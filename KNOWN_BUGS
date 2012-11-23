@@ -1,0 +1,7 @@
+KNOWN BUGS
+------------------------------------------
+
+1. Parser Memory leak
+
+There is a constant memory leak of 16k somewhere in the
+parser, due to the allocation of a buffer.
