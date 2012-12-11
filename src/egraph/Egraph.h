@@ -377,10 +377,10 @@ public:
   inline bool         getUseGmp               ( ) { return use_gmp; }
   void                splitOnDemand           ( vector< Enode * > &, int ); // Splitting on demand modulo equality
   void                splitOnDemand           ( Enode *, int );             // Splitting on demand
-  bool                checkDupClause          ( Enode *, Enode * );         // Check if a clause is duplicate    
+  bool                checkDupClause          ( Enode *, Enode * );         // Check if a clause is duplicate
   void                explain                 ( Enode *
                                               , Enode *
-					      , vector< Enode * > & );      // Exported explain
+                                              , vector< Enode * > & );      // Exported explain
   // Temporary merge, used by array theory to merge indexes
 #ifdef PRODUCE_PROOF
   void                tmpMergeBegin           ( Enode *, Enode * ); 
@@ -389,7 +389,7 @@ public:
 
   //===========================================================================
   // Exported function for using egraph as supporting solver
-  
+
   bool                extAssertLit            ( Enode * );                  // Assert a theory literal
   void                extPushBacktrackPoint   ( );                          // Push a backtrack point
   void                extPopBacktrackPoint    ( );                          // Backtrack to last saved point
@@ -400,7 +400,7 @@ public:
   bool                isInitialized             ( );
 
 private:
-  
+
   //===========================================================================
   // Private Routines for enode construction/destruction
 
@@ -433,16 +433,16 @@ private:
   //
   // Handy function to swap two arguments of a list
   //
-  inline Enode * swapList ( Enode * args ) 
-  { 
+  inline Enode * swapList ( Enode * args )
+  {
     assert( args );
     assert( args->isList( ) );
     assert( args->getArity( ) == 2 );
     return cons( args->getCdr( )->getCar( ), cons( args->getCar( ) ) );
   }
-  //                                                            
-  // Related to term creation                                   
-  //                                                            
+  //
+  // Related to term creation
+  //
   Enode * insertNumber ( Enode * );                             // Inserts a number
   void    removeNumber ( Enode * );                             // Remove a number
   void    insertSymbol ( Enode * );                             // Inserts a symbol
@@ -455,14 +455,14 @@ private:
 #ifndef SMTCOMP
   void    evaluateTermRec ( Enode *, Real & );                  // Evaluate node
 #endif
-  //                                                                
-  // Related to congruence closure                                  
-  //                                                                
+  //
+  // Related to congruence closure
+  //
   Enode * insertSigTab ( const enodeid_t, Enode *, Enode * );   // For undoable cons only
   Enode * insertSigTab ( Enode * );                             // For for terms that go in the congruence
   Enode * lookupSigTab ( Enode * );                             // Retrieve Enode
   void    removeSigTab ( Enode * );                             // Remove Enode from sig_tab
-                                                                
+
   bool                        active_dup1;                      // To prevent nested usage
   bool                        active_dup2;                      // To prevent nested usage
   vector< int >               duplicates1;                      // Fast duplicate checking
@@ -482,8 +482,8 @@ private:
   map< string, Enode * >      name_to_define;                   // Store for defines
 
   SplayTree< Enode *, Enode::idLessThan > store;                // The actual store
-  SigTab                                  sig_tab;		// (Supposely) Efficient Signature table for congruence closure
-                                                                
+  SigTab                                  sig_tab;              // (Supposely) Efficient Signature table for congruence closure
+
   vector< Enode * >              id_to_enode;                   // Table ENODE_ID --> ENODE
   vector< int >                  id_to_belong_mask;             // Table ENODE_ID --> ENODE
   vector< int >                  id_to_fan_in;                  // Table ENODE_ID --> fan in
@@ -506,23 +506,23 @@ private:
   // Private Routines for Core Theory Solver
 
   bool    assertLit_      ( Enode * );                          // Assert a theory literal
-  //                                                            
-  // Asserting literals                                         
-  //                                                            
+  //
+  // Asserting literals
+  //
   bool    assertEq        ( Enode *, Enode *, Enode * );        // Asserts an equality
   bool    assertNEq       ( Enode *, Enode *, Enode * );        // Asserts a negated equality
   bool    assertDist      ( Enode *, Enode * );                 // Asserts a distinction
-  //                                                            
-  // Backtracking                                               
-  //                                                            
+  //
+  // Backtracking
+  //
   void backtrackToStackSize ( size_t );                         // Backtrack to a certain operation
-  //                                                            
-  // Congruence closure main routines                           
-  //                                                            
+  //
+  // Congruence closure main routines
+  //
   bool    unmergable      ( Enode *, Enode *, Enode ** );       // Can two nodes be merged ?
   void    merge           ( Enode *, Enode * );                 // Merge two nodes
   bool    mergeLoop       ( Enode * );                          // Merge loop
-  void	  deduce          ( Enode *, Enode * );                 // Deduce from merging of two nodes
+  void    deduce          ( Enode *, Enode * );                 // Deduce from merging of two nodes
   void    undoMerge       ( Enode * );                          // Undoes a merge
   void    undoDisequality ( Enode * );                          // Undoes a disequality
   void    undoDistinction ( Enode * );                          // Undoes a distinction
@@ -537,7 +537,7 @@ private:
   void     expReRootOn          ( Enode * );                    // Reroot the proof tree on x
   void     expUnion             ( Enode *, Enode * );           // Union of x and y in the explanation
   Enode *  expFind              ( Enode * );                    // Find for the eq classes of the explanation
-  Enode *  expHighestNode       ( Enode * );                    // Returns the node of the eq class of x that is closes to the root of the explanation tree
+  Enode *  expHighestNode       ( Enode * );                    // Returns the node of the eq class of x that is closest to the root of the explanation tree
   Enode *  expNCA               ( Enode *, Enode * );           // Return the nearest common ancestor of x and y
   void     expRemoveExplanation ( );                            // Undoes the effect of expStoreExplanation
   void     expCleanup           ( );                            // Undoes the effect of expExplain
@@ -584,11 +584,11 @@ private:
   Real                        rescale_factor;                   // Rescale factor for DL
   long                        rescale_factor_l;                 // Rescale factor for DL
   bool                        use_gmp;                          // Do we have to use gmp?
-  
+
   void    initializeCongInc ( Enode * );                        // Initialize a node in the congruence at runtime
   void    initializeAndMerge( Enode * );                        // Initialize a node in the congruence at runtime
   Enode * uCons             ( Enode *, Enode * );               // Undoable cons - To create dynamic terms
-  void    undoCons          ( Enode * );		       	// Undoes a cons
+  void    undoCons          ( Enode * )                         // Undoes a cons
 
   //============================================================================
 
@@ -634,7 +634,7 @@ private:
   bool                    automatic_coloring;        // Set automatic node coloring
   vector< Enode * >       idef_list;                 // Definition list in rev chron order
   map< Enode *, Enode * > idef_map;                  // Def to term map
-#endif                                                                      
+#endif
 
   //===========================================================================
   // Debugging routines - Implemented in EgraphDebug.C
@@ -668,75 +668,75 @@ inline bool Egraph::isInitialized( )
 }
 
 inline void Egraph::initDupMap1( )
-{ 
-  assert( !active_dup_map1 ); 
-  active_dup_map1 = true; 
-  dup_map1.resize( id_to_enode.size( ), NULL ); 
-  dup_set1.resize( id_to_enode.size( ), dup_map_count1 ); 
-  dup_map_count1 ++; 
+{
+  assert( !active_dup_map1 );
+  active_dup_map1 = true;
+  dup_map1.resize( id_to_enode.size( ), NULL );
+  dup_set1.resize( id_to_enode.size( ), dup_map_count1 );
+  dup_map_count1 ++;
 }
 
 inline void Egraph::initDupMap2( )
-{ 
-  assert( !active_dup_map2 ); 
-  active_dup_map2 = true; 
-  dup_map2.resize( id_to_enode.size( ), NULL ); 
-  dup_set2.resize( id_to_enode.size( ), dup_map_count2 ); 
-  dup_map_count2 ++; 
+{
+  assert( !active_dup_map2 );
+  active_dup_map2 = true;
+  dup_map2.resize( id_to_enode.size( ), NULL );
+  dup_set2.resize( id_to_enode.size( ), dup_map_count2 );
+  dup_map_count2 ++;
 }
 
-inline void Egraph::storeDupMap1( Enode * k, Enode * e ) 
-{ 
-  assert(  active_dup_map1 ); 
-  dup_map1.resize( id_to_enode.size( ), NULL ); 
-  dup_set1.resize( id_to_enode.size( ), dup_map_count1 - 1 ); 
-  assert( k->getId( ) < (enodeid_t)dup_set1.size( ) ); 
-  dup_set1[ k->getId( ) ] = dup_map_count1; 
-  dup_map1[ k->getId( ) ] = e; 
+inline void Egraph::storeDupMap1( Enode * k, Enode * e )
+{
+  assert(  active_dup_map1 );
+  dup_map1.resize( id_to_enode.size( ), NULL );
+  dup_set1.resize( id_to_enode.size( ), dup_map_count1 - 1 );
+  assert( k->getId( ) < (enodeid_t)dup_set1.size( ) );
+  dup_set1[ k->getId( ) ] = dup_map_count1;
+  dup_map1[ k->getId( ) ] = e;
 }
 
-inline void Egraph::storeDupMap2( Enode * k, Enode * e ) 
-{ 
-  assert(  active_dup_map2 ); 
-  dup_map2.resize( id_to_enode.size( ), NULL ); 
-  dup_set2.resize( id_to_enode.size( ), dup_map_count2 - 1 ); 
-  assert( k->getId( ) < (enodeid_t)dup_set2.size( ) ); 
-  dup_set2[ k->getId( ) ] = dup_map_count2; 
-  dup_map2[ k->getId( ) ] = e; 
+inline void Egraph::storeDupMap2( Enode * k, Enode * e )
+{
+  assert(  active_dup_map2 );
+  dup_map2.resize( id_to_enode.size( ), NULL );
+  dup_set2.resize( id_to_enode.size( ), dup_map_count2 - 1 );
+  assert( k->getId( ) < (enodeid_t)dup_set2.size( ) );
+  dup_set2[ k->getId( ) ] = dup_map_count2;
+  dup_map2[ k->getId( ) ] = e;
 }
 
 inline Enode * Egraph::valDupMap1( Enode * k )
-{ 
-  assert(  active_dup_map1 ); 
-  dup_map1.resize( id_to_enode.size( ), NULL ); 
-  dup_set1.resize( id_to_enode.size( ), dup_map_count1 - 1 ); 
-  assert( k->getId( ) < (enodeid_t)dup_set1.size( ) ); 
-  if ( dup_set1[ k->getId( ) ] == dup_map_count1 ) 
-    return dup_map1[ k->getId( ) ]; 
-  return NULL; 
+{
+  assert(  active_dup_map1 );
+  dup_map1.resize( id_to_enode.size( ), NULL );
+  dup_set1.resize( id_to_enode.size( ), dup_map_count1 - 1 );
+  assert( k->getId( ) < (enodeid_t)dup_set1.size( ) );
+  if ( dup_set1[ k->getId( ) ] == dup_map_count1 )
+    return dup_map1[ k->getId( ) ];
+  return NULL;
 }
 
 inline Enode * Egraph::valDupMap2( Enode * k )
-{ 
-  assert(  active_dup_map2 ); 
-  dup_map2.resize( id_to_enode.size( ), NULL ); 
-  dup_set2.resize( id_to_enode.size( ), dup_map_count2 - 1 ); 
-  assert( k->getId( ) < (enodeid_t)dup_set2.size( ) ); 
-  if ( dup_set2[ k->getId( ) ] == dup_map_count2 ) 
-    return dup_map2[ k->getId( ) ]; 
-  return NULL; 
+{
+  assert(  active_dup_map2 );
+  dup_map2.resize( id_to_enode.size( ), NULL );
+  dup_set2.resize( id_to_enode.size( ), dup_map_count2 - 1 );
+  assert( k->getId( ) < (enodeid_t)dup_set2.size( ) );
+  if ( dup_set2[ k->getId( ) ] == dup_map_count2 )
+    return dup_map2[ k->getId( ) ];
+  return NULL;
 }
 
-inline void Egraph::doneDupMap1( ) 
-{ 
-  assert(  active_dup_map1 ); 
-  active_dup_map1 = false; 
+inline void Egraph::doneDupMap1( )
+{
+  assert(  active_dup_map1 );
+  active_dup_map1 = false;
 }
 
-inline void Egraph::doneDupMap2( ) 
-{ 
-  assert(  active_dup_map2 ); 
-  active_dup_map2 = false; 
+inline void Egraph::doneDupMap2( )
+{
+  assert(  active_dup_map2 );
+  active_dup_map2 = false;
 }
 
 #endif

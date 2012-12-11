@@ -20,50 +20,185 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 #ifndef ENODE_H
 #define ENODE_H
 
-#include "Global.h"
-#include "EnodeTypes.h"
-#include "Otl.h"
+#include "Vec.h"
+#include "Alloc.h"
+
+#include "terms/Term.h"
+
+//#include "Global.h"
+//#include "EnodeTypes.h"
+//#include "Otl.h"
 #include "sorts/Sort.h"
+#include "CgTypes.h"
+#include "SigMap.h"
+
+typedef RegionAllocator<uint32_t>::Ref ERef;
+
+class CgData {
+    ERef        root;           // Root of the equivalence class
+    cgId        cid;            // The "congruence id" of the class
+    ERef        next;           // Next node in the class
+    int         size;           // Size of the eq class
+    ERef        parent;         // Parent of the node (in congruence)
+    ERef        same_car;       // Circular list of all the car-parents of the class
+    ERef        same_cdr;       // Circular list of all the cdr-parents of the class
+    int         parent_size;    // Size of the parent's congruence class
+    ERef        cg_ptr;         // Congruence class representative (how is this different from root?)
+    vec<ERef>*  forbid;         // List of unmergeable Enodes
+    dist_t      dist_classes;   // The bit vector for distinction classes
+
+    friend class Enode;
+};
+
+class EnodeAllocator;
+
+static ERef const ERef_Nil = RegionAllocator<uint32_t>::Ref_Undef;
 
 class Enode
 {
+    static uint32_t cgid_ctr;
+
+    struct {
+        unsigned type       : 2;
+        unsigned reloced    : 1;
+        unsigned unused     : 29; } header;
+
+    TRef        tr;
+    uint32_t    id;
+    ERef        er;     // Either my tref or reference to the relocated one
+    ERef        car;
+    ERef        cdr;
+
+    // This is a trick to enable congruence data on only Enodes it is needed
+    CgData      cgdata[0];
+
+
+    friend class EnodeAllocator;
+    friend class EnodeStore;
+
 public:
 
-  //
-  // Constructor for Enil
-  //
-  Enode  ( );
-  //
-  // Constructor for symbols
-  //
-  Enode ( const enodeid_t       // id
-	, const char *          // name/value
-	, const etype_t         // enode type
-	, Snode *               // Sort args
-	, Snode *               // Sort ret value
-	);
-  //
-  // Constructor for symbols (new interface)
-  //
-  Enode ( const enodeid_t      // id
-        , const char *          // name/value
-        , const etype_t         // enode type
-        , list<Sort*>&          // Sort args
-        , Sort&                 // Sort ret value
-        );
+    enum en_type { et_symb, et_list, et_term };
+
+    // Constructor for symbol and singleton term nodes
+    Enode(TRef tr_) : tr(tr_) { header.type = et_symb; }
+
+    // Constructor for the non-singleton term and list nodes
+    Enode(ERef car_, ERef cdr_, en_type t, EnodeAllocator& ea, ERef er, Map<SigPair,ERef,SigHash,Equal<const SigPair&> >& sig_tab);
+
+    Enode* Enode_new(en_type t, TRef tr) {
+        assert(sizeof(TRef) == sizeof(uint32_t));
+        size_t sz = sizeof(header) + sizeof(TRef) + sizeof(uint32_t);
+        if (t != et_symb) sz += sizeof(CgData);
+        void* mem = malloc(sz);
+
+        if (t == et_term) {
+            Enode* en = new (mem) Enode(tr);
+            new (en->cgdata) CgData();
+        }
+        return new (mem) Enode(tr);
+
+    }
+
+    en_type type        ()        const { return (en_type)header.type; }
+
+    void relocate       (ERef e)        { header.reloced = 1; er = e; }
+    bool reloced        ()        const { return header.reloced; }
+    ERef relocation     ()        const { return er; }
+
+    friend class CgData;
+};
+
+class EnodeAllocator : public RegionAllocator<uint32_t>
+{
+    static int enodeWord32Size(bool has_cgdata){
+        if (has_cgdata) return (sizeof(Enode) + sizeof(CgData))/sizeof(int32_t);
+        else            return sizeof(Enode)/sizeof(int32_t); }
+
+    Map<SigPair,ERef,SigHash,Equal<const SigPair&> >* sig_tab;
+
+ public:
+
+    EnodeAllocator(uint32_t start_cap, Map<SigPair,ERef,SigHash,Equal<const SigPair&> >* st) : RegionAllocator<uint32_t>(start_cap), sig_tab(st) {}
+    EnodeAllocator() {}
+
+    void moveTo(EnodeAllocator& to){
+        RegionAllocator<uint32_t>::moveTo(to); }
+
+    ERef alloc(TRef tr) {
+        assert(sizeof(TRef)     == sizeof(uint32_t));
+        assert(sizeof(ERef)     == sizeof(uint32_t));
+        ERef eid = RegionAllocator<uint32_t>::alloc(enodeWord32Size(false));
+        new (lea(eid)) Enode(tr);
+
+        return eid;
+    }
+
+    ERef alloc(ERef car, ERef cdr, Enode::en_type t)
+    {
+        assert(sizeof(TRef)     == sizeof(uint32_t));
+        assert(sizeof(ERef)     == sizeof(uint32_t));
+
+        bool has_cgdata = (t == Enode::et_list) || (t == Enode::et_term);
+        ERef eid = RegionAllocator<uint32_t>::alloc(enodeWord32Size(has_cgdata));
+        new (lea(eid)) Enode(car, cdr, t, *this, eid, *sig_tab);
+
+        return eid;
+    }
+
+    ERef alloc(Enode&) {
+        assert(false);
+        return ERef_Nil;
+    }
+
+    // Deref, Load Effective Address (LEA), Inverse of LEA (AEL):
+    Enode&       operator[](Ref r)         { return (Enode&)RegionAllocator<uint32_t>::operator[](r); }
+    const Enode& operator[](Ref r) const   { return (Enode&)RegionAllocator<uint32_t>::operator[](r); }
+    Enode*       lea       (Ref r)         { return (Enode*)RegionAllocator<uint32_t>::lea(r); }
+    const Enode* lea       (Ref r) const   { return (Enode*)RegionAllocator<uint32_t>::lea(r); }
+    Ref          ael       (const Enode* t){ return RegionAllocator<uint32_t>::ael((uint32_t*)t); }
+
+    void free(ERef eid)
+    {
+        Enode& e = operator[](eid);
+        if ((e.type() == Enode::et_list) || (e.type() == Enode::et_term))
+            RegionAllocator<uint32_t>::free(enodeWord32Size(true));
+        else
+            RegionAllocator<uint32_t>::free(enodeWord32Size(false));
+
+    }
+
+    void reloc(ERef& er, EnodeAllocator& to)
+    {
+        Enode& e = operator[](er);
+
+        if (e.reloced()) { er = e.relocation(); return; }
+
+        er = to.alloc(e);
+        e.relocate(er);
+    }
+};
+
+
+
+
+/*
+  Enode ( const enodeid_t, TRef ) :
+      id(geid++);
+    , header.type(ETYPE_SYM)
   //
   // Constructor for terms and lists
   //
   Enode ( const enodeid_t       // id
-	, Enode *               // car
-	, Enode *               // cdr
+        , Enode *               // car
+        , Enode *               // cdr
         );
   //
-  // Constructor for defs
+  // Constructor for defs -- what is a def?
   //
   Enode ( const enodeid_t       // id
-	, Enode *	        // def
-	);
+        , Enode *               // def
+        );
   //
   // Destructor
   //
@@ -81,117 +216,16 @@ public:
   inline void setEtype          ( const etype_t t )
   {
     assert( t == ETYPE_SYMB
-	 || t == ETYPE_NUMB
-	 || t == ETYPE_LIST
-	 || t == ETYPE_TERM
-	 || t == ETYPE_DEF );
+         || t == ETYPE_NUMB
+         || t == ETYPE_LIST
+         || t == ETYPE_TERM
+         || t == ETYPE_DEF );
     properties |= t;
   }
 
   inline void setArity            ( const unsigned a ) { assert( a <= ARITY_N ); properties |= (a << ARITY_SHIFT); }
-  //
-  // Check if a term node represents a certain symbol
-  //
-  inline bool isPlus              ( ) const { return hasSymbolId( ENODE_ID_PLUS	       ); }
-  inline bool isMinus             ( ) const { return hasSymbolId( ENODE_ID_MINUS       ); }
-  inline bool isUminus            ( ) const { return hasSymbolId( ENODE_ID_UMINUS      ); }
-  inline bool isTimes             ( ) const { return hasSymbolId( ENODE_ID_TIMES       ); }
-  inline bool isDiv               ( ) const { return hasSymbolId( ENODE_ID_DIV	       ); }
-  inline bool isEq                ( ) const { return hasSymbolId( ENODE_ID_EQ	       ); }
-  inline bool isLeq               ( ) const { return hasSymbolId( ENODE_ID_LEQ	       ); }
-  inline bool isGeq               ( ) const { return hasSymbolId( ENODE_ID_GEQ	       ); }
-  inline bool isLt                ( ) const { return hasSymbolId( ENODE_ID_LT	       ); }
-  inline bool isGt                ( ) const { return hasSymbolId( ENODE_ID_GT	       ); }
-  inline bool isStore             ( ) const { return car->getName( ) == string( "store" ); }
-  inline bool isSelect            ( ) const { return car->getName( ) == string( "select" ); }
-  inline bool isDiff              ( ) const { return car->getName( ) == string( "diff" ); }
-  inline bool isImplies           ( ) const { return hasSymbolId( ENODE_ID_IMPLIES     ); }
-  inline bool isAnd               ( ) const { return hasSymbolId( ENODE_ID_AND         ); }
-  inline bool isOr                ( ) const { return hasSymbolId( ENODE_ID_OR          ); }
-  inline bool isNot               ( ) const { return hasSymbolId( ENODE_ID_NOT         ); }
-  inline bool isXor               ( ) const { return hasSymbolId( ENODE_ID_XOR         ); }
-  inline bool isIff               ( ) const { return hasSymbolId( ENODE_ID_EQ ) && get1st( )->hasSortBool( ); }
-  inline bool isTrue              ( ) const { return hasSymbolId( ENODE_ID_TRUE        ); }
-  inline bool isFalse             ( ) const { return hasSymbolId( ENODE_ID_FALSE       ); }
-  inline bool isIte               ( ) const { return car->getName( ) == string( "ite" ); }
-  inline bool isDistinct          ( ) const { return hasSymbolId( ENODE_ID_DISTINCT    ); }
-  inline bool isFakeInterp        ( ) const { return hasSymbolId( ENODE_ID_FAKE_INTERP ); }
-  /*
-  inline bool isBvslt             ( ) const { return hasSymbolId( ENODE_ID_BVSLT       ); }
-  inline bool isBvsgt             ( ) const { return hasSymbolId( ENODE_ID_BVSGT       ); }
-  inline bool isBvsle             ( ) const { return hasSymbolId( ENODE_ID_BVSLE       ); }
-  inline bool isBvsge             ( ) const { return hasSymbolId( ENODE_ID_BVSGE       ); }
-  inline bool isBvult             ( ) const { return hasSymbolId( ENODE_ID_BVULT       ); }
-  inline bool isBvugt             ( ) const { return hasSymbolId( ENODE_ID_BVUGT       ); }
-  inline bool isBvule             ( ) const { return hasSymbolId( ENODE_ID_BVULE       ); }
-  inline bool isBvuge             ( ) const { return hasSymbolId( ENODE_ID_BVUGE       ); }
-  inline bool isConcat            ( ) const { return hasSymbolId( ENODE_ID_CONCAT      ); }
-  inline bool isCbe               ( ) const { return hasSymbolId( ENODE_ID_CBE         ); }
-  inline bool isBvand             ( ) const { return hasSymbolId( ENODE_ID_BVAND       ); }
-  inline bool isBvor              ( ) const { return hasSymbolId( ENODE_ID_BVOR        ); }
-  inline bool isBvxor             ( ) const { return hasSymbolId( ENODE_ID_BVXOR       ); }
-  inline bool isBvnot             ( ) const { return hasSymbolId( ENODE_ID_BVNOT       ); }
-  inline bool isBvadd             ( ) const { return hasSymbolId( ENODE_ID_BVADD       ); }
-  inline bool isBvsub             ( ) const { return hasSymbolId( ENODE_ID_BVSUB       ); }
-  inline bool isBvmul             ( ) const { return hasSymbolId( ENODE_ID_BVMUL       ); }
-  inline bool isBvneg             ( ) const { return hasSymbolId( ENODE_ID_BVNEG       ); }
-  inline bool isBvlshr            ( ) const { return hasSymbolId( ENODE_ID_BVLSHR      ); }
-  inline bool isBvashr            ( ) const { return hasSymbolId( ENODE_ID_BVASHR      ); }
-  inline bool isBvshl             ( ) const { return hasSymbolId( ENODE_ID_BVSHL       ); }
-  inline bool isBvsrem            ( ) const { return hasSymbolId( ENODE_ID_BVSREM      ); }
-  inline bool isBvurem            ( ) const { return hasSymbolId( ENODE_ID_BVUREM      ); }
-  inline bool isBvsdiv            ( ) const { return hasSymbolId( ENODE_ID_BVSDIV      ); }
-  inline bool isBvudiv            ( ) const { return hasSymbolId( ENODE_ID_BVUDIV      ); }
-  inline bool isSignExtend        ( ) const { int i; return sscanf( car->getName( ), "sign_extend[%d]", &i ) == 1; }
-  bool        isSignExtend        ( int * );
-  inline bool isZeroExtend        ( ) const { return hasSymbolId( ENODE_ID_ZERO_EXTEND ); }
-  inline bool isBoolcast          ( ) const { return hasSymbolId( ENODE_ID_BOOLCAST    ); }
-  inline bool isWord1cast         ( ) const { return hasSymbolId( ENODE_ID_WORD1CAST   ); }
-  */
-  inline bool isUp                ( ) const { return car->id > ENODE_ID_LAST && isAtom( ) && getArity( ) > 0; }
-  inline bool isUf                ( ) const { return car->id > ENODE_ID_LAST && !isAtom( ) && getArity( ) > 0; }
-
-  inline bool isCostIncur       ( ) const { return hasSymbolId( ENODE_ID_CTINCUR ); }
-  inline bool isCostBound       ( ) const { return hasSymbolId( ENODE_ID_CTBOUND ); }
-
-  bool        isVar               ( ) const; // True if it is a variable
-  bool        isConstant          ( ) const; // True if it is a constant
-  bool        isLit               ( ) const; // True if it is a literal
-  bool        isAtom              ( ) const; // True if it is an atom
-  bool        isTLit              ( ) const; // True if it is a theory literal
-  bool        isTAtom             ( ) const; // True if it is a theory atom
-  bool        isBooleanOperator   ( ) const; // True if it is a boolean operator
-  bool        isArithmeticOp      ( ) const; // True if root is an arith term
-  bool        isUFOp              ( ) const; // True if root is UF
-
-  inline bool hasSortBool( ) const
-  { 
-    assert( isTerm( ) ); 
-    return car->symb_data->ret_sort.hasSortBool( ); 
-  }
-  inline bool hasSortReal( ) const
-  { 
-    assert( isTerm( ) ); 
-    return car->symb_data->ret_sort.hasSortReal( ); 
-  }
-  inline bool hasSortInt( ) const
-  { 
-    assert( isTerm( ) ); 
-    return car->symb_data->ret_sort.hasSortInt( ); 
-  }
-  inline bool hasSortArray( ) const
-  { 
-    assert( isTerm( ) ); 
-    return car->symb_data->ret_sort.hasSortArray( ); 
-  }
-  inline bool hasSortUndef( ) const
-  { 
-    assert( isTerm( ) ); 
-    return car->symb_data->ret_sort.hasSortUndef( ); 
-  }
 
   inline bool hasCongData         ( ) const { return cong_data != NULL; }
-
   void        allocCongData       ( );
   void        deallocCongData     ( );
 
@@ -199,17 +233,12 @@ public:
   // Getty and Setty methods
   //
   inline enodeid_t            getId      ( ) const { return id; }
-  inline unsigned             getArity   ( ) const { return ((properties & ARITY_MASK) >> ARITY_SHIFT); }
-  // The below is problematic since the sort is potentially complex
-  Sort *                      getArgSort ( ) const { assert( isTerm( ) || isSymb( ) ); assert(false); return NULL; } // isTerm( ) ? &(car->symb_data->arg_sort) : &(symb_data->arg_sort); }
-  Sort *                      getRetSort ( ) const { assert( isTerm( ) || isSymb( ) ); return isTerm( ) ? &(car->symb_data->ret_sort) : &(symb_data->ret_sort); }
-  inline string   getName                ( )       { assert( isSymb( ) || isNumb( ) ); assert( symb_data ); return stripName( symb_data->name ); }
-  inline string   getNameFull            ( )       { assert( isSymb( ) || isNumb( ) ); assert( symb_data ); return symb_data->name; }
-  inline const char*   getNameFullC      ( )       { assert( isSymb( ) || isNumb( ) ); assert( symb_data ); return symb_data->name; }
+  inline TRef                 getTerm    ( ) const { return tr; }
+
   inline Enode *  getCar                 ( ) const { return car; }
   inline Enode *  getCdr                 ( ) const { return cdr; }
-  inline Enode *  getDef                 ( ) const { assert( isDef( ) ); assert( car ); return car; }
-                  
+//  inline Enode *  getDef                 ( ) const { assert( isDef( ) ); assert( car ); return car; }
+
   inline Enode *  getNext                ( ) const { assert( isTerm( ) || isList( ) ); assert( cong_data ); return cong_data->next; }
   inline int      getSize                ( ) const { assert( isTerm( ) || isList( ) ); assert( cong_data ); return cong_data->size; }
   inline Enode *  getParent              ( ) const { assert( isTerm( ) || isList( ) ); assert( cong_data ); return cong_data->parent; }
@@ -219,11 +248,7 @@ public:
   inline Enode *  getCgPtr               ( ) const { assert( isTerm( ) || isList( ) ); assert( cong_data ); return cong_data->cg_ptr; }
   inline Elist *  getForbid              ( ) const { assert( isTerm( ) || isList( ) ); assert( cong_data ); return cong_data->forbid; }
   inline dist_t   getDistClasses         ( ) const { assert( isTerm( ) || isList( ) ); assert( cong_data ); return cong_data->dist_classes; }
-                  
-  const Real &    getValue               ( ) const;
-  const Real      getComplexValue        ( ) const;
-  void            setValue               ( const Real & );
-  bool            hasValue               ( ) const;
+
   Enode *         getRoot                ( ) const;
   enodeid_t       getCid                 ( ) const;
   Enode *         getConstant            ( ) const;
@@ -244,7 +269,7 @@ public:
   inline int      getWeightInc           ( )       { assert( isAtom( ) && atom_data ); return atom_data->weight_inc; }
   inline int      getDedIndex            ( ) const { assert( isTerm( ) && atom_data ); return atom_data->ded_index; }
   inline int      getDistIndex           ( ) const { assert( isTerm( ) && atom_data ); return atom_data->dist_index; }
-                  
+
   inline Enode *  getCb                  ( ) const { assert( isTerm( ) && cong_data && cong_data->term_data ); return cong_data->term_data->cb; }
   inline Enode *  getRef                 ( ) const { assert( isTerm( ) && cong_data && cong_data->term_data ); return cong_data->root; }
   inline int      getWidth               ( ) const { assert( isTerm( ) || isSymb( ) || isNumb( ) ); return (properties & WIDTH_MASK); }
@@ -260,7 +285,7 @@ public:
   }
 
   inline void    setRoot                ( Enode * e )        { assert( isTerm( ) || isList( ) ); assert( cong_data ); cong_data->root = e; }
-  inline void    setCid                 ( const enodeid_t c ){ assert( isTerm( ) || isList( ) ); assert( cong_data ); cong_data->cid = c; }
+  inline void    setCid                 ( const enodeid_t c ){ assert( isTerm( ) || isList( ) ); assert( cong_data ); cong_data->cid = c; } // Congruence id?
   inline void    setDef                 ( Enode * e )        { assert( e ); assert( isDef( ) ); car = e; }
   inline void    setNext                ( Enode * e )        { assert( isTerm( ) || isList( ) ); assert( cong_data ); cong_data->next = e; }
   inline void    setSize                ( const int s )      { assert( isTerm( ) || isList( ) ); assert( cong_data ); cong_data->size = s; }
@@ -299,16 +324,16 @@ public:
   //
   // Shortcuts for retrieving a term's arguments
   //
-  inline Enode * get1st                 ( ) const;     // Get first argument in constant time
+  inline Enode * get1st                 ( ) const;     // Get first argument in constant time (constant?)
   inline Enode * get2nd                 ( ) const;     // Get second argument in constant time
   inline Enode * get3rd                 ( ) const;     // Get third argument in constant time
 
   bool           addToCongruence        ( ) const;
   unsigned       sizeInMem              ( ) const;
 
-  void           print	                ( ostream & ); // Prints the enode
+  void           print                  ( ostream & ); // Prints the enode
   string         stripName              ( string );
-  void           printSig	        ( ostream & ); // Prints the enode signature
+  void           printSig               ( ostream & ); // Prints the enode signature
 
 #ifdef BUILD_64
   inline enodeid_pair_t          getSig    ( ) const { return encode( car->getRoot( )->getCid( ), cdr->getRoot( )->getCid( ) ); }
@@ -349,7 +374,7 @@ public:
       if ( x->isEnil( ) ) return true;
       if ( y->isEnil( ) ) return false;
       return (x->getCar( )->getCid( ) <  y->getCar( )->getCid( ))
-	  || (x->getCar( )->getCid( ) == y->getCar( )->getCid( ) && x->getCdr( )->getCid( ) < y->getCdr( )->getCid( ) );
+          || (x->getCar( )->getCid( ) == y->getCar( )->getCid( ) && x->getCdr( )->getCid( ) < y->getCdr( )->getCid( ) );
     }
   };
 
@@ -366,7 +391,6 @@ private:
   SymbData *        symb_data;   // For symbols/numbers
   };
   AtomData *        atom_data;   // For atom terms only
-  Real *            value;       // Pointer to enode value
 #ifdef PRODUCE_PROOF
   ipartitions_t     ipartitions; // Partitions for interpolation
 #endif
@@ -374,34 +398,6 @@ private:
   inline bool       hasSymbolId    ( const enodeid_t id ) const { assert( isTerm( ) ); return car->getId( ) == id; }
 };
 
-inline const Real & Enode::getValue ( ) const
-{
-  assert( hasValue( ) );
-  return *value;
-}
-
-inline const Real Enode::getComplexValue( ) const
-{
-  if( isDiv( ) )
-    return get1st( )->getCar( )->getComplexValue( ) / get2nd( )->getCar( )->getComplexValue( );
-  else if( isUminus( ) )
-    return -(*value);
-  else
-    return *value;
-}
-
-inline void Enode::setValue ( const Real & v )
-{
-  assert( isTerm( ) );
-  value = new Real;
-  *value = v;
-}
-
-inline bool Enode::hasValue( ) const
-{
-  assert( isTerm( ) );
-  return value != NULL;
-}
 
 inline Enode * Enode::getRoot ( ) const
 {
@@ -419,98 +415,6 @@ inline enodeid_t Enode::getCid ( ) const
   return id;
 }
 
-inline Enode * Enode::getConstant ( ) const
-{
-  assert( isTerm( ) || isList( ) );
-  // assert( cong_data );
-  if ( cong_data == NULL )
-    return NULL;
-
-  if ( isTerm( ) )
-  {
-    assert( cong_data );
-    assert( cong_data->term_data );
-    return cong_data->term_data->constant;
-  }
-
-  return NULL;
-}
-
-//
-// enode is a literal if it is
-// an atom or a negated atom
-//
-inline bool Enode::isLit( ) const
-{
-  if ( !isTerm( ) ) return false;
-  if ( isAtom( ) ) return true;
-  // if ( car->getArity( ) != ENODE_ARITY_1 ) return false;
-  if ( getArity( ) != 1 ) return false;
-  Enode * arg = get1st( );
-  return isNot( ) && arg->isAtom( );
-}
-//
-// enode is an atom if it has boolean type and
-// it is not a boolean operator. Constants true
-// and false are considered atoms
-//
-inline bool Enode::isAtom( ) const
-{
-  if ( !isTerm( ) ) return false;
-  if ( !hasSortBool( ) ) return false;
-  if ( isBooleanOperator( ) ) return false;
-
-  return true;
-}
-//
-// enode is a tatom if it has boolean type and
-// it is not a boolean operator nor a boolean variable
-// nor constants true and false.
-//
-inline bool Enode::isTAtom( ) const
-{
-  if ( !isTerm( ) ) return false;
-  if ( !isAtom( ) ) return false;
-  if ( isVar( ) )   return false;
-  if ( isTrue( ) )  return false;
-  if ( isFalse( ) ) return false;
-  return true;
-}
-//
-// enode is a literal if it is
-// an atom or a negated atom
-//
-inline bool Enode::isTLit( ) const
-{
-  if ( !isTerm( ) ) return false;
-  if ( isTAtom( ) ) return true;
-  if ( getArity( ) != 1 ) return false;
-  Enode * arg = get1st( );
-  return isNot( ) && arg->isTAtom( );
-}
-
-inline bool Enode::isVar( ) const
-{
-  if ( car->getId( )    <= ENODE_ID_LAST ) return false;     // If the code is predefined, is not a variable
-  if ( isConstant( ) ) return false;                         // If it's a constant is not a variable
-  if ( !isTerm( ) ) return false;		             // If is not a term is not a variable
-  if ( getArity( ) != 0 ) return false;
-  return car->isSymb( );	                             // Final check
-}
-
-inline bool Enode::isConstant( ) const
-{
-  if ( !isTerm( ) ) return false;		         // Check is a term
-  return isTrue( ) || isFalse( ) || car->isNumb( );      // Only numbers, true, false are constant
-}
-
-inline bool Enode::isBooleanOperator( ) const
-{
-  return isAnd( ) || isOr( )  || isNot( )
-      || isIff( ) 
-      || isXor( ) || isImplies( )
-      ;
-}
 
 inline Enode * Enode::get1st ( ) const
 {
@@ -584,34 +488,5 @@ inline void Enode::deallocCongData( )
   delete cong_data;
   cong_data = NULL;
 }
-
-inline bool Enode::isArithmeticOp( ) const
-{
-  //
-  // Put the exhaustive list of arithmetic operators here
-  //
-  if ( isPlus    ( ) 
-    || isUminus  ( )
-    || isTimes   ( )
-    || isLeq     ( ) 
-    || isEq      ( ) )
-    return true;
-
-  return false;
-}
-
-inline bool Enode::isUFOp( ) const
-{
-  //
-  // Put the exhaustive list of uf operators here
-  //
-  if ( isUf       ( ) 
-    || isUp       ( ) 
-    || isDistinct ( ) 
-    || isEq       ( ) )
-    return true;
-
-  return false;
-}
-
+*/
 #endif
