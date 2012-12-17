@@ -38,13 +38,13 @@ class Term {
         header.size      = ps.size();
 
         for (int i = 0; i < ps.size(); i++) args[i].sort = ps[i]; }
-public:
+  public:
 
     // -- use this as a wrapper:
     Term* Term_new(vec<SRef>& ps, bool left_assoc = false, bool right_assoc = false, bool chainable = false, bool pairwise = false) {
         assert(sizeof(SRef) == sizeof(uint32_t));
         void* mem = malloc(sizeof(header) + sizeof(TId) + sizeof(uint32_t)*ps.size());
-        new (mem) Term(ps);
+        //new (mem) Term(ps);
         assert(left_assoc + right_assoc + chainable + pairwise <= 1);
         if (left_assoc == true)
             header.type = 1;
@@ -85,6 +85,7 @@ public:
 };
 
 const TRef TRef_Undef = RegionAllocator<uint32_t>::Ref_Undef;
+const TRef TRef_Nil = TRef_Undef-1;
 
 class TermAllocator : public RegionAllocator<uint32_t>
 {

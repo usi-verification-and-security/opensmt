@@ -1,6 +1,7 @@
 #include "Enode.h"
 
 cgId Enode::cgid_ctr = cgId_Nil+1;
+ERef Enode::ERef_Nil;
 
 Enode::Enode(ERef car_, ERef cdr_, en_type t, EnodeAllocator& ea, ERef er, Map<SigPair,ERef,SigHash,Equal<const SigPair&> >& sig_tab) {
 

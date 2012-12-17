@@ -4,9 +4,11 @@ noinst_PROGRAMS = test
 INCLUDES=$(config_includedirs)
 
 
-libegraph_la_SOURCES = Enode.h
+libegraph_la_SOURCES = Enode.h Enode.C EnodeStore.h EnodeStore.C
 
-test_SOURCES = Enode.h Enode.C test.C
+test_SOURCES = test.C
+test_LDADD = libegraph.la
+
 
 # libegraph_la_SOURCES = EgraphSolver.C \
 # 		       EgraphStore.C \

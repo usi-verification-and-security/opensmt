@@ -52,7 +52,7 @@ class CgData {
 
 class EnodeAllocator;
 
-static ERef const ERef_Nil = RegionAllocator<uint32_t>::Ref_Undef;
+static ERef const ERef_Undef = RegionAllocator<uint32_t>::Ref_Undef;
 
 class Enode
 {
@@ -77,6 +77,7 @@ class Enode
     friend class EnodeStore;
 
 public:
+    static ERef ERef_Nil;
 
     enum en_type { et_symb, et_list, et_term };
 
@@ -148,7 +149,7 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
 
     ERef alloc(Enode&) {
         assert(false);
-        return ERef_Nil;
+        return ERef_Undef;
     }
 
     // Deref, Load Effective Address (LEA), Inverse of LEA (AEL):

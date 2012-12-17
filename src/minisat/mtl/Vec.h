@@ -23,7 +23,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <cstdlib>
 #include <cassert>
 #include <new>
-
+#include "IntTypes.h"
 //=================================================================================================
 // Automatically resizable arrays
 //
@@ -69,6 +69,7 @@ public:
 
     // Size operations:
     int      size   (void) const       { return sz; }
+    uint32_t size_  (void) const       { assert(sz >=0); return (uint32_t)sz; }
     void     shrink (int nelems)       { assert(nelems <= sz); for (int i = 0; i < nelems; i++) sz--, data[sz].~T(); }
     void     shrink_(int nelems)       { assert(nelems <= sz); sz -= nelems; }
     void     pop    (void)             { sz--, data[sz].~T(); }

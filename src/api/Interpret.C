@@ -280,6 +280,7 @@ void Interpret::exit() {
 }
 
 bool Interpret::interp(ASTNode& n) {
+    bool rval;
     assert(n.getType() == CMD_T);
     const char* cmd = n.getValue();
     if (strcmp(cmd, "set-logic") == 0) {
@@ -321,7 +322,8 @@ bool Interpret::interp(ASTNode& n) {
                 goto declare_sort_err;
             }
             store.insertStore(s);
-            assert(logic.declare_sort_hook(s));
+            rval = logic.declare_sort_hook(s);
+            assert(rval);
             notify_success();
 declare_sort_err: ;
         }
@@ -374,15 +376,15 @@ declare_fun_err: ;
         if (logic.isSet()) {
             ASTNode& asrt = **(n.children->begin());
             vec<LetFrame> let_branch;
-            TRef tr = parseTerm(asrt, let_branch);
-            if (tr == TRef_Undef)
+            PTRef tr = parseTerm(asrt, let_branch);
+            if (tr == PTRef_Undef)
                 notify_formatted(true, "assertion returns an unknown sort");
-            else if (tstore[tr].rsort() == store["Bool 0"]) {
+            else if (tstore[ptstore[tr].symb()].rsort() == store["Bool 0"]) {
                 notify_success();
                 return true;
             }
             else {
-                notify_formatted(true, "Top-level assertion sort must be Bool, got %s", store[tstore[tr].rsort()]->getCanonName());
+                notify_formatted(true, "Top-level assertion sort must be Bool, got %s", store[tstore[ptstore[tr].symb()].rsort()]->getCanonName());
                 return false;
             }
         }
@@ -409,9 +411,9 @@ declare_fun_err: ;
 //  (ii) if an error occurred in inserting the term to the termtable for some reason, or
 // (iii) if the name is non-redefinable in the logic.
 // Overloading let variables is not supported at the moment
-bool Interpret::addLetName(const char* s, const TRef tr, LetFrame& frame) {
+bool Interpret::addLetName(const char* s, const PTRef tr, LetFrame& frame) {
     if (frame.contains(s)) {
-        comment_formatted("Overloading let variables is not supported: %s", s);
+        comment_formatted("Overloading let variables makes no sense: %s", s);
         return false;
     }
     // If a term is noscoping with one name, all others are also
@@ -421,15 +423,30 @@ bool Interpret::addLetName(const char* s, const TRef tr, LetFrame& frame) {
         return false;
     }
 
-    vec<TRef> trs;
-    frame.insert(s, trs);
-    frame[s].push(tr);
+    frame.insert(s, tr);
     return true;
 }
 
-// Resolves the TRef for name s starting from the topmost let frame.
-// Returns TRef_Undef if the name is not defined anywhere
-TRef Interpret::letNameResolve(const char* s, const vec<TRef>& args, const vec<LetFrame>& let_branch) const {
+//
+// Determine whether the term refers to some let definition
+//
+PTRef Interpret::letNameResolve(const char* s, const vec<LetFrame>& let_branch) const {
+    // We need to try the let branch we're in
+    for (int i = let_branch.size()-1; i >= 0; i--) {
+        if (let_branch[i].contains(s)) {
+            PTRef tref = let_branch[i][s];
+            return tref;
+        }
+    }
+    return PTRef_Undef;
+}
+
+//
+// Resolves the PTRef for name s taking into account polymorphism
+// Returns PTRef_Undef if the name is not defined anywhere
+//
+PTRef Interpret::insertTerm(const char* s, const vec<PTRef>& args) {
+//   comment_formatted("Resolving name %s", s);
     if (tstore.contains(s)) {
         const vec<TRef>& trefs = tstore.nameToRef(s);
         if (tstore[trefs[0]].noScoping()) {
@@ -438,152 +455,151 @@ TRef Interpret::letNameResolve(const char* s, const vec<TRef>& args, const vec<L
             for (int i = 0; i < trefs.size(); i++) {
                 TRef ctr = trefs[i];
                 const Term& t = tstore[ctr];
-                if (t.nargs() == args.size()) {
+                if (t.nargs() == args.size_()) {
                     // t is a potential match.  Check that arguments match
-                    int j = 0;
-                    for (; j < t.nargs(); j++)
-                        if (t[j] != tstore[args[j]].rsort()) break;
-                    if (j == t.nargs())
-                        return ctr;
+                    uint32_t j = 0;
+                    for (; j < t.nargs(); j++) {
+                        TRef argt = ptstore[args[j]].symb();
+                        if (t[j] != tstore[argt].rsort()) break;
+                    }
+                    if (j == t.nargs()) {
+                        // Create the proper term and return the reference
+                        return ptstore.insertTerm(ctr, args);
+                    }
                 }
                 // The term might still be one of the special cases:
                 // left associative
-                else if (t.nargs() < args.size() && t.left_assoc() && tstore[args[0]].rsort() == t.rsort()) {
+                // - requires that the left argument and the return value have the same sort
+                else if (t.nargs() < args.size_() && t.left_assoc() && tstore[ptstore[args[0]].symb()].rsort() == t.rsort()) {
                     int j = 1;
-                    for (; j < args.size(); j++)
-                        if (tstore[args[j]].rsort() != t[1]) break;
+                    for (; j < args.size(); j++) {
+                        TRef argt = ptstore[args[j]].symb();
+                        if (tstore[argt].rsort() != t[1]) break;
+                    }
                     if (j == args.size())
-                        return ctr;
+                        return ptstore.insertTerm(ctr, args);
                 }
-                else if (t.nargs() < args.size() && t.right_assoc()) {
+                else if (t.nargs() < args.size_() && t.right_assoc()) {
                     comment_formatted("right assoc term %s, not implemented yet", tstore.getName(ctr));
-                    return TRef_Undef;
+                    return PTRef_Undef;
                 }
-                else if (t.nargs() < args.size() && t.chainable()) {
+                else if (t.nargs() < args.size_() && t.chainable()) {
                     comment_formatted("chainable term %s, not implemented yet", tstore.getName(ctr));
-                    return SRef_Undef;
+                    return PTRef_Undef;
                 }
-                else if (t.nargs() < args.size() && t.pairwise()) {
+                else if (t.nargs() < args.size_() && t.pairwise()) {
                     int j = 0;
-                    for (; j < args.size(); j++)
-                        if (tstore[args[j]].rsort() != t[0]) break;
-                    if (j == args.size()) return ctr;
+                    for (; j < args.size(); j++) {
+                        TRef argt = ptstore[args[j]].symb();
+                        if (tstore[argt].rsort() != t[0]) break;
+                    }
+                    if (j == args.size()) return ptstore.insertTerm(ctr, args);
                 }
                 else {
                     comment_formatted("No matching terms found");
-                    return TRef_Undef;
+                    return PTRef_Undef;
                 }
             }
         }
     }
 
-    // We need to try the let branch we're in
-    for (int i = let_branch.size()-1; i >= 0; i--) {
-        if (let_branch[i].contains(s)) {
-            const vec<TRef>& trefs = let_branch[i][s];
-            for (int i = 0; i < trefs.size(); i++) {
-                TRef ctr = trefs[i];
-                return ctr;
-// The following might make sense if smtlib allowed the definition of functions in let statements.
-// Since lets are always single names, there is no reason ever to check the arguments.
-//                const Term& t = tstore[ctr];
-//                if (t.nargs() == args.size()) {
-                    // t is a potential match.  Check that arguments match
-//                    int j = 0;
-//                    for (; j < t.nargs(); j++)
-//                        if (t[j] != tstore[args[j]].rsort()) break;
-//                    if (j == t.nargs())
-//                        return ctr;
-//                }
-            }
-        }
-    }
     // We get here if it was not in let branches either
     if (tstore.contains(s)) {
         const vec<TRef>& trefs = tstore.nameToRef(s);
         for (int i = 0; i < trefs.size(); i++) {
             TRef ctr = trefs[i];
             const Term& t = tstore[ctr];
-            if (t.nargs() == args.size()) {
+            if (t.nargs() == args.size_()) {
                 // t is a potential match.  Check that arguments match
-                int j = 0;
-                for (; j < t.nargs(); j++)
-                    if (t[j] != tstore[args[j]].rsort()) break;
+                uint32_t j = 0;
+                for (; j < t.nargs(); j++) {
+                    TRef argt = ptstore[args[j]].symb();
+                    if (t[j] != tstore[argt].rsort()) break;
+                }
                 if (j == t.nargs())
-                    return ctr;
+                    return ptstore.insertTerm(ctr, args);
             }
         }
     }
     // Not found
-    return TRef_Undef;
+    return PTRef_Undef;
 }
 
 //
-// Typecheck the term structure
+// Typecheck the term structure.  Construct the terms.
 //
 // TODO: left and right associativity, pairwisety - integrate these to the congruence algorithm,
 //       chainability - not yet implemented
 //       The string based scoping is too slow
-// Need info for the Egraph structure:
-//  - mark all applications of the function f.  The markings will be used when
-//    searching all applications of f having newly modified equality group members
-//    as an argument
-//  - set up this info: r.parent[k] contains index TRef (i, t) pairs s.t. r appears at
-//    index i on term t, for every index but only one term per index
-//    Thus r.parent[k] is a partial function from indices to terms.
-//
-TRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
-//    comment_formatted("Looking at a %s on let level %d", term.typeToStr(), let_branch.size()-1);
+
+PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
     ASTType t = term.getType();
     if (t == TERM_T) {
-//        comment_formatted("Found a term %s", (**(term.children->begin())).getValue());
     }
 
     else if (t == QID_T) {
         const char* name = (**(term.children->begin())).getValue();
-//        comment_formatted("Found an identifier %s", name.c_str());
-        TRef tr = letNameResolve(name, vec_empty, let_branch);
-        if (tr != TRef_Undef) {
-//            comment_formatted("Identifier exists as a term");
-//            const Term& tm = tstore[tr];
-//            comment_formatted("Identifier maps to sort %s", store[sr_out]->getCanonName().c_str());
-
+//        comment_formatted("Processing term with symbol %s", name);
+        PTRef tr = letNameResolve(name, let_branch);
+        if (tr != PTRef_Undef) {
+//            comment_formatted("Found a let reference to term %d", tr);
+            return tr;
+        }
+        else
+            tr = insertTerm(name, vec_empty);
+//        if (tr != TRef_Undef) {
+//            vec<PTRef> vec_empty;
+//            ptr = ptstore.insertTerm(tr, vec_empty);
 // This check is not needed since it is syntactically enforced and we allow returning of
 // let terms where it does not hold, kind of.
 //            if (tm.nargs() != 0) {
 //                comment_formatted("Term %s needs %d arguments", name, tm.nargs());
 //                tr = TRef_Undef;
 //            }
-        }
-        else
+//        }
+//        else
+        if (tr == PTRef_Undef)
             comment_formatted("unknown qid term %s", name);
         return tr;
     }
 
     else if ( t == LQID_T ) {
+        // Multi-argument term
         list<ASTNode*>::iterator node_iter = term.children->begin();
-        vec<TRef> args;
+        vec<PTRef> args;
         const char* name = (**node_iter).getValue(); node_iter++;
+        // Parse the arguments
         for (; node_iter != term.children->end(); node_iter++) {
-//            comment_formatted("arg %d sort %s", i, store[tm[i]]->getCanonName()));
-            TRef arg_term = parseTerm(**node_iter, let_branch);
-            if (arg_term == TRef_Undef)
-                return TRef_Undef;
+            PTRef arg_term = parseTerm(**node_iter, let_branch);
+            if (arg_term == PTRef_Undef)
+                return PTRef_Undef;
             else
                 args.push(arg_term);
         }
 
-//        comment_formatted("Multi-argument term");
-        TRef tr = letNameResolve(name, args, let_branch);
-        if (tr == TRef_Undef) {
-            notify_formatted("No such term: %s", name);
-            comment_formatted("possibilities are: <not implemented>");
-            return TRef_Undef;
+        PTRef tr = insertTerm(name, args);
+        if (tr == PTRef_Undef) {
+            // Implement a nice error reporting here
+            notify_formatted(true, "No such symbol %s", name);
+            comment_formatted("The symbol %s is not defined for the following sorts:", name);
+            for (int j = 0; j < args.size(); j++)
+                comment_formatted("arg %d: %s", j, store[tstore[ptstore[args[j]].symb()].rsort()]->getCanonName());
+            comment_formatted("candidates are:");
+            const vec<TRef>& trefs = tstore.nameToRef(name);
+            for (int j = 0; j < trefs.size(); j++) {
+                TRef ctr = trefs[j];
+                const Term& t = tstore[ctr];
+                comment_formatted(" candidate %d", j);
+                for (uint32_t k = 0; k < t.nargs(); k++) {
+                    comment_formatted("  arg %d: %s", k, store[t[k]]->getCanonName());
+                }
+            }
+            return PTRef_Undef;
         }
 
-        for (int i = 0; i < args.size(); i++) {
-            tstore.insertOcc(args[i], i, tr);
-        }
+//        for (int i = 0; i < args.size(); i++) {
+//            tstore.insertOcc(args[i], i, tr);
+//        }
 
         return tr;
     }
@@ -592,12 +608,12 @@ TRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
         std::list<ASTNode*>::iterator ch = term.children->begin();
         std::list<ASTNode*>::iterator vbl = (**ch).children->begin();
         let_branch.push(); // The next scope, where my vars will be defined
-        vec<TRef> tmp_args;
+        vec<PTRef> tmp_args;
         vec<const char*> names;
         // First read the term declarations in the let statement
         while (vbl != (**ch).children->end()) {
-            TRef let_tr = parseTerm(**((**vbl).children->begin()), let_branch);
-            if (let_tr == TRef_Undef) return TRef_Undef;
+            PTRef let_tr = parseTerm(**((**vbl).children->begin()), let_branch);
+            if (let_tr == PTRef_Undef) return PTRef_Undef;
             tmp_args.push(let_tr);
             char* name = strdup((**vbl).getValue());
             names.push(name);
@@ -609,22 +625,22 @@ TRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
 //            args.push(tmp_args[i]);
             if (addLetName(names[i], tmp_args[i], let_branch[let_branch.size()-1]) == false) {
                 comment_formatted("Let name addition failed");
-                return TRef_Undef;
+                return PTRef_Undef;
             }
             assert(let_branch[let_branch.size()-1].contains(names[i]));
         }
         ch++;
         // This is now constructed with the let declarations context in let_branch
-        TRef tr = parseTerm(**(ch), let_branch);
-        if (tr == TRef_Undef) {
+        PTRef tr = parseTerm(**(ch), let_branch);
+        if (tr == PTRef_Undef) {
             comment_formatted("Failed in parsing the let scoped term");
-            return TRef_Undef;
+            return PTRef_Undef;
         }
         let_branch.pop(); // Now the scope is unavailable for us
         return tr;
     }
     comment_formatted("Unknown term type");
-    return TRef_Undef;
+    return PTRef_Undef;
 }
 
 bool Interpret::declareFun(const char* fname, const vec<SRef>& args) {

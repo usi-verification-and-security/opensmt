@@ -1,12 +1,14 @@
 #include "parsers/smt2new/smt2newcontext.h"
 #include "common/StringMap.h"
-#include "Egraph.h"
-#include "SimpSMTSolver.h"
-#include "Tseitin.h"
+//#include "Egraph.h"
+//#include "SimpSMTSolver.h"
+//#include "Tseitin.h"
+#include "sorts/SStore.h"
 #include "sorts/Sort.h"
 #include "logics/Logic.h"
 #include "terms/TStore.h"
 #include "terms/Term.h"
+#include "pterms/PtStore.h"
 
 enum ConfType { O_EMPTY, O_STR, O_SYM, O_NUM, O_DEC, O_HEX, O_BIN, O_LIST, O_ATTR, O_BOOL };
 
@@ -44,14 +46,18 @@ class LetFrame {
   private:
     static uint32_t id_cnt;
     uint32_t id_;
-    VecMap<const char*, TRef, StringHash, Equal<const char*> > frameMap;
+    Map<const char*, PTRef, StringHash, Equal<const char*> > frameMap;
+//    VecMap<const char*, PTRef, StringHash, Equal<const char*> > frameMap;
   public:
     LetFrame() : id_(id_cnt++) {}
     bool        contains(const char* s) const { return frameMap.contains(s); }
-    void        insert  (const char* key, const vec<TRef>& value) { frameMap.insert(key, value); }
+//    void        insert  (const char* key, const vec<PTRef>& value) { frameMap.insert(key, value); }
+    void        insert  (const char* key, PTRef value) { frameMap.insert(key, value); }
     uint32_t    getId   () const { return id_; }
-    vec<TRef>&  operator[] (const char* s) { return frameMap[s]; }
-    const vec<TRef>& operator[] (const char* s) const { return frameMap[s]; }
+    PTRef       operator[] (const char* s) { return frameMap[s]; }
+    PTRef       operator[] (const char* s) const { return frameMap[s]; }
+//    vec<PTRef>&  operator[] (const char* s) { return frameMap[s]; }
+//    const vec<PTRef>& operator[] (const char* s) const { return frameMap[s]; }
 };
 
 
@@ -60,9 +66,9 @@ class Interpret {
     Map<char*,Info,StringHash,Equal<char*> >   infoTable;
     Map<char*,Option,StringHash,Equal<char*> > optionTable;
     SMTConfig                                  config;
-    TStore                                     tstore;
-    SStore                                     store;
-
+    TStore                                     tstore;   // Terms (more like symbols)
+    SStore                                     store;    // Sorts
+    PtStore                                    ptstore;  // Proper terms
 
     Logic                       logic;
 
@@ -73,7 +79,7 @@ class Interpret {
     void                        setOption(ASTNode& n);
     void                        getOption(ASTNode& n);
     bool                        declareFun(const char* fname, const vec<SRef>& args);
-    SRef                        parseTerm(const ASTNode& term, vec<LetFrame>& let_branch);
+    PTRef                       parseTerm(const ASTNode& term, vec<LetFrame>& let_branch);
     void                        exit();
 
     bool                        interp (ASTNode& n);
@@ -82,15 +88,16 @@ class Interpret {
     void                        notify_formatted(bool error, const char* s, ...);
     void                        notify_success();
     void                        comment_formatted(const char* s, ...) const;
-    bool                        addLetName(const char* s, const TRef args, LetFrame& frame);
-    TRef                        letNameResolve(const char* s, const vec<SRef>& args, const vec<LetFrame>& let_branch) const;
+    bool                        addLetName(const char* s, const PTRef args, LetFrame& frame);
+    PTRef                       letNameResolve(const char* s, const vec<LetFrame>& frame) const;
+    PTRef                       insertTerm(const char* s, const vec<PTRef>& args);
     int                         asrt_lev;
 
     vec<SRef>                   vec_empty; // For faster comparison with empty vec
 
   public:
     // Constructor initiates a default logic.  Not sure if this is the best way to go...
-    Interpret() : store(config), logic(config, store, tstore), f_exit(false), asrt_lev(0) {};
+    Interpret() : store(config), logic(config, store, tstore), ptstore(tstore, store), f_exit(false), asrt_lev(0) {};
 
     int                         interpFile(FILE* in);
     int                         interpInteractive(FILE* in);

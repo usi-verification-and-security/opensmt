@@ -20,7 +20,7 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 
 //#include "Egraph.h"
 //#include "OpenSMTContext.h"
-#include "SimpSMTSolver.h"
+//#include "SimpSMTSolver.h"
 //#include "Tseitin.h"
 //#include "ExpandITEs.h"
 //#include "ArraySimplify.h"

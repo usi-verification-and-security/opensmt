@@ -237,6 +237,7 @@ config_includedirs="-I\${top_srcdir}/src \\\
 -I\${top_srcdir}/src/egraph \\\
 -I\${top_srcdir}/src/sorts \\\
 -I\${top_srcdir}/src/terms \\\
+-I\${top_srcdir}/src/pterms \\\
 -I\${top_srcdir}/src/smtsolvers \\\
 -I\${top_srcdir}/src/cnfizers \\\
 -I\${top_srcdir}/src/proof \\\
@@ -268,6 +269,7 @@ AC_CONFIG_FILES([ \
 		  src/sorts/Makefile \
 		  src/logics/Makefile \
 		  src/terms/Makefile \
+		  src/pterms/Makefile \
 		  src/tsolvers/Makefile \
 		  src/tsolvers/emptysolver/Makefile \
 		  src/tsolvers/axdiffsolver/Makefile \

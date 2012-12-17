@@ -1,6 +1,6 @@
 #ifndef LOGIC_H
 #define LOGIC_H
-#include "smtsolvers/SMTConfig.h"
+//#include "smtsolvers/SMTConfig.h"
 //#include "SimpSMTSolver.h"
 //#include "Tseitin.h"
 #include "Sort.h"
