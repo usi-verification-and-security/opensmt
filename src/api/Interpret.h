@@ -1,7 +1,7 @@
 #include "parsers/smt2new/smt2newcontext.h"
 #include "common/StringMap.h"
 //#include "Egraph.h"
-//#include "SimpSMTSolver.h"
+#include "SimpSMTSolver.h"
 //#include "Tseitin.h"
 #include "sorts/SStore.h"
 #include "sorts/Sort.h"
@@ -69,6 +69,7 @@ class Interpret {
     TStore                                     tstore;   // Terms (more like symbols)
     SStore                                     store;    // Sorts
     PtStore                                    ptstore;  // Proper terms
+    SimpSMTSolver                              solver;
 
     Logic                       logic;
 
@@ -97,7 +98,13 @@ class Interpret {
 
   public:
     // Constructor initiates a default logic.  Not sure if this is the best way to go...
-    Interpret() : store(config), logic(config, store, tstore), ptstore(tstore, store), f_exit(false), asrt_lev(0) {};
+    Interpret() :
+          store(config)
+        , logic(config, store, tstore)
+        , ptstore(tstore, store)
+        , solver(config)
+        , f_exit(false)
+        , asrt_lev(0) {};
 
     int                         interpFile(FILE* in);
     int                         interpInteractive(FILE* in);

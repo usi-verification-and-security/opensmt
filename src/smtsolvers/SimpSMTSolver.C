@@ -42,8 +42,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 //=================================================================================================
 // Constructor/Destructor:
 
-  SimpSMTSolver::SimpSMTSolver( Egraph & e, SMTConfig & c )
-     : CoreSMTSolver( e, c )
+//SimpSMTSolver::SimpSMTSolver(Egraph & e, SMTConfig & c) :
+SimpSMTSolver::SimpSMTSolver(SMTConfig & c) :
+       CoreSMTSolver(c)
      , grow               (0)
      , asymm_mode         (false)
      , redundancy_check   (false)
@@ -113,7 +114,7 @@ void SimpSMTSolver::initialize( )
   clauseFalse.push( Lit( var_False, true ) );
   addClause( clauseFalse );
 
-  theory_handler = new THandler( egraph, config, *this, trail, level, assigns, var_True, var_False );
+//  theory_handler = new THandler( egraph, config, *this, trail, level, assigns, var_True, var_False );
 }
 
 Var SimpSMTSolver::newVar(bool sign, bool dvar)
@@ -133,6 +134,7 @@ Var SimpSMTSolver::newVar(bool sign, bool dvar)
   return v;
 }
 
+/*
 lbool SimpSMTSolver::solve( const vec< Enode * > & assumps
     , bool do_simp
     , bool turn_off_simp )
@@ -155,7 +157,9 @@ lbool SimpSMTSolver::solve( const vec< Enode * > & assumps
   }
   return solve( lits, do_simp, turn_off_simp );
 }
+*/
 
+/*
 lbool SimpSMTSolver::solve( const vec< Enode * > & assumps
     , const unsigned conflicts
     , bool do_simp
@@ -181,6 +185,7 @@ lbool SimpSMTSolver::solve( const vec< Enode * > & assumps
   }
   return solve( lits, conflicts, do_simp, turn_off_simp );
 }
+*/
 
 lbool SimpSMTSolver::solve( const vec< Lit > & assumps
     , bool do_simp
@@ -264,7 +269,7 @@ skip_theory_preproc:
 //=================================================================================================
 // Added code
 
-bool SimpSMTSolver::addSMTClause( vector< Enode * > & smt_clause
+bool SimpSMTSolver::addSMTClause( vec<PTRef>& smt_clause
 #ifdef PRODUCE_PROOF
                                 , const ipartitions_t in 
 #endif
@@ -276,7 +281,7 @@ bool SimpSMTSolver::addSMTClause( vector< Enode * > & smt_clause
 #ifdef PRODUCE_PROOF
   assert( config.produce_inter == 0 || in != 0 );
 #endif
-
+/*
   for ( vector< Enode * >::iterator it = smt_clause.begin( ) ;
       it != smt_clause.end( ) ;
       it ++ )
@@ -297,7 +302,7 @@ bool SimpSMTSolver::addSMTClause( vector< Enode * > & smt_clause
     Lit l = theory_handler->enodeToLit( e );
     sat_clause.push( l );
   }
-
+*/
 #ifdef PRODUCE_PROOF
   return addClause( sat_clause, in );
 #else
@@ -349,6 +354,7 @@ bool SimpSMTSolver::addClause( vec<Lit> & ps
       && var(ps[0]) >= 2 ) // Don't consider true/false
   {
     Var v = var( ps[0] );
+/*
     Enode * e = theory_handler->varToEnode( v );
     if ( e->isTAtom( ) )
     {
@@ -364,8 +370,8 @@ bool SimpSMTSolver::addClause( vec<Lit> & ps
       t_var[ x ].insert( y->getId( ) );
       t_var[ y ].insert( x->getId( ) );
     }
+*/
   }
-
   // Added code
   //=================================================================================================
 
@@ -939,7 +945,7 @@ void SimpSMTSolver::cleanUpClauses()
 
 //=================================================================================================
 // Added Code
-
+/*
 void SimpSMTSolver::getDLVars( Enode * e, bool negate, Enode ** x, Enode ** y )
 {
   assert( config.sat_preprocess_theory != 0 );
@@ -960,6 +966,7 @@ void SimpSMTSolver::getDLVars( Enode * e, bool negate, Enode ** x, Enode ** y )
     *y = tmp;
   }
 }
+*/
 
 // Added Code
 //=================================================================================================

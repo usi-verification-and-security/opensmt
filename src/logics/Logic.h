@@ -15,6 +15,11 @@ class Logic {
     TStore&             term_store;
     bool                is_set;
     string              name;
+    TRef                sym_AND;
+    TRef                sym_OR;
+    TRef                sym_NOT;
+    TRef                sym_EQ;
+    SRef                sort_BOOL;
 //    Egraph              egraph;
 //    SimpSMTSolver       solver;
 //    Tseitin             cnfizer;
@@ -22,9 +27,15 @@ class Logic {
   public:
     Logic(SMTConfig& c, SStore& s, TStore& t);
 
-    bool          setLogic         (const char* l)                         ;
-    bool          isSet            ()              const { return is_set; };
-    const string& getName          ()              const { return name; }  ;
+    bool          setLogic         (const char* l);
+    bool          isSet            ()              const { return is_set;    }
+    const string& getName          ()              const { return name;      }
+
+    TRef          getSym_and       ()              const { return sym_AND;   }
+    TRef          getSym_or        ()              const { return sym_OR;    }
+    TRef          getSym_not       ()              const { return sym_NOT;   }
+    TRef          getSym_eq        ()              const { return sym_EQ;    }
+    SRef          getSort_bool     ()              const { return sort_BOOL; }
 
     // Override for different logics...
     bool        declare_sort_hook(Sort* s);

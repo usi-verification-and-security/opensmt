@@ -9,7 +9,6 @@
 #include "common/IntTypes.h"
 
 typedef uint32_t SRef;
-const SRef SRef_Undef = -1;
 
 enum SortType { S_EMPTY, S_ID, S_ID_LIST };
 

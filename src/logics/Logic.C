@@ -17,6 +17,8 @@ Logic::Logic(SMTConfig& c, SStore& s, TStore& t) :
 bool Logic::setLogic(const char* l) {
     if (strcmp(l, "QF_UF") == 0) {
         sort_store.insertStore(new Sort(*(new Identifier("Bool"))));
+        sort_BOOL = sort_store["Bool 0"];
+
         vec<SRef> params;
 
         char* tk_true    = strdup("true");
@@ -44,6 +46,7 @@ bool Logic::setLogic(const char* l) {
         tr = term_store.newTerm(tk_not, params);
         if (tr == TRef_Undef) { free(tk_not); return false; }
         term_store[tr].setNoScoping();
+        sym_NOT = tr;
 
         params.push(sort_store["Bool 0"]);
 
@@ -51,6 +54,7 @@ bool Logic::setLogic(const char* l) {
         if (tr == TRef_Undef) { free(tk_equals); return false; }
         if (term_store[tr].setRightAssoc() == false) { return false; } // TODO: Remove and clean
         term_store[tr].setNoScoping();
+        sym_EQ = tr;
 
         tr = term_store.newTerm(tk_implies, params);
         if (tr == TRef_Undef) { free(tk_implies); return false; }
@@ -61,11 +65,13 @@ bool Logic::setLogic(const char* l) {
         if (tr == TRef_Undef) { free(tk_and); return false; }
         if (term_store[tr].setLeftAssoc() == false) return false;
         term_store[tr].setNoScoping();
+        sym_AND = tr;
 
         tr = term_store.newTerm(tk_or, params);
         if (tr == TRef_Undef) { free(tk_or); return false; }
         if (term_store[tr].setLeftAssoc() == false) return false;
         term_store[tr].setNoScoping();
+        sym_OR = tr;
 
         tr = term_store.newTerm(tk_xor, params);
         if (tr == TRef_Undef) { free(tk_or); return false; }

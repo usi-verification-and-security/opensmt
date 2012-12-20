@@ -50,7 +50,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "Alg.h"
 
 #include "SolverTypes.h"
-#include "LA.h"
+//#include "LA.h"
 
 #ifdef PRODUCE_PROOF
 #include "ProofGraph.h"
@@ -67,10 +67,12 @@ class CoreSMTSolver : public SMTSolver
 
     // Constructor/Destructor:
     //
-    CoreSMTSolver( Egraph &, SMTConfig & );
+//    CoreSMTSolver( Egraph &, SMTConfig & );
+    CoreSMTSolver(SMTConfig&);
     ~CoreSMTSolver();
-
     void     initialize       ( );
+/*
+*/
 
     // Problem specification:
     //
@@ -80,7 +82,6 @@ class CoreSMTSolver : public SMTSolver
 	              , const ipartitions_t = 0 
 #endif
 		      );                                        // Add a clause to the solver. NOTE! 'ps' may be shrunk by this method!
-
     // Solving:
     //
     bool    simplify     ();                        // Removes already satisfied clauses.
@@ -93,7 +94,6 @@ class CoreSMTSolver : public SMTSolver
     //
     void    setPolarity    (Var v, bool b); // Declare which polarity the decision heuristic should use for a variable. Requires mode 'polarity_user'.
     void    setDecisionVar (Var v, bool b); // Declare if a variable should be eligible for selection in the decision heuristic.
-
     // Read state:
     //
     lbool   value      (Var x) const;       // The current value of a variable.
@@ -106,7 +106,7 @@ class CoreSMTSolver : public SMTSolver
 
     //=================================================================================================
     // Added Code
-
+/*
     void addSMTAxiomClause  ( vector< Enode * > & 
 #ifdef PRODUCE_PROOF
 	                    , Enode * 
@@ -118,7 +118,7 @@ class CoreSMTSolver : public SMTSolver
 #endif
 
     void addNewAtom         ( Enode * );
-
+*/
     vec< Clause * >          axioms;         // List of axioms produced with splitting on demand
     int                      axioms_checked; // Id of next axiom to be checked
 
@@ -133,11 +133,12 @@ class CoreSMTSolver : public SMTSolver
     inline void restoreOK          ( )       { ok = true; }
     inline bool isOK               ( ) const { return ok; }
 
+/*
     template<class C>
     void     printSMTClause   ( ostream &, const C& );
     void     printSMTClause   ( ostream &, vec< Lit > &, bool = false );
     void     printSMTClause   ( ostream &, vector< Lit > &, bool = false );
-
+*/
     set< Clause * > detached;
 
     // Added Code
@@ -216,7 +217,7 @@ class CoreSMTSolver : public SMTSolver
     double              progress_estimate;// Set by 'search()'.
     bool                remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
 
-#if CACHE_POLARITY
+#ifdef CACHE_POLARITY
     vec<char>           prev_polarity;    // The previous polarity of each variable.
 #endif
 
@@ -275,12 +276,14 @@ class CoreSMTSolver : public SMTSolver
     uint32_t abstractLevel    (Var x) const; // Used to represent an abstraction of sets of decision levels.
     double   progressEstimate ()      const; // DELETE THIS ?? IT'S NOT VERY USEFUL ...
 
-    // Debug:
-    /*    void     printLit         (Lit l);
-	  template<class C>
-	  void     printClause      (const C& c);*/
 
+// Debug:
+//    void     printLit         (Lit l);
+//    template<class C>
+//    void     printClause      (const C& c);
+/*
     void     printSMTLit              ( ostream &, const Lit );
+*/
 #ifdef PRODUCE_PROOF
     void     printRestrictedSMTClause ( ostream &, vec< Lit > &, const ipartitions_t & );
     Enode *  mkRestrictedSMTClause    ( vec< Lit > &, const ipartitions_t & );
@@ -313,14 +316,17 @@ class CoreSMTSolver : public SMTSolver
 
       void     printLit         (Lit l);
       template<class C>
-	void     printClause      (const C& c);
+      void     printClause      (const C& c);
 
       lbool smtSolve                ( );             // Solve
 #ifndef SMTCOMP
+/*
       lbool  getModel               ( Enode * );
+*/
       void   printModel             ( );             // Wrapper
       void   printModel             ( ostream & );   // Prints model
 #endif
+/*
 #ifdef PRODUCE_PROOF
       void   printProof              ( ostream & );
       void   printInter              ( ostream & );   // Print interpolants
@@ -332,7 +338,7 @@ class CoreSMTSolver : public SMTSolver
       inline Enode *               getInterpolants( Clause * c )            { assert( clause_to_in.find( c ) != clause_to_in.end( ) ); return clause_to_in[ c ]; }
       inline void                  setInterpolant ( Clause * c, Enode * e ) { clause_to_in[ c ] = e; }
 #endif
-
+*/
   protected:
 
 #ifdef STATISTICS
@@ -340,21 +346,27 @@ class CoreSMTSolver : public SMTSolver
 #endif
       void   printTrail             ( );             // Prints the trail (debugging)
       int    checkTheory            ( bool );        // Checks consistency in theory
+/*
       int    deduceTheory           ( );             // Perform theory-deductions
+*/
       int    checkAxioms            ( );             // Checks consistency of lemma on demand
+/*
       int    analyzeUnsatLemma      ( Clause * );    // Conflict analysis for an unsat lemma on demand
+*/
       void   cancelUntilVar         ( Var );         // Backtrack until a certain variable
       void   cancelUntilVarTempInit ( Var );         // Backtrack until a certain variable
       void   cancelUntilVarTempDone ( );             // Backtrack until a certain variable
       int    restartNextLimit       ( int );         // Next conflict limit for restart
+/*
       Var    generateMoreEij        ( );             // Generate more eij
       Var    generateNextEij        ( );             // Generate next eij
-
+*/
 #ifndef SMTCOMP
       void   dumpCNF                ( );             // Dumps CNF to cnf.smt2
+/*
       void   dumpRndInter           ( );             // Dumps a random interpolation problem
+*/
 #endif
-
       Clause *	   fake_clause;                // Fake clause for unprovided reasons
       vec< Clause * >    cleanup;                    // For cleaning up
       bool	           first_model_found;          // True if we found a first boolean model
@@ -368,6 +380,7 @@ class CoreSMTSolver : public SMTSolver
       bool               cuvti;                      // For cancelUntilVarTemp
       vec<Lit>           lit_to_restore;             // For cancelUntilVarTemp
       vec<char>          val_to_restore;             // For cancelUntilVarTemp
+/*
 #ifdef PRODUCE_PROOF
       //
       // Proof production
@@ -388,6 +401,7 @@ class CoreSMTSolver : public SMTSolver
       // set< Enode * >     interface_terms_cache;      // Interface terms for lazy dtc
       set< Enode * >     interface_equalities;       // To check that we do not duplicate eij
       set< Enode * >     atoms_seen;                 // Some interface equalities may already exists in the formula
+*/
       int                next_it_i;                  // Next index i
       int                next_it_j;                  // Next index j
       //
@@ -428,34 +442,34 @@ class CoreSMTSolver : public SMTSolver
       //=================================================================================================
 };
 
-
 //=================================================================================================
 // Implementation of inline methods:
 
 
 inline void CoreSMTSolver::insertVarOrder(Var x) {
-  if (!order_heap.inHeap(x) && decision_var[x]) order_heap.insert(x); }
+    if (!order_heap.inHeap(x) && decision_var[x]) order_heap.insert(x); }
 
-  inline void CoreSMTSolver::varDecayActivity() { var_inc *= var_decay; }
-  inline void CoreSMTSolver::varBumpActivity(Var v) {
-    if ( (activity[v] += var_inc) > 1e100 ) {
-      // Rescale:
-      for (int i = 0; i < nVars(); i++)
-	activity[i] *= 1e-100;
-      var_inc *= 1e-100; }
-      // Update order_heap with respect to new activity:
-      if (order_heap.inHeap(v))
-	order_heap.decrease(v); }
+inline void CoreSMTSolver::varDecayActivity() { var_inc *= var_decay; }
+inline void CoreSMTSolver::varBumpActivity(Var v) {
+   if ( (activity[v] += var_inc) > 1e100 ) {
+     // Rescale:
+     for (int i = 0; i < nVars(); i++)
+       activity[i] *= 1e-100;
+     var_inc *= 1e-100; }
+     // Update order_heap with respect to new activity:
+     if (order_heap.inHeap(v))
+       order_heap.decrease(v);
+}
 
-	//=================================================================================================
-	// Added Code
+//=================================================================================================
+// Added Code
 
 inline void CoreSMTSolver::boolVarDecActivity( )
 {
 #if 1
   if (first_model_found)
     return;
-
+/*
   for (int i = 2; i < nVars(); i++)
   {
     Enode * e = theory_handler->varToEnode( i );
@@ -477,8 +491,10 @@ inline void CoreSMTSolver::boolVarDecActivity( )
     }
 #endif
   }
+*/
 #endif
 }
+/*
 
 #ifdef PRODUCE_PROOF
 inline void CoreSMTSolver::checkPartitions( )
@@ -498,7 +514,7 @@ inline void CoreSMTSolver::checkPartitions( )
   }
 }
 #endif
-
+*/
 // Added Code
 //=================================================================================================
 
@@ -510,27 +526,27 @@ inline void CoreSMTSolver::claBumpActivity (Clause& c) {
       learnts[i]->activity() *= 1e-20;
     cla_inc *= 1e-20; } }
 
-    inline bool     CoreSMTSolver::enqueue         (Lit p, Clause* from)   { return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, from), true); }
-    inline bool     CoreSMTSolver::locked          (const Clause& c) const { return reason[var(c[0])] == &c && value(c[0]) == l_True; }
-    inline void     CoreSMTSolver::newDecisionLevel()                      { trail_lim.push(trail.size()); }
+inline bool     CoreSMTSolver::enqueue         (Lit p, Clause* from)   { return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, from), true); }
+inline bool     CoreSMTSolver::locked          (const Clause& c) const { return reason[var(c[0])] == &c && value(c[0]) == l_True; }
+inline void     CoreSMTSolver::newDecisionLevel()                      { trail_lim.push(trail.size()); }
 
-    inline int      CoreSMTSolver::decisionLevel ()      const                { return trail_lim.size(); }
-    inline uint32_t CoreSMTSolver::abstractLevel (Var x) const                { return 1 << (level[x] & 31); }
-    inline lbool    CoreSMTSolver::value         (Var x) const                { return toLbool(assigns[x]); }
-    inline lbool    CoreSMTSolver::value         (Lit p) const                { return toLbool(assigns[var(p)]) ^ sign(p); }
-    inline lbool    CoreSMTSolver::modelValue    (Lit p) const                { return model[var(p)] ^ sign(p); }
-    inline int      CoreSMTSolver::nAssigns      ()      const                { return trail.size(); }
-    inline int      CoreSMTSolver::nClauses      ()      const                { return clauses.size(); }
-    inline int      CoreSMTSolver::nLearnts      ()      const                { return learnts.size(); }
-    inline int      CoreSMTSolver::nVars         ()      const                { return assigns.size(); }
-    inline void     CoreSMTSolver::setPolarity   (Var v, bool b)              { polarity    [v] = (char)b; }
-    inline void     CoreSMTSolver::setDecisionVar(Var v, bool b)              { decision_var[v] = (char)b; if (b) { insertVarOrder(v); } }
-    inline lbool    CoreSMTSolver::solve         ()                           { vec<Lit> tmp; return solve(tmp); }
-    inline lbool    CoreSMTSolver::solve         ( const vec<Lit> & assumps ) { return solve( assumps, 0 ) == l_True; }
-    inline bool     CoreSMTSolver::okay          () const                     { return ok; }
+inline int      CoreSMTSolver::decisionLevel ()      const                { return trail_lim.size(); }
+inline uint32_t CoreSMTSolver::abstractLevel (Var x) const                { return 1 << (level[x] & 31); }
+inline lbool    CoreSMTSolver::value         (Var x) const                { return toLbool(assigns[x]); }
+inline lbool    CoreSMTSolver::value         (Lit p) const                { return toLbool(assigns[var(p)]) ^ sign(p); }
+inline lbool    CoreSMTSolver::modelValue    (Lit p) const                { return model[var(p)] ^ sign(p); }
+inline int      CoreSMTSolver::nAssigns      ()      const                { return trail.size(); }
+inline int      CoreSMTSolver::nClauses      ()      const                { return clauses.size(); }
+inline int      CoreSMTSolver::nLearnts      ()      const                { return learnts.size(); }
+inline int      CoreSMTSolver::nVars         ()      const                { return assigns.size(); }
+inline void     CoreSMTSolver::setPolarity   (Var v, bool b)              { polarity    [v] = (char)b; }
+inline void     CoreSMTSolver::setDecisionVar(Var v, bool b)              { decision_var[v] = (char)b; if (b) { insertVarOrder(v); } }
+inline lbool    CoreSMTSolver::solve         ()                           { vec<Lit> tmp; return solve(tmp); }
+inline lbool    CoreSMTSolver::solve         ( const vec<Lit> & assumps ) { return solve( assumps, 0 ) == l_True; }
+inline bool     CoreSMTSolver::okay          () const                     { return ok; }
 
-    //=================================================================================================
-    // Debug + etc:
+//=================================================================================================
+// Debug + etc:
 
 #define reportf(format, args...) ( fflush(stdout), fprintf(stderr, format, ## args), fflush(stderr) )
 
@@ -564,7 +580,8 @@ inline void CoreSMTSolver::printLit(Lit l)
   //reportf("%s%-3d:%c", sign(l) ? "-" : "", var(l)+1, value(l) == l_True ? '1' : (value(l) == l_False ? '0' : 'X'));
 }
 
-  template<class C>
+
+template<class C>
 inline void CoreSMTSolver::printClause(const C& c)
 {
   for (int i = 0; i < c.size(); i++){
@@ -575,7 +592,7 @@ inline void CoreSMTSolver::printClause(const C& c)
 
 //=================================================================================================
 // Added code
-
+/*
   template<class C>
 inline void CoreSMTSolver::printSMTClause( ostream & os, const C& c )
 {
@@ -640,7 +657,7 @@ inline void CoreSMTSolver::printSMTLit( ostream & os, const Lit l )
     os << (sign(l)?"(not ":" ") << e << (sign(l)?") ":" ");
   }
 }
-
+*/
 //ADDED FOR MINIMIZATION
 inline void CoreSMTSolver::printClause( vec< Lit > & c )
 {
@@ -651,6 +668,7 @@ inline void CoreSMTSolver::printClause( vec< Lit > & c )
 }
 
 #ifdef PRODUCE_PROOF
+/*
 inline void CoreSMTSolver::printRestrictedSMTClause( ostream & os, vec< Lit > & c
                                                    , const ipartitions_t & mask )
 {
@@ -708,6 +726,7 @@ inline Enode * CoreSMTSolver::mkRestrictedSMTClause( vec< Lit > & c
 
   return egraph.mkOr( egraph.cons( args ) );
 }
+*/
 #endif
 
 //=================================================================================================

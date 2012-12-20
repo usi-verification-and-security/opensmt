@@ -1,4 +1,4 @@
-SUBDIRS = parsers smtsolvers common api sorts logics terms pterms egraph
+SUBDIRS = parsers smtsolvers common api sorts logics terms pterms egraph cnfizers
 
 noinst_LTLIBRARIES = libopensmt.la
 
@@ -15,7 +15,8 @@ libopensmt_la_LIBADD = parsers/libparsers.la \
 		       logics/liblogics.la \
 		       terms/libterms.la \
 		       pterms/libpterms.la \
-		       egraph/libegraph.la
+		       egraph/libegraph.la \
+		       cnfizers/libcnfizers.la
 
 libopensmt_1_0_la_SOURCES = 
 libopensmt_1_0_la_LIBADD = smtsolvers/libsmtsolvers.la \
@@ -25,5 +26,6 @@ libopensmt_1_0_la_LIBADD = smtsolvers/libsmtsolvers.la \
 		       logics/liblogics.la \
 		       terms/libterms.la \
 		       pterms/libpterms.la \
-		       egraph/libegraph.la
+		       egraph/libegraph.la \
+		       cnfizers/libcnfizers.la
 

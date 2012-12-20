@@ -21,9 +21,11 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 #define CNFIZER_H
 
 #include "Global.h"
-#include "Otl.h"
+//#include "Otl.h"
 #include "SMTSolver.h"
-#include "Egraph.h"
+//#include "Egraph.h"
+#include "PtStore.h"
+#include "SStore.h"
 
 //
 // Generic class for conversion into CNF
@@ -32,19 +34,32 @@ class Cnfizer
 {
 public:
 
-  Cnfizer( Egraph &    egraph_
+  Cnfizer( PtStore &   ptstore_
          , SMTSolver & solver_
-	 , SMTConfig & config_
-	 , SStore &    sstore_ )
-   : egraph  ( egraph_ )
-   , solver  ( solver_ )
-   , config  ( config_ )
-   , sstore  ( sstore_ )
+         , SMTConfig & config_
+         , TStore&     symstore_
+         , SStore &    sstore_
+         , TRef sym_and
+         , TRef sym_or
+         , TRef sym_not
+         , TRef sym_eq
+         , SRef sort_bool
+         ) :
+     ptstore  (ptstore_ )
+   , solver   (solver_  )
+   , config   (config_  )
+   , symstore (symstore_)
+   , sstore   (sstore_  )
+   , sym_AND  (sym_and  )
+   , sym_OR   (sym_or   )
+   , sym_NOT  (sym_not  )
+   , sym_EQ   (sym_eq   )
+   , sort_BOOL(sort_bool)
   { }
 
   virtual ~Cnfizer( ) { }
 
-  lbool cnfizeAndGiveToSolver ( Enode *
+  lbool cnfizeAndGiveToSolver ( PTRef
 #ifdef PRODUCE_PROOF
                               , const ipartitions_t = 0
 #endif
@@ -52,49 +67,59 @@ public:
 
 protected:
   
-  virtual bool cnfize	       ( Enode *
-                               , map< enodeid_t, Enode * > & 
+  virtual bool cnfize	       ( PTRef
 #ifdef PRODUCE_PROOF
 			       , const ipartitions_t = 0 
 #endif
 			       ) = 0; // Actual cnfization. To be implemented in derived classes
 
-  bool     deMorganize                ( Enode *
+  bool     deMorganize                ( PTRef
 #ifdef PRODUCE_PROOF
                                       , const ipartitions_t &
 #endif
                                       ); 	 	                      // Apply deMorgan rules whenever feasible
-  Enode *  rewriteMaxArity            ( Enode *, map< enodeid_t, int > & );   // Rewrite terms using maximum arity
+//  Enode *  rewriteMaxArity            ( Enode *, map< enodeid_t, int > & );   // Rewrite terms using maximum arity
 
-  bool     checkCnf                   ( Enode * );			      // Check if formula is in CNF
-  bool     checkDeMorgan              ( Enode * );                            // Check if formula can be deMorganized
-  bool     giveToSolver               ( Enode *
+  bool     checkCnf                   ( PTRef );			      // Check if formula is in CNF
+  bool     checkDeMorgan              ( PTRef );                            // Check if formula can be deMorganized
+  bool     giveToSolver               ( PTRef
 #ifdef PRODUCE_PROOF
                                       , const ipartitions_t &
 #endif
                                       );                              // Gives formula to the SAT solver
-                                                                             
-  void  retrieveTopLevelFormulae   ( Enode *, vector< Enode * > & );         // Retrieves the list of top-level formulae
-  void  retrieveClause             ( Enode *, vector< Enode * > & );         // Retrieve a clause from a formula
-  void  retrieveConjuncts          ( Enode *, vector< Enode * > & );         // Retrieve the list of conjuncts
-                                                                             
-  Enode * toggleLit		   ( Enode * );                              // Handy function for toggling literals
-                                                                             
-  Egraph &     egraph;                                                        // Reference to Egraph
+
+  void  retrieveTopLevelFormulae   ( PTRef, vec<PTRef> & );         // Retrieves the list of top-level formulae
+//  void  retrieveClause             ( PTRef, vec<PTRef> & );         // Retrieve a clause from a formula
+//  void  retrieveConjuncts          ( PTRef, vec<PTRef> & );         // Retrieve the list of conjuncts
+
+//  Enode * toggleLit		   ( Enode * );                              // Handy function for toggling literals
+
+  PtStore&     ptstore;                                                       // Reference to Egraph
   SMTSolver &  solver;                                                        // Reference to Solver
   SMTConfig &  config;                                                        // Reference to Config
+  TStore&      symstore;
   SStore &     sstore;
 
 private:
 
-  void    computeIncomingEdges ( Enode *, map< enodeid_t, int > & );         // Computes the list of incoming edges for a node
-  Enode * mergeEnodeArgs       ( Enode *
-                               , map< enodeid_t, Enode * > &
-                               , map< enodeid_t, int > & );                  // Subroutine for rewriteMaxArity
+//  void    computeIncomingEdges ( Enode *, map< enodeid_t, int > & );         // Computes the list of incoming edges for a node
+//  Enode * mergeEnodeArgs       ( Enode *
+//                               , map< enodeid_t, Enode * > &
+//                               , map< enodeid_t, int > & );                  // Subroutine for rewriteMaxArity
 
-  bool    checkConj            ( Enode *, set< enodeid_t > & );              // Check if a formula is a conjunction
-  bool    checkClause          ( Enode *, set< enodeid_t > & );              // Check if a formula is a clause
-  bool    checkPureConj        ( Enode *, set< enodeid_t > & );              // Check if a formula is purely a conjuntion
+  bool    checkConj            (PTRef, Map<PTRef,bool,TRefHash,Equal<PTRef> >& check_cache); // Check if a formula is a conjunction
+  bool    checkClause          (PTRef, Map<PTRef,bool,TRefHash,Equal<PTRef> >& check_cache); // Check if a formula is a clause
+  bool    checkPureConj        (PTRef, Map<PTRef,bool,TRefHash,Equal<PTRef> >& check_cache); // Check if a formula is purely a conjuntion
+
+  // The special boolean symbols
+protected:
+  TRef  sym_AND;
+  TRef  sym_OR;
+  TRef  sym_NOT;
+  TRef  sym_EQ;
+  SRef  sort_BOOL;
+
+  bool  isLit(PTRef r);
 };
 
 #endif

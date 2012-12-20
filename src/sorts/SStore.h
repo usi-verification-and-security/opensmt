@@ -22,7 +22,7 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 
 #include "Sort.h"
 #include "SMTConfig.h"
-#include "SplayTree.h"
+//#include "SplayTree.h"
 #include "ANode.h"
 #include "common/StringMap.h"
 

@@ -37,7 +37,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 **************************************************************************************************/
 
 #include "CoreSMTSolver.h"
-#include "THandler.h"
+//#include "THandler.h"
 #include "Sort.h"
 #include <cmath>
 
@@ -56,9 +56,11 @@ namespace opensmt
 // Constructor/Destructor:
 
 
-CoreSMTSolver::CoreSMTSolver( Egraph & e, SMTConfig & c )
+//CoreSMTSolver::CoreSMTSolver( Egraph & e, SMTConfig & c )
+CoreSMTSolver::CoreSMTSolver(SMTConfig & c )
   // Initializes configuration and egraph
-  : SMTSolver        ( e, c )
+//  : SMTSolver        ( e, c )
+  : SMTSolver        ( c )
   , axioms_checked   ( 0 )
   // Parameters: (formerly in 'SearchParams')
   , var_decay        ( 1 / 0.95 )
@@ -177,7 +179,7 @@ CoreSMTSolver::~CoreSMTSolver()
     printStatistics ( cerr );
 #endif
 
-  delete theory_handler;
+//  delete theory_handler;
   free(fake_clause);
 #ifdef PRODUCE_PROOF
   delete proof_;
@@ -426,10 +428,11 @@ void CoreSMTSolver::cancelUntil(int level)
     else
       trail_lim.shrink(trail_lim.size() - level);
 
-    if ( first_model_found ) theory_handler->backtrack( );
+//    if ( first_model_found ) theory_handler->backtrack( );
   }
 }
 
+/*
 void CoreSMTSolver::addSMTAxiomClause( vector< Enode * > & smt_clause
 #ifdef PRODUCE_PROOF
                                      , Enode * interpolants
@@ -539,7 +542,9 @@ void CoreSMTSolver::addSMTAxiomClause( vector< Enode * > & smt_clause
 #endif
   }
 }
+*/
 
+/*
 void CoreSMTSolver::addNewAtom( Enode * e )
 {
   assert( e );
@@ -548,6 +553,7 @@ void CoreSMTSolver::addNewAtom( Enode * e )
   // Automatically adds new variable for e
   Lit l = theory_handler->enodeToLit( e );
 }
+*/
 
 void CoreSMTSolver::cancelUntilVar( Var v )
 {
@@ -579,7 +585,7 @@ void CoreSMTSolver::cancelUntilVar( Var v )
     trail_lim.shrink(trail_lim.size( ) - lev);
   }
 
-  theory_handler->backtrack( );
+//  theory_handler->backtrack( );
 }
 
 void CoreSMTSolver::cancelUntilVarTempInit( Var v )
@@ -607,7 +613,7 @@ void CoreSMTSolver::cancelUntilVarTempInit( Var v )
   assigns[ v ] = toInt(l_Undef);
 
   trail.shrink(trail.size( ) - c );
-  theory_handler->backtrack( );
+//  theory_handler->backtrack( );
 }
 
 void CoreSMTSolver::cancelUntilVarTempDone( )
@@ -626,13 +632,13 @@ void CoreSMTSolver::cancelUntilVarTempDone( )
     trail.push( p );
   }
 
-  const bool res = theory_handler->assertLits( );
+  const bool res = false; //theory_handler->assertLits( );
   // Flush conflict if unsat
   if ( !res )
   {
     vec< Lit > conflicting;
     int        max_decision_level;
-    theory_handler->getConflict( conflicting, max_decision_level );
+//    theory_handler->getConflict( conflicting, max_decision_level );
   }
 }
 
@@ -652,7 +658,7 @@ Lit CoreSMTSolver::pickBranchLit(int polarity_mode, double random_var_freq)
     // Theory suggestion-based decision
     for( ;; )
     {
-      Lit sugg = theory_handler->getSuggestion( );
+      Lit sugg = lit_Undef; //= theory_handler->getSuggestion( );
       // No suggestions
       if ( sugg == lit_Undef )
 	break;
@@ -675,7 +681,7 @@ Lit CoreSMTSolver::pickBranchLit(int polarity_mode, double random_var_freq)
 	  && ( config.logic == QF_UFIDL || config.logic == QF_UFLRA )
 	  && config.sat_lazy_dtc != 0 )
       {
-	next = generateMoreEij( );
+//	next = generateMoreEij( );
 
 	/*
 	if ( next != var_Undef )
@@ -815,7 +821,7 @@ void CoreSMTSolver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btleve
 #ifdef STATISTICS
       const double start = cpuTime( );
 #endif
-      theory_handler->getReason( p, r );
+//      theory_handler->getReason( p, r );
 
 #ifdef STATISTICS
       tsolvers_time += cpuTime( ) - start;
@@ -853,9 +859,9 @@ void CoreSMTSolver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btleve
       }
       if ( config.produce_inter > 0 )
       {
-	Enode * interpolants = theory_handler->getInterpolants( );
-	assert( interpolants );
-	clause_to_in[ ct ] = interpolants;
+//	Enode * interpolants = theory_handler->getInterpolants( );
+//	assert( interpolants );
+//	clause_to_in[ ct ] = interpolants;
 	if ( config.incremental )
 	{
 	  undo_stack_oper.push_back( NEWINTER );
@@ -1028,7 +1034,7 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
 	// Temporairly backtracking
 	cancelUntilVarTempInit( v );
 	// Retrieving the reason
-	theory_handler->getReason( p, r );
+//	theory_handler->getReason( p, r );
 	// Restoring trail
 	cancelUntilVarTempDone( );
 	Clause * ct = NULL;
@@ -1410,8 +1416,7 @@ CoreSMTSolver::pushBacktrackPoint( )
 #endif
 }
 
-  void
-CoreSMTSolver::popBacktrackPoint ( )
+void CoreSMTSolver::popBacktrackPoint ( )
 {
   assert( config.incremental );
   //
@@ -1465,7 +1470,7 @@ CoreSMTSolver::popBacktrackPoint ( )
       watches     .pop();
       watches     .pop();
       // Remove variable from translation tables
-      theory_handler->clearVar( x );
+//      theory_handler->clearVar( x );
     }
     else if ( op == NEWUNIT )
       ; // Do nothing
@@ -1511,7 +1516,7 @@ CoreSMTSolver::popBacktrackPoint ( )
   proof.popBacktrackPoint( );
 #endif
   // Backtrack theory solvers
-  theory_handler->backtrack( );
+//  theory_handler->backtrack( );
   // Restore OK
   restoreOK( );
   assert( isOK( ) );
@@ -1570,7 +1575,7 @@ CoreSMTSolver::reset( )
       watches     .pop();
       watches     .pop();
       // Remove variable from translation tables
-      theory_handler->clearVar( x );
+//      theory_handler->clearVar( x );
     }
     else if ( op == NEWUNIT )
       ; // Do nothing
@@ -1660,10 +1665,10 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
   const double start = cpuTime( );
 #endif
   // (Incomplete) Check of Level-0 atoms
-  int res = checkTheory( false );
+  int res = false; //= checkTheory( false );
   if ( res == -1 ) return l_False;
   while ( res == 2 )
-    res = checkTheory( false );
+    res = false; // = checkTheory( false );
   assert( res == 1 );
 #ifdef STATISTICS
   tsolvers_time += cpuTime( ) - start;
@@ -1754,7 +1759,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 #ifdef STATISTICS
 	  const double start = cpuTime( );
 #endif
-	  int res = checkTheory( false );
+	  int res = false; //= checkTheory( false );
 #ifdef STATISTICS
 	  tsolvers_time += cpuTime( ) - start;
 #endif
@@ -1768,7 +1773,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 	  }
 
 	  // Check axioms
-	  res = checkAxioms( );
+//	  res = checkAxioms( );
 
 	  switch( res )
 	  {
@@ -1809,7 +1814,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 #ifdef STATISTICS
 	    const double start = cpuTime( );
 #endif
-	    int res = checkTheory( true );
+//	    int res = checkTheory( true );
 #ifdef STATISTICS
 	    tsolvers_time += cpuTime( ) - start;
 #endif
@@ -1820,7 +1825,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 #ifdef STATISTICS
 	    const double start2 = cpuTime( );
 #endif
-	    res = checkAxioms( );
+//	    res = checkAxioms( );
 #ifdef STATISTICS
 	    tsolvers_time += cpuTime( ) - start2;
 #endif
@@ -1897,14 +1902,14 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
 #endif
 
   // Statically inform nodes created so far
-  theory_handler->inform( );
+//  theory_handler->inform( );
 
 #ifndef SMTCOMP
   if ( config.sat_dump_cnf != 0 )
     dumpCNF( );
 
-  if ( config.sat_dump_rnd_inter != 0 )
-    dumpRndInter( );
+//  if ( config.sat_dump_rnd_inter != 0 )
+//    dumpRndInter( );
 #endif
 
   model.clear();
@@ -1982,7 +1987,7 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
       if ( config.produce_models
 	  && !config.incremental )
       {
-	egraph.computeModel( );
+//	egraph.computeModel( );
 	printModel( );
       }
 #endif
@@ -1997,8 +2002,8 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
   {
     // We terminate
     cancelUntil(-1);
-    if ( first_model_found )
-      theory_handler->backtrack( );
+//    if ( first_model_found )
+//      theory_handler->backtrack( );
   }
   else
   {
@@ -2011,6 +2016,7 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
 }
 
 #ifndef SMTCOMP
+/*
 lbool CoreSMTSolver::getModel( Enode * atom )
 {
   assert( atom->isAtom() );
@@ -2018,6 +2024,7 @@ lbool CoreSMTSolver::getModel( Enode * atom )
   //assert( model[ v ] != l_Undef );
   return model[ v ];
 }
+*/
 #endif
 
 lbool CoreSMTSolver::smtSolve( ) { return solve(); }
@@ -2059,7 +2066,7 @@ void CoreSMTSolver::printStatistics( ostream & os )
   if ( config.sat_preprocess_theory != 0 )
     os << "# T-Vars eliminated........: " << elim_tvars << " out of " << total_tvars << endl;
   os << "# TSolvers time............: " << tsolvers_time << " s" << endl;
-  if ( config.sat_lazy_dtc != 0 )
-    os << "# Interf. equalities.......: " << ie_generated << " out of " << egraph.getInterfaceTermsNumber( ) * (egraph.getInterfaceTermsNumber( )-1) / 2 << endl;
+//  if ( config.sat_lazy_dtc != 0 )
+//    os << "# Interf. equalities.......: " << ie_generated << " out of " << egraph.getInterfaceTermsNumber( ) * (egraph.getInterfaceTermsNumber( )-1) / 2 << endl;
 }
 #endif

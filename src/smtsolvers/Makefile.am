@@ -1,7 +1,10 @@
 noinst_LTLIBRARIES = libsmtsolvers.la
 
 INCLUDES=$(config_includedirs)
-libsmtsolvers_la_SOURCES = SMTConfig.C SMTConfig.h
+libsmtsolvers_la_SOURCES = SMTConfig.C SMTConfig.h \
+			   SimpSMTSolver.C SimpSMTSolver.h \
+			   CoreSMTSolver.C CoreSMTSolver.h \
+			   SMTSolver.h Debug.C
 
 #libsmtsolvers_la_SOURCES = CoreSMTSolver.C CoreSMTSolver.h \
 #			   SimpSMTSolver.C SimpSMTSolver.h \

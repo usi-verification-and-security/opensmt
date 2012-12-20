@@ -42,28 +42,36 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "Queue.h"
 #include "CoreSMTSolver.h"
 
-class SimpSMTSolver : public CoreSMTSolver 
+class SimpSMTSolver : public CoreSMTSolver
 {
  public:
     // Constructor/Destructor:
     //
-    SimpSMTSolver ( Egraph &, SMTConfig & );
+//    SimpSMTSolver ( Egraph &, SMTConfig & );
+    SimpSMTSolver (SMTConfig &);
     ~SimpSMTSolver( );
 
-    bool         addSMTClause         ( vector< Enode * > &
+    bool         addSMTClause         ( vec<PTRef> &
 #ifdef PRODUCE_PROOF
-	                              , const ipartitions_t = 0 
+                                      , const ipartitions_t = 0
 #endif
-				      );
-    inline lbool smtSolve             ( bool do_simp = true ) { return solve( do_simp, false ); }
+                                      );
+    inline lbool smtSolve             () { return solve(); }
+
+//    inline lbool smtSolve             ( bool do_simp = true ) { return solve( do_simp, false ); }
+/*
     Enode *      mergeTAtoms          ( Enode *, bool, Enode *, bool, Enode * );
     void         eliminateTVar        ( Enode * );
+*/
     void         initialize           ( );
+/*
     void         getDLVars            ( Enode *, bool, Enode **, Enode ** );
     void         gatherInterfaceTerms ( Enode * );
+*/
 
     set< Clause * >                      to_remove;
     vector< Clause * >                   unary_to_remove;
+/*
     // TODO: change to vector< list< Clauses * > >
     map< Enode *, set< enodeid_t > >     t_var; // Variables to which is connected to
     map< enodeid_t, vector< Clause * > > t_pos; // Clauses where theory variable appears positively
@@ -71,21 +79,21 @@ class SimpSMTSolver : public CoreSMTSolver
 
     // Problem specification:
     //
+*/
     Var     newVar    ( bool polarity = true, bool dvar = true );
     bool    addClause ( vec<Lit> & ps
 #ifdef PRODUCE_PROOF
 	              , const ipartitions_t & in = 0 
 #endif
 		      );
-
     // Variable mode:
     // 
     void    setFrozen (Var v, bool b); // If a variable is frozen it will not be eliminated.
 
     // Solving:
     //
-    lbool   solve     ( const vec< Enode * > &, bool = true   , bool = false );
-    lbool   solve     ( const vec< Enode * > &, const unsigned, bool = true, bool = false );
+//    lbool   solve     ( const vec< Enode * > &, bool = true   , bool = false );
+//    lbool   solve     ( const vec< Enode * > &, const unsigned, bool = true, bool = false );
     lbool   solve     ( const vec< Lit > &    , bool = true   , bool = false );
     lbool   solve     ( const vec< Lit > &    , const unsigned, bool = true, bool = false );
     lbool   solve     ( bool = true, bool = false ); 
@@ -97,6 +105,7 @@ class SimpSMTSolver : public CoreSMTSolver
 
     // Mode of operation:
     //
+
     int     grow;             // Allow a variable elimination step to grow by a number of clauses (default to zero).
     bool    asymm_mode;       // Shrink clauses by asymmetric branching.
     bool    redundancy_check; // Check if a clause is already implied. Prett costly, and subsumes subsumptions :)
@@ -128,7 +137,6 @@ class SimpSMTSolver : public CoreSMTSolver
         int  cost      (Var x)        const { return n_occ[toInt(Lit(x))] * n_occ[toInt(~Lit(x))]; }
         bool operator()(Var x, Var y) const { return cost(x) < cost(y); } };
 
-
     // Solver state:
     //
     int                 elimorder;
@@ -148,6 +156,7 @@ class SimpSMTSolver : public CoreSMTSolver
 
     // Main internal methods:
     //
+
     bool          asymm                    (Var v, Clause& c);
     bool          asymmVar                 (Var v);
     void          updateElimHeap           (Var v);
@@ -158,6 +167,7 @@ class SimpSMTSolver : public CoreSMTSolver
     bool          merge                    (const Clause& _ps, const Clause& _qs, Var v);
     bool          backwardSubsumptionCheck (bool verbose = false);
     bool          eliminateVar             (Var v, bool fail = false);
+
     void          remember                 (Var v);
     void          extendModel              ();
     void          verifyModel              ();
@@ -173,7 +183,6 @@ class SimpSMTSolver : public CoreSMTSolver
 
 //=================================================================================================
 // Implementation of inline methods:
-
 inline void SimpSMTSolver::updateElimHeap(Var v) {
     if (elimtable[v].order == 0)
         elim_heap.update(v); }
@@ -201,5 +210,4 @@ inline void  SimpSMTSolver::setFrozen    (Var v, bool b) { if ( !use_simplificat
 inline lbool SimpSMTSolver::solve        (bool do_simp, bool turn_off_simp) { vec<Lit> tmp; return solve(tmp, do_simp, turn_off_simp); }
 
 //=================================================================================================
-
 #endif

@@ -1,3 +1,6 @@
+#ifndef TSTORE_H
+#define TSTORE_H
+
 #include <string>
 #include "Term.h"
 #include "Vec.h"
@@ -45,3 +48,5 @@ class TStore {
     void insertOcc(TRef tr, int k_arg, TRef par)         { occList[trefToId[tr]].push(Occ(par, k_arg)); }
     const char* getName(TRef tr)                   const { return idToName[trefToId[tr]]; }
 };
+
+#endif

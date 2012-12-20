@@ -24,7 +24,7 @@ void CoreSMTSolver::dumpCNF( )
 {
   const char * name = "cnf.smt2";
   std::ofstream dump_out( name );
-  egraph.dumpHeaderToFile( dump_out );
+//  egraph.dumpHeaderToFile( dump_out );
   dump_out << "(assert" << endl;
   dump_out << "(and" << endl;
 
@@ -35,7 +35,7 @@ void CoreSMTSolver::dumpCNF( )
     if ( c.mark( ) == 1 )
       continue;
 
-    printSMTClause( dump_out, c );
+//    printSMTClause( dump_out, c );
     dump_out << endl;
   }
 
@@ -46,8 +46,8 @@ void CoreSMTSolver::dumpCNF( )
   {
     Var v = var(trail[i]);
     if ( v <= 1 ) continue;
-    Enode * e = theory_handler->varToEnode( v );
-    dump_out << (sign(trail[i])?"(not ":" ") << e << (sign(trail[i])?") ":" ") << endl;
+//    Enode * e = theory_handler->varToEnode( v );
+//    dump_out << (sign(trail[i])?"(not ":" ") << e << (sign(trail[i])?") ":" ") << endl;
   }
 
   dump_out << "))" << endl;
@@ -70,7 +70,7 @@ void CoreSMTSolver::verifyModel()
 
     reportf("unsatisfied clause: ");
     printClause(*clauses[i]);
-    printSMTClause( cerr, *clauses[i] );
+//    printSMTClause( cerr, *clauses[i] );
     reportf("\n");
     failed = true;
 next:;
@@ -112,20 +112,20 @@ void CoreSMTSolver::printModel( )
   // Print Boolean model
   printModel( config.getRegularOut( ) );
   // Print Theory model
-  egraph.printModel( config.getRegularOut( ) );
+//  egraph.printModel( config.getRegularOut( ) );
 }
 
 void CoreSMTSolver::printModel( ostream & out )
 {
   for (Var v = 2; v < model.size(); v++)
   {
-    Enode * e = theory_handler->varToEnode( v );
-    if ( e->isTAtom( ) )
-      continue;
+//    Enode * e = theory_handler->varToEnode( v );
+//    if ( e->isTAtom( ) )
+//      continue;
     int tmp1, tmp2;
-    if( sscanf( (e->getCar( )->getName( )).c_str( ), CNF_STR, &tmp1, &tmp2 ) != 2 )
-      if ( model[ v ] != l_Undef )
-	out << ( model[ v ] == l_True ? "" : "(not " ) << e << ( model[ v ] == l_True ? "" : ")" ) << endl;
+//    if( sscanf( (e->getCar( )->getName( )).c_str( ), CNF_STR, &tmp1, &tmp2 ) != 2 )
+ //     if ( model[ v ] != l_Undef )
+//	out << ( model[ v ] == l_True ? "" : "(not " ) << e << ( model[ v ] == l_True ? "" : ")" ) << endl;
   }
 }
 #endif

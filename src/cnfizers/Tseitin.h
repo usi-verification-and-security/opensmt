@@ -21,40 +21,51 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 #define TSEITIN_H
 
 #include "Global.h"
-#include "Otl.h"
+//#include "Otl.h"
 #include "SMTSolver.h"
-#include "Egraph.h"
+//#include "Egraph.h"
+#include "PtStore.h"
 #include "Cnfizer.h"
 
 class Tseitin : public Cnfizer
 {
 public:
 
-  Tseitin( Egraph & egraph_, SMTSolver & solver_, SMTConfig & config_, SStore & sstore_ )
-    : Cnfizer( egraph_, solver_, config_, sstore_ )
-  { }
+    Tseitin(PtStore&   ptstore_,
+            SMTSolver& solver_,
+            SMTConfig& config_,
+            TStore&    symstore_,
+            SStore&    sstore_,
+            TRef       sym_and,
+            TRef       sym_or,
+            TRef       sym_not,
+            TRef       sym_eq,
+            SRef       sort_bool
+           )
+      : Cnfizer(ptstore_, solver_, config_, symstore_, sstore_, sym_and, sym_or, sym_not, sym_eq, sort_bool)
+    {}
 
-  ~Tseitin( ) { }
+    ~Tseitin( ) { }
 
 private:
 
-  bool cnfize           ( Enode *, map< int, Enode * > & 
+    bool cnfize           ( PTRef
 #ifdef PRODUCE_PROOF
-                        , const ipartitions_t = 0 
+                          , const ipartitions_t = 0 
 #endif
-                        );            // Do the actual cnfization
+                          );            // Do the actual cnfization
 #ifdef PRODUCE_PROOF
-  void cnfizeAnd        ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize conjunctions
-  void cnfizeOr         ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize disjunctions
-  void cnfizeIff        ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize iffs
-  void cnfizeXor        ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize xors
-  void cnfizeIfthenelse ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize if then elses
+//  void cnfizeAnd        ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize conjunctions
+//  void cnfizeOr         ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize disjunctions
+//  void cnfizeIff        ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize iffs
+//  void cnfizeXor        ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize xors
+//  void cnfizeIfthenelse ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize if then elses
 #else
-  void cnfizeAnd        ( Enode *, Enode * );                          // Cnfize conjunctions
-  void cnfizeOr         ( Enode *, Enode * );                          // Cnfize disjunctions
-  void cnfizeIff        ( Enode *, Enode * );                          // Cnfize iffs
-  void cnfizeXor        ( Enode *, Enode * );                          // Cnfize xors
-  void cnfizeIfthenelse ( Enode *, Enode * );                          // Cnfize if then elses
+//  void cnfizeAnd        ( Enode *, Enode * );                          // Cnfize conjunctions
+//  void cnfizeOr         ( Enode *, Enode * );                          // Cnfize disjunctions
+//  void cnfizeIff        ( Enode *, Enode * );                          // Cnfize iffs
+//  void cnfizeXor        ( Enode *, Enode * );                          // Cnfize xors
+//  void cnfizeIfthenelse ( Enode *, Enode * );                          // Cnfize if then elses
 #endif
 };
 

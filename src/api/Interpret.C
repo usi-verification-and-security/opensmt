@@ -6,6 +6,11 @@
 #include <readline/history.h>
 #include "Interpret.h"
 #include "Term.h"
+#include "Tseitin.h"
+
+namespace opensmt {
+bool stop;
+};
 
 uint32_t LetFrame::id_cnt = 0;
 
@@ -380,7 +385,14 @@ declare_fun_err: ;
             if (tr == PTRef_Undef)
                 notify_formatted(true, "assertion returns an unknown sort");
             else if (tstore[ptstore[tr].symb()].rsort() == store["Bool 0"]) {
-                notify_success();
+                // Framework for handling different logic related simplifications?
+                // cnfization of the formula
+                // Get the egraph data structure for instance from here
+                // Terms need to be purified before cnfization?
+                Tseitin ts(ptstore, solver, config, tstore, store, logic.getSym_and(), logic.getSym_or(), logic.getSym_not(), logic.getSym_eq(), logic.getSort_bool());
+                lbool state = ts.cnfizeAndGiveToSolver(tr);
+                if (state == l_Undef)
+                    notify_success();
                 return true;
             }
             else {

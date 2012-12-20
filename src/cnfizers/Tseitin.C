@@ -23,187 +23,187 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 //
 // Performs the actual cnfization
 //
-bool Tseitin::cnfize( Enode * formula
-                    , map< enodeid_t, Enode * > & cnf_cache 
-#ifdef PRODUCE_PROOF 
-		    , const ipartitions_t partitions
+bool Tseitin::cnfize(PTRef formula
+#ifdef PRODUCE_PROOF
+                    , const ipartitions_t partitions
 #endif
-		    )
+                    )
 {
 #ifdef PRODUCE_PROOF
   assert( config.produce_inter == 0 || partitions != 0 );
 #endif
-  (void)cnf_cache;
-  assert( formula );
-  assert( !formula->isAnd( ) );
-  Enode * arg_def = egraph.valDupMap1( formula );
+
+  assert(formula != PTRef_Undef);
+  assert(ptstore[formula].symb() != sym_AND);
+//  Enode * arg_def = egraph.valDupMap1( formula );
   //
   // Formula was cnfized before ...
   //
-  if ( arg_def != NULL )
-  {
-    vector< Enode * > clause;
-    clause.push_back( arg_def );
+//  if ( arg_def != NULL )
+//  {
+//    vector< Enode * > clause;
+//    clause.push_back( arg_def );
 #ifdef PRODUCE_PROOF
-    if ( config.produce_inter != 0 )
-      return solver.addSMTClause( clause
-	                        , partitions );
+//    if ( config.produce_inter != 0 )
+//      return solver.addSMTClause( clause
+//	                        , partitions );
 #endif
-    return solver.addSMTClause( clause );
-  }
+//    return solver.addSMTClause( clause );
+//  }
 
-  vector< Enode * > unprocessed_enodes;       // Stack for unprocessed enodes
-  unprocessed_enodes.push_back( formula );    // formula needs to be processed
+//  vector< Enode * > unprocessed_enodes;       // Stack for unprocessed enodes
+//  unprocessed_enodes.push_back( formula );    // formula needs to be processed
   //
   // Visit the DAG of the formula from the leaves to the root
   //
-  while( !unprocessed_enodes.empty( ) )
-  {
-    Enode * enode = unprocessed_enodes.back( );
+//  while( !unprocessed_enodes.empty( ) )
+//  {
+//    Enode * enode = unprocessed_enodes.back( );
     //
     // Skip if the node has already been processed before
     //
-    if ( egraph.valDupMap1( enode ) != NULL )
-    {
-      unprocessed_enodes.pop_back( );
-      continue;
-    }
+//    if ( egraph.valDupMap1( enode ) != NULL )
+//    {
+//      unprocessed_enodes.pop_back( );
+//      continue;
+//    }
 
-    bool unprocessed_children = false;
-    Enode * arg_list;
-    for ( arg_list = enode->getCdr( ) ;
-	  arg_list != egraph.enil ;
-	  arg_list = arg_list->getCdr( ) )
-    {
-      Enode * arg = arg_list->getCar( );
+//    bool unprocessed_children = false;
+//    Enode * arg_list;
+//    for ( arg_list = enode->getCdr( ) ;
+//	  arg_list != egraph.enil ;
+//	  arg_list = arg_list->getCdr( ) )
+//    {
+//      Enode * arg = arg_list->getCar( );
 
-      assert( arg->isTerm( ) );
+//      assert( arg->isTerm( ) );
       //
       // Push only if it is an unprocessed boolean operator
       //
-      if ( enode->isBooleanOperator( )
-	&& egraph.valDupMap1( arg ) == NULL )
-      {
-	unprocessed_enodes.push_back( arg );
-	unprocessed_children = true;
-      }
+//      if ( enode->isBooleanOperator( )
+//	&& egraph.valDupMap1( arg ) == NULL )
+//      {
+//	unprocessed_enodes.push_back( arg );
+//	unprocessed_children = true;
+//      }
       //
       // If it is an atom (either boolean or theory) just
       // store it in the cache
       //
-      else if ( arg->isAtom( ) )
-      {
-	egraph.storeDupMap1( arg, arg );
-      }
-    }
+//      else if ( arg->isAtom( ) )
+//      {
+//	egraph.storeDupMap1( arg, arg );
+//      }
+//    }
     //
     // SKip if unprocessed_children
     //
-    if ( unprocessed_children )
-      continue;
+//    if ( unprocessed_children )
+//      continue;
 
-    unprocessed_enodes.pop_back( );
-    Enode * result = NULL;
+//    unprocessed_enodes.pop_back( );
+//    Enode * result = NULL;
     //
     // At this point, every child has been processed
     //
     //
     // Do the actual cnfization, according to the node type
     //
-    char def_name[ 32 ];
+//    char def_name[ 32 ];
 
-    if ( enode->isLit( ) )
-    {
-      result = enode;
-    }
-    else if ( enode->isNot( ) )
-    {
-      Enode * arg_def = egraph.valDupMap1( enode->get1st( ) );
-      assert( arg_def );
-      result = egraph.mkNot( egraph.cons( arg_def ) ); // Toggle the literal
-    }
-    else
-    {
-      Enode * arg_def = NULL;
-      Enode * new_arg_list = egraph.copyEnodeEtypeListWithCache( enode->getCdr( ) );
+//    if ( enode->isLit( ) )
+//    {
+//      result = enode;
+//    }
+//    else if ( enode->isNot( ) )
+//    {
+//      Enode * arg_def = egraph.valDupMap1( enode->get1st( ) );
+//      assert( arg_def );
+//      result = egraph.mkNot( egraph.cons( arg_def ) ); // Toggle the literal
+//    }
+//    else
+//    {
+//      Enode * arg_def = NULL;
+//      Enode * new_arg_list = egraph.copyEnodeEtypeListWithCache( enode->getCdr( ) );
       //
       // If the enode is not top-level it needs a definition
       //
-      if ( formula != enode )
-      {
-	sprintf( def_name, CNF_STR, formula->getId( ), enode->getId( ) );
-	egraph.newSymbol( def_name, NULL, sstore.mkBool( ) );
-	arg_def = egraph.mkVar( def_name );
+//      if ( formula != enode )
+//      {
+//	sprintf( def_name, CNF_STR, formula->getId( ), enode->getId( ) );
+//	egraph.newSymbol( def_name, NULL, sstore.mkBool( ) );
+//	arg_def = egraph.mkVar( def_name );
 #ifdef PRODUCE_PROOF
-	if ( config.produce_inter != 0 )
-	{
-	  arg_def->setIPartitions( partitions );
-	  egraph.addDefinition( arg_def, enode );
-	}
+//	if ( config.produce_inter != 0 )
+//	{
+//	  arg_def->setIPartitions( partitions );
+//	  egraph.addDefinition( arg_def, enode );
+//	}
 #endif
-      }
+//      }
       //
       // Handle boolean operators
       //
-      if ( enode->isAnd( ) )
-	cnfizeAnd( new_arg_list
-		 , arg_def 
-#ifdef PRODUCE_PROOF
-		 , partitions
-#endif	    
-        );
-      else if ( enode->isOr( ) )
-	cnfizeOr( new_arg_list
-	        , arg_def
-#ifdef PRODUCE_PROOF
-	        , partitions
-#endif	    
-        );
-      else if ( enode->isIff( ) )
-	cnfizeIff( new_arg_list
-	         , arg_def
-#ifdef PRODUCE_PROOF
-		 , partitions
-#endif	    
-        );
-      else if ( enode->isXor( ) )
-	cnfizeXor( new_arg_list
-	         , arg_def 
-#ifdef PRODUCE_PROOF
-	         , partitions
-#endif	    
-        );
-      else
-      {
-	opensmt_error2( "operator not handled ", enode->getCar( ) );
-      }
+//      if ( enode->isAnd( ) )
+//	cnfizeAnd( new_arg_list
+//		 , arg_def 
+//#ifdef PRODUCE_PROOF
+//		 , partitions
+//#endif	    
+//        );
+//      else if ( enode->isOr( ) )
+//	cnfizeOr( new_arg_list
+//	        , arg_def
+//#ifdef PRODUCE_PROOF
+//	        , partitions
+//#endif	    
+//        );
+//      else if ( enode->isIff( ) )
+//	cnfizeIff( new_arg_list
+//	         , arg_def
+//#ifdef PRODUCE_PROOF
+//		 , partitions
+//#endif	    
+//        );
+//      else if ( enode->isXor( ) )
+//	cnfizeXor( new_arg_list
+//	         , arg_def 
+//#ifdef PRODUCE_PROOF
+//	         , partitions
+//#endif	    
+//        );
+//      else
+//      {
+//	opensmt_error2( "operator not handled ", enode->getCar( ) );
+//      }
 
-      if ( arg_def != NULL )
-	result = arg_def;
-    }
+//      if ( arg_def != NULL )
+//	result = arg_def;
+//    }
 
-    assert( egraph.valDupMap1( enode ) == NULL );
-    egraph.storeDupMap1( enode, result );
-  }
+//    assert( egraph.valDupMap1( enode ) == NULL );
+//    egraph.storeDupMap1( enode, result );
+//  }
 
-  if ( formula->isNot( ) )
-  {
+//  if ( formula->isNot( ) )
+//  {
     // Retrieve definition of argument
-    Enode * arg_def = egraph.valDupMap1( formula->get1st( ) );
-    assert( arg_def );
-    vector< Enode * > clause;
-    clause.push_back( toggleLit( arg_def ) );
-#ifdef PRODUCE_PROOF
-    if ( config.produce_inter > 0 )
-      return solver.addSMTClause( clause
-	                        , partitions );
-#endif
-    return solver.addSMTClause( clause );
-  }
+//    Enode * arg_def = egraph.valDupMap1( formula->get1st( ) );
+//    assert( arg_def );
+//    vector< Enode * > clause;
+//    clause.push_back( toggleLit( arg_def ) );
+//#ifdef PRODUCE_PROOF
+//    if ( config.produce_inter > 0 )
+//      return solver.addSMTClause( clause
+//	                        , partitions );
+//#endif
+//    return solver.addSMTClause( clause );
+//  }
 
   return true;
 }
 
+/*
 void Tseitin::cnfizeAnd( Enode * list
                        , Enode * arg_def
 #ifdef PRODUCE_PROOF
@@ -366,7 +366,7 @@ void Tseitin::cnfizeXor( Enode * list
     // <=>
     //
     // aux = ( -aux | a_0  | a_1 ) & ( -aux | -a_0 | -a_1 ) &
-    //       (  aux | -a_0 | a_1 ) & (  aux |  a_0 |  a_1 )
+    //       (  aux | -a_0 | a_1 ) & (  aux |  a_0 | -a_1 )
     //
     Enode * arg0 = list->getCar( );
     Enode * arg1 = list->getCdr( )->getCar( );
@@ -636,3 +636,5 @@ void Tseitin::cnfizeIfthenelse( Enode * list
     solver.addSMTClause( clause );
   }
 }
+*/
+
