@@ -30,97 +30,83 @@ bool Tseitin::cnfize(PTRef formula
                     )
 {
 #ifdef PRODUCE_PROOF
-  assert( config.produce_inter == 0 || partitions != 0 );
+    assert( config.produce_inter == 0 || partitions != 0 );
 #endif
 
-  assert(formula != PTRef_Undef);
-  assert(ptstore[formula].symb() != sym_AND);
-//  Enode * arg_def = egraph.valDupMap1( formula );
-  //
-  // Formula was cnfized before ...
-  //
-//  if ( arg_def != NULL )
-//  {
-//    vector< Enode * > clause;
-//    clause.push_back( arg_def );
+    assert(formula != PTRef_Undef);
+    assert(ptstore[formula].symb() != sym_AND);
+
+    if (processed.contains(formula)) {
+    //
+    // Formula was cnfized before ...
+    //
+        vec<PTRef> clause;
+        clause.push(formula);
 #ifdef PRODUCE_PROOF
-//    if ( config.produce_inter != 0 )
-//      return solver.addSMTClause( clause
-//	                        , partitions );
+        if (config.produce_inter != 0)
+            return solver.addSMTClause(clause, partitions);
 #endif
-//    return solver.addSMTClause( clause );
-//  }
+        return solver.addSMTClause( clause );
+    }
 
-//  vector< Enode * > unprocessed_enodes;       // Stack for unprocessed enodes
-//  unprocessed_enodes.push_back( formula );    // formula needs to be processed
-  //
-  // Visit the DAG of the formula from the leaves to the root
-  //
-//  while( !unprocessed_enodes.empty( ) )
-//  {
-//    Enode * enode = unprocessed_enodes.back( );
+    vec<PTRef> unprocessed_terms;       // Stack for unprocessed terms
+    unprocessed_terms.push(formula);    // formula needs to be processed
     //
-    // Skip if the node has already been processed before
+    // Visit the DAG of the formula from the leaves to the root
     //
-//    if ( egraph.valDupMap1( enode ) != NULL )
-//    {
-//      unprocessed_enodes.pop_back( );
-//      continue;
-//    }
+    while(unprocessed_terms.size() != 0) {
+        PTRef ptr = unprocessed_terms.last();
+        unprocessed_terms.pop();
+        //
+        // Skip if the node has already been processed before
+        //
+        if (processed.contains(ptr)) {
+            unprocessed_terms.pop();
+            continue;
+        }
 
-//    bool unprocessed_children = false;
-//    Enode * arg_list;
-//    for ( arg_list = enode->getCdr( ) ;
-//	  arg_list != egraph.enil ;
-//	  arg_list = arg_list->getCdr( ) )
-//    {
-//      Enode * arg = arg_list->getCar( );
+        bool unprocessed_children = false;
+        Pterm& pt = ptstore[ptr];
+        for (int i = 0; i < pt.size(); i++) {
 
-//      assert( arg->isTerm( ) );
-      //
-      // Push only if it is an unprocessed boolean operator
-      //
-//      if ( enode->isBooleanOperator( )
-//	&& egraph.valDupMap1( arg ) == NULL )
-//      {
-//	unprocessed_enodes.push_back( arg );
-//	unprocessed_children = true;
-//      }
-      //
-      // If it is an atom (either boolean or theory) just
-      // store it in the cache
-      //
-//      else if ( arg->isAtom( ) )
-//      {
-//	egraph.storeDupMap1( arg, arg );
-//      }
-//    }
-    //
-    // SKip if unprocessed_children
-    //
-//    if ( unprocessed_children )
-//      continue;
+            PTRef arg = pt[i];
+            Pterm arg_t = ptstore[arg];
+            if (isBooleanOperator(arg_t.symb()) && !processed.contains(arg)) {
+                unprocessed_terms.push(arg);
+                unprocessed_children = true;
+            }
+            else if (isAtom(arg)) {
+                //
+                // If it is an atom (either boolean or theory) just
+                // store it in the cache
+                //
+                processed.insert(arg, true);
+            }
+        }
+        //
+        // Skip if unprocessed_children.  This structure seems a bit strange?
+        //
+        if ( unprocessed_children )
+            continue;
 
-//    unprocessed_enodes.pop_back( );
-//    Enode * result = NULL;
-    //
-    // At this point, every child has been processed
-    //
-    //
-    // Do the actual cnfization, according to the node type
-    //
-//    char def_name[ 32 ];
+        unprocessed_terms.pop();
+        PTRef result = PTRef_Undef;
+        //
+        // At this point, every child has been processed
+        //
+        //
+        // Do the actual cnfization, according to the node type
+        //
+        char def_name[ 32 ];
 
-//    if ( enode->isLit( ) )
-//    {
-//      result = enode;
-//    }
-//    else if ( enode->isNot( ) )
-//    {
-//      Enode * arg_def = egraph.valDupMap1( enode->get1st( ) );
-//      assert( arg_def );
-//      result = egraph.mkNot( egraph.cons( arg_def ) ); // Toggle the literal
-//    }
+        if (isLit(ptr))
+            result = ptr;
+        else if (ptr == sym_NOT) {
+            assert(processed.contains(ptstore[ptr][0]));
+            Var v = processed.contains(ptstore[ptr][0]);
+            result = Lit(v, true);
+        }
+    }
 //    else
 //    {
 //      Enode * arg_def = NULL;
@@ -183,7 +169,7 @@ bool Tseitin::cnfize(PTRef formula
 
 //    assert( egraph.valDupMap1( enode ) == NULL );
 //    egraph.storeDupMap1( enode, result );
-//  }
+    }
 
 //  if ( formula->isNot( ) )
 //  {

@@ -49,6 +49,8 @@ public:
 
 private:
 
+    Map<PTRef,Var,PTRefHash,Equal<PTRef> > processed;
+
     bool cnfize           ( PTRef
 #ifdef PRODUCE_PROOF
                           , const ipartitions_t = 0 

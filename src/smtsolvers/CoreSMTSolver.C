@@ -180,7 +180,7 @@ CoreSMTSolver::~CoreSMTSolver()
 #endif
 
 //  delete theory_handler;
-  free(fake_clause);
+//  free(fake_clause);
 #ifdef PRODUCE_PROOF
   delete proof_;
 #endif

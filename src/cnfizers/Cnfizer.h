@@ -94,7 +94,7 @@ protected:
 
 //  Enode * toggleLit		   ( Enode * );                              // Handy function for toggling literals
 
-  PtStore&     ptstore;                                                       // Reference to Egraph
+  PtStore&     ptstore;                                                       // Reference to the term store
   SMTSolver &  solver;                                                        // Reference to Solver
   SMTConfig &  config;                                                        // Reference to Config
   TStore&      symstore;
@@ -120,6 +120,8 @@ protected:
   SRef  sort_BOOL;
 
   bool  isLit(PTRef r);
+  bool  isBooleanOperator(TRef tr) { return (tr == sym_AND) | (tr == sym_OR) | (tr == sym_NOT) | (tr == sym_EQ); }
+  bool  isAtom(PTRef r);
 };
 
 #endif

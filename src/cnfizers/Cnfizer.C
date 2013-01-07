@@ -35,6 +35,20 @@ bool Cnfizer::isLit(PTRef r) {
     return false;
 }
 
+  // A term is an atom if its sort is Bool and
+  //  (i)   number of arguments is 0
+  //  (ii) it is an atom stating an equivalence of non-boolean terms (terms must be purified at this point)
+bool Cnfizer::isAtom(PTRef r) {
+    Pterm& t = ptstore[r];
+    if (symstore[t.symb()].rsort() == sort_BOOL) {
+        if (t.size() == 0) return true;
+        if (t.symb() == sym_NOT) return false;
+        // At this point all arguments of equivalence have the same sort.  Check only the first
+        if ((t.symb() == sym_EQ) && (symstore[ptstore[t[0]].symb()].rsort() != sort_BOOL)) return true;
+    }
+    return false;
+}
+
 //
 // Main Routine. Examine formula and give it to the solver
 //
