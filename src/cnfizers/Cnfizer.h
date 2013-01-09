@@ -117,10 +117,11 @@ protected:
   TRef  sym_OR;
   TRef  sym_NOT;
   TRef  sym_EQ;
+  TRef  sym_XOR;
   SRef  sort_BOOL;
 
   bool  isLit(PTRef r);
-  bool  isBooleanOperator(TRef tr) { return (tr == sym_AND) | (tr == sym_OR) | (tr == sym_NOT) | (tr == sym_EQ); }
+  bool  isBooleanOperator(TRef tr) { return (tr == sym_AND) | (tr == sym_OR) | (tr == sym_NOT) | (tr == sym_EQ) | (tr == sym_XOR); }
   bool  isAtom(PTRef r);
 };
 

@@ -72,7 +72,7 @@ public:
     uint32_t size_  (void) const       { assert(sz >=0); return (uint32_t)sz; }
     void     shrink (int nelems)       { assert(nelems <= sz); for (int i = 0; i < nelems; i++) sz--, data[sz].~T(); }
     void     shrink_(int nelems)       { assert(nelems <= sz); sz -= nelems; }
-    void     pop    (void)             { sz--, data[sz].~T(); }
+    void     pop    (void)             { assert(sz > 0); sz--, data[sz].~T(); }
     void     growTo (int size);
     void     growTo (int size, const T& pad);
     void     clear  (bool dealloc = false);
@@ -142,7 +142,7 @@ public:
     int      size   (void) const       { return sz; }
     void     shrink (int nelems)       { assert(nelems <= sz); for (int i = 0; i < nelems; i++) sz--, data[sz].~vec<T>(); }
     void     shrink_(int nelems)       { assert(nelems <= sz); sz -= nelems; }
-    void     pop    (void)             { sz--, data[sz].~vec<T>(); }
+    void     pop    (void)             { assert(sz>0); sz--, data[sz].~vec<T>(); }
     void     growTo (int size);
     void     growTo (int size, const vec<T>& pad);
     void     clear  (bool dealloc = false);

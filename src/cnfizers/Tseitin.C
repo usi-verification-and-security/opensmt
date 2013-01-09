@@ -34,14 +34,15 @@ bool Tseitin::cnfize(PTRef formula
 #endif
 
     assert(formula != PTRef_Undef);
+    // Top level formula must not be and anymore
     assert(ptstore[formula].symb() != sym_AND);
 
     if (processed.contains(formula)) {
     //
     // Formula was cnfized before ...
     //
-        vec<PTRef> clause;
-        clause.push(formula);
+        vec<Lit> clause;
+        clause.push(findLit(formula));
 #ifdef PRODUCE_PROOF
         if (config.produce_inter != 0)
             return solver.addSMTClause(clause, partitions);
@@ -54,7 +55,7 @@ bool Tseitin::cnfize(PTRef formula
     //
     // Visit the DAG of the formula from the leaves to the root
     //
-    while(unprocessed_terms.size() != 0) {
+    while (unprocessed_terms.size() != 0) {
         PTRef ptr = unprocessed_terms.last();
         unprocessed_terms.pop();
         //
@@ -84,88 +85,78 @@ bool Tseitin::cnfize(PTRef formula
             }
         }
         //
-        // Skip if unprocessed_children.  This structure seems a bit strange?
+        // Skip if unprocessed_children.
         //
         if ( unprocessed_children )
             continue;
 
-        unprocessed_terms.pop();
-        PTRef result = PTRef_Undef;
+        assert(unprocessed_terms.size() == 0);
+        Lit result = lit_Undef;
         //
-        // At this point, every child has been processed
+        // At this point, every child of ptr has been processed
         //
         //
         // Do the actual cnfization, according to the node type
         //
-        char def_name[ 32 ];
+//        char def_name[ 32 ];
 
-        if (isLit(ptr))
-            result = ptr;
+        if (isLit(ptr)) ;
+//            result = ptr;
         else if (ptr == sym_NOT) {
             assert(processed.contains(ptstore[ptr][0]));
             Var v = processed.contains(ptstore[ptr][0]);
             result = Lit(v, true);
         }
-    }
-//    else
-//    {
-//      Enode * arg_def = NULL;
-//      Enode * new_arg_list = egraph.copyEnodeEtypeListWithCache( enode->getCdr( ) );
-      //
-      // If the enode is not top-level it needs a definition
-      //
-//      if ( formula != enode )
-//      {
-//	sprintf( def_name, CNF_STR, formula->getId( ), enode->getId( ) );
-//	egraph.newSymbol( def_name, NULL, sstore.mkBool( ) );
-//	arg_def = egraph.mkVar( def_name );
+        else {
+            //
+            // If the term is not top-level it needs a definition
+            //
+            Lit v = lit_Undef;
+            if (formula != ptr) {
+                v = Lit(solver.newVar());
 #ifdef PRODUCE_PROOF
-//	if ( config.produce_inter != 0 )
-//	{
-//	  arg_def->setIPartitions( partitions );
-//	  egraph.addDefinition( arg_def, enode );
-//	}
+                if ( config.produce_inter != 0 ) {
+                    arg_def->setIPartitions( partitions );
+                    egraph.addDefinition( arg_def, enode );
+                }
 #endif
-//      }
-      //
-      // Handle boolean operators
-      //
-//      if ( enode->isAnd( ) )
-//	cnfizeAnd( new_arg_list
-//		 , arg_def 
-//#ifdef PRODUCE_PROOF
-//		 , partitions
-//#endif	    
-//        );
-//      else if ( enode->isOr( ) )
-//	cnfizeOr( new_arg_list
-//	        , arg_def
-//#ifdef PRODUCE_PROOF
-//	        , partitions
-//#endif	    
-//        );
-//      else if ( enode->isIff( ) )
-//	cnfizeIff( new_arg_list
-//	         , arg_def
-//#ifdef PRODUCE_PROOF
-//		 , partitions
-//#endif	    
-//        );
-//      else if ( enode->isXor( ) )
-//	cnfizeXor( new_arg_list
-//	         , arg_def 
-//#ifdef PRODUCE_PROOF
-//	         , partitions
-//#endif	    
-//        );
-//      else
-//      {
-//	opensmt_error2( "operator not handled ", enode->getCar( ) );
-//      }
+            }
+            //
+            // Handle boolean operators
+            //
+            if (ptr == sym_AND)
+                cnfizeAnd( ptr
+                         , v
+#ifdef PRODUCE_PROOF
+                         , partitions
+#endif
+                );
+            else if (ptr == sym_OR)
+                cnfizeOr( ptr
+                        , v
+#ifdef PRODUCE_PROOF
+                        , partitions
+#endif
+                );
+            else if (ptr == sym_EQ)
+                cnfizeIff(ptr
+                         , v
+#ifdef PRODUCE_PROOF
+                         , partitions
+#endif
+                );
+            else if (ptr == sym_XOR)
+                cnfizeXor(ptr
+                         , v
+#ifdef PRODUCE_PROOF
+                         , partitions
+#endif
+                         );
+            else opensmt_error2("operator not handled ", symstore.getName(ptstore[ptr].symb()));
 
-//      if ( arg_def != NULL )
-//	result = arg_def;
-//    }
+            if (v != lit_Undef)
+                result = v;
+        }
 
 //    assert( egraph.valDupMap1( enode ) == NULL );
 //    egraph.storeDupMap1( enode, result );
@@ -189,332 +180,319 @@ bool Tseitin::cnfize(PTRef formula
   return true;
 }
 
-/*
-void Tseitin::cnfizeAnd( Enode * list
-                       , Enode * arg_def
+
+void Tseitin::cnfizeAnd( PTRef and_term
+                       , Lit v
 #ifdef PRODUCE_PROOF
                        , const ipartitions_t partitions
 #endif
                        )
 {
-  assert( list );
-  assert( list->isList( ) );
-  if ( arg_def == NULL )
-  {
-    for ( ; list != egraph.enil ; list = list->getCdr( ) )
-    {
-      Enode * arg = list->getCar( );
-      vector< Enode * > little_clause;
-      little_clause.push_back( arg );
+//  assert( list );
+//  assert( list->isList( ) );
+    if (v == lit_Undef) {
+        for (int i = 0; i < ptstore[and_term].size(); i++) {
+            PTRef arg = ptstore[and_term][i];
+            vec<Lit> little_clause;
+            little_clause.push(findLit(arg));
 #ifdef PRODUCE_PROOF
-      if ( config.produce_inter > 0 )
-	solver.addSMTClause( little_clause, partitions );
-      else
+        if ( config.produce_inter > 0 )
+            solver.addSMTClause( little_clause, partitions );
+        else
 #endif
-      solver.addSMTClause( little_clause );        // Adds a little clause to the solver
+            solver.addSMTClause( little_clause );        // Adds a little clause to the solver
+        }
     }
-  }
-  else
-  {
-    //
-    // ( a_0 & ... & a_{n-1} )
-    //
-    // <=>
-    //
-    // aux = ( -aux | a_0 ) & ... & ( -aux | a_{n-1} ) & ( aux & -a_0 & ... & -a_{n-1} )
-    //
-    vector< Enode * > little_clause;
-    vector< Enode * > big_clause;
-    little_clause.push_back( toggleLit( arg_def ) );
-    big_clause   .push_back( arg_def );
-    for ( ; list != egraph.enil ; list = list->getCdr( ) )
-    {
-      Enode * arg = list->getCar( );
-      little_clause.push_back( arg );
-      big_clause   .push_back( toggleLit( arg ) );
+    else {
+        //
+        // ( a_0 & ... & a_{n-1} )
+        //
+        // <=>
+        //
+        // aux = ( -aux | a_0 ) & ... & ( -aux | a_{n-1} ) & ( aux & -a_0 & ... & -a_{n-1} )
+        //
+        vec<Lit> little_clause;
+        vec<Lit> big_clause;
+        little_clause.push(~v);
+        big_clause   .push(v);
+        for (int i = 0; i < ptstore[and_term].size(); i++) {
+            PTRef arg = ptstore[and_term][i];
+            little_clause.push( findLit(arg));
+            big_clause   .push(~findLit(arg));
 #ifdef PRODUCE_PROOF
-      if ( config.produce_inter > 0 )
-	solver.addSMTClause( little_clause, partitions );
-      else
+            if ( config.produce_inter > 0 )
+                solver.addSMTClause( little_clause, partitions );
+            else
 #endif
-      solver       .addSMTClause( little_clause );        // Adds a little clause to the solver
-      little_clause.pop_back( );
+                solver.addSMTClause(little_clause);        // Adds a little clause to the solver
+            little_clause.pop();
+        }
+#ifdef PRODUCE_PROOF
+        if ( config.produce_inter > 0 )
+            solver.addSMTClause( big_clause, partitions );
+        else
+#endif
+            solver.addSMTClause( big_clause );                    // Adds a big clause to the solver
     }
-#ifdef PRODUCE_PROOF
-      if ( config.produce_inter > 0 )
-	solver.addSMTClause( big_clause, partitions );
-      else
-#endif
-    solver.addSMTClause( big_clause );                    // Adds a big clause to the solver
-  }
 }
 
-void Tseitin::cnfizeOr( Enode * list
-                      , Enode * arg_def
+void Tseitin::cnfizeOr( PTRef or_term
+                      , Lit   v
 #ifdef PRODUCE_PROOF
                       , const ipartitions_t partitions
 #endif
                       )
 {
-  assert( list );
-  assert( list->isList( ) );
-  if ( arg_def == NULL )
-  {
-    vector< Enode * > big_clause;
-    for ( ; list != egraph.enil ; list = list->getCdr( ) )
-    {
-      Enode * arg = list->getCar( );
-      big_clause.push_back( arg );
+//  assert( list );
+//  assert( list->isList( ) );
+    if (v == lit_Undef) {
+        vec<Lit> big_clause;
+        for (int i = 0; i < ptstore[or_term].size(); i++)
+            big_clause.push(findLit(ptstore[or_term][i]));
+#ifdef PRODUCE_PROOF
+        if ( config.produce_inter > 0 )
+            solver.addSMTClause( big_clause, partitions );
+        else
+#endif
+            solver.addSMTClause(big_clause);
     }
+    else {
+        //
+        // ( a_0 | ... | a_{n-1} )
+        //
+        // <=>
+        //
+        // aux = ( aux | -a_0 ) & ... & ( aux | -a_{n-1} ) & ( -aux | a_0 | ... | a_{n-1} )
+        //
+        vec<Lit>    little_clause;
+        vec<Lit>    big_clause;
+        little_clause.push( v);
+        big_clause   .push(~v);
+        for (int i = 0 ; i < ptstore[or_term].size(); i++) {
+            Lit arg = findLit(ptstore[or_term][i]);
+            little_clause.push(~arg);
+            big_clause   .push( arg);
 #ifdef PRODUCE_PROOF
-      if ( config.produce_inter > 0 )
-	solver.addSMTClause( big_clause, partitions );
-      else
+            if ( config.produce_inter > 0 )
+                solver.addSMTClause( little_clause, partitions );
+            else
 #endif
-    solver.addSMTClause( big_clause );        
-  }
-  else
-  {
-    //
-    // ( a_0 | ... | a_{n-1} )
-    //
-    // <=>
-    //
-    // aux = ( aux | -a_0 ) & ... & ( aux | -a_{n-1} ) & ( -aux | a_0 | ... | a_{n-1} )
-    //
-    vector< Enode * > little_clause;
-    vector< Enode * > big_clause;
-    little_clause.push_back( arg_def );
-    big_clause   .push_back( toggleLit( arg_def ) );
-    for ( ; list != egraph.enil ; list = list->getCdr( ) )
-    {
-      Enode * arg = list->getCar( );
-      little_clause.push_back( toggleLit( arg ) );
-      big_clause   .push_back( arg );
+                solver.addSMTClause(little_clause);        // Adds a little clause to the solver
+            little_clause.pop();
+        }
 #ifdef PRODUCE_PROOF
-      if ( config.produce_inter > 0 )
-	solver.addSMTClause( little_clause, partitions );
-      else
+        if (config.produce_inter > 0)
+            solver.addSMTClause( big_clause, partitions );
+        else
 #endif
-      solver       .addSMTClause( little_clause );        // Adds a little clause to the solver
-      little_clause.pop_back( );
+                solver.addSMTClause(big_clause);                    // Adds a big clause to the solver
     }
-#ifdef PRODUCE_PROOF
-    if ( config.produce_inter > 0 )
-      solver.addSMTClause( big_clause, partitions );
-    else
-#endif
-    solver.addSMTClause( big_clause );                    // Adds a big clause to the solver
-  }
 }
 
-void Tseitin::cnfizeXor( Enode * list
-                       , Enode * arg_def
+void Tseitin::cnfizeXor(PTRef xor_term
+                       , Lit v
 #ifdef PRODUCE_PROOF
-		       , const ipartitions_t partitions
+                       , const ipartitions_t partitions
 #endif
                        )
 {
-  assert( list );
-  if ( arg_def == NULL )
-  {
-    Enode * arg0 = list->getCar();
-    Enode * arg1 = list->getCdr( )->getCar();
+    if (v == lit_Undef) {
+        Lit arg0 = findLit(ptstore[xor_term][0]);
+        Lit arg1 = findLit(ptstore[xor_term][1]);
 
-    vector< Enode * > clause;
+        vec<Lit> clause;
 
-    clause.push_back( arg0 );
-    clause.push_back( arg1 );
+        clause.push(arg0);
+        clause.push(arg1);
 #ifdef PRODUCE_PROOF
-    if ( config.produce_inter > 0 )
-      solver.addSMTClause( clause, partitions );
-    else
+        if ( config.produce_inter > 0 )
+            solver.addSMTClause(clause, partitions);
+        else
 #endif
-    solver.addSMTClause( clause );        
+            solver.addSMTClause(clause);
 
-    clause.pop_back( );
-    clause.pop_back( );
+        clause.pop();
+        clause.pop();
 
-    clause.push_back( toggleLit( arg0 ) );
-    clause.push_back( toggleLit( arg1 ) );
+        clause.push(~arg0);
+        clause.push(~arg1);
 #ifdef PRODUCE_PROOF
-    if ( config.produce_inter > 0 )
-      solver.addSMTClause( clause, partitions );
-    else
+        if ( config.produce_inter > 0 )
+            solver.addSMTClause(clause, partitions);
+        else
 #endif
-    solver.addSMTClause( clause );        
-  }
-  else
-  {
-    //
-    // ( a_0 xor a_1 )
-    //
-    // <=>
-    //
-    // aux = ( -aux | a_0  | a_1 ) & ( -aux | -a_0 | -a_1 ) &
-    //       (  aux | -a_0 | a_1 ) & (  aux |  a_0 | -a_1 )
-    //
-    Enode * arg0 = list->getCar( );
-    Enode * arg1 = list->getCdr( )->getCar( );
-    vector< Enode *> clause;
+        solver.addSMTClause(clause);
+    }
+    else {
+        //
+        // ( a_0 xor a_1 )
+        //
+        // <=>
+        //
+        // aux = ( -aux | a_0  | a_1 ) & ( -aux | -a_0 | -a_1 ) &
+        //       (  aux | -a_0 | a_1 ) & (  aux |  a_0 | -a_1 )
+        //
+        Lit arg0 = findLit(ptstore[xor_term][0]);
+        Lit arg1 = findLit(ptstore[xor_term][1]);
+        vec<Lit> clause;
 
-    clause.push_back( toggleLit( arg_def ) );
+        clause.push(~v);
 
-    // First clause
-    clause.push_back( arg0 );
-    clause.push_back( arg1 );
+        // First clause
+        clause.push(arg0);
+        clause.push(arg1);
 #ifdef PRODUCE_PROOF
-    if ( config.produce_inter > 0 )
-      solver.addSMTClause( clause, partitions ); 
-    else
+        if (config.produce_inter > 0)
+            solver.addSMTClause(clause, partitions);
+        else
 #endif
-    solver.addSMTClause( clause ); // Adds a little clause to the solver
-    clause.pop_back( );
-    clause.pop_back( );
+            solver.addSMTClause(clause); // Adds a little clause to the solver
+        clause.pop();
+        clause.pop();
 
-    // Second clause
-    clause.push_back( toggleLit( arg0 ) );
-    clause.push_back( toggleLit( arg1 ) );
+        // Second clause
+        clause.push(~arg0);
+        clause.push(~arg1);
 #ifdef PRODUCE_PROOF
-    if ( config.produce_inter > 0 )
-      solver.addSMTClause( clause, partitions ); 
-    else
+        if (config.produce_inter > 0)
+            solver.addSMTClause(clause, partitions);
+        else
 #endif
-    solver.addSMTClause( clause ); // Adds a little clause to the solver
-    clause.pop_back( );
-    clause.pop_back( );
+            solver.addSMTClause(clause); // Adds a little clause to the solver
+        clause.pop();
+        clause.pop();
 
-    clause.pop_back( );
-    clause.push_back( arg_def );
+        clause.pop();
+        clause.push(v);
 
-    // Third clause
-    clause.push_back( toggleLit( arg0 ) );
-    clause.push_back( arg1 );
+        // Third clause
+        clause.push(~arg0);
+        clause.push( arg1);
 #ifdef PRODUCE_PROOF
-    if ( config.produce_inter > 0 )
-      solver.addSMTClause( clause, partitions );
-    else
+        if (config.produce_inter > 0)
+            solver.addSMTClause(clause, partitions);
+        else
 #endif
-    solver.addSMTClause( clause ); // Adds a little clause to the solver
-    clause.pop_back( );
-    clause.pop_back( );
+            solver.addSMTClause(clause); // Adds a little clause to the solver
+        clause.pop();
+        clause.pop();
 
-    // Fourth clause
-    clause.push_back( arg0 );
-    clause.push_back( toggleLit( arg1 ) );
+        // Fourth clause
+        clause.push( arg0);
+        clause.push(~arg1);
 #ifdef PRODUCE_PROOF
-    if ( config.produce_inter > 0 )
-      solver.addSMTClause( clause, partitions );
-    else
+        if (config.produce_inter > 0)
+            solver.addSMTClause(clause, partitions);
+        else
 #endif
-    solver.addSMTClause( clause );           // Adds a little clause to the solver
-  }
+            solver.addSMTClause(clause);           // Adds a little clause to the solver
+    }
 }
 
-void Tseitin::cnfizeIff( Enode * list
-                       , Enode * arg_def
+void Tseitin::cnfizeIff( PTRef eq_term
+                       , Lit v
 #ifdef PRODUCE_PROOF
-		       , const ipartitions_t partitions
+                       , const ipartitions_t partitions
 #endif
                        )
 {
-  if ( arg_def == NULL )
-  {
-    Enode * arg0 = list->getCar();
-    Enode * arg1 = list->getCdr( )->getCar();
+    if (v == lit_Undef) {
+        Lit arg0 = findLit(ptstore[eq_term][0]);
+        Lit arg1 = findLit(ptstore[eq_term][1]);
 
-    vector< Enode * > clause;
+        vec<Lit> clause;
 
-    clause.push_back( arg0 );
-    clause.push_back( toggleLit( arg1 ) );
+        clause.push( arg0);
+        clause.push(~arg1);
 #ifdef PRODUCE_PROOF
-    if ( config.produce_inter > 0 )
-      solver.addSMTClause( clause, partitions );
-	                         
-    else
+        if (config.produce_inter > 0)
+            solver.addSMTClause(clause, partitions);
+        else
 #endif
-    solver.addSMTClause( clause );        
+            solver.addSMTClause(clause);
 
-    clause.pop_back( );
-    clause.pop_back( );
+        clause.pop();
+        clause.pop();
 
-    clause.push_back( toggleLit( arg0 ) );
-    clause.push_back( arg1 );
+        clause.push(~arg0);
+        clause.push( arg1);
 #ifdef PRODUCE_PROOF
-    if ( config.produce_inter > 0 )
-      solver.addSMTClause( clause, partitions );
-    else
+        if (config.produce_inter > 0)
+            solver.addSMTClause(clause, partitions);
+        else
 #endif
-    solver.addSMTClause( clause );        
-  }
-  else
-  {
-    //
-    // ( a_0 <-> a_1 )
-    //
-    // <=>
-    //
-    // aux = ( -aux |  a_0 | -a_1 ) & ( -aux | -a_0 |  a_1 ) &
-    //	   (  aux |  a_0 |  a_1 ) & (  aux | -a_0 | -a_1 )
-    //
-    assert( list->getArity( ) == 2 );
-    Enode * arg0 = list->getCar( );
-    Enode * arg1 = list->getCdr( )->getCar( );
-    vector< Enode * > clause;
+            solver.addSMTClause(clause);
+    }
+    else {
+        //
+        // ( a_0 <-> a_1 )
+        //
+        // <=>
+        //
+        // aux = ( -aux |  a_0 | -a_1 ) & ( -aux | -a_0 |  a_1 ) &
+        //       (  aux |  a_0 |  a_1 ) & (  aux | -a_0 | -a_1 )
+        //
+        assert(ptstore[eq_term].size() == 2);
+        Lit arg0 = findLit(ptstore[eq_term][0]);
+        Lit arg1 = findLit(ptstore[eq_term][1]);
+        vec<Lit> clause;
 
-    clause.push_back( toggleLit( arg_def ) );
+        clause.push(~v);
 
-    // First clause
-    clause.push_back( arg0 );
-    clause.push_back( toggleLit( arg1 ) );
+        // First clause
+        clause.push( arg0);
+        clause.push(~arg1);
 #ifdef PRODUCE_PROOF
-    if ( config.produce_inter > 0 )
-      solver.addSMTClause( clause, partitions );
-    else
+        if (config.produce_inter > 0)
+            solver.addSMTClause(clause, partitions);
+        else
 #endif
-    solver.addSMTClause( clause );           // Adds a little clause to the solver
-    clause.pop_back( );
-    clause.pop_back( );
+            solver.addSMTClause(clause);           // Adds a little clause to the solver
 
-    // Second clause
-    clause.push_back( toggleLit( arg0 ) );
-    clause.push_back( arg1 );
+        clause.pop();
+        clause.pop();
+
+        // Second clause
+        clause.push(~arg0);
+        clause.push( arg1);
 #ifdef PRODUCE_PROOF
-    if ( config.produce_inter > 0 )
-      solver.addSMTClause( clause, partitions );
-    else
+        if (config.produce_inter > 0)
+            solver.addSMTClause(clause, partitions);
+        else
 #endif
-    solver.addSMTClause( clause );           // Adds a little clause to the solver
-    clause.pop_back( );
-    clause.pop_back( );
+            solver.addSMTClause(clause);           // Adds a little clause to the solver
 
-    clause.pop_back( );
-    clause.push_back( arg_def );
+        clause.pop();
+        clause.pop();
 
-    // Third clause
-    clause.push_back( arg0 );
-    clause.push_back( arg1 );
+        clause.pop();
+        clause.push(v);
+
+        // Third clause
+        clause.push(arg0);
+        clause.push(arg1);
 #ifdef PRODUCE_PROOF
-    if ( config.produce_inter > 0 )
-      solver.addSMTClause( clause, partitions );
-    else
+        if ( config.produce_inter > 0 )
+            solver.addSMTClause(clause, partitions);
+        else
 #endif
-    solver.addSMTClause( clause );           // Adds a little clause to the solver
-    clause.pop_back( );
-    clause.pop_back( );
+            solver.addSMTClause(clause);           // Adds a little clause to the solver
+        clause.pop();
+        clause.pop();
 
-    // Fourth clause
-    clause.push_back( toggleLit( arg0 ) );
-    clause.push_back( toggleLit( arg1 ) );
+        // Fourth clause
+        clause.push(~arg0);
+        clause.push(~arg1);
 #ifdef PRODUCE_PROOF
-    if ( config.produce_inter > 0 )
-      solver.addSMTClause( clause, partitions );
-    else
+        if (config.produce_inter > 0)
+            solver.addSMTClause(clause, partitions);
+        else
 #endif
-    solver.addSMTClause( clause );           // Adds a little clause to the solver
-  }
+            solver.addSMTClause(clause);           // Adds a little clause to the solver
+    }
 }
 
+/*
 void Tseitin::cnfizeIfthenelse( Enode * list
                               , Enode * arg_def
 #ifdef PRODUCE_PROOF

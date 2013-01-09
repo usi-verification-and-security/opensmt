@@ -57,18 +57,19 @@ private:
 #endif
                           );            // Do the actual cnfization
 #ifdef PRODUCE_PROOF
-//  void cnfizeAnd        ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize conjunctions
-//  void cnfizeOr         ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize disjunctions
-//  void cnfizeIff        ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize iffs
-//  void cnfizeXor        ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize xors
-//  void cnfizeIfthenelse ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize if then elses
+    void cnfizeAnd        ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize conjunctions
+    void cnfizeOr         ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize disjunctions
+    void cnfizeIff        ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize iffs
+    void cnfizeXor        ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize xors
+    void cnfizeIfthenelse ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize if then elses
 #else
-//  void cnfizeAnd        ( Enode *, Enode * );                          // Cnfize conjunctions
-//  void cnfizeOr         ( Enode *, Enode * );                          // Cnfize disjunctions
-//  void cnfizeIff        ( Enode *, Enode * );                          // Cnfize iffs
-//  void cnfizeXor        ( Enode *, Enode * );                          // Cnfize xors
-//  void cnfizeIfthenelse ( Enode *, Enode * );                          // Cnfize if then elses
+    void cnfizeAnd        (PTRef, Lit);                          // Cnfize conjunctions
+    void cnfizeOr         (PTRef, Lit);                          // Cnfize disjunctions
+    void cnfizeIff        (PTRef, Lit);                          // Cnfize iffs
+    void cnfizeXor        (PTRef, Lit);                          // Cnfize xors
+//    void cnfizeIfthenelse (PTRef, Var);                          // Cnfize if then elses
 #endif
+    Lit findLit           (PTRef) const { return lit_Undef; };
 };
 
 #endif

@@ -51,7 +51,7 @@ class SimpSMTSolver : public CoreSMTSolver
     SimpSMTSolver (SMTConfig &);
     ~SimpSMTSolver( );
 
-    bool         addSMTClause         ( vec<PTRef> &
+    bool         addSMTClause         ( vec<Lit> &
 #ifdef PRODUCE_PROOF
                                       , const ipartitions_t = 0
 #endif

@@ -44,11 +44,11 @@ public:
   // addClause
   //
   // Receive a clause in form of a list of
-  // snodes each representing a literal
+  // literals
   // (atom or negated atom) and feeds a
   // corresponding clause in the SAT Solver
   //
-  virtual bool   addSMTClause  ( vec<PTRef> &
+  virtual bool   addSMTClause  ( vec<Lit> &
 #ifdef PRODUCE_PROOF
                                , const ipartitions_t = 0 
 #endif

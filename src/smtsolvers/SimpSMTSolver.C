@@ -269,44 +269,36 @@ skip_theory_preproc:
 //=================================================================================================
 // Added code
 
-bool SimpSMTSolver::addSMTClause( vec<PTRef>& smt_clause
+bool SimpSMTSolver::addSMTClause( vec<Lit>& smt_clause
 #ifdef PRODUCE_PROOF
-                                , const ipartitions_t in 
+                                , const ipartitions_t in
 #endif
-				)
+                                )
 {
-  assert( config.sat_preprocess_theory == 0 );
-  vec< Lit > sat_clause;
+    assert( config.sat_preprocess_theory == 0 );
 
 #ifdef PRODUCE_PROOF
-  assert( config.produce_inter == 0 || in != 0 );
+    assert(config.produce_inter == 0 || in != 0);
 #endif
-/*
-  for ( vector< Enode * >::iterator it = smt_clause.begin( ) ;
-      it != smt_clause.end( ) ;
-      it ++ )
-  {
-    Enode * e = *it;
-    // Do not add false literals
-    if ( e->isFalse( ) ) continue;
-    // If a literal is true, the clause is true
-    if ( e->isTrue( ) )
-      return true;
 
-    // Keep track of atoms seen, as they may
-    // be interface equalities to skip later
-    if ( config.logic == QF_UFIDL
-      || config.logic == QF_UFLRA )
-      atoms_seen.insert( e );
+    for (int i = 0; i < smt_clause.size(); i++) {
+        Lit e = smt_clause[i];
+        // Do not add false literals
+        // if ( e->isFalse( ) ) continue;
+        // If a literal is true, the clause is true
+        // if ( e->isTrue( ) )
+        // return true;
 
-    Lit l = theory_handler->enodeToLit( e );
-    sat_clause.push( l );
-  }
-*/
+        // Keep track of atoms seen, as they may
+        // be interface equalities to skip later
+//        if (config.logic == QF_UFIDL || config.logic == QF_UFLRA)
+//            atoms_seen.insert( e );
+
+    }
 #ifdef PRODUCE_PROOF
-  return addClause( sat_clause, in );
+    return addClause(smt_clause, in);
 #else
-  return addClause( sat_clause );
+    return addClause(smt_clause);
 #endif
 }
 

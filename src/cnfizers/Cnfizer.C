@@ -122,57 +122,51 @@ bool Cnfizer::deMorganize( PTRef formula
 #endif
                          )
 {
-  Pterm& pt = ptstore[formula];
-  assert( pt.symb() != sym_AND );
+    Pterm& pt = ptstore[formula];
+    assert( pt.symb() != sym_AND );
 
-  bool rval;
+    bool rval;
 
-  //
-  // Case (not (and a b)) --> (or (not a) (not b))
-  //
-  if (pt.symb() == sym_NOT && ptstore[pt[0]].symb() == sym_AND)
-  {
+    //
+    // Case (not (and a b)) --> (or (not a) (not b))
+    //
+    if (pt.symb() == sym_NOT && ptstore[pt[0]].symb() == sym_AND) {
 
-    PTRef and_tr = pt[0];
-    Pterm& and_t = ptstore[and_tr];
-    // Retrieve conjuncts as a clause
-    vec<PTRef> clause;
-    vec<PTRef> to_process;
-    to_process.push(and_tr);
+        PTRef and_tr = pt[0];
+        Pterm& and_t = ptstore[and_tr];
+        // Retrieve conjuncts as a clause
+        vec<Lit> clause;
+        vec<PTRef> to_process;
+        to_process.push(and_tr);
 
-    while (to_process.size() != 0) {
+        while (to_process.size() != 0) {
 
-        and_tr = to_process.last(); to_process.pop();
-        and_t = ptstore[and_tr];
+            and_tr = to_process.last(); to_process.pop();
+            and_t = ptstore[and_tr];
 
-        for (int i = 0; i < and_t.size(); i++) {
+            for (int i = 0; i < and_t.size(); i++) {
 
-            PTRef  conj_tr = and_t[i];
-            Pterm& conj_t  = ptstore[conj_tr];
+                PTRef  conj_tr = and_t[i];
+                Pterm& conj_t  = ptstore[conj_tr];
 
-            if (isLit(conj_tr)) {
-                conj_t.negate();
-                clause.push(conj_tr);
+                if (isLit(conj_tr)) {
+                    clause.push(~toLit(conj_tr));
+                }
+                else if (conj_t.symb() == sym_AND)
+                    to_process.push(conj_tr);
+
+                else assert(false);
             }
-            else if (conj_t.symb() == sym_AND)
-                to_process.push(conj_tr);
-
-            else assert(false);
         }
-    }
 
 #ifdef PRODUCE_PROOF
-    if ( config.produce_inter != 0 )
-      rval = solver.addSMTClause(clause, partition);
-    else
+        if (config.produce_inter != 0)
+            rval = solver.addSMTClause(clause, partition);
+        else
 #endif
-    rval = solver.addSMTClause(clause);
-    // Clear the sign
-    for (int i = 0; i < clause.size(); i++)
-        ptstore[clause[i]].negate();
-  }
-
-  return rval;
+            rval = solver.addSMTClause(clause);
+    }
+    return rval;
 }
 
 //
@@ -510,13 +504,13 @@ bool Cnfizer::giveToSolver( PTRef f
 #endif
                           )
 {
-    vec<PTRef> clause;
+    vec<Lit> clause;
 
     //
     // A unit clause
     //
     if (isLit(f)) {
-        clause.push(f);
+        clause.push(toLit(f));
 #ifdef PRODUCE_PROOF
         if ( config.produce_inter != 0 )
             return solver.addSMTClause( clause, partition );
@@ -531,7 +525,7 @@ bool Cnfizer::giveToSolver( PTRef f
     if (cand_t.symb() == sym_OR) {
         for (int i = 0; i < cand_t.size(); i ++) {
             assert(isLit(cand_t[i]));
-            clause.push(cand_t[i]);
+            clause.push(toLit(cand_t[i]));
         }
 #ifdef PRODUCE_PROOF
         if ( config.produce_inter != 0 )
