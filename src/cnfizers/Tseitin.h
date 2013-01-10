@@ -36,22 +36,23 @@ public:
             SMTConfig& config_,
             TStore&    symstore_,
             SStore&    sstore_,
+            TRef       sym_true,
+            TRef       sym_false,
             TRef       sym_and,
             TRef       sym_or,
             TRef       sym_not,
             TRef       sym_eq,
             SRef       sort_bool
            )
-      : Cnfizer(ptstore_, solver_, config_, symstore_, sstore_, sym_and, sym_or, sym_not, sym_eq, sort_bool)
+      : Cnfizer(ptstore_, solver_, config_, symstore_, sstore_, sym_true, sym_false, sym_and, sym_or, sym_not, sym_eq, sort_bool)
     {}
 
     ~Tseitin( ) { }
 
 private:
 
-    Map<PTRef,Var,PTRefHash,Equal<PTRef> > processed;
 
-    bool cnfize           ( PTRef
+    bool cnfize          ( PTRef
 #ifdef PRODUCE_PROOF
                           , const ipartitions_t = 0 
 #endif
@@ -69,7 +70,6 @@ private:
     void cnfizeXor        (PTRef, Lit);                          // Cnfize xors
 //    void cnfizeIfthenelse (PTRef, Var);                          // Cnfize if then elses
 #endif
-    Lit findLit           (PTRef) const { return lit_Undef; };
 };
 
 #endif

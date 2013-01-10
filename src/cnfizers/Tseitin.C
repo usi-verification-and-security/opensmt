@@ -76,13 +76,11 @@ bool Tseitin::cnfize(PTRef formula
                 unprocessed_terms.push(arg);
                 unprocessed_children = true;
             }
-            else if (isAtom(arg)) {
-                //
-                // If it is an atom (either boolean or theory) just
-                // store it in the cache
-                //
-                processed.insert(arg, true);
-            }
+            //
+            // If it is an unseen atom (either boolean or theory) introduce a new lit for it and
+            // store it in the cache.  If it is a constant true or false, introduce the corresponding literals.
+            //
+            else if (isAtom(arg)) declareAtom(arg, arg_t.symb());
         }
         //
         // Skip if unprocessed_children.
@@ -102,7 +100,7 @@ bool Tseitin::cnfize(PTRef formula
 
         if (isLit(ptr)) ;
 //            result = ptr;
-        else if (ptr == sym_NOT) {
+        else if (pt.symb() == sym_NOT) {
             assert(processed.contains(ptstore[ptr][0]));
             Var v = processed.contains(ptstore[ptr][0]);
             result = Lit(v, true);
@@ -124,35 +122,35 @@ bool Tseitin::cnfize(PTRef formula
             //
             // Handle boolean operators
             //
-            if (ptr == sym_AND)
+            if (pt.symb() == sym_AND)
                 cnfizeAnd( ptr
                          , v
 #ifdef PRODUCE_PROOF
                          , partitions
 #endif
                 );
-            else if (ptr == sym_OR)
+            else if (pt.symb() == sym_OR)
                 cnfizeOr( ptr
                         , v
 #ifdef PRODUCE_PROOF
                         , partitions
 #endif
                 );
-            else if (ptr == sym_EQ)
+            else if (pt.symb() == sym_EQ)
                 cnfizeIff(ptr
                          , v
 #ifdef PRODUCE_PROOF
                          , partitions
 #endif
                 );
-            else if (ptr == sym_XOR)
+            else if (pt.symb() == sym_XOR)
                 cnfizeXor(ptr
                          , v
 #ifdef PRODUCE_PROOF
                          , partitions
 #endif
                          );
-            else opensmt_error2("operator not handled ", symstore.getName(ptstore[ptr].symb()));
+            else opensmt_error2("operator not handled", symstore.getName(ptstore[ptr].symb()));
 
             if (v != lit_Undef)
                 result = v;

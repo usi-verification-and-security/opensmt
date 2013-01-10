@@ -108,14 +108,14 @@ void
 CoreSMTSolver::initialize( )
 {
   assert( config.isInit( ) );
-  assert( !init );
+//  assert( !init );
 
   restart_first = config.sat_restart_first;
   restart_inc = config.sat_restart_inc;
 
-  vec< Lit > fc;
-  fc.push( lit_Undef );
-  fake_clause = Clause_new( fc );
+//  vec< Lit > fc;
+//  fc.push( lit_Undef );
+//  fake_clause = Clause_new( fc );
   // FIXME: check why this ?
   first_model_found = config.logic == QF_UFLRA
                    || config.logic == QF_UFIDL;
@@ -1665,7 +1665,8 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
   const double start = cpuTime( );
 #endif
   // (Incomplete) Check of Level-0 atoms
-  int res = false; //= checkTheory( false );
+/*
+  int res = checkTheory( false );
   if ( res == -1 ) return l_False;
   while ( res == 2 )
     res = false; // = checkTheory( false );
@@ -1673,6 +1674,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 #ifdef STATISTICS
   tsolvers_time += cpuTime( ) - start;
 #endif
+*/
   //
   // Decrease activity for booleans
   //
@@ -1759,7 +1761,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 #ifdef STATISTICS
 	  const double start = cpuTime( );
 #endif
-	  int res = false; //= checkTheory( false );
+	  int res = true; //= checkTheory( false );
 #ifdef STATISTICS
 	  tsolvers_time += cpuTime( ) - start;
 #endif
@@ -1814,7 +1816,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 #ifdef STATISTICS
 	    const double start = cpuTime( );
 #endif
-//	    int res = checkTheory( true );
+	    int res = true; // checkTheory( true );
 #ifdef STATISTICS
 	    tsolvers_time += cpuTime( ) - start;
 #endif
@@ -1879,7 +1881,7 @@ double CoreSMTSolver::progressEstimate() const
 lbool CoreSMTSolver::solve( const vec<Lit> & assumps
                           , const unsigned max_conflicts )
 {
-  assert( init );
+//  assert( init );
   // Check some invariants before we start ...
   assert( config.logic != UNDEF );
   // Incrementality should be enabled for arrays

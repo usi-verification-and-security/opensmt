@@ -389,10 +389,14 @@ declare_fun_err: ;
                 // cnfization of the formula
                 // Get the egraph data structure for instance from here
                 // Terms need to be purified before cnfization?
-                Tseitin ts(ptstore, solver, config, tstore, store, logic.getSym_and(), logic.getSym_or(), logic.getSym_not(), logic.getSym_eq(), logic.getSort_bool());
+                Tseitin ts(ptstore, solver, config, tstore, store, logic.getSym_true(), logic.getSym_false(), logic.getSym_and(), logic.getSym_or(), logic.getSym_not(), logic.getSym_eq(), logic.getSort_bool());
                 lbool state = ts.cnfizeAndGiveToSolver(tr);
                 if (state == l_Undef)
                     notify_success();
+                if (state == l_False) {
+                    notify_success();
+                    comment_formatted("The formula is trivially unsatisfiable");
+                }
                 return true;
             }
             else {
@@ -406,7 +410,14 @@ declare_fun_err: ;
         }
     }
     if (strcmp(cmd, "check-sat") == 0) {
-        return false;
+        solver.initialize();
+        lbool res = solver.solve();
+        if (res == l_True)
+            notify_formatted(false, "sat");
+        else if (res == l_False)
+            notify_formatted(false, "unsat");
+        else
+            notify_formatted(false, "unknown");
     }
     if (strcmp(cmd, "exit") == 0) {
         exit();
@@ -475,7 +486,7 @@ PTRef Interpret::insertTerm(const char* s, const vec<PTRef>& args) {
                         if (t[j] != tstore[argt].rsort()) break;
                     }
                     if (j == t.nargs()) {
-                        // Create the proper term and return the reference
+                        // Create / lookup the proper term and return the reference
                         return ptstore.insertTerm(ctr, args);
                     }
                 }
@@ -776,6 +787,7 @@ int Interpret::interpInteractive(FILE*) {
             line_read = readline("... ");
         else {
             notify_formatted(true, "interactive reader: unbalanced parentheses");
+            parse_buf[pb_sz-1] = 0; // replace newline with end of string
             add_history(parse_buf);
             pb_sz = 0;
             par = 0;

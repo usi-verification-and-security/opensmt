@@ -81,8 +81,8 @@ struct SMTConfig
     if ( strcmp( attr, "stdout" ) != 0 && !rocset )
     {
       out.open( attr );
-      if( !out ) 
-	opensmt_error2( "can't open ", attr );
+      if( !out )
+        opensmt_error2( "can't open ", attr );
       rocset = true;
     }
   }

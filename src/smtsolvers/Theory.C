@@ -22,6 +22,8 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 
 int CoreSMTSolver::checkTheory( bool complete )
 {
+  // We skip the theory solvers for now
+  return 1;
   // Skip calls to theory solvers
   // (does not seem to be helpful ...)
   if ( !complete

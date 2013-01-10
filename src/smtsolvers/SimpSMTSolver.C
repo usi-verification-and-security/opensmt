@@ -102,17 +102,17 @@ void SimpSMTSolver::initialize( )
   // Add clauses for true/false
   // Useful for expressing TAtoms that are constantly true/false
 
-  const Var var_True = newVar( );
-  const Var var_False = newVar( );
+//  const Var var_True = newVar( );
+//  const Var var_False = newVar( );
 
-  setFrozen( var_True, true );
-  setFrozen( var_False, true );
+//  setFrozen( var_True, true );
+//  setFrozen( var_False, true );
 
-  vec< Lit > clauseTrue, clauseFalse;
-  clauseTrue.push( Lit( var_True ) );
-  addClause( clauseTrue );
-  clauseFalse.push( Lit( var_False, true ) );
-  addClause( clauseFalse );
+//  vec< Lit > clauseTrue, clauseFalse;
+//  clauseTrue.push( Lit( var_True ) );
+//  addClause( clauseTrue );
+//  clauseFalse.push( Lit( var_False, true ) );
+//  addClause( clauseFalse );
 
 //  theory_handler = new THandler( egraph, config, *this, trail, level, assigns, var_True, var_False );
 }

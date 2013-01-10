@@ -16,6 +16,10 @@ Logic::Logic(SMTConfig& c, SStore& s, TStore& t) :
 
 bool Logic::setLogic(const char* l) {
     if (strcmp(l, "QF_UF") == 0) {
+        config.logic                    = QF_UF;
+        config.sat_restart_first        = 100;
+        config.sat_restart_inc          = 1.5;
+
         sort_store.insertStore(new Sort(*(new Identifier("Bool"))));
         sort_BOOL = sort_store["Bool 0"];
 
@@ -37,10 +41,12 @@ bool Logic::setLogic(const char* l) {
         tr = term_store.newTerm(tk_true, params);
         if (tr == TRef_Undef) { free(tk_true); return false; }
         term_store[tr].setNoScoping();
+        sym_TRUE = tr;
 
         tr = term_store.newTerm(tk_false, params);
         if (tr == TRef_Undef) { free(tk_false); return false; }
         term_store[tr].setNoScoping();
+        sym_FALSE = tr;
 
         params.push(sort_store["Bool 0"]);
         tr = term_store.newTerm(tk_not, params);

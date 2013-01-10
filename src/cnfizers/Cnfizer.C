@@ -36,9 +36,9 @@ bool Cnfizer::isLit(PTRef r) {
 }
 
   // A term is an atom if its sort is Bool and
-  //  (i)   number of arguments is 0
+  //  (i)  number of arguments is 0
   //  (ii) it is an atom stating an equivalence of non-boolean terms (terms must be purified at this point)
-bool Cnfizer::isAtom(PTRef r) {
+bool Cnfizer::isAtom(PTRef r) const {
     Pterm& t = ptstore[r];
     if (symstore[t.symb()].rsort() == sort_BOOL) {
         if (t.size() == 0) return true;
@@ -47,6 +47,31 @@ bool Cnfizer::isAtom(PTRef r) {
         if ((t.symb() == sym_EQ) && (symstore[ptstore[t[0]].symb()].rsort() != sort_BOOL)) return true;
     }
     return false;
+}
+
+const Lit Cnfizer::findLit(PTRef ptr) const {
+    PTRef p;
+    bool sgn = isNPAtom(ptr, p);
+    assert(processed.contains(p));
+    return (sgn == false) ? processed[p] : ~processed[p];
+}
+
+// A term is a npatom if it is an atom or it is a negation or a npatom
+bool Cnfizer::isNPAtom(PTRef r, PTRef& p) const {
+    bool sign = false;
+    while (true) {
+        if (ptstore[r].symb() == sym_NOT) {
+            r = ptstore[r][0];
+            sign = !sign;
+        }
+        else {
+            if (isAtom(r))
+                p = r;
+            else
+                p = PTRef_Undef;
+            return sign;
+        }
+    }
 }
 
 //
@@ -60,57 +85,55 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula
 {
 //  egraph.initDupMap1( );
 
-  assert( formula != PTRef_Undef);
+    if (solver.okay() == false) return false;
 
-  vec<PTRef> top_level_formulae;
-  // Retrieve top-level formulae
-  retrieveTopLevelFormulae( formula, top_level_formulae ); 
-  assert(top_level_formulae.size() != 0);
+    assert( formula != PTRef_Undef);
+
+    vec<PTRef> top_level_formulae;
+    // Retrieve top-level formulae
+    retrieveTopLevelFormulae( formula, top_level_formulae ); 
+    assert(top_level_formulae.size() != 0);
 
 //  map< enodeid_t, Enode * > cnf_cache;
-  bool res = true;
+    bool res = true;
   // For each top-level conjunct
-  for ( unsigned i = 0 ; i < top_level_formulae.size_() && res ; i ++ )
-  {
-    PTRef f = top_level_formulae[ i ];
+    for ( unsigned i = 0 ; i < top_level_formulae.size_() && (res == true) ; i ++ ) {
+        PTRef f = top_level_formulae[ i ];
 
-    // Give it to the solver if already in CNF
-    if ( checkCnf( f ) )
-    {
-      res = giveToSolver( f
+        // Give it to the solver if already in CNF
+        if (checkCnf(f) == true) {
+            res = giveToSolver(f
 #ifdef PRODUCE_PROOF
-	                , partition 
+                              , partition
 #endif
-			);
-    }
-    // Check whether it can be rewritten using deMorgan laws
-    else if ( checkDeMorgan( f ) )
-    {
-      res = deMorganize( f
+                              );
+        }
+        // Check whether it can be rewritten using deMorgan laws
+        else if (checkDeMorgan(f) == true) {
+            res = deMorganize(f
 #ifdef PRODUCE_PROOF
-	               , partition 
+                             , partition
 #endif
-		       );
-    }
-    // Otherwise perform cnfization
-    else
-    {
+                             );
+        }
+        // Otherwise perform cnfization
+        else {
 //      map< enodeid_t, int > enodeid_to_incoming_edges;
 //      computeIncomingEdges( f, enodeid_to_incoming_edges ); // Compute incoming edges for f and children
 //      f = rewriteMaxArity( f, enodeid_to_incoming_edges );  // Rewrite f with maximum arity for operators
-      res = cnfize( f //, cnf_cache
+            res = cnfize(f //, cnf_cache
 #ifdef PRODUCE_PROOF
-	          , partition 
+                        , partition
 #endif
-		  );                         // Perform actual cnfization (implemented in subclasses)
+                        );                         // Perform actual cnfization (implemented in subclasses)
+        }
     }
-  }
 
 //  egraph.doneDupMap1( );
 
-  if ( !res ) return l_False;
+    if (res == false) return l_False;
 
-  return l_Undef;
+    return l_Undef;
 }
 
 //
@@ -379,9 +402,10 @@ bool Cnfizer::deMorganize( PTRef formula
 // Check whether a formula is in cnf
 //
 bool Cnfizer::checkCnf(PTRef formula) {
-  Map<PTRef,bool,TRefHash,Equal<PTRef> > check_cache;
-  bool res = checkConj(formula, check_cache) || checkClause( formula, check_cache ); 
-  return res;
+    Map<PTRef,bool,TRefHash,Equal<PTRef> > check_cache;
+    bool res = checkConj(formula, check_cache);
+    if (res == false) return checkClause(formula, check_cache);
+    return res;
 }
 
 //
@@ -424,17 +448,8 @@ bool Cnfizer::checkClause(PTRef e, Map<PTRef,bool,TRefHash,Equal<PTRef> > & chec
 {
     assert(e != PTRef_Undef);
 
-    if (isLit(e)) {
-        check_cache.insert(e, true);                           // Don't check again
-        return true;
-    }
-
-    Pterm& or_t = ptstore[e];
-
-    if (or_t.symb() != sym_OR)
-        return false;
-
     vec<PTRef> to_process;
+
     to_process.push(e);
 
     while (to_process.size() != 0) {
@@ -443,20 +458,53 @@ bool Cnfizer::checkClause(PTRef e, Map<PTRef,bool,TRefHash,Equal<PTRef> > & chec
         if (check_cache.contains(e))  // Already visited term
             continue;
 
-        or_t = ptstore[e];
+        Pterm& or_t = ptstore[e];
 
         for (int i = 0; i < or_t.size(); i++) {
-            if (ptstore[or_t[i]].symb() == sym_OR)
+            Pterm& arg = ptstore[or_t[i]];
+            if (arg.symb() == sym_OR)
                 to_process.push(or_t[i]);
-            else if (!isLit(or_t[i]))
-               return false;
+            else {
+                PTRef p;
+                isNPAtom(or_t[i], p);
+                if (p != PTRef_Undef)
+                    to_process.push(p);
+                else
+                    return false;
+            }
         }
+
+        PTRef p;
+        isNPAtom(e, p);
+        if (p != PTRef_Undef)
+            declareAtom(e, or_t.symb());
 
         check_cache.insert(e, true);
     }
 
     return true;
 }
+
+void Cnfizer::declareAtom(PTRef ptr, TRef symb) {
+    if (!processed.contains(ptr)) {
+        processed.insert(ptr, Lit(solver.newVar()));
+        if (symb == sym_TRUE) {
+            vec<Lit> cl_true;
+            cl_true.push(findLit(ptr));
+            bool rval = solver.addSMTClause(cl_true);
+            solver.setFrozen(var(findLit(ptr)), true);
+            assert(rval);
+        }
+        else if (symb == sym_FALSE) {
+            vec<Lit> cl_false;
+            cl_false.push(~findLit(ptr));
+            bool rval = solver.addSMTClause(cl_false);
+            solver.setFrozen(var(findLit(ptr)), false);
+            assert(rval);
+        }
+    }
+}
+
 
 //
 // Check whether it can be easily put in clausal form by means of DeMorgan's Rules
@@ -510,7 +558,7 @@ bool Cnfizer::giveToSolver( PTRef f
     // A unit clause
     //
     if (isLit(f)) {
-        clause.push(toLit(f));
+        clause.push(findLit(f));
 #ifdef PRODUCE_PROOF
         if ( config.produce_inter != 0 )
             return solver.addSMTClause( clause, partition );
@@ -525,7 +573,7 @@ bool Cnfizer::giveToSolver( PTRef f
     if (cand_t.symb() == sym_OR) {
         for (int i = 0; i < cand_t.size(); i ++) {
             assert(isLit(cand_t[i]));
-            clause.push(toLit(cand_t[i]));
+            clause.push(findLit(cand_t[i]));
         }
 #ifdef PRODUCE_PROOF
         if ( config.produce_inter != 0 )

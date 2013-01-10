@@ -57,6 +57,8 @@ public:
   virtual Var    newVar        ( bool = true, bool = true )                     = 0;
   virtual void   setFrozen     ( Var, bool )                                    = 0;
 
+  virtual bool   okay          () const                                         = 0;
+
 protected:
 
 //  THandler *  theory_handler; // Handles theory

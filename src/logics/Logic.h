@@ -15,6 +15,8 @@ class Logic {
     TStore&             term_store;
     bool                is_set;
     string              name;
+    TRef                sym_TRUE;
+    TRef                sym_FALSE;
     TRef                sym_AND;
     TRef                sym_OR;
     TRef                sym_NOT;
@@ -31,6 +33,8 @@ class Logic {
     bool          isSet            ()              const { return is_set;    }
     const string& getName          ()              const { return name;      }
 
+    TRef          getSym_true      ()              const { return sym_TRUE;  }
+    TRef          getSym_false     ()              const { return sym_FALSE; }
     TRef          getSym_and       ()              const { return sym_AND;   }
     TRef          getSym_or        ()              const { return sym_OR;    }
     TRef          getSym_not       ()              const { return sym_NOT;   }

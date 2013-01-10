@@ -88,7 +88,7 @@ class CoreSMTSolver : public SMTSolver
     lbool   solve        ( const vec< Lit > & assumps );                 // Search for a model that respects a given set of assumptions.
     lbool   solve        ( const vec< Lit > & assumps, const unsigned ); // Search for a model that respects a given set of assumptions .
     lbool   solve        ();                        // Search without assumptions.
-    bool    okay         () const;                  // FALSE means solver is in a conflicting state
+    virtual bool  okay   () const;                  // FALSE means solver is in a conflicting state
 
     // Variable mode:
     //
@@ -318,7 +318,7 @@ class CoreSMTSolver : public SMTSolver
       template<class C>
       void     printClause      (const C& c);
 
-      lbool smtSolve                ( );             // Solve
+      lbool    smtSolve         ( );             // Solve
 #ifndef SMTCOMP
 /*
       lbool  getModel               ( Enode * );
