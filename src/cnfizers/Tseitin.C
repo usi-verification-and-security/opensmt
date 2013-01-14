@@ -38,9 +38,9 @@ bool Tseitin::cnfize(PTRef formula
     assert(ptstore[formula].symb() != sym_AND);
 
     if (processed.contains(formula)) {
-    //
-    // Formula was cnfized before ...
-    //
+        //
+        // Formula was cnfized before ...
+        //
         vec<Lit> clause;
         clause.push(findLit(formula));
 #ifdef PRODUCE_PROOF

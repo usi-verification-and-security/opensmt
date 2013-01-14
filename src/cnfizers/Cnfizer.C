@@ -36,7 +36,7 @@ bool Cnfizer::isLit(PTRef r) {
 }
 
   // A term is an atom if its sort is Bool and
-  //  (i)  number of arguments is 0
+  //  (i)  number of arguments is 0, or
   //  (ii) it is an atom stating an equivalence of non-boolean terms (terms must be purified at this point)
 bool Cnfizer::isAtom(PTRef r) const {
     Pterm& t = ptstore[r];
@@ -49,14 +49,30 @@ bool Cnfizer::isAtom(PTRef r) const {
     return false;
 }
 
-const Lit Cnfizer::findLit(PTRef ptr) const {
+// Extracts the literal corresponding to a term.
+// Accepts negations.
+const Lit Cnfizer::findLit(PTRef ptr) {
     PTRef p;
-    bool sgn = isNPAtom(ptr, p);
-    assert(processed.contains(p));
-    return (sgn == false) ? processed[p] : ~processed[p];
+    bool sgn;
+    Var v;
+    getTerm(ptr, p, sgn);
+    if (!processed.contains(p)) {
+        v = solver.newVar();
+        processed.insert(p, v);
+    }
+    return Lit(v, sgn);
 }
 
-// A term is a npatom if it is an atom or it is a negation or a npatom
+void Cnfizer::getTerm(PTRef r, PTRef& p, bool& sgn) {
+    sgn = false;
+    while (ptstore[r].symb() == sym_NOT) {
+        r = ptstore[r][0];
+        sign = !sign;
+    }
+    p = r;
+}
+
+// A term is an npatom if it is an atom or it is a negation of an npatom
 bool Cnfizer::isNPAtom(PTRef r, PTRef& p) const {
     bool sign = false;
     while (true) {
@@ -90,15 +106,14 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula
     assert( formula != PTRef_Undef);
 
     vec<PTRef> top_level_formulae;
-    // Retrieve top-level formulae
-    retrieveTopLevelFormulae( formula, top_level_formulae ); 
+    // Retrieve top-level formulae - this is a list constructed from a conjunction
+    retrieveTopLevelFormulae(formula, top_level_formulae);
     assert(top_level_formulae.size() != 0);
 
-//  map< enodeid_t, Enode * > cnf_cache;
     bool res = true;
   // For each top-level conjunct
-    for ( unsigned i = 0 ; i < top_level_formulae.size_() && (res == true) ; i ++ ) {
-        PTRef f = top_level_formulae[ i ];
+    for (unsigned i = 0 ; i < top_level_formulae.size_() && (res == true) ; i ++) {
+        PTRef f = top_level_formulae[i];
 
         // Give it to the solver if already in CNF
         if (checkCnf(f) == true) {
@@ -505,6 +520,11 @@ void Cnfizer::declareAtom(PTRef ptr, TRef symb) {
     }
 }
 
+Lit Cnfizer::getPureTerm(PTRef r) const {
+    PTRef p;
+    bool sgn;
+    getPureTerm(r, p, sgn); // remove the negations and compute the sign
+}
 
 //
 // Check whether it can be easily put in clausal form by means of DeMorgan's Rules

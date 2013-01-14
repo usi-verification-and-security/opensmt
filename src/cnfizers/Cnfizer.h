@@ -52,75 +52,75 @@ class Cnfizer
 {
 public:
 
-  Cnfizer( PtStore &   ptstore_
-         , SMTSolver & solver_
-         , SMTConfig & config_
-         , TStore&     symstore_
-         , SStore &    sstore_
-         , TRef sym_true
-         , TRef sym_false
-         , TRef sym_and
-         , TRef sym_or
-         , TRef sym_not
-         , TRef sym_eq
-         , SRef sort_bool
-         ) :
-     ptstore  (ptstore_ )
-   , solver   (solver_  )
-   , config   (config_  )
-   , symstore (symstore_)
-   , sstore   (sstore_  )
-   , sym_TRUE (sym_true )
-   , sym_FALSE(sym_false)
-   , sym_AND  (sym_and  )
-   , sym_OR   (sym_or   )
-   , sym_NOT  (sym_not  )
-   , sym_EQ   (sym_eq   )
-   , sort_BOOL(sort_bool)
-  { }
+    Cnfizer( PtStore &   ptstore_
+           , SMTSolver & solver_
+           , SMTConfig & config_
+           , TStore&     symstore_
+           , SStore &    sstore_
+           , TRef sym_true
+           , TRef sym_false
+           , TRef sym_and
+           , TRef sym_or
+           , TRef sym_not
+           , TRef sym_eq
+           , SRef sort_bool
+           ) :
+       ptstore  (ptstore_ )
+     , solver   (solver_  )
+     , config   (config_  )
+     , symstore (symstore_)
+     , sstore   (sstore_  )
+     , sym_TRUE (sym_true )
+     , sym_FALSE(sym_false)
+     , sym_AND  (sym_and  )
+     , sym_OR   (sym_or   )
+     , sym_NOT  (sym_not  )
+     , sym_EQ   (sym_eq   )
+     , sort_BOOL(sort_bool)
+    { }
 
-  virtual ~Cnfizer( ) { }
+    virtual ~Cnfizer( ) { }
 
-  lbool cnfizeAndGiveToSolver ( PTRef
+    lbool cnfizeAndGiveToSolver ( PTRef
 #ifdef PRODUCE_PROOF
-                              , const ipartitions_t = 0
+                                , const ipartitions_t = 0
 #endif
-			      ); // Main routine
+                                ); // Main routine
 
 protected:
-  
-  virtual bool cnfize	       ( PTRef
-#ifdef PRODUCE_PROOF
-			       , const ipartitions_t = 0 
-#endif
-			       ) = 0; // Actual cnfization. To be implemented in derived classes
 
-  bool     deMorganize                ( PTRef
+    virtual bool cnfize                 ( PTRef
 #ifdef PRODUCE_PROOF
-                                      , const ipartitions_t &
+                                        , const ipartitions_t = 0
 #endif
-                                      ); 	 	                      // Apply deMorgan rules whenever feasible
+                                        ) = 0; // Actual cnfization. To be implemented in derived classes
+
+    bool     deMorganize                ( PTRef
+#ifdef PRODUCE_PROOF
+                                        , const ipartitions_t &
+#endif
+                                        );                                    // Apply deMorgan rules whenever feasible
 //  Enode *  rewriteMaxArity            ( Enode *, map< enodeid_t, int > & );   // Rewrite terms using maximum arity
 
-  bool     checkCnf                   ( PTRef );			      // Check if formula is in CNF
-  bool     checkDeMorgan              ( PTRef );                            // Check if formula can be deMorganized
-  bool     giveToSolver               ( PTRef
+    bool     checkCnf                   ( PTRef );                            // Check if formula is in CNF
+    bool     checkDeMorgan              ( PTRef );                            // Check if formula can be deMorganized
+    bool     giveToSolver               ( PTRef
 #ifdef PRODUCE_PROOF
-                                      , const ipartitions_t &
+                                        , const ipartitions_t &
 #endif
-                                      );                              // Gives formula to the SAT solver
+                                        );                              // Gives formula to the SAT solver
 
-  void  retrieveTopLevelFormulae   ( PTRef, vec<PTRef> & );         // Retrieves the list of top-level formulae
+    void  retrieveTopLevelFormulae   ( PTRef, vec<PTRef> & );         // Retrieves the list of top-level formulae
 //  void  retrieveClause             ( PTRef, vec<PTRef> & );         // Retrieve a clause from a formula
 //  void  retrieveConjuncts          ( PTRef, vec<PTRef> & );         // Retrieve the list of conjuncts
 
 //  Enode * toggleLit		   ( Enode * );                              // Handy function for toggling literals
 
-  PtStore&     ptstore;                                                       // Reference to the term store
-  SMTSolver &  solver;                                                        // Reference to Solver
-  SMTConfig &  config;                                                        // Reference to Config
-  TStore&      symstore;
-  SStore &     sstore;
+    PtStore&     ptstore;                                                       // Reference to the term store
+    SMTSolver &  solver;                                                        // Reference to Solver
+    SMTConfig &  config;                                                        // Reference to Config
+    TStore&      symstore;
+    SStore &     sstore;
 
 private:
 
@@ -129,30 +129,33 @@ private:
 //                               , map< enodeid_t, Enode * > &
 //                               , map< enodeid_t, int > & );                  // Subroutine for rewriteMaxArity
 
-  bool    checkConj            (PTRef, Map<PTRef,bool,TRefHash,Equal<PTRef> >& check_cache); // Check if a formula is a conjunction
-  bool    checkClause          (PTRef, Map<PTRef,bool,TRefHash,Equal<PTRef> >& check_cache); // Check if a formula is a clause
-  bool    checkPureConj        (PTRef, Map<PTRef,bool,TRefHash,Equal<PTRef> >& check_cache); // Check if a formula is purely a conjuntion
+    bool    checkConj            (PTRef, Map<PTRef,bool,TRefHash,Equal<PTRef> >& check_cache); // Check if a formula is a conjunction
+    bool    checkClause          (PTRef, Map<PTRef,bool,TRefHash,Equal<PTRef> >& check_cache); // Check if a formula is a clause
+    bool    checkPureConj        (PTRef, Map<PTRef,bool,TRefHash,Equal<PTRef> >& check_cache); // Check if a formula is purely a conjuntion
 
 
-  // The special boolean symbols
+    // The special boolean symbols
 protected:
-  TRef  sym_TRUE;
-  TRef  sym_FALSE;
-  TRef  sym_AND;
-  TRef  sym_OR;
-  TRef  sym_NOT;
-  TRef  sym_EQ;
-  TRef  sym_XOR;
-  SRef  sort_BOOL;
+    TRef  sym_TRUE;
+    TRef  sym_FALSE;
+    TRef  sym_AND;
+    TRef  sym_OR;
+    TRef  sym_NOT;
+    TRef  sym_EQ;
+    TRef  sym_XOR;
+    SRef  sort_BOOL;
 
-  Map<PTRef,Lit,PTRefHash,Equal<PTRef> > processed;
+    Map<PTRef,Lit,PTRefHash,Equal<PTRef> > processed;
 
-  bool  isLit            (PTRef r);
-  const Lit findLit      (PTRef ptr) const ;
-  bool  isBooleanOperator(TRef tr) { return (tr == sym_AND) | (tr == sym_OR) | (tr == sym_NOT) | (tr == sym_EQ) | (tr == sym_XOR); }
-  bool  isAtom           (PTRef r) const;
-  bool  isNPAtom         (PTRef r, PTRef& p) const; // Check if r is a (negated) atom.  Return true if the corresponding atom is negated.  The purified reference is placed in the second argument.
-  void  declareAtom      (PTRef, TRef);             // Declare an atom for the smt/sat solver
+    bool  isLit            (PTRef r);
+    const Lit findLit      (PTRef ptr) const ;
+    bool  isBooleanOperator(TRef tr) { return (tr == sym_AND) | (tr == sym_OR) | (tr == sym_NOT) | (tr == sym_EQ) | (tr == sym_XOR); }
+    bool  isAtom           (PTRef r) const;
+    bool  isNPAtom         (PTRef r, PTRef& p)   const; // Check if r is a (negated) atom.  Return true if the corresponding atom is negated.  The purified reference is placed in the second argument.
+    void  declareAtom      (PTRef, TRef);               // Declare an atom for the smt/sat solver
+    bool  termSeen         (PTRef)               const; // True if the term has been seen and thus processed in the sense that there is already literal corresponding to it.  Sees through negations.
+    void  getTerm          (PTRef, PTRef&, bool) const; // Return the term and its sign
+
 };
 
 #endif
