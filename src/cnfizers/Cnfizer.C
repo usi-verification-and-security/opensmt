@@ -60,14 +60,16 @@ const Lit Cnfizer::findLit(PTRef ptr) {
         v = solver.newVar();
         processed.insert(p, v);
     }
+    else
+        v = processed[p];
     return Lit(v, sgn);
 }
 
-void Cnfizer::getTerm(PTRef r, PTRef& p, bool& sgn) {
+void Cnfizer::getTerm(PTRef r, PTRef& p, bool& sgn) const {
     sgn = false;
     while (ptstore[r].symb() == sym_NOT) {
         r = ptstore[r][0];
-        sign = !sign;
+        sgn = !sgn;
     }
     p = r;
 }
@@ -116,6 +118,7 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula
         PTRef f = top_level_formulae[i];
 
         // Give it to the solver if already in CNF
+/*
         if (checkCnf(f) == true) {
             res = giveToSolver(f
 #ifdef PRODUCE_PROOF
@@ -123,7 +126,9 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula
 #endif
                               );
         }
+*/
         // Check whether it can be rewritten using deMorgan laws
+/*
         else if (checkDeMorgan(f) == true) {
             res = deMorganize(f
 #ifdef PRODUCE_PROOF
@@ -131,18 +136,18 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula
 #endif
                              );
         }
+*/
         // Otherwise perform cnfization
-        else {
 //      map< enodeid_t, int > enodeid_to_incoming_edges;
 //      computeIncomingEdges( f, enodeid_to_incoming_edges ); // Compute incoming edges for f and children
 //      f = rewriteMaxArity( f, enodeid_to_incoming_edges );  // Rewrite f with maximum arity for operators
-            res = cnfize(f //, cnf_cache
+        res = cnfize(f //, cnf_cache
 #ifdef PRODUCE_PROOF
-                        , partition
+                    , partition
 #endif
-                        );                         // Perform actual cnfization (implemented in subclasses)
-        }
+                    );                         // Perform actual cnfization (implemented in subclasses)
     }
+
 
 //  egraph.doneDupMap1( );
 
@@ -416,16 +421,19 @@ bool Cnfizer::deMorganize( PTRef formula
 //
 // Check whether a formula is in cnf
 //
+/*
 bool Cnfizer::checkCnf(PTRef formula) {
     Map<PTRef,bool,TRefHash,Equal<PTRef> > check_cache;
     bool res = checkConj(formula, check_cache);
     if (res == false) return checkClause(formula, check_cache);
     return res;
 }
+*/
 
 //
 // Check if a formula is a conjunction of clauses
 //
+/*
 bool Cnfizer::checkConj(PTRef e, Map<PTRef,bool,TRefHash,Equal<PTRef> > & check_cache)
 {
     Pterm& and_t = ptstore[e];
@@ -455,10 +463,12 @@ bool Cnfizer::checkConj(PTRef e, Map<PTRef,bool,TRefHash,Equal<PTRef> > & check_
 
     return true;
 }
+*/
 
 //
 // Check whether a formula is a clause
 //
+/*
 bool Cnfizer::checkClause(PTRef e, Map<PTRef,bool,TRefHash,Equal<PTRef> > & check_cache)
 {
     assert(e != PTRef_Undef);
@@ -499,7 +509,9 @@ bool Cnfizer::checkClause(PTRef e, Map<PTRef,bool,TRefHash,Equal<PTRef> > & chec
 
     return true;
 }
+*/
 
+/*
 void Cnfizer::declareAtom(PTRef ptr, TRef symb) {
     if (!processed.contains(ptr)) {
         processed.insert(ptr, Lit(solver.newVar()));
@@ -519,12 +531,15 @@ void Cnfizer::declareAtom(PTRef ptr, TRef symb) {
         }
     }
 }
+*/
 
+/*
 Lit Cnfizer::getPureTerm(PTRef r) const {
     PTRef p;
     bool sgn;
     getPureTerm(r, p, sgn); // remove the negations and compute the sign
 }
+*/
 
 //
 // Check whether it can be easily put in clausal form by means of DeMorgan's Rules

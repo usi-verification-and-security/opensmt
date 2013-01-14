@@ -64,10 +64,10 @@ private:
     void cnfizeXor        ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize xors
     void cnfizeIfthenelse ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize if then elses
 #else
-    void cnfizeAnd        (PTRef, Lit);                          // Cnfize conjunctions
-    void cnfizeOr         (PTRef, Lit);                          // Cnfize disjunctions
-    void cnfizeIff        (PTRef, Lit);                          // Cnfize iffs
-    void cnfizeXor        (PTRef, Lit);                          // Cnfize xors
+    void cnfizeAnd        (PTRef);                          // Cnfize conjunctions
+    void cnfizeOr         (PTRef);                          // Cnfize disjunctions
+    void cnfizeIff        (PTRef);                          // Cnfize iffs
+    void cnfizeXor        (PTRef);                          // Cnfize xors
 //    void cnfizeIfthenelse (PTRef, Var);                          // Cnfize if then elses
 #endif
 };

@@ -145,16 +145,16 @@ protected:
     TRef  sym_XOR;
     SRef  sort_BOOL;
 
-    Map<PTRef,Lit,PTRefHash,Equal<PTRef> > processed;
+    Map<PTRef,Var,PTRefHash,Equal<PTRef> > processed;
 
     bool  isLit            (PTRef r);
-    const Lit findLit      (PTRef ptr) const ;
+    const Lit findLit      (PTRef ptr);
     bool  isBooleanOperator(TRef tr) { return (tr == sym_AND) | (tr == sym_OR) | (tr == sym_NOT) | (tr == sym_EQ) | (tr == sym_XOR); }
     bool  isAtom           (PTRef r) const;
-    bool  isNPAtom         (PTRef r, PTRef& p)   const; // Check if r is a (negated) atom.  Return true if the corresponding atom is negated.  The purified reference is placed in the second argument.
-    void  declareAtom      (PTRef, TRef);               // Declare an atom for the smt/sat solver
-    bool  termSeen         (PTRef)               const; // True if the term has been seen and thus processed in the sense that there is already literal corresponding to it.  Sees through negations.
-    void  getTerm          (PTRef, PTRef&, bool) const; // Return the term and its sign
+    bool  isNPAtom         (PTRef r, PTRef& p)    const; // Check if r is a (negated) atom.  Return true if the corresponding atom is negated.  The purified reference is placed in the second argument.
+    void  declareAtom      (PTRef, TRef);                // Declare an atom for the smt/sat solver
+    bool  termSeen         (PTRef)                const; // True if the term has been seen and thus processed in the sense that there is already literal corresponding to it.  Sees through negations.
+    void  getTerm          (PTRef, PTRef&, bool&) const; // Return the term and its sign
 
 };
 
