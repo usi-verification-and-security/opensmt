@@ -56,12 +56,12 @@ const Lit Cnfizer::findLit(PTRef ptr) {
     bool sgn;
     Var v;
     getTerm(ptr, p, sgn);
-    if (!processed.contains(p)) {
+    if (!seen.contains(p)) {
         v = solver.newVar();
-        processed.insert(p, v);
+        seen.insert(p, v);
     }
     else
-        v = processed[p];
+        v = seen[p];
     return Lit(v, sgn);
 }
 

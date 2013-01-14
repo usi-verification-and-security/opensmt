@@ -38,6 +38,7 @@ bool Tseitin::cnfize(PTRef formula
     // Top level formula must not be and anymore
     assert(ft.symb() != sym_AND);
 
+    // Add the top level literal as a unit to solver.
     vec<Lit> clause;
     clause.push(findLit(formula));
 #ifdef PRODUCE_PROOF
@@ -47,8 +48,7 @@ bool Tseitin::cnfize(PTRef formula
     solver.addSMTClause( clause );
 
     vec<PTRef> unprocessed_terms;       // Stack for unprocessed terms
-    for (int i = 0; i < ft.size(); i++)
-        unprocessed_terms.push(ft[i]);    // children of formula need to be processed
+    unprocessed_terms.push(formula);    // Start with this term
     //
     // Visit the DAG of the formula
     //
@@ -76,7 +76,10 @@ bool Tseitin::cnfize(PTRef formula
         for (int i = 0; i < pt.size(); i++)
             unprocessed_terms.push(pt[i]);
 
+        processed.insert(ptr, true);
+
     }
+
     return true;
 }
 

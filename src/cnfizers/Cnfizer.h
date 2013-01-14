@@ -145,7 +145,8 @@ protected:
     TRef  sym_XOR;
     SRef  sort_BOOL;
 
-    Map<PTRef,Var,PTRefHash,Equal<PTRef> > processed;
+    Map<PTRef,bool,PTRefHash,Equal<PTRef> >   processed;  // Is a term already processed
+    Map<PTRef,Var,PTRefHash,Equal<PTRef> >    seen;       // mapping from PTRef to var
 
     bool  isLit            (PTRef r);
     const Lit findLit      (PTRef ptr);
