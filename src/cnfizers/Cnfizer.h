@@ -50,34 +50,22 @@ const ckval ck_Unsat = toCkval( 0);
 //
 class Cnfizer
 {
-public:
+    public:
 
     Cnfizer( PtStore &   ptstore_
            , SMTSolver & solver_
            , SMTConfig & config_
            , TStore&     symstore_
            , SStore &    sstore_
-           , TRef sym_true
-           , TRef sym_false
            , TRef sym_and
            , TRef sym_or
            , TRef sym_not
            , TRef sym_eq
            , SRef sort_bool
-           ) :
-       ptstore  (ptstore_ )
-     , solver   (solver_  )
-     , config   (config_  )
-     , symstore (symstore_)
-     , sstore   (sstore_  )
-     , sym_TRUE (sym_true )
-     , sym_FALSE(sym_false)
-     , sym_AND  (sym_and  )
-     , sym_OR   (sym_or   )
-     , sym_NOT  (sym_not  )
-     , sym_EQ   (sym_eq   )
-     , sort_BOOL(sort_bool)
-    { }
+           , PTRef term_true
+           , PTRef term_false
+           );
+
 
     virtual ~Cnfizer( ) { }
 
@@ -136,8 +124,8 @@ private:
 
     // The special boolean symbols
 protected:
-    TRef  sym_TRUE;
-    TRef  sym_FALSE;
+    PTRef  term_TRUE;
+    PTRef  term_FALSE;
     TRef  sym_AND;
     TRef  sym_OR;
     TRef  sym_NOT;

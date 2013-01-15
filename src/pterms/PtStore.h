@@ -16,9 +16,11 @@ class PtStore {
     PtermAllocator pta;
     TStore&        symstore;
     SStore&        sortstore;
+    PTRef          term_true;
+    PTRef          term_false;
     Map<TRef,PTRef,TRefHash,Equal<TRef> > cterm_map; // Mapping constant symbols to terms
   public:
-    PtStore(TStore& symstore_, SStore& sortstore_) : symstore(symstore_), sortstore(sortstore_) {}
+    PtStore(TStore& symstore_, SStore& sortstore_, TRef sym_true, TRef sym_false);
     PTRef insertTerm(TRef sym, const vec<PTRef>& terms) {
         // Catch the constants here
         if (terms.size() == 0 && cterm_map.contains(sym))
@@ -30,6 +32,9 @@ class PtStore {
 
         return res;
     }
+    inline PTRef getTerm_true () const { return term_true;  }
+    inline PTRef getTerm_false() const { return term_false; }
+
     Pterm& operator[] (PTRef tr) { return pta[tr]; }
     const Pterm& operator[] (PTRef tr) const { return pta[tr]; }
 };

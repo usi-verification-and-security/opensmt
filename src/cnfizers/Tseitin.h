@@ -31,21 +31,31 @@ class Tseitin : public Cnfizer
 {
 public:
 
-    Tseitin(PtStore&   ptstore_,
-            SMTSolver& solver_,
-            SMTConfig& config_,
-            TStore&    symstore_,
-            SStore&    sstore_,
-            TRef       sym_true,
-            TRef       sym_false,
-            TRef       sym_and,
-            TRef       sym_or,
-            TRef       sym_not,
-            TRef       sym_eq,
-            SRef       sort_bool
+    Tseitin(PtStore&   ptstore_
+           , SMTSolver& solver_
+           , SMTConfig& config_
+           , TStore&    symstore_
+           , SStore&    sstore_
+           , TRef       sym_and
+           , TRef       sym_or
+           , TRef       sym_not
+           , TRef       sym_eq
+           , SRef       sort_bool
+           , PTRef      term_true
+           , PTRef      term_false
            )
-      : Cnfizer(ptstore_, solver_, config_, symstore_, sstore_, sym_true, sym_false, sym_and, sym_or, sym_not, sym_eq, sort_bool)
-    {}
+      : Cnfizer(ptstore_
+                , solver_
+                , config_
+                , symstore_
+                , sstore_
+                , sym_and
+                , sym_or
+                , sym_not
+                , sym_eq
+                , sort_bool
+                , term_true
+                , term_false) {}
 
     ~Tseitin( ) { }
 

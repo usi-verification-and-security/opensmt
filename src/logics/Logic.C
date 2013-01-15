@@ -6,83 +6,84 @@
 /***********************************************************
  * Class defining logic
  ***********************************************************/
+
+// The constructor initiates the base logic (Boolean)
 Logic::Logic(SMTConfig& c, SStore& s, TStore& t) :
       config(c)
     , sort_store(s)
     , term_store(t)
     , is_set(false)
 {
-};
+    sort_store.insertStore(new Sort(*(new Identifier("Bool"))));
+    sort_BOOL = sort_store["Bool 0"];
+
+    vec<SRef> params;
+
+    char* tk_true    = strdup("true");
+    char* tk_false   = strdup("false");
+    char* tk_not     = strdup("not");
+    char* tk_equals  = strdup("=");
+    char* tk_implies = strdup("=>");
+    char* tk_and     = strdup("and");
+    char* tk_or      = strdup("or");
+    char* tk_xor     = strdup("xor");
+
+    params.push(sort_store["Bool 0"]);
+
+    TRef tr;
+
+    tr = term_store.newTerm(tk_true, params);
+    if (tr == TRef_Undef) { free(tk_true); assert(false); }
+    term_store[tr].setNoScoping();
+    sym_TRUE = tr;
+
+    tr = term_store.newTerm(tk_false, params);
+    if (tr == TRef_Undef) { free(tk_false); assert(false); }
+    term_store[tr].setNoScoping();
+    sym_FALSE = tr;
+
+    params.push(sort_store["Bool 0"]);
+    tr = term_store.newTerm(tk_not, params);
+    if (tr == TRef_Undef) { free(tk_not); assert(false); }
+    term_store[tr].setNoScoping();
+    sym_NOT = tr;
+
+    params.push(sort_store["Bool 0"]);
+
+    tr = term_store.newTerm(tk_equals, params);
+    if (tr == TRef_Undef) { free(tk_equals); assert(false); }
+    if (term_store[tr].setRightAssoc() == false) { assert(false); } // TODO: Remove and clean
+    term_store[tr].setNoScoping();
+    sym_EQ = tr;
+
+    tr = term_store.newTerm(tk_implies, params);
+    if (tr == TRef_Undef) { free(tk_implies); assert(false); }
+    if (term_store[tr].setRightAssoc() == false) { assert(false); } // TODO: Remove and clean
+    term_store[tr].setNoScoping();
+
+    tr = term_store.newTerm(tk_and, params);
+    if (tr == TRef_Undef) { free(tk_and); assert(false); }
+    if (term_store[tr].setLeftAssoc() == false) assert(false);
+    term_store[tr].setNoScoping();
+    sym_AND = tr;
+
+    tr = term_store.newTerm(tk_or, params);
+    if (tr == TRef_Undef) { free(tk_or); assert(false); }
+    if (term_store[tr].setLeftAssoc() == false) assert(false);
+    term_store[tr].setNoScoping();
+    sym_OR = tr;
+
+    tr = term_store.newTerm(tk_xor, params);
+    if (tr == TRef_Undef) { free(tk_or); assert(false); }
+    if (term_store[tr].setLeftAssoc() == false) assert(false);
+    term_store[tr].setNoScoping();
+}
 
 bool Logic::setLogic(const char* l) {
     if (strcmp(l, "QF_UF") == 0) {
         config.logic                    = QF_UF;
         config.sat_restart_first        = 100;
         config.sat_restart_inc          = 1.5;
-
-        sort_store.insertStore(new Sort(*(new Identifier("Bool"))));
-        sort_BOOL = sort_store["Bool 0"];
-
-        vec<SRef> params;
-
-        char* tk_true    = strdup("true");
-        char* tk_false   = strdup("false");
-        char* tk_not     = strdup("not");
-        char* tk_equals  = strdup("=");
-        char* tk_implies = strdup("=>");
-        char* tk_and     = strdup("and");
-        char* tk_or      = strdup("or");
-        char* tk_xor     = strdup("xor");
-
-        params.push(sort_store["Bool 0"]);
-
-        TRef tr;
-
-        tr = term_store.newTerm(tk_true, params);
-        if (tr == TRef_Undef) { free(tk_true); return false; }
-        term_store[tr].setNoScoping();
-        sym_TRUE = tr;
-
-        tr = term_store.newTerm(tk_false, params);
-        if (tr == TRef_Undef) { free(tk_false); return false; }
-        term_store[tr].setNoScoping();
-        sym_FALSE = tr;
-
-        params.push(sort_store["Bool 0"]);
-        tr = term_store.newTerm(tk_not, params);
-        if (tr == TRef_Undef) { free(tk_not); return false; }
-        term_store[tr].setNoScoping();
-        sym_NOT = tr;
-
-        params.push(sort_store["Bool 0"]);
-
-        tr = term_store.newTerm(tk_equals, params);
-        if (tr == TRef_Undef) { free(tk_equals); return false; }
-        if (term_store[tr].setRightAssoc() == false) { return false; } // TODO: Remove and clean
-        term_store[tr].setNoScoping();
-        sym_EQ = tr;
-
-        tr = term_store.newTerm(tk_implies, params);
-        if (tr == TRef_Undef) { free(tk_implies); return false; }
-        if (term_store[tr].setRightAssoc() == false) { return false; } // TODO: Remove and clean
-        term_store[tr].setNoScoping();
-
-        tr = term_store.newTerm(tk_and, params);
-        if (tr == TRef_Undef) { free(tk_and); return false; }
-        if (term_store[tr].setLeftAssoc() == false) return false;
-        term_store[tr].setNoScoping();
-        sym_AND = tr;
-
-        tr = term_store.newTerm(tk_or, params);
-        if (tr == TRef_Undef) { free(tk_or); return false; }
-        if (term_store[tr].setLeftAssoc() == false) return false;
-        term_store[tr].setNoScoping();
-        sym_OR = tr;
-
-        tr = term_store.newTerm(tk_xor, params);
-        if (tr == TRef_Undef) { free(tk_or); return false; }
-        if (term_store[tr].setLeftAssoc() == false) return false;
-        term_store[tr].setNoScoping();
 
         is_set = true;
         name = "QF_UF";

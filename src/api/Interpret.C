@@ -389,7 +389,19 @@ declare_fun_err: ;
                 // cnfization of the formula
                 // Get the egraph data structure for instance from here
                 // Terms need to be purified before cnfization?
-                Tseitin ts(ptstore, solver, config, tstore, store, logic.getSym_true(), logic.getSym_false(), logic.getSym_and(), logic.getSym_or(), logic.getSym_not(), logic.getSym_eq(), logic.getSort_bool());
+                Tseitin ts(   ptstore
+                            , solver
+                            , config
+                            , tstore
+                            , store
+                            , logic.getSym_and()
+                            , logic.getSym_or()
+                            , logic.getSym_not()
+                            , logic.getSym_eq()
+                            , logic.getSort_bool()
+                            , ptstore.getTerm_true()
+                            , ptstore.getTerm_false());
+
                 lbool state = ts.cnfizeAndGiveToSolver(tr);
                 if (state == l_Undef)
                     notify_success();
@@ -409,15 +421,21 @@ declare_fun_err: ;
             return false;
         }
     }
-    if (strcmp(cmd, "check-sat") == 0) {
-        solver.initialize();
-        lbool res = solver.solve();
-        if (res == l_True)
-            notify_formatted(false, "sat");
-        else if (res == l_False)
-            notify_formatted(false, "unsat");
-        else
-            notify_formatted(false, "unknown");
+    if ((strcmp(cmd, "check-sat") == 0)) {
+        if (logic.isSet()) {
+            solver.initialize();
+            lbool res = solver.solve();
+            if (res == l_True)
+                notify_formatted(false, "sat");
+            else if (res == l_False)
+                notify_formatted(false, "unsat");
+            else
+                notify_formatted(false, "unknown");
+        }
+        else {
+            notify_formatted(true, "Illegal command before set-logic: %s", cmd);
+            return false;
+        }
     }
     if (strcmp(cmd, "exit") == 0) {
         exit();

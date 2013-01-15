@@ -19,11 +19,48 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 
 #include "Cnfizer.h"
 
-  // A term is literal if its sort is Bool and
-  //  (i)   number of arguments is 0
-  //  (ii)  its symbol is sym_NOT and argument is a literal (nested nots
-  //        create literals?)
-  //  (iii) it is an atom stating an equivalence of non-boolean terms (terms must be purified at this point)
+Cnfizer::Cnfizer( PtStore &   ptstore_
+           , SMTSolver & solver_
+           , SMTConfig & config_
+           , TStore&     symstore_
+           , SStore &    sstore_
+           , TRef sym_and
+           , TRef sym_or
+           , TRef sym_not
+           , TRef sym_eq
+           , SRef sort_bool
+           , PTRef term_true
+           , PTRef term_false
+           ) :
+       ptstore  (ptstore_ )
+     , solver   (solver_  )
+     , config   (config_  )
+     , symstore (symstore_)
+     , sstore   (sstore_  )
+     , sym_AND  (sym_and  )
+     , sym_OR   (sym_or   )
+     , sym_NOT  (sym_not  )
+     , sym_EQ   (sym_eq   )
+     , sort_BOOL(sort_bool)
+
+     , term_TRUE (term_true)
+     , term_FALSE(term_false)
+{
+    vec<Lit> c;
+    Lit l = findLit(term_true);
+    c.push(l);
+    solver.addSMTClause(c);
+    c.pop();
+    l = findLit(term_false);
+    c.push(~l);
+    solver.addSMTClause(c);
+}
+
+// A term is literal if its sort is Bool and
+//  (i)   number of arguments is 0
+//  (ii)  its symbol is sym_NOT and argument is a literal (nested nots
+//        create literals?)
+//  (iii) it is an atom stating an equivalence of non-boolean terms (terms must be purified at this point)
 bool Cnfizer::isLit(PTRef r) {
     Pterm& t = ptstore[r];
     if (symstore[t.symb()].rsort() == sort_BOOL) {

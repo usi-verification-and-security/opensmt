@@ -66,12 +66,12 @@ class Interpret {
     Map<char*,Info,StringHash,Equal<char*> >   infoTable;
     Map<char*,Option,StringHash,Equal<char*> > optionTable;
     SMTConfig                                  config;
-    TStore                                     tstore;   // Terms (more like symbols)
     SStore                                     store;    // Sorts
+    TStore                                     tstore;   // Terms (more like symbols)
+    Logic                                      logic;
     PtStore                                    ptstore;  // Proper terms
     SimpSMTSolver                              solver;
 
-    Logic                       logic;
 
     bool                        f_exit;
 
@@ -101,7 +101,7 @@ class Interpret {
     Interpret() :
           store(config)
         , logic(config, store, tstore)
-        , ptstore(tstore, store)
+        , ptstore(tstore, store, logic.getSym_true(), logic.getSym_false())
         , solver(config)
         , f_exit(false)
         , asrt_lev(0) {};
