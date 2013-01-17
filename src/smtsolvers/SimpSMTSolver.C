@@ -269,7 +269,7 @@ skip_theory_preproc:
 //=================================================================================================
 // Added code
 
-bool SimpSMTSolver::addSMTClause( vec<Lit>& smt_clause
+bool SimpSMTSolver::addSMTClause( const vec<Lit>& smt_clause
 #ifdef PRODUCE_PROOF
                                 , const ipartitions_t in
 #endif
@@ -295,10 +295,13 @@ bool SimpSMTSolver::addSMTClause( vec<Lit>& smt_clause
 //            atoms_seen.insert( e );
 
     }
+    vec<Lit> cl_out;
+    // addClause will change the contents, and we don't want that here.
+    smt_clause.copyTo(cl_out);
 #ifdef PRODUCE_PROOF
     return addClause(smt_clause, in);
 #else
-    return addClause(smt_clause);
+    return addClause(cl_out);
 #endif
 }
 

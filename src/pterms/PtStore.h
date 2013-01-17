@@ -27,7 +27,7 @@ class PtStore {
             return cterm_map[sym];
 
         PTRef res = pta.alloc(sym, terms);
-        printf("Inserting sym %d (%s) having %d args.  The term reference is %d\n", sym, symstore.getName(sym), terms.size(), res);
+//        printf("Inserting sym %d (%s) having %d args.  The term reference is %d\n", sym, symstore.getName(sym), terms.size(), res);
         if (terms.size() == 0) cterm_map.insert(sym, res);
 
         return res;

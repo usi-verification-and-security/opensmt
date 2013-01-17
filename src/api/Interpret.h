@@ -9,6 +9,7 @@
 #include "terms/TStore.h"
 #include "terms/Term.h"
 #include "pterms/PtStore.h"
+#include "Tseitin.h"
 
 enum ConfType { O_EMPTY, O_STR, O_SYM, O_NUM, O_DEC, O_HEX, O_BIN, O_LIST, O_ATTR, O_BOOL };
 
@@ -71,7 +72,7 @@ class Interpret {
     Logic                                      logic;
     PtStore                                    ptstore;  // Proper terms
     SimpSMTSolver                              solver;
-
+    Tseitin                                    ts;
 
     bool                        f_exit;
 
@@ -103,6 +104,18 @@ class Interpret {
         , logic(config, store, tstore)
         , ptstore(tstore, store, logic.getSym_true(), logic.getSym_false())
         , solver(config)
+        , ts( ptstore
+            , solver
+            , config
+            , tstore
+            , store
+            , logic.getSym_and()
+            , logic.getSym_or()
+            , logic.getSym_not()
+            , logic.getSym_eq()
+            , logic.getSort_bool()
+            , ptstore.getTerm_true()
+            , ptstore.getTerm_false())
         , f_exit(false)
         , asrt_lev(0) {};
 

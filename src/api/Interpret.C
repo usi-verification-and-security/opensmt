@@ -6,7 +6,6 @@
 #include <readline/history.h>
 #include "Interpret.h"
 #include "Term.h"
-#include "Tseitin.h"
 
 namespace opensmt {
 bool stop;
@@ -389,19 +388,6 @@ declare_fun_err: ;
                 // cnfization of the formula
                 // Get the egraph data structure for instance from here
                 // Terms need to be purified before cnfization?
-                Tseitin ts(   ptstore
-                            , solver
-                            , config
-                            , tstore
-                            , store
-                            , logic.getSym_and()
-                            , logic.getSym_or()
-                            , logic.getSym_not()
-                            , logic.getSym_eq()
-                            , logic.getSort_bool()
-                            , ptstore.getTerm_true()
-                            , ptstore.getTerm_false());
-
                 lbool state = ts.cnfizeAndGiveToSolver(tr);
                 if (state == l_Undef)
                     notify_success();
@@ -409,6 +395,7 @@ declare_fun_err: ;
                     notify_success();
                     comment_formatted("The formula is trivially unsatisfiable");
                 }
+                comment_formatted("Inserted assertion");
                 return true;
             }
             else {

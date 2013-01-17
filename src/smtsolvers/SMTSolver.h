@@ -48,7 +48,7 @@ public:
   // (atom or negated atom) and feeds a
   // corresponding clause in the SAT Solver
   //
-  virtual bool   addSMTClause  ( vec<Lit> &
+  virtual bool   addSMTClause  ( const vec<Lit> &
 #ifdef PRODUCE_PROOF
                                , const ipartitions_t = 0 
 #endif
