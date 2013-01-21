@@ -238,6 +238,7 @@ config_includedirs="-I\${top_srcdir}/src \\\
 -I\${top_srcdir}/src/sorts \\\
 -I\${top_srcdir}/src/terms \\\
 -I\${top_srcdir}/src/pterms \\\
+-I\${top_srcdir}/src/logics \\\
 -I\${top_srcdir}/src/smtsolvers \\\
 -I\${top_srcdir}/src/cnfizers \\\
 -I\${top_srcdir}/src/proof \\\
