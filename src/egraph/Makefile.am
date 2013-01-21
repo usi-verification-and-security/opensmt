@@ -7,7 +7,7 @@ INCLUDES=$(config_includedirs)
 libegraph_la_SOURCES = Enode.h Enode.C EnodeStore.h EnodeStore.C
 
 test_SOURCES = test.C
-test_LDADD = libegraph.la
+test_LDADD = libegraph.la ../logics/liblogics.la ../pterms/libpterms.la ../smtsolvers/libsmtsolvers.la ../terms/libterms.la ../sorts/libsorts.la
 
 
 # libegraph_la_SOURCES = EgraphSolver.C \

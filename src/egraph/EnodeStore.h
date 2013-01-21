@@ -15,6 +15,8 @@ class EnodeStore {
         { Enode::ERef_Nil = ERef_Nil; }
     ERef addTerm(ERef t);
     ERef addSymb(TRef t);
+    ERef cons(ERef x, ERef y);
+    ERef get_Nil() const { return ERef_Nil; }
 };
 
 #endif

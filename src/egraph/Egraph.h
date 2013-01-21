@@ -26,8 +26,8 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 #include "SStore.h"
 #include "Enode.h"
 #include "TSolver.h"
-#include "SigTab.h"
-#include "SplayTree.h"
+//#include "SigTab.h"
+//#include "SplayTree.h"
 
 #ifdef PRODUCE_PROOF
 #include "UFInterpolator.h"
@@ -40,8 +40,6 @@ public:
   Egraph( SMTConfig & c 
         , SStore & s )
       : CoreTSolver        ( 0, "EUF Solver", c )
-      , enil               ( new Enode )
-      , sort_store         ( s )
       , active_dup1        ( false )
       , active_dup2        ( false )
       , dup_count1         ( 0 )
@@ -50,25 +48,17 @@ public:
       , active_dup_map2    ( false )
       , dup_map_count1     ( 0 )
       , dup_map_count2     ( 0 )
-      , has_ites           ( false )
       , congruence_running ( false )
       , theoryInitialized  ( false )
       , time_stamp         ( 0 )
-      , use_gmp		   ( false )
+      , use_gmp            ( false )
 #ifdef PRODUCE_PROOF
-      , iformula           ( 1 ) 
+      , iformula           ( 1 )
       , cgraph_            ( new CGraph( *this, config ) )
       , cgraph             ( *cgraph_ )
       , automatic_coloring ( false )
 #endif
-  {
-    //
-    // Initialize nil key for splay tree
-    //
-    Enode * nilKey = const_cast< Enode * >( enil );
-    store.setNil( nilKey );
-    id_to_enode.push_back( const_cast< Enode * >( enil ) );
-  }
+  { }
 
   ~Egraph( )
   {
@@ -145,154 +135,37 @@ public:
   //
   // Predefined constants nil, true, false
   //
-  const Enode * const enil;
-  Enode * etrue;
-  Enode * efalse;
+  ERef ERef_true;
+  ERef ERef_false;
 
   //===========================================================================
   // Public APIs for enode construction/destruction
 
-  Enode *  newSymbol           ( const char *, Snode *, Snode *, uint64_t = 0 );                 // Creates a new symbol
-  Enode *  newSymbol           ( const char *, list<Sort*>&, Sort&, uint64_t = 0 );              // Creates a new symbol (new interface)
-  Enode *  cons                ( list< Enode * > & );                                            // Shortcut, but not efficient
-  Enode *  cons                ( Enode **, unsigned );                                           // Shortcut
-  Enode *  cons                ( Enode *, Enode * );                                             // Create Lists/Terms
-  Enode *  cons                ( Enode *, Enode *, bool & );                                     // Create Lists/Terms; notifies if already existent
-  Enode *  cons                ( Enode * e ) { return cons( e, const_cast< Enode * >(enil) ); }  // Shortcut for singleton
-  //
-  // Specialized functions 
-  // 
-  inline Enode * mkLt          ( Enode * args ) { return mkNot( cons( mkLeq( swapList( args ) ) ) ); }  
-  inline Enode * mkGeq         ( Enode * args ) { return              mkLeq( swapList( args ) ); }  
-  inline Enode * mkGt          ( Enode * args ) { return mkNot( cons( mkLeq(           args ) ) ); } 
+  ERef    getUncheckedAssertions  ( );
+  void    setDistinctEnodes       ( vec<ERef> & );
 
-  inline Enode * mkTrue        ( )              { return etrue; }  
-  inline Enode * mkFalse       ( )              { return efalse; } 
-  inline Enode * mkFakeInterp  ( )              { return cons( id_to_enode[ ENODE_ID_FAKE_INTERP ] ); }
-  
-  /*
-  inline Enode * mkBvslt       ( Enode * args, bool simp = true ) { return simp ? mkNot( cons( mkBvsle( swapList( args ) ) ) ) : cons( id_to_enode[ ENODE_ID_BVSLT ], args ); }
-  inline Enode * mkBvsge       ( Enode * args )                   { return              mkBvsle( swapList( args ) ); }
-  inline Enode * mkBvsgt       ( Enode * args )                   { return mkNot( cons( mkBvsle( args ) ) ); }
-
-  inline Enode * mkBvult       ( Enode * args, bool simp = true ) { return simp ? mkNot( cons( mkBvule( swapList( args ) ) ) ) : cons( id_to_enode[ ENODE_ID_BVULT ], args ); }
-  inline Enode * mkBvuge       ( Enode * args )                   { return              mkBvule( swapList( args ) ); }
-  inline Enode * mkBvugt       ( Enode * args )                   { return mkNot( cons( mkBvule( args ) ) ); }
-
-  inline Enode * mkBvurem      ( Enode * args ) { return cons( id_to_enode[ ENODE_ID_BVUREM ], args ); }
-  inline Enode * mkBvudiv      ( Enode * args ) { return cons( id_to_enode[ ENODE_ID_BVUDIV ], args ); }
-  */
-
-  //
-  // Implemented in EgraphStore.C
-  // Semantic of mk* functions: they use
-  // the concrete cons, and they store the
-  // node permanently inside the term bank
-  //
-  Enode * mkPlus             ( Enode * );
-  Enode * mkMinus            ( Enode * );
-  Enode * mkTimes            ( Enode * );
-  Enode * mkDiv              ( Enode * );
-  Enode * mkUminus           ( Enode * );
-  Enode * mkDistinct         ( Enode * );
-  Enode * mkNot              ( Enode * );
-  Enode * mkAnd              ( Enode * );
-  Enode * mkIff              ( Enode * );
-  Enode * mkOr               ( Enode * );
-  Enode * mkIte              ( Enode * );
-  Enode * mkIte              ( Enode *, Enode *, Enode * );
-  Enode * mkEq               ( Enode * );
-  Enode * mkImplies          ( Enode * );
-  Enode * mkXor              ( Enode * );
-
-  Enode * mkSelect	     ( Enode *, Enode * );	
-  Enode * mkStore	     ( Enode *, Enode *, Enode * );
-  Enode * mkDiff             ( Enode *, Enode * );
-  
-  Enode * mkCostIncur        ( Enode * );
-  Enode * mkCostBound        ( Enode * );
-
-  Enode * mkLeq              ( Enode * );
-
-  Enode * mkBvand            ( Enode * );
-  Enode * mkBvor             ( Enode * );
-  Enode * mkBvnot            ( Enode * );
-  Enode * mkBvxor            ( Enode * );
-  Enode * mkConcat           ( Enode * );
-  Enode * mkCbe              ( Enode * );
-  Enode * mkBvlshr           ( Enode * );
-  Enode * mkBvashr           ( Enode * );
-  Enode * mkBvshl            ( Enode * );
-  Enode * mkBvneg            ( Enode * );
-  Enode * mkBvmul            ( Enode * );
-  Enode * mkBvadd            ( Enode * );
-  Enode * mkBvsub            ( Enode * );
-  Enode * mkBvsdiv           ( Enode * );
-  Enode * mkBvsrem           ( Enode * );
-  Enode * mkBvnum            ( char * str);
-
-  Enode * mkBvsle            ( Enode * );
-  Enode * mkBvule            ( Enode * );
-  Enode * mkZeroExtend       ( int, Enode * );
-  Enode * mkSignExtend       ( int, Enode * );
-  Enode * mkRotateLeft       ( int, Enode * );
-  Enode * mkRotateRight      ( int, Enode * );
-  Enode * mkExtract          ( int, int, Enode * );
-  Enode * mkRepeat           ( int, Enode * );
-  Enode * mkWord1cast        ( Enode * );
-  Enode * mkBoolcast         ( Enode * );
-
-  Enode * allocTrue          ( );
-  Enode * allocFalse         ( );
-                             
-  Enode * mkVar              ( const char *, bool = false );
-  Enode * mkNum              ( const char * );
-  Enode * mkNum              ( const char *, const char * );
-  Enode * mkNum              ( const Real & );
-  Enode * mkFun              ( const char *, Enode * );
-
-  void    mkDefine           ( const char *, Enode * );
-  Enode * mkLet              ( Enode * );
-  Enode * getDefine          ( const char * );
-
-  Enode * makeNumberFromGmp  ( mpz_class &, const int );
-
-  Enode * getUncheckedAssertions  ( );
-  void    setDistinctEnodes       ( vector< Enode * > & );
-                                  
   void    printEnodeList          ( ostream & );
-  void    addAssertion            ( Enode * );
-  void    evaluateTerm            ( Enode *, Real & );
+  void    addAssertion            ( ERef );
 
-  Snode * getSortIndex            ( ) { return sindex; }
-  Snode * getSortArray            ( ) { return sarray; }
-  Snode * getSortElem             ( ) { return selem; }
-                                  
   void          initializeStore   ( );
 #ifndef SMTCOMP
-  inline void   addSubstitution   ( Enode * s, Enode * t ) { top_level_substs.push_back( make_pair( s, t ) ); }
+  inline void   addSubstitution   ( ERef s, ERef t ) { top_level_substs.push_back( make_pair( s, t ) ); }
 #endif
-  inline void   setTopEnode       ( Enode * e )            { assert( e ); top = e; }
-  inline size_t nofEnodes         ( )                      { return id_to_enode.size( ); }
+  inline void   setTopEnode       ( ERef e )         { assert( e != ERef_Nil ); top = e; }
+  inline size_t nofEnodes         ( )                { return id_to_enode.size( ); }
 
-  inline Enode * indexToDistReas ( unsigned index ) const
-  { 
-    assert( index < index_to_dist.size( ) ); 
-    return index_to_dist[ index ]; 
+  inline ERef indexToDistReas ( unsigned index ) const
+  {
+    assert( index < index_to_dist.size( ) );
+    return index_to_dist[ index ];
   }
 
 
-  Enode * copyEnodeEtypeTermWithCache   ( Enode *, bool = false );
-  Enode * copyEnodeEtypeListWithCache   ( Enode *, bool = false );
+  ERef copyEnodeEtypeTermWithCache   ( ERef, bool = false );
+  ERef copyEnodeEtypeListWithCache   ( ERef, bool = false );
 
-  inline void         setRescale        ( Real & r ) { rescale_factor = r; rescale_factor_l = atol( r.get_str( ).c_str( ) ); }
-  inline const Real & getRescale        ( Real & p ) { (void)p; return rescale_factor; }
-  inline const long & getRescale        ( long & p ) { (void)p; return rescale_factor_l; }
-
-  inline bool hasItes                   ( ) { return has_ites; }
-
-  Enode * canonize                      ( Enode *, bool = false );
-  Enode * maximize                      ( Enode * );
+  ERef canonize                      ( ERef, bool = false );
+  ERef maximize                      ( ERef );
 
 #ifdef STATISTICS
   void        printMemStats             ( ostream & );
@@ -300,59 +173,59 @@ public:
   //
   // Fast duplicates checking. Cannot be nested !
   //
-  inline void initDup1  ( )           { assert( !active_dup1 ); active_dup1 = true; duplicates1.resize( id_to_enode.size( ), dup_count1 ); dup_count1 ++; }
-  inline void storeDup1 ( Enode * e ) { assert(  active_dup1 ); assert( e->getId( ) < (enodeid_t)duplicates1.size( ) ); duplicates1[ e->getId( ) ] = dup_count1; }
-  inline bool isDup1    ( Enode * e ) { assert(  active_dup1 ); assert( e->getId( ) < (enodeid_t)duplicates1.size( ) ); return duplicates1[ e->getId( ) ] == dup_count1; }
-  inline void doneDup1  ( )           { assert(  active_dup1 ); active_dup1 = false; }
+  inline void initDup1  ( )        { assert( !active_dup1 ); active_dup1 = true; duplicates1.resize( id_to_enode.size( ), dup_count1 ); dup_count1 ++; }
+  inline void storeDup1 ( ERef e ) { assert(  active_dup1 ); assert( ea[e].getId( ) < (enodeid_t)duplicates1.size( ) ); duplicates1[ ea[e].getId( ) ] = dup_count1; }
+  inline bool isDup1    ( ERef e ) { assert(  active_dup1 ); assert( ea[e].getId( ) < (enodeid_t)duplicates1.size( ) ); return duplicates1[ ea[e].getId( ) ] == dup_count1; }
+  inline void doneDup1  ( )        { assert(  active_dup1 ); active_dup1 = false; }
   //
   // Fast duplicates checking. Cannot be nested !
   //
   inline void initDup2  ( )           { assert( !active_dup2 ); active_dup2 = true; duplicates2.resize( id_to_enode.size( ), dup_count2 ); dup_count2 ++; }
-  inline void storeDup2 ( Enode * e ) { assert(  active_dup2 ); assert( e->getId( ) < (enodeid_t)duplicates2.size( ) ); duplicates2[ e->getId( ) ] = dup_count2; }
-  inline bool isDup2    ( Enode * e ) { assert(  active_dup2 ); assert( e->getId( ) < (enodeid_t)duplicates2.size( ) ); return duplicates2[ e->getId( ) ] == dup_count2; }
+  inline void storeDup2 ( ERef e ) { assert(  active_dup2 ); assert( ea[e].getId( ) < (enodeid_t)duplicates2.size( ) ); duplicates2[ ea[e].getId( ) ] = dup_count2; }
+  inline bool isDup2    ( ERef e ) { assert(  active_dup2 ); assert( ea[e].getId( ) < (enodeid_t)duplicates2.size( ) ); return duplicates2[ ea[e].getId( ) ] == dup_count2; }
   inline void doneDup2  ( )           { assert(  active_dup2 ); active_dup2 = false; }
   //
   // Fast duplicates checking. Cannot be nested !
   //
   void    initDupMap1  ( );
-  void    storeDupMap1 ( Enode *, Enode * );
-  Enode * valDupMap1   ( Enode * );
+  void    storeDupMap1 ( ERef, ERef );
+  ERefi   valDupMap1   ( ERef );
   void    doneDupMap1  ( );
 
   void    initDupMap2  ( );
-  void    storeDupMap2 ( Enode *, Enode * );
-  Enode * valDupMap2   ( Enode * );
+  void    storeDupMap2 ( ERef, ERef );
+  ERef    valDupMap2   ( ERef );
   void    doneDupMap2  ( );
 
-  void    computePolarities ( Enode * );
+  void    computePolarities ( ERef );
 
   void dumpAssertionsToFile ( const char * );
   void dumpHeaderToFile     ( ostream &, logic_t = UNDEF );
-  void dumpFormulaToFile    ( ostream &, Enode *, bool = false );
-  void dumpToFile           ( const char *, Enode * );
+  void dumpFormulaToFile    ( ostream &, ERef, bool = false );
+  void dumpToFile           ( const char *, ERef );
 
   //===========================================================================
   // Public APIs for Theory Combination with DTC
 
-  void    gatherInterfaceTerms     ( Enode * );
+  void    gatherInterfaceTerms     ( ERef );
   int     getInterfaceTermsNumber  ( );
-  Enode * getInterfaceTerm         ( const int );
-  bool    isRootUF                 ( Enode * );
-  Enode * canonizeDTC              ( Enode *, bool = false );
+  ERef    getInterfaceTerm         ( const int );
+  bool    isRootUF                 ( ERef );
+  ERef    canonizeDTC              ( ERef, bool = false );
   // Not used but left there
-  bool    isPureUF                 ( Enode * );
-  bool    isPureLA                 ( Enode * );
+//  bool    isPureUF                 ( Enode * );
+//  bool    isPureLA                 ( Enode * );
 #ifdef PRODUCE_PROOF
   void    getInterfaceVars         ( Enode *, set< Enode * > & );
 #endif
 
 private:
 
-  vector< Enode * > interface_terms;
+  vec< ERef > interface_terms;
   // Cache for interface terms
-  set< Enode * > interface_terms_cache;
+//  set< Enode * > interface_terms_cache;
   // Cache for uf terms and la terms
-  set< Enode * > it_uf, it_la;
+//  set< Enode * > it_uf, it_la;
 
 public:
 
