@@ -72,6 +72,7 @@ class Term {
     bool     pairwise    ()      const   { return header.type == 4; }
     bool     noScoping   ()      const   { return header.noscoping; }
     uint32_t nargs       ()      const   { return size() - 1; }
+    bool     isConstant  ()      const   { return nargs() == 0; }
 
     bool     setLeftAssoc ()             { if (header.type != 0) return false; return (header.type = 1); }
     bool     setRightAssoc()             { if (header.type != 0) return false; return (header.type = 2); }

@@ -8,8 +8,8 @@ TRef TStore::newTerm(const char* fname, const vec<SRef>& args, bool, bool, bool,
     if (newterm == false) {
         const vec<TRef>& trs = termTable[fname];
         for (int i = 0; i < trs.size(); i++) {
-            if (ta[trs[i]].rsort() == args[0] && ta[trs[i]].nargs() == args.size()-1) {
-                int j;
+            if (ta[trs[i]].rsort() == args[0] && ta[trs[i]].nargs() == args.size_()-1) {
+                uint32_t j;
                 for (j = 0; j < ta[trs[i]].nargs(); j++) {
                     if (ta[trs[i]][j] != args[j+1])
                         break;

@@ -115,12 +115,14 @@ bool Logic::declare_sort_hook(Sort* s) {
     tr = term_store.newTerm(tk_equals, params);
     if (tr == TRef_Undef) { free(tk_equals); return false; }
     term_store[tr].setNoScoping();
+    equalities.insert(tr, true);
 
     // distinct
     tr = term_store.newTerm(tk_distinct, params);
     if (tr == TRef_Undef) { free(tk_distinct); return false; }
     if (term_store[tr].setPairwise() == false) return false;
     term_store[tr].setNoScoping();
+    disequalities.insert(tr, true);
 
     // ite
     params.clear();

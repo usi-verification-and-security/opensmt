@@ -12,3 +12,5 @@ ERef EnodeStore::addTerm(ERef sr) {
 ERef EnodeStore::cons(ERef x, ERef y) {
     return ea.alloc(x, y, Enode::et_list);
 }
+
+

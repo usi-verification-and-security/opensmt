@@ -4,12 +4,17 @@
 //#include "SimpSMTSolver.h"
 //#include "Tseitin.h"
 #include "Sort.h"
+// For TRefHash
+#include "TStore.h"
 
 class SStore;
 class TStore;
 
 class Logic {
   private:
+    Map<TRef,bool,TRefHash,Equal<TRef> >        equalities;
+    Map<TRef,bool,TRefHash,Equal<TRef> >        disequalities;
+
     SMTConfig&          config;
     SStore&             sort_store;
     TStore&             term_store;
@@ -33,6 +38,7 @@ class Logic {
     bool          isSet            ()              const { return is_set;    }
     const string& getName          ()              const { return name;      }
 
+    // The Boolean connectives
     TRef          getSym_true      ()              const { return sym_TRUE;  }
     TRef          getSym_false     ()              const { return sym_FALSE; }
     TRef          getSym_and       ()              const { return sym_AND;   }
@@ -41,6 +47,8 @@ class Logic {
     TRef          getSym_eq        ()              const { return sym_EQ;    }
     SRef          getSort_bool     ()              const { return sort_BOOL; }
 
+    bool        isEquality    (TRef tr) const { return equalities.contains(tr); }
+    bool        isDisequality (TRef tr) const { return disequalities.contains(tr); }
     // Override for different logics...
     bool        declare_sort_hook(Sort* s);
     inline bool isPredef(string&) const { return false; };

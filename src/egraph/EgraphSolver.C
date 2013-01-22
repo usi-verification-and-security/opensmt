@@ -19,18 +19,18 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 
 #include "Egraph.h"
 #include "Enode.h"
-#include "LA.h"
+//#include "LA.h"
 // DO NOT REMOVE THIS COMMENT !!
 // IT IS USED BY CREATE_THEORY.SH SCRIPT !!
 // NEW_THEORY_HEADER
-#include "EmptySolver.h"
-#include "BVSolver.h"
-#include "LRASolver.h"
-#include "DLSolver.h"
-#include "CostSolver.h"
-#include "AXDiffSolver.h"
+//#include "EmptySolver.h"
+//#include "BVSolver.h"
+//#include "LRASolver.h"
+//#include "DLSolver.h"
+//#include "CostSolver.h"
+//#include "AXDiffSolver.h"
 // Added to support compiling templates
-#include "DLSolver.C"
+//#include "DLSolver.C"
 #include "SimpSMTSolver.h"
 
 #define VERBOSE 0
@@ -38,420 +38,423 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 //
 // Inform the solver about the existence of node e
 //
-lbool Egraph::inform( Enode * e )
-{
-  assert( e );
-  assert( theoryInitialized );
 
-#ifdef PRODUCE_PROOF
-  assert( config.produce_inter == 0 
-       || e->getIPartitions( ) != 0 );
-#endif
-
-  lbool status;
-  map< enodeid_t, lbool >::iterator it = informed.find( e->getId( ) );
-
-  if ( it == informed.end( ) )
-  {
-    if ( e->getId( ) >= (enodeid_t)id_to_belong_mask.size( ) )
-      id_to_belong_mask.resize( e->getId( ) + 1, 0 );
-
-    // If congruence is running enode is initialized by
-    // the appropriate routine initializeCongInc on demand
-    // only if necessary
-    if ( !congruence_running )
-      initializeCong( e );
-
-    assert( id_to_belong_mask[ e->getId( ) ] == 0 );
-
-    // Uninterpreted functions only does not
-    // need to associate interpreted atoms to
-    // a particular theory solver
-    if ( config.logic != QF_UF )
-    {
-      bool unassigned_atom = e->isLeq( );  // Arithmetic should be assigned
-
-      for ( unsigned i = 1 
-	  ; i < tsolvers.size( ) && status == l_Undef 
-	  ; ++ i )
-      {
-	if ( tsolvers[ i ]->belongsToT( e ) )
-	{
-	  status = tsolvers[ i ]->inform( e );
-	  id_to_belong_mask[ e->getId( ) ] |= SETBIT( i );
-	  unassigned_atom = false;
-	}
-      }
-
-      if ( unassigned_atom )
-	opensmt_error2( e, " cannot be handled by any TSolver. Did you disable some solver in the configure file ?" );
-    }
-
-    informed[ e->getId( ) ] = status;
-  }
-  else
-  {
-    status = it->second;
-  }
-
-  return status;
-}
+//lbool Egraph::inform( ERef e )
+//{
+//  assert( e != ERef_Undef );
+//  assert( theoryInitialized );
+//
+//#ifdef PRODUCE_PROOF
+//  assert( config.produce_inter == 0 
+//       || e->getIPartitions( ) != 0 );
+//#endif
+//
+//  lbool status;
+//  Enode& en_e = enode_store[e];
+//  map< enodeid_t, lbool >::iterator it = informed.find( en_e.getId( ) );
+//
+//  if ( it == informed.end( ) )
+//  {
+//    if ( en_e.getId( ) >= (enodeid_t)id_to_belong_mask.size_( ) )
+//      id_to_belong_mask.growTo( en_e.getId( ) + 1, 0 );
+//
+//    // If congruence is running enode is initialized by
+//    // the appropriate routine initializeCongInc on demand
+//    // only if necessary
+//    if ( !congruence_running )
+//      initializeCong( e );
+//
+//    assert( id_to_belong_mask[ en_e.getId( ) ] == 0 );
+//
+//    // Uninterpreted functions only does not
+//    // need to associate interpreted atoms to
+//    // a particular theory solver
+//    if ( config.logic != QF_UF )
+//    {
+////      bool unassigned_atom = e->isLeq( );  // Arithmetic should be assigned
+//
+//      for ( unsigned i = 1 
+//	  ; i < tsolvers.size( ) && status == l_Undef 
+//	  ; ++ i )
+//      {
+//	if ( tsolvers[ i ]->belongsToT( e ) )
+//	{
+//	  status = tsolvers[ i ]->inform( e );
+//	  id_to_belong_mask[ e->getId( ) ] |= SETBIT( i );
+//	  unassigned_atom = false;
+//	}
+//      }
+//
+//      if ( unassigned_atom )
+//	opensmt_error2( e, " cannot be handled by any TSolver. Did you disable some solver in the configure file ?" );
+//    }
+//
+//    informed[ en_e.getId( ) ] = status;
+//  }
+//  else
+//  {
+//    status = it->second;
+//  }
+//
+//  return status;
+//}
 
 //
 // Initialize congruence
 //
-void Egraph::initializeCong( Enode * e )
-{
-#ifdef PEDANTIC_DEBUG
-  assert( checkInvariants( ) );
-#endif
-
-  assert( e );
-  // Skip what is not term or list
-  assert ( e->isTerm( ) || e->isList( ) );
-  // Skip enil
-  if ( e->isEnil( ) )
-    return;
-  // Skip true and false
-  if ( e->isTerm( ) && ( e->isTrue( ) || e->isFalse( ) ) )
-    return;
-  // Skip already initialized nodes
-  if ( initialized.find( e->getId( ) ) != initialized.end( ) )
-    return;
-  // Process arguments first
-  if ( e->isList( ) )
-    initializeCong( e->getCar( ) );
-  initializeCong( e->getCdr( ) );
-  // Precondition
-  assert( e->getCar( ) == e->getCar( )->getRoot( ) );
-  assert( e->getCdr( ) == e->getCdr( )->getRoot( ) );
-  assert( !e->hasCongData( ) );
-  e->allocCongData( );
-  // Set constant for constants
-  if ( e->isConstant( ) )
-    e->setConstant( e );
-  // Add parents relationships
-  if ( e->isList( ) )
-    e->getCar( )->addParent( e );
-  e->getCdr( )->addParent( e );
-  // Node initialized
-  initialized.insert( e->getId( ) );
-  // Insert in SigTab
-  if ( config.incremental )
-  {
-    undo_stack_term.push_back( e );
-    undo_stack_oper.push_back( INITCONG );
-
-    Enode * prev = lookupSigTab( e );
-    assert( prev != e );
-    assert( prev == NULL || prev == prev->getCgPtr( ) );
-    if ( prev == NULL )
-      insertSigTab( e );
-    else
-    {
-      // Set congruence pointer to maintain
-      // invariant of signature table
-      e->setCgPtr( prev );
-      // Add to pending
-      pending.push_back( e );
-      pending.push_back( prev );
-      // Merge
-      const bool res = mergeLoop( NULL );
-      if ( !res )
-	opensmt_error( "unexpected result" );
-    }
-  }
-  else
-  {
-    assert( lookupSigTab( e ) == NULL );
-    insertSigTab( e );
-    assert( lookupSigTab( e ) == e );
-  }
-
-#ifdef PEDANTIC_DEBUG
-  assert( checkParents( e ) );
-  assert( checkInvariants( ) );
-#endif
-}
+//void Egraph::initializeCong( ERef e )
+//{
+//#ifdef PEDANTIC_DEBUG
+//  assert( checkInvariants( ) );
+//#endif
+//
+//  assert( e != ERef_Undef );
+//  en_e = ea[e];
+//  // Skip what is not term or list
+//  assert ( en_e.isTerm( ) || en_e.isList( ) );
+//  // Skip enil
+//  if ( e == ERef_Nil )
+//    return;
+//  // Skip true and false
+//  if ( en_e.isTerm( ) && ( en_e.isTrue( ) || en_e.isFalse( ) ) )
+//    return;
+//  // Skip already initialized nodes
+//  if ( initialized.find( en_e.getId( ) ) != initialized.end( ) )
+//    return;
+//  // Process arguments first
+//  if ( en_e.isList( ) )
+//    initializeCong( en_e.getCar( ) );
+//  initializeCong( en_e.getCdr( ) );
+//  // Precondition
+//  assert( en_e.getCar( ) == ea[en_e.getCar( )].getRoot( ) );
+//  assert( en_e.getCdr( ) == ea[en_e.getCdr( )]->getRoot( ) );
+//  assert( !en_e.hasCongData( ) );
+//  e->allocCongData( );
+//  // Set constant for constants
+//  if ( e->isConstant( ) )
+//    e->setConstant( e );
+//  // Add parents relationships
+//  if ( e->isList( ) )
+//    e->getCar( )->addParent( e );
+//  e->getCdr( )->addParent( e );
+//  // Node initialized
+//  initialized.insert( e->getId( ) );
+//  // Insert in SigTab
+//  if ( config.incremental )
+//  {
+//    undo_stack_term.push_back( e );
+//    undo_stack_oper.push_back( INITCONG );
+//
+//    Enode * prev = lookupSigTab( e );
+//    assert( prev != e );
+//    assert( prev == NULL || prev == prev->getCgPtr( ) );
+//    if ( prev == NULL )
+//      insertSigTab( e );
+//    else
+//    {
+//      // Set congruence pointer to maintain
+//      // invariant of signature table
+//      e->setCgPtr( prev );
+//      // Add to pending
+//      pending.push_back( e );
+//      pending.push_back( prev );
+//      // Merge
+//      const bool res = mergeLoop( NULL );
+//      if ( !res )
+//	opensmt_error( "unexpected result" );
+//    }
+//  }
+//  else
+//  {
+//    assert( lookupSigTab( e ) == NULL );
+//    insertSigTab( e );
+//    assert( lookupSigTab( e ) == e );
+//  }
+//
+//#ifdef PEDANTIC_DEBUG
+//  assert( checkParents( e ) );
+//  assert( checkInvariants( ) );
+//#endif
+//}
 
 //
 // Asserts a literal
 //
-bool Egraph::assertLit_ ( Enode * e )
-{
-#if VERBOSE
-  cerr << "========= Asserting: " 
-       << e 
-       << " " 
-       << e->getId( ) 
-       << " | "
-       << e->getCar( )->getId( )
-       << ", "
-       << e->getCdr( )->getId( )
-       << " ==================" 
-       << endl;
-#endif
+//bool Egraph::assertLit_ ( ERef e )
+//{
+//#if VERBOSE
+//  cerr << "========= Asserting: " 
+//       << e 
+//       << " " 
+//       << en_e.getId( ) 
+//       << " | "
+//       << e->getCar( )->getId( )
+//       << ", "
+//       << e->getCdr( )->getId( )
+//       << " ==================" 
+//       << endl;
+//#endif
+//
+//  assert( explanation.empty( ) );
+//  assert( theoryInitialized );
+//  assert( e->isTAtom( ) );
+//  assert( undo_stack_oper.size( ) == undo_stack_term.size( ) );
+//  assert( e->hasPolarity( ) );
+//  assert( e->getPolarity( ) == l_False
+//       || e->getPolarity( ) == l_True );
+//
+//  bool n = e->getPolarity( ) == l_False;
+//
+//  // cerr << "Asserting: " << (n?"!":" ") << e << endl;
+//
+//  // e is asserted with the same polarity that
+//  // we deduced: we don't add it to the congruence
+//  if ( e->isDeduced( )
+//    && e->getPolarity( ) == e->getDeduced( ) )
+//    return true;
+//
+//  bool res = true;
+//  Enode * s = e;
+//  //
+//  // Make sure the received node has been
+//  // initialized
+//  //
+//  if ( config.incremental 
+//    && initialized.find( e->getId( ) ) == initialized.end( ) )
+//    initializeCongInc( e );
+//
+//  // Assert positive or negative equality
+//  if ( e->isEq( ) )
+//  {
+//    // Has arity 2
+//    assert( e->getArity( ) == 2 );
+//    Enode * lhs = e->get1st( );
+//    Enode * rhs = e->get2nd( );
+//
+//    // If the polarity of the equality is negative
+//    if ( n )
+//    {
+//      res = assertNEq( lhs, rhs, s );
+//
+//      /*
+//      // Handling arrays
+//      if( config.logic == QF_AX )
+//      	handleArrayAssertedNEq( lhs, rhs );
+//      */
+//
+//      // Also, assert that e is equivalent to false
+//      // to trigger theory-deductions automatically
+//      if ( res )
+//      {
+//	res = assertEq( e, mkFalse( ), s );
+//	assert( res );
+//      }
+//    }
+//    // Otherwise the polarity of the equality is positive
+//    else
+//    {
+//      res = assertEq( lhs, rhs, s );
+//
+//      /*
+//      // Handling arrays
+//      if( config.logic == QF_AX )
+//      	handleArrayAssertedEq( lhs, rhs );
+//      */
+//
+//      // Also, assert that e is equivalent to true
+//      // to trigger theory-deductions automatically
+//      if ( res )
+//      {
+//	res = assertEq( e, mkTrue( ), s );
+//	assert( res );
+//      }
+//    }
+//  }
+//  // Assert an explicit strict inequality which are
+//  // (partially) interpreted as negated equalities
+//  else if ( n && ( e->isLeq( )) )
+//  {
+//    // Has arity 2
+//    assert( e->getArity( ) == 2 );
+//    Enode * lhs = e->get1st( );
+//    Enode * rhs = e->get2nd( );
+//    res = assertNEq( lhs, rhs, s );
+//    //
+//    // Also, assert that e is equivalent to false
+//    // Notice that it may trigger a conflict, for instance
+//    // if we have
+//    //
+//    // a <= b, a=c
+//    //
+//    // and we push
+//    //
+//    // !(c <= b)
+//    //
+//    // the last was deduced positive in a previous call,
+//    // but it can be pushed by BCP negated. This is a little
+//    // bit asimmetric w.r.t. equality, but it is the
+//    // same for uninterpreted predicates
+//    //
+//    if ( res )
+//      res = assertEq( e, mkFalse( ), s );
+//  }
+//  // Assert Distinction
+//  else if ( e->isDistinct( ) )
+//  {
+//    if ( n && config.logic == QF_UF )
+//      opensmt_error2( "can't handle distincts with negative polarity in QF_UF", "" );
+//
+//    if ( !n )
+//      res = assertDist( e, s );
+//  }
+//  // Considers <= as uninterpreted if pushed positively
+//  else if ( e->isUp   ( )
+//         || e->isLeq  ( ))
+//  {
+//    if ( n )
+//      res = assertEq( e, mkFalse( ), s );
+//    else
+//      res = assertEq( e, mkTrue( ), s );
+//  }
+//  else if ( e->isCostIncur() || e->isCostBound() )
+//  {
+//    if ( n )
+//      res = assertEq( e, mkFalse( ), s );
+//    else
+//      res = assertEq( e, mkTrue( ), s );
+//  }
+//  else
+//    opensmt_error2( "can't handle ", e );
+//
+//  // Cleanup the eq-classes generated during expExplain
+//  if ( !res )
+//  {
+//    conf_index = 0;
+//    expCleanup( );
+//  }
+//
+//#ifdef STATISTICS
+//  if ( res ) tsolvers_stats[ 0 ]->sat_calls ++;
+//  else       tsolvers_stats[ 0 ]->uns_calls ++;
+//#endif
+//
+//  assert( !res || explanation.empty( ) );
+//  assert( exp_cleanup.empty( ) );
+//
+//#ifdef PRODUCE_PROOF
+//  if ( !res
+//    && config.produce_inter > 0 )
+//  {
+//    list< Enode * > in_list;
+//    // We count interpolants from 1,
+//    // hence we set the first nibble
+//    // to E=1110 instead of F=1111
+//    ipartitions_t mask = -2;
+//    for ( unsigned in = 1 ; in < getNofPartitions( ) ; in ++ )
+//    {
+//      // mask &= ~SETBIT( in );
+//      clrbit( mask, in );
+//      // Compute intermediate interpolants
+//      in_list.push_front( cgraph.getInterpolant( mask ) );
+//    }
+//    interpolants = cons( in_list );
+//    cgraph.clear( );
+//  }
+//#endif
+//
+//  if ( !res )
+//  {
+//#if VERBOSE
+//    cerr << "Conflict is: " << endl;
+//    for ( size_t i = 0 ; i < explanation.size( ) ; i ++ )
+//    {
+//      cerr << " "
+//	<< (explanation[ i ]->getPolarity( ) == l_False?"!":" ")
+//	<< explanation[ i ]
+//#ifdef PRODUCE_PROOF
+//	<< getIPartitions( explanation[ i ] )
+//#endif
+//	<< endl;
+//    }
+//#endif
+//  }
+//
+//  return res;
+//}
 
-  assert( explanation.empty( ) );
-  assert( theoryInitialized );
-  assert( e->isTAtom( ) );
-  assert( undo_stack_oper.size( ) == undo_stack_term.size( ) );
-  assert( e->hasPolarity( ) );
-  assert( e->getPolarity( ) == l_False
-       || e->getPolarity( ) == l_True );
 
-  bool n = e->getPolarity( ) == l_False;
-
-  // cerr << "Asserting: " << (n?"!":" ") << e << endl;
-
-  // e is asserted with the same polarity that
-  // we deduced: we don't add it to the congruence
-  if ( e->isDeduced( )
-    && e->getPolarity( ) == e->getDeduced( ) )
-    return true;
-
-  bool res = true;
-  Enode * s = e;
-  //
-  // Make sure the received node has been
-  // initialized
-  //
-  if ( config.incremental 
-    && initialized.find( e->getId( ) ) == initialized.end( ) )
-    initializeCongInc( e );
-
-  // Assert positive or negative equality
-  if ( e->isEq( ) )
-  {
-    // Has arity 2
-    assert( e->getArity( ) == 2 );
-    Enode * lhs = e->get1st( );
-    Enode * rhs = e->get2nd( );
-
-    // If the polarity of the equality is negative
-    if ( n )
-    {
-      res = assertNEq( lhs, rhs, s );
-
-      /*
-      // Handling arrays
-      if( config.logic == QF_AX )
-      	handleArrayAssertedNEq( lhs, rhs );
-      */
-
-      // Also, assert that e is equivalent to false
-      // to trigger theory-deductions automatically
-      if ( res )
-      {
-	res = assertEq( e, mkFalse( ), s );
-	assert( res );
-      }
-    }
-    // Otherwise the polarity of the equality is positive
-    else
-    {
-      res = assertEq( lhs, rhs, s );
-
-      /*
-      // Handling arrays
-      if( config.logic == QF_AX )
-      	handleArrayAssertedEq( lhs, rhs );
-      */
-
-      // Also, assert that e is equivalent to true
-      // to trigger theory-deductions automatically
-      if ( res )
-      {
-	res = assertEq( e, mkTrue( ), s );
-	assert( res );
-      }
-    }
-  }
-  // Assert an explicit strict inequality which are
-  // (partially) interpreted as negated equalities
-  else if ( n && ( e->isLeq( )) )
-  {
-    // Has arity 2
-    assert( e->getArity( ) == 2 );
-    Enode * lhs = e->get1st( );
-    Enode * rhs = e->get2nd( );
-    res = assertNEq( lhs, rhs, s );
-    //
-    // Also, assert that e is equivalent to false
-    // Notice that it may trigger a conflict, for instance
-    // if we have
-    //
-    // a <= b, a=c
-    //
-    // and we push
-    //
-    // !(c <= b)
-    //
-    // the last was deduced positive in a previous call,
-    // but it can be pushed by BCP negated. This is a little
-    // bit asimmetric w.r.t. equality, but it is the
-    // same for uninterpreted predicates
-    //
-    if ( res )
-      res = assertEq( e, mkFalse( ), s );
-  }
-  // Assert Distinction
-  else if ( e->isDistinct( ) )
-  {
-    if ( n && config.logic == QF_UF )
-      opensmt_error2( "can't handle distincts with negative polarity in QF_UF", "" );
-
-    if ( !n )
-      res = assertDist( e, s );
-  }
-  // Considers <= as uninterpreted if pushed positively
-  else if ( e->isUp   ( )
-         || e->isLeq  ( ))
-  {
-    if ( n )
-      res = assertEq( e, mkFalse( ), s );
-    else
-      res = assertEq( e, mkTrue( ), s );
-  }
-  else if ( e->isCostIncur() || e->isCostBound() )
-  {
-    if ( n )
-      res = assertEq( e, mkFalse( ), s );
-    else
-      res = assertEq( e, mkTrue( ), s );
-  }
-  else
-    opensmt_error2( "can't handle ", e );
-
-  // Cleanup the eq-classes generated during expExplain
-  if ( !res )
-  {
-    conf_index = 0;
-    expCleanup( );
-  }
-
-#ifdef STATISTICS
-  if ( res ) tsolvers_stats[ 0 ]->sat_calls ++;
-  else       tsolvers_stats[ 0 ]->uns_calls ++;
-#endif
-
-  assert( !res || explanation.empty( ) );
-  assert( exp_cleanup.empty( ) );
-
-#ifdef PRODUCE_PROOF
-  if ( !res
-    && config.produce_inter > 0 )
-  {
-    list< Enode * > in_list;
-    // We count interpolants from 1,
-    // hence we set the first nibble
-    // to E=1110 instead of F=1111
-    ipartitions_t mask = -2;
-    for ( unsigned in = 1 ; in < getNofPartitions( ) ; in ++ )
-    {
-      // mask &= ~SETBIT( in );
-      clrbit( mask, in );
-      // Compute intermediate interpolants
-      in_list.push_front( cgraph.getInterpolant( mask ) );
-    }
-    interpolants = cons( in_list );
-    cgraph.clear( );
-  }
-#endif
-
-  if ( !res )
-  {
-#if VERBOSE
-    cerr << "Conflict is: " << endl;
-    for ( size_t i = 0 ; i < explanation.size( ) ; i ++ )
-    {
-      cerr << " "
-	<< (explanation[ i ]->getPolarity( ) == l_False?"!":" ")
-	<< explanation[ i ]
-#ifdef PRODUCE_PROOF
-	<< getIPartitions( explanation[ i ] )
-#endif
-	<< endl;
-    }
-#endif
-  }
-
-  return res;
-}
-
-
-bool Egraph::assertLit( Enode * e, bool reason )
-{
-  /*
-  if ( config.verbosity > 3 )
-    cerr << "# Egraph::Asserting Literal: " 
-         << ( e->getPolarity( ) == l_True ? "     " : "(not " )
-         << e
-         << ( e->getPolarity( ) == l_True ? "" : ")" )
-         << endl;
-  */
-
-  congruence_running = true;
-#ifndef SMTCOMP
-  model_computed = false;
-#endif
-  // Node may be new. Inform solvers
-  if ( config.incremental )
-    inform( e );
-
-  // Runtime translation
-  suggestions.clear( );
-
-  // Skip if explicitly set
-  const bool skip_uf = config.uf_disable
-  // Or if during interpolation and theory combination
-  // with arithmetic we get something that is not an equality
-#ifdef PRODUCE_PROOF
-		    || ( config.produce_inter != 0 
-		      && ( config.logic == QF_UFIDL
-			|| config.logic == QF_UFLRA )
-		      && !e->isEq( ) )
-#endif
-		     ;
-
-  bool res = skip_uf ? true : assertLit_( e );
-
-  if ( res )
-  {
-    assert( explanation.empty( ) );
-    // Assert literal in the other theories
-    for ( unsigned i = 1 ; i < tsolvers.size( ) && res ; i ++ )
-    {
-      OrdinaryTSolver & t = *tsolvers[ i ];
-#ifdef STATISTICS
-      TSolverStats & ts = *tsolvers_stats[ i ];
-#endif
-
-      // Skip solver if this atom does not belong to T
-      if ( (id_to_belong_mask[ e->getId( ) ] & SETBIT( i )) == 0)
-	continue;
-
-#ifdef STATISTICS
-      size_t deductions_old = deductions.size( );
-#endif
-
-      res = t.assertLit( e, reason );
-      if ( !res )
-	conf_index = i;
-#ifdef STATISTICS
-      if ( res )
-      {
-	ts.sat_calls ++;
-	ts.deductions_done += deductions.size( ) - deductions_old;
-      }
-      else
-	ts.uns_calls ++;
-#endif
-    }
-  }
-
-  return res;
-}
+//bool Egraph::assertLit( Enode * e, bool reason )
+//{
+//  /*
+//  if ( config.verbosity > 3 )
+//    cerr << "# Egraph::Asserting Literal: " 
+//         << ( e->getPolarity( ) == l_True ? "     " : "(not " )
+//         << e
+//         << ( e->getPolarity( ) == l_True ? "" : ")" )
+//         << endl;
+//  */
+//
+//  congruence_running = true;
+//#ifndef SMTCOMP
+//  model_computed = false;
+//#endif
+//  // Node may be new. Inform solvers
+//  if ( config.incremental )
+//    inform( e );
+//
+//  // Runtime translation
+//  suggestions.clear( );
+//
+//  // Skip if explicitly set
+//  const bool skip_uf = config.uf_disable
+//  // Or if during interpolation and theory combination
+//  // with arithmetic we get something that is not an equality
+//#ifdef PRODUCE_PROOF
+//		    || ( config.produce_inter != 0 
+//		      && ( config.logic == QF_UFIDL
+//			|| config.logic == QF_UFLRA )
+//		      && !e->isEq( ) )
+//#endif
+//		     ;
+//
+//  bool res = skip_uf ? true : assertLit_( e );
+//
+//  if ( res )
+//  {
+//    assert( explanation.empty( ) );
+//    // Assert literal in the other theories
+//    for ( unsigned i = 1 ; i < tsolvers.size( ) && res ; i ++ )
+//    {
+//      OrdinaryTSolver & t = *tsolvers[ i ];
+//#ifdef STATISTICS
+//      TSolverStats & ts = *tsolvers_stats[ i ];
+//#endif
+//
+//      // Skip solver if this atom does not belong to T
+//      if ( (id_to_belong_mask[ e->getId( ) ] & SETBIT( i )) == 0)
+//	continue;
+//
+//#ifdef STATISTICS
+//      size_t deductions_old = deductions.size( );
+//#endif
+//
+//      res = t.assertLit( e, reason );
+//      if ( !res )
+//	conf_index = i;
+//#ifdef STATISTICS
+//      if ( res )
+//      {
+//	ts.sat_calls ++;
+//	ts.deductions_done += deductions.size( ) - deductions_old;
+//      }
+//      else
+//	ts.uns_calls ++;
+//#endif
+//    }
+//  }
+//
+//  return res;
+//}
 
 //
 // Checks for consistency in theories
@@ -461,7 +464,7 @@ bool Egraph::check( bool complete )
   bool res = true;
 
   // Assert literal in the other theories
-  for ( unsigned i = 1 ; i < tsolvers.size( ) && res ; i ++ )
+  for ( uint32_t i = 1 ; i < tsolvers.size_( ) && res ; i ++ )
   {
     OrdinaryTSolver & t = *tsolvers[ i ];
 #ifdef STATISTICS
@@ -486,8 +489,8 @@ bool Egraph::check( bool complete )
 #endif
   }
 
-  assert( !res || explanation.empty( ) );
-  assert( exp_cleanup.empty( ) );
+  assert( !res || explanation.size() == 0 );
+  assert( exp_cleanup.size() == 0 );
 
   return res;
 }
@@ -502,11 +505,11 @@ void Egraph::pushBacktrackPoint( )
   backtrack_points.push_back( undo_stack_term.size( ) );
 
   // Push ordinary theories
-  for ( unsigned i = 1 ; i < tsolvers.size( ) ; i ++ )
+  for ( uint32_t i = 1 ; i < tsolvers.size_( ) ; i ++ )
     tsolvers[ i ]->pushBacktrackPoint( );
 
-  deductions_lim .push_back( deductions.size( ) );
-  deductions_last.push_back( deductions_next );
+  deductions_lim .push( deductions.size( ) );
+  deductions_last.push( deductions_next );
   assert( deductions_last.size( ) == deductions_lim.size( ) );
 }
 
@@ -521,69 +524,72 @@ void Egraph::popBacktrackPoint( )
   backtrackToStackSize( undo_stack_new_size );
 
   // Pop ordinary theories
-  for ( unsigned i = 1 ; i < tsolvers.size( ) ; i ++ )
+  for ( uint32_t i = 1 ; i < tsolvers.size_( ) ; i ++ )
     tsolvers[ i ]->popBacktrackPoint( );
 
   assert( deductions_last.size( ) > 0 );
   assert( deductions_lim.size( ) > 0 );
   // Restore deduction next
-  deductions_next = deductions_last.back( );
-  deductions_last.pop_back( );
+  deductions_next = deductions_last.last();
+  deductions_last.pop();
   // Restore deductions
-  size_t new_deductions_size = deductions_lim.back( );
-  deductions_lim.pop_back( );
-  while( deductions.size( ) > new_deductions_size )
+  size_t new_deductions_size = deductions_lim.last( );
+  deductions_lim.pop( );
+  while( deductions.size_() > new_deductions_size )
   {
-    Enode * e = deductions.back( );
-    assert( e->isDeduced( ) );
-    e->resetDeduced( );
-    deductions.pop_back( );
+    ERef e = deductions.last();
+    Enode& en_e = enode_store[e];
+    assert( en_e.isDeduced( ) );
+    en_e.rsDeduced();
+    deductions.pop();
   }
-  assert( deductions_next <= deductions.size( ) );
+  assert( deductions_next <= deductions.size_() );
   assert( deductions_last.size( ) == deductions_lim.size( ) );
 }
 
 //
 // Returns a deduction
 //
-Enode * Egraph::getDeduction( )
+ERef Egraph::getDeduction( )
 {
   // Communicate UF deductions
-  while ( deductions_next < deductions.size( ) )
+  while ( deductions_next < deductions.size_( ) )
   {
-    Enode * e = deductions[ deductions_next++ ];
+    ERef e = deductions[ deductions_next++ ];
+    Enode& en_e = enode_store[e];
     // For sure this has a deduced polarity
-    assert( e->isDeduced( ) );
+    assert( en_e.isDeduced( ) );
     // If it has been pushed it is not a good candidate
     // for deduction
-    if ( e->hasPolarity( ) )
+    if ( en_e.hasPolarity( ) )
       continue;
 
 #ifdef STATISTICS
-    const int index = e->getDedIndex( );
-    tsolvers_stats[ index ]->deductions_sent ++;
+//    const int index = e->getDedIndex( );
+//    tsolvers_stats[ index ]->deductions_sent ++;
 #endif
 
     return e;
   }
 
   // We have already returned all the possible deductions
-  return NULL;
+  return ERef_Undef;
 }
 
 //
 // Returns a suggestion
 //
-Enode * Egraph::getSuggestion( )
+ERef Egraph::getSuggestion( )
 {
   // Communicate suggestion
-  while ( !suggestions.empty( ) )
+  while ( !suggestions.size() == 0 )
   {
-    Enode * e = suggestions.back( );
-    suggestions.pop_back( );
-    if ( e->hasPolarity( ) )
+    ERef e = suggestions.last();
+    suggestions.pop();
+    Enode& en_e = enode_store[e];
+    if ( en_e.hasPolarity( ) )
       continue;
-    if ( e->isDeduced( ) )
+    if ( en_e.isDeduced( ) )
       continue;
 
     return e;
@@ -591,13 +597,13 @@ Enode * Egraph::getSuggestion( )
 
   // We have already returned all
   // the possible suggestions
-  return NULL;
+  return ERef_Undef;
 }
 
 //
 // Communicate conflict
 //
-vector< Enode * > & Egraph::getConflict( bool deduction )
+vec<ERef>& Egraph::getConflict( bool deduction )
 {
   assert( 0 <= conf_index && conf_index < (int)tsolvers.size( ) );
   (void)deduction;
@@ -639,186 +645,186 @@ Enode * Egraph::getInterpolants( logic_t & l )
 }
 #endif
 
-void Egraph::initializeTheorySolvers( SimpSMTSolver * s )
-{
-  setSolver( s );
-  assert( !theoryInitialized );
+//void Egraph::initializeTheorySolvers( SimpSMTSolver * s )
+//{
+//  setSolver( s );
+//  assert( !theoryInitialized );
+//
+//  theoryInitialized = true;
+//
+//  // Reserve empty space
+//  tsolvers      .push_back( NULL );
+//#ifdef STATISTICS
+//  tsolvers_stats.push_back( new TSolverStats( ) );
+//#endif
+//
+//  // No need to instantiate any other solver
+//  if ( config.logic == QF_UF )
+//    return;
+//  // Empty theory solver, a template for user-defined solvers
+//  if ( config.logic == EMPTY )
+//  {
+//    cerr << "# WARNING: Empty solver activated" << endl;
+//    tsolvers      .push_back( new EmptySolver( tsolvers.size( ), "Empty Solver", config, *this, sort_store, explanation, deductions, suggestions ) );
+//#ifdef STATISTICS
+//    tsolvers_stats.push_back( new TSolverStats( ) );
+//#endif
+//  }
+//  else if ( config.logic == QF_BV )
+//  {
+//    if ( !config.bv_disable )
+//    {
+//      tsolvers      .push_back( new BVSolver( tsolvers.size( ), "BV Solver", config, *this, sort_store, explanation, deductions, suggestions ) );
+//#ifdef STATISTICS
+//      tsolvers_stats.push_back( new TSolverStats( ) );
+//#endif
+//    }
+//  }
+//  else if ( config.logic == QF_RDL
+//         || config.logic == QF_IDL
+//         || config.logic == QF_UFIDL )
+//  {
+//    if ( !config.dl_disable )
+//    {
+//      if ( getUseGmp( ) )
+//	tsolvers    .push_back( new DLSolver<Real>( tsolvers.size( ), "DL Solver", config, *this, sort_store, explanation, deductions, suggestions ) );
+//      else
+//	tsolvers    .push_back( new DLSolver<long>( tsolvers.size( ), "DL Solver", config, *this, sort_store, explanation, deductions, suggestions ) );
+//#ifdef STATISTICS
+//      tsolvers_stats.push_back( new TSolverStats( ) );
+//#endif
+//    }
+//  }
+//  else if ( config.logic == QF_LRA
+//         || config.logic == QF_UFLRA )
+//  {
+//    if ( !config.lra_disable )
+//    {
+//      tsolvers      .push_back( new LRASolver( tsolvers.size( ), "LRA Solver", config, *this, sort_store, explanation, deductions, suggestions ) );
+//#ifdef STATISTICS
+//      tsolvers_stats.push_back( new TSolverStats( ) );
+//#endif
+//    }
+//  }
+//  else if ( config.logic == QF_LIA)
+//  {
+//    if ( !config.lra_disable && config.lra_integer_solver==1 )
+//    {
+//      tsolvers      .push_back( new LRASolver( tsolvers.size( ), "LIA Solver", config, *this, sort_store, explanation, deductions, suggestions ) );
+//#ifdef STATISTICS
+//      tsolvers_stats.push_back( new TSolverStats( ) );
+//#endif
+//    }
+//  }
+//  else if ( config.logic == QF_CT )
+//  {
+//    // Allocating a cost solver (we always do this, unless in QF_UF)
+//    tsolvers.push_back( new CostSolver( tsolvers.size( ), "Cost Solver", config, *this, sort_store, explanation, deductions, suggestions ) );
+//#ifdef STATISTICS
+//    tsolvers_stats.push_back( new TSolverStats( ) );
+//#endif
+//  }
+//  else if ( config.logic == QF_AX 
+//         || config.logic == QF_AXDIFF )
+//  {
+//    // Allocating a cost solver (we always do this, unless in QF_UF)
+//    tsolvers.push_back( new AXDiffSolver( tsolvers.size( )
+//	                                , "AX Diff Solver"
+//					, config
+//					, *this
+//					, sort_store
+//					, explanation
+//					, deductions
+//					, suggestions ) );
+//#ifdef STATISTICS
+//    tsolvers_stats.push_back( new TSolverStats( ) );
+//#endif
+//  }
+//  else if ( config.logic == QF_BOOL )
+//    ; // Do nothing
+//  // DO NOT REMOVE THIS COMMENT !!
+//  // IT IS USED BY CREATE_THEORY.SH SCRIPT !!
+//  // NEW_THEORY_INIT
+//  else
+//  {
+//#ifndef SMTCOMP
+//    cerr << "# WARNING: Running in INCOMPLETE mode" << endl;
+//#endif
+//  }
+//
+//#ifdef STATISTICS
+//  assert( tsolvers.size( ) == tsolvers_stats.size( ) );
+//#endif
+//}
 
-  theoryInitialized = true;
-
-  // Reserve empty space
-  tsolvers      .push_back( NULL );
-#ifdef STATISTICS
-  tsolvers_stats.push_back( new TSolverStats( ) );
-#endif
-
-  // No need to instantiate any other solver
-  if ( config.logic == QF_UF )
-    return;
-  // Empty theory solver, a template for user-defined solvers
-  if ( config.logic == EMPTY )
-  {
-    cerr << "# WARNING: Empty solver activated" << endl;
-    tsolvers      .push_back( new EmptySolver( tsolvers.size( ), "Empty Solver", config, *this, sort_store, explanation, deductions, suggestions ) );
-#ifdef STATISTICS
-    tsolvers_stats.push_back( new TSolverStats( ) );
-#endif
-  }
-  else if ( config.logic == QF_BV )
-  {
-    if ( !config.bv_disable )
-    {
-      tsolvers      .push_back( new BVSolver( tsolvers.size( ), "BV Solver", config, *this, sort_store, explanation, deductions, suggestions ) );
-#ifdef STATISTICS
-      tsolvers_stats.push_back( new TSolverStats( ) );
-#endif
-    }
-  }
-  else if ( config.logic == QF_RDL
-         || config.logic == QF_IDL
-         || config.logic == QF_UFIDL )
-  {
-    if ( !config.dl_disable )
-    {
-      if ( getUseGmp( ) )
-	tsolvers    .push_back( new DLSolver<Real>( tsolvers.size( ), "DL Solver", config, *this, sort_store, explanation, deductions, suggestions ) );
-      else
-	tsolvers    .push_back( new DLSolver<long>( tsolvers.size( ), "DL Solver", config, *this, sort_store, explanation, deductions, suggestions ) );
-#ifdef STATISTICS
-      tsolvers_stats.push_back( new TSolverStats( ) );
-#endif
-    }
-  }
-  else if ( config.logic == QF_LRA
-         || config.logic == QF_UFLRA )
-  {
-    if ( !config.lra_disable )
-    {
-      tsolvers      .push_back( new LRASolver( tsolvers.size( ), "LRA Solver", config, *this, sort_store, explanation, deductions, suggestions ) );
-#ifdef STATISTICS
-      tsolvers_stats.push_back( new TSolverStats( ) );
-#endif
-    }
-  }
-  else if ( config.logic == QF_LIA)
-  {
-    if ( !config.lra_disable && config.lra_integer_solver==1 )
-    {
-      tsolvers      .push_back( new LRASolver( tsolvers.size( ), "LIA Solver", config, *this, sort_store, explanation, deductions, suggestions ) );
-#ifdef STATISTICS
-      tsolvers_stats.push_back( new TSolverStats( ) );
-#endif
-    }
-  }
-  else if ( config.logic == QF_CT )
-  {
-    // Allocating a cost solver (we always do this, unless in QF_UF)
-    tsolvers.push_back( new CostSolver( tsolvers.size( ), "Cost Solver", config, *this, sort_store, explanation, deductions, suggestions ) );
-#ifdef STATISTICS
-    tsolvers_stats.push_back( new TSolverStats( ) );
-#endif
-  }
-  else if ( config.logic == QF_AX 
-         || config.logic == QF_AXDIFF )
-  {
-    // Allocating a cost solver (we always do this, unless in QF_UF)
-    tsolvers.push_back( new AXDiffSolver( tsolvers.size( )
-	                                , "AX Diff Solver"
-					, config
-					, *this
-					, sort_store
-					, explanation
-					, deductions
-					, suggestions ) );
-#ifdef STATISTICS
-    tsolvers_stats.push_back( new TSolverStats( ) );
-#endif
-  }
-  else if ( config.logic == QF_BOOL )
-    ; // Do nothing
-  // DO NOT REMOVE THIS COMMENT !!
-  // IT IS USED BY CREATE_THEORY.SH SCRIPT !!
-  // NEW_THEORY_INIT
-  else
-  {
 #ifndef SMTCOMP
-    cerr << "# WARNING: Running in INCOMPLETE mode" << endl;
-#endif
-  }
+//void Egraph::computeModel( )
+//{
+//  model_computed = true;
+//  //
+//  // Compute models in tsolvers
+//  //
+//  for( unsigned i = 1 ; i < tsolvers.size( ) ; i ++ )
+//    tsolvers[ i ]->computeModel( );
+//  //
+//  // Compute values for variables removed
+//  // during preprocessing, starting from
+//  // the last
+//  //
+//  for ( int i = top_level_substs.size( ) - 1 ; i >= 0 ; i -- )
+//  {
+//    Enode * var = top_level_substs[i].first;
+//    Enode * term = top_level_substs[i].second;
+//    Real r;
+//    // Compute value for term
+//    evaluateTerm( term, r );
+//    // Set value for variable
+//    var->setValue( r );
+//  }
+//}
 
-#ifdef STATISTICS
-  assert( tsolvers.size( ) == tsolvers_stats.size( ) );
-#endif
-}
-
-#ifndef SMTCOMP
-void Egraph::computeModel( )
-{
-  model_computed = true;
-  //
-  // Compute models in tsolvers
-  //
-  for( unsigned i = 1 ; i < tsolvers.size( ) ; i ++ )
-    tsolvers[ i ]->computeModel( );
-  //
-  // Compute values for variables removed
-  // during preprocessing, starting from
-  // the last
-  //
-  for ( int i = top_level_substs.size( ) - 1 ; i >= 0 ; i -- )
-  {
-    Enode * var = top_level_substs[i].first;
-    Enode * term = top_level_substs[i].second;
-    Real r;
-    // Compute value for term
-    evaluateTerm( term, r );
-    // Set value for variable
-    var->setValue( r );
-  }
-}
-
-void Egraph::printModel( ostream & os )
-{
-  assert( config.produce_models );
-  computeModel( );
-  //
-  // Print values
-  //
-  for( set< Enode * >::iterator it = variables.begin( )
-      ; it != variables.end( )
-      ; it ++ )
-  {
-    // Retrieve enode
-    Enode * v = *it;
-    // Print depending on type
-    if ( v->hasSortBool( ) )
-      continue;
-    else if ( v->hasSortInt( )
-	   || v->hasSortReal( ) )
-    {
-      os << "(= " << v << " ";
-      if ( v->hasValue( ) )
-	os << v->getValue( );
-      else
-	os << "?";
-      os << ")";
-    }
-    else if ( config.logic == QF_UF )
-    {
-      os << "(= " << v << " " << v->getRoot( ) << ")";
-    }
-    else if ( config.logic == QF_CT )
-    {
-      os << "(= " << v << " " << v->getValue( ) << ")";
-    }
-    else
-    {
-      opensmt_error2( "model printing unsupported for this variable: ", v );
-    }
-
-    os << endl;
-  }
-}
+//void Egraph::printModel( ostream & os )
+//{
+//  assert( config.produce_models );
+//  computeModel( );
+//  //
+//  // Print values
+//  //
+//  for( set< Enode * >::iterator it = variables.begin( )
+//      ; it != variables.end( )
+//      ; it ++ )
+//  {
+//    // Retrieve enode
+//    Enode * v = *it;
+//    // Print depending on type
+//    if ( v->hasSortBool( ) )
+//      continue;
+//    else if ( v->hasSortInt( )
+//	   || v->hasSortReal( ) )
+//    {
+//      os << "(= " << v << " ";
+//      if ( v->hasValue( ) )
+//	os << v->getValue( );
+//      else
+//	os << "?";
+//      os << ")";
+//    }
+//    else if ( config.logic == QF_UF )
+//    {
+//      os << "(= " << v << " " << v->getRoot( ) << ")";
+//    }
+//    else if ( config.logic == QF_CT )
+//    {
+//      os << "(= " << v << " " << v->getValue( ) << ")";
+//    }
+//    else
+//    {
+//      opensmt_error2( "model printing unsupported for this variable: ", v );
+//    }
+//
+//    os << endl;
+//  }
+//}
 #endif
 
 //===========================================================================
@@ -827,171 +833,192 @@ void Egraph::printModel( ostream & os )
 //
 // Assert an equality between nodes x and y
 //
-bool Egraph::assertEq ( Enode * x, Enode * y, Enode * r )
+bool Egraph::assertEq ( ERef x, ERef y, ERef r )
 {
-  assert( x->isTerm( ) );
-  assert( y->isTerm( ) );
-  assert( pending.empty( ) );
-  assert( x->isAtom( )
-       || config.logic != QF_BV
-       || x->getWidth( ) == y->getWidth( ) );
+    Enode& en_x = enode_store[x];
+    Enode& en_y = enode_store[x];
+    assert( en_x.isTerm() );
+    assert( en_y.isTerm() );
+    assert( pending.size() == 0 );
+//    assert( x->isAtom( )
+//         || config.logic != QF_BV
+//         || x->getWidth( ) == y->getWidth( ) );
 
-  pending.push_back( x );
-  pending.push_back( y );
+    pending.push( x );
+    pending.push( y );
 
-  const bool res = mergeLoop( r );
+    const bool res = mergeLoop( r );
 
-  return res;
+    return res;
 }
 
 //
 // Merge what is in pending and propagate to parents
 //
-bool Egraph::mergeLoop( Enode * r )
+bool Egraph::mergeLoop( ERef r )
 {
-  bool congruence_pending = false;
+    bool congruence_pending = false;
 
-  while ( !pending.empty( ) )
-  {
-    // Remove a pending equivalence
-    assert( pending.size( ) >= 2 );
-    assert( pending.size( ) % 2 == 0 );
-    Enode * p = pending.back( ); pending.pop_back( );
-    Enode * q = pending.back( ); pending.pop_back( );
-
-    if ( p->getRoot( ) == q->getRoot( ) )
-      continue;
-
-    // Store explanation, for either congruence or eq
-    // The third argument is the reason for the merge
-    // of p and q; they may merge because of an equality,
-    // and in that case the reason is the id of the equality.
-    // Or they may merge because of congruence, and in that
-    // case the reason is empty (NULL). Notice that we store
-    // reasons only among TERMs, and never among LISTs. That
-    // means that the reason for p and q being equal has to
-    // be found recursively in their arguments. We store the
-    // reason even in case of unmergability, to have an
-    // automatic way of retrieving a conflict
-
-    if ( p->isTerm( ) )
-      expStoreExplanation( p, q, congruence_pending ? NULL : r );
-
-    // Check if they can't be merged
-    Enode * reason = NULL;
-    bool res = unmergable( p->getRoot( ), q->getRoot( ), &reason );
-
-    // They are not unmergable, so they can be merged
-    if ( !res )
+    while ( pending.size() != 0 )
     {
-      merge( p->getRoot( ), q->getRoot( ) );
-      congruence_pending = true;
-      continue;
-    }
+      // Remove a pending equivalence
+      assert( pending.size( ) >= 2 );
+      assert( pending.size( ) % 2 == 0 );
+      ERef p = pending.last( ); pending.pop( );
+      ERef q = pending.last( ); pending.pop( );
+      Enode& en_p = enode_store[p];
+      Enode& en_q = enode_store[q];
 
-    // Conflict detected. We should retrieve the explanation
-    // We have to distinguish 2 cases. If the reason for the
-    // conflict is NULL, it means that a conflict arises because
-    // we tried to merge two classes that are assigned to different
-    // constants, otherwise we have a proper reason
-    Enode * reason_1 = NULL;
-    Enode * reason_2 = NULL;
-    //
-    // Different constants
-    //
-    if ( reason == NULL )
-    {
-      assert( p->getRoot( )->getConstant( ) != NULL );
-      assert( q->getRoot( )->getConstant( ) != NULL );
-      assert( p->getRoot( )->getConstant( ) != q->getRoot( )->getConstant( ) );
-#ifdef PRODUCE_PROOF
-      if ( config.produce_inter > 0 )
+      if ( en_p.getRoot( ) == en_q.getRoot( ) )
+        continue;
+
+      // Store explanation, for either congruence or eq
+      // The third argument is the reason for the merge
+      // of p and q; they may merge because of an equality,
+      // and in that case the reason is the id of the equality.
+      // Or they may merge because of congruence, and in that
+      // case the reason is empty (NULL). Notice that we store
+      // reasons only among TERMs, and never among LISTs. That
+      // means that the reason for p and q being equal has to
+      // be found recursively in their arguments. We store the
+      // reason even in case of unmergability, to have an
+      // automatic way of retrieving a conflict
+
+      if ( en_p.isTerm( ) )
+        expStoreExplanation( p, q, congruence_pending ? ERef_Undef : r );
+
+      // Check if they can't be merged
+      PTRef reason = PTRef_Undef;
+      PTRef* reason_p = &reason;
+      bool res = unmergeable( en_p.getRoot(), en_q.getRoot(), reason_p );
+
+      // They are not unmergable, so they can be merged
+      if ( !res )
       {
-	cgraph.setConf( p->getRoot( )->getConstant( )
-	              , q->getRoot( )->getConstant( )
-	              , NULL );
+        merge( en_p.getRoot( ), en_q.getRoot( ) );
+        congruence_pending = true;
+        continue;
       }
-#endif
+
+      // Conflict detected. We should retrieve the explanation
+      // We have to distinguish 2 cases. If the reason for the
+      // conflict is ERef_Undef, it means that a conflict arises because
+      // we tried to merge two classes that are assigned to different
+      // constants, otherwise we have a proper reason
+      ERef reason_1 = ERef_Undef;
+      ERef reason_2 = ERef_Undef;
       //
-      // We need explaining
+      // Different constants
       //
-      // 1. why p and p->constant are equal
-      exp_pending.push_back( p );
-      exp_pending.push_back( p->getRoot( )->getConstant( ) );
-      // 2. why q and q->constant are equal
-      exp_pending.push_back( q );
-      exp_pending.push_back( q->getRoot( )->getConstant( ) );
-      // 3. why p and q are equal
-      exp_pending.push_back( q );
-      exp_pending.push_back( p );
+      ERef enr_proot = en_p.getRoot();
+      ERef enr_qroot = en_q.getRoot();
 
-      initDup1( );
-      expExplain( );
-      doneDup1( );
-    }
-    else if ( reason->isDistinct( ) )
-    {
-      // The reason is a distinction
-      explanation.push_back( reason );
-      // We should iterate through the elements
-      // of the distinction and find which atoms
-      // are causing the conflict
-      Enode * list = reason->getCdr( );
-      while ( !list->isEnil( ) )
+      if ( reason == PTRef_Undef )
       {
-	Enode * arg = list->getCar( );
-	if ( arg->getRoot( ) == p->getRoot( ) ) { assert( reason_1 == NULL ); reason_1 = arg; }
-	if ( arg->getRoot( ) == q->getRoot( ) ) { assert( reason_2 == NULL ); reason_2 = arg; }
-	list = list->getCdr( );
+          Enode& en_proot = enode_store[enr_proot];
+          Enode& en_qroot = enode_store[enr_qroot];
+
+          assert( sym_store[en_proot.getTerm()].isConstant() );
+          assert( sym_store[en_qroot.getTerm()].isConstant() );
+
+          assert( en_proot.getTerm() != en_qroot.getTerm() );
+  #ifdef PRODUCE_PROOF
+          if ( config.produce_inter > 0 )
+          {
+              cgraph.setConf( p->getRoot( )->getConstant( )
+                        , q->getRoot( )->getConstant( )
+                        , NULL );
+          }
+  #endif
+          //
+          // We need explaining
+          //
+          // 1. why p and p->constant are equal
+          exp_pending.push( p );
+          exp_pending.push( en_proot.getTerm() );
+          // 2. why q and q->constant are equal
+          exp_pending.push( q );
+          exp_pending.push( en_qroot.getTerm() );
+          // 3. why p and q are equal
+          exp_pending.push( q );
+          exp_pending.push( p );
+
+          initDup1( );
+          expExplain( );
+          doneDup1( );
       }
-      assert( reason_1 != NULL );
-      assert( reason_2 != NULL );
-      expExplain( reason_1, reason_2, reason );
-    }
-    else
-    {
-      // The reason is a negated equality
-      assert( reason->isEq( )
-	   || reason->isLeq( )
-	   );
+      // Does the reason term correspond to disequality symbol
+      else if ( logic.isDisequality(term_store[reason].symb()) ) {
+          // The reason is a distinction
+          explanation.push( reason );
+          // We should iterate through the elements
+          // of the distinction and find which atoms
+          // are causing the conflict
+          Pterm& pt_reason = term_store[reason];
+          for (int i = 0; i < pt_reason.size(); i++) {
+              // (1) Get the proper term reference from pos i in the distinction
+              // (2) Get the enode corresponding to the proper term
+              // (3) Find the enode corresponding to the root
+              // (4) Check if the root enode is the same as the root of p or q
 
-      if ( config.incremental )
-      {
-	Enode * s = reason;
-	explanation.push_back( s );
+              PTRef ptr_arg = pt_reason[i];                             // (1)
+              ERef  enr_arg = enode_store.termToERef[ptr_arg];          // (2)
+              ERef  enr_arg_root = enode_store[enr_arg].getRoot();     // (3)
+
+              // (4)
+              if ( enr_arg_root == enr_proot ) { assert( reason_1 == ERef_Undef ); reason_1 = enr_arg; }
+              if ( enr_arg_root == enr_qroot ) { assert( reason_2 == ERef_Undef ); reason_2 = enr_arg; }
+          }
+          assert( reason_1 != ERef_Undef );
+          assert( reason_2 != ERef_Undef );
+          expExplain( reason_1, reason_2, reason );
       }
-      else
-	explanation.push_back( reason );
+      else {
+        // The reason is a negated equality
+        Pterm& pt_reason = term_store[reason];
+        assert( logic.isEquality(pt_reason.symb())
+//             || reason->isLeq( )
+             );
 
-      reason_1 = reason->get1st( );
-      reason_2 = reason->get2nd( );
+          // Hmm, the difference being?
+//          if ( config.incremental ) {
+//              Enode * s = reason;
+//              explanation.push_back( s );
+//          }
+//          else
+//              explanation.push_back( reason );
 
-      assert( reason_1 != NULL );
-      assert( reason_2 != NULL );
+          explanation.push(reason);
+
+          reason_1 = enode_store.termToERef[pt_reason[0]];
+          reason_2 = enode_store.termToERef[pt_reason[1]];
+
+          assert( reason_1 != PTRef_Undef );
+          assert( reason_2 != PTRef_Undef );
 
 #if VERBOSE
-      cerr << "Reason is neg equality: " << reason << endl;
+          cerr << "Reason is neg equality: " << reason << endl;
 #endif
 
-      expExplain( reason_1, reason_2, reason );
+          expExplain( reason_1, reason_2, reason );
+      }
+
+      // Clear remaining pendings
+      pending.clear( );
+      // Remove the last explanation that links
+      // the two unmergable classes
+      expRemoveExplanation( );
+      // Return conflict
+      return false;
     }
 
-    // Clear remaining pendings
-    pending.clear( );
-    // Remove the last explanation that links
-    // the two unmergable classes
-    expRemoveExplanation( );
-    // Return conflict
-    return false;
-  }
-
-  return true;
+    return true;
 }
 
 //
 // Assert an inequality between nodes x and y
 //
-bool Egraph::assertNEq ( Enode * x, Enode * y, Enode * r )
+bool Egraph::assertNEq ( ERef x, ERef y, ERef r )
 {
 #if MORE_DEDUCTIONS
   neq_list.push_back( r );
@@ -999,13 +1026,13 @@ bool Egraph::assertNEq ( Enode * x, Enode * y, Enode * r )
   undo_stack_term.push_back( r );
 #endif
 
-  Enode * p = x->getRoot( );
-  Enode * q = y->getRoot( );
+  ERef p = enode_store[x].getRoot( );
+  ERef q = enode_store[y].getRoot( );
 
   // They can't be different if the nodes are in the same class
   if ( p == q )
   {
-    explanation.push_back( r );
+    explanation.push( r );
     expExplain( x, y, r );
 
 #ifdef PEDANTIC_DEBUG
@@ -1027,11 +1054,13 @@ bool Egraph::assertNEq ( Enode * x, Enode * y, Enode * r )
   // unchecked.
 
   // Create new distinction in q
-  Elist * pdist = new Elist;
+  vec<EForbid>* pdist = new vec<EForbid>();
+  pdist.push();
+  pdist.last()
   pdist->e = p;
   pdist->reason = r;
   // If there is no node in forbid list
-  if ( q->getForbid( ) == NULL )
+  if ( enode_store[q]->getForbid( ) == NULL )
   {
     q->setForbid( pdist );
     pdist->link = pdist;
@@ -1809,11 +1838,11 @@ void Egraph::undoDistinction ( Enode * r )
 #endif
 }
 
-bool Egraph::unmergable ( Enode * x, Enode * y, Enode ** r )
+bool Egraph::unmergable ( ERef x, ERef y, PTRef* r )
 {
   assert( x );
   assert( y );
-  assert( (*r) == NULL );
+  assert( r == ERef_Undef );
   Enode * p = x->getRoot( );
   Enode * q = y->getRoot( );
   // If they are in the same class, they can merge
@@ -1835,8 +1864,8 @@ bool Egraph::unmergable ( Enode * x, Enode * y, Enode ** r )
       intersection = intersection >> 1;
       index ++;
     }
-    (*r) = indexToDistReas( index );
-    assert( (*r) != NULL );
+    r = indexToDistReas( index );
+    assert( r != ERef_Undef );
     return true;
   }
   // Check forbid lists (binary distinction)
@@ -1852,8 +1881,8 @@ bool Egraph::unmergable ( Enode * x, Enode * y, Enode ** r )
   for (;;)
   {
     // They are unmergable if they are on the other forbid list
-    if ( pptr->e->getRoot( ) == q ){ (*r) = pptr->reason; return true; }
-    if ( qptr->e->getRoot( ) == p ){ (*r) = qptr->reason; return true; }
+    if ( ea[pptr->e].cgdata->getRoot( ) == q ){ r = pptr->reason; return true; }
+    if ( ea[qptr->e].cgdata->getRoot( ) == p ){ r = qptr->reason; return true; }
     // Pass to the next element
     pptr = pptr->link;
     qptr = qptr->link;
@@ -1864,7 +1893,7 @@ bool Egraph::unmergable ( Enode * x, Enode * y, Enode ** r )
     if ( qptr == qstart ) break;
   }
   // If here they are mergable
-  assert( (*r) == NULL );
+  assert( r == ERef_Undef );
   return false;
 }
 

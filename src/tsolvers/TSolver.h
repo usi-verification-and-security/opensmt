@@ -194,24 +194,24 @@ public:
   virtual ~CoreTSolver ( )
   { }
 
-  virtual vector< Enode * > & getConflict    ( bool = false ) = 0; // Return conflict
-  virtual Enode *             getDeduction   ( )              = 0; // Return an implied node based on the current state
+  virtual vec< ERef > &       getConflict    ( bool = false ) = 0; // Return conflict
+  virtual ERef                getDeduction   ( )              = 0; // Return an implied node based on the current state
   inline void                 setSolver      ( SimpSMTSolver * s ) { assert( s ); assert( solver == NULL || solver == s); solver = s; }
-  virtual void                splitOnDemand  ( vector< Enode * > &
+  virtual void                splitOnDemand  ( vec< ERef > &
                                              , const int )    = 0; // For splitting on demand
 
 protected:
 
-  vector< OrdinaryTSolver * > tsolvers;            // List of ordinary theory solvers
+  vec< OrdinaryTSolver * >    tsolvers;            // List of ordinary theory solvers
 #ifdef STATISTICS
-  vector< TSolverStats * >    tsolvers_stats;      // Statistical info for tsolvers
+  vec< TSolverStats * >       tsolvers_stats;      // Statistical info for tsolvers
 #endif
-  vector< Enode * >           explanation;         // Stores the explanation
-  vector< Enode * >           deductions;          // List of deductions
+  vec< ERef >                 explanation;         // Stores the explanation
+  vec< ERef >                 deductions;          // List of deductions
   size_t                      deductions_next;     // Index of next deduction to communicate
-  vector< size_t >            deductions_lim;      // Keeps track of deductions done up to a certain point
-  vector< size_t >            deductions_last;     // Keeps track of deductions done up to a certain point
-  vector< Enode * >           suggestions;         // List of suggestions for decisions
+  vec< size_t >               deductions_lim;      // Keeps track of deductions done up to a certain point
+  vec< size_t >               deductions_last;     // Keeps track of deductions done up to a certain point
+  vec< ERef >                 suggestions;         // List of suggestions for decisions
   SimpSMTSolver *             solver;              // Pointer to solver
 };
 

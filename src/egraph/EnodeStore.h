@@ -3,11 +3,12 @@
 
 #include "Enode.h"
 #include "Term.h"
+#include "Pterm.h"
 
 class EnodeStore {
     Map<SigPair,ERef,SigHash,Equal<const SigPair&> > sig_tab;
-    EnodeAllocator ea;
-    ERef ERef_Nil;
+    EnodeAllocator      ea;
+    ERef                ERef_Nil;
   public:
     EnodeStore() :
         ea(1024*1024, &sig_tab)
@@ -17,6 +18,10 @@ class EnodeStore {
     ERef addSymb(TRef t);
     ERef cons(ERef x, ERef y);
     ERef get_Nil() const { return ERef_Nil; }
+    void free(ERef er) { ea.free(er); }
+    vec<ERef>           id_to_enode;
+    Enode& operator[] (ERef e) { return ea[e]; }
+    Map<PTRef,ERef,ERefHash,Equal<ERef> > termToERef;
 };
 
 #endif

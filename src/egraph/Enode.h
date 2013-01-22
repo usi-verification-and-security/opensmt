@@ -68,6 +68,8 @@ class Enode
     ERef        er;     // Either my tref or reference to the relocated one
     ERef        car;
     ERef        cdr;
+    bool        is_deduced;
+    bool        has_polarity;
 
     // This is a trick to enable congruence data on only Enodes it is needed
     CgData      cgdata[0];
@@ -107,8 +109,34 @@ public:
     bool reloced        ()        const { return header.reloced; }
     ERef relocation     ()        const { return er; }
 
+    uint32_t getId      ()        const { return id; }
+
+    bool isList         ()        const { return (en_type)header.type == et_list; }
+    bool isTerm         ()        const { return (en_type)header.type == et_term; }
+    uint32_t getArity   ()        const { return 2; } // FIXME
+    ERef        getCar  ()              { return car; }
+    ERef        getCdr  ()              { return cdr; }
+    bool        isDeduced()       const { return is_deduced; }
+    void        rsDeduced()             { is_deduced = false; }
+    bool        hasPolarity()     const { return has_polarity; }
+    TRef        getTerm ()        const { return tr; }
+    ERef        getRoot ()        const { return cgdata->root; }
+    const vec<ERef>* getForbid()  const { return cgdata->forbid; }
     friend class CgData;
 };
+
+
+struct ERefHash {
+    uint32_t operator () (const ERef s) const {
+        return (uint32_t)s; }
+};
+
+// FIXME I really need the abstraction here... Make [A-Z]Ref a class!
+//template <>
+//struct Equal<const ERef> {
+//    bool operator() (const ERef s1, const ERef s2) { return s1 == s2; }
+//};
+
 
 class EnodeAllocator : public RegionAllocator<uint32_t>
 {
@@ -180,9 +208,81 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
     }
 };
 
+//
+// Data structure used to store forbid lists
+//
+
+struct ELRef {
+    uint32_t x;
+    void operator= (uint32_t v) { x = v; }
+//    explicit ELRef(uint32_t v) { x = v; }
+};
+
+static ELRef ELRef_Undef(UINT32_MAX);
 
 
+class Elist
+{
+    bool     rlcd;                  // This is waste of space (flag saying I was relocated)
+    union    { ERef e; ELRef rel_e; }; // Enode that differs from this, or the reference where I was relocated
+    ERef     reason;                // Reason for this distinction
+    ELRef    link;                  // Link to the next element in the list
+    bool     reloced()    const { return rlcd; }
+    ELRef    relocation() const { return rel_e; }
+    void     relocate(ELRef er) { reloced = 1; rel_e = er; }
+    friend class ElistAllocator;
 
+public:
+    Elist(ERef e_, ERef r) : rlcd(false), e(e_), reason(r), link(ELRef_Undef) {}
+    Elist* Elist_new(ERef e_, ERef r) {
+        assert(sizeof(ELRef) == sizeof(uint32_t));
+        size_t sz = sizeof(ELRef) + 2*sizeof(ERef);
+        void* mem = malloc(sz);
+        return new (mem) Elist(e_, r);
+    }
+};
+
+class ELAllocator : public RegionAllocator<uint32_t>
+{
+    static int elistWord32Size() {
+        return sizeof(Elist)/sizeof(int32_t); }
+public:
+    ELAllocator() {}
+
+    void moveTo(ELAllocator& to) {
+        RegionAllocator<uint32_t>::moveTo(to); }
+    ELRef alloc(ERef e, ERef r) {
+        assert(sizeof(ERef) == sizeof(uint32_t));
+        ELRef elid(RegionAllocator<uint32_t>::alloc(elistWord32Size()));
+        new (lea(elid)) Elist(e, r);
+        return elid;
+    }
+    ELRef alloc(Elist&) {
+        assert(false);
+        return ELRef_Undef;
+    }
+    Elist&       operator[](ELRef r)         { return (Elist&)RegionAllocator<uint32_t>::operator[](r.x); }
+    const Elist& operator[](ELRef r) const   { return (Elist&)RegionAllocator<uint32_t>::operator[](r.x); }
+    Elist*       lea       (ELRef r)         { return (Elist*)RegionAllocator<uint32_t>::lea(r.x); }
+    const Elist* lea       (ELRef r) const   { return (Elist*)RegionAllocator<uint32_t>::lea(r.x); }
+    ELRef        ael       (const Elist* t)  { return (ELRef)RegionAllocator<uint32_t>::ael((uint32_t*)t); }
+
+    // No garbage collection implemented.  I wonder if this is bad...
+    void free(ELRef)
+    {
+        RegionAllocator<uint32_t>::free(elistWord32Size());
+    }
+
+    void reloc(ELRef& er, EnodeAllocator& to)
+    {
+        Elist& e = operator[](er);
+
+        if (e.reloced()) { er = e.relocation(); return; }
+
+        er = to.alloc(e);
+        e.relocate(er);
+    }
+};
 /*
   Enode ( const enodeid_t, TRef ) :
       id(geid++);
