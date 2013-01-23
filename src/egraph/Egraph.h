@@ -46,6 +46,7 @@ private:
   EnodeStore &  enode_store;
   Logic&        logic;
   ERef          ERef_Nil;
+  ELAllocator   forbid_allocator;
 public:
 
   Egraph( SMTConfig & c

@@ -22,6 +22,21 @@ class EnodeStore {
     vec<ERef>           id_to_enode;
     Enode& operator[] (ERef e) { return ea[e]; }
     Map<PTRef,ERef,ERefHash,Equal<ERef> > termToERef;
+
+    void removeParent(ERef, ERef);
+
+//    inline const SigPair& getSig(ERef e) const
+//        { const Enode& en_e = ea[e];
+//          SigPair sp( ea[ea[en_e.getCar()].getRoot()].getCid(), ea[ea[en_e.getCdr()].getRoot()].getCid() );
+//          return sp; }
+    inline ERef lookupSig(ERef e) const
+        { const Enode& en_e = ea[e];
+          SigPair sp( ea[ea[en_e.getCar()].getRoot()].getCid(), ea[ea[en_e.getCdr()].getRoot()].getCid() );
+          return sig_tab[sp]; }
+    inline void removeSig(ERef e)
+        { const Enode& en_e = ea[e];
+          SigPair sp( ea[ea[en_e.getCar()].getRoot()].getCid(), ea[ea[en_e.getCdr()].getRoot()].getCid() );
+          sig_tab.remove(sp); }
 };
 
 #endif

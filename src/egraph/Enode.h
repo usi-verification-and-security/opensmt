@@ -34,6 +34,21 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 
 typedef RegionAllocator<uint32_t>::Ref ERef;
 
+//
+// Data structure used to store forbid lists
+//
+
+struct ELRef {
+    uint32_t x;
+    void operator= (uint32_t v) { x = v; }
+    inline friend bool operator== (const ELRef& a1, const ELRef& a2) {return a1.x == a2.x; }
+//    struct ELRef operator() (uint32_t v) { x = v; return *this;}
+//    explicit ELRef(uint32_t v) { x = v; }
+};
+
+// FIXME this is uninitialized right now.
+static struct ELRef ELRef_Undef;
+
 class CgData {
     ERef        root;           // Root of the equivalence class
     cgId        cid;            // The "congruence id" of the class
@@ -44,11 +59,14 @@ class CgData {
     ERef        same_cdr;       // Circular list of all the cdr-parents of the class
     int         parent_size;    // Size of the parent's congruence class
     ERef        cg_ptr;         // Congruence class representative (how is this different from root?)
-    vec<ERef>*  forbid;         // List of unmergeable Enodes
+    ELRef       forbid;         // List of unmergeable Enodes
     dist_t      dist_classes;   // The bit vector for distinction classes
+    int         dist_index;     // ?
 
     friend class Enode;
 };
+
+
 
 class EnodeAllocator;
 
@@ -95,7 +113,7 @@ public:
         if (t != et_symb) sz += sizeof(CgData);
         void* mem = malloc(sz);
 
-        if (t == et_term) {
+        if (t == et_term || t == et_list) {
             Enode* en = new (mem) Enode(tr);
             new (en->cgdata) CgData();
         }
@@ -114,14 +132,25 @@ public:
     bool isList         ()        const { return (en_type)header.type == et_list; }
     bool isTerm         ()        const { return (en_type)header.type == et_term; }
     uint32_t getArity   ()        const { return 2; } // FIXME
-    ERef        getCar  ()              { return car; }
-    ERef        getCdr  ()              { return cdr; }
-    bool        isDeduced()       const { return is_deduced; }
-    void        rsDeduced()             { is_deduced = false; }
-    bool        hasPolarity()     const { return has_polarity; }
-    TRef        getTerm ()        const { return tr; }
-    ERef        getRoot ()        const { return cgdata->root; }
-    const vec<ERef>* getForbid()  const { return cgdata->forbid; }
+    ERef  getCar        ()        const { return car; }
+    ERef  getCdr        ()        const { return cdr; }
+    bool  isDeduced     ()        const { return is_deduced; }
+    void  rsDeduced     ()              { is_deduced = false; }
+    bool  hasPolarity   ()        const { return has_polarity; }
+    TRef  getTerm       ()        const { return tr; }
+    ERef  getRoot       ()        const { return cgdata->root; }
+    ELRef getForbid     ()              { return cgdata->forbid; }
+    void  setForbid     (ELRef r)       { cgdata->forbid = r; }
+    int   getDistIndex  ()        const { return cgdata->dist_index; }
+    void  setDistIndex  (int i)         { cgdata->dist_index = i; }
+    void  setCgPtr      (ERef e)        { cgdata->cg_ptr = e; }
+    ERef  getCgPtr      ()        const { return cgdata->cg_ptr; }
+    ERef  getCid        ()        const { return cgdata->cid; }
+
+    void  setDistClasses( const dist_t& d) { cgdata->dist_classes = d; }
+
+    inline dist_t getDistClasses() const { return cgdata->dist_classes; }
+
     friend class CgData;
 };
 
@@ -208,31 +237,19 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
     }
 };
 
-//
-// Data structure used to store forbid lists
-//
-
-struct ELRef {
-    uint32_t x;
-    void operator= (uint32_t v) { x = v; }
-//    explicit ELRef(uint32_t v) { x = v; }
-};
-
-static ELRef ELRef_Undef(UINT32_MAX);
-
 
 class Elist
 {
     bool     rlcd;                  // This is waste of space (flag saying I was relocated)
     union    { ERef e; ELRef rel_e; }; // Enode that differs from this, or the reference where I was relocated
     ERef     reason;                // Reason for this distinction
-    ELRef    link;                  // Link to the next element in the list
     bool     reloced()    const { return rlcd; }
     ELRef    relocation() const { return rel_e; }
-    void     relocate(ELRef er) { reloced = 1; rel_e = er; }
-    friend class ElistAllocator;
+    void     relocate(ELRef er) { rlcd = 1; rel_e = er; }
+    friend class ELAllocator;
 
 public:
+    ELRef    link;                  // Link to the next element in the list
     Elist(ERef e_, ERef r) : rlcd(false), e(e_), reason(r), link(ELRef_Undef) {}
     Elist* Elist_new(ERef e_, ERef r) {
         assert(sizeof(ELRef) == sizeof(uint32_t));
@@ -253,7 +270,9 @@ public:
         RegionAllocator<uint32_t>::moveTo(to); }
     ELRef alloc(ERef e, ERef r) {
         assert(sizeof(ERef) == sizeof(uint32_t));
-        ELRef elid(RegionAllocator<uint32_t>::alloc(elistWord32Size()));
+        uint32_t v = RegionAllocator<uint32_t>::alloc(elistWord32Size());
+        ELRef elid;
+        elid.x = v;
         new (lea(elid)) Elist(e, r);
         return elid;
     }
@@ -265,7 +284,7 @@ public:
     const Elist& operator[](ELRef r) const   { return (Elist&)RegionAllocator<uint32_t>::operator[](r.x); }
     Elist*       lea       (ELRef r)         { return (Elist*)RegionAllocator<uint32_t>::lea(r.x); }
     const Elist* lea       (ELRef r) const   { return (Elist*)RegionAllocator<uint32_t>::lea(r.x); }
-    ELRef        ael       (const Elist* t)  { return (ELRef)RegionAllocator<uint32_t>::ael((uint32_t*)t); }
+    ELRef        ael       (const Elist* t)  { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); ELRef rf; rf.x = r; return rf; }
 
     // No garbage collection implemented.  I wonder if this is bad...
     void free(ELRef)
@@ -273,7 +292,7 @@ public:
         RegionAllocator<uint32_t>::free(elistWord32Size());
     }
 
-    void reloc(ELRef& er, EnodeAllocator& to)
+    void reloc(ELRef& er, ELAllocator& to)
     {
         Elist& e = operator[](er);
 

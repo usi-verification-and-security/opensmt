@@ -3,6 +3,8 @@
 cgId Enode::cgid_ctr = cgId_Nil+1;
 ERef Enode::ERef_Nil;
 
+//struct ELRef ELRef_Undef = { INT32_MAX };
+
 Enode::Enode(ERef car_, ERef cdr_, en_type t, EnodeAllocator& ea, ERef er, Map<SigPair,ERef,SigHash,Equal<const SigPair&> >& sig_tab) {
 
     header.type    = t;
@@ -43,3 +45,7 @@ Enode::Enode(ERef car_, ERef cdr_, en_type t, EnodeAllocator& ea, ERef er, Map<S
     SigPair p(x.cgdata->cid,y.cgdata->cid);
     sig_tab.insert(p, er);
 }
+
+
+
+

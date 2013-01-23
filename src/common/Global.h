@@ -42,6 +42,8 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 #include <stdint.h>
 #include <limits.h>
 
+#include "minisat/mtl/Map.h"
+
 #define opensmt_error( S )        { cerr << "# Error: " << S << " (triggered at " <<  __FILE__ << ", " << __LINE__ << ")" << endl; exit( 1 ); }
 #define opensmt_error2( S, T )    { cerr << "# Error: " << S << " " << T << " (triggered at " <<  __FILE__ << ", " << __LINE__ << ")" << endl; exit( 1 ); }
 #define opensmt_warning( S )      { cerr << "# Warning: " << S << endl; }
@@ -105,6 +107,8 @@ typedef long Integer;
 #define Pair( T ) pair< T, T >
 
 typedef int       enodeid_t;
+
+
 typedef enodeid_t snodeid_t;
 typedef enodeid_t sortid_t;
 #ifdef BUILD_64
@@ -240,6 +244,17 @@ inline bool isAB     ( const ipartitions_t & p, const ipartitions_t & mask ) { r
 #endif
 
 } // namespace opensmt
+
+struct EnodeIdHash {
+    opensmt::enodeid_t operator() (const opensmt::enodeid_t s) const {
+        return s; }
+};
+
+template <>
+struct Equal<const opensmt::enodeid_t> {
+    bool operator() (const opensmt::enodeid_t s1, const opensmt::enodeid_t s2) const {
+        return s1 == s2; }
+};
 
 using opensmt::Real;
 using opensmt::Integer;

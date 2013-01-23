@@ -1054,16 +1054,13 @@ bool Egraph::assertNEq ( ERef x, ERef y, ERef r )
   // unchecked.
 
   // Create new distinction in q
-  vec<EForbid>* pdist = new vec<EForbid>();
-  pdist.push();
-  pdist.last()
-  pdist->e = p;
-  pdist->reason = r;
+  ELRef pdist = forbid_allocator.alloc(p, r);
+  Enode& en_q = enode_store[q];
   // If there is no node in forbid list
-  if ( enode_store[q]->getForbid( ) == NULL )
+  if ( en_q.getForbid( ) == ELRef_Undef )
   {
-    q->setForbid( pdist );
-    pdist->link = pdist;
+    en_q.setForbid( pdist );
+    forbid_allocator[pdist].link = pdist;
   }
   // Otherwise we should put the new node after the first
   // and make the first point to pdist. This is because
@@ -1073,80 +1070,81 @@ bool Egraph::assertNEq ( ERef x, ERef y, ERef r )
   // the only present in the list
   else
   {
-    pdist->link = q->getForbid( )->link;
-    q->getForbid( )->link = pdist;
+    forbid_allocator[pdist].link = forbid_allocator[en_q.getForbid()].link;
+    forbid_allocator[en_q.getForbid()].link = pdist;
   }
 
   // Create new distinction in p
-  Elist * qdist = new Elist;
-  qdist->e = q;
-  qdist->reason = r;
-  if ( p->getForbid( ) == NULL )
+  ELRef qdist = forbid_allocator.alloc(q, r);
+  Enode& en_p = enode_store[p];
+  if ( en_p.getForbid() == ELRef_Undef )
   {
-    p->setForbid( qdist );
-    qdist->link = qdist;
+    en_p.setForbid( qdist );
+    forbid_allocator[qdist].link = qdist;
   }
   // Same arguments above
   else
   {
-    qdist->link = p->getForbid( )->link;
-    p->getForbid( )->link = qdist;
+    Elist& forb_p = forbid_allocator[en_p.getForbid()];
+    forbid_allocator[qdist].link = forb_p.link;
+    forb_p.link = qdist;
   }
 
   // Save operation in undo_stack
   assert( undo_stack_oper.size( ) == undo_stack_term.size( ) );
-  undo_stack_oper.push_back( DISEQ );
-  undo_stack_term.push_back( q );
+  undo_stack_oper.push( DISEQ );
+  undo_stack_term.push( q );
 
   return true;
 }
 
-bool Egraph::assertDist( Enode * d, Enode * r )
+bool Egraph::assertDist( ERef d, ERef r )
 {
-  // Retrieve distinction number
-  size_t index = d->getDistIndex( );
-  // While asserting, check that no two nodes are congruent
-  map< enodeid_t, Enode * > root_to_enode;
-  // Nodes changed
-  vector< Enode * > nodes_changed;
-  // Assign distinction flag to all arguments
-  Enode * list = d->getCdr( );
-  while ( list != enil )
-  {
-    Enode * e = list->getCar( );
+    Enode& en_d = enode_store[d];
+    // Retrieve distinction number
+    size_t index = en_d.getDistIndex();
+    // While asserting, check that no two nodes are congruent
+    Map< enodeid_t, ERef, EnodeIdHash, Equal<enodeid_t> > root_to_enode;
+    // Nodes changed
+    vec<ERef> nodes_changed;
+    // Assign distinction flag to all arguments
+    ERef list = en_d.getCdr();
+    while (list != ERef_Nil) {
+        ERef e = enode_store[list].getCar( );
+        Enode& en_e = enode_store[e];
 
-    pair< map< enodeid_t, Enode * >::iterator, bool > elem = root_to_enode.insert( make_pair( e->getRoot( )->getId( ), e ) );
-    // Two equivalent nodes in the same distinction. Conflict
-    if ( !elem.second )
-    {
-      explanation.push_back( r );
-      // Extract the other node with the same root
-      Enode * p = (*elem.first).second;
-      // Check condition
-      assert( p->getRoot( ) == e->getRoot( ) );
-      // Retrieve explanation
-      expExplain( e, p, r );
-      // Revert changes, as the current context is inconsistent
-      while( !nodes_changed.empty( ) )
-      {
-	Enode * n = nodes_changed.back( );
-	nodes_changed.pop_back( );
-	// Deactivate distinction in n
-	n->setDistClasses( n->getDistClasses( ) & ~(SETBIT( index )) );
-      }
-      return false;
+//        pair< map< enodeid_t, Enode * >::iterator, bool > elem = root_to_enode.insert( make_pair( e->getRoot( )->getId( ), e ) );
+        enodeid_t root_id = enode_store[en_e.getRoot()].getId();
+        if ( root_to_enode.contains(root_id) ) {
+            // Two equivalent nodes in the same distinction. Conflict
+            explanation.push(r);
+            // Extract the other node with the same root
+            ERef p = root_to_enode[root_id];
+            // Check condition
+            assert( enode_store[p].getRoot() == en_e.getRoot() );
+            // Retrieve explanation
+            expExplain( e, p, r );
+            // Revert changes, as the current context is inconsistent
+            while( nodes_changed.size() != 0 ) {
+                ERef n = nodes_changed.last();
+                nodes_changed.pop();
+                // Deactivate distinction in n
+                Enode& en_n = enode_store[n];
+                en_n.setDistClasses( en_n.getDistClasses() & ~(SETBIT( index )) );
+            }
+            return false;
+        }
+        // Activate distinction in e
+        en_e.setDistClasses( (en_e.getDistClasses( ) | SETBIT( index )) );
+        nodes_changed.push(e);
+        // Next elem
+        list = enode_store[list].getCdr();
     }
-    // Activate distinction in e
-    e->setDistClasses( (e->getDistClasses( ) | SETBIT( index )) );
-    nodes_changed.push_back( e );
-    // Next elem
-    list = list->getCdr( );
-  }
-  // Distinction pushed without conflict
-  assert( undo_stack_oper.size( ) == undo_stack_term.size( ) );
-  undo_stack_oper.push_back( DIST );
-  undo_stack_term.push_back( d );
-  return true;
+    // Distinction pushed without conflict
+    assert( undo_stack_oper.size() == undo_stack_term.size() );
+    undo_stack_oper.push(DIST);
+    undo_stack_term.push(d);
+    return true;
 }
 
 //
@@ -1160,25 +1158,26 @@ void Egraph::backtrackToStackSize ( size_t size )
   //
   // Restore state at previous backtrack point
   //
-  while ( undo_stack_term.size( ) > size )
+  while ( undo_stack_term.size_() > size )
   {
-    oper_t last_action = undo_stack_oper.back( );
-    Enode * e = undo_stack_term.back( );
+    oper_t last_action = undo_stack_oper.last();
+    ERef e = undo_stack_term.last();
+    Enode& en_e = enode_store[e];
 
-    undo_stack_oper.pop_back( );
-    undo_stack_term.pop_back( );
+    undo_stack_oper.pop();
+    undo_stack_term.pop();
 
     if ( last_action == MERGE )
     {
       undoMerge( e );
-      if ( e->isTerm( ) )
+      if ( en_e.isTerm( ) )
 	expRemoveExplanation( );
     }
 #if MORE_DEDUCTIONS
     else if ( last_action == ASSERT_NEQ )
     {
-      assert( neq_list.back( ) == e );
-      neq_list.pop_back( );
+      assert( neq_list.last( ) == e );
+      neq_list.pop( );
     }
 #endif
     else if ( last_action == INITCONG )
@@ -1187,85 +1186,86 @@ void Egraph::backtrackToStackSize ( size_t size )
 #if VERBOSE
       cerr << "UNDO: BEG INITCONG " << e << endl;
 #endif
-      Enode * car = e->getCar( );
-      Enode * cdr = e->getCdr( );
-      assert( car );
-      assert( cdr );
+      ERef car = en_e.getCar( );
+      ERef cdr = en_e.getCdr( );
+      assert( car != ERef_Undef );
+      assert( cdr != ERef_Undef );
 
-      if ( e->getCgPtr( ) == e )
+      if ( en_e.getCgPtr( ) == e )
       {
-	assert( lookupSigTab( e ) == e );
-	// Remove from sig_tab
-	removeSigTab( e );
+        assert( enode_store.lookupSig( e ) == e );
+        // Remove from sig_tab
+        enode_store.removeSig( e );
       }
       else
       {
-	assert( lookupSigTab( e ) != e );
-	e->setCgPtr( e );
+        assert( enode_store.lookupSig( e ) != e );
+        en_e.setCgPtr( e );
       }
 
-      assert( initialized.find( e->getId( ) ) != initialized.end( ) );
+      assert( initialized.find( en_e.getId( ) ) != initialized.end( ) );
       // Remove from initialized nodes
-      initialized.erase( e->getId( ) );
-      assert( initialized.find( e->getId( ) ) == initialized.end( ) );
+      initialized.erase( en_e.getId( ) );
+      assert( initialized.find( en_e.getId( ) ) == initialized.end( ) );
       // Remove parents info
-      if ( e->isList( ) )
-	car->removeParent( e );
-      cdr->removeParent( e );
+      if ( en_e.isList( ) )
+        enode_store[car].removeParent( car, e );
+      enode_store[cdr].removeParent( cdr, e );
 
       // Deallocate congruence data
-      assert( e->hasCongData( ) );
-      e->deallocCongData( );
-      assert( !e->hasCongData( ) );
+      // This sounds like a huge overhead!
+//      assert( en_e.hasCongData( ) );
+//      e->deallocCongData( );
+//      assert( !e->hasCongData( ) );
     }
     else if ( last_action == FAKE_MERGE )
     {
 #if VERBOSE
       cerr << "UNDO: BEGIN FAKE MERGE " << e << endl;
 #endif
-      assert( initialized.find( e->getId( ) ) != initialized.end( ) );
-      initialized.erase( e->getId( ) );
-      assert( initialized.find( e->getId( ) ) == initialized.end( ) );
-      assert( e->hasCongData( ) );
-      e->deallocCongData( );
-      assert( !e->hasCongData( ) );
+      assert( initialized.find( en_e.getId( ) ) != initialized.end( ) );
+      initialized.erase( en_e.getId( ) );
+      assert( initialized.find( en_e.getId( ) ) == initialized.end( ) );
+//      assert( e->hasCongData( ) );
+//      e->deallocCongData( );
+//      assert( !e->hasCongData( ) );
     }
     else if ( last_action == FAKE_INSERT )
     {
 #if VERBOSE
       cerr << "UNDO: BEGIN FAKE INSERT " << e << endl;
 #endif
-      assert( e->isTerm( ) || e->isList( ) );
-      Enode * car = e->getCar( );
-      Enode * cdr = e->getCdr( );
+      assert( en_e.isTerm( ) || en_e.isList( ) );
+      ERef car = en_e.getCar( );
+      ERef cdr = en_e.getCdr( );
       assert( car );
       assert( cdr );
 
-      // Node must be there if its a congruence 
+      // Node must be there if its a congruence
       // root and it has to be removed
-      if ( e->getCgPtr( ) == e )
+      if ( en_e.getCgPtr() == e )
       {
-	assert( lookupSigTab( e ) == e );
-	removeSigTab( e );
+        assert( lookupSigTab( e ) == e );
+        removeSigTab( e );
       }
       // Otherwise sets it back to itself
       else
       {
-	assert( lookupSigTab( e ) != e );
-	e->setCgPtr( e );
+        assert( lookupSigTab( e ) != e );
+        en_e.setCgPtr( e );
       }
 
       // Remove Parent info
-      if ( e->isList( ) )
-	car->removeParent( e );
-      cdr->removeParent( e );
+      if ( en_e.isList( ) )
+        enode_store[car].removeParent( e );
+      enode_store[cdr].removeParent( e );
       // Remove initialization
-      assert( initialized.find( e->getId( ) ) != initialized.end( ) );
-      initialized.erase( e->getId( ) );
+      assert( initialized.find( en_e.getId( ) ) != initialized.end( ) );
+      initialized.erase( en_e.getId( ) );
       // Dealloc cong data
-      assert( e->hasCongData( ) );
-      e->deallocCongData( );
-      assert( !e->hasCongData( ) );
+//      assert( e->hasCongData( ) );
+//      e->deallocCongData( );
+//      assert( !e->hasCongData( ) );
     }
     else if ( last_action == DISEQ )
       undoDisequality( e );
@@ -1838,7 +1838,7 @@ void Egraph::undoDistinction ( Enode * r )
 #endif
 }
 
-bool Egraph::unmergable ( ERef x, ERef y, PTRef* r )
+bool Egraph::unmergeable ( ERef x, ERef y, PTRef* r )
 {
   assert( x );
   assert( y );
