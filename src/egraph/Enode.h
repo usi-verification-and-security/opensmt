@@ -81,7 +81,8 @@ class Enode
         unsigned reloced    : 1;
         unsigned unused     : 29; } header;
 
-    TRef        tr;
+    TRef        tr;     // The symbol (if this is a symbol node) -- not sure this is necessary?
+    PTRef       pterm;  // The proper term (if this is a term node)
     uint32_t    id;
     ERef        er;     // Either my tref or reference to the relocated one
     ERef        car;
@@ -101,11 +102,11 @@ public:
 
     enum en_type { et_symb, et_list, et_term };
 
-    // Constructor for symbol and singleton term nodes
+    // Constructor for symbol and singleton term nodes -- Is this really even necessary?
     Enode(TRef tr_) : tr(tr_) { header.type = et_symb; }
 
     // Constructor for the non-singleton term and list nodes
-    Enode(ERef car_, ERef cdr_, en_type t, EnodeAllocator& ea, ERef er, Map<SigPair,ERef,SigHash,Equal<const SigPair&> >& sig_tab);
+    Enode(ERef car_, ERef cdr_, en_type t, EnodeAllocator& ea, ERef er, PTRef pterm, Map<SigPair,ERef,SigHash,Equal<const SigPair&> >& sig_tab);
 
     Enode* Enode_new(en_type t, TRef tr) {
         assert(sizeof(TRef) == sizeof(uint32_t));
@@ -139,13 +140,29 @@ public:
     bool  hasPolarity   ()        const { return has_polarity; }
     TRef  getTerm       ()        const { return tr; }
     ERef  getRoot       ()        const { return cgdata->root; }
+    void  setRoot       (ERef r)        { cgdata->root = r; }
     ELRef getForbid     ()              { return cgdata->forbid; }
     void  setForbid     (ELRef r)       { cgdata->forbid = r; }
     int   getDistIndex  ()        const { return cgdata->dist_index; }
     void  setDistIndex  (int i)         { cgdata->dist_index = i; }
     void  setCgPtr      (ERef e)        { cgdata->cg_ptr = e; }
     ERef  getCgPtr      ()        const { return cgdata->cg_ptr; }
-    ERef  getCid        ()        const { return cgdata->cid; }
+    CgId  getCid        ()        const { return cgdata->cid; }
+    void  setCid        (CgId id)       { return cgdata->cid = id; }
+
+    ERef  getParent     ()        const { return cgdata->parent; }
+    void  setParent     (ERef e)        { cgdata->parent = e; }
+    int   getParentSize ()        const { return cgdata->parent_size; }
+    void  setParentSize (int i)         { cgdata->parent_size = i; }
+    ERef  getSameCdr    ()        const { return cgdata->same_cdr; }
+    void  setSameCdr    (ERef e)        { cgdata->same_cdr = e; }
+    ERef  getSameCar    ()        const { return cgdata->same_car; }
+    void  setSameCar    (ERef e)        { cgdata->same_car = e; }
+
+    ERef  getNext       ()        const { return cgdata->next; }
+    void  setNext       (ERef n)        { cgdata->next = n; }
+    ERef  getSize       ()        const { return cgdata->size; }
+    void  setSize       (int i)         { cgdata->size = i; }
 
     void  setDistClasses( const dist_t& d) { cgdata->dist_classes = d; }
 

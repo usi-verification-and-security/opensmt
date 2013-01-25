@@ -29,6 +29,12 @@ class EnodeStore {
 //        { const Enode& en_e = ea[e];
 //          SigPair sp( ea[ea[en_e.getCar()].getRoot()].getCid(), ea[ea[en_e.getCdr()].getRoot()].getCid() );
 //          return sp; }
+    inline bool containsSig(ERef e) const
+        { const Enode& en_e = ea[e];
+          SigPair sp( ea[ea[en_e.getCar()].getRoot()].getCid(), ea[ea[en_e.getCdr()].getRoot()].getCid() );
+          return sig_tab.contains(sp; }
+
+
     inline ERef lookupSig(ERef e) const
         { const Enode& en_e = ea[e];
           SigPair sp( ea[ea[en_e.getCar()].getRoot()].getCid(), ea[ea[en_e.getCdr()].getRoot()].getCid() );
@@ -37,6 +43,9 @@ class EnodeStore {
         { const Enode& en_e = ea[e];
           SigPair sp( ea[ea[en_e.getCar()].getRoot()].getCid(), ea[ea[en_e.getCdr()].getRoot()].getCid() );
           sig_tab.remove(sp); }
+
+    inline void insertSig(ERef e)
+        { const Enode& en_e = ea[e]; sig_tab.insert(SigPair(ea[en_e.getCar()].getCid(), ea[en_e.getCdr()].getCid()), en_e.getCgPtr()); }
 };
 
 #endif

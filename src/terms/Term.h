@@ -19,7 +19,8 @@ class Term {
         unsigned has_extra  : 1;
         unsigned reloced    : 1;
         unsigned noscoping  : 1;
-        unsigned size       : 25; }     header;
+        unsigned constant   : 1;
+        unsigned size       : 24; }     header;
     TId                                 id;
     // This has to be the last
     union { SRef sort; TRef rel;  }     args[0];
@@ -35,6 +36,7 @@ class Term {
         header.has_extra = 0;
         header.reloced   = 0;
         header.noscoping = 0;           // This is an optimization to avoid expensive name lookup on logic operations
+        header.constant  = false;
         header.size      = ps.size();
 
         for (int i = 0; i < ps.size(); i++) args[i].sort = ps[i]; }
@@ -72,7 +74,7 @@ class Term {
     bool     pairwise    ()      const   { return header.type == 4; }
     bool     noScoping   ()      const   { return header.noscoping; }
     uint32_t nargs       ()      const   { return size() - 1; }
-    bool     isConstant  ()      const   { return nargs() == 0; }
+    bool     isConstant  ()      const   { return nargs() == 0 && header.constant; }
 
     bool     setLeftAssoc ()             { if (header.type != 0) return false; return (header.type = 1); }
     bool     setRightAssoc()             { if (header.type != 0) return false; return (header.type = 2); }

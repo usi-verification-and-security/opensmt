@@ -1209,8 +1209,8 @@ void Egraph::backtrackToStackSize ( size_t size )
       assert( initialized.find( en_e.getId( ) ) == initialized.end( ) );
       // Remove parents info
       if ( en_e.isList( ) )
-        enode_store[car].removeParent( car, e );
-      enode_store[cdr].removeParent( cdr, e );
+        enode_store.removeParent( car, e );
+      enode_store.removeParent( cdr, e );
 
       // Deallocate congruence data
       // This sounds like a huge overhead!
@@ -1245,20 +1245,20 @@ void Egraph::backtrackToStackSize ( size_t size )
       // root and it has to be removed
       if ( en_e.getCgPtr() == e )
       {
-        assert( lookupSigTab( e ) == e );
-        removeSigTab( e );
+        assert( enode_store.lookupSig( e ) == e );
+        enode_store.removeSig( e );
       }
       // Otherwise sets it back to itself
       else
       {
-        assert( lookupSigTab( e ) != e );
+        assert( enode_store.lookupSig( e ) != e );
         en_e.setCgPtr( e );
       }
 
       // Remove Parent info
       if ( en_e.isList( ) )
-        enode_store[car].removeParent( e );
-      enode_store[cdr].removeParent( e );
+        enode_store.removeParent( car, e );
+      enode_store.removeParent( cdr, e );
       // Remove initialization
       assert( initialized.find( en_e.getId( ) ) != initialized.end( ) );
       initialized.erase( en_e.getId( ) );
@@ -1271,14 +1271,14 @@ void Egraph::backtrackToStackSize ( size_t size )
       undoDisequality( e );
     else if ( last_action == DIST )
       undoDistinction( e );
-    else if ( last_action == SYMB )
-      removeSymbol( e );
-    else if ( last_action == NUMB )
-      removeNumber( e );
+//    else if ( last_action == SYMB )
+//      removeSymbol( e );
+//    else if ( last_action == NUMB )
+//      removeNumber( e );
     else if ( last_action == CONS )
       undoCons( e );
-    else if ( last_action == INSERT_STORE )
-      removeStore( e );
+//    else if ( last_action == INSERT_STORE )
+//      removeStore( e );
     else
       opensmt_error( "unknown action" );
   }
@@ -1286,84 +1286,84 @@ void Egraph::backtrackToStackSize ( size_t size )
   assert( undo_stack_term.size( ) == undo_stack_oper.size( ) );
 }
 
-bool Egraph::checkDupClause( Enode * c1, Enode * c2 )
-{
-  assert( c1 );
-  assert( c2 );
-  // Swap let cl3 be the lowest clause
-  if ( c1->getId( ) > c2->getId( ) )
-  {
-    Enode * tmp = c1;
-    c1 = c2;
-    c2 = tmp;
-  }
+// bool Egraph::checkDupClause( Enode * c1, Enode * c2 )
+// {
+//   assert( c1 );
+//   assert( c2 );
+//   // Swap let cl3 be the lowest clause
+//   if ( c1->getId( ) > c2->getId( ) )
+//   {
+//     Enode * tmp = c1;
+//     c1 = c2;
+//     c2 = tmp;
+//   }
+// 
+// #ifdef BUILD_64
+//   enodeid_pair_t sig = encode( c1->getId( ), c2->getId( ) );
+// #else
+//   Pair( enodeid_t ) sig = make_pair( c1->getId( ), c2->getId( ) );
+// #endif
+// 
+//   const bool res = clauses_sent.insert( sig ).second == false;
+//   return res;
+// }
 
-#ifdef BUILD_64
-  enodeid_pair_t sig = encode( c1->getId( ), c2->getId( ) );
-#else
-  Pair( enodeid_t ) sig = make_pair( c1->getId( ), c2->getId( ) );
-#endif
+//void Egraph::splitOnDemand( vector< Enode * > & c, const int
+//#ifdef STATISTICS
+//    id 
+//#endif
+//    )
+//{
+//  assert( config.incremental );
+//  // Assume that we split only of size 2
+//  assert( c.size( ) == 2 );
+//  if ( checkDupClause( c[ 0 ], c[ 1 ] ) ) return;
+//#ifdef STATISTICS
+//  assert( id >= 0 );
+//  assert( id < static_cast< int >( tsolvers_stats.size( ) ) );
+//  TSolverStats & ts = *tsolvers_stats[ id ];
+//  if ( (long)c.size( ) > ts.max_sod_size )
+//    ts.max_sod_size = c.size( );
+//  if ( (long)c.size( ) < ts.min_sod_size )
+//    ts.min_sod_size = c.size( );
+//  ts.sod_sent ++;
+//  ts.sod_done ++;
+//  ts.avg_sod_size += c.size( );
+//#endif
+//
+//#ifdef PRODUCE_PROOF
+//  assert( config.produce_inter == 0 || c[ 0 ]->getIPartitions( ) != 0 );
+//  assert( config.produce_inter == 0 || c[ 1 ]->getIPartitions( ) != 0 );
+//  // FIXME: should compute interpolant ...
+//  solver->addSMTAxiomClause( c, NULL );
+//#else
+//  solver->addSMTAxiomClause( c );
+//#endif
+//}
 
-  const bool res = clauses_sent.insert( sig ).second == false;
-  return res;
-}
-
-void Egraph::splitOnDemand( vector< Enode * > & c, const int
-#ifdef STATISTICS
-    id 
-#endif
-    )
-{
-  assert( config.incremental );
-  // Assume that we split only of size 2
-  assert( c.size( ) == 2 );
-  if ( checkDupClause( c[ 0 ], c[ 1 ] ) ) return;
-#ifdef STATISTICS
-  assert( id >= 0 );
-  assert( id < static_cast< int >( tsolvers_stats.size( ) ) );
-  TSolverStats & ts = *tsolvers_stats[ id ];
-  if ( (long)c.size( ) > ts.max_sod_size )
-    ts.max_sod_size = c.size( );
-  if ( (long)c.size( ) < ts.min_sod_size )
-    ts.min_sod_size = c.size( );
-  ts.sod_sent ++;
-  ts.sod_done ++;
-  ts.avg_sod_size += c.size( );
-#endif
-
-#ifdef PRODUCE_PROOF
-  assert( config.produce_inter == 0 || c[ 0 ]->getIPartitions( ) != 0 );
-  assert( config.produce_inter == 0 || c[ 1 ]->getIPartitions( ) != 0 );
-  // FIXME: should compute interpolant ...
-  solver->addSMTAxiomClause( c, NULL );
-#else
-  solver->addSMTAxiomClause( c );
-#endif
-}
-
-void Egraph::splitOnDemand( Enode * c, const int
-#ifdef STATISTICS
-    id 
-#endif
-    )
-{
-  assert( c );
-
-#ifdef STATISTICS
-  assert( id >= 0 );
-  assert( id < static_cast< int >( tsolvers_stats.size( ) ) );
-  TSolverStats & ts = *tsolvers_stats[ id ];
-  if ( ts.max_sod_size < 1 )
-    ts.max_sod_size = 1;
-  if ( ts.min_sod_size > 1 )
-    ts.min_sod_size = 1;
-  ts.sod_sent ++;
-  ts.sod_done ++;
-  ts.avg_sod_size ++;
-#endif
-
-  solver->addNewAtom( c );
-}
+//void Egraph::splitOnDemand( Enode * c, const int
+//#ifdef STATISTICS
+//    id 
+//#endif
+//    )
+//{
+//  assert( c );
+//
+//#ifdef STATISTICS
+//  assert( id >= 0 );
+//  assert( id < static_cast< int >( tsolvers_stats.size( ) ) );
+//  TSolverStats & ts = *tsolvers_stats[ id ];
+//  if ( ts.max_sod_size < 1 )
+//    ts.max_sod_size = 1;
+//  if ( ts.min_sod_size > 1 )
+//    ts.min_sod_size = 1;
+//  ts.sod_sent ++;
+//  ts.sod_done ++;
+//  ts.avg_sod_size ++;
+//#endif
+//
+//  solver->addNewAtom( c );
+//}
 
 //=============================================================================
 // Congruence Closure Routines
@@ -1372,144 +1372,142 @@ void Egraph::splitOnDemand( Enode * c, const int
 // Merge the class of x with the class of y
 // x will become the representant
 //
-void Egraph::merge ( Enode * x, Enode * y )
+void Egraph::merge ( ERef x, ERef y )
 {
 #ifdef PEDANTIC_DEBUG
-  assert( checkParents( x ) );
-  assert( checkParents( y ) );
-  assert( checkInvariants( ) );
+    assert( checkParents( x ) );
+    assert( checkParents( y ) );
+    assert( checkInvariants( ) );
 #endif
 
-  assert( !x->isConstant( ) || !y->isConstant( ) );
-  assert( !x->isConstant( ) || x->getSize( ) == 1 );
-  assert( !y->isConstant( ) || y->getSize( ) == 1 );
-  assert( x->getRoot( ) != y->getRoot( ) );
-  assert( x == x->getRoot( ) );
-  assert( y == y->getRoot( ) );
+    Enode& en_x = enode_store[x];
+    Enode& en_y = enode_store[y];
+
+//    assert( !en_x.isConstant( ) || !en_y.isConstant( ) );
+//    assert( !en_x.isConstant( ) || en_x.getSize( ) == 1 );
+//    assert( !y->isConstant( ) || y->getSize( ) == 1 );
+    assert( en_x.getRoot( ) != en_y.getRoot( ) );
+    assert( x == en_x.getRoot( ) );
+    assert( y == en_y.getRoot( ) );
 
   // Swap x,y if y has a larger eq class
-  if ( x->getSize( ) < y->getSize( )
-    || x->isConstant( ) )
-  {
-    Enode * tmp = x;
-    x = y;
-    y = tmp;
-  }
+    if ( en_x.getSize( ) < en_y.getSize( ) )
+//    || en_x.isConstant( ) )
+    {
+        ERef tmp = x;
+        x = y;
+        y = tmp;
+    }
 
-  assert( !x->isConstant( ) );
+//    assert( !x->isConstant( ) );
 
   // TODO:
   // Propagate equalities to other ordinary theories
   //
 
   // Update forbid list for x by adding elements of y
-  if ( y->getForbid( ) != NULL )
-  {
-    // We assign the same forbid list
-    if ( x->getForbid( ) == NULL )
-      x->setForbid( y->getForbid( ) );
+    if ( en_y.getForbid( ) != NULL ) {
+        // We assign the same forbid list
+        if ( en_x.getForbid( ) == NULL )
+            en_x.setForbid( en_y.getForbid( ) );
     // Otherwise we splice the two lists
-    else
-    {
-      Elist * tmp = x->getForbid( )->link;
-      x->getForbid( )->link = y->getForbid( )->link;
-      y->getForbid( )->link = tmp;
+        else {
+            ELRef tmp = forbid_allocator[en_x.getForbid()].link;
+            forbid_allocator[en_x.getForbid()].link = forbid_allocator[en_y.getForbid()].link;
+            forbid_allocator[en_y.getForbid()].link = tmp;
+        }
     }
-  }
 
-  // Merge distinction classes
-  x->setDistClasses( ( x->getDistClasses( ) | y->getDistClasses( ) ) );
-  // Assign w to the class with fewer parents
-  Enode * w = x->getParentSize( ) < y->getParentSize( ) ? x : y ;
-  // Visit each parent of w, according to the type of w
-  // and remove each congruence root from the signature table
-  Enode * p = w->getParent( );
-  const Enode * pstart = p;
-  const bool scdr = w->isList( );
-  for ( ; p != NULL ; )
-  {
-    assert ( p->isTerm( ) || p->isList( ) );
-    // If p is a congruence root
-    if ( p == p->getCgPtr( ) )
-      sig_tab.erase( p );
-    // Next element
-    p = scdr ? p->getSameCdr( ) : p->getSameCar( ) ;
-    // End of cycle
-    if ( p == pstart )
-      p = NULL;
-  }
-
-  // Compute deductions that follows from
-  // merging x and y. Probably this function
-  // could be partially embedded into the next
-  // cycle. However, for the sake of simplicity
-  // we prefer to separate the two contexts
-  if ( config.uf_theory_propagation > 0 )
-    deduce( x, y );
-
-  // Perform the union of the two equivalence classes
-  // i.e. reroot every node in y's class to point to x
-
-  Enode * v = y;
-  const Enode * vstart = v;
-  for (;;)
-  {
-    v->setRoot( x );
-    v = v->getNext( );
-    if ( v == vstart )
-      break;
-  }
-
-  // Splice next lists
-  Enode * tmp = x->getNext( );
-  x->setNext( y->getNext( ) );
-  y->setNext( tmp );
-  // Update size of the congruence class
-  x->setSize( x->getSize( ) + y->getSize( ) );
-
-  // Preserve signatures of larger parent set
-  if ( x->getParentSize( ) < y->getParentSize( ) )
-  {
-    enodeid_t tmp = x->getCid( );
-    x->setCid( y->getCid( ) );
-    y->setCid( tmp );
-  }
-
-  // Insert new signatures and propagate congruences
-  p = w->getParent( );
-  for ( ; p != NULL ; )
-  {
-    // If p is a congruence root
-    if ( p == p->getCgPtr( ) )
-    {
-      Enode * q = sig_tab.insert( p );
-      // Signature already present
-      if ( q != p )
-      {
-	p->setCgPtr( q );
-	pending.push_back( p );
-	pending.push_back( q );
-      }
+    // Merge distinction classes
+    en_x.setDistClasses( ( en_x.getDistClasses( ) | en_y.getDistClasses( ) ) );
+    // Assign w to the class with fewer parents
+    ERef w = en_x.getParentSize() < en_y.getParentSize( ) ? x : y ;
+    // Visit each parent of w, according to the type of w
+    // and remove each congruence root from the signature table
+    Enode& en_w = enode_store[w];
+    ERef p = en_w.getParent();
+    const ERef pstart = p;
+    const bool scdr = en_w.isList( );
+    for ( ; p != ERef_Undef ; ) {
+        Enode& en_p = enode_store[p];
+        assert ( en_p.isTerm( ) || en_p.isList( ) );
+        // If p is a congruence root
+        if ( p == en_p.getCgPtr( ) )
+            enode_store.removeSig( p );
+        // Next element
+        p = scdr ? en_p.getSameCdr( ) : en_p.getSameCar( ) ;
+        // End of cycle
+        if ( p == pstart )
+            p = ERef_Undef;
     }
-    // Next element
-    p = scdr ? p->getSameCdr( ) : p->getSameCar( ) ;
-    // Exit if cycle complete
-    if ( p == pstart )
-      p = NULL;
-  }
 
-  // Merge parent lists
-  if ( y->getParent( ) != NULL )
-  {
-    // If x hasn't got parents, we assign y's one
-    if ( x->getParent( ) == NULL )
-      x->setParent( y->getParent( ) );
-    // Splice the parent lists
-    else
+    // Compute deductions that follows from
+    // merging x and y. Probably this function
+    // could be partially embedded into the next
+    // cycle. However, for the sake of simplicity
+    // we prefer to separate the two contexts
+    if ( config.uf_theory_propagation > 0 )
+        deduce( x, y );
+
+    // Perform the union of the two equivalence classes
+    // i.e. reroot every node in y's class to point to x
+
+    ERef v = y;
+    const ERef vstart = v;
+    for (;;) {
+        Enode& en_v = enode_store[v];
+        en_v.setRoot(x);
+        v = en_v.getNext();
+        if (v == vstart)
+            break;
+    }
+
+    // Splice next lists
+    ERef tmp = en_x.getNext();
+    en_x.setNext( en_y.getNext() );
+    en_y.setNext( tmp );
+    // Update size of the congruence class
+    en_x.setSize( en_x.getSize( ) + en_y.getSize( ) );
+
+    // Preserve signatures of larger parent set
+    if ( en_x.getParentSize() < en_y.getParentSize() )
     {
-      if ( x->isList( ) )
-      {
-	Enode * tmp = x->getParent( )->getSameCdr( );
+        enodeid_t tmp = en_x.getCid();
+        en_x.setCid( en_y.getCid() );
+        en_y.setCid( tmp );
+    }
+
+    // Insert new signatures and propagate congruences
+    p = en_w.getParent();
+    for ( ; p != NULL ; ) {
+        Enode& en_p = enode_store[p];
+        // If p is a congruence root
+        if ( p == en_p.getCgPtr( ) ) {
+            //ERef q = EnodeStore.insertSig(p);
+            // Signature already present
+            //if ( q != p )
+            if EnodeStore.containsSig(p) {
+                en_p.setCgPtr( q );
+                pending.push_back( p );
+                pending.push_back( q );
+            }
+        }
+        // Next element
+        p = scdr ? en_p.getSameCdr( ) : en_p.getSameCar( ) ;
+        // Exit if cycle complete
+        if ( p == pstart )
+            p = ERef_Undef;
+    }
+
+    // Merge parent lists
+    if ( en_y.getParent( ) != ERef_Undef ) {
+        // If x hasn't got parents, we assign y's one
+        if ( en_x.getParent( ) == ERef_Undef )
+        en_x.setParent( en_y.getParent( ) );
+        // Splice the parent lists
+        else {
+            if ( en_x.isList() ) {
+                ERef tmp = x->getParent( )->getSameCdr( );
 	x->getParent( )->setSameCdr( y->getParent( )->getSameCdr( ) );
 	y->getParent( )->setSameCdr( tmp );
       }

@@ -28,7 +28,7 @@ void EnodeStore::removeParent(ERef n, ERef p) {
     if ( en_n.getParentSize() == 0 )
     {
         assert( en_n.getParent() == p );
-        setParent( ERef_Undef );
+        en_n.setParent( ERef_Undef );
         return;
     }
     // Otherwise adds remove p from the samecar/cdr list
@@ -42,7 +42,7 @@ void EnodeStore::removeParent(ERef n, ERef p) {
     else
     {
         // Build or update samecar circular list
-        assert( ea[ea_n.getParent()].getSameCar() == p );
+        assert( ea[en_n.getParent()].getSameCar() == p );
         Enode& en_samecar = ea[ea[en_n.getParent()].getSameCar()];
         ea[en_n.getParent()].setSameCar( en_samecar.getSameCar( ) );
     }

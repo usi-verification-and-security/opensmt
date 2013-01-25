@@ -268,9 +268,9 @@ public:
 #endif
 //  inline void         setUseGmp               ( ) { use_gmp = true; }
 //  inline bool         getUseGmp               ( ) { return use_gmp; }
-  void                splitOnDemand           ( vector<ERef> &, int );      // Splitting on demand modulo equality
-  void                splitOnDemand           ( ERef, int );                // Splitting on demand
-  bool                checkDupClause          ( ERef, ERef);                // Check if a clause is duplicate
+//  void                splitOnDemand           ( vec<ERef> &, int );         // Splitting on demand modulo equality
+//  void                splitOnDemand           ( ERef, int );                // Splitting on demand
+//  bool                checkDupClause          ( ERef, ERef);                // Check if a clause is duplicate
   void                explain                 ( ERef
                                               , ERef
                                               , vector<ERef> & );           // Exported explain
