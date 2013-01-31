@@ -32,7 +32,7 @@ class EnodeStore {
     inline bool containsSig(ERef e) const
         { const Enode& en_e = ea[e];
           SigPair sp( ea[ea[en_e.getCar()].getRoot()].getCid(), ea[ea[en_e.getCdr()].getRoot()].getCid() );
-          return sig_tab.contains(sp; }
+          return sig_tab.contains(sp); }
 
 
     inline ERef lookupSig(ERef e) const

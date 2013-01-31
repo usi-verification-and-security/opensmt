@@ -24,6 +24,7 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 #include "Alloc.h"
 
 #include "terms/Term.h"
+#include "pterms/Pterm.h"
 
 //#include "Global.h"
 //#include "EnodeTypes.h"
@@ -42,6 +43,7 @@ struct ELRef {
     uint32_t x;
     void operator= (uint32_t v) { x = v; }
     inline friend bool operator== (const ELRef& a1, const ELRef& a2) {return a1.x == a2.x; }
+    inline friend bool operator!= (const ELRef& a1, const ELRef& a2) {return a1.x != a2.x; }
 //    struct ELRef operator() (uint32_t v) { x = v; return *this;}
 //    explicit ELRef(uint32_t v) { x = v; }
 };
@@ -71,6 +73,7 @@ class CgData {
 class EnodeAllocator;
 
 static ERef const ERef_Undef = RegionAllocator<uint32_t>::Ref_Undef;
+typedef uint32_t CgId;
 
 class Enode
 {
@@ -106,7 +109,7 @@ public:
     Enode(TRef tr_) : tr(tr_) { header.type = et_symb; }
 
     // Constructor for the non-singleton term and list nodes
-    Enode(ERef car_, ERef cdr_, en_type t, EnodeAllocator& ea, ERef er, PTRef pterm, Map<SigPair,ERef,SigHash,Equal<const SigPair&> >& sig_tab);
+    Enode(ERef car_, ERef cdr_, en_type t, EnodeAllocator& ea, ERef er, Map<SigPair,ERef,SigHash,Equal<const SigPair&> >& sig_tab);
 
     Enode* Enode_new(en_type t, TRef tr) {
         assert(sizeof(TRef) == sizeof(uint32_t));
@@ -148,7 +151,7 @@ public:
     void  setCgPtr      (ERef e)        { cgdata->cg_ptr = e; }
     ERef  getCgPtr      ()        const { return cgdata->cg_ptr; }
     CgId  getCid        ()        const { return cgdata->cid; }
-    void  setCid        (CgId id)       { return cgdata->cid = id; }
+    void  setCid        (CgId id)       { cgdata->cid = id; }
 
     ERef  getParent     ()        const { return cgdata->parent; }
     void  setParent     (ERef e)        { cgdata->parent = e; }
@@ -200,7 +203,7 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
     void moveTo(EnodeAllocator& to){
         RegionAllocator<uint32_t>::moveTo(to); }
 
-    ERef alloc(TRef tr) {
+    ERef alloc(PTRef tr) {
         assert(sizeof(TRef)     == sizeof(uint32_t));
         assert(sizeof(ERef)     == sizeof(uint32_t));
         ERef eid = RegionAllocator<uint32_t>::alloc(enodeWord32Size(false));
@@ -258,16 +261,16 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
 class Elist
 {
     bool     rlcd;                  // This is waste of space (flag saying I was relocated)
-    union    { ERef e; ELRef rel_e; }; // Enode that differs from this, or the reference where I was relocated
-    ERef     reason;                // Reason for this distinction
     bool     reloced()    const { return rlcd; }
     ELRef    relocation() const { return rel_e; }
     void     relocate(ELRef er) { rlcd = 1; rel_e = er; }
     friend class ELAllocator;
 
 public:
-    ELRef    link;                  // Link to the next element in the list
-    Elist(ERef e_, ERef r) : rlcd(false), e(e_), reason(r), link(ELRef_Undef) {}
+    ERef     reason;                // Reason for this distinction
+    union    { ERef e; ELRef rel_e; }; // Enode that differs from this, or the reference where I was relocated
+    ELRef    link;                     // Link to the next element in the list
+    Elist(ERef e_, ERef r) : rlcd(false), reason(r), e(e_), link(ELRef_Undef) {}
     Elist* Elist_new(ERef e_, ERef r) {
         assert(sizeof(ELRef) == sizeof(uint32_t));
         size_t sz = sizeof(ELRef) + 2*sizeof(ERef);

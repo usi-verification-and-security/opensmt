@@ -5,13 +5,13 @@ ERef Enode::ERef_Nil;
 
 //struct ELRef ELRef_Undef = { INT32_MAX };
 
-Enode::Enode(ERef car_, ERef cdr_, en_type t, EnodeAllocator& ea, ERef er, PTRef pt, Map<SigPair,ERef,SigHash,Equal<const SigPair&> >& sig_tab) {
+Enode::Enode(ERef car_, ERef cdr_, en_type t, EnodeAllocator& ea, ERef er, Map<SigPair,ERef,SigHash,Equal<const SigPair&> >& sig_tab) {
 
     header.type    = t;
     car            = car_;
     cdr            = cdr_;
 
-    pterm          = pt;
+//    pterm          = pt;
 
     Enode& x = ea[car];
     Enode& y = ea[cdr];

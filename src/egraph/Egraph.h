@@ -174,7 +174,7 @@ public:
   inline void   setTopEnode       ( ERef e )         { assert( e != ERef_Nil ); top = e; }
   inline size_t nofEnodes         ( )                { return enode_store.id_to_enode.size( ); }
 
-  inline ERef indexToDistReas ( unsigned index ) const
+  inline PTRef indexToDistReas ( unsigned index ) const
   {
     assert( index < index_to_dist.size_( ) );
     return index_to_dist[ index ];
@@ -380,7 +380,7 @@ private:
 //  vector< Enode * >              id_to_enode;                   // Table ENODE_ID --> ENODE
 //  vector< int >                  id_to_belong_mask;             // Table ENODE_ID --> ENODE
 //  vector< int >                  id_to_fan_in;                  // Table ENODE_ID --> fan in
-  vec< ERef >                 index_to_dist;                    // Table distinction index --> enode
+  vec< PTRef >                 index_to_dist;                    // Table distinction index --> proper term
 //  list< Enode * >                assertions;                    // List of assertions
 //  vector< Enode * >              cache;                         // Cache simplifications
   ERef                        top;                              // Top node of the formula
