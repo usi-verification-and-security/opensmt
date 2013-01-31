@@ -253,8 +253,8 @@ public:
   // Public APIs for Egraph Core Solver
 
 //  void                initializeTheorySolvers ( SimpSMTSolver * );          // Attaches ordinary theory solvers
-  lbool               inform                  ( ERef );                     // Inform the solver about the existence of a theory atom
-  bool                assertLit               ( ERef, bool = false );       // Assert a theory literal
+  lbool               inform                  ( ERef ) { return l_True; }   // Inform the solver about the existence of a theory atom
+  bool                assertLit               ( ERef, bool = false ) {return true; } // Assert a theory literal
   void                pushBacktrackPoint      ( );                          // Push a backtrack point
   void                popBacktrackPoint       ( );                          // Backtrack to last saved point
   ERef                getDeduction            ( );                          // Return an implied node based on the current state
@@ -268,7 +268,7 @@ public:
 #endif
 //  inline void         setUseGmp               ( ) { use_gmp = true; }
 //  inline bool         getUseGmp               ( ) { return use_gmp; }
-//  void                splitOnDemand           ( vec<ERef> &, int );         // Splitting on demand modulo equality
+  void                splitOnDemand           ( vec<ERef> &, int ) { };       // Splitting on demand modulo equality
 //  void                splitOnDemand           ( ERef, int );                // Splitting on demand
 //  bool                checkDupClause          ( ERef, ERef);                // Check if a clause is duplicate
   void                explain                 ( ERef
@@ -398,12 +398,12 @@ private:
   //===========================================================================
   // Private Routines for Core Theory Solver
 
-  bool    assertLit_      ( ERef );                             // Assert a theory literal
+  bool    assertLit_      ( ERef ) { return true; }             // Assert a theory literal
   //
   // Asserting literals
   //
-  bool    assertEq        ( ERef, ERef, ERef );                 // Asserts an equality
-  bool    assertNEq       ( ERef, ERef, ERef );                 // Asserts a negated equality
+  bool    assertEq        ( ERef, ERef, PTRef );                // Asserts an equality
+  bool    assertNEq       ( ERef, ERef, PTRef );                // Asserts a negated equality
   bool    assertDist      ( ERef, ERef );                       // Asserts a distinction
   //
   // Backtracking

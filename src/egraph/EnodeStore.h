@@ -1,5 +1,5 @@
 #ifndef ENODESTORE_H
-#define ENODESTORE_h
+#define ENODESTORE_H
 
 #include "Enode.h"
 #include "Term.h"

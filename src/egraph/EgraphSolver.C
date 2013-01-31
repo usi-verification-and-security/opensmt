@@ -884,8 +884,8 @@ bool Egraph::mergeLoop( ERef r )
       // reason even in case of unmergability, to have an
       // automatic way of retrieving a conflict
 
-      if ( en_p.isTerm( ) )
-        expStoreExplanation( p, q, congruence_pending ? ERef_Undef : r );
+//      if ( en_p.isTerm( ) )
+//        expStoreExplanation( p, q, congruence_pending ? ERef_Undef : r );
 
       // Check if they can't be merged
       PTRef reason = PTRef_Undef;
@@ -944,7 +944,7 @@ bool Egraph::mergeLoop( ERef r )
           exp_pending.push( p );
 
           initDup1( );
-          expExplain( );
+//          expExplain( );
           doneDup1( );
       }
       // Does the reason term correspond to disequality symbol
@@ -971,7 +971,7 @@ bool Egraph::mergeLoop( ERef r )
           }
           assert( reason_1 != ERef_Undef );
           assert( reason_2 != ERef_Undef );
-          expExplain( reason_1, reason_2, reason );
+//          expExplain( reason_1, reason_2, reason );
       }
       else {
         // The reason is a negated equality
@@ -1000,14 +1000,14 @@ bool Egraph::mergeLoop( ERef r )
           cerr << "Reason is neg equality: " << reason << endl;
 #endif
 
-          expExplain( reason_1, reason_2, reason );
+//          expExplain( reason_1, reason_2, reason );
       }
 
       // Clear remaining pendings
       pending.clear( );
       // Remove the last explanation that links
       // the two unmergable classes
-      expRemoveExplanation( );
+//      expRemoveExplanation( );
       // Return conflict
       return false;
     }
@@ -1033,7 +1033,7 @@ bool Egraph::assertNEq ( ERef x, ERef y, ERef r )
   if ( p == q )
   {
     explanation.push( r );
-    expExplain( x, y, r );
+//    expExplain( x, y, r );
 
 #ifdef PEDANTIC_DEBUG
     assert( checkExp( ) );
@@ -1123,7 +1123,7 @@ bool Egraph::assertDist( ERef d, ERef r )
             // Check condition
             assert( enode_store[p].getRoot() == en_e.getRoot() );
             // Retrieve explanation
-            expExplain( e, p, r );
+//            expExplain( e, p, r );
             // Revert changes, as the current context is inconsistent
             while( nodes_changed.size() != 0 ) {
                 ERef n = nodes_changed.last();
@@ -1171,7 +1171,8 @@ void Egraph::backtrackToStackSize ( size_t size )
     {
       undoMerge( e );
       if ( en_e.isTerm( ) )
-	expRemoveExplanation( );
+//	expRemoveExplanation( );
+        ;
     }
 #if MORE_DEDUCTIONS
     else if ( last_action == ASSERT_NEQ )
@@ -1276,9 +1277,10 @@ void Egraph::backtrackToStackSize ( size_t size )
 //    else if ( last_action == NUMB )
 //      removeNumber( e );
     else if ( last_action == CONS )
-      undoCons( e );
+//      undoCons( e );
 //    else if ( last_action == INSERT_STORE )
 //      removeStore( e );
+        ;
     else
       opensmt_error( "unknown action" );
   }
@@ -1447,7 +1449,8 @@ void Egraph::merge ( ERef x, ERef y )
     // cycle. However, for the sake of simplicity
     // we prefer to separate the two contexts
     if ( config.uf_theory_propagation > 0 )
-        deduce( x, y );
+//        deduce( x, y )
+    ;
 
     // Perform the union of the two equivalence classes
     // i.e. reroot every node in y's class to point to x
