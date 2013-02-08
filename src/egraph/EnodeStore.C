@@ -5,12 +5,17 @@ ERef EnodeStore::addSymb(TRef t) {
     return ea.alloc(t);
 }
 
-ERef EnodeStore::addTerm(ERef sr) {
-    return ea.alloc(sr, ERef_Nil, Enode::et_term);
+ERef EnodeStore::addTerm(ERef sr, ERef args, PTRef term) {
+    ERef r = ea.alloc(sr, args, Enode::et_term, term);
+    insertSig(r);
+    termToERef.insert(term, r);
+    return r;
 }
 
 ERef EnodeStore::cons(ERef x, ERef y) {
-    return ea.alloc(x, y, Enode::et_list);
+    ERef r = ea.alloc(x, y, Enode::et_list, PTRef_Undef);
+    insertSig(r);
+    return r;
 }
 
 // p is only given as an argument for assertion checking!

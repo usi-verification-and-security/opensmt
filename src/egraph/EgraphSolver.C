@@ -833,7 +833,7 @@ Enode * Egraph::getInterpolants( logic_t & l )
 //
 // Assert an equality between nodes x and y
 //
-bool Egraph::assertEq ( ERef x, ERef y, ERef r )
+bool Egraph::assertEq ( ERef x, ERef y, PTRef r )
 {
     Enode& en_x = enode_store[x];
     Enode& en_y = enode_store[x];
@@ -855,9 +855,9 @@ bool Egraph::assertEq ( ERef x, ERef y, ERef r )
 //
 // Merge what is in pending and propagate to parents
 //
-bool Egraph::mergeLoop( ERef r )
+bool Egraph::mergeLoop( PTRef reason )
 {
-    bool congruence_pending = false;
+//    bool congruence_pending = false;
 
     while ( pending.size() != 0 )
     {
@@ -896,7 +896,7 @@ bool Egraph::mergeLoop( ERef r )
       if ( !res )
       {
         merge( en_p.getRoot( ), en_q.getRoot( ) );
-        congruence_pending = true;
+//        congruence_pending = true;
         continue;
       }
 
@@ -976,7 +976,8 @@ bool Egraph::mergeLoop( ERef r )
       else {
         // The reason is a negated equality
         Pterm& pt_reason = term_store[reason];
-        assert( logic.isEquality(pt_reason.symb())
+        assert( logic.getSym_not() == pt_reason.symb() );
+        assert( logic.isEquality(term_store[pt_reason[0]].symb())
 //             || reason->isLeq( )
              );
 
@@ -990,8 +991,16 @@ bool Egraph::mergeLoop( ERef r )
 
           explanation.push(reason);
 
-          reason_1 = enode_store.termToERef[pt_reason[0]];
-          reason_2 = enode_store.termToERef[pt_reason[1]];
+          // The equality that has been negated
+          // If properly booleanized, the left and righ sides of equality
+          // will always be UF terms
+          Pterm& eqty = term_store[pt_reason[0]];
+          // The left hand side of the equality
+          reason_1 = enode_store.termToERef[eqty[0]];
+          // The rhs of the equality
+          reason_2 = enode_store.termToERef[eqty[1]];
+//          reason_1 = enode_store.termToERef[pt_reason[0]];
+//          reason_2 = enode_store.termToERef[pt_reason[1]];
 
           assert( reason_1 != PTRef_Undef );
           assert( reason_2 != PTRef_Undef );
@@ -1016,9 +1025,9 @@ bool Egraph::mergeLoop( ERef r )
 }
 
 //
-// Assert an inequality between nodes x and y
+// Assert a disequality between nodes x and y
 //
-bool Egraph::assertNEq ( ERef x, ERef y, ERef r )
+bool Egraph::assertNEq ( ERef x, ERef y, PTRef r )
 {
 #if MORE_DEDUCTIONS
   neq_list.push_back( r );
@@ -1057,7 +1066,7 @@ bool Egraph::assertNEq ( ERef x, ERef y, ERef r )
   ELRef pdist = forbid_allocator.alloc(p, r);
   Enode& en_q = enode_store[q];
   // If there is no node in forbid list
-  if ( en_q.getForbid( ) == ELRef_Undef )
+  if ( en_q.getForbid() == ELRef_Undef )
   {
     en_q.setForbid( pdist );
     forbid_allocator[pdist].link = pdist;
@@ -1382,24 +1391,28 @@ void Egraph::merge ( ERef x, ERef y )
     assert( checkInvariants( ) );
 #endif
 
-    Enode& en_x = enode_store[x];
-    Enode& en_y = enode_store[y];
+    // This is weird.  If I get the references here and change them afterwards, the cgdata will not be correct.
+//    Enode& en_x = enode_store[x];
+//    Enode& en_y = enode_store[y];
 
 //    assert( !en_x.isConstant( ) || !en_y.isConstant( ) );
 //    assert( !en_x.isConstant( ) || en_x.getSize( ) == 1 );
 //    assert( !y->isConstant( ) || y->getSize( ) == 1 );
-    assert( en_x.getRoot( ) != en_y.getRoot( ) );
-    assert( x == en_x.getRoot( ) );
-    assert( y == en_y.getRoot( ) );
+    assert( enode_store[x].getRoot( ) != enode_store[y].getRoot( ) );
+    assert( x == enode_store[x].getRoot( ) );
+    assert( y == enode_store[y].getRoot( ) );
 
   // Swap x,y if y has a larger eq class
-    if ( en_x.getSize( ) < en_y.getSize( ) )
+    if ( enode_store[x].getSize( ) < enode_store[y].getSize( ) )
 //    || en_x.isConstant( ) )
     {
         ERef tmp = x;
         x = y;
         y = tmp;
     }
+        // Get the references right here
+    Enode& en_x = enode_store[x];
+    Enode& en_y = enode_store[y];
 
 //    assert( !x->isConstant( ) );
 
@@ -1412,7 +1425,7 @@ void Egraph::merge ( ERef x, ERef y )
         // We assign the same forbid list
         if ( en_x.getForbid( ) == ELRef_Undef )
             en_x.setForbid( en_y.getForbid( ) );
-    // Otherwise we splice the two lists
+        // Otherwise we splice the two lists
         else {
             ELRef tmp = forbid_allocator[en_x.getForbid()].link;
             forbid_allocator[en_x.getForbid()].link = forbid_allocator[en_y.getForbid()].link;
@@ -1505,10 +1518,10 @@ void Egraph::merge ( ERef x, ERef y )
     }
 
     // Merge parent lists
-    if ( en_y.getParent( ) != ERef_Undef ) {
+    if ( en_y.getParent() != ERef_Undef ) {
         // If x hasn't got parents, we assign y's one
-        if ( en_x.getParent( ) == ERef_Undef )
-        en_x.setParent( en_y.getParent( ) );
+        if ( en_x.getParent() == ERef_Undef )
+            en_x.setParent( en_y.getParent() );
         // Splice the parent lists
         else {
             if ( en_x.isList() ) {
@@ -1702,8 +1715,8 @@ void Egraph::undoMerge( ERef y )
     // Reinsert back signatures that have been removed during
     // the merge operation
     p = en_w.getParent( );
-    Enode& en_p = enode_store[p];
     for ( ; p != ERef_Undef; ) {
+        Enode& en_p = enode_store[p];
         assert( en_p.isTerm( ) || en_p.isList( ) );
 
         ERef cg = en_p.getCgPtr();

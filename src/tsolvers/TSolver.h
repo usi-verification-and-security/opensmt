@@ -124,8 +124,8 @@ public:
 
   virtual ~TSolver ( ) { }
 
-  virtual lbool               inform              ( Enode * )               = 0;  // Inform the solver about the existence of a theory atom
-  virtual bool                assertLit           ( Enode *, bool = false ) = 0;  // Assert a theory literal
+  virtual lbool               inform              ( ERef )               = 0;  // Inform the solver about the existence of a theory atom
+  virtual bool                assertLit           ( ERef, bool = false ) = 0;  // Assert a theory literal
   virtual void                pushBacktrackPoint  ( )                       = 0;  // Push a backtrack point
   virtual void                popBacktrackPoint   ( )                       = 0;  // Backtrack to last saved point
   virtual bool                check               ( bool )                  = 0;  // Check satisfiability

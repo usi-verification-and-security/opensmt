@@ -402,9 +402,11 @@ private:
   //
   // Asserting literals
   //
+public:
   bool    assertEq        ( ERef, ERef, PTRef );                // Asserts an equality
   bool    assertNEq       ( ERef, ERef, PTRef );                // Asserts a negated equality
   bool    assertDist      ( ERef, ERef );                       // Asserts a distinction
+private:
   //
   // Backtracking
   //
@@ -414,7 +416,7 @@ private:
   //
   bool    unmergeable     ( ERef, ERef, unsigned int* );        // Can two nodes be merged ? FIXME Why unsigned int* and not PTRef& ??
   void    merge           ( ERef, ERef );                       // Merge two nodes
-  bool    mergeLoop       ( ERef );                             // Merge loop
+  bool    mergeLoop       ( PTRef reason );                     // Merge loop
   void    deduce          ( ERef, ERef);                        // Deduce from merging of two nodes
   void    undoMerge       ( ERef );                             // Undoes a merge
   void    undoDisequality ( ERef );                             // Undoes a disequality

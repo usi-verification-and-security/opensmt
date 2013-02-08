@@ -12,11 +12,11 @@ class EnodeStore {
   public:
     EnodeStore() :
         ea(1024*1024, &sig_tab)
-      , ERef_Nil(ea.alloc(TRef_Nil))
-        { Enode::ERef_Nil = ERef_Nil; }
-    ERef addTerm(ERef t);
+      , ERef_Nil(ea.alloc(TRef_Undef))
+        { Enode::ERef_Nil = ERef_Nil; } // Nil is a symbol.  Is this right?
+    ERef addTerm(ERef sym, ERef args, PTRef pt);
     ERef addSymb(TRef t);
-    ERef cons(ERef x, ERef y);
+    ERef cons(ERef car, ERef cdr);
     ERef get_Nil() const { return ERef_Nil; }
     void free(ERef er) { ea.free(er); }
     vec<ERef>           id_to_enode;
@@ -41,11 +41,19 @@ class EnodeStore {
           return sig_tab[sp]; }
     inline void removeSig(ERef e)
         { const Enode& en_e = ea[e];
-          SigPair sp( ea[ea[en_e.getCar()].getRoot()].getCid(), ea[ea[en_e.getCdr()].getRoot()].getCid() );
-          sig_tab.remove(sp); }
+          ERef carRoot = ea[en_e.getCar()].getRoot();
+          ERef cdrRoot = ea[en_e.getCdr()].getRoot();
+          SigPair sp( ea[carRoot].getCid(), ea[cdrRoot].getCid() );
+          sig_tab.remove(sp);
+          assert(!containsSig(e));
+          }
 
     inline void insertSig(ERef e)
-        { const Enode& en_e = ea[e]; sig_tab.insert(SigPair(ea[en_e.getCar()].getCid(), ea[en_e.getCdr()].getCid()), en_e.getCgPtr()); }
+        { const Enode& en_e = ea[e];
+          ERef carRoot = ea[en_e.getCar()].getRoot();
+          ERef cdrRoot = ea[en_e.getCdr()].getRoot();
+          assert(!containsSig(e));
+          sig_tab.insert(SigPair(ea[carRoot].getCid(), ea[cdrRoot].getCid()), en_e.getCgPtr()); }
 };
 
 #endif
