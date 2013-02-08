@@ -24,11 +24,7 @@ Cnfizer::Cnfizer( PtStore &   ptstore_
            , SMTConfig & config_
            , TStore&     symstore_
            , SStore &    sstore_
-           , TRef sym_and
-           , TRef sym_or
-           , TRef sym_not
-           , TRef sym_eq
-           , SRef sort_bool
+           , Logic&      logic_
            , PTRef term_true
            , PTRef term_false
            ) :
@@ -37,12 +33,7 @@ Cnfizer::Cnfizer( PtStore &   ptstore_
      , config   (config_  )
      , symstore (symstore_)
      , sstore   (sstore_  )
-     , sym_AND  (sym_and  )
-     , sym_OR   (sym_or   )
-     , sym_NOT  (sym_not  )
-     , sym_EQ   (sym_eq   )
-     , sort_BOOL(sort_bool)
-
+     , logic    (logic_   )
      , term_TRUE (term_true)
      , term_FALSE(term_false)
 {
@@ -65,9 +56,9 @@ bool Cnfizer::isLit(PTRef r) {
     Pterm& t = ptstore[r];
     if (symstore[t.symb()].rsort() == sort_BOOL) {
         if (t.size() == 0) return true;
-        if (t.symb() == sym_NOT) return isLit(t[0]);
+        if (t.symb() == logic.getSym_not() ) return isLit(t[0]);
         // At this point all arguments of equivalence have the same sort.  Check only the first
-        if ((t.symb() == sym_EQ) && (symstore[ptstore[t[0]].symb()].rsort() != sort_BOOL)) return true;
+        if ((t.symb() == logic.getSym_eq() ) && (symstore[ptstore[t[0]].symb()].rsort() != sort_BOOL)) return true;
     }
     return false;
 }
@@ -79,9 +70,9 @@ bool Cnfizer::isAtom(PTRef r) const {
     Pterm& t = ptstore[r];
     if (symstore[t.symb()].rsort() == sort_BOOL) {
         if (t.size() == 0) return true;
-        if (t.symb() == sym_NOT) return false;
+        if (t.symb() == logic.getSym_not() ) return false;
         // At this point all arguments of equivalence have the same sort.  Check only the first
-        if ((t.symb() == sym_EQ) && (symstore[ptstore[t[0]].symb()].rsort() != sort_BOOL)) return true;
+        if ((t.symb() == logic.getSym_eq() ) && (symstore[ptstore[t[0]].symb()].rsort() != sort_BOOL)) return true;
     }
     return false;
 }
@@ -99,12 +90,15 @@ const Lit Cnfizer::findLit(PTRef ptr) {
     }
     else
         v = seen[p];
-    return Lit(v, sgn);
+    Lit l = Lit(v, sgn);
+    if (!isBooleanOperator(ptstore[p].symb()))
+        varToTerm.insert(v,p);
+    return l;
 }
 
 void Cnfizer::getTerm(PTRef r, PTRef& p, bool& sgn) const {
     sgn = false;
-    while (ptstore[r].symb() == sym_NOT) {
+    while (ptstore[r].symb() == logic.getSym_not()) {
         r = ptstore[r][0];
         sgn = !sgn;
     }
@@ -115,7 +109,7 @@ void Cnfizer::getTerm(PTRef r, PTRef& p, bool& sgn) const {
 bool Cnfizer::isNPAtom(PTRef r, PTRef& p) const {
     bool sign = false;
     while (true) {
-        if (ptstore[r].symb() == sym_NOT) {
+        if (ptstore[r].symb() == logic.getSym_not() ) {
             r = ptstore[r][0];
             sign = !sign;
         }
@@ -203,14 +197,14 @@ bool Cnfizer::deMorganize( PTRef formula
                          )
 {
     Pterm& pt = ptstore[formula];
-    assert( pt.symb() != sym_AND );
+    assert( pt.symb() != logic.getSym_and() );
 
     bool rval;
 
     //
     // Case (not (and a b)) --> (or (not a) (not b))
     //
-    if (pt.symb() == sym_NOT && ptstore[pt[0]].symb() == sym_AND) {
+    if (pt.symb() == logic.getSym_not() && ptstore[pt[0]].symb() == logic.getSym_and()) {
 
         PTRef and_tr = pt[0];
         Pterm& and_t = ptstore[and_tr];
@@ -232,7 +226,7 @@ bool Cnfizer::deMorganize( PTRef formula
                 if (isLit(conj_tr)) {
                     clause.push(~toLit(conj_tr));
                 }
-                else if (conj_t.symb() == sym_AND)
+                else if (conj_t.symb() == logic.getSym_and())
                     to_process.push(conj_tr);
 
                 else assert(false);
@@ -585,7 +579,7 @@ bool Cnfizer::checkDeMorgan(PTRef e)
 {
     Map<PTRef,bool,TRefHash,Equal<PTRef> > check_cache;
     Pterm& not_t = ptstore[e];
-    if ( not_t.symb() == sym_NOT && checkPureConj(not_t[0], check_cache) ) return true;
+    if ( not_t.symb() == logic.getSym_not() && checkPureConj(not_t[0], check_cache) ) return true;
     else return false;
 }
 
@@ -603,7 +597,7 @@ bool Cnfizer::checkPureConj(PTRef e, Map<PTRef,bool,TRefHash,Equal<PTRef> > & ch
         e = to_process.last(); to_process.pop();
         Pterm& and_t = ptstore[e];
 
-        if (and_t.symb() == sym_AND)
+        if (and_t.symb() == logic.getSym_and())
             for (int i = 0; i < and_t.size(); i++)
                 to_process.push(and_t[i]);
         else if (!isLit(e))
@@ -642,7 +636,7 @@ bool Cnfizer::giveToSolver( PTRef f
     //
     Pterm& cand_t = ptstore[f];
 
-    if (cand_t.symb() == sym_OR) {
+    if (cand_t.symb() == logic.getSym_or()) {
         for (int i = 0; i < cand_t.size(); i ++) {
             assert(isLit(cand_t[i]));
             clause.push(findLit(cand_t[i]));
@@ -657,7 +651,7 @@ bool Cnfizer::giveToSolver( PTRef f
     //
     // Conjunction
     //
-    assert(cand_t.symb() == sym_AND);
+    assert(cand_t.symb() == logic.getSym_and());
     vec<PTRef> conj;
     retrieveTopLevelFormulae( f, conj );
     bool result = true;
@@ -681,7 +675,7 @@ void Cnfizer::retrieveTopLevelFormulae(PTRef f, vec<PTRef>& top_level_formulae)
     while (to_process.size() != 0) {
         f = to_process.last(); to_process.pop();
         Pterm& cand_t = ptstore[f];
-        if (cand_t.symb() == sym_AND)
+        if (cand_t.symb() == logic.getSym_and())
             for (int i = 0; i < cand_t.size(); i++)
                 to_process.push(cand_t[i]);
         else top_level_formulae.push(f);

@@ -36,7 +36,7 @@ bool Tseitin::cnfize(PTRef formula
     assert(formula != PTRef_Undef);
     Pterm& ft = ptstore[formula];
     // Top level formula must not be and anymore
-    assert(ft.symb() != sym_AND);
+    assert(ft.symb() != logic.getSym_and());
 
     // Add the top level literal as a unit to solver.
     vec<Lit> clause;
@@ -62,20 +62,28 @@ bool Tseitin::cnfize(PTRef formula
             continue;
 
         Pterm& pt = ptstore[ptr];
-        if (pt.symb() == sym_AND)
+        if (pt.symb() == logic.getSym_and())
             cnfizeAnd(ptr);
-        else if (pt.symb() == sym_OR)
+        else if (pt.symb() == logic.getSym_or())
             cnfizeOr(ptr);
-        else if (pt.symb() == sym_XOR)
+        else if (pt.symb() == logic.getSym_xor())
             cnfizeXor(ptr);
-        else if (pt.symb() == sym_EQ)
+        else if (pt.symb() == logic.getSym_eq())
             cnfizeIff(ptr);
-        else if (pt.symb() != sym_NOT && pt.size() > 0)
-            opensmt_error2("operator not handled", symstore.getName(ptstore[ptr].symb()));
+        else if (pt.symb() != logic.getSym_not() && pt.size() > 0) {
+            if (logic.isEquality(pt.symb())) {
+                goto tseitin_end;
+                // This is a bridge equality
+                // It should be treated as a literal by the SAT solver
+            }
+            else {
+                opensmt_error2("operator not handled", symstore.getName(ptstore[ptr].symb()));
+            }
+        }
 
         for (int i = 0; i < pt.size(); i++)
             unprocessed_terms.push(pt[i]);
-
+tseitin_end:
         processed.insert(ptr, true);
 
     }

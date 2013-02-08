@@ -26,6 +26,7 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 //#include "Egraph.h"
 #include "PtStore.h"
 #include "SStore.h"
+#include "Logic.h"
 
 // A small typechecked class for checkClause type return values to enable us to check whether the formula is unsatisfiable simultaneously
 class ckval {
@@ -57,11 +58,7 @@ class Cnfizer
            , SMTConfig & config_
            , TStore&     symstore_
            , SStore &    sstore_
-           , TRef sym_and
-           , TRef sym_or
-           , TRef sym_not
-           , TRef sym_eq
-           , SRef sort_bool
+           , Logic&      logic_
            , PTRef term_true
            , PTRef term_false
            );
@@ -126,11 +123,7 @@ private:
 protected:
     PTRef  term_TRUE;
     PTRef  term_FALSE;
-    TRef  sym_AND;
-    TRef  sym_OR;
-    TRef  sym_NOT;
-    TRef  sym_EQ;
-    TRef  sym_XOR;
+    Logic& logic;
     SRef  sort_BOOL;
 
     Map<PTRef,bool,PTRefHash,Equal<PTRef> >   processed;  // Is a term already processed
@@ -138,13 +131,14 @@ protected:
 
     bool  isLit            (PTRef r);
     const Lit findLit      (PTRef ptr);
-    bool  isBooleanOperator(TRef tr) { return (tr == sym_AND) | (tr == sym_OR) | (tr == sym_NOT) | (tr == sym_EQ) | (tr == sym_XOR); }
+    bool  isBooleanOperator(TRef tr) { return (tr == logic.getSym_and()) | (tr == logic.getSym_or() ) | (tr == logic.getSym_not() ) | (tr == logic.getSym_eq() ) | (tr == logic.getSym_xor() ); }
     bool  isAtom           (PTRef r) const;
     bool  isNPAtom         (PTRef r, PTRef& p)    const; // Check if r is a (negated) atom.  Return true if the corresponding atom is negated.  The purified reference is placed in the second argument.
     void  declareAtom      (PTRef, TRef);                // Declare an atom for the smt/sat solver
     bool  termSeen         (PTRef)                const; // True if the term has been seen and thus processed in the sense that there is already literal corresponding to it.  Sees through negations.
     void  getTerm          (PTRef, PTRef&, bool&) const; // Return the term and its sign
 
+    map<Var,PTRef>
 };
 
 #endif

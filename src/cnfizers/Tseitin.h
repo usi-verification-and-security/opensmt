@@ -36,11 +36,7 @@ public:
            , SMTConfig& config_
            , TStore&    symstore_
            , SStore&    sstore_
-           , TRef       sym_and
-           , TRef       sym_or
-           , TRef       sym_not
-           , TRef       sym_eq
-           , SRef       sort_bool
+           , Logic&     logic_
            , PTRef      term_true
            , PTRef      term_false
            )
@@ -49,11 +45,7 @@ public:
                 , config_
                 , symstore_
                 , sstore_
-                , sym_and
-                , sym_or
-                , sym_not
-                , sym_eq
-                , sort_bool
+                , logic_
                 , term_true
                 , term_false) {}
 

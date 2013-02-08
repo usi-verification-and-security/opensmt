@@ -77,6 +77,7 @@ Logic::Logic(SMTConfig& c, SStore& s, TStore& t) :
     if (tr == TRef_Undef) { free(tk_or); assert(false); }
     if (term_store[tr].setLeftAssoc() == false) assert(false);
     term_store[tr].setNoScoping();
+    sym_XOR = tr;
 }
 
 bool Logic::setLogic(const char* l) {

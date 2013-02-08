@@ -109,11 +109,7 @@ class Interpret {
             , config
             , tstore
             , store
-            , logic.getSym_and()
-            , logic.getSym_or()
-            , logic.getSym_not()
-            , logic.getSym_eq()
-            , logic.getSort_bool()
+            , logic
             , ptstore.getTerm_true()
             , ptstore.getTerm_false())
         , f_exit(false)

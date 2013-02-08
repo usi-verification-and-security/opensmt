@@ -24,6 +24,7 @@ class Logic {
     TRef                sym_FALSE;
     TRef                sym_AND;
     TRef                sym_OR;
+    TRef                sym_XOR;
     TRef                sym_NOT;
     TRef                sym_EQ;
     SRef                sort_BOOL;
@@ -43,6 +44,7 @@ class Logic {
     TRef          getSym_false     ()              const { return sym_FALSE; }
     TRef          getSym_and       ()              const { return sym_AND;   }
     TRef          getSym_or        ()              const { return sym_OR;    }
+    TRef          getSym_xor       ()              const { return sym_XOR;   }
     TRef          getSym_not       ()              const { return sym_NOT;   }
     TRef          getSym_eq        ()              const { return sym_EQ;    }
     SRef          getSort_bool     ()              const { return sort_BOOL; }
