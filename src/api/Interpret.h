@@ -10,6 +10,7 @@
 #include "terms/Term.h"
 #include "pterms/PtStore.h"
 #include "Tseitin.h"
+#include "egraph/Egraph.h"
 
 enum ConfType { O_EMPTY, O_STR, O_SYM, O_NUM, O_DEC, O_HEX, O_BIN, O_LIST, O_ATTR, O_BOOL };
 
@@ -74,6 +75,8 @@ class Interpret {
     SimpSMTSolver                              solver;
     Tseitin                                    ts;
 
+    Egraph                                     uf_solver;
+
     bool                        f_exit;
 
     void                        setInfo(ASTNode& n);
@@ -81,6 +84,7 @@ class Interpret {
     void                        setOption(ASTNode& n);
     void                        getOption(ASTNode& n);
     bool                        declareFun(const char* fname, const vec<SRef>& args);
+    bool                        checkSat(const char*);
     PTRef                       parseTerm(const ASTNode& term, vec<LetFrame>& let_branch);
     void                        exit();
 
@@ -112,6 +116,12 @@ class Interpret {
             , logic
             , ptstore.getTerm_true()
             , ptstore.getTerm_false())
+        , uf_solver( config
+                   , store
+                   , tstore
+                   , ptstore
+                   , logic
+                   )
         , f_exit(false)
         , asrt_lev(0) {};
 

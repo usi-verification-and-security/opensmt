@@ -730,3 +730,15 @@ void Cnfizer::retrieveTopLevelFormulae(PTRef f, vec<PTRef>& top_level_formulae)
 //  assert( arg->isTerm( ) );
 //  return egraph.mkNot( egraph.cons( arg ) );
 //}
+
+
+vec<ValPair>* Cnfizer::getModel() {
+    assert(solver.okay());
+    vec<lbool>& model = solver.model;
+    vec<ValPair>* out = new vec<ValPair>();
+    for (Var v = 0; v < model.size(); v++) {
+        if (varToTerm.contains(v))
+            out->push(ValPair(varToTerm[v], model[v]));
+    }
+    return out;
+}

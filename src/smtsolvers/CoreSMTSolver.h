@@ -146,7 +146,7 @@ class CoreSMTSolver : public SMTSolver
 
     // Extra results: (read-only member variable)
     //
-    vec<lbool> model;             // If problem is satisfiable, this vector contains the model (if any).
+//    vec<lbool> model;             // If problem is satisfiable, this vector contains the model (if any). (moded to SMTSolver)
     vec<Lit>   conflict;          // If problem is unsatisfiable (possibly under assumptions),
     // this vector represent the final conflict clause expressed in the assumptions.
 

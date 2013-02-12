@@ -409,20 +409,7 @@ declare_fun_err: ;
         }
     }
     if ((strcmp(cmd, "check-sat") == 0)) {
-        if (logic.isSet()) {
-            solver.initialize();
-            lbool res = solver.solve();
-            if (res == l_True)
-                notify_formatted(false, "sat");
-            else if (res == l_False)
-                notify_formatted(false, "unsat");
-            else
-                notify_formatted(false, "unknown");
-        }
-        else {
-            notify_formatted(true, "Illegal command before set-logic: %s", cmd);
-            return false;
-        }
+        checkSat(cmd);
     }
     if (strcmp(cmd, "exit") == 0) {
         exit();
@@ -669,6 +656,41 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
     }
     comment_formatted("Unknown term type");
     return PTRef_Undef;
+}
+
+bool Interpret::checkSat(const char* cmd) {
+    if (logic.isSet()) {
+        solver.initialize();
+        lbool res = solver.solve();
+        if (res == l_True) {
+            notify_formatted(false, "sat");
+            vec<ValPair>* val = ts.getModel();
+            // This cannot of course be the final solution, but it would be nice to able to check if everything works
+            for (int i = 0; i < val->size(); i++) {
+                Pterm& t = ptstore[(*val)[i].getTerm()];
+                if (logic.isEquality(t.symb())) {
+                    if (tstore[t.symb()][0] != logic.getSort_bool()) {
+                        notify_formatted(false, "Term is uf equality: %d", (*val)[i]);
+                        if ((*val)[i].getVal() != l_Undef) {
+                            lbool stat = uf_solver.addEquality((*val)[i].getTerm(), (*val)[i].getVal() == l_True);
+                            if (stat == l_False) {
+                                notify_formatted(false, "Unsatisfiable");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else if (res == l_False)
+            notify_formatted(false, "unsat");
+        else
+            notify_formatted(false, "unknown");
+    }
+    else {
+        notify_formatted(true, "Illegal command before set-logic: %s", cmd);
+        return false;
+    }
+    return true;
 }
 
 bool Interpret::declareFun(const char* fname, const vec<SRef>& args) {

@@ -46,6 +46,16 @@ const ckval ck_True  = toCkval( 1);
 const ckval ck_False = toCkval(-1);
 const ckval ck_Unsat = toCkval( 0);
 
+class ValPair {
+  private:
+    PTRef       t;
+    lbool       v;
+  public:
+    ValPair(PTRef term, lbool value) : t(term), v(value) {}
+    const PTRef getTerm() const { return t; }
+    const lbool getVal () const { return v; }
+};
+
 //
 // Generic class for conversion into CNF
 //
@@ -71,6 +81,7 @@ class Cnfizer
                                 , const ipartitions_t = 0
 #endif
                                 ); // Main routine
+    vec<ValPair>* getModel            ();                              // Retrieves the model (if SAT and solved)
 
 protected:
 
@@ -96,6 +107,7 @@ protected:
                                         );                              // Gives formula to the SAT solver
 
     void  retrieveTopLevelFormulae   ( PTRef, vec<PTRef> & );         // Retrieves the list of top-level formulae
+
 //  void  retrieveClause             ( PTRef, vec<PTRef> & );         // Retrieve a clause from a formula
 //  void  retrieveConjuncts          ( PTRef, vec<PTRef> & );         // Retrieve the list of conjuncts
 
@@ -138,7 +150,7 @@ protected:
     bool  termSeen         (PTRef)                const; // True if the term has been seen and thus processed in the sense that there is already literal corresponding to it.  Sees through negations.
     void  getTerm          (PTRef, PTRef&, bool&) const; // Return the term and its sign
 
-    map<Var,PTRef>
+    Map<Var,PTRef,VarHash,Equal<Var> >        varToTerm;
 };
 
 #endif

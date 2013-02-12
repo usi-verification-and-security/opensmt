@@ -827,6 +827,11 @@ Enode * Egraph::getInterpolants( logic_t & l )
 //}
 #endif
 
+lbool Egraph::addEquality(PTRef term, bool val) {
+
+    return l_Undef;
+}
+
 //===========================================================================
 // Private Routines for Core Theory Solver
 

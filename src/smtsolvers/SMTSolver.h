@@ -64,6 +64,8 @@ protected:
 //  THandler *  theory_handler; // Handles theory
 //  Egraph &    egraph;         // Stores Sgraph
   SMTConfig & config;         // Stores Config
+public:
+  vec<lbool>  model;          // Stores model
 };
 
 #endif

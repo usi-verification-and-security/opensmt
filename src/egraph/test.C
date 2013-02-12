@@ -11,12 +11,12 @@
 
 int main(int argc, char **argv) {
     SMTConfig cfg(argc, argv);
-    EnodeStore estore;
+//    EnodeStore estore;
     SStore sort_store(cfg);
     TStore sym_store;
     Logic logic(cfg, sort_store, sym_store);
     PtStore term_store(sym_store, sort_store, logic.getSym_true(), logic.getSym_false());
-    Egraph egraph(cfg, sort_store, sym_store, term_store, estore, logic);
+    Egraph egraph(cfg, sort_store, sym_store, term_store, logic);
 
     Identifier i("TSort");
     Sort s(i);
@@ -100,41 +100,50 @@ int main(int argc, char **argv) {
     deq_args.push(eq3_ptr);
     PTRef deq_ptr = term_store.insertTerm(not_sym, deq_args);
 
+    lbool rval = egraph.addEquality(eq3_ptr, false);
+    assert(rval == l_Undef);
+
+    rval = egraph.addEquality(eq2_ptr, true);
+    assert(rval == l_Undef);
+
+    rval = egraph.addEquality(eq_ptr, true);
+    assert(rval == l_False);
+
     // Symbols
-    ERef a_er = estore.addSymb(a_tr);
-    ERef b_er = estore.addSymb(b_tr);
-    ERef c_er = estore.addSymb(c_tr);
-    ERef f_er = estore.addSymb(f_tr);
-
-    ERef ERef_Nil = estore.get_Nil();
-
-    // Enode Terms
-    ERef a = estore.addTerm(a_er, ERef_Nil, a_ptr);
-    ERef b = estore.addTerm(b_er, ERef_Nil, b_ptr);
-    ERef c = estore.addTerm(c_er, ERef_Nil, c_ptr);
-
-    // Enode Lists
-    ERef b_list_er = estore.cons(b, estore.get_Nil());
-    ERef a_b_list_er = estore.cons(a, b_list_er);
-
-    // f(a,b) term
-    ERef f_a_b = estore.addTerm(f_er, a_b_list_er, f_a_b_ptr);
-
-    // Enode Lists continue
-    ERef f2_arg_list_er = estore.cons(f_a_b, b_list_er);
-
-    // Enode Terms continue
-    ERef f2_a_b_b = estore.addTerm(f_er, f2_arg_list_er, f2_f_a_b_b_ptr);
-
-    // a != c
-    bool rval = egraph.assertNEq(a, c, deq_ptr);
-    assert(rval == true);
-    // f(f(a,b),b) = c
-    rval = egraph.assertEq(f2_a_b_b, c, eq2_ptr);
-    assert(rval == true);
-    // f(a,b) = a
-    rval = egraph.assertEq(f_a_b, a, eq_ptr);
-    assert(rval == false);
-
+//    ERef a_er = estore.addSymb(a_tr);
+//    ERef b_er = estore.addSymb(b_tr);
+//    ERef c_er = estore.addSymb(c_tr);
+//    ERef f_er = estore.addSymb(f_tr);
+//
+//    ERef ERef_Nil = estore.get_Nil();
+//
+//    // Enode Terms
+//    ERef a = estore.addTerm(a_er, ERef_Nil, a_ptr);
+//    ERef b = estore.addTerm(b_er, ERef_Nil, b_ptr);
+//    ERef c = estore.addTerm(c_er, ERef_Nil, c_ptr);
+//
+//    // Enode Lists
+//    ERef b_list_er = estore.cons(b, estore.get_Nil());
+//    ERef a_b_list_er = estore.cons(a, b_list_er);
+//
+//    // f(a,b) term
+//    ERef f_a_b = estore.addTerm(f_er, a_b_list_er, f_a_b_ptr);
+//
+//    // Enode Lists continue
+//    ERef f2_arg_list_er = estore.cons(f_a_b, b_list_er);
+//
+//    // Enode Terms continue
+//    ERef f2_a_b_b = estore.addTerm(f_er, f2_arg_list_er, f2_f_a_b_b_ptr);
+//
+//    // a != c
+//    bool rval = egraph.assertNEq(a, c, deq_ptr);
+//    assert(rval == true);
+//    // f(f(a,b),b) = c
+//    rval = egraph.assertEq(f2_a_b_b, c, eq2_ptr);
+//    assert(rval == true);
+//    // f(a,b) = a
+//    rval = egraph.assertEq(f_a_b, a, eq_ptr);
+//    assert(rval == false);
+//
     return 0;
 }

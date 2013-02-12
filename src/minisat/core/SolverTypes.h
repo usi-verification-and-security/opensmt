@@ -40,6 +40,17 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 typedef int Var;
 #define var_Undef (-1)
 
+struct VarHash {
+    uint32_t operator() (const Var& s) const { return s; } };
+
+// Not sure why this does not work... Too many int-typed Equal
+// templates?
+//template <>
+//struct Equal<const Var&> {
+//    bool operator() (const Var& v1, const Var& v2) const {
+//        return (v1 == v2); };
+//};
+
 
 class Lit {
 	int     x;

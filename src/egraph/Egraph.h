@@ -43,21 +43,20 @@ private:
   SStore &      sort_store;
   TStore &      sym_store;
   PtStore&      term_store;
-  EnodeStore &  enode_store;
   Logic&        logic;
+  EnodeStore    enode_store;
   ERef          ERef_Nil;
   ELAllocator   forbid_allocator;
 public:
 
   Egraph( SMTConfig & c
-        , SStore & s, TStore& syms, PtStore& terms, EnodeStore& e, Logic& l )
+        , SStore & s, TStore& syms, PtStore& terms, Logic& l )
       : CoreTSolver        ( 0, "EUF Solver", c )
       , sort_store         ( s )
       , sym_store          ( syms )
       , term_store         ( terms )
-      , enode_store        ( e )
       , logic              ( l )
-      , ERef_Nil           ( e.get_Nil() )
+      , ERef_Nil           ( enode_store.get_Nil() )
       , active_dup1        ( false )
       , active_dup2        ( false )
       , dup_count1         ( 0 )
@@ -403,10 +402,11 @@ private:
   // Asserting literals
   //
 public:
+  lbool   addEquality     ( PTRef, bool);
+private:
   bool    assertEq        ( ERef, ERef, PTRef );                // Asserts an equality
   bool    assertNEq       ( ERef, ERef, PTRef );                // Asserts a negated equality
   bool    assertDist      ( ERef, ERef );                       // Asserts a distinction
-private:
   //
   // Backtracking
   //
