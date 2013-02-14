@@ -8,6 +8,19 @@
 
 typedef RegionAllocator<uint32_t>::Ref PTRef;
 
+typedef TRefHash PTRefHash;
+// These are redefinitions...
+//struct PTRefHash {
+//    uint32_t operator () (const PTRef s) const {
+//        return (uint32_t)s; }
+//};
+
+//template <>
+//struct Equal<const PTRef> {
+//    bool operator() (const PTRef s1, const PTRef s2) { return s1 == s2; }
+//};
+
+
 typedef uint32_t TRef;
 typedef uint32_t PTId; // Used as an array index
 

@@ -670,11 +670,13 @@ bool Interpret::checkSat(const char* cmd) {
                 Pterm& t = ptstore[(*val)[i].getTerm()];
                 if (logic.isEquality(t.symb())) {
                     if (tstore[t.symb()][0] != logic.getSort_bool()) {
-                        notify_formatted(false, "Term is uf equality: %d", (*val)[i]);
+                        char* term_str = ptstore.printTerm((*val)[i].getTerm());
+                        comment_formatted("Term is uf equality: %s%s", (*val)[i].getVal() == l_True ? "" : "not ", term_str);
+                        free(term_str);
                         if ((*val)[i].getVal() != l_Undef) {
                             lbool stat = uf_solver.addEquality((*val)[i].getTerm(), (*val)[i].getVal() == l_True);
                             if (stat == l_False) {
-                                notify_formatted(false, "Unsatisfiable");
+                                comment_formatted("Unsatisfiable");
                             }
                         }
                     }

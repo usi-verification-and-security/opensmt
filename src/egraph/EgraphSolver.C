@@ -828,8 +828,52 @@ Enode * Egraph::getInterpolants( logic_t & l )
 #endif
 
 lbool Egraph::addEquality(PTRef term, bool val) {
+    term_store.printTerm(term);
+    Pterm& t = term_store[term];
+    assert( logic.isEquality(t.symb()) );
+    assert( sym_store[t.symb()][0] != logic.getSort_bool() );
 
-    return l_Undef;
+    vec<PTRef> queue;
+    queue.push(t[0]);
+    queue.push(t[1]);
+    vec<PTRef> to_process;
+
+    while (queue.size() != 0) {
+        PTRef tr = queue.last();
+        queue.pop();
+        to_process.push(tr);
+        Pterm& tm = term_store[tr];
+        for (int i = 0; i < tm.size(); i++)
+            queue.push(tm[i]);
+    }
+
+
+    // construct an enode term for each term in to_process
+    for (int i = to_process.size() - 1; i >= 0; i--) {
+        PTRef tr = to_process[i];
+        Pterm& tm = term_store[tr];
+        if (!enode_store.termToERef.contains(tr)) {
+            ERef sym = enode_store.addSymb(tm.symb());
+            ERef cdr = ERef_Nil;
+            for (int j = tm.size()-1; j >= 0; j--) {
+                ERef car = enode_store.termToERef[tm[j]];
+                cdr = enode_store.cons(car, cdr);
+            }
+            enode_store.addTerm(sym, cdr, tr);
+        }
+    }
+
+    // Get the lhs and rhs of the equality
+    ERef eq_lhs = enode_store.termToERef[t[0]];
+    ERef eq_rhs = enode_store.termToERef[t[1]];
+
+    bool rval;
+    if (val == true)
+        rval = assertEq( eq_lhs, eq_rhs, term );
+    else
+        rval = assertNEq( eq_lhs, eq_rhs, term);
+
+    return rval == false ? l_False : l_Undef;
 }
 
 //===========================================================================
@@ -981,8 +1025,7 @@ bool Egraph::mergeLoop( PTRef reason )
       else {
         // The reason is a negated equality
         Pterm& pt_reason = term_store[reason];
-        assert( logic.getSym_not() == pt_reason.symb() );
-        assert( logic.isEquality(term_store[pt_reason[0]].symb())
+        assert( logic.isEquality(pt_reason.symb())
 //             || reason->isLeq( )
              );
 
@@ -996,14 +1039,13 @@ bool Egraph::mergeLoop( PTRef reason )
 
           explanation.push(reason);
 
-          // The equality that has been negated
+          // The equality
           // If properly booleanized, the left and righ sides of equality
           // will always be UF terms
-          Pterm& eqty = term_store[pt_reason[0]];
           // The left hand side of the equality
-          reason_1 = enode_store.termToERef[eqty[0]];
+          reason_1 = enode_store.termToERef[pt_reason[0]];
           // The rhs of the equality
-          reason_2 = enode_store.termToERef[eqty[1]];
+          reason_2 = enode_store.termToERef[pt_reason[1]];
 //          reason_1 = enode_store.termToERef[pt_reason[0]];
 //          reason_2 = enode_store.termToERef[pt_reason[1]];
 
@@ -1184,9 +1226,9 @@ void Egraph::backtrackToStackSize ( size_t size )
     if ( last_action == MERGE )
     {
       undoMerge( e );
-      if ( en_e.isTerm( ) )
+      if ( en_e.isTerm( ) ) {
 //	expRemoveExplanation( );
-        ;
+      }
     }
 #if MORE_DEDUCTIONS
     else if ( last_action == ASSERT_NEQ )
@@ -1466,9 +1508,9 @@ void Egraph::merge ( ERef x, ERef y )
     // could be partially embedded into the next
     // cycle. However, for the sake of simplicity
     // we prefer to separate the two contexts
-    if ( config.uf_theory_propagation > 0 )
-//        deduce( x, y )
-    ;
+    if ( config.uf_theory_propagation > 0 ) {
+//        deduce( x, y );
+    }
 
     // Perform the union of the two equivalence classes
     // i.e. reroot every node in y's class to point to x

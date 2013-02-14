@@ -5,8 +5,19 @@
 #include "Vec.h"
 #include "Alloc.h"
 #include "Sort.h"
+#include "Map.h"
 
 typedef RegionAllocator<uint32_t>::Ref TRef;
+
+struct TRefHash {
+    uint32_t operator () (const TRef s) const {
+        return (uint32_t)s; }
+};
+
+template <>
+struct Equal<const TRef> {
+    bool operator() (const TRef s1, const TRef s2) { return s1 == s2; }
+};
 
 typedef uint32_t SRef;
 typedef uint32_t TId; // Used as an array index

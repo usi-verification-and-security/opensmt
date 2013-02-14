@@ -21,7 +21,8 @@ class EnodeStore {
     void free(ERef er) { ea.free(er); }
     vec<ERef>           id_to_enode;
     Enode& operator[] (ERef e) { return ea[e]; }
-    Map<PTRef,ERef,ERefHash,Equal<ERef> > termToERef;
+    Map<PTRef,ERef,PTRefHash,Equal<PTRef> > termToERef;
+    Map<TRef,ERef, TRefHash,Equal<TRef> > symToERef;
 
     void removeParent(ERef, ERef);
 
@@ -34,11 +35,20 @@ class EnodeStore {
           SigPair sp( ea[ea[en_e.getCar()].getRoot()].getCid(), ea[ea[en_e.getCdr()].getRoot()].getCid() );
           return sig_tab.contains(sp); }
 
+    inline bool containsSig(ERef car, ERef cdr) const
+        { SigPair sp( ea[ea[car].getRoot()].getCid(), ea[ea[cdr].getRoot()].getCid() );
+          return sig_tab.contains(sp); }
+
 
     inline ERef lookupSig(ERef e) const
         { const Enode& en_e = ea[e];
           SigPair sp( ea[ea[en_e.getCar()].getRoot()].getCid(), ea[ea[en_e.getCdr()].getRoot()].getCid() );
           return sig_tab[sp]; }
+
+    inline ERef lookupSig(ERef car, ERef cdr) const
+        { SigPair sp( ea[ea[car].getRoot()].getCid(), ea[ea[cdr].getRoot()].getCid() );
+          return sig_tab[sp]; }
+
     inline void removeSig(ERef e)
         { const Enode& en_e = ea[e];
           ERef carRoot = ea[en_e.getCar()].getRoot();

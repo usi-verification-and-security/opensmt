@@ -5,10 +5,10 @@
 #include "TStore.h"
 #include "SStore.h"
 
-struct PTRefHash {
-    uint32_t operator () (const PTRef s) const {
-        return (uint32_t)s; }
-};
+//struct PTRefHash {
+//    uint32_t operator () (const PTRef s) const {
+//        return (uint32_t)s; }
+//};
 
 
 
@@ -37,6 +37,9 @@ class PtStore {
 
     Pterm& operator[] (PTRef tr) { return pta[tr]; }
     const Pterm& operator[] (PTRef tr) const { return pta[tr]; }
+
+    char* printTerm(PTRef) const;
+    char* printTerm_(PTRef) const;
 };
 
 #endif

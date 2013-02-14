@@ -2,20 +2,58 @@
 #include "Term.h"
 
 ERef EnodeStore::addSymb(TRef t) {
-    return ea.alloc(t);
+    ERef rval;
+    if (symToERef.contains(t))
+        rval = symToERef[t];
+    else {
+        ERef er = ea.alloc(t);
+        symToERef.insert(t, er);
+        rval = er;
+    }
+    return rval;
 }
 
 ERef EnodeStore::addTerm(ERef sr, ERef args, PTRef term) {
-    ERef r = ea.alloc(sr, args, Enode::et_term, term);
-    insertSig(r);
-    termToERef.insert(term, r);
-    return r;
+    ERef rval;
+    if (termToERef.contains(term))
+        rval = termToERef[term];
+    else {
+        // Term's signature might be here already, and then it should
+        // join the equivalence group.  There is a bit of a challenge,
+        // however: if the term goes there as a result of an eariler
+        // asserted equality which is then undone, the entry in
+        // termToERef is invalidated.  The term should be then removed
+        // together with the undoing so that it can be reasserted.  What
+        // happens in this case to the non-allocated enode?  It will be
+        // allocated once reasserted.
+        if (containsSig(sr, args)) {
+            rval = lookupSig(sr, args);
+            termToERef.insert(term, rval);
+            // XXX push to the undo stack
+        }
+        else {
+            rval = ea.alloc(sr, args, Enode::et_term, term);
+            insertSig(rval);
+            termToERef.insert(term, rval);
+        }
+    }
+    return rval;
 }
 
 ERef EnodeStore::cons(ERef x, ERef y) {
-    ERef r = ea.alloc(x, y, Enode::et_list, PTRef_Undef);
-    insertSig(r);
-    return r;
+    ERef rval;
+    if (!containsSig(x, y)) {
+        rval = ea.alloc(x, y, Enode::et_list, PTRef_Undef);
+        insertSig(rval);
+    }
+    else {
+        // Again this could be because of an asserted equality.  If the
+        // equality is retracted, the list might need to be
+        // reintroduced.  However, the term introduction should take
+        // care of this.
+        rval = lookupSig(x, y);
+    }
+    return rval;
 }
 
 // p is only given as an argument for assertion checking!

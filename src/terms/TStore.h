@@ -3,8 +3,8 @@
 
 #include <string>
 #include "Term.h"
-#include "Vec.h"
-#include "Map.h"
+//#include "Vec.h"
+//#include "Map.h"
 #include "StringMap.h"
 
 // Contains pairs (TRef p, int i) stating that p is the i-parent of a term
@@ -15,15 +15,6 @@ class Occ {
     Occ() : i(-1), p(TRef_Undef) {};
 };
 
-struct TRefHash {
-    uint32_t operator () (const TRef s) const {
-        return (uint32_t)s; }
-};
-
-template <>
-struct Equal<const TRef> {
-    bool operator() (const TRef s1, const TRef s2) { return s1 == s2; }
-};
 
 
 class TStore {
