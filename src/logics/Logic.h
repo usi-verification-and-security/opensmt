@@ -6,6 +6,7 @@
 #include "Sort.h"
 // For TRefHash
 #include "TStore.h"
+#include "PtStore.h"
 
 class SStore;
 class TStore;
@@ -14,10 +15,12 @@ class Logic {
   private:
     Map<TRef,bool,TRefHash,Equal<TRef> >        equalities;
     Map<TRef,bool,TRefHash,Equal<TRef> >        disequalities;
+    Map<PTRef,PTRef,PTRefHash,Equal<PTRef> >    UP_map; // maps uninterpreted predicates to their equality terms
 
     SMTConfig&          config;
     SStore&             sort_store;
-    TStore&             term_store;
+    TStore&             sym_store;
+    PtStore&            term_store;
     bool                is_set;
     string              name;
     TRef                sym_TRUE;
@@ -28,12 +31,24 @@ class Logic {
     TRef                sym_NOT;
     TRef                sym_EQ;
     SRef                sort_BOOL;
-//    Egraph              egraph;
-//    SimpSMTSolver       solver;
-//    Tseitin             cnfizer;
+
+    PTRef               term_TRUE;
+    PTRef               term_FALSE;
+
+    static const char*  tk_true;
+    static const char*  tk_false;
+    static const char*  tk_not;
+    static const char*  tk_equals;
+    static const char*  tk_implies;
+    static const char*  tk_and;
+    static const char*  tk_or;
+    static const char*  tk_xor;
+    static const char*  tk_distinct;
+    static const char*  tk_ite;
 
   public:
-    Logic(SMTConfig& c, SStore& s, TStore& t);
+    Logic(SMTConfig& c, SStore& s, TStore& t, PtStore& pt);
+
 
     bool          setLogic         (const char* l);
     bool          isSet            ()              const { return is_set;    }
@@ -49,11 +64,20 @@ class Logic {
     TRef          getSym_eq        ()              const { return sym_EQ;    }
     SRef          getSort_bool     ()              const { return sort_BOOL; }
 
+    PTRef          getTerm_true    ()              const { return term_TRUE;  }
+    PTRef          getTerm_false   ()              const { return term_FALSE; };
+
     bool        isEquality    (TRef tr) const { return equalities.contains(tr); }
     bool        isDisequality (TRef tr) const { return disequalities.contains(tr); }
+    // Check if term is an uninterpreted predicate.
+    // Return the corresponding equivalence term if yes,
+    // PTRef_Undef otherwise.
+    PTRef       addUP         (TRef tr) const;
+
     // Override for different logics...
     bool        declare_sort_hook(Sort* s);
     inline bool isPredef(string&) const { return false; };
+
 };
 
 #endif // LOGIC_H

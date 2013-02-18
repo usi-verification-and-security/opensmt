@@ -75,7 +75,23 @@ public:
       , cgraph             ( *cgraph_ )
       , automatic_coloring ( false )
 #endif
-  { }
+  {
+    // For the uninterpreted predicates to work we need to have
+    // two special terms true and false, and an asserted disequality
+    // true != false
+
+    // This is for the enode store
+    ERef ers_true  = enode_store.addSymb(logic.getSym_true());
+    ERef ers_false = enode_store.addSymb(logic.getSym_false());
+    ERef er_true   = enode_store.addTerm(ers_true, ERef_Nil, logic.getTerm_true());
+    ERef er_false  = enode_store.addTerm(ers_false, ERef_Nil, logic.getTerm_false());
+
+    // add the term (= true false) to term store
+    vec<PTRef> tmp;
+    tmp.push(logic.getSort_bool());
+    tmp.push(logic.getSort_bool());
+    PTRef neq = term_store.insertTerm(logic.getSym_eq(), tmp);
+    assertNEq(er_true, er_false, neq); }
 
   ~Egraph( )
   {

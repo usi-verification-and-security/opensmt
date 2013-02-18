@@ -457,90 +457,6 @@ PTRef Interpret::letNameResolve(const char* s, const vec<LetFrame>& let_branch) 
 }
 
 //
-// Resolves the PTRef for name s taking into account polymorphism
-// Returns PTRef_Undef if the name is not defined anywhere
-//
-PTRef Interpret::insertTerm(const char* s, const vec<PTRef>& args) {
-//   comment_formatted("Resolving name %s", s);
-    if (tstore.contains(s)) {
-        const vec<TRef>& trefs = tstore.nameToRef(s);
-        if (tstore[trefs[0]].noScoping()) {
-            // No need to look forward, this is the only possible term
-            // list
-            for (int i = 0; i < trefs.size(); i++) {
-                TRef ctr = trefs[i];
-                const Term& t = tstore[ctr];
-                if (t.nargs() == args.size_()) {
-                    // t is a potential match.  Check that arguments match
-                    uint32_t j = 0;
-                    for (; j < t.nargs(); j++) {
-                        TRef argt = ptstore[args[j]].symb();
-                        if (t[j] != tstore[argt].rsort()) break;
-                    }
-                    if (j == t.nargs()) {
-                        // Create / lookup the proper term and return the reference
-                        return ptstore.insertTerm(ctr, args);
-                    }
-                }
-                // The term might still be one of the special cases:
-                // left associative
-                // - requires that the left argument and the return value have the same sort
-                else if (t.nargs() < args.size_() && t.left_assoc() && tstore[ptstore[args[0]].symb()].rsort() == t.rsort()) {
-                    int j = 1;
-                    for (; j < args.size(); j++) {
-                        TRef argt = ptstore[args[j]].symb();
-                        if (tstore[argt].rsort() != t[1]) break;
-                    }
-                    if (j == args.size())
-                        return ptstore.insertTerm(ctr, args);
-                }
-                else if (t.nargs() < args.size_() && t.right_assoc()) {
-                    comment_formatted("right assoc term %s, not implemented yet", tstore.getName(ctr));
-                    return PTRef_Undef;
-                }
-                else if (t.nargs() < args.size_() && t.chainable()) {
-                    comment_formatted("chainable term %s, not implemented yet", tstore.getName(ctr));
-                    return PTRef_Undef;
-                }
-                else if (t.nargs() < args.size_() && t.pairwise()) {
-                    int j = 0;
-                    for (; j < args.size(); j++) {
-                        TRef argt = ptstore[args[j]].symb();
-                        if (tstore[argt].rsort() != t[0]) break;
-                    }
-                    if (j == args.size()) return ptstore.insertTerm(ctr, args);
-                }
-                else {
-                    comment_formatted("No matching terms found");
-                    return PTRef_Undef;
-                }
-            }
-        }
-    }
-
-    // We get here if it was not in let branches either
-    if (tstore.contains(s)) {
-        const vec<TRef>& trefs = tstore.nameToRef(s);
-        for (int i = 0; i < trefs.size(); i++) {
-            TRef ctr = trefs[i];
-            const Term& t = tstore[ctr];
-            if (t.nargs() == args.size_()) {
-                // t is a potential match.  Check that arguments match
-                uint32_t j = 0;
-                for (; j < t.nargs(); j++) {
-                    TRef argt = ptstore[args[j]].symb();
-                    if (t[j] != tstore[argt].rsort()) break;
-                }
-                if (j == t.nargs())
-                    return ptstore.insertTerm(ctr, args);
-            }
-        }
-    }
-    // Not found
-    return PTRef_Undef;
-}
-
-//
 // Typecheck the term structure.  Construct the terms.
 //
 // TODO: left and right associativity, pairwisety - integrate these to the congruence algorithm,
@@ -561,18 +477,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
             return tr;
         }
         else
-            tr = insertTerm(name, vec_empty);
-//        if (tr != TRef_Undef) {
-//            vec<PTRef> vec_empty;
-//            ptr = ptstore.insertTerm(tr, vec_empty);
-// This check is not needed since it is syntactically enforced and we allow returning of
-// let terms where it does not hold, kind of.
-//            if (tm.nargs() != 0) {
-//                comment_formatted("Term %s needs %d arguments", name, tm.nargs());
-//                tr = TRef_Undef;
-//            }
-//        }
-//        else
+            tr = ptstore.lookupTerm(name, vec_empty);
         if (tr == PTRef_Undef)
             comment_formatted("unknown qid term %s", name);
         return tr;
@@ -592,7 +497,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
                 args.push(arg_term);
         }
 
-        PTRef tr = insertTerm(name, args);
+        PTRef tr = ptstore.lookupTerm(name, args);
         if (tr == PTRef_Undef) {
             // Implement a nice error reporting here
             notify_formatted(true, "No such symbol %s", name);
@@ -667,17 +572,32 @@ bool Interpret::checkSat(const char* cmd) {
             vec<ValPair>* val = ts.getModel();
             // This cannot of course be the final solution, but it would be nice to able to check if everything works
             for (int i = 0; i < val->size(); i++) {
-                Pterm& t = ptstore[(*val)[i].getTerm()];
+                PTRef t_ref = (*val)[i].getTerm();
+                lbool sign = (*val)[i].getVal();
+                Pterm& t = ptstore[t_ref];
                 if (logic.isEquality(t.symb())) {
                     if (tstore[t.symb()][0] != logic.getSort_bool()) {
-                        char* term_str = ptstore.printTerm((*val)[i].getTerm());
-                        comment_formatted("Term is uf equality: %s%s", (*val)[i].getVal() == l_True ? "" : "not ", term_str);
+                        char* term_str = ptstore.printTerm(t_ref);
+                        comment_formatted("Term is uf equality: %s%s", sign == l_True ? "" : "not ", term_str);
                         free(term_str);
-                        if ((*val)[i].getVal() != l_Undef) {
-                            lbool stat = uf_solver.addEquality((*val)[i].getTerm(), (*val)[i].getVal() == l_True);
+                        if (sign != l_Undef) {
+                            lbool stat = uf_solver.addEquality(t_ref, sign == l_True);
                             if (stat == l_False) {
                                 comment_formatted("Unsatisfiable");
                             }
+                        }
+                    }
+                }
+                else {
+                    PTRef up_eq = logic.addUP(t_ref);
+                    if (up_eq != PTRef_Undef) {
+                        char* term_str = ptstore.printTerm(t_ref);
+                        comment_formatted("Term is uninterpreted predicate: %s%s", sign == l_True ? "" : "not ", term_str);
+                        free(term_str);
+                        // We need to make the new term, but only if it does not already exist
+                        lbool stat = uf_solver.addEquality(up_eq, sign == l_True);
+                        if (stat == l_False) {
+                            comment_formatted("Unsatisfiable");
                         }
                     }
                 }

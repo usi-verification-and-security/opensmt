@@ -14,8 +14,8 @@ int main(int argc, char **argv) {
 //    EnodeStore estore;
     SStore sort_store(cfg);
     TStore sym_store;
-    Logic logic(cfg, sort_store, sym_store);
-    PtStore term_store(sym_store, sort_store, logic.getSym_true(), logic.getSym_false());
+    PtStore term_store(sym_store, sort_store);
+    Logic logic(cfg, sort_store, sym_store, term_store);
     Egraph egraph(cfg, sort_store, sym_store, term_store, logic);
 
     Identifier i("TSort");

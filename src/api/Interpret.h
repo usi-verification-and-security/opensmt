@@ -70,8 +70,8 @@ class Interpret {
     SMTConfig                                  config;
     SStore                                     store;    // Sorts
     TStore                                     tstore;   // Terms (more like symbols)
-    Logic                                      logic;
     PtStore                                    ptstore;  // Proper terms
+    Logic                                      logic;
     SimpSMTSolver                              solver;
     Tseitin                                    ts;
 
@@ -105,8 +105,8 @@ class Interpret {
     // Constructor initiates a default logic.  Not sure if this is the best way to go...
     Interpret() :
           store(config)
-        , logic(config, store, tstore)
-        , ptstore(tstore, store, logic.getSym_true(), logic.getSym_false())
+        , ptstore(tstore, store)
+        , logic(config, store, tstore, ptstore)
         , solver(config)
         , ts( ptstore
             , solver
@@ -114,8 +114,8 @@ class Interpret {
             , tstore
             , store
             , logic
-            , ptstore.getTerm_true()
-            , ptstore.getTerm_false())
+            , logic.getTerm_true()
+            , logic.getTerm_false())
         , uf_solver( config
                    , store
                    , tstore

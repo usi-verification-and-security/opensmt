@@ -831,7 +831,10 @@ lbool Egraph::addEquality(PTRef term, bool val) {
     term_store.printTerm(term);
     Pterm& t = term_store[term];
     assert( logic.isEquality(t.symb()) );
-    assert( sym_store[t.symb()][0] != logic.getSort_bool() );
+    // In general we don't want to put the Boolean equalities to UF
+    // solver.  However, the Boolean uninterpreted functions are an
+    // exception.
+//    assert( sym_store[t.symb()][0] != logic.getSort_bool() );
 
     vec<PTRef> queue;
     queue.push(t[0]);
