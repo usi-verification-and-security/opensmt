@@ -381,7 +381,7 @@ void CoreSMTSolver::detachClause(Clause& c) {
 void CoreSMTSolver::removeClause(Clause& c)
 {
   assert( config.isInit( ) );
-  if ( config.incremental &&
+  if ( config.isIncremental() &&
       detached.find( &c ) != detached.end( ) )
   {
     detached.erase( &c );
@@ -1048,7 +1048,7 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
 	  ct = Clause_new( r, config.sat_temporary_learn );
 	  learnts.push(ct);
 #ifndef SMTCOMP
-	  if ( config.incremental != 0 )
+	  if ( config.isIncremental() != 0 )
 	  {
 	    undo_stack_oper.push_back( NEWLEARNT );
 	    undo_stack_elem.push_back( (void *)ct );
@@ -1404,7 +1404,7 @@ bool CoreSMTSolver::simplify()
   void
 CoreSMTSolver::pushBacktrackPoint( )
 {
-  assert( config.incremental );
+  assert( config.isIncremental() );
   //
   // Save undo stack size
   //
@@ -1418,7 +1418,7 @@ CoreSMTSolver::pushBacktrackPoint( )
 
 void CoreSMTSolver::popBacktrackPoint ( )
 {
-  assert( config.incremental );
+  assert( config.isIncremental() );
   //
   // Force restart, but retain assumptions
   //
@@ -1525,7 +1525,7 @@ void CoreSMTSolver::popBacktrackPoint ( )
   void
 CoreSMTSolver::reset( )
 {
-  assert( config.incremental );
+  assert( config.isIncremental() );
   //
   // Force restart, but retain assumptions
   //
@@ -1887,11 +1887,11 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
   // Incrementality should be enabled for arrays
   // assert( config.logic != QF_AX || config.incremental );
   // Incrementality should be enabled for lazy dtc
-  assert( config.logic != QF_UFRDL || config.sat_lazy_dtc == 0 || config.incremental );
-  assert( config.logic != QF_UFIDL || config.sat_lazy_dtc == 0 || config.incremental );
-  assert( config.logic != QF_UFLRA || config.sat_lazy_dtc == 0 || config.incremental );
-  assert( config.logic != QF_UFLIA || config.sat_lazy_dtc == 0 || config.incremental );
-  assert( config.logic != QF_UFLRA || config.sat_lazy_dtc == 0 || config.incremental );
+  assert( config.logic != QF_UFRDL || config.sat_lazy_dtc == 0 || config.isIncremental() );
+  assert( config.logic != QF_UFIDL || config.sat_lazy_dtc == 0 || config.isIncremental() );
+  assert( config.logic != QF_UFLRA || config.sat_lazy_dtc == 0 || config.isIncremental() );
+  assert( config.logic != QF_UFLIA || config.sat_lazy_dtc == 0 || config.isIncremental() );
+  assert( config.logic != QF_UFLRA || config.sat_lazy_dtc == 0 || config.isIncremental() );
   // UF solver should be enabled for lazy dtc
   assert( config.sat_lazy_dtc == 0 || config.uf_disable == 0 );
 #ifdef PRODUCE_PROOF
@@ -1987,7 +1987,7 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
       verifyModel( );
       // Compute models in tsolvers
       if ( config.produce_models
-	  && !config.incremental )
+	  && !config.isIncremental() )
       {
 //	egraph.computeModel( );
 	printModel( );
@@ -2000,7 +2000,7 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
     }
   }
 
-  if ( !config.incremental )
+  if ( !config.isIncremental() )
   {
     // We terminate
     cancelUntil(-1);

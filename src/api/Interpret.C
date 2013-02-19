@@ -13,191 +13,6 @@ bool stop;
 
 uint32_t LetFrame::id_cnt = 0;
 
-/*********************************************************************
- * Generic configuration class, used for both set-info and set-option
- *********************************************************************/
-
-ConfValue::ConfValue(const ASTNode& s_expr_n) {
-    if (s_expr_n.getType() == SEXPRL_T) {
-        type = O_LIST;
-        configs = new list<ConfValue*>;
-        for (list<ASTNode*>::iterator i = s_expr_n.children->begin(); i != s_expr_n.children->end(); i++)
-            configs->push_back(new ConfValue(**i));
-    }
-    else if (s_expr_n.getType() == SYM_T) {
-        type   = O_SYM;
-        strval = strdup(s_expr_n.getValue());
-    }
-    else if (s_expr_n.getType() == SPECC_T) {
-        ASTNode& spn = **(s_expr_n.children->begin());
-        if (spn.getType() == NUM_T) {
-           type = O_NUM;
-           numval = atoi(spn.getValue());
-        }
-        else if (spn.getType() == DEC_T) {
-            type = O_DEC;
-            char* end;
-            decval = strtod(spn.getValue(), &end);
-            assert(end != NULL);
-        }
-        else if (spn.getType() == HEX_T) {
-            type = O_HEX;
-            string tmp(spn.getValue());
-            tmp.erase(0,2);
-            char* end;
-            unumval = strtoul(tmp.c_str(), &end, 16);
-            assert(end != NULL);
-        }
-        else if (spn.getType() == BIN_T) {
-            type = O_BIN;
-            string tmp(spn.getValue());
-            tmp.erase(0,2);
-            char* end;
-            unumval = strtoul(tmp.c_str(), &end, 2);
-            assert(end != NULL);
-        }
-        else if (spn.getType() == STR_T) {
-            type = O_STR;
-            strval = strdup(spn.getValue());
-        }
-        else assert(false);
-    }
-    else if (s_expr_n.getType() == UATTR_T) {
-        type = O_ATTR;
-        strval = strdup(s_expr_n.getValue());
-    }
-    else assert(false); //Not implemented
-}
-
-char* ConfValue::toString() {
-    if (type == O_BOOL)
-        return numval == 1 ? strdup("true") : strdup("false");
-    if (type == O_STR)
-        return strdup(strval);
-    if (type == O_NUM) {
-        stringstream ss;
-        ss << numval;
-        return strdup(ss.str().c_str());
-    }
-    if (type == O_EMPTY) {
-        return strdup("");
-    }
-    if (type == O_ATTR) {
-        return strdup(strval);
-    }
-    if (type == O_DEC) {
-        stringstream ss;
-        ss << decval;
-        return strdup(ss.str().c_str());
-    }
-    if (type == O_HEX) {
-        stringstream ss;
-        ss << unumval;
-        return strdup(ss.str().c_str());
-    }
-    if (type == O_BIN) {
-        stringstream ss;
-        ss << unumval;
-        return strdup(ss.str().c_str());
-    }
-    if (type == O_SYM) {
-        return strdup(strval);
-    }
-    if (type == O_LIST) {
-        stringstream ss;
-        ss << "( ";
-        for (list<ConfValue*>::iterator it = configs->begin(); it != configs->end(); it++) {
-            ss << *((*it)->toString()); ss << " "; }
-        ss << ")";
-        return strdup(ss.str().c_str());
-    }
-    return strdup("not implemented");
-}
-
-
-/***********************************************************
- * Class defining the information, configured with set-info
- ***********************************************************/
-
-Info::Info(ASTNode& n) {
-    assert( n.getType() == UATTR_T || n.getType() == PATTR_T );
-    if (n.children == NULL) {
-        value.type = O_EMPTY;
-        return;
-    }
-    else {
-        // n is now attribute_value
-        n = **(n.children->begin());
-
-        if (n.getType() == SPECC_T) {
-            value = ConfValue(n);
-        }
-        else if (n.getType() == SYM_T) {
-            value.strval = strdup(n.getValue());
-            value.type = O_STR;
-            return;
-        }
-        else if (n.getType() == SEXPRL_T) {
-            value = ConfValue(n);
-        }
-        else assert(false);
-    }
-}
-
-/***********************************************************
- * Class defining the options, configured with set-config
- ***********************************************************/
-
-Option::Option(ASTNode& n) {
-    assert(n.children != NULL);
-
-    n = **(n.children->begin());
-
-    if (n.getType() == BOOL_T) {
-        value.type   = O_BOOL;
-        value.numval = strcmp(n.getValue(), "true") == 0 ? 1 : 0;
-        return;
-    }
-    if (n.getType() == STR_T) {
-        value.type   = O_STR;
-        value.strval = strdup(n.getValue());
-        return;
-    }
-    if (n.getType() == NUM_T) {
-        value.type   = O_NUM;
-        value.numval = atoi(n.getValue());
-        return;
-    }
-
-    assert( n.getType() == UATTR_T || n.getType() == PATTR_T );
-    // The option is an attribute
-
-    if (n.children == NULL) {
-        value.type = O_EMPTY;
-        return;
-    }
-    else {
-        // n is now attribute_value
-        n = **(n.children->begin());
-
-        if (n.getType() == SPECC_T) {
-            value = ConfValue(n);
-        }
-        else if (n.getType() == SYM_T) {
-            value.strval = strdup(n.getValue());
-            value.type = O_STR;
-            return;
-        }
-        else if (n.getType() == SEXPRL_T) {
-            value = ConfValue(n);
-            /*
-            */
-        }
-        else assert(false);
-    }
-}
-
-
 
 /***********************************************************
  * Class defining interpreter
@@ -208,36 +23,35 @@ Option::Option(ASTNode& n) {
 void Interpret::setInfo(ASTNode& n) {
     assert(n.getType() == UATTR_T || n.getType() == PATTR_T);
 
-    Info*  value = new Info();
-    char* name = strdup(n.getValue());
-
-    if (infoTable.peek(name, *value)) {
-//        printf("Updating an existing info %s\n", n.getValue());
-        delete value;
-        infoTable.remove(name);
-        value = new Info(n);
+    char* name = NULL;
+    if (n.getValue() == NULL) {
+        ASTNode& an = **(n.children->begin());
+        assert(an.getType() == UATTR_T || an.getType() == PATTR_T);
+        name = strdup(an.getValue());
     }
-    else
-        value = new Info(n);
+    else // Normal option
+        name = strdup(n.getValue());
 
-    infoTable.insert(name, *value);
+    Info value(n);
+
+    config.setInfo(name, value);
 }
 
 void Interpret::getInfo(ASTNode& n) {
     assert(n.getType() == INFO_T);
 
-    char* name;
+    const char* name;
 
     if (n.getValue() != NULL)
-        name = strdup(n.getValue());
+        name = n.getValue();
     else {
         assert(n.children != NULL);
-        name = strdup((**(n.children->begin())).getValue());
+        name = (**(n.children->begin())).getValue();
     }
 
-    Info value;
+    const Info& value = config.getInfo(name);
 
-    if (!infoTable.peek(name, value))
+    if (value.isEmpty())
         notify_formatted(true, "no value for info %s", name);
     else
         notify_formatted(false, "%s %s", name, value.toString());
@@ -246,7 +60,6 @@ void Interpret::getInfo(ASTNode& n) {
 void Interpret::setOption(ASTNode& n) {
     assert(n.getType() == OPTION_T);
     char* name  = NULL;
-    Option* value = NULL;
 
     if (n.getValue() == NULL)  {
         // Attribute
@@ -257,13 +70,8 @@ void Interpret::setOption(ASTNode& n) {
     else // Normal option
         name = strdup(n.getValue());
 
-    if (optionTable.contains(name)) {
-        printf("Updating an existing option %s\n", name);
-        optionTable.remove(name);
-    }
-    value = new Option(n);
-
-    optionTable.insert(name, *value);
+    Option value(n);
+    config.setOption(name, value);
 }
 
 void Interpret::getOption(ASTNode& n) {
@@ -271,12 +79,15 @@ void Interpret::getOption(ASTNode& n) {
 
     assert(n.getValue() != NULL);
     char* name = strdup(n.getValue());
-    Option value;
+//    Option value;
 
-    if (!optionTable.peek(name, value))
+    const Option& value = config.getOption(name);
+
+    if (value.isEmpty())
         notify_formatted(true, "No value for attr %s", name);
     else
         notify_formatted(false, "%s",value.toString());
+
 }
 
 void Interpret::exit() {
@@ -388,6 +199,7 @@ declare_fun_err: ;
                 // cnfization of the formula
                 // Get the egraph data structure for instance from here
                 // Terms need to be purified before cnfization?
+//                solver.cancelUntil(0);
                 lbool state = ts.cnfizeAndGiveToSolver(tr);
                 if (state == l_Undef)
                     notify_success();

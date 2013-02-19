@@ -22,15 +22,61 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 
 #include "Global.h"
 #include "SolverTypes.h"
+#include "parsers/smt2new/smt2newcontext.h"
+#include "common/StringMap.h"
+
+enum ConfType { O_EMPTY, O_STR, O_SYM, O_NUM, O_DEC, O_HEX, O_BIN, O_LIST, O_ATTR, O_BOOL };
+
+class ConfValue {
+  public:
+    ConfType type;
+    union { char* strval; int numval; double decval; uint32_t unumval; list<ConfValue*>* configs; };
+    ConfValue() : type(O_EMPTY) {};
+    ConfValue(const ASTNode& s_expr_n);
+    ConfValue(int i) : type(O_DEC), numval(i) {};
+    char* toString() const;
+};
+
+class Info {
+  private:
+//    char*      name;
+    ConfValue   value;
+  public:
+    Info(ASTNode& n);
+    Info() {};
+    bool isEmpty() const { return value.type == O_EMPTY; }
+    inline char* toString() const { return value.toString(); };
+};
+
+
+class Option {
+  private:
+    ConfValue   value;
+  public:
+    Option(ASTNode& n);
+    Option() {}
+    Option(int i) : value(i) {};
+    inline bool  isEmpty()  const { return value.type == O_EMPTY; }
+    inline char* toString() const { return value.toString(); }
+    inline const ConfValue& getValue() const { return value; }
+};
 
 //
 // Holds informations about the configuration of the solver
 //
 struct SMTConfig
 {
+private:
+  static const char* o_incremental;
+
+  Info          info_Empty;
+  Option        option_Empty;
+  Map<const char*,Info,StringHash,Equal<const char*> >   infoTable;
+  Map<const char*,Option,StringHash,Equal<const char*> > optionTable;
   //
   // For standard executable
   //
+public:
   SMTConfig ( int    argc
 	    , char * argv[ ] )
     : filename ( argv[ argc - 1 ] )
@@ -58,6 +104,12 @@ struct SMTConfig
     if ( rocset )         out.close( );
     if ( docset )         err.close( );
   }
+
+  bool          setOption(const char* name, const Option& value);
+  const Option& getOption(const char* name) const;
+
+  bool          setInfo  (const char* name, const Info& value);
+  const Info&   getInfo  (const char* name) const;
 
   void initializeConfig ( );
 
@@ -101,7 +153,10 @@ struct SMTConfig
   const char * filename;                     // Holds the name of the input filename
   logic_t      logic;                        // SMT-Logic under consideration
   lbool	       status;                       // Status of the benchmark
-  int          incremental;                  // Incremental solving
+//  int          incremental;                  // Incremental solving
+  int           isIncremental() const
+     { return optionTable.contains(":incremental") ?
+        optionTable[":incremental"].getValue().numval == 1: false; }
   int          produce_stats;                // Should print statistics ?
   int          print_stats;                  // Should print statistics ?
   int          produce_models;               // Should produce models ?

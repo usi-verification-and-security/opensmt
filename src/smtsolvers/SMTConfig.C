@@ -19,13 +19,228 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 
 #include "SMTConfig.h"
 
+/*********************************************************************
+ * Generic configuration class, used for both set-info and set-option
+ *********************************************************************/
+
+ConfValue::ConfValue(const ASTNode& s_expr_n) {
+    if (s_expr_n.getType() == SEXPRL_T) {
+        type = O_LIST;
+        configs = new list<ConfValue*>;
+        for (list<ASTNode*>::iterator i = s_expr_n.children->begin(); i != s_expr_n.children->end(); i++)
+            configs->push_back(new ConfValue(**i));
+    }
+    else if (s_expr_n.getType() == SYM_T) {
+        type   = O_SYM;
+        strval = strdup(s_expr_n.getValue());
+    }
+    else if (s_expr_n.getType() == SPECC_T) {
+        ASTNode& spn = **(s_expr_n.children->begin());
+        if (spn.getType() == NUM_T) {
+           type = O_NUM;
+           numval = atoi(spn.getValue());
+        }
+        else if (spn.getType() == DEC_T) {
+            type = O_DEC;
+            char* end;
+            decval = strtod(spn.getValue(), &end);
+            assert(end != NULL);
+        }
+        else if (spn.getType() == HEX_T) {
+            type = O_HEX;
+            string tmp(spn.getValue());
+            tmp.erase(0,2);
+            char* end;
+            unumval = strtoul(tmp.c_str(), &end, 16);
+            assert(end != NULL);
+        }
+        else if (spn.getType() == BIN_T) {
+            type = O_BIN;
+            string tmp(spn.getValue());
+            tmp.erase(0,2);
+            char* end;
+            unumval = strtoul(tmp.c_str(), &end, 2);
+            assert(end != NULL);
+        }
+        else if (spn.getType() == STR_T) {
+            type = O_STR;
+            strval = strdup(spn.getValue());
+        }
+        else assert(false);
+    }
+    else if (s_expr_n.getType() == UATTR_T) {
+        type = O_ATTR;
+        strval = strdup(s_expr_n.getValue());
+    }
+    else assert(false); //Not implemented
+}
+
+char* ConfValue::toString() const {
+    if (type == O_BOOL)
+        return numval == 1 ? strdup("true") : strdup("false");
+    if (type == O_STR)
+        return strdup(strval);
+    if (type == O_NUM) {
+        stringstream ss;
+        ss << numval;
+        return strdup(ss.str().c_str());
+    }
+    if (type == O_EMPTY) {
+        return strdup("");
+    }
+    if (type == O_ATTR) {
+        return strdup(strval);
+    }
+    if (type == O_DEC) {
+        stringstream ss;
+        ss << decval;
+        return strdup(ss.str().c_str());
+    }
+    if (type == O_HEX) {
+        stringstream ss;
+        ss << unumval;
+        return strdup(ss.str().c_str());
+    }
+    if (type == O_BIN) {
+        stringstream ss;
+        ss << unumval;
+        return strdup(ss.str().c_str());
+    }
+    if (type == O_SYM) {
+        return strdup(strval);
+    }
+    if (type == O_LIST) {
+        stringstream ss;
+        ss << "( ";
+        for (list<ConfValue*>::iterator it = configs->begin(); it != configs->end(); it++) {
+            ss << *((*it)->toString()); ss << " "; }
+        ss << ")";
+        return strdup(ss.str().c_str());
+    }
+    return strdup("not implemented");
+}
+
+
+/***********************************************************
+ * Class defining the information, configured with set-info
+ ***********************************************************/
+
+Info::Info(ASTNode& n) {
+    assert( n.getType() == UATTR_T || n.getType() == PATTR_T );
+    if (n.children == NULL) {
+        value.type = O_EMPTY;
+        return;
+    }
+    else {
+        // n is now attribute_value
+        n = **(n.children->begin());
+
+        if (n.getType() == SPECC_T) {
+            value = ConfValue(n);
+        }
+        else if (n.getType() == SYM_T) {
+            value.strval = strdup(n.getValue());
+            value.type = O_STR;
+            return;
+        }
+        else if (n.getType() == SEXPRL_T) {
+            value = ConfValue(n);
+        }
+        else assert(false);
+    }
+}
+
+/***********************************************************
+ * Class defining the options, configured with set-config
+ ***********************************************************/
+
+Option::Option(ASTNode& n) {
+    assert(n.children != NULL);
+
+    n = **(n.children->begin());
+
+    if (n.getType() == BOOL_T) {
+        value.type   = O_BOOL;
+        value.numval = strcmp(n.getValue(), "true") == 0 ? 1 : 0;
+        return;
+    }
+    if (n.getType() == STR_T) {
+        value.type   = O_STR;
+        value.strval = strdup(n.getValue());
+        return;
+    }
+    if (n.getType() == NUM_T) {
+        value.type   = O_NUM;
+        value.numval = atoi(n.getValue());
+        return;
+    }
+
+    assert( n.getType() == UATTR_T || n.getType() == PATTR_T );
+    // The option is an attribute
+
+    if (n.children == NULL) {
+        value.type = O_EMPTY;
+        return;
+    }
+    else {
+        // n is now attribute_value
+        n = **(n.children->begin());
+
+        if (n.getType() == SPECC_T) {
+            value = ConfValue(n);
+        }
+        else if (n.getType() == SYM_T) {
+            value.strval = strdup(n.getValue());
+            value.type = O_STR;
+            return;
+        }
+        else if (n.getType() == SEXPRL_T) {
+            value = ConfValue(n);
+            /*
+            */
+        }
+        else assert(false);
+    }
+}
+
+bool SMTConfig::setOption(const char* name, const Option& value) {
+    if (optionTable.contains(name))
+        optionTable.remove(name);
+    optionTable.insert(name, value);
+    return true;
+}
+
+const Option& SMTConfig::getOption(const char* name) const {
+    if (optionTable.contains(name))
+        return optionTable[name];
+    else
+        return option_Empty;
+}
+
+bool SMTConfig::setInfo(const char* name, const Info& value) {
+    if (infoTable.contains(name))
+        infoTable.remove(name);
+    infoTable.insert(name, value);
+    return true;
+}
+
+const Info& SMTConfig::getInfo(const char* name) const {
+    if (infoTable.contains(name))
+        return infoTable[name];
+    else
+        return info_Empty;
+}
+
+const char* SMTConfig::o_incremental  = ":incremental";
+
 void
 SMTConfig::initializeConfig( )
 {
   // Set Global Default configuration
   logic                         = UNDEF;
   status                        = l_Undef;
-  incremental                   = 0;
+//  incremental                   = 0;
+  optionTable.insert(o_incremental, Option(0));
   produce_stats                 = 0;
   produce_models                = 0;
   print_stats                   = 0;
@@ -122,8 +337,8 @@ void SMTConfig::parseConfig ( char * f )
       char tmpbuf[ 32 ];
 
       // GENERIC CONFIGURATION
-	   if ( sscanf( buf, "incremental %d\n"             , &incremental )                   == 1 );
-      else if ( sscanf( buf, "produce_stats %d\n"           , &produce_stats )                 == 1 );
+//	   if ( sscanf( buf, "incremental %d\n"             , &incremental )                   == 1 );
+           if ( sscanf( buf, "produce_stats %d\n"           , &produce_stats )                 == 1 );
       else if ( sscanf( buf, "print_stats %d\n"             , &print_stats )                   == 1 );
       else if ( sscanf( buf, "print_proofs_smtlib2 %d\n"    , &print_proofs_smtlib2 )          == 1 );
       else if ( sscanf( buf, "print_proofs_dotty %d\n"      , &print_proofs_dotty )            == 1 );
@@ -223,7 +438,7 @@ void SMTConfig::printConfig ( ostream & out )
   out << "# GENERIC CONFIGURATION" << endl;
   out << "#" << endl;
   out << "# Enables incrementality (SMT-LIB 2.0 script-compatible)" << endl;
-  out << "incremental "                << incremental << endl;
+  out << "incremental "                << getOption(o_incremental).toString() << endl;
   out << "# Regular output channel " << endl;
   out << "regular_output_channel stdout" << endl;
   out << "# Diagnostic output channel " << endl;

@@ -1242,7 +1242,7 @@ void Egraph::backtrackToStackSize ( size_t size )
 #endif
     else if ( last_action == INITCONG )
     {
-      assert( config.incremental );
+      assert( config.isIncremental() );
 #if VERBOSE
       cerr << "UNDO: BEG INITCONG " << e << endl;
 #endif

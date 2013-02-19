@@ -11,38 +11,7 @@
 #include "pterms/PtStore.h"
 #include "Tseitin.h"
 #include "egraph/Egraph.h"
-
-enum ConfType { O_EMPTY, O_STR, O_SYM, O_NUM, O_DEC, O_HEX, O_BIN, O_LIST, O_ATTR, O_BOOL };
-
-class ConfValue {
-  public:
-    ConfType type;
-    union { char* strval; int numval; double decval; uint32_t unumval; list<ConfValue*>* configs; };
-    ConfValue() : type(O_EMPTY) {};
-    ConfValue(const ASTNode& s_expr_n);
-    char* toString();
-};
-
-class Info {
-  private:
-    char*      name;
-    ConfValue   value;
-  public:
-    Info(ASTNode& n);
-    Info() : name(strdup("")) {};
-    inline char* toString() { return value.toString(); };
-};
-
-
-class Option {
-  private:
-    char*       name;
-    ConfValue   value;
-  public:
-    Option(ASTNode& n);
-    Option() : name(strdup("")) {};
-    inline char* toString() { return value.toString(); };
-};
+#include "smtsolvers/SMTConfig.h"
 
 class LetFrame {
   private:
@@ -65,8 +34,6 @@ class LetFrame {
 
 class Interpret {
   private:
-    Map<char*,Info,StringHash,Equal<char*> >   infoTable;
-    Map<char*,Option,StringHash,Equal<char*> > optionTable;
     SMTConfig                                  config;
     SStore                                     store;    // Sorts
     TStore                                     tstore;   // Terms (more like symbols)
