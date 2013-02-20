@@ -61,7 +61,7 @@ public:
 
 protected:
 
-//  THandler *  theory_handler; // Handles theory
+  THandler    theory_handler; // Handles theory
 //  Egraph &    egraph;         // Stores Sgraph
   SMTConfig & config;         // Stores Config
 public:
