@@ -20,14 +20,14 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 #ifndef SMTSOLVER_H
 #define SMTSOLVER_H
 
-//#include "THandler.h"
 #include "SolverTypes.h"
 #include "Global.h"
+//#include "THandler.h"
 //#include "Egraph.h"
 #include "SMTConfig.h"
 #include "Pterm.h"
 
-//class THandler; // Forward declaration
+class THandler; // Forward declaration
 
 // 
 // Interface that a SATSolver should implement 
@@ -37,7 +37,7 @@ class SMTSolver
 public:
 
 //  SMTSolver ( Egraph & e, SMTConfig & c ) 
-  SMTSolver (SMTConfig& c) : config(c) { }
+  SMTSolver (SMTConfig& c, THandler& t) : config(c), theory_handler(t) { }
 
   virtual ~SMTSolver ( ) { }
   //
@@ -61,9 +61,9 @@ public:
 
 protected:
 
-  THandler    theory_handler; // Handles theory
 //  Egraph &    egraph;         // Stores Sgraph
   SMTConfig & config;         // Stores Config
+  THandler  & theory_handler; // Handles theory
 public:
   vec<lbool>  model;          // Stores model
 };

@@ -68,6 +68,7 @@ Logic::Logic(SMTConfig& c, SStore& s, TStore& t, PtStore& pt) :
     if (tr == TRef_Undef) { assert(false); }
     if (sym_store[tr].setRightAssoc() == false) { assert(false); } // TODO: Remove and clean
     sym_store[tr].setNoScoping();
+    sym_IMPLIES = tr;
 
     tr = sym_store.newTerm(tk_and, params);
     if (tr == TRef_Undef) { assert(false); }
@@ -86,6 +87,20 @@ Logic::Logic(SMTConfig& c, SStore& s, TStore& t, PtStore& pt) :
     if (sym_store[tr].setLeftAssoc() == false) assert(false);
     sym_store[tr].setNoScoping();
     sym_XOR = tr;
+}
+
+bool Logic::isTheorySymbol(TRef tr) const {
+    Term& t = sym_store[tr];
+    // Boolean var
+    if (t.rsort() == sort_BOOL && t.nargs() == 0) return false;
+    // Standard Boolean operators
+    if (tr == sym_NOT) return false;
+    if (tr == sym_EQ)  return false;
+    if (tr == sym_IMPLIES) return false;
+    if (tr == sym_AND) return false;
+    if (tr == sym_OR)  return false;
+    if (tr == sym_XOR) return false;
+    return true;
 }
 
 bool Logic::setLogic(const char* l) {

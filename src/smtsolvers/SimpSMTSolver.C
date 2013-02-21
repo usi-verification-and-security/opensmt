@@ -43,8 +43,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 // Constructor/Destructor:
 
 //SimpSMTSolver::SimpSMTSolver(Egraph & e, SMTConfig & c) :
-SimpSMTSolver::SimpSMTSolver(SMTConfig & c) :
-       CoreSMTSolver(c)
+SimpSMTSolver::SimpSMTSolver(SMTConfig & c, THandler & t) :
+       CoreSMTSolver(c, t)
      , grow               (0)
      , asymm_mode         (false)
      , redundancy_check   (false)

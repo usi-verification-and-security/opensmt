@@ -22,8 +22,6 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 
 int CoreSMTSolver::checkTheory( bool complete )
 {
-  // We skip the theory solvers for now
-  return 1;
   // Skip calls to theory solvers
   // (does not seem to be helpful ...)
   if ( !complete
@@ -35,8 +33,8 @@ int CoreSMTSolver::checkTheory( bool complete )
 
   skipped_calls = 0;
 
-  bool res = theory_handler->assertLits( )
-          && theory_handler->check( complete );
+  bool res = theory_handler.assertLits( )
+          && theory_handler.check( complete );
   //
   // Problem is T-Satisfiable
   //
@@ -54,8 +52,8 @@ int CoreSMTSolver::checkTheory( bool complete )
 	// There are deductions
 	if ( ded )
 	{
-	  res = theory_handler->assertLits( )
-	     && theory_handler->check( false );
+	  res = theory_handler.assertLits( )
+	     && theory_handler.check( false );
 
 	  // SAT and deductions done, time for BCP
 	  if ( res ) return 2;
@@ -103,12 +101,12 @@ int CoreSMTSolver::checkTheory( bool complete )
   int        max_decision_level;
   int        backtrack_level;
 
-  theory_handler->getConflict( conflicting, max_decision_level );
+  theory_handler.getConflict( conflicting, max_decision_level );
 
 #if PRODUCE_PROOF
   Enode * interp = NULL;
   if ( config.produce_inter > 0 )
-    interp = theory_handler->getInterpolants( );
+    interp = theory_handler.getInterpolants( );
 #endif
 
   assert( max_decision_level <= decisionLevel( ) );
@@ -194,11 +192,11 @@ int CoreSMTSolver::checkTheory( bool complete )
     confl = Clause_new( conflicting, config.sat_temporary_learn );
     learnts.push(confl);
 #ifndef SMTCOMP
-    if ( config.incremental )
-    {
-      undo_stack_oper.push_back( NEWLEARNT );
-      undo_stack_elem.push_back( (void *)confl );
-    }
+//    if ( config.incremental )
+//    {
+//      undo_stack_oper.push_back( NEWLEARNT );
+//      undo_stack_elem.push_back( (void *)confl );
+//    }
 #endif
     attachClause(*confl);
     claBumpActivity(*confl);
@@ -427,7 +425,7 @@ int CoreSMTSolver::analyzeUnsatLemma( Clause * confl )
 //
 int CoreSMTSolver::deduceTheory( )
 {
-  Lit ded = theory_handler->getDeduction( );
+  Lit ded = theory_handler.getDeduction( );
 
   if ( ded == lit_Undef )
     return 0;
@@ -445,7 +443,7 @@ int CoreSMTSolver::deduceTheory( )
     }
 #endif
 
-    ded = theory_handler->getDeduction( );
+    ded = theory_handler.getDeduction( );
   }
   while( ded != lit_Undef );
   return 1;

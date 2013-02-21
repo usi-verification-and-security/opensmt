@@ -39,10 +39,8 @@ class Interpret {
     TStore                                     tstore;   // Terms (more like symbols)
     PtStore                                    ptstore;  // Proper terms
     Logic                                      logic;
-    SimpSMTSolver                              solver;
     Tseitin                                    ts;
 
-    Egraph                                     uf_solver;
 
     bool                        f_exit;
 
@@ -74,21 +72,11 @@ class Interpret {
           store(config)
         , ptstore(tstore, store)
         , logic(config, store, tstore, ptstore)
-        , solver(config)
         , ts( ptstore
-            , solver
             , config
             , tstore
             , store
-            , logic
-            , logic.getTerm_true()
-            , logic.getTerm_false())
-        , uf_solver( config
-                   , store
-                   , tstore
-                   , ptstore
-                   , logic
-                   )
+            , logic )
         , f_exit(false)
         , asrt_lev(0) {};
 

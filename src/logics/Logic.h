@@ -30,6 +30,7 @@ class Logic {
     TRef                sym_XOR;
     TRef                sym_NOT;
     TRef                sym_EQ;
+    TRef                sym_IMPLIES;
     SRef                sort_BOOL;
 
     PTRef               term_TRUE;
@@ -69,6 +70,9 @@ class Logic {
 
     bool        isEquality    (TRef tr) const { return equalities.contains(tr); }
     bool        isDisequality (TRef tr) const { return disequalities.contains(tr); }
+    // tr is a theory symbol if it is not a boolean variable, nor one of the standard
+    // boolean operators (and, not, or, etc...)
+    bool        isTheorySymbol(TRef tr) const;
     // Check if term is an uninterpreted predicate.
     // Return the corresponding equivalence term if yes,
     // PTRef_Undef otherwise.

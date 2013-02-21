@@ -26,131 +26,137 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 // the positive input enode. Creates the correspondence
 // by adding a new MiniSAT variable, if it doesn't exists
 //
-Var THandler::enodeToVar( Enode * atm )
-{
-  assert( atm );
-  assert( atm->isAtom( ) );
-  assert( !atm->isTrue( ) );
-  assert( !atm->isFalse( ) );
-
-  if ( enode_id_to_var.size( ) <= (unsigned)atm->getId( ) )
-    enode_id_to_var.resize( atm->getId( ) + 1, var_Undef );
-
-  Var v = enode_id_to_var[ atm->getId( ) ];
-
-  if ( v == var_Undef )
-  {
-    lbool state = l_Undef;
-
-    // Store TAtom and give later
-    // unless we are just dumping
-    // a random interpolant
-    if ( atm->isTAtom( )
-      && config.sat_dump_rnd_inter == 0 )
-    {
-      // Give to theory solvers right away
-      if ( config.incremental )
-	egraph.inform( atm );
-      // Accumulate and give to theory solvers later
-      else
-      {
-	if ( static_cast< int >( tatoms_seen.size( ) ) <= atm->getId( ) )
-	  tatoms_seen.resize( atm->getId( ) + 1, false );
-	if ( tatoms_seen[ atm->getId( ) ] == false )
-	{
-	  tatoms_seen[ atm->getId( ) ] = true;
-	  tatoms_list.push_back( atm );
-	  tatoms_give.push_back( true );
-	}
-      }
-    }
-
-    if ( state == l_Undef )
-    {
-      // There is no variable in MiniSAT for this enode
-      // Create a new variable and store the correspondence
-
-      // Assign custom polarity if any
-      if ( atm->isTAtom( ) && atm->getDecPolarity( ) != l_Undef )
-	v = solver.newVar( atm->getDecPolarity( ) == l_False );
-      else
-      {
-	if ( config.sat_polarity_mode == 3 )
-	  v = solver.newVar( false ); // Positive polarity
-	else if ( config.sat_polarity_mode == 4 )
-	  v = solver.newVar( true );  // Negative polarity
-	else
-	{
-	  assert( (config.sat_polarity_mode == 5 && !atm->isTAtom( ))
-	       || (0 <= config.sat_polarity_mode && config.sat_polarity_mode <= 2 ) );
-	  double random_seed = 91648253;
-	  v = solver.newVar( irand( random_seed, 2 ) );
-	}
-      }
-
-      if ( atm->isTAtom( ) )
-      {
-	solver.setFrozen( v, true );
-	tatoms ++;
-      }
-      else
-	batoms ++;
-
-      enode_id_to_var[ atm->getId( ) ] = v;
-
-      if ( var_to_enode.size( ) <= (unsigned)v )
-	var_to_enode.resize( v + 1, NULL );
-
-      assert( var_to_enode[ v ] == NULL );
-      var_to_enode[ v ] = atm;
-    }
-    else if ( state == l_False )
-    {
-      v = var_False;
-    }
-    else
-    {
-      v = var_True;
-    }
-  }
-
-  assert( v != var_Undef );
-  return v;
-}
+// This is done in Tseitin translation
+//
+//Var THandler::enodeToVar( Enode * atm )
+//{
+//  assert( atm );
+//  assert( atm->isAtom( ) );
+//  assert( !atm->isTrue( ) );
+//  assert( !atm->isFalse( ) );
+//
+//  if ( enode_id_to_var.size( ) <= (unsigned)atm->getId( ) )
+//    enode_id_to_var.resize( atm->getId( ) + 1, var_Undef );
+//
+//  Var v = enode_id_to_var[ atm->getId( ) ];
+//
+//  if ( v == var_Undef )
+//  {
+//    lbool state = l_Undef;
+//
+//    // Store TAtom and give later
+//    // unless we are just dumping
+//    // a random interpolant
+//    if ( atm->isTAtom( )
+//      && config.sat_dump_rnd_inter == 0 )
+//    {
+//      // Give to theory solvers right away
+//      if ( config.incremental )
+//	egraph.inform( atm );
+//      // Accumulate and give to theory solvers later
+//      else
+//      {
+//	if ( static_cast< int >( tatoms_seen.size( ) ) <= atm->getId( ) )
+//	  tatoms_seen.resize( atm->getId( ) + 1, false );
+//	if ( tatoms_seen[ atm->getId( ) ] == false )
+//	{
+//	  tatoms_seen[ atm->getId( ) ] = true;
+//	  tatoms_list.push_back( atm );
+//	  tatoms_give.push_back( true );
+//	}
+//      }
+//    }
+//
+//    if ( state == l_Undef )
+//    {
+//      // There is no variable in MiniSAT for this enode
+//      // Create a new variable and store the correspondence
+//
+//      // Assign custom polarity if any
+//      if ( atm->isTAtom( ) && atm->getDecPolarity( ) != l_Undef )
+//	v = solver.newVar( atm->getDecPolarity( ) == l_False );
+//      else
+//      {
+//	if ( config.sat_polarity_mode == 3 )
+//	  v = solver.newVar( false ); // Positive polarity
+//	else if ( config.sat_polarity_mode == 4 )
+//	  v = solver.newVar( true );  // Negative polarity
+//	else
+//	{
+//	  assert( (config.sat_polarity_mode == 5 && !atm->isTAtom( ))
+//	       || (0 <= config.sat_polarity_mode && config.sat_polarity_mode <= 2 ) );
+//	  double random_seed = 91648253;
+//	  v = solver.newVar( irand( random_seed, 2 ) );
+//	}
+//      }
+//
+//      if ( atm->isTAtom( ) )
+//      {
+//	solver.setFrozen( v, true );
+//	tatoms ++;
+//      }
+//      else
+//	batoms ++;
+//
+//      enode_id_to_var[ atm->getId( ) ] = v;
+//
+//      if ( var_to_enode.size( ) <= (unsigned)v )
+//	var_to_enode.resize( v + 1, NULL );
+//
+//      assert( var_to_enode[ v ] == NULL );
+//      var_to_enode[ v ] = atm;
+//    }
+//    else if ( state == l_False )
+//    {
+//      v = var_False;
+//    }
+//    else
+//    {
+//      v = var_True;
+//    }
+//  }
+//
+//  assert( v != var_Undef );
+//  return v;
+//}
 
 //
 // Return the MiniSAT literal corresponding to
 // the input enode literal. Creates the correspondence
 // by adding a new MiniSAT variable, if it doesn't exists
 //
-Lit THandler::enodeToLit( Enode * elit )
-{
-  assert( elit );
-  assert( elit->isLit( ) );
+// Done in Tseitin
+//Lit THandler::enodeToLit( Enode * elit )
+//{
+//  assert( elit );
+//  assert( elit->isLit( ) );
+//
+//  bool negated = elit->isNot( );
+//  Enode * atm = negated ? elit->getCdr( )->getCar( ) : elit;
+//  Var v = enodeToVar( atm );
+//  return Lit( v, negated );
+//}
 
-  bool negated = elit->isNot( );
-  Enode * atm = negated ? elit->getCdr( )->getCar( ) : elit;
-  Var v = enodeToVar( atm );
-  return Lit( v, negated );
-}
+// Also in Tseitin encoder?
+//Enode * THandler::varToEnode( Var v )
+//{
+//  assert( v < (int)var_to_enode.size( ) );
+//  assert( var_to_enode[ v ] != NULL );
+//  return var_to_enode[ v ];
+//}
 
-Enode * THandler::varToEnode( Var v )
-{
-  assert( v < (int)var_to_enode.size( ) );
-  assert( var_to_enode[ v ] != NULL );
-  return var_to_enode[ v ];
-}
+// Don't know where this is used
+//void THandler::clearVar( Var v )
+//{
+//  assert( var_to_enode[ v ] != NULL );
+//  Enode * e = var_to_enode[ v ];
+//  assert( e->getId( ) < static_cast< int >( enode_id_to_var.size( ) ) );
+//  assert( enode_id_to_var[ e->getId( ) ] == v );
+//  var_to_enode[ v ] = NULL;
+//  enode_id_to_var[ e->getId( ) ] = var_Undef;
+//}
 
-void THandler::clearVar( Var v )
-{
-  assert( var_to_enode[ v ] != NULL );
-  Enode * e = var_to_enode[ v ];
-  assert( e->getId( ) < static_cast< int >( enode_id_to_var.size( ) ) );
-  assert( enode_id_to_var[ e->getId( ) ] == v );
-  var_to_enode[ v ] = NULL;
-  enode_id_to_var[ e->getId( ) ] = var_Undef;
-}
-
+// Push newly found literals from trail to egraph
 bool THandler::assertLits( )
 {
   bool res = true;
@@ -163,31 +169,26 @@ bool THandler::assertLits( )
     const Lit l = trail[ i ];
     const Var v = var( l );
 
-    Enode * e = var_to_enode[ v ];
-    assert( v <= 1 || e );
-    stack.push_back( e );
+    if (!varToTheorySymbol.contains(v)) continue;
 
-    if ( v == var_True || v == var_False )
-    {
-      assert( v != var_True  || sign( l ) == false );
-      assert( v != var_False || sign( l ) == true );
-      continue;
-    }
+    PTRef pt_r = tmap.varToTerm[ v ];
+//    assert( v <= 1 || e );
+    stack.push( pt_r ); // This was originally pushed even for non-theory atoms
 
-    if ( !e->isTAtom( ) )
-      continue;
+    if ( pt_r == logic.getTerm_true() ) assert(sign(l) == true), continue;
+    else if ( pt_r == logic.getTerm_false() ) assert(sign(l) == false), continue;
 
     // Push backtrack point
     egraph.pushBacktrackPoint( );
 
-    assert( !e->hasPolarity( ) );
-    e->setPolarity( (sign( l ) ? l_False : l_True) );
-    assert( e->hasPolarity( ) );
-  
-    res = egraph.assertLit( e );
+//    assert( !e->hasPolarity( ) );
+//    e->setPolarity( (sign( l ) ? l_False : l_True) );
+//    assert( e->hasPolarity( ) );
 
-    if ( !res && config.certification_level > 2 )
-      verifyCallWithExternalTool( res, i );
+    res = egraph.addEquality( pt_r, sign(l) );
+
+//    if ( !res && config.certification_level > 2 )
+//      verifyCallWithExternalTool( res, i );
   }
 
   checked_trail_size = stack.size( );
@@ -196,6 +197,7 @@ bool THandler::assertLits( )
   return res;
 }
 
+// Check the assignment with equality solver
 bool THandler::check( bool complete )
 {
   const bool res = egraph.check( complete );

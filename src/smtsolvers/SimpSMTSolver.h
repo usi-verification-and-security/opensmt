@@ -48,7 +48,7 @@ class SimpSMTSolver : public CoreSMTSolver
     // Constructor/Destructor:
     //
 //    SimpSMTSolver ( Egraph &, SMTConfig & );
-    SimpSMTSolver (SMTConfig &);
+    SimpSMTSolver (SMTConfig &, THandler&);
     ~SimpSMTSolver( );
 
     bool         addSMTClause         ( const vec<Lit> &

@@ -130,7 +130,7 @@ public:
   virtual void                popBacktrackPoint   ( )                       = 0;  // Backtrack to last saved point
   virtual bool                check               ( bool )                  = 0;  // Check satisfiability
   inline const string &       getName             ( ) { return name; }            // The name of the solver
-  virtual lbool               evaluate            ( Enode * ) { return l_Undef; } // Evaluate the expression in the current state
+  virtual lbool               evaluate            ( ERef ) { return l_Undef; } // Evaluate the expression in the current state
 #ifdef PRODUCE_PROOF
   virtual Enode *             getInterpolants     ( logic_t & ) { return interpolants; }
 #endif

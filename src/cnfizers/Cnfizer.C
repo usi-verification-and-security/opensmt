@@ -20,22 +20,19 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 #include "Cnfizer.h"
 
 Cnfizer::Cnfizer( PtStore &   ptstore_
-           , SMTSolver & solver_
            , SMTConfig & config_
            , TStore&     symstore_
            , SStore &    sstore_
            , Logic&      logic_
-           , PTRef term_true
-           , PTRef term_false
            ) :
-       ptstore  (ptstore_ )
-     , solver   (solver_  )
-     , config   (config_  )
-     , symstore (symstore_)
+       config   (config_  )
      , sstore   (sstore_  )
+     , symstore (symstore_)
+     , ptstore  (ptstore_ )
      , logic    (logic_   )
-     , term_TRUE (term_true)
-     , term_FALSE(term_false)
+     , thandler (uf_solver, config)
+     , solver   (config_, thandler)
+     , uf_solver(config, sstore, symstore, ptstore, logic)
 {
     vec<Lit> c;
     Lit l = findLit(term_true);
@@ -92,7 +89,9 @@ const Lit Cnfizer::findLit(PTRef ptr) {
         v = seen[p];
     Lit l = Lit(v, sgn);
     if (!isBooleanOperator(ptstore[p].symb()))
-        varToTerm.insert(v,p);
+        tmap.varToTerm.insert(v,p);
+    if (isTheoryTerm(ptstore[p].symb()))
+        tmap.varToTheorySymbol.insert(v,p);
     return l;
 }
 
@@ -737,8 +736,8 @@ vec<ValPair>* Cnfizer::getModel() {
     vec<lbool>& model = solver.model;
     vec<ValPair>* out = new vec<ValPair>();
     for (Var v = 0; v < model.size(); v++) {
-        if (varToTerm.contains(v))
-            out->push(ValPair(varToTerm[v], model[v]));
+        if (tmap.varToTerm.contains(v))
+            out->push(ValPair(tmap.varToTerm[v], model[v]));
     }
     return out;
 }

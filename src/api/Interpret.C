@@ -377,49 +377,55 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
 
 bool Interpret::checkSat(const char* cmd) {
     if (logic.isSet()) {
-        solver.initialize();
-        lbool res = solver.solve();
+        ts.initialize();
+        lbool res = ts.solve();
         if (res == l_True) {
             notify_formatted(false, "sat");
-            vec<ValPair>* val = ts.getModel();
-            // This cannot of course be the final solution, but it would be nice to able to check if everything works
-            for (int i = 0; i < val->size(); i++) {
-                PTRef t_ref = (*val)[i].getTerm();
-                lbool sign = (*val)[i].getVal();
-                Pterm& t = ptstore[t_ref];
-                if (logic.isEquality(t.symb())) {
-                    if (tstore[t.symb()][0] != logic.getSort_bool()) {
-                        char* term_str = ptstore.printTerm(t_ref);
-                        comment_formatted("Term is uf equality: %s%s", sign == l_True ? "" : "not ", term_str);
-                        free(term_str);
-                        if (sign != l_Undef) {
-                            lbool stat = uf_solver.addEquality(t_ref, sign == l_True);
-                            if (stat == l_False) {
-                                comment_formatted("Unsatisfiable");
-                            }
-                        }
-                    }
-                }
-                else {
-                    PTRef up_eq = logic.addUP(t_ref);
-                    if (up_eq != PTRef_Undef) {
-                        char* term_str = ptstore.printTerm(t_ref);
-                        comment_formatted("Term is uninterpreted predicate: %s%s", sign == l_True ? "" : "not ", term_str);
-                        free(term_str);
-                        // We need to make the new term, but only if it does not already exist
-                        lbool stat = uf_solver.addEquality(up_eq, sign == l_True);
-                        if (stat == l_False) {
-                            comment_formatted("Unsatisfiable");
-                        }
-                    }
-                }
-            }
         }
         else if (res == l_False)
             notify_formatted(false, "unsat");
         else
             notify_formatted(false, "unknown");
     }
+//            vec<ValPair>* val = ts.getModel();
+//            // This cannot of course be the final solution, but it would be nice to able to check if everything works
+//            for (int i = 0; i < val->size(); i++) {
+//                PTRef t_ref = (*val)[i].getTerm();
+//                lbool sign = (*val)[i].getVal();
+//                Pterm& t = ptstore[t_ref];
+//                if (logic.isEquality(t.symb())) {
+//                    if (tstore[t.symb()][0] != logic.getSort_bool()) {
+//                        char* term_str = ptstore.printTerm(t_ref);
+//                        comment_formatted("Term is uf equality: %s%s", sign == l_True ? "" : "not ", term_str);
+//                        free(term_str);
+//                        if (sign != l_Undef) {
+//                            lbool stat = uf_solver.addEquality(t_ref, sign == l_True);
+//                            if (stat == l_False) {
+//                                comment_formatted("Unsatisfiable");
+//                            }
+//                        }
+//                    }
+//                }
+//                else {
+//                    PTRef up_eq = logic.addUP(t_ref);
+//                    if (up_eq != PTRef_Undef) {
+//                        char* term_str = ptstore.printTerm(t_ref);
+//                        comment_formatted("Term is uninterpreted predicate: %s%s", sign == l_True ? "" : "not ", term_str);
+//                        free(term_str);
+//                        // We need to make the new term, but only if it does not already exist
+//                        lbool stat = uf_solver.addEquality(up_eq, sign == l_True);
+//                        if (stat == l_False) {
+//                            comment_formatted("Unsatisfiable");
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//        else if (res == l_False)
+//            notify_formatted(false, "unsat");
+//        else
+//            notify_formatted(false, "unknown");
+
     else {
         notify_formatted(true, "Illegal command before set-logic: %s", cmd);
         return false;

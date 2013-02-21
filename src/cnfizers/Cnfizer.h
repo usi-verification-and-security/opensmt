@@ -20,10 +20,13 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 #ifndef CNFIZER_H
 #define CNFIZER_H
 
+#include "TermMapper.h"
 #include "Global.h"
 //#include "Otl.h"
-#include "SMTSolver.h"
-//#include "Egraph.h"
+//#include "SMTSolver.h"
+#include "SimpSMTSolver.h"
+#include "Egraph.h"
+#include "THandler.h"
 #include "PtStore.h"
 #include "SStore.h"
 #include "Logic.h"
@@ -61,16 +64,24 @@ class ValPair {
 //
 class Cnfizer
 {
-    public:
+    SMTConfig&          config;
+    SStore &            sstore;
+    TStore&             symstore;
+    PtStore&            ptstore;         // Reference to the term store
+    Logic&              logic;
+
+    TermMapper          tmap;            // Map vars to proper terms
+    THandler            thandler;
+    SimpSMTSolver       solver;
+    Egraph              uf_solver;
+
+public:
 
     Cnfizer( PtStore &   ptstore_
-           , SMTSolver & solver_
            , SMTConfig & config_
            , TStore&     symstore_
            , SStore &    sstore_
            , Logic&      logic_
-           , PTRef term_true
-           , PTRef term_false
            );
 
 
@@ -81,7 +92,11 @@ class Cnfizer
                                 , const ipartitions_t = 0
 #endif
                                 ); // Main routine
-    vec<ValPair>* getModel            ();                              // Retrieves the model (if SAT and solved)
+
+    vec<ValPair>* getModel ();                              // Retrieves the model (if SAT and solved)
+
+    void   initialize      () { solver.initialize(); }
+    lbool  solve           () { return solver.solve(); }
 
 protected:
 
@@ -113,11 +128,7 @@ protected:
 
 //  Enode * toggleLit		   ( Enode * );                              // Handy function for toggling literals
 
-    PtStore&     ptstore;                                                       // Reference to the term store
-    SMTSolver &  solver;                                                        // Reference to Solver
-    SMTConfig &  config;                                                        // Reference to Config
-    TStore&      symstore;
-    SStore &     sstore;
+
 
 private:
 
@@ -133,10 +144,6 @@ private:
 
     // The special boolean symbols
 protected:
-    PTRef  term_TRUE;
-    PTRef  term_FALSE;
-    Logic& logic;
-    SRef  sort_BOOL;
 
     Map<PTRef,bool,PTRefHash,Equal<PTRef> >   processed;  // Is a term already processed
     Map<PTRef,Var,PTRefHash,Equal<PTRef> >    seen;       // mapping from PTRef to var
@@ -144,13 +151,13 @@ protected:
     bool  isLit            (PTRef r);
     const Lit findLit      (PTRef ptr);
     bool  isBooleanOperator(TRef tr) { return (tr == logic.getSym_and()) | (tr == logic.getSym_or() ) | (tr == logic.getSym_not() ) | (tr == logic.getSym_eq() ) | (tr == logic.getSym_xor() ); }
+    bool  isTheorySymbol   (TRef tr) { return logic.isTheorySymbol(tr); }
     bool  isAtom           (PTRef r) const;
     bool  isNPAtom         (PTRef r, PTRef& p)    const; // Check if r is a (negated) atom.  Return true if the corresponding atom is negated.  The purified reference is placed in the second argument.
     void  declareAtom      (PTRef, TRef);                // Declare an atom for the smt/sat solver
     bool  termSeen         (PTRef)                const; // True if the term has been seen and thus processed in the sense that there is already literal corresponding to it.  Sees through negations.
     void  getTerm          (PTRef, PTRef&, bool&) const; // Return the term and its sign
 
-    Map<Var,PTRef,VarHash,Equal<Var> >        varToTerm;
 };
 
 #endif

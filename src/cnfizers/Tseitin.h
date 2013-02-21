@@ -32,24 +32,19 @@ class Tseitin : public Cnfizer
 public:
 
     Tseitin(PtStore&   ptstore_
-           , SMTSolver& solver_
            , SMTConfig& config_
            , TStore&    symstore_
            , SStore&    sstore_
            , Logic&     logic_
-           , PTRef      term_true
-           , PTRef      term_false
            )
       : Cnfizer(ptstore_
-                , solver_
                 , config_
                 , symstore_
                 , sstore_
-                , logic_
-                , term_true
-                , term_false) {}
+                , logic_) {}
 
     ~Tseitin( ) { }
+
 
 private:
 

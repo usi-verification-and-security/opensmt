@@ -68,7 +68,7 @@ class CoreSMTSolver : public SMTSolver
     // Constructor/Destructor:
     //
 //    CoreSMTSolver( Egraph &, SMTConfig & );
-    CoreSMTSolver(SMTConfig&);
+    CoreSMTSolver(SMTConfig&, THandler&);
     ~CoreSMTSolver();
     void     initialize       ( );
 /*
@@ -346,13 +346,13 @@ class CoreSMTSolver : public SMTSolver
 #endif
       void   printTrail             ( );             // Prints the trail (debugging)
       int    checkTheory            ( bool );        // Checks consistency in theory
-/*
+
       int    deduceTheory           ( );             // Perform theory-deductions
-*/
+
       int    checkAxioms            ( );             // Checks consistency of lemma on demand
-/*
+
       int    analyzeUnsatLemma      ( Clause * );    // Conflict analysis for an unsat lemma on demand
-*/
+
       void   cancelUntilVar         ( Var );         // Backtrack until a certain variable
       void   cancelUntilVarTempInit ( Var );         // Backtrack until a certain variable
       void   cancelUntilVarTempDone ( );             // Backtrack until a certain variable

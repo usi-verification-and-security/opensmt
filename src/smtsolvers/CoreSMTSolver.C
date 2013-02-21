@@ -57,10 +57,10 @@ namespace opensmt
 
 
 //CoreSMTSolver::CoreSMTSolver( Egraph & e, SMTConfig & c )
-CoreSMTSolver::CoreSMTSolver(SMTConfig & c )
+CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
   // Initializes configuration and egraph
 //  : SMTSolver        ( e, c )
-  : SMTSolver        ( c )
+  : SMTSolver        ( c, t )
   , axioms_checked   ( 0 )
   // Parameters: (formerly in 'SearchParams')
   , var_decay        ( 1 / 0.95 )
