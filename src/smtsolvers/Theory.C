@@ -33,8 +33,8 @@ int CoreSMTSolver::checkTheory( bool complete )
 
   skipped_calls = 0;
 
-  bool res = theory_handler.assertLits( )
-          && theory_handler.check( complete );
+  bool res = theory_handler.assertLits(trail)
+          && theory_handler.check(complete, trail);
   //
   // Problem is T-Satisfiable
   //
@@ -52,8 +52,8 @@ int CoreSMTSolver::checkTheory( bool complete )
 	// There are deductions
 	if ( ded )
 	{
-	  res = theory_handler.assertLits( )
-	     && theory_handler.check( false );
+	  res = theory_handler.assertLits(trail)
+	     && theory_handler.check(false, trail);
 
 	  // SAT and deductions done, time for BCP
 	  if ( res ) return 2;
@@ -101,7 +101,7 @@ int CoreSMTSolver::checkTheory( bool complete )
   int        max_decision_level;
   int        backtrack_level;
 
-  theory_handler.getConflict( conflicting, max_decision_level );
+  theory_handler.getConflict(conflicting, level, max_decision_level);
 
 #if PRODUCE_PROOF
   Enode * interp = NULL;

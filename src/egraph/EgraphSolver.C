@@ -605,30 +605,28 @@ ERef Egraph::getSuggestion( )
 //
 vec<ERef>& Egraph::getConflict( bool deduction )
 {
-  assert( 0 <= conf_index && conf_index < (int)tsolvers.size( ) );
-  (void)deduction;
+    assert( 0 <= conf_index && conf_index < (int)tsolvers.size( ) );
+    (void)deduction;
 #ifdef STATISTICS
-  TSolverStats & ts = *tsolvers_stats[ conf_index ];
-  if ( deduction )
-  {
-    if ( (long)explanation.size( ) > ts.max_reas_size )
-      ts.max_reas_size = explanation.size( );
-    if ( (long)explanation.size( ) < ts.min_reas_size )
-      ts.min_reas_size = explanation.size( );
-    ts.reasons_sent ++;
-    ts.avg_reas_size += explanation.size( );
-  }
-  else
-  {
-    if ( (long)explanation.size( ) > ts.max_conf_size )
-      ts.max_conf_size = explanation.size( );
-    if ( (long)explanation.size( ) < ts.min_conf_size )
-      ts.min_conf_size = explanation.size( );
-    ts.conflicts_sent ++;
-    ts.avg_conf_size += explanation.size( );
-  }
+    TSolverStats & ts = *tsolvers_stats[ conf_index ];
+    if ( deduction ) {
+        if ( (long)explanation.size( ) > ts.max_reas_size )
+            ts.max_reas_size = explanation.size( );
+        if ( (long)explanation.size( ) < ts.min_reas_size )
+            ts.min_reas_size = explanation.size( );
+        ts.reasons_sent ++;
+        ts.avg_reas_size += explanation.size( );
+    }
+    else {
+        if ( (long)explanation.size( ) > ts.max_conf_size )
+            ts.max_conf_size = explanation.size( );
+        if ( (long)explanation.size( ) < ts.min_conf_size )
+            ts.min_conf_size = explanation.size( );
+        ts.conflicts_sent ++;
+        ts.avg_conf_size += explanation.size( );
+    }
 #endif
-  return explanation;
+    return explanation;
 }
 
 #ifdef PRODUCE_PROOF

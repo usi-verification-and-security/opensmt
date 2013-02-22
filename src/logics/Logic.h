@@ -73,6 +73,7 @@ class Logic {
     // tr is a theory symbol if it is not a boolean variable, nor one of the standard
     // boolean operators (and, not, or, etc...)
     bool        isTheorySymbol(TRef tr) const;
+    bool        isTheoryTerm(PTRef tr) const { return isTheorySymbol(term_store[tr].symb()); }
     // Check if term is an uninterpreted predicate.
     // Return the corresponding equivalence term if yes,
     // PTRef_Undef otherwise.

@@ -91,7 +91,8 @@ const Lit Cnfizer::findLit(PTRef ptr) {
     if (!isBooleanOperator(ptstore[p].symb()))
         tmap.varToTerm.insert(v,p);
     if (isTheorySymbol(ptstore[p].symb()))
-        tmap.varToTheorySymbol.insert(v,p);
+        tmap.varToTheorySymbol.insert(v,ptstore[p].symb());
+    tmap.termToLit.insert(p, l);
     return l;
 }
 

@@ -62,7 +62,7 @@ public:
 
   virtual ~THandler ( ) { }
 
-  void    getConflict          ( vec< Lit > &, int & ); // Returns theory conflict in terms of literals
+  void    getConflict          ( vec<Lit>&, vec<int>&, int & ); // Returns theory conflict in terms of literals
 #ifdef PRODUCE_PROOF
   Enode * getInterpolants      ( );                     // Fill a vector with interpolants
 #endif
@@ -76,9 +76,9 @@ public:
 //  Enode * varToEnode           ( Var );                 // Return the enode corresponding to a variable
 //  void    clearVar             ( Var );                 // Clear a Var in translation table (used in incremental solving)
 
-  bool    assertLits           ( );                     // Give to the TSolvers the newly added literals on the trail
-  bool    check                ( bool );                // Check trail in the theories
-  void    backtrack            ( );                     // Remove literals that are not anymore on the trail
+  bool    assertLits           (vec<Lit>&);             // Give to the TSolvers the newly added literals on the trail
+  bool    check                (bool, vec<Lit>&);       // Check trail in the theories
+  void    backtrack            (vec<Lit>&);             // Remove literals that are not anymore on the trail
 
   double  getAtomsRatio        ( ) { return (double)batoms/((double)tatoms + 1.0); }
 

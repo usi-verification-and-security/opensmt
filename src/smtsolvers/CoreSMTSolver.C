@@ -1665,7 +1665,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
   const double start = cpuTime( );
 #endif
   // (Incomplete) Check of Level-0 atoms
-/*
+
   int res = checkTheory( false );
   if ( res == -1 ) return l_False;
   while ( res == 2 )
@@ -1674,7 +1674,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 #ifdef STATISTICS
   tsolvers_time += cpuTime( ) - start;
 #endif
-*/
+
   //
   // Decrease activity for booleans
   //

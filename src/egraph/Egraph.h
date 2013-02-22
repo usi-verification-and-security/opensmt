@@ -275,7 +275,7 @@ public:
   ERef                getDeduction            ( );                          // Return an implied node based on the current state
   ERef                getSuggestion           ( );                          // Return a suggested literal based on the current state
   vec<ERef> &         getConflict             ( bool = false );             // Get explanation
-  bool                check                   ( bool );		            // Check satisfiability
+  bool                check                   ( bool );                     // Check satisfiability
 //  void                initializeCong          ( Enode * );                  // Initialize congruence structures for a node
 #ifndef SMTCOMP
 //  void                computeModel            ( );
@@ -480,7 +480,7 @@ private:
   vec< ERef >                 pending;                          // Pending merges
   vec< ERef >                 undo_stack_term;                  // Keeps track of terms involved in operations
   vec< oper_t >               undo_stack_oper;                  // Keeps track of operations
-  vec< ERef >                 explanation;                      // Stores explanation
+  vec< PTRef >                explanation;                      // Stores explanation
 
 #if MORE_DEDUCTIONS
   vec< ERef>                  neq_list;
