@@ -64,6 +64,7 @@ class ValPair {
 //
 class Cnfizer
 {
+protected:
     SMTConfig&          config;
     SStore &            sstore;
     TStore&             symstore;

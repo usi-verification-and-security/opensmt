@@ -34,20 +34,22 @@ public:
   THandler ( Egraph &      e
            , SMTConfig &   c
            , TermMapper&   tm
-           , vec< Lit > &  t
-           , vec< int > &  l
-           , vec< char > & a
-           , const Var     vt
-           , const Var     vf )
+           , Logic&        l
+//           , vec< Lit > &  t
+//           , vec< int > &  l
+//           , vec< char > & a
+//           , const Var     vt
+//           , const Var     vf
+           )
     : egraph             ( e )
     , config             ( c )
-//    , solver             ( s )
     , tmap               ( tm )
-    , trail              ( t )
-    , level              ( l )
-    , assigns            ( a )
-    , var_True           ( vt )
-    , var_False          ( vf )
+    , logic              ( l )
+//    , trail              ( t )
+//    , level              ( l )
+//    , assigns            ( a )
+//    , var_True           ( vt )
+//    , var_False          ( vf )
     , checked_trail_size ( 0 )
     , tatoms             ( 0 )
     , batoms             ( 0 )
@@ -120,11 +122,12 @@ private:
   SMTConfig &         config;                   // Reference to configuration
 //  SMTSolver &         solver;                   // Reference to SMT Solver
   TermMapper&         tmap;                     // Mappings between TRefs and Lits
-  vec< Lit > &        trail;                    // Reference to SMT Solver trail
-  vec< int > &        level;                    // Reference to SMT Solver level
-  vec< char > &       assigns;                  // Reference to SMT Solver assigns
-  const Var           var_True;                 // To specify constantly true atoms
-  const Var           var_False;                // To specify constantly false atoms
+//  vec< Lit > &        trail;                    // Reference to SMT Solver trail
+//  vec< int > &        level;                    // Reference to SMT Solver level
+//  vec< char > &       assigns;                  // Reference to SMT Solver assigns
+//  const Var           var_True;                 // To specify constantly true atoms
+//  const Var           var_False;                // To specify constantly false atoms
+  Logic &             logic;                    // For true, false literals etc
   vec< PTRef >        stack;                    // Stacked atoms
   size_t              checked_trail_size;       // Store last size of the trail checked by the solvers
 

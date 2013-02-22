@@ -30,16 +30,16 @@ Cnfizer::Cnfizer( PtStore &   ptstore_
      , symstore (symstore_)
      , ptstore  (ptstore_ )
      , logic    (logic_   )
-     , thandler (uf_solver, config)
+     , thandler (uf_solver, config, tmap, logic)
      , solver   (config_, thandler)
      , uf_solver(config, sstore, symstore, ptstore, logic)
 {
     vec<Lit> c;
-    Lit l = findLit(term_true);
+    Lit l = findLit(logic.getTerm_true());
     c.push(l);
     solver.addSMTClause(c);
     c.pop();
-    l = findLit(term_false);
+    l = findLit(logic.getTerm_false());
     c.push(~l);
     solver.addSMTClause(c);
 }
@@ -51,11 +51,11 @@ Cnfizer::Cnfizer( PtStore &   ptstore_
 //  (iii) it is an atom stating an equivalence of non-boolean terms (terms must be purified at this point)
 bool Cnfizer::isLit(PTRef r) {
     Pterm& t = ptstore[r];
-    if (symstore[t.symb()].rsort() == sort_BOOL) {
+    if (symstore[t.symb()].rsort() == logic.getSort_bool()) {
         if (t.size() == 0) return true;
         if (t.symb() == logic.getSym_not() ) return isLit(t[0]);
         // At this point all arguments of equivalence have the same sort.  Check only the first
-        if ((t.symb() == logic.getSym_eq() ) && (symstore[ptstore[t[0]].symb()].rsort() != sort_BOOL)) return true;
+        if ((t.symb() == logic.getSym_eq() ) && (symstore[ptstore[t[0]].symb()].rsort() != logic.getSort_bool())) return true;
     }
     return false;
 }
@@ -65,11 +65,11 @@ bool Cnfizer::isLit(PTRef r) {
   //  (ii) it is an atom stating an equivalence of non-boolean terms (terms must be purified at this point)
 bool Cnfizer::isAtom(PTRef r) const {
     Pterm& t = ptstore[r];
-    if (symstore[t.symb()].rsort() == sort_BOOL) {
+    if (symstore[t.symb()].rsort() == logic.getSort_bool()) {
         if (t.size() == 0) return true;
         if (t.symb() == logic.getSym_not() ) return false;
         // At this point all arguments of equivalence have the same sort.  Check only the first
-        if ((t.symb() == logic.getSym_eq() ) && (symstore[ptstore[t[0]].symb()].rsort() != sort_BOOL)) return true;
+        if ((t.symb() == logic.getSym_eq() ) && (symstore[ptstore[t[0]].symb()].rsort() != logic.getSort_bool())) return true;
     }
     return false;
 }
@@ -90,7 +90,7 @@ const Lit Cnfizer::findLit(PTRef ptr) {
     Lit l = Lit(v, sgn);
     if (!isBooleanOperator(ptstore[p].symb()))
         tmap.varToTerm.insert(v,p);
-    if (isTheoryTerm(ptstore[p].symb()))
+    if (isTheorySymbol(ptstore[p].symb()))
         tmap.varToTheorySymbol.insert(v,p);
     return l;
 }
