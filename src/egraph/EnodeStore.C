@@ -29,7 +29,7 @@ ERef EnodeStore::addTerm(ERef sr, ERef args, PTRef term) {
         if (containsSig(sr, args)) {
             rval = lookupSig(sr, args);
             termToERef.insert(term, rval);
-            // XXX push to the undo stack
+            assert(false); // XXX push to the undo stack
         }
         else {
             rval = ea.alloc(sr, args, Enode::et_term, term);

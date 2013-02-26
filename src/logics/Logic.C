@@ -87,6 +87,13 @@ Logic::Logic(SMTConfig& c, SStore& s, TStore& t, PtStore& pt) :
     if (sym_store[tr].setLeftAssoc() == false) assert(false);
     sym_store[tr].setNoScoping();
     sym_XOR = tr;
+
+    params.push(sort_store["Bool 0"]);
+    tr = sym_store.newTerm(tk_ite, params);
+    if (tr == TRef_Undef) { assert(false); }
+    sym_store[tr].setNoScoping();
+    sym_ITE = tr;
+    ites.insert(tr, true);
 }
 
 bool Logic::isTheorySymbol(TRef tr) const {
@@ -94,12 +101,13 @@ bool Logic::isTheorySymbol(TRef tr) const {
     // Boolean var
     if (t.rsort() == sort_BOOL && t.nargs() == 0) return false;
     // Standard Boolean operators
-    if (tr == sym_NOT) return false;
-    if (tr == sym_EQ)  return false;
+    if (tr == sym_NOT)     return false;
+    if (tr == sym_EQ)      return false;
     if (tr == sym_IMPLIES) return false;
-    if (tr == sym_AND) return false;
-    if (tr == sym_OR)  return false;
-    if (tr == sym_XOR) return false;
+    if (tr == sym_AND)     return false;
+    if (tr == sym_OR)      return false;
+    if (tr == sym_XOR)     return false;
+    if (tr == sym_ITE)     return false;
     return true;
 }
 
@@ -159,19 +167,27 @@ bool Logic::declare_sort_hook(Sort* s) {
 }
 
 
-// Adds the uninterpreted predicate ptr if it is an uninterpreted predicate.
+// Uninterpreted predicate p : U U* -> Bool
+// Adds the uninterpreted predicate if ptr is an uninterpreted predicate.
 // Returns reference to corresponding equality term or PTRef_Undef.  Creates
-// the eq term if it does not exist previously.
-PTRef Logic::addUP(PTRef ptr) const {
+// the eq term if it does not exist.
+// If the term is an equality (disequality), it must be an equality
+// (disequality) over terms with non-boolean return type.  Those must be then
+// returned as is.
+PTRef Logic::lookupUPEq(PTRef ptr) const {
     if (UP_map.contains(ptr)) return UP_map[ptr];
     Pterm& t = term_store[ptr];
+    if (isEquality(t.symb()) | isDisequality(t.symb()))
+        return ptr;
+
     Term& sym = sym_store[t.symb()];
     if (sym.nargs() == 0) return PTRef_Undef; // This is a Boolean constant
     if (sym.rsort() != getSort_bool()) return PTRef_Undef;
-    int i;
-    for (i = 0; i < sym.size(); i++)
-        if (sym[i] == getSort_bool()) break;
-    if (i != sym.size()) return PTRef_Undef;
+    // This is not a necessary condition.  This should work for arbitrary arguments
+//    int i;
+//    for (i = 0; i < sym.size(); i++)
+//        if (sym[i] == getSort_bool()) break;
+//    if (i != sym.size()) return PTRef_Undef;
     // A new boolean predicate
     vec<PTRef> args;
     args.push(ptr);
@@ -179,6 +195,16 @@ PTRef Logic::addUP(PTRef ptr) const {
     return term_store.lookupTerm(tk_equals, args);
 }
 
+bool Logic::isBooleanOperator(TRef tr) const {
+    if (tr == getSym_and())     return true;
+    if (tr == getSym_or())      return true;
+    if (tr == getSym_not())     return true;
+    if (tr == getSym_eq())      return true;
+    if (tr == getSym_xor())     return true;
+    if (tr == getSym_ite())     return true;
+    if (tr == getSym_implies()) return true;
+    return false;
+}
 //bool Logic::DeclareSort(string& name, int arity) {
 //    printf("Declaring sort %s of arity %d\n", name.c_str(), arity);
 //    sstore.newSymbol(name.c_str());

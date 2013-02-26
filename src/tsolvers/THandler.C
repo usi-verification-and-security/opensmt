@@ -186,6 +186,7 @@ bool THandler::assertLits(vec<Lit>& trail)
 //    assert( e->hasPolarity( ) );
     // sign(l) == true if l is negated
     res = egraph.addEquality( pt_r, !sign(l) ) == l_Undef;
+    if (!res) break;
 
 //    if ( !res && config.certification_level > 2 )
 //      verifyCallWithExternalTool( res, i );

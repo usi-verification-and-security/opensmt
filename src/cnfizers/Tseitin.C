@@ -61,22 +61,29 @@ bool Tseitin::cnfize(PTRef formula
         if (processed.contains(ptr))
             continue;
 
-        Pterm& pt = ptstore[ptr];
-        if (pt.symb() == logic.getSym_and())
+        // Here (after the checks) not safe to use Pterm& since cnfize.* can alter the table of terms
+        // by calling findLit
+        TRef symb = ptstore[ptr].symb();
+        int sz = ptstore[ptr].size();
+        if (symb == logic.getSym_and())
             cnfizeAnd(ptr);
-        else if (pt.symb() == logic.getSym_or())
+        else if (symb == logic.getSym_or())
             cnfizeOr(ptr);
-        else if (pt.symb() == logic.getSym_xor())
+        else if (symb == logic.getSym_xor())
             cnfizeXor(ptr);
-        else if (pt.symb() == logic.getSym_eq())
+        else if (symb == logic.getSym_eq())
             cnfizeIff(ptr);
-        else if (pt.symb() != logic.getSym_not() && pt.size() > 0) {
-            if (logic.isEquality(pt.symb())) {
+        else if (symb == logic.getSym_implies())
+            cnfizeImplies(ptr);
+        else if (symb == logic.getSym_ite())
+            cnfizeIfthenelse(ptr);
+        else if (symb != logic.getSym_not() && sz > 0) {
+            if (logic.isEquality(symb)) {
                 goto tseitin_end;
                 // This is a bridge equality
                 // It should be treated as a literal by the SAT solver
             }
-            if (logic.addUP(ptr) != PTRef_Undef) {
+            if (logic.lookupUPEq(ptr) != PTRef_Undef) {
                 // Uninterpreted predicate.  Special handling
                 goto tseitin_end;
             }
@@ -85,8 +92,11 @@ bool Tseitin::cnfize(PTRef formula
             }
         }
 
-        for (int i = 0; i < pt.size(); i++)
-            unprocessed_terms.push(pt[i]);
+        {
+            Pterm& pt = ptstore[ptr];
+            for (int i = 0; i < pt.size(); i++)
+                unprocessed_terms.push(pt[i]); // It would seem that using the reference is not safe if a reallocation happened?
+        }
 tseitin_end:
         processed.insert(ptr, true);
 
@@ -324,45 +334,12 @@ void Tseitin::cnfizeIff( PTRef eq_term
         solver.addSMTClause(clause);           // Adds a little clause to the solver
 }
 
-/*
-void Tseitin::cnfizeIfthenelse( Enode * list
-                              , Enode * arg_def
+void Tseitin::cnfizeIfthenelse( PTRef ite_term
 #ifdef PRODUCE_PROOF
                               , const ipartitions_t partitions
 #endif
                               )
 {
-  if ( arg_def == NULL )
-  {
-    Enode * i = list->getCar();
-    Enode * t = list->getCdr( )->getCar( );
-    Enode * e = list->getCdr( )->getCdr( )->getCar( );
-
-    vector< Enode * > clause;
-
-    clause.push_back( toggleLit( i ) );
-    clause.push_back( t );
-#ifdef PRODUCE_PROOF
-    if ( config.produce_inter > 0 )
-      solver.addSMTClause( clause, partitions );
-    else
-#endif
-    solver.addSMTClause( clause );        
-
-    clause.pop_back( );
-    clause.pop_back( );
-
-    clause.push_back( i );
-    clause.push_back( e );
-#ifdef PRODUCE_PROOF
-    if ( config.produce_inter > 0 )
-      solver.addSMTClause( clause, partitions );
-    else
-#endif
-    solver.addSMTClause( clause );        
-  }
-  else
-  {
     //  (!a | !i | t) & (!a | i | e) & (a | !i | !t) & (a | i | !e)
     //
     // ( if a_0 then a_1 else a_2 )
@@ -374,63 +351,61 @@ void Tseitin::cnfizeIfthenelse( Enode * list
     //       (  aux | -a_0 | -a_1 ) &
     //       (  aux |  a_0 | -a_2 )
     //
-    assert( list->getArity( ) == 3 );
-    Enode * arg0 = list->getCar( );
-    Enode * arg1 = list->getCdr( )->getCar( );
-    Enode * arg2 = list->getCdr( )->getCdr( )->getCar( );
-    vector< Enode * > clause;
+    Pterm& pt_ite = ptstore[ite_term];
+    assert(pt_ite.size() == 3);
 
-    clause.push_back( toggleLit( arg_def ) );
+    Lit v  = findLit(ite_term);
+    Lit a0 = findLit(pt_ite[0]);
+    Lit a1 = findLit(pt_ite[1]);
+    Lit a2 = findLit(pt_ite[2]);
 
-    // First clause
-    clause.push_back( toggleLit( arg0 ) );
-    clause.push_back( arg1 );
-#ifdef PRODUCE_PROOF
-    if ( config.produce_inter > 0 )
-      solver.addSMTClause( clause, partitions );
-    else
-#endif
+    vec<Lit> clause;
+
+    clause.push(~v); clause.push(~a0); clause.push(a1);
+    solver.addSMTClause( clause ); clause.clear();
+
+    clause.push(~v); clause.push(a0); clause.push(a2);
+    solver.addSMTClause( clause ); clause.clear();
+
+    clause.push(v); clause.push(~a0); clause.push(~a1);
+    solver.addSMTClause( clause ); clause.clear();
+
+    clause.push(v); clause.push(a0); clause.push(~a2);
     solver.addSMTClause( clause );
-    clause.pop_back( );
-    clause.pop_back( );
-
-    // Second clause
-    clause.push_back( arg0 );
-    clause.push_back( arg2 );
-#ifdef PRODUCE_PROOF
-    if ( config.produce_inter > 0 )
-      solver.addSMTClause( clause, partitions );
-    else
-#endif
-    solver.addSMTClause( clause );
-    clause.pop_back( );
-    clause.pop_back( );
-
-    clause.pop_back( );
-    clause.push_back( arg_def );
-
-    // Third clause
-    clause.push_back( toggleLit( arg0 ) );
-    clause.push_back( toggleLit( arg1 ) );
-#ifdef PRODUCE_PROOF
-    if ( config.produce_inter > 0 )
-      solver.addSMTClause( clause, partitions );
-    else
-#endif
-    solver.addSMTClause( clause );
-    clause.pop_back( );
-    clause.pop_back( );
-
-    // Fourth clause
-    clause.push_back( arg0 );
-    clause.push_back( toggleLit( arg2 ) );
-#ifdef PRODUCE_PROOF
-    if ( config.produce_inter > 0 )
-      solver.addSMTClause( clause, partitions );
-    else
-#endif
-    solver.addSMTClause( clause );
-  }
 }
-*/
 
+void Tseitin::cnfizeImplies( PTRef impl_term
+#ifdef PRODUCE_PROOF
+                              , const ipartitions_t partitions
+#endif
+                              )
+{
+    // ( a_0 => a_1 )
+    //
+    // <=>
+    //
+    // aux = ( -aux | -a_0 |  a_1 ) &
+    //       (  aux |  a_0 )        &
+    //       (  aux | -a_1 )
+    //
+
+    Pterm& pt_impl = ptstore[impl_term];
+    assert(pt_impl.size() == 2);
+
+    Lit v  = findLit(impl_term);
+    Lit a0 = findLit(pt_impl[0]);
+    Lit a1 = findLit(pt_impl[1]);
+
+    vec<Lit> clause;
+
+    clause.push(v);
+
+    clause.push(a0);
+    solver.addSMTClause(clause); clause.pop();
+
+    clause.push(~a1);
+    solver.addSMTClause(clause); clause.clear();
+
+    clause.push(~v); clause.push(~a0); clause.push(a1);
+    solver.addSMTClause(clause);
+}

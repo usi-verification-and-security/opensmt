@@ -458,39 +458,39 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 
 //
 // Checks for consistency in theories
-//
+// Shouldn't this be done elsewhere?
 bool Egraph::check( bool complete )
 {
   bool res = true;
 
   // Assert literal in the other theories
-  for ( uint32_t i = 1 ; i < tsolvers.size_( ) && res ; i ++ )
-  {
-    OrdinaryTSolver & t = *tsolvers[ i ];
-#ifdef STATISTICS
-    TSolverStats & ts = *tsolvers_stats[ i ];
-#endif
-
-#ifdef STATISTICS
-    size_t deductions_old = deductions.size( );
-#endif
-
-    res = t.check( complete );
-    if ( !res ) conf_index = i;
-
-#ifdef STATISTICS
-    if ( res )
-    {
-      ts.sat_calls ++;
-      ts.deductions_done += deductions.size( ) - deductions_old;
-    }
-    else
-      ts.uns_calls ++;
-#endif
-  }
-
-  assert( !res || explanation.size() == 0 );
-  assert( exp_cleanup.size() == 0 );
+//  for ( uint32_t i = 1 ; i < tsolvers.size_( ) && res ; i ++ )
+//  {
+//    OrdinaryTSolver & t = *tsolvers[ i ];
+//#ifdef STATISTICS
+//    TSolverStats & ts = *tsolvers_stats[ i ];
+//#endif
+//
+//#ifdef STATISTICS
+//    size_t deductions_old = deductions.size( );
+//#endif
+//
+//    res = t.check( complete );
+//    if ( !res ) conf_index = i;
+//
+//#ifdef STATISTICS
+//    if ( res )
+//    {
+//      ts.sat_calls ++;
+//      ts.deductions_done += deductions.size( ) - deductions_old;
+//    }
+//    else
+//      ts.uns_calls ++;
+//#endif
+//  }
+//
+//  assert( !res || explanation.size() == 0 );
+//  assert( exp_cleanup.size() == 0 );
 
   return res;
 }
@@ -605,26 +605,26 @@ ERef Egraph::getSuggestion( )
 //
 vec<ERef>& Egraph::getConflict( bool deduction )
 {
-    assert( 0 <= conf_index && conf_index < (int)tsolvers.size( ) );
-    (void)deduction;
+//    assert( 0 <= conf_index && conf_index < (int)tsolvers.size( ) );
+//    (void)deduction;
 #ifdef STATISTICS
-    TSolverStats & ts = *tsolvers_stats[ conf_index ];
-    if ( deduction ) {
-        if ( (long)explanation.size( ) > ts.max_reas_size )
-            ts.max_reas_size = explanation.size( );
-        if ( (long)explanation.size( ) < ts.min_reas_size )
-            ts.min_reas_size = explanation.size( );
-        ts.reasons_sent ++;
-        ts.avg_reas_size += explanation.size( );
-    }
-    else {
-        if ( (long)explanation.size( ) > ts.max_conf_size )
-            ts.max_conf_size = explanation.size( );
-        if ( (long)explanation.size( ) < ts.min_conf_size )
-            ts.min_conf_size = explanation.size( );
-        ts.conflicts_sent ++;
-        ts.avg_conf_size += explanation.size( );
-    }
+//    TSolverStats & ts = *tsolvers_stats[ conf_index ];
+//    if ( deduction ) {
+//        if ( (long)explanation.size( ) > ts.max_reas_size )
+//            ts.max_reas_size = explanation.size( );
+//        if ( (long)explanation.size( ) < ts.min_reas_size )
+//            ts.min_reas_size = explanation.size( );
+//        ts.reasons_sent ++;
+//        ts.avg_reas_size += explanation.size( );
+//    }
+//    else {
+//        if ( (long)explanation.size( ) > ts.max_conf_size )
+//            ts.max_conf_size = explanation.size( );
+//        if ( (long)explanation.size( ) < ts.min_conf_size )
+//            ts.min_conf_size = explanation.size( );
+//        ts.conflicts_sent ++;
+//        ts.avg_conf_size += explanation.size( );
+//    }
 #endif
     return explanation;
 }

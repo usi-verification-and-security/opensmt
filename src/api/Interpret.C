@@ -479,8 +479,8 @@ void Interpret::notify_formatted(bool error, const char* fmt_str, ...) {
     char c1, *t;
     if (error)
         cout << "(error \"";
-    else
-        cout << "(";
+//    else
+//        cout << "(";
 
     va_start(ap, fmt_str);
     while (true) {
@@ -507,8 +507,9 @@ void Interpret::notify_formatted(bool error, const char* fmt_str, ...) {
     va_end(ap);
     if (error)
         cout << "\")" << endl;
-    else
-        cout << ")" << endl;
+//    else
+//        cout << ")" << endl;
+        cout << endl;
 }
 
 void Interpret::notify_success() {

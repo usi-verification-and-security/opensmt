@@ -151,8 +151,9 @@ protected:
 
     bool  isLit            (PTRef r);
     const Lit findLit      (PTRef ptr);
-    bool  isBooleanOperator(TRef tr) { return (tr == logic.getSym_and()) | (tr == logic.getSym_or() ) | (tr == logic.getSym_not() ) | (tr == logic.getSym_eq() ) | (tr == logic.getSym_xor() ); }
-    bool  isTheorySymbol   (TRef tr) { return logic.isTheorySymbol(tr); }
+    bool  isBooleanOperator(TRef tr) { return logic.isBooleanOperator(tr); } // (tr == logic.getSym_and()) | (tr == logic.getSym_or() ) | (tr == logic.getSym_not() ) | (tr == logic.getSym_eq() ) | (tr == logic.getSym_xor() ); }
+    bool  isTheorySymbol   (TRef tr) const { return logic.isTheorySymbol(tr); }
+    bool  isIte            (TRef tr) const { return logic.isIte(tr); }
     bool  isAtom           (PTRef r) const;
     bool  isNPAtom         (PTRef r, PTRef& p)    const; // Check if r is a (negated) atom.  Return true if the corresponding atom is negated.  The purified reference is placed in the second argument.
     void  declareAtom      (PTRef, TRef);                // Declare an atom for the smt/sat solver

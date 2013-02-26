@@ -47,34 +47,34 @@ int CoreSMTSolver::checkTheory( bool complete )
     {
       if ( !complete )
       {
-	int ded = deduceTheory( );
-	assert( ded == 0 || ded == 1 );
-	// There are deductions
-	if ( ded )
-	{
-	  res = theory_handler.assertLits(trail)
-	     && theory_handler.check(false, trail);
+        int ded = deduceTheory( );
+        assert( ded == 0 || ded == 1 );
+        // There are deductions
+        if ( ded )
+        {
+          res = theory_handler.assertLits(trail)
+             && theory_handler.check(false, trail);
 
-	  // SAT and deductions done, time for BCP
-	  if ( res ) return 2;
-	  // Otherwise goto Problem is T-Unsatisfiable
-	  // This case can happen only during DTC
-	  assert( res == 0 );
-	  assert( ( ( config.logic == QF_UFIDL
-		   || config.logic == QF_UFLRA )
-	           && config.sat_lazy_dtc != 0 )
-	       || config.logic == QF_AXDIFF
-	       || config.logic == QF_AX );
-	}
-	// SAT and there are no deductions, time for decision
-	else
-	{
-	  skip_step *= config.sat_skip_step_factor;
-	  return 1; // SAT and nothing to deduce, time for decision
-	}
+          // SAT and deductions done, time for BCP
+          if ( res ) return 2;
+          // Otherwise goto Problem is T-Unsatisfiable
+          // This case can happen only during DTC
+          assert( res == 0 );
+          assert( ( ( config.logic == QF_UFIDL
+                   || config.logic == QF_UFLRA )
+                   && config.sat_lazy_dtc != 0 )
+               || config.logic == QF_AXDIFF
+               || config.logic == QF_AX );
+        }
+        // SAT and there are no deductions, time for decision
+        else
+        {
+          skip_step *= config.sat_skip_step_factor;
+          return 1; // SAT and nothing to deduce, time for decision
+        }
       }
       else
-	return 1; // SAT and complete call, we are done
+        return 1; // SAT and complete call, we are done
     }
     else
     {
@@ -251,11 +251,11 @@ int CoreSMTSolver::checkTheory( bool complete )
     units[ var(learnt_clause[0]) ] = proof.last( );
 #endif
   }else{
-		// ADDED FOR NEW MINIMIZATION
-		learnts_size += learnt_clause.size( );
-		all_learnts ++;
+    // ADDED FOR NEW MINIMIZATION
+    learnts_size += learnt_clause.size( );
+    all_learnts ++;
 
-		Clause * c = Clause_new( learnt_clause, true );
+    Clause * c = Clause_new( learnt_clause, true );
 
 #ifdef PRODUCE_PROOF
     proof.endChain( c );

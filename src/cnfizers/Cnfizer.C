@@ -81,18 +81,31 @@ const Lit Cnfizer::findLit(PTRef ptr) {
     bool sgn;
     Var v;
     getTerm(ptr, p, sgn);
+    bool isnew = false;
     if (!seen.contains(p)) {
         v = solver.newVar();
         seen.insert(p, v);
+        isnew = true;
     }
     else
         v = seen[p];
+
     Lit l = Lit(v, sgn);
-    if (!isBooleanOperator(ptstore[p].symb()))
+
+    if (isnew && !isBooleanOperator(ptstore[p].symb()) && !isIte(ptstore[p].symb())) {
+        // Terms with Boolean return value, i.e., uninterpreted
+        // predicates, will be associated with the corresponding
+        // equality.
+        PTRef new_term = logic.lookupUPEq(p);
+        if (new_term != PTRef_Undef) {
+            p = new_term;
+            tmap.varToTheorySymbol.insert(v,ptstore[p].symb());
+        }
         tmap.varToTerm.insert(v,p);
-    if (isTheorySymbol(ptstore[p].symb()))
+    }
+    if (isnew && isTheorySymbol(ptstore[p].symb()))
         tmap.varToTheorySymbol.insert(v,ptstore[p].symb());
-    tmap.termToLit.insert(p, l);
+    if (isnew) tmap.termToLit.insert(p, l);
     return l;
 }
 

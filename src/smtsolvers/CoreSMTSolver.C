@@ -113,9 +113,9 @@ CoreSMTSolver::initialize( )
   restart_first = config.sat_restart_first;
   restart_inc = config.sat_restart_inc;
 
-//  vec< Lit > fc;
-//  fc.push( lit_Undef );
-//  fake_clause = Clause_new( fc );
+  vec< Lit > fc;
+  fc.push( lit_Undef );
+  fake_clause = Clause_new( fc );
   // FIXME: check why this ?
   first_model_found = config.logic == QF_UFLRA
                    || config.logic == QF_UFIDL;
@@ -1669,7 +1669,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
   int res = checkTheory( false );
   if ( res == -1 ) return l_False;
   while ( res == 2 )
-    res = false; // = checkTheory( false );
+    res = checkTheory( false );
   assert( res == 1 );
 #ifdef STATISTICS
   tsolvers_time += cpuTime( ) - start;
@@ -1690,7 +1690,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
       // CONFLICT
       conflicts++; conflictC++;
       if (decisionLevel() == 0)
-	return l_False;
+        return l_False;
 
       first = false;
       learnt_clause.clear();
@@ -1701,7 +1701,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
       assert(value(learnt_clause[0]) == l_Undef);
 
       if (learnt_clause.size() == 1){
-	uncheckedEnqueue(learnt_clause[0]);
+        uncheckedEnqueue(learnt_clause[0]);
 #ifdef PRODUCE_PROOF
 	Clause * c = Clause_new( learnt_clause, false );
 	proof.endChain( c );
@@ -1710,11 +1710,11 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 #endif
       }else{
 
-	// ADDED FOR NEW MINIMIZATION
-	learnts_size += learnt_clause.size( );
-	all_learnts ++;
+        // ADDED FOR NEW MINIMIZATION
+        learnts_size += learnt_clause.size( );
+        all_learnts ++;
 
-	Clause * c = Clause_new( learnt_clause, true );
+        Clause * c = Clause_new( learnt_clause, true );
 
 #ifdef PRODUCE_PROOF
 	proof.endChain( c );
@@ -1724,14 +1724,14 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 	  undo_stack_elem.push_back( (void *)c );
 	}
 #endif
-	learnts.push(c);
+        learnts.push(c);
 #ifndef SMTCOMP
 	undo_stack_oper.push_back( NEWLEARNT );
 	undo_stack_elem.push_back( (void *)c );
 #endif
-	attachClause(*c);
-	claBumpActivity(*c);
-	uncheckedEnqueue(learnt_clause[0], c);
+        attachClause(*c);
+        claBumpActivity(*c);
+        uncheckedEnqueue(learnt_clause[0], c);
       }
 
       varDecayActivity();
@@ -1741,124 +1741,124 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
       // NO CONFLICT
 
       if (nof_conflicts >= 0 && conflictC >= nof_conflicts){
-	// Reached bound on number of conflicts:
-	progress_estimate = progressEstimate();
-	cancelUntil(0);
-	return l_Undef; }
+        // Reached bound on number of conflicts:
+        progress_estimate = progressEstimate();
+        cancelUntil(0);
+        return l_Undef; }
 
-	// Simplify the set of problem clauses:
-	if (decisionLevel() == 0 && !simplify())
-	  return l_False;
+        // Simplify the set of problem clauses:
+        if (decisionLevel() == 0 && !simplify())
+          return l_False;
 
-	if (nof_learnts >= 0 && learnts.size()-nAssigns() >= nof_learnts)
-	  // Reduce the set of learnt clauses:
-	  reduceDB();
+        if (nof_learnts >= 0 && learnts.size()-nAssigns() >= nof_learnts)
+          // Reduce the set of learnt clauses:
+          reduceDB();
 
-	if ( first_model_found )
-	{
-	  // Early Pruning Call
-	  // Step 1: check if the current assignment is theory-consistent
+        if ( first_model_found )
+        {
+          // Early Pruning Call
+          // Step 1: check if the current assignment is theory-consistent
 #ifdef STATISTICS
-	  const double start = cpuTime( );
+          const double start = cpuTime( );
 #endif
-	  int res = true; //= checkTheory( false );
+          int res = checkTheory( false );
 #ifdef STATISTICS
-	  tsolvers_time += cpuTime( ) - start;
+          tsolvers_time += cpuTime( ) - start;
 #endif
-	  switch( res )
-	  {
-	    case -1: return l_False;        // Top-Level conflict: unsat
-	    case  0: conflictC++; continue; // Theory conflict: time for bcp
-	    case  1: break;                 // Sat and no deductions: go ahead
-	    case  2: continue;              // Sat and deductions: time for bcp
-	    default: assert( false );
-	  }
+          switch( res )
+          {
+            case -1: return l_False;        // Top-Level conflict: unsat
+            case  0: conflictC++; continue; // Theory conflict: time for bcp
+            case  1: break;                 // Sat and no deductions: go ahead
+            case  2: continue;              // Sat and deductions: time for bcp
+            default: assert( false );
+          }
 
-	  // Check axioms
-//	  res = checkAxioms( );
+          // Check axioms
+//          res = checkAxioms( );
+//
+//          switch( res )
+//          {
+//            case -1: return l_False;        // Top-Level conflict: unsat
+//            case  0: conflictC++; continue; // Theory conflict: time for bcp
+//            case  1: break;                 // Sat and no deductions: go ahead
+//            case  2: continue;              // Sat and deductions: time for bcp
+//            default: assert( false );
+//          }
+        }
 
-	  switch( res )
-	  {
-	    case -1: return l_False;        // Top-Level conflict: unsat
-	    case  0: conflictC++; continue; // Theory conflict: time for bcp
-	    case  1: break;                 // Sat and no deductions: go ahead
-	    case  2: continue;              // Sat and deductions: time for bcp
-	    default: assert( false );
-	  }
-	}
+        Lit next = lit_Undef;
+        while (decisionLevel() < assumptions.size()){
+          // Perform user provided assumption:
+          Lit p = assumptions[decisionLevel()];
+          if (value(p) == l_True){
+            // Dummy decision level:
+            newDecisionLevel();
+          }else if (value(p) == l_False){
+            analyzeFinal(~p, conflict);
+            return l_False;
+          }else{
+            next = p;
+            break;
+          }
+        }
 
-	Lit next = lit_Undef;
-	while (decisionLevel() < assumptions.size()){
-	  // Perform user provided assumption:
-	  Lit p = assumptions[decisionLevel()];
-	  if (value(p) == l_True){
-	    // Dummy decision level:
-	    newDecisionLevel();
-	  }else if (value(p) == l_False){
-	    analyzeFinal(~p, conflict);
-	    return l_False;
-	  }else{
-	    next = p;
-	    break;
-	  }
-	}
+        if (next == lit_Undef)
+        {
+          // New variable decision:
+          decisions++;
+          next = pickBranchLit(polarity_mode, random_var_freq);
 
-	if (next == lit_Undef)
-	{
-	  // New variable decision:
-	  decisions++;
-	  next = pickBranchLit(polarity_mode, random_var_freq);
-
-	  // Complete Call
-	  if ( next == lit_Undef )
-	  {
-	    first_model_found = true;
+          // Complete Call
+          if ( next == lit_Undef )
+          {
+            first_model_found = true;
 #ifdef STATISTICS
-	    const double start = cpuTime( );
+            const double start = cpuTime( );
 #endif
-	    int res = true; // checkTheory( true );
+            int res = checkTheory( true );
 #ifdef STATISTICS
-	    tsolvers_time += cpuTime( ) - start;
+            tsolvers_time += cpuTime( ) - start;
 #endif
-	    if ( res == 0 ) { conflictC++; continue; }
-	    if ( res == -1 ) return l_False;
-	    assert( res == 1 );
+            if ( res == 0 ) { conflictC++; continue; }
+            if ( res == -1 ) return l_False;
+            assert( res == 1 );
 
 #ifdef STATISTICS
-	    const double start2 = cpuTime( );
+            const double start2 = cpuTime( );
 #endif
 //	    res = checkAxioms( );
 #ifdef STATISTICS
-	    tsolvers_time += cpuTime( ) - start2;
+            tsolvers_time += cpuTime( ) - start2;
 #endif
 
-	    if ( res == 0 ) { conflictC++; continue; }
-	    if ( res == 2 ) { continue; }
-	    if ( res == -1 ) return l_False;
-	    assert( res == 1 );
-	    // Otherwise we still have to make sure that
-	    // splitting on demand did not add any new variable
-	    decisions++;
-	    next = pickBranchLit( polarity_mode, random_var_freq );
-	  }
+//            if ( res == 0 ) { conflictC++; continue; }
+//            if ( res == 2 ) { continue; }
+//            if ( res == -1 ) return l_False;
+//            assert( res == 1 );
+            // Otherwise we still have to make sure that
+            // splitting on demand did not add any new variable
+            decisions++;
+            next = pickBranchLit( polarity_mode, random_var_freq );
+          }
 
-	  if (next == lit_Undef)
-	    // Model found:
-	    return l_True;
-	}
+          if (next == lit_Undef)
+            // Model found:
+            return l_True;
+        }
 
-	// This case may happen only during DTC
-	if ( value( next ) != l_Undef )
-	{
-	  assert( config.logic == QF_UFIDL
-	       || config.logic == QF_UFLRA );
-	  continue;
-	}
+        // This case may happen only during DTC
+        if ( value( next ) != l_Undef )
+        {
+          assert( config.logic == QF_UFIDL
+               || config.logic == QF_UFLRA );
+          continue;
+        }
 
-	// Increase decision level and enqueue 'next'
-	assert(value(next) == l_Undef);
-	newDecisionLevel();
-	uncheckedEnqueue(next);
+        // Increase decision level and enqueue 'next'
+        assert(value(next) == l_Undef);
+        newDecisionLevel();
+        uncheckedEnqueue(next);
     }
   }
 }

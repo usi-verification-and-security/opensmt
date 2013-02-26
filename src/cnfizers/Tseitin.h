@@ -65,7 +65,8 @@ private:
     void cnfizeOr         (PTRef);                          // Cnfize disjunctions
     void cnfizeIff        (PTRef);                          // Cnfize iffs
     void cnfizeXor        (PTRef);                          // Cnfize xors
-//    void cnfizeIfthenelse (PTRef, Var);                          // Cnfize if then elses
+    void cnfizeIfthenelse (PTRef);                          // Cnfize if then elses
+    void cnfizeImplies    (PTRef);                          // Cnfize if then elses
 #endif
 };
 
