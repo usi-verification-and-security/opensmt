@@ -101,11 +101,13 @@ const Lit Cnfizer::findLit(PTRef ptr) {
             p = new_term;
             tmap.varToTheorySymbol.insert(v,ptstore[p].symb());
         }
-        tmap.varToTerm.insert(v,p);
     }
     if (isnew && isTheorySymbol(ptstore[p].symb()))
         tmap.varToTheorySymbol.insert(v,ptstore[p].symb());
-    if (isnew) tmap.termToLit.insert(p, l);
+    if (isnew) {
+        tmap.termToLit.insert(p, l);
+        tmap.varToTerm.insert(v, p);
+    }
     return l;
 }
 

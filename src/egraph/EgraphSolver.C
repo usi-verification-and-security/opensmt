@@ -828,12 +828,13 @@ Enode * Egraph::getInterpolants( logic_t & l )
 lbool Egraph::addEquality(PTRef term, bool val) {
     term_store.printTerm(term);
     Pterm& t = term_store[term];
-    assert( logic.isEquality(t.symb()) );
+    assert( logic.isEquality(t.symb()) | logic.isDisequality(t.symb()) );
     // In general we don't want to put the Boolean equalities to UF
     // solver.  However, the Boolean uninterpreted functions are an
     // exception.
 //    assert( sym_store[t.symb()][0] != logic.getSort_bool() );
 
+    assert(t.size() == 2);
     vec<PTRef> queue;
     queue.push(t[0]);
     queue.push(t[1]);
@@ -864,12 +865,14 @@ lbool Egraph::addEquality(PTRef term, bool val) {
         }
     }
 
-    // Get the lhs and rhs of the equality
+
+    // Get the lhs and rhs of the (dis)equality
     ERef eq_lhs = enode_store.termToERef[t[0]];
     ERef eq_rhs = enode_store.termToERef[t[1]];
 
     bool rval;
-    if (val == true)
+    if ((val == true  && logic.isEquality(t.symb())) ||
+        (val == false && logic.isDisequality(t.symb())))
         rval = assertEq( eq_lhs, eq_rhs, term );
     else
         rval = assertNEq( eq_lhs, eq_rhs, term);

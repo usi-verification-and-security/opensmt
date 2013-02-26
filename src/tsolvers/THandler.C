@@ -169,11 +169,12 @@ bool THandler::assertLits(vec<Lit>& trail)
     const Lit l = trail[ i ];
     const Var v = var( l );
 
+    PTRef pt_r = tmap.varToTerm[ v ];
+    stack.push( pt_r );
+
     if (!tmap.varToTheorySymbol.contains(v)) continue;
 
-    PTRef pt_r = tmap.varToTerm[ v ];
 //    assert( v <= 1 || e );
-    stack.push( pt_r ); // This was originally pushed even for non-theory atoms
 
     if ( pt_r == logic.getTerm_true() )       { assert(sign(l) == true ); continue; }
     else if ( pt_r == logic.getTerm_false() ) { assert(sign(l) == false); continue; }
@@ -186,7 +187,6 @@ bool THandler::assertLits(vec<Lit>& trail)
 //    assert( e->hasPolarity( ) );
     // sign(l) == true if l is negated
     res = egraph.addEquality( pt_r, !sign(l) ) == l_Undef;
-    if (!res) break;
 
 //    if ( !res && config.certification_level > 2 )
 //      verifyCallWithExternalTool( res, i );

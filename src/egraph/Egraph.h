@@ -167,11 +167,6 @@ public:
 
   size_t size() const { return enode_store.id_to_enode.size(); };
 
-  //
-  // Predefined constants nil, true, false
-  //
-  ERef ERef_true;
-  ERef ERef_false;
 
   //===========================================================================
   // Public APIs for enode construction/destruction
