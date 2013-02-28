@@ -78,7 +78,8 @@ public:
 
   bool    assertLits           (vec<Lit>&);             // Give to the TSolvers the newly added literals on the trail
   bool    check                (bool, vec<Lit>&);       // Check trail in the theories
-  void    backtrack            (vec<Lit>&);             // Remove literals that are not anymore on the trail
+//  void    backtrack            (vec<Lit>&);             // Remove literals that are not anymore on the trail
+  void    backtrack            (int);                   // Remove literals that are not anymore on the trail
 
   double  getAtomsRatio        ( ) { return (double)batoms/((double)tatoms + 1.0); }
 

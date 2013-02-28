@@ -69,9 +69,28 @@ int main( int argc, char * argv[] )
   // Catch SigTerm, so that it answers even on ctrl-c
   signal( SIGTERM, opensmt::catcher );
   signal( SIGINT , opensmt::catcher );
+
+  //
+  // This trick (copied from Main.C of MiniSAT) is to allow
+  // the repeatability of experiments that might be compromised
+  // by the floating point unit approximations on doubles
+  //
+#if defined(__linux__) && !defined( SMTCOMP )
+  fpu_control_t oldcw, newcw;
+  _FPU_GETCW(oldcw); newcw = (oldcw & ~_FPU_EXTENDED) | _FPU_DOUBLE; _FPU_SETCW(newcw);
+#endif
+
+#ifdef PEDANTIC_DEBUG
+  opensmt_warning("pedantic assertion checking enabled (very slow)");
+#endif
+
+#ifndef OPTIMIZE
+  opensmt_warning( "this binary is compiled with optimizations disabled (slow)" );
+#endif
+
 #ifndef SMTCOMP
 //  if ( context.getConfig( ).verbosity > 0 )
-  if ( true )
+  if ( false )
   {
     const int len_pack = strlen( PACKAGE_STRING );
     const char * site = "http://verify.inf.usi.ch/opensmt";
@@ -155,23 +174,6 @@ int main( int argc, char * argv[] )
   fclose( fin );
 
 
-  //
-  // This trick (copied from Main.C of MiniSAT) is to allow
-  // the repeatability of experiments that might be compromised
-  // by the floating point unit approximations on doubles
-  //
-#if defined(__linux__) && !defined( SMTCOMP )
-  fpu_control_t oldcw, newcw;
-  _FPU_GETCW(oldcw); newcw = (oldcw & ~_FPU_EXTENDED) | _FPU_DOUBLE; _FPU_SETCW(newcw);
-#endif
-
-#ifdef PEDANTIC_DEBUG
-  opensmt_warning("pedantic assertion checking enabled (very slow)");
-#endif
-
-#ifndef OPTIMIZE
-  opensmt_warning( "this binary is compiled with optimizations disabled (slow)" );
-#endif
   // 
   // Execute accumulated commands
   // function defined in OpenSMTContext.C

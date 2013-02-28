@@ -21,7 +21,9 @@ class Logic {
     SMTConfig&          config;
     SStore&             sort_store;
     TStore&             sym_store;
+  public:
     PtStore&            term_store;
+  private:
     bool                is_set;
     string              name;
     TRef                sym_TRUE;

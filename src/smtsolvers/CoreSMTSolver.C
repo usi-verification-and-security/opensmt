@@ -428,7 +428,7 @@ void CoreSMTSolver::cancelUntil(int level)
     else
       trail_lim.shrink(trail_lim.size() - level);
 
-//    if ( first_model_found ) theory_handler->backtrack( );
+    if ( first_model_found ) theory_handler.backtrack(level);
   }
 }
 
@@ -585,7 +585,7 @@ void CoreSMTSolver::cancelUntilVar( Var v )
     trail_lim.shrink(trail_lim.size( ) - lev);
   }
 
-//  theory_handler->backtrack( );
+  theory_handler.backtrack(trail.size());
 }
 
 void CoreSMTSolver::cancelUntilVarTempInit( Var v )
@@ -613,7 +613,7 @@ void CoreSMTSolver::cancelUntilVarTempInit( Var v )
   assigns[ v ] = toInt(l_Undef);
 
   trail.shrink(trail.size( ) - c );
-//  theory_handler->backtrack( );
+  theory_handler.backtrack(trail.size());
 }
 
 void CoreSMTSolver::cancelUntilVarTempDone( )
@@ -632,13 +632,13 @@ void CoreSMTSolver::cancelUntilVarTempDone( )
     trail.push( p );
   }
 
-  const bool res = false; //theory_handler->assertLits( );
+  const bool res = theory_handler.assertLits(trail);
   // Flush conflict if unsat
   if ( !res )
   {
     vec< Lit > conflicting;
     int        max_decision_level;
-//    theory_handler->getConflict( conflicting, max_decision_level );
+    theory_handler.getConflict( conflicting, level, max_decision_level );
   }
 }
 
@@ -821,7 +821,7 @@ void CoreSMTSolver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btleve
 #ifdef STATISTICS
       const double start = cpuTime( );
 #endif
-//      theory_handler->getReason( p, r );
+      theory_handler.getReason( p, r );
 
 #ifdef STATISTICS
       tsolvers_time += cpuTime( ) - start;
@@ -1034,7 +1034,7 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
 	// Temporairly backtracking
 	cancelUntilVarTempInit( v );
 	// Retrieving the reason
-//	theory_handler->getReason( p, r );
+	theory_handler.getReason( p, r );
 	// Restoring trail
 	cancelUntilVarTempDone( );
 	Clause * ct = NULL;
@@ -1516,13 +1516,13 @@ void CoreSMTSolver::popBacktrackPoint ( )
   proof.popBacktrackPoint( );
 #endif
   // Backtrack theory solvers
-//  theory_handler->backtrack( );
+  theory_handler.backtrack(trail.size());
   // Restore OK
   restoreOK( );
   assert( isOK( ) );
 }
 
-  void
+void
 CoreSMTSolver::reset( )
 {
   assert( config.isIncremental() );
@@ -1943,7 +1943,7 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
     if ( conflicts == 0
 	|| conflicts >= next_printout )
     {
-      if ( config.verbosity > 10 )
+      if ( config.verbosity() > 10 )
       {
 	reportf( "# %9d | %8d %8d | %8.3f s | %6.3f MB"
 	    , (int)conflicts
@@ -2004,8 +2004,8 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
   {
     // We terminate
     cancelUntil(-1);
-//    if ( first_model_found )
-//      theory_handler->backtrack( );
+    if ( first_model_found )
+      theory_handler.backtrack(-1);
   }
   else
   {

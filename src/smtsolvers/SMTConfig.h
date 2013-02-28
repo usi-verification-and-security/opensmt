@@ -167,8 +167,12 @@ public:
   bool         rocset;                       // Regular Output Channel set ?
   bool         docset;                       // Diagnostic Output Channel set ?
   int          dump_formula;                 // Dump input formula
-  int          verbosity;                    // Verbosity level
-  bool         print_success;                // Print sat/unsat
+  int          verbosity() const             // Verbosity level
+    { return optionTable.contains(":verbosity") ?
+        optionTable[":verbosity"].getValue().numval : 0; }
+  int          printSuccess() const
+     { return optionTable.contains(":print-success") ?
+        optionTable[":print-success"].getValue().numval == 1: false; }
   int          certification_level;          // Level of certification
   char         certifying_solver[256];       // Executable used for certification
   // SAT-Solver related parameters

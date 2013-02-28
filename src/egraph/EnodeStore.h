@@ -21,8 +21,9 @@ class EnodeStore {
     void free(ERef er) { ea.free(er); }
     vec<ERef>           id_to_enode;
     Enode& operator[] (ERef e) { return ea[e]; }
-    Map<PTRef,ERef,PTRefHash,Equal<PTRef> > termToERef;
-    Map<TRef,ERef, TRefHash,Equal<TRef> > symToERef;
+    Map<PTRef,ERef,PTRefHash,Equal<PTRef> >  termToERef;
+    Map<TRef,ERef, TRefHash,Equal<TRef> >    symToERef;
+    VecMap<ERef,PTRef,ERefHash,Equal<ERef> > ERefToTerms;
 
     void removeParent(ERef, ERef);
 

@@ -208,10 +208,10 @@ bool THandler::check( bool complete, vec<Lit>& ) {
     return res;
 }
 
-void THandler::backtrack(vec<Lit>& trail)
+void THandler::backtrack(int lev)
 {
     // Undoes the state of theory atoms if needed
-    while ( (int)stack.size( ) > trail.size( ) ) {
+    while ( (int)stack.size( ) > (lev > 0 ? lev : 0) ) {
         PTRef e = stack.last( );
         stack.pop( );
 
@@ -219,7 +219,7 @@ void THandler::backtrack(vec<Lit>& trail)
         if ( e == logic.getTerm_true() || e == logic.getTerm_false() ) continue;
 
         if ( !logic.isTheoryTerm(e) ) continue;
-
+        printf("Backtracking term %s\n", logic.term_store.printTerm(e));
         egraph.popBacktrackPoint( );
 
 //    assert( e->hasPolarity( ) );

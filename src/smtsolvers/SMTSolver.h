@@ -22,7 +22,7 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 
 #include "SolverTypes.h"
 #include "Global.h"
-//#include "THandler.h"
+#include "THandler.h"
 //#include "Egraph.h"
 #include "SMTConfig.h"
 #include "Pterm.h"

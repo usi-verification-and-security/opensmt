@@ -502,7 +502,7 @@ void Egraph::pushBacktrackPoint( )
 {
   // Save solver state if required
   assert( undo_stack_oper.size( ) == undo_stack_term.size( ) );
-  backtrack_points.push_back( undo_stack_term.size( ) );
+  backtrack_points.push( undo_stack_term.size( ) );
 
   // Push ordinary theories
   for ( uint32_t i = 1 ; i < tsolvers.size_( ) ; i ++ )
@@ -516,35 +516,33 @@ void Egraph::pushBacktrackPoint( )
 //
 // Pops a backtrack point
 //
-void Egraph::popBacktrackPoint( )
-{
-  assert( backtrack_points.size( ) > 0 );
-  size_t undo_stack_new_size = backtrack_points.back( );
-  backtrack_points.pop_back( );
-  backtrackToStackSize( undo_stack_new_size );
+void Egraph::popBacktrackPoint() {
+    assert( backtrack_points.size( ) > 0 );
+    size_t undo_stack_new_size = backtrack_points.last();
+    backtrack_points.pop();
+    backtrackToStackSize( undo_stack_new_size );
 
-  // Pop ordinary theories
-  for ( uint32_t i = 1 ; i < tsolvers.size_( ) ; i ++ )
-    tsolvers[ i ]->popBacktrackPoint( );
+    // Pop ordinary theories
+    for ( uint32_t i = 1 ; i < tsolvers.size_( ) ; i ++ )
+        tsolvers[ i ]->popBacktrackPoint( );
 
-  assert( deductions_last.size( ) > 0 );
-  assert( deductions_lim.size( ) > 0 );
-  // Restore deduction next
-  deductions_next = deductions_last.last();
-  deductions_last.pop();
-  // Restore deductions
-  size_t new_deductions_size = deductions_lim.last( );
-  deductions_lim.pop( );
-  while( deductions.size_() > new_deductions_size )
-  {
-    ERef e = deductions.last();
-    Enode& en_e = enode_store[e];
-    assert( en_e.isDeduced( ) );
-    en_e.rsDeduced();
-    deductions.pop();
-  }
-  assert( deductions_next <= deductions.size_() );
-  assert( deductions_last.size( ) == deductions_lim.size( ) );
+    assert( deductions_last.size( ) > 0 );
+    assert( deductions_lim.size( ) > 0 );
+    // Restore deduction next
+    deductions_next = deductions_last.last();
+    deductions_last.pop();
+    // Restore deductions
+    size_t new_deductions_size = deductions_lim.last( );
+    deductions_lim.pop( );
+    while( deductions.size_() > new_deductions_size ) {
+        ERef e = deductions.last();
+        Enode& en_e = enode_store[e];
+        assert( en_e.isDeduced( ) );
+        en_e.rsDeduced();
+        deductions.pop();
+    }
+    assert( deductions_next <= deductions.size_() );
+    assert( deductions_last.size( ) == deductions_lim.size( ) );
 }
 
 //
@@ -826,7 +824,7 @@ Enode * Egraph::getInterpolants( logic_t & l )
 #endif
 
 lbool Egraph::addEquality(PTRef term, bool val) {
-    term_store.printTerm(term);
+    printf("asserting equality %s %s\n", val == true ? "true" : "false", term_store.printTerm(term));
     Pterm& t = term_store[term];
     assert( logic.isEquality(t.symb()) | logic.isDisequality(t.symb()) );
     // In general we don't want to put the Boolean equalities to UF
@@ -1210,142 +1208,132 @@ bool Egraph::assertDist( ERef d, ERef r )
 //
 // Backtracks stack to a certain size
 //
-void Egraph::backtrackToStackSize ( size_t size )
-{
-  // Make sure explanation is cleared
-  // (might be empty, though, if boolean backtracking happens)
-  // explanation.clear( );
-  //
-  // Restore state at previous backtrack point
-  //
-  while ( undo_stack_term.size_() > size )
-  {
-    oper_t last_action = undo_stack_oper.last();
-    ERef e = undo_stack_term.last();
-    Enode& en_e = enode_store[e];
+void Egraph::backtrackToStackSize ( size_t size ) {
+    // Make sure explanation is cleared
+    // (might be empty, though, if boolean backtracking happens)
+    explanation.clear();
+    //
+    // Restore state at previous backtrack point
+    //
+//    printf("stack size %d > %d\n", undo_stack_term.size(), size);
+    while ( undo_stack_term.size_() > size ) {
+        oper_t last_action = undo_stack_oper.last();
+        ERef e = undo_stack_term.last();
+        Enode& en_e = enode_store[e];
 
-    undo_stack_oper.pop();
-    undo_stack_term.pop();
+        undo_stack_oper.pop();
+        undo_stack_term.pop();
 
-    if ( last_action == MERGE )
-    {
-      undoMerge( e );
-      if ( en_e.isTerm( ) ) {
-//	expRemoveExplanation( );
-      }
-    }
+        if ( last_action == MERGE ) {
+            undoMerge( e );
+            if ( en_e.isTerm( ) ) {
+//                expRemoveExplanation( );
+            }
+        }
 #if MORE_DEDUCTIONS
-    else if ( last_action == ASSERT_NEQ )
-    {
-      assert( neq_list.last( ) == e );
-      neq_list.pop( );
-    }
+        else if ( last_action == ASSERT_NEQ ) {
+            assert( neq_list.last( ) == e );
+            neq_list.pop( );
+        }
 #endif
-    else if ( last_action == INITCONG )
-    {
-      assert( config.isIncremental() );
+        else if ( last_action == INITCONG ) {
+            assert( config.isIncremental() );
 #if VERBOSE
-      cerr << "UNDO: BEG INITCONG " << e << endl;
+            cerr << "UNDO: BEG INITCONG " << e << endl;
 #endif
-      ERef car = en_e.getCar( );
-      ERef cdr = en_e.getCdr( );
-      assert( car != ERef_Undef );
-      assert( cdr != ERef_Undef );
+            ERef car = en_e.getCar( );
+            ERef cdr = en_e.getCdr( );
+            assert( car != ERef_Undef );
+            assert( cdr != ERef_Undef );
 
-      if ( en_e.getCgPtr( ) == e )
-      {
-        assert( enode_store.lookupSig( e ) == e );
-        // Remove from sig_tab
-        enode_store.removeSig( e );
-      }
-      else
-      {
-        assert( enode_store.lookupSig( e ) != e );
-        en_e.setCgPtr( e );
-      }
+            if ( en_e.getCgPtr( ) == e ) {
+                assert( enode_store.lookupSig( e ) == e );
+                // Remove from sig_tab
+                enode_store.removeSig( e );
+            }
+            else {
+                assert( enode_store.lookupSig( e ) != e );
+                en_e.setCgPtr( e );
+            }
 
-      assert( initialized.find( en_e.getId( ) ) != initialized.end( ) );
-      // Remove from initialized nodes
-      initialized.erase( en_e.getId( ) );
-      assert( initialized.find( en_e.getId( ) ) == initialized.end( ) );
-      // Remove parents info
-      if ( en_e.isList( ) )
-        enode_store.removeParent( car, e );
-      enode_store.removeParent( cdr, e );
+            assert( initialized.find( en_e.getId( ) ) != initialized.end( ) );
+            // Remove from initialized nodes
+            initialized.erase( en_e.getId( ) );
+            assert( initialized.find( en_e.getId( ) ) == initialized.end( ) );
+            // Remove parents info
+            if ( en_e.isList( ) )
+                enode_store.removeParent( car, e );
+            enode_store.removeParent( cdr, e );
 
-      // Deallocate congruence data
-      // This sounds like a huge overhead!
+            // Deallocate congruence data
+            // This sounds like a huge overhead!
 //      assert( en_e.hasCongData( ) );
 //      e->deallocCongData( );
 //      assert( !e->hasCongData( ) );
-    }
-    else if ( last_action == FAKE_MERGE )
-    {
+        }
+        else if ( last_action == FAKE_MERGE ) {
 #if VERBOSE
-      cerr << "UNDO: BEGIN FAKE MERGE " << e << endl;
+            cerr << "UNDO: BEGIN FAKE MERGE " << e << endl;
 #endif
-      assert( initialized.find( en_e.getId( ) ) != initialized.end( ) );
-      initialized.erase( en_e.getId( ) );
-      assert( initialized.find( en_e.getId( ) ) == initialized.end( ) );
+            assert( initialized.find( en_e.getId( ) ) != initialized.end( ) );
+            initialized.erase( en_e.getId( ) );
+            assert( initialized.find( en_e.getId( ) ) == initialized.end( ) );
 //      assert( e->hasCongData( ) );
 //      e->deallocCongData( );
 //      assert( !e->hasCongData( ) );
-    }
-    else if ( last_action == FAKE_INSERT )
-    {
+        }
+        else if ( last_action == FAKE_INSERT ) {
 #if VERBOSE
-      cerr << "UNDO: BEGIN FAKE INSERT " << e << endl;
+            cerr << "UNDO: BEGIN FAKE INSERT " << e << endl;
 #endif
-      assert( en_e.isTerm( ) || en_e.isList( ) );
-      ERef car = en_e.getCar( );
-      ERef cdr = en_e.getCdr( );
-      assert( car );
-      assert( cdr );
+            assert( en_e.isTerm( ) || en_e.isList( ) );
+            ERef car = en_e.getCar( );
+            ERef cdr = en_e.getCdr( );
+            assert( car );
+            assert( cdr );
 
-      // Node must be there if its a congruence
-      // root and it has to be removed
-      if ( en_e.getCgPtr() == e )
-      {
-        assert( enode_store.lookupSig( e ) == e );
-        enode_store.removeSig( e );
-      }
-      // Otherwise sets it back to itself
-      else
-      {
-        assert( enode_store.lookupSig( e ) != e );
-        en_e.setCgPtr( e );
-      }
+            // Node must be there if its a congruence
+            // root and it has to be removed
+            if ( en_e.getCgPtr() == e ) {
+                assert( enode_store.lookupSig( e ) == e );
+                enode_store.removeSig( e );
+            }
+            // Otherwise sets it back to itself
+            else {
+                assert( enode_store.lookupSig( e ) != e );
+                en_e.setCgPtr( e );
+            }
 
-      // Remove Parent info
-      if ( en_e.isList( ) )
-        enode_store.removeParent( car, e );
-      enode_store.removeParent( cdr, e );
-      // Remove initialization
-      assert( initialized.find( en_e.getId( ) ) != initialized.end( ) );
-      initialized.erase( en_e.getId( ) );
-      // Dealloc cong data
+            // Remove Parent info
+            if ( en_e.isList( ) )
+                enode_store.removeParent( car, e );
+            enode_store.removeParent( cdr, e );
+            // Remove initialization
+            assert( initialized.find( en_e.getId( ) ) != initialized.end( ) );
+            initialized.erase( en_e.getId( ) );
+            // Dealloc cong data
 //      assert( e->hasCongData( ) );
 //      e->deallocCongData( );
 //      assert( !e->hasCongData( ) );
-    }
-    else if ( last_action == DISEQ )
-      undoDisequality( e );
-    else if ( last_action == DIST )
-      undoDistinction( e );
+        }
+        else if ( last_action == DISEQ )
+            undoDisequality( e );
+        else if ( last_action == DIST )
+            undoDistinction( e );
 //    else if ( last_action == SYMB )
 //      removeSymbol( e );
 //    else if ( last_action == NUMB )
 //      removeNumber( e );
-    else if ( last_action == CONS )
+        else if ( last_action == CONS )
 //      undoCons( e );
 //    else if ( last_action == INSERT_STORE )
 //      removeStore( e );
         ;
-    else
-      opensmt_error( "unknown action" );
-  }
+        else
+            opensmt_error( "unknown action" );
+    }
 
-  assert( undo_stack_term.size( ) == undo_stack_oper.size( ) );
+    assert( undo_stack_term.size( ) == undo_stack_oper.size( ) );
 }
 
 // bool Egraph::checkDupClause( Enode * c1, Enode * c2 )
@@ -1607,6 +1595,8 @@ void Egraph::merge ( ERef x, ERef y )
     undo_stack_oper.push( MERGE );
     undo_stack_term.push( y );
 
+    printf("Merging %s and %s, undo stack size %d\n", term_store.printTerm(en_x.getTerm()), term_store.printTerm(en_y.getTerm()), undo_stack_term.size());
+
 #ifdef PEDANTIC_DEBUG
     assert( checkParents( x ) );
     assert( checkParents( y ) );
@@ -1779,6 +1769,16 @@ void Egraph::undoMerge( ERef y )
         {
             assert(!enode_store.containsSig(p));
             enode_store.insertSig(p);
+            // remove all guests now that the signature has changed
+            if (en_p.isTerm()) {
+                vec<PTRef>& guests = enode_store.ERefToTerms[p];
+                printf("Removing guests from enode %d\n", p);
+                for (int i = 0; i < guests.size(); i++) {
+                    enode_store.termToERef.remove(guests[i]);
+                    printf("  %s (%d)\n", term_store.printTerm(guests[i]), guests[i]);
+                }
+                guests.clear();
+            }
 //      (void)res; // Huh?
 //            assert( res == p );
             en_p.setCgPtr( p );
@@ -1802,6 +1802,7 @@ void Egraph::undoMerge( ERef y )
         forbid_allocator[en_x.getForbid()].link = forbid_allocator[en_y.getForbid()].link;
         forbid_allocator[en_y.getForbid()].link = tmp;
     }
+
 
 //    if ( en_y.getConstant() != NULL )
 //  {
@@ -2461,7 +2462,7 @@ void Egraph::extPushBacktrackPoint( )
 {
   // Save solver state if required
   assert( undo_stack_oper.size( ) == undo_stack_term.size( ) );
-  backtrack_points.push_back( undo_stack_term.size( ) );
+  backtrack_points.push( undo_stack_term.size( ) );
 }
 
 //
@@ -2470,7 +2471,7 @@ void Egraph::extPushBacktrackPoint( )
 void Egraph::extPopBacktrackPoint( )
 {
   assert( backtrack_points.size( ) > 0 );
-  size_t undo_stack_new_size = backtrack_points.back( );
-  backtrack_points.pop_back( );
+  size_t undo_stack_new_size = backtrack_points.last( );
+  backtrack_points.pop( );
   backtrackToStackSize( undo_stack_new_size );
 }

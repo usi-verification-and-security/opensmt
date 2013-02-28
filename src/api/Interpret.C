@@ -444,6 +444,7 @@ void Interpret::comment_formatted(const char* fmt_str, ...) const {
     va_list ap;
     int d;
     char c1, *t;
+    if (config.verbosity() < 2) return;
     cout << "; ";
 
     va_start(ap, fmt_str);
@@ -513,7 +514,8 @@ void Interpret::notify_formatted(bool error, const char* fmt_str, ...) {
 }
 
 void Interpret::notify_success() {
-    cout << "success" << endl;
+    if (config.printSuccess())
+        cout << "success" << endl;
 }
 
 void Interpret::execute(const ASTNode* r) {

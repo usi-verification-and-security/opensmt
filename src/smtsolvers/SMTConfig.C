@@ -248,8 +248,8 @@ SMTConfig::initializeConfig( )
   print_proofs_dotty	        = 0;
   produce_inter                 = 0;
   dump_formula                  = 0;
-  verbosity                     = 2;
-  print_success                 = false;
+//  verbosity                     = 2;
+//  print_success                 = false;
   certification_level           = 0;       
   strcpy( certifying_solver, "tool_wrapper.sh" ); 
   // Set SAT-Solver Default configuration
@@ -262,7 +262,7 @@ SMTConfig::initializeConfig( )
   sat_use_luby_restart          = 0;
   sat_learn_up_to_size          = 0;
   sat_temporary_learn           = 1;
-  sat_preprocess_booleans       = 1;
+  sat_preprocess_booleans       = 0;
   sat_preprocess_theory         = 0;
   sat_centrality                = 18;
   sat_trade_off                 = 8192;
@@ -361,7 +361,7 @@ void SMTConfig::parseConfig ( char * f )
       else if ( sscanf( buf, "diagnostic_output_channel %s\n", tmpbuf )                         == 1 )
 	setDiagnosticOutputChannel( tmpbuf );
       else if ( sscanf( buf, "dump_formula %d\n"             , &dump_formula )                  == 1 );
-      else if ( sscanf( buf, "verbosity %d\n"                , &verbosity )                     == 1 );
+//      else if ( sscanf( buf, "verbosity %d\n"                , &verbosity )                     == 1 );
       else if ( sscanf( buf, "certification_level %d\n"      , &certification_level )           == 1 );
       else if ( sscanf( buf, "certifying_solver %s\n"        , certifying_solver )              == 1 );
       // SAT SOLVER CONFIGURATION                            
@@ -457,7 +457,7 @@ void SMTConfig::printConfig ( ostream & out )
   out << "# Dumps input formula (debugging)" << endl;
   out << "dump_formula "               << dump_formula << endl;
   out << "# Choose verbosity level" << endl;
-  out << "verbosity "                  << verbosity << endl;
+//  out << "verbosity "                  << verbosity << endl;
   out << "# Choose certification level" << endl;
   out << "# 0 - don't certify" << endl;
   out << "# 1 - certify conflicts" << endl;

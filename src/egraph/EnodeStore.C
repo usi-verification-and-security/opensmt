@@ -13,6 +13,9 @@ ERef EnodeStore::addSymb(TRef t) {
     return rval;
 }
 
+// Here we try a clever trick to avoid having to introduce enodes to
+// terms that are in the same equivalence class with another enode
+// already inserted.
 ERef EnodeStore::addTerm(ERef sr, ERef args, PTRef term) {
     ERef rval;
     if (termToERef.contains(term))
@@ -29,12 +32,17 @@ ERef EnodeStore::addTerm(ERef sr, ERef args, PTRef term) {
         if (containsSig(sr, args)) {
             rval = lookupSig(sr, args);
             termToERef.insert(term, rval);
-            assert(false); // XXX push to the undo stack
+            ERefToTerms[rval].push(term);
+            printf("letting %d to point to %d\n", term, rval);
+//            assert(false); // XXX push to the undo stack
         }
         else {
             rval = ea.alloc(sr, args, Enode::et_term, term);
             insertSig(rval);
             termToERef.insert(term, rval);
+            vec<TRef> terms;
+            terms.push(term);
+            ERefToTerms.insert(rval, terms);
         }
     }
     return rval;

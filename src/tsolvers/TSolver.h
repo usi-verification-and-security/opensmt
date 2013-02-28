@@ -140,8 +140,10 @@ protected:
   const int                   id;               // Id of the solver
   const string                name;             // Name of the solver
   SMTConfig &                 config;           // Reference to configuration
-  vector< size_t >            backtrack_points; // Keeps track of backtrack points
+  vec< size_t >               backtrack_points; // Keeps track of backtrack points
+#ifdef PRODUCE_PROOF
   Enode *                     interpolants;     // Store interpolants
+#endif
 };
 
 class OrdinaryTSolver : public TSolver

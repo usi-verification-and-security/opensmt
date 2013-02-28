@@ -20,6 +20,8 @@ Enode::Enode(ERef car_, ERef cdr_,
     car            = car_;
     cdr            = cdr_;
 
+    cgdata->dist_classes = 0;
+
 //    pterm          = pt;
 
     Enode& x = ea[car];

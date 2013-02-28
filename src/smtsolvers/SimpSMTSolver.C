@@ -593,7 +593,7 @@ bool SimpSMTSolver::backwardSubsumptionCheck(bool verbose)
 
       if (c.mark()) continue;
 
-      if (verbose && config.verbosity > 9 && cnt++ % 1000 == 0)
+      if (verbose && config.verbosity() > 9 && cnt++ % 1000 == 0)
 	reportf("# Subsumption left: %10d (%10d subsumed, %10d deleted literals)\r", subsumption_queue.size(), subsumed, deleted_literals);
 
       assert(c.size() > 1 || value(c[0]) == l_True);    // Unit-clauses should have been propagated before this point.
@@ -858,7 +858,7 @@ bool SimpSMTSolver::eliminate(bool turn_off_elim)
     {
       Var elim = elim_heap.removeMin();
 
-      if (config.verbosity > 9 && cnt % 100 == 0)
+      if (config.verbosity() > 9 && cnt % 100 == 0)
 	reportf("# Elimination left: %10d\r", elim_heap.size());
 
       if (!frozen[elim] && !eliminateVar(elim))
@@ -869,7 +869,7 @@ bool SimpSMTSolver::eliminate(bool turn_off_elim)
     gatherTouchedClauses();
   }
 
-  if ( config.verbosity >= 9 )
+  if ( config.verbosity() >= 9 )
     reportf("# \n");
 
   // Cleanup:

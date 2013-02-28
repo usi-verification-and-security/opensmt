@@ -187,7 +187,7 @@ inline void SimpSMTSolver::updateElimHeap(Var v) {
     if (elimtable[v].order == 0)
         elim_heap.update(v); }
 
-inline void SimpSMTSolver::cleanOcc(Var v) 
+inline void SimpSMTSolver::cleanOcc(Var v)
 {
     assert(use_simplification);
     Clause **begin = (Clause**)occurs[v];
