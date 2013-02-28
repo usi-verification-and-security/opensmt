@@ -55,8 +55,8 @@ class ValPair {
     lbool       v;
   public:
     ValPair(PTRef term, lbool value) : t(term), v(value) {}
-    const PTRef getTerm() const { return t; }
-    const lbool getVal () const { return v; }
+    PTRef getTerm()       const { return t; }
+    lbool getVal ()       const { return v; }
 };
 
 //
@@ -96,8 +96,11 @@ public:
 
     vec<ValPair>* getModel ();                              // Retrieves the model (if SAT and solved)
 
+    lbool  getTermValue(PTRef);
+
     void   initialize      () { solver.initialize(); }
-    lbool  solve           () { return solver.solve(); }
+    lbool  solve           () { status = solver.solve(); return status; }
+    lbool  getStatus       () { return status; }
 
 protected:
 
@@ -142,6 +145,7 @@ private:
     bool    checkClause          (PTRef, Map<PTRef,bool,TRefHash,Equal<PTRef> >& check_cache); // Check if a formula is a clause
     bool    checkPureConj        (PTRef, Map<PTRef,bool,TRefHash,Equal<PTRef> >& check_cache); // Check if a formula is purely a conjuntion
 
+    lbool   status;     // The status of the last solver call (initially l_Undef)
 
     // The special boolean symbols
 protected:
@@ -158,7 +162,6 @@ protected:
     bool  isNPAtom         (PTRef r, PTRef& p)    const; // Check if r is a (negated) atom.  Return true if the corresponding atom is negated.  The purified reference is placed in the second argument.
     void  declareAtom      (PTRef, TRef);                // Declare an atom for the smt/sat solver
     bool  termSeen         (PTRef)                const; // True if the term has been seen and thus processed in the sense that there is already literal corresponding to it.  Sees through negations.
-    void  getTerm          (PTRef, PTRef&, bool&) const; // Return the term and its sign
 
 };
 

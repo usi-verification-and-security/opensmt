@@ -83,6 +83,7 @@
 ":verbosity"                 { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_VERBOSITY;               }
 ":error-behavior"            { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_ERRORBEHAVIOR;           }
 ":name"                      { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_NAME;                    }
+":named"                     { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_NAMED;                   }
 ":authors"                   { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_AUTHORS;                 }
 ":version"                   { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_VERSION;                 }
 ":status"                    { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_STATUS;                  }

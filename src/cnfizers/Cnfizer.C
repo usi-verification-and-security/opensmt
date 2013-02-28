@@ -30,9 +30,11 @@ Cnfizer::Cnfizer( PtStore &   ptstore_
      , symstore (symstore_)
      , ptstore  (ptstore_ )
      , logic    (logic_   )
+     , tmap     (logic    )
      , thandler (uf_solver, config, tmap, logic)
      , solver   (config_, thandler)
      , uf_solver(config, sstore, symstore, ptstore, logic)
+     , status   (l_Undef)
 {
     vec<Lit> c;
     Lit l = findLit(logic.getTerm_true());
@@ -80,7 +82,7 @@ const Lit Cnfizer::findLit(PTRef ptr) {
     PTRef p;
     bool sgn;
     Var v;
-    getTerm(ptr, p, sgn);
+    tmap.getTerm(ptr, p, sgn);
     bool isnew = false;
     if (!seen.contains(p)) {
         v = solver.newVar();
@@ -105,20 +107,12 @@ const Lit Cnfizer::findLit(PTRef ptr) {
     if (isnew && isTheorySymbol(ptstore[p].symb()))
         tmap.varToTheorySymbol.insert(v,ptstore[p].symb());
     if (isnew) {
-        tmap.termToLit.insert(p, l);
+        tmap.termToVar.insert(p, v);
         tmap.varToTerm.insert(v, p);
     }
     return l;
 }
 
-void Cnfizer::getTerm(PTRef r, PTRef& p, bool& sgn) const {
-    sgn = false;
-    while (ptstore[r].symb() == logic.getSym_not()) {
-        r = ptstore[r][0];
-        sgn = !sgn;
-    }
-    p = r;
-}
 
 // A term is an npatom if it is an atom or it is a negation of an npatom
 bool Cnfizer::isNPAtom(PTRef r, PTRef& p) const {
@@ -756,4 +750,18 @@ vec<ValPair>* Cnfizer::getModel() {
             out->push(ValPair(tmap.varToTerm[v], model[v]));
     }
     return out;
+}
+
+lbool Cnfizer::getTermValue(PTRef tr) {
+    assert(solver.okay());
+    assert(status == l_True);
+    vec<lbool>& model = solver.model;
+    PTRef p;
+    bool sgn;
+    tmap.getTerm(tr, p, sgn);
+    Var v = tmap.termToVar[p];
+    lbool val = model[v];
+    assert(val != l_Undef);
+
+    return sgn == false ? val : (val == l_True ? l_False : l_True);
 }

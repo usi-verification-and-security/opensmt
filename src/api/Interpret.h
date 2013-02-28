@@ -41,6 +41,9 @@ class Interpret {
     Logic                                      logic;
     Tseitin                                    ts;
 
+    Map<const char*,PTRef,StringHash,Equal<const char*> > nameToTerm;
+    VecMap<PTRef,const char*,PTRefHash,Equal<PTRef> > termToNames;
+    vec<const char*>            term_names;
 
     bool                        f_exit;
 
@@ -50,6 +53,7 @@ class Interpret {
     void                        getOption(ASTNode& n);
     bool                        declareFun(const char* fname, const vec<SRef>& args);
     bool                        checkSat(const char*);
+    bool                        getAssignment(const char*);
     PTRef                       parseTerm(const ASTNode& term, vec<LetFrame>& let_branch);
     void                        exit();
 

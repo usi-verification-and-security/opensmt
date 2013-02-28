@@ -95,11 +95,12 @@
      KW_VERBOSITY = 313,
      KW_ERRORBEHAVIOR = 314,
      KW_NAME = 315,
-     KW_AUTHORS = 316,
-     KW_VERSION = 317,
-     KW_STATUS = 318,
-     KW_REASONUNKNOWN = 319,
-     KW_ALLSTATISTICS = 320
+     KW_NAMED = 316,
+     KW_AUTHORS = 317,
+     KW_VERSION = 318,
+     KW_STATUS = 319,
+     KW_REASONUNKNOWN = 320,
+     KW_ALLSTATISTICS = 321
    };
 #endif
 /* Tokens.  */
@@ -161,11 +162,12 @@
 #define KW_VERBOSITY 313
 #define KW_ERRORBEHAVIOR 314
 #define KW_NAME 315
-#define KW_AUTHORS 316
-#define KW_VERSION 317
-#define KW_STATUS 318
-#define KW_REASONUNKNOWN 319
-#define KW_ALLSTATISTICS 320
+#define KW_NAMED 316
+#define KW_AUTHORS 317
+#define KW_VERSION 318
+#define KW_STATUS 319
+#define KW_REASONUNKNOWN 320
+#define KW_ALLSTATISTICS 321
 
 
 
@@ -185,7 +187,7 @@ typedef union YYSTYPE
 
 
 /* Line 2068 of yacc.c  */
-#line 189 "smt2newparser.h"
+#line 191 "smt2newparser.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

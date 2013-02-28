@@ -281,7 +281,8 @@ void THandler::getConflict ( vec<Lit> & conflict, vec<int>& level, int & max_dec
 //        bool negate = ei->getPolarity( ) == l_False;
 
 //        Var v = enodeToVar( ei );
-        Lit l = tmap.termToLit[ei];
+
+        Lit l = tmap.getLit(ei);
 #if PEDANTIC_DEBUG
         assert( isOnTrail(l) );
 #endif
@@ -328,7 +329,8 @@ Lit THandler::getDeduction( ) {
 //  bool negate = e->getDeduced( ) == l_False;
 //  Var v = enodeToVar( e );
 //  return Lit( v, negate );
-    return tmap.termToLit[e];
+
+    return tmap.getLit(e);
 }
 
 Lit THandler::getSuggestion( ) {
@@ -340,7 +342,8 @@ Lit THandler::getSuggestion( ) {
 //  bool negate = e->getDecPolarity( ) == l_False;
 //  Var v = enodeToVar( e );
 //  return Lit( v, negate );
-    tmap.termToLit[e];
+    
+    return tmap.getLit(e);
 }
 
 void THandler::getReason( Lit l, vec< Lit > & reason )
@@ -396,7 +399,7 @@ void THandler::getReason( Lit l, vec< Lit > & reason )
 //        assert( ei->getPolarity( ) == l_True
 //                || ei->getPolarity( ) == l_False );
 //        bool negate = ei->getPolarity( ) == l_False;
-        Lit l = tmap.termToLit[ei];
+        Lit l = tmap.getLit(ei);
         reason.push(l);
 // I must admit I don't know what happens here
 //        // Toggle polarity for deduced literal

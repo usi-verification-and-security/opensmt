@@ -220,8 +220,12 @@ declare_fun_err: ;
             return false;
         }
     }
-    if ((strcmp(cmd, "check-sat") == 0)) {
+    if (strcmp(cmd, "check-sat") == 0) {
         checkSat(cmd);
+    }
+
+    if (strcmp(cmd, "get-assignment") == 0) {
+        getAssignment(cmd);
     }
     if (strcmp(cmd, "exit") == 0) {
         exit();
@@ -273,7 +277,7 @@ PTRef Interpret::letNameResolve(const char* s, const vec<LetFrame>& let_branch) 
 //
 // TODO: left and right associativity, pairwisety - integrate these to the congruence algorithm,
 //       chainability - not yet implemented
-//       The string based scoping is too slow
+//       attributed terms - working now on this
 
 PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
     ASTType t = term.getType();
@@ -371,7 +375,36 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
         let_branch.pop(); // Now the scope is unavailable for us
         return tr;
     }
-    comment_formatted("Unknown term type");
+
+    else if (t == BANG_T) {
+        assert(term.children->size() == 2);
+        std::list<ASTNode*>::iterator ch = term.children->begin();
+        ASTNode& named_term = **ch;
+        ASTNode& attr_l = **(++ ch);
+        assert(attr_l.getType() == GATTRL_T);
+        assert(attr_l.children->size() == 1);
+        ASTNode& name_attr = **(attr_l.children->begin());
+        assert(name_attr.getType() == PATTR_T);
+        assert(strcmp(name_attr.getValue(), ":named") == 0);
+        ASTNode& sym = **(name_attr.children->begin());
+        assert(sym.getType() == SYM_T);
+        const char* name = sym.getValue();
+        if (nameToTerm.contains(name)) {
+            notify_formatted(true, "name %s already exists", name);
+            return TRef_Undef;
+        }
+        PTRef tr = parseTerm(named_term, let_branch);
+        nameToTerm.insert(name, tr);
+        if (!termToNames.contains(tr)) {
+            vec<const char*> v;
+            termToNames.insert(tr, v);
+        }
+        termToNames[tr].push(name);
+        term_names.push(name);
+        return tr;
+    }
+    else
+        comment_formatted("Unknown term type");
     return PTRef_Undef;
 }
 
@@ -387,49 +420,38 @@ bool Interpret::checkSat(const char* cmd) {
         else
             notify_formatted(false, "unknown");
     }
-//            vec<ValPair>* val = ts.getModel();
-//            // This cannot of course be the final solution, but it would be nice to able to check if everything works
-//            for (int i = 0; i < val->size(); i++) {
-//                PTRef t_ref = (*val)[i].getTerm();
-//                lbool sign = (*val)[i].getVal();
-//                Pterm& t = ptstore[t_ref];
-//                if (logic.isEquality(t.symb())) {
-//                    if (tstore[t.symb()][0] != logic.getSort_bool()) {
-//                        char* term_str = ptstore.printTerm(t_ref);
-//                        comment_formatted("Term is uf equality: %s%s", sign == l_True ? "" : "not ", term_str);
-//                        free(term_str);
-//                        if (sign != l_Undef) {
-//                            lbool stat = uf_solver.addEquality(t_ref, sign == l_True);
-//                            if (stat == l_False) {
-//                                comment_formatted("Unsatisfiable");
-//                            }
-//                        }
-//                    }
-//                }
-//                else {
-//                    PTRef up_eq = logic.addUP(t_ref);
-//                    if (up_eq != PTRef_Undef) {
-//                        char* term_str = ptstore.printTerm(t_ref);
-//                        comment_formatted("Term is uninterpreted predicate: %s%s", sign == l_True ? "" : "not ", term_str);
-//                        free(term_str);
-//                        // We need to make the new term, but only if it does not already exist
-//                        lbool stat = uf_solver.addEquality(up_eq, sign == l_True);
-//                        if (stat == l_False) {
-//                            comment_formatted("Unsatisfiable");
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//        else if (res == l_False)
-//            notify_formatted(false, "unsat");
-//        else
-//            notify_formatted(false, "unknown");
-
     else {
         notify_formatted(true, "Illegal command before set-logic: %s", cmd);
         return false;
     }
+    return true;
+}
+
+bool Interpret::getAssignment(const char* cmd) {
+    if (!logic.isSet()) {
+       notify_formatted(true, "Illegal command before set-logic: %s", cmd);
+       return false;
+    }
+    if (ts.getStatus() != l_True) {
+       notify_formatted(true, "Last solver call not satisfiable");
+       return false;
+    }
+    char* out_str;
+    asprintf(&out_str, "(");
+    for (int i = 0; i < term_names.size(); i++) {
+        const char* name = term_names[i];
+        PTRef tr = nameToTerm[name];
+        lbool val = ts.getTermValue(tr);
+        asprintf(&out_str, "%s(%s %s)%s",
+                 out_str,
+                 name,
+                 val == l_True ? "true" : "false",
+                 i < term_names.size() - 1 ? " " : "");
+    }
+
+    asprintf(&out_str, "%s)", out_str);
+    notify_formatted(false, out_str);
+    free(out_str);
     return true;
 }
 
