@@ -68,6 +68,8 @@ class Interpret {
     PTRef                       insertTerm(const char* s, const vec<PTRef>& args);
     int                         asrt_lev;
 
+    int                         sat_calls; // number of sat calls
+
     vec<SRef>                   vec_empty; // For faster comparison with empty vec
 
   public:
@@ -82,7 +84,8 @@ class Interpret {
             , store
             , logic )
         , f_exit(false)
-        , asrt_lev(0) {};
+        , asrt_lev(0)
+        , sat_calls(0) {};
 
     int                         interpFile(FILE* in);
     int                         interpInteractive(FILE* in);

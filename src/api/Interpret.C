@@ -409,7 +409,12 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
 }
 
 bool Interpret::checkSat(const char* cmd) {
+    if (sat_calls > 0 && config.isIncremental() == false) {
+            comment_formatted("Incrementality not enabled but %d check-sat encountered", sat_calls);
+            return false;
+    }
     if (logic.isSet()) {
+        sat_calls++;
         ts.initialize();
         lbool res = ts.solve();
         if (res == l_True) {
