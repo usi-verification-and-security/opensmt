@@ -873,7 +873,7 @@ lbool Egraph::addEquality(PTRef term, bool val) {
         (val == false && logic.isDisequality(t.symb())))
         rval = assertEq( eq_lhs, eq_rhs, term );
     else
-        rval = assertNEq( eq_lhs, eq_rhs, term);
+        rval = assertNEq( eq_lhs, eq_rhs, term );
 
     return rval == false ? l_False : l_Undef;
 }
@@ -969,8 +969,8 @@ bool Egraph::mergeLoop( PTRef reason )
           Enode& en_proot = enode_store[enr_proot];
           Enode& en_qroot = enode_store[enr_qroot];
 
-          assert( sym_store[en_proot.getTerm()].isConstant() );
-          assert( sym_store[en_qroot.getTerm()].isConstant() );
+          assert( sym_store[term_store[en_proot.getTerm()].symb()].isConstant() );
+          assert( sym_store[term_store[en_qroot.getTerm()].symb()].isConstant() );
 
           assert( en_proot.getTerm() != en_qroot.getTerm() );
   #ifdef PRODUCE_PROOF
@@ -1079,81 +1079,76 @@ bool Egraph::mergeLoop( PTRef reason )
 bool Egraph::assertNEq ( ERef x, ERef y, PTRef r )
 {
 #if MORE_DEDUCTIONS
-  neq_list.push_back( r );
-  undo_stack_oper.push_back( ASSERT_NEQ );
-  undo_stack_term.push_back( r );
+    neq_list.push_back( r );
+    undo_stack_oper.push_back( ASSERT_NEQ );
+    undo_stack_term.push_back( r );
 #endif
 
-  ERef p = enode_store[x].getRoot( );
-  ERef q = enode_store[y].getRoot( );
+    ERef p = enode_store[x].getRoot( );
+    ERef q = enode_store[y].getRoot( );
 
-  // They can't be different if the nodes are in the same class
-  if ( p == q )
-  {
-    explanation.push( r );
+    // They can't be different if the nodes are in the same class
+    if ( p == q ) {
+        explanation.push( r );
 //    expExplain( x, y, r );
 
 #ifdef PEDANTIC_DEBUG
-    assert( checkExp( ) );
+        assert( checkExp( ) );
 #endif
-    return false;
-  }
+        return false;
+    }
 
-  // Is it possible that x is already in the list of y
-  // and viceversa ? YES. If things have
-  // been done carefully (for instance, if x=y is the same atom
-  // as y=x), each theory atom appears only once in the trail.
-  // However it is possible to get x!=y and x<y, and pushing
-  // x<y is the same as x!=y for the UF solver. However, I don't
-  // think this is going to be a big performance problem, worst
-  // case it doubles the size of forbid lists. But checking the
-  // lists for duplicates every time would be time-consuming,
-  // especially when we have many !='s. For now I'll leave it
-  // unchecked.
+    // Is it possible that x is already in the list of y
+    // and viceversa ? YES. If things have
+    // been done carefully (for instance, if x=y is the same atom
+    // as y=x), each theory atom appears only once in the trail.
+    // However it is possible to get x!=y and x<y, and pushing
+    // x<y is the same as x!=y for the UF solver. However, I don't
+    // think this is going to be a big performance problem, worst
+    // case it doubles the size of forbid lists. But checking the
+    // lists for duplicates every time would be time-consuming,
+    // especially when we have many !='s. For now I'll leave it
+    // unchecked.
 
-  // Create new distinction in q
-  ELRef pdist = forbid_allocator.alloc(p, r);
-  Enode& en_q = enode_store[q];
-  // If there is no node in forbid list
-  if ( en_q.getForbid() == ELRef_Undef )
-  {
-    en_q.setForbid( pdist );
-    forbid_allocator[pdist].link = pdist;
-  }
-  // Otherwise we should put the new node after the first
-  // and make the first point to pdist. This is because
-  // the list is circular, but could be emptq. Therefore
-  // we need a "reference" element for keeping it circular.
-  // So the last insertion is either the second element or
-  // the only present in the list
-  else
-  {
-    forbid_allocator[pdist].link = forbid_allocator[en_q.getForbid()].link;
-    forbid_allocator[en_q.getForbid()].link = pdist;
-  }
+    // Create new distinction in q
+    ELRef pdist = forbid_allocator.alloc(p, r);
+    Enode& en_q = enode_store[q];
+    // If there is no node in forbid list
+    if ( en_q.getForbid() == ELRef_Undef ) {
+        en_q.setForbid( pdist );
+        forbid_allocator[pdist].link = pdist;
+    }
+    // Otherwise we should put the new node after the first
+    // and make the first point to pdist. This is because
+    // the list is circular, but could be emptq. Therefore
+    // we need a "reference" element for keeping it circular.
+    // So the last insertion is either the second element or
+    // the only present in the list
+    else {
+        forbid_allocator[pdist].link = forbid_allocator[en_q.getForbid()].link;
+        forbid_allocator[en_q.getForbid()].link = pdist;
+    }
 
-  // Create new distinction in p
-  ELRef qdist = forbid_allocator.alloc(q, r);
-  Enode& en_p = enode_store[p];
-  if ( en_p.getForbid() == ELRef_Undef )
-  {
-    en_p.setForbid( qdist );
-    forbid_allocator[qdist].link = qdist;
-  }
-  // Same arguments above
-  else
-  {
-    Elist& forb_p = forbid_allocator[en_p.getForbid()];
-    forbid_allocator[qdist].link = forb_p.link;
-    forb_p.link = qdist;
-  }
+    // Create new distinction in p
+    ELRef qdist = forbid_allocator.alloc(q, r);
+    Enode& en_p = enode_store[p];
+    if ( en_p.getForbid() == ELRef_Undef ) {
+        en_p.setForbid( qdist );
+        forbid_allocator[qdist].link = qdist;
+    }
+    // Same arguments above
+    else {
+        Elist& forb_p = forbid_allocator[en_p.getForbid()];
+        forbid_allocator[qdist].link = forb_p.link;
+        forb_p.link = qdist;
+    }
 
-  // Save operation in undo_stack
-  assert( undo_stack_oper.size( ) == undo_stack_term.size( ) );
-  undo_stack_oper.push( DISEQ );
-  undo_stack_term.push( q );
+    // Save operation in undo_stack
+    assert( undo_stack_oper.size( ) == undo_stack_term.size( ) );
+    undo_stack_oper.push( DISEQ );
+    undo_stack_term.push( q );
 
-  return true;
+    return true;
 }
 
 bool Egraph::assertDist( ERef d, ERef r )
@@ -1595,7 +1590,10 @@ void Egraph::merge ( ERef x, ERef y )
     undo_stack_oper.push( MERGE );
     undo_stack_term.push( y );
 
-    printf("Merging %s and %s, undo stack size %d\n", term_store.printTerm(en_x.getTerm()), term_store.printTerm(en_y.getTerm()), undo_stack_term.size());
+    if (en_x.isTerm()) {
+        printf("Merging %s and %s, undo stack size %d\n", term_store.printTerm(en_x.getTerm()), term_store.printTerm(en_y.getTerm()), undo_stack_term.size());
+        printf("There are %d backtrack points\n", backtrack_points.size());
+    }
 
 #ifdef PEDANTIC_DEBUG
     assert( checkParents( x ) );

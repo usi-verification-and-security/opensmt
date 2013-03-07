@@ -1,29 +1,38 @@
-// Strongly MiniSat inspired implementation for Terms
-#ifndef TERM_H
-#define TERM_H
+// Strongly MiniSat inspired implementation for Symbols
+#ifndef SYMBOL_H
+#define SYMBOL_H
 
 #include "Vec.h"
 #include "Alloc.h"
 #include "Sort.h"
 #include "Map.h"
 
-typedef RegionAllocator<uint32_t>::Ref TRef;
+typedef uint32_t SRef;
 
-struct TRefHash {
-    uint32_t operator () (const TRef s) const {
-        return (uint32_t)s; }
+struct SymRef {
+    uint32_t x;
+    void operator= (uint32_t v) { x = v; }
+    inline friend bool operator== (const SymRef& a1, const SymRef& a2) {return a1.x == a2.x; }
+    inline friend bool operator!= (const SymRef& a1, const SymRef& a2) {return a1.x != a2.x; }
+};
+
+static struct SymRef SymRef_Undef = {INT32_MAX};
+static struct SymRef SymRef_Nil   = {INT32_MAX-1};
+
+struct SymRefHash {
+    uint32_t operator () (const SymRef s) const {
+        return (uint32_t)s.x; }
 };
 
 template <>
-struct Equal<const TRef> {
-    bool operator() (const TRef s1, const TRef s2) { return s1 == s2; }
+struct Equal<const SymRef> {
+    bool operator() (const SymRef s1, const SymRef s2) { return s1 == s2; }
 };
 
-typedef uint32_t SRef;
-typedef uint32_t TId; // Used as an array index
+typedef uint32_t SymId; // Used as an array index
 
 // args[0].sort is the return sort, rest are arguments.
-class Term {
+class Symbol {
     struct {
         unsigned type       : 3;
         unsigned learnt     : 1;
@@ -32,16 +41,16 @@ class Term {
         unsigned noscoping  : 1;
         unsigned constant   : 1;
         unsigned size       : 24; }     header;
-    TId                                 id;
+    SymId                               id;
     // This has to be the last
-    union { SRef sort; TRef rel;  }     args[0];
+    union { SRef sort; SymRef rel;  }   args[0];
 
 
-    friend class TermAllocator;
-    friend class TStore;
+    friend class SymAllocator;
+    friend class SymStore;
   public:
     // Note: do not use directly (no memory allocation for args)
-    Term(const vec<TRef>& ps) {
+    Symbol(const vec<SRef>& ps) {
         header.type      = 0;
         header.learnt    = 0;
         header.has_extra = 0;
@@ -54,10 +63,9 @@ class Term {
   public:
 
     // -- use this as a wrapper:
-    Term* Term_new(vec<SRef>& ps, bool left_assoc = false, bool right_assoc = false, bool chainable = false, bool pairwise = false) {
+    Symbol* Symbol_new(vec<SRef>& ps, bool left_assoc = false, bool right_assoc = false, bool chainable = false, bool pairwise = false) {
         assert(sizeof(SRef) == sizeof(uint32_t));
-        void* mem = malloc(sizeof(header) + sizeof(TId) + sizeof(uint32_t)*ps.size());
-        //new (mem) Term(ps);
+        void* mem = malloc(sizeof(header) + sizeof(SymId) + sizeof(uint32_t)*ps.size());
         assert(left_assoc + right_assoc + chainable + pairwise <= 1);
         if (left_assoc == true)
             header.type = 1;
@@ -67,16 +75,16 @@ class Term {
             header.type = 3;
         else if (pairwise == true)
             header.type = 4;
-        return new (mem) Term(ps); }
+        return new (mem) Symbol(ps); }
 
     int      size        ()      const   { return header.size; }
     SRef     operator [] (int i) const   { return args[i+1].sort; }
     SRef     rsort       ()      const   { return args[0].sort; }
     bool     has_extra   ()      const   { return false; }
     bool     reloced     ()      const   { return header.reloced; }
-    TRef     relocation  ()      const   { return args[0].rel; }
+    SymRef   relocation  ()      const   { return args[0].rel; }
     bool     learnt      ()      const   { return header.learnt; }
-    void     relocate    (TRef t)        { header.reloced = 1; args[0].rel = t; }
+    void     relocate    (SymRef t)      { header.reloced = 1; args[0].rel = t; }
     uint32_t type        ()      const   { return header.type; }
     void     type        (uint32_t m)    { header.type = m; }
     bool     left_assoc  ()      const   { return header.type == 1; }
@@ -98,59 +106,72 @@ class Term {
 
 };
 
-const TRef TRef_Undef = RegionAllocator<uint32_t>::Ref_Undef;
-const TRef TRef_Nil = TRef_Undef-1;
 
-class TermAllocator : public RegionAllocator<uint32_t>
+class SymbolAllocator : public RegionAllocator<uint32_t>
 {
-    static int termWord32Size(int size){
-        return (sizeof(Term) + (sizeof(SRef) * size )) / sizeof(uint32_t); }
+    static int symWord32Size(int size){
+        return (sizeof(Symbol) + (sizeof(SRef) * size )) / sizeof(uint32_t); }
  public:
     bool extra_term_field;
 
-    TermAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), extra_term_field(false){}
-    TermAllocator() : extra_term_field(false){}
+    SymbolAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), extra_term_field(false){}
+    SymbolAllocator() : extra_term_field(false){}
 
-    void moveTo(TermAllocator& to){
+    void moveTo(SymbolAllocator& to){
         to.extra_term_field = extra_term_field;
         RegionAllocator<uint32_t>::moveTo(to); }
 
-    template<class Sorts>
-    TRef alloc(const Sorts& ps, bool)
+    SymRef alloc(Symbol& ps, bool)
+    {
+        assert(false);
+        assert(sizeof(SRef)     == sizeof(uint32_t));
+        assert(sizeof(float)    == sizeof(uint32_t));
+
+        uint32_t v = RegionAllocator<uint32_t>::alloc(symWord32Size(ps.size()));
+        SymRef symid;
+        symid.x = v;
+
+        new (lea(symid)) Symbol(ps);
+        return symid;
+    }
+
+    SymRef alloc(const vec<SRef>& ps, bool)
     {
         assert(sizeof(SRef)     == sizeof(uint32_t));
         assert(sizeof(float)    == sizeof(uint32_t));
 
-        TRef tid = RegionAllocator<uint32_t>::alloc(termWord32Size(ps.size()));
-        new (lea(tid)) Term(ps);
+        uint32_t v = RegionAllocator<uint32_t>::alloc(symWord32Size(ps.size()));
+        SymRef symid;
+        symid.x = v;
 
-        return tid;
+        new (lea(symid)) Symbol(ps);
+        return symid;
     }
 
     // Deref, Load Effective Address (LEA), Inverse of LEA (AEL):
-    Term&       operator[](Ref r)        { return (Term&)RegionAllocator<uint32_t>::operator[](r); }
-    const Term& operator[](Ref r) const  { return (Term&)RegionAllocator<uint32_t>::operator[](r); }
-    Term*       lea       (Ref r)        { return (Term*)RegionAllocator<uint32_t>::lea(r); }
-    const Term* lea       (Ref r) const  { return (Term*)RegionAllocator<uint32_t>::lea(r); }
-    Ref         ael       (const Term* t){ return RegionAllocator<uint32_t>::ael((uint32_t*)t); }
+    Symbol&       operator[](SymRef r)        { return (Symbol&)RegionAllocator<uint32_t>::operator[](r.x); }
+    const Symbol& operator[](SymRef r) const  { return (Symbol&)RegionAllocator<uint32_t>::operator[](r.x); }
+    Symbol*       lea       (SymRef r)        { return (Symbol*)RegionAllocator<uint32_t>::lea(r.x); }
+    const Symbol* lea       (SymRef r) const  { return (Symbol*)RegionAllocator<uint32_t>::lea(r.x); }
+    SymRef        ael       (const Symbol* t) { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); SymRef rf; rf.x = r; return rf; }
 
-    void free(TRef tid)
+    void free(SymRef symid)
     {
-        Term& t = operator[](tid);
-        RegionAllocator<uint32_t>::free(termWord32Size(t.size()));
+        Symbol& s = operator[](symid);
+        RegionAllocator<uint32_t>::free(symWord32Size(s.size()));
     }
 
-    void reloc(TRef& tr, TermAllocator& to)
+    void reloc(SymRef& symr, SymbolAllocator& to)
     {
-        Term& t = operator[](tr);
+        Symbol& s = operator[](symr);
 
-        if (t.reloced()) { tr = t.relocation(); return; }
+        if (s.reloced()) { symr = s.relocation(); return; }
 
-        tr = to.alloc(t, t.learnt());
-        t.relocate(tr);
+        symr = to.alloc(s, s.learnt());
+        s.relocate(symr);
 
         // Copy extra data-fields:
-        to[tr].type(t.type());
+        to[symr].type(s.type());
 //        if (to[tr].learnt())         to[tr].activity() = t.activity();
 //        else if (to[tr].has_extra()) to[tr].calcAbstraction();
     }

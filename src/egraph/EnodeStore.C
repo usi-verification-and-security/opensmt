@@ -1,7 +1,7 @@
 #include "EnodeStore.h"
-#include "Term.h"
+#include "Symbol.h"
 
-ERef EnodeStore::addSymb(TRef t) {
+ERef EnodeStore::addSymb(SymRef t) {
     ERef rval;
     if (symToERef.contains(t))
         rval = symToERef[t];
@@ -40,7 +40,7 @@ ERef EnodeStore::addTerm(ERef sr, ERef args, PTRef term) {
             rval = ea.alloc(sr, args, Enode::et_term, term);
             insertSig(rval);
             termToERef.insert(term, rval);
-            vec<TRef> terms;
+            vec<PTRef> terms;
             terms.push(term);
             ERefToTerms.insert(rval, terms);
         }

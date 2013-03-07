@@ -1630,6 +1630,7 @@ CoreSMTSolver::reset( )
   assert( learnts.size( ) == 0 );
 }
 
+
 /*_________________________________________________________________________________________________
   |
   |  search : (nof_conflicts : int) (nof_learnts : int) (params : const SearchParams&)  ->  [lbool]

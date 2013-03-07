@@ -1,11 +1,11 @@
 #include "PtStore.h"
 
-PtStore::PtStore(TStore& symstore_, SStore& sortstore_)
+PtStore::PtStore(SymStore& symstore_, SStore& sortstore_)
     : symstore(symstore_), sortstore(sortstore_) { }
 
 char* PtStore::printTerm_(PTRef tr) const {
     const Pterm& t = pta[tr];
-    TRef sr = t.symb();
+    SymRef sr = t.symb();
     char* out;
     if (t.size() == 0) {
         asprintf(&out, "%s", symstore.getName(sr));
@@ -40,18 +40,18 @@ char* PtStore::printTerm_(PTRef tr) const {
 //
 PTRef PtStore::lookupTerm(const char* s, const vec<PTRef>& args) {
     if (symstore.contains(s)) {
-        const vec<TRef>& trefs = symstore.nameToRef(s);
+        const vec<SymRef>& trefs = symstore.nameToRef(s);
         if (symstore[trefs[0]].noScoping()) {
             // No need to look forward, this is the only possible term
             // list
             for (int i = 0; i < trefs.size(); i++) {
-                TRef ctr = trefs[i];
-                const Term& t = symstore[ctr];
+                SymRef ctr = trefs[i];
+                const Symbol& t = symstore[ctr];
                 if (t.nargs() == args.size_()) {
                     // t is a potential match.  Check that arguments match
                     uint32_t j = 0;
                     for (; j < t.nargs(); j++) {
-                        TRef argt = pta[args[j]].symb();
+                        SymRef argt = pta[args[j]].symb();
                         if (t[j] != symstore[argt].rsort()) break;
                     }
                     if (j == t.nargs()) {
@@ -65,7 +65,7 @@ PTRef PtStore::lookupTerm(const char* s, const vec<PTRef>& args) {
                 else if (t.nargs() < args.size_() && t.left_assoc() && symstore[pta[args[0]].symb()].rsort() == t.rsort()) {
                     int j = 1;
                     for (; j < args.size(); j++) {
-                        TRef argt = pta[args[j]].symb();
+                        SymRef argt = pta[args[j]].symb();
                         if (symstore[argt].rsort() != t[1]) break;
                     }
                     if (j == args.size())
@@ -82,7 +82,7 @@ PTRef PtStore::lookupTerm(const char* s, const vec<PTRef>& args) {
                 else if (t.nargs() < args.size_() && t.pairwise()) {
                     int j = 0;
                     for (; j < args.size(); j++) {
-                        TRef argt = pta[args[j]].symb();
+                        SymRef argt = pta[args[j]].symb();
                         if (symstore[argt].rsort() != t[0]) break;
                     }
                     if (j == args.size()) return insertTerm(ctr, args);
@@ -95,15 +95,15 @@ PTRef PtStore::lookupTerm(const char* s, const vec<PTRef>& args) {
 
     // We get here if it was not in let branches either
     if (symstore.contains(s)) {
-        const vec<TRef>& trefs = symstore.nameToRef(s);
+        const vec<SymRef>& trefs = symstore.nameToRef(s);
         for (int i = 0; i < trefs.size(); i++) {
-            TRef ctr = trefs[i];
-            const Term& t = symstore[ctr];
+            SymRef ctr = trefs[i];
+            const Symbol& t = symstore[ctr];
             if (t.nargs() == args.size_()) {
                 // t is a potential match.  Check that arguments match
                 uint32_t j = 0;
                 for (; j < t.nargs(); j++) {
-                    TRef argt = pta[args[j]].symb();
+                    SymRef argt = pta[args[j]].symb();
                     if (t[j] != symstore[argt].rsort()) break;
                 }
                 if (j == t.nargs())

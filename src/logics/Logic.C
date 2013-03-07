@@ -1,6 +1,4 @@
 #include "sorts/SStore.h"
-#include "sorts/Sort.h"
-#include "terms/TStore.h"
 #include "pterms/PtStore.h"
 #include "Logic.h"
 
@@ -20,7 +18,7 @@ const char* Logic::tk_distinct = "distinct";
 const char* Logic::tk_ite      = "ite";
 
 // The constructor initiates the base logic (Boolean)
-Logic::Logic(SMTConfig& c, SStore& s, TStore& t, PtStore& pt) :
+Logic::Logic(SMTConfig& c, SStore& s, SymStore& t, PtStore& pt) :
       config(c)
     , sort_store(s)
     , sym_store(t)
@@ -34,70 +32,72 @@ Logic::Logic(SMTConfig& c, SStore& s, TStore& t, PtStore& pt) :
 
     params.push(sort_store["Bool 0"]);
 
-    TRef tr;
+    SymRef tr;
 
-    tr = sym_store.newTerm(tk_true, params);
-    if (tr == TRef_Undef) { assert(false); }
+    tr = sym_store.newSymb(tk_true, params);
+    if (tr == SymRef_Undef) { assert(false); }
     sym_store[tr].setNoScoping();
     sym_TRUE = tr;
     vec<PTRef> tmp;
     term_TRUE  = term_store.insertTerm(sym_TRUE,  tmp);
 
-    tr = sym_store.newTerm(tk_false, params);
-    if (tr == TRef_Undef) { assert(false); }
+    tr = sym_store.newSymb(tk_false, params);
+    if (tr == SymRef_Undef) { assert(false); }
     sym_store[tr].setNoScoping();
     sym_FALSE = tr;
     term_FALSE = term_store.insertTerm(sym_FALSE, tmp);
 
     params.push(sort_store["Bool 0"]);
-    tr = sym_store.newTerm(tk_not, params);
-    if (tr == TRef_Undef) { assert(false); }
+    tr = sym_store.newSymb(tk_not, params);
+    if (tr == SymRef_Undef) { assert(false); }
     sym_store[tr].setNoScoping();
     sym_NOT = tr;
 
     params.push(sort_store["Bool 0"]);
 
-    tr = sym_store.newTerm(tk_equals, params);
-    if (tr == TRef_Undef) { assert(false); }
+    tr = sym_store.newSymb(tk_equals, params);
+    if (tr == SymRef_Undef) { assert(false); }
     if (sym_store[tr].setRightAssoc() == false) { assert(false); } // TODO: Remove and clean
     sym_store[tr].setNoScoping();
     sym_EQ = tr;
     equalities.insert(sym_EQ, true);
 
-    tr = sym_store.newTerm(tk_implies, params);
-    if (tr == TRef_Undef) { assert(false); }
+    tr = sym_store.newSymb(tk_implies, params);
+    if (tr == SymRef_Undef) { assert(false); }
     if (sym_store[tr].setRightAssoc() == false) { assert(false); } // TODO: Remove and clean
     sym_store[tr].setNoScoping();
     sym_IMPLIES = tr;
 
-    tr = sym_store.newTerm(tk_and, params);
-    if (tr == TRef_Undef) { assert(false); }
+    tr = sym_store.newSymb(tk_and, params);
+    if (tr == SymRef_Undef) { assert(false); }
     if (sym_store[tr].setLeftAssoc() == false) assert(false);
     sym_store[tr].setNoScoping();
     sym_AND = tr;
 
-    tr = sym_store.newTerm(tk_or, params);
-    if (tr == TRef_Undef) { assert(false); }
+    tr = sym_store.newSymb(tk_or, params);
+    if (tr == SymRef_Undef) { assert(false); }
     if (sym_store[tr].setLeftAssoc() == false) assert(false);
     sym_store[tr].setNoScoping();
     sym_OR = tr;
 
-    tr = sym_store.newTerm(tk_xor, params);
-    if (tr == TRef_Undef) { assert(false); }
+    tr = sym_store.newSymb(tk_xor, params);
+    if (tr == SymRef_Undef) { assert(false); }
     if (sym_store[tr].setLeftAssoc() == false) assert(false);
     sym_store[tr].setNoScoping();
     sym_XOR = tr;
 
     params.push(sort_store["Bool 0"]);
-    tr = sym_store.newTerm(tk_ite, params);
-    if (tr == TRef_Undef) { assert(false); }
+    tr = sym_store.newSymb(tk_ite, params);
+    if (tr == SymRef_Undef) { assert(false); }
     sym_store[tr].setNoScoping();
     sym_ITE = tr;
     ites.insert(tr, true);
 }
 
-bool Logic::isTheorySymbol(TRef tr) const {
-    Term& t = sym_store[tr];
+bool Logic::isTheorySymbol(SymRef tr) const {
+    // True and False are special cases, we count them as theory symbols
+    if (tr == sym_TRUE || tr == sym_FALSE) return true;
+    Symbol& t = sym_store[tr];
     // Boolean var
     if (t.rsort() == sort_BOOL && t.nargs() == 0) return false;
     // Standard Boolean operators
@@ -138,16 +138,16 @@ bool Logic::declare_sort_hook(Sort* s) {
 
     // Equality
 
-    TRef tr;
+    SymRef tr;
 
-    tr = sym_store.newTerm(tk_equals, params);
-    if (tr == TRef_Undef) { return false; }
+    tr = sym_store.newSymb(tk_equals, params);
+    if (tr == SymRef_Undef) { return false; }
     sym_store[tr].setNoScoping();
     equalities.insert(tr, true);
 
     // distinct
-    tr = sym_store.newTerm(tk_distinct, params);
-    if (tr == TRef_Undef) { return false; }
+    tr = sym_store.newSymb(tk_distinct, params);
+    if (tr == SymRef_Undef) { return false; }
     if (sym_store[tr].setPairwise() == false) return false;
     sym_store[tr].setNoScoping();
     disequalities.insert(tr, true);
@@ -159,8 +159,8 @@ bool Logic::declare_sort_hook(Sort* s) {
     params.push(sr);
     params.push(sr);
 
-    tr = sym_store.newTerm(tk_ite, params);
-    if (tr == TRef_Undef) { return false; }
+    tr = sym_store.newSymb(tk_ite, params);
+    if (tr == SymRef_Undef) { return false; }
     sym_store[tr].setNoScoping();
 
     return true;
@@ -168,6 +168,16 @@ bool Logic::declare_sort_hook(Sort* s) {
 
 
 // Uninterpreted predicate p : U U* -> Bool
+bool Logic::isUP(PTRef ptr) const {
+    Pterm& t = term_store[ptr];
+    SymRef sr = t.symb();
+    if (isEquality(sr) || isDisequality(sr)) return true;
+    Symbol& sym = sym_store[sr];
+    if (sym.nargs() == 0) return false;
+    if (sym.rsort() != getSort_bool()) return false;
+    return true;
+}
+
 // Adds the uninterpreted predicate if ptr is an uninterpreted predicate.
 // Returns reference to corresponding equality term or PTRef_Undef.  Creates
 // the eq term if it does not exist.
@@ -175,27 +185,23 @@ bool Logic::declare_sort_hook(Sort* s) {
 // (disequality) over terms with non-boolean return type.  Those must be then
 // returned as is.
 PTRef Logic::lookupUPEq(PTRef ptr) const {
+    assert(isUP(ptr));
+    // already seen
     if (UP_map.contains(ptr)) return UP_map[ptr];
+    // already an equality
     Pterm& t = term_store[ptr];
     if (isEquality(t.symb()) | isDisequality(t.symb()))
         return ptr;
 
-    Term& sym = sym_store[t.symb()];
-    if (sym.nargs() == 0) return PTRef_Undef; // This is a Boolean constant
-    if (sym.rsort() != getSort_bool()) return PTRef_Undef;
-    // This is not a necessary condition.  This should work for arbitrary arguments
-//    int i;
-//    for (i = 0; i < sym.size(); i++)
-//        if (sym[i] == getSort_bool()) break;
-//    if (i != sym.size()) return PTRef_Undef;
-    // A new boolean predicate
+    // Create a the new equality
+    Symbol& sym = sym_store[t.symb()];
     vec<PTRef> args;
     args.push(ptr);
     args.push(getTerm_true());
     return term_store.lookupTerm(tk_equals, args);
 }
 
-bool Logic::isBooleanOperator(TRef tr) const {
+bool Logic::isBooleanOperator(SymRef tr) const {
     if (tr == getSym_and())     return true;
     if (tr == getSym_or())      return true;
     if (tr == getSym_not())     return true;

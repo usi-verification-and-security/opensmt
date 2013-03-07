@@ -229,29 +229,29 @@ LDFLAGS=$OLDLDFLAGS
 #
 # List of directories to include
 #
-config_includedirs="-I\${top_srcdir}/src \\\
--I\${top_srcdir}/src/minisat/mtl \\\
--I\${top_srcdir}/src/minisat/core \\\
--I\${top_srcdir}/src/simplifiers \\\
--I\${top_srcdir}/src/common \\\
--I\${top_srcdir}/src/egraph \\\
--I\${top_srcdir}/src/sorts \\\
--I\${top_srcdir}/src/terms \\\
--I\${top_srcdir}/src/pterms \\\
--I\${top_srcdir}/src/logics \\\
--I\${top_srcdir}/src/smtsolvers \\\
--I\${top_srcdir}/src/cnfizers \\\
--I\${top_srcdir}/src/proof \\\
--I\${top_srcdir}/src/api \\\
--I\${top_srcdir}/src/tsolvers \\\
--I\${top_srcdir}/src/tsolvers/emptysolver \\\
--I\${top_srcdir}/src/tsolvers/bvsolver \\\
--I\${top_srcdir}/src/tsolvers/bvsolver/minisatp \\\
--I\${top_srcdir}/src/tsolvers/lrasolver \\\
--I\${top_srcdir}/src/tsolvers/liasolver \\\
--I\${top_srcdir}/src/tsolvers/ctsolver \\\
--I\${top_srcdir}/src/tsolvers/axdiffsolver \\\
--I\${top_srcdir}/src/tsolvers/dlsolver \\\
+config_includedirs="-I\${top_srcdir}/src \\
+-I\${top_srcdir}/src/minisat/mtl \\
+-I\${top_srcdir}/src/minisat/core \\
+-I\${top_srcdir}/src/simplifiers \\
+-I\${top_srcdir}/src/common \\
+-I\${top_srcdir}/src/egraph \\
+-I\${top_srcdir}/src/sorts \\
+-I\${top_srcdir}/src/symbols \\
+-I\${top_srcdir}/src/pterms \\
+-I\${top_srcdir}/src/logics \\
+-I\${top_srcdir}/src/smtsolvers \\
+-I\${top_srcdir}/src/cnfizers \\
+-I\${top_srcdir}/src/proof \\
+-I\${top_srcdir}/src/api \\
+-I\${top_srcdir}/src/tsolvers \\
+-I\${top_srcdir}/src/tsolvers/emptysolver \\
+-I\${top_srcdir}/src/tsolvers/bvsolver \\
+-I\${top_srcdir}/src/tsolvers/bvsolver/minisatp \\
+-I\${top_srcdir}/src/tsolvers/lrasolver \\
+-I\${top_srcdir}/src/tsolvers/liasolver \\
+-I\${top_srcdir}/src/tsolvers/ctsolver \\
+-I\${top_srcdir}/src/tsolvers/axdiffsolver \\
+-I\${top_srcdir}/src/tsolvers/dlsolver \\
 -I\${top_srcdir}/src/attributes"
 
 AC_SUBST(config_includedirs)
@@ -269,7 +269,7 @@ AC_CONFIG_FILES([ \
 		  src/egraph/Makefile \
 		  src/sorts/Makefile \
 		  src/logics/Makefile \
-		  src/terms/Makefile \
+		  src/symbols/Makefile \
 		  src/pterms/Makefile \
 		  src/tsolvers/Makefile \
 		  src/tsolvers/emptysolver/Makefile \

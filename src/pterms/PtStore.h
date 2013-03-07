@@ -2,7 +2,7 @@
 #define PTSTORE_H
 
 #include "Pterm.h"
-#include "TStore.h"
+#include "SymStore.h"
 #include "SStore.h"
 
 //struct PTRefHash {
@@ -14,13 +14,13 @@
 
 class PtStore {
     PtermAllocator pta;
-    TStore&        symstore;
+    SymStore&      symstore;
     SStore&        sortstore;
 
-    Map<TRef,PTRef,TRefHash,Equal<TRef> > cterm_map; // Mapping constant symbols to terms
+    Map<SymRef,PTRef,SymRefHash,Equal<SymRef> > cterm_map; // Mapping constant symbols to terms
   public:
-    PtStore(TStore& symstore_, SStore& sortstore_);
-    PTRef insertTerm(TRef sym, const vec<PTRef>& terms) {
+    PtStore(SymStore& symstore_, SStore& sortstore_);
+    PTRef insertTerm(SymRef sym, const vec<PTRef>& terms) {
         // Catch the constants here
         if (terms.size() == 0 && cterm_map.contains(sym))
             return cterm_map[sym];

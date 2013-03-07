@@ -1,7 +1,7 @@
 #include "Sort.h"
 #include "SStore.h"
-#include "TStore.h"
-#include "Term.h"
+#include "SymStore.h"
+#include "Symbol.h"
 #include "PtStore.h"
 #include "Pterm.h"
 #include "Logic.h"
@@ -13,7 +13,7 @@ int main(int argc, char **argv) {
     SMTConfig cfg(argc, argv);
 //    EnodeStore estore;
     SStore sort_store(cfg);
-    TStore sym_store;
+    SymStore sym_store;
     PtStore term_store(sym_store, sort_store);
     Logic logic(cfg, sort_store, sym_store, term_store);
     Egraph egraph(cfg, sort_store, sym_store, term_store, logic);
@@ -27,38 +27,38 @@ int main(int argc, char **argv) {
     SRef bsr = sort_store["Bool 0"];
     sort_args_a.push(sr);
     // First arg is the return sort
-    TRef a_tr = sym_store.newTerm("a", sort_args_a);
-    TRef b_tr = sym_store.newTerm("b", sort_args_a);
-    TRef c_tr = sym_store.newTerm("c", sort_args_a);
+    SymRef a_tr = sym_store.newSymb("a", sort_args_a);
+    SymRef b_tr = sym_store.newSymb("b", sort_args_a);
+    SymRef c_tr = sym_store.newSymb("c", sort_args_a);
 
     vec<SRef> sort_args_f;
     sort_args_f.push(sort_store["TSort 0"]);
     sort_args_f.push(sort_store["TSort 0"]);
     sort_args_f.push(sort_store["TSort 0"]);
-    TRef f_tr = sym_store.newTerm("f", sort_args_f);
+    SymRef f_tr = sym_store.newSymb("f", sort_args_f);
 
-    vec<TRef>& eq_syms = sym_store.nameToRef("=");
-    TRef eq_sym = TRef_Undef;  // Find the equality symbol for the equality of TSort 0
+    vec<SymRef>& eq_syms = sym_store.nameToRef("=");
+    SymRef eq_sym = SymRef_Undef;  // Find the equality symbol for the equality of TSort 0
     for (int i = 0; i < eq_syms.size(); i++) {
-        Term& sym = sym_store[eq_syms[i]];
+        Symbol& sym = sym_store[eq_syms[i]];
         if (sym[0] == sr && sym[1] == sr) {
             eq_sym = eq_syms[i];
             break;
         }
     }
 
-    vec<TRef>& not_syms = sym_store.nameToRef("not");
-    TRef not_sym = TRef_Undef;
+    vec<SymRef>& not_syms = sym_store.nameToRef("not");
+    SymRef not_sym = SymRef_Undef;
     for (int i = 0; i < not_syms.size(); i++) {
-        Term& sym = sym_store[not_syms[i]];
+        Symbol& sym = sym_store[not_syms[i]];
         if (sym[0] == bsr) {
             not_sym = not_syms[i];
             break;
         }
     }
 
-    assert(eq_sym != TRef_Undef);
-    assert(not_sym != TRef_Undef);
+    assert(eq_sym != SymRef_Undef);
+    assert(not_sym != SymRef_Undef);
 
     // Add the terms
     // a

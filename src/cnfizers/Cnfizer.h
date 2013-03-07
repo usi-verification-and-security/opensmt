@@ -67,7 +67,7 @@ class Cnfizer
 protected:
     SMTConfig&          config;
     SStore &            sstore;
-    TStore&             symstore;
+    SymStore&           symstore;
     PtStore&            ptstore;         // Reference to the term store
     Logic&              logic;
 
@@ -80,7 +80,7 @@ public:
 
     Cnfizer( PtStore &   ptstore_
            , SMTConfig & config_
-           , TStore&     symstore_
+           , SymStore&   symstore_
            , SStore &    sstore_
            , Logic&      logic_
            );
@@ -100,6 +100,7 @@ public:
 
     void   initialize      () { solver.initialize(); }
     lbool  solve           () { status = solver.solve(); return status; }
+    void   crashTest       (int rounds) { solver.crashTest(rounds, tmap.getVar(logic.getTerm_true()), tmap.getVar(logic.getTerm_false())); }
     lbool  getStatus       () { return status; }
 
 protected:
@@ -141,9 +142,9 @@ private:
 //                               , map< enodeid_t, Enode * > &
 //                               , map< enodeid_t, int > & );                  // Subroutine for rewriteMaxArity
 
-    bool    checkConj            (PTRef, Map<PTRef,bool,TRefHash,Equal<PTRef> >& check_cache); // Check if a formula is a conjunction
-    bool    checkClause          (PTRef, Map<PTRef,bool,TRefHash,Equal<PTRef> >& check_cache); // Check if a formula is a clause
-    bool    checkPureConj        (PTRef, Map<PTRef,bool,TRefHash,Equal<PTRef> >& check_cache); // Check if a formula is purely a conjuntion
+    bool    checkConj            (PTRef, Map<PTRef,bool,PTRefHash,Equal<PTRef> >& check_cache); // Check if a formula is a conjunction
+    bool    checkClause          (PTRef, Map<PTRef,bool,PTRefHash,Equal<PTRef> >& check_cache); // Check if a formula is a clause
+    bool    checkPureConj        (PTRef, Map<PTRef,bool,PTRefHash,Equal<PTRef> >& check_cache); // Check if a formula is purely a conjuntion
 
     lbool   status;     // The status of the last solver call (initially l_Undef)
 
@@ -155,12 +156,12 @@ protected:
 
     bool  isLit            (PTRef r);
     const Lit findLit      (PTRef ptr);
-    bool  isBooleanOperator(TRef tr) { return logic.isBooleanOperator(tr); } // (tr == logic.getSym_and()) | (tr == logic.getSym_or() ) | (tr == logic.getSym_not() ) | (tr == logic.getSym_eq() ) | (tr == logic.getSym_xor() ); }
-    bool  isTheorySymbol   (TRef tr) const { return logic.isTheorySymbol(tr); }
-    bool  isIte            (TRef tr) const { return logic.isIte(tr); }
+    bool  isBooleanOperator(SymRef tr) { return logic.isBooleanOperator(tr); } // (tr == logic.getSym_and()) | (tr == logic.getSym_or() ) | (tr == logic.getSym_not() ) | (tr == logic.getSym_eq() ) | (tr == logic.getSym_xor() ); }
+    bool  isTheorySymbol   (SymRef tr) const { return logic.isTheorySymbol(tr); }
+    bool  isIte            (SymRef tr) const { return logic.isIte(tr); }
     bool  isAtom           (PTRef r) const;
     bool  isNPAtom         (PTRef r, PTRef& p)    const; // Check if r is a (negated) atom.  Return true if the corresponding atom is negated.  The purified reference is placed in the second argument.
-    void  declareAtom      (PTRef, TRef);                // Declare an atom for the smt/sat solver
+    void  declareAtom      (PTRef, SymRef);              // Declare an atom for the smt/sat solver
     bool  termSeen         (PTRef)                const; // True if the term has been seen and thus processed in the sense that there is already literal corresponding to it.  Sees through negations.
 
 };

@@ -27,7 +27,7 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 #include "EnodeStore.h"
 #include "Enode.h"
 #include "TSolver.h"
-#include "TStore.h"
+#include "SymStore.h"
 #include "PtStore.h"
 #include "Logic.h"
 //#include "SigTab.h"
@@ -41,7 +41,7 @@ class Egraph : public CoreTSolver
 {
 private:
   SStore &      sort_store;
-  TStore &      sym_store;
+  SymStore &    sym_store;
   PtStore&      term_store;
   Logic&        logic;
   EnodeStore    enode_store;
@@ -50,7 +50,7 @@ private:
 public:
 
   Egraph( SMTConfig & c
-        , SStore & s, TStore& syms, PtStore& terms, Logic& l )
+        , SStore & s, SymStore& syms, PtStore& terms, Logic& l )
       : CoreTSolver        ( 0, "EUF Solver", c )
       , sort_store         ( s )
       , sym_store          ( syms )

@@ -11,8 +11,9 @@ class TermMapper {
     TermMapper(Logic& l) : logic(l) {}
 
     Map<Var,PTRef,VarHash,Equal<Var> >        varToTerm;
-    Map<Var,TRef,VarHash,Equal<Var> >         varToTheorySymbol;
+    Map<Var,SymRef,VarHash,Equal<Var> >       varToTheorySymbol;
     Map<PTRef,Var,PTRefHash,Equal<PTRef> >    termToVar;
+    Map<PTRef,bool,PTRefHash,Equal<PTRef> >   theoryTerms;
     void getTerm(PTRef, PTRef&, bool&) const;
     Var  getVar(PTRef) const;
     Lit  getLit(PTRef) const;

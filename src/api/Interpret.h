@@ -6,8 +6,8 @@
 #include "sorts/SStore.h"
 #include "sorts/Sort.h"
 #include "logics/Logic.h"
-#include "terms/TStore.h"
-#include "terms/Term.h"
+#include "symbols/SymStore.h"
+#include "symbols/Symbol.h"
 #include "pterms/PtStore.h"
 #include "Tseitin.h"
 #include "egraph/Egraph.h"
@@ -36,7 +36,7 @@ class Interpret {
   private:
     SMTConfig                                  config;
     SStore                                     store;    // Sorts
-    TStore                                     tstore;   // Terms (more like symbols)
+    SymStore                                   symstore;   // Terms (more like symbols)
     PtStore                                    ptstore;  // Proper terms
     Logic                                      logic;
     Tseitin                                    ts;
@@ -76,11 +76,11 @@ class Interpret {
     // Constructor initiates a default logic.  Not sure if this is the best way to go...
     Interpret() :
           store(config)
-        , ptstore(tstore, store)
-        , logic(config, store, tstore, ptstore)
+        , ptstore(symstore, store)
+        , logic(config, store, symstore, ptstore)
         , ts( ptstore
             , config
-            , tstore
+            , symstore
             , store
             , logic )
         , f_exit(false)

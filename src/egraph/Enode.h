@@ -23,7 +23,7 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 #include "Vec.h"
 #include "Alloc.h"
 
-#include "terms/Term.h"
+#include "symbols/Symbol.h"
 #include "pterms/Pterm.h"
 
 //#include "Global.h"
@@ -83,7 +83,7 @@ class Enode
         unsigned reloced    : 1;
         unsigned unused     : 29; } header;
 
-    TRef        tr;     // The symbol (if this is a symbol node) -- not sure this is necessary?
+    SymRef      tr;     // The symbol (if this is a symbol node) -- not sure this is necessary?
     PTRef       pterm;  // The proper term (if this is a term node)
     uint32_t    id;
     ERef        er;     // Either my tref or reference to the relocated one
@@ -106,14 +106,14 @@ public:
     enum en_type { et_symb, et_list, et_term };
 
     // Constructor for symbols
-    Enode(TRef, ERef);
+    Enode(SymRef, ERef);
 
     // Constructor for term and list nodes
     Enode(ERef car_, ERef cdr_, en_type t, EnodeAllocator& ea, ERef er, Map<SigPair,ERef,SigHash,Equal<const SigPair&> >& sig_tab);
 
-//    Enode* Enode_new(en_type t, TRef tr) {
-//        assert(sizeof(TRef) == sizeof(uint32_t));
-//        size_t sz = sizeof(header) + sizeof(TRef) + sizeof(uint32_t);
+//    Enode* Enode_new(en_type t, SymRef tr) {
+//        assert(sizeof(SymRef) == sizeof(uint32_t));
+//        size_t sz = sizeof(header) + sizeof(SymRef) + sizeof(uint32_t);
 //        if (t != et_symb) sz += sizeof(CgData);
 //        void* mem = malloc(sz);
 //
@@ -141,7 +141,7 @@ public:
     bool  isDeduced     ()        const { return is_deduced; }
     void  rsDeduced     ()              { is_deduced = false; }
     bool  hasPolarity   ()        const { return has_polarity; }
-    TRef  getSym        ()        const { assert(type() == et_symb); return tr; }
+    SymRef  getSym        ()        const { assert(type() == et_symb); return tr; }
     PTRef getTerm       ()        const { assert(type() != et_symb); return pterm; }
     ERef  getRoot       ()        const { if (type() == et_symb) return er; else return cgdata->root; }
     void  setRoot       (ERef r)        { assert(type() != et_symb); cgdata->root = r; }
@@ -205,8 +205,8 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
         RegionAllocator<uint32_t>::moveTo(to); }
 
     // For symbols
-    ERef alloc(TRef sym) {
-        assert(sizeof(TRef)     == sizeof(uint32_t));
+    ERef alloc(SymRef sym) {
+        assert(sizeof(SymRef)     == sizeof(uint32_t));
         assert(sizeof(ERef)     == sizeof(uint32_t));
         ERef eid = RegionAllocator<uint32_t>::alloc(enodeWord32Size(false));
         Enode* tmp = new (lea(eid)) Enode(sym, eid);
@@ -217,7 +217,7 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
     // For terms and lists
     ERef alloc(ERef car, ERef cdr, Enode::en_type t, PTRef ptr)
     {
-        assert(sizeof(TRef)     == sizeof(uint32_t));
+        assert(sizeof(SymRef)     == sizeof(uint32_t));
         assert(sizeof(ERef)     == sizeof(uint32_t));
 
         bool has_cgdata = (t == Enode::et_list) || (t == Enode::et_term);
@@ -327,7 +327,7 @@ public:
     }
 };
 /*
-  Enode ( const enodeid_t, TRef ) :
+  Enode ( const enodeid_t, SymRef ) :
       id(geid++);
     , header.type(ETYPE_SYM)
   //
@@ -377,7 +377,7 @@ public:
   // Getty and Setty methods
   //
   inline enodeid_t            getId      ( ) const { return id; }
-  inline TRef                 getTerm    ( ) const { return tr; }
+  inline SymRef                 getTerm    ( ) const { return tr; }
 
   inline Enode *  getCar                 ( ) const { return car; }
   inline Enode *  getCdr                 ( ) const { return cdr; }

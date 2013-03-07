@@ -63,7 +63,7 @@ bool Tseitin::cnfize(PTRef formula
 
         // Here (after the checks) not safe to use Pterm& since cnfize.* can alter the table of terms
         // by calling findLit
-        TRef symb = ptstore[ptr].symb();
+        SymRef symb = ptstore[ptr].symb();
         int sz = ptstore[ptr].size();
         if (symb == logic.getSym_and())
             cnfizeAnd(ptr);

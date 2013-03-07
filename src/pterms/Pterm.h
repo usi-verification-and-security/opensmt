@@ -4,24 +4,23 @@
 
 #include "Vec.h"
 #include "Alloc.h"
-#include "Term.h"
+#include "Symbol.h"
 
 typedef RegionAllocator<uint32_t>::Ref PTRef;
 
-typedef TRefHash PTRefHash;
 // These are redefinitions...
-//struct PTRefHash {
-//    uint32_t operator () (const PTRef s) const {
-//        return (uint32_t)s; }
-//};
+struct PTRefHash {
+    uint32_t operator () (const PTRef s) const {
+        return (uint32_t)s; }
+};
 
-//template <>
-//struct Equal<const PTRef> {
-//    bool operator() (const PTRef s1, const PTRef s2) { return s1 == s2; }
-//};
+template <>
+struct Equal<const PTRef> {
+    bool operator() (const PTRef s1, const PTRef s2) { return s1 == s2; }
+};
 
 
-typedef uint32_t TRef;
+//typedef uint32_t TRef;
 typedef uint32_t PTId; // Used as an array index
 
 // args[0].sort is the return sort, rest are arguments.
@@ -33,7 +32,7 @@ class Pterm {
         unsigned noscoping  : 1;
         unsigned size       : 26; }     header;
     PTId                                id;
-    TRef                                sym;
+    SymRef                              sym;
     // This has to be the last
     PTRef                               args[0]; // Either the terms or the relocation reference
 
@@ -42,7 +41,7 @@ class Pterm {
     friend class PTStore;
   public:
     // Note: do not use directly (no memory allocation for args)
-    Pterm(const TRef sym_, const vec<PTRef>& ps) : sym(sym_) {
+    Pterm(const SymRef sym_, const vec<PTRef>& ps) : sym(sym_) {
         header.type      = 0;
         header.has_extra = 0;
         header.reloced   = 0;
@@ -53,11 +52,11 @@ class Pterm {
   public:
 
     // -- use this as a wrapper:
-    Pterm* Pterm_new(TRef sym, vec<PTRef>& ps, bool left_assoc = false, bool right_assoc = false, bool chainable = false, bool pairwise = false) {
+    Pterm* Pterm_new(SymRef sym, vec<PTRef>& ps, bool left_assoc = false, bool right_assoc = false, bool chainable = false, bool pairwise = false) {
         assert(sizeof(PTRef) == sizeof(uint32_t));
         assert(sizeof(PTId)  == sizeof(uint32_t));
-        assert(sizeof(TRef)  == sizeof(uint32_t));
-        void* mem = malloc(sizeof(header) + sizeof(PTId) + +sizeof(TRef) + sizeof(PTRef)*ps.size());
+        assert(sizeof(SymRef)  == sizeof(uint32_t));
+        void* mem = malloc(sizeof(header) + sizeof(PTId) + +sizeof(SymRef) + sizeof(PTRef)*ps.size());
 
         assert(left_assoc + right_assoc + chainable + pairwise <= 1);
         if (left_assoc == true)
@@ -72,11 +71,11 @@ class Pterm {
 
     int      size        ()      const   { return header.size; }
     PTRef    operator [] (int i) const   { return args[i]; }
-    TRef     symb        ()      const   { return sym; }
+    SymRef   symb        ()      const   { return sym; }
     bool     has_extra   ()      const   { return false; }
     bool     reloced     ()      const   { return header.reloced; }
-    TRef     relocation  ()      const   { return args[0]; }
-    void     relocate    (TRef t)        { header.reloced = 1; args[0] = t; }
+    PTRef    relocation  ()      const   { return args[0]; }
+    void     relocate    (PTRef t)       { header.reloced = 1; args[0] = t; }
     uint32_t type        ()      const   { return header.type; }
     void     type        (uint32_t m)    { header.type = m; }
     bool     left_assoc  ()      const   { return header.type == 1; }
@@ -113,7 +112,7 @@ class PtermAllocator : public RegionAllocator<uint32_t>
         to.extra_term_field = extra_term_field;
         RegionAllocator<uint32_t>::moveTo(to); }
 
-    PTRef alloc(const TRef sym, const vec<PTRef>& ps, bool extra = false)
+    PTRef alloc(const SymRef sym, const vec<PTRef>& ps, bool extra = false)
     {
         assert(sizeof(PTRef) == sizeof(uint32_t));
 

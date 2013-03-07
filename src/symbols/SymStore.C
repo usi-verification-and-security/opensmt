@@ -1,0 +1,39 @@
+#include "string.h"
+#include "SymStore.h"
+#include "Symbol.h"
+
+SymRef SymStore::newSymb(const char* fname, const vec<SRef>& args, bool, bool, bool, bool) {
+    // Check if there already is a term called fname with same number of arguments of the same sort
+    bool newsym = !contains(fname);
+    if (newsym == false) {
+        const vec<SymRef>& trs = symbolTable[fname];
+        for (int i = 0; i < trs.size(); i++) {
+            if (ta[trs[i]].rsort() == args[0] && ta[trs[i]].nargs() == args.size_()-1) {
+                uint32_t j;
+                for (j = 0; j < ta[trs[i]].nargs(); j++) {
+                    if (ta[trs[i]][j] != args[j+1])
+                        break;
+                }
+                if (j == ta[trs[i]].nargs()) // The term exists already
+                    return SymRef_Undef;
+            }
+        }
+    }
+
+    SymRef tr = ta.alloc(args, false);
+    SymId id = symbols.size();
+    symbols.push(tr);
+
+    symrefToId.insert(tr, id);
+//    occList.push();                     // Get the occurrence list for this term
+    if (newsym) {
+        vec<SymRef> trs;
+        symbolTable.insert(fname, trs);
+    }
+    symbolTable[fname].push(tr);           // Map the name to term reference (why not id?), used in parsing
+    char* tmp_name = strdup(fname);
+    idToName.push(tmp_name);            // Map the id to name, used in error reporting
+    ta[tr].id = id;                     // Tell the term its id, used in error reporting, and checking whether two terms could be equal in future?
+    return tr;
+}
+

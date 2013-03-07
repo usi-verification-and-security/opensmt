@@ -26,7 +26,7 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 #include "ANode.h"
 #include "common/StringMap.h"
 
-class Symbol
+class gSymbol
 {
   private:
     char*      name;
@@ -34,8 +34,8 @@ class Symbol
     int        arity;
     char*      attrib;
   public:
-    Symbol(char* n, int ar, char* attr );
-    Symbol(ASTNode& n);
+    gSymbol(char* n, int ar, char* attr );
+    gSymbol(ASTNode& n);
     inline bool        isPredef     () const { return false; };
     const char*        getCanonName () const;
 
@@ -62,11 +62,11 @@ public:
   //===========================================================================
   // Public APIs for snode construction/destruction
 
-  void    insertSymbol    ( Identifier*, int, char* );           // Inserts a symbol
-  void    insertSymbol    ( Symbol& );                           // Inserts a symbol
-  void    removeSymbol    ( Identifier*, int );                  // Remove a symbol
-  void    removeSymbol    ( Symbol& );                           // Remove a symbol
-  Symbol* lookupSymbol    ( const char* name );                  // Retrieve a symbol
+  void     insertgSymbol    ( Identifier*, int, char* ); // Inserts a symbol
+  void     insertgSymbol    ( gSymbol& );                // Inserts a symbol
+  void     removegSymbol    ( Identifier*, int );        // Remove a symbol
+  void     removegSymbol    ( gSymbol& );                // Remove a symbol
+  gSymbol* lookupgSymbol    ( const char* name );        // Retrieve a symbol
 
   bool    contains        (const char* s)   const { return sortTable.contains(s); }
   SRef    operator []     (const char* s)   const { return sortTable[s]; }

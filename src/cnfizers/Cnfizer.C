@@ -21,7 +21,7 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 
 Cnfizer::Cnfizer( PtStore &   ptstore_
            , SMTConfig & config_
-           , TStore&     symstore_
+           , SymStore&     symstore_
            , SStore &    sstore_
            , Logic&      logic_
            ) :
@@ -94,23 +94,39 @@ const Lit Cnfizer::findLit(PTRef ptr) {
 
     Lit l = Lit(v, sgn);
 
-    if (isnew && !isBooleanOperator(ptstore[p].symb()) && !isIte(ptstore[p].symb())) {
-        // Terms with Boolean return value, i.e., uninterpreted
-        // predicates, will be associated with the corresponding
-        // equality.
-        PTRef new_term = logic.lookupUPEq(p);
-        if (new_term != PTRef_Undef) {
-            p = new_term;
-            tmap.varToTheorySymbol.insert(v,ptstore[p].symb());
-        }
-    }
-    if (isnew && isTheorySymbol(ptstore[p].symb()))
-        tmap.varToTheorySymbol.insert(v,ptstore[p].symb());
+
     if (isnew) {
+        if (logic.isTheoryTerm(p)) {
+            // special case for Uninterpreted Predicates: insert an equality.
+            // Implement here!
+            if (logic.isUP(p))
+                p = logic.lookupUPEq(p);
+
+            tmap.varToTheorySymbol.insert(v, ptstore[p].symb());
+            tmap.theoryTerms.insert(p,true);
+        }
         tmap.termToVar.insert(p, v);
         tmap.varToTerm.insert(v, p);
     }
     return l;
+
+//    if (isnew && !isBooleanOperator(ptstore[p].symb()) && !isIte(ptstore[p].symb())) {
+//        // Terms with Boolean return value, i.e., uninterpreted
+//        // predicates, will be associated with the corresponding
+//        // equality.
+//        PTRef new_term = logic.lookupUPEq(p);
+//        if (new_term != PTRef_Undef) {
+//            p = new_term;
+//            tmap.varToTheorySymbol.insert(v,ptstore[p].symb());
+//        }
+//    }
+//    if (isnew && isTheorySymbol(ptstore[p].symb()))
+//        tmap.varToTheorySymbol.insert(v,ptstore[p].symb());
+//    if (isnew) {
+//        tmap.termToVar.insert(p, v);
+//        tmap.varToTerm.insert(v, p);
+//    }
+//    return l;
 }
 
 
@@ -586,7 +602,7 @@ Lit Cnfizer::getPureTerm(PTRef r) const {
 //
 bool Cnfizer::checkDeMorgan(PTRef e)
 {
-    Map<PTRef,bool,TRefHash,Equal<PTRef> > check_cache;
+    Map<PTRef,bool,PTRefHash,Equal<PTRef> > check_cache;
     Pterm& not_t = ptstore[e];
     if ( not_t.symb() == logic.getSym_not() && checkPureConj(not_t[0], check_cache) ) return true;
     else return false;
@@ -595,7 +611,7 @@ bool Cnfizer::checkDeMorgan(PTRef e)
 //
 // Check whether it is a pure conjunction of literals
 //
-bool Cnfizer::checkPureConj(PTRef e, Map<PTRef,bool,TRefHash,Equal<PTRef> > & check_cache) {
+bool Cnfizer::checkPureConj(PTRef e, Map<PTRef,bool,PTRefHash,Equal<PTRef> > & check_cache) {
     if (check_cache.contains(e))
         return true;
 

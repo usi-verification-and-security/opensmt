@@ -5,7 +5,7 @@ ERef Enode::ERef_Nil;
 
 //struct ELRef ELRef_Undef = { INT32_MAX };
 
-Enode::Enode(TRef tr_, ERef er_) : tr(tr_), er(er_) {
+Enode::Enode(SymRef tr_, ERef er_) : tr(tr_), er(er_) {
     header.type = et_symb;
     cid = cgid_ctr++;
 }

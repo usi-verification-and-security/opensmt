@@ -159,43 +159,42 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 // Push newly found literals from trail to egraph
 bool THandler::assertLits(vec<Lit>& trail)
 {
-  bool res = true;
+    bool res = true;
 
-  assert( checked_trail_size == stack.size_( ) );
-  assert( (int)stack.size( ) <= trail.size( ) );
+    assert( checked_trail_size == stack.size_( ) );
+    assert( (int)stack.size( ) <= trail.size( ) );
 
-  for ( int i = checked_trail_size ; i < trail.size( ) && res ; i ++ )
-  {
-    const Lit l = trail[ i ];
-    const Var v = var( l );
+    for ( int i = checked_trail_size ; i < trail.size( ) && res ; i ++ ) {
+        const Lit l = trail[ i ];
+        const Var v = var( l );
 
-    PTRef pt_r = tmap.varToTerm[ v ];
-    stack.push( pt_r );
+        PTRef pt_r = tmap.varToTerm[ v ];
+        stack.push( pt_r );
 
-    if (!tmap.varToTheorySymbol.contains(v)) continue;
 
-//    assert( v <= 1 || e );
+        if (!tmap.varToTheorySymbol.contains(v)) continue;
+        assert(logic.isTheorySymbol(tmap.varToTheorySymbol[v]));
 
-    if ( pt_r == logic.getTerm_true() )       { assert(sign(l) == true ); continue; }
-    else if ( pt_r == logic.getTerm_false() ) { assert(sign(l) == false); continue; }
 
-    // Push backtrack point
-    egraph.pushBacktrackPoint( );
+        if ( pt_r == logic.getTerm_true() )       { assert(sign(l) == true ); continue; }
+        else if ( pt_r == logic.getTerm_false() ) { assert(sign(l) == false); continue; }
 
-//    assert( !e->hasPolarity( ) );
-//    e->setPolarity( (sign( l ) ? l_False : l_True) );
-//    assert( e->hasPolarity( ) );
-    // sign(l) == true if l is negated
-    res = egraph.addEquality( pt_r, !sign(l) ) == l_Undef;
+        // We are interested only in theory atoms from here onwards
+
+        // Push backtrack point
+        egraph.pushBacktrackPoint( );
+
+        // sign(l) == true if l is negated
+        res = egraph.addEquality( pt_r, !sign(l) ) == l_Undef;
 
 //    if ( !res && config.certification_level > 2 )
 //      verifyCallWithExternalTool( res, i );
-  }
+    }
 
-  checked_trail_size = stack.size( );
+    checked_trail_size = stack.size( );
 //  assert( !res || trail.size( ) == (int)stack.size( ) );
 
-  return res;
+    return res;
 }
 
 // Check the assignment with equality solver
@@ -218,7 +217,7 @@ void THandler::backtrack(int lev)
         // It was var_True or var_False
         if ( e == logic.getTerm_true() || e == logic.getTerm_false() ) continue;
 
-        if ( !logic.isTheoryTerm(e) ) continue;
+        if ( !tmap.theoryTerms.contains(e) ) continue;
         printf("Backtracking term %s\n", logic.term_store.printTerm(e));
         egraph.popBacktrackPoint( );
 

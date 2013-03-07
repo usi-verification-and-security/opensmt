@@ -33,7 +33,7 @@ public:
 
     Tseitin(PtStore&   ptstore_
            , SMTConfig& config_
-           , TStore&    symstore_
+           , SymStore&  symstore_
            , SStore&    sstore_
            , Logic&     logic_
            )

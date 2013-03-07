@@ -5,7 +5,6 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "Interpret.h"
-#include "Term.h"
 
 namespace opensmt {
 bool stop;
@@ -194,7 +193,7 @@ declare_fun_err: ;
             PTRef tr = parseTerm(asrt, let_branch);
             if (tr == PTRef_Undef)
                 notify_formatted(true, "assertion returns an unknown sort");
-            else if (tstore[ptstore[tr].symb()].rsort() == store["Bool 0"]) {
+            else if (symstore[ptstore[tr].symb()].rsort() == store["Bool 0"]) {
                 // Framework for handling different logic related simplifications?
                 // cnfization of the formula
                 // Get the egraph data structure for instance from here
@@ -211,7 +210,7 @@ declare_fun_err: ;
                 return true;
             }
             else {
-                notify_formatted(true, "Top-level assertion sort must be Bool, got %s", store[tstore[ptstore[tr].symb()].rsort()]->getCanonName());
+                notify_formatted(true, "Top-level assertion sort must be Bool, got %s", store[symstore[ptstore[tr].symb()].rsort()]->getCanonName());
                 return false;
             }
         }
@@ -249,7 +248,7 @@ bool Interpret::addLetName(const char* s, const PTRef tr, LetFrame& frame) {
     }
     // If a term is noscoping with one name, all others are also
     // noscoping.
-    if (tstore.contains(s) && tstore[tstore.nameToRef(s)[0]].noScoping()) {
+    if (symstore.contains(s) && symstore[symstore.nameToRef(s)[0]].noScoping()) {
         comment_formatted("Names marked as no scoping cannot be overloaded with let variables: %s", s);
         return false;
     }
@@ -319,12 +318,12 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
             notify_formatted(true, "No such symbol %s", name);
             comment_formatted("The symbol %s is not defined for the following sorts:", name);
             for (int j = 0; j < args.size(); j++)
-                comment_formatted("arg %d: %s", j, store[tstore[ptstore[args[j]].symb()].rsort()]->getCanonName());
+                comment_formatted("arg %d: %s", j, store[symstore[ptstore[args[j]].symb()].rsort()]->getCanonName());
             comment_formatted("candidates are:");
-            const vec<TRef>& trefs = tstore.nameToRef(name);
+            const vec<SymRef>& trefs = symstore.nameToRef(name);
             for (int j = 0; j < trefs.size(); j++) {
-                TRef ctr = trefs[j];
-                const Term& t = tstore[ctr];
+                SymRef ctr = trefs[j];
+                const Symbol& t = symstore[ctr];
                 comment_formatted(" candidate %d", j);
                 for (uint32_t k = 0; k < t.nargs(); k++) {
                     comment_formatted("  arg %d: %s", k, store[t[k]]->getCanonName());
@@ -333,9 +332,6 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
             return PTRef_Undef;
         }
 
-//        for (int i = 0; i < args.size(); i++) {
-//            tstore.insertOcc(args[i], i, tr);
-//        }
 
         return tr;
     }
@@ -391,7 +387,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
         const char* name = sym.getValue();
         if (nameToTerm.contains(name)) {
             notify_formatted(true, "name %s already exists", name);
-            return TRef_Undef;
+            return PTRef_Undef;
         }
         PTRef tr = parseTerm(named_term, let_branch);
         nameToTerm.insert(name, tr);
@@ -416,7 +412,9 @@ bool Interpret::checkSat(const char* cmd) {
     if (logic.isSet()) {
         sat_calls++;
         ts.initialize();
-        lbool res = ts.solve();
+//        lbool res = ts.solve();
+        lbool res = l_True;
+        ts.crashTest(1000);
         if (res == l_True) {
             notify_formatted(false, "sat");
         }
@@ -461,10 +459,12 @@ bool Interpret::getAssignment(const char* cmd) {
 }
 
 bool Interpret::declareFun(const char* fname, const vec<SRef>& args) {
-    bool rval = tstore.newTerm(fname, args);
-    if (rval == false)
+    SymRef rval = symstore.newSymb(fname, args);
+    if (rval == SymRef_Undef) {
         comment_formatted("function %s already defined", fname);
-    return rval;
+        return false;
+    }
+    return true;
 }
 
 void Interpret::comment_formatted(const char* fmt_str, ...) const {

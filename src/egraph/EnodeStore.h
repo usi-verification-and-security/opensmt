@@ -2,7 +2,7 @@
 #define ENODESTORE_H
 
 #include "Enode.h"
-#include "Term.h"
+#include "Symbol.h"
 #include "Pterm.h"
 
 class EnodeStore {
@@ -12,17 +12,17 @@ class EnodeStore {
   public:
     EnodeStore() :
         ea(1024*1024, &sig_tab)
-      , ERef_Nil(ea.alloc(TRef_Undef))
+      , ERef_Nil(ea.alloc(SymRef_Undef))
         { Enode::ERef_Nil = ERef_Nil; } // Nil is a symbol.  Is this right?
     ERef addTerm(ERef sym, ERef args, PTRef pt);
-    ERef addSymb(TRef t);
+    ERef addSymb(SymRef t);
     ERef cons(ERef car, ERef cdr);
     ERef get_Nil() const { return ERef_Nil; }
     void free(ERef er) { ea.free(er); }
     vec<ERef>           id_to_enode;
     Enode& operator[] (ERef e) { return ea[e]; }
     Map<PTRef,ERef,PTRefHash,Equal<PTRef> >  termToERef;
-    Map<TRef,ERef, TRefHash,Equal<TRef> >    symToERef;
+    Map<SymRef,ERef, SymRefHash,Equal<SymRef> >    symToERef;
     VecMap<ERef,PTRef,ERefHash,Equal<ERef> > ERefToTerms;
 
     void removeParent(ERef, ERef);
