@@ -94,6 +94,17 @@ Logic::Logic(SMTConfig& c, SStore& s, SymStore& t, PtStore& pt) :
     ites.insert(tr, true);
 }
 
+bool Logic::isTheoryTerm(PTRef ptr) const {
+    Pterm& p = term_store[ptr];
+    SymRef sr = p.symb();
+    if (sr == sym_EQ) {
+        assert(p.nargs() == 2);
+        if (isUP(p[0]) || isUP(p[1]))
+            return true;
+    }
+    else return isTheorySymbol(sr);
+}
+
 bool Logic::isTheorySymbol(SymRef tr) const {
     // True and False are special cases, we count them as theory symbols
     if (tr == sym_TRUE || tr == sym_FALSE) return true;

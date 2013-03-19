@@ -135,6 +135,7 @@ public:
 
     bool  isList        ()        const { return (en_type)header.type == et_list; }
     bool  isTerm        ()        const { return (en_type)header.type == et_term; }
+    bool  isSymb        ()        const { return (en_type)header.type == et_symb; }
     uint32_t getArity   ()        const { return 2; } // FIXME
     ERef  getCar        ()        const { assert(type() != et_symb); return car; }
     ERef  getCdr        ()        const { assert(type() != et_symb); return cdr; }

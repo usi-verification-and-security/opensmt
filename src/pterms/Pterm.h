@@ -6,17 +6,26 @@
 #include "Alloc.h"
 #include "Symbol.h"
 
-typedef RegionAllocator<uint32_t>::Ref PTRef;
+//typedef RegionAllocator<uint32_t>::Ref PTRef;
+
+struct PTRef {
+    uint32_t x;
+    void operator= (uint32_t v) { x = v; }
+    inline friend bool operator== (const PTRef& a1, const PTRef& a2)   { return a1.x == a2.x; }
+    inline friend bool operator!= (const PTRef& a1, const PTRef& a2)   { return a1.x != a2.x; }
+};
+
+static struct PTRef PTRef_Undef = {INT32_MAX};
 
 // These are redefinitions...
 struct PTRefHash {
-    uint32_t operator () (const PTRef s) const {
-        return (uint32_t)s; }
+    uint32_t operator () (const PTRef& s) const {
+        return (uint32_t)s.x; }
 };
 
 template <>
 struct Equal<const PTRef> {
-    bool operator() (const PTRef s1, const PTRef s2) { return s1 == s2; }
+    bool operator() (const PTRef& s1, const PTRef& s2) { return s1 == s2; }
 };
 
 
@@ -96,8 +105,6 @@ class Pterm {
 
 };
 
-const PTRef PTRef_Undef = RegionAllocator<uint32_t>::Ref_Undef;
-
 class PtermAllocator : public RegionAllocator<uint32_t>
 {
     static int ptermWord32Size(int size){
@@ -116,7 +123,9 @@ class PtermAllocator : public RegionAllocator<uint32_t>
     {
         assert(sizeof(PTRef) == sizeof(uint32_t));
 
-        PTRef tid = RegionAllocator<uint32_t>::alloc(ptermWord32Size(ps.size()));
+        uint32_t v = RegionAllocator<uint32_t>::alloc(ptermWord32Size(ps.size()));
+        PTRef tid;
+        tid.x = v;
         new (lea(tid)) Pterm(sym, ps);
 
         return tid;
@@ -125,11 +134,11 @@ class PtermAllocator : public RegionAllocator<uint32_t>
     PTRef alloc(Pterm&, bool) { assert(false); return PTRef_Undef; }
 
     // Deref, Load Effective Address (LEA), Inverse of LEA (AEL):
-    Pterm&       operator[](Ref r)         { return (Pterm&)RegionAllocator<uint32_t>::operator[](r); }
-    const Pterm& operator[](Ref r) const   { return (Pterm&)RegionAllocator<uint32_t>::operator[](r); }
-    Pterm*       lea       (Ref r)         { return (Pterm*)RegionAllocator<uint32_t>::lea(r); }
-    const Pterm* lea       (Ref r) const   { return (Pterm*)RegionAllocator<uint32_t>::lea(r); }
-    Ref          ael       (const Pterm* t){ return RegionAllocator<uint32_t>::ael((uint32_t*)t); }
+    Pterm&       operator[](PTRef r)         { return (Pterm&)RegionAllocator<uint32_t>::operator[](r.x); }
+    const Pterm& operator[](PTRef r) const   { return (Pterm&)RegionAllocator<uint32_t>::operator[](r.x); }
+    Pterm*       lea       (PTRef r)         { return (Pterm*)RegionAllocator<uint32_t>::lea(r.x); }
+    const Pterm* lea       (PTRef r) const   { return (Pterm*)RegionAllocator<uint32_t>::lea(r.x); }
+    PTRef        ael       (const Pterm* t)  { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); PTRef rf; rf.x = r; return rf; }
 
     void free(PTRef tid)
     {

@@ -88,8 +88,8 @@ public:
 
     // add the term (= true false) to term store
     vec<PTRef> tmp;
-    tmp.push(logic.getSort_bool());
-    tmp.push(logic.getSort_bool());
+    tmp.push(logic.getTerm_true());
+    tmp.push(logic.getTerm_false());
     PTRef neq = term_store.insertTerm(logic.getSym_eq(), tmp);
     assertNEq(er_true, er_false, neq); }
 
@@ -263,13 +263,13 @@ public:
   // Public APIs for Egraph Core Solver
 
 //  void                initializeTheorySolvers ( SimpSMTSolver * );          // Attaches ordinary theory solvers
-  lbool               inform                  ( ERef ) { return l_True; }   // Inform the solver about the existence of a theory atom
-  bool                assertLit               ( ERef, bool = false ) {return true; } // Assert a theory literal
+  lbool               inform                  ( PTRef ) { return l_True; }   // Inform the solver about the existence of a theory atom
+  bool                assertLit               ( PTRef, bool = false ) {return true; } // Assert a theory literal
   void                pushBacktrackPoint      ( );                          // Push a backtrack point
   void                popBacktrackPoint       ( );                          // Backtrack to last saved point
-  ERef                getDeduction            ( );                          // Return an implied node based on the current state
-  ERef                getSuggestion           ( );                          // Return a suggested literal based on the current state
-  vec<ERef> &         getConflict             ( bool = false );             // Get explanation
+  PTRef               getDeduction            ( );                          // Return an implied node based on the current state
+  PTRef               getSuggestion           ( );                          // Return a suggested literal based on the current state
+  vec<PTRef> &        getConflict             ( bool = false );             // Get explanation
   bool                check                   ( bool );                     // Check satisfiability
 //  void                initializeCong          ( Enode * );                  // Initialize congruence structures for a node
 #ifndef SMTCOMP
@@ -278,7 +278,7 @@ public:
 #endif
 //  inline void         setUseGmp               ( ) { use_gmp = true; }
 //  inline bool         getUseGmp               ( ) { return use_gmp; }
-  void                splitOnDemand           ( vec<ERef> &, int ) { };       // Splitting on demand modulo equality
+  void                splitOnDemand           ( vec<PTRef> &, int ) { };       // Splitting on demand modulo equality
 //  void                splitOnDemand           ( ERef, int );                // Splitting on demand
 //  bool                checkDupClause          ( ERef, ERef);                // Check if a clause is duplicate
   void                explain                 ( ERef
@@ -408,7 +408,7 @@ private:
   //===========================================================================
   // Private Routines for Core Theory Solver
 
-  bool    assertLit_      ( ERef ) { return true; }             // Assert a theory literal
+  bool    assertLit_      ( PTRef ) { return true; }             // Assert a theory literal
   //
   // Asserting literals
   //
@@ -421,11 +421,11 @@ private:
   //
   // Backtracking
   //
-  void backtrackToStackSize ( size_t );                         // Backtrack to a certain operation
+  void    backtrackToStackSize ( size_t );                      // Backtrack to a certain operation
   //
   // Congruence closure main routines
   //
-  bool    unmergeable     ( ERef, ERef, unsigned int* );        // Can two nodes be merged ? FIXME Why unsigned int* and not PTRef& ??
+  PTRef   unmergeable     ( ERef, ERef );                       // Can two nodes be merged ?
   void    merge           ( ERef, ERef );                       // Merge two nodes
   bool    mergeLoop       ( PTRef reason );                     // Merge loop
   void    deduce          ( ERef, ERef);                        // Deduce from merging of two nodes
@@ -556,11 +556,11 @@ private:
 #if PEDANTIC_DEBUG
   bool checkParents              ( ERef );
   bool checkInvariants           ( );
-  bool checkInvariantFLS         ( );
-  bool checkInvariantSTC         ( );
-  bool checkExp                  ( );
-  bool checkExpTree              ( ERef );
-  bool checkExpReachable         ( ERef, ERef );
+//  bool checkInvariantFLS         ( );
+  bool checkInvariantSTC         ( ) { return enode_store.checkInvariants(); }
+//  bool checkExp                  ( );
+//  bool checkExpTree              ( ERef );
+//  bool checkExpReachable         ( ERef, ERef );
 #endif
   bool checkStaticDynamicTable   ( );
 

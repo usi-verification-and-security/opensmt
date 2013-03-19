@@ -31,11 +31,11 @@ void CoreSMTSolver::crashTest(int rounds, Var var_true, Var var_false) {
             for (int k = stack_sz; k < i; k++) {
                 Var v = rand() % nVars();
                 if (v == var_true) {
-                    Lit l(v, true);
+                    Lit l(v, false);
                     tmp_trail.push(l);
                 }
                 else if (v == var_false) {
-                    Lit l(v, false);
+                    Lit l(v, true);
                     tmp_trail.push(l);
                 }
                 else {
@@ -46,9 +46,14 @@ void CoreSMTSolver::crashTest(int rounds, Var var_true, Var var_false) {
             printf("Stack contains %d literals of which %d new\n", tmp_trail.size(), tmp_trail.size()-stack_sz);
             stack_sz = tmp_trail.size_();
             bool res = theory_handler.assertLits(tmp_trail);
-            if (res == false) { printf("Conflict\n"); assert(false); }
+                int new_stack_sz;
+            if (res == false) {
+                printf("Conflict\n");
+                new_stack_sz = 0;
+            }
+            else
+                new_stack_sz = rand() % (i+1);
 
-            int new_stack_sz = rand() % (i+1);
             theory_handler.backtrack(new_stack_sz);
             tmp_trail.shrink(stack_sz - new_stack_sz);
             stack_sz = new_stack_sz;

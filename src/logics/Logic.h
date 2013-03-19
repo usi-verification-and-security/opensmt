@@ -80,7 +80,7 @@ class Logic {
     // tr is a theory symbol if it is not a boolean variable, nor one of the standard
     // boolean operators (and, not, or, etc...)
     bool        isTheorySymbol(SymRef tr)    const;
-    bool        isTheoryTerm(PTRef tr)     const { return isTheorySymbol(term_store[tr].symb()); }
+    bool        isTheoryTerm(PTRef tr)       const;
     bool        isBooleanOperator(SymRef tr) const;
 
     // Check if term is an uninterpreted predicate.

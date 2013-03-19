@@ -173,11 +173,11 @@ bool THandler::assertLits(vec<Lit>& trail)
 
 
         if (!tmap.varToTheorySymbol.contains(v)) continue;
-        assert(logic.isTheorySymbol(tmap.varToTheorySymbol[v]));
+        assert(logic.isTheoryTerm(pt_r));
 
 
-        if ( pt_r == logic.getTerm_true() )       { assert(sign(l) == true ); continue; }
-        else if ( pt_r == logic.getTerm_false() ) { assert(sign(l) == false); continue; }
+        if ( pt_r == logic.getTerm_true() )       { assert(sign(l) == false); continue; }
+        else if ( pt_r == logic.getTerm_false() ) { assert(sign(l) == true ); continue; }
 
         // We are interested only in theory atoms from here onwards
 
@@ -259,7 +259,7 @@ void THandler::getConflict ( vec<Lit> & conflict, vec<int>& level, int & max_dec
 
     Var v = enodeToVar( ei );
 #if PEDANTIC_DEBUG
-    assert( isOnTrail( Lit( v, negate ) ) );
+//    assert( isOnTrail( Lit( v, negate ) ) );
 #endif
     Lit l = Lit( v, !negate );
     conflict.push( l );
@@ -272,7 +272,7 @@ void THandler::getConflict ( vec<Lit> & conflict, vec<int>& level, int & max_dec
 #else
     max_decision_level = -1;
     while (explanation.size() != 0) {
-        PTRef ei = explanation.last( );
+        PTRef tr = explanation.last( );
         explanation.pop( );
 //    assert( ei->hasPolarity( ) );
 //    assert( ei->getPolarity( ) == l_True
@@ -280,10 +280,9 @@ void THandler::getConflict ( vec<Lit> & conflict, vec<int>& level, int & max_dec
 //        bool negate = ei->getPolarity( ) == l_False;
 
 //        Var v = enodeToVar( ei );
-
-        Lit l = tmap.getLit(ei);
+        Lit l = tmap.getLit(tr);
 #if PEDANTIC_DEBUG
-        assert( isOnTrail(l) );
+//        assert( isOnTrail(l) );
 #endif
         conflict.push( l );
 
@@ -442,6 +441,7 @@ void THandler::getReason( Lit l, vec< Lit > & reason )
 //}
 
 #ifdef PEDANTIC_DEBUG
+/*
 bool THandler::isOnTrail( Lit l )
 {
   for ( int i = 0 ; i < trail.size( ) ; i ++ )
@@ -449,6 +449,7 @@ bool THandler::isOnTrail( Lit l )
 
   return false;
 }
+*/
 #endif
 
 //void THandler::verifyCallWithExternalTool( bool res, size_t trail_size )

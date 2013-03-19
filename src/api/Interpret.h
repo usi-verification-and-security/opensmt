@@ -70,8 +70,8 @@ class Interpret {
 
     int                         sat_calls; // number of sat calls
 
-    vec<SRef>                   vec_empty; // For faster comparison with empty vec
-
+    vec<SRef>                   vec_sr_empty; // For faster comparison with empty vec
+    vec<PTRef>                  vec_ptr_empty;
   public:
     // Constructor initiates a default logic.  Not sure if this is the best way to go...
     Interpret() :

@@ -9,6 +9,9 @@ ERef EnodeStore::addSymb(SymRef t) {
         ERef er = ea.alloc(t);
         symToERef.insert(t, er);
         rval = er;
+#ifdef PEDANTIC_DEBUG
+        enodes.push(er);
+#endif
     }
     return rval;
 }
@@ -43,6 +46,9 @@ ERef EnodeStore::addTerm(ERef sr, ERef args, PTRef term) {
             vec<PTRef> terms;
             terms.push(term);
             ERefToTerms.insert(rval, terms);
+#ifdef PEDANTIC_DEBUG
+            enodes.push(rval);
+#endif
         }
     }
     return rval;
@@ -53,6 +59,9 @@ ERef EnodeStore::cons(ERef x, ERef y) {
     if (!containsSig(x, y)) {
         rval = ea.alloc(x, y, Enode::et_list, PTRef_Undef);
         insertSig(rval);
+#ifdef PEDANTIC_DEBUG
+        enodes.push(rval);
+#endif
     }
     else {
         // Again this could be because of an asserted equality.  If the
@@ -98,3 +107,54 @@ void EnodeStore::removeParent(ERef n, ERef p) {
         ea[en_n.getParent()].setSameCar( en_samecar.getSameCar( ) );
     }
 }
+
+// DEBUG
+#ifdef PEDANTIC_DEBUG
+bool EnodeStore::checkInvariants( )
+{
+    // Check all enodes
+    for ( int first = 0 ; first < enodes.size( ) ; first ++ ) {
+        assert ( enodes[first] != ERef_Undef );
+        ERef e = enodes[first];
+        if (ea[e].isSymb()) continue;
+
+        assert(containsSig(e));
+        ERef root = lookupSig(e);
+        Enode& en_r = ea[root];
+        assert(en_r.isTerm() || en_r.isList());
+        // The sigtab contains elements ((x.car.root.id, x.cdr.root.id), x)
+        // such that x is a binary E/node that is a congruence root
+        if ( root != en_r.getCgPtr() ) {
+            cerr << "STC Invariant broken: "
+                 << root
+                 << " is not congruence root"
+                 << endl;
+            assert(false);
+        }
+    }
+
+    // Check all signatures, but I'm not sure what exactly I want to check here
+//    if ( x->getSig( ) != p ) {
+//        cerr << "x root: " << x->getRoot( ) << endl;
+//        cerr << "x root car: " << x->getRoot( )->getCar( ) << endl;
+//        cerr << "x root car root: " << x->getRoot( )->getCar( )->getRoot( ) << endl;
+//        cerr << "x->getCar( ): " << x->getCar( )->getId( ) << endl;
+//        cerr << "STC Invariant broken: "
+//             << x
+//             << " signature is wrong."
+//             << " It is "
+//             << "(" << x->getSigCar( )
+//             << ", " << x->getSigCdr( )
+//             << ") instead of ("
+//             << p.first
+//             << ", "
+//             << p.second
+//             << ")"
+//             << endl;
+//        return false;
+//    }
+
+    return true;
+}
+#endif
+

@@ -85,7 +85,7 @@ public:
 
   void    inform               ( );
 
-  lbool   evaluate             ( ERef e ) { return egraph.evaluate( e ); }
+  lbool   evaluate             ( PTRef e ) { return egraph.evaluate( e ); }
 
 private:
 

@@ -124,13 +124,13 @@ public:
 
   virtual ~TSolver ( ) { }
 
-  virtual lbool               inform              ( ERef )               = 0;  // Inform the solver about the existence of a theory atom
-  virtual bool                assertLit           ( ERef, bool = false ) = 0;  // Assert a theory literal
+  virtual lbool               inform              ( PTRef )               = 0;  // Inform the solver about the existence of a theory atom
+  virtual bool                assertLit           ( PTRef, bool = false ) = 0;  // Assert a theory literal
   virtual void                pushBacktrackPoint  ( )                       = 0;  // Push a backtrack point
   virtual void                popBacktrackPoint   ( )                       = 0;  // Backtrack to last saved point
   virtual bool                check               ( bool )                  = 0;  // Check satisfiability
   inline const string &       getName             ( ) { return name; }            // The name of the solver
-  virtual lbool               evaluate            ( ERef ) { return l_Undef; } // Evaluate the expression in the current state
+  virtual lbool               evaluate            ( PTRef ) { return l_Undef; } // Evaluate the expression in the current state
 #ifdef PRODUCE_PROOF
   virtual Enode *             getInterpolants     ( logic_t & ) { return interpolants; }
 #endif
@@ -196,10 +196,10 @@ public:
   virtual ~CoreTSolver ( )
   { }
 
-  virtual vec< ERef > &       getConflict    ( bool = false ) = 0; // Return conflict
-  virtual ERef                getDeduction   ( )              = 0; // Return an implied node based on the current state
+  virtual vec< PTRef > &      getConflict    ( bool = false ) = 0; // Return conflict
+  virtual PTRef               getDeduction   ( )              = 0; // Return an implied node based on the current state
   inline void                 setSolver      ( SimpSMTSolver * s ) { assert( s ); assert( solver == NULL || solver == s); solver = s; }
-  virtual void                splitOnDemand  ( vec< ERef > &
+  virtual void                splitOnDemand  ( vec< PTRef > &
                                              , const int )    = 0; // For splitting on demand
 
 protected:
@@ -208,12 +208,12 @@ protected:
 #ifdef STATISTICS
   vec< TSolverStats * >       tsolvers_stats;      // Statistical info for tsolvers
 #endif
-  vec< ERef >                 explanation;         // Stores the explanation
-  vec< ERef >                 deductions;          // List of deductions
+  vec< PTRef >                 explanation;         // Stores the explanation
+  vec< PTRef >                 deductions;          // List of deductions
   size_t                      deductions_next;     // Index of next deduction to communicate
   vec< size_t >               deductions_lim;      // Keeps track of deductions done up to a certain point
   vec< size_t >               deductions_last;     // Keeps track of deductions done up to a certain point
-  vec< ERef >                 suggestions;         // List of suggestions for decisions
+  vec< PTRef >                 suggestions;         // List of suggestions for decisions
   SimpSMTSolver *             solver;              // Pointer to solver
 };
 

@@ -535,7 +535,7 @@ void Egraph::popBacktrackPoint() {
     size_t new_deductions_size = deductions_lim.last( );
     deductions_lim.pop( );
     while( deductions.size_() > new_deductions_size ) {
-        ERef e = deductions.last();
+        PTRef e = deductions.last();
         Enode& en_e = enode_store[e];
         assert( en_e.isDeduced( ) );
         en_e.rsDeduced();
@@ -601,7 +601,7 @@ ERef Egraph::getSuggestion( )
 //
 // Communicate conflict
 //
-vec<ERef>& Egraph::getConflict( bool deduction )
+vec<PTRef>& Egraph::getConflict( bool deduction )
 {
 //    assert( 0 <= conf_index && conf_index < (int)tsolvers.size( ) );
 //    (void)deduction;
@@ -847,22 +847,41 @@ lbool Egraph::addEquality(PTRef term, bool val) {
             queue.push(tm[i]);
     }
 
+#ifdef PEDANTIC_DEBUG
+    bool new_terms = false;
+#endif
 
     // construct an enode term for each term in to_process
     for (int i = to_process.size() - 1; i >= 0; i--) {
         PTRef tr = to_process[i];
-        Pterm& tm = term_store[tr];
         if (!enode_store.termToERef.contains(tr)) {
+#ifdef PEDANTIC_DEBUG
+            new_terms = true;
+#endif
+            Pterm& tm = term_store[tr];
             ERef sym = enode_store.addSymb(tm.symb());
             ERef cdr = ERef_Nil;
             for (int j = tm.size()-1; j >= 0; j--) {
                 ERef car = enode_store.termToERef[tm[j]];
                 cdr = enode_store.cons(car, cdr);
+#ifdef PEDANTIC_DEBUG
+                assert( checkParents( car ) );
+                assert( checkParents( cdr ) );
+                assert( checkInvariants( ) );
+#endif
             }
             enode_store.addTerm(sym, cdr, tr);
+#ifdef PEDANTIC_DEBUG
+            assert( checkParents( ) );
+            assert( checkInvariants( ) );
+#endif
         }
     }
 
+#ifdef PEDANTIC_DEBUG
+    if (not new_terms)
+        cout << "All was seen" << endl;
+#endif
 
     // Get the lhs and rhs of the (dis)equality
     ERef eq_lhs = enode_store.termToERef[t[0]];
@@ -939,12 +958,10 @@ bool Egraph::mergeLoop( PTRef reason )
 //        expStoreExplanation( p, q, congruence_pending ? ERef_Undef : r );
 
       // Check if they can't be merged
-      PTRef reason = PTRef_Undef;
-      PTRef* reason_p = &reason;
-      bool res = unmergeable( en_p.getRoot(), en_q.getRoot(), reason_p );
+      PTRef res = unmergeable( en_p.getRoot(), en_q.getRoot() );
 
       // They are not unmergable, so they can be merged
-      if ( !res )
+      if ( res == PTRef_Undef )
       {
         merge( en_p.getRoot( ), en_q.getRoot( ) );
 //        congruence_pending = true;
@@ -973,14 +990,14 @@ bool Egraph::mergeLoop( PTRef reason )
           assert( sym_store[term_store[en_qroot.getTerm()].symb()].isConstant() );
 
           assert( en_proot.getTerm() != en_qroot.getTerm() );
-  #ifdef PRODUCE_PROOF
+#ifdef PRODUCE_PROOF
           if ( config.produce_inter > 0 )
           {
               cgraph.setConf( p->getRoot( )->getConstant( )
                         , q->getRoot( )->getConstant( )
                         , NULL );
           }
-  #endif
+#endif
           //
           // We need explaining
           //
@@ -1014,7 +1031,7 @@ bool Egraph::mergeLoop( PTRef reason )
 
               PTRef ptr_arg = pt_reason[i];                             // (1)
               ERef  enr_arg = enode_store.termToERef[ptr_arg];          // (2)
-              ERef  enr_arg_root = enode_store[enr_arg].getRoot();     // (3)
+              ERef  enr_arg_root = enode_store[enr_arg].getRoot();      // (3)
 
               // (4)
               if ( enr_arg_root == enr_proot ) { assert( reason_1 == ERef_Undef ); reason_1 = enr_arg; }
@@ -1093,7 +1110,7 @@ bool Egraph::assertNEq ( ERef x, ERef y, PTRef r )
 //    expExplain( x, y, r );
 
 #ifdef PEDANTIC_DEBUG
-        assert( checkExp( ) );
+//        assert( checkExp( ) );
 #endif
         return false;
     }
@@ -1448,6 +1465,7 @@ void Egraph::merge ( ERef x, ERef y )
     Enode& en_x = enode_store[x];
     Enode& en_y = enode_store[y];
 
+    assert(en_x.type() == en_y.type());
 //    assert( !x->isConstant( ) );
 
   // TODO:
@@ -1553,9 +1571,11 @@ void Egraph::merge ( ERef x, ERef y )
 
     // Merge parent lists
     if ( en_y.getParent() != ERef_Undef ) {
-        // If x hasn't got parents, we assign y's one
-        if ( en_x.getParent() == ERef_Undef )
+        // If x has no parents, we assign y's one
+        if ( en_x.getParent() == ERef_Undef ) {
+            assert( en_x.type() == en_y.type() );
             en_x.setParent( en_y.getParent() );
+        }
         // Splice the parent lists
         else {
             if ( en_x.isList() ) {
@@ -1572,7 +1592,9 @@ void Egraph::merge ( ERef x, ERef y )
     }
     // Adjust parent size
     en_x.setParentSize( en_x.getParentSize( ) + en_y.getParentSize( ) );
-
+#ifdef PEDANTIC_DEBUG
+    checkParents(x);
+#endif
     // Store info about the constant
 //    if ( en_y.getConstant( ) != E) {
 //        assert( en_x.getConstant( ) == NULL );
@@ -1768,14 +1790,14 @@ void Egraph::undoMerge( ERef y )
             assert(!enode_store.containsSig(p));
             enode_store.insertSig(p);
             // remove all guests now that the signature has changed
-            if (en_p.isTerm()) {
+            if (en_p.isTerm() && enode_store.ERefToTerms[p].size() > 1) {
                 vec<PTRef>& guests = enode_store.ERefToTerms[p];
                 printf("Removing guests from enode %d\n", p);
-                for (int i = 0; i < guests.size(); i++) {
+                for (int i = 1; i < guests.size(); i++) {
                     enode_store.termToERef.remove(guests[i]);
                     printf("  %s (%d)\n", term_store.printTerm(guests[i]), guests[i]);
                 }
-                guests.clear();
+                guests.shrink(guests.size()-1);
             }
 //      (void)res; // Huh?
 //            assert( res == p );
@@ -1912,15 +1934,15 @@ void Egraph::undoDistinction ( ERef r )
 #endif
 }
 
-bool Egraph::unmergeable ( ERef x, ERef y, PTRef* r )
+PTRef Egraph::unmergeable (ERef x, ERef y)
 {
     assert( x != ERef_Undef );
     assert( y != ERef_Undef );
-    assert( *r == PTRef_Undef );
+
     ERef p = enode_store[x].getRoot();
     ERef q = enode_store[y].getRoot();
     // If they are in the same class, they can merge
-    if ( p == q ) return false;
+    if ( p == q ) return PTRef_Undef;
     // Check if they have different constants. It is sufficient
     // to check that they both have a constant. It is not
     // possible that the constant is the same. In fact if it was
@@ -1931,6 +1953,9 @@ bool Egraph::unmergeable ( ERef x, ERef y, PTRef* r )
     Enode& en_p = enode_store[p];
     Enode& en_q = enode_store[q];
     dist_t intersection = ( en_p.getDistClasses( ) & en_q.getDistClasses( ) );
+
+    PTRef r = PTRef_Undef; // the return valu
+
     if ( intersection ) {
         // Compute the first index in the intersection
         // TODO: Use hacker's delight
@@ -1939,16 +1964,16 @@ bool Egraph::unmergeable ( ERef x, ERef y, PTRef* r )
             intersection = intersection >> 1;
             index ++;
         }
-        *r = indexToDistReas( index );
-        assert( *r != PTRef_Undef );
-        return true;
+        r = indexToDistReas( index );
+        assert( r != PTRef_Undef );
+        return PTRef_Undef;
     }
     // Check forbid lists (binary distinction)
     const ELRef pstart = en_p.getForbid( );
     const ELRef qstart = en_q.getForbid( );
     // If at least one is empty, they can merge
     if ( pstart == ELRef_Undef || qstart == ELRef_Undef )
-        return false;
+        return PTRef_Undef;
 
     ELRef pptr = pstart;
     ELRef qptr = qstart;
@@ -1957,8 +1982,16 @@ bool Egraph::unmergeable ( ERef x, ERef y, PTRef* r )
         Elist& el_pptr = forbid_allocator[pptr];
         Elist& el_qptr = forbid_allocator[qptr];
         // They are unmergable if they are on the other forbid list
-        if ( enode_store[el_pptr.e].getRoot( ) == q ){ *r = el_pptr.reason; return true; }
-        if ( enode_store[el_qptr.e].getRoot( ) == p ){ *r = el_qptr.reason; return true; }
+        if ( enode_store[el_pptr.e].getRoot( ) == q ) {
+            r = el_pptr.reason;
+            assert(r != PTRef_Undef);
+            return r;
+        }
+        if ( enode_store[el_qptr.e].getRoot( ) == p ) {
+            r = el_qptr.reason;
+            assert(r != PTRef_Undef);
+            return r;
+        }
         // Pass to the next element
         pptr = el_pptr.link;
         qptr = el_qptr.link;
@@ -1969,8 +2002,8 @@ bool Egraph::unmergeable ( ERef x, ERef y, PTRef* r )
         if ( qptr == qstart ) break;
     }
     // If here they are mergable
-    assert( *r == PTRef_Undef );
-    return false;
+    assert( r == PTRef_Undef );
+    return r;
 }
 
 //

@@ -47,154 +47,77 @@ bool Egraph::checkInvariants( )
   return true;
 }
 
-bool Egraph::checkInvariantSTC( )
+
+
+bool Egraph::checkParents( ERef e )
 {
-  return sig_tab.checkInvariantSTC( );
+    assert( enode_store[e].isList( ) || enode_store[e].isTerm( ) );
+    Enode& en_e = enode_store[e];
+    const bool scdr = en_e.isList( );
+    ERef p = en_e.getParent( );
+
+    const ERef pstart = p;
+    int count = 0;
+    for ( ; p != ERef_Undef ; ) {
+        assert ( enode_store[p].isTerm( ) || enode_store[p].isList( ) );
+        if ( scdr && enode_store[enode_store[p].getCdr()].getRoot( ) != en_e.getRoot( ) ) {
+            cerr << "Parent invariant broken in parents of " << e << ": "
+                 << enode_store[enode_store[p].getCdr()].getRoot( )
+                 << " differs from"
+                 << en_e.getRoot()
+                 << endl;
+            assert(false);
+            return false;
+        }
+        if ( !scdr && enode_store[enode_store[p].getCar( )].getRoot( ) != en_e.getRoot( ) ) {
+            cerr << "Parent invariant broken in parents of " << e << ": "
+                 << enode_store[enode_store[p].getCar()].getRoot( )
+                 << " differs from "
+                 << en_e.getRoot( )
+                 << endl;
+            assert(false);
+            return false;
+        }
+        // Next element
+        p = scdr ? enode_store[p].getSameCdr( ) : enode_store[p].getSameCar( ) ;
+        // End of cycle
+        if ( p == pstart )
+            p = ERef_Undef;
+        count ++;
+    }
+    if ( en_e.getParent( ) == ERef_Undef && en_e.getParentSize( ) != 0 ) {
+        cerr << "Parent invariant broken: " 
+             << endl
+             << " wrong parent size for " 
+             << e
+             << endl;
+        assert(false);
+        return false;
+    }
+    // This invariant is valid only if it has some parents 
+    // (see "Merge parent lists": if y is empty
+    // it will stay empty, as y will not become
+    // root ...)
+    if ( count != enode_store[en_e.getRoot()].getParentSize( ) && en_e.getParent( ) != ERef_Undef ) {
+        cerr << "Parent invariant broken: "
+             << endl
+             << " wrong parent size for "
+             << e << " (" << en_e.getRoot( ) << ")"
+             << "; "
+             << endl
+             << " they should be "
+             << enode_store[en_e.getRoot( )].getParentSize( )
+             << " but they are "
+             << count
+             << endl;
+        assert(false);
+        return false;
+    }
+
+    return true;
 }
 
-bool SigTab::checkInvariantSTC( )
-{
-#ifdef BUILD_64
-  for ( HashTable::iterator it = store.begin( )
-      ; it != store.end( )
-      ; it ++ )
-  {
-    const enodeid_pair_t p = it->first;
-    Enode * x = it->second;
-#else
-  for ( unsigned first = 0 ; first < store.size( ) ; first ++ )
-  {
-    if ( store[ first ] == NULL )
-      continue;
-
-    for ( HashTable::iterator it = store[ first ]->begin( )
-	; it != store[ first ]->end( )
-	; it ++ )
-    {
-      const Pair( int ) p = make_pair( first, it->first );
-      Cell * x_cell = (it->second);
-      assert( x_cell );
-      if ( !x_cell->active )
-	continue;
-      Enode * x = x_cell->elem;
-#endif
-      assert( x );
-      assert( x->hasCongData( ) );
-      // Check that x is a congruence root
-      if ( x != x->getCgPtr( ) )
-      {
-	cerr << "STC Invariant broken: " 
-	     << x 
-	     << " is not congruence root" 
-	     << endl;
-	return false;
-      }
-      if ( x->getSig( ) != p )
-      {
-	cerr << "x root: " << x->getRoot( ) << endl;
-	cerr << "x root car: " << x->getRoot( )->getCar( ) << endl;
-	cerr << "x root car root: " << x->getRoot( )->getCar( )->getRoot( ) << endl;
-	cerr << "x->getCar( ): " << x->getCar( )->getId( ) << endl;
-	cerr << "STC Invariant broken: "
-	     << x
-	     << " signature is wrong."
-	     << " It is " 
-	     << "(" << x->getSigCar( )
-	     << ", " << x->getSigCdr( )
-	     << ") instead of ("
-#ifdef BUILD_64
-	     << (p>>32)
-#else
-	     << p.first
-#endif
-	     << ", " 
-#ifdef BUILD_64
-	     << (p & 0x00000000FFFFFFFF)
-#else
-	     << p.second
-#endif
-	     << ")"
-	     << endl;
-	return false;
-      }
-#ifndef BUILD_64
-    }
-#endif
-  }
-
-  return true;
-}
-
-bool Egraph::checkParents( Enode * e )
-{
-  assert( e->isList( ) || e->isTerm( ) );
-  const bool scdr = e->isList( );
-  Enode * p = e->getParent( );
-
-  const Enode * pstart = p;
-  int count = 0;
-  for ( ; p != NULL ; )
-  {
-    assert ( p->isTerm( ) || p->isList( ) );
-    if ( scdr && p->getCdr( )->getRoot( ) != e->getRoot( ) ) 
-    {
-      cerr << "Parent invariant broken in parents of " << e << ": "
-	   << p->getCdr( )->getRoot( )
-	   << " differs from"
-	   << e->getRoot( )
-	   << endl;
-      return false;
-    }
-    if ( !scdr && p->getCar( )->getRoot( ) != e->getRoot( ) ) 
-    {
-      cerr << "Parent invariant broken in parents of " << e << ": "
-	   << p->getCar( )->getRoot( )
-	   << " differs from "
-	   << e->getRoot( )
-	   << endl;
-      return false;
-    }
-    // Next element
-    p = scdr ? p->getSameCdr( ) : p->getSameCar( ) ;
-    // End of cycle
-    if ( p == pstart )
-      p = NULL;
-    count ++;
-  }
-  if ( e->getParent( ) == NULL 
-    && e->getParentSize( ) != 0 )
-  {
-    cerr << "Parent invariant broken: " 
-         << endl
-         << " wrong parent size for " 
-	 << e 
-	 << endl;
-    return false;
-  }
-  // This invariant is valid only if it has some parents 
-  // (see "Merge parent lists": if y is empty
-  // it will stay empty, as y will not become
-  // root ...)
-  if ( count != e->getRoot( )->getParentSize( )
-    && e->getParent( ) != NULL )
-  {
-    cerr << "Parent invariant broken: " 
-         << endl
-         << " wrong parent size for " 
-	 << e << " (" << e->getRoot( ) << ")"
-	 << "; "
-	 << endl
-	 << " they should be " 
-	 << e->getRoot( )->getParentSize( )
-	 << " but they are " 
-	 << count 
-	 << endl;
-    return false;
-  }
-
-  return true;
-}
-
+/*
 bool Egraph::checkExp ( )
 {
 #if CHECK_EXPLANATIONS
@@ -268,9 +191,9 @@ bool Egraph::checkExpReachable( Enode * x, Enode * h_x )
   return true;
 #endif
 }
-
+*/
 #endif
-
+/*
 //=============================================================================
 // Printing Routines
 
@@ -373,3 +296,4 @@ void Egraph::printParents( ostream & os, Enode * w )
       p = NULL;
   }
 }
+*/

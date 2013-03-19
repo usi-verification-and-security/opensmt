@@ -292,7 +292,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
             return tr;
         }
         else
-            tr = ptstore.lookupTerm(name, vec_empty);
+            tr = ptstore.lookupTerm(name, vec_ptr_empty);
         if (tr == PTRef_Undef)
             comment_formatted("unknown qid term %s", name);
         return tr;

@@ -9,6 +9,7 @@ class EnodeStore {
     Map<SigPair,ERef,SigHash,Equal<const SigPair&> > sig_tab;
     EnodeAllocator      ea;
     ERef                ERef_Nil;
+    vec<ERef>           enodes;
   public:
     EnodeStore() :
         ea(1024*1024, &sig_tab)
@@ -64,7 +65,15 @@ class EnodeStore {
           ERef carRoot = ea[en_e.getCar()].getRoot();
           ERef cdrRoot = ea[en_e.getCdr()].getRoot();
           assert(!containsSig(e));
-          sig_tab.insert(SigPair(ea[carRoot].getCid(), ea[cdrRoot].getCid()), en_e.getCgPtr()); }
+          sig_tab.insert(SigPair(ea[carRoot].getCid(), ea[cdrRoot].getCid()), en_e.getCgPtr());
+#ifdef PEDANTIC_DEBUG
+//          SigPair(ea[carRoot.getCid(), ea[cdrRoot].getCid()])
+#endif
+        }
+// DEBUG
+#ifdef PEDANTIC_DEBUG
+    bool checkInvariants();
+#endif
 };
 
 #endif
