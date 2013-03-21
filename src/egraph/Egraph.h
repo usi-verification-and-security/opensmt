@@ -56,6 +56,7 @@ public:
       , sym_store          ( syms )
       , term_store         ( terms )
       , logic              ( l )
+      , enode_store        ( sym_store, term_store )
       , ERef_Nil           ( enode_store.get_Nil() )
       , active_dup1        ( false )
       , active_dup2        ( false )
@@ -481,7 +482,7 @@ private:
   vec< ERef>                  neq_list;
 #endif
 
-  vec< ERef >                 exp_pending;                      // Pending explanations
+  vec< PTRef >                exp_pending;                      // Pending explanations
   vec< ERef >                 exp_undo_stack;                   // Keep track of exp_parent merges
   vec< ERef >                 exp_cleanup;                      // List of nodes to be restored
   int                         time_stamp;                       // Need for finding NCA

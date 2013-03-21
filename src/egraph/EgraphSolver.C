@@ -535,10 +535,10 @@ void Egraph::popBacktrackPoint() {
     size_t new_deductions_size = deductions_lim.last( );
     deductions_lim.pop( );
     while( deductions.size_() > new_deductions_size ) {
-        PTRef e = deductions.last();
+        PTRef tr = deductions.last();
+        ERef e = enode_store.termToERef[tr];
         Enode& en_e = enode_store[e];
         assert( en_e.isDeduced( ) );
-        en_e.rsDeduced();
         deductions.pop();
     }
     assert( deductions_next <= deductions.size_() );
@@ -548,12 +548,13 @@ void Egraph::popBacktrackPoint() {
 //
 // Returns a deduction
 //
-ERef Egraph::getDeduction( )
+PTRef Egraph::getDeduction( )
 {
   // Communicate UF deductions
   while ( deductions_next < deductions.size_( ) )
   {
-    ERef e = deductions[ deductions_next++ ];
+    PTRef tr = deductions[deductions_next++];
+    ERef e = enode_store.termToERef[tr];
     Enode& en_e = enode_store[e];
     // For sure this has a deduced polarity
     assert( en_e.isDeduced( ) );
@@ -567,22 +568,23 @@ ERef Egraph::getDeduction( )
 //    tsolvers_stats[ index ]->deductions_sent ++;
 #endif
 
-    return e;
+    return tr;
   }
 
   // We have already returned all the possible deductions
-  return ERef_Undef;
+  return PTRef_Undef;
 }
 
 //
 // Returns a suggestion
 //
-ERef Egraph::getSuggestion( )
+PTRef Egraph::getSuggestion( )
 {
   // Communicate suggestion
   while ( !suggestions.size() == 0 )
   {
-    ERef e = suggestions.last();
+    PTRef tr = suggestions.last();
+    ERef e = enode_store.termToERef[tr];
     suggestions.pop();
     Enode& en_e = enode_store[e];
     if ( en_e.hasPolarity( ) )
@@ -590,12 +592,12 @@ ERef Egraph::getSuggestion( )
     if ( en_e.isDeduced( ) )
       continue;
 
-    return e;
+    return tr;
   }
 
   // We have already returned all
   // the possible suggestions
-  return ERef_Undef;
+  return PTRef_Undef;
 }
 
 //
@@ -824,7 +826,7 @@ Enode * Egraph::getInterpolants( logic_t & l )
 #endif
 
 lbool Egraph::addEquality(PTRef term, bool val) {
-    printf("asserting equality %s %s\n", val == true ? "true" : "false", term_store.printTerm(term));
+//    printf("asserting equality %s %s\n", val == true ? "true" : "false", term_store.printTerm(term));
     Pterm& t = term_store[term];
     assert( logic.isEquality(t.symb()) | logic.isDisequality(t.symb()) );
     // In general we don't want to put the Boolean equalities to UF
@@ -870,10 +872,15 @@ lbool Egraph::addEquality(PTRef term, bool val) {
                 assert( checkInvariants( ) );
 #endif
             }
+#ifndef PEDANTIC_DEBUG
             enode_store.addTerm(sym, cdr, tr);
-#ifdef PEDANTIC_DEBUG
-            assert( checkParents( ) );
+#else
+            ERef tr_new = enode_store.addTerm(sym, cdr, tr);
+            assert( checkParents( tr_new ) );
             assert( checkInvariants( ) );
+//            cerr << "Conversion done:" << endl
+//                 << term_store.printTerm(tr) << endl
+//                 << enode_store.printEnode(tr_new) << endl;
 #endif
         }
     }
@@ -1002,14 +1009,14 @@ bool Egraph::mergeLoop( PTRef reason )
           // We need explaining
           //
           // 1. why p and p->constant are equal
-          exp_pending.push( p );
+          exp_pending.push( en_p.getTerm() );
           exp_pending.push( en_proot.getTerm() );
           // 2. why q and q->constant are equal
-          exp_pending.push( q );
+          exp_pending.push( en_q.getTerm() );
           exp_pending.push( en_qroot.getTerm() );
           // 3. why p and q are equal
-          exp_pending.push( q );
-          exp_pending.push( p );
+          exp_pending.push( en_q.getTerm() );
+          exp_pending.push( en_p.getTerm() );
 
           initDup1( );
 //          expExplain( );
@@ -1068,8 +1075,8 @@ bool Egraph::mergeLoop( PTRef reason )
 //          reason_1 = enode_store.termToERef[pt_reason[0]];
 //          reason_2 = enode_store.termToERef[pt_reason[1]];
 
-          assert( reason_1 != PTRef_Undef );
-          assert( reason_2 != PTRef_Undef );
+          assert( reason_1 != ERef_Undef );
+          assert( reason_2 != ERef_Undef );
 
 #if VERBOSE
           cerr << "Reason is neg equality: " << reason << endl;
@@ -1187,7 +1194,7 @@ bool Egraph::assertDist( ERef d, ERef r )
         enodeid_t root_id = enode_store[en_e.getRoot()].getId();
         if ( root_to_enode.contains(root_id) ) {
             // Two equivalent nodes in the same distinction. Conflict
-            explanation.push(r);
+            explanation.push(enode_store[r].getTerm());
             // Extract the other node with the same root
             ERef p = root_to_enode[root_id];
             // Check condition
@@ -1273,9 +1280,9 @@ void Egraph::backtrackToStackSize ( size_t size ) {
             initialized.erase( en_e.getId( ) );
             assert( initialized.find( en_e.getId( ) ) == initialized.end( ) );
             // Remove parents info
-            if ( en_e.isList( ) )
-                enode_store.removeParent( car, e );
-            enode_store.removeParent( cdr, e );
+//            if ( en_e.isList( ) )
+//                enode_store.removeParent( car, e );
+//            enode_store.removeParent( cdr, e );
 
             // Deallocate congruence data
             // This sounds like a huge overhead!
@@ -1301,8 +1308,8 @@ void Egraph::backtrackToStackSize ( size_t size ) {
             assert( en_e.isTerm( ) || en_e.isList( ) );
             ERef car = en_e.getCar( );
             ERef cdr = en_e.getCdr( );
-            assert( car );
-            assert( cdr );
+            assert( car != ERef_Nil );
+            assert( cdr != ERef_Nil );
 
             // Node must be there if its a congruence
             // root and it has to be removed
@@ -1317,9 +1324,9 @@ void Egraph::backtrackToStackSize ( size_t size ) {
             }
 
             // Remove Parent info
-            if ( en_e.isList( ) )
-                enode_store.removeParent( car, e );
-            enode_store.removeParent( cdr, e );
+//            if ( en_e.isList( ) )
+//                enode_store.removeParent( car, e );
+//            enode_store.removeParent( cdr, e );
             // Remove initialization
             assert( initialized.find( en_e.getId( ) ) != initialized.end( ) );
             initialized.erase( en_e.getId( ) );
@@ -1437,6 +1444,9 @@ void Egraph::backtrackToStackSize ( size_t size ) {
 void Egraph::merge ( ERef x, ERef y )
 {
 #ifdef PEDANTIC_DEBUG
+//    cerr << "Asserting equality of the following enodes: " << endl
+//         << enode_store.printEnode(x) << endl
+//         << enode_store.printEnode(y) << endl;
     assert( checkParents( x ) );
     assert( checkParents( y ) );
     assert( checkInvariants( ) );
@@ -1522,7 +1532,7 @@ void Egraph::merge ( ERef x, ERef y )
 
     ERef v = y;
     const ERef vstart = v;
-    for (;;) {
+    while (true) {
         Enode& en_v = enode_store[v];
         en_v.setRoot(x);
         v = en_v.getNext();
@@ -1547,6 +1557,7 @@ void Egraph::merge ( ERef x, ERef y )
 
     // Insert new signatures and propagate congruences
     p = en_w.getParent();
+    int n_roots = 0;
     for ( ; p != ERef_Undef; ) {
         Enode& en_p = enode_store[p];
         // If p is a congruence root
@@ -1730,14 +1741,16 @@ void Egraph::undoMerge( ERef y )
 
     // Assign w to the smallest parent class
     ERef w = en_x.getParentSize( ) < en_y.getParentSize( ) ? x : y ;
+    assert(w != ERef_Undef);
     Enode& en_w = enode_store[w];
     // Undoes the insertion of the modified signatures
     ERef p = en_w.getParent( );
     const ERef pstart = p;
-    // w might be NULL, i.e. it may not have fathers
+    // w might be NULL, i.e. it may not have fathers (hmm, checked for ERef_Undef above)
     const bool scdr = w == ERef_Undef ? false : en_w.isList( );
 
-    for ( ; p != ERef_Undef ; ) {
+    if (p == ERef_Undef) goto skip_cgroot_sig_removal;
+    while (true) {
         Enode& en_p = enode_store[p];
         assert( en_p.isTerm( ) || en_p.isList( ) );
         // If p is a congruence root
@@ -1749,8 +1762,9 @@ void Egraph::undoMerge( ERef y )
         p = scdr ? en_p.getSameCdr( ) : en_p.getSameCar( ) ;
         // End of cycle
         if ( p == pstart )
-            p = ERef_Undef;
+            break;
     }
+skip_cgroot_sig_removal:
     // Restore the size of x's class
     en_x.setSize( en_x.getSize( ) - en_y.getSize( ) );
     // Unsplice next lists
@@ -1760,7 +1774,7 @@ void Egraph::undoMerge( ERef y )
     // Reroot each node of y's eq class back to y
     ERef v = y;
     const ERef vstart = v;
-    for (;;) {
+    while (true) {
         Enode& en_v = enode_store[v];
         en_v.setRoot( y );
         v = en_v.getNext( );
@@ -1776,7 +1790,8 @@ void Egraph::undoMerge( ERef y )
     // Reinsert back signatures that have been removed during
     // the merge operation
     p = en_w.getParent( );
-    for ( ; p != ERef_Undef; ) {
+    if (p == ERef_Undef) goto skip_signature_removal;
+    while (true) {
         Enode& en_p = enode_store[p];
         assert( en_p.isTerm( ) || en_p.isList( ) );
 
@@ -1787,29 +1802,38 @@ void Egraph::undoMerge( ERef y )
             || enode_store[en_p.getCar()].getRoot() != enode_store[en_cg.getCar()].getRoot()
             || enode_store[en_p.getCdr()].getRoot() != enode_store[en_cg.getCdr()].getRoot() )
         {
+            en_p.setCgPtr(p);
+        }
+        if (en_p.getCgPtr() == p) {
+#ifdef PEDANTIC_DEBUG
+            if (enode_store.containsSig(p)) {
+                cerr << enode_store.printEnode(p);
+                assert(false);
+            }
+#else
             assert(!enode_store.containsSig(p));
+#endif
             enode_store.insertSig(p);
             // remove all guests now that the signature has changed
             if (en_p.isTerm() && enode_store.ERefToTerms[p].size() > 1) {
                 vec<PTRef>& guests = enode_store.ERefToTerms[p];
-                printf("Removing guests from enode %d\n", p);
+                printf("Removing guests from enode %d\n", p.x);
                 for (int i = 1; i < guests.size(); i++) {
                     enode_store.termToERef.remove(guests[i]);
-                    printf("  %s (%d)\n", term_store.printTerm(guests[i]), guests[i]);
+                    printf("  %s (%d)\n", term_store.printTerm(guests[i]), guests[i].x);
                 }
                 guests.shrink(guests.size()-1);
             }
 //      (void)res; // Huh?
 //            assert( res == p );
-            en_p.setCgPtr( p );
         }
         // Next element
         p = scdr ? en_p.getSameCdr( ) : en_p.getSameCar();
         // End of cycle
         if ( p == pstart )
-        p = ERef_Undef;
+            break;
     }
-
+skip_signature_removal:
     // Restore distinction classes for x, with a set difference operation
     en_x.setDistClasses( ( en_x.getDistClasses() & ~(en_y.getDistClasses())) );
 

@@ -5,7 +5,7 @@ ERef Enode::ERef_Nil;
 
 //struct ELRef ELRef_Undef = { INT32_MAX };
 
-Enode::Enode(SymRef tr_, ERef er_) : tr(tr_), er(er_) {
+Enode::Enode(SymRef tr_, ERef er_) : symb(tr_), er(er_) {
     header.type = et_symb;
     cid = cgid_ctr++;
 }
@@ -60,6 +60,10 @@ Enode::Enode(ERef car_, ERef cdr_,
         if (y_cgd.parent == ERef_Undef) {
             y_cgd.parent = er;
             cgd.same_cdr = er;
+        }
+        else {
+            cgd.same_cdr = ea[y_cgd.parent].cgdata->same_cdr;
+            ea[y_cgd.parent].cgdata->same_cdr = er;
         }
         y_cgd.parent_size++;
     }

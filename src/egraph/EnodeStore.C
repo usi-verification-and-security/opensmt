@@ -3,6 +3,7 @@
 
 ERef EnodeStore::addSymb(SymRef t) {
     ERef rval;
+    assert(t != SymRef_Undef);
     if (symToERef.contains(t))
         rval = symToERef[t];
     else {
@@ -36,7 +37,8 @@ ERef EnodeStore::addTerm(ERef sr, ERef args, PTRef term) {
             rval = lookupSig(sr, args);
             termToERef.insert(term, rval);
             ERefToTerms[rval].push(term);
-            printf("letting %d to point to %d\n", term, rval);
+//            cerr << "letting " << term_store.printTerm(term)
+//                 << " point to %s" << printEnode(rval) << endl;
 //            assert(false); // XXX push to the undo stack
         }
         else {
@@ -109,6 +111,88 @@ void EnodeStore::removeParent(ERef n, ERef p) {
 }
 
 // DEBUG
+
+std::string EnodeStore::printEnode(ERef e) {
+    Enode& en = ea[e];
+    std::stringstream s;
+    s <<         "+=============================================" << endl;
+    if (en.isTerm()) {
+        s <<     "| Term enode (" << term_store.printTerm(en.getTerm()) << ")" << endl
+          <<     "+---------------------------------------------" << endl
+          <<     "|  - Reference : " << e.x << endl
+          <<     "|  - Symb Enode: " << en.getCar().x  << endl
+          <<     "|  - List Enode: " << en.getCdr().x  << endl
+          <<     "|  - root      : " << en.getRoot().x << endl
+          <<     "|  - congruence: " << en.getCid()    << endl
+          <<     "|  - root cong.: " << ea[en.getRoot()].getCid() << endl
+          <<     "|  - cong. ptr : " << en.getCgPtr().x<< endl
+          <<     "+---------------------------------------------" << endl;
+    }
+
+    else if (en.isList()) {
+        s <<     "| List enode                                 |" << endl
+          <<     "+--------------------------------------------+" << endl
+          <<     "|  - Reference : " << e.x << endl
+          <<     "|  - Car       : " << en.getCar().x  << endl
+          <<     "|  - Cdr       : " << en.getCdr().x  << endl
+          <<     "|  - root      : " << en.getRoot().x << endl
+          <<     "|  - congruence: " << en.getCid()    << endl
+          <<     "|  - root cong.: " << ea[en.getRoot()].getCid() << endl
+          <<     "|  - cong. ptr : " << en.getCgPtr().x<< endl
+          <<     "+--------------------------------------------+" << endl;
+    }
+
+    else if (en.isSymb()) {
+        s <<     "| Symb enode (" << sym_store.getName(en.getSymb()) << ")" << endl
+          <<     "+---------------------------------------------" << endl
+          <<     "|  - Reference: " << e.x << endl
+          <<     "+=============================================" << endl;
+    }
+    if (!en.isSymb()) {
+        s <<     "|  - Number of parents: " << ea[en.getRoot()].getParentSize() << endl
+          <<     "|    ";
+        ERef parent_start = en.getParent();
+        ERef parent = parent_start;
+        int pcount = 0;
+        if (parent_start == ERef_Undef) { s << endl; goto skip; }
+        if (en.isTerm()) {
+            while (true) {
+                pcount ++;
+                s << parent.x << " ";
+                parent = ea[parent].getSameCar();
+                if (parent == parent_start) break;
+            }
+        }
+        else if (en.isList()) {
+            ERef parent_start = en.getParent();
+            ERef parent = parent_start;
+            while (true) {
+                pcount ++;
+                s << parent.x << " ";
+                parent = ea[parent].getSameCdr();
+                if (parent == parent_start) break;
+            }
+        }
+        if (pcount != ea[en.getRoot()].getParentSize())
+            s << "parent count mismatch!";
+        s << endl;
+skip:
+        if (en.isTerm()) {
+            s << printEnode(en.getCar()) << endl;
+            ERef cdr = en.getCdr();
+            if (cdr != ERef_Nil) {
+                s << printEnode(cdr) << endl;
+            }
+        }
+        else if (en.isList()) {
+            s << printEnode(en.getCar());
+            if (en.getCdr() != ERef_Nil)
+                s << printEnode(en.getCdr());
+        }
+    }
+    return s.str();
+}
+
 #ifdef PEDANTIC_DEBUG
 bool EnodeStore::checkInvariants( )
 {
@@ -126,7 +210,7 @@ bool EnodeStore::checkInvariants( )
         // such that x is a binary E/node that is a congruence root
         if ( root != en_r.getCgPtr() ) {
             cerr << "STC Invariant broken: "
-                 << root
+                 << root.x
                  << " is not congruence root"
                  << endl;
             assert(false);

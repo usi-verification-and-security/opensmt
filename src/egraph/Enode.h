@@ -33,7 +33,15 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 #include "CgTypes.h"
 #include "SigMap.h"
 
-typedef RegionAllocator<uint32_t>::Ref ERef;
+//typedef RegionAllocator<uint32_t>::Ref ERef;
+
+struct ERef {
+    uint32_t x;
+    void operator= (uint32_t v) { x = v; }
+    inline friend bool operator== (const ERef& a1, const ERef& a2) {return a1.x == a2.x; }
+    inline friend bool operator!= (const ERef& a1, const ERef& a2) {return a1.x != a2.x; }
+};
+static struct ERef ERef_Undef = {INT32_MAX};
 
 //
 // Data structure used to store forbid lists
@@ -71,7 +79,6 @@ class CgData {
 
 class EnodeAllocator;
 
-static ERef const ERef_Undef = RegionAllocator<uint32_t>::Ref_Undef;
 typedef uint32_t CgId;
 
 class Enode
@@ -83,7 +90,7 @@ class Enode
         unsigned reloced    : 1;
         unsigned unused     : 29; } header;
 
-    SymRef      tr;     // The symbol (if this is a symbol node) -- not sure this is necessary?
+    SymRef      symb;     // The symbol (if this is a symbol node) -- not sure this is necessary?
     PTRef       pterm;  // The proper term (if this is a term node)
     uint32_t    id;
     ERef        er;     // Either my tref or reference to the relocated one
@@ -142,7 +149,7 @@ public:
     bool  isDeduced     ()        const { return is_deduced; }
     void  rsDeduced     ()              { is_deduced = false; }
     bool  hasPolarity   ()        const { return has_polarity; }
-    SymRef  getSym        ()        const { assert(type() == et_symb); return tr; }
+    SymRef getSymb      ()        const { assert(type() == et_symb); return symb; }
     PTRef getTerm       ()        const { assert(type() != et_symb); return pterm; }
     ERef  getRoot       ()        const { if (type() == et_symb) return er; else return cgdata->root; }
     void  setRoot       (ERef r)        { assert(type() != et_symb); cgdata->root = r; }
@@ -166,7 +173,7 @@ public:
 
     ERef  getNext       ()        const { return cgdata->next; }
     void  setNext       (ERef n)        { cgdata->next = n; }
-    ERef  getSize       ()        const { return cgdata->size; }
+    int   getSize       ()        const { return cgdata->size; }
     void  setSize       (int i)         { cgdata->size = i; }
 
     void  setDistClasses( const dist_t& d) { cgdata->dist_classes = d; }
@@ -178,8 +185,8 @@ public:
 
 
 struct ERefHash {
-    uint32_t operator () (const ERef s) const {
-        return (uint32_t)s; }
+    uint32_t operator () (const ERef& s) const {
+        return (uint32_t)s.x; }
 };
 
 // FIXME I really need the abstraction here... Make [A-Z]Ref a class!
@@ -209,7 +216,9 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
     ERef alloc(SymRef sym) {
         assert(sizeof(SymRef)     == sizeof(uint32_t));
         assert(sizeof(ERef)     == sizeof(uint32_t));
-        ERef eid = RegionAllocator<uint32_t>::alloc(enodeWord32Size(false));
+        uint32_t v = RegionAllocator<uint32_t>::alloc(enodeWord32Size(false));
+        ERef eid;
+        eid.x = v;
         Enode* tmp = new (lea(eid)) Enode(sym, eid);
         tmp->header.type = Enode::et_symb;
         return eid;
@@ -222,7 +231,9 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
         assert(sizeof(ERef)     == sizeof(uint32_t));
 
         bool has_cgdata = (t == Enode::et_list) || (t == Enode::et_term);
-        ERef eid = RegionAllocator<uint32_t>::alloc(enodeWord32Size(has_cgdata));
+        uint32_t v = RegionAllocator<uint32_t>::alloc(enodeWord32Size(has_cgdata));
+        ERef eid;
+        eid.x = v;
         Enode* tmp = new (lea(eid)) Enode(car, cdr, t, *this, eid, *sig_tab);
         tmp->header.type = t;
         tmp->pterm = ptr;
@@ -235,11 +246,11 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
     }
 
     // Deref, Load Effective Address (LEA), Inverse of LEA (AEL):
-    Enode&       operator[](Ref r)         { return (Enode&)RegionAllocator<uint32_t>::operator[](r); }
-    const Enode& operator[](Ref r) const   { return (Enode&)RegionAllocator<uint32_t>::operator[](r); }
-    Enode*       lea       (Ref r)         { return (Enode*)RegionAllocator<uint32_t>::lea(r); }
-    const Enode* lea       (Ref r) const   { return (Enode*)RegionAllocator<uint32_t>::lea(r); }
-    Ref          ael       (const Enode* t){ return RegionAllocator<uint32_t>::ael((uint32_t*)t); }
+    Enode&       operator[](ERef r)         { return (Enode&)RegionAllocator<uint32_t>::operator[](r.x); }
+    const Enode& operator[](ERef r) const   { return (Enode&)RegionAllocator<uint32_t>::operator[](r.x); }
+    Enode*       lea       (ERef r)         { return (Enode*)RegionAllocator<uint32_t>::lea(r.x); }
+    const Enode* lea       (ERef r) const   { return (Enode*)RegionAllocator<uint32_t>::lea(r.x); }
+    ERef         ael       (const Enode* t) { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); ERef rf; rf.x = r; return rf; }
 
     void free(ERef eid)
     {
@@ -272,11 +283,11 @@ class Elist
     friend class ELAllocator;
 
 public:
-    ERef     reason;                // Reason for this distinction
+    PTRef    reason;                   // Reason for this distinction
     union    { ERef e; ELRef rel_e; }; // Enode that differs from this, or the reference where I was relocated
     ELRef    link;                     // Link to the next element in the list
-    Elist(ERef e_, ERef r) : rlcd(false), reason(r), e(e_), link(ELRef_Undef) {}
-    Elist* Elist_new(ERef e_, ERef r) {
+    Elist(ERef e_, PTRef r) : rlcd(false), reason(r), e(e_), link(ELRef_Undef) {}
+    Elist* Elist_new(ERef e_, PTRef r) {
         assert(sizeof(ELRef) == sizeof(uint32_t));
         size_t sz = sizeof(ELRef) + 2*sizeof(ERef);
         void* mem = malloc(sz);
@@ -293,7 +304,7 @@ public:
 
     void moveTo(ELAllocator& to) {
         RegionAllocator<uint32_t>::moveTo(to); }
-    ELRef alloc(ERef e, ERef r) {
+    ELRef alloc(ERef e, PTRef r) {
         assert(sizeof(ERef) == sizeof(uint32_t));
         uint32_t v = RegionAllocator<uint32_t>::alloc(elistWord32Size());
         ELRef elid;

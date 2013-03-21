@@ -249,7 +249,7 @@ bool Cnfizer::deMorganize( PTRef formula
                 Pterm& conj_t  = ptstore[conj_tr];
 
                 if (isLit(conj_tr)) {
-                    clause.push(~toLit(conj_tr));
+                    clause.push(~tmap.getLit(conj_tr));
                 }
                 else if (conj_t.symb() == logic.getSym_and())
                     to_process.push(conj_tr);

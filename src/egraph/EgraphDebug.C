@@ -61,19 +61,19 @@ bool Egraph::checkParents( ERef e )
     for ( ; p != ERef_Undef ; ) {
         assert ( enode_store[p].isTerm( ) || enode_store[p].isList( ) );
         if ( scdr && enode_store[enode_store[p].getCdr()].getRoot( ) != en_e.getRoot( ) ) {
-            cerr << "Parent invariant broken in parents of " << e << ": "
-                 << enode_store[enode_store[p].getCdr()].getRoot( )
+            cerr << "Parent invariant broken in parents of " << e.x << ": "
+                 << enode_store[enode_store[p].getCdr()].getRoot().x
                  << " differs from"
-                 << en_e.getRoot()
+                 << en_e.getRoot().x
                  << endl;
             assert(false);
             return false;
         }
         if ( !scdr && enode_store[enode_store[p].getCar( )].getRoot( ) != en_e.getRoot( ) ) {
-            cerr << "Parent invariant broken in parents of " << e << ": "
-                 << enode_store[enode_store[p].getCar()].getRoot( )
+            cerr << "Parent invariant broken in parents of " << e.x << ": "
+                 << enode_store[enode_store[p].getCar()].getRoot( ).x
                  << " differs from "
-                 << en_e.getRoot( )
+                 << en_e.getRoot( ).x
                  << endl;
             assert(false);
             return false;
@@ -89,7 +89,7 @@ bool Egraph::checkParents( ERef e )
         cerr << "Parent invariant broken: " 
              << endl
              << " wrong parent size for " 
-             << e
+             << e.x
              << endl;
         assert(false);
         return false;
@@ -102,7 +102,8 @@ bool Egraph::checkParents( ERef e )
         cerr << "Parent invariant broken: "
              << endl
              << " wrong parent size for "
-             << e << " (" << en_e.getRoot( ) << ")"
+             << e.x << " (" << en_e.getRoot( ).x << ")"
+             << "(" << enode_store.printEnode(e) << ")"
              << "; "
              << endl
              << " they should be "

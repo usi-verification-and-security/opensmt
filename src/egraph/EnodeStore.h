@@ -3,16 +3,22 @@
 
 #include "Enode.h"
 #include "Symbol.h"
-#include "Pterm.h"
+#include "PtStore.h"
 
 class EnodeStore {
+    SymStore&      sym_store;
+    PtStore&       term_store;
     Map<SigPair,ERef,SigHash,Equal<const SigPair&> > sig_tab;
-    EnodeAllocator      ea;
-    ERef                ERef_Nil;
-    vec<ERef>           enodes;
+    EnodeAllocator ea;
+    ERef           ERef_Nil;
+#ifdef PEDANTIC_DEBUG
+    vec<ERef>      enodes;
+#endif
   public:
-    EnodeStore() :
-        ea(1024*1024, &sig_tab)
+    EnodeStore(SymStore& syms, PtStore& terms) :
+        sym_store(syms)
+      , term_store(terms)
+      , ea(1024*1024, &sig_tab)
       , ERef_Nil(ea.alloc(SymRef_Undef))
         { Enode::ERef_Nil = ERef_Nil; } // Nil is a symbol.  Is this right?
     ERef addTerm(ERef sym, ERef args, PTRef pt);
@@ -27,6 +33,7 @@ class EnodeStore {
     VecMap<ERef,PTRef,ERefHash,Equal<ERef> > ERefToTerms;
 
     void removeParent(ERef, ERef);
+    std::string printEnode(ERef);
 
 //    inline const SigPair& getSig(ERef e) const
 //        { const Enode& en_e = ea[e];
