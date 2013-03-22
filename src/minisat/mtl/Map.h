@@ -292,7 +292,8 @@ class VecMap {
         int j = 0;
         for (; j < ps.size() && !equals(ps[j].key, k); j++);
         assert(j < ps.size());
-        ps[j] = ps.last();
+        ps[j].key = ps.last().key;
+        ps.last().data.copyTo(ps[j].data);
         ps.pop();
         size--;
     }

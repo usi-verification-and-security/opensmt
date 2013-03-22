@@ -864,18 +864,39 @@ lbool Egraph::addEquality(PTRef term, bool val) {
             ERef sym = enode_store.addSymb(tm.symb());
             ERef cdr = ERef_Nil;
             for (int j = tm.size()-1; j >= 0; j--) {
+#ifdef PEDANTIC_DEBUG
+                assert( checkParents(cdr) );
+#endif
                 ERef car = enode_store.termToERef[tm[j]];
-                cdr = enode_store.cons(car, cdr);
+#ifdef PEDANTIC_DEBUG
+                ERef prev_cdr = cdr;
+                if (cdr.x == 183 && car.x == 468) {
+                    cerr << enode_store.printEnode(car);
+                    cerr << enode_store.printEnode(cdr);
+                }
+                if (enode_store[car].getRoot() != car) {
+                    cerr << "Running cons on non-root car" << endl;
+                }
+                if (enode_store[cdr].getRoot() != cdr) {
+                    cerr << "Running cons on non-root cdr" << endl;
+                }
+#endif
+                cdr = enode_store.addList(car, cdr, undo_stack_oper.size());
 #ifdef PEDANTIC_DEBUG
                 assert( checkParents( car ) );
+                if (enode_store[car].getRoot() != car)
+                    assert( checkParents( enode_store[car].getRoot() ) );
+                assert( checkParents( prev_cdr ) );
+                if (enode_store[prev_cdr].getRoot() != prev_cdr)
+                    assert( checkParents( enode_store[prev_cdr].getRoot() ) );
                 assert( checkParents( cdr ) );
                 assert( checkInvariants( ) );
 #endif
             }
 #ifndef PEDANTIC_DEBUG
-            enode_store.addTerm(sym, cdr, tr);
+            enode_store.addTerm(sym, cdr, tr, undo_stack_oper.size());
 #else
-            ERef tr_new = enode_store.addTerm(sym, cdr, tr);
+            ERef tr_new = enode_store.addTerm(sym, cdr, tr, undo_stack_oper.size() );
             assert( checkParents( tr_new ) );
             assert( checkInvariants( ) );
 //            cerr << "Conversion done:" << endl
@@ -1244,6 +1265,26 @@ void Egraph::backtrackToStackSize ( size_t size ) {
         undo_stack_term.pop();
 
         if ( last_action == MERGE ) {
+            // Remove equality dependent conses that occurred after this
+            // merge was performed.
+            if (enode_store.eq_dep_conses.contains(e)) {
+                vec<EqDepId>& eq_deps = enode_store.eq_dep_conses[e];
+                int removed = 0;
+                for (int i = eq_deps.size() - 1; i >= 0; i++) {
+                    EqDepId& edi = eq_deps[i];
+                    if (edi.level > undo_stack_oper.size()) {
+                        if (enode_store[edi.node].isList())
+                            enode_store.undoList(edi.node);
+                        else if (enode_store[edi.node].isTerm())
+                            enode_store.undoTerm(edi.node);
+                        else
+                            assert(false);
+                        removed++;
+                    }
+                    else break;
+                }
+                eq_deps.shrink(removed);
+            }
             undoMerge( e );
             if ( en_e.isTerm( ) ) {
 //                expRemoveExplanation( );
@@ -1557,7 +1598,6 @@ void Egraph::merge ( ERef x, ERef y )
 
     // Insert new signatures and propagate congruences
     p = en_w.getParent();
-    int n_roots = 0;
     for ( ; p != ERef_Undef; ) {
         Enode& en_p = enode_store[p];
         // If p is a congruence root
@@ -2236,31 +2276,6 @@ PTRef Egraph::unmergeable (ERef x, ERef y)
 //  return e;
 //}
 
-//void Egraph::undoCons( Enode * e )
-//{
-//  assert( config.incremental );
-//  assert( e );
-//  assert( e->isTerm( ) || e->isList( ) );
-//  Enode * car = e->getCar( );
-//  Enode * cdr = e->getCdr( );
-//  assert( car );
-//  assert( cdr );
-//  // Node must be there
-//  assert( lookupSigTab( e ) == e );
-//  // Remove from sig_tab
-//  removeSigTab( e );
-//  // Remove Parent info
-//  if ( car->isList( ) )
-//    car->removeParent( e );
-//  if ( !cdr->isEnil( ) )
-//    cdr->removeParent( e );
-//  // Remove initialization
-//  initialized.erase( e->getId( ) );
-//  // Get rid of the correspondence
-//  id_to_enode[ e->getId( ) ] = NULL;
-//  // Erase the enode
-//  delete e;
-//}
 
 #ifdef PRODUCE_PROOF
 void Egraph::tmpMergeBegin( Enode * x, Enode * y )

@@ -22,8 +22,6 @@ Enode::Enode(ERef car_, ERef cdr_,
 
     cgdata->dist_classes = 0;
 
-//    pterm          = pt;
-
     Enode& x = ea[car];
     Enode& y = ea[cdr];
 

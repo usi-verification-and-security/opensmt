@@ -414,7 +414,7 @@ bool Interpret::checkSat(const char* cmd) {
         ts.initialize();
 //        lbool res = ts.solve();
         lbool res = l_True;
-        ts.crashTest(1000);
+        ts.crashTest(10);
         if (res == l_True) {
             notify_formatted(false, "sat");
         }

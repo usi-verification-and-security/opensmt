@@ -250,6 +250,7 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
     const Enode& operator[](ERef r) const   { return (Enode&)RegionAllocator<uint32_t>::operator[](r.x); }
     Enode*       lea       (ERef r)         { return (Enode*)RegionAllocator<uint32_t>::lea(r.x); }
     const Enode* lea       (ERef r) const   { return (Enode*)RegionAllocator<uint32_t>::lea(r.x); }
+    const Enode& dbg       (int  r) const   { return (Enode&)RegionAllocator<uint32_t>::operator[](r); }
     ERef         ael       (const Enode* t) { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); ERef rf; rf.x = r; return rf; }
 
     void free(ERef eid)

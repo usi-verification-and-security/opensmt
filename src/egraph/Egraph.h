@@ -84,8 +84,10 @@ public:
     // This is for the enode store
     ERef ers_true  = enode_store.addSymb(logic.getSym_true());
     ERef ers_false = enode_store.addSymb(logic.getSym_false());
-    ERef er_true   = enode_store.addTerm(ers_true, ERef_Nil, logic.getTerm_true());
-    ERef er_false  = enode_store.addTerm(ers_false, ERef_Nil, logic.getTerm_false());
+    ERef er_true   = enode_store.addTerm(ers_true, ERef_Nil,
+                            logic.getTerm_true(), undo_stack_oper.size());
+    ERef er_false  = enode_store.addTerm(ers_false, ERef_Nil,
+                            logic.getTerm_false(), undo_stack_oper.size());
 
     // add the term (= true false) to term store
     vec<PTRef> tmp;
@@ -342,7 +344,12 @@ private:
     Enode& en = enode_store[args];
     assert( en.isList() );
     assert( en.getArity() == 2 );
-    return enode_store.cons( enode_store[en.getCdr()].getCar(), enode_store.cons(en.getCar(), ERef_Nil) );
+    return enode_store.addList(
+            enode_store[en.getCdr()].getCar(),
+            enode_store.addList(en.getCar(),
+                                ERef_Nil,
+                                undo_stack_oper.size()),
+            undo_stack_oper.size());
   }
   //
   // Related to term creation

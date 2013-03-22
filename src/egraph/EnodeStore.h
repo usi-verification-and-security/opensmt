@@ -5,6 +5,14 @@
 #include "Symbol.h"
 #include "PtStore.h"
 
+class EqDepId {
+  public:
+    ERef node;
+    int  level;
+    EqDepId(ERef n, int l) : node(n), level(l) {}
+    EqDepId() : node(ERef_Undef), level(-1) {}
+};
+
 class EnodeStore {
     SymStore&      sym_store;
     PtStore&       term_store;
@@ -20,10 +28,15 @@ class EnodeStore {
       , term_store(terms)
       , ea(1024*1024, &sig_tab)
       , ERef_Nil(ea.alloc(SymRef_Undef))
-        { Enode::ERef_Nil = ERef_Nil; } // Nil is a symbol.  Is this right?
-    ERef addTerm(ERef sym, ERef args, PTRef pt);
+        { Enode::ERef_Nil = ERef_Nil; } // Nil is a symbol.  It should
+                                        // in theory be list, but makes no matter now
+    ERef addTerm(ERef sym, ERef args, PTRef pt, int);
     ERef addSymb(SymRef t);
-    ERef cons(ERef car, ERef cdr);
+    ERef addList(ERef car, ERef cdr, int);
+
+    void undoTerm(ERef);
+    void undoList(ERef);
+
     ERef get_Nil() const { return ERef_Nil; }
     void free(ERef er) { ea.free(er); }
     vec<ERef>           id_to_enode;
@@ -31,6 +44,7 @@ class EnodeStore {
     Map<PTRef,ERef,PTRefHash,Equal<PTRef> >  termToERef;
     Map<SymRef,ERef, SymRefHash,Equal<SymRef> >    symToERef;
     VecMap<ERef,PTRef,ERefHash,Equal<ERef> > ERefToTerms;
+    VecMap<ERef,EqDepId,ERefHash,Equal<const ERef&> > eq_dep_conses;
 
     void removeParent(ERef, ERef);
     std::string printEnode(ERef);

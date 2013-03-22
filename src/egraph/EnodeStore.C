@@ -20,7 +20,8 @@ ERef EnodeStore::addSymb(SymRef t) {
 // Here we try a clever trick to avoid having to introduce enodes to
 // terms that are in the same equivalence class with another enode
 // already inserted.
-ERef EnodeStore::addTerm(ERef sr, ERef args, PTRef term) {
+ERef EnodeStore::addTerm(ERef sr, ERef args, PTRef term, int level) {
+    assert(ea[sr].isSymb());
     ERef rval;
     if (termToERef.contains(term))
         rval = termToERef[term];
@@ -42,7 +43,22 @@ ERef EnodeStore::addTerm(ERef sr, ERef args, PTRef term) {
 //            assert(false); // XXX push to the undo stack
         }
         else {
+            bool is_edn = (ea[args].getRoot() != args);
+            if (is_edn) {
+#ifdef PEDANTIC_DEBUG
+                cerr << "Non-root args" << endl;
+#endif
+                args = ea[args].getRoot();
+            }
             rval = ea.alloc(sr, args, Enode::et_term, term);
+            if (is_edn) {
+                EqDepId edi(rval, level);
+                if (!eq_dep_conses.contains(args)) {
+                    vec<EqDepId> tmp;
+                    eq_dep_conses.insert(args, tmp);
+                }
+                eq_dep_conses[args].push(edi);
+            }
             insertSig(rval);
             termToERef.insert(term, rval);
             vec<PTRef> terms;
@@ -56,10 +72,47 @@ ERef EnodeStore::addTerm(ERef sr, ERef args, PTRef term) {
     return rval;
 }
 
-ERef EnodeStore::cons(ERef x, ERef y) {
+// Same cleverness implemented here.
+// Problem: Parent invariants are broken if x or y is not a congruence root.
+ERef EnodeStore::addList(ERef x, ERef y, int level) {
     ERef rval;
+    // This is skipped if there is a term corresponding to cons of these guys equivalence class,
+    // but goes through also in case x and y are not equivalence roots but no cons corresponding to the
+    // equivalence roots exist.
     if (!containsSig(x, y)) {
+        bool is_edn_x = (ea[x].getRoot() != x);
+        ERef old_x = x;
+        if (is_edn_x) {
+#ifdef PEDANTIC_DEBUG
+            cerr << "Non-root car" << endl;
+#endif
+            x = ea[x].getRoot();
+        }
+        bool is_edn_y = (ea[y].getRoot() != y);
+        ERef old_y = y;
+        if (is_edn_y) {
+#ifdef PEDANTIC_DEBUG
+            cerr << "Non-root cdr" << endl;
+#endif
+            y = ea[y].getRoot();
+        }
         rval = ea.alloc(x, y, Enode::et_list, PTRef_Undef);
+        if (is_edn_x) {
+            EqDepId edi(rval, level);
+            if (!eq_dep_conses.contains(old_x)) {
+                vec<EqDepId> tmp;
+                eq_dep_conses.insert(old_x, tmp);
+            }
+            eq_dep_conses[old_x].push(edi);
+        }
+        if (is_edn_y) {
+            EqDepId edi(rval, level);
+            if (!eq_dep_conses.contains(old_y)) {
+                vec<EqDepId> tmp;
+                eq_dep_conses.insert(old_y, tmp);
+            }
+            eq_dep_conses[old_y].push(edi);
+        }
         insertSig(rval);
 #ifdef PEDANTIC_DEBUG
         enodes.push(rval);
@@ -73,6 +126,125 @@ ERef EnodeStore::cons(ERef x, ERef y) {
         rval = lookupSig(x, y);
     }
     return rval;
+}
+
+// Undo a term.  Prerequisites are that the node has no parents
+// and is in a singleton equivalence class.
+void EnodeStore::undoTerm( ERef e ) {
+    assert( e != ERef_Nil );
+    assert( ea[e].isTerm() );
+    assert( ea[e].getParentSize() == 0 );
+    assert( ea[e].getNext() == e );
+
+    Enode& en = ea[e];
+    ERef car = en.getCar();
+    ERef cdr = en.getCdr();
+
+    // Node must be there
+    assert( lookupSig(e) == e );
+    // Remove from sig_tab
+    removeSig(e);
+    // Remove Parent info
+    Enode& en_car = ea[car];
+    Enode& en_cdr = ea[cdr];
+
+    assert(en_car.isSymb());
+    assert(en_cdr.isList() || cdr == ERef_Nil);
+
+    // remove e from cdr's parent list
+    if (cdr != ERef_Nil) {
+        assert(en_cdr.getParentSize() > 0);
+        int parentsz = en_cdr.getParentSize();
+        if (parentsz == 1) {
+            en_cdr.setParentSize(0);
+            en_cdr.setParent(ERef_Undef);
+        }
+        else {
+            ERef p = en_cdr.getParent();
+            ERef p_prev;
+            while (true) {
+                p_prev = p;
+                p = ea[p].getSameCdr();
+                if (p == e) break;
+            }
+            assert(p == e);
+            ea[p_prev].setSameCdr(en.getSameCdr());
+        }
+        en_cdr.setParentSize(parentsz-1);
+    }
+
+    // Get rid of the extra data
+    termToERef.remove(en.getTerm());
+    ERefToTerms.remove(e);
+    ea.free(e);
+}
+
+// Undo a list.  Prerequisites are that the node has no parents
+// and is in a singleton equivalence class.
+void EnodeStore::undoList( ERef e ) {
+    assert( e != ERef_Nil );
+    assert( ea[e].isList() );
+    assert( ea[e].getParentSize() == 0 );
+    assert( ea[e].getNext() == e );
+
+    Enode& en = ea[e];
+    ERef car = en.getCar();
+    ERef cdr = en.getCdr();
+
+    // Node must be there
+    assert( lookupSig(e) == e );
+    // Remove from sig_tab
+    removeSig(e);
+    // Remove Parent info
+    Enode& en_car = ea[car];
+    Enode& en_cdr = ea[cdr];
+
+    assert(en_car.isTerm());
+    assert(en_cdr.isList() || cdr == ERef_Nil);
+
+    // remove e from cdr's parent list
+    if (cdr != ERef_Nil) {
+        assert(en_cdr.getParentSize() > 0);
+        int parentsz = en_cdr.getParentSize();
+        if (parentsz == 1) {
+            en_cdr.setParentSize(0);
+            en_cdr.setParent(ERef_Undef);
+        }
+        else {
+            ERef p = en_cdr.getParent();
+            ERef p_prev;
+            while (true) {
+                p_prev = p;
+                p = ea[p].getSameCdr();
+                if (p == e) break;
+            }
+            assert(p == e);
+            ea[p_prev].setSameCdr(en.getSameCdr());
+        }
+        en_cdr.setParentSize(parentsz-1);
+    }
+
+    // remove e from car's parent list
+    assert(en_cdr.getParentSize() > 0);
+    int parentsz = en_car.getParentSize();
+    if (parentsz == 1) {
+        en_car.setParentSize(0);
+        en_car.setParent(ERef_Undef);
+    }
+    else {
+        ERef p = en_car.getParent();
+        ERef p_prev;
+        while (true) {
+            p_prev = p;
+            p = ea[p].getSameCar();
+            if (p == e) break;
+        }
+        assert(p == e);
+        ea[p_prev].setSameCar(en.getSameCar());
+    }
+    en_car.setParentSize(parentsz-1);
+
+    ea.free(e);
 }
 
 // p is only given as an argument for assertion checking!

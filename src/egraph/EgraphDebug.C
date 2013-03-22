@@ -51,6 +51,7 @@ bool Egraph::checkInvariants( )
 
 bool Egraph::checkParents( ERef e )
 {
+    if (e == ERef_Nil) return true;
     assert( enode_store[e].isList( ) || enode_store[e].isTerm( ) );
     Enode& en_e = enode_store[e];
     const bool scdr = en_e.isList( );
