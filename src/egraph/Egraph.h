@@ -89,6 +89,8 @@ public:
     ERef er_false  = enode_store.addTerm(ers_false, ERef_Nil,
                             logic.getTerm_false(), undo_stack_oper.size());
 
+    enode_store.ERef_True  = er_true;
+    enode_store.ERef_False = er_false;
     // add the term (= true false) to term store
     vec<PTRef> tmp;
     tmp.push(logic.getTerm_true());
@@ -421,7 +423,11 @@ private:
   // Asserting literals
   //
 public:
-  lbool   addEquality     ( PTRef, bool);
+  lbool   addDisequality  ( PTRef );
+  lbool   addEquality     ( PTRef );
+  lbool   addTrue         ( PTRef );
+  lbool   addFalse        ( PTRef );
+  lbool   addTerm         ( PTRef );
 private:
   bool    assertEq        ( ERef, ERef, PTRef );                // Asserts an equality
   bool    assertNEq       ( ERef, ERef, PTRef );                // Asserts a negated equality

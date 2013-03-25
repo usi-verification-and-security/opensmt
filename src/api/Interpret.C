@@ -199,13 +199,17 @@ declare_fun_err: ;
                 // Get the egraph data structure for instance from here
                 // Terms need to be purified before cnfization?
 //                solver.cancelUntil(0);
-                lbool state = ts.cnfizeAndGiveToSolver(tr);
+                vec<PTRef> uf_terms;
+                lbool state = ts.cnfizeAndGiveToSolver(tr, uf_terms);
                 if (state == l_Undef)
                     notify_success();
                 if (state == l_False) {
                     notify_success();
                     comment_formatted("The formula is trivially unsatisfiable");
                 }
+                for (int i = 0; i < uf_terms.size(); i++)
+                    uf_solver.addTerm(uf_terms[i]);
+
                 comment_formatted("Inserted assertion");
                 return true;
             }
@@ -412,9 +416,9 @@ bool Interpret::checkSat(const char* cmd) {
     if (logic.isSet()) {
         sat_calls++;
         ts.initialize();
-//        lbool res = ts.solve();
-        lbool res = l_True;
-        ts.crashTest(10);
+        lbool res = ts.solve();
+//        lbool res = l_True;
+//        ts.crashTest(20);
         if (res == l_True) {
             notify_formatted(false, "sat");
         }

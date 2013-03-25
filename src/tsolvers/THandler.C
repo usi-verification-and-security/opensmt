@@ -159,18 +159,21 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 // Push newly found literals from trail to egraph
 bool THandler::assertLits(vec<Lit>& trail)
 {
-    bool res = true;
+    lbool res = l_Undef;
 
     assert( checked_trail_size == stack.size_( ) );
     assert( (int)stack.size( ) <= trail.size( ) );
 
-    for ( int i = checked_trail_size ; i < trail.size( ) && res ; i ++ ) {
+    for ( int i = checked_trail_size;
+          i < trail.size( ) && (res != l_False);
+          i ++ ) {
         const Lit l = trail[ i ];
         const Var v = var( l );
 
         PTRef pt_r = tmap.varToTerm[ v ];
         stack.push( pt_r );
 
+//        printf("%s\n", logic.term_store.printTerm(pt_r));
 
         if (!tmap.varToTheorySymbol.contains(v)) continue;
         assert(logic.isTheoryTerm(pt_r));
@@ -184,8 +187,30 @@ bool THandler::assertLits(vec<Lit>& trail)
         // Push backtrack point
         egraph.pushBacktrackPoint( );
 
+        Pterm& pt = logic.term_store[pt_r];
+
         // sign(l) == true if l is negated
-        res = egraph.addEquality( pt_r, !sign(l) ) == l_Undef;
+        if (logic.isEquality(pt.symb()) && !sign(l))
+            res = egraph.addEquality(pt_r);
+
+        else if (logic.isEquality(pt.symb()) && sign(l))
+            res = egraph.addDisequality(pt_r);
+
+        else if (logic.isDisequality(pt.symb()) && !sign(l))
+            res = egraph.addDisequality(pt_r);
+
+        else if (logic.isDisequality(pt.symb()) && sign(l))
+            res = egraph.addEquality(pt_r);
+
+        else if (logic.isUP(pt_r) && !sign(l))
+            res = egraph.addTrue(pt_r);
+
+        else if (logic.isUP(pt_r) && sign(l))
+            res = egraph.addFalse(pt_r);
+
+        else
+            assert(false);
+
 
 //    if ( !res && config.certification_level > 2 )
 //      verifyCallWithExternalTool( res, i );
@@ -194,7 +219,7 @@ bool THandler::assertLits(vec<Lit>& trail)
     checked_trail_size = stack.size( );
 //  assert( !res || trail.size( ) == (int)stack.size( ) );
 
-    return res;
+    return res != l_False;
 }
 
 // Check the assignment with equality solver
@@ -373,7 +398,12 @@ void THandler::getReason( Lit l, vec< Lit > & reason )
     // Compute reason in whatever solver
 //  const bool res = egraph.assertLit( e, true ) &&
 //                   egraph.check( true );
-    lbool res = egraph.addEquality(e, sign(l));
+    lbool res = l_Undef;
+    if (!sign(l))
+        res = egraph.addEquality(e);
+    else
+        res = egraph.addDisequality(e);
+
     // Result must be false
     if ( res != l_False ) {
         cout << endl << "unknown" << endl;

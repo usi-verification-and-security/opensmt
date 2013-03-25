@@ -27,19 +27,13 @@ ERef EnodeStore::addTerm(ERef sr, ERef args, PTRef term, int level) {
         rval = termToERef[term];
     else {
         // Term's signature might be here already, and then it should
-        // join the equivalence group.  There is a bit of a challenge,
-        // however: if the term goes there as a result of an eariler
-        // asserted equality which is then undone, the entry in
-        // termToERef is invalidated.  The term should be then removed
-        // together with the undoing so that it can be reasserted.  What
-        // happens in this case to the non-allocated enode?  It will be
-        // allocated once reasserted.
+        // join the equivalence group.
         if (containsSig(sr, args)) {
             rval = lookupSig(sr, args);
             termToERef.insert(term, rval);
             ERefToTerms[rval].push(term);
-//            cerr << "letting " << term_store.printTerm(term)
-//                 << " point to %s" << printEnode(rval) << endl;
+            cerr << "letting " << term_store.printTerm(term)
+                 << " point to %s" << printEnode(rval) << endl;
 //            assert(false); // XXX push to the undo stack
         }
         else {

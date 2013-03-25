@@ -34,6 +34,7 @@ class Logic {
     SymRef              sym_NOT;
     SymRef              sym_EQ;
     SymRef              sym_IMPLIES;
+    SymRef              sym_DISTINCT;
     SymRef              sym_ITE;
     SRef                sort_BOOL;
 
@@ -60,23 +61,24 @@ class Logic {
     const string& getName          ()              const { return name;      }
 
     // The Boolean connectives
-    SymRef        getSym_true      ()              const { return sym_TRUE;   }
-    SymRef        getSym_false     ()              const { return sym_FALSE;  }
-    SymRef        getSym_and       ()              const { return sym_AND;    }
-    SymRef        getSym_or        ()              const { return sym_OR;     }
-    SymRef        getSym_xor       ()              const { return sym_XOR;    }
-    SymRef        getSym_not       ()              const { return sym_NOT;    }
-    SymRef        getSym_eq        ()              const { return sym_EQ;     }
-    SymRef        getSym_ite       ()              const { return sym_ITE;    }
-    SymRef        getSym_implies   ()              const { return sym_IMPLIES;}
-    SRef          getSort_bool     ()              const { return sort_BOOL;  }
+    SymRef        getSym_true      ()              const { return sym_TRUE;     }
+    SymRef        getSym_false     ()              const { return sym_FALSE;    }
+    SymRef        getSym_and       ()              const { return sym_AND;      }
+    SymRef        getSym_or        ()              const { return sym_OR;       }
+    SymRef        getSym_xor       ()              const { return sym_XOR;      }
+    SymRef        getSym_not       ()              const { return sym_NOT;      }
+    SymRef        getSym_eq        ()              const { return sym_EQ;       }
+    SymRef        getSym_ite       ()              const { return sym_ITE;      }
+    SymRef        getSym_implies   ()              const { return sym_IMPLIES;  }
+    SymRef        getSym_distinct  ()              const { return sym_DISTINCT; }
+    SRef          getSort_bool     ()              const { return sort_BOOL;    }
 
-    PTRef          getTerm_true    ()              const { return term_TRUE;  }
-    PTRef          getTerm_false   ()              const { return term_FALSE; };
+    PTRef         getTerm_true     ()              const { return term_TRUE;  }
+    PTRef         getTerm_false    ()              const { return term_FALSE; }
 
-    bool        isEquality    (SymRef tr) const { return equalities.contains(tr);    }
-    bool        isDisequality (SymRef tr) const { return disequalities.contains(tr); }
-    bool        isIte         (SymRef tr) const { return ites.contains(tr);          }
+    bool          isEquality       (SymRef tr)     const { return equalities.contains(tr);    }
+    bool          isDisequality    (SymRef tr)     const { return disequalities.contains(tr); }
+    bool          isIte            (SymRef tr)     const { return ites.contains(tr);          }
     // tr is a theory symbol if it is not a boolean variable, nor one of the standard
     // boolean operators (and, not, or, etc...)
     bool        isTheorySymbol(SymRef tr)    const;

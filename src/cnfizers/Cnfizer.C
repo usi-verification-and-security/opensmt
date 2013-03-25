@@ -19,29 +19,32 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 
 #include "Cnfizer.h"
 
-Cnfizer::Cnfizer( PtStore &   ptstore_
-           , SMTConfig & config_
-           , SymStore&     symstore_
-           , SStore &    sstore_
-           , Logic&      logic_
-           ) :
-       config   (config_  )
-     , sstore   (sstore_  )
+Cnfizer::Cnfizer( PtStore &      ptstore_
+                , SMTConfig&     config_
+                , SymStore&      symstore_
+                , SStore&        sstore_
+                , Logic&         logic_
+                , TermMapper&    tmap_
+                , THandler&      thandler_
+                , SimpSMTSolver& solver_
+                ) :
+       ptstore  (ptstore_ )
+     , config   (config_  )
      , symstore (symstore_)
-     , ptstore  (ptstore_ )
+     , sstore   (sstore_  )
      , logic    (logic_   )
-     , tmap     (logic    )
-     , thandler (uf_solver, config, tmap, logic)
-     , solver   (config_, thandler)
-     , uf_solver(config, sstore, symstore, ptstore, logic)
+     , tmap     (tmap_    )
+     , thandler (thandler_)
+     , solver   (solver_)
      , status   (l_Undef)
 {
     vec<Lit> c;
-    Lit l = findLit(logic.getTerm_true());
+    vec<PTRef> tmp;
+    Lit l = findLit(logic.getTerm_true(), tmp);
     c.push(l);
     solver.addSMTClause(c);
     c.pop();
-    l = findLit(logic.getTerm_false());
+    l = findLit(logic.getTerm_false(), tmp);
     c.push(~l);
     solver.addSMTClause(c);
 }
@@ -78,7 +81,7 @@ bool Cnfizer::isAtom(PTRef r) const {
 
 // Extracts the literal corresponding to a term.
 // Accepts negations.
-const Lit Cnfizer::findLit(PTRef ptr) {
+const Lit Cnfizer::findLit(PTRef ptr, vec<PTRef>& uf_terms) {
     PTRef p;
     bool sgn;
     Var v;
@@ -97,13 +100,23 @@ const Lit Cnfizer::findLit(PTRef ptr) {
 
     if (isnew) {
         if (logic.isTheoryTerm(p)) {
-            // special case for Uninterpreted Predicates: insert an equality.
-            // Implement here!
-            if (logic.isUP(p))
-                p = logic.lookupUPEq(p);
-
-            tmap.varToTheorySymbol.insert(v, ptstore[p].symb());
+            Pterm& tr = ptstore[p];
+            tmap.varToTheorySymbol.insert(v, tr.symb());
             tmap.theoryTerms.insert(p,true);
+            assert(logic.isEquality(tr.symb())        ||
+                   logic.isDisequality(tr.symb())     ||
+                   logic.getTerm_true() == p          ||
+                   logic.getTerm_false() == p         ||
+                   logic.isUP(p)                      );
+            if (logic.isUP(p))
+                uf_terms.push(p);
+            else {
+                for (int i = 0; i < tr.size(); i++) {
+                    if (logic.isTheoryTerm(tr[i])) {
+                        uf_terms.push(tr[i]);
+                     }
+                }
+            }
         }
         tmap.termToVar.insert(p, v);
         tmap.varToTerm.insert(v, p);
@@ -151,7 +164,8 @@ bool Cnfizer::isNPAtom(PTRef r, PTRef& p) const {
 //
 // Main Routine. Examine formula and give it to the solver
 //
-lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula
+lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula,
+                                      vec<PTRef>& uf_terms
 #ifdef PRODUCE_PROOF
                                     , const ipartitions_t partition
 #endif
@@ -197,7 +211,7 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula
 //      map< enodeid_t, int > enodeid_to_incoming_edges;
 //      computeIncomingEdges( f, enodeid_to_incoming_edges ); // Compute incoming edges for f and children
 //      f = rewriteMaxArity( f, enodeid_to_incoming_edges );  // Rewrite f with maximum arity for operators
-        res = cnfize(f //, cnf_cache
+        res = cnfize(f, uf_terms //, cnf_cache
 #ifdef PRODUCE_PROOF
                     , partition
 #endif
@@ -637,7 +651,7 @@ bool Cnfizer::checkPureConj(PTRef e, Map<PTRef,bool,PTRefHash,Equal<PTRef> > & c
 //
 // Give the formula to the solver
 //
-bool Cnfizer::giveToSolver( PTRef f
+bool Cnfizer::giveToSolver( PTRef f, vec<PTRef>& uf_terms
 #ifdef PRODUCE_PROOF
                           , const ipartitions_t & partition
 #endif
@@ -649,7 +663,7 @@ bool Cnfizer::giveToSolver( PTRef f
     // A unit clause
     //
     if (isLit(f)) {
-        clause.push(findLit(f));
+        clause.push(findLit(f, uf_terms));
 #ifdef PRODUCE_PROOF
         if ( config.produce_inter != 0 )
             return solver.addSMTClause( clause, partition );
@@ -664,7 +678,7 @@ bool Cnfizer::giveToSolver( PTRef f
     if (cand_t.symb() == logic.getSym_or()) {
         for (int i = 0; i < cand_t.size(); i ++) {
             assert(isLit(cand_t[i]));
-            clause.push(findLit(cand_t[i]));
+            clause.push(findLit(cand_t[i], uf_terms));
         }
 #ifdef PRODUCE_PROOF
         if ( config.produce_inter != 0 )
@@ -681,7 +695,7 @@ bool Cnfizer::giveToSolver( PTRef f
     retrieveTopLevelFormulae( f, conj );
     bool result = true;
     for (unsigned i = 0; i < conj.size_( ) && result; i++)
-        result = giveToSolver(conj[i]
+        result = giveToSolver(conj[i], uf_terms
 #ifdef PRODUCE_PROOF
                              , partition
 #endif

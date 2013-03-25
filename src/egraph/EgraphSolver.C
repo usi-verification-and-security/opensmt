@@ -825,19 +825,15 @@ Enode * Egraph::getInterpolants( logic_t & l )
 //}
 #endif
 
-lbool Egraph::addEquality(PTRef term, bool val) {
-//    printf("asserting equality %s %s\n", val == true ? "true" : "false", term_store.printTerm(term));
-    Pterm& t = term_store[term];
-    assert( logic.isEquality(t.symb()) | logic.isDisequality(t.symb()) );
+lbool Egraph::addTerm(PTRef term) {
+    assert( logic.isTheoryTerm(term) );
     // In general we don't want to put the Boolean equalities to UF
     // solver.  However, the Boolean uninterpreted functions are an
     // exception.
 //    assert( sym_store[t.symb()][0] != logic.getSort_bool() );
 
-    assert(t.size() == 2);
     vec<PTRef> queue;
-    queue.push(t[0]);
-    queue.push(t[1]);
+    queue.push(term);
     vec<PTRef> to_process;
 
     while (queue.size() != 0) {
@@ -870,25 +866,13 @@ lbool Egraph::addEquality(PTRef term, bool val) {
                 ERef car = enode_store.termToERef[tm[j]];
 #ifdef PEDANTIC_DEBUG
                 ERef prev_cdr = cdr;
-                if (cdr.x == 183 && car.x == 468) {
-                    cerr << enode_store.printEnode(car);
-                    cerr << enode_store.printEnode(cdr);
-                }
-                if (enode_store[car].getRoot() != car) {
-                    cerr << "Running cons on non-root car" << endl;
-                }
-                if (enode_store[cdr].getRoot() != cdr) {
-                    cerr << "Running cons on non-root cdr" << endl;
-                }
+                assert (enode_store[car].getRoot() == car);
+                assert (enode_store[cdr].getRoot() == cdr);
 #endif
                 cdr = enode_store.addList(car, cdr, undo_stack_oper.size());
 #ifdef PEDANTIC_DEBUG
                 assert( checkParents( car ) );
-                if (enode_store[car].getRoot() != car)
-                    assert( checkParents( enode_store[car].getRoot() ) );
                 assert( checkParents( prev_cdr ) );
-                if (enode_store[prev_cdr].getRoot() != prev_cdr)
-                    assert( checkParents( enode_store[prev_cdr].getRoot() ) );
                 assert( checkParents( cdr ) );
                 assert( checkInvariants( ) );
 #endif
@@ -911,18 +895,48 @@ lbool Egraph::addEquality(PTRef term, bool val) {
         cout << "All was seen" << endl;
 #endif
 
-    // Get the lhs and rhs of the (dis)equality
-    ERef eq_lhs = enode_store.termToERef[t[0]];
-    ERef eq_rhs = enode_store.termToERef[t[1]];
+    return l_Undef;
+}
 
-    bool rval;
-    if ((val == true  && logic.isEquality(t.symb())) ||
-        (val == false && logic.isDisequality(t.symb())))
-        rval = assertEq( eq_lhs, eq_rhs, term );
-    else
-        rval = assertNEq( eq_lhs, eq_rhs, term );
 
-    return rval == false ? l_False : l_Undef;
+lbool Egraph::addEquality(PTRef term) {
+    Pterm& pt = term_store[term];
+    assert(pt.size() == 2);
+
+    bool res = true;
+    PTRef e = pt[0];
+    for (int i = 1; i < pt.size() && res == true; i++)
+        res = assertEq(enode_store.termToERef[e],
+                 enode_store.termToERef[pt[i]],
+                 term );
+
+    return res == false ? l_False : l_Undef;
+}
+
+lbool Egraph::addDisequality(PTRef term) {
+    Pterm& pt = term_store[term];
+    assert(pt.size() == 2);
+
+    bool res = true;
+    PTRef e = pt[0];
+    for (int i = 1; i < pt.size() && res == true; i++)
+        res = assertNEq(enode_store.termToERef[e],
+                 enode_store.termToERef[pt[i]],
+                 term );
+
+    return res == false ? l_False : l_Undef;
+}
+
+lbool Egraph::addTrue(PTRef term) {
+    lbool res = assertEq(enode_store.termToERef[term],
+                         enode_store.getEnode_true(), term);
+    return res;
+}
+
+lbool Egraph::addFalse(PTRef term) {
+    lbool res = assertEq(enode_store.termToERef[term],
+                         enode_store.getEnode_false(), term);
+    return res;
 }
 
 //===========================================================================
@@ -1069,12 +1083,9 @@ bool Egraph::mergeLoop( PTRef reason )
           assert( reason_2 != ERef_Undef );
 //          expExplain( reason_1, reason_2, reason );
       }
-      else {
+      else if ( logic.isEquality(term_store[reason].symb()) ) {
         // The reason is a negated equality
         Pterm& pt_reason = term_store[reason];
-        assert( logic.isEquality(pt_reason.symb())
-//             || reason->isLeq( )
-             );
 
           // Hmm, the difference being?
 //          if ( config.incremental ) {
@@ -1105,7 +1116,10 @@ bool Egraph::mergeLoop( PTRef reason )
 
 //          expExplain( reason_1, reason_2, reason );
       }
-
+      else if ( logic.isUP(reason) ) {
+        // The reason is an uninterpreted predicate
+        explanation.push(reason);
+      }
       // Clear remaining pendings
       pending.clear( );
       // Remove the last explanation that links
@@ -1855,15 +1869,15 @@ skip_cgroot_sig_removal:
 #endif
             enode_store.insertSig(p);
             // remove all guests now that the signature has changed
-            if (en_p.isTerm() && enode_store.ERefToTerms[p].size() > 1) {
-                vec<PTRef>& guests = enode_store.ERefToTerms[p];
-                printf("Removing guests from enode %d\n", p.x);
-                for (int i = 1; i < guests.size(); i++) {
-                    enode_store.termToERef.remove(guests[i]);
-                    printf("  %s (%d)\n", term_store.printTerm(guests[i]), guests[i].x);
-                }
-                guests.shrink(guests.size()-1);
-            }
+//            if (en_p.isTerm() && enode_store.ERefToTerms[p].size() > 1) {
+//                vec<PTRef>& guests = enode_store.ERefToTerms[p];
+//                printf("Removing guests from enode %d\n", p.x);
+//                for (int i = 1; i < guests.size(); i++) {
+//                    enode_store.termToERef.remove(guests[i]);
+//                    printf("  %s (%d)\n", term_store.printTerm(guests[i]), guests[i].x);
+//                }
+//                guests.shrink(guests.size()-1);
+//            }
 //      (void)res; // Huh?
 //            assert( res == p );
         }

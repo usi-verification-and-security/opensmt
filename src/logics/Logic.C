@@ -86,6 +86,12 @@ Logic::Logic(SMTConfig& c, SStore& s, SymStore& t, PtStore& pt) :
     sym_store[tr].setNoScoping();
     sym_XOR = tr;
 
+    tr = sym_store.newSymb(tk_distinct, params);
+    if (tr == SymRef_Undef) { assert(false); }
+    if (sym_store[tr].setLeftAssoc() == false) assert(false);
+    sym_store[tr].setNoScoping();
+    sym_DISTINCT = tr;
+
     params.push(sort_store["Bool 0"]);
     tr = sym_store.newSymb(tk_ite, params);
     if (tr == SymRef_Undef) { assert(false); }
@@ -99,8 +105,7 @@ bool Logic::isTheoryTerm(PTRef ptr) const {
     SymRef sr = p.symb();
     if (sr == sym_EQ) {
         assert(p.nargs() == 2);
-        if (isUP(p[0]) || isUP(p[1]))
-            return true;
+            return false;
     }
     else return isTheorySymbol(sr);
 }
@@ -112,13 +117,14 @@ bool Logic::isTheorySymbol(SymRef tr) const {
     // Boolean var
     if (t.rsort() == sort_BOOL && t.nargs() == 0) return false;
     // Standard Boolean operators
-    if (tr == sym_NOT)     return false;
-    if (tr == sym_EQ)      return false;
-    if (tr == sym_IMPLIES) return false;
-    if (tr == sym_AND)     return false;
-    if (tr == sym_OR)      return false;
-    if (tr == sym_XOR)     return false;
-    if (tr == sym_ITE)     return false;
+    if (tr == sym_NOT)      return false;
+    if (tr == sym_EQ)       return false;
+    if (tr == sym_IMPLIES)  return false;
+    if (tr == sym_AND)      return false;
+    if (tr == sym_OR)       return false;
+    if (tr == sym_XOR)      return false;
+    if (tr == sym_ITE)      return false;
+    if (tr == sym_DISTINCT) return false;
     return true;
 }
 

@@ -19,6 +19,8 @@ class EnodeStore {
     Map<SigPair,ERef,SigHash,Equal<const SigPair&> > sig_tab;
     EnodeAllocator ea;
     ERef           ERef_Nil;
+    ERef           ERef_True;
+    ERef           ERef_False;
 #ifdef PEDANTIC_DEBUG
     vec<ERef>      enodes;
 #endif
@@ -30,6 +32,11 @@ class EnodeStore {
       , ERef_Nil(ea.alloc(SymRef_Undef))
         { Enode::ERef_Nil = ERef_Nil; } // Nil is a symbol.  It should
                                         // in theory be list, but makes no matter now
+
+
+    ERef getEnode_true()  { return ERef_True;  }
+    ERef getEnode_false() { return ERef_False; }
+
     ERef addTerm(ERef sym, ERef args, PTRef pt, int);
     ERef addSymb(SymRef t);
     ERef addList(ERef car, ERef cdr, int);
@@ -41,9 +48,10 @@ class EnodeStore {
     void free(ERef er) { ea.free(er); }
     vec<ERef>           id_to_enode;
     Enode& operator[] (ERef e) { return ea[e]; }
-    Map<PTRef,ERef,PTRefHash,Equal<PTRef> >  termToERef;
-    Map<SymRef,ERef, SymRefHash,Equal<SymRef> >    symToERef;
-    VecMap<ERef,PTRef,ERefHash,Equal<ERef> > ERefToTerms;
+    Map<PTRef,ERef,PTRefHash,Equal<PTRef> >     termToERef;
+    Map<SymRef,ERef, SymRefHash,Equal<SymRef> > symToERef;
+    VecMap<ERef,PTRef,ERefHash,Equal<ERef> >    ERefToTerms;
+
     VecMap<ERef,EqDepId,ERefHash,Equal<const ERef&> > eq_dep_conses;
 
     void removeParent(ERef, ERef);
@@ -95,6 +103,7 @@ class EnodeStore {
 #ifdef PEDANTIC_DEBUG
     bool checkInvariants();
 #endif
+    friend class Egraph;
 };
 
 #endif

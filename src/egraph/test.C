@@ -100,13 +100,13 @@ int main(int argc, char **argv) {
     deq_args.push(eq3_ptr);
     PTRef deq_ptr = term_store.insertTerm(not_sym, deq_args);
 
-    lbool rval = egraph.addEquality(eq3_ptr, false);
+    lbool rval = egraph.addEquality(eq3_ptr);
     assert(rval == l_Undef);
 
-    rval = egraph.addEquality(eq2_ptr, true);
+    rval = egraph.addDisequality(eq2_ptr);
     assert(rval == l_Undef);
 
-    rval = egraph.addEquality(eq_ptr, true);
+    rval = egraph.addDisequality(eq_ptr);
     assert(rval == l_False);
 
     return 0;

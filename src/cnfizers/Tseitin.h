@@ -31,17 +31,24 @@ class Tseitin : public Cnfizer
 {
 public:
 
-    Tseitin(PtStore&   ptstore_
-           , SMTConfig& config_
-           , SymStore&  symstore_
-           , SStore&    sstore_
-           , Logic&     logic_
+    Tseitin( PtStore&       ptstore_
+           , SMTConfig&     config_
+           , SymStore&      symstore_
+           , SStore&        sstore_
+           , Logic&         logic_
+           , TermMapper&    tmap_
+           , THandler&      thandler_
+           , SimpSMTSolver& solver_
            )
       : Cnfizer(ptstore_
                 , config_
                 , symstore_
                 , sstore_
-                , logic_) {}
+                , logic_
+                , tmap_
+                , thandler_
+                , solver_ )
+      {}
 
     ~Tseitin( ) { }
 
@@ -49,7 +56,7 @@ public:
 private:
 
 
-    bool cnfize          ( PTRef
+    bool cnfize          ( PTRef, vec<PTRef>& uf_terms
 #ifdef PRODUCE_PROOF
                           , const ipartitions_t = 0 
 #endif
@@ -61,12 +68,13 @@ private:
     void cnfizeXor        ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize xors
     void cnfizeIfthenelse ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize if then elses
 #else
-    void cnfizeAnd        (PTRef);                          // Cnfize conjunctions
-    void cnfizeOr         (PTRef);                          // Cnfize disjunctions
-    void cnfizeIff        (PTRef);                          // Cnfize iffs
-    void cnfizeXor        (PTRef);                          // Cnfize xors
-    void cnfizeIfthenelse (PTRef);                          // Cnfize if then elses
-    void cnfizeImplies    (PTRef);                          // Cnfize if then elses
+    void cnfizeAnd        (PTRef, vec<PTRef>&);                          // Cnfize conjunctions
+    void cnfizeOr         (PTRef, vec<PTRef>&);                          // Cnfize disjunctions
+    void cnfizeIff        (PTRef, vec<PTRef>&);                          // Cnfize iffs
+    void cnfizeXor        (PTRef, vec<PTRef>&);                          // Cnfize xors
+    void cnfizeIfthenelse (PTRef, vec<PTRef>&);                          // Cnfize if then elses
+    void cnfizeImplies    (PTRef, vec<PTRef>&);                          // Cnfize if then elses
+    void cnfizeDistinct   (PTRef, vec<PTRef>&);                          // Cnfize distinctions
 #endif
 };
 

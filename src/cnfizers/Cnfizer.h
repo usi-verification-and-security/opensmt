@@ -65,30 +65,33 @@ class ValPair {
 class Cnfizer
 {
 protected:
-    SMTConfig&          config;
-    SStore &            sstore;
-    SymStore&           symstore;
     PtStore&            ptstore;         // Reference to the term store
+    SMTConfig&          config;
+    SymStore&           symstore;
+    SStore &            sstore;
     Logic&              logic;
+    TermMapper&         tmap;            // Map vars to proper terms
 
-    TermMapper          tmap;            // Map vars to proper terms
-    THandler            thandler;
-    SimpSMTSolver       solver;
-    Egraph              uf_solver;
+    THandler&           thandler;
+    SimpSMTSolver&      solver;
+//    Egraph              uf_solver;
 
 public:
 
-    Cnfizer( PtStore &   ptstore_
-           , SMTConfig & config_
-           , SymStore&   symstore_
-           , SStore &    sstore_
-           , Logic&      logic_
+    Cnfizer( PtStore &      ptstore_
+           , SMTConfig &    config_
+           , SymStore&      symstore_
+           , SStore &       sstore_
+           , Logic&         logic_
+           , TermMapper&    tmap_
+           , THandler&      thandler_
+           , SimpSMTSolver& solver_
            );
 
 
     virtual ~Cnfizer( ) { }
 
-    lbool cnfizeAndGiveToSolver ( PTRef
+    lbool cnfizeAndGiveToSolver ( PTRef, vec<PTRef>&
 #ifdef PRODUCE_PROOF
                                 , const ipartitions_t = 0
 #endif
@@ -105,7 +108,7 @@ public:
 
 protected:
 
-    virtual bool cnfize                 ( PTRef
+    virtual bool cnfize                 ( PTRef, vec<PTRef>&
 #ifdef PRODUCE_PROOF
                                         , const ipartitions_t = 0
 #endif
@@ -120,7 +123,7 @@ protected:
 
     bool     checkCnf                   ( PTRef );                            // Check if formula is in CNF
     bool     checkDeMorgan              ( PTRef );                            // Check if formula can be deMorganized
-    bool     giveToSolver               ( PTRef
+    bool     giveToSolver               ( PTRef, vec<PTRef>&
 #ifdef PRODUCE_PROOF
                                         , const ipartitions_t &
 #endif
@@ -155,7 +158,7 @@ protected:
     Map<PTRef,Var,PTRefHash,Equal<PTRef> >    seen;       // mapping from PTRef to var
 
     bool  isLit            (PTRef r);
-    const Lit findLit      (PTRef ptr);
+    const Lit findLit      (PTRef ptr, vec<PTRef>& uf_terms);
     bool  isBooleanOperator(SymRef tr) { return logic.isBooleanOperator(tr); } // (tr == logic.getSym_and()) | (tr == logic.getSym_or() ) | (tr == logic.getSym_not() ) | (tr == logic.getSym_eq() ) | (tr == logic.getSym_xor() ); }
     bool  isTheorySymbol   (SymRef tr) const { return logic.isTheorySymbol(tr); }
     bool  isIte            (SymRef tr) const { return logic.isIte(tr); }

@@ -34,12 +34,17 @@ class LetFrame {
 
 class Interpret {
   private:
-    SMTConfig                                  config;
-    SStore                                     store;    // Sorts
-    SymStore                                   symstore;   // Terms (more like symbols)
-    PtStore                                    ptstore;  // Proper terms
-    Logic                                      logic;
-    Tseitin                                    ts;
+    SMTConfig config;
+    SStore    store;      // Sorts
+    SymStore  symstore;   // Terms (more like symbols)
+    PtStore   ptstore;    // Proper terms
+    Logic     logic;
+
+    TermMapper    tmap;
+    Egraph        uf_solver;
+    THandler      thandler;
+    SimpSMTSolver sat_solver;
+    Tseitin       ts;
 
     Map<const char*,PTRef,StringHash,Equal<const char*> > nameToTerm;
     VecMap<PTRef,const char*,PTRefHash,Equal<PTRef> > termToNames;
@@ -75,14 +80,34 @@ class Interpret {
   public:
     // Constructor initiates a default logic.  Not sure if this is the best way to go...
     Interpret() :
-          store(config)
-        , ptstore(symstore, store)
-        , logic(config, store, symstore, ptstore)
+          store   (config)
+        , ptstore (symstore, store)
+        , logic   (config, store, symstore, ptstore)
+        , tmap    (logic)
+
+        , uf_solver( config
+                   , store
+                   , symstore
+                   , ptstore
+                   , logic )
+
+        , thandler( uf_solver
+                  , config
+                  , tmap
+                  , logic )
+
+        , sat_solver( config
+                    , thandler )
+
         , ts( ptstore
             , config
             , symstore
             , store
-            , logic )
+            , logic
+            , tmap
+            , thandler
+            , sat_solver )
+
         , f_exit(false)
         , asrt_lev(0)
         , sat_calls(0) {};
