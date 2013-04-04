@@ -119,81 +119,71 @@ bool Egraph::checkParents( ERef e )
     return true;
 }
 
-/*
-bool Egraph::checkExp ( )
-{
+bool Egraph::checkExp () {
 #if CHECK_EXPLANATIONS
-  assert( explanation.size( ) > 1 );
-  // Check for duplicated literals in conflict
-  set< enodeid_t > visited;
-  for ( unsigned i = 0 ; i < explanation.size( ) ; i ++ )
-  {
-    if ( visited.find( explanation[ i ]->getId( ) ) != visited.end( ) )
-    {
-      cerr << "Error: explanation " << explanation[ i ] << " is present twice" << endl;
-      return false;
+    assert( explanation.size() > 1 );
+    // Check for duplicated literals in conflict
+    set< enodeid_t > visited;
+    for ( unsigned i = 0 ; i < explanation.size( ) ; i ++ ) {
+        if ( visited.find( term_store[explanation[i]].getId() ) != visited.end( ) ) {
+            cerr << "Error: explanation " << explanation[i] << " is present twice" << endl;
+            return false;
+        }
+        visited.insert( term_store[explanation[i]].getId() );
     }
-    visited.insert( explanation[ i ]->getId( ) );
-  }
 
-  return true;
-#else
-  return true;
-#endif
-}
-
-bool Egraph::checkExpTree ( Enode * x )
-{
-  assert( x );
-#if CHECK_EXPLANATIONS
-  set< Reason * > visited;
-
-  while ( x->getExpParent( ) != NULL )
-  {
-    if ( x->getExpReason( ) != NULL )
-    {
-      if ( visited.find( x->getExpReason( ) ) != visited.end( ) )
-      {
-	cerr << "Error: explanation is present twice" << endl;
-	return false;
-      }
-      visited.insert( x->getExpReason( ) );
-    }
-    x = x->getExpParent( );
-  }
-
-  return true;
-#else
-  return true;
-#endif
-}
-
-bool Egraph::checkExpReachable( Enode * x, Enode * h_x )
-{
-  assert( x );
-  assert( h_x );
-#if CHECK_EXPLANATIONS
-  Enode * orig = x;
-
-  if ( x == h_x )
     return true;
-
-  while ( x->getExpParent( ) != h_x )
-  {
-    x = x->getExpParent( );
-    if ( x == NULL )
-    {
-      cerr << h_x << " is unreachable from " << orig << endl;
-      return false;
-    }
-  }
-
-  return true;
 #else
-  return true;
+    return true;
 #endif
 }
-*/
+
+
+bool Egraph::checkExpTree ( PTRef x ) {
+    assert( x != PTRef_Undef );
+#if CHECK_EXPLANATIONS
+     set< PTRef > visited;
+
+    while ( expParent.contains(x) ) {
+        if ( expReason.contains(x) ) {
+            if ( visited.find( expReason[x] ) != visited.end() ) {
+                cerr << "Error: explanation is present twice" << endl;
+                return false;
+            }
+        }
+        visited.insert( expReason[x] );
+        x = expReason[x];
+    }
+
+    return true;
+#else
+    return true;
+#endif
+}
+
+bool Egraph::checkExpReachable( PTRef x, PTRef h_x ) {
+    assert( x != PTRef_Undef );
+    assert( h_x != PTRef_Undef );
+#if CHECK_EXPLANATIONS
+    PTRef orig = x;
+
+    if ( x == h_x )
+        return true;
+
+    while ( expParent[x] != h_x ) {
+        x = expParent[x];
+        if ( x == PTRef_Undef ) {
+            cerr << h_x << " is unreachable from " << orig << endl;
+            return false;
+        }
+    }
+
+    return true;
+#else
+    return true;
+#endif
+}
+
 #endif
 /*
 //=============================================================================

@@ -47,6 +47,13 @@ private:
   EnodeStore    enode_store;
   ERef          ERef_Nil;
   ELAllocator   forbid_allocator;
+  // Explanations
+  Map<PTRef,PTRef,PTRefHash,Equal<PTRef> > expParent;
+  Map<PTRef,int,PTRefHash,Equal<PTRef> >   expTimeStamp;
+  Map<PTRef,int,PTRefHash,Equal<PTRef> >   expClassSize;
+  Map<PTRef,PTRef,PTRefHash,Equal<PTRef> > expReason;
+  Map<PTRef,PTRef,PTRefHash,Equal<PTRef> > expRoot;
+
 public:
 
   Egraph( SMTConfig & c
@@ -96,7 +103,7 @@ public:
     tmp.push(logic.getTerm_true());
     tmp.push(logic.getTerm_false());
     PTRef neq = term_store.insertTerm(logic.getSym_eq(), tmp);
-    assertNEq(er_true, er_false, neq); }
+    assertNEq(logic.getTerm_true(), logic.getTerm_false(), neq); }
 
   ~Egraph( )
   {
@@ -208,10 +215,10 @@ public:
   //
   // Fast duplicates checking. Cannot be nested !
   //
-  inline void initDup1  ( )        { assert( !active_dup1 ); active_dup1 = true; duplicates1.growTo( enode_store.id_to_enode.size( ), dup_count1 ); dup_count1 ++; }
-  inline void storeDup1 ( ERef e ) { assert(  active_dup1 ); assert( enode_store[e].getId() < (enodeid_t)duplicates1.size_() ); duplicates1[ enode_store[e].getId( ) ] = dup_count1; }
-  inline bool isDup1    ( ERef e ) { assert(  active_dup1 ); assert( enode_store[e].getId() < (enodeid_t)duplicates1.size_() ); return duplicates1[ enode_store[e].getId( ) ] == dup_count1; }
-  inline void doneDup1  ( )        { assert(  active_dup1 ); active_dup1 = false; }
+  inline void initDup1 ()        { assert( !active_dup1 ); active_dup1 = true; dup_count1 ++; }
+  inline void storeDup1(PTRef e) { assert(  active_dup1 ); if (duplicates1.contains(e)) duplicates1[e] = dup_count1; else duplicates1.insert(e, dup_count1); }
+  inline bool isDup1   (PTRef e) { assert(  active_dup1 ); return !duplicates1.contains(e) ? false : duplicates1[e] == dup_count1; }
+  inline void doneDup1 ()        { assert(  active_dup1 ); active_dup1 = false; }
   //
   // Fast duplicates checking. Cannot be nested !
   //
@@ -286,9 +293,9 @@ public:
   void                splitOnDemand           ( vec<PTRef> &, int ) { };       // Splitting on demand modulo equality
 //  void                splitOnDemand           ( ERef, int );                // Splitting on demand
 //  bool                checkDupClause          ( ERef, ERef);                // Check if a clause is duplicate
-  void                explain                 ( ERef
-                                              , ERef
-                                              , vector<ERef> & );           // Exported explain
+  void                explain                 ( PTRef
+                                              , PTRef
+                                              , vec<PTRef> & );             // Exported explain
   // Temporary merge, used by array theory to merge indexes
 #ifdef PRODUCE_PROOF
   void                tmpMergeBegin           ( ERef, ERef );
@@ -378,7 +385,7 @@ private:
 
   bool                        active_dup1;                      // To prevent nested usage
   bool                        active_dup2;                      // To prevent nested usage
-  vec< int >                  duplicates1;                      // Fast duplicate checking
+  Map<PTRef,int,PTRefHash,Equal<PTRef> >  duplicates1;          // Fast duplicate checking
   vec< int >                  duplicates2;                      // Fast duplicate checking
   int                         dup_count1;                       // Current dup token
   int                         dup_count2;                       // Current dup token
@@ -429,9 +436,9 @@ public:
   lbool   addFalse        ( PTRef );
   lbool   addTerm         ( PTRef );
 private:
-  bool    assertEq        ( ERef, ERef, PTRef );                // Asserts an equality
-  bool    assertNEq       ( ERef, ERef, PTRef );                // Asserts a negated equality
-  bool    assertDist      ( ERef, ERef );                       // Asserts a distinction
+  bool    assertEq        ( PTRef, PTRef, PTRef );                // Asserts an equality
+  bool    assertNEq       ( PTRef, PTRef, PTRef );                // Asserts a negated equality
+  bool    assertDist      ( PTRef, PTRef );                       // Asserts a distinction
   //
   // Backtracking
   //
@@ -450,15 +457,15 @@ private:
   // Explanation routines and data
   //
   void     expExplain           ( );                            // Main routine for explanation
-  void     expExplain           ( ERef, ERef, ERef );           // Enqueue equality and explain
-  void     expStoreExplanation  ( ERef, ERef, ERef );           // Store the explanation for the merge
-  void     expExplainAlongPath  ( ERef, ERef );                 // Store explanation in explanation
-  void     expEnqueueArguments  ( ERef, ERef );                 // Enqueue arguments to be explained
-  void     expReRootOn          ( ERef );                       // Reroot the proof tree on x
-  void     expUnion             ( ERef, ERef );                 // Union of x and y in the explanation
-  ERef     expFind              ( ERef );                       // Find for the eq classes of the explanation
-  ERef     expHighestNode       ( ERef );                       // Returns the node of the eq class of x that is closest to the root of the explanation tree
-  ERef     expNCA               ( ERef, ERef );                 // Return the nearest common ancestor of x and y
+  void     expExplain           ( PTRef, PTRef, PTRef );        // Enqueue equality and explain
+  void     expStoreExplanation  ( ERef, ERef, PTRef );          // Store the explanation for the merge
+  void     expExplainAlongPath  ( PTRef, PTRef );               // Store explanation in explanation
+  void     expEnqueueArguments  ( PTRef, PTRef );               // Enqueue arguments to be explained
+  void     expReRootOn          ( PTRef );                      // Reroot the proof tree on x
+  void     expUnion             ( PTRef, PTRef );               // Union of x and y in the explanation
+  PTRef    expFind              ( PTRef );                      // Find for the eq classes of the explanation
+  PTRef    expHighestNode       ( PTRef );                      // Returns the node of the eq class of x that is closest to the root of the explanation tree
+  PTRef    expNCA               ( PTRef, PTRef );               // Return the nearest common ancestor of x and y
   void     expRemoveExplanation ( );                            // Undoes the effect of expStoreExplanation
   void     expCleanup           ( );                            // Undoes the effect of expExplain
 
@@ -496,8 +503,8 @@ private:
 #endif
 
   vec< PTRef >                exp_pending;                      // Pending explanations
-  vec< ERef >                 exp_undo_stack;                   // Keep track of exp_parent merges
-  vec< ERef >                 exp_cleanup;                      // List of nodes to be restored
+  vec< PTRef >                exp_undo_stack;                   // Keep track of exp_parent merges
+  vec< PTRef >                exp_cleanup;                      // List of nodes to be restored
   int                         time_stamp;                       // Need for finding NCA
   int                         conf_index;                       // Index of theory solver that caused conflict
 
@@ -572,9 +579,9 @@ private:
   bool checkInvariants           ( );
 //  bool checkInvariantFLS         ( );
   bool checkInvariantSTC         ( ) { return enode_store.checkInvariants(); }
-//  bool checkExp                  ( );
-//  bool checkExpTree              ( ERef );
-//  bool checkExpReachable         ( ERef, ERef );
+  bool checkExp                  ( );
+  bool checkExpTree              ( PTRef );
+  bool checkExpReachable         ( PTRef, PTRef );
 #endif
   bool checkStaticDynamicTable   ( );
 

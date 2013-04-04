@@ -32,8 +32,8 @@ ERef EnodeStore::addTerm(ERef sr, ERef args, PTRef term, int level) {
             rval = lookupSig(sr, args);
             termToERef.insert(term, rval);
             ERefToTerms[rval].push(term);
-            cerr << "letting " << term_store.printTerm(term)
-                 << " point to %s" << printEnode(rval) << endl;
+//            cerr << "letting " << term_store.printTerm(term)
+//                 << " point to %s" << printEnode(rval) << endl;
 //            assert(false); // XXX push to the undo stack
         }
         else {

@@ -72,6 +72,14 @@ class CgData {
     dist_t      dist_classes;   // The bit vector for distinction classes
     int         dist_index;     // ?
 
+    // Move these to a term-specific storage
+    PTRef       exp_reason;
+    ERef        exp_parent;
+    ERef        exp_root;
+    int         exp_class_size;
+    ERef        exp_highest_node;
+    int         exp_time_stamp;
+
     friend class Enode;
 };
 
@@ -180,7 +188,20 @@ public:
 
     inline dist_t getDistClasses() const { return cgdata->dist_classes; }
 
-    friend class CgData;
+    PTRef getExpReason       () const { assert( isTerm() ); return cgdata->exp_reason; }
+    ERef  getExpParent       () const { assert( isTerm() ); return cgdata->exp_parent; }
+    ERef  getExpRoot         () const { assert( isTerm() ); return cgdata->exp_root; }
+    int   getExpClassSize    () const { assert( isTerm() ); return cgdata->exp_class_size; }
+    ERef  getExpHighestNode  () const { assert( isTerm() ); return cgdata->exp_highest_node; }
+    int   getExpTimeStamp    () const { assert( isTerm() ); return cgdata->exp_time_stamp; }
+
+    void setExpReason           ( PTRef r )           { assert( isTerm() ); cgdata->exp_reason = r; }
+    void setExpParent           ( ERef e )            { assert( isTerm() ); cgdata->exp_parent = e; }
+    void setExpRoot             ( ERef e )            { assert( isTerm() ); cgdata->exp_root   = e; }
+    void setExpClassSize        ( const int s )       { assert( isTerm() ); cgdata->exp_class_size   = s; }
+    void setExpHighestNode      ( ERef e )            { assert( isTerm() ); cgdata->exp_highest_node = e; }
+    void setExpTimeStamp        ( const int t )       { assert( isTerm() ); cgdata->exp_time_stamp   = t; }
+//    friend class CgData;
 };
 
 
