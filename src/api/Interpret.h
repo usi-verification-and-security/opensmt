@@ -89,7 +89,8 @@ class Interpret {
                    , store
                    , symstore
                    , ptstore
-                   , logic )
+                   , logic
+                   , tmap )
 
         , thandler( uf_solver
                   , config
@@ -110,7 +111,9 @@ class Interpret {
 
         , f_exit(false)
         , asrt_lev(0)
-        , sat_calls(0) {};
+        , sat_calls(0) {
+            uf_solver.solver = &sat_solver;
+        };
 
     int                         interpFile(FILE* in);
     int                         interpInteractive(FILE* in);

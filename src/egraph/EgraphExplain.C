@@ -73,6 +73,10 @@ void Egraph::expStoreExplanation ( ERef x, ERef y, PTRef reason )
     // Reroot the explanation tree on y. It has an amortized cost of logn
     expReRootOn( tr_y );
 
+#ifdef PEDANTIC_DEBUG
+    cout << printExpTree( tr_y );
+#endif
+
     if (!expParent.contains(tr_y)) expParent.insert(tr_y, tr_x);
     else expParent[tr_y] = tr_x;
 

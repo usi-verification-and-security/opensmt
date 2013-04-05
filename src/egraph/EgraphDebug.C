@@ -20,6 +20,8 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 #include "Egraph.h"
 #include "SigTab.h"
 
+class SimpSMTSolver;
+
 // Choose debugging level
 #define CHECK_INVARIANTS                            1
 #define CHECK_INVARIANT_FORBID_LIST_SYMMERTRY       0
@@ -185,71 +187,75 @@ bool Egraph::checkExpReachable( PTRef x, PTRef h_x ) {
 }
 
 #endif
-/*
+
 //=============================================================================
 // Printing Routines
 
-void Egraph::printEqClass( ostream & os, Enode * v )
+string Egraph::printEqClass( ERef v )
 {
-  os << "Class of " << v << " :" << endl;
-  const Enode * vstart = v;
-  for (;;)
-  {
-    os << "   " << v << endl;
-    v = v->getNext( );
+    stringstream os;
+    os << "Class of " << v.x << " :" << endl;
+    const ERef vstart = v;
+    for (;;) {
+        os << "   " << v.x << endl;
+    v = enode_store[v].getNext();
     if ( v == vstart )
-      break;
-  }
+        break;
+    }
+    return os.str();
 }
 
-void Egraph::printExplanation( ostream & os )
+std::string Egraph::printExplanation() {
+    stringstream os;
+    os << "# Conflict: ";
+    for ( int i = 0 ; i < explanation.size( ) ; i ++ ) {
+        if ( i > 0 )
+            os << ", ";
+
+//        assert( explanation[ i ]->hasPolarity( ) );
+        assert(solver->value(tmap.termToVar[explanation[i]]) != l_Undef);
+        if ( solver->value(tmap.termToVar[explanation[i]]) == l_False )
+            os << "!";
+
+        os << explanation[i].x;
+    }
+    os << endl;
+    return os.str();
+}
+
+std::string Egraph::printExplanationTree( ERef x )
 {
-  os << "# Conflict: ";
-  for ( unsigned i = 0 ; i < explanation.size( ) ; i ++ )
-  {
-    if ( i > 0 )
-      os << ", ";
-
-    assert( explanation[ i ]->hasPolarity( ) );
-    if ( explanation[ i ]->getPolarity( ) == l_False )
-      os << "!";
-
-    explanation[ i ]->print( os );
-  }
-  os << endl;
+    stringstream os;
+    while ( x != ERef_Undef ) {
+        os << x.x;
+        if ( expParent[x] != ERef_Undef )
+            os << " --[";
+        if ( expReason[x] != ERef_Undef )
+            os << expReason[x].x;
+        if ( expParent[x]->getExpParent( ) != ERef_Undef )
+            os << "]--> ";
+        x = expParent[x];
+    }
+    return os.str();
 }
 
-void Egraph::printExplanationTree( ostream & os, Enode * x )
+std::string Egraph::printExplanationTreeDotty( ERef x )
 {
-  while ( x != NULL )
-  {
-    os << x;
-    if ( x->getExpParent( ) != NULL )
-      os << " --[";
-    if ( x->getExpReason( ) != NULL )
-      os << x->getExpReason( );
-    if ( x->getExpParent( ) != NULL )
-      os << "]--> ";
-    x = x->getExpParent( );
-  }
+    stringstream os;
+    os << "digraph expl" << endl;
+    os << "{" << endl;
+
+    while ( x != ERef_Undef ) {
+        os << x.x;
+        if ( expParent[x] != ERef_Undef )
+            os << " -> ";
+        x = expParent[x];
+    }
+
+    os << endl << "}" << endl;
+    return os.str();
 }
-
-void Egraph::printExplanationTreeDotty( ostream & os, Enode * x )
-{
-  os << "digraph expl" << endl;
-  os << "{" << endl;
-
-  while ( x != NULL )
-  {
-    os << x;
-    if ( x->getExpParent( ) != NULL )
-      os << " -> ";
-    x = x->getExpParent( );
-  }
-
-  os << endl << "}" << endl;
-}
-
+/*
 void Egraph::printDistinctionList( ostream & os, Enode * x )
 {
   Elist * l = x->getForbid( );

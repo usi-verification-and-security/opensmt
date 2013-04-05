@@ -30,12 +30,15 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 #include "SymStore.h"
 #include "PtStore.h"
 #include "Logic.h"
+// For debugging
+#include "TermMapper.h"
 //#include "SigTab.h"
 //#include "SplayTree.h"
 
 #ifdef PRODUCE_PROOF
 #include "UFInterpolator.h"
 #endif
+
 
 class Egraph : public CoreTSolver
 {
@@ -44,9 +47,12 @@ private:
   SymStore &    sym_store;
   PtStore&      term_store;
   Logic&        logic;
+  TermMapper&   tmap;
   EnodeStore    enode_store;
   ERef          ERef_Nil;
   ELAllocator   forbid_allocator;
+
+
   // Explanations
   Map<PTRef,PTRef,PTRefHash,Equal<PTRef> > expParent;
   Map<PTRef,int,PTRefHash,Equal<PTRef> >   expTimeStamp;
@@ -55,14 +61,16 @@ private:
   Map<PTRef,PTRef,PTRefHash,Equal<PTRef> > expRoot;
 
 public:
+  SimpSMTSolver* solver; // for debugging only
 
   Egraph( SMTConfig & c
-        , SStore & s, SymStore& syms, PtStore& terms, Logic& l )
+        , SStore & s, SymStore& syms, PtStore& terms, Logic& l, TermMapper& term_map )
       : CoreTSolver        ( 0, "EUF Solver", c )
       , sort_store         ( s )
       , sym_store          ( syms )
       , term_store         ( terms )
       , logic              ( l )
+      , tmap               ( term_map )
       , enode_store        ( sym_store, term_store )
       , ERef_Nil           ( enode_store.get_Nil() )
       , active_dup1        ( false )
@@ -446,7 +454,7 @@ private:
   //
   // Congruence closure main routines
   //
-  PTRef   unmergeable     ( ERef, ERef );                       // Can two nodes be merged ?
+  bool    unmergeable     ( ERef, ERef, PTRef& );               // Can two nodes be merged ?
   void    merge           ( ERef, ERef );                       // Merge two nodes
   bool    mergeLoop       ( PTRef reason );                     // Merge loop
   void    deduce          ( ERef, ERef);                        // Deduce from merging of two nodes
@@ -566,14 +574,14 @@ private:
   //===========================================================================
   // Debugging routines - Implemented in EgraphDebug.C
 
-  void printEqClass              ( ostream &, ERef );
-  void printExplanation          ( ostream & );
-  void printExplanationTree      ( ostream &, ERef );
-  void printExplanationTreeDotty ( ostream &, ERef );
-  void printDistinctionList      ( ostream &, ERef );
-  void printCbeStructure         ( );
-  void printCbeStructure         ( ostream &, ERef, set< int > & );
-  void printParents              ( ostream &, ERef);
+  string printEqClass              ( ERef );
+  string printExplanation          ( );
+  string printExplanationTree      ( ERef );
+  string printExplanationTreeDotty ( ERef );
+  string printDistinctionList      ( ERef );
+  string printCbeStructure         ( );
+  string printCbeStructure         ( ERef, set< int > & );
+  string printParents              ( ERef);
 #if PEDANTIC_DEBUG
   bool checkParents              ( ERef );
   bool checkInvariants           ( );

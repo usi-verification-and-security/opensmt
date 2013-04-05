@@ -208,7 +208,7 @@ declare_fun_err: ;
                     comment_formatted("The formula is trivially unsatisfiable");
                 }
                 for (int i = 0; i < uf_terms.size(); i++)
-                    uf_solver.addTerm(uf_terms[i]);
+                    uf_solver.addTerm(uf_terms[i]); // Change here the tmap if term is known
 
                 comment_formatted("Inserted assertion");
                 return true;

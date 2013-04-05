@@ -991,17 +991,19 @@ bool Egraph::mergeLoop( PTRef reason )
       // means that the reason for p and q being equal has to
       // be found recursively in their arguments. We store the
       // reason even in case of unmergability, to have an
-      // automatic way of retrieving a conflict
+      // automatic way of retrieving a conflict.
 
       if ( en_p.isTerm( ) )
         expStoreExplanation( p, q, congruence_pending ? PTRef_Undef : reason );
 
       // Check if they can't be merged
-      PTRef res = unmergeable( en_p.getRoot(), en_q.getRoot() );
+      PTRef reason_inequality;
+      bool res = unmergeable( en_p.getRoot(), en_q.getRoot(), reason_inequality );
 
       // They are not unmergable, so they can be merged
-      if ( res == PTRef_Undef )
+      if ( !res )
       {
+
         merge( en_p.getRoot( ), en_q.getRoot( ) );
         congruence_pending = true;
         continue;
@@ -1020,8 +1022,9 @@ bool Egraph::mergeLoop( PTRef reason )
       ERef enr_proot = en_p.getRoot();
       ERef enr_qroot = en_q.getRoot();
 
-      if ( reason == PTRef_Undef )
+      if ( reason_inequality == PTRef_Undef )
       {
+          assert(false);
           Enode& en_proot = enode_store[enr_proot];
           Enode& en_qroot = enode_store[enr_qroot];
 
@@ -1055,13 +1058,13 @@ bool Egraph::mergeLoop( PTRef reason )
           doneDup1( );
       }
       // Does the reason term correspond to disequality symbol
-      else if ( logic.isDisequality(term_store[reason].symb()) ) {
+      else if ( logic.isDisequality(term_store[reason_inequality].symb()) ) {
           // The reason is a distinction
-          explanation.push( reason );
+          explanation.push( reason_inequality );
           // We should iterate through the elements
           // of the distinction and find which atoms
           // are causing the conflict
-          Pterm& pt_reason = term_store[res];
+          Pterm& pt_reason = term_store[reason_inequality];
           for (int i = 0; i < pt_reason.size(); i++) {
               // (1) Get the proper term reference from pos i in the distinction
               // (2) Get the enode corresponding to the proper term
@@ -1078,11 +1081,11 @@ bool Egraph::mergeLoop( PTRef reason )
           }
           assert( reason_1 != PTRef_Undef );
           assert( reason_2 != PTRef_Undef );
-          expExplain( reason_1, reason_2, reason );
+          expExplain( reason_1, reason_2, reason_inequality );
       }
-      else if ( logic.isEquality(term_store[reason].symb()) ) {
+      else if ( logic.isEquality(term_store[reason_inequality].symb()) ) {
         // The reason is a negated equality
-        Pterm& pt_reason = term_store[res];
+        Pterm& pt_reason = term_store[reason_inequality];
 
           // Hmm, the difference being?
 //          if ( config.incremental ) {
@@ -1092,7 +1095,7 @@ bool Egraph::mergeLoop( PTRef reason )
 //          else
 //              explanation.push_back( reason );
 
-          explanation.push(reason);
+          explanation.push(reason_inequality);
 
           // The equality
           // If properly booleanized, the left and righ sides of equality
@@ -1107,15 +1110,15 @@ bool Egraph::mergeLoop( PTRef reason )
           assert( reason_1 != PTRef_Undef );
           assert( reason_2 != PTRef_Undef );
 
-#if VERBOSE
-          cerr << "Reason is neg equality: " << reason << endl;
-#endif
-
-          expExplain( reason_1, reason_2, reason );
+//#if VERBOSE
+          cerr << "Reason is neg equality: " << term_store.printTerm(reason_inequality) << endl;
+//#endif
+          expExplain( reason_1, reason_2, reason_inequality );
       }
-      else if ( logic.isUP(reason) ) {
+      else if ( logic.isUP(reason_inequality) ) {
         // The reason is an uninterpreted predicate
-        explanation.push(reason);
+        assert(false);
+        explanation.push(reason_inequality);
       }
       // Clear remaining pendings
       pending.clear( );
@@ -2010,7 +2013,7 @@ void Egraph::undoDistinction ( ERef r )
 #endif
 }
 
-PTRef Egraph::unmergeable (ERef x, ERef y)
+bool Egraph::unmergeable (ERef x, ERef y, PTRef& r)
 {
     assert( x != ERef_Undef );
     assert( y != ERef_Undef );
@@ -2018,7 +2021,7 @@ PTRef Egraph::unmergeable (ERef x, ERef y)
     ERef p = enode_store[x].getRoot();
     ERef q = enode_store[y].getRoot();
     // If they are in the same class, they can merge
-    if ( p == q ) return PTRef_Undef;
+    if ( p == q ) return false;
     // Check if they have different constants. It is sufficient
     // to check that they both have a constant. It is not
     // possible that the constant is the same. In fact if it was
@@ -2030,8 +2033,6 @@ PTRef Egraph::unmergeable (ERef x, ERef y)
     Enode& en_q = enode_store[q];
     dist_t intersection = ( en_p.getDistClasses( ) & en_q.getDistClasses( ) );
 
-    PTRef r = PTRef_Undef; // the return valu
-
     if ( intersection ) {
         // Compute the first index in the intersection
         // TODO: Use hacker's delight
@@ -2042,14 +2043,14 @@ PTRef Egraph::unmergeable (ERef x, ERef y)
         }
         r = indexToDistReas( index );
         assert( r != PTRef_Undef );
-        return PTRef_Undef;
+        return true;
     }
     // Check forbid lists (binary distinction)
     const ELRef pstart = en_p.getForbid( );
     const ELRef qstart = en_q.getForbid( );
     // If at least one is empty, they can merge
     if ( pstart == ELRef_Undef || qstart == ELRef_Undef )
-        return PTRef_Undef;
+        return false;
 
     ELRef pptr = pstart;
     ELRef qptr = qstart;
@@ -2060,13 +2061,11 @@ PTRef Egraph::unmergeable (ERef x, ERef y)
         // They are unmergable if they are on the other forbid list
         if ( enode_store[el_pptr.e].getRoot( ) == q ) {
             r = el_pptr.reason;
-            assert(r != PTRef_Undef);
-            return r;
+            return true;
         }
         if ( enode_store[el_qptr.e].getRoot( ) == p ) {
             r = el_qptr.reason;
-            assert(r != PTRef_Undef);
-            return r;
+            return true;
         }
         // Pass to the next element
         pptr = el_pptr.link;
@@ -2079,7 +2078,7 @@ PTRef Egraph::unmergeable (ERef x, ERef y)
     }
     // If here they are mergable
     assert( r == PTRef_Undef );
-    return r;
+    return false;
 }
 
 //
