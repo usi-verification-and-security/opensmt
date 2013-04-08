@@ -825,7 +825,7 @@ Enode * Egraph::getInterpolants( logic_t & l )
 //}
 #endif
 
-lbool Egraph::addTerm(PTRef term) {
+PTRef Egraph::addTerm(PTRef term) {
     assert( logic.isTheoryTerm(term) );
     // In general we don't want to put the Boolean equalities to UF
     // solver.  However, the Boolean uninterpreted functions are an
@@ -835,6 +835,7 @@ lbool Egraph::addTerm(PTRef term) {
     vec<PTRef> queue;
     queue.push(term);
     vec<PTRef> to_process;
+    PTRef rval;
 
     while (queue.size() != 0) {
         PTRef tr = queue.last();
@@ -878,9 +879,15 @@ lbool Egraph::addTerm(PTRef term) {
 #endif
             }
 #ifndef PEDANTIC_DEBUG
-            enode_store.addTerm(sym, cdr, tr, undo_stack_oper.size());
+            // Will be overwritten, but we're only interested in the
+            // last one anyway.
+            rval = enode_store.addTerm(sym, cdr, tr, undo_stack_oper.size());
 #else
-            ERef tr_new = enode_store.addTerm(sym, cdr, tr, undo_stack_oper.size() );
+            rval = enode_store.addTerm(sym, cdr, tr, undo_stack_oper.size() );
+            if (rval != tr)
+                cout << "Duplicate: " << term_store.printTerm(rval)
+                     << " equals " << term_store.printTerm(tr) << endl;
+            ERef tr_new = enode_store.termToERef[rval];
             assert( checkParents( tr_new ) );
             assert( checkInvariants( ) );
 //            cerr << "Conversion done:" << endl
@@ -888,6 +895,7 @@ lbool Egraph::addTerm(PTRef term) {
 //                 << enode_store.printEnode(tr_new) << endl;
 #endif
         }
+        else rval = tr;
     }
 
 #ifdef PEDANTIC_DEBUG
@@ -895,7 +903,7 @@ lbool Egraph::addTerm(PTRef term) {
 //        cout << "All was seen" << endl;
 #endif
 
-    return l_Undef;
+    return rval;
 }
 
 
@@ -1059,8 +1067,9 @@ bool Egraph::mergeLoop( PTRef reason )
       }
       // Does the reason term correspond to disequality symbol
       else if ( logic.isDisequality(term_store[reason_inequality].symb()) ) {
-          // The reason is a distinction
-          explanation.push( reason_inequality );
+          // The reason is a distinction, but skip the false equality
+          if (reason_inequality != Eq_FALSE)
+              explanation.push( reason_inequality );
           // We should iterate through the elements
           // of the distinction and find which atoms
           // are causing the conflict
@@ -1095,7 +1104,8 @@ bool Egraph::mergeLoop( PTRef reason )
 //          else
 //              explanation.push_back( reason );
 
-          explanation.push(reason_inequality);
+          if (reason_inequality != Eq_FALSE)
+              explanation.push(reason_inequality);
 
           // The equality
           // If properly booleanized, the left and righ sides of equality
@@ -1118,7 +1128,8 @@ bool Egraph::mergeLoop( PTRef reason )
       else if ( logic.isUP(reason_inequality) ) {
         // The reason is an uninterpreted predicate
         assert(false);
-        explanation.push(reason_inequality);
+        if (reason_inequality != Eq_FALSE)
+          explanation.push(reason_inequality);
       }
       // Clear remaining pendings
       pending.clear( );
@@ -1148,7 +1159,7 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PTRef r )
 
     // They can't be different if the nodes are in the same class
     if ( p == q ) {
-        explanation.push( r );
+        if (r != Eq_FALSE) explanation.push( r );
         expExplain( x, y, r );
 
 #ifdef PEDANTIC_DEBUG
@@ -1230,7 +1241,8 @@ bool Egraph::assertDist( PTRef tr_d, PTRef tr_r )
         enodeid_t root_id = enode_store[en_e.getRoot()].getId();
         if ( root_to_enode.contains(root_id) ) {
             // Two equivalent nodes in the same distinction. Conflict
-            explanation.push(tr_r);
+            if (tr_r != Eq_FALSE)
+                explanation.push(tr_r);
             // Extract the other node with the same root
             ERef p = root_to_enode[root_id];
             // Check condition
@@ -2054,6 +2066,8 @@ bool Egraph::unmergeable (ERef x, ERef y, PTRef& r)
 
     ELRef pptr = pstart;
     ELRef qptr = qstart;
+
+    r = PTRef_Undef;
 
     for (;;) {
         Elist& el_pptr = forbid_allocator[pptr];

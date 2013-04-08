@@ -52,6 +52,7 @@ private:
   ERef          ERef_Nil;
   ELAllocator   forbid_allocator;
 
+  PTRef         Eq_FALSE; // will be set to (= true false) in constructor
 
   // Explanations
   Map<PTRef,PTRef,PTRefHash,Equal<PTRef> > expParent;
@@ -99,19 +100,24 @@ public:
     // This is for the enode store
     ERef ers_true  = enode_store.addSymb(logic.getSym_true());
     ERef ers_false = enode_store.addSymb(logic.getSym_false());
-    ERef er_true   = enode_store.addTerm(ers_true, ERef_Nil,
+    PTRef ptr_new_true  = enode_store.addTerm(ers_true, ERef_Nil,
                             logic.getTerm_true(), undo_stack_oper.size());
-    ERef er_false  = enode_store.addTerm(ers_false, ERef_Nil,
+    PTRef ptr_new_false = enode_store.addTerm(ers_false, ERef_Nil,
                             logic.getTerm_false(), undo_stack_oper.size());
 
-    enode_store.ERef_True  = er_true;
-    enode_store.ERef_False = er_false;
+    assert(ptr_new_true  == logic.getTerm_true());
+    assert(ptr_new_false == logic.getTerm_false());
+
+    enode_store.ERef_True  = enode_store.termToERef[ptr_new_true];
+    enode_store.ERef_False = enode_store.termToERef[ptr_new_false];
     // add the term (= true false) to term store
     vec<PTRef> tmp;
     tmp.push(logic.getTerm_true());
     tmp.push(logic.getTerm_false());
     PTRef neq = term_store.insertTerm(logic.getSym_eq(), tmp);
-    assertNEq(logic.getTerm_true(), logic.getTerm_false(), neq); }
+    assertNEq(logic.getTerm_true(), logic.getTerm_false(), neq);
+    Eq_FALSE = neq;
+  }
 
   ~Egraph( )
   {
@@ -442,7 +448,7 @@ public:
   lbool   addEquality     ( PTRef );
   lbool   addTrue         ( PTRef );
   lbool   addFalse        ( PTRef );
-  lbool   addTerm         ( PTRef );
+  PTRef   addTerm         ( PTRef );
 private:
   bool    assertEq        ( PTRef, PTRef, PTRef );                // Asserts an equality
   bool    assertNEq       ( PTRef, PTRef, PTRef );                // Asserts a negated equality
@@ -466,6 +472,7 @@ private:
   //
   void     expExplain           ( );                            // Main routine for explanation
   void     expExplain           ( PTRef, PTRef, PTRef );        // Enqueue equality and explain
+  PTRef    canonize             ( PTRef x );                    // return the canonical term
   void     expStoreExplanation  ( ERef, ERef, PTRef );          // Store the explanation for the merge
   void     expExplainAlongPath  ( PTRef, PTRef );               // Store explanation in explanation
   void     expEnqueueArguments  ( PTRef, PTRef );               // Enqueue arguments to be explained
@@ -576,8 +583,8 @@ private:
 
   string printEqClass              ( ERef );
   string printExplanation          ( );
-  string printExplanationTree      ( ERef );
-  string printExplanationTreeDotty ( ERef );
+  string printExplanationTree      ( PTRef );
+  string printExplanationTreeDotty ( PTRef );
   string printDistinctionList      ( ERef );
   string printCbeStructure         ( );
   string printCbeStructure         ( ERef, set< int > & );

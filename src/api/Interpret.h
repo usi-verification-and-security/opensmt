@@ -95,7 +95,8 @@ class Interpret {
         , thandler( uf_solver
                   , config
                   , tmap
-                  , logic )
+                  , logic
+                  )
 
         , sat_solver( config
                     , thandler )

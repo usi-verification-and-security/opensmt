@@ -201,16 +201,20 @@ declare_fun_err: ;
 //                solver.cancelUntil(0);
                 vec<PTRef> uf_terms;
                 lbool state = ts.cnfizeAndGiveToSolver(tr, uf_terms);
+                for (int i = 0; i < uf_terms.size() && state != l_False; i++) {
+                    PTRef new_tr = uf_solver.addTerm(uf_terms[i]); // uf_terms[i] != new_tr if term is not new
+                    if (new_tr != uf_terms[i]) {
+                        comment_formatted("According to uf solver, the terms %d (%s) and %d (%s) are equal", new_tr, ptstore.printTerm(new_tr), uf_terms[i], ptstore.printTerm(uf_terms[i]));
+                        state = ts.extEquals(uf_terms[i], new_tr);
+                    }
+                }
+                comment_formatted("Inserted assertion");
                 if (state == l_Undef)
                     notify_success();
                 if (state == l_False) {
                     notify_success();
                     comment_formatted("The formula is trivially unsatisfiable");
                 }
-                for (int i = 0; i < uf_terms.size(); i++)
-                    uf_solver.addTerm(uf_terms[i]); // Change here the tmap if term is known
-
-                comment_formatted("Inserted assertion");
                 return true;
             }
             else {

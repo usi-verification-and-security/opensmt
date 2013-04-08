@@ -39,12 +39,18 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 //  year      = {2005},
 // }
 
+PTRef Egraph::canonize(PTRef x) {
+    if (x == PTRef_Undef) return x;
+    ERef e = enode_store.termToERef[x];
+    return enode_store.ERefToTerms[e][0];
+}
 
 //
 // Store explanation for an eq merge
 //
 void Egraph::expStoreExplanation ( ERef x, ERef y, PTRef reason )
 {
+    reason = canonize(reason);
     assert(enode_store[x].isTerm());
     assert(enode_store[y].isTerm());
 
@@ -74,7 +80,7 @@ void Egraph::expStoreExplanation ( ERef x, ERef y, PTRef reason )
     expReRootOn( tr_y );
 
 #ifdef PEDANTIC_DEBUG
-    cout << printExpTree( tr_y );
+//    cout << printExpTree( tr_y );
 #endif
 
     if (!expParent.contains(tr_y)) expParent.insert(tr_y, tr_x);
@@ -144,8 +150,13 @@ void Egraph::expExplain () {
     while ( exp_pending.size() > 0 ) {
         assert( exp_pending.size() % 2 == 0 );
 
-        PTRef p = exp_pending.last(); exp_pending.pop();
-        PTRef q = exp_pending.last(); exp_pending.pop();
+        PTRef p_in = exp_pending.last(); exp_pending.pop();
+        PTRef q_in = exp_pending.last(); exp_pending.pop();
+
+        ERef p_er = enode_store.termToERef[p_in];
+        PTRef p = enode_store.ERefToTerms[p_er][0];
+        ERef q_er = enode_store.termToERef[q_in];
+        PTRef q = enode_store.ERefToTerms[q_er][0];
 
         if ( p == q ) continue;
 
@@ -224,7 +235,7 @@ void Egraph::expExplainAlongPath (PTRef x, PTRef y) {
         PTRef r = expReason.contains(v) ? expReason[v] : PTRef_Undef;
 
         // If it is not a congruence edge
-        if (r != PTRef_Undef) {
+        if (r != PTRef_Undef && r != Eq_FALSE) {
             if ( !isDup1(r) ) {
                 explanation.push(r);
                 storeDup1(r);
@@ -267,12 +278,28 @@ void Egraph::expEnqueueArguments(PTRef x, PTRef y) {
     }
     // Otherwise they are the same function symbol
     // Recursively enqueue the explanations for the args
+    // Use the canonical representative here in case the UF solver
+    // detected an equivalence!
     assert( term_store[x].symb() == term_store[y].symb() );
     for (uint32_t i = 0; i < term_store[x].nargs(); i++) {
         PTRef xptr = term_store[x][i];
         PTRef yptr = term_store[y][i];
-        exp_pending.push(xptr);
-        exp_pending.push(yptr);
+        ERef xer = enode_store.termToERef[xptr];
+        PTRef x_canon = enode_store.ERefToTerms[xer][0];
+        if (x_canon != xptr)
+            cout << "Duplicate reasons avoided: using "
+                 << term_store.printTerm(x_canon) << " instead of "
+                 << term_store.printTerm(xptr) << endl;
+
+        ERef yer = enode_store.termToERef[yptr];
+        PTRef y_canon = enode_store.ERefToTerms[yer][0];
+        if (y_canon != yptr)
+            cout << "Duplicate reasons avoided: using "
+                 << term_store.printTerm(y_canon) << " instead of "
+                 << term_store.printTerm(yptr) << endl;
+
+        exp_pending.push(x_canon);
+        exp_pending.push(y_canon);
     }
 }
 
@@ -341,6 +368,8 @@ PTRef Egraph::expFind(PTRef x) {
 
 PTRef Egraph::expHighestNode(PTRef x) {
     PTRef x_exp_root = expFind(x);
+    ERef er = enode_store.termToERef[x_exp_root];
+    x_exp_root = enode_store.ERefToTerms[er][0];
     return x_exp_root;
 }
 
@@ -365,32 +394,29 @@ PTRef Egraph::expNCA(PTRef x, PTRef y) {
             // We reached a node already marked by h_y
             if ( expTimeStamp.contains(h_x) && expTimeStamp[h_x] == time_stamp )
                 return h_x;
-            // Mark the node and move to the next
-            if (expParent.contains(h_x)) {
-                if ( expParent[h_x] != h_x ) {
-                    if (!expTimeStamp.contains(h_x))
-                        expTimeStamp.insert(h_x, time_stamp);
-                    else expTimeStamp[h_x] = time_stamp;
+
+            // Mark the node
+            if (!expTimeStamp.contains(h_x))
+                expTimeStamp.insert(h_x, time_stamp);
+            else expTimeStamp[h_x] = time_stamp;
+
+            // move to the next
+            if (expParent.contains(h_x) && expParent[h_x] != h_x)
                     h_x = expParent[h_x];
-                }
-            }
             else h_x = PTRef_Undef; // no parent
         }
         if ( h_y != PTRef_Undef ) {
             // We reached a node already marked by h_x
             if ( expTimeStamp.contains(h_y) && expTimeStamp[h_y] == time_stamp )
                 return h_y;
-            // Mark the node and move to the next
-            if (expParent.contains(h_y)) {
-                if ( expParent[h_y] != h_y ) {
-                    if (!expTimeStamp.contains(h_y))
-                        expTimeStamp.insert(h_y, time_stamp);
-                    else
-                        expTimeStamp[h_y] = time_stamp;
-                    expTimeStamp[h_y] = time_stamp;
+            // Mark the node
+            if (!expTimeStamp.contains(h_y))
+                expTimeStamp.insert(h_y, time_stamp);
+            else expTimeStamp[h_y] = time_stamp;
+
+            // move to the next
+            if (expParent.contains(h_y) && expParent[h_y] != h_y)
                     h_y = expParent[h_y];
-                }
-            }
             else h_y = PTRef_Undef; // no parent
         }
     }

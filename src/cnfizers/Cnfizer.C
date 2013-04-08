@@ -226,6 +226,33 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula,
     return l_Undef;
 }
 
+lbool Cnfizer::extEquals(PTRef r_new, PTRef r_old) {
+    vec<PTRef> tmp;
+
+    Lit l_new = findLit(r_new, tmp);
+
+    if (!tmap.varToTheorySymbol.contains(var(l_new))) {
+        // The variable has already been removed
+        return l_Undef;
+    }
+
+    Lit l_old = findLit(r_old, tmp);
+
+    tmap.varToTheorySymbol.remove(var(l_new));
+    tmap.theoryTerms.remove(r_new);
+
+    lbool rval = l_Undef;
+
+    vec<Lit> c1;
+    vec<Lit> c2;
+    c1.push(l_new); c1.push(~l_old);
+    c2.push(~l_new); c2.push(l_old);
+    rval = solver.addSMTClause(c1);
+    if (rval == l_False) return rval;
+    rval = solver.addSMTClause(c2);
+    return rval;
+}
+
 //
 // Apply simple de Morgan laws to the formula
 //

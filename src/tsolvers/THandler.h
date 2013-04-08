@@ -35,7 +35,6 @@ public:
            , SMTConfig &   c
            , TermMapper&   tm
            , Logic&        l
-//           , vec< Lit > &  t
 //           , vec< int > &  l
 //           , vec< char > & a
 //           , const Var     vt
@@ -45,7 +44,6 @@ public:
     , config             ( c )
     , tmap               ( tm )
     , logic              ( l )
-//    , trail              ( t )
 //    , level              ( l )
 //    , assigns            ( a )
 //    , var_True           ( vt )
@@ -62,7 +60,11 @@ public:
 
   virtual ~THandler ( ) { }
 
+#ifdef PEDANTIC_DEBUG
+  void    getConflict          ( vec<Lit>&, vec<int>&, int &, vec<Lit>& ); // Returns theory conflict in terms of literals
+#else
   void    getConflict          ( vec<Lit>&, vec<int>&, int & ); // Returns theory conflict in terms of literals
+#endif
 #ifdef PRODUCE_PROOF
   Enode * getInterpolants      ( );                     // Fill a vector with interpolants
 #endif
@@ -113,7 +115,7 @@ private:
 #endif
 
 #ifdef PEDANTIC_DEBUG
-  bool  isOnTrail     ( Lit );
+  bool  isOnTrail     ( Lit, vec<Lit>& );
 #endif
 
 //  vector< Var >       enode_id_to_var;          // Conversion EnodeID --> Var
@@ -123,7 +125,6 @@ private:
   SMTConfig &         config;                   // Reference to configuration
 //  SMTSolver &         solver;                   // Reference to SMT Solver
   TermMapper&         tmap;                     // Mappings between TRefs and Lits
-//  vec< Lit > &        trail;                    // Reference to SMT Solver trail
 //  vec< int > &        level;                    // Reference to SMT Solver level
 //  vec< char > &       assigns;                  // Reference to SMT Solver assigns
 //  const Var           var_True;                 // To specify constantly true atoms

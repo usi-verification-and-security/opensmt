@@ -17,21 +17,32 @@ ERef EnodeStore::addSymb(SymRef t) {
     return rval;
 }
 
-// Here we try a clever trick to avoid having to introduce enodes to
-// terms that are in the same equivalence class with another enode
-// already inserted.
-ERef EnodeStore::addTerm(ERef sr, ERef args, PTRef term, int level) {
+//
+// Add a term to enode store
+//
+PTRef EnodeStore::addTerm(ERef sr, ERef args, PTRef term, int level) {
     assert(ea[sr].isSymb());
-    ERef rval;
+    PTRef rval;
     if (termToERef.contains(term))
-        rval = termToERef[term];
+        rval = term;
     else {
         // Term's signature might be here already, and then it should
-        // join the equivalence group.
+        // join the equivalence group.  To have the explanations
+        // working, there must not be two terms that correspond to a
+        // single enode (this goes back to the explanation tree).  Thus
+        // we need to communicate equivality back to the caller so that
+        // eventually required actions can be taken.
         if (containsSig(sr, args)) {
-            rval = lookupSig(sr, args);
-            termToERef.insert(term, rval);
-            ERefToTerms[rval].push(term);
+            ERef canon = lookupSig(sr, args);
+            termToERef.insert(term, canon);
+            ERefToTerms[canon].push(term);
+            rval = ea[canon].getTerm();
+            cout << "Seeing the duplicate in EnodeStore: "
+                 << "ERef " << canon.x << " points to "
+                 << ERefToTerms[canon].size() << " terms." << endl;
+            for (int i = 0; i < ERefToTerms[canon].size(); i++)
+                cout << ERefToTerms[canon][i].x << " ";
+            cout << endl;
 //            cerr << "letting " << term_store.printTerm(term)
 //                 << " point to %s" << printEnode(rval) << endl;
 //            assert(false); // XXX push to the undo stack
@@ -39,28 +50,30 @@ ERef EnodeStore::addTerm(ERef sr, ERef args, PTRef term, int level) {
         else {
             bool is_edn = (ea[args].getRoot() != args);
             if (is_edn) {
+                assert(false);
 #ifdef PEDANTIC_DEBUG
                 cerr << "Non-root args" << endl;
 #endif
                 args = ea[args].getRoot();
             }
-            rval = ea.alloc(sr, args, Enode::et_term, term);
+            ERef new_er = ea.alloc(sr, args, Enode::et_term, term);
             if (is_edn) {
-                EqDepId edi(rval, level);
+                EqDepId edi(new_er, level);
                 if (!eq_dep_conses.contains(args)) {
                     vec<EqDepId> tmp;
                     eq_dep_conses.insert(args, tmp);
                 }
                 eq_dep_conses[args].push(edi);
             }
-            insertSig(rval);
-            termToERef.insert(term, rval);
+            insertSig(new_er);
+            termToERef.insert(term, new_er);
             vec<PTRef> terms;
             terms.push(term);
-            ERefToTerms.insert(rval, terms);
+            ERefToTerms.insert(new_er, terms);
 #ifdef PEDANTIC_DEBUG
-            enodes.push(rval);
+            enodes.push(new_er);
 #endif
+            rval = term;
         }
     }
     return rval;

@@ -17,6 +17,9 @@ class TermMapper {
     void getTerm(PTRef, PTRef&, bool&) const;
     Var  getVar(PTRef) const;
     Lit  getLit(PTRef) const;
+#ifdef PEDANTIC_DEBUG
+    Var  getVarDbg(int r) const { PTRef tr; tr = r; return termToVar[tr]; }
+#endif
 };
 
 #endif

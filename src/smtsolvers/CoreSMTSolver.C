@@ -638,7 +638,11 @@ void CoreSMTSolver::cancelUntilVarTempDone( )
   {
     vec< Lit > conflicting;
     int        max_decision_level;
+#ifdef PEDANTIC_DEBUG
+    theory_handler.getConflict( conflicting, level, max_decision_level, trail );
+#else
     theory_handler.getConflict( conflicting, level, max_decision_level );
+#endif
   }
 }
 

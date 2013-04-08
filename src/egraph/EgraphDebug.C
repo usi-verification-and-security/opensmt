@@ -205,6 +205,7 @@ string Egraph::printEqClass( ERef v )
     return os.str();
 }
 
+/*
 std::string Egraph::printExplanation() {
     stringstream os;
     os << "# Conflict: ";
@@ -222,32 +223,32 @@ std::string Egraph::printExplanation() {
     os << endl;
     return os.str();
 }
-
-std::string Egraph::printExplanationTree( ERef x )
+*/
+std::string Egraph::printExplanationTree( PTRef x )
 {
     stringstream os;
-    while ( x != ERef_Undef ) {
+    while ( x != PTRef_Undef ) {
         os << x.x;
-        if ( expParent[x] != ERef_Undef )
+        if ( expParent[x] != PTRef_Undef )
             os << " --[";
-        if ( expReason[x] != ERef_Undef )
+        if ( expReason[x] != PTRef_Undef )
             os << expReason[x].x;
-        if ( expParent[x]->getExpParent( ) != ERef_Undef )
+        if ( expParent[x] != PTRef_Undef )
             os << "]--> ";
         x = expParent[x];
     }
     return os.str();
 }
 
-std::string Egraph::printExplanationTreeDotty( ERef x )
+std::string Egraph::printExplanationTreeDotty( PTRef x )
 {
     stringstream os;
     os << "digraph expl" << endl;
     os << "{" << endl;
 
-    while ( x != ERef_Undef ) {
+    while ( x != PTRef_Undef ) {
         os << x.x;
-        if ( expParent[x] != ERef_Undef )
+        if ( expParent[x] != PTRef_Undef )
             os << " -> ";
         x = expParent[x];
     }

@@ -8,6 +8,7 @@
 #include "Enode.h"
 #include "EnodeStore.h"
 #include "Egraph.h"
+#include "TermMapper.h"
 
 int main(int argc, char **argv) {
     SMTConfig cfg(argc, argv);
@@ -16,7 +17,8 @@ int main(int argc, char **argv) {
     SymStore sym_store;
     PtStore term_store(sym_store, sort_store);
     Logic logic(cfg, sort_store, sym_store, term_store);
-    Egraph egraph(cfg, sort_store, sym_store, term_store, logic);
+    TermMapper tmap(logic);
+    Egraph egraph(cfg, sort_store, sym_store, term_store, logic, tmap);
 
     Identifier i("TSort");
     Sort s(i);

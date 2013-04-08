@@ -37,7 +37,7 @@ class EnodeStore {
     ERef getEnode_true()  { return ERef_True;  }
     ERef getEnode_false() { return ERef_False; }
 
-    ERef addTerm(ERef sym, ERef args, PTRef pt, int);
+    PTRef addTerm(ERef sym, ERef args, PTRef pt, int);
     ERef addSymb(SymRef t);
     ERef addList(ERef car, ERef cdr, int);
 
