@@ -37,12 +37,12 @@ PTRef EnodeStore::addTerm(ERef sr, ERef args, PTRef term, int level) {
             termToERef.insert(term, canon);
             ERefToTerms[canon].push(term);
             rval = ea[canon].getTerm();
-            cout << "Seeing the duplicate in EnodeStore: "
-                 << "ERef " << canon.x << " points to "
-                 << ERefToTerms[canon].size() << " terms." << endl;
-            for (int i = 0; i < ERefToTerms[canon].size(); i++)
-                cout << ERefToTerms[canon][i].x << " ";
-            cout << endl;
+//            cerr << "Seeing the duplicate in EnodeStore: "
+//                 << "ERef " << canon.x << " points to "
+//                 << ERefToTerms[canon].size() << " terms." << endl;
+//            for (int i = 0; i < ERefToTerms[canon].size(); i++)
+//                cerr << ERefToTerms[canon][i].x << " ";
+//            cerr << endl;
 //            cerr << "letting " << term_store.printTerm(term)
 //                 << " point to %s" << printEnode(rval) << endl;
 //            assert(false); // XXX push to the undo stack

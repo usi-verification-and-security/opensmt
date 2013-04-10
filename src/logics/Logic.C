@@ -179,6 +179,7 @@ bool Logic::declare_sort_hook(Sort* s) {
     tr = sym_store.newSymb(tk_ite, params);
     if (tr == SymRef_Undef) { return false; }
     sym_store[tr].setNoScoping();
+    ites.insert(tr, true);
 
     return true;
 }

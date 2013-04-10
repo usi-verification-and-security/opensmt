@@ -205,25 +205,6 @@ string Egraph::printEqClass( ERef v )
     return os.str();
 }
 
-/*
-std::string Egraph::printExplanation() {
-    stringstream os;
-    os << "# Conflict: ";
-    for ( int i = 0 ; i < explanation.size( ) ; i ++ ) {
-        if ( i > 0 )
-            os << ", ";
-
-//        assert( explanation[ i ]->hasPolarity( ) );
-        assert(solver->value(tmap.termToVar[explanation[i]]) != l_Undef);
-        if ( solver->value(tmap.termToVar[explanation[i]]) == l_False )
-            os << "!";
-
-        os << explanation[i].x;
-    }
-    os << endl;
-    return os.str();
-}
-*/
 std::string Egraph::printExplanationTree( PTRef x )
 {
     stringstream os;

@@ -41,6 +41,8 @@ class Logic {
     PTRef               term_TRUE;
     PTRef               term_FALSE;
 
+
+  public:
     static const char*  tk_true;
     static const char*  tk_false;
     static const char*  tk_not;
@@ -52,7 +54,6 @@ class Logic {
     static const char*  tk_distinct;
     static const char*  tk_ite;
 
-  public:
     Logic(SMTConfig& c, SStore& s, SymStore& t, PtStore& pt);
 
 

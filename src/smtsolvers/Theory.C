@@ -144,9 +144,9 @@ int CoreSMTSolver::checkTheory( bool complete )
   int        backtrack_level;
 
 #ifdef PEDANTIC_DEBUG
-  theory_handler.getConflict(conflicting, level, max_decision_level, trail);
+  theory_handler.getConflict(conflicting, level, max_decision_level, assigns, trail);
 #else
-  theory_handler.getConflict(conflicting, level, max_decision_level);
+  theory_handler.getConflict(conflicting, level, max_decision_level, assigns);
 #endif
 #if PRODUCE_PROOF
   Enode * interp = NULL;

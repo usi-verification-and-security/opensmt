@@ -61,9 +61,9 @@ public:
   virtual ~THandler ( ) { }
 
 #ifdef PEDANTIC_DEBUG
-  void    getConflict          ( vec<Lit>&, vec<int>&, int &, vec<Lit>& ); // Returns theory conflict in terms of literals
+  void    getConflict          ( vec<Lit>&, vec<int>&, int &, vec<char>&, vec<Lit>& ); // Returns theory conflict in terms of literals
 #else
-  void    getConflict          ( vec<Lit>&, vec<int>&, int & ); // Returns theory conflict in terms of literals
+  void    getConflict          ( vec<Lit>&, vec<int>&, int &, vec<char>& ); // Returns theory conflict in terms of literals
 #endif
 #ifdef PRODUCE_PROOF
   Enode * getInterpolants      ( );                     // Fill a vector with interpolants
@@ -140,6 +140,13 @@ private:
   unsigned            tatoms_given;             // Next atom to give
   vec< ERef >         tatoms_list;              // List of tatoms to communicate later
   vec< bool >         tatoms_give;              // We might want not to give some atoms
+
+
+// Debug
+#ifdef PEDANTIC_DEBUG
+  std::string printExplanation(vec<PTRef>&, vec<char>&);
+  std::string printAssertions(vec<Lit>&);
+#endif
 };
 
 #endif

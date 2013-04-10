@@ -165,6 +165,10 @@ bool THandler::assertLits(vec<Lit>& trail)
     assert( checked_trail_size == stack.size_( ) );
     assert( (int)stack.size( ) <= trail.size( ) );
 
+#ifdef PEDANTIC_DEBUG
+    vec<Lit> assertions;
+#endif
+
     for ( int i = checked_trail_size;
           i < trail.size( ) && (res != l_False);
           i ++ ) {
@@ -184,6 +188,10 @@ bool THandler::assertLits(vec<Lit>& trail)
         else if ( pt_r == logic.getTerm_false() ) { assert(sign(l) == true ); continue; }
 
         // We are interested only in theory atoms from here onwards
+
+#ifdef PEDANTIC_DEBUG
+        assertions.push(l);
+#endif
 
         // Push backtrack point
         egraph.pushBacktrackPoint( );
@@ -219,6 +227,11 @@ bool THandler::assertLits(vec<Lit>& trail)
 
     checked_trail_size = stack.size( );
 //  assert( !res || trail.size( ) == (int)stack.size( ) );
+#ifdef PEDANTIC_DEBUG
+    if (res != l_False)
+        cout << "; non-conflicting" << endl;
+    cout << printAssertions(assertions);
+#endif
 
     return res != l_False;
 }
@@ -264,6 +277,7 @@ void THandler::getConflict (
         vec<Lit> & conflict
         , vec<int>& level
         , int & max_decision_level
+        , vec<char>& assigns
 #ifdef PEDANTIC_DEBUG
         , vec<Lit>& trail
 #endif
@@ -274,6 +288,9 @@ void THandler::getConflict (
     // wants a clause we store it in the form ( l1 | ... | ln )
     // where li is the literal corresponding with ei with polarity !pi
     vec< PTRef > & explanation = egraph.getConflict();
+#ifdef PEDANTIC_DEBUG
+    cout << printExplanation(explanation, assigns);
+#endif
     if ( explanation.size() == 0 ) {
         max_decision_level = 0;
         return;
@@ -315,6 +332,10 @@ void THandler::getConflict (
 
 //        Var v = enodeToVar( ei );
         Lit l = tmap.getLit(tr);
+        // Get the sign right
+        lbool val = toLbool(assigns[var(l)] ^ sign(l));
+        if (val == l_False)
+            l = ~l;
 #ifdef PEDANTIC_DEBUG
         assert( isOnTrail(l, trail) );
 #endif
@@ -813,6 +834,43 @@ void THandler::verifyInterpolantWithExternalTool( vector< Enode * > & expl
     if ( tool_res == true )
       opensmt_error2( config.certifying_solver, " says B & I does not hold" );
   }
+}
+#endif
+
+#ifdef PEDANTIC_DEBUG
+std::string THandler::printAssertions(vec<Lit>& assertions) {
+    stringstream os;
+    os << "; assertions: ";
+    for (int i = 0; i < assertions.size(); i++) {
+        if (i > 0)
+            os << ", ";
+        Var v = var(assertions[i]);
+        PTRef pt_r = tmap.varToTerm[v];
+        if (sign(assertions[i]))
+            os << "!";
+        os << logic.term_store.printTerm(pt_r);
+    }
+    os << endl;
+    return os.str();
+}
+
+std::string THandler::printExplanation(vec<PTRef>& explanation, vec<char>& assigns) {
+    stringstream os;
+    os << "; Conflict: ";
+    for ( int i = 0 ; i < explanation.size( ) ; i ++ ) {
+        if ( i > 0 )
+            os << ", ";
+        Var v = tmap.termToVar[explanation[i]];
+        lbool val = toLbool(assigns[v]);
+        assert(val != l_Undef);
+        if ( val == l_False )
+            os << "!";
+
+        os << logic.term_store.printTerm(explanation[i]);
+        os << "[var " << v << "]";
+    }
+    os << endl;
+    return os.str();
 }
 #endif
 

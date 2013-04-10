@@ -169,7 +169,7 @@ public:
   int          dump_formula;                 // Dump input formula
   int          verbosity() const             // Verbosity level
     { return optionTable.contains(":verbosity") ?
-        optionTable[":verbosity"].getValue().numval : 2; }
+        optionTable[":verbosity"].getValue().numval : 0; }
   int          printSuccess() const
      { return optionTable.contains(":print-success") ?
         optionTable[":print-success"].getValue().numval == 1: false; }

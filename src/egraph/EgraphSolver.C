@@ -825,7 +825,7 @@ Enode * Egraph::getInterpolants( logic_t & l )
 //}
 #endif
 
-PTRef Egraph::addTerm(PTRef term) {
+PTRef Egraph::addTerm(PTRef term, vec<PtPair>& ites) {
     assert( logic.isTheoryTerm(term) );
     // In general we don't want to put the Boolean equalities to UF
     // solver.  However, the Boolean uninterpreted functions are an
@@ -842,8 +842,29 @@ PTRef Egraph::addTerm(PTRef term) {
         queue.pop();
         to_process.push(tr);
         Pterm& tm = term_store[tr];
-        for (int i = 0; i < tm.size(); i++)
+        for (int i = 0; i < tm.size(); i++) {
+            if (logic.isIte(term_store[tm[i]].symb())) {
+                // (1) Add a new term o_ite with no arguments and same sort as tm[i]
+                // (2) add tm[i] to ites
+                // (3) replace tm[i] with o_ite
+                SRef sr = sym_store[term_store[tm[i]].symb()].rsort();
+                vec<SRef> sort_args;
+                sort_args.push(sr);
+                char* name = NULL;
+                asprintf(&name, ".oite%d", tm[i].x);
+                SymRef sym = sym_store.newSymb(name, sort_args);
+                // The symbol might already be there
+                if (sym == SymRef_Undef) {
+                    assert(sym_store.nameToRef(name).size() == 1);
+                    sym = sym_store.nameToRef(name)[0];
+                }
+                PTRef o_ite = term_store.insertTerm(sym, vec<PTRef>());
+                assert(o_ite != PTRef_Undef);
+                ites.push(PtPair(tm[i], o_ite));
+                tm[i] = o_ite;
+            }
             queue.push(tm[i]);
+        }
     }
 
 #ifdef PEDANTIC_DEBUG

@@ -32,7 +32,6 @@ struct Equal<const PTRef> {
 //typedef uint32_t TRef;
 typedef uint32_t PTId; // Used as an array index
 
-// args[0].sort is the return sort, rest are arguments.
 class Pterm {
     struct {
         unsigned type       : 3;
@@ -79,7 +78,8 @@ class Pterm {
         return new (mem) Pterm(sym, ps); }
 
     int      size        ()      const   { return header.size; }
-    PTRef    operator [] (int i) const   { return args[i]; }
+    const PTRef& operator [] (int i) const   { return args[i]; }
+    PTRef&       operator [] (int i)         { return args[i]; }
     SymRef   symb        ()      const   { return sym; }
     bool     has_extra   ()      const   { return false; }
     bool     reloced     ()      const   { return header.reloced; }
@@ -103,6 +103,13 @@ class Pterm {
     int      getId() const { return id; }
     void     setId(int i) { id = i; }
 
+};
+
+class PtPair {
+  public:
+    PTRef x;
+    PTRef y;
+    PtPair(PTRef x_, PTRef y_) : x(x_), y(y_) {}
 };
 
 class PtermAllocator : public RegionAllocator<uint32_t>

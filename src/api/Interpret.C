@@ -199,13 +199,58 @@ declare_fun_err: ;
                 // Get the egraph data structure for instance from here
                 // Terms need to be purified before cnfization?
 //                solver.cancelUntil(0);
-                vec<PTRef> uf_terms;
-                lbool state = ts.cnfizeAndGiveToSolver(tr, uf_terms);
-                for (int i = 0; i < uf_terms.size() && state != l_False; i++) {
-                    PTRef new_tr = uf_solver.addTerm(uf_terms[i]); // uf_terms[i] != new_tr if term is not new
-                    if (new_tr != uf_terms[i]) {
-                        comment_formatted("According to uf solver, the terms %d (%s) and %d (%s) are equal", new_tr, ptstore.printTerm(new_tr), uf_terms[i], ptstore.printTerm(uf_terms[i]));
-                        state = ts.extEquals(uf_terms[i], new_tr);
+                vec<PTRef> terms;
+                terms.push(tr);
+                lbool state;
+                while (terms.size() != 0) {
+                    vec<PTRef> uf_terms;
+                    PTRef ctr = terms.last();
+                    terms.pop();
+                    state = ts.cnfizeAndGiveToSolver(ctr, uf_terms);
+                    for (int i = 0; i < uf_terms.size() && state != l_False; i++) {
+                        vec<PtPair> ites;
+                        PTRef new_tr = uf_solver.addTerm(uf_terms[i], ites); // uf_terms[i] != new_tr if term is not new
+                        if (new_tr != uf_terms[i]) {
+                            comment_formatted("According to uf solver, the terms %d (%s) and %d (%s) are equal", new_tr, ptstore.printTerm(new_tr), uf_terms[i], ptstore.printTerm(uf_terms[i]));
+                            state = ts.extEquals(uf_terms[i], new_tr);
+                        }
+                        comment_formatted("%d ites in need of conversion", ites.size());
+                        for (int j = 0; j < ites.size(); j++) {
+                            PTRef ite  = ites[j].x;
+                            PTRef sbst = ites[j].y;
+                            PTRef b = ptstore[ite][0];
+                            PTRef t = ptstore[ite][1];
+                            PTRef e = ptstore[ite][2];
+
+                            // b -> (= sbst t)
+                            vec<PTRef> args_eq;
+                            args_eq.push(sbst);
+                            args_eq.push(t);
+                            PTRef eq_term = ptstore.lookupTerm(Logic::tk_equals, args_eq);
+                            assert(eq_term != PTRef_Undef);
+                            vec<PTRef> args_impl;
+                            args_impl.push(b);
+                            args_impl.push(eq_term);
+                            PTRef if_term = ptstore.lookupTerm(Logic::tk_implies, args_impl);
+                            assert(if_term != PTRef_Undef);
+                            // \neg b -> (= sbst e)
+                            args_eq.pop();
+                            args_eq.push(e);
+                            eq_term = ptstore.lookupTerm(Logic::tk_equals, args_eq);
+                            assert(eq_term != PTRef_Undef);
+                            vec<PTRef> args_neg;
+                            args_neg.push(b);
+                            PTRef neg_term = ptstore.lookupTerm(Logic::tk_not, args_neg);
+                            vec<PTRef> args_impl2;
+                            args_impl2.push(neg_term);
+                            args_impl2.push(eq_term);
+
+                            PTRef else_term = ptstore.lookupTerm(Logic::tk_implies, args_impl2);
+                            assert(else_term != PTRef_Undef);
+
+                            terms.push(if_term);
+                            terms.push(else_term);
+                        }
                     }
                 }
                 comment_formatted("Inserted assertion");

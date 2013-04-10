@@ -448,7 +448,7 @@ public:
   lbool   addEquality     ( PTRef );
   lbool   addTrue         ( PTRef );
   lbool   addFalse        ( PTRef );
-  PTRef   addTerm         ( PTRef );
+  PTRef   addTerm         ( PTRef, vec<PtPair>& );
 private:
   bool    assertEq        ( PTRef, PTRef, PTRef );                // Asserts an equality
   bool    assertNEq       ( PTRef, PTRef, PTRef );                // Asserts a negated equality
