@@ -202,6 +202,9 @@ declare_fun_err: ;
                 vec<PTRef> terms;
                 terms.push(tr);
                 lbool state;
+#ifdef PEDANTIC_DEBUG
+                vec<PTRef> glue_terms;
+#endif
                 while (terms.size() != 0) {
                     vec<PTRef> uf_terms;
                     PTRef ctr = terms.last();
@@ -250,10 +253,18 @@ declare_fun_err: ;
 
                             terms.push(if_term);
                             terms.push(else_term);
+#ifdef PEDANTIC_DEBUG
+                            glue_terms.push(if_term);
+                            glue_terms.push(else_term);
+#endif
                         }
                     }
                 }
                 comment_formatted("Inserted assertion");
+#ifdef PEDANTIC_DEBUG
+                for (int i = 0; i < glue_terms.size(); i++)
+                    comment_formatted("Glue term: %s", ptstore.printTerm(glue_terms[i]));
+#endif
                 if (state == l_Undef)
                     notify_success();
                 if (state == l_False) {

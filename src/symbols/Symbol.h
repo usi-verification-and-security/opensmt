@@ -36,7 +36,7 @@ class Symbol {
     struct {
         unsigned type       : 3;
         unsigned learnt     : 1;
-        unsigned has_extra  : 1;
+        unsigned commutes   : 1;
         unsigned reloced    : 1;
         unsigned noscoping  : 1;
         unsigned constant   : 1;
@@ -53,7 +53,7 @@ class Symbol {
     Symbol(const vec<SRef>& ps) {
         header.type      = 0;
         header.learnt    = 0;
-        header.has_extra = 0;
+        header.commutes  = 0;
         header.reloced   = 0;
         header.noscoping = 0;           // This is an optimization to avoid expensive name lookup on logic operations
         header.constant  = false;
@@ -80,7 +80,7 @@ class Symbol {
     int      size        ()      const   { return header.size; }
     SRef     operator [] (int i) const   { return args[i+1].sort; }
     SRef     rsort       ()      const   { return args[0].sort; }
-    bool     has_extra   ()      const   { return false; }
+    bool     commutes    ()      const   { return header.commutes; }
     bool     reloced     ()      const   { return header.reloced; }
     SymRef   relocation  ()      const   { return args[0].rel; }
     bool     learnt      ()      const   { return header.learnt; }
@@ -100,6 +100,7 @@ class Symbol {
     bool     setChainable ()             { if (header.type != 0) return false; return (header.type = 3); }
     bool     setPairwise  ()             { if (header.type != 0) return false; return (header.type = 4); }
     void     setNoScoping ()             { header.noscoping = 1; }
+    void     setCommutes  ()             { header.commutes  = 1; }
 
     int      getId() const { return id; }
     void     setId(int i) { id = i; }

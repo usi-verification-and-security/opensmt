@@ -168,8 +168,13 @@ public:
   bool         docset;                       // Diagnostic Output Channel set ?
   int          dump_formula;                 // Dump input formula
   int          verbosity() const             // Verbosity level
+#ifdef PEDANTIC_DEBUG
+    { return optionTable.contains(":verbosity") ?
+        optionTable[":verbosity"].getValue().numval : 2; }
+#else
     { return optionTable.contains(":verbosity") ?
         optionTable[":verbosity"].getValue().numval : 0; }
+#endif
   int          printSuccess() const
      { return optionTable.contains(":print-success") ?
         optionTable[":print-success"].getValue().numval == 1: false; }

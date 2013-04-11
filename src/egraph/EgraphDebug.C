@@ -209,14 +209,17 @@ std::string Egraph::printExplanationTree( PTRef x )
 {
     stringstream os;
     while ( x != PTRef_Undef ) {
-        os << x.x;
-        if ( expParent[x] != PTRef_Undef )
+        os << term_store.printTerm(x);
+        if ( expParent.contains(x) && expParent[x] != PTRef_Undef )
             os << " --[";
-        if ( expReason[x] != PTRef_Undef )
-            os << expReason[x].x;
-        if ( expParent[x] != PTRef_Undef )
+        if ( expReason.contains(x) && expReason[x] != PTRef_Undef )
+            os << term_store.printTerm(expReason[x]);
+        if ( expParent.contains(x) && expParent[x] != PTRef_Undef )
             os << "]--> ";
-        x = expParent[x];
+        if (!expParent.contains(x))
+            x = PTRef_Undef;
+        else
+            x = expParent[x];
     }
     return os.str();
 }

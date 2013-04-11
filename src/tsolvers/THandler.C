@@ -221,6 +221,12 @@ bool THandler::assertLits(vec<Lit>& trail)
             assert(false);
 
 
+#ifdef PEDANTIC_DEBUG
+        if (res == l_False) {
+            cerr << "conflict asserting " << logic.term_store.printTerm(pt_r)
+                 << endl;
+        }
+#endif
 //    if ( !res && config.certification_level > 2 )
 //      verifyCallWithExternalTool( res, i );
     }
@@ -339,7 +345,7 @@ void THandler::getConflict (
 #ifdef PEDANTIC_DEBUG
         assert( isOnTrail(l, trail) );
 #endif
-        conflict.push( l );
+        conflict.push( ~l );
 
         if ( max_decision_level < level[ var(l) ] )
             max_decision_level = level[ var(l) ];
@@ -848,7 +854,7 @@ std::string THandler::printAssertions(vec<Lit>& assertions) {
         PTRef pt_r = tmap.varToTerm[v];
         if (sign(assertions[i]))
             os << "!";
-        os << logic.term_store.printTerm(pt_r);
+        os << logic.term_store.printTerm(pt_r) << "[var " << v << "] ";
     }
     os << endl;
     return os.str();

@@ -160,6 +160,7 @@ bool Logic::declare_sort_hook(Sort* s) {
     tr = sym_store.newSymb(tk_equals, params);
     if (tr == SymRef_Undef) { return false; }
     sym_store[tr].setNoScoping();
+    sym_store[tr].setCommutes();
     equalities.insert(tr, true);
 
     // distinct
@@ -167,6 +168,7 @@ bool Logic::declare_sort_hook(Sort* s) {
     if (tr == SymRef_Undef) { return false; }
     if (sym_store[tr].setPairwise() == false) return false;
     sym_store[tr].setNoScoping();
+    sym_store[tr].setCommutes();
     disequalities.insert(tr, true);
 
     // ite

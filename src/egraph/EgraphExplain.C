@@ -41,8 +41,11 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 
 PTRef Egraph::canonize(PTRef x) {
     if (x == PTRef_Undef) return x;
-    ERef e = enode_store.termToERef[x];
-    return enode_store.ERefToTerms[e][0];
+    if (enode_store.termToERef.contains(x)) {
+        ERef e = enode_store.termToERef[x];
+        return enode_store.ERefToTerms[e][0];
+    }
+    else return x;
 }
 
 //
@@ -79,9 +82,6 @@ void Egraph::expStoreExplanation ( ERef x, ERef y, PTRef reason )
     // Reroot the explanation tree on y. It has an amortized cost of logn
     expReRootOn( tr_y );
 
-#ifdef PEDANTIC_DEBUG
-//    cout << printExpTree( tr_y );
-#endif
 
     if (!expParent.contains(tr_y)) expParent.insert(tr_y, tr_x);
     else expParent[tr_y] = tr_x;
@@ -98,6 +98,7 @@ void Egraph::expStoreExplanation ( ERef x, ERef y, PTRef reason )
 #ifdef PEDANTIC_DEBUG
     assert( checkExpTree(tr_x) );
     assert( checkExpTree(tr_y) );
+    cout << printExplanationTree( tr_y ) << endl;
 #endif
 }
 
@@ -287,14 +288,14 @@ void Egraph::expEnqueueArguments(PTRef x, PTRef y) {
         ERef xer = enode_store.termToERef[xptr];
         PTRef x_canon = enode_store.ERefToTerms[xer][0];
         if (x_canon != xptr)
-            cout << "Duplicate reasons avoided: using "
+            cerr << "Duplicate reasons avoided: using "
                  << term_store.printTerm(x_canon) << " instead of "
                  << term_store.printTerm(xptr) << endl;
 
         ERef yer = enode_store.termToERef[yptr];
         PTRef y_canon = enode_store.ERefToTerms[yer][0];
         if (y_canon != yptr)
-            cout << "Duplicate reasons avoided: using "
+            cerr << "Duplicate reasons avoided: using "
                  << term_store.printTerm(y_canon) << " instead of "
                  << term_store.printTerm(yptr) << endl;
 

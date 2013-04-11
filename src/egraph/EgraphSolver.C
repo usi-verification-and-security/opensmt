@@ -832,6 +832,10 @@ PTRef Egraph::addTerm(PTRef term, vec<PtPair>& ites) {
     // exception.
 //    assert( sym_store[t.symb()][0] != logic.getSort_bool() );
 
+    assert(logic.isEquality(term_store[term].symb())    ||
+           logic.isDisequality(term_store[term].symb()) ||
+           logic.isUP(term));
+
     vec<PTRef> queue;
     queue.push(term);
     vec<PTRef> to_process;
@@ -840,7 +844,12 @@ PTRef Egraph::addTerm(PTRef term, vec<PtPair>& ites) {
     while (queue.size() != 0) {
         PTRef tr = queue.last();
         queue.pop();
-        to_process.push(tr);
+#ifdef PEDANTIC_DEBUG
+        cerr << "Considering term " << term_store.printTerm(tr) << endl;
+#endif
+        if (!logic.isEquality(term_store[tr].symb()) &&
+            !logic.isDisequality(term_store[tr].symb()))
+            to_process.push(tr);
         Pterm& tm = term_store[tr];
         for (int i = 0; i < tm.size(); i++) {
             if (logic.isIte(term_store[tm[i]].symb())) {
@@ -861,7 +870,9 @@ PTRef Egraph::addTerm(PTRef term, vec<PtPair>& ites) {
                 PTRef o_ite = term_store.insertTerm(sym, vec<PTRef>());
                 assert(o_ite != PTRef_Undef);
                 ites.push(PtPair(tm[i], o_ite));
+                cerr << "; changing " << term_store.printTerm(tr) << " to ";
                 tm[i] = o_ite;
+                cerr << term_store.printTerm(tr) << endl;
             }
             queue.push(tm[i]);
         }
@@ -879,6 +890,16 @@ PTRef Egraph::addTerm(PTRef term, vec<PtPair>& ites) {
             new_terms = true;
 #endif
             Pterm& tm = term_store[tr];
+            if (sym_store[tm.symb()].commutes()) {
+#ifdef PEDANTIC_DEBUG
+                cerr << "The term " << term_store.printTerm(tr) << " is commutative"
+                     << " and will be sorted to ";
+#endif
+                termSort(tm);
+#ifdef PEDANTIC_DEBUG
+                cerr << term_store.printTerm(tr) << "." << endl;
+#endif
+            }
             ERef sym = enode_store.addSymb(tm.symb());
             ERef cdr = ERef_Nil;
             for (int j = tm.size()-1; j >= 0; j--) {
@@ -924,7 +945,7 @@ PTRef Egraph::addTerm(PTRef term, vec<PtPair>& ites) {
 //        cout << "All was seen" << endl;
 #endif
 
-    return rval;
+    return term;
 }
 
 

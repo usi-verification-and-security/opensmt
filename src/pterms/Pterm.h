@@ -5,6 +5,7 @@
 #include "Vec.h"
 #include "Alloc.h"
 #include "Symbol.h"
+#include "Sort.h"
 
 //typedef RegionAllocator<uint32_t>::Ref PTRef;
 
@@ -28,7 +29,6 @@ struct Equal<const PTRef> {
     bool operator() (const PTRef& s1, const PTRef& s2) { return s1 == s2; }
 };
 
-
 //typedef uint32_t TRef;
 typedef uint32_t PTId; // Used as an array index
 
@@ -47,6 +47,7 @@ class Pterm {
 
     friend class PtermAllocator;
     friend class PTStore;
+    friend void termSort(Pterm&);
   public:
     // Note: do not use directly (no memory allocation for args)
     Pterm(const SymRef sym_, const vec<PTRef>& ps) : sym(sym_) {
@@ -168,5 +169,12 @@ class PtermAllocator : public RegionAllocator<uint32_t>
 //        else if (to[tr].has_extra()) to[tr].calcAbstraction();
     }
 };
+
+struct LessThan_PTRef {
+    bool operator () (PTRef& x, PTRef& y) { return x.x < y.x; } };
+
+inline void termSort(Pterm& t) {
+//    PTRef                               args[0]; // Either the terms or the relocation reference
+    sort(t.args, t.size(), LessThan_PTRef()); }
 
 #endif
