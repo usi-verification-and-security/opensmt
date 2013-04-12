@@ -35,7 +35,7 @@ PTRef EnodeStore::addTerm(ERef sr, ERef args, PTRef term, int level) {
         if (containsSig(sr, args)) {
             ERef canon = lookupSig(sr, args);
             termToERef.insert(term, canon);
-            ERefToTerms[canon].push(term);
+//            ERefToTerms[canon].push(term);
             rval = ea[canon].getTerm();
 //            cerr << "Seeing the duplicate in EnodeStore: "
 //                 << "ERef " << canon.x << " points to "

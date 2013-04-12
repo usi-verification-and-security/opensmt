@@ -61,6 +61,11 @@ private:
   Map<PTRef,PTRef,PTRefHash,Equal<PTRef> > expReason;
   Map<PTRef,PTRef,PTRefHash,Equal<PTRef> > expRoot;
 
+  // Duplicates for the interface equalities, disequalities and UPs
+  VecKeyMap<ERef,PTRef,ERef_vecHash,ERef_vecEq> eq_terms;
+  VecKeyMap<ERef,PTRef,ERef_vecHash,ERef_vecEq> deq_terms;
+  VecKeyMap<ERef,PTRef,ERef_vecHash,ERef_vecEq> up_terms;
+
 public:
   SimpSMTSolver* solver; // for debugging only
 
@@ -471,7 +476,11 @@ private:
   // Explanation routines and data
   //
   void     expExplain           ( );                            // Main routine for explanation
+#ifdef PRODUCE_PROOF
   void     expExplain           ( PTRef, PTRef, PTRef );        // Enqueue equality and explain
+#else
+  void     expExplain           ( PTRef, PTRef );               // Enqueue equality and explain
+#endif
   PTRef    canonize             ( PTRef x );                    // return the canonical term
   void     expStoreExplanation  ( ERef, ERef, PTRef );          // Store the explanation for the merge
   void     expExplainAlongPath  ( PTRef, PTRef );               // Store explanation in explanation

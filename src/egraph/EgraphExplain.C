@@ -98,7 +98,7 @@ void Egraph::expStoreExplanation ( ERef x, ERef y, PTRef reason )
 #ifdef PEDANTIC_DEBUG
     assert( checkExpTree(tr_x) );
     assert( checkExpTree(tr_y) );
-    cout << printExplanationTree( tr_y ) << endl;
+//    cout << printExplanationTree( tr_y ) << endl;
 #endif
 }
 
@@ -169,14 +169,22 @@ void Egraph::expExplain () {
         PTRef w = expNCA(p, q);
         assert(w != PTRef_Undef);
 
+#ifdef PEDANTIC_DEBUG
+        cerr << "Explanation from " << term_store.printTerm(p) << " to " << term_store.printTerm(w) << ":" << endl;
+        cerr << " " << printExplanationTree(p) << endl;
+        cerr << "Explanation from " << term_store.printTerm(q) << " to " << term_store.printTerm(w) << ":" << endl;
+        cerr << " " <<printExplanationTree(q) << endl;
+#endif
         expExplainAlongPath( p, w );
         expExplainAlongPath( q, w );
     }
 }
 
 // Exported explain
+/*
 void Egraph::explain( PTRef x, PTRef y, vec<PTRef> & expl )
 {
+    assert(false);
     assert(explanation.size() == 0);
     if (x == y) return;
     expExplain(x, y, PTRef_Undef);
@@ -190,16 +198,17 @@ void Egraph::explain( PTRef x, PTRef y, vec<PTRef> & expl )
         cgraph.clear( );
 #endif
 }
-
+*/
 //
 // Produce an explanation between nodes x and y
 // Wrapper for expExplain
 //
-void Egraph::expExplain(PTRef x, PTRef y, PTRef
-#ifdef PRODUCE_PROOF
-    r
+#ifndef PRODUCE_PROOF
+void Egraph::expExplain(PTRef x, PTRef y)
+#else
+void Egraph::expExplain(PTRef x, PTRef y, PTRef r)
 #endif
-    ) {
+{
     exp_pending.push(x);
     exp_pending.push(y);
 
@@ -215,11 +224,12 @@ void Egraph::expExplain(PTRef x, PTRef y, PTRef
 
 void Egraph::expCleanup() {
   // Destroy the eq classes of the explanation
-    while (exp_cleanup.size() != 0) {
-        PTRef x = exp_cleanup.last();
+    for (int i = 0; i < exp_cleanup.size(); i++) {
+        PTRef x = exp_cleanup[i];
+        assert(expRoot.contains(x));
         expRoot[x] = x;
-        exp_cleanup.pop();
     }
+    exp_cleanup.clear();
 }
 
 //
@@ -228,6 +238,7 @@ void Egraph::expCleanup() {
 //
 void Egraph::expExplainAlongPath (PTRef x, PTRef y) {
     PTRef v  = expHighestNode(x);
+    // Why this? Not in the pseudo code!
     PTRef to = expHighestNode(y);
 
     while ( v != to ) {
@@ -333,9 +344,9 @@ void Egraph::expUnion(PTRef x, PTRef y) {
 
     int sz = expClassSize[x_exp_root] + expClassSize[y_exp_root];
     expClassSize[x_exp_root] = sz;
-    // Keep track of this union
-    exp_cleanup.push(x_exp_root);
-    exp_cleanup.push(y_exp_root);
+    // Keep track of this union (this is done in expFind already)
+//    exp_cleanup.push(x_exp_root);
+//    exp_cleanup.push(y_exp_root);
 
 #ifdef PEDANTIC_DEBUG
     assert(checkExpReachable(x, x_exp_root));
@@ -359,8 +370,8 @@ PTRef Egraph::expFind(PTRef x) {
     }
     // Path compression
     for (int i = 0; i < path_compr.size(); i++) {
-        if (!expRoot.contains(path_compr[i])) expRoot.insert(path_compr[i], x);
-        else expRoot[path_compr[i]] = x;
+        assert(expRoot.contains(path_compr[i]));
+        expRoot[path_compr[i]] = x;
         exp_cleanup.push(path_compr[i]);
     }
 
@@ -369,8 +380,16 @@ PTRef Egraph::expFind(PTRef x) {
 
 PTRef Egraph::expHighestNode(PTRef x) {
     PTRef x_exp_root = expFind(x);
+#ifdef PEDANTIC_DEBUG
     ERef er = enode_store.termToERef[x_exp_root];
-    x_exp_root = enode_store.ERefToTerms[er][0];
+    if (enode_store.ERefToTerms[er].size() > 1) {
+        cerr << "Oversized eref";
+        for (int i = 0; i < enode_store.ERefToTerms[er].size(); i++)
+            cerr << " " << term_store.printTerm(enode_store.ERefToTerms[er][i]);
+        cerr << endl;
+    }
+    assert(enode_store.ERefToTerms[er].size() == 1);
+#endif
     return x_exp_root;
 }
 

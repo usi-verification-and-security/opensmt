@@ -375,6 +375,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
             else
                 args.push(arg_term);
         }
+        assert(args.size() > 0);
 
         PTRef tr = ptstore.lookupTerm(name, args);
         if (tr == PTRef_Undef) {

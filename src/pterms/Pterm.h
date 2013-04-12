@@ -18,11 +18,11 @@ struct PTRef {
 
 static struct PTRef PTRef_Undef = {INT32_MAX};
 
-// These are redefinitions...
 struct PTRefHash {
     uint32_t operator () (const PTRef& s) const {
         return (uint32_t)s.x; }
 };
+
 
 template <>
 struct Equal<const PTRef> {
@@ -58,6 +58,13 @@ class Pterm {
         header.size      = ps.size();
 
         for (int i = 0; i < ps.size(); i++) args[i] = ps[i]; }
+    Pterm() {
+        header.type      = 0;
+        header.has_extra = 0;
+        header.reloced   = 0;
+        header.noscoping = 0;           // This is an optimization to avoid expensive name lookup on logic operations
+        header.size      = 0;
+    }
   public:
 
     // -- use this as a wrapper:
@@ -106,11 +113,20 @@ class Pterm {
 
 };
 
+
 class PtPair {
   public:
     PTRef x;
     PTRef y;
     PtPair(PTRef x_, PTRef y_) : x(x_), y(y_) {}
+};
+
+class PtChild {
+  public:
+    PTRef tr;
+    PTRef parent;
+    int pos;
+    PtChild(PTRef tr_, PTRef parent_, int pos_) : tr(tr_), parent(parent_), pos(pos_) {}
 };
 
 class PtermAllocator : public RegionAllocator<uint32_t>

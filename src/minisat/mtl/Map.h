@@ -323,6 +323,142 @@ class VecMap {
     const vec<Pair>& bucket(int i) const { return table[i]; }
 };
 
+template<class K, class D, class H, class E = Equal<K> >
+class VecKeyMap {
+ public:
+    struct Pair { vec<K> key; D data; };
+
+ private:
+    H          hash;
+    E          equals;
+
+    vec<Pair>* table;
+    int        cap;
+    int        size;
+
+    // Don't allow copying (error prone):
+    VecKeyMap<K,D,H,E>&  operator = (VecKeyMap<K,D,H,E>& other) { assert(0); }
+                   VecKeyMap        (VecKeyMap<K,D,H,E>& other) { assert(0); }
+
+    bool    checkCap(int new_size) const { return new_size > cap; }
+
+    int32_t index  (const vec<K>& k) const { return hash(k) % cap; }
+    void   _insert (const vec<K>& k, const D& d) {
+        vec<Pair>& ps = table[index(k)];
+        ps.push(); k.copyTo(ps.last().key); ps.last().data = d; }
+
+    void    rehash () {
+        const vec<Pair>* old = table;
+
+        int old_cap = cap;
+        int newsize = primes[0];
+        for (int i = 1; newsize <= cap && i < nprimes; i++)
+           newsize = primes[i];
+
+        table = new vec<Pair>[newsize];
+        cap   = newsize;
+
+        for (int i = 0; i < old_cap; i++){
+            for (int j = 0; j < old[i].size(); j++){
+                _insert(old[i][j].key, old[i][j].data); }}
+
+        delete [] old;
+
+        // printf(" --- rehashing, old-cap=%d, new-cap=%d\n", cap, newsize);
+    }
+
+
+ public:
+
+    VecKeyMap  () : table(NULL), cap(0), size(0) {}
+    VecKeyMap  (const H& h, const E& e) : hash(h), equals(e), table(NULL), cap(0), size(0){}
+    ~VecKeyMap () { delete [] table; }
+
+    // PRECONDITION: the key must already exist in the map.
+    const D& operator [] (const vec<K>& k) const
+    {
+        assert(size != 0);
+        const D*         res = NULL;
+        const vec<Pair>& ps  = table[index(k)];
+        for (int i = 0; i < ps.size(); i++)
+            if (equals(ps[i].key, k))
+                res = &ps[i].data;
+        assert(res != NULL);
+        return *res;
+    }
+
+    // PRECONDITION: the key must already exist in the map.
+    D& operator [] (const vec<K>& k)
+    {
+        assert(size != 0);
+        D*         res = NULL;
+        vec<Pair>& ps  = table[index(k)];
+        for (int i = 0; i < ps.size(); i++)
+            if (equals(ps[i].key, k))
+                res = &ps[i].data;
+        assert(res != NULL);
+        return *res;
+    }
+
+    // PRECONDITION: the key must *NOT* exist in the map.
+    void insert (const vec<K>& k, const D& d) { if (checkCap(size+1)) rehash(); _insert(k, d); size++; }
+    bool peek   (const vec<K>& k, D& d) const {
+        if (size == 0) return false;
+        const vec<Pair>& ps = table[index(k)];
+        for (int i = 0; i < ps.size(); i++)
+            if (equals(ps[i].key, k)){
+                d = ps[i].data;
+                return true; } 
+        return false;
+    }
+
+    bool contains(const vec<K>& k) const {
+        if (size == 0) return false;
+        const vec<Pair>& ps = table[index(k)];
+        for (int i = 0; i < ps.size(); i++)
+            if (equals(ps[i].key, k))
+                return true;
+        return false;
+    }
+
+    // PRECONDITION: the key must exist in the map.
+    void remove(const vec<K>& k) {
+        assert(table != NULL);
+        vec<Pair>& ps = table[index(k)];
+        int j = 0;
+        for (; j < ps.size() && !equals(ps[j].key, k); j++);
+        assert(j < ps.size());
+        ps[j] = ps.last();
+        ps.pop();
+        size--;
+    }
+
+    void clear  () {
+        cap = size = 0;
+        delete [] table;
+        table = NULL;
+    }
+
+    int  elems() const { return size; }
+    int  bucket_count() const { return cap; }
+
+    // NOTE: the hash and equality objects are not moved by this method:
+    void moveTo(VecKeyMap& other){
+        delete [] other.table;
+
+        other.table = table;
+        other.cap   = cap;
+        other.size  = size;
+
+        table = NULL;
+        size = cap = 0;
+    }
+
+    // NOTE: given a bit more time, I could make a more C++-style iterator out of this:
+    const vec<Pair>& bucket(int i) const { return table[i]; }
+};
+
+
 
 //=================================================================================================
 

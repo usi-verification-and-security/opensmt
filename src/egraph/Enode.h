@@ -38,6 +38,7 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 struct ERef {
     uint32_t x;
     void operator= (uint32_t v) { x = v; }
+    inline friend bool operator<  (const ERef& a1, const ERef& a2) {return a1.x < a2.x;  }
     inline friend bool operator== (const ERef& a1, const ERef& a2) {return a1.x == a2.x; }
     inline friend bool operator!= (const ERef& a1, const ERef& a2) {return a1.x != a2.x; }
 };
@@ -210,11 +211,19 @@ struct ERefHash {
         return (uint32_t)s.x; }
 };
 
-// FIXME I really need the abstraction here... Make [A-Z]Ref a class!
-//template <>
-//struct Equal<const ERef> {
-//    bool operator() (const ERef s1, const ERef s2) { return s1 == s2; }
-//};
+struct ERef_vecHash {
+    uint32_t operator () (const vec<ERef>& s) const {
+        int m = 0; for (int i = 0; i < s.size(); i++) m += s[i].x;
+        return m; }
+};
+
+struct ERef_vecEq {
+    bool operator () (const vec<ERef>& s1, const vec<ERef>& s2) const {
+        if (s1.size() != s2.size()) return false;
+        for (int i = 0; i < s1.size(); i++)
+            if (s1[i] != s2[i]) return false;
+        return true; }
+};
 
 
 class EnodeAllocator : public RegionAllocator<uint32_t>
