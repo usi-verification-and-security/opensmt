@@ -308,6 +308,8 @@ PTRef Egraph::addTerm(PTRef term, vec<PtPair>& ites) {
     vec<PtChild> to_process;
     PTRef rval;
 
+    // Go through the term and sort its subterms to a list
+    // from leaves to root.  Convert ITEs to conditional equalities.
     while (queue.size() != 0) {
         PtChild& child = queue.last();
         PTRef tr = child.tr;
@@ -338,8 +340,10 @@ PTRef Egraph::addTerm(PTRef term, vec<PtPair>& ites) {
                 }
                 PTRef o_ite = term_store.insertTerm(sym, vec<PTRef>());
                 assert(o_ite != PTRef_Undef);
+                // The old term goes to PtPair
                 ites.push(PtPair(tm[i], o_ite));
 #ifdef PEDANTIC_DEBUG
+                cerr << "Added the term " << term_store.printTerm(tm[i], true) << " to later processing" << endl;
                 cerr << "; changing " << term_store.printTerm(tr) << " to ";
 #endif
                 tm[i] = o_ite;
@@ -363,6 +367,14 @@ PTRef Egraph::addTerm(PTRef term, vec<PtPair>& ites) {
         PTRef tr = child.tr;
         PTRef parent = child.parent;
         int child_pos = child.pos;
+#ifdef PEDANTIC_DEBUG
+        if (parent != PTRef_Undef)
+            cerr << "Now constructing / normalizing term " << term_store.printTerm(tr, true)
+                 << " which is child nr " << child_pos << " of " << term_store.printTerm(parent, true) << endl;
+        else
+            cerr << "Now constructing / normalizing term " << term_store.printTerm(tr, true) << endl;
+
+#endif
         if (!enode_store.termToERef.contains(tr)) {
 #ifdef PEDANTIC_DEBUG
             new_terms = true;
@@ -414,7 +426,18 @@ PTRef Egraph::addTerm(PTRef term, vec<PtPair>& ites) {
                     term_store[child.parent][child_pos] = rval;
             }
         }
-        else rval = tr;
+        else {
+            // Canonize
+            // TODO: It would be better to use a special mapping from TRefs to canon TRefs
+            ERef tmp = enode_store.termToERef[tr];
+            rval = enode_store.ERefToTerms[tmp][0];
+            if (child.parent != PTRef_Undef)
+                term_store[child.parent][child_pos] = rval;
+#ifdef PEDANTIC_DEBUG
+            if (rval != tr)
+                cerr << "Canonized " << term_store.printTerm(child.parent, true);
+#endif
+        }
     }
 
 #ifdef PEDANTIC_DEBUG
@@ -482,12 +505,12 @@ lbool Egraph::addDisequality(PTRef term) {
 
 lbool Egraph::addTrue(PTRef term) {
     lbool res = assertEq(term, logic.getTerm_true(), term);
-    return res;
+    return res == false ? l_False : l_Undef;
 }
 
 lbool Egraph::addFalse(PTRef term) {
     lbool res = assertEq(term, logic.getTerm_false(), term);
-    return res;
+    return res == false ? l_False : l_Undef;
 }
 
 //===========================================================================

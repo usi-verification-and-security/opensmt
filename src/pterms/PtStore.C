@@ -3,32 +3,35 @@
 PtStore::PtStore(SymStore& symstore_, SStore& sortstore_)
     : symstore(symstore_), sortstore(sortstore_) { }
 
-char* PtStore::printTerm_(PTRef tr) const {
+char* PtStore::printTerm_(PTRef tr, bool ext) const {
     const Pterm& t = pta[tr];
     SymRef sr = t.symb();
     char* out;
     if (t.size() == 0) {
-        asprintf(&out, "%s", symstore.getName(sr));
+        if (ext)
+            asprintf(&out, "%s <%d>", symstore.getName(sr), tr.x);
+        else
+            asprintf(&out, "%s", symstore.getName(sr));
         return out;
     }
-    asprintf(&out, "(%s", symstore.getName(sr));
-    if (t.size() > 0) {
-        char* old = out;
-        asprintf(&out, "%s ", old);
+
+    char* old;
+    asprintf(&out, "(%s ", symstore.getName(sr));
+    for (int i = 0; i < t.size(); i++) {
+        old = out;
+        asprintf(&out, "%s%s", old, printTerm_(t[i], ext));
         free(old);
-        for (int i = 0; i < t.size(); i++) {
+        if (i < t.size()-1) {
             old = out;
-            asprintf(&out, "%s%s", old, printTerm_(t[i]));
+            asprintf(&out, "%s ", old);
             free(old);
-            if (i < t.size()-1) {
-                old = out;
-                asprintf(&out, "%s ", old);
-                free(old);
-            }
         }
     }
-    char* old = out;
-    asprintf(&out, "%s)", old);
+    old = out;
+    if (ext)
+        asprintf(&out, "%s) <%d>", old, tr.x);
+    else
+        asprintf(&out, "%s)", old);
     free(old);
     return out;
 }
@@ -116,7 +119,7 @@ PTRef PtStore::lookupTerm(const char* s, const vec<PTRef>& args) {
 }
 
 
-char* PtStore::printTerm(PTRef tr) const {
-    char* tms = printTerm_(tr);
+char* PtStore::printTerm(PTRef tr, bool ext) const {
+    char* tms = printTerm_(tr, ext);
     return tms;
 }

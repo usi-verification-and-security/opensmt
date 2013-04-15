@@ -384,16 +384,20 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
             comment_formatted("The symbol %s is not defined for the following sorts:", name);
             for (int j = 0; j < args.size(); j++)
                 comment_formatted("arg %d: %s", j, store[symstore[ptstore[args[j]].symb()].rsort()]->getCanonName());
-            comment_formatted("candidates are:");
-            const vec<SymRef>& trefs = symstore.nameToRef(name);
-            for (int j = 0; j < trefs.size(); j++) {
-                SymRef ctr = trefs[j];
-                const Symbol& t = symstore[ctr];
-                comment_formatted(" candidate %d", j);
-                for (uint32_t k = 0; k < t.nargs(); k++) {
-                    comment_formatted("  arg %d: %s", k, store[t[k]]->getCanonName());
+            if (symstore.contains(name)) {
+                comment_formatted("candidates are:");
+                const vec<SymRef>& trefs = symstore.nameToRef(name);
+                for (int j = 0; j < trefs.size(); j++) {
+                    SymRef ctr = trefs[j];
+                    const Symbol& t = symstore[ctr];
+                    comment_formatted(" candidate %d", j);
+                    for (uint32_t k = 0; k < t.nargs(); k++) {
+                        comment_formatted("  arg %d: %s", k, store[t[k]]->getCanonName());
+                    }
                 }
             }
+            else
+                comment_formatted("There are no candidates.");
             return PTRef_Undef;
         }
 

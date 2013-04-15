@@ -298,18 +298,25 @@ void Egraph::expEnqueueArguments(PTRef x, PTRef y) {
         PTRef yptr = term_store[y][i];
         ERef xer = enode_store.termToERef[xptr];
         PTRef x_canon = enode_store.ERefToTerms[xer][0];
-        if (x_canon != xptr)
+        if (x_canon != xptr) {
+#ifdef PEDANTIC_DEBUG
+            cerr << "Too many thing in ERefToTerms[" << xer.x << "] " << term_store.printTerm(enode_store[xer].getTerm()) << endl;
+            for  (int j = 0; j < enode_store.ERefToTerms[xer].size(); j++)
+                cerr << " " << enode_store.ERefToTerms[xer][j].x << " " << term_store.printTerm(enode_store.ERefToTerms[xer][j]) << endl;
+#endif
             cerr << "Duplicate reasons avoided: using "
                  << term_store.printTerm(x_canon) << " instead of "
                  << term_store.printTerm(xptr) << endl;
-
+            assert(false);
+        }
         ERef yer = enode_store.termToERef[yptr];
         PTRef y_canon = enode_store.ERefToTerms[yer][0];
-        if (y_canon != yptr)
+        if (y_canon != yptr) {
             cerr << "Duplicate reasons avoided: using "
                  << term_store.printTerm(y_canon) << " instead of "
                  << term_store.printTerm(yptr) << endl;
-
+            assert(false);
+        }
         exp_pending.push(x_canon);
         exp_pending.push(y_canon);
     }

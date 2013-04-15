@@ -145,7 +145,7 @@ private:
 // Debug
 #ifdef PEDANTIC_DEBUG
   std::string printExplanation(vec<PTRef>&, vec<char>&);
-  std::string printAssertions(vec<Lit>&);
+  std::string printAssertion(Lit);
 #endif
 };
 

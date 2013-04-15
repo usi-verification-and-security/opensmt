@@ -190,7 +190,7 @@ bool THandler::assertLits(vec<Lit>& trail)
         // We are interested only in theory atoms from here onwards
 
 #ifdef PEDANTIC_DEBUG
-        assertions.push(l);
+        cout << printAssertion(l);
 #endif
 
         // Push backtrack point
@@ -236,7 +236,7 @@ bool THandler::assertLits(vec<Lit>& trail)
 #ifdef PEDANTIC_DEBUG
     if (res != l_False)
         cout << "; non-conflicting" << endl;
-    cout << printAssertions(assertions);
+//    cout << printAssertions(assertions);
 #endif
 
     return res != l_False;
@@ -844,19 +844,14 @@ void THandler::verifyInterpolantWithExternalTool( vector< Enode * > & expl
 #endif
 
 #ifdef PEDANTIC_DEBUG
-std::string THandler::printAssertions(vec<Lit>& assertions) {
+std::string THandler::printAssertion(Lit assertion) {
     stringstream os;
-    os << "; assertions: ";
-    for (int i = 0; i < assertions.size(); i++) {
-        if (i > 0)
-            os << ", ";
-        Var v = var(assertions[i]);
-        PTRef pt_r = tmap.varToTerm[v];
-        if (sign(assertions[i]))
-            os << "!";
-        os << logic.term_store.printTerm(pt_r) << "[var " << v << "] ";
-    }
-    os << endl;
+    os << "; assertions ";
+    Var v = var(assertion);
+    PTRef pt_r = tmap.varToTerm[v];
+    if (sign(assertion))
+        os << "!";
+    os << logic.term_store.printTerm(pt_r, true) << "[var " << v << "] " << endl;
     return os.str();
 }
 

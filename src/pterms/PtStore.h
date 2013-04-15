@@ -38,8 +38,8 @@ class PtStore {
     Pterm& operator[] (PTRef tr) { return pta[tr]; }
     const Pterm& operator[] (PTRef tr) const { return pta[tr]; }
 
-    char* printTerm(PTRef) const;
-    char* printTerm_(PTRef) const;
+    char* printTerm(PTRef, bool ext = false) const;
+    char* printTerm_(PTRef, bool ext = false) const;
 };
 
 #endif
