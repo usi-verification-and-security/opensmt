@@ -85,6 +85,8 @@ class Pterm {
             header.type = 4;
         return new (mem) Pterm(sym, ps); }
 
+    Pterm    operator=   (Pterm t1)      { assert(false); return *this; }
+
     int      size        ()      const   { return header.size; }
     const PTRef& operator [] (int i) const   { return args[i]; }
     PTRef&       operator [] (int i)         { return args[i]; }

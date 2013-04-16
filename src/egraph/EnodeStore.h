@@ -21,6 +21,8 @@ class EnodeStore {
     ERef           ERef_Nil;
     ERef           ERef_True;
     ERef           ERef_False;
+    Map<PTRef,char,PTRefHash,Equal<PTRef> > dist_classes;
+    int            dist_idx;
 #ifdef PEDANTIC_DEBUG
     vec<ERef>      enodes;
 #endif
@@ -30,6 +32,7 @@ class EnodeStore {
       , term_store(terms)
       , ea(1024*1024, &sig_tab)
       , ERef_Nil(ea.alloc(SymRef_Undef))
+      , dist_idx(0)
         { Enode::ERef_Nil = ERef_Nil; } // Nil is a symbol.  It should
                                         // in theory be list, but makes no matter now
 
@@ -56,6 +59,18 @@ class EnodeStore {
 
     void removeParent(ERef, ERef);
     std::string printEnode(ERef);
+
+    char getDistIndex(PTRef tr_d) const {
+        assert(dist_classes.contains(tr_d));
+        return dist_classes[tr_d];
+    }
+
+    void addDistClass(PTRef tr_d) {
+        assert(!dist_classes.contains(tr_d));
+        assert(dist_idx < sizeof(dist_t)*8);
+        dist_classes.insert(tr_d, dist_idx);
+        dist_idx++;
+    }
 
 //    inline const SigPair& getSig(ERef e) const
 //        { const Enode& en_e = ea[e];

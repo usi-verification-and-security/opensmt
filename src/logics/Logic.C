@@ -88,7 +88,7 @@ Logic::Logic(SMTConfig& c, SStore& s, SymStore& t, PtStore& pt) :
 
     tr = sym_store.newSymb(tk_distinct, params);
     if (tr == SymRef_Undef) { assert(false); }
-    if (sym_store[tr].setLeftAssoc() == false) assert(false);
+    if (sym_store[tr].setPairwise() == false) assert(false);
     sym_store[tr].setNoScoping();
     sym_DISTINCT = tr;
 

@@ -321,6 +321,9 @@ PTRef Egraph::addTerm(PTRef term, vec<PtPair>& ites) {
         SymRef sym = term_store[tr].symb();
         if (!logic.isEquality(sym) && !logic.isDisequality(sym))
             to_process.push(child);
+        if (logic.isDisequality(sym))
+            enode_store.addDistClass(tr);
+
         Pterm& tm = term_store[tr];
         for (int i = 0; i < tm.size(); i++) {
             if (logic.isIte(term_store[tm[i]].symb())) {
@@ -493,12 +496,12 @@ lbool Egraph::addEquality(PTRef term) {
 
 lbool Egraph::addDisequality(PTRef term) {
     Pterm& pt = term_store[term];
-    assert(pt.size() == 2);
-
     bool res = true;
-    PTRef e = pt[0];
-    for (int i = 1; i < pt.size() && res == true; i++)
-        res = assertNEq(e, pt[i], term );
+
+    if (pt.size() == 2)
+        res = assertNEq(pt[0], pt[1], term);
+    else
+        res = assertDist(term, term);
 
     return res == false ? l_False : l_Undef;
 }
@@ -805,22 +808,21 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PTRef r )
 
 bool Egraph::assertDist( PTRef tr_d, PTRef tr_r )
 {
-    ERef d = enode_store.termToERef[tr_d];
-    Enode& en_d = enode_store[d];
     // Retrieve distinction number
-    size_t index = en_d.getDistIndex();
+    size_t index = enode_store.getDistIndex(tr_d);
     // While asserting, check that no two nodes are congruent
     Map< enodeid_t, ERef, EnodeIdHash, Equal<enodeid_t> > root_to_enode;
     // Nodes changed
     vec<ERef> nodes_changed;
     // Assign distinction flag to all arguments
-    ERef list = en_d.getCdr();
-    while (list != ERef_Nil) {
-        ERef e = enode_store[list].getCar( );
-        Enode& en_e = enode_store[e];
+    Pterm& pt_d = term_store[tr_d];
+    for (int i = 0; i < pt_d.size(); i++) {
+        PTRef tr_c = pt_d[i];
+        ERef er_c = enode_store.termToERef[tr_c];
+        Enode& en_c = enode_store[er_c];
+        assert(en_c.isTerm());
 
-//        pair< map< enodeid_t, Enode * >::iterator, bool > elem = root_to_enode.insert( make_pair( e->getRoot( )->getId( ), e ) );
-        enodeid_t root_id = enode_store[en_e.getRoot()].getId();
+        enodeid_t root_id = enode_store[en_c.getRoot()].getId();
         if ( root_to_enode.contains(root_id) ) {
             // Two equivalent nodes in the same distinction. Conflict
             if (tr_r != Eq_FALSE)
@@ -828,12 +830,12 @@ bool Egraph::assertDist( PTRef tr_d, PTRef tr_r )
             // Extract the other node with the same root
             ERef p = root_to_enode[root_id];
             // Check condition
-            assert( enode_store[p].getRoot() == en_e.getRoot() );
+            assert( enode_store[p].getRoot() == en_c.getRoot() );
             // Retrieve explanation
 #ifdef PRODUCE_PROOF
-            expExplain( enode_store[e].getTerm(), enode_store[p].getTerm(), tr_r );
+            expExplain( en_c.getTerm(), enode_store[p].getTerm(), tr_r );
 #else
-            expExplain( enode_store[e].getTerm(), enode_store[p].getTerm() );
+            expExplain( en_c.getTerm(), enode_store[p].getTerm() );
 #endif
             // Revert changes, as the current context is inconsistent
             while( nodes_changed.size() != 0 ) {
@@ -846,15 +848,13 @@ bool Egraph::assertDist( PTRef tr_d, PTRef tr_r )
             return false;
         }
         // Activate distinction in e
-        en_e.setDistClasses( (en_e.getDistClasses( ) | SETBIT( index )) );
-        nodes_changed.push(e);
-        // Next elem
-        list = enode_store[list].getCdr();
+        en_c.setDistClasses( (en_c.getDistClasses( ) | SETBIT( index )) );
+        nodes_changed.push(er_c);
     }
     // Distinction pushed without conflict
     assert( undo_stack_oper.size() == undo_stack_term.size() );
     undo_stack_oper.push(DIST);
-    undo_stack_term.push(d);
+    undo_stack_term.push(ERef_Undef);
     return true;
 }
 
