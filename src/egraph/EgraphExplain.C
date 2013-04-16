@@ -351,9 +351,13 @@ void Egraph::expUnion(PTRef x, PTRef y) {
 
     int sz = expClassSize[x_exp_root] + expClassSize[y_exp_root];
     expClassSize[x_exp_root] = sz;
-    // Keep track of this union (this is done in expFind already)
-//    exp_cleanup.push(x_exp_root);
-//    exp_cleanup.push(y_exp_root);
+    // Keep track of this union
+    if (!expRoot.contains(x_exp_root))
+        expRoot.insert(x_exp_root, x_exp_root);
+    if (!expRoot.contains(y_exp_root))
+        expRoot.insert(y_exp_root, y_exp_root);
+    exp_cleanup.push(x_exp_root);
+    exp_cleanup.push(y_exp_root);
 
 #ifdef PEDANTIC_DEBUG
     assert(checkExpReachable(x, x_exp_root));
