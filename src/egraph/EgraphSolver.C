@@ -693,7 +693,9 @@ bool Egraph::mergeLoop( PTRef reason )
             assert( reason_2 != PTRef_Undef );
 
 //#if VERBOSE
+#ifdef PEDANTIC_DEBUG
             cerr << "Reason is neg equality: " << term_store.printTerm(reason_inequality) << endl;
+#endif
 //#endif
 #ifdef PRODUCE_PROOF
             expExplain( reason_1, reason_2, reason_inequality );
@@ -712,7 +714,7 @@ bool Egraph::mergeLoop( PTRef reason )
         // Remove the last explanation that links
         // the two unmergable classes
         expRemoveExplanation( );
-        expCleanup();
+//        expCleanup(); // called in expExplain(r1, r2)
         // Return conflict
         return false;
     }

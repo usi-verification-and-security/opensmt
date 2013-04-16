@@ -220,6 +220,7 @@ void Egraph::expExplain(PTRef x, PTRef y, PTRef r)
     initDup1();
     expExplain();
     doneDup1();
+    expCleanup();
 }
 
 void Egraph::expCleanup() {
@@ -230,6 +231,12 @@ void Egraph::expCleanup() {
         expRoot[x] = x;
     }
     exp_cleanup.clear();
+#ifdef PEDANTIC_DEBUG
+    for (int i = 0; i < expRoot.keys.size(); i++) {
+        PTRef k = expRoot.keys[i];
+        assert(expRoot[k] == k);
+    }
+#endif
 }
 
 //
@@ -273,7 +280,10 @@ void Egraph::expExplainAlongPath (PTRef x, PTRef y) {
 #endif
 
         expUnion( v, p );
+        PTRef v_old = v;
         v = expHighestNode( p );
+        if (v_old == v)
+            assert(false); // loop in the explanation graph!
     }
 }
 
