@@ -23,6 +23,7 @@ class EnodeStore {
     ERef           ERef_False;
     Map<PTRef,char,PTRefHash,Equal<PTRef> > dist_classes;
     int            dist_idx;
+    vec<PTRef>     index_to_dist;                    // Table distinction index --> proper term
 #ifdef PEDANTIC_DEBUG
     vec<ERef>      enodes;
 #endif
@@ -40,9 +41,9 @@ class EnodeStore {
     ERef getEnode_true()  { return ERef_True;  }
     ERef getEnode_false() { return ERef_False; }
 
-    PTRef addTerm(ERef sym, ERef args, PTRef pt, int);
+    PTRef addTerm(ERef sym, ERef args, PTRef pt);
     ERef addSymb(SymRef t);
-    ERef addList(ERef car, ERef cdr, int);
+    ERef addList(ERef car, ERef cdr);
 
     void undoTerm(ERef);
     void undoList(ERef);
@@ -65,10 +66,14 @@ class EnodeStore {
         return dist_classes[tr_d];
     }
 
+    PTRef getDistTerm(dist_t idx) { return index_to_dist[idx]; }
+
     void addDistClass(PTRef tr_d) {
         assert(!dist_classes.contains(tr_d));
         assert(dist_idx < sizeof(dist_t)*8);
         dist_classes.insert(tr_d, dist_idx);
+        assert(index_to_dist.size() == dist_idx);
+        index_to_dist.push(tr_d);
         dist_idx++;
     }
 

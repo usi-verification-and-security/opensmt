@@ -81,11 +81,11 @@ int main( int argc, char * argv[] )
 #endif
 
 #ifdef PEDANTIC_DEBUG
-  opensmt_warning("pedantic assertion checking enabled (very slow)");
+  cerr << "pedantic assertion checking enabled (very slow)" << endl;
 #endif
 
 #ifndef OPTIMIZE
-  opensmt_warning( "this binary is compiled with optimizations disabled (slow)" );
+  cerr << "this binary is compiled with optimizations disabled (slow)" << endl;
 #endif
 
 #ifndef SMTCOMP

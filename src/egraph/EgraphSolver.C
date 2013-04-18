@@ -80,8 +80,7 @@ bool Egraph::check( bool complete )
 void Egraph::pushBacktrackPoint( )
 {
   // Save solver state if required
-  assert( undo_stack_oper.size( ) == undo_stack_term.size( ) );
-  backtrack_points.push( undo_stack_term.size( ) );
+  backtrack_points.push( undo_stack_main.size( ) );
 
   // Push ordinary theories
   for ( uint32_t i = 1 ; i < tsolvers.size_( ) ; i ++ )
@@ -405,7 +404,7 @@ PTRef Egraph::addTerm(PTRef term, vec<PtPair>& ites) {
                 assert (enode_store[car].getRoot() == car);
                 assert (enode_store[cdr].getRoot() == cdr);
 #endif
-                cdr = enode_store.addList(car, cdr, undo_stack_oper.size());
+                cdr = enode_store.addList(car, cdr);
 #ifdef PEDANTIC_DEBUG
                 assert( checkParents( car ) );
                 assert( checkParents( prev_cdr ) );
@@ -414,7 +413,7 @@ PTRef Egraph::addTerm(PTRef term, vec<PtPair>& ites) {
 #endif
             }
             // Canonize the term representation
-            rval = enode_store.addTerm(sym, cdr, tr, undo_stack_oper.size());
+            rval = enode_store.addTerm(sym, cdr, tr);
             if (rval != tr) {
 #ifdef PEDANTIC_DEBUG
                 cout << "Duplicate: " << term_store.printTerm(rval)
@@ -472,6 +471,8 @@ PTRef Egraph::addTerm(PTRef term, vec<PtPair>& ites) {
     }
     else if (logic.isUP(term)) {
         PTRef val = PTRef_Undef;
+        // Here we need to consider also the symbol
+        canon_args.push(enode_store.symToERef[term_store[term].symb()]);
         if (up_terms.peek(canon_args, val))
             return val;
         else
@@ -528,7 +529,7 @@ bool Egraph::assertEq ( PTRef tr_x, PTRef tr_y, PTRef r )
     ERef y = enode_store.termToERef[tr_y];
 
     Enode& en_x = enode_store[x];
-    Enode& en_y = enode_store[x];
+    Enode& en_y = enode_store[y];
     assert( en_x.isTerm() );
     assert( en_y.isTerm() );
     assert( pending.size() == 0 );
@@ -799,15 +800,17 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PTRef r )
     }
 
     // Save operation in undo_stack
-    assert( undo_stack_oper.size( ) == undo_stack_term.size( ) );
-    undo_stack_oper.push( DISEQ );
-    undo_stack_term.push( q );
+    undo_stack_main.push( Undo(DISEQ, q) );
 
     return true;
 }
 
+// Assert a distinction on arguments of tr_d
+
 bool Egraph::assertDist( PTRef tr_d, PTRef tr_r )
 {
+    assert(tr_d == tr_r);
+
     // Retrieve distinction number
     size_t index = enode_store.getDistIndex(tr_d);
     // While asserting, check that no two nodes are congruent
@@ -822,7 +825,7 @@ bool Egraph::assertDist( PTRef tr_d, PTRef tr_r )
         Enode& en_c = enode_store[er_c];
         assert(en_c.isTerm());
 
-        enodeid_t root_id = enode_store[en_c.getRoot()].getId();
+        enodeid_t root_id = enode_store[en_c.getRoot()].getCid();
         if ( root_to_enode.contains(root_id) ) {
             // Two equivalent nodes in the same distinction. Conflict
             if (tr_r != Eq_FALSE)
@@ -847,15 +850,31 @@ bool Egraph::assertDist( PTRef tr_d, PTRef tr_r )
             }
             return false;
         }
+        else
+            root_to_enode.insert(root_id, er_c);
         // Activate distinction in e
-        en_c.setDistClasses( (en_c.getDistClasses( ) | SETBIT( index )) );
-        nodes_changed.push(er_c);
+        Enode& root = enode_store[en_c.getRoot()];
+        root.setDistClasses( (root.getDistClasses( ) | SETBIT( index )) );
+        nodes_changed.push(en_c.getRoot());
     }
     // Distinction pushed without conflict
-    assert( undo_stack_oper.size() == undo_stack_term.size() );
-    undo_stack_oper.push(DIST);
-    undo_stack_term.push(ERef_Undef);
+    undo_stack_main.push(Undo(DIST, tr_d));
     return true;
+}
+
+void Egraph::undoDistinction(PTRef tr_d) {
+    dist_t index = enode_store.getDistIndex(tr_d);
+    Pterm& pt_d = term_store[tr_d];
+    for (int i = 0; i < pt_d.size(); i++) {
+        PTRef tr_c = pt_d[i];
+        ERef er_c = enode_store.termToERef[tr_c];
+        Enode& en_c = enode_store[er_c];
+        assert(en_c.isTerm());
+        en_c.setDistClasses( en_c.getDistClasses() & ~(SETBIT(index)) );
+    }
+#ifdef PEDANTIC_DEBUG
+    assert(checkInvariants());
+#endif
 }
 
 //
@@ -869,42 +888,24 @@ void Egraph::backtrackToStackSize ( size_t size ) {
     // Restore state at previous backtrack point
     //
 //    printf("stack size %d > %d\n", undo_stack_term.size(), size);
-    while ( undo_stack_term.size_() > size ) {
-        oper_t last_action = undo_stack_oper.last();
-        ERef e = undo_stack_term.last();
-        Enode& en_e = enode_store[e];
+    while ( undo_stack_main.size_() > size ) {
+        Undo& u = undo_stack_main.last();
+        oper_t last_action = u.oper;
 
-        undo_stack_oper.pop();
-        undo_stack_term.pop();
+        undo_stack_main.pop();
 
         if ( last_action == MERGE ) {
-            // Remove equality dependent conses that occurred after this
-            // merge was performed.
-            if (enode_store.eq_dep_conses.contains(e)) {
-                vec<EqDepId>& eq_deps = enode_store.eq_dep_conses[e];
-                int removed = 0;
-                for (int i = eq_deps.size() - 1; i >= 0; i++) {
-                    EqDepId& edi = eq_deps[i];
-                    if (edi.level > undo_stack_oper.size()) {
-                        if (enode_store[edi.node].isList())
-                            enode_store.undoList(edi.node);
-                        else if (enode_store[edi.node].isTerm())
-                            enode_store.undoTerm(edi.node);
-                        else
-                            assert(false);
-                        removed++;
-                    }
-                    else break;
-                }
-                eq_deps.shrink(removed);
-            }
+            ERef e = u.arg.er;
+            Enode& en_e = enode_store[e];
             undoMerge( e );
             if ( en_e.isTerm( ) ) {
                 expRemoveExplanation( );
             }
         }
+
 #if MORE_DEDUCTIONS
         else if ( last_action == ASSERT_NEQ ) {
+            ERef e = u.arg.er;
             assert( neq_list.last( ) == e );
             neq_list.pop( );
         }
@@ -914,6 +915,9 @@ void Egraph::backtrackToStackSize ( size_t size ) {
 #if VERBOSE
             cerr << "UNDO: BEG INITCONG " << e << endl;
 #endif
+            ERef e = u.arg.er;
+            Enode& en_e = enode_store[e];
+
             ERef car = en_e.getCar( );
             ERef cdr = en_e.getCdr( );
             assert( car != ERef_Undef );
@@ -948,6 +952,9 @@ void Egraph::backtrackToStackSize ( size_t size ) {
 #if VERBOSE
             cerr << "UNDO: BEGIN FAKE MERGE " << e << endl;
 #endif
+            ERef e = u.arg.er;
+            Enode& en_e = enode_store[e];
+
             assert( initialized.find( en_e.getId( ) ) != initialized.end( ) );
             initialized.erase( en_e.getId( ) );
             assert( initialized.find( en_e.getId( ) ) == initialized.end( ) );
@@ -959,6 +966,9 @@ void Egraph::backtrackToStackSize ( size_t size ) {
 #if VERBOSE
             cerr << "UNDO: BEGIN FAKE INSERT " << e << endl;
 #endif
+            ERef e = u.arg.er;
+            Enode& en_e = enode_store[e];
+
             assert( en_e.isTerm( ) || en_e.isList( ) );
             ERef car = en_e.getCar( );
             ERef cdr = en_e.getCdr( );
@@ -989,10 +999,14 @@ void Egraph::backtrackToStackSize ( size_t size ) {
 //      e->deallocCongData( );
 //      assert( !e->hasCongData( ) );
         }
-        else if ( last_action == DISEQ )
+        else if ( last_action == DISEQ ) {
+            ERef e = u.arg.er;
             undoDisequality( e );
-        else if ( last_action == DIST )
-            undoDistinction( e );
+        }
+        else if ( last_action == DIST ) {
+            PTRef ptr = u.arg.ptr;
+            undoDistinction( ptr );
+        }
 //    else if ( last_action == SYMB )
 //      removeSymbol( e );
 //    else if ( last_action == NUMB )
@@ -1006,7 +1020,6 @@ void Egraph::backtrackToStackSize ( size_t size ) {
             opensmt_error( "unknown action" );
     }
 
-    assert( undo_stack_term.size( ) == undo_stack_oper.size( ) );
 }
 
 // bool Egraph::checkDupClause( Enode * c1, Enode * c2 )
@@ -1272,9 +1285,7 @@ void Egraph::merge ( ERef x, ERef y )
 //  }
 
   // Push undo record
-    assert( undo_stack_oper.size( ) == undo_stack_term.size( ) );
-    undo_stack_oper.push( MERGE );
-    undo_stack_term.push( y );
+    undo_stack_main.push( Undo(MERGE,y) );
 
 //    if (en_x.isTerm()) {
 //        printf("Merging %s and %s, undo stack size %d\n", term_store.printTerm(en_x.getTerm()), term_store.printTerm(en_y.getTerm()), undo_stack_term.size());
@@ -1586,31 +1597,6 @@ void Egraph::undoDisequality ( ERef x )
 #endif
 }
 
-//
-// Undoes the effect of pushing a distinction
-//
-void Egraph::undoDistinction ( ERef r )
-{
-    // Retrieve distinction index
-    Enode& en_r = enode_store[r];
-    size_t index = en_r.getDistIndex();
-    // Iterate through the list
-    ERef list = en_r.getCdr( );
-    while ( list != ERef_Nil ) {
-        Enode& en_list = enode_store[list];
-        ERef e = en_list.getCar();
-        Enode& en_e = enode_store[e];
-        // Deactivate distinction in e
-        en_e.setDistClasses( (en_e.getDistClasses( ) & ~(SETBIT( index ))) );
-        // Next elem
-        list = en_list.getCdr();
-    }
-
-#ifdef PEDANTIC_DEBUG
-    assert( checkInvariants( ) );
-#endif
-}
-
 bool Egraph::unmergeable (ERef x, ERef y, PTRef& r)
 {
     assert( x != ERef_Undef );
@@ -1639,7 +1625,7 @@ bool Egraph::unmergeable (ERef x, ERef y, PTRef& r)
             intersection = intersection >> 1;
             index ++;
         }
-        r = indexToDistReas( index );
+        r = enode_store.getDistTerm(index);
         assert( r != PTRef_Undef );
         return true;
     }
@@ -2142,8 +2128,7 @@ bool Egraph::deduceMore( vector< Enode * > & saved_deds )
 void Egraph::extPushBacktrackPoint( )
 {
   // Save solver state if required
-  assert( undo_stack_oper.size( ) == undo_stack_term.size( ) );
-  backtrack_points.push( undo_stack_term.size( ) );
+  backtrack_points.push( undo_stack_main.size( ) );
 }
 
 //

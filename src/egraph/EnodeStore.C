@@ -20,7 +20,7 @@ ERef EnodeStore::addSymb(SymRef t) {
 //
 // Add a term to enode store
 //
-PTRef EnodeStore::addTerm(ERef sr, ERef args, PTRef term, int level) {
+PTRef EnodeStore::addTerm(ERef sr, ERef args, PTRef term) {
     assert(ea[sr].isSymb());
     PTRef rval;
     if (termToERef.contains(term))
@@ -49,23 +49,8 @@ PTRef EnodeStore::addTerm(ERef sr, ERef args, PTRef term, int level) {
 #endif
         }
         else {
-            bool is_edn = (ea[args].getRoot() != args);
-            if (is_edn) {
-                assert(false);
-#ifdef PEDANTIC_DEBUG
-                cerr << "Non-root args" << endl;
-#endif
-                args = ea[args].getRoot();
-            }
+            assert (ea[args].getRoot() == args);
             ERef new_er = ea.alloc(sr, args, Enode::et_term, term);
-            if (is_edn) {
-                EqDepId edi(new_er, level);
-                if (!eq_dep_conses.contains(args)) {
-                    vec<EqDepId> tmp;
-                    eq_dep_conses.insert(args, tmp);
-                }
-                eq_dep_conses[args].push(edi);
-            }
             insertSig(new_er);
             termToERef.insert(term, new_er);
             vec<PTRef> terms;
@@ -83,45 +68,16 @@ PTRef EnodeStore::addTerm(ERef sr, ERef args, PTRef term, int level) {
 
 // Same cleverness implemented here.
 // Problem: Parent invariants are broken if x or y is not a congruence root.
-ERef EnodeStore::addList(ERef x, ERef y, int level) {
+ERef EnodeStore::addList(ERef x, ERef y) {
     ERef rval;
     // This is skipped if there is a term corresponding to cons of these guys equivalence class,
     // but goes through also in case x and y are not equivalence roots but no cons corresponding to the
     // equivalence roots exist.
     if (!containsSig(x, y)) {
-        bool is_edn_x = (ea[x].getRoot() != x);
-        ERef old_x = x;
-        if (is_edn_x) {
-#ifdef PEDANTIC_DEBUG
-            cerr << "Non-root car" << endl;
-#endif
-            x = ea[x].getRoot();
-        }
-        bool is_edn_y = (ea[y].getRoot() != y);
-        ERef old_y = y;
-        if (is_edn_y) {
-#ifdef PEDANTIC_DEBUG
-            cerr << "Non-root cdr" << endl;
-#endif
-            y = ea[y].getRoot();
-        }
+        assert(ea[x].getRoot() == x);
+        assert(ea[y].getRoot() == y);
+
         rval = ea.alloc(x, y, Enode::et_list, PTRef_Undef);
-        if (is_edn_x) {
-            EqDepId edi(rval, level);
-            if (!eq_dep_conses.contains(old_x)) {
-                vec<EqDepId> tmp;
-                eq_dep_conses.insert(old_x, tmp);
-            }
-            eq_dep_conses[old_x].push(edi);
-        }
-        if (is_edn_y) {
-            EqDepId edi(rval, level);
-            if (!eq_dep_conses.contains(old_y)) {
-                vec<EqDepId> tmp;
-                eq_dep_conses.insert(old_y, tmp);
-            }
-            eq_dep_conses[old_y].push(edi);
-        }
         insertSig(rval);
 #ifdef PEDANTIC_DEBUG
         enodes.push(rval);

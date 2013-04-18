@@ -106,9 +106,9 @@ public:
     ERef ers_true  = enode_store.addSymb(logic.getSym_true());
     ERef ers_false = enode_store.addSymb(logic.getSym_false());
     PTRef ptr_new_true  = enode_store.addTerm(ers_true, ERef_Nil,
-                            logic.getTerm_true(), undo_stack_oper.size());
+                            logic.getTerm_true());
     PTRef ptr_new_false = enode_store.addTerm(ers_false, ERef_Nil,
-                            logic.getTerm_false(), undo_stack_oper.size());
+                            logic.getTerm_false());
 
     assert(ptr_new_true  == logic.getTerm_true());
     assert(ptr_new_false == logic.getTerm_false());
@@ -215,11 +215,6 @@ public:
   inline void   setTopEnode       ( ERef e )         { assert( e != ERef_Nil ); top = e; }
   inline size_t nofEnodes         ( )                { return enode_store.id_to_enode.size( ); }
 
-  inline PTRef indexToDistReas ( unsigned index ) const
-  {
-    assert( index < index_to_dist.size_( ) );
-    return index_to_dist[ index ];
-  }
 
 
   ERef copyEnodeEtypeTermWithCache   ( ERef, bool = false );
@@ -359,10 +354,21 @@ private:
     , INSERT_STORE    // Inserted in store
     , EXPL            // Explanation added
     , SET_DYNAMIC     // Dynamic info was set
+    , UNDEF_OP        // A dummy value for default constructor
 #if MORE_DEDUCTIONS
     , ASSERT_NEQ
 #endif
   } oper_t;
+
+  class Undo {
+    public:
+      oper_t oper;
+      union arg_t { PTRef ptr; ERef er; } arg;
+      Undo(oper_t o, PTRef r) : oper(o) { arg.ptr = r; }
+      Undo(oper_t o, ERef r)  : oper(o) { arg.er = r; }
+      Undo()         : oper(UNDEF_OP)   { arg.ptr = PTRef_Undef; }
+  };
+
   //
   // Handy function to swap two arguments of a list
   //
@@ -375,9 +381,7 @@ private:
     return enode_store.addList(
             enode_store[en.getCdr()].getCar(),
             enode_store.addList(en.getCar(),
-                                ERef_Nil,
-                                undo_stack_oper.size()),
-            undo_stack_oper.size());
+                                ERef_Nil));
   }
   //
   // Related to term creation
@@ -426,7 +430,6 @@ private:
 //  vector< Enode * >              id_to_enode;                   // Table ENODE_ID --> ENODE
 //  vector< int >                  id_to_belong_mask;             // Table ENODE_ID --> ENODE
 //  vector< int >                  id_to_fan_in;                  // Table ENODE_ID --> fan in
-  vec< PTRef >                 index_to_dist;                    // Table distinction index --> proper term
 //  list< Enode * >                assertions;                    // List of assertions
 //  vector< Enode * >              cache;                         // Cache simplifications
   ERef                        top;                              // Top node of the formula
@@ -471,7 +474,7 @@ private:
   void    deduce          ( ERef, ERef);                        // Deduce from merging of two nodes
   void    undoMerge       ( ERef );                             // Undoes a merge
   void    undoDisequality ( ERef );                             // Undoes a disequality
-  void    undoDistinction ( ERef );                             // Undoes a distinction
+  void    undoDistinction ( PTRef );                            // Undoes a distinction
   //
   // Explanation routines and data
   //
@@ -518,8 +521,8 @@ private:
   set< enodeid_t >            initialized;                      // Keep track of initialized nodes
   map< enodeid_t, lbool >     informed;                         // Keep track of informed nodes
   vec< ERef >                 pending;                          // Pending merges
-  vec< ERef >                 undo_stack_term;                  // Keeps track of terms involved in operations
-  vec< oper_t >               undo_stack_oper;                  // Keeps track of operations
+  vec< Undo >                 undo_stack_main;                  // Keeps track of terms involved in operations
+//  vec< oper_t >               undo_stack_oper;                  // Keeps track of operations
   vec< PTRef >                explanation;                      // Stores explanation
 
 #if MORE_DEDUCTIONS
