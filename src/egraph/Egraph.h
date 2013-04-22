@@ -127,6 +127,8 @@ public:
   ~Egraph( )
   {
     backtrackToStackSize( 0 );
+    cerr << "Wasted memory in forbid allocator:" << endl;
+    cerr << forbid_allocator.wasted() << endl;
 #ifdef STATISTICS
     // TODO added for convenience
     if( tsolvers_stats.size() > 0 )

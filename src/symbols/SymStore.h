@@ -23,9 +23,9 @@ class SymStore {
     Map<SymRef,SymId,SymRefHash,Equal<SymRef> >             symrefToId;
     vec<SymRef>                                       symbols;
     SymbolAllocator                                   ta;
-//    vec<vec<Occ> >                                  occList;
-    vec<const char*>                                idToName;
+    vec<char*>                                        idToName;
   public:
+    ~SymStore();
     SymRef newSymb(const char* fname, const vec<SRef>& args, bool la = false, bool ra = false, bool ch = false, bool pw = false);
     bool contains(const char* fname)            const { return symbolTable.contains(fname); }
     const vec<SymRef>& nameToRef(const char* s) const { return symbolTable[s]; }

@@ -38,10 +38,10 @@ void smt2newerror( YYLTYPE* locp, Smt2newContext* context, const char * s )
 
 %union
 {
-  char  *                   str;
-  std::vector< std::string > *        str_list;
-  ASTNode *                 snode;
-  std::list< ASTNode * > *       snode_list;
+  char  *                      str;
+  std::vector< std::string > * str_list;
+  ASTNode *                    snode;
+  std::list< ASTNode * > *     snode_list;
 }
 
 

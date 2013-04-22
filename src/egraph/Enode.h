@@ -302,6 +302,7 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
         er = to.alloc(e);
         e.relocate(er);
     }
+
 };
 
 
@@ -328,10 +329,11 @@ public:
 
 class ELAllocator : public RegionAllocator<uint32_t>
 {
+    int free_ctr;
     static int elistWord32Size() {
         return sizeof(Elist)/sizeof(int32_t); }
 public:
-    ELAllocator() {}
+    ELAllocator() : free_ctr(0) {}
 
     void moveTo(ELAllocator& to) {
         RegionAllocator<uint32_t>::moveTo(to); }
@@ -356,6 +358,7 @@ public:
     // No garbage collection implemented.  I wonder if this is bad...
     void free(ELRef)
     {
+        free_ctr++;
         RegionAllocator<uint32_t>::free(elistWord32Size());
     }
 

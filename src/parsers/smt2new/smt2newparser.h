@@ -179,10 +179,10 @@ typedef union YYSTYPE
 /* Line 2068 of yacc.c  */
 #line 40 "smt2newparser.yy"
 
-  char  *                   str;
-  std::vector< std::string > *        str_list;
-  ASTNode *                 snode;
-  std::list< ASTNode * > *       snode_list;
+  char  *                      str;
+  std::vector< std::string > * str_list;
+  ASTNode *                    snode;
+  std::list< ASTNode * > *     snode_list;
 
 
 
