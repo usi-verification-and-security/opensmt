@@ -5,14 +5,6 @@
 #include "Symbol.h"
 #include "PtStore.h"
 
-class EqDepId {
-  public:
-    ERef node;
-    int  level;
-    EqDepId(ERef n, int l) : node(n), level(l) {}
-    EqDepId() : node(ERef_Undef), level(-1) {}
-};
-
 class EnodeStore {
     SymStore&      sym_store;
     PtStore&       term_store;
@@ -22,18 +14,33 @@ class EnodeStore {
     ERef           ERef_True;
     ERef           ERef_False;
     Map<PTRef,char,PTRefHash,Equal<PTRef> > dist_classes;
-    int            dist_idx;
-    vec<PTRef>     index_to_dist;                    // Table distinction index --> proper term
+    uint32_t       dist_idx;
+
 #ifdef PEDANTIC_DEBUG
-    vec<ERef>      enodes;
+    ELAllocator&   fa;
 #endif
+
+    vec<PTRef>     index_to_dist;                    // Table distinction index --> proper term
+
+    vec<ERef>      enodes;
+
   public:
+#ifdef PEDANTIC_DEBUG
+    EnodeStore(SymStore& syms, PtStore& terms, ELAllocator& fa_) :
+        sym_store(syms)
+      , term_store(terms)
+      , ea(1024*1024, &sig_tab)
+      , ERef_Nil(ea.alloc(SymRef_Undef))
+      , dist_idx(0)
+      , fa(fa_)
+#else
     EnodeStore(SymStore& syms, PtStore& terms) :
         sym_store(syms)
       , term_store(terms)
       , ea(1024*1024, &sig_tab)
       , ERef_Nil(ea.alloc(SymRef_Undef))
       , dist_idx(0)
+#endif
         { Enode::ERef_Nil = ERef_Nil; } // Nil is a symbol.  It should
                                         // in theory be list, but makes no matter now
 
@@ -56,8 +63,6 @@ class EnodeStore {
     Map<SymRef,ERef, SymRefHash,Equal<SymRef> > symToERef;
     VecMap<ERef,PTRef,ERefHash,Equal<ERef> >    ERefToTerms;
 
-    VecMap<ERef,EqDepId,ERefHash,Equal<const ERef&> > eq_dep_conses;
-
     void removeParent(ERef, ERef);
     std::string printEnode(ERef);
 
@@ -72,7 +77,7 @@ class EnodeStore {
         assert(!dist_classes.contains(tr_d));
         assert(dist_idx < sizeof(dist_t)*8);
         dist_classes.insert(tr_d, dist_idx);
-        assert(index_to_dist.size() == dist_idx);
+        assert(index_to_dist.size_() == dist_idx);
         index_to_dist.push(tr_d);
         dist_idx++;
     }

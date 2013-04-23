@@ -730,6 +730,7 @@ bool Egraph::mergeLoop( PTRef reason )
 //
 bool Egraph::assertNEq ( PTRef x, PTRef y, PTRef r )
 {
+    checkFaGarbage();
 #if MORE_DEDUCTIONS
     neq_list.push_back( r );
     undo_stack_oper.push_back( ASSERT_NEQ );
@@ -2140,4 +2141,47 @@ void Egraph::extPopBacktrackPoint( )
   size_t undo_stack_new_size = backtrack_points.last( );
   backtrack_points.pop( );
   backtrackToStackSize( undo_stack_new_size );
+}
+
+//=================================================================================================
+// Garbage Collection methods:
+
+void Egraph::relocAll(ELAllocator& to) {
+    for (int i = 0; i < enode_store.enodes.size(); i++) {
+        ERef er = enode_store.enodes[i];
+        Enode& en = enode_store[er];
+        assert(en.isTerm());
+
+#ifdef PEDANTIC_DEBUG
+        cerr << enode_store.printEnode(er);
+#endif
+        const ELRef start = en.getForbid();
+        ELRef& start_ref = en.altForbid();
+        bool done = false;
+        ELRef& curr_ch = start_ref;
+        if (curr_ch == ELRef_Undef) continue;
+        ELRef curr_fx = start_ref;
+        ELRef prev_fx = ELRef_Undef;
+        while (true) {
+            forbid_allocator.reloc(curr_ch, to);
+            if (prev_fx != ELRef_Undef)
+                to[prev_fx].link = curr_ch;
+            // curr now points to "to"
+            if (done == true) break;
+            prev_fx = curr_ch;
+            curr_ch = forbid_allocator[curr_fx].link;
+            curr_fx = forbid_allocator[curr_fx].link;
+            if (curr_fx == start) done = true;
+        }
+    }
+}
+
+void Egraph::faGarbageCollect() {
+    ELAllocator to(forbid_allocator.size() - forbid_allocator.wasted());
+
+    relocAll(to);
+    if (config.verbosity() >= 2)
+        printf("Garbage collection:   %12d bytes => %12d bytes|\n",
+               forbid_allocator.size()*ELAllocator::Unit_Size, to.size()*ELAllocator::Unit_Size);
+    to.moveTo(forbid_allocator);
 }

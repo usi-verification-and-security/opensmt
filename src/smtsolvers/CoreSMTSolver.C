@@ -1223,7 +1223,7 @@ Clause* CoreSMTSolver::propagate()
       // Make sure the false literal is data[1]:
       Lit false_lit = ~p;
       if (c[0] == false_lit)
-	c[0] = c[1], c[1] = false_lit;
+        c[0] = c[1], c[1] = false_lit;
 
       assert(c[1] == false_lit);
 

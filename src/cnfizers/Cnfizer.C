@@ -89,6 +89,8 @@ const Lit Cnfizer::findLit(PTRef ptr, vec<PTRef>& uf_terms) {
     bool isnew = false;
     if (!seen.contains(p)) {
         v = solver.newVar();
+        tmap.varToTheorySymbol.push(SymRef_Undef);
+        tmap.varToTerm.push(PTRef_Undef);
         seen.insert(p, v);
         isnew = true;
     }
@@ -101,7 +103,7 @@ const Lit Cnfizer::findLit(PTRef ptr, vec<PTRef>& uf_terms) {
     if (isnew) {
         if (logic.isTheoryTerm(p)) {
             Pterm& tr = ptstore[p];
-            tmap.varToTheorySymbol.insert(v, tr.symb());
+            tmap.varToTheorySymbol[v] = tr.symb();
             tmap.theoryTerms.insert(p,true);
             assert(logic.isEquality(tr.symb())        ||
                    logic.isDisequality(tr.symb())     ||
@@ -119,27 +121,10 @@ const Lit Cnfizer::findLit(PTRef ptr, vec<PTRef>& uf_terms) {
             }
         }
         tmap.termToVar.insert(p, v);
-        tmap.varToTerm.insert(v, p);
+//        tmap.varToTerm.insert(v, p);
+        tmap.varToTerm[v] = p;
     }
     return l;
-
-//    if (isnew && !isBooleanOperator(ptstore[p].symb()) && !isIte(ptstore[p].symb())) {
-//        // Terms with Boolean return value, i.e., uninterpreted
-//        // predicates, will be associated with the corresponding
-//        // equality.
-//        PTRef new_term = logic.lookupUPEq(p);
-//        if (new_term != PTRef_Undef) {
-//            p = new_term;
-//            tmap.varToTheorySymbol.insert(v,ptstore[p].symb());
-//        }
-//    }
-//    if (isnew && isTheorySymbol(ptstore[p].symb()))
-//        tmap.varToTheorySymbol.insert(v,ptstore[p].symb());
-//    if (isnew) {
-//        tmap.termToVar.insert(p, v);
-//        tmap.varToTerm.insert(v, p);
-//    }
-//    return l;
 }
 
 
@@ -231,14 +216,14 @@ lbool Cnfizer::extEquals(PTRef r_new, PTRef r_old) {
 
     Lit l_new = findLit(r_new, tmp);
 
-    if (!tmap.varToTheorySymbol.contains(var(l_new))) {
+    if (tmap.varToTheorySymbol[var(l_new)] == SymRef_Undef) {
         // The variable has already been removed
         return l_Undef;
     }
 
     Lit l_old = findLit(r_old, tmp);
 
-    tmap.varToTheorySymbol.remove(var(l_new));
+    tmap.varToTheorySymbol[var(l_new)] = SymRef_Undef;
     tmap.theoryTerms.remove(r_new);
 
     lbool rval = l_Undef;
@@ -803,7 +788,7 @@ vec<ValPair>* Cnfizer::getModel() {
     vec<lbool>& model = solver.model;
     vec<ValPair>* out = new vec<ValPair>();
     for (Var v = 0; v < model.size(); v++) {
-        if (tmap.varToTerm.contains(v))
+        if (tmap.varToTerm[v] != PTRef_Undef)
             out->push(ValPair(tmap.varToTerm[v], model[v]));
     }
     return out;

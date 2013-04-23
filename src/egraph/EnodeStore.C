@@ -10,9 +10,9 @@ ERef EnodeStore::addSymb(SymRef t) {
         ERef er = ea.alloc(t);
         symToERef.insert(t, er);
         rval = er;
-#ifdef PEDANTIC_DEBUG
-        enodes.push(er);
-#endif
+
+//        enodes.push(er);
+
     }
     return rval;
 }
@@ -57,9 +57,9 @@ PTRef EnodeStore::addTerm(ERef sr, ERef args, PTRef term) {
             terms.push(term);
             assert(!ERefToTerms.contains(new_er));
             ERefToTerms.insert(new_er, terms);
-#ifdef PEDANTIC_DEBUG
+
             enodes.push(new_er);
-#endif
+
             rval = term;
         }
     }
@@ -79,9 +79,7 @@ ERef EnodeStore::addList(ERef x, ERef y) {
 
         rval = ea.alloc(x, y, Enode::et_list, PTRef_Undef);
         insertSig(rval);
-#ifdef PEDANTIC_DEBUG
-        enodes.push(rval);
-#endif
+
     }
     else {
         // Again this could be because of an asserted equality.  If the
@@ -263,7 +261,24 @@ std::string EnodeStore::printEnode(ERef e) {
           <<     "|  - congruence: " << en.getCid()    << endl
           <<     "|  - root cong.: " << ea[en.getRoot()].getCid() << endl
           <<     "|  - cong. ptr : " << en.getCgPtr().x<< endl
+          <<     "+---------------------------------------------" << endl
+          <<     "| Forbids: " << endl
+          <<     "|  ";
+#ifdef PEDANTIC_DEBUG
+        ELRef f_start = en.getForbid();
+        ELRef f_next = f_start;
+        if (f_start != ELRef_Undef) {
+            while (true) {
+                s << fa[f_next].e.x << " (" << term_store.printTerm(fa[f_start].reason) << ") ";
+                f_next = fa[f_next].link;
+                if (f_next == f_start) break;
+            }
+        }
+        s << endl
           <<     "+---------------------------------------------" << endl;
+#else
+        s << " N/A (enable debug)" << endl;
+#endif
     }
 
     else if (en.isList()) {

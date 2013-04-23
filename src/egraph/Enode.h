@@ -163,6 +163,7 @@ public:
     ERef  getRoot       ()        const { if (type() == et_symb) return er; else return cgdata->root; }
     void  setRoot       (ERef r)        { assert(type() != et_symb); cgdata->root = r; }
     ELRef getForbid     ()        const { return cgdata->forbid; }
+    ELRef& altForbid    ()              { return cgdata->forbid; }
     void  setForbid     (ELRef r)       { cgdata->forbid = r; }
     int   getDistIndex  ()        const { return cgdata->dist_index; }
     void  setDistIndex  (int i)         { cgdata->dist_index = i; }
@@ -334,9 +335,11 @@ class ELAllocator : public RegionAllocator<uint32_t>
         return sizeof(Elist)/sizeof(int32_t); }
 public:
     ELAllocator() : free_ctr(0) {}
+    ELAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), free_ctr(0) {}
 
     void moveTo(ELAllocator& to) {
         RegionAllocator<uint32_t>::moveTo(to); }
+
     ELRef alloc(ERef e, PTRef r) {
         assert(sizeof(ERef) == sizeof(uint32_t));
         uint32_t v = RegionAllocator<uint32_t>::alloc(elistWord32Size());
@@ -345,10 +348,15 @@ public:
         new (lea(elid)) Elist(e, r);
         return elid;
     }
-    ELRef alloc(Elist&) {
-        assert(false);
-        return ELRef_Undef;
+
+    ELRef alloc(const Elist& old) {
+        uint32_t v = RegionAllocator<uint32_t>::alloc(elistWord32Size());
+        ELRef elid;
+        elid.x = v;
+        new (lea(elid)) Elist(old.e, old.reason);
+        return elid;
     }
+
     Elist&       operator[](ELRef r)         { return (Elist&)RegionAllocator<uint32_t>::operator[](r.x); }
     const Elist& operator[](ELRef r) const   { return (Elist&)RegionAllocator<uint32_t>::operator[](r.x); }
     Elist*       lea       (ELRef r)         { return (Elist*)RegionAllocator<uint32_t>::lea(r.x); }

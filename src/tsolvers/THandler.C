@@ -180,7 +180,7 @@ bool THandler::assertLits(vec<Lit>& trail)
 
 //        printf("%s\n", logic.term_store.printTerm(pt_r));
 
-        if (!tmap.varToTheorySymbol.contains(v)) continue;
+        if (tmap.varToTheorySymbol[v] == SymRef_Undef) continue;
         assert(logic.isTheoryTerm(pt_r));
 
 

@@ -35,6 +35,10 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 //#include "SigTab.h"
 //#include "SplayTree.h"
 
+#ifdef PEDANTIC_DEBUG
+#include "GCTest.h"
+#endif
+
 #ifdef PRODUCE_PROOF
 #include "UFInterpolator.h"
 #endif
@@ -48,9 +52,9 @@ private:
   PtStore&      term_store;
   Logic&        logic;
   TermMapper&   tmap;
+  ELAllocator   forbid_allocator;
   EnodeStore    enode_store;
   ERef          ERef_Nil;
-  ELAllocator   forbid_allocator;
 
   PTRef         Eq_FALSE; // will be set to (= true false) in constructor
 
@@ -66,6 +70,8 @@ private:
   VecKeyMap<ERef,PTRef,ERef_vecHash,ERef_vecEq> deq_terms;
   VecKeyMap<ERef,PTRef,ERef_vecHash,ERef_vecEq> up_terms;
 
+  double fa_garbage_frac;
+
 public:
   SimpSMTSolver* solver; // for debugging only
 
@@ -77,8 +83,13 @@ public:
       , term_store         ( terms )
       , logic              ( l )
       , tmap               ( term_map )
+#ifdef PEDANTIC_DEBUG
+      , enode_store        ( sym_store, term_store, forbid_allocator )
+#else
       , enode_store        ( sym_store, term_store )
+#endif
       , ERef_Nil           ( enode_store.get_Nil() )
+      , fa_garbage_frac    ( 0.5 )
       , active_dup1        ( false )
       , active_dup2        ( false )
       , dup_count1         ( 0 )
@@ -127,8 +138,8 @@ public:
   ~Egraph( )
   {
     backtrackToStackSize( 0 );
-    cerr << "Wasted memory in forbid allocator:" << endl;
-    cerr << forbid_allocator.wasted() << endl;
+//    cerr << "Wasted memory in forbid allocator:" << endl;
+//    cerr << forbid_allocator.wasted() << endl;
 #ifdef STATISTICS
     // TODO added for convenience
     if( tsolvers_stats.size() > 0 )
@@ -547,6 +558,15 @@ private:
   void    undoCons          ( ERef );                           // Undoes a cons
 
   //============================================================================
+  // Memory management for forbid allocator
+  void faGarbageCollect();
+  inline void checkFaGarbage(void) { return checkFaGarbage(fa_garbage_frac); }
+  inline void checkFaGarbage(double gf) {
+    if (forbid_allocator.wasted() > forbid_allocator.size() * gf)
+        faGarbageCollect(); }
+  void relocAll(ELAllocator&);
+
+  //============================================================================
 
 #ifdef BUILD_64
   hash_set< enodeid_pair_t >     clauses_sent;
@@ -617,6 +637,8 @@ private:
 #ifdef STATISTICS
   void printStatistics ( ofstream & );
 #endif
+
+  friend class GCTest;
 };
 
 inline bool Egraph::isInitialized( )
