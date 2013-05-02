@@ -1587,7 +1587,7 @@ void Egraph::undoDisequality ( ERef x )
 
     // Only one node in the list
     if ( el_xdist.link == xdist )
-    en_y.setForbid( ELRef_Undef );
+        en_y.setForbid( ELRef_Undef );
     // Other nodes in the list
     else
         el_yfirst.link = el_xdist.link;
@@ -2156,12 +2156,13 @@ void Egraph::relocAll(ELAllocator& to) {
         cerr << enode_store.printEnode(er);
 #endif
         const ELRef start = en.getForbid();
+        if (start == ELRef_Undef) continue;
+
         ELRef& start_ref = en.altForbid();
-        bool done = false;
         ELRef& curr_ch = start_ref;
-        if (curr_ch == ELRef_Undef) continue;
         ELRef curr_fx = start_ref;
         ELRef prev_fx = ELRef_Undef;
+        bool done = false;
         while (true) {
             forbid_allocator.reloc(curr_ch, to);
             if (prev_fx != ELRef_Undef)
