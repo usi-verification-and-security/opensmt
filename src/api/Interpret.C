@@ -70,7 +70,9 @@ void Interpret::setOption(ASTNode& n) {
         name = strdup(n.getValue());
 
     Option value(n);
-    config.setOption(name, value);
+    bool rval = config.setOption(name, value);
+    if (rval == false)
+        notify_formatted(true, "set-option failed", logic.getName().c_str());
 }
 
 void Interpret::getOption(ASTNode& n) {

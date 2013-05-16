@@ -168,20 +168,20 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula,
     assert(top_level_formulae.size() != 0);
 
     bool res = true;
-  // For each top-level conjunct
+    // For each top-level conjunct
     for (unsigned i = 0 ; i < top_level_formulae.size_() && (res == true) ; i ++) {
         PTRef f = top_level_formulae[i];
+        std::cout << ptstore.printTerm(f) << endl;
 
         // Give it to the solver if already in CNF
-/*
         if (checkCnf(f) == true) {
-            res = giveToSolver(f
+            res = giveToSolver(f, uf_terms
 #ifdef PRODUCE_PROOF
                               , partition
 #endif
                               );
         }
-*/
+
         // Check whether it can be rewritten using deMorgan laws
 /*
         else if (checkDeMorgan(f) == true) {
@@ -503,24 +503,23 @@ bool Cnfizer::deMorganize( PTRef formula
 //
 // Check whether a formula is in cnf
 //
-/*
+
 bool Cnfizer::checkCnf(PTRef formula) {
-    Map<PTRef,bool,TRefHash,Equal<PTRef> > check_cache;
-    bool res = checkConj(formula, check_cache);
-    if (res == false) return checkClause(formula, check_cache);
+    bool res = checkConj(formula);
+    if (res == false) return checkClause(formula);
     return res;
 }
-*/
+
 
 //
 // Check if a formula is a conjunction of clauses
 //
-/*
-bool Cnfizer::checkConj(PTRef e, Map<PTRef,bool,TRefHash,Equal<PTRef> > & check_cache)
+
+bool Cnfizer::checkConj(PTRef e)
 {
     Pterm& and_t = ptstore[e];
 
-    if (and_t.symb() != sym_AND)
+    if (and_t.symb() != logic.getSym_and())
         return false;
 
     vec<PTRef> to_process;
@@ -528,30 +527,27 @@ bool Cnfizer::checkConj(PTRef e, Map<PTRef,bool,TRefHash,Equal<PTRef> > & check_
     while (to_process.size() != 0) {
 
         e = to_process.last(); to_process.pop();
-        if (check_cache.contains(e))  // Already visited term
-            continue;
 
         and_t = ptstore[e];
 
         for (int i = 0; i < and_t.size(); i++) {
-            if (ptstore[and_t[i]].symb() == sym_AND)
+            if (ptstore[and_t[i]].symb() == logic.getSym_and())
                 to_process.push(and_t[i]);
-            else if (!checkClause(and_t[i], check_cache)) // Slightly awkward to use the same cache...
+            else if (!checkClause(and_t[i])) // Slightly awkward to use the same cache...
                 return false;
         }
 
-        check_cache.insert(e, true);
     }
 
     return true;
 }
-*/
+
 
 //
 // Check whether a formula is a clause
 //
-/*
-bool Cnfizer::checkClause(PTRef e, Map<PTRef,bool,TRefHash,Equal<PTRef> > & check_cache)
+
+bool Cnfizer::checkClause(PTRef e)
 {
     assert(e != PTRef_Undef);
 
@@ -562,14 +558,12 @@ bool Cnfizer::checkClause(PTRef e, Map<PTRef,bool,TRefHash,Equal<PTRef> > & chec
     while (to_process.size() != 0) {
 
         e = to_process.last(); to_process.pop();
-        if (check_cache.contains(e))  // Already visited term
-            continue;
 
         Pterm& or_t = ptstore[e];
 
         for (int i = 0; i < or_t.size(); i++) {
             Pterm& arg = ptstore[or_t[i]];
-            if (arg.symb() == sym_OR)
+            if (arg.symb() == logic.getSym_or())
                 to_process.push(or_t[i]);
             else {
                 PTRef p;
@@ -580,18 +574,11 @@ bool Cnfizer::checkClause(PTRef e, Map<PTRef,bool,TRefHash,Equal<PTRef> > & chec
                     return false;
             }
         }
-
-        PTRef p;
-        isNPAtom(e, p);
-        if (p != PTRef_Undef)
-            declareAtom(e, or_t.symb());
-
-        check_cache.insert(e, true);
     }
 
     return true;
 }
-*/
+
 
 /*
 void Cnfizer::declareAtom(PTRef ptr, TRef symb) {

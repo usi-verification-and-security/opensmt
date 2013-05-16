@@ -22,6 +22,12 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 /*********************************************************************
  * Generic configuration class, used for both set-info and set-option
  *********************************************************************/
+// TODO destructor for ConfValue?
+
+ConfValue::ConfValue(const char* s) {
+    type = O_STR;
+    strval = strdup(s); // TODO memory leak
+}
 
 ConfValue::ConfValue(const ASTNode& s_expr_n) {
     if (s_expr_n.getType() == SEXPRL_T) {
@@ -190,8 +196,18 @@ Option::Option(ASTNode& n) {
             value = ConfValue(n);
         }
         else if (n.getType() == SYM_T) {
-            value.strval = strdup(n.getValue());
-            value.type = O_STR;
+            if (strcmp(n.getValue(), "true") == 0) {
+                value.type = O_BOOL;
+                value.numval = 1;
+            }
+            else if (strcmp(n.getValue(), "false") == 0) {
+                value.type = O_BOOL;
+                value.numval = 0;
+            }
+            else {
+                value.strval = strdup(n.getValue());
+                value.type = O_STR;
+            }
             return;
         }
         else if (n.getType() == SEXPRL_T) {
@@ -204,6 +220,47 @@ Option::Option(ASTNode& n) {
 }
 
 bool SMTConfig::setOption(const char* name, const Option& value) {
+    // Special options:
+    // stats_out
+    if (strcmp(name, o_stats_out) == 0) {
+        if (value.getValue().type != O_STR) return false;
+        if (!optionTable.contains(name))
+            stats_out.open(value.getValue().strval, std::ios_base::out);
+        else if (strcmp(optionTable[name].getValue().strval, value.getValue().strval) != 0) {
+            if (stats_out.is_open()) {
+                stats_out.close();
+                stats_out.open(value.getValue().strval, std::ios_base::out);
+            }
+        }
+        else {}
+    }
+
+    // produce stats
+    if (strcmp(name, o_produce_stats) == 0) {
+        if (value.getValue().type != O_BOOL) return false;
+        if (value.getValue().numval == 1) {
+            // Gets set to true
+            if (!optionTable.contains(o_stats_out)) {
+                if (!optionTable.contains(o_produce_stats) || optionTable[o_produce_stats].getValue().numval == 0) {
+                    // Insert the default value
+                    optionTable.insert(o_stats_out, Option("/dev/stdout"));
+                }
+                else if (optionTable.contains(o_produce_stats) && optionTable[o_produce_stats].getValue().numval == 1)
+                    assert(false);
+            }
+            else { } // No action required
+
+            if (!stats_out.is_open()) stats_out.open(optionTable[o_stats_out].getValue().strval, std::ios_base::out);
+        }
+        else if (optionTable.contains(o_produce_stats) && optionTable[o_produce_stats].getValue().numval == 1) {
+            // gets set to false and was previously true
+            if (optionTable.contains(o_stats_out)) {
+                if (optionTable[o_stats_out].getValue().numval == 0) assert(false);
+                else if (stats_out.is_open()) stats_out.close();
+            }
+        }
+    }
+
     if (optionTable.contains(name))
         optionTable.remove(name);
     optionTable.insert(name, value);
@@ -231,7 +288,9 @@ const Info& SMTConfig::getInfo(const char* name) const {
         return info_Empty;
 }
 
-const char* SMTConfig::o_incremental  = ":incremental";
+const char* SMTConfig::o_incremental   = ":incremental";
+const char* SMTConfig::o_produce_stats = ":produce-stats";
+const char* SMTConfig::o_stats_out     = ":stats-out";
 
 void
 SMTConfig::initializeConfig( )
@@ -241,7 +300,8 @@ SMTConfig::initializeConfig( )
   status                        = l_Undef;
 //  incremental                   = 0;
   optionTable.insert(o_incremental, Option(0));
-  produce_stats                 = 0;
+  optionTable.insert(o_produce_stats, Option(0));
+//  produce_stats                 = 0;
   produce_models                = 0;
   print_stats                   = 0;
   print_proofs_smtlib2          = 0;
@@ -338,8 +398,8 @@ void SMTConfig::parseConfig ( char * f )
 
       // GENERIC CONFIGURATION
 //	   if ( sscanf( buf, "incremental %d\n"             , &incremental )                   == 1 );
-           if ( sscanf( buf, "produce_stats %d\n"           , &produce_stats )                 == 1 );
-      else if ( sscanf( buf, "print_stats %d\n"             , &print_stats )                   == 1 );
+//           if ( sscanf( buf, "produce_stats %d\n"           , &produce_stats )                 == 1 );
+      if ( sscanf( buf, "print_stats %d\n"             , &print_stats )                   == 1 );
       else if ( sscanf( buf, "print_proofs_smtlib2 %d\n"    , &print_proofs_smtlib2 )          == 1 );
       else if ( sscanf( buf, "print_proofs_dotty %d\n"      , &print_proofs_dotty )            == 1 );
       else if ( sscanf( buf, "produce_models %d\n"          , &produce_models )                == 1 )
@@ -423,7 +483,7 @@ void SMTConfig::parseConfig ( char * f )
     fclose( filein );
   }
 
-  if ( produce_stats ) stats_out.open( "stats.out" );
+  if ( produceStats() ) stats_out.open( "stats.out" );
 }
 
 void SMTConfig::printConfig ( ostream & out )
@@ -444,7 +504,7 @@ void SMTConfig::printConfig ( ostream & out )
   out << "# Diagnostic output channel " << endl;
   out << "diagnostic_output_channel stderr" << endl;
   out << "# Prints statistics in stats.out" << endl;
-  out << "produce_stats "              << produce_stats << endl;
+  out << "produce_stats "              << getOption(o_produce_stats).toString() << endl;
   out << "# Prints statistics to screen" << endl;
   out << "print_stats "              << print_stats << endl;
   out << "# Prints models" << endl;

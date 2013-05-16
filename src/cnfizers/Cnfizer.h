@@ -146,8 +146,8 @@ private:
 //                               , map< enodeid_t, Enode * > &
 //                               , map< enodeid_t, int > & );                  // Subroutine for rewriteMaxArity
 
-    bool    checkConj            (PTRef, Map<PTRef,bool,PTRefHash,Equal<PTRef> >& check_cache); // Check if a formula is a conjunction
-    bool    checkClause          (PTRef, Map<PTRef,bool,PTRefHash,Equal<PTRef> >& check_cache); // Check if a formula is a clause
+    bool    checkConj            (PTRef); // Check if a formula is a conjunction
+    bool    checkClause          (PTRef); // Check if a formula is a clause
     bool    checkPureConj        (PTRef, Map<PTRef,bool,PTRefHash,Equal<PTRef> >& check_cache); // Check if a formula is purely a conjuntion
 
     lbool   status;     // The status of the last solver call (initially l_Undef)

@@ -18,6 +18,7 @@ class PtStore {
     SStore&        sortstore;
 
     Map<SymRef,PTRef,SymRefHash,Equal<SymRef> > cterm_map; // Mapping constant symbols to terms
+    Map<PTRef,PTRef,PTRefHash,Equal<PTRef> >    cplx_map;  // Mapping complex terms to canonical terms
   public:
     PtStore(SymStore& symstore_, SStore& sortstore_);
     PTRef insertTerm(SymRef sym, const vec<PTRef>& terms) {

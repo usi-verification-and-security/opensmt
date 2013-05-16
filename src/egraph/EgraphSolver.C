@@ -768,36 +768,41 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PTRef r )
     // unchecked.
 
     // Create new distinction in q
-    ELRef pdist = forbid_allocator.alloc(p, r);
-    Enode& en_q = enode_store[q];
+    // If this is the first distinction for q, make it a "special" one,
+    // so that it has the owner reference.  Allocate an extra 32 bits.
     // If there is no node in forbid list
+    ELRef pdist = ELRef_Undef;
+    Enode& en_q = enode_store[q];
     if ( en_q.getForbid() == ELRef_Undef ) {
+        pdist = forbid_allocator.alloc(p, r, q);
         en_q.setForbid( pdist );
         forbid_allocator[pdist].link = pdist;
     }
     // Otherwise we should put the new node after the first
     // and make the first point to pdist. This is because
-    // the list is circular, but could be emptq. Therefore
+    // the list is circular, but could be empty. Therefore
     // we need a "reference" element for keeping it circular.
     // So the last insertion is either the second element or
     // the only present in the list
     else {
+        pdist = forbid_allocator.alloc(p, r, ERef_Undef);
         forbid_allocator[pdist].link = forbid_allocator[en_q.getForbid()].link;
         forbid_allocator[en_q.getForbid()].link = pdist;
     }
 
     // Create new distinction in p
-    ELRef qdist = forbid_allocator.alloc(q, r);
+    ELRef qdist = ELRef_Undef;
     Enode& en_p = enode_store[p];
     if ( en_p.getForbid() == ELRef_Undef ) {
+        qdist = forbid_allocator.alloc(q, r, p);
         en_p.setForbid( qdist );
         forbid_allocator[qdist].link = qdist;
     }
     // Same arguments above
     else {
-        Elist& forb_p = forbid_allocator[en_p.getForbid()];
-        forbid_allocator[qdist].link = forb_p.link;
-        forb_p.link = qdist;
+        qdist = forbid_allocator.alloc(q, r, ERef_Undef);
+        forbid_allocator[qdist].link = forbid_allocator[en_p.getForbid()].link;
+        forbid_allocator[en_p.getForbid()].link = qdist;
     }
 
     // Save operation in undo_stack
@@ -1146,11 +1151,11 @@ void Egraph::merge ( ERef x, ERef y )
     assert(en_x.type() == en_y.type());
 //    assert( !x->isConstant( ) );
 
-  // TODO:
-  // Propagate equalities to other ordinary theories
-  //
+    // TODO:
+    // Propagate equalities to other ordinary theories
+    //
 
-  // Update forbid list for x by adding elements of y
+    // Update forbid list for x by adding elements of y
     if ( en_y.getForbid( ) != ELRef_Undef ) {
         // We assign the same forbid list
         if ( en_x.getForbid( ) == ELRef_Undef )
@@ -2147,35 +2152,60 @@ void Egraph::extPopBacktrackPoint( )
 // Garbage Collection methods:
 
 void Egraph::relocAll(ELAllocator& to) {
-    for (int i = 0; i < enode_store.enodes.size(); i++) {
-        ERef er = enode_store.enodes[i];
-        Enode& en = enode_store[er];
-        assert(en.isTerm());
-
-#ifdef PEDANTIC_DEBUG
-        cerr << enode_store.printEnode(er);
-#endif
-        const ELRef start = en.getForbid();
-        if (start == ELRef_Undef) continue;
-
-        ELRef& start_ref = en.altForbid();
-        ELRef& curr_ch = start_ref;
-        ELRef curr_fx = start_ref;
+    for (int i = 0; i < forbid_allocator.elists.size(); i++) {
+        ELRef er = forbid_allocator.elists[i];
+        ELRef er_old = er;
+        ELRef start = er;
+        if (forbid_allocator[er].isDirty()) continue;
         ELRef prev_fx = ELRef_Undef;
         bool done = false;
         while (true) {
-            forbid_allocator.reloc(curr_ch, to);
+            forbid_allocator.reloc(er, to);
+            if (forbid_allocator[er_old].has_extra()) {
+                // update the owner's reference
+                ERef o = forbid_allocator[er_old].owner[0];
+                enode_store[o].setForbid(er);
+            }
             if (prev_fx != ELRef_Undef)
-                to[prev_fx].link = curr_ch;
-            // curr now points to "to"
+                to[prev_fx].link = er;
             if (done == true) break;
-            prev_fx = curr_ch;
-            curr_ch = forbid_allocator[curr_fx].link;
-            curr_fx = forbid_allocator[curr_fx].link;
-            if (curr_fx == start) done = true;
+            prev_fx = er;
+            er = forbid_allocator[er].link;
+            er_old = er;
+            if (er == start) done = true;
         }
     }
 }
+
+//    for (int i = 0; i < enode_store.enodes.size(); i++) {
+//        ERef er = enode_store.enodes[i];
+//        Enode& en = enode_store[er];
+//        assert(en.isTerm());
+//
+//#ifdef PEDANTIC_DEBUG
+//        cerr << enode_store.printEnode(er);
+//#endif
+//        const ELRef start = en.getForbid();
+//        if (start == ELRef_Undef) continue;
+//
+//        ELRef& start_ref = en.altForbid();
+//        ELRef& curr_ch = start_ref;
+//        ELRef curr_fx = start_ref;
+//        ELRef prev_fx = ELRef_Undef;
+//        bool done = false;
+//        while (true) {
+//            forbid_allocator.reloc(curr_ch, to);
+//            if (prev_fx != ELRef_Undef)
+//                to[prev_fx].link = curr_ch;
+//            // curr now points to "to"
+//            if (done == true) break;
+//            prev_fx = curr_ch;
+//            curr_ch = forbid_allocator[curr_fx].link;
+//            curr_fx = forbid_allocator[curr_fx].link;
+//            if (curr_fx == start) done = true;
+//        }
+//    }
+//}
 
 void Egraph::faGarbageCollect() {
     ELAllocator to(forbid_allocator.size() - forbid_allocator.wasted());

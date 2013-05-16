@@ -1,5 +1,5 @@
 AC_PREREQ(2.59)
-AC_INIT([OpenSMT 1.0.1], [(unstable)], [roberto.bruttomesso@gmail.com])
+AC_INIT([OpenSMT 2.0], [(unstable)], [antti.hyvarinen@gmail.com])
 AC_CONFIG_AUX_DIR(autotools)
 AM_INIT_AUTOMAKE
 AC_CONFIG_MACRO_DIR([m4])
@@ -28,13 +28,13 @@ AM_CONDITIONAL([WANT_LIBRARY], [test "$want_library" = "yes"])
 #
 AC_ARG_ENABLE(statically,
   AC_HELP_STRING([--enable-statically],
-                 [enable statically linked libraries (--static) (default=no)]),
+                 [enable statically linked libraries (-static) (default=no)]),
   enablestatically=$enableval,
   enablestatically="no")
 
 if test $enablestatically = "yes" ;
 then
-  config_statically="--static"
+  config_statically="-static"
 elif test $enablestatically = "no" ;
 then
   config_statically="" 
@@ -119,6 +119,25 @@ else
 fi
 echo "setting pedantic debug flags to... ${config_pedantic_debug:-none}"
 #
+# Enable GC debug
+#
+AC_ARG_ENABLE(gcdebug,
+  AC_HELP_STRING([--enable-gcdebug],
+                 [enable garbage collection debug (default=no)]),
+  enablegc_debug=$enableval,
+  enablegc_debug="no")
+
+if test $enablegc_debug = "yes" ;
+then
+  config_gc_debug="-DGC_DEBUG"
+elif test $enablegc_debug = "no" ;
+then
+  config_gc_debug=""
+else
+  config_gc_debug=$enablegc_debug
+fi
+echo "setting garbage collection debug flags to... ${config_gc_debug:-none}"
+#
 # SMTCOMP version
 #
 AC_ARG_ENABLE(smtcomp,
@@ -129,7 +148,7 @@ AC_ARG_ENABLE(smtcomp,
 
 if test $enablesmtcomp = "yes" ;
 then
-  config_smtcomp="-DSMTCOMP -march=opteron --static"
+  config_smtcomp="-DSMTCOMP -march=opteron -static"
 elif test $enablesmtcomp = "no" ;
 then
   config_smtcomp=""
@@ -159,8 +178,8 @@ then
   exit
 fi
 
-AM_CFLAGS="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization $config_pedantic_debug $config_smtcomp $config_statically $config_proof"
-AM_CXXFLAGS="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization $config_pedantic_debug $config_smtcomp $config_statically $config_proof"
+AM_CFLAGS="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_statically $config_proof"
+AM_CXXFLAGS="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_statically $config_proof"
 CFLAGS=""
 CXXFLAGS=""
 

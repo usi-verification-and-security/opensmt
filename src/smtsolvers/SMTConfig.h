@@ -34,6 +34,7 @@ class ConfValue {
     ConfValue() : type(O_EMPTY) {};
     ConfValue(const ASTNode& s_expr_n);
     ConfValue(int i) : type(O_DEC), numval(i) {};
+    ConfValue(const char* s);
     char* toString() const;
 };
 
@@ -55,7 +56,8 @@ class Option {
   public:
     Option(ASTNode& n);
     Option() {}
-    Option(int i) : value(i) {};
+    Option(int i)   : value(i) {}
+    Option(const char* s) : value(s) {}
     inline bool  isEmpty()  const { return value.type == O_EMPTY; }
     inline char* toString() const { return value.toString(); }
     inline const ConfValue& getValue() const { return value; }
@@ -68,6 +70,8 @@ struct SMTConfig
 {
 private:
   static const char* o_incremental;
+  static const char* o_produce_stats;
+  static const char* o_stats_out;
 
   Info          info_Empty;
   Option        option_Empty;
@@ -100,7 +104,7 @@ public:
 
   ~SMTConfig ( ) 
   { 
-    if ( produce_stats )  stats_out.close( );
+    if ( produceStats() )  stats_out.close( );
     if ( rocset )         out.close( );
     if ( docset )         err.close( );
   }
@@ -120,7 +124,7 @@ public:
 
   inline bool      isInit      ( ) { return logic != UNDEF; }
 
-  inline ostream & getStatsOut     ( ) { assert( produce_stats );  return stats_out; }
+  inline ostream & getStatsOut     ( ) { assert( optionTable.contains(o_produce_stats) );  return stats_out; }
   inline ostream & getRegularOut   ( ) { return rocset ? out : cout; }
   inline ostream & getDiagnosticOut( ) { return docset ? err : cerr; }
 
@@ -155,9 +159,16 @@ public:
   lbool	       status;                       // Status of the benchmark
 //  int          incremental;                  // Incremental solving
   int           isIncremental() const
-     { return optionTable.contains(":incremental") ?
-        optionTable[":incremental"].getValue().numval == 1: false; }
-  int          produce_stats;                // Should print statistics ?
+     { return optionTable.contains(o_incremental) ?
+        optionTable[o_incremental].getValue().numval == 1: false; }
+  int          produceStats() const
+     { return optionTable.contains(o_produce_stats) ?
+        optionTable[o_produce_stats].getValue().numval == 1: false; }
+  std::string  getStatsOut() const
+     { return optionTable.contains(o_stats_out) ?
+        optionTable[o_stats_out].getValue().strval: "/dev/stdout"; }
+
+//  int          produce_stats;                // Should print statistics ?
   int          print_stats;                  // Should print statistics ?
   int          produce_models;               // Should produce models ?
   int          produce_proofs;               // Should produce proofs ?
@@ -169,6 +180,9 @@ public:
   int          dump_formula;                 // Dump input formula
   int          verbosity() const             // Verbosity level
 #ifdef PEDANTIC_DEBUG
+    { return optionTable.contains(":verbosity") ?
+        optionTable[":verbosity"].getValue().numval : 2; }
+#elif GC_DEBUG
     { return optionTable.contains(":verbosity") ?
         optionTable[":verbosity"].getValue().numval : 2; }
 #else

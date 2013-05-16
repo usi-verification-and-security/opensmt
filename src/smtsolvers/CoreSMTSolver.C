@@ -1,4 +1,23 @@
 /*********************************************************************
+Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
+
+OpenSMT -- Copyright (C) 2013, Antti Hyvarinen
+
+OpenSMT is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+OpenSMT is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
+*********************************************************************/
+
+/*********************************************************************
 Author: Roberto Bruttomesso <roberto.bruttomesso@gmail.com>
 
 OpenSMT -- Copyright (C) 2010, Roberto Bruttomesso
@@ -172,7 +191,7 @@ CoreSMTSolver::~CoreSMTSolver()
   for (int i = 0; i < tmp_reas.size(); i++) free(tmp_reas[i]);
 
 #ifdef STATISTICS
-  if ( config.produce_stats != 0 )
+  if ( config.produceStats() != 0 )
     printStatistics ( config.getStatsOut( ) );
   // TODO added for convenience
   if ( config.print_stats != 0 )
@@ -2052,28 +2071,28 @@ int CoreSMTSolver::restartNextLimit ( int nof_conflicts )
   return nof_conflicts * restart_inc;
 }
 
-#ifdef STATISTICS
 void CoreSMTSolver::printStatistics( ostream & os )
 {
-  os << "# -------------------------" << endl;
-  os << "# STATISTICS FOR SAT SOLVER" << endl;
-  os << "# -------------------------" << endl;
-  os << "# Restarts.................: " << starts << endl;
-  os << "# Conflicts................: " << conflicts << endl;
-  os << "# Decisions................: " << (float)decisions << endl;
-  os << "# Propagations.............: " << propagations << endl;
-  os << "# Conflict literals........: " << tot_literals << endl;
-  os << "# T-Lemmata learnt.........: " << learnt_t_lemmata << endl;
-  os << "# T-Lemmata perm learnt....: " << perm_learnt_t_lemmata << endl;
-  os << "# Conflicts learnt.........: " << all_learnts << endl;
-  os << "# Average learnts size.....: " << learnts_size/all_learnts << endl;
+  os << "; -------------------------" << endl;
+  os << "; STATISTICS FOR SAT SOLVER" << endl;
+  os << "; -------------------------" << endl;
+  os << "; Restarts.................: " << starts << endl;
+  os << "; Conflicts................: " << conflicts << endl;
+  os << "; Decisions................: " << (float)decisions << endl;
+  os << "; Propagations.............: " << propagations << endl;
+  os << "; Conflict literals........: " << tot_literals << endl;
+  os << "; T-Lemmata learnt.........: " << learnt_t_lemmata << endl;
+  os << "; T-Lemmata perm learnt....: " << perm_learnt_t_lemmata << endl;
+  os << "; Conflicts learnt.........: " << all_learnts << endl;
+  os << "; Average learnts size.....: " << learnts_size/all_learnts << endl;
   if ( config.sat_preprocess_booleans != 0
       || config.sat_preprocess_theory != 0 )
-    os << "# Preprocessing time.......: " << preproc_time << " s" << endl;
+    os << "; Preprocessing time.......: " << preproc_time << " s" << endl;
   if ( config.sat_preprocess_theory != 0 )
-    os << "# T-Vars eliminated........: " << elim_tvars << " out of " << total_tvars << endl;
-  os << "# TSolvers time............: " << tsolvers_time << " s" << endl;
+    os << "; T-Vars eliminated........: " << elim_tvars << " out of " << total_tvars << endl;
+  os << "; TSolvers time............: " << tsolvers_time << " s" << endl;
 //  if ( config.sat_lazy_dtc != 0 )
 //    os << "# Interf. equalities.......: " << ie_generated << " out of " << egraph.getInterfaceTermsNumber( ) * (egraph.getInterfaceTermsNumber( )-1) / 2 << endl;
+  os << "; Init clauses.............: " << clauses.size() << endl;
+  os << "; Variables................: " << nVars() << endl;
 }
-#endif

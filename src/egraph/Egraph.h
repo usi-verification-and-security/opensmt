@@ -144,7 +144,7 @@ public:
     // TODO added for convenience
     if( tsolvers_stats.size() > 0 )
     {
-    	if ( config.produce_stats )
+    	if ( config.produceStats() )
     	    {
     	      config.getStatsOut( ) << "# -------------------------" << endl;
     	      config.getStatsOut( ) << "# STATISTICS FOR EUF SOLVER" << endl;
@@ -168,10 +168,10 @@ public:
     assert( tsolvers.size( ) == tsolvers_stats.size( ) );
 #endif
       // TODO added for convenience
-    for ( unsigned i = 1 ; ( config.produce_stats || config.print_stats ) && i < tsolvers.size_( ) ; i ++ )
+    for ( unsigned i = 1 ; ( config.produceStats() || config.print_stats ) && i < tsolvers.size_( ) ; i ++ )
     {
 #ifdef STATISTICS
-        if( config.produce_stats )
+        if( config.produceStats() )
         {
               config.getStatsOut( ) << "# -------------------------" << endl;
               config.getStatsOut( ) << "# STATISTICS FOR " << tsolvers[ i ]->getName( ) << endl;

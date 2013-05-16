@@ -309,51 +309,86 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
 
 class Elist
 {
-    bool     rlcd;                  // This is waste of space (flag saying I was relocated)
-    bool     reloced()    const { return rlcd; }
+    struct {
+        unsigned rlcd      : 1;
+        unsigned has_extra : 1;
+        unsigned dirty     : 1;
+        unsigned id        : 29; } header;
+
+    bool     reloced()    const { return header.rlcd; }
     ELRef    relocation() const { return rel_e; }
-    void     relocate(ELRef er) { rlcd = 1; rel_e = er; }
+    void     relocate(ELRef er) { header.rlcd = 1; rel_e = er; }
+    unsigned getId()      const { return header.id; }
+    void     setId(uint32_t id) { assert(id < 536870912); header.id = id; }
     friend class ELAllocator;
 
 public:
+    void     setDirty()         { header.dirty = true; }
+    bool     isDirty()    const { return header.dirty; }
+    bool     has_extra()  const { return header.has_extra; }
     PTRef    reason;                   // Reason for this distinction
     union    { ERef e; ELRef rel_e; }; // Enode that differs from this, or the reference where I was relocated
     ELRef    link;                     // Link to the next element in the list
-    Elist(ERef e_, PTRef r) : rlcd(false), reason(r), e(e_), link(ELRef_Undef) {}
-    Elist* Elist_new(ERef e_, PTRef r) {
+    ERef owner[0];                     // The owner of this PTRef, if it is an element with an owner
+
+    Elist(ERef e_, PTRef r, ERef _owner) : reason(r), e(e_), link(ELRef_Undef) {
+        header.rlcd = false;
+        if (_owner != ERef_Undef) {
+            owner[0] = _owner;
+            header.has_extra = true;
+        }
+        else header.has_extra = false;
+        header.dirty = false;
+    }
+    Elist* Elist_new(ERef e_, PTRef r, ERef owner) {
         assert(sizeof(ELRef) == sizeof(uint32_t));
         size_t sz = sizeof(ELRef) + 2*sizeof(ERef);
         void* mem = malloc(sz);
-        return new (mem) Elist(e_, r);
+        return new (mem) Elist(e_, r, owner);
     }
 };
 
 class ELAllocator : public RegionAllocator<uint32_t>
 {
     int free_ctr;
-    static int elistWord32Size() {
-        return sizeof(Elist)/sizeof(int32_t); }
+    static int elistWord32Size(bool has_owner) {
+        if (has_owner) return (sizeof(Elist)+sizeof(ELRef))/sizeof(int32_t);
+        else           return sizeof(Elist)/sizeof(int32_t);
+    }
 public:
+    vec<ELRef> elists;
     ELAllocator() : free_ctr(0) {}
     ELAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), free_ctr(0) {}
 
     void moveTo(ELAllocator& to) {
-        RegionAllocator<uint32_t>::moveTo(to); }
+        RegionAllocator<uint32_t>::moveTo(to);
+        elists.copyTo(to.elists); }
 
-    ELRef alloc(ERef e, PTRef r) {
+    ELRef alloc(ERef e, PTRef r, ERef owner) {
         assert(sizeof(ERef) == sizeof(uint32_t));
-        uint32_t v = RegionAllocator<uint32_t>::alloc(elistWord32Size());
+        uint32_t v = RegionAllocator<uint32_t>::alloc(elistWord32Size(owner != ERef_Undef));
         ELRef elid;
         elid.x = v;
-        new (lea(elid)) Elist(e, r);
+        new (lea(elid)) Elist(e, r, owner);
+        operator[] (elid).setId(elists.size());
+#ifdef GC_DEBUG
+        for (int i = 0; i < elists.size(); i++)
+            assert(elists[i] != elid);
+#endif
+        elists.push(elid);
         return elid;
     }
 
     ELRef alloc(const Elist& old) {
-        uint32_t v = RegionAllocator<uint32_t>::alloc(elistWord32Size());
+        uint32_t v = RegionAllocator<uint32_t>::alloc(elistWord32Size(old.has_extra()));
         ELRef elid;
         elid.x = v;
-        new (lea(elid)) Elist(old.e, old.reason);
+        if (old.has_extra())
+            new (lea(elid)) Elist(old.e, old.reason, old.owner[0]);
+        else
+            new (lea(elid)) Elist(old.e, old.reason, ERef_Undef);
+        operator[] (elid).setId(elists.size());
+        elists.push(elid);
         return elid;
     }
 
@@ -363,11 +398,11 @@ public:
     const Elist* lea       (ELRef r) const   { return (Elist*)RegionAllocator<uint32_t>::lea(r.x); }
     ELRef        ael       (const Elist* t)  { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); ELRef rf; rf.x = r; return rf; }
 
-    // No garbage collection implemented.  I wonder if this is bad...
-    void free(ELRef)
+    void free(ELRef r)
     {
         free_ctr++;
-        RegionAllocator<uint32_t>::free(elistWord32Size());
+        RegionAllocator<uint32_t>::free(elistWord32Size(operator[](r).has_extra()));
+        (operator[](r)).setDirty();
     }
 
     void reloc(ELRef& er, ELAllocator& to)
