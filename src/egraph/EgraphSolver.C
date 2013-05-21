@@ -291,7 +291,14 @@ Enode * Egraph::getInterpolants( logic_t & l )
 //}
 #endif
 
-PTRef Egraph::addTerm(PTRef term, vec<PtPair>& ites) {
+
+// Read a term with Boolean return sort and insert the subterms to UF.
+// If the term is equality it will be simplified by removing duplicates.
+// If the remaining term will be size one, l_True is returned.
+// If the term is disequality containing duplicates, l_False is
+// returned.
+
+lbool Egraph::addTerm(PTRef term, vec<PtPair>& ites) {
     assert( logic.isTheoryTerm(term) );
     // In general we don't want to put the Boolean equalities to UF
     // solver.  However, the Boolean uninterpreted functions are an
@@ -301,6 +308,31 @@ PTRef Egraph::addTerm(PTRef term, vec<PtPair>& ites) {
     assert(logic.isEquality(term_store[term].symb())    ||
            logic.isDisequality(term_store[term].symb()) ||
            logic.isUP(term));
+
+    Pterm& t = term_store[term];
+
+    // Remove trivially true equalities
+    if (logic.isEquality(t.symb())) {
+        PTRef p; int i, j;
+        for (i = j = 0, p = PTRef_Undef; i < t.size(); i++)
+            if (t[i] != p)
+                t[j++] = p = t[i];
+        // shrink the size!
+        t.shrink(i-j);
+#ifdef PEDANTIC_DEBUG
+        if (i-j != 0)
+            cout << term_store.printTerm(term) << endl;
+#endif
+        if (t.size() == 1)
+            return l_True;
+    }
+    // Remove false disequalities
+    else if (logic.isDisequality(term_store[term].symb())) {
+        PTRef p; int i, j;
+        for (i = j = 0, p = PTRef_Undef; i < t.size(); i++)
+            if (t[i] == p)
+                return l_False;
+    }
 
     vec<PtChild> queue;
     queue.push(PtChild(term, PTRef_Undef, -1));
@@ -340,7 +372,8 @@ PTRef Egraph::addTerm(PTRef term, vec<PtPair>& ites) {
                     assert(sym_store.nameToRef(name).size() == 1);
                     sym = sym_store.nameToRef(name)[0];
                 }
-                PTRef o_ite = term_store.insertTerm(sym, vec<PTRef>());
+                vec<PTRef> tmp;
+                PTRef o_ite = logic.insertTerm(sym, tmp);
                 assert(o_ite != PTRef_Undef);
                 // The old term goes to PtPair
                 ites.push(PtPair(tm[i], o_ite));
@@ -382,16 +415,17 @@ PTRef Egraph::addTerm(PTRef term, vec<PtPair>& ites) {
             new_terms = true;
 #endif
             Pterm& tm = term_store[tr];
-            if (sym_store[tm.symb()].commutes()) {
-#ifdef PEDANTIC_DEBUG
-                cerr << "The term " << term_store.printTerm(tr) << " is commutative"
-                     << " and will be sorted to ";
-#endif
-                termSort(tm);
-#ifdef PEDANTIC_DEBUG
-                cerr << term_store.printTerm(tr) << "." << endl;
-#endif
-            }
+            // The following is already done when reading in the terms
+//            if (sym_store[tm.symb()].commutes()) {
+//#ifdef PEDANTIC_DEBUG
+//                cerr << "The term " << term_store.printTerm(tr) << " is commutative"
+//                     << " and will be sorted to ";
+//#endif
+//                termSort(tm);
+//#ifdef PEDANTIC_DEBUG
+//                cerr << term_store.printTerm(tr) << "." << endl;
+//#endif
+//            }
             ERef sym = enode_store.addSymb(tm.symb());
             ERef cdr = ERef_Nil;
             for (int j = tm.size()-1; j >= 0; j--) {
@@ -415,6 +449,8 @@ PTRef Egraph::addTerm(PTRef term, vec<PtPair>& ites) {
             // Canonize the term representation
             rval = enode_store.addTerm(sym, cdr, tr);
             if (rval != tr) {
+                // This is already done at term instertion time
+                assert(false);
 #ifdef PEDANTIC_DEBUG
                 cout << "Duplicate: " << term_store.printTerm(rval)
                      << " equals " << term_store.printTerm(tr) << endl;
@@ -430,7 +466,9 @@ PTRef Egraph::addTerm(PTRef term, vec<PtPair>& ites) {
         }
         else {
             // Canonize
-            // TODO: It would be better to use a special mapping from TRefs to canon TRefs
+            // XXX This is already done at term read in time
+            // This code should be removed and checked if all works
+            // still
             ERef tmp = enode_store.termToERef[tr];
             rval = enode_store.ERefToTerms[tmp][0];
             if (child.parent != PTRef_Undef)
@@ -446,40 +484,7 @@ PTRef Egraph::addTerm(PTRef term, vec<PtPair>& ites) {
 //    if (not new_terms)
 //        cout << "All was seen" << endl;
 #endif
-
-    // Check if this term already exists
-    Pterm& t = term_store[term];
-    vec<ERef> canon_args;
-    for (int i = 0; i < t.size(); i++)
-        canon_args.push(enode_store.termToERef[t[i]]);
-    if (sym_store[t.symb()].commutes())
-        sort(canon_args);
-
-    if (logic.isEquality(t.symb())) {
-        PTRef val = PTRef_Undef;
-        if (eq_terms.peek(canon_args, val))
-            return val;
-        else
-            eq_terms.insert(canon_args, term);
-    }
-    else if (logic.isDisequality(term_store[term].symb())) {
-        PTRef val = PTRef_Undef;
-        if (deq_terms.peek(canon_args, val))
-            return val;
-        else
-            deq_terms.insert(canon_args, term);
-    }
-    else if (logic.isUP(term)) {
-        PTRef val = PTRef_Undef;
-        // Here we need to consider also the symbol
-        canon_args.push(enode_store.symToERef[term_store[term].symb()]);
-        if (up_terms.peek(canon_args, val))
-            return val;
-        else
-            up_terms.insert(canon_args, term);
-    }
-
-    return term;
+    return l_Undef;
 }
 
 

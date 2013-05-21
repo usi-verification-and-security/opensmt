@@ -39,13 +39,13 @@ Logic::Logic(SMTConfig& c, SStore& s, SymStore& t, PtStore& pt) :
     sym_store[tr].setNoScoping();
     sym_TRUE = tr;
     vec<PTRef> tmp;
-    term_TRUE  = term_store.insertTerm(sym_TRUE,  tmp);
+    term_TRUE  = insertTerm(sym_TRUE,  tmp);
 
     tr = sym_store.newSymb(tk_false, params);
     if (tr == SymRef_Undef) { assert(false); }
     sym_store[tr].setNoScoping();
     sym_FALSE = tr;
-    term_FALSE = term_store.insertTerm(sym_FALSE, tmp);
+    term_FALSE = insertTerm(sym_FALSE, tmp);
 
     params.push(sort_store["Bool 0"]);
     tr = sym_store.newSymb(tk_not, params);
@@ -186,6 +186,50 @@ bool Logic::declare_sort_hook(Sort* s) {
     return true;
 }
 
+PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args) {
+    SymRef sref = term_store.lookupSymbol(s, args);
+    PTRef rval;
+    if (sref == SymRef_Undef)
+        rval = PTRef_Undef;
+    else
+        rval = insertTerm(sref, args);
+    return rval;
+}
+
+PTRef Logic::mkAnd(const vec<PTRef>& args) {
+    return PTRef_Undef;
+}
+
+PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms) {
+    PTRef res;
+    if (terms.size() == 0) {
+        if (term_store.cterm_map.contains(sym))
+            res = term_store.cterm_map[sym];
+        else {
+            res = term_store.pta.alloc(sym, terms);
+            term_store.cterm_map.insert(sym, res);
+        }
+    }
+    else if (!isBooleanOperator(sym)) {
+        if (sym_store[sym].commutes()) {
+            sort(terms);
+        }
+        PTLKey k;
+        k.sym = sym;
+        terms.copyTo(k.args);
+        if (term_store.cplx_map.contains(k))
+            res = term_store.cplx_map[k];
+        else {
+            res = term_store.pta.alloc(sym, terms);
+            term_store.cplx_map.insert(k, res);
+        }
+    }
+    else {
+        // Boolean operator
+        res = term_store.pta.alloc(sym, terms);
+    }
+    return res;
+}
 
 // Uninterpreted predicate p : U U* -> Bool
 bool Logic::isUP(PTRef ptr) const {
@@ -204,7 +248,7 @@ bool Logic::isUP(PTRef ptr) const {
 // If the term is an equality (disequality), it must be an equality
 // (disequality) over terms with non-boolean return type.  Those must be then
 // returned as is.
-PTRef Logic::lookupUPEq(PTRef ptr) const {
+PTRef Logic::lookupUPEq(PTRef ptr) {
     assert(isUP(ptr));
     // already seen
     if (UP_map.contains(ptr)) return UP_map[ptr];
@@ -213,12 +257,12 @@ PTRef Logic::lookupUPEq(PTRef ptr) const {
     if (isEquality(t.symb()) | isDisequality(t.symb()))
         return ptr;
 
-    // Create a the new equality
+    // Create a new equality
     Symbol& sym = sym_store[t.symb()];
     vec<PTRef> args;
     args.push(ptr);
     args.push(getTerm_true());
-    return term_store.lookupTerm(tk_equals, args);
+    return resolveTerm(tk_equals, args);
 }
 
 bool Logic::isBooleanOperator(SymRef tr) const {

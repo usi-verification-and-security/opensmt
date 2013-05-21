@@ -65,52 +65,53 @@ GCTest::GCTest(int argc, char **argv) {
     assert(not_sym != SymRef_Undef);
 
     // Add the terms
+    vec<PTRef> tmp;
     // a
-    PTRef a_ptr = term_store.insertTerm(a_tr, vec<PTRef>());
+    PTRef a_ptr = logic.insertTerm(a_tr, tmp);
     // b
-    PTRef b_ptr = term_store.insertTerm(b_tr, vec<PTRef>());
+    PTRef b_ptr = logic.insertTerm(b_tr, tmp);
     // c
-    PTRef c_ptr = term_store.insertTerm(c_tr, vec<PTRef>());
+    PTRef c_ptr = logic.insertTerm(c_tr, tmp);
     // f a b
     vec<PTRef> f_args;
     f_args.push(a_ptr);
     f_args.push(b_ptr);
-    PTRef f_a_b_ptr = term_store.insertTerm(f_tr, f_args);
+    PTRef f_a_b_ptr = logic.insertTerm(f_tr, f_args);
     // = (f a b) a
     vec<PTRef> eq_args;
     eq_args.push(f_a_b_ptr);
     eq_args.push(a_ptr);
-    PTRef eq_ptr = term_store.insertTerm(eq_sym, eq_args);
+    PTRef eq_ptr = logic.insertTerm(eq_sym, eq_args);
 
     // f (f a b) b
     vec<PTRef> f2_args;
     f2_args.push(f_a_b_ptr);
     f2_args.push(b_ptr);
-    PTRef f2_f_a_b_b_ptr = term_store.insertTerm(f_tr, f2_args);
+    PTRef f2_f_a_b_b_ptr = logic.insertTerm(f_tr, f2_args);
 
     // = (f (f a b) b) c
     vec<PTRef> eq2_args;
     eq2_args.push(f2_f_a_b_b_ptr);
     eq2_args.push(c_ptr);
-    PTRef eq2_ptr = term_store.insertTerm(eq_sym, eq2_args);
+    PTRef eq2_ptr = logic.insertTerm(eq_sym, eq2_args);
 
     // = (a c)
     vec<PTRef> eq3_args;
     eq3_args.push(a_ptr);
     eq3_args.push(c_ptr);
-    PTRef eq3_ptr = term_store.insertTerm(eq_sym, eq3_args);
+    PTRef eq3_ptr = logic.insertTerm(eq_sym, eq3_args);
     // not (= (a c))
     vec<PTRef> deq_args;
     deq_args.push(eq3_ptr);
-    PTRef deq_ptr = term_store.insertTerm(not_sym, deq_args);
+    PTRef deq_ptr = logic.insertTerm(not_sym, deq_args);
 
     // add the terms
     vec<PtPair> v;
-    PTRef t1 = egraph.addTerm(eq2_ptr, v);
-    assert(t1 == eq2_ptr);
+    lbool res = egraph.addTerm(eq2_ptr, v);
+    assert(res == l_Undef);
 
-    PTRef t2 = egraph.addTerm(eq_ptr, v);
-    assert(t2 == eq_ptr);
+    lbool t2 = egraph.addTerm(eq_ptr, v);
+    assert(t2 == l_Undef);
 
     // Get their refs
 

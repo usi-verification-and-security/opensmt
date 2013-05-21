@@ -91,12 +91,17 @@ class Logic {
 
     // Return the corresponding equivalence term if yes,
     // PTRef_Undef otherwise.
-    PTRef       lookupUPEq       (PTRef tr) const;
+    PTRef       lookupUPEq       (PTRef tr);
 
     // Override for different logics...
     bool        declare_sort_hook(Sort* s);
     inline bool isPredef(string&) const { return false; };
 
+    PTRef       resolveTerm(const char* s, vec<PTRef>& args);
+    PTRef       insertTerm(SymRef sym, vec<PTRef>& terms);
+    // Boolean term generation
+    PTRef       mkAnd(const vec<PTRef>& args);
+    //...
 };
 
 #endif // LOGIC_H

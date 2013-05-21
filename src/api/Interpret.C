@@ -214,12 +214,13 @@ declare_fun_err: ;
                     state = ts.cnfizeAndGiveToSolver(ctr, uf_terms);
                     for (int i = 0; i < uf_terms.size() && state != l_False; i++) {
                         vec<PtPair> ites;
-                        PTRef new_tr = uf_solver.addTerm(uf_terms[i], ites); // uf_terms[i] != new_tr if term is not new
-                        if (new_tr != uf_terms[i]) {
-                            comment_formatted("According to uf solver, the terms %d (%s) and %d (%s) are equal", new_tr, ptstore.printTerm(new_tr), uf_terms[i], ptstore.printTerm(uf_terms[i]));
-                            state = ts.extEquals(uf_terms[i], new_tr);
+                        lbool res = uf_solver.addTerm(uf_terms[i], ites);
+                        if (res == l_False) {
+                            ts.extEquals(uf_terms[i], logic.getTerm_false());
                         }
-                        comment_formatted("%d ites in need of conversion", ites.size());
+                        if (res == l_True) {
+                            ts.extEquals(uf_terms[i], logic.getTerm_true());
+                        }
                         for (int j = 0; j < ites.size(); j++) {
                             PTRef ite  = ites[j].x;
                             PTRef sbst = ites[j].y;
@@ -231,26 +232,26 @@ declare_fun_err: ;
                             vec<PTRef> args_eq;
                             args_eq.push(sbst);
                             args_eq.push(t);
-                            PTRef eq_term = ptstore.lookupTerm(Logic::tk_equals, args_eq);
+                            PTRef eq_term = logic.resolveTerm(Logic::tk_equals, args_eq); // ptstore.lookupTerm(Logic::tk_equals, args_eq);
                             assert(eq_term != PTRef_Undef);
                             vec<PTRef> args_impl;
                             args_impl.push(b);
                             args_impl.push(eq_term);
-                            PTRef if_term = ptstore.lookupTerm(Logic::tk_implies, args_impl);
+                            PTRef if_term = logic.resolveTerm(Logic::tk_implies, args_impl);
                             assert(if_term != PTRef_Undef);
                             // \neg b -> (= sbst e)
                             args_eq.pop();
                             args_eq.push(e);
-                            eq_term = ptstore.lookupTerm(Logic::tk_equals, args_eq);
+                            eq_term = logic.resolveTerm(Logic::tk_equals, args_eq);
                             assert(eq_term != PTRef_Undef);
                             vec<PTRef> args_neg;
                             args_neg.push(b);
-                            PTRef neg_term = ptstore.lookupTerm(Logic::tk_not, args_neg);
+                            PTRef neg_term = logic.resolveTerm(Logic::tk_not, args_neg);
                             vec<PTRef> args_impl2;
                             args_impl2.push(neg_term);
                             args_impl2.push(eq_term);
 
-                            PTRef else_term = ptstore.lookupTerm(Logic::tk_implies, args_impl2);
+                            PTRef else_term = logic.resolveTerm(Logic::tk_implies, args_impl2);
                             assert(else_term != PTRef_Undef);
 
                             terms.push(if_term);
@@ -358,7 +359,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
             return tr;
         }
         else
-            tr = ptstore.lookupTerm(name, vec_ptr_empty);
+            tr = logic.resolveTerm(name, vec_ptr_empty);
         if (tr == PTRef_Undef)
             comment_formatted("unknown qid term %s", name);
         return tr;
@@ -379,7 +380,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
         }
         assert(args.size() > 0);
 
-        PTRef tr = ptstore.lookupTerm(name, args);
+        PTRef tr = logic.resolveTerm(name, args);
         if (tr == PTRef_Undef) {
             // Implement a nice error reporting here
             notify_formatted(true, "No such symbol %s", name);

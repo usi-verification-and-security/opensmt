@@ -14,6 +14,7 @@ struct PTRef {
     void operator= (uint32_t v) { x = v; }
     inline friend bool operator== (const PTRef& a1, const PTRef& a2)   { return a1.x == a2.x; }
     inline friend bool operator!= (const PTRef& a1, const PTRef& a2)   { return a1.x != a2.x; }
+    inline friend bool operator< (const PTRef& a1, const PTRef& a2)    { return a1.x < a2.x;  }
 };
 
 static struct PTRef PTRef_Undef = {INT32_MAX};
@@ -28,6 +29,47 @@ template <>
 struct Equal<const PTRef> {
     bool operator() (const PTRef& s1, const PTRef& s2) { return s1 == s2; }
 };
+
+// A key used for pterm resolve lookups
+struct PTLKey {
+    SymRef     sym;
+    vec<PTRef> args;
+    friend bool operator== (const PTLKey& k1, const PTLKey& k2) {
+        if (k1.sym != k2.sym) return false;
+        if (k1.args.size() != k2.args.size()) return false;
+        int i;
+        for (i = 0; i < k1.args.size(); i++)
+            if (k1.args[i] != k2.args[i]) break;
+        return i == k1.args.size();
+    }
+    void operator= (const PTLKey& k) {
+        sym = k.sym;
+        k.args.copyTo(args);
+    }
+};
+
+
+struct PTLHash {
+    uint32_t operator () (const PTLKey& s) const {
+        uint32_t v = (uint32_t)s.sym.x;
+        for (int i = 0; i < s.args.size(); i++)
+            v += (uint32_t)s.args[i].x;
+        return v; }
+};
+
+/*
+template <>
+struct Equal<const PTLKey> {
+    bool operator() (const PTLKey& k1, const PTLKey& k2) {
+        if (k1.sym != k2.sym) return false;
+        if (k1.args.size() != k2.args.size()) return false;
+        int i;
+        for (i = 0; i < k1.args.size(); i++)
+            if (k1.args[i] != k2.args[i]) break;
+        return i == k1.args.size();
+    }
+};
+*/
 
 //typedef uint32_t TRef;
 typedef uint32_t PTId; // Used as an array index
@@ -112,6 +154,8 @@ class Pterm {
 
     int      getId() const { return id; }
     void     setId(int i) { id = i; }
+
+    void     shrink(int s)               { header.size -= s; }
 
 };
 

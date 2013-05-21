@@ -41,7 +41,7 @@ char* PtStore::printTerm_(PTRef tr, bool ext) const {
 // Creates the term.
 // Returns PTRef_Undef if the name is not defined anywhere
 //
-PTRef PtStore::lookupTerm(const char* s, const vec<PTRef>& args) {
+SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args) {
     if (symstore.contains(s)) {
         const vec<SymRef>& trefs = symstore.nameToRef(s);
         if (symstore[trefs[0]].noScoping()) {
@@ -59,7 +59,7 @@ PTRef PtStore::lookupTerm(const char* s, const vec<PTRef>& args) {
                     }
                     if (j == t.nargs()) {
                         // Create / lookup the proper term and return the reference
-                        return insertTerm(ctr, args);
+                        return ctr;
                     }
                 }
                 // The term might still be one of the special cases:
@@ -72,15 +72,15 @@ PTRef PtStore::lookupTerm(const char* s, const vec<PTRef>& args) {
                         if (symstore[argt].rsort() != t[1]) break;
                     }
                     if (j == args.size())
-                        return insertTerm(ctr, args);
+                        return ctr;
                 }
                 else if (t.nargs() < args.size_() && t.right_assoc()) {
                     opensmt_error2("right assoc term not implemented yet", symstore.getName(ctr));
-                    return PTRef_Undef;
+                    return SymRef_Undef;
                 }
                 else if (t.nargs() < args.size_() && t.chainable()) {
                     opensmt_error2("chainable term not implemented yet", symstore.getName(ctr));
-                    return PTRef_Undef;
+                    return SymRef_Undef;
                 }
                 else if (t.nargs() < args.size_() && t.pairwise()) {
                     int j = 0;
@@ -88,10 +88,10 @@ PTRef PtStore::lookupTerm(const char* s, const vec<PTRef>& args) {
                         SymRef argt = pta[args[j]].symb();
                         if (symstore[argt].rsort() != t[0]) break;
                     }
-                    if (j == args.size()) return insertTerm(ctr, args);
+                    if (j == args.size()) return ctr;
                 }
                 else
-                    return PTRef_Undef;
+                    return SymRef_Undef;
             }
         }
     }
@@ -110,12 +110,12 @@ PTRef PtStore::lookupTerm(const char* s, const vec<PTRef>& args) {
                     if (t[j] != symstore[argt].rsort()) break;
                 }
                 if (j == t.nargs())
-                    return insertTerm(ctr, args);
+                    return ctr;
             }
         }
     }
     // Not found
-    return PTRef_Undef;
+    return SymRef_Undef;
 }
 
 

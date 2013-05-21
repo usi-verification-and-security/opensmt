@@ -171,7 +171,6 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula,
     // For each top-level conjunct
     for (unsigned i = 0 ; i < top_level_formulae.size_() && (res == true) ; i ++) {
         PTRef f = top_level_formulae[i];
-        std::cout << ptstore.printTerm(f) << endl;
 
         // Give it to the solver if already in CNF
         if (checkCnf(f) == true) {

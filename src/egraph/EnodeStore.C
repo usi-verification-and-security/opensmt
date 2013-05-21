@@ -30,7 +30,7 @@ PTRef EnodeStore::addTerm(ERef sr, ERef args, PTRef term) {
         // join the equivalence group.  To have the explanations
         // working, there must not be two terms that correspond to a
         // single enode (this goes back to the explanation tree).  Thus
-        // we need to communicate equivality back to the caller so that
+        // we need to communicate equality back to the caller so that
         // eventually required actions can be taken.
         if (containsSig(sr, args)) {
             ERef canon = lookupSig(sr, args);

@@ -130,7 +130,7 @@ public:
     vec<PTRef> tmp;
     tmp.push(logic.getTerm_true());
     tmp.push(logic.getTerm_false());
-    PTRef neq = term_store.insertTerm(logic.getSym_eq(), tmp);
+    PTRef neq = logic.insertTerm(logic.getSym_eq(), tmp);
     assertNEq(logic.getTerm_true(), logic.getTerm_false(), neq);
     Eq_FALSE = neq;
   }
@@ -469,7 +469,7 @@ public:
   lbool   addEquality     ( PTRef );
   lbool   addTrue         ( PTRef );
   lbool   addFalse        ( PTRef );
-  PTRef   addTerm         ( PTRef, vec<PtPair>& );
+  lbool   addTerm         ( PTRef, vec<PtPair>& );
 private:
   bool    assertEq        ( PTRef, PTRef, PTRef );                // Asserts an equality
   bool    assertNEq       ( PTRef, PTRef, PTRef );                // Asserts a negated equality
