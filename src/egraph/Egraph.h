@@ -465,11 +465,12 @@ private:
   // Asserting literals
   //
 public:
-  lbool   addDisequality  ( PTRef );
-  lbool   addEquality     ( PTRef );
-  lbool   addTrue         ( PTRef );
-  lbool   addFalse        ( PTRef );
-  lbool   addTerm         ( PTRef, vec<PtPair>& );
+  lbool       simplifyAndAddTerms ( PTRef, vec<PtPair>&, vec<PTRef>& );
+  lbool       addDisequality      ( PTRef );
+  lbool       addEquality         ( PTRef );
+  lbool       addTrue             ( PTRef );
+  lbool       addFalse            ( PTRef );
+  lbool       addTerm             ( PTRef, vec<PtPair>&, vec<PTRef>& );
 private:
   bool    assertEq        ( PTRef, PTRef, PTRef );                // Asserts an equality
   bool    assertNEq       ( PTRef, PTRef, PTRef );                // Asserts a negated equality

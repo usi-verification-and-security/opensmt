@@ -16,6 +16,19 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 *********************************************************************/
+/* Based on the paper
+ * @article{DBLP:journals/corr/abs-1111-5652,
+ *    author    = {Alexander Fuchs and Amit Goel and Jim Grundy and Sava Krstic and
+ *                 Cesare Tinelli},
+ *    title     = {Ground interpolation for the theory of equality},
+ *    journal   = {Logical Methods in Computer Science},
+ *    volume    = {8},
+ *    number    = {1},
+ *    year      = {2012},
+ *    ee        = {http://dx.doi.org/10.2168/LMCS-8(1:6)2012},
+ *    bibsource = {DBLP, http://dblp.uni-trier.de}
+ *  }
+ */
 
 #ifdef PRODUCE_PROOF
 

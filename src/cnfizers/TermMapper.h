@@ -10,8 +10,6 @@ class TermMapper {
   public:
     TermMapper(Logic& l) : logic(l) {}
 
-    // Change this to a vector!
-//    Map<Var,PTRef,VarHash,Equal<Var> >        varToTerm;
     vec<PTRef>                                varToTerm;
     vec<SymRef>                               varToTheorySymbol;
     Map<PTRef,Var,PTRefHash,Equal<PTRef> >    termToVar;

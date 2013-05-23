@@ -291,6 +291,49 @@ Enode * Egraph::getInterpolants( logic_t & l )
 //}
 #endif
 
+lbool Egraph::simplifyAndAddTerms(PTRef tr, vec<PtPair>& ites, vec<PTRef>& bools) {
+    vec<PtChild> terms;
+    terms.push(PtChild(tr, PTRef_Undef, -1));
+    bool true_root = false;
+    bool false_root = false;
+    while (terms.size() != 0) {
+        PtChild ctr = terms.last();
+        terms.pop();
+        if (logic.isTheoryTerm(ctr.tr) && ctr.tr != logic.getTerm_true() && ctr.tr != logic.getTerm_false()) {
+            vec<PTRef> nest_bools;
+            lbool val = addTerm(ctr.tr, ites, nest_bools);
+            if (val == l_True) {
+                if (ctr.parent != PTRef_Undef)
+                    term_store[ctr.parent][ctr.pos] = logic.getTerm_true();
+                else {
+                    assert(ctr.tr == tr);
+                    true_root = true;
+                }
+            }
+            if (val == l_False) {
+                if (ctr.parent != PTRef_Undef)
+                    term_store[ctr.parent][ctr.pos] = logic.getTerm_false();
+                else {
+                    assert(ctr.tr == tr);
+                    false_root = true;
+                }
+            }
+            for (int i = 0; i < nest_bools.size(); i++) {
+                cerr << "Nested Booleans not supported" << endl;
+                bools.push(nest_bools[i]);
+//                terms.push(PtChild(nest_bools[i], 
+            }
+        }
+        else
+            for (int i = 0; i < term_store[ctr.tr].size(); i++) {
+                PtChild nch(term_store[ctr.tr][i], ctr.tr, i);
+                terms.push(nch);
+            }
+    }
+    if      (true_root)  return l_True;
+    else if (false_root) return l_False;
+    else                 return l_Undef;
+}
 
 // Read a term with Boolean return sort and insert the subterms to UF.
 // If the term is equality it will be simplified by removing duplicates.
@@ -298,7 +341,7 @@ Enode * Egraph::getInterpolants( logic_t & l )
 // If the term is disequality containing duplicates, l_False is
 // returned.
 
-lbool Egraph::addTerm(PTRef term, vec<PtPair>& ites) {
+lbool Egraph::addTerm(PTRef term, vec<PtPair>& ites, vec<PTRef>& nested_bools) {
     assert( logic.isTheoryTerm(term) );
     // In general we don't want to put the Boolean equalities to UF
     // solver.  However, the Boolean uninterpreted functions are an
@@ -317,21 +360,25 @@ lbool Egraph::addTerm(PTRef term, vec<PtPair>& ites) {
         for (i = j = 0, p = PTRef_Undef; i < t.size(); i++)
             if (t[i] != p)
                 t[j++] = p = t[i];
+        if (j == 1) {
+            term_store.free(term); // Lazy free
+            return l_True;
+        }
         // shrink the size!
         t.shrink(i-j);
 #ifdef PEDANTIC_DEBUG
         if (i-j != 0)
             cout << term_store.printTerm(term) << endl;
 #endif
-        if (t.size() == 1)
-            return l_True;
     }
     // Remove false disequalities
     else if (logic.isDisequality(term_store[term].symb())) {
         PTRef p; int i, j;
         for (i = j = 0, p = PTRef_Undef; i < t.size(); i++)
-            if (t[i] == p)
+            if (t[i] == p) {
+                term_store.free(term);
                 return l_False;
+            }
     }
 
     vec<PtChild> queue;
@@ -344,6 +391,8 @@ lbool Egraph::addTerm(PTRef term, vec<PtPair>& ites) {
     while (queue.size() != 0) {
         PtChild& child = queue.last();
         PTRef tr = child.tr;
+        if (!logic.isTheoryTerm(tr))
+            nested_bools.push(tr);
         assert(logic.isTheoryTerm(tr));
         queue.pop();
 #ifdef PEDANTIC_DEBUG
@@ -415,17 +464,6 @@ lbool Egraph::addTerm(PTRef term, vec<PtPair>& ites) {
             new_terms = true;
 #endif
             Pterm& tm = term_store[tr];
-            // The following is already done when reading in the terms
-//            if (sym_store[tm.symb()].commutes()) {
-//#ifdef PEDANTIC_DEBUG
-//                cerr << "The term " << term_store.printTerm(tr) << " is commutative"
-//                     << " and will be sorted to ";
-//#endif
-//                termSort(tm);
-//#ifdef PEDANTIC_DEBUG
-//                cerr << term_store.printTerm(tr) << "." << endl;
-//#endif
-//            }
             ERef sym = enode_store.addSymb(tm.symb());
             ERef cdr = ERef_Nil;
             for (int j = tm.size()-1; j >= 0; j--) {

@@ -39,12 +39,11 @@ Cnfizer::Cnfizer( PtStore &      ptstore_
      , status   (l_Undef)
 {
     vec<Lit> c;
-    vec<PTRef> tmp;
-    Lit l = findLit(logic.getTerm_true(), tmp);
+    Lit l = findLit(logic.getTerm_true());
     c.push(l);
     solver.addSMTClause(c);
     c.pop();
-    l = findLit(logic.getTerm_false(), tmp);
+    l = findLit(logic.getTerm_false());
     c.push(~l);
     solver.addSMTClause(c);
 }
@@ -81,7 +80,7 @@ bool Cnfizer::isAtom(PTRef r) const {
 
 // Extracts the literal corresponding to a term.
 // Accepts negations.
-const Lit Cnfizer::findLit(PTRef ptr, vec<PTRef>& uf_terms) {
+const Lit Cnfizer::findLit(PTRef ptr) {
     PTRef p;
     bool sgn;
     Var v;
@@ -110,15 +109,6 @@ const Lit Cnfizer::findLit(PTRef ptr, vec<PTRef>& uf_terms) {
                    logic.getTerm_true() == p          ||
                    logic.getTerm_false() == p         ||
                    logic.isUP(p)                      );
-            if (logic.isUP(p))
-                uf_terms.push(p);
-            else {
-                for (int i = 0; i < tr.size(); i++) {
-                    if (logic.isTheoryTerm(tr[i])) {
-                        uf_terms.push(tr[i]);
-                     }
-                }
-            }
         }
         tmap.termToVar.insert(p, v);
 //        tmap.varToTerm.insert(v, p);
@@ -149,8 +139,7 @@ bool Cnfizer::isNPAtom(PTRef r, PTRef& p) const {
 //
 // Main Routine. Examine formula and give it to the solver
 //
-lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula,
-                                      vec<PTRef>& uf_terms
+lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula
 #ifdef PRODUCE_PROOF
                                     , const ipartitions_t partition
 #endif
@@ -174,7 +163,7 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula,
 
         // Give it to the solver if already in CNF
         if (checkCnf(f) == true) {
-            res = giveToSolver(f, uf_terms
+            res = giveToSolver(f
 #ifdef PRODUCE_PROOF
                               , partition
 #endif
@@ -195,7 +184,7 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula,
 //      map< enodeid_t, int > enodeid_to_incoming_edges;
 //      computeIncomingEdges( f, enodeid_to_incoming_edges ); // Compute incoming edges for f and children
 //      f = rewriteMaxArity( f, enodeid_to_incoming_edges );  // Rewrite f with maximum arity for operators
-        res = cnfize(f, uf_terms //, cnf_cache
+        res = cnfize(f
 #ifdef PRODUCE_PROOF
                     , partition
 #endif
@@ -211,16 +200,15 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula,
 }
 
 lbool Cnfizer::extEquals(PTRef r_new, PTRef r_old) {
-    vec<PTRef> tmp;
 
-    Lit l_new = findLit(r_new, tmp);
+    Lit l_new = findLit(r_new);
 
     if (tmap.varToTheorySymbol[var(l_new)] == SymRef_Undef) {
         // The variable has already been removed
         return l_Undef;
     }
 
-    Lit l_old = findLit(r_old, tmp);
+    Lit l_old = findLit(r_old);
 
     tmap.varToTheorySymbol[var(l_new)] = SymRef_Undef;
     tmap.theoryTerms.remove(r_new);
@@ -550,6 +538,10 @@ bool Cnfizer::checkClause(PTRef e)
 {
     assert(e != PTRef_Undef);
 
+    Pterm& or_t = ptstore[e];
+    if (or_t.symb() != logic.getSym_and())
+        return false;
+
     vec<PTRef> to_process;
 
     to_process.push(e);
@@ -559,7 +551,6 @@ bool Cnfizer::checkClause(PTRef e)
         e = to_process.last(); to_process.pop();
 
         Pterm& or_t = ptstore[e];
-
         for (int i = 0; i < or_t.size(); i++) {
             Pterm& arg = ptstore[or_t[i]];
             if (arg.symb() == logic.getSym_or())
@@ -649,7 +640,7 @@ bool Cnfizer::checkPureConj(PTRef e, Map<PTRef,bool,PTRefHash,Equal<PTRef> > & c
 //
 // Give the formula to the solver
 //
-bool Cnfizer::giveToSolver( PTRef f, vec<PTRef>& uf_terms
+bool Cnfizer::giveToSolver( PTRef f
 #ifdef PRODUCE_PROOF
                           , const ipartitions_t & partition
 #endif
@@ -661,7 +652,7 @@ bool Cnfizer::giveToSolver( PTRef f, vec<PTRef>& uf_terms
     // A unit clause
     //
     if (isLit(f)) {
-        clause.push(findLit(f, uf_terms));
+        clause.push(findLit(f));
 #ifdef PRODUCE_PROOF
         if ( config.produce_inter != 0 )
             return solver.addSMTClause( clause, partition );
@@ -676,7 +667,7 @@ bool Cnfizer::giveToSolver( PTRef f, vec<PTRef>& uf_terms
     if (cand_t.symb() == logic.getSym_or()) {
         for (int i = 0; i < cand_t.size(); i ++) {
             assert(isLit(cand_t[i]));
-            clause.push(findLit(cand_t[i], uf_terms));
+            clause.push(findLit(cand_t[i]));
         }
 #ifdef PRODUCE_PROOF
         if ( config.produce_inter != 0 )
@@ -693,7 +684,7 @@ bool Cnfizer::giveToSolver( PTRef f, vec<PTRef>& uf_terms
     retrieveTopLevelFormulae( f, conj );
     bool result = true;
     for (unsigned i = 0; i < conj.size_( ) && result; i++)
-        result = giveToSolver(conj[i], uf_terms
+        result = giveToSolver(conj[i]
 #ifdef PRODUCE_PROOF
                              , partition
 #endif
@@ -792,4 +783,47 @@ lbool Cnfizer::getTermValue(PTRef tr) {
     assert(val != l_Undef);
 
     return sgn == false ? val : (val == l_True ? l_False : l_True);
+}
+
+void Cnfizer::expandItes(vec<PtPair>& ites, vec<PTRef>& bool_roots) {
+    for (int j = 0; j < ites.size(); j++) {
+        PTRef ite  = ites[j].x;
+        PTRef sbst = ites[j].y;
+        PTRef b = ptstore[ite][0];
+        PTRef t = ptstore[ite][1];
+        PTRef e = ptstore[ite][2];
+
+        // b -> (= sbst t)
+        vec<PTRef> args_eq;
+        args_eq.push(sbst);
+        args_eq.push(t);
+        PTRef eq_term = logic.resolveTerm(Logic::tk_equals, args_eq);
+        assert(eq_term != PTRef_Undef);
+        vec<PTRef> args_impl;
+        args_impl.push(b);
+        args_impl.push(eq_term);
+        PTRef if_term = logic.resolveTerm(Logic::tk_implies, args_impl);
+        assert(if_term != PTRef_Undef);
+        // \neg b -> (= sbst e)
+        args_eq.pop();
+        args_eq.push(e);
+        eq_term = logic.resolveTerm(Logic::tk_equals, args_eq);
+        assert(eq_term != PTRef_Undef);
+        vec<PTRef> args_neg;
+        args_neg.push(b);
+        PTRef neg_term = logic.resolveTerm(Logic::tk_not, args_neg);
+        vec<PTRef> args_impl2;
+        args_impl2.push(neg_term);
+        args_impl2.push(eq_term);
+
+        PTRef else_term = logic.resolveTerm(Logic::tk_implies, args_impl2);
+        assert(else_term != PTRef_Undef);
+
+        bool_roots.push(if_term);
+        bool_roots.push(else_term);
+#ifdef PEDANTIC_DEBUG
+        glue_terms.push(if_term);
+        glue_terms.push(else_term);
+#endif
+    }
 }

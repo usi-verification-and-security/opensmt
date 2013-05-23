@@ -23,7 +23,7 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 //
 // Performs the actual cnfization
 //
-bool Tseitin::cnfize(PTRef formula, vec<PTRef>& uf_terms
+bool Tseitin::cnfize(PTRef formula
 #ifdef PRODUCE_PROOF
                     , const ipartitions_t partitions
 #endif
@@ -40,7 +40,7 @@ bool Tseitin::cnfize(PTRef formula, vec<PTRef>& uf_terms
 
     // Add the top level literal as a unit to solver.
     vec<Lit> clause;
-    clause.push(findLit(formula, uf_terms));
+    clause.push(findLit(formula));
 #ifdef PRODUCE_PROOF
     if (config.produce_inter != 0)
         solver.addSMTClause(clause, partitions);
@@ -66,19 +66,19 @@ bool Tseitin::cnfize(PTRef formula, vec<PTRef>& uf_terms
         SymRef symb = ptstore[ptr].symb();
         int sz = ptstore[ptr].size();
         if (symb == logic.getSym_and())
-            cnfizeAnd(ptr, uf_terms);
+            cnfizeAnd(ptr);
         else if (symb == logic.getSym_or())
-            cnfizeOr(ptr, uf_terms);
+            cnfizeOr(ptr);
         else if (symb == logic.getSym_xor())
-            cnfizeXor(ptr, uf_terms);
+            cnfizeXor(ptr);
         else if (symb == logic.getSym_eq())
-            cnfizeIff(ptr, uf_terms);
+            cnfizeIff(ptr);
         else if (symb == logic.getSym_implies())
-            cnfizeImplies(ptr, uf_terms);
+            cnfizeImplies(ptr);
         else if (symb == logic.getSym_distinct())
-            cnfizeDistinct(ptr, uf_terms);
+            cnfizeDistinct(ptr);
         else if (symb == logic.getSym_ite())
-            cnfizeIfthenelse(ptr, uf_terms);
+            cnfizeIfthenelse(ptr);
         else if (symb != logic.getSym_not() && sz > 0) {
             // XXX Cnfize equalities here
             if (logic.isEquality(symb)) {
@@ -109,7 +109,7 @@ tseitin_end:
 }
 
 
-void Tseitin::cnfizeAnd( PTRef and_term, vec<PTRef>& uf_terms
+void Tseitin::cnfizeAnd( PTRef and_term
 #ifdef PRODUCE_PROOF
                        , const ipartitions_t partitions
 #endif
@@ -124,15 +124,15 @@ void Tseitin::cnfizeAnd( PTRef and_term, vec<PTRef>& uf_terms
     //
     // aux = ( -aux | a_0 ) & ... & ( -aux | a_{n-1} ) & ( aux & -a_0 & ... & -a_{n-1} )
     //
-    Lit v = findLit(and_term, uf_terms);
+    Lit v = findLit(and_term);
     vec<Lit> little_clause;
     vec<Lit> big_clause;
     little_clause.push(~v);
     big_clause   .push(v);
     for (int i = 0; i < ptstore[and_term].size(); i++) {
         PTRef arg = ptstore[and_term][i];
-        little_clause.push( findLit(arg, uf_terms) );
-        big_clause   .push(~findLit(arg, uf_terms));
+        little_clause.push( findLit(arg) );
+        big_clause   .push(~findLit(arg));
 #ifdef PRODUCE_PROOF
         if ( config.produce_inter > 0 )
             solver.addSMTClause( little_clause, partitions );
@@ -149,7 +149,7 @@ void Tseitin::cnfizeAnd( PTRef and_term, vec<PTRef>& uf_terms
         solver.addSMTClause( big_clause );                    // Adds a big clause to the solver
 }
 
-void Tseitin::cnfizeOr( PTRef or_term, vec<PTRef>& uf_terms
+void Tseitin::cnfizeOr( PTRef or_term
 #ifdef PRODUCE_PROOF
                       , const ipartitions_t partitions
 #endif
@@ -166,11 +166,11 @@ void Tseitin::cnfizeOr( PTRef or_term, vec<PTRef>& uf_terms
     //
     vec<Lit>    little_clause;
     vec<Lit>    big_clause;
-    Lit v = findLit(or_term, uf_terms);
+    Lit v = findLit(or_term);
     little_clause.push( v);
     big_clause   .push(~v);
     for (int i = 0 ; i < ptstore[or_term].size(); i++) {
-        Lit arg = findLit(ptstore[or_term][i], uf_terms);
+        Lit arg = findLit(ptstore[or_term][i]);
         little_clause.push(~arg);
         big_clause   .push( arg);
 #ifdef PRODUCE_PROOF
@@ -189,7 +189,7 @@ void Tseitin::cnfizeOr( PTRef or_term, vec<PTRef>& uf_terms
             solver.addSMTClause(big_clause);                    // Adds a big clause to the solver
 }
 
-void Tseitin::cnfizeXor(PTRef xor_term, vec<PTRef>& uf_terms
+void Tseitin::cnfizeXor(PTRef xor_term
 #ifdef PRODUCE_PROOF
                        , const ipartitions_t partitions
 #endif
@@ -204,10 +204,10 @@ void Tseitin::cnfizeXor(PTRef xor_term, vec<PTRef>& uf_terms
     //       (  aux | -a_0 | a_1 ) & (  aux |  a_0 | -a_1 )
     //
 
-    Lit v = findLit(xor_term, uf_terms);
+    Lit v = findLit(xor_term);
 
-    Lit arg0 = findLit(ptstore[xor_term][0], uf_terms);
-    Lit arg1 = findLit(ptstore[xor_term][1], uf_terms);
+    Lit arg0 = findLit(ptstore[xor_term][0]);
+    Lit arg1 = findLit(ptstore[xor_term][1]);
     vec<Lit> clause;
 
     clause.push(~v);
@@ -262,7 +262,7 @@ void Tseitin::cnfizeXor(PTRef xor_term, vec<PTRef>& uf_terms
         solver.addSMTClause(clause);           // Adds a little clause to the solver
 }
 
-void Tseitin::cnfizeIff( PTRef eq_term, vec<PTRef>& uf_terms
+void Tseitin::cnfizeIff( PTRef eq_term
 #ifdef PRODUCE_PROOF
                        , const ipartitions_t partitions
 #endif
@@ -278,9 +278,9 @@ void Tseitin::cnfizeIff( PTRef eq_term, vec<PTRef>& uf_terms
     //       (  aux |  a_0 |  a_1 ) & (  aux | -a_0 | -a_1 )
     //
     assert(ptstore[eq_term].size() == 2);
-    Lit v = findLit(eq_term, uf_terms);
-    Lit arg0 = findLit(ptstore[eq_term][0], uf_terms);
-    Lit arg1 = findLit(ptstore[eq_term][1], uf_terms);
+    Lit v = findLit(eq_term);
+    Lit arg0 = findLit(ptstore[eq_term][0]);
+    Lit arg1 = findLit(ptstore[eq_term][1]);
     vec<Lit> clause;
 
     clause.push(~v);
@@ -337,7 +337,7 @@ void Tseitin::cnfizeIff( PTRef eq_term, vec<PTRef>& uf_terms
         solver.addSMTClause(clause);           // Adds a little clause to the solver
 }
 
-void Tseitin::cnfizeIfthenelse( PTRef ite_term, vec<PTRef>& uf_terms
+void Tseitin::cnfizeIfthenelse( PTRef ite_term
 #ifdef PRODUCE_PROOF
                               , const ipartitions_t partitions
 #endif
@@ -357,10 +357,10 @@ void Tseitin::cnfizeIfthenelse( PTRef ite_term, vec<PTRef>& uf_terms
     Pterm& pt_ite = ptstore[ite_term];
     assert(pt_ite.size() == 3);
 
-    Lit v  = findLit(ite_term, uf_terms);
-    Lit a0 = findLit(pt_ite[0], uf_terms);
-    Lit a1 = findLit(pt_ite[1], uf_terms);
-    Lit a2 = findLit(pt_ite[2], uf_terms);
+    Lit v  = findLit(ite_term);
+    Lit a0 = findLit(pt_ite[0]);
+    Lit a1 = findLit(pt_ite[1]);
+    Lit a2 = findLit(pt_ite[2]);
 
     vec<Lit> clause;
 
@@ -377,7 +377,7 @@ void Tseitin::cnfizeIfthenelse( PTRef ite_term, vec<PTRef>& uf_terms
     solver.addSMTClause( clause );
 }
 
-void Tseitin::cnfizeImplies( PTRef impl_term, vec<PTRef>& uf_terms
+void Tseitin::cnfizeImplies( PTRef impl_term
 #ifdef PRODUCE_PROOF
                               , const ipartitions_t partitions
 #endif
@@ -395,9 +395,9 @@ void Tseitin::cnfizeImplies( PTRef impl_term, vec<PTRef>& uf_terms
     Pterm& pt_impl = ptstore[impl_term];
     assert(pt_impl.size() == 2);
 
-    Lit v  = findLit(impl_term, uf_terms);
-    Lit a0 = findLit(pt_impl[0], uf_terms);
-    Lit a1 = findLit(pt_impl[1], uf_terms);
+    Lit v  = findLit(impl_term);
+    Lit a0 = findLit(pt_impl[0]);
+    Lit a1 = findLit(pt_impl[1]);
 
     vec<Lit> clause;
 
@@ -413,11 +413,11 @@ void Tseitin::cnfizeImplies( PTRef impl_term, vec<PTRef>& uf_terms
     solver.addSMTClause(clause);
 }
 
-void Tseitin::cnfizeDistinct( PTRef distinct_term, vec<PTRef>& uf_terms
+void Tseitin::cnfizeDistinct( PTRef distinct_term
 #ifdef PRODUCE_PROOF
                               , const ipartitions_t partitions
 #endif
                               )
 {
-    cnfizeOr(distinct_term, uf_terms);
+    cnfizeOr(distinct_term);
 }

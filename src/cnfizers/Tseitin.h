@@ -56,7 +56,7 @@ public:
 private:
 
 
-    bool cnfize          ( PTRef, vec<PTRef>& uf_terms
+    bool cnfize          ( PTRef
 #ifdef PRODUCE_PROOF
                           , const ipartitions_t = 0 
 #endif
@@ -68,13 +68,13 @@ private:
     void cnfizeXor        ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize xors
     void cnfizeIfthenelse ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize if then elses
 #else
-    void cnfizeAnd        (PTRef, vec<PTRef>&);                          // Cnfize conjunctions
-    void cnfizeOr         (PTRef, vec<PTRef>&);                          // Cnfize disjunctions
-    void cnfizeIff        (PTRef, vec<PTRef>&);                          // Cnfize iffs
-    void cnfizeXor        (PTRef, vec<PTRef>&);                          // Cnfize xors
-    void cnfizeIfthenelse (PTRef, vec<PTRef>&);                          // Cnfize if then elses
-    void cnfizeImplies    (PTRef, vec<PTRef>&);                          // Cnfize if then elses
-    void cnfizeDistinct   (PTRef, vec<PTRef>&);                          // Cnfize distinctions
+    void cnfizeAnd        (PTRef);                          // Cnfize conjunctions
+    void cnfizeOr         (PTRef);                          // Cnfize disjunctions
+    void cnfizeIff        (PTRef);                          // Cnfize iffs
+    void cnfizeXor        (PTRef);                          // Cnfize xors
+    void cnfizeIfthenelse (PTRef);                          // Cnfize if then elses
+    void cnfizeImplies    (PTRef);                          // Cnfize if then elses
+    void cnfizeDistinct   (PTRef);                          // Cnfize distinctions
 #endif
 };
 

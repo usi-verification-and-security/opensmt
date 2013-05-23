@@ -20,11 +20,11 @@ char* PtStore::printTerm_(PTRef tr, bool ext) const {
     for (int i = 0; i < t.size(); i++) {
         old = out;
         asprintf(&out, "%s%s", old, printTerm_(t[i], ext));
-        free(old);
+        ::free(old);
         if (i < t.size()-1) {
             old = out;
             asprintf(&out, "%s ", old);
-            free(old);
+            ::free(old);
         }
     }
     old = out;
@@ -32,7 +32,7 @@ char* PtStore::printTerm_(PTRef tr, bool ext) const {
         asprintf(&out, "%s) <%d>", old, tr.x);
     else
         asprintf(&out, "%s)", old);
-    free(old);
+    ::free(old);
     return out;
 }
 

@@ -91,7 +91,7 @@ public:
 
     virtual ~Cnfizer( ) { }
 
-    lbool cnfizeAndGiveToSolver ( PTRef, vec<PTRef>&
+    lbool cnfizeAndGiveToSolver ( PTRef
 #ifdef PRODUCE_PROOF
                                 , const ipartitions_t = 0
 #endif
@@ -107,9 +107,11 @@ public:
     void   crashTest       (int rounds) { solver.crashTest(rounds, tmap.getVar(logic.getTerm_true()), tmap.getVar(logic.getTerm_false())); }
     lbool  getStatus       () { return status; }
 
+    void   expandItes      (vec<PtPair>&, vec<PTRef>&);
+
 protected:
 
-    virtual bool cnfize                 ( PTRef, vec<PTRef>&
+    virtual bool cnfize                 ( PTRef
 #ifdef PRODUCE_PROOF
                                         , const ipartitions_t = 0
 #endif
@@ -124,7 +126,7 @@ protected:
 
     bool     checkCnf                   ( PTRef );                            // Check if formula is in CNF
     bool     checkDeMorgan              ( PTRef );                            // Check if formula can be deMorganized
-    bool     giveToSolver               ( PTRef, vec<PTRef>&
+    bool     giveToSolver               ( PTRef
 #ifdef PRODUCE_PROOF
                                         , const ipartitions_t &
 #endif
@@ -159,7 +161,7 @@ protected:
     Map<PTRef,Var,PTRefHash,Equal<PTRef> >    seen;       // mapping from PTRef to var
 
     bool  isLit            (PTRef r);
-    const Lit findLit      (PTRef ptr, vec<PTRef>& uf_terms);
+    const Lit findLit      (PTRef ptr);
     bool  isBooleanOperator(SymRef tr) { return logic.isBooleanOperator(tr); } // (tr == logic.getSym_and()) | (tr == logic.getSym_or() ) | (tr == logic.getSym_not() ) | (tr == logic.getSym_eq() ) | (tr == logic.getSym_xor() ); }
     bool  isTheorySymbol   (SymRef tr) const { return logic.isTheorySymbol(tr); }
     bool  isIte            (SymRef tr) const { return logic.isIte(tr); }

@@ -201,67 +201,31 @@ declare_fun_err: ;
                 // Get the egraph data structure for instance from here
                 // Terms need to be purified before cnfization?
 //                solver.cancelUntil(0);
-                vec<PTRef> terms;
-                terms.push(tr);
+                vec<PTRef> bools;
+                vec<PTRef> bool_roots;
+                bool_roots.push(tr);
                 lbool state;
+                while (bool_roots.size() != 0) {
+
+                    vec<PtPair> ites;
+                    tr = bool_roots.last();
+                    bools.push(tr);
+                    bool_roots.pop();
+                    lbool val = uf_solver.simplifyAndAddTerms(tr, ites, bools);
+                    if (val == l_True) tr = logic.getTerm_true();
+                    else if (val == l_False) tr = logic.getTerm_false();
+
+                    ts.expandItes(ites, bool_roots);
+
+                }
 #ifdef PEDANTIC_DEBUG
                 vec<PTRef> glue_terms;
 #endif
-                while (terms.size() != 0) {
-                    vec<PTRef> uf_terms;
-                    PTRef ctr = terms.last();
-                    terms.pop();
-                    state = ts.cnfizeAndGiveToSolver(ctr, uf_terms);
-                    for (int i = 0; i < uf_terms.size() && state != l_False; i++) {
-                        vec<PtPair> ites;
-                        lbool res = uf_solver.addTerm(uf_terms[i], ites);
-                        if (res == l_False) {
-                            ts.extEquals(uf_terms[i], logic.getTerm_false());
-                        }
-                        if (res == l_True) {
-                            ts.extEquals(uf_terms[i], logic.getTerm_true());
-                        }
-                        for (int j = 0; j < ites.size(); j++) {
-                            PTRef ite  = ites[j].x;
-                            PTRef sbst = ites[j].y;
-                            PTRef b = ptstore[ite][0];
-                            PTRef t = ptstore[ite][1];
-                            PTRef e = ptstore[ite][2];
-
-                            // b -> (= sbst t)
-                            vec<PTRef> args_eq;
-                            args_eq.push(sbst);
-                            args_eq.push(t);
-                            PTRef eq_term = logic.resolveTerm(Logic::tk_equals, args_eq); // ptstore.lookupTerm(Logic::tk_equals, args_eq);
-                            assert(eq_term != PTRef_Undef);
-                            vec<PTRef> args_impl;
-                            args_impl.push(b);
-                            args_impl.push(eq_term);
-                            PTRef if_term = logic.resolveTerm(Logic::tk_implies, args_impl);
-                            assert(if_term != PTRef_Undef);
-                            // \neg b -> (= sbst e)
-                            args_eq.pop();
-                            args_eq.push(e);
-                            eq_term = logic.resolveTerm(Logic::tk_equals, args_eq);
-                            assert(eq_term != PTRef_Undef);
-                            vec<PTRef> args_neg;
-                            args_neg.push(b);
-                            PTRef neg_term = logic.resolveTerm(Logic::tk_not, args_neg);
-                            vec<PTRef> args_impl2;
-                            args_impl2.push(neg_term);
-                            args_impl2.push(eq_term);
-
-                            PTRef else_term = logic.resolveTerm(Logic::tk_implies, args_impl2);
-                            assert(else_term != PTRef_Undef);
-
-                            terms.push(if_term);
-                            terms.push(else_term);
-#ifdef PEDANTIC_DEBUG
-                            glue_terms.push(if_term);
-                            glue_terms.push(else_term);
-#endif
-                        }
-                    }
+                while (bools.size() != 0) {
+                    PTRef ctr = bools.last();
+                    bools.pop();
+                    state = ts.cnfizeAndGiveToSolver(ctr);
+                    if (state == l_False) break;
                 }
                 comment_formatted("Inserted assertion");
 #ifdef PEDANTIC_DEBUG
