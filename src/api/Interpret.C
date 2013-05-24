@@ -190,59 +190,27 @@ declare_fun_err: ;
     }
     if (strcmp(cmd, "assert") == 0) {
         if (logic.isSet()) {
+            sstat status;
             ASTNode& asrt = **(n.children->begin());
             vec<LetFrame> let_branch;
             PTRef tr = parseTerm(asrt, let_branch);
             if (tr == PTRef_Undef)
                 notify_formatted(true, "assertion returns an unknown sort");
-            else if (symstore[ptstore[tr].symb()].rsort() == store["Bool 0"]) {
-                // Framework for handling different logic related simplifications?
-                // cnfization of the formula
-                // Get the egraph data structure for instance from here
-                // Terms need to be purified before cnfization?
-//                solver.cancelUntil(0);
-                vec<PTRef> bools;
-                vec<PTRef> bool_roots;
-                bool_roots.push(tr);
-                lbool state;
-                while (bool_roots.size() != 0) {
-
-                    vec<PtPair> ites;
-                    tr = bool_roots.last();
-                    bools.push(tr);
-                    bool_roots.pop();
-                    lbool val = uf_solver.simplifyAndAddTerms(tr, ites, bools);
-                    if (val == l_True) tr = logic.getTerm_true();
-                    else if (val == l_False) tr = logic.getTerm_false();
-
-                    ts.expandItes(ites, bool_roots);
-
-                }
-#ifdef PEDANTIC_DEBUG
-                vec<PTRef> glue_terms;
-#endif
-                while (bools.size() != 0) {
-                    PTRef ctr = bools.last();
-                    bools.pop();
-                    state = ts.cnfizeAndGiveToSolver(ctr);
-                    if (state == l_False) break;
-                }
-                comment_formatted("Inserted assertion");
-#ifdef PEDANTIC_DEBUG
-                for (int i = 0; i < glue_terms.size(); i++)
-                    comment_formatted("Glue term: %s", ptstore.printTerm(glue_terms[i]));
-#endif
-                if (state == l_Undef)
-                    notify_success();
-                if (state == l_False) {
-                    notify_success();
-                    comment_formatted("The formula is trivially unsatisfiable");
-                }
-                return true;
-            }
             else {
-                notify_formatted(true, "Top-level assertion sort must be Bool, got %s", store[symstore[ptstore[tr].symb()].rsort()]->getCanonName());
-                return false;
+
+                char* err_msg = NULL;
+                status = main_solver.insertTermRoot(tr, &err_msg);
+
+                if (status == s_Error)
+                    notify_formatted(true, "Error");
+                else if (status == s_Undef)
+                    notify_success();
+                else if (status == s_False)
+                    notify_success();
+
+                if (err_msg != NULL)
+                    notify_formatted(true, err_msg);
+                free(err_msg);
             }
         }
         else {

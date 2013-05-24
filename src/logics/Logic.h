@@ -54,12 +54,36 @@ class Logic {
     static const char*  tk_distinct;
     static const char*  tk_ite;
 
-    Logic(SMTConfig& c, SStore& s, SymStore& t, PtStore& pt);
+    static const char*  s_sort_bool;
 
+    Logic(SMTConfig& c, SStore& s, SymStore& t, PtStore& pt);
 
     bool          setLogic         (const char* l);
     bool          isSet            ()              const { return is_set;    }
     const string& getName          ()              const { return name;      }
+
+    // Fetching sorts
+    SRef        getSortRef(const char* name) const          { return sort_store[name]; }
+    Sort*       getSort(const SRef s)                       { return sort_store[s]; }
+
+    // Symbols
+    SymRef      newSymb(const char* name, vec<SRef>& sort_args)   { return sym_store.newSymb(name, sort_args); }
+    Symbol&     getSym (const SymRef s)               const { return sym_store[s]; }
+    vec<SymRef>& symNameToRef(const char* s)                { return sym_store.nameToRef(s); }
+    // Terms
+
+    Pterm&        getPterm         (const PTRef tr)const { return term_store[tr];  }
+
+    // Boolean term generation
+    PTRef       mkAnd(vec<PTRef>& args);
+    PTRef       mkImpl(vec<PTRef>& args);
+    PTRef       mkNot(PTRef);
+
+    // Generic equalities
+    PTRef       mkEq(vec<PTRef>& args);
+
+    // Generic constants
+    PTRef       mkConst(SRef, const char*);
 
     // The Boolean connectives
     SymRef        getSym_true      ()              const { return sym_TRUE;     }
@@ -99,9 +123,9 @@ class Logic {
 
     PTRef       resolveTerm(const char* s, vec<PTRef>& args);
     PTRef       insertTerm(SymRef sym, vec<PTRef>& terms);
-    // Boolean term generation
-    PTRef       mkAnd(const vec<PTRef>& args);
-    //...
+
+// Debugging
+    char*       printTerm(PTRef tr) const { term_store.printTerm(tr, false); }
 };
 
 #endif // LOGIC_H

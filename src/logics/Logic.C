@@ -17,6 +17,8 @@ const char* Logic::tk_xor      = "xor";
 const char* Logic::tk_distinct = "distinct";
 const char* Logic::tk_ite      = "ite";
 
+const char* Logic::s_sort_bool = "Bool 0";
+
 // The constructor initiates the base logic (Boolean)
 Logic::Logic(SMTConfig& c, SStore& s, SymStore& t, PtStore& pt) :
       config(c)
@@ -186,6 +188,7 @@ bool Logic::declare_sort_hook(Sort* s) {
     return true;
 }
 
+// The vec argument might be sorted!
 PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args) {
     SymRef sref = term_store.lookupSymbol(s, args);
     PTRef rval;
@@ -196,8 +199,36 @@ PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args) {
     return rval;
 }
 
-PTRef Logic::mkAnd(const vec<PTRef>& args) {
-    return PTRef_Undef;
+PTRef Logic::mkAnd(vec<PTRef>& args) {
+    return resolveTerm(tk_and, args);
+}
+
+PTRef Logic::mkImpl(vec<PTRef>& args) {
+    return resolveTerm(tk_implies, args);
+}
+
+PTRef Logic::mkEq(vec<PTRef>& args) {
+    return resolveTerm(tk_equals, args);
+}
+
+PTRef Logic::mkNot(PTRef arg) {
+    vec<PTRef> tmp;
+    tmp.push(arg);
+    return resolveTerm(tk_not, tmp);
+}
+
+PTRef Logic::mkConst(SRef s, const char* name) {
+    vec<SRef> sort_args;
+    sort_args.push(s);
+    SymRef sr = newSymb(name, sort_args);
+    if (sr == SymRef_Undef) {
+        assert(symNameToRef(name).size() == 1);
+        sr = symNameToRef(name)[0];
+    }
+    vec<PTRef> tmp;
+    PTRef ptr = insertTerm(sr, tmp);
+    assert (ptr != PTRef_Undef);
+    return ptr;
 }
 
 PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms) {
@@ -258,11 +289,12 @@ PTRef Logic::lookupUPEq(PTRef ptr) {
         return ptr;
 
     // Create a new equality
-    Symbol& sym = sym_store[t.symb()];
+//    Symbol& sym = sym_store[t.symb()];
     vec<PTRef> args;
     args.push(ptr);
     args.push(getTerm_true());
-    return resolveTerm(tk_equals, args);
+    return mkEq(args);
+//    return resolveTerm(tk_equals, args);
 }
 
 bool Logic::isBooleanOperator(SymRef tr) const {

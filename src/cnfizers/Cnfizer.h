@@ -107,7 +107,7 @@ public:
     void   crashTest       (int rounds) { solver.crashTest(rounds, tmap.getVar(logic.getTerm_true()), tmap.getVar(logic.getTerm_false())); }
     lbool  getStatus       () { return status; }
 
-    void   expandItes      (vec<PtPair>&, vec<PTRef>&);
+    PTRef  expandItes      (vec<PtChild>&);
 
 protected:
 

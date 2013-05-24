@@ -107,7 +107,6 @@ class Pterm {
         header.noscoping = 0;           // This is an optimization to avoid expensive name lookup on logic operations
         header.size      = 0;
     }
-  public:
 
     // -- use this as a wrapper:
     Pterm* Pterm_new(SymRef sym, vec<PTRef>& ps, bool left_assoc = false, bool right_assoc = false, bool chainable = false, bool pairwise = false) {

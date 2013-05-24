@@ -12,6 +12,7 @@
 #include "Tseitin.h"
 #include "egraph/Egraph.h"
 #include "smtsolvers/SMTConfig.h"
+#include "api/MainSolver.h"
 
 class LetFrame {
   private:
@@ -45,6 +46,8 @@ class Interpret {
     THandler      thandler;
     SimpSMTSolver sat_solver;
     Tseitin       ts;
+
+    MainSolver    main_solver;
 
     Map<const char*,PTRef,StringHash,Equal<const char*> > nameToTerm;
     VecMap<PTRef,const char*,PTRefHash,Equal<PTRef> > termToNames;
@@ -109,6 +112,12 @@ class Interpret {
             , tmap
             , thandler
             , sat_solver )
+
+        , main_solver( logic
+                     , tmap
+                     , uf_solver
+                     , sat_solver
+                     , ts )
 
         , f_exit(false)
         , asrt_lev(0)

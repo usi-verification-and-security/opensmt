@@ -2,7 +2,7 @@ noinst_LTLIBRARIES = libapi.la
 
 INCLUDES=$(config_includedirs) -I../parsers/smt2new/
 
-libapi_la_SOURCES = Interpret.C
+libapi_la_SOURCES = Interpret.C MainSolver.h MainSolver.C
 
 libapi_la_LIBADD = -lreadline
 

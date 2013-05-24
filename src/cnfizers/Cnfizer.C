@@ -785,45 +785,81 @@ lbool Cnfizer::getTermValue(PTRef tr) {
     return sgn == false ? val : (val == l_True ? l_False : l_True);
 }
 
-void Cnfizer::expandItes(vec<PtPair>& ites, vec<PTRef>& bool_roots) {
+// Assumes that the root of the tree is term_list[0]
+PTRef Cnfizer::expandItes(vec<PtChild>& term_list) {
+    assert(term_list.size() > 0);
+    vec<PtPair> ites;
+
+    assert(!logic.isTheoryTerm(term_list[0].tr) or !logic.isIte(logic.getPterm(term_list[0].tr).symb()));
+
+    for (int i = term_list.size()-1; i >= 1; i--) {
+        PtChild ptc   = term_list[i];
+        Pterm& parent = logic.getPterm(ptc.parent);
+        PTRef tr      = ptc.tr;
+        int pos       = ptc.pos;
+        Pterm& pt     = logic.getPterm(tr);
+
+        if (logic.isTheoryTerm(tr) and logic.isIte(pt.symb())) {
+            // (1) Add a new term o_ite with no arguments and same sort as pt
+            // (2) add tr to ites
+            // (3) replace parent[pos] with o_ite
+            SRef sr = logic.getSym(pt.symb()).rsort();
+            char* name;
+            asprintf(&name, ".oite%d", logic.getPterm(tr).getId());
+            PTRef o_ite = logic.mkConst(sr, name);
+            // The old term goes to PtPair
+            ites.push(PtPair(tr, o_ite));
+#ifdef PEDANTIC_DEBUG
+            cerr << "Added the term " << term_store.printTerm(tr, true) << " to later processing" << endl;
+            cerr << "; changing " << term_store.printTerm(parent[pos]) << " to ";
+#endif
+            parent[pos] = o_ite;
+#ifdef PEDANTIC_DEBUG
+            cerr << term_store.printTerm(parent[pos]) << endl;
+#endif
+        }
+    }
+
+    vec<PTRef> ite_roots;
+    ite_roots.push(term_list[0].tr);
+
     for (int j = 0; j < ites.size(); j++) {
         PTRef ite  = ites[j].x;
         PTRef sbst = ites[j].y;
-        PTRef b = ptstore[ite][0];
-        PTRef t = ptstore[ite][1];
-        PTRef e = ptstore[ite][2];
+        PTRef b = logic.getPterm(ite)[0];
+        PTRef t = logic.getPterm(ite)[1];
+        PTRef e = logic.getPterm(ite)[2];
 
         // b -> (= sbst t)
         vec<PTRef> args_eq;
         args_eq.push(sbst);
         args_eq.push(t);
-        PTRef eq_term = logic.resolveTerm(Logic::tk_equals, args_eq);
+        PTRef eq_term = logic.mkEq(args_eq);
         assert(eq_term != PTRef_Undef);
         vec<PTRef> args_impl;
         args_impl.push(b);
         args_impl.push(eq_term);
-        PTRef if_term = logic.resolveTerm(Logic::tk_implies, args_impl);
+        PTRef if_term = logic.mkImpl(args_impl);
         assert(if_term != PTRef_Undef);
         // \neg b -> (= sbst e)
         args_eq.pop();
         args_eq.push(e);
-        eq_term = logic.resolveTerm(Logic::tk_equals, args_eq);
+        eq_term = logic.mkEq(args_eq);
         assert(eq_term != PTRef_Undef);
-        vec<PTRef> args_neg;
-        args_neg.push(b);
-        PTRef neg_term = logic.resolveTerm(Logic::tk_not, args_neg);
+        PTRef neg_term = logic.mkNot(b);
         vec<PTRef> args_impl2;
         args_impl2.push(neg_term);
         args_impl2.push(eq_term);
 
-        PTRef else_term = logic.resolveTerm(Logic::tk_implies, args_impl2);
+        PTRef else_term = logic.mkImpl(args_impl2);
         assert(else_term != PTRef_Undef);
 
-        bool_roots.push(if_term);
-        bool_roots.push(else_term);
+        ite_roots.push(if_term);
+        ite_roots.push(else_term);
 #ifdef PEDANTIC_DEBUG
         glue_terms.push(if_term);
         glue_terms.push(else_term);
 #endif
     }
+    return logic.mkAnd(ite_roots);
 }
