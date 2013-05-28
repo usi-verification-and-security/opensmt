@@ -75,7 +75,7 @@ then
   config_optimization="-O3 -DOPTIMIZE -DNDEBUG"
 elif test $enableoptimization = "no" ;
 then
-  config_optimization=""
+  config_optimization="-O0"
 else
   config_optimization=$enableoptimization
 fi

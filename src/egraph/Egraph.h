@@ -471,6 +471,9 @@ public:
   lbool       addTrue             ( PTRef );
   lbool       addFalse            ( PTRef );
   lbool       addTerm             ( PTRef, vec<PtPair>&, vec<PTRef>& );
+  void        declareTerm         ( PtChild );
+  void        simplifyEquality    ( PtChild, bool simplify = true );
+  void        simplifyDisequality ( PtChild, bool simplify = true );
 private:
   bool    assertEq        ( PTRef, PTRef, PTRef );                // Asserts an equality
   bool    assertNEq       ( PTRef, PTRef, PTRef );                // Asserts a negated equality

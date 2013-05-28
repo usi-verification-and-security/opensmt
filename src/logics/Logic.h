@@ -102,7 +102,9 @@ class Logic {
     PTRef         getTerm_false    ()              const { return term_FALSE; }
 
     bool          isEquality       (SymRef tr)     const { return equalities.contains(tr);    }
+    bool          isEquality       (PTRef tr)      const { return equalities.contains(term_store[tr].symb());}
     bool          isDisequality    (SymRef tr)     const { return disequalities.contains(tr); }
+    bool          isDisequality    (PTRef tr)      const { return disequalities.contains(term_store[tr].symb()); }
     bool          isIte            (SymRef tr)     const { return ites.contains(tr);          }
     // tr is a theory symbol if it is not a boolean variable, nor one of the standard
     // boolean operators (and, not, or, etc...)
@@ -125,7 +127,7 @@ class Logic {
     PTRef       insertTerm(SymRef sym, vec<PTRef>& terms);
 
 // Debugging
-    char*       printTerm(PTRef tr) const { term_store.printTerm(tr, false); }
+    char*       printTerm(PTRef tr) const { return term_store.printTerm(tr, true); }
 };
 
 #endif // LOGIC_H

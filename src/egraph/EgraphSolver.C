@@ -335,11 +335,79 @@ lbool Egraph::simplifyAndAddTerms(PTRef tr, vec<PtPair>& ites, vec<PTRef>& bools
     else                 return l_Undef;
 }
 
-// Read a term with Boolean return sort and insert the subterms to UF.
-// If the term is equality it will be simplified by removing duplicates.
-// If the remaining term will be size one, l_True is returned.
-// If the term is disequality containing duplicates, l_False is
-// returned.
+void Egraph::simplifyDisequality(PtChild ptc, bool simplify) {
+    assert(logic.isDisequality(ptc.tr));
+    if (!enode_store.dist_classes.contains(ptc.tr))
+        enode_store.addDistClass(ptc.tr);
+
+    if (!simplify) return;
+
+    Pterm& t = term_store[ptc.tr];
+    PTRef p; int i, j;
+    for (i = j = 0, p = PTRef_Undef; i < t.size(); i++)
+        if (t[i] == p) {
+            term_store.free(ptc.tr);
+            term_store[ptc.parent][ptc.pos] = logic.getTerm_false();
+        }
+}
+
+
+
+void Egraph::simplifyEquality(PtChild ptc, bool simplify) {
+    assert(logic.isEquality(ptc.tr));
+    if (!simplify) return;
+    Pterm& t = term_store[ptc.tr];
+
+    PTRef p; int i, j;
+    for (i = j = 0, p = PTRef_Undef; i < t.size(); i++)
+        if (t[i] != p)
+            t[j++] = p = t[i];
+    if (j == 1) {
+        term_store.free(ptc.tr); // Lazy free
+        term_store[ptc.parent][ptc.pos] = logic.getTerm_true();
+    }
+    // shrink the size!
+    t.shrink(i-j);
+#ifdef PEDANTIC_DEBUG
+    if (i-j != 0)
+        cout << term_store.printTerm(term) << endl;
+#endif
+}
+
+
+void Egraph::declareTerm(PtChild ptc) {
+    PTRef tr = ptc.tr;
+
+    if (!enode_store.termToERef.contains(tr)) {
+#ifdef PEDANTIC_DEBUG
+        new_terms = true;
+#endif
+        Pterm& tm = term_store[tr];
+        ERef sym = enode_store.addSymb(tm.symb());
+        ERef cdr = ERef_Nil;
+        for (int j = tm.size()-1; j >= 0; j--) {
+#ifdef PEDANTIC_DEBUG
+            assert( checkParents(cdr) );
+#endif
+            ERef car = enode_store.termToERef[tm[j]];
+#ifdef PEDANTIC_DEBUG
+            ERef prev_cdr = cdr;
+            assert (enode_store[car].getRoot() == car);
+            assert (enode_store[cdr].getRoot() == cdr);
+#endif
+            cdr = enode_store.addList(car, cdr);
+#ifdef PEDANTIC_DEBUG
+            assert( checkParents( car ) );
+            assert( checkParents( prev_cdr ) );
+            assert( checkParents( cdr ) );
+            assert( checkInvariants( ) );
+#endif
+        }
+        // Canonize the term representation
+        PTRef rval = enode_store.addTerm(sym, cdr, tr);
+        assert (rval == tr);
+    }
+}
 
 lbool Egraph::addTerm(PTRef term, vec<PtPair>& ites, vec<PTRef>& nested_bools) {
     assert( logic.isTheoryTerm(term) );

@@ -17,11 +17,11 @@ void MainSolver::getTermList(PTRef tr, vec<PtChild>& list_out) {
     }
 }
 
-sstat MainSolver::insertTermRoot(PTRef tr, char** msg) {
-    if (logic.getSym(logic.getPterm(tr).symb()).rsort() != logic.getSortRef(Logic::s_sort_bool)) {
+sstat MainSolver::insertTermRoot(PTRef root, char** msg) {
+    if (logic.getSym(logic.getPterm(root).symb()).rsort() != logic.getSortRef(Logic::s_sort_bool)) {
         asprintf(msg, "Top-level assertion sort must be %s, got %s",
                  Logic::s_sort_bool,
-                 logic.getSort(logic.getSym(logic.getPterm(tr).symb()).rsort())->getCanonName());
+                 logic.getSort(logic.getSym(logic.getPterm(root).symb()).rsort())->getCanonName());
         return s_Error;
     }
     // Framework for handling different logic related simplifications?
@@ -30,41 +30,42 @@ sstat MainSolver::insertTermRoot(PTRef tr, char** msg) {
     // Terms need to be purified before cnfization?
 
     vec<PtChild> terms;
-    getTermList(tr, terms);
+    getTermList(root, terms);
 
-    if (terms.size() > 0)
-        tr = ts.expandItes(terms);
-
-    vec<PTRef> bools;
-    vec<PTRef> bool_roots;
-    bool_roots.push(tr);
-    sstat state;
-
-
-    while (bool_roots.size() != 0) {
-
-
-        vec<PtPair> ites;
-        tr = bool_roots.last();
-        bools.push(tr);
-        bool_roots.pop();
-        lbool val = uf_solver.simplifyAndAddTerms(tr, ites, bools);
-        if (val == l_True) tr = logic.getTerm_true();
-        else if (val == l_False) tr = logic.getTerm_false();
-
-//        ts.expandItes(ites, bool_roots);
-
+    if (terms.size() > 0) {
+        root = ts.expandItes(terms);
+        terms.clear();
+        getTermList(root, terms);
     }
+
+    for (int i = terms.size(); i >= 0; i--) {
+        PtChild ptc = terms[i];
+        PTRef tr = ptc.tr;
+        if (logic.isTheoryTerm(tr) && logic.getTerm_true() != tr && logic.getTerm_false() != tr) {
+            if (logic.isEquality(tr)) {
+                cerr << "Simplifying equality " << logic.printTerm(tr) << endl;
+                uf_solver.simplifyEquality(terms[i], true);
+                cerr << "  " << logic.printTerm(logic.getPterm(ptc.parent)[ptc.pos]) << endl;
+            }
+            else if (logic.isDisequality(tr)) {
+//                cerr << "Simplifying disequality " << logic.printTerm(tr) << endl;
+                uf_solver.simplifyDisequality(terms[i]);
+//                cerr << "  " << logic.printTerm(logic.getPterm(ptc.parent)[ptc.pos]) << endl;
+            }
+            else {
+//                cerr << "Declaring term " << logic.printTerm(tr) << endl;
+                uf_solver.declareTerm(ptc);
+            }
+        }
+    }
+//    cerr << logic.printTerm(tr);
 #ifdef PEDANTIC_DEBUG
     vec<PTRef> glue_terms;
 #endif
-    while (bools.size() != 0) {
-        PTRef ctr = bools.last();
-        bools.pop();
-        lbool ts_state = ts.cnfizeAndGiveToSolver(ctr);
-        if (ts_state == l_False) {
-            state = s_False; break; }
-    }
+    sstat state;
+    lbool ts_state = ts.cnfizeAndGiveToSolver(root);
+    if (ts_state == l_False)
+        state = s_False;
 #ifdef PEDANTIC_DEBUG
     for (int i = 0; i < glue_terms.size(); i++)
         cerr << "Glue term: " << ptstore.printTerm(glue_terms[i]) << endl;

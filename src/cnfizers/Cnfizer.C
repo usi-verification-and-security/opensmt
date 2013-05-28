@@ -861,5 +861,7 @@ PTRef Cnfizer::expandItes(vec<PtChild>& term_list) {
         glue_terms.push(else_term);
 #endif
     }
-    return logic.mkAnd(ite_roots);
+    if (ite_roots.size() > 1)
+        return logic.mkAnd(ite_roots);
+    else return term_list[0].tr;
 }
