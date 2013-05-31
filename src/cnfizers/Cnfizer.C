@@ -59,7 +59,8 @@ bool Cnfizer::isLit(PTRef r) {
         if (t.size() == 0) return true;
         if (t.symb() == logic.getSym_not() ) return isLit(t[0]);
         // At this point all arguments of equivalence have the same sort.  Check only the first
-        if ((t.symb() == logic.getSym_eq() ) && (symstore[ptstore[t[0]].symb()].rsort() != logic.getSort_bool())) return true;
+        if (logic.isEquality(r) && (symstore[ptstore[t[0]].symb()].rsort() != logic.getSort_bool())) return true;
+        if (logic.isUP(r)) return true;
     }
     return false;
 }
@@ -73,7 +74,8 @@ bool Cnfizer::isAtom(PTRef r) const {
         if (t.size() == 0) return true;
         if (t.symb() == logic.getSym_not() ) return false;
         // At this point all arguments of equivalence have the same sort.  Check only the first
-        if ((t.symb() == logic.getSym_eq() ) && (symstore[ptstore[t[0]].symb()].rsort() != logic.getSort_bool())) return true;
+        if (logic.isEquality(t.symb()) && (symstore[ptstore[t[0]].symb()].rsort() != logic.getSort_bool())) return true;
+        if (logic.isUP(r)) return true;
     }
     return false;
 }
@@ -113,6 +115,7 @@ const Lit Cnfizer::findLit(PTRef ptr) {
         tmap.termToVar.insert(p, v);
 //        tmap.varToTerm.insert(v, p);
         tmap.varToTerm[v] = p;
+        cerr << "Term " << logic.printTerm(p) << " maps to var " << v << endl;
     }
     return l;
 }
@@ -162,12 +165,13 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula
         PTRef f = top_level_formulae[i];
 
         // Give it to the solver if already in CNF
-        if (checkCnf(f) == true) {
+        if (checkCnf(f) == true || checkClause(f) == true) {
             res = giveToSolver(f
 #ifdef PRODUCE_PROOF
                               , partition
 #endif
                               );
+            continue;
         }
 
         // Check whether it can be rewritten using deMorgan laws
@@ -539,7 +543,7 @@ bool Cnfizer::checkClause(PTRef e)
     assert(e != PTRef_Undef);
 
     Pterm& or_t = ptstore[e];
-    if (or_t.symb() != logic.getSym_and())
+    if (or_t.symb() != logic.getSym_or())
         return false;
 
     vec<PTRef> to_process;
@@ -558,9 +562,7 @@ bool Cnfizer::checkClause(PTRef e)
             else {
                 PTRef p;
                 isNPAtom(or_t[i], p);
-                if (p != PTRef_Undef)
-                    to_process.push(p);
-                else
+                if (p == PTRef_Undef)
                     return false;
             }
         }
@@ -637,6 +639,17 @@ bool Cnfizer::checkPureConj(PTRef e, Map<PTRef,bool,PTRefHash,Equal<PTRef> > & c
     return true;
 }
 
+#ifndef PRODUCE_PROOF
+bool Cnfizer::addClause( vec<Lit>& clause ) {
+#else
+bool Cnfizer::addClause( vec<Lit>& clause const ipartitions_t& partition) {
+#endif
+#ifndef PRODUCE_PROOF
+    return solver.addSMTClause(clause);
+#else
+    return solver.addSMTClause(clause, partition);
+#endif
+}
 //
 // Give the formula to the solver
 //

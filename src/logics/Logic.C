@@ -270,6 +270,7 @@ bool Logic::isUP(PTRef ptr) const {
     Symbol& sym = sym_store[sr];
     if (sym.nargs() == 0) return false;
     if (sym.rsort() != getSort_bool()) return false;
+    if (isBooleanOperator(sr)) return false;
     return true;
 }
 

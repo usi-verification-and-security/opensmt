@@ -202,6 +202,9 @@ class CoreSMTSolver : public SMTSolver
     vec<char>           assigns;          // The current assignments (lbool:s stored as char:s).
     vec<char>           polarity;         // The preferred polarity of each variable.
     vec<char>           decision_var;     // Declares if a variable is eligible for selection in the decision heuristic.
+  public:
+    vec<int>            n_occs;           // Number of occurrences of a variable in clauses
+  protected:
     vec<Lit>            trail;            // Assignment stack; stores all assigments made in the order they were made.
     vec<int>            trail_lim;        // Separator indices for different decision levels in 'trail'.
 #ifdef PRODUCE_PROOF

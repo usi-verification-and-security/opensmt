@@ -127,7 +127,7 @@ class Logic {
     PTRef       insertTerm(SymRef sym, vec<PTRef>& terms);
 
 // Debugging
-    char*       printTerm(PTRef tr) const { return term_store.printTerm(tr, true); }
+    char*       printTerm(PTRef tr) const { return term_store.printTerm(tr); }
 };
 
 #endif // LOGIC_H

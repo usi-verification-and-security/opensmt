@@ -39,4 +39,5 @@ class MainSolver {
         {}
     sstat insertTermRoot(PTRef, char**);
     void getTermList(PTRef tr, vec<PtChild>&);
+    
 };

@@ -134,6 +134,12 @@ protected:
 
     void  retrieveTopLevelFormulae   ( PTRef, vec<PTRef> & );         // Retrieves the list of top-level formulae
 
+#ifdef PRODUCE_PROOF
+    bool  addClause                  ( vec<Lit>&, const ipartitions_t& );
+#else
+    bool  addClause                  ( vec<Lit>& );
+#endif
+
 //  void  retrieveClause             ( PTRef, vec<PTRef> & );         // Retrieve a clause from a formula
 //  void  retrieveConjuncts          ( PTRef, vec<PTRef> & );         // Retrieve the list of conjuncts
 

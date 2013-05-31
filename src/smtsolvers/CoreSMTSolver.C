@@ -247,6 +247,8 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
   }
 #endif
 
+  n_occs.push(0);
+
   return v;
 }
 
@@ -284,13 +286,20 @@ bool CoreSMTSolver::addClause( vec<Lit>& ps
       if (value(ps[i]) == l_True || ps[i] == ~p)
       {
 #ifdef PRODUCE_PROOF
-	proof.endChain( );
-	proof.forceDelete( root );
+        proof.endChain( );
+        proof.forceDelete( root );
 #endif
-	return true;
+        // decrease the counts of those encountered so far
+        for (int k = 0; k < j; k++) {
+            n_occs[var(ps[k])] -= 1;
+            assert(n_occs[var(ps[k])] >= 0);
+        }
+        return true;
       }
-      else if (value(ps[i]) != l_False && ps[i] != p)
-	ps[j++] = p = ps[i];
+      else if (value(ps[i]) != l_False && ps[i] != p) {
+        ps[j++] = p = ps[i];
+        n_occs[var(ps[i])] += 1;
+      }
 #ifdef PRODUCE_PROOF
       else if ( value(ps[i]) == l_False )
       {

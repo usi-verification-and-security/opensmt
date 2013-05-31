@@ -14,6 +14,7 @@ class TermMapper {
     vec<SymRef>                               varToTheorySymbol;
     Map<PTRef,Var,PTRefHash,Equal<PTRef> >    termToVar;
     Map<PTRef,bool,PTRefHash,Equal<PTRef> >   theoryTerms;
+
     void getTerm(PTRef, PTRef&, bool&) const;
     Var  getVar(PTRef) const;
     Lit  getLit(PTRef) const;
