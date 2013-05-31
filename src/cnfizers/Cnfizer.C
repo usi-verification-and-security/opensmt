@@ -823,12 +823,12 @@ PTRef Cnfizer::expandItes(vec<PtChild>& term_list) {
             // The old term goes to PtPair
             ites.push(PtPair(tr, o_ite));
 #ifdef PEDANTIC_DEBUG
-            cerr << "Added the term " << term_store.printTerm(tr, true) << " to later processing" << endl;
-            cerr << "; changing " << term_store.printTerm(parent[pos]) << " to ";
+            cerr << "Added the term " << logic.printTerm(tr) << " to later processing" << endl;
+            cerr << "; changing " << logic.printTerm(parent[pos]) << " to ";
 #endif
             parent[pos] = o_ite;
 #ifdef PEDANTIC_DEBUG
-            cerr << term_store.printTerm(parent[pos]) << endl;
+            cerr << logic.printTerm(parent[pos]) << endl;
 #endif
         }
     }
@@ -869,10 +869,6 @@ PTRef Cnfizer::expandItes(vec<PtChild>& term_list) {
 
         ite_roots.push(if_term);
         ite_roots.push(else_term);
-#ifdef PEDANTIC_DEBUG
-        glue_terms.push(if_term);
-        glue_terms.push(else_term);
-#endif
     }
     if (ite_roots.size() > 1)
         return logic.mkAnd(ite_roots);

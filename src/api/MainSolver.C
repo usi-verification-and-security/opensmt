@@ -38,7 +38,7 @@ sstat MainSolver::insertTermRoot(PTRef root, char** msg) {
         getTermList(root, terms);
     }
 
-    for (int i = terms.size(); i >= 0; i--) {
+    for (int i = terms.size()-1; i >= 0; i--) {
         PtChild ptc = terms[i];
         PTRef tr = ptc.tr;
         if (logic.isTheoryTerm(tr) && logic.getTerm_true() != tr && logic.getTerm_false() != tr) {
@@ -74,10 +74,10 @@ sstat MainSolver::insertTermRoot(PTRef root, char** msg) {
         state = s_False;
 #ifdef PEDANTIC_DEBUG
     for (int i = 0; i < glue_terms.size(); i++)
-        cerr << "Glue term: " << ptstore.printTerm(glue_terms[i]) << endl;
+        cerr << "Glue term: " << logic.printTerm(glue_terms[i]) << endl;
 #endif
     if (state == s_False) {
-        asprintf(msg, "The formula is trivially unsatisfiable");
+        asprintf(msg, "; The formula is trivially unsatisfiable");
     }
     return state;
 }

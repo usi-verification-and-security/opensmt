@@ -208,8 +208,10 @@ declare_fun_err: ;
                 else if (status == s_False)
                     notify_success();
 
-                if (err_msg != NULL)
+                if (err_msg != NULL && status == s_Error)
                     notify_formatted(true, err_msg);
+                if (err_msg != NULL && status != s_Error)
+                    comment_formatted(err_msg);
                 free(err_msg);
             }
         }

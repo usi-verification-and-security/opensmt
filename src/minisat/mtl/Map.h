@@ -102,9 +102,6 @@ class Map {
     Map (const H& h, const E& e) : hash(h), equals(e), table(NULL), cap(0), size(0){}
     ~Map () { delete [] table; }
 
-#ifdef PEDANTIC_DEBUG
-    vec<K> keys;
-#endif
 
     // PRECONDITION: the key must already exist in the map.
     const D& operator [] (const K& k) const
@@ -133,16 +130,7 @@ class Map {
     }
 
     // PRECONDITION: the key must *NOT* exist in the map.
-#ifdef PEDANTIC_DEBUG
-    void insert (const K& k, const D& d) {
-        if (checkCap(size+1)) rehash();
-        _insert(k, d);
-        size++;
-        keys.push(k);
-    }
-#else
     void insert (const K& k, const D& d) { if (checkCap(size+1)) rehash(); _insert(k, d); size++; }
-#endif
     bool peek   (const K& k, D& d) const {
         if (size == 0) return false;
         const vec<Pair>& ps = table[index(k)];

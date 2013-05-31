@@ -1,0 +1,18 @@
+(set-logic QF_UF)
+(declare-sort U 0)
+(declare-fun f7 (U U) U)
+(declare-fun c14 () U)
+(declare-fun f4 (U) U)
+(declare-fun f3 (U) U)
+(declare-fun c_0 () U)
+(declare-fun c_1 () U)
+(declare-fun c_2 () U)
+(assert
+ (let ((?v_201 (f4 c_0))
+       (?v_204 (f3 c_0)))
+  (let ((?v_146 (= c_0 (f7 ?v_201 ?v_204))))
+   (and (distinct c_0 c_1 c_2)
+    ?v_146
+    (or (= c14 c_0) (= c14 c_1) (= c14 c_2))))))
+(check-sat)
+(exit)

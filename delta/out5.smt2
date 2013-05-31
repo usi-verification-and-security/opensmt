@@ -1,0 +1,15 @@
+(set-logic QF_UF)
+(declare-sort S0 0)
+(declare-fun v0 () S0)
+(declare-fun v1 () S0)
+(declare-fun p3 (S0) Bool)
+(assert
+ (let ((e39 (ite false v0 v1)))
+ (let ((e63 (p3 v0)))
+ (let ((e76 (p3 e39)))
+ (let ((e149 (xor e76 e63)))
+ (let ((e163 (xor e149 e149)))
+ (let ((e166 (not e163)))
+ e163)))))))
+(check-sat)
+
