@@ -370,7 +370,7 @@ void Egraph::simplifyEquality(PtChild ptc, bool simplify) {
     t.shrink(i-j);
 #ifdef PEDANTIC_DEBUG
     if (i-j != 0)
-        cout << term_store.printTerm(term) << endl;
+        cout << term_store.printTerm(ptc.tr) << endl;
 #endif
 }
 
@@ -379,9 +379,6 @@ void Egraph::declareTerm(PtChild ptc) {
     PTRef tr = ptc.tr;
 
     if (!enode_store.termToERef.contains(tr)) {
-#ifdef PEDANTIC_DEBUG
-        new_terms = true;
-#endif
         Pterm& tm = term_store[tr];
         ERef sym = enode_store.addSymb(tm.symb());
         ERef cdr = ERef_Nil;
@@ -2265,15 +2262,29 @@ void Egraph::extPopBacktrackPoint( )
 void Egraph::relocAll(ELAllocator& to) {
     for (int i = 0; i < forbid_allocator.elists.size(); i++) {
         ELRef er = forbid_allocator.elists[i];
+#ifdef PEDANTIC_DEBUG
+        cerr << "Starting gc round " << i << endl;
+#endif
         ELRef er_old = er;
         ELRef start = er;
         if (forbid_allocator[er].isDirty()) continue;
         ELRef prev_fx = ELRef_Undef;
         bool done = false;
         while (true) {
+#ifdef PEDANTIC_DEBUG
+            cerr << "Traversing forbid list " << endl
+                 << "  node: " << er.x
+                 << "  link: " << forbid_allocator[er].link.x << endl;
+#endif
             forbid_allocator.reloc(er, to);
+#ifdef PEDANTIC_DEBUG
+            cerr << "  new node: " << er.x << endl;
+#endif
             if (forbid_allocator[er_old].has_extra()) {
                 // update the owner's reference
+#ifdef PEDANTIC_DEBUG
+                cerr << "Updating owner reference" << endl;
+#endif
                 ERef o = forbid_allocator[er_old].owner[0];
                 enode_store[o].setForbid(er);
             }
@@ -2281,7 +2292,10 @@ void Egraph::relocAll(ELAllocator& to) {
                 to[prev_fx].link = er;
             if (done == true) break;
             prev_fx = er;
-            er = forbid_allocator[er].link;
+            er = forbid_allocator[er_old].link;
+#ifdef PEDANTIC_DEBUG
+            cerr << "Now going to node " << er.x << endl;
+#endif
             er_old = er;
             if (er == start) done = true;
         }

@@ -231,12 +231,6 @@ void Egraph::expCleanup() {
         expRoot[x] = x;
     }
     exp_cleanup.clear();
-#ifdef PEDANTIC_DEBUG
-    for (int i = 0; i < expRoot.keys.size(); i++) {
-        PTRef k = expRoot.keys[i];
-        assert(expRoot[k] == k);
-    }
-#endif
 }
 
 //
