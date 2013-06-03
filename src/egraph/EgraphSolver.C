@@ -838,6 +838,11 @@ bool Egraph::mergeLoop( PTRef reason )
 //
 bool Egraph::assertNEq ( PTRef x, PTRef y, PTRef r )
 {
+#ifdef GC_DEBUG
+    cerr << "Asserting distinction of " << logic.printTerm(x)
+         << " and " << logic.printTerm(y)
+         << " enforced by " << logic.printTerm(r) << endl;
+#endif
     checkFaGarbage();
 #if MORE_DEDUCTIONS
     neq_list.push_back( r );
@@ -1663,7 +1668,7 @@ void Egraph::undoDisequality ( ERef x )
     Enode& en_x = enode_store[x];
     assert( en_x.getForbid() != ELRef_Undef );
 
-    // We have to distinct two cases:
+    // We have to distinguish two cases:
     // If there is only one node, that is the
     // distinction to remove
     ELRef xfirst = en_x.getForbid( );
@@ -2261,6 +2266,7 @@ void Egraph::extPopBacktrackPoint( )
 
 void Egraph::relocAll(ELAllocator& to) {
     for (int i = 0; i < forbid_allocator.elists.size(); i++) {
+        // Here er points to the old allocator
         ELRef er = forbid_allocator.elists[i];
 #ifdef PEDANTIC_DEBUG
         cerr << "Starting gc round " << i << endl;
@@ -2274,12 +2280,20 @@ void Egraph::relocAll(ELAllocator& to) {
 #ifdef PEDANTIC_DEBUG
             cerr << "Traversing forbid list " << endl
                  << "  node: " << er.x
-                 << "  link: " << forbid_allocator[er].link.x << endl;
+                 << "  link: " << forbid_allocator[er].link.x << endl
+                 << "  ERef: " << forbid_allocator[er].e.x
+                 << "  Reason: " << logic.printTerm(forbid_allocator[er].reason) << endl;
+            if (enode_store[forbid_allocator[er].e].isTerm()) {
+                cerr << "  Term: "
+                     << logic.printTerm(enode_store[forbid_allocator[er].e].getTerm()) << endl;
+            }
 #endif
             forbid_allocator.reloc(er, to);
+            // Now er points to the new allocator
 #ifdef PEDANTIC_DEBUG
             cerr << "  new node: " << er.x << endl;
 #endif
+            // er_old points to the old allocator
             if (forbid_allocator[er_old].has_extra()) {
                 // update the owner's reference
 #ifdef PEDANTIC_DEBUG
