@@ -623,7 +623,7 @@ private:
   string printExplanation          ( );
   string printExplanationTree      ( PTRef );
   string printExplanationTreeDotty ( PTRef );
-  string printDistinctionList      ( ERef );
+  const string printDistinctionList      ( ELRef, ELAllocator& ela );
   string printCbeStructure         ( );
   string printCbeStructure         ( ERef, set< int > & );
   string printParents              ( ERef);

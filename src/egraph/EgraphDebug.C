@@ -249,25 +249,40 @@ std::string Egraph::printExplanationTreeDotty( PTRef x )
     os << endl << "}" << endl;
     return os.str();
 }
-/*
-void Egraph::printDistinctionList( ostream & os, Enode * x )
+
+
+const string Egraph::printDistinctionList( ELRef x, ELAllocator& ela )
 {
-  Elist * l = x->getForbid( );
+    if ( x == ELRef_Undef )
+        return "";
 
-  if ( l == NULL )
-    return;
+    std::stringstream os;
 
-  string sep = "";
-  do
-  {
-    os << sep;
-    sep = ", ";
-    l->e->print( os );
-    l = l->link;
-  }
-  while( l != x->getForbid( ) );
+    ELRef start = x;
+    do {
+        os << "+-----------------------------------------------------------+" << endl
+           << "| Forbid list node                                          |" << endl
+           << "+-----------------------------------------------------------+" << endl
+           << "| ELRef: " << x.x << endl
+           << "| id: " << ela[x].getId() << endl
+           << "| dirty: " << ela[x].isDirty() << endl
+           << "| reason: " << logic.printTerm(ela[x].reason) << endl;
+        if (ela[x].reloced())
+            os << "| reloced to: " << ela[x].rel_e.x << endl;
+        else {
+            os << "| different from enode " << ela[x].e.x << endl;
+            if (enode_store[ela[x].e].isTerm())
+                os << "|   term " << logic.printTerm(enode_store[ela[x].e].getTerm()) << endl;
+        }
+        os << "| link: " << ela[x].link.x << endl;
+        os << "+-----------------------------------------------------------+" << endl;
+
+        x = ela[x].link;
+    } while( x != start );
+    return os.str();
 }
 
+/*
 void Egraph::printParents( ostream & os, Enode * w )
 {
   assert( w->hasCongData( ) );

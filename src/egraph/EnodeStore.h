@@ -64,7 +64,7 @@ class EnodeStore {
     VecMap<ERef,PTRef,ERefHash,Equal<ERef> >    ERefToTerms;
 
     void removeParent(ERef, ERef);
-    std::string printEnode(ERef);
+    const char* printEnode(ERef);
 
     char getDistIndex(PTRef tr_d) const {
         assert(dist_classes.contains(tr_d));

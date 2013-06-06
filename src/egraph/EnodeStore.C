@@ -247,7 +247,7 @@ void EnodeStore::removeParent(ERef n, ERef p) {
 
 // DEBUG
 
-std::string EnodeStore::printEnode(ERef e) {
+const char* EnodeStore::printEnode(ERef e) {
     Enode& en = ea[e];
     std::stringstream s;
     s <<         "+=============================================" << endl;
@@ -269,7 +269,8 @@ std::string EnodeStore::printEnode(ERef e) {
         ELRef f_next = f_start;
         if (f_start != ELRef_Undef) {
             while (true) {
-                s << fa[f_next].e.x << " (" << term_store.printTerm(fa[f_start].reason) << ") ";
+//                s << fa[f_next].e.x << " (" << term_store.printTerm(fa[f_start].reason) << ") ";
+                s << f_next.x << " (" << term_store.printTerm((operator[] (fa[f_next].e)).pterm) << ") ";
                 f_next = fa[f_next].link;
                 if (f_next == f_start) break;
             }
@@ -342,7 +343,7 @@ skip:
                 s << printEnode(en.getCdr());
         }
     }
-    return s.str();
+    return s.str().c_str();
 }
 
 #ifdef PEDANTIC_DEBUG

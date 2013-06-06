@@ -307,58 +307,59 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
 };
 
 
+#define ID_BITS 30
+#define ID_MAX 2 << 30
 class Elist
 {
     struct {
         unsigned rlcd      : 1;
-        unsigned has_extra : 1;
         unsigned dirty     : 1;
-        unsigned id        : 29; } header;
+        unsigned id        : ID_BITS; } header;
 
-    bool     reloced()    const { return header.rlcd; }
     ELRef    relocation() const { return rel_e; }
     void     relocate(ELRef er) { header.rlcd = 1; rel_e = er; }
-    unsigned getId()      const { return header.id; }
-    void     setId(uint32_t id) { assert(id < 536870912); header.id = id; }
+    void     setId(uint32_t id) { assert(id < (uint32_t)(ID_MAX)); header.id = id; }
     friend class ELAllocator;
 
 public:
+    bool     reloced()    const { return header.rlcd; }
+    unsigned getId()      const { return header.id; }
     void     setDirty()         { header.dirty = true; }
     bool     isDirty()    const { return header.dirty; }
-    bool     has_extra()  const { return header.has_extra; }
     PTRef    reason;                   // Reason for this distinction
     union    { ERef e; ELRef rel_e; }; // Enode that differs from this, or the reference where I was relocated
     ELRef    link;                     // Link to the next element in the list
-    ERef owner[0];                     // The owner of this PTRef, if it is an element with an owner
 
-    Elist(ERef e_, PTRef r, ERef _owner) : reason(r), e(e_), link(ELRef_Undef) {
+    Elist(ERef e_, PTRef r) : reason(r), e(e_), link(ELRef_Undef) {
         header.rlcd = false;
-        if (_owner != ERef_Undef) {
-            owner[0] = _owner;
-            header.has_extra = true;
-        }
-        else header.has_extra = false;
         header.dirty = false;
     }
-    Elist* Elist_new(ERef e_, PTRef r, ERef owner) {
+    Elist* Elist_new(ERef e_, PTRef r) {
+        assert(false);
         assert(sizeof(ELRef) == sizeof(uint32_t));
         size_t sz = sizeof(ELRef) + 2*sizeof(ERef);
         void* mem = malloc(sz);
-        return new (mem) Elist(e_, r, owner);
+//        return new (mem) Elist(e_, r, owner);
+        return new (mem) Elist(e_, r);
     }
 };
 
 class ELAllocator : public RegionAllocator<uint32_t>
 {
     int free_ctr;
-    static int elistWord32Size(bool has_owner) {
-        if (has_owner) return (sizeof(Elist)+sizeof(ELRef))/sizeof(int32_t);
-        else           return sizeof(Elist)/sizeof(int32_t);
+    static int elistWord32Size() {
+        return sizeof(Elist)/sizeof(int32_t);
     }
 public:
     vec<ELRef> elists;
+    vec<vec<ERef> > referenced_by;
     ELAllocator() : free_ctr(0) {}
     ELAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), free_ctr(0) {}
+
+    void addReference(ELRef ref, ERef referer) {
+        int id = operator[] (ref).getId();
+        referenced_by[id].push(referer);
+    }
 
     void moveTo(ELAllocator& to) {
         RegionAllocator<uint32_t>::moveTo(to);
@@ -366,27 +367,26 @@ public:
 
     ELRef alloc(ERef e, PTRef r, ERef owner) {
         assert(sizeof(ERef) == sizeof(uint32_t));
-        uint32_t v = RegionAllocator<uint32_t>::alloc(elistWord32Size(owner != ERef_Undef));
+        uint32_t v = RegionAllocator<uint32_t>::alloc(elistWord32Size());
         ELRef elid;
         elid.x = v;
-        new (lea(elid)) Elist(e, r, owner);
+        new (lea(elid)) Elist(e, r);
         operator[] (elid).setId(elists.size());
 #ifdef GC_DEBUG
         for (int i = 0; i < elists.size(); i++)
             assert(elists[i] != elid);
 #endif
         elists.push(elid);
+        referenced_by.push();
+        referenced_by.last().push(owner);
         return elid;
     }
 
     ELRef alloc(const Elist& old) {
-        uint32_t v = RegionAllocator<uint32_t>::alloc(elistWord32Size(old.has_extra()));
+        uint32_t v = RegionAllocator<uint32_t>::alloc(elistWord32Size());
         ELRef elid;
         elid.x = v;
-        if (old.has_extra())
-            new (lea(elid)) Elist(old.e, old.reason, old.owner[0]);
-        else
-            new (lea(elid)) Elist(old.e, old.reason, ERef_Undef);
+        new (lea(elid)) Elist(old.e, old.reason);
         operator[] (elid).setId(elists.size());
         elists.push(elid);
         return elid;
@@ -401,7 +401,8 @@ public:
     void free(ELRef r)
     {
         free_ctr++;
-        RegionAllocator<uint32_t>::free(elistWord32Size(operator[](r).has_extra()));
+        RegionAllocator<uint32_t>::free(elistWord32Size());
+        assert(!operator[](r).isDirty());
         (operator[](r)).setDirty();
     }
 
@@ -412,6 +413,7 @@ public:
         if (e.reloced()) { er = e.relocation(); return; }
 
         er = to.alloc(e);
+        referenced_by[e.getId()].copyTo(to.referenced_by[to[er].getId()]);
         e.relocate(er);
     }
 };
