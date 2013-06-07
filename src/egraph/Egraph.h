@@ -624,6 +624,8 @@ private:
   string printExplanationTree      ( PTRef );
   string printExplanationTreeDotty ( PTRef );
   const string printDistinctionList      ( ELRef, ELAllocator& ela );
+  void checkForbidReferences       ( ERef );
+  void checkRefConsistency         ( );
   string printCbeStructure         ( );
   string printCbeStructure         ( ERef, set< int > & );
   string printParents              ( ERef);

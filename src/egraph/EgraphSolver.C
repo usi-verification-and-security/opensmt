@@ -839,11 +839,17 @@ bool Egraph::mergeLoop( PTRef reason )
 bool Egraph::assertNEq ( PTRef x, PTRef y, PTRef r )
 {
 #ifdef GC_DEBUG
+    checkRefConsistency();
+#endif
+#ifdef GC_DEBUG
     cerr << "Asserting distinction of " << logic.printTerm(x)
          << " and " << logic.printTerm(y)
          << " enforced by " << logic.printTerm(r) << endl;
 #endif
     checkFaGarbage();
+#ifdef GC_DEBUG
+    checkRefConsistency();
+#endif
 #if MORE_DEDUCTIONS
     neq_list.push_back( r );
     undo_stack_oper.push_back( ASSERT_NEQ );
@@ -890,6 +896,9 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PTRef r )
         pdist = forbid_allocator.alloc(p, r, q);
         en_q.setForbid( pdist );
         forbid_allocator[pdist].link = pdist;
+#ifdef GC_DEBUG
+        checkRefConsistency();
+#endif
     }
     // Otherwise we should put the new node after the first
     // and make the first point to pdist. This is because
@@ -905,6 +914,9 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PTRef r )
         cerr << "Added distinction " << pdist.x << endl;
         cerr << printDistinctionList(en_q.getForbid(), forbid_allocator);
 #endif
+#ifdef GC_DEBUG
+        checkRefConsistency();
+#endif
     }
 
     // Create new distinction in p
@@ -914,6 +926,9 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PTRef r )
         qdist = forbid_allocator.alloc(q, r, p);
         en_p.setForbid( qdist );
         forbid_allocator[qdist].link = qdist;
+#ifdef GC_DEBUG
+        checkRefConsistency();
+#endif
     }
     // Same arguments above
     else {
@@ -923,6 +938,9 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PTRef r )
 #ifdef GC_DEBUG
         cerr << "Added distinction " << qdist.x << endl;
         cerr << printDistinctionList(en_p.getForbid(), forbid_allocator);
+#endif
+#ifdef GC_DEBUG
+        checkRefConsistency();
 #endif
     }
 
@@ -1237,6 +1255,11 @@ void Egraph::backtrackToStackSize ( size_t size ) {
 //
 void Egraph::merge ( ERef x, ERef y )
 {
+#ifdef GC_DEBUG
+    checkRefConsistency();
+    checkForbidReferences(x);
+    checkForbidReferences(y);
+#endif
 #ifdef PEDANTIC_DEBUG
 //    cerr << "Asserting equality of the following enodes: " << endl
 //         << enode_store.printEnode(x) << endl
@@ -1281,7 +1304,7 @@ void Egraph::merge ( ERef x, ERef y )
         // We assign the same forbid list
         if ( en_x.getForbid( ) == ELRef_Undef ) {
             en_x.setForbid( en_y.getForbid( ) );
-            forbid_allocator.addReference(en_y.getForbid(), x);
+            forbid_allocator.addReference(en_x.getForbid(), x);
         }
         // Otherwise we splice the two lists
         else {
@@ -1290,6 +1313,10 @@ void Egraph::merge ( ERef x, ERef y )
             forbid_allocator[en_y.getForbid()].link = tmp;
         }
     }
+#ifdef GC_DEBUG
+    checkRefConsistency();
+    checkForbidReferences(x);
+#endif
 
     // Merge distinction classes
     en_x.setDistClasses( ( en_x.getDistClasses( ) | en_y.getDistClasses( ) ) );
@@ -1493,6 +1520,9 @@ void Egraph::merge ( ERef x, ERef y )
 //
 void Egraph::undoMerge( ERef y )
 {
+#ifdef GC_DEBUG
+    checkRefConsistency();
+#endif
     assert( y != ERef_Undef );
 
     Enode& en_y = enode_store[y];
@@ -1631,8 +1661,10 @@ skip_signature_removal:
     en_x.setDistClasses( ( en_x.getDistClasses() & ~(en_y.getDistClasses())) );
 
     // Restore forbid list for x and y
-    if ( en_x.getForbid( ) == en_y.getForbid( ) )
+    if ( (en_x.getForbid( ) == en_y.getForbid() ) && en_x.getForbid() != ELRef_Undef ) {
+        forbid_allocator.removeRef(x, en_x.getForbid());
         en_x.setForbid( ELRef_Undef );
+    }
     // Unsplice back the two lists
     else if ( en_y.getForbid( ) != ELRef_Undef ) {
         ELRef tmp = forbid_allocator[en_x.getForbid()].link;
@@ -1668,6 +1700,9 @@ skip_signature_removal:
   assert( checkParents( x ) );
   assert( checkInvariants( ) );
 #endif
+#ifdef GC_DEBUG
+    checkRefConsistency();
+#endif
 }
 
 //
@@ -1675,6 +1710,9 @@ skip_signature_removal:
 //
 void Egraph::undoDisequality ( ERef x )
 {
+#ifdef GC_DEBUG
+    checkRefConsistency();
+#endif
     Enode& en_x = enode_store[x];
     assert( en_x.getForbid() != ELRef_Undef );
 
@@ -1705,35 +1743,43 @@ void Egraph::undoDisequality ( ERef x )
     assert( yfirst != ELRef_Undef );
     Elist& el_yfirst = forbid_allocator[yfirst];
     assert( el_yfirst.link != yfirst || el_yfirst.e == x );
-//    assert( el_yfirst.link == yfirst || forbid_allocator[el_yfirst.link].e == x );
-    if ( !(el_yfirst.link == yfirst || forbid_allocator[el_yfirst.link].e == x) )
-        cerr << "Assertion would fail" << endl;
+    assert( el_yfirst.link == yfirst || forbid_allocator[el_yfirst.link].e == x );
     assert( en_x.getRoot( ) != en_y.getRoot( ) );
 
     ELRef ydist = el_xfirst.link == xfirst ? xfirst : el_xfirst.link;
     Elist& el_ydist = forbid_allocator[ydist];
 
     // Only one node in the list
-    if ( el_ydist.link == ydist )
+    if ( el_ydist.link == ydist ) {
+        forbid_allocator.removeRef(x, en_x.getForbid());
         en_x.setForbid( ELRef_Undef );
+    }
     // Other nodes in the list
     else
         el_xfirst.link = el_ydist.link;
+
     forbid_allocator.free(ydist);
 
     ELRef xdist = el_yfirst.link == yfirst ? yfirst : el_yfirst.link;
     Elist& el_xdist = forbid_allocator[xdist];
 
     // Only one node in the list
-    if ( el_xdist.link == xdist )
+    if ( el_xdist.link == xdist ) {
+        assert(en_y.getForbid() != ELRef_Undef);
+        forbid_allocator.removeRef(y, en_y.getForbid());
         en_y.setForbid( ELRef_Undef );
+    }
     // Other nodes in the list
     else
         el_yfirst.link = el_xdist.link;
+
     forbid_allocator.free(xdist);
 
 #ifdef PEDANTIC_DEBUG
     assert( checkInvariants( ) );
+#endif
+#ifdef GC_DEBUG
+    checkRefConsistency();
 #endif
 }
 
@@ -2298,6 +2344,16 @@ void Egraph::relocAll(ELAllocator& to) {
         if (forbid_allocator[er].reloced()) continue;
 #ifdef GC_DEBUG
         cerr << printDistinctionList(er, forbid_allocator);
+        do {
+            Elist& e_old = forbid_allocator[er_old];
+            for (int j = 0; j < forbid_allocator.referenced_by[e_old.getId()].size(); j++) {
+                ERef referer = forbid_allocator.referenced_by[e_old.getId()][j];
+                if (referer == ERef_Undef) continue;
+                assert (e_old.e != referer);
+            }
+
+        } while (start != er_old);
+        assert(start == er_old);
 #endif
         ELRef prev_fx = ELRef_Undef;
         bool done = false;
@@ -2320,12 +2376,16 @@ void Egraph::relocAll(ELAllocator& to) {
 #endif
             // er_old points to the old allocator
             int id = to[er].getId();
-            for (int i = 0; i < to.referenced_by[id].size(); i++) {
+            for (int j = 0; j < to.referenced_by[id].size(); j++) {
 #ifdef GC_DEBUG
                 cerr << "Updating owner references" << endl;
 #endif
-                ERef o = to.referenced_by[id][i];
+                ERef o = to.referenced_by[id][j];
+                assert(o != ERef_Undef);
                 enode_store[o].setForbid(er);
+#ifdef GC_DEBUG
+                assert(to[er].getId() == to[enode_store[o].getForbid()].getId());
+#endif
             }
             if (prev_fx != ELRef_Undef)
                 to[prev_fx].link = er;
@@ -2357,10 +2417,17 @@ void Egraph::relocAll(ELAllocator& to) {
             ERef reason_lhs = enode_store.termToERef[term_store[e_new.reason][0]];
             ERef reason_rhs = enode_store.termToERef[term_store[e_new.reason][1]];
             assert (enode_store[reason_lhs].getRoot() != enode_store[reason_rhs].getRoot());
+            for (int j = 0; j < to.referenced_by[to[er_new].getId()].size(); j++) {
+                ERef referer = to.referenced_by[to[er_new].getId()][j];
+                if (referer == ERef_Undef) continue;
+                assert (to[er_new].e != referer);
+            }
             er_old = forbid_allocator[er_old].link;
             er_new = to[er_new].link;
+
         } while (start_old != er_old);
         assert(start_new == er_new);
+
 #endif
     }
 }
@@ -2397,10 +2464,15 @@ void Egraph::relocAll(ELAllocator& to) {
 
 void Egraph::faGarbageCollect() {
     ELAllocator to(forbid_allocator.size() - forbid_allocator.wasted());
-
+#ifdef GC_DEBUG
+    checkRefConsistency();
+#endif
     relocAll(to);
     if (config.verbosity() >= 2)
         printf("Garbage collection:   %12d bytes => %12d bytes|\n",
                forbid_allocator.size()*ELAllocator::Unit_Size, to.size()*ELAllocator::Unit_Size);
     to.moveTo(forbid_allocator);
+#ifdef GC_DEBUG
+    checkRefConsistency();
+#endif
 }

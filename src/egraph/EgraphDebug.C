@@ -282,6 +282,32 @@ const string Egraph::printDistinctionList( ELRef x, ELAllocator& ela )
     return os.str();
 }
 
+void Egraph::checkForbidReferences(ERef er) {
+    ELRef start = enode_store[er].getForbid();
+    if (start == ELRef_Undef) return;
+    ELRef er_old = start;
+    do {
+        Elist& e_old = forbid_allocator[er_old];
+        for (int j = 0; j < forbid_allocator.referenced_by[e_old.getId()].size(); j++) {
+            ERef referer = forbid_allocator.referenced_by[e_old.getId()][j];
+            assert (e_old.e != referer);
+        }
+
+    } while (start != er_old);
+}
+
+void Egraph::checkRefConsistency() {
+    for (int i = 0; i < forbid_allocator.referenced_by.size(); i++) {
+        vec<ERef>& referers = forbid_allocator.referenced_by[i];
+        for (int j = 0; j < referers.size(); j++) {
+            ERef referer = referers[j];
+            if (referer == ERef_Undef) continue;
+            ELRef forbid = enode_store[referer].getForbid();
+            assert(forbid_allocator[forbid].getId() == i);
+        }
+    }
+}
+
 /*
 void Egraph::printParents( ostream & os, Enode * w )
 {

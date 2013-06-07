@@ -363,8 +363,14 @@ public:
 
     void moveTo(ELAllocator& to) {
         RegionAllocator<uint32_t>::moveTo(to);
-        elists.copyTo(to.elists); }
-
+        elists.copyTo(to.elists);
+        to.referenced_by.clear();
+        for (int i = 0; i < referenced_by.size(); i++) {
+            to.referenced_by.push();
+            for (int j = 0; j < referenced_by[i].size(); j++)
+                to.referenced_by.last().push(referenced_by[i][j]);
+        }
+    }
     ELRef alloc(ERef e, PTRef r, ERef owner) {
         assert(sizeof(ERef) == sizeof(uint32_t));
         uint32_t v = RegionAllocator<uint32_t>::alloc(elistWord32Size());
@@ -376,6 +382,7 @@ public:
         for (int i = 0; i < elists.size(); i++)
             assert(elists[i] != elid);
 #endif
+        assert(referenced_by.size() == elists.size());
         elists.push(elid);
         referenced_by.push();
         referenced_by.last().push(owner);
@@ -406,15 +413,40 @@ public:
         (operator[](r)).setDirty();
     }
 
-    void reloc(ELRef& er, ELAllocator& to)
+    void reloc(ELRef& elr, ELAllocator& to)
     {
-        Elist& e = operator[](er);
+        Elist& el = operator[](elr);
 
-        if (e.reloced()) { er = e.relocation(); return; }
+        if (el.reloced()) { elr = el.relocation(); return; }
 
-        er = to.alloc(e);
-        referenced_by[e.getId()].copyTo(to.referenced_by[to[er].getId()]);
-        e.relocate(er);
+        elr = to.alloc(el);
+        to.referenced_by.push();
+        assert(to.referenced_by.size() == to[elr].getId()+1);
+
+        // copy referers from old allocator to new
+        vec<ERef>& referers = referenced_by[el.getId()];
+        for (int i = 0; i < referers.size(); i++) {
+            ERef er = referers[i];
+            if (er != ERef_Undef)
+                to.referenced_by.last().push(er);
+        }
+        el.relocate(elr);
+    }
+
+    void removeRef(ERef er, ELRef elr) {
+        int i = 0;
+        int id = operator[] (elr).getId();
+        for (; i < referenced_by[id].size(); i++) {
+            if (referenced_by[id][i] == er) {
+                referenced_by[id][i] = ERef_Undef;
+                break;
+            }
+        }
+        assert(i < referenced_by[id].size());
+#ifdef GC_DEBUG
+        for (i++; i < referenced_by[id].size(); i++)
+            assert(referenced_by[id][i] != er);
+#endif
     }
 };
 /*
