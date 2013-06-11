@@ -102,7 +102,7 @@ public:
 
     lbool  getTermValue(PTRef);
 
-    void   initialize      () { solver.initialize(); }
+    void   initialize      ();
     lbool  solve           () { status = solver.solve(); return status; }
     void   crashTest       (int rounds) { solver.crashTest(rounds, tmap.getVar(logic.getTerm_true()), tmap.getVar(logic.getTerm_false())); }
     lbool  getStatus       () { return status; }

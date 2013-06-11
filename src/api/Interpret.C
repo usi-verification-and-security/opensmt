@@ -105,11 +105,13 @@ bool Interpret::interp(ASTNode& n) {
         if (logic.isSet()) {
             notify_formatted(true, "logic has already been set to %s", logic.getName().c_str());
         }
+        else if (!logic.setLogic(logic_name)) {
+            notify_formatted(true, "unknown logic %s", logic_name);
+            return false;
+        }
         else {
-            if (!logic.setLogic(logic_name)) {
-                notify_formatted(true, "unknown logic %s", logic_name);
-                return false;
-            }
+            sat_solver.initialize();
+            ts.initialize();
         }
         return true;
     }
@@ -417,7 +419,6 @@ bool Interpret::checkSat(const char* cmd) {
     }
     if (logic.isSet()) {
         sat_calls++;
-        ts.initialize();
         lbool res = ts.solve();
 //        lbool res = l_True;
 //        ts.crashTest(20);

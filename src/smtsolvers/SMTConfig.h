@@ -72,6 +72,7 @@ private:
   static const char* o_incremental;
   static const char* o_produce_stats;
   static const char* o_stats_out;
+  static const char* o_random_seed;
 
   Info          info_Empty;
   Option        option_Empty;
@@ -127,8 +128,9 @@ public:
   inline ostream & getStatsOut     ( ) { assert( optionTable.contains(o_produce_stats) );  return stats_out; }
   inline ostream & getRegularOut   ( ) { return rocset ? out : cout; }
   inline ostream & getDiagnosticOut( ) { return docset ? err : cerr; }
+  inline int       getRandomSeed   ( ) { return optionTable.contains(o_random_seed) ? optionTable[o_random_seed].getValue().numval : 91648253; }
 
-  inline void setProduceModels( ) { if ( produce_models != 0 ) return; produce_models = 1; }  
+  inline void setProduceModels( ) { if ( produce_models != 0 ) return; produce_models = 1; }
   inline void setProduceProofs( ) { if ( print_proofs_smtlib2 != 0 ) return; print_proofs_smtlib2 = 1; }
   inline void setProduceInter( )  { if ( produce_inter != 0 ) return; produce_inter = 1; }
 

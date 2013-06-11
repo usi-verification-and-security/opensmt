@@ -11,6 +11,7 @@ formula (Albert Oliveras).
 (set-info :status unsat)
 (set-option :produce-stats true)
 (set-option :stats-out "statistics.out")
+(set-option :random-seed 6)
 (declare-sort U 0)
 (declare-fun c14 () U)
 (declare-fun c12 () U)

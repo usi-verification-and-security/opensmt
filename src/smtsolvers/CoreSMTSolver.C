@@ -103,7 +103,7 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
   , simpDB_assigns        (-1)
   , simpDB_props          (0)
   , order_heap            (VarOrderLt(activity))
-  , random_seed           (91648253)
+  , random_seed           (c.getRandomSeed())
   , progress_estimate     (0)
   , remove_satisfied      (true)
   , learnt_t_lemmata      (0)
@@ -128,10 +128,9 @@ CoreSMTSolver::initialize( )
 {
   assert( config.isInit( ) );
 //  assert( !init );
-
+  random_seed = config.getRandomSeed();
   restart_first = config.sat_restart_first;
   restart_inc = config.sat_restart_inc;
-
   vec< Lit > fc;
   fc.push( lit_Undef );
   fake_clause = Clause_new( fc );

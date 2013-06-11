@@ -37,7 +37,9 @@ Cnfizer::Cnfizer( PtStore &      ptstore_
      , thandler (thandler_)
      , solver   (solver_)
      , status   (l_Undef)
-{
+{ }
+
+void Cnfizer::initialize() {
     vec<Lit> c;
     Lit l = findLit(logic.getTerm_true());
     c.push(l);
@@ -115,6 +117,7 @@ const Lit Cnfizer::findLit(PTRef ptr) {
         tmap.termToVar.insert(p, v);
 //        tmap.varToTerm.insert(v, p);
         tmap.varToTerm[v] = p;
+        solver.setFrozen(v, true);
         cerr << "Term " << logic.printTerm(p) << " maps to var " << v << endl;
     }
     return l;

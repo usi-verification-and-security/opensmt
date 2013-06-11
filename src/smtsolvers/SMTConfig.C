@@ -261,6 +261,11 @@ bool SMTConfig::setOption(const char* name, const Option& value) {
         }
     }
 
+    if (strcmp(name, o_random_seed) == 0) {
+        if (value.getValue().type != O_NUM) return false;
+        int seed = value.getValue().numval;
+        if (seed == 0) return false;
+    }
     if (optionTable.contains(name))
         optionTable.remove(name);
     optionTable.insert(name, value);
@@ -291,6 +296,7 @@ const Info& SMTConfig::getInfo(const char* name) const {
 const char* SMTConfig::o_incremental   = ":incremental";
 const char* SMTConfig::o_produce_stats = ":produce-stats";
 const char* SMTConfig::o_stats_out     = ":stats-out";
+const char* SMTConfig::o_random_seed   = ":random-seed";
 
 void
 SMTConfig::initializeConfig( )

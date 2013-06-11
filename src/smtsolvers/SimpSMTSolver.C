@@ -52,7 +52,7 @@ SimpSMTSolver::SimpSMTSolver(SMTConfig & c, THandler & t) :
      , asymm_lits         (0)
      , remembered_clauses (0)
      , elimorder          (1)
-     , use_simplification (false)
+     , use_simplification (true)
      , elim_heap          (ElimLt(n_occ))
      , bwdsub_assigns     (0)
 {
@@ -349,6 +349,7 @@ bool SimpSMTSolver::addClause( vec<Lit> & ps
       && var(ps[0]) >= 2 ) // Don't consider true/false
   {
     Var v = var( ps[0] );
+    cerr << "XXX skipped handling of unary theory literal?" << endl;
 /*
     Enode * e = theory_handler->varToEnode( v );
     if ( e->isTAtom( ) )
@@ -860,7 +861,6 @@ bool SimpSMTSolver::eliminate(bool turn_off_elim)
 
       if (config.verbosity() > 9 && cnt % 100 == 0)
 	reportf("# Elimination left: %10d\r", elim_heap.size());
-
       if (!frozen[elim] && !eliminateVar(elim))
 	return false;
     }
