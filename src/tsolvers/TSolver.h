@@ -196,8 +196,9 @@ public:
   virtual ~CoreTSolver ( )
   { }
 
-  virtual vec< PTRef > &      getConflict    ( bool = false ) = 0; // Return conflict
-  virtual PTRef               getDeduction   ( )              = 0; // Return an implied node based on the current state
+//  virtual vec< PTRef > &      getConflict    ( bool = false ) = 0; // Return conflict
+  virtual void                getConflict    ( bool, vec<PtAsgn>& ) = 0; // Return conflict
+  virtual PtAsgn&             getDeduction   ( )              = 0; // Return an implied node based on the current state
   inline void                 setSolver      ( SimpSMTSolver * s ) { assert( s ); assert( solver == NULL || solver == s); solver = s; }
   virtual void                splitOnDemand  ( vec< PTRef > &
                                              , const int )    = 0; // For splitting on demand
@@ -208,8 +209,8 @@ protected:
 #ifdef STATISTICS
   vec< TSolverStats * >       tsolvers_stats;      // Statistical info for tsolvers
 #endif
-  vec< PTRef >                 explanation;         // Stores the explanation
-  vec< PTRef >                 deductions;          // List of deductions
+  vec< PTRef >                explanation;         // Stores the explanation
+  vec< PtAsgn >               deductions;          // List of deductions
   size_t                      deductions_next;     // Index of next deduction to communicate
   vec< size_t >               deductions_lim;      // Keeps track of deductions done up to a certain point
   vec< size_t >               deductions_last;     // Keeps track of deductions done up to a certain point

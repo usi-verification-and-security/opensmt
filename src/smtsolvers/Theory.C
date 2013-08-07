@@ -470,25 +470,44 @@ int CoreSMTSolver::analyzeUnsatLemma( Clause * confl )
 //
 int CoreSMTSolver::deduceTheory( )
 {
-  Lit ded = theory_handler.getDeduction( );
-
-  if ( ded == lit_Undef )
-    return 0;
-
+  Lit ded = lit_Undef;
+  while (true) {
+    ded = theory_handler.getDeduction( );
+    if ( ded == lit_Undef ) return 0;
+    if (value(ded) == l_Undef) break;
+  }
+  assert(ded != lit_Undef);
+  assert(value(ded) == l_Undef);
   do
   {
+    assert(value(ded) == l_Undef);
+    assert(ded != lit_Undef);
 #ifndef PRODUCE_PROOF
     if ( decisionLevel( ) == 0 )
       uncheckedEnqueue( ded );
     else
     {
 #endif
+      if (toInt(ded) == 241) {
+        vec<Lit> r;
+        theory_handler.getReason(ded, r, assigns);
+        for (int i = 0; i < r.size(); i++)
+            cerr << toInt(r[i]) << " ";
+        cerr << endl;
+      }
+      // Debuggissimo
+      vec<Lit> r;
+      theory_handler.getReason(ded, r, assigns);
+      cerr << theory_handler.printAsrtClause(r);
+      cerr << endl;
       uncheckedEnqueue( ded, fake_clause );
 #ifndef PRODUCE_PROOF
     }
 #endif
-
-    ded = theory_handler.getDeduction( );
+    while (true) {
+      ded = theory_handler.getDeduction();
+      if (ded == lit_Undef || value(ded) == l_Undef) break;
+    }
   }
   while( ded != lit_Undef );
   return 1;

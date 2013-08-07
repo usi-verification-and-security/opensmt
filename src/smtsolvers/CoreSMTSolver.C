@@ -121,6 +121,8 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
   , elim_tvars            (0)
 #endif
   , init                  (false)
+  , asgn_240_ctr          (0)
+  , asgn_241_ctr          (0)
 { }
 
 void
@@ -198,7 +200,7 @@ CoreSMTSolver::~CoreSMTSolver()
 #endif
 
 //  delete theory_handler;
-//  free(fake_clause);
+  free(fake_clause);
 #ifdef PRODUCE_PROOF
   delete proof_;
 #endif
@@ -444,6 +446,18 @@ void CoreSMTSolver::cancelUntil(int level)
 
     for (int c = trail.size()-1; c >= trail_lim_level; c--)
     {
+      if (asgn_241_ctr == 3)
+        cerr << "Backtrack before failure " << c << endl;
+      if (toInt(trail[c]) == 241)
+        cerr << "backtracked not (p6 c_2 c_2) (" << asgn_241_ctr << ")" << endl;
+      else if ((asgn_241_ctr == 3) and
+         ((toInt(trail[c]) == 41) or
+          (toInt(trail[c]) == 40) or
+          (toInt(trail[c]) == 33) or
+          (toInt(trail[c]) == 32) or
+          (toInt(trail[c]) == 612) or
+          (toInt(trail[c]) == 613)))
+        cerr << "backtracked " << toInt(trail[c]) << endl;
       Var     x  = var(trail[c]);
       assigns[x] = toInt(l_Undef);
       insertVarOrder(x);
@@ -844,6 +858,7 @@ void CoreSMTSolver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btleve
       // a little bit in order to remove every atom pushed after
       // p has been deduced
       Var v = var(p);
+      assert(value(p) == l_True);
       // Backtracking the trail until v is the variable on the top
       cancelUntilVar( v );
 
@@ -852,7 +867,7 @@ void CoreSMTSolver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btleve
 #ifdef STATISTICS
       const double start = cpuTime( );
 #endif
-      theory_handler.getReason( p, r );
+      theory_handler.getReason( p, r, assigns );
 
 #ifdef STATISTICS
       tsolvers_time += cpuTime( ) - start;
@@ -1065,7 +1080,7 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
 	// Temporairly backtracking
 	cancelUntilVarTempInit( v );
 	// Retrieving the reason
-	theory_handler.getReason( p, r );
+	theory_handler.getReason( p, r, assigns );
 	// Restoring trail
 	cancelUntilVarTempDone( );
 	Clause * ct = NULL;
@@ -1202,6 +1217,10 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
 
 void CoreSMTSolver::uncheckedEnqueue(Lit p, Clause* from)
 {
+  if (toInt(p) == 241) {
+    asgn_241_ctr++;
+    cerr << "Enqueued not (p6 c_2 c_2) (" << asgn_241_ctr << ")" << endl;
+  }
   assert(value(p) == l_Undef);
   assigns [var(p)] = toInt(lbool(!sign(p)));  // <<== abstract but not uttermost effecient
 

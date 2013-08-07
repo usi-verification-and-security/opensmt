@@ -371,10 +371,10 @@ class CoreSMTSolver : public SMTSolver
       void   dumpRndInter           ( );             // Dumps a random interpolation problem
 */
 #endif
-      Clause *	   fake_clause;                // Fake clause for unprovided reasons
+      Clause *           fake_clause;                // Fake clause for unprovided reasons
       vec< Clause * >    cleanup;                    // For cleaning up
-      bool	           first_model_found;          // True if we found a first boolean model
-      double	           skip_step;                  // Steps to skip in calling tsolvers
+      bool               first_model_found;          // True if we found a first boolean model
+      double             skip_step;                  // Steps to skip in calling tsolvers
       long               skipped_calls;              // Calls skipped so far
       long               learnt_t_lemmata;           // T-Lemmata stored during search
       long               perm_learnt_t_lemmata;      // T-Lemmata stored during search
@@ -443,6 +443,9 @@ class CoreSMTSolver : public SMTSolver
 #endif
       bool               init;
 
+      // very debug XXX
+      int                asgn_240_ctr;
+      int                asgn_241_ctr;
       // Added Code
       //=================================================================================================
 };

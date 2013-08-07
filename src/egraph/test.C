@@ -103,13 +103,13 @@ int main(int argc, char **argv) {
     deq_args.push(eq3_ptr);
     PTRef deq_ptr = logic.insertTerm(not_sym, deq_args);
 
-    lbool rval = egraph.addEquality(eq3_ptr);
+    lbool rval = egraph.addEquality(PtAsgn(eq3_ptr, l_True));
     assert(rval == l_Undef);
 
-    rval = egraph.addDisequality(eq2_ptr);
+    rval = egraph.addDisequality(PtAsgn(eq2_ptr, l_False));
     assert(rval == l_Undef);
 
-    rval = egraph.addDisequality(eq_ptr);
+    rval = egraph.addDisequality(PtAsgn(eq_ptr, l_False));
     assert(rval == l_False);
 
     return 0;

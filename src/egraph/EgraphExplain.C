@@ -39,21 +39,11 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 //  year      = {2005},
 // }
 
-PTRef Egraph::canonize(PTRef x) {
-    if (x == PTRef_Undef) return x;
-    if (enode_store.termToERef.contains(x)) {
-        ERef e = enode_store.termToERef[x];
-        return enode_store.ERefToTerms[e][0];
-    }
-    else return x;
-}
-
 //
 // Store explanation for an eq merge
 //
-void Egraph::expStoreExplanation ( ERef x, ERef y, PTRef reason )
+void Egraph::expStoreExplanation ( ERef x, ERef y, PtAsgn reason )
 {
-    reason = canonize(reason);
     assert(enode_store[x].isTerm());
     assert(enode_store[y].isTerm());
 
@@ -110,7 +100,7 @@ void Egraph::expStoreExplanation ( ERef x, ERef y, PTRef reason )
 void Egraph::expReRootOn (PTRef x) {
     PTRef p = x;
     PTRef parent = expParent.contains(p) ? expParent[p] : PTRef_Undef;
-    PTRef reason = expReason.contains(p) ? expReason[p] : PTRef_Undef;
+    PtAsgn reason = expReason.contains(p) ? expReason[p] : PtAsgn(PTRef_Undef, l_Undef);
 
     if (!expParent.contains(x))
         expParent.insert(x, PTRef_Undef);
@@ -118,17 +108,17 @@ void Egraph::expReRootOn (PTRef x) {
         expParent[x] = PTRef_Undef;
 
     if (!expReason.contains(x))
-        expReason.insert(x, PTRef_Undef);
+        expReason.insert(x, PtAsgn(PTRef_Undef, false));
     else
-        expReason[x] = PTRef_Undef;
+        expReason[x] = PtAsgn(PTRef_Undef, false);
 
     while( parent != PTRef_Undef ) {
         // Save grandparent
         PTRef grandparent = expParent.contains(parent) ?  expParent[parent] : PTRef_Undef;
 
         // Save reason
-        PTRef saved_reason = reason;
-        reason = expReason.contains(parent) ? expReason[parent] : PTRef_Undef;
+        PtAsgn saved_reason = reason;
+        reason = expReason.contains(parent) ? expReason[parent] : PtAsgn(PTRef_Undef, false);
 
         // Reverse edge & reason
         if (expParent.contains(parent)) expParent[parent] = p;
@@ -155,9 +145,9 @@ void Egraph::expExplain () {
         PTRef q_in = exp_pending.last(); exp_pending.pop();
 
         ERef p_er = enode_store.termToERef[p_in];
-        PTRef p = enode_store.ERefToTerms[p_er][0];
+        PTRef p = enode_store.ERefToTerm[p_er];
         ERef q_er = enode_store.termToERef[q_in];
-        PTRef q = enode_store.ERefToTerms[q_er][0];
+        PTRef q = enode_store.ERefToTerm[q_er];
 
         if ( p == q ) continue;
 
@@ -245,13 +235,13 @@ void Egraph::expExplainAlongPath (PTRef x, PTRef y) {
     while ( v != to ) {
         PTRef p = expParent[v];
         assert(p != PTRef_Undef);
-        PTRef r = expReason.contains(v) ? expReason[v] : PTRef_Undef;
+        PtAsgn r = expReason.contains(v) ? expReason[v] : PtAsgn(PTRef_Undef, l_Undef);
 
         // If it is not a congruence edge
-        if (r != PTRef_Undef && r != Eq_FALSE) {
-            if ( !isDup1(r) ) {
+        if (r.tr != PTRef_Undef && r.tr != Eq_FALSE) {
+            if ( !isDup1(r.tr) ) {
                 explanation.push(r);
-                storeDup1(r);
+                storeDup1(r.tr);
             }
         }
         // Otherwise it is a congruence edge
@@ -300,29 +290,9 @@ void Egraph::expEnqueueArguments(PTRef x, PTRef y) {
     for (uint32_t i = 0; i < term_store[x].nargs(); i++) {
         PTRef xptr = term_store[x][i];
         PTRef yptr = term_store[y][i];
-        ERef xer = enode_store.termToERef[xptr];
-        PTRef x_canon = enode_store.ERefToTerms[xer][0];
-        if (x_canon != xptr) {
-#ifdef PEDANTIC_DEBUG
-            cerr << "Too many thing in ERefToTerms[" << xer.x << "] " << term_store.printTerm(enode_store[xer].getTerm()) << endl;
-            for  (int j = 0; j < enode_store.ERefToTerms[xer].size(); j++)
-                cerr << " " << enode_store.ERefToTerms[xer][j].x << " " << term_store.printTerm(enode_store.ERefToTerms[xer][j]) << endl;
-#endif
-            cerr << "Duplicate reasons avoided: using "
-                 << term_store.printTerm(x_canon) << " instead of "
-                 << term_store.printTerm(xptr) << endl;
-            assert(false);
-        }
-        ERef yer = enode_store.termToERef[yptr];
-        PTRef y_canon = enode_store.ERefToTerms[yer][0];
-        if (y_canon != yptr) {
-            cerr << "Duplicate reasons avoided: using "
-                 << term_store.printTerm(y_canon) << " instead of "
-                 << term_store.printTerm(yptr) << endl;
-            assert(false);
-        }
-        exp_pending.push(x_canon);
-        exp_pending.push(y_canon);
+
+        exp_pending.push(xptr);
+        exp_pending.push(yptr);
     }
 }
 
@@ -395,16 +365,6 @@ PTRef Egraph::expFind(PTRef x) {
 
 PTRef Egraph::expHighestNode(PTRef x) {
     PTRef x_exp_root = expFind(x);
-#ifdef PEDANTIC_DEBUG
-    ERef er = enode_store.termToERef[x_exp_root];
-    if (enode_store.ERefToTerms[er].size() > 1) {
-        cerr << "Oversized eref";
-        for (int i = 0; i < enode_store.ERefToTerms[er].size(); i++)
-            cerr << " " << term_store.printTerm(enode_store.ERefToTerms[er][i]);
-        cerr << endl;
-    }
-    assert(enode_store.ERefToTerms[er].size() == 1);
-#endif
     return x_exp_root;
 }
 
@@ -480,10 +440,10 @@ void Egraph::expRemoveExplanation() {
     assert( expParent[x] == y || expParent[y] == x);
     if (expParent[x] == y ) {
         expParent[x] = PTRef_Undef;
-        expReason[x] = PTRef_Undef;
+        expReason[x] = PtAsgn_Undef;
     }
     else {
         expParent[y] = PTRef_Undef;
-        expReason[y] = PTRef_Undef;
+        expReason[y] = PtAsgn_Undef;
     }
 }

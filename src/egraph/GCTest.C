@@ -122,9 +122,9 @@ GCTest::GCTest(int argc, char **argv) {
     ERef er_f = egraph.enode_store.termToERef[f_a_b_ptr];
 
     // not real reasons...
-    ELRef dist_b = egraph.forbid_allocator.alloc(er_b, eq_ptr, er_a);
-    ELRef dist_c = egraph.forbid_allocator.alloc(er_c, eq_ptr, ERef_Undef);
-    ELRef dist_f = egraph.forbid_allocator.alloc(er_f, eq_ptr, ERef_Undef);
+    ELRef dist_b = egraph.forbid_allocator.alloc(er_b, PtAsgn(eq_ptr, l_False), er_a);
+    ELRef dist_c = egraph.forbid_allocator.alloc(er_c, PtAsgn(eq_ptr, l_False), ERef_Undef);
+    ELRef dist_f = egraph.forbid_allocator.alloc(er_f, PtAsgn(eq_ptr, l_False), ERef_Undef);
 
     egraph.forbid_allocator[dist_b].link = dist_c;
     egraph.forbid_allocator[dist_c].link = dist_f;

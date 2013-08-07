@@ -59,11 +59,11 @@ private:
   PTRef         Eq_FALSE; // will be set to (= true false) in constructor
 
   // Explanations
-  Map<PTRef,PTRef,PTRefHash,Equal<PTRef> > expParent;
-  Map<PTRef,int,PTRefHash,Equal<PTRef> >   expTimeStamp;
-  Map<PTRef,int,PTRefHash,Equal<PTRef> >   expClassSize;
-  Map<PTRef,PTRef,PTRefHash,Equal<PTRef> > expReason;
-  Map<PTRef,PTRef,PTRefHash,Equal<PTRef> > expRoot;
+  Map<PTRef,PTRef,PTRefHash,Equal<PTRef> >  expParent;
+  Map<PTRef,int,PTRefHash,Equal<PTRef> >    expTimeStamp;
+  Map<PTRef,int,PTRefHash,Equal<PTRef> >    expClassSize;
+  Map<PTRef,PtAsgn,PTRefHash,Equal<PTRef> > expReason;
+  Map<PTRef,PTRef,PTRefHash,Equal<PTRef> >  expRoot;
 
   // Duplicates for the interface equalities, disequalities and UPs
   VecKeyMap<ERef,PTRef,ERef_vecHash,ERef_vecEq> eq_terms;
@@ -131,7 +131,7 @@ public:
     tmp.push(logic.getTerm_true());
     tmp.push(logic.getTerm_false());
     PTRef neq = logic.insertTerm(logic.getSym_eq(), tmp);
-    assertNEq(logic.getTerm_true(), logic.getTerm_false(), neq);
+    assertNEq(logic.getTerm_true(), logic.getTerm_false(), PtAsgn(neq, l_False));
     Eq_FALSE = neq;
   }
 
@@ -306,9 +306,9 @@ public:
   bool                assertLit               ( PTRef, bool = false ) {return true; } // Assert a theory literal
   void                pushBacktrackPoint      ( );                          // Push a backtrack point
   void                popBacktrackPoint       ( );                          // Backtrack to last saved point
-  PTRef               getDeduction            ( );                          // Return an implied node based on the current state
+  PtAsgn&             getDeduction            ( );                          // Return an implied node based on the current state
   PTRef               getSuggestion           ( );                          // Return a suggested literal based on the current state
-  vec<PTRef> &        getConflict             ( bool = false );             // Get explanation
+  void                getConflict             ( bool, vec<PtAsgn>& );       // Get explanation
   bool                check                   ( bool );                     // Check satisfiability
 //  void                initializeCong          ( Enode * );                  // Initialize congruence structures for a node
 #ifndef SMTCOMP
@@ -380,6 +380,9 @@ private:
       Undo(oper_t o, PTRef r) : oper(o) { arg.ptr = r; }
       Undo(oper_t o, ERef r)  : oper(o) { arg.er = r; }
       Undo()         : oper(UNDEF_OP)   { arg.ptr = PTRef_Undef; }
+#ifdef PEDANTIC_DEBUG
+      ERef merged_with;
+#endif
   };
 
   //
@@ -466,8 +469,8 @@ private:
   //
 public:
   lbool       simplifyAndAddTerms ( PTRef, vec<PtPair>&, vec<PTRef>& );
-  lbool       addDisequality      ( PTRef );
-  lbool       addEquality         ( PTRef );
+  lbool       addDisequality      ( PtAsgn );
+  lbool       addEquality         ( PtAsgn );
   lbool       addTrue             ( PTRef );
   lbool       addFalse            ( PTRef );
   lbool       addTerm             ( PTRef, vec<PtPair>&, vec<PTRef>& );
@@ -475,9 +478,9 @@ public:
   void        simplifyEquality    ( PtChild, bool simplify = true );
   void        simplifyDisequality ( PtChild, bool simplify = true );
 private:
-  bool    assertEq        ( PTRef, PTRef, PTRef );                // Asserts an equality
-  bool    assertNEq       ( PTRef, PTRef, PTRef );                // Asserts a negated equality
-  bool    assertDist      ( PTRef, PTRef );                       // Asserts a distinction
+  bool    assertEq        ( PTRef, PTRef, PtAsgn );               // Asserts an equality
+  bool    assertNEq       ( PTRef, PTRef, PtAsgn );               // Asserts a negated equality
+  bool    assertDist      ( PTRef, PtAsgn );                      // Asserts a distinction
   //
   // Backtracking
   //
@@ -485,9 +488,9 @@ private:
   //
   // Congruence closure main routines
   //
-  bool    unmergeable     ( ERef, ERef, PTRef& );               // Can two nodes be merged ?
+  bool    unmergeable     ( ERef, ERef, PtAsgn& );              // Can two nodes be merged ?
   void    merge           ( ERef, ERef );                       // Merge two nodes
-  bool    mergeLoop       ( PTRef reason );                     // Merge loop
+  bool    mergeLoop       ( PtAsgn reason );                    // Merge loop
   void    deduce          ( ERef, ERef);                        // Deduce from merging of two nodes
   void    undoMerge       ( ERef );                             // Undoes a merge
   void    undoDisequality ( ERef );                             // Undoes a disequality
@@ -501,8 +504,7 @@ private:
 #else
   void     expExplain           ( PTRef, PTRef );               // Enqueue equality and explain
 #endif
-  PTRef    canonize             ( PTRef x );                    // return the canonical term
-  void     expStoreExplanation  ( ERef, ERef, PTRef );          // Store the explanation for the merge
+  void     expStoreExplanation  ( ERef, ERef, PtAsgn );         // Store the explanation for the merge
   void     expExplainAlongPath  ( PTRef, PTRef );               // Store explanation in explanation
   void     expEnqueueArguments  ( PTRef, PTRef );               // Enqueue arguments to be explained
   void     expReRootOn          ( PTRef );                      // Reroot the proof tree on x
@@ -540,7 +542,7 @@ private:
   vec< ERef >                 pending;                          // Pending merges
   vec< Undo >                 undo_stack_main;                  // Keeps track of terms involved in operations
 //  vec< oper_t >               undo_stack_oper;                  // Keeps track of operations
-  vec< PTRef >                explanation;                      // Stores explanation
+  vec< PtAsgn >               explanation;                      // Stores explanation
 
 #if MORE_DEDUCTIONS
   vec< ERef>                  neq_list;
@@ -629,7 +631,11 @@ private:
   string printCbeStructure         ( );
   string printCbeStructure         ( ERef, set< int > & );
   string printParents              ( ERef);
+
 #if PEDANTIC_DEBUG
+public:
+  const char* printUndoTrail     ( );
+private:
   bool checkParents              ( ERef );
   bool checkInvariants           ( );
 //  bool checkInvariantFLS         ( );

@@ -214,14 +214,14 @@ std::string Egraph::printExplanationTree( PTRef x )
             os << " --[";
             if ( !expReason.contains(x) )
                 os << "<not-contained>";
-            else if(expReason[x] == PTRef_Undef) {
+            else if(expReason[x].tr == PTRef_Undef) {
                 os << "<";
                 for (int i = 0; i < term_store[x].size(); i++)
                     os << term_store.printTerm(term_store[x][i]) << " ";
                 os << ">";
             }
             else
-                os << term_store.printTerm(expReason[x]);
+                os << (expReason[x].sgn == true ? "" : "not ") << term_store.printTerm(expReason[x].tr);
             if ( expParent.contains(x) && expParent[x] != PTRef_Undef )
                 os << "]--> ";
         }
@@ -266,7 +266,7 @@ const string Egraph::printDistinctionList( ELRef x, ELAllocator& ela )
            << "| ELRef: " << x.x << endl
            << "| id: " << ela[x].getId() << endl
            << "| dirty: " << ela[x].isDirty() << endl
-           << "| reason: " << logic.printTerm(ela[x].reason) << endl;
+           << "| reason: " << (ela[x].reason.sgn == true ? "" : "not " ) << logic.printTerm(ela[x].reason.tr) << endl;
         if (ela[x].reloced())
             os << "| reloced to: " << ela[x].rel_e.x << endl;
         else {
@@ -308,6 +308,29 @@ void Egraph::checkRefConsistency() {
     }
 }
 
+#ifdef PEDANTIC_DEBUG
+const char* Egraph::printUndoTrail() {
+    std::stringstream ss;
+    for (int i = 0; i < undo_stack_main.size(); i++) {
+        Undo& u = undo_stack_main[i];
+        oper_t action = u.oper;
+        if (action == MERGE) {
+            ERef e = u.arg.er;
+            Enode& en_e = enode_store[e];
+            if (en_e.type() == Enode::et_list)
+                ss << i << " --- merge of list" << endl;
+            else
+                ss << i << " --- merge of terms " << logic.printTerm(en_e.getTerm())
+                   << " and " << logic.printTerm(enode_store[u.merged_with].getTerm()) << endl;
+        }
+        else if (action == DISEQ)
+            ss << i << " --- disequality" << endl;
+        else
+            ss << i << " --- other" << endl;
+    }
+    return ss.str().c_str();
+}
+#endif
 /*
 void Egraph::printParents( ostream & os, Enode * w )
 {

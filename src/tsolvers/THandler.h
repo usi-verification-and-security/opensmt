@@ -70,7 +70,7 @@ public:
 #endif
   Lit     getDeduction         ( );                     // Returns a literal that is implied by the current state
   Lit     getSuggestion        ( );                     // Returns a literal that is suggested by the current state
-  void    getReason            ( Lit, vec< Lit > & );   // Returns the explanation for a deduced literal
+  void    getReason            ( Lit, vec< Lit > &, vec<char>& );   // Returns the explanation for a deduced literal
 
 //  Var     enodeToVar           ( Enode * );             // Converts enode into boolean variable. Create a new variable if needed
 //  Lit     enodeToLit           ( Enode * );             // Converts enode into boolean literal. Create a new variable if needed
@@ -141,10 +141,15 @@ private:
   vec< ERef >         tatoms_list;              // List of tatoms to communicate later
   vec< bool >         tatoms_give;              // We might want not to give some atoms
 
+  inline lbool value (Lit p, vec<char>& assigns) const { return toLbool(assigns[var(p)]) ^ sign(p); }
+
 
 // Debug
+public:
+  const char* printAsrtClause(vec<Lit>& r);
+private:
 #ifdef PEDANTIC_DEBUG
-  std::string printExplanation(vec<PTRef>&, vec<char>&);
+  std::string printExplanation(vec<PtAsgn>&, vec<char>&);
   std::string printAssertion(Lit);
 #endif
 };

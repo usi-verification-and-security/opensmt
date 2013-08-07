@@ -156,10 +156,11 @@ public:
     ERef  getCar        ()        const { assert(type() != et_symb); return car; }
     ERef  getCdr        ()        const { assert(type() != et_symb); return cdr; }
     bool  isDeduced     ()        const { return is_deduced; }
-    void  rsDeduced     ()              { is_deduced = false; }
+    void  setDeduced    ()              { assert(type() == et_term); is_deduced = true; }
+    void  resetDeduced  ()              { is_deduced = false; }
     bool  hasPolarity   ()        const { return has_polarity; }
     SymRef getSymb      ()        const { assert(type() == et_symb); return symb; }
-    PTRef getTerm       ()        const { assert(type() != et_symb); return pterm; }
+    PTRef getTerm       ()        const { assert(type() != et_symb && type() != et_list); return pterm; }
     ERef  getRoot       ()        const { if (type() == et_symb) return er; else return cgdata->root; }
     void  setRoot       (ERef r)        { assert(type() != et_symb); cgdata->root = r; }
     ELRef getForbid     ()        const { return cgdata->forbid; }
@@ -326,15 +327,15 @@ public:
     unsigned getId()      const { return header.id; }
     void     setDirty()         { header.dirty = true; }
     bool     isDirty()    const { return header.dirty; }
-    PTRef    reason;                   // Reason for this distinction
+    PtAsgn   reason;                   // Reason for this distinction
     union    { ERef e; ELRef rel_e; }; // Enode that differs from this, or the reference where I was relocated
     ELRef    link;                     // Link to the next element in the list
 
-    Elist(ERef e_, PTRef r) : reason(r), e(e_), link(ELRef_Undef) {
+    Elist(ERef e_, PtAsgn r) : reason(r), e(e_), link(ELRef_Undef) {
         header.rlcd = false;
         header.dirty = false;
     }
-    Elist* Elist_new(ERef e_, PTRef r) {
+    Elist* Elist_new(ERef e_, PtAsgn r) {
         assert(false);
         assert(sizeof(ELRef) == sizeof(uint32_t));
         size_t sz = sizeof(ELRef) + 2*sizeof(ERef);
@@ -371,7 +372,7 @@ public:
                 to.referenced_by.last().push(referenced_by[i][j]);
         }
     }
-    ELRef alloc(ERef e, PTRef r, ERef owner) {
+    ELRef alloc(ERef e, PtAsgn r, ERef owner) {
         assert(sizeof(ERef) == sizeof(uint32_t));
         uint32_t v = RegionAllocator<uint32_t>::alloc(elistWord32Size());
         ELRef elid;

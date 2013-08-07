@@ -198,16 +198,16 @@ bool THandler::assertLits(vec<Lit>& trail)
 
         // sign(l) == true if l is negated
         if (logic.isEquality(pt.symb()) && !sign(l))
-            res = egraph.addEquality(pt_r);
+            res = egraph.addEquality(PtAsgn(pt_r, true));
 
         else if (logic.isEquality(pt.symb()) && sign(l))
-            res = egraph.addDisequality(pt_r);
+            res = egraph.addDisequality(PtAsgn(pt_r, false));
 
         else if (logic.isDisequality(pt.symb()) && !sign(l))
-            res = egraph.addDisequality(pt_r);
+            res = egraph.addDisequality(PtAsgn(pt_r, true));
 
         else if (logic.isDisequality(pt.symb()) && sign(l))
-            res = egraph.addEquality(pt_r);
+            res = egraph.addEquality(PtAsgn(pt_r, false));
 
         else if (logic.isUP(pt_r) && !sign(l))
             res = egraph.addTrue(pt_r);
@@ -291,7 +291,8 @@ void THandler::getConflict (
     // with associated polarities p1,...,pn. Since the sat-solver
     // wants a clause we store it in the form ( l1 | ... | ln )
     // where li is the literal corresponding with ei with polarity !pi
-    vec< PTRef > & explanation = egraph.getConflict();
+    vec<PtAsgn> explanation;
+    egraph.getConflict(false, explanation);
 #ifdef PEDANTIC_DEBUG
     cout << printExplanation(explanation, assigns);
 #endif
@@ -327,7 +328,7 @@ void THandler::getConflict (
 #else
     max_decision_level = -1;
     while (explanation.size() != 0) {
-        PTRef tr = explanation.last( );
+        PtAsgn ta = explanation.last( );
         explanation.pop( );
 //    assert( ei->hasPolarity( ) );
 //    assert( ei->getPolarity( ) == l_True
@@ -335,9 +336,9 @@ void THandler::getConflict (
 //        bool negate = ei->getPolarity( ) == l_False;
 
 //        Var v = enodeToVar( ei );
-        Lit l = tmap.getLit(tr);
+        Lit l = tmap.getLit(ta.tr);
         // Get the sign right
-        lbool val = toLbool(assigns[var(l)] ^ sign(l));
+        lbool val = ta.sgn;
         if (val == l_False)
             l = ~l;
 #ifdef PEDANTIC_DEBUG
@@ -373,10 +374,13 @@ Enode * THandler::getInterpolants( )
 #endif
 
 Lit THandler::getDeduction( ) {
-    PTRef e = egraph.getDeduction( );
+    PtAsgn& e = egraph.getDeduction();
 
-    if ( e == PTRef_Undef )
-    return lit_Undef;
+    if ( e.tr == PTRef_Undef )
+        return lit_Undef;
+
+    assert(e.sgn != l_Undef);
+    return e.sgn == l_True ? tmap.getLit(e.tr) : ~tmap.getLit(e.tr);
 
 //  if ( config.certification_level > 1 )
 //    verifyDeductionWithExternalTool( e );
@@ -388,7 +392,6 @@ Lit THandler::getDeduction( ) {
 //  Var v = enodeToVar( e );
 //  return Lit( v, negate );
 
-    return tmap.getLit(e);
 }
 
 Lit THandler::getSuggestion( ) {
@@ -404,7 +407,7 @@ Lit THandler::getSuggestion( ) {
     return tmap.getLit(e);
 }
 
-void THandler::getReason( Lit l, vec< Lit > & reason )
+void THandler::getReason( Lit l, vec< Lit > & reason, vec<char>& assigns )
 {
 #if LAZY_COMMUNICATION
     assert( checked_trail_size == stack.size( ) );
@@ -434,19 +437,28 @@ void THandler::getReason( Lit l, vec< Lit > & reason )
 //  const bool res = egraph.assertLit( e, true ) &&
 //                   egraph.check( true );
     lbool res = l_Undef;
-    if (!sign(l))
-        res = egraph.addEquality(e);
-    else
-        res = egraph.addDisequality(e);
+    assert(value(l, assigns) == l_Undef);
+    if (logic.isEquality(e))
+        res = sign(l) ? egraph.addEquality(PtAsgn(e, true)) : egraph.addDisequality(PtAsgn(e, false));
+    else {
+        assert(logic.isUP(e));
+        res = sign(l) ? egraph.addTrue(e) : egraph.addFalse(e);
+    }
 
     // Result must be false
     if ( res != l_False ) {
         cout << endl << "unknown" << endl;
+#ifdef PEDANTIC_DEBUG
+        cerr << egraph.printUndoTrail();
+#endif
         exit( 1 );
     }
+    else
+        cerr << endl << "ok" << endl;
 
     // Get Explanation
-    vec<PTRef> & explanation = egraph.getConflict( true );
+    vec<PtAsgn> explanation;
+    egraph.getConflict( true, explanation );
 
 //    if ( config.certification_level > 0 )
 //        verifyExplanationWithExternalTool( explanation );
@@ -456,22 +468,26 @@ void THandler::getReason( Lit l, vec< Lit > & reason )
     // Copy explanation
 
     while ( explanation.size() > 0 ) {
-        PTRef ei  = explanation.last();
+        PtAsgn pa = explanation.last();
+        PTRef ei  = pa.tr;
         explanation.pop();
 //        assert( ei->hasPolarity( ) );
 //        assert( ei->getPolarity( ) == l_True
 //                || ei->getPolarity( ) == l_False );
 //        bool negate = ei->getPolarity( ) == l_False;
-        Lit l = tmap.getLit(ei);
-        reason.push(l);
-// I must admit I don't know what happens here
-//        // Toggle polarity for deduced literal
-//        if ( e == ei ) {
+
+        // Toggle polarity for deduced literal
+        if ( e == ei ) {
 //            assert( e->getDeduced( ) != l_Undef );           // But still holds the deduced polarity
-//            // The deduced literal must have been pushed
-//            // with the the same polarity that has been deduced
-//            reason[ 0 ] = Lit( v, !negate );
-//        }
+            // The deduced literal must have been pushed
+            // with the the same polarity that has been deduced
+            assert((pa.sgn == l_True && sign(l)) || (pa.sgn == l_False && !sign(l))); // The literal is true (sign false) iff the egraph term polarity is false
+            reason[0] = l;
+        }
+        else {
+            assert(pa.sgn != l_Undef);
+            reason.push(pa.sgn == l_True ? ~tmap.getLit(ei) : tmap.getLit(ei)); // Swap the sign for others
+        }
 //        else {
 //            assert( ei->hasPolarity( ) );                    // Lit in explanation is active
 //            // This assertion might fail if in your theory solver
@@ -841,6 +857,16 @@ void THandler::verifyInterpolantWithExternalTool( vector< Enode * > & expl
 }
 #endif
 
+const char* THandler::printAsrtClause(vec<Lit>& r) {
+    stringstream os;
+    for (int i = 0; i < r.size(); i++) {
+        Var v = var(r[i]);
+        bool sgn = sign(r[i]);
+        os << (sgn ? "not " : "") << logic.printTerm(tmap.varToTerm[var(r[i])]) << " ";
+    }
+    return os.str().c_str();
+}
+
 #ifdef PEDANTIC_DEBUG
 std::string THandler::printAssertion(Lit assertion) {
     stringstream os;
@@ -853,19 +879,19 @@ std::string THandler::printAssertion(Lit assertion) {
     return os.str();
 }
 
-std::string THandler::printExplanation(vec<PTRef>& explanation, vec<char>& assigns) {
+std::string THandler::printExplanation(vec<PtAsgn>& explanation, vec<char>& assigns) {
     stringstream os;
     os << "; Conflict: ";
     for ( int i = 0 ; i < explanation.size( ) ; i ++ ) {
         if ( i > 0 )
             os << ", ";
-        Var v = tmap.termToVar[explanation[i]];
+        Var v = tmap.termToVar[explanation[i].tr];
         lbool val = toLbool(assigns[v]);
         assert(val != l_Undef);
         if ( val == l_False )
             os << "!";
 
-        os << logic.term_store.printTerm(explanation[i]);
+        os << logic.term_store.printTerm(explanation[i].tr);
         os << "[var " << v << "]";
     }
     os << endl;

@@ -858,14 +858,15 @@ PTRef Cnfizer::expandItes(vec<PtChild>& term_list) {
         PTRef if_term = logic.mkImpl(args_impl);
         assert(if_term != PTRef_Undef);
         // \neg b -> (= sbst e)
-        args_eq.pop();
-        args_eq.push(e);
-        eq_term = logic.mkEq(args_eq);
-        assert(eq_term != PTRef_Undef);
+        vec<PTRef> args_eq2;
+        args_eq2.push(sbst);
+        args_eq2.push(e);
+        PTRef eq_term2 = logic.mkEq(args_eq2);
+        assert(eq_term2 != PTRef_Undef);
         PTRef neg_term = logic.mkNot(b);
         vec<PTRef> args_impl2;
         args_impl2.push(neg_term);
-        args_impl2.push(eq_term);
+        args_impl2.push(eq_term2);
 
         PTRef else_term = logic.mkImpl(args_impl2);
         assert(else_term != PTRef_Undef);

@@ -6,6 +6,7 @@
 #include "Alloc.h"
 #include "Symbol.h"
 #include "Sort.h"
+#include "SolverTypes.h"
 
 //typedef RegionAllocator<uint32_t>::Ref PTRef;
 
@@ -173,6 +174,16 @@ class PtChild {
     int pos;
     PtChild(PTRef tr_, PTRef parent_, int pos_) : tr(tr_), parent(parent_), pos(pos_) {}
 };
+
+class PtAsgn {
+  public:
+    PTRef tr;
+    lbool sgn;
+    PtAsgn(PTRef tr_, lbool sgn_) : tr(tr_), sgn(sgn_) {}
+    PtAsgn() : tr(PTRef_Undef), sgn(l_Undef) {}
+};
+
+static class PtAsgn PtAsgn_Undef(PTRef_Undef, l_Undef);
 
 class PtermAllocator : public RegionAllocator<uint32_t>
 {

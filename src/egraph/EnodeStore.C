@@ -35,15 +35,10 @@ PTRef EnodeStore::addTerm(ERef sr, ERef args, PTRef term) {
         if (containsSig(sr, args)) {
             ERef canon = lookupSig(sr, args);
             termToERef.insert(term, canon);
-//            ERefToTerms[canon].push(term);
             rval = ea[canon].getTerm();
 #ifdef PEDANTIC_DEBUG
             cerr << "Seeing the duplicate in EnodeStore: "
-                 << "ERef " << canon.x << " points to "
-                 << ERefToTerms[canon].size() << " terms." << endl;
-            for (int i = 0; i < ERefToTerms[canon].size(); i++)
-                cerr << ERefToTerms[canon][i].x << " ";
-            cerr << endl;
+                 << "ERef " << canon.x << endl;
             cerr << "letting " << term_store.printTerm(term)
                  << " point to " << endl << printEnode(canon) << endl;
 #endif
@@ -53,10 +48,8 @@ PTRef EnodeStore::addTerm(ERef sr, ERef args, PTRef term) {
             ERef new_er = ea.alloc(sr, args, Enode::et_term, term);
             insertSig(new_er);
             termToERef.insert(term, new_er);
-            vec<PTRef> terms;
-            terms.push(term);
-            assert(!ERefToTerms.contains(new_er));
-            ERefToTerms.insert(new_er, terms);
+            assert(!ERefToTerm.contains(new_er));
+            ERefToTerm.insert(new_er, term);
 
             enodes.push(new_er);
 
@@ -138,7 +131,7 @@ void EnodeStore::undoTerm( ERef e ) {
 
     // Get rid of the extra data
     termToERef.remove(en.getTerm());
-    ERefToTerms.remove(e);
+    ERefToTerm.remove(e);
     ea.free(e);
 }
 
