@@ -185,6 +185,21 @@ class PtAsgn {
 
 static class PtAsgn PtAsgn_Undef(PTRef_Undef, l_Undef);
 
+class PtAsgn_reason {
+  public:
+    PTRef tr;
+    PTRef reason;
+    lbool sgn;
+    PtAsgn_reason(PTRef tr_, lbool sgn_, PTRef reason_)
+         : tr(tr_)
+         , reason(reason_)
+         , sgn(sgn_)
+         {}
+    PtAsgn_reason() : tr(PTRef_Undef), reason(PTRef_Undef), sgn(l_Undef) {}
+};
+
+static class PtAsgn_reason PtAsgn_reason_Undef(PTRef_Undef, l_Undef, PTRef_Undef);
+
 class PtermAllocator : public RegionAllocator<uint32_t>
 {
     static int ptermWord32Size(int size){

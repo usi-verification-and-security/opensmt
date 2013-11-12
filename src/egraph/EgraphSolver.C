@@ -113,7 +113,7 @@ void Egraph::popBacktrackPoint() {
     size_t new_deductions_size = deductions_lim.last( );
     deductions_lim.pop( );
     while( deductions.size_() > new_deductions_size ) {
-        PtAsgn asgn = deductions.last();
+        PtAsgn_reason asgn = deductions.last();
         ERef e = enode_store.termToERef[asgn.tr];
         Enode& en_e = enode_store[e];
         assert( en_e.isDeduced() );
@@ -127,13 +127,13 @@ void Egraph::popBacktrackPoint() {
 //
 // Returns a deduction
 //
-PtAsgn& Egraph::getDeduction( ) {
+PtAsgn_reason& Egraph::getDeduction( ) {
 
     // Communicate UF deductions
     while ( deductions_next < deductions.size_( ) ) {
-        PtAsgn& pta = deductions[deductions_next++];
-        ERef e      = enode_store.termToERef[pta.tr];
-        Enode& en_e = enode_store[e];
+        PtAsgn_reason& pta = deductions[deductions_next++];
+        ERef e             = enode_store.termToERef[pta.tr];
+        Enode& en_e        = enode_store[e];
         // For sure this has a deduced polarity
         assert( en_e.isDeduced( ) );
         // If it has been pushed it is not a good candidate
@@ -150,7 +150,7 @@ PtAsgn& Egraph::getDeduction( ) {
     }
 
     // We have already returned all the possible deductions
-    return PtAsgn_Undef;
+    return PtAsgn_reason_Undef;
 }
 
 //
@@ -687,7 +687,9 @@ bool Egraph::mergeLoop( PtAsgn reason )
         // They are not unmergable, so they can be merged
         if ( !res ) {
 
-            merge( en_p.getRoot( ), en_q.getRoot( ) );
+            // XXX We need to put here the reason so that the deduction can
+            // report the correct decision level (checked from the reason)
+            merge( en_p.getRoot( ), en_q.getRoot( ), reason );
             congruence_pending = true;
             continue;
         }
@@ -838,7 +840,8 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
 #ifdef GC_DEBUG
     cerr << "Asserting distinction of " << logic.printTerm(x)
          << " and " << logic.printTerm(y)
-         << " enforced by " << (r.sgn == true ? "" : "not ") << logic.printTerm(r) << endl;
+         << " enforced by " << (r.sgn == true ? "" : "not ")
+         << logic.printTerm(r.tr) << endl;
 #endif
     checkFaGarbage();
 #ifdef GC_DEBUG
@@ -1266,7 +1269,7 @@ void Egraph::backtrackToStackSize ( size_t size ) {
 // Merge the class of x with the class of y
 // x will become the representant
 //
-void Egraph::merge ( ERef x, ERef y )
+void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
 {
 #ifdef GC_DEBUG
     checkRefConsistency();
@@ -1360,7 +1363,7 @@ void Egraph::merge ( ERef x, ERef y )
     // cycle. However, for the sake of simplicity
     // we prefer to separate the two contexts
     if ( config.uf_theory_propagation > 0 ) {
-        deduce( x, y );
+        deduce( x, y, reason );
     }
 
     // Perform the union of the two equivalence classes
@@ -1474,7 +1477,7 @@ void Egraph::merge ( ERef x, ERef y )
 //
 // Deduce facts from the merge of x and y
 //
-void Egraph::deduce( ERef x, ERef y ) {
+void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
     lbool deduced_polarity = l_Undef;
 
     if ( x == enode_store.getEnode_true() )
@@ -1513,7 +1516,8 @@ void Egraph::deduce( ERef x, ERef y ) {
         {
 //            enode_store[sv].setDeduced( deduced_polarity, id );
             enode_store[sv].setDeduced();
-            deductions.push(PtAsgn(enode_store.ERefToTerm[sv], deduced_polarity));
+            deductions.push(PtAsgn_reason(enode_store.ERefToTerm[sv],
+                                          deduced_polarity, reason.tr));
 #ifdef STATISTICS
 //            tsolvers_stats[ 0 ]->deductions_done ++;
 #endif
@@ -2384,7 +2388,9 @@ void Egraph::relocAll(ELAllocator& to) {
                  << "  node: " << er.x
                  << "  link: " << forbid_allocator[er].link.x << endl
                  << "  ERef: " << forbid_allocator[er].e.x
-                 << "  Reason: " << logic.printTerm(forbid_allocator[er].reason) << endl;
+                 << "  Reason: " <<
+                    logic.printTerm(forbid_allocator[er].reason.tr)
+                 << endl;
             if (enode_store[forbid_allocator[er].e].isTerm()) {
                 cerr << "  Term: "
                      << logic.printTerm(enode_store[forbid_allocator[er].e].getTerm()) << endl;
@@ -2434,9 +2440,9 @@ void Egraph::relocAll(ELAllocator& to) {
 
             assert(e_old.isDirty() == e_new.isDirty());
             assert(e_new.isDirty() == false);
-            assert(e_old.reason == e_new.reason);
-            ERef reason_lhs = enode_store.termToERef[term_store[e_new.reason][0]];
-            ERef reason_rhs = enode_store.termToERef[term_store[e_new.reason][1]];
+            assert(e_old.reason.tr == e_new.reason.tr);
+            ERef reason_lhs = enode_store.termToERef[term_store[e_new.reason.tr][0]];
+            ERef reason_rhs = enode_store.termToERef[term_store[e_new.reason.tr][1]];
             assert (enode_store[reason_lhs].getRoot() != enode_store[reason_rhs].getRoot());
             for (int j = 0; j < to.referenced_by[to[er_new].getId()].size(); j++) {
                 ERef referer = to.referenced_by[to[er_new].getId()][j];

@@ -68,7 +68,7 @@ public:
 #ifdef PRODUCE_PROOF
   Enode * getInterpolants      ( );                     // Fill a vector with interpolants
 #endif
-  Lit     getDeduction         ( );                     // Returns a literal that is implied by the current state
+  Lit     getDeduction         (Lit& r);                // Returns a literal that is implied by the current state and the reason literal
   Lit     getSuggestion        ( );                     // Returns a literal that is suggested by the current state
   void    getReason            ( Lit, vec< Lit > &, vec<char>& );   // Returns the explanation for a deduced literal
 

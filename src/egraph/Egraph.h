@@ -306,7 +306,7 @@ public:
   bool                assertLit               ( PTRef, bool = false ) {return true; } // Assert a theory literal
   void                pushBacktrackPoint      ( );                          // Push a backtrack point
   void                popBacktrackPoint       ( );                          // Backtrack to last saved point
-  PtAsgn&             getDeduction            ( );                          // Return an implied node based on the current state
+  PtAsgn_reason&      getDeduction            ( );                          // Return an implied node based on the current state
   PTRef               getSuggestion           ( );                          // Return a suggested literal based on the current state
   void                getConflict             ( bool, vec<PtAsgn>& );       // Get explanation
   bool                check                   ( bool );                     // Check satisfiability
@@ -489,9 +489,9 @@ private:
   // Congruence closure main routines
   //
   bool    unmergeable     ( ERef, ERef, PtAsgn& );              // Can two nodes be merged ?
-  void    merge           ( ERef, ERef );                       // Merge two nodes
+  void    merge           ( ERef, ERef, PtAsgn );               // Merge two nodes
   bool    mergeLoop       ( PtAsgn reason );                    // Merge loop
-  void    deduce          ( ERef, ERef);                        // Deduce from merging of two nodes
+  void    deduce          ( ERef, ERef, PtAsgn );               // Deduce from merging of two nodes (record the reason)
   void    undoMerge       ( ERef );                             // Undoes a merge
   void    undoDisequality ( ERef );                             // Undoes a disequality
   void    undoDistinction ( PTRef );                            // Undoes a distinction

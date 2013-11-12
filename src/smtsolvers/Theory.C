@@ -471,16 +471,17 @@ int CoreSMTSolver::analyzeUnsatLemma( Clause * confl )
 int CoreSMTSolver::deduceTheory( )
 {
   Lit ded = lit_Undef;
+  Lit reason = lit_Undef;
+  int n_deductions = 0;
   while (true) {
-    ded = theory_handler.getDeduction( );
-    if ( ded == lit_Undef ) return 0;
-    if (value(ded) == l_Undef) break;
-  }
-  assert(ded != lit_Undef);
-  assert(value(ded) == l_Undef);
-  do
-  {
-    assert(value(ded) == l_Undef);
+    ded = theory_handler.getDeduction(reason);
+    if (ded == lit_Undef)      break;
+    if (value(ded) != l_Undef) continue;
+
+    // Found an unassigned deduction
+    n_deductions ++;
+    assert(reason != lit_Undef);
+    assert(level[var(reason)] == decisionLevel()); // should break at some point
     assert(ded != lit_Undef);
 #ifndef PRODUCE_PROOF
     if ( decisionLevel( ) == 0 )
@@ -488,27 +489,43 @@ int CoreSMTSolver::deduceTheory( )
     else
     {
 #endif
-      if (toInt(ded) == 241) {
-        vec<Lit> r;
-        theory_handler.getReason(ded, r, assigns);
-        for (int i = 0; i < r.size(); i++)
-            cerr << toInt(r[i]) << " ";
-        cerr << endl;
-      }
+#ifdef PEDANTIC_DEBUG
       // Debuggissimo
       vec<Lit> r;
       theory_handler.getReason(ded, r, assigns);
       cerr << theory_handler.printAsrtClause(r);
       cerr << endl;
+      int max_lev = -1;
+      bool reason_found = false;
+      assert(ded == r[0]);
+      for (int i = 1; i < r.size(); i++) {
+        Var v = var(r[i]);
+        max_lev = max_lev > level[v] ? max_lev : level[v];
+        if (v == var(reason)) reason_found = true;
+      }
+      assert(reason_found);               // Should break?
+      assert(max_lev == decisionLevel()); // Should break
+      addTheoryReasonClause_debug(ded, r);
+#endif
       uncheckedEnqueue( ded, fake_clause );
 #ifndef PRODUCE_PROOF
     }
 #endif
-    while (true) {
-      ded = theory_handler.getDeduction();
-      if (ded == lit_Undef || value(ded) == l_Undef) break;
-    }
   }
-  while( ded != lit_Undef );
-  return 1;
+  return (n_deductions == 0 ? 0 : 1);
 }
+
+#ifdef PEDANTIC_DEBUG
+void CoreSMTSolver::addTheoryReasonClause_debug(Lit ded, vec<Lit>& reason) {
+    Clause* c = Clause_new<vec<Lit> >(reason);
+    int idx = debug_reasons.size();
+    debug_reasons.push(c);
+    debug_reason_map.insert(var(ded), idx);
+    return;
+}
+void CoreSMTSolver::checkTheoryReasonClause_debug(Var v) {
+    int idx = debug_reason_map[v];
+    Clause* c = debug_reasons[idx];
+    for (int i = 0; i < c->size(); i++)
+        
+#endif

@@ -373,13 +373,17 @@ Enode * THandler::getInterpolants( )
 }
 #endif
 
-Lit THandler::getDeduction( ) {
-    PtAsgn& e = egraph.getDeduction();
+Lit THandler::getDeduction(Lit& reason) {
+    PtAsgn_reason& e = egraph.getDeduction();
 
-    if ( e.tr == PTRef_Undef )
+    if ( e.tr == PTRef_Undef ) {
+        reason = lit_Undef;
         return lit_Undef;
-
+    }
+    assert(e.reason != PTRef_Undef);
     assert(e.sgn != l_Undef);
+    reason = tmap.getLit(e.reason);
+    assert(reason != lit_Undef);
     return e.sgn == l_True ? tmap.getLit(e.tr) : ~tmap.getLit(e.tr);
 
 //  if ( config.certification_level > 1 )

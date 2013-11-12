@@ -121,8 +121,9 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
   , elim_tvars            (0)
 #endif
   , init                  (false)
-  , asgn_240_ctr          (0)
-  , asgn_241_ctr          (0)
+#ifdef PEDANTIC_DEBUG
+  , max_dl_debug          (0)
+#endif
 { }
 
 void
@@ -446,21 +447,15 @@ void CoreSMTSolver::cancelUntil(int level)
 
     for (int c = trail.size()-1; c >= trail_lim_level; c--)
     {
-      if (asgn_241_ctr == 3)
-        cerr << "Backtrack before failure " << c << endl;
-      if (toInt(trail[c]) == 241)
-        cerr << "backtracked not (p6 c_2 c_2) (" << asgn_241_ctr << ")" << endl;
-      else if ((asgn_241_ctr == 3) and
-         ((toInt(trail[c]) == 41) or
-          (toInt(trail[c]) == 40) or
-          (toInt(trail[c]) == 33) or
-          (toInt(trail[c]) == 32) or
-          (toInt(trail[c]) == 612) or
-          (toInt(trail[c]) == 613)))
-        cerr << "backtracked " << toInt(trail[c]) << endl;
       Var     x  = var(trail[c]);
       assigns[x] = toInt(l_Undef);
       insertVarOrder(x);
+#ifdef PEDANTIC_DEBUG
+      if (debug_reason_map.contains(x)) {
+        checkTheoryReasonClause_debug(x);
+        removeTheoryReasonClause_debug(x);
+      }
+#endif
     }
     qhead = trail_lim_level;
     trail.shrink(trail.size() - trail_lim_level);
@@ -1217,10 +1212,6 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
 
 void CoreSMTSolver::uncheckedEnqueue(Lit p, Clause* from)
 {
-  if (toInt(p) == 241) {
-    asgn_241_ctr++;
-    cerr << "Enqueued not (p6 c_2 c_2) (" << asgn_241_ctr << ")" << endl;
-  }
   assert(value(p) == l_Undef);
   assigns [var(p)] = toInt(lbool(!sign(p)));  // <<== abstract but not uttermost effecient
 

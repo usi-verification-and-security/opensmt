@@ -195,6 +195,10 @@ class CoreSMTSolver : public SMTSolver
     vec<Clause*>        clauses;          // List of problem clauses.
     vec<Clause*>        learnts;          // List of learnt clauses.
     vec<Clause*>        tmp_reas;         // Reasons for minimize_conflicts 2
+#ifdef PEDANTIC_DEBUG
+    vec<Clause*>        debug_reasons;    // Reasons for the theory deduced clauses
+    Map<Var,int,VarHash> debug_reason_map; // Maps the deduced lit to the clause used to deduce it
+#endif
     double              cla_inc;          // Amount to bump next clause with.
     vec<double>         activity;         // A heuristic measurement of the activity of a variable.
     double              var_inc;          // Amount to bump next variable with.
@@ -444,8 +448,10 @@ class CoreSMTSolver : public SMTSolver
       bool               init;
 
       // very debug XXX
-      int                asgn_240_ctr;
-      int                asgn_241_ctr;
+#ifdef PEDANTIC_DEBUG
+      int                max_dl_debug;
+      void addTheoryReasonClause_debug(Lit ded, vec<Lit>& reason);
+#endif
       // Added Code
       //=================================================================================================
 };
@@ -536,7 +542,12 @@ inline void CoreSMTSolver::claBumpActivity (Clause& c) {
 
 inline bool     CoreSMTSolver::enqueue         (Lit p, Clause* from)   { return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, from), true); }
 inline bool     CoreSMTSolver::locked          (const Clause& c) const { return reason[var(c[0])] == &c && value(c[0]) == l_True; }
-inline void     CoreSMTSolver::newDecisionLevel()                      { trail_lim.push(trail.size()); }
+inline void     CoreSMTSolver::newDecisionLevel() {
+  trail_lim.push(trail.size());
+#ifdef PEDANTIC_DEBUG
+  max_dl_debug = decisionLevel() > max_dl_debug ? decisionLevel() : max_dl_debug;
+#endif
+ }
 
 inline int      CoreSMTSolver::decisionLevel ()      const                { return trail_lim.size(); }
 inline uint32_t CoreSMTSolver::abstractLevel (Var x) const                { return 1 << (level[x] & 31); }
