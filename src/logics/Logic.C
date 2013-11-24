@@ -199,9 +199,15 @@ PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args) {
     return rval;
 }
 
+// Check if arguments contain true or false?
 PTRef Logic::mkAnd(vec<PTRef>& args) {
     return resolveTerm(tk_and, args);
 }
+
+PTRef Logic::mkOr(vec<PTRef>& args) {
+    return resolveTerm(tk_or, args);
+}
+
 
 PTRef Logic::mkImpl(vec<PTRef>& args) {
     return resolveTerm(tk_implies, args);

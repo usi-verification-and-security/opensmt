@@ -76,6 +76,7 @@ class Logic {
 
     // Boolean term generation
     PTRef       mkAnd(vec<PTRef>& args);
+    PTRef       mkOr(vec<PTRef>& args);
     PTRef       mkImpl(vec<PTRef>& args);
     PTRef       mkNot(PTRef);
 

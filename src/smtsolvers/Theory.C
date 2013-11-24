@@ -493,7 +493,7 @@ int CoreSMTSolver::deduceTheory( )
       // Debuggissimo
       vec<Lit> r;
       theory_handler.getReason(ded, r, assigns);
-      cerr << theory_handler.printAsrtClause(r);
+      cerr << "deduced " << theory_handler.printAsrtClause(r);
       cerr << endl;
       int max_lev = -1;
       bool reason_found = false;
@@ -502,10 +502,25 @@ int CoreSMTSolver::deduceTheory( )
         Var v = var(r[i]);
         max_lev = max_lev > level[v] ? max_lev : level[v];
         if (v == var(reason)) reason_found = true;
+        assert(value(r[i]) == l_False);
       }
       assert(reason_found);               // Should break?
       assert(max_lev == decisionLevel()); // Should break
       addTheoryReasonClause_debug(ded, r);
+      if (r[0] == toLit(317) &&
+          r[1] == toLit(37)  &&
+          r[2] == toLit(31)  &&
+          r[3] == toLit(612) &&
+          level[var(r[0])] == 21 &&
+          level[var(r[1])] == 21 &&
+          level[var(r[2])] == 18 &&
+          level[var(r[3])] == 0) {
+        cerr << "This clause will cause problems" << endl;
+        cerr << " dl " << level[var(r[0])] << endl;
+        cerr << " dl " << level[var(r[1])] << endl;
+        cerr << " dl " << level[var(r[2])] << endl;
+        cerr << " dl " << level[var(r[3])] << endl;
+      }
 #endif
       uncheckedEnqueue( ded, fake_clause );
 #ifndef PRODUCE_PROOF
@@ -516,16 +531,45 @@ int CoreSMTSolver::deduceTheory( )
 }
 
 #ifdef PEDANTIC_DEBUG
+
 void CoreSMTSolver::addTheoryReasonClause_debug(Lit ded, vec<Lit>& reason) {
     Clause* c = Clause_new<vec<Lit> >(reason);
     int idx = debug_reasons.size();
     debug_reasons.push(c);
+    assert(!debug_reason_map.contains(var(ded)));
     debug_reason_map.insert(var(ded), idx);
     return;
 }
+
 void CoreSMTSolver::checkTheoryReasonClause_debug(Var v) {
     int idx = debug_reason_map[v];
     Clause* c = debug_reasons[idx];
-    for (int i = 0; i < c->size(); i++)
-        
+    bool v_found = false;
+    for (int i = 0; i < c->size(); i++) {
+        Lit l = (*c)[i];
+        Var u = var(l);
+        if (value(l) != l_False && (v != u)) {
+            cerr << theory_handler.printAsrtClause(c) << endl;
+            assert(false);
+        }
+        assert(value(l) == l_False || (v == u));
+        if (v == u) {
+            v_found = true;
+            if (value(l) != l_Undef) {
+                cerr << theory_handler.printAsrtClause(c) << endl;
+                assert(false);
+            }
+        }
+    }
+    assert(v_found);
+    assert(var((*c)[0]) == v);
+}
+
+void CoreSMTSolver::removeTheoryReasonClause_debug(Var v) {
+    int idx = debug_reason_map[v];
+    assert(debug_reason_map.contains(v));
+    debug_reason_map.remove(v);
+    assert(!debug_reason_map.contains(v));
+}
+
 #endif

@@ -70,7 +70,11 @@ public:
 #endif
   Lit     getDeduction         (Lit& r);                // Returns a literal that is implied by the current state and the reason literal
   Lit     getSuggestion        ( );                     // Returns a literal that is suggested by the current state
+#ifdef PEDANTIC_DEBUG
+  bool    getReason            ( Lit, vec< Lit > &, vec<char>& );   // Returns the explanation for a deduced literal
+#else
   void    getReason            ( Lit, vec< Lit > &, vec<char>& );   // Returns the explanation for a deduced literal
+#endif
 
 //  Var     enodeToVar           ( Enode * );             // Converts enode into boolean variable. Create a new variable if needed
 //  Lit     enodeToLit           ( Enode * );             // Converts enode into boolean literal. Create a new variable if needed
@@ -147,6 +151,8 @@ private:
 // Debug
 public:
   const char* printAsrtClause(vec<Lit>& r);
+  const char* printAsrtClause(Clause *c);
+  bool checkTrailConsistency(vec<Lit>& trail);
 private:
 #ifdef PEDANTIC_DEBUG
   std::string printExplanation(vec<PtAsgn>&, vec<char>&);

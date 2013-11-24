@@ -448,6 +448,9 @@ void CoreSMTSolver::cancelUntil(int level)
     for (int c = trail.size()-1; c >= trail_lim_level; c--)
     {
       Var     x  = var(trail[c]);
+#ifdef PEDANTIC_DEBUG
+      assert(assigns[x] != toInt(l_Undef));
+#endif
       assigns[x] = toInt(l_Undef);
       insertVarOrder(x);
 #ifdef PEDANTIC_DEBUG
@@ -464,7 +467,9 @@ void CoreSMTSolver::cancelUntil(int level)
     else
       trail_lim.shrink(trail_lim.size() - level);
 
-    if ( first_model_found ) theory_handler.backtrack(level);
+    // Changed this from decision level to trail.size()
+    // the theory stack is in sync with the trail size, not the decision level!
+    if ( first_model_found ) theory_handler.backtrack(trail.size());
   }
 }
 
@@ -669,9 +674,13 @@ void CoreSMTSolver::cancelUntilVarTempDone( )
   }
 
   const bool res = theory_handler.assertLits(trail);
+#ifdef PEDANTIC_DEBUG
+  theory_handler.checkTrailConsistency(trail);
+#endif
   // Flush conflict if unsat
   if ( !res )
   {
+//    assert(false);
     vec< Lit > conflicting;
     int        max_decision_level;
 #ifdef PEDANTIC_DEBUG
@@ -855,15 +864,26 @@ void CoreSMTSolver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btleve
       Var v = var(p);
       assert(value(p) == l_True);
       // Backtracking the trail until v is the variable on the top
-      cancelUntilVar( v );
+      cancelUntilVarTempInit( v );
 
       vec< Lit > r;
       // Retrieving the reason
 #ifdef STATISTICS
       const double start = cpuTime( );
 #endif
+#ifdef PEDANTIC_DEBUG
+      if (theory_handler.getReason( p, r, assigns ) == false) {
+        assert(debug_reason_map.contains(var(p)));
+        int idx = debug_reason_map[var(p)];
+        Clause* c = debug_reasons[idx];
+        cerr << "Could not find reason " << theory_handler.printAsrtClause(c) << endl;
+        assert(false);
+      }
+#else
       theory_handler.getReason( p, r, assigns );
-
+#endif
+      assert(r.size() > 0);
+      cancelUntilVarTempDone();
 #ifdef STATISTICS
       tsolvers_time += cpuTime( ) - start;
 #endif
@@ -945,7 +965,7 @@ void CoreSMTSolver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btleve
     }
 #endif
 
-  }while (pathC > 0);
+  } while (pathC > 0);
 
   assert(p != lit_Undef);
   assert((~p) != lit_Undef);
@@ -955,7 +975,7 @@ void CoreSMTSolver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btleve
   // Simplify conflict clause:
   //
   int i, j;
-  if (expensive_ccmin){
+  if (expensive_ccmin) {
     uint32_t abstract_level = 0;
     for (i = 1; i < out_learnt.size(); i++)
       abstract_level |= abstractLevel(var(out_learnt[i])); // (maintain an abstraction of levels involved in conflict)
@@ -968,7 +988,7 @@ void CoreSMTSolver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btleve
     for (i = j = 1; i < out_learnt.size(); i++)
       if (reason[var(out_learnt[i])] == NULL || !litRedundant(out_learnt[i], abstract_level))
 	out_learnt[j++] = out_learnt[i];
-  }else{
+  } else {
     // Added line
     assert( false );
     out_learnt.copyTo(analyze_toclear);
@@ -988,11 +1008,11 @@ void CoreSMTSolver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btleve
   //
   if (out_learnt.size() == 1)
     out_btlevel = 0;
-  else{
+  else {
     int max_i = 1;
     for (int i = 2; i < out_learnt.size(); i++)
       if (level[var(out_learnt[i])] > level[var(out_learnt[max_i])])
-	max_i = i;
+        max_i = i;
 
     Lit p             = out_learnt[max_i];
     out_learnt[max_i] = out_learnt[1];
@@ -1075,7 +1095,17 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
 	// Temporairly backtracking
 	cancelUntilVarTempInit( v );
 	// Retrieving the reason
+#ifdef PEDANTIC_DEBUG
+	if (theory_handler.getReason( p, r, assigns ) == false) {
+            assert(debug_reason_map.contains(var(p)));
+            int idx = debug_reason_map[var(p)];
+            Clause* c = debug_reasons[idx];
+            cerr << theory_handler.printAsrtClause(c) << endl;
+            assert(false);
+        }
+#else
 	theory_handler.getReason( p, r, assigns );
+#endif
 	// Restoring trail
 	cancelUntilVarTempDone( );
 	Clause * ct = NULL;

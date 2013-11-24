@@ -411,7 +411,11 @@ Lit THandler::getSuggestion( ) {
     return tmap.getLit(e);
 }
 
+#ifdef PEDANTIC_DEBUG
+bool THandler::getReason( Lit l, vec< Lit > & reason, vec<char>& assigns )
+#else
 void THandler::getReason( Lit l, vec< Lit > & reason, vec<char>& assigns )
+#endif
 {
 #if LAZY_COMMUNICATION
     assert( checked_trail_size == stack.size( ) );
@@ -449,20 +453,26 @@ void THandler::getReason( Lit l, vec< Lit > & reason, vec<char>& assigns )
         res = sign(l) ? egraph.addTrue(e) : egraph.addFalse(e);
     }
 
+#ifdef PEDANTIC_DEBUG
     // Result must be false
     if ( res != l_False ) {
         cout << endl << "unknown" << endl;
-#ifdef PEDANTIC_DEBUG
         cerr << egraph.printUndoTrail();
-#endif
-        exit( 1 );
+        return false;
     }
     else
         cerr << endl << "ok" << endl;
+#else
+    if ( res != l_False ) {
+        cout << endl << "unknown" << endl;
+        exit(1);
+    }
+#endif
 
     // Get Explanation
     vec<PtAsgn> explanation;
     egraph.getConflict( true, explanation );
+    assert(explanation.size() > 0);
 
 //    if ( config.certification_level > 0 )
 //        verifyExplanationWithExternalTool( explanation );
@@ -510,6 +520,9 @@ void THandler::getReason( Lit l, vec< Lit > & reason, vec<char>& assigns )
 
     // Resetting polarity
 //    e->resetPolarity( );
+#ifdef PEDANTIC_DEBUG
+    return true;
+#endif
 }
 
 //
@@ -869,6 +882,24 @@ const char* THandler::printAsrtClause(vec<Lit>& r) {
         os << (sgn ? "not " : "") << logic.printTerm(tmap.varToTerm[var(r[i])]) << " ";
     }
     return os.str().c_str();
+}
+
+const char* THandler::printAsrtClause(Clause* c) {
+    vec<Lit> v;
+    for (int i = 0; i < c->size(); i++)
+        v.push((*c)[i]);
+    return printAsrtClause(v);
+}
+
+bool THandler::checkTrailConsistency(vec<Lit>& trail) {
+    assert(trail.size() >= stack.size()); // There might be extra stuff
+                                          // because of conflicting assignments
+    for (int i = 0; i < stack.size(); i++) {
+        assert(var(trail[i]) == var(tmap.getLit(stack[i])));
+//        ||
+//               (stack[i] == logic.getTerm_false() &&
+//                trail[i] == ~tmap.getLit(stack[i])));
+    }
 }
 
 #ifdef PEDANTIC_DEBUG
