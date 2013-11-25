@@ -7,6 +7,7 @@ SymStore::~SymStore() {
         free(idToName[i]);
 }
 
+
 SymRef SymStore::newSymb(const char* fname, const vec<SRef>& args, bool, bool, bool, bool) {
     // Check if there already is a term called fname with same number of arguments of the same sort
     bool newsym = !contains(fname);

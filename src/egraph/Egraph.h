@@ -473,8 +473,14 @@ public:
   lbool       addEquality         ( PtAsgn );
   lbool       addTrue             ( PTRef );
   lbool       addFalse            ( PTRef );
+  // The term to be added, a list to be filled with the ites found, and
+  // the nested booleans that should be processed again with the CNF
+  // solver
   lbool       addTerm             ( PTRef, vec<PtPair>&, vec<PTRef>& );
   void        declareTerm         ( PtChild );
+  // Remove redundancies and
+  // replace with true if
+  // trivial
   void        simplifyEquality    ( PtChild, bool simplify = true );
   void        simplifyDisequality ( PtChild, bool simplify = true );
 private:
@@ -621,7 +627,10 @@ private:
   //===========================================================================
   // Debugging routines - Implemented in EgraphDebug.C
 
-  string printEqClass              ( ERef );
+//  string printEqClass              ( ERef );
+public:
+  const char* printEqClass         ( PTRef tr ) const;
+private:
   string printExplanation          ( );
   string printExplanationTree      ( PTRef );
   string printExplanationTreeDotty ( PTRef );
@@ -630,7 +639,7 @@ private:
   void checkRefConsistency         ( );
   string printCbeStructure         ( );
   string printCbeStructure         ( ERef, set< int > & );
-  string printParents              ( ERef);
+  string printParents              ( ERef );
 
 #if PEDANTIC_DEBUG
 public:

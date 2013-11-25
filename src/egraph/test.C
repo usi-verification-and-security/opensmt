@@ -20,97 +20,102 @@ int main(int argc, char **argv) {
     TermMapper tmap(logic);
     Egraph egraph(cfg, sort_store, sym_store, term_store, logic, tmap);
 
+    assert(logic.setLogic("QF_UF"));
+
     Identifier i("TSort");
     Sort s(i);
     sort_store.insertStore(&s);
     logic.declare_sort_hook(&s);
-    vec<SRef> sort_args_a;
     SRef sr = sort_store["TSort 0"];
     SRef bsr = sort_store["Bool 0"];
-    sort_args_a.push(sr);
     // First arg is the return sort
-    SymRef a_tr = sym_store.newSymb("a", sort_args_a);
-    SymRef b_tr = sym_store.newSymb("b", sort_args_a);
-    SymRef c_tr = sym_store.newSymb("c", sort_args_a);
+    PTRef a_tr = logic.mkConst(sr, "a");
+    PTRef b_tr = logic.mkConst(sr, "b");
+    PTRef c_tr = logic.mkConst(sr, "c");
 
     vec<SRef> sort_args_f;
-    sort_args_f.push(sort_store["TSort 0"]);
-    sort_args_f.push(sort_store["TSort 0"]);
-    sort_args_f.push(sort_store["TSort 0"]);
-    SymRef f_tr = sym_store.newSymb("f", sort_args_f);
+    sort_args_f.push(sr);
+    sort_args_f.push(sr);
+    sort_args_f.push(sr);
 
-    vec<SymRef>& eq_syms = sym_store.nameToRef("=");
-    SymRef eq_sym = SymRef_Undef;  // Find the equality symbol for the equality of TSort 0
-    for (int i = 0; i < eq_syms.size(); i++) {
-        Symbol& sym = sym_store[eq_syms[i]];
-        if (sym[0] == sr && sym[1] == sr) {
-            eq_sym = eq_syms[i];
-            break;
-        }
-    }
+    SymRef sym_f = logic.newSymb("f", sort_args_f);
+    assert(sym_f != SymRef_Undef);
 
-    vec<SymRef>& not_syms = sym_store.nameToRef("not");
-    SymRef not_sym = SymRef_Undef;
-    for (int i = 0; i < not_syms.size(); i++) {
-        Symbol& sym = sym_store[not_syms[i]];
-        if (sym[0] == bsr) {
-            not_sym = not_syms[i];
-            break;
-        }
-    }
-
-    assert(eq_sym != SymRef_Undef);
-    assert(not_sym != SymRef_Undef);
-
-    // Add the terms
-    vec<PTRef> tmp;
-    // a
-    PTRef a_ptr = logic.insertTerm(a_tr, tmp);
-    // b
-    PTRef b_ptr = logic.insertTerm(b_tr, tmp);
-    // c
-    PTRef c_ptr = logic.insertTerm(c_tr, tmp);
-    // f a b
     vec<PTRef> f_args;
-    f_args.push(a_ptr);
-    f_args.push(b_ptr);
-    PTRef f_a_b_ptr = logic.insertTerm(f_tr, f_args);
-    // = (f a b) a
+    f_args.push(a_tr);
+    f_args.push(b_tr);
+
+    PTRef f_a_b_tr = logic.insertTerm(sym_f, f_args);
+
+    assert(f_a_b_tr != PTRef_Undef);
+
+    // eq_1 : (= (f a b) a)
     vec<PTRef> eq_args;
-    eq_args.push(f_a_b_ptr);
-    eq_args.push(a_ptr);
-    PTRef eq_ptr = logic.insertTerm(eq_sym, eq_args);
+    eq_args.push(f_a_b_tr);
+    eq_args.push(a_tr);
 
-    // f (f a b) b
-    vec<PTRef> f2_args;
-    f2_args.push(f_a_b_ptr);
-    f2_args.push(b_ptr);
-    PTRef f2_f_a_b_b_ptr = logic.insertTerm(f_tr, f2_args);
+    PTRef eq_1 = logic.mkEq(eq_args);
+    assert(logic.isEquality(eq_1));
+    vec<PtPair> ites;
+    vec<PTRef> nested_bools;
+    egraph.addTerm(eq_1, ites, nested_bools);
 
-    // = (f (f a b) b) c
-    vec<PTRef> eq2_args;
-    eq2_args.push(f2_f_a_b_b_ptr);
-    eq2_args.push(c_ptr);
-    PTRef eq2_ptr = logic.insertTerm(eq_sym, eq2_args);
+    // (f (f a b) b)
+    vec<PTRef> f_f_args;
+    f_f_args.push(f_a_b_tr);
+    f_f_args.push(b_tr);
+    PTRef f_f_a_b_tr = logic.insertTerm(sym_f, f_f_args);
 
-    // = (a c)
-    vec<PTRef> eq3_args;
-    eq3_args.push(a_ptr);
-    eq3_args.push(c_ptr);
-    PTRef eq3_ptr = logic.insertTerm(eq_sym, eq3_args);
-    // not (= (a c))
-    vec<PTRef> deq_args;
-    deq_args.push(eq3_ptr);
-    PTRef deq_ptr = logic.insertTerm(not_sym, deq_args);
+    // eq_2 : (= (f (f a b) b) b)
+    vec<PTRef> eq_args_2;
+    eq_args_2.push(f_f_a_b_tr);
+    eq_args_2.push(b_tr);
+    PTRef eq_2 = logic.mkEq(eq_args_2);
+    egraph.addTerm(eq_2, ites, nested_bools);
 
-    lbool rval = egraph.addEquality(PtAsgn(eq3_ptr, l_True));
+    // eq_3 : (= (f (f a b) b) c)
+    vec<PTRef> eq_args_3;
+    eq_args_3.push(f_f_a_b_tr);
+    eq_args_3.push(c_tr);
+    PTRef eq_3 = logic.mkEq(eq_args_3);
+    egraph.addTerm(eq_3, ites, nested_bools);
+
+    // eq_4 : (= a c)
+    vec<PTRef> eq_args_4;
+    eq_args_4.push(a_tr);
+    eq_args_4.push(c_tr);
+    PTRef eq_4 = logic.mkEq(eq_args_4);
+    egraph.addTerm(eq_4, ites, nested_bools);
+
+    // Assert the stuff
+
+    lbool rval = egraph.addEquality(PtAsgn(eq_1, l_True));
+    assert(rval == l_Undef);
+    rval = egraph.addTrue(eq_1);
     assert(rval == l_Undef);
 
-    rval = egraph.addDisequality(PtAsgn(eq2_ptr, l_False));
+    rval = egraph.addEquality(PtAsgn(eq_2, l_True));
+    assert(rval == l_Undef);
+    rval = egraph.addTrue(eq_2);
     assert(rval == l_Undef);
 
-    rval = egraph.addDisequality(PtAsgn(eq_ptr, l_False));
+    rval = egraph.addEquality(PtAsgn(eq_3, l_True));
+    assert(rval == l_Undef);
+    rval = egraph.addTrue(eq_3);
+    assert(rval == l_Undef);
+
+    printf("%s\n", egraph.printEqClass(a_tr));
+    printf("%s\n", egraph.printEqClass(logic.getTerm_true()));
+    printf("%s\n", egraph.printEqClass(logic.getTerm_false()));
+
+    while (true) {
+        PtAsgn_reason& e = egraph.getDeduction();
+        if (e.tr == PTRef_Undef) break;
+        cout << logic.printTerm(e.tr) << endl;
+    }
+    rval = egraph.addDisequality(PtAsgn(eq_4, l_False));
     assert(rval == l_False);
+
 
     return 0;
 }

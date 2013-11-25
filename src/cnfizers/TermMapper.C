@@ -13,6 +13,9 @@ Lit TermMapper::getLit(PTRef r) const {
     bool sgn;
     PTRef p;
     getTerm(r, p, sgn);
+#ifdef PEDANTIC_DEBUG
+    assert(termToVar.contains(p));
+#endif
     return Lit(termToVar[p], sgn);
 }
 

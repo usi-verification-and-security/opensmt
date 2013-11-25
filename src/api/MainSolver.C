@@ -52,10 +52,7 @@ sstat MainSolver::insertTermRoot(PTRef root, char** msg) {
                 uf_solver.simplifyDisequality(terms[i]);
 //                cerr << "  " << logic.printTerm(logic.getPterm(ptc.parent)[ptc.pos]) << endl;
             }
-            else {
-//                cerr << "Declaring term " << logic.printTerm(tr) << endl;
-                uf_solver.declareTerm(ptc);
-            }
+            uf_solver.declareTerm(ptc);
         }
     }
 //    cerr << logic.printTerm(tr);

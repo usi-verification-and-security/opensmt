@@ -1768,8 +1768,18 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
       learnt_clause.clear();
       analyze(confl, learnt_clause, backtrack_level);
 
-      cancelUntil(backtrack_level);
+#ifdef PEDANTIC_DEBUG
+      cerr << "Backtracking due to SAT conflict "
+           << decisionLevel() - backtrack_level << endl;
+      int init_trail_sz = trail.size();
+#endif
 
+      cancelUntil(backtrack_level);
+#ifdef PEDANTIC_DEBUG
+      cerr << "Backtracking due to SAT conflict done" << endl;
+      cerr << "Backtracked " << init_trail_sz - trail.size()
+           << " variables." << endl;
+#endif
       assert(value(learnt_clause[0]) == l_Undef);
 
       if (learnt_clause.size() == 1){

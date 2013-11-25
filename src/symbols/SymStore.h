@@ -20,12 +20,14 @@
 class SymStore {
   private:
     VecMap<const char*,SymRef,StringHash,Equal<const char*> >  symbolTable;
-    Map<SymRef,SymId,SymRefHash,Equal<SymRef> >             symrefToId;
-    vec<SymRef>                                       symbols;
-    SymbolAllocator                                   ta;
-    vec<char*>                                        idToName;
+    Map<SymRef,SymId,SymRefHash,Equal<SymRef> > symrefToId;
+    vec<SymRef>                                 symbols;
+    SymbolAllocator                             ta;
+    vec<char*>                                  idToName;
   public:
     ~SymStore();
+    // Construct a new symbol.  The first argument in args is the return
+    // sort of the symbol
     SymRef newSymb(const char* fname, const vec<SRef>& args, bool la = false, bool ra = false, bool ch = false, bool pw = false);
     bool contains(const char* fname)            const { return symbolTable.contains(fname); }
     const vec<SymRef>& nameToRef(const char* s) const { return symbolTable[s]; }

@@ -191,18 +191,39 @@ bool Egraph::checkExpReachable( PTRef x, PTRef h_x ) {
 //=============================================================================
 // Printing Routines
 
-string Egraph::printEqClass( ERef v )
-{
-    stringstream os;
-    os << "Class of " << v.x << " :" << endl;
-    const ERef vstart = v;
-    for (;;) {
-        os << "   " << v.x << endl;
-    v = enode_store[v].getNext();
-    if ( v == vstart )
-        break;
+//string Egraph::printEqClass( ERef v )
+//{
+//    stringstream os;
+//    os << "Class of " << v.x << " :" << endl;
+//    const ERef vstart = v;
+//    for (;;) {
+//        os << "   " << v.x << endl;
+//        v = enode_store[v].getNext();
+//        if ( v == vstart )
+//            break;
+//    }
+//    return os.str();
+//}
+//
+
+const char* Egraph::printEqClass(PTRef tr) const {
+    std::stringstream ss;
+    const ERef er = enode_store.termToERef[tr];
+    assert(enode_store[er].isTerm());
+    ERef c_er = er;
+    ss << "In the same eq class with " << logic.printTerm(tr)
+       << " are:" << endl << "[ ";
+
+    while (true) {
+        const Enode& en = enode_store[c_er];
+        ERef next_er = en.getNext();
+        if (next_er == er) break;
+        const Enode& en_o = enode_store[next_er];
+        ss << logic.printTerm(en_o.getTerm()) << " ";
+        c_er = next_er;
     }
-    return os.str();
+    ss << "]";
+    return ss.str().c_str();
 }
 
 std::string Egraph::printExplanationTree( PTRef x )
@@ -308,6 +329,7 @@ void Egraph::checkRefConsistency() {
     }
 }
 
+
 #ifdef PEDANTIC_DEBUG
 const char* Egraph::printUndoTrail() {
     std::stringstream ss;
@@ -328,6 +350,7 @@ const char* Egraph::printUndoTrail() {
         else
             ss << i << " --- other" << endl;
     }
+    // print the equivalence classes of true and false
     return ss.str().c_str();
 }
 #endif

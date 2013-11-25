@@ -507,20 +507,6 @@ int CoreSMTSolver::deduceTheory( )
       assert(reason_found);               // Should break?
       assert(max_lev == decisionLevel()); // Should break
       addTheoryReasonClause_debug(ded, r);
-      if (r[0] == toLit(317) &&
-          r[1] == toLit(37)  &&
-          r[2] == toLit(31)  &&
-          r[3] == toLit(612) &&
-          level[var(r[0])] == 21 &&
-          level[var(r[1])] == 21 &&
-          level[var(r[2])] == 18 &&
-          level[var(r[3])] == 0) {
-        cerr << "This clause will cause problems" << endl;
-        cerr << " dl " << level[var(r[0])] << endl;
-        cerr << " dl " << level[var(r[1])] << endl;
-        cerr << " dl " << level[var(r[2])] << endl;
-        cerr << " dl " << level[var(r[3])] << endl;
-      }
 #endif
       uncheckedEnqueue( ded, fake_clause );
 #ifndef PRODUCE_PROOF

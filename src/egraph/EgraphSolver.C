@@ -407,7 +407,9 @@ void Egraph::declareTerm(PtChild ptc) {
     }
 }
 
+// Not used
 lbool Egraph::addTerm(PTRef term, vec<PtPair>& ites, vec<PTRef>& nested_bools) {
+    assert(false);
     assert( logic.isTheoryTerm(term) );
     // In general we don't want to put the Boolean equalities to UF
     // solver.  However, the Boolean uninterpreted functions are an
@@ -465,8 +467,8 @@ lbool Egraph::addTerm(PTRef term, vec<PtPair>& ites, vec<PTRef>& nested_bools) {
         cerr << "Considering term " << term_store.printTerm(tr) << endl;
 #endif
         SymRef sym = term_store[tr].symb();
-        if (!logic.isEquality(sym) && !logic.isDisequality(sym))
-            to_process.push(child);
+//        if (!logic.isEquality(sym) && !logic.isDisequality(sym))
+        to_process.push(child);
         if (logic.isDisequality(sym))
             enode_store.addDistClass(tr);
 
@@ -1005,6 +1007,9 @@ bool Egraph::assertDist( PTRef tr_d, PtAsgn tr_r )
 }
 
 void Egraph::undoDistinction(PTRef tr_d) {
+#ifdef PEDANTIC_DEBUG
+    cerr << "Undo distinction: " << logic.printTerm(tr_d) << endl;
+#endif
     dist_t index = enode_store.getDistIndex(tr_d);
     Pterm& pt_d = term_store[tr_d];
     for (int i = 0; i < pt_d.size(); i++) {
@@ -1042,8 +1047,8 @@ void Egraph::backtrackToStackSize ( size_t size ) {
 #ifdef PEDANTIC_DEBUG
             if (en_e.type() == Enode::et_list)
                 cerr << "Undo merge of list" << endl;
-            else
-                cerr << "Undo merge: " << logic.printTerm(en_e.getTerm()) << endl;
+//            else
+//                cerr << "Undo merge: " << logic.printTerm(en_e.getTerm()) << endl;
 #endif
             undoMerge( e );
             if ( en_e.isTerm( ) ) {
@@ -1156,16 +1161,10 @@ void Egraph::backtrackToStackSize ( size_t size ) {
         else if ( last_action == DISEQ ) {
             ERef e = u.arg.er;
             Enode& en_e = enode_store[e];
-#ifdef PEDANTIC_DEBUG
-            cerr << "Undo diseq: " << logic.printTerm(en_e.getTerm()) << " " << endl;
-#endif
             undoDisequality( e );
         }
         else if ( last_action == DIST ) {
             PTRef ptr = u.arg.ptr;
-#ifdef PEDANTIC_DEBUG
-            cerr << "Undo distinction: " << logic.printTerm(ptr) << " " << endl;
-#endif
             undoDistinction( ptr );
         }
 //    else if ( last_action == SYMB )
@@ -1755,6 +1754,15 @@ void Egraph::undoDisequality ( ERef x )
 
 
     ELRef yfirst = en_y.getForbid();
+
+#if VERBOSE
+    cerr << "UD: Undoing distinction of " << x << " and " << y << endl;
+#elif PEDANTIC_DEBUG
+    if (en_x.isTerm())
+        cerr << "UD: Undoing distinction of "
+             << logic.printTerm(en_x.getTerm()) << " and "
+             << logic.printTerm(en_y.getTerm()) << endl;
+#endif
 
 #ifdef GC_DEBUG
     cerr << "Distinction list for xfirst" << endl;

@@ -251,6 +251,15 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms) {
         if (sym_store[sym].commutes()) {
             sort(terms);
         }
+        if (!sym_store[sym].left_assoc() &&
+            !sym_store[sym].right_assoc() &&
+            !sym_store[sym].chainable() &&
+            !sym_store[sym].pairwise() &&
+            sym_store[sym].nargs() != terms.size())
+        {
+            cerr << "arg num mismatch" << endl;
+            return PTRef_Undef;
+        }
         PTLKey k;
         k.sym = sym;
         terms.copyTo(k.args);
