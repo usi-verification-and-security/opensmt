@@ -118,7 +118,9 @@ const Lit Cnfizer::findLit(PTRef ptr) {
 //        tmap.varToTerm.insert(v, p);
         tmap.varToTerm[v] = p;
         solver.setFrozen(v, true);
+#ifdef PEDANTIC_DEBUG
         cerr << "Term " << logic.printTerm(p) << " maps to var " << v << endl;
+#endif
     }
     return l;
 }

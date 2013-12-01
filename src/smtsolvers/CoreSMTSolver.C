@@ -123,6 +123,7 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
   , init                  (false)
 #ifdef PEDANTIC_DEBUG
   , max_dl_debug          (0)
+  , analyze_cnt           (0)
 #endif
 { }
 
@@ -793,6 +794,9 @@ class lastToFirst_lt {  // Helper class to 'analyze' -- order literals from last
 
 void CoreSMTSolver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btlevel)
 {
+#ifdef PEDANTIC_DEBUG
+  cerr << "analyze " << analyze_cnt++ << endl;
+#endif
 #ifdef PRODUCE_PROOF
   assert( proof.checkState( ) );
 #endif
@@ -1242,6 +1246,9 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
 
 void CoreSMTSolver::uncheckedEnqueue(Lit p, Clause* from)
 {
+#ifdef PEDANTIC_DEBUG
+  assert(from == fake_clause || !debug_reason_map.contains(var(p)));
+#endif
   assert(value(p) == l_Undef);
   assigns [var(p)] = toInt(lbool(!sign(p)));  // <<== abstract but not uttermost effecient
 
@@ -1593,8 +1600,7 @@ void CoreSMTSolver::popBacktrackPoint ( )
   assert( isOK( ) );
 }
 
-void
-CoreSMTSolver::reset( )
+void CoreSMTSolver::reset( )
 {
   assert( config.isIncremental() );
   //

@@ -326,7 +326,7 @@ SMTConfig::initializeConfig( )
   sat_restart_first             = 100;
   sat_restart_inc               = 1.1;
   sat_use_luby_restart          = 0;
-  sat_learn_up_to_size          = INT_MAX;
+  sat_learn_up_to_size          = 0;
   sat_temporary_learn           = 1;
   sat_preprocess_booleans       = 1;
   sat_preprocess_theory         = 0;

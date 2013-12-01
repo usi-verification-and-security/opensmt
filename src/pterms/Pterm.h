@@ -202,15 +202,17 @@ static class PtAsgn_reason PtAsgn_reason_Undef(PTRef_Undef, l_Undef, PTRef_Undef
 
 class PtermAllocator : public RegionAllocator<uint32_t>
 {
+    PTId n_terms;
     static int ptermWord32Size(int size){
         return (sizeof(Pterm) + (sizeof(PTRef) * size )) / sizeof(uint32_t); }
  public:
     bool extra_term_field;
 
-    PtermAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), extra_term_field(false){}
-    PtermAllocator() : extra_term_field(false){}
+    PtermAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), n_terms(0), extra_term_field(false){}
+    PtermAllocator() : n_terms(0), extra_term_field(false){}
 
     void moveTo(PtermAllocator& to){
+        to.n_terms = n_terms;
         to.extra_term_field = extra_term_field;
         RegionAllocator<uint32_t>::moveTo(to); }
 
@@ -222,6 +224,7 @@ class PtermAllocator : public RegionAllocator<uint32_t>
         PTRef tid;
         tid.x = v;
         new (lea(tid)) Pterm(sym, ps);
+        operator[](tid).setId(n_terms++);
 
         return tid;
     }

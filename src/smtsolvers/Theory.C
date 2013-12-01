@@ -89,11 +89,37 @@ int CoreSMTSolver::checkTheory( bool complete )
     {
       if ( !complete )
       {
-        int ded = deduceTheory( );
-        assert( ded == 0 || ded == 1 );
-        // There are deductions
-        if ( ded )
+        vec<LitLev> deds;
+        deduceTheory(deds); // deds will be ordered by decision levels
+        for (int i = 0; i < deds.size(); i++)
         {
+          // There are deductions
+          // For now we just implement the propagation on the lowest
+          // decision level in deds
+          if (deds[0].lev != deds[i].lev) break;
+
+#ifdef PEDANTIC_DEBUG
+          // Debuggissimo
+          vec<Lit> r;
+          theory_handler.getReason(deds[i].l, r, assigns);
+          cerr << "deduced " << theory_handler.printAsrtClause(r);
+          cerr << endl;
+          addTheoryReasonClause_debug(deds[i].l, r);
+
+          cerr << "backtracking from " << decisionLevel() <<
+                  " to " << deds[i].lev << " to propagate a new lit " <<
+                  i+1 << " / " << deds.size() << endl;
+
+#endif
+          cancelUntil(deds[i].lev);
+          uncheckedEnqueue(deds[i].l, fake_clause);
+          // I think the trail can get messed up if I propagate
+          // more than one literal even on the same decision level,
+          // since possibly the propagations are not in the right order
+//          break;
+        }
+        if (deds.size() > 0) {
+          // now check the other theories
           res = theory_handler.assertLits(trail)
              && theory_handler.check(false, trail);
 
@@ -464,56 +490,47 @@ int CoreSMTSolver::analyzeUnsatLemma( Clause * confl )
 }
 
 //
-// Return values
-// 0 no deductions done
-// 1 some deductions done
+// Return a vector containing deduced literals and their decision levels
 //
-int CoreSMTSolver::deduceTheory( )
+void CoreSMTSolver::deduceTheory(vec<LitLev>& deductions)
 {
-  Lit ded = lit_Undef;
-  Lit reason = lit_Undef;
-  int n_deductions = 0;
-  while (true) {
-    ded = theory_handler.getDeduction(reason);
-    if (ded == lit_Undef)      break;
-    if (value(ded) != l_Undef) continue;
+    Lit ded = lit_Undef;
+    Lit reason = lit_Undef;
+    int n_deductions = 0;
+    int last_dl = -1;
 
-    // Found an unassigned deduction
-    n_deductions ++;
-    assert(reason != lit_Undef);
-    assert(level[var(reason)] == decisionLevel()); // should break at some point
-    assert(ded != lit_Undef);
-#ifndef PRODUCE_PROOF
-    if ( decisionLevel( ) == 0 )
-      uncheckedEnqueue( ded );
-    else
-    {
-#endif
-#ifdef PEDANTIC_DEBUG
-      // Debuggissimo
-      vec<Lit> r;
-      theory_handler.getReason(ded, r, assigns);
-      cerr << "deduced " << theory_handler.printAsrtClause(r);
-      cerr << endl;
-      int max_lev = -1;
-      bool reason_found = false;
-      assert(ded == r[0]);
-      for (int i = 1; i < r.size(); i++) {
-        Var v = var(r[i]);
-        max_lev = max_lev > level[v] ? max_lev : level[v];
-        if (v == var(reason)) reason_found = true;
-        assert(value(r[i]) == l_False);
-      }
-      assert(reason_found);               // Should break?
-      assert(max_lev == decisionLevel()); // Should break
-      addTheoryReasonClause_debug(ded, r);
-#endif
-      uncheckedEnqueue( ded, fake_clause );
-#ifndef PRODUCE_PROOF
+    while (true) {
+        ded = theory_handler.getDeduction(reason);
+        if (ded == lit_Undef)      break;
+        if (value(ded) != l_Undef) continue;
+
+        // Found an unassigned deduction
+        n_deductions ++;
+        assert(reason != lit_Undef);
+        int lev_reason = level[var(reason)];
+        // the reasons should be coming in order
+        assert(lev_reason >= last_dl);
+        last_dl = lev_reason;
+
+        // Determine the decision level on which this reason should be propagated
+        vec<Lit> r;
+        theory_handler.getReason(ded, r, assigns);
+        int max_lev = -1;
+        bool reason_found = false;
+        assert(ded == r[0]);
+        for (int i = 1; i < r.size(); i++) {
+            Var v = var(r[i]);
+            max_lev = max_lev > level[v] ? max_lev : level[v];
+            if (v == var(reason)) reason_found = true;
+            assert(value(r[i]) == l_False);
+        }
+        assert(reason_found);               // Should break?
+        assert(max_lev == lev_reason);      // Should break?
+
+        deductions.push(LitLev(ded, max_lev));
+
     }
-#endif
-  }
-  return (n_deductions == 0 ? 0 : 1);
+    return;
 }
 
 #ifdef PEDANTIC_DEBUG

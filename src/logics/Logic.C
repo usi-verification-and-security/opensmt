@@ -281,7 +281,13 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms) {
 bool Logic::isUP(PTRef ptr) const {
     Pterm& t = term_store[ptr];
     SymRef sr = t.symb();
-    if (isEquality(sr) || isDisequality(sr)) return true;
+    // Should this really be an uninterpreted predicate?
+    // At least it falsely identifies (= true false) as an uninterpreted
+    // predicate without the extra condition
+    if (isEquality(sr) || isDisequality(sr)) {
+        if (isBooleanOperator(sr)) return false;
+        else return true;
+    }
     Symbol& sym = sym_store[sr];
     if (sym.nargs() == 0) return false;
     if (sym.rsort() != getSort_bool()) return false;

@@ -7,6 +7,11 @@
 osmt=/u1/home/aehyvari/src/OpenSMT/opensmt-dev/TRUNK/opensmt
 z3=/u1/home/aehyvari/src/z3/z3/bin/external/z3
 
+if [[ $# != 1 ]]; then
+    echo "Usage: $0 <file>"
+    exit 1
+fi
+
 out_osmt=`$osmt $1`
 echo $out_osmt
 res_osmt=2

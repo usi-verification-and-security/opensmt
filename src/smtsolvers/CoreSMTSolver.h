@@ -355,7 +355,7 @@ class CoreSMTSolver : public SMTSolver
       void   printTrail             ( );             // Prints the trail (debugging)
       int    checkTheory            ( bool );        // Checks consistency in theory
 
-      int    deduceTheory           ( );             // Perform theory-deductions
+      void   deduceTheory           (vec<LitLev>&);  // Perform theory-deductions
 
       int    checkAxioms            ( );             // Checks consistency of lemma on demand
 
@@ -450,6 +450,7 @@ class CoreSMTSolver : public SMTSolver
       // very debug XXX
 #ifdef PEDANTIC_DEBUG
       int                max_dl_debug;
+      int                analyze_cnt;
       void addTheoryReasonClause_debug(Lit ded, vec<Lit>& reason);
       void checkTheoryReasonClause_debug(Var v);
       void removeTheoryReasonClause_debug(Var v);
