@@ -1,9 +1,11 @@
 AC_PREREQ(2.59)
 AC_INIT([OpenSMT 2.0], [(unstable)], [antti.hyvarinen@gmail.com])
+AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(autotools)
 AM_INIT_AUTOMAKE
-AC_CONFIG_MACRO_DIR([m4])
+AC_DISABLE_SHARED
 
+AC_PROG_LIBTOOL
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_YACC
@@ -13,7 +15,6 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
 LT_INIT
-AC_DISABLE_SHARED
 
 AC_ARG_ENABLE(library,
   AC_HELP_STRING([--enable-library],
@@ -194,6 +195,19 @@ if test $NONSTDGMPPATH = 1 ; then
   AM_LDFLAGS="$AM_LDFLAGS -L$with_gmp/lib"
 fi
 
+# Allow user to use a GMP lib in a non-standard location
+AC_ARG_WITH([readline],
+	    [AS_HELP_STRING([--with-readline=prefix],
+			    [Use this when readline is in a non-standard location])],
+			    [NONSTDREADLINEPATH=1],
+			    [NONSTDREADLINEPATH=0])
+
+if test $NONSTDREADLINEPATH = 1 ; then
+  AM_CFLAGS="$AM_CFLAGS -I$with_readline/include"
+  AM_CXXFLAGS="$AM_CXXFLAGS -I$with_readline/include"
+  AM_LDFLAGS="$AM_LDFLAGS -L$with_readline/lib"
+fi
+
 AC_SUBST(AM_CFLAGS)
 AC_SUBST(AM_CXXFLAGS)
 AC_SUBST(CFLAGS)
@@ -205,6 +219,7 @@ OLDCPPFLAGS=$CPPFLAGS
 CPPFLAGS=$CXXFLAGS
 OLDLDFLAGS=$LDFLAGS
 LDFLAGS="$LDFLAGS $AM_LDFLAGS"
+CFLAGS="$CFLAGS $AM_CFLAGS"
 
 # Check for GMP header
 GMP_HEADER_FOUND=1
@@ -222,25 +237,7 @@ fi
 AC_CHECK_LIB(gmp, __gmpz_init, ,[AC_MSG_ERROR([GMP library not found])])
 
 # Check for readline library
-AC_ARG_WITH([readline],
-            [AS_HELP_STRING([--with-readline],
-              [support fancy command line editing @<:@default=check@:>@])],
-            [],
-            [with_readline=check])
-
-LIBREADLINE=
-AS_IF([test "x$with_readline" != xno],
-      [AC_CHECK_LIB([readline], [main],
-                    [AC_SUBST([LIBREADLINE], ["-lreadline -lncurses"])
-                     AC_DEFINE([HAVE_LIBREADLINE], [1],
-                               [Define if you have libreadline])
-                    ],
-                    [if test "x$with_readline" != xcheck; then
-                        AC_MSG_FAILURE([--with-readline was given, but test for readline failed])
-                     fi
-                    ], -lncurses)])
-
-
+AX_LIB_READLINE
 # Restore original flags
 CPPFLAGS=$OLDCPPFLAGS
 LDFLAGS=$OLDLDFLAGS
@@ -248,30 +245,7 @@ LDFLAGS=$OLDLDFLAGS
 #
 # List of directories to include
 #
-config_includedirs="-I\${top_srcdir}/src \\
--I\${top_srcdir}/src/minisat/mtl \\
--I\${top_srcdir}/src/minisat/core \\
--I\${top_srcdir}/src/simplifiers \\
--I\${top_srcdir}/src/common \\
--I\${top_srcdir}/src/egraph \\
--I\${top_srcdir}/src/sorts \\
--I\${top_srcdir}/src/symbols \\
--I\${top_srcdir}/src/pterms \\
--I\${top_srcdir}/src/logics \\
--I\${top_srcdir}/src/smtsolvers \\
--I\${top_srcdir}/src/cnfizers \\
--I\${top_srcdir}/src/proof \\
--I\${top_srcdir}/src/api \\
--I\${top_srcdir}/src/tsolvers \\
--I\${top_srcdir}/src/tsolvers/emptysolver \\
--I\${top_srcdir}/src/tsolvers/bvsolver \\
--I\${top_srcdir}/src/tsolvers/bvsolver/minisatp \\
--I\${top_srcdir}/src/tsolvers/lrasolver \\
--I\${top_srcdir}/src/tsolvers/liasolver \\
--I\${top_srcdir}/src/tsolvers/ctsolver \\
--I\${top_srcdir}/src/tsolvers/axdiffsolver \\
--I\${top_srcdir}/src/tsolvers/dlsolver \\
--I\${top_srcdir}/src/attributes"
+config_includedirs="-I\${top_srcdir}/src -I\${top_srcdir}/src/minisat/mtl -I\${top_srcdir}/src/minisat/core -I\${top_srcdir}/src/simplifiers -I\${top_srcdir}/src/common -I\${top_srcdir}/src/egraph -I\${top_srcdir}/src/sorts -I\${top_srcdir}/src/symbols -I\${top_srcdir}/src/pterms -I\${top_srcdir}/src/logics -I\${top_srcdir}/src/smtsolvers -I\${top_srcdir}/src/cnfizers -I\${top_srcdir}/src/proof -I\${top_srcdir}/src/api -I\${top_srcdir}/src/tsolvers -I\${top_srcdir}/src/tsolvers/emptysolver -I\${top_srcdir}/src/tsolvers/bvsolver -I\${top_srcdir}/src/tsolvers/bvsolver/minisatp -I\${top_srcdir}/src/tsolvers/lrasolver -I\${top_srcdir}/src/tsolvers/liasolver -I\${top_srcdir}/src/tsolvers/ctsolver -I\${top_srcdir}/src/tsolvers/axdiffsolver -I\${top_srcdir}/src/tsolvers/dlsolver -I\${top_srcdir}/src/attributes"
 
 AC_SUBST(config_includedirs)
 

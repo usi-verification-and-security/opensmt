@@ -20,6 +20,7 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
+#include <string.h>
 #include <gmpxx.h>
 #include <cassert>
 #include <string>
