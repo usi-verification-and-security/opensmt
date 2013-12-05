@@ -41,6 +41,7 @@ public:
 //           , const Var     vf
            )
     : egraph             ( e )
+    , euf_stats          ( e.tsolver_stats )
     , config             ( c )
     , tmap               ( tm )
     , logic              ( l )
@@ -126,6 +127,7 @@ private:
 //  vector< Enode * >   var_to_enode;             // Conversion Var --> EnodeID
 
   Egraph &            egraph;                   // Pointer to Egraph that works as core solver
+  TSolverStats&       euf_stats;                // Egraph statistics
   SMTConfig &         config;                   // Reference to configuration
 //  SMTSolver &         solver;                   // Reference to SMT Solver
   TermMapper&         tmap;                     // Mappings between TRefs and Lits

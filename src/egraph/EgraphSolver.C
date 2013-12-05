@@ -142,6 +142,7 @@ PtAsgn_reason& Egraph::getDeduction( ) {
             continue;
 
 #ifdef STATISTICS
+        tsolver_stats.deductions_sent ++;
 //    const int index = e->getDedIndex( );
 //    tsolvers_stats[ index ]->deductions_sent ++;
 #endif
@@ -183,29 +184,28 @@ PTRef Egraph::getSuggestion( )
 //
 void Egraph::getConflict( bool deduction, vec<PtAsgn>& cnfl )
 {
-//    assert( 0 <= conf_index && conf_index < (int)tsolvers.size( ) );
-//    (void)deduction;
-#ifdef STATISTICS
-//    TSolverStats & ts = *tsolvers_stats[ conf_index ];
-//    if ( deduction ) {
-//        if ( (long)explanation.size( ) > ts.max_reas_size )
-//            ts.max_reas_size = explanation.size( );
-//        if ( (long)explanation.size( ) < ts.min_reas_size )
-//            ts.min_reas_size = explanation.size( );
-//        ts.reasons_sent ++;
-//        ts.avg_reas_size += explanation.size( );
-//    }
-//    else {
-//        if ( (long)explanation.size( ) > ts.max_conf_size )
-//            ts.max_conf_size = explanation.size( );
-//        if ( (long)explanation.size( ) < ts.min_conf_size )
-//            ts.min_conf_size = explanation.size( );
-//        ts.conflicts_sent ++;
-//        ts.avg_conf_size += explanation.size( );
-//    }
-#endif
+    (void)deduction;
     for (int i = 0; i < explanation.size(); i++)
         cnfl.push(explanation[i]);
+#ifdef STATISTICS
+    tsolver_stats.conflicts_sent++;
+    if (deduction) {
+        if (cnfl.size() > tsolver_stats.max_reas_size)
+            tsolver_stats.max_reas_size = cnfl.size();
+        if (cnfl.size() < tsolver_stats.min_reas_size)
+            tsolver_stats.min_reas_size = cnfl.size();
+        tsolver_stats.reasons_sent ++;
+        tsolver_stats.avg_reas_size += cnfl.size();
+    }
+    else {
+        if (cnfl.size() > tsolver_stats.max_conf_size)
+            tsolver_stats.max_conf_size = cnfl.size();
+        if (cnfl.size() < tsolver_stats.min_conf_size)
+            tsolver_stats.min_conf_size = cnfl.size();
+        tsolver_stats.conflicts_sent ++;
+        tsolver_stats.avg_conf_size += cnfl.size();
+    }
+#endif
 }
 
 #ifdef PRODUCE_PROOF
@@ -595,6 +595,13 @@ lbool Egraph::addEquality(PtAsgn pa) {
     for (int i = 1; i < pt.size() && res == true; i++)
         res = assertEq(e, pt[i], pa);
 
+#ifdef STATISTICS
+    if (res == false)
+        tsolver_stats.uns_calls++;
+    else
+        tsolver_stats.sat_calls++;
+#endif
+
     return res == false ? l_False : l_Undef;
 }
 
@@ -607,16 +614,35 @@ lbool Egraph::addDisequality(PtAsgn pa) {
     else
         res = assertDist(pa.tr, pa);
 
+#ifdef STATISTICS
+    if (!res)
+        tsolver_stats.uns_calls++;
+    else
+        tsolver_stats.sat_calls++;
+#endif
+
     return res == false ? l_False : l_Undef;
 }
 
 lbool Egraph::addTrue(PTRef term) {
-    lbool res = assertEq(term, logic.getTerm_true(), PtAsgn(term, l_True));
-    return res == false ? l_False : l_Undef;
+    bool res = assertEq(term, logic.getTerm_true(), PtAsgn(term, l_True));
+#ifdef STATISTICS
+    if (res == false)
+        tsolver_stats.uns_calls++;
+    else
+        tsolver_stats.sat_calls++;
+#endif
+    return res;
 }
 
 lbool Egraph::addFalse(PTRef term) {
-    lbool res = assertEq(term, logic.getTerm_false(), PtAsgn(term, l_False));
+    bool res = assertEq(term, logic.getTerm_false(), PtAsgn(term, l_False));
+#ifdef STATISTICS
+    if (res == false)
+        tsolver_stats.uns_calls++;
+    else
+        tsolver_stats.sat_calls++;
+#endif
     return res == false ? l_False : l_Undef;
 }
 
@@ -1518,7 +1544,7 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
             deductions.push(PtAsgn_reason(enode_store.ERefToTerm[sv],
                                           deduced_polarity, reason.tr));
 #ifdef STATISTICS
-//            tsolvers_stats[ 0 ]->deductions_done ++;
+            tsolver_stats.deductions_done ++;
 #endif
         }
         v = enode_store[v].getNext( );

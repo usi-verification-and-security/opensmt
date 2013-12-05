@@ -236,7 +236,6 @@ bool THandler::assertLits(vec<Lit>& trail)
         cout << "; non-conflicting" << endl;
 //    cout << printAssertions(assertions);
 #endif
-
     return res != l_False;
 }
 
@@ -900,6 +899,7 @@ bool THandler::checkTrailConsistency(vec<Lit>& trail) {
 //               (stack[i] == logic.getTerm_false() &&
 //                trail[i] == ~tmap.getLit(stack[i])));
     }
+    return true;
 }
 
 #ifdef PEDANTIC_DEBUG

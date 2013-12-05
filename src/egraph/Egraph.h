@@ -135,81 +135,68 @@ public:
     Eq_FALSE = neq;
   }
 
-  ~Egraph( )
-  {
-    backtrackToStackSize( 0 );
-//    cerr << "Wasted memory in forbid allocator:" << endl;
-//    cerr << forbid_allocator.wasted() << endl;
+    ~Egraph( ) {
+        backtrackToStackSize( 0 );
 #ifdef STATISTICS
-    // TODO added for convenience
-    if( tsolvers_stats.size() > 0 )
-    {
-    	if ( config.produceStats() )
-    	    {
-    	      config.getStatsOut( ) << "# -------------------------" << endl;
-    	      config.getStatsOut( ) << "# STATISTICS FOR EUF SOLVER" << endl;
-    	      config.getStatsOut( ) << "# -------------------------" << endl;
-    	      tsolvers_stats[ 0 ]->printStatistics( config.getStatsOut( ) );
-    	    }
-        if ( config.print_stats )
-        {
-          cerr << "# -------------------------" << endl;
-          cerr << "# STATISTICS FOR EUF SOLVER" << endl;
-          cerr << "# -------------------------" << endl;
-          tsolvers_stats[ 0 ]->printStatistics( cerr );
+        // TODO added for convenience
+        if ( config.produceStats() ) {
+            config.getStatsOut( ) << "; -------------------------" << endl;
+            config.getStatsOut( ) << "; STATISTICS FOR EUF SOLVER" << endl;
+            config.getStatsOut( ) << "; -------------------------" << endl;
+            tsolver_stats.printStatistics( config.getStatsOut( ) );
         }
-    	delete tsolvers_stats[ 0 ];
-    }
-#endif
-    //
-    // Delete Ordinary Theory Solvers
-    //
-#ifdef STATISTICS
-    assert( tsolvers.size( ) == tsolvers_stats.size( ) );
-#endif
-      // TODO added for convenience
-    for ( unsigned i = 1 ; ( config.produceStats() || config.print_stats ) && i < tsolvers.size_( ) ; i ++ )
-    {
-#ifdef STATISTICS
-        if( config.produceStats() )
-        {
-              config.getStatsOut( ) << "# -------------------------" << endl;
-              config.getStatsOut( ) << "# STATISTICS FOR " << tsolvers[ i ]->getName( ) << endl;
-              config.getStatsOut( ) << "# -------------------------" << endl;
-              assert( tsolvers_stats[ i ] );
-              tsolvers_stats[ i ]->printStatistics( config.getStatsOut( ) );
-        }
-        if( config.print_stats )
-        {
-               cerr << "# -------------------------" << endl;
-               cerr << "# STATISTICS FOR " << tsolvers[ i ]->getName( ) << endl;
-               cerr << "# -------------------------" << endl;
-               assert( tsolvers_stats[ i ] );
-               tsolvers_stats[ i ]->printStatistics( cerr );
-        }
-      delete tsolvers_stats[ i ];
-#endif
-      assert( tsolvers[ i ] );
-      delete tsolvers[ i ];
-    }
-    //
-    // Delete enodes
-    //
-    while ( enode_store.id_to_enode.size() != 0 )
-    {
-      ERef er = enode_store.id_to_enode.last();
-      if (er != ERef_Undef )
-        enode_store.free(er);
 
-      enode_store.id_to_enode.pop();
-    }
+        if ( config.print_stats ) {
+            cerr << "; -------------------------" << endl;
+            cerr << "; STATISTICS FOR EUF SOLVER" << endl;
+            cerr << "; -------------------------" << endl;
+            tsolver_stats.printStatistics( cerr );
+        }
+#endif
+        //
+        // Delete Ordinary Theory Solvers
+        //
+        // TODO added for convenience
+        for ( unsigned i = 1 ;
+              ( config.produceStats() || config.print_stats ) && i < tsolvers.size_( ) ;
+              i ++ ) {
+#ifdef STATISTICS
+//            if ( config.produceStats() ) {
+//                config.getStatsOut( ) << "# -------------------------" << endl;
+//                config.getStatsOut( ) << "# STATISTICS FOR " << tsolvers[ i ]->getName( ) << endl;
+//                config.getStatsOut( ) << "# -------------------------" << endl;
+//                assert( tsolvers_stats[ i ] );
+//                tsolvers_stats[ i ]->printStatistics( config.getStatsOut( ) );
+//            }
+//            if ( config.print_stats ) {
+//                cerr << "# -------------------------" << endl;
+//                cerr << "# STATISTICS FOR " << tsolvers[ i ]->getName( ) << endl;
+//                cerr << "# -------------------------" << endl;
+//                assert( tsolvers_stats[ i ] );
+//               tsolvers_stats[ i ]->printStatistics( cerr );
+//            }
+//            delete tsolvers_stats[ i ];
+#endif
+            assert( tsolvers[ i ] );
+            delete tsolvers[ i ];
+        }
+        //
+        // Delete enodes
+        //
+        while ( enode_store.id_to_enode.size() != 0 ) {
+            ERef er = enode_store.id_to_enode.last();
+            if (er != ERef_Undef )
+                enode_store.free(er);
+
+            enode_store.id_to_enode.pop();
+        }
 #ifdef PRODUCE_PROOF
-    assert( cgraph_ );
-    delete cgraph_;
+        assert( cgraph_ );
+        delete cgraph_;
 #endif
-  }
+    }
 
-  size_t size() const { return enode_store.id_to_enode.size(); };
+    size_t size() const { return enode_store.id_to_enode.size(); };
 
 
   //===========================================================================

@@ -65,7 +65,7 @@ SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args) {
                 // The term might still be one of the special cases:
                 // left associative
                 // - requires that the left argument and the return value have the same sort
-                else if (t.nargs() < args.size_() && t.left_assoc() && symstore[pta[args[0]].symb()].rsort() == t.rsort()) {
+                else if (t.left_assoc() && symstore[pta[args[0]].symb()].rsort() == t.rsort()) {
                     int j = 1;
                     for (; j < args.size(); j++) {
                         SymRef argt = pta[args[j]].symb();
@@ -74,7 +74,7 @@ SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args) {
                     if (j == args.size())
                         return ctr;
                 }
-                else if (t.nargs() < args.size_() && t.right_assoc()) {
+                else if (t.right_assoc()) {
                     opensmt_error2("right assoc term not implemented yet", symstore.getName(ctr));
                     return SymRef_Undef;
                 }

@@ -420,8 +420,6 @@ bool Interpret::checkSat(const char* cmd) {
     if (logic.isSet()) {
         sat_calls++;
         lbool res = ts.solve();
-//        lbool res = l_True;
-//        ts.crashTest(20);
         if (res == l_True) {
             notify_formatted(false, "sat");
         }

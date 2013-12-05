@@ -65,12 +65,14 @@ sstat MainSolver::insertTermRoot(PTRef root, char** msg) {
 #endif
     sstat state;
     lbool ts_state = ts.cnfizeAndGiveToSolver(root);
+#ifdef PEDANTIC_DEBUG
     for (int i = 0; i < sat_solver.n_occs.size(); i++) {
         if (sat_solver.n_occs[i] == 0)
             cerr << "No occurrences of var " << i
                  << " term " << logic.printTerm(tmap.varToTerm[i])
                  << endl;
     }
+#endif
     if (ts_state == l_False)
         state = s_False;
 #ifdef PEDANTIC_DEBUG

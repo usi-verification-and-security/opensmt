@@ -380,11 +380,17 @@ bool CoreSMTSolver::addClause( vec<Lit>& ps
     clauses.push(c);
     attachClause(*c);
 
+    //XXX
+//    for (int i = 0; i < c->size(); i++)
+//      cout << toInt((*c)[i]) << " ";
+//    cout << endl;
+
 #ifndef SMTCOMP
     undo_stack_oper.push_back( NEWCLAUSE );
     undo_stack_elem.push_back( (void *)c );
 #endif
   }
+
 
   return true;
 }
@@ -1896,7 +1902,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
           // New variable decision:
           decisions++;
           next = pickBranchLit(polarity_mode, random_var_freq);
-
+//          cout << "branch: " << toInt(next) << endl;
           // Complete Call
           if ( next == lit_Undef )
           {
@@ -2031,9 +2037,9 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
     if ( conflicts == 0
 	|| conflicts >= next_printout )
     {
-      if ( config.verbosity() > 10 )
+//      if ( config.verbosity() > 10 )
       {
-	reportf( "# %9d | %8d %8d | %8.3f s | %6.3f MB"
+	reportf( "; %9d | %8d %8d | %8.3f s | %6.3f MB\n"
 	    , (int)conflicts
 	    , (int)nof_learnts
 	    , nLearnts()

@@ -168,6 +168,7 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula
     // For each top-level conjunct
     for (unsigned i = 0 ; i < top_level_formulae.size_() && (res == true) ; i ++) {
         PTRef f = top_level_formulae[i];
+//        cout << logic.printTerm(f) << endl;
 
         // Give it to the solver if already in CNF
         if (checkCnf(f) == true || checkClause(f) == true) {
@@ -722,7 +723,7 @@ void Cnfizer::retrieveTopLevelFormulae(PTRef f, vec<PTRef>& top_level_formulae)
         f = to_process.last(); to_process.pop();
         Pterm& cand_t = ptstore[f];
         if (cand_t.symb() == logic.getSym_and())
-            for (int i = 0; i < cand_t.size(); i++)
+            for (int i = cand_t.size() - 1; i >= 0; i--)
                 to_process.push(cand_t[i]);
         else top_level_formulae.push(f);
     }

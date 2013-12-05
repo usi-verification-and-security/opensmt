@@ -54,36 +54,36 @@ struct TSolverStats
   // Statistics for theory solvers
   void printStatistics ( ostream & os )
   {
-    os << "# Satisfiable calls........: " << sat_calls << endl;
-    os << "# Unsatisfiable calls......: " << uns_calls << endl;
+    os << "; Satisfiable calls........: " << sat_calls << endl;
+    os << "; Unsatisfiable calls......: " << uns_calls << endl;
     if ( uns_calls > 0 )
     {
-      os << "# Conflicts sent...........: " << conflicts_sent << endl;
+      os << "; Conflicts sent...........: " << conflicts_sent << endl;
       if ( conflicts_sent > 0 )
       {
-	os << "# Average conflict size....: " << avg_conf_size / (float)conflicts_sent << endl;
-	os << "# Max conflict size........: " << max_conf_size << endl;
-	os << "# Min conflict size........: " << min_conf_size << endl;
+        os << "; Average conflict size....: " << avg_conf_size / (float)conflicts_sent << endl;
+        os << "; Max conflict size........: " << max_conf_size << endl;
+        os << "; Min conflict size........: " << min_conf_size << endl;
       }
     }
     if ( sat_calls > 0 )
     {
-      os << "# Deductions done..........: " << deductions_done << endl;
-      os << "# Deductions sent..........: " << deductions_sent << endl;
-      os << "# Reasons sent.............: " << reasons_sent << endl;
+      os << "; Deductions done..........: " << deductions_done << endl;
+      os << "; Deductions sent..........: " << deductions_sent << endl;
+      os << "; Reasons sent.............: " << reasons_sent << endl;
       if ( reasons_sent > 0 )
       {
-	os << "# Average reason size......: " << avg_reas_size / (float)reasons_sent << endl;
-	os << "# Max reason size..........: " << max_reas_size << endl;
-	os << "# Min reason size..........: " << min_reas_size << endl;
+	os << "; Average reason size......: " << avg_reas_size / (float)reasons_sent << endl;
+	os << "; Max reason size..........: " << max_reas_size << endl;
+	os << "; Min reason size..........: " << min_reas_size << endl;
       }
-      os << "# SOD done.................: " << sod_done << endl;
-      os << "# SOD sent.................: " << sod_sent << endl;
+      os << "; SOD done.................: " << sod_done << endl;
+      os << "; SOD sent.................: " << sod_sent << endl;
       if ( sod_sent > 0 )
       {
-	os << "# Average reason size......: " << avg_reas_size / (float)sod_sent << endl;
-	os << "# Max reason size..........: " << max_reas_size << endl;
-	os << "# Min reason size..........: " << min_reas_size << endl;
+	os << "; Average reason size......: " << avg_reas_size / (float)sod_sent << endl;
+	os << "; Max reason size..........: " << max_reas_size << endl;
+	os << "; Min reason size..........: " << min_reas_size << endl;
       }
     }
   }
@@ -206,15 +206,19 @@ public:
 protected:
 
   vec< OrdinaryTSolver * >    tsolvers;            // List of ordinary theory solvers
+
+public:
 #ifdef STATISTICS
-  vec< TSolverStats * >       tsolvers_stats;      // Statistical info for tsolvers
+  TSolverStats                tsolver_stats;       // Statistical info for this solver
 #endif
+
+protected:
   vec< PTRef >                explanation;         // Stores the explanation
   vec< PtAsgn_reason >        deductions;          // List of deductions
   size_t                      deductions_next;     // Index of next deduction to communicate
   vec< size_t >               deductions_lim;      // Keeps track of deductions done up to a certain point
   vec< size_t >               deductions_last;     // Keeps track of deductions done up to a certain point
-  vec< PTRef >                 suggestions;         // List of suggestions for decisions
+  vec< PTRef >                suggestions;         // List of suggestions for decisions
   SimpSMTSolver *             solver;              // Pointer to solver
 };
 
