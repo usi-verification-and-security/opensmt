@@ -186,6 +186,7 @@ bool THandler::assertLits(vec<Lit>& trail)
         else if ( pt_r == logic.getTerm_false() ) { assert(sign(l) == true ); continue; }
 
         // We are interested only in theory atoms from here onwards
+        cerr << "Asserting " << (sign(l) ? "not " : "")  << logic.printTerm(pt_r) << endl;
 
 #ifdef PEDANTIC_DEBUG
         cout << printAssertion(l);

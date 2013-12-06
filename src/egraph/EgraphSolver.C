@@ -590,10 +590,24 @@ lbool Egraph::addEquality(PtAsgn pa) {
     Pterm& pt = term_store[pa.tr];
     assert(pt.size() == 2);
 
-    bool res = true;
+    lbool res;
     PTRef e = pt[0];
     for (int i = 1; i < pt.size() && res == true; i++)
         res = assertEq(e, pt[i], pa);
+
+    if (res == true) {
+        lbool res2;
+        // First: I'm not sure this is the right way to do this!
+        // second:
+        //  pa.sgn == true if this is an equality literal and false if this
+        //  is a distinct
+        if (pa.sgn == true)
+            res2 = addTrue(pa.tr);
+        else
+            res2 = addFalse(pa.tr);
+
+        assert(res2 != l_False);
+    }
 
 #ifdef STATISTICS
     if (res == false)
@@ -614,6 +628,15 @@ lbool Egraph::addDisequality(PtAsgn pa) {
     else
         res = assertDist(pa.tr, pa);
 
+    if (res == true) {
+        lbool res2;
+        // pa.sgn == true if this is a disequality
+        if (pa.sgn == true)
+            res2 = addTrue(pa.tr);
+        else
+            res2 = addFalse(pa.tr);
+        assert(res2 != l_False);
+    }
 #ifdef STATISTICS
     if (!res)
         tsolver_stats.uns_calls++;
@@ -632,7 +655,7 @@ lbool Egraph::addTrue(PTRef term) {
     else
         tsolver_stats.sat_calls++;
 #endif
-    return res;
+    return res == false ? l_False : l_Undef;
 }
 
 lbool Egraph::addFalse(PTRef term) {
