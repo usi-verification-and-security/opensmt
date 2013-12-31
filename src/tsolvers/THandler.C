@@ -198,17 +198,19 @@ bool THandler::assertLits(vec<Lit>& trail)
         Pterm& pt = logic.term_store[pt_r];
 
         // sign(l) == true if l is negated
+        // Watch out here! the second argument of PtAsgn constructor is
+        // in fact lbool!
         if (logic.isEquality(pt.symb()) && !sign(l))
-            res = egraph.addEquality(PtAsgn(pt_r, true));
+            res = egraph.addEquality(PtAsgn(pt_r, l_True));
 
         else if (logic.isEquality(pt.symb()) && sign(l))
-            res = egraph.addDisequality(PtAsgn(pt_r, false));
+            res = egraph.addDisequality(PtAsgn(pt_r, l_False));
 
         else if (logic.isDisequality(pt.symb()) && !sign(l))
-            res = egraph.addDisequality(PtAsgn(pt_r, true));
+            res = egraph.addDisequality(PtAsgn(pt_r, l_True));
 
         else if (logic.isDisequality(pt.symb()) && sign(l))
-            res = egraph.addEquality(PtAsgn(pt_r, false));
+            res = egraph.addEquality(PtAsgn(pt_r, l_False));
 
         else if (logic.isUP(pt_r) && !sign(l))
             res = egraph.addTrue(pt_r);
