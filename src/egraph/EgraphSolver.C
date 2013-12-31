@@ -590,12 +590,12 @@ lbool Egraph::addEquality(PtAsgn pa) {
     Pterm& pt = term_store[pa.tr];
     assert(pt.size() == 2);
 
-    lbool res;
+    lbool res = l_True;
     PTRef e = pt[0];
-    for (int i = 1; i < pt.size() && res == true; i++)
-        res = assertEq(e, pt[i], pa);
+    for (int i = 1; i < pt.size() && res == l_True; i++)
+        res = assertEq(e, pt[i], pa) ? l_True : l_False;
 
-    if (res == true) {
+    if (res == l_True) {
         lbool res2;
         // First: I'm not sure this is the right way to do this!
         // second:

@@ -185,10 +185,10 @@ bool THandler::assertLits(vec<Lit>& trail)
         if ( pt_r == logic.getTerm_true() )       { assert(sign(l) == false); continue; }
         else if ( pt_r == logic.getTerm_false() ) { assert(sign(l) == true ); continue; }
 
+#ifdef PEDANTIC_DEBUG
         // We are interested only in theory atoms from here onwards
         cerr << "Asserting " << (sign(l) ? "not " : "")  << logic.printTerm(pt_r) << endl;
 
-#ifdef PEDANTIC_DEBUG
         cout << printAssertion(l);
 #endif
 
@@ -236,6 +236,8 @@ bool THandler::assertLits(vec<Lit>& trail)
     if (res != l_False)
         cout << "; non-conflicting" << endl;
 //    cout << printAssertions(assertions);
+    cout << egraph.printEqClass(logic.getTerm_true()) << endl;
+    cout << egraph.printEqClass(logic.getTerm_false()) << endl;
 #endif
     return res != l_False;
 }

@@ -48,7 +48,8 @@ sstat MainSolver::insertTermRoot(PTRef root, char** msg) {
 #endif
                 uf_solver.simplifyEquality(terms[i], true);
 #ifdef PEDANTIC_DEBUG
-                cerr << "  " << logic.printTerm(logic.getPterm(ptc.parent)[ptc.pos]) << endl;
+                if (ptc.parent != PTRef_Undef)
+                    cerr << "  " << logic.printTerm(logic.getPterm(ptc.parent)[ptc.pos]) << endl;
 #endif
             }
             else if (logic.isDisequality(tr)) {

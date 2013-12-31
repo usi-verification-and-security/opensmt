@@ -524,8 +524,8 @@ void CoreSMTSolver::deduceTheory(vec<LitLev>& deductions)
             if (v == var(reason)) reason_found = true;
             assert(value(r[i]) == l_False);
         }
-        assert(reason_found);               // Should break?
-        assert(max_lev == lev_reason);      // Should break?
+//        assert(reason_found);               // Should break?
+//        assert(max_lev == lev_reason);      // Should break?
 
         deductions.push(LitLev(ded, max_lev));
 
