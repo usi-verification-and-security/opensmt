@@ -590,13 +590,16 @@ lbool Egraph::addEquality(PtAsgn pa) {
     Pterm& pt = term_store[pa.tr];
     assert(pt.size() == 2);
 
-    lbool res = l_True;
+    bool res = true;
     PTRef e = pt[0];
-    for (int i = 1; i < pt.size() && res == l_True; i++)
-        res = assertEq(e, pt[i], pa) ? l_True : l_False;
+    for (int i = 1; i < pt.size() && res == true; i++)
+        res = assertEq(e, pt[i], pa);
 
-    if (res == l_True) {
-        lbool res2;
+    if (res) {
+#ifdef PEDANTIC_DEBUG
+        cerr << "Asserting the equality to true / false" << endl;
+#endif
+        bool res2;
         // First: I'm not sure this is the right way to do this!
         // second:
         //  pa.sgn == true if this is an equality literal and false if this
@@ -606,7 +609,7 @@ lbool Egraph::addEquality(PtAsgn pa) {
         else
             res2 = addFalse(pa.tr);
 
-        assert(res2 != l_False);
+        assert(res2 != false);
     }
 
 #ifdef STATISTICS
@@ -627,15 +630,17 @@ lbool Egraph::addDisequality(PtAsgn pa) {
         res = assertNEq(pt[0], pt[1], pa);
     else
         res = assertDist(pa.tr, pa);
-
     if (res == true) {
-        lbool res2;
+#ifdef PEDANTIC_DEBUG
+        cerr << "Asserting the equality to false/true" << endl;
+#endif
+        bool res2;
         // pa.sgn == true if this is a disequality
         if (pa.sgn == true)
             res2 = addTrue(pa.tr);
         else
             res2 = addFalse(pa.tr);
-        assert(res2 != l_False);
+        assert(res2 != false);
     }
 #ifdef STATISTICS
     if (!res)
@@ -647,7 +652,7 @@ lbool Egraph::addDisequality(PtAsgn pa) {
     return res == false ? l_False : l_Undef;
 }
 
-lbool Egraph::addTrue(PTRef term) {
+bool Egraph::addTrue(PTRef term) {
     bool res = assertEq(term, logic.getTerm_true(), PtAsgn(term, l_True));
 #ifdef STATISTICS
     if (res == false)
@@ -655,10 +660,10 @@ lbool Egraph::addTrue(PTRef term) {
     else
         tsolver_stats.sat_calls++;
 #endif
-    return res == false ? l_False : l_Undef;
+    return res;
 }
 
-lbool Egraph::addFalse(PTRef term) {
+bool Egraph::addFalse(PTRef term) {
     bool res = assertEq(term, logic.getTerm_false(), PtAsgn(term, l_False));
 #ifdef STATISTICS
     if (res == false)
@@ -666,7 +671,7 @@ lbool Egraph::addFalse(PTRef term) {
     else
         tsolver_stats.sat_calls++;
 #endif
-    return res == false ? l_False : l_Undef;
+    return res;
 }
 
 //===========================================================================
@@ -737,9 +742,6 @@ bool Egraph::mergeLoop( PtAsgn reason )
 
         // They are not unmergable, so they can be merged
         if ( !res ) {
-
-            // XXX We need to put here the reason so that the deduction can
-            // report the correct decision level (checked from the reason)
             merge( en_p.getRoot( ), en_q.getRoot( ), reason );
             congruence_pending = true;
             continue;
@@ -1562,8 +1564,18 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
 //            && ( config.isIncremental == false || informed.contains(enode_store[sv].getId()))
            )
         {
-//            enode_store[sv].setDeduced( deduced_polarity, id );
             enode_store[sv].setDeduced();
+#ifdef PEDANTIC_DEBUG
+            cerr << "Deducing ";
+            cerr << (deduced_polarity == l_False ? "not " : "");
+            cerr << logic.printTerm(enode_store[sv].getTerm());
+            cerr << " since ";
+            cerr << logic.printTerm(enode_store[x].getTerm());
+            cerr << " and ";
+            cerr << logic.printTerm(enode_store[y].getTerm());
+            cerr << " are now equal";
+            cerr << endl;
+#endif
             deductions.push(PtAsgn_reason(enode_store.ERefToTerm[sv],
                                           deduced_polarity, reason.tr));
 #ifdef STATISTICS

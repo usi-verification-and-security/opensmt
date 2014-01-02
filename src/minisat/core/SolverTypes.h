@@ -91,6 +91,10 @@ public:
     LitLev(Lit l_, int lev_) : l(l_), lev(lev_) {}
 };
 
+struct LitLev_lt {
+    bool operator () (LitLev& x, LitLev& y) { return x.lev < y.lev; }
+};
+
 //=================================================================================================
 // Lifted booleans:
 

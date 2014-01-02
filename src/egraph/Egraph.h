@@ -458,8 +458,8 @@ public:
   lbool       simplifyAndAddTerms ( PTRef, vec<PtPair>&, vec<PTRef>& );
   lbool       addDisequality      ( PtAsgn );
   lbool       addEquality         ( PtAsgn );
-  lbool       addTrue             ( PTRef );
-  lbool       addFalse            ( PTRef );
+  bool       addTrue             ( PTRef );
+  bool       addFalse            ( PTRef );
   // The term to be added, a list to be filled with the ites found, and
   // the nested booleans that should be processed again with the CNF
   // solver

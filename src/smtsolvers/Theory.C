@@ -109,14 +109,21 @@ int CoreSMTSolver::checkTheory( bool complete )
           cerr << "backtracking from " << decisionLevel() <<
                   " to " << deds[i].lev << " to propagate a new lit " <<
                   i+1 << " / " << deds.size() << endl;
+          if (deds[i].lev != decisionLevel()) {
+            assert(i == 0);
+            cerr << "Bling! " << decisionLevel() << " -> " << deds[i].lev << endl;
+            cerr << "Bling! " << i + 1 << " / " << deds.size() << endl;
+            for (int j = i+1; j < deds.size(); j++) {
+                cerr << "Bling! would have propagated also " << toInt(deds[j].l);
+                cerr << " on level " << deds[j].lev << endl;
+            }
+
+          }
 
 #endif
-          cancelUntil(deds[i].lev);
+          if (deds[i].lev < decisionLevel())
+              cancelUntil(deds[i].lev);
           uncheckedEnqueue(deds[i].l, fake_clause);
-          // I think the trail can get messed up if I propagate
-          // more than one literal even on the same decision level,
-          // since possibly the propagations are not in the right order
-//          break;
         }
         if (deds.size() > 0) {
           // now check the other theories
@@ -530,6 +537,17 @@ void CoreSMTSolver::deduceTheory(vec<LitLev>& deductions)
         deductions.push(LitLev(ded, max_lev));
 
     }
+    sort<LitLev,LitLev_lt>(deductions, LitLev_lt());
+#ifdef PEDANTIC_DEBUG
+    int max_lev = -1;
+    for (int i = 0; i < deductions.size(); i++) {
+        if (deductions[i].lev < max_lev) {
+            cerr << "Bling! Expected less than " << max_lev;
+            cerr << " " << deductions[i].lev << endl;
+        }
+        max_lev = deductions[i].lev;
+    }
+#endif
     return;
 }
 

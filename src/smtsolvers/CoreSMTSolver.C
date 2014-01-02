@@ -1764,6 +1764,9 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
   //
   boolVarDecActivity( );
 
+#ifdef PEDANTIC_DEBUG
+  bool thr_backtrack = false;
+#endif
   for (;;)
   {
     // Added line
@@ -1771,6 +1774,10 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 
     Clause* confl = propagate();
     if (confl != NULL){
+#ifdef PEDANTIC_DEBUG
+      if (thr_backtrack == true)
+        cerr << "Bling! Theory backtrack resulted in conflict" << endl;
+#endif
       // CONFLICT
       conflicts++; conflictC++;
       if (decisionLevel() == 0)
@@ -1833,7 +1840,11 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 
     }else{
       // NO CONFLICT
-
+#ifdef PEDANTIC_DEBUG
+      if (thr_backtrack)
+        cerr << "Bling! No theory backtracking" << endl;
+    thr_backtrack = false;
+#endif
       if (nof_conflicts >= 0 && conflictC >= nof_conflicts){
         // Reached bound on number of conflicts:
         progress_estimate = progressEstimate();
@@ -1855,6 +1866,9 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 #ifdef STATISTICS
           const double start = cpuTime( );
 #endif
+#ifdef PEDANTIC_DEBUG
+          int prev_dl = decisionLevel();
+#endif
           int res = checkTheory( false );
 #ifdef STATISTICS
           tsolvers_time += cpuTime( ) - start;
@@ -1864,7 +1878,11 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
             case -1: return l_False;        // Top-Level conflict: unsat
             case  0: conflictC++; continue; // Theory conflict: time for bcp
             case  1: break;                 // Sat and no deductions: go ahead
-            case  2: continue;              // Sat and deductions: time for bcp
+            case  2:                        // Sat and deductions: time for bcp
+#ifdef PEDANTIC_DEBUG
+              thr_backtrack = (decisionLevel() != prev_dl);
+#endif
+              continue;
             default: assert( false );
           }
 
@@ -1902,7 +1920,9 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
           // New variable decision:
           decisions++;
           next = pickBranchLit(polarity_mode, random_var_freq);
-//          cout << "branch: " << toInt(next) << endl;
+#ifdef PEDANTIC_DEBUG
+          cout << "branch: " << toInt(next) << endl;
+#endif
           // Complete Call
           if ( next == lit_Undef )
           {
