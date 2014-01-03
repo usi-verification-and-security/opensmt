@@ -309,7 +309,7 @@ SMTConfig::initializeConfig( )
   optionTable.insert(o_produce_stats, Option(0));
 //  produce_stats                 = 0;
   produce_models                = 0;
-  print_stats                   = 0;
+  print_stats                   = 1;
   print_proofs_smtlib2          = 0;
   print_proofs_dotty	        = 0;
   produce_inter                 = 0;
