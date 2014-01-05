@@ -684,9 +684,19 @@ bool Cnfizer::giveToSolver( PTRef f
     Pterm& cand_t = ptstore[f];
 
     if (cand_t.symb() == logic.getSym_or()) {
-        for (int i = 0; i < cand_t.size(); i ++) {
-            assert(isLit(cand_t[i]));
-            clause.push(findLit(cand_t[i]));
+        vec<PTRef> queue;
+        queue.push(f);
+        while (queue.size() != 0) {
+            Pterm& e = ptstore[queue.last()];
+            queue.pop();
+            for (int i = 0; i < e.size(); i ++) {
+                if (isLit(e[i]))
+                    clause.push(findLit(e[i]));
+                else if (ptstore[e[i]].symb() == logic.getSym_or())
+                    queue.push(e[i]);
+                else
+                    assert(false); // Not a clause!
+            }
         }
 #ifdef PRODUCE_PROOF
         if ( config.produce_inter != 0 )

@@ -93,11 +93,12 @@ int CoreSMTSolver::checkTheory( bool complete )
         deduceTheory(deds); // deds will be ordered by decision levels
         for (int i = 0; i < deds.size(); i++)
         {
+#ifndef IGNORE_DL_THEORYPROPAGATION
           // There are deductions
           // For now we just implement the propagation on the lowest
           // decision level in deds
           if (deds[0].lev != deds[i].lev) break;
-
+#endif
 #ifdef PEDANTIC_DEBUG
           // Debuggissimo
           vec<Lit> r;
@@ -121,8 +122,10 @@ int CoreSMTSolver::checkTheory( bool complete )
           }
 
 #endif
+#ifndef IGNORE_DL_THEORYPROPAGATION
           if (deds[i].lev < decisionLevel())
               cancelUntil(deds[i].lev);
+#endif
           uncheckedEnqueue(deds[i].l, fake_clause);
         }
         if (deds.size() > 0) {
