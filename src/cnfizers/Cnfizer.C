@@ -117,7 +117,8 @@ const Lit Cnfizer::findLit(PTRef ptr) {
         tmap.termToVar.insert(p, v);
 //        tmap.varToTerm.insert(v, p);
         tmap.varToTerm[v] = p;
-        solver.setFrozen(v, true);
+        if (logic.isTheoryTerm(p))
+            solver.setFrozen(v, true);
 #ifdef PEDANTIC_DEBUG
         cerr << "Term " << logic.printTerm(p) << " maps to var " << v << endl;
 #endif
