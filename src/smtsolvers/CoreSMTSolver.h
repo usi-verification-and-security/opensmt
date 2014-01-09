@@ -564,7 +564,7 @@ inline int      CoreSMTSolver::nVars         ()      const                { retu
 inline void     CoreSMTSolver::setPolarity   (Var v, bool b)              { polarity    [v] = (char)b; }
 inline void     CoreSMTSolver::setDecisionVar(Var v, bool b)              { decision_var[v] = (char)b; if (b) { insertVarOrder(v); } }
 inline lbool    CoreSMTSolver::solve         ()                           { vec<Lit> tmp; return solve(tmp); }
-inline lbool    CoreSMTSolver::solve         ( const vec<Lit> & assumps ) { return solve( assumps, 0 ) == l_True; }
+inline lbool    CoreSMTSolver::solve         ( const vec<Lit> & assumps ) { return solve( assumps, 0 ); }
 inline bool     CoreSMTSolver::okay          () const                     { return ok; }
 
 //=================================================================================================

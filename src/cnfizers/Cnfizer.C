@@ -156,7 +156,7 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula
 {
 //  egraph.initDupMap1( );
 
-    if (solver.okay() == false) return false;
+    if (solver.okay() == false) return l_False;
 
     assert( formula != PTRef_Undef);
 
@@ -230,9 +230,9 @@ lbool Cnfizer::extEquals(PTRef r_new, PTRef r_old) {
     vec<Lit> c2;
     c1.push(l_new); c1.push(~l_old);
     c2.push(~l_new); c2.push(l_old);
-    rval = solver.addSMTClause(c1);
+    rval = solver.addSMTClause(c1) == false ? l_False : l_Undef;
     if (rval == l_False) return rval;
-    rval = solver.addSMTClause(c2);
+    rval = solver.addSMTClause(c2) == false ? l_False : l_Undef;
     return rval;
 }
 

@@ -242,7 +242,7 @@ std::string Egraph::printExplanationTree( PTRef x )
                 os << ">";
             }
             else
-                os << (expReason[x].sgn == true ? "" : "not ") << term_store.printTerm(expReason[x].tr);
+                os << (expReason[x].sgn == l_True ? "" : "not ") << term_store.printTerm(expReason[x].tr);
             if ( expParent.contains(x) && expParent[x] != PTRef_Undef )
                 os << "]--> ";
         }
@@ -287,7 +287,7 @@ const string Egraph::printDistinctionList( ELRef x, ELAllocator& ela )
            << "| ELRef: " << x.x << endl
            << "| id: " << ela[x].getId() << endl
            << "| dirty: " << ela[x].isDirty() << endl
-           << "| reason: " << (ela[x].reason.sgn == true ? "" : "not " ) << logic.printTerm(ela[x].reason.tr) << endl;
+           << "| reason: " << (ela[x].reason.sgn == l_True ? "" : "not " ) << logic.printTerm(ela[x].reason.tr) << endl;
         if (ela[x].reloced())
             os << "| reloced to: " << ela[x].rel_e.x << endl;
         else {

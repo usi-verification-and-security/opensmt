@@ -119,6 +119,18 @@ else
   config_pedantic_debug=$enablepedantic_debug
 fi
 echo "setting pedantic debug flags to... ${config_pedantic_debug:-none}"
+
+if test $enablestupid_theoryprop = "yes" ;
+then
+  config_stupid_theoryprop="-DIGNORED_DL_THEORYPROPAGATION"
+elif test $enablestupid_theoryprop = "no" ;
+then
+  config_stupid_theoryprop=""
+else
+  config_stupid_theoryprop=$enablestupid_theoryprop
+fi
+echo "setting stupid theory-propagation flag to... ${config_pedantic_debug:-none}"
+
 #
 # Enable GC debug
 #

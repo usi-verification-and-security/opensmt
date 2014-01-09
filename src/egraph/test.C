@@ -91,17 +91,17 @@ int main(int argc, char **argv) {
 
     lbool rval = egraph.addEquality(PtAsgn(eq_1, l_True));
     assert(rval == l_Undef);
-    rval = egraph.addTrue(eq_1);
+    rval = egraph.addTrue(eq_1) == true ? l_Undef : l_False;
     assert(rval == l_Undef);
 
     rval = egraph.addEquality(PtAsgn(eq_2, l_True));
     assert(rval == l_Undef);
-    rval = egraph.addTrue(eq_2);
+    rval = egraph.addTrue(eq_2) == true ? l_Undef : l_False;
     assert(rval == l_Undef);
 
     rval = egraph.addEquality(PtAsgn(eq_3, l_True));
     assert(rval == l_Undef);
-    rval = egraph.addTrue(eq_3);
+    rval = egraph.addTrue(eq_3) == true ? l_Undef : l_False;
     assert(rval == l_Undef);
 
     printf("%s\n", egraph.printEqClass(a_tr));

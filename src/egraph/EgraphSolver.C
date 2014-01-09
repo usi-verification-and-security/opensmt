@@ -604,7 +604,7 @@ lbool Egraph::addEquality(PtAsgn pa) {
         // second:
         //  pa.sgn == true if this is an equality literal and false if this
         //  is a distinct
-        if (pa.sgn == true)
+        if (pa.sgn == l_True)
             res2 = addTrue(pa.tr);
         else
             res2 = addFalse(pa.tr);
@@ -636,7 +636,7 @@ lbool Egraph::addDisequality(PtAsgn pa) {
 #endif
         bool res2;
         // pa.sgn == true if this is a disequality
-        if (pa.sgn == true)
+        if (pa.sgn == l_True)
             res2 = addTrue(pa.tr);
         else
             res2 = addFalse(pa.tr);
@@ -1905,7 +1905,7 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r)
             index ++;
         }
         // Dist terms are all inequalities, hence their polarity's true
-        r = PtAsgn(enode_store.getDistTerm(index), true);
+        r = PtAsgn(enode_store.getDistTerm(index), l_True);
         assert( r.tr != PTRef_Undef );
         return true;
     }
@@ -1919,7 +1919,7 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r)
     ELRef pptr = pstart;
     ELRef qptr = qstart;
 
-    r = PtAsgn(PTRef_Undef, true);
+    r = PtAsgn(PTRef_Undef, l_True);
 
     for (;;) {
         Elist& el_pptr = forbid_allocator[pptr];

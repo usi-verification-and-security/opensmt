@@ -213,10 +213,10 @@ bool THandler::assertLits(vec<Lit>& trail)
             res = egraph.addEquality(PtAsgn(pt_r, l_False));
 
         else if (logic.isUP(pt_r) && !sign(l))
-            res = egraph.addTrue(pt_r);
+            res = egraph.addTrue(pt_r) == false ? l_False : l_Undef;
 
         else if (logic.isUP(pt_r) && sign(l))
-            res = egraph.addFalse(pt_r);
+            res = egraph.addFalse(pt_r) == false ? l_False : l_Undef;
 
         else
             assert(false);
@@ -451,10 +451,11 @@ void THandler::getReason( Lit l, vec< Lit > & reason, vec<char>& assigns )
     lbool res = l_Undef;
     assert(value(l, assigns) == l_Undef);
     if (logic.isEquality(e))
-        res = sign(l) ? egraph.addEquality(PtAsgn(e, true)) : egraph.addDisequality(PtAsgn(e, false));
+        res = sign(l) ? egraph.addEquality(PtAsgn(e, l_True)) : egraph.addDisequality(PtAsgn(e, l_False));
     else {
         assert(logic.isUP(e));
-        res = sign(l) ? egraph.addTrue(e) : egraph.addFalse(e);
+        bool ok = sign(l) ? egraph.addTrue(e) : egraph.addFalse(e);
+        res = ok == false ? l_False : l_Undef;
     }
 
 #ifdef PEDANTIC_DEBUG

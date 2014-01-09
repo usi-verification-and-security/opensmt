@@ -108,9 +108,9 @@ void Egraph::expReRootOn (PTRef x) {
         expParent[x] = PTRef_Undef;
 
     if (!expReason.contains(x))
-        expReason.insert(x, PtAsgn(PTRef_Undef, false));
+        expReason.insert(x, PtAsgn(PTRef_Undef, l_False));
     else
-        expReason[x] = PtAsgn(PTRef_Undef, false);
+        expReason[x] = PtAsgn(PTRef_Undef, l_False);
 
     while( parent != PTRef_Undef ) {
         // Save grandparent
@@ -118,7 +118,7 @@ void Egraph::expReRootOn (PTRef x) {
 
         // Save reason
         PtAsgn saved_reason = reason;
-        reason = expReason.contains(parent) ? expReason[parent] : PtAsgn(PTRef_Undef, false);
+        reason = expReason.contains(parent) ? expReason[parent] : PtAsgn(PTRef_Undef, l_False);
 
         // Reverse edge & reason
         if (expParent.contains(parent)) expParent[parent] = p;
