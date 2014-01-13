@@ -1,4 +1,5 @@
 #include "MainSolver.h"
+#include "simplifiers/TopLevelPropagate.h"
 
 void MainSolver::getTermList(PTRef tr, vec<PtChild>& list_out) {
     vec<PTRef> queue;
@@ -60,6 +61,10 @@ sstat MainSolver::insertTermRoot(PTRef root, char** msg) {
             uf_solver.declareTerm(ptc);
         }
     }
+
+    TopLevelPropagator tlp = TopLevelPropagator(logic, ts);
+    tlp.insertBinings(root);
+
 //    cerr << logic.printTerm(tr);
 #ifdef PEDANTIC_DEBUG
     vec<PTRef> glue_terms;

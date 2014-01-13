@@ -109,6 +109,10 @@ public:
 
     PTRef  expandItes      (vec<PtChild>&);
 
+    void  purify           (PTRef r, PTRef& p, lbool& sgn) const
+        {p = r; sgn = l_True; while (ptstore[p].symb() == logic.getSym_not()) { sgn = sgn^1; p = ptstore[r][0]; };}
+    bool  isNPAtom         (PTRef r, PTRef& p)    const; // Check if r is a (negated) atom.  Return true if the corresponding atom is negated.  The purified reference is placed in the second argument.
+
 protected:
 
     virtual bool cnfize                 ( PTRef
@@ -172,7 +176,6 @@ protected:
     bool  isTheorySymbol   (SymRef tr) const { return logic.isTheorySymbol(tr); }
     bool  isIte            (SymRef tr) const { return logic.isIte(tr); }
     bool  isAtom           (PTRef r) const;
-    bool  isNPAtom         (PTRef r, PTRef& p)    const; // Check if r is a (negated) atom.  Return true if the corresponding atom is negated.  The purified reference is placed in the second argument.
     void  declareAtom      (PTRef, SymRef);              // Declare an atom for the smt/sat solver
     bool  termSeen         (PTRef)                const; // True if the term has been seen and thus processed in the sense that there is already literal corresponding to it.  Sees through negations.
 

@@ -80,6 +80,7 @@ class Logic {
     PTRef       mkImpl(vec<PTRef>& args);
     PTRef       mkNot(PTRef);
 
+
     // Generic equalities
     PTRef       mkEq(vec<PTRef>& args);
 
@@ -115,6 +116,10 @@ class Logic {
 
     // Check if term is an uninterpreted predicate.
     bool        isUP(PTRef) const;
+
+    // Boolean term identification
+    bool        isAnd(PTRef ptr) { return term_store[ptr].symb() == sym_AND; }
+    bool        isOr(PTRef ptr)  { return term_store[ptr].symb() == sym_OR; }
 
     // Return the corresponding equivalence term if yes,
     // PTRef_Undef otherwise.

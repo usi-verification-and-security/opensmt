@@ -1,4 +1,4 @@
-SUBDIRS = parsers tsolvers smtsolvers common api sorts logics symbols pterms egraph cnfizers
+SUBDIRS = parsers tsolvers smtsolvers common api sorts logics symbols pterms egraph cnfizers simplifiers
 
 noinst_LTLIBRARIES = libopensmt.la
 
@@ -12,6 +12,7 @@ libopensmt_la_LIBADD = parsers/libparsers.la \
 		       smtsolvers/libsmtsolvers.la \
 		       common/libcommon.la \
 		       sorts/libsorts.la \
+		       simplifiers/libsimplifiers.la \
 		       api/libapi.la \
 		       logics/liblogics.la \
 		       symbols/libsymbols.la \
