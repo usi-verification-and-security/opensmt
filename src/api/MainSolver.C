@@ -1,5 +1,4 @@
 #include "MainSolver.h"
-#include "simplifiers/TopLevelPropagate.h"
 
 void MainSolver::getTermList(PTRef tr, vec<PtChild>& list_out) {
     vec<PTRef> queue;
@@ -25,12 +24,27 @@ sstat MainSolver::insertTermRoot(PTRef root, char** msg) {
                  logic.getSort(logic.getSym(logic.getPterm(root).symb()).rsort())->getCanonName());
         return s_Error;
     }
-    // Framework for handling different logic related simplifications?
+
+    sstat state;
+    lbool ts_state;
+    vec<PtChild> terms;
+#ifdef PEDANTIC_DEBUG
+    vec<PTRef> glue_terms;
+#endif
+
+    // Framework for handling different logic related simplifications
+    if (!tlp.insertBindings(root)) {
+        // insert an artificial unsatisfiable problem
+        ts.cnfizeAndGiveToSolver(logic.mkNot(logic.getTerm_true()));
+        state = s_False; goto end; }
+
+    tlp.substitute(root);
+
     // cnfization of the formula
     // Get the egraph data structure for instance from here
     // Terms need to be purified before cnfization?
 
-    vec<PtChild> terms;
+
     getTermList(root, terms);
 
     if (terms.size() > 0) {
@@ -62,15 +76,9 @@ sstat MainSolver::insertTermRoot(PTRef root, char** msg) {
         }
     }
 
-    TopLevelPropagator tlp = TopLevelPropagator(logic, ts);
-    tlp.insertBinings(root);
 
 //    cerr << logic.printTerm(tr);
-#ifdef PEDANTIC_DEBUG
-    vec<PTRef> glue_terms;
-#endif
-    sstat state;
-    lbool ts_state = ts.cnfizeAndGiveToSolver(root);
+    ts_state = ts.cnfizeAndGiveToSolver(root);
 #ifdef PEDANTIC_DEBUG
     for (int i = 0; i < sat_solver.n_occs.size(); i++) {
         if (sat_solver.n_occs[i] == 0)
@@ -85,6 +93,7 @@ sstat MainSolver::insertTermRoot(PTRef root, char** msg) {
     for (int i = 0; i < glue_terms.size(); i++)
         cerr << "Glue term: " << logic.printTerm(glue_terms[i]) << endl;
 #endif
+end:
     if (state == s_False) {
         asprintf(msg, "; The formula is trivially unsatisfiable");
     }

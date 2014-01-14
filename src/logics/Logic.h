@@ -108,11 +108,14 @@ class Logic {
     bool          isDisequality    (SymRef tr)     const { return disequalities.contains(tr); }
     bool          isDisequality    (PTRef tr)      const { return disequalities.contains(term_store[tr].symb()); }
     bool          isIte            (SymRef tr)     const { return ites.contains(tr);          }
+
     // tr is a theory symbol if it is not a boolean variable, nor one of the standard
     // boolean operators (and, not, or, etc...)
     bool        isTheorySymbol(SymRef tr)    const;
     bool        isTheoryTerm(PTRef tr)       const;
     bool        isBooleanOperator(SymRef tr) const;
+
+    bool        isVar(PTRef tr)              const { return term_store[tr].nargs() == 0; }
 
     // Check if term is an uninterpreted predicate.
     bool        isUP(PTRef) const;

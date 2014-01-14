@@ -2,6 +2,7 @@
 #include "SimpSMTSolver.h"
 #include "Egraph.h"
 #include "Tseitin.h"
+#include "simplifiers/TopLevelPropagate.h"
 
 class sstat {
     char value;
@@ -29,6 +30,8 @@ class MainSolver {
     SimpSMTSolver& sat_solver;
     Tseitin&       ts;
 
+    TopLevelPropagator tlp;
+
   public:
     MainSolver(Logic& l, TermMapper& tm, Egraph& uf_s, SimpSMTSolver& sat_s, Tseitin& t) :
           logic(l)
@@ -36,6 +39,7 @@ class MainSolver {
         , uf_solver(uf_s)
         , sat_solver(sat_s)
         , ts(t)
+        , tlp(logic,ts)
         {}
     sstat insertTermRoot(PTRef, char**);
     void getTermList(PTRef tr, vec<PtChild>&);
