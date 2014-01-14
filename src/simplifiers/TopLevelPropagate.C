@@ -102,6 +102,9 @@ bool TopLevelPropagator::insertBindings(PTRef root)
 
         // Join equalities
         else if (logic.isEquality(tr) && sgn == l_True) {
+#ifdef PEDANTIC_DEBUG
+            cerr << "Identified an equality: " << logic.printTerm(tr) << endl;
+#endif
             Pterm& t = logic.getPterm(tr);
             Node * n;
             // n will be the reference
@@ -118,7 +121,7 @@ bool TopLevelPropagator::insertBindings(PTRef root)
                     m = PTRefToNode[t[j]];
                 else {
                     m = new Node(t[j]);
-                    PTRefToNode.insert(tr, m);
+                    PTRefToNode.insert(t[j], m);
                 }
                 merge(n, m);
             }
