@@ -1,21 +1,5 @@
 #include "MainSolver.h"
-
-void MainSolver::getTermList(PTRef tr, vec<PtChild>& list_out) {
-    vec<PTRef> queue;
-
-    queue.push(tr);
-    list_out.push(PtChild(tr, PTRef_Undef, -1));
-
-    while (queue.size() > 0) {
-        tr = queue.last();
-        queue.pop();
-        Pterm& pt = logic.getPterm(tr);
-        for (int i = 0; i < pt.size(); i++) {
-            queue.push(pt[i]);
-            list_out.push(PtChild(pt[i], tr, i));
-        }
-    }
-}
+#include "TreeOps.h"
 
 sstat MainSolver::insertTermRoot(PTRef root, char** msg) {
     if (logic.getSym(logic.getPterm(root).symb()).rsort() != logic.getSortRef(Logic::s_sort_bool)) {
@@ -33,24 +17,26 @@ sstat MainSolver::insertTermRoot(PTRef root, char** msg) {
 #endif
 
     // Framework for handling different logic related simplifications
-    if (!tlp.insertBindings(root)) {
-        // insert an artificial unsatisfiable problem
-        ts.cnfizeAndGiveToSolver(logic.mkNot(logic.getTerm_true()));
-        state = s_False; goto end; }
+    // For soundness it is important to run this until completion
+    while (true){
+        if (!tlp.insertBindings(root)) {
+            // insert an artificial unsatisfiable problem
+            ts.cnfizeAndGiveToSolver(logic.mkNot(logic.getTerm_true()));
+            state = s_False; goto end; }
 
-    tlp.substitute(root);
-
+        if (!tlp.substitute(root)) break;
+    }
     // cnfization of the formula
     // Get the egraph data structure for instance from here
     // Terms need to be purified before cnfization?
 
 
-    getTermList(root, terms);
+    getTermList<PtChild>(root, terms, logic);
 
     if (terms.size() > 0) {
         root = ts.expandItes(terms);
         terms.clear();
-        getTermList(root, terms);
+        getTermList(root, terms, logic);
     }
 
     for (int i = terms.size()-1; i >= 0; i--) {

@@ -4,6 +4,7 @@ INCLUDES=$(config_includedirs)
 
 libcommon_la_SOURCES = FastRationals.h FastRationals.C \
 		       Otl.h \
+                       TreeOps.h \
 		       Global.h
 
 #libcommon_la_SOURCES = FastRationals.h FastRationals.C \

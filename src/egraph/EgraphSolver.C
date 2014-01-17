@@ -353,7 +353,7 @@ void Egraph::simplifyDisequality(PtChild ptc, bool simplify) {
 }
 
 
-
+// This should probably not be in this class
 void Egraph::simplifyEquality(PtChild ptc, bool simplify) {
     assert(logic.isEquality(ptc.tr));
     if (!simplify) return;

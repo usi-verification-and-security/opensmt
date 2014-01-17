@@ -61,7 +61,7 @@ class EnodeStore {
     Enode& operator[] (ERef e) { return ea[e]; }
     const Enode& operator[] (ERef e) const { return ea[e]; }
     Map<PTRef,ERef,PTRefHash,Equal<PTRef> >     termToERef;
-    Map<SymRef,ERef, SymRefHash,Equal<SymRef> > symToERef;
+    Map<SymRef,ERef,SymRefHash,Equal<SymRef> > symToERef;
     Map<ERef,PTRef,ERefHash,Equal<ERef> >       ERefToTerm;
 
     void removeParent(ERef, ERef);

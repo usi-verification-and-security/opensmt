@@ -42,6 +42,5 @@ class MainSolver {
         , tlp(logic,ts)
         {}
     sstat insertTermRoot(PTRef, char**);
-    void getTermList(PTRef tr, vec<PtChild>&);
-    
+//    static void getTermList(PTRef tr, vec<PtChild>&, Logic& l);
 };

@@ -102,7 +102,7 @@ class Enode
     SymRef      symb;     // The symbol (if this is a symbol node) -- not sure this is necessary?
     PTRef       pterm;  // The proper term (if this is a term node)
     uint32_t    id;
-    ERef        er;     // Either my tref or reference to the relocated one
+    ERef        er;     // Either my eref or reference to the relocated one
     ERef        car;
     ERef        cdr;
     bool        is_deduced;

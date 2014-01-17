@@ -28,7 +28,7 @@ struct PTRefHash {
 
 template <>
 struct Equal<const PTRef> {
-    bool operator() (const PTRef& s1, const PTRef& s2) { return s1 == s2; }
+    bool operator() (const PTRef& s1, const PTRef& s2) const { return s1 == s2; }
 };
 
 // A key used for pterm resolve lookups
