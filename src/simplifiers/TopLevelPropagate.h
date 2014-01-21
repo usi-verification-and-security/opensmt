@@ -23,11 +23,11 @@ class SEnode
       public:
         SERef        root;           // Root of the equivalence class
         SERef        next;           // Next node in the class
-        int         size;           // Size of the eq class
+        int          size;           // Size of the eq class
         SERef        parent;         // Parent of the node (in congruence)
         SERef        same_car;       // Circular list of all the car-parents of the class
         SERef        same_cdr;       // Circular list of all the cdr-parents of the class
-        int         parent_size;    // Size of the parent's congruence class
+        int          parent_size;    // Size of the parent's congruence class
         SERef        cg_ptr;         // Congruence class representative (how is this different from root?)
     };
     static uint32_t cgid_ctr;
@@ -35,8 +35,7 @@ class SEnode
         unsigned type       : 2;
         unsigned reloced    : 1;
         unsigned unused     : 29; } header;
-    SymRef      symb;     // The symbol (if this is a symbol node) -- not sure this is necessary?
-    PTRef       pterm;  // The proper term (if this is a term node)
+    union { SymRef symb; PTRef pterm; };     // The symbol or the pterm
     SERef        er;     // Either my eref or reference to the relocated one
     SERef        car;
     SERef        cdr;
@@ -44,13 +43,13 @@ class SEnode
 
   public:
     // This is a trick to enable congruence data on only Enodes it is needed
-    SCgData      cgdata[0];
     static SERef SERef_Nil;
+    SCgData      cgdata[0];
     enum en_type { et_symb, et_list, et_term };
     // Constructor for symbols
     SEnode(SymRef, SERef);
     // Constructor for term and list nodes
-    SEnode(SERef car_, SERef cdr_, en_type t, SEAllocator& ea, SERef er, Map<SigPair,SERef,SigHash,Equal<const SigPair&> >& sig_tab);
+    SEnode(SERef car_, SERef cdr_, en_type t, SEAllocator& ea, SERef er);
     en_type type        ()        const { return (en_type)header.type; }
 
     void relocate       (SERef e)        { header.reloced = 1; er = e; }
@@ -96,12 +95,12 @@ class SEAllocator : public RegionAllocator<uint32_t>
         if (has_cgdata) return (sizeof(SEnode) + sizeof(SEnode::SCgData))/sizeof(int32_t);
         else            return sizeof(SEnode)/sizeof(int32_t); }
 
-    Map<SigPair,SERef,SigHash,Equal<const SigPair&> >* sig_tab;
+    Map<SigPair,SERef,SigHash,Equal<const SigPair&> >& sigtab;
 
  public:
 
-    SEAllocator(uint32_t start_cap, Map<SigPair,SERef,SigHash,Equal<const SigPair&> >* st) : RegionAllocator<uint32_t>(start_cap), sig_tab(st) {}
-    SEAllocator() {}
+    SEAllocator(uint32_t start_cap, Map<SigPair,SERef,SigHash,Equal<const SigPair&> >& st) : RegionAllocator<uint32_t>(start_cap), sigtab(st) {}
+//    SEAllocator() {}
 
     void moveTo(SEAllocator& to){
         RegionAllocator<uint32_t>::moveTo(to); }
@@ -123,14 +122,17 @@ class SEAllocator : public RegionAllocator<uint32_t>
     {
         assert(sizeof(SymRef)     == sizeof(uint32_t));
         assert(sizeof(SERef)     == sizeof(uint32_t));
-
+        assert(t != SEnode::et_symb);
         bool has_cgdata = (t == SEnode::et_list) || (t == SEnode::et_term);
         uint32_t v = RegionAllocator<uint32_t>::alloc(senodeWord32Size(has_cgdata));
         SERef eid;
         eid.x = v;
-        SEnode* tmp = new (lea(eid)) SEnode(car, cdr, t, *this, eid, *sig_tab);
+        SEnode* tmp = new (lea(eid)) SEnode(car, cdr, t, *this, eid);
         tmp->header.type = t;
         tmp->pterm = ptr;
+        cgId car_id = operator[](car).getCid();
+        cgId cdr_id = operator[](cdr).getCid();
+        sigtab.insert(SigPair(car_id, cdr_id), eid);
         return eid;
     }
 
@@ -167,6 +169,46 @@ class SEAllocator : public RegionAllocator<uint32_t>
         e.relocate(er);
     }
 
+#ifdef PEDANTIC_DEBUG
+    const char* printEnode(SERef er)
+    {
+        SEnode& e = operator[](er);
+        stringstream ss;
+        ss << "============================================" << endl;
+        ss << "| my ref: " << er.x << endl;
+        ss << "| type: " << (e.type() == SEnode::et_symb ? "symb" : (e.type() == SEnode::et_list ? "list" : "term")) << endl;
+        if (e.type() == SEnode::et_term) {
+            ss << "| Pterm " << e.getTerm().x << endl;
+        }
+        ss << "| car " << e.getCar().x << endl;
+        ss << "| cdr " << e.getCdr().x << endl;
+        ss << "+------------------------------------------" << endl;
+        if (e.type() != SEnode::et_symb) {
+            ss << "| root " << e.getRoot().x << endl;
+            ss << "| CgPtr " << e.getCgPtr().x << endl;
+            ss << "| parent " << e.getParent().x << endl;
+            ss << "| parent size " << e.getParentSize() << endl;
+            ss << "| sameCdr " << e.getSameCdr().x << endl;
+            ss << "| sameCar " << e.getSameCar().x << endl;
+            ss << "| next " << e.getNext().x << endl;
+            ss << "| size " << e.getSize() << endl;
+        }
+        ss << "| Cid " << e.getCid() << endl;
+        ss << "============================================" << endl;
+        return ss.str().c_str();
+    }
+
+    void checkEnodeAsrts(SERef er) {
+        SEnode& e = operator[](er);
+        SERef same_cdr = e.getSameCdr();
+        while (same_cdr != er) {
+            assert(operator[](operator[](same_cdr).getCdr()).getRoot() ==
+                                      operator[](e.getCdr()).getRoot());
+            same_cdr = operator[](same_cdr).getSameCdr();
+        }
+    }
+#endif
+
 };
 
 //
@@ -191,10 +233,11 @@ class TopLevelPropagator {
     Logic&      logic;
     Cnfizer&    cnfizer;
 
-    SEAllocator ea;
-    Map<SigPair,SERef,SigHash,Equal<const SigPair&> > sigtab;
     Map<PTRef,SERef,PTRefHash,Equal<const PTRef> > termToSERef;
     Map<SymRef,SERef,SymRefHash,Equal<SymRef> > symToSERef;
+    Map<SigPair,SERef,SigHash,Equal<const SigPair&> > sigtab;
+
+    SEAllocator ea;
     vec<SERefPair> pending;
 
 
@@ -202,7 +245,8 @@ class TopLevelPropagator {
     SERef       n_true;
 
     Map<PTRef, Node*, PTRefHash, Equal<PTRef> > PTRefToNode;
-    PTRef find(PTRef p) const {return ea[termToSERef[p]].getTerm(); } // Return the root congruence element
+    // Get root congruene node and return its term
+    PTRef find(PTRef p) const {return ea[ea[termToSERef[p]].getRoot()].getTerm(); }
     void merge(SERef xr, SERef yr);  // union
     bool contains(PTRef x, PTRef y); // term x contains an occurrence of y
     bool assertEq(PTRef eq);         // Add equivalence and propagate

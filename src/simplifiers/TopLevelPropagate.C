@@ -11,7 +11,7 @@ SEnode::SEnode(SymRef tr_, SERef er_) : symb(tr_), er(er_) {
 
 SEnode::SEnode(SERef car_, SERef cdr_,
              en_type t, SEAllocator& ea,
-             SERef er_, Map<SigPair,SERef,SigHash,Equal<const SigPair&> >& sig_tab)
+             SERef er_)
      : er(er_)
 {
     header.type    = t;
@@ -51,13 +51,13 @@ SEnode::SEnode(SERef car_, SERef cdr_,
         cgd.same_car = er;
 
     if (y.type() != SEnode::et_symb) {
-        if (y_cgd.parent == SERef_Undef) {
-            y_cgd.parent = er;
-            cgd.same_cdr = er;
+        if (y.getParent() == SERef_Undef) {
+            y.setParent(er);
+            setSameCdr(er);
         }
         else {
-            cgd.same_cdr = ea[y_cgd.parent].cgdata->same_cdr;
-            ea[y_cgd.parent].cgdata->same_cdr = er;
+            setSameCdr(ea[y.getParent()].getSameCdr());
+            ea[y.getParent()].setSameCdr(er);
         }
         y_cgd.parent_size++;
     }
@@ -72,9 +72,11 @@ SEnode::SEnode(SERef car_, SERef cdr_,
 TopLevelPropagator::TopLevelPropagator(Logic& l, Cnfizer& c) :
     logic(l)
   , cnfizer(c)
+  , ea(1024*1024, sigtab)
 {
-    ea.alloc(ea.alloc(logic.getSym_true()), SEnode::SERef_Nil, SEnode::et_term, logic.getTerm_true());
-    ea.alloc(ea.alloc(logic.getSym_false()), SEnode::SERef_Nil, SEnode::et_term, logic.getTerm_false());
+    n_true = ea.alloc(ea.alloc(logic.getSym_true()), SEnode::SERef_Nil, SEnode::et_term, logic.getTerm_true());
+    n_false = ea.alloc(ea.alloc(logic.getSym_false()), SEnode::SERef_Nil, SEnode::et_term, logic.getTerm_false());
+
 }
 
 void TopLevelPropagator::merge(SERef xr, SERef yr)
@@ -97,13 +99,14 @@ void TopLevelPropagator::merge(SERef xr, SERef yr)
     // Remove outdated signatures
     while (true) {
         SEnode& p = ea[pr];
-        if (pr == p.getCgPtr())
-            sigtab.remove(SigPair(ea[ea[p.getCar()].getRoot()].getCid(),
-                                  ea[ea[p.getCdr()].getRoot()].getCid()));
+        if (pr == p.getCgPtr()) {
+            cgId car_id = ea[ea[p.getCar()].getRoot()].getCid();
+            cgId cdr_id = ea[ea[p.getCdr()].getRoot()].getCid();
+            sigtab.remove(SigPair(car_id, cdr_id));
+        }
         pr = scdr ? p.getSameCdr() : p.getSameCar();
         if (pr == prstart) break;
     }
-
     // Set new root for eq class of y
     SERef vr = yr;
     SERef vrstart = vr;
@@ -150,14 +153,18 @@ void TopLevelPropagator::merge(SERef xr, SERef yr)
             x.setParent(y.getParent());
         else if (x.isList()) {
             SERef tr = ea[x.getParent()].getSameCdr();
-            ea[x.getParent()].setSameCdr(ea[y.getParent()].getSameCdr());
+            SERef parent_samecdr_join = ea[y.getParent()].getSameCdr();
+            ea[x.getParent()].setSameCdr(parent_samecdr_join);
             ea[y.getParent()].setSameCdr(tr);
         }
         else {
             SERef tr = ea[x.getParent()].getSameCar();
             ea[x.getParent()].setSameCar(ea[y.getParent()].getSameCar());
-            ea[y.getParent()].setSameCdr(tr);
+            ea[y.getParent()].setSameCar(tr);
         }
+#ifdef PEDANTIC_DEBUG
+        ea.checkEnodeAsrts(y.getParent());
+#endif
     }
     x.setParentSize(x.getParentSize() + y.getParentSize());
 
@@ -203,7 +210,9 @@ bool TopLevelPropagator::insertBindings(PTRef root)
         PtChild& ptc = terms[i];
         cerr << logic.printTerm(ptc.tr) << endl;
         if (!termToSERef.contains(ptc.tr)) {
+            // New term
             Pterm& t = logic.getPterm(ptc.tr);
+            // 1. Find/define the symbol
             SymRef sr = t.symb();
             SERef ser;
             if (symToSERef.contains(sr))
@@ -212,6 +221,7 @@ bool TopLevelPropagator::insertBindings(PTRef root)
                 ser = ea.alloc(sr);
                 symToSERef.insert(sr, ser);
             }
+            // Construct the list enode
             SERef cdr = SEnode::SERef_Nil;
             for (int j = t.size()-1; j >= 0; j--) {
                 SERef cdr_out;
@@ -220,13 +230,17 @@ bool TopLevelPropagator::insertBindings(PTRef root)
                           ea[ea[cdr].getRoot()].getCid());
                 if (!sigtab.contains(k)) {
                     cdr_out = ea.alloc(car, cdr, SEnode::et_list, PTRef_Undef);
-                    sigtab.insert(k, cdr_out);
                     cdr = cdr_out;
                 }
                 else
                     cdr = sigtab[k];
             }
-            termToSERef.insert(ptc.tr, cdr);
+            SERef set = ea.alloc(ser, cdr, SEnode::et_term, ptc.tr);
+            termToSERef.insert(ptc.tr, set);
+#ifdef PEDANTIC_DEBUG
+            cerr << logic.printTerm(ptc.tr) << " maps to "
+                 << logic.printTerm(find(ptc.tr)) << endl;
+#endif
         }
     }
     // Find equalities that are true/false on the abstract top (Boolean)
@@ -312,11 +326,10 @@ bool TopLevelPropagator::insertBindings(PTRef root)
             if (!assertEq(tr)) break;
 
 #ifdef PEDANTIC_DEBUG
-            cerr << logic.printTerm(tr) << " is an equality and therefore its arguments ";
+            cerr << logic.printTerm(tr) << " is an equality and therefore the following replacements are in place:" << endl;
             for (int j = 0; j < t.size(); j++)
-                cerr << logic.printTerm(t[j]) << " ";
-            cerr << " are currently all replaced by "
-                 << logic.printTerm(find(tr))  << endl;
+                cerr << "  [" << j << "] " << logic.printTerm(t[j]) << " replaced by "
+                     << logic.printTerm(find(t[0]))  << endl;
 #endif
         }
     }
@@ -373,3 +386,5 @@ bool TopLevelPropagator::substitute(PTRef& root)
 
 // This is not yet implemented
 bool TopLevelPropagator::contains(PTRef x, PTRef y) { return false; }
+
+
