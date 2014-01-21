@@ -5,7 +5,7 @@ http://www.cs.bham.ac.uk/~vxs/quasigroups/benchmark/
 |)
 (set-info :smt-lib-version 2.0)
 (set-info :category "crafted")
-(set-info :status unsat)
+;(set-info :status unsat)
 (declare-sort U 0)
 (declare-sort I 0)
 (declare-fun unit () I)

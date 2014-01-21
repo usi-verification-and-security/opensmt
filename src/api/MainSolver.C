@@ -40,14 +40,19 @@ sstat MainSolver::insertTermRoot(PTRef root, char** msg) {
     }
 
     for (int i = terms.size()-1; i >= 0; i--) {
-        PtChild ptc = terms[i];
+        PtChild& ptc = terms[i];
         PTRef tr = ptc.tr;
         if (logic.isTheoryTerm(tr) && logic.getTerm_true() != tr && logic.getTerm_false() != tr) {
             if (logic.isEquality(tr)) {
 #ifdef PEDANTIC_DEBUG
                 cerr << "Simplifying equality " << logic.printTerm(tr) << endl;
 #endif
-                uf_solver.simplifyEquality(terms[i], true);
+                if (uf_solver.simplifyEquality(ptc, true)) {
+                    // the root of the formula is trivially true
+                    root = logic.getTerm_true();
+                    break;
+                }
+
 #ifdef PEDANTIC_DEBUG
                 if (ptc.parent != PTRef_Undef)
                     cerr << "  " << logic.printTerm(logic.getPterm(ptc.parent)[ptc.pos]) << endl;
@@ -55,7 +60,7 @@ sstat MainSolver::insertTermRoot(PTRef root, char** msg) {
             }
             else if (logic.isDisequality(tr)) {
 //                cerr << "Simplifying disequality " << logic.printTerm(tr) << endl;
-                uf_solver.simplifyDisequality(terms[i]);
+                uf_solver.simplifyDisequality(ptc);
 //                cerr << "  " << logic.printTerm(logic.getPterm(ptc.parent)[ptc.pos]) << endl;
             }
             uf_solver.declareTerm(ptc);

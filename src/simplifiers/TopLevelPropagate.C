@@ -204,11 +204,9 @@ bool TopLevelPropagator::insertBindings(PTRef root)
 
     // Insert terms to the enode structure
     vec<PtChild> terms;
-    cerr << "Stuff on the root" << endl;
     getTermList<PtChild>(root, terms, logic);
     for (int i = terms.size()-1; i >= 0; i--) {
         PtChild& ptc = terms[i];
-        cerr << logic.printTerm(ptc.tr) << endl;
         if (!termToSERef.contains(ptc.tr)) {
             // New term
             Pterm& t = logic.getPterm(ptc.tr);

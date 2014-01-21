@@ -336,7 +336,7 @@ lbool Egraph::simplifyAndAddTerms(PTRef tr, vec<PtPair>& ites, vec<PTRef>& bools
     else                 return l_Undef;
 }
 
-void Egraph::simplifyDisequality(PtChild ptc, bool simplify) {
+void Egraph::simplifyDisequality(PtChild& ptc, bool simplify) {
     assert(logic.isDisequality(ptc.tr));
     if (!enode_store.dist_classes.contains(ptc.tr))
         enode_store.addDistClass(ptc.tr);
@@ -354,9 +354,9 @@ void Egraph::simplifyDisequality(PtChild ptc, bool simplify) {
 
 
 // This should probably not be in this class
-void Egraph::simplifyEquality(PtChild ptc, bool simplify) {
+bool Egraph::simplifyEquality(PtChild& ptc, bool simplify) {
     assert(logic.isEquality(ptc.tr));
-    if (!simplify) return;
+    if (!simplify) return false;
     Pterm& t = term_store[ptc.tr];
 
     PTRef p; int i, j;
@@ -365,14 +365,19 @@ void Egraph::simplifyEquality(PtChild ptc, bool simplify) {
             t[j++] = p = t[i];
     if (j == 1) {
         term_store.free(ptc.tr); // Lazy free
+        if (ptc.parent == PTRef_Undef)
+            return true;
         term_store[ptc.parent][ptc.pos] = logic.getTerm_true();
+        ptc.tr = logic.getTerm_true();
     }
-    // shrink the size!
-    t.shrink(i-j);
+    else {// shrink the size!
+        t.shrink(i-j);
 #ifdef PEDANTIC_DEBUG
-    if (i-j != 0)
-        cout << term_store.printTerm(ptc.tr) << endl;
+        if (i-j != 0)
+            cout << term_store.printTerm(ptc.tr) << endl;
 #endif
+    }
+    return false;
 }
 
 
@@ -403,6 +408,10 @@ void Egraph::declareTerm(PtChild ptc) {
         }
         // Canonize the term representation
         PTRef rval = enode_store.addTerm(sym, cdr, tr);
+        if (rval != tr) {
+            ptc.tr = rval;
+            term_store[ptc.parent][ptc.pos] = ptc.tr;
+        }
 //        assert (rval == tr);
     }
 }

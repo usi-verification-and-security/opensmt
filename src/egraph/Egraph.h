@@ -465,11 +465,10 @@ public:
   // solver
   lbool       addTerm             ( PTRef, vec<PtPair>&, vec<PTRef>& );
   void        declareTerm         ( PtChild );
-  // Remove redundancies and
-  // replace with true if
-  // trivial
-  void        simplifyEquality    ( PtChild, bool simplify = true );
-  void        simplifyDisequality ( PtChild, bool simplify = true );
+  // Remove redundancies and replace with true if
+  // trivial.  Return true if root of the formula is trivially true
+  bool        simplifyEquality    ( PtChild&, bool simplify = true );
+  void        simplifyDisequality ( PtChild&, bool simplify = true );
 private:
   bool    assertEq        ( PTRef, PTRef, PtAsgn );               // Asserts an equality
   bool    assertNEq       ( PTRef, PTRef, PtAsgn );               // Asserts a negated equality
