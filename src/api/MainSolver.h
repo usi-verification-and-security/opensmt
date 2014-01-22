@@ -29,8 +29,26 @@ class MainSolver {
     Egraph&        uf_solver;
     SimpSMTSolver& sat_solver;
     Tseitin&       ts;
+    vec<PTRef>     formulas;
 
     TopLevelPropagator tlp;
+
+    class FContainer {
+        PTRef   root;
+
+      public:
+              FContainer(PTRef r) : root(r)     {}
+        void  setRoot   (PTRef r)               { root = r; }
+        PTRef getRoot   ()        const         { return root; }
+    };
+
+    void expandItes(FContainer& fc, vec<PtChild>& terms) const;
+
+    sstat giveToSolver(PTRef root) {
+        if (ts.cnfizeAndGiveToSolver(root) == l_False) return s_False;
+        return s_Undef; }
+
+    FContainer simplifyEqualities(vec<PtChild>& terms);
 
   public:
     MainSolver(Logic& l, TermMapper& tm, Egraph& uf_s, SimpSMTSolver& sat_s, Tseitin& t) :
@@ -41,6 +59,16 @@ class MainSolver {
         , ts(t)
         , tlp(logic,ts)
         {}
-    sstat insertTermRoot(PTRef, char**);
+
+    sstat insertFormula(PTRef root, char** msg) {
+        if (logic.getSort(root) != logic.getSort_bool()) {
+            asprintf(msg, "Top-level assertion sort must be %s, got %s",
+                     Logic::s_sort_bool, logic.getSort(logic.getSort(root))->getCanonName());
+            return s_Error; }
+        formulas.push(root);
+        return s_Undef; }
+
+    sstat simplifyFormulas(char** err_msg);
+    lbool solve() { return ts.solve(); }
 //    static void getTermList(PTRef tr, vec<PtChild>&, Logic& l);
 };

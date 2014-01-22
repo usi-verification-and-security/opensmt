@@ -36,6 +36,7 @@ Cnfizer::Cnfizer( PtStore &      ptstore_
      , tmap     (tmap_    )
      , thandler (thandler_)
      , solver   (solver_)
+     , s_empty  (true)
      , status   (l_Undef)
 { }
 
@@ -202,6 +203,7 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula
                     );                         // Perform actual cnfization (implemented in subclasses)
     }
 
+    s_empty = false;
 
 //  egraph.doneDupMap1( );
 

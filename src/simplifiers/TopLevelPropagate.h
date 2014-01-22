@@ -81,6 +81,14 @@ class SEnode
     void  setNext       (SERef n)        { cgdata->next = n; }
     int   getSize       ()        const { return cgdata->size; }
     void  setSize       (int i)         { cgdata->size = i; }
+
+    bool Lt (const SEnode& e, const Logic& l) const {
+        assert((type() != et_symb) && (e.type() != et_symb));
+        assert(type() == e.type());
+        if (type() == et_list) return getParentSize() < e.getParentSize();
+        // is type et_term
+        return (getParentSize() < e.getParentSize()) &&
+                (l.isVar(getTerm()) || l.isVar(e.getTerm())); }
     friend class SEAllocator;
 };
 
@@ -252,7 +260,7 @@ class TopLevelPropagator {
     bool assertEq(PTRef eq);         // Add equivalence and propagate
   public:
     TopLevelPropagator(Logic& logic, Cnfizer& cnfizer);
-    bool insertBindings(PTRef root); // Insert the top level variable
+    bool updateBindings(PTRef root); // Insert the top level variable
                                      // bindings implied by the formula
                                      // root
     bool substitute(PTRef& root);    // Substitute based on the

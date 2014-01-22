@@ -201,7 +201,7 @@ declare_fun_err: ;
             else {
 
                 char* err_msg = NULL;
-                status = main_solver.insertTermRoot(tr, &err_msg);
+                status = main_solver.insertFormula(tr, &err_msg);
 
                 if (status == s_Error)
                     notify_formatted(true, "Error");
@@ -419,7 +419,19 @@ bool Interpret::checkSat(const char* cmd) {
     }
     if (logic.isSet()) {
         sat_calls++;
-        lbool res = ts.solve();
+        char* msg;
+
+        sstat rval = main_solver.simplifyFormulas(&msg);
+        lbool res;
+        if (rval == s_Undef)
+            res = ts.solve();
+        else if (rval == s_False)
+            res = l_False;
+        else if (rval == s_Undef)
+            res == l_Undef;
+        else
+            notify_formatted(true, msg);
+
         if (res == l_True) {
             notify_formatted(false, "sat");
         }

@@ -74,6 +74,7 @@ protected:
 
     THandler&           thandler;
     SimpSMTSolver&      solver;
+    bool                s_empty;
 //    Egraph              uf_solver;
 
 public:
@@ -112,6 +113,7 @@ public:
     void  purify           (PTRef r, PTRef& p, lbool& sgn) const
         {p = r; sgn = l_True; while (ptstore[p].symb() == logic.getSym_not()) { sgn = sgn^1; p = ptstore[r][0]; };}
     bool  isNPAtom         (PTRef r, PTRef& p)    const; // Check if r is a (negated) atom.  Return true if the corresponding atom is negated.  The purified reference is placed in the second argument.
+    bool  solverEmpty      ()                     const { return s_empty; }
 
 protected:
 

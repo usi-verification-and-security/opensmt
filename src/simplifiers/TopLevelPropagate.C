@@ -199,7 +199,12 @@ bool TopLevelPropagator::assertEq(PTRef eqr)
 //    if (logic.isVar(x->tr)) y->parent = x;
 //    else x->parent = y; }
 
-bool TopLevelPropagator::insertBindings(PTRef root)
+//
+// Extract the (more or less) cnfized structure starting from root,
+// and update the list of substitutions based on top-level facts
+// (equalities in the top-level conjunction of the cnf form)
+//
+bool TopLevelPropagator::updateBindings(PTRef root)
 {
 
     // Insert terms to the enode structure
