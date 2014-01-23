@@ -81,15 +81,22 @@ TopLevelPropagator::TopLevelPropagator(Logic& l, Cnfizer& c) :
 
 void TopLevelPropagator::merge(SERef xr, SERef yr)
 {
-    if (ea[xr].getSize() < ea[yr].getSize()) {
+    if (ea[xr] < ea[yr]) {
         SERef tr = xr;
         xr = yr;
         yr = tr;
     }
     SEnode& x = ea[xr];
     SEnode& y = ea[yr];
+#ifdef PEDANTIC_DEBUG
+    if (x.type() == SEnode::et_term)
+        cerr << "Merging terms " << logic.printTerm(x.getTerm())
+             << " and " << logic.printTerm(y.getTerm())
+             << ".  The root will be "
+             << logic.printTerm(x.getTerm()) << endl;
+#endif
 
-    SERef wr = x.getParentSize() < y.getParentSize() ? xr : yr;
+    SERef wr = x.getParentSize() < y.getParentSize()  ? xr : yr;
     SEnode& w = ea[wr];
 
     SERef pr = w.getParent();

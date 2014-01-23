@@ -82,13 +82,16 @@ class SEnode
     int   getSize       ()        const { return cgdata->size; }
     void  setSize       (int i)         { cgdata->size = i; }
 
-    bool Lt (const SEnode& e, const Logic& l) const {
+    bool operator< (const SEnode& e) const {
         assert((type() != et_symb) && (e.type() != et_symb));
         assert(type() == e.type());
-        if (type() == et_list) return getParentSize() < e.getParentSize();
+        bool xsmall = (getSize() < e.getSize());
+        if (type() == et_list) return xsmall;
         // is type et_term
-        return (getParentSize() < e.getParentSize()) &&
-                (l.isVar(getTerm()) || l.isVar(e.getTerm())); }
+        bool xv = (getCdr() == SERef_Nil);   // I am a term without args
+        bool yv = (e.getCdr() == SERef_Nil); // e is a term without args
+        return (xsmall && (!xv || yv)) || (!xsmall && !xv && yv); }
+
     friend class SEAllocator;
 };
 
