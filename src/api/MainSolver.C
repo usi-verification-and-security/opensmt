@@ -12,15 +12,24 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
     root = logic.mkAnd(formulas);
     // Framework for handling different logic related simplifications.
     // For soundness it is important to run this until closure
+    vec<PTRef> tlfacts;
     while (true) {
-        if (!tlp.updateBindings(root)) {
+        if (!tlp.updateBindings(root, tlfacts)) {
             // insert an artificial unsatisfiable problem
             ts.cnfizeAndGiveToSolver(logic.mkNot(logic.getTerm_true()));
             state = s_False; goto end; }
 
         if (!tlp.substitute(root)) break;
     }
+#ifdef PEDANTIC_DEBUG
+    cerr << "Stored top level facts not to be simplified away: " << endl;
+    for (int i = 0; i < tlfacts.size(); i++)
+        cerr << logic.printTerm(tlfacts[i]) << endl;
+#endif
     {
+        // Add the top level facts to the formula
+        tlfacts.push(root);
+        root = logic.mkAnd(tlfacts);
         vec<PtChild> terms;
         FContainer fc(root);
         expandItes(fc, terms);

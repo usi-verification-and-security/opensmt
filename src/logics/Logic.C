@@ -1,6 +1,7 @@
 #include "sorts/SStore.h"
 #include "pterms/PtStore.h"
 #include "Logic.h"
+#include "common/TreeOps.h"
 
 /***********************************************************
  * Class defining logic
@@ -235,6 +236,27 @@ PTRef Logic::mkConst(SRef s, const char* name) {
     PTRef ptr = insertTerm(sr, tmp);
     assert (ptr != PTRef_Undef);
     return ptr;
+}
+
+//
+// Clone the deep term structure maintaining similar reference structrue
+//
+PTRef Logic::cloneTerm(const PTRef& tr) {
+    Map<PTRef,PTRef,PTRefHash > oldToNew;
+    vec<PtChild> terms;
+    getTermList(tr, terms, *this);
+    PTRef ptr_new;
+    for (int i = terms.size()-1; i >= 0; i--) {
+        PTRef ptr = terms[i].tr;
+        if (oldToNew.contains(ptr)) continue;
+        Pterm& pt = getPterm(ptr);
+        vec<PTRef> args_new;
+        for (int j = 0; j < pt.size(); j++)
+            args_new.push(oldToNew[pt[j]]);
+        ptr_new = term_store.newTerm(pt.symb(), args_new);
+        oldToNew.insert(ptr, ptr_new);
+    }
+    return ptr_new;
 }
 
 PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms) {

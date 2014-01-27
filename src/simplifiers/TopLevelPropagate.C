@@ -211,7 +211,7 @@ bool TopLevelPropagator::assertEq(PTRef eqr)
 // and update the list of substitutions based on top-level facts
 // (equalities in the top-level conjunction of the cnf form)
 //
-bool TopLevelPropagator::updateBindings(PTRef root)
+bool TopLevelPropagator::updateBindings(PTRef root, vec<PTRef>& tlfacts)
 {
 
     // Insert terms to the enode structure
@@ -256,27 +256,59 @@ bool TopLevelPropagator::updateBindings(PTRef root)
     // Find equalities that are true/false on the abstract top (Boolean)
     // level
     vec<PtAsgn> facts;
-    vec<PTRef> queue;
-    PTRef purified;
+    vec<PtAsgn> queue;
+    PTRef p;
     lbool sign;
-    cnfizer.purify(root, purified, sign);
-    queue.push(purified);
+    cnfizer.purify(root, p, sign);
+    queue.push(PtAsgn(p, sign));
 
     while (queue.size() != 0) {
-        PTRef pt_r = queue.last(); queue.pop();
-        cnfizer.purify(pt_r, purified, sign);
-        Pterm& pt = logic.getPterm(purified);
-        if (logic.isAnd(purified) and sign == l_True)
-            for (int i = 0; i < pt.size(); i++)
-                queue.push(pt[i]);
+        PtAsgn pta = queue.last(); queue.pop();
+        Pterm& t = logic.getPterm(pta.tr);
 
-        else if (logic.isOr(purified) and sign == l_False)
-            for (int i = 0; i < pt.size(); i++)
-                queue.push(pt[i]);
-
-        else if (logic.isEquality(purified) || logic.isUP(purified))
-            facts.push(PtAsgn(purified, sign));
-        // Missing: unary ors and ands
+        if (logic.isAnd(pta.tr) and pta.sgn == l_True)
+            for (int i = 0; i < t.size(); i++) {
+                PTRef c;
+                lbool c_sign;
+                cnfizer.purify(t[i], c, c_sign);
+                queue.push(PtAsgn(c, pta.sgn == l_True ? c_sign : c_sign^true));
+            }
+        else if (logic.isOr(pta.tr) and (pta.sgn == l_False))
+            for (int i = 0; i < t.size(); i++) {
+                PTRef c;
+                lbool c_sign;
+                cnfizer.purify(t[i], c, c_sign);
+                queue.push(PtAsgn(c, c_sign^true));
+            }
+        // unary and negated
+        else if (logic.isAnd(pta.tr) and (pta.sgn == l_False) and (t.size() == 1)) {
+            PTRef c;
+            lbool c_sign;
+            cnfizer.purify(t[0], c, c_sign);
+            queue.push(PtAsgn(c, c_sign^true));
+        }
+        // unary or
+        else if (logic.isOr(pta.tr) and (pta.sgn == l_True) and (t.size() == 1)) {
+            PTRef c;
+            lbool c_sign;
+            cnfizer.purify(t[0], c, c_sign);
+            queue.push(PtAsgn(c, c_sign));
+        }
+        // Found a fact.  It is important for soundness that we have also the original facts
+        // asserted to the euf solver in the future even though no search will be performed there.
+        // Therefore we need to clone the whole terms as facts that will be asserted to the solver.
+        else if (logic.isEquality(pta.tr) and pta.sgn == l_True) {
+            PTRef r = logic.cloneTerm(t[0]);
+            for (int i = 1; i < t.size(); i++) {
+                vec<PTRef> ps;
+                ps.push(r); ps.push(logic.cloneTerm(t[i]));
+                PTRef eq = logic.mkEq(ps);
+                tlfacts.push(eq);
+            }
+            facts.push(pta);
+        }
+        else if (logic.isUP(pta.tr))
+            facts.push(pta);
     }
 
 #ifdef PEDANTIC_DEBUG

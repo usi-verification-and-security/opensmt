@@ -263,9 +263,9 @@ class TopLevelPropagator {
     bool assertEq(PTRef eq);         // Add equivalence and propagate
   public:
     TopLevelPropagator(Logic& logic, Cnfizer& cnfizer);
-    bool updateBindings(PTRef root); // Insert the top level variable
-                                     // bindings implied by the formula
-                                     // root
+    // Insert the top level variable bindings implied by the formula
+    // root, store clones of the found equalities to tlfacts
+    bool updateBindings(PTRef root, vec<PTRef>& tlfacts);
     bool substitute(PTRef& root);    // Substitute based on the
                                      // previously inserted bindings.
                                      // Return true if substitutions were performed

@@ -58,7 +58,7 @@ class MainSolver {
         , sat_solver(sat_s)
         , ts(t)
         , tlp(logic,ts)
-        {}
+        { formulas.push(logic.getTerm_true()); }
 
     sstat insertFormula(PTRef root, char** msg) {
         if (logic.getSort(root) != logic.getSort_bool()) {

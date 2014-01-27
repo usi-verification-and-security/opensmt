@@ -87,7 +87,10 @@ class Logic {
     PTRef       mkEq          (vec<PTRef>& args);
 
     // Generic constants
-    PTRef       mkConst            (SRef, const char*);
+    PTRef       mkConst       (SRef, const char*);
+
+    // Clone a term
+    PTRef       cloneTerm     (const PTRef&);
 
     // The Boolean connectives
     SymRef        getSym_true      ()              const { return sym_TRUE;     }

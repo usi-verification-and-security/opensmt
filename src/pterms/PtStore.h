@@ -23,6 +23,8 @@ class PtStore {
   public:
     PtStore(SymStore& symstore_, SStore& sortstore_);
 
+    PTRef  newTerm(const SymRef sym, const vec<PTRef>& ps) { return pta.alloc(sym, ps); }
+
     void   free(PTRef r) { pta.free(r); }  // this is guaranteed to be lazy
 
     SymRef lookupSymbol(const char* s, const vec<PTRef>& args);
