@@ -249,6 +249,9 @@ class TopLevelPropagator {
     Map<SigPair,SERef,SigHash,Equal<const SigPair&> > sigtab;
 
     SEAllocator ea;
+
+    int total_substs;
+
     vec<SERefPair> pending;
 
 

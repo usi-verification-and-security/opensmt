@@ -33,6 +33,9 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         vec<PtChild> terms;
         FContainer fc(root);
         expandItes(fc, terms);
+        cerr << logic.printTerm(fc.getRoot()) << endl;
+        fc = propFlatten(fc);
+        cerr << logic.printTerm(fc.getRoot()) << endl;
         fc = simplifyEqualities(terms);
         state = giveToSolver(fc.getRoot());
     }
@@ -56,6 +59,126 @@ void MainSolver::expandItes(FContainer& fc, vec<PtChild>& terms) const
         getTermList<PtChild>(root, terms, logic);
     }
     fc.setRoot(root);
+}
+
+
+//
+// Replace subtrees consisting only of ands / ors with a single and / or term.
+// Search a maximal section of the tree consisting solely of ands / ors.  The
+// root of this subtree is called and / or root.  Collect the subtrees rooted at
+// the leaves of this section, and create a new and / or term with the leaves as
+// arguments and the parent of the and / or tree as the parent.
+//
+// invariant: the parent of an and / or root is never substituted
+//
+MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
+{
+    vec<PtChild> and_roots;
+    vec<PtChild> or_roots;
+    Map<PTRef,PTRef,PTRefHash,Equal<PTRef> > parent;
+
+    PTRef root = fc.getRoot();
+
+    vec<PtChild> mainq;
+    mainq.push(PtChild(root, PTRef_Undef, -1));
+    parent.insert(root, PTRef_Undef);
+
+    while (mainq.size() != 0) {
+        // Find the and- or or-roots
+        while (mainq.size() != 0) {
+            PtChild ptc = mainq.last(); mainq.pop();
+            Pterm& t = logic.getPterm(ptc.tr);
+            if (logic.isAnd(ptc.tr))
+                and_roots.push(ptc);
+            else if (logic.isOr(ptc.tr))
+                or_roots.push(ptc);
+
+            else
+                for (int i = t.size()-1; i >= 0; i--)
+                    if (!parent.contains(t[i])) {
+                        mainq.push(PtChild(t[i], ptc.tr, i));
+                        parent.insert(t[i], ptc.tr);
+                    }
+        }
+
+        // Process starting from them
+        while (and_roots.size() + or_roots.size() != 0) {
+            if (and_roots.size() != 0) {
+                vec<PTRef> args;
+                vec<PTRef> queue;
+                vec<PtChild> new_ors;
+                vec<PtChild> new_mains;
+
+                PtChild and_root = and_roots.last(); and_roots.pop();
+                queue.push(and_root.tr);
+
+                while (queue.size() != 0) {
+                    PTRef tr = queue.last(); queue.pop();
+                    Pterm& t = logic.getPterm(tr);
+                    for (int i = t.size()-1; i >=0; i--) {
+                        if (logic.isAnd(t[i]))
+                            queue.push(t[i]);
+                        else {
+                            if (logic.isOr(t[i]))
+                                new_ors.push(PtChild(t[i], PTRef_Undef, args.size()));
+                            else
+                                new_mains.push(PtChild(t[i], PTRef_Undef, args.size()));
+                            args.push(t[i]);
+                        }
+                    }
+                }
+
+                PTRef par_tr = logic.mkAnd(args);
+                if (and_root.parent != PTRef_Undef)
+                    logic.getPterm(and_root.parent)[and_root.pos] = par_tr;
+                else
+                    fc.setRoot(par_tr);
+                // Update the found ors with the new parent
+                for (int i = 0; i < new_ors.size(); i++)
+                    or_roots.push(PtChild(new_ors[i].tr, par_tr, new_ors[i].pos));
+                for (int i = 0; i < new_mains.size(); i++)
+                    mainq.push(PtChild(new_mains[i].tr, par_tr, new_mains[i].pos));
+            }
+            if (or_roots.size() != 0) {
+                vec<PTRef> args;
+                vec<PTRef> queue;
+                vec<PtChild> new_ands;
+                vec<PtChild> new_mains;
+
+                PtChild or_root = or_roots.last(); or_roots.pop();
+                queue.push(or_root.tr);
+
+                while (queue.size() != 0) {
+                    PTRef tr = queue.last(); queue.pop();
+                    Pterm& t = logic.getPterm(tr);
+                    for (int i = t.size()-1; i >= 0; i--) {
+                        if (logic.isOr(t[i]))
+                            queue.push(t[i]);
+                        else {
+                            if (logic.isAnd(t[i]))
+                                new_ands.push(PtChild(t[i], PTRef_Undef, args.size()));
+                            else
+                                new_mains.push(PtChild(t[i], PTRef_Undef, args.size()));
+                            args.push(t[i]);
+                        }
+                    }
+                }
+
+                PTRef par_tr = logic.mkOr(args);
+                if (or_root.parent != PTRef_Undef)
+                    logic.getPterm(or_root.parent)[or_root.pos] = par_tr;
+                else
+                    fc.setRoot(par_tr);
+
+                // Update the found ands and orthers with the new parent
+                for (int i = 0;  i < new_ands.size(); i++)
+                    and_roots.push(PtChild(new_ands[i].tr, par_tr, new_ands[i].pos));
+                for (int i = 0; i < new_mains.size(); i++)
+                    mainq.push(PtChild(new_mains[i].tr, par_tr, new_mains[i].pos));
+            }
+        }
+    }
+    return fc;
 }
 
 //

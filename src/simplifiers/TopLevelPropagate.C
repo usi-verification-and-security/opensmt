@@ -73,6 +73,7 @@ TopLevelPropagator::TopLevelPropagator(Logic& l, Cnfizer& c) :
     logic(l)
   , cnfizer(c)
   , ea(1024*1024, sigtab)
+  , total_substs(0)
 {
     n_true = ea.alloc(ea.alloc(logic.getSym_true()), SEnode::SERef_Nil, SEnode::et_term, logic.getTerm_true());
     n_false = ea.alloc(ea.alloc(logic.getSym_false()), SEnode::SERef_Nil, SEnode::et_term, logic.getTerm_false());
@@ -422,6 +423,7 @@ bool TopLevelPropagator::substitute(PTRef& root)
         for (int i = 0; i < t.size(); i++)
             nodes.push(PtChild(t[i], ctr.tr, i));
     }
+    total_substs += n_substs;
     return n_substs > 0;
 
 }

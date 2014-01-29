@@ -49,6 +49,7 @@ class MainSolver {
         return s_Undef; }
 
     FContainer simplifyEqualities(vec<PtChild>& terms);
+    FContainer propFlatten(FContainer fc);
 
   public:
     MainSolver(Logic& l, TermMapper& tm, Egraph& uf_s, SimpSMTSolver& sat_s, Tseitin& t) :
