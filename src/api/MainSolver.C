@@ -33,9 +33,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         vec<PtChild> terms;
         FContainer fc(root);
         expandItes(fc, terms);
-        cerr << logic.printTerm(fc.getRoot()) << endl;
         fc = propFlatten(fc);
-        cerr << logic.printTerm(fc.getRoot()) << endl;
         fc = simplifyEqualities(terms);
         state = giveToSolver(fc.getRoot());
     }
