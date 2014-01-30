@@ -1723,7 +1723,9 @@ skip_cgroot_sig_removal:
         if (en_p.getCgPtr() == p) {
 #ifdef PEDANTIC_DEBUG
             if (enode_store.containsSig(p)) {
-                cerr << enode_store.printEnode(p);
+                char* errmsg = enode_store.printEnode(p);
+                cerr << errmsg;
+                free(errmsg);
                 assert(false);
             }
 #else

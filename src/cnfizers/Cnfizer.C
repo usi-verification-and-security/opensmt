@@ -44,11 +44,11 @@ void Cnfizer::initialize() {
     vec<Lit> c;
     Lit l = findLit(logic.getTerm_true());
     c.push(l);
-    solver.addSMTClause(c);
+    addClause(c);
     c.pop();
     l = findLit(logic.getTerm_false());
     c.push(~l);
-    solver.addSMTClause(c);
+    addClause(c);
 }
 
 // A term is literal if its sort is Bool and
@@ -232,9 +232,9 @@ lbool Cnfizer::extEquals(PTRef r_new, PTRef r_old) {
     vec<Lit> c2;
     c1.push(l_new); c1.push(~l_old);
     c2.push(~l_new); c2.push(l_old);
-    rval = solver.addSMTClause(c1) == false ? l_False : l_Undef;
+    rval = addClause(c1) == false ? l_False : l_Undef;
     if (rval == l_False) return rval;
-    rval = solver.addSMTClause(c2) == false ? l_False : l_Undef;
+    rval = addClause(c2) == false ? l_False : l_Undef;
     return rval;
 }
 
@@ -274,7 +274,7 @@ bool Cnfizer::deMorganize( PTRef formula
                 Pterm& conj_t  = ptstore[conj_tr];
 
                 if (isLit(conj_tr)) {
-                    clause.push(~tmap.getLit(conj_tr));
+                    clause.push(~findLit(conj_tr));
                 }
                 else if (conj_t.symb() == logic.getSym_and())
                     to_process.push(conj_tr);
@@ -285,10 +285,10 @@ bool Cnfizer::deMorganize( PTRef formula
 
 #ifdef PRODUCE_PROOF
         if (config.produce_inter != 0)
-            rval = solver.addSMTClause(clause, partition);
+            rval = addClause(clause, partition);
         else
 #endif
-            rval = solver.addSMTClause(clause);
+            rval = addClause(clause);
     }
     return rval;
 }
@@ -651,14 +651,22 @@ bool Cnfizer::checkPureConj(PTRef e, Map<PTRef,bool,PTRefHash,Equal<PTRef> > & c
 }
 
 #ifndef PRODUCE_PROOF
-bool Cnfizer::addClause( vec<Lit>& clause ) {
+bool Cnfizer::addClause( vec<Lit>& c ) {
 #else
-bool Cnfizer::addClause( vec<Lit>& clause const ipartitions_t& partition) {
+bool Cnfizer::addClause( vec<Lit>& c const ipartitions_t& partition) {
+#endif
+#ifdef PEDANTIC_DEBUG
+    cerr << "Adding clause ";
+    for (int i = 0; i < c.size(); i++)
+        cerr << (sign(c[i]) ? "not " : "")
+             << logic.printTerm(tmap.varToTerm[var(c[i])])
+             << " ";
+    cerr << endl;
 #endif
 #ifndef PRODUCE_PROOF
-    return solver.addSMTClause(clause);
+    return solver.addSMTClause(c);
 #else
-    return solver.addSMTClause(clause, partition);
+    return solver.addSMTClause(c, partition);
 #endif
 }
 //
@@ -679,9 +687,9 @@ bool Cnfizer::giveToSolver( PTRef f
         clause.push(findLit(f));
 #ifdef PRODUCE_PROOF
         if ( config.produce_inter != 0 )
-            return solver.addSMTClause( clause, partition );
+            return addClause( clause, partition );
 #endif
-        return solver.addSMTClause( clause );
+        return addClause( clause );
     }
     //
     // A clause
@@ -705,9 +713,9 @@ bool Cnfizer::giveToSolver( PTRef f
         }
 #ifdef PRODUCE_PROOF
         if ( config.produce_inter != 0 )
-            return solver.addSMTClause(f, partition);
+            return addClause(f, partition);
 #endif
-        return solver.addSMTClause(clause);
+        return addClause(clause);
     }
 
     //

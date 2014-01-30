@@ -39,8 +39,10 @@ PTRef EnodeStore::addTerm(ERef sr, ERef args, PTRef term) {
 #ifdef PEDANTIC_DEBUG
             cerr << "Seeing the duplicate in EnodeStore: "
                  << "ERef " << canon.x << endl;
+            char* enstr = printEnode(canon);
             cerr << "letting " << term_store.printTerm(term)
-                 << " point to " << endl << printEnode(canon) << endl;
+                 << " point to " << endl << enstr << endl;
+            ::free(enstr);
 #endif
         }
         else {
@@ -240,71 +242,114 @@ void EnodeStore::removeParent(ERef n, ERef p) {
 
 // DEBUG
 
-const char* EnodeStore::printEnode(ERef e) {
+char* EnodeStore::printEnode(ERef e) {
     Enode& en = ea[e];
-    std::stringstream s;
-    s <<         "+=============================================" << endl;
+    char* out;
+    char* old;
+    asprintf(&out, "+=============================================\n");
+
     if (en.isTerm()) {
-        s <<     "| Term enode (" << term_store.printTerm(en.getTerm()) << ")" << endl
-          <<     "+---------------------------------------------" << endl
-          <<     "|  - Reference : " << e.x << endl
-          <<     "|  - Symb Enode: " << en.getCar().x  << endl
-          <<     "|  - List Enode: " << en.getCdr().x  << endl
-          <<     "|  - root      : " << en.getRoot().x << endl
-          <<     "|  - congruence: " << en.getCid()    << endl
-          <<     "|  - root cong.: " << ea[en.getRoot()].getCid() << endl
-          <<     "|  - cong. ptr : " << en.getCgPtr().x<< endl
-          <<     "+---------------------------------------------" << endl
-          <<     "| Forbids: " << endl
-          <<     "|  ";
+        old = out;
+        asprintf(&out, "%s| Term enode (%s)\n"
+                         "+---------------------------------------------\n"
+                         "|  - Reference : %d\n"
+                         "|  - Symb Enode: %d\n"
+                         "|  - List Enode: %d\n"
+                         "|  - root      : %d\n"
+                         "|  - congruence: %d\n"
+                         "|  - root cong.: %d\n"
+                         "|  - cong. ptr : %d\n"
+                         "+---------------------------------------------\n"
+                         "| Forbids: \n"
+#ifndef PEDANTIC_DEBUG
+                         "|   N/A (enable debug)\n"
+#endif
+                     , old
+                     , term_store.printTerm(en.getTerm())
+                     , e.x
+                     , en.getCar().x
+                     , en.getCdr().x
+                     , en.getRoot().x
+                     , en.getCid()
+                     , ea[en.getRoot()].getCid()
+                     , en.getCgPtr().x);
+        ::free(old);
 #ifdef PEDANTIC_DEBUG
         ELRef f_start = en.getForbid();
         ELRef f_next = f_start;
         if (f_start != ELRef_Undef) {
             while (true) {
-//                s << fa[f_next].e.x << " (" << term_store.printTerm(fa[f_start].reason) << ") ";
-                s << f_next.x << " (" << term_store.printTerm((operator[] (fa[f_next].e)).pterm) << ") ";
+                old = out;
+                asprintf(&out, "%s %d (%s) ",
+                    old,
+                    f_next.x,
+                    term_store.printTerm((operator[] (fa[f_next].e)).pterm));
+                ::free(old);
                 f_next = fa[f_next].link;
                 if (f_next == f_start) break;
             }
         }
-        s << endl
-          <<     "+---------------------------------------------" << endl;
-#else
-        s << " N/A (enable debug)" << endl;
+        old = out;
+        asprintf(&out, "%s\n+---------------------------------------------\n", old);
+        ::free(old);
 #endif
+
     }
 
     else if (en.isList()) {
-        s <<     "| List enode                                 |" << endl
-          <<     "+--------------------------------------------+" << endl
-          <<     "|  - Reference : " << e.x << endl
-          <<     "|  - Car       : " << en.getCar().x  << endl
-          <<     "|  - Cdr       : " << en.getCdr().x  << endl
-          <<     "|  - root      : " << en.getRoot().x << endl
-          <<     "|  - congruence: " << en.getCid()    << endl
-          <<     "|  - root cong.: " << ea[en.getRoot()].getCid() << endl
-          <<     "|  - cong. ptr : " << en.getCgPtr().x<< endl
-          <<     "+--------------------------------------------+" << endl;
+        old = out;
+        asprintf(&out, "%s| List enode                                 |\n"
+                         "+--------------------------------------------+\n"
+                         "|  - Reference : %d\n"
+                         "|  - Car       : %d\n"
+                         "|  - Cdr       : %d\n"
+                         "|  - root      : %d\n"
+                         "|  - congruence: %d\n"
+                         "|  - root cong.: %d\n"
+                         "|  - cong. ptr : %d\n"
+                         "+--------------------------------------------+\n"
+                     , old
+                     , en.getCdr().x
+                     , e.x
+                     , en.getCar().x
+                     , en.getRoot().x
+                     , en.getCid()
+                     , ea[en.getRoot()].getCid()
+                     , en.getCgPtr().x);
+        ::free(old);
     }
 
     else if (en.isSymb()) {
-        s <<     "| Symb enode (" << sym_store.getName(en.getSymb()) << ")" << endl
-          <<     "+---------------------------------------------" << endl
-          <<     "|  - Reference: " << e.x << endl
-          <<     "+=============================================" << endl;
+        old = out;
+        asprintf(&out, "%s| Symb enode (%s)\n"
+                         "+---------------------------------------------\n"
+                         "|  - Reference: %d\n"
+                         "+=============================================\n"
+                     , old, sym_store.getName(en.getSymb())
+                     , e.x);
+        ::free(old);
+
     }
     if (!en.isSymb()) {
-        s <<     "|  - Number of parents: " << ea[en.getRoot()].getParentSize() << endl
-          <<     "|    ";
+        old = out;
+        asprintf(&out, "%s|  - Number of parents: %d\n"
+                         "|    "
+                     , old, ea[en.getRoot()].getParentSize());
+        ::free(old);
         ERef parent_start = en.getParent();
         ERef parent = parent_start;
         int pcount = 0;
-        if (parent_start == ERef_Undef) { s << endl; goto skip; }
+        if (parent_start == ERef_Undef) {
+            old = out;
+            asprintf(&out, "%s\n", old);
+            ::free(old);
+            goto skip; }
         if (en.isTerm()) {
             while (true) {
+                old = out;
                 pcount ++;
-                s << parent.x << " ";
+                asprintf(&out, "%s%d ", old, parent.x);
+                ::free(old);
                 parent = ea[parent].getSameCar();
                 if (parent == parent_start) break;
             }
@@ -313,30 +358,54 @@ const char* EnodeStore::printEnode(ERef e) {
             ERef parent_start = en.getParent();
             ERef parent = parent_start;
             while (true) {
+                old = out;
                 pcount ++;
-                s << parent.x << " ";
+                asprintf(&out, "%s%d ", old, parent.x);
+                ::free(old);
                 parent = ea[parent].getSameCdr();
                 if (parent == parent_start) break;
             }
         }
-        if (pcount != ea[en.getRoot()].getParentSize())
-            s << "parent count mismatch!";
-        s << endl;
+        if (pcount != ea[en.getRoot()].getParentSize()) {
+            old = out;
+            asprintf(&out, "%s%s", old, "parent count mismatch!");
+            ::free(old);
+        }
+        old = out;
+        asprintf(&out, "%s\n", old);
+        ::free(old);
 skip:
         if (en.isTerm()) {
-            s << printEnode(en.getCar()) << endl;
+            old = out;
+            char* in = printEnode(en.getCar());
+            asprintf(&out, "%s%s\n", old, in);
+            ::free(old);
+            ::free(in);
             ERef cdr = en.getCdr();
             if (cdr != ERef_Nil) {
-                s << printEnode(cdr) << endl;
+                old = out;
+                in = printEnode(cdr);
+                asprintf(&out, "%s%s\n", old, in);
+                ::free(old);
+                ::free(in);
             }
         }
         else if (en.isList()) {
-            s << printEnode(en.getCar());
-            if (en.getCdr() != ERef_Nil)
-                s << printEnode(en.getCdr());
+            old = out;
+            char* in = printEnode(en.getCar());
+            asprintf(&out, "%s%s", old, in);
+            ::free(old);
+            ::free(in);
+            if (en.getCdr() != ERef_Nil) {
+                old = out;
+                in = printEnode(en.getCdr());
+                asprintf(&out, "%s%s", old, in);
+                ::free(old);
+                ::free(in);
+            }
         }
     }
-    return s.str().c_str();
+    return out;
 }
 
 #ifdef PEDANTIC_DEBUG

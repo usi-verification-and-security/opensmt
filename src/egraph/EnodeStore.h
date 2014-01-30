@@ -65,7 +65,7 @@ class EnodeStore {
     Map<ERef,PTRef,ERefHash,Equal<ERef> >       ERefToTerm;
 
     void removeParent(ERef, ERef);
-    const char* printEnode(ERef);
+    char* printEnode(ERef);
 
     char getDistIndex(PTRef tr_d) const {
         assert(dist_classes.contains(tr_d));

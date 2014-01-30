@@ -9,7 +9,11 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         asprintf(err_msg, "Solver already contains a simplified problem.  Cannot continue for now");
         return s_Error; }
 
-    root = logic.mkAnd(formulas);
+    // XXX Disable this once debugging phase is over
+    vec<PTRef> tmp;
+    for (int i = formulas.size()-1; i >= 0; i--)
+        tmp.push(formulas[i]);
+    root = logic.mkAnd(tmp);
     // Framework for handling different logic related simplifications.
     // For soundness it is important to run this until closure
     vec<PTRef> tlfacts;
@@ -28,12 +32,19 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
 #endif
     {
         // Add the top level facts to the formula
-        tlfacts.push(root);
-        root = logic.mkAnd(tlfacts);
+        // XXX Fix this once debugging phase is over
+        vec<PTRef> tmp;
+        tmp.push(root);
+        for (int i = 0; i < tlfacts.size(); i++)
+            tmp.push(tlfacts[i]);
+        root = logic.mkAnd(tmp);
         vec<PtChild> terms;
         FContainer fc(root);
         expandItes(fc, terms);
+        fc.setRoot(terms[0].tr);
         fc = propFlatten(fc);
+        terms.clear();
+        getTermList(fc.getRoot(), terms, logic);
         fc = simplifyEqualities(terms);
         state = giveToSolver(fc.getRoot());
     }
@@ -66,8 +77,6 @@ void MainSolver::expandItes(FContainer& fc, vec<PtChild>& terms) const
 // root of this subtree is called and / or root.  Collect the subtrees rooted at
 // the leaves of this section, and create a new and / or term with the leaves as
 // arguments and the parent of the and / or tree as the parent.
-//
-// invariant: the parent of an and / or root is never substituted
 //
 MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
 {
@@ -108,21 +117,23 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
                 vec<PtChild> new_mains;
 
                 PtChild and_root = and_roots.last(); and_roots.pop();
+#ifdef PEDANTIC_DEBUG
+//                cerr << "and root: " << logic.printTerm(and_root.tr) << endl;
+#endif
                 queue.push(and_root.tr);
 
                 while (queue.size() != 0) {
                     PTRef tr = queue.last(); queue.pop();
                     Pterm& t = logic.getPterm(tr);
-                    for (int i = t.size()-1; i >=0; i--) {
-                        if (logic.isAnd(t[i]))
+                    if (logic.isAnd(tr))
+                        for (int i = t.size()-1; i >= 0; i--)
                             queue.push(t[i]);
-                        else {
-                            if (logic.isOr(t[i]))
-                                new_ors.push(PtChild(t[i], PTRef_Undef, args.size()));
-                            else
-                                new_mains.push(PtChild(t[i], PTRef_Undef, args.size()));
-                            args.push(t[i]);
-                        }
+                    else {
+                        if (logic.isOr(tr))
+                            new_ors.push(PtChild(tr, PTRef_Undef, args.size()));
+                        else
+                            new_mains.push(PtChild(tr, PTRef_Undef, args.size()));
+                        args.push(tr);
                     }
                 }
 
@@ -136,6 +147,9 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
                     or_roots.push(PtChild(new_ors[i].tr, par_tr, new_ors[i].pos));
                 for (int i = 0; i < new_mains.size(); i++)
                     mainq.push(PtChild(new_mains[i].tr, par_tr, new_mains[i].pos));
+#ifdef PEDANTIC_DEBUG
+//                cerr << " => " << logic.printTerm(par_tr) << endl;
+#endif
             }
             if (or_roots.size() != 0) {
                 vec<PTRef> args;
@@ -145,20 +159,22 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
 
                 PtChild or_root = or_roots.last(); or_roots.pop();
                 queue.push(or_root.tr);
+#ifdef PEDANTIC_DEBUG
+//                cerr << "or root: " << logic.printTerm(or_root.tr) << endl;
+#endif
 
                 while (queue.size() != 0) {
                     PTRef tr = queue.last(); queue.pop();
                     Pterm& t = logic.getPterm(tr);
-                    for (int i = t.size()-1; i >= 0; i--) {
-                        if (logic.isOr(t[i]))
+                    if (logic.isOr(tr))
+                        for (int i = t.size()-1; i >= 0; i--)
                             queue.push(t[i]);
-                        else {
-                            if (logic.isAnd(t[i]))
-                                new_ands.push(PtChild(t[i], PTRef_Undef, args.size()));
-                            else
-                                new_mains.push(PtChild(t[i], PTRef_Undef, args.size()));
-                            args.push(t[i]);
-                        }
+                    else {
+                        if (logic.isAnd(tr))
+                            new_ands.push(PtChild(tr, PTRef_Undef, args.size()));
+                        else
+                            new_mains.push(PtChild(tr, PTRef_Undef, args.size()));
+                        args.push(tr);
                     }
                 }
 
@@ -173,6 +189,9 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
                     and_roots.push(PtChild(new_ands[i].tr, par_tr, new_ands[i].pos));
                 for (int i = 0; i < new_mains.size(); i++)
                     mainq.push(PtChild(new_mains[i].tr, par_tr, new_mains[i].pos));
+#ifdef PEDANTIC_DEBUG
+//                cerr << " => " << logic.printTerm(par_tr) << endl;
+#endif
             }
         }
     }
