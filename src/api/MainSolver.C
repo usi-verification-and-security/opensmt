@@ -192,9 +192,6 @@ MainSolver::FContainer MainSolver::simplifyEqualities(vec<PtChild>& terms)
         PTRef tr = ptc.tr;
         if (logic.isTheoryTerm(tr) && logic.getTerm_true() != tr && logic.getTerm_false() != tr) {
             if (logic.isEquality(tr)) {
-#ifdef PEDANTIC_DEBUG
-                cerr << "Simplifying equality " << logic.printTerm(tr) << endl;
-#endif
                 if (uf_solver.simplifyEquality(ptc, true)) {
                     // the root of the formula is trivially true
                     root = logic.getTerm_true();
@@ -202,8 +199,11 @@ MainSolver::FContainer MainSolver::simplifyEqualities(vec<PtChild>& terms)
                 }
 
 #ifdef PEDANTIC_DEBUG
-                if (ptc.parent != PTRef_Undef)
-                    cerr << "  " << logic.printTerm(logic.getPterm(ptc.parent)[ptc.pos]) << endl;
+                if (tr != logic.getPterm(ptc.parent)[ptc.pos]) {
+                    cerr << "Simplified equality " << logic.printTerm(tr) << endl;
+                    if (ptc.parent != PTRef_Undef)
+                        cerr << "  " << logic.printTerm(logic.getPterm(ptc.parent)[ptc.pos]) << endl;
+                }
 #endif
             }
             else if (logic.isDisequality(tr)) {

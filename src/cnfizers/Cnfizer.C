@@ -183,7 +183,7 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula
         }
 
         // Check whether it can be rewritten using deMorgan laws
-/*
+
         else if (checkDeMorgan(f) == true) {
             res = deMorganize(f
 #ifdef PRODUCE_PROOF
@@ -191,19 +191,19 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula
 #endif
                              );
         }
-*/
+        else {
         // Otherwise perform cnfization
 //      map< enodeid_t, int > enodeid_to_incoming_edges;
 //      computeIncomingEdges( f, enodeid_to_incoming_edges ); // Compute incoming edges for f and children
 //      f = rewriteMaxArity( f, enodeid_to_incoming_edges );  // Rewrite f with maximum arity for operators
-        res = cnfize(f
+            res = cnfize(f
 #ifdef PRODUCE_PROOF
-                    , partition
+                        , partition
 #endif
-                    );                         // Perform actual cnfization (implemented in subclasses)
+                        );                         // Perform actual cnfization (implemented in subclasses)
+        }
+        s_empty = false; // solver no longer empty
     }
-
-    s_empty = false;
 
 //  egraph.doneDupMap1( );
 
@@ -250,7 +250,7 @@ bool Cnfizer::deMorganize( PTRef formula
     Pterm& pt = ptstore[formula];
     assert( pt.symb() != logic.getSym_and() );
 
-    bool rval;
+    bool rval = true;
 
     //
     // Case (not (and a b)) --> (or (not a) (not b))
@@ -258,7 +258,6 @@ bool Cnfizer::deMorganize( PTRef formula
     if (pt.symb() == logic.getSym_not() && ptstore[pt[0]].symb() == logic.getSym_and()) {
 
         PTRef and_tr = pt[0];
-        Pterm& and_t = ptstore[and_tr];
         // Retrieve conjuncts as a clause
         vec<Lit> clause;
         vec<PTRef> to_process;
@@ -267,7 +266,7 @@ bool Cnfizer::deMorganize( PTRef formula
         while (to_process.size() != 0) {
 
             and_tr = to_process.last(); to_process.pop();
-            and_t = ptstore[and_tr];
+            Pterm& and_t = ptstore[and_tr];
 
             for (int i = 0; i < and_t.size(); i++) {
 
@@ -631,6 +630,9 @@ bool Cnfizer::checkPureConj(PTRef e, Map<PTRef,bool,PTRefHash,Equal<PTRef> > & c
 
     vec<PTRef> to_process;
     to_process.push(e);
+
+    // Topmost needs to be and
+    if (ptstore[e].symb() != logic.getSym_and()) return false;
 
     while (to_process.size() != 0) {
         e = to_process.last(); to_process.pop();

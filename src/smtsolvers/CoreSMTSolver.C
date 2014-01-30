@@ -1995,6 +1995,7 @@ double CoreSMTSolver::progressEstimate() const
 lbool CoreSMTSolver::solve( const vec<Lit> & assumps
                           , const unsigned max_conflicts )
 {
+  random_seed = config.getRandomSeed();
 //  assert( init );
   // Check some invariants before we start ...
   assert( config.logic != UNDEF );

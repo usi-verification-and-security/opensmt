@@ -248,10 +248,6 @@ bool TopLevelPropagator::updateBindings(PTRef root, vec<PTRef>& tlfacts)
             }
             SERef set = ea.alloc(ser, cdr, SEnode::et_term, ptc.tr);
             termToSERef.insert(ptc.tr, set);
-#ifdef PEDANTIC_DEBUG
-            cerr << logic.printTerm(ptc.tr) << " maps to "
-                 << logic.printTerm(find(ptc.tr)) << endl;
-#endif
         }
     }
     // Find equalities that are true/false on the abstract top (Boolean)
