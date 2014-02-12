@@ -107,17 +107,23 @@ int CoreSMTSolver::checkTheory( bool complete )
           cerr << endl;
           addTheoryReasonClause_debug(deds[i].l, r);
 
+#ifndef IGNORE_DL_THEORYPROPAGATION
           cerr << "backtracking from " << decisionLevel() <<
                   " to " << deds[i].lev << " to propagate a new lit " <<
                   i+1 << " / " << deds.size() << endl;
+#endif
           if (deds[i].lev != decisionLevel()) {
+#ifndef IGNORE_DL_THEORYPROPAGATION
             assert(i == 0);
+#endif
             cerr << "Bling! " << decisionLevel() << " -> " << deds[i].lev << endl;
             cerr << "Bling! " << i + 1 << " / " << deds.size() << endl;
+#ifndef IGNORE_DL_THEORYPROPAGATION
             for (int j = i+1; j < deds.size(); j++) {
                 cerr << "Bling! would have propagated also " << toInt(deds[j].l);
                 cerr << " on level " << deds[j].lev << endl;
             }
+#endif
 
           }
 

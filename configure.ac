@@ -33,11 +33,9 @@ AC_ARG_ENABLE(statically,
   enablestatically=$enableval,
   enablestatically="no")
 
-if test $enablestatically = "yes" ;
-then
+if test $enablestatically = "yes" ; then
   config_statically="-static"
-elif test $enablestatically = "no" ;
-then
+elif test $enablestatically = "no" ; then
   config_statically="" 
 else
   config_statically=$enablestatically
@@ -120,16 +118,25 @@ else
 fi
 echo "setting pedantic debug flags to... ${config_pedantic_debug:-none}"
 
+#
+# Enable Stupid Theory Propagation
+#
+AC_ARG_ENABLE(stupid_theoryprop,
+  AC_HELP_STRING([--enable-stupid_theoryprop],
+                 [enable straightforward theorypropagation (default=no)]),
+  enablestupid_theoryprop=$enableval,
+  enablestupid_theoryprop="no")
+
 if test $enablestupid_theoryprop = "yes" ;
 then
-  config_stupid_theoryprop="-DIGNORED_DL_THEORYPROPAGATION"
+  config_stupid_theoryprop="-DIGNORE_DL_THEORYPROPAGATION"
 elif test $enablestupid_theoryprop = "no" ;
 then
   config_stupid_theoryprop=""
 else
   config_stupid_theoryprop=$enablestupid_theoryprop
 fi
-echo "setting stupid theory-propagation flag to... ${config_pedantic_debug:-none}"
+echo "setting stupid theory-propagation flag to...  ${config_stupid_theoryprop:-none}"
 
 #
 # Enable GC debug
@@ -191,8 +198,8 @@ then
   exit
 fi
 
-AM_CFLAGS="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_statically $config_proof"
-AM_CXXFLAGS="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_statically $config_proof"
+AM_CFLAGS="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_statically $config_proof $config_stupid_theoryprop"
+AM_CXXFLAGS="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_statically $config_proof $config_stupid_theoryprop"
 CFLAGS=""
 CXXFLAGS=""
 
