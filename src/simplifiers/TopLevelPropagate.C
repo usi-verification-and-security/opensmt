@@ -427,4 +427,85 @@ bool TopLevelPropagator::substitute(PTRef& root)
 // This is not yet implemented
 bool TopLevelPropagator::contains(PTRef x, PTRef y) { return false; }
 
+PTRef TopLevelPropagator::learnEqTransitivity(PTRef formula)
+{
+    vec<PTRef> implications;
+    vec<PTRef> queue;
+    Map<PTRef,bool,PTRefHash> processed;
 
+    queue.push(formula);
+    while (queue.size() != 0) {
+        PTRef tr = queue.last();
+        if (processed.contains(tr)) {
+            queue.pop(); continue; }
+
+        Pterm& t = logic.getPterm(tr);
+        bool unp_ch = false;
+        for (int i = 0; i < t.size(); i++) {
+            if (!processed.contains(t[i])) {
+                queue.push(t[i]);
+                unp_ch = true;
+            }
+        }
+        if (unp_ch) continue;
+
+        queue.pop();
+        //
+        // Add (or (and (= x w) (= w z)) (and (= x y) (= y z))) -> (= x z)
+        //
+
+        const bool cond1 = logic.isOr(tr) && t.size() == 2 &&
+                           logic.isAnd(t[0]) && logic.isAnd(t[1]) &&
+                           logic.isEquality(logic.getPterm(t[0])[0]) &&
+                           logic.isEquality(logic.getPterm(t[0])[1]) &&
+                           logic.isEquality(logic.getPterm(t[1])[0]) &&
+                           logic.isEquality(logic.getPterm(t[1])[1]);
+
+        if (cond1) {
+            // (= v1 v2) (= v3 v4)
+            PTRef v1 = logic.getPterm(logic.getPterm(t[0])[0])[0];
+            PTRef v2 = logic.getPterm(logic.getPterm(t[0])[0])[1];
+            PTRef v3 = logic.getPterm(logic.getPterm(t[0])[1])[0];
+            PTRef v4 = logic.getPterm(logic.getPterm(t[0])[1])[1];
+
+            // (= t1 t2) (= t3 t4)
+            PTRef t1 = logic.getPterm(logic.getPterm(t[1])[0])[0];
+            PTRef t2 = logic.getPterm(logic.getPterm(t[1])[0])[1];
+            PTRef t3 = logic.getPterm(logic.getPterm(t[1])[1])[0];
+            PTRef t4 = logic.getPterm(logic.getPterm(t[1])[1])[1];
+
+            // Detecting bridging variables
+            const bool cond2a = v1 == v3 || v1 == v4 || v2 == v3 || v2 == v4;
+            const bool cond2b = t1 == t3 || t1 == t4 || t2 == t3 || t2 == t4;
+
+            if (cond2a && cond2b) {
+                PTRef w  = (v1 == v3 || v1 == v4 ? v1 : v2);
+                PTRef x1 = (v1 == w ? v2 : v1);
+                PTRef z1 = (v3 == w ? v4 : v3);
+
+                PTRef y  = (t1 == t3 || t1 == t4 ? t1 : t2);
+                PTRef x2 = (t1 == y ? t2 : t1);
+                PTRef z2 = (t3 == y ? t4 : t3);
+
+                const bool cond2 = (x1 == x2 && z1 == z2) || (x1 == z2 && x2 == z1);
+                if (cond2) {
+                    vec<PTRef> args_eq;
+                    args_eq.push(x1);
+                    args_eq.push(z1);
+                    PTRef eq = logic.mkEq(args_eq);
+                    vec<PTRef> args_impl;
+                    args_impl.push(tr);
+                    args_impl.push(eq);
+                    PTRef impl = logic.mkImpl(args_impl);
+                    implications.push(impl);
+                }
+            }
+        }
+        processed.insert(tr, true);
+    }
+
+    if (implications.size() > 0)
+        return logic.mkAnd(implications);
+    else
+        return PTRef_Undef;
+}

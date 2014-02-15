@@ -261,9 +261,10 @@ class TopLevelPropagator {
     Map<PTRef, Node*, PTRefHash, Equal<PTRef> > PTRefToNode;
     // Get root congruene node and return its term
     PTRef find(PTRef p) const {return ea[ea[termToSERef[p]].getRoot()].getTerm(); }
-    void merge(SERef xr, SERef yr);  // union
-    bool contains(PTRef x, PTRef y); // term x contains an occurrence of y
-    bool assertEq(PTRef eq);         // Add equivalence and propagate
+    void merge(SERef xr, SERef yr);   // union
+    bool contains(PTRef x, PTRef y);  // term x contains an occurrence of y
+    bool assertEq(PTRef eq);          // Add equivalence and propagate
+
   public:
     TopLevelPropagator(Logic& logic, Cnfizer& cnfizer);
     // Insert the top level variable bindings implied by the formula
@@ -272,6 +273,8 @@ class TopLevelPropagator {
     bool substitute(PTRef& root);    // Substitute based on the
                                      // previously inserted bindings.
                                      // Return true if substitutions were performed
+    PTRef learnEqTransitivity(PTRef); // Learn limited transitivity information
+                                      // (should speed up significantly the solving of some problems)
 };
 
 #endif

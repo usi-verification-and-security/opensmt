@@ -14,6 +14,14 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
     for (int i = formulas.size()-1; i >= 0; i--)
         tmp.push(formulas[i]);
     root = logic.mkAnd(tmp);
+    PTRef trans = PTRef_Undef;
+    trans = tlp.learnEqTransitivity(root);
+    if (trans != PTRef_Undef) {
+        vec<PTRef> enriched;
+        enriched.push(trans);
+        enriched.push(root);
+        root = logic.mkAnd(enriched);
+    }
     // Framework for handling different logic related simplifications.
     // For soundness it is important to run this until closure
     vec<PTRef> tlfacts;
