@@ -212,7 +212,16 @@ bool TopLevelPropagator::assertEq(PTRef eqr)
 // and update the list of substitutions based on top-level facts
 // (equalities in the top-level conjunction of the cnf form)
 //
-bool TopLevelPropagator::updateBindings(PTRef root, vec<PTRef>& tlfacts)
+// We have two types of information here.  One is to compute equivalence
+// classes on top level and use the information to prune down the number of
+// equivalences we see during the search.  The other is to try to substitute
+// enode variables with terms not containing the variables to reduce the number
+// of enode variables we need to handle.  It seems that at least the use of
+// only the former does not result in as good a speed-up as the use of only the
+// latter.  It would be interesting to test whether combining the two would be
+// useful in theory and practice.
+//
+bool TopLevelPropagator::updateBindings(PTRef root, vec<PTRef>& tlfacts, Map<PTRef,PTRef,PTRefHash>& substs)
 {
 
     // Insert terms to the enode structure
@@ -363,6 +372,23 @@ bool TopLevelPropagator::updateBindings(PTRef root, vec<PTRef>& tlfacts)
             Pterm& t = logic.getPterm(tr);
             // n will be the reference
             if (!assertEq(tr)) break;
+            // This is the simple replacement to elimiate enode terms where possible
+            assert(t.size() == 2);
+            // One of them should be a var
+            Pterm& a1 = logic.getPterm(t[0]);
+            Pterm& a2 = logic.getPterm(t[1]);
+            if (a1.size() == 0 || a2.size() == 0) {
+                PTRef var = a1.size() == 0 ? t[0] : t[1];
+                PTRef trm = a1.size() == 0 ? t[1] : t[0];
+                if (contains(term, var)) continue;
+#ifdef PEDANTIC_DEBUG
+                if (substs.contains(var)) {
+                    cerr << "Double substitution:" << endl;
+                    cerr << " " << logic.printTerm(var) << "/" << logic.printTerm(trm) << endl;
+                    cerr << " " << logic.printTerm(var) << "/" << logic.PrintTerm(substs[var]) << endl;
+                }
+                substs.insert(var, trm);
+            }
 
 #ifdef PEDANTIC_DEBUG
             cerr << logic.printTerm(tr) << " is an equality and therefore the following replacements are in place:" << endl;
@@ -424,8 +450,34 @@ bool TopLevelPropagator::substitute(PTRef& root)
 
 }
 
-// This is not yet implemented
-bool TopLevelPropagator::contains(PTRef x, PTRef y) { return false; }
+//
+// Does term contain var?
+//
+bool TopLevelPropagator::contains(PTRef term, PTRef var)
+{
+    Map<PTRef, bool, PTRef_equals> proc;
+    vec<PTRef> queue;
+    queue.push(term);
+
+    while (queue.size() != 0) {
+        PTRef tr = queue.last();
+        if (tr = var) return true;
+        if (proc.contains(tr)) {
+            queue.pop();
+            continue;
+        }
+        bool unprocessed_children = false;
+        Pterm& t = logic.getPterm(tr);
+        for (int i = 0; i < t.size(); i++)
+            if (!proc.contains(t[i])) {
+                queue.push(t[i]);
+                unprocessed_children = true; }
+        if (unprocessed_children) continue;
+        queue.pop();
+        proc.insert(tr, true);
+    }
+    return false;
+}
 
 PTRef TopLevelPropagator::learnEqTransitivity(PTRef formula)
 {
