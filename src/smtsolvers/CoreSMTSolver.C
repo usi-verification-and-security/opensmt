@@ -350,6 +350,9 @@ bool CoreSMTSolver::addClause( vec<Lit>& ps
 	&& var(ps[0]) > 1 ) // Avoids true/false
       units_to_partition.push_back( make_pair( res, in ) );
 #endif
+#ifdef PEDANTIC_DEBUG
+    cout << toInt(ps[0]) << endl;
+#endif
     uncheckedEnqueue(ps[0]);
 #ifdef PRODUCE_PROOF
     Clause * confl = propagate();
@@ -380,10 +383,11 @@ bool CoreSMTSolver::addClause( vec<Lit>& ps
     clauses.push(c);
     attachClause(*c);
 
-    //XXX
-//    for (int i = 0; i < c->size(); i++)
-//      cout << toInt((*c)[i]) << " ";
-//    cout << endl;
+#ifdef PEDANTIC_DEBUG
+    for (int i = 0; i < c->size(); i++)
+      cout << toInt((*c)[i]) << " ";
+    cout << endl;
+#endif
 
 #ifndef SMTCOMP
     undo_stack_oper.push_back( NEWCLAUSE );

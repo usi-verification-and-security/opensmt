@@ -377,10 +377,14 @@ bool Egraph::simplifyEquality(PtChild& ptc, bool simplify) {
             cout << term_store.printTerm(ptc.tr) << endl;
 #endif
     }
+    termSort(t);
     return false;
 }
 
-
+//
+// No recursion here, we assume the caller has already introduced the
+// subterms
+//
 void Egraph::declareTerm(PtChild ptc) {
     PTRef tr = ptc.tr;
 
@@ -413,6 +417,14 @@ void Egraph::declareTerm(PtChild ptc) {
             term_store[ptc.parent][ptc.pos] = ptc.tr;
         }
 //        assert (rval == tr);
+    }
+
+    // Check if termToERef contained the ref and it has been rewritten
+    // to another term.  This is a bit messy, but will do for now...
+    PTRef out = enode_store[enode_store.termToERef[ptc.tr]].getTerm();
+    if (out != ptc.tr) {
+        ptc.tr = out;
+        term_store[ptc.parent][ptc.pos] = out;
     }
 }
 

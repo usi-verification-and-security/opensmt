@@ -43,9 +43,9 @@ bool Tseitin::cnfize(PTRef formula
     clause.push(findLit(formula));
 #ifdef PRODUCE_PROOF
     if (config.produce_inter != 0)
-        solver.addSMTClause(clause, partitions);
+        addClause(clause, partitions);
 #endif
-    solver.addSMTClause( clause );
+    addClause( clause );
 
     vec<PTRef> unprocessed_terms;       // Stack for unprocessed terms
     unprocessed_terms.push(formula);    // Start with this term
@@ -135,18 +135,18 @@ void Tseitin::cnfizeAnd( PTRef and_term
         big_clause   .push(~findLit(arg));
 #ifdef PRODUCE_PROOF
         if ( config.produce_inter > 0 )
-            solver.addSMTClause( little_clause, partitions );
+            addClause( little_clause, partitions );
         else
 #endif
-            solver.addSMTClause(little_clause);        // Adds a little clause to the solver
+            addClause(little_clause);        // Adds a little clause to the solver
         little_clause.pop();
     }
 #ifdef PRODUCE_PROOF
     if ( config.produce_inter > 0 )
-        solver.addSMTClause( big_clause, partitions );
+        addClause( big_clause, partitions );
     else
 #endif
-        solver.addSMTClause( big_clause );                    // Adds a big clause to the solver
+        addClause( big_clause );                    // Adds a big clause to the solver
 }
 
 void Tseitin::cnfizeOr( PTRef or_term
@@ -175,18 +175,18 @@ void Tseitin::cnfizeOr( PTRef or_term
         big_clause   .push( arg);
 #ifdef PRODUCE_PROOF
         if ( config.produce_inter > 0 )
-            solver.addSMTClause( little_clause, partitions );
+            addClause( little_clause, partitions );
         else
 #endif
-            solver.addSMTClause(little_clause);        // Adds a little clause to the solver
+            addClause(little_clause);        // Adds a little clause to the solver
         little_clause.pop();
     }
 #ifdef PRODUCE_PROOF
     if (config.produce_inter > 0)
-        solver.addSMTClause( big_clause, partitions );
+        addClause( big_clause, partitions );
     else
 #endif
-            solver.addSMTClause(big_clause);                    // Adds a big clause to the solver
+            addClause(big_clause);                    // Adds a big clause to the solver
 }
 
 void Tseitin::cnfizeXor(PTRef xor_term
@@ -217,10 +217,10 @@ void Tseitin::cnfizeXor(PTRef xor_term
     clause.push(arg1);
 #ifdef PRODUCE_PROOF
     if (config.produce_inter > 0)
-        solver.addSMTClause(clause, partitions);
+        addClause(clause, partitions);
     else
 #endif
-        solver.addSMTClause(clause); // Adds a little clause to the solver
+        addClause(clause); // Adds a little clause to the solver
     clause.pop();
     clause.pop();
 
@@ -229,10 +229,10 @@ void Tseitin::cnfizeXor(PTRef xor_term
     clause.push(~arg1);
 #ifdef PRODUCE_PROOF
     if (config.produce_inter > 0)
-        solver.addSMTClause(clause, partitions);
+        addClause(clause, partitions);
     else
 #endif
-        solver.addSMTClause(clause); // Adds a little clause to the solver
+        addClause(clause); // Adds a little clause to the solver
     clause.pop();
     clause.pop();
 
@@ -244,10 +244,10 @@ void Tseitin::cnfizeXor(PTRef xor_term
     clause.push( arg1);
 #ifdef PRODUCE_PROOF
     if (config.produce_inter > 0)
-        solver.addSMTClause(clause, partitions);
+        addClause(clause, partitions);
     else
 #endif
-        solver.addSMTClause(clause); // Adds a little clause to the solver
+        addClause(clause); // Adds a little clause to the solver
     clause.pop();
     clause.pop();
 
@@ -256,10 +256,10 @@ void Tseitin::cnfizeXor(PTRef xor_term
     clause.push(~arg1);
 #ifdef PRODUCE_PROOF
     if (config.produce_inter > 0)
-        solver.addSMTClause(clause, partitions);
+        addClause(clause, partitions);
     else
 #endif
-        solver.addSMTClause(clause);           // Adds a little clause to the solver
+        addClause(clause);           // Adds a little clause to the solver
 }
 
 void Tseitin::cnfizeIff( PTRef eq_term
@@ -290,10 +290,10 @@ void Tseitin::cnfizeIff( PTRef eq_term
     clause.push(~arg1);
 #ifdef PRODUCE_PROOF
     if (config.produce_inter > 0)
-        solver.addSMTClause(clause, partitions);
+        addClause(clause, partitions);
     else
 #endif
-        solver.addSMTClause(clause);           // Adds a little clause to the solver
+        addClause(clause);           // Adds a little clause to the solver
 
     clause.pop();
     clause.pop();
@@ -303,10 +303,10 @@ void Tseitin::cnfizeIff( PTRef eq_term
     clause.push( arg1);
 #ifdef PRODUCE_PROOF
     if (config.produce_inter > 0)
-        solver.addSMTClause(clause, partitions);
+        addClause(clause, partitions);
     else
 #endif
-        solver.addSMTClause(clause);           // Adds a little clause to the solver
+        addClause(clause);           // Adds a little clause to the solver
 
     clause.pop();
     clause.pop();
@@ -319,10 +319,10 @@ void Tseitin::cnfizeIff( PTRef eq_term
     clause.push(arg1);
 #ifdef PRODUCE_PROOF
     if ( config.produce_inter > 0 )
-        solver.addSMTClause(clause, partitions);
+        addClause(clause, partitions);
     else
 #endif
-        solver.addSMTClause(clause);           // Adds a little clause to the solver
+        addClause(clause);           // Adds a little clause to the solver
     clause.pop();
     clause.pop();
 
@@ -331,10 +331,10 @@ void Tseitin::cnfizeIff( PTRef eq_term
     clause.push(~arg1);
 #ifdef PRODUCE_PROOF
     if (config.produce_inter > 0)
-        solver.addSMTClause(clause, partitions);
+        addClause(clause, partitions);
     else
 #endif
-        solver.addSMTClause(clause);           // Adds a little clause to the solver
+        addClause(clause);           // Adds a little clause to the solver
 }
 
 void Tseitin::cnfizeIfthenelse( PTRef ite_term
@@ -365,16 +365,16 @@ void Tseitin::cnfizeIfthenelse( PTRef ite_term
     vec<Lit> clause;
 
     clause.push(~v); clause.push(~a0); clause.push(a1);
-    solver.addSMTClause( clause ); clause.clear();
+    addClause( clause ); clause.clear();
 
     clause.push(~v); clause.push(a0); clause.push(a2);
-    solver.addSMTClause( clause ); clause.clear();
+    addClause( clause ); clause.clear();
 
     clause.push(v); clause.push(~a0); clause.push(~a1);
-    solver.addSMTClause( clause ); clause.clear();
+    addClause( clause ); clause.clear();
 
     clause.push(v); clause.push(a0); clause.push(~a2);
-    solver.addSMTClause( clause );
+    addClause( clause );
 }
 
 void Tseitin::cnfizeImplies( PTRef impl_term
@@ -404,13 +404,13 @@ void Tseitin::cnfizeImplies( PTRef impl_term
     clause.push(v);
 
     clause.push(a0);
-    solver.addSMTClause(clause); clause.pop();
+    addClause(clause); clause.pop();
 
     clause.push(~a1);
-    solver.addSMTClause(clause); clause.clear();
+    addClause(clause); clause.clear();
 
     clause.push(~v); clause.push(~a0); clause.push(a1);
-    solver.addSMTClause(clause);
+    addClause(clause);
 }
 
 void Tseitin::cnfizeDistinct( PTRef distinct_term

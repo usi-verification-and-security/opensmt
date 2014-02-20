@@ -225,40 +225,40 @@ bool TopLevelPropagator::updateBindings(PTRef root, vec<PTRef>& tlfacts, Map<PTR
 {
 
     // Insert terms to the enode structure
-    vec<PtChild> terms;
-    getTermList<PtChild>(root, terms, logic);
-    for (int i = terms.size()-1; i >= 0; i--) {
-        PtChild& ptc = terms[i];
-        if (!termToSERef.contains(ptc.tr)) {
-            // New term
-            Pterm& t = logic.getPterm(ptc.tr);
-            // 1. Find/define the symbol
-            SymRef sr = t.symb();
-            SERef ser;
-            if (symToSERef.contains(sr))
-                ser = symToSERef[sr];
-            else {
-                ser = ea.alloc(sr);
-                symToSERef.insert(sr, ser);
-            }
-            // Construct the list enode
-            SERef cdr = SEnode::SERef_Nil;
-            for (int j = t.size()-1; j >= 0; j--) {
-                SERef cdr_out;
-                SERef car = termToSERef[t[j]];
-                SigPair k(ea[ea[car].getRoot()].getCid(),
-                          ea[ea[cdr].getRoot()].getCid());
-                if (!sigtab.contains(k)) {
-                    cdr_out = ea.alloc(car, cdr, SEnode::et_list, PTRef_Undef);
-                    cdr = cdr_out;
-                }
-                else
-                    cdr = sigtab[k];
-            }
-            SERef set = ea.alloc(ser, cdr, SEnode::et_term, ptc.tr);
-            termToSERef.insert(ptc.tr, set);
-        }
-    }
+//    vec<PtChild> terms;
+//    getTermList<PtChild>(root, terms, logic);
+//    for (int i = terms.size()-1; i >= 0; i--) {
+//        PtChild& ptc = terms[i];
+//        if (!termToSERef.contains(ptc.tr)) {
+//            // New term
+//            Pterm& t = logic.getPterm(ptc.tr);
+//            // 1. Find/define the symbol
+//            SymRef sr = t.symb();
+//            SERef ser;
+//            if (symToSERef.contains(sr))
+//                ser = symToSERef[sr];
+//            else {
+//                ser = ea.alloc(sr);
+//                symToSERef.insert(sr, ser);
+//            }
+//            // Construct the list enode
+//            SERef cdr = SEnode::SERef_Nil;
+//            for (int j = t.size()-1; j >= 0; j--) {
+//                SERef cdr_out;
+//                SERef car = termToSERef[t[j]];
+//                SigPair k(ea[ea[car].getRoot()].getCid(),
+//                          ea[ea[cdr].getRoot()].getCid());
+//                if (!sigtab.contains(k)) {
+//                    cdr_out = ea.alloc(car, cdr, SEnode::et_list, PTRef_Undef);
+//                    cdr = cdr_out;
+//                }
+//                else
+//                    cdr = sigtab[k];
+//            }
+//            SERef set = ea.alloc(ser, cdr, SEnode::et_term, ptc.tr);
+//            termToSERef.insert(ptc.tr, set);
+//        }
+//    }
     // Find equalities that are true/false on the abstract top (Boolean)
     // level
     vec<PtAsgn> facts;
@@ -371,7 +371,7 @@ bool TopLevelPropagator::updateBindings(PTRef root, vec<PTRef>& tlfacts, Map<PTR
 #endif
             Pterm& t = logic.getPterm(tr);
             // n will be the reference
-            if (!assertEq(tr)) break;
+//            if (!assertEq(tr)) break;
             // This is the simple replacement to elimiate enode terms where possible
             assert(t.size() == 2);
             // One of them should be a var
@@ -380,27 +380,74 @@ bool TopLevelPropagator::updateBindings(PTRef root, vec<PTRef>& tlfacts, Map<PTR
             if (a1.size() == 0 || a2.size() == 0) {
                 PTRef var = a1.size() == 0 ? t[0] : t[1];
                 PTRef trm = a1.size() == 0 ? t[1] : t[0];
-                if (contains(term, var)) continue;
+                if (contains(trm, var)) continue;
 #ifdef PEDANTIC_DEBUG
                 if (substs.contains(var)) {
                     cerr << "Double substitution:" << endl;
                     cerr << " " << logic.printTerm(var) << "/" << logic.printTerm(trm) << endl;
-                    cerr << " " << logic.printTerm(var) << "/" << logic.PrintTerm(substs[var]) << endl;
+                    cerr << " " << logic.printTerm(var) << "/" << logic.printTerm(substs[var]) << endl;
                 }
-                substs.insert(var, trm);
+#endif
+                substs.insert(var, logic.cloneTerm(trm));
             }
 
 #ifdef PEDANTIC_DEBUG
-            cerr << logic.printTerm(tr) << " is an equality and therefore the following replacements are in place:" << endl;
-            for (int j = 0; j < t.size(); j++)
-                cerr << "  [" << j << "] " << logic.printTerm(t[j]) << " replaced by "
-                     << logic.printTerm(find(t[0]))  << endl;
+//            cerr << logic.printTerm(tr) << " is an equality and therefore the following replacements are in place:" << endl;
+//            for (int j = 0; j < t.size(); j++)
+//                cerr << "  [" << j << "] " << logic.printTerm(t[j]) << " replaced by "
+//                     << logic.printTerm(find(t[0]))  << endl;
 #endif
         }
     }
     if (i < facts.size())
         return false;
     return true;
+}
+
+//
+// I will now implement here the second type of substitution aiming at minimizing the number of enode variables.
+//
+bool TopLevelPropagator::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& substs)
+{
+    int n_substs = 0;
+    vec<PtChild> nodes;
+    nodes.push(PtChild(root, PTRef_Undef, -1));
+
+
+    while (nodes.size() > 0) {
+        PtChild ctr = nodes.last(); nodes.pop();
+        if (substs.contains(ctr.tr)) {
+            PTRef nr = substs[ctr.tr];
+#ifdef PEDANTIC_DEBUG
+            cerr << "Will substitute " << logic.printTerm(ctr.tr)
+                 << " with " << logic.printTerm(nr) << " in ";
+#endif
+            // Do the substitution
+            if (ctr.parent == PTRef_Undef) {
+#ifdef PEDANTIC_DEBUG
+                cerr << logic.printTerm(root);
+#endif
+                root = nr;
+            }else{
+                Pterm& parent = logic.getPterm(ctr.parent);
+#ifdef PEDANTIC_DEBUG
+                cerr << logic.printTerm(ctr.parent) << ": ";
+#endif
+                assert(parent.size() > ctr.pos);
+                parent[ctr.pos] = nr;
+#ifdef PEDANTIC_DEBUG
+                cerr << logic.printTerm(ctr.parent) << endl;
+#endif
+            }
+            n_substs++;
+            continue;
+        }
+        Pterm& t = logic.getPterm(ctr.tr);
+        for (int i = 0; i < t.size(); i++)
+            nodes.push(PtChild(t[i], ctr.tr, i));
+    }
+    total_substs += n_substs;
+    return n_substs > 0;
 }
 
 bool TopLevelPropagator::substitute(PTRef& root)
@@ -455,13 +502,13 @@ bool TopLevelPropagator::substitute(PTRef& root)
 //
 bool TopLevelPropagator::contains(PTRef term, PTRef var)
 {
-    Map<PTRef, bool, PTRef_equals> proc;
+    Map<PTRef, bool, PTRefHash> proc;
     vec<PTRef> queue;
     queue.push(term);
 
     while (queue.size() != 0) {
         PTRef tr = queue.last();
-        if (tr = var) return true;
+        if (tr == var) return true;
         if (proc.contains(tr)) {
             queue.pop();
             continue;

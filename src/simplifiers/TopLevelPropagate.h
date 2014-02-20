@@ -269,10 +269,11 @@ class TopLevelPropagator {
     TopLevelPropagator(Logic& logic, Cnfizer& cnfizer);
     // Insert the top level variable bindings implied by the formula
     // root, store clones of the found equalities to tlfacts
-    bool updateBindings(PTRef root, vec<PTRef>& tlfacts, Map<PTRef,PTRef,PTRefHash&> substs);
+    bool updateBindings(PTRef root, vec<PTRef>& tlfacts, Map<PTRef,PTRef,PTRefHash>& substs);
     bool substitute(PTRef& root);    // Substitute based on the
                                      // previously inserted bindings.
                                      // Return true if substitutions were performed
+    bool varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& substs);
     PTRef learnEqTransitivity(PTRef); // Learn limited transitivity information
                                       // (should speed up significantly the solving of some problems)
 };

@@ -25,27 +25,29 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
     // Framework for handling different logic related simplifications.
     // For soundness it is important to run this until closure
     vec<PTRef> tlfacts;
+    Map<PTRef,PTRef,PTRefHash> substs;
     while (true) {
-        if (!tlp.updateBindings(root, tlfacts)) {
+        if (!tlp.updateBindings(root, tlfacts, substs)) {
             // insert an artificial unsatisfiable problem
             ts.cnfizeAndGiveToSolver(logic.mkNot(logic.getTerm_true()));
             state = s_False; goto end; }
 
-        if (!tlp.substitute(root)) break;
+//        if (!tlp.substitute(root)) break;
+        if (!tlp.varsubstitute(root, substs)) break;
     }
 #ifdef PEDANTIC_DEBUG
-    cerr << "Stored top level facts not to be simplified away: " << endl;
-    for (int i = 0; i < tlfacts.size(); i++)
-        cerr << logic.printTerm(tlfacts[i]) << endl;
+//    cerr << "Stored top level facts not to be simplified away: " << endl;
+//    for (int i = 0; i < tlfacts.size(); i++)
+//        cerr << logic.printTerm(tlfacts[i]) << endl;
 #endif
     {
         // Add the top level facts to the formula
         // XXX Fix this once debugging phase is over
-        vec<PTRef> tmp;
-        tmp.push(root);
-        for (int i = 0; i < tlfacts.size(); i++)
-            tmp.push(tlfacts[i]);
-        root = logic.mkAnd(tmp);
+//        vec<PTRef> tmp;
+//        tmp.push(root);
+//        for (int i = 0; i < tlfacts.size(); i++)
+//            tmp.push(tlfacts[i]);
+//        root = logic.mkAnd(tmp);
         vec<PtChild> terms;
         FContainer fc(root);
         expandItes(fc, terms);

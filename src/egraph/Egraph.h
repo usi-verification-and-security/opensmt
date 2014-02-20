@@ -464,6 +464,7 @@ public:
   // the nested booleans that should be processed again with the CNF
   // solver
   lbool       addTerm             ( PTRef, vec<PtPair>&, vec<PTRef>& );
+  // Non-recursive declare term
   void        declareTerm         ( PtChild );
   // Remove redundancies and replace with true if
   // trivial.  Return true if root of the formula is trivially true
