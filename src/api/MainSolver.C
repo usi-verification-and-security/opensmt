@@ -25,8 +25,11 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
     // Framework for handling different logic related simplifications.
     // For soundness it is important to run this until closure
     vec<PTRef> tlfacts;
-    Map<PTRef,PTRef,PTRefHash> substs;
     while (true) {
+        // For some reason opensmt1 reinitiates the substs on each
+        // iteration?  I'd think having it outside would be better but
+        // that way we're still slower. Let's see...
+        Map<PTRef,PTRef,PTRefHash> substs;
         if (!tlp.updateBindings(root, tlfacts, substs)) {
             // insert an artificial unsatisfiable problem
             ts.cnfizeAndGiveToSolver(logic.mkNot(logic.getTerm_true()));
