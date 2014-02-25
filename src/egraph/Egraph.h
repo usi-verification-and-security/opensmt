@@ -616,7 +616,7 @@ private:
 
 //  string printEqClass              ( ERef );
 public:
-  const char* printEqClass         ( PTRef tr ) const;
+  char* printEqClass               ( PTRef tr ) const;
 private:
   string printExplanation          ( );
   string printExplanationTree      ( PTRef );

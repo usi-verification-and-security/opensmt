@@ -827,14 +827,14 @@ lbool Cnfizer::getTermValue(PTRef tr) {
     return sgn == false ? val : (val == l_True ? l_False : l_True);
 }
 
-// Assumes that the root of the tree is term_list[0]
+// Assumes that the root of the tree is the last element of term_list
 PTRef Cnfizer::expandItes(vec<PtChild>& term_list) {
     assert(term_list.size() > 0);
     vec<PtPair> ites;
+    int l = term_list.size()-1;
+    assert(!logic.isTheoryTerm(term_list[l].tr) or !logic.isIte(logic.getPterm(term_list[l].tr).symb()));
 
-    assert(!logic.isTheoryTerm(term_list[0].tr) or !logic.isIte(logic.getPterm(term_list[0].tr).symb()));
-
-    for (int i = term_list.size()-1; i >= 1; i--) {
+    for (int i = 0; i < term_list.size()-1; i++) {
         PtChild ptc   = term_list[i];
         Pterm& parent = logic.getPterm(ptc.parent);
         PTRef tr      = ptc.tr;
@@ -863,7 +863,7 @@ PTRef Cnfizer::expandItes(vec<PtChild>& term_list) {
     }
 
     vec<PTRef> ite_roots;
-    ite_roots.push(term_list[0].tr);
+    ite_roots.push(term_list[l].tr);
 
     for (int j = 0; j < ites.size(); j++) {
         PTRef ite  = ites[j].x;
@@ -902,5 +902,5 @@ PTRef Cnfizer::expandItes(vec<PtChild>& term_list) {
     }
     if (ite_roots.size() > 1)
         return logic.mkAnd(ite_roots);
-    else return term_list[0].tr;
+    else return term_list[l].tr;
 }

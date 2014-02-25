@@ -30,10 +30,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         // iteration?  I'd think having it outside would be better but
         // that way we're still slower. Let's see...
         Map<PTRef,PTRef,PTRefHash> substs;
-        if (!tlp.updateBindings(root, tlfacts, substs)) {
-            // insert an artificial unsatisfiable problem
-            ts.cnfizeAndGiveToSolver(logic.mkNot(logic.getTerm_true()));
-            state = s_False; goto end; }
+        tlp.retrieveSubstitutions(root, substs);
 
 //        if (!tlp.substitute(root)) break;
         if (!tlp.varsubstitute(root, substs)) break;
@@ -54,7 +51,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         vec<PtChild> terms;
         FContainer fc(root);
         expandItes(fc, terms);
-        fc.setRoot(terms[0].tr);
+        fc.setRoot(terms[terms.size()-1].tr);
         fc = propFlatten(fc);
         terms.clear();
         getTermList(fc.getRoot(), terms, logic);
@@ -217,9 +214,8 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
 //
 MainSolver::FContainer MainSolver::simplifyEqualities(vec<PtChild>& terms)
 {
-    PTRef root = terms[0].tr;
-
-    for (int i = terms.size()-1; i >= 0; i--) {
+    PTRef root = terms[terms.size()-1].tr;
+    for (int i = 0; i < terms.size(); i++) {
         PtChild& ptc = terms[i];
         PTRef tr = ptc.tr;
         if (logic.isTheoryTerm(tr) && logic.getTerm_true() != tr && logic.getTerm_false() != tr) {

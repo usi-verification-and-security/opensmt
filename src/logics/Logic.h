@@ -137,6 +137,8 @@ class Logic {
     bool        declare_sort_hook  (Sort* s);
     inline bool isPredef           (string&)        const { return false; };
 
+    // Implement logic-aware simplifications
+    void        simplify           (SymRef& s, vec<PTRef>& args);
     PTRef       resolveTerm        (const char* s, vec<PTRef>& args);
     PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms);
 

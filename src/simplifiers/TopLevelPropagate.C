@@ -197,71 +197,56 @@ bool TopLevelPropagator::assertEq(PTRef eqr)
     return ok;
 }
 
-//void TopLevelPropagator::merge(TopLevelPropagator::Node* x,
-//                               TopLevelPropagator::Node* y)
-//{
-//    x = find(x);
-//    y = find(y);
 //
-//    // Make sure the root is a var, if equality class contains a var
-//    if (logic.isVar(x->tr)) y->parent = x;
-//    else x->parent = y; }
-
+// The substitutions for the term riddance from osmt1
 //
-// Extract the (more or less) cnfized structure starting from root,
-// and update the list of substitutions based on top-level facts
-// (equalities in the top-level conjunction of the cnf form)
-//
-// We have two types of information here.  One is to compute equivalence
-// classes on top level and use the information to prune down the number of
-// equivalences we see during the search.  The other is to try to substitute
-// enode variables with terms not containing the variables to reduce the number
-// of enode variables we need to handle.  It seems that at least the use of
-// only the former does not result in as good a speed-up as the use of only the
-// latter.  It would be interesting to test whether combining the two would be
-// useful in theory and practice.
-//
-bool TopLevelPropagator::updateBindings(PTRef root, vec<PTRef>& tlfacts, Map<PTRef,PTRef,PTRefHash>& substs)
+void TopLevelPropagator::retrieveSubstitutions(PTRef root, Map<PTRef,PTRef,PTRefHash>& substs)
 {
-
-    // Insert terms to the enode structure
-//    vec<PtChild> terms;
-//    getTermList<PtChild>(root, terms, logic);
-//    for (int i = terms.size()-1; i >= 0; i--) {
-//        PtChild& ptc = terms[i];
-//        if (!termToSERef.contains(ptc.tr)) {
-//            // New term
-//            Pterm& t = logic.getPterm(ptc.tr);
-//            // 1. Find/define the symbol
-//            SymRef sr = t.symb();
-//            SERef ser;
-//            if (symToSERef.contains(sr))
-//                ser = symToSERef[sr];
-//            else {
-//                ser = ea.alloc(sr);
-//                symToSERef.insert(sr, ser);
-//            }
-//            // Construct the list enode
-//            SERef cdr = SEnode::SERef_Nil;
-//            for (int j = t.size()-1; j >= 0; j--) {
-//                SERef cdr_out;
-//                SERef car = termToSERef[t[j]];
-//                SigPair k(ea[ea[car].getRoot()].getCid(),
-//                          ea[ea[cdr].getRoot()].getCid());
-//                if (!sigtab.contains(k)) {
-//                    cdr_out = ea.alloc(car, cdr, SEnode::et_list, PTRef_Undef);
-//                    cdr = cdr_out;
-//                }
-//                else
-//                    cdr = sigtab[k];
-//            }
-//            SERef set = ea.alloc(ser, cdr, SEnode::et_term, ptc.tr);
-//            termToSERef.insert(ptc.tr, set);
-//        }
-//    }
-    // Find equalities that are true/false on the abstract top (Boolean)
-    // level
     vec<PtAsgn> facts;
+    vec<PtAsgn> facts_clone;
+
+    collectFacts(root, facts, facts_clone);
+
+    for (int i = 0; i < facts.size(); i++) {
+        PTRef tr = facts[i].tr;
+        lbool sgn = facts[i].sgn;
+        // Join equalities
+        if (logic.isEquality(tr) && sgn == l_True) {
+#ifdef PEDANTIC_DEBUG
+            cerr << "Identified an equality: " << logic.printTerm(tr) << endl;
+#endif
+            Pterm& t = logic.getPterm(tr);
+            // n will be the reference
+//            if (!assertEq(tr)) break;
+            // This is the simple replacement to elimiate enode terms where possible
+            assert(t.size() == 2);
+            // One of them should be a var
+            Pterm& a1 = logic.getPterm(t[0]);
+            Pterm& a2 = logic.getPterm(t[1]);
+            if (a1.size() == 0 || a2.size() == 0) {
+                PTRef var = a1.size() == 0 ? t[0] : t[1];
+                PTRef trm = a1.size() == 0 ? t[1] : t[0];
+                if (contains(trm, var)) continue;
+#ifdef PEDANTIC_DEBUG
+                if (substs.contains(var)) {
+                    cerr << "Double substitution:" << endl;
+                    cerr << " " << logic.printTerm(var) << "/" << logic.printTerm(trm) << endl;
+                    cerr << " " << logic.printTerm(var) << "/" << logic.printTerm(substs[var]) << endl;
+                }
+                char* tmp1 = logic.printTerm(var);
+                char* tmp2 = logic.printTerm(trm);
+                cerr << "Substituting " << tmp1 << " with " << tmp2 << endl;
+                ::free(tmp1); ::free(tmp2);
+#endif
+                substs.insert(var, logic.cloneTerm(trm));
+            }
+        }
+    }
+}
+
+void TopLevelPropagator::collectFacts(PTRef root, vec<PtAsgn>& facts, vec<PtAsgn>& facts_clone)
+{
+    Map<PTRef,bool,PTRefHash> isdup;
     vec<PtAsgn> queue;
     PTRef p;
     lbool sign;
@@ -270,6 +255,10 @@ bool TopLevelPropagator::updateBindings(PTRef root, vec<PTRef>& tlfacts, Map<PTR
 
     while (queue.size() != 0) {
         PtAsgn pta = queue.last(); queue.pop();
+
+        if (isdup.contains(pta.tr)) continue;
+        isdup.insert(pta.tr, true);
+
         Pterm& t = logic.getPterm(pta.tr);
 
         if (logic.isAnd(pta.tr) and pta.sgn == l_True)
@@ -309,7 +298,7 @@ bool TopLevelPropagator::updateBindings(PTRef root, vec<PTRef>& tlfacts, Map<PTR
                 vec<PTRef> ps;
                 ps.push(r); ps.push(logic.cloneTerm(t[i]));
                 PTRef eq = logic.mkEq(ps);
-                tlfacts.push(eq);
+                facts_clone.push(PtAsgn(eq, l_True));
             }
             facts.push(pta);
         }
@@ -322,15 +311,66 @@ bool TopLevelPropagator::updateBindings(PTRef root, vec<PTRef>& tlfacts, Map<PTR
     for (int i = 0; i < facts.size(); i++)
         cerr << (facts[i].sgn == l_True ? "" : "not ") << logic.printTerm(facts[i].tr) << endl;
 #endif
+}
 
+
+//
+// Initialize the small congruence data structure with the relevant nodes starting from root
+//
+void TopLevelPropagator::initCongruence(PTRef root)
+{
+    // Insert terms to the enode structure
+    vec<PtChild> terms;
+    getTermList<PtChild>(root, terms, logic);
+    for (int i = 0; i < terms.size(); i++) {
+        PtChild& ptc = terms[i];
+        if (!termToSERef.contains(ptc.tr)) {
+            // New term
+            Pterm& t = logic.getPterm(ptc.tr);
+            // 1. Find/define the symbol
+            SymRef sr = t.symb();
+            SERef ser;
+            if (symToSERef.contains(sr))
+                ser = symToSERef[sr];
+            else {
+                ser = ea.alloc(sr);
+                symToSERef.insert(sr, ser);
+            }
+            // Construct the list enode
+            SERef cdr = SEnode::SERef_Nil;
+            for (int j = t.size()-1; j >= 0; j--) {
+                SERef cdr_out;
+                SERef car = termToSERef[t[j]];
+                SigPair k(ea[ea[car].getRoot()].getCid(),
+                          ea[ea[cdr].getRoot()].getCid());
+                if (!sigtab.contains(k)) {
+                    cdr_out = ea.alloc(car, cdr, SEnode::et_list, PTRef_Undef);
+                    cdr = cdr_out;
+                }
+                else
+                    cdr = sigtab[k];
+            }
+            SERef set = ea.alloc(ser, cdr, SEnode::et_term, ptc.tr);
+            termToSERef.insert(ptc.tr, set);
+        }
+    }
+}
+
+
+//
+// The congruence substitution scheme.  This seems to have some potential based
+// on the earlier experimentation.
+//
+bool TopLevelPropagator::computeCongruenceSubstitutions(PTRef root, vec<PtAsgn>& tlfacts)
+{
+    vec<PtAsgn> facts;
+    collectFacts(root, facts, tlfacts);
     int i;
-
-
     for (i = 0; i < facts.size(); i++) {
         PTRef tr = facts[i].tr;
         lbool sgn = facts[i].sgn;
-//
-//        // Join to true
+
+        // Join to true
 //        if (logic.isUP(tr) && !logic.isEquality(tr) && !logic.isDisequality(tr) && sgn == l_True) {
 //            if (PTRefToNode.contains(tr)) {
 //                Node* n = find(PTRefToNode[tr]);
@@ -363,46 +403,98 @@ bool TopLevelPropagator::updateBindings(PTRef root, vec<PTRef>& tlfacts, Map<PTR
 //                     << logic.printTerm(logic.getTerm_false()) << endl;
 //#endif
 //        }
-//
+
         // Join equalities
+//        else if (logic.isEquality(tr) && sgn == l_True) {
         if (logic.isEquality(tr) && sgn == l_True) {
 #ifdef PEDANTIC_DEBUG
             cerr << "Identified an equality: " << logic.printTerm(tr) << endl;
 #endif
             Pterm& t = logic.getPterm(tr);
             // n will be the reference
-//            if (!assertEq(tr)) break;
+            if (!assertEq(tr)) break;
             // This is the simple replacement to elimiate enode terms where possible
             assert(t.size() == 2);
-            // One of them should be a var
-            Pterm& a1 = logic.getPterm(t[0]);
-            Pterm& a2 = logic.getPterm(t[1]);
-            if (a1.size() == 0 || a2.size() == 0) {
-                PTRef var = a1.size() == 0 ? t[0] : t[1];
-                PTRef trm = a1.size() == 0 ? t[1] : t[0];
-                if (contains(trm, var)) continue;
 #ifdef PEDANTIC_DEBUG
-                if (substs.contains(var)) {
-                    cerr << "Double substitution:" << endl;
-                    cerr << " " << logic.printTerm(var) << "/" << logic.printTerm(trm) << endl;
-                    cerr << " " << logic.printTerm(var) << "/" << logic.printTerm(substs[var]) << endl;
-                }
-#endif
-                substs.insert(var, logic.cloneTerm(trm));
-            }
-
-#ifdef PEDANTIC_DEBUG
-//            cerr << logic.printTerm(tr) << " is an equality and therefore the following replacements are in place:" << endl;
-//            for (int j = 0; j < t.size(); j++)
-//                cerr << "  [" << j << "] " << logic.printTerm(t[j]) << " replaced by "
-//                     << logic.printTerm(find(t[0]))  << endl;
+            cerr << logic.printTerm(tr) << " is an equality and therefore the following replacements are in place:" << endl;
+            for (int j = 0; j < t.size(); j++)
+                cerr << "  [" << j << "] " << logic.printTerm(t[j]) << " replaced by "
+                     << logic.printTerm(find(t[0]))  << endl;
 #endif
         }
     }
     if (i < facts.size())
         return false;
     return true;
+
 }
+
+
+//
+// Extract the (more or less) cnfized structure starting from root,
+// and update the list of substitutions based on top-level facts
+// (equalities in the top-level conjunction of the cnf form)
+//
+// We have two types of information here.  One is to compute equivalence
+// classes on top level and use the information to prune down the number of
+// equivalences we see during the search.  The other is to try to substitute
+// enode variables with terms not containing the variables to reduce the number
+// of enode variables we need to handle.  It seems that at least the use of
+// only the former does not result in as good a speed-up as the use of only the
+// latter.  It would be interesting to test whether combining the two would be
+// useful in theory and practice.
+//
+//bool TopLevelPropagator::updateBindings(PTRef root, vec<PTRef>& tlfacts, Map<PTRef,PTRef,PTRefHash>& substs)
+//{
+//    // Find equalities that are true/false on the abstract top (Boolean)
+//    // level
+//    int i;
+//
+//    vec<PTRef> facts;
+//    collectFacts(root, facts, tlfacts);
+//
+//    for (i = 0; i < facts.size(); i++) {
+//        PTRef tr = facts[i].tr;
+//        lbool sgn = facts[i].sgn;
+//        // Join equalities
+//        if (logic.isEquality(tr) && sgn == l_True) {
+//#ifdef PEDANTIC_DEBUG
+//            cerr << "Identified an equality: " << logic.printTerm(tr) << endl;
+//#endif
+//            Pterm& t = logic.getPterm(tr);
+//            // n will be the reference
+////            if (!assertEq(tr)) break;
+//            // This is the simple replacement to elimiate enode terms where possible
+//            assert(t.size() == 2);
+//            // One of them should be a var
+//            Pterm& a1 = logic.getPterm(t[0]);
+//            Pterm& a2 = logic.getPterm(t[1]);
+//            if (a1.size() == 0 || a2.size() == 0) {
+//                PTRef var = a1.size() == 0 ? t[0] : t[1];
+//                PTRef trm = a1.size() == 0 ? t[1] : t[0];
+//                if (contains(trm, var)) continue;
+//#ifdef PEDANTIC_DEBUG
+//                if (substs.contains(var)) {
+//                    cerr << "Double substitution:" << endl;
+//                    cerr << " " << logic.printTerm(var) << "/" << logic.printTerm(trm) << endl;
+//                    cerr << " " << logic.printTerm(var) << "/" << logic.printTerm(substs[var]) << endl;
+//                }
+//#endif
+//                substs.insert(var, logic.cloneTerm(trm));
+//            }
+//
+//#ifdef PEDANTIC_DEBUG
+////            cerr << logic.printTerm(tr) << " is an equality and therefore the following replacements are in place:" << endl;
+////            for (int j = 0; j < t.size(); j++)
+////                cerr << "  [" << j << "] " << logic.printTerm(t[j]) << " replaced by "
+////                     << logic.printTerm(find(t[0]))  << endl;
+//#endif
+//        }
+//    }
+//    if (i < facts.size())
+//        return false;
+//    return true;
+//}
 
 //
 // I will now implement here the second type of substitution aiming at minimizing the number of enode variables.

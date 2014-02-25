@@ -173,6 +173,17 @@ class PtChild {
     PTRef parent;
     int pos;
     PtChild(PTRef tr_, PTRef parent_, int pos_) : tr(tr_), parent(parent_), pos(pos_) {}
+    PtChild() : tr(PTRef_Undef), parent(PTRef_Undef), pos(-1) {}
+    inline friend bool operator== (const PtChild& a1, const PtChild& a2)
+        { return (a1.tr == a2.tr) && (a1.parent == a2.parent) && (a1.pos == a2.pos); }
+    inline friend bool operator!= (const PtChild& a1, const PtChild& a2)
+        { return (a1.tr != a2.tr) || (a1.parent != a2.parent) || (a1.pos != a2.pos); }
+//    inline friend bool operator< (const PTRef& a1, const PTRef& a2)    { return a1.x < a2.x;  }
+};
+
+struct PtChildHash {
+    uint32_t operator () (const PtChild& s) const {
+        return (uint32_t)s.tr.x+(uint32_t)s.parent.x+(uint32_t)s.pos; }
 };
 
 class PtAsgn {

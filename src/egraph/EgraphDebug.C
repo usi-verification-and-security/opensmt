@@ -206,24 +206,34 @@ bool Egraph::checkExpReachable( PTRef x, PTRef h_x ) {
 //}
 //
 
-const char* Egraph::printEqClass(PTRef tr) const {
-    std::stringstream ss;
+char* Egraph::printEqClass(PTRef tr) const {
+    char* out;
+    char* old;
+
     const ERef er = enode_store.termToERef[tr];
     assert(enode_store[er].isTerm());
     ERef c_er = er;
-    ss << "In the same eq class with " << logic.printTerm(tr)
-       << " are:" << endl << "[ ";
+    char* tmp = logic.printTerm(tr);
+    asprintf(&out, "In the same eq class with %s are:\n[ ",
+             tmp);
+    ::free(tmp);
 
     while (true) {
         const Enode& en = enode_store[c_er];
         ERef next_er = en.getNext();
         if (next_er == er) break;
         const Enode& en_o = enode_store[next_er];
-        ss << logic.printTerm(en_o.getTerm()) << " ";
+        old = out;
+        tmp = logic.printTerm(en_o.getTerm());
+        asprintf(&out, "%s%s ", old, tmp);
+        ::free(tmp);
+        ::free(old);
         c_er = next_er;
     }
-    ss << "]";
-    return ss.str().c_str();
+    old = out;
+    asprintf(&out, "%s]", old);
+    ::free(old);
+    return out;
 }
 
 std::string Egraph::printExplanationTree( PTRef x )

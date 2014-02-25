@@ -267,9 +267,15 @@ class TopLevelPropagator {
 
   public:
     TopLevelPropagator(Logic& logic, Cnfizer& cnfizer);
-    // Insert the top level variable bindings implied by the formula
-    // root, store clones of the found equalities to tlfacts
-    bool updateBindings(PTRef root, vec<PTRef>& tlfacts, Map<PTRef,PTRef,PTRefHash>& substs);
+    // Collect the top level facts following the boolean structure
+    void collectFacts(PTRef root, vec<PtAsgn>& facts, vec<PtAsgn>& facts_clone);
+    // OpenSMT 1 substitution scheme - replace variables with terms not containing the variable
+    void retrieveSubstitutions(PTRef root, Map<PTRef,PTRef,PTRefHash>& substs);
+
+    // Initialize the congruence with terms starting from root
+    void initCongruence(PTRef root);
+    // Compute the substitutions based on the congruence
+    bool computeCongruenceSubstitutions(PTRef root, vec<PtAsgn>& tlfacts);
     bool substitute(PTRef& root);    // Substitute based on the
                                      // previously inserted bindings.
                                      // Return true if substitutions were performed

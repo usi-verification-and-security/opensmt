@@ -238,8 +238,12 @@ bool THandler::assertLits(vec<Lit>& trail)
     if (res != l_False)
         cout << "; non-conflicting" << endl;
 //    cout << printAssertions(assertions);
-    cout << egraph.printEqClass(logic.getTerm_true()) << endl;
-    cout << egraph.printEqClass(logic.getTerm_false()) << endl;
+    char* tmp = egraph.printEqClass(logic.getTerm_true());
+    cout << tmp << endl;
+    ::free(tmp);
+    tmp = egraph.printEqClass(logic.getTerm_false());
+    cout << tmp << endl;
+    ::free(tmp);
 #endif
     return res != l_False;
 }

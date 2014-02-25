@@ -145,6 +145,7 @@ CoreSMTSolver::initialize( )
   skip_step = config.sat_initial_skip_step;
   skipped_calls = 0;
 #ifdef STATISTICS
+  preproc_time = 0;
   tsolvers_time = 0;
   ie_generated = 0;
 #endif

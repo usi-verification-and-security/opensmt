@@ -192,6 +192,7 @@ bool Logic::declare_sort_hook(Sort* s) {
 // The vec argument might be sorted!
 PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args) {
     SymRef sref = term_store.lookupSymbol(s, args);
+    simplify(sref, args);
     PTRef rval;
     if (sref == SymRef_Undef)
         rval = PTRef_Undef;
@@ -200,9 +201,128 @@ PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args) {
     return rval;
 }
 
-// Check if arguments contain true or false?
+void Logic::simplify(SymRef& s, vec<PTRef>& args) {
+    int dropped_args = 0;
+    bool replace = false;
+    if (s == getSym_and()) {
+        int i, j;
+        for (i = j = 0; i < args.size(); i++) {
+            if (args[i] == getTerm_false()) {
+                args.clear();
+                s = getSym_false();
+                cerr << "and  -> false" << endl;
+                return;
+            } else if (args[i] != getTerm_true()) {
+                args[j++] = args[i];
+            } else {
+                cerr << "and -> drop" << endl; }
+        }
+        dropped_args = i-j;
+        if (dropped_args == args.size()) {
+            s = getSym_true();
+            args.clear();
+            cerr << "and -> true" << endl;
+            return;
+        } else if (dropped_args == args.size() - 1)
+            replace = true;
+        else if (dropped_args > 0)
+            args.shrink(dropped_args);
+    }
+    if (s == getSym_or()) {
+        int i, j;
+        for (i = j = 0; i < args.size(); i++) {
+            if (args[i] == getTerm_true()) {
+                args.clear();
+                s = getSym_true();
+                cerr << "or -> true" << endl;
+                return;
+            } else if (args[i] != getTerm_false()) {
+                args[j++] = args[i];
+            } else {
+                cerr << "or -> drop" << endl; }
+        }
+        dropped_args = i-j;
+        if (dropped_args == args.size()) {
+            s = getSym_false();
+            args.clear();
+            cerr << "or -> false" << endl;
+            return;
+        }
+        else if (dropped_args == args.size() - 1)
+            replace = true;
+        else if (dropped_args > 0)
+            args.shrink(dropped_args);
+    }
+    if (s == getSym_eq()) {
+        assert(args.size() == 2);
+        if (args[0] == getTerm_true()) {
+            Pterm& t = getPterm(args[1]);
+            s = t.symb();
+            args.clear();
+            for (int i = 0; i < t.size(); i++)
+                args.push(t[i]);
+            cerr << "eq -> second" << endl;
+            return;
+        } else if (args[0] == getTerm_false()) {
+            PTRef old = args[1];
+            PTRef tr = mkNot(args[1]);
+            Pterm& t = getPterm(tr);
+            s = t.symb();
+            args.clear();
+            args.push(old);
+            cerr << "eq -> not second" << endl;
+            return;
+        } else if (args[1] == getTerm_true()) {
+            args.clear();
+            Pterm& t = getPterm(args[0]);
+            s = t.symb();
+            args.clear();
+            for (int i = 0; i < t.size(); i++)
+                args.push(t[i]);
+            cerr << "eq -> first" << endl;
+            return;
+        } else if (args[1] == getTerm_false()) {
+            PTRef old = args[0];
+            PTRef tr = mkNot(args[0]);
+            Pterm& t = getPterm(tr);
+            s = t.symb();
+            args.clear();
+            args.push(old);
+            cerr << "eq -> not first"<< endl;
+            return;
+        } else if (args[0] == args[1]) {
+            args.clear();
+            s = getSym_true();
+            cerr << "eq -> true" << endl;
+            return;
+       } else if (args[0] == mkNot(args[1])) {
+            args.clear();
+            s = getSym_false();
+            cerr << "eq -> false" << endl;
+            return;
+        }
+    }
+    // Others, to be implemented:
+    // - distinct
+    // - implies
+    // - xor
+    // - ite
+    // - not
+    if (replace) {
+        // Return whatever is the sole argument
+        Pterm& t = getPterm(args[0]);
+        s = t.symb();
+        args.clear();
+        for (int i = 0; i < t.size(); i++)
+            args.push(t[i]);
+        cerr << " replace" << endl;
+    }
+}
+
+// Check if arguments contain trues or a false and return the simplified
+// term
 PTRef Logic::mkAnd(vec<PTRef>& args) {
-    return resolveTerm(tk_and, args);
+        return resolveTerm(tk_and, args);
 }
 
 PTRef Logic::mkOr(vec<PTRef>& args) {
@@ -239,14 +359,14 @@ PTRef Logic::mkConst(SRef s, const char* name) {
 }
 
 //
-// Clone the deep term structure maintaining similar reference structrue
+// Clone the deep term structure maintaining isomorphic reference structrue
 //
 PTRef Logic::cloneTerm(const PTRef& tr) {
     Map<PTRef,PTRef,PTRefHash > oldToNew;
     vec<PtChild> terms;
     getTermList(tr, terms, *this);
     PTRef ptr_new;
-    for (int i = terms.size()-1; i >= 0; i--) {
+    for (int i = 0; i < terms.size(); i++) {
         PTRef ptr = terms[i].tr;
         if (oldToNew.contains(ptr)) continue;
         Pterm& pt = getPterm(ptr);
