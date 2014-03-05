@@ -121,7 +121,7 @@ const Lit Cnfizer::findLit(PTRef ptr) {
         if (logic.isTheoryTerm(p))
             solver.setFrozen(v, true);
 #ifdef PEDANTIC_DEBUG
-        cerr << "Term " << logic.printTerm(p) << " maps to var " << v << endl;
+//        cerr << "Term " << logic.printTerm(p) << " maps to var " << v << endl;
 #endif
     }
     return l;
@@ -155,6 +155,7 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula
 #endif
                                     )
 {
+    Map<PTRef,PTRef,PTRefHash> dupMap;
 //  egraph.initDupMap1( );
 
     if (solver.okay() == false) return l_False;
@@ -170,10 +171,14 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula
     // For each top-level conjunct
     for (unsigned i = 0 ; i < top_level_formulae.size_() && (res == true) ; i ++) {
         PTRef f = top_level_formulae[i];
-//        cout << logic.printTerm(f) << endl;
-
+#ifdef PEDANTIC_DEBUG
+        cout << "Adding clause " << logic.printTerm(f) << endl;
+#endif
         // Give it to the solver if already in CNF
         if (checkCnf(f) == true || checkClause(f) == true) {
+#ifdef PEDANTIC_DEBUG
+            cout << " => Already in CNF" << endl;
+#endif
             res = giveToSolver(f
 #ifdef PRODUCE_PROOF
                               , partition
@@ -185,6 +190,9 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula
         // Check whether it can be rewritten using deMorgan laws
 
         else if (checkDeMorgan(f) == true) {
+#ifdef PEDANTIC_DEBUG
+            cout << " => Will be de Morganized" << endl;
+#endif
             res = deMorganize(f
 #ifdef PRODUCE_PROOF
                              , partition
@@ -193,9 +201,16 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula
         }
         else {
         // Otherwise perform cnfization
-//      map< enodeid_t, int > enodeid_to_incoming_edges;
+      map< enodeid_t, int > enodeid_to_incoming_edges;
+      // The following tweak is able to use shared structure in "and"
+      // and "or" subformulas.  I assume this is beneficial for the
+      // efficiency of the solver.  However, initial experimentation
+      // does not show this to have an effect
 //      computeIncomingEdges( f, enodeid_to_incoming_edges ); // Compute incoming edges for f and children
 //      f = rewriteMaxArity( f, enodeid_to_incoming_edges );  // Rewrite f with maximum arity for operators
+#ifdef PEDANTIC_DEBUG
+            cout << " => proper cnfization" << endl;
+#endif
             res = cnfize(f
 #ifdef PRODUCE_PROOF
                         , partition
@@ -516,7 +531,11 @@ bool Cnfizer::checkCnf(PTRef formula) {
 
 bool Cnfizer::checkConj(PTRef e)
 {
+    if (isLit(e)) // A Boolean constant
+        return true;
+
     Pterm& and_t = ptstore[e];
+
 
     if (and_t.symb() != logic.getSym_and())
         return false;
@@ -656,12 +675,12 @@ bool Cnfizer::addClause( vec<Lit>& c ) {
 bool Cnfizer::addClause( vec<Lit>& c const ipartitions_t& partition) {
 #endif
 #ifdef PEDANTIC_DEBUG
-    cerr << "Adding clause ";
-    for (int i = 0; i < c.size(); i++)
-        cerr << (sign(c[i]) ? "not " : "")
-             << logic.printTerm(tmap.varToTerm[var(c[i])])
-             << " ";
-    cerr << endl;
+//    cerr << "Adding clause ";
+//    for (int i = 0; i < c.size(); i++)
+//        cerr << (sign(c[i]) ? "not " : "")
+//             << logic.printTerm(tmap.varToTerm[var(c[i])])
+//             << " ";
+//    cerr << endl;
 #endif
 #ifndef PRODUCE_PROOF
     return solver.addSMTClause(c);

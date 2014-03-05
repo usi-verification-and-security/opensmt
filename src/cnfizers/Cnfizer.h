@@ -104,7 +104,13 @@ public:
     lbool  getTermValue(PTRef);
 
     void   initialize      ();
-    lbool  solve           () { status = solver.solve(); return status; }
+    lbool  solve           () {
+#ifdef PEDANTIC_DEBUG
+    for (int i = 0; i < solver.trail.size(); i++)
+        cerr << logic.printTerm(tmap.varToTerm[var(solver.trail[i])]) << endl;
+#endif
+    status = solver.solve(); return status; }
+
     void   crashTest       (int rounds) { solver.crashTest(rounds, tmap.getVar(logic.getTerm_true()), tmap.getVar(logic.getTerm_false())); }
     lbool  getStatus       () { return status; }
 

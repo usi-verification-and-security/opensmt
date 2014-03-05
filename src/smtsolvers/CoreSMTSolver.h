@@ -209,7 +209,13 @@ class CoreSMTSolver : public SMTSolver
   public:
     vec<int>            n_occs;           // Number of occurrences of a variable in clauses
   protected:
+#ifdef PEDANTIC_DEBUG
+  public:
     vec<Lit>            trail;            // Assignment stack; stores all assigments made in the order they were made.
+  protected:
+#else
+    vec<Lit>            trail;            // Assignment stack; stores all assigments made in the order they were made.
+#endif
     vec<int>            trail_lim;        // Separator indices for different decision levels in 'trail'.
 #ifdef PRODUCE_PROOF
     vec<int>            trail_pos;        // 'trail_pos[var]' is the variable's position in 'trail[]'. This supersedes 'level[]' in some sense, and 'level[]' will probably be removed in future releases.

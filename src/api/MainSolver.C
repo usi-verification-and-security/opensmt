@@ -30,9 +30,11 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         // iteration?  I'd think having it outside would be better but
         // that way we're still slower. Let's see...
         Map<PTRef,PTRef,PTRefHash> substs;
+        cerr << "retrieving" << endl;
         tlp.retrieveSubstitutions(root, substs);
 
 //        if (!tlp.substitute(root)) break;
+        cerr << "substituting" << endl;
         if (!tlp.varsubstitute(root, substs)) break;
     }
 #ifdef PEDANTIC_DEBUG

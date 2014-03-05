@@ -238,7 +238,8 @@ void TopLevelPropagator::retrieveSubstitutions(PTRef root, Map<PTRef,PTRef,PTRef
                 cerr << "Substituting " << tmp1 << " with " << tmp2 << endl;
                 ::free(tmp1); ::free(tmp2);
 #endif
-                substs.insert(var, logic.cloneTerm(trm));
+//                substs.insert(var, logic.cloneTerm(trm));
+                substs.insert(var, trm);
             }
         }
     }
@@ -292,11 +293,19 @@ void TopLevelPropagator::collectFacts(PTRef root, vec<PtAsgn>& facts, vec<PtAsgn
         // Found a fact.  It is important for soundness that we have also the original facts
         // asserted to the euf solver in the future even though no search will be performed there.
         // Therefore we need to clone the whole terms as facts that will be asserted to the solver.
+        // The function allocates new terms, so address of pta.tr might
+        // change.  Do not trust Pterm& t here!
         else if (logic.isEquality(pta.tr) and pta.sgn == l_True) {
+
+            vec<PTRef> args;
+            for (int i = 0; i < t.size(); i++)
+                args.push(t[i]);
+
             PTRef r = logic.cloneTerm(t[0]);
-            for (int i = 1; i < t.size(); i++) {
+
+            for (int i = 1; i < args.size(); i++) {
                 vec<PTRef> ps;
-                ps.push(r); ps.push(logic.cloneTerm(t[i]));
+                ps.push(r); ps.push(logic.cloneTerm(args[i]));
                 PTRef eq = logic.mkEq(ps);
                 facts_clone.push(PtAsgn(eq, l_True));
             }

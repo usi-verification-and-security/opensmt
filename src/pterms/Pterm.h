@@ -15,7 +15,7 @@ struct PTRef {
     void operator= (uint32_t v) { x = v; }
     inline friend bool operator== (const PTRef& a1, const PTRef& a2)   { return a1.x == a2.x; }
     inline friend bool operator!= (const PTRef& a1, const PTRef& a2)   { return a1.x != a2.x; }
-    inline friend bool operator< (const PTRef& a1, const PTRef& a2)    { return a1.x < a2.x;  }
+    inline friend bool operator< (const PTRef& a1, const PTRef& a2)    { return a1.x > a2.x;  }
 };
 
 static struct PTRef PTRef_Undef = {INT32_MAX};
@@ -272,7 +272,7 @@ class PtermAllocator : public RegionAllocator<uint32_t>
 };
 
 struct LessThan_PTRef {
-    bool operator () (PTRef& x, PTRef& y) { return x.x < y.x; } };
+    bool operator () (PTRef& x, PTRef& y) { return x.x > y.x; } };
 
 inline void termSort(Pterm& t) {
 //    PTRef                               args[0]; // Either the terms or the relocation reference
