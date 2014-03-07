@@ -28,14 +28,15 @@ void getTermList(PTRef tr, vec<T>& list_out, Logic& logic) {
     queue.push(Qel<PtChild>(PtChild(tr, PTRef_Undef, -1)));
 
     while (queue.size() > 0) {
-        Qel<PtChild> qtr = queue.last();
+        int q_idx = queue.size() - 1;
+        Qel<PtChild>& qtr = queue.last();
         Pterm& pt = logic.getPterm(qtr.x.tr);
         int i = qtr.chk;
         if (i < pt.size()) {
             PtChild ptc(pt[i], qtr.x.tr, i);
             if (!seen.contains(ptc))
                 queue.push(Qel<PtChild>(ptc));
-            qtr.chk = i+1;
+            queue[q_idx].chk = i+1;
         } else {
             T ptc(qtr.x.tr, qtr.x.parent, qtr.x.pos);
             list_out.push(ptc);
