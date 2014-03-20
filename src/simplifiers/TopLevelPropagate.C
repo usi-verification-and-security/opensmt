@@ -519,9 +519,11 @@ bool TopLevelPropagator::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& 
         PtChild ctr = nodes.last(); nodes.pop();
         if (substs.contains(ctr.tr)) {
             PTRef nr = substs[ctr.tr];
+            if (contains(nr, ctr.tr)) continue;
 #ifdef PEDANTIC_DEBUG
             cerr << "Will substitute " << logic.printTerm(ctr.tr)
                  << " with " << logic.printTerm(nr) << " in ";
+            assert(!contains(nr, ctr.tr));
 #endif
             // Do the substitution
             if (ctr.parent == PTRef_Undef) {
