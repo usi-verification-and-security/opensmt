@@ -102,7 +102,7 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
     vec<PtChild> mainq;
     mainq.push(PtChild(root, PTRef_Undef, -1));
     parent.insert(root, PTRef_Undef);
-    // This guy has the side-effect of duplicating terms that used to be same!
+
     while (mainq.size() != 0) {
         // Find the and- or or-roots
         while (mainq.size() != 0) {
