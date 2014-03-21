@@ -107,7 +107,7 @@ public:
     lbool  solve           () {
 #ifdef PEDANTIC_DEBUG
     for (int i = 0; i < solver.trail.size(); i++)
-        cerr << logic.printTerm(tmap.varToTerm[var(solver.trail[i])]) << endl;
+        cerr << (sign(solver.trail[i]) ? "not " : "") << logic.printTerm(tmap.varToTerm[var(solver.trail[i])]) << endl;
 #endif
     status = solver.solve(); return status; }
 
@@ -134,7 +134,7 @@ protected:
                                         , const ipartitions_t &
 #endif
                                         );                                    // Apply deMorgan rules whenever feasible
-//  Enode *  rewriteMaxArity            ( Enode *, map< enodeid_t, int > & );   // Rewrite terms using maximum arity
+    PTRef    rewriteMaxArity            ( PTRef, Map<PTRef, int, PTRefHash> & );   // Rewrite terms using maximum arity
 
     bool     checkCnf                   ( PTRef );                            // Check if formula is in CNF
     bool     checkDeMorgan              ( PTRef );                            // Check if formula can be deMorganized
@@ -161,14 +161,14 @@ protected:
 
 private:
 
-//  void    computeIncomingEdges ( Enode *, map< enodeid_t, int > & );         // Computes the list of incoming edges for a node
-//  Enode * mergeEnodeArgs       ( Enode *
-//                               , map< enodeid_t, Enode * > &
-//                               , map< enodeid_t, int > & );                  // Subroutine for rewriteMaxArity
+    void    computeIncomingEdges (PTRef, Map<PTRef, int, PTRefHash> & );         // Computes the list of incoming edges for a node
+    PTRef   mergeEnodeArgs       ( PTRef
+                                 , Map<PTRef, PTRef, PTRefHash> &
+                                 , Map<PTRef, int, PTRefHash> & );  // Subroutine for rewriteMaxArity
 
     bool    checkConj            (PTRef); // Check if a formula is a conjunction
     bool    checkClause          (PTRef); // Check if a formula is a clause
-    bool    checkPureConj        (PTRef, Map<PTRef,bool,PTRefHash,Equal<PTRef> >& check_cache); // Check if a formula is purely a conjuntion
+    bool    checkPureConj        (PTRef, Map<PTRef,bool,PTRefHash>& check_cache); // Check if a formula is purely a conjuntion
 
     lbool   status;     // The status of the last solver call (initially l_Undef)
 

@@ -71,17 +71,6 @@ bool Cnfizer::isLit(PTRef r) {
   // A term is an atom if its sort is Bool and
   //  (i)  number of arguments is 0, or
   //  (ii) it is an atom stating an equivalence of non-boolean terms (terms must be purified at this point)
-bool Cnfizer::isAtom(PTRef r) const {
-    Pterm& t = ptstore[r];
-    if (symstore[t.symb()].rsort() == logic.getSort_bool()) {
-        if (t.size() == 0) return true;
-        if (t.symb() == logic.getSym_not() ) return false;
-        // At this point all arguments of equivalence have the same sort.  Check only the first
-        if (logic.isEquality(t.symb()) && (symstore[ptstore[t[0]].symb()].rsort() != logic.getSort_bool())) return true;
-        if (logic.isUP(r)) return true;
-    }
-    return false;
-}
 
 // Extracts the literal corresponding to a term.
 // Accepts negations.
@@ -137,7 +126,7 @@ bool Cnfizer::isNPAtom(PTRef r, PTRef& p) const {
             sign = !sign;
         }
         else {
-            if (isAtom(r))
+            if (logic.isAtom(r))
                 p = r;
             else
                 p = PTRef_Undef;
@@ -200,14 +189,13 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula
                              );
         }
         else {
-        // Otherwise perform cnfization
-      map< enodeid_t, int > enodeid_to_incoming_edges;
-      // The following tweak is able to use shared structure in "and"
-      // and "or" subformulas.  I assume this is beneficial for the
-      // efficiency of the solver.  However, initial experimentation
-      // does not show this to have an effect
-//      computeIncomingEdges( f, enodeid_to_incoming_edges ); // Compute incoming edges for f and children
-//      f = rewriteMaxArity( f, enodeid_to_incoming_edges );  // Rewrite f with maximum arity for operators
+            // Otherwise perform cnfization
+//            Map<PTRef, int, PTRefHash> ptref_to_incoming_edges;
+            // The following tweak is able to use shared structure in "and"
+            // and "or" subformulas.  I assume this is beneficial for the
+            // efficiency of the solver.
+//            computeIncomingEdges(f, ptref_to_incoming_edges);    // Compute incoming edges for f and children
+//            f = rewriteMaxArity (f, ptref_to_incoming_edges);  // Rewrite f with maximum arity for operators
 #ifdef PEDANTIC_DEBUG
             cout << " => proper cnfization" << endl;
 #endif
@@ -311,208 +299,170 @@ bool Cnfizer::deMorganize( PTRef formula
 //
 // Compute the number of incoming edges for e and children
 //
-//void Cnfizer::computeIncomingEdges( Enode * e
-//                                  , map< enodeid_t, int > & enodeid_to_incoming_edges )
-//{
-//  assert( e );
-//
-//  vector< Enode * > unprocessed_enodes;       // Stack for unprocessed enodes
-//  unprocessed_enodes.push_back( e );    // formula needs to be processed
-//  //
-//  // Visit the DAG of the formula from the leaves to the root
-//  //
-//  while( !unprocessed_enodes.empty( ) )
-//  {
-//    Enode * enode = unprocessed_enodes.back( );
-//    // 
-//    // Skip if the node has already been processed before
-//    //
-//    map< enodeid_t, int >::iterator it = enodeid_to_incoming_edges.find( enode->getId( ) );
-//    if ( it != enodeid_to_incoming_edges.end( ) )
-//    {
-//      it->second++;
-//      unprocessed_enodes.pop_back( );
-//      continue;
-//    }
-//
-//    bool unprocessed_children = false;
-//    if ( enode->isBooleanOperator( ) )
-//    {
-//      for ( Enode * arg_list = enode->getCdr( ) 
-//	  ; !arg_list->isEnil( )
-//	  ; arg_list = arg_list->getCdr( ) )
-//      {
-//	Enode * arg = arg_list->getCar( );
-//	//
-//	// Push only if it is an unprocessed boolean operator
-//	//
-//	map< enodeid_t, int >::iterator it = enodeid_to_incoming_edges.find( arg->getId( ) );
-//	if ( it == enodeid_to_incoming_edges.end( ) )
-//	{
-//	  unprocessed_enodes.push_back( arg );
-//	  unprocessed_children = true;
-//	}
-//	else
-//	{
-//	  it->second ++;
-//	}
-//      }
-//    }
-//    //
-//    // SKip if unprocessed_children
-//    //
-//    if ( unprocessed_children )
-//      continue;
-//
-//    unprocessed_enodes.pop_back( );                      
-//    //
-//    // At this point, every child has been processed
-//    //
-//    assert ( enode->isBooleanOperator( ) || enode->isAtom( ) );
-//    assert ( enodeid_to_incoming_edges.find( enode->getId( ) ) == enodeid_to_incoming_edges.end( ) );
-//    enodeid_to_incoming_edges[ enode->getId( ) ] = 1;
-//  }
-//}
+void Cnfizer::computeIncomingEdges( PTRef e
+                                  , Map<PTRef, int, PTRefHash> & ptref_to_incoming_edges )
+{
+  assert(e != PTRef_Undef);
+
+  vec<PTRef> unprocessed_terms; // Stack for unprocessed enodes
+  unprocessed_terms.push(e);    // formula needs to be processed
+  //
+  // Visit the DAG of the formula from the leaves to the root
+  //
+  while(unprocessed_terms.size() > 0) {
+    PTRef tr = unprocessed_terms.last();
+    // 
+    // Skip if the node has already been processed before
+    //
+    if (ptref_to_incoming_edges.contains(tr)) {
+        ptref_to_incoming_edges[tr]++;
+        unprocessed_terms.pop();
+        continue;
+    }
+
+    bool unprocessed_children = false;
+    if (logic.isBooleanOperator(tr)) {
+      Pterm& t = logic.getPterm(tr);
+      for ( int i = 0; i < t.size(); i++) {
+        //
+        // Push only if it is an unprocessed boolean operator
+        //
+        if (!ptref_to_incoming_edges.contains(t[i])) {
+            unprocessed_terms.push(t[i]);
+            unprocessed_children = true;
+        }
+        else {
+            ptref_to_incoming_edges[t[i]]++;
+        }
+      }
+    }
+    //
+    // SKip if unprocessed_children
+    //
+    if ( unprocessed_children )
+      continue;
+
+    //
+    // At this point, every child has been processed
+    //
+    assert(logic.isBooleanOperator(tr) || logic.isAtom(tr));
+    assert(!ptref_to_incoming_edges.contains(tr));
+    ptref_to_incoming_edges.insert(tr, 1);
+    unprocessed_terms.pop();
+  }
+}
 
 //
 // Rewrite formula with maximum arity for operators
 //
-//Enode * Cnfizer::rewriteMaxArity( Enode * formula, map< enodeid_t, int > & enodeid_to_incoming_edges )
-//{
-//  assert( formula );
-//
-//  vector< Enode * > unprocessed_enodes;       // Stack for unprocessed enodes
-//  unprocessed_enodes.push_back( formula );    // formula needs to be processed
-//  map< enodeid_t, Enode * > cache;            // Cache of processed nodes
-//  //
-//  // Visit the DAG of the formula from the leaves to the root
-//  //
-//  while( !unprocessed_enodes.empty( ) )
-//  {
-//    Enode * enode = unprocessed_enodes.back( );
-//    // 
-//    // Skip if the node has already been processed before
-//    //
-//    if ( cache.find( enode->getId( ) ) != cache.end( ) )
-//    {
-//      unprocessed_enodes.pop_back( );
-//      continue;
-//    }
-//
-//    bool unprocessed_children = false;
-//    Enode * arg_list;
-//    for ( arg_list = enode->getCdr( ) ; 
-//	  arg_list != egraph.enil ; 
-//	  arg_list = arg_list->getCdr( ) )
-//    {
-//      Enode * arg = arg_list->getCar( );
-//
-//      assert( arg->isTerm( ) );
-//      //
-//      // Push only if it is an unprocessed boolean operator
-//      //
-//      if ( arg->isBooleanOperator( ) 
-//	&& cache.find( arg->getId( ) ) == cache.end( ) )
-//      {
-//	unprocessed_enodes.push_back( arg );
-//	unprocessed_children = true;
-//      }
-//      //
-//      // If it is an atom (either boolean or theory) just
-//      // store it in the cache
-//      //
-//      else if ( arg->isAtom( ) )
-//      {
-//	cache.insert( make_pair( arg->getId( ), arg ) );
-//      }
-//    }
-//    //
-//    // SKip if unprocessed_children
-//    //
-//    if ( unprocessed_children )
-//      continue;
-//
-//    unprocessed_enodes.pop_back( );                      
-//    Enode * result = NULL;
-//    //
-//    // At this point, every child has been processed
-//    //
-//    assert ( enode->isBooleanOperator( ) );
-//
-//    if ( enode->isAnd( ) 
-//      || enode->isOr ( ) )
-//    {
-//      assert( enode->isAnd( ) || enode->isOr( ) );
-//      //
-//      // Construct the new lists for the operators
-//      //
-//      result = mergeEnodeArgs( enode, cache, enodeid_to_incoming_edges );
-//    }
-//    else
-//    {
-//      result = enode;
-//    }
-//
-//    assert( result );
-//    assert( cache.find( enode->getId( ) ) == cache.end( ) );
-//    cache[ enode->getId( ) ] = result;
-//  }
-//
-//  Enode * top_enode = cache[ formula->getId( ) ];
-//  return top_enode;
-//}
+PTRef Cnfizer::rewriteMaxArity(PTRef formula, Map<PTRef, int, PTRefHash> & ptref_to_incoming_edges )
+{
+  assert(formula != PTRef_Undef);
+
+  vec<PTRef> unprocessed_terms;       // Stack for unprocessed PTRefs
+  unprocessed_terms.push(formula);    // formula needs to be processed
+  Map<PTRef,PTRef,PTRefHash> cache;   // Cache of processed nodes
+  //
+  // Visit the DAG of the formula from the leaves to the root
+  //
+  while(unprocessed_terms.size() != 0) {
+    PTRef tr = unprocessed_terms.last();
+    //
+    // Skip if the node has already been processed before
+    //
+    if (cache.contains(tr)) {
+      unprocessed_terms.pop();
+      continue;
+    }
+
+    bool unprocessed_children = false;
+    Pterm& t = logic.getPterm(tr);
+    for (int i = 0; i < t.size(); i++) {
+
+      //
+      // Push only if it is an unprocessed boolean operator
+      //
+      if ( logic.isBooleanOperator(t[i]) && !cache.contains(t[i])) {
+          unprocessed_terms.push(t[i]);
+          unprocessed_children = true;
+      }
+      //
+      // If it is an atom (either boolean or theory) just
+      // store it in the cache
+      //
+      else if (logic.isAtom(t[i]))
+        cache.insert(t[i], t[i]);
+
+    }
+    //
+    // SKip if unprocessed_children
+    //
+    if (unprocessed_children)
+      continue;
+
+    unprocessed_terms.pop();
+    PTRef result = PTRef_Undef;
+    //
+    // At this point, every child has been processed
+    //
+    assert(logic.isBooleanOperator(tr));
+
+    // Construct the new lists for the operators
+    if (logic.isAnd(tr) || logic.isOr(tr))
+      result = mergeEnodeArgs( tr, cache, ptref_to_incoming_edges );
+    else result = tr;
+
+    assert(result != PTRef_Undef);
+    assert(!cache.contains(tr));
+    cache.insert(tr, result);
+  }
+
+  PTRef top_term = cache[formula];
+  return top_term;
+}
 
 //
 // Merge collected arguments for nodes
 //
-//Enode * Cnfizer::mergeEnodeArgs( Enode * e
-//                               , map< enodeid_t, Enode * > & cache
-//		               , map< enodeid_t, int > & enodeid_to_incoming_edges )
-//{
-//  assert( e->isAnd( ) || e->isOr( ) );
-//
-//  Enode * e_symb = e->getCar( );
-//  vector< Enode * > new_args;
-//  
-//  for ( Enode * list = e->getCdr( ) ; 
-//        !list->isEnil( ) ;
-//	list = list->getCdr( ) )
-//  {
-//    Enode * arg = list->getCar( );
-//    Enode * sub_arg = cache[ arg->getId( ) ];
-//    Enode * sym = arg->getCar( );
-//
-//    if ( sym->getId( ) != e_symb->getId( ) )
-//    {
-//      new_args.push_back( sub_arg );
-//      continue;
-//    }
-//
-//    assert( enodeid_to_incoming_edges.find( arg->getId( ) ) != enodeid_to_incoming_edges.end( ) );
-//    assert( enodeid_to_incoming_edges[ arg->getId( ) ] >= 1 );
-//
-//    if ( enodeid_to_incoming_edges[ arg->getId( ) ] > 1 )
-//    {
-//      new_args.push_back( sub_arg );
-//      continue;
-//    }
-//
-//    for ( Enode * sub_arg_list = sub_arg->getCdr( ) ; 
-//	  !sub_arg_list->isEnil( ) ; 
-//	  sub_arg_list = sub_arg_list->getCdr( ) )
-//      new_args.push_back( sub_arg_list->getCar( ) );
-//  }
-//
-//  Enode * new_list = const_cast< Enode * >(egraph.enil);
-//
-//  while ( !new_args.empty( ) )
-//  {
-//    new_list = egraph.cons( new_args.back( ), new_list );
-//    new_args.pop_back( );
-//  }
-//
-//  return egraph.cons( e_symb, new_list );
-//}
+PTRef Cnfizer::mergeEnodeArgs( PTRef e
+                             , Map<PTRef, PTRef, PTRefHash> & cache
+                             , Map<PTRef, int, PTRefHash> & ptref_to_incoming_edges )
+{
+  assert( logic.isAnd(e) || logic.isOr(e) );
+
+  Pterm& t = logic.getPterm(e);
+  SymRef e_symb = t.symb();
+  vec<PTRef> new_args;
+
+  for (int i = 0; i < t.size(); i++) {
+    PTRef arg = t[i];
+    PTRef sub_arg = cache[arg];
+    SymRef sym = logic.getPterm(arg).symb();
+
+    // We're no longer looking at either or or an and.  I hope I got this right...
+    if (sym != e_symb) {
+      new_args.push(sub_arg);
+      continue;
+    }
+
+    assert(ptref_to_incoming_edges.contains(arg));
+    assert(ptref_to_incoming_edges[arg] >= 1 );
+
+    if (ptref_to_incoming_edges[arg] > 1) {
+      new_args.push(sub_arg);
+      continue;
+    }
+
+    Pterm& s = logic.getPterm(sub_arg);
+    for (int j = 0; j < s.size(); j++)
+        new_args.push(s[j]);
+  }
+
+
+  // This creates a new term with the same symbol having the arguments from new_args
+  // We know that e is either and or or
+  return logic.isAnd(e) ? logic.mkAnd(new_args) : logic.mkOr(new_args);
+}
 
 //
 // Check whether a formula is in cnf

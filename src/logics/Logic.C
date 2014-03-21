@@ -471,6 +471,19 @@ bool Logic::isBooleanOperator(SymRef tr) const {
     if (tr == getSym_implies()) return true;
     return false;
 }
+
+bool Logic::isAtom(PTRef r) const {
+    Pterm& t = term_store[r];
+    if (sym_store[t.symb()].rsort() == getSort_bool()) {
+        if (t.size() == 0) return true;
+        if (t.symb() == getSym_not() ) return false;
+        // At this point all arguments of equivalence have the same sort.  Check only the first
+        if (isEquality(t.symb()) && (sym_store[term_store[t[0]].symb()].rsort() != getSort_bool())) return true;
+        if (isUP(r)) return true;
+    }
+    return false;
+}
+
 //bool Logic::DeclareSort(string& name, int arity) {
 //    printf("Declaring sort %s of arity %d\n", name.c_str(), arity);
 //    sstore.newSymbol(name.c_str());

@@ -119,9 +119,10 @@ class Logic {
     bool        isTheorySymbol     (SymRef tr)     const;
     bool        isTheoryTerm       (PTRef tr)      const;
     bool        isBooleanOperator  (SymRef tr)     const;
+    bool        isBooleanOperator  (PTRef tr)      const { return isBooleanOperator(term_store[tr].symb()); }
 
     bool        isVar              (PTRef tr)      const { return term_store[tr].nargs() == 0; }
-
+    bool        isAtom             (PTRef tr)      const;
     // Check if term is an uninterpreted predicate.
     bool        isUP               (PTRef)         const;
 

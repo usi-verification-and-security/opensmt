@@ -77,6 +77,7 @@ void MainSolver::expandItes(FContainer& fc, vec<PtChild>& terms) const
     if (terms.size() > 0) {
         root = ts.expandItes(terms);
         terms.clear();
+        // This seems a bit subtle way of updating the terms vector
         getTermList<PtChild>(root, terms, logic);
     }
     fc.setRoot(root);
@@ -101,7 +102,7 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
     vec<PtChild> mainq;
     mainq.push(PtChild(root, PTRef_Undef, -1));
     parent.insert(root, PTRef_Undef);
-
+    // This guy has the side-effect of duplicating terms that used to be same!
     while (mainq.size() != 0) {
         // Find the and- or or-roots
         while (mainq.size() != 0) {
@@ -123,6 +124,7 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
         // Process starting from them
         while (and_roots.size() + or_roots.size() != 0) {
             if (and_roots.size() != 0) {
+                bool changed = false;  // Did we find ands to collapse
                 vec<PTRef> args;
                 vec<PTRef> queue;
                 vec<PtChild> new_ors;
@@ -137,10 +139,11 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
                 while (queue.size() != 0) {
                     PTRef tr = queue.last(); queue.pop();
                     Pterm& t = logic.getPterm(tr);
-                    if (logic.isAnd(tr))
+                    if (logic.isAnd(tr)) {
+                        if (tr != and_root.tr) changed = true; // We need a new and
                         for (int i = t.size()-1; i >= 0; i--)
                             queue.push(t[i]);
-                    else {
+                    } else {
                         if (logic.isOr(tr))
                             new_ors.push(PtChild(tr, PTRef_Undef, args.size()));
                         else
@@ -149,7 +152,9 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
                     }
                 }
 
-                PTRef par_tr = logic.mkAnd(args);
+                // Do not duplicate if nothing changed
+                PTRef par_tr = changed ? logic.mkAnd(args) : and_root.tr;
+
                 if (and_root.parent != PTRef_Undef)
                     logic.getPterm(and_root.parent)[and_root.pos] = par_tr;
                 else
@@ -164,6 +169,7 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
 #endif
             }
             if (or_roots.size() != 0) {
+                bool changed = false;  // Did we find ors to collapse
                 vec<PTRef> args;
                 vec<PTRef> queue;
                 vec<PtChild> new_ands;
@@ -178,10 +184,11 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
                 while (queue.size() != 0) {
                     PTRef tr = queue.last(); queue.pop();
                     Pterm& t = logic.getPterm(tr);
-                    if (logic.isOr(tr))
+                    if (logic.isOr(tr)) { // We need a new or
+                        if (tr != or_root.tr) changed = true; // We need a new and
                         for (int i = t.size()-1; i >= 0; i--)
                             queue.push(t[i]);
-                    else {
+                    } else {
                         if (logic.isAnd(tr))
                             new_ands.push(PtChild(tr, PTRef_Undef, args.size()));
                         else
@@ -190,7 +197,7 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
                     }
                 }
 
-                PTRef par_tr = logic.mkOr(args);
+                PTRef par_tr = changed ? logic.mkOr(args) : or_root.tr;
                 if (or_root.parent != PTRef_Undef)
                     logic.getPterm(or_root.parent)[or_root.pos] = par_tr;
                 else
