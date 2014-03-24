@@ -81,6 +81,8 @@ class CgData {
     ERef        exp_highest_node;
     int         exp_time_stamp;
 
+    PTRef       constant;
+
     friend class Enode;
 };
 
