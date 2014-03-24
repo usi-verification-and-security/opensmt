@@ -618,6 +618,7 @@ private:
 public:
   char* printEqClass               ( PTRef tr ) const;
 private:
+  bool   isEqual                   (PTRef, PTRef) const;
   string printExplanation          ( );
   string printExplanationTree      ( PTRef );
   string printExplanationTreeDotty ( PTRef );

@@ -187,9 +187,10 @@ bool THandler::assertLits(vec<Lit>& trail)
 
 #ifdef PEDANTIC_DEBUG
         // We are interested only in theory atoms from here onwards
-        cerr << "Asserting " << (sign(l) ? "not " : "")  << logic.printTerm(pt_r) << endl;
+        cerr << "Asserting " << (sign(l) ? "not " : "")  << logic.printTerm(pt_r) <<
+            "(" << pt_r.x << ")" << endl;
 
-        cout << printAssertion(l);
+//        cout << printAssertion(l);
 #endif
 
         // Push backtrack point

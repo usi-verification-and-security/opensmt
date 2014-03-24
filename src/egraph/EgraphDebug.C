@@ -236,6 +236,22 @@ char* Egraph::printEqClass(PTRef tr) const {
     return out;
 }
 
+bool Egraph::isEqual(PTRef tr_x, PTRef tr_y) const {
+
+    const ERef er = enode_store.termToERef[tr_x];
+    ERef c_er = er;
+
+    while (true) {
+        const Enode& en = enode_store[c_er];
+        ERef next_er = en.getNext();
+        if (next_er == er) break;
+        const Enode& en_o = enode_store[next_er];
+        if (en_o.getTerm() == tr_y) return true;
+        c_er = next_er;
+    }
+    return false;
+}
+
 std::string Egraph::printExplanationTree( PTRef x )
 {
     stringstream os;
