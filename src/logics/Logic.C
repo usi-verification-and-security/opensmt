@@ -414,7 +414,26 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms) {
     }
     else {
         // Boolean operator
-        res = term_store.pta.alloc(sym, terms);
+        PTLKey k;
+        k.sym = sym;
+        terms.copyTo(k.args);
+        if (term_store.bool_map.contains(k)) {
+            res = term_store.bool_map[k];
+#ifdef PEDANTIC_DEBUG
+            char* ts = printTerm(res);
+            cerr << "duplicate: " << ts << endl;
+            ::free(ts);
+#endif
+        }
+        else {
+            res = term_store.pta.alloc(sym, terms);
+#ifdef PEDANTIC_DEBUG
+            term_store.bool_map.insert(k, res);
+            char* ts = printTerm(res);
+            cerr << "new: " << ts << endl;
+            ::free(ts);
+#endif
+        }
     }
     return res;
 }

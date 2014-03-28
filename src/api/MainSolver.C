@@ -91,8 +91,38 @@ void MainSolver::expandItes(FContainer& fc, vec<PtChild>& terms) const
 // the leaves of this section, and create a new and / or term with the leaves as
 // arguments and the parent of the and / or tree as the parent.
 //
+// However, we will do this in a clever way so that if a certain
+// term appears as a child in more than one term, we will not flatten
+// that structure.
+//
 MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
 {
+//    PTRef top = fc.getRoot();
+//    vec<PTRef> queue;
+//    queue.push(top);
+//    Map<PTRef,int,PTRefHash> seen;
+//    vec<PTRef> terms;
+//    while (queue.size() != 0) {
+//        PTRef tr = queue.last();
+//        queue.pop();
+//        if (seen.contains(tr)) {
+//            seen[tr]++;
+//            terms.push(tr);
+//        }
+//        else {
+//            seen.insert(tr, 1);
+//            Pterm& t = logic.getPterm(tr);
+//            for (int i = 0; i < t.size(); i++)
+//                queue.push(t[i]);
+//        }
+//    }
+//    for (int i = 0; i < terms.size(); i++) {
+//        if (seen[terms[i]] > 1) {
+//            char* ts = logic.printTerm(terms[i]);
+//            cerr << "Shared term " << ts << " " << seen[terms[i]] << " times " << endl;
+//        }
+//    }
+
     vec<PtChild> and_roots;
     vec<PtChild> or_roots;
     Map<PTRef,PTRef,PTRefHash,Equal<PTRef> > parent;

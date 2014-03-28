@@ -25,7 +25,7 @@
 
 %%
 
-";".*\n                      // Eat comments
+\;.*                         // Eat comments
 [ \t\n]+                     // Eat spaces
 
 "!"        { return *yyget_text(yyscanner);                                                   }

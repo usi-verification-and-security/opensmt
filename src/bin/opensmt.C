@@ -111,68 +111,46 @@ int main( int argc, char * argv[] )
 #endif
   // Initialize pointer to context for parsing
 //  parser_ctx    = &context;
-  const char * filename = argv[ argc - 1 ];
-  assert( filename );
   // Accepts file from stdin if nothing specified
   FILE * fin = NULL;
   // Print help if required
-  if ( strcmp( filename, "--help" ) == 0
-    || strcmp( filename, "-h" ) == 0 )
+  if (argc == 2 &&
+     (strcmp( argv[1], "--help") == 0 ||
+      strcmp( argv[1], "-h" ) == 0 ))
   {
 //    context.getConfig( ).printHelp( );
     return 0;
   }
-  // File must be last arg
-  if ( strncmp( filename, "--", 2 ) == 0
-    || strncmp( filename, "-", 1 ) == 0 )
-    opensmt_error( "input file must be last argument" );
-  // Make sure file exists
-  if ( argc == 1 )
+  if (argc == 1) {
     fin = stdin;
-  else if ( (fin = fopen( filename, "rt" )) == NULL )
-    opensmt_error( "can't open file" );
-
-  // Parse
-  // Parse according to filetype
-  if ( fin == stdin )
-  {
     Interpret interpreter;
-//    int rval = interpreter.interpFile(fin);
     int rval = interpreter.interpInteractive(fin);
-//    smt2set_in( fin );
-//    smt2parse( );
   }
-  else
-  {
-    const char * extension = strrchr( filename, '.' );
-    if ( strcmp( extension, ".smt" ) == 0 )
-    {
-      opensmt_error( "SMTLIB 1.2 format is not supported in this version, sorry" );
-//      smtset_in( fin );
-//      smtparse( );
-    }
-//    else if ( strcmp( extension, ".cnf" ) == 0 )
-//    {
-//      context.SetLogic( QF_BOOL );
-//      cnfset_in( fin );
-//      cnfparse( );
-//      context.addCheckSAT();
-//    }
-    else if ( strcmp( extension, ".smt2" ) == 0 )
-    {
-        Interpret interpreter;
+  else {
+    Interpret interpreter;
+    for (int i = 1; i < argc; i++) {
+      const char * filename = argv[i];
+      assert( filename );
+      if ( strncmp( filename, "--", 2 ) == 0
+           || strncmp( filename, "-", 1 ) == 0 ) {
+        opensmt_error( "input file must be last argument" ); }
+
+      else if ( (fin = fopen( filename, "rt" )) == NULL )
+        opensmt_error( "can't open file" );
+
+      const char * extension = strrchr( filename, '.' );
+      if ( strcmp( extension, ".smt" ) == 0 ) {
+        opensmt_error( "SMTLIB 1.2 format is not supported in this version, sorry" ); }
+      else if ( strcmp( extension, ".smt2" ) == 0 ) {
         int rval = interpreter.interpFile(fin);
 //      smt2set_in( fin );
 //      smt2parse( );
+      }
+      else
+        opensmt_error2( extension, " extension not recognized. Please use one in { smt2, cnf } or stdin (smtlib2 is assumed)" );
     }
-    else
-    {
-      opensmt_error2( extension, " extension not recognized. Please use one in { smt2, cnf } or stdin (smtlib2 is assumed)" );
-    }
+    fclose( fin );
   }
-
-  fclose( fin );
-
 
   // 
   // Execute accumulated commands
