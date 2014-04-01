@@ -24,6 +24,12 @@ const sstat s_Error = toSstat( 2);
 
 class MainSolver {
   private:
+    class pi {
+      public:
+        PTRef x;
+        int i;
+        pi(PTRef x_) : x(x_), i(0) {}
+    };
     Logic&         logic;
     TermMapper&    tmap;
     Egraph&        uf_solver;

@@ -427,8 +427,8 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms) {
         }
         else {
             res = term_store.pta.alloc(sym, terms);
-#ifdef PEDANTIC_DEBUG
             term_store.bool_map.insert(k, res);
+#ifdef PEDANTIC_DEBUG
             char* ts = printTerm(res);
             cerr << "new: " << ts << endl;
             ::free(ts);

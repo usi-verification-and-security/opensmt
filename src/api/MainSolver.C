@@ -97,31 +97,40 @@ void MainSolver::expandItes(FContainer& fc, vec<PtChild>& terms) const
 //
 MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
 {
-//    PTRef top = fc.getRoot();
-//    vec<PTRef> queue;
-//    queue.push(top);
-//    Map<PTRef,int,PTRefHash> seen;
-//    vec<PTRef> terms;
-//    while (queue.size() != 0) {
-//        PTRef tr = queue.last();
-//        queue.pop();
-//        if (seen.contains(tr)) {
-//            seen[tr]++;
-//            terms.push(tr);
-//        }
-//        else {
-//            seen.insert(tr, 1);
-//            Pterm& t = logic.getPterm(tr);
-//            for (int i = 0; i < t.size(); i++)
-//                queue.push(t[i]);
-//        }
-//    }
-//    for (int i = 0; i < terms.size(); i++) {
-//        if (seen[terms[i]] > 1) {
-//            char* ts = logic.printTerm(terms[i]);
-//            cerr << "Shared term " << ts << " " << seen[terms[i]] << " times " << endl;
-//        }
-//    }
+
+    PTRef top = fc.getRoot();
+    vec<pi> qu;
+    qu.push(pi(top));
+    Map<PTRef,int,PTRefHash> occs;
+    vec<PTRef> terms;
+    cerr << logic.printTerm(top) << endl;
+
+    while (qu.size() != 0) {
+        int ci = qu.size() - 1;
+        if (occs.contains(qu[ci].x)) {
+            occs[qu[ci].x]++;
+            qu.pop();
+            continue;
+        }
+        bool unprocessed_children = false;
+        if (logic.isBooleanOperator(qu[ci].x)) {
+            Pterm& t = logic.getPterm(qu[ci].x);
+            for (; qu[ci].i < t.size(); qu[ci].i++) {
+                PTRef c = t[qu[ci].i];
+                if (!occs.contains(c)) {
+                    unprocessed_children = true;
+                    qu.push(pi(c));
+                }
+                else
+                    occs[c]++;
+            }
+        }
+        if (unprocessed_children)
+            continue;
+        assert(!occs.contains(qu[ci].x));
+        occs.insert(qu[ci].x, 1);
+        qu.pop();
+    }
 
     vec<PtChild> and_roots;
     vec<PtChild> or_roots;
@@ -132,6 +141,7 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
     vec<PtChild> mainq;
     mainq.push(PtChild(root, PTRef_Undef, -1));
     parent.insert(root, PTRef_Undef);
+    Map<PTRef, PTRef, PTRefHash> processed; // To reuse duplicate terms
 
     while (mainq.size() != 0) {
         // Find the and- or or-roots
@@ -145,6 +155,7 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
 
             else
                 for (int i = t.size()-1; i >= 0; i--)
+//                for (int i = 0; i < t.size(); i++)
                     if (!parent.contains(t[i])) {
                         mainq.push(PtChild(t[i], ptc.tr, i));
                         parent.insert(t[i], ptc.tr);
@@ -158,84 +169,178 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
                 vec<PTRef> args;
                 vec<PTRef> queue;
                 vec<PtChild> new_ors;
+                vec<PtChild> new_ands;
                 vec<PtChild> new_mains;
 
                 PtChild and_root = and_roots.last(); and_roots.pop();
+                cerr << "====================================" << endl;
+                cerr << "Hi there!  I'll start checking out the and root " << logic.printTerm(and_root.tr) << endl;
+                cerr << "As the new args of the and I'll put the following stuff:" << endl;
 #ifdef PEDANTIC_DEBUG
 //                cerr << "and root: " << logic.printTerm(and_root.tr) << endl;
 #endif
-                queue.push(and_root.tr);
+                // Push the children of the and root to queue
+                Pterm& and_root_t = logic.getPterm(and_root.tr);
+ //               for (int i = 0; i < and_root_t.size(); i++)
+               for (int i = and_root_t.size()-1; i >= 0; i--)
+                    queue.push(and_root_t[i]);
 
                 while (queue.size() != 0) {
                     PTRef tr = queue.last(); queue.pop();
+                    assert(tr != and_root.tr);
                     Pterm& t = logic.getPterm(tr);
                     if (logic.isAnd(tr)) {
-                        if (tr != and_root.tr) changed = true; // We need a new and
-                        for (int i = t.size()-1; i >= 0; i--)
-                            queue.push(t[i]);
+                        // This tr is used elsewhere.
+                        // Open it once, store its opened version and
+                        // use the opened term next time it is seen.
+                        if (occs[tr] > 1) {
+                            if (processed.contains(tr)) {
+                                cerr << "Will use the shared structure for " << logic.printTerm(tr) << endl;
+                                cerr << " => " << logic.printTerm(processed[tr]) << endl;
+                                args.push(processed[tr]);
+                                changed = true;
+                            } else { // The new and root
+                                cerr << "Found an unprocessed and-root shared between " << occs[tr] << " terms" << endl;
+                                cerr << "Will retain the nested and-structure here" << endl;
+                                new_ands.push(PtChild(tr, PTRef_Undef, args.size()));
+                                cerr << "  => " << logic.printTerm(tr) << endl;
+                                args.push(tr);
+                            }
+                        } else {
+                            changed = true; // We need a new and
+                            cerr << "Will open an unshared term: " << logic.printTerm(tr) << endl;
+                            for (int i = t.size()-1; i >= 0; i--)
+//                            for (int i = 0; i < t.size(); i++)
+                                queue.push(t[i]);
+                        }
                     } else {
                         if (logic.isOr(tr))
                             new_ors.push(PtChild(tr, PTRef_Undef, args.size()));
                         else
                             new_mains.push(PtChild(tr, PTRef_Undef, args.size()));
+                        cerr << " => " << logic.printTerm(tr) << endl;
                         args.push(tr);
                     }
                 }
 
                 // Do not duplicate if nothing changed
-                PTRef par_tr = changed ? logic.mkAnd(args) : and_root.tr;
+                PTRef par_tr;
 
-                if (and_root.parent != PTRef_Undef)
+                if (changed) {
+                    par_tr = logic.mkAnd(args);
+                } else
+                    par_tr = and_root.tr;
+
+                processed.insert(and_root.tr, par_tr);
+                cerr << "From now on " << logic.printTerm(and_root.tr) << endl;
+                cerr << "will be     " << logic.printTerm(par_tr) << endl;
+
+                if (and_root.parent != PTRef_Undef) {
+                    cerr << "Will change " << logic.printTerm(logic.getPterm(and_root.parent)[and_root.pos]) << " to " << endl;
+                    cerr << "            " << logic.printTerm(par_tr) << endl;
+                    cerr << "Rewrite: " << logic.printTerm(and_root.parent) << endl;
                     logic.getPterm(and_root.parent)[and_root.pos] = par_tr;
+                    cerr << "         " << logic.printTerm(and_root.parent) << endl;
+                }
                 else
                     fc.setRoot(par_tr);
-                // Update the found ors with the new parent
+                // Update the found ors, ands, and mains with the new parent
                 for (int i = 0; i < new_ors.size(); i++)
                     or_roots.push(PtChild(new_ors[i].tr, par_tr, new_ors[i].pos));
+                for (int i = 0; i < new_ands.size(); i++) {
+                    assert(par_tr != new_ands[i].tr);
+                    and_roots.push(PtChild(new_ands[i].tr, par_tr, new_ands[i].pos));
+                }
                 for (int i = 0; i < new_mains.size(); i++)
                     mainq.push(PtChild(new_mains[i].tr, par_tr, new_mains[i].pos));
 #ifdef PEDANTIC_DEBUG
 //                cerr << " => " << logic.printTerm(par_tr) << endl;
 #endif
             }
+
             if (or_roots.size() != 0) {
                 bool changed = false;  // Did we find ors to collapse
                 vec<PTRef> args;
                 vec<PTRef> queue;
+                vec<PtChild> new_ors;
                 vec<PtChild> new_ands;
                 vec<PtChild> new_mains;
 
                 PtChild or_root = or_roots.last(); or_roots.pop();
-                queue.push(or_root.tr);
+                cerr << "_____________________________________________" << endl;
+                cerr << "Hi there!  I'll start checking out the or root " << logic.printTerm(or_root.tr) << endl;
+                cerr << "As the new args of the or I'll put the following stuff:" << endl;
 #ifdef PEDANTIC_DEBUG
 //                cerr << "or root: " << logic.printTerm(or_root.tr) << endl;
 #endif
+                Pterm& or_root_t = logic.getPterm(or_root.tr);
+//                for (int i = 0; i < or_root_t.size(); i++)
+                for (int i = or_root_t.size()-1; i >= 0; i--)
+                    queue.push(or_root_t[i]);
 
                 while (queue.size() != 0) {
                     PTRef tr = queue.last(); queue.pop();
+                    assert(tr != or_root.tr);
                     Pterm& t = logic.getPterm(tr);
                     if (logic.isOr(tr)) { // We need a new or
-                        if (tr != or_root.tr) changed = true; // We need a new and
-                        for (int i = t.size()-1; i >= 0; i--)
-                            queue.push(t[i]);
+                        if (occs[tr] > 1) {
+                            if (processed.contains(tr)) {
+                                cerr << "Will use the shared structure for " << logic.printTerm(tr) << endl;
+                                cerr << " => " << logic.printTerm(processed[tr]) << endl;
+                                args.push(processed[tr]);
+                                changed = true;
+                            } else {
+                                cerr << "Found an unprocessed or-root shared between " << occs[tr] << " terms" << endl;
+                                cerr << "Will retain the nested or-structure here" << endl;
+                                new_ors.push(PtChild(tr, PTRef_Undef, args.size()));
+                                cerr << "  => " << logic.printTerm(tr) << endl;
+                                args.push(tr);
+                            }
+                        } else {
+                            changed = true; // We need a new and
+                            cerr << "Will open an unshared term: " << logic.printTerm(tr) << endl;
+                            for (int i = t.size()-1; i >= 0; i--)
+//                            for (int i = 0; i < t.size(); i++)
+                                queue.push(t[i]);
+                        }
                     } else {
                         if (logic.isAnd(tr))
                             new_ands.push(PtChild(tr, PTRef_Undef, args.size()));
                         else
                             new_mains.push(PtChild(tr, PTRef_Undef, args.size()));
+                        cerr << " => " << logic.printTerm(tr) << endl;
                         args.push(tr);
                     }
                 }
 
-                PTRef par_tr = changed ? logic.mkOr(args) : or_root.tr;
-                if (or_root.parent != PTRef_Undef)
+                PTRef par_tr;
+
+                if (changed) {
+                     par_tr = logic.mkOr(args);
+                } else
+                    par_tr = or_root.tr;
+
+                processed.insert(or_root.tr, par_tr);
+                cerr << "From now on " << logic.printTerm(or_root.tr) << endl;
+                cerr << "will be     " << logic.printTerm(par_tr) << endl;
+
+                if (or_root.parent != PTRef_Undef) {
+                    cerr << "Will change " << logic.printTerm(logic.getPterm(or_root.parent)[or_root.pos]) << " to " << endl;
+                    cerr << "            " << logic.printTerm(par_tr) << endl;
+                    cerr << "Rewrite: " << logic.printTerm(or_root.parent) << endl;
                     logic.getPterm(or_root.parent)[or_root.pos] = par_tr;
+                    cerr << "         " << logic.printTerm(or_root.parent) << endl;
+                }
                 else
                     fc.setRoot(par_tr);
 
                 // Update the found ands and orthers with the new parent
                 for (int i = 0;  i < new_ands.size(); i++)
                     and_roots.push(PtChild(new_ands[i].tr, par_tr, new_ands[i].pos));
+                for (int i = 0; i < new_ors.size(); i++) {
+                    assert(par_tr != new_ors[i].tr);
+                    or_roots.push(PtChild(new_ors[i].tr, par_tr, new_ors[i].pos));
+                }
                 for (int i = 0; i < new_mains.size(); i++)
                     mainq.push(PtChild(new_mains[i].tr, par_tr, new_mains[i].pos));
 #ifdef PEDANTIC_DEBUG
