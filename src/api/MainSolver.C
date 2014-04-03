@@ -57,11 +57,11 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         // tmp debug
         PTRef root = fc.getRoot();
         Pterm& r = logic.getPterm(root);
-        for (int i = 0; i < r.size(); i++) {
-            fc.setRoot(r[i]);
+//        for (int i = 0; i < r.size(); i++) {
+//            fc.setRoot(r[i]);
             fc = propFlatten(fc);
-        }
-        exit(1);
+//        }
+//        exit(1);
         terms.clear();
         getTermList(fc.getRoot(), terms, logic);
         fc = simplifyEqualities(terms);
