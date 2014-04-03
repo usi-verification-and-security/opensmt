@@ -54,7 +54,14 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         FContainer fc(root);
         expandItes(fc, terms);
         fc.setRoot(terms[terms.size()-1].tr);
-        fc = propFlatten(fc);
+        // tmp debug
+        PTRef root = fc.getRoot();
+        Pterm& r = logic.getPterm(root);
+        for (int i = 0; i < r.size(); i++) {
+            fc.setRoot(r[i]);
+            fc = propFlatten(fc);
+        }
+        exit(1);
         terms.clear();
         getTermList(fc.getRoot(), terms, logic);
         fc = simplifyEqualities(terms);
@@ -97,47 +104,61 @@ void MainSolver::expandItes(FContainer& fc, vec<PtChild>& terms) const
 //
 MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
 {
-//    cerr << "; COMPUTE INCOMING EDGES" << endl;
+#ifdef PEDANTIC_DEBUG
+    cerr << "; COMPUTE INCOMING EDGES" << endl;
+#endif
 
     PTRef top = fc.getRoot();
     vec<pi> qu;
     qu.push(pi(top));
     Map<PTRef,int,PTRefHash> occs;
     vec<PTRef> terms;
-//    VecMap<PTRef,PTRef,PTRefHash > parents;
+#ifdef PEDANTIC_DEBUG
+    VecMap<PTRef,PTRef,PTRefHash > parents;
+#endif
 
     while (qu.size() != 0) {
         int ci = qu.size() - 1;
-//        cerr << "Processing " << logic.printTerm(qu[ci].x) << endl;
+#ifdef PEDANTIC_DEBUG
+        cerr << "Processing " << logic.printTerm(qu[ci].x) << " (" << qu[ci].x.x << ")" << endl;
+#endif
 //        assert(!occs.contains(qu[ci].x));
-//        if (occs.contains(qu[ci].x)) {
-//            cerr << "Processed before: " << logic.printTerm(qu[ci].x);
-//            occs[qu[ci].x]++;
-//            qu.pop();
-//            continue;
-//        }
+        if (occs.contains(qu[ci].x)) {
+            // fires if a term has two occurrences of the same atom
+#ifdef PEDANTIC_DEBUG
+            cerr << "Processed before: " << logic.printTerm(qu[ci].x);
+#endif
+            occs[qu[ci].x]++;
+            qu.pop();
+            continue;
+        }
         bool unprocessed_children = false;
         if (logic.isBooleanOperator(qu[ci].x) && qu[ci].done == false) {
             Pterm& t = logic.getPterm(qu[ci].x);
             for (int i = 0; i < t.size(); i++) {
-//            for (qu[ci].i = 0; qu[ci].i < t.size(); qu[ci].i++) {
                 PTRef cr = t[i];
                 if (!occs.contains(cr)) {
                     unprocessed_children = true;
                     qu.push(pi(cr));
-//                    vec<PTRef> tmp;
-//                    tmp.push(qu[ci].x);
-//                    parents.insert(cr,tmp);
+                    vec<PTRef> tmp;
+                    tmp.push(qu[ci].x);
+#ifdef PEDANTIC_DEBUG
+                    parents.insert(cr,tmp);
+#endif
                 }
                 else {
                     Pterm& c = logic.getPterm(cr);
-//                    cerr << "Node id " << c.getId() << " Processed before 2: " << logic.printTerm(cr) << endl;
-//                    cerr << "Current parent is " << logic.printTerm(qu[ci].x) << endl;
+#ifdef PEDANTIC_DEBUG
+                    cerr << "Node id " << c.getId() << " Processed before 2: " << logic.printTerm(cr) << endl;
+                    cerr << "Current parent is " << logic.printTerm(qu[ci].x) << endl;
+#endif
                     occs[cr]++;
-//                    parents[cr].push(qu[ci].x);
-//                    cerr << " has parents" << endl;
-//                    for (int i = 0; i < parents[cr].size(); i++)
-//                        cerr << "  - " << parents[cr][i].x << endl;
+#ifdef PEDANTIC_DEBUG
+                    parents[cr].push(qu[ci].x);
+                    cerr << " has parents" << endl;
+                    for (int i = 0; i < parents[cr].size(); i++)
+                        cerr << "  - " << parents[cr][i].x << endl;
+#endif
                 }
             }
             qu[ci].done = true;
@@ -159,7 +180,7 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
 
     vec<PtChild> mainq;
     mainq.push(PtChild(root, PTRef_Undef, -1));
-//    parent.insert(root, PTRef_Undef);
+    parent.insert(root, PTRef_Undef);
     Map<PTRef, PTRef, PTRefHash> processed; // To reuse duplicate terms
 
     while (mainq.size() != 0) {
