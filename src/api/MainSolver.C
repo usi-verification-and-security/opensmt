@@ -97,40 +97,59 @@ void MainSolver::expandItes(FContainer& fc, vec<PtChild>& terms) const
 //
 MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
 {
+//    cerr << "; COMPUTE INCOMING EDGES" << endl;
 
     PTRef top = fc.getRoot();
     vec<pi> qu;
     qu.push(pi(top));
     Map<PTRef,int,PTRefHash> occs;
     vec<PTRef> terms;
-    cerr << logic.printTerm(top) << endl;
+//    VecMap<PTRef,PTRef,PTRefHash > parents;
 
     while (qu.size() != 0) {
         int ci = qu.size() - 1;
-        if (occs.contains(qu[ci].x)) {
-            occs[qu[ci].x]++;
-            qu.pop();
-            continue;
-        }
+//        cerr << "Processing " << logic.printTerm(qu[ci].x) << endl;
+//        assert(!occs.contains(qu[ci].x));
+//        if (occs.contains(qu[ci].x)) {
+//            cerr << "Processed before: " << logic.printTerm(qu[ci].x);
+//            occs[qu[ci].x]++;
+//            qu.pop();
+//            continue;
+//        }
         bool unprocessed_children = false;
-        if (logic.isBooleanOperator(qu[ci].x)) {
+        if (logic.isBooleanOperator(qu[ci].x) && qu[ci].done == false) {
             Pterm& t = logic.getPterm(qu[ci].x);
-            for (; qu[ci].i < t.size(); qu[ci].i++) {
-                PTRef c = t[qu[ci].i];
-                if (!occs.contains(c)) {
+            for (int i = 0; i < t.size(); i++) {
+//            for (qu[ci].i = 0; qu[ci].i < t.size(); qu[ci].i++) {
+                PTRef cr = t[i];
+                if (!occs.contains(cr)) {
                     unprocessed_children = true;
-                    qu.push(pi(c));
+                    qu.push(pi(cr));
+//                    vec<PTRef> tmp;
+//                    tmp.push(qu[ci].x);
+//                    parents.insert(cr,tmp);
                 }
-                else
-                    occs[c]++;
+                else {
+                    Pterm& c = logic.getPterm(cr);
+//                    cerr << "Node id " << c.getId() << " Processed before 2: " << logic.printTerm(cr) << endl;
+//                    cerr << "Current parent is " << logic.printTerm(qu[ci].x) << endl;
+                    occs[cr]++;
+//                    parents[cr].push(qu[ci].x);
+//                    cerr << " has parents" << endl;
+//                    for (int i = 0; i < parents[cr].size(); i++)
+//                        cerr << "  - " << parents[cr][i].x << endl;
+                }
             }
+            qu[ci].done = true;
         }
         if (unprocessed_children)
             continue;
         assert(!occs.contains(qu[ci].x));
         occs.insert(qu[ci].x, 1);
+        terms.push(qu[ci].x);
         qu.pop();
     }
+
 
     vec<PtChild> and_roots;
     vec<PtChild> or_roots;
@@ -140,7 +159,7 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
 
     vec<PtChild> mainq;
     mainq.push(PtChild(root, PTRef_Undef, -1));
-    parent.insert(root, PTRef_Undef);
+//    parent.insert(root, PTRef_Undef);
     Map<PTRef, PTRef, PTRefHash> processed; // To reuse duplicate terms
 
     while (mainq.size() != 0) {
@@ -173,9 +192,6 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
                 vec<PtChild> new_mains;
 
                 PtChild and_root = and_roots.last(); and_roots.pop();
-                cerr << "====================================" << endl;
-                cerr << "Hi there!  I'll start checking out the and root " << logic.printTerm(and_root.tr) << endl;
-                cerr << "As the new args of the and I'll put the following stuff:" << endl;
 #ifdef PEDANTIC_DEBUG
 //                cerr << "and root: " << logic.printTerm(and_root.tr) << endl;
 #endif
@@ -195,20 +211,14 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
                         // use the opened term next time it is seen.
                         if (occs[tr] > 1) {
                             if (processed.contains(tr)) {
-                                cerr << "Will use the shared structure for " << logic.printTerm(tr) << endl;
-                                cerr << " => " << logic.printTerm(processed[tr]) << endl;
                                 args.push(processed[tr]);
                                 changed = true;
                             } else { // The new and root
-                                cerr << "Found an unprocessed and-root shared between " << occs[tr] << " terms" << endl;
-                                cerr << "Will retain the nested and-structure here" << endl;
                                 new_ands.push(PtChild(tr, PTRef_Undef, args.size()));
-                                cerr << "  => " << logic.printTerm(tr) << endl;
                                 args.push(tr);
                             }
                         } else {
                             changed = true; // We need a new and
-                            cerr << "Will open an unshared term: " << logic.printTerm(tr) << endl;
                             for (int i = t.size()-1; i >= 0; i--)
 //                            for (int i = 0; i < t.size(); i++)
                                 queue.push(t[i]);
@@ -218,7 +228,6 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
                             new_ors.push(PtChild(tr, PTRef_Undef, args.size()));
                         else
                             new_mains.push(PtChild(tr, PTRef_Undef, args.size()));
-                        cerr << " => " << logic.printTerm(tr) << endl;
                         args.push(tr);
                     }
                 }
@@ -232,15 +241,9 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
                     par_tr = and_root.tr;
 
                 processed.insert(and_root.tr, par_tr);
-                cerr << "From now on " << logic.printTerm(and_root.tr) << endl;
-                cerr << "will be     " << logic.printTerm(par_tr) << endl;
 
                 if (and_root.parent != PTRef_Undef) {
-                    cerr << "Will change " << logic.printTerm(logic.getPterm(and_root.parent)[and_root.pos]) << " to " << endl;
-                    cerr << "            " << logic.printTerm(par_tr) << endl;
-                    cerr << "Rewrite: " << logic.printTerm(and_root.parent) << endl;
                     logic.getPterm(and_root.parent)[and_root.pos] = par_tr;
-                    cerr << "         " << logic.printTerm(and_root.parent) << endl;
                 }
                 else
                     fc.setRoot(par_tr);
@@ -267,9 +270,6 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
                 vec<PtChild> new_mains;
 
                 PtChild or_root = or_roots.last(); or_roots.pop();
-                cerr << "_____________________________________________" << endl;
-                cerr << "Hi there!  I'll start checking out the or root " << logic.printTerm(or_root.tr) << endl;
-                cerr << "As the new args of the or I'll put the following stuff:" << endl;
 #ifdef PEDANTIC_DEBUG
 //                cerr << "or root: " << logic.printTerm(or_root.tr) << endl;
 #endif
@@ -285,20 +285,13 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
                     if (logic.isOr(tr)) { // We need a new or
                         if (occs[tr] > 1) {
                             if (processed.contains(tr)) {
-                                cerr << "Will use the shared structure for " << logic.printTerm(tr) << endl;
-                                cerr << " => " << logic.printTerm(processed[tr]) << endl;
                                 args.push(processed[tr]);
-                                changed = true;
                             } else {
-                                cerr << "Found an unprocessed or-root shared between " << occs[tr] << " terms" << endl;
-                                cerr << "Will retain the nested or-structure here" << endl;
                                 new_ors.push(PtChild(tr, PTRef_Undef, args.size()));
-                                cerr << "  => " << logic.printTerm(tr) << endl;
                                 args.push(tr);
                             }
                         } else {
                             changed = true; // We need a new and
-                            cerr << "Will open an unshared term: " << logic.printTerm(tr) << endl;
                             for (int i = t.size()-1; i >= 0; i--)
 //                            for (int i = 0; i < t.size(); i++)
                                 queue.push(t[i]);
@@ -308,7 +301,6 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
                             new_ands.push(PtChild(tr, PTRef_Undef, args.size()));
                         else
                             new_mains.push(PtChild(tr, PTRef_Undef, args.size()));
-                        cerr << " => " << logic.printTerm(tr) << endl;
                         args.push(tr);
                     }
                 }
@@ -321,15 +313,9 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
                     par_tr = or_root.tr;
 
                 processed.insert(or_root.tr, par_tr);
-                cerr << "From now on " << logic.printTerm(or_root.tr) << endl;
-                cerr << "will be     " << logic.printTerm(par_tr) << endl;
 
                 if (or_root.parent != PTRef_Undef) {
-                    cerr << "Will change " << logic.printTerm(logic.getPterm(or_root.parent)[or_root.pos]) << " to " << endl;
-                    cerr << "            " << logic.printTerm(par_tr) << endl;
-                    cerr << "Rewrite: " << logic.printTerm(or_root.parent) << endl;
                     logic.getPterm(or_root.parent)[or_root.pos] = par_tr;
-                    cerr << "         " << logic.printTerm(or_root.parent) << endl;
                 }
                 else
                     fc.setRoot(par_tr);

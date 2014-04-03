@@ -27,8 +27,8 @@ class MainSolver {
     class pi {
       public:
         PTRef x;
-        int i;
-        pi(PTRef x_) : x(x_), i(0) {}
+        bool done;
+        pi(PTRef x_) : x(x_), done(false) {}
     };
     Logic&         logic;
     TermMapper&    tmap;
