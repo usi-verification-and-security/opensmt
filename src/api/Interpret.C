@@ -476,9 +476,10 @@ bool Interpret::getAssignment(const char* cmd) {
 }
 
 bool Interpret::declareFun(const char* fname, const vec<SRef>& args) {
-    SymRef rval = symstore.newSymb(fname, args);
+    const char* msg;
+    SymRef rval = symstore.newSymb(fname, args, &msg);
     if (rval == SymRef_Undef) {
-        comment_formatted("function %s already defined", fname);
+        comment_formatted("While declare-fun %s: %s", fname, msg);
         return false;
     }
     return true;

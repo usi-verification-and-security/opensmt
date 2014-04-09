@@ -38,14 +38,15 @@ int main(int argc, char **argv) {
     sort_args_f.push(sr);
     sort_args_f.push(sr);
 
-    SymRef sym_f = logic.newSymb("f", sort_args_f);
+    const char* msg;
+    SymRef sym_f = logic.newSymb("f", sort_args_f, &msg);
     assert(sym_f != SymRef_Undef);
 
     vec<PTRef> f_args;
     f_args.push(a_tr);
     f_args.push(b_tr);
 
-    PTRef f_a_b_tr = logic.insertTerm(sym_f, f_args);
+    PTRef f_a_b_tr = logic.insertTerm(sym_f, f_args, &msg);
 
     assert(f_a_b_tr != PTRef_Undef);
 
@@ -64,7 +65,8 @@ int main(int argc, char **argv) {
     vec<PTRef> f_f_args;
     f_f_args.push(f_a_b_tr);
     f_f_args.push(b_tr);
-    PTRef f_f_a_b_tr = logic.insertTerm(sym_f, f_f_args);
+    PTRef f_f_a_b_tr = logic.insertTerm(sym_f, f_f_args, &msg);
+    assert (f_f_a_b_tr != PTRef_Undef);
 
     // eq_2 : (= (f (f a b) b) b)
     vec<PTRef> eq_args_2;

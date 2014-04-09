@@ -31,15 +31,16 @@ GCTest::GCTest(int argc, char **argv) {
     SRef bsr = sort_store["Bool 0"];
     sort_args_a.push(sr);
     // First arg is the return sort
-    SymRef a_tr = sym_store.newSymb("a", sort_args_a);
-    SymRef b_tr = sym_store.newSymb("b", sort_args_a);
-    SymRef c_tr = sym_store.newSymb("c", sort_args_a);
+    const char* msg;
+    SymRef a_tr = sym_store.newSymb("a", sort_args_a, &msg);
+    SymRef b_tr = sym_store.newSymb("b", sort_args_a, &msg);
+    SymRef c_tr = sym_store.newSymb("c", sort_args_a, &msg);
 
     vec<SRef> sort_args_f;
     sort_args_f.push(sort_store["TSort 0"]);
     sort_args_f.push(sort_store["TSort 0"]);
     sort_args_f.push(sort_store["TSort 0"]);
-    SymRef f_tr = sym_store.newSymb("f", sort_args_f);
+    SymRef f_tr = sym_store.newSymb("f", sort_args_f, &msg);
 
     vec<SymRef>& eq_syms = sym_store.nameToRef("=");
     SymRef eq_sym = SymRef_Undef;  // Find the equality symbol for the equality of TSort 0
@@ -67,43 +68,43 @@ GCTest::GCTest(int argc, char **argv) {
     // Add the terms
     vec<PTRef> tmp;
     // a
-    PTRef a_ptr = logic.insertTerm(a_tr, tmp);
+    PTRef a_ptr = logic.insertTerm(a_tr, tmp, &msg);
     // b
-    PTRef b_ptr = logic.insertTerm(b_tr, tmp);
+    PTRef b_ptr = logic.insertTerm(b_tr, tmp, &msg);
     // c
-    PTRef c_ptr = logic.insertTerm(c_tr, tmp);
+    PTRef c_ptr = logic.insertTerm(c_tr, tmp, &msg);
     // f a b
     vec<PTRef> f_args;
     f_args.push(a_ptr);
     f_args.push(b_ptr);
-    PTRef f_a_b_ptr = logic.insertTerm(f_tr, f_args);
+    PTRef f_a_b_ptr = logic.insertTerm(f_tr, f_args, &msg);
     // = (f a b) a
     vec<PTRef> eq_args;
     eq_args.push(f_a_b_ptr);
     eq_args.push(a_ptr);
-    PTRef eq_ptr = logic.insertTerm(eq_sym, eq_args);
+    PTRef eq_ptr = logic.insertTerm(eq_sym, eq_args, &msg);
 
     // f (f a b) b
     vec<PTRef> f2_args;
     f2_args.push(f_a_b_ptr);
     f2_args.push(b_ptr);
-    PTRef f2_f_a_b_b_ptr = logic.insertTerm(f_tr, f2_args);
+    PTRef f2_f_a_b_b_ptr = logic.insertTerm(f_tr, f2_args, &msg);
 
     // = (f (f a b) b) c
     vec<PTRef> eq2_args;
     eq2_args.push(f2_f_a_b_b_ptr);
     eq2_args.push(c_ptr);
-    PTRef eq2_ptr = logic.insertTerm(eq_sym, eq2_args);
+    PTRef eq2_ptr = logic.insertTerm(eq_sym, eq2_args, &msg);
 
     // = (a c)
     vec<PTRef> eq3_args;
     eq3_args.push(a_ptr);
     eq3_args.push(c_ptr);
-    PTRef eq3_ptr = logic.insertTerm(eq_sym, eq3_args);
+    PTRef eq3_ptr = logic.insertTerm(eq_sym, eq3_args, &msg);
     // not (= (a c))
     vec<PTRef> deq_args;
     deq_args.push(eq3_ptr);
-    PTRef deq_ptr = logic.insertTerm(not_sym, deq_args);
+    PTRef deq_ptr = logic.insertTerm(not_sym, deq_args, &msg);
 
     // add the terms
     vec<PtPair> v;

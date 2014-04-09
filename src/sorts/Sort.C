@@ -1,6 +1,6 @@
 #include "Sort.h"
 
-const SRef SRef_Undef = -1;
+//const SRef SRef_Undef = -1;
 
 /***********************************************************
  * Identifier constructor

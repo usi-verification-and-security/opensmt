@@ -10,6 +10,8 @@
 
 typedef uint32_t SRef;
 
+static const SRef SRef_Undef = -1;
+
 enum SortType { S_EMPTY, S_ID, S_ID_LIST };
 
 // What are these for?

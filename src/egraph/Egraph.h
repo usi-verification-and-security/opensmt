@@ -130,7 +130,9 @@ public:
     vec<PTRef> tmp;
     tmp.push(logic.getTerm_true());
     tmp.push(logic.getTerm_false());
-    PTRef neq = logic.insertTerm(logic.getSym_eq(), tmp);
+    const char* msg;
+    PTRef neq = logic.insertTerm(logic.getSym_eq(), tmp, &msg);
+    assert(neq != PTRef_Undef);
     assertNEq(logic.getTerm_true(), logic.getTerm_false(), PtAsgn(neq, l_False));
     Eq_FALSE = neq;
   }
@@ -466,6 +468,8 @@ public:
   lbool       addTerm             ( PTRef, vec<PtPair>&, vec<PTRef>& );
   // Non-recursive declare term
   void        declareTerm         ( PtChild );
+  // Recursive declare term
+  void        declareTermTree     ( PTRef );
   // Remove redundancies and replace with true if
   // trivial.  Return true if root of the formula is trivially true
   bool        simplifyEquality    ( PtChild&, bool simplify = true );

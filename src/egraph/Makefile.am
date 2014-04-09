@@ -1,5 +1,5 @@
 noinst_LTLIBRARIES = libegraph.la
-noinst_PROGRAMS = test gctest test3
+noinst_PROGRAMS = test gctest test3 test4
 
 INCLUDES=$(config_includedirs)
 
@@ -16,6 +16,9 @@ test3_LDADD = libegraph.la ../logics/liblogics.la ../pterms/libpterms.la ../smts
 
 gctest_SOURCES = GCTest.C GCTest.h
 gctest_LDADD = libegraph.la ../logics/liblogics.la ../pterms/libpterms.la ../smtsolvers/libsmtsolvers.la ../symbols/libsymbols.la ../sorts/libsorts.la
+
+test4_SOURCES = test4.C
+test4_LDADD = libegraph.la ../logics/liblogics.la ../pterms/libpterms.la ../smtsolvers/libsmtsolvers.la ../symbols/libsymbols.la ../sorts/libsorts.la
 
 
 # libegraph_la_SOURCES = EgraphSolver.C \

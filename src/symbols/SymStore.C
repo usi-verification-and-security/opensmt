@@ -2,13 +2,14 @@
 #include "SymStore.h"
 #include "Symbol.h"
 
+static const char* e_duplicate_symbol = "Symbol Store: symbol already exists";
+
 SymStore::~SymStore() {
     for (int i = 0; i < idToName.size(); i++)
         free(idToName[i]);
 }
 
-
-SymRef SymStore::newSymb(const char* fname, const vec<SRef>& args, bool, bool, bool, bool) {
+SymRef SymStore::newSymb(const char* fname, const vec<SRef>& args, const char** msg, bool, bool, bool, bool) {
     // Check if there already is a term called fname with same number of arguments of the same sort
     bool newsym = !contains(fname);
     if (newsym == false) {
@@ -20,8 +21,10 @@ SymRef SymStore::newSymb(const char* fname, const vec<SRef>& args, bool, bool, b
                     if (ta[trs[i]][j] != args[j+1])
                         break;
                 }
-                if (j == ta[trs[i]].nargs()) // The term exists already
+                if (j == ta[trs[i]].nargs()) { // The term exists already
+                    *msg = e_duplicate_symbol;
                     return SymRef_Undef;
+                }
             }
         }
     }

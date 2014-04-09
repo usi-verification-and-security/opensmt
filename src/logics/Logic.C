@@ -2,11 +2,13 @@
 #include "pterms/PtStore.h"
 #include "Logic.h"
 #include "common/TreeOps.h"
+#include "minisat/mtl/Sort.h"
 
 /***********************************************************
  * Class defining logic
  ***********************************************************/
 
+const char* Logic::e_argnum_mismatch = "incorrect number of arguments";
 const char* Logic::tk_true     = "true";
 const char* Logic::tk_false    = "false";
 const char* Logic::tk_not      = "not";
@@ -37,66 +39,69 @@ Logic::Logic(SMTConfig& c, SStore& s, SymStore& t, PtStore& pt) :
 
     SymRef tr;
 
-    tr = sym_store.newSymb(tk_true, params);
+    const char* msg;
+    tr = sym_store.newSymb(tk_true, params, &msg);
     if (tr == SymRef_Undef) { assert(false); }
     sym_store[tr].setNoScoping();
     sym_TRUE = tr;
     vec<PTRef> tmp;
-    term_TRUE  = insertTerm(sym_TRUE,  tmp);
+    term_TRUE  = insertTerm(sym_TRUE,  tmp, &msg);
+    assert(term_TRUE != PTRef_Undef);
 
-    tr = sym_store.newSymb(tk_false, params);
+    tr = sym_store.newSymb(tk_false, params, &msg);
     if (tr == SymRef_Undef) { assert(false); }
     sym_store[tr].setNoScoping();
     sym_FALSE = tr;
-    term_FALSE = insertTerm(sym_FALSE, tmp);
+    term_FALSE = insertTerm(sym_FALSE, tmp, &msg);
+    assert(term_FALSE != PTRef_Undef);
 
     params.push(sort_store["Bool 0"]);
-    tr = sym_store.newSymb(tk_not, params);
+    tr = sym_store.newSymb(tk_not, params, &msg);
     if (tr == SymRef_Undef) { assert(false); }
     sym_store[tr].setNoScoping();
     sym_NOT = tr;
 
     params.push(sort_store["Bool 0"]);
 
-    tr = sym_store.newSymb(tk_equals, params);
+    tr = sym_store.newSymb(tk_equals, params, &msg);
     if (tr == SymRef_Undef) { assert(false); }
     if (sym_store[tr].setRightAssoc() == false) { assert(false); } // TODO: Remove and clean
     sym_store[tr].setNoScoping();
     sym_EQ = tr;
     equalities.insert(sym_EQ, true);
 
-    tr = sym_store.newSymb(tk_implies, params);
+    tr = sym_store.newSymb(tk_implies, params, &msg);
     if (tr == SymRef_Undef) { assert(false); }
     if (sym_store[tr].setRightAssoc() == false) { assert(false); } // TODO: Remove and clean
     sym_store[tr].setNoScoping();
     sym_IMPLIES = tr;
 
-    tr = sym_store.newSymb(tk_and, params);
+    tr = sym_store.newSymb(tk_and, params, &msg);
     if (tr == SymRef_Undef) { assert(false); }
     if (sym_store[tr].setLeftAssoc() == false) assert(false);
     sym_store[tr].setNoScoping();
     sym_AND = tr;
 
-    tr = sym_store.newSymb(tk_or, params);
+    tr = sym_store.newSymb(tk_or, params, &msg);
     if (tr == SymRef_Undef) { assert(false); }
     if (sym_store[tr].setLeftAssoc() == false) assert(false);
     sym_store[tr].setNoScoping();
     sym_OR = tr;
 
-    tr = sym_store.newSymb(tk_xor, params);
+    tr = sym_store.newSymb(tk_xor, params, &msg);
     if (tr == SymRef_Undef) { assert(false); }
     if (sym_store[tr].setLeftAssoc() == false) assert(false);
     sym_store[tr].setNoScoping();
     sym_XOR = tr;
 
-    tr = sym_store.newSymb(tk_distinct, params);
+    tr = sym_store.newSymb(tk_distinct, params, &msg);
     if (tr == SymRef_Undef) { assert(false); }
     if (sym_store[tr].setPairwise() == false) assert(false);
     sym_store[tr].setNoScoping();
     sym_DISTINCT = tr;
 
     params.push(sort_store["Bool 0"]);
-    tr = sym_store.newSymb(tk_ite, params);
+    tr = sym_store.newSymb(tk_ite, params, &msg);
     if (tr == SymRef_Undef) { assert(false); }
     sym_store[tr].setNoScoping();
     sym_ITE = tr;
@@ -160,14 +165,15 @@ bool Logic::declare_sort_hook(Sort* s) {
 
     SymRef tr;
 
-    tr = sym_store.newSymb(tk_equals, params);
+    const char* msg;
+    tr = sym_store.newSymb(tk_equals, params, &msg);
     if (tr == SymRef_Undef) { return false; }
     sym_store[tr].setNoScoping();
     sym_store[tr].setCommutes();
     equalities.insert(tr, true);
 
     // distinct
-    tr = sym_store.newSymb(tk_distinct, params);
+    tr = sym_store.newSymb(tk_distinct, params, &msg);
     if (tr == SymRef_Undef) { return false; }
     if (sym_store[tr].setPairwise() == false) return false;
     sym_store[tr].setNoScoping();
@@ -181,7 +187,7 @@ bool Logic::declare_sort_hook(Sort* s) {
     params.push(sr);
     params.push(sr);
 
-    tr = sym_store.newSymb(tk_ite, params);
+    tr = sym_store.newSymb(tk_ite, params, &msg);
     if (tr == SymRef_Undef) { return false; }
     sym_store[tr].setNoScoping();
     ites.insert(tr, true);
@@ -194,10 +200,11 @@ PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args) {
     SymRef sref = term_store.lookupSymbol(s, args);
     simplify(sref, args);
     PTRef rval;
+    const char** msg;
     if (sref == SymRef_Undef)
         rval = PTRef_Undef;
     else
-        rval = insertTerm(sref, args);
+        rval = insertTerm(sref, args, msg);
     return rval;
 }
 
@@ -253,7 +260,7 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
         else if (dropped_args > 0)
             args.shrink(dropped_args);
     }
-    if (s == getSym_eq()) {
+    if (isEquality(s)) {
         assert(args.size() == 2);
         if (args[0] == getTerm_true()) {
             Pterm& t = getPterm(args[1]);
@@ -301,6 +308,7 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
             cerr << "eq -> false" << endl;
             return;
         }
+        // Sorting is done at insertion time, no need to do it here
     }
     // Others, to be implemented:
     // - distinct
@@ -347,15 +355,48 @@ PTRef Logic::mkNot(PTRef arg) {
 PTRef Logic::mkConst(SRef s, const char* name) {
     vec<SRef> sort_args;
     sort_args.push(s);
-    SymRef sr = newSymb(name, sort_args);
+    const char* msg;
+    SymRef sr = newSymb(name, sort_args, &msg);
     if (sr == SymRef_Undef) {
+        cerr << "Warning: while mkConst " << name << ": " << msg << endl;
         assert(symNameToRef(name).size() == 1);
         sr = symNameToRef(name)[0];
     }
     vec<PTRef> tmp;
-    PTRef ptr = insertTerm(sr, tmp);
+    PTRef ptr = insertTerm(sr, tmp, &msg);
     assert (ptr != PTRef_Undef);
     return ptr;
+}
+
+PTRef Logic::mkFun(SymRef f, vec<PTRef>& args, const char** msg)
+{
+    return insertTerm(f, args, msg);
+}
+
+SRef Logic::declareSort(const char* id, const char** msg)
+{
+    Identifier i(id);
+    Sort s(i);
+    sort_store.insertStore(&s);
+    declare_sort_hook(&s);
+    char* sort_name;
+    asprintf(&sort_name, "%s 0", id);
+    return sort_store[sort_name];
+}
+
+SymRef Logic::declareFun(const char* fname, const SRef rsort, const vec<SRef>& args, const char** msg)
+{
+    vec<SRef> comb_args;
+
+    assert(rsort != SRef_Undef);
+
+    comb_args.push(rsort);
+
+    for (int i = 0; i < args.size(); i++) {
+        assert(args[i] != SRef_Undef);
+        comb_args.push(args[i]);
+    }
+    return sym_store.newSymb(fname, comb_args, msg);
 }
 
 //
@@ -379,7 +420,7 @@ PTRef Logic::cloneTerm(const PTRef& tr) {
     return ptr_new;
 }
 
-PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms) {
+PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, const char** msg) {
     PTRef res;
     if (terms.size() == 0) {
         if (term_store.cterm_map.contains(sym))
@@ -391,7 +432,7 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms) {
     }
     else if (!isBooleanOperator(sym)) {
         if (sym_store[sym].commutes()) {
-            sort(terms);
+            sort(terms, LessThan_PTRef());
         }
         if (!sym_store[sym].left_assoc() &&
             !sym_store[sym].right_assoc() &&
@@ -399,7 +440,7 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms) {
             !sym_store[sym].pairwise() &&
             sym_store[sym].nargs() != terms.size())
         {
-            cerr << "arg num mismatch" << endl;
+            *msg = e_argnum_mismatch;
             return PTRef_Undef;
         }
         PTLKey k;
@@ -421,7 +462,7 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms) {
             res = term_store.bool_map[k];
 #ifdef PEDANTIC_DEBUG
             char* ts = printTerm(res);
-            cerr << "duplicate: " << ts << endl;
+//            cerr << "duplicate: " << ts << endl;
             ::free(ts);
 #endif
         }
@@ -430,7 +471,7 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms) {
             term_store.bool_map.insert(k, res);
 #ifdef PEDANTIC_DEBUG
             char* ts = printTerm(res);
-            cerr << "new: " << ts << endl;
+//            cerr << "new: " << ts << endl;
             ::free(ts);
 #endif
         }

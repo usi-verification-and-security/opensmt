@@ -57,15 +57,30 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         // tmp debug
         PTRef root = fc.getRoot();
         Pterm& r = logic.getPterm(root);
-//        for (int i = 0; i < r.size(); i++) {
-//            fc.setRoot(r[i]);
-            fc = propFlatten(fc);
-//        }
-//        exit(1);
+#ifdef ENABLE_SHARING_BUG
+        vec<PTRef> tmp;
+        vec<PTRef> tlfs;
+        ts.retrieveTopLevelFormulae(root, tlfs);
+        for (int i = 0; i < tlfs.size(); i++) {
+            if (ts.checkDeMorgan(tlfs[i]) || ts.checkCnf(tlfs[i]) || ts.checkClause(tlfs[i]))
+                fc.setRoot(tlfs[i]);
+            else {
+                fc.setRoot(tlfs[i]);
+                fc = propFlatten(fc);
+            }
+            terms.clear();
+            getTermList(fc.getRoot(), terms, logic);
+            fc = simplifyEqualities(terms);
+            giveToSolver(fc.getRoot());
+        }
+//        fc.setRoot(logic.mkAnd(tmp));
+#else
+        fc = propFlatten(fc);
         terms.clear();
         getTermList(fc.getRoot(), terms, logic);
         fc = simplifyEqualities(terms);
         state = giveToSolver(fc.getRoot());
+#endif
     }
 end:
     return state;
@@ -133,7 +148,12 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
             continue;
         }
         bool unprocessed_children = false;
-        if (logic.isBooleanOperator(qu[ci].x) && qu[ci].done == false) {
+#ifdef ENABLE_SHARING_BUG
+        if (logic.isBooleanOperator(qu[ci].x))
+#else
+        if (logic.isBooleanOperator(qu[ci].x) && qu[ci].done == false)
+#endif
+        {
             Pterm& t = logic.getPterm(qu[ci].x);
             for (int i = 0; i < t.size(); i++) {
                 PTRef cr = t[i];
@@ -157,7 +177,7 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
                     parents[cr].push(qu[ci].x);
                     cerr << " has parents" << endl;
                     for (int i = 0; i < parents[cr].size(); i++)
-                        cerr << "  - " << parents[cr][i].x << endl;
+                        cerr << "  - " << logic.getPterm(parents[cr][i]).getId() << endl;
 #endif
                 }
             }
@@ -258,6 +278,10 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
 
                 if (changed) {
                     par_tr = logic.mkAnd(args);
+                    if (occs.contains(par_tr))
+                        occs[par_tr]++;
+                    else
+                        occs.insert(par_tr, 1);
                 } else
                     par_tr = and_root.tr;
 
@@ -329,7 +353,11 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
                 PTRef par_tr;
 
                 if (changed) {
-                     par_tr = logic.mkOr(args);
+                    par_tr = logic.mkOr(args);
+                    if (occs.contains(par_tr))
+                        occs[par_tr]++;
+                    else
+                        occs.insert(par_tr, 1);
                 } else
                     par_tr = or_root.tr;
 

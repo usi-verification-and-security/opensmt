@@ -263,27 +263,35 @@ bool Cnfizer::deMorganize( PTRef formula
         PTRef and_tr = pt[0];
         // Retrieve conjuncts as a clause
         vec<Lit> clause;
-        vec<PTRef> to_process;
-        to_process.push(and_tr);
+        vec<pi> to_process;
+        to_process.push(pi(and_tr));
 
+        // The loop is strange of course because we want the post-order
         while (to_process.size() != 0) {
-
-            and_tr = to_process.last(); to_process.pop();
+            int idx = to_process.size() - 1;
+            PTRef and_tr = to_process[idx].x;
             Pterm& and_t = ptstore[and_tr];
 
-            for (int i = 0; i < and_t.size(); i++) {
+            if (!to_process[idx].done) {
+                bool unprocessed_children = false;
+                for (int i = and_t.size() - 1; i >= 0; i--) {
+                    PTRef  conj_tr = and_t[i];
+                    Pterm& conj_t  = ptstore[conj_tr];
 
-                PTRef  conj_tr = and_t[i];
-                Pterm& conj_t  = ptstore[conj_tr];
-
-                if (isLit(conj_tr)) {
-                    clause.push(~findLit(conj_tr));
+                    if (isLit(conj_tr) || logic.isAnd(conj_tr)) {
+                        to_process.push(pi(conj_tr));
+                        unprocessed_children = true;
+                    }
                 }
-                else if (conj_t.symb() == logic.getSym_and())
-                    to_process.push(conj_tr);
-
-                else assert(false);
+                to_process[idx].done = true;
+                if (unprocessed_children) continue;
             }
+            assert(to_process.last().x == and_tr);
+            if (isLit(and_tr)) {
+                clause.push(~findLit(and_tr));
+            }
+            else assert(logic.isAnd(and_tr));
+            to_process.pop();
         }
 
 #ifdef PRODUCE_PROOF
@@ -496,7 +504,7 @@ bool Cnfizer::checkConj(PTRef e)
 
         e = to_process.last(); to_process.pop();
 
-        and_t = ptstore[e];
+        Pterm& and_t = ptstore[e];
 
         for (int i = 0; i < and_t.size(); i++) {
             if (ptstore[and_t[i]].symb() == logic.getSym_and())

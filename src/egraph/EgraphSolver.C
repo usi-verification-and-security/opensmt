@@ -32,6 +32,7 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 // Added to support compiling templates
 //#include "DLSolver.C"
 #include "SimpSMTSolver.h"
+#include "TreeOps.h"
 
 #define VERBOSE 0
 
@@ -428,6 +429,15 @@ void Egraph::declareTerm(PtChild ptc) {
     }
 }
 
+// Declare a tree of terms
+void Egraph::declareTermTree(PTRef tr)
+{
+    vec<PtChild> terms;
+    getTermList(tr, terms, logic);
+    for (int i = 0; i < terms.size(); i++)
+        declareTerm(terms[i]);
+}
+
 // Not used
 lbool Egraph::addTerm(PTRef term, vec<PtPair>& ites, vec<PTRef>& nested_bools) {
     assert(false);
@@ -504,14 +514,15 @@ lbool Egraph::addTerm(PTRef term, vec<PtPair>& ites, vec<PTRef>& nested_bools) {
                 sort_args.push(sr);
                 char* name = NULL;
                 asprintf(&name, ".oite%d", tm[i].x);
-                SymRef sym = sym_store.newSymb(name, sort_args);
+                const char* msg;
+                SymRef sym = sym_store.newSymb(name, sort_args, &msg);
                 // The symbol might already be there
                 if (sym == SymRef_Undef) {
                     assert(sym_store.nameToRef(name).size() == 1);
                     sym = sym_store.nameToRef(name)[0];
                 }
                 vec<PTRef> tmp;
-                PTRef o_ite = logic.insertTerm(sym, tmp);
+                PTRef o_ite = logic.insertTerm(sym, tmp, &msg);
                 assert(o_ite != PTRef_Undef);
                 // The old term goes to PtPair
                 ites.push(PtPair(tm[i], o_ite));
@@ -653,7 +664,7 @@ lbool Egraph::addDisequality(PtAsgn pa) {
         res = assertDist(pa.tr, pa);
     if (res == true) {
 #ifdef PEDANTIC_DEBUG
-        cerr << "Asserting the equality to false/true" << endl;
+//        cerr << "Asserting the equality to false/true" << endl;
 #endif
         bool res2;
         // pa.sgn == true if this is a disequality
@@ -1608,15 +1619,15 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
         {
             enode_store[sv].setDeduced();
 #ifdef PEDANTIC_DEBUG
-            cerr << "Deducing ";
-            cerr << (deduced_polarity == l_False ? "not " : "");
-            cerr << logic.printTerm(enode_store[sv].getTerm());
-            cerr << " since ";
-            cerr << logic.printTerm(enode_store[x].getTerm());
-            cerr << " and ";
-            cerr << logic.printTerm(enode_store[y].getTerm());
-            cerr << " are now equal";
-            cerr << endl;
+//            cerr << "Deducing ";
+//            cerr << (deduced_polarity == l_False ? "not " : "");
+//            cerr << logic.printTerm(enode_store[sv].getTerm());
+//            cerr << " since ";
+//            cerr << logic.printTerm(enode_store[x].getTerm());
+//            cerr << " and ";
+//            cerr << logic.printTerm(enode_store[y].getTerm());
+//            cerr << " are now equal";
+//            cerr << endl;
 #endif
             deductions.push(PtAsgn_reason(enode_store.ERefToTerm[sv],
                                           deduced_polarity, reason.tr));

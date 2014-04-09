@@ -139,6 +139,27 @@ fi
 echo "setting stupid theory-propagation flag to...  ${config_stupid_theoryprop:-none}"
 
 #
+# Enable the buggy implementation of the structure sharing
+#
+AC_ARG_ENABLE(sharebug,
+  AC_HELP_STRING([--enable-sharebug],
+                 [enable the structure sharing bug in propositional flattening (default=yes)]),
+  enablesharebug=$enableval,
+  enablesharebug="yes")
+
+if test $enablesharebug = "yes" ;
+then
+  config_sharebug="-DENABLE_SHARING_BUG"
+elif test $enablesharebug = "no" ;
+then
+  config_sharebug=""
+else
+  config_sharebug=$enablesharebug
+fi
+echo "setting sharing bug flag to...  ${config_sharebug:-none}"
+
+
+#
 # Enable GC debug
 #
 AC_ARG_ENABLE(gcdebug,
@@ -198,8 +219,8 @@ then
   exit
 fi
 
-AM_CFLAGS="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_statically $config_proof $config_stupid_theoryprop"
-AM_CXXFLAGS="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_statically $config_proof $config_stupid_theoryprop"
+AM_CFLAGS="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_statically $config_proof $config_stupid_theoryprop $config_sharebug"
+AM_CXXFLAGS="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_statically $config_proof $config_stupid_theoryprop $config_sharebug"
 CFLAGS=""
 CXXFLAGS=""
 

@@ -136,15 +136,18 @@ protected:
                                         );                                    // Apply deMorgan rules whenever feasible
     PTRef    rewriteMaxArity            ( PTRef, Map<PTRef, int, PTRefHash> & );   // Rewrite terms using maximum arity
 
+public:
+    bool     checkClause                ( PTRef ); // Check if a formula is a clause
     bool     checkCnf                   ( PTRef );                            // Check if formula is in CNF
     bool     checkDeMorgan              ( PTRef );                            // Check if formula can be deMorganized
+    void     retrieveTopLevelFormulae   ( PTRef, vec<PTRef> & );         // Retrieves the list of top-level formulae
+protected:
     bool     giveToSolver               ( PTRef
 #ifdef PRODUCE_PROOF
                                         , const ipartitions_t &
 #endif
                                         );                              // Gives formula to the SAT solver
 
-    void  retrieveTopLevelFormulae   ( PTRef, vec<PTRef> & );         // Retrieves the list of top-level formulae
 
 #ifdef PRODUCE_PROOF
     bool  addClause                  ( vec<Lit>&, const ipartitions_t& );
@@ -160,6 +163,12 @@ protected:
 
 
 private:
+    class pi {
+      public:
+        PTRef x;
+        bool done;
+        pi(PTRef x_) : x(x_), done(false) {}
+    };
 
     void    computeIncomingEdges (PTRef, Map<PTRef, int, PTRefHash> & );         // Computes the list of incoming edges for a node
     PTRef   mergeEnodeArgs       ( PTRef
@@ -167,7 +176,6 @@ private:
                                  , Map<PTRef, int, PTRefHash> & );  // Subroutine for rewriteMaxArity
 
     bool    checkConj            (PTRef); // Check if a formula is a conjunction
-    bool    checkClause          (PTRef); // Check if a formula is a clause
     bool    checkPureConj        (PTRef, Map<PTRef,bool,PTRefHash>& check_cache); // Check if a formula is purely a conjuntion
 
     lbool   status;     // The status of the last solver call (initially l_Undef)

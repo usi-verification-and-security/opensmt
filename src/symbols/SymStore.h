@@ -28,7 +28,7 @@ class SymStore {
     ~SymStore();
     // Construct a new symbol.  The first argument in args is the return
     // sort of the symbol
-    SymRef newSymb(const char* fname, const vec<SRef>& args, bool la = false, bool ra = false, bool ch = false, bool pw = false);
+    SymRef newSymb(const char* fname, const vec<SRef>& args, const char** msg, bool la = false, bool ra = false, bool ch = false, bool pw = false);
     bool contains(const char* fname)            const { return symbolTable.contains(fname); }
     const vec<SymRef>& nameToRef(const char* s) const { return symbolTable[s]; }
     vec<SymRef>& nameToRef(const char* s)             { return symbolTable[s]; }
@@ -37,6 +37,8 @@ class SymStore {
     const Symbol& operator [] (SymRef tr)       const { return ta[tr]; }
 //    void insertOcc(SymRef tr, int k_arg, SymRef par)  { occList[symrefToId[tr]].push(Occ(par, k_arg)); }
     const char* getName(SymRef tr)              const { return idToName[symrefToId[tr]]; }
+private:
+    const char* e_duplicate_symbol;
 };
 
 #endif

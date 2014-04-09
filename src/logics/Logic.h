@@ -13,6 +13,8 @@ class TStore;
 
 class Logic {
   private:
+    static const char* e_argnum_mismatch;
+
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      equalities;
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      disequalities;
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      ites;
@@ -68,8 +70,8 @@ class Logic {
     Sort*       getSort       (const SRef s)                { return sort_store[s]; }
 
     // Symbols
-    SymRef      newSymb       (const char* name, vec<SRef>& sort_args)
-                                                            { return sym_store.newSymb(name, sort_args); }
+    SymRef      newSymb       (const char* name, vec<SRef>& sort_args, const char** msg)
+                                                            { return sym_store.newSymb(name, sort_args, msg); }
     Symbol&     getSym        (const SymRef s)        const { return sym_store[s]; }
     vec<SymRef>& symNameToRef (const char* s)               { return sym_store.nameToRef(s); }
     // Terms
@@ -88,6 +90,10 @@ class Logic {
 
     // Generic constants
     PTRef       mkConst       (SRef, const char*);
+
+    SymRef      declareFun    (const char* fname, const SRef rsort, const vec<SRef>& args, const char** msg);
+    SRef        declareSort   (const char* id, const char** msg);
+    PTRef       mkFun         (SymRef f, vec<PTRef>& args, const char** msg);
 
     // Clone a term
     PTRef       cloneTerm     (const PTRef&);
@@ -141,7 +147,7 @@ class Logic {
     // Implement logic-aware simplifications
     void        simplify           (SymRef& s, vec<PTRef>& args);
     PTRef       resolveTerm        (const char* s, vec<PTRef>& args);
-    PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms);
+    PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms, const char** msg);
 
 // Debugging
     char*       printTerm          (PTRef tr)       const { return term_store.printTerm(tr); }
