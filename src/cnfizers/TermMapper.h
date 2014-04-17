@@ -15,7 +15,8 @@ class TermMapper {
     Map<PTRef,Var,PTRefHash,Equal<PTRef> >    termToVar;
     Map<PTRef,bool,PTRefHash,Equal<PTRef> >   theoryTerms;
 
-    void getTerm(PTRef, PTRef&, bool&) const;
+    // Return a "purified" term by removing sequence of nots.  sgn is false if sequence length is even, and true if it odd
+    void getTerm(PTRef tr, PTRef& tr_clean, bool& sgn) const;
     Var  getVar(PTRef) const;
     Lit  getLit(PTRef) const;
 #ifdef PEDANTIC_DEBUG

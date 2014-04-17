@@ -35,63 +35,72 @@ int main(int argc, char **argv) {
     PTRef e2_tr = logic.mkConst(sr, "e2");
 
     // (op e0 e0)
+
+    // First declare the function symbol op (U U) U
     vec<SRef> args;
     args.push(sr);
     args.push(sr);
     SymRef f = logic.declareFun("op", sr, args, &msg);
     assert(f != SymRef_Undef);
+
+    // Then define the term (op e0 e0)
     vec<PTRef> targs;
     targs.push(e0_tr);
     targs.push(e0_tr);
     PTRef ope0e0_tr = logic.mkFun(f, targs, &msg);
     assert(ope0e0_tr != PTRef_Undef);
-    // eq_1 : (= e0 e1)
+
     vec<PTRef> eq_args;
-    eq_args.push(e0_tr);
-    eq_args.push(e1_tr);
 
-    PTRef eq_e0_e1_tr = logic.mkEq(eq_args);
-
-    // (= (= op e0 e0) e1)
+    // (= (op e0 e0) e1)
     eq_args.clear();
     eq_args.push(ope0e0_tr);
     eq_args.push(e1_tr);
     PTRef eq_ope0e0_e1_tr = logic.mkEq(eq_args);
 
+    // (= (op e0 e0) e2)
     eq_args.clear();
     eq_args.push(ope0e0_tr);
     eq_args.push(e2_tr);
     PTRef eq_ope0e0_e2_tr = logic.mkEq(eq_args);
-
-    // declare equalities (= (op e0 e0) e2)
-    //                    (= e0 e1)
-    // and                (= (op e0 e0) e1)
-    egraph.declareTermTree(eq_ope0e0_e2_tr);
-    egraph.declareTermTree(eq_e0_e1_tr);
-    egraph.declareTermTree(eq_ope0e0_e1_tr);
-
-    // (= e0 e2)
-    eq_args.clear();
-    eq_args.push(e0_tr);
-    eq_args.push(e2_tr);
-    PTRef eq_e0e2_tr = logic.mkEq(eq_args);
-    egraph.declareTermTree(eq_e0e2_tr);
 
     // (= e1 e2)
     eq_args.clear();
     eq_args.push(e1_tr);
     eq_args.push(e2_tr);
     PTRef eq_e1e2_tr = logic.mkEq(eq_args);
+//    // (= e1 e3)
+//    eq_args.clear();
+//    eq_args.push(e1_tr);
+//    eq_args.push(e3_tr);
+//    PTRef eq_e1e3_tr = logic.mkEq(eq_args);
+
+    // declare equalities (= (op e0 e0) e2)
+    // and                (= (op e0 e0) e1)
+    cerr << "declaring term " << logic.printTerm(eq_ope0e0_e2_tr) << endl;
+    egraph.declareTermTree(eq_ope0e0_e2_tr);
+    cerr << "declaring term " << logic.printTerm(eq_ope0e0_e1_tr) << endl;
+    egraph.declareTermTree(eq_ope0e0_e1_tr);
+    cerr << "declaring term " << logic.printTerm(eq_e1e2_tr) << endl;
     egraph.declareTermTree(eq_e1e2_tr);
+//    cerr << "declaring term " << logic.printTerm(eq_e1e3_tr) << endl;
+//    egraph.declareTermTree(eq_e1e3_tr);
 
     // Assert the stuff
 
     lbool rval;
+
+    cerr << "Asserting " << logic.printTerm(eq_ope0e0_e1_tr) << endl;
+    rval = egraph.addEquality(PtAsgn(eq_ope0e0_e1_tr, l_True));
+    assert(rval == l_Undef);
+
+    cerr << "Asserting not " << logic.printTerm(eq_e1e2_tr) << endl;
     rval = egraph.addDisequality(PtAsgn(eq_e1e2_tr, l_False));
     assert(rval == l_Undef);
 
-    rval = egraph.addEquality(PtAsgn(eq_ope0e0_e1_tr, l_True));
-    assert(rval == l_Undef);
+//    cerr << "Asserting not " << logic.printTerm(eq_e1e3_tr) << endl;
+//    rval = egraph.addDisequality(PtAsgn(eq_e1e3_tr, l_False));
+//    assert(rval == l_Undef);
 
     while (true) {
         PtAsgn_reason& r = egraph.getDeduction();
@@ -103,7 +112,10 @@ int main(int argc, char **argv) {
 
     printf("%s\n", egraph.printEqClass(logic.getTerm_true()));
     printf("%s\n", egraph.printEqClass(logic.getTerm_false()));
-
-
+    printf("%s\n", egraph.printEqClass(e1_tr));
+    printf("%s\n", egraph.printEqClass(e2_tr));
+    printf("%s\n", egraph.printDistinctions(e1_tr));
+    printf("%s\n", egraph.printDistinctions(e2_tr));
+    printf("%s\n", egraph.printDistinctions(ope0e0_tr));
     return 0;
 }

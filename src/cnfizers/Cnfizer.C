@@ -144,7 +144,7 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula
 #endif
                                     )
 {
-    Map<PTRef,PTRef,PTRefHash> dupMap;
+    Map<PTRef,PTRef,PTRefHash> valdupmap;
 //  egraph.initDupMap1( );
 
     if (solver.okay() == false) return l_False;
@@ -157,6 +157,7 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula
     assert(top_level_formulae.size() != 0);
 
     bool res = true;
+
     // For each top-level conjunct
     for (unsigned i = 0 ; i < top_level_formulae.size_() && (res == true) ; i ++) {
         PTRef f = top_level_formulae[i];
@@ -198,12 +199,16 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula
 //            f = rewriteMaxArity (f, ptref_to_incoming_edges);  // Rewrite f with maximum arity for operators
 #ifdef PEDANTIC_DEBUG
             cout << " => proper cnfization" << endl;
-#endif
-            res = cnfize(f
+#endif // PEDANTIC_DEBUG
+#ifdef ENABLE_SHARING_BUG
+            res = cnfize(f, valdupmap);
+#else // ENABLE_SHARING_BUG
 #ifdef PRODUCE_PROOF
-                        , partition
-#endif
-                        );                         // Perform actual cnfization (implemented in subclasses)
+            res = cnfize(f, partition);
+#else // PRODUCE_PROOF
+            res = cnfize(f);                         // Perform actual cnfization (implemented in subclasses)
+#endif // PRODUCE_PROOF
+#endif // ENABLE_SHARING_BUG
         }
         s_empty = false; // solver no longer empty
     }

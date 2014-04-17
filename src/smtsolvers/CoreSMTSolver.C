@@ -1926,7 +1926,14 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
           decisions++;
           next = pickBranchLit(polarity_mode, random_var_freq);
 #ifdef PEDANTIC_DEBUG
-          cout << "branch: " << toInt(next) << endl;
+          char* name;
+          if (next != lit_Undef) {
+              theory_handler.getVarName(var(next), &name);
+              cout << "branch: " << toInt(next) << (sign(next) ? " not " : " ") << name << endl;
+              ::free(name);
+          }
+          else cout << "branch: " << toInt(next) << (sign(next) ? " not " : " ") << "undef" << endl;
+
 #endif
           // Complete Call
           if ( next == lit_Undef )

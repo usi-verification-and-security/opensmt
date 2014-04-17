@@ -61,6 +61,8 @@ public:
 
   virtual ~THandler ( ) { }
 
+  Logic&  getLogic  ( ) { return logic; }
+
 #ifdef PEDANTIC_DEBUG
   void    getConflict          ( vec<Lit>&, vec<int>&, int &, vec<char>&, vec<Lit>& ); // Returns theory conflict in terms of literals
 #else
@@ -76,6 +78,13 @@ public:
 #else
   void    getReason            ( Lit, vec< Lit > &, vec<char>& );   // Returns the explanation for a deduced literal
 #endif
+
+  PTRef varToTerm           ( Var v ) { return tmap.varToTerm[v]; }  // Return the term ref corresponding to a variable
+  Pterm& varToPterm         ( Var v)  { return logic.getPterm(tmap.varToTerm[v]); } // Return the term corresponding to a variable
+
+  void getVarName           ( Var v, char** name ) { *name = logic.printTerm(tmap.varToTerm[v]); }
+
+    Var ptrefToVar          ( PTRef r ) { return tmap.getVar(r); }
 
 //  Var     enodeToVar           ( Enode * );             // Converts enode into boolean variable. Create a new variable if needed
 //  Lit     enodeToLit           ( Enode * );             // Converts enode into boolean literal. Create a new variable if needed

@@ -56,6 +56,11 @@ class MainSolver {
 
     FContainer simplifyEqualities(vec<PtChild>& terms);
     FContainer propFlatten(FContainer fc);
+#ifdef ENABLE_SHARING_BUG
+    FContainer mergeEnodeArgs(PTRef fr, Map<PTRef, PTRef, PTRefHash>& cache, Map<PTRef, int, PTRefHash>& occs);
+    FContainer rewriteMaxArity(FContainer fc, Map<PTRef, int, PTRefHash>& occs);
+
+#endif
 
   public:
     MainSolver(Logic& l, TermMapper& tm, Egraph& uf_s, SimpSMTSolver& sat_s, Tseitin& t) :

@@ -457,7 +457,7 @@ private:
   // Asserting literals
   //
 public:
-  lbool       simplifyAndAddTerms ( PTRef, vec<PtPair>&, vec<PTRef>& );
+//  lbool       simplifyAndAddTerms ( PTRef, vec<PtPair>&, vec<PTRef>& );
   lbool       addDisequality      ( PtAsgn );
   lbool       addEquality         ( PtAsgn );
   bool       addTrue             ( PTRef );
@@ -465,7 +465,7 @@ public:
   // The term to be added, a list to be filled with the ites found, and
   // the nested booleans that should be processed again with the CNF
   // solver
-  lbool       addTerm             ( PTRef, vec<PtPair>&, vec<PTRef>& );
+//  lbool       addTerm             ( PTRef, vec<PtPair>&, vec<PTRef>& );
   // Non-recursive declare term
   void        declareTerm         ( PtChild );
   // Recursive declare term
@@ -621,6 +621,7 @@ private:
 //  string printEqClass              ( ERef );
 public:
   char* printEqClass               ( PTRef tr ) const;
+  char* printDistinctions          ( PTRef tr ) const;
 private:
   bool   isEqual                   (PTRef, PTRef) const;
   string printExplanation          ( );

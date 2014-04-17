@@ -106,6 +106,89 @@ void MainSolver::expandItes(FContainer& fc, vec<PtChild>& terms) const
 }
 
 
+#ifdef ENABLE_SHARING_BUG
+MainSolver::FContainer MainSolver::mergeEnodeArgs(PTRef fr, Map<PTRef, PTRef, PTRefHash>& cache, Map<PTRef, int, PTRefHash>& occs)
+{
+    assert(logic.isAnd(fr) || logic.isOr(fr));
+    Pterm& f = logic.getPterm(fr);
+    SymRef sr = f.symb();
+    vec<PTRef> new_args;
+    char* name = logic.printTerm(fr);
+    cout << "; Merge: " << name << endl;
+    ::free(name);
+    for (int i = 0; i < f.size(); i++) {
+        PTRef arg = f[i];
+        PTRef sub_arg = cache[arg];
+        SymRef sym = logic.getPterm(arg).symb();
+        if (sym != sr) {
+            new_args.push(sub_arg);
+            continue;
+        }
+        assert(occs.contains(arg));
+        assert(occs[arg] >= 1);
+
+        if (occs[arg] > 1) {
+            new_args.push(sub_arg);
+            cout << " Using shared structure (" << occs[arg] << " * ";
+            char* name = logic.printTerm(sub_arg);
+            cout << name << endl;
+            ::free(name);
+            continue;
+        }
+        Pterm& sa = logic.getPterm(sub_arg);
+        for (int j = 0; j < sa.size(); j++)
+            new_args.push(sa[j]);
+    }
+    const char* msg;
+    PTRef out = logic.mkFun(sr, new_args, &msg);
+    cout << " =>    ";
+    name = logic.printTerm(out);
+    cout << name << endl;
+    ::free(name);
+    return out;
+}
+
+MainSolver::FContainer MainSolver::rewriteMaxArity(MainSolver::FContainer fc, Map<PTRef, int, PTRefHash>& occs)
+{
+    PTRef f = fc.getRoot();
+    vec<PTRef> queue;
+    queue.push(f);
+    Map<PTRef,PTRef,PTRefHash> cache; // Cache for processed nodes
+
+    while (queue.size() != 0) {
+        PTRef tr = queue.last();
+        Pterm& t = logic.getPterm(tr);
+        if (cache.contains(tr)) {
+            queue.pop();
+            continue;
+        }
+
+        bool unprocessed_children = false;
+        for (int i = 0; i < t.size(); i++) {
+            if (logic.isBooleanOperator(t[i]) && !cache.contains(t[i])) {
+                queue.push(t[i]);
+                unprocessed_children = true;
+            } else if (logic.isAtom(t[i]))
+                cache.insert(t[i], t[i]);
+        }
+        if (unprocessed_children) continue;
+        queue.pop();
+        assert(logic.isBooleanOperator(tr));
+        PTRef result;
+        if (logic.isAnd(tr) || logic.isOr(tr))
+            result = mergeEnodeArgs(tr, cache, occs).getRoot();
+        else
+            result = tr;
+
+        assert(!cache.contains(tr));
+        cache.insert(tr, result);
+    }
+
+    fc.setRoot(cache[f]);
+    return fc;
+}
+#endif
+
 //
 // Replace subtrees consisting only of ands / ors with a single and / or term.
 // Search a maximal section of the tree consisting solely of ands / ors.  The
@@ -191,6 +274,9 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
         qu.pop();
     }
 
+#ifdef ENABLE_SHARING_BUG
+    fc = rewriteMaxArity(fc.getRoot(), occs);
+#else
 
     vec<PtChild> and_roots;
     vec<PtChild> or_roots;
@@ -258,6 +344,17 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
                                 new_ands.push(PtChild(tr, PTRef_Undef, args.size()));
                                 args.push(tr);
                             }
+#ifdef PEDANTIC_DEBUG
+                            cerr << " Using shared structure (" << occs[tr];
+                            PTRef tmp_tr;
+                            if (processed.contains(tr))
+                                tmp_tr = processed[tr];
+                            else
+                                tmp_tr = tr;
+                            char* name = logic.printTerm(tmp_tr);
+                            cerr << " * " << name << endl;
+                            ::free(name);
+#endif
                         } else {
                             changed = true; // We need a new and
                             for (int i = t.size()-1; i >= 0; i--)
@@ -384,6 +481,7 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
             }
         }
     }
+#endif
     return fc;
 }
 

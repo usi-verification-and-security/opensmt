@@ -109,11 +109,9 @@ GCTest::GCTest(int argc, char **argv) {
     // add the terms
     vec<PtPair> v;
     vec<PTRef> dangling;
-    lbool res = egraph.addTerm(eq2_ptr, v, dangling);
-    assert(res == l_Undef);
+    egraph.declareTermTree(eq2_ptr);
 
-    lbool t2 = egraph.addTerm(eq_ptr, v, dangling);
-    assert(t2 == l_Undef);
+    egraph.declareTermTree(eq_ptr);
 
     // Get their refs
 

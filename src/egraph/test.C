@@ -22,12 +22,14 @@ int main(int argc, char **argv) {
 
     assert(logic.setLogic("QF_UF"));
 
-    Identifier i("TSort");
-    Sort s(i);
-    sort_store.insertStore(&s);
-    logic.declare_sort_hook(&s);
-    SRef sr = sort_store["TSort 0"];
-    SRef bsr = sort_store["Bool 0"];
+    const char* msg;
+    SRef sr = logic.declareSort("U", &msg);
+    if (sr == SRef_Undef) {
+        cerr << "Error: " << msg;
+        return 1;
+    }
+    SRef bsr = logic.getSort_bool();
+
     // First arg is the return sort
     PTRef a_tr = logic.mkConst(sr, "a");
     PTRef b_tr = logic.mkConst(sr, "b");
@@ -36,17 +38,15 @@ int main(int argc, char **argv) {
     vec<SRef> sort_args_f;
     sort_args_f.push(sr);
     sort_args_f.push(sr);
-    sort_args_f.push(sr);
 
-    const char* msg;
-    SymRef sym_f = logic.newSymb("f", sort_args_f, &msg);
+    SymRef sym_f = logic.declareFun("f", sr, sort_args_f, &msg);
     assert(sym_f != SymRef_Undef);
 
     vec<PTRef> f_args;
     f_args.push(a_tr);
     f_args.push(b_tr);
 
-    PTRef f_a_b_tr = logic.insertTerm(sym_f, f_args, &msg);
+    PTRef f_a_b_tr = logic.mkFun(sym_f, f_args, &msg);
 
     assert(f_a_b_tr != PTRef_Undef);
 
@@ -59,13 +59,13 @@ int main(int argc, char **argv) {
     assert(logic.isEquality(eq_1));
     vec<PtPair> ites;
     vec<PTRef> nested_bools;
-    egraph.addTerm(eq_1, ites, nested_bools);
+    egraph.declareTermTree(eq_1);
 
     // (f (f a b) b)
     vec<PTRef> f_f_args;
     f_f_args.push(f_a_b_tr);
     f_f_args.push(b_tr);
-    PTRef f_f_a_b_tr = logic.insertTerm(sym_f, f_f_args, &msg);
+    PTRef f_f_a_b_tr = logic.mkFun(sym_f, f_f_args, &msg);
     assert (f_f_a_b_tr != PTRef_Undef);
 
     // eq_2 : (= (f (f a b) b) b)
@@ -73,21 +73,21 @@ int main(int argc, char **argv) {
     eq_args_2.push(f_f_a_b_tr);
     eq_args_2.push(b_tr);
     PTRef eq_2 = logic.mkEq(eq_args_2);
-    egraph.addTerm(eq_2, ites, nested_bools);
+    egraph.declareTermTree(eq_2);
 
     // eq_3 : (= (f (f a b) b) c)
     vec<PTRef> eq_args_3;
     eq_args_3.push(f_f_a_b_tr);
     eq_args_3.push(c_tr);
     PTRef eq_3 = logic.mkEq(eq_args_3);
-    egraph.addTerm(eq_3, ites, nested_bools);
+    egraph.declareTermTree(eq_3);
 
     // eq_4 : (= a c)
     vec<PTRef> eq_args_4;
     eq_args_4.push(a_tr);
     eq_args_4.push(c_tr);
     PTRef eq_4 = logic.mkEq(eq_args_4);
-    egraph.addTerm(eq_4, ites, nested_bools);
+    egraph.declareTermTree(eq_4);
 
     // Assert the stuff
 

@@ -123,12 +123,16 @@ public:
 
 protected:
 
+#ifdef ENABLE_SHARING_BUG
+    // My theory is that the other hash is not used.
+    virtual bool cnfize                 (PTRef, Map<PTRef, PTRef, PTRefHash>& valdupmap) = 0;
+#else
     virtual bool cnfize                 ( PTRef
 #ifdef PRODUCE_PROOF
                                         , const ipartitions_t = 0
 #endif
                                         ) = 0; // Actual cnfization. To be implemented in derived classes
-
+#endif
     bool     deMorganize                ( PTRef
 #ifdef PRODUCE_PROOF
                                         , const ipartitions_t &

@@ -438,7 +438,7 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, const char** msg) {
             !sym_store[sym].right_assoc() &&
             !sym_store[sym].chainable() &&
             !sym_store[sym].pairwise() &&
-            sym_store[sym].nargs() != terms.size())
+            sym_store[sym].nargs() != terms.size_())
         {
             *msg = e_argnum_mismatch;
             return PTRef_Undef;
@@ -519,6 +519,23 @@ PTRef Logic::lookupUPEq(PTRef ptr) {
     args.push(getTerm_true());
     return mkEq(args);
 //    return resolveTerm(tk_equals, args);
+}
+
+// Check if the term store contains an equality over the given arguments
+// Return the reference if yes, return PTRef_Undef if no
+// Changes the argument!
+PTRef Logic::hasEquality(vec<PTRef>& args)
+{
+    SymRef sref = term_store.lookupSymbol(tk_equals, args);
+    assert(sref != SymRef_Undef);
+    sort(args, LessThan_PTRef());
+    PTLKey k;
+    k.sym = sref;
+    args.copyTo(k.args);
+    if (term_store.cplx_map.contains(k))
+        return term_store.cplx_map[k];
+    else
+        return PTRef_Undef;
 }
 
 bool Logic::isBooleanOperator(SymRef tr) const {

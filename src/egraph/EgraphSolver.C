@@ -293,50 +293,51 @@ Enode * Egraph::getInterpolants( logic_t & l )
 //}
 #endif
 
-lbool Egraph::simplifyAndAddTerms(PTRef tr, vec<PtPair>& ites, vec<PTRef>& bools) {
-    vec<PtChild> terms;
-    terms.push(PtChild(tr, PTRef_Undef, -1));
-    bool true_root = false;
-    bool false_root = false;
-    while (terms.size() != 0) {
-        PtChild ctr = terms.last();
-        terms.pop();
-        if (logic.isTheoryTerm(ctr.tr) && ctr.tr != logic.getTerm_true() && ctr.tr != logic.getTerm_false()) {
-            vec<PTRef> nest_bools;
-            lbool val = addTerm(ctr.tr, ites, nest_bools);
-            if (val == l_True) {
-                if (ctr.parent != PTRef_Undef)
-                    term_store[ctr.parent][ctr.pos] = logic.getTerm_true();
-                else {
-                    assert(ctr.tr == tr);
-                    true_root = true;
-                }
-            }
-            if (val == l_False) {
-                if (ctr.parent != PTRef_Undef)
-                    term_store[ctr.parent][ctr.pos] = logic.getTerm_false();
-                else {
-                    assert(ctr.tr == tr);
-                    false_root = true;
-                }
-            }
-            for (int i = 0; i < nest_bools.size(); i++) {
-                cerr << "Nested Booleans not supported" << endl;
-                bools.push(nest_bools[i]);
-//                terms.push(PtChild(nest_bools[i], 
-            }
-        }
-        else
-            for (int i = 0; i < term_store[ctr.tr].size(); i++) {
-                PtChild nch(term_store[ctr.tr][i], ctr.tr, i);
-                terms.push(nch);
-            }
-    }
-    if      (true_root)  return l_True;
-    else if (false_root) return l_False;
-    else                 return l_Undef;
-}
-
+// Not used
+//lbool Egraph::simplifyAndAddTerms(PTRef tr, vec<PtPair>& ites, vec<PTRef>& bools) {
+//    vec<PtChild> terms;
+//    terms.push(PtChild(tr, PTRef_Undef, -1));
+//    bool true_root = false;
+//    bool false_root = false;
+//    while (terms.size() != 0) {
+//        PtChild ctr = terms.last();
+//        terms.pop();
+//        if (logic.isTheoryTerm(ctr.tr) && ctr.tr != logic.getTerm_true() && ctr.tr != logic.getTerm_false()) {
+//            vec<PTRef> nest_bools;
+//            lbool val = addTerm(ctr.tr, ites, nest_bools);
+//            if (val == l_True) {
+//                if (ctr.parent != PTRef_Undef)
+//                    term_store[ctr.parent][ctr.pos] = logic.getTerm_true();
+//                else {
+//                    assert(ctr.tr == tr);
+//                    true_root = true;
+//                }
+//            }
+//            if (val == l_False) {
+//                if (ctr.parent != PTRef_Undef)
+//                    term_store[ctr.parent][ctr.pos] = logic.getTerm_false();
+//                else {
+//                    assert(ctr.tr == tr);
+//                    false_root = true;
+//                }
+//            }
+//            for (int i = 0; i < nest_bools.size(); i++) {
+//                cerr << "Nested Booleans not supported" << endl;
+//                bools.push(nest_bools[i]);
+////                terms.push(PtChild(nest_bools[i], 
+//            }
+//        }
+//        else
+//            for (int i = 0; i < term_store[ctr.tr].size(); i++) {
+//                PtChild nch(term_store[ctr.tr][i], ctr.tr, i);
+//                terms.push(nch);
+//            }
+//    }
+//    if      (true_root)  return l_True;
+//    else if (false_root) return l_False;
+//    else                 return l_Undef;
+//}
+//
 void Egraph::simplifyDisequality(PtChild& ptc, bool simplify) {
     assert(logic.isDisequality(ptc.tr));
     if (!enode_store.dist_classes.contains(ptc.tr))
@@ -439,183 +440,183 @@ void Egraph::declareTermTree(PTRef tr)
 }
 
 // Not used
-lbool Egraph::addTerm(PTRef term, vec<PtPair>& ites, vec<PTRef>& nested_bools) {
-    assert(false);
-    assert( logic.isTheoryTerm(term) );
-    // In general we don't want to put the Boolean equalities to UF
-    // solver.  However, the Boolean uninterpreted functions are an
-    // exception.
-//    assert( sym_store[t.symb()][0] != logic.getSort_bool() );
-
-    assert(logic.isEquality(term_store[term].symb())    ||
-           logic.isDisequality(term_store[term].symb()) ||
-           logic.isUP(term));
-
-    Pterm& t = term_store[term];
-
-    // Remove trivially true equalities
-    if (logic.isEquality(t.symb())) {
-        PTRef p; int i, j;
-        for (i = j = 0, p = PTRef_Undef; i < t.size(); i++)
-            if (t[i] != p)
-                t[j++] = p = t[i];
-        if (j == 1) {
-            term_store.free(term); // Lazy free
-            return l_True;
-        }
-        // shrink the size!
-        t.shrink(i-j);
-#ifdef PEDANTIC_DEBUG
-        if (i-j != 0)
-            cout << term_store.printTerm(term) << endl;
-#endif
-    }
-    // Remove false disequalities
-    else if (logic.isDisequality(term_store[term].symb())) {
-        PTRef p; int i, j;
-        for (i = j = 0, p = PTRef_Undef; i < t.size(); i++)
-            if (t[i] == p) {
-                term_store.free(term);
-                return l_False;
-            }
-    }
-
-    vec<PtChild> queue;
-    queue.push(PtChild(term, PTRef_Undef, -1));
-    vec<PtChild> to_process;
-    PTRef rval;
-
-    // Go through the term and sort its subterms to a list
-    // from leaves to root.  Convert ITEs to conditional equalities.
-    while (queue.size() != 0) {
-        PtChild& child = queue.last();
-        PTRef tr = child.tr;
-        if (!logic.isTheoryTerm(tr))
-            nested_bools.push(tr);
-        assert(logic.isTheoryTerm(tr));
-        queue.pop();
-#ifdef PEDANTIC_DEBUG
-        cerr << "Considering term " << term_store.printTerm(tr) << endl;
-#endif
-        SymRef sym = term_store[tr].symb();
-//        if (!logic.isEquality(sym) && !logic.isDisequality(sym))
-        to_process.push(child);
-        if (logic.isDisequality(sym))
-            enode_store.addDistClass(tr);
-
-        Pterm& tm = term_store[tr];
-        for (int i = 0; i < tm.size(); i++) {
-            if (logic.isIte(term_store[tm[i]].symb())) {
-                // (1) Add a new term o_ite with no arguments and same sort as tm[i]
-                // (2) add tm[i] to ites
-                // (3) replace tm[i] with o_ite
-                SRef sr = sym_store[term_store[tm[i]].symb()].rsort();
-                vec<SRef> sort_args;
-                sort_args.push(sr);
-                char* name = NULL;
-                asprintf(&name, ".oite%d", tm[i].x);
-                const char* msg;
-                SymRef sym = sym_store.newSymb(name, sort_args, &msg);
-                // The symbol might already be there
-                if (sym == SymRef_Undef) {
-                    assert(sym_store.nameToRef(name).size() == 1);
-                    sym = sym_store.nameToRef(name)[0];
-                }
-                vec<PTRef> tmp;
-                PTRef o_ite = logic.insertTerm(sym, tmp, &msg);
-                assert(o_ite != PTRef_Undef);
-                // The old term goes to PtPair
-                ites.push(PtPair(tm[i], o_ite));
-#ifdef PEDANTIC_DEBUG
-                cerr << "Added the term " << term_store.printTerm(tm[i], true) << " to later processing" << endl;
-                cerr << "; changing " << term_store.printTerm(tr) << " to ";
-#endif
-                tm[i] = o_ite;
-#ifdef PEDANTIC_DEBUG
-                cerr << term_store.printTerm(tr) << endl;
-#endif
-            }
-            queue.push(PtChild(tm[i], tr, i));
-        }
-    }
-
-#ifdef PEDANTIC_DEBUG
-    bool new_terms = false;
-#endif
-
-    // construct an enode term for each term in to_process
-    // Normalize the terms so that there will be no two UF terms with the
-    // same name.
-    for (int i = to_process.size() - 1; i >= 0; i--) {
-        PtChild& child = to_process[i];
-        PTRef tr = child.tr;
-        PTRef parent = child.parent;
-        int child_pos = child.pos;
-#ifdef PEDANTIC_DEBUG
-        if (parent != PTRef_Undef)
-            cerr << "Now constructing / normalizing term " << term_store.printTerm(tr, true)
-                 << " which is child nr " << child_pos << " of " << term_store.printTerm(parent, true) << endl;
-        else
-            cerr << "Now constructing / normalizing term " << term_store.printTerm(tr, true) << endl;
-
-#endif
-        if (!enode_store.termToERef.contains(tr)) {
-#ifdef PEDANTIC_DEBUG
-            new_terms = true;
-#endif
-            Pterm& tm = term_store[tr];
-            ERef sym = enode_store.addSymb(tm.symb());
-            ERef cdr = ERef_Nil;
-            for (int j = tm.size()-1; j >= 0; j--) {
-#ifdef PEDANTIC_DEBUG
-                assert( checkParents(cdr) );
-#endif
-                ERef car = enode_store.termToERef[tm[j]];
-#ifdef PEDANTIC_DEBUG
-                ERef prev_cdr = cdr;
-                assert (enode_store[car].getRoot() == car);
-                assert (enode_store[cdr].getRoot() == cdr);
-#endif
-                cdr = enode_store.addList(car, cdr);
-#ifdef PEDANTIC_DEBUG
-                assert( checkParents( car ) );
-                assert( checkParents( prev_cdr ) );
-                assert( checkParents( cdr ) );
-                assert( checkInvariants( ) );
-#endif
-            }
-            // Canonize the term representation
-            rval = enode_store.addTerm(sym, cdr, tr);
-            if (rval != tr) {
-                // This is already done at term instertion time
-                assert(false);
-#ifdef PEDANTIC_DEBUG
-                cout << "Duplicate: " << term_store.printTerm(rval)
-                     << " equals " << term_store.printTerm(tr) << endl;
-                ERef tr_new = enode_store.termToERef[rval];
-                assert( checkParents( tr_new ) );
-                assert( checkInvariants( ) );
-#endif
-                // Fix the parent term to point to the canonical
-                // representative of the child term.
-                if (child.parent != PTRef_Undef)
-                    term_store[child.parent][child_pos] = rval;
-            }
-        }
-        else {
-            assert(tr == enode_store.ERefToTerm[enode_store.termToERef[tr]]);
-            rval = tr;
-            if (child.parent != PTRef_Undef)
-                term_store[child.parent][child_pos] = tr;
-        }
-    }
-
-#ifdef PEDANTIC_DEBUG
-//    if (not new_terms)
-//        cout << "All was seen" << endl;
-#endif
-    return l_Undef;
-}
+//lbool Egraph::addTerm(PTRef term, vec<PtPair>& ites, vec<PTRef>& nested_bools) {
+//    assert(false);
+//    assert( logic.isTheoryTerm(term) );
+//    // In general we don't want to put the Boolean equalities to UF
+//    // solver.  However, the Boolean uninterpreted functions are an
+//    // exception.
+////    assert( sym_store[t.symb()][0] != logic.getSort_bool() );
+//
+//    assert(logic.isEquality(term_store[term].symb())    ||
+//           logic.isDisequality(term_store[term].symb()) ||
+//           logic.isUP(term));
+//
+//    Pterm& t = term_store[term];
+//
+//    // Remove trivially true equalities
+//    if (logic.isEquality(t.symb())) {
+//        PTRef p; int i, j;
+//        for (i = j = 0, p = PTRef_Undef; i < t.size(); i++)
+//            if (t[i] != p)
+//                t[j++] = p = t[i];
+//        if (j == 1) {
+//            term_store.free(term); // Lazy free
+//            return l_True;
+//        }
+//        // shrink the size!
+//        t.shrink(i-j);
+//#ifdef PEDANTIC_DEBUG
+//        if (i-j != 0)
+//            cout << term_store.printTerm(term) << endl;
+//#endif
+//    }
+//    // Remove false disequalities
+//    else if (logic.isDisequality(term_store[term].symb())) {
+//        PTRef p; int i, j;
+//        for (i = j = 0, p = PTRef_Undef; i < t.size(); i++)
+//            if (t[i] == p) {
+//                term_store.free(term);
+//                return l_False;
+//            }
+//    }
+//
+//    vec<PtChild> queue;
+//    queue.push(PtChild(term, PTRef_Undef, -1));
+//    vec<PtChild> to_process;
+//    PTRef rval;
+//
+//    // Go through the term and sort its subterms to a list
+//    // from leaves to root.  Convert ITEs to conditional equalities.
+//    while (queue.size() != 0) {
+//        PtChild& child = queue.last();
+//        PTRef tr = child.tr;
+//        if (!logic.isTheoryTerm(tr))
+//            nested_bools.push(tr);
+//        assert(logic.isTheoryTerm(tr));
+//        queue.pop();
+//#ifdef PEDANTIC_DEBUG
+//        cerr << "Considering term " << term_store.printTerm(tr) << endl;
+//#endif
+//        SymRef sym = term_store[tr].symb();
+////        if (!logic.isEquality(sym) && !logic.isDisequality(sym))
+//        to_process.push(child);
+//        if (logic.isDisequality(sym))
+//            enode_store.addDistClass(tr);
+//
+//        Pterm& tm = term_store[tr];
+//        for (int i = 0; i < tm.size(); i++) {
+//            if (logic.isIte(term_store[tm[i]].symb())) {
+//                // (1) Add a new term o_ite with no arguments and same sort as tm[i]
+//                // (2) add tm[i] to ites
+//                // (3) replace tm[i] with o_ite
+//                SRef sr = sym_store[term_store[tm[i]].symb()].rsort();
+//                vec<SRef> sort_args;
+//                sort_args.push(sr);
+//                char* name = NULL;
+//                asprintf(&name, ".oite%d", tm[i].x);
+//                const char* msg;
+//                SymRef sym = sym_store.newSymb(name, sort_args, &msg);
+//                // The symbol might already be there
+//                if (sym == SymRef_Undef) {
+//                    assert(sym_store.nameToRef(name).size() == 1);
+//                    sym = sym_store.nameToRef(name)[0];
+//                }
+//                vec<PTRef> tmp;
+//                PTRef o_ite = logic.insertTerm(sym, tmp, &msg);
+//                assert(o_ite != PTRef_Undef);
+//                // The old term goes to PtPair
+//                ites.push(PtPair(tm[i], o_ite));
+//#ifdef PEDANTIC_DEBUG
+//                cerr << "Added the term " << term_store.printTerm(tm[i], true) << " to later processing" << endl;
+//                cerr << "; changing " << term_store.printTerm(tr) << " to ";
+//#endif
+//                tm[i] = o_ite;
+//#ifdef PEDANTIC_DEBUG
+//                cerr << term_store.printTerm(tr) << endl;
+//#endif
+//            }
+//            queue.push(PtChild(tm[i], tr, i));
+//        }
+//    }
+//
+//#ifdef PEDANTIC_DEBUG
+//    bool new_terms = false;
+//#endif
+//
+//    // construct an enode term for each term in to_process
+//    // Normalize the terms so that there will be no two UF terms with the
+//    // same name.
+//    for (int i = to_process.size() - 1; i >= 0; i--) {
+//        PtChild& child = to_process[i];
+//        PTRef tr = child.tr;
+//        PTRef parent = child.parent;
+//        int child_pos = child.pos;
+//#ifdef PEDANTIC_DEBUG
+//        if (parent != PTRef_Undef)
+//            cerr << "Now constructing / normalizing term " << term_store.printTerm(tr, true)
+//                 << " which is child nr " << child_pos << " of " << term_store.printTerm(parent, true) << endl;
+//        else
+//            cerr << "Now constructing / normalizing term " << term_store.printTerm(tr, true) << endl;
+//
+//#endif
+//        if (!enode_store.termToERef.contains(tr)) {
+//#ifdef PEDANTIC_DEBUG
+//            new_terms = true;
+//#endif
+//            Pterm& tm = term_store[tr];
+//            ERef sym = enode_store.addSymb(tm.symb());
+//            ERef cdr = ERef_Nil;
+//            for (int j = tm.size()-1; j >= 0; j--) {
+//#ifdef PEDANTIC_DEBUG
+//                assert( checkParents(cdr) );
+//#endif
+//                ERef car = enode_store.termToERef[tm[j]];
+//#ifdef PEDANTIC_DEBUG
+//                ERef prev_cdr = cdr;
+//                assert (enode_store[car].getRoot() == car);
+//                assert (enode_store[cdr].getRoot() == cdr);
+//#endif
+//                cdr = enode_store.addList(car, cdr);
+//#ifdef PEDANTIC_DEBUG
+//                assert( checkParents( car ) );
+//                assert( checkParents( prev_cdr ) );
+//                assert( checkParents( cdr ) );
+//                assert( checkInvariants( ) );
+//#endif
+//            }
+//            // Canonize the term representation
+//            rval = enode_store.addTerm(sym, cdr, tr);
+//            if (rval != tr) {
+//                // This is already done at term instertion time
+//                assert(false);
+//#ifdef PEDANTIC_DEBUG
+//                cout << "Duplicate: " << term_store.printTerm(rval)
+//                     << " equals " << term_store.printTerm(tr) << endl;
+//                ERef tr_new = enode_store.termToERef[rval];
+//                assert( checkParents( tr_new ) );
+//                assert( checkInvariants( ) );
+//#endif
+//                // Fix the parent term to point to the canonical
+//                // representative of the child term.
+//                if (child.parent != PTRef_Undef)
+//                    term_store[child.parent][child_pos] = rval;
+//            }
+//        }
+//        else {
+//            assert(tr == enode_store.ERefToTerm[enode_store.termToERef[tr]]);
+//            rval = tr;
+//            if (child.parent != PTRef_Undef)
+//                term_store[child.parent][child_pos] = tr;
+//        }
+//    }
+//
+//#ifdef PEDANTIC_DEBUG
+////    if (not new_terms)
+////        cout << "All was seen" << endl;
+//#endif
+//    return l_Undef;
+//}
 
 
 lbool Egraph::addEquality(PtAsgn pa) {
@@ -1600,6 +1601,49 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
                 !isEqual(enode_store[y].getTerm(), logic.getTerm_true()) &&
                 !isEqual(enode_store[y].getTerm(), logic.getTerm_false())));
 #endif
+#ifdef NEG_DEDUCE
+        // Work on negative deductions
+        ELRef elr = enode_store[x].getForbid();
+        if (elr == ELRef_Undef) return; // Nothing to be done
+        ELRef c_elr = elr;
+        while (true) {
+            const Elist& el = forbid_allocator[c_elr];
+            ELRef next_elr = el.link;
+            const Elist el_o = forbid_allocator[next_elr];
+            PTRef z = enode_store[el_o.e].getTerm();
+
+            vec<ERef> two_terms;
+            two_terms.push(x);
+            two_terms.push(y);
+            for (int i = 0; i < two_terms.size(); i++) {
+                // x != z.  Do we have a term for this?
+                vec<PTRef> args;
+                args.push(enode_store[two_terms[i]].getTerm());
+                args.push(z);
+
+                // Is there a literal for this fact?
+                PTRef eq = logic.hasEquality(args);
+                if (eq != PTRef_Undef && enode_store.termToERef.contains(eq)) {
+                    ERef ded_eq = enode_store.termToERef[eq];
+                    enode_store[ded_eq].setDeduced();
+#ifdef PEDANTIC_DEBUG
+                    cerr << "Neg-Deducing ";
+                    cerr << "not " << logic.printTerm(eq);
+                    cerr << " since ";
+                    cerr << logic.printTerm(enode_store[x].getTerm());
+                    cerr << " and ";
+                    cerr << logic.printTerm(enode_store[y].getTerm());
+                    cerr << " are now equal";
+                    cerr << endl;
+#endif
+                    deductions.push(PtAsgn_reason(eq, l_False, reason.tr));
+                    tsolver_stats.deductions_done ++;
+                }
+            }
+            if (elr == next_elr) break;
+            c_elr = next_elr;
+        }
+#endif
         return; }
 
     ERef v = y;
@@ -1609,37 +1653,37 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
         // that we previously deduced on this branch
         ERef sv = v;
         assert(!enode_store[sv].hasPolarity());
-        assert(!enode_store[sv].isDeduced());
-        if ( !enode_store[sv].hasPolarity() && !enode_store[sv].isDeduced()
-//          && enode_store[sv].getTerm() != enode_store[x].getTerm()
-//          && enode_store[sv].getTerm() != enode_store[y].getTerm()
-            // Also when incrementality is used, node should be explicitly informed
-//            && ( config.isIncremental == false || informed.contains(enode_store[sv].getId()))
-           )
-        {
-            enode_store[sv].setDeduced();
-#ifdef PEDANTIC_DEBUG
-//            cerr << "Deducing ";
-//            cerr << (deduced_polarity == l_False ? "not " : "");
-//            cerr << logic.printTerm(enode_store[sv].getTerm());
-//            cerr << " since ";
-//            cerr << logic.printTerm(enode_store[x].getTerm());
-//            cerr << " and ";
-//            cerr << logic.printTerm(enode_store[y].getTerm());
-//            cerr << " are now equal";
-//            cerr << endl;
-#endif
-            deductions.push(PtAsgn_reason(enode_store.ERefToTerm[sv],
-                                          deduced_polarity, reason.tr));
-#ifdef STATISTICS
-            tsolver_stats.deductions_done ++;
-#endif
+        if (!enode_store[sv].isDeduced()) { // Can be previously deduced with the negative deduction engine
+            if ( !enode_store[sv].hasPolarity() && !enode_store[sv].isDeduced()
+    //          && enode_store[sv].getTerm() != enode_store[x].getTerm()
+    //          && enode_store[sv].getTerm() != enode_store[y].getTerm()
+                // Also when incrementality is used, node should be explicitly informed
+    //            && ( config.isIncremental == false || informed.contains(enode_store[sv].getId()))
+               )
+            {
+                enode_store[sv].setDeduced();
+    #ifdef PEDANTIC_DEBUG
+//                cerr << "Deducing ";
+//                cerr << (deduced_polarity == l_False ? "not " : "");
+//                cerr << logic.printTerm(enode_store[sv].getTerm());
+//                cerr << " since ";
+//                cerr << logic.printTerm(enode_store[x].getTerm());
+//                cerr << " and ";
+//                cerr << logic.printTerm(enode_store[y].getTerm());
+//                cerr << " are now equal";
+//                cerr << endl;
+    #endif
+                deductions.push(PtAsgn_reason(enode_store.ERefToTerm[sv],
+                                              deduced_polarity, reason.tr));
+    #ifdef STATISTICS
+                tsolver_stats.deductions_done ++;
+    #endif
+            }
         }
         v = enode_store[v].getNext( );
         if ( v == vstart )
             break;
     }
-
 #ifdef PEDANTIC_DEBUG
     assert( checkInvariants( ) );
 #endif

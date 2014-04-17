@@ -55,19 +55,31 @@ public:
 
 private:
 
-
+#ifdef ENABLE_SHARING_BUG
+    bool cnfize         (PTRef, Map<PTRef, PTRef, PTRefHash>& valdupmap);
+#else
     bool cnfize          ( PTRef
 #ifdef PRODUCE_PROOF
                           , const ipartitions_t = 0 
 #endif
                           );            // Do the actual cnfization
+#endif
 #ifdef PRODUCE_PROOF
     void cnfizeAnd        ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize conjunctions
     void cnfizeOr         ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize disjunctions
     void cnfizeIff        ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize iffs
     void cnfizeXor        ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize xors
     void cnfizeIfthenelse ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize if then elses
-#else
+#else // PRODUCE_PROOF
+#ifdef ENABLE_SHARING_BUG
+    void cnfizeAnd        (vec<PTRef>&, PTRef);             // Cnfize conjunctions
+    void cnfizeOr         (vec<PTRef>&, PTRef);             // Cnfize disjunctions
+    void cnfizeIff        (vec<PTRef>&, PTRef);             // Cnfize iffs
+    void cnfizeXor        (vec<PTRef>&, PTRef);             // Cnfize xors
+    void cnfizeIfthenelse (vec<PTRef>&, PTRef);             // Cnfize if then elses
+    void cnfizeImplies    (vec<PTRef>&, PTRef);             // Cnfize if then elses
+    void cnfizeDistinct   (vec<PTRef>&, PTRef);             // Cnfize distinctions
+#else // ENABLE_SHARING_BUG
     void cnfizeAnd        (PTRef);                          // Cnfize conjunctions
     void cnfizeOr         (PTRef);                          // Cnfize disjunctions
     void cnfizeIff        (PTRef);                          // Cnfize iffs
@@ -75,7 +87,9 @@ private:
     void cnfizeIfthenelse (PTRef);                          // Cnfize if then elses
     void cnfizeImplies    (PTRef);                          // Cnfize if then elses
     void cnfizeDistinct   (PTRef);                          // Cnfize distinctions
-#endif
+#endif // ENABLE_SHARING_BUG
+#endif // PRODUCE_PROOF
+    void copyArgsWithCache(PTRef, vec<PTRef>&, Map<PTRef, PTRef, PTRefHash>&);
 };
 
 #endif

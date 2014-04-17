@@ -297,6 +297,44 @@ std::string Egraph::printExplanationTreeDotty( PTRef x )
     return os.str();
 }
 
+char* Egraph::printDistinctions(PTRef x) const
+{
+    char* out;
+    char* old;
+
+    if (x == PTRef_Undef) {
+        assert(false);
+        return NULL;
+    }
+
+    char* tmp = logic.printTerm(x);
+    asprintf(&out, "In different eq class with %s are:\n[ ", tmp);
+    ::free(tmp);
+
+
+    const ERef er = enode_store[enode_store.termToERef[x]].getRoot();
+    assert(enode_store[er].isTerm());
+
+    ELRef elr = enode_store[er].getForbid();
+    ELRef c_elr = elr;
+
+    while (true) {
+        const Elist& el = forbid_allocator[c_elr];
+        ELRef next_elr = el.link;
+        const Elist& el_o = forbid_allocator[next_elr];
+        old = out;
+        tmp = logic.printTerm(enode_store[el_o.e].getTerm());
+        asprintf(&out, "%s%s ", old, tmp);
+        ::free(tmp);
+        ::free(old);
+        if (next_elr == elr) break;
+        c_elr = next_elr;
+    }
+    old = out;
+    asprintf(&out, "%s]", old);
+    ::free(old);
+    return out;
+}
 
 const string Egraph::printDistinctionList( ELRef x, ELAllocator& ela )
 {

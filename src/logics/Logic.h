@@ -94,6 +94,8 @@ class Logic {
     SymRef      declareFun    (const char* fname, const SRef rsort, const vec<SRef>& args, const char** msg);
     SRef        declareSort   (const char* id, const char** msg);
     PTRef       mkFun         (SymRef f, vec<PTRef>& args, const char** msg);
+    PTRef       mkBoolVar     (const char* name) { return mkConst(getSort_bool(), name); }
+
 
     // Clone a term
     PTRef       cloneTerm     (const PTRef&);
@@ -132,14 +134,32 @@ class Logic {
     // Check if term is an uninterpreted predicate.
     bool        isUP               (PTRef)         const;
 
-    // Boolean term identification
-    bool        isAnd              (PTRef ptr)            { return term_store[ptr].symb() == sym_AND; }
-    bool        isOr               (PTRef ptr)            { return term_store[ptr].symb() == sym_OR; }
+    bool        isAnd(PTRef tr)  const { return getPterm(tr).symb() == getSym_and(); }
+    bool        isAnd(SymRef sr) const { return sr == getSym_and(); }
+    bool        isOr (PTRef tr)  const { return getPterm(tr).symb() == getSym_or (); }
+    bool        isOr (SymRef sr) const { return sr == getSym_or(); }
+    bool        isNot(PTRef tr)  const { return getPterm(tr).symb() == getSym_not(); }
+    bool        isNot(SymRef sr) const { return sr == getSym_not(); }
+    bool        isXor(SymRef sr) const { return sr == getSym_xor(); }
+    bool        isXor(PTRef tr)  const { return isXor(getPterm(tr).symb()); }
+    bool        isImplies(SymRef sr) const { return sr == getSym_implies(); }
+    bool        isImplies(PTRef tr)  const { return isImplies(getPterm(tr).symb()); }
+    bool        isTrue(SymRef sr) const { return sr == getSym_true(); }
+    bool        isTrue(PTRef tr)  const { return isTrue(getPterm(tr).symb()); }
+    bool        isFalse(SymRef sr) const { return sr == getSym_false(); }
+    bool        isFalse(PTRef tr)  const { return isTrue(getPterm(tr).symb()); }
+    bool        isDistinct(SymRef sr) const { return sr == getSym_distinct(); }
+    bool        isDistinct(PTRef tr) const { return isDistinct(getPterm(tr).symb()); }
+    bool        isIff(SymRef sr) const { return sr == getSym_eq(); }
+    bool        isIff(PTRef tr) const { return isIff(getPterm(tr).symb()); }
 
     // Return the corresponding equivalence term if yes,
     // PTRef_Undef otherwise.
     PTRef       lookupUPEq         (PTRef tr);
 
+    // Returns an equality over args if term store contains one, otherwise returns PTRef_Undef.
+    // args is sorted before lookup, but not simplified otherwise
+    PTRef       hasEquality        (vec<PTRef>& args);
     // Override for different logics...
     bool        declare_sort_hook  (Sort* s);
     inline bool isPredef           (string&)        const { return false; };
