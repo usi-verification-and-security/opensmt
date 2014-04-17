@@ -738,8 +738,9 @@ bool SimpSMTSolver::eliminateVar(Var v, bool fail)
     for (int j = 0; j < neg.size(); j++)
       if (merge(*pos[i], *neg[j], v) && ++cnt > cls.size() + grow)
 	return true;
-
+#ifdef PEDANTIC_DEBUG
   cerr << "XXY gonna-remove" << endl;
+#endif
   // Delete and store old clauses:
   setDecisionVar(v, false);
   elimtable[v].order = elimorder++;

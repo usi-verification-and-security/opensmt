@@ -217,18 +217,25 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
             if (args[i] == getTerm_false()) {
                 args.clear();
                 s = getSym_false();
+#ifdef PEDANTIC_DEBUG
                 cerr << "and  -> false" << endl;
+#endif
                 return;
             } else if (args[i] != getTerm_true()) {
                 args[j++] = args[i];
             } else {
-                cerr << "and -> drop" << endl; }
+#ifdef PEDANTIC_DEBUG
+                cerr << "and -> drop" << endl;
+#endif
+            }
         }
         dropped_args = i-j;
         if (dropped_args == args.size()) {
             s = getSym_true();
             args.clear();
+#ifdef PEDANTIC_DEBUG
             cerr << "and -> true" << endl;
+#endif
             return;
         } else if (dropped_args == args.size() - 1)
             replace = true;
@@ -241,18 +248,25 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
             if (args[i] == getTerm_true()) {
                 args.clear();
                 s = getSym_true();
+#ifdef PEDANTIC_DEBUG
                 cerr << "or -> true" << endl;
+#endif
                 return;
             } else if (args[i] != getTerm_false()) {
                 args[j++] = args[i];
             } else {
-                cerr << "or -> drop" << endl; }
+#ifdef PEDANTIC_DEBUG
+                cerr << "or -> drop" << endl;
+#endif
+            }
         }
         dropped_args = i-j;
         if (dropped_args == args.size()) {
             s = getSym_false();
             args.clear();
+#ifdef PEDANTIC_DEBUG
             cerr << "or -> false" << endl;
+#endif
             return;
         }
         else if (dropped_args == args.size() - 1)
@@ -268,7 +282,9 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
             args.clear();
             for (int i = 0; i < t.size(); i++)
                 args.push(t[i]);
+#ifdef PEDANTIC_DEBUG
             cerr << "eq -> second" << endl;
+#endif
             return;
         } else if (args[0] == getTerm_false()) {
             PTRef old = args[1];
@@ -277,7 +293,9 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
             s = t.symb();
             args.clear();
             args.push(old);
+#ifdef PEDANTIC_DEBUG
             cerr << "eq -> not second" << endl;
+#endif
             return;
         } else if (args[1] == getTerm_true()) {
             args.clear();
@@ -286,7 +304,9 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
             args.clear();
             for (int i = 0; i < t.size(); i++)
                 args.push(t[i]);
+#ifdef PEDANTIC_DEBUG
             cerr << "eq -> first" << endl;
+#endif
             return;
         } else if (args[1] == getTerm_false()) {
             PTRef old = args[0];
@@ -295,17 +315,23 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
             s = t.symb();
             args.clear();
             args.push(old);
+#ifdef PEDANTIC_DEBUG
             cerr << "eq -> not first"<< endl;
+#endif
             return;
         } else if (args[0] == args[1]) {
             args.clear();
             s = getSym_true();
+#ifdef PEDANTIC_DEBUG
             cerr << "eq -> true" << endl;
+#endif
             return;
        } else if (args[0] == mkNot(args[1])) {
             args.clear();
             s = getSym_false();
+#ifdef PEDANTIC_DEBUG
             cerr << "eq -> false" << endl;
+#endif
             return;
         }
         // Sorting is done at insertion time, no need to do it here
@@ -323,7 +349,9 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
         args.clear();
         for (int i = 0; i < t.size(); i++)
             args.push(t[i]);
+#ifdef PEDANTIC_DEBUG
         cerr << " replace" << endl;
+#endif
     }
 }
 

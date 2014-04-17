@@ -30,11 +30,15 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         // iteration?  I'd think having it outside would be better but
         // that way we're still slower. Let's see...
         Map<PTRef,PTRef,PTRefHash> substs;
+#ifdef PEDANTIC_DEBUG
         cerr << "retrieving" << endl;
+#endif
         tlp.retrieveSubstitutions(root, substs);
 
 //        if (!tlp.substitute(root)) break;
+#ifdef PEDANTIC_DEBUG
         cerr << "substituting" << endl;
+#endif
         if (!tlp.varsubstitute(root, substs)) break;
     }
 #ifdef PEDANTIC_DEBUG
@@ -113,9 +117,11 @@ MainSolver::FContainer MainSolver::mergeEnodeArgs(PTRef fr, Map<PTRef, PTRef, PT
     Pterm& f = logic.getPterm(fr);
     SymRef sr = f.symb();
     vec<PTRef> new_args;
+#ifdef PEDANTIC_DEBUG
     char* name = logic.printTerm(fr);
     cout << "; Merge: " << name << endl;
     ::free(name);
+#endif
     for (int i = 0; i < f.size(); i++) {
         PTRef arg = f[i];
         PTRef sub_arg = cache[arg];
@@ -129,10 +135,12 @@ MainSolver::FContainer MainSolver::mergeEnodeArgs(PTRef fr, Map<PTRef, PTRef, PT
 
         if (occs[arg] > 1) {
             new_args.push(sub_arg);
+#ifdef PEDANTIC_DEBUG
             cout << " Using shared structure (" << occs[arg] << " * ";
             char* name = logic.printTerm(sub_arg);
             cout << name << endl;
             ::free(name);
+#endif
             continue;
         }
         Pterm& sa = logic.getPterm(sub_arg);
@@ -141,10 +149,12 @@ MainSolver::FContainer MainSolver::mergeEnodeArgs(PTRef fr, Map<PTRef, PTRef, PT
     }
     const char* msg;
     PTRef out = logic.mkFun(sr, new_args, &msg);
+#ifdef PEDANTIC_DEBUG
     cout << " =>    ";
     name = logic.printTerm(out);
     cout << name << endl;
     ::free(name);
+#endif
     return out;
 }
 
