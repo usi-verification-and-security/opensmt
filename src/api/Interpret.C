@@ -425,7 +425,7 @@ bool Interpret::checkSat(const char* cmd) {
         lbool res;
         if (rval == s_Undef)
 // XXX Test the cnfization code
-//            res = ts.solve();
+            res = ts.solve();
             ;
         else if (rval == s_False)
             res = l_False;
