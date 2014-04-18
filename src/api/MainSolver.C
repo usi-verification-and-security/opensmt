@@ -514,10 +514,9 @@ MainSolver::FContainer MainSolver::simplifyEqualities(vec<PtChild>& terms)
                 }
 
 #ifdef PEDANTIC_DEBUG
-                if (tr != logic.getPterm(ptc.parent)[ptc.pos]) {
+                if (ptc.parent != PTRef_Undef && tr != logic.getPterm(ptc.parent)[ptc.pos]) {
                     cerr << "Simplified equality " << logic.printTerm(tr) << endl;
-                    if (ptc.parent != PTRef_Undef)
-                        cerr << "  " << logic.printTerm(logic.getPterm(ptc.parent)[ptc.pos]) << endl;
+                    cerr << "  " << logic.printTerm(logic.getPterm(ptc.parent)[ptc.pos]) << endl;
                 }
 #endif
             }

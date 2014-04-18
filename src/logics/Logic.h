@@ -73,6 +73,7 @@ class Logic {
     SymRef      newSymb       (const char* name, vec<SRef>& sort_args, const char** msg)
                                                             { return sym_store.newSymb(name, sort_args, msg); }
     Symbol&     getSym        (const SymRef s)        const { return sym_store[s]; }
+    const char* getSymName    (const PTRef tr)        const { return sym_store.getName(getPterm(tr).symb()); }
     vec<SymRef>& symNameToRef (const char* s)               { return sym_store.nameToRef(s); }
     // Terms
 
@@ -121,6 +122,7 @@ class Logic {
     bool          isDisequality    (SymRef tr)     const { return disequalities.contains(tr); }
     bool          isDisequality    (PTRef tr)      const { return disequalities.contains(term_store[tr].symb()); }
     bool          isIte            (SymRef tr)     const { return ites.contains(tr);          }
+    bool          isIte            (PTRef tr)      const { return ites.contains(term_store[tr].symb()); }
 
     // tr is a theory symbol if it is not a boolean variable, nor one of the standard
     // boolean operators (and, not, or, etc...)

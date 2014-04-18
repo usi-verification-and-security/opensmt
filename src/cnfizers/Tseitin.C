@@ -43,8 +43,10 @@ bool Tseitin::cnfize(PTRef f, Map<PTRef, PTRef, PTRefHash>& valdupmap)
 
     while (queue.size() != 0) {
         PTRef tr = queue.last();
-        if (valdupmap.contains(tr))
+        if (valdupmap.contains(tr)) {
+            queue.pop();
             continue;
+        }
 
         bool unprocessed_children = false;
 
@@ -111,8 +113,38 @@ bool Tseitin::cnfize(PTRef f, Map<PTRef, PTRef, PTRefHash>& valdupmap)
 #else
                 cnfizeXor(new_args, arg_def, partitions);
 #endif
+            else if (logic.isImplies(tr))
+#ifndef PRODUCE_PROOF
+                cnfizeImplies(new_args, arg_def);
+#else
+                cnfizeImplies(new_args, arg_def, partitions);
+#endif
+            else if (logic.isDistinct(tr))
+#ifndef PRODUCE_PROOF
+                cnfizeDistinct(new_args, arg_def);
+#else
+                cnfizeDistinct(new_args, arg_def, partitions);
+#endif
+            else if (logic.isIte(tr))
+#ifndef PRODUCE_PROOF
+                cnfizeIfthenelse(new_args, arg_def);
+#else
+                cnfizeIfthenelse(new_args, arg_def);
+#endif
+            else if (!logic.isNot(tr) && logic.getPterm(tr).size() > 0) {
+                // XXX Cnfize equalities here
+                if (logic.isEquality(tr)) {
+                    ;
+                    // This is a bridge equality
+                    // It should be treated as a literal by the SAT solver
+                }
+                if (logic.lookupUPEq(tr) != PTRef_Undef) {
+                    // Uninterpreted predicate.  Special handling
+                    ;
+                }
+            }
             else
-                cerr << "Operator not handled" << endl;
+                cerr << "Operator not handled: " << logic.getSymName(tr) << endl;
             if (arg_def != PTRef_Undef)
                 result = arg_def;
         }

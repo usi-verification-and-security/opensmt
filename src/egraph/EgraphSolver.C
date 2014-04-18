@@ -416,7 +416,8 @@ void Egraph::declareTerm(PtChild ptc) {
         PTRef rval = enode_store.addTerm(sym, cdr, tr);
         if (rval != tr) {
             ptc.tr = rval;
-            term_store[ptc.parent][ptc.pos] = ptc.tr;
+            if (ptc.parent != PTRef_Undef)
+                term_store[ptc.parent][ptc.pos] = ptc.tr;
         }
 //        assert (rval == tr);
     }
