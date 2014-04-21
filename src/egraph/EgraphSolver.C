@@ -427,7 +427,8 @@ void Egraph::declareTerm(PtChild ptc) {
     PTRef out = enode_store[enode_store.termToERef[ptc.tr]].getTerm();
     if (out != ptc.tr) {
         ptc.tr = out;
-        term_store[ptc.parent][ptc.pos] = out;
+        if (ptc.parent != PTRef_Undef)
+            term_store[ptc.parent][ptc.pos] = out;
     }
 }
 
