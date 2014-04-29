@@ -65,7 +65,7 @@ bool Tseitin::cnfize(PTRef f, Map<PTRef, PTRef, PTRefHash>& valdupmap)
         queue.pop();
         PTRef result = PTRef_Undef;
 
-        if (isLit(tr)) result = tr;
+        if (logic.isLit(tr)) result = tr;
         else if (logic.isNot(tr)) {
             PTRef tr_clear;
             bool sgn;

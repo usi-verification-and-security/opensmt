@@ -160,7 +160,7 @@ protected:
 #endif
 
 //  void  retrieveClause             ( PTRef, vec<PTRef> & );         // Retrieve a clause from a formula
-//  void  retrieveConjuncts          ( PTRef, vec<PTRef> & );         // Retrieve the list of conjuncts
+    void  retrieveConjuncts          ( PTRef, vec<PTRef> & );         // Retrieve the list of conjuncts
 
 //  Enode * toggleLit		   ( Enode * );                              // Handy function for toggling literals
 
@@ -190,7 +190,7 @@ protected:
     Map<PTRef,bool,PTRefHash,Equal<PTRef> >   processed;  // Is a term already processed
     Map<PTRef,Var,PTRefHash,Equal<PTRef> >    seen;       // mapping from PTRef to var
 
-    bool  isLit            (PTRef r);
+//    bool  isLit            (PTRef r);
     const Lit findLit      (PTRef ptr);
     bool  isBooleanOperator(SymRef tr) { return logic.isBooleanOperator(tr); } // (tr == logic.getSym_and()) | (tr == logic.getSym_or() ) | (tr == logic.getSym_not() ) | (tr == logic.getSym_eq() ) | (tr == logic.getSym_xor() ); }
     bool  isTheorySymbol   (SymRef tr) const { return logic.isTheorySymbol(tr); }

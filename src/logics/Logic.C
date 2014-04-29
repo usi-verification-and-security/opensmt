@@ -401,6 +401,24 @@ PTRef Logic::mkFun(SymRef f, vec<PTRef>& args, const char** msg)
     return insertTerm(f, args, msg);
 }
 
+// A term is literal if its sort is Bool and
+//  (i)   number of arguments is 0
+//  (ii)  its symbol is sym_NOT and argument is a literal (nested nots
+//        create literals?)
+//  (iii) it is an atom stating an equivalence of non-boolean terms (terms must be purified at this point)
+bool Logic::isLit(PTRef tr) const
+{
+    Pterm& t = getPterm(tr);
+    if (sym_store[t.symb()].rsort() == getSort_bool()) {
+        if (t.size() == 0) return true;
+        if (t.symb() == getSym_not() ) return isLit(t[0]);
+        // At this point all arguments of equivalence have the same sort.  Check only the first
+        if (isEquality(tr) && (sym_store[getPterm(t[0]).symb()].rsort() != getSort_bool())) return true;
+        if (isUP(tr)) return true;
+    }
+    return false;
+}
+
 SRef Logic::declareSort(const char* id, const char** msg)
 {
     Identifier i(id);

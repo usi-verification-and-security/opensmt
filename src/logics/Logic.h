@@ -155,6 +155,9 @@ class Logic {
     bool        isIff(SymRef sr) const { return sr == getSym_eq(); }
     bool        isIff(PTRef tr) const { return isIff(getPterm(tr).symb()); }
 
+    bool        isLit(PTRef tr) const;
+
+
     // Return the corresponding equivalence term if yes,
     // PTRef_Undef otherwise.
     PTRef       lookupUPEq         (PTRef tr);

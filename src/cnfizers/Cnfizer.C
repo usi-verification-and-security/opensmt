@@ -56,17 +56,17 @@ void Cnfizer::initialize() {
 //  (ii)  its symbol is sym_NOT and argument is a literal (nested nots
 //        create literals?)
 //  (iii) it is an atom stating an equivalence of non-boolean terms (terms must be purified at this point)
-bool Cnfizer::isLit(PTRef r) {
-    Pterm& t = ptstore[r];
-    if (symstore[t.symb()].rsort() == logic.getSort_bool()) {
-        if (t.size() == 0) return true;
-        if (t.symb() == logic.getSym_not() ) return isLit(t[0]);
-        // At this point all arguments of equivalence have the same sort.  Check only the first
-        if (logic.isEquality(r) && (symstore[ptstore[t[0]].symb()].rsort() != logic.getSort_bool())) return true;
-        if (logic.isUP(r)) return true;
-    }
-    return false;
-}
+//bool Cnfizer::isLit(PTRef r) {
+//    Pterm& t = ptstore[r];
+//    if (symstore[t.symb()].rsort() == logic.getSort_bool()) {
+//        if (t.size() == 0) return true;
+//        if (t.symb() == logic.getSym_not() ) return isLit(t[0]);
+//        // At this point all arguments of equivalence have the same sort.  Check only the first
+//        if (logic.isEquality(r) && (symstore[ptstore[t[0]].symb()].rsort() != logic.getSort_bool())) return true;
+//        if (logic.isUP(r)) return true;
+//    }
+//    return false;
+//}
 
   // A term is an atom if its sort is Bool and
   //  (i)  number of arguments is 0, or
@@ -255,49 +255,21 @@ bool Cnfizer::deMorganize( PTRef formula
 #endif
                          )
 {
+    assert(!logic.isAnd(formula));
     Pterm& pt = ptstore[formula];
-    assert( pt.symb() != logic.getSym_and() );
 
     bool rval = true;
 
     //
     // Case (not (and a b)) --> (or (not a) (not b))
     //
-    if (pt.symb() == logic.getSym_not() && ptstore[pt[0]].symb() == logic.getSym_and()) {
-
-        PTRef and_tr = pt[0];
-        // Retrieve conjuncts as a clause
+    if (logic.isNot(formula) && logic.isAnd(pt[0])) {
+        vec<PTRef> conjuncts;
         vec<Lit> clause;
-        vec<pi> to_process;
-        to_process.push(pi(and_tr));
 
-        // The loop is strange of course because we want the post-order
-        while (to_process.size() != 0) {
-            int idx = to_process.size() - 1;
-            PTRef and_tr = to_process[idx].x;
-            Pterm& and_t = ptstore[and_tr];
-
-            if (!to_process[idx].done) {
-                bool unprocessed_children = false;
-                for (int i = and_t.size() - 1; i >= 0; i--) {
-                    PTRef  conj_tr = and_t[i];
-                    Pterm& conj_t  = ptstore[conj_tr];
-
-                    if (isLit(conj_tr) || logic.isAnd(conj_tr)) {
-                        to_process.push(pi(conj_tr));
-                        unprocessed_children = true;
-                    }
-                }
-                to_process[idx].done = true;
-                if (unprocessed_children) continue;
-            }
-            assert(to_process.last().x == and_tr);
-            if (isLit(and_tr)) {
-                clause.push(~findLit(and_tr));
-            }
-            else assert(logic.isAnd(and_tr));
-            to_process.pop();
-        }
+        retrieveConjuncts(pt[0], conjuncts);
+        for (int i = 0; i < conjuncts.size(); i++)
+            clause.push(~findLit(conjuncts[i]));
 
 #ifdef PRODUCE_PROOF
         if (config.produce_inter != 0)
@@ -494,7 +466,7 @@ bool Cnfizer::checkCnf(PTRef formula) {
 
 bool Cnfizer::checkConj(PTRef e)
 {
-    if (isLit(e)) // A Boolean constant
+    if (logic.isLit(e)) // A Boolean constant
         return true;
 
     Pterm& and_t = ptstore[e];
@@ -623,7 +595,7 @@ bool Cnfizer::checkPureConj(PTRef e, Map<PTRef,bool,PTRefHash,Equal<PTRef> > & c
         if (and_t.symb() == logic.getSym_and())
             for (int i = 0; i < and_t.size(); i++)
                 to_process.push(and_t[i]);
-        else if (!isLit(e))
+        else if (!logic.isLit(e))
             return false;
 
         check_cache.insert(e, true);
@@ -633,10 +605,11 @@ bool Cnfizer::checkPureConj(PTRef e, Map<PTRef,bool,PTRefHash,Equal<PTRef> > & c
 }
 
 #ifndef PRODUCE_PROOF
-bool Cnfizer::addClause( vec<Lit>& c ) {
+bool Cnfizer::addClause( vec<Lit>& c )
 #else
-bool Cnfizer::addClause( vec<Lit>& c const ipartitions_t& partition) {
+bool Cnfizer::addClause( vec<Lit>& c const ipartitions_t& partition)
 #endif
+{
 #ifdef PEDANTIC_DEBUG
 //    cerr << "Adding clause ";
 //    for (int i = 0; i < c.size(); i++)
@@ -665,7 +638,7 @@ bool Cnfizer::giveToSolver( PTRef f
     //
     // A unit clause
     //
-    if (isLit(f)) {
+    if (logic.isLit(f)) {
         clause.push(findLit(f));
 #ifdef PRODUCE_PROOF
         if ( config.produce_inter != 0 )
@@ -685,7 +658,7 @@ bool Cnfizer::giveToSolver( PTRef f
             Pterm& e = ptstore[queue.last()];
             queue.pop();
             for (int i = 0; i < e.size(); i ++) {
-                if (isLit(e[i]))
+                if (logic.isLit(e[i]))
                     clause.push(findLit(e[i]));
                 else if (ptstore[e[i]].symb() == logic.getSym_or())
                     queue.push(e[i]);
@@ -762,22 +735,18 @@ void Cnfizer::retrieveTopLevelFormulae(PTRef f, vec<PTRef>& top_level_formulae)
 //
 // Retrieve conjuncts
 //
-//void Cnfizer::retrieveConjuncts( Enode * f, vector< Enode * > & conjuncts )
-//{
-//  assert( f->isLit( ) || f->isAnd( ) );
-//
-//  if ( f->isLit( ) )
-//  {
-//    conjuncts.push_back( f );
-//  }
-//  else if ( f->isAnd( ) )
-//  {
-//    for ( Enode * list = f->getCdr( ) ; 
-//	  list != egraph.enil ; 
-//	  list = list->getCdr( ) )
-//      retrieveConjuncts( list->getCar( ), conjuncts );
-//  }
-//}
+void Cnfizer::retrieveConjuncts( PTRef f, vec<PTRef> & conjuncts )
+{
+    assert(logic.isLit(f) || logic.isAnd(f));
+
+    if (logic.isLit(f))
+        conjuncts.push(f);
+    else {
+        Pterm& t = logic.getPterm(f);
+        for (int i = 0; i < t.size(); i++)
+            retrieveConjuncts(t[i], conjuncts);
+    }
+}
 
 //
 // A shortcut for literal negation
