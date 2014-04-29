@@ -200,7 +200,11 @@ bool TopLevelPropagator::assertEq(PTRef eqr)
 //
 // The substitutions for the term riddance from osmt1
 //
+#ifdef PEDANTIC_DEBUG
+void TopLevelPropagator::retrieveSubstitutions(PTRef root, Map<PTRef,PTRef,PTRefHash>& substs, vec<PTRef>& subst_vars)
+#else
 void TopLevelPropagator::retrieveSubstitutions(PTRef root, Map<PTRef,PTRef,PTRefHash>& substs)
+#endif
 {
     vec<PtAsgn> facts;
     vec<PtAsgn> facts_clone;
@@ -232,7 +236,8 @@ void TopLevelPropagator::retrieveSubstitutions(PTRef root, Map<PTRef,PTRef,PTRef
                     cerr << "Double substitution:" << endl;
                     cerr << " " << logic.printTerm(var) << "/" << logic.printTerm(trm) << endl;
                     cerr << " " << logic.printTerm(var) << "/" << logic.printTerm(substs[var]) << endl;
-                }
+                } else
+                    subst_vars.push(var);
                 char* tmp1 = logic.printTerm(var);
                 char* tmp2 = logic.printTerm(trm);
                 cerr << "Substituting " << tmp1 << " with " << tmp2 << endl;
@@ -513,7 +518,6 @@ bool TopLevelPropagator::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& 
     int n_substs = 0;
     vec<PtChild> nodes;
     nodes.push(PtChild(root, PTRef_Undef, -1));
-
 
     while (nodes.size() > 0) {
         PtChild ctr = nodes.last(); nodes.pop();

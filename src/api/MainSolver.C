@@ -32,8 +32,14 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         Map<PTRef,PTRef,PTRefHash> substs;
 #ifdef PEDANTIC_DEBUG
         cerr << "retrieving" << endl;
-#endif
+        vec<PTRef> subst_vars;
+        tlp.retrieveSubstitutions(root, substs, subst_vars);
+        cerr << "Identified substitutions: " << endl;
+        for (int i = 0; i < subst_vars.size(); i++)
+            cerr << "Substituting " << logic.printTerm(subst_vars[i]) << " with " << logic.printTerm(substs[subst_vars[i]]) << endl;
+#else
         tlp.retrieveSubstitutions(root, substs);
+#endif
 
 //        if (!tlp.substitute(root)) break;
 #ifdef PEDANTIC_DEBUG

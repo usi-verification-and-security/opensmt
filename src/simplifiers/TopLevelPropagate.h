@@ -270,8 +270,11 @@ class TopLevelPropagator {
     // Collect the top level facts following the boolean structure
     void collectFacts(PTRef root, vec<PtAsgn>& facts, vec<PtAsgn>& facts_clone);
     // OpenSMT 1 substitution scheme - replace variables with terms not containing the variable
+#ifdef PEDANTIC_DEBUG
+    void retrieveSubstitutions(PTRef root, Map<PTRef,PTRef,PTRefHash>& substs, vec<PTRef>& subst_vars);
+#else
     void retrieveSubstitutions(PTRef root, Map<PTRef,PTRef,PTRefHash>& substs);
-
+#endif
     // Initialize the congruence with terms starting from root
     void initCongruence(PTRef root);
     // Compute the substitutions based on the congruence

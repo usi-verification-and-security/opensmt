@@ -717,11 +717,13 @@ bool Cnfizer::giveToSolver( PTRef f
 }
 
 //
-// Retrieve the formulae at the top-level
+// Retrieve the formulae at the top-level.  Ignore duplicates
 //
 void Cnfizer::retrieveTopLevelFormulae(PTRef f, vec<PTRef>& top_level_formulae)
 {
     vec<PTRef> to_process;
+
+    Map<PTRef,bool,PTRefHash> seen;
 
     to_process.push(f);
     while (to_process.size() != 0) {
@@ -730,7 +732,10 @@ void Cnfizer::retrieveTopLevelFormulae(PTRef f, vec<PTRef>& top_level_formulae)
         if (cand_t.symb() == logic.getSym_and())
             for (int i = cand_t.size() - 1; i >= 0; i--)
                 to_process.push(cand_t[i]);
-        else top_level_formulae.push(f);
+        else if (!seen.contains(f)) {
+            top_level_formulae.push(f);
+            seen.insert(f, true);
+        }
     }
 }
 
