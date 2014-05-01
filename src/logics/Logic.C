@@ -198,6 +198,7 @@ bool Logic::declare_sort_hook(Sort* s) {
 // The vec argument might be sorted!
 PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args) {
     SymRef sref = term_store.lookupSymbol(s, args);
+    assert(sref != SymRef_Undef);
     simplify(sref, args);
     PTRef rval;
     const char** msg;
@@ -209,10 +210,17 @@ PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args) {
 }
 
 void Logic::simplify(SymRef& s, vec<PTRef>& args) {
+    // First sort it
+    if (sym_store[s].commutes())
+        sort(args, LessThan_PTRef());
+
+    if (!isBooleanOperator(s)) return;
+
     int dropped_args = 0;
     bool replace = false;
     if (s == getSym_and()) {
         int i, j;
+        PTRef p = PTRef_Undef;
         for (i = j = 0; i < args.size(); i++) {
             if (args[i] == getTerm_false()) {
                 args.clear();
@@ -221,8 +229,8 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
                 cerr << "and  -> false" << endl;
 #endif
                 return;
-            } else if (args[i] != getTerm_true()) {
-                args[j++] = args[i];
+            } else if (args[i] != getTerm_true() && args[i] != p) {
+                args[j++] = p = args[i];
             } else {
 #ifdef PEDANTIC_DEBUG
                 cerr << "and -> drop" << endl;
@@ -244,6 +252,7 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
     }
     if (s == getSym_or()) {
         int i, j;
+        PTRef p = PTRef_Undef;
         for (i = j = 0; i < args.size(); i++) {
             if (args[i] == getTerm_true()) {
                 args.clear();
@@ -252,8 +261,8 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
                 cerr << "or -> true" << endl;
 #endif
                 return;
-            } else if (args[i] != getTerm_false()) {
-                args[j++] = args[i];
+            } else if (args[i] != getTerm_false() && args[i] != p) {
+                args[j++] = p = args[i];
             } else {
 #ifdef PEDANTIC_DEBUG
                 cerr << "or -> drop" << endl;
@@ -326,7 +335,7 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
             cerr << "eq -> true" << endl;
 #endif
             return;
-       } else if (args[0] == mkNot(args[1])) {
+        } else if (args[0] == mkNot(args[1])) {
             args.clear();
             s = getSym_false();
 #ifdef PEDANTIC_DEBUG
