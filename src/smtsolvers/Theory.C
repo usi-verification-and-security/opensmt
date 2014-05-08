@@ -99,13 +99,14 @@ int CoreSMTSolver::checkTheory( bool complete )
           // decision level in deds
           if (deds[0].lev != deds[i].lev) break;
 #endif
-#ifdef PEDANTIC_DEBUG
+#ifdef DEBUG_REASONS
           // Debuggissimo
           vec<Lit> r;
           theory_handler.getReason(deds[i].l, r, assigns);
           cerr << "deduced " << theory_handler.printAsrtClause(r);
           cerr << endl;
           addTheoryReasonClause_debug(deds[i].l, r);
+#endif
 
 #ifndef IGNORE_DL_THEORYPROPAGATION
           cerr << "backtracking from " << decisionLevel() <<
@@ -116,8 +117,8 @@ int CoreSMTSolver::checkTheory( bool complete )
 #ifndef IGNORE_DL_THEORYPROPAGATION
             assert(i == 0);
 #endif
-            cerr << "Bling! " << decisionLevel() << " -> " << deds[i].lev << endl;
-            cerr << "Bling! " << i + 1 << " / " << deds.size() << endl;
+//            cerr << "Bling! " << decisionLevel() << " -> " << deds[i].lev << endl;
+//            cerr << "Bling! " << i + 1 << " / " << deds.size() << endl;
 #ifndef IGNORE_DL_THEORYPROPAGATION
             for (int j = i+1; j < deds.size(); j++) {
                 cerr << "Bling! would have propagated also " << toInt(deds[j].l);
@@ -127,7 +128,7 @@ int CoreSMTSolver::checkTheory( bool complete )
 
           }
 
-#endif
+
 #ifndef IGNORE_DL_THEORYPROPAGATION
           if (deds[i].lev < decisionLevel())
               cancelUntil(deds[i].lev);
@@ -187,6 +188,11 @@ int CoreSMTSolver::checkTheory( bool complete )
 
 #ifdef PEDANTIC_DEBUG
   theory_handler.getConflict(conflicting, level, max_decision_level, assigns, trail);
+//  if (analyze_cnt == 2) {
+//    for (int i = 0; i < conflicting.size(); i++)
+//        cerr << theory_handler.egraph.printExplanationTreeDotty(theory_handler.varToTerm(var(conflicting[i])));
+//    assert(false);
+//  }
 #else
   theory_handler.getConflict(conflicting, level, max_decision_level, assigns);
 #endif
@@ -528,6 +534,7 @@ void CoreSMTSolver::deduceTheory(vec<LitLev>& deductions)
         assert(lev_reason >= last_dl);
         last_dl = lev_reason;
 
+#ifndef IGNORE_DL_THEORYPROPAGATION
         // Determine the decision level on which this reason should be propagated
         vec<Lit> r;
         theory_handler.getReason(ded, r, assigns);
@@ -540,11 +547,11 @@ void CoreSMTSolver::deduceTheory(vec<LitLev>& deductions)
             if (v == var(reason)) reason_found = true;
             assert(value(r[i]) == l_False);
         }
-//        assert(reason_found);               // Should break?
-//        assert(max_lev == lev_reason);      // Should break?
 
         deductions.push(LitLev(ded, max_lev));
-
+#else
+        deductions.push(LitLev(ded, decisionLevel()));
+#endif
     }
     sort<LitLev,LitLev_lt>(deductions, LitLev_lt());
 #ifdef PEDANTIC_DEBUG
@@ -560,7 +567,7 @@ void CoreSMTSolver::deduceTheory(vec<LitLev>& deductions)
     return;
 }
 
-#ifdef PEDANTIC_DEBUG
+#ifdef DEBUG_REASONS
 
 void CoreSMTSolver::addTheoryReasonClause_debug(Lit ded, vec<Lit>& reason) {
     Clause* c = Clause_new<vec<Lit> >(reason);

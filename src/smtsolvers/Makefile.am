@@ -1,6 +1,6 @@
 noinst_LTLIBRARIES = libsmtsolvers.la
 
-INCLUDES=$(config_includedirs)
+AM_CPPFLAGS=$(config_includedirs)
 libsmtsolvers_la_SOURCES = SMTConfig.C SMTConfig.h \
 			   SimpSMTSolver.C SimpSMTSolver.h \
 			   CoreSMTSolver.C CoreSMTSolver.h \

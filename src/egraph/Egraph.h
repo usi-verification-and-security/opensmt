@@ -70,6 +70,8 @@ private:
   VecKeyMap<ERef,PTRef,ERef_vecHash,ERef_vecEq> deq_terms;
   VecKeyMap<ERef,PTRef,ERef_vecHash,ERef_vecEq> up_terms;
 
+  Map<PTRef,lbool,PTRefHash>    polarityMap;
+
   double fa_garbage_frac;
 
 public:
@@ -197,6 +199,11 @@ public:
         delete cgraph_;
 #endif
     }
+
+    void  setPolarity(PTRef tr, lbool p) { if (polarityMap.contains(tr)) { polarityMap[tr] = p; } else { polarityMap.insert(tr, p); } }
+    lbool getPolarity(PTRef tr)          { return polarityMap[tr]; }
+    bool  hasPolarity(PTRef tr)          { if (polarityMap.contains(tr)) { return polarityMap[tr] != l_Undef; } else return false; }
+    void  clearPolarity(PTRef tr)        { polarityMap[tr] = l_Undef; }
 
     size_t size() const { return enode_store.id_to_enode.size(); };
 
@@ -371,6 +378,7 @@ private:
       Undo()         : oper(UNDEF_OP)   { arg.ptr = PTRef_Undef; }
 #ifdef PEDANTIC_DEBUG
       ERef merged_with;
+      PTRef bool_term;
 #endif
   };
 
@@ -626,7 +634,9 @@ private:
   bool   isEqual                   (PTRef, PTRef) const;
   string printExplanation          ( );
   string printExplanationTree      ( PTRef );
+public:
   string printExplanationTreeDotty ( PTRef );
+private:
   const string printDistinctionList      ( ELRef, ELAllocator& ela );
   void checkForbidReferences       ( ERef );
   void checkRefConsistency         ( );
@@ -637,6 +647,7 @@ private:
 #if PEDANTIC_DEBUG
 public:
   const char* printUndoTrail     ( );
+  const char* printAsrtTrail     ( );
 private:
   bool checkParents              ( ERef );
   bool checkInvariants           ( );

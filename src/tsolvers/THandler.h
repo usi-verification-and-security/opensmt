@@ -134,7 +134,9 @@ private:
 
 //  vector< Var >       enode_id_to_var;          // Conversion EnodeID --> Var
 //  vector< Enode * >   var_to_enode;             // Conversion Var --> EnodeID
-
+#ifdef PEDANTIC_DEBUG
+public:
+#endif
   Egraph &            egraph;                   // Pointer to Egraph that works as core solver
   TSolverStats&       euf_stats;                // Egraph statistics
   SMTConfig &         config;                   // Reference to configuration

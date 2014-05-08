@@ -268,9 +268,10 @@ bool Cnfizer::deMorganize( PTRef formula
         vec<Lit> clause;
 
         retrieveConjuncts(pt[0], conjuncts);
-        for (int i = 0; i < conjuncts.size(); i++)
+        for (int i = 0; i < conjuncts.size(); i++) {
             clause.push(~findLit(conjuncts[i]));
-
+            cerr << "(not " << logic.printTerm(conjuncts[i]) << ")" << endl;
+        }
 #ifdef PRODUCE_PROOF
         if (config.produce_inter != 0)
             rval = addClause(clause, partition);
@@ -652,20 +653,10 @@ bool Cnfizer::giveToSolver( PTRef f
     Pterm& cand_t = ptstore[f];
 
     if (cand_t.symb() == logic.getSym_or()) {
-        vec<PTRef> queue;
-        queue.push(f);
-        while (queue.size() != 0) {
-            Pterm& e = ptstore[queue.last()];
-            queue.pop();
-            for (int i = 0; i < e.size(); i ++) {
-                if (logic.isLit(e[i]))
-                    clause.push(findLit(e[i]));
-                else if (ptstore[e[i]].symb() == logic.getSym_or())
-                    queue.push(e[i]);
-                else
-                    assert(false); // Not a clause!
-            }
-        }
+        vec<PTRef> lits;
+        retrieveClause(f, lits);
+        for (int i = 0; i < lits.size(); i++)
+            clause.push(findLit(lits[i]));
 #ifdef PRODUCE_PROOF
         if ( config.produce_inter != 0 )
             return addClause(f, partition);
@@ -715,22 +706,18 @@ void Cnfizer::retrieveTopLevelFormulae(PTRef f, vec<PTRef>& top_level_formulae)
 //
 // Retrieve a clause
 //
-//void Cnfizer::retrieveClause( Enode * f, vector< Enode * > & clause )
-//{
-//  assert( f->isLit( ) || f->isOr( ) );
-//
-//  if ( f->isLit( ) )
-//  {
-//    clause.push_back( f );
-//  }
-//  else if ( f->isOr( ) )
-//  {
-//    for ( Enode * list = f->getCdr( ) ; 
-//	  list != egraph.enil ; 
-//	  list = list->getCdr( ) )
-//      retrieveClause( list->getCar( ), clause );
-//  }
-//}
+void Cnfizer::retrieveClause( PTRef f, vec<PTRef> & clause )
+{
+    assert(logic.isLit(f) || logic.isOr(f));
+
+    if ( logic.isLit(f) )
+        clause.push(f);
+    else if ( logic.isOr(f) ) {
+        Pterm& t = logic.getPterm(f);
+        for ( int i = 0; i < t.size(); i++)
+            retrieveClause( t[i], clause );
+    }
+}
 
 //
 // Retrieve conjuncts

@@ -287,7 +287,11 @@ std::string Egraph::printExplanationTreeDotty( PTRef x )
     os << "{" << endl;
 
     while ( x != PTRef_Undef ) {
-        os << x.x;
+        char* name = logic.printTerm(x);
+        os << name;
+        ::free(name);
+        if (!expParent.contains(x))
+            break;
         if ( expParent[x] != PTRef_Undef )
             os << " -> ";
         x = expParent[x];
@@ -407,16 +411,37 @@ const char* Egraph::printUndoTrail() {
                 ss << i << " --- merge of list" << endl;
             else
                 ss << i << " --- merge of terms " << logic.printTerm(en_e.getTerm())
-                   << " and " << logic.printTerm(enode_store[u.merged_with].getTerm()) << endl;
+                   << " and " << logic.printTerm(enode_store[u.merged_with].getTerm())
+                   << " by term " << logic.printTerm(u.bool_term) << endl;
         }
         else if (action == DISEQ)
-            ss << i << " --- disequality" << endl;
+            ss << i << " --- disequality by term " << logic.printTerm(u.bool_term) << endl;
         else
             ss << i << " --- other" << endl;
     }
     // print the equivalence classes of true and false
     return ss.str().c_str();
 }
+
+const char* Egraph::printAsrtTrail()
+{
+    std::stringstream ss;
+    for (int i = 0; i < undo_stack_main.size(); i++) {
+        Undo& u = undo_stack_main[i];
+        oper_t action = u.oper;
+        if (action == MERGE) {
+            ERef e = u.arg.er;
+            Enode& en_e = enode_store[e];
+            if ((en_e.type() != Enode::et_list) && (en_e.getTerm() != logic.getTerm_false()) && (enode_store[u.merged_with].getTerm() != logic.getTerm_false()))
+                ss << i << " --- rel to eq " << logic.printTerm(u.bool_term) << endl;
+        }
+        else if (action == DISEQ)
+            ss << i << " --- rel to diseq " << logic.printTerm(u.bool_term) << endl;
+    }
+    return ss.str().c_str();
+}
+
+
 #endif
 /*
 void Egraph::printParents( ostream & os, Enode * w )

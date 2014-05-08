@@ -465,7 +465,7 @@ void CoreSMTSolver::cancelUntil(int level)
 #endif
       assigns[x] = toInt(l_Undef);
       insertVarOrder(x);
-#ifdef PEDANTIC_DEBUG
+#ifdef DEBUG_REASONS
       if (debug_reason_map.contains(x)) {
         checkTheoryReasonClause_debug(x);
         removeTheoryReasonClause_debug(x);
@@ -886,7 +886,7 @@ void CoreSMTSolver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btleve
 #ifdef STATISTICS
       const double start = cpuTime( );
 #endif
-#ifdef PEDANTIC_DEBUG
+#ifdef DEBUG_REASONS
       if (theory_handler.getReason( p, r, assigns ) == false) {
         assert(debug_reason_map.contains(var(p)));
         int idx = debug_reason_map[var(p)];
@@ -1050,7 +1050,7 @@ void CoreSMTSolver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btleve
     for ( int j = 0 ; j < c.size( ) ; j++ )
       if ( level[ var(c[j]) ] == 0 )
       {
-	proof.resolve( units[ var(c[j]) ], var(c[j]) );
+        proof.resolve( units[ var(c[j]) ], var(c[j]) );
       }
   }
   // Chain will be ended outside analyze
@@ -1110,7 +1110,7 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
 	// Temporairly backtracking
 	cancelUntilVarTempInit( v );
 	// Retrieving the reason
-#ifdef PEDANTIC_DEBUG
+#ifdef DEBUG_REASONS
 	if (theory_handler.getReason( p, r, assigns ) == false) {
             assert(debug_reason_map.contains(var(p)));
             int idx = debug_reason_map[var(p)];
@@ -1257,7 +1257,7 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
 
 void CoreSMTSolver::uncheckedEnqueue(Lit p, Clause* from)
 {
-#ifdef PEDANTIC_DEBUG
+#ifdef DEBUG_REASONS
   assert(from == fake_clause || !debug_reason_map.contains(var(p)));
 #endif
   assert(value(p) == l_Undef);
@@ -2101,6 +2101,8 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
     }
     else
       nof_learnts *= learntsize_inc;
+    // Just one round
+    opensmt::stop = true;
   }
 
   // Added line

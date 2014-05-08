@@ -1,6 +1,6 @@
 noinst_LTLIBRARIES = libpterms.la
 
-INCLUDES=$(config_includedirs)
+AM_CPPFLAGS=$(config_includedirs)
 
 libpterms_la_SOURCES = Pterm.h PtStore.h PtStore.C
 

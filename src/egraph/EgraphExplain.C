@@ -160,10 +160,10 @@ void Egraph::expExplain () {
         assert(w != PTRef_Undef);
 
 #ifdef PEDANTIC_DEBUG
-        cerr << "Explanation from " << term_store.printTerm(p) << " to " << term_store.printTerm(w) << ":" << endl;
-        cerr << " " << printExplanationTree(p) << endl;
-        cerr << "Explanation from " << term_store.printTerm(q) << " to " << term_store.printTerm(w) << ":" << endl;
-        cerr << " " <<printExplanationTree(q) << endl;
+//        cerr << "Explanation from " << term_store.printTerm(p) << " to " << term_store.printTerm(w) << ":" << endl;
+//        cerr << " " << printExplanationTree(p) << endl;
+//        cerr << "Explanation from " << term_store.printTerm(q) << " to " << term_store.printTerm(w) << ":" << endl;
+//        cerr << " " <<printExplanationTree(q) << endl;
 #endif
         expExplainAlongPath( p, w );
         expExplainAlongPath( q, w );
@@ -219,6 +219,9 @@ void Egraph::expCleanup() {
         PTRef x = exp_cleanup[i];
         assert(expRoot.contains(x));
         expRoot[x] = x;
+// These are not used
+//        assert(expHighestNode.contains(x));
+//        expHighestNode[x] = x;
     }
     exp_cleanup.clear();
 }
@@ -325,13 +328,10 @@ void Egraph::expUnion(PTRef x, PTRef y) {
 
     int sz = expClassSize[x_exp_root] + expClassSize[y_exp_root];
     expClassSize[x_exp_root] = sz;
+
     // Keep track of this union
-    if (!expRoot.contains(x_exp_root))
-        expRoot.insert(x_exp_root, x_exp_root);
-    if (!expRoot.contains(y_exp_root))
-        expRoot.insert(y_exp_root, y_exp_root);
-    exp_cleanup.push(x_exp_root);
-    exp_cleanup.push(y_exp_root);
+    if (expRoot.contains(x_exp_root)) exp_cleanup.push(x_exp_root);
+    if (expRoot.contains(y_exp_root)) exp_cleanup.push(y_exp_root);
 
 #ifdef PEDANTIC_DEBUG
     assert(checkExpReachable(x, x_exp_root));
@@ -342,7 +342,6 @@ void Egraph::expUnion(PTRef x, PTRef y) {
 //
 // Find the representant of x's equivalence class
 // and meanwhile do path compression
-// no need for enodes
 //
 PTRef Egraph::expFind(PTRef x) {
     vec<PTRef> path_compr;
@@ -391,13 +390,18 @@ PTRef Egraph::expNCA(PTRef x, PTRef y) {
                 return h_x;
 
             // Mark the node
-            if (!expTimeStamp.contains(h_x))
-                expTimeStamp.insert(h_x, time_stamp);
-            else expTimeStamp[h_x] = time_stamp;
-
+//            if (!expTimeStamp.contains(h_x))
+//                expTimeStamp.insert(h_x, time_stamp);
+//            else expTimeStamp[h_x] = time_stamp;
+//            assert(expParent.contains(h_x));
+            if (!expParent.contains(h_x) || expParent[h_x] != h_x) {
+                if (!expTimeStamp.contains(h_x))
+                    expTimeStamp.insert(h_x, time_stamp);
+                else expTimeStamp[h_x] = time_stamp;
+            }
             // move to the next
             if (expParent.contains(h_x) && expParent[h_x] != h_x)
-                    h_x = expParent[h_x];
+                h_x = expParent[h_x];
             else h_x = PTRef_Undef; // no parent
         }
         if ( h_y != PTRef_Undef ) {
@@ -405,13 +409,18 @@ PTRef Egraph::expNCA(PTRef x, PTRef y) {
             if ( expTimeStamp.contains(h_y) && expTimeStamp[h_y] == time_stamp )
                 return h_y;
             // Mark the node
-            if (!expTimeStamp.contains(h_y))
-                expTimeStamp.insert(h_y, time_stamp);
-            else expTimeStamp[h_y] = time_stamp;
-
+//            if (!expTimeStamp.contains(h_y))
+//                expTimeStamp.insert(h_y, time_stamp);
+//            else expTimeStamp[h_y] = time_stamp;
+//            assert(expParent.contains(h_y));
+            if (!expParent.contains(h_y) || expParent[h_y] != h_y) {
+                if (!expTimeStamp.contains(h_y))
+                    expTimeStamp.insert(h_y, time_stamp);
+                else expTimeStamp[h_y] = time_stamp;
+            }
             // move to the next
             if (expParent.contains(h_y) && expParent[h_y] != h_y)
-                    h_y = expParent[h_y];
+                h_y = expParent[h_y];
             else h_y = PTRef_Undef; // no parent
         }
     }

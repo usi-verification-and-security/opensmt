@@ -457,6 +457,8 @@ class CoreSMTSolver : public SMTSolver
 #ifdef PEDANTIC_DEBUG
       int                max_dl_debug;
       int                analyze_cnt;
+#endif
+#ifdef DEBUG_REASONS
       void addTheoryReasonClause_debug(Lit ded, vec<Lit>& reason);
       void checkTheoryReasonClause_debug(Var v);
       void removeTheoryReasonClause_debug(Var v);

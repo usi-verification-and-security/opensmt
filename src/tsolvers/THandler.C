@@ -201,33 +201,39 @@ bool THandler::assertLits(vec<Lit>& trail)
         // sign(l) == true if l is negated
         // Watch out here! the second argument of PtAsgn constructor is
         // in fact lbool!
-        if (logic.isEquality(pt.symb()) && !sign(l))
+        if (logic.isEquality(pt.symb()) && !sign(l)) {
+            egraph.setPolarity(pt_r, l_True);
             res = egraph.addEquality(PtAsgn(pt_r, l_True));
-
-        else if (logic.isEquality(pt.symb()) && sign(l))
+        }
+        else if (logic.isEquality(pt.symb()) && sign(l)) {
+            egraph.setPolarity(pt_r, l_False);
             res = egraph.addDisequality(PtAsgn(pt_r, l_False));
-
-        else if (logic.isDisequality(pt.symb()) && !sign(l))
+        }
+        else if (logic.isDisequality(pt.symb()) && !sign(l)) {
+            egraph.setPolarity(pt_r, l_True);
             res = egraph.addDisequality(PtAsgn(pt_r, l_True));
-
-        else if (logic.isDisequality(pt.symb()) && sign(l))
+        }
+        else if (logic.isDisequality(pt.symb()) && sign(l)) {
+            egraph.setPolarity(pt_r, l_False);
             res = egraph.addEquality(PtAsgn(pt_r, l_False));
-
-        else if (logic.isUP(pt_r) && !sign(l))
+        }
+        else if (logic.isUP(pt_r) && !sign(l)) {
+            egraph.setPolarity(pt_r, l_True);
             res = egraph.addTrue(pt_r) == false ? l_False : l_Undef;
-
-        else if (logic.isUP(pt_r) && sign(l))
+        }
+        else if (logic.isUP(pt_r) && sign(l)) {
+            egraph.setPolarity(pt_r, l_False);
             res = egraph.addFalse(pt_r) == false ? l_False : l_Undef;
-
+        }
         else
             assert(false);
 
 
 #ifdef PEDANTIC_DEBUG
-        if (res == l_False) {
-            cerr << "conflict asserting " << logic.term_store.printTerm(pt_r)
-                 << endl;
-        }
+//        if (res == l_False) {
+//            cerr << "conflict asserting " << logic.term_store.printTerm(pt_r)
+//                 << endl;
+//        }
 #endif
 //    if ( !res && config.certification_level > 2 )
 //      verifyCallWithExternalTool( res, i );
@@ -236,15 +242,15 @@ bool THandler::assertLits(vec<Lit>& trail)
     checked_trail_size = stack.size( );
 //  assert( !res || trail.size( ) == (int)stack.size( ) );
 #ifdef PEDANTIC_DEBUG
-    if (res != l_False)
-        cout << "; non-conflicting" << endl;
+//    if (res != l_False)
+//        cout << "; non-conflicting" << endl;
 //    cout << printAssertions(assertions);
-    char* tmp = egraph.printEqClass(logic.getTerm_true());
-    cout << tmp << endl;
-    ::free(tmp);
-    tmp = egraph.printEqClass(logic.getTerm_false());
-    cout << tmp << endl;
-    ::free(tmp);
+//    char* tmp = egraph.printEqClass(logic.getTerm_true());
+//    cout << tmp << endl;
+//    ::free(tmp);
+//    tmp = egraph.printEqClass(logic.getTerm_false());
+//    cout << tmp << endl;
+//    ::free(tmp);
 #endif
     return res != l_False;
 }
@@ -270,9 +276,11 @@ void THandler::backtrack(int lev)
         if ( e == logic.getTerm_true() || e == logic.getTerm_false() ) continue;
 
         if ( !tmap.theoryTerms.contains(e) ) continue;
-//        printf("Backtracking term %s\n", logic.term_store.printTerm(e));
+        printf("Backtracking term %s\n", logic.term_store.printTerm(e));
         egraph.popBacktrackPoint( );
 
+        assert(egraph.hasPolarity(e));
+        egraph.clearPolarity(e);
 //    assert( e->hasPolarity( ) );
 //    assert( e->getPolarity( ) == l_True
 //       || e->getPolarity( ) == l_False );
@@ -294,7 +302,8 @@ void THandler::getConflict (
 #ifdef PEDANTIC_DEBUG
         , vec<Lit>& trail
 #endif
-    ) {
+    )
+{
     // First of all, the explanation in a tsolver is
     // stored as conjunction of enodes e1,...,en
     // with associated polarities p1,...,pn. Since the sat-solver
@@ -303,7 +312,7 @@ void THandler::getConflict (
     vec<PtAsgn> explanation;
     egraph.getConflict(false, explanation);
 #ifdef PEDANTIC_DEBUG
-    cout << printExplanation(explanation, assigns);
+//    cout << printExplanation(explanation, assigns);
 #endif
     if ( explanation.size() == 0 ) {
         max_decision_level = 0;
@@ -336,9 +345,15 @@ void THandler::getConflict (
     explanation.clear( );
 #else
     max_decision_level = -1;
+#ifdef PEDANTIC_DEBUG
+    cerr << "Explanation clause: " << endl;
+#endif
     while (explanation.size() != 0) {
         PtAsgn ta = explanation.last( );
         explanation.pop( );
+#ifdef PEDANTIC_DEBUG
+        cerr << " " << (ta.sgn == l_False ? "" : "not ") << logic.printTerm(ta.tr) << endl;
+#endif
 //    assert( ei->hasPolarity( ) );
 //    assert( ei->getPolarity( ) == l_True
 //       || ei->getPolarity( ) == l_False );
@@ -437,6 +452,7 @@ void THandler::getReason( Lit l, vec< Lit > & reason, vec<char>& assigns )
 
     // It must be a TAtom and already disabled
     assert( logic.isTheoryTerm(e) );
+    assert(!egraph.hasPolarity(e));
 //  assert( !e->hasPolarity( ) );
 //  assert( e->isDeduced( ) );
 //  assert( e->getDeduced( ) != l_Undef );           // Last assigned deduction
@@ -455,10 +471,15 @@ void THandler::getReason( Lit l, vec< Lit > & reason, vec<char>& assigns )
 //                   egraph.check( true );
     lbool res = l_Undef;
     assert(value(l, assigns) == l_Undef);
-    if (logic.isEquality(e))
-        res = sign(l) ? egraph.addEquality(PtAsgn(e, l_True)) : egraph.addDisequality(PtAsgn(e, l_False));
+    if (logic.isEquality(e)) {
+        // Assign temporarily opposite polarity
+        lbool p = sign(l) ? l_True : l_False;
+        egraph.setPolarity(e, p);
+        res = sign(l) ? egraph.addEquality(PtAsgn(e, p)) : egraph.addDisequality(PtAsgn(e, p));
+    }
     else {
         assert(logic.isUP(e));
+        egraph.setPolarity(e, sign(l) ? l_True : l_False);
         bool ok = sign(l) ? egraph.addTrue(e) : egraph.addFalse(e);
         res = ok == false ? l_False : l_Undef;
     }
@@ -466,12 +487,12 @@ void THandler::getReason( Lit l, vec< Lit > & reason, vec<char>& assigns )
 #ifdef PEDANTIC_DEBUG
     // Result must be false
     if ( res != l_False ) {
-        cout << endl << "unknown" << endl;
-        cerr << egraph.printUndoTrail();
+//        cout << endl << "unknown" << endl;
+//        cerr << egraph.printUndoTrail();
         return false;
     }
-    else
-        cerr << endl << "ok" << endl;
+    else ;
+//        cerr << endl << "ok" << endl;
 #else
     if ( res != l_False ) {
         cout << endl << "unknown" << endl;
@@ -529,6 +550,7 @@ void THandler::getReason( Lit l, vec< Lit > & reason, vec<char>& assigns )
     egraph.popBacktrackPoint( );
 
     // Resetting polarity
+    egraph.clearPolarity(e);
 //    e->resetPolarity( );
 #ifdef PEDANTIC_DEBUG
     return true;

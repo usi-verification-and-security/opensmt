@@ -1,7 +1,7 @@
 noinst_LTLIBRARIES = libegraph.la
-noinst_PROGRAMS = test gctest test3 test4
+noinst_PROGRAMS = test gctest test3 test4 test5
 
-INCLUDES=$(config_includedirs)
+AM_CPPFLAGS=$(config_includedirs)
 
 
 libegraph_la_SOURCES = Enode.h Enode.C EnodeStore.h EnodeStore.C \
@@ -20,6 +20,8 @@ gctest_LDADD = libegraph.la ../logics/liblogics.la ../pterms/libpterms.la ../smt
 test4_SOURCES = test4.C
 test4_LDADD = libegraph.la ../logics/liblogics.la ../pterms/libpterms.la ../smtsolvers/libsmtsolvers.la ../symbols/libsymbols.la ../sorts/libsorts.la
 
+test5_SOURCES = test5.C
+test5_LDADD = libegraph.la ../logics/liblogics.la ../pterms/libpterms.la ../smtsolvers/libsmtsolvers.la ../symbols/libsymbols.la ../sorts/libsorts.la
 
 # libegraph_la_SOURCES = EgraphSolver.C \
 # 		       EgraphStore.C \

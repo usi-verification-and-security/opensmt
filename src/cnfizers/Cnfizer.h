@@ -159,7 +159,7 @@ protected:
     bool  addClause                  ( vec<Lit>& );
 #endif
 
-//  void  retrieveClause             ( PTRef, vec<PTRef> & );         // Retrieve a clause from a formula
+    void  retrieveClause             ( PTRef, vec<PTRef> & );         // Retrieve a clause from a formula
     void  retrieveConjuncts          ( PTRef, vec<PTRef> & );         // Retrieve the list of conjuncts
 
 //  Enode * toggleLit		   ( Enode * );                              // Handy function for toggling literals

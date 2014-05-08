@@ -80,6 +80,9 @@ bool Egraph::check( bool complete )
 //
 void Egraph::pushBacktrackPoint( )
 {
+#ifdef PEDANTIC_DEBUG
+  cerr << "bt point " << backtrack_points.size() << endl;
+#endif
   // Save solver state if required
   backtrack_points.push( undo_stack_main.size( ) );
 
@@ -890,7 +893,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
 
 //#if VERBOSE
 #ifdef PEDANTIC_DEBUG
-            cerr << "Reason is neg equality: " << term_store.printTerm(reason_inequality.tr) << endl;
+//            cerr << "Reason is neg equality: " << term_store.printTerm(reason_inequality.tr) << endl;
 #endif
 //#endif
 #ifdef PRODUCE_PROOF
@@ -903,7 +906,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
             // The reason is an uninterpreted predicate
             assert(false);
             if (reason_inequality.tr != Eq_FALSE)
-            explanation.push(reason_inequality);
+                explanation.push(reason_inequality);
         }
         // Clear remaining pendings
         pending.clear( );
@@ -1031,6 +1034,9 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
 
     // Save operation in undo_stack
     undo_stack_main.push( Undo(DISEQ, q) );
+#ifdef PEDANTIC_DEBUG
+    undo_stack_main.last().bool_term = r.tr;
+#endif
 
     return true;
 }
@@ -1131,10 +1137,12 @@ void Egraph::backtrackToStackSize ( size_t size ) {
             ERef e = u.arg.er;
             Enode& en_e = enode_store[e];
 #ifdef PEDANTIC_DEBUG
-            if (en_e.type() == Enode::et_list)
-                cerr << "Undo merge of list" << endl;
+//            if (en_e.type() == Enode::et_list)
+//                cerr << "Undo merge of list" << endl;
 //            else
 //                cerr << "Undo merge: " << logic.printTerm(en_e.getTerm()) << endl;
+            if (en_e.type() != Enode::et_list)
+                cerr << "Undo merge: " << logic.printTerm(en_e.getTerm()) << endl;
 #endif
             undoMerge( e );
             if ( en_e.isTerm( ) ) {
@@ -1545,6 +1553,7 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     undo_stack_main.push( Undo(MERGE,y) );
 #ifdef PEDANTIC_DEBUG
     undo_stack_main.last().merged_with = x;
+    undo_stack_main.last().bool_term = reason.tr;
 #endif
 
 //    if (en_x.isTerm()) {
@@ -1654,26 +1663,27 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
         // We deduce only things that aren't currently assigned or
         // that we previously deduced on this branch
         ERef sv = v;
-        assert(!enode_store[sv].hasPolarity());
+//        assert(!enode_store[sv].hasPolarity());
         if (!enode_store[sv].isDeduced()) { // Can be previously deduced with the negative deduction engine
-            if ( !enode_store[sv].hasPolarity() && !enode_store[sv].isDeduced()
-    //          && enode_store[sv].getTerm() != enode_store[x].getTerm()
-    //          && enode_store[sv].getTerm() != enode_store[y].getTerm()
+//            if ( !enode_store[sv].hasPolarity() && !enode_store[sv].isDeduced()
+            if ( !hasPolarity(enode_store[sv].getTerm()) && !enode_store[sv].isDeduced()
+//              && enode_store[sv].getTerm() != enode_store[x].getTerm()
+//              && enode_store[sv].getTerm() != enode_store[y].getTerm()
                 // Also when incrementality is used, node should be explicitly informed
-    //            && ( config.isIncremental == false || informed.contains(enode_store[sv].getId()))
+//              && ( config.isIncremental == false || informed.contains(enode_store[sv].getId()))
                )
             {
                 enode_store[sv].setDeduced();
-    #ifdef PEDANTIC_DEBUG
-//                cerr << "Deducing ";
-//                cerr << (deduced_polarity == l_False ? "not " : "");
-//                cerr << logic.printTerm(enode_store[sv].getTerm());
-//                cerr << " since ";
-//                cerr << logic.printTerm(enode_store[x].getTerm());
-//                cerr << " and ";
-//                cerr << logic.printTerm(enode_store[y].getTerm());
-//                cerr << " are now equal";
-//                cerr << endl;
+#ifdef PEDANTIC_DEBUG
+                cerr << "Deducing ";
+                cerr << (deduced_polarity == l_False ? "not " : "");
+                cerr << logic.printTerm(enode_store[sv].getTerm());
+                cerr << " since ";
+                cerr << logic.printTerm(enode_store[x].getTerm());
+                cerr << " and ";
+                cerr << logic.printTerm(enode_store[y].getTerm());
+                cerr << " are now equal";
+                cerr << endl;
     #endif
                 deductions.push(PtAsgn_reason(enode_store.ERefToTerm[sv],
                                               deduced_polarity, reason.tr));
@@ -1713,12 +1723,12 @@ void Egraph::undoMerge( ERef y )
     Enode& en_x = enode_store[x];
 
 #if VERBOSE
-    cerr << "UM: Undoing merge of " << y << " and " << x << endl;
+//    cerr << "UM: Undoing merge of " << y << " and " << x << endl;
 #endif
 #if PEDANTIC_DEBUG
-    if (en_y.isTerm())
-        cerr << "UM: Undoing merge of " << logic.printTerm(en_y.getTerm())
-             << " and " << logic.printTerm(en_x.getTerm()) << endl;
+//    if (en_y.isTerm())
+//        cerr << "UM: Undoing merge of " << logic.printTerm(en_y.getTerm())
+//             << " and " << logic.printTerm(en_x.getTerm()) << endl;
 #endif
 
     // Undoes the merge of the parent lists

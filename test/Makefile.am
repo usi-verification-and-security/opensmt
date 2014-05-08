@@ -1,7 +1,7 @@
 
 BUILT_SOURCES = smt2newparser.h
 
-INCLUDES = $(config_includedirs)
+AM_CPPFLAGS = $(config_includedirs)
 
 AM_YFLAGS = -d --name-prefix=smt2new
 AM_LFLAGS = -olex.yy.c -Psmt2new

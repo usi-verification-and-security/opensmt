@@ -1,6 +1,6 @@
 noinst_LTLIBRARIES = libsimplifiers.la
 
-INCLUDES=$(config_includedirs)
+AM_CPPFLAGS=$(config_includedirs)
 
 libsimplifiers_la_SOURCES = TopLevelPropagate.h TopLevelPropagate.C
 

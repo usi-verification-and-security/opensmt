@@ -1,10 +1,11 @@
 ACLOCAL_AMFLAGS = -I m4
+AUTOMAKE_OPTIONS = subdir-objects
 
 SUBDIRS = src
 
 bin_PROGRAMS = opensmt
 
-INCLUDES = $(config_includedirs)
+AM_CPPFLAGS = $(config_includedirs)
 
 opensmt_SOURCES = src/bin/opensmt.C
 opensmt_LDFLAGS =

@@ -1,6 +1,6 @@
 noinst_LTLIBRARIES = libproof.la
 
-INCLUDES=$(config_includedirs) 
+AM_CPPFLAGS=$(config_includedirs)
 
 libproof_la_SOURCES = ProofGlobal.h \
 		      ProofGraphBuild.C ProofGraph.h \
