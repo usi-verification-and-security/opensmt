@@ -354,12 +354,16 @@ PTRef Egraph::expFind(PTRef x) {
     if (expRoot[x] == x) return x;
 
     // Recurse
+#ifdef PEDANTIC_DEBUG
     cerr << "expFind: " << logic.printTerm(x) << endl;
+#endif
     PTRef exp_root = expFind(expRoot[x]);
     // Path compression
     if (exp_root != expRoot[x]) {
         expRoot[x] = exp_root;
+#ifdef PEDANTIC_DEBUG
         cerr << "expFind: cleanup " << logic.printTerm(x) << endl;
+#endif
         exp_cleanup.push(x);
     }
     return exp_root;
