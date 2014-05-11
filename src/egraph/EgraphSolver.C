@@ -635,7 +635,9 @@ lbool Egraph::addEquality(PtAsgn pa) {
     Pterm& pt = term_store[pa.tr];
     assert(pt.size() == 2);
     if (enode_store[pa.tr].getDeduced() == pa.sgn) {
+#ifdef PEDANTIC_DEBUG
         cerr << "Assertion already deduced: " << logic.printTerm(pa.tr) << endl;
+#endif
         return l_Undef;
     }
     bool res = true;
@@ -675,7 +677,9 @@ lbool Egraph::addDisequality(PtAsgn pa) {
     bool res = true;
 
     if (enode_store[pa.tr].getDeduced() == pa.sgn) {
+#ifdef PEDANTIC_DEBUG
         cerr << "Assertion already deduced: " << logic.printTerm(pa.tr) << endl;
+#endif
         return l_Undef;
     }
     if (pt.size() == 2)
@@ -787,7 +791,9 @@ bool Egraph::mergeLoop( PtAsgn reason )
 
         if ( en_p.isTerm( ) ) {
             expStoreExplanation( p, q, congruence_pending ? PtAsgn(PTRef_Undef, l_Undef) : reason );
+#ifdef PEDANTIC_DEBUG
             cerr << "Exp store: " << (congruence_pending ? "undef" : logic.printTerm(reason.tr)) << endl;
+#endif
         }
 
         // Check if they can't be merged
@@ -800,12 +806,12 @@ bool Egraph::mergeLoop( PtAsgn reason )
             congruence_pending = true;
             continue;
         }
-
+#ifdef PEDANTIC_DEBUG
         cerr << "Unmergeable: " << logic.printTerm(en_p.getTerm()) << " [" << logic.printTerm(enode_store[en_p.getRoot()].getTerm()) << "] "
                                 << logic.printTerm(en_q.getTerm()) << " [" << logic.printTerm(enode_store[en_q.getRoot()].getTerm()) << "]" << endl;
 
         cerr << "Due to " << logic.printTerm(reason_inequality.tr) << endl;
-
+#endif
         // Conflict detected. We should retrieve the explanation
         // We have to distinguish 2 cases. If the reason for the
         // conflict is ERef_Undef, it means that a conflict arises because

@@ -145,9 +145,9 @@ void Egraph::expExplain () {
         assert( checkExpTree( p ) );
         assert( checkExpTree( q ) );
 #endif
-
+#ifdef PEDANTIC_DEBUG
         cerr << "Explain " << logic.printTerm(p) << " and " << logic.printTerm(q) << endl;
-
+#endif
         PTRef w = expNCA(p, q);
         assert(w != PTRef_Undef);
 
@@ -157,9 +157,13 @@ void Egraph::expExplain () {
 //        cerr << "Explanation from " << term_store.printTerm(q) << " to " << term_store.printTerm(w) << ":" << endl;
 //        cerr << " " <<printExplanationTree(q) << endl;
 #endif
+#ifdef PEDANTIC_DEBUG
         cerr << "Explaining along path " << logic.printTerm(p) << " -> " << logic.printTerm(w) << endl;
+#endif
         expExplainAlongPath( p, w );
+#ifdef PEDANTIC_DEBUG
         cerr << "Explaining along path " << logic.printTerm(q) << " -> " << logic.printTerm(w) << endl;
+#endif
         expExplainAlongPath( q, w );
     }
 }
@@ -217,7 +221,9 @@ void Egraph::expCleanup() {
         PTRef x = exp_cleanup[i];
         assert(expRoot.contains(x));
         expRoot[x] = x;
+#ifdef PEDANTIC_DEBUG
         cerr << "clean: " << logic.printTerm(x) << endl;
+#endif
 // These are not used
 //        assert(expHighestNode.contains(x));
 //        expHighestNode[x] = x;

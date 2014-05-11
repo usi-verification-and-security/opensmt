@@ -116,6 +116,8 @@ public:
     // true != false
 
     // This is for the enode store
+    // XXX These guys should be defined through the same interface every
+    // other term is defined.  This is probably declareTerm()
     ERef ers_true  = enode_store.addSymb(logic.getSym_true());
     ERef ers_false = enode_store.addSymb(logic.getSym_false());
     PTRef ptr_new_true  = enode_store.addTerm(ers_true, ERef_Nil,
@@ -125,6 +127,15 @@ public:
 
     assert(ptr_new_true  == logic.getTerm_true());
     assert(ptr_new_false == logic.getTerm_false());
+
+    expReason.insert(ptr_new_true, PtAsgn(PTRef_Undef, l_Undef));
+    expReason.insert(ptr_new_false, PtAsgn(PTRef_Undef, l_Undef));
+    expParent.insert(ptr_new_true, PTRef_Undef);
+    expParent.insert(ptr_new_false, PTRef_Undef);
+    expRoot.insert(ptr_new_true, ptr_new_true);
+    expRoot.insert(ptr_new_false, ptr_new_true);
+    expClassSize.insert(ptr_new_true, 1);
+    expTimeStamp.insert(ptr_new_false, 0);
 
     enode_store.ERef_True  = enode_store.termToERef[ptr_new_true];
     enode_store.ERef_False = enode_store.termToERef[ptr_new_false];

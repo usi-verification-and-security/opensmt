@@ -276,7 +276,9 @@ void THandler::backtrack(int lev)
         if ( e == logic.getTerm_true() || e == logic.getTerm_false() ) continue;
 
         if ( !tmap.theoryTerms.contains(e) ) continue;
+#ifdef PEDANTIC_DEBUG
         printf("Backtracking term %s\n", logic.term_store.printTerm(e));
+#endif
         egraph.popBacktrackPoint( );
 
         assert(egraph.hasPolarity(e));
