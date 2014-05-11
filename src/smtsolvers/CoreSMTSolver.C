@@ -2101,8 +2101,6 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
     }
     else
       nof_learnts *= learntsize_inc;
-    // Just one round
-    opensmt::stop = true;
   }
 
   // Added line

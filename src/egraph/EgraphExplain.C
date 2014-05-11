@@ -73,11 +73,9 @@ void Egraph::expStoreExplanation ( ERef x, ERef y, PtAsgn reason )
     expReRootOn( tr_y );
 
 
-    if (!expParent.contains(tr_y)) expParent.insert(tr_y, tr_x);
-    else expParent[tr_y] = tr_x;
+    expParent[tr_y] = tr_x;
 
-    if (!expReason.contains(tr_y)) expReason.insert(tr_y, reason);
-    else expReason[tr_y] = reason;
+    expReason[tr_y] = reason;
 
     // Store both nodes. Because of rerooting operations
     // we don't know whether x --> y or x <-- y at the moment of
@@ -99,33 +97,25 @@ void Egraph::expStoreExplanation ( ERef x, ERef y, PtAsgn reason )
 //
 void Egraph::expReRootOn (PTRef x) {
     PTRef p = x;
-    PTRef parent = expParent.contains(p) ? expParent[p] : PTRef_Undef;
-    PtAsgn reason = expReason.contains(p) ? expReason[p] : PtAsgn(PTRef_Undef, l_Undef);
+    PTRef parent = expParent[p];
+    PtAsgn reason = expReason[p];
 
-    if (!expParent.contains(x))
-        expParent.insert(x, PTRef_Undef);
-    else
-        expParent[x] = PTRef_Undef;
+    expParent[x] = PTRef_Undef;
 
-    if (!expReason.contains(x))
-        expReason.insert(x, PtAsgn(PTRef_Undef, l_False));
-    else
-        expReason[x] = PtAsgn(PTRef_Undef, l_False);
+    expReason[x] = PtAsgn(PTRef_Undef, l_False);
 
     while( parent != PTRef_Undef ) {
         // Save grandparent
-        PTRef grandparent = expParent.contains(parent) ?  expParent[parent] : PTRef_Undef;
+        PTRef grandparent = expParent[parent];
 
         // Save reason
         PtAsgn saved_reason = reason;
-        reason = expReason.contains(parent) ? expReason[parent] : PtAsgn(PTRef_Undef, l_False);
+        reason = expReason[parent];
 
         // Reverse edge & reason
-        if (expParent.contains(parent)) expParent[parent] = p;
-        else expParent.insert(parent, p);
+        expParent[parent] = p;
 
-        if (expReason.contains(parent)) expReason[parent] = saved_reason;
-        else expReason.insert(parent, saved_reason);
+        expReason[parent] = saved_reason;
 
 #ifdef PEDANTIC_DEBUG
         assert( checkExpTree( parent ) );
@@ -156,6 +146,8 @@ void Egraph::expExplain () {
         assert( checkExpTree( q ) );
 #endif
 
+        cerr << "Explain " << logic.printTerm(p) << " and " << logic.printTerm(q) << endl;
+
         PTRef w = expNCA(p, q);
         assert(w != PTRef_Undef);
 
@@ -165,7 +157,9 @@ void Egraph::expExplain () {
 //        cerr << "Explanation from " << term_store.printTerm(q) << " to " << term_store.printTerm(w) << ":" << endl;
 //        cerr << " " <<printExplanationTree(q) << endl;
 #endif
+        cerr << "Explaining along path " << logic.printTerm(p) << " -> " << logic.printTerm(w) << endl;
         expExplainAlongPath( p, w );
+        cerr << "Explaining along path " << logic.printTerm(q) << " -> " << logic.printTerm(w) << endl;
         expExplainAlongPath( q, w );
     }
 }
@@ -199,6 +193,9 @@ void Egraph::expExplain(PTRef x, PTRef y)
 void Egraph::expExplain(PTRef x, PTRef y, PTRef r)
 #endif
 {
+#ifdef PEDANTIC_DEBUG
+    cerr << "exp pending size " << exp_pending.size() << endl;
+#endif
     exp_pending.push(x);
     exp_pending.push(y);
 
@@ -214,11 +211,13 @@ void Egraph::expExplain(PTRef x, PTRef y, PTRef r)
 }
 
 void Egraph::expCleanup() {
-  // Destroy the eq classes of the explanation
-    for (int i = 0; i < exp_cleanup.size(); i++) {
+    // Destroy the eq classes of the explanation
+    // May be reversed once debug's fine
+    for (int i = exp_cleanup.size()-1; i >= 0; i--) {
         PTRef x = exp_cleanup[i];
         assert(expRoot.contains(x));
         expRoot[x] = x;
+        cerr << "clean: " << logic.printTerm(x) << endl;
 // These are not used
 //        assert(expHighestNode.contains(x));
 //        expHighestNode[x] = x;
@@ -234,11 +233,13 @@ void Egraph::expExplainAlongPath (PTRef x, PTRef y) {
     PTRef v  = expHighestNode(x);
     // Why this? Not in the pseudo code!
     PTRef to = expHighestNode(y);
-
+#ifdef PEDANTIC_DEBUG
+    cerr << "Explaining " << logic.printTerm(v) << " to " << logic.printTerm(to) << endl;
+#endif
     while ( v != to ) {
         PTRef p = expParent[v];
         assert(p != PTRef_Undef);
-        PtAsgn r = expReason.contains(v) ? expReason[v] : PtAsgn(PTRef_Undef, l_Undef);
+        PtAsgn r = expReason[v];
 
         // If it is not a congruence edge
         if (r.tr != PTRef_Undef && r.tr != Eq_FALSE) {
@@ -300,11 +301,18 @@ void Egraph::expEnqueueArguments(PTRef x, PTRef y) {
 }
 
 void Egraph::expUnion(PTRef x, PTRef y) {
+#ifdef PEDANTIC_DEBUG
+    cerr << "Union: " << logic.printTerm(x) << " " << logic.printTerm(y) << endl;
+#endif
     // Unions are always between a node and its parent
     assert(expParent[x] == y);
     // Retrieve the representant for the explanation class for x and y
     PTRef x_exp_root = expFind(x);
     PTRef y_exp_root = expFind(y);
+#ifdef PEDANTIC_DEBUG
+    cerr << "Root of " << logic.printTerm(x) << " is " << logic.printTerm(x_exp_root) << endl;
+    cerr << "Root of " << logic.printTerm(y) << " is " << logic.printTerm(y_exp_root) << endl;
+#endif
 
 #ifdef PEDANTIC_DEBUG
     assert(checkExpReachable( x, x_exp_root ) );
@@ -316,22 +324,14 @@ void Egraph::expUnion(PTRef x, PTRef y) {
         return;
     // Save highest node. It is always the node of the parent,
     // as it is closest to the root of the explanation tree
-    if (!expRoot.contains(x_exp_root))
-        expRoot.insert(x_exp_root, y_exp_root);
-    else
-        expRoot[x_exp_root] = y_exp_root;
-
-    if (!expClassSize.contains(x_exp_root))
-        expClassSize.insert(x_exp_root, 0);
-    if (!expClassSize.contains(y_exp_root))
-        expClassSize.insert(y_exp_root, 0);
+    expRoot[x_exp_root] = y_exp_root;
 
     int sz = expClassSize[x_exp_root] + expClassSize[y_exp_root];
     expClassSize[x_exp_root] = sz;
 
     // Keep track of this union
-    if (expRoot.contains(x_exp_root)) exp_cleanup.push(x_exp_root);
-    if (expRoot.contains(y_exp_root)) exp_cleanup.push(y_exp_root);
+    exp_cleanup.push(x_exp_root);
+    exp_cleanup.push(y_exp_root);
 
 #ifdef PEDANTIC_DEBUG
     assert(checkExpReachable(x, x_exp_root));
@@ -344,22 +344,19 @@ void Egraph::expUnion(PTRef x, PTRef y) {
 // and meanwhile do path compression
 //
 PTRef Egraph::expFind(PTRef x) {
-    vec<PTRef> path_compr;
-    while (true) {
-        // If x is the root, return x
-        if ( !expRoot.contains(x) || expRoot[x] == x )
-            break;
-        path_compr.push(x);
-        x = expRoot[x];
-    }
-    // Path compression
-    for (int i = 0; i < path_compr.size(); i++) {
-        assert(expRoot.contains(path_compr[i]));
-        expRoot[path_compr[i]] = x;
-        exp_cleanup.push(path_compr[i]);
-    }
+    // If x is the root, return x
+    if (expRoot[x] == x) return x;
 
-    return x;
+    // Recurse
+    cerr << "expFind: " << logic.printTerm(x) << endl;
+    PTRef exp_root = expFind(expRoot[x]);
+    // Path compression
+    if (exp_root != expRoot[x]) {
+        expRoot[x] = exp_root;
+        cerr << "expFind: cleanup " << logic.printTerm(x) << endl;
+        exp_cleanup.push(x);
+    }
+    return exp_root;
 }
 
 PTRef Egraph::expHighestNode(PTRef x) {
@@ -376,8 +373,13 @@ PTRef Egraph::expNCA(PTRef x, PTRef y) {
     time_stamp ++;
 
     PTRef h_x = expHighestNode(x);
+#ifdef PEDANTIC_DEBUG
+    cerr << "Highest node of " << logic.printTerm(x) << " is " << logic.printTerm(h_x) << endl;
+#endif
     PTRef h_y = expHighestNode(y);
-
+#ifdef PEDANTIC_DEBUG
+    cerr << "Highest node of " << logic.printTerm(y) << " is " << logic.printTerm(h_y) << endl;
+#endif
 #ifdef PEDANTIC_DEBUG
     assert(checkExpReachable( x, h_x ));
     assert(checkExpReachable( y, h_y ));
@@ -386,42 +388,38 @@ PTRef Egraph::expNCA(PTRef x, PTRef y) {
     while ( h_x != h_y ) {
         if ( h_x != PTRef_Undef ) {
             // We reached a node already marked by h_y
-            if ( expTimeStamp.contains(h_x) && expTimeStamp[h_x] == time_stamp )
+            if (expTimeStamp[h_x] == time_stamp) {
+#ifdef PEDANTIC_DEBUG
+                cerr << "found x, " << logic.printTerm(h_x) << endl;
+#endif
                 return h_x;
-
-            // Mark the node
-//            if (!expTimeStamp.contains(h_x))
-//                expTimeStamp.insert(h_x, time_stamp);
-//            else expTimeStamp[h_x] = time_stamp;
-//            assert(expParent.contains(h_x));
-            if (!expParent.contains(h_x) || expParent[h_x] != h_x) {
-                if (!expTimeStamp.contains(h_x))
-                    expTimeStamp.insert(h_x, time_stamp);
-                else expTimeStamp[h_x] = time_stamp;
             }
-            // move to the next
-            if (expParent.contains(h_x) && expParent[h_x] != h_x)
+
+            // Mark the node and move to the next
+#ifdef PEDANTIC_DEBUG
+            cerr << "x: ExpParent of " << logic.printTerm(h_x) << " is " << (expParent[h_x] == PTRef_Undef ? "undef" : logic.printTerm(expParent[h_x])) << endl;
+#endif
+            if (expParent[h_x] != h_x) {
+                expTimeStamp[h_x] = time_stamp;
                 h_x = expParent[h_x];
-            else h_x = PTRef_Undef; // no parent
+            }
         }
         if ( h_y != PTRef_Undef ) {
             // We reached a node already marked by h_x
-            if ( expTimeStamp.contains(h_y) && expTimeStamp[h_y] == time_stamp )
+            if (expTimeStamp[h_y] == time_stamp) {
+#ifdef PEDANTIC_DEBUG
+                cerr << "found y, " << logic.printTerm(h_y) << endl;
+#endif
                 return h_y;
-            // Mark the node
-//            if (!expTimeStamp.contains(h_y))
-//                expTimeStamp.insert(h_y, time_stamp);
-//            else expTimeStamp[h_y] = time_stamp;
-//            assert(expParent.contains(h_y));
-            if (!expParent.contains(h_y) || expParent[h_y] != h_y) {
-                if (!expTimeStamp.contains(h_y))
-                    expTimeStamp.insert(h_y, time_stamp);
-                else expTimeStamp[h_y] = time_stamp;
             }
-            // move to the next
-            if (expParent.contains(h_y) && expParent[h_y] != h_y)
+            // Mark the node and move to the next
+#ifdef PEDANTIC_DEBUG
+            cerr << "y: ExpParent of " << logic.printTerm(h_y) << " is " << (expParent[h_y] == PTRef_Undef ? "undef" : logic.printTerm(expParent[h_y])) << endl;
+#endif
+            if (expParent[h_y] != h_y) {
+                expTimeStamp[h_y] = time_stamp;
                 h_y = expParent[h_y];
-            else h_y = PTRef_Undef; // no parent
+            }
         }
     }
     // Since h_x == h_y, we return h_x

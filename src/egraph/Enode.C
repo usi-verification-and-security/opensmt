@@ -8,7 +8,7 @@ ERef Enode::ERef_Nil;
 Enode::Enode(SymRef tr_, ERef er_) : symb(tr_), er(er_) {
     header.type = et_symb;
     cid = cgid_ctr++;
-    is_deduced = false;
+    deduced = l_Undef;
     has_polarity = false;
 }
 
@@ -17,7 +17,7 @@ Enode::Enode(ERef car_, ERef cdr_,
              ERef er_, Map<SigPair,ERef,SigHash,Equal<const SigPair&> >& sig_tab)
      : er(er_)
 {
-    is_deduced = false;
+    deduced = l_Undef;
     has_polarity = false;
 
     header.type    = t;

@@ -408,6 +408,8 @@ Lit THandler::getDeduction(Lit& reason) {
     assert(e.sgn != l_Undef);
     reason = tmap.getLit(e.reason);
     assert(reason != lit_Undef);
+    assert(egraph.isDeduced(e.tr));
+    assert(egraph.getDeduced(e.tr) == e.sgn);
     return e.sgn == l_True ? tmap.getLit(e.tr) : ~tmap.getLit(e.tr);
 
 //  if ( config.certification_level > 1 )

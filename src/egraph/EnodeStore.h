@@ -58,11 +58,15 @@ class EnodeStore {
     ERef get_Nil() const { return ERef_Nil; }
     void free(ERef er) { ea.free(er); }
     vec<ERef>           id_to_enode;
-    Enode& operator[] (ERef e) { return ea[e]; }
-    const Enode& operator[] (ERef e) const { return ea[e]; }
-    Map<PTRef,ERef,PTRefHash,Equal<PTRef> >     termToERef;
+
+    Map<PTRef,ERef,PTRefHash,Equal<PTRef> >    termToERef;
     Map<SymRef,ERef,SymRefHash,Equal<SymRef> > symToERef;
-    Map<ERef,PTRef,ERefHash,Equal<ERef> >       ERefToTerm;
+    Map<ERef,PTRef,ERefHash,Equal<ERef> >      ERefToTerm;
+
+    Enode&       operator[] (ERef e)         { return ea[e]; }
+    const Enode& operator[] (ERef e)   const { return ea[e]; }
+          Enode& operator[] (PTRef tr)       { return ea[termToERef[tr]]; }
+    const Enode& operator[] (PTRef tr) const { return ea[termToERef[tr]]; }
 
     void removeParent(ERef, ERef);
     char* printEnode(ERef);

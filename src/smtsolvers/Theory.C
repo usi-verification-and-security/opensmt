@@ -188,11 +188,10 @@ int CoreSMTSolver::checkTheory( bool complete )
 
 #ifdef PEDANTIC_DEBUG
   theory_handler.getConflict(conflicting, level, max_decision_level, assigns, trail);
-//  if (analyze_cnt == 2) {
-//    for (int i = 0; i < conflicting.size(); i++)
-//        cerr << theory_handler.egraph.printExplanationTreeDotty(theory_handler.varToTerm(var(conflicting[i])));
-//    assert(false);
-//  }
+  if (analyze_cnt == 2) {
+    for (int i = 0; i < conflicting.size(); i++)
+        cerr << theory_handler.egraph.printExplanationTreeDotty(theory_handler.varToTerm(var(conflicting[i])));
+  }
 #else
   theory_handler.getConflict(conflicting, level, max_decision_level, assigns);
 #endif

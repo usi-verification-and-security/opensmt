@@ -421,6 +421,13 @@ void Egraph::declareTerm(PtChild ptc) {
             ptc.tr = rval;
             if (ptc.parent != PTRef_Undef)
                 term_store[ptc.parent][ptc.pos] = ptc.tr;
+        } else {
+            // Properly new.  Initialize explanation data
+            expReason   .insert(tr, PtAsgn(PTRef_Undef, l_Undef));
+            expParent   .insert(tr, PTRef_Undef);
+            expRoot     .insert(tr, tr);
+            expClassSize.insert(tr, 1);
+            expTimeStamp.insert(tr, 0);
         }
 //        assert (rval == tr);
     }
@@ -627,7 +634,10 @@ void Egraph::declareTermTree(PTRef tr)
 lbool Egraph::addEquality(PtAsgn pa) {
     Pterm& pt = term_store[pa.tr];
     assert(pt.size() == 2);
-
+    if (enode_store[pa.tr].getDeduced() == pa.sgn) {
+        cerr << "Assertion already deduced: " << logic.printTerm(pa.tr) << endl;
+        return l_Undef;
+    }
     bool res = true;
     PTRef e = pt[0];
     for (int i = 1; i < pt.size() && res == true; i++)
@@ -664,6 +674,10 @@ lbool Egraph::addDisequality(PtAsgn pa) {
     Pterm& pt = term_store[pa.tr];
     bool res = true;
 
+    if (enode_store[pa.tr].getDeduced() == pa.sgn) {
+        cerr << "Assertion already deduced: " << logic.printTerm(pa.tr) << endl;
+        return l_Undef;
+    }
     if (pt.size() == 2)
         res = assertNEq(pt[0], pt[1], pa);
     else
@@ -771,8 +785,10 @@ bool Egraph::mergeLoop( PtAsgn reason )
         // reason even in case of unmergability, to have an
         // automatic way of retrieving a conflict.
 
-        if ( en_p.isTerm( ) )
+        if ( en_p.isTerm( ) ) {
             expStoreExplanation( p, q, congruence_pending ? PtAsgn(PTRef_Undef, l_Undef) : reason );
+            cerr << "Exp store: " << (congruence_pending ? "undef" : logic.printTerm(reason.tr)) << endl;
+        }
 
         // Check if they can't be merged
         PtAsgn reason_inequality(PTRef_Undef, l_Undef);
@@ -784,6 +800,11 @@ bool Egraph::mergeLoop( PtAsgn reason )
             congruence_pending = true;
             continue;
         }
+
+        cerr << "Unmergeable: " << logic.printTerm(en_p.getTerm()) << " [" << logic.printTerm(enode_store[en_p.getRoot()].getTerm()) << "] "
+                                << logic.printTerm(en_q.getTerm()) << " [" << logic.printTerm(enode_store[en_q.getRoot()].getTerm()) << "]" << endl;
+
+        cerr << "Due to " << logic.printTerm(reason_inequality.tr) << endl;
 
         // Conflict detected. We should retrieve the explanation
         // We have to distinguish 2 cases. If the reason for the
@@ -827,6 +848,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
             exp_pending.push( en_q.getTerm() );
             exp_pending.push( en_p.getTerm() );
 
+            cerr << "Explain XXX" << endl;
             initDup1( );
             expExplain( );
             doneDup1( );
@@ -856,6 +878,9 @@ bool Egraph::mergeLoop( PtAsgn reason )
             }
             assert( reason_1 != PTRef_Undef );
             assert( reason_2 != PTRef_Undef );
+#ifdef PEDANTIC_DEBUG
+            cerr << "Explain YYY" << endl;
+#endif
 #ifdef PRODUCE_PROOF
             expExplain( reason_1, reason_2, reason_inequality );
 #else
@@ -865,6 +890,9 @@ bool Egraph::mergeLoop( PtAsgn reason )
         else if ( logic.isEquality(term_store[reason_inequality.tr].symb()) ) {
             // The reason is a negated equality
             assert(reason_inequality.sgn == l_False);
+#ifdef PEDANTIC_DEBUG
+            cerr << "Reason inequality " << logic.printTerm(reason_inequality.tr) << endl;
+#endif
             Pterm& pt_reason = term_store[reason_inequality.tr];
 
             // Hmm, the difference being?
@@ -885,8 +913,6 @@ bool Egraph::mergeLoop( PtAsgn reason )
             reason_1 = pt_reason[0];
             // The rhs of the equality
             reason_2 = pt_reason[1];
-//          reason_1 = enode_store.termToERef[pt_reason[0]];
-//          reason_2 = enode_store.termToERef[pt_reason[1]];
 
             assert( reason_1 != PTRef_Undef );
             assert( reason_2 != PTRef_Undef );
@@ -896,6 +922,9 @@ bool Egraph::mergeLoop( PtAsgn reason )
 //            cerr << "Reason is neg equality: " << term_store.printTerm(reason_inequality.tr) << endl;
 #endif
 //#endif
+#ifdef PEDANTIC_DEBUG
+            cerr << "Explain ZZZ " << logic.printTerm(reason_1) << " " << logic.printTerm(reason_2) << " " << logic.printTerm(reason_inequality.tr) << endl;
+#endif
 #ifdef PRODUCE_PROOF
             expExplain( reason_1, reason_2, reason_inequality );
 #else
@@ -925,6 +954,9 @@ bool Egraph::mergeLoop( PtAsgn reason )
 //
 bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
 {
+#ifdef PEDANTIC_DEBUG
+    cerr << "Assert NEQ of " << logic.printTerm(x) << " and " << logic.printTerm(y) << " since " << logic.printTerm(r.tr) << endl;
+#endif
 #ifdef GC_DEBUG
     checkRefConsistency();
 #endif
@@ -950,6 +982,9 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
     // They can't be different if the nodes are in the same class
     if ( p == q ) {
         if (r.tr != Eq_FALSE) explanation.push( r );
+#ifdef PEDANTIC_DEBUG
+        cerr << "Explain XXY" << endl;
+#endif
 #ifdef PRODUCE_PROOF
         expExplain( x, y, r );
 #else
@@ -978,6 +1013,9 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
     // If this is the first distinction for q, make it a "special" one,
     // so that it has the owner reference.  Allocate an extra 32 bits.
     // If there is no node in forbid list
+#ifdef PEDANTIC_DEBUG
+    cerr << "Reason is " << logic.printTerm(r.tr) << endl;
+#endif
     ELRef pdist = ELRef_Undef;
     Enode& en_q = enode_store[q];
     if ( en_q.getForbid() == ELRef_Undef ) {
@@ -1071,6 +1109,9 @@ bool Egraph::assertDist( PTRef tr_d, PtAsgn tr_r )
             // Check condition
             assert( enode_store[p].getRoot() == en_c.getRoot() );
             // Retrieve explanation
+#ifdef PEDANTIC_DEBUG
+            cerr << "Explain XYX" << endl;
+#endif
 #ifdef PRODUCE_PROOF
             expExplain( en_c.getTerm(), enode_store[p].getTerm(), tr_r );
 #else
@@ -1673,7 +1714,7 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
 //              && ( config.isIncremental == false || informed.contains(enode_store[sv].getId()))
                )
             {
-                enode_store[sv].setDeduced();
+                enode_store[sv].setDeduced(deduced_polarity);
 #ifdef PEDANTIC_DEBUG
                 cerr << "Deducing ";
                 cerr << (deduced_polarity == l_False ? "not " : "");
@@ -2035,12 +2076,20 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r)
     for (;;) {
         Elist& el_pptr = forbid_allocator[pptr];
         Elist& el_qptr = forbid_allocator[qptr];
-        // They are unmergable if they are on the other forbid list
+        // They are unmergeable if they are on the other forbid list
         if ( enode_store[el_pptr.e].getRoot( ) == q ) {
+#ifdef PEDANTIC_DEBUG
+            cerr << "Unmergeable-q: " << logic.printTerm(enode_store[q].getTerm()) << endl;
+            cerr << " - reason: " << logic.printTerm(el_pptr.reason.tr) << endl;
+#endif
             r = el_pptr.reason;
             return true;
         }
         if ( enode_store[el_qptr.e].getRoot( ) == p ) {
+#ifdef PEDANTIC_DEBUG
+            cerr << "Unmergeable-p: " << logic.printTerm(enode_store[p].getTerm()) << endl;
+            cerr << " - reason: " << logic.printTerm(el_qptr.reason.tr) << endl;
+#endif
             r = el_qptr.reason;
             return true;
         }

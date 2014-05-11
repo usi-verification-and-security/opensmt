@@ -200,6 +200,9 @@ public:
 #endif
     }
 
+    bool  isDeduced(PTRef tr)   const    { return enode_store[tr].isDeduced(); }
+    lbool getDeduced(PTRef tr)  const    { return enode_store[tr].getDeduced(); }
+
     void  setPolarity(PTRef tr, lbool p) { if (polarityMap.contains(tr)) { polarityMap[tr] = p; } else { polarityMap.insert(tr, p); } }
     lbool getPolarity(PTRef tr)          { return polarityMap[tr]; }
     bool  hasPolarity(PTRef tr)          { if (polarityMap.contains(tr)) { return polarityMap[tr] != l_Undef; } else return false; }

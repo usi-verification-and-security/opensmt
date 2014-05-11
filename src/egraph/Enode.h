@@ -107,7 +107,7 @@ class Enode
     ERef        er;     // Either my eref or reference to the relocated one
     ERef        car;
     ERef        cdr;
-    bool        is_deduced;
+    lbool       deduced;
     bool        has_polarity;
     cgId        cid;            // The congruence id of the enode (defined also for symbols)
 
@@ -157,9 +157,10 @@ public:
     uint32_t getArity   ()        const { return 2; } // FIXME
     ERef  getCar        ()        const { assert(type() != et_symb); return car; }
     ERef  getCdr        ()        const { assert(type() != et_symb); return cdr; }
-    bool  isDeduced     ()        const { return is_deduced; }
-    void  setDeduced    ()              { assert(type() == et_term); is_deduced = true; }
-    void  resetDeduced  ()              { is_deduced = false; }
+    bool  isDeduced     ()        const { return deduced != l_Undef; }
+    void  setDeduced    (lbool v)       { assert(type() == et_term); deduced = v; }
+    lbool getDeduced    ()        const { return deduced; }
+    void  resetDeduced  ()              { deduced = l_Undef; }
     bool  hasPolarity   ()        const { return has_polarity; }
     SymRef getSymb      ()        const { assert(type() == et_symb); return symb; }
     PTRef getTerm       ()        const { assert(type() != et_symb && type() != et_list); return pterm; }
