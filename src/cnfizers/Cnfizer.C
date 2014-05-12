@@ -270,7 +270,9 @@ bool Cnfizer::deMorganize( PTRef formula
         retrieveConjuncts(pt[0], conjuncts);
         for (int i = 0; i < conjuncts.size(); i++) {
             clause.push(~findLit(conjuncts[i]));
+#ifdef PEDANTIC_DEBUG
             cerr << "(not " << logic.printTerm(conjuncts[i]) << ")" << endl;
+#endif
         }
 #ifdef PRODUCE_PROOF
         if (config.produce_inter != 0)
