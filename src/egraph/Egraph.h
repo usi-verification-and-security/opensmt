@@ -135,10 +135,17 @@ public:
     expRoot.insert(ptr_new_true, ptr_new_true);
     expRoot.insert(ptr_new_false, ptr_new_true);
     expClassSize.insert(ptr_new_true, 1);
+    expClassSize.insert(ptr_new_false, 1);
+    expTimeStamp.insert(ptr_new_true, 0);
     expTimeStamp.insert(ptr_new_false, 0);
 
-    enode_store.ERef_True  = enode_store.termToERef[ptr_new_true];
-    enode_store.ERef_False = enode_store.termToERef[ptr_new_false];
+    PTRef t = logic.getTerm_true();
+    PTRef f = logic.getTerm_false();
+    enode_store[t].setConstant(t);
+    enode_store[f].setConstant(f);
+
+    enode_store.ERef_True  = enode_store.termToERef[t];
+    enode_store.ERef_False = enode_store.termToERef[f];
     // add the term (= true false) to term store
     vec<PTRef> tmp;
     tmp.push(logic.getTerm_true());
@@ -213,6 +220,8 @@ public:
 
     bool  isDeduced(PTRef tr)   const    { return enode_store[tr].isDeduced(); }
     lbool getDeduced(PTRef tr)  const    { return enode_store[tr].getDeduced(); }
+
+    bool  isConstant(ERef er)   const    { return enode_store.ERef_True == er || enode_store.ERef_False == er; }
 
     void  setPolarity(PTRef tr, lbool p) { if (polarityMap.contains(tr)) { polarityMap[tr] = p; } else { polarityMap.insert(tr, p); } }
     lbool getPolarity(PTRef tr)          { return polarityMap[tr]; }

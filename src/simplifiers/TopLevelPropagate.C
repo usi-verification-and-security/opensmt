@@ -545,6 +545,8 @@ bool TopLevelPropagator::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& 
 #ifdef PEDANTIC_DEBUG
                 cerr << logic.printTerm(ctr.parent) << endl;
 #endif
+                // TODO each modified parent should be simplified once
+                logic.simplify(ctr.parent);
             }
             n_substs++;
             continue;

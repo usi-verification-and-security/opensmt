@@ -171,6 +171,8 @@ class Logic {
 
     // Implement logic-aware simplifications
     void        simplify           (SymRef& s, vec<PTRef>& args);
+    // Wrapper for simplifying terms
+    void        simplify           (PTRef& tr);
     PTRef       resolveTerm        (const char* s, vec<PTRef>& args);
     PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms, const char** msg);
 

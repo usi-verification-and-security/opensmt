@@ -209,6 +209,24 @@ PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args) {
     return rval;
 }
 
+// TODO Work on the refactoring to avoid replicating code
+void Logic::simplify(PTRef& tr) {
+    Pterm& t = getPterm(tr);
+    vec<PTRef> args;
+    for (int i = 0; i < t.size(); i++)
+        args.push(t[i]);
+    SymRef sr = t.symb();
+
+    simplify(sr, args);
+
+    const char** msg;
+    tr = insertTerm(t.symb(), args, msg);
+    if (tr == PTRef_Undef) {
+        cerr << msg << endl;
+        assert(false);
+    }
+}
+
 void Logic::simplify(SymRef& s, vec<PTRef>& args) {
     // First sort it
     if (sym_store[s].commutes())
@@ -343,7 +361,6 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
 #endif
             return;
         }
-        // Sorting is done at insertion time, no need to do it here
     }
     // Others, to be implemented:
     // - distinct

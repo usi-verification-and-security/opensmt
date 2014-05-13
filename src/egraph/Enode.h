@@ -208,6 +208,10 @@ public:
     void setExpHighestNode      ( ERef e )            { assert( isTerm() ); cgdata->exp_highest_node = e; }
     void setExpTimeStamp        ( const int t )       { assert( isTerm() ); cgdata->exp_time_stamp   = t; }
 //    friend class CgData;
+
+    void setConstant            (PTRef tr)            { assert(isTerm()); cgdata->constant = tr; }
+    PTRef getConstant           ()                    { assert(isTerm()); return cgdata->constant; }
+    void clearConstant          ()                    { assert(isTerm()); cgdata->constant = PTRef_Undef; }
 };
 
 

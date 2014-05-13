@@ -809,8 +809,10 @@ bool Egraph::mergeLoop( PtAsgn reason )
 #ifdef PEDANTIC_DEBUG
         cerr << "Unmergeable: " << logic.printTerm(en_p.getTerm()) << " [" << logic.printTerm(enode_store[en_p.getRoot()].getTerm()) << "] "
                                 << logic.printTerm(en_q.getTerm()) << " [" << logic.printTerm(enode_store[en_q.getRoot()].getTerm()) << "]" << endl;
-
-        cerr << "Due to " << logic.printTerm(reason_inequality.tr) << endl;
+        if (reason_inequality.tr != PTRef_Undef)
+            cerr << "Due to " << logic.printTerm(reason_inequality.tr) << endl;
+        else
+            cerr << "Due to different constants" << endl;
 #endif
         // Conflict detected. We should retrieve the explanation
         // We have to distinguish 2 cases. If the reason for the
@@ -826,14 +828,11 @@ bool Egraph::mergeLoop( PtAsgn reason )
         ERef enr_qroot = en_q.getRoot();
 
         if ( reason_inequality.tr == PTRef_Undef ) {
-            assert(false);
             Enode& en_proot = enode_store[enr_proot];
             Enode& en_qroot = enode_store[enr_qroot];
-
-            assert( sym_store[term_store[en_proot.getTerm()].symb()].isConstant() );
-            assert( sym_store[term_store[en_qroot.getTerm()].symb()].isConstant() );
-
-            assert( en_proot.getTerm() != en_qroot.getTerm() );
+            assert(en_proot.getConstant() != PTRef_Undef);
+            assert(en_qroot.getConstant() != PTRef_Undef);
+            assert(enr_proot != enr_qroot);
 #ifdef PRODUCE_PROOF
             if ( config.produce_inter > 0 ) {
                 cgraph.setConf( p->getRoot( )->getConstant( )
@@ -853,8 +852,9 @@ bool Egraph::mergeLoop( PtAsgn reason )
             // 3. why p and q are equal
             exp_pending.push( en_q.getTerm() );
             exp_pending.push( en_p.getTerm() );
-
+#ifdef PEDANTIC_DEBUG
             cerr << "Explain XXX" << endl;
+#endif
             initDup1( );
             expExplain( );
             doneDup1( );
@@ -1420,36 +1420,44 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
 //    cerr << "Asserting equality of the following enodes: " << endl
 //         << enode_store.printEnode(x) << endl
 //         << enode_store.printEnode(y) << endl;
+    if (enode_store[x].isTerm())
+        cerr << "Asserting equality of " << logic.printTerm(enode_store[x].getTerm()) << " and "
+             << logic.printTerm(enode_store[y].getTerm()) << endl;
+    cerr << "x size is " << enode_store[x].getSize() << endl;
+    cerr << "x isTerm is " << enode_store[x].isTerm() << endl;
+    cerr << "x isConstant is " << isConstant(x) << endl;
     assert( checkParents( x ) );
     assert( checkParents( y ) );
     assert( checkInvariants( ) );
 #endif
 
     // This is weird.  If I get the references here and change them afterwards, the cgdata will not be correct.
-//    Enode& en_x = enode_store[x];
-//    Enode& en_y = enode_store[y];
+    Enode& an_x = enode_store[x];
+    Enode& an_y = enode_store[y];
 
-//    assert( !en_x.isConstant( ) || !en_y.isConstant( ) );
-//    assert( !en_x.isConstant( ) || en_x.getSize( ) == 1 );
-//    assert( !y->isConstant( ) || y->getSize( ) == 1 );
-    assert( enode_store[x].getRoot( ) != enode_store[y].getRoot( ) );
-    assert( x == enode_store[x].getRoot( ) );
-    assert( y == enode_store[y].getRoot( ) );
+    if (an_x.isTerm()) {
+        assert( !isConstant(x) || !isConstant(y) );
+        assert( !isConstant(x) || an_x.getSize() == 1 );
+        assert( !isConstant(y) || an_y.getSize() == 1 );
+    }
+    assert( an_x.getRoot( ) != an_y.getRoot( ) );
+    assert( x == an_x.getRoot( ) );
+    assert( y == an_y.getRoot( ) );
 
   // Swap x,y if y has a larger eq class
-    if ( enode_store[x].getSize( ) < enode_store[y].getSize( ) )
-//    || en_x.isConstant( ) )
+    if ( an_x.getSize() < an_y.getSize()
+        || (an_x.isTerm() && isConstant(x)) )
     {
         ERef tmp = x;
         x = y;
         y = tmp;
     }
-        // Get the references right here
+    // Get the references right here
     Enode& en_x = enode_store[x];
     Enode& en_y = enode_store[y];
 
     assert(en_x.type() == en_y.type());
-//    assert( !x->isConstant( ) );
+    assert(!en_x.isTerm() || !isConstant(x));
 
     // TODO:
     // Propagate equalities to other ordinary theories
@@ -1585,16 +1593,15 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     checkParents(x);
 #endif
     // Store info about the constant
-//    if ( en_y.getConstant( ) != E) {
-//        assert( en_x.getConstant( ) == NULL );
-//        x->setConstant( y->getConstant( ) );
-//  }
-  // Store info about the constant
-//  else if ( x->getConstant( ) != NULL )
-//  {
-//    assert( y->getConstant( ) == NULL );
-//    y->setConstant( x->getConstant( ) );
-//  }
+    if (en_y.isTerm() && isConstant(y)) {
+        assert(!isConstant(x));
+        en_x.setConstant( en_y.getConstant() );
+    }
+    // Store info about the constant
+    else if (en_x.isTerm() && isConstant(x)) {
+        assert(!isConstant(y));
+        en_y.setConstant(en_x.getConstant());
+    }
 
   // Push undo record
     undo_stack_main.push( Undo(MERGE,y) );
@@ -1915,23 +1922,21 @@ skip_signature_removal:
     }
 
 
-//    if ( en_y.getConstant() != NULL )
-//  {
-//    Enode * yc = y->getConstant( );
-//    Enode * xc = x->getConstant( );
-//    (void)xc;
-//    assert( yc == xc );
-    // Invariant: the constant comes from one class only
-    // No merge can occur beteween terms that point to the
-    // same constant, as they would be in the same class already
-//    assert( ( yc->getRoot( ) == y && xc->getRoot( ) != x )
-//	 || ( yc->getRoot( ) != y && xc->getRoot( ) == x ) );
-    // Determine from which class the constant comes from
-//    if ( yc->getRoot( ) == y )
-//      x->setConstant( NULL );
-//    else
-//      y->setConstant( NULL );
-//  }
+    if (isConstant(y)) {
+        PTRef yc = en_y.getConstant();
+        PTRef xc = en_x.getConstant();
+        assert( yc == xc );
+        // Invariant: the constant comes from one class only
+        // No merge can occur beteween terms that point to the
+        // same constant, as they would be in the same class already
+//        assert( ( yc->getRoot( ) == y && xc->getRoot( ) != x )
+//             || ( yc->getRoot( ) != y && xc->getRoot( ) == x ) );
+        // Determine from which class the constant comes from
+        if ( enode_store[yc].getRoot() == y )
+            en_x.clearConstant();
+        else
+            en_y.clearConstant();
+    }
 
   //
   // TODO: unmerge for ordinary theories
@@ -2041,17 +2046,29 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r)
 
     ERef p = enode_store[x].getRoot();
     ERef q = enode_store[y].getRoot();
+
+#ifdef PEDANTIC_DEBUG
+    if (enode_store[x].isTerm()) {
+        cerr << "Checking unmergeability of "
+             << logic.printTerm(enode_store[x].getTerm())
+             << " [" << logic.printTerm(enode_store[p].getTerm())
+             << "] and "
+             << logic.printTerm(enode_store[y].getTerm())
+             << " [" << logic.printTerm(enode_store[q].getTerm())
+             << "]" << endl;
+    }
+#endif
+
     // If they are in the same class, they can merge
     if ( p == q ) return false;
     // Check if they have different constants. It is sufficient
     // to check that they both have a constant. It is not
     // possible that the constant is the same. In fact if it was
     // the same, they would be in the same class, but they are not
-
-//  if ( p->getConstant( ) != NULL && q->getConstant( ) != NULL ) return true;
     // Check if they are part of the same distinction (general distinction)
     Enode& en_p = enode_store[p];
     Enode& en_q = enode_store[q];
+    if ( en_p.isTerm() && en_p.getConstant() != PTRef_Undef && en_q.getConstant() != PTRef_Undef) return true;
     dist_t intersection = ( en_p.getDistClasses( ) & en_q.getDistClasses( ) );
 
     if ( intersection ) {
