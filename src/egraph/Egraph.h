@@ -133,7 +133,7 @@ public:
     expParent.insert(ptr_new_true, PTRef_Undef);
     expParent.insert(ptr_new_false, PTRef_Undef);
     expRoot.insert(ptr_new_true, ptr_new_true);
-    expRoot.insert(ptr_new_false, ptr_new_true);
+    expRoot.insert(ptr_new_false, ptr_new_false);
     expClassSize.insert(ptr_new_true, 1);
     expClassSize.insert(ptr_new_false, 1);
     expTimeStamp.insert(ptr_new_true, 0);

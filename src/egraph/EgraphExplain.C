@@ -244,6 +244,8 @@ void Egraph::expExplainAlongPath (PTRef x, PTRef y) {
 #endif
     while ( v != to ) {
         PTRef p = expParent[v];
+        if (p == PTRef_Undef)
+            cerr << "weirdness " << logic.printTerm(v) << endl;
         assert(p != PTRef_Undef);
         PtAsgn r = expReason[v];
 
