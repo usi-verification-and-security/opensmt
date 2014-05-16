@@ -67,6 +67,7 @@ Logic::Logic(SMTConfig& c, SStore& s, SymStore& t, PtStore& pt) :
     if (tr == SymRef_Undef) { assert(false); }
     if (sym_store[tr].setRightAssoc() == false) { assert(false); } // TODO: Remove and clean
     sym_store[tr].setNoScoping();
+    sym_store[tr].setCommutes();
     sym_EQ = tr;
     equalities.insert(sym_EQ, true);
 
@@ -80,17 +81,20 @@ Logic::Logic(SMTConfig& c, SStore& s, SymStore& t, PtStore& pt) :
     if (tr == SymRef_Undef) { assert(false); }
     if (sym_store[tr].setLeftAssoc() == false) assert(false);
     sym_store[tr].setNoScoping();
+    sym_store[tr].setCommutes();
     sym_AND = tr;
 
     tr = sym_store.newSymb(tk_or, params, &msg);
     if (tr == SymRef_Undef) { assert(false); }
     if (sym_store[tr].setLeftAssoc() == false) assert(false);
     sym_store[tr].setNoScoping();
+    sym_store[tr].setCommutes();
     sym_OR = tr;
 
     tr = sym_store.newSymb(tk_xor, params, &msg);
     if (tr == SymRef_Undef) { assert(false); }
     if (sym_store[tr].setLeftAssoc() == false) assert(false);
+    sym_store[tr].setCommutes();
     sym_store[tr].setNoScoping();
     sym_XOR = tr;
 
@@ -98,6 +102,7 @@ Logic::Logic(SMTConfig& c, SStore& s, SymStore& t, PtStore& pt) :
     if (tr == SymRef_Undef) { assert(false); }
     if (sym_store[tr].setPairwise() == false) assert(false);
     sym_store[tr].setNoScoping();
+    sym_store[tr].setCommutes();
     sym_DISTINCT = tr;
 
     params.push(sort_store["Bool 0"]);
@@ -195,6 +200,116 @@ bool Logic::declare_sort_hook(Sort* s) {
     return true;
 }
 
+//
+// This method is currently under development
+//
+PTRef Logic::simplifyTree(PTRef tr)
+{
+    vec<pi> queue;
+    Map<PTRef,bool,PTRefHash> processed;
+    queue.push(pi(tr));
+    while (queue.size() != 0) {
+        int i = queue.size()-1;
+        if (processed.contains(queue[i].x)) {
+            queue.pop();
+            continue;
+        }
+        bool unprocessed_children = false;
+        if (queue[i].done == false) {
+            cerr << "looking at term num " << queue[i].x.x << endl;
+            Pterm& t = getPterm(queue[i].x);
+            for (int j = 0; j < t.size(); j++) {
+                PTRef cr = t[j];
+                if (!processed.contains(cr)) {
+                    unprocessed_children = true;
+                    queue.push(pi(cr));
+                    cerr << "pushing child " << cr.x << endl;
+                }
+            }
+            queue[i].done = true;
+        }
+        if (unprocessed_children) continue;
+
+        cerr << "Found a node " << queue[i].x.x << endl;
+        cerr << "Before simplification it looks like " << term_store.printTerm(queue[i].x) << endl;
+        // (1) Simplify in place
+        // (2) Check if my children (potentially simplified now) exist in
+        //     term store and if so, replace them with the term store
+        //     representative
+        // (3) If I am an `and' or an `or' and I only have a single child,
+        //     replace myself with that term (in place)
+        simplify(queue[i].x);
+        cerr << "Simplified the node.  Result is " << term_store.printTerm(queue[i].x, true) << endl;
+        Pterm& t = getPterm(queue[i].x);
+        // (2)
+        if (t.size() > 0)
+            cerr << "Now looking into the children of " << queue[i].x.x << endl;
+        else
+            cerr << "The node " << queue[i].x.x << " has no children" << endl;
+        for (int e = 0; e < t.size(); e++) {
+            PTRef cr = t[e];
+            cerr << "child n. " << e << " is " << cr.x << endl;
+            assert(cr != queue[i].x);
+            Pterm& c = getPterm(cr);
+            PTLKey k;
+            k.sym = c.symb();
+            for (int j = 0; j < c.size(); j++)
+                k.args.push(c[j]);
+            if (!isBooleanOperator(k.sym)) {
+                cerr << cr.x << " is not a boolean operator ";
+                assert(term_store.cplx_map.contains(k));
+                cerr << "and it maps to " << term_store.cplx_map[k].x << endl;
+                t[e] = term_store.cplx_map[k];
+                assert(t[e] != queue[i].x);
+            } else {
+                cerr << cr.x << " is a boolean operator";
+                assert(term_store.bool_map.contains(k));
+                cerr << " and it maps to " << term_store.bool_map[k].x << endl;
+                t[e] = term_store.bool_map[k];
+                assert(t[e] != queue[i].x);
+                // (3)
+                Pterm& c_canon = getPterm(t[e]);
+                if (c_canon.size() == 1 && (isAnd(cr) || isOr(cr))) {
+                    t[e] = c_canon[0];
+                    assert(t[e] != queue[i].x);
+                }
+            }
+        }
+        cerr << "After processing the children ended up with node " << term_store.printTerm(queue[i].x, true) << endl;
+        simplify(queue[i].x);
+        cerr << "-> which was now simplified to " << term_store.printTerm(queue[i].x, true) << endl;
+        processed.insert(queue[i].x, true);
+        // Make sure my key is in term hash
+        cerr << "Making sure " << queue[i].x.x << " is in term_store hash" << endl;
+        PTLKey k;
+        cerr << "Pushing symb " << t.symb().x << " to hash key" << endl;
+        k.sym = t.symb();
+        for (int j = 0; j < t.size(); j++) {
+            cerr << "Pushing arg " << t[j].x << " to hash key" << endl;
+            k.args.push(t[j]);
+        }
+        if (!isBooleanOperator(t.symb())) {
+            if (!term_store.cplx_map.contains(k))
+                term_store.cplx_map.insert(k, queue[i].x);
+                cerr << "sym " << k.sym.x << " args ";
+                for (int j = 0; j < k.args.size(); j++) {
+                    cerr << k.args[j].x << " ";
+                }
+                cerr << "maps to " << term_store.cplx_map[k].x << endl;
+        } else {
+            if (!term_store.bool_map.contains(k)) {
+                term_store.bool_map.insert(k, queue[i].x);
+                cerr << "sym " << k.sym.x << " args ";
+                for (int j = 0; j < k.args.size(); j++) {
+                    cerr << k.args[j].x << " ";
+                }
+                cerr << "maps to " << term_store.bool_map[k].x << endl;
+            }
+        }
+        queue.pop();
+    }
+}
+
 // The vec argument might be sorted!
 PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args) {
     SymRef sref = term_store.lookupSymbol(s, args);
@@ -209,24 +324,52 @@ PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args) {
     return rval;
 }
 
-// TODO Work on the refactoring to avoid replicating code
+//
+// Wrapper for simplify.  After running this, the reference should be checked
+// for other occurrences since simplification might result in duplicate terms.
+//
+// In order to avoid duplicate appearances of terms making solving after
+// cnfization slow a simplifyTree should be called to the subtree after calling
+// the method.
+//
 void Logic::simplify(PTRef& tr) {
     Pterm& t = getPterm(tr);
     vec<PTRef> args;
     for (int i = 0; i < t.size(); i++)
         args.push(t[i]);
     SymRef sr = t.symb();
-
+    SymRef sr_prev = sr;
     simplify(sr, args);
 
-    const char** msg;
-    tr = insertTerm(t.symb(), args, msg);
-    if (tr == PTRef_Undef) {
-        cerr << msg << endl;
-        assert(false);
+    // The if statement is not strictly speaking necessary, since checking for
+    // duplicates needs to be performed anyway after this step
+    if (sr != sr_prev && sr == getSym_true())
+        tr = getTerm_true();
+    else if (sr != sr_prev && sr == getSym_false())
+        tr = getTerm_false();
+    else {
+        t.sym = sr;
+        for (int i = 0 ; i < args.size(); i++) {
+            t[i] = args[i];
+            t.shrink(t.size()-args.size());
+        }
     }
 }
 
+//
+// Sort a term if it commutes.
+// The following simplifications implemented
+// (should be refactored to separate methods?):
+//  - `and':
+//    - drop constant true terms
+//    - convert an empty `and' to the constant term `true'
+//    - convert an `and' containing `false' to a replicate `false'
+//  - `or':
+//    - drop constant false terms
+//    - convert an empty `or' to a replicate `false' term
+//    - convert an `or' containing `true' to a replicate `true'
+//
+//
 void Logic::simplify(SymRef& s, vec<PTRef>& args) {
     // First sort it
     if (sym_store[s].commutes())

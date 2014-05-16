@@ -43,6 +43,13 @@ class Logic {
     PTRef               term_TRUE;
     PTRef               term_FALSE;
 
+    // For depth first search
+    class pi {
+      public:
+        PTRef x;
+        bool done;
+        pi(PTRef x_) : x(x_), done(false) {}
+    };
 
   public:
     static const char*  tk_true;
@@ -173,6 +180,8 @@ class Logic {
     void        simplify           (SymRef& s, vec<PTRef>& args);
     // Wrapper for simplifying terms
     void        simplify           (PTRef& tr);
+    // Simplify a term tree
+    PTRef       simplifyTree       (PTRef tr);
     PTRef       resolveTerm        (const char* s, vec<PTRef>& args);
     PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms, const char** msg);
 

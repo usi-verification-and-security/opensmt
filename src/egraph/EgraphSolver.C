@@ -1426,6 +1426,9 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     cerr << "x size is " << enode_store[x].getSize() << endl;
     cerr << "x isTerm is " << enode_store[x].isTerm() << endl;
     cerr << "x isConstant is " << isConstant(x) << endl;
+    cerr << "y size is " << enode_store[y].getSize() << endl;
+    cerr << "y isTerm is " << enode_store[y].isTerm() << endl;
+    cerr << "y isConstant is " << isConstant(y) << endl;
     assert( checkParents( x ) );
     assert( checkParents( y ) );
     assert( checkInvariants( ) );

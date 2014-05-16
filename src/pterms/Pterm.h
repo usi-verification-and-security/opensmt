@@ -91,6 +91,7 @@ class Pterm {
     friend class PtermAllocator;
     friend class PTStore;
     friend void termSort(Pterm&);
+    friend class Logic;
   public:
     // Note: do not use directly (no memory allocation for args)
     Pterm(const SymRef sym_, const vec<PTRef>& ps) : sym(sym_) {
@@ -156,9 +157,8 @@ class Pterm {
     void     setId(int i) { id = i; }
 
     void     shrink(int s)               { header.size -= s; }
-
+    void     copyTo(Pterm& to);
 };
-
 
 class PtPair {
   public:

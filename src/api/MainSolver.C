@@ -266,8 +266,8 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
 #endif
                 }
                 else {
-                    Pterm& c = logic.getPterm(cr);
 #ifdef PEDANTIC_DEBUG
+                    Pterm& c = logic.getPterm(cr);
                     cerr << "Node id " << c.getId() << " Processed before 2: " << logic.printTerm(cr) << endl;
                     cerr << "Current parent is " << logic.printTerm(qu[ci].x) << endl;
 #endif
