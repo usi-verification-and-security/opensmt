@@ -423,8 +423,9 @@ bool Interpret::checkSat(const char* cmd) {
 
         sstat rval = main_solver.simplifyFormulas(&msg);
         lbool res;
-        if (rval == s_Undef)
+        if (rval == s_Undef) {
             res = ts.solve();
+        }
         else if (rval == s_False)
             res = l_False;
         else if (rval == s_Undef)

@@ -46,14 +46,18 @@ int main(int argc, char** argv) {
     for (int i = 0; i < or1_t_old.size(); i++)
         cout << "    " << or1_t_old[i].x << endl;
 
-    logic.simplifyTree(or1);
-    Pterm& or1_t = logic.getPterm(or1);
-    cout << " - new term num " << or1.x << endl;
-    cout << " - new term size " << or1_t.size() << endl;
-    cout << " - new term children " << endl;
-    for (int i = 0; i < or1_t.size(); i++)
-        cout << "    " << or1_t[i].x << endl;
-    cerr << endl;
-    cout << "after: " << logic.printTerm(or1) << endl;
+    lbool res = logic.simplifyTree(or1);
+    if (res == l_True) cout << "simplified to true" << endl;
+    else if (res == l_False) cout << "simplified to false" << endl;
+    else {
+        Pterm& or1_t = logic.getPterm(or1);
+        cout << " - new term num " << or1.x << endl;
+        cout << " - new term size " << or1_t.size() << endl;
+        cout << " - new term children " << endl;
+        for (int i = 0; i < or1_t.size(); i++)
+            cout << "    " << or1_t[i].x << endl;
+        cerr << endl;
+        cout << "after: " << logic.printTerm(or1) << endl;
+    }
     return 0;
 }

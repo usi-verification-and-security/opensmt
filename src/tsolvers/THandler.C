@@ -399,19 +399,34 @@ Enode * THandler::getInterpolants( )
 }
 #endif
 
+//
+// It is in principle possible that the egraph contains deduceable literals
+// that the SAT solver is not aware of because they have been simplified due to
+// appearing only in clauses that are tautological.  We check this here, but it
+// would be better to remove them from egraph after simplifications are done.
+//
 Lit THandler::getDeduction(Lit& reason) {
-    PtAsgn_reason& e = egraph.getDeduction();
+    PtAsgn_reason e;
+    while (true) {
+        e = egraph.getDeduction();
 
-    if ( e.tr == PTRef_Undef ) {
-        reason = lit_Undef;
-        return lit_Undef;
+        if ( e.tr == PTRef_Undef ) {
+            reason = lit_Undef;
+            return lit_Undef;
+        }
+        assert(e.reason != PTRef_Undef);
+        assert(e.sgn != l_Undef);
+#ifdef PEDANTIC_DEBUG
+        if (!tmap.hasLit(e.tr))
+            cerr << "Missing (optimized) deduced literal ignored: " << logic.printTerm(e.tr) << endl;
+#endif
+        if (!tmap.hasLit(e.tr)) continue;
+        reason = tmap.getLit(e.reason);
+        assert(reason != lit_Undef);
+        assert(egraph.isDeduced(e.tr));
+        assert(egraph.getDeduced(e.tr) == e.sgn);
+        break;
     }
-    assert(e.reason != PTRef_Undef);
-    assert(e.sgn != l_Undef);
-    reason = tmap.getLit(e.reason);
-    assert(reason != lit_Undef);
-    assert(egraph.isDeduced(e.tr));
-    assert(egraph.getDeduced(e.tr) == e.sgn);
     return e.sgn == l_True ? tmap.getLit(e.tr) : ~tmap.getLit(e.tr);
 
 //  if ( config.certification_level > 1 )

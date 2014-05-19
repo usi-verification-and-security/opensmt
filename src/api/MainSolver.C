@@ -26,9 +26,10 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
     // For soundness it is important to run this until closure
     vec<PTRef> tlfacts;
     while (true) {
-        // For some reason opensmt1 reinitiates the substs on each
-        // iteration?  I'd think having it outside would be better but
-        // that way we're still slower. Let's see...
+        // For some reason opensmt1 reinitiates the substs on each iteration?
+        // I'd think having it outside would be better but that way we're still
+        // slower. Let's see...  This change is currently in place only because
+        // we need exactly same behavior for debugging performance problems.
         Map<PTRef,PTRef,PTRefHash> substs;
 #ifdef PEDANTIC_DEBUG
         cerr << "retrieving" << endl;
@@ -81,7 +82,10 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
             terms.clear();
             getTermList(fc.getRoot(), terms, logic);
             fc = simplifyEqualities(terms);
-            giveToSolver(fc.getRoot());
+            lbool res = logic.simplifyTree(fc.getRoot());
+            if (res == l_False) giveToSolver(logic.getTerm_true());
+            else if (res == l_Undef)
+                giveToSolver(fc.getRoot());
         }
 //        fc.setRoot(logic.mkAnd(tmp));
 #else

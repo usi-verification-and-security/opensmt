@@ -7,4 +7,4 @@ liblogics_la_SOURCES = Logic.h Logic.C
 
 #testsimplify_SOURCES = TestSimplify.C
 
-#testsimplify_LDADD = ../logics/liblogics.la ../pterms/libpterms.la ../symbols/libsymbols.la ../sorts/libsorts.la ../smtsolvers/libsmtsolvers.la
+#testsimplify_LDADD = liblogics.la ../pterms/libpterms.la ../symbols/libsymbols.la ../sorts/libsorts.la ../smtsolvers/libsmtsolvers.la

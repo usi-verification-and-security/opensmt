@@ -17,8 +17,9 @@ class TermMapper {
 
     // Return a "purified" term by removing sequence of nots.  sgn is false if sequence length is even, and true if it odd
     void getTerm(PTRef tr, PTRef& tr_clean, bool& sgn) const;
-    Var  getVar(PTRef) const;
-    Lit  getLit(PTRef) const;
+    Var  getVar(PTRef)    const;
+    Lit  getLit(PTRef)    const;
+    bool hasLit(PTRef tr) const { return termToVar.contains(tr); }
 #ifdef PEDANTIC_DEBUG
     Var  getVarDbg(int r) const { PTRef tr; tr = r; return termToVar[tr]; }
 #endif

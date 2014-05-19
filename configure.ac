@@ -158,6 +158,26 @@ else
 fi
 echo "setting sharing bug flag to...  ${config_sharebug:-none}"
 
+#
+# Enable simplification debug
+#
+AC_ARG_ENABLE(simplification_debug,
+  AC_HELP_STRING([--enable-simplification_debug],
+                 [enable simplification debug (default=off)]),
+  enablesimplification_debug=$enableval,
+  enablesimplification_debug="")
+
+if test $enablesimplification_debug = "yes";
+then
+  config_simplification_debug="-DSIMPLIFY_DEBUG"
+elif test $enablesimplification_debug = "no" ;
+then
+  config_simplification_debug=""
+else
+  config_simplification_debug=""
+fi
+echo "setting simplification_debug flag to...  ${config_simplification_debug:-none}"
+
 
 #
 # Enable GC debug
@@ -219,8 +239,8 @@ then
   exit
 fi
 
-AM_CFLAGS="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_statically $config_proof $config_stupid_theoryprop $config_sharebug"
-AM_CXXFLAGS="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_statically $config_proof $config_stupid_theoryprop $config_sharebug"
+AM_CFLAGS="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_statically $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug"
+AM_CXXFLAGS="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_statically $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug"
 CFLAGS=""
 CXXFLAGS=""
 

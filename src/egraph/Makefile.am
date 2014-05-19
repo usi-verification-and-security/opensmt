@@ -1,5 +1,5 @@
 noinst_LTLIBRARIES = libegraph.la
-noinst_PROGRAMS = test gctest test3 test4 test5
+#noinst_PROGRAMS = test gctest test3 test4 test5
 
 AM_CPPFLAGS=$(config_includedirs)
 
@@ -8,20 +8,20 @@ libegraph_la_SOURCES = Enode.h Enode.C EnodeStore.h EnodeStore.C \
                        EgraphSolver.C EgraphDebug.C EgraphExplain.C
 
 
-test_SOURCES = test.C
-test_LDADD = libegraph.la ../logics/liblogics.la ../pterms/libpterms.la ../smtsolvers/libsmtsolvers.la ../symbols/libsymbols.la ../sorts/libsorts.la
+#test_SOURCES = test.C
+#test_LDADD = libegraph.la ../logics/liblogics.la ../pterms/libpterms.la ../smtsolvers/libsmtsolvers.la ../symbols/libsymbols.la ../sorts/libsorts.la
 
-test3_SOURCES = test3.C
-test3_LDADD = libegraph.la ../logics/liblogics.la ../pterms/libpterms.la ../smtsolvers/libsmtsolvers.la ../symbols/libsymbols.la ../sorts/libsorts.la
+#test3_SOURCES = test3.C
+#test3_LDADD = libegraph.la ../logics/liblogics.la ../pterms/libpterms.la ../smtsolvers/libsmtsolvers.la ../symbols/libsymbols.la ../sorts/libsorts.la
 
-gctest_SOURCES = GCTest.C GCTest.h
-gctest_LDADD = libegraph.la ../logics/liblogics.la ../pterms/libpterms.la ../smtsolvers/libsmtsolvers.la ../symbols/libsymbols.la ../sorts/libsorts.la
+#gctest_SOURCES = GCTest.C GCTest.h
+#gctest_LDADD = libegraph.la ../logics/liblogics.la ../pterms/libpterms.la ../smtsolvers/libsmtsolvers.la ../symbols/libsymbols.la ../sorts/libsorts.la
 
-test4_SOURCES = test4.C
-test4_LDADD = libegraph.la ../logics/liblogics.la ../pterms/libpterms.la ../smtsolvers/libsmtsolvers.la ../symbols/libsymbols.la ../sorts/libsorts.la
+#test4_SOURCES = test4.C
+#test4_LDADD = libegraph.la ../logics/liblogics.la ../pterms/libpterms.la ../smtsolvers/libsmtsolvers.la ../symbols/libsymbols.la ../sorts/libsorts.la
 
-test5_SOURCES = test5.C
-test5_LDADD = libegraph.la ../logics/liblogics.la ../pterms/libpterms.la ../smtsolvers/libsmtsolvers.la ../symbols/libsymbols.la ../sorts/libsorts.la
+#test5_SOURCES = test5.C
+#test5_LDADD = libegraph.la ../logics/liblogics.la ../pterms/libpterms.la ../smtsolvers/libsmtsolvers.la ../symbols/libsymbols.la ../sorts/libsorts.la
 
 # libegraph_la_SOURCES = EgraphSolver.C \
 # 		       EgraphStore.C \

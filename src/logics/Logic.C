@@ -203,11 +203,12 @@ bool Logic::declare_sort_hook(Sort* s) {
 //
 // This method is currently under development
 //
-PTRef Logic::simplifyTree(PTRef tr)
+lbool Logic::simplifyTree(PTRef tr)
 {
     vec<pi> queue;
     Map<PTRef,bool,PTRefHash> processed;
     queue.push(pi(tr));
+    lbool last_val = l_Undef;
     while (queue.size() != 0) {
         int i = queue.size()-1;
         if (processed.contains(queue[i].x)) {
@@ -216,22 +217,27 @@ PTRef Logic::simplifyTree(PTRef tr)
         }
         bool unprocessed_children = false;
         if (queue[i].done == false) {
+#ifdef SIMPLIFY_DEBUG
             cerr << "looking at term num " << queue[i].x.x << endl;
+#endif
             Pterm& t = getPterm(queue[i].x);
             for (int j = 0; j < t.size(); j++) {
                 PTRef cr = t[j];
                 if (!processed.contains(cr)) {
                     unprocessed_children = true;
                     queue.push(pi(cr));
+#ifdef SIMPLIFY_DEBUG
                     cerr << "pushing child " << cr.x << endl;
+#endif
                 }
             }
             queue[i].done = true;
         }
         if (unprocessed_children) continue;
-
+#ifdef SIMPLIFY_DEBUG
         cerr << "Found a node " << queue[i].x.x << endl;
         cerr << "Before simplification it looks like " << term_store.printTerm(queue[i].x) << endl;
+#endif
         // (1) Simplify in place
         // (2) Check if my children (potentially simplified now) exist in
         //     term store and if so, replace them with the term store
@@ -239,16 +245,22 @@ PTRef Logic::simplifyTree(PTRef tr)
         // (3) If I am an `and' or an `or' and I only have a single child,
         //     replace myself with that term (in place)
         simplify(queue[i].x);
+#ifdef SIMPLIFY_DEBUG
         cerr << "Simplified the node.  Result is " << term_store.printTerm(queue[i].x, true) << endl;
+#endif
         Pterm& t = getPterm(queue[i].x);
         // (2)
+#ifdef SIMPLIFY_DEBUG
         if (t.size() > 0)
             cerr << "Now looking into the children of " << queue[i].x.x << endl;
         else
             cerr << "The node " << queue[i].x.x << " has no children" << endl;
+#endif
         for (int e = 0; e < t.size(); e++) {
             PTRef cr = t[e];
+#ifdef SIMPLIFY_DEBUG
             cerr << "child n. " << e << " is " << cr.x << endl;
+#endif
             assert(cr != queue[i].x);
             Pterm& c = getPterm(cr);
             PTLKey k;
@@ -256,15 +268,19 @@ PTRef Logic::simplifyTree(PTRef tr)
             for (int j = 0; j < c.size(); j++)
                 k.args.push(c[j]);
             if (!isBooleanOperator(k.sym)) {
-                cerr << cr.x << " is not a boolean operator ";
                 assert(term_store.cplx_map.contains(k));
+#ifdef SIMPLIFY_DEBUG
+                cerr << cr.x << " is not a boolean operator ";
                 cerr << "and it maps to " << term_store.cplx_map[k].x << endl;
+#endif
                 t[e] = term_store.cplx_map[k];
                 assert(t[e] != queue[i].x);
             } else {
-                cerr << cr.x << " is a boolean operator";
                 assert(term_store.bool_map.contains(k));
+#ifdef SIMPLIFY_DEBUG
+                cerr << cr.x << " is a boolean operator";
                 cerr << " and it maps to " << term_store.bool_map[k].x << endl;
+#endif
                 t[e] = term_store.bool_map[k];
                 assert(t[e] != queue[i].x);
                 // (3)
@@ -275,39 +291,59 @@ PTRef Logic::simplifyTree(PTRef tr)
                 }
             }
         }
+#ifdef SIMPLIFY_DEBUG
         cerr << "After processing the children ended up with node " << term_store.printTerm(queue[i].x, true) << endl;
+#endif
         simplify(queue[i].x);
+#ifdef SIMPLIFY_DEBUG
         cerr << "-> which was now simplified to " << term_store.printTerm(queue[i].x, true) << endl;
+#endif
         processed.insert(queue[i].x, true);
         // Make sure my key is in term hash
+#ifdef SIMPLIFY_DEBUG
         cerr << "Making sure " << queue[i].x.x << " is in term_store hash" << endl;
-        PTLKey k;
         cerr << "Pushing symb " << t.symb().x << " to hash key" << endl;
+#endif
+        PTLKey k;
         k.sym = t.symb();
         for (int j = 0; j < t.size(); j++) {
+#ifdef SIMPLIFY_DEBUG
             cerr << "Pushing arg " << t[j].x << " to hash key" << endl;
+#endif
             k.args.push(t[j]);
         }
         if (!isBooleanOperator(t.symb())) {
-            if (!term_store.cplx_map.contains(k))
+            if (!term_store.cplx_map.contains(k)) {
                 term_store.cplx_map.insert(k, queue[i].x);
+#ifdef SIMPLIFY_DEBUG
                 cerr << "sym " << k.sym.x << " args ";
                 for (int j = 0; j < k.args.size(); j++) {
                     cerr << k.args[j].x << " ";
                 }
                 cerr << "maps to " << term_store.cplx_map[k].x << endl;
+#endif
+            }
+            PTRef l = term_store.cplx_map[k];
+            if (isTrue(l)) last_val = l_True;
+            else if (isFalse(l)) last_val = l_False;
+            else last_val = l_Undef;
         } else {
             if (!term_store.bool_map.contains(k)) {
                 term_store.bool_map.insert(k, queue[i].x);
+#ifdef SIMPLIFY_DEBUG
                 cerr << "sym " << k.sym.x << " args ";
                 for (int j = 0; j < k.args.size(); j++) {
                     cerr << k.args[j].x << " ";
                 }
                 cerr << "maps to " << term_store.bool_map[k].x << endl;
+#endif
             }
+            assert(!isTrue(term_store.bool_map[k]) && !isFalse(term_store.bool_map[k]));
+            last_val = l_Undef;
         }
         queue.pop();
     }
+    return last_val;
 }
 
 // The vec argument might be sorted!
@@ -386,14 +422,14 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
             if (args[i] == getTerm_false()) {
                 args.clear();
                 s = getSym_false();
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
                 cerr << "and  -> false" << endl;
 #endif
                 return;
             } else if (args[i] != getTerm_true() && args[i] != p) {
                 args[j++] = p = args[i];
             } else {
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
                 cerr << "and -> drop" << endl;
 #endif
             }
@@ -402,7 +438,7 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
         if (dropped_args == args.size()) {
             s = getSym_true();
             args.clear();
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
             cerr << "and -> true" << endl;
 #endif
             return;
@@ -418,14 +454,14 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
             if (args[i] == getTerm_true()) {
                 args.clear();
                 s = getSym_true();
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
                 cerr << "or -> true" << endl;
 #endif
                 return;
             } else if (args[i] != getTerm_false() && args[i] != p) {
                 args[j++] = p = args[i];
             } else {
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
                 cerr << "or -> drop" << endl;
 #endif
             }
@@ -434,7 +470,7 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
         if (dropped_args == args.size()) {
             s = getSym_false();
             args.clear();
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
             cerr << "or -> false" << endl;
 #endif
             return;
@@ -452,7 +488,7 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
             args.clear();
             for (int i = 0; i < t.size(); i++)
                 args.push(t[i]);
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
             cerr << "eq -> second" << endl;
 #endif
             return;
@@ -463,7 +499,7 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
             s = t.symb();
             args.clear();
             args.push(old);
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
             cerr << "eq -> not second" << endl;
 #endif
             return;
@@ -474,7 +510,7 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
             args.clear();
             for (int i = 0; i < t.size(); i++)
                 args.push(t[i]);
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
             cerr << "eq -> first" << endl;
 #endif
             return;
@@ -485,21 +521,21 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
             s = t.symb();
             args.clear();
             args.push(old);
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
             cerr << "eq -> not first"<< endl;
 #endif
             return;
         } else if (args[0] == args[1]) {
             args.clear();
             s = getSym_true();
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
             cerr << "eq -> true" << endl;
 #endif
             return;
         } else if (args[0] == mkNot(args[1])) {
             args.clear();
             s = getSym_false();
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
             cerr << "eq -> false" << endl;
 #endif
             return;
@@ -518,7 +554,7 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
         args.clear();
         for (int i = 0; i < t.size(); i++)
             args.push(t[i]);
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
         cerr << " replace" << endl;
 #endif
     }

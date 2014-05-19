@@ -180,8 +180,10 @@ class Logic {
     void        simplify           (SymRef& s, vec<PTRef>& args);
     // Wrapper for simplifying terms
     void        simplify           (PTRef& tr);
-    // Simplify a term tree
-    PTRef       simplifyTree       (PTRef tr);
+    // Simplify a term tree.  Return l_True, l_False, or l_Undef, if
+    // simplification resulted in constant true or fale, or neither,
+    // respectively
+    lbool       simplifyTree       (PTRef tr);
     PTRef       resolveTerm        (const char* s, vec<PTRef>& args);
     PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms, const char** msg);
 
