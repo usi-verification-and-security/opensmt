@@ -199,6 +199,7 @@ void Egraph::expExplain(PTRef x, PTRef y, PTRef r)
 {
 #ifdef PEDANTIC_DEBUG
     cerr << "exp pending size " << exp_pending.size() << endl;
+    cerr << "explain pushing " << logic.printTerm(x) << " and " << logic.printTerm(y) << endl;
 #endif
     exp_pending.push(x);
     exp_pending.push(y);
@@ -217,6 +218,9 @@ void Egraph::expExplain(PTRef x, PTRef y, PTRef r)
 void Egraph::expCleanup() {
     // Destroy the eq classes of the explanation
     // May be reversed once debug's fine
+#ifdef PEDANTIC_DEBUG
+    cerr << "Cleanup called" << endl;
+#endif
     for (int i = exp_cleanup.size()-1; i >= 0; i--) {
         PTRef x = exp_cleanup[i];
         assert(expRoot.contains(x));
@@ -290,6 +294,9 @@ void Egraph::expEnqueueArguments(PTRef x, PTRef y) {
 
     // Simple explanation if they are arity 0 terms
     if ( term_store[x].nargs() == 0 ) {
+#ifdef PEDANTIC_DEBUG
+        cerr << "pushing " << logic.printTerm(x) << " and " << logic.printTerm(y) << endl;
+#endif
         exp_pending.push(x);
         exp_pending.push(y);
         return;
@@ -302,7 +309,7 @@ void Egraph::expEnqueueArguments(PTRef x, PTRef y) {
     for (uint32_t i = 0; i < term_store[x].nargs(); i++) {
         PTRef xptr = term_store[x][i];
         PTRef yptr = term_store[y][i];
-
+        cerr << "in loop pushing " << logic.printTerm(xptr) << " and " << logic.printTerm(yptr) << endl;
         exp_pending.push(xptr);
         exp_pending.push(yptr);
     }
@@ -338,7 +345,13 @@ void Egraph::expUnion(PTRef x, PTRef y) {
     expClassSize[x_exp_root] = sz;
 
     // Keep track of this union
+#ifdef PEDANTIC_DEBUG
+    cerr << "Union: cleanup " << logic.printTerm(x_exp_root) << endl;
+#endif
     exp_cleanup.push(x_exp_root);
+#ifdef PEDANTIC_DEBUG
+    cerr << "Union: cleanup " << logic.printTerm(y_exp_root) << endl;
+#endif
     exp_cleanup.push(y_exp_root);
 
 #ifdef PEDANTIC_DEBUG

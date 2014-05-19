@@ -844,12 +844,27 @@ bool Egraph::mergeLoop( PtAsgn reason )
             // We need explaining
             //
             // 1. why p and p->constant are equal
+#ifdef PEDANTIC_DEBUG
+            cerr << "constant pushing (1): "
+                 << logic.printTerm(en_p.getTerm()) << " and "
+                 << logic.printTerm(en_proot.getConstant()) << endl;
+#endif
             exp_pending.push( en_p.getTerm() );
-            exp_pending.push( en_proot.getTerm() );
+            exp_pending.push( en_proot.getConstant() );
             // 2. why q and q->constant are equal
+#ifdef PEDANTIC_DEBUG
+            cerr << "constant pushing (2): "
+                 << logic.printTerm(en_q.getTerm()) << " and "
+                 << logic.printTerm(en_qroot.getConstant()) << endl;
+#endif
             exp_pending.push( en_q.getTerm() );
-            exp_pending.push( en_qroot.getTerm() );
+            exp_pending.push( en_qroot.getConstant() );
             // 3. why p and q are equal
+#ifdef PEDANTIC_DEBUG
+            cerr << "constant pushing (3): "
+                 << logic.printTerm(en_q.getTerm()) << " and "
+                 << logic.printTerm(en_p.getTerm()) << endl;
+#endif
             exp_pending.push( en_q.getTerm() );
             exp_pending.push( en_p.getTerm() );
 #ifdef PEDANTIC_DEBUG
@@ -858,6 +873,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
             initDup1( );
             expExplain( );
             doneDup1( );
+            expCleanup(); // Should be organized better...
         }
         // Does the reason term correspond to disequality symbol
         else if ( logic.isDisequality(term_store[reason_inequality.tr].symb()) ) {

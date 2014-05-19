@@ -5,9 +5,11 @@
 # 2 - unknown
 
 #osmt=/u1/home/aehyvari/src/OpenSMT/opensmt-dev/TRUNK/opensmt
-osmt=/Users/aehyvari/src/OpenSMT/opensmt-dev/opensmt-dev/TRUNK/opensmt
+#osmt=/Users/aehyvari/src/OpenSMT/opensmt-dev/opensmt-dev/TRUNK/opensmt
+osmt=/home/hyvaeria/src/OpenSMT/opensmt_antti/opensmt-dev/TRUNK/opensmt
 #z3=/u1/home/aehyvari/src/z3/z3/bin/external/z3
-z3=/Users/aehyvari/src/z3/bin/external/z3
+#z3=/Users/aehyvari/src/z3/bin/external/z3
+z3=/home/hyvaeria/src/z3/z3/bin/external/z3
 
 if [[ $# != 1 ]]; then
     echo "Usage: $0 <file>"

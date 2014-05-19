@@ -294,6 +294,7 @@ AC_CONFIG_FILES([ \
 		  src/Makefile \
 		  src/parsers/Makefile \
 		  src/parsers/smt2new/Makefile \
+		  src/pterms/Makefile \
 		  src/cnfizers/Makefile \
 		  src/simplifiers/Makefile \
 		  src/smtsolvers/Makefile \
@@ -303,7 +304,6 @@ AC_CONFIG_FILES([ \
 		  src/sorts/Makefile \
 		  src/logics/Makefile \
 		  src/symbols/Makefile \
-		  src/pterms/Makefile \
 		  src/tsolvers/Makefile \
 		  src/tsolvers/emptysolver/Makefile \
 		  src/tsolvers/axdiffsolver/Makefile \
