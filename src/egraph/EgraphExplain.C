@@ -309,7 +309,9 @@ void Egraph::expEnqueueArguments(PTRef x, PTRef y) {
     for (uint32_t i = 0; i < term_store[x].nargs(); i++) {
         PTRef xptr = term_store[x][i];
         PTRef yptr = term_store[y][i];
+#ifdef PEDANTIC_DEBUG
         cerr << "in loop pushing " << logic.printTerm(xptr) << " and " << logic.printTerm(yptr) << endl;
+#endif
         exp_pending.push(xptr);
         exp_pending.push(yptr);
     }
