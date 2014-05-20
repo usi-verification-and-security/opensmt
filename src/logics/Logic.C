@@ -210,6 +210,7 @@ lbool Logic::simplifyTree(PTRef tr)
     queue.push(pi(tr));
     lbool last_val = l_Undef;
     while (queue.size() != 0) {
+        // First find a node with all children processed.
         int i = queue.size()-1;
         if (processed.contains(queue[i].x)) {
             queue.pop();
@@ -238,18 +239,16 @@ lbool Logic::simplifyTree(PTRef tr)
         cerr << "Found a node " << queue[i].x.x << endl;
         cerr << "Before simplification it looks like " << term_store.printTerm(queue[i].x) << endl;
 #endif
-        // (1) Simplify in place
-        // (2) Check if my children (potentially simplified now) exist in
+        // (1) Check if my children (potentially simplified now) exist in
         //     term store and if so, replace them with the term store
         //     representative
-        // (3) If I am an `and' or an `or' and I only have a single child,
-        //     replace myself with that term (in place)
-        simplify(queue[i].x);
-#ifdef SIMPLIFY_DEBUG
-        cerr << "Simplified the node.  Result is " << term_store.printTerm(queue[i].x, true) << endl;
-#endif
+        // (2) Simplify in place
+        // (3) See if the simplifications resulted in me changing, and if so,
+        //     look up from the table whether I'm already listed somewhere and add
+        //     a mapping to the canonical representative, or create a new entry for
+        //     me in the map.
         Pterm& t = getPterm(queue[i].x);
-        // (2)
+        // (1)
 #ifdef SIMPLIFY_DEBUG
         if (t.size() > 0)
             cerr << "Now looking into the children of " << queue[i].x.x << endl;
@@ -278,30 +277,30 @@ lbool Logic::simplifyTree(PTRef tr)
             } else {
                 assert(term_store.bool_map.contains(k));
 #ifdef SIMPLIFY_DEBUG
-                cerr << cr.x << " is a boolean operator";
-                cerr << " and it maps to " << term_store.bool_map[k].x << endl;
+                cerr << cr.x << " is a boolean operator"
+                     << " and it maps to " << term_store.bool_map[k].x << endl;
 #endif
                 t[e] = term_store.bool_map[k];
                 assert(t[e] != queue[i].x);
-                // (3)
-                Pterm& c_canon = getPterm(t[e]);
-                if (c_canon.size() == 1 && (isAnd(cr) || isOr(cr))) {
-                    t[e] = c_canon[0];
-                    assert(t[e] != queue[i].x);
-                }
             }
         }
 #ifdef SIMPLIFY_DEBUG
         cerr << "After processing the children ended up with node " << term_store.printTerm(queue[i].x, true) << endl;
 #endif
+        // (2) Simplify in place
+        PTRef orig = queue[i].x; // We need to save the original type in case the term gets simplified
         simplify(queue[i].x);
 #ifdef SIMPLIFY_DEBUG
         cerr << "-> which was now simplified to " << term_store.printTerm(queue[i].x, true) << endl;
+        if (orig != queue[i].x) {
+            assert(isTrue(queue[i].x) || isFalse(queue[i].x));
+            assert(isAnd(orig) || isOr(orig));
+        }
 #endif
         processed.insert(queue[i].x, true);
         // Make sure my key is in term hash
 #ifdef SIMPLIFY_DEBUG
-        cerr << "Making sure " << queue[i].x.x << " is in term_store hash" << endl;
+        cerr << "Making sure " << orig.x << " is in term_store hash" << endl;
         cerr << "Pushing symb " << t.symb().x << " to hash key" << endl;
 #endif
         PTLKey k;
@@ -312,18 +311,19 @@ lbool Logic::simplifyTree(PTRef tr)
 #endif
             k.args.push(t[j]);
         }
-        if (!isBooleanOperator(t.symb())) {
+        if (!isBooleanOperator(k.sym)) {
             if (!term_store.cplx_map.contains(k)) {
                 term_store.cplx_map.insert(k, queue[i].x);
 #ifdef SIMPLIFY_DEBUG
-                cerr << "sym " << k.sym.x << " args ";
+                cerr << "sym " << k.sym.x << " args <";
                 for (int j = 0; j < k.args.size(); j++) {
                     cerr << k.args[j].x << " ";
                 }
-                cerr << "maps to " << term_store.cplx_map[k].x << endl;
+                cerr << "> maps to " << term_store.cplx_map[k].x << endl;
 #endif
             }
             PTRef l = term_store.cplx_map[k];
+            // This is being kept on record in case the root term gets simplified
             if (isTrue(l)) last_val = l_True;
             else if (isFalse(l)) last_val = l_False;
             else last_val = l_Undef;
@@ -338,8 +338,11 @@ lbool Logic::simplifyTree(PTRef tr)
                 cerr << "maps to " << term_store.bool_map[k].x << endl;
 #endif
             }
-            assert(!isTrue(term_store.bool_map[k]) && !isFalse(term_store.bool_map[k]));
-            last_val = l_Undef;
+            PTRef l = term_store.bool_map[k];
+            // This is being kept on record in case the root term gets simplified
+            if (isTrue(l)) last_val = l_True;
+            else if (isFalse(l)) last_val = l_False;
+            else last_val = l_Undef;
         }
         queue.pop();
     }

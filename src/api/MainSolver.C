@@ -83,6 +83,17 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
             getTermList(fc.getRoot(), terms, logic);
             fc = simplifyEqualities(terms);
             lbool res = logic.simplifyTree(fc.getRoot());
+#ifdef SIMPLIFY_DEBUG
+            cerr << "After simplification got " << endl;
+            if (res == l_Undef)
+                 cerr << logic.printTerm(fc.getRoot()) << endl;
+            else if (res == l_False)
+                cerr << logic.printTerm(logic.getTerm_false()) << endl;
+            else if (res == l_True)
+                cerr << logic.printTerm(logic.getTerm_true()) << endl;
+            else
+                assert(false);
+#endif
             if (res == l_False) giveToSolver(logic.getTerm_true());
             else if (res == l_Undef)
                 giveToSolver(fc.getRoot());
