@@ -294,7 +294,7 @@ lbool Logic::simplifyTree(PTRef tr)
         cerr << "-> which was now simplified to " << term_store.printTerm(queue[i].x, true) << endl;
         if (orig != queue[i].x) {
             assert(isTrue(queue[i].x) || isFalse(queue[i].x));
-            assert(isAnd(orig) || isOr(orig) || isEquality(orig));
+            assert(isAnd(orig) || isOr(orig) || isEquality(orig) || isNot(orig));
         }
 #endif
         processed.insert(orig, true);
@@ -544,12 +544,29 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
             return;
         }
     }
+    if (isNot(s)) {
+        if (isTrue(args[0])) {
+            args.clear();
+            s = getSym_false();
+#ifdef SIMPLIFY_DEBUG
+            cerr << "not -> false" << endl;
+#endif
+            return;
+        }
+        if (isFalse(args[0])) {
+            args.clear();
+            s = getSym_true();
+#ifdef SIMPLIFY_DEBUG
+            cerr << "not -> true" << endl;
+#endif
+            return;
+        }
+    }
     // Others, to be implemented:
     // - distinct
     // - implies
     // - xor
     // - ite
-    // - not
     if (replace) {
         // Return whatever is the sole argument
         Pterm& t = getPterm(args[0]);
