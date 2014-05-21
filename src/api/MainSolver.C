@@ -47,6 +47,9 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         cerr << "substituting" << endl;
 #endif
         if (!tlp.varsubstitute(root, substs)) break;
+        lbool res = logic.simplifyTree(root);
+        if (res == l_True) root = logic.getTerm_true(); // Trivial problem
+        else if (res == l_False) root = logic.getTerm_false(); // Trivial problem
     }
 #ifdef PEDANTIC_DEBUG
 //    cerr << "Stored top level facts not to be simplified away: " << endl;
@@ -94,7 +97,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
             else
                 assert(false);
 #endif
-            if (res == l_False) giveToSolver(logic.getTerm_true());
+            if (res == l_False) giveToSolver(logic.getTerm_false());
             else if (res == l_Undef)
                 giveToSolver(fc.getRoot());
         }

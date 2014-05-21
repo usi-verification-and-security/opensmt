@@ -294,10 +294,10 @@ lbool Logic::simplifyTree(PTRef tr)
         cerr << "-> which was now simplified to " << term_store.printTerm(queue[i].x, true) << endl;
         if (orig != queue[i].x) {
             assert(isTrue(queue[i].x) || isFalse(queue[i].x));
-            assert(isAnd(orig) || isOr(orig));
+            assert(isAnd(orig) || isOr(orig) || isEquality(orig));
         }
 #endif
-        processed.insert(queue[i].x, true);
+        processed.insert(orig, true);
         // Make sure my key is in term hash
 #ifdef SIMPLIFY_DEBUG
         cerr << "Making sure " << orig.x << " is in term_store hash" << endl;
@@ -414,7 +414,7 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
     if (sym_store[s].commutes())
         sort(args, LessThan_PTRef());
 
-    if (!isBooleanOperator(s)) return;
+    if (!isBooleanOperator(s) && !isEquality(s)) return;
 
     int dropped_args = 0;
     bool replace = false;
@@ -485,7 +485,7 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
     }
     if (isEquality(s)) {
         assert(args.size() == 2);
-        if (args[0] == getTerm_true()) {
+        if (isBooleanOperator(s) && (args[0] == getTerm_true())) {
             Pterm& t = getPterm(args[1]);
             s = t.symb();
             args.clear();
@@ -495,7 +495,7 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
             cerr << "eq -> second" << endl;
 #endif
             return;
-        } else if (args[0] == getTerm_false()) {
+        } else if (isBooleanOperator(s) && (args[0] == getTerm_false())) {
             PTRef old = args[1];
             PTRef tr = mkNot(args[1]);
             Pterm& t = getPterm(tr);
@@ -506,7 +506,7 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
             cerr << "eq -> not second" << endl;
 #endif
             return;
-        } else if (args[1] == getTerm_true()) {
+        } else if (isBooleanOperator(s) && (args[1] == getTerm_true())) {
             args.clear();
             Pterm& t = getPterm(args[0]);
             s = t.symb();
@@ -517,7 +517,7 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
             cerr << "eq -> first" << endl;
 #endif
             return;
-        } else if (args[1] == getTerm_false()) {
+        } else if (isBooleanOperator(s) && (args[1] == getTerm_false())) {
             PTRef old = args[0];
             PTRef tr = mkNot(args[0]);
             Pterm& t = getPterm(tr);
@@ -535,7 +535,7 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
             cerr << "eq -> true" << endl;
 #endif
             return;
-        } else if (args[0] == mkNot(args[1])) {
+        } else if (isBooleanOperator(s) && (args[0] == mkNot(args[1]))) {
             args.clear();
             s = getSym_false();
 #ifdef SIMPLIFY_DEBUG

@@ -133,6 +133,7 @@ class Logic {
 
     // tr is a theory symbol if it is not a boolean variable, nor one of the standard
     // boolean operators (and, not, or, etc...)
+    // Note that equivalence over non-boolean terms is not a Boolean operator.
     bool        isTheorySymbol     (SymRef tr)     const;
     bool        isTheoryTerm       (PTRef tr)      const;
     bool        isBooleanOperator  (SymRef tr)     const;

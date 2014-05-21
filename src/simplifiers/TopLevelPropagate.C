@@ -511,49 +511,37 @@ bool TopLevelPropagator::computeCongruenceSubstitutions(PTRef root, vec<PtAsgn>&
 //}
 
 //
-// I will now implement here the second type of substitution aiming at minimizing the number of enode variables.
+// I will now implement here the second type of substitution aiming at
+// minimizing the number of enode variables.  The method does not simplify, so
+// to enable consecutive substitutions a simplification is required.
 //
 bool TopLevelPropagator::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& substs)
 {
     int n_substs = 0;
-    vec<PtChild> nodes;
-    nodes.push(PtChild(root, PTRef_Undef, -1));
+    vec<PTRef> nodes;
 
+    nodes.push(root);
     while (nodes.size() > 0) {
-        PtChild ctr = nodes.last(); nodes.pop();
-        if (substs.contains(ctr.tr)) {
-            PTRef nr = substs[ctr.tr];
-            if (contains(nr, ctr.tr)) continue;
+        PTRef tr = nodes.last();
+        nodes.pop();
+        Pterm& t = logic.getPterm(tr);
+        for (int i = 0; i < t.size(); i++) {
+            nodes.push(t[i]);
+            if (substs.contains(t[i])) {
+                PTRef nr = substs[t[i]];
+                if (contains(nr, t[i])) continue;
 #ifdef PEDANTIC_DEBUG
-            cerr << "Will substitute " << logic.printTerm(ctr.tr)
-                 << " with " << logic.printTerm(nr) << " in ";
-            assert(!contains(nr, ctr.tr));
+                cerr << "Will substitute " << logic.printTerm(t[i])
+                     << " with " << logic.printTerm(nr) << " in "
+                     << logic.printTerm(tr);
 #endif
-            // Do the substitution
-            if (ctr.parent == PTRef_Undef) {
+                t[i] = substs[t[i]];
 #ifdef PEDANTIC_DEBUG
-                cerr << logic.printTerm(root);
+                cerr << ": " << logic.printTerm(tr) << endl;
 #endif
-                root = nr;
-            }else{
-                Pterm& parent = logic.getPterm(ctr.parent);
-#ifdef PEDANTIC_DEBUG
-                cerr << logic.printTerm(ctr.parent) << ": ";
-#endif
-                assert(parent.size() > ctr.pos);
-                parent[ctr.pos] = nr;
-#ifdef PEDANTIC_DEBUG
-                cerr << logic.printTerm(ctr.parent) << endl;
-#endif
-                // TODO each modified parent should be simplified once
-                logic.simplify(ctr.parent);
+                n_substs++;
             }
-            n_substs++;
-            continue;
         }
-        Pterm& t = logic.getPterm(ctr.tr);
-        for (int i = 0; i < t.size(); i++)
-            nodes.push(PtChild(t[i], ctr.tr, i));
     }
     total_substs += n_substs;
     return n_substs > 0;
