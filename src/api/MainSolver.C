@@ -2,7 +2,7 @@
 #include "TreeOps.h"
 
 sstat MainSolver::simplifyFormulas(char** err_msg) {
-    sstat  state;
+    sstat  state = s_Undef;
     PTRef  root;
     // Think of something here to enable incrementality...
     if (!ts.solverEmpty()) {
@@ -75,7 +75,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         vec<PTRef> tmp;
         vec<PTRef> tlfs;
         ts.retrieveTopLevelFormulae(root, tlfs);
-        for (int i = 0; i < tlfs.size(); i++) {
+        for (int i = 0; (i < tlfs.size()) && (state == s_Undef); i++) {
             if (ts.checkDeMorgan(tlfs[i]) || ts.checkCnf(tlfs[i]) || ts.checkClause(tlfs[i]))
                 fc.setRoot(tlfs[i]);
             else {
@@ -97,9 +97,10 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
             else
                 assert(false);
 #endif
-            if (res == l_False) giveToSolver(logic.getTerm_false());
+            
+            if (res == l_False) state = giveToSolver(logic.getTerm_false());
             else if (res == l_Undef)
-                giveToSolver(fc.getRoot());
+                state = giveToSolver(fc.getRoot());
         }
 //        fc.setRoot(logic.mkAnd(tmp));
 #else

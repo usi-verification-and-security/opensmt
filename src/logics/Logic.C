@@ -411,7 +411,8 @@ void Logic::simplify(PTRef& tr) {
 //
 void Logic::simplify(SymRef& s, vec<PTRef>& args) {
     // First sort it
-    if (sym_store[s].commutes())
+    // XXX Some stupidity for debugging
+    if (sym_store[s].commutes() && !isAnd(s) && !isOr(s))
         sort(args, LessThan_PTRef());
 
     if (!isBooleanOperator(s) && !isEquality(s)) return;

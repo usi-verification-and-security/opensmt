@@ -2087,9 +2087,9 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
 	next_printout *= restart_inc;
     }
 #endif
-    // XXX
-//    opensmt::stop = true;
     status = search((int)nof_conflicts, (int)nof_learnts);
+    // XXX
+    opensmt::stop = true;
     nof_conflicts = restartNextLimit( nof_conflicts );
     cstop = cstop || ( max_conflicts != 0 
 	&& nLearnts() > (int)max_conflicts + (int)old_conflicts );
