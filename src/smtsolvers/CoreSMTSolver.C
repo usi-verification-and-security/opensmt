@@ -1735,6 +1735,15 @@ void CoreSMTSolver::reset( )
   |________________________________________________________________________________________________@*/
 lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 {
+#ifdef PEDANTIC_DEBUG
+  cerr << "Units when starting search:" << endl;
+  for (int i = 2; i < trail.size(); i++) {
+    char* name;
+    theory_handler.getVarName(var(trail[i]), &name);
+    cerr << name << endl;
+    ::free(name);
+  }
+#endif
 #ifdef PRODUCE_PROOF
   // Force disable theory propagation, since we don't
   // have at the moment we don't construct the reasons

@@ -237,6 +237,7 @@ struct ERef_vecEq {
 
 class EnodeAllocator : public RegionAllocator<uint32_t>
 {
+    enodeid_t n_enodes;
     static int enodeWord32Size(bool has_cgdata){
         if (has_cgdata) return (sizeof(Enode) + sizeof(CgData))/sizeof(int32_t);
         else            return sizeof(Enode)/sizeof(int32_t); }
@@ -245,11 +246,13 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
 
  public:
 
-    EnodeAllocator(uint32_t start_cap, Map<SigPair,ERef,SigHash,Equal<const SigPair&> >* st) : RegionAllocator<uint32_t>(start_cap), sig_tab(st) {}
-    EnodeAllocator() {}
+    EnodeAllocator(uint32_t start_cap, Map<SigPair,ERef,SigHash,Equal<const SigPair&> >* st) : RegionAllocator<uint32_t>(start_cap), n_enodes(0), sig_tab(st) {}
+    EnodeAllocator() : n_enodes(0) {}
 
     void moveTo(EnodeAllocator& to){
-        RegionAllocator<uint32_t>::moveTo(to); }
+        RegionAllocator<uint32_t>::moveTo(to);
+        to.n_enodes = n_enodes;
+    }
 
     // For symbols
     ERef alloc(SymRef sym) {
@@ -260,6 +263,7 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
         eid.x = v;
         Enode* tmp = new (lea(eid)) Enode(sym, eid);
         tmp->header.type = Enode::et_symb;
+        tmp->id = n_enodes++;
         return eid;
     }
 
@@ -276,6 +280,7 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
         Enode* tmp = new (lea(eid)) Enode(car, cdr, t, *this, eid, *sig_tab);
         tmp->header.type = t;
         tmp->pterm = ptr;
+        tmp->id = n_enodes++;
         return eid;
     }
 
@@ -394,6 +399,7 @@ public:
         elists.push(elid);
         referenced_by.push();
         referenced_by.last().push(owner);
+        
         return elid;
     }
 

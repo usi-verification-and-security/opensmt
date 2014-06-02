@@ -1115,19 +1115,27 @@ bool Egraph::assertDist( PTRef tr_d, PtAsgn tr_r )
     vec<ERef> nodes_changed;
     // Assign distinction flag to all arguments
     Pterm& pt_d = term_store[tr_d];
+#ifdef PEDANTIC_DEBUG
+    cerr << "Distinction check for " << logic.printTerm(tr_d) << endl;
+#endif
     for (int i = 0; i < pt_d.size(); i++) {
         PTRef tr_c = pt_d[i];
         ERef er_c = enode_store.termToERef[tr_c];
         Enode& en_c = enode_store[er_c];
         assert(en_c.isTerm());
-
-        enodeid_t root_id = enode_store[en_c.getRoot()].getCid();
+        enodeid_t root_id = enode_store[en_c.getRoot()].getId();
+#ifdef PEDANTIC_DEBUG
+        cerr << "  Checking distinction member " << logic.printTerm(tr_c) << " with root " << logic.printTerm(enode_store.ERefToTerm[en_c.getRoot()]) << " (" << root_id << ")" << endl;
+#endif
         if ( root_to_enode.contains(root_id) ) {
             // Two equivalent nodes in the same distinction. Conflict
             if (tr_r.tr != Eq_FALSE)
                 explanation.push(tr_r);
             // Extract the other node with the same root
             ERef p = root_to_enode[root_id];
+#ifdef PEDANTIC_DEBUG
+            cerr << "  Distinction members " << logic.printTerm(tr_c) << " and " << logic.printTerm(enode_store.ERefToTerm[p]) << " are equal" << endl;
+#endif
             // Check condition
             assert( enode_store[p].getRoot() == en_c.getRoot() );
             // Retrieve explanation
@@ -1152,9 +1160,9 @@ bool Egraph::assertDist( PTRef tr_d, PtAsgn tr_r )
         else
             root_to_enode.insert(root_id, er_c);
         // Activate distinction in e
-        Enode& root = enode_store[en_c.getRoot()];
-        root.setDistClasses( (root.getDistClasses( ) | SETBIT( index )) );
-        nodes_changed.push(en_c.getRoot());
+        en_c.setDistClasses(en_c.getDistClasses() | SETBIT(index));
+        nodes_changed.push(er_c);
+        cerr << "  Activating distinction of " << logic.printTerm(tr_c) << endl;
     }
     // Distinction pushed without conflict
     undo_stack_main.push(Undo(DIST, tr_d));
