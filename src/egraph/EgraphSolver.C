@@ -121,6 +121,7 @@ void Egraph::popBacktrackPoint() {
         ERef e = enode_store.termToERef[asgn.tr];
         Enode& en_e = enode_store[e];
         assert( en_e.isDeduced() );
+        cerr << "Clearing deduction " << logic.printTerm(asgn.tr) << endl;
         en_e.resetDeduced();
         deductions.pop();
     }
@@ -634,7 +635,7 @@ void Egraph::declareTermTree(PTRef tr)
 lbool Egraph::addEquality(PtAsgn pa) {
     Pterm& pt = term_store[pa.tr];
     assert(pt.size() == 2);
-    if (enode_store[pa.tr].getDeduced() == pa.sgn) {
+    if (enode_store[pa.tr].isDeduced() && enode_store[pa.tr].getDeduced() == pa.sgn) {
 #ifdef PEDANTIC_DEBUG
         cerr << "Assertion already deduced: " << logic.printTerm(pa.tr) << endl;
 #endif
@@ -676,17 +677,23 @@ lbool Egraph::addDisequality(PtAsgn pa) {
     Pterm& pt = term_store[pa.tr];
     bool res = true;
 
-    if (enode_store[pa.tr].getDeduced() == pa.sgn) {
+    if (enode_store[pa.tr].isDeduced() && enode_store[pa.tr].getDeduced() == pa.sgn) {
 #ifdef PEDANTIC_DEBUG
         cerr << "Assertion already deduced: " << logic.printTerm(pa.tr) << endl;
 #endif
         return l_Undef;
     }
+
     if (pt.size() == 2)
         res = assertNEq(pt[0], pt[1], pa);
     else
         res = assertDist(pa.tr, pa);
+
+#ifdef ENABLE_DIST_BOOL // This should be more efficient but osmt1 does not do it
     if (res == true) {
+#else
+    if (res == true && pt.size() == 2) {
+#endif
 #ifdef PEDANTIC_DEBUG
 //        cerr << "Asserting the equality to false/true" << endl;
 #endif
@@ -709,6 +716,12 @@ lbool Egraph::addDisequality(PtAsgn pa) {
 }
 
 bool Egraph::addTrue(PTRef term) {
+    if (enode_store[term].isDeduced() && enode_store[term].getDeduced() == l_True) {
+#ifdef PEDANTIC_DEBUG
+        cerr << "Assertion already deduced: " << logic.printTerm(term) << endl;
+#endif
+        return true;
+    }
     bool res = assertEq(term, logic.getTerm_true(), PtAsgn(term, l_True));
 #ifdef STATISTICS
     if (res == false)
@@ -720,6 +733,12 @@ bool Egraph::addTrue(PTRef term) {
 }
 
 bool Egraph::addFalse(PTRef term) {
+    if (enode_store[term].isDeduced() && enode_store[term].getDeduced() == l_False) {
+#ifdef PEDANTIC_DEBUG
+        cerr << "Assertion already deduced: " << logic.printTerm(term) << endl;
+#endif
+        return true;
+    }
     bool res = assertEq(term, logic.getTerm_false(), PtAsgn(term, l_False));
 #ifdef STATISTICS
     if (res == false)
