@@ -1235,8 +1235,8 @@ void Egraph::backtrackToStackSize ( size_t size ) {
 //                cerr << "Undo merge of list" << endl;
 //            else
 //                cerr << "Undo merge: " << logic.printTerm(en_e.getTerm()) << endl;
-            if (en_e.type() != Enode::et_list)
-                cerr << "Undo merge: " << logic.printTerm(en_e.getTerm()) << endl;
+//            if (en_e.type() != Enode::et_list)
+//                cerr << "Undo merge: " << logic.printTerm(en_e.getTerm()) << endl;
 #endif
             undoMerge( e );
             if ( en_e.isTerm( ) ) {
@@ -2032,10 +2032,10 @@ void Egraph::undoDisequality ( ERef x )
 #if VERBOSE
     cerr << "UD: Undoing distinction of " << x << " and " << y << endl;
 #elif PEDANTIC_DEBUG
-    if (en_x.isTerm())
-        cerr << "UD: Undoing distinction of "
-             << logic.printTerm(en_x.getTerm()) << " and "
-             << logic.printTerm(en_y.getTerm()) << endl;
+//    if (en_x.isTerm())
+//        cerr << "UD: Undoing distinction of "
+//             << logic.printTerm(en_x.getTerm()) << " and "
+//             << logic.printTerm(en_y.getTerm()) << endl;
 #endif
 
 #ifdef GC_DEBUG

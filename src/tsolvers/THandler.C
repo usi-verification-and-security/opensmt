@@ -276,7 +276,7 @@ void THandler::backtrack(int lev)
 
         if ( !tmap.theoryTerms.contains(e) ) continue;
 #ifdef PEDANTIC_DEBUG
-        printf("Backtracking term %s\n", logic.term_store.printTerm(e));
+//        printf("Backtracking term %s\n", logic.term_store.printTerm(e));
 #endif
         egraph.popBacktrackPoint( );
 

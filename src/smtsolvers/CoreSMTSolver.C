@@ -673,7 +673,9 @@ void CoreSMTSolver::cancelUntilVarTempDone( )
 {
   assert( cuvti == true );
   cuvti = false;
-
+#ifdef PEDANTIC_DEBUG
+  cerr << "restoring " << val_to_restore.size() << " lits to trail" << endl;
+#endif
   while ( val_to_restore.size( ) > 0 )
   {
     Lit p = lit_to_restore.last( );
@@ -879,7 +881,7 @@ void CoreSMTSolver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btleve
       Var v = var(p);
       assert(value(p) == l_True);
       // Backtracking the trail until v is the variable on the top
-      cancelUntilVarTempInit( v );
+      cancelUntilVar( v );
 
       vec< Lit > r;
       // Retrieving the reason
@@ -898,7 +900,6 @@ void CoreSMTSolver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btleve
       theory_handler.getReason( p, r, assigns );
 #endif
       assert(r.size() > 0);
-      cancelUntilVarTempDone();
 #ifdef STATISTICS
       tsolvers_time += cpuTime( ) - start;
 #endif
