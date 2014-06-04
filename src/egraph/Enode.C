@@ -9,7 +9,7 @@ Enode::Enode(SymRef tr_, ERef er_) : symb(tr_), er(er_) {
     header.type = et_symb;
     cid = cgid_ctr++;
     deduced = l_Undef;
-    has_polarity = false;
+//    has_polarity = false;
 }
 
 Enode::Enode(ERef car_, ERef cdr_,
@@ -18,7 +18,7 @@ Enode::Enode(ERef car_, ERef cdr_,
      : er(er_)
 {
     deduced = l_Undef;
-    has_polarity = false;
+//    has_polarity = false;
 
     header.type    = t;
     car            = car_;

@@ -2097,21 +2097,35 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
 	next_printout *= restart_inc;
     }
 #endif
+#ifdef PEDANTIC_DEBUG
+    cerr << "restart " << starts << endl;
+#endif
     status = search((int)nof_conflicts, (int)nof_learnts);
     // XXX
-//    opensmt::stop = true;
+//    if (starts == 2) opensmt::stop = true;
     nof_conflicts = restartNextLimit( nof_conflicts );
+#ifdef PEDANTIC_DEBUG
+    cerr << "nof_conflicts is " << nof_conflicts << endl;
+#endif
     cstop = cstop || ( max_conflicts != 0 
 	&& nLearnts() > (int)max_conflicts + (int)old_conflicts );
 
     if ( config.sat_use_luby_restart )
     {
-      if ( last_luby_k != luby_k )
+      if ( last_luby_k != luby_k ) {
 	nof_learnts *= 1.215;
+#ifdef PEDANTIC_DEBUG
+        cerr << "nof_conflicts (luby) is " << nof_conflicts << endl;
+#endif
+      }
       last_luby_k = luby_k;
     }
-    else
+    else {
       nof_learnts *= learntsize_inc;
+#ifdef PEDANTIC_DEBUG
+        cerr << "nof_conflicts is " << nof_conflicts << endl;
+#endif
+    }
   }
 
   // Added line

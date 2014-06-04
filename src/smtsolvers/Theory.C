@@ -552,7 +552,9 @@ void CoreSMTSolver::deduceTheory(vec<LitLev>& deductions)
         deductions.push(LitLev(ded, decisionLevel()));
 #endif
     }
+#ifndef IGNORE_DL_THEORYPROPAGATION
     sort<LitLev,LitLev_lt>(deductions, LitLev_lt());
+#endif
 #ifdef PEDANTIC_DEBUG
     int max_lev = -1;
     for (int i = 0; i < deductions.size(); i++) {

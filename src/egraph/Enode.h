@@ -108,7 +108,7 @@ class Enode
     ERef        car;
     ERef        cdr;
     lbool       deduced;
-    bool        has_polarity;
+//    bool        has_polarity;
     cgId        cid;            // The congruence id of the enode (defined also for symbols)
 
     // This is a trick to enable congruence data on only Enodes it is needed
@@ -161,7 +161,7 @@ public:
     void  setDeduced    (lbool v)       { assert(type() == et_term); deduced = v; }
     lbool getDeduced    ()        const { return deduced; }
     void  resetDeduced  ()              { deduced = l_Undef; }
-    bool  hasPolarity   ()        const { return has_polarity; }
+//    bool  hasPolarity   ()        const { return has_polarity; }
     SymRef getSymb      ()        const { assert(type() == et_symb); return symb; }
     PTRef getTerm       ()        const { assert(type() != et_symb && type() != et_list); return pterm; }
     ERef  getRoot       ()        const { if (type() == et_symb) return er; else return cgdata->root; }

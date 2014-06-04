@@ -157,7 +157,7 @@ class CoreSMTSolver : public SMTSolver
     double    clause_decay;       // Inverse of the clause activity decay factor.                                              (1 / 0.999)
     double    random_var_freq;    // The frequency with which the decision heuristic tries to choose a random variable.        (default 0.02)
     int       restart_first;      // The initial restart limit.                                                                (default 100)
-    double    restart_inc;        // The factor with which the restart limit is multiplied in each restart.                    (default 1.5)
+    double    restart_inc;        // The factor with which the restart limit is multiplied in each restart.                    (default 1.1)
     double    learntsize_factor;  // The intitial limit for learnt clauses is a factor of the original clauses.                (default 1 / 3)
     double    learntsize_inc;     // The limit for learnt clauses is multiplied with this factor each restart.                 (default 1.1)
     bool      expensive_ccmin;    // Controls conflict clause minimization.                                                    (default TRUE)

@@ -136,6 +136,9 @@ void Egraph::popBacktrackPoint() {
 //
 PtAsgn_reason& Egraph::getDeduction( ) {
 
+#ifdef PEDANTIC_DEBUG
+    cerr << "deductions available: " << deductions.size() - deductions_next << endl;
+#endif
     // Communicate UF deductions
     while ( deductions_next < deductions.size_( ) ) {
         PtAsgn_reason& pta = deductions[deductions_next++];
@@ -145,11 +148,14 @@ PtAsgn_reason& Egraph::getDeduction( ) {
         assert( en_e.isDeduced( ) );
         // If it has been pushed it is not a good candidate
         // for deduction
-        if ( en_e.hasPolarity( ) )
+        if ( hasPolarity(pta.tr) )
             continue;
 
 #ifdef STATISTICS
         tsolver_stats.deductions_sent ++;
+#ifdef PEDANTIC_DEBUG
+        cerr << "sent a deduction" << endl;
+#endif
 //    const int index = e->getDedIndex( );
 //    tsolvers_stats[ index ]->deductions_sent ++;
 #endif
@@ -173,7 +179,7 @@ PTRef Egraph::getSuggestion( )
     ERef e = enode_store.termToERef[tr];
     suggestions.pop();
     Enode& en_e = enode_store[e];
-    if ( en_e.hasPolarity( ) )
+    if ( hasPolarity(tr) )
       continue;
     if ( en_e.isDeduced( ) )
       continue;
@@ -195,7 +201,6 @@ void Egraph::getConflict( bool deduction, vec<PtAsgn>& cnfl )
     for (int i = 0; i < explanation.size(); i++)
         cnfl.push(explanation[i]);
 #ifdef STATISTICS
-    tsolver_stats.conflicts_sent++;
     if (deduction) {
         if (cnfl.size() > tsolver_stats.max_reas_size)
             tsolver_stats.max_reas_size = cnfl.size();
@@ -668,8 +673,7 @@ lbool Egraph::addEquality(PtAsgn pa) {
 #ifdef STATISTICS
     if (res == false)
         tsolver_stats.uns_calls++;
-    else
-        tsolver_stats.sat_calls++;
+    // The sat_calls is increased already in addTrue
 #endif
 
     return res == false ? l_False : l_Undef;
@@ -692,10 +696,11 @@ lbool Egraph::addDisequality(PtAsgn pa) {
         res = assertDist(pa.tr, pa);
 
 #ifdef ENABLE_DIST_BOOL // This should be more efficient but osmt1 does not do it
-    if (res == true) {
+    if (res == true)
 #else
-    if (res == true && pt.size() == 2) {
+    if (res == true && pt.size() == 2)
 #endif
+    {
 #ifdef PEDANTIC_DEBUG
 //        cerr << "Asserting the equality to false/true" << endl;
 #endif
@@ -710,8 +715,7 @@ lbool Egraph::addDisequality(PtAsgn pa) {
 #ifdef STATISTICS
     if (!res)
         tsolver_stats.uns_calls++;
-    else
-        tsolver_stats.sat_calls++;
+    // The sat_calls is increased already in addFalse
 #endif
 
     return res == false ? l_False : l_Undef;
@@ -728,8 +732,12 @@ bool Egraph::addTrue(PTRef term) {
 #ifdef STATISTICS
     if (res == false)
         tsolver_stats.uns_calls++;
-    else
+    else {
         tsolver_stats.sat_calls++;
+#ifdef PEDANTIC_DEBUG
+        cerr << "sat call" << endl;
+#endif
+    }
 #endif
     return res;
 }
@@ -745,8 +753,12 @@ bool Egraph::addFalse(PTRef term) {
 #ifdef STATISTICS
     if (res == false)
         tsolver_stats.uns_calls++;
-    else
+    else {
         tsolver_stats.sat_calls++;
+#ifdef PEDANTIC_DEBUG
+        cerr << "sat call" << endl;
+#endif
+    }
 #endif
     return res;
 }
@@ -2797,7 +2809,7 @@ void Egraph::faGarbageCollect() {
     checkRefConsistency();
 #endif
     relocAll(to);
-    if (config.verbosity() >= 2)
+    if (config.verbosity() >= 10)
         printf("Garbage collection:   %12d bytes => %12d bytes|\n",
                forbid_allocator.size()*ELAllocator::Unit_Size, to.size()*ELAllocator::Unit_Size);
     to.moveTo(forbid_allocator);

@@ -223,10 +223,21 @@ public:
 
     bool  isConstant(ERef er)   const    { return enode_store.ERef_True == er || enode_store.ERef_False == er; }
 
-    void  setPolarity(PTRef tr, lbool p) { if (polarityMap.contains(tr)) { polarityMap[tr] = p; } else { polarityMap.insert(tr, p); } }
+    void  setPolarity(PTRef tr, lbool p) {
+        if (polarityMap.contains(tr)) { polarityMap[tr] = p; }
+        else { polarityMap.insert(tr, p); }
+#ifdef PEDANTIC_DEBUG
+        cerr << "Setting polarity " << logic.printTerm(tr) << endl;
+#endif
+    }
     lbool getPolarity(PTRef tr)          { return polarityMap[tr]; }
     bool  hasPolarity(PTRef tr)          { if (polarityMap.contains(tr)) { return polarityMap[tr] != l_Undef; } else return false; }
-    void  clearPolarity(PTRef tr)        { polarityMap[tr] = l_Undef; }
+    void  clearPolarity(PTRef tr)        {
+        polarityMap[tr] = l_Undef;
+#ifdef PEDANTIC_DEBUG
+        cerr << "Clearing polarity " << logic.printTerm(tr) << endl;
+#endif
+    }
 
     size_t size() const { return enode_store.id_to_enode.size(); };
 

@@ -144,8 +144,8 @@ bool Logic::isTheorySymbol(SymRef tr) const {
 bool Logic::setLogic(const char* l) {
     if (strcmp(l, "QF_UF") == 0) {
         config.logic                    = QF_UF;
-        config.sat_restart_first        = 100;
-        config.sat_restart_inc          = 1.5;
+//        config.sat_restart_first        = 100;
+//        config.sat_restart_inc          = 1.5;
 
         is_set = true;
         name = "QF_UF";
