@@ -121,7 +121,9 @@ void Egraph::popBacktrackPoint() {
         ERef e = enode_store.termToERef[asgn.tr];
         Enode& en_e = enode_store[e];
         assert( en_e.isDeduced() );
+#ifdef PEDANTIC_DEBUG
         cerr << "Clearing deduction " << logic.printTerm(asgn.tr) << endl;
+#endif
         en_e.resetDeduced();
         deductions.pop();
     }
@@ -1181,7 +1183,9 @@ bool Egraph::assertDist( PTRef tr_d, PtAsgn tr_r )
         // Activate distinction in e
         en_c.setDistClasses(en_c.getDistClasses() | SETBIT(index));
         nodes_changed.push(er_c);
+#ifdef PEDANTIC_DEBUG
         cerr << "  Activating distinction of " << logic.printTerm(tr_c) << endl;
+#endif
     }
     // Distinction pushed without conflict
     undo_stack_main.push(Undo(DIST, tr_d));
