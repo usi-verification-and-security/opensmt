@@ -20,7 +20,6 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
     }
     // Framework for handling different logic related simplifications.
     // For soundness it is important to run this until closure
-    vec<PTRef> tlfacts;
     Map<PTRef,PTRef,PTRefHash> substs;
     while (true) {
 #ifdef PEDANTIC_DEBUG
@@ -43,14 +42,25 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         if (res == l_True) root = logic.getTerm_true(); // Trivial problem
         else if (res == l_False) root = logic.getTerm_false(); // Trivial problem
     }
+
+    vec<PtAsgn> tlfacts;
+    tlp.initCongruence(root);
+
+    while (true) {
+        if (!tlp.computeCongruenceSubstitutions(root, tlfacts)) {
+            root = logic.getTerm_false(); // trivial problem
+            break;
+        }
+        if (!tlp.substitute(root)) break;
+    }
+
     {
         // Add the top level facts to the formula
-        // XXX Fix this once debugging phase is over
-//        vec<PTRef> tmp;
-//        tmp.push(root);
-//        for (int i = 0; i < tlfacts.size(); i++)
-//            tmp.push(tlfacts[i]);
-//        root = logic.mkAnd(tmp);
+        vec<PTRef> tmp;
+        tmp.push(root);
+        for (int i = 0; i < tlfacts.size(); i++)
+            tmp.push(tlfacts[i].sgn == l_True ? tlfacts[i].tr : logic.mkNot(tlfacts[i].tr));
+        root = logic.mkAnd(tmp);
         vec<PtChild> terms;
         FContainer fc(root);
         expandItes(fc, terms);
