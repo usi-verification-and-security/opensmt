@@ -185,7 +185,7 @@ class Logic {
     // simplification resulted in constant true or fale, or neither,
     // respectively
     lbool       simplifyTree       (PTRef tr);
-    PTRef       resolveTerm        (const char* s, vec<PTRef>& args);
+    PTRef       resolveTerm        (const char* s, vec<PTRef>& args, char** msg);
     PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms, const char** msg);
 
 // Debugging

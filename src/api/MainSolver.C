@@ -9,11 +9,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         asprintf(err_msg, "Solver already contains a simplified problem.  Cannot continue for now");
         return s_Error; }
 
-    // XXX Disable this once debugging phase is over
-    vec<PTRef> tmp;
-    for (int i = formulas.size()-1; i >= 0; i--)
-        tmp.push(formulas[i]);
-    root = logic.mkAnd(tmp);
+    root = logic.mkAnd(formulas);
     PTRef trans = PTRef_Undef;
     trans = tlp.learnEqTransitivity(root);
     if (trans != PTRef_Undef) {
@@ -25,12 +21,8 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
     // Framework for handling different logic related simplifications.
     // For soundness it is important to run this until closure
     vec<PTRef> tlfacts;
+    Map<PTRef,PTRef,PTRefHash> substs;
     while (true) {
-        // For some reason opensmt1 reinitiates the substs on each iteration?
-        // I'd think having it outside would be better but that way we're still
-        // slower. Let's see...  This change is currently in place only because
-        // we need exactly same behavior for debugging performance problems.
-        Map<PTRef,PTRef,PTRefHash> substs;
 #ifdef PEDANTIC_DEBUG
         cerr << "retrieving" << endl;
         vec<PTRef> subst_vars;
@@ -51,11 +43,6 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         if (res == l_True) root = logic.getTerm_true(); // Trivial problem
         else if (res == l_False) root = logic.getTerm_false(); // Trivial problem
     }
-#ifdef PEDANTIC_DEBUG
-//    cerr << "Stored top level facts not to be simplified away: " << endl;
-//    for (int i = 0; i < tlfacts.size(); i++)
-//        cerr << logic.printTerm(tlfacts[i]) << endl;
-#endif
     {
         // Add the top level facts to the formula
         // XXX Fix this once debugging phase is over
@@ -71,45 +58,45 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         // tmp debug
         PTRef root = fc.getRoot();
         Pterm& r = logic.getPterm(root);
-#ifdef ENABLE_SHARING_BUG
-        vec<PTRef> tmp;
-        vec<PTRef> tlfs;
-        ts.retrieveTopLevelFormulae(root, tlfs);
-        for (int i = 0; (i < tlfs.size()) && (state == s_Undef); i++) {
-            if (ts.checkDeMorgan(tlfs[i]) || ts.checkCnf(tlfs[i]) || ts.checkClause(tlfs[i]))
-                fc.setRoot(tlfs[i]);
-            else {
-                fc.setRoot(tlfs[i]);
-                fc = propFlatten(fc);
-            }
-            terms.clear();
-            getTermList(fc.getRoot(), terms, logic);
-            fc = simplifyEqualities(terms);
-            lbool res = logic.simplifyTree(fc.getRoot());
-#ifdef SIMPLIFY_DEBUG
-            cerr << "After simplification got " << endl;
-            if (res == l_Undef)
-                 cerr << logic.printTerm(fc.getRoot()) << endl;
-            else if (res == l_False)
-                cerr << logic.printTerm(logic.getTerm_false()) << endl;
-            else if (res == l_True)
-                cerr << logic.printTerm(logic.getTerm_true()) << endl;
-            else
-                assert(false);
-#endif
-            
-            if (res == l_False) state = giveToSolver(logic.getTerm_false());
-            else if (res == l_Undef)
-                state = giveToSolver(fc.getRoot());
-        }
+//#ifdef ENABLE_SHARING_BUG
+//        vec<PTRef> tmp;
+//        vec<PTRef> tlfs;
+//        ts.retrieveTopLevelFormulae(root, tlfs);
+//        for (int i = 0; (i < tlfs.size()) && (state == s_Undef); i++) {
+//            if (ts.checkDeMorgan(tlfs[i]) || ts.checkCnf(tlfs[i]) || ts.checkClause(tlfs[i]))
+//                fc.setRoot(tlfs[i]);
+//            else {
+//                fc.setRoot(tlfs[i]);
+//                fc = propFlatten(fc);
+//            }
+//            terms.clear();
+//            getTermList(fc.getRoot(), terms, logic);
+//            fc = simplifyEqualities(terms);
+//            lbool res = logic.simplifyTree(fc.getRoot());
+//#ifdef SIMPLIFY_DEBUG
+//            cerr << "After simplification got " << endl;
+//            if (res == l_Undef)
+//                 cerr << logic.printTerm(fc.getRoot()) << endl;
+//            else if (res == l_False)
+//                cerr << logic.printTerm(logic.getTerm_false()) << endl;
+//            else if (res == l_True)
+//                cerr << logic.printTerm(logic.getTerm_true()) << endl;
+//            else
+//                assert(false);
+//#endif
+//            
+//            if (res == l_False) state = giveToSolver(logic.getTerm_false());
+//            else if (res == l_Undef)
+//                state = giveToSolver(fc.getRoot());
+//        }
 //        fc.setRoot(logic.mkAnd(tmp));
-#else
+//#else
         fc = propFlatten(fc);
         terms.clear();
         getTermList(fc.getRoot(), terms, logic);
         fc = simplifyEqualities(terms);
         state = giveToSolver(fc.getRoot());
-#endif
+//#endif
     }
 end:
     return state;
@@ -208,7 +195,7 @@ MainSolver::FContainer MainSolver::rewriteMaxArity(MainSolver::FContainer fc, Ma
         }
         if (unprocessed_children) continue;
         queue.pop();
-        assert(logic.isBooleanOperator(tr));
+        assert(logic.isBooleanOperator(tr) || logic.isTrue(tr) || logic.isFalse(tr));
         PTRef result;
         if (logic.isAnd(tr) || logic.isOr(tr))
             result = mergeEnodeArgs(tr, cache, occs).getRoot();

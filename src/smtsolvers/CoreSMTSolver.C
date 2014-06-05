@@ -125,7 +125,11 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
   , max_dl_debug          (0)
   , analyze_cnt           (0)
 #endif
-{ }
+{
+  vec< Lit > fc;
+  fc.push( lit_Undef );
+  fake_clause = Clause_new( fc );
+}
 
 void
 CoreSMTSolver::initialize( )
@@ -135,9 +139,6 @@ CoreSMTSolver::initialize( )
   random_seed = config.getRandomSeed();
   restart_first = config.sat_restart_first;
   restart_inc = config.sat_restart_inc;
-  vec< Lit > fc;
-  fc.push( lit_Undef );
-  fake_clause = Clause_new( fc );
   // FIXME: check why this ?
   first_model_found = config.logic == QF_UFLRA
                    || config.logic == QF_UFIDL;
@@ -2097,16 +2098,8 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
 	next_printout *= restart_inc;
     }
 #endif
-#ifdef PEDANTIC_DEBUG
-    cerr << "restart " << starts << endl;
-#endif
     status = search((int)nof_conflicts, (int)nof_learnts);
-    // XXX
-//    if (starts == 2) opensmt::stop = true;
     nof_conflicts = restartNextLimit( nof_conflicts );
-#ifdef PEDANTIC_DEBUG
-    cerr << "nof_conflicts is " << nof_conflicts << endl;
-#endif
     cstop = cstop || ( max_conflicts != 0 
 	&& nLearnts() > (int)max_conflicts + (int)old_conflicts );
 
@@ -2114,17 +2107,11 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
     {
       if ( last_luby_k != luby_k ) {
 	nof_learnts *= 1.215;
-#ifdef PEDANTIC_DEBUG
-        cerr << "nof_conflicts (luby) is " << nof_conflicts << endl;
-#endif
       }
       last_luby_k = luby_k;
     }
     else {
       nof_learnts *= learntsize_inc;
-#ifdef PEDANTIC_DEBUG
-        cerr << "nof_conflicts is " << nof_conflicts << endl;
-#endif
     }
   }
 

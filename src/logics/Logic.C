@@ -350,16 +350,22 @@ lbool Logic::simplifyTree(PTRef tr)
 }
 
 // The vec argument might be sorted!
-PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args) {
+PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args, char** msg) {
     SymRef sref = term_store.lookupSymbol(s, args);
+    if (sref == SymRef_Undef) {
+        asprintf(msg, "Unknown symbol %s", s);
+        return PTRef_Undef;
+    }
     assert(sref != SymRef_Undef);
     simplify(sref, args);
     PTRef rval;
-    const char** msg;
+    const char** msg2 = NULL;
     if (sref == SymRef_Undef)
         rval = PTRef_Undef;
     else
-        rval = insertTerm(sref, args, msg);
+        rval = insertTerm(sref, args, msg2);
+    if (msg2 != NULL)
+        asprintf(msg, "%s", *msg2);
     return rval;
 }
 
@@ -411,8 +417,7 @@ void Logic::simplify(PTRef& tr) {
 //
 void Logic::simplify(SymRef& s, vec<PTRef>& args) {
     // First sort it
-    // XXX Some stupidity for debugging
-    if (sym_store[s].commutes() && !isAnd(s) && !isOr(s))
+    if (sym_store[s].commutes())
         sort(args, LessThan_PTRef());
 
     if (!isBooleanOperator(s) && !isEquality(s)) return;
@@ -584,26 +589,31 @@ void Logic::simplify(SymRef& s, vec<PTRef>& args) {
 // Check if arguments contain trues or a false and return the simplified
 // term
 PTRef Logic::mkAnd(vec<PTRef>& args) {
-        return resolveTerm(tk_and, args);
+    char** msg;
+    return resolveTerm(tk_and, args, msg);
 }
 
 PTRef Logic::mkOr(vec<PTRef>& args) {
-    return resolveTerm(tk_or, args);
+    char** msg;
+    return resolveTerm(tk_or, args, msg);
 }
 
 
 PTRef Logic::mkImpl(vec<PTRef>& args) {
-    return resolveTerm(tk_implies, args);
+    char** msg;
+    return resolveTerm(tk_implies, args, msg);
 }
 
 PTRef Logic::mkEq(vec<PTRef>& args) {
-    return resolveTerm(tk_equals, args);
+    char** msg;
+    return resolveTerm(tk_equals, args, msg);
 }
 
 PTRef Logic::mkNot(PTRef arg) {
+    char** msg;
     vec<PTRef> tmp;
     tmp.push(arg);
-    return resolveTerm(tk_not, tmp);
+    return resolveTerm(tk_not, tmp, msg);
 }
 
 PTRef Logic::mkConst(SRef s, const char* name) {

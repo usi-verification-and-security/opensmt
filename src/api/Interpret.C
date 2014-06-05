@@ -290,14 +290,16 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
         const char* name = (**(term.children->begin())).getValue();
 //        comment_formatted("Processing term with symbol %s", name);
         PTRef tr = letNameResolve(name, let_branch);
+        char* msg = NULL;
         if (tr != PTRef_Undef) {
 //            comment_formatted("Found a let reference to term %d", tr);
             return tr;
         }
         else
-            tr = logic.resolveTerm(name, vec_ptr_empty);
+            tr = logic.resolveTerm(name, vec_ptr_empty, &msg);
         if (tr == PTRef_Undef)
-            comment_formatted("unknown qid term %s", name);
+            comment_formatted("unknown qid term %s: %s", name, msg);
+        free(msg);
         return tr;
     }
 
@@ -315,11 +317,11 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
                 args.push(arg_term);
         }
         assert(args.size() > 0);
-
-        PTRef tr = logic.resolveTerm(name, args);
+        char* msg = NULL;
+        PTRef tr = logic.resolveTerm(name, args, &msg);
         if (tr == PTRef_Undef) {
             // Implement a nice error reporting here
-            notify_formatted(true, "No such symbol %s", name);
+            notify_formatted(true, "No such symbol %s: %s", name, msg);
             comment_formatted("The symbol %s is not defined for the following sorts:", name);
             for (int j = 0; j < args.size(); j++)
                 comment_formatted("arg %d: %s", j, store[symstore[ptstore[args[j]].symb()].rsort()]->getCanonName());
@@ -337,6 +339,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
             }
             else
                 comment_formatted("There are no candidates.");
+            free(msg);
             return PTRef_Undef;
         }
 
