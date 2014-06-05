@@ -223,8 +223,12 @@ class SEAllocator : public RegionAllocator<uint32_t>
 };
 
 //
-// A simpler congruence closure algorithm without backtracking and forbid lists
-// for top-level propagation
+// TopLevelPropagator implements three types of simplifications:
+//  - A simpler congruence closure algorithm without backtracking and forbid lists
+//    for top-level propagation, and
+//  - A heuristic for minimizing the number of terms in the uninterpreted functions, and
+//  - The transitivity simplification (which seems a bit useless, given that it only applies
+//    in one benchmark category famous for this simplification)
 //
 class TopLevelPropagator {
     class Node {
@@ -244,8 +248,8 @@ class TopLevelPropagator {
     Logic&      logic;
     Cnfizer&    cnfizer;
 
-    Map<PTRef,SERef,PTRefHash,Equal<const PTRef> > termToSERef;
-    Map<SymRef,SERef,SymRefHash,Equal<SymRef> > symToSERef;
+    Map<PTRef,SERef,PTRefHash,Equal<const PTRef> >    termToSERef;
+    Map<SymRef,SERef,SymRefHash,Equal<SymRef> >       symToSERef;
     Map<SigPair,SERef,SigHash,Equal<const SigPair&> > sigtab;
 
     SEAllocator ea;
@@ -260,7 +264,7 @@ class TopLevelPropagator {
 
     Map<PTRef, Node*, PTRefHash, Equal<PTRef> > PTRefToNode;
     // Get root congruene node and return its term
-    PTRef find(PTRef p) const {return ea[ea[termToSERef[p]].getRoot()].getTerm(); }
+    PTRef find(PTRef p) const { return ea[ea[termToSERef[p]].getRoot()].getTerm(); }
     void merge(SERef xr, SERef yr);   // union
     bool contains(PTRef x, PTRef y);  // term x contains an occurrence of y
     bool assertEq(PTRef eq);          // Add equivalence and propagate
