@@ -12,7 +12,6 @@ class Qel {
     Qel(T r) : x(r), chk(0) {};
 };
 
-extern int TreeOps_h_count;
 //
 // Visit the term tree rooted at tr.  Return in list_out every term occurrence
 // in the tree in an order where the parent term is always listed before its
@@ -27,7 +26,6 @@ void getTermList(PTRef tr, vec<T>& list_out, Logic& logic) {
     Map<PTRef,int,PTRefHash> chkd;
 
 #ifdef PEDANTIC_DEBUG
-    cerr << TreeOps_h_count ++ << endl;
     assert(logic.hasSym(logic.getPterm(tr).symb()));
 #endif
     queue.push(Qel<PtChild>(PtChild(tr, PTRef_Undef, -1)));
