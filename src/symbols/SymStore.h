@@ -30,6 +30,7 @@ class SymStore {
     // sort of the symbol
     SymRef newSymb(const char* fname, const vec<SRef>& args, const char** msg, bool la = false, bool ra = false, bool ch = false, bool pw = false);
     bool contains(const char* fname)            const { return symbolTable.contains(fname); }
+    bool contains(SymRef sr)                    const { return symrefToId.contains(sr); }
     const vec<SymRef>& nameToRef(const char* s) const { return symbolTable[s]; }
     vec<SymRef>& nameToRef(const char* s)             { return symbolTable[s]; }
 

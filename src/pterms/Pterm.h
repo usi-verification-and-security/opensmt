@@ -131,8 +131,8 @@ class Pterm {
     Pterm    operator=   (Pterm t1)      { assert(false); return *this; }
 
     int      size        ()      const   { return header.size; }
-    const PTRef& operator [] (int i) const   { return args[i]; }
-    PTRef&       operator [] (int i)         { return args[i]; }
+    const PTRef& operator [] (int i) const   { assert(i < size()); return args[i]; }
+    PTRef&       operator [] (int i)         { assert(i < size()); return args[i]; }
     SymRef   symb        ()      const   { return sym; }
     bool     has_extra   ()      const   { return false; }
     bool     reloced     ()      const   { return header.reloced; }

@@ -510,7 +510,7 @@ void THandler::getReason( Lit l, vec< Lit > & reason, vec<char>& assigns )
 //        cerr << egraph.printUndoTrail();
         return false;
     }
-    else ;
+    else {}
 //        cerr << endl << "ok" << endl;
 #else
     if ( res != l_False ) {

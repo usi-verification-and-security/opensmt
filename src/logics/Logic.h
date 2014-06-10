@@ -79,6 +79,7 @@ class Logic {
     // Symbols
     SymRef      newSymb       (const char* name, vec<SRef>& sort_args, const char** msg)
                                                             { return sym_store.newSymb(name, sort_args, msg); }
+    bool        hasSym        (const SymRef s)        const { return sym_store.contains(s); }
     Symbol&     getSym        (const SymRef s)        const { return sym_store[s]; }
     const char* getSymName    (const PTRef tr)        const { return sym_store.getName(getPterm(tr).symb()); }
     vec<SymRef>& symNameToRef (const char* s)               { return sym_store.nameToRef(s); }

@@ -12,6 +12,7 @@ class Qel {
     Qel(T r) : x(r), chk(0) {};
 };
 
+extern int TreeOps_h_count;
 //
 // Visit the term tree rooted at tr.  Return in list_out every term occurrence
 // in the tree in an order where the parent term is always listed before its
@@ -25,20 +26,30 @@ void getTermList(PTRef tr, vec<T>& list_out, Logic& logic) {
     Map<PtChild,bool,PtChildHash> seen;
     Map<PTRef,int,PTRefHash> chkd;
 
+#ifdef PEDANTIC_DEBUG
+    cerr << TreeOps_h_count ++ << endl;
+    assert(logic.hasSym(logic.getPterm(tr).symb()));
+#endif
     queue.push(Qel<PtChild>(PtChild(tr, PTRef_Undef, -1)));
 
     while (queue.size() > 0) {
         int q_idx = queue.size() - 1;
-        Qel<PtChild>& qtr = queue.last();
-        Pterm& pt = logic.getPterm(qtr.x.tr);
-        int i = qtr.chk;
+#ifdef PEDANTIC_DEBUG
+        assert(logic.hasSym(logic.getPterm(queue[q_idx].x.tr).symb()));
+#endif
+        Pterm& pt = logic.getPterm(queue[q_idx].x.tr);
+        int i = queue[q_idx].chk;
         if (i < pt.size()) {
-            PtChild ptc(pt[i], qtr.x.tr, i);
-            if (!seen.contains(ptc))
+            PtChild ptc(pt[i], queue[q_idx].x.tr, i);
+            if (!seen.contains(ptc)) {
                 queue.push(Qel<PtChild>(ptc));
+#ifdef PEDANTIC_DEBUG
+                assert(logic.hasSym(logic.getPterm(ptc.tr).symb()));
+#endif
+            }
             queue[q_idx].chk = i+1;
         } else {
-            T ptc(qtr.x.tr, qtr.x.parent, qtr.x.pos);
+            T ptc(queue[q_idx].x.tr, queue[q_idx].x.parent, queue[q_idx].x.pos);
             list_out.push(ptc);
             seen.insert(ptc, true);
             assert(queue.size() > 0);
