@@ -529,7 +529,10 @@ bool TopLevelPropagator::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& 
             nodes.push(t[i]);
             if (substs.contains(t[i])) {
                 PTRef nr = substs[t[i]];
-                if (contains(nr, t[i])) continue;
+                if (contains(nr, t[i])) {
+//                    cout << "TLP: skipping substitution" << endl;
+                    continue;
+                }
 #ifdef PEDANTIC_DEBUG
                 cerr << "Will substitute " << logic.printTerm(t[i])
                      << " with " << logic.printTerm(nr) << " in "
@@ -559,7 +562,8 @@ bool TopLevelPropagator::substitute(PTRef& root)
         if (termToSERef.contains(ctr.tr)) {
             PTRef nr = find(ctr.tr);
             // p is the substituent nr
-            if (nr != ctr.tr && logic.isVar(nr) && !contains(ctr.tr, nr)) {
+//            if (nr != ctr.tr && logic.isVar(nr) && !contains(ctr.tr, nr)) {
+            if (nr != ctr.tr) {
 #ifdef PEDANTIC_DEBUG
                 cerr << "Will substitute " << logic.printTerm(ctr.tr)
                      << " with " << logic.printTerm(nr) << " in ";
@@ -582,6 +586,7 @@ bool TopLevelPropagator::substitute(PTRef& root)
 #endif
                 }
                 n_substs++;
+//                cout << "TLP: substitute " << n_substs << endl;
                 continue;
             }
         }

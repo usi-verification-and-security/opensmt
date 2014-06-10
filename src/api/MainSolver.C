@@ -69,36 +69,47 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         PTRef root = fc.getRoot();
         Pterm& r = logic.getPterm(root);
 
-        // XXX There should be no reason to do this one by one.
-        vec<PTRef> tlfs;
-        ts.retrieveTopLevelFormulae(root, tlfs);
-        for (int i = 0; (i < tlfs.size()) && (state == s_Undef); i++) {
-            if (ts.checkDeMorgan(tlfs[i]) || ts.checkCnf(tlfs[i]) || ts.checkClause(tlfs[i]))
-                fc.setRoot(tlfs[i]);
-            else {
-                fc.setRoot(tlfs[i]);
-                fc = propFlatten(fc);
-            }
-            terms.clear();
-            getTermList(fc.getRoot(), terms, logic);
-            fc = simplifyEqualities(terms);
-            lbool res = logic.simplifyTree(fc.getRoot());
-#ifdef SIMPLIFY_DEBUG
-            cerr << "After simplification got " << endl;
-            if (res == l_Undef)
-                 cerr << logic.printTerm(fc.getRoot()) << endl;
-            else if (res == l_False)
-                cerr << logic.printTerm(logic.getTerm_false()) << endl;
-            else if (res == l_True)
-                cerr << logic.printTerm(logic.getTerm_true()) << endl;
-            else
-                assert(false);
-#endif
-            
-            if (res == l_False) state = giveToSolver(logic.getTerm_false());
-            else if (res == l_Undef)
-                state = giveToSolver(fc.getRoot());
-        }
+        // XXX There should be no reason to do this one by one, and in fact it
+        // should be harmful since the shared structure will be invisible that
+        // way.
+        fc = propFlatten(fc);
+        terms.clear();
+        getTermList(fc.getRoot(), terms, logic);
+        fc = simplifyEqualities(terms);
+        lbool res = logic.simplifyTree(fc.getRoot());
+        if (res == l_False) state = giveToSolver(logic.getTerm_false());
+        else if (res == l_Undef)
+            state = giveToSolver(fc.getRoot());
+
+
+//        vec<PTRef> tlfs;
+//        ts.retrieveTopLevelFormulae(root, tlfs);
+//        for (int i = 0; (i < tlfs.size()) && (state == s_Undef); i++) {
+//            if (ts.checkDeMorgan(tlfs[i]) || ts.checkCnf(tlfs[i]) || ts.checkClause(tlfs[i]))
+//                fc.setRoot(tlfs[i]);
+//            else {
+//                fc.setRoot(tlfs[i]);
+//                fc = propFlatten(fc);
+//            }
+//            terms.clear();
+//            getTermList(fc.getRoot(), terms, logic);
+//            fc = simplifyEqualities(terms);
+//            lbool res = logic.simplifyTree(fc.getRoot());
+//#ifdef SIMPLIFY_DEBUG
+//            cerr << "After simplification got " << endl;
+//            if (res == l_Undef)
+//                 cerr << logic.printTerm(fc.getRoot()) << endl;
+//            else if (res == l_False)
+//                cerr << logic.printTerm(logic.getTerm_false()) << endl;
+//            else if (res == l_True)
+//                cerr << logic.printTerm(logic.getTerm_true()) << endl;
+//            else
+//                assert(false);
+//#endif
+//            if (res == l_False) state = giveToSolver(logic.getTerm_false());
+//            else if (res == l_Undef)
+//                state = giveToSolver(fc.getRoot());
+//        }
     }
 end:
     return state;
