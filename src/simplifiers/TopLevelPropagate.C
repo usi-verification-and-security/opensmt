@@ -80,23 +80,29 @@ TopLevelPropagator::TopLevelPropagator(Logic& l, Cnfizer& c) :
 
 }
 
+//
+// The merge function.  We make an attempt that the canonical representative
+// would not be contained in any term in the equivalence class, but
+// guarantee nothing.
+//
 void TopLevelPropagator::merge(SERef xr, SERef yr)
 {
-    if (ea[xr] < ea[yr]) {
+    if ((ea[xr] < ea[yr]) && !contains(yr, xr)) {
         SERef tr = xr;
         xr = yr;
         yr = tr;
     }
     SEnode& x = ea[xr];
     SEnode& y = ea[yr];
+    if (x.type() == SEnode::et_term) {
+        assert(!contains(xr, yr));
 #ifdef PEDANTIC_DEBUG
-    if (x.type() == SEnode::et_term)
         cerr << "Merging terms " << logic.printTerm(x.getTerm())
              << " and " << logic.printTerm(y.getTerm())
              << ".  The root will be "
              << logic.printTerm(x.getTerm()) << endl;
 #endif
-
+    }
     SERef wr = x.getParentSize() < y.getParentSize()  ? xr : yr;
     SEnode& w = ea[wr];
 
@@ -250,7 +256,7 @@ void TopLevelPropagator::retrieveSubstitutions(PTRef root, Map<PTRef,PTRef,PTRef
     }
 }
 
-void TopLevelPropagator::collectFacts(PTRef root, vec<PtAsgn>& facts, vec<PtAsgn>& facts_clone)
+void TopLevelPropagator::collectFacts(PTRef root, vec<PtAsgn>& facts)
 {
     Map<PTRef,bool,PTRefHash> isdup;
     vec<PtAsgn> queue;
@@ -297,23 +303,7 @@ void TopLevelPropagator::collectFacts(PTRef root, vec<PtAsgn>& facts, vec<PtAsgn
         }
         // Found a fact.  It is important for soundness that we have also the original facts
         // asserted to the euf solver in the future even though no search will be performed there.
-        // Therefore we need to clone the whole terms as facts that will be asserted to the solver.
-        // The function allocates new terms, so address of pta.tr might
-        // change.  Do not trust Pterm& t here!
         else if (logic.isEquality(pta.tr) and pta.sgn == l_True) {
-
-            vec<PTRef> args;
-            for (int i = 0; i < t.size(); i++)
-                args.push(t[i]);
-
-            PTRef r = logic.cloneTerm(t[0]);
-
-            for (int i = 1; i < args.size(); i++) {
-                vec<PTRef> ps;
-                ps.push(r); ps.push(logic.cloneTerm(args[i]));
-                PTRef eq = logic.mkEq(ps);
-                facts_clone.push(PtAsgn(eq, l_True));
-            }
             facts.push(pta);
         }
         else if (logic.isUP(pta.tr))
@@ -323,7 +313,7 @@ void TopLevelPropagator::collectFacts(PTRef root, vec<PtAsgn>& facts, vec<PtAsgn
 #ifdef PEDANTIC_DEBUG
     cerr << "True facts" << endl;
     for (int i = 0; i < facts.size(); i++)
-        cerr << (facts[i].sgn == l_True ? "" : "not ") << logic.printTerm(facts[i].tr) << endl;
+        cerr << (facts[i].sgn == l_True ? "" : "not ") << logic.printTerm(facts[i].tr) << " (" << facts[i].tr.x << ")" << endl;
 #endif
 }
 
@@ -373,12 +363,11 @@ void TopLevelPropagator::initCongruence(PTRef root)
 
 //
 // The congruence substitution scheme.  This seems to have some potential based
-// on the earlier experimentation.
+// on both earlier experimentation and pen and paper.
 //
-bool TopLevelPropagator::computeCongruenceSubstitutions(PTRef root, vec<PtAsgn>& tlfacts)
+bool TopLevelPropagator::computeCongruenceSubstitutions(PTRef root, vec<PtAsgn>& facts)
 {
-    vec<PtAsgn> facts;
-    collectFacts(root, facts, tlfacts);
+    collectFacts(root, facts);
     int i;
     for (i = 0; i < facts.size(); i++) {
         PTRef tr = facts[i].tr;
@@ -419,7 +408,7 @@ bool TopLevelPropagator::computeCongruenceSubstitutions(PTRef root, vec<PtAsgn>&
 //        }
 
         // Join equalities
-//        else if (logic.isEquality(tr) && sgn == l_True) {
+//        else if (logic.isEquality(tr) && sgn == l_True)
         if (logic.isEquality(tr) && sgn == l_True) {
 #ifdef PEDANTIC_DEBUG
             cerr << "Identified an equality: " << logic.printTerm(tr) << endl;
@@ -437,6 +426,9 @@ bool TopLevelPropagator::computeCongruenceSubstitutions(PTRef root, vec<PtAsgn>&
 #endif
         }
     }
+
+    my_root = ea[termToSERef[root]].getRoot();
+
     if (i < facts.size())
         return false;
     return true;
@@ -530,7 +522,6 @@ bool TopLevelPropagator::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& 
             if (substs.contains(t[i])) {
                 PTRef nr = substs[t[i]];
                 if (contains(nr, t[i])) {
-//                    cout << "TLP: skipping substitution" << endl;
                     continue;
                 }
 #ifdef PEDANTIC_DEBUG
@@ -550,57 +541,99 @@ bool TopLevelPropagator::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& 
     return n_substs > 0;
 }
 
-bool TopLevelPropagator::substitute(PTRef& root)
+
+bool TopLevelPropagator::substitute(PTRef& root, PTRef& tr_new)
 {
+    Map<PTRef, PTRef, PTRefHash> subst;
+
+    vec<pi> queue;
+    Map<PTRef,bool,PTRefHash> processed;
+
+    queue.push(pi(root, PTRef_Undef, -1));
     int n_substs = 0;
-    vec<PtChild> nodes;
-    nodes.push(PtChild(root, PTRef_Undef, -1));
 
-
-    while (nodes.size() > 0) {
-        PtChild ctr = nodes.last(); nodes.pop();
-        if (termToSERef.contains(ctr.tr)) {
-            PTRef nr = find(ctr.tr);
-            // p is the substituent nr
-//            if (nr != ctr.tr && logic.isVar(nr) && !contains(ctr.tr, nr)) {
-            if (nr != ctr.tr) {
-#ifdef PEDANTIC_DEBUG
-                cerr << "Will substitute " << logic.printTerm(ctr.tr)
-                     << " with " << logic.printTerm(nr) << " in ";
-#endif
-                // Do the substitution
-                if (ctr.parent == PTRef_Undef) {
-#ifdef PEDANTIC_DEBUG
-                    cerr << logic.printTerm(root);
-#endif
-                    root = nr;
-                }else{
-                    Pterm& parent = logic.getPterm(ctr.parent);
-#ifdef PEDANTIC_DEBUG
-                    cerr << logic.printTerm(ctr.parent) << ": ";
-#endif
-                    assert(parent.size() > ctr.pos);
-                    parent[ctr.pos] = nr;
-#ifdef PEDANTIC_DEBUG
-                    cerr << logic.printTerm(ctr.parent) << endl;
-#endif
-                }
-                n_substs++;
-//                cout << "TLP: substitute " << n_substs << endl;
-                continue;
-            }
+    while (queue.size() > 0) {
+        int idx = queue.size() - 1;
+        if (processed.contains(queue[idx])) {
+            queue.pop();
+            continue;
         }
-        Pterm& t = logic.getPterm(ctr.tr);
-        for (int i = 0; i < t.size(); i++)
-            nodes.push(PtChild(t[i], ctr.tr, i));
+        if (!queue[idx].done) {
+            for (int i = 0; i < t.size(); i++)
+                queue.push(pi(logic.getPterm(queue[idx].tr)[i], queue[idx].tr, i));
+            queue[idx].done = true;
+            continue;
+        }
+        // Get the new reference
+        PTRef nr = find(queue[idx].tr);
+        if (queue[idx].tr != nr && contains(queue[idx].tr, nr)) {
+#ifdef PEDANTIC_DEBUG
+            cerr << "Cannot substitute " << logic.printTerm(queue[idx].tr) << " with " << logic.printTerm(nr) << endl;
+#endif
+            // Do nothing
+        } else if (nr == queue[idx].tr) {
+            vec<PTRef> args;
+            for (int i = 0; i < logic.getPterm(queque[idx].tr).size())
+                args.push(find(queue[idx].tr))
+            const char** msg;
+            nr = logic.declareTerm(logic.getPterm(queue[idx].tr), args, msg)
+            if (nr != queue[idx].tr) n_substs ++;
+        } else
+            n_substs ++;
+        processed.insert(queue[idx], true);
+        queue.pop();
+        tr_new = nr;
     }
-    total_substs += n_substs;
-    return n_substs > 0;
+
+
+//    vec<PtChild> nodes;
+//    nodes.push(PtChild(root, PTRef_Undef, -1));
+//
+//
+//    while (nodes.size() > 0) {
+//        PtChild ctr = nodes.last(); nodes.pop();
+//        if (termToSERef.contains(ctr.tr)) {
+//            PTRef nr = find(ctr.tr);
+//            // p is the substituent nr
+//            if (nr != ctr.tr) {
+////                cout << "TLP: congruence substitution " << n_substs << endl;
+//#ifdef PEDANTIC_DEBUG
+//                cerr << "Will substitute " << logic.printTerm(ctr.tr)
+//                     << " with " << logic.printTerm(nr) << " in ";
+//#endif
+//                // Do the substitution
+//                if (ctr.parent == PTRef_Undef) {
+//#ifdef PEDANTIC_DEBUG
+//                    cerr << logic.printTerm(root);
+//#endif
+//                    root = nr;
+//                }else{
+//                    Pterm& parent = logic.getPterm(ctr.parent);
+//#ifdef PEDANTIC_DEBUG
+//                    cerr << logic.printTerm(ctr.parent) << ": ";
+//#endif
+//                    assert(parent.size() > ctr.pos);
+//                    parent[ctr.pos] = nr;
+//#ifdef PEDANTIC_DEBUG
+//                    cerr << logic.printTerm(ctr.parent) << endl;
+//#endif
+//                }
+//                n_substs++;
+////                cout << "TLP: substitute " << n_substs << endl;
+//                continue;
+//            }
+//        }
+//        Pterm& t = logic.getPterm(ctr.tr);
+//        for (int i = 0; i < t.size(); i++)
+//            nodes.push(PtChild(t[i], ctr.tr, i));
+//    }
+//    total_substs += n_substs;
+//    return n_substs > 0;
 
 }
 
 //
-// Does term contain var?
+// Does term contain var?  (works even if var is a term...)
 //
 bool TopLevelPropagator::contains(PTRef term, PTRef var)
 {

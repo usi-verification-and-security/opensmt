@@ -50,37 +50,37 @@ class SEnode
     SEnode(SymRef, SERef);
     // Constructor for term and list nodes
     SEnode(SERef car_, SERef cdr_, en_type t, SEAllocator& ea, SERef er);
-    en_type type        ()        const { return (en_type)header.type; }
+    en_type type         ()        const { return (en_type)header.type; }
 
-    void relocate       (SERef e)        { header.reloced = 1; er = e; }
-    bool reloced        ()        const { return header.reloced; }
-    SERef relocation     ()        const { return er; }
+    void   relocate      (SERef e)       { header.reloced = 1; er = e; }
+    bool   reloced       ()        const { return header.reloced; }
+    SERef  relocation    ()        const { return er; }
 
-    bool  isList        ()        const { return (en_type)header.type == et_list; }
-    bool  isTerm        ()        const { return (en_type)header.type == et_term; }
-    bool  isSymb        ()        const { return (en_type)header.type == et_symb; }
+    bool   isList        ()        const { return (en_type)header.type == et_list; }
+    bool   isTerm        ()        const { return (en_type)header.type == et_term; }
+    bool   isSymb        ()        const { return (en_type)header.type == et_symb; }
     SERef  getCar        ()        const { assert(type() != et_symb); return car; }
     SERef  getCdr        ()        const { assert(type() != et_symb); return cdr; }
-    SymRef getSymb      ()        const { assert(type() == et_symb); return symb; }
-    PTRef getTerm       ()        const { assert(type() != et_symb && type() != et_list); return pterm; }
+    SymRef getSymb       ()        const { assert(type() == et_symb); return symb; }
+    PTRef  getTerm       ()        const { assert(type() != et_symb && type() != et_list); return pterm; }
     SERef  getRoot       ()        const { if (type() == et_symb) return er; else return cgdata->root; }
-    void  setRoot       (SERef r)        { assert(type() != et_symb); cgdata->root = r; }
+    void   setRoot       (SERef r)        { assert(type() != et_symb); cgdata->root = r; }
     SERef  getCgPtr      ()        const { return cgdata->cg_ptr; }
-    void  setCgPtr      (SERef e)        { cgdata->cg_ptr = e; }
-    CgId  getCid        ()        const { return cid; }
-    void  setCid        (CgId id)       { cid = id; }
+    void   setCgPtr      (SERef e)        { cgdata->cg_ptr = e; }
+    CgId   getCid        ()        const { return cid; }
+    void   setCid        (CgId id)       { cid = id; }
     SERef  getParent     ()        const { return cgdata->parent; }
-    void  setParent     (SERef e)        { cgdata->parent = e; }
-    int   getParentSize ()        const { return cgdata->parent_size; }
-    void  setParentSize (int i)         { cgdata->parent_size = i; }
+    void   setParent     (SERef e)        { cgdata->parent = e; }
+    int    getParentSize ()        const { return cgdata->parent_size; }
+    void   setParentSize (int i)         { cgdata->parent_size = i; }
     SERef  getSameCdr    ()        const { return cgdata->same_cdr; }
-    void  setSameCdr    (SERef e)        { cgdata->same_cdr = e; }
+    void   setSameCdr    (SERef e)        { cgdata->same_cdr = e; }
     SERef  getSameCar    ()        const { return cgdata->same_car; }
-    void  setSameCar    (SERef e)        { cgdata->same_car = e; }
+    void   setSameCar    (SERef e)        { cgdata->same_car = e; }
     SERef  getNext       ()        const { return cgdata->next; }
-    void  setNext       (SERef n)        { cgdata->next = n; }
-    int   getSize       ()        const { return cgdata->size; }
-    void  setSize       (int i)         { cgdata->size = i; }
+    void   setNext       (SERef n)        { cgdata->next = n; }
+    int    getSize       ()        const { return cgdata->size; }
+    void   setSize       (int i)         { cgdata->size = i; }
 
     bool operator< (const SEnode& e) const {
         assert((type() != et_symb) && (e.type() != et_symb));
@@ -244,6 +244,15 @@ class TopLevelPropagator {
         SERef y;
         SERefPair(SERef x_, SERef y_) : x(x_), y(y_) {}
     };
+    // For depth first search
+    class pi {
+      public:
+        PTRef x;
+        bool done;
+        PTRef parent;
+        int pos;
+        pi(PTRef x_, PTRef p, int pos_) : x(x_), done(false), parent(p), pos(pos_) {}
+    };
 
     Logic&      logic;
     Cnfizer&    cnfizer;
@@ -263,7 +272,7 @@ class TopLevelPropagator {
     SERef       n_true;
 
     Map<PTRef, Node*, PTRefHash, Equal<PTRef> > PTRefToNode;
-    // Get root congruene node and return its term
+    // Get root congruence node and return its term
     PTRef find(PTRef p) const { return ea[ea[termToSERef[p]].getRoot()].getTerm(); }
     void merge(SERef xr, SERef yr);   // union
     bool contains(PTRef x, PTRef y);  // term x contains an occurrence of y
@@ -272,7 +281,7 @@ class TopLevelPropagator {
   public:
     TopLevelPropagator(Logic& logic, Cnfizer& cnfizer);
     // Collect the top level facts following the boolean structure
-    void collectFacts(PTRef root, vec<PtAsgn>& facts, vec<PtAsgn>& facts_clone);
+    void collectFacts(PTRef root, vec<PtAsgn>& facts);
     // OpenSMT 1 substitution scheme - replace variables with terms not containing the variable
 #ifdef PEDANTIC_DEBUG
     void retrieveSubstitutions(PTRef root, Map<PTRef,PTRef,PTRefHash>& substs, vec<PTRef>& subst_vars);
@@ -283,9 +292,12 @@ class TopLevelPropagator {
     void initCongruence(PTRef root);
     // Compute the substitutions based on the congruence
     bool computeCongruenceSubstitutions(PTRef root, vec<PtAsgn>& tlfacts);
-    bool substitute(PTRef& root);    // Substitute based on the
-                                     // previously inserted bindings.
-                                     // Return true if substitutions were performed
+//    bool substitute(PTRef& root, PTRef& n);    // Substitute based on the
+//                                     // previously inserted bindings.
+//                                     // Return true if substitutions were performed
+//                                     // n will be the new root
+    PTRef extractSimplified();
+
     bool varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& substs);
     PTRef learnEqTransitivity(PTRef); // Learn limited transitivity information
                                       // (should speed up significantly the solving of some problems)

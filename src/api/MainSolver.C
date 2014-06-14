@@ -46,12 +46,15 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
     vec<PtAsgn> tlfacts;
     tlp.initCongruence(root);
 
-    while (true) {
+    bool cont = true;
+    while (cont) {
         if (!tlp.computeCongruenceSubstitutions(root, tlfacts)) {
             root = logic.getTerm_false(); // trivial problem
             break;
         }
-        if (!tlp.substitute(root)) break;
+        PTRef new_root;
+        cont = tlp.substitute(root, new_root);
+        root = new_root;
     }
 
     {
@@ -61,6 +64,9 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         for (int i = 0; i < tlfacts.size(); i++)
             tmp.push(tlfacts[i].sgn == l_True ? tlfacts[i].tr : logic.mkNot(tlfacts[i].tr));
         root = logic.mkAnd(tmp);
+        lbool res = logic.simplifyTree(root);
+        if (res == l_True) root = logic.getTerm_true(); // Trivial problem
+        else if (res == l_False) root = logic.getTerm_false(); // Trivial problem
         vec<PtChild> terms;
         FContainer fc(root);
         expandItes(fc, terms);
@@ -76,7 +82,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         terms.clear();
         getTermList(fc.getRoot(), terms, logic);
         fc = simplifyEqualities(terms);
-        lbool res = logic.simplifyTree(fc.getRoot());
+        res = logic.simplifyTree(fc.getRoot());
         if (res == l_False) state = giveToSolver(logic.getTerm_false());
         else if (res == l_Undef)
             state = giveToSolver(fc.getRoot());
