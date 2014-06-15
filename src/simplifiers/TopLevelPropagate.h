@@ -36,9 +36,9 @@ class SEnode
         unsigned reloced    : 1;
         unsigned unused     : 29; } header;
     union { SymRef symb; PTRef pterm; };     // The symbol or the pterm
-    SERef        er;     // Either my eref or reference to the relocated one
-    SERef        car;
-    SERef        cdr;
+    SERef       er;     // Either my eref or reference to the relocated one
+    SERef       car;
+    SERef       cdr;
     cgId        cid;            // The congruence id of the enode (defined also for symbols)
 
   public:
@@ -249,9 +249,7 @@ class TopLevelPropagator {
       public:
         PTRef x;
         bool done;
-        PTRef parent;
-        int pos;
-        pi(PTRef x_, PTRef p, int pos_) : x(x_), done(false), parent(p), pos(pos_) {}
+        pi(PTRef x_) : x(x_), done(false) {}
     };
 
     Logic&      logic;
@@ -292,7 +290,7 @@ class TopLevelPropagator {
     void initCongruence(PTRef root);
     // Compute the substitutions based on the congruence
     bool computeCongruenceSubstitutions(PTRef root, vec<PtAsgn>& tlfacts);
-//    bool substitute(PTRef& root, PTRef& n);    // Substitute based on the
+    bool substitute(PTRef& root, PTRef& n);    // Substitute based on the
 //                                     // previously inserted bindings.
 //                                     // Return true if substitutions were performed
 //                                     // n will be the new root

@@ -292,10 +292,11 @@ lbool Logic::simplifyTree(PTRef tr)
         simplify(queue[i].x);
 #ifdef SIMPLIFY_DEBUG
         cerr << "-> which was now simplified to " << term_store.printTerm(queue[i].x, true) << endl;
-        if (orig != queue[i].x) {
-            assert(isTrue(queue[i].x) || isFalse(queue[i].x));
-            assert(isAnd(orig) || isOr(orig) || isEquality(orig) || isNot(orig));
-        }
+//      I don't seem to remember why this should be true or false?
+//        if (orig != queue[i].x) {
+//            assert(isTrue(queue[i].x) || isFalse(queue[i].x));
+//            assert(isAnd(orig) || isOr(orig) || isEquality(orig) || isNot(orig));
+//        }
 #endif
         processed.insert(orig, true);
         // Make sure my key is in term hash
@@ -386,19 +387,16 @@ void Logic::simplify(PTRef& tr) {
     SymRef sr_prev = sr;
     simplify(sr, args);
 
+    const char** msg;
+
     // The if statement is not strictly speaking necessary, since checking for
     // duplicates needs to be performed anyway after this step
     if (sr != sr_prev && sr == getSym_true())
         tr = getTerm_true();
     else if (sr != sr_prev && sr == getSym_false())
         tr = getTerm_false();
-    else {
-        t.sym = sr;
-        for (int i = 0 ; i < args.size(); i++) {
-            t[i] = args[i];
-            t.shrink(t.size()-args.size());
-        }
-    }
+    else
+        tr = insertTerm(sr, args, msg);
 }
 
 //

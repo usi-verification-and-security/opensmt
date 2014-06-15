@@ -44,10 +44,16 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
     }
 
     vec<PtAsgn> tlfacts;
+#ifdef PEDANTIC_DEBUG
+    cerr << "Init congruence with " << logic.printTerm(root) << endl;
+#endif
     tlp.initCongruence(root);
 
     bool cont = true;
     while (cont) {
+#ifdef PEDANTIC_DEBUG
+        cerr << "Compute congruence substitution" << endl;
+#endif
         if (!tlp.computeCongruenceSubstitutions(root, tlfacts)) {
             root = logic.getTerm_false(); // trivial problem
             break;
