@@ -303,11 +303,9 @@ void TopLevelPropagator::collectFacts(PTRef root, vec<PtAsgn>& facts)
         // asserted to the euf solver in the future even though no search will be performed there.
         else if (logic.isEquality(pta.tr) and pta.sgn == l_True) {
             facts.push(pta);
-            initCongruence(pta.tr);
         }
         else if (logic.isUP(pta.tr)) {
             facts.push(pta);
-            initCongruence(pta.tr);
         }
     }
 

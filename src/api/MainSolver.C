@@ -49,19 +49,15 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
 #endif
     tlp.initCongruence(root);
 
-    bool cont = true;
-    while (cont) {
 #ifdef PEDANTIC_DEBUG
-        cerr << "Compute congruence substitution" << endl;
+    cerr << "Compute congruence substitution" << endl;
 #endif
-        if (!tlp.computeCongruenceSubstitutions(root, tlfacts)) {
-            root = logic.getTerm_false(); // trivial problem
-            break;
-        }
-        PTRef new_root;
-        cont = tlp.substitute(root, new_root);
-        root = new_root;
+    if (!tlp.computeCongruenceSubstitutions(root, tlfacts)) {
+        root = logic.getTerm_false(); // trivial problem
     }
+    PTRef new_root;
+    tlp.substitute(root, new_root);
+    root = new_root;
 
     {
         // Add the top level facts to the formula
