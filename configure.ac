@@ -1,5 +1,6 @@
 AC_PREREQ(2.59)
-AC_INIT([OpenSMT 2.0], [(unstable)], [antti.hyvarinen@gmail.com])
+define([svnversion], esyscmd([sh -c "svnversion -n"]))
+AC_INIT([OpenSMT 2.0.svnversion], [(unstable)], [antti.hyvarinen@gmail.com])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(autotools)
 AM_INIT_AUTOMAKE
@@ -15,6 +16,8 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
 LT_INIT
+
+AC_DEFINE(SVN_REVISION, "svnversion", [SVN Revision])
 
 AC_ARG_ENABLE(library,
   AC_HELP_STRING([--enable-library],

@@ -415,7 +415,11 @@ void Logic::simplify(PTRef& tr) {
 //
 void Logic::simplify(SymRef& s, vec<PTRef>& args) {
     // First sort it
+#ifdef SORT_BOOLEANS
     if (sym_store[s].commutes())
+#else
+    if (sym_store[s].commutes() && !isAnd(s) && !isOr(s))
+#endif
         sort(args, LessThan_PTRef());
 
     if (!isBooleanOperator(s) && !isEquality(s)) return;
@@ -740,18 +744,18 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, const char** msg) {
         terms.copyTo(k.args);
         if (term_store.bool_map.contains(k)) {
             res = term_store.bool_map[k];
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
             char* ts = printTerm(res);
-//            cerr << "duplicate: " << ts << endl;
+            cerr << "duplicate: " << ts << endl;
             ::free(ts);
 #endif
         }
         else {
             res = term_store.pta.alloc(sym, terms);
             term_store.bool_map.insert(k, res);
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
             char* ts = printTerm(res);
-//            cerr << "new: " << ts << endl;
+            cerr << "new: " << ts << endl;
             ::free(ts);
 #endif
         }

@@ -9,7 +9,12 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         asprintf(err_msg, "Solver already contains a simplified problem.  Cannot continue for now");
         return s_Error; }
 
-    root = logic.mkAnd(formulas);
+    // XXX Disable this once debugging phase is over
+    vec<PTRef> tmp;
+    for (int i = formulas.size()-1; i >= 0; i--)
+        tmp.push(formulas[i]);
+    root = logic.mkAnd(tmp);
+//    root = logic.mkAnd(formulas);
     PTRef trans = PTRef_Undef;
     trans = tlp.learnEqTransitivity(root);
     if (trans != PTRef_Undef) {
@@ -44,20 +49,20 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
     }
 
     vec<PtAsgn> tlfacts;
-#ifdef PEDANTIC_DEBUG
-    cerr << "Init congruence with " << logic.printTerm(root) << endl;
-#endif
-    tlp.initCongruence(root);
-
-#ifdef PEDANTIC_DEBUG
-    cerr << "Compute congruence substitution" << endl;
-#endif
-    if (!tlp.computeCongruenceSubstitutions(root, tlfacts)) {
-        root = logic.getTerm_false(); // trivial problem
-    }
-    PTRef new_root;
-    tlp.substitute(root, new_root);
-    root = new_root;
+//#ifdef PEDANTIC_DEBUG
+//    cerr << "Init congruence with " << logic.printTerm(root) << endl;
+//#endif
+//    tlp.initCongruence(root);
+//
+//#ifdef PEDANTIC_DEBUG
+//    cerr << "Compute congruence substitution" << endl;
+//#endif
+//    if (!tlp.computeCongruenceSubstitutions(root, tlfacts)) {
+//        root = logic.getTerm_false(); // trivial problem
+//    }
+//    PTRef new_root;
+//    tlp.substitute(root, new_root);
+//    root = new_root;
 
     {
         // Add the top level facts to the formula
@@ -80,6 +85,37 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         // XXX There should be no reason to do this one by one, and in fact it
         // should be harmful since the shared structure will be invisible that
         // way.
+#ifdef OLD_SIMPLIFICATION
+        vec<PTRef> tlfs;
+        ts.retrieveTopLevelFormulae(root, tlfs);
+        for (int i = 0; (i < tlfs.size()) && (state == s_Undef); i++) {
+            if (ts.checkDeMorgan(tlfs[i]) || ts.checkCnf(tlfs[i]) || ts.checkClause(tlfs[i]))
+                fc.setRoot(tlfs[i]);
+            else {
+                fc.setRoot(tlfs[i]);
+                fc = propFlatten(fc);
+            }
+            terms.clear();
+            getTermList(fc.getRoot(), terms, logic);
+            fc = simplifyEqualities(terms);
+            lbool res = logic.simplifyTree(fc.getRoot());
+#ifdef SIMPLIFY_DEBUG
+            cerr << "After simplification got " << endl;
+            if (res == l_Undef)
+                 cerr << logic.printTerm(fc.getRoot()) << endl;
+            else if (res == l_False)
+                cerr << logic.printTerm(logic.getTerm_false()) << endl;
+            else if (res == l_True)
+                cerr << logic.printTerm(logic.getTerm_true()) << endl;
+            else
+                assert(false);
+#endif
+            
+            if (res == l_False) state = giveToSolver(logic.getTerm_false());
+            else if (res == l_Undef)
+                state = giveToSolver(fc.getRoot());
+        }
+#else
         fc = propFlatten(fc);
         terms.clear();
         getTermList(fc.getRoot(), terms, logic);
@@ -88,7 +124,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         if (res == l_False) state = giveToSolver(logic.getTerm_false());
         else if (res == l_Undef)
             state = giveToSolver(fc.getRoot());
-
+#endif
 
 //        vec<PTRef> tlfs;
 //        ts.retrieveTopLevelFormulae(root, tlfs);

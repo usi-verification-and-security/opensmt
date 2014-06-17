@@ -81,12 +81,14 @@ int main( int argc, char * argv[] )
 #endif
 
 #ifdef PEDANTIC_DEBUG
-  cerr << "pedantic assertion checking enabled (very slow)" << endl;
+  cerr << "; pedantic assertion checking enabled (very slow)" << endl;
 #endif
 
 #ifndef OPTIMIZE
-  cerr << "this binary is compiled with optimizations disabled (slow)" << endl;
+  cerr << "; this binary is compiled with optimizations disabled (slow)" << endl;
 #endif
+
+  cerr << "; svn rev: " << SVN_REVISION << endl;
 
 #ifndef SMTCOMP
 //  if ( context.getConfig( ).verbosity > 0 )
