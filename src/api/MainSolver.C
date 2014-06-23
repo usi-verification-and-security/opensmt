@@ -42,7 +42,13 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
 #ifdef PEDANTIC_DEBUG
         cerr << "substituting" << endl;
 #endif
+#ifdef NEW_VARSUBSTITUTE
+        PTRef new_root = PTRef_Undef;
+        if (!tlp.varsubstitute(root, substs, new_root)) break;
+        root = new_root;
+#else
         if (!tlp.varsubstitute(root, substs)) break;
+#endif
         lbool res = logic.simplifyTree(root);
         if (res == l_True) root = logic.getTerm_true(); // Trivial problem
         else if (res == l_False) root = logic.getTerm_false(); // Trivial problem
@@ -110,7 +116,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
             else
                 assert(false);
 #endif
-            
+
             if (res == l_False) state = giveToSolver(logic.getTerm_false());
             else if (res == l_Undef)
                 state = giveToSolver(fc.getRoot());

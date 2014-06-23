@@ -296,7 +296,11 @@ class TopLevelPropagator {
 //                                     // n will be the new root
     PTRef extractSimplified();
 
+#ifdef NEW_VARSUBSTITUTE
+    bool varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& substs, PTRef& tr_new);
+#else
     bool varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& substs);
+#endif
     PTRef learnEqTransitivity(PTRef); // Learn limited transitivity information
                                       // (should speed up significantly the solving of some problems)
 };

@@ -501,12 +501,78 @@ bool TopLevelPropagator::computeCongruenceSubstitutions(PTRef root, vec<PtAsgn>&
 //}
 
 //
-// I will now implement here the second type of substitution aiming at
-// minimizing the number of enode variables.  The method does not simplify, so
-// to enable consecutive substitutions a simplification is required.
+// Substitution aiming at minimizing the number of enode variables.
+// Depth-first search through the tree starting at root.
 //
+//  - Do not stop expansion when a substitution is done, but instead continue
+//    inside the newly substituted term?
+//  - Make this aware of the existing terms in term store to avoid constructing
+//    duplicate terms!
+//
+#ifdef NEW_VARSUBSTITUTE
+bool TopLevelPropagator::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& substs, PTRef& tr_new)
+#else
 bool TopLevelPropagator::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& substs)
+#endif
 {
+#ifdef NEW_VARSUBSTITUTE
+    Map<PTRef, PTRef, PTRefHash> subst;
+
+    vec<pi> queue;
+    Map<PTRef,bool,PTRefHash> processed;
+
+    queue.push(pi(root));
+    int n_substs = 0;
+
+    while (queue.size() > 0) {
+        int idx = queue.size() - 1;
+        Pterm& t = logic.getPterm(queue[idx].x);
+        if (processed.contains(queue[idx].x)) {
+            queue.pop();
+            continue;
+        }
+        if (!queue[idx].done) {
+            for (int i = 0; i < t.size(); i++) {
+                PTRef c_n = t[i];
+                if (substs.contains(t[i])) {
+                    c_n = substs[t[i]];
+                    if (contains(c_n, t[i]))
+                        continue;
+
+                }
+                if (c_n == t[i]) {
+                    queue.push(pi(t[i]));
+                } else {
+                    n_substs++;
+                    subst.insert(t[i], c_n);
+                    queue.push(c_n);
+                }
+            }
+            queue[idx].done = true;
+            continue;
+        }
+
+        // We are coming back now
+        vec<PTRef> args;
+        for (int i = 0; i < t.size(); i++)
+            args.push(subst[t[i]]);
+
+        const char** msg;
+        PTRef tr_n = logic.insertTerm(t.symb(), args, msg);
+
+        assert(!subst.contains(queue[idx].x));
+        subst.insert(queue[idx].x, tr_n);
+        processed.insert(queue[idx].x, true);
+        queue.pop();
+    }
+
+    assert(subst.contains(root));
+    tr_new = subst[root];
+    total_substs += n_substs;
+
+    return n_substs > 0;
+
+#else
     int n_substs = 0;
     vec<PTRef> nodes;
 
@@ -516,7 +582,6 @@ bool TopLevelPropagator::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& 
         nodes.pop();
         Pterm& t = logic.getPterm(tr);
         for (int i = 0; i < t.size(); i++) {
-            nodes.push(t[i]);
             if (substs.contains(t[i])) {
                 PTRef nr = substs[t[i]];
                 if (contains(nr, t[i])) {
@@ -529,14 +594,16 @@ bool TopLevelPropagator::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& 
 #endif
                 t[i] = substs[t[i]];
 #ifdef PEDANTIC_DEBUG
-                cerr << ": " << logic.printTerm(tr) << endl;
+                cerr << ": " << logic.printTerm(tr) << "(" << tr.x << ")" << endl;
 #endif
                 n_substs++;
             }
+            nodes.push(t[i]);
         }
     }
     total_substs += n_substs;
     return n_substs > 0;
+#endif
 }
 
 
