@@ -504,9 +504,9 @@ bool TopLevelPropagator::computeCongruenceSubstitutions(PTRef root, vec<PtAsgn>&
 // Substitution aiming at minimizing the number of enode variables.
 // Depth-first search through the tree starting at root.
 //
-//  - Do not stop expansion when a substitution is done, but instead continue
-//    inside the newly substituted term?
-//  - Make this aware of the existing terms in term store to avoid constructing
+//  - Stop expansion when a substitution is done.  Otherwise inifinte substitution chains are
+//    possible
+//  - Always use logic.insertTerm() to avoid constructing
 //    duplicate terms!
 //
 #ifdef NEW_VARSUBSTITUTE
@@ -545,7 +545,7 @@ bool TopLevelPropagator::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& 
                 } else {
                     n_substs++;
                     subst.insert(t[i], c_n);
-                    queue.push(c_n);
+//                    queue.push(c_n);
                 }
             }
             queue[idx].done = true;
