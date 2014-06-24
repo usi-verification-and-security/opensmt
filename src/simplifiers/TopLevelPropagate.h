@@ -296,7 +296,7 @@ class TopLevelPropagator {
 //                                     // n will be the new root
     PTRef extractSimplified();
 
-#ifdef NEW_VARSUBSTITUTE
+#ifndef OLD_VARSUBSTITUTE
     bool varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& substs, PTRef& tr_new);
 #else
     bool varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& substs);

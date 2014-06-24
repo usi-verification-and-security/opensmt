@@ -509,13 +509,13 @@ bool TopLevelPropagator::computeCongruenceSubstitutions(PTRef root, vec<PtAsgn>&
 //  - Always use logic.insertTerm() to avoid constructing
 //    duplicate terms!
 //
-#ifdef NEW_VARSUBSTITUTE
+#ifndef OLD_VARSUBSTITUTE
 bool TopLevelPropagator::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& substs, PTRef& tr_new)
 #else
 bool TopLevelPropagator::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& substs)
 #endif
 {
-#ifdef NEW_VARSUBSTITUTE
+#ifndef OLD_VARSUBSTITUTE
     Map<PTRef, PTRef, PTRefHash> subst;
 
     vec<pi> queue;

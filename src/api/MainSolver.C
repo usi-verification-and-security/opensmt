@@ -42,34 +42,35 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
 #ifdef PEDANTIC_DEBUG
         cerr << "substituting" << endl;
 #endif
-#ifdef NEW_VARSUBSTITUTE
+#ifndef OLD_VARSUBSTITUTE
         PTRef new_root = PTRef_Undef;
         if (!tlp.varsubstitute(root, substs, new_root)) break;
         root = new_root;
 #else
         if (!tlp.varsubstitute(root, substs)) break;
 #endif
-        lbool res = logic.simplifyTree(root);
-        if (res == l_True) root = logic.getTerm_true(); // Trivial problem
-        else if (res == l_False) root = logic.getTerm_false(); // Trivial problem
+//        lbool res = logic.simplifyTree(root);
+//        if (res == l_True) root = logic.getTerm_true(); // Trivial problem
+//        else if (res == l_False) root = logic.getTerm_false(); // Trivial problem
     }
 
     vec<PtAsgn> tlfacts;
-//#ifdef PEDANTIC_DEBUG
-//    cerr << "Init congruence with " << logic.printTerm(root) << endl;
-//#endif
-//    tlp.initCongruence(root);
-//
-//#ifdef PEDANTIC_DEBUG
-//    cerr << "Compute congruence substitution" << endl;
-//#endif
-//    if (!tlp.computeCongruenceSubstitutions(root, tlfacts)) {
-//        root = logic.getTerm_false(); // trivial problem
-//    }
-//    PTRef new_root;
-//    tlp.substitute(root, new_root);
-//    root = new_root;
+#ifdef ENABLE_CONGRUENCESUBSTITUTION
+#ifdef PEDANTIC_DEBUG
+    cerr << "Init congruence with " << logic.printTerm(root) << endl;
+#endif
+    tlp.initCongruence(root);
 
+#ifdef PEDANTIC_DEBUG
+    cerr << "Compute congruence substitution" << endl;
+#endif
+    if (!tlp.computeCongruenceSubstitutions(root, tlfacts)) {
+        root = logic.getTerm_false(); // trivial problem
+    }
+    PTRef new_root;
+    tlp.substitute(root, new_root);
+    root = new_root;
+#endif
     {
         // Add the top level facts to the formula
         vec<PTRef> tmp;
@@ -126,7 +127,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         terms.clear();
         getTermList(fc.getRoot(), terms, logic);
         fc = simplifyEqualities(terms);
-        res = logic.simplifyTree(fc.getRoot());
+//        res = logic.simplifyTree(fc.getRoot());
         if (res == l_False) state = giveToSolver(logic.getTerm_false());
         else if (res == l_Undef)
             state = giveToSolver(fc.getRoot());
