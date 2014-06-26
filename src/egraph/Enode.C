@@ -75,7 +75,11 @@ Enode::Enode(ERef car_, ERef cdr_,
     }
     cgd.cg_ptr = er;
 
+#ifdef CUSTOM_EL_ALLOC
     cgd.forbid = ELRef_Undef;
+#else
+    cgd.forbid = NULL;
+#endif
 }
 
 

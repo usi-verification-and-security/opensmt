@@ -13,6 +13,7 @@
 #include "GCTest.h"
 
 GCTest::GCTest(int argc, char **argv) {
+#ifdef CUSTOM_EL_ALLOC
     SMTConfig cfg(argc, argv);
 //    EnodeStore estore;
     SStore sort_store(cfg);
@@ -143,8 +144,11 @@ GCTest::GCTest(int argc, char **argv) {
     rval = egraph.addDisequality(eq_ptr);
     assert(rval == l_False);
 */
+#endif
 }
 
 int main(int argc, char** argv) {
+#ifdef CUSTOM_GC_ALLOC
     GCTest t(argc, argv);
+#endif
 }

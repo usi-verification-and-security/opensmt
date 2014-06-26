@@ -52,7 +52,9 @@ private:
   PtStore&      term_store;
   Logic&        logic;
   TermMapper&   tmap;
+#ifdef CUSTOM_EL_ALLOC
   ELAllocator   forbid_allocator;
+#endif
   EnodeStore    enode_store;
   ERef          ERef_Nil;
 
@@ -85,7 +87,7 @@ public:
       , term_store         ( terms )
       , logic              ( l )
       , tmap               ( term_map )
-#ifdef PEDANTIC_DEBUG
+#if defined(PEDANTIC_DEBUG) && defined(CUSTOM_EL_ALLOC)
       , enode_store        ( sym_store, term_store, forbid_allocator )
 #else
       , enode_store        ( sym_store, term_store )
@@ -602,6 +604,7 @@ private:
   ERef    uCons             ( ERef, ERef );                     // Undoable cons - To create dynamic terms
   void    undoCons          ( ERef );                           // Undoes a cons
 
+#ifdef CUSTOM_EL_ALLOC
   //============================================================================
   // Memory management for forbid allocator
   void faGarbageCollect();
@@ -610,7 +613,7 @@ private:
     if (forbid_allocator.wasted() > forbid_allocator.size() * gf)
         faGarbageCollect(); }
   void relocAll(ELAllocator&);
-
+#endif
   //============================================================================
 
 #ifdef BUILD_64
@@ -671,7 +674,11 @@ private:
 public:
   string printExplanationTreeDotty ( PTRef );
 private:
-  const string printDistinctionList      ( ELRef, ELAllocator& ela );
+#ifdef CUSTOM_EL_ALLOC
+  const string printDistinctionList( ELRef, ELAllocator& ela );
+#else
+  const string printDistinctionList( );
+#endif
   void checkForbidReferences       ( ERef );
   void checkRefConsistency         ( );
   string printCbeStructure         ( );

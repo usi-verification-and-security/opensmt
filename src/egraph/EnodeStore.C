@@ -275,17 +275,33 @@ char* EnodeStore::printEnode(ERef e) {
                      , en.getCgPtr().x);
         ::free(old);
 #ifdef PEDANTIC_DEBUG
+#ifdef CUSTOM_EL_ALLOC
         ELRef f_start = en.getForbid();
         ELRef f_next = f_start;
         if (f_start != ELRef_Undef) {
+#else
+        Elist* f_start = en.getForbid();
+        Elist* f_next = f_start;
+        if (f_start != NULL) {
+#endif
             while (true) {
                 old = out;
+#ifdef CUSTOM_EL_ALLOC
                 asprintf(&out, "%s %d (%s) ",
                     old,
                     f_next.x,
                     term_store.printTerm((operator[] (fa[f_next].e)).pterm));
+#else
+                asprintf(&out, "%s (%s) ",
+                    old,
+                    term_store.printTerm((operator[] (f_next->e)).pterm));
+#endif
                 ::free(old);
+#ifdef CUSTOM_EL_ALLOC
                 f_next = fa[f_next].link;
+#else
+                f_next = f_next->link;
+#endif
                 if (f_next == f_start) break;
             }
         }

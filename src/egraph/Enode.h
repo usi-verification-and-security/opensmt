@@ -48,6 +48,7 @@ static struct ERef ERef_Undef = {INT32_MAX};
 // Data structure used to store forbid lists
 //
 
+#ifdef CUSTOM_EL_ALLOC
 struct ELRef {
     uint32_t x;
     void operator= (uint32_t v) { x = v; }
@@ -59,6 +60,16 @@ struct ELRef {
 
 // FIXME this is uninitialized right now.
 static struct ELRef ELRef_Undef = {INT32_MAX};
+#else
+class Elist
+{
+public:
+    Elist  *link;              // Link to the next element in the list
+    ERef   e;                  // Enode that differs from this
+    PtAsgn reason;             // Reason for this distinction
+    Elist(ERef e_, PtAsgn r_) : link(NULL), e(e_), reason(r_) {}
+};
+#endif
 
 class CgData {
     ERef        root;           // Root of the equivalence class
@@ -69,7 +80,11 @@ class CgData {
     ERef        same_cdr;       // Circular list of all the cdr-parents of the class
     int         parent_size;    // Size of the parent's congruence class
     ERef        cg_ptr;         // Congruence class representative (how is this different from root?)
+#ifdef CUSTOM_EL_ALLOC
     ELRef       forbid;         // List of unmergeable Enodes
+#else
+    Elist*      forbid;         // List of unmergeable Enodes
+#endif
     dist_t      dist_classes;   // The bit vector for distinction classes
     int         dist_index;     // ?
 
@@ -166,9 +181,15 @@ public:
     PTRef getTerm       ()        const { assert(type() != et_symb && type() != et_list); return pterm; }
     ERef  getRoot       ()        const { if (type() == et_symb) return er; else return cgdata->root; }
     void  setRoot       (ERef r)        { assert(type() != et_symb); cgdata->root = r; }
+#ifdef CUSTOM_EL_ALLOC
     ELRef getForbid     ()        const { return cgdata->forbid; }
     ELRef& altForbid    ()              { return cgdata->forbid; }
     void  setForbid     (ELRef r)       { cgdata->forbid = r; }
+#else
+    Elist* getForbid    ()        const { return cgdata->forbid; }
+    Elist& altForbid    ()              { return *(cgdata->forbid); }
+    void  setForbid     (Elist* r)      { cgdata->forbid = r; }
+#endif
     int   getDistIndex  ()        const { return cgdata->dist_index; }
     void  setDistIndex  (int i)         { cgdata->dist_index = i; }
     ERef  getCgPtr      ()        const { return cgdata->cg_ptr; }
@@ -320,6 +341,7 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
 };
 
 
+#ifdef CUSTOM_EL_ALLOC
 #define ID_BITS 30
 #define ID_MAX 2 << 30
 class Elist
@@ -463,311 +485,7 @@ public:
 #endif
     }
 };
-/*
-  Enode ( const enodeid_t, SymRef ) :
-      id(geid++);
-    , header.type(ETYPE_SYM)
-  //
-  // Constructor for terms and lists
-  //
-  Enode ( const enodeid_t       // id
-        , Enode *               // car
-        , Enode *               // cdr
-        );
-  //
-  // Constructor for defs -- what is a def?
-  //
-  Enode ( const enodeid_t       // id
-        , Enode *               // def
-        );
-  //
-  // Destructor
-  //
-  ~Enode ( );
-  //
-  // Check if a node is Enil
-  //
-  inline bool isEnil            ( ) const { return id == ENODE_ID_ENIL; }
-  inline bool isList            ( ) const { return (properties & ETYPE_MASK) == ETYPE_LIST; }
-  inline bool isTerm            ( ) const { return (properties & ETYPE_MASK) == ETYPE_TERM; }
-  inline bool isSymb            ( ) const { return (properties & ETYPE_MASK) == ETYPE_SYMB; }
-  inline bool isNumb            ( ) const { return (properties & ETYPE_MASK) == ETYPE_NUMB; }
-  inline bool isDef             ( ) const { return (properties & ETYPE_MASK) == ETYPE_DEF; }
 
-  inline void setEtype          ( const etype_t t )
-  {
-    assert( t == ETYPE_SYMB
-         || t == ETYPE_NUMB
-         || t == ETYPE_LIST
-         || t == ETYPE_TERM
-         || t == ETYPE_DEF );
-    properties |= t;
-  }
-
-  inline void setArity            ( const unsigned a ) { assert( a <= ARITY_N ); properties |= (a << ARITY_SHIFT); }
-
-  inline bool hasCongData         ( ) const { return cong_data != NULL; }
-  void        allocCongData       ( );
-  void        deallocCongData     ( );
-
-  //
-  // Getty and Setty methods
-  //
-  inline enodeid_t            getId      ( ) const { return id; }
-  inline SymRef                 getTerm    ( ) const { return tr; }
-
-  inline Enode *  getCar                 ( ) const { return car; }
-  inline Enode *  getCdr                 ( ) const { return cdr; }
-//  inline Enode *  getDef                 ( ) const { assert( isDef( ) ); assert( car ); return car; }
-
-  inline Enode *  getNext                ( ) const { assert( isTerm( ) || isList( ) ); assert( cong_data ); return cong_data->next; }
-  inline int      getSize                ( ) const { assert( isTerm( ) || isList( ) ); assert( cong_data ); return cong_data->size; }
-  inline Enode *  getParent              ( ) const { assert( isTerm( ) || isList( ) ); assert( cong_data ); return cong_data->parent; }
-  inline Enode *  getSameCar             ( ) const { assert( isTerm( ) || isList( ) ); assert( cong_data ); return cong_data->same_car; }
-  inline Enode *  getSameCdr             ( ) const { assert( isTerm( ) || isList( ) ); assert( cong_data ); return cong_data->same_cdr; }
-  inline int      getParentSize          ( ) const { assert( isTerm( ) || isList( ) ); assert( cong_data ); return cong_data->parent_size; }
-  inline Enode *  getCgPtr               ( ) const { assert( isTerm( ) || isList( ) ); assert( cong_data ); return cong_data->cg_ptr; }
-  inline Elist *  getForbid              ( ) const { assert( isTerm( ) || isList( ) ); assert( cong_data ); return cong_data->forbid; }
-  inline dist_t   getDistClasses         ( ) const { assert( isTerm( ) || isList( ) ); assert( cong_data ); return cong_data->dist_classes; }
-
-  Enode *         getRoot                ( ) const;
-  enodeid_t       getCid                 ( ) const;
-  Enode *         getConstant            ( ) const;
-                  
-  inline Enode *  getExpReason           ( ) const { assert( isTerm( ) && cong_data && cong_data->term_data ); return cong_data->term_data->exp_reason; }
-  inline Enode *  getExpParent           ( ) const { assert( isTerm( ) && cong_data && cong_data->term_data ); return cong_data->term_data->exp_parent; }
-  inline Enode *  getExpRoot             ( ) const { assert( isTerm( ) && cong_data && cong_data->term_data ); return cong_data->term_data->exp_root; }
-  inline int      getExpClassSize        ( ) const { assert( isTerm( ) && cong_data && cong_data->term_data ); return cong_data->term_data->exp_class_size; }
-  inline Enode *  getExpHighestNode      ( ) const { assert( isTerm( ) && cong_data && cong_data->term_data ); return cong_data->term_data->exp_highest_node; }
-  // inline Reason * getExpReason           ( ) const { assert( isTerm( ) && cong_data && cong_data->term_data ); return cong_data->term_data->exp_reason; }
-  inline int      getExpTimeStamp        ( ) const { assert( isTerm( ) && cong_data && cong_data->term_data ); return cong_data->term_data->exp_time_stamp; }
-
-  inline lbool    getPolarity            ( ) const { assert( isTerm( ) && atom_data ); return atom_data->polarity; }
-  inline bool	  hasPolarity            ( ) const { assert( isTerm( ) && atom_data ); return atom_data->has_polarity; }
-  inline lbool    getDeduced             ( ) const { assert( isTerm( ) && atom_data ); return atom_data->deduced; }
-  inline bool     isDeduced              ( ) const { assert( isTerm( ) && atom_data ); return atom_data->is_deduced; }
-  inline lbool    getDecPolarity         ( )       { assert( isAtom( ) && atom_data ); return atom_data->dec_polarity; }
-  inline int      getWeightInc           ( )       { assert( isAtom( ) && atom_data ); return atom_data->weight_inc; }
-  inline int      getDedIndex            ( ) const { assert( isTerm( ) && atom_data ); return atom_data->ded_index; }
-  inline int      getDistIndex           ( ) const { assert( isTerm( ) && atom_data ); return atom_data->dist_index; }
-
-  inline Enode *  getCb                  ( ) const { assert( isTerm( ) && cong_data && cong_data->term_data ); return cong_data->term_data->cb; }
-  inline Enode *  getRef                 ( ) const { assert( isTerm( ) && cong_data && cong_data->term_data ); return cong_data->root; }
-  inline int      getWidth               ( ) const { assert( isTerm( ) || isSymb( ) || isNumb( ) ); return (properties & WIDTH_MASK); }
-
-  inline void     setWidth               ( const uint32_t w )
-  {
-    assert( isTerm( ) );
-    assert( w < MAX_WIDTH );
-    // Reset width
-    properties &= ~WIDTH_MASK;
-    properties |= w;
-    assert( getWidth( ) == static_cast<int>( w ) );
-  }
-
-  inline void    setRoot                ( Enode * e )        { assert( isTerm( ) || isList( ) ); assert( cong_data ); cong_data->root = e; }
-  inline void    setCid                 ( const enodeid_t c ){ assert( isTerm( ) || isList( ) ); assert( cong_data ); cong_data->cid = c; } // Congruence id?
-  inline void    setDef                 ( Enode * e )        { assert( e ); assert( isDef( ) ); car = e; }
-  inline void    setNext                ( Enode * e )        { assert( isTerm( ) || isList( ) ); assert( cong_data ); cong_data->next = e; }
-  inline void    setSize                ( const int s )      { assert( isTerm( ) || isList( ) ); assert( cong_data ); cong_data->size = s; }
-  inline void    setParent              ( Enode * e )        { assert( isTerm( ) || isList( ) ); assert( cong_data ); cong_data->parent = e; }
-  inline void    setSameCar             ( Enode * e )        { assert( isTerm( ) || isList( ) ); assert( cong_data ); cong_data->same_car = e; }
-  inline void    setSameCdr             ( Enode * e )        { assert( isTerm( ) || isList( ) ); assert( cong_data ); cong_data->same_cdr = e; }
-  inline void    setParentSize          ( const int s )      { assert( isTerm( ) || isList( ) ); assert( cong_data ); cong_data->parent_size = s; }
-  inline void    setCgPtr               ( Enode * e )        { assert( isTerm( ) || isList( ) ); assert( cong_data ); cong_data->cg_ptr = e; }
-  inline void    setForbid              ( Elist * l )        { assert( isTerm( ) || isList( ) ); assert( cong_data ); cong_data->forbid = l; }
-  inline void    setDistClasses         ( const dist_t & d ) { assert( isTerm( ) || isList( ) ); assert( cong_data ); cong_data->dist_classes = d; }
-
-  inline void    setConstant            ( Enode * e )            { assert( isTerm( ) && cong_data && cong_data->term_data ); assert( e == NULL || e->isConstant( ) ); cong_data->term_data->constant = e; }
-  inline void    setExpReason           ( Enode * r )            { assert( isTerm( ) && cong_data && cong_data->term_data ); cong_data->term_data->exp_reason = r; }
-  inline void    setExpParent           ( Enode * e )            { assert( isTerm( ) && cong_data && cong_data->term_data ); cong_data->term_data->exp_parent = e; }
-  inline void    setExpRoot             ( Enode * e )            { assert( isTerm( ) && cong_data && cong_data->term_data ); cong_data->term_data->exp_root = e; }
-  inline void    setExpClassSize        ( const int s )          { assert( isTerm( ) && cong_data && cong_data->term_data ); cong_data->term_data->exp_class_size = s; }
-  inline void    setExpHighestNode      ( Enode * e )            { assert( isTerm( ) && cong_data && cong_data->term_data ); cong_data->term_data->exp_highest_node = e; }
-  inline void    setExpTimeStamp        ( const int t )          { assert( isTerm( ) && cong_data && cong_data->term_data ); cong_data->term_data->exp_time_stamp = t; }
-  inline void    setPolarity            ( const lbool p )        { assert( isTerm( ) && atom_data ); assert( !atom_data->has_polarity ); atom_data->polarity = p; atom_data->has_polarity = true; }
-  inline void    resetPolarity          ( )			 { assert( isTerm( ) && atom_data ); assert( atom_data->has_polarity ); atom_data->has_polarity = false; }
-  inline void    setDeduced             ( const lbool d, int i ) { assert( isTerm( ) && atom_data ); assert( !atom_data->is_deduced ); atom_data->deduced = d; atom_data->ded_index = i; atom_data->is_deduced = true; }
-  inline void    setDeduced             ( const bool s, int i )  { setDeduced( s ? l_False : l_True, i ); }
-  inline void    resetDeduced           ( )			 { assert( isTerm( ) && atom_data ); assert( atom_data->is_deduced ); atom_data->is_deduced = false; }
-  inline void    setDecPolarity         ( const lbool s )        { assert( isAtom( ) && atom_data ); atom_data->dec_polarity = s; }
-  inline void    setWeightInc           ( const int w )          { assert( isAtom( ) && atom_data ); atom_data->weight_inc = w; }
-  inline void    setDistIndex           ( const int d )	         { assert( isTerm( ) && atom_data ); atom_data->dist_index = d; }
-
-  inline void    setCb                  ( Enode * e )            { assert( isTerm( ) && cong_data && cong_data->term_data ); cong_data->term_data->cb = e; }
-
-  //
-  // Congruence closure related routines
-  //
-  void           addParent              ( Enode * );   // Adds a parent to this node. Useful for congruence closure
-  void           addParentTail          ( Enode * );   // Adds a parent to the tail of this node. Useful for congruence closure
-  void           removeParent           ( Enode * );   // Remove a parent of this node
-  //
-  // Shortcuts for retrieving a term's arguments
-  //
-  inline Enode * get1st                 ( ) const;     // Get first argument in constant time (constant?)
-  inline Enode * get2nd                 ( ) const;     // Get second argument in constant time
-  inline Enode * get3rd                 ( ) const;     // Get third argument in constant time
-
-  bool           addToCongruence        ( ) const;
-  unsigned       sizeInMem              ( ) const;
-
-  void           print                  ( ostream & ); // Prints the enode
-  string         stripName              ( string );
-  void           printSig               ( ostream & ); // Prints the enode signature
-
-#ifdef BUILD_64
-  inline enodeid_pair_t          getSig    ( ) const { return encode( car->getRoot( )->getCid( ), cdr->getRoot( )->getCid( ) ); }
-#else
-  inline const Pair( enodeid_t ) getSig    ( ) const { return make_pair( car->getRoot( )->getCid( ), cdr->getRoot( )->getCid( ) ); }
-#endif
-  inline enodeid_t               getSigCar ( ) const { return car->getRoot( )->getCid( ); }
-  inline enodeid_t               getSigCdr ( ) const { return cdr->getRoot( )->getCid( ); }
-
-#ifdef PRODUCE_PROOF
-  inline const ipartitions_t & getIPartitions ( ) const                   { return ipartitions; }
-  inline void                  setIPartitions ( const ipartitions_t & p ) { assert( ipartitions == 0 ); ipartitions = p; }
-  inline void                  addIPartitions ( const ipartitions_t & p ) { assert( p != 0 ); ipartitions |= p; }
-  // inline void                  oveIPartitions ( const ipartitions_t & p ) { assert( p != 0 ); ipartitions = p; }
 #endif
 
-  inline friend ostream & operator<<( ostream & os, Enode * e )    { assert( e ); e->print( os ); return os; }
-
-  struct idLessThan
-  {
-    inline bool operator( )( Enode * x, Enode * y ) const
-    {
-      const Enode *x_car = x->getCar();
-      const Enode *y_car = y->getCar();
-      const enodeid_t x_car_id = x_car->getId();
-      const enodeid_t y_car_id = y_car->getId();
-
-      return (x_car_id < y_car_id)
-	  || (x_car_id == y_car_id && x->getCdr( )->getId( ) < y->getCdr( )->getId( ) );
-    }
-  };
-
-  struct cidLessThan
-  {
-    inline bool operator( )( Enode * x, Enode * y ) const
-    {
-      if ( x == y ) return false;
-      if ( x->isEnil( ) ) return true;
-      if ( y->isEnil( ) ) return false;
-      return (x->getCar( )->getCid( ) <  y->getCar( )->getCid( ))
-          || (x->getCar( )->getCid( ) == y->getCar( )->getCid( ) && x->getCdr( )->getCid( ) < y->getCdr( )->getCid( ) );
-    }
-  };
-
-private:
-  //
-  // Standard informations for terms
-  //
-  const enodeid_t   id;          // Node unique identifier
-  uint32_t          properties;  // Contains all the properties of this node (see EnodeTypes.h for bitfields definition)
-  Enode *           car;         // For car / defs
-  Enode *           cdr;         // For cdr
-  union {
-  CongData *        cong_data;   // For terms and lists that go in the congruence
-  SymbData *        symb_data;   // For symbols/numbers
-  };
-  AtomData *        atom_data;   // For atom terms only
-#ifdef PRODUCE_PROOF
-  ipartitions_t     ipartitions; // Partitions for interpolation
-#endif
-
-  inline bool       hasSymbolId    ( const enodeid_t id ) const { assert( isTerm( ) ); return car->getId( ) == id; }
-};
-
-
-inline Enode * Enode::getRoot ( ) const
-{
-  assert( !isDef( ) );
-  if ( (isTerm( ) || isList( )) && cong_data != NULL )
-    return cong_data->root;
-  return const_cast<Enode *>(this);
-}
-
-inline enodeid_t Enode::getCid ( ) const
-{
-  assert( !isDef( ) );
-  if ( (isTerm( ) || isList( )) && cong_data )
-    return cong_data->cid;
-  return id;
-}
-
-
-inline Enode * Enode::get1st ( ) const
-{
-  assert( isTerm( ) );
-  assert( getArity( ) > 0 );
-  return getCdr( )->getCar( );
-}
-
-inline Enode * Enode::get2nd ( ) const
-{
-  assert( isTerm( ) );
-  assert( getArity( ) > 1 );
-  return getCdr( )->getCdr( )->getCar( );
-}
-
-inline Enode * Enode::get3rd ( ) const
-{
-  assert( isTerm( ) );
-  assert( getArity( ) > 2 );
-  return getCdr( )->getCdr( )->getCdr( )->getCar( );
-}
-
-inline unsigned Enode::sizeInMem( ) const
-{
-  assert(value == NULL);
-  unsigned size = sizeof( Enode );
-  if ( isSymb( ) )
-  {
-    assert( symb_data );
-    assert( symb_data->name );
-    size += sizeof( SymbData ) + strlen( symb_data->name );
-  }
-  if ( isNumb( ) )
-  {
-    assert( symb_data );
-    assert( symb_data->name );
-    assert( symb_data->value );
-    size += sizeof( SymbData ) + strlen( symb_data->name ) + sizeof( Real );
-  }
-  if ( atom_data ) size += sizeof( AtomData );
-  if ( cong_data )
-  {
-    size += sizeof( CongData );
-    if ( cong_data->term_data ) size += sizeof( TermData );
-  }
-#ifdef PRODUCE_PROOF
-  size += ipartitions.get_mpz_t()->_mp_alloc * sizeof(ipartitions.get_mpz_t()->_mp_d[0]);
-#endif
-  return size;
-}
-
-inline void Enode::allocCongData( )
-{
-  assert( isTerm( ) || isList( ) );
-  assert( cong_data == NULL );
-  cong_data = new CongData( id, const_cast<Enode *>(this) );
-  if ( isTerm( ) )
-    cong_data->term_data = new TermData( const_cast<Enode *>(this) );
-}
-
-inline void Enode::deallocCongData( )
-{
-  assert( isTerm( ) || isList( ) );
-  assert( cong_data != NULL );
-  if ( isTerm( ) )
-  {
-    assert( cong_data->term_data != NULL );
-    delete cong_data->term_data;
-    cong_data->term_data = NULL;
-  }
-  delete cong_data;
-  cong_data = NULL;
-}
-*/
 #endif
