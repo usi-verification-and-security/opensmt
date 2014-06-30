@@ -82,6 +82,7 @@ class CgData {
     ERef        cg_ptr;         // Congruence class representative (how is this different from root?)
 #ifdef CUSTOM_EL_ALLOC
     ELRef       forbid;         // List of unmergeable Enodes
+    int         padding[2];     // XXX Remove, this is only for debugging
 #else
     Elist*      forbid;         // List of unmergeable Enodes
 #endif
@@ -127,6 +128,8 @@ class Enode
     cgId        cid;            // The congruence id of the enode (defined also for symbols)
 
     // This is a trick to enable congruence data on only Enodes it is needed
+    // XXX Check whether this is a pointer, taking extra space in the
+    // structure...
     CgData      cgdata[0];
 
 
@@ -143,20 +146,6 @@ public:
 
     // Constructor for term and list nodes
     Enode(ERef car_, ERef cdr_, en_type t, EnodeAllocator& ea, ERef er, Map<SigPair,ERef,SigHash,Equal<const SigPair&> >& sig_tab);
-
-//    Enode* Enode_new(en_type t, SymRef tr) {
-//        assert(sizeof(SymRef) == sizeof(uint32_t));
-//        size_t sz = sizeof(header) + sizeof(SymRef) + sizeof(uint32_t);
-//        if (t != et_symb) sz += sizeof(CgData);
-//        void* mem = malloc(sz);
-//
-//        if (t == et_term || t == et_list) {
-//            Enode* en = new (mem) Enode(tr);
-//            new (en->cgdata) CgData();
-//        }
-//        return new (mem) Enode(tr);
-//
-//    }
 
     en_type type        ()        const { return (en_type)header.type; }
 
@@ -185,6 +174,7 @@ public:
     ELRef getForbid     ()        const { return cgdata->forbid; }
     ELRef& altForbid    ()              { return cgdata->forbid; }
     void  setForbid     (ELRef r)       { cgdata->forbid = r; }
+    int   padding;                      // XXX for debugging (I dont't know why this is needed!)
 #else
     Elist* getForbid    ()        const { return cgdata->forbid; }
     Elist& altForbid    ()              { return *(cgdata->forbid); }

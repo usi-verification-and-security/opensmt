@@ -675,9 +675,9 @@ public:
   string printExplanationTreeDotty ( PTRef );
 private:
 #ifdef CUSTOM_EL_ALLOC
-  const string printDistinctionList( ELRef, ELAllocator& ela );
+  const string printDistinctionList( ELRef, ELAllocator& ela, bool detailed = true );
 #else
-  const string printDistinctionList( );
+  const string printDistinctionList( Elist* );
 #endif
   void checkForbidReferences       ( ERef );
   void checkRefConsistency         ( );

@@ -786,6 +786,47 @@ bool Egraph::assertEq ( PTRef tr_x, PTRef tr_y, PtAsgn r )
     pending.push( x );
     pending.push( y );
 
+#if defined(PEDANTIC_DEBUG)
+    cerr << "this is assertEq for " << logic.printTerm(en_x.getTerm())
+         << " (enode-id " << tr_x.x << ") and "
+         << logic.printTerm(en_y.getTerm()) << " (enode-id " << tr_y.x << ")" << endl;
+#endif
+#if defined(PEDANTIC_DEBUG) && defined(CUSTOM_EL_ALLOC)
+    ELRef elr_x = en_x.getForbid();
+    ERef first_x = ERef_Undef;
+    if (elr_x == ELRef_Undef)
+        cerr << "asserting eq, x's forbid list is undef" << endl;
+    else {
+        cerr << "asserting eq, x's forbid list is " << endl;
+        cerr << printDistinctionList(elr_x, forbid_allocator, false);
+    }
+    ELRef elr_y = en_y.getForbid();
+    ERef first_y = ERef_Undef;
+    if (elr_y == ELRef_Undef)
+        cerr << "asserting eq, y's forbid list is undef" << endl;
+    else {
+        cerr << "asserting eq, y's forbid list is " << endl;
+        cerr << printDistinctionList(elr_y, forbid_allocator, false);
+    }
+#elif defined(PEDANTIC_DEBUG)
+    Elist* el_x = en_x.getForbid();
+    ERef first_x = ERef_Undef;
+    if (el_x == NULL)
+        cerr << "asserting eq, x's forbid list is undef" << endl;
+    else {
+        cerr << "asserting eq, x's forbid list is " << endl;
+        cerr << printDistinctionList(el_x);
+    }
+    Elist* el_y = en_y.getForbid();
+    ERef first_y = ERef_Undef;
+    if (el_y == NULL)
+        cerr << "asserting eq, y's forbid list is undef" << endl;
+    else {
+        cerr << "asserting eq, y's forbid list is " << endl;
+        cerr << printDistinctionList(el_y);
+    }
+#endif
+
     const bool res = mergeLoop( r );
 
     return res;
@@ -1089,6 +1130,8 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
     Enode& en_q = enode_store[q];
     if ( en_q.getForbid() == NULL ) {
         pdist = new Elist(p, r);
+        en_q.setForbid(pdist);
+        pdist->link = pdist;
     }
 #endif
 
@@ -1110,8 +1153,8 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
 #endif
 #else
         pdist = new Elist(p, r);
-        pdist->link = en_q.altForbid().link;
-        en_q.altForbid().link = pdist;
+        pdist->link = en_q.getForbid()->link;
+        en_q.getForbid()->link = pdist;
 #endif
     }
 
@@ -1155,8 +1198,14 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
     // Save operation in undo_stack
     undo_stack_main.push( Undo(DISEQ, q) );
 #ifdef PEDANTIC_DEBUG
+#ifdef CUSTOM_EL_ALLOC
+    cerr << printDistinctionList(en_q.getForbid(), forbid_allocator, false);
+#else
+    cerr << printDistinctionList(en_q.getForbid());
+#endif
     undo_stack_main.last().bool_term = r.tr;
 #endif
+
 
     return true;
 }
@@ -1584,17 +1633,6 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
             en_y.getForbid()->link = tmp;
         }
     }
-    if ( en_y.getForbid( ) != NULL ) {
-        // We assign the same forbid list
-        if ( en_x.getForbid( ) == NULL )
-            en_x.setForbid( en_y.getForbid( ) );
-        // Otherwise we splice the two lists
-        else {
-            Elist* tmp = en_x.getForbid()->link;
-            en_x.getForbid()->link = en_y.getForbid()->link;
-            en_y.getForbid()->link = tmp;
-        }
-    }
 #endif // CUSTOM_EL_ALLOC
     // Merge distinction classes
     en_x.setDistClasses( ( en_x.getDistClasses( ) | en_y.getDistClasses( ) ) );
@@ -1884,6 +1922,9 @@ void Egraph::undoMerge( ERef y )
 {
 #ifdef GC_DEBUG
     checkRefConsistency();
+#endif
+#ifdef PEDANTIC_DEBUG
+    cerr << "Undo merge of " << y.x << endl;
 #endif
     assert( y != ERef_Undef );
 

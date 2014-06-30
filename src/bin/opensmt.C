@@ -90,6 +90,8 @@ int main( int argc, char * argv[] )
 
   cerr << "; svn rev: " << SVN_REVISION << endl;
 
+  cerr << "; enode size w/ congruence: " << (sizeof(Enode) + sizeof(CgData))/sizeof(int32_t) << endl;
+  cerr << "; enode size w/o congruence: " << sizeof(Enode) / sizeof(int32_t) << endl;
 #ifndef SMTCOMP
 //  if ( context.getConfig( ).verbosity > 0 )
   if ( false )

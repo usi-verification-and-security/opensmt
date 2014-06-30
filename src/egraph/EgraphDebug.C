@@ -359,30 +359,42 @@ char* Egraph::printDistinctions(PTRef x) const
 }
 
 #ifdef CUSTOM_EL_ALLOC
-const string Egraph::printDistinctionList( ELRef x, ELAllocator& ela )
+const string Egraph::printDistinctionList( ELRef x, ELAllocator& ela, bool detailed )
 {
     if ( x == ELRef_Undef )
-        return "";
+        return "(undef)";
 
     std::stringstream os;
 
     ELRef start = x;
     do {
-        os << "+-----------------------------------------------------------+" << endl
-           << "| Forbid list node                                          |" << endl
-           << "+-----------------------------------------------------------+" << endl
-           << "| ELRef: " << x.x << endl
-           << "| id: " << ela[x].getId() << endl
-           << "| dirty: " << ela[x].isDirty() << endl
-           << "| reason: " << (ela[x].reason.sgn == l_True ? "" : "not " ) << logic.printTerm(ela[x].reason.tr) << endl;
-        if (ela[x].reloced())
-            os << "| reloced to: " << ela[x].rel_e.x << endl;
-        else {
+       if (detailed) {
+           os << "+-----------------------------------------------------------+" << endl
+              << "| Forbid list node                                          |" << endl
+              << "+-----------------------------------------------------------+" << endl
+              << "| ELRef: " << x.x << endl
+              << "| id: " << ela[x].getId() << endl
+              << "| dirty: " << ela[x].isDirty() << endl
+              << "| reason: " << (ela[x].reason.sgn == l_True ? "" : "not " ) << logic.printTerm(ela[x].reason.tr) << endl;
+
+            if (ela[x].reloced())
+                os << "| reloced to: " << ela[x].rel_e.x << endl;
+            else {
+                os << "| different from enode " << ela[x].e.x << endl;
+                if (enode_store[ela[x].e].isTerm())
+                    os << "|   term " << logic.printTerm(enode_store[ela[x].e].getTerm()) << endl;
+            }
+            os << "| link: " << ela[x].link.x << endl;
+        } else {
+            os << "+-----------------------------------------------------------+" << endl
+               << "| Forbid list node                                          |" << endl
+               << "+-----------------------------------------------------------+" << endl
+               << "| reason: " << (ela[x].reason.sgn == l_True ? "" : "not " ) << logic.printTerm(ela[x].reason.tr) << endl;
+
             os << "| different from enode " << ela[x].e.x << endl;
             if (enode_store[ela[x].e].isTerm())
                 os << "|   term " << logic.printTerm(enode_store[ela[x].e].getTerm()) << endl;
         }
-        os << "| link: " << ela[x].link.x << endl;
         os << "+-----------------------------------------------------------+" << endl;
 
         x = ela[x].link;
@@ -416,7 +428,31 @@ void Egraph::checkRefConsistency() {
     }
 }
 
+#else
+const string Egraph::printDistinctionList( Elist* x )
+{
+    if ( x == NULL )
+        return "(undef)\n";
+
+    std::stringstream os;
+
+    Elist* start = x;
+    do {
+        os << "+-----------------------------------------------------------+" << endl
+           << "| Forbid list node                                          |" << endl
+           << "+-----------------------------------------------------------+" << endl
+           << "| reason: " << (x->reason.sgn == l_True ? "" : "not " ) << logic.printTerm(x->reason.tr) << endl;
+        os << "| different from enode " << x->e.x << endl;
+        if (enode_store[x->e].isTerm())
+            os << "|   term " << logic.printTerm(enode_store[x->e].getTerm()) << endl;
+        os << "+-----------------------------------------------------------+" << endl;
+
+        x = x->link;
+    } while( x != start );
+    return os.str();
+}
 #endif
+
 
 #ifdef PEDANTIC_DEBUG
 const char* Egraph::printUndoTrail() {
