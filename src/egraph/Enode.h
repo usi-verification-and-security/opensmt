@@ -82,7 +82,6 @@ class CgData {
     ERef        cg_ptr;         // Congruence class representative (how is this different from root?)
 #ifdef CUSTOM_EL_ALLOC
     ELRef       forbid;         // List of unmergeable Enodes
-    int         padding[2];     // XXX Remove, this is only for debugging
 #else
     Elist*      forbid;         // List of unmergeable Enodes
 #endif

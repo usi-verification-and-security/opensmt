@@ -1,6 +1,8 @@
 AC_PREREQ(2.59)
 define([svnversion], esyscmd([sh -c "svnversion -n"]))
 AC_INIT([OpenSMT 2.0.svnversion], [(unstable)], [antti.hyvarinen@gmail.com])
+config_flags="$*"
+AC_DEFINE_UNQUOTED([CONFIG_FLAGS], ["$config_flags"], [Flags passed to configure])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(autotools)
 AM_INIT_AUTOMAKE
