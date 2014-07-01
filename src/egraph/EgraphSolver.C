@@ -1778,19 +1778,17 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
 // Deduce facts from the merge of x and y
 //
 // FIXME The implementation of polarity deduction should be based on just checking the
-//       enode against true/false.  Or possibly the trail should be available for checking
+//       enode against true/false.  Or possibly the trail should be available for checking.
+//       2014-07-01 fixed?
 //
 void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
     if (enode_store[x].isList()) return;
     lbool deduced_polarity = l_Undef;
 
-    if ( x == enode_store.getEnode_true() )
+    PTRef x_const = enode_store[x].getConstant();
+    if ( x_const == logic.getTerm_true() )
         deduced_polarity = l_True;
-    else if ( x == enode_store.getEnode_false() )
-        deduced_polarity = l_False;
-    else if (isEqual(enode_store[x].getTerm(), logic.getTerm_true()))
-        deduced_polarity = l_True;
-    else if (isEqual(enode_store[x].getTerm(), logic.getTerm_false()))
+    else if ( x_const == logic.getTerm_false() )
         deduced_polarity = l_False;
 
     // Let y store the representant of the class
@@ -1799,16 +1797,21 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
         ERef tmp = x;
         x = y;
         y = tmp;
+        PTRef x_const = enode_store[x].getConstant();
+        if ( x_const == logic.getTerm_true() )
+            deduced_polarity = l_True;
+        else if ( x_const == logic.getTerm_false() )
+            deduced_polarity = l_False;
     }
 
-    if ( x == enode_store.getEnode_true() )
-        deduced_polarity = l_True;
-    else if ( x == enode_store.getEnode_false() )
-        deduced_polarity = l_False;
-    else if (isEqual(enode_store[x].getTerm(), logic.getTerm_true()))
-        deduced_polarity = l_True;
-    else if (isEqual(enode_store[x].getTerm(), logic.getTerm_false()))
-        deduced_polarity = l_False;
+//    if ( x == enode_store.getEnode_true() )
+//        deduced_polarity = l_True;
+//    else if ( x == enode_store.getEnode_false() )
+//        deduced_polarity = l_False;
+//    else if (isEqual(enode_store[x].getTerm(), logic.getTerm_true()))
+//        deduced_polarity = l_True;
+//    else if (isEqual(enode_store[x].getTerm(), logic.getTerm_false()))
+//        deduced_polarity = l_False;
 
     if ( deduced_polarity == l_Undef ) { // True, for instance, if x & y are not boolean types, or if they are, but they have not been assigned a value yet
 #ifdef PEDANTIC_DEBUG
@@ -1867,7 +1870,8 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
             c_elr = next_elr;
         }
 #endif
-        return; }
+        return;
+    }
 
     ERef v = y;
     const ERef vstart = v;
@@ -1896,12 +1900,12 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
                 cerr << logic.printTerm(enode_store[y].getTerm());
                 cerr << " are now equal";
                 cerr << endl;
-    #endif
+#endif
                 deductions.push(PtAsgn_reason(enode_store.ERefToTerm[sv],
                                               deduced_polarity, reason.tr));
-    #ifdef STATISTICS
+#ifdef STATISTICS
                 tsolver_stats.deductions_done ++;
-    #endif
+#endif
             }
         }
         v = enode_store[v].getNext( );
