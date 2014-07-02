@@ -32,21 +32,21 @@ AM_CONDITIONAL([WANT_LIBRARY], [test "$want_library" = "yes"])
 #
 # Statically linked version
 #
-AC_ARG_ENABLE(staticlibs,
-  AC_HELP_STRING([--enable-staticlibs],
-                 [enable statically linked libraries (-static) @<:@no@:>@)]),
-  [:],
-  [enable_staticlibs="no"])
+#AC_ARG_ENABLE(staticlibs,
+#  AC_HELP_STRING([--enable-staticlibs],
+#                 [enable statically linked libraries (-static) @<:@yes@:>@)]),
+#  [:],
+#  [enable_staticlibs="no"])
+#
+#AM_CONDITIONAL([ENABLE_STATIC], [test "$enable_static" = "yes"])
 
-AM_CONDITIONAL([ENABLE_STATIC], [test "$enable_static" = "yes"])
-
-if test $enable_staticlibs = "yes" ; then
-  config_staticlibs="-static"
-else
-  config_static=""
-fi
-echo "Compile statically linked libraries... ${enable_staticlibs}"
-
+#if test $enable_staticlibs = "yes" ; then
+#  config_staticlibs="-static"
+#else
+#  config_static=""
+#fi
+#echo "Compile statically linked libraries... ${enable_staticlibs}"
+#
 #
 # Profiling
 #
@@ -256,7 +256,7 @@ then
   exit
 fi
 
-AM_CFLAGS="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization_compiler $config_staticlibs"
+AM_CFLAGS="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization_compiler -static"
 AM_CXXFLAGS=$AM_CFLAGS
 AM_CPPFLAGS="$config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution"
 
@@ -334,7 +334,7 @@ LDFLAGS=$OLDLDFLAGS
 config_includedirs="-I\${top_srcdir}/src -I\${top_srcdir}/src/minisat/mtl -I\${top_srcdir}/src/minisat/core -I\${top_srcdir}/src/simplifiers -I\${top_srcdir}/src/common -I\${top_srcdir}/src/egraph -I\${top_srcdir}/src/sorts -I\${top_srcdir}/src/symbols -I\${top_srcdir}/src/pterms -I\${top_srcdir}/src/logics -I\${top_srcdir}/src/smtsolvers -I\${top_srcdir}/src/cnfizers -I\${top_srcdir}/src/proof -I\${top_srcdir}/src/api -I\${top_srcdir}/src/tsolvers -I\${top_srcdir}/src/tsolvers/emptysolver -I\${top_srcdir}/src/tsolvers/bvsolver -I\${top_srcdir}/src/tsolvers/bvsolver/minisatp -I\${top_srcdir}/src/tsolvers/lrasolver -I\${top_srcdir}/src/tsolvers/liasolver -I\${top_srcdir}/src/tsolvers/ctsolver -I\${top_srcdir}/src/tsolvers/axdiffsolver -I\${top_srcdir}/src/tsolvers/dlsolver -I\${top_srcdir}/src/attributes"
 
 AM_CFLAGS="$AM_CFLAGS ${config_includedirs}"
-AM_CXXFLAGS="$AM_CXXFLAGS ${config_includedirs}"
+AM_CXXFLAGS="$AM_CXXFLAGS $AM_CPPFLAGS ${config_includedirs}"
 AC_SUBST(config_includedirs)
 
 AC_CONFIG_FILES([ \
