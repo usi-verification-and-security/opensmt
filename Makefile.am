@@ -7,8 +7,6 @@ bin_PROGRAMS = opensmt
 
 noinst_PROGRAMS = testsimplify testegraph1 testegraph3 testegraph4 testegraph5 gctest
 
-AM_CPPFLAGS = $(config_includedirs)
-
 opensmt_SOURCES = src/bin/opensmt.C
 opensmt_LDFLAGS =
 # -lgmpxx -lgmp

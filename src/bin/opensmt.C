@@ -92,7 +92,9 @@ int main( int argc, char * argv[] )
 
   cerr << "; enode size w/ congruence: " << (sizeof(Enode) + sizeof(CgData))/sizeof(int32_t) << endl;
   cerr << "; enode size w/o congruence: " << sizeof(Enode) / sizeof(int32_t) << endl;
-  cerr << "; Compiled with flags " << CONFIG_FLAGS << endl;
+  cerr << "; Configured with args " << CONFIG_FLAGS << endl;
+  cerr << "; AM_CPPFLAGS after configure " << CONFIGTIME_AM_CPPFLAGS << endl;
+  cerr << "; AM_CXXFLAGS after configure " << CONFIGTIME_AM_CXXFLAGS << endl;
 #ifndef SMTCOMP
 //  if ( context.getConfig( ).verbosity > 0 )
   if ( false )

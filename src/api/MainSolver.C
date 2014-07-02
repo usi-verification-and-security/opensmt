@@ -49,9 +49,9 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
 #else
         if (!tlp.varsubstitute(root, substs)) break;
 #endif
-//        lbool res = logic.simplifyTree(root);
-//        if (res == l_True) root = logic.getTerm_true(); // Trivial problem
-//        else if (res == l_False) root = logic.getTerm_false(); // Trivial problem
+        lbool res = logic.simplifyTree(root);
+        if (res == l_True) root = logic.getTerm_true(); // Trivial problem
+        else if (res == l_False) root = logic.getTerm_false(); // Trivial problem
     }
 
     vec<PtAsgn> tlfacts;
@@ -127,7 +127,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         terms.clear();
         getTermList(fc.getRoot(), terms, logic);
         fc = simplifyEqualities(terms);
-//        res = logic.simplifyTree(fc.getRoot());
+        res = logic.simplifyTree(fc.getRoot());
         if (res == l_False) state = giveToSolver(logic.getTerm_false());
         else if (res == l_Undef)
             state = giveToSolver(fc.getRoot());

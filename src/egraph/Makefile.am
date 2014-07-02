@@ -1,9 +1,6 @@
 noinst_LTLIBRARIES = libegraph.la
 #noinst_PROGRAMS = test gctest test3 test4 test5
 
-AM_CPPFLAGS=$(config_includedirs)
-
-
 libegraph_la_SOURCES = Enode.h Enode.C EnodeStore.h EnodeStore.C \
                        EgraphSolver.C EgraphDebug.C EgraphExplain.C
 

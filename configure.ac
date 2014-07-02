@@ -32,156 +32,169 @@ AM_CONDITIONAL([WANT_LIBRARY], [test "$want_library" = "yes"])
 #
 # Statically linked version
 #
-AC_ARG_ENABLE(statically,
-  AC_HELP_STRING([--enable-statically],
-                 [enable statically linked libraries (-static) (default=no)]),
-  enablestatically=$enableval,
-  enablestatically="no")
+AC_ARG_ENABLE(staticlibs,
+  AC_HELP_STRING([--enable-staticlibs],
+                 [enable statically linked libraries (-static) @<:@no@:>@)]),
+  [:],
+  [enable_staticlibs="no"])
 
-if test $enablestatically = "yes" ; then
-  config_statically="-static"
-elif test $enablestatically = "no" ; then
-  config_statically="" 
+AM_CONDITIONAL([ENABLE_STATIC], [test "$enable_static" = "yes"])
+
+if test $enable_staticlibs = "yes" ; then
+  config_staticlibs="-static"
 else
-  config_statically=$enablestatically
+  config_static=""
 fi
-echo "setting static flags to... ${config_statically:-none}"
-# 
+echo "Compile statically linked libraries... ${enable_staticlibs}"
+
+#
 # Profiling
 #
 AC_ARG_ENABLE(profiling,
   AC_HELP_STRING([--enable-profiling],
-                 [enable profiling (-pg) (default=no)]),
-  enableprofiling=$enableval,
-  enableprofiling="no")
+                 [enable profiling (-pg) @<:@no@:>@]),
+  [:],
+  enable_profiling="no")
 
-if test $enableprofiling = "yes" ;
+if test $enable_profiling = "yes" ;
 then
   config_profiling="-pg"
-elif test $enableprofiling = "no" ;
+elif test $enable_profiling = "no" ;
 then
   config_profiling=""
-else
-  config_profiling=$enableprofiling
 fi
-echo "setting profiling flags to... ${config_profiling:-none}"
+
+AM_CONDITIONAL([ENABLE_PROFILING], [test "$enable_profiling" = "yes"])
+
+echo "Compile with profiling... ${enable_profiling}"
+
 #
 # Optimization
 #
 AC_ARG_ENABLE(optimization,
   AC_HELP_STRING([--enable-optimization],
-                 [enable optimization by compiler (-O3) (default=yes)]),
-  enableoptimization=$enableval,
-  enableoptimization="yes")
+                 [enable optimization by compiler (-O3) @<:@yes@:>@]),
+  [:],
+  [enable_optimization="yes"])
 
-if test $enableoptimization = "yes" ;
+if test $enable_optimization = "yes" ;
 then
-  config_optimization="-O3 -DOPTIMIZE -DNDEBUG"
-elif test $enableoptimization = "no" ;
-then
-  config_optimization="-O0"
+  config_optimization_compiler="-O3"
+  config_optimization_preproc="-DOPTIMIZE -DNDEBUG"
 else
-  config_optimization=$enableoptimization
+  config_optimization_compiler="-O0"
+  config_optimization_preproc=""
 fi
-echo "setting optimization flags to... ${config_optimization:-none}"
+AM_CONDITIONAL([ENABLE_OPTIMIZATION], [test "$enable_optimization" = "yes"])
+echo "Setting preprocessor optimization flags to... ${config_optimization_preproc:-none}"
+echo "Setting compiler optimization flags to...  ${config_optimization_compiler:-none}"
 #
 # Proof production
 #
 AC_ARG_ENABLE(proof,
   AC_HELP_STRING([--enable-proof],
-                 [enable proof production (default=no)]),
-  enableproof=$enableval,
-  enableproof="no")
+                 [enable proof production @<:@no@:>@)]),
+  [:],
+  [enable_proof="no"])
 
-if test $enableproof = "yes" ;
+if test $enable_proof = "yes" ;
 then
   config_proof="-DPRODUCE_PROOF"
-elif test $enableproof = "no" ;
-then
-  config_proof=""
 else
-  config_proof=$enableproof
+  config_proof=""
 fi
-echo "setting proof flags to... ${config_proof:-none}"
+
+AM_CONDITIONAL([ENABLE_PROOF], [test "$enable_proof" = "yes"])
+echo "Produce proofs... ${enable_proof}"
+
 #
 # Enable Pedantic Assertion Checking
 #
-AC_ARG_ENABLE(pedantic_debug,
-  AC_HELP_STRING([--enable-pedantic_debug],
-                 [enable pedantic assertion checking (default=no)]),
-  enablepedantic_debug=$enableval,
-  enablepedantic_debug="no")
+AC_ARG_ENABLE(pedantic,
+  AC_HELP_STRING([--enable-pedantic],
+                 [enable pedantic assertion checking @<:@no@:>@]),
+  [:],
+  [enable_pedantic="no"])
 
-if test $enablepedantic_debug = "yes" ;
+if test $enable_pedantic = "yes" ;
 then
   config_pedantic_debug="-DPEDANTIC_DEBUG"
-elif test $enablepedantic_debug = "no" ;
-then
-  config_pedantic_debug=""
 else
-  config_pedantic_debug=$enablepedantic_debug
+  config_pedantic_debug=""
 fi
-echo "setting pedantic debug flags to... ${config_pedantic_debug:-none}"
+AM_CONDITIONAL([ENABLE_PEDANTIC], [test "$enable_pedantic" = "yes"])
+echo "Do pedantic assertion checks... $enable_pedantic"
 
 #
 # Enable Stupid Theory Propagation
 #
-AC_ARG_ENABLE(stupid_theoryprop,
-  AC_HELP_STRING([--enable-stupid_theoryprop],
-                 [enable straightforward theorypropagation (default=no)]),
-  enablestupid_theoryprop=$enableval,
-  enablestupid_theoryprop="no")
+AC_ARG_ENABLE(clever_theoryprop,
+  AC_HELP_STRING([--enable-clever_theoryprop],
+                 [enable clever theorypropagation @<:@no@:>@]),
+  [:],
+  [enable_clever_theoryprop="no"])
 
-if test $enablestupid_theoryprop = "yes" ;
+if test $enable_clever_theoryprop = "no" ;
 then
   config_stupid_theoryprop="-DIGNORE_DL_THEORYPROPAGATION"
-elif test $enablestupid_theoryprop = "no" ;
-then
-  config_stupid_theoryprop=""
 else
-  config_stupid_theoryprop=$enablestupid_theoryprop
+  config_stupid_theoryprop=""
 fi
-echo "setting stupid theory-propagation flag to...  ${config_stupid_theoryprop:-none}"
+AM_CONDITIONAL([ENABLE_STUPID_THEORYPROP], [test "$enable_clever_theoryprop" = "yes"])
+
+echo "Propagate from theories with decision level...  ${enable_clever_theoryprop}"
 
 #
 # Enable the buggy implementation of the structure sharing
 #
 AC_ARG_ENABLE(sharebug,
   AC_HELP_STRING([--enable-sharebug],
-                 [enable the structure sharing bug in propositional flattening (default=yes)]),
-  enablesharebug=$enableval,
-  enablesharebug="yes")
+                 [enable the structure sharing bug in propositional flattening @<:@no@:>@]),
+  [:],
+  [enable_sharebug="no"])
 
-if test $enablesharebug = "yes" ;
+if test $enable_sharebug = "yes" ;
 then
   config_sharebug="-DENABLE_SHARING_BUG"
-elif test $enablesharebug = "no" ;
-then
-  config_sharebug=""
 else
-  config_sharebug=$enablesharebug
+  config_sharebug=""
 fi
-echo "setting sharing bug flag to...  ${config_sharebug:-none}"
+AM_CONDITIONAL([ENABLE_SHAREBUG], [test "$enable_sharebug" = "yes"])
+echo "Enable sharing bug...  ${enable_sharebug} (${config_sharebug:-none})"
+
+AC_ARG_ENABLE(congruencesubstitution,
+  AC_HELP_STRING([--enable-congruencesubstitution],
+                 [enable the top level substitutions using congruence
+                  closure @<:@yes@:>@]),
+  [:],
+  [enable_congruencesubstitution="no"])
+
+if test $enable_congruencesubstitution = "yes" ;
+then
+  config_congruencesubstitution="-DENABLE_CONGRUENCESUBSTITUTION"
+else
+  config_congruencesubstitution=""
+fi
+AM_CONDITIONAL([ENABLE_CONGRUENCESUBSTITUTION], [test "$enable_congruencesubstitution" = "yes"])
+echo "Use congruence substitution...  ${enable_congruencesubstitution}"
 
 #
 # Enable simplification debug
 #
 AC_ARG_ENABLE(simplification_debug,
   AC_HELP_STRING([--enable-simplification_debug],
-                 [enable simplification debug (default=off)]),
-  enablesimplification_debug=$enableval,
-  enablesimplification_debug="")
+                 [enable simplification debug @<:@no@:>@)]),
+  [:],
+  enable_simplification_debug="no")
 
-if test $enablesimplification_debug = "yes";
+if test "${enable_simplification_debug}" = "yes";
 then
   config_simplification_debug="-DSIMPLIFY_DEBUG"
-elif test $enablesimplification_debug = "no" ;
-then
-  config_simplification_debug=""
 else
   config_simplification_debug=""
 fi
-echo "setting simplification_debug flag to...  ${config_simplification_debug:-none}"
+AM_CONDITIONAL([ENABLE_SIMPLIFICATION_DEBUG], [test "$enable_simplification_debug" = "yes"])
+echo "Enable simplification debug...  ${enable_simplification_debug}"
 
 
 #
@@ -189,65 +202,69 @@ echo "setting simplification_debug flag to...  ${config_simplification_debug:-no
 #
 AC_ARG_ENABLE(gcdebug,
   AC_HELP_STRING([--enable-gcdebug],
-                 [enable garbage collection debug (default=no)]),
-  enablegc_debug=$enableval,
-  enablegc_debug="no")
+                 [enable garbage collection debug @<:@no@:>@]),
+  [:],
+  [enable_gc_debug="no"])
 
-if test $enablegc_debug = "yes" ;
+if test $enable_gc_debug = "yes" ;
 then
   config_gc_debug="-DGC_DEBUG"
-elif test $enablegc_debug = "no" ;
-then
-  config_gc_debug=""
 else
-  config_gc_debug=$enablegc_debug
+  config_gc_debug=""
 fi
-echo "setting garbage collection debug flags to... ${config_gc_debug:-none}"
+AM_CONDITIONAL([ENABLE_GC_DEBUG], [test "$enable_gc_debug" = "yes"])
+echo "Enable garbage collection debug... ${enable_gc_debug}"
+
 #
 # SMTCOMP version
 #
 AC_ARG_ENABLE(smtcomp,
-  AC_HELP_STRING([--enable-smtcomp],
-                 [enable smtcomp mode (default=no)]),
-  enablesmtcomp=$enableval,
-  enablesmtcomp="no")
+  [AC_HELP_STRING([--enable-smtcomp],
+                 [enable smtcomp mode @<:@no@:>@])],
+  [:],
+  [enable_smtcomp="no"])
 
-if test $enablesmtcomp = "yes" ;
+if test $enable_smtcomp = "yes" ;
 then
   config_smtcomp="-DSMTCOMP -march=opteron -static"
-elif test $enablesmtcomp = "no" ;
-then
-  config_smtcomp=""
 else
-  config_smtcomp=$enablesmtcomp
+  config_smtcomp=""
 fi
-echo "setting smtcomp flags to... ${config_smtcomp:-none}"
+echo "Compile for smtcomp... ${enable_smtcomp}"
 
-# Complain if both pedantic debug and optimization are enabled
-if test $enablepedantic_debug = "yes" -a $enableoptimization = "yes" ;
-then
-  echo "Error: cannot enable both pedantic debug and optimization"
-  exit
-fi
+AM_CONDITIONAL([ENABLE_SMTCOMP], [test "$enable_smtcomp" = "yes"])
 
 # Complain if smtcomp is enabled and optimization is disabled
-if test $enablesmtcomp = "yes" -a $enableoptimization = "no" ;
+if test $enable_smtcomp = "yes" -a $enable_optimization = "no" ;
 then
   echo "Error: smtcomp requires optimizations"
   exit
 fi
 
 # Complain if smtcomp is enabled and proof is enabled
-if test $enablesmtcomp = "yes" -a $enableproof = "yes" ;
+if test $enable_smtcomp = "yes" -a $enable_proof = "yes" ;
 then
   echo "Error: cannot enable proof with smtcomp"
   exit
 fi
 
-AM_CFLAGS="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_statically $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug"
-AM_CXXFLAGS="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_statically $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug"
+
+# Complain if both pedantic debug and optimization are enabled
+if test $enable_pedantic = "yes" -a $enable_optimization = "yes" ;
+then
+  echo "Error: cannot enable both pedantic debug and optimization"
+  exit
+fi
+
+AM_CFLAGS="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization_compiler $config_staticlibs"
+AM_CXXFLAGS=$AM_CFLAGS
+AM_CPPFLAGS="$config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution"
+
+#AM_CXXFLAGS="$AM_CXXFLAGS $AM_CPPFLAGS"
+
 CFLAGS=""
 CXXFLAGS=""
+CPPFLAGS=""
 
 # Allow user to use a GMP lib in a non-standard location
 AC_ARG_WITH([gmp],
@@ -273,11 +290,15 @@ if test $NONSTDREADLINEPATH = 1 ; then
   AM_LDFLAGS="$AM_LDFLAGS -L$with_readline/lib"
 fi
 
-AC_SUBST(AM_CFLAGS)
-AC_SUBST(AM_CXXFLAGS)
-AC_SUBST(CFLAGS)
-AC_SUBST(CXXFLAGS)
-AC_SUBST(AM_LDFLAGS)
+AC_SUBST([AM_CFLAGS])
+AC_SUBST([AM_CXXFLAGS])
+AC_SUBST([AM_CPPFLAGS])
+AC_SUBST([AM_LDFLAGS])
+AC_SUBST([CFLAGS])
+AC_SUBST([CXXFLAGS])
+AC_SUBST([CPPFLAGS])
+
+echo "Now cflags are $CFLAGS and am_cflags are $AM_CFLAGS"
 
 # Setup comilation/linking flags for library checks
 OLDCPPFLAGS=$CPPFLAGS
@@ -312,6 +333,8 @@ LDFLAGS=$OLDLDFLAGS
 #
 config_includedirs="-I\${top_srcdir}/src -I\${top_srcdir}/src/minisat/mtl -I\${top_srcdir}/src/minisat/core -I\${top_srcdir}/src/simplifiers -I\${top_srcdir}/src/common -I\${top_srcdir}/src/egraph -I\${top_srcdir}/src/sorts -I\${top_srcdir}/src/symbols -I\${top_srcdir}/src/pterms -I\${top_srcdir}/src/logics -I\${top_srcdir}/src/smtsolvers -I\${top_srcdir}/src/cnfizers -I\${top_srcdir}/src/proof -I\${top_srcdir}/src/api -I\${top_srcdir}/src/tsolvers -I\${top_srcdir}/src/tsolvers/emptysolver -I\${top_srcdir}/src/tsolvers/bvsolver -I\${top_srcdir}/src/tsolvers/bvsolver/minisatp -I\${top_srcdir}/src/tsolvers/lrasolver -I\${top_srcdir}/src/tsolvers/liasolver -I\${top_srcdir}/src/tsolvers/ctsolver -I\${top_srcdir}/src/tsolvers/axdiffsolver -I\${top_srcdir}/src/tsolvers/dlsolver -I\${top_srcdir}/src/attributes"
 
+AM_CFLAGS="$AM_CFLAGS ${config_includedirs}"
+AM_CXXFLAGS="$AM_CXXFLAGS ${config_includedirs}"
 AC_SUBST(config_includedirs)
 
 AC_CONFIG_FILES([ \
@@ -341,4 +364,16 @@ AC_CONFIG_FILES([ \
 		  test/Makefile \
 		  ])
 
+AC_DEFINE_UNQUOTED([CONFIGTIME_AM_CPPFLAGS], ["$AM_CPPFLAGS"], [C preprocessor flags passed after configure])
+AC_DEFINE_UNQUOTED([CONFIGTIME_AM_CXXFLAGS], ["$AM_CXXFLAGS"], [C++ compiler flags passed after configure])
+
 AC_OUTPUT
+
+
+echo "=================================================="
+echo "Configuring with [AM_CPPFLAGS] = $AM_CPPFLAGS"
+echo "Configuring with [AM_CXXFLAGS] = $AM_CXXFLAGS"
+echo "Configuring with [AM_CFLAGS] = $AM_CFLAGS"
+echo "=================================================="
+
+
