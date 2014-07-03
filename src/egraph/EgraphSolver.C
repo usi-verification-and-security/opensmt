@@ -1785,6 +1785,8 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
     if (enode_store[x].isList()) return;
     lbool deduced_polarity = l_Undef;
 
+#ifdef OPTIMIZED_DEDUCTION
+
     PTRef x_const = enode_store[x].getConstant();
     if ( x_const == logic.getTerm_true() )
         deduced_polarity = l_True;
@@ -1803,15 +1805,32 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
         else if ( x_const == logic.getTerm_false() )
             deduced_polarity = l_False;
     }
+#else
+    if ( x == enode_store.getEnode_true() )
+        deduced_polarity = l_True;
+    else if ( x == enode_store.getEnode_false() )
+        deduced_polarity = l_False;
+    else if (isEqual(enode_store[x].getTerm(), logic.getTerm_true()))
+        deduced_polarity = l_True;
+    else if (isEqual(enode_store[x].getTerm(), logic.getTerm_false()))
+        deduced_polarity = l_False;
 
-//    if ( x == enode_store.getEnode_true() )
-//        deduced_polarity = l_True;
-//    else if ( x == enode_store.getEnode_false() )
-//        deduced_polarity = l_False;
-//    else if (isEqual(enode_store[x].getTerm(), logic.getTerm_true()))
-//        deduced_polarity = l_True;
-//    else if (isEqual(enode_store[x].getTerm(), logic.getTerm_false()))
-//        deduced_polarity = l_False;
+    if ( deduced_polarity == l_Undef ) {
+        ERef tmp = x;
+        x = y;
+        y = tmp;
+    }
+
+    if ( x == enode_store.getEnode_true() )
+        deduced_polarity = l_True;
+    else if ( x == enode_store.getEnode_false() )
+        deduced_polarity = l_False;
+    else if (isEqual(enode_store[x].getTerm(), logic.getTerm_true()))
+        deduced_polarity = l_True;
+    else if (isEqual(enode_store[x].getTerm(), logic.getTerm_false()))
+        deduced_polarity = l_False;
+#endif
+
 
     if ( deduced_polarity == l_Undef ) { // True, for instance, if x & y are not boolean types, or if they are, but they have not been assigned a value yet
 #ifdef PEDANTIC_DEBUG

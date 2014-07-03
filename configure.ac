@@ -216,6 +216,25 @@ AM_CONDITIONAL([ENABLE_GC_DEBUG], [test "$enable_gc_debug" = "yes"])
 echo "Enable garbage collection debug... ${enable_gc_debug}"
 
 #
+# Enable slow deduction
+#
+AC_ARG_ENABLE(slowdeduction,
+  AC_HELP_STRING([--enable-slowdeduction],
+                 [enable slow deduction @<:@no@:>@]),
+  [:],
+  [enable_slowdeduction="no"])
+
+if test $enable_slowdeduction = "yes" ;
+then
+  config_slowdeduction=""
+else
+  config_slowdeduction="-DOPTIMIZED_DEDUCTION"
+fi
+AM_CONDITIONAL([ENABLE_SLOWDEDUCTION], [test "$enable_slowdeduction" = "yes"])
+echo "Enable slow deduction... ${enable_slowdeduction}"
+
+
+#
 # SMTCOMP version
 #
 AC_ARG_ENABLE(smtcomp,
@@ -256,9 +275,13 @@ then
   exit
 fi
 
-AM_CFLAGS="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization_compiler -static"
+def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_slowdeduction"
+comp_flags="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization_compiler"
+
+AM_CFLAGS=""
 AM_CXXFLAGS=$AM_CFLAGS
-AM_CPPFLAGS="$config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution"
+
+#AM_CPPFLAGS="$config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_slowdeduction"
 
 #AM_CXXFLAGS="$AM_CXXFLAGS $AM_CPPFLAGS"
 
@@ -298,8 +321,6 @@ AC_SUBST([CFLAGS])
 AC_SUBST([CXXFLAGS])
 AC_SUBST([CPPFLAGS])
 
-echo "Now cflags are $CFLAGS and am_cflags are $AM_CFLAGS"
-
 # Setup comilation/linking flags for library checks
 OLDCPPFLAGS=$CPPFLAGS
 CPPFLAGS=$CXXFLAGS
@@ -333,8 +354,8 @@ LDFLAGS=$OLDLDFLAGS
 #
 config_includedirs="-I\${top_srcdir}/src -I\${top_srcdir}/src/minisat/mtl -I\${top_srcdir}/src/minisat/core -I\${top_srcdir}/src/simplifiers -I\${top_srcdir}/src/common -I\${top_srcdir}/src/egraph -I\${top_srcdir}/src/sorts -I\${top_srcdir}/src/symbols -I\${top_srcdir}/src/pterms -I\${top_srcdir}/src/logics -I\${top_srcdir}/src/smtsolvers -I\${top_srcdir}/src/cnfizers -I\${top_srcdir}/src/proof -I\${top_srcdir}/src/api -I\${top_srcdir}/src/tsolvers -I\${top_srcdir}/src/tsolvers/emptysolver -I\${top_srcdir}/src/tsolvers/bvsolver -I\${top_srcdir}/src/tsolvers/bvsolver/minisatp -I\${top_srcdir}/src/tsolvers/lrasolver -I\${top_srcdir}/src/tsolvers/liasolver -I\${top_srcdir}/src/tsolvers/ctsolver -I\${top_srcdir}/src/tsolvers/axdiffsolver -I\${top_srcdir}/src/tsolvers/dlsolver -I\${top_srcdir}/src/attributes"
 
-AM_CFLAGS="$AM_CFLAGS ${config_includedirs}"
-AM_CXXFLAGS="$AM_CXXFLAGS $AM_CPPFLAGS ${config_includedirs}"
+AM_CFLAGS="$AM_CFLAGS ${config_includedirs} ${def_flags} ${comp_flags}"
+AM_CXXFLAGS="$AM_CXXFLAGS ${config_includedirs} ${def_flags} ${comp_flags}"
 AC_SUBST(config_includedirs)
 
 AC_CONFIG_FILES([ \
@@ -364,13 +385,15 @@ AC_CONFIG_FILES([ \
 		  test/Makefile \
 		  ])
 
-AC_DEFINE_UNQUOTED([CONFIGTIME_AM_CPPFLAGS], ["$AM_CPPFLAGS"], [C preprocessor flags passed after configure])
-AC_DEFINE_UNQUOTED([CONFIGTIME_AM_CXXFLAGS], ["$AM_CXXFLAGS"], [C++ compiler flags passed after configure])
+AC_DEFINE_UNQUOTED([CONFIGTIME_DEFFLAGS], ["`echo ${def_flags} | sed 's/  */ /g'`]", [C define flags passed after configure])
+AC_DEFINE_UNQUOTED([CONFIGTIME_COMPFLAGS], ["$comp_flags"], [C++ compiler flags of interest])
 
 AC_OUTPUT
 
-
 echo "=================================================="
+echo "Configuring with C define flags"
+echo " ${def_flags}" | sed 's/  */\n /g'
+echo
 echo "Configuring with [AM_CPPFLAGS] = $AM_CPPFLAGS"
 echo "Configuring with [AM_CXXFLAGS] = $AM_CXXFLAGS"
 echo "Configuring with [AM_CFLAGS] = $AM_CFLAGS"
