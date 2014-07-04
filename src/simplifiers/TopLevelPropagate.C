@@ -206,9 +206,9 @@ bool TopLevelPropagator::assertEq(PTRef eqr)
 // The substitutions for the term riddance from osmt1
 //
 #ifdef PEDANTIC_DEBUG
-void TopLevelPropagator::retrieveSubstitutions(PTRef root, Map<PTRef,PTRef,PTRefHash>& substs, vec<PTRef>& subst_vars)
+void TopLevelPropagator::retrieveSubstitutions(PTRef root, Map<PTRef,PTRef,PTRefHash>& substs, Map<PTRef,bool,PTRefHash>& subst_targets, vec<PTRef>& subst_vars)
 #else
-void TopLevelPropagator::retrieveSubstitutions(PTRef root, Map<PTRef,PTRef,PTRefHash>& substs)
+void TopLevelPropagator::retrieveSubstitutions(PTRef root, Map<PTRef,PTRef,PTRefHash>& substs, Map<PTRef,bool,PTRefHash>& subst_targets)
 #endif
 {
     vec<PtAsgn> facts;
@@ -249,6 +249,10 @@ void TopLevelPropagator::retrieveSubstitutions(PTRef root, Map<PTRef,PTRef,PTRef
 #endif
 //                substs.insert(var, logic.cloneTerm(trm));
                 substs.insert(var, trm);
+                subst_targets.insert(trm, true);
+#ifdef PEDANTIC_DEBUG
+                cerr << "Subst target: " << logic.printTerm(trm) << endl;
+#endif
             }
         }
     }
@@ -510,7 +514,7 @@ bool TopLevelPropagator::computeCongruenceSubstitutions(PTRef root, vec<PtAsgn>&
 //    duplicate terms!
 //
 #ifndef OLD_VARSUBSTITUTE
-bool TopLevelPropagator::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& substs, PTRef& tr_new)
+bool TopLevelPropagator::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& substs, Map<PTRef,bool,PTRefHash>& subst_targets, PTRef& tr_new)
 #else
 bool TopLevelPropagator::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& substs)
 #endif
@@ -533,6 +537,10 @@ bool TopLevelPropagator::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& 
         }
         if (!queue[idx].done) {
             for (int i = 0; i < t.size(); i++) {
+                if (subst_targets.contains(t[i])) {
+                    subst.insert(t[i], t[i]);
+                    continue;
+                }
                 PTRef c_n = t[i];
                 if (substs.contains(t[i])) {
                     c_n = substs[t[i]];
@@ -545,7 +553,6 @@ bool TopLevelPropagator::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& 
                 } else {
                     n_substs++;
                     subst.insert(t[i], c_n);
-//                    queue.push(c_n);
                 }
             }
             queue[idx].done = true;
@@ -557,7 +564,7 @@ bool TopLevelPropagator::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& 
         for (int i = 0; i < t.size(); i++)
             args.push(subst[t[i]]);
 
-        const char** msg;
+        const char** msg = NULL;
         PTRef tr_n = logic.insertTerm(t.symb(), args, msg);
 
         assert(!subst.contains(queue[idx].x));

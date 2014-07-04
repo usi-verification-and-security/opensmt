@@ -26,16 +26,17 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
     // Framework for handling different logic related simplifications.
     // For soundness it is important to run this until closure
     Map<PTRef,PTRef,PTRefHash> substs;
+    Map<PTRef,bool,PTRefHash> subst_targets;
     while (true) {
 #ifdef PEDANTIC_DEBUG
         cerr << "retrieving" << endl;
         vec<PTRef> subst_vars;
-        tlp.retrieveSubstitutions(root, substs, subst_vars);
+        tlp.retrieveSubstitutions(root, substs, subst_targets, subst_vars);
         cerr << "Identified substitutions: " << endl;
         for (int i = 0; i < subst_vars.size(); i++)
             cerr << "Substituting " << logic.printTerm(subst_vars[i]) << " with " << logic.printTerm(substs[subst_vars[i]]) << endl;
 #else
-        tlp.retrieveSubstitutions(root, substs);
+        tlp.retrieveSubstitutions(root, substs, subst_targets);
 #endif
 
 //        if (!tlp.substitute(root)) break;
@@ -44,7 +45,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
 #endif
 #ifndef OLD_VARSUBSTITUTE
         PTRef new_root = PTRef_Undef;
-        if (!tlp.varsubstitute(root, substs, new_root)) break;
+        if (!tlp.varsubstitute(root, substs, subst_targets, new_root)) break;
         root = new_root;
 #else
         if (!tlp.varsubstitute(root, substs)) break;
