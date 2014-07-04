@@ -220,7 +220,7 @@ public:
 //    friend class CgData;
 
     void setConstant            (PTRef tr)            { assert(isTerm()); cgdata->constant = tr; }
-    PTRef getConstant           ()                    { assert(isTerm()); return cgdata->constant; }
+    PTRef getConstant           ()                    { if (!isTerm()) return PTRef_Undef; return cgdata->constant; }
     void clearConstant          ()                    { assert(isTerm()); cgdata->constant = PTRef_Undef; }
 };
 

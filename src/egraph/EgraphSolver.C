@@ -1671,8 +1671,19 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
 
     ERef v = y;
     const ERef vstart = v;
+#ifdef PEDANTIC_DEBUG
+    bool constant_shouldset = false;
+    bool constant_set = false;
+#endif
     while (true) {
         Enode& en_v = enode_store[v];
+        // XXX
+#ifdef PEDANTIC_DEBUG
+        if (isConstant(v)) {
+            cerr << "Rerooting " << logic.printTerm(en_v.getTerm()) << endl;
+            constant_shouldset = true;
+        }
+#endif
         en_v.setRoot(x);
         v = en_v.getNext();
         if (v == vstart)
@@ -1745,15 +1756,26 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     checkParents(x);
 #endif
     // Store info about the constant
-    if (en_y.isTerm() && isConstant(y)) {
-        assert(!isConstant(x));
+    if (en_y.isTerm() && en_y.getConstant() != PTRef_Undef) {
+        assert(en_x.getConstant() == PTRef_Undef);
         en_x.setConstant( en_y.getConstant() );
+#ifdef PEDANTIC_DEBUG
+        constant_set = true;
+#endif
     }
     // Store info about the constant
-    else if (en_x.isTerm() && isConstant(x)) {
-        assert(!isConstant(y));
+    else if (en_x.isTerm() && en_x.getConstant() != PTRef_Undef) {
+        assert(en_y.getConstant() == PTRef_Undef);
         en_y.setConstant(en_x.getConstant());
+#ifdef PEDANTIC_DEBUG
+        constant_set = true;
+#endif
     }
+
+#ifdef PEDANTIC_DEBUG
+    if (constant_shouldset && !constant_set)
+        assert(false);
+#endif
 
   // Push undo record
     undo_stack_main.push( Undo(MERGE,y) );
@@ -1785,7 +1807,6 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
     if (enode_store[x].isList()) return;
     lbool deduced_polarity = l_Undef;
 
-#ifdef OPTIMIZED_DEDUCTION
 
     PTRef x_const = enode_store[x].getConstant();
     if ( x_const == logic.getTerm_true() )
@@ -1805,32 +1826,36 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
         else if ( x_const == logic.getTerm_false() )
             deduced_polarity = l_False;
     }
-#else
-    if ( x == enode_store.getEnode_true() )
-        deduced_polarity = l_True;
-    else if ( x == enode_store.getEnode_false() )
-        deduced_polarity = l_False;
-    else if (isEqual(enode_store[x].getTerm(), logic.getTerm_true()))
-        deduced_polarity = l_True;
-    else if (isEqual(enode_store[x].getTerm(), logic.getTerm_false()))
-        deduced_polarity = l_False;
 
-    if ( deduced_polarity == l_Undef ) {
+#ifdef PEDANTIC_DEBUG
+    lbool deduced_polarity2 = l_Undef;
+    if ( x == enode_store.getEnode_true() )
+        deduced_polarity2 = l_True;
+    else if ( x == enode_store.getEnode_false() )
+        deduced_polarity2 = l_False;
+    else if (isEqual(enode_store[x].getTerm(), logic.getTerm_true()))
+        deduced_polarity2 = l_True;
+    else if (isEqual(enode_store[x].getTerm(), logic.getTerm_false()))
+        deduced_polarity2 = l_False;
+
+    if ( deduced_polarity2 == l_Undef ) {
         ERef tmp = x;
         x = y;
         y = tmp;
     }
 
     if ( x == enode_store.getEnode_true() )
-        deduced_polarity = l_True;
+        deduced_polarity2 = l_True;
     else if ( x == enode_store.getEnode_false() )
-        deduced_polarity = l_False;
+        deduced_polarity2 = l_False;
     else if (isEqual(enode_store[x].getTerm(), logic.getTerm_true()))
-        deduced_polarity = l_True;
+        deduced_polarity2 = l_True;
     else if (isEqual(enode_store[x].getTerm(), logic.getTerm_false()))
-        deduced_polarity = l_False;
-#endif
+        deduced_polarity2 = l_False;
 
+    if (deduced_polarity != deduced_polarity2)
+        assert(false);
+#endif
 
     if ( deduced_polarity == l_Undef ) { // True, for instance, if x & y are not boolean types, or if they are, but they have not been assigned a value yet
 #ifdef PEDANTIC_DEBUG
@@ -1888,7 +1913,7 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
             if (elr == next_elr) break;
             c_elr = next_elr;
         }
-#endif
+#endif // NEG_DEDUCE
         return;
     }
 
@@ -2070,18 +2095,6 @@ skip_cgroot_sig_removal:
             assert(!enode_store.containsSig(p));
 #endif
             enode_store.insertSig(p);
-            // remove all guests now that the signature has changed
-//            if (en_p.isTerm() && enode_store.ERefToTerms[p].size() > 1) {
-//                vec<PTRef>& guests = enode_store.ERefToTerms[p];
-//                printf("Removing guests from enode %d\n", p.x);
-//                for (int i = 1; i < guests.size(); i++) {
-//                    enode_store.termToERef.remove(guests[i]);
-//                    printf("  %s (%d)\n", term_store.printTerm(guests[i]), guests[i].x);
-//                }
-//                guests.shrink(guests.size()-1);
-//            }
-//      (void)res; // Huh?
-//            assert( res == p );
         }
         // Next element
         p = scdr ? en_p.getSameCdr( ) : en_p.getSameCar();
@@ -2116,7 +2129,7 @@ skip_signature_removal:
     }
 #endif
 
-    if (isConstant(y)) {
+    if (en_y.getConstant() != PTRef_Undef) {
         PTRef yc = en_y.getConstant();
         PTRef xc = en_x.getConstant();
         assert( yc == xc );

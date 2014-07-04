@@ -215,23 +215,6 @@ fi
 AM_CONDITIONAL([ENABLE_GC_DEBUG], [test "$enable_gc_debug" = "yes"])
 echo "Enable garbage collection debug... ${enable_gc_debug}"
 
-#
-# Enable slow deduction
-#
-AC_ARG_ENABLE(slowdeduction,
-  AC_HELP_STRING([--enable-slowdeduction],
-                 [enable slow deduction @<:@no@:>@]),
-  [:],
-  [enable_slowdeduction="no"])
-
-if test $enable_slowdeduction = "yes" ;
-then
-  config_slowdeduction=""
-else
-  config_slowdeduction="-DOPTIMIZED_DEDUCTION"
-fi
-AM_CONDITIONAL([ENABLE_SLOWDEDUCTION], [test "$enable_slowdeduction" = "yes"])
-echo "Enable slow deduction... ${enable_slowdeduction}"
 
 
 #
@@ -275,15 +258,11 @@ then
   exit
 fi
 
-def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_slowdeduction"
+def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution"
 comp_flags="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization_compiler"
 
 AM_CFLAGS=""
 AM_CXXFLAGS=$AM_CFLAGS
-
-#AM_CPPFLAGS="$config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_slowdeduction"
-
-#AM_CXXFLAGS="$AM_CXXFLAGS $AM_CPPFLAGS"
 
 CFLAGS=""
 CXXFLAGS=""
