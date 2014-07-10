@@ -108,6 +108,25 @@ AM_CONDITIONAL([ENABLE_PROOF], [test "$enable_proof" = "yes"])
 echo "Produce proofs... ${enable_proof}"
 
 #
+# Enable Custom memory allocation for forbid lists
+#
+AC_ARG_ENABLE(custom_memalloc,
+  AC_HELP_STRING([--enable-custom_memalloc],
+                 [enable custom memory allocation for forbid lists@<:@no@:>@]),
+  [:],
+  [enable_custom_memalloc="no"])
+
+if test $enable_custom_memalloc = "yes" ;
+then
+  config_custom_memalloc="-DCUSTOM_EL_ALLOC"
+else
+  config_custom_memalloc=""
+fi
+AM_CONDITIONAL([ENABLE_CUSTOMMEMALLOC], [test "$enable_custom_memalloc" = "yes"])
+echo "Use custom memory allocation for forbid lists...  $enable_custom_memalloc"
+
+
+#
 # Enable Pedantic Assertion Checking
 #
 AC_ARG_ENABLE(pedantic,
@@ -274,7 +293,7 @@ then
   exit
 fi
 
-def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_oldsubstitution"
+def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_oldsubstitution $config_custom_memalloc"
 comp_flags="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization_compiler"
 
 AM_CFLAGS=""
