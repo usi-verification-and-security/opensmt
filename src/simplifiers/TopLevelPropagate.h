@@ -281,10 +281,10 @@ class TopLevelPropagator {
     // Collect the top level facts following the boolean structure
     void collectFacts(PTRef root, vec<PtAsgn>& facts);
     // OpenSMT 1 substitution scheme - replace variables with terms not containing the variable
-#ifdef PEDANTIC_DEBUG
-    void retrieveSubstitutions(PTRef root, Map<PTRef,PTRef,PTRefHash>& substs, Map<PTRef,bool,PTRefHash>& subst_targets, vec<PTRef>& subst_vars);
+#ifdef SIMPLIFY_DEBUG
+    void retrieveSubstitutions(PTRef root, Map<PTRef,PTRef,PTRefHash>& substs, Map<PTRef,int,PTRefHash>& subst_targets, vec<PTRef>& subst_vars);
 #else
-    void retrieveSubstitutions(PTRef root, Map<PTRef,PTRef,PTRefHash>& substs, Map<PTRef,bool,PTRefHash>& subst_targets);
+    void retrieveSubstitutions(PTRef root, Map<PTRef,PTRef,PTRefHash>& substs, Map<PTRef,int,PTRefHash>& subst_targets);
 #endif
     // Initialize the congruence with terms starting from root
     void initCongruence(PTRef root);
@@ -297,7 +297,7 @@ class TopLevelPropagator {
     PTRef extractSimplified();
 
 #ifndef OLD_VARSUBSTITUTE
-    bool varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& substs, Map<PTRef,bool,PTRefHash>& subst_targets, PTRef& tr_new);
+    bool varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& substs, Map<PTRef,int,PTRefHash>& subst_targets, PTRef& tr_new);
 #else
     bool varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& substs);
 #endif

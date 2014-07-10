@@ -162,12 +162,12 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula
     for (unsigned i = 0 ; i < top_level_formulae.size_() && (res == true) ; i ++) {
         PTRef f = top_level_formulae[i];
 #ifdef PEDANTIC_DEBUG
-        cout << "Adding clause " << logic.printTerm(f) << endl;
+        cerr << "Adding clause " << logic.printTerm(f) << endl;
 #endif
         // Give it to the solver if already in CNF
         if (checkCnf(f) == true || checkClause(f) == true) {
 #ifdef PEDANTIC_DEBUG
-            cout << " => Already in CNF" << endl;
+            cerr << " => Already in CNF" << endl;
 #endif
             res = giveToSolver(f
 #ifdef PRODUCE_PROOF

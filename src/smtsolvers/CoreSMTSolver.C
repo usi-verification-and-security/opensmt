@@ -353,7 +353,7 @@ bool CoreSMTSolver::addClause( vec<Lit>& ps
       units_to_partition.push_back( make_pair( res, in ) );
 #endif
 #ifdef PEDANTIC_DEBUG
-    cout << toInt(ps[0]) << endl;
+    cerr << toInt(ps[0]) << endl;
 #endif
     uncheckedEnqueue(ps[0]);
 #ifdef PRODUCE_PROOF
@@ -387,8 +387,8 @@ bool CoreSMTSolver::addClause( vec<Lit>& ps
 
 #ifdef PEDANTIC_DEBUG
     for (int i = 0; i < c->size(); i++)
-      cout << toInt((*c)[i]) << " ";
-    cout << endl;
+      cerr << toInt((*c)[i]) << " ";
+    cerr << endl;
 #endif
 
 #ifndef SMTCOMP
@@ -1742,6 +1742,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
   for (int i = 2; i < trail.size(); i++) {
     char* name;
     theory_handler.getVarName(var(trail[i]), &name);
+    cerr << (sign(trail[i]) ? "not " : "");
     cerr << name << endl;
     ::free(name);
   }
@@ -1940,10 +1941,10 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
           char* name;
           if (next != lit_Undef) {
               theory_handler.getVarName(var(next), &name);
-              cout << "branch: " << toInt(next) << (sign(next) ? " not " : " ") << name << endl;
+              cerr << "branch: " << toInt(next) << (sign(next) ? " not " : " ") << name << endl;
               ::free(name);
           }
-          else cout << "branch: " << toInt(next) << (sign(next) ? " not " : " ") << "undef" << endl;
+          else cerr << "branch: " << toInt(next) << (sign(next) ? " not " : " ") << "undef" << endl;
 
 #endif
           // Complete Call

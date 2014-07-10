@@ -178,6 +178,22 @@ fi
 AM_CONDITIONAL([ENABLE_CONGRUENCESUBSTITUTION], [test "$enable_congruencesubstitution" = "yes"])
 echo "Use congruence substitution...  ${enable_congruencesubstitution}"
 
+AC_ARG_ENABLE(oldsubstitution,
+  AC_HELP_STRING([--enable-oldsubstitution],
+                 [enable old substitution @<:@yes@:>@]),
+  [:],
+  [enable_oldsubstitution="no"])
+
+if test $enable_oldsubstitution = "yes" ;
+then
+  config_oldsubstitution="-DOSMT1_SUBSTITUTION"
+else
+  config_oldsubstitution=""
+fi
+AM_CONDITIONAL([ENABLE_OLDSUBSTITUTION], [test "$enable_oldsubstitution" = "yes"])
+echo "Use old substitution...  ${enable_oldsubstitution}"
+
+#
 #
 # Enable simplification debug
 #
@@ -258,7 +274,7 @@ then
   exit
 fi
 
-def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution"
+def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_oldsubstitution"
 comp_flags="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization_compiler"
 
 AM_CFLAGS=""

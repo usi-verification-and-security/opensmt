@@ -140,7 +140,9 @@ class Logic {
     bool        isBooleanOperator  (SymRef tr)     const;
     bool        isBooleanOperator  (PTRef tr)      const { return isBooleanOperator(term_store[tr].symb()); }
 
+    // XXX The two Boolean constants are vars.  This is confusing.
     bool        isVar              (PTRef tr)      const { return term_store[tr].nargs() == 0; }
+    bool        isConst            (PTRef tr)      const { return isTrue(tr) || isFalse(tr); }
     bool        isAtom             (PTRef tr)      const;
     // Check if term is an uninterpreted predicate.
     bool        isUP               (PTRef)         const;
@@ -187,6 +189,7 @@ class Logic {
     // respectively
     lbool       simplifyTree       (PTRef tr);
     PTRef       resolveTerm        (const char* s, vec<PTRef>& args, char** msg);
+    // XXX There's a need for non msg giving version
     PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms, const char** msg);
 
 // Debugging

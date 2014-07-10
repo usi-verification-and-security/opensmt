@@ -202,13 +202,14 @@ bool TopLevelPropagator::assertEq(PTRef eqr)
     return ok;
 }
 
+
 //
 // The substitutions for the term riddance from osmt1
 //
-#ifdef PEDANTIC_DEBUG
-void TopLevelPropagator::retrieveSubstitutions(PTRef root, Map<PTRef,PTRef,PTRefHash>& substs, Map<PTRef,bool,PTRefHash>& subst_targets, vec<PTRef>& subst_vars)
+#ifdef SIMPLIFY_DEBUG
+void TopLevelPropagator::retrieveSubstitutions(PTRef root, Map<PTRef,PTRef,PTRefHash>& substs, Map<PTRef,int,PTRefHash>& subst_targets, vec<PTRef>& subst_vars)
 #else
-void TopLevelPropagator::retrieveSubstitutions(PTRef root, Map<PTRef,PTRef,PTRefHash>& substs, Map<PTRef,bool,PTRefHash>& subst_targets)
+void TopLevelPropagator::retrieveSubstitutions(PTRef root, Map<PTRef,PTRef,PTRefHash>& substs, Map<PTRef,int,PTRefHash>& subst_targets)
 #endif
 {
     vec<PtAsgn> facts;
@@ -220,7 +221,7 @@ void TopLevelPropagator::retrieveSubstitutions(PTRef root, Map<PTRef,PTRef,PTRef
         lbool sgn = facts[i].sgn;
         // Join equalities
         if (logic.isEquality(tr) && sgn == l_True) {
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
             cerr << "Identified an equality: " << logic.printTerm(tr) << endl;
 #endif
             Pterm& t = logic.getPterm(tr);
@@ -235,24 +236,40 @@ void TopLevelPropagator::retrieveSubstitutions(PTRef root, Map<PTRef,PTRef,PTRef
                 PTRef var = a1.size() == 0 ? t[0] : t[1];
                 PTRef trm = a1.size() == 0 ? t[1] : t[0];
                 if (contains(trm, var)) continue;
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
                 if (substs.contains(var)) {
                     cerr << "Double substitution:" << endl;
                     cerr << " " << logic.printTerm(var) << "/" << logic.printTerm(trm) << endl;
                     cerr << " " << logic.printTerm(var) << "/" << logic.printTerm(substs[var]) << endl;
-                } else
+                } else {
                     subst_vars.push(var);
-                char* tmp1 = logic.printTerm(var);
-                char* tmp2 = logic.printTerm(trm);
-                cerr << "Substituting " << tmp1 << " with " << tmp2 << endl;
-                ::free(tmp1); ::free(tmp2);
+                    char* tmp1 = logic.printTerm(var);
+                    char* tmp2 = logic.printTerm(trm);
+                    cerr << "Substituting " << tmp1 << " with " << tmp2 << endl;
+                    ::free(tmp1); ::free(tmp2);
+                }
 #endif
-//                substs.insert(var, logic.cloneTerm(trm));
-                substs.insert(var, trm);
-                subst_targets.insert(trm, true);
-#ifdef PEDANTIC_DEBUG
-                cerr << "Subst target: " << logic.printTerm(trm) << endl;
+                if (!substs.contains(var)) {
+                    substs.insert(var, trm);
+                    if (!subst_targets.contains(trm))
+                        subst_targets.insert(trm, 1);
+                    else
+                        subst_targets[trm]++;
+#ifdef SIMPLIFY_DEBUG
+                    cerr << "Subst target (" << subst_targets[trm] << " fold): " << logic.printTerm(trm) << endl;
 #endif
+                } else {
+                    assert(subst_targets.contains(substs[var]));
+                    subst_targets[substs[var]]--;
+                    if (subst_targets[substs[var]] == 0)
+                        subst_targets.remove(substs[var]);
+                    substs.remove(var);
+                    if (subst_targets.contains(trm))
+                        subst_targets[trm]++;
+                    else
+                        subst_targets.insert(trm, 1);
+                    substs.insert(var,trm);
+                }
             }
         }
     }
@@ -504,6 +521,69 @@ bool TopLevelPropagator::computeCongruenceSubstitutions(PTRef root, vec<PtAsgn>&
 //    return true;
 //}
 
+#ifdef OSMT1_SUBSTITUTION
+//
+// Compute the generalized substitution based on substs, and return in
+// tr_new the corresponding term dag.
+// Preconditions:
+//  - all substitutions in substs must be on variables
+//
+bool TopLevelPropagator::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& substs, Map<PTRef,int,PTRefHash>& subst_targets, PTRef& tr_new)
+{
+    Map<PTRef,PTRef,PTRefHash> gen_sub;
+    vec<PTRef> queue;
+    int n_substs = 0;
+
+    queue.push(root);
+    while (queue.size() != 0) {
+        PTRef tr = queue.last();
+        if (gen_sub.contains(tr)) {
+            // Already processed
+            queue.pop();
+            continue;
+        }
+        bool unprocessed_children = false;
+        Pterm& t = logic.getPterm(tr);
+        for (int i = 0; i < t.size(); i++) {
+            if (!gen_sub.contains(t[i])) {
+                queue.push(t[i]);
+                unprocessed_children = true;
+            }
+        }
+        if (unprocessed_children) continue;
+        queue.pop();
+        PTRef result = PTRef_Undef;
+        if (logic.isVar(tr) || logic.isConst(tr)) {
+            // The base case
+            if (substs.contains(tr))
+                result = substs[tr];
+            else
+                result = tr;
+            assert(!logic.isConst(tr) || result == tr);
+        } else {
+            // The "inductive" case
+            vec<PTRef> args_mapped;
+            for (int i = 0; i < t.size(); i++)
+                args_mapped.push(gen_sub[t[i]]);
+            const char* msg;
+            result = logic.insertTerm(t.symb(), args_mapped, &msg);
+
+        }
+        gen_sub.insert(tr, result);
+        assert(result != PTRef_Undef);
+
+        if (result != tr) {
+            n_substs++;
+#ifdef SIMPLIFY_DEBUG
+            cerr << "Will substitute " << logic.printTerm(tr) << " with " << logic.printTerm(result) << endl;
+#endif
+        }
+    }
+    tr_new = gen_sub[root];
+    return n_substs > 0;
+}
+#else
+
 //
 // Substitution aiming at minimizing the number of enode variables.
 // Depth-first search through the tree starting at root.
@@ -514,7 +594,7 @@ bool TopLevelPropagator::computeCongruenceSubstitutions(PTRef root, vec<PtAsgn>&
 //    duplicate terms!
 //
 #ifndef OLD_VARSUBSTITUTE
-bool TopLevelPropagator::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& substs, Map<PTRef,bool,PTRefHash>& subst_targets, PTRef& tr_new)
+bool TopLevelPropagator::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& substs, Map<PTRef,int,PTRefHash>& subst_targets, PTRef& tr_new)
 #else
 bool TopLevelPropagator::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& substs)
 #endif
@@ -612,7 +692,7 @@ bool TopLevelPropagator::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& 
     return n_substs > 0;
 #endif
 }
-
+#endif // OSMT1_SUBSTITUTION
 
 // --------------------------------------------------------------
 // TopLevelPropagator::substitute

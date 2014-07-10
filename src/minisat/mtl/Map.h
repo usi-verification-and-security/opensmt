@@ -201,8 +201,8 @@ class VecMap {
     int        size;
 
     // Don't allow copying (error prone):
-    VecMap<K,D,H,E>&  operator = (VecMap<K,D,H,E>& other) { assert(0); }
-                   VecMap        (VecMap<K,D,H,E>& other) { assert(0); }
+    VecMap<K,D,H,E>&  operator = (VecMap<K,D,H,E>& ) { assert(0); }
+                   VecMap        (VecMap<K,D,H,E>& ) { assert(0); }
 
     bool    checkCap(int new_size) const { return new_size > cap; }
 

@@ -25,10 +25,12 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
     }
     // Framework for handling different logic related simplifications.
     // For soundness it is important to run this until closure
-    Map<PTRef,PTRef,PTRefHash> substs;
-    Map<PTRef,bool,PTRefHash> subst_targets;
+    Map<PTRef,int,PTRefHash> subst_targets;
     while (true) {
-#ifdef PEDANTIC_DEBUG
+        // For termination it is important to have this reinitialized
+        // every time
+        Map<PTRef,PTRef,PTRefHash> substs;
+#ifdef SIMPLIFY_DEBUG
         cerr << "retrieving" << endl;
         vec<PTRef> subst_vars;
         tlp.retrieveSubstitutions(root, substs, subst_targets, subst_vars);
@@ -40,7 +42,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
 #endif
 
 //        if (!tlp.substitute(root)) break;
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
         cerr << "substituting" << endl;
 #endif
 #ifndef OLD_VARSUBSTITUTE
@@ -57,12 +59,12 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
 
     vec<PtAsgn> tlfacts;
 #ifdef ENABLE_CONGRUENCESUBSTITUTION
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
     cerr << "Init congruence with " << logic.printTerm(root) << endl;
 #endif
     tlp.initCongruence(root);
 
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
     cerr << "Compute congruence substitution" << endl;
 #endif
     if (!tlp.computeCongruenceSubstitutions(root, tlfacts)) {
@@ -86,14 +88,14 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         FContainer fc(root);
         expandItes(fc, terms);
         fc.setRoot(terms[terms.size()-1].tr);
-        // tmp debug
-        PTRef root = fc.getRoot();
-        Pterm& r = logic.getPterm(root);
 
+#ifdef OLD_SIMPLIFICATION
         // XXX There should be no reason to do this one by one, and in fact it
         // should be harmful since the shared structure will be invisible that
         // way.
-#ifdef OLD_SIMPLIFICATION
+        // tmp debug
+        PTRef root = fc.getRoot();
+        Pterm& r = logic.getPterm(root);
         vec<PTRef> tlfs;
         ts.retrieveTopLevelFormulae(root, tlfs);
         for (int i = 0; (i < tlfs.size()) && (state == s_Undef); i++) {
