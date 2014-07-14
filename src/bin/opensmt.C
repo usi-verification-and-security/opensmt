@@ -90,8 +90,9 @@ int main( int argc, char * argv[] )
 
   cerr << "; svn rev: " << SVN_REVISION << endl;
 
-  cerr << "; enode size w/ congruence: " << (sizeof(Enode) + sizeof(CgData))/sizeof(int32_t) << endl;
-  cerr << "; enode size w/o congruence: " << sizeof(Enode) / sizeof(int32_t) << endl;
+  cerr << "; symbol enode size: " << EnodeAllocator::symEnodeWord32Size() << endl;
+  cerr << "; list enode size: " << EnodeAllocator::listEnodeWord32Size() << endl;
+  cerr << "; term enode size: " << EnodeAllocator::termEnodeWord32Size() << endl;
   cerr << "; Configured with args " << CONFIG_FLAGS << endl;
   cerr << "; preprocessor definitions set in configure " << CONFIGTIME_DEFFLAGS << endl;
   cerr << "; compiler flags set in configure " << CONFIGTIME_COMPFLAGS << endl;

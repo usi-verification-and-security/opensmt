@@ -418,6 +418,7 @@ private:
 #endif
   };
 
+  /*
   //
   // Handy function to swap two arguments of a list
   //
@@ -432,6 +433,7 @@ private:
             enode_store.addList(en.getCar(),
                                 ERef_Nil));
   }
+  */
   //
   // Related to term creation
   //
