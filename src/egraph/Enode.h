@@ -97,14 +97,6 @@ class Extra {
         PTRef       constant;
         lbool       deduced;
 
-#ifdef ENODES_HAVE_EXPLANATIONS
-        PTRef       exp_reason;
-        ERef        exp_parent;
-        ERef        exp_root;
-        int         exp_class_size;
-        ERef        exp_highest_node;
-        int         exp_time_stamp;
-#endif
     } trm;
     friend class Enode;
     friend class EnodeAllocator;
@@ -223,21 +215,6 @@ public:
 
 //    inline dist_t getDistClasses() const { assert(isTerm()); return ex->trm.dist_classes; }
     inline dist_t getDistClasses() const { assert(!isSymb()); if (isTerm()) return ex->trm.dist_classes; else return 0; }
-#ifdef ENODES_HAVE_EXPLANATIONS
-    PTRef getExpReason       () const { assert( isTerm() ); return ex->trm.exp_reason; }
-    ERef  getExpParent       () const { assert( isTerm() ); return ex->trm.exp_parent; }
-    ERef  getExpRoot         () const { assert( isTerm() ); return ex->trm.exp_root; }
-    int   getExpClassSize    () const { assert( isTerm() ); return ex->trm.exp_class_size; }
-    ERef  getExpHighestNode  () const { assert( isTerm() ); return ex->trm.exp_highest_node; }
-    int   getExpTimeStamp    () const { assert( isTerm() ); return ex->trm.exp_time_stamp; }
-
-    void setExpReason     (PTRef r)       { assert( isTerm() ); ex->trm.exp_reason = r; }
-    void setExpParent     ( ERef e )      { assert( isTerm() ); ex->trm.exp_parent = e; }
-    void setExpRoot       ( ERef e )      { assert( isTerm() ); ex->trm.exp_root   = e; }
-    void setExpClassSize  ( const int s ) { assert( isTerm() ); ex->trm.exp_class_size   = s; }
-    void setExpHighestNode( ERef e )      { assert( isTerm() ); ex->trm.exp_highest_node = e; }
-    void setExpTimeStamp  ( const int t ) { assert( isTerm() ); ex->trm.exp_time_stamp   = t; }
-#endif
 
     void setConstant      (PTRef tr)      { assert(isTerm()); ex->trm.constant = tr; }
     PTRef getConstant     ()              { if (!isTerm()) return PTRef_Undef; return ex->trm.constant; }

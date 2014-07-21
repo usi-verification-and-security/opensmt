@@ -72,6 +72,32 @@ struct Equal<const PTLKey> {
 };
 */
 
+class PtAsgn {
+  public:
+    PTRef tr;
+    lbool sgn;
+    PtAsgn(PTRef tr_, lbool sgn_) : tr(tr_), sgn(sgn_) {}
+    PtAsgn() : tr(PTRef_Undef), sgn(l_Undef) {}
+};
+
+static class PtAsgn PtAsgn_Undef(PTRef_Undef, l_Undef);
+
+class PtAsgn_reason {
+  public:
+    PTRef tr;
+    PTRef reason;
+    lbool sgn;
+    PtAsgn_reason(PTRef tr_, lbool sgn_, PTRef reason_)
+         : tr(tr_)
+         , reason(reason_)
+         , sgn(sgn_)
+         {}
+    PtAsgn_reason() : tr(PTRef_Undef), reason(PTRef_Undef), sgn(l_Undef) {}
+};
+
+static class PtAsgn_reason PtAsgn_reason_Undef(PTRef_Undef, l_Undef, PTRef_Undef);
+
+
 //typedef uint32_t TRef;
 typedef uint32_t PTId; // Used as an array index
 
@@ -84,6 +110,13 @@ class Pterm {
         unsigned size       : 26; }     header;
     PTId                                id;
     SymRef                              sym;
+#ifdef TERMS_HAVE_EXPLANATIONS
+    PtAsgn      exp_reason;
+    PTRef       exp_parent;
+    PTRef       exp_root;
+    int         exp_class_size;
+    int         exp_time_stamp;
+#endif
     // This has to be the last
     PTRef                               args[0]; // Either the terms or the relocation reference
 
@@ -93,23 +126,52 @@ class Pterm {
     friend void termSort(Pterm&);
     friend class Logic;
   public:
+
+#ifdef TERMS_HAVE_EXPLANATIONS
+    PtAsgn getExpReason       () const { return exp_reason; }
+    PTRef  getExpParent       () const { return exp_parent; }
+    PTRef  getExpRoot         () const { return exp_root; }
+    int    getExpClassSize    () const { return exp_class_size; }
+    int    getExpTimeStamp    () const { return exp_time_stamp; }
+
+    void setExpReason     (PtAsgn r)     { exp_reason = r; }
+    void setExpParent     (PTRef r)      { exp_parent = r; }
+    void setExpRoot       (PTRef r)      { exp_root   = r; }
+    void setExpClassSize  (const int s)  { exp_class_size   = s; }
+    void setExpTimeStamp  (const int t)  { exp_time_stamp   = t; }
+#endif
+
     // Note: do not use directly (no memory allocation for args)
+#ifdef TERMS_HAVE_EXPLANATIONS
+    Pterm(const SymRef sym_, const vec<PTRef>& ps, PTRef t) : sym(sym_) {
+#else
     Pterm(const SymRef sym_, const vec<PTRef>& ps) : sym(sym_) {
+#endif
         header.type      = 0;
         header.has_extra = 0;
         header.reloced   = 0;
         header.noscoping = 0;           // This is an optimization to avoid expensive name lookup on logic operations
         header.size      = ps.size();
 
-        for (int i = 0; i < ps.size(); i++) args[i] = ps[i]; }
+        for (int i = 0; i < ps.size(); i++) args[i] = ps[i];
+#ifdef TERMS_HAVE_EXPLANATIONS
+        setExpReason(PtAsgn(PTRef_Undef, l_Undef));
+        setExpParent(PTRef_Undef);
+        setExpRoot(t);
+        setExpClassSize(1);
+        setExpTimeStamp(0);
+#endif
+    }
     Pterm() {
         header.type      = 0;
         header.has_extra = 0;
         header.reloced   = 0;
         header.noscoping = 0;           // This is an optimization to avoid expensive name lookup on logic operations
         header.size      = 0;
+
     }
 
+/*
     // -- use this as a wrapper:
     Pterm* Pterm_new(SymRef sym, vec<PTRef>& ps, bool left_assoc = false, bool right_assoc = false, bool chainable = false, bool pairwise = false) {
         assert(sizeof(PTRef) == sizeof(uint32_t));
@@ -127,7 +189,7 @@ class Pterm {
         else if (pairwise == true)
             header.type = 4;
         return new (mem) Pterm(sym, ps); }
-
+*/
     Pterm    operator=   (Pterm t1)      { assert(false); return *this; }
 
     int      size        ()      const   { return header.size; }
@@ -186,31 +248,6 @@ struct PtChildHash {
         return (uint32_t)s.tr.x+(uint32_t)s.parent.x+(uint32_t)s.pos; }
 };
 
-class PtAsgn {
-  public:
-    PTRef tr;
-    lbool sgn;
-    PtAsgn(PTRef tr_, lbool sgn_) : tr(tr_), sgn(sgn_) {}
-    PtAsgn() : tr(PTRef_Undef), sgn(l_Undef) {}
-};
-
-static class PtAsgn PtAsgn_Undef(PTRef_Undef, l_Undef);
-
-class PtAsgn_reason {
-  public:
-    PTRef tr;
-    PTRef reason;
-    lbool sgn;
-    PtAsgn_reason(PTRef tr_, lbool sgn_, PTRef reason_)
-         : tr(tr_)
-         , reason(reason_)
-         , sgn(sgn_)
-         {}
-    PtAsgn_reason() : tr(PTRef_Undef), reason(PTRef_Undef), sgn(l_Undef) {}
-};
-
-static class PtAsgn_reason PtAsgn_reason_Undef(PTRef_Undef, l_Undef, PTRef_Undef);
-
 class PtermAllocator : public RegionAllocator<uint32_t>
 {
     PTId n_terms;
@@ -232,9 +269,12 @@ class PtermAllocator : public RegionAllocator<uint32_t>
         assert(sizeof(PTRef) == sizeof(uint32_t));
 
         uint32_t v = RegionAllocator<uint32_t>::alloc(ptermWord32Size(ps.size()));
-        PTRef tid;
-        tid.x = v;
+        PTRef tid = {v};
+#ifdef TERMS_HAVE_EXPLANATIONS
+        new (lea(tid)) Pterm(sym, ps, tid);
+#else
         new (lea(tid)) Pterm(sym, ps);
+#endif
         operator[](tid).setId(n_terms++);
 
         return tid;

@@ -164,23 +164,23 @@ AM_CONDITIONAL([ENABLE_STUPID_THEORYPROP], [test "$enable_clever_theoryprop" = "
 echo "Propagate from theories with decision level...  ${enable_clever_theoryprop}"
 
 #
-# Store explanations in enodes
+# Store explanations in terms
 #
-AC_ARG_ENABLE(enode_explanations,
-  AC_HELP_STRING([--enable-enode_explanations],
-                 [store explanations in enodes @<:@no@:>@]),
+AC_ARG_ENABLE(term_explanations,
+  AC_HELP_STRING([--enable-term_explanations],
+                 [store explanations in terms @<:@no@:>@]),
   [:],
-  [enable_enode_explanations="no"])
+  [enable_term_explanations="no"])
 
-if test $enable_enode_explanations = "yes" ;
+if test $enable_term_explanations = "yes" ;
 then
-  config_enode_explanations="-DENODES_HAVE_EXPLANATIONS"
+  config_term_explanations="-DTERMS_HAVE_EXPLANATIONS"
 else
-  config_enode_explanations=""
+  config_term_explanations=""
 fi
-AM_CONDITIONAL([ENABLE_ENODE_EXPLANATIONS], [test "$enable_enode_explanations" = "yes"])
+AM_CONDITIONAL([ENABLE_TERM_EXPLANATIONS], [test "$enable_term_explanations" = "yes"])
 
-echo "Store explanations in enodes...  ${enable_enode_explanations}"
+echo "Store explanations in terms...  ${enable_term_explanations}"
 
 
 #
@@ -313,8 +313,11 @@ then
   exit
 fi
 
-def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_oldsubstitution $config_custom_memalloc $config_enode_explanations"
+def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_oldsubstitution $config_custom_memalloc $config_term_explanations"
 comp_flags="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization_compiler"
+
+def_flags=`echo ${def_flags} |sed 's/ [ ]*/ /g'`
+comp_flags=`echo ${comp_flags} |sed 's/ [ ]*/ /g'`
 
 AM_CFLAGS=""
 AM_CXXFLAGS=$AM_CFLAGS

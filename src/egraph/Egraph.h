@@ -60,20 +60,15 @@ private:
 
   PTRef         Eq_FALSE; // will be set to (= true false) in constructor
 
-//#ifndef ENODES_HAVE_EXPLANATIONS
+#ifndef TERMS_HAVE_EXPLANATIONS
   // Explanations
   Map<PTRef,PTRef,PTRefHash,Equal<PTRef> >  expParent;
   Map<PTRef,int,PTRefHash,Equal<PTRef> >    expTimeStamp;
   Map<PTRef,int,PTRefHash,Equal<PTRef> >    expClassSize;
   Map<PTRef,PtAsgn,PTRefHash,Equal<PTRef> > expReason;
   Map<PTRef,PTRef,PTRefHash,Equal<PTRef> >  expRoot;
-//#endif
-/*
-  // Duplicates for the interface equalities, disequalities and UPs
-  VecKeyMap<ERef,PTRef,ERef_vecHash,ERef_vecEq> eq_terms;
-  VecKeyMap<ERef,PTRef,ERef_vecHash,ERef_vecEq> deq_terms;
-  VecKeyMap<ERef,PTRef,ERef_vecHash,ERef_vecEq> up_terms;
-*/
+#endif
+
   Map<PTRef,lbool,PTRefHash>    polarityMap;
 
   double fa_garbage_frac;
@@ -131,7 +126,7 @@ public:
 
     assert(ptr_new_true  == logic.getTerm_true());
     assert(ptr_new_false == logic.getTerm_false());
-
+#ifndef TERMS_HAVE_EXPLANATIONS
     expReason.insert(ptr_new_true, PtAsgn(PTRef_Undef, l_Undef));
     expReason.insert(ptr_new_false, PtAsgn(PTRef_Undef, l_Undef));
     expParent.insert(ptr_new_true, PTRef_Undef);
@@ -142,7 +137,7 @@ public:
     expClassSize.insert(ptr_new_false, 1);
     expTimeStamp.insert(ptr_new_true, 0);
     expTimeStamp.insert(ptr_new_false, 0);
-
+#endif
     PTRef t = logic.getTerm_true();
     PTRef f = logic.getTerm_false();
     enode_store[t].setConstant(t);
