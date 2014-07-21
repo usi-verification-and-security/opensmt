@@ -60,18 +60,20 @@ private:
 
   PTRef         Eq_FALSE; // will be set to (= true false) in constructor
 
+//#ifndef ENODES_HAVE_EXPLANATIONS
   // Explanations
   Map<PTRef,PTRef,PTRefHash,Equal<PTRef> >  expParent;
   Map<PTRef,int,PTRefHash,Equal<PTRef> >    expTimeStamp;
   Map<PTRef,int,PTRefHash,Equal<PTRef> >    expClassSize;
   Map<PTRef,PtAsgn,PTRefHash,Equal<PTRef> > expReason;
   Map<PTRef,PTRef,PTRefHash,Equal<PTRef> >  expRoot;
-
+//#endif
+/*
   // Duplicates for the interface equalities, disequalities and UPs
   VecKeyMap<ERef,PTRef,ERef_vecHash,ERef_vecEq> eq_terms;
   VecKeyMap<ERef,PTRef,ERef_vecHash,ERef_vecEq> deq_terms;
   VecKeyMap<ERef,PTRef,ERef_vecHash,ERef_vecEq> up_terms;
-
+*/
   Map<PTRef,lbool,PTRefHash>    polarityMap;
 
   double fa_garbage_frac;

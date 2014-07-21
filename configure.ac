@@ -164,6 +164,26 @@ AM_CONDITIONAL([ENABLE_STUPID_THEORYPROP], [test "$enable_clever_theoryprop" = "
 echo "Propagate from theories with decision level...  ${enable_clever_theoryprop}"
 
 #
+# Store explanations in enodes
+#
+AC_ARG_ENABLE(enode_explanations,
+  AC_HELP_STRING([--enable-enode_explanations],
+                 [store explanations in enodes @<:@no@:>@]),
+  [:],
+  [enable_enode_explanations="no"])
+
+if test $enable_enode_explanations = "yes" ;
+then
+  config_enode_explanations="-DENODES_HAVE_EXPLANATIONS"
+else
+  config_enode_explanations=""
+fi
+AM_CONDITIONAL([ENABLE_ENODE_EXPLANATIONS], [test "$enable_enode_explanations" = "yes"])
+
+echo "Store explanations in enodes...  ${enable_enode_explanations}"
+
+
+#
 # Enable the buggy implementation of the structure sharing
 #
 AC_ARG_ENABLE(sharebug,
@@ -293,7 +313,7 @@ then
   exit
 fi
 
-def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_oldsubstitution $config_custom_memalloc"
+def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_oldsubstitution $config_custom_memalloc $config_enode_explanations"
 comp_flags="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization_compiler"
 
 AM_CFLAGS=""

@@ -109,37 +109,6 @@ class Extra {
     friend class Enode;
     friend class EnodeAllocator;
 };
-/*
-class CgData {
-    ERef        root;           // Root of the equivalence class
-    ERef        next;           // Next node in the class
-    int         size;           // Size of the eq class
-    ERef        parent;         // Parent of the node (in congruence)
-    ERef        same_car;       // Circular list of all the car-parents of the class
-    ERef        same_cdr;       // Circular list of all the cdr-parents of the class
-    int         parent_size;    // Size of the parent's congruence class
-    ERef        cg_ptr;         // Congruence class representative (how is this different from root?)
-#ifdef CUSTOM_EL_ALLOC
-    ELRef       forbid;         // List of unmergeable Enodes
-#else
-    Elist*      forbid;         // List of unmergeable Enodes
-#endif
-    dist_t      dist_classes;   // The bit vector for distinction classes
-    int         dist_index;     // ?
-
-    // Move these to a term-specific storage
-    PTRef       exp_reason;
-    ERef        exp_parent;
-    ERef        exp_root;
-    int         exp_class_size;
-    ERef        exp_highest_node;
-    int         exp_time_stamp;
-
-    PTRef       constant;
-
-    friend class Enode;
-};
-*/
 
 class EnodeAllocator;
 
@@ -255,141 +224,25 @@ public:
 //    inline dist_t getDistClasses() const { assert(isTerm()); return ex->trm.dist_classes; }
     inline dist_t getDistClasses() const { assert(!isSymb()); if (isTerm()) return ex->trm.dist_classes; else return 0; }
 #ifdef ENODES_HAVE_EXPLANATIONS
-    PTRef getExpReason       () const { assert( isTerm() ); return ex->term.exp_reason; }
-    ERef  getExpParent       () const { assert( isTerm() ); return ex->term.exp_parent; }
-    ERef  getExpRoot         () const { assert( isTerm() ); return ex->term.exp_root; }
-    int   getExpClassSize    () const { assert( isTerm() ); return ex->term.exp_class_size; }
-    ERef  getExpHighestNode  () const { assert( isTerm() ); return ex->term.exp_highest_node; }
-    int   getExpTimeStamp    () const { assert( isTerm() ); return ex->term.exp_time_stamp; }
+    PTRef getExpReason       () const { assert( isTerm() ); return ex->trm.exp_reason; }
+    ERef  getExpParent       () const { assert( isTerm() ); return ex->trm.exp_parent; }
+    ERef  getExpRoot         () const { assert( isTerm() ); return ex->trm.exp_root; }
+    int   getExpClassSize    () const { assert( isTerm() ); return ex->trm.exp_class_size; }
+    ERef  getExpHighestNode  () const { assert( isTerm() ); return ex->trm.exp_highest_node; }
+    int   getExpTimeStamp    () const { assert( isTerm() ); return ex->trm.exp_time_stamp; }
 
-    void setExpReason     (PTRef r)       { assert( isTerm() ); ex->term.exp_reason = r; }
-    void setExpParent     ( ERef e )      { assert( isTerm() ); ex->term.exp_parent = e; }
-    void setExpRoot       ( ERef e )      { assert( isTerm() ); ex->term.exp_root   = e; }
-    void setExpClassSize  ( const int s ) { assert( isTerm() ); ex->term.exp_class_size   = s; }
-    void setExpHighestNode( ERef e )      { assert( isTerm() ); ex->term.exp_highest_node = e; }
-    void setExpTimeStamp  ( const int t ) { assert( isTerm() ); ex->term.exp_time_stamp   = t; }
+    void setExpReason     (PTRef r)       { assert( isTerm() ); ex->trm.exp_reason = r; }
+    void setExpParent     ( ERef e )      { assert( isTerm() ); ex->trm.exp_parent = e; }
+    void setExpRoot       ( ERef e )      { assert( isTerm() ); ex->trm.exp_root   = e; }
+    void setExpClassSize  ( const int s ) { assert( isTerm() ); ex->trm.exp_class_size   = s; }
+    void setExpHighestNode( ERef e )      { assert( isTerm() ); ex->trm.exp_highest_node = e; }
+    void setExpTimeStamp  ( const int t ) { assert( isTerm() ); ex->trm.exp_time_stamp   = t; }
 #endif
 
     void setConstant      (PTRef tr)      { assert(isTerm()); ex->trm.constant = tr; }
     PTRef getConstant     ()              { if (!isTerm()) return PTRef_Undef; return ex->trm.constant; }
     void clearConstant    ()              { assert(isTerm()); ex->trm.constant = PTRef_Undef; }
 };
-
-//class Enode
-//{
-//    static uint32_t cgid_ctr;
-//
-//    struct {
-//        unsigned type       : 2;
-//        unsigned reloced    : 1;
-//        unsigned unused     : 29; } header;
-//
-//    SymRef      symb;     // The symbol (if this is a symbol node) -- not sure this is necessary?
-//    PTRef       pterm;  // The proper term (if this is a term node)
-//    uint32_t    id;
-//    ERef        er;     // Either my eref or reference to the relocated one
-//    ERef        car;
-//    ERef        cdr;
-//    lbool       deduced;
-//    cgId        cid;            // The congruence id of the enode (defined also for symbols)
-//
-//    // This is a trick to enable congruence data on only Enodes it is needed
-//    // XXX Check whether this is a pointer, taking extra space in the
-//    // structure...
-//    CgData      cgdata[0];
-//
-//
-//    friend class EnodeAllocator;
-//    friend class EnodeStore;
-//
-//public:
-//    static ERef ERef_Nil;
-//
-//    enum en_type { et_symb, et_list, et_term };
-//
-//    // Constructor for symbols
-//    Enode(SymRef, ERef);
-//
-//    // Constructor for term and list nodes
-//    Enode(ERef car_, ERef cdr_, en_type t, EnodeAllocator& ea, ERef er);
-//
-//    en_type type        ()        const { return (en_type)header.type; }
-//
-//    void relocate       (ERef e)        { header.reloced = 1; er = e; }
-//    bool reloced        ()        const { return header.reloced; }
-//    ERef relocation     ()        const { return er; }
-//
-//    uint32_t getId      ()        const { return id; }
-//
-//    bool  isList        ()        const { return (en_type)header.type == et_list; }
-//    bool  isTerm        ()        const { return (en_type)header.type == et_term; }
-//    bool  isSymb        ()        const { return (en_type)header.type == et_symb; }
-////    uint32_t getArity   ()        const { return 2; } // FIXME
-//    ERef  getCar        ()        const { assert(type() != et_symb); return car; }
-//    ERef  getCdr        ()        const { assert(type() != et_symb); return cdr; }
-//    bool  isDeduced     ()        const { assert(type() == et_term); return deduced != l_Undef; }
-//    void  setDeduced    (lbool v)       { assert(type() == et_term); deduced = v; }
-//    lbool getDeduced    ()        const { assert(type() == et_term); return deduced; }
-//    void  resetDeduced  ()              { assert(type() == et_term); deduced = l_Undef; }
-////    bool  hasPolarity   ()        const { return has_polarity; }
-//    SymRef getSymb      ()        const { assert(type() == et_symb); return symb; }
-//    PTRef getTerm       ()        const { assert(type() != et_symb && type() != et_list); return pterm; }
-//    ERef  getRoot       ()        const { if (type() == et_symb) return er; else return cgdata->root; }
-//    void  setRoot       (ERef r)        { assert(type() != et_symb); root = r; }
-//#ifdef CUSTOM_EL_ALLOC
-//    ELRef getForbid     ()        const { return cgdata->forbid; }
-//    ELRef& altForbid    ()              { return cgdata->forbid; }
-//    void  setForbid     (ELRef r)       { assert(type() != et_list || r == ELRef_Undef); cgdata->forbid = r; }
-//#else
-//    Elist* getForbid    ()        const { return cgdata->forbid; }
-//    Elist& altForbid    ()              { return *(cgdata->forbid); }
-//    void  setForbid     (Elist* r)      { cgdata->forbid = r; }
-//#endif
-//    int   getDistIndex  ()        const { return cgdata->dist_index; }
-//    void  setDistIndex  (int i)         { cgdata->dist_index = i; }
-//    ERef  getCgPtr      ()        const { return cgdata->cg_ptr; }
-//    void  setCgPtr      (ERef e)        { cgdata->cg_ptr = e; }
-//    CgId  getCid        ()        const { return cid; }
-//    void  setCid        (CgId id)       { cid = id; }
-//
-//    ERef  getParent     ()        const { return cgdata->parent; }
-//    void  setParent     (ERef e)        { cgdata->parent = e; }
-//    int   getParentSize ()        const { return cgdata->parent_size; }
-//    void  setParentSize (int i)         { cgdata->parent_size = i; }
-//    ERef  getSameCdr    ()        const { return cgdata->same_cdr; }
-//    void  setSameCdr    (ERef e)        { cgdata->same_cdr = e; }
-//    ERef  getSameCar    ()        const { return cgdata->same_car; }
-//    void  setSameCar    (ERef e)        { cgdata->same_car = e; }
-//
-//    ERef  getNext       ()        const { return cgdata->next; }
-//    void  setNext       (ERef n)        { cgdata->next = n; }
-//    int   getSize       ()        const { return cgdata->size; }
-//    void  setSize       (int i)         { cgdata->size = i; }
-//
-//    void  setDistClasses( const dist_t& d) { assert(type() != et_list || d == 0); cgdata->dist_classes = d; }
-//
-//    inline dist_t getDistClasses() const { return cgdata->dist_classes; }
-//
-//    PTRef getExpReason       () const { assert( isTerm() ); return cgdata->exp_reason; }
-//    ERef  getExpParent       () const { assert( isTerm() ); return cgdata->exp_parent; }
-//    ERef  getExpRoot         () const { assert( isTerm() ); return cgdata->exp_root; }
-//    int   getExpClassSize    () const { assert( isTerm() ); return cgdata->exp_class_size; }
-//    ERef  getExpHighestNode  () const { assert( isTerm() ); return cgdata->exp_highest_node; }
-//    int   getExpTimeStamp    () const { assert( isTerm() ); return cgdata->exp_time_stamp; }
-//
-//    void setExpReason           ( PTRef r )           { assert( isTerm() ); cgdata->exp_reason = r; }
-//    void setExpParent           ( ERef e )            { assert( isTerm() ); cgdata->exp_parent = e; }
-//    void setExpRoot             ( ERef e )            { assert( isTerm() ); cgdata->exp_root   = e; }
-//    void setExpClassSize        ( const int s )       { assert( isTerm() ); cgdata->exp_class_size   = s; }
-//    void setExpHighestNode      ( ERef e )            { assert( isTerm() ); cgdata->exp_highest_node = e; }
-//    void setExpTimeStamp        ( const int t )       { assert( isTerm() ); cgdata->exp_time_stamp   = t; }
-//
-//    void setConstant            (PTRef tr)            { assert(isTerm()); cgdata->constant = tr; }
-//    PTRef getConstant           ()                    { if (!isTerm()) return PTRef_Undef; return cgdata->constant; }
-//    void clearConstant          ()                    { assert(isTerm()); cgdata->constant = PTRef_Undef; }
-//};
-//#endif
-
 
 struct ERefHash {
     uint32_t operator () (const ERef& s) const {
