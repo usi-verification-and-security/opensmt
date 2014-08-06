@@ -168,9 +168,9 @@ echo "Propagate from theories with decision level...  ${enable_clever_theoryprop
 #
 AC_ARG_ENABLE(term_explanations,
   AC_HELP_STRING([--enable-term_explanations],
-                 [store explanations in terms @<:@no@:>@]),
+                 [store explanations in terms @<:@yes@:>@]),
   [:],
-  [enable_term_explanations="no"])
+  [enable_term_explanations="yes"])
 
 if test $enable_term_explanations = "yes" ;
 then
