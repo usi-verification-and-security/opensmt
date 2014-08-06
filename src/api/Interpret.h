@@ -64,7 +64,10 @@ class Interpret {
     bool                        getAssignment(const char*);
     PTRef                       parseTerm(const ASTNode& term, vec<LetFrame>& let_branch);
     void                        exit();
-
+#ifdef PRODUCE_PROOF
+    void                        GetProof();
+    void                        GetInterpolants();
+#endif
     bool                        interp (ASTNode& n);
     void                        execute(const ASTNode* n);
 
@@ -125,6 +128,7 @@ class Interpret {
             uf_solver.solver = &sat_solver;
         };
 
-    int                         interpFile(FILE* in);
-    int                         interpInteractive(FILE* in);
+    int interpFile(FILE* in);
+    int interpInteractive(FILE* in);
+    int interpPipe();
 };

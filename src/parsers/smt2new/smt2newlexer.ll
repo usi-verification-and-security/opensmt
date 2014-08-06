@@ -58,6 +58,7 @@
 "set-logic"       { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_SETLOGIC;      }
 "set-info"        { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_SETINFO;       }
 "set-option"      { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_SETOPTION;     }
+"get-interpolants" { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_GETITPS;      }
 "theory"          { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_THEORY;        }
 
 ":sorts"                     { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_SORTS;                   }

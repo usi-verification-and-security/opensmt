@@ -18,7 +18,6 @@ uint32_t LetFrame::id_cnt = 0;
  ***********************************************************/
 
 
-
 void Interpret::setInfo(ASTNode& n) {
     assert(n.getType() == UATTR_T || n.getType() == PATTR_T);
 
@@ -391,23 +390,42 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
         assert(attr_l.getType() == GATTRL_T);
         assert(attr_l.children->size() == 1);
         ASTNode& name_attr = **(attr_l.children->begin());
-        assert(name_attr.getType() == PATTR_T);
-        assert(strcmp(name_attr.getValue(), ":named") == 0);
-        ASTNode& sym = **(name_attr.children->begin());
-        assert(sym.getType() == SYM_T);
-        const char* name = sym.getValue();
-        if (nameToTerm.contains(name)) {
-            notify_formatted(true, "name %s already exists", name);
-            return PTRef_Undef;
-        }
+
         PTRef tr = parseTerm(named_term, let_branch);
-        nameToTerm.insert(name, tr);
-        if (!termToNames.contains(tr)) {
-            vec<const char*> v;
-            termToNames.insert(tr, v);
+        if (tr == PTRef_Undef) return tr;
+
+        if (strcmp(name_attr.getValue(), ":named") == 0) {
+            ASTNode& sym = **(name_attr.children->begin());
+            assert(sym.getType() == SYM_T);
+            const char* name = sym.getValue();
+            if (nameToTerm.contains(name)) {
+                notify_formatted(true, "name %s already exists", name);
+                return PTRef_Undef;
+            }
+
+            nameToTerm.insert(name, tr);
+            if (!termToNames.contains(tr)) {
+                vec<const char*> v;
+                termToNames.insert(tr, v);
+            }
+            termToNames[tr].push(name);
+            term_names.push(name);
         }
-        termToNames[tr].push(name);
-        term_names.push(name);
+#ifdef PRODUCE_PROOF
+        if (strcmp(name_attr.getValue(), ":partition") == 0) {
+            // Get the symbolic name of the partition
+            ASTNode& sym = **(name_attr.children->begin());
+            assert(sym.getType() == SYM_T);
+            const char* pname = sym.getValue();
+            char* msg = NULL;
+            if (!ptstore.assignPartition(pname, tr, &msg)) {
+                notify_formatted(true, "assign partition: %s", msg);
+                free(msg);
+                return PTRef_Undef;
+            }
+            assert(msg == NULL);
+        }
+#endif
         return tr;
     }
     else
@@ -585,6 +603,80 @@ int Interpret::interpFile(FILE* in) {
     return rval;
 }
 
+// For reading from pipe
+int Interpret::interpPipe() {
+
+    int buf_sz  = 16;
+    char* buf   = (char*) malloc(sizeof(char)*buf_sz);
+    int rd_head = 0;
+    int rd_idx  = 0;
+
+    bool done  = false;
+    buf[0] = '\0';
+    while (!done) {
+        assert(buf[rd_head] == '\0');
+        if (rd_head == buf_sz - 1) {
+            buf_sz *= 2;
+            buf = (char*) realloc(buf, sizeof(char)*buf_sz);
+        }
+        int rd_chunk = buf_sz - rd_head - 1;
+        assert(rd_chunk > 0);
+        int bts_rd = read(STDIN_FILENO, &buf[rd_head], rd_chunk);
+        if (bts_rd == 0) {
+            // Read EOF
+            done = true;
+            continue;
+        }
+        if (bts_rd < 0) {
+            done = true;
+            notify_formatted(true, sys_errlist[errno]);
+            continue;
+        }
+
+        rd_head += bts_rd;
+        int par     = 0;
+        for (int i = 0; i < rd_head; i++) {
+            char c = buf[i];
+            if (c == '(') par ++;
+            else if (c == ')') {
+                par --;
+                if (par == 0) {
+                    // prepare parse buffer
+                    char* buf_out = (char*) malloc(sizeof(char)*i+2);
+                    // copy contents to the parse buffer
+                    for (int j = 0; j <= i; j++)
+                        buf_out[j] = buf[j];
+                    buf_out[i+1] = '\0';
+                    // copy remaining part buf
+                    for (int j = i+1; j < rd_head; j++)
+                        buf[j-i-1] = buf[j];
+                    buf[rd_head-i-1] = '\0';
+                    // update pointers
+                    rd_head = rd_head-i-1;
+
+                    Smt2newContext context(buf_out);
+                    int rval = smt2newparse(&context);
+                    if (rval != 0)
+                        notify_formatted(true, "scanner");
+                    else {
+                        const ASTNode* r = context.getRoot();
+                        execute(r);
+                        done = f_exit;
+                    }
+                    free(buf_out);
+                }
+                if (par < 0) {
+                    notify_formatted(true, "pipe reader: unbalanced parentheses");
+                    done = true;
+                }
+            }
+        }
+    }
+    free(buf);
+    return 0;
+}
+
+// For reading with readline.
 int Interpret::interpInteractive(FILE*) {
     char *line_read = (char *) NULL;
     bool done = false;
@@ -653,3 +745,39 @@ int Interpret::interpInteractive(FILE*) {
     if (line_read) free(line_read);
     return rval;
 }
+
+#ifdef PRODUCE_PROOF
+void Interpret::GetProof()
+{
+    if (ts.getStatus() == l_False) {
+        if (config.print_proofs_smtlib2 > 0) sat_solver.printProofSMT2(config.getRegularOut());
+        sat_solver.createProofGraph();
+        if (config.print_proofs_dotty > 0) sat_solver.printProofDotty();
+        // FIXME test
+//        config.proof_reduce = 1;
+//        config.proof_rec_piv       = 1;
+//        config.proof_transf_trav	= 1;
+//        config.proof_struct_hash	= 1;
+//        config.proof_num_graph_traversals    = 3;
+//        config.proof_red_trans               = 2;
+        if (config.proof_reduce() > 0) sat_solver.reduceProofGraph();
+        sat_solver.deleteProofGraph();
+    } else
+        notify_formatted(true, "get-proof: formula not unsat");
+}
+
+void Interpret::GetInterpolants()
+{
+    if (config.produce_inter() == 0)
+        notify_formatted(true, "get-interpolants: skipping since produce-interpolants is not set");
+    else if (ts.getStatus() == l_False) {
+        sat_solver.createProofGraph();
+        if (config.proof_reduce() > 0) sat_solver.reduceProofGraph();
+        sat_solver.printInter(config.getRegularOut());
+        sat_solver.deleteProofGraph();
+    }
+    else
+        notify_formatted(true, "get-interpolants: skipping since formula not shown unsat");
+}
+#endif
+

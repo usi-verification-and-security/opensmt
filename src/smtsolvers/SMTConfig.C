@@ -297,6 +297,38 @@ const char* SMTConfig::o_incremental   = ":incremental";
 const char* SMTConfig::o_produce_stats = ":produce-stats";
 const char* SMTConfig::o_stats_out     = ":stats-out";
 const char* SMTConfig::o_random_seed   = ":random-seed";
+const char* SMTConfig::o_grow          = ":grow";
+const char* SMTConfig::o_clause_lim    = ":cl-lim";
+const char* SMTConfig::o_subsumption_lim = ":sub-lim";
+const char* SMTConfig::o_simp_garbage_frac = ":simp-gc-frac";
+const char* SMTConfig::o_use_asymm     = ":asymm";
+const char* SMTConfig::o_use_rcheck    = ":rcheck";
+const char* SMTConfig::o_use_elim      = ":elim";
+const char* SMTConfig::o_var_decay     = ":var-decay";
+const char* SMTConfig::o_clause_decay  = ":clause-decay";
+const char* SMTConfig::o_random_var_freq= ":random-var-freq";
+const char* SMTConfig::o_luby_restart  = ":luby-restart";
+const char* SMTConfig::o_ccmin_mode    = ":ccmin-mode";
+const char* SMTConfig::o_phase_saving  = ":phase-saving";
+const char* SMTConfig::o_rnd_pol       = ":rnd-pol";
+const char* SMTConfig::o_rnd_init_act  = ":rnd-init-act";
+const char* SMTConfig::o_sat_dump_rnd_inter = ":sat-num-rnd-itps";
+const char* SMTConfig::o_garbage_frac  = ":garbage-frac";
+const char* SMTConfig::o_restart_first = ":restart-first";
+const char* SMTConfig::o_restart_inc   = ":restart-inc";
+const char* SMTConfig::o_produce_inter = ":produce-interpolants";
+const char* SMTConfig::o_proof_struct_hash       = ":proof-struct-hash";
+const char* SMTConfig::o_proof_struct_hash_build = ":proof-struct-hash-build";
+const char* SMTConfig::o_proof_check   = ":proof-check";
+const char* SMTConfig::o_proof_multiple_inter    = ":proof-interpolation-property";
+const char* SMTConfig::o_proof_alternative_inter = ":proof-alternative-inter";
+const char* SMTConfig::o_proof_reduce  = ":proof-reduce";
+const char* SMTConfig::o_proof_rec_piv = ":proof-rpi";
+const char* SMTConfig::o_proof_push_units = ":proof-lower-units";
+const char* SMTConfig::o_proof_transf_trav = ":proof-reduce-expose";
+const char* SMTConfig::o_proof_num_graph_traversals = ":proof-num-graph-traversals";
+const char* SMTConfig::o_proof_red_trans = ":proof-num-global-iterations";
+const char* SMTConfig::o_proof_set_inter_algo = ":proof-interpolation-algorithm";
 
 void
 SMTConfig::initializeConfig( )
@@ -312,19 +344,17 @@ SMTConfig::initializeConfig( )
   print_stats                   = 1;
   print_proofs_smtlib2          = 0;
   print_proofs_dotty	        = 0;
-  produce_inter                 = 0;
+//  produce_inter                 = 0;
   dump_formula                  = 0;
 //  verbosity                     = 2;
 //  print_success                 = false;
-  certification_level           = 0;       
-  strcpy( certifying_solver, "tool_wrapper.sh" ); 
+  certification_level           = 0;
+  strcpy( certifying_solver, "tool_wrapper.sh" );
   // Set SAT-Solver Default configuration
   sat_theory_propagation        = 1;
   sat_polarity_mode             = 0;
   sat_initial_skip_step         = 1;
   sat_skip_step_factor          = 1;
-  sat_restart_first             = 100;
-  sat_restart_inc               = 1.1;
   sat_use_luby_restart          = 0;
   sat_learn_up_to_size          = 0;
   sat_temporary_learn           = 1;
@@ -334,7 +364,7 @@ SMTConfig::initializeConfig( )
   sat_trade_off                 = 8192;
   sat_minimize_conflicts        = 1;
   sat_dump_cnf                  = 0;
-  sat_dump_rnd_inter            = 0;
+//  sat_dump_rnd_inter            = 0;
   sat_lazy_dtc                  = 0;
   sat_lazy_dtc_burst            = 1;
   // UF-Solver Default configuration
@@ -353,22 +383,22 @@ SMTConfig::initializeConfig( )
   lra_gaussian_elim             = 1;
   lra_integer_solver            = 0;
   lra_check_on_assert           = 0;
-  // Proof parameters           
-  proof_reduce                  = 0;
+  // Proof parameters
+//  proof_reduce                  = 0;
   proof_ratio_red_solv          = 0;
   proof_red_time                = 0;
-  proof_num_graph_traversals    = 0;
-  proof_red_trans               = 0;
+//  proof_num_graph_traversals    = 0;
+//  proof_red_trans               = 0;
   proof_reorder_pivots          = 0;
   proof_reduce_while_reordering = 0;
   proof_random_context_analysis = 0;
   proof_random_swap_application = 0;
   proof_remove_mixed            = 0;
-  proof_set_inter_algo          = 1;
+//  proof_set_inter_algo          = 1;
   proof_certify_inter           = 0;
   proof_random_seed	        = 0;
 }
-
+/*
 void SMTConfig::parseConfig ( char * f )
 {
   FILE * filein = NULL;
@@ -415,7 +445,7 @@ void SMTConfig::parseConfig ( char * f )
 	  opensmt_error( "You must configure code with --enable-proof to produce proofs" );
 #endif
       }
-      else if ( sscanf( buf, "produce_inter %d\n"            , &produce_inter )                 == 1 )
+//      else if ( sscanf( buf, "produce_inter %d\n"            , &produce_inter )                 == 1 )
       {
 #ifndef PRODUCE_PROOF
 	if ( produce_inter != 0 )
@@ -430,7 +460,7 @@ void SMTConfig::parseConfig ( char * f )
 //      else if ( sscanf( buf, "verbosity %d\n"                , &verbosity )                     == 1 );
       else if ( sscanf( buf, "certification_level %d\n"      , &certification_level )           == 1 );
       else if ( sscanf( buf, "certifying_solver %s\n"        , certifying_solver )              == 1 );
-      // SAT SOLVER CONFIGURATION                            
+      // SAT SOLVER CONFIGURATION
       else if ( sscanf( buf, "sat_theory_propagation %d\n"   , &(sat_theory_propagation))       == 1 );
       else if ( sscanf( buf, "sat_polarity_mode %d\n"        , &(sat_polarity_mode))            == 1 );
       else if ( sscanf( buf, "sat_initial_skip_step %lf\n"   , &(sat_initial_skip_step))        == 1 );
@@ -466,13 +496,13 @@ void SMTConfig::parseConfig ( char * f )
       // EUF SOLVER CONFIGURATION
       else if ( sscanf( buf, "uf_disable %d\n"               , &(uf_disable))                   == 1 );
       else if ( sscanf( buf, "uf_theory_propagation %d\n"    , &(uf_theory_propagation))        == 1 );
-      // BV SOLVER CONFIGURATION                                                                      
+      // BV SOLVER CONFIGURATION
       else if ( sscanf( buf, "bv_disable %d\n"               , &(bv_disable))                   == 1 );
       else if ( sscanf( buf, "bv_theory_propagation %d\n"    , &(bv_theory_propagation))        == 1 );
-      // DL SOLVER CONFIGURATION                                                                      
+      // DL SOLVER CONFIGURATION
       else if ( sscanf( buf, "dl_disable %d\n"               , &(dl_disable))                   == 1 );
       else if ( sscanf( buf, "dl_theory_propagation %d\n"    , &(dl_theory_propagation))        == 1 );
-      // LRA SOLVER CONFIGURATION                                                                     
+      // LRA SOLVER CONFIGURATION
       else if ( sscanf( buf, "lra_disable %d\n"              , &(lra_disable))                  == 1 );
       else if ( sscanf( buf, "lra_theory_propagation %d\n"   , &(lra_theory_propagation))       == 1 );
       else if ( sscanf( buf, "lra_poly_deduct_size %d\n"     , &(lra_poly_deduct_size))         == 1 );
@@ -491,7 +521,7 @@ void SMTConfig::parseConfig ( char * f )
 
   if ( produceStats() ) stats_out.open( "stats.out" );
 }
-
+*/
 void SMTConfig::printConfig ( ostream & out )
 {
   out << "#" << endl;
@@ -519,7 +549,7 @@ void SMTConfig::printConfig ( ostream & out )
   out << "print_proofs_smtlib2 "       << print_proofs_smtlib2 << endl;
   out << "print_proofs_dotty "         << print_proofs_dotty << endl;
   out << "# Prints interpolants" << endl;
-  out << "produce_inter "              << produce_inter << endl;
+//  out << "produce_inter "              << produce_inter << endl;
   out << "# Dumps input formula (debugging)" << endl;
   out << "dump_formula "               << dump_formula << endl;
   out << "# Choose verbosity level" << endl;
@@ -548,8 +578,6 @@ void SMTConfig::printConfig ( ostream & out )
   out << "sat_initial_skip_step "   << sat_initial_skip_step << endl;
   out << "sat_skip_step_factor "    << sat_skip_step_factor << endl;
   out << "# Initial and increment conflict limits for restart" << endl;
-  out << "sat_restart_first "       << sat_restart_first << endl;
-  out << "sat_restart_increment "   << sat_restart_inc << endl;
   out << "sat_use_luby_restart "    << sat_use_luby_restart << endl;
   out << "# Learn theory-clauses up to the specified size (0 learns nothing)" << endl;
   out << "sat_learn_up_to_size "    << sat_learn_up_to_size << endl;
@@ -561,14 +589,14 @@ void SMTConfig::printConfig ( ostream & out )
   out << "sat_trade_off "           << sat_trade_off << endl;
   out << "sat_minimize_conflicts "  << sat_minimize_conflicts << endl;
   out << "sat_dump_cnf "            << sat_dump_cnf << endl;
-  out << "sat_dump_rnd_inter "      << sat_dump_rnd_inter << endl;
+//  out << "sat_dump_rnd_inter "      << sat_dump_rnd_inter << endl;
   out << "sat_lazy_dtc "            << sat_lazy_dtc << endl;
   out << "sat_lazy_dtc_burst "      << sat_lazy_dtc_burst << endl;
   out << "#" << endl;
   out << "# PROOF TRANSFORMER CONFIGURATION" << endl;
   out << "#" << endl;
-  out << "# Enable reduction" << endl;
-  out << "proof_reduce "             << proof_reduce << endl;
+//  out << "# Enable reduction" << endl;
+//  out << "proof_reduce "             << proof_reduce << endl;
   out << "# Randomly initialize seed for transformation" << endl;
   out << "proof_random_seed "     << proof_random_seed << endl;
   out << "# Reduction timeout w.r.t. solving time for each global iteration" << endl;
@@ -576,9 +604,9 @@ void SMTConfig::printConfig ( ostream & out )
   out << "# Reduction timeout for each global iteration" << endl;
   out << "proof_red_time "           << proof_red_time << endl;
   out << "# Number of graph traversals for each global iteration" << endl;
-  out << "proof_num_graph_traversals "   << proof_num_graph_traversals << endl;
+//  out << "proof_num_graph_traversals "   << proof_num_graph_traversals << endl;
   out << "# Number of reduction global iterations" << endl;
-  out << "proof_red_trans "          << proof_red_trans << endl;
+//  out << "proof_red_trans "          << proof_red_trans << endl;
   out << "# Enable pivot reordering for interpolation" << endl;
   out << "proof_reorder_pivots "     << proof_reorder_pivots << endl;
   out << "proof_reduce_while_reordering "     << proof_reduce_while_reordering << endl;
@@ -589,7 +617,7 @@ void SMTConfig::printConfig ( ostream & out )
   out << "# Delete AB-mixed subtrees" << endl;
   out << "proof_remove_mixed "       << proof_remove_mixed << endl;
   out << "# Set to 0,1,2 to use McMillan, Pudlak or McMillan' interpolation algorithm" << endl;
-  out << "proof_set_inter_algo "      << proof_set_inter_algo << endl;
+//  out << "proof_set_inter_algo "      << proof_set_inter_algo << endl;
   out << "# Choose certification level for interpolants" << endl;
   out << "# 0 - don't certify" << endl;
   out << "# 1 - certify final interpolant" << endl;
@@ -629,13 +657,13 @@ SMTConfig::parseCMDLine( int argc
   {
     const char * buf = argv[ i ];
     // Parsing of configuration options
-    if ( sscanf( buf, "--config=%s", config_name ) == 1 )
-    {
-      parseConfig( config_name );
-      break;
-    }      
-    else if ( strcmp( buf, "--help" ) == 0 
-	   || strcmp( buf, "-h" ) == 0 )
+//    if ( sscanf( buf, "--config=%s", config_name ) == 1 )
+//    {
+//      parseConfig( config_name );
+//      break;
+//    }
+    if ( strcmp( buf, "--help" ) == 0
+         || strcmp( buf, "-h" ) == 0 )
     {
       printHelp( );
       exit( 1 );
@@ -650,7 +678,7 @@ SMTConfig::parseCMDLine( int argc
 
 void SMTConfig::printHelp( )
 {
-  const char help_string[] 
+  const char help_string[]
     = "Usage: ./opensmt [OPTION] filename\n"
       "where OPTION can be\n"
       "  --help [-h]              print this help\n"

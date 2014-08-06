@@ -137,8 +137,8 @@ CoreSMTSolver::initialize( )
   assert( config.isInit( ) );
 //  assert( !init );
   random_seed = config.getRandomSeed();
-  restart_first = config.sat_restart_first;
-  restart_inc = config.sat_restart_inc;
+  restart_first = config.sat_restart_first();
+  restart_inc = config.sat_restart_inc();
   // FIXME: check why this ?
   first_model_found = config.logic == QF_UFLRA
                    || config.logic == QF_UFIDL;
