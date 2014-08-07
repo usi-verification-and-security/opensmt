@@ -2,7 +2,7 @@
 Author: Roberto Bruttomesso <roberto.bruttomesso@unisi.ch>
       , Edgar Pek <edgar.pek@lu.unisi.ch>
 
-OpenSMT -- Copyright (C) 2008-2010, Roberto Bruttomesso
+OpenSMT -- Copyright (C) 2008-2012, Roberto Bruttomesso
 
 OpenSMT is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

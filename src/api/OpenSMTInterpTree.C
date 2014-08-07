@@ -1,8 +1,7 @@
 /*********************************************************************
 Author: Antti Hyvärinen <antti.hyvarinen@gmail.com
 
-OpenSMT -- Copyright (C) 2010, Roberto Bruttomesso
-        -- Copyright (C) 2012, Antti Hyvärinen
+OpenSMT -- Copyright (C) 2012 - 2014, Antti Hyvärinen
 
 OpenSMT is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

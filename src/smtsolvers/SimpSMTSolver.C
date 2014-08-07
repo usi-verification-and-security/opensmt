@@ -1,7 +1,8 @@
 /*********************************************************************
-Author: Roberto Bruttomesso <roberto.bruttomesso@gmail.com>
+Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
 
-OpenSMT -- Copyright (C) 2009, Roberto Bruttomesso
+OpenSMT -- Copyright (C) 2012 - 2014 Antti Hyvarinen
+                         2008 - 2012 Roberto Bruttomesso
 
 OpenSMT is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -15,7 +16,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
- *********************************************************************/
+*********************************************************************/
 
 /************************************************************************************[SimpSolver.C]
 MiniSat -- Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson

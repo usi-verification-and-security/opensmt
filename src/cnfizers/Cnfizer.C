@@ -1,7 +1,8 @@
 /*********************************************************************
-Author: Roberto Bruttomesso <roberto.bruttomesso@gmail.com>
+Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
 
-OpenSMT -- Copyright (C) 2009, Roberto Bruttomesso
+OpenSMT -- Copyright (C) 2012 - 2014 Antti Hyvarinen
+                         2008 - 2012 Roberto Bruttomesso
 
 OpenSMT is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -765,11 +766,13 @@ lbool Cnfizer::getTermValue(PTRef tr) {
     PTRef p;
     bool sgn;
     tmap.getTerm(tr, p, sgn);
-    Var v = tmap.termToVar[p];
-    lbool val = model[v];
-    assert(val != l_Undef);
-
-    return sgn == false ? val : (val == l_True ? l_False : l_True);
+    if (tmap.termToVar.contains(p)) {
+        Var v = tmap.termToVar[p];
+        lbool val = model[v];
+        assert(val != l_Undef);
+        return sgn == false ? val : (val == l_True ? l_False : l_True);
+    }
+    else return l_Undef;
 }
 
 // Assumes that the root of the tree is the last element of term_list

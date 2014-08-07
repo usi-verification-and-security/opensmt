@@ -179,7 +179,7 @@ typedef union YYSTYPE
 {
 
 /* Line 2068 of yacc.c  */
-#line 40 "smt2newparser.yy"
+#line 60 "smt2newparser.yy"
 
   char  *                      str;
   std::vector< std::string > * str_list;

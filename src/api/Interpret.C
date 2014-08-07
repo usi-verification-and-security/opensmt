@@ -1,3 +1,23 @@
+/*********************************************************************
+Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
+
+OpenSMT -- Copyright (C) 2012 - 2014 Antti Hyvarinen
+
+OpenSMT is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+OpenSMT is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
+*********************************************************************/
+
+
 #include <assert.h>
 #include <stdarg.h>
 #include <string.h>
@@ -487,7 +507,7 @@ bool Interpret::getAssignment(const char* cmd) {
         asprintf(&out_str, "%s(%s %s)%s",
                  out_str,
                  name,
-                 val == l_True ? "true" : "false",
+                 val == l_True ? "true" : (val == l_False ? "false" : "unknown"),
                  i < term_names.size() - 1 ? " " : "");
     }
 
