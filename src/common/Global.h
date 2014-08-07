@@ -1,20 +1,26 @@
 /*********************************************************************
 Author: Roberto Bruttomesso <roberto.bruttomesso@gmail.com>
 
-OpenSMT -- Copyright (C) 2008 - 2012, Roberto Bruttomesso
+OpenSMT2 -- Copyright (C) 2008 - 2012, Roberto Bruttomesso
 
-OpenSMT is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
 
-OpenSMT is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Software.
 
-You should have received a copy of the GNU General Public License
-along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 #ifndef GLOBAL_H
@@ -71,7 +77,7 @@ using __gnu_cxx::hash;
 using __gnu_pbds::priority_queue;
 using __gnu_pbds::pairing_heap_tag;
 #else
-#error "This version of OpenSMT requires at least gcc 4.3"
+#error "This version of OpenSMT2 requires at least gcc 4.3"
 using pb_ds::priority_queue;
 using pb_ds::pairing_heap_tag;
 #endif
@@ -87,15 +93,9 @@ using std::ifstream;
 #define USE_GMP        1
 #define FAST_RATIONALS 1
 
-#if FAST_RATIONALS
-#include "FastRationals.h"
-#endif
-
 namespace opensmt {
 
 #if FAST_RATIONALS
-typedef FastRational Real;
-typedef FastInteger Integer;
 #elif USE_GMP
 typedef mpq_class Real;
 typedef mpz_class Integer;
@@ -257,8 +257,6 @@ struct Equal<const opensmt::enodeid_t> {
         return s1 == s2; }
 };
 
-using opensmt::Real;
-using opensmt::Integer;
 using opensmt::enodeid_t;
 using opensmt::snodeid_t;
 using opensmt::sortid_t;

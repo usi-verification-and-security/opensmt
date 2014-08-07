@@ -774,22 +774,28 @@ static yyconst flex_int32_t yy_rule_can_match_eol[87] =
 /*********************************************************************
 Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
 
-OpenSMT -- Copyright (C) 2012 - 2014 Antti Hyvarinen
+OpenSMT2 -- Copyright (C) 2012 - 2014 Antti Hyvarinen
 
-OpenSMT is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
 
-OpenSMT is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Software.
 
-You should have received a copy of the GNU General Public License
-along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
-#line 30 "smt2newlexer.ll"
+#line 36 "smt2newlexer.ll"
 
 #include <cstdio>
 #include <cstdlib>
@@ -803,7 +809,7 @@ along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 #define YY_USER_ACTION smt2newget_lloc(yyscanner)->first_line = smt2newget_lineno(yyscanner);
 
 
-#line 807 "smt2newlexer.cc"
+#line 813 "smt2newlexer.cc"
 
 #define INITIAL 0
 #define STR 1
@@ -1057,10 +1063,10 @@ YY_DECL
 	register int yy_act;
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
 
-#line 46 "smt2newlexer.ll"
+#line 52 "smt2newlexer.ll"
 
 
-#line 1064 "smt2newlexer.cc"
+#line 1070 "smt2newlexer.cc"
 
     yylval = yylval_param;
 
@@ -1161,444 +1167,444 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 48 "smt2newlexer.ll"
+#line 54 "smt2newlexer.ll"
 // Eat comments
 	YY_BREAK
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 49 "smt2newlexer.ll"
+#line 55 "smt2newlexer.ll"
 // Eat spaces
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 51 "smt2newlexer.ll"
+#line 57 "smt2newlexer.ll"
 { return *smt2newget_text(yyscanner);                                                   }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 52 "smt2newlexer.ll"
+#line 58 "smt2newlexer.ll"
 { return *smt2newget_text(yyscanner);                                                   }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 53 "smt2newlexer.ll"
+#line 59 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_AS;      }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 54 "smt2newlexer.ll"
+#line 60 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_DECIMAL; }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 55 "smt2newlexer.ll"
+#line 61 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_EXISTS;  }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 56 "smt2newlexer.ll"
+#line 62 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_FORALL;  }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 57 "smt2newlexer.ll"
+#line 63 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_LET;     }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 58 "smt2newlexer.ll"
+#line 64 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_NUMERAL; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 59 "smt2newlexer.ll"
+#line 65 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_PAR;     }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 60 "smt2newlexer.ll"
+#line 66 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_STRING;  }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 62 "smt2newlexer.ll"
+#line 68 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_ASSERT;        }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 63 "smt2newlexer.ll"
+#line 69 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_CHECKSAT;      }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 64 "smt2newlexer.ll"
+#line 70 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_DECLARESORT;   }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 65 "smt2newlexer.ll"
+#line 71 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_DECLAREFUN;    }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 66 "smt2newlexer.ll"
+#line 72 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_DEFINESORT;    }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 67 "smt2newlexer.ll"
+#line 73 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_DEFINEFUN;     }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 68 "smt2newlexer.ll"
+#line 74 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_EXIT;          }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 69 "smt2newlexer.ll"
+#line 75 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_GETASSERTIONS; }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 70 "smt2newlexer.ll"
+#line 76 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_GETASSIGNMENT; }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 71 "smt2newlexer.ll"
+#line 77 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_GETINFO;       }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 72 "smt2newlexer.ll"
+#line 78 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_GETOPTION;     }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 73 "smt2newlexer.ll"
+#line 79 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_GETPROOF;      }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 74 "smt2newlexer.ll"
+#line 80 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_GETUNSATCORE;  }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 75 "smt2newlexer.ll"
+#line 81 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_GETVALUE;      }
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 76 "smt2newlexer.ll"
+#line 82 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_POP;           }
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 77 "smt2newlexer.ll"
+#line 83 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_PUSH;          }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 78 "smt2newlexer.ll"
+#line 84 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_SETLOGIC;      }
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 79 "smt2newlexer.ll"
+#line 85 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_SETINFO;       }
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 80 "smt2newlexer.ll"
+#line 86 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_SETOPTION;     }
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 81 "smt2newlexer.ll"
+#line 87 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_GETITPS;      }
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 82 "smt2newlexer.ll"
+#line 88 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_THEORY;        }
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 84 "smt2newlexer.ll"
+#line 90 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_SORTS;                   }
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 85 "smt2newlexer.ll"
+#line 91 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_FUNS;                    }
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 86 "smt2newlexer.ll"
+#line 92 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_SORTSDESCRIPTION;        }
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 87 "smt2newlexer.ll"
+#line 93 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_FUNSDESCRIPTION;         }
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 88 "smt2newlexer.ll"
+#line 94 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_DEFINITION;              }
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 89 "smt2newlexer.ll"
+#line 95 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_VALUES;                  }
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 90 "smt2newlexer.ll"
+#line 96 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_NOTES;                   }
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 91 "smt2newlexer.ll"
+#line 97 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_THEORIES;                }
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 92 "smt2newlexer.ll"
+#line 98 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_LANGUAGE;                }
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 93 "smt2newlexer.ll"
+#line 99 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_EXTENSIONS;              }
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 94 "smt2newlexer.ll"
+#line 100 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_PRINTSUCCESS;            }
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 95 "smt2newlexer.ll"
+#line 101 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_EXPANDDEFINITIONS;       }
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 96 "smt2newlexer.ll"
+#line 102 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_INTERACTIVEMODE;         }
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 97 "smt2newlexer.ll"
+#line 103 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_PRODUCEPROOFS;           }
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
-#line 98 "smt2newlexer.ll"
+#line 104 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_PRODUCEUNSATCORES;       }
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
-#line 99 "smt2newlexer.ll"
+#line 105 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_PRODUCEMODELS;           }
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 100 "smt2newlexer.ll"
+#line 106 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_PRODUCEASSIGNMENTS;      }
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 101 "smt2newlexer.ll"
+#line 107 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_REGULAROUTPUTCHANNEL;    }
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 102 "smt2newlexer.ll"
+#line 108 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_DIAGNOSTICOUTPUTCHANNEL; }
 	YY_BREAK
 case 53:
 YY_RULE_SETUP
-#line 103 "smt2newlexer.ll"
+#line 109 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_RANDOMSEED;              }
 	YY_BREAK
 case 54:
 YY_RULE_SETUP
-#line 104 "smt2newlexer.ll"
+#line 110 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_VERBOSITY;               }
 	YY_BREAK
 case 55:
 YY_RULE_SETUP
-#line 105 "smt2newlexer.ll"
+#line 111 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_ERRORBEHAVIOR;           }
 	YY_BREAK
 case 56:
 YY_RULE_SETUP
-#line 106 "smt2newlexer.ll"
+#line 112 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_NAME;                    }
 	YY_BREAK
 case 57:
 YY_RULE_SETUP
-#line 107 "smt2newlexer.ll"
+#line 113 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_NAMED;                   }
 	YY_BREAK
 case 58:
 YY_RULE_SETUP
-#line 108 "smt2newlexer.ll"
+#line 114 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_AUTHORS;                 }
 	YY_BREAK
 case 59:
 YY_RULE_SETUP
-#line 109 "smt2newlexer.ll"
+#line 115 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_VERSION;                 }
 	YY_BREAK
 case 60:
 YY_RULE_SETUP
-#line 110 "smt2newlexer.ll"
+#line 116 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_STATUS;                  }
 	YY_BREAK
 case 61:
 YY_RULE_SETUP
-#line 111 "smt2newlexer.ll"
+#line 117 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_REASONUNKNOWN;           }
 	YY_BREAK
 case 62:
 YY_RULE_SETUP
-#line 112 "smt2newlexer.ll"
+#line 118 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return KW_ALLSTATISTICS;           }
 	YY_BREAK
 case 63:
 YY_RULE_SETUP
-#line 115 "smt2newlexer.ll"
+#line 121 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_NUM; }
 	YY_BREAK
 case 64:
 YY_RULE_SETUP
-#line 116 "smt2newlexer.ll"
+#line 122 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_DEC; }
 	YY_BREAK
 case 65:
 YY_RULE_SETUP
-#line 117 "smt2newlexer.ll"
+#line 123 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_HEX; }
 	YY_BREAK
 case 66:
 YY_RULE_SETUP
-#line 118 "smt2newlexer.ll"
+#line 124 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_BIN; }
 	YY_BREAK
 case 67:
 YY_RULE_SETUP
-#line 120 "smt2newlexer.ll"
+#line 126 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_SYM; }
 	YY_BREAK
 case 68:
 YY_RULE_SETUP
-#line 121 "smt2newlexer.ll"
+#line 127 "smt2newlexer.ll"
 { smt2newget_lval(yyscanner)->str = strdup( smt2newget_text(yyscanner) ); return TK_KEY; }
 	YY_BREAK
 case 69:
 YY_RULE_SETUP
-#line 123 "smt2newlexer.ll"
+#line 129 "smt2newlexer.ll"
 { return *smt2newget_text(yyscanner); }
 	YY_BREAK
 case 70:
 YY_RULE_SETUP
-#line 125 "smt2newlexer.ll"
+#line 131 "smt2newlexer.ll"
 { yy_push_state(STR, yyscanner); }
 	YY_BREAK
 
 case 71:
 YY_RULE_SETUP
-#line 128 "smt2newlexer.ll"
+#line 134 "smt2newlexer.ll"
 { yyextra->insertBuf(' ');                                       }
 	YY_BREAK
 case 72:
 YY_RULE_SETUP
-#line 129 "smt2newlexer.ll"
+#line 135 "smt2newlexer.ll"
 { yyextra->insertBuf('\t');                                      }
 	YY_BREAK
 case 73:
 /* rule 73 can match eol */
 YY_RULE_SETUP
-#line 130 "smt2newlexer.ll"
+#line 136 "smt2newlexer.ll"
 { yyextra->insertBuf('\n');                                      }
 	YY_BREAK
 case 74:
 YY_RULE_SETUP
-#line 131 "smt2newlexer.ll"
+#line 137 "smt2newlexer.ll"
 { yyextra->insertBuf('"');                                       }
 	YY_BREAK
 case 75:
 YY_RULE_SETUP
-#line 132 "smt2newlexer.ll"
+#line 138 "smt2newlexer.ll"
 { yyextra->insertBuf('\\');                                      }
 	YY_BREAK
 case 76:
 YY_RULE_SETUP
-#line 133 "smt2newlexer.ll"
+#line 139 "smt2newlexer.ll"
 { yyextra->insertBuf(smt2newget_text(yyscanner)[0]);                  }
 	YY_BREAK
 case 77:
 YY_RULE_SETUP
-#line 134 "smt2newlexer.ll"
+#line 140 "smt2newlexer.ll"
 { yylval->str = strdup(yyextra->getBuf()); yyextra->clearBuf();
                     yy_pop_state(yyscanner); return TK_STR;                      }
 	YY_BREAK
 
 case 78:
 YY_RULE_SETUP
-#line 138 "smt2newlexer.ll"
+#line 144 "smt2newlexer.ll"
 { yy_push_state(PSYM, yyscanner); }
 	YY_BREAK
 
 case 79:
 YY_RULE_SETUP
-#line 141 "smt2newlexer.ll"
+#line 147 "smt2newlexer.ll"
 { yyextra->insertBuf(' ');                                       }
 	YY_BREAK
 case 80:
 YY_RULE_SETUP
-#line 142 "smt2newlexer.ll"
+#line 148 "smt2newlexer.ll"
 { yyextra->insertBuf('\t');                                      }
 	YY_BREAK
 case 81:
 /* rule 81 can match eol */
 YY_RULE_SETUP
-#line 143 "smt2newlexer.ll"
+#line 149 "smt2newlexer.ll"
 { yyextra->insertBuf('\n');                                      }
 	YY_BREAK
 case 82:
 YY_RULE_SETUP
-#line 144 "smt2newlexer.ll"
+#line 150 "smt2newlexer.ll"
 { yyextra->insertBuf(smt2newget_text(yyscanner)[0]);                  }
 	YY_BREAK
 case 83:
 YY_RULE_SETUP
-#line 145 "smt2newlexer.ll"
+#line 151 "smt2newlexer.ll"
 { yylval->str = strdup(yyextra->getBuf()); yyextra->clearBuf();
                     yy_pop_state(yyscanner); return TK_SYM;                      }
 	YY_BREAK
 case 84:
 YY_RULE_SETUP
-#line 147 "smt2newlexer.ll"
+#line 153 "smt2newlexer.ll"
 { printf("Syntax error at line %d near %s, \\ not allowed inside | ... |\n", smt2newget_lineno(yyscanner), smt2newget_text(yyscanner)); exit(1); }
 	YY_BREAK
 
 case 85:
 YY_RULE_SETUP
-#line 150 "smt2newlexer.ll"
+#line 156 "smt2newlexer.ll"
 { printf( "Syntax error at line %d near %s\n", smt2newget_lineno(yyscanner), smt2newget_text(yyscanner) ); exit( 1 ); }
 	YY_BREAK
 case 86:
 YY_RULE_SETUP
-#line 152 "smt2newlexer.ll"
+#line 158 "smt2newlexer.ll"
 ECHO;
 	YY_BREAK
-#line 1602 "smt2newlexer.cc"
+#line 1608 "smt2newlexer.cc"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(STR):
 case YY_STATE_EOF(PSYM):
@@ -2830,7 +2836,7 @@ void smt2newfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 152 "smt2newlexer.ll"
+#line 158 "smt2newlexer.ll"
 
 
 
