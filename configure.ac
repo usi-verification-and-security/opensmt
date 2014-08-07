@@ -112,9 +112,9 @@ echo "Produce proofs... ${enable_proof}"
 #
 AC_ARG_ENABLE(custom_memalloc,
   AC_HELP_STRING([--enable-custom_memalloc],
-                 [enable custom memory allocation for forbid lists@<:@no@:>@]),
+                 [enable custom memory allocation for forbid lists@<:@yes@:>@]),
   [:],
-  [enable_custom_memalloc="no"])
+  [enable_custom_memalloc="yes"])
 
 if test $enable_custom_memalloc = "yes" ;
 then
@@ -221,7 +221,7 @@ AC_ARG_ENABLE(oldsubstitution,
   AC_HELP_STRING([--enable-oldsubstitution],
                  [enable old substitution @<:@yes@:>@]),
   [:],
-  [enable_oldsubstitution="no"])
+  [enable_oldsubstitution="yes"])
 
 if test $enable_oldsubstitution = "yes" ;
 then
