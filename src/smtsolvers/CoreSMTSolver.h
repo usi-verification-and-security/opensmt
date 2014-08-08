@@ -333,6 +333,8 @@ class CoreSMTSolver : public SMTSolver
       //=================================================================================================
       // Added Code
 
+      char*       litToString   (const Lit l);
+      char*       clauseToString(const Clause& c);
   public:
 
       void     printLit         (Lit l);
@@ -625,6 +627,25 @@ inline void CoreSMTSolver::printClause(const C& c)
     printLit(c[i]);
     fprintf(stderr, " ");
   }
+}
+
+inline char* CoreSMTSolver::litToString(const Lit l)
+{
+    char* l_str;
+    asprintf(&l_str, "%s%d", sign(l) ? "-" : "", var(l)+1);
+    return l_str;
+}
+
+inline char* CoreSMTSolver::clauseToString(const Clause& c)
+{
+    char* c_str;
+    for (int i = 0; i < c.size(); i++) {
+        char* l_str = litToString(c[i]);
+        asprintf(&c_str, "%s %s", c_str, l_str);
+        free(l_str);
+    }
+    asprintf(&c_str, "%s 0\n", c_str);
+    return c_str;
 }
 
 //=================================================================================================

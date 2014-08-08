@@ -263,15 +263,15 @@ public:
   int sat_rnd_init_act() const
     { return optionTable.contains(o_rnd_init_act) ?
         optionTable[o_rnd_init_act].getValue().numval > 0 : 0; }
-  int sat_garbage_frac() const
+  double sat_garbage_frac() const
     { return optionTable.contains(o_garbage_frac) ?
         optionTable[o_garbage_frac].getValue().decval : 0.20; }
   int sat_restart_first() const
     { return optionTable.contains(o_restart_first) ?
         optionTable[o_restart_first].getValue().numval : 100; }
-  int sat_restart_inc() const
+  double sat_restart_inc() const
     { return optionTable.contains(o_restart_inc) ?
-        optionTable[o_restart_inc].getValue().numval : 2; }
+        optionTable[o_restart_inc].getValue().numval : 1.1; }
   int produce_inter() const
     { return optionTable.contains(o_produce_inter) ?
         optionTable[o_produce_inter].getValue().numval : 0; }

@@ -44,6 +44,7 @@ uint32_t LetFrame::id_cnt = 0;
  ***********************************************************/
 
 
+
 void Interpret::setInfo(ASTNode& n) {
     assert(n.getType() == UATTR_T || n.getType() == PATTR_T);
 
@@ -628,7 +629,7 @@ int Interpret::interpFile(FILE* in) {
     execute(r);
     return rval;
 }
-
+/*
 // For reading from pipe
 int Interpret::interpPipe() {
 
@@ -701,6 +702,7 @@ int Interpret::interpPipe() {
     free(buf);
     return 0;
 }
+*/
 
 // For reading with readline.
 int Interpret::interpInteractive(FILE*) {
