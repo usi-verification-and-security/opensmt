@@ -255,6 +255,12 @@ declare_fun_err: ;
     if (strcmp(cmd, "get-assignment") == 0) {
         getAssignment(cmd);
     }
+    if (strcmp(cmd, "dump-state") == 0) {
+        char* state_s = ts.getSolverState();
+        cerr << state_s;
+        free(state_s);
+
+    }
     if (strcmp(cmd, "exit") == 0) {
         exit();
         notify_success();

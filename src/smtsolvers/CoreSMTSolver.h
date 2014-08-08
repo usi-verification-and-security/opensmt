@@ -333,13 +333,15 @@ class CoreSMTSolver : public SMTSolver
       //=================================================================================================
       // Added Code
 
-      char*       litToString   (const Lit l);
-      char*       clauseToString(const Clause& c);
   public:
 
       void     printLit         (Lit l);
       template<class C>
       void     printClause      (const C& c);
+
+      char*    litToString      (const Lit l);
+      char*    clauseToString   (const Clause& c);
+      char*    cnfToString      ();
 
       lbool    smtSolve         ( );             // Solve
 #ifndef SMTCOMP
@@ -638,16 +640,43 @@ inline char* CoreSMTSolver::litToString(const Lit l)
 
 inline char* CoreSMTSolver::clauseToString(const Clause& c)
 {
-    char* c_str;
+    char* c_str = (char*)malloc(1);
+    c_str[0] = 0;
+    char* c_old = c_str;
     for (int i = 0; i < c.size(); i++) {
         char* l_str = litToString(c[i]);
-        asprintf(&c_str, "%s %s", c_str, l_str);
+        c_old = c_str;
+        asprintf(&c_str, "%s%s ", c_old, l_str);
         free(l_str);
+        free(c_old);
     }
-    asprintf(&c_str, "%s 0\n", c_str);
+    c_old = c_str;
+    asprintf(&c_str, "%s0", c_str);
+    free(c_old);
     return c_str;
 }
 
+inline char* CoreSMTSolver::cnfToString()
+{
+    char* f_str = (char*)malloc(1);
+    f_str[0] = 0;
+    char* f_old = f_str;
+    for (int i = 0; i < (trail_lim.size() > 0 ? trail_lim[0] : trail.size()); i++) {
+        char* l_str = litToString(trail[i]);
+        f_old = f_str;
+        asprintf(&f_str, "%s%s 0\n", f_old, l_str);
+        free(l_str);
+        free(f_old);
+    }
+    for (int i = 0; i < clauses.size(); i++) {
+        char* c_str = clauseToString(*clauses[i]);
+        f_old = f_str;
+        asprintf(&f_str, "%s\n%s", f_old, c_str);
+        free(c_str);
+        free(f_old);
+    }
+    return f_str;
+}
 //=================================================================================================
 // Added code
 /*

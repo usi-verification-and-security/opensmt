@@ -2130,6 +2130,7 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
     }
   }
 
+#ifdef BACKTRACK_AFTER_FINISHING
   if ( !config.isIncremental() )
   {
     // We terminate
@@ -2143,6 +2144,9 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
     // ready to accept new clauses
     cancelUntil(0);
   }
+#else
+  cancelUntil(0);
+#endif
 
   return status;
 }

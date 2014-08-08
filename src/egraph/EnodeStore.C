@@ -316,11 +316,11 @@ char* EnodeStore::printEnode(ERef e) {
                 asprintf(&out, "%s %d (%s) ",
                     old,
                     f_next.x,
-                    term_store.printTerm((operator[] (fa[f_next].e)).pterm));
+                    term_store.printTerm((operator[] (fa[f_next].e)).getTerm()));
 #else
                 asprintf(&out, "%s (%s) ",
                     old,
-                    term_store.printTerm((operator[] (f_next->e)).pterm));
+                    term_store.printTerm((operator[] (f_next->e)).getTerm()));
 #endif
                 ::free(old);
 #ifdef CUSTOM_EL_ALLOC

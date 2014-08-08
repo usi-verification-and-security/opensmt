@@ -522,7 +522,7 @@ PTRef Egraph::expNCA(PTRef x, PTRef y) {
             // Mark the node and move to the next
 #ifdef PEDANTIC_DEBUG
 #ifdef TERMS_HAVE_EXPLANATIONS
-            cerr << "y: ExpParent of " << logic.printTerm(h_y) << " is " << (term_store[h_y].getExpParent() == PTRef_Undef ? "undef" : logic.printTerm(term_store_h[y].getExpParent())) << endl;
+            cerr << "y: ExpParent of " << logic.printTerm(h_y) << " is " << (term_store[h_y].getExpParent() == PTRef_Undef ? "undef" : logic.printTerm(term_store[h_y].getExpParent())) << endl;
 #else
             cerr << "y: ExpParent of " << logic.printTerm(h_y) << " is " << (expParent[h_y] == PTRef_Undef ? "undef" : logic.printTerm(expParent[h_y])) << endl;
 #endif
