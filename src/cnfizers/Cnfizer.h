@@ -67,6 +67,20 @@ class ValPair {
 };
 
 //
+// Struct for communicating the cnf and the mapping between variables and PTRefs
+//
+
+struct VarPtPair {
+    Var v;
+    PTRef tr;
+};
+
+struct CnfState {
+    char*          cnf;
+    vec<VarPtPair> map;
+};
+
+//
 // Generic class for conversion into CNF
 //
 class Cnfizer
@@ -123,7 +137,7 @@ public:
     bool  isNPAtom         (PTRef r, PTRef& p)    const; // Check if r is a (negated) atom.  Return true if the corresponding atom is negated.  The purified reference is placed in the second argument.
     bool  solverEmpty      ()                     const { return s_empty; }
 
-    char* getSolverState   ();
+    void  getCnfState   (CnfState&);
 protected:
 
 #ifdef ENABLE_SHARING_BUG

@@ -86,7 +86,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 "set-option"      { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_SETOPTION;     }
 "get-interpolants" { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_GETITPS;      }
 "theory"          { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_THEORY;        }
-"dump-state"      { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_DUMPSTATE;     }
+"write-state"      { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_WRSTATE;     }
+"read-state"      { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_RDSTATE;     }
 
 ":sorts"                     { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_SORTS;                   }
 ":funs"                      { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_FUNS;                    }

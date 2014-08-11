@@ -26,6 +26,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "MainSolver.h"
 #include "TreeOps.h"
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 sstat MainSolver::simplifyFormulas(char** err_msg) {
     sstat  state = s_Undef;
@@ -657,6 +661,135 @@ MainSolver::FContainer MainSolver::simplifyEqualities(vec<PtChild>& terms)
         }
     }
     return FContainer(root);
+}
+
+//
+// Read the solver state from a file
+//
+bool MainSolver::readSolverState(const char* file, CnfState& cs, char** msg)
+{
+    int fd = open(file, O_RDONLY);
+    if (fd == -1) {
+        *msg = strerror(errno);
+        return false;
+    }
+    struct stat stat_buf;
+    int res = fstat(fd, &stat_buf);
+    if (res == -1) {
+        *msg = strerror(errno);
+        return false;
+    }
+    off_t size = stat_buf.st_size;
+    int* contents = (int*)malloc(size);
+    res = read(fd, contents, size);
+    if (res == -1) {
+        *msg = strerror(errno);
+        return false;
+    }
+    int map_offs = contents[map_offs_idx];
+    int cnf_offs = contents[cnf_offs_idx];
+    int termstore_offs = contents[termstore_offs_idx];
+    int symstore_offs = contents[symstore_offs_idx];
+    int sortstore_offs = contents[sortstore_offs_idx];
+
+    for (int i = 0; i < contents[map_offs]; i++) {
+       PTRef tr;
+       tr.x = contents[i+map_offs+1];
+       cs.map.push({i, tr});
+    }
+    cs.cnf = (char*)(contents + cnf_offs);
+    return true;
+}
+
+//
+// Write the solver state to a partly binary file (cnf is in clear text
+// and written last).  Output format looks like this:
+//
+// +--------+-----------+-----------+----------------+-----------+
+// |map_offs|tstore_offs|symstore_offs|sortstore_offs|cnf_offs   |
+// +--------+-----------+-----------+----------------+-----------+
+// |map_sz              | <map data>                             |
+// +--------------------+----------------------------------------+
+// |tstore_sz           | <tstore data>                          |
+// +--------------------+----------------------------------------+
+// |symstore_sz         | <symstore data>                        |
+// +--------------------+----------------------------------------+
+// |sortstore_sz        | <sortstore data>                       |
+// +--------------------+----------------------------------------+
+// |<cnf data>                                                   |
+// +-------------------------------------------------------------+
+//
+bool MainSolver::writeSolverState(CnfState& cs, const char* file, char** msg)
+{
+    int fd = open(file, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+    if (fd == -1) {
+        *msg = strerror(errno);
+        return false;
+    }
+
+#ifdef PEDANTIC_DEBUG
+    cerr << "Trying to write solver state" << endl;
+    cerr << "Cnf: " << endl;
+    cerr << cs.cnf << endl;
+#endif
+
+
+    int termstore_sz = 0;
+    int symstore_sz = 0;
+    int sortstore_sz = 0;
+    int map_sz = cs.map.size();
+
+    // allocate space for the map, the cnf, the offset indexes and the
+    // sizes
+    int buf_sz = (termstore_sz + symstore_sz + sortstore_sz + map_sz)*sizeof(int)
+               + (strlen(cs.cnf)+1)
+               + 9*sizeof(int);
+#ifdef PEDANTIC_DEBUG
+    cerr << "Mallocing " << buf_sz << " bytes for the buffer" << endl;
+    cerr << "The cnf is " << strlen(cs.cnf)+1 << " bytes" << endl;
+    cerr << "The map is " << map_sz * sizeof(int) << " bytes" << endl;
+    cerr << "The termstore is " << termstore_sz * sizeof(int) << " bytes" << endl;
+    cerr << "The symstore is " << symstore_sz * sizeof(int) << " bytes" << endl;
+    cerr << "The sortstore is " << sortstore_sz * sizeof(int) << " bytes" << endl;
+    cerr << "The header is " << 5*sizeof(int) << " bytes" << endl;
+    cerr << "The size fields are " << 4*sizeof(int) << " bytes" << endl;
+#endif
+    int* buf = (int*)malloc(buf_sz);
+
+    buf[map_offs_idx]       = cnf_offs_idx+1;
+    buf[termstore_offs_idx] = buf[map_offs_idx]+map_sz+1;
+    buf[symstore_offs_idx]  = buf[termstore_offs_idx] + termstore_sz + 1;
+    buf[sortstore_offs_idx] = buf[symstore_offs_idx]+symstore_sz+1;
+    buf[cnf_offs_idx]       = buf[sortstore_offs_idx]+sortstore_sz+1;
+
+    buf[buf[map_offs_idx]]       = map_sz;
+    buf[buf[termstore_offs_idx]] = termstore_sz;
+    buf[buf[symstore_offs_idx]]  = symstore_sz;
+    buf[buf[sortstore_offs_idx]] = sortstore_sz;
+
+    cerr << "Map:" << endl;
+    for (int i = 0; i < cs.map.size(); i++) {
+#ifdef PEDANTIC_DEBUG
+        cerr << "  Var " << i << " maps to " << cs.map[i].tr.x << endl;
+#endif
+        buf[buf[map_offs_idx]+i+1] = cs.map[i].tr.x;
+    }
+    char* cnf_buf = (char*) (&buf[buf[cnf_offs_idx]]);
+    int i;
+    for (i = 0; cs.cnf[i] != '\0'; i++)
+        cnf_buf[i] = cs.cnf[i];
+    cnf_buf[i] = '\n';
+
+    int res = write(fd, buf, buf_sz);
+    if (res == -1) {
+        *msg = strerror(errno);
+        return false;
+    } else if (res < buf_sz) {
+        asprintf(msg, "Not all data was written.  Out of space?\n");
+        return false;
+    }
+    close(fd);
+    return true;
 }
 
 /*

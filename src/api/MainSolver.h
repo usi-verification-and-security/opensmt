@@ -50,6 +50,11 @@ const sstat s_Error = toSstat( 2);
 
 class MainSolver {
   private:
+    const static int map_offs_idx = 0;
+    const static int termstore_offs_idx = 1;
+    const static int symstore_offs_idx = 2;
+    const static int sortstore_offs_idx = 3;
+    const static int cnf_offs_idx = 4;
     class pi {
       public:
         PTRef x;
@@ -109,4 +114,6 @@ class MainSolver {
     sstat simplifyFormulas(char** err_msg);
     lbool solve() { return ts.solve(); }
 //    static void getTermList(PTRef tr, vec<PtChild>&, Logic& l);
+    bool readSolverState(const char* file, CnfState& cs, char** msg);
+    bool writeSolverState(CnfState& cs, const char* file, char** msg);
 };

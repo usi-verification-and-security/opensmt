@@ -255,11 +255,24 @@ declare_fun_err: ;
     if (strcmp(cmd, "get-assignment") == 0) {
         getAssignment(cmd);
     }
-    if (strcmp(cmd, "dump-state") == 0) {
-        char* state_s = ts.getSolverState();
-        cerr << state_s;
-        free(state_s);
-
+    if (strcmp(cmd, "write-state") == 0) {
+        const char* filename = (**(n.children->begin())).getValue();
+        CnfState cs;
+        ts.getCnfState(cs);
+        char* msg;
+        bool rval = main_solver.writeSolverState(cs, filename, &msg);
+        if (!rval) {
+            notify_formatted("%s", msg);
+        }
+    }
+    if (strcmp(cmd, "read-state") == 0) {
+        const char* filename = (**(n.children->begin())).getValue();
+        CnfState cs;
+        char* msg;
+        bool rval = main_solver.readSolverState(filename, cs, &msg);
+        if (!rval) {
+            notify_formatted("%s", msg);
+        }
     }
     if (strcmp(cmd, "exit") == 0) {
         exit();
