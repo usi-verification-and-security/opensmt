@@ -28,19 +28,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 //const SRef SRef_Undef = -1;
 
-/***********************************************************
- * Identifier constructor
- ***********************************************************/
-Identifier::Identifier(ASTNode& n) {
-    name = string(n.getValue());
-    if (n.children == NULL) type = IDTYPE_SIMPLE;
-    else {
-        type = IDTYPE_CMPLX;
-        for (list<ASTNode*>::iterator it = n.children->begin(); it != n.children->end(); it++)
-            numlist.push(atoi((**it).getValue()));
-    }
-}
-
 sortid_t Sort::static_uniq_id = 0;
 
 //=============================================================================
@@ -113,6 +100,3 @@ Sort::Sort(Identifier& id) : id(&id)
 };
 
 
-bool hasSortBool() {
-    return true;
-}

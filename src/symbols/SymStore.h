@@ -24,24 +24,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 
-#ifndef TSTORE_H
-#define TSTORE_H
+#ifndef SymStore_h
+#define SymStore_h
 
 #include <string>
 #include "Symbol.h"
-//#include "Vec.h"
-//#include "Map.h"
 #include "StringMap.h"
-
-// Contains pairs (SymRef p, int i) stating that p is the i-parent of a term
-//class Occ {
-//    int i; SymRef p;
-//  public:
-//    Occ(int i_, SymRef p_) : i(i_), p(p_) {}
-//    Occ() : i(-1), p(SymRef_Undef) {};
-//};
-
-
 
 class SymStore {
   private:

@@ -710,7 +710,7 @@ bool MainSolver::readSolverState(const char* file, CnfState& cs, char** msg)
     cerr << cs.cnf << endl;
 #endif
     for (int i = 0; i < cs.map.size(); i++) {
-        if (i > sat_solver.nVars()) {
+        if (i >= sat_solver.nVars()) {
             int j = sat_solver.newVar();
             assert(j == i);
         }
@@ -726,8 +726,10 @@ bool MainSolver::readSolverState(const char* file, CnfState& cs, char** msg)
         if (tmap.varToTheorySymbol.size() > i)
             assert(tmap.varToTheorySymbol[i] == logic.getPterm(cs.map[i].tr).symb());
         else {
-            if (logic.isTheoryTerm(cs.map[i].tr))
+            if (logic.isTheoryTerm(cs.map[i].tr)) {
                 tmap.varToTheorySymbol.push(logic.getPterm(cs.map[i].tr).symb());
+                sat_solver.setFrozen(i, true);
+            }
             else tmap.varToTheorySymbol.push(SymRef_Undef);
         }
     }

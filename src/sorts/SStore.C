@@ -2,7 +2,7 @@
 Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
 
 OpenSMT2 -- Copyright (C) 2012 - 2014 Antti Hyvarinen
-                         2008 - 2012 Roberto Bruttomesso
+                          2008 - 2012 Roberto Bruttomesso
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the
@@ -26,34 +26,19 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "SStore.h"
 
-gSymbol::gSymbol( char* n, int ar, char* attr )
-    : name(n)
-    , arity(ar)
-    , attrib(attr)
+SRef SStore::newSort(ASTNode& sn)
 {
-    stringstream ss;
-    ss << name << ", " << arity;
-    canon_name = strdup(ss.str().c_str());
-}
-
-gSymbol::gSymbol(ASTNode& n)
-{
-    list<ASTNode*>::iterator it = n.children->begin();
-    name = strdup((**it).getValue());
-    it++;
-    arity = atoi((**it).getValue());
-    stringstream ss;
-    ss << name << ", " << arity;
-    canon_name = strdup(ss.str().c_str());
-}
-
-const char* gSymbol::getCanonName() const
-{
-    return canon_name;
-}
-
-void SStore::initializeStore( )
-{
+    if (sn.getType() == CMD_T) {
+        list<ASTNode*>::iterator p = sn.children->begin();
+        ASTNode& sym_name = **p; p++;
+        ASTNode& num      = **p;
+        id = new Identifier(sym_name);
+        par_num = atoi(num.getValue());
+        stype = SORT_ID_SIMPL;
+        ss << sym_name.getValue();
+        ss << " " << par_num;
+        canon_name = strdup(ss.str().c_str());
+    }
 }
 
 void SStore::insertStore(Sort* s) {
@@ -66,7 +51,13 @@ void SStore::insertStore(Sort* s) {
     SRefToSort.push(s);
 }
 
-void
-SStore::dumpSortsToFile ( ostream & dump_out )
+void SStore::storeSorts()
 {
+    for (int i = 0; i < SRefToSort.size(); i++) {
+        SRefToSort[i];
+    }
 }
+//void
+//SStore::dumpSortsToFile ( ostream & dump_out )
+//{
+//}

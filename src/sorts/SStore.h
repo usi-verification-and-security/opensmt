@@ -29,24 +29,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "Sort.h"
 #include "SMTConfig.h"
-//#include "SplayTree.h"
-#include "ANode.h"
 #include "common/StringMap.h"
+#include "Alloc.h"
 
-class gSymbol
-{
-  private:
-    char*      name;
-    char*      canon_name;
-    int        arity;
-    char*      attrib;
-  public:
-    gSymbol(char* n, int ar, char* attr );
-    gSymbol(ASTNode& n);
-    inline bool        isPredef     () const { return false; };
-    const char*        getCanonName () const;
-
-};
 
 class SStore
 {
@@ -69,11 +54,11 @@ public:
   //===========================================================================
   // Public APIs for snode construction/destruction
 
-  void     insertgSymbol    ( Identifier*, int, char* ); // Inserts a symbol
-  void     insertgSymbol    ( gSymbol& );                // Inserts a symbol
-  void     removegSymbol    ( Identifier*, int );        // Remove a symbol
-  void     removegSymbol    ( gSymbol& );                // Remove a symbol
-  gSymbol* lookupgSymbol    ( const char* name );        // Retrieve a symbol
+//  void     insertgSymbol    ( Identifier*, int, char* ); // Inserts a symbol
+//  void     insertgSymbol    ( gSymbol& );                // Inserts a symbol
+//  void     removegSymbol    ( Identifier*, int );        // Remove a symbol
+//  void     removegSymbol    ( gSymbol& );                // Remove a symbol
+//  gSymbol* lookupgSymbol    ( const char* name );        // Retrieve a symbol
 
   bool    contains        (const char* s)   const { return sortTable.contains(s); }
   SRef    operator []     (const char* s)   const { return sortTable[s]; }
@@ -83,7 +68,7 @@ public:
 
   void    insertStore     ( Sort* );                               // Insert node into the global store
 
-  void dumpSortsToFile ( ostream & );
+  void    storeSorts      ();
 
 private:
   //
