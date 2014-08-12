@@ -102,11 +102,11 @@ const Lit Cnfizer::findLit(PTRef ptr) {
 
     if (isnew) {
         if (logic.isTheoryTerm(p)) {
-            Pterm& tr = ptstore[p];
-            tmap.varToTheorySymbol[v] = tr.symb();
-            tmap.theoryTerms.insert(p,true);
-            assert(logic.isEquality(tr.symb())        ||
-                   logic.isDisequality(tr.symb())     ||
+            Pterm& t = ptstore[p];
+            tmap.varToTheorySymbol[v] = t.symb();
+//            tmap.theoryTerms.insert(p,true);
+            assert(logic.isEquality(t.symb())        ||
+                   logic.isDisequality(t.symb())     ||
                    logic.getTerm_true() == p          ||
                    logic.getTerm_false() == p         ||
                    logic.isUP(p)                      );
@@ -227,6 +227,7 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula
     return l_Undef;
 }
 
+/*
 lbool Cnfizer::extEquals(PTRef r_new, PTRef r_old) {
 
     Lit l_new = findLit(r_new);
@@ -252,7 +253,7 @@ lbool Cnfizer::extEquals(PTRef r_new, PTRef r_old) {
     rval = addClause(c2) == false ? l_False : l_Undef;
     return rval;
 }
-
+*/
 //
 // Apply simple de Morgan laws to the formula
 //

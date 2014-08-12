@@ -118,7 +118,7 @@ public:
                                 , const ipartitions_t = 0
 #endif
                                 ); // Main routine
-    lbool extEquals             ( PTRef new_r, PTRef old_r ); // Tell the solver that two terms are equal (used when equality deduced by a theory solver)
+//    lbool extEquals             ( PTRef new_r, PTRef old_r ); // Tell the solver that two terms are equal (used when equality deduced by a theory solver)
 
     vec<ValPair>* getModel ();                              // Retrieves the model (if SAT and solved)
 

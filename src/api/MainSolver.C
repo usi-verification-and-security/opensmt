@@ -26,6 +26,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "MainSolver.h"
 #include "TreeOps.h"
+#include "DimacsParser.h"
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -692,12 +693,47 @@ bool MainSolver::readSolverState(const char* file, CnfState& cs, char** msg)
     int symstore_offs = contents[symstore_offs_idx];
     int sortstore_offs = contents[sortstore_offs_idx];
 
+#ifdef PEDANTIC_DEBUG
+    cerr << "Reading the map" << endl;
+#endif
     for (int i = 0; i < contents[map_offs]; i++) {
        PTRef tr;
        tr.x = contents[i+map_offs+1];
        cs.map.push({i, tr});
+#ifdef PEDANTIC_DEBUG
+       cerr << "  Var " << i << " maps to PTRef " << tr.x << endl;
+#endif
     }
     cs.cnf = (char*)(contents + cnf_offs);
+#ifdef PEDANTIC_DEBUG
+    cerr << "The cnf is" << endl;
+    cerr << cs.cnf << endl;
+#endif
+    for (int i = 0; i < cs.map.size(); i++) {
+        if (i > sat_solver.nVars()) {
+            int j = sat_solver.newVar();
+            assert(j == i);
+        }
+        if (tmap.varToTerm.size() > i)
+            assert(tmap.varToTerm[i] == cs.map[i].tr);
+        else
+            tmap.varToTerm.push(cs.map[i].tr);
+
+        if (tmap.termToVar.contains(cs.map[i].tr))
+            assert(tmap.termToVar[cs.map[i].tr] == i);
+        else
+            tmap.termToVar.insert(cs.map[i].tr, i);
+        if (tmap.varToTheorySymbol.size() > i)
+            assert(tmap.varToTheorySymbol[i] == logic.getPterm(cs.map[i].tr).symb());
+        else {
+            if (logic.isTheoryTerm(cs.map[i].tr))
+                tmap.varToTheorySymbol.push(logic.getPterm(cs.map[i].tr).symb());
+            else tmap.varToTheorySymbol.push(SymRef_Undef);
+        }
+    }
+    DimacsParser dp;
+    dp.parse_DIMACS_main(cs.cnf, sat_solver);
+    close(fd);
     return true;
 }
 
@@ -721,7 +757,7 @@ bool MainSolver::readSolverState(const char* file, CnfState& cs, char** msg)
 //
 bool MainSolver::writeSolverState(CnfState& cs, const char* file, char** msg)
 {
-    int fd = open(file, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+    int fd = open(file, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
     if (fd == -1) {
         *msg = strerror(errno);
         return false;
@@ -776,18 +812,22 @@ bool MainSolver::writeSolverState(CnfState& cs, const char* file, char** msg)
     }
     char* cnf_buf = (char*) (&buf[buf[cnf_offs_idx]]);
     int i;
-    for (i = 0; cs.cnf[i] != '\0'; i++)
+    for (i = 0; cs.cnf[i] != 0; i++)
         cnf_buf[i] = cs.cnf[i];
-    cnf_buf[i] = '\n';
+    cnf_buf[i] = 0;
 
-    int res = write(fd, buf, buf_sz);
+    int res = write(fd, buf, buf_sz-1);
     if (res == -1) {
         *msg = strerror(errno);
         return false;
-    } else if (res < buf_sz) {
-        asprintf(msg, "Not all data was written.  Out of space?\n");
+    } else if (res != buf_sz-1) {
+        asprintf(msg, "Not all data was written.  Out of space?");
+        close(fd);
         return false;
     }
+#ifdef PEDANTIC_DEBUG
+    cerr << "Printed " << res  << " bytes" << endl;
+#endif
     close(fd);
     return true;
 }

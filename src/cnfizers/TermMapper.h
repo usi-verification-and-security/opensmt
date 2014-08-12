@@ -37,11 +37,13 @@ class TermMapper {
     TermMapper(Logic& l) : logic(l) {}
 
     vec<PTRef>                                varToTerm;
+    // This is maintained for performance reasons for THandler
     vec<SymRef>                               varToTheorySymbol;
     Map<PTRef,Var,PTRefHash,Equal<PTRef> >    termToVar;
-    Map<PTRef,bool,PTRefHash,Equal<PTRef> >   theoryTerms;
+//    Map<PTRef,bool,PTRefHash,Equal<PTRef> >   theoryTerms;
 
-    // Return a "purified" term by removing sequence of nots.  sgn is false if sequence length is even, and true if it odd
+    // Return a "purified" term by removing sequence of nots.  sgn is false if
+    // sequence length is even, and true if it odd
     void getTerm(PTRef tr, PTRef& tr_clean, bool& sgn) const;
     Var  getVar(PTRef)    const;
     Lit  getLit(PTRef)    const;
