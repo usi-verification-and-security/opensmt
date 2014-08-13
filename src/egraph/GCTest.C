@@ -39,24 +39,20 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 GCTest::GCTest(int argc, char **argv) {
 #ifdef CUSTOM_EL_ALLOC
     SMTConfig cfg(argc, argv);
-//    EnodeStore estore;
-    SStore sort_store(cfg);
+    IdentifierStore id_store;
+    SStore sort_store(cfg, id_store);
     SymStore sym_store;
     PtStore term_store(sym_store, sort_store);
-    Logic logic(cfg, sort_store, sym_store, term_store);
+    Logic logic(cfg, id_store, sort_store, sym_store, term_store);
     TermMapper tmap(logic);
     Egraph egraph(cfg, sort_store, sym_store, term_store, logic, tmap);
 
-    Identifier i("TSort");
-    Sort s(i);
-    sort_store.insertStore(&s);
-    logic.declare_sort_hook(&s);
+    const char* msg;
+    SRef sr = logic.declareSort("TSort", &msg);
     vec<SRef> sort_args_a;
-    SRef sr = sort_store["TSort 0"];
-    SRef bsr = sort_store["Bool 0"];
+    SRef bsr = logic.getSort_bool();
     sort_args_a.push(sr);
     // First arg is the return sort
-    const char* msg;
     SymRef a_tr = sym_store.newSymb("a", sort_args_a, &msg);
     SymRef b_tr = sym_store.newSymb("b", sort_args_a, &msg);
     SymRef c_tr = sym_store.newSymb("c", sort_args_a, &msg);

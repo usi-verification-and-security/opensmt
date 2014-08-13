@@ -30,10 +30,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "Vec.h"
 #include "Alloc.h"
-#include "Sort.h"
+#include "sorts/Sort.h"
 #include "Map.h"
-
-typedef uint32_t SRef;
 
 struct SymRef {
     uint32_t x;

@@ -106,7 +106,7 @@ class MainSolver {
     sstat insertFormula(PTRef root, char** msg) {
         if (logic.getSort(root) != logic.getSort_bool()) {
             asprintf(msg, "Top-level assertion sort must be %s, got %s",
-                     Logic::s_sort_bool, logic.getSort(logic.getSort(root))->getCanonName());
+                     Logic::s_sort_bool, logic.getSortName(logic.getSort(root)));
             return s_Error; }
         formulas.push(root);
         return s_Undef; }

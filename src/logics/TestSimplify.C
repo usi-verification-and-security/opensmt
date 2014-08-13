@@ -34,10 +34,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 int main(int argc, char** argv) {
     SMTConfig cfg(argc, argv);
-    SStore sort_store(cfg);
+    IdentifierStore id_store;
+    SStore sort_store(cfg, id_store);
     SymStore sym_store;
     PtStore term_store(sym_store, sort_store);
-    Logic logic(cfg, sort_store, sym_store, term_store);
+    Logic logic(cfg, id_store, sort_store, sym_store, term_store);
 
     assert(logic.setLogic("QF_UF"));
     SRef bsr = logic.getSort_bool();

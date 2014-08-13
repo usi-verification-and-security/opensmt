@@ -38,22 +38,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 int main(int argc, char **argv) {
     SMTConfig cfg(argc, argv);
-//    EnodeStore estore;
-    SStore sort_store(cfg);
+    IdentifierStore id_store;
+    SStore sort_store(cfg, id_store);
     SymStore sym_store;
     PtStore term_store(sym_store, sort_store);
-    Logic logic(cfg, sort_store, sym_store, term_store);
+    Logic logic(cfg, id_store, sort_store, sym_store, term_store);
     TermMapper tmap(logic);
     Egraph egraph(cfg, sort_store, sym_store, term_store, logic, tmap);
 
     assert(logic.setLogic("QF_UF"));
 
-    Identifier i("TSort");
-    Sort s(i);
-    sort_store.insertStore(&s);
-    logic.declare_sort_hook(&s);
-    SRef sr = sort_store["TSort 0"];
-    SRef bsr = sort_store["Bool 0"];
+    IdRef idr = id_store.newIdentifier("TSort");
+    vec<SRef> tmp;
+    SRef sr = sort_store.newSort(idr, tmp);
+    logic.declare_sort_hook(sr);
+    sr = sort_store["TSort"];
+    SRef bsr = sort_store["Bool"];
     // First arg is the return sort
     PTRef c_2_tr = logic.mkConst(sr, "c_2");
     PTRef c_3_tr = logic.mkConst(sr, "c_3");

@@ -32,61 +32,86 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "common/StringMap.h"
 #include "Alloc.h"
 
+class IdentifierStore
+{
+  private:
+    StrAllocator<IdStr, IdStrRef> isa;
+    IdentifierAllocator ia;
+  public:
+    // Provided for simplicity
+    IdRef newIdentifier(const char* name) {
+        IdStrRef nr = isa.alloc(name);
+        return ia.alloc(nr);
+    }
+    IdRef newIdentifier(ASTNode& n) {
+        if (n.children == NULL) {
+            IdStrRef nr = isa.alloc(n.getValue());
+            return ia.alloc(nr);
+        } else {
+            char* s = NULL;
+            char* o = s;
+            vec<int> nl;
+            for (list<ASTNode*>::iterator it = n.children->begin(); it != n.children->end(); it++) {
+                o = s;
+                asprintf(&s, "%s %s", o, (**it).getValue());
+                free(o);
+                nl.push(atoi((**it).getValue()));
+            }
+            o = s;
+            asprintf(&s, "%s (%s)", n.getValue(), s);
+            free(o);
+            IdStrRef nr = isa.alloc(s);
+            return ia.alloc(nr, nl);
+        }
+    }
+    const char* getName(IdRef ir) { return isa[ia[ir].getNameRef()].getName(); }
+};
 
 class SStore
 {
-private:
-
+  private:
+    IdentifierStore& is;
+    StrAllocator<SStr, SStrRef> ssa;
+    SortAllocator sa;
     Map<const char*,SRef,StringHash,Equal<const char*> > sortTable;
     vec<SRef>                                     sorts;
     // Temporary hack to avoid mem management for sorts for now
     vec<Sort*>                                    SRefToSort;
-public:
 
-    SStore( SMTConfig & c ) : config ( c )
-  {
-  }
+    typedef enum {      // These constants are stored on undo_stack_oper when
+        SYMB            // A new symbol is created
+      , PARA            // A new parameter
+      , CONS            // An undoable cons is done
+    } oper_t;
 
-  ~SStore( )
-  {
-  }
+    SMTConfig & config; // Reference to config
 
-  //===========================================================================
-  // Public APIs for snode construction/destruction
 
-//  void     insertgSymbol    ( Identifier*, int, char* ); // Inserts a symbol
-//  void     insertgSymbol    ( gSymbol& );                // Inserts a symbol
-//  void     removegSymbol    ( Identifier*, int );        // Remove a symbol
-//  void     removegSymbol    ( gSymbol& );                // Remove a symbol
-//  gSymbol* lookupgSymbol    ( const char* name );        // Retrieve a symbol
+  public:
 
-  bool    contains        (const char* s)   const { return sortTable.contains(s); }
-  SRef    operator []     (const char* s)   const { return sortTable[s]; }
-  bool    contains        (const Sort& s)   const { return sortTable.contains(s.getCanonName()); }
-  SRef    operator []     (const Sort& s) { return sortTable[s.getCanonName()]; }
-  Sort*   operator []     (SRef sr)       { return SRefToSort[sr]; }
+    SStore(SMTConfig & c, IdentifierStore& is_) : is(is_), sa(ssa), config(c) { }
 
-  void    insertStore     ( Sort* );                               // Insert node into the global store
+    ~SStore() { }
 
-  void    storeSorts      ();
+    //===========================================================================
+    // Public APIs for sort construction/destruction
 
-private:
-  //
-  // TODO: Defines the set of operations that can be performed and that should be undone
-  //
-  typedef enum {      // These constants are stored on undo_stack_oper when
-      SYMB            // A new symbol is created
-    , PARA            // A new parameter
-    , CONS            // An undoable cons is done
-  } oper_t;
+    bool    contains        (const char* s)   const { return sortTable.contains(s); }
+    SRef    operator []     (const char* s)   const { return sortTable[s]; }
+    bool    contains        (const Sort& s)   const { return sortTable.contains(ssa[s.getNameRef()].getName()); }
+    SRef    operator []     (const Sort& s) { return sortTable[ssa[s.getNameRef()].getName()]; }
+    Sort*   operator []     (SRef sr)       { return &sa[sr]; }
 
-  SMTConfig & config; // Reference to config
-
-  //
-  // Related to term creation
-  //
-  void    initializeStore ( );                                     // Initializes the store
-
+//    void    insertStore     (Sort*);                               // Insert node into the global store
+    char*   buildName       (ASTNode& sn);
+    SRef    newSort         (ASTNode& sn);
+    SRef    newSort         (IdRef id, vec<SRef>& rest);
+    bool    containsSort    (ASTNode& sn)
+        { char* name = buildName(sn); bool rval = sortTable.contains(name);
+          free(name); return rval; }
+    void    storeSorts      ();
+    const char* getName     (SRef sr) { return ssa[sa[sr].getNameRef()].getName(); }
+    Sort&   getSort         (SRef sr) { return sa[sr]; }
 };
 
 #endif

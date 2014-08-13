@@ -46,22 +46,25 @@ const char* Logic::tk_xor      = "xor";
 const char* Logic::tk_distinct = "distinct";
 const char* Logic::tk_ite      = "ite";
 
-const char* Logic::s_sort_bool = "Bool 0";
+const char* Logic::s_sort_bool = "Bool";
 
 // The constructor initiates the base logic (Boolean)
-Logic::Logic(SMTConfig& c, SStore& s, SymStore& t, PtStore& pt) :
+Logic::Logic(SMTConfig& c, IdentifierStore& i, SStore& s, SymStore& t, PtStore& pt) :
       config(c)
+    , id_store(i)
     , sort_store(s)
     , sym_store(t)
     , term_store(pt)
     , is_set(false)
 {
-    sort_store.insertStore(new Sort(*(new Identifier("Bool"))));
-    sort_BOOL = sort_store["Bool 0"];
+    IdRef bool_id = id_store.newIdentifier("Bool");
+    vec<SRef> tmp_srefs;
+    sort_store.newSort(bool_id, tmp_srefs);
+    sort_BOOL = sort_store["Bool"];
 
     vec<SRef> params;
 
-    params.push(sort_store["Bool 0"]);
+    params.push(sort_store["Bool"]);
 
     SymRef tr;
 
@@ -81,13 +84,13 @@ Logic::Logic(SMTConfig& c, SStore& s, SymStore& t, PtStore& pt) :
     term_FALSE = insertTerm(sym_FALSE, tmp, &msg);
     assert(term_FALSE != PTRef_Undef);
 
-    params.push(sort_store["Bool 0"]);
+    params.push(sort_store["Bool"]);
     tr = sym_store.newSymb(tk_not, params, &msg);
     if (tr == SymRef_Undef) { assert(false); }
     sym_store[tr].setNoScoping();
     sym_NOT = tr;
 
-    params.push(sort_store["Bool 0"]);
+    params.push(sort_store["Bool"]);
 
     tr = sym_store.newSymb(tk_equals, params, &msg);
     if (tr == SymRef_Undef) { assert(false); }
@@ -131,7 +134,7 @@ Logic::Logic(SMTConfig& c, SStore& s, SymStore& t, PtStore& pt) :
     sym_store[tr].setCommutes();
     sym_DISTINCT = tr;
 
-    params.push(sort_store["Bool 0"]);
+    params.push(sort_store["Bool"]);
     tr = sym_store.newSymb(tk_ite, params, &msg);
     if (tr == SymRef_Undef) { assert(false); }
     sym_store[tr].setNoScoping();
@@ -182,11 +185,10 @@ bool Logic::setLogic(const char* l) {
 
 // description: Add equality for each new sort
 // precondition: sort has been declared
-bool Logic::declare_sort_hook(Sort* s) {
+bool Logic::declare_sort_hook(SRef sr) {
     vec<SRef> params;
 
-    SRef sr = sort_store[s->getCanonName()];
-    SRef br = sort_store["Bool 0"];
+    SRef br = sort_store["Bool"];
 
     params.push(br);
     params.push(sr);
@@ -685,12 +687,12 @@ bool Logic::isLit(PTRef tr) const
 
 SRef Logic::declareSort(const char* id, const char** msg)
 {
-    Identifier i(id);
-    Sort s(i);
-    sort_store.insertStore(&s);
-    declare_sort_hook(&s);
+    IdRef idr = id_store.newIdentifier(id);
+    vec<SRef> tmp;
+    SRef sr = sort_store.newSort(idr, tmp);
+    declare_sort_hook(sr);
     char* sort_name;
-    asprintf(&sort_name, "%s 0", id);
+    asprintf(&sort_name, "%s", id);
     return sort_store[sort_name];
 }
 

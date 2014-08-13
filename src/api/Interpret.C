@@ -159,14 +159,13 @@ bool Interpret::interp(ASTNode& n) {
     }
     if (strcmp(cmd, "declare-sort") == 0) {
         if (logic.isSet()) {
-            Sort* s = new Sort(n);
-            if (store.contains(s->getCanonName())) {
-                notify_formatted(true, "sort %s already declared", s->getCanonName());
-                delete s;
+            bool was_new = !store.containsSort(n);
+            SRef sr = store.newSort(n);
+            if (!was_new) {
+                notify_formatted(true, "sort %s already declared", store.getName(sr));
                 goto declare_sort_err;
             }
-            store.insertStore(s);
-            rval = logic.declare_sort_hook(s);
+            rval = logic.declare_sort_hook(sr);
             assert(rval);
             notify_success();
 declare_sort_err: ;
@@ -187,25 +186,23 @@ declare_sort_err: ;
 
             vec<SRef> args;
 
-            Sort* s = new Sort(ret_node);
-            const char* name = s->getCanonName();
-            if (store.contains(name))
-                args.push(store[*s]);
-            else {
+            if (store.containsSort(ret_node)) {
+                SRef sr = store.newSort(ret_node);
+                args.push(sr);
+            } else {
+                char* name = store.buildName(ret_node);
                 notify_formatted(true, "Unknown return sort %s of %s", name, fname);
+                free(name);
                 goto declare_fun_err;
             }
             for (list<ASTNode*>::iterator it2 = args_node.children->begin(); it2 != args_node.children->end(); it2++) {
-                Sort* s = new Sort(**it2);
-                if (store.contains(*s)) {
-                    SRef sr = store[*s];
-                    args.push(sr);
-                    delete s;
+                char* name = store.buildName(**it2);
+                if (store.containsSort(**it2)) {
+                    args.push(store[name]);
+                    free(name);
                 }
                 else {
-                    const char* name = s->getCanonName();
                     notify_formatted(true, "Undefined sort %s in function %s", name, fname);
-                    delete s;
                     goto declare_fun_err;
                 }
             }
@@ -369,7 +366,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
             notify_formatted(true, "No such symbol %s: %s", name, msg);
             comment_formatted("The symbol %s is not defined for the following sorts:", name);
             for (int j = 0; j < args.size(); j++)
-                comment_formatted("arg %d: %s", j, store[symstore[ptstore[args[j]].symb()].rsort()]->getCanonName());
+                comment_formatted("arg %d: %s", j, store.getName(symstore[ptstore[args[j]].symb()].rsort()));
             if (symstore.contains(name)) {
                 comment_formatted("candidates are:");
                 const vec<SymRef>& trefs = symstore.nameToRef(name);
@@ -378,7 +375,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
                     const Symbol& t = symstore[ctr];
                     comment_formatted(" candidate %d", j);
                     for (uint32_t k = 0; k < t.nargs(); k++) {
-                        comment_formatted("  arg %d: %s", k, store[t[k]]->getCanonName());
+                        comment_formatted("  arg %d: %s", k, store.getName(t[k]));
                     }
                 }
             }

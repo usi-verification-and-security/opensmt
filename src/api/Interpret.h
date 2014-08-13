@@ -61,11 +61,12 @@ class LetFrame {
 
 class Interpret {
   private:
-    SMTConfig config;
-    SStore    store;      // Sorts
-    SymStore  symstore;   // Terms (more like symbols)
-    PtStore   ptstore;    // Proper terms
-    Logic     logic;
+    SMTConfig       config;
+    IdentifierStore idstore;  // Identifiers
+    SStore          store;    // Sorts
+    SymStore        symstore; // Symbols
+    PtStore         ptstore;  // Proper terms
+    Logic           logic;
 
     TermMapper    tmap;
     Egraph        uf_solver;
@@ -112,9 +113,9 @@ class Interpret {
   public:
     // Constructor initiates a default logic.  Not sure if this is the best way to go...
     Interpret() :
-          store   (config)
+          store   (config, idstore)
         , ptstore (symstore, store)
-        , logic   (config, store, symstore, ptstore)
+        , logic   (config, idstore, store, symstore, ptstore)
         , tmap    (logic)
 
         , uf_solver( config

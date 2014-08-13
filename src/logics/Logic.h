@@ -47,6 +47,7 @@ class Logic {
     Map<PTRef,PTRef,PTRefHash,Equal<PTRef> >        UP_map; // maps uninterpreted predicates to their equality terms
 
     SMTConfig&          config;
+    IdentifierStore&    id_store;
     SStore&             sort_store;
     SymStore&           sym_store;
   public:
@@ -91,7 +92,7 @@ class Logic {
 
     static const char*  s_sort_bool;
 
-    Logic(SMTConfig& c, SStore& s, SymStore& t, PtStore& pt);
+    Logic(SMTConfig& c, IdentifierStore& i, SStore& s, SymStore& t, PtStore& pt);
 
     bool          setLogic    (const char* l);
     bool          isSet       ()                      const { return is_set;    }
@@ -101,6 +102,7 @@ class Logic {
     SRef        getSortRef    (const char* name)      const { return sort_store[name]; }
     SRef        getSort       (const PTRef tr)        const { return getSym(getPterm(tr).symb()).rsort(); }
     Sort*       getSort       (const SRef s)                { return sort_store[s]; }
+    const char* getSortName   (const SRef s)                { return sort_store.getName(s); }
 
     // Symbols
     SymRef      newSymb       (const char* name, vec<SRef>& sort_args, const char** msg)
@@ -203,7 +205,7 @@ class Logic {
     // args is sorted before lookup, but not simplified otherwise
     PTRef       hasEquality        (vec<PTRef>& args);
     // Override for different logics...
-    bool        declare_sort_hook  (Sort* s);
+    bool        declare_sort_hook  (SRef sr);
     inline bool isPredef           (string&)        const { return false; };
 
     // Implement logic-aware simplifications
