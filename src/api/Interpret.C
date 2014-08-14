@@ -254,10 +254,8 @@ declare_fun_err: ;
     }
     if (strcmp(cmd, "write-state") == 0) {
         const char* filename = (**(n.children->begin())).getValue();
-        CnfState cs;
-        ts.getCnfState(cs);
         char* msg;
-        bool rval = main_solver.writeSolverState(cs, filename, &msg);
+        bool rval = main_solver.writeSolverState(filename, &msg);
         if (!rval) {
             notify_formatted("%s", msg);
         }
@@ -266,7 +264,7 @@ declare_fun_err: ;
         const char* filename = (**(n.children->begin())).getValue();
         CnfState cs;
         char* msg;
-        bool rval = main_solver.readSolverState(filename, cs, &msg);
+        bool rval = main_solver.readSolverState(filename, &msg);
         if (!rval) {
             notify_formatted("%s", msg);
         }

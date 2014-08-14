@@ -665,10 +665,11 @@ MainSolver::FContainer MainSolver::simplifyEqualities(vec<PtChild>& terms)
 }
 
 //
-// Read the solver state from a file
+// Read the solver state from a file and store it to the main solver
 //
-bool MainSolver::readSolverState(const char* file, CnfState& cs, char** msg)
+bool MainSolver::readSolverState(const char* file, char** msg)
 {
+    CnfState cs;
     int fd = open(file, O_RDONLY);
     if (fd == -1) {
         *msg = strerror(errno);
@@ -681,22 +682,27 @@ bool MainSolver::readSolverState(const char* file, CnfState& cs, char** msg)
         return false;
     }
     off_t size = stat_buf.st_size;
-    int* contents = (int*)malloc(size);
+
+    // Allocate space for the contents and a terminating '\0'.
+    int* contents = (int*)malloc(size+1);
     res = read(fd, contents, size);
     if (res == -1) {
         *msg = strerror(errno);
         return false;
     }
+    ((char*)contents)[size] = '\0'; // Add the terminating '\0'
+
     int map_offs = contents[map_offs_idx];
     int cnf_offs = contents[cnf_offs_idx];
     int termstore_offs = contents[termstore_offs_idx];
     int symstore_offs = contents[symstore_offs_idx];
+    int idstore_offs = contents[idstore_offs_idx];
     int sortstore_offs = contents[sortstore_offs_idx];
 
 #ifdef PEDANTIC_DEBUG
     cerr << "Reading the map" << endl;
 #endif
-    for (int i = 0; i < contents[map_offs]; i++) {
+    for (int i = 0; i < contents[map_offs]-1; i++) {
        PTRef tr;
        tr.x = contents[i+map_offs+1];
        cs.map.push({i, tr});
@@ -704,6 +710,31 @@ bool MainSolver::readSolverState(const char* file, CnfState& cs, char** msg)
        cerr << "  Var " << i << " maps to PTRef " << tr.x << endl;
 #endif
     }
+
+#ifdef PEDANTIC_DEBUG
+    cerr << "Reading IdentifierStore" << endl;
+#endif
+    int idstore_sz = contents[idstore_offs];
+    int sortstore_sz = contents[sortstore_offs];
+#ifdef PEDANTIC_DEBUG
+    cerr << "  Identifier store size in words is " << idstore_sz << endl;
+    cerr << "  Sort store size in words is " << sortstore_sz << endl;
+#endif
+    int* idstore_buf = (int*)malloc(contents[idstore_offs]*sizeof(int));
+    for (int i = 0; i < idstore_sz; i++)
+        idstore_buf[i] = contents[idstore_offs+i];
+    int* sortstore_buf = (int*)malloc(contents[sortstore_offs]*sizeof(int));
+    for (int i = 0; i < sortstore_sz; i++)
+        sortstore_buf[i] = contents[sortstore_offs+i];
+
+    int* termstore_buf = NULL;
+    int* symstore_buf = NULL;
+    logic.deserializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf);
+    free(termstore_buf);
+    free(symstore_buf);
+    free(sortstore_buf);
+    free(idstore_buf);
+
     cs.cnf = (char*)(contents + cnf_offs);
 #ifdef PEDANTIC_DEBUG
     cerr << "The cnf is" << endl;
@@ -736,6 +767,7 @@ bool MainSolver::readSolverState(const char* file, CnfState& cs, char** msg)
     DimacsParser dp;
     dp.parse_DIMACS_main(cs.cnf, sat_solver);
     close(fd);
+    free(contents);
     return true;
 }
 
@@ -743,22 +775,28 @@ bool MainSolver::readSolverState(const char* file, CnfState& cs, char** msg)
 // Write the solver state to a partly binary file (cnf is in clear text
 // and written last).  Output format looks like this:
 //
-// +--------+-----------+-----------+----------------+-----------+
-// |map_offs|tstore_offs|symstore_offs|sortstore_offs|cnf_offs   |
-// +--------+-----------+-----------+----------------+-----------+
-// |map_sz              | <map data>                             |
-// +--------------------+----------------------------------------+
-// |tstore_sz           | <tstore data>                          |
-// +--------------------+----------------------------------------+
-// |symstore_sz         | <symstore data>                        |
-// +--------------------+----------------------------------------+
-// |sortstore_sz        | <sortstore data>                       |
-// +--------------------+----------------------------------------+
-// |<cnf data>                                                   |
-// +-------------------------------------------------------------+
+// +--------+-----------+-------------+-------+--------------+--------+
+// |map_offs|tstore_offs|symstore_offs|id_offs|sortstore_offs|cnf_offs|
+// +--------+-----------+-------------+-------+--------------+--------+
+// |map_sz              | <map data>                                  |
+// +--------------------+---------------------------------------------+
+// |tstore_sz           | <tstore data>                               |
+// +--------------------+---------------------------------------------+
+// |symstore_sz         | <symstore data>                             |
+// +--------------------+---------------------------------------------+
+// |idstore_sz          | <idstore data>                              |
+// +--------------------+---------------------------------------------+
+// |sortstore_sz        | <sortstore data>                            |
+// +--------------------+---------------------------------------------+
+// |<cnf data>                                                        |
+// +------------------------------------------------------------------+
 //
-bool MainSolver::writeSolverState(CnfState& cs, const char* file, char** msg)
+// The sizes include the storage of the size itself
+//
+bool MainSolver::writeSolverState(const char* file, char** msg)
 {
+    CnfState cs;
+    ts.getCnfState(cs);
     int fd = open(file, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
     if (fd == -1) {
         *msg = strerror(errno);
@@ -771,52 +809,101 @@ bool MainSolver::writeSolverState(CnfState& cs, const char* file, char** msg)
     cerr << cs.cnf << endl;
 #endif
 
+    int* termstore_buf;
+    int* symstore_buf;
+    int* idstore_buf;
+    int* sortstore_buf;
 
-    int termstore_sz = 0;
-    int symstore_sz = 0;
-    int sortstore_sz = 0;
-    int map_sz = cs.map.size();
+    logic.serializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf);
 
-    // allocate space for the map, the cnf, the offset indexes and the
+    // All stores contain their sizes, hence the minimum size of 1
+    int termstore_sz = 1;
+    int symstore_sz = 1;
+
+
+    int idstore_sz = idstore_buf[0];
+    int sortstore_sz = sortstore_buf[0];
+    int map_sz = cs.map.size()+1;
+
+    int hdr_sz = 6; // The offsets
+    // allocate space for the map, the cnf, the offset indices and the
     // sizes
-    int buf_sz = (termstore_sz + symstore_sz + sortstore_sz + map_sz)*sizeof(int)
-               + (strlen(cs.cnf)+1)
-               + 9*sizeof(int);
+    int buf_sz = (termstore_sz + symstore_sz + idstore_sz + sortstore_sz + map_sz)*sizeof(int)
+                 + (strlen(cs.cnf)+1) + hdr_sz*sizeof(int);
 #ifdef PEDANTIC_DEBUG
     cerr << "Mallocing " << buf_sz << " bytes for the buffer" << endl;
     cerr << "The cnf is " << strlen(cs.cnf)+1 << " bytes" << endl;
     cerr << "The map is " << map_sz * sizeof(int) << " bytes" << endl;
     cerr << "The termstore is " << termstore_sz * sizeof(int) << " bytes" << endl;
     cerr << "The symstore is " << symstore_sz * sizeof(int) << " bytes" << endl;
+    cerr << "The id store is " << idstore_sz * sizeof(int) << " bytes" << endl;
     cerr << "The sortstore is " << sortstore_sz * sizeof(int) << " bytes" << endl;
-    cerr << "The header is " << 5*sizeof(int) << " bytes" << endl;
-    cerr << "The size fields are " << 4*sizeof(int) << " bytes" << endl;
+    cerr << "The header is " << 8*sizeof(int) << " bytes" << endl;
 #endif
     int* buf = (int*)malloc(buf_sz);
 
     buf[map_offs_idx]       = cnf_offs_idx+1;
-    buf[termstore_offs_idx] = buf[map_offs_idx]+map_sz+1;
-    buf[symstore_offs_idx]  = buf[termstore_offs_idx] + termstore_sz + 1;
-    buf[sortstore_offs_idx] = buf[symstore_offs_idx]+symstore_sz+1;
-    buf[cnf_offs_idx]       = buf[sortstore_offs_idx]+sortstore_sz+1;
+    buf[termstore_offs_idx] = buf[map_offs_idx]+map_sz;
+    buf[symstore_offs_idx]  = buf[termstore_offs_idx] + termstore_sz;
+    buf[idstore_offs_idx]   = buf[symstore_offs_idx] + symstore_sz;
+    buf[sortstore_offs_idx] = buf[idstore_offs_idx] + idstore_sz;
+    buf[cnf_offs_idx]       = buf[sortstore_offs_idx]+sortstore_sz;
 
-    buf[buf[map_offs_idx]]       = map_sz;
-    buf[buf[termstore_offs_idx]] = termstore_sz;
-    buf[buf[symstore_offs_idx]]  = symstore_sz;
-    buf[buf[sortstore_offs_idx]] = sortstore_sz;
 
+    buf[buf[map_offs_idx]]          = map_sz;
+
+    // These will be replaced by the actual buffers
+    buf[buf[termstore_offs_idx]]    = termstore_sz;
+    buf[buf[symstore_offs_idx]]     = symstore_sz;
+
+#ifdef PEDANTIC_DEBUG
     cerr << "Map:" << endl;
+#endif
     for (int i = 0; i < cs.map.size(); i++) {
 #ifdef PEDANTIC_DEBUG
         cerr << "  Var " << i << " maps to " << cs.map[i].tr.x << endl;
+        cerr << "  Writing it to idx " << buf[map_offs_idx]+i+1 << endl;
 #endif
         buf[buf[map_offs_idx]+i+1] = cs.map[i].tr.x;
     }
+#ifdef PEDANTIC_DEBUG
+    cerr << "Will write cnf to index " << buf[cnf_offs_idx] << endl;
+#endif
     char* cnf_buf = (char*) (&buf[buf[cnf_offs_idx]]);
     int i;
     for (i = 0; cs.cnf[i] != 0; i++)
         cnf_buf[i] = cs.cnf[i];
-    cnf_buf[i] = 0;
+    cnf_buf[i] = '\0';
+
+    for (i = 0; i < idstore_sz; i++)
+        buf[buf[idstore_offs_idx]+i] = idstore_buf[i];
+
+    free(idstore_buf);
+
+    for (i = 0; i < sortstore_sz; i++)
+        buf[buf[sortstore_offs_idx]+i] = sortstore_buf[i];
+
+#ifdef PEDANTIC_DEBUG
+    cerr << "Map offset read from buf idx " << map_offs_idx << endl;
+    cerr << "Map starts at word " << buf[map_offs_idx] << endl;
+    cerr << "Map size is " << buf[buf[map_offs_idx]] << endl;
+
+    cerr << "tstore offset read from buf idx " << termstore_offs_idx << endl;
+    cerr << "tstore starts at word " << buf[termstore_offs_idx] << endl;
+    cerr << "tstore size is " << buf[buf[termstore_offs_idx]] << endl;
+
+    cerr << "symstore offset read from buf idx " << symstore_offs_idx << endl;
+    cerr << "symstore starts at word " << buf[symstore_offs_idx] << endl;
+    cerr << "symstore size is " << buf[buf[symstore_offs_idx]] << endl;
+
+    cerr << "idstore offset read from buf idx " << idstore_offs_idx << endl;
+    cerr << "idstore starts at word " << buf[idstore_offs_idx] << endl;
+    cerr << "idstore size is " << buf[buf[idstore_offs_idx]] << endl;
+
+    cerr << "sortstore offset read from buf idx " << sortstore_offs_idx << endl;
+    cerr << "sortstore starts at word " << buf[sortstore_offs_idx] << endl;
+    cerr << "sortstore size is " << buf[buf[sortstore_offs_idx]] << endl;
+#endif
 
     int res = write(fd, buf, buf_sz-1);
     if (res == -1) {
@@ -830,6 +917,7 @@ bool MainSolver::writeSolverState(CnfState& cs, const char* file, char** msg)
 #ifdef PEDANTIC_DEBUG
     cerr << "Printed " << res  << " bytes" << endl;
 #endif
+    free(buf);
     close(fd);
     return true;
 }

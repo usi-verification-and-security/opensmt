@@ -77,7 +77,8 @@ class RegionAllocator
         sz = cap = wasted_ = 0;
     }
 
-
+    int* serialize();
+    void deserialize(int*);
 };
 
 template<class T>
@@ -107,7 +108,7 @@ void RegionAllocator<T>::capacity(uint32_t min_cap)
 template<class T>
 typename RegionAllocator<T>::Ref
 RegionAllocator<T>::alloc(int size)
-{ 
+{
     // printf("ALLOC called (this = %p, size = %d)\n", this, size); fflush(stdout);
     assert(size > 0);
     capacity(sz + size);
@@ -122,6 +123,34 @@ RegionAllocator<T>::alloc(int size)
     return prev_sz;
 }
 
+template<class T>
+int* RegionAllocator<T>::serialize()
+{
+    assert(sizeof(T) % sizeof(int) == 0);
+    int buf_sz = 4*sizeof(int) + sz*sizeof(T);
+    int* buf = (int*)malloc(buf_sz);
+    buf[0] = buf_sz/sizeof(int);
+    buf[1] = sz;
+    buf[2] = cap;
+    buf[3] = wasted_;
+    T* membuf = (T*)(&buf[4]);
+    for (uint32_t i = 0; i < sz; i++)
+        membuf[i] = memory[i];
+
+    return buf;
+}
+
+template<class T>
+void RegionAllocator<T>::deserialize(int* buf)
+{
+    sz = buf[1];
+    cap = buf[2];
+    wasted_ = buf[3];
+    memory = (T*)xrealloc(memory, sizeof(T)*cap);
+    T* membuf = (T*)(&buf[4]);
+    for (uint32_t i = 0; i < sz; i++)
+        memory[i] = membuf[i];
+}
 
 //=================================================================================================
 

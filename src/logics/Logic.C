@@ -873,6 +873,19 @@ bool Logic::isAtom(PTRef r) const {
     return false;
 }
 
+void Logic::serializeTermSystem(int*& termstore_buf, int*& symstore_buf, int*& idstore_buf, int*& sortstore_buf)
+{
+    idstore_buf   = id_store.serializeIdentifiers();
+    sortstore_buf = sort_store.serializeSorts();
+}
+
+void Logic::deserializeTermSystem(int*& termstore_buf, int*& symstore_buf, int*& idstore_buf, int*& sortstore_buf)
+{
+    id_store.deserializeIdentifiers(idstore_buf);
+    sort_store.deserializeSorts(sortstore_buf);
+}
+
+
 //bool Logic::DeclareSort(string& name, int arity) {
 //    printf("Declaring sort %s of arity %d\n", name.c_str(), arity);
 //    sstore.newSymbol(name.c_str());

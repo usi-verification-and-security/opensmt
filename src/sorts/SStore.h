@@ -65,6 +65,8 @@ class IdentifierStore
         }
     }
     const char* getName(IdRef ir) { return isa[ia[ir].getNameRef()].getName(); }
+    int* serializeIdentifiers();
+    void deserializeIdentifiers(int*);
 };
 
 class SStore
@@ -75,8 +77,6 @@ class SStore
     SortAllocator sa;
     Map<const char*,SRef,StringHash,Equal<const char*> > sortTable;
     vec<SRef>                                     sorts;
-    // Temporary hack to avoid mem management for sorts for now
-    vec<Sort*>                                    SRefToSort;
 
     typedef enum {      // These constants are stored on undo_stack_oper when
         SYMB            // A new symbol is created
@@ -102,16 +102,17 @@ class SStore
     SRef    operator []     (const Sort& s) { return sortTable[ssa[s.getNameRef()].getName()]; }
     Sort*   operator []     (SRef sr)       { return &sa[sr]; }
 
-//    void    insertStore     (Sort*);                               // Insert node into the global store
     char*   buildName       (ASTNode& sn);
     SRef    newSort         (ASTNode& sn);
     SRef    newSort         (IdRef id, vec<SRef>& rest);
     bool    containsSort    (ASTNode& sn)
         { char* name = buildName(sn); bool rval = sortTable.contains(name);
           free(name); return rval; }
-    void    storeSorts      ();
     const char* getName     (SRef sr) { return ssa[sa[sr].getNameRef()].getName(); }
     Sort&   getSort         (SRef sr) { return sa[sr]; }
+
+    int*    serializeSorts();
+    void    deserializeSorts(int*);
 };
 
 #endif

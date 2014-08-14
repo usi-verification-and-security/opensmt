@@ -75,9 +75,12 @@ struct VarPtPair {
     PTRef tr;
 };
 
-struct CnfState {
+class CnfState {
+public:
     char*          cnf;
     vec<VarPtPair> map;
+    CnfState() : cnf(NULL) {};
+    ~CnfState() { free(cnf); }
 };
 
 //

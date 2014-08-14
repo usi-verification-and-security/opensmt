@@ -220,8 +220,13 @@ class Logic {
     // XXX There's a need for non msg giving version
     PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms, const char** msg);
 
+
+    void        serializeTermSystem(int*& termstore_buf, int*& symstore_buf, int*& idstore_buf, int*& sortstore_buf);
+    void        deserializeTermSystem(int*& termstore_buf, int*& symstore_buf, int*& idstore_buf, int*& sortstore_buf);
 // Debugging
     char*       printTerm          (PTRef tr)       const { return term_store.printTerm(tr); }
+
+
 };
 
 #endif // LOGIC_H
