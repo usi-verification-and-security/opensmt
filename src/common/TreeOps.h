@@ -52,14 +52,14 @@ void getTermList(PTRef tr, vec<T>& list_out, Logic& logic) {
     Map<PTRef,int,PTRefHash> chkd;
 
 #ifdef PEDANTIC_DEBUG
-    assert(logic.hasSym(logic.getPterm(tr).symb()));
+//    assert(logic.hasSym(logic.getPterm(tr).symb()));
 #endif
     queue.push(Qel<PtChild>(PtChild(tr, PTRef_Undef, -1)));
 
     while (queue.size() > 0) {
         int q_idx = queue.size() - 1;
 #ifdef PEDANTIC_DEBUG
-        assert(logic.hasSym(logic.getPterm(queue[q_idx].x.tr).symb()));
+//        assert(logic.hasSym(logic.getPterm(queue[q_idx].x.tr).symb()));
 #endif
         Pterm& pt = logic.getPterm(queue[q_idx].x.tr);
         int i = queue[q_idx].chk;
@@ -68,7 +68,7 @@ void getTermList(PTRef tr, vec<T>& list_out, Logic& logic) {
             if (!seen.contains(ptc)) {
                 queue.push(Qel<PtChild>(ptc));
 #ifdef PEDANTIC_DEBUG
-                assert(logic.hasSym(logic.getPterm(ptc.tr).symb()));
+//                assert(logic.hasSym(logic.getPterm(ptc.tr).symb()));
 #endif
             }
             queue[q_idx].chk = i+1;

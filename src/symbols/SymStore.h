@@ -34,7 +34,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 class SymStore {
   private:
     VecMap<const char*,SymRef,StringHash,Equal<const char*> >  symbolTable;
-    Map<SymRef,SymId,SymRefHash,Equal<SymRef> > symrefToId;
     vec<SymRef>                                 symbols;
     SymbolAllocator                             ta;
     vec<char*>                                  idToName;
@@ -44,16 +43,21 @@ class SymStore {
     // sort of the symbol
     SymRef newSymb(const char* fname, const vec<SRef>& args, const char** msg, bool la = false, bool ra = false, bool ch = false, bool pw = false);
     bool contains(const char* fname)            const { return symbolTable.contains(fname); }
-    bool contains(SymRef sr)                    const { return symrefToId.contains(sr); }
     const vec<SymRef>& nameToRef(const char* s) const { return symbolTable[s]; }
     vec<SymRef>& nameToRef(const char* s)             { return symbolTable[s]; }
 
     Symbol& operator [] (SymRef sr)                   { return ta[sr]; }
     const Symbol& operator [] (SymRef tr)       const { return ta[tr]; }
-//    void insertOcc(SymRef tr, int k_arg, SymRef par)  { occList[symrefToId[tr]].push(Occ(par, k_arg)); }
-    const char* getName(SymRef tr)              const { return idToName[symrefToId[tr]]; }
+    const char* getName(SymRef tr)              const { return idToName[ta[tr].getId()]; }
+
+    int* serializeSymbols();
+    void deserializeSymbols(int* buf);
 private:
-    const char* e_duplicate_symbol;
+    static const char* e_duplicate_symbol;
+    // For serialization
+    static const int symstore_buf_offs_idx;
+    static const int symref_buf_offs_idx;
+    static const int symname_buf_offs_idx;
 };
 
 #endif

@@ -145,7 +145,20 @@ SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args) {
 }
 
 
-char* PtStore::printTerm(PTRef tr, bool ext) const {
+char* PtStore::printTerm(PTRef tr, bool ext) const
+{
     char* tms = printTerm_(tr, ext);
     return tms;
+}
+
+int* PtStore::serializeTerms()
+{
+    int* ptstore_buf = pta.serialize();
+    int* buf = (int*)malloc(ptstore_buf[0]+sizeof(int));
+    buf[0] = ptstore_buf[0]+1;
+    return buf;
+}
+
+void PtStore::deserializeTerms(int* buf)
+{
 }

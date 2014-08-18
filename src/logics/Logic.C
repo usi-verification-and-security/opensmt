@@ -295,20 +295,20 @@ lbool Logic::simplifyTree(PTRef tr)
             for (int j = 0; j < c.size(); j++)
                 k.args.push(c[j]);
             if (!isBooleanOperator(k.sym)) {
-                assert(term_store.cplx_map.contains(k));
+                assert(term_store.hasCplxKey(k));
 #ifdef SIMPLIFY_DEBUG
                 cerr << cr.x << " is not a boolean operator ";
-                cerr << "and it maps to " << term_store.cplx_map[k].x << endl;
+                cerr << "and it maps to " << term_store.getFromCplxMap(k).x;
 #endif
-                t[e] = term_store.cplx_map[k];
+                t[e] = term_store.getFromCplxMap(k);
                 assert(t[e] != queue[i].x);
             } else {
-                assert(term_store.bool_map.contains(k));
+                assert(term_store.hasBoolKey(k)); //assert(term_store.bool_map.contains(k));
 #ifdef SIMPLIFY_DEBUG
                 cerr << cr.x << " is a boolean operator"
                      << " and it maps to " << term_store.bool_map[k].x << endl;
 #endif
-                t[e] = term_store.bool_map[k];
+                t[e] = term_store.getFromBoolMap(k); //term_store.bool_map[k];
                 assert(t[e] != queue[i].x);
             }
         }
@@ -341,24 +341,24 @@ lbool Logic::simplifyTree(PTRef tr)
             k.args.push(t[j]);
         }
         if (!isBooleanOperator(k.sym)) {
-            if (!term_store.cplx_map.contains(k)) {
-                term_store.cplx_map.insert(k, queue[i].x);
+            if (!term_store.hasCplxKey(k)) {
+                term_store.addToCplxMap(k, queue[i].x);
 #ifdef SIMPLIFY_DEBUG
                 cerr << "sym " << k.sym.x << " args <";
                 for (int j = 0; j < k.args.size(); j++) {
                     cerr << k.args[j].x << " ";
                 }
-                cerr << "> maps to " << term_store.cplx_map[k].x << endl;
+                cerr << "> maps to " << term_store.getFromCplxMap(k).x << endl;
 #endif
             }
-            PTRef l = term_store.cplx_map[k];
+            PTRef l = term_store.getFromCplxMap(k);
             // This is being kept on record in case the root term gets simplified
             if (isTrue(l)) last_val = l_True;
             else if (isFalse(l)) last_val = l_False;
             else last_val = l_Undef;
         } else {
-            if (!term_store.bool_map.contains(k)) {
-                term_store.bool_map.insert(k, queue[i].x);
+            if (!term_store.hasBoolKey(k)) {//bool_map.contains(k)) {
+                term_store.addToBoolMap(k, queue[i].x); //bool_map.insert(k, queue[i].x);
 #ifdef SIMPLIFY_DEBUG
                 cerr << "sym " << k.sym.x << " args ";
                 for (int j = 0; j < k.args.size(); j++) {
@@ -367,7 +367,7 @@ lbool Logic::simplifyTree(PTRef tr)
                 cerr << "maps to " << term_store.bool_map[k].x << endl;
 #endif
             }
-            PTRef l = term_store.bool_map[k];
+            PTRef l = term_store.getFromBoolMap(k); //bool_map[k];
             // This is being kept on record in case the root term gets simplified
             if (isTrue(l)) last_val = l_True;
             else if (isFalse(l)) last_val = l_False;
@@ -735,11 +735,11 @@ PTRef Logic::cloneTerm(const PTRef& tr) {
 PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, const char** msg) {
     PTRef res;
     if (terms.size() == 0) {
-        if (term_store.cterm_map.contains(sym))
-            res = term_store.cterm_map[sym];
+        if (term_store.hasCtermKey(sym)) //cterm_map.contains(sym))
+            res = term_store.getFromCtermMap(sym); //cterm_map[sym];
         else {
             res = term_store.pta.alloc(sym, terms);
-            term_store.cterm_map.insert(sym, res);
+            term_store.addToCtermMap(sym, res); //cterm_map.insert(sym, res);
         }
     }
     else if (!isBooleanOperator(sym)) {
@@ -758,11 +758,11 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, const char** msg) {
         PTLKey k;
         k.sym = sym;
         terms.copyTo(k.args);
-        if (term_store.cplx_map.contains(k))
-            res = term_store.cplx_map[k];
+        if (term_store.hasCplxKey(k))
+            res = term_store.getFromCplxMap(k);
         else {
             res = term_store.pta.alloc(sym, terms);
-            term_store.cplx_map.insert(k, res);
+            term_store.addToCplxMap(k, res);
         }
     }
     else {
@@ -770,8 +770,8 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, const char** msg) {
         PTLKey k;
         k.sym = sym;
         terms.copyTo(k.args);
-        if (term_store.bool_map.contains(k)) {
-            res = term_store.bool_map[k];
+        if (term_store.hasBoolKey(k)) {//bool_map.contains(k)) {
+            res = term_store.getFromBoolMap(k); //bool_map[k];
 #ifdef SIMPLIFY_DEBUG
             char* ts = printTerm(res);
             cerr << "duplicate: " << ts << endl;
@@ -780,7 +780,7 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, const char** msg) {
         }
         else {
             res = term_store.pta.alloc(sym, terms);
-            term_store.bool_map.insert(k, res);
+            term_store.addToBoolMap(k, res); //bool_map.insert(k, res);
 #ifdef SIMPLIFY_DEBUG
             char* ts = printTerm(res);
             cerr << "new: " << ts << endl;
@@ -844,8 +844,8 @@ PTRef Logic::hasEquality(vec<PTRef>& args)
     PTLKey k;
     k.sym = sref;
     args.copyTo(k.args);
-    if (term_store.cplx_map.contains(k))
-        return term_store.cplx_map[k];
+    if (term_store.hasCplxKey(k))
+        return term_store.getFromCplxMap(k);
     else
         return PTRef_Undef;
 }
@@ -877,12 +877,16 @@ void Logic::serializeTermSystem(int*& termstore_buf, int*& symstore_buf, int*& i
 {
     idstore_buf   = id_store.serializeIdentifiers();
     sortstore_buf = sort_store.serializeSorts();
+    symstore_buf  = sym_store.serializeSymbols();
+    termstore_buf = term_store.serializeTerms();
 }
 
 void Logic::deserializeTermSystem(int*& termstore_buf, int*& symstore_buf, int*& idstore_buf, int*& sortstore_buf)
 {
     id_store.deserializeIdentifiers(idstore_buf);
     sort_store.deserializeSorts(sortstore_buf);
+    sym_store.deserializeSymbols(symstore_buf);
+    term_store.deserializeTerms(termstore_buf);
 }
 
 

@@ -631,7 +631,7 @@ MainSolver::FContainer MainSolver::simplifyEqualities(vec<PtChild>& terms)
     for (int i = 0; i < terms.size(); i++) {
         PtChild& ptc = terms[i];
         // XXX The terms in here might have invalid symbols for some reason.
-        assert(logic.hasSym(logic.getPterm(ptc.tr).symb()));
+//        assert(logic.hasSym(logic.getPterm(ptc.tr).symb()));
     }
 #endif
     PTRef root = terms[terms.size()-1].tr;
@@ -715,20 +715,37 @@ bool MainSolver::readSolverState(const char* file, char** msg)
     cerr << "Reading IdentifierStore" << endl;
 #endif
     int idstore_sz = contents[idstore_offs];
-    int sortstore_sz = contents[sortstore_offs];
-#ifdef PEDANTIC_DEBUG
-    cerr << "  Identifier store size in words is " << idstore_sz << endl;
-    cerr << "  Sort store size in words is " << sortstore_sz << endl;
-#endif
     int* idstore_buf = (int*)malloc(contents[idstore_offs]*sizeof(int));
     for (int i = 0; i < idstore_sz; i++)
         idstore_buf[i] = contents[idstore_offs+i];
+#ifdef PEDANTIC_DEBUG
+    cerr << "  Identifier store size in words is " << idstore_sz << endl;
+    cerr << "Reading sort store" << endl;
+#endif
+    int sortstore_sz = contents[sortstore_offs];
     int* sortstore_buf = (int*)malloc(contents[sortstore_offs]*sizeof(int));
     for (int i = 0; i < sortstore_sz; i++)
         sortstore_buf[i] = contents[sortstore_offs+i];
+#ifdef PEDANTIC_DEBUG
+    cerr << "  Sort store size in words is " << sortstore_sz << endl;
+    cerr << "Reading symstore" << endl;
+#endif
+    int symstore_sz = contents[symstore_offs];
+    int *symstore_buf = (int*)malloc(contents[symstore_offs]*sizeof(int));
+    for (int i = 0; i < symstore_sz; i++)
+        symstore_buf[i] = contents[symstore_offs+i];
+#ifdef PEDANTIC_DEBUG
+    cerr << "  Symstore size is " << symstore_sz << endl;
+    cerr << "Reading termstore" << endl;
+#endif
+    int termstore_sz = contents[symstore_offs];
+    int *termstore_buf = (int*)malloc(contents[termstore_offs]*sizeof(int));
+    for (int i = 0; i < termstore_sz; i++)
+        termstore_buf[i] = contents[termstore_offs+i];
+#ifdef PEDANTIC_DEBUG
+    cerr << "  Termstore size is " << termstore_sz << endl;
+#endif
 
-    int* termstore_buf = NULL;
-    int* symstore_buf = NULL;
     logic.deserializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf);
     free(termstore_buf);
     free(symstore_buf);
@@ -817,13 +834,12 @@ bool MainSolver::writeSolverState(const char* file, char** msg)
     logic.serializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf);
 
     // All stores contain their sizes, hence the minimum size of 1
-    int termstore_sz = 1;
-    int symstore_sz = 1;
-
 
     int idstore_sz = idstore_buf[0];
     int sortstore_sz = sortstore_buf[0];
     int map_sz = cs.map.size()+1;
+    int symstore_sz = symstore_buf[0];
+    int termstore_sz = termstore_buf[0];
 
     int hdr_sz = 6; // The offsets
     // allocate space for the map, the cnf, the offset indices and the
@@ -882,6 +898,10 @@ bool MainSolver::writeSolverState(const char* file, char** msg)
 
     for (i = 0; i < sortstore_sz; i++)
         buf[buf[sortstore_offs_idx]+i] = sortstore_buf[i];
+
+    for (int i = 0; i < symstore_sz; i++)
+        buf[buf[symstore_offs_idx]+i] = symstore_buf[i];
+
 
 #ifdef PEDANTIC_DEBUG
     cerr << "Map offset read from buf idx " << map_offs_idx << endl;

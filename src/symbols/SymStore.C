@@ -28,7 +28,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SymStore.h"
 #include "Symbol.h"
 
-static const char* e_duplicate_symbol = "Symbol Store: symbol already exists";
+const char* SymStore::e_duplicate_symbol = "Symbol Store: symbol already exists";
+const int   SymStore::symstore_buf_offs_idx = 1;
+const int   SymStore::symref_buf_offs_idx   = 2;
+const int   SymStore::symname_buf_offs_idx  = 3;
 
 SymStore::~SymStore() {
     for (int i = 0; i < idToName.size(); i++)
@@ -59,8 +62,6 @@ SymRef SymStore::newSymb(const char* fname, const vec<SRef>& args, const char** 
     SymId id = symbols.size();
     symbols.push(tr);
 
-    symrefToId.insert(tr, id);
-//    occList.push();                     // Get the occurrence list for this term
     if (newsym) {
         vec<SymRef> trs;
         symbolTable.insert(fname, trs);
@@ -72,3 +73,135 @@ SymRef SymStore::newSymb(const char* fname, const vec<SRef>& args, const char** 
     return tr;
 }
 
+int* SymStore::serializeSymbols()
+{
+    int* buf = NULL;
+
+    // Compute the sizes
+    assert(sizeof(SymRef) == sizeof(int));
+    int symref_buf_sz = symbols.size() + 1;
+    int* symstore_buf = ta.serialize();
+    int symstore_buf_sz = symstore_buf[0];
+
+    // Get the total size required to store the symbol names
+    int symname_buf_sz = sizeof(int); // Contains always the size
+    for (int i = 0; i < idToName.size(); i++)
+        symname_buf_sz += strlen(idToName[i]) + 1;
+
+    int symstore_buf_offs = 4;
+    int symref_buf_offs = symstore_buf_offs+symstore_buf_sz;
+    int symname_buf_offs = symref_buf_offs+symref_buf_sz;
+
+    int buf_sz = (symstore_buf_sz + symref_buf_sz + 4)*sizeof(int) + symname_buf_sz
+        + (symname_buf_sz % sizeof(int) == 0 ? 0 : 4-symname_buf_sz % sizeof(int));
+    assert(buf_sz % sizeof(int) == 0);
+    buf = (int*) malloc(buf_sz);
+    buf[0] = buf_sz / sizeof(int) + (buf_sz % sizeof(int) == 0 ? 0 : 1);
+    buf[symstore_buf_offs_idx] = symstore_buf_offs;
+    buf[symref_buf_offs_idx] = symref_buf_offs;
+    buf[symname_buf_offs_idx] = symname_buf_offs;
+
+
+    // Copy symstore
+    int* symstore_buf_entailed = &buf[symstore_buf_offs];
+    for (int i = 0; i < symstore_buf_sz; i++)
+        symstore_buf_entailed[i] = symstore_buf[i];
+    free(symstore_buf);
+
+    // Copy symrefs
+    int* symref_buf = &buf[symref_buf_offs];
+    symref_buf[0] = symref_buf_sz;
+#ifdef PEDANTIC_DEBUG
+    cerr << "Storing " << symref_buf_sz << " symrefs" << endl;
+#endif
+    for (int i = 0; i < symbols.size(); i++)
+        symref_buf[i+1] = symbols[i].x;
+
+    // Copy symnames (in id order)
+    buf[symname_buf_offs] = symname_buf_sz;
+    char* symname_buf = (char*)&buf[symname_buf_offs + 1];
+    int p = 0;
+    for (int i = 0; i < idToName.size(); i++) {
+        strcpy(&symname_buf[p], idToName[i]);
+        p += strlen(idToName[i])+1;
+    }
+#ifdef PEDANTIC_DEBUG
+    cerr << "Stored the SymStore" << endl;
+    cerr << " - " << buf[buf[symstore_buf_offs_idx]] << " words for symbols" << endl;
+    cerr << " - " << buf[buf[symref_buf_offs_idx]] << " symrefs" << endl;
+    cerr << " - " << buf[buf[symname_buf_offs_idx]] << " chars for symnames" << endl;
+#endif
+    return buf;
+}
+
+void SymStore::deserializeSymbols(int* buf)
+{
+#ifdef PEDANTIC_DEBUG
+    cerr << "SymStore deserializeSymbols got " << buf[0] << " words of data" << endl;
+#endif
+    int symstore_buf_offs = buf[symstore_buf_offs_idx];
+    int* symstore_buf = &buf[symstore_buf_offs];
+    int symref_buf_offs = buf[symref_buf_offs_idx];
+    int* symref_buf = &buf[symref_buf_offs];
+    int symname_buf_offs = buf[symname_buf_offs_idx];
+    int* symname_buf = &buf[symname_buf_offs];
+#ifdef PEDANTIC_DEBUG
+    cerr << "Reading " << buf[symstore_buf_offs] << " words for symbols" << endl;
+#endif
+    ta.deserialize(symstore_buf);
+    uint32_t symref_buf_sz = symref_buf[0];
+#ifdef PEDANTIC_DEBUG
+    cerr << "Reading " << symref_buf_sz << " words for symrefs" << endl;
+#endif
+    for (uint32_t i = 0; i < symref_buf_sz-1; i++) {
+        SymRef sr = SymRef({(uint32_t)symref_buf[i+1]});
+        if (i < symbols.size_())
+            assert(symbols[i] == sr);
+        else
+            symbols.push(sr);
+        assert(ta[sr].id == i);
+    }
+
+    int symname_buf_sz = symname_buf[0];
+#ifdef PEDANTIC_DEBUG
+    cerr << "Reading " << symname_buf_sz << " characters for symnames" << endl;
+#endif
+    char* symname_buf_proper = (char*)&symname_buf[1];
+    for (int p = 0, sym_id = 0; p < symname_buf_sz-4; sym_id++) {
+        int name_sz = strlen(&symname_buf_proper[p]);
+#ifdef PEDANTIC_DEBUG
+        cerr << "  string at " << p << " is " << &symname_buf_proper[p] << endl;
+#endif
+        if (sym_id < idToName.size())
+            assert(strcmp(idToName[sym_id], &symname_buf_proper[p]) == 0);
+        else {
+            char* name_out;
+            asprintf(&name_out, "%s", &symname_buf_proper[p]);
+            idToName.push(name_out);
+            cerr << "Added new symbol " << name_out << endl;
+            if (symbolTable.contains(name_out)) {
+                vec<SymRef>& symrefs = symbolTable[name_out];
+                bool found = false;
+                for (int j = 0; j < symrefs.size(); j++) {
+                    if (symrefs[j] == symbols[sym_id]) {
+                        found = true; break; }
+                }
+                if (!found) {
+#ifdef PEDANTIC_DEBUG
+                    cerr << "mapping symbol name " << name_out << " to SymRef " << symbols[sym_id].x << endl;
+#endif
+                    symrefs.push(symbols[sym_id]);
+                }
+            }
+            else {
+                vec<SymRef> tmp;
+                tmp.push(symbols[sym_id]);
+                symbolTable.insert(name_out, tmp);
+#ifdef PEDANTIC_DEBUG
+                cerr << "mapping symbol name " << name_out << " to SymRef " << symbols[sym_id].x << endl;
+#endif
+            }
+        }
+        p += name_sz+1;
+    }
+}

@@ -107,6 +107,7 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
   , next_it_i             (0)
   , next_it_j             (1)
 #ifdef STATISTICS
+  , preproc_time          (0)
   , elim_tvars            (0)
 #endif
   , init                  (false)
