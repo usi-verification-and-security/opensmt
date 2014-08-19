@@ -26,6 +26,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "PtStore.h"
 
+const int PtStore::ptstore_buf_idx = 1;
+
 PtStore::PtStore(SymStore& symstore_, SStore& sortstore_)
     : symstore(symstore_), sortstore(sortstore_) { }
 
@@ -154,11 +156,19 @@ char* PtStore::printTerm(PTRef tr, bool ext) const
 int* PtStore::serializeTerms()
 {
     int* ptstore_buf = pta.serialize();
-    int* buf = (int*)malloc(ptstore_buf[0]+sizeof(int));
-    buf[0] = ptstore_buf[0]+1;
+    int ptstore_buf_sz = ptstore_buf[0];
+    int buf_sz = ptstore_buf_sz+2;
+    int* buf = (int*)malloc(buf_sz*sizeof(int));
+    buf[0] = buf_sz;
+    int ptstore_buf_offs = ptstore_buf_idx+1;
+    buf[ptstore_buf_idx] = ptstore_buf_offs;
+    for (int i = 0; i < ptstore_buf_sz; i++)
+        buf[ptstore_buf_offs+i] = ptstore_buf[i];
     return buf;
 }
 
 void PtStore::deserializeTerms(int* buf)
 {
+    int* ptstore_buf = &buf[ptstore_buf_idx];
+    pta.deserialize(ptstore_buf);
 }

@@ -226,6 +226,12 @@ class Logic {
 // Debugging
     char*       printTerm          (PTRef tr)       const { return term_store.printTerm(tr); }
 
+#ifdef PEDANTIC_DEBUG
+    void compareSymStore(SymStore& other) { sym_store.compare(other); }
+    void compareIdStore(IdentifierStore& other) {}
+    void compareSortStore(SStore& other) { }
+    void compareTermStore(PtStore& other) { }// term_store.compare(other); }
+#endif
 
 };
 

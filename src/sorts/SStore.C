@@ -206,7 +206,7 @@ int* SStore::serializeSorts()
 
     buf[sorts_offs] = sorts.size();
     for (int i = 0; i < sorts.size(); i++)
-        buf[sorts_offs+1+i] = sorts[i];
+        buf[sorts_offs+1+i] = sorts[i].x;
 
     free(idstore_buf);
     free(sortstrstore_buf);
@@ -227,7 +227,7 @@ void SStore::deserializeSorts(int* buf)
     sa.deserialize(&buf[sortstore_buf_offs]);
 
     for (int i = sorts_offs+1; i < buf[sorts_offs]; i++) {
-        sorts.push(SRef(buf[i]));
+        sorts.push(SRef({(uint32_t)buf[i]}));
         char* canon_name;
         asprintf(&canon_name, "%s", is.getName((operator[] (sorts.last()))->getCar()));
         sortTable.insert(canon_name, sorts.last());

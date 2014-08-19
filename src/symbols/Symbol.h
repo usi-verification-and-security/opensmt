@@ -69,6 +69,20 @@ class Symbol {
     // This has to be the last
     union { SRef sort; SymRef rel;  }   args[0];
 
+#ifdef PEDANTIC_DEBUG
+    void compare(Symbol& other) {
+        assert(header.type == other.header.type);
+        assert(header.learnt == other.header.learnt);
+        assert(header.commutes == other.header.commutes);
+        assert(header.reloced == other.header.reloced);
+        assert(header.noscoping == other.header.noscoping);
+        assert(header.constant == other.header.constant);
+        assert(header.size == other.header.size);
+        for (int i = 0; i < header.size; i++)
+            assert(args[i].sort.x == other.args[i].sort.x);
+        assert(id == other.id);
+    }
+#endif
 
     friend class SymAllocator;
     friend class SymStore;

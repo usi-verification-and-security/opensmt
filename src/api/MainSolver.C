@@ -738,7 +738,7 @@ bool MainSolver::readSolverState(const char* file, char** msg)
     cerr << "  Symstore size is " << symstore_sz << endl;
     cerr << "Reading termstore" << endl;
 #endif
-    int termstore_sz = contents[symstore_offs];
+    int termstore_sz = contents[termstore_offs];
     int *termstore_buf = (int*)malloc(contents[termstore_offs]*sizeof(int));
     for (int i = 0; i < termstore_sz; i++)
         termstore_buf[i] = contents[termstore_offs+i];
@@ -756,6 +756,12 @@ bool MainSolver::readSolverState(const char* file, char** msg)
 #ifdef PEDANTIC_DEBUG
     cerr << "The cnf is" << endl;
     cerr << cs.cnf << endl;
+    cerr << "The terms are" << endl;
+    for (int i = 0; i < cs.map.size(); i++) {
+        char* tr_s = logic.printTerm(cs.map[i].tr);
+        cerr << "  " << tr_s << endl;
+        free(tr_s);
+    }
 #endif
     for (int i = 0; i < cs.map.size(); i++) {
         if (i >= sat_solver.nVars()) {
@@ -824,6 +830,13 @@ bool MainSolver::writeSolverState(const char* file, char** msg)
     cerr << "Trying to write solver state" << endl;
     cerr << "Cnf: " << endl;
     cerr << cs.cnf << endl;
+    cerr << "The terms are" << endl;
+    for (int i = 0; i < cs.map.size(); i++) {
+        char* tr_s = logic.printTerm(cs.map[i].tr);
+        cerr << "  " << tr_s << endl;
+        free(tr_s);
+    }
+
 #endif
 
     int* termstore_buf;
@@ -902,6 +915,8 @@ bool MainSolver::writeSolverState(const char* file, char** msg)
     for (int i = 0; i < symstore_sz; i++)
         buf[buf[symstore_offs_idx]+i] = symstore_buf[i];
 
+    for (int i = 0; i < termstore_sz; i++)
+        buf[buf[termstore_offs_idx]+i] = termstore_buf[i];
 
 #ifdef PEDANTIC_DEBUG
     cerr << "Map offset read from buf idx " << map_offs_idx << endl;
@@ -923,6 +938,24 @@ bool MainSolver::writeSolverState(const char* file, char** msg)
     cerr << "sortstore offset read from buf idx " << sortstore_offs_idx << endl;
     cerr << "sortstore starts at word " << buf[sortstore_offs_idx] << endl;
     cerr << "sortstore size is " << buf[buf[sortstore_offs_idx]] << endl;
+
+    SMTConfig config;
+    SymStore new_symstore;
+    IdentifierStore new_idstore;
+    SStore new_sortstore(config, new_idstore);
+    PtStore new_tstore(new_symstore, new_sortstore);
+
+    new_symstore.deserializeSymbols(&buf[buf[symstore_offs_idx]]);
+    logic.compareSymStore(new_symstore);
+    new_idstore.deserializeIdentifiers(&buf[buf[idstore_offs_idx]]);
+    logic.compareIdStore(new_idstore);
+//    logic.compareTermStore(new_tstore);
+    new_tstore.deserializeTerms(&buf[buf[termstore_offs_idx]]);
+    for (int i = 0; i < cs.map.size(); i++) {
+        Pterm& my_t = logic.getPterm(cs.map[i].tr);
+        Pterm& other_t = new_tstore[cs.map[i].tr];
+        my_t.compare(other_t);
+    }
 #endif
 
     int res = write(fd, buf, buf_sz-1);

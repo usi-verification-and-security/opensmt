@@ -156,8 +156,9 @@ public:
     vec<PTRef> tmp;
     tmp.push(logic.getTerm_true());
     tmp.push(logic.getTerm_false());
-    const char* msg;
-    PTRef neq = logic.insertTerm(logic.getSym_eq(), tmp, &msg);
+    PTRef neq = logic.mkEq(tmp);
+//    const char* msg;
+//    PTRef neq = logic.insertTerm(logic.getSym_eq(), tmp, &msg);
     assert(neq != PTRef_Undef);
     assertNEq(logic.getTerm_true(), logic.getTerm_false(), PtAsgn(neq, l_False));
     Eq_FALSE = neq;

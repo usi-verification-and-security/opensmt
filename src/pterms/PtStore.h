@@ -44,14 +44,15 @@ class PtStore {
     SStore&        sortstore;
 
     Map<SymRef,PTRef,SymRefHash,Equal<SymRef> > cterm_map; // Mapping constant symbols to terms
-    vec<SymRef> cterm_keys;
+//    vec<SymRef> cterm_keys;
 
     Map<PTLKey,PTRef,PTLHash,Equal<PTLKey> >    cplx_map;  // Mapping complex terms to canonical terms
-    vec<PTLKey> cplx_keys;
+//    vec<PTLKey> cplx_keys;
 
     Map<PTLKey,PTRef,PTLHash,Equal<PTLKey> >    bool_map;  // Mapping boolean terms to canonical terms
-    vec<PTLKey> bool_keys;
+//    vec<PTLKey> bool_keys;
     friend class Logic;
+    static const int ptstore_buf_idx;
   public:
     PtStore(SymStore& symstore_, SStore& sortstore_);
 
@@ -68,15 +69,24 @@ class PtStore {
     char* printTerm_(PTRef, bool ext = false) const;
 
     bool hasCtermKey(SymRef& k) { return cterm_map.contains(k); }
-    void addToCtermMap(SymRef& k, PTRef tr) { cterm_map.insert(k, tr); cterm_keys.push(k); }
+    void addToCtermMap(SymRef& k, PTRef tr) {
+        cterm_map.insert(k, tr);
+//        cterm_keys.push(k);
+    }
     PTRef getFromCtermMap(SymRef& k) { return cterm_map[k]; }
 
     bool hasBoolKey(PTLKey& k) { return bool_map.contains(k); }
-    void addToBoolMap(PTLKey& k, PTRef tr) { bool_map.insert(k, tr); bool_keys.push(k); }
+    void addToBoolMap(PTLKey& k, PTRef tr) {
+        bool_map.insert(k, tr);
+//        bool_keys.push(k);
+    }
     PTRef getFromBoolMap(PTLKey& k) { return bool_map[k]; }
 
     bool hasCplxKey(PTLKey& k) { return cplx_map.contains(k); }
-    void addToCplxMap(PTLKey& k, PTRef tr) { cplx_map.insert(k, tr); cplx_keys.push(k); }
+    void addToCplxMap(PTLKey& k, PTRef tr) {
+        cplx_map.insert(k, tr);
+//        cplx_keys.push(k);
+    }
     PTRef getFromCplxMap(PTLKey& k) { return cplx_map[k]; }
 
     int* serializeTerms();

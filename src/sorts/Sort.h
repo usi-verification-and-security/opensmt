@@ -38,8 +38,19 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // sort symbols and concrete sorts the way pterms are constructed.  As a
 // result, we only support "constant sorts" of arity 0
 
-typedef RegionAllocator<uint32_t>::Ref SRef;
-const SRef SRef_Undef = RegionAllocator<uint32_t>::Ref_Undef;
+//typedef RegionAllocator<uint32_t>::Ref SRef;
+//const SRef SRef_Undef = RegionAllocator<uint32_t>::Ref_Undef;
+
+struct SRef {
+    uint32_t x;
+    void operator= (uint32_t v) { x = v; }
+    inline friend bool operator== (const SRef& a1, const SRef& a2) {return a1.x == a2.x; }
+    inline friend bool operator!= (const SRef& a1, const SRef& a2) {return a1.x != a2.x; }
+};
+
+static struct SRef SRef_Undef = {INT32_MAX};
+static struct SRef SRef_Nil   = {INT32_MAX-1};
+
 
 enum SortType { S_EMPTY, S_ID, S_ID_LIST };
 
@@ -270,18 +281,20 @@ class SortAllocator : public RegionAllocator<uint32_t>
         RegionAllocator<uint32_t>::moveTo(to); }
     SRef alloc(IdRef idr, SStrRef nr, vec<SRef>& rest)
     {
-        SRef sid = RegionAllocator<uint32_t>::alloc(SortWord32Size(rest.size()));
+        uint32_t v = RegionAllocator<uint32_t>::alloc(SortWord32Size(rest.size()));
+        SRef sid;
+        sid.x = v;
         new (lea(sid)) Sort(idr, static_uniq_id++, nr, rest);
         return sid;
     }
-    Sort&       operator[](Ref r)       { return (Sort&)RegionAllocator<uint32_t>::operator[](r); }
-    const Sort& operator[](Ref r) const { return (Sort&)RegionAllocator<uint32_t>::operator[](r); }
-    Sort*       lea       (Ref r)       { return (Sort*)RegionAllocator<uint32_t>::lea(r); }
+    Sort&       operator[](SRef r)       { return (Sort&)RegionAllocator<uint32_t>::operator[](r.x); }
+    const Sort& operator[](SRef r) const { return (Sort&)RegionAllocator<uint32_t>::operator[](r.x); }
+    Sort*       lea       (SRef r)       { return (Sort*)RegionAllocator<uint32_t>::lea(r.x); }
     Ref         ael       (const Sort* t){ return RegionAllocator<uint32_t>::ael((uint32_t*)t); }
 
-    void free(IdRef idr)
+    void free(SRef sr)
     {
-        Sort& s = operator[](idr);
+        Sort& s = operator[](sr);
         RegionAllocator<uint32_t>::free(SortWord32Size(s.getSize()));
     }
 

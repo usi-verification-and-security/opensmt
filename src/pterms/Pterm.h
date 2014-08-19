@@ -246,6 +246,19 @@ class Pterm {
 
     void     shrink(int s)               { header.size -= s; }
     void     copyTo(Pterm& to);
+#ifdef PEDANTIC_DEBUG
+    void     compare(Pterm& other) {
+        assert(header.type == other.header.type);
+        assert(header.has_extra == other.header.has_extra);
+        assert(header.reloced == other.header.reloced);
+        assert(header.noscoping == other.header.noscoping);
+        assert(header.size == other.header.size);
+        assert(id == other.id);
+        assert(sym == other.sym);
+        for (int i = 0; i < header.size; i++)
+            assert(args[i] == other.args[i]);
+    }
+#endif
 };
 
 class PtPair {

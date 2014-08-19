@@ -205,3 +205,24 @@ void SymStore::deserializeSymbols(int* buf)
         p += name_sz+1;
     }
 }
+
+#ifdef PEDANTIC_DEBUG
+void SymStore::compare(SymStore& other)
+{
+    if (symbols.size() != other.symbols.size()) assert(false);
+    for (int i = 0; i < symbols.size(); i++) {
+        if (symbols[i] != other.symbols[i]) assert(false);
+        Symbol& my_sym = ta[symbols[i]];
+        Symbol& other_sym = other.ta[symbols[i]];
+        my_sym.compare(other_sym);
+    }
+    for (int i = 0; i < idToName.size(); i++) {
+        assert(strcmp(other.idToName[i], idToName[i]) == 0);
+        vec<SymRef>& my_v = symbolTable[idToName[i]];
+        vec<SymRef>& other_v = other.symbolTable[idToName[i]];
+        assert(my_v.size() == other_v.size());
+        for (int j = 0; j < my_v.size(); j++)
+            assert(my_v[j] == other_v[j]);
+    }
+}
+#endif

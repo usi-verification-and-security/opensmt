@@ -52,6 +52,9 @@ class SymStore {
 
     int* serializeSymbols();
     void deserializeSymbols(int* buf);
+#ifdef PEDANTIC_DEBUG
+    void compare(SymStore&);
+#endif
 private:
     static const char* e_duplicate_symbol;
     // For serialization
