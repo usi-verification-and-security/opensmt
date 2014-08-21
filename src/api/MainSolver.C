@@ -124,7 +124,6 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         // XXX There should be no reason to do this one by one, and in fact it
         // should be harmful since the shared structure will be invisible that
         // way.
-        // tmp debug
         PTRef root = fc.getRoot();
         Pterm& r = logic.getPterm(root);
         vec<PTRef> tlfs;
@@ -196,7 +195,6 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
 //                state = giveToSolver(fc.getRoot());
 //        }
     }
-end:
     return state;
 }
 
@@ -698,6 +696,7 @@ bool MainSolver::readSolverState(const char* file, char** msg)
     int symstore_offs = contents[symstore_offs_idx];
     int idstore_offs = contents[idstore_offs_idx];
     int sortstore_offs = contents[sortstore_offs_idx];
+    int logicstore_offs = contents[logicstore_offs_idx];
 
 #ifdef PEDANTIC_DEBUG
     cerr << "Reading the map" << endl;
@@ -746,13 +745,15 @@ bool MainSolver::readSolverState(const char* file, char** msg)
     cerr << "  Termstore size is " << termstore_sz << endl;
 #endif
 
-    logic.deserializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf);
+    int logicstore_sz = contents[logicstore_offs];
+    int *logicstore_buf = (int*)malloc(contents[logicstore_offs]*sizeof(int));
+    logic.deserializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf);
     free(termstore_buf);
     free(symstore_buf);
     free(sortstore_buf);
     free(idstore_buf);
 
-    cs.cnf = (char*)(contents + cnf_offs);
+    asprintf(&cs.cnf, "%s", (char*)(contents + cnf_offs));
 #ifdef PEDANTIC_DEBUG
     cerr << "The cnf is" << endl;
     cerr << cs.cnf << endl;
@@ -786,6 +787,7 @@ bool MainSolver::readSolverState(const char* file, char** msg)
             }
             else tmap.varToTheorySymbol.push(SymRef_Undef);
         }
+        uf_solver.declareTermTree(cs.map[i].tr);
     }
     DimacsParser dp;
     dp.parse_DIMACS_main(cs.cnf, sat_solver);
@@ -798,21 +800,23 @@ bool MainSolver::readSolverState(const char* file, char** msg)
 // Write the solver state to a partly binary file (cnf is in clear text
 // and written last).  Output format looks like this:
 //
-// +--------+-----------+-------------+-------+--------------+--------+
-// |map_offs|tstore_offs|symstore_offs|id_offs|sortstore_offs|cnf_offs|
-// +--------+-----------+-------------+-------+--------------+--------+
-// |map_sz              | <map data>                                  |
-// +--------------------+---------------------------------------------+
-// |tstore_sz           | <tstore data>                               |
-// +--------------------+---------------------------------------------+
-// |symstore_sz         | <symstore data>                             |
-// +--------------------+---------------------------------------------+
-// |idstore_sz          | <idstore data>                              |
-// +--------------------+---------------------------------------------+
-// |sortstore_sz        | <sortstore data>                            |
-// +--------------------+---------------------------------------------+
-// |<cnf data>                                                        |
-// +------------------------------------------------------------------+
+// +--------+-----------+-------------+-------+--------------+---------------+--------+
+// |map_offs|tstore_offs|symstore_offs|id_offs|sortstore_offs|logicstore_offs|cnf_offs|
+// +--------+-----------+-------------+-------+--------------+---------------+--------+
+// |map_sz              | <map data>                                                  |
+// +--------------------+-------------------------------------------------------------+
+// |tstore_sz           | <tstore data>                                               |
+// +--------------------+-------------------------------------------------------------+
+// |symstore_sz         | <symstore data>                                             |
+// +--------------------+-------------------------------------------------------------+
+// |idstore_sz          | <idstore data>                                              |
+// +--------------------+-------------------------------------------------------------+
+// |sortstore_sz        | <sortstore data>                                            |
+// +--------------------+-------------------------------------------------------------+
+// |logicstore_sz       | <logicstore data>                                           |
+// +--------------------+-------------------------------------------------------------+
+// |<cnf data>                                                                        |
+// +----------------------------------------------------------------------------------+
 //
 // The sizes include the storage of the size itself
 //
@@ -843,8 +847,9 @@ bool MainSolver::writeSolverState(const char* file, char** msg)
     int* symstore_buf;
     int* idstore_buf;
     int* sortstore_buf;
+    int* logicstore_buf;
 
-    logic.serializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf);
+    logic.serializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf);
 
     // All stores contain their sizes, hence the minimum size of 1
 
@@ -853,11 +858,12 @@ bool MainSolver::writeSolverState(const char* file, char** msg)
     int map_sz = cs.map.size()+1;
     int symstore_sz = symstore_buf[0];
     int termstore_sz = termstore_buf[0];
+    int logicstore_sz = logicstore_buf[0];
 
-    int hdr_sz = 6; // The offsets
+    int hdr_sz = 7; // The offsets
     // allocate space for the map, the cnf, the offset indices and the
     // sizes
-    int buf_sz = (termstore_sz + symstore_sz + idstore_sz + sortstore_sz + map_sz)*sizeof(int)
+    int buf_sz = (termstore_sz + symstore_sz + idstore_sz + sortstore_sz + map_sz + logicstore_sz)*sizeof(int)
                  + (strlen(cs.cnf)+1) + hdr_sz*sizeof(int);
 #ifdef PEDANTIC_DEBUG
     cerr << "Mallocing " << buf_sz << " bytes for the buffer" << endl;
@@ -867,7 +873,7 @@ bool MainSolver::writeSolverState(const char* file, char** msg)
     cerr << "The symstore is " << symstore_sz * sizeof(int) << " bytes" << endl;
     cerr << "The id store is " << idstore_sz * sizeof(int) << " bytes" << endl;
     cerr << "The sortstore is " << sortstore_sz * sizeof(int) << " bytes" << endl;
-    cerr << "The header is " << 8*sizeof(int) << " bytes" << endl;
+    cerr << "The header is " << hdr_sz*sizeof(int) << " bytes" << endl;
 #endif
     int* buf = (int*)malloc(buf_sz);
 
@@ -876,7 +882,8 @@ bool MainSolver::writeSolverState(const char* file, char** msg)
     buf[symstore_offs_idx]  = buf[termstore_offs_idx] + termstore_sz;
     buf[idstore_offs_idx]   = buf[symstore_offs_idx] + symstore_sz;
     buf[sortstore_offs_idx] = buf[idstore_offs_idx] + idstore_sz;
-    buf[cnf_offs_idx]       = buf[sortstore_offs_idx]+sortstore_sz;
+    buf[logicstore_offs_idx]= buf[sortstore_offs_idx] + sortstore_sz;
+    buf[cnf_offs_idx]       = buf[logicstore_offs_idx]+logicstore_sz;
 
 
     buf[buf[map_offs_idx]]          = map_sz;
@@ -917,6 +924,9 @@ bool MainSolver::writeSolverState(const char* file, char** msg)
 
     for (int i = 0; i < termstore_sz; i++)
         buf[buf[termstore_offs_idx]+i] = termstore_buf[i];
+
+    for (int i = 0; i < logicstore_sz; i++)
+        buf[buf[logicstore_offs_idx]+i] = logicstore_buf[i];
 
 #ifdef PEDANTIC_DEBUG
     cerr << "Map offset read from buf idx " << map_offs_idx << endl;

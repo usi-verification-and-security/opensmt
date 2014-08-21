@@ -119,6 +119,10 @@ private:
   static const char* o_proof_reduce;
   static const char* o_proof_set_inter_algo;
   static const char* o_sat_dump_rnd_inter;
+  static const char* o_sat_time_limit;
+  static const char* o_sat_dec_limit;
+  static const char* o_dump_state;
+  static const char* o_dump_only;
 private:
   Info          info_Empty;
   Option        option_Empty;
@@ -314,6 +318,18 @@ public:
   int sat_dump_rnd_inter() const
     { return optionTable.contains(o_sat_dump_rnd_inter) ?
         optionTable[o_sat_dump_rnd_inter].getValue().numval : 2; }
+  int sat_time_limit() const
+    { return optionTable.contains(o_sat_time_limit) ?
+        optionTable[o_sat_time_limit].getValue().numval : -1; }
+  int sat_dec_limit() const
+    { return optionTable.contains(o_sat_dec_limit) ?
+        optionTable[o_sat_dec_limit].getValue().numval : -1; }
+  const char* dump_state() const
+    { return optionTable.contains(o_dump_state) ?
+        optionTable[o_dump_state].getValue().strval : "out.osmt2"; }
+  int dump_only() const
+    { return optionTable.contains(o_dump_only) ?
+        optionTable[o_dump_only].getValue().numval : 0; }
 
 //  int          produce_stats;                // Should print statistics ?
   int          print_stats;                  // Should print statistics ?

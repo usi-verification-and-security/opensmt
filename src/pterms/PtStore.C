@@ -169,6 +169,6 @@ int* PtStore::serializeTerms()
 
 void PtStore::deserializeTerms(int* buf)
 {
-    int* ptstore_buf = &buf[ptstore_buf_idx];
+    int* ptstore_buf = &buf[buf[ptstore_buf_idx]];
     pta.deserialize(ptstore_buf);
 }

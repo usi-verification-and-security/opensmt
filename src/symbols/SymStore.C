@@ -178,7 +178,9 @@ void SymStore::deserializeSymbols(int* buf)
             char* name_out;
             asprintf(&name_out, "%s", &symname_buf_proper[p]);
             idToName.push(name_out);
+#ifdef PEDANTIC_DEBUG
             cerr << "Added new symbol " << name_out << endl;
+#endif
             if (symbolTable.contains(name_out)) {
                 vec<SymRef>& symrefs = symbolTable[name_out];
                 bool found = false;

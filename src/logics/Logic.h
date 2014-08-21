@@ -41,10 +41,16 @@ class Logic {
   private:
     static const char* e_argnum_mismatch;
 
+    // Information related to state serialization
+    const static int buf_sz_idx             = 0;
+    const static int equalities_offs_idx    = 1;
+    const static int disequalities_offs_idx = 2;
+    const static int ites_offs_idx          = 3;
+
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      equalities;
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      disequalities;
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      ites;
-    Map<PTRef,PTRef,PTRefHash,Equal<PTRef> >        UP_map; // maps uninterpreted predicates to their equality terms
+//    Map<PTRef,PTRef,PTRefHash,Equal<PTRef> >        UP_map; // maps uninterpreted predicates to their equality terms
 
     SMTConfig&          config;
     IdentifierStore&    id_store;
@@ -220,9 +226,11 @@ class Logic {
     // XXX There's a need for non msg giving version
     PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms, const char** msg);
 
+    void        serializeLogicData(int*& logicdata_buf);
+    void        deserializeLogicData(int*& logicdata_buf);
 
-    void        serializeTermSystem(int*& termstore_buf, int*& symstore_buf, int*& idstore_buf, int*& sortstore_buf);
-    void        deserializeTermSystem(int*& termstore_buf, int*& symstore_buf, int*& idstore_buf, int*& sortstore_buf);
+    void        serializeTermSystem(int*& termstore_buf, int*& symstore_buf, int*& idstore_buf, int*& sortstore_buf, int*& logicdata_buf);
+    void        deserializeTermSystem(int*& termstore_buf, int*& symstore_buf, int*& idstore_buf, int*& sortstore_buf, int*& logicdata_buf);
 // Debugging
     char*       printTerm          (PTRef tr)       const { return term_store.printTerm(tr); }
 

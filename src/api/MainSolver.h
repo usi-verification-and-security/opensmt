@@ -50,12 +50,13 @@ const sstat s_Error = toSstat( 2);
 
 class MainSolver {
   private:
-    const static int map_offs_idx = 0;
-    const static int termstore_offs_idx = 1;
-    const static int symstore_offs_idx = 2;
-    const static int idstore_offs_idx = 3;
-    const static int sortstore_offs_idx = 4;
-    const static int cnf_offs_idx = 5;
+    const static int map_offs_idx        = 0;
+    const static int termstore_offs_idx  = 1;
+    const static int symstore_offs_idx   = 2;
+    const static int idstore_offs_idx    = 3;
+    const static int sortstore_offs_idx  = 4;
+    const static int logicstore_offs_idx = 5;
+    const static int cnf_offs_idx        = 6;
 
     class pi {
       public:

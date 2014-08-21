@@ -55,6 +55,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <sys/wait.h>
 #endif
 
+#include "time.h"
+
 namespace opensmt
 {
   extern bool stop;
@@ -79,6 +81,9 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
   // More parameters:
   //
   , expensive_ccmin  ( true )
+  // Resource limits
+  , stop_time             (-1)
+  , stop_decs             (-1)
   // Statistics: (formerly in 'SolverStats')
   //
   , starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0)
@@ -1779,6 +1784,13 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
     // Added line
     if ( opensmt::stop ) return l_Undef;
 
+    if (conflicts % 1000 == 0 && stop_time >= 0 && time(NULL) >= stop_time) {
+        opensmt::stop = true; return l_Undef; }
+#ifdef PEDANTIC_DEBUG
+    if (conflicts % 10 == 0 && stop_decs >= 0 && decisions >= stop_decs) {
+        opensmt::stop = true; return l_Undef; }
+#endif
+
     Clause* confl = propagate();
     if (confl != NULL){
 #ifdef PEDANTIC_DEBUG
@@ -2009,6 +2021,11 @@ double CoreSMTSolver::progressEstimate() const
 lbool CoreSMTSolver::solve( const vec<Lit> & assumps
                           , const unsigned max_conflicts )
 {
+  stop_time = config.sat_time_limit() >= 0 ? time(NULL) + config.sat_time_limit() : -1;
+  stop_decs = config.sat_dec_limit() >= 0 ? config.sat_dec_limit() : -1;
+
+  if (config.dump_only()) return l_Undef;
+
   random_seed = config.getRandomSeed();
 //  assert( init );
   // Check some invariants before we start ...
@@ -2126,8 +2143,8 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
 #endif
     }else{
       assert( opensmt::stop || status == l_False);
-      if (conflict.size() == 0)
-	ok = false;
+//      if (conflict.size() == 0)
+//	ok = false;
     }
   }
 

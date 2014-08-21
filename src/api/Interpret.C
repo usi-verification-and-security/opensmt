@@ -253,12 +253,7 @@ declare_fun_err: ;
         getAssignment(cmd);
     }
     if (strcmp(cmd, "write-state") == 0) {
-        const char* filename = (**(n.children->begin())).getValue();
-        char* msg;
-        bool rval = main_solver.writeSolverState(filename, &msg);
-        if (!rval) {
-            notify_formatted("%s", msg);
-        }
+        writeState((**(n.children->begin())).getValue());
     }
     if (strcmp(cmd, "read-state") == 0) {
         const char* filename = (**(n.children->begin())).getValue();
@@ -479,19 +474,17 @@ bool Interpret::checkSat(const char* cmd) {
             comment_formatted("Incrementality not enabled but %d check-sat encountered", sat_calls);
             return false;
     }
+    lbool res;
     if (logic.isSet()) {
         sat_calls++;
         char* msg;
 
         sstat rval = main_solver.simplifyFormulas(&msg);
-        lbool res;
         if (rval == s_Undef) {
             res = ts.solve();
         }
         else if (rval == s_False)
             res = l_False;
-        else if (rval == s_Undef)
-            res == l_Undef;
         else
             notify_formatted(true, msg);
 
@@ -506,6 +499,11 @@ bool Interpret::checkSat(const char* cmd) {
     else {
         notify_formatted(true, "Illegal command before set-logic: %s", cmd);
         return false;
+    }
+    if (res == l_Undef) {
+        const Option& o_dump_state = config.getOption(":dump-state");
+        if (!o_dump_state.isEmpty())
+            writeState(config.dump_state());
     }
     return true;
 }
@@ -536,6 +534,15 @@ bool Interpret::getAssignment(const char* cmd) {
     notify_formatted(false, out_str);
     free(out_str);
     return true;
+}
+
+void Interpret::writeState(const char* filename)
+{
+    char* msg;
+    bool rval = main_solver.writeSolverState(filename, &msg);
+    if (!rval) {
+        notify_formatted("%s", msg);
+    }
 }
 
 bool Interpret::declareFun(const char* fname, const vec<SRef>& args) {

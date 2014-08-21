@@ -172,6 +172,9 @@ class CoreSMTSolver : public SMTSolver
 
     enum { polarity_true = 0, polarity_false = 1, polarity_user = 2, polarity_rnd = 3 };
 
+    double   stop_time;           // Time limit for the search in wall clock
+    int      stop_decs;           // Time limit for the search in wall clock
+
     // Statistics: (read-only member variable)
     //
     uint64_t starts, decisions, rnd_decisions, propagations, conflicts;

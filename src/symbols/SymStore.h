@@ -50,6 +50,8 @@ class SymStore {
     const Symbol& operator [] (SymRef tr)       const { return ta[tr]; }
     const char* getName(SymRef tr)              const { return idToName[ta[tr].getId()]; }
 
+    const vec<SymRef>& getSymbols()             const { return symbols; }
+
     int* serializeSymbols();
     void deserializeSymbols(int* buf);
 #ifdef PEDANTIC_DEBUG

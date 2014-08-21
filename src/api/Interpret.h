@@ -86,6 +86,7 @@ class Interpret {
     void                        getInfo(ASTNode& n);
     void                        setOption(ASTNode& n);
     void                        getOption(ASTNode& n);
+    void                        writeState(const char* fname);
     bool                        declareFun(const char* fname, const vec<SRef>& args);
     bool                        checkSat(const char*);
     bool                        getAssignment(const char*);

@@ -229,7 +229,7 @@ bool Logic::declare_sort_hook(SRef sr) {
 }
 
 //
-// This method is currently under development
+// XXX Comments? This method is currently under development
 //
 lbool Logic::simplifyTree(PTRef tr)
 {
@@ -818,7 +818,7 @@ bool Logic::isUP(PTRef ptr) const {
 PTRef Logic::lookupUPEq(PTRef ptr) {
     assert(isUP(ptr));
     // already seen
-    if (UP_map.contains(ptr)) return UP_map[ptr];
+//    if (UP_map.contains(ptr)) return UP_map[ptr];
     // already an equality
     Pterm& t = term_store[ptr];
     if (isEquality(t.symb()) | isDisequality(t.symb()))
@@ -873,20 +873,71 @@ bool Logic::isAtom(PTRef r) const {
     return false;
 }
 
-void Logic::serializeTermSystem(int*& termstore_buf, int*& symstore_buf, int*& idstore_buf, int*& sortstore_buf)
+void Logic::serializeLogicData(int*& logicdata_buf)
+{
+    int equalities_sz    = 0;
+    int disequalities_sz = 0;
+    int ites_sz          = 0;
+
+    const vec<SymRef> &symbols = sym_store.getSymbols();
+    for (int i = 0; i < symbols.size(); i++) {
+        if (equalities.contains(symbols[i]))
+            equalities_sz ++;
+        if (disequalities.contains(symbols[i]))
+            disequalities_sz ++;
+        if (ites.contains(symbols[i]))
+            ites_sz ++;
+    }
+
+    int logicdata_sz = equalities_sz + disequalities_sz + ites_sz + 4;
+    logicdata_buf = (int*) malloc(logicdata_sz*sizeof(int));
+    logicdata_buf[buf_sz_idx] = logicdata_sz;
+    int equalities_offs = 4;
+    int disequalities_offs = equalities_offs + equalities_sz;
+    int ites_offs = disequalities_offs + disequalities_sz;
+
+    logicdata_buf[equalities_offs_idx] = equalities_offs;
+    logicdata_buf[disequalities_offs_idx] = disequalities_offs;
+    logicdata_buf[ites_offs_idx] = ites_offs;
+
+    logicdata_buf[equalities_offs] = equalities_sz;
+    logicdata_buf[disequalities_offs] = disequalities_sz;
+    logicdata_buf[ites_offs] = ites_sz;
+
+    int equalities_p = equalities_offs+1;
+    int disequalities_p = disequalities_offs+1;
+    int ites_p = ites_offs+1;
+    for (int i = 0; i < symbols.size(); i++) {
+        if (equalities.contains(symbols[i]))
+            logicdata_buf[equalities_p ++] = symbols[i].x;
+        if (disequalities.contains(symbols[i]))
+            logicdata_buf[disequalities_p ++] = symbols[i].x;
+        if (ites.contains(symbols[i]))
+            logicdata_buf[ites_p ++] = symbols[i].x;
+    }
+}
+
+void Logic::deserializeLogicData(int*& logicdata_buf)
+{
+
+}
+
+void Logic::serializeTermSystem(int*& termstore_buf, int*& symstore_buf, int*& idstore_buf, int*& sortstore_buf, int*& logicdata_buf)
 {
     idstore_buf   = id_store.serializeIdentifiers();
     sortstore_buf = sort_store.serializeSorts();
     symstore_buf  = sym_store.serializeSymbols();
     termstore_buf = term_store.serializeTerms();
+    serializeLogicData(logicdata_buf);
 }
 
-void Logic::deserializeTermSystem(int*& termstore_buf, int*& symstore_buf, int*& idstore_buf, int*& sortstore_buf)
+void Logic::deserializeTermSystem(int*& termstore_buf, int*& symstore_buf, int*& idstore_buf, int*& sortstore_buf, int*& logicdata_buf)
 {
     id_store.deserializeIdentifiers(idstore_buf);
     sort_store.deserializeSorts(sortstore_buf);
     sym_store.deserializeSymbols(symstore_buf);
     term_store.deserializeTerms(termstore_buf);
+    deserializeLogicData(logicdata_buf);
 }
 
 

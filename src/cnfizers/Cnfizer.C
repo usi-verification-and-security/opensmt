@@ -866,6 +866,10 @@ void Cnfizer::getCnfState(CnfState& cs)
     out[0] = 0;
     // The cnf
     cs.cnf = solver.cnfToString();
+    if (!solver.okay()) {
+        char* tmp = cs.cnf;
+        asprintf(&cs.cnf, "%s\n%s 0", tmp, solver.litToString(~Lit(tmap.termToVar[logic.getTerm_true()])));
+    }
 
     // The mapping to terms
 #ifdef PEDANTIC_DEBUG

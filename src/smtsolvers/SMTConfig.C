@@ -336,6 +336,10 @@ const char* SMTConfig::o_proof_transf_trav = ":proof-reduce-expose";
 const char* SMTConfig::o_proof_num_graph_traversals = ":proof-num-graph-traversals";
 const char* SMTConfig::o_proof_red_trans = ":proof-num-global-iterations";
 const char* SMTConfig::o_proof_set_inter_algo = ":proof-interpolation-algorithm";
+const char* SMTConfig::o_sat_time_limit = ":time-limit";
+const char* SMTConfig::o_sat_dec_limit = ":resource-limit";
+const char* SMTConfig::o_dump_state = ":dump-state";
+const char* SMTConfig::o_dump_only = ":dump-only";
 
 void
 SMTConfig::initializeConfig( )
