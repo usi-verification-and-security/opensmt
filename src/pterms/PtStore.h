@@ -89,8 +89,8 @@ class PtStore {
     }
     PTRef getFromCplxMap(PTLKey& k) { return cplx_map[k]; }
 
-    int* serializeTerms();
-    void deserializeTerms(int*);
+    int* serializeTerms() const;
+    void deserializeTerms(const int*);
 };
 
 #endif

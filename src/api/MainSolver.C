@@ -31,6 +31,138 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#ifdef USE_GZ
+#include <zlib.h>
+#include <stdio.h>
+#endif
+
+#ifdef USE_GZ
+#if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(__CYGWIN__)
+#include <fcntl.h>
+#include <io.h>
+#define SET_BINARY_MODE(file) setmode(fileno(fil), O_BINARY)
+#else
+#define SET_BINARY_MODE(file)
+#endif
+#define CHUNK_SZ 1048576
+#endif
+
+#ifdef USE_GZ
+int MainSolver::compress_buf(const int* buf_in, int*& buf_out, int sz, int& sz_out) const
+{
+    unsigned char* in = (unsigned char*) buf_in;
+    unsigned char* out = (unsigned char*) buf_out;
+
+    z_stream strm;
+    int ret, flush;
+    unsigned have;
+
+    int out_buf_sz = CHUNK_SZ;
+    out = (unsigned char*)malloc(out_buf_sz);
+
+    int in_buf_p  = 0;
+    int out_buf_p = 0;
+
+    strm.zalloc  = Z_NULL;
+    strm.zfree   = Z_NULL;
+    strm.opaque  = Z_NULL;
+    ret = deflateInit(&strm, Z_DEFAULT_COMPRESSION);
+    if (ret != Z_OK)
+        return ret;
+
+    // Compress buf_in until sz chars have been processed
+    int bytes_left = sz;
+
+    do {
+        int in_buf_sz = bytes_left < sz ? bytes_left : sz;
+        flush = bytes_left <= sz ? Z_FINISH : Z_NO_FLUSH;
+
+        strm.next_in = in + in_buf_p;
+        strm.avail_in = in_buf_sz;
+
+        do {
+            int avail_out = out_buf_sz - out_buf_p;
+            if (avail_out == 0) {
+                out_buf_sz += CHUNK_SZ;
+                out = (unsigned char*)realloc(out, out_buf_sz);
+                avail_out = out_buf_sz - out_buf_p;
+            }
+            strm.avail_out = avail_out;
+            strm.next_out = out+out_buf_p;
+
+            if ((ret = deflate(&strm, flush)) == Z_STREAM_ERROR)
+                return Z_STREAM_ERROR;
+
+            have = avail_out - strm.avail_out;
+            out_buf_p += have;
+        } while (strm.avail_out == 0);
+
+        assert(strm.avail_in == 0);
+    } while (flush != Z_FINISH);
+
+    assert(ret == Z_STREAM_END);
+    deflateEnd(&strm);
+
+    out = (unsigned char*) realloc(out, out_buf_p);
+    buf_out = (int*)out;
+    sz_out = out_buf_p;
+    return Z_OK;
+}
+
+int MainSolver::decompress_buf(int* buf_in, int*& buf_out, int sz, int& sz_out ) const
+{
+    int ret;
+    unsigned have;
+    z_stream strm;
+
+    unsigned char* in = (unsigned char*) buf_in;
+    unsigned char* out = (unsigned char*) buf_out;
+    int out_p = 0;
+
+    int out_sz = CHUNK_SZ;
+    out = (unsigned char*) malloc(out_sz);
+
+
+    strm.zalloc   = Z_NULL;
+    strm.zfree    = Z_NULL;
+    strm.opaque   = Z_NULL;
+    strm.avail_in = 0;
+    strm.next_in  = Z_NULL;
+
+    ret = inflateInit(&strm);
+    if (ret != Z_OK)
+        return ret;
+
+    do {
+        strm.avail_in = sz;
+        if (strm.avail_in == 0) break;
+        strm.next_in = in;
+        do {
+            if (out_sz - out_p == 0) {
+                out_sz += CHUNK_SZ;
+                out = (unsigned char*) realloc(out, out_sz);
+            }
+            strm.avail_out = out_sz - out_p;
+            strm.next_out = out + out_p;
+
+            ret = inflate(&strm, Z_NO_FLUSH);
+            assert(ret != Z_STREAM_ERROR);
+            if (ret == Z_NEED_DICT) return Z_DATA_ERROR;
+            if (ret == Z_DATA_ERROR) return ret;
+            if (ret == Z_MEM_ERROR) return ret;
+
+            have = (out_sz - out_p) - strm.avail_out;
+            out_p += have;
+        } while (strm.avail_out == 0);
+    } while (ret != Z_STREAM_END);
+
+    inflateEnd(&strm);
+    sz_out = out_p;
+    buf_out = (int*) out;
+
+    return ret == Z_STREAM_END ? Z_OK : Z_DATA_ERROR;
+}
+#endif
 
 sstat MainSolver::simplifyFormulas(char** err_msg) {
     sstat  state = s_Undef;
@@ -673,13 +805,16 @@ bool MainSolver::readSolverState(const char* file, char** msg)
         *msg = strerror(errno);
         return false;
     }
+
+    off_t size;
+    int res;
     struct stat stat_buf;
-    int res = fstat(fd, &stat_buf);
+    res = fstat(fd, &stat_buf);
     if (res == -1) {
         *msg = strerror(errno);
         return false;
     }
-    off_t size = stat_buf.st_size;
+    size = stat_buf.st_size;
 
     // Allocate space for the contents and a terminating '\0'.
     int* contents = (int*)malloc(size+1);
@@ -688,6 +823,19 @@ bool MainSolver::readSolverState(const char* file, char** msg)
         *msg = strerror(errno);
         return false;
     }
+
+#ifdef USE_GZ
+    int* contents_uncompressed;
+    int sz_out;
+    if (decompress_buf(contents, contents_uncompressed, size, sz_out) != Z_OK) {
+        asprintf(msg, "decompression error");
+        return false;
+    }
+    free(contents);
+    contents = contents_uncompressed;
+    size = sz_out;
+    assert(contents[0] == sz_out);
+#endif
     ((char*)contents)[size] = '\0'; // Add the terminating '\0'
 
     int map_offs = contents[map_offs_idx];
@@ -747,6 +895,9 @@ bool MainSolver::readSolverState(const char* file, char** msg)
 
     int logicstore_sz = contents[logicstore_offs];
     int *logicstore_buf = (int*)malloc(contents[logicstore_offs]*sizeof(int));
+    for (int i = 0; i < logicstore_sz; i++)
+        logicstore_buf[i] = contents[logicstore_offs+i];
+
     logic.deserializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf);
     free(termstore_buf);
     free(symstore_buf);
@@ -800,25 +951,28 @@ bool MainSolver::readSolverState(const char* file, char** msg)
 // Write the solver state to a partly binary file (cnf is in clear text
 // and written last).  Output format looks like this:
 //
-// +--------+-----------+-------------+-------+--------------+---------------+--------+
-// |map_offs|tstore_offs|symstore_offs|id_offs|sortstore_offs|logicstore_offs|cnf_offs|
-// +--------+-----------+-------------+-------+--------------+---------------+--------+
-// |map_sz              | <map data>                                                  |
-// +--------------------+-------------------------------------------------------------+
-// |tstore_sz           | <tstore data>                                               |
-// +--------------------+-------------------------------------------------------------+
-// |symstore_sz         | <symstore data>                                             |
-// +--------------------+-------------------------------------------------------------+
-// |idstore_sz          | <idstore data>                                              |
-// +--------------------+-------------------------------------------------------------+
-// |sortstore_sz        | <sortstore data>                                            |
-// +--------------------+-------------------------------------------------------------+
-// |logicstore_sz       | <logicstore data>                                           |
-// +--------------------+-------------------------------------------------------------+
-// |<cnf data>                                                                        |
-// +----------------------------------------------------------------------------------+
+// +--+-----+-----------+-------------+-------+--------------+---------------+-----------+
+// |sz|map_offs|tstore_offs|symstore_offs|id_offs|sortstore_offs|logicstore_offs|cnf_offs|
+// +--------+-----------+-------------+-------+--------------+---------------+-----------+
+// |map_sz              | <map data>                                                     |
+// +--------------------+----------------------------------------------------------------+
+// |tstore_sz           | <tstore data>                                                  |
+// +--------------------+----------------------------------------------------------------+
+// |symstore_sz         | <symstore data>                                                |
+// +--------------------+----------------------------------------------------------------+
+// |idstore_sz          | <idstore data>                                                 |
+// +--------------------+----------------------------------------------------------------+
+// |sortstore_sz        | <sortstore data>                                               |
+// +--------------------+----------------------------------------------------------------+
+// |logicstore_sz       | <logicstore data>                                              |
+// +--------------------+----------------------------------------------------------------+
+// |<cnf data>                                                                           |
+// +-------------------------------------------------------------------------------------+
 //
-// The sizes include the storage of the size itself
+// The sizes include the storage of the size itself.  All sizes with the
+// exception of sz are given in number of integers.  sz is given in
+// number of characters.
+//
 //
 bool MainSolver::writeSolverState(const char* file, char** msg)
 {
@@ -853,14 +1007,14 @@ bool MainSolver::writeSolverState(const char* file, char** msg)
 
     // All stores contain their sizes, hence the minimum size of 1
 
-    int idstore_sz = idstore_buf[0];
-    int sortstore_sz = sortstore_buf[0];
-    int map_sz = cs.map.size()+1;
-    int symstore_sz = symstore_buf[0];
-    int termstore_sz = termstore_buf[0];
+    int idstore_sz    = idstore_buf[0];
+    int sortstore_sz  = sortstore_buf[0];
+    int map_sz        = cs.map.size()+1;
+    int symstore_sz   = symstore_buf[0];
+    int termstore_sz  = termstore_buf[0];
     int logicstore_sz = logicstore_buf[0];
 
-    int hdr_sz = 7; // The offsets
+    int hdr_sz = 8; // The offsets
     // allocate space for the map, the cnf, the offset indices and the
     // sizes
     int buf_sz = (termstore_sz + symstore_sz + idstore_sz + sortstore_sz + map_sz + logicstore_sz)*sizeof(int)
@@ -877,13 +1031,13 @@ bool MainSolver::writeSolverState(const char* file, char** msg)
 #endif
     int* buf = (int*)malloc(buf_sz);
 
-    buf[map_offs_idx]       = cnf_offs_idx+1;
-    buf[termstore_offs_idx] = buf[map_offs_idx]+map_sz;
-    buf[symstore_offs_idx]  = buf[termstore_offs_idx] + termstore_sz;
-    buf[idstore_offs_idx]   = buf[symstore_offs_idx] + symstore_sz;
-    buf[sortstore_offs_idx] = buf[idstore_offs_idx] + idstore_sz;
-    buf[logicstore_offs_idx]= buf[sortstore_offs_idx] + sortstore_sz;
-    buf[cnf_offs_idx]       = buf[logicstore_offs_idx]+logicstore_sz;
+    buf[map_offs_idx]        = cnf_offs_idx+1;
+    buf[termstore_offs_idx]  = buf[map_offs_idx]+map_sz;
+    buf[symstore_offs_idx]   = buf[termstore_offs_idx] + termstore_sz;
+    buf[idstore_offs_idx]    = buf[symstore_offs_idx] + symstore_sz;
+    buf[sortstore_offs_idx]  = buf[idstore_offs_idx] + idstore_sz;
+    buf[logicstore_offs_idx] = buf[sortstore_offs_idx] + sortstore_sz;
+    buf[cnf_offs_idx]        = buf[logicstore_offs_idx]+logicstore_sz;
 
 
     buf[buf[map_offs_idx]]          = map_sz;
@@ -967,16 +1121,32 @@ bool MainSolver::writeSolverState(const char* file, char** msg)
         my_t.compare(other_t);
     }
 #endif
+    // Write the size in characters
+    buf[0] = buf_sz - 1;
+#ifdef USE_GZ
+    // Compress the buffer and update the write info accordingly
+    int* buf_out;
+    int rval = compress_buf(buf, buf_out, buf_sz-1, buf_sz);
+    if (rval != Z_OK) {
+        asprintf(msg, "compression error");
+        close(fd);
+        return false;
+    }
+    int write_sz = buf_sz;
+#else
+    int write_sz = buf_sz - 1;
+#endif
 
-    int res = write(fd, buf, buf_sz-1);
+    int res = write(fd, buf_out, write_sz);
     if (res == -1) {
         *msg = strerror(errno);
         return false;
-    } else if (res != buf_sz-1) {
+    } else if (res != write_sz) {
         asprintf(msg, "Not all data was written.  Out of space?");
         close(fd);
         return false;
     }
+
 #ifdef PEDANTIC_DEBUG
     cerr << "Printed " << res  << " bytes" << endl;
 #endif

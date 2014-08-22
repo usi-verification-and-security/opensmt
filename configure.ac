@@ -145,6 +145,24 @@ AM_CONDITIONAL([ENABLE_PEDANTIC], [test "$enable_pedantic" = "yes"])
 echo "Do pedantic assertion checks... $enable_pedantic"
 
 #
+# Enable compression for dump files
+#
+AC_ARG_ENABLE(compress,
+  AC_HELP_STRING([--enable-compress],
+                 [compress the dump files @<:@yes@:>@]),
+  [:],
+  [enable_compress="yes"])
+
+if test $enable_compress = "yes" ;
+then
+  config_compress="-DUSE_GZ"
+else
+  config_compress=""
+fi
+AM_CONDITIONAL([ENABLE_PEDANTIC], [test "$enable_compress" = "yes"])
+echo "Use compression on output files... $enable_compress"
+
+#
 # Enable Stupid Theory Propagation
 #
 AC_ARG_ENABLE(clever_theoryprop,
@@ -313,7 +331,7 @@ then
   exit
 fi
 
-def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_oldsubstitution $config_custom_memalloc $config_term_explanations"
+def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_oldsubstitution $config_custom_memalloc $config_term_explanations $config_compress"
 comp_flags="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization_compiler"
 
 def_flags=`echo ${def_flags} |sed 's/ [ ]*/ /g'`
@@ -337,7 +355,7 @@ if test $NONSTDGMPPATH = 1 ; then
   AM_LDFLAGS="$AM_LDFLAGS -L$with_gmp/lib"
 fi
 
-# Allow user to use a GMP lib in a non-standard location
+# Allow user to use the readline lib in a non-standard location
 AC_ARG_WITH([readline],
 	    [AS_HELP_STRING([--with-readline=prefix],
 			    [Use this when readline is in a non-standard location])],
@@ -348,6 +366,10 @@ if test $NONSTDREADLINEPATH = 1 ; then
   AM_CFLAGS="$AM_CFLAGS -I$with_readline/include"
   AM_CXXFLAGS="$AM_CXXFLAGS -I$with_readline/include"
   AM_LDFLAGS="$AM_LDFLAGS -L$with_readline/lib"
+fi
+
+if test "$config_compress = 'yes'"; then
+    AM_LDFLAGS="$AM_LDFLAGS -lz"
 fi
 
 AC_SUBST([AM_CFLAGS])

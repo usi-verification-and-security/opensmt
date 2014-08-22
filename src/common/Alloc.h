@@ -77,8 +77,8 @@ class RegionAllocator
         sz = cap = wasted_ = 0;
     }
 
-    int* serialize();
-    void deserialize(int*);
+    int* serialize() const;
+    void deserialize(const int*);
 };
 
 template<class T>
@@ -124,7 +124,7 @@ RegionAllocator<T>::alloc(int size)
 }
 
 template<class T>
-int* RegionAllocator<T>::serialize()
+int* RegionAllocator<T>::serialize() const
 {
     assert(sizeof(T) % sizeof(int) == 0);
     int buf_sz = 4*sizeof(int) + sz*sizeof(T);
@@ -141,7 +141,7 @@ int* RegionAllocator<T>::serialize()
 }
 
 template<class T>
-void RegionAllocator<T>::deserialize(int* buf)
+void RegionAllocator<T>::deserialize(const int* buf)
 {
     sz = buf[1];
     cap = buf[2];

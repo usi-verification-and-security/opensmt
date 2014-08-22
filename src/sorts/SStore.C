@@ -129,7 +129,7 @@ SRef SStore::newSort(IdRef idr, vec<SRef>& rest)
 //    SRefToSort.push(s);
 //}
 
-int* IdentifierStore::serializeIdentifiers()
+int* IdentifierStore::serializeIdentifiers() const
 {
     int* idstr_buf = isa.serialize();
     int* id_buf = ia.serialize();
@@ -154,7 +154,7 @@ int* IdentifierStore::serializeIdentifiers()
     return buf;
 }
 
-void IdentifierStore::deserializeIdentifiers(int* buf)
+void IdentifierStore::deserializeIdentifiers(const int* buf)
 {
     int buf_sz = buf[0];
     int str_offs = buf[1];
@@ -168,7 +168,7 @@ void IdentifierStore::deserializeIdentifiers(int* buf)
 //
 // Serialize the sorts
 //
-int* SStore::serializeSorts()
+int* SStore::serializeSorts() const
 {
     int* buf = NULL;
     int* idstore_buf = is.serializeIdentifiers();
@@ -215,7 +215,7 @@ int* SStore::serializeSorts()
     return buf;
 }
 
-void SStore::deserializeSorts(int* buf)
+void SStore::deserializeSorts(const int* buf)
 {
     int idstore_buf_offs     = buf[1];
     int sortstrstore_buf_offs= buf[2];

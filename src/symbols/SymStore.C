@@ -73,7 +73,7 @@ SymRef SymStore::newSymb(const char* fname, const vec<SRef>& args, const char** 
     return tr;
 }
 
-int* SymStore::serializeSymbols()
+int* SymStore::serializeSymbols() const
 {
     int* buf = NULL;
 
@@ -134,17 +134,17 @@ int* SymStore::serializeSymbols()
     return buf;
 }
 
-void SymStore::deserializeSymbols(int* buf)
+void SymStore::deserializeSymbols(const int* buf)
 {
 #ifdef PEDANTIC_DEBUG
     cerr << "SymStore deserializeSymbols got " << buf[0] << " words of data" << endl;
 #endif
     int symstore_buf_offs = buf[symstore_buf_offs_idx];
-    int* symstore_buf = &buf[symstore_buf_offs];
+    const int* symstore_buf = &buf[symstore_buf_offs];
     int symref_buf_offs = buf[symref_buf_offs_idx];
-    int* symref_buf = &buf[symref_buf_offs];
+    const int* symref_buf = &buf[symref_buf_offs];
     int symname_buf_offs = buf[symname_buf_offs_idx];
-    int* symname_buf = &buf[symname_buf_offs];
+    const int* symname_buf = &buf[symname_buf_offs];
 #ifdef PEDANTIC_DEBUG
     cerr << "Reading " << buf[symstore_buf_offs] << " words for symbols" << endl;
 #endif

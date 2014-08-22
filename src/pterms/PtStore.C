@@ -153,7 +153,7 @@ char* PtStore::printTerm(PTRef tr, bool ext) const
     return tms;
 }
 
-int* PtStore::serializeTerms()
+int* PtStore::serializeTerms() const
 {
     int* ptstore_buf = pta.serialize();
     int ptstore_buf_sz = ptstore_buf[0];
@@ -167,8 +167,8 @@ int* PtStore::serializeTerms()
     return buf;
 }
 
-void PtStore::deserializeTerms(int* buf)
+void PtStore::deserializeTerms(const int* buf)
 {
-    int* ptstore_buf = &buf[buf[ptstore_buf_idx]];
+    const int* ptstore_buf = &buf[buf[ptstore_buf_idx]];
     pta.deserialize(ptstore_buf);
 }

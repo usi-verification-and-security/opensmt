@@ -873,11 +873,23 @@ bool Logic::isAtom(PTRef r) const {
     return false;
 }
 
-void Logic::serializeLogicData(int*& logicdata_buf)
+//
+// Logic data contains the maps for equalities, disequalities and ites
+// +-----------------------------------+
+// |size|eqs_offs|diseqs_offs|ites_offs|
+// +----+---+----+-----------+---------+
+// |eqs_size| <eqs_data>               |
+// +--------+--+-----------------------+
+// |diseqs_size| <diseqs_data>         |
+// +---------+-+-----------------------+
+// |ites_size| <ites_data>             |
+// +---------+-------------------------+
+//
+void Logic::serializeLogicData(int*& logicdata_buf) const
 {
-    int equalities_sz    = 0;
-    int disequalities_sz = 0;
-    int ites_sz          = 0;
+    int equalities_sz    = 1;
+    int disequalities_sz = 1;
+    int ites_sz          = 1;
 
     const vec<SymRef> &symbols = sym_store.getSymbols();
     for (int i = 0; i < symbols.size(); i++) {
@@ -917,12 +929,35 @@ void Logic::serializeLogicData(int*& logicdata_buf)
     }
 }
 
-void Logic::deserializeLogicData(int*& logicdata_buf)
+void Logic::deserializeLogicData(const int* logicdata_buf)
 {
+    const int* eqs_buf = &logicdata_buf[logicdata_buf[equalities_offs_idx]];
+    const int* diseqs_buf = &logicdata_buf[logicdata_buf[disequalities_offs_idx]];
+    const int* ites_buf = &logicdata_buf[logicdata_buf[ites_offs_idx]];
 
+    int eqs_sz = eqs_buf[0];
+    for (int i = 0; i < eqs_sz-1; i++) {
+        SymRef sr = {(uint32_t)eqs_buf[i+1]};
+        if (!equalities.contains(sr))
+            equalities.insert(sr, true);
+    }
+
+    int diseqs_sz = diseqs_buf[0];
+    for (int i = 0; i < diseqs_sz - 1; i++) {
+        SymRef sr = {(uint32_t)diseqs_buf[i+1]};
+        if (!disequalities.contains(sr))
+            disequalities.insert(sr, true);
+    }
+
+    int ites_sz = ites_buf[0];
+    for (int i = 0; i < ites_sz - 1; i++) {
+        SymRef sr = {(uint32_t)ites_buf[i+1]};
+        if (!ites.contains(sr))
+            ites.insert(sr, true);
+    }
 }
 
-void Logic::serializeTermSystem(int*& termstore_buf, int*& symstore_buf, int*& idstore_buf, int*& sortstore_buf, int*& logicdata_buf)
+void Logic::serializeTermSystem(int*& termstore_buf, int*& symstore_buf, int*& idstore_buf, int*& sortstore_buf, int*& logicdata_buf) const
 {
     idstore_buf   = id_store.serializeIdentifiers();
     sortstore_buf = sort_store.serializeSorts();
@@ -931,7 +966,7 @@ void Logic::serializeTermSystem(int*& termstore_buf, int*& symstore_buf, int*& i
     serializeLogicData(logicdata_buf);
 }
 
-void Logic::deserializeTermSystem(int*& termstore_buf, int*& symstore_buf, int*& idstore_buf, int*& sortstore_buf, int*& logicdata_buf)
+void Logic::deserializeTermSystem(const int* termstore_buf, const int* symstore_buf, const int* idstore_buf, const int* sortstore_buf, const int* logicdata_buf)
 {
     id_store.deserializeIdentifiers(idstore_buf);
     sort_store.deserializeSorts(sortstore_buf);

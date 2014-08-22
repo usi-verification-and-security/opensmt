@@ -52,8 +52,8 @@ class SymStore {
 
     const vec<SymRef>& getSymbols()             const { return symbols; }
 
-    int* serializeSymbols();
-    void deserializeSymbols(int* buf);
+    int* serializeSymbols() const;
+    void deserializeSymbols(const int* buf);
 #ifdef PEDANTIC_DEBUG
     void compare(SymStore&);
 #endif

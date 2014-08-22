@@ -65,8 +65,8 @@ class IdentifierStore
         }
     }
     const char* getName(IdRef ir) { return isa[ia[ir].getNameRef()].getName(); }
-    int* serializeIdentifiers();
-    void deserializeIdentifiers(int*);
+    int* serializeIdentifiers() const;
+    void deserializeIdentifiers(const int*);
 };
 
 class SStore
@@ -111,8 +111,8 @@ class SStore
     const char* getName     (SRef sr) { return ssa[sa[sr].getNameRef()].getName(); }
     Sort&   getSort         (SRef sr) { return sa[sr]; }
 
-    int*    serializeSorts();
-    void    deserializeSorts(int*);
+    int*    serializeSorts() const;
+    void    deserializeSorts(const int*);
 };
 
 #endif
