@@ -357,9 +357,6 @@ Enode * Egraph::getInterpolants( logic_t & l )
 //}
 //
 void Egraph::simplifyDisequality(PtChild& ptc, bool simplify) {
-    assert(logic.isDisequality(ptc.tr));
-    if (!enode_store.dist_classes.contains(ptc.tr))
-        enode_store.addDistClass(ptc.tr);
 
     if (!simplify) return;
 
@@ -457,6 +454,9 @@ void Egraph::declareTerm(PtChild ptc) {
         if (ptc.parent != PTRef_Undef)
             term_store[ptc.parent][ptc.pos] = out;
     }
+    if (logic.isDisequality(ptc.tr) && !enode_store.dist_classes.contains(ptc.tr))
+        enode_store.addDistClass(ptc.tr);
+
 }
 
 // Declare a tree of terms
