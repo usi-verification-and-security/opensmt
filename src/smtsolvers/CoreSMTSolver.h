@@ -678,6 +678,15 @@ inline char* CoreSMTSolver::cnfToString()
         free(c_str);
         free(f_old);
     }
+    if (config.sat_dump_learnts()) {
+        for (int i = 0; i < learnts.size(); i++) {
+            char* c_str = clauseToString(*learnts[i]);
+            f_old = f_str;
+            asprintf(&f_str, "%s\n%s", f_old, c_str);
+            free(c_str);
+            free(f_old);
+        }
+    }
     return f_str;
 }
 //=================================================================================================

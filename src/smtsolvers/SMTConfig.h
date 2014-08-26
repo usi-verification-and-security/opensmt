@@ -123,6 +123,7 @@ private:
   static const char* o_sat_dec_limit;
   static const char* o_dump_state;
   static const char* o_dump_only;
+  static const char* o_sat_dump_learnts;
 private:
   Info          info_Empty;
   Option        option_Empty;
@@ -330,6 +331,9 @@ public:
   int dump_only() const
     { return optionTable.contains(o_dump_only) ?
         optionTable[o_dump_only].getValue().numval : 0; }
+  int sat_dump_learnts() const
+    { return optionTable.contains(o_sat_dump_learnts) ?
+        optionTable[o_sat_dump_learnts].getValue().numval : 0; }
 
 //  int          produce_stats;                // Should print statistics ?
   int          print_stats;                  // Should print statistics ?

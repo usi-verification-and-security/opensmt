@@ -340,6 +340,7 @@ const char* SMTConfig::o_sat_time_limit = ":time-limit";
 const char* SMTConfig::o_sat_dec_limit = ":resource-limit";
 const char* SMTConfig::o_dump_state = ":dump-state";
 const char* SMTConfig::o_dump_only = ":dump-only";
+const char* SMTConfig::o_sat_dump_learnts = ":dump-learnts";
 
 void
 SMTConfig::initializeConfig( )
