@@ -1786,10 +1786,8 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 
     if (conflicts % 1000 == 0 && stop_time >= 0 && time(NULL) >= stop_time) {
         opensmt::stop = true; return l_Undef; }
-#ifdef PEDANTIC_DEBUG
-    if (conflicts % 10 == 0 && stop_decs >= 0 && decisions >= stop_decs) {
+    if (conflicts % 1000 == 0 && stop_decs >= 0 && decisions >= stop_decs) {
         opensmt::stop = true; return l_Undef; }
-#endif
 
     Clause* confl = propagate();
     if (confl != NULL){
