@@ -70,6 +70,16 @@ class Option {
     inline const ConfValue& getValue() const { return value; }
 };
 
+// Type safe wrapper for split types
+typedef struct SpType { int t; } SpType;
+
+static const char* spts_guiding = "guiding-path";
+static const char* spts_scatter = "scattering";
+static const char* spts_none = "none";
+
+static const struct SpType spt_none = { 0 };
+static const struct SpType spt_guiding = { 1 };
+static const struct SpType spt_scatter = { 2 };
 //
 // Holds informations about the configuration of the solver
 //
@@ -124,6 +134,17 @@ private:
   static const char* o_dump_state;
   static const char* o_dump_only;
   static const char* o_sat_dump_learnts;
+  static const char* o_sat_split_type;
+  static const char* o_sat_split_inittune;
+  static const char* o_sat_split_midtune;
+  static const char* o_sat_split_num;
+
+  static const char* s_err_not_str;
+  static const char* s_err_not_bool;
+  static const char* s_err_not_num;
+  static const char* s_err_seed_zero;
+  static const char* s_err_unknown_split;
+
 private:
   Info          info_Empty;
   Option        option_Empty;
@@ -161,7 +182,7 @@ public:
     if ( docset )         err.close( );
   }
 
-  bool          setOption(const char* name, const Option& value);
+  bool          setOption(const char* name, const Option& value, const char*& msg);
   const Option& getOption(const char* name) const;
 
   bool          setInfo  (const char* name, const Info& value);
@@ -334,6 +355,28 @@ public:
   int sat_dump_learnts() const
     { return optionTable.contains(o_sat_dump_learnts) ?
         optionTable[o_sat_dump_learnts].getValue().numval : 0; }
+  const SpType sat_split_type() const {
+      if (optionTable.contains(o_sat_split_type)) {
+        const char* type = optionTable[o_sat_split_type].getValue().strval;
+        if (strcmp(type, spts_guiding) == 0)
+            return spt_guiding;
+        else if (strcmp(type, spts_scatter) == 0)
+            return spt_scatter;
+      } else return spt_none; }
+  int sat_split_inittune() const {
+      return optionTable.contains(o_sat_split_inittune) ?
+              optionTable[o_sat_split_inittune].getValue().numval :
+              -1; }
+  int sat_split_midtune() const {
+      return optionTable.contains(o_sat_split_midtune) ?
+              optionTable[o_sat_split_midtune].getValue().numval :
+              -1; }
+  int sat_split_num() const {
+      return optionTable.contains(o_sat_split_num) ?
+              optionTable[o_sat_split_num].getValue().numval :
+              -1; }
+
+
 
 //  int          produce_stats;                // Should print statistics ?
   int          print_stats;                  // Should print statistics ?

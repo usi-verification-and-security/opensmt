@@ -96,9 +96,10 @@ void Interpret::setOption(ASTNode& n) {
         name = strdup(n.getValue());
 
     Option value(n);
-    bool rval = config.setOption(name, value);
+    const char* msg = "ok";
+    bool rval = config.setOption(name, value, msg);
     if (rval == false)
-        notify_formatted(true, "set-option failed", logic.getName().c_str());
+        notify_formatted(true, "set-option failed: %s", msg);
 }
 
 void Interpret::getOption(ASTNode& n) {

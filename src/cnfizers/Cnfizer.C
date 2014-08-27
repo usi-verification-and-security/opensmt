@@ -865,11 +865,12 @@ void Cnfizer::getCnfState(CnfState& cs)
     char* out = (char*)malloc(1);
     out[0] = 0;
     // The cnf
-    cs.cnf = solver.cnfToString();
-    if (!solver.okay()) {
-        char* tmp = cs.cnf;
-        asprintf(&cs.cnf, "%s\n%s 0", tmp, solver.litToString(~Lit(tmap.termToVar[logic.getTerm_true()])));
-    }
+    solver.cnfToString(cs);
+//    cs.setCnf(solver.cnfToString());
+//    if (!solver.okay()) {
+//        char* tmp = cs.cnf;
+//        asprintf(&cs.cnf, "%s\n%s 0", tmp, solver.litToString(~Lit(tmap.termToVar[logic.getTerm_true()])));
+//    }
 
     // The mapping to terms
 #ifdef PEDANTIC_DEBUG
@@ -877,7 +878,7 @@ void Cnfizer::getCnfState(CnfState& cs)
 #endif
     for (int i = 0; i < solver.nVars(); i++) {
         PTRef tr = tmap.varToTerm[i];
-        cs.map.push({i, tr});
+        cs.addToMap({i, tr});
 #ifdef PEDANTIC_DEBUG
         old = out;
         char* map_s;

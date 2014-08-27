@@ -59,18 +59,18 @@ class DimacsParser {
 
     static inline bool isEof(const char*   in) { return *in == '\0'; }
 
-    static void skipWhitespace(char*& in) {
+    static void skipWhitespace(const char*& in) {
         while ((*in >= 9 && *in <= 13) || *in == 32)
             ++in; }
 
-    static void skipLine(char*& in) {
+    static void skipLine(const char*& in) {
         for (;;){
             if (isEof(in)) return;
             if (*in == '\n') { ++in; return; }
             ++in; } }
 
 
-    static int parseInt(char*& in) {
+    static int parseInt(const char*& in) {
         int     val = 0;
         bool    neg = false;
         skipWhitespace(in);
@@ -87,7 +87,7 @@ class DimacsParser {
 
     // String matching: in case of a match the input iterator will be advanced
     // the corresponding number of characters.
-    static bool match(char*& in, const char* str) {
+    static bool match(const char*& in, const char* str) {
         int i;
         for (i = 0; str[i] != '\0'; i++)
             if (in[i] != str[i])
@@ -100,13 +100,13 @@ class DimacsParser {
 
     // String matching: consumes characters eagerly, but does not require
     // random access iterator.
-    static bool eagerMatch(char*& in, const char* str) {
+    static bool eagerMatch(const char*& in, const char* str) {
         for (; *str != '\0'; ++str, ++in)
             if (*str != *in)
                 return false;
         return true; }
 
-    static void readClause(char*& in, SimpSMTSolver& S, vec<Lit>& lits) {
+    static void readClause(const char*& in, SimpSMTSolver& S, vec<Lit>& lits) {
         int     parsed_lit, var;
         lits.clear();
         for (;;) {
@@ -119,7 +119,7 @@ class DimacsParser {
         }
     }
   public:
-    static void parse_DIMACS_main(char* in, SimpSMTSolver& S) {
+    static void parse_DIMACS_main(const char* in, SimpSMTSolver& S) {
         vec<Lit> lits;
         for (;;){
             skipWhitespace(in);

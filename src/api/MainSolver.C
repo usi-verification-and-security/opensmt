@@ -852,7 +852,7 @@ bool MainSolver::readSolverState(const char* file, char** msg)
     for (int i = 0; i < contents[map_offs]-1; i++) {
        PTRef tr;
        tr.x = contents[i+map_offs+1];
-       cs.map.push({i, tr});
+       cs.addToMap({i, tr});
 #ifdef PEDANTIC_DEBUG
        cerr << "  Var " << i << " maps to PTRef " << tr.x << endl;
 #endif
@@ -904,44 +904,48 @@ bool MainSolver::readSolverState(const char* file, char** msg)
     free(sortstore_buf);
     free(idstore_buf);
 
-    asprintf(&cs.cnf, "%s", (char*)(contents + cnf_offs));
+    char* tmp_cnf;
+    asprintf(&tmp_cnf, "%s", (char*)(contents + cnf_offs));
+    cs.setCnf(tmp_cnf);
+    const vec<VarPtPair>& map = cs.getMap();
 #ifdef PEDANTIC_DEBUG
     cerr << "The cnf is" << endl;
-    cerr << cs.cnf << endl;
+    cerr << cs.getCnf() << endl;
     cerr << "The terms are" << endl;
-    for (int i = 0; i < cs.map.size(); i++) {
-        char* tr_s = logic.printTerm(cs.map[i].tr);
+    for (int i = 0; i < map.size(); i++) {
+        char* tr_s = logic.printTerm(map[i].tr);
         cerr << "  " << tr_s << endl;
         free(tr_s);
     }
 #endif
-    for (int i = 0; i < cs.map.size(); i++) {
+
+    for (int i = 0; i < map.size(); i++) {
         if (i >= sat_solver.nVars()) {
             int j = sat_solver.newVar();
             assert(j == i);
         }
         if (tmap.varToTerm.size() > i)
-            assert(tmap.varToTerm[i] == cs.map[i].tr);
+            assert(tmap.varToTerm[i] == map[i].tr);
         else
-            tmap.varToTerm.push(cs.map[i].tr);
+            tmap.varToTerm.push(map[i].tr);
 
-        if (tmap.termToVar.contains(cs.map[i].tr))
-            assert(tmap.termToVar[cs.map[i].tr] == i);
+        if (tmap.termToVar.contains(map[i].tr))
+            assert(tmap.termToVar[map[i].tr] == i);
         else
-            tmap.termToVar.insert(cs.map[i].tr, i);
+            tmap.termToVar.insert(map[i].tr, i);
         if (tmap.varToTheorySymbol.size() > i)
-            assert(tmap.varToTheorySymbol[i] == logic.getPterm(cs.map[i].tr).symb());
+            assert(tmap.varToTheorySymbol[i] == logic.getPterm(map[i].tr).symb());
         else {
-            if (logic.isTheoryTerm(cs.map[i].tr)) {
-                tmap.varToTheorySymbol.push(logic.getPterm(cs.map[i].tr).symb());
+            if (logic.isTheoryTerm(map[i].tr)) {
+                tmap.varToTheorySymbol.push(logic.getPterm(map[i].tr).symb());
                 sat_solver.setFrozen(i, true);
             }
             else tmap.varToTheorySymbol.push(SymRef_Undef);
         }
-        uf_solver.declareTermTree(cs.map[i].tr);
+        uf_solver.declareTermTree(map[i].tr);
     }
     DimacsParser dp;
-    dp.parse_DIMACS_main(cs.cnf, sat_solver);
+    dp.parse_DIMACS_main(cs.getCnf(), sat_solver);
     close(fd);
     free(contents);
     return true;
@@ -1009,7 +1013,7 @@ bool MainSolver::writeSolverState(const char* file, char** msg)
 
     int idstore_sz    = idstore_buf[0];
     int sortstore_sz  = sortstore_buf[0];
-    int map_sz        = cs.map.size()+1;
+    int map_sz        = cs.getMap().size()+1;
     int symstore_sz   = symstore_buf[0];
     int termstore_sz  = termstore_buf[0];
     int logicstore_sz = logicstore_buf[0];
@@ -1018,7 +1022,7 @@ bool MainSolver::writeSolverState(const char* file, char** msg)
     // allocate space for the map, the cnf, the offset indices and the
     // sizes
     int buf_sz = (termstore_sz + symstore_sz + idstore_sz + sortstore_sz + map_sz + logicstore_sz)*sizeof(int)
-                 + (strlen(cs.cnf)+1) + hdr_sz*sizeof(int);
+                 + (strlen(cs.getCnf())+1) + hdr_sz*sizeof(int);
 #ifdef PEDANTIC_DEBUG
     cerr << "Mallocing " << buf_sz << " bytes for the buffer" << endl;
     cerr << "The cnf is " << strlen(cs.cnf)+1 << " bytes" << endl;
@@ -1049,20 +1053,21 @@ bool MainSolver::writeSolverState(const char* file, char** msg)
 #ifdef PEDANTIC_DEBUG
     cerr << "Map:" << endl;
 #endif
-    for (int i = 0; i < cs.map.size(); i++) {
+    for (int i = 0; i < cs.getMap().size(); i++) {
 #ifdef PEDANTIC_DEBUG
         cerr << "  Var " << i << " maps to " << cs.map[i].tr.x << endl;
         cerr << "  Writing it to idx " << buf[map_offs_idx]+i+1 << endl;
 #endif
-        buf[buf[map_offs_idx]+i+1] = cs.map[i].tr.x;
+        buf[buf[map_offs_idx]+i+1] = cs.getMap()[i].tr.x;
     }
 #ifdef PEDANTIC_DEBUG
     cerr << "Will write cnf to index " << buf[cnf_offs_idx] << endl;
 #endif
     char* cnf_buf = (char*) (&buf[buf[cnf_offs_idx]]);
     int i;
-    for (i = 0; cs.cnf[i] != 0; i++)
-        cnf_buf[i] = cs.cnf[i];
+    const char* in_cnf = cs.getCnf();
+    for (i = 0; in_cnf[i] != 0; i++)
+        cnf_buf[i] = in_cnf[i];
     cnf_buf[i] = '\0';
 
     for (i = 0; i < idstore_sz; i++)

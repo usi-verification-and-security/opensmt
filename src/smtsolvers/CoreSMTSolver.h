@@ -65,6 +65,129 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 class Proof;
 #endif
 
+//---------------------------------------------------------------------------------------
+// State for CNFs and mappings for terms
+//
+//
+// Struct for communicating the cnf and the mapping between variables and PTRefs
+//
+
+struct VarPtPair {
+    Var v;
+    PTRef tr;
+};
+
+class CnfState {
+    char*               cnf;
+    vec<VarPtPair>      map;
+    bool                unsat;
+public:
+    CnfState() : cnf(NULL), unsat(false) {};
+    ~CnfState() { free(cnf); }
+    bool                  setUnsat()            { assert(cnf == NULL); unsat = true; }
+    const char*           getCnf()              { return unsat ? "1 -1 0" : cnf; }
+    void                  setCnf(char* cnf_)    { cnf = cnf_; }
+    const vec<VarPtPair>& getMap()              { return map; }
+    void                  addToMap(VarPtPair p) { map.push(p); }
+};
+
+// -----------------------------------------------------------------------------------------
+// The splits
+//
+class SplitData
+{
+    vec<Clause*>&       inst_clauses;   // Reference to the instance clause database
+    int                 clause_idx;     // The index of the first problem clause not contained in the split
+    vec<Lit>&           trail;          // Solver's trail for level 0 clauses
+    vec<int>&           trail_lim;      // Solver's dec level limits
+
+    vec<vec<Lit> >      constraints;    // The split constraints
+    vec<vec<Lit> >      learnts;        // The learnt clauses
+
+    char* litToString(const Lit);
+    template<class C> char* clauseToString(const C&);
+    char* clauseToString(const vec<Lit>&);
+
+  public:
+    SplitData(vec<Clause*>& ic, int c_id, vec<Lit>& t, vec<int>& tl)
+        : inst_clauses(ic)
+        , clause_idx(c_id)
+        , trail(t)
+        , trail_lim(tl)
+    {}
+    void addConstraint(Clause& c) {
+        constraints.push();
+        vec<Lit>& cstr = constraints.last();
+        for (int i = 0; i < c.size(); i++)
+            cstr.push(c[i]); }
+    void addLearnt(Clause& c) {
+        learnts.push();
+        vec<Lit>& learnt = learnts.last();
+        for (int i = 0; i < c.size(); i++)
+            learnt.push(c[i]); }
+    char* splitToString();
+};
+
+inline char* SplitData::litToString(const Lit l)
+{
+    char* l_str;
+    asprintf(&l_str, "%s%d", sign(l) ? "-" : "", var(l)+1);
+    return l_str;
+}
+
+template<class C>
+inline char* SplitData::clauseToString(const C& c)
+{
+    char* c_str = (char*)malloc(1);
+    c_str[0] = 0;
+    char* c_old = c_str;
+    for (int i = 0; i < c.size(); i++) {
+        char* l_str = litToString(c[i]);
+        c_old = c_str;
+        asprintf(&c_str, "%s%s ", c_old, l_str);
+        free(l_str);
+        free(c_old);
+    }
+    c_old = c_str;
+    asprintf(&c_str, "%s0", c_str);
+    free(c_old);
+    return c_str;
+}
+
+inline char* SplitData::splitToString()
+{
+    char* f_str = (char*)malloc(1);
+    f_str[0] = 0;
+    char* f_old = f_str;
+
+    // Units in dl 0
+    for (int i = 0; i < (trail_lim.size() > 0 ? trail_lim[0] : trail.size()); i++) {
+        char* l_str = litToString(trail[i]);
+        f_old = f_str;
+        asprintf(&f_str, "%s%s 0\n", f_old, l_str);
+        free(l_str);
+        free(f_old);
+    }
+
+    // The instance
+    for (int i = 0; i < clause_idx; i++) {
+        char* c_str = clauseToString(*inst_clauses[i]);
+        f_old = f_str;
+        asprintf(&f_str, "%s\n%s", f_old, c_str);
+        free(c_str);
+        free(f_old);
+    }
+    for (int i = 0; i < learnts.size(); i++) {
+        char* c_str = clauseToString<vec<Lit> >(learnts[i]);
+        f_old = f_str;
+        asprintf(&f_str, "%s\n%s", f_old, c_str);
+        free(c_str);
+        free(f_old);
+    }
+    return f_str;
+}
+
+
 //=================================================================================================
 // Solver -- the main class:
 
@@ -182,8 +305,12 @@ class CoreSMTSolver : public SMTSolver
     double learnts_size;
     uint64_t all_learnts;
 
+    // Splits
+    vec<SplitData> splits;
+
   protected:
 
+    static const char* str_unsat_inst;
     // Helper structures:
     //
     struct VarOrderLt {
@@ -342,9 +469,7 @@ class CoreSMTSolver : public SMTSolver
       template<class C>
       void     printClause      (const C& c);
 
-      char*    litToString      (const Lit l);
-      char*    clauseToString   (const Clause& c);
-      char*    cnfToString      ();
+      void     cnfToString      (CnfState&);
 
       lbool    smtSolve         ( );             // Solve
 #ifndef SMTCOMP
@@ -634,61 +759,19 @@ inline void CoreSMTSolver::printClause(const C& c)
   }
 }
 
-inline char* CoreSMTSolver::litToString(const Lit l)
+inline void CoreSMTSolver::cnfToString(CnfState& cs)
 {
-    char* l_str;
-    asprintf(&l_str, "%s%d", sign(l) ? "-" : "", var(l)+1);
-    return l_str;
-}
-
-inline char* CoreSMTSolver::clauseToString(const Clause& c)
-{
-    char* c_str = (char*)malloc(1);
-    c_str[0] = 0;
-    char* c_old = c_str;
-    for (int i = 0; i < c.size(); i++) {
-        char* l_str = litToString(c[i]);
-        c_old = c_str;
-        asprintf(&c_str, "%s%s ", c_old, l_str);
-        free(l_str);
-        free(c_old);
-    }
-    c_old = c_str;
-    asprintf(&c_str, "%s0", c_str);
-    free(c_old);
-    return c_str;
-}
-
-inline char* CoreSMTSolver::cnfToString()
-{
-    char* f_str = (char*)malloc(1);
-    f_str[0] = 0;
-    char* f_old = f_str;
-    for (int i = 0; i < (trail_lim.size() > 0 ? trail_lim[0] : trail.size()); i++) {
-        char* l_str = litToString(trail[i]);
-        f_old = f_str;
-        asprintf(&f_str, "%s%s 0\n", f_old, l_str);
-        free(l_str);
-        free(f_old);
-    }
-    for (int i = 0; i < clauses.size(); i++) {
-        char* c_str = clauseToString(*clauses[i]);
-        f_old = f_str;
-        asprintf(&f_str, "%s\n%s", f_old, c_str);
-        free(c_str);
-        free(f_old);
-    }
+    SplitData sd(clauses, clauses.size(), trail, trail_lim);
     if (config.sat_dump_learnts()) {
-        for (int i = 0; i < learnts.size(); i++) {
-            char* c_str = clauseToString(*learnts[i]);
-            f_old = f_str;
-            asprintf(&f_str, "%s\n%s", f_old, c_str);
-            free(c_str);
-            free(f_old);
-        }
+        for (int i = 0; i < learnts.size(); i++)
+            sd.addLearnt(*learnts[i]);
     }
-    return f_str;
+    if (okay())
+        cs.setCnf(sd.splitToString());
+    else cs.setUnsat();
 }
+
+
 //=================================================================================================
 // Added code
 /*

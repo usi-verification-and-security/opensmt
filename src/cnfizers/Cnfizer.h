@@ -66,22 +66,6 @@ class ValPair {
     lbool getVal ()       const { return v; }
 };
 
-//
-// Struct for communicating the cnf and the mapping between variables and PTRefs
-//
-
-struct VarPtPair {
-    Var v;
-    PTRef tr;
-};
-
-class CnfState {
-public:
-    char*          cnf;
-    vec<VarPtPair> map;
-    CnfState() : cnf(NULL) {};
-    ~CnfState() { free(cnf); }
-};
 
 //
 // Generic class for conversion into CNF

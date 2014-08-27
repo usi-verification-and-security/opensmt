@@ -226,11 +226,15 @@ Option::Option(ASTNode& n) {
     }
 }
 
-bool SMTConfig::setOption(const char* name, const Option& value) {
+//---------------------------------------------------------------------------------
+// SMTConfig
+
+bool SMTConfig::setOption(const char* name, const Option& value, const char*& msg) {
+    msg = "ok";
     // Special options:
     // stats_out
     if (strcmp(name, o_stats_out) == 0) {
-        if (value.getValue().type != O_STR) return false;
+        if (value.getValue().type != O_STR) { msg = s_err_not_str; return false; }
         if (!optionTable.contains(name))
             stats_out.open(value.getValue().strval, std::ios_base::out);
         else if (strcmp(optionTable[name].getValue().strval, value.getValue().strval) != 0) {
@@ -244,7 +248,7 @@ bool SMTConfig::setOption(const char* name, const Option& value) {
 
     // produce stats
     if (strcmp(name, o_produce_stats) == 0) {
-        if (value.getValue().type != O_BOOL) return false;
+        if (value.getValue().type != O_BOOL) { msg = s_err_not_bool; return false; }
         if (value.getValue().numval == 1) {
             // Gets set to true
             if (!optionTable.contains(o_stats_out)) {
@@ -269,9 +273,18 @@ bool SMTConfig::setOption(const char* name, const Option& value) {
     }
 
     if (strcmp(name, o_random_seed) == 0) {
-        if (value.getValue().type != O_NUM) return false;
+        if (value.getValue().type != O_NUM) { msg = s_err_not_num; return false; }
         int seed = value.getValue().numval;
-        if (seed == 0) return false;
+        if (seed == 0) { msg = s_err_seed_zero; return false; }
+    }
+
+    if (strcmp(name, o_sat_split_type) == 0) {
+        if (value.getValue().type != O_STR) { msg = s_err_not_str; return false; }
+        const char* val = value.getValue().strval;
+        if (strcmp(val, spts_guiding) != 0 &&
+                strcmp(val, spts_scatter) != 0 &&
+                strcmp(val, spts_none) != 0)
+        { msg = s_err_unknown_split; return false; }
     }
     if (optionTable.contains(name))
         optionTable.remove(name);
@@ -341,6 +354,17 @@ const char* SMTConfig::o_sat_dec_limit = ":resource-limit";
 const char* SMTConfig::o_dump_state = ":dump-state";
 const char* SMTConfig::o_dump_only = ":dump-only";
 const char* SMTConfig::o_sat_dump_learnts = ":dump-learnts";
+const char* SMTConfig::o_sat_split_type = ":split-type";
+const char* SMTConfig::o_sat_split_inittune = ":split-init-tune";
+const char* SMTConfig::o_sat_split_midtune = ":split-mid-tune";
+const char* SMTConfig::o_sat_split_num = ":split-num";
+
+// Error strings
+const char* SMTConfig::s_err_not_str = "expected string";
+const char* SMTConfig::s_err_not_bool = "expected Boolean";
+const char* SMTConfig::s_err_not_num = "expected number";
+const char* SMTConfig::s_err_seed_zero = "seed cannot be 0";
+const char* SMTConfig::s_err_unknown_split = "unknown split type";
 
 void
 SMTConfig::initializeConfig( )
