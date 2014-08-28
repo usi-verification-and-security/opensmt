@@ -121,6 +121,8 @@ class MainSolver {
     sstat simplifyFormulas(char** err_msg);
     lbool solve() { return ts.solve(); }
 //    static void getTermList(PTRef tr, vec<PtChild>&, Logic& l);
-    bool readSolverState(const char* file, char** msg);
-    bool writeSolverState(const char* file, char** msg);
+    bool readSolverState  (const char* file, char** msg);
+    bool writeState       (const char* file, CnfState& cs, char** msg);
+    bool writeSolverState (const char* file, char** msg);
+    bool writeSolverSplits(const char* file, char** msg);
 };

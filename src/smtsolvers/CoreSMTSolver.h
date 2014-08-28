@@ -97,25 +97,30 @@ public:
 class SplitData
 {
     vec<Clause*>&       inst_clauses;   // Reference to the instance clause database
-    int                 clause_idx;     // The index of the first problem clause not contained in the split
-    vec<Lit>&           trail;          // Solver's trail for level 0 clauses
-    vec<int>&           trail_lim;      // Solver's dec level limits
+    vec<Lit>&           trail;          // Solver's trail for level 0 unit clauses
+    int                 trail_idx;      // First index not on level 0 at the time of insertion
 
     vec<vec<Lit> >      constraints;    // The split constraints
     vec<vec<Lit> >      learnts;        // The learnt clauses
+    vec<vec<Lit> >      instance;       // The copy of the instance as it was when updateInstance was called
 
     char* litToString(const Lit);
     template<class C> char* clauseToString(const C&);
     char* clauseToString(const vec<Lit>&);
 
   public:
-    SplitData(vec<Clause*>& ic, int c_id, vec<Lit>& t, vec<int>& tl)
+    SplitData(vec<Clause*>& ic, vec<Lit>& t, int tl)
         : inst_clauses(ic)
-        , clause_idx(c_id)
         , trail(t)
-        , trail_lim(tl)
+        , trail_idx(tl)
     {}
-    void addConstraint(Clause& c) {
+    SplitData(const SplitData& other)
+        : inst_clauses(other.inst_clauses)
+        , trail(other.trail)
+        , trail_idx(other.trail_idx)
+    { assert(other.instance.size() == 0 && other.constraints.size() == 0 && other.learnts.size() == 0); }
+
+    template<class C> void addConstraint(const C& c) {
         constraints.push();
         vec<Lit>& cstr = constraints.last();
         for (int i = 0; i < c.size(); i++)
@@ -125,7 +130,18 @@ class SplitData
         vec<Lit>& learnt = learnts.last();
         for (int i = 0; i < c.size(); i++)
             learnt.push(c[i]); }
+    void updateInstance() {
+        assert(instance.size() == 0);
+        for (int i = 0; i < inst_clauses.size(); i++) {
+            instance.push();
+            vec<Lit>& c_o = instance.last();
+            Clause& c_i = *(inst_clauses[i]);
+            for (int j = 0; j < c_i.size(); j++)
+                c_o.push(c_i[j]);
+        }
+    }
     char* splitToString();
+    void  cnfToString(CnfState& cs) { cs.setCnf(splitToString()); }
 };
 
 inline char* SplitData::litToString(const Lit l)
@@ -161,7 +177,7 @@ inline char* SplitData::splitToString()
     char* f_old = f_str;
 
     // Units in dl 0
-    for (int i = 0; i < (trail_lim.size() > 0 ? trail_lim[0] : trail.size()); i++) {
+    for (int i = 0; i < (trail_idx > 0 ? trail_idx : trail.size()); i++) {
         char* l_str = litToString(trail[i]);
         f_old = f_str;
         asprintf(&f_str, "%s%s 0\n", f_old, l_str);
@@ -170,8 +186,8 @@ inline char* SplitData::splitToString()
     }
 
     // The instance
-    for (int i = 0; i < clause_idx; i++) {
-        char* c_str = clauseToString(*inst_clauses[i]);
+    for (int i = 0; i < instance.size(); i++) {
+        char* c_str = clauseToString<vec<Lit> >(instance[i]);
         f_old = f_str;
         asprintf(&f_str, "%s\n%s", f_old, c_str);
         free(c_str);
@@ -197,7 +213,6 @@ class CoreSMTSolver : public SMTSolver
 
     // Constructor/Destructor:
     //
-//    CoreSMTSolver( Egraph &, SMTConfig & );
     CoreSMTSolver(SMTConfig&, THandler&);
     ~CoreSMTSolver();
     void     initialize       ( );
@@ -295,8 +310,7 @@ class CoreSMTSolver : public SMTSolver
 
     enum { polarity_true = 0, polarity_false = 1, polarity_user = 2, polarity_rnd = 3 };
 
-    double   stop_time;           // Time limit for the search in wall clock
-    int      stop_decs;           // Time limit for the search in wall clock
+
 
     // Statistics: (read-only member variable)
     //
@@ -310,7 +324,6 @@ class CoreSMTSolver : public SMTSolver
 
   protected:
 
-    static const char* str_unsat_inst;
     // Helper structures:
     //
     struct VarOrderLt {
@@ -385,8 +398,29 @@ class CoreSMTSolver : public SMTSolver
     vec< Clause * >     units;
 #endif
 
+    SpUnit   resource_units;
+    double   resource_limit;      // Time limit for the search in resource_units
+    double   next_resource_limit; // The limit at which the solver needs to stop
+
+    // splitting state vars
+    SpType   split_type;
+
+    bool     split_on;
+    bool     split_start;
+    int      split_num;
+    SpUnit   split_units;
+
+    double   split_inittune;                                                           // Initial tuning in units.
+    double   split_midtune;                                                            // mid-tuning in units.
+    double   split_next;                                                               // When the next split will happen?
+
+
     // Main internal methods:
     //
+    void     updateSplitState();                                                       // Update the state of the splitting machine.
+    bool     scatterLevel();                                                           // Are we currently on a scatter level.
+    bool     createSplit(bool last);                                                   // Create a split formula and place it to the splits vector.
+    bool     excludeAssumptions(vec<Lit>& neg_constrs);                                // Add a clause to the database and propagate
     void     insertVarOrder   (Var x);                                                 // Insert a variable in the decision order priority queue.
     Lit      pickBranchLit    (int polarity_mode, double random_var_freq);             // Return the next decision variable.
     void     newDecisionLevel ();                                                      // Begins a new decision level.
@@ -761,7 +795,9 @@ inline void CoreSMTSolver::printClause(const C& c)
 
 inline void CoreSMTSolver::cnfToString(CnfState& cs)
 {
-    SplitData sd(clauses, clauses.size(), trail, trail_lim);
+    int curr_dl0_idx = trail_lim.size() > 0 ? trail_lim[0] : trail.size();
+    SplitData sd(clauses, trail, curr_dl0_idx);
+    sd.updateInstance();
     if (config.sat_dump_learnts()) {
         for (int i = 0; i < learnts.size(); i++)
             sd.addLearnt(*learnts[i]);

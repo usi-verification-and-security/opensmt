@@ -860,18 +860,12 @@ PTRef Cnfizer::expandItes(vec<PtChild>& term_list) {
     else return term_list[l].tr;
 }
 
-void Cnfizer::getCnfState(CnfState& cs)
+void Cnfizer::getVarMapping(CnfState& cs)
 {
     char* out = (char*)malloc(1);
     out[0] = 0;
     // The cnf
-    solver.cnfToString(cs);
-//    cs.setCnf(solver.cnfToString());
-//    if (!solver.okay()) {
-//        char* tmp = cs.cnf;
-//        asprintf(&cs.cnf, "%s\n%s 0", tmp, solver.litToString(~Lit(tmap.termToVar[logic.getTerm_true()])));
-//    }
-
+//    solver.cnfToString(cs);
     // The mapping to terms
 #ifdef PEDANTIC_DEBUG
     char* old;
@@ -890,34 +884,6 @@ void Cnfizer::getCnfState(CnfState& cs)
 #endif
     }
 
-    // The terms, starting from the boolean theory terms found from the cnf
-//    Map<PTRef, bool, PTRefHash> seen;
-//    vec<PTRef> queue;
-//    bool_thterms.copyTo(queue);
-//    while (queue.size() != 0) {
-//        PTRef tr = queue.last();
-//        queue.pop();
-//        if (seen.contains(tr))
-//            continue;
-//        Pterm& t = logic.getPterm(tr);
-//        char* t_str;
-//        if (t.size() > 0) {
-//            asprintf(&t_str, "%d[", tr.x);
-//            for (int i = 0; i < t.size(); i++) {
-//                char* t_old = t_str;
-//                asprintf(&t_str, "%s%d ", t_old, t[i].x);
-//                free(t_old);
-//                queue.push(t[i]);
-//            }
-//            t_str[strlen(t_str)-1] = ']';
-//        } else
-//            asprintf(&t_str, "%d[]", tr.x);
-//
-//        old = out;
-//        asprintf(&out, "%s\n%s", old, t_str);
-//        free(old);
-//        seen.insert(tr, true);
-//    }
 #ifdef PEDANTIC_DEBUG
     cerr << "Cnf looks like" << endl;
     cerr << cs.cnf << endl;

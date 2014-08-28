@@ -505,6 +505,9 @@ bool Interpret::checkSat(const char* cmd) {
         const Option& o_dump_state = config.getOption(":dump-state");
         if (!o_dump_state.isEmpty())
             writeState(config.dump_state());
+        const SpType o_split = config.sat_split_type();
+        if (o_split != spt_none)
+            writeSplits(config.dump_state());
     }
     return true;
 }
@@ -541,6 +544,15 @@ void Interpret::writeState(const char* filename)
 {
     char* msg;
     bool rval = main_solver.writeSolverState(filename, &msg);
+    if (!rval) {
+        notify_formatted("%s", msg);
+    }
+}
+
+void Interpret::writeSplits(const char* filename)
+{
+    char* msg;
+    bool rval = main_solver.writeSolverSplits(filename, &msg);
     if (!rval) {
         notify_formatted("%s", msg);
     }

@@ -41,8 +41,10 @@ class ConfValue {
     ConfValue() : type(O_EMPTY) {};
     ConfValue(const ASTNode& s_expr_n);
     ConfValue(int i) : type(O_DEC), numval(i) {};
+    ConfValue(double i) : type(O_DEC), decval(i) {};
     ConfValue(const char* s);
     char* toString() const;
+    double getDoubleVal() const {if (type == O_NUM) return (double)numval; else if (type == O_DEC) return decval; else assert(false); return -1;}
 };
 
 class Info {
@@ -64,6 +66,7 @@ class Option {
     Option(ASTNode& n);
     Option() {}
     Option(int i)   : value(i) {}
+    Option(double i): value(i) {}
     Option(const char* s) : value(s) {}
     inline bool  isEmpty()  const { return value.type == O_EMPTY; }
     inline char* toString() const { return value.toString(); }
@@ -71,15 +74,30 @@ class Option {
 };
 
 // Type safe wrapper for split types
-typedef struct SpType { int t; } SpType;
+typedef struct SpType    { int t; } SpType;
+typedef struct SpUnit    { int t; } SpUnit;
 
-static const char* spts_guiding = "guiding-path";
-static const char* spts_scatter = "scattering";
-static const char* spts_none = "none";
+inline bool operator==(const SpType& s1, const SpType& s2) { return s1.t == s2.t; }
+inline bool operator==(const SpUnit& s1, const SpUnit& s2) { return s1.t == s2.t; }
+inline bool operator!=(const SpType& s1, const SpType& s2) { return s1.t != s2.t; }
+inline bool operator!=(const SpUnit& s1, const SpUnit& s2) { return s1.t != s2.t; }
 
-static const struct SpType spt_none = { 0 };
+
+static const char* spts_guiding   = "guiding-path";
+static const char* spts_scatter   = "scattering";
+static const char* spts_none      = "none";
+
+static const char* spts_decisions = "decisions";
+static const char* spts_time      = "time";
+
+static const struct SpType spt_none    = { 0 };
 static const struct SpType spt_guiding = { 1 };
 static const struct SpType spt_scatter = { 2 };
+
+static const struct SpUnit spm_decisions = { 0 };
+static const struct SpUnit spm_time      = { 1 };
+static const struct SpUnit  spm_unknown   = { 2 };
+
 //
 // Holds informations about the configuration of the solver
 //
@@ -129,8 +147,8 @@ private:
   static const char* o_proof_reduce;
   static const char* o_proof_set_inter_algo;
   static const char* o_sat_dump_rnd_inter;
-  static const char* o_sat_time_limit;
-  static const char* o_sat_dec_limit;
+  static const char* o_sat_resource_units;
+  static const char* o_sat_resource_limit;
   static const char* o_dump_state;
   static const char* o_dump_only;
   static const char* o_sat_dump_learnts;
@@ -138,12 +156,15 @@ private:
   static const char* o_sat_split_inittune;
   static const char* o_sat_split_midtune;
   static const char* o_sat_split_num;
+  static const char* o_sat_split_asap;
+  static const char* o_sat_split_units;
 
   static const char* s_err_not_str;
   static const char* s_err_not_bool;
   static const char* s_err_not_num;
   static const char* s_err_seed_zero;
   static const char* s_err_unknown_split;
+  static const char* s_err_unknown_units;
 
 private:
   Info          info_Empty;
@@ -340,12 +361,20 @@ public:
   int sat_dump_rnd_inter() const
     { return optionTable.contains(o_sat_dump_rnd_inter) ?
         optionTable[o_sat_dump_rnd_inter].getValue().numval : 2; }
-  int sat_time_limit() const
-    { return optionTable.contains(o_sat_time_limit) ?
-        optionTable[o_sat_time_limit].getValue().numval : -1; }
-  int sat_dec_limit() const
-    { return optionTable.contains(o_sat_dec_limit) ?
-        optionTable[o_sat_dec_limit].getValue().numval : -1; }
+
+  const SpUnit sat_resource_units() const {
+      if (optionTable.contains(o_sat_resource_units)) {
+          const char* type = optionTable[o_sat_resource_units].getValue().strval;
+          if (strcmp(type, spts_decisions) == 0)
+              return spm_decisions;
+          else if (strcmp(type, spts_time) == 0)
+              return spm_time;
+      }
+      return spm_unknown;
+    }
+  double sat_resource_limit() const
+    { return optionTable.contains(o_sat_resource_limit) ?
+        optionTable[o_sat_resource_limit].getValue().getDoubleVal() : -1; }
   const char* dump_state() const
     { return optionTable.contains(o_dump_state) ?
         optionTable[o_dump_state].getValue().strval : "out.osmt2"; }
@@ -362,19 +391,36 @@ public:
             return spt_guiding;
         else if (strcmp(type, spts_scatter) == 0)
             return spt_scatter;
-      } else return spt_none; }
-  int sat_split_inittune() const {
+      }
+      return spt_none; }
+
+  const SpUnit sat_split_units() const {
+      if (optionTable.contains(o_sat_split_units)) {
+          const char* type = optionTable[o_sat_split_units].getValue().strval;
+          if (strcmp(type, spts_decisions) == 0)
+              return spm_decisions;
+          else if (strcmp(type, spts_time) == 0)
+              return spm_time;
+      }
+      return spm_decisions;
+    }
+
+  double sat_split_inittune() const {
       return optionTable.contains(o_sat_split_inittune) ?
-              optionTable[o_sat_split_inittune].getValue().numval :
+              optionTable[o_sat_split_inittune].getValue().getDoubleVal() :
               -1; }
-  int sat_split_midtune() const {
+  double sat_split_midtune() const {
       return optionTable.contains(o_sat_split_midtune) ?
-              optionTable[o_sat_split_midtune].getValue().numval :
+              optionTable[o_sat_split_midtune].getValue().getDoubleVal() :
               -1; }
   int sat_split_num() const {
       return optionTable.contains(o_sat_split_num) ?
               optionTable[o_sat_split_num].getValue().numval :
               -1; }
+  int sat_split_asap() const {
+      return optionTable.contains(o_sat_split_asap) ?
+              optionTable[o_sat_split_asap].getValue().numval :
+              0; }
 
 
 

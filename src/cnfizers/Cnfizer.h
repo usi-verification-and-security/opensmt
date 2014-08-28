@@ -124,7 +124,8 @@ public:
     bool  isNPAtom         (PTRef r, PTRef& p)    const; // Check if r is a (negated) atom.  Return true if the corresponding atom is negated.  The purified reference is placed in the second argument.
     bool  solverEmpty      ()                     const { return s_empty; }
 
-    void  getCnfState   (CnfState&);
+    bool  getSolverState   (CnfState& cs) { solver.cnfToString(cs); }
+    void  getVarMapping    (CnfState&);
 protected:
 
 #ifdef ENABLE_SHARING_BUG

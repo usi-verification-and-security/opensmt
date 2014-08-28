@@ -188,6 +188,10 @@ Option::Option(ASTNode& n) {
         return;
     }
 
+    if (n.getType() == DEC_T) {
+        value.type   = O_DEC;
+        sscanf(n.getValue(), "%lf", &value.decval);
+    }
     assert( n.getType() == UATTR_T || n.getType() == PATTR_T );
     // The option is an attribute
 
@@ -286,6 +290,13 @@ bool SMTConfig::setOption(const char* name, const Option& value, const char*& ms
                 strcmp(val, spts_none) != 0)
         { msg = s_err_unknown_split; return false; }
     }
+    if (strcmp(name, o_sat_split_units) == 0) {
+        if (value.getValue().type != O_STR) { msg = s_err_not_str; return false; }
+        const char* val = value.getValue().strval;
+        if (strcmp(val, spts_time) != 0 &&
+                strcmp(val, spts_decisions) != 0)
+        { msg = s_err_unknown_units; return false; }
+    }
     if (optionTable.contains(name))
         optionTable.remove(name);
     optionTable.insert(name, value);
@@ -349,8 +360,8 @@ const char* SMTConfig::o_proof_transf_trav = ":proof-reduce-expose";
 const char* SMTConfig::o_proof_num_graph_traversals = ":proof-num-graph-traversals";
 const char* SMTConfig::o_proof_red_trans = ":proof-num-global-iterations";
 const char* SMTConfig::o_proof_set_inter_algo = ":proof-interpolation-algorithm";
-const char* SMTConfig::o_sat_time_limit = ":time-limit";
-const char* SMTConfig::o_sat_dec_limit = ":resource-limit";
+const char* SMTConfig::o_sat_resource_units = ":resource-units";
+const char* SMTConfig::o_sat_resource_limit = ":resource-limit";
 const char* SMTConfig::o_dump_state = ":dump-state";
 const char* SMTConfig::o_dump_only = ":dump-only";
 const char* SMTConfig::o_sat_dump_learnts = ":dump-learnts";
@@ -358,6 +369,8 @@ const char* SMTConfig::o_sat_split_type = ":split-type";
 const char* SMTConfig::o_sat_split_inittune = ":split-init-tune";
 const char* SMTConfig::o_sat_split_midtune = ":split-mid-tune";
 const char* SMTConfig::o_sat_split_num = ":split-num";
+const char* SMTConfig::o_sat_split_asap = ":split-asap";
+const char* SMTConfig::o_sat_split_units = ":split-units";
 
 // Error strings
 const char* SMTConfig::s_err_not_str = "expected string";
@@ -365,6 +378,7 @@ const char* SMTConfig::s_err_not_bool = "expected Boolean";
 const char* SMTConfig::s_err_not_num = "expected number";
 const char* SMTConfig::s_err_seed_zero = "seed cannot be 0";
 const char* SMTConfig::s_err_unknown_split = "unknown split type";
+const char* SMTConfig::s_err_unknown_units = "unknown split units";
 
 void
 SMTConfig::initializeConfig( )

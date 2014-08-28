@@ -66,7 +66,6 @@ namespace opensmt
 // Constructor/Destructor:
 
 
-//CoreSMTSolver::CoreSMTSolver( Egraph & e, SMTConfig & c )
 CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
   // Initializes configuration and egraph
 //  : SMTSolver        ( e, c )
@@ -81,9 +80,6 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
   // More parameters:
   //
   , expensive_ccmin  ( true )
-  // Resource limits
-  , stop_time             (-1)
-  , stop_decs             (-1)
   // Statistics: (formerly in 'SolverStats')
   //
   , starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0)
@@ -100,6 +96,17 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
   , random_seed           (c.getRandomSeed())
   , progress_estimate     (0)
   , remove_satisfied      (true)
+  , resource_units        (config.sat_resource_units())
+  , resource_limit        (config.sat_resource_limit())
+  , next_resource_limit   (-1)
+  , split_type            (config.sat_split_type())
+  , split_on              (false)
+  , split_start           (config.sat_split_asap())
+  , split_num             (config.sat_split_num())
+  , split_units            (config.sat_split_units())
+  , split_inittune        (config.sat_split_inittune())
+  , split_midtune         (config.sat_split_midtune())
+  , split_next            (split_units == spm_time ? cpuTime() + split_inittune : decisions + split_inittune)
   , learnt_t_lemmata      (0)
   , perm_learnt_t_lemmata (0)
   , luby_i                (0)
@@ -1755,8 +1762,6 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 
   starts++;
 
-  bool first = true;
-
 #ifdef STATISTICS
   const double start = cpuTime( );
 #endif
@@ -1779,15 +1784,16 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 #ifdef PEDANTIC_DEBUG
   bool thr_backtrack = false;
 #endif
-  for (;;)
+  while (split_type == spt_none || splits.size() < split_num - 1)
   {
     // Added line
     if ( opensmt::stop ) return l_Undef;
 
-    if (conflicts % 1000 == 0 && stop_time >= 0 && time(NULL) >= stop_time) {
-        opensmt::stop = true; return l_Undef; }
-    if (conflicts % 1000 == 0 && stop_decs >= 0 && decisions >= stop_decs) {
-        opensmt::stop = true; return l_Undef; }
+    if (resource_limit >= 0 && conflicts % 1000 == 0) {
+        if ((resource_units == spm_time && time(NULL) >= next_resource_limit) ||
+                (resource_units == spm_decisions && decisions >= next_resource_limit))
+            opensmt::stop = true; return l_Undef;
+    }
 
     Clause* confl = propagate();
     if (confl != NULL){
@@ -1800,7 +1806,6 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
       if (decisionLevel() == 0)
         return l_False;
 
-      first = false;
       learnt_clause.clear();
       analyze(confl, learnt_clause, backtrack_level);
 
@@ -1860,7 +1865,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 #ifdef PEDANTIC_DEBUG
       if (thr_backtrack)
         cerr << "Bling! No theory backtracking" << endl;
-    thr_backtrack = false;
+        thr_backtrack = false;
 #endif
       if (nof_conflicts >= 0 && conflictC >= nof_conflicts){
         // Reached bound on number of conflicts:
@@ -1934,6 +1939,16 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 
         if (next == lit_Undef)
         {
+          // Assumptions done and the solver is in consistent state
+          updateSplitState();
+          if (!split_start && split_on && scatterLevel()) {
+                if (!createSplit(false)) { // Rest is unsat
+                    opensmt::stop = true; return l_Undef; }
+                else continue;
+          }
+          // Otherwise continue to variable decision.
+
+
           // New variable decision:
           decisions++;
           next = pickBranchLit(polarity_mode, random_var_freq);
@@ -1999,6 +2014,9 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
         uncheckedEnqueue(next);
     }
   }
+  cancelUntil(0);
+  createSplit(true);
+  opensmt::stop = true; return l_Undef;
 }
 
 
@@ -2019,8 +2037,30 @@ double CoreSMTSolver::progressEstimate() const
 lbool CoreSMTSolver::solve( const vec<Lit> & assumps
                           , const unsigned max_conflicts )
 {
-  stop_time = config.sat_time_limit() >= 0 ? time(NULL) + config.sat_time_limit() : -1;
-  stop_decs = config.sat_dec_limit() >= 0 ? config.sat_dec_limit() : -1;
+  // If splitting is enabled refresh the options
+  split_type     = config.sat_split_type();
+  if (split_type != spt_none) {
+      split_start    = config.sat_split_asap();
+      split_on       = false;
+      split_num      = config.sat_split_num();
+      split_inittune = config.sat_split_inittune();
+      split_midtune  = config.sat_split_midtune();
+      split_units    = config.sat_split_units();
+      if (split_units == spm_time)
+          split_next = config.sat_split_inittune() + cpuTime();
+      else if (split_units == spm_decisions)
+          split_next = config.sat_split_inittune() + decisions;
+      else split_next = -1;
+
+  }
+  resource_units = config.sat_resource_units();
+  resource_limit = config.sat_resource_limit();
+  if (resource_limit >= 0) {
+      if (resource_units == spm_time)
+          next_resource_limit = cpuTime() + resource_limit;
+      else if (resource_units == spm_decisions)
+          next_resource_limit = decisions + resource_limit;
+  } else next_resource_limit = -1;
 
   if (config.dump_only()) return l_Undef;
 
@@ -2195,6 +2235,83 @@ int CoreSMTSolver::restartNextLimit ( int nof_conflicts )
   }
   // Standard restart
   return nof_conflicts * restart_inc;
+}
+
+bool CoreSMTSolver::scatterLevel()
+{
+    int d;
+    if (!split_on) return false;
+    // Current scattered instance number i = splits.size() + 1
+    float r = 1/(float)(split_num-splits.size());
+    for (int i = 0; ; i++) {
+        // 2 << i == 2^(i+1)
+        if ((2 << (i-1) <= split_num - splits.size()) &&
+                (2 << i >= split_num - splits.size())) {
+            // r-1(2^i) < 0 and we want absolute
+            d = -(r-1/(float)(2<<(i-1))) > r-1/(float)(2<<i) ? i+1 : i;
+            break;
+        }
+    }
+    return d == decisionLevel();
+}
+
+bool CoreSMTSolver::createSplit(bool last)
+{
+    // Due to the stupidness of the minisat version this gets
+    // complicated
+    int curr_dl0_idx = trail_lim.size() > 0 ? trail_lim[0] : trail.size();
+    splits.push_c(SplitData(clauses, trail, curr_dl0_idx));
+    SplitData& sp = splits.last();
+    vec<Lit> constraints_negated;
+    for (int i = 0; i < decisionLevel(); i++) {
+        vec<Lit> tmp;
+        Lit l = trail[trail_lim[i]];
+        tmp.push(l);
+        sp.addConstraint(tmp);
+        constraints_negated.push(~l);
+    }
+    sp.updateInstance();
+    // XXX Skipped learned clauses
+    cancelUntil(0);
+    if (!excludeAssumptions(constraints_negated))
+        return false;
+    simplify();
+    assert(ok);
+    split_start = true;
+    split_on    = true;
+    split_next = (split_units == spm_time ? cpuTime() + split_midtune : decisions + split_midtune);
+    return true;
+}
+
+bool CoreSMTSolver::excludeAssumptions(vec<Lit>& neg_constrs)
+{
+    addClause(neg_constrs);
+    simplify();
+    return ok;
+}
+
+void CoreSMTSolver::updateSplitState()
+{
+    if (split_start && !split_on) {
+        if ((split_units == spm_time && cpuTime() >= split_next) ||
+                (split_units == spm_decisions && decisions >= split_next)) {
+            cancelUntil(0);
+            split_start = false;
+            split_on = true;
+            if (split_units == spm_time) split_next = cpuTime() + split_midtune;
+            if (split_units == spm_decisions) split_next = decisions + split_midtune;
+        }
+    }
+    if (split_start && split_on) {
+        if ((split_units == spm_time && cpuTime() >= split_next) ||
+                (split_units == spm_decisions && decisions >= split_next)) {
+            cancelUntil(0);
+            split_start = false;
+            split_on = true;
+            if (split_units == spm_time) split_next = cpuTime() + split_midtune;
+            if (split_units == spm_decisions) split_next = decisions + split_midtune;
+        }
+    }
 }
 
 void CoreSMTSolver::printStatistics( ostream & os )
