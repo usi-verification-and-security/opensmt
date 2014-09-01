@@ -192,7 +192,7 @@ bool THandler::assertLits(vec<Lit>& trail)
         if ( pt_r == logic.getTerm_true() )       { assert(sign(l) == false); continue; }
         else if ( pt_r == logic.getTerm_false() ) { assert(sign(l) == true ); continue; }
 
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
         // We are interested only in theory atoms from here onwards
         cerr << "Asserting " << (sign(l) ? "not " : "")  << logic.printTerm(pt_r) << endl;
 //        cerr << "Asserting " << (sign(l) ? "not " : "")  << logic.printTerm(pt_r) << " (" << pt_r.x << ")" << endl;
@@ -236,7 +236,7 @@ bool THandler::assertLits(vec<Lit>& trail)
             assert(false);
 
 
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
 //        if (res == l_False) {
 //            cerr << "conflict asserting " << logic.term_store.printTerm(pt_r)
 //                 << endl;
@@ -248,7 +248,7 @@ bool THandler::assertLits(vec<Lit>& trail)
 
     checked_trail_size = stack.size( );
 //  assert( !res || trail.size( ) == (int)stack.size( ) );
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
 //    if (res != l_False)
 //        cout << "; non-conflicting" << endl;
 //    cout << printAssertions(assertions);
@@ -284,7 +284,7 @@ void THandler::backtrack(int lev)
 
 //        if ( !tmap.theoryTerms.contains(e) ) continue;
         if (!logic.isTheoryTerm(e)) continue;
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
 //        printf("Backtracking term %s\n", logic.term_store.printTerm(e));
 #endif
         egraph.popBacktrackPoint( );
@@ -321,7 +321,7 @@ void THandler::getConflict (
     // where li is the literal corresponding with ei with polarity !pi
     vec<PtAsgn> explanation;
     egraph.getConflict(false, explanation);
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
 //    cout << printExplanation(explanation, assigns);
 #endif
     if ( explanation.size() == 0 ) {
@@ -355,13 +355,13 @@ void THandler::getConflict (
     explanation.clear( );
 #else
     max_decision_level = -1;
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
     cerr << "Explanation clause: " << endl;
 #endif
     while (explanation.size() != 0) {
         PtAsgn ta = explanation.last( );
         explanation.pop( );
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
         cerr << " " << (ta.sgn == l_False ? "" : "not ") << logic.printTerm(ta.tr) << endl;
 #endif
 //    assert( ei->hasPolarity( ) );

@@ -104,6 +104,7 @@ class PtAsgn {
     lbool sgn;
     PtAsgn(PTRef tr_, lbool sgn_) : tr(tr_), sgn(sgn_) {}
     PtAsgn() : tr(PTRef_Undef), sgn(l_Undef) {}
+    bool operator== (const PtAsgn& other) const { return tr == other.tr && sgn == other.sgn; }
 };
 
 static class PtAsgn PtAsgn_Undef(PTRef_Undef, l_Undef);

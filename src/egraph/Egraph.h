@@ -62,7 +62,13 @@ private:
 #ifdef CUSTOM_EL_ALLOC
   ELAllocator   forbid_allocator;
 #endif
+#if defined(PEDANTIC_DEBUG) && defined(TERMS_HAVE_EXPLANATIONS)
+public:
   EnodeStore    enode_store;
+private:
+#else
+  EnodeStore    enode_store;
+#endif
   ERef          ERef_Nil;
 
   PTRef         Eq_FALSE; // will be set to (= true false) in constructor
@@ -233,7 +239,7 @@ public:
     void  setPolarity(PTRef tr, lbool p) {
         if (polarityMap.contains(tr)) { polarityMap[tr] = p; }
         else { polarityMap.insert(tr, p); }
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
         cerr << "Setting polarity " << logic.printTerm(tr) << endl;
 #endif
     }
@@ -241,7 +247,7 @@ public:
     bool  hasPolarity(PTRef tr)          { if (polarityMap.contains(tr)) { return polarityMap[tr] != l_Undef; } else return false; }
     void  clearPolarity(PTRef tr)        {
         polarityMap[tr] = l_Undef;
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
         cerr << "Clearing polarity " << logic.printTerm(tr) << endl;
 #endif
     }

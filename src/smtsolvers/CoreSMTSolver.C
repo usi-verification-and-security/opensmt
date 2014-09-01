@@ -354,7 +354,7 @@ bool CoreSMTSolver::addClause( vec<Lit>& ps
 	&& var(ps[0]) > 1 ) // Avoids true/false
       units_to_partition.push_back( make_pair( res, in ) );
 #endif
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_SAST
     cerr << toInt(ps[0]) << endl;
 #endif
     uncheckedEnqueue(ps[0]);
@@ -387,7 +387,7 @@ bool CoreSMTSolver::addClause( vec<Lit>& ps
     clauses.push(c);
     attachClause(*c);
 
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_SAT
     for (int i = 0; i < c->size(); i++)
       cerr << toInt((*c)[i]) << " ";
     cerr << endl;
@@ -676,7 +676,7 @@ void CoreSMTSolver::cancelUntilVarTempDone( )
 {
   assert( cuvti == true );
   cuvti = false;
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_SAT
   cerr << "restoring " << val_to_restore.size() << " lits to trail" << endl;
 #endif
   while ( val_to_restore.size( ) > 0 )
@@ -810,7 +810,7 @@ class lastToFirst_lt {  // Helper class to 'analyze' -- order literals from last
 
 void CoreSMTSolver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btlevel)
 {
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_SAT
   cerr << "analyze " << analyze_cnt++ << endl;
 #endif
 #ifdef PRODUCE_PROOF
@@ -1739,7 +1739,7 @@ void CoreSMTSolver::reset( )
   |________________________________________________________________________________________________@*/
 lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 {
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_SAT
   cerr << "Units when starting search:" << endl;
   for (int i = 2; i < trail.size(); i++) {
     char* name;
@@ -1797,7 +1797,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 
     Clause* confl = propagate();
     if (confl != NULL){
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_SAT
       if (thr_backtrack == true)
         cerr << "Bling! Theory backtrack resulted in conflict" << endl;
 #endif
@@ -1809,14 +1809,14 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
       learnt_clause.clear();
       analyze(confl, learnt_clause, backtrack_level);
 
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_SAT
       cerr << "Backtracking due to SAT conflict "
            << decisionLevel() - backtrack_level << endl;
       int init_trail_sz = trail.size();
 #endif
 
       cancelUntil(backtrack_level);
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_SAT
       cerr << "Backtracking due to SAT conflict done" << endl;
       cerr << "Backtracked " << init_trail_sz - trail.size()
            << " variables." << endl;
@@ -1862,7 +1862,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 
     }else{
       // NO CONFLICT
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_SAT
       if (thr_backtrack)
         cerr << "Bling! No theory backtracking" << endl;
         thr_backtrack = false;
@@ -1952,7 +1952,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
           // New variable decision:
           decisions++;
           next = pickBranchLit(polarity_mode, random_var_freq);
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_SAT
           char* name;
           if (next != lit_Undef) {
               theory_handler.getVarName(var(next), &name);
@@ -2186,7 +2186,7 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
     }
   }
 
-#ifdef BACKTRACK_AFTER_FINISHING
+//#ifdef BACKTRACK_AFTER_FINISHING
   if ( !config.isIncremental() )
   {
     // We terminate
@@ -2200,9 +2200,9 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
     // ready to accept new clauses
     cancelUntil(0);
   }
-#else
-  cancelUntil(0);
-#endif
+//#else
+//  cancelUntil(0);
+//#endif
 
   return status;
 }

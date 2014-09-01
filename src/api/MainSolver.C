@@ -357,7 +357,7 @@ MainSolver::FContainer MainSolver::mergeEnodeArgs(PTRef fr, Map<PTRef, PTRef, PT
     Pterm& f = logic.getPterm(fr);
     SymRef sr = f.symb();
     vec<PTRef> new_args;
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
     char* name = logic.printTerm(fr);
     cout << "; Merge: " << name << endl;
     ::free(name);
@@ -375,7 +375,7 @@ MainSolver::FContainer MainSolver::mergeEnodeArgs(PTRef fr, Map<PTRef, PTRef, PT
 
         if (occs[arg] > 1) {
             new_args.push(sub_arg);
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
             cout << " Using shared structure (" << occs[arg] << " * ";
             char* name = logic.printTerm(sub_arg);
             cout << name << endl;
@@ -389,7 +389,7 @@ MainSolver::FContainer MainSolver::mergeEnodeArgs(PTRef fr, Map<PTRef, PTRef, PT
     }
     const char* msg;
     PTRef out = logic.mkFun(sr, new_args, &msg);
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
     cout << " =>    ";
     name = logic.printTerm(out);
     cout << name << endl;
@@ -452,7 +452,7 @@ MainSolver::FContainer MainSolver::rewriteMaxArity(MainSolver::FContainer fc, Ma
 //
 MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
 {
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
     cerr << "; COMPUTE INCOMING EDGES" << endl;
 #endif
 
@@ -461,19 +461,19 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
     qu.push(pi(top));
     Map<PTRef,int,PTRefHash> occs;
     vec<PTRef> terms;
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
     VecMap<PTRef,PTRef,PTRefHash > parents;
 #endif
 
     while (qu.size() != 0) {
         int ci = qu.size() - 1;
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
         cerr << "Processing " << logic.printTerm(qu[ci].x) << " (" << qu[ci].x.x << ")" << endl;
 #endif
 //        assert(!occs.contains(qu[ci].x));
         if (occs.contains(qu[ci].x)) {
             // fires if a term has two occurrences of the same atom
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
             cerr << "Processed before: " << logic.printTerm(qu[ci].x);
 #endif
             occs[qu[ci].x]++;
@@ -495,18 +495,18 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
                     qu.push(pi(cr));
                     vec<PTRef> tmp;
                     tmp.push(qu[ci].x);
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
                     parents.insert(cr,tmp);
 #endif
                 }
                 else {
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
                     Pterm& c = logic.getPterm(cr);
                     cerr << "Node id " << c.getId() << " Processed before 2: " << logic.printTerm(cr) << endl;
                     cerr << "Current parent is " << logic.printTerm(qu[ci].x) << endl;
 #endif
                     occs[cr]++;
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
                     parents[cr].push(qu[ci].x);
                     cerr << " has parents" << endl;
                     for (int i = 0; i < parents[cr].size(); i++)
@@ -571,7 +571,7 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
 
                 PtChild and_root = and_roots.last(); and_roots.pop();
 
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
                 if (and_root.parent != PTRef_Undef)
                     assert(logic.getPterm(and_root.parent).size() > and_root.pos);
 //                cerr << "and root: " << logic.printTerm(and_root.tr) << endl;
@@ -596,7 +596,7 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
                             } else { // The new and root
                                 args.push(tr);
                             }
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
                             cerr << " Using shared structure (" << occs[tr];
                             PTRef tmp_tr;
                             if (processed.contains(tr))
@@ -642,13 +642,13 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
                 if (and_root.parent != PTRef_Undef) {
 //                    assert(logic.getPterm(and_root.parent).size() > and_root.pos);
                     logic.getPterm(and_root.parent)[and_root.pos] = par_tr;
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
                     cerr << logic.printTerm(and_root.parent) << endl;
 #endif
                 }
                 else
                     fc.setRoot(par_tr);
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
 //                cerr << " => " << logic.printTerm(par_tr) << endl;
 #endif
             }
@@ -663,7 +663,7 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
 
                 PtChild or_root = or_roots.last(); or_roots.pop();
 
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
                 if (or_root.parent != PTRef_Undef)
                     assert(logic.getPterm(or_root.parent).size() > or_root.pos);
 //                cerr << "or root: " << logic.printTerm(or_root.tr) << endl;
@@ -688,7 +688,7 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
                             } else { // The new or root
                                 args.push(tr);
                             }
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
                             cerr << " Using shared structure (" << occs[tr];
                             PTRef tmp_tr;
                             if (processed.contains(tr))
@@ -734,14 +734,14 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
                 if (or_root.parent != PTRef_Undef) {
 //                    assert(logic.getPterm(or_root.parent).size() > or_root.pos);
                     logic.getPterm(or_root.parent)[or_root.pos] = par_tr;
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
                     cerr << logic.printTerm(or_root.parent) << endl;
 #endif
                 }
                 else
                     fc.setRoot(par_tr);
 
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
 //                cerr << " => " << logic.printTerm(par_tr) << endl;
 #endif
             }
@@ -757,7 +757,7 @@ MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
 //
 MainSolver::FContainer MainSolver::simplifyEqualities(vec<PtChild>& terms)
 {
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
     for (int i = 0; i < terms.size(); i++) {
         PtChild& ptc = terms[i];
         // XXX The terms in here might have invalid symbols for some reason.
@@ -776,7 +776,7 @@ MainSolver::FContainer MainSolver::simplifyEqualities(vec<PtChild>& terms)
                     break;
                 }
 
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFY_DEBUG
                 if (ptc.parent != PTRef_Undef && tr != logic.getPterm(ptc.parent)[ptc.pos]) {
                     cerr << "Simplified equality " << logic.printTerm(tr) << endl;
                     cerr << "  " << logic.printTerm(logic.getPterm(ptc.parent)[ptc.pos]) << endl;
@@ -846,26 +846,26 @@ bool MainSolver::readSolverState(const char* file, char** msg)
     int sortstore_offs = contents[sortstore_offs_idx];
     int logicstore_offs = contents[logicstore_offs_idx];
 
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_FOPS
     cerr << "Reading the map" << endl;
 #endif
     for (int i = 0; i < contents[map_offs]-1; i++) {
        PTRef tr;
        tr.x = contents[i+map_offs+1];
        cs.addToMap({i, tr});
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_FOPS
        cerr << "  Var " << i << " maps to PTRef " << tr.x << endl;
 #endif
     }
 
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_FOPS
     cerr << "Reading IdentifierStore" << endl;
 #endif
     int idstore_sz = contents[idstore_offs];
     int* idstore_buf = (int*)malloc(contents[idstore_offs]*sizeof(int));
     for (int i = 0; i < idstore_sz; i++)
         idstore_buf[i] = contents[idstore_offs+i];
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_FOPS
     cerr << "  Identifier store size in words is " << idstore_sz << endl;
     cerr << "Reading sort store" << endl;
 #endif
@@ -873,7 +873,7 @@ bool MainSolver::readSolverState(const char* file, char** msg)
     int* sortstore_buf = (int*)malloc(contents[sortstore_offs]*sizeof(int));
     for (int i = 0; i < sortstore_sz; i++)
         sortstore_buf[i] = contents[sortstore_offs+i];
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_FOPS
     cerr << "  Sort store size in words is " << sortstore_sz << endl;
     cerr << "Reading symstore" << endl;
 #endif
@@ -881,7 +881,7 @@ bool MainSolver::readSolverState(const char* file, char** msg)
     int *symstore_buf = (int*)malloc(contents[symstore_offs]*sizeof(int));
     for (int i = 0; i < symstore_sz; i++)
         symstore_buf[i] = contents[symstore_offs+i];
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_FOPS
     cerr << "  Symstore size is " << symstore_sz << endl;
     cerr << "Reading termstore" << endl;
 #endif
@@ -889,7 +889,7 @@ bool MainSolver::readSolverState(const char* file, char** msg)
     int *termstore_buf = (int*)malloc(contents[termstore_offs]*sizeof(int));
     for (int i = 0; i < termstore_sz; i++)
         termstore_buf[i] = contents[termstore_offs+i];
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_FOPS
     cerr << "  Termstore size is " << termstore_sz << endl;
 #endif
 
@@ -908,7 +908,7 @@ bool MainSolver::readSolverState(const char* file, char** msg)
     asprintf(&tmp_cnf, "%s", (char*)(contents + cnf_offs));
     cs.setCnf(tmp_cnf);
     const vec<VarPtPair>& map = cs.getMap();
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_FOPS
     cerr << "The cnf is" << endl;
     cerr << cs.getCnf() << endl;
     cerr << "The terms are" << endl;
@@ -986,14 +986,29 @@ bool MainSolver::writeState(const char* file, CnfState& cs, char** msg)
         *msg = strerror(errno);
         return false;
     }
+    // XXX I think it is strange that these are not reset.  Need to
+    // investigate more!
 
-#ifdef PEDANTIC_DEBUG
+#if defined(PEDANTIC_DEBUG) && defined(TERMS_HAVE_EXPLANATIONS)
+    vec<ERef>& ens = uf_solver.enode_store.enodes;
+    for (int i = 0; i < ens.size(); i++) {
+        ERef er = ens[i];
+        PTRef tr = uf_solver.enode_store[er].getTerm();
+        Pterm& t = logic.getPterm(tr);
+        assert(t.getExpReason() == PtAsgn_Undef);
+        assert(t.getExpParent() == PTRef_Undef);
+        assert(t.getExpRoot() == tr);
+        assert(t.getExpClassSize() == 1);
+        assert(t.getExpTimeStamp() == 0);
+    }
+#endif
+#ifdef VERBOSE_FOPS
     cerr << "Trying to write solver state" << endl;
     cerr << "Cnf: " << endl;
-    cerr << cs.cnf << endl;
+    cerr << cs.getCnf() << endl;
     cerr << "The terms are" << endl;
-    for (int i = 0; i < cs.map.size(); i++) {
-        char* tr_s = logic.printTerm(cs.map[i].tr);
+    for (int i = 0; i < cs.getMap().size(); i++) {
+        char* tr_s = logic.printTerm(cs.getMap()[i].tr);
         cerr << "  " << tr_s << endl;
         free(tr_s);
     }
@@ -1022,9 +1037,9 @@ bool MainSolver::writeState(const char* file, CnfState& cs, char** msg)
     // sizes
     int buf_sz = (termstore_sz + symstore_sz + idstore_sz + sortstore_sz + map_sz + logicstore_sz)*sizeof(int)
                  + (strlen(cs.getCnf())+1) + hdr_sz*sizeof(int);
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_FOPS
     cerr << "Mallocing " << buf_sz << " bytes for the buffer" << endl;
-    cerr << "The cnf is " << strlen(cs.cnf)+1 << " bytes" << endl;
+    cerr << "The cnf is " << strlen(cs.getCnf())+1 << " bytes" << endl;
     cerr << "The map is " << map_sz * sizeof(int) << " bytes" << endl;
     cerr << "The termstore is " << termstore_sz * sizeof(int) << " bytes" << endl;
     cerr << "The symstore is " << symstore_sz * sizeof(int) << " bytes" << endl;
@@ -1049,17 +1064,17 @@ bool MainSolver::writeState(const char* file, CnfState& cs, char** msg)
     buf[buf[termstore_offs_idx]]    = termstore_sz;
     buf[buf[symstore_offs_idx]]     = symstore_sz;
 
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_FOPS
     cerr << "Map:" << endl;
 #endif
     for (int i = 0; i < cs.getMap().size(); i++) {
-#ifdef PEDANTIC_DEBUG
-        cerr << "  Var " << i << " maps to " << cs.map[i].tr.x << endl;
+#ifdef VERBOSE_FOPS
+        cerr << "  Var " << i << " maps to " << cs.getMap()[i].tr.x << endl;
         cerr << "  Writing it to idx " << buf[map_offs_idx]+i+1 << endl;
 #endif
         buf[buf[map_offs_idx]+i+1] = cs.getMap()[i].tr.x;
     }
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_FOPS
     cerr << "Will write cnf to index " << buf[cnf_offs_idx] << endl;
 #endif
     char* cnf_buf = (char*) (&buf[buf[cnf_offs_idx]]);
@@ -1086,7 +1101,7 @@ bool MainSolver::writeState(const char* file, CnfState& cs, char** msg)
     for (int i = 0; i < logicstore_sz; i++)
         buf[buf[logicstore_offs_idx]+i] = logicstore_buf[i];
 
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_FOPS
     cerr << "Map offset read from buf idx " << map_offs_idx << endl;
     cerr << "Map starts at word " << buf[map_offs_idx] << endl;
     cerr << "Map size is " << buf[buf[map_offs_idx]] << endl;
@@ -1106,7 +1121,8 @@ bool MainSolver::writeState(const char* file, CnfState& cs, char** msg)
     cerr << "sortstore offset read from buf idx " << sortstore_offs_idx << endl;
     cerr << "sortstore starts at word " << buf[sortstore_offs_idx] << endl;
     cerr << "sortstore size is " << buf[buf[sortstore_offs_idx]] << endl;
-
+#endif
+#ifdef PEDANTIC_DEBUG
     SMTConfig config;
     SymStore new_symstore;
     IdentifierStore new_idstore;
@@ -1119,9 +1135,9 @@ bool MainSolver::writeState(const char* file, CnfState& cs, char** msg)
     logic.compareIdStore(new_idstore);
 //    logic.compareTermStore(new_tstore);
     new_tstore.deserializeTerms(&buf[buf[termstore_offs_idx]]);
-    for (int i = 0; i < cs.map.size(); i++) {
-        Pterm& my_t = logic.getPterm(cs.map[i].tr);
-        Pterm& other_t = new_tstore[cs.map[i].tr];
+    for (int i = 0; i < cs.getMap().size(); i++) {
+        Pterm& my_t = logic.getPterm(cs.getMap()[i].tr);
+        Pterm& other_t = new_tstore[cs.getMap()[i].tr];
         my_t.compare(other_t);
     }
 #endif
@@ -1151,7 +1167,7 @@ bool MainSolver::writeState(const char* file, CnfState& cs, char** msg)
         return false;
     }
 
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_FOPS
     cerr << "Printed " << res  << " bytes" << endl;
 #endif
     free(buf);
@@ -1169,13 +1185,18 @@ bool MainSolver::writeSolverState(const char* file, char** msg)
 
 bool MainSolver::writeSolverSplits(const char* file, char** msg)
 {
-    for (int i = 0; i < sat_solver.splits.size(); i++) {
+    for (int i = 0; i < sat_solver.splits.size(); i++) { // free name!
         char* name;
         asprintf(&name, "%s-%02d.osmt2", file, i);
         CnfState cs;
         ts.getVarMapping(cs);
         sat_solver.splits[i].cnfToString(cs);
-        if (!writeState(name, cs, msg)) return false;
+        if (!writeState(name, cs, msg)) {
+            free(name);
+            return false;
+        }
+        free(name);
     }
+    return true;
 }
 

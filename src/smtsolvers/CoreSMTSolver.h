@@ -85,7 +85,7 @@ public:
     CnfState() : cnf(NULL), unsat(false) {};
     ~CnfState() { free(cnf); }
     bool                  setUnsat()            { assert(cnf == NULL); unsat = true; }
-    const char*           getCnf()              { return unsat ? "1 -1 0" : cnf; }
+    const char*           getCnf()              { return unsat ? "1 -1 0" : (cnf == NULL ? "c empty" : cnf); }
     void                  setCnf(char* cnf_)    { cnf = cnf_; }
     const vec<VarPtPair>& getMap()              { return map; }
     void                  addToMap(VarPtPair p) { map.push(p); }

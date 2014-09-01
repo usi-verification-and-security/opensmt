@@ -87,7 +87,7 @@ bool Egraph::check( bool complete )
 //
 void Egraph::pushBacktrackPoint( )
 {
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
   cerr << "bt point " << backtrack_points.size() << endl;
 #endif
   // Save solver state if required
@@ -128,7 +128,7 @@ void Egraph::popBacktrackPoint() {
         ERef e = enode_store.termToERef[asgn.tr];
         Enode& en_e = enode_store[e];
         assert( en_e.isDeduced() );
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
         cerr << "Clearing deduction " << logic.printTerm(asgn.tr) << endl;
 #endif
         en_e.resetDeduced();
@@ -143,7 +143,7 @@ void Egraph::popBacktrackPoint() {
 //
 PtAsgn_reason& Egraph::getDeduction( ) {
 
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
     cerr << "deductions available: " << deductions.size() - deductions_next << endl;
 #endif
     // Communicate UF deductions
@@ -160,7 +160,7 @@ PtAsgn_reason& Egraph::getDeduction( ) {
 
 #ifdef STATISTICS
         tsolver_stats.deductions_sent ++;
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
         cerr << "sent a deduction" << endl;
 #endif
 //    const int index = e->getDedIndex( );
@@ -389,7 +389,7 @@ bool Egraph::simplifyEquality(PtChild& ptc, bool simplify) {
     }
     else {// shrink the size!
         t.shrink(i-j);
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
         if (i-j != 0)
             cout << term_store.printTerm(ptc.tr) << endl;
 #endif
@@ -410,17 +410,17 @@ void Egraph::declareTerm(PtChild ptc) {
         ERef sym = enode_store.addSymb(tm.symb());
         ERef cdr = ERef_Nil;
         for (int j = tm.size()-1; j >= 0; j--) {
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
             assert( checkParents(cdr) );
 #endif
             ERef car = enode_store.termToERef[tm[j]];
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
             ERef prev_cdr = cdr;
             assert (enode_store[car].getRoot() == car);
             assert (enode_store[cdr].getRoot() == cdr);
 #endif
             cdr = enode_store.addList(car, cdr);
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
             assert( checkParents( car ) );
             assert( checkParents( prev_cdr ) );
             assert( checkParents( cdr ) );
@@ -495,7 +495,7 @@ void Egraph::declareTermTree(PTRef tr)
 //        }
 //        // shrink the size!
 //        t.shrink(i-j);
-//#ifdef PEDANTIC_DEBUG
+//#ifdef VERBOSE_EUF
 //        if (i-j != 0)
 //            cout << term_store.printTerm(term) << endl;
 //#endif
@@ -524,7 +524,7 @@ void Egraph::declareTermTree(PTRef tr)
 //            nested_bools.push(tr);
 //        assert(logic.isTheoryTerm(tr));
 //        queue.pop();
-//#ifdef PEDANTIC_DEBUG
+//#ifdef VERBOSE_EUF
 //        cerr << "Considering term " << term_store.printTerm(tr) << endl;
 //#endif
 //        SymRef sym = term_store[tr].symb();
@@ -556,12 +556,12 @@ void Egraph::declareTermTree(PTRef tr)
 //                assert(o_ite != PTRef_Undef);
 //                // The old term goes to PtPair
 //                ites.push(PtPair(tm[i], o_ite));
-//#ifdef PEDANTIC_DEBUG
+//#ifdef VERBOSE_EUF
 //                cerr << "Added the term " << term_store.printTerm(tm[i], true) << " to later processing" << endl;
 //                cerr << "; changing " << term_store.printTerm(tr) << " to ";
 //#endif
 //                tm[i] = o_ite;
-//#ifdef PEDANTIC_DEBUG
+//#ifdef VERBOSE_EUF
 //                cerr << term_store.printTerm(tr) << endl;
 //#endif
 //            }
@@ -569,7 +569,7 @@ void Egraph::declareTermTree(PTRef tr)
 //        }
 //    }
 //
-//#ifdef PEDANTIC_DEBUG
+//#ifdef VERBOSE_EUF
 //    bool new_terms = false;
 //#endif
 //
@@ -581,7 +581,7 @@ void Egraph::declareTermTree(PTRef tr)
 //        PTRef tr = child.tr;
 //        PTRef parent = child.parent;
 //        int child_pos = child.pos;
-//#ifdef PEDANTIC_DEBUG
+//#ifdef VERBOSE_EUF
 //        if (parent != PTRef_Undef)
 //            cerr << "Now constructing / normalizing term " << term_store.printTerm(tr, true)
 //                 << " which is child nr " << child_pos << " of " << term_store.printTerm(parent, true) << endl;
@@ -590,24 +590,24 @@ void Egraph::declareTermTree(PTRef tr)
 //
 //#endif
 //        if (!enode_store.termToERef.contains(tr)) {
-//#ifdef PEDANTIC_DEBUG
+//#ifdef VERBOSE_EUF
 //            new_terms = true;
 //#endif
 //            Pterm& tm = term_store[tr];
 //            ERef sym = enode_store.addSymb(tm.symb());
 //            ERef cdr = ERef_Nil;
 //            for (int j = tm.size()-1; j >= 0; j--) {
-//#ifdef PEDANTIC_DEBUG
+//#ifdef VERBOSE_EUF
 //                assert( checkParents(cdr) );
 //#endif
 //                ERef car = enode_store.termToERef[tm[j]];
-//#ifdef PEDANTIC_DEBUG
+//#ifdef VERBOSE_EUF
 //                ERef prev_cdr = cdr;
 //                assert (enode_store[car].getRoot() == car);
 //                assert (enode_store[cdr].getRoot() == cdr);
 //#endif
 //                cdr = enode_store.addList(car, cdr);
-//#ifdef PEDANTIC_DEBUG
+//#ifdef VERBOSE_EUF
 //                assert( checkParents( car ) );
 //                assert( checkParents( prev_cdr ) );
 //                assert( checkParents( cdr ) );
@@ -619,7 +619,7 @@ void Egraph::declareTermTree(PTRef tr)
 //            if (rval != tr) {
 //                // This is already done at term instertion time
 //                assert(false);
-//#ifdef PEDANTIC_DEBUG
+//#ifdef VERBOSE_EUF
 //                cout << "Duplicate: " << term_store.printTerm(rval)
 //                     << " equals " << term_store.printTerm(tr) << endl;
 //                ERef tr_new = enode_store.termToERef[rval];
@@ -640,7 +640,7 @@ void Egraph::declareTermTree(PTRef tr)
 //        }
 //    }
 //
-//#ifdef PEDANTIC_DEBUG
+//#ifdef VERBOSE_EUF
 ////    if (not new_terms)
 ////        cout << "All was seen" << endl;
 //#endif
@@ -652,7 +652,7 @@ lbool Egraph::addEquality(PtAsgn pa) {
     Pterm& pt = term_store[pa.tr];
     assert(pt.size() == 2);
     if (enode_store[pa.tr].isDeduced() && enode_store[pa.tr].getDeduced() == pa.sgn) {
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
         cerr << "Assertion already deduced: " << logic.printTerm(pa.tr) << endl;
 #endif
         return l_Undef;
@@ -663,7 +663,7 @@ lbool Egraph::addEquality(PtAsgn pa) {
         res = assertEq(e, pt[i], pa);
 
     if (res) {
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
 //        cerr << "Asserting the equality to true / false" << endl;
 #endif
         bool res2;
@@ -693,7 +693,7 @@ lbool Egraph::addDisequality(PtAsgn pa) {
     bool res = true;
 
     if (enode_store[pa.tr].isDeduced() && enode_store[pa.tr].getDeduced() == pa.sgn) {
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
         cerr << "Assertion already deduced: " << logic.printTerm(pa.tr) << endl;
 #endif
         return l_Undef;
@@ -710,7 +710,7 @@ lbool Egraph::addDisequality(PtAsgn pa) {
     if (res == true && pt.size() == 2)
 #endif
     {
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
 //        cerr << "Asserting the equality to false/true" << endl;
 #endif
         bool res2;
@@ -732,7 +732,7 @@ lbool Egraph::addDisequality(PtAsgn pa) {
 
 bool Egraph::addTrue(PTRef term) {
     if (enode_store[term].isDeduced() && enode_store[term].getDeduced() == l_True) {
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
         cerr << "Assertion already deduced: " << logic.printTerm(term) << endl;
 #endif
         return true;
@@ -743,7 +743,7 @@ bool Egraph::addTrue(PTRef term) {
         tsolver_stats.uns_calls++;
     else {
         tsolver_stats.sat_calls++;
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
         cerr << "sat call" << endl;
 #endif
     }
@@ -753,7 +753,7 @@ bool Egraph::addTrue(PTRef term) {
 
 bool Egraph::addFalse(PTRef term) {
     if (enode_store[term].isDeduced() && enode_store[term].getDeduced() == l_False) {
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
         cerr << "Assertion already deduced: " << logic.printTerm(term) << endl;
 #endif
         return true;
@@ -764,7 +764,7 @@ bool Egraph::addFalse(PTRef term) {
         tsolver_stats.uns_calls++;
     else {
         tsolver_stats.sat_calls++;
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
         cerr << "sat call" << endl;
 #endif
     }
@@ -795,12 +795,12 @@ bool Egraph::assertEq ( PTRef tr_x, PTRef tr_y, PtAsgn r )
     pending.push( x );
     pending.push( y );
 
-#if defined(PEDANTIC_DEBUG)
+#if defined(VERBOSE_EUF)
     cerr << "this is assertEq for " << logic.printTerm(en_x.getTerm())
          << " (enode-id " << tr_x.x << ") and "
          << logic.printTerm(en_y.getTerm()) << " (enode-id " << tr_y.x << ")" << endl;
 #endif
-#if defined(PEDANTIC_DEBUG) && defined(CUSTOM_EL_ALLOC)
+#if defined(VERBOSE_EUF) && defined(CUSTOM_EL_ALLOC)
     ELRef elr_x = en_x.getForbid();
     ERef first_x = ERef_Undef;
     if (elr_x == ELRef_Undef)
@@ -817,7 +817,7 @@ bool Egraph::assertEq ( PTRef tr_x, PTRef tr_y, PtAsgn r )
         cerr << "asserting eq, y's forbid list is " << endl;
         cerr << printDistinctionList(elr_y, forbid_allocator, false);
     }
-#elif defined(PEDANTIC_DEBUG)
+#elif defined(VERBOSE_EUF)
     Elist* el_x = en_x.getForbid();
     ERef first_x = ERef_Undef;
     if (el_x == NULL)
@@ -874,7 +874,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
 
         if ( en_p.isTerm( ) ) {
             expStoreExplanation( p, q, congruence_pending ? PtAsgn(PTRef_Undef, l_Undef) : reason );
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
             cerr << "Exp store: " << (congruence_pending ? "undef" : logic.printTerm(reason.tr)) << endl;
 #endif
         }
@@ -889,7 +889,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
             congruence_pending = true;
             continue;
         }
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
         cerr << "Unmergeable: " << logic.printTerm(en_p.getTerm()) << " [" << logic.printTerm(enode_store[en_p.getRoot()].getTerm()) << "] "
                                 << logic.printTerm(en_q.getTerm()) << " [" << logic.printTerm(enode_store[en_q.getRoot()].getTerm()) << "]" << endl;
         if (reason_inequality.tr != PTRef_Undef)
@@ -927,7 +927,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
             // We need explaining
             //
             // 1. why p and p->constant are equal
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
             cerr << "constant pushing (1): "
                  << logic.printTerm(en_p.getTerm()) << " and "
                  << logic.printTerm(en_proot.getConstant()) << endl;
@@ -935,7 +935,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
             exp_pending.push( en_p.getTerm() );
             exp_pending.push( en_proot.getConstant() );
             // 2. why q and q->constant are equal
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
             cerr << "constant pushing (2): "
                  << logic.printTerm(en_q.getTerm()) << " and "
                  << logic.printTerm(en_qroot.getConstant()) << endl;
@@ -943,14 +943,14 @@ bool Egraph::mergeLoop( PtAsgn reason )
             exp_pending.push( en_q.getTerm() );
             exp_pending.push( en_qroot.getConstant() );
             // 3. why p and q are equal
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
             cerr << "constant pushing (3): "
                  << logic.printTerm(en_q.getTerm()) << " and "
                  << logic.printTerm(en_p.getTerm()) << endl;
 #endif
             exp_pending.push( en_q.getTerm() );
             exp_pending.push( en_p.getTerm() );
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
             cerr << "Explain XXX" << endl;
 #endif
             initDup1( );
@@ -983,7 +983,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
             }
             assert( reason_1 != PTRef_Undef );
             assert( reason_2 != PTRef_Undef );
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
             cerr << "Explain YYY" << endl;
 #endif
 #ifdef PRODUCE_PROOF
@@ -995,7 +995,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
         else if ( logic.isEquality(term_store[reason_inequality.tr].symb()) ) {
             // The reason is a negated equality
             assert(reason_inequality.sgn == l_False);
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
             cerr << "Reason inequality " << logic.printTerm(reason_inequality.tr) << endl;
 #endif
             Pterm& pt_reason = term_store[reason_inequality.tr];
@@ -1023,11 +1023,11 @@ bool Egraph::mergeLoop( PtAsgn reason )
             assert( reason_2 != PTRef_Undef );
 
 //#if VERBOSE
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
 //            cerr << "Reason is neg equality: " << term_store.printTerm(reason_inequality.tr) << endl;
 #endif
 //#endif
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
             cerr << "Explain ZZZ " << logic.printTerm(reason_1) << " " << logic.printTerm(reason_2) << " " << logic.printTerm(reason_inequality.tr) << endl;
 #endif
 #ifdef PRODUCE_PROOF
@@ -1059,7 +1059,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
 //
 bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
 {
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
     cerr << "Assert NEQ of " << logic.printTerm(x) << " and " << logic.printTerm(y) << " since " << logic.printTerm(r.tr) << endl;
 #endif
 #ifdef GC_DEBUG
@@ -1089,7 +1089,7 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
     // They can't be different if the nodes are in the same class
     if ( p == q ) {
         if (r.tr != Eq_FALSE) explanation.push( r );
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
         cerr << "Explain XXY" << endl;
 #endif
 #ifdef PRODUCE_PROOF
@@ -1098,7 +1098,7 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
         expExplain( x, y );
 #endif
 
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
         assert( checkExp( ) );
 #endif
         return false;
@@ -1120,7 +1120,7 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
     // If this is the first distinction for q, make it a "special" one,
     // so that it has the owner reference.  Allocate an extra 32 bits.
     // If there is no node in forbid list
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
     cerr << "Reason is " << logic.printTerm(r.tr) << endl;
 #endif
 #ifdef CUSTOM_EL_ALLOC
@@ -1206,7 +1206,7 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
 #endif
     // Save operation in undo_stack
     undo_stack_main.push( Undo(DISEQ, q) );
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
 #ifdef CUSTOM_EL_ALLOC
     cerr << printDistinctionList(en_q.getForbid(), forbid_allocator, false);
 #else
@@ -1233,7 +1233,7 @@ bool Egraph::assertDist( PTRef tr_d, PtAsgn tr_r )
     vec<ERef> nodes_changed;
     // Assign distinction flag to all arguments
     Pterm& pt_d = term_store[tr_d];
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
     cerr << "Distinction check for " << logic.printTerm(tr_d) << endl;
 #endif
     for (int i = 0; i < pt_d.size(); i++) {
@@ -1242,7 +1242,7 @@ bool Egraph::assertDist( PTRef tr_d, PtAsgn tr_r )
         Enode& en_c = enode_store[er_c];
         assert(en_c.isTerm());
         enodeid_t root_id = enode_store[en_c.getRoot()].getId();
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
         cerr << "  Checking distinction member " << logic.printTerm(tr_c) << " with root " << logic.printTerm(enode_store.ERefToTerm[en_c.getRoot()]) << " (" << root_id << ")" << endl;
 #endif
         if ( root_to_enode.contains(root_id) ) {
@@ -1251,13 +1251,13 @@ bool Egraph::assertDist( PTRef tr_d, PtAsgn tr_r )
                 explanation.push(tr_r);
             // Extract the other node with the same root
             ERef p = root_to_enode[root_id];
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
             cerr << "  Distinction members " << logic.printTerm(tr_c) << " and " << logic.printTerm(enode_store.ERefToTerm[p]) << " are equal" << endl;
 #endif
             // Check condition
             assert( enode_store[p].getRoot() == en_c.getRoot() );
             // Retrieve explanation
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
             cerr << "Explain XYX" << endl;
 #endif
 #ifdef PRODUCE_PROOF
@@ -1280,7 +1280,7 @@ bool Egraph::assertDist( PTRef tr_d, PtAsgn tr_r )
         // Activate distinction in e
         en_c.setDistClasses(en_c.getDistClasses() | SETBIT(index));
         nodes_changed.push(er_c);
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
         cerr << "  Activating distinction of " << logic.printTerm(tr_c) << endl;
 #endif
     }
@@ -1290,7 +1290,7 @@ bool Egraph::assertDist( PTRef tr_d, PtAsgn tr_r )
 }
 
 void Egraph::undoDistinction(PTRef tr_d) {
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
     cerr << "Undo distinction: " << logic.printTerm(tr_d) << endl;
 #endif
     dist_t index = enode_store.getDistIndex(tr_d);
@@ -1302,7 +1302,7 @@ void Egraph::undoDistinction(PTRef tr_d) {
         assert(en_c.isTerm());
         en_c.setDistClasses( en_c.getDistClasses() & ~(SETBIT(index)) );
     }
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
     assert(checkInvariants());
 #endif
 }
@@ -1327,7 +1327,7 @@ void Egraph::backtrackToStackSize ( size_t size ) {
         if ( last_action == MERGE ) {
             ERef e = u.arg.er;
             Enode& en_e = enode_store[e];
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
 //            if (en_e.type() == Enode::et_list)
 //                cerr << "Undo merge of list" << endl;
 //            else
@@ -1392,7 +1392,7 @@ void Egraph::backtrackToStackSize ( size_t size ) {
 #endif
             ERef e = u.arg.er;
             Enode& en_e = enode_store[e];
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
             cerr << "Undo fake merge: " << logic.printTerm(en_e.getTerm()) << endl;
 #endif
 
@@ -1409,7 +1409,7 @@ void Egraph::backtrackToStackSize ( size_t size ) {
 #endif
             ERef e = u.arg.er;
             Enode& en_e = enode_store[e];
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
             cerr << "Undo fake insert: " << logic.printTerm(en_e.getTerm()) << endl;
 #endif
 
@@ -1560,7 +1560,7 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     checkForbidReferences(x);
     checkForbidReferences(y);
 #endif
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
 //    cerr << "Asserting equality of the following enodes: " << endl
 //         << enode_store.printEnode(x) << endl
 //         << enode_store.printEnode(y) << endl;
@@ -1680,14 +1680,14 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
 
     ERef v = y;
     const ERef vstart = v;
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
     bool constant_shouldset = false;
     bool constant_set = false;
 #endif
     while (true) {
         Enode& en_v = enode_store[v];
         // XXX
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
         if (isConstant(v)) {
             cerr << "Rerooting " << logic.printTerm(en_v.getTerm()) << endl;
             constant_shouldset = true;
@@ -1761,14 +1761,14 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     }
     // Adjust parent size
     en_x.setParentSize( en_x.getParentSize( ) + en_y.getParentSize( ) );
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
     checkParents(x);
 #endif
     // Store info about the constant
     if (en_y.isTerm() && en_y.getConstant() != PTRef_Undef) {
         assert(en_x.getConstant() == PTRef_Undef);
         en_x.setConstant( en_y.getConstant() );
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
         constant_set = true;
 #endif
     }
@@ -1776,19 +1776,19 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     else if (en_x.isTerm() && en_x.getConstant() != PTRef_Undef) {
         assert(en_y.getConstant() == PTRef_Undef);
         en_y.setConstant(en_x.getConstant());
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
         constant_set = true;
 #endif
     }
 
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
     if (constant_shouldset && !constant_set)
         assert(false);
 #endif
 
   // Push undo record
     undo_stack_main.push( Undo(MERGE,y) );
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
     undo_stack_main.last().merged_with = x;
     undo_stack_main.last().bool_term = reason.tr;
 #endif
@@ -1798,7 +1798,7 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
 //        printf("There are %d backtrack points\n", backtrack_points.size());
 //    }
 
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
     assert( checkParents( x ) );
     assert( checkParents( y ) );
     assert( checkInvariants( ) );
@@ -1836,7 +1836,7 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
             deduced_polarity = l_False;
     }
 
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
     lbool deduced_polarity2 = l_Undef;
     if ( x == enode_store.getEnode_true() )
         deduced_polarity2 = l_True;
@@ -1867,7 +1867,7 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
 #endif
 
     if ( deduced_polarity == l_Undef ) { // True, for instance, if x & y are not boolean types, or if they are, but they have not been assigned a value yet
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
         assert(enode_store[x].isList() ||
                (!isEqual(enode_store[x].getTerm(), logic.getTerm_true()) &&
                 !isEqual(enode_store[x].getTerm(), logic.getTerm_false()) &&
@@ -1905,7 +1905,7 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
                     // Found the equality, and we deduce its negation
                     ERef ded_eq = enode_store.termToERef[eq];
                     enode_store[ded_eq].setDeduced(l_False);
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
                     cerr << "Neg-Deducing ";
                     cerr << "not " << logic.printTerm(eq);
                     cerr << " since ";
@@ -1943,7 +1943,7 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
                )
             {
                 enode_store[sv].setDeduced(deduced_polarity);
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
                 cerr << "Deducing ";
                 cerr << (deduced_polarity == l_False ? "not " : "");
                 cerr << logic.printTerm(enode_store[sv].getTerm());
@@ -1965,7 +1965,7 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
         if ( v == vstart )
             break;
     }
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
     assert( checkInvariants( ) );
 #endif
 }
@@ -1980,7 +1980,7 @@ void Egraph::undoMerge( ERef y )
 #ifdef GC_DEBUG
     checkRefConsistency();
 #endif
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
     cerr << "Undo merge of " << y.x << endl;
 #endif
     assert( y != ERef_Undef );
@@ -1997,7 +1997,7 @@ void Egraph::undoMerge( ERef y )
 #if VERBOSE
 //    cerr << "UM: Undoing merge of " << y << " and " << x << endl;
 #endif
-#if PEDANTIC_DEBUG
+#if VERBOSE_EUF
 //    if (en_y.isTerm())
 //        cerr << "UM: Undoing merge of " << logic.printTerm(en_y.getTerm())
 //             << " and " << logic.printTerm(en_x.getTerm()) << endl;
@@ -2093,7 +2093,7 @@ skip_cgroot_sig_removal:
             en_p.setCgPtr(p);
         }
         if (en_p.getCgPtr() == p) {
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
             if (enode_store.containsSig(p)) {
                 char* errmsg = enode_store.printEnode(p);
                 cerr << errmsg;
@@ -2158,7 +2158,7 @@ skip_signature_removal:
   // TODO: unmerge for ordinary theories
   //
 
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
   assert( checkParents( y ) );
   assert( checkParents( x ) );
   assert( checkInvariants( ) );
@@ -2198,7 +2198,7 @@ void Egraph::undoDisequality ( ERef x )
 
 #if VERBOSE
     cerr << "UD: Undoing distinction of " << x << " and " << y << endl;
-#elif PEDANTIC_DEBUG
+#elif VERBOSE_EUF
 //    if (en_x.isTerm())
 //        cerr << "UD: Undoing distinction of "
 //             << logic.printTerm(en_x.getTerm()) << " and "
@@ -2248,7 +2248,7 @@ void Egraph::undoDisequality ( ERef x )
 
     forbid_allocator.free(xdist);
 
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
     assert( checkInvariants( ) );
 #endif
 #ifdef GC_DEBUG
@@ -2311,7 +2311,7 @@ void Egraph::undoDisequality ( ERef x )
 
     delete xdist;
 
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
     assert( checkInvariants( ) );
 #endif
 }
@@ -2325,7 +2325,7 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r)
     ERef p = enode_store[x].getRoot();
     ERef q = enode_store[y].getRoot();
 
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
     if (enode_store[x].isTerm()) {
         cerr << "Checking unmergeability of "
              << logic.printTerm(enode_store[x].getTerm())
@@ -2382,7 +2382,7 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r)
         Elist& el_qptr = forbid_allocator[qptr];
         // They are unmergeable if they are on the other forbid list
         if ( enode_store[el_pptr.e].getRoot( ) == q ) {
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
             cerr << "Unmergeable-q: " << logic.printTerm(enode_store[q].getTerm()) << endl;
             cerr << " - reason: " << logic.printTerm(el_pptr.reason.tr) << endl;
 #endif
@@ -2390,7 +2390,7 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r)
             return true;
         }
         if ( enode_store[el_qptr.e].getRoot( ) == p ) {
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
             cerr << "Unmergeable-p: " << logic.printTerm(enode_store[p].getTerm()) << endl;
             cerr << " - reason: " << logic.printTerm(el_qptr.reason.tr) << endl;
 #endif
@@ -2424,7 +2424,7 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r)
     for (;;) {
         // They are unmergeable if they are on the other forbid list
         if ( enode_store[pptr->e].getRoot( ) == q ) {
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
             cerr << "Unmergeable-q: " << logic.printTerm(enode_store[q].getTerm()) << endl;
             cerr << " - reason: " << logic.printTerm(pptr->reason.tr) << endl;
 #endif
@@ -2432,7 +2432,7 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r)
             return true;
         }
         if ( enode_store[qptr->e].getRoot( ) == p ) {
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
             cerr << "Unmergeable-p: " << logic.printTerm(enode_store[p].getTerm()) << endl;
             cerr << " - reason: " << logic.printTerm(qptr->reason.tr) << endl;
 #endif

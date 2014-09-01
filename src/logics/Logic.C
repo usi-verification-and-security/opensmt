@@ -960,6 +960,10 @@ void Logic::deserializeLogicData(const int* logicdata_buf)
 void Logic::serializeTermSystem(int*& termstore_buf, int*& symstore_buf, int*& idstore_buf, int*& sortstore_buf, int*& logicdata_buf) const
 {
     idstore_buf   = id_store.serializeIdentifiers();
+#if defined(PEDANTIC_DEBUG) && defined(TERMS_HAVE_EXPLANATIONS)
+    // Check that reasons stored in terms are on their default values
+    
+#endif
     sortstore_buf = sort_store.serializeSorts();
     symstore_buf  = sym_store.serializeSymbols();
     termstore_buf = term_store.serializeTerms();

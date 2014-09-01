@@ -111,7 +111,7 @@ int* SymStore::serializeSymbols() const
     // Copy symrefs
     int* symref_buf = &buf[symref_buf_offs];
     symref_buf[0] = symref_buf_sz;
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_FOPS
     cerr << "Storing " << symref_buf_sz << " symrefs" << endl;
 #endif
     for (int i = 0; i < symbols.size(); i++)
@@ -125,7 +125,7 @@ int* SymStore::serializeSymbols() const
         strcpy(&symname_buf[p], idToName[i]);
         p += strlen(idToName[i])+1;
     }
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_FOPS
     cerr << "Stored the SymStore" << endl;
     cerr << " - " << buf[buf[symstore_buf_offs_idx]] << " words for symbols" << endl;
     cerr << " - " << buf[buf[symref_buf_offs_idx]] << " symrefs" << endl;
@@ -136,7 +136,7 @@ int* SymStore::serializeSymbols() const
 
 void SymStore::deserializeSymbols(const int* buf)
 {
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_FOPS
     cerr << "SymStore deserializeSymbols got " << buf[0] << " words of data" << endl;
 #endif
     int symstore_buf_offs = buf[symstore_buf_offs_idx];
@@ -145,12 +145,12 @@ void SymStore::deserializeSymbols(const int* buf)
     const int* symref_buf = &buf[symref_buf_offs];
     int symname_buf_offs = buf[symname_buf_offs_idx];
     const int* symname_buf = &buf[symname_buf_offs];
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_FOPS
     cerr << "Reading " << buf[symstore_buf_offs] << " words for symbols" << endl;
 #endif
     ta.deserialize(symstore_buf);
     uint32_t symref_buf_sz = symref_buf[0];
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_FOPS
     cerr << "Reading " << symref_buf_sz << " words for symrefs" << endl;
 #endif
     for (uint32_t i = 0; i < symref_buf_sz-1; i++) {
@@ -163,13 +163,13 @@ void SymStore::deserializeSymbols(const int* buf)
     }
 
     int symname_buf_sz = symname_buf[0];
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_FOPS
     cerr << "Reading " << symname_buf_sz << " characters for symnames" << endl;
 #endif
     char* symname_buf_proper = (char*)&symname_buf[1];
     for (int p = 0, sym_id = 0; p < symname_buf_sz-4; sym_id++) {
         int name_sz = strlen(&symname_buf_proper[p]);
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_FOPS
         cerr << "  string at " << p << " is " << &symname_buf_proper[p] << endl;
 #endif
         if (sym_id < idToName.size())
@@ -178,7 +178,7 @@ void SymStore::deserializeSymbols(const int* buf)
             char* name_out;
             asprintf(&name_out, "%s", &symname_buf_proper[p]);
             idToName.push(name_out);
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_FOPS
             cerr << "Added new symbol " << name_out << endl;
 #endif
             if (symbolTable.contains(name_out)) {
@@ -189,7 +189,7 @@ void SymStore::deserializeSymbols(const int* buf)
                         found = true; break; }
                 }
                 if (!found) {
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_FOPS
                     cerr << "mapping symbol name " << name_out << " to SymRef " << symbols[sym_id].x << endl;
 #endif
                     symrefs.push(symbols[sym_id]);
@@ -199,7 +199,7 @@ void SymStore::deserializeSymbols(const int* buf)
                 vec<SymRef> tmp;
                 tmp.push(symbols[sym_id]);
                 symbolTable.insert(name_out, tmp);
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_FOPS
                 cerr << "mapping symbol name " << name_out << " to SymRef " << symbols[sym_id].x << endl;
 #endif
             }

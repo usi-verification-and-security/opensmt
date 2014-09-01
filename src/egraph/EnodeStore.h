@@ -50,6 +50,9 @@ class EnodeStore {
 
     vec<PTRef>     index_to_dist;                    // Table distinction index --> proper term
 
+#if defined(PEDANTIC_DEBUG) && defined(TERMS_HAVE_EXPLANATIONS)
+  public:
+#endif
     vec<ERef>      enodes;
 
   public:

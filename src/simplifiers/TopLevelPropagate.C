@@ -356,7 +356,7 @@ void TopLevelPropagator::collectFacts(PTRef root, vec<PtAsgn>& facts)
         }
     }
 
-#ifdef PEDANTIC_DEBUG
+#ifdef SIMPLIFICATION_DEBUG
     cerr << "True facts" << endl;
     for (int i = 0; i < facts.size(); i++)
         cerr << (facts[i].sgn == l_True ? "" : "not ") << logic.printTerm(facts[i].tr) << " (" << facts[i].tr.x << ")" << endl;

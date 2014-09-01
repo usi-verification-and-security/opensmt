@@ -257,12 +257,17 @@ declare_fun_err: ;
         writeState((**(n.children->begin())).getValue());
     }
     if (strcmp(cmd, "read-state") == 0) {
-        const char* filename = (**(n.children->begin())).getValue();
-        CnfState cs;
-        char* msg;
-        bool rval = main_solver.readSolverState(filename, &msg);
-        if (!rval) {
-            notify_formatted("%s", msg);
+        if (logic.isSet()) {
+            const char* filename = (**(n.children->begin())).getValue();
+            CnfState cs;
+            char* msg;
+            bool rval = main_solver.readSolverState(filename, &msg);
+            if (!rval) {
+                notify_formatted("%s", msg);
+            }
+        } else {
+            notify_formatted(true, "Illegal command before set-logic: %s", cmd);
+            return false;
         }
     }
     if (strcmp(cmd, "exit") == 0) {
@@ -503,10 +508,10 @@ bool Interpret::checkSat(const char* cmd) {
     }
     if (res == l_Undef) {
         const Option& o_dump_state = config.getOption(":dump-state");
-        if (!o_dump_state.isEmpty())
-            writeState(config.dump_state());
         const SpType o_split = config.sat_split_type();
-        if (o_split != spt_none)
+        if (!o_dump_state.isEmpty() && o_split == spt_none)
+            writeState(config.dump_state());
+        else if (o_split != spt_none)
             writeSplits(config.dump_state());
     }
     return true;

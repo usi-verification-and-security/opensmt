@@ -116,7 +116,7 @@ const Lit Cnfizer::findLit(PTRef ptr) {
         tmap.varToTerm[v] = p;
         if (logic.isTheoryTerm(p))
             solver.setFrozen(v, true);
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_CNFIZATION
 //        cerr << "Term " << logic.printTerm(p) << " maps to var " << v << endl;
 #endif
     }
@@ -867,13 +867,13 @@ void Cnfizer::getVarMapping(CnfState& cs)
     // The cnf
 //    solver.cnfToString(cs);
     // The mapping to terms
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_FOPS
     char* old;
 #endif
     for (int i = 0; i < solver.nVars(); i++) {
         PTRef tr = tmap.varToTerm[i];
         cs.addToMap({i, tr});
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_FOPS
         old = out;
         char* map_s;
         char* term_s = logic.printTerm(tmap.varToTerm[i]);
@@ -884,9 +884,9 @@ void Cnfizer::getVarMapping(CnfState& cs)
 #endif
     }
 
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_FOPS
     cerr << "Cnf looks like" << endl;
-    cerr << cs.cnf << endl;
+    cerr << cs.getCnf() << endl;
     cerr << "Map looks like " << endl;
     cerr << out << endl;
     free(out);

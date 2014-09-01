@@ -145,6 +145,100 @@ AM_CONDITIONAL([ENABLE_PEDANTIC], [test "$enable_pedantic" = "yes"])
 echo "Do pedantic assertion checks... $enable_pedantic"
 
 #
+# Enable verbosity for Cnfizations
+#
+AC_ARG_ENABLE(verbose_cnfization,
+  AC_HELP_STRING([--enable-verbose_cnfization],
+                 [enable verbose output for cnfization <:@no@:>@]),
+  [:],
+  [enable_verbose_cnfization="no"])
+
+if test $enable_verbose_cnfization = "yes" ;
+then
+  config_verbose_cnfization="-DVERBOSE_CNFIZATION"
+else
+  config_verbose_cnfization=""
+fi
+AM_CONDITIONAL([ENABLE_VERBOSE_CNFIZATION], [test "$enable_verbose_cnfization" = "yes"])
+echo "Be verbose in cnfization... $enable_verbose_cnfization"
+
+
+#
+# Enable verbosity for EUF
+#
+AC_ARG_ENABLE(verbose_euf,
+  AC_HELP_STRING([--enable-verbose_euf],
+                 [enable verbose output for equalities and
+                  uninterpreted functions @<:@no@:>@]),
+  [:],
+  [enable_verbose_euf="no"])
+
+if test $enable_verbose_euf = "yes" ;
+then
+  config_verbose_euf="-DVERBOSE_EUF"
+else
+  config_verbose_euf=""
+fi
+AM_CONDITIONAL([ENABLE_VERBOSE_EUF], [test "$enable_verbose_euf" = "yes"])
+echo "Be verbose in EUF... $enable_verbose_euf"
+
+#
+# Enable verbosity for EUF explanations
+#
+AC_ARG_ENABLE(verbose_eufexps,
+  AC_HELP_STRING([--enable-verbose_eufexps],
+                 [enable verbose output for explanations in equalities and
+                  uninterpreted functions @<:@no@:>@]),
+  [:],
+  [enable_verbose_eufex="no"])
+
+if test $enable_verbose_eufex = "yes" ;
+then
+  config_verbose_eufex="-DVERBOSE_EUFEX"
+else
+  config_verbose_eufex=""
+fi
+AM_CONDITIONAL([ENABLE_VERBOSE_EUFEX], [test "$enable_verbose_eufex" = "yes"])
+echo "Be verbose in EUF explanations... $enable_verbose_eufex"
+
+#
+# Enable verbosity for file operations
+#
+AC_ARG_ENABLE(verbose_fops,
+  AC_HELP_STRING([--enable-verbose_fops],
+                 [enable verbose output for file operations @<:@no@:>@]),
+  [:],
+  [enable_verbose_fops="no"])
+
+if test $enable_verbose_fops = "yes" ;
+then
+  config_verbose_fops="-DVERBOSE_FOPS"
+else
+  config_verbose_fops=""
+fi
+AM_CONDITIONAL([ENABLE_VERBOSE_FOPS], [test "$enable_verbose_fops" = "yes"])
+echo "Be verbose in file operations... $enable_verbose_fops"
+
+#
+# Enable verbosity for SAT solver
+#
+AC_ARG_ENABLE(verbose_sat,
+  AC_HELP_STRING([--enable-verbose_sat],
+                 [enable verbose output for the SAT solver <:@no@:>@]),
+  [:],
+  [enable_verbose_sat="no"])
+
+if test $enable_verbose_sat = "yes" ;
+then
+  config_verbose_sat="-DVERBOSE_SAT"
+else
+  config_verbose_sat=""
+fi
+AM_CONDITIONAL([ENABLE_VERBOSE_SAT], [test "$enable_verbose_sat" = "yes"])
+echo "Be verbose in SAT solver... $enable_verbose_sat"
+
+
+#
 # Enable compression for dump files
 #
 AC_ARG_ENABLE(compress,
@@ -159,7 +253,7 @@ then
 else
   config_compress=""
 fi
-AM_CONDITIONAL([ENABLE_PEDANTIC], [test "$enable_compress" = "yes"])
+AM_CONDITIONAL([ENABLE_COMPRESS], [test "$enable_compress" = "yes"])
 echo "Use compression on output files... $enable_compress"
 
 #
@@ -331,7 +425,7 @@ then
   exit
 fi
 
-def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_oldsubstitution $config_custom_memalloc $config_term_explanations $config_compress"
+def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_oldsubstitution $config_custom_memalloc $config_term_explanations $config_compress $config_verbose_euf $config_verbose_eufex $config_verbose_fops $config_verbose_sat $config_verbose_cnfization"
 comp_flags="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization_compiler"
 
 def_flags=`echo ${def_flags} |sed 's/ [ ]*/ /g'`

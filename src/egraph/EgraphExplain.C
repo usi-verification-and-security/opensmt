@@ -172,23 +172,23 @@ void Egraph::expExplain () {
         assert( checkExpTree( p ) );
         assert( checkExpTree( q ) );
 #endif
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUFEX
         cerr << "Explain " << logic.printTerm(p) << " and " << logic.printTerm(q) << endl;
 #endif
         PTRef w = expNCA(p, q);
         assert(w != PTRef_Undef);
 
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUFEX
 //        cerr << "Explanation from " << term_store.printTerm(p) << " to " << term_store.printTerm(w) << ":" << endl;
 //        cerr << " " << printExplanationTree(p) << endl;
 //        cerr << "Explanation from " << term_store.printTerm(q) << " to " << term_store.printTerm(w) << ":" << endl;
 //        cerr << " " <<printExplanationTree(q) << endl;
 #endif
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUFEX
         cerr << "Explaining along path " << logic.printTerm(p) << " -> " << logic.printTerm(w) << endl;
 #endif
         expExplainAlongPath( p, w );
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUFEX
         cerr << "Explaining along path " << logic.printTerm(q) << " -> " << logic.printTerm(w) << endl;
 #endif
         expExplainAlongPath( q, w );
@@ -224,7 +224,7 @@ void Egraph::expExplain(PTRef x, PTRef y)
 void Egraph::expExplain(PTRef x, PTRef y, PTRef r)
 #endif
 {
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUFEX
     cerr << "exp pending size " << exp_pending.size() << endl;
     cerr << "explain pushing " << logic.printTerm(x) << " and " << logic.printTerm(y) << endl;
 #endif
@@ -245,7 +245,7 @@ void Egraph::expExplain(PTRef x, PTRef y, PTRef r)
 void Egraph::expCleanup() {
     // Destroy the eq classes of the explanation
     // May be reversed once debug's fine
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUFEX
     cerr << "Cleanup called" << endl;
 #endif
     for (int i = exp_cleanup.size()-1; i >= 0; i--) {
@@ -256,7 +256,7 @@ void Egraph::expCleanup() {
         assert(expRoot.contains(x));
         expRoot[x] = x;
 #endif
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUFEX
         cerr << "clean: " << logic.printTerm(x) << endl;
 #endif
 // These are not used
@@ -274,7 +274,7 @@ void Egraph::expExplainAlongPath (PTRef x, PTRef y) {
     PTRef v  = expHighestNode(x);
     // Why this? Not in the pseudo code!
     PTRef to = expHighestNode(y);
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUFEX
     cerr << "Explaining " << logic.printTerm(v) << " to " << logic.printTerm(to) << endl;
 #endif
     while ( v != to ) {
@@ -333,7 +333,7 @@ void Egraph::expEnqueueArguments(PTRef x, PTRef y) {
 
     // Simple explanation if they are arity 0 terms
     if ( term_store[x].nargs() == 0 ) {
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUFEX
         cerr << "pushing " << logic.printTerm(x) << " and " << logic.printTerm(y) << endl;
 #endif
         exp_pending.push(x);
@@ -348,7 +348,7 @@ void Egraph::expEnqueueArguments(PTRef x, PTRef y) {
     for (uint32_t i = 0; i < term_store[x].nargs(); i++) {
         PTRef xptr = term_store[x][i];
         PTRef yptr = term_store[y][i];
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUFEX
         cerr << "in loop pushing " << logic.printTerm(xptr) << " and " << logic.printTerm(yptr) << endl;
 #endif
         exp_pending.push(xptr);
@@ -357,7 +357,7 @@ void Egraph::expEnqueueArguments(PTRef x, PTRef y) {
 }
 
 void Egraph::expUnion(PTRef x, PTRef y) {
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUFEX
     cerr << "Union: " << logic.printTerm(x) << " " << logic.printTerm(y) << endl;
 #endif
     // Unions are always between a node and its parent
@@ -369,7 +369,7 @@ void Egraph::expUnion(PTRef x, PTRef y) {
     // Retrieve the representant for the explanation class for x and y
     PTRef x_exp_root = expFind(x);
     PTRef y_exp_root = expFind(y);
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUFEX
     cerr << "Root of " << logic.printTerm(x) << " is " << logic.printTerm(x_exp_root) << endl;
     cerr << "Root of " << logic.printTerm(y) << " is " << logic.printTerm(y_exp_root) << endl;
 #endif
@@ -396,11 +396,11 @@ void Egraph::expUnion(PTRef x, PTRef y) {
 #endif
 
     // Keep track of this union
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUFEX
     cerr << "Union: cleanup " << logic.printTerm(x_exp_root) << endl;
 #endif
     exp_cleanup.push(x_exp_root);
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUFEX
     cerr << "Union: cleanup " << logic.printTerm(y_exp_root) << endl;
 #endif
     exp_cleanup.push(y_exp_root);
@@ -423,7 +423,7 @@ PTRef Egraph::expFind(PTRef x) {
     if (expRoot[x] == x) return x;
 #endif
     // Recurse
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUFEX
     cerr << "expFind: " << logic.printTerm(x) << endl;
 #endif
 #ifdef TERMS_HAVE_EXPLANATIONS
@@ -439,7 +439,7 @@ PTRef Egraph::expFind(PTRef x) {
     if (exp_root != expRoot[x]) {
         expRoot[x] = exp_root;
 #endif
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUFEX
         cerr << "expFind: cleanup " << logic.printTerm(x) << endl;
 #endif
         exp_cleanup.push(x);
@@ -461,11 +461,11 @@ PTRef Egraph::expNCA(PTRef x, PTRef y) {
     time_stamp ++;
 
     PTRef h_x = expHighestNode(x);
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUFEX
     cerr << "Highest node of " << logic.printTerm(x) << " is " << logic.printTerm(h_x) << endl;
 #endif
     PTRef h_y = expHighestNode(y);
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUFEX
     cerr << "Highest node of " << logic.printTerm(y) << " is " << logic.printTerm(h_y) << endl;
 #endif
 #ifdef PEDANTIC_DEBUG
@@ -481,14 +481,14 @@ PTRef Egraph::expNCA(PTRef x, PTRef y) {
 #else
             if (expTimeStamp[h_x] == time_stamp) {
 #endif
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUFEX
                 cerr << "found x, " << logic.printTerm(h_x) << endl;
 #endif
                 return h_x;
             }
 
             // Mark the node and move to the next
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUFEX
 #ifdef TERMS_HAVE_EXPLANATIONS
             cerr << "x: ExpParent of " << logic.printTerm(h_x) << " is " << (term_store[h_x].getExpParent() == PTRef_Undef ? "undef" : logic.printTerm(term_store[h_x].getExpParent())) << endl;
 #else
@@ -514,13 +514,13 @@ PTRef Egraph::expNCA(PTRef x, PTRef y) {
 #else
             if (expTimeStamp[h_y] == time_stamp) {
 #endif
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUFEX
                 cerr << "found y, " << logic.printTerm(h_y) << endl;
 #endif
                 return h_y;
             }
             // Mark the node and move to the next
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUFEX
 #ifdef TERMS_HAVE_EXPLANATIONS
             cerr << "y: ExpParent of " << logic.printTerm(h_y) << " is " << (term_store[h_y].getExpParent() == PTRef_Undef ? "undef" : logic.printTerm(term_store[h_y].getExpParent())) << endl;
 #else
