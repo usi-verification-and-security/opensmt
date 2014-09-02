@@ -1803,9 +1803,13 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 #endif
       // CONFLICT
       conflicts++; conflictC++;
-      if (decisionLevel() == 0)
-        return l_False;
-
+      if (decisionLevel() == 0) {
+          if (splits.size() > 0) {
+              opensmt::stop = true;
+              return l_Undef;
+          }
+          else return l_False;
+      }
       learnt_clause.clear();
       analyze(confl, learnt_clause, backtrack_level);
 
@@ -1874,9 +1878,12 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
         return l_Undef; }
 
         // Simplify the set of problem clauses:
-        if (decisionLevel() == 0 && !simplify())
-          return l_False;
-
+        if (decisionLevel() == 0 && !simplify()) {
+            if (splits.size() > 0) {
+                opensmt::stop = true;
+                return l_Undef;
+            } else return l_False;
+        }
         if (nof_learnts >= 0 && learnts.size()-nAssigns() >= nof_learnts)
           // Reduce the set of learnt clauses:
           reduceDB();
@@ -1897,7 +1904,13 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 #endif
           switch( res )
           {
-            case -1: return l_False;        // Top-Level conflict: unsat
+            case -1:
+                {
+                    if (splits.size() > 0) {
+                        opensmt::stop = true;
+                        return l_Undef;
+                    } else return l_False;  // Top-Level conflict: unsat
+                }
             case  0: conflictC++; continue; // Theory conflict: time for bcp
             case  1: break;                 // Sat and no deductions: go ahead
             case  2:                        // Sat and deductions: time for bcp
@@ -1930,7 +1943,10 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
             newDecisionLevel();
           }else if (value(p) == l_False){
             analyzeFinal(~p, conflict);
-            return l_False;
+            if (splits.size() > 0) {
+                opensmt::stop = true;
+                return l_Undef;
+            } else return l_False;
           }else{
             next = p;
             break;
@@ -1974,7 +1990,12 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
             tsolvers_time += cpuTime( ) - start;
 #endif
             if ( res == 0 ) { conflictC++; continue; }
-            if ( res == -1 ) return l_False;
+            if ( res == -1 ) {
+                if (splits.size() > 0) {
+                    opensmt::stop = true;
+                    return l_Undef;
+                } else return l_False;
+            }
             assert( res == 1 );
 
 #ifdef STATISTICS
