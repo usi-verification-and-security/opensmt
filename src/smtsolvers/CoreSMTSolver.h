@@ -185,6 +185,15 @@ inline char* SplitData::splitToString()
         free(f_old);
     }
 
+    // The constraints
+    for (int i = 0; i < constraints.size(); i++) {
+        char* c_str = clauseToString<vec<Lit> >(constraints[i]);
+        f_old = f_str;
+        asprintf(&f_str, "%s\n%s", f_old, c_str);
+        free(c_str);
+        free(f_old);
+    }
+
     // The instance
     for (int i = 0; i < instance.size(); i++) {
         char* c_str = clauseToString<vec<Lit> >(instance[i]);
