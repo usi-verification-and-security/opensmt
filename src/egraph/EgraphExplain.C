@@ -113,7 +113,7 @@ void Egraph::expReRootOn (PTRef x) {
 
     term_store[x].setExpParent(PTRef_Undef);
 
-    term_store[x].setExpReason(PtAsgn(PTRef_Undef, l_False));
+    term_store[x].setExpReason(PtAsgn_Undef);
 #else
     PTRef parent = expParent[p];
     PtAsgn reason = expReason[p];

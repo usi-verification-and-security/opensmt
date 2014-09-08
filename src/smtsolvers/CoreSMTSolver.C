@@ -2212,7 +2212,7 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
   {
     // We terminate
     cancelUntil(-1);
-    if ( first_model_found )
+    if ( first_model_found || splits.size() > 1)
       theory_handler.backtrack(-1);
   }
   else

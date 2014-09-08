@@ -899,6 +899,19 @@ bool MainSolver::readSolverState(const char* file, char** msg)
         logicstore_buf[i] = contents[logicstore_offs+i];
 
     logic.deserializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf);
+#if defined(PEDANTIC_DEBUG) && defined(TERMS_HAVE_EXPLANATIONS)
+    vec<ERef>& ens = uf_solver.enode_store.enodes;
+    for (int i = 0; i < ens.size(); i++) {
+        ERef er = ens[i];
+        PTRef tr = uf_solver.enode_store[er].getTerm();
+        Pterm& t = logic.getPterm(tr);
+        assert(t.getExpReason() == PtAsgn_Undef);
+        assert(t.getExpParent() == PTRef_Undef);
+        assert(t.getExpRoot() == tr);
+        assert(t.getExpClassSize() == 1);
+        assert(t.getExpTimeStamp() == 0);
+    }
+#endif
     free(termstore_buf);
     free(symstore_buf);
     free(sortstore_buf);
@@ -986,13 +999,12 @@ bool MainSolver::writeState(const char* file, CnfState& cs, char** msg)
         *msg = strerror(errno);
         return false;
     }
-    // XXX I think it is strange that these are not reset.  Need to
-    // investigate more!
+    // Reset, ok.
 
 #if defined(PEDANTIC_DEBUG) && defined(TERMS_HAVE_EXPLANATIONS)
     vec<ERef>& ens = uf_solver.enode_store.enodes;
     for (int i = 0; i < ens.size(); i++) {
-        ERef er = ens[i];
+        ERef  er = ens[i];
         PTRef tr = uf_solver.enode_store[er].getTerm();
         Pterm& t = logic.getPterm(tr);
         assert(t.getExpReason() == PtAsgn_Undef);
@@ -1123,10 +1135,10 @@ bool MainSolver::writeState(const char* file, CnfState& cs, char** msg)
     cerr << "sortstore size is " << buf[buf[sortstore_offs_idx]] << endl;
 #endif
 #ifdef PEDANTIC_DEBUG
-    SMTConfig config;
+    SMTConfig new_config;
     SymStore new_symstore;
     IdentifierStore new_idstore;
-    SStore new_sortstore(config, new_idstore);
+    SStore new_sortstore(new_config, new_idstore);
     PtStore new_tstore(new_symstore, new_sortstore);
 
     new_symstore.deserializeSymbols(&buf[buf[symstore_offs_idx]]);
@@ -1135,11 +1147,18 @@ bool MainSolver::writeState(const char* file, CnfState& cs, char** msg)
     logic.compareIdStore(new_idstore);
 //    logic.compareTermStore(new_tstore);
     new_tstore.deserializeTerms(&buf[buf[termstore_offs_idx]]);
+//    Logic new_logic(new_config, new_idstore, new_sortstore, new_symstore, new_tstore);
+//    TermMapper new_tmap(new_logic);
+//    Egraph new_uf_solver(new_config, new_sortstore, new_symstore, new_tstore, new_logic, new_tmap);
+//    THandler new_thandler(new_uf_solver, new_config, new_tmap, new_logic);
+//    SimpSMTSolver new_sat_solver(new_config, new_thandler);
+
     for (int i = 0; i < cs.getMap().size(); i++) {
         Pterm& my_t = logic.getPterm(cs.getMap()[i].tr);
         Pterm& other_t = new_tstore[cs.getMap()[i].tr];
         my_t.compare(other_t);
     }
+
 #endif
     // Write the size in characters
     buf[0] = buf_sz - 1;

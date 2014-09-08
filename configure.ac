@@ -149,7 +149,7 @@ echo "Do pedantic assertion checks... $enable_pedantic"
 #
 AC_ARG_ENABLE(verbose_cnfization,
   AC_HELP_STRING([--enable-verbose_cnfization],
-                 [enable verbose output for cnfization <:@no@:>@]),
+                 [enable verbose output for cnfization @<:@no@:>@]),
   [:],
   [enable_verbose_cnfization="no"])
 
@@ -185,8 +185,8 @@ echo "Be verbose in EUF... $enable_verbose_euf"
 #
 # Enable verbosity for EUF explanations
 #
-AC_ARG_ENABLE(verbose_eufexps,
-  AC_HELP_STRING([--enable-verbose_eufexps],
+AC_ARG_ENABLE(verbose_eufex,
+  AC_HELP_STRING([--enable-verbose_eufex],
                  [enable verbose output for explanations in equalities and
                   uninterpreted functions @<:@no@:>@]),
   [:],
