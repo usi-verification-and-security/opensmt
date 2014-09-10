@@ -62,13 +62,8 @@ private:
 #ifdef CUSTOM_EL_ALLOC
   ELAllocator   forbid_allocator;
 #endif
-#if defined(PEDANTIC_DEBUG) && defined(TERMS_HAVE_EXPLANATIONS)
-public:
+
   EnodeStore    enode_store;
-private:
-#else
-  EnodeStore    enode_store;
-#endif
   ERef          ERef_Nil;
 
   PTRef         Eq_FALSE; // will be set to (= true false) in constructor
@@ -231,10 +226,12 @@ public:
 #endif
     }
 
-    bool  isDeduced(PTRef tr)   const    { return enode_store[tr].isDeduced(); }
-    lbool getDeduced(PTRef tr)  const    { return enode_store[tr].getDeduced(); }
+    const vec<ERef>& getEnodes() const    { return enode_store.getEnodes(); }
+    PTRef ERefToTerm(ERef er)    const    { return enode_store[er].getTerm(); }
+    bool  isDeduced(PTRef tr)    const    { return enode_store[tr].isDeduced(); }
+    lbool getDeduced(PTRef tr)   const    { return enode_store[tr].getDeduced(); }
 
-    bool  isConstant(ERef er)   const    { return enode_store.ERef_True == er || enode_store.ERef_False == er; }
+    bool  isConstant(ERef er)    const    { return enode_store.ERef_True == er || enode_store.ERef_False == er; }
 
     void  setPolarity(PTRef tr, lbool p) {
         if (polarityMap.contains(tr)) { polarityMap[tr] = p; }

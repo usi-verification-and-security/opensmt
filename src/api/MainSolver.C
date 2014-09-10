@@ -899,11 +899,11 @@ bool MainSolver::readSolverState(const char* file, char** msg)
         logicstore_buf[i] = contents[logicstore_offs+i];
 
     logic.deserializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf);
-    vec<ERef>& ens = uf_solver.enode_store.enodes;
+    const vec<ERef>& ens = uf_solver.getEnodes();
 #if defined(PEDANTIC_DEBUG) && defined(TERMS_HAVE_EXPLANATIONS)
     for (int i = 0; i < ens.size(); i++) {
         ERef er = ens[i];
-        PTRef tr = uf_solver.enode_store[er].getTerm();
+        PTRef tr = uf_solver.ERefToTerm(er);
         Pterm& t = logic.getPterm(tr);
         assert(t.getExpReason() == PtAsgn_Undef);
         assert(t.getExpParent() == PTRef_Undef);
@@ -916,7 +916,7 @@ bool MainSolver::readSolverState(const char* file, char** msg)
     // outside of the terms in fact
     for (int i = 0; i < ens.size(); i++) {
         ERef er = ens[i];
-        PTRef tr = uf_solver.enode_store[er].getTerm();
+        PTRef tr = uf_solver.ERefToTerm(er);
         Pterm& t = logic.getPterm(tr);
         t.setExpTimeStamp(0);
     }
@@ -1010,10 +1010,10 @@ bool MainSolver::writeState(const char* file, CnfState& cs, char** msg)
     // Reset, ok.
 
 #if defined(PEDANTIC_DEBUG) && defined(TERMS_HAVE_EXPLANATIONS)
-    vec<ERef>& ens = uf_solver.enode_store.enodes;
+    const vec<ERef>& ens = uf_solver.getEnodes();
     for (int i = 0; i < ens.size(); i++) {
         ERef  er = ens[i];
-        PTRef tr = uf_solver.enode_store[er].getTerm();
+        PTRef tr = uf_solver.ERefToTerm(er);
         Pterm& t = logic.getPterm(tr);
         assert(t.getExpReason() == PtAsgn_Undef);
         assert(t.getExpParent() == PTRef_Undef);
