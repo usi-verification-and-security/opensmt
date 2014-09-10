@@ -141,7 +141,7 @@ class Pterm {
     PtAsgn      exp_reason;
     PTRef       exp_parent;
     PTRef       exp_root;
-    int         exp_class_size;
+//    int         exp_class_size;
     int         exp_time_stamp;
 #endif
     // This has to be the last
@@ -158,13 +158,13 @@ class Pterm {
     PtAsgn getExpReason       () const { return exp_reason; }
     PTRef  getExpParent       () const { return exp_parent; }
     PTRef  getExpRoot         () const { return exp_root; }
-    int    getExpClassSize    () const { return exp_class_size; }
+//    int    getExpClassSize    () const { return exp_class_size; }
     int    getExpTimeStamp    () const { return exp_time_stamp; }
 
     void setExpReason     (PtAsgn r)     { exp_reason = r; }
     void setExpParent     (PTRef r)      { exp_parent = r; }
     void setExpRoot       (PTRef r)      { exp_root   = r; }
-    void setExpClassSize  (const int s)  { exp_class_size   = s; }
+//    void setExpClassSize  (const int s)  { exp_class_size   = s; }
     void setExpTimeStamp  (const int t)  { exp_time_stamp   = t; }
 #endif
 
@@ -185,7 +185,7 @@ class Pterm {
         setExpReason(PtAsgn(PTRef_Undef, l_Undef));
         setExpParent(PTRef_Undef);
         setExpRoot(t);
-        setExpClassSize(1);
+//        setExpClassSize(1);
         setExpTimeStamp(0);
 #endif
     }

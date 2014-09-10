@@ -386,13 +386,13 @@ void Egraph::expUnion(PTRef x, PTRef y) {
     // as it is closest to the root of the explanation tree
 #ifdef TERMS_HAVE_EXPLANATIONS
     term_store[x_exp_root].setExpRoot(y_exp_root);
-    int sz = term_store[x_exp_root].getExpClassSize() + term_store[y_exp_root].getExpClassSize();
-    term_store[x_exp_root].setExpClassSize(sz);
+//    int sz = term_store[x_exp_root].getExpClassSize() + term_store[y_exp_root].getExpClassSize();
+//    term_store[x_exp_root].setExpClassSize(sz);
 #else
     expRoot[x_exp_root] = y_exp_root;
 
-    int sz = expClassSize[x_exp_root] + expClassSize[y_exp_root];
-    expClassSize[x_exp_root] = sz;
+//    int sz = expClassSize[x_exp_root] + expClassSize[y_exp_root];
+//    expClassSize[x_exp_root] = sz;
 #endif
 
     // Keep track of this union

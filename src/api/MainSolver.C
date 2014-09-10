@@ -899,8 +899,8 @@ bool MainSolver::readSolverState(const char* file, char** msg)
         logicstore_buf[i] = contents[logicstore_offs+i];
 
     logic.deserializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf);
-#if defined(PEDANTIC_DEBUG) && defined(TERMS_HAVE_EXPLANATIONS)
     vec<ERef>& ens = uf_solver.enode_store.enodes;
+#if defined(PEDANTIC_DEBUG) && defined(TERMS_HAVE_EXPLANATIONS)
     for (int i = 0; i < ens.size(); i++) {
         ERef er = ens[i];
         PTRef tr = uf_solver.enode_store[er].getTerm();
@@ -908,10 +908,18 @@ bool MainSolver::readSolverState(const char* file, char** msg)
         assert(t.getExpReason() == PtAsgn_Undef);
         assert(t.getExpParent() == PTRef_Undef);
         assert(t.getExpRoot() == tr);
-        assert(t.getExpClassSize() == 1);
-        assert(t.getExpTimeStamp() == 0);
+//        assert(t.getExpClassSize() == 1);
+//        assert(t.getExpTimeStamp() == 0);
     }
 #endif
+    // This thing is ugly.  I think the explanations should be stored
+    // outside of the terms in fact
+    for (int i = 0; i < ens.size(); i++) {
+        ERef er = ens[i];
+        PTRef tr = uf_solver.enode_store[er].getTerm();
+        Pterm& t = logic.getPterm(tr);
+        t.setExpTimeStamp(0);
+    }
     free(termstore_buf);
     free(symstore_buf);
     free(sortstore_buf);
@@ -1010,8 +1018,8 @@ bool MainSolver::writeState(const char* file, CnfState& cs, char** msg)
         assert(t.getExpReason() == PtAsgn_Undef);
         assert(t.getExpParent() == PTRef_Undef);
         assert(t.getExpRoot() == tr);
-        assert(t.getExpClassSize() == 1);
-        assert(t.getExpTimeStamp() == 0);
+//        assert(t.getExpClassSize() == 1);
+//        assert(t.getExpTimeStamp() == 0);
     }
 #endif
 #ifdef VERBOSE_FOPS
