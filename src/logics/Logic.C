@@ -738,7 +738,7 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, const char** msg) {
         if (term_store.hasCtermKey(sym)) //cterm_map.contains(sym))
             res = term_store.getFromCtermMap(sym); //cterm_map[sym];
         else {
-            res = term_store.pta.alloc(sym, terms);
+            res = term_store.newTerm(sym, terms);
             term_store.addToCtermMap(sym, res); //cterm_map.insert(sym, res);
         }
     }
@@ -761,7 +761,7 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, const char** msg) {
         if (term_store.hasCplxKey(k))
             res = term_store.getFromCplxMap(k);
         else {
-            res = term_store.pta.alloc(sym, terms);
+            res = term_store.newTerm(sym, terms);
             term_store.addToCplxMap(k, res);
         }
     }
@@ -779,7 +779,7 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, const char** msg) {
 #endif
         }
         else {
-            res = term_store.pta.alloc(sym, terms);
+            res = term_store.newTerm(sym, terms);
             term_store.addToBoolMap(k, res); //bool_map.insert(k, res);
 #ifdef SIMPLIFY_DEBUG
             char* ts = printTerm(res);

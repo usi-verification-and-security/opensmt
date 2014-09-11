@@ -36,13 +36,41 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //        return (uint32_t)s; }
 //};
 
-
-
 class PtStore {
+#ifndef TERMS_HAVE_EXPLANATIONS
+    class Explanation {
+      private:
+        PtAsgn      reason;
+        PTRef       parent;
+        PTRef       root;
+        int         time_stamp;
+      public:
+        Explanation()
+            : reason(PtAsgn(PTRef_Undef, l_Undef))
+            , parent(PTRef_Undef)
+            , root(PTRef_Undef)
+            , time_stamp(0)
+            {}
+
+        void setReason(PtAsgn pta) { reason = pta; }
+        void setParent(PTRef p)    { parent = p; }
+        void setRoot(PTRef p)      { root = p; }
+        void setTimeStamp(int s)   { time_stamp = s; }
+
+        PtAsgn getReason()    const { return reason;     }
+        PTRef  getParent()    const { return parent;     }
+        PTRef  getRoot()      const { return root;       }
+        int    getTimeStamp() const { return time_stamp; }
+    };
+
+#endif
     PtermAllocator pta;
     SymStore&      symstore;
     SStore&        sortstore;
-
+    vec<PTRef>     idToPTRef;
+#ifndef TERMS_HAVE_EXPLANATIONS
+    vec<Explanation> explanations;
+#endif
     Map<SymRef,PTRef,SymRefHash,Equal<SymRef> > cterm_map; // Mapping constant symbols to terms
 //    vec<SymRef> cterm_keys;
 
@@ -51,12 +79,22 @@ class PtStore {
 
     Map<PTLKey,PTRef,PTLHash,Equal<PTLKey> >    bool_map;  // Mapping boolean terms to canonical terms
 //    vec<PTLKey> bool_keys;
-    friend class Logic;
+//    friend class Logic;
     static const int ptstore_buf_idx;
+    static const int ptstore_vec_idx;
   public:
     PtStore(SymStore& symstore_, SStore& sortstore_);
 
-    PTRef  newTerm(const SymRef sym, const vec<PTRef>& ps) { return pta.alloc(sym, ps); }
+    PTRef  newTerm(const SymRef sym, const vec<PTRef>& ps) {
+        PTRef tr = pta.alloc(sym, ps); idToPTRef.push(tr);
+        assert(idToPTRef.size() == pta.getNumTerms());
+#ifndef TERMS_HAVE_EXPLANATIONS
+        explanations.push();
+        explanations.last().setRoot(tr);
+#endif
+        return tr;
+    }
+
 
     void   free(PTRef r) { pta.free(r); }  // this is guaranteed to be lazy
 
@@ -65,6 +103,25 @@ class PtStore {
     Pterm& operator[] (PTRef tr) { return pta[tr]; }
     const Pterm& operator[] (PTRef tr) const { return pta[tr]; }
 
+#ifndef TERMS_HAVE_EXPLANATIONS
+    // Explanation related functions
+    void  setReason(PTRef tr, PtAsgn pta) { explanations[operator[](tr).getId()].setReason(pta); }
+    void  setParent(PTRef tr, PTRef p)    {
+        assert((p == PTRef_Undef) ||
+            (symstore[operator[](tr).symb()].rsort() == symstore[operator[](p).symb()].rsort()));
+        explanations[operator[](tr).getId()].setParent(p);
+    }
+    void  setRoot  (PTRef tr, PTRef r)    {
+        assert((r == PTRef_Undef) ||
+            (symstore[operator[](tr).symb()].rsort() == symstore[operator[](r).symb()].rsort()));
+        explanations[operator[](tr).getId()].setRoot(r); }
+    void  setTimeStamp(PTRef tr, int s)   { explanations[operator[](tr).getId()].setTimeStamp(s); }
+
+    PtAsgn getReason(PTRef tr)    const { return explanations[operator[](tr).getId()].getReason(); }
+    PTRef  getParent(PTRef tr)    const { return explanations[operator[](tr).getId()].getParent(); }
+    PTRef  getRoot(PTRef tr)      const { return explanations[operator[](tr).getId()].getRoot(); }
+    int    getTimeStamp(PTRef tr) const { return explanations[operator[](tr).getId()].getTimeStamp(); }
+#endif
     char* printTerm(PTRef, bool ext = false) const;
     char* printTerm_(PTRef, bool ext = false) const;
 

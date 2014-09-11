@@ -70,11 +70,11 @@ private:
 
 #ifndef TERMS_HAVE_EXPLANATIONS
   // Explanations
-  Map<PTRef,PTRef,PTRefHash,Equal<PTRef> >  expParent;
-  Map<PTRef,int,PTRefHash,Equal<PTRef> >    expTimeStamp;
-  Map<PTRef,int,PTRefHash,Equal<PTRef> >    expClassSize;
-  Map<PTRef,PtAsgn,PTRefHash,Equal<PTRef> > expReason;
-  Map<PTRef,PTRef,PTRefHash,Equal<PTRef> >  expRoot;
+//  Map<PTRef,PTRef,PTRefHash,Equal<PTRef> >  expParent;
+//  Map<PTRef,int,PTRefHash,Equal<PTRef> >    expTimeStamp;
+//  Map<PTRef,int,PTRefHash,Equal<PTRef> >    expClassSize;
+//  Map<PTRef,PtAsgn,PTRefHash,Equal<PTRef> > expReason;
+//  Map<PTRef,PTRef,PTRefHash,Equal<PTRef> >  expRoot;
 #endif
 
   Map<PTRef,lbool,PTRefHash>    polarityMap;
@@ -135,16 +135,16 @@ public:
     assert(ptr_new_true  == logic.getTerm_true());
     assert(ptr_new_false == logic.getTerm_false());
 #ifndef TERMS_HAVE_EXPLANATIONS
-    expReason.insert(ptr_new_true, PtAsgn(PTRef_Undef, l_Undef));
-    expReason.insert(ptr_new_false, PtAsgn(PTRef_Undef, l_Undef));
-    expParent.insert(ptr_new_true, PTRef_Undef);
-    expParent.insert(ptr_new_false, PTRef_Undef);
-    expRoot.insert(ptr_new_true, ptr_new_true);
-    expRoot.insert(ptr_new_false, ptr_new_false);
-    expClassSize.insert(ptr_new_true, 1);
-    expClassSize.insert(ptr_new_false, 1);
-    expTimeStamp.insert(ptr_new_true, 0);
-    expTimeStamp.insert(ptr_new_false, 0);
+//    expReason.insert(ptr_new_true, PtAsgn(PTRef_Undef, l_Undef));
+//    expReason.insert(ptr_new_false, PtAsgn(PTRef_Undef, l_Undef));
+//    expParent.insert(ptr_new_true, PTRef_Undef);
+//    expParent.insert(ptr_new_false, PTRef_Undef);
+//    expRoot.insert(ptr_new_true, ptr_new_true);
+//    expRoot.insert(ptr_new_false, ptr_new_false);
+//    expClassSize.insert(ptr_new_true, 1);
+//    expClassSize.insert(ptr_new_false, 1);
+//    expTimeStamp.insert(ptr_new_true, 0);
+//    expTimeStamp.insert(ptr_new_false, 0);
 #endif
     PTRef t = logic.getTerm_true();
     PTRef f = logic.getTerm_false();

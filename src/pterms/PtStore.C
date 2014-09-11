@@ -26,7 +26,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "PtStore.h"
 
-const int PtStore::ptstore_buf_idx = 1;
+const int PtStore::ptstore_vec_idx = 1;
+const int PtStore::ptstore_buf_idx = 2;
 
 PtStore::PtStore(SymStore& symstore_, SStore& sortstore_)
     : symstore(symstore_), sortstore(sortstore_) { }
@@ -157,11 +158,19 @@ int* PtStore::serializeTerms() const
 {
     int* ptstore_buf = pta.serialize();
     int ptstore_buf_sz = ptstore_buf[0];
-    int buf_sz = ptstore_buf_sz+2;
+    int buf_sz = ptstore_buf_sz+pta.getNumTerms()+4;
     int* buf = (int*)malloc(buf_sz*sizeof(int));
     buf[0] = buf_sz;
-    int ptstore_buf_offs = ptstore_buf_idx+1;
+    int ptstore_vec_offs = ptstore_buf_idx + 1;
+    buf[ptstore_vec_idx] = ptstore_vec_offs;
+
+    int ptstore_buf_offs = ptstore_vec_offs + pta.getNumTerms() + 1;
     buf[ptstore_buf_idx] = ptstore_buf_offs;
+
+    buf[ptstore_vec_offs] = pta.getNumTerms(); // Cannot be right!
+    for (int i = 0; i < pta.getNumTerms(); i++)
+        buf[i + ptstore_vec_offs + 1] = idToPTRef[i].x;
+
     for (int i = 0; i < ptstore_buf_sz; i++)
         buf[ptstore_buf_offs+i] = ptstore_buf[i];
     return buf;
@@ -171,4 +180,15 @@ void PtStore::deserializeTerms(const int* buf)
 {
     const int* ptstore_buf = &buf[buf[ptstore_buf_idx]];
     pta.deserialize(ptstore_buf);
+    const int* vec_buf = &buf[buf[ptstore_vec_idx]];
+    pta.setNumTerms(vec_buf[0]);
+    for (int i = 0; i < vec_buf[0]; i++) {
+        PTRef tr = {(uint32_t)vec_buf[i+1]};
+        idToPTRef.push(tr);
+#ifndef TERMS_HAVE_EXPLANATIONS
+        explanations.push();
+        setRoot(tr, tr);
+//        explanations.last().setRoot(tr);
+#endif
+    }
 }

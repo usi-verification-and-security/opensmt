@@ -185,7 +185,6 @@ class Pterm {
         setExpReason(PtAsgn(PTRef_Undef, l_Undef));
         setExpParent(PTRef_Undef);
         setExpRoot(t);
-//        setExpClassSize(1);
         setExpTimeStamp(0);
 #endif
     }
@@ -198,30 +197,13 @@ class Pterm {
 
     }
 
-/*
-    // -- use this as a wrapper:
-    Pterm* Pterm_new(SymRef sym, vec<PTRef>& ps, bool left_assoc = false, bool right_assoc = false, bool chainable = false, bool pairwise = false) {
-        assert(sizeof(PTRef) == sizeof(uint32_t));
-        assert(sizeof(PTId)  == sizeof(uint32_t));
-        assert(sizeof(SymRef)  == sizeof(uint32_t));
-        void* mem = malloc(sizeof(header) + sizeof(PTId) + +sizeof(SymRef) + sizeof(PTRef)*ps.size());
+    Pterm    operator=   (Pterm)         { assert(false); return *this; }
 
-        assert(left_assoc + right_assoc + chainable + pairwise <= 1);
-        if (left_assoc == true)
-            header.type = 1;
-        else if (right_assoc == true)
-            header.type = 2;
-        else if (chainable == true)
-            header.type = 3;
-        else if (pairwise == true)
-            header.type = 4;
-        return new (mem) Pterm(sym, ps); }
-*/
-    Pterm    operator=   (Pterm t1)      { assert(false); return *this; }
+    int      size        ()          const   { return header.size; }
 
-    int      size        ()      const   { return header.size; }
     const PTRef& operator [] (int i) const   { assert(i < size()); return args[i]; }
     PTRef&       operator [] (int i)         { assert(i < size()); return args[i]; }
+
     SymRef   symb        ()      const   { return sym; }
     bool     has_extra   ()      const   { return false; }
     bool     reloced     ()      const   { return header.reloced; }
@@ -291,17 +273,18 @@ struct PtChildHash {
 class PtermAllocator : public RegionAllocator<uint32_t>
 {
     PTId n_terms;
+    void setNumTerms(int i) { n_terms = i; }
     static int ptermWord32Size(int size){
         return (sizeof(Pterm) + (sizeof(PTRef) * size )) / sizeof(uint32_t); }
  public:
-    bool extra_term_field;
 
-    PtermAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), n_terms(0), extra_term_field(false){}
-    PtermAllocator() : n_terms(0), extra_term_field(false){}
+    PtermAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), n_terms(0) {}
+    PtermAllocator() : n_terms(0) {}
+
+    int getNumTerms() const { return n_terms; }
 
     void moveTo(PtermAllocator& to){
         to.n_terms = n_terms;
-        to.extra_term_field = extra_term_field;
         RegionAllocator<uint32_t>::moveTo(to); }
 
     PTRef alloc(const SymRef sym, const vec<PTRef>& ps, bool extra = false)
@@ -349,6 +332,7 @@ class PtermAllocator : public RegionAllocator<uint32_t>
 //        if (to[tr].learnt())         to[tr].activity() = t.activity();
 //        else if (to[tr].has_extra()) to[tr].calcAbstraction();
     }
+    friend class PtStore;
 };
 
 struct LessThan_PTRef {

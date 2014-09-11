@@ -268,18 +268,13 @@ std::string Egraph::printExplanationTree( PTRef x )
 #ifdef TERMS_HAVE_EXPLANATIONS
         if (term_store[x].getExpParent() != PTRef_Undef) {
 #else
-        if ( expParent.contains(x) && expParent[x] != PTRef_Undef ) {
+        if (term_store.getParent(x) != PTRef_Undef) {
 #endif
             os << " --[";
-#ifndef TERMS_HAVE_EXPLANATIONS
-            if ( !expReason.contains(x) )
-                os << "<not-contained>";
-            else
-#endif
 #ifdef TERMS_HAVE_EXPLANATIONS
-            if(term_store[x].getExpReason().tr == PTRef_Undef) {
+            if (term_store[x].getExpReason().tr == PTRef_Undef) {
 #else
-            if(expReason[x].tr == PTRef_Undef) {
+            if (term_store.getReason(x).tr == PTRef_Undef) {
 #endif
                 os << "<";
                 for (int i = 0; i < term_store[x].size(); i++)
@@ -290,20 +285,17 @@ std::string Egraph::printExplanationTree( PTRef x )
 #ifdef TERMS_HAVE_EXPLANATIONS
                 os << (term_store[x].getExpReason().sgn == l_True ? "" : "not ") << term_store.printTerm(term_store[x].getExpReason().tr);
 #else
-                os << (expReason[x].sgn == l_True ? "" : "not ") << term_store.printTerm(expReason[x].tr);
+                os << (term_store.getReason(x).sgn == l_True ? "" : "not ") << term_store.printTerm(term_store.getReason(x).tr);
 #endif
 #ifdef TERMS_HAVE_EXPLANATIONS
             if ( term_store[x].getExpParent() != PTRef_Undef )
 #else
-            if ( expParent.contains(x) && expParent[x] != PTRef_Undef )
+            if (term_store.getParent(x) != PTRef_Undef)
 #endif
                 os << "]--> ";
         }
 #ifndef TERMS_HAVE_EXPLANATIONS
-        if (!expParent.contains(x))
-            x = PTRef_Undef;
-        else
-            x = expParent[x];
+        x = term_store.getParent(x);
 #else
         x = term_store[x].getExpParent();
 #endif
@@ -321,20 +313,16 @@ std::string Egraph::printExplanationTreeDotty( PTRef x )
         char* name = logic.printTerm(x);
         os << name;
         ::free(name);
-#ifndef TERMS_HAVE_EXPLANATIONS
-        if (!expParent.contains(x))
-            break;
-#endif
 #ifdef TERMS_HAVE_EXPLANATIONS
         if (term_store[x].getExpParent() != PTRef_Undef)
 #else
-        if ( expParent[x] != PTRef_Undef )
+        if (term_store.getParent(x) != PTRef_Undef)
 #endif
             os << " -> ";
 #ifdef TERMS_HAVE_EXPLANATIONS
         x = term_store[x].getExpParent();
 #else
-        x = expParent[x];
+        x = term_store.getParent(x);
 #endif
     }
 

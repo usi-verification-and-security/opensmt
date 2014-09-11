@@ -83,9 +83,8 @@ void Egraph::expStoreExplanation ( ERef x, ERef y, PtAsgn reason )
     term_store[tr_y].setExpParent(tr_x);
     term_store[tr_y].setExpReason(reason);
 #else
-    expParent[tr_y] = tr_x;
-
-    expReason[tr_y] = reason;
+    term_store.setParent(tr_y, tr_x);
+    term_store.setReason(tr_y, reason);
 #endif
     // Store both nodes. Because of rerooting operations
     // we don't know whether x --> y or x <-- y at the moment of
@@ -110,24 +109,20 @@ void Egraph::expReRootOn (PTRef x) {
 #ifdef TERMS_HAVE_EXPLANATIONS
     PTRef parent = term_store[p].getExpParent();
     PtAsgn reason = term_store[p].getExpReason();
-
     term_store[x].setExpParent(PTRef_Undef);
-
     term_store[x].setExpReason(PtAsgn_Undef);
 #else
-    PTRef parent = expParent[p];
-    PtAsgn reason = expReason[p];
-
-    expParent[x] = PTRef_Undef;
-
-    expReason[x] = PtAsgn(PTRef_Undef, l_False);
+    PTRef parent = term_store.getParent(p);
+    PtAsgn reason = term_store.getReason(p);
+    term_store.setParent(x, PTRef_Undef);
+    term_store.setReason(x, PtAsgn_Undef);
 #endif
     while( parent != PTRef_Undef ) {
         // Save grandparent
 #ifdef TERMS_HAVE_EXPLANATIONS
         PTRef grandparent = term_store[parent].getExpParent();
 #else
-        PTRef grandparent = expParent[parent];
+        PTRef grandparent = term_store.getParent(parent);
 #endif
         // Save reason
         PtAsgn saved_reason = reason;
@@ -137,11 +132,10 @@ void Egraph::expReRootOn (PTRef x) {
         term_store[parent].setExpParent(p);
         term_store[parent].setExpReason(saved_reason);
 #else
-        reason = expReason[parent];
+        reason = term_store.getReason(parent);
         // Reverse edge & reason
-        expParent[parent] = p;
-
-        expReason[parent] = saved_reason;
+        term_store.setParent(parent, p);
+        term_store.setReason(parent, saved_reason);
 #endif
 
 #ifdef PEDANTIC_DEBUG
@@ -253,8 +247,7 @@ void Egraph::expCleanup() {
 #ifdef TERMS_HAVE_EXPLANATIONS
         term_store[x].setExpRoot(x);
 #else
-        assert(expRoot.contains(x));
-        expRoot[x] = x;
+        term_store.setRoot(x, x);
 #endif
 #ifdef VERBOSE_EUFEX
         cerr << "clean: " << logic.printTerm(x) << endl;
@@ -281,7 +274,7 @@ void Egraph::expExplainAlongPath (PTRef x, PTRef y) {
 #ifdef TERMS_HAVE_EXPLANATIONS
         PTRef p = term_store[v].getExpParent();
 #else
-        PTRef p = expParent[v];
+        PTRef p = term_store.getParent(v);
 #endif
         if (p == PTRef_Undef)
             cerr << "weirdness " << logic.printTerm(v) << endl;
@@ -289,7 +282,7 @@ void Egraph::expExplainAlongPath (PTRef x, PTRef y) {
 #ifdef TERMS_HAVE_EXPLANATIONS
         PtAsgn r = term_store[v].getExpReason();
 #else
-        PtAsgn r = expReason[v];
+        PtAsgn r = term_store.getReason(v);
 #endif
 
         // If it is not a congruence edge
@@ -364,7 +357,7 @@ void Egraph::expUnion(PTRef x, PTRef y) {
 #ifdef TERMS_HAVE_EXPLANATIONS
     assert(term_store[x].getExpParent() == y);
 #else
-    assert(expParent[x] == y);
+    assert(term_store.getParent(x) == y);
 #endif
     // Retrieve the representant for the explanation class for x and y
     PTRef x_exp_root = expFind(x);
@@ -386,13 +379,8 @@ void Egraph::expUnion(PTRef x, PTRef y) {
     // as it is closest to the root of the explanation tree
 #ifdef TERMS_HAVE_EXPLANATIONS
     term_store[x_exp_root].setExpRoot(y_exp_root);
-//    int sz = term_store[x_exp_root].getExpClassSize() + term_store[y_exp_root].getExpClassSize();
-//    term_store[x_exp_root].setExpClassSize(sz);
 #else
-    expRoot[x_exp_root] = y_exp_root;
-
-//    int sz = expClassSize[x_exp_root] + expClassSize[y_exp_root];
-//    expClassSize[x_exp_root] = sz;
+    term_store.setRoot(x_exp_root, y_exp_root);
 #endif
 
     // Keep track of this union
@@ -420,7 +408,7 @@ PTRef Egraph::expFind(PTRef x) {
 #ifdef TERMS_HAVE_EXPLANATIONS
     if (term_store[x].getExpRoot() == x) return x;
 #else
-    if (expRoot[x] == x) return x;
+    if (term_store.getRoot(x) == x) return x;
 #endif
     // Recurse
 #ifdef VERBOSE_EUFEX
@@ -429,15 +417,15 @@ PTRef Egraph::expFind(PTRef x) {
 #ifdef TERMS_HAVE_EXPLANATIONS
     PTRef exp_root = expFind(term_store[x].getExpRoot());
 #else
-    PTRef exp_root = expFind(expRoot[x]);
+    PTRef exp_root = expFind(term_store.getRoot(x));
 #endif
     // Path compression
 #ifdef TERMS_HAVE_EXPLANATIONS
     if (exp_root != term_store[x].getExpRoot()) {
         term_store[x].setExpRoot(exp_root);
 #else
-    if (exp_root != expRoot[x]) {
-        expRoot[x] = exp_root;
+    if (exp_root != term_store.getRoot(x)) {
+        term_store.setRoot(x, exp_root);
 #endif
 #ifdef VERBOSE_EUFEX
         cerr << "expFind: cleanup " << logic.printTerm(x) << endl;
@@ -479,7 +467,7 @@ PTRef Egraph::expNCA(PTRef x, PTRef y) {
 #ifdef TERMS_HAVE_EXPLANATIONS
             if (term_store[h_x].getExpTimeStamp() == time_stamp) {
 #else
-            if (expTimeStamp[h_x] == time_stamp) {
+            if (term_store.getTimeStamp(h_x) == time_stamp) {
 #endif
 #ifdef VERBOSE_EUFEX
                 cerr << "found x, " << logic.printTerm(h_x) << endl;
@@ -492,7 +480,7 @@ PTRef Egraph::expNCA(PTRef x, PTRef y) {
 #ifdef TERMS_HAVE_EXPLANATIONS
             cerr << "x: ExpParent of " << logic.printTerm(h_x) << " is " << (term_store[h_x].getExpParent() == PTRef_Undef ? "undef" : logic.printTerm(term_store[h_x].getExpParent())) << endl;
 #else
-            cerr << "x: ExpParent of " << logic.printTerm(h_x) << " is " << (expParent[h_x] == PTRef_Undef ? "undef" : logic.printTerm(expParent[h_x])) << endl;
+            cerr << "x: ExpParent of " << logic.printTerm(h_x) << " is " << (term_store.getParent(h_x) == PTRef_Undef ? "undef" : logic.printTerm(term_store.getParent(h_x))) << endl;
 #endif
 #endif
 #ifdef TERMS_HAVE_EXPLANATIONS
@@ -501,9 +489,9 @@ PTRef Egraph::expNCA(PTRef x, PTRef y) {
                 h_x = term_store[h_x].getExpParent();
             }
 #else
-            if (expParent[h_x] != h_x) {
-                expTimeStamp[h_x] = time_stamp;
-                h_x = expParent[h_x];
+            if (term_store.getParent(h_x) != h_x) {
+                term_store.setTimeStamp(h_x, time_stamp);
+                h_x = term_store.getParent(h_x);
             }
 #endif
         }
@@ -512,7 +500,7 @@ PTRef Egraph::expNCA(PTRef x, PTRef y) {
 #ifdef TERMS_HAVE_EXPLANATIONS
             if (term_store[h_y].getExpTimeStamp() == time_stamp) {
 #else
-            if (expTimeStamp[h_y] == time_stamp) {
+            if (term_store.getTimeStamp(h_y) == time_stamp) {
 #endif
 #ifdef VERBOSE_EUFEX
                 cerr << "found y, " << logic.printTerm(h_y) << endl;
@@ -524,7 +512,7 @@ PTRef Egraph::expNCA(PTRef x, PTRef y) {
 #ifdef TERMS_HAVE_EXPLANATIONS
             cerr << "y: ExpParent of " << logic.printTerm(h_y) << " is " << (term_store[h_y].getExpParent() == PTRef_Undef ? "undef" : logic.printTerm(term_store[h_y].getExpParent())) << endl;
 #else
-            cerr << "y: ExpParent of " << logic.printTerm(h_y) << " is " << (expParent[h_y] == PTRef_Undef ? "undef" : logic.printTerm(expParent[h_y])) << endl;
+            cerr << "y: ExpParent of " << logic.printTerm(h_y) << " is " << (term_store.getParent(h_y) == PTRef_Undef ? "undef" : logic.printTerm(term_store.getParent(h_y))) << endl;
 #endif
 #endif
 #ifdef TERMS_HAVE_EXPLANATIONS
@@ -533,14 +521,15 @@ PTRef Egraph::expNCA(PTRef x, PTRef y) {
                 h_y = term_store[h_y].getExpParent();
             }
 #else
-            if (expParent[h_y] != h_y) {
-                expTimeStamp[h_y] = time_stamp;
-                h_y = expParent[h_y];
+            if (term_store.getParent(h_y) != h_y) {
+                term_store.setTimeStamp(h_y, time_stamp);
+                h_y = term_store.getParent(h_y);
             }
 #endif
         }
     }
     // Since h_x == h_y, we return h_x
+    assert(h_x == h_y);
     return h_x;
 }
 
@@ -573,14 +562,14 @@ void Egraph::expRemoveExplanation() {
         term_store[y].setExpReason(PtAsgn_Undef);
     }
 #else
-    assert( expParent[x] == y || expParent[y] == x);
-    if (expParent[x] == y ) {
-        expParent[x] = PTRef_Undef;
-        expReason[x] = PtAsgn_Undef;
+    assert(term_store.getParent(x) == y || term_store.getParent(y) == x);
+    if (term_store.getParent(x) == y) {
+        term_store.setParent(x, PTRef_Undef);
+        term_store.setReason(x, PtAsgn_Undef);
     }
     else {
-        expParent[y] = PTRef_Undef;
-        expReason[y] = PtAsgn_Undef;
+        term_store.setParent(y, PTRef_Undef);
+        term_store.setReason(y, PtAsgn_Undef);
     }
 #endif
 }

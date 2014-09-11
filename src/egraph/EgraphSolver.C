@@ -433,15 +433,6 @@ void Egraph::declareTerm(PtChild ptc) {
             ptc.tr = rval;
             if (ptc.parent != PTRef_Undef)
                 term_store[ptc.parent][ptc.pos] = ptc.tr;
-        } else {
-            // Properly new.  Initialize explanation data
-#ifndef TERMS_HAVE_EXPLANATIONS
-            expReason   .insert(tr, PtAsgn(PTRef_Undef, l_Undef));
-            expParent   .insert(tr, PTRef_Undef);
-            expRoot     .insert(tr, tr);
-            expClassSize.insert(tr, 1);
-            expTimeStamp.insert(tr, 0);
-#endif
         }
 //        assert (rval == tr);
     }

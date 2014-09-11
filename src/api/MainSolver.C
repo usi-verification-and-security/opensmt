@@ -899,8 +899,8 @@ bool MainSolver::readSolverState(const char* file, char** msg)
         logicstore_buf[i] = contents[logicstore_offs+i];
 
     logic.deserializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf);
-    const vec<ERef>& ens = uf_solver.getEnodes();
 #if defined(PEDANTIC_DEBUG) && defined(TERMS_HAVE_EXPLANATIONS)
+    const vec<ERef>& ens = uf_solver.getEnodes();
     for (int i = 0; i < ens.size(); i++) {
         ERef er = ens[i];
         PTRef tr = uf_solver.ERefToTerm(er);
@@ -912,14 +912,6 @@ bool MainSolver::readSolverState(const char* file, char** msg)
 //        assert(t.getExpTimeStamp() == 0);
     }
 #endif
-    // This thing is ugly.  I think the explanations should be stored
-    // outside of the terms in fact
-    for (int i = 0; i < ens.size(); i++) {
-        ERef er = ens[i];
-        PTRef tr = uf_solver.ERefToTerm(er);
-        Pterm& t = logic.getPterm(tr);
-        t.setExpTimeStamp(0);
-    }
     free(termstore_buf);
     free(symstore_buf);
     free(sortstore_buf);
