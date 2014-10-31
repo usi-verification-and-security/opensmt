@@ -79,6 +79,43 @@ template <class T> static inline void sort(T* array, int size) {
     sort(array, size, LessThan_default<T>()); }
 
 
+template <class T>
+void copyArray(T* src, int begin, int end, T* dst) {
+    for (int i = begin; i < end; i++)
+        dst[i] = src[i];
+}
+
+template <class T, class LessThan>
+void merge(T* src, int begin, int middle, int end, T* work, LessThan lt)
+{
+    int i0 = begin;
+    int i1 = middle;
+    for (int j = begin; j < end; j++) {
+        if (i0 < middle && (i1 >= end || lt(src[i0], src[i1])))
+            work[j] = src[i0++];
+        else
+            work[j] = src[i1++];
+    }
+}
+
+template <class T, class LessThan>
+void splitMerge(T* src, int begin, int end, T* work, LessThan lt)
+{
+    if (end-begin <= 1) return;
+    int middle = (end+begin)/2;
+    splitMerge(src, begin, middle, work, lt);
+    splitMerge(src, middle, end, work, lt);
+    merge(src, begin, middle, end, work, lt);
+    copyArray(work, begin, end, src);
+}
+
+template <class T, class LessThan> static inline
+void mergeSort(T* src, int size, LessThan lt) {
+    T* work = (T*)malloc(sizeof(T)*size);
+    splitMerge(src, 0, size, work, lt);
+    free(work);
+}
+
 //=================================================================================================
 // For 'vec's:
 
