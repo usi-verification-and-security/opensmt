@@ -521,7 +521,6 @@ AC_CONFIG_FILES([ \
 		  src/simplifiers/Makefile \
 		  src/smtsolvers/Makefile \
 		  src/proof/Makefile \
-		  src/common/Makefile \
 		  src/egraph/Makefile \
 		  src/sorts/Makefile \
 		  src/logics/Makefile \
