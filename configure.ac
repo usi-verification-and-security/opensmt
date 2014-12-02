@@ -466,6 +466,9 @@ if test "$config_compress = 'yes'"; then
     AM_LDFLAGS="$AM_LDFLAGS -lz"
 fi
 
+AM_CPPFLAGS=$AM_CXXFLAGS
+AM_CFLAGS=$AM_CXXFLAGS
+
 AC_SUBST([AM_CFLAGS])
 AC_SUBST([AM_CXXFLAGS])
 AC_SUBST([AM_CPPFLAGS])
