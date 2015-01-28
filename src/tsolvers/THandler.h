@@ -86,6 +86,7 @@ public:
   void    getReason            ( Lit, vec< Lit > &, vec<char>& );   // Returns the explanation for a deduced literal
 #endif
 
+  bool isTheoryTerm         ( Var v ) { return logic.isTheoryTerm(varToTerm(v)); }
   PTRef varToTerm           ( Var v ) { return tmap.varToTerm[v]; }  // Return the term ref corresponding to a variable
   Pterm& varToPterm         ( Var v)  { return logic.getPterm(tmap.varToTerm[v]); } // Return the term corresponding to a variable
 

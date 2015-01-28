@@ -735,18 +735,38 @@ Lit CoreSMTSolver::pickBranchLit(int polarity_mode, double random_var_freq)
       return sugg;
     }
 
+#ifdef SCATTER_ONLY_TERMS
+    vec<int> discarded;
+#endif
     // Activity based decision:
-    while (next == var_Undef || toLbool(assigns[next]) != l_Undef || !decision_var[next])
-      if (order_heap.empty()){
-	next = var_Undef;
-	break;
-      }else
-	next = order_heap.removeMin();
-
-      if ( next == var_Undef
-	  && ( config.logic == QF_UFIDL || config.logic == QF_UFLRA )
-	  && config.sat_lazy_dtc != 0 )
-      {
+    while (next == var_Undef || toLbool(assigns[next]) != l_Undef || !decision_var[next]) {
+        if (order_heap.empty()){
+#ifdef SCATTER_ONLY_TERMS
+            if (discarded.size() > 0)
+                next = discarded[0];
+            else next = var_Undef
+#else
+            next = var_Undef;
+#endif
+            break;
+        }else {
+            next = order_heap.removeMin();
+#ifdef SCATTER_ONLY_TERMS
+            if (split_on && next != var_Undef && !theory_handler.isTheoryTerm(next)) {
+                discarded.push(next);
+                next = var_Undef;
+            }
+#endif
+        }
+    }
+#ifdef SCATTER_ONLY_TERMS
+    for (int i = 0; i < discarded.size(); i++)
+        order_heap.insert(discarded[i]);
+#endif
+    if ( next == var_Undef
+          && ( config.logic == QF_UFIDL || config.logic == QF_UFLRA )
+          && config.sat_lazy_dtc != 0 )
+    {
 //	next = generateMoreEij( );
 
 	/*
@@ -757,11 +777,11 @@ Lit CoreSMTSolver::pickBranchLit(int polarity_mode, double random_var_freq)
 	      ? "F"
 	      : "U" ) << endl;
 	*/
-      }
+    }
 
 
-      if ( next == var_Undef )
-	return lit_Undef;
+    if ( next == var_Undef )
+        return lit_Undef;
 
 #if CACHE_POLARITY
       if ( prev_polarity[ next ] != toInt(l_Undef) )

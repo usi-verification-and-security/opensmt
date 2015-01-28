@@ -173,11 +173,11 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         return s_Error; }
 
     // XXX Disable this once debugging phase is over
-    vec<PTRef> tmp;
-    for (int i = formulas.size()-1; i >= 0; i--)
-        tmp.push(formulas[i]);
-    root = logic.mkAnd(tmp);
-//    root = logic.mkAnd(formulas);
+//    vec<PTRef> tmp;
+//    for (int i = formulas.size()-1; i >= 0; i--)
+//        tmp.push(formulas[i]);
+//    root = logic.mkAnd(tmp);
+    root = logic.mkAnd(formulas);
     PTRef trans = PTRef_Undef;
     trans = tlp.learnEqTransitivity(root);
     if (trans != PTRef_Undef) {

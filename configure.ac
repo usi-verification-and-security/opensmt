@@ -257,6 +257,25 @@ AM_CONDITIONAL([ENABLE_COMPRESS], [test "$enable_compress" = "yes"])
 echo "Use compression on output files... $enable_compress"
 
 #
+# Enable scattering on theory terms
+#
+AC_ARG_ENABLE(compress,
+  AC_HELP_STRING([--enable-theoryscatter],
+                 [Prefer splitting on theory terms in scatter @<:@yes@:>@]),
+  [:],
+  [enable_theoryscatter="yes"])
+
+if test $enable_theoryscatter = "yes" ;
+then
+  config_theoryscatter="-DSCATTER_PREFERS_TTERMS"
+else
+  config_theoryscatter=""
+fi
+AM_CONDITIONAL([ENABLE_SCATTTERPREFERSTTERMS], [test "$enable_theoryscatter" = "yes"])
+echo "Use compression on output files... $enable_theoryscatter"
+
+
+#
 # Enable Stupid Theory Propagation
 #
 AC_ARG_ENABLE(clever_theoryprop,
@@ -425,7 +444,7 @@ then
   exit
 fi
 
-def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_oldsubstitution $config_custom_memalloc $config_term_explanations $config_compress $config_verbose_euf $config_verbose_eufex $config_verbose_fops $config_verbose_sat $config_verbose_cnfization"
+def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_oldsubstitution $config_custom_memalloc $config_term_explanations $config_compress $config_verbose_euf $config_verbose_eufex $config_verbose_fops $config_verbose_sat $config_verbose_cnfization $config_theoryscatter"
 comp_flags="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization_compiler"
 
 def_flags=`echo ${def_flags} |sed 's/ [ ]*/ /g'`
