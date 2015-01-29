@@ -735,23 +735,23 @@ Lit CoreSMTSolver::pickBranchLit(int polarity_mode, double random_var_freq)
       return sugg;
     }
 
-#ifdef SCATTER_ONLY_TERMS
+#ifdef SCATTER_PREFERS_TTERMS
     vec<int> discarded;
 #endif
     // Activity based decision:
     while (next == var_Undef || toLbool(assigns[next]) != l_Undef || !decision_var[next]) {
         if (order_heap.empty()){
-#ifdef SCATTER_ONLY_TERMS
+#ifdef SCATTER_PREFERS_TTERMS
             if (discarded.size() > 0)
                 next = discarded[0];
-            else next = var_Undef
+            else next = var_Undef;
 #else
             next = var_Undef;
 #endif
             break;
         }else {
             next = order_heap.removeMin();
-#ifdef SCATTER_ONLY_TERMS
+#ifdef SCATTER_PREFERS_TTERMS
             if (split_on && next != var_Undef && !theory_handler.isTheoryTerm(next)) {
                 discarded.push(next);
                 next = var_Undef;
@@ -759,7 +759,7 @@ Lit CoreSMTSolver::pickBranchLit(int polarity_mode, double random_var_freq)
 #endif
         }
     }
-#ifdef SCATTER_ONLY_TERMS
+#ifdef SCATTER_PREFERS_TTERMS
     for (int i = 0; i < discarded.size(); i++)
         order_heap.insert(discarded[i]);
 #endif
