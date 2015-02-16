@@ -899,7 +899,7 @@ bool MainSolver::readSolverState(const char* file, char** msg)
         logicstore_buf[i] = contents[logicstore_offs+i];
 
     logic.deserializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf);
-#if defined(PEDANTIC_DEBUG) && defined(TERMS_HAVE_EXPLANATIONS)
+#if defined(TERMS_HAVE_EXPLANATIONS)
     // Note: At this point the uf_solver might only have the constants
     // true and false.
     const vec<ERef>& ens = uf_solver.getEnodes();
