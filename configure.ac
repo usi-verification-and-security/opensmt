@@ -259,7 +259,7 @@ echo "Use compression on output files... $enable_compress"
 #
 # Enable scattering on theory terms
 #
-AC_ARG_ENABLE(compress,
+AC_ARG_ENABLE(theoryscatter,
   AC_HELP_STRING([--enable-theoryscatter],
                  [Prefer splitting on theory terms in scatter @<:@yes@:>@]),
   [:],

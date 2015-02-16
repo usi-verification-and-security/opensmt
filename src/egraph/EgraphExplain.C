@@ -212,10 +212,10 @@ void Egraph::explain( PTRef x, PTRef y, vec<PTRef> & expl )
 // Produce an explanation between nodes x and y
 // Wrapper for expExplain
 //
-#ifndef PRODUCE_PROOF
-void Egraph::expExplain(PTRef x, PTRef y)
-#else
+#ifdef PRODUCE_PROOF
 void Egraph::expExplain(PTRef x, PTRef y, PTRef r)
+#else
+void Egraph::expExplain(PTRef x, PTRef y)
 #endif
 {
 #ifdef VERBOSE_EUFEX
@@ -267,6 +267,7 @@ void Egraph::expExplainAlongPath (PTRef x, PTRef y) {
     PTRef v  = expHighestNode(x);
     // Why this? Not in the pseudo code!
     PTRef to = expHighestNode(y);
+
 #ifdef VERBOSE_EUFEX
     cerr << "Explaining " << logic.printTerm(v) << " to " << logic.printTerm(to) << endl;
 #endif
@@ -462,6 +463,8 @@ PTRef Egraph::expNCA(PTRef x, PTRef y) {
 #endif
 
     while ( h_x != h_y ) {
+        assert(term_store[h_x].getExpTimeStamp() <= time_stamp);
+        assert(term_store[h_y].getExpTimeStamp() <= time_stamp);
         if ( h_x != PTRef_Undef ) {
             // We reached a node already marked by h_y
 #ifdef TERMS_HAVE_EXPLANATIONS

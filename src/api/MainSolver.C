@@ -900,18 +900,21 @@ bool MainSolver::readSolverState(const char* file, char** msg)
 
     logic.deserializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf);
 #if defined(PEDANTIC_DEBUG) && defined(TERMS_HAVE_EXPLANATIONS)
+    // Note: At this point the uf_solver might only have the constants
+    // true and false.
     const vec<ERef>& ens = uf_solver.getEnodes();
     for (int i = 0; i < ens.size(); i++) {
         ERef er = ens[i];
         PTRef tr = uf_solver.ERefToTerm(er);
         Pterm& t = logic.getPterm(tr);
+        t.setExpTimeStamp(0);
         assert(t.getExpReason() == PtAsgn_Undef);
         assert(t.getExpParent() == PTRef_Undef);
         assert(t.getExpRoot() == tr);
 //        assert(t.getExpClassSize() == 1);
 //        assert(t.getExpTimeStamp() == 0);
-    }
 #endif
+    }
     free(termstore_buf);
     free(symstore_buf);
     free(sortstore_buf);
@@ -1001,19 +1004,6 @@ bool MainSolver::writeState(const char* file, CnfState& cs, char** msg)
     }
     // Reset, ok.
 
-#if defined(PEDANTIC_DEBUG) && defined(TERMS_HAVE_EXPLANATIONS)
-    const vec<ERef>& ens = uf_solver.getEnodes();
-    for (int i = 0; i < ens.size(); i++) {
-        ERef  er = ens[i];
-        PTRef tr = uf_solver.ERefToTerm(er);
-        Pterm& t = logic.getPterm(tr);
-        assert(t.getExpReason() == PtAsgn_Undef);
-        assert(t.getExpParent() == PTRef_Undef);
-        assert(t.getExpRoot() == tr);
-//        assert(t.getExpClassSize() == 1);
-//        assert(t.getExpTimeStamp() == 0);
-    }
-#endif
 #ifdef VERBOSE_FOPS
     cerr << "Trying to write solver state" << endl;
     cerr << "Cnf: " << endl;
@@ -1032,6 +1022,20 @@ bool MainSolver::writeState(const char* file, CnfState& cs, char** msg)
     int* idstore_buf;
     int* sortstore_buf;
     int* logicstore_buf;
+
+    // Clear the timestamp for explanations!
+    const vec<ERef>& ens = uf_solver.getEnodes();
+    for (int i = 0; i < ens.size(); i++) {
+        ERef er = ens[i];
+        PTRef tr = uf_solver.ERefToTerm(er);
+        Pterm& t = logic.getPterm(tr);
+#ifdef TERMS_HAVE_EXPLANATIONS
+        t.setExpTimeStamp(0);
+        t.setExpReason(PtAsgn(PTRef_Undef, l_Undef));
+        t.setExpParent(PTRef_Undef);
+        t.setExpRoot(tr);
+#endif
+    }
 
     logic.serializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf);
 
