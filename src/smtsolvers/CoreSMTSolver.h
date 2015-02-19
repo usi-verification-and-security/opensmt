@@ -327,6 +327,7 @@ class CoreSMTSolver : public SMTSolver
     uint64_t clauses_literals, learnts_literals, max_literals, tot_literals;
     double learnts_size;
     uint64_t all_learnts;
+    uint64_t learnt_theory_conflicts;
 
     // Splits
     vec<SplitData> splits;

@@ -86,6 +86,7 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
   , clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0)
   // ADDED FOR MINIMIZATION
   , learnts_size(0) , all_learnts(0)
+  , learnt_theory_conflicts(0)
   , ok                    (true)
   , cla_inc               (1)
   , var_inc               (1)
@@ -1809,8 +1810,8 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
   while (split_type == spt_none || splits.size() < split_num - 1)
   {
 #ifdef PRINT_CLAUSAL_SIZE
-    if (conflictC % 1000)
-    printf("; %d clausal size %d\n", conflictC, clauses.size());
+    if (conflicts % 1000 == 0)
+    printf("; %d total learnt theory conflicts %d\n", conflictC, learnt_theory_conflicts);
 #endif
     // Added line
     if ( opensmt::stop ) return l_Undef;
@@ -2376,6 +2377,7 @@ void CoreSMTSolver::printStatistics( ostream & os )
   os << "; T-Lemmata learnt.........: " << learnt_t_lemmata << endl;
   os << "; T-Lemmata perm learnt....: " << perm_learnt_t_lemmata << endl;
   os << "; Conflicts learnt.........: " << all_learnts << endl;
+  os << "; T-conflicts learnt.......: " << learnt_theory_conflicts << endl;
   os << "; Average learnts size.....: " << learnts_size/all_learnts << endl;
   if ( config.sat_preprocess_booleans != 0
       || config.sat_preprocess_theory != 0 )

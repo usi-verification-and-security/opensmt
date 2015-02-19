@@ -365,6 +365,7 @@ int CoreSMTSolver::checkTheory( bool complete )
     }
 #endif
     learnts.push(c);
+    learnt_theory_conflicts++;
 #ifndef SMTCOMP
     undo_stack_oper.push_back( NEWLEARNT );
     undo_stack_elem.push_back( (void *)c );
