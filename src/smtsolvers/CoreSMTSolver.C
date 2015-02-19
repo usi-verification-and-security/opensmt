@@ -1807,11 +1807,16 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 #ifdef PEDANTIC_DEBUG
   bool thr_backtrack = false;
 #endif
+#ifdef PRINT_CLAUSAL_SIZE
+  int prev_conflicts = conflicts;
+#endif
   while (split_type == spt_none || splits.size() < split_num - 1)
   {
 #ifdef PRINT_CLAUSAL_SIZE
-    if (conflicts % 1000 == 0)
-    printf("; %d total learnt theory conflicts %d\n", conflictC, learnt_theory_conflicts);
+    if (conflicts % 1000 == 0 && conflicts != prev_conflicts) {
+        prev_conflicts = conflicts;
+        printf("; %d total learnt theory conflicts %d\n", conflicts, learnt_theory_conflicts);
+    }
 #endif
     // Added line
     if ( opensmt::stop ) return l_Undef;
