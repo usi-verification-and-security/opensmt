@@ -716,7 +716,7 @@ Lit CoreSMTSolver::pickBranchLit(int polarity_mode, double random_var_freq)
   Var next = var_Undef;
 
   // Random decision:
-  if (drand(random_seed) < random_var_freq && !order_heap.empty()){
+  if (((!split_on && drand(random_seed) < random_var_freq) || (split_on && split_preference == sppref_rand)) && !order_heap.empty()){
     next = order_heap[irand(random_seed,order_heap.size())];
     if (toLbool(assigns[next]) == l_Undef && decision_var[next])
       rnd_decisions++; }
@@ -735,34 +735,36 @@ Lit CoreSMTSolver::pickBranchLit(int polarity_mode, double random_var_freq)
       return sugg;
     }
 
-#ifdef SCATTER_PREFERS_TTERMS
     vec<int> discarded;
-#endif
+
     // Activity based decision:
     while (next == var_Undef || toLbool(assigns[next]) != l_Undef || !decision_var[next]) {
         if (order_heap.empty()){
-#ifdef SCATTER_PREFERS_TTERMS
-            if (discarded.size() > 0)
-                next = discarded[0];
-            else next = var_Undef;
-#else
-            next = var_Undef;
-#endif
+            if (split_preference == sppref_tterm || split_preference == sppref_bterm) {
+                if (discarded.size() > 0)
+                    next = discarded[0];
+                else next = var_Undef;
+            } else
+                next = var_Undef;
             break;
+
         }else {
             next = order_heap.removeMin();
-#ifdef SCATTER_PREFERS_TTERMS
-            if (split_on && next != var_Undef && !theory_handler.isTheoryTerm(next)) {
-                discarded.push(next);
-                next = var_Undef;
+            if (split_on && next != var_Undef) {
+                if (split_preference == sppref_tterm && !theory_handler.isTheoryTerm(next)) {
+                    discarded.push(next);
+                    next = var_Undef;
+                } else if (split_preference == sppref_bterm && theory_handler.isTheoryTerm(next)) {
+                    discarded.push(next);
+                    next = var_Undef;
+                }
             }
-#endif
         }
     }
-#ifdef SCATTER_PREFERS_TTERMS
-    for (int i = 0; i < discarded.size(); i++)
-        order_heap.insert(discarded[i]);
-#endif
+    if (split_preference == sppref_tterm || split_preference == sppref_bterm)
+        for (int i = 0; i < discarded.size(); i++)
+            order_heap.insert(discarded[i]);
+
     if ( next == var_Undef
           && ( config.logic == QF_UFIDL || config.logic == QF_UFLRA )
           && config.sat_lazy_dtc != 0 )
@@ -1806,6 +1808,10 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 #endif
   while (split_type == spt_none || splits.size() < split_num - 1)
   {
+#ifdef PRINT_CLAUSAL_SIZE
+    if (conflictC % 1000)
+    printf("; %d clausal size %d\n", conflictC, clauses.size());
+#endif
     // Added line
     if ( opensmt::stop ) return l_Undef;
 
@@ -2092,6 +2098,8 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
       else if (split_units == spm_decisions)
           split_next = config.sat_split_inittune() + decisions;
       else split_next = -1;
+
+      split_preference = config.sat_split_preference();
 
   }
   resource_units = config.sat_resource_units();

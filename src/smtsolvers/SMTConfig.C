@@ -371,6 +371,7 @@ const char* SMTConfig::o_sat_split_midtune = ":split-mid-tune";
 const char* SMTConfig::o_sat_split_num = ":split-num";
 const char* SMTConfig::o_sat_split_asap = ":split-asap";
 const char* SMTConfig::o_sat_split_units = ":split-units";
+const char* SMTConfig::o_sat_split_preference = ":split-preference";
 
 // Error strings
 const char* SMTConfig::s_err_not_str = "expected string";

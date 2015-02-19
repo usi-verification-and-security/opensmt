@@ -76,12 +76,14 @@ class Option {
 // Type safe wrapper for split types
 typedef struct SpType    { int t; } SpType;
 typedef struct SpUnit    { int t; } SpUnit;
+typedef struct SpPref    { int t; } SpPref;
 
 inline bool operator==(const SpType& s1, const SpType& s2) { return s1.t == s2.t; }
 inline bool operator==(const SpUnit& s1, const SpUnit& s2) { return s1.t == s2.t; }
 inline bool operator!=(const SpType& s1, const SpType& s2) { return s1.t != s2.t; }
 inline bool operator!=(const SpUnit& s1, const SpUnit& s2) { return s1.t != s2.t; }
-
+inline bool operator==(const SpPref& s1, const SpPref& s2) { return s1.t == s2.t; }
+inline bool operator!=(const SpPref& s1, const SpPref& s2) { return s1.t != s2.t; }
 
 static const char* spts_guiding   = "guiding-path";
 static const char* spts_scatter   = "scattering";
@@ -90,13 +92,23 @@ static const char* spts_none      = "none";
 static const char* spts_decisions = "decisions";
 static const char* spts_time      = "time";
 
+static const char* spprefs_tterm   = "tterm";
+static const char* spprefs_blind   = "blind";
+static const char* spprefs_bterm   = "bterm";
+static const char* spprefs_rand    = "random";
+
 static const struct SpType spt_none    = { 0 };
 static const struct SpType spt_guiding = { 1 };
 static const struct SpType spt_scatter = { 2 };
 
 static const struct SpUnit spm_decisions = { 0 };
 static const struct SpUnit spm_time      = { 1 };
-static const struct SpUnit  spm_unknown   = { 2 };
+static const struct SpUnit spm_unknown   = { 2 };
+
+static const struct SpPref sppref_tterm = { 0 };
+static const struct SpPref sppref_blind = { 1 };
+static const struct SpPref sppref_bterm = { 2 };
+static const struct SpPref sppref_rand  = { 3 };
 
 //
 // Holds informations about the configuration of the solver
@@ -158,6 +170,7 @@ private:
   static const char* o_sat_split_num;
   static const char* o_sat_split_asap;
   static const char* o_sat_split_units;
+  static const char* o_sat_split_preference;
 
   static const char* s_err_not_str;
   static const char* s_err_not_bool;
@@ -422,6 +435,15 @@ public:
               optionTable[o_sat_split_asap].getValue().numval :
               0; }
 
+  SpPref sat_split_preference() const {
+    if (optionTable.contains(o_sat_split_preference)) {
+        const char* type = optionTable[o_sat_split_preference].getValue().strval;
+        if (strcmp(type, spprefs_tterm) == 0) return sppref_tterm;
+        if (strcmp(type, spprefs_blind) == 0) return sppref_blind;
+        if (strcmp(type, spprefs_bterm) == 0) return sppref_bterm;
+        if (strcmp(type, spprefs_rand)  == 0) return sppref_rand;
+    } else return sppref_blind;
+  }
 
 
 //  int          produce_stats;                // Should print statistics ?

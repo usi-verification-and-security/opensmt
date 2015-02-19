@@ -423,6 +423,8 @@ class CoreSMTSolver : public SMTSolver
     double   split_midtune;                                                            // mid-tuning in units.
     double   split_next;                                                               // When the next split will happen?
 
+    SpPref   split_preference;
+
 
     // Main internal methods:
     //
