@@ -92,6 +92,18 @@ public:
 };
 
 // -----------------------------------------------------------------------------------------
+// Data type for upper bound array
+//
+class UBVal {
+  private:
+    int ub;
+    int round;
+  public:
+    UBVal() : l(-1), round(-1);
+    UBVal(int b, int r) : ub(b), round(r) {}
+}
+
+// -----------------------------------------------------------------------------------------
 // The splits
 //
 class SplitData
@@ -242,6 +254,10 @@ class CoreSMTSolver : public SMTSolver
     lbool   solve        ( const vec< Lit > & assumps );                 // Search for a model that respects a given set of assumptions.
     lbool   solve        ( const vec< Lit > & assumps, const unsigned ); // Search for a model that respects a given set of assumptions .
     lbool   solve        ();                        // Search without assumptions.
+
+    lbool   lookaheadSplit(int d) { return lookaheadSplit(d, 0, i); }    // Perform a lookahead-based split of depth d
+    lbool   lookaheadSplit(int d, int dl, int idx); // Perform a lookahead of depth d and split.  Decision level should initially be 0
+
     void    crashTest    (int, Var, Var);           // Stress test the theory solver
     virtual bool  okay   () const;                  // FALSE means solver is in a conflicting state
 
@@ -364,6 +380,8 @@ class CoreSMTSolver : public SMTSolver
     double              var_inc;          // Amount to bump next variable with.
     vec<vec<Clause*> >  watches;          // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
     vec<char>           assigns;          // The current assignments (lbool:s stored as char:s).
+    vec<UBVal>          LAupperbounds;    // The current upper bounds
+    vec<int>            LAexacts;         // The current exact values
     vec<char>           polarity;         // The preferred polarity of each variable.
     vec<char>           decision_var;     // Declares if a variable is eligible for selection in the decision heuristic.
   public:
@@ -394,6 +412,8 @@ class CoreSMTSolver : public SMTSolver
 #ifdef CACHE_POLARITY
     vec<char>           prev_polarity;    // The previous polarity of each variable.
 #endif
+
+    int la_round;                         // Keeps track of the lookahead round (used in lower bounds)
 
     // Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is
     // used, exept 'seen' wich is used in several places.
@@ -446,6 +466,11 @@ class CoreSMTSolver : public SMTSolver
     lbool    search           (int nof_conflicts, int nof_learnts);                    // Search for a given number of conflicts.
     void     reduceDB         ();                                                      // Reduce the set of learnt clauses.
     void     removeSatisfied  (vec<Clause*>& cs);                                      // Shrink 'cs' to contain only non-satisfied clauses.
+
+    // Lookahead helper functions
+    void     updateLAUB       (Lit l, int props);                                      // Check the lookahead upper bound and update it if necessary
+    void     setLAExact       (Lit l, int props);                                      // Set the exact la value
+    Lit      getLABest()        { return LABestLit; }
 
     // Maintaining Variable/Clause activity:
     //

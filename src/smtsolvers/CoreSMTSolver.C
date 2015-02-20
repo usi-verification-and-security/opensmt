@@ -97,6 +97,7 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
   , random_seed           (c.getRandomSeed())
   , progress_estimate     (0)
   , remove_satisfied      (true)
+  , la_round              (0)
   , resource_units        (config.sat_resource_units())
   , resource_limit        (config.sat_resource_limit())
   , next_resource_limit   (-1)
@@ -242,6 +243,11 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
 #if CACHE_POLARITY
   prev_polarity.push(toInt(l_Undef));
 #endif
+
+  LAupperbounds.push(); // leave space for the literal...
+  LAupperbounds.push(); // ... and its negation.
+  LAexacts.push();      // The same for the exact value...
+  LAexacts.push();      // ... and the negation.
 
   insertVarOrder(v);
 
@@ -2260,6 +2266,70 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
 //#endif
 
   return status;
+}
+
+lbool CoreSMTSolver::lookaheadSplit(int d, int dl, int idx)
+{
+    assert(decisionLevel() == dl);
+    ++ la_round; // Update the lookahead round for the lower bound arrays
+    if (d == 0) createSplit(false);
+    for (int i = 0; i < vars.size(); i++) {
+        Var v = vars[idx % vars.size()];
+        if (value(v) != l_Undef || inferior(v)) continue;
+        int p0 = 0, p1 = 0;
+        for (int p = 0; p < 2; p++) { // do for both polarities
+            assume(Lit(v, p));
+
+            do {
+                int curr_asgns = trail.size();
+                if ((Clause* c = propagate()) != CRef_Undef) {
+                    vec<Lit> out_learnt;
+                    int out_btlevel;
+                    analyze(c, out_learnt, out_btlevel)
+                    return out_btlevel;
+                }
+                int curr_dl = decisionLevel();
+                checkTheory(complete);
+                if (decisionLevel() < curr_dl)
+                    return decisionLevel();
+                int diff = trail.size() - curr_asgns;
+                p == 0 ? p0 += diff : p1 += diff;
+            } while (diff > 0);
+
+            int props = (p == 0 ? p0 : p1);
+            for (int j = 0; j < trail.size() - props; j++)
+                updateLAUB(trail[i], props);
+        }
+        setLAExact(v, p0, p1);
+        updateLABest(v);
+    }
+    Lit best = getLABest();
+    for (int p = 0; p < 2; p++) { // repeat for both polarities
+        assume(p == 0 ? best : ~best);
+        assert(decisionLevel() == dl+1);
+        dl = decisionLevel();
+        int new_dl = lookaheadSplit(d-1, dl, idx);
+        if (new_dl < dl)
+            return new_dl;
+        assert(decisionLevel() == dl);
+        backtrack(dl-1);
+    }
+    assert(decisionLevel() == dl);
+    return dl - 1;
+}
+
+void CoreSMTSolver::updateLAUB(Lit l, int props)
+{
+    int val = LAupperbounds[toInt(l)];
+    LAupperbounds[toInt(l)] = props > val ? props : val;
+}
+
+void CoreSMTSolver::setLAExact(Lit l, int props)
+{
+    LAexacts[toInt(l)] = props;
+    if (LABestLit != lit_Undef)
+        LABestLit = LAexacts[LABestLit] < props ? l : LABestLit;
+    else LABestLit = l;
 }
 
 #ifndef SMTCOMP
