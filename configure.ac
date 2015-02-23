@@ -17,6 +17,8 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
+AX_CXX_COMPILE_STDCXX_11
+
 LT_INIT
 
 AC_DEFINE(SVN_REVISION, "svnversion", [SVN Revision])
@@ -450,12 +452,12 @@ comp_flags="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization_c
 def_flags=`echo ${def_flags} |sed 's/ [ ]*/ /g'`
 comp_flags=`echo ${comp_flags} |sed 's/ [ ]*/ /g'`
 
-AM_CFLAGS=""
-AM_CXXFLAGS=$AM_CFLAGS
+#AM_CFLAGS=""
+#AM_CXXFLAGS=$AM_CFLAGS
 
-CFLAGS=""
-CXXFLAGS=""
-CPPFLAGS=""
+#CFLAGS=""
+#CXXFLAGS=""
+#CPPFLAGS=""
 
 # Allow user to use a GMP lib in a non-standard location
 AC_ARG_WITH([gmp],

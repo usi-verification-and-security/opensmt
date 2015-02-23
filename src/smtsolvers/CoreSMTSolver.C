@@ -62,6 +62,10 @@ namespace opensmt
   extern bool stop;
 }
 
+bool CoreSMTSolver::UBVal::operator< (const struct CoreSMTSolver::ExVal e) const {
+    return false;
+}
+
 //=================================================================================================
 // Constructor/Destructor:
 
@@ -90,6 +94,7 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
   , ok                    (true)
   , cla_inc               (1)
   , var_inc               (1)
+  , latest_round          (0)
   , qhead                 (0)
   , simpDB_assigns        (-1)
   , simpDB_props          (0)
@@ -97,7 +102,7 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
   , random_seed           (c.getRandomSeed())
   , progress_estimate     (0)
   , remove_satisfied      (true)
-  , la_round              (0)
+  , LABestLit             (lit_Undef)
   , resource_units        (config.sat_resource_units())
   , resource_limit        (config.sat_resource_limit())
   , next_resource_limit   (-1)
@@ -244,10 +249,8 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
   prev_polarity.push(toInt(l_Undef));
 #endif
 
-  LAupperbounds.push(); // leave space for the literal...
-  LAupperbounds.push(); // ... and its negation.
-  LAexacts.push();      // The same for the exact value...
-  LAexacts.push();      // ... and the negation.
+  LAupperbounds.push(); // leave space for the var
+  LAexacts.push();      // leave space for the var
 
   insertVarOrder(v);
 
@@ -2268,28 +2271,49 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
   return status;
 }
 
-lbool CoreSMTSolver::lookaheadSplit(int d, int dl, int idx)
+bool CoreSMTSolver::inferior(Var v)
+{
+    if (getLABest() == lit_Undef) return false;
+    // If the upper bound of v is less than the exact of b there is no need to check
+    // ...
+    return false;
+}
+
+//
+// Do the splits based on the lookahead heuristics.  The function is
+// recursive
+//  - d is the depth until which the lookahead should be done, and
+//    results in 2^d splits
+//  - dl is the decision level where the function is called
+//  - idx is the index to the variable where the lookahead should start
+//    (to avoid the quadratic behavior)
+//
+int CoreSMTSolver::lookaheadSplit(int d, int dl, int idx)
 {
     assert(decisionLevel() == dl);
-    ++ la_round; // Update the lookahead round for the lower bound arrays
+    updateRound();
     if (d == 0) createSplit(false);
-    for (int i = 0; i < vars.size(); i++) {
-        Var v = vars[idx % vars.size()];
+    for (int i = 0; i < nVars(); i++) {
+        Var v((idx+i) % nVars());
         if (value(v) != l_Undef || inferior(v)) continue;
         int p0 = 0, p1 = 0;
         for (int p = 0; p < 2; p++) { // do for both polarities
-            assume(Lit(v, p));
 
+            newDecisionLevel();
+            uncheckedEnqueue(Lit(v, p));
+
+            int diff = 0;
             do {
                 int curr_asgns = trail.size();
-                if ((Clause* c = propagate()) != CRef_Undef) {
+                Clause *c;
+                if ((c = propagate()) != NULL) {
                     vec<Lit> out_learnt;
                     int out_btlevel;
-                    analyze(c, out_learnt, out_btlevel)
+                    analyze(c, out_learnt, out_btlevel);
                     return out_btlevel;
                 }
                 int curr_dl = decisionLevel();
-                checkTheory(complete);
+                checkTheory(true);
                 if (decisionLevel() < curr_dl)
                     return decisionLevel();
                 int diff = trail.size() - curr_asgns;
@@ -2299,20 +2323,24 @@ lbool CoreSMTSolver::lookaheadSplit(int d, int dl, int idx)
             int props = (p == 0 ? p0 : p1);
             for (int j = 0; j < trail.size() - props; j++)
                 updateLAUB(trail[i], props);
+
+            // Backtrack the decision
+            cancelUntil(decisionLevel()-1);
         }
         setLAExact(v, p0, p1);
         updateLABest(v);
     }
-    Lit best = getLABest();
+    Lit best = getLABest();  // Save the best lit for this round
     for (int p = 0; p < 2; p++) { // repeat for both polarities
-        assume(p == 0 ? best : ~best);
+        // Make the branch
+        newDecisionLevel();
+        uncheckedEnqueue(p == 0 ? best : ~best);
         assert(decisionLevel() == dl+1);
-        dl = decisionLevel();
-        int new_dl = lookaheadSplit(d-1, dl, idx);
+        int new_dl = lookaheadSplit(d-1, decisionLevel(), idx);
         if (new_dl < dl)
             return new_dl;
-        assert(decisionLevel() == dl);
-        backtrack(dl-1);
+        assert(decisionLevel() == dl+1);
+        cancelUntil(dl);
     }
     assert(decisionLevel() == dl);
     return dl - 1;
@@ -2320,16 +2348,19 @@ lbool CoreSMTSolver::lookaheadSplit(int d, int dl, int idx)
 
 void CoreSMTSolver::updateLAUB(Lit l, int props)
 {
-    int val = LAupperbounds[toInt(l)];
-    LAupperbounds[toInt(l)] = props > val ? props : val;
+    UBVal& val = LAupperbounds[var(l)];
+    if (sign(l))
+        val.setUB_n(val.getUB_n() > props ? val.getUB_n() : props);
+    else
+        val.setUB_p(val.getUB_p() > props ? val.getUB_p() : props);
 }
 
-void CoreSMTSolver::setLAExact(Lit l, int props)
+void CoreSMTSolver::setLAExact(Var v, int pprops, int nprops)
 {
-    LAexacts[toInt(l)] = props;
+    LAexacts[v] = ExVal(pprops, nprops, latest_round);
     if (LABestLit != lit_Undef)
-        LABestLit = LAexacts[LABestLit] < props ? l : LABestLit;
-    else LABestLit = l;
+        LABestLit = LAexacts[var(LABestLit)] < LAexacts[v] ? Lit(v, nprops > pprops) : LABestLit;
+    else LABestLit = Lit(v, nprops > pprops);
 }
 
 #ifndef SMTCOMP

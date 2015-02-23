@@ -84,23 +84,11 @@ class CnfState {
 public:
     CnfState() : cnf(NULL), unsat(false) {};
     ~CnfState() { free(cnf); }
-    bool                  setUnsat()            { assert(cnf == NULL); unsat = true; }
+    void                  setUnsat()            { assert(cnf == NULL); unsat = true; }
     const char*           getCnf()              { return unsat ? "1 -1 0" : (cnf == NULL ? "c empty" : cnf); }
     void                  setCnf(char* cnf_)    { cnf = cnf_; }
     const vec<VarPtPair>& getMap()              { return map; }
     void                  addToMap(VarPtPair p) { map.push(p); }
-};
-
-// -----------------------------------------------------------------------------------------
-// Data type for upper bound array
-//
-class UBVal {
-  private:
-    int ub;
-    int round;
-  public:
-    UBVal() : l(-1), round(-1);
-    UBVal(int b, int r) : ub(b), round(r) {}
 };
 
 // -----------------------------------------------------------------------------------------
@@ -255,8 +243,8 @@ class CoreSMTSolver : public SMTSolver
     lbool   solve        ( const vec< Lit > & assumps, const unsigned ); // Search for a model that respects a given set of assumptions .
     lbool   solve        ();                        // Search without assumptions.
 
-    lbool   lookaheadSplit(int d) { return lookaheadSplit(d, 0, i); }    // Perform a lookahead-based split of depth d
-    lbool   lookaheadSplit(int d, int dl, int idx); // Perform a lookahead of depth d and split.  Decision level should initially be 0
+    int     lookaheadSplit(int d) { return lookaheadSplit(d, 0, 0); }    // Perform a lookahead-based split of depth d
+    int     lookaheadSplit(int d, int dl, int idx); // Perform a lookahead of depth d and split.  Decision level should initially be 0.  idx is the index to the var array: the lookahead will start going through the vars from there.
 
     void    crashTest    (int, Var, Var);           // Stress test the theory solver
     virtual bool  okay   () const;                  // FALSE means solver is in a conflicting state
@@ -380,8 +368,49 @@ class CoreSMTSolver : public SMTSolver
     double              var_inc;          // Amount to bump next variable with.
     vec<vec<Clause*> >  watches;          // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
     vec<char>           assigns;          // The current assignments (lbool:s stored as char:s).
+
+    // Stuff specific to the lookahead implementation
+
+    uint32_t latest_round;                      // The numbering for arrays
+    void updateRound() { latest_round++; }
+    // -----------------------------------------------------------------------------------------
+    // Data type for exact value array
+
+    class ExVal {
+      private:
+         int pprops;
+         int nprops;
+         int round;
+         int min(int i, int j) const { return i < j ? i : j; }
+      public:
+         ExVal() : pprops(-1), nprops(-1), round(-1) {}
+         ExVal(int p, int n, int r) : pprops(p), nprops(n), round(r) {}
+         bool operator< (const ExVal& e) const { return (round < e.round) || (min(pprops, nprops) < min(e.pprops, e.nprops)); }
+         bool betterPolarity() const { return pprops < nprops; } // Should return false if the literal should be unsigned
+    };
+
+    // -----------------------------------------------------------------------------------------
+    // Data type for upper bound array
+    //
+    class UBVal {
+      private:
+        int ub_p;
+        int ub_n;
+        int round;
+      public:
+        UBVal() : ub_p(-1), ub_n(-1), round(-1) {}
+        UBVal(int ub_pos, int ub_neg, int r) : ub_p(ub_pos), ub_n(ub_neg), round(r) {}
+        void setUB_p(int x) { ub_p = x; }
+        void setUB_n(int x) { ub_n = x; }
+        int  getUB_p()      { return ub_p; }
+        int  getUB_n()      { return ub_n; }
+        bool operator< (const struct ExVal e) const;
+    };
+
+    void updateLABest(Var v) { Lit prev_best = getLABest(); ExVal& e = LAexacts[v]; LABestLit = LAexacts[v] < LAexacts[var(prev_best)] ? prev_best : Lit(v, e.betterPolarity()); }
+
     vec<UBVal>          LAupperbounds;    // The current upper bounds
-    vec<int>            LAexacts;         // The current exact values
+    vec<ExVal>          LAexacts;         // The current exact values
     vec<char>           polarity;         // The preferred polarity of each variable.
     vec<char>           decision_var;     // Declares if a variable is eligible for selection in the decision heuristic.
   public:
@@ -414,6 +443,7 @@ class CoreSMTSolver : public SMTSolver
 #endif
 
     int la_round;                         // Keeps track of the lookahead round (used in lower bounds)
+    Lit LABestLit;                        // The current best literal of lookahead
 
     // Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is
     // used, exept 'seen' wich is used in several places.
@@ -468,9 +498,10 @@ class CoreSMTSolver : public SMTSolver
     void     removeSatisfied  (vec<Clause*>& cs);                                      // Shrink 'cs' to contain only non-satisfied clauses.
 
     // Lookahead helper functions
+    bool     inferior         (Var v);                                                 // See if we can already deduce that var v cannot be the best lookahead variable
     void     updateLAUB       (Lit l, int props);                                      // Check the lookahead upper bound and update it if necessary
-    void     setLAExact       (Lit l, int props);                                      // Set the exact la value
-    Lit      getLABest()        { return LABestLit; }
+    void     setLAExact       (Var v, int pprops, int nprops);                         // Set the exact la value
+    Lit      getLABest        () { return LABestLit; }
 
     // Maintaining Variable/Clause activity:
     //
