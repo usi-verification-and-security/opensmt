@@ -62,10 +62,6 @@ namespace opensmt
   extern bool stop;
 }
 
-bool CoreSMTSolver::UBVal::operator< (const struct CoreSMTSolver::ExVal e) const {
-    return false;
-}
-
 //=================================================================================================
 // Constructor/Destructor:
 
@@ -2271,12 +2267,39 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
   return status;
 }
 
-bool CoreSMTSolver::inferior(Var v)
+bool CoreSMTSolver::inferior(Lit l)
 {
+    assert(LAupperbounds[var(l)].getRound() == latest_round);
+    // If there's no best literal yet then we need to check
     if (getLABest() == lit_Undef) return false;
-    // If the upper bound of v is less than the exact of b there is no need to check
-    // ...
-    return false;
+
+    ExVal& e = LAexacts[var(getLABest())];
+    UBVal& ub = LAupperbounds[var(l)];
+
+    assert(e.getRound() == latest_round);
+
+    // Get the minimum and maximum polarity upper bounds and exact
+    // values
+    int ub_l = min(ub.getUB_p(), ub.getUB_n());
+    int e_l = min(e.getEx_p(), e.getEx_n());
+    int ub_h = max(ub.getUB_p(), ub.getUB_n());
+    int e_h = max(ub.getUB_p(), ub.getUB_n());
+
+    // If the low upper bound of l is less than the low exact of b there is no need to check
+    if (ub_l < e_l) return true;
+    // If lower upper bound of l equals lower exact of b but higher
+    // upper bound of l is less than (or equal to) higher exact there's
+    // no need to check
+    if (ub_l == e_l && ub_h <= e_h) return true;
+    // If lower upper bound of l equals lower exact of b and higher
+    // upper bound of l is greater than higher exact of b we need to
+    // check
+    if (ub_l == e_l && ub_h > e_h) return false;
+    // if lower upper bound of l is greater than lower exact of b we
+    // need to check.
+    if (ub_l > e_l) return false;
+
+    assert(false);
 }
 
 //
@@ -2295,9 +2318,9 @@ int CoreSMTSolver::lookaheadSplit(int d, int dl, int idx)
     if (d == 0) createSplit(false);
     for (int i = 0; i < nVars(); i++) {
         Var v((idx+i) % nVars());
-        if (value(v) != l_Undef || inferior(v)) continue;
         int p0 = 0, p1 = 0;
         for (int p = 0; p < 2; p++) { // do for both polarities
+            if (value(v) != l_Undef || inferior(Lit(v, p))) continue;
 
             newDecisionLevel();
             uncheckedEnqueue(Lit(v, p));

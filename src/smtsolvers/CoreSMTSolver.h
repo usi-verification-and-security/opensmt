@@ -375,18 +375,22 @@ class CoreSMTSolver : public SMTSolver
     void updateRound() { latest_round++; }
     // -----------------------------------------------------------------------------------------
     // Data type for exact value array
+    static inline int min(int i, int j) { return i < j ? i : j; }
+    static inline int max(int i, int j) { return i > j ? i : j; }
 
     class ExVal {
       private:
          int pprops;
          int nprops;
          int round;
-         int min(int i, int j) const { return i < j ? i : j; }
       public:
          ExVal() : pprops(-1), nprops(-1), round(-1) {}
          ExVal(int p, int n, int r) : pprops(p), nprops(n), round(r) {}
          bool operator< (const ExVal& e) const { return (round < e.round) || (min(pprops, nprops) < min(e.pprops, e.nprops)); }
          bool betterPolarity() const { return pprops < nprops; } // Should return false if the literal should be unsigned
+         int  getRound() const { return round; }
+         int getEx_p() const { return pprops; }
+         int getEx_n() const { return nprops; }
     };
 
     // -----------------------------------------------------------------------------------------
@@ -402,10 +406,12 @@ class CoreSMTSolver : public SMTSolver
         UBVal(int ub_pos, int ub_neg, int r) : ub_p(ub_pos), ub_n(ub_neg), round(r) {}
         void setUB_p(int x) { ub_p = x; }
         void setUB_n(int x) { ub_n = x; }
-        int  getUB_p()      { return ub_p; }
-        int  getUB_n()      { return ub_n; }
-        bool operator< (const struct ExVal e) const;
+        int  getUB_p()  const { return ub_p; }
+        int  getUB_n()  const { return ub_n; }
+        int  getRound() const { return round; }
     };
+
+    bool betterThan_ub(const UBVal& ub, const ExVal& e) const;
 
     void updateLABest(Var v) { Lit prev_best = getLABest(); ExVal& e = LAexacts[v]; LABestLit = LAexacts[v] < LAexacts[var(prev_best)] ? prev_best : Lit(v, e.betterPolarity()); }
 
@@ -498,10 +504,10 @@ class CoreSMTSolver : public SMTSolver
     void     removeSatisfied  (vec<Clause*>& cs);                                      // Shrink 'cs' to contain only non-satisfied clauses.
 
     // Lookahead helper functions
-    bool     inferior         (Var v);                                                 // See if we can already deduce that var v cannot be the best lookahead variable
+    bool     inferior         (Lit l);                                                 // See if we can already deduce that l needs not to be checked
     void     updateLAUB       (Lit l, int props);                                      // Check the lookahead upper bound and update it if necessary
     void     setLAExact       (Var v, int pprops, int nprops);                         // Set the exact la value
-    Lit      getLABest        () { return LABestLit; }
+    Lit      getLABest        () { if (LAexacts[var(LABestLit)].getRound() < latest_round) { return lit_Undef; } else { return LABestLit; } }
 
     // Maintaining Variable/Clause activity:
     //
