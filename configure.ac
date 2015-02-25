@@ -8,6 +8,10 @@ AC_CONFIG_AUX_DIR(autotools)
 AM_INIT_AUTOMAKE
 AC_DISABLE_SHARED
 
+# Empty default flags
+: ${CFLAGS=""}
+: ${CXXFLAGS=""}
+
 AC_PROG_LIBTOOL
 AC_PROG_CC
 AC_PROG_CXX
@@ -31,24 +35,6 @@ AC_ARG_ENABLE(library,
 
 AM_CONDITIONAL([WANT_LIBRARY], [test "$want_library" = "yes"])
 
-#
-# Statically linked version
-#
-#AC_ARG_ENABLE(staticlibs,
-#  AC_HELP_STRING([--enable-staticlibs],
-#                 [enable statically linked libraries (-static) @<:@yes@:>@)]),
-#  [:],
-#  [enable_staticlibs="no"])
-#
-#AM_CONDITIONAL([ENABLE_STATIC], [test "$enable_static" = "yes"])
-
-#if test $enable_staticlibs = "yes" ; then
-#  config_staticlibs="-static"
-#else
-#  config_static=""
-#fi
-#echo "Compile statically linked libraries... ${enable_staticlibs}"
-#
 #
 # Profiling
 #
@@ -81,15 +67,19 @@ AC_ARG_ENABLE(optimization,
 
 if test $enable_optimization = "yes" ;
 then
-  config_optimization_compiler="-O3"
+  AM_CFLAGS='-O3'
+  AM_CXXFLAGS='-O3'
   config_optimization_preproc="-DOPTIMIZE -DNDEBUG"
 else
-  config_optimization_compiler="-O0"
+  AM_CFLAGS='-g -O0'
+  AM_CXXFLAGS='-g -O0'
   config_optimization_preproc=""
 fi
 AM_CONDITIONAL([ENABLE_OPTIMIZATION], [test "$enable_optimization" = "yes"])
 echo "Setting preprocessor optimization flags to... ${config_optimization_preproc:-none}"
-echo "Setting compiler optimization flags to...  ${config_optimization_compiler:-none}"
+echo "Setting c compiler optimization flags to...  ${AM_CFLAGS}"
+echo "Setting c++ compiler optimization flags to...  ${AM_CXXFLAGS}"
+
 #
 # Proof production
 #
@@ -447,7 +437,7 @@ then
 fi
 
 def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_oldsubstitution $config_custom_memalloc $config_term_explanations $config_compress $config_verbose_euf $config_verbose_eufex $config_verbose_fops $config_verbose_sat $config_verbose_cnfization $config_printclausalsize"
-comp_flags="-W -Wall -g -Wno-deprecated $config_profiling $config_optimization_compiler"
+comp_flags="-W -Wall -g -Wno-deprecated $config_profiling"
 
 def_flags=`echo ${def_flags} |sed 's/ [ ]*/ /g'`
 comp_flags=`echo ${comp_flags} |sed 's/ [ ]*/ /g'`

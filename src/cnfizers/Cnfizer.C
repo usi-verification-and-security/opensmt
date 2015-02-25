@@ -767,7 +767,6 @@ vec<ValPair>* Cnfizer::getModel() {
 
 lbool Cnfizer::getTermValue(PTRef tr) {
     assert(solver.okay());
-    assert(status == l_True);
     vec<lbool>& model = solver.model;
     PTRef p;
     bool sgn;

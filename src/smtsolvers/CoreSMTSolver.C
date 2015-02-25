@@ -1995,7 +1995,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
           // Assumptions done and the solver is in consistent state
           updateSplitState();
           if (!split_start && split_on && scatterLevel()) {
-                if (!createSplit(false)) { // Rest is unsat
+                if (!createSplit_scatter(false)) { // Rest is unsat
                     opensmt::stop = true; return l_Undef; }
                 else continue;
           }
@@ -2073,7 +2073,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
     }
   }
   cancelUntil(0);
-  createSplit(true);
+  createSplit_scatter(true);
   opensmt::stop = true; return l_Undef;
 }
 
@@ -2269,7 +2269,8 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
 
 bool CoreSMTSolver::inferior(Lit l)
 {
-    assert(LAupperbounds[var(l)].getRound() == latest_round);
+    // If we do not know anything about l, we need to check.
+    if (LAupperbounds[var(l)].getRound() != latest_round) return false;
     // If there's no best literal yet then we need to check
     if (getLABest() == lit_Undef) return false;
 
@@ -2283,7 +2284,7 @@ bool CoreSMTSolver::inferior(Lit l)
     int ub_l = min(ub.getUB_p(), ub.getUB_n());
     int e_l = min(e.getEx_p(), e.getEx_n());
     int ub_h = max(ub.getUB_p(), ub.getUB_n());
-    int e_h = max(ub.getUB_p(), ub.getUB_n());
+    int e_h = max(e.getEx_p(), e.getEx_n());
 
     // If the low upper bound of l is less than the low exact of b there is no need to check
     if (ub_l < e_l) return true;
@@ -2313,14 +2314,17 @@ bool CoreSMTSolver::inferior(Lit l)
 //
 int CoreSMTSolver::lookaheadSplit(int d, int dl, int idx)
 {
+    int checks = 0; // Just checking...
     assert(decisionLevel() == dl);
     updateRound();
-    if (d == 0) createSplit(false);
+    if (d == 0) { createSplit_lookahead(); return dl - 1; }
     for (int i = 0; i < nVars(); i++) {
         Var v((idx+i) % nVars());
         int p0 = 0, p1 = 0;
         for (int p = 0; p < 2; p++) { // do for both polarities
             if (value(v) != l_Undef || inferior(Lit(v, p))) continue;
+
+            checks++; // Just checking...
 
             newDecisionLevel();
             uncheckedEnqueue(Lit(v, p));
@@ -2353,7 +2357,9 @@ int CoreSMTSolver::lookaheadSplit(int d, int dl, int idx)
         setLAExact(v, p0, p1);
         updateLABest(v);
     }
+    printf("I checked %d vars\n", checks);
     Lit best = getLABest();  // Save the best lit for this round
+    printf("The best I found propagates pos %d and neg %d\n", LAexacts[var(getLABest())].getEx_p(), LAexacts[var(getLABest())].getEx_n());
     for (int p = 0; p < 2; p++) { // repeat for both polarities
         // Make the branch
         newDecisionLevel();
@@ -2434,7 +2440,25 @@ bool CoreSMTSolver::scatterLevel()
     return d == decisionLevel();
 }
 
-bool CoreSMTSolver::createSplit(bool last)
+bool CoreSMTSolver::createSplit_lookahead()
+{
+    // Due to the stupidness of the minisat version this gets
+    // complicated
+    int curr_dl0_idx = trail_lim.size() > 0 ? trail_lim[0] : trail.size();
+    splits.push_c(SplitData(clauses, trail, curr_dl0_idx));
+    SplitData& sp = splits.last();
+    for (int i = 0; i < decisionLevel(); i++) {
+        vec<Lit> tmp;
+        Lit l = trail[trail_lim[i]];
+        tmp.push(l);
+        sp.addConstraint(tmp);
+    }
+    sp.updateInstance();
+    assert(ok);
+    return true;
+}
+
+bool CoreSMTSolver::createSplit_scatter(bool last)
 {
     // Due to the stupidness of the minisat version this gets
     // complicated

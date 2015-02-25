@@ -243,7 +243,7 @@ class CoreSMTSolver : public SMTSolver
     lbool   solve        ( const vec< Lit > & assumps, const unsigned ); // Search for a model that respects a given set of assumptions.
     lbool   solve        ();                        // Search without assumptions.
 
-    lbool   lookaheadSplit(int d) { return lookaheadSplit(d, 0, 0) < 0 ? l_False : l_Undef; }    // Perform a lookahead-based split of depth d
+    lbool   lookaheadSplit(int d) { return lookaheadSplit(d, 0, 0) < -1 ? l_False : l_Undef; }    // Perform a lookahead-based split of depth d
     int     lookaheadSplit(int d, int dl, int idx); // Perform a lookahead of depth d and split.  Decision level should initially be 0.  idx is the index to the var array: the lookahead will start going through the vars from there.
 
     void    crashTest    (int, Var, Var);           // Stress test the theory solver
@@ -487,7 +487,8 @@ class CoreSMTSolver : public SMTSolver
     //
     void     updateSplitState();                                                       // Update the state of the splitting machine.
     bool     scatterLevel();                                                           // Are we currently on a scatter level.
-    bool     createSplit(bool last);                                                   // Create a split formula and place it to the splits vector.
+    bool     createSplit_scatter(bool last);                                           // Create a split formula and place it to the splits vector.
+    bool     createSplit_lookahead();                                                  // Does not change the formula
     bool     excludeAssumptions(vec<Lit>& neg_constrs);                                // Add a clause to the database and propagate
     void     insertVarOrder   (Var x);                                                 // Insert a variable in the decision order priority queue.
     Lit      pickBranchLit    (int polarity_mode, double random_var_freq);             // Return the next decision variable.
