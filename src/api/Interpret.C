@@ -480,24 +480,25 @@ bool Interpret::checkSat(const char* cmd) {
             comment_formatted("Incrementality not enabled but %d check-sat encountered", sat_calls);
             return false;
     }
-    lbool res;
+    sstat res;
     if (logic.isSet()) {
         sat_calls++;
         char* msg;
 
-        sstat rval = main_solver.simplifyFormulas(&msg);
-        if (rval == s_Undef) {
-            res = ts.solve();
+        res = main_solver.simplifyFormulas(&msg);
+        if (res == s_Undef) {
+            if (config.sat_split_type() == spt_lookahead)
+                res = main_solver.lookaheadSplit(getLog2Ceil(config.sat_split_num()));
+            else
+                res = main_solver.solve();
         }
-        else if (rval == s_False)
-            res = l_False;
         else
             notify_formatted(true, msg);
 
-        if (res == l_True) {
+        if (res == s_True) {
             notify_formatted(false, "sat");
         }
-        else if (res == l_False)
+        else if (res == s_False)
             notify_formatted(false, "unsat");
         else
             notify_formatted(false, "unknown");
@@ -506,7 +507,7 @@ bool Interpret::checkSat(const char* cmd) {
         notify_formatted(true, "Illegal command before set-logic: %s", cmd);
         return false;
     }
-    if (res == l_Undef) {
+    if (res == s_Undef) {
         const Option& o_dump_state = config.getOption(":dump-state");
         const SpType o_split = config.sat_split_type();
         if (!o_dump_state.isEmpty() && o_split == spt_none)
@@ -522,7 +523,7 @@ bool Interpret::getAssignment(const char* cmd) {
        notify_formatted(true, "Illegal command before set-logic: %s", cmd);
        return false;
     }
-    if (ts.getStatus() != l_True) {
+    if (main_solver.getStatus() != s_True) {
        notify_formatted(true, "Last solver call not satisfiable");
        return false;
     }

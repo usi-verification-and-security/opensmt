@@ -85,7 +85,7 @@ inline bool operator!=(const SpUnit& s1, const SpUnit& s2) { return s1.t != s2.t
 inline bool operator==(const SpPref& s1, const SpPref& s2) { return s1.t == s2.t; }
 inline bool operator!=(const SpPref& s1, const SpPref& s2) { return s1.t != s2.t; }
 
-static const char* spts_guiding   = "guiding-path";
+static const char* spts_lookahead = "lookahead";
 static const char* spts_scatter   = "scattering";
 static const char* spts_none      = "none";
 
@@ -97,9 +97,9 @@ static const char* spprefs_blind   = "blind";
 static const char* spprefs_bterm   = "bterm";
 static const char* spprefs_rand    = "random";
 
-static const struct SpType spt_none    = { 0 };
-static const struct SpType spt_guiding = { 1 };
-static const struct SpType spt_scatter = { 2 };
+static const struct SpType spt_none      = { 0 };
+static const struct SpType spt_lookahead = { 1 };
+static const struct SpType spt_scatter   = { 2 };
 
 static const struct SpUnit spm_decisions = { 0 };
 static const struct SpUnit spm_time      = { 1 };
@@ -400,8 +400,8 @@ public:
   const SpType sat_split_type() const {
       if (optionTable.contains(o_sat_split_type)) {
         const char* type = optionTable[o_sat_split_type].getValue().strval;
-        if (strcmp(type, spts_guiding) == 0)
-            return spt_guiding;
+        if (strcmp(type, spts_lookahead) == 0)
+            return spt_lookahead;
         else if (strcmp(type, spts_scatter) == 0)
             return spt_scatter;
       }

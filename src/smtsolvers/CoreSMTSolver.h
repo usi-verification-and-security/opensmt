@@ -240,10 +240,10 @@ class CoreSMTSolver : public SMTSolver
     //
     bool    simplify     ();                        // Removes already satisfied clauses.
     lbool   solve        ( const vec< Lit > & assumps );                 // Search for a model that respects a given set of assumptions.
-    lbool   solve        ( const vec< Lit > & assumps, const unsigned ); // Search for a model that respects a given set of assumptions .
+    lbool   solve        ( const vec< Lit > & assumps, const unsigned ); // Search for a model that respects a given set of assumptions.
     lbool   solve        ();                        // Search without assumptions.
 
-    int     lookaheadSplit(int d) { return lookaheadSplit(d, 0, 0); }    // Perform a lookahead-based split of depth d
+    lbool   lookaheadSplit(int d) { return lookaheadSplit(d, 0, 0) < 0 ? l_False : l_Undef; }    // Perform a lookahead-based split of depth d
     int     lookaheadSplit(int d, int dl, int idx); // Perform a lookahead of depth d and split.  Decision level should initially be 0.  idx is the index to the var array: the lookahead will start going through the vars from there.
 
     void    crashTest    (int, Var, Var);           // Stress test the theory solver

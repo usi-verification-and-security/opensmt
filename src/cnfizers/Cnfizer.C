@@ -44,7 +44,6 @@ Cnfizer::Cnfizer( PtStore &      ptstore_
      , thandler (thandler_)
      , solver   (solver_)
      , s_empty  (true)
-     , status   (l_Undef)
 { }
 
 void Cnfizer::initialize() {

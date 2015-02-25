@@ -285,7 +285,7 @@ bool SMTConfig::setOption(const char* name, const Option& value, const char*& ms
     if (strcmp(name, o_sat_split_type) == 0) {
         if (value.getValue().type != O_STR) { msg = s_err_not_str; return false; }
         const char* val = value.getValue().strval;
-        if (strcmp(val, spts_guiding) != 0 &&
+        if (strcmp(val, spts_lookahead) != 0 &&
                 strcmp(val, spts_scatter) != 0 &&
                 strcmp(val, spts_none) != 0)
         { msg = s_err_unknown_split; return false; }

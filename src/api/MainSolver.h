@@ -32,13 +32,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 class sstat {
     char value;
-    explicit sstat(int v) : value(v) {}
   public:
-    sstat() : value(0) {}
+    explicit sstat(int v) : value(v) {}
     bool operator == (sstat s) const { return value == s.value; }
     bool operator != (sstat s) const { return value != s.value; }
+    sstat() : value(0) {}
+    sstat(lbool l) { if (l == l_True) value = 1; else if (l == l_False) value = -1; else if (l == l_Undef) value = 0; }
     friend sstat toSstat(int v);
-
 };
 
 inline sstat toSstat(int v) {return sstat(v); }
@@ -74,6 +74,7 @@ class MainSolver {
     SimpSMTSolver& sat_solver;
     Tseitin&       ts;
     vec<PTRef>     formulas;
+    sstat          status;     // The status of the last solver call (initially s_Undef)
 
     TopLevelPropagator tlp;
 
@@ -108,6 +109,7 @@ class MainSolver {
         , sat_solver(sat_s)
         , ts(t)
         , tlp(logic,ts)
+        , status(s_Undef)
         { formulas.push(logic.getTerm_true()); }
 
     sstat insertFormula(PTRef root, char** msg) {
@@ -118,8 +120,11 @@ class MainSolver {
         formulas.push(root);
         return s_Undef; }
 
+
     sstat simplifyFormulas(char** err_msg);
-    lbool solve() { return ts.solve(); }
+    sstat solve           () { return status = sstat(ts.solve()); }
+    sstat lookaheadSplit  (int d) { return status = sstat(sat_solver.lookaheadSplit(d)); }
+    sstat getStatus       () { return status; }
 //    static void getTermList(PTRef tr, vec<PtChild>&, Logic& l);
     bool readSolverState  (const char* file, char** msg);
     bool writeState       (const char* file, CnfState& cs, char** msg);

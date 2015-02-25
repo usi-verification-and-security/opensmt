@@ -257,6 +257,17 @@ struct Equal<const opensmt::enodeid_t> {
         return s1 == s2; }
 };
 
+static inline int getLog2Ceil(int i)
+{
+    if (i == 0 || i == 1) return 0;
+    int r = 0;
+    int j = i;
+    while (i >>= 1) r++;
+
+    if ((1 << r) ^ j) r++;
+    return r;
+}
+
 using opensmt::enodeid_t;
 using opensmt::snodeid_t;
 using opensmt::sortid_t;

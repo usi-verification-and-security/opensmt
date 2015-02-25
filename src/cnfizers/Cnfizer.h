@@ -112,10 +112,9 @@ public:
     lbool  getTermValue(PTRef);
 
     void   initialize      ();
-    lbool  solve           () { status = solver.solve(); return status; }
+    lbool  solve           () { return solver.solve(); }
 
     void   crashTest       (int rounds) { solver.crashTest(rounds, tmap.getVar(logic.getTerm_true()), tmap.getVar(logic.getTerm_false())); }
-    lbool  getStatus       () { return status; }
 
     PTRef  expandItes      (vec<PtChild>&);
 
@@ -187,7 +186,6 @@ private:
     bool    checkConj            (PTRef); // Check if a formula is a conjunction
     bool    checkPureConj        (PTRef, Map<PTRef,bool,PTRefHash>& check_cache); // Check if a formula is purely a conjuntion
 
-    lbool   status;     // The status of the last solver call (initially l_Undef)
 
     // The special boolean symbols
 protected:
