@@ -165,18 +165,13 @@ int MainSolver::decompress_buf(int* buf_in, int*& buf_out, int sz, int& sz_out )
 #endif
 
 sstat MainSolver::simplifyFormulas(char** err_msg) {
-    sstat  state = s_Undef;
+    status = s_Undef;
     PTRef  root;
     // Think of something here to enable incrementality...
     if (!ts.solverEmpty()) {
         asprintf(err_msg, "Solver already contains a simplified problem.  Cannot continue for now");
         return s_Error; }
 
-    // XXX Disable this once debugging phase is over
-//    vec<PTRef> tmp;
-//    for (int i = formulas.size()-1; i >= 0; i--)
-//        tmp.push(formulas[i]);
-//    root = logic.mkAnd(tmp);
     root = logic.mkAnd(formulas);
     PTRef trans = PTRef_Undef;
     trans = tlp.learnEqTransitivity(root);
@@ -260,7 +255,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         Pterm& r = logic.getPterm(root);
         vec<PTRef> tlfs;
         ts.retrieveTopLevelFormulae(root, tlfs);
-        for (int i = 0; (i < tlfs.size()) && (state == s_Undef); i++) {
+        for (int i = 0; (i < tlfs.size()) && (status == s_Undef); i++) {
             if (ts.checkDeMorgan(tlfs[i]) || ts.checkCnf(tlfs[i]) || ts.checkClause(tlfs[i]))
                 fc.setRoot(tlfs[i]);
             else {
@@ -283,9 +278,9 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
                 assert(false);
 #endif
 
-            if (res == l_False) state = giveToSolver(logic.getTerm_false());
+            if (res == l_False) status = giveToSolver(logic.getTerm_false());
             else if (res == l_Undef)
-                state = giveToSolver(fc.getRoot());
+                status = giveToSolver(fc.getRoot());
         }
 #else
         fc = propFlatten(fc);
@@ -293,41 +288,13 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         getTermList(fc.getRoot(), terms, logic);
         fc = simplifyEqualities(terms);
         res = logic.simplifyTree(fc.getRoot());
-        if (res == l_False) state = giveToSolver(logic.getTerm_false());
+        if (res == l_False) status = giveToSolver(logic.getTerm_false());
         else if (res == l_Undef)
-            state = giveToSolver(fc.getRoot());
+            status = giveToSolver(fc.getRoot());
 #endif
 
-//        vec<PTRef> tlfs;
-//        ts.retrieveTopLevelFormulae(root, tlfs);
-//        for (int i = 0; (i < tlfs.size()) && (state == s_Undef); i++) {
-//            if (ts.checkDeMorgan(tlfs[i]) || ts.checkCnf(tlfs[i]) || ts.checkClause(tlfs[i]))
-//                fc.setRoot(tlfs[i]);
-//            else {
-//                fc.setRoot(tlfs[i]);
-//                fc = propFlatten(fc);
-//            }
-//            terms.clear();
-//            getTermList(fc.getRoot(), terms, logic);
-//            fc = simplifyEqualities(terms);
-//            lbool res = logic.simplifyTree(fc.getRoot());
-//#ifdef SIMPLIFY_DEBUG
-//            cerr << "After simplification got " << endl;
-//            if (res == l_Undef)
-//                 cerr << logic.printTerm(fc.getRoot()) << endl;
-//            else if (res == l_False)
-//                cerr << logic.printTerm(logic.getTerm_false()) << endl;
-//            else if (res == l_True)
-//                cerr << logic.printTerm(logic.getTerm_true()) << endl;
-//            else
-//                assert(false);
-//#endif
-//            if (res == l_False) state = giveToSolver(logic.getTerm_false());
-//            else if (res == l_Undef)
-//                state = giveToSolver(fc.getRoot());
-//        }
     }
-    return state;
+    return status;
 }
 
 void MainSolver::expandItes(FContainer& fc, vec<PtChild>& terms) const
@@ -899,22 +866,6 @@ bool MainSolver::readSolverState(const char* file, char** msg)
         logicstore_buf[i] = contents[logicstore_offs+i];
 
     logic.deserializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf);
-#if defined(TERMS_HAVE_EXPLANATIONS)
-    // Note: At this point the uf_solver might only have the constants
-    // true and false.
-    const vec<ERef>& ens = uf_solver.getEnodes();
-    for (int i = 0; i < ens.size(); i++) {
-        ERef er = ens[i];
-        PTRef tr = uf_solver.ERefToTerm(er);
-        Pterm& t = logic.getPterm(tr);
-        t.setExpTimeStamp(0);
-        assert(t.getExpReason() == PtAsgn_Undef);
-        assert(t.getExpParent() == PTRef_Undef);
-        assert(t.getExpRoot() == tr);
-//        assert(t.getExpClassSize() == 1);
-//        assert(t.getExpTimeStamp() == 0);
-#endif
-    }
     free(termstore_buf);
     free(symstore_buf);
     free(sortstore_buf);
@@ -960,6 +911,21 @@ bool MainSolver::readSolverState(const char* file, char** msg)
         }
         uf_solver.declareTermTree(map[i].tr);
     }
+
+#if defined(TERMS_HAVE_EXPLANATIONS)
+    const vec<ERef>& ens = uf_solver.getEnodes();
+    for (int i = 0; i < ens.size(); i++) {
+        ERef er = ens[i];
+        PTRef tr = uf_solver.ERefToTerm(er);
+        Pterm& t = logic.getPterm(tr);
+        t.setExpTimeStamp(0);
+        assert(t.getExpReason() == PtAsgn_Undef);
+        assert(t.getExpParent() == PTRef_Undef);
+        assert(t.getExpRoot() == tr);
+//        assert(t.getExpClassSize() == 1);
+//        assert(t.getExpTimeStamp() == 0);
+    }
+#endif
     DimacsParser dp;
     dp.parse_DIMACS_main(cs.getCnf(), sat_solver);
     close(fd);

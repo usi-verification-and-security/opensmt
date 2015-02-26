@@ -122,12 +122,12 @@ class MainSolver {
 
 
     sstat simplifyFormulas(char** err_msg);
-    sstat solve           () { return status = sstat(ts.solve()); }
-    sstat lookaheadSplit  (int d) { return status = sstat(sat_solver.lookaheadSplit(d)); }
-    sstat getStatus       () { return status; }
-//    static void getTermList(PTRef tr, vec<PtChild>&, Logic& l);
-    bool readSolverState  (const char* file, char** msg);
-    bool writeState       (const char* file, CnfState& cs, char** msg);
-    bool writeSolverState (const char* file, char** msg);
-    bool writeSolverSplits(const char* file, char** msg);
+    sstat solve           ()       { return status = sstat(ts.solve()); }
+    sstat lookaheadSplit  (int d)  { return status = sstat(sat_solver.lookaheadSplit(d)); }
+    sstat getStatus       ()       { return status; }
+    bool  solverEmpty     () const { return ts.solverEmpty(); }
+    bool  readSolverState  (const char* file, char** msg);
+    bool  writeState       (const char* file, CnfState& cs, char** msg);
+    bool  writeSolverState (const char* file, char** msg);
+    bool  writeSolverSplits(const char* file, char** msg);
 };

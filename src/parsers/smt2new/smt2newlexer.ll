@@ -40,7 +40,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <list>
 
 #include "smt2newcontext.h"
-#include "smt2newparser.h"
+#include "smt2newparser.hh"
 
 #define YY_EXTRA_TYPE Smt2newContext*
 #define YY_USER_ACTION yyget_lloc(yyscanner)->first_line = yyget_lineno(yyscanner);
@@ -65,29 +65,30 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 "par"      { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_PAR;     }
 "STRING"   { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_STRING;  }
 
-"assert"          { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_ASSERT;        }
-"check-sat"       { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_CHECKSAT;      }
-"declare-sort"    { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_DECLARESORT;   }
-"declare-fun"     { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_DECLAREFUN;    }
-"define-sort"     { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_DEFINESORT;    }
-"define-fun"      { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_DEFINEFUN;     }
-"exit"            { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_EXIT;          }
-"get-assertions"  { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_GETASSERTIONS; }
-"get-assignment"  { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_GETASSIGNMENT; }
-"get-info"        { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_GETINFO;       }
-"get-option"      { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_GETOPTION;     }
-"get-proof"       { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_GETPROOF;      }
-"get-unsat-core"  { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_GETUNSATCORE;  }
-"get-value"       { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_GETVALUE;      }
-"pop"             { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_POP;           }
-"push"            { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_PUSH;          }
-"set-logic"       { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_SETLOGIC;      }
-"set-info"        { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_SETINFO;       }
-"set-option"      { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_SETOPTION;     }
-"get-interpolants" { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_GETITPS;      }
-"theory"          { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_THEORY;        }
-"write-state"      { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_WRSTATE;     }
-"read-state"      { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_RDSTATE;     }
+"assert"           { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_ASSERT;        }
+"check-sat"        { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_CHECKSAT;      }
+"declare-sort"     { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_DECLARESORT;   }
+"declare-fun"      { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_DECLAREFUN;    }
+"define-sort"      { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_DEFINESORT;    }
+"define-fun"       { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_DEFINEFUN;     }
+"exit"             { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_EXIT;          }
+"get-assertions"   { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_GETASSERTIONS; }
+"get-assignment"   { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_GETASSIGNMENT; }
+"get-info"         { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_GETINFO;       }
+"get-option"       { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_GETOPTION;     }
+"get-proof"        { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_GETPROOF;      }
+"get-unsat-core"   { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_GETUNSATCORE;  }
+"get-value"        { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_GETVALUE;      }
+"pop"              { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_POP;           }
+"push"             { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_PUSH;          }
+"set-logic"        { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_SETLOGIC;      }
+"set-info"         { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_SETINFO;       }
+"set-option"       { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_SETOPTION;     }
+"get-interpolants" { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_GETITPS;       }
+"theory"           { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_THEORY;        }
+"write-state"      { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_WRSTATE;       }
+"read-state"       { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_RDSTATE;       }
+"simplify"         { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_SIMPLIFY;      }
 
 ":sorts"                     { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_SORTS;                   }
 ":funs"                      { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_FUNS;                    }

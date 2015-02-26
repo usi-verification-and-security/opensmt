@@ -246,6 +246,12 @@ declare_fun_err: ;
             return false;
         }
     }
+    if (strcmp(cmd, "simplify") == 0) {
+        char* msg;
+        sstat status = main_solver.simplifyFormulas(&msg);
+        if (status == s_Error)
+            notify_formatted(true, "Simplify: %s", msg);
+    }
     if (strcmp(cmd, "check-sat") == 0) {
         checkSat(cmd);
     }
@@ -254,6 +260,12 @@ declare_fun_err: ;
         getAssignment(cmd);
     }
     if (strcmp(cmd, "write-state") == 0) {
+        if (main_solver.solverEmpty()) {
+            char* msg;
+            sstat status = main_solver.simplifyFormulas(&msg);
+            if (status == s_Error)
+                notify_formatted(true, "write-state: %s", msg);
+        }
         writeState((**(n.children->begin())).getValue());
     }
     if (strcmp(cmd, "read-state") == 0) {
