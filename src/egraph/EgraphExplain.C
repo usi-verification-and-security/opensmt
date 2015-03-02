@@ -463,8 +463,8 @@ PTRef Egraph::expNCA(PTRef x, PTRef y) {
 #endif
 
     while ( h_x != h_y ) {
-        assert(term_store[h_x].getExpTimeStamp() <= time_stamp);
-        assert(term_store[h_y].getExpTimeStamp() <= time_stamp);
+        assert(h_x == PTRef_Undef || term_store[h_x].getExpTimeStamp() <= time_stamp);
+        assert(h_y == PTRef_Undef || term_store[h_y].getExpTimeStamp() <= time_stamp);
         if ( h_x != PTRef_Undef ) {
             // We reached a node already marked by h_y
 #ifdef TERMS_HAVE_EXPLANATIONS
