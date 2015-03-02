@@ -2287,11 +2287,17 @@ bool CoreSMTSolver::inferior(Lit l)
     int e_h = max(e.getEx_p(), e.getEx_n());
 
     // If the low upper bound of l is less than the low exact of b there is no need to check
-    if (ub_l < e_l) return true;
+    if (ub_l < e_l) {
+        printf("Skipping because of ub_l < e_l\n");
+        return true;
+    }
     // If lower upper bound of l equals lower exact of b but higher
     // upper bound of l is less than (or equal to) higher exact there's
     // no need to check
-    if (ub_l == e_l && ub_h <= e_h) return true;
+    if (ub_l == e_l && ub_h <= e_h) {
+        printf("Skipping because of ub_l == e_l && ub_h <= e_h\n");
+        return true;
+    }
     // If lower upper bound of l equals lower exact of b and higher
     // upper bound of l is greater than higher exact of b we need to
     // check
@@ -2301,6 +2307,18 @@ bool CoreSMTSolver::inferior(Lit l)
     if (ub_l > e_l) return false;
 
     assert(false);
+}
+
+// Entry point for lookaheadSplit
+//
+
+lbool CoreSMTSolver::lookaheadSplit(int d)
+{
+    bool first_model_found_prev = first_model_found;
+    first_model_found = true;
+    lbool res = lookaheadSplit(d, 0, 0) < -1 ? l_False : l_Undef;
+    first_model_found = first_model_found_prev;
+    return res;
 }
 
 //
@@ -2330,18 +2348,26 @@ int CoreSMTSolver::lookaheadSplit(int d, int dl, int idx)
             uncheckedEnqueue(Lit(v, p));
 
             int diff = 0;
+            int rounds = 0;
             do {
+                rounds++;
+                printf("Propagation round %d\n", rounds);
                 int curr_asgns = trail.size();
                 Clause *c;
                 if ((c = propagate()) != NULL) {
                     vec<Lit> out_learnt;
                     int out_btlevel;
                     analyze(c, out_learnt, out_btlevel);
-                    return out_btlevel;
+                    if (out_btlevel < dl) {
+                        return out_btlevel;
+                    }
                 }
-                int curr_dl = decisionLevel();
-                checkTheory(true);
-                if (decisionLevel() < curr_dl)
+                int res = checkTheory(true);
+                if (res == -1) return -1;
+                if (res == 2)
+                    continue; // BCP
+
+                if (decisionLevel() < dl)
                     return decisionLevel();
                 int diff = trail.size() - curr_asgns;
                 p == 0 ? p0 += diff : p1 += diff;
@@ -2349,15 +2375,16 @@ int CoreSMTSolver::lookaheadSplit(int d, int dl, int idx)
 
             int props = (p == 0 ? p0 : p1);
             for (int j = 0; j < trail.size() - props; j++)
-                updateLAUB(trail[i], props);
+                updateLAUB(trail[j], props);
 
             // Backtrack the decision
             cancelUntil(decisionLevel()-1);
         }
         setLAExact(v, p0, p1);
+        printf("Var %d pos %d neg %d\n", v, p0, p1);
         updateLABest(v);
     }
-    printf("I checked %d vars\n", checks);
+    printf("I checked %d lits\n", checks);
     Lit best = getLABest();  // Save the best lit for this round
     printf("The best I found propagates pos %d and neg %d\n", LAexacts[var(getLABest())].getEx_p(), LAexacts[var(getLABest())].getEx_n());
     for (int p = 0; p < 2; p++) { // repeat for both polarities

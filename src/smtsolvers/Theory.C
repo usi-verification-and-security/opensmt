@@ -140,6 +140,7 @@ int CoreSMTSolver::checkTheory( bool complete )
           if (deds[i].lev < decisionLevel())
               cancelUntil(deds[i].lev);
 #endif
+          printf("Propagating from theory\n");
           uncheckedEnqueue(deds[i].l, fake_clause);
         }
         if (deds.size() > 0) {

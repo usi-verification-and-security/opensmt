@@ -243,8 +243,6 @@ class CoreSMTSolver : public SMTSolver
     lbool   solve        ( const vec< Lit > & assumps, const unsigned ); // Search for a model that respects a given set of assumptions.
     lbool   solve        ();                        // Search without assumptions.
 
-    lbool   lookaheadSplit(int d) { return lookaheadSplit(d, 0, 0) < -1 ? l_False : l_Undef; }    // Perform a lookahead-based split of depth d
-    int     lookaheadSplit(int d, int dl, int idx); // Perform a lookahead of depth d and split.  Decision level should initially be 0.  idx is the index to the var array: the lookahead will start going through the vars from there.
 
     void    crashTest    (int, Var, Var);           // Stress test the theory solver
     virtual bool  okay   () const;                  // FALSE means solver is in a conflicting state
@@ -386,7 +384,10 @@ class CoreSMTSolver : public SMTSolver
       public:
          ExVal() : pprops(-1), nprops(-1), round(-1) {}
          ExVal(int p, int n, int r) : pprops(p), nprops(n), round(r) {}
-         bool operator< (const ExVal& e) const { return (round < e.round) || (min(pprops, nprops) < min(e.pprops, e.nprops)); }
+         bool operator< (const ExVal& e) const {
+             return (round < e.round) ||
+                 (min(pprops, nprops) < min(e.pprops, e.nprops)) ||
+                 ((min(pprops, nprops) == min(e.pprops, e.nprops)) && (max(pprops, nprops) < max(e.pprops, e.nprops))); }
          bool betterPolarity() const { return pprops < nprops; } // Should return false if the literal should be unsigned
          int  getRound() const { return round; }
          int getEx_p() const { return pprops; }
@@ -713,6 +714,9 @@ class CoreSMTSolver : public SMTSolver
 #endif
       // Added Code
       //=================================================================================================
+  public:
+    lbool   lookaheadSplit(int d);                  // Perform a lookahead-based split of depth d
+    int     lookaheadSplit(int d, int dl, int idx); // Perform a lookahead of depth d and split.  Decision level should initially be 0.  idx is the index to the var array: the lookahead will start going through the vars from there.
 };
 
 //=================================================================================================
