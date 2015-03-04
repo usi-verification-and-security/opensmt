@@ -2267,46 +2267,35 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
   return status;
 }
 
-bool CoreSMTSolver::inferior(Lit l)
+const CoreSMTSolver::UBel CoreSMTSolver::UBel_Undef = { -1, -1 };
+
+// safeToSkip: given an exact value e for a variable b, is it safe to
+// skip checking my literal's extra value in the lookahead heuristic?
+//
+bool CoreSMTSolver::UBVal::safeToSkip(const ExVal& e) const
 {
-    // If we do not know anything about l, we need to check.
-    if (LAupperbounds[var(l)].getRound() != latest_round) return false;
-    // If there's no best literal yet then we need to check
-    if (getLABest() == lit_Undef) return false;
+    // My value needs to be current with respect to both polarities and
+    // the timestamp of e
+    if (!current(e)) return false;
 
-    ExVal& e = LAexacts[var(getLABest())];
-    UBVal& ub = LAupperbounds[var(l)];
+    const UBel& ub_l = getLow();
+    const UBel& ub_h = getHigh();
 
-    assert(e.getRound() == latest_round);
+    assert(ub_l != UBel_Undef);
 
-    // Get the minimum and maximum polarity upper bounds and exact
-    // values
-    int ub_l = min(ub.getUB_p(), ub.getUB_n());
-    int e_l = min(e.getEx_p(), e.getEx_n());
-    int ub_h = max(ub.getUB_p(), ub.getUB_n());
-    int e_h = max(e.getEx_p(), e.getEx_n());
+    // If my low-polarity upper bound is less than the low exact of b there is
+    // no reason to check me
+    if (ub_l.ub < e.getEx_l()) {
+        return true; }
 
-    // If the low upper bound of l is less than the low exact of b there is no need to check
-    if (ub_l < e_l) {
-        printf("Skipping because of ub_l < e_l\n");
-        return true;
-    }
-    // If lower upper bound of l equals lower exact of b but higher
-    // upper bound of l is less than (or equal to) higher exact there's
-    // no need to check
-    if (ub_l == e_l && ub_h <= e_h) {
-        printf("Skipping because of ub_l == e_l && ub_h <= e_h\n");
-        return true;
-    }
-    // If lower upper bound of l equals lower exact of b and higher
-    // upper bound of l is greater than higher exact of b we need to
-    // check
-    if (ub_l == e_l && ub_h > e_h) return false;
-    // if lower upper bound of l is greater than lower exact of b we
-    // need to check.
-    if (ub_l > e_l) return false;
+    // If my low-polarity upper bound is equal to the low exact of b and
+    // my high-polarity upper bound is less than or equal to the high
+    // exact of b there is no reason to check me
+    if (ub_l.ub ==  e.getEx_l() && ub_h.ub <= e.getEx_h()) {
+        return true; }
 
-    assert(false);
+    // In all other cases the value needs to be checked.
+    return false;
 }
 
 // Entry point for lookaheadSplit
@@ -2318,6 +2307,10 @@ lbool CoreSMTSolver::lookaheadSplit(int d)
     first_model_found = true;
     lbool res = lookaheadSplit(d, 0, 0) < -1 ? l_False : l_Undef;
     first_model_found = first_model_found_prev;
+
+    // Without these I get a segfault from solver's destructor...
+    cancelUntil(-1);
+    theory_handler.backtrack(-1);
     return res;
 }
 
@@ -2330,62 +2323,93 @@ lbool CoreSMTSolver::lookaheadSplit(int d)
 //  - idx is the index to the variable where the lookahead should start
 //    (to avoid the quadratic behavior)
 //
-int CoreSMTSolver::lookaheadSplit(int d, int dl, int idx)
+int CoreSMTSolver::lookaheadSplit(int d, const int dl, int idx)
 {
-    int checks = 0; // Just checking...
     assert(decisionLevel() == dl);
     updateRound();
-    if (d == 0) { createSplit_lookahead(); return dl - 1; }
-    for (int i = 0; i < nVars(); i++) {
-        Var v((idx+i) % nVars());
+    if (d == 0) { createSplit_lookahead(); return dl; }
+    int i = 0;
+    for (Var v(idx % nVars()); LAexacts[v].getRound() != latest_round; v = Var((idx + (++i)) % nVars())) {
+        bool conflict_found = false;
         int p0 = 0, p1 = 0;
         for (int p = 0; p < 2; p++) { // do for both polarities
-            if (value(v) != l_Undef || inferior(Lit(v, p))) continue;
+            if (value(v) != l_Undef || LAupperbounds[v].safeToSkip(LAexacts[var(getLABest())])) continue;
+            if (decisionLevel() == dl)
+                newDecisionLevel();
+            assert(decisionLevel() == dl+1);
+            Lit l(v, p);
+            uncheckedEnqueue(l);
 
-            checks++; // Just checking...
-
-            newDecisionLevel();
-            uncheckedEnqueue(Lit(v, p));
-
-            int diff = 0;
-            int rounds = 0;
+            bool diff;
             do {
-                rounds++;
-                printf("Propagation round %d\n", rounds);
+                assert(decisionLevel() == dl+1 || decisionLevel() == dl);
+                diff = false;
                 int curr_asgns = trail.size();
                 Clause *c;
-                if ((c = propagate()) != NULL) {
+                while ((c = propagate()) != NULL) {
                     vec<Lit> out_learnt;
                     int out_btlevel;
                     analyze(c, out_learnt, out_btlevel);
-                    if (out_btlevel < dl) {
+                    cancelUntil(out_btlevel);
+                    Clause* d = NULL;
+                    if (out_learnt.size() > 1) {
+                        d = Clause_new(out_learnt, true);
+                        learnts.push(d);
+                        attachClause(*d);
+                    }
+                    uncheckedEnqueue(out_learnt[0], d);
+                    if (out_btlevel < dl) // Backjump
                         return out_btlevel;
+                    conflict_found = true;
+                    diff = true;
+                    assert(decisionLevel() == dl);
+                }
+                if (!diff) {
+                    int res = checkTheory(true);
+                    if (res == -1) return -1;
+                    if (res == 2)
+                        continue; // BCP
+                    if (res == 0) { // l results in a conflict.
+                        if (decisionLevel() < dl) // Backjump
+                            return decisionLevel();
+                        // We can still continue the lookahead, but we are
+                        // no longer interested in the lookahead values of
+                        // The propagation can be continued until fix point
+                        conflict_found = true;
+                        diff = true;
                     }
                 }
-                int res = checkTheory(true);
-                if (res == -1) return -1;
-                if (res == 2)
-                    continue; // BCP
+                diff |= (trail.size() - curr_asgns > 0);
+            } while (diff);
 
-                if (decisionLevel() < dl)
-                    return decisionLevel();
-                int diff = trail.size() - curr_asgns;
-                p == 0 ? p0 += diff : p1 += diff;
-            } while (diff > 0);
+            if (!conflict_found)
+                for (int j = 0; j < trail.size(); j++)
+                    updateLAUB(trail[j], trail.size());
+            else {
+                // Which also means that there is new information
+                // available on the solver in the form of literals
+                // asserted on the previous decision level and we need
+                // to recompute the lookahead values.
+                updateRound();
+                assert(decisionLevel() == dl);
+                break;
+            }
 
-            int props = (p == 0 ? p0 : p1);
-            for (int j = 0; j < trail.size() - props; j++)
-                updateLAUB(trail[j], props);
+            p == 0 ? p0 = trail.size() : p1 = trail.size();
 
             // Backtrack the decision
             cancelUntil(decisionLevel()-1);
         }
-        setLAExact(v, p0, p1);
-        printf("Var %d pos %d neg %d\n", v, p0, p1);
-        updateLABest(v);
+
+        if (!conflict_found && value(v) == l_Undef) {
+            setLAExact(v, p0, p1);
+            updateLABest(v);
+        }
     }
-    printf("I checked %d lits\n", checks);
     Lit best = getLABest();  // Save the best lit for this round
+    // FIXME here it is possible not to have a best literal, for
+    // instance if everything is already assigned.
+    assert(best != lit_Undef);
     printf("The best I found propagates pos %d and neg %d\n", LAexacts[var(getLABest())].getEx_p(), LAexacts[var(getLABest())].getEx_n());
     for (int p = 0; p < 2; p++) { // repeat for both polarities
         // Make the branch
@@ -2393,22 +2417,22 @@ int CoreSMTSolver::lookaheadSplit(int d, int dl, int idx)
         uncheckedEnqueue(p == 0 ? best : ~best);
         assert(decisionLevel() == dl+1);
         int new_dl = lookaheadSplit(d-1, decisionLevel(), idx);
-        if (new_dl < dl)
+        if (new_dl <= dl)
             return new_dl;
         assert(decisionLevel() == dl+1);
         cancelUntil(dl);
     }
     assert(decisionLevel() == dl);
-    return dl - 1;
+    return dl;
 }
 
 void CoreSMTSolver::updateLAUB(Lit l, int props)
 {
     UBVal& val = LAupperbounds[var(l)];
     if (sign(l))
-        val.setUB_n(val.getUB_n() > props ? val.getUB_n() : props);
+        val.updateUB_n(UBel(props, latest_round));
     else
-        val.setUB_p(val.getUB_p() > props ? val.getUB_p() : props);
+        val.updateUB_p(UBel(props, latest_round));
 }
 
 void CoreSMTSolver::setLAExact(Var v, int pprops, int nprops)

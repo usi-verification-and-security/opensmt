@@ -392,24 +392,44 @@ class CoreSMTSolver : public SMTSolver
          int  getRound() const { return round; }
          int getEx_p() const { return pprops; }
          int getEx_n() const { return nprops; }
+         int getEx_l() const { return min(pprops, nprops); }
+         int getEx_h() const { return max(pprops, nprops); }
     };
 
     // -----------------------------------------------------------------------------------------
     // Data type for upper bound array
     //
+    class UBel {
+      public:
+        int ub;
+        int round;
+
+        UBel() : ub(-1), round(-1) {}
+        UBel(int u, int r) : ub(u), round(r) {}
+
+        bool operator== (const UBel& o) const { return ub == o.ub && round == o.round; }
+        bool operator!= (const UBel& o) const { return !(operator==(o)); }
+    };
+
+    static const CoreSMTSolver::UBel UBel_Undef;
+
     class UBVal {
       private:
-        int ub_p;
-        int ub_n;
-        int round;
+        UBel ub_p;
+        UBel ub_n;
+        bool current(const ExVal& e) const { return ub_p.round == ub_n.round && ub_p.round == e.getRound(); }
       public:
-        UBVal() : ub_p(-1), ub_n(-1), round(-1) {}
-        UBVal(int ub_pos, int ub_neg, int r) : ub_p(ub_pos), ub_n(ub_neg), round(r) {}
-        void setUB_p(int x) { ub_p = x; }
-        void setUB_n(int x) { ub_n = x; }
-        int  getUB_p()  const { return ub_p; }
-        int  getUB_n()  const { return ub_n; }
-        int  getRound() const { return round; }
+        UBVal() {}
+        UBVal(const UBel& ub_pos, const UBel& ub_neg) : ub_p(ub_pos), ub_n(ub_neg) {}
+        void updateUB_p(const UBel& ub) { if (ub_p.round < ub.round || (ub_p.round == ub.round && ub_p.ub > ub.ub)) ub_p = ub; }
+        void updateUB_n(const UBel& ub) { if (ub_n.round < ub.round || (ub_n.round == ub.round && ub_n.ub > ub.ub)) ub_n = ub; }
+
+        bool safeToSkip(const ExVal& e) const;
+        const UBel& getUB_p()  const { return ub_p; }
+        const UBel& getUB_n()  const { return ub_n; }
+        bool betterThan(const ExVal& e) const;
+        const UBel& getLow() const { if (ub_p.round != ub_n.round) return UBel_Undef; else return ub_p.ub < ub_n.ub ? ub_p : ub_n; }
+        const UBel& getHigh() const {if (ub_p.round != ub_n.round) return UBel_Undef; else return  ub_p.ub < ub_n.ub ? ub_n : ub_p; }
     };
 
     bool betterThan_ub(const UBVal& ub, const ExVal& e) const;
@@ -505,8 +525,6 @@ class CoreSMTSolver : public SMTSolver
     void     reduceDB         ();                                                      // Reduce the set of learnt clauses.
     void     removeSatisfied  (vec<Clause*>& cs);                                      // Shrink 'cs' to contain only non-satisfied clauses.
 
-    // Lookahead helper functions
-    bool     inferior         (Lit l);                                                 // See if we can already deduce that l needs not to be checked
     void     updateLAUB       (Lit l, int props);                                      // Check the lookahead upper bound and update it if necessary
     void     setLAExact       (Var v, int pprops, int nprops);                         // Set the exact la value
     Lit      getLABest        () { if (LAexacts[var(LABestLit)].getRound() < latest_round) { return lit_Undef; } else { return LABestLit; } }
@@ -716,7 +734,7 @@ class CoreSMTSolver : public SMTSolver
       //=================================================================================================
   public:
     lbool   lookaheadSplit(int d);                  // Perform a lookahead-based split of depth d
-    int     lookaheadSplit(int d, int dl, int idx); // Perform a lookahead of depth d and split.  Decision level should initially be 0.  idx is the index to the var array: the lookahead will start going through the vars from there.
+    int     lookaheadSplit(int d, const int dl, int idx); // Perform a lookahead of depth d and split.  Decision level should initially be 0.  idx is the index to the var array: the lookahead will start going through the vars from there.
 };
 
 //=================================================================================================
