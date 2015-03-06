@@ -1,7 +1,7 @@
 /*********************************************************************
 Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
 
-OpenSMT2 -- Copyright (C) 2012 - 2014 Antti Hyvarinen
+OpenSMT2 -- Copyright (C) 2012 - 2015 Antti Hyvarinen
                          2008 - 2012 Roberto Bruttomesso
 
 Permission is hereby granted, free of charge, to any person obtaining a
@@ -390,10 +390,9 @@ class CoreSMTSolver : public SMTSolver
                  ((min(pprops, nprops) == min(e.pprops, e.nprops)) && (max(pprops, nprops) < max(e.pprops, e.nprops))); }
          bool betterPolarity() const { return pprops < nprops; } // Should return false if the literal should be unsigned
          int  getRound() const { return round; }
-         int getEx_p() const { return pprops; }
-         int getEx_n() const { return nprops; }
-         int getEx_l() const { return min(pprops, nprops); }
-         int getEx_h() const { return max(pprops, nprops); }
+         int  getEx_l() const  { return min(pprops, nprops); }
+         int  getEx_h() const  { return max(pprops, nprops); }
+         void setRound(int r)  { round = r; }
     };
 
     // -----------------------------------------------------------------------------------------
@@ -434,7 +433,7 @@ class CoreSMTSolver : public SMTSolver
 
     bool betterThan_ub(const UBVal& ub, const ExVal& e) const;
 
-    void updateLABest(Var v) { Lit prev_best = getLABest(); ExVal& e = LAexacts[v]; LABestLit = LAexacts[v] < LAexacts[var(prev_best)] ? prev_best : Lit(v, e.betterPolarity()); }
+    void updateLABest(Var v);
 
     vec<UBVal>          LAupperbounds;    // The current upper bounds
     vec<ExVal>          LAexacts;         // The current exact values

@@ -2305,10 +2305,17 @@ lbool CoreSMTSolver::lookaheadSplit(int d)
 {
     bool first_model_found_prev = first_model_found;
     first_model_found = true;
-    lbool res = lookaheadSplit(d, 0, 0) < -1 ? l_False : l_Undef;
+    int dl = lookaheadSplit(d, 0, 0);
+    lbool res = l_Undef;
+    if (dl == -2) {
+        res = l_True;
+        model.growTo(nVars());
+        for (int i = 0; i < nVars(); i++)
+            model[i] = value(trail[i]);
+    }
     first_model_found = first_model_found_prev;
 
-    // Without these I get a segfault from solver's destructor...
+    // Without these I get a segfault from theory solver's destructor...
     cancelUntil(-1);
     theory_handler.backtrack(-1);
     return res;
@@ -2329,11 +2336,30 @@ int CoreSMTSolver::lookaheadSplit(int d, const int dl, int idx)
     updateRound();
     if (d == 0) { createSplit_lookahead(); return dl; }
     int i = 0;
-    for (Var v(idx % nVars()); LAexacts[v].getRound() != latest_round; v = Var((idx + (++i)) % nVars())) {
-        bool conflict_found = false;
+    bool conflict_found = false;
+    for (Var v(idx % nVars()); (LAexacts[v].getRound() != latest_round) || conflict_found; v = Var((idx + (++i)) % nVars())) {
+        if (value(v) != l_Undef || LAupperbounds[v].safeToSkip(LAexacts[var(getLABest())])) {
+            LAexacts[v].setRound(latest_round);
+            // It is possible that all variables are assigned here.
+            // In this case it seems that we have a satisfying assignment.
+            if (trail.size() == nVars()) {
+                assert(checkTheory(true) == 1);
+                for (int j = 0; j < clauses.size(); j++) {
+                    Clause& c = *clauses[j];
+                    int k;
+                    for (k = 0; k < c.size(); k++)
+                        if (value(c[k]) == l_True) break;
+                    assert(k < c.size());
+                }
+                return -2; // Stands for SAT
+            }
+            continue;
+        }
         int p0 = 0, p1 = 0;
         for (int p = 0; p < 2; p++) { // do for both polarities
-            if (value(v) != l_Undef || LAupperbounds[v].safeToSkip(LAexacts[var(getLABest())])) continue;
+
+            conflict_found = false;
+
             if (decisionLevel() == dl)
                 newDecisionLevel();
             assert(decisionLevel() == dl+1);
@@ -2367,14 +2393,16 @@ int CoreSMTSolver::lookaheadSplit(int d, const int dl, int idx)
                 if (!diff) {
                     int res = checkTheory(true);
                     if (res == -1) return -1;
-                    if (res == 2)
+                    if (res == 2) {
+                        propagations = true;
                         continue; // BCP
+                    }
                     if (res == 0) { // l results in a conflict.
                         if (decisionLevel() < dl) // Backjump
                             return decisionLevel();
-                        // We can still continue the lookahead, but we are
-                        // no longer interested in the lookahead values of
                         // The propagation can be continued until fix point
+                        // We can still continue the lookahead, but we are
+                        // no longer interested in the upper bounds
                         conflict_found = true;
                         diff = true;
                     }
@@ -2404,13 +2432,16 @@ int CoreSMTSolver::lookaheadSplit(int d, const int dl, int idx)
         if (!conflict_found && value(v) == l_Undef) {
             setLAExact(v, p0, p1);
             updateLABest(v);
+            assert(value(getLABest()) == l_Undef);
         }
     }
+    assert(decisionLevel() == dl);
     Lit best = getLABest();  // Save the best lit for this round
     // FIXME here it is possible not to have a best literal, for
     // instance if everything is already assigned.
     assert(best != lit_Undef);
-    printf("The best I found propagates pos %d and neg %d\n", LAexacts[var(getLABest())].getEx_p(), LAexacts[var(getLABest())].getEx_n());
+    assert(value(best) == l_Undef);
+    printf("The best I found propagates high %d and low %d\n", LAexacts[var(getLABest())].getEx_h(), LAexacts[var(getLABest())].getEx_l());
     for (int p = 0; p < 2; p++) { // repeat for both polarities
         // Make the branch
         newDecisionLevel();
@@ -2424,6 +2455,19 @@ int CoreSMTSolver::lookaheadSplit(int d, const int dl, int idx)
     }
     assert(decisionLevel() == dl);
     return dl;
+}
+
+void CoreSMTSolver::updateLABest(Var v)
+{
+    assert(value(v) == l_Undef);
+    ExVal& e = LAexacts[v];
+    Lit l_v = Lit(v, e.betterPolarity());
+    if (value(LABestLit) != l_Undef)
+        LABestLit = l_v;
+    else {
+        Lit prev_best = getLABest();
+        LABestLit = LAexacts[v] < LAexacts[var(prev_best)] ? prev_best : l_v;
+    }
 }
 
 void CoreSMTSolver::updateLAUB(Lit l, int props)
