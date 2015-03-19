@@ -74,8 +74,6 @@ class Interpret {
     SimpSMTSolver sat_solver;
     Tseitin       ts;
 
-    MainSolver    main_solver;
-
     Map<const char*,PTRef,StringHash,Equal<const char*> > nameToTerm;
     VecMap<PTRef,const char*,PTRefHash,Equal<PTRef> > termToNames;
     vec<const char*>            term_names;
@@ -160,4 +158,6 @@ class Interpret {
     int interpFile(FILE* in);
     int interpInteractive(FILE* in);
     int interpPipe();
+
+    MainSolver    main_solver;
 };

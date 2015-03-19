@@ -38,6 +38,7 @@ class sstat {
     bool operator != (sstat s) const { return value != s.value; }
     sstat() : value(0) {}
     sstat(lbool l) { if (l == l_True) value = 1; else if (l == l_False) value = -1; else if (l == l_Undef) value = 0; }
+    char getValue()            const { return value; }
     friend sstat toSstat(int v);
 };
 

@@ -37,6 +37,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //#include "Ackermanize.h"
 
 #include "Interpret.h"
+#include "net/net.h"
 
 #include <cstdlib>
 #include <cstdio>
@@ -127,15 +128,35 @@ int main( int argc, char * argv[] )
   // Initialize pointer to context for parsing
 //  parser_ctx    = &context;
   // Accepts file from stdin if nothing specified
-  FILE * fin = NULL;
-  // Print help if required
-  if (argc == 2 &&
-     (strcmp( argv[1], "--help") == 0 ||
-      strcmp( argv[1], "-h" ) == 0 ))
-  {
-//    context.getConfig( ).printHelp( );
-    return 0;
-  }
+    FILE * fin = NULL;
+    int opt, i;
+    WorkerClient *w;
+    while ((opt = getopt(argc, argv, "hs:")) != -1) {
+        switch (opt) {
+            case 's':
+                for(i=0;optarg[i]!=':' && optarg[i]!='\0';i++){}
+                if(optarg[i]!=':'){
+                    fprintf(stderr, "Invalid host:port argument\n",
+                            argv[0]);
+                    return 1;
+                }
+                optarg[i]='\0';
+                try{
+                    w = new WorkerClient(optarg, atoi(&optarg[i+1]));
+                    w->runForever();
+                }catch(char const *s){
+                    std::cout << "Exception: " << s << "\n";
+                }
+                return 0;
+            case 'h':
+                //    context.getConfig( ).printHelp( );
+            default: /* '?' */
+                fprintf(stderr, "Usage:\n\t%s filename [...]\n\t%s -s host:port\n\t%s -h\n",
+                        argv[0], argv[0], argv[0]);
+                return 0;
+        }
+    }
+
   if (argc == 1) {
     fin = stdin;
     Interpret interpreter;
