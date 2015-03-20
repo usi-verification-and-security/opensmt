@@ -33,6 +33,7 @@ AC_ARG_ENABLE(library,
   want_library="yes",
   want_library="no")
 
+
 AM_CONDITIONAL([WANT_LIBRARY], [test "$want_library" = "yes"])
 
 #
@@ -510,6 +511,9 @@ fi
 # Check for GMP library
 AC_CHECK_LIB(gmp, __gmpz_init, ,[AC_MSG_ERROR([GMP library not found])])
 
+AC_CHECK_LIB(pthread, pthread_create,,
+	[AC_MSG_ERROR([required library pthread missing])])
+
 # Check for readline library
 AX_LIB_READLINE
 # Restore original flags
@@ -528,6 +532,7 @@ AC_SUBST(config_includedirs)
 AC_CONFIG_FILES([ \
 		  Makefile \
 		  src/Makefile \
+		  src/net/Makefile \
 		  src/parsers/Makefile \
 		  src/parsers/smt2new/Makefile \
 		  src/pterms/Makefile \
