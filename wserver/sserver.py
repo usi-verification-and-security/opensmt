@@ -77,14 +77,9 @@ class Server(object):
     def handle_timeout(self):
         pass
 
-    def close_client(self, sock):
-        self.handle_close(sock)
-        sock.close()
-        self._rlist.remove(sock)
-
     def run_forever(self):
         while True:
-            rlist = select.select(self._rlist, [], [], 10)[0]
+            rlist = select.select(self._rlist, [], [], 60)[0]
             if len(rlist) == 0:
                 self.handle_timeout()
                 continue
@@ -97,20 +92,21 @@ class Server(object):
                 message = sock.read()
                 length = len(message)
                 if length == 0:
-                    self.close_client(sock)
+                    self.handle_close(sock)
+                    sock.close()
+                    self._rlist.remove(sock)
                     continue
                 self.handle_message(sock, message)
 
 
 class Job(dict):
     def __init__(self, name, **kwargs):
+        super(Job, self).__init__(kwargs)
         self.update({
             'name': name,
-            'status': 0,
             'history': [('CREATED', time.time())]
         })
         self.started = False
-        super(Job, self).__init__(kwargs)
 
     def add_history_item(self, item):
         now = time.time()
@@ -118,21 +114,21 @@ class Job(dict):
             self.started = now
         if item[0] == 'SOLVED':
             self.update({'elapsed': now - self.started})
-        self.get('history').append((now, item))
+        self['history'].append((now, item))
 
     def safe_dump(self):
-        return {key: self.get(key) for key in self if not key.startswith('_')}
+        return {key: self[key] for key in self if not key.startswith('_')}
 
-    def __str__(self):
+    def __repr__(self):
         return '{}'.format(self.safe_dump())
 
 
 class WorkerServer(Server):
     _lock = threading.Lock()
-    _status = {}
+    _status = {}  # sock -> (job, code_id)
     _jobs = {
-        -2: Job('!ERROR'),
-        -1: Job('!IDLE')
+        -2: Job('\\ERROR'),
+        -1: Job('\\IDLE')
     }
 
     def __init__(self, port, timeout):
@@ -140,27 +136,30 @@ class WorkerServer(Server):
         super(WorkerServer, self).__init__(port)
 
     def handle_timeout(self):
+        if not self._timeout:
+            return
+        jids = []
         with self._lock:
-            if not self._timeout:
-                return
             min = time.time() - self._timeout
             for sock in self._status:
                 job = self._status[sock]
                 jid = [jid for jid in self._jobs if self._jobs[jid] == job][0]
                 if job.started and job.started < min:
-                    self.handle_command('Q{}'.format(jid))
+                    jids.append(jid)
+        for jid in jids:
+            self.handle_command('Q{}'.format(jid))
 
     def handle_accept(self, sock):
         with self._lock:
             self.output.write('+ worker {}\n'.format(sock.address))
-            self._status[sock] = self._jobs[-1]
+            self._status[sock] = (self._jobs[-1], 0)
             self._commit()
 
     def handle_message(self, sock, message):
         with self._lock:
             start = message.index('\\')
             jid = int(message[1:start])
-            if jid < 0 or jid not in self._jobs or self._jobs[jid] != self._status[sock]:
+            if jid < 0 or jid not in self._jobs or self._jobs[jid] != self._status[sock][0]:
                 return
             self.output.write('< worker {}: {}\n'.format(sock.address, message))
             content = message[start + 1:]
@@ -173,18 +172,35 @@ class WorkerServer(Server):
     def handle_close(self, sock):
         with self._lock:
             self.output.write('- worker {}\n'.format(sock.address))
-            jid = self._jobs.keys()[self._jobs.values().index(self._status[sock])]
+            jid = self._jobs.keys()[self._jobs.values().index(self._status[sock][0])]
             if jid >= 0:
-                self._jobs[jid].add_history_item(('-', 1))
+                self._jobs[jid].add_history_item(('-', 1, self._status[sock][1]))
             self._status.pop(sock)
             self._commit()
 
     def handle_command(self, message):
         with self._lock:
             if message[0] == 'S':
-                jid = max(self._jobs.keys()) + 1
+                message = message[1:]
+                last = message[0] != '\\'
+                if not last:
+                    message = message[1:]
                 start = message.index('\\')
-                self._jobs[jid] = Job(message[1:start], _code=message[start + 1:])
+                name = message[:start]
+                code = message[start + 1:]
+                jid = max(self._jobs.keys()) + 1
+                for _jid in self._jobs:
+                    if self._jobs[_jid]['name'] == name:
+                        if self._jobs[_jid]['status'] != -2:
+                            self.output.write('$ JOB {} ALREADY CLOSED: {}\n'.format(jid, name))
+                            return
+                        jid = _jid
+                        break
+                if jid not in self._jobs:
+                    self._jobs[jid] = Job(name, _code=[code])
+                else:
+                    self._jobs[jid]['_code'].append(code)
+                self._jobs[jid]['status'] = 0 if last else -2
                 self._commit()
             elif message[0] == 'Q':
                 jid = int(message[1:])
@@ -193,9 +209,12 @@ class WorkerServer(Server):
                 self._commit()
             elif message[0] == 'D':
                 try:
-                    pickle.dump({key: self._jobs[key].safe_dump() for key in self._jobs}, open(message[1:], 'wb'))
+                    file = open(message[1:], 'wb')
+                    pickle.dump({key: self._jobs[key].safe_dump() for key in self._jobs}, file)
                 except:
-                    self.output.write('DUMP ERROR: {}'.format(message))
+                    self.output.write('$ DUMP ERROR: {}\n'.format(message))
+                else:
+                    file.close()
 
     def _commit(self):
         """
@@ -211,19 +230,40 @@ class WorkerServer(Server):
         """
         if jid_prev not in self._jobs or jid_next not in self._jobs:
             return
-        workers = []
-        for sock in self._status:
-            if self._status[sock] == self._jobs[jid_prev]:
-                workers.append(sock)
-                self._status[sock] = self._jobs[jid_next]
+        workers = [sock for socks in self._get_commitments(jid_prev).values() for sock in socks]
         if workers:
             if jid_prev >= 0:
                 self._jobs[jid_prev].add_history_item(('-', len(workers)))
                 self._broadcast('Q{}'.format(jid_prev), to=workers)
             if jid_next >= 0:
-                self._jobs[jid_next].add_history_item(('+', len(workers)))
-                self._broadcast('S{}\\{}'.format(jid_next, self._jobs[jid_next]['_code']), to=workers)
+                commitments = self._get_commitments(jid_next)
+                cid_workers = {cid: [] for cid in commitments}
+                for sock in workers:
+                    rev = {len(commitments[cid]): cid for cid in commitments}
+                    cid = rev[min(rev)]
+                    cid_workers[cid].append(sock)
+                    self._status[sock] = (self._jobs[jid_next], cid)
+                    commitments = self._get_commitments(jid_next)
+                for cid in cid_workers:
+                    if len(cid_workers[cid]):
+                        self._jobs[jid_next].add_history_item(('+', len(cid_workers[cid]), cid))
+                        self._broadcast('S{}\\{}'.format(jid_next, self._jobs[jid_next]['_code'][cid]), to=cid_workers[cid])
+            else:
+                for sock in workers:
+                    self._status[sock] = (self._jobs[jid_next], 0)
         return workers
+
+    def _get_commitments(self, jid):
+        if jid not in self._jobs:
+            return # ERROREEEEE
+        job = self._jobs[jid]
+        commitments = {cid: [] for cid in range(len(job['_code']) if '_code' in job else 1)}
+        for sock in self._status:
+            if not self._status[sock][0] == job:
+                continue
+            cid = self._status[sock][1]
+            commitments[cid].append(sock)
+        return commitments
 
     def _broadcast(self, message, to=None):
         """
@@ -235,8 +275,9 @@ class WorkerServer(Server):
                 continue
             sock.write(message)
 
-    def __str__(self):
-        workers = {sock.address: self._jobs.keys()[self._jobs.values().index(self._status[sock])]
+    def __repr__(self):
+        workers = {sock.address:
+                       (self._jobs.keys()[self._jobs.values().index(self._status[sock][0])], self._status[sock][1])
                    for sock in self._status}
         return '{}\n{}'.format(
             '\n'.join([str((key, self._jobs[key].safe_dump())) for key in self._jobs]),

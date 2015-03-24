@@ -17,6 +17,7 @@
 #include <strings.h>
 #include <string.h>
 #include <thread>
+#include <random>
 
 class FrameSocket {
 private:
@@ -35,6 +36,7 @@ private:
     FrameSocket *s;
     FrameSocket *rpipe;
     std::thread t;
+    uint32_t jid;
     void command(char *frame, uint32_t length);
     static void solve(int wpipefd, char* osmt2filename, uint32_t jid);
     

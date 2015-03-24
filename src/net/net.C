@@ -86,7 +86,7 @@ void WorkerClient::solve(int wpipefd, char* smt2filename, uint32_t jid){
     FrameSocket *wpipe = new FrameSocket(wpipefd);
     sstat status;
     
-    if((fin = fopen(smt2filename, "rt" )) == NULL){
+    if((fin = fopen(smt2filename, "r" )) == NULL){
         n=snprintf(buffer, 128, "E%u\\can't open file", jid);
     }
     else{
@@ -98,12 +98,11 @@ void WorkerClient::solve(int wpipefd, char* smt2filename, uint32_t jid){
             n=snprintf(buffer, 128, "S%u\\%hhd", jid, status.getValue());
         }
         else{
-            opensmt::stop=false;
+            n=snprintf(buffer, 128, "!");
         }
     }
     
-    if(n>0)
-        wpipe->write(buffer, n);
+    wpipe->write(buffer, n);
     close(wpipe->fd());
     std::cout << "Finished job " << jid << "\n";
 }
@@ -116,37 +115,41 @@ void WorkerClient::command(char *frame, uint32_t length){
     int pipefd[2];
     char buffer[1024];
     
+    for(i=2;frame[i]!='\\' && i<7 && i<length;i++){}
+    frame[i]='\0';
+    jid = atoi(&frame[1]);
+    if (jid>999999){
+        n=snprintf(buffer, 1024, "E%u\\invalid job id", jid);
+        this->s->write(buffer, n);
+        return;
+    }
+    
     if(frame[0]=='S'){
-        for(i=2;frame[i]!='\\' && i<7;i++){}
-        frame[i]='\0';
-        jid = atoi(&frame[1]);
-        if (jid>999999){
-            n=snprintf(buffer, 1024, "E%u\\invalid job id", jid);
-            this->s->write(buffer, n);
-            return;
-        }
-        
         if(this->rpipe!=NULL){
-            n=snprintf(buffer, 1024, "E%u\\already executing a job", jid);
+            n=snprintf(buffer, 1024, "E%u\\already executing a job", this->jid);
             this->s->write(buffer, n);
             return;
         }
         
         if (pipe(pipefd) == -1) {
-            n=snprintf(buffer, 1024, "E%u\\pipe error", jid);
+            n=snprintf(buffer, 1024, "E%u\\pipe error", this->jid);
             this->s->write(buffer, n);
             return;
         }
+        
+        this->jid = jid;
         
         filename = tmpnam(NULL);
         file = fopen(filename, "w");
         ::fwrite(&frame[i+1], sizeof(char), length-i-1, file);
         fclose(file);
         
-        n=snprintf(buffer, 1024, "(set-option :random-seed 16)\n"
+        std::uniform_int_distribution<uint32_t> randuint(0, 0xFFFFFF);
+        std::random_device rd;
+        n=snprintf(buffer, 1024, "(set-option :random-seed %u)\n"
                    "(set-logic QF_UF)\n"
                    "(read-state \"%s\")\n"
-                   "(check-sat)\n", filename);
+                   "(check-sat)\n", randuint(rd), filename);
         
         filename = tmpnam(NULL);
         file = fopen(filename, "w");
@@ -154,7 +157,14 @@ void WorkerClient::command(char *frame, uint32_t length){
         fclose(file);
         
         this->rpipe = new FrameSocket(pipefd[0]);
-        this->t = std::thread(solve, pipefd[1], filename, jid);
+        this->t = std::thread(solve, pipefd[1], filename, this->jid);
+    }
+    else if(frame[0]=='Q'){
+        if (jid == this->jid) {
+            opensmt::stop=true;
+            this->t.join();
+            opensmt::stop=false;
+        }
     }
 }
 
@@ -168,9 +178,18 @@ void WorkerClient::runForever(){
         FD_SET(this->s->fd(), &set);
         if(this->rpipe!=NULL)
             FD_SET(this->rpipe->fd(), &set);
-        
         if(select(FD_SETSIZE, &set, NULL, NULL, NULL)==-1)
             throw "Select";
+        
+        if(this->rpipe!=NULL && FD_ISSET(this->rpipe->fd(), &set)){
+            length = this->rpipe->read(&frame);
+            if (frame[0]!='!') {
+                this->s->write(frame, length);
+            }
+            close(this->rpipe->fd());
+            this->rpipe=NULL;
+            free(frame);
+        }
         
         if(FD_ISSET(this->s->fd(), &set)!=0){
             length = this->s->read(&frame);
@@ -178,13 +197,5 @@ void WorkerClient::runForever(){
             free(frame);
         }
         
-        if(this->rpipe!=NULL && FD_ISSET(this->rpipe->fd(), &set)){
-            length = this->rpipe->read(&frame);
-            this->s->write(frame, length);
-            
-            close(this->rpipe->fd());
-            this->rpipe=NULL;
-            free(frame);
-        }
     }
 }

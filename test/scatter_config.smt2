@@ -4,4 +4,4 @@
 (set-option :split-init-tune 2)
 (set-option :split-mid-tune 2)
 (set-option :split-num 2)
-(set-option :dump-state "/tmp/dump")
+(set-option :dump-state "/dev/shm/asd")

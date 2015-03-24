@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import server
+import sserver
 import sys
 import optparse
 
@@ -15,7 +15,7 @@ if __name__ == '__main__':
     if len(args) == 0:
         parser.error("missing <host> argument")
 
-    s = server.Socket()
+    s = sserver.Socket()
     s.connect((args[0], options.port))
 
     if len(args) == 1:
