@@ -10,8 +10,15 @@ import sys
 import time
 import os
 import pickle
+import __builtin__
 
 __author__ = 'Matteo Marescotti'
+
+
+class Dict(dict):
+    def keys_of(self, item):
+        return [key for key in self if self[key] == item]
+__builtin__.dict = Dict
 
 
 class Socket(socket.socket):
@@ -99,37 +106,37 @@ class Server(object):
                 self.handle_message(sock, message)
 
 
+class Task(object):
+    def __init__(self, code):
+        self.code = code
+        self.solved = False
+
 class Job(dict):
-    def __init__(self, name, **kwargs):
-        super(Job, self).__init__(kwargs)
+    def __init__(self, name, tasks=(None,)):
+        super(Job, self).__init__()
         self.update({
             'name': name,
-            'history': [('CREATED', time.time())]
+            'history': [('CREATED', time.time())],
         })
+        self.tasks = tasks
         self.started = False
 
     def add_history_item(self, item):
         now = time.time()
         if item[0] == '+' and not self.started:
             self.started = now
-        if item[0] == 'SOLVED':
-            self.update({'elapsed': now - self.started})
+        if item[0] == 'S':
+            self['elapsed'] = now - self.started
         self['history'].append((now, item))
-
-    def safe_dump(self):
-        return {key: self[key] for key in self if not key.startswith('_')}
-
-    def __repr__(self):
-        return '{}'.format(self.safe_dump())
 
 
 class WorkerServer(Server):
     _lock = threading.Lock()
-    _status = {}  # sock -> (job, code_id)
-    _jobs = {
+    _status = {}  # sock -> (job, task_id)
+    _jobs = dict({
         -2: Job('\\ERROR'),
         -1: Job('\\IDLE')
-    }
+    })
 
     def __init__(self, port, timeout):
         self._timeout = timeout
@@ -143,7 +150,7 @@ class WorkerServer(Server):
             min = time.time() - self._timeout
             for sock in self._status:
                 job = self._status[sock]
-                jid = [jid for jid in self._jobs if self._jobs[jid] == job][0]
+                jid = self._jobs.keys_of(job)[0]
                 if job.started and job.started < min:
                     jids.append(jid)
         for jid in jids:
@@ -164,15 +171,21 @@ class WorkerServer(Server):
             self.output.write('< worker {}: {}\n'.format(sock.address, message))
             content = message[start + 1:]
             if message[0] == 'S':  # solved
-                self._jobs[jid].add_history_item(('SOLVED', content))
-                self._jobs[jid]['status'] = 1
-                self._swap_jobs(jid, -1)
+                tid = self._status[sock][1]
+                self._jobs[jid].tasks[tid].solved = True
+                if content[0] == '1':  # SAT
+                    self._jobs[jid].add_history_item(('S', content))
+                    self._jobs[jid]['status'] = 1
+                    self._swap_jobs(jid, -1)
+                else:
+                    self._jobs[jid].add_history_item(('U', content, tid))
+                    self._swap_jobs(jid, -1, tid)
                 self._commit()
 
     def handle_close(self, sock):
         with self._lock:
             self.output.write('- worker {}\n'.format(sock.address))
-            jid = self._jobs.keys()[self._jobs.values().index(self._status[sock][0])]
+            jid = self._jobs.keys_of(self._status[sock][0])[0]
             if jid >= 0:
                 self._jobs[jid].add_history_item(('-', 1, self._status[sock][1]))
             self._status.pop(sock)
@@ -197,9 +210,9 @@ class WorkerServer(Server):
                         jid = _jid
                         break
                 if jid not in self._jobs:
-                    self._jobs[jid] = Job(name, _code=[code])
+                    self._jobs[jid] = Job(name, [Task(code)])
                 else:
-                    self._jobs[jid]['_code'].append(code)
+                    self._jobs[jid].tasks.append(Task(code))
                 self._jobs[jid]['status'] = 0 if last else -2
                 self._commit()
             elif message[0] == 'Q':
@@ -210,7 +223,7 @@ class WorkerServer(Server):
             elif message[0] == 'D':
                 try:
                     file = open(message[1:], 'wb')
-                    pickle.dump({key: self._jobs[key].safe_dump() for key in self._jobs}, file)
+                    pickle.dump(self._jobs, file)
                 except:
                     self.output.write('$ DUMP ERROR: {}\n'.format(message))
                 else:
@@ -218,54 +231,70 @@ class WorkerServer(Server):
 
     def _commit(self):
         """
-        Find a job not yet solved then send it to idle workers
+        Find job available (with POLICY) and then execute it
         """
         jids = [jid for jid in self._jobs if jid >= 0 and self._jobs[jid]['status'] == 0]
-        if jids:
-            self._swap_jobs(-1, jids[0])
+        for jid in jids:
+            """ POLICY: the first job that has one or more tasks without workers working on it
+                is executed by all the workers idle/available
+            """
+            commitments = self._get_commitments(jid, False)
+            if not all(commitments.values()):
+                self._swap_jobs(-1, jid)
+                return
 
-    def _swap_jobs(self, jid_prev, jid_next):
+    def _swap_jobs(self, jid_prev, jid_next, filter=None):
         """
-        frees workers on jid_prev and put them on jid_next
+        frees workers on jid_prev (eventually only on task_id filter) and put them on jid_next with a POLICY
         """
         if jid_prev not in self._jobs or jid_next not in self._jobs:
-            return
-        workers = [sock for socks in self._get_commitments(jid_prev).values() for sock in socks]
+            return []
+        job_prev, job_next = self._jobs[jid_prev], self._jobs[jid_next]
+        if not filter:
+            workers = [sock for socks in self._get_commitments(jid_prev).values() for sock in socks]
+        else:
+            workers = self._get_commitments(jid_prev)[filter]
         if workers:
             if jid_prev >= 0:
-                self._jobs[jid_prev].add_history_item(('-', len(workers)))
-                self._broadcast('Q{}'.format(jid_prev), to=workers)
+                job_prev.add_history_item(('-', len(workers)))
+                self._multicast('Q{}'.format(jid_prev), to=workers)
             if jid_next >= 0:
-                commitments = self._get_commitments(jid_next)
-                cid_workers = {cid: [] for cid in commitments}
+                tid_workers = {tid: [] for tid in self._get_commitments(jid_next, False)}
                 for sock in workers:
-                    rev = {len(commitments[cid]): cid for cid in commitments}
-                    cid = rev[min(rev)]
-                    cid_workers[cid].append(sock)
-                    self._status[sock] = (self._jobs[jid_next], cid)
-                    commitments = self._get_commitments(jid_next)
-                for cid in cid_workers:
-                    if len(cid_workers[cid]):
-                        self._jobs[jid_next].add_history_item(('+', len(cid_workers[cid]), cid))
-                        self._broadcast('S{}\\{}'.format(jid_next, self._jobs[jid_next]['_code'][cid]), to=cid_workers[cid])
+                    """ POLICY: every worker is assigned to the not solved task that have the minimum number
+                        of workers still working on. that spreads the workers on all the tasks of the job
+                    """
+                    commitments = self._get_commitments(jid_next, False)
+                    rev = {len(commitments[tid]): tid for tid in commitments}
+                    tid = rev[min(rev)]
+                    tid_workers[tid].append(sock)
+                    self._status[sock] = (job_next, tid)
+                for tid in tid_workers:
+                    if tid_workers[tid]:
+                        job_next.add_history_item(('+', len(tid_workers[tid]), tid))
+                        self._multicast('S{}\\{}'.format(jid_next, job_next.tasks[tid].code), to=tid_workers[tid])
             else:
                 for sock in workers:
-                    self._status[sock] = (self._jobs[jid_next], 0)
+                    self._status[sock] = (job_next, 0)
         return workers
 
-    def _get_commitments(self, jid):
-        if jid not in self._jobs:
-            return # ERROREEEEE
+    def _get_commitments(self, jid, filter=None):
+        """
+        gets the commitments (what task a worker is doing on a job) in a dictonary task_id -> [list of workers]
+        if filter is set, the tasks in the return dict are the only with solved = filter
+        """
         job = self._jobs[jid]
-        commitments = {cid: [] for cid in range(len(job['_code']) if '_code' in job else 1)}
+        commitments = {tid: [] for tid in range(len(job.tasks))}
+        if filter is not None:
+            commitments = {tid: commitments[tid] for tid in commitments if job.tasks[tid].solved == filter}
         for sock in self._status:
-            if not self._status[sock][0] == job:
-                continue
-            cid = self._status[sock][1]
-            commitments[cid].append(sock)
+            if self._status[sock][0] == job:
+                tid = self._status[sock][1]
+                if tid in commitments:
+                    commitments[tid].append(sock)
         return commitments
 
-    def _broadcast(self, message, to=None):
+    def _multicast(self, message, to=None):
         """
         sends the message to all workers if <to> is None, else send only to <to> (list expected)
         """
@@ -276,11 +305,10 @@ class WorkerServer(Server):
             sock.write(message)
 
     def __repr__(self):
-        workers = {sock.address:
-                       (self._jobs.keys()[self._jobs.values().index(self._status[sock][0])], self._status[sock][1])
+        workers = {sock.address: (self._jobs.keys_of(self._status[sock][0])[0], self._status[sock][1])
                    for sock in self._status}
         return '{}\n{}'.format(
-            '\n'.join([str((key, self._jobs[key].safe_dump())) for key in self._jobs]),
+            '\n'.join([str((jid, self._jobs[jid])) for jid in self._jobs]),
             '\n'.join([str(item) for item in workers.items()])
         )
 
