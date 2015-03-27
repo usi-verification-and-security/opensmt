@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import subprocess
 import socket
 import optparse
 import select
@@ -10,6 +11,7 @@ import sys
 import time
 import os
 import pickle
+import tempfile
 import __builtin__
 
 __author__ = 'Matteo Marescotti'
@@ -18,6 +20,8 @@ __author__ = 'Matteo Marescotti'
 class Dict(dict):
     def keys_of(self, item):
         return [key for key in self if self[key] == item]
+
+
 __builtin__.dict = Dict
 
 
@@ -111,13 +115,16 @@ class Task(object):
         self.code = code
         self.solved = False
 
+
 class Job(dict):
-    def __init__(self, name, tasks=(None,)):
+    def __init__(self, name, tasks=None):
         super(Job, self).__init__()
         self.update({
             'name': name,
             'history': [('CREATED', time.time())],
         })
+        if not tasks:
+            tasks = (None,)
         self.tasks = tasks
         self.started = False
 
@@ -173,7 +180,7 @@ class WorkerServer(Server):
             if message[0] == 'S':  # solved
                 tid = self._status[sock][1]
                 self._jobs[jid].tasks[tid].solved = True
-                if content[0] == '1':  # SAT
+                if content[0] == '1' or all([task.solved for task in self._jobs[jid].tasks]):  # SAT or all tasks solved
                     self._jobs[jid].add_history_item(('S', content))
                     self._jobs[jid]['status'] = 1
                     self._swap_jobs(jid, -1)
@@ -234,14 +241,18 @@ class WorkerServer(Server):
         Find job available (with POLICY) and then execute it
         """
         jids = [jid for jid in self._jobs if jid >= 0 and self._jobs[jid]['status'] == 0]
+        """ POLICY: the first job that has one or more tasks without workers working on it
+            is executed by all the workers idle/available
         for jid in jids:
-            """ POLICY: the first job that has one or more tasks without workers working on it
-                is executed by all the workers idle/available
-            """
             commitments = self._get_commitments(jid, False)
             if not all(commitments.values()):
                 self._swap_jobs(-1, jid)
                 return
+        """
+
+        """POLICY: finds the first job not yet solved"""
+        if jids:
+            self._swap_jobs(-1, jids[0])
 
     def _swap_jobs(self, jid_prev, jid_next, filter=None):
         """
@@ -250,7 +261,7 @@ class WorkerServer(Server):
         if jid_prev not in self._jobs or jid_next not in self._jobs:
             return []
         job_prev, job_next = self._jobs[jid_prev], self._jobs[jid_next]
-        if not filter:
+        if filter is None:
             workers = [sock for socks in self._get_commitments(jid_prev).values() for sock in socks]
         else:
             workers = self._get_commitments(jid_prev)[filter]
@@ -314,16 +325,52 @@ class WorkerServer(Server):
 
 
 class CommandServer(Server):
-    def __init__(self, port, worker_server):
+    def __init__(self, port, worker_server, opensmt):
         if not isinstance(worker_server, WorkerServer):
             raise TypeError
         self._worker_server = worker_server
+        self._opensmt = opensmt
         super(CommandServer, self).__init__(port)
 
     def handle_message(self, sock, message):
         self.output.write('* {} size:{}\n'.format(sock.address, len(message)))
         if message[0] == '!':
-            self.output.write('{}\n'.format(self._worker_server))
+            if len(message) > 1 and message[1] == 'S':
+                start = message.index('\\')
+                name = message[2:start]
+                code = message[start + 1:]
+                smt_options = [
+                    '(set-option :split-type "scattering")',
+                    '(set-option :split-units "time")',
+                    '(set-option :split-asap true)',
+                    '(set-option :split-init-tune 2)',
+                    '(set-option :split-mid-tune 2)',
+                    '(set-option :split-num 2)',
+                ]
+                temp_fd, temp_name = tempfile.mkstemp('.smt2')
+                dump_prefix = '/dev/shm/{}'.format(os.path.basename(temp_name))
+                smt_options.append('(set-option :dump-state "{}")'.format(dump_prefix))
+                with os.fdopen(temp_fd, 'w') as file:
+                    file.write('{}\n{}'.format(
+                        '\n'.join(smt_options),
+                        code
+                    ))
+                subprocess.call([self._opensmt, temp_name], stdout=open('/dev/null', 'w'), stderr=subprocess.STDOUT)
+                try:
+                    tasks = subprocess.check_output('ls {}-*'.format(dump_prefix), shell=True).split('\n')
+                except:
+                    self.output.write('* DONE without split: {}\n'.format(name))
+                else:
+                    tasks = tasks[:-1]
+                    for task in tasks:
+                        with open(task, 'rb') as file:
+                            self._worker_server.handle_command('S{}{}\\{}'.format(
+                                '' if task is tasks[-1] else '\\',
+                                name,
+                                file.read()
+                            ))
+            else:
+                self.output.write('{}\n'.format(self._worker_server))
         else:
             self._worker_server.handle_command(message)
 
@@ -338,10 +385,12 @@ if __name__ == '__main__':
                       default=False, help='verbose output on stderr')
     parser.add_option('-t', '--timeout', dest='timeout', type='int',
                       default=None, help='timeout for each problem')
+    parser.add_option('-o', '--opensmt', dest='opensmt', type='str',
+                      default='opensmt', help='opensmt executable')
     (options, args) = parser.parse_args()
 
     wserver = WorkerServer(options.wport, options.timeout)
-    cserver = CommandServer(options.cport, wserver)
+    cserver = CommandServer(options.cport, wserver, options.opensmt)
 
     wserver.output = sys.stderr
     cserver.output = sys.stderr
@@ -349,7 +398,7 @@ if __name__ == '__main__':
     t = threading.Thread(target=wserver.run_forever)
     t.start()
 
-    #try:
+    # try:
     cserver.run_forever()
     #except:
-     #   os._exit(0)
+    #   os._exit(0)

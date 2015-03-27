@@ -4,6 +4,7 @@
 import sserver
 import sys
 import optparse
+import os.path
 
 __author__ = 'Matteo Marescotti'
 
@@ -22,9 +23,12 @@ if __name__ == '__main__':
         s.write(sys.stdin.read())
     else:
         for filename in args[1:]:
-            print "sending {} ...".format(filename)
-            f = open(filename, 'r')
-            s.write('S{}\\{}'.format(filename, f.read()))
-            f.close()
+            with open(filename, 'r') as f:
+                print filename
+                s.write('{}S{}\\{}'.format(
+                    '!' if filename.endswith('.smt2') else '',
+                    os.path.basename(filename),
+                    f.read())
+                )
 
     s.close()
