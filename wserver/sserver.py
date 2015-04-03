@@ -12,7 +12,6 @@ import time
 import os
 import pickle
 import tempfile
-import __builtin__
 
 __author__ = 'Matteo Marescotti'
 
@@ -20,9 +19,6 @@ __author__ = 'Matteo Marescotti'
 class Dict(dict):
     def keys_of(self, item):
         return [key for key in self if self[key] == item]
-
-
-__builtin__.dict = Dict
 
 
 class Socket(socket.socket):
@@ -100,7 +96,11 @@ class Server(object):
                     self._rlist.append(new_socket)
                     self.handle_accept(new_socket)
                     continue
-                message = sock.read()
+                try:
+                    message = sock.read()
+                except:
+                    self.output.write('_ socket.error during read\n')
+                    continue
                 length = len(message)
                 if length == 0:
                     self.handle_close(sock)
@@ -140,7 +140,7 @@ class Job(dict):
 class WorkerServer(Server):
     _lock = threading.Lock()
     _status = {}  # sock -> (job, task_id)
-    _jobs = dict({
+    _jobs = Dict({
         -2: Job('\\ERROR'),
         -1: Job('\\IDLE')
     })
@@ -232,9 +232,9 @@ class WorkerServer(Server):
                     file = open(message[1:], 'wb')
                     pickle.dump(self._jobs, file)
                 except:
-                    self.output.write('$ DUMP ERROR: {}\n'.format(message))
+                   self.output.write('$ DUMP ERROR: {}\n'.format(message))
                 else:
-                    file.close()
+                   file.close()
 
     def _commit(self):
         """
@@ -336,6 +336,9 @@ class CommandServer(Server):
         self.output.write('* {} size:{}\n'.format(sock.address, len(message)))
         if message[0] == '!':
             if len(message) > 1 and message[1] == 'S':
+                if not options.opensmt:
+                    self.output.write('* OPENSMT executable path not specified\n')
+                    return
                 start = message.index('\\')
                 name = message[2:start]
                 code = message[start + 1:]
