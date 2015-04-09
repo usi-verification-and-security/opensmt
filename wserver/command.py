@@ -27,7 +27,7 @@ if __name__ == '__main__':
                 print filename
                 s.write('{}S{}\\{}'.format(
                     '!' if filename.endswith('.smt2') else '',
-                    os.path.basename(filename),
+                    os.path.splitext(os.path.basename(filename))[0],
                     f.read())
                 )
 

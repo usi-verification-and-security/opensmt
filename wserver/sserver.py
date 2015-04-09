@@ -134,6 +134,7 @@ class Job(dict):
             self.started = now
         if item[0] == 'S':
             self['elapsed'] = now - self.started
+            self['result'] = item[1]
         self['history'].append((now, item))
 
 
@@ -156,7 +157,7 @@ class WorkerServer(Server):
         with self._lock:
             min = time.time() - self._timeout
             for sock in self._status:
-                job = self._status[sock]
+                job = self._status[sock][0]
                 jid = self._jobs.keys_of(job)[0]
                 if job.started and job.started < min:
                     jids.append(jid)
@@ -171,6 +172,7 @@ class WorkerServer(Server):
 
     def handle_message(self, sock, message):
         with self._lock:
+            done = False
             start = message.index('\\')
             jid = int(message[1:start])
             if jid < 0 or jid not in self._jobs or self._jobs[jid] != self._status[sock][0]:
@@ -182,12 +184,15 @@ class WorkerServer(Server):
                 self._jobs[jid].tasks[tid].solved = True
                 if content[0] == '1' or all([task.solved for task in self._jobs[jid].tasks]):  # SAT or all tasks solved
                     self._jobs[jid].add_history_item(('S', content))
-                    self._jobs[jid]['status'] = 1
+                    self._jobs[jid]['status'] = 2
                     self._swap_jobs(jid, -1)
                 else:
                     self._jobs[jid].add_history_item(('U', content, tid))
                     self._swap_jobs(jid, -1, tid)
-                self._commit()
+                if not self._commit():
+                    done = True
+        if done:  # this is only to print the results when done, debug only (var done not necessary)
+            self.handle_command('ADONE'+str(int(time.time())))
 
     def handle_close(self, sock):
         with self._lock:
@@ -211,7 +216,7 @@ class WorkerServer(Server):
                 jid = max(self._jobs.keys()) + 1
                 for _jid in self._jobs:
                     if self._jobs[_jid]['name'] == name:
-                        if self._jobs[_jid]['status'] != -2:
+                        if self._jobs[_jid].get('status', -1) != -2:
                             self.output.write('$ JOB {} ALREADY CLOSED: {}\n'.format(jid, name))
                             return
                         jid = _jid
@@ -235,14 +240,29 @@ class WorkerServer(Server):
                    self.output.write('$ DUMP ERROR: {}\n'.format(message))
                 else:
                    file.close()
-
+            elif message[0] == 'A':
+                l = [str(sys.argv)]
+                for jid in self._jobs:
+                    if jid < 0:
+                        continue
+                    name = self._jobs[jid]['name']
+                    result_code = int(self._jobs[jid].get('result', 0))
+                    if result_code == 1:
+                        result = 'sat'
+                    elif result_code == -1:
+                        result = 'unsat'
+                    else:
+                        result = 'unknown'
+                    l.append('{} {} {:.2f}'.format(name, result, self._jobs[jid].get('elapsed', -1)))
+                with open(message[1:], 'w') as f:
+                    f.write('\n'.join(l))
     def _commit(self):
         """
         Find job available (with POLICY) and then execute it
         """
-        jids = [jid for jid in self._jobs if jid >= 0 and self._jobs[jid]['status'] == 0]
-        """ POLICY: the first job that has one or more tasks without workers working on it
+        """POLICY: the first job that has one or more tasks without workers working on it
             is executed by all the workers idle/available
+        jids = [jid for jid in self._jobs if jid >= 0 and self._jobs[jid]['status'] == 0]
         for jid in jids:
             commitments = self._get_commitments(jid, False)
             if not all(commitments.values()):
@@ -250,9 +270,15 @@ class WorkerServer(Server):
                 return
         """
 
-        """POLICY: finds the first job not yet solved"""
+        """POLICY: finds the first job with some workers working on it, or if none, the first unsolved"""
+        jids = [jid for jid in self._jobs if jid >= 0 and self._jobs[jid]['status'] == 1]
+        if not jids:
+            jids = [jid for jid in self._jobs if jid >= 0 and self._jobs[jid]['status'] == 0]
         if jids:
             self._swap_jobs(-1, jids[0])
+            return [jids[0]]
+        else:
+            return []
 
     def _swap_jobs(self, jid_prev, jid_next, filter=None):
         """
@@ -270,6 +296,7 @@ class WorkerServer(Server):
                 job_prev.add_history_item(('-', len(workers)))
                 self._multicast('Q{}'.format(jid_prev), to=workers)
             if jid_next >= 0:
+                job_next['status'] = 1
                 tid_workers = {tid: [] for tid in self._get_commitments(jid_next, False)}
                 for sock in workers:
                     """ POLICY: every worker is assigned to the not solved task that have the minimum number
@@ -342,16 +369,11 @@ class CommandServer(Server):
                 start = message.index('\\')
                 name = message[2:start]
                 code = message[start + 1:]
-                smt_options = [
-                    '(set-option :split-type "scattering")',
-                    '(set-option :split-units "time")',
-                    '(set-option :split-asap true)',
-                    '(set-option :split-init-tune 2)',
-                    '(set-option :split-mid-tune 2)',
-                    '(set-option :split-num 2)',
-                ]
                 temp_fd, temp_name = tempfile.mkstemp('.smt2')
                 dump_prefix = '/dev/shm/{}'.format(os.path.basename(temp_name))
+                with open(options.file_options) as options_file:
+                    smt_options = options_file.read().split('\n')
+                smt_options.append('(set-option :split-num {})'.format(options.split_num))
                 smt_options.append('(set-option :dump-state "{}")'.format(dump_prefix))
                 with os.fdopen(temp_fd, 'w') as file:
                     file.write('{}\n{}'.format(
@@ -389,7 +411,12 @@ if __name__ == '__main__':
     parser.add_option('-t', '--timeout', dest='timeout', type='int',
                       default=None, help='timeout for each problem')
     parser.add_option('-o', '--opensmt', dest='opensmt', type='str',
-                      default='opensmt', help='opensmt executable')
+                      default='../opensmt', help='opensmt executable')
+    parser.add_option('-f', '--file-options', dest='file_options', type='str',
+                      default=None, help='option file containig headers')
+    parser.add_option('-s', '--split-num', dest='split_num', type='int',
+                      default=2, help='number of splits')
+
     (options, args) = parser.parse_args()
 
     wserver = WorkerServer(options.wport, options.timeout)
