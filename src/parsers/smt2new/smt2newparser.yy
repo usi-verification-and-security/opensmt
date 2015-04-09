@@ -25,7 +25,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 %pure-parser
-%name-prefix "smt2new"
+%name-prefix="smt2new"
 %locations
 %defines
 %error-verbose

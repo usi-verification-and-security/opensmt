@@ -1,5 +1,5 @@
 
-BUILT_SOURCES = smt2newparser.h
+BUILT_SOURCES = smt2newparser.hh
 
 AM_YFLAGS = -d --name-prefix=smt2new
 AM_LFLAGS = -olex.yy.c -Psmt2new
