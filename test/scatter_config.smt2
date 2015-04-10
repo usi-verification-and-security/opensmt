@@ -1,5 +1,5 @@
 (set-option :split-type "scattering")
-(set-option :split-units "time")
+(set-option :split-units "decisions")
 (set-option :split-asap true)
 (set-option :split-init-tune 2)
 (set-option :split-mid-tune 2)

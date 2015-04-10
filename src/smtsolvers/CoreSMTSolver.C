@@ -106,7 +106,7 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
   , split_on              (false)
   , split_start           (config.sat_split_asap())
   , split_num             (config.sat_split_num())
-  , split_units            (config.sat_split_units())
+  , split_units           (config.sat_split_units())
   , split_inittune        (config.sat_split_inittune())
   , split_midtune         (config.sat_split_midtune())
   , split_next            (split_units == spm_time ? cpuTime() + split_inittune : decisions + split_inittune)
@@ -2312,6 +2312,9 @@ lbool CoreSMTSolver::lookaheadSplit(int d)
         model.growTo(nVars());
         for (int i = 0; i < nVars(); i++)
             model[i] = value(trail[i]);
+    }
+    if (dl == -1 && splits.size() == 0) {
+        res = l_False;
     }
     first_model_found = first_model_found_prev;
 
