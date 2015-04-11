@@ -2313,7 +2313,7 @@ lbool CoreSMTSolver::lookaheadSplit(int d)
         for (int i = 0; i < nVars(); i++)
             model[i] = value(trail[i]);
     }
-    if (dl == -1 && splits.size() == 0) {
+    else if (splits.size() == 0) {
         res = l_False;
     }
     first_model_found = first_model_found_prev;
