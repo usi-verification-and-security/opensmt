@@ -105,10 +105,12 @@ static const struct SpUnit spm_decisions = { 0 };
 static const struct SpUnit spm_time      = { 1 };
 static const struct SpUnit spm_unknown   = { 2 };
 
+
 static const struct SpPref sppref_tterm = { 0 };
 static const struct SpPref sppref_blind = { 1 };
 static const struct SpPref sppref_bterm = { 2 };
 static const struct SpPref sppref_rand  = { 3 };
+static const struct SpPref sppref_undef = { 4 };
 
 //
 // Holds informations about the configuration of the solver

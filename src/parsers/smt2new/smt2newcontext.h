@@ -74,11 +74,20 @@ enum ASTType {
 class ASTNode {
   private:
     ASTType             type;
-    const char*         val;
+    char*               val;
     static const char*  typestr[];
   public:
     std::list< ASTNode* >*children;
-    ASTNode(ASTType t, const char* v) : type(t), val(v), children(NULL) {}
+    ASTNode(ASTType t, char* v) : type(t), val(v), children(NULL) {}
+    ~ASTNode() {
+        if (children) {
+            for (std::list<ASTNode*>::const_iterator ci = children->begin(); ci != children->end(); ci++) {
+                delete *ci;
+            };
+            delete children;
+        }
+        free(val);
+    }
     void                  print(std::ostream& o, int indent);
     inline const char    *typeToStr() const { return typestr[type]; }
     inline ASTType        getType()   const { return type; }
@@ -129,6 +138,8 @@ class Smt2newContext {
 
     ~Smt2newContext() {
         destroy_scanner();
+        delete root;
+        free(buffer);
     }
 
     void insertBuf(char c) {

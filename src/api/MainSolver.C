@@ -868,8 +868,9 @@ bool MainSolver::readSolverState(const char* file, char** msg)
     logic.deserializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf);
     free(termstore_buf);
     free(symstore_buf);
-    free(sortstore_buf);
     free(idstore_buf);
+    free(sortstore_buf);
+    free(logicstore_buf);
 
     char* tmp_cnf;
     asprintf(&tmp_cnf, "%s", (char*)(contents + cnf_offs));

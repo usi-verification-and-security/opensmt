@@ -1691,7 +1691,7 @@ yyreduce:
     {
         case 2:
 #line 95 "smt2newparser.yy" /* yacc.c:1646  */
-    { ASTNode *n = new ASTNode(CMDL_T, "main-script"); n->children = (yyvsp[0].snode_list); context->insertRoot(n); }
+    { ASTNode *n = new ASTNode(CMDL_T, strdup("main-script")); n->children = (yyvsp[0].snode_list); context->insertRoot(n); }
 #line 1696 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 

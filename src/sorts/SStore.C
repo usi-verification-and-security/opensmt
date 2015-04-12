@@ -107,9 +107,11 @@ SRef SStore::newSort(IdRef idr, vec<SRef>& rest)
     } else
         asprintf(&canon_name, "%s", is.getName(idr));
 
-    if (sortTable.contains(canon_name))
-        return sortTable[canon_name];
-    else {
+    if (sortTable.contains(canon_name)) {
+        SRef sr = sortTable[canon_name];
+        free(canon_name);
+        return sr;
+    } else {
         SStrRef nr = ssa.alloc(canon_name);
         sr = sa.alloc(idr, nr, rest);
         sorts.push(sr);

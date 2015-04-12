@@ -92,7 +92,7 @@ void smt2newerror( YYLTYPE* locp, Smt2newContext* context, const char * s )
 
 %%
 
-script: command_list { ASTNode *n = new ASTNode(CMDL_T, "main-script"); n->children = $1; context->insertRoot(n); };
+script: command_list { ASTNode *n = new ASTNode(CMDL_T, strdup("main-script")); n->children = $1; context->insertRoot(n); };
 
 
 command_list:
