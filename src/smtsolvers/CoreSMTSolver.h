@@ -734,11 +734,23 @@ class CoreSMTSolver : public SMTSolver
   public:
     lbool   lookaheadSplit(int d);                  // Perform a lookahead-based split of depth d
     int     lookaheadSplit(int d, const int dl, int idx); // Perform a lookahead of depth d and split.  Decision level should initially be 0.  idx is the index to the var array: the lookahead will start going through the vars from there.
+    int     lookaheadSplit2(int d, int idx);
+    void    printTrace() const;
 };
 
 //=================================================================================================
 // Implementation of inline methods:
 
+inline void CoreSMTSolver::printTrace() const {
+    int dl = 0;
+    for (int i = 0; i < trail.size(); i++) {
+        if (i == 0 || (trail_lim.size() > dl-1 && trail_lim[dl-1] == i))
+            printf("\ndl %d:\n  ", dl++);
+
+        printf("%s%d ", sign(trail[i]) ? "-" : "", var(trail[i]));
+    }
+    printf("\n");
+}
 
 inline void CoreSMTSolver::insertVarOrder(Var x) {
     if (!order_heap.inHeap(x) && decision_var[x]) order_heap.insert(x); }

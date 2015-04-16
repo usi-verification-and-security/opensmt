@@ -1133,9 +1133,9 @@ bool MainSolver::writeState(const char* file, CnfState& cs, char** msg)
 #endif
     // Write the size in characters
     buf[0] = buf_sz - 1;
+    int* buf_out;
 #ifdef USE_GZ
     // Compress the buffer and update the write info accordingly
-    int* buf_out;
     int rval = compress_buf(buf, buf_out, buf_sz-1, buf_sz);
     if (rval != Z_OK) {
         asprintf(msg, "compression error");
@@ -1144,6 +1144,7 @@ bool MainSolver::writeState(const char* file, CnfState& cs, char** msg)
     }
     int write_sz = buf_sz;
 #else
+    buf_out = buf;
     int write_sz = buf_sz - 1;
 #endif
 

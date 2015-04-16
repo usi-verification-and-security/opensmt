@@ -2325,6 +2325,202 @@ lbool CoreSMTSolver::lookaheadSplit(int d)
     return res;
 }
 
+// The new try for the lookahead with backjumping:
+// Do not write this as a recursive function but instead maintain the
+// tree explicitly.  Each internal node should have the info whether its
+// both children have been constructed and whether any of its two
+// children has been shown unsatisfiable either directly or with a
+// backjump.
+int CoreSMTSolver::lookaheadSplit2(int d, int idx)
+{
+    class LANode {
+      public:
+        LANode* c1; LANode* c2; LANode* p; Lit l; lbool v; int d; };
+    class SearchStatus {
+      public:
+        int x; bool operator== (SearchStatus& o) { return o.x == x; } };
+    static SearchStatus s_Unsat = { 0 };
+    static SearchStatus s_Sat = { 1 };
+    static SearchStatus s_Backtrack = { 2 };
+    static SearchStatus s_Unset = { 3 };
+
+    updateRound();
+    vec<LANode*> queue;
+    LANode* root = new LANode();
+    root->c1 = NULL;
+    root->c2 = NULL;
+    root->p  = root;
+    root->l  = lit_Undef;
+    root->v  = l_Undef;
+    root->d  = 0;
+    queue.push(root);
+
+    while (queue.size() != 0) {
+        LANode& n = *queue.last();
+        if (n.d == d) {
+            // Nothing to do here
+        }
+        vec<Lit> path;
+        LANode *curr = &n;
+        LANode* parent = n.p;
+        // Collect the truth assignment.
+        while (parent != curr) {
+            path.push(parent->l);
+            curr = parent;
+            parent = curr->p;
+        }
+        int j = 0;
+        assert(path.size() == d);
+        for (int i = path.size() - 1; i >= 0; i--) {
+            assert(trail[trail_lim[j++]] == path[i]);
+        }
+        cancelUntil(d);
+
+        // Do the lookahead
+        int i = 0;
+        bool conflict_found = false;
+
+        SearchStatus status = s_Unset;
+
+        printf("Starting lookahead phase at level %d\n", decisionLevel());
+        for (Var v(idx % nVars()); (LAexacts[v].getRound() != latest_round) || conflict_found; v = Var((idx + (++i)) % nVars())) {
+            if (value(v) != l_Undef || LAupperbounds[v].safeToSkip(LAexacts[var(getLABest())])) {
+                LAexacts[v].setRound(latest_round);
+                // It is possible that all variables are assigned here.
+                // In this case it seems that we have a satisfying assignment.
+                if (trail.size() == nVars()) {
+                    assert(checkTheory(true) == 1);
+                    for (int j = 0; j < clauses.size(); j++) {
+                        Clause& c = *clauses[j];
+                        int k;
+                        for (k = 0; k < c.size(); k++)
+                            if (value(c[k]) == l_True) break;
+                        assert(k < c.size());
+                    }
+                    status = s_Sat; // Stands for SAT
+                    break;
+                }
+                continue;
+            }
+            int p0 = 0, p1 = 0;
+            for (int p = 0; p < 2; p++) { // do for both polarities
+
+                conflict_found = false;
+
+                assert(decisionLevel() == d);
+                newDecisionLevel();
+                assert(decisionLevel() == d+1);
+
+                Lit l(v, p);
+                uncheckedEnqueue(l);
+
+                bool diff;
+                do {
+                    assert(decisionLevel() == d+1);
+                    diff = false;
+                    int curr_asgns = trail.size();
+                    Clause *c;
+                    while ((c = propagate()) != NULL) {
+                        vec<Lit> out_learnt;
+                        int out_btlevel;
+                        analyze(c, out_learnt, out_btlevel);
+                        // Think this better.  If we find a conflict, it
+                        // means that the problems at the leaves of the
+                        // subtree starting from out_btlevel + 1 are
+                        // in fact unsatisfiable.  The exception is the unit
+                        // clauses.  
+                        printf("Conflict: I need to backtrack from %d to %d\n", decisionLevel(), out_btlevel);
+                        printf("The implied literal is %s%d\n", sign(out_learnt[0]) ? "-" : "", var(out_learnt[0]));
+                        cancelUntil(out_btlevel);
+                        if (out_btlevel != 0) {
+                            // we know something about unsatisfiability
+                            // of this branch: Everything starting from
+                            // out_btlevel+1 in this branch is unsatisfiable
+                            LANode* curr = &n;
+                            LANode* parent = n.p;
+                            while (curr != parent && curr->d > decisionLevel()) {
+                                curr->v = l_False;
+                                curr = parent;
+                                parent = curr->p;
+                            }
+                        }
+                        printTrace();
+                        Clause* cd = NULL;
+                        if (out_learnt.size() > 1) {
+                            cd = Clause_new(out_learnt, true);
+                            learnts.push(cd);
+                            attachClause(*cd);
+                        }
+                        uncheckedEnqueue(out_learnt[0], cd);
+                        if (out_btlevel < d) { // Backjump
+                            if (out_btlevel == -1) {
+                                status = s_Unsat;
+                                break;
+                            }
+                            else {
+                                status = s_Backtrack;
+                                break;
+                            }
+                        }
+                        conflict_found = true;
+                        diff = true;
+                        assert(decisionLevel() == d);
+                    }
+                    if (!diff) {
+                        int res = checkTheory(true);
+                        if (res == -1) return -1;
+                        if (res == 2) {
+                            printf("Theory propagations\n");
+                            propagations = true;
+                            continue; // BCP
+                        }
+                        if (res == 0) { // l results in a conflict.
+                            printf("Theory conflict\n");
+                            printTrace();
+                            if (decisionLevel() < d) // Backjump
+                                return decisionLevel();
+                            // The propagation can be continued until fix point
+                            // We can still continue the lookahead, but we are
+                            // no longer interested in the upper bounds
+                            conflict_found = true;
+                            diff = true;
+                        }
+                    }
+                    diff |= (trail.size() - curr_asgns > 0);
+                } while (diff);
+
+                if (!conflict_found)
+                    for (int j = 0; j < trail.size(); j++)
+                        updateLAUB(trail[j], trail.size());
+                else {
+                    // Which also means that there is new information
+                    // available on the solver in the form of literals
+                    // asserted on the previous decision level and we need
+                    // to recompute the lookahead values.
+                    updateRound();
+                    assert(decisionLevel() == d);
+                    break;
+                }
+
+                p == 0 ? p0 = trail.size() : p1 = trail.size();
+
+                // Backtrack the decision
+                cancelUntil(decisionLevel()-1);
+            }
+
+            if (!conflict_found && value(v) == l_Undef) {
+                setLAExact(v, p0, p1);
+                updateLABest(v);
+                assert(value(getLABest()) == l_Undef);
+            }
+        }
+
+        if (n.c1 == NULL) {
+            // Construct the first child
+        }
+    }
+    return 0;
+}
 //
 // Do the splits based on the lookahead heuristics.  The function is
 // recursive
@@ -2341,6 +2537,7 @@ int CoreSMTSolver::lookaheadSplit(int d, const int dl, int idx)
     if (d == 0) { createSplit_lookahead(); return dl; }
     int i = 0;
     bool conflict_found = false;
+    printf("Starting lookahead phase at level %d\n", decisionLevel());
     for (Var v(idx % nVars()); (LAexacts[v].getRound() != latest_round) || conflict_found; v = Var((idx + (++i)) % nVars())) {
         if (value(v) != l_Undef || LAupperbounds[v].safeToSkip(LAexacts[var(getLABest())])) {
             LAexacts[v].setRound(latest_round);
@@ -2380,7 +2577,15 @@ int CoreSMTSolver::lookaheadSplit(int d, const int dl, int idx)
                     vec<Lit> out_learnt;
                     int out_btlevel;
                     analyze(c, out_learnt, out_btlevel);
+                    // Think this better.  If we find a conflict, it
+                    // means that the problems at the leaves of the
+                    // subtree starting from out_btlevel + 1 are
+                    // in fact unsatisfiable.  The exception is the unit
+                    // clauses.  
+                    printf("Conflict: I need to backtrack from %d to %d\n", decisionLevel(), out_btlevel);
+                    printf("The implied literal is %s%d\n", sign(out_learnt[0]) ? "-" : "", var(out_learnt[0]));
                     cancelUntil(out_btlevel);
+                    printTrace();
                     Clause* d = NULL;
                     if (out_learnt.size() > 1) {
                         d = Clause_new(out_learnt, true);
@@ -2388,8 +2593,11 @@ int CoreSMTSolver::lookaheadSplit(int d, const int dl, int idx)
                         attachClause(*d);
                     }
                     uncheckedEnqueue(out_learnt[0], d);
-                    if (out_btlevel < dl) // Backjump
-                        return out_btlevel;
+                    if (out_btlevel < dl) { // Backjump
+                        if (out_btlevel == -1)
+                            return out_btlevel;
+                        else return out_btlevel+1; // To be consistent with the recursive call in normal case
+                    }
                     conflict_found = true;
                     diff = true;
                     assert(decisionLevel() == dl);
@@ -2398,10 +2606,13 @@ int CoreSMTSolver::lookaheadSplit(int d, const int dl, int idx)
                     int res = checkTheory(true);
                     if (res == -1) return -1;
                     if (res == 2) {
+                        printf("Theory propagations\n");
                         propagations = true;
                         continue; // BCP
                     }
                     if (res == 0) { // l results in a conflict.
+                        printf("Theory conflict\n");
+                        printTrace();
                         if (decisionLevel() < dl) // Backjump
                             return decisionLevel();
                         // The propagation can be continued until fix point
@@ -2439,6 +2650,7 @@ int CoreSMTSolver::lookaheadSplit(int d, const int dl, int idx)
             assert(value(getLABest()) == l_Undef);
         }
     }
+    printf("Lookahead phase over successfully\n");
     assert(decisionLevel() == dl);
     Lit best = getLABest();  // Save the best lit for this round
     // FIXME here it is possible not to have a best literal, for
@@ -2449,12 +2661,15 @@ int CoreSMTSolver::lookaheadSplit(int d, const int dl, int idx)
     for (int p = 0; p < 2; p++) { // repeat for both polarities
         // Make the branch
         newDecisionLevel();
-        uncheckedEnqueue(p == 0 ? best : ~best);
+        Lit choice = p == 0 ? best : ~best;
+        printTrace();
+        printf("I'm making decision %s%d at dl %d\n", sign(choice) ? "-" : "", var(choice), decisionLevel());
+        uncheckedEnqueue(choice);
         assert(decisionLevel() == dl+1);
         int new_dl = lookaheadSplit(d-1, decisionLevel(), idx);
         if (new_dl <= dl)
             return new_dl;
-        assert(decisionLevel() == dl+1);
+//        assert(decisionLevel() == dl+1); // This is not true
         cancelUntil(dl);
     }
     assert(decisionLevel() == dl);
@@ -2546,12 +2761,15 @@ bool CoreSMTSolver::createSplit_lookahead()
     int curr_dl0_idx = trail_lim.size() > 0 ? trail_lim[0] : trail.size();
     splits.push_c(SplitData(clauses, trail, curr_dl0_idx));
     SplitData& sp = splits.last();
+    printf("Outputing an instance:\n");
     for (int i = 0; i < decisionLevel(); i++) {
         vec<Lit> tmp;
         Lit l = trail[trail_lim[i]];
         tmp.push(l);
+        printf("%s%d ", sign(l) ? "-" : "", var(l));
         sp.addConstraint(tmp);
     }
+    printf("\n");
     sp.updateInstance();
     assert(ok);
     return true;
