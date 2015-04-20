@@ -497,6 +497,7 @@ LDFLAGS="$LDFLAGS $AM_LDFLAGS"
 CFLAGS="$CFLAGS $AM_CFLAGS"
 
 # Check for GMP header
+echo "I'm looking here: $with_gmp"
 GMP_HEADER_FOUND=1
 if test $NONSTDGMPPATH = 1 ; then
 	AC_CHECK_HEADERS($with_gmp/include/gmp.h,

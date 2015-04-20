@@ -124,7 +124,7 @@ class MainSolver {
 
     sstat simplifyFormulas(char** err_msg);
     sstat solve           ()       { return status = sstat(ts.solve()); }
-    sstat lookaheadSplit  (int d)  { return status = sstat(sat_solver.lookaheadSplit(d)); }
+    sstat lookaheadSplit  (int d)  { return status = sstat(sat_solver.lookaheadSplit2(d)); }
     sstat getStatus       ()       { return status; }
     bool  solverEmpty     () const { return ts.solverEmpty(); }
     bool  readSolverState  (const char* file, char** msg);

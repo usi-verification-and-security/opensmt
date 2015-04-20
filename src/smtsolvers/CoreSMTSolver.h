@@ -525,8 +525,10 @@ class CoreSMTSolver : public SMTSolver
     void     removeSatisfied  (vec<Clause*>& cs);                                      // Shrink 'cs' to contain only non-satisfied clauses.
 
     void     updateLAUB       (Lit l, int props);                                      // Check the lookahead upper bound and update it if necessary
+    Lit      lookahead_loop   (int &idx);
     void     setLAExact       (Var v, int pprops, int nprops);                         // Set the exact la value
     Lit      getLABest        () { if (LAexacts[var(LABestLit)].getRound() < latest_round) { return lit_Undef; } else { return LABestLit; } }
+    bool     LApropagate_wrapper();
 
     // Maintaining Variable/Clause activity:
     //
@@ -733,8 +735,10 @@ class CoreSMTSolver : public SMTSolver
       //=================================================================================================
   public:
     lbool   lookaheadSplit(int d);                  // Perform a lookahead-based split of depth d
+
     int     lookaheadSplit(int d, const int dl, int idx); // Perform a lookahead of depth d and split.  Decision level should initially be 0.  idx is the index to the var array: the lookahead will start going through the vars from there.
-    int     lookaheadSplit2(int d, int idx);
+    int     lookaheadSplit2(int d, int &idx);
+    int     lookaheadSplit2(int d) { int idx = 0; return lookaheadSplit2(d, idx); }
     void    printTrace() const;
 };
 

@@ -2325,202 +2325,265 @@ lbool CoreSMTSolver::lookaheadSplit(int d)
     return res;
 }
 
+// Function for making a propagation.  Returns false if the there was a conflict.
+// Backtracks the solver to the correct decision level and continues until no
+// new conflicts or propagations are available in theory or in unit propagation
+bool CoreSMTSolver::LApropagate_wrapper()
+{
+    Clause *c;
+    bool conflict_found = false;
+    bool diff;
+    do {
+        diff = false;
+        while ((c = propagate()) != NULL) {
+            vec<Lit> out_learnt;
+            int out_btlevel;
+            analyze(c, out_learnt, out_btlevel);
+            printf("Conflict: I would need to backtrack from %d to %d\n", decisionLevel(), out_btlevel);
+            cancelUntil(out_btlevel);
+            Clause* d = NULL;
+            if (out_learnt.size() > 1) {
+                d = Clause_new(out_learnt, true);
+                learnts.push(d);
+                attachClause(*d);
+            }
+            uncheckedEnqueue(out_learnt[0], d);
+            conflict_found = true;
+            diff = true;
+        }
+        if (!diff) {
+            int res = checkTheory(true);
+            if (res == -1) {
+                printf("Theory unsatisfiability\n");
+                return -1; // Unsat
+            } else if (res == 2) {
+                printf("Theory propagation\n");
+                propagations = true;
+                continue;
+            } else if (res == 0) {
+                printf("Theory conflict\n");
+                conflict_found = true;
+                diff = true;
+            }
+        }
+        assert(diff == conflict_found);
+    } while (diff);
+
+    return true;
+}
+
 // The new try for the lookahead with backjumping:
 // Do not write this as a recursive function but instead maintain the
 // tree explicitly.  Each internal node should have the info whether its
 // both children have been constructed and whether any of its two
 // children has been shown unsatisfiable either directly or with a
 // backjump.
-int CoreSMTSolver::lookaheadSplit2(int d, int idx)
+int CoreSMTSolver::lookaheadSplit2(int d, int &idx)
 {
     class LANode {
       public:
-        LANode* c1; LANode* c2; LANode* p; Lit l; lbool v; int d; };
-    class SearchStatus {
-      public:
-        int x; bool operator== (SearchStatus& o) { return o.x == x; } };
-    static SearchStatus s_Unsat = { 0 };
-    static SearchStatus s_Sat = { 1 };
-    static SearchStatus s_Backtrack = { 2 };
-    static SearchStatus s_Unset = { 3 };
+        // c1 & c2 are for debugging
+        LANode* c1; LANode* c2; LANode* p; Lit l; lbool v; int d;
+        LANode() : c1(NULL), c2(NULL), p(NULL), l(lit_Undef), v(l_Undef), d(0) {}
+        LANode(LANode* par, Lit li, lbool va, int dl) :
+            c1(NULL), c2(NULL), p(par), l(li), v(va), d(dl) {}
+    };
 
     updateRound();
     vec<LANode*> queue;
     LANode* root = new LANode();
-    root->c1 = NULL;
-    root->c2 = NULL;
     root->p  = root;
-    root->l  = lit_Undef;
-    root->v  = l_Undef;
-    root->d  = 0;
     queue.push(root);
 
     while (queue.size() != 0) {
         LANode& n = *queue.last();
-        if (n.d == d) {
-            // Nothing to do here
-        }
+        queue.pop();
+
+        printf("main loop: dl %d -> %d\n", decisionLevel(), 0);
+
+        cancelUntil(0);
+
         vec<Lit> path;
         LANode *curr = &n;
         LANode* parent = n.p;
         // Collect the truth assignment.
         while (parent != curr) {
-            path.push(parent->l);
+            path.push(curr->l);
             curr = parent;
             parent = curr->p;
         }
-        int j = 0;
-        assert(path.size() == d);
-        for (int i = path.size() - 1; i >= 0; i--) {
-            assert(trail[trail_lim[j++]] == path[i]);
+
+        int i;
+
+        printf("Setting solver to the right dl %d\n", path.size());
+
+        for (i = path.size() - 1; i >= 0; i--) {
+            newDecisionLevel();
+
+            printf("I will propagate %s%d\n", sign(path[i]) ? "-" : "", var(path[i]));
+
+            uncheckedEnqueue(path[i]);
+            bool res = LApropagate_wrapper();
+
+            printf("Trail is now following:\n");
+            printTrace();
+
+            if (res == false) {
+//#ifdef LADEBUG
+                printf(" -> Path this far is unsatisfiable already\n");
+//#endif
+                break;
+            }
+
         }
-        cancelUntil(d);
+        // Decision level -1 at this point means we proved unsatisfiability
+        if (decisionLevel() == -1)
+            return -1;
+
+        if (i != -1) {
+//#ifdef LADEBUG
+            printf("Unsatisfiability detected on branch\n");
+            printTrace();
+//#endif
+            continue;
+        }
+        if (n.d == d) {
+//#ifdef LADEBUG
+            printf("Producing a split:\n");;
+            printTrace();
+//#endif
+            createSplit_lookahead();
+        }
+
+        // Otherwise we will continue here by attempting to create two children for this node
 
         // Do the lookahead
-        int i = 0;
-        bool conflict_found = false;
+        assert(decisionLevel() == n.d);
+        Lit best = lookahead_loop(idx);
+        assert(decisionLevel() <= n.d);
 
-        SearchStatus status = s_Unset;
-
-        printf("Starting lookahead phase at level %d\n", decisionLevel());
-        for (Var v(idx % nVars()); (LAexacts[v].getRound() != latest_round) || conflict_found; v = Var((idx + (++i)) % nVars())) {
-            if (value(v) != l_Undef || LAupperbounds[v].safeToSkip(LAexacts[var(getLABest())])) {
-                LAexacts[v].setRound(latest_round);
-                // It is possible that all variables are assigned here.
-                // In this case it seems that we have a satisfying assignment.
-                if (trail.size() == nVars()) {
-                    assert(checkTheory(true) == 1);
-                    for (int j = 0; j < clauses.size(); j++) {
-                        Clause& c = *clauses[j];
-                        int k;
-                        for (k = 0; k < c.size(); k++)
-                            if (value(c[k]) == l_True) break;
-                        assert(k < c.size());
-                    }
-                    status = s_Sat; // Stands for SAT
-                    break;
-                }
-                continue;
-            }
-            int p0 = 0, p1 = 0;
-            for (int p = 0; p < 2; p++) { // do for both polarities
-
-                conflict_found = false;
-
-                assert(decisionLevel() == d);
-                newDecisionLevel();
-                assert(decisionLevel() == d+1);
-
-                Lit l(v, p);
-                uncheckedEnqueue(l);
-
-                bool diff;
-                do {
-                    assert(decisionLevel() == d+1);
-                    diff = false;
-                    int curr_asgns = trail.size();
-                    Clause *c;
-                    while ((c = propagate()) != NULL) {
-                        vec<Lit> out_learnt;
-                        int out_btlevel;
-                        analyze(c, out_learnt, out_btlevel);
-                        // Think this better.  If we find a conflict, it
-                        // means that the problems at the leaves of the
-                        // subtree starting from out_btlevel + 1 are
-                        // in fact unsatisfiable.  The exception is the unit
-                        // clauses.  
-                        printf("Conflict: I need to backtrack from %d to %d\n", decisionLevel(), out_btlevel);
-                        printf("The implied literal is %s%d\n", sign(out_learnt[0]) ? "-" : "", var(out_learnt[0]));
-                        cancelUntil(out_btlevel);
-                        if (out_btlevel != 0) {
-                            // we know something about unsatisfiability
-                            // of this branch: Everything starting from
-                            // out_btlevel+1 in this branch is unsatisfiable
-                            LANode* curr = &n;
-                            LANode* parent = n.p;
-                            while (curr != parent && curr->d > decisionLevel()) {
-                                curr->v = l_False;
-                                curr = parent;
-                                parent = curr->p;
-                            }
-                        }
-                        printTrace();
-                        Clause* cd = NULL;
-                        if (out_learnt.size() > 1) {
-                            cd = Clause_new(out_learnt, true);
-                            learnts.push(cd);
-                            attachClause(*cd);
-                        }
-                        uncheckedEnqueue(out_learnt[0], cd);
-                        if (out_btlevel < d) { // Backjump
-                            if (out_btlevel == -1) {
-                                status = s_Unsat;
-                                break;
-                            }
-                            else {
-                                status = s_Backtrack;
-                                break;
-                            }
-                        }
-                        conflict_found = true;
-                        diff = true;
-                        assert(decisionLevel() == d);
-                    }
-                    if (!diff) {
-                        int res = checkTheory(true);
-                        if (res == -1) return -1;
-                        if (res == 2) {
-                            printf("Theory propagations\n");
-                            propagations = true;
-                            continue; // BCP
-                        }
-                        if (res == 0) { // l results in a conflict.
-                            printf("Theory conflict\n");
-                            printTrace();
-                            if (decisionLevel() < d) // Backjump
-                                return decisionLevel();
-                            // The propagation can be continued until fix point
-                            // We can still continue the lookahead, but we are
-                            // no longer interested in the upper bounds
-                            conflict_found = true;
-                            diff = true;
-                        }
-                    }
-                    diff |= (trail.size() - curr_asgns > 0);
-                } while (diff);
-
-                if (!conflict_found)
-                    for (int j = 0; j < trail.size(); j++)
-                        updateLAUB(trail[j], trail.size());
-                else {
-                    // Which also means that there is new information
-                    // available on the solver in the form of literals
-                    // asserted on the previous decision level and we need
-                    // to recompute the lookahead values.
-                    updateRound();
-                    assert(decisionLevel() == d);
-                    break;
-                }
-
-                p == 0 ? p0 = trail.size() : p1 = trail.size();
-
-                // Backtrack the decision
-                cancelUntil(decisionLevel()-1);
-            }
-
-            if (!conflict_found && value(v) == l_Undef) {
-                setLAExact(v, p0, p1);
-                updateLABest(v);
-                assert(value(getLABest()) == l_Undef);
-            }
+        if (decisionLevel() < n.d) {
+            n.v = l_False;
+//#ifdef LADEBUG
+            printf("Unsatisfiability detected after lookahead\n");
+            printTrace();
+//#endif
+            continue;
         }
 
-        if (n.c1 == NULL) {
-            // Construct the first child
-        }
+        assert(best != lit_Undef);
+
+        LANode* c1 = new LANode(&n, best, l_Undef, n.d+1);
+        LANode* c2 = new LANode(&n, ~best, l_Undef, n.d+1);
+
+        queue.push(c1);
+        queue.push(c2);
+
+        // These are for debugging
+        n.c1 = c1;
+        n.c2 = c2;
     }
     return 0;
 }
+
+Lit CoreSMTSolver::lookahead_loop(int &idx) {
+    updateRound();
+    int i = 0;
+    int d = decisionLevel();
+
+    int count = 0;
+#ifdef LADEBUG
+    printf("Starting lookahead loop with %d vars\n", nVars());
+#endif
+    for (Var v(idx % nVars()); (LAexacts[v].getRound() != latest_round); v = Var((idx + (++i)) % nVars())) {
+#ifdef LADEBUG
+        printf("Checking var %d\n", v);
+#endif
+        if (value(v) != l_Undef || LAupperbounds[v].safeToSkip(LAexacts[var(getLABest())])) {
+#ifdef LADEBUG
+            printf("  Var is safe to skip due to %s\n",
+                value(v) != l_Undef ? "being assigned" : "having low upper bound");
+#endif
+            LAexacts[v].setRound(latest_round);
+            // It is possible that all variables are assigned here.
+            // In this case it seems that we have a satisfying assignment.
+            // This is in fact a debug check
+            if (trail.size() == nVars()) {
+                printf("All vars set?\n");
+                assert(checkTheory(true) == 1);
+                for (int j = 0; j < clauses.size(); j++) {
+                    Clause& c = *clauses[j];
+                    int k;
+                    for (k = 0; k < c.size(); k++) {
+                        if (value(c[k]) == l_True) {
+                            break;
+                        }
+                    }
+                    assert(k < c.size());
+                }
+                return lit_Undef; // Stands for SAT
+            }
+            continue;
+        }
+        count++;
+        int p0 = 0, p1 = 0;
+        for (int p = 0; p < 2; p++) { // do for both polarities
+            assert(decisionLevel() == d);
+            newDecisionLevel();
+            Lit l(v, p);
+            int tmp_trail_sz = trail.size();
+#ifdef LADEBUG
+            printTrace();
+            printf("Checking lit %s%d\n", p == 0 ? "" : "-", v);
+#endif
+            uncheckedEnqueue(l);
+            bool res = LApropagate_wrapper();
+            if (res == false) return lit_Undef;
+            if (decisionLevel() == d+1) {
+#ifdef LADEBUG
+                printf(" -> Successfully propagated %d lits\n", trail.size() - tmp_trail_sz);
+#endif
+                for (int j = 0; j < trail.size(); j++)
+                    updateLAUB(trail[j], trail.size());
+            }
+            else if (decisionLevel() == d) {
+#ifdef LADEBUG
+                printf(" -> Propagation resulted in backtrack\n");
+#endif
+                updateRound();
+                break;
+            } else {
+#ifdef LADEBUG
+                printf(" -> Propagation resulted in backtrack: %d\n", d - decisionLevel());
+#endif
+                // Backtracking should happen.
+                return lit_Undef;
+            }
+#ifdef LADEBUG
+            printTrace();
+#endif
+            p == 0 ? p0 = trail.size() : p1 = trail.size();
+            cancelUntil(decisionLevel() - 1);
+        }
+        if (value(v) == l_Undef) {
+#ifdef LADEBUG
+            printf("Updating var %d to (%d, %d)\n", v, p0, p1);
+#endif
+            setLAExact(v, p0, p1);
+            updateLABest(v);
+            assert(value(getLABest()) == l_Undef);
+        }
+    }
+#ifdef LADEBUG
+    printf("Lookahead phase over successfully\n");
+    printf("Best I found propagates high %d and low %d\n",
+            LAexacts[var(getLABest())].getEx_h(),
+            LAexacts[var(getLABest())].getEx_l());
+#endif
+    idx = (idx + i) % nVars();
+    return getLABest();
+}
+
 //
 // Do the splits based on the lookahead heuristics.  The function is
 // recursive
