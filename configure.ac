@@ -379,13 +379,13 @@ echo "Enable simplification debug...  ${enable_simplification_debug}"
 #
 # Enable GC debug
 #
-AC_ARG_ENABLE(gcdebug,
-  AC_HELP_STRING([--enable-gcdebug],
+AC_ARG_ENABLE(gc_debug,
+  AC_HELP_STRING([--enable-gc_debug],
                  [enable garbage collection debug @<:@no@:>@]),
   [:],
-  [enable_gc_debug="no"])
+  enable_gc_debug="no")
 
-if test $enable_gc_debug = "yes" ;
+if test "${enable_gc_debug}" = "yes" ;
 then
   config_gc_debug="-DGC_DEBUG"
 else
@@ -393,6 +393,24 @@ else
 fi
 AM_CONDITIONAL([ENABLE_GC_DEBUG], [test "$enable_gc_debug" = "yes"])
 echo "Enable garbage collection debug... ${enable_gc_debug}"
+
+#
+# Enable lookahead debug
+#
+AC_ARG_ENABLE(la_debug,
+  AC_HELP_STRING([--enable-la_debug],
+                 [enable lookahead debug @<:@no@:>@]),
+  [:],
+  [enable_la_debug="no"])
+
+if test $enable_la_debug = "yes" ;
+then
+  config_la_debug="-DLADEBUG"
+else
+  config_la_debug=""
+fi
+AM_CONDITIONAL([ENABLE_LA_DEBUG], [test "$enable_la_debug" = "yes"])
+echo "Enable lookahead debug... ${enable_la_debug}"
 
 
 
@@ -437,7 +455,7 @@ then
   exit
 fi
 
-def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_oldsubstitution $config_custom_memalloc $config_term_explanations $config_compress $config_verbose_euf $config_verbose_eufex $config_verbose_fops $config_verbose_sat $config_verbose_cnfization $config_printclausalsize"
+def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_la_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_oldsubstitution $config_custom_memalloc $config_term_explanations $config_compress $config_verbose_euf $config_verbose_eufex $config_verbose_fops $config_verbose_sat $config_verbose_cnfization $config_printclausalsize"
 comp_flags="-W -Wall -g -Wno-deprecated $config_profiling"
 
 def_flags=`echo ${def_flags} |sed 's/ [ ]*/ /g'`
@@ -497,7 +515,7 @@ LDFLAGS="$LDFLAGS $AM_LDFLAGS"
 CFLAGS="$CFLAGS $AM_CFLAGS"
 
 # Check for GMP header
-echo "I'm looking here: $with_gmp"
+
 GMP_HEADER_FOUND=1
 if test $NONSTDGMPPATH = 1 ; then
 	AC_CHECK_HEADERS($with_gmp/include/gmp.h,

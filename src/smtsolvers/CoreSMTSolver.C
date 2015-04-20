@@ -2325,13 +2325,31 @@ lbool CoreSMTSolver::lookaheadSplit(int d)
     return res;
 }
 
+lbool CoreSMTSolver::lookaheadSplit2(int d) {
+    int idx = 0;
+    bool first_model_found_prev = first_model_found;
+    first_model_found = true;
+    lbool res = lookaheadSplit2(d, idx);
+    first_model_found = first_model_found_prev;
+    if (res == l_True) {
+        model.growTo(nVars());
+        for (int i = 0; i < nVars(); i++)
+            model[i] = value(trail[i]);
+    }
+    if (res == l_False)
+        splits.clear();
+    // Without these I get a segfault from theory solver's destructor...
+    cancelUntil(-1);
+    theory_handler.backtrack(-1);
+    return res;
+}
+
 // Function for making a propagation.  Returns false if the there was a conflict.
 // Backtracks the solver to the correct decision level and continues until no
 // new conflicts or propagations are available in theory or in unit propagation
 bool CoreSMTSolver::LApropagate_wrapper()
 {
     Clause *c;
-    bool conflict_found = false;
     bool diff;
     do {
         diff = false;
@@ -2339,7 +2357,9 @@ bool CoreSMTSolver::LApropagate_wrapper()
             vec<Lit> out_learnt;
             int out_btlevel;
             analyze(c, out_learnt, out_btlevel);
+#ifdef LADEBUG
             printf("Conflict: I would need to backtrack from %d to %d\n", decisionLevel(), out_btlevel);
+#endif
             cancelUntil(out_btlevel);
             Clause* d = NULL;
             if (out_learnt.size() > 1) {
@@ -2348,25 +2368,28 @@ bool CoreSMTSolver::LApropagate_wrapper()
                 attachClause(*d);
             }
             uncheckedEnqueue(out_learnt[0], d);
-            conflict_found = true;
             diff = true;
         }
         if (!diff) {
             int res = checkTheory(true);
             if (res == -1) {
+#ifdef LADEBUG
                 printf("Theory unsatisfiability\n");
+#endif
                 return -1; // Unsat
             } else if (res == 2) {
+#ifdef LADEBUG
                 printf("Theory propagation\n");
-                propagations = true;
+#endif
+                diff = true;
                 continue;
             } else if (res == 0) {
+#ifdef LADEBUG
                 printf("Theory conflict\n");
-                conflict_found = true;
+#endif
                 diff = true;
             }
         }
-        assert(diff == conflict_found);
     } while (diff);
 
     return true;
@@ -2378,7 +2401,7 @@ bool CoreSMTSolver::LApropagate_wrapper()
 // both children have been constructed and whether any of its two
 // children has been shown unsatisfiable either directly or with a
 // backjump.
-int CoreSMTSolver::lookaheadSplit2(int d, int &idx)
+lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
 {
     class LANode {
       public:
@@ -2398,9 +2421,9 @@ int CoreSMTSolver::lookaheadSplit2(int d, int &idx)
     while (queue.size() != 0) {
         LANode& n = *queue.last();
         queue.pop();
-
+#ifdef LADEBUG
         printf("main loop: dl %d -> %d\n", decisionLevel(), 0);
-
+#endif
         cancelUntil(0);
 
         vec<Lit> path;
@@ -2414,62 +2437,84 @@ int CoreSMTSolver::lookaheadSplit2(int d, int &idx)
         }
 
         int i;
-
+#ifdef LADEBUG
         printf("Setting solver to the right dl %d\n", path.size());
-
+#endif
         for (i = path.size() - 1; i >= 0; i--) {
             newDecisionLevel();
-
-            printf("I will propagate %s%d\n", sign(path[i]) ? "-" : "", var(path[i]));
-
-            uncheckedEnqueue(path[i]);
-            bool res = LApropagate_wrapper();
-
-            printf("Trail is now following:\n");
-            printTrace();
-
-            if (res == false) {
-//#ifdef LADEBUG
-                printf(" -> Path this far is unsatisfiable already\n");
-//#endif
+            if (value(path[i]) == l_Undef) {
+#ifdef LADEBUG
+                printf("I will propagate %s%d\n", sign(path[i]) ? "-" : "", var(path[i]));
+#endif
+                uncheckedEnqueue(path[i]);
+                bool res = LApropagate_wrapper();
+                if (res == false) {
+#ifdef LADEBUG
+                    printf(" -> Path this far is unsatisfiable already\n");
+#endif
+                    break;
+                }
+            } else {
+#ifdef LADEBUG
+                printf("Would propagate %s%d but the literal is already assigned\n", sign(path[i]) ? "-" : "", var(path[i]));
+#endif
+                if (value(path[i]) == l_False) {
+#ifdef LADEBUG
+                    printf("Unsatisfiable branch since I'd like to propagate %s%d but %s%d is assigned already\n", sign(path[i]) ? "-" : "", var(path[i]), sign(~path[i]), var(path[i]));
+#endif
+                }
                 break;
             }
-
+#ifdef LADEBUG
+            printf("Trail is now following:\n");
+            printTrace();
+#endif
         }
+
         // Decision level -1 at this point means we proved unsatisfiability
         if (decisionLevel() == -1)
-            return -1;
+            return l_False;
 
         if (i != -1) {
-//#ifdef LADEBUG
+#ifdef LADEBUG
             printf("Unsatisfiability detected on branch\n");
             printTrace();
-//#endif
+#endif
             continue;
         }
         if (n.d == d) {
-//#ifdef LADEBUG
+#ifdef LADEBUG
             printf("Producing a split:\n");;
             printTrace();
-//#endif
+#endif
             createSplit_lookahead();
+            continue;
         }
 
         // Otherwise we will continue here by attempting to create two children for this node
 
         // Do the lookahead
         assert(decisionLevel() == n.d);
-        Lit best = lookahead_loop(idx);
+        Lit best;
+        lbool res = lookahead_loop(best, idx);
         assert(decisionLevel() <= n.d);
 
         if (decisionLevel() < n.d) {
             n.v = l_False;
-//#ifdef LADEBUG
+#ifdef LADEBUG
             printf("Unsatisfiability detected after lookahead\n");
             printTrace();
-//#endif
+#endif
             continue;
+        } else if (res == l_True) {
+#ifdef LADEBUG
+            printf("Lookahead claims to have found a satisfying truth assignment:\n");
+            printTrail();
+#endif
+            return l_True;
         }
+        else if (res == l_False)
+            return l_False;
 
         assert(best != lit_Undef);
 
@@ -2483,10 +2528,10 @@ int CoreSMTSolver::lookaheadSplit2(int d, int &idx)
         n.c1 = c1;
         n.c2 = c2;
     }
-    return 0;
+    return l_Undef;
 }
 
-Lit CoreSMTSolver::lookahead_loop(int &idx) {
+lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx) {
     updateRound();
     int i = 0;
     int d = decisionLevel();
@@ -2521,7 +2566,8 @@ Lit CoreSMTSolver::lookahead_loop(int &idx) {
                     }
                     assert(k < c.size());
                 }
-                return lit_Undef; // Stands for SAT
+                best = lit_Undef;
+                return l_True; // Stands for SAT
             }
             continue;
         }
@@ -2538,7 +2584,7 @@ Lit CoreSMTSolver::lookahead_loop(int &idx) {
 #endif
             uncheckedEnqueue(l);
             bool res = LApropagate_wrapper();
-            if (res == false) return lit_Undef;
+            if (res == false) { best = lit_Undef; return l_False; }
             if (decisionLevel() == d+1) {
 #ifdef LADEBUG
                 printf(" -> Successfully propagated %d lits\n", trail.size() - tmp_trail_sz);
@@ -2557,7 +2603,8 @@ Lit CoreSMTSolver::lookahead_loop(int &idx) {
                 printf(" -> Propagation resulted in backtrack: %d\n", d - decisionLevel());
 #endif
                 // Backtracking should happen.
-                return lit_Undef;
+                best = lit_Undef;
+                return l_Undef;
             }
 #ifdef LADEBUG
             printTrace();
@@ -2581,7 +2628,8 @@ Lit CoreSMTSolver::lookahead_loop(int &idx) {
             LAexacts[var(getLABest())].getEx_l());
 #endif
     idx = (idx + i) % nVars();
-    return getLABest();
+    best = getLABest();
+    return l_Undef;
 }
 
 //
@@ -2824,7 +2872,8 @@ bool CoreSMTSolver::createSplit_lookahead()
     int curr_dl0_idx = trail_lim.size() > 0 ? trail_lim[0] : trail.size();
     splits.push_c(SplitData(clauses, trail, curr_dl0_idx));
     SplitData& sp = splits.last();
-    printf("Outputing an instance:\n");
+
+    printf("; Outputing an instance:\n; ");
     for (int i = 0; i < decisionLevel(); i++) {
         vec<Lit> tmp;
         Lit l = trail[trail_lim[i]];
