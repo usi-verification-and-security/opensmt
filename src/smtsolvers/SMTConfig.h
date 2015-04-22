@@ -466,7 +466,7 @@ public:
         optionTable[":verbosity"].getValue().numval : 2; }
 #else
     { return optionTable.contains(":verbosity") ?
-        optionTable[":verbosity"].getValue().numval : 0; }
+        optionTable[":verbosity"].getValue().numval : 2; }
 #endif
   int          printSuccess() const
      { return optionTable.contains(":print-success") ?

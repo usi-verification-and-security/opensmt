@@ -2410,7 +2410,17 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
         LANode() : c1(NULL), c2(NULL), p(NULL), l(lit_Undef), v(l_Undef), d(0) {}
         LANode(LANode* par, Lit li, lbool va, int dl) :
             c1(NULL), c2(NULL), p(par), l(li), v(va), d(dl) {}
+        void print() {
+            for (int i = 0; i < d; i++)
+                printf(" ");
+            printf("%s%d [%s, %d]\n", sign(l) ? "-" : "", var(l), v == l_False ? "unsat" : "open");
+            if (c1 != NULL)
+                c1->print();
+            if (c2 != NULL)
+                c2->print();
+        }
     };
+
 
     updateRound();
     vec<LANode*> queue;
@@ -2425,6 +2435,9 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
         printf("main loop: dl %d -> %d\n", decisionLevel(), 0);
 #endif
         cancelUntil(0);
+
+        if (n.v == l_False)
+            continue;
 
         vec<Lit> path;
         LANode *curr = &n;
@@ -2452,6 +2465,7 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
 #ifdef LADEBUG
                     printf(" -> Path this far is unsatisfiable already\n");
 #endif
+                    n.v = l_False;
                     break;
                 }
             } else {
@@ -2460,15 +2474,14 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
 #endif
                 if (value(path[i]) == l_False) {
 #ifdef LADEBUG
-                    printf("Unsatisfiable branch since I'd like to propagate %s%d but %s%d is assigned already\n", sign(path[i]) ? "-" : "", var(path[i]), sign(~path[i]), var(path[i]));
+                    printf("Unsatisfiable branch since I'd like to propagate %s%d but %s%d is assigned already\n", sign(path[i]) ? "-" : "", var(path[i]), sign(~path[i]) ? "-" : "", var(path[i]));
 #endif
+                    n.v = l_False;
+                    break;
+                } else {
+                    assert(value(path[i]) == l_True);
                 }
-                break;
             }
-#ifdef LADEBUG
-            printf("Trail is now following:\n");
-            printTrace();
-#endif
         }
 
         // Decision level -1 at this point means we proved unsatisfiability
@@ -2478,7 +2491,6 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
         if (i != -1) {
 #ifdef LADEBUG
             printf("Unsatisfiability detected on branch\n");
-            printTrace();
 #endif
             continue;
         }
@@ -2503,8 +2515,13 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
             n.v = l_False;
 #ifdef LADEBUG
             printf("Unsatisfiability detected after lookahead\n");
-            printTrace();
 #endif
+            // level and force a backjump.  It means that the node from
+            // which backjump happens is unsatisfiable.  It does not
+            // mean that the path leading to the lookahead node would be
+            // unsatisfiable.  Hence we need to put this node back to
+            // the search queue.
+            queue.push(&n);
             continue;
         } else if (res == l_True) {
 #ifdef LADEBUG
@@ -2528,6 +2545,7 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
         n.c1 = c1;
         n.c2 = c2;
     }
+    root->print();
     return l_Undef;
 }
 
@@ -2579,7 +2597,6 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx) {
             Lit l(v, p);
             int tmp_trail_sz = trail.size();
 #ifdef LADEBUG
-            printTrace();
             printf("Checking lit %s%d\n", p == 0 ? "" : "-", v);
 #endif
             uncheckedEnqueue(l);
@@ -2606,9 +2623,6 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx) {
                 best = lit_Undef;
                 return l_Undef;
             }
-#ifdef LADEBUG
-            printTrace();
-#endif
             p == 0 ? p0 = trail.size() : p1 = trail.size();
             cancelUntil(decisionLevel() - 1);
         }

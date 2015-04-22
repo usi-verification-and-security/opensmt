@@ -86,7 +86,7 @@ class ASTNode {
             };
             delete children;
         }
-        free(val);
+//        free(val);
     }
     void                  print(std::ostream& o, int indent);
     inline const char    *typeToStr() const { return typestr[type]; }
