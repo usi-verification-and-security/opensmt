@@ -168,7 +168,10 @@ class WorkerServer(Server):
         with self._lock:
             self.output.write('+ worker {}\n'.format(sock.address))
             self._status[sock] = (self._jobs[-1], 0)
-            self._commit()
+            jobs = self._commit()
+        if not jobs and options.done_exit:
+            self.handle_command('A!')
+            os._exit(0)
 
     def handle_message(self, sock, message):
         with self._lock:
@@ -191,8 +194,9 @@ class WorkerServer(Server):
                     self._swap_jobs(jid, -1, tid)
                 if not self._commit():
                     done = True
-        if done:  # this is only to print the results when done, debug only (var done not necessary)
-            self.handle_command('ADONE'+str(int(time.time())))
+        if done and options.done_exit:
+            self.handle_command('A!')
+            os._exit(0)
 
     def handle_close(self, sock):
         with self._lock:
@@ -254,8 +258,14 @@ class WorkerServer(Server):
                     else:
                         result = 'unknown'
                     l.append('{} {} {:.2f}'.format(name, result, self._jobs[jid].get('elapsed', -1)))
-                with open(message[1:], 'w') as f:
-                    f.write('\n'.join(l))
+                if message[1:].startswith('!'):
+                    self.output.write('\nDONE:\n{}\n################################\n'.format(l[0]))
+                    self.output.write('\n'.join(l[1:]))
+                    self.output.write('\n')
+                    self.output.flush()
+                else:
+                    with open(message[1:], 'w') as f:
+                        f.write('\n'.join(l))
     def _commit(self):
         """
         Find job available (with POLICY) and then execute it
@@ -396,8 +406,10 @@ class CommandServer(Server):
                             ))
             else:
                 self.output.write('{}\n'.format(self._worker_server))
+            sock.write('D')
         else:
             self._worker_server.handle_command(message)
+
 
 
 if __name__ == '__main__':
@@ -416,14 +428,16 @@ if __name__ == '__main__':
                       default=None, help='option file containig headers')
     parser.add_option('-s', '--split-num', dest='split_num', type='int',
                       default=2, help='number of splits')
+    parser.add_option('-d', '--done-exit', action='store_true', dest='done_exit',
+                        default=False, help='if true server dies when all jobs are done')
 
     (options, args) = parser.parse_args()
 
     wserver = WorkerServer(options.wport, options.timeout)
     cserver = CommandServer(options.cport, wserver, options.opensmt)
 
-    wserver.output = sys.stderr
-    cserver.output = sys.stderr
+    wserver.output = sys.stdout
+    cserver.output = sys.stdout
 
     t = threading.Thread(target=wserver.run_forever)
     t.start()

@@ -23,6 +23,9 @@ if __name__ == '__main__':
         s.write(sys.stdin.read())
     else:
         for filename in args[1:]:
+            if not os.path.exists(filename):
+                sys.stderr.write("{}: file doesn't exists\n".format(filename))
+                continue
             with open(filename, 'r') as f:
                 print filename
                 s.write('{}S{}\\{}'.format(
@@ -30,5 +33,6 @@ if __name__ == '__main__':
                     os.path.splitext(os.path.basename(filename))[0],
                     f.read())
                 )
+                s.read()
 
     s.close()
