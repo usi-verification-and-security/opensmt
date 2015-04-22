@@ -2413,7 +2413,15 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
         void print() {
             for (int i = 0; i < d; i++)
                 printf(" ");
-            printf("%s%d [%s, %d]\n", sign(l) ? "-" : "", var(l), v == l_False ? "unsat" : "open");
+            printf("%s%d [%s, %d]", sign(l) ? "-" : "", var(l), v == l_False ? "unsat" : "open", d);
+
+            if (c1 != NULL) {
+                printf(" c1");
+            }
+            if (c2 != NULL) {
+                printf(" c2");
+            }
+            printf("\n");
             if (c1 != NULL)
                 c1->print();
             if (c2 != NULL)
@@ -2464,6 +2472,8 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
                 if (res == false) {
 #ifdef LADEBUG
                     printf(" -> Path this far is unsatisfiable already\n");
+                    printf("Marking the subtree false:\n");
+                    n.print();
 #endif
                     n.v = l_False;
                     break;
@@ -2473,10 +2483,12 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
                 printf("Would propagate %s%d but the literal is already assigned\n", sign(path[i]) ? "-" : "", var(path[i]));
 #endif
                 if (value(path[i]) == l_False) {
+                    n.v = l_False;
 #ifdef LADEBUG
                     printf("Unsatisfiable branch since I'd like to propagate %s%d but %s%d is assigned already\n", sign(path[i]) ? "-" : "", var(path[i]), sign(~path[i]) ? "-" : "", var(path[i]));
+                    printf("Marking the subtree false:\n");
+                    n.print();
 #endif
-                    n.v = l_False;
                     break;
                 } else {
                     assert(value(path[i]) == l_True);
@@ -2512,7 +2524,6 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
         assert(decisionLevel() <= n.d);
 
         if (decisionLevel() < n.d) {
-            n.v = l_False;
 #ifdef LADEBUG
             printf("Unsatisfiability detected after lookahead\n");
 #endif
@@ -2545,7 +2556,9 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
         n.c1 = c1;
         n.c2 = c2;
     }
+#ifdef LADEBUG
     root->print();
+#endif
     return l_Undef;
 }
 
@@ -2617,7 +2630,7 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx) {
                 break;
             } else {
 #ifdef LADEBUG
-                printf(" -> Propagation resulted in backtrack: %d\n", d - decisionLevel());
+                printf(" -> Propagation resulted in backtrack: %d -> %d\n", d, decisionLevel());
 #endif
                 // Backtracking should happen.
                 best = lit_Undef;
