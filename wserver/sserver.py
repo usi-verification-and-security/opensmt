@@ -171,6 +171,8 @@ class WorkerServer(Server):
             jobs = self._commit()
         if not jobs and options.done_exit:
             self.handle_command('A!')
+            for sock in self._status:
+                sock.write('!')
             os._exit(0)
 
     def handle_message(self, sock, message):
@@ -390,9 +392,11 @@ class CommandServer(Server):
                         '\n'.join(smt_options),
                         code
                     ))
+                start_time = time.time()
                 subprocess.call([self._opensmt, temp_name], stdout=open('/dev/null', 'w'), stderr=subprocess.STDOUT)
                 try:
-                    tasks = subprocess.check_output('ls {}-*'.format(dump_prefix), shell=True).split('\n')
+                    tasks = subprocess.check_output('ls {}-*'.format(dump_prefix), shell=True,
+                                                    stderr=open('/dev/null', 'w')).split('\n')
                 except:
                     self.output.write('* DONE without split: {}\n'.format(name))
                 else:
@@ -404,9 +408,16 @@ class CommandServer(Server):
                                 name,
                                 file.read()
                             ))
+                        os.remove(task)
+                finally:
+                    self.output.write('T {} {}\n'.format(name, time.time() - start_time))
+                    self.output.flush()
             else:
                 self.output.write('{}\n'.format(self._worker_server))
-            sock.write('D')
+            try:
+                sock.write('D')
+            except:
+                pass
         else:
             self._worker_server.handle_command(message)
 

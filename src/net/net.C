@@ -115,6 +115,10 @@ void WorkerClient::command(char *frame, uint32_t length){
     int pipefd[2];
     char buffer[1024];
     
+    if (frame[0]=='!'){
+        exit(0);
+    }
+    
     for(i=2;frame[i]!='\\' && i<7 && i<length;i++){}
     frame[i]='\0';
     jid = atoi(&frame[1]);

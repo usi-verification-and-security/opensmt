@@ -64,8 +64,5 @@ done
 echo '# waiting for all the problem to be solved... '
 wait $server_pid
 echo '# done'
-echo "# The results shoud be in $SERVER_OUT"
-echo '# Killing all the opensmt solvers... '
-jobs -p | xargs kill -9
-echo '# done'
+echo "# The results are in $SERVER_OUT"
 echo '# bye'
