@@ -38,7 +38,7 @@ SymStore::~SymStore() {
         free(idToName[i]);
 }
 
-SymRef SymStore::newSymb(const char* fname, const vec<SRef>& args, const char** msg, bool, bool, bool, bool) {
+SymRef SymStore::newSymb(const char* fname, const vec<SRef>& args, char** msg, bool, bool, bool, bool) {
     // Check if there already is a term called fname with same number of arguments of the same sort
     bool newsym = !contains(fname);
     if (newsym == false) {
@@ -51,7 +51,8 @@ SymRef SymStore::newSymb(const char* fname, const vec<SRef>& args, const char** 
                         break;
                 }
                 if (j == ta[trs[i]].nargs()) { // The term exists already
-                    *msg = e_duplicate_symbol;
+                    *msg = (char*)malloc(strlen(e_duplicate_symbol)+1);
+                    strcpy(*msg, e_duplicate_symbol);
                     return SymRef_Undef;
                 }
             }

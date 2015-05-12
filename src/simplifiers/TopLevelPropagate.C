@@ -591,7 +591,7 @@ bool TopLevelPropagator::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& 
             vec<PTRef> args_mapped;
             for (int i = 0; i < t.size(); i++)
                 args_mapped.push(gen_sub[t[i]]);
-            const char* msg;
+            char* msg;
             result = logic.insertTerm(t.symb(), args_mapped, &msg);
 
         }
@@ -764,7 +764,7 @@ bool TopLevelPropagator::substitute(PTRef& root, PTRef& tr_new)
         for (int i = 0; i < t.size(); i++)
             args.push(subst[t[i]]);
 
-        const char** msg;
+        char** msg;
         PTRef tr_n = logic.insertTerm(t.symb(), args, msg);
 
         assert(!subst.contains(queue[idx].x));

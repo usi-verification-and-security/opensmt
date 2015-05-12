@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
     args1.push(logic.getTerm_true());
     args1.push(t1);
     args1.push(t2);
-    const char* msg;
+    char* msg;
     // No simplification
     cerr << "Term " << logic.getSym_and().x << " (" << sym_store.getName(logic.getSym_and()) << ")" << (sym_store[logic.getSym_and()].commutes() ? " commutes." : " does not commute.") << endl;
     PTRef and1 = logic.insertTerm(logic.getSym_and(), args1, &msg);

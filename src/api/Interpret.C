@@ -495,7 +495,7 @@ bool Interpret::checkSat(const char* cmd) {
     sstat res;
     if (logic.isSet()) {
         sat_calls++;
-        char* msg;
+        char* msg = NULL;
 
         res = main_solver.simplifyFormulas(&msg);
         if (res == s_Undef) {
@@ -504,8 +504,6 @@ bool Interpret::checkSat(const char* cmd) {
             else
                 res = main_solver.solve();
         }
-        else
-            notify_formatted(true, msg);
 
         if (res == s_True) {
             notify_formatted(false, "sat");
@@ -514,6 +512,8 @@ bool Interpret::checkSat(const char* cmd) {
             notify_formatted(false, "unsat");
         else
             notify_formatted(false, "unknown");
+        if (msg != NULL)
+            notify_formatted(true, msg);
     }
     else {
         notify_formatted(true, "Illegal command before set-logic: %s", cmd);
@@ -577,10 +577,11 @@ void Interpret::writeSplits(const char* filename)
 }
 
 bool Interpret::declareFun(const char* fname, const vec<SRef>& args) {
-    const char* msg;
+    char* msg;
     SymRef rval = symstore.newSymb(fname, args, &msg);
     if (rval == SymRef_Undef) {
         comment_formatted("While declare-fun %s: %s", fname, msg);
+        free(msg);
         return false;
     }
     return true;

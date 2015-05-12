@@ -47,7 +47,7 @@ GCTest::GCTest(int argc, char **argv) {
     TermMapper tmap(logic);
     Egraph egraph(cfg, sort_store, sym_store, term_store, logic, tmap);
 
-    const char* msg;
+    char* msg;
     SRef sr = logic.declareSort("TSort", &msg);
     vec<SRef> sort_args_a;
     SRef bsr = logic.getSort_bool();

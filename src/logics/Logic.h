@@ -70,7 +70,19 @@ class Logic {
     SymRef              sym_IMPLIES;
     SymRef              sym_DISTINCT;
     SymRef              sym_ITE;
+
+    SymRef              sym_Real_NEG;
+    SymRef              sym_Real_MINUS;
+    SymRef              sym_Real_PLUS;
+    SymRef              sym_Real_TIMES;
+    SymRef              sym_Real_DIV;
+    SymRef              sym_Real_LEQ;
+    SymRef              sym_Real_LT;
+    SymRef              sym_Real_GEQ;
+    SymRef              sym_Real_GT;
+
     SRef                sort_BOOL;
+    SRef                sort_REAL;
 
     PTRef               term_TRUE;
     PTRef               term_FALSE;
@@ -95,7 +107,18 @@ class Logic {
     static const char*  tk_distinct;
     static const char*  tk_ite;
 
+    static const char*  tk_real_neg;
+    static const char*  tk_real_minus;
+    static const char*  tk_real_plus;
+    static const char*  tk_real_times;
+    static const char*  tk_real_div;
+    static const char*  tk_real_leq;
+    static const char*  tk_real_lt;
+    static const char*  tk_real_geq;
+    static const char*  tk_real_gt;
+
     static const char*  s_sort_bool;
+    static const char*  s_sort_real;
 
     Logic(SMTConfig& c, IdentifierStore& i, SStore& s, SymStore& t, PtStore& pt);
 
@@ -110,7 +133,7 @@ class Logic {
     const char* getSortName   (const SRef s)                { return sort_store.getName(s); }
 
     // Symbols
-    SymRef      newSymb       (const char* name, vec<SRef>& sort_args, const char** msg)
+    SymRef      newSymb       (const char* name, vec<SRef>& sort_args, char** msg)
                                                             { return sym_store.newSymb(name, sort_args, msg); }
 //    bool        hasSym        (const SymRef s)        const { return sym_store.contains(s); }
     Symbol&     getSym        (const SymRef s)        const { return sym_store[s]; }
@@ -133,9 +156,10 @@ class Logic {
     // Generic constants
     PTRef       mkConst       (SRef, const char*);
 
-    SymRef      declareFun    (const char* fname, const SRef rsort, const vec<SRef>& args, const char** msg);
-    SRef        declareSort   (const char* id, const char** msg);
-    PTRef       mkFun         (SymRef f, vec<PTRef>& args, const char** msg);
+    SymRef      declareFun    (const char* fname, const SRef rsort, const vec<SRef>& args, char** msg);
+    SRef        declareSort   (const char* id, char** msg);
+    SRef        declareSort_Real(char** msg);
+    PTRef       mkFun         (SymRef f, vec<PTRef>& args, char** msg);
     PTRef       mkBoolVar     (const char* name) { return mkConst(getSort_bool(), name); }
 
 
@@ -154,6 +178,7 @@ class Logic {
     SymRef        getSym_implies   ()              const { return sym_IMPLIES;  }
     SymRef        getSym_distinct  ()              const { return sym_DISTINCT; }
     SRef          getSort_bool     ()              const { return sort_BOOL;    }
+    SRef          getSort_real     ()              const { return sort_REAL;    }
 
     PTRef         getTerm_true     ()              const { return term_TRUE;  }
     PTRef         getTerm_false    ()              const { return term_FALSE; }
@@ -223,7 +248,7 @@ class Logic {
     lbool       simplifyTree       (PTRef tr);
     PTRef       resolveTerm        (const char* s, vec<PTRef>& args, char** msg);
     // XXX There's a need for non msg giving version
-    PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms, const char** msg);
+    PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms, char** msg);
 
     void        serializeLogicData(int*& logicdata_buf) const;
     void        deserializeLogicData(const int* logicdata_buf);

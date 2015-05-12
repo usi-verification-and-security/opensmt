@@ -46,7 +46,18 @@ const char* Logic::tk_xor      = "xor";
 const char* Logic::tk_distinct = "distinct";
 const char* Logic::tk_ite      = "ite";
 
+const char* Logic::tk_real_neg   = "-";
+const char* Logic::tk_real_minus = "-";
+const char* Logic::tk_real_plus  = "+";
+const char* Logic::tk_real_times = "*";
+const char* Logic::tk_real_div   = "/";
+const char* Logic::tk_real_lt    = "<";
+const char* Logic::tk_real_leq   = "<=";
+const char* Logic::tk_real_gt    = ">";
+const char* Logic::tk_real_geq   = ">=";
+
 const char* Logic::s_sort_bool = "Bool";
+const char* Logic::s_sort_real = "Real";
 
 // The constructor initiates the base logic (Boolean)
 Logic::Logic(SMTConfig& c, IdentifierStore& i, SStore& s, SymStore& t, PtStore& pt) :
@@ -68,7 +79,7 @@ Logic::Logic(SMTConfig& c, IdentifierStore& i, SStore& s, SymStore& t, PtStore& 
 
     SymRef tr;
 
-    const char* msg;
+    char* msg;
     tr = sym_store.newSymb(tk_true, params, &msg);
     if (tr == SymRef_Undef) { assert(false); }
     sym_store[tr].setNoScoping();
@@ -170,6 +181,30 @@ bool Logic::isTheorySymbol(SymRef tr) const {
     return true;
 }
 
+SRef Logic::declareSort_Real(char** msg) {
+    if ((sort_REAL = declareSort(s_sort_real, msg)) == SRef_Undef) return SRef_Undef;
+
+    vec<SRef> params;
+    params.push(sort_REAL);
+
+    // Negation
+    if ((sym_Real_NEG = declareFun(tk_real_neg, sort_REAL, params, msg)) == SymRef_Undef) return SRef_Undef;
+
+    params.push(sort_REAL);
+    
+    if ((sym_Real_MINUS = declareFun(tk_real_neg, sort_REAL, params, msg)) == SymRef_Undef) return SRef_Undef;
+    if ((sym_Real_PLUS  = declareFun(tk_real_plus, sort_REAL, params, msg)) == SymRef_Undef) return SRef_Undef;
+    if ((sym_Real_TIMES = declareFun(tk_real_times, sort_REAL, params, msg)) == SymRef_Undef) return SRef_Undef;
+    if ((sym_Real_DIV   = declareFun(tk_real_div, sort_REAL, params, msg)) == SymRef_Undef) return SRef_Undef;
+
+    if ((sym_Real_LEQ  = declareFun(tk_real_leq, sort_BOOL, params, msg)) == SymRef_Undef) return SRef_Undef;
+    if ((sym_Real_LT   = declareFun(tk_real_lt, sort_BOOL, params, msg))  == SymRef_Undef) return SRef_Undef;
+    if ((sym_Real_GEQ  = declareFun(tk_real_geq, sort_BOOL, params, msg)) == SymRef_Undef) return SRef_Undef;
+    if ((sym_Real_GT   = declareFun(tk_real_gt, sort_BOOL, params, msg))  == SymRef_Undef) return SRef_Undef;
+
+    return sort_REAL;
+}
+
 bool Logic::setLogic(const char* l) {
     if (strcmp(l, "QF_UF") == 0) {
         config.logic                    = QF_UF;
@@ -178,6 +213,18 @@ bool Logic::setLogic(const char* l) {
 
         is_set = true;
         name = "QF_UF";
+        return true;
+    }
+    else if (strcmp(l, "QF_LRA") == 0) {
+        config.logic                    = QF_LRA;
+        is_set = true;
+        name = "QF_LRA";
+        char* msg;
+        if (declareSort_Real(&msg) == SRef_Undef) {
+            printf("%s\n", msg);
+            free(msg);
+            return false;
+        }
         return true;
     }
     else return false;
@@ -198,7 +245,7 @@ bool Logic::declare_sort_hook(SRef sr) {
 
     SymRef tr;
 
-    const char* msg;
+    char* msg;
     tr = sym_store.newSymb(tk_equals, params, &msg);
     if (tr == SymRef_Undef) { return false; }
     sym_store[tr].setNoScoping();
@@ -388,13 +435,11 @@ PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args, char** msg) {
     assert(sref != SymRef_Undef);
     simplify(sref, args);
     PTRef rval;
-    const char** msg2 = NULL;
+    char** msg2 = NULL;
     if (sref == SymRef_Undef)
         rval = PTRef_Undef;
     else
         rval = insertTerm(sref, args, msg2);
-    if (msg2 != NULL)
-        asprintf(msg, "%s", *msg2);
     return rval;
 }
 
@@ -415,7 +460,7 @@ void Logic::simplify(PTRef& tr) {
     SymRef sr_prev = sr;
     simplify(sr, args);
 
-    const char** msg;
+    char** msg;
 
     // The if statement is not strictly speaking necessary, since checking for
     // duplicates needs to be performed anyway after this step
@@ -649,10 +694,11 @@ PTRef Logic::mkNot(PTRef arg) {
 PTRef Logic::mkConst(SRef s, const char* name) {
     vec<SRef> sort_args;
     sort_args.push(s);
-    const char* msg;
+    char* msg;
     SymRef sr = newSymb(name, sort_args, &msg);
     if (sr == SymRef_Undef) {
         cerr << "Warning: while mkConst " << name << ": " << msg << endl;
+        free(msg);
         assert(symNameToRef(name).size() == 1);
         sr = symNameToRef(name)[0];
     }
@@ -662,7 +708,7 @@ PTRef Logic::mkConst(SRef s, const char* name) {
     return ptr;
 }
 
-PTRef Logic::mkFun(SymRef f, vec<PTRef>& args, const char** msg)
+PTRef Logic::mkFun(SymRef f, vec<PTRef>& args, char** msg)
 {
     return insertTerm(f, args, msg);
 }
@@ -685,7 +731,7 @@ bool Logic::isLit(PTRef tr) const
     return false;
 }
 
-SRef Logic::declareSort(const char* id, const char** msg)
+SRef Logic::declareSort(const char* id, char** msg)
 {
     IdRef idr = id_store.newIdentifier(id);
     vec<SRef> tmp;
@@ -696,7 +742,7 @@ SRef Logic::declareSort(const char* id, const char** msg)
     return sort_store[sort_name];
 }
 
-SymRef Logic::declareFun(const char* fname, const SRef rsort, const vec<SRef>& args, const char** msg)
+SymRef Logic::declareFun(const char* fname, const SRef rsort, const vec<SRef>& args, char** msg)
 {
     vec<SRef> comb_args;
 
@@ -732,7 +778,7 @@ PTRef Logic::cloneTerm(const PTRef& tr) {
     return ptr_new;
 }
 
-PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, const char** msg) {
+PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, char** msg) {
     PTRef res;
     if (terms.size() == 0) {
         if (term_store.hasCtermKey(sym)) //cterm_map.contains(sym))
@@ -752,7 +798,8 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, const char** msg) {
             !sym_store[sym].pairwise() &&
             sym_store[sym].nargs() != terms.size_())
         {
-            *msg = e_argnum_mismatch;
+            *msg = (char*)malloc(strlen(e_argnum_mismatch)+1);
+            strcpy(*msg, e_argnum_mismatch);
             return PTRef_Undef;
         }
         PTLKey k;

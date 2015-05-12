@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
 
     assert(logic.setLogic("QF_UF"));
 
-    const char* msg;
+    char* msg;
     SRef sr = logic.declareSort("U", &msg);
     if (sr == SRef_Undef) {
         cerr << "Error: " << msg;
