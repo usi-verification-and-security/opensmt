@@ -35,6 +35,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  ***********************************************************/
 
 const char* Logic::e_argnum_mismatch = "incorrect number of arguments";
+const char* Logic::e_bad_constant    = "incorrect constant for logic";
 const char* Logic::tk_true     = "true";
 const char* Logic::tk_false    = "false";
 const char* Logic::tk_not      = "not";
@@ -189,18 +190,41 @@ SRef Logic::declareSort_Real(char** msg) {
 
     // Negation
     if ((sym_Real_NEG = declareFun(tk_real_neg, sort_REAL, params, msg)) == SymRef_Undef) return SRef_Undef;
-
     params.push(sort_REAL);
-    
+
     if ((sym_Real_MINUS = declareFun(tk_real_neg, sort_REAL, params, msg)) == SymRef_Undef) return SRef_Undef;
+    sym_store[sym_Real_MINUS].setLeftAssoc();
+
     if ((sym_Real_PLUS  = declareFun(tk_real_plus, sort_REAL, params, msg)) == SymRef_Undef) return SRef_Undef;
+    sym_store[sym_Real_PLUS].setNoScoping();
+    sym_store[sym_Real_PLUS].setCommutes();
+    sym_store[sym_Real_PLUS].setLeftAssoc();
+
     if ((sym_Real_TIMES = declareFun(tk_real_times, sort_REAL, params, msg)) == SymRef_Undef) return SRef_Undef;
+    sym_store[sym_Real_TIMES].setNoScoping();
+    sym_store[sym_Real_TIMES].setLeftAssoc();
+    sym_store[sym_Real_TIMES].setCommutes();
+
+
     if ((sym_Real_DIV   = declareFun(tk_real_div, sort_REAL, params, msg)) == SymRef_Undef) return SRef_Undef;
+    sym_store[sym_Real_DIV].setNoScoping();
+    sym_store[sym_Real_DIV].setLeftAssoc();
 
     if ((sym_Real_LEQ  = declareFun(tk_real_leq, sort_BOOL, params, msg)) == SymRef_Undef) return SRef_Undef;
+    sym_store[sym_Real_LEQ].setNoScoping();
+    sym_store[sym_Real_LEQ].setChainable();
+
     if ((sym_Real_LT   = declareFun(tk_real_lt, sort_BOOL, params, msg))  == SymRef_Undef) return SRef_Undef;
+    sym_store[sym_Real_LT].setNoScoping();
+    sym_store[sym_Real_LT].setChainable();
+
     if ((sym_Real_GEQ  = declareFun(tk_real_geq, sort_BOOL, params, msg)) == SymRef_Undef) return SRef_Undef;
+    sym_store[sym_Real_GEQ].setNoScoping();
+    sym_store[sym_Real_GEQ].setChainable();
+
     if ((sym_Real_GT   = declareFun(tk_real_gt, sort_BOOL, params, msg))  == SymRef_Undef) return SRef_Undef;
+    sym_store[sym_Real_GEQ].setNoScoping();
+    sym_store[sym_Real_GEQ].setChainable();
 
     return sort_REAL;
 }
@@ -275,6 +299,47 @@ bool Logic::declare_sort_hook(SRef sr) {
     return true;
 }
 
+void Logic::simplifyDisequality(PtChild& ptc, bool simplify) {
+
+    if (!simplify) return;
+
+    Pterm& t = term_store[ptc.tr];
+    PTRef p; int i, j;
+    for (i = j = 0, p = PTRef_Undef; i < t.size(); i++)
+        if (t[i] == p) {
+            term_store.free(ptc.tr);
+            term_store[ptc.parent][ptc.pos] = getTerm_false();
+        }
+}
+
+bool Logic::simplifyEquality(PtChild& ptc, bool simplify) {
+    assert(isEquality(ptc.tr));
+    if (!simplify) return false;
+    Pterm& t = term_store[ptc.tr];
+
+    PTRef p; int i, j;
+    for (i = j = 0, p = PTRef_Undef; i < t.size(); i++)
+        if (t[i] != p)
+            t[j++] = p = t[i];
+    if (j == 1) {
+        term_store.free(ptc.tr); // Lazy free
+        if (ptc.parent == PTRef_Undef)
+            return true;
+        term_store[ptc.parent][ptc.pos] = getTerm_true();
+        ptc.tr = getTerm_true();
+    }
+    else {// shrink the size!
+        t.shrink(i-j);
+#ifdef VERBOSE_EUF
+        if (i-j != 0)
+            cout << term_store.printTerm(ptc.tr) << endl;
+#endif
+    }
+    termSort(t);
+    return false;
+}
+
+
 //
 // XXX Comments? This method is currently under development
 //
@@ -345,7 +410,7 @@ lbool Logic::simplifyTree(PTRef tr)
                 assert(term_store.hasCplxKey(k));
 #ifdef SIMPLIFY_DEBUG
                 cerr << cr.x << " is not a boolean operator ";
-                cerr << "and it maps to " << term_store.getFromCplxMap(k).x;
+                cerr << "and it maps to " << term_store.getFromCplxMap(k).x << endl;
 #endif
                 t[e] = term_store.getFromCplxMap(k);
                 assert(t[e] != queue[i].x);
@@ -429,7 +494,7 @@ lbool Logic::simplifyTree(PTRef tr)
 PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args, char** msg) {
     SymRef sref = term_store.lookupSymbol(s, args);
     if (sref == SymRef_Undef) {
-        asprintf(msg, "Unknown symbol %s", s);
+        asprintf(msg, "Unknown symbol `%s'", s);
         return PTRef_Undef;
     }
     assert(sref != SymRef_Undef);
@@ -689,6 +754,28 @@ PTRef Logic::mkNot(PTRef arg) {
     vec<PTRef> tmp;
     tmp.push(arg);
     return resolveTerm(tk_not, tmp, msg);
+}
+
+PTRef Logic::mkConst(const char* name, char** msg) {
+    // Determine the sort
+    if (config.logic == QF_UF) {
+        if ((strcmp(name, tk_true) != 0) && (strcmp(name, tk_false) != 0)) {
+            *msg = (char*)malloc(sizeof(e_bad_constant)+1);
+            strcpy(*msg, e_bad_constant);
+            return PTRef_Undef;
+        }
+        return mkConst(getSort_bool(), name);
+    } else if (config.logic == QF_LRA) {
+// QF_LRA has terms of form 0.01 at least.
+//        for (int i = 0; i < strlen(name); i++) {
+//            if (name[i] < '0' || name[i] > '9') {
+//                *msg = (char*)malloc(sizeof(e_bad_constant)+1);
+//                strcpy(*msg, e_bad_constant);
+//                return PTRef_Undef;
+//            }
+//        }
+        return mkConst(getSort_real(), name);
+    }
 }
 
 PTRef Logic::mkConst(SRef s, const char* name) {

@@ -232,68 +232,33 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
     tlp.substitute(root, new_root);
     root = new_root;
 #endif
-    {
-        // Add the top level facts to the formula
-        vec<PTRef> tmp;
-        tmp.push(root);
-        for (int i = 0; i < tlfacts.size(); i++)
-            tmp.push(tlfacts[i].sgn == l_True ? tlfacts[i].tr : logic.mkNot(tlfacts[i].tr));
-        root = logic.mkAnd(tmp);
-        lbool res = logic.simplifyTree(root);
-        if (res == l_True) root = logic.getTerm_true(); // Trivial problem
-        else if (res == l_False) root = logic.getTerm_false(); // Trivial problem
-        vec<PtChild> terms;
-        FContainer fc(root);
-        expandItes(fc, terms);
-        fc.setRoot(terms[terms.size()-1].tr);
 
-#ifdef OLD_SIMPLIFICATION
-        // XXX There should be no reason to do this one by one, and in fact it
-        // should be harmful since the shared structure will be invisible that
-        // way.
-        PTRef root = fc.getRoot();
-        Pterm& r = logic.getPterm(root);
-        vec<PTRef> tlfs;
-        ts.retrieveTopLevelFormulae(root, tlfs);
-        for (int i = 0; (i < tlfs.size()) && (status == s_Undef); i++) {
-            if (ts.checkDeMorgan(tlfs[i]) || ts.checkCnf(tlfs[i]) || ts.checkClause(tlfs[i]))
-                fc.setRoot(tlfs[i]);
-            else {
-                fc.setRoot(tlfs[i]);
-                fc = propFlatten(fc);
-            }
-            terms.clear();
-            getTermList(fc.getRoot(), terms, logic);
-            fc = simplifyEqualities(terms);
-            lbool res = logic.simplifyTree(fc.getRoot());
-#ifdef SIMPLIFY_DEBUG
-            cerr << "After simplification got " << endl;
-            if (res == l_Undef)
-                 cerr << logic.printTerm(fc.getRoot()) << endl;
-            else if (res == l_False)
-                cerr << logic.printTerm(logic.getTerm_false()) << endl;
-            else if (res == l_True)
-                cerr << logic.printTerm(logic.getTerm_true()) << endl;
-            else
-                assert(false);
-#endif
+    // Add the top level facts to the formula
+    vec<PTRef> tmp;
+    tmp.push(root);
+    for (int i = 0; i < tlfacts.size(); i++)
+        tmp.push(tlfacts[i].sgn == l_True ? tlfacts[i].tr : logic.mkNot(tlfacts[i].tr));
+    root = logic.mkAnd(tmp);
+    lbool res = logic.simplifyTree(root);
+    if (res == l_True) root = logic.getTerm_true(); // Trivial problem
+    else if (res == l_False) root = logic.getTerm_false(); // Trivial problem
+    vec<PtChild> terms;
+    FContainer fc(root);
+    expandItes(fc, terms);
+    fc.setRoot(terms[terms.size()-1].tr);
 
-            if (res == l_False) status = giveToSolver(logic.getTerm_false());
-            else if (res == l_Undef)
-                status = giveToSolver(fc.getRoot());
-        }
-#else
-        fc = propFlatten(fc);
-        terms.clear();
-        getTermList(fc.getRoot(), terms, logic);
-        fc = simplifyEqualities(terms);
-        res = logic.simplifyTree(fc.getRoot());
-        if (res == l_False) status = giveToSolver(logic.getTerm_false());
-        else if (res == l_Undef)
-            status = giveToSolver(fc.getRoot());
-#endif
+    fc = propFlatten(fc);
+    terms.clear();
+    getTermList(fc.getRoot(), terms, logic);
+    fc = simplifyEqualities(terms);
+    res = logic.simplifyTree(fc.getRoot());
 
-    }
+    uf_solver.declareTermTree(fc.getRoot());
+
+    if (res == l_False) status = giveToSolver(logic.getTerm_false());
+    else if (res == l_Undef)
+        status = giveToSolver(fc.getRoot());
+
     return status;
 }
 
@@ -737,7 +702,7 @@ MainSolver::FContainer MainSolver::simplifyEqualities(vec<PtChild>& terms)
         PTRef tr = ptc.tr;
         if (logic.isTheoryTerm(tr) && logic.getTerm_true() != tr && logic.getTerm_false() != tr) {
             if (logic.isEquality(tr)) {
-                if (uf_solver.simplifyEquality(ptc, true)) {
+                if (logic.simplifyEquality(ptc, true)) {
                     // the root of the formula is trivially true
                     root = logic.getTerm_true();
                     break;
@@ -752,10 +717,10 @@ MainSolver::FContainer MainSolver::simplifyEqualities(vec<PtChild>& terms)
             }
             else if (logic.isDisequality(tr)) {
 //                cerr << "Simplifying disequality " << logic.printTerm(tr) << endl;
-                uf_solver.simplifyDisequality(ptc);
+                logic.simplifyDisequality(ptc);
 //                cerr << "  " << logic.printTerm(logic.getPterm(ptc.parent)[ptc.pos]) << endl;
             }
-            uf_solver.declareTerm(ptc);
+//            uf_solver.declareTerm(ptc);
         }
     }
     return FContainer(root);

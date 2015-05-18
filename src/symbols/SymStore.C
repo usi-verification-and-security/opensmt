@@ -51,9 +51,10 @@ SymRef SymStore::newSymb(const char* fname, const vec<SRef>& args, char** msg, b
                         break;
                 }
                 if (j == ta[trs[i]].nargs()) { // The term exists already
-                    *msg = (char*)malloc(strlen(e_duplicate_symbol)+1);
-                    strcpy(*msg, e_duplicate_symbol);
-                    return SymRef_Undef;
+                    //*msg = (char*)malloc(strlen(e_duplicate_symbol)+1);
+                    //strcpy(*msg, e_duplicate_symbol);
+                    //return SymRef_Undef;
+                    return trs[i];
                 }
             }
         }

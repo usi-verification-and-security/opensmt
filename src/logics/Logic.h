@@ -40,6 +40,7 @@ class TStore;
 class Logic {
   private:
     static const char* e_argnum_mismatch;
+    static const char* e_bad_constant;
 
     // Information related to state serialization
     const static int buf_sz_idx             = 0;
@@ -154,6 +155,7 @@ class Logic {
     PTRef       mkEq          (vec<PTRef>& args);
 
     // Generic constants
+    PTRef       mkConst       (const char*, char** msg);
     PTRef       mkConst       (SRef, const char*);
 
     SymRef      declareFun    (const char* fname, const SRef rsort, const vec<SRef>& args, char** msg);
@@ -242,6 +244,10 @@ class Logic {
     void        simplify           (SymRef& s, vec<PTRef>& args);
     // Wrapper for simplifying terms
     void        simplify           (PTRef& tr);
+    // Simplify an equality.  TODO: See if this could be combined with
+    // simplifyTree
+    bool simplifyEquality(PtChild& ptc, bool simplify);
+    void simplifyDisequality(PtChild& ptc, bool simplify = true);
     // Simplify a term tree.  Return l_True, l_False, or l_Undef, if
     // simplification resulted in constant true or fale, or neither,
     // respectively

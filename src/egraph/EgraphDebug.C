@@ -37,7 +37,7 @@ class SimpSMTSolver;
 
 #define CHECK_EXPLANATIONS                          0
 
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
 
 bool Egraph::checkInvariants( )
 {

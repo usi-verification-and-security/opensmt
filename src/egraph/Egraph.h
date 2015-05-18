@@ -420,7 +420,7 @@ private:
       Undo(oper_t o, PTRef r) : oper(o) { arg.ptr = r; }
       Undo(oper_t o, ERef r)  : oper(o) { arg.er = r; }
       Undo()         : oper(UNDEF_OP)   { arg.ptr = PTRef_Undef; }
-#ifdef PEDANTIC_DEBUG
+#ifdef VERBOSE_EUF
       ERef merged_with;
       PTRef bool_term;
 #endif
@@ -695,7 +695,7 @@ private:
   string printCbeStructure         ( ERef, set< int > & );
   string printParents              ( ERef );
 
-#if PEDANTIC_DEBUG
+#if VERBOSE_EUF
 public:
   const char* printUndoTrail     ( );
   const char* printAsrtTrail     ( );
@@ -703,7 +703,8 @@ private:
   bool checkParents              ( ERef );
   bool checkInvariants           ( );
 //  bool checkInvariantFLS         ( );
-  bool checkInvariantSTC         ( ) { return enode_store.checkInvariants(); }
+//  bool checkInvariantSTC         ( ) { return checkInvariants(); }
+  bool checkInvariantSTC         ( ) { return true; }
   bool checkExp                  ( );
   bool checkExpTree              ( PTRef );
   bool checkExpReachable         ( PTRef, PTRef );

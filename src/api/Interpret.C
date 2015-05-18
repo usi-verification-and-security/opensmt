@@ -337,6 +337,14 @@ PTRef Interpret::letNameResolve(const char* s, const vec<LetFrame>& let_branch) 
 PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
     ASTType t = term.getType();
     if (t == TERM_T) {
+        const char* name = (**(term.children->begin())).getValue();
+//        comment_formatted("Processing term %s", name);
+        char* msg;
+        vec<SymRef> params;
+        PTRef tr = logic.mkConst(name, &msg);
+        if (tr == PTRef_Undef)
+            comment_formatted("While processing %s: %s", name, msg);
+        return tr;
     }
 
     else if (t == QID_T) {

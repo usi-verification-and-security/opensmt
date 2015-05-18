@@ -77,6 +77,9 @@ class PtStore {
     Map<PTLKey,PTRef,PTLHash,Equal<PTLKey> >    cplx_map;  // Mapping complex terms to canonical terms
 //    vec<PTLKey> cplx_keys;
 
+#ifdef SIMPLIFY_DEBUG
+    public:
+#endif
     Map<PTLKey,PTRef,PTLHash,Equal<PTLKey> >    bool_map;  // Mapping boolean terms to canonical terms
 //    vec<PTLKey> bool_keys;
 //    friend class Logic;

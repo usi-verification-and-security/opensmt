@@ -311,93 +311,6 @@ Enode * Egraph::getInterpolants( logic_t & l )
 //}
 #endif
 
-// Not used
-//lbool Egraph::simplifyAndAddTerms(PTRef tr, vec<PtPair>& ites, vec<PTRef>& bools) {
-//    vec<PtChild> terms;
-//    terms.push(PtChild(tr, PTRef_Undef, -1));
-//    bool true_root = false;
-//    bool false_root = false;
-//    while (terms.size() != 0) {
-//        PtChild ctr = terms.last();
-//        terms.pop();
-//        if (logic.isTheoryTerm(ctr.tr) && ctr.tr != logic.getTerm_true() && ctr.tr != logic.getTerm_false()) {
-//            vec<PTRef> nest_bools;
-//            lbool val = addTerm(ctr.tr, ites, nest_bools);
-//            if (val == l_True) {
-//                if (ctr.parent != PTRef_Undef)
-//                    term_store[ctr.parent][ctr.pos] = logic.getTerm_true();
-//                else {
-//                    assert(ctr.tr == tr);
-//                    true_root = true;
-//                }
-//            }
-//            if (val == l_False) {
-//                if (ctr.parent != PTRef_Undef)
-//                    term_store[ctr.parent][ctr.pos] = logic.getTerm_false();
-//                else {
-//                    assert(ctr.tr == tr);
-//                    false_root = true;
-//                }
-//            }
-//            for (int i = 0; i < nest_bools.size(); i++) {
-//                cerr << "Nested Booleans not supported" << endl;
-//                bools.push(nest_bools[i]);
-////                terms.push(PtChild(nest_bools[i], 
-//            }
-//        }
-//        else
-//            for (int i = 0; i < term_store[ctr.tr].size(); i++) {
-//                PtChild nch(term_store[ctr.tr][i], ctr.tr, i);
-//                terms.push(nch);
-//            }
-//    }
-//    if      (true_root)  return l_True;
-//    else if (false_root) return l_False;
-//    else                 return l_Undef;
-//}
-//
-void Egraph::simplifyDisequality(PtChild& ptc, bool simplify) {
-
-    if (!simplify) return;
-
-    Pterm& t = term_store[ptc.tr];
-    PTRef p; int i, j;
-    for (i = j = 0, p = PTRef_Undef; i < t.size(); i++)
-        if (t[i] == p) {
-            term_store.free(ptc.tr);
-            term_store[ptc.parent][ptc.pos] = logic.getTerm_false();
-        }
-}
-
-
-// This should probably not be in this class
-bool Egraph::simplifyEquality(PtChild& ptc, bool simplify) {
-    assert(logic.isEquality(ptc.tr));
-    if (!simplify) return false;
-    Pterm& t = term_store[ptc.tr];
-
-    PTRef p; int i, j;
-    for (i = j = 0, p = PTRef_Undef; i < t.size(); i++)
-        if (t[i] != p)
-            t[j++] = p = t[i];
-    if (j == 1) {
-        term_store.free(ptc.tr); // Lazy free
-        if (ptc.parent == PTRef_Undef)
-            return true;
-        term_store[ptc.parent][ptc.pos] = logic.getTerm_true();
-        ptc.tr = logic.getTerm_true();
-    }
-    else {// shrink the size!
-        t.shrink(i-j);
-#ifdef VERBOSE_EUF
-        if (i-j != 0)
-            cout << term_store.printTerm(ptc.tr) << endl;
-#endif
-    }
-    termSort(t);
-    return false;
-}
-
 //
 // No recursion here, we assume the caller has already introduced the
 // subterms
@@ -411,7 +324,7 @@ void Egraph::declareTerm(PtChild ptc) {
         ERef cdr = ERef_Nil;
         for (int j = tm.size()-1; j >= 0; j--) {
 #ifdef VERBOSE_EUF
-            assert( checkParents(cdr) );
+//            assert( checkParents(cdr) );
 #endif
             ERef car = enode_store.termToERef[tm[j]];
 #ifdef VERBOSE_EUF
@@ -428,6 +341,9 @@ void Egraph::declareTerm(PtChild ptc) {
 #endif
         }
         // Canonize the term representation
+#ifdef VERBOSE_EUF
+        cerr << "EgraphSolver: Adding term " << logic.printTerm(tr) << " (" << tr.x << ")" << endl;
+#endif
         PTRef rval = enode_store.addTerm(sym, cdr, tr);
         if (rval != tr) {
             ptc.tr = rval;
@@ -1203,7 +1119,7 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
 #else
     cerr << printDistinctionList(en_q.getForbid());
 #endif
-    undo_stack_main.last().bool_term = r.tr;
+//    undo_stack_main.last().bool_term = r.tr;
 #endif
 
 
