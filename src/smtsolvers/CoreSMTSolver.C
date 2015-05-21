@@ -1827,6 +1827,10 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
     // Added line
     if ( opensmt::stop ) return l_Undef;
 
+    if (conflicts % 1000 == 0){
+      if ( this->stop ) return l_Undef;
+    }
+
     if (resource_limit >= 0 && conflicts % 1000 == 0) {
         if ((resource_units == spm_time && time(NULL) >= next_resource_limit) ||
                 (resource_units == spm_decisions && decisions >= next_resource_limit))

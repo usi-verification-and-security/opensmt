@@ -44,7 +44,7 @@ class SMTSolver
 public:
 
 //  SMTSolver ( Egraph & e, SMTConfig & c ) 
-  SMTSolver (SMTConfig& c, THandler& t) : config(c), theory_handler(t) { }
+  SMTSolver (SMTConfig& c, THandler& t) : config(c), theory_handler(t), stop(false) { }
 
   virtual ~SMTSolver ( ) { }
   //
@@ -73,6 +73,7 @@ protected:
   THandler  & theory_handler; // Handles theory
 public:
   vec<lbool>  model;          // Stores model
+  bool stop;
 };
 
 #endif

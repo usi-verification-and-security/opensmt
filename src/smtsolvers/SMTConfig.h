@@ -399,6 +399,19 @@ public:
   int sat_dump_learnts() const
     { return optionTable.contains(o_sat_dump_learnts) ?
         optionTable[o_sat_dump_learnts].getValue().numval : 0; }
+    
+    bool sat_split_threads(int threads){
+        if (threads<2) return false;
+        optionTable.insert(o_sat_split_type, Option(spts_scatter));
+        optionTable.insert(o_sat_split_units, Option(spts_time));
+        optionTable.insert(o_sat_split_inittune, Option(double(2)));
+        optionTable.insert(o_sat_split_midtune, Option(double(2)));
+        optionTable.insert(o_sat_split_num, Option(2));
+        optionTable.insert(o_sat_split_asap, Option(1));
+        parallel_threads = threads;
+        return true;
+    }
+  
   const SpType sat_split_type() const {
       if (optionTable.contains(o_sat_split_type)) {
         const char* type = optionTable[o_sat_split_type].getValue().strval;
@@ -537,6 +550,9 @@ public:
   int          lra_integer_solver;           // Flag to require integer solution for LA problem
   int          lra_check_on_assert;          // Probability (0 to 100) to run check when assert is called
 
+  // parameter for parallelism
+  int          parallel_threads;
+    
 private:
 
   ofstream     stats_out;                    // File for statistics

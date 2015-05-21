@@ -52,11 +52,11 @@ class Logic {
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      disequalities;
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      ites;
 
-    SMTConfig&          config;
     IdentifierStore&    id_store;
     SStore&             sort_store;
     SymStore&           sym_store;
   public:
+    SMTConfig&          config;
     PtStore&            term_store;
   private:
     bool                is_set;

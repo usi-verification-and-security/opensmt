@@ -47,6 +47,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define CHUNK_SZ 1048576
 #endif
 
+namespace opensmt { extern bool stop; }
+
 #ifdef USE_GZ
 int MainSolver::compress_buf(const int* buf_in, int*& buf_out, int sz, int& sz_out) const
 {
@@ -1156,3 +1158,145 @@ bool MainSolver::writeSolverSplits(const char* file, char** msg)
     return true;
 }
 
+sstat MainSolver::solve()
+{
+    int i, r, min;
+    int pipefd[2];
+    char buf[3];
+    fd_set set;
+    std::thread *threads;
+    std::mutex mtx;
+    sstat result;
+    sstat *results;
+    vec<int> *split_threads;
+    
+    status = sstat(ts.solve());
+    if (!(logic.config.parallel_threads && status == s_Undef))
+        return status;
+    
+    if (pipe(pipefd) == -1) {
+        cerr << "Pipe error";
+        return status;
+    }
+    
+    split_threads = new vec<int>[sat_solver.splits.size()];
+    results = new sstat[sat_solver.splits.size()];
+    for (i=0; i<sat_solver.splits.size(); i++) {
+        results[i] = s_Undef;
+    }
+    
+    // start the threads
+    threads = new std::thread[logic.config.parallel_threads];
+    for (i=0; i<logic.config.parallel_threads; i++) {
+        this->parallel_solvers.push(NULL);
+        r = i%sat_solver.splits.size();
+        split_threads[r].push(i);
+        threads[i] = std::thread(&MainSolver::solve_split,
+                                 this,
+                                 i,
+                                 r,
+                                 pipefd[1],
+                                 &mtx);
+    }
+    
+    // wait for messages from the threads
+    while (1) {
+        r=0;
+        while (r<3) r+=::read(pipefd[0], &buf[r], 3);
+        threads[(int)buf[0]].join();
+        this->parallel_solvers[(int)buf[0]] = NULL;
+        result = sstat((int)buf[2]);
+        if (result == s_Undef || result == s_False){
+            if (result == s_False) {
+                printf("thread #%d: split #%d unsat\n",(int)buf[0],(int)buf[1]);
+                results[(int)buf[1]] = s_False;
+                for (i=0; i<split_threads[(int)buf[1]].size(); i++) {
+                    r=split_threads[(int)buf[1]][i];
+                    if (this->parallel_solvers[r]!=NULL) {
+                        this->parallel_solvers[r]->stop = true;
+                    }
+                }
+            }
+            r=-1;
+            min = logic.config.parallel_threads;
+            for (i=0; i<sat_solver.splits.size(); i++) {
+                if (results[i]!=s_Undef)
+                    continue;
+                if (split_threads[i].size() < min) {
+                    r = i;
+                    min = split_threads[i].size();
+                }
+            }
+            if (r<0){
+                break;
+            }
+            split_threads[r].push((int)buf[0]);
+            threads[(int)buf[0]] = std::thread(&MainSolver::solve_split,
+                                               this,
+                                               (int)buf[0],
+                                               r,
+                                               pipefd[1],
+                                               &mtx);
+        }
+        else {
+            if (result == s_True) {
+                printf("thread #%d: split #%d sat\n",(int)buf[0],(int)buf[1]);
+            }
+            else{
+                cerr << "Error while solving split #" << (int)buf[1] << "\n";
+            }
+            break;
+        }
+    }
+    for (i=0; i<logic.config.parallel_threads; i++) {
+        if (this->parallel_solvers[i]!=NULL) {
+            this->parallel_solvers[i]->stop = true;
+        }
+    }
+    for (i=0; i<logic.config.parallel_threads; i++) {
+        if (threads[i].joinable()) {
+            threads[i].join();
+        }
+    }
+    delete[] threads;
+    delete[] results;
+    delete[] split_threads;
+    ::close(pipefd[0]);
+    ::close(pipefd[1]);
+    return status = result;
+}
+
+void MainSolver::solve_split(int i, int s, int wpipefd, std::mutex *mtx)
+{
+    char buf[3];
+    
+    buf[0] = (char)i;
+    buf[1] = (char)s;
+    
+    
+    SMTConfig new_config;
+    SymStore new_symstore;
+    IdentifierStore new_idstore;
+    SStore new_sortstore(new_config, new_idstore);
+    PtStore new_tstore(new_symstore, new_sortstore);
+    
+    //new_symstore.deserializeSymbols(&buf[buf[symstore_offs_idx]]);
+    //logic.compareSymStore(new_symstore);
+    //new_idstore.deserializeIdentifiers(&buf[buf[idstore_offs_idx]]);
+    //logic.compareIdStore(new_idstore);
+    //    logic.compareTermStore(new_tstore);
+    //new_tstore.deserializeTerms(&buf[buf[termstore_offs_idx]]);
+    
+    Logic new_logic(new_config, new_idstore, new_sortstore, new_symstore, new_tstore);
+    TermMapper new_tmap(new_logic);
+    Egraph new_uf_solver(new_config, new_sortstore, new_symstore, new_tstore, new_logic, new_tmap);
+    THandler new_thandler(new_uf_solver, new_config, new_tmap, new_logic);
+    
+    this->parallel_solvers[i] = new SimpSMTSolver(new_config, new_thandler);
+    //solve
+    
+    buf[2] = (char)-1;//(i%2?1:-1);
+    mtx->lock();
+    ::write(wpipefd, buf, 3);
+    mtx->unlock();
+}

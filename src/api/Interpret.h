@@ -61,7 +61,6 @@ class LetFrame {
 
 class Interpret {
   private:
-    SMTConfig       config;
     IdentifierStore idstore;  // Identifiers
     SStore          store;    // Sorts
     SymStore        symstore; // Symbols
@@ -155,6 +154,7 @@ class Interpret {
             uf_solver.solver = &sat_solver;
         };
 
+    SMTConfig       config;
     int interpFile(FILE* in);
     int interpInteractive(FILE* in);
     int interpPipe();

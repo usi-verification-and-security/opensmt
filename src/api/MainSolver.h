@@ -29,6 +29,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Egraph.h"
 #include "Tseitin.h"
 #include "simplifiers/TopLevelPropagate.h"
+#include <thread>
+#include <mutex>
 
 class sstat {
     char value;
@@ -102,6 +104,8 @@ class MainSolver {
 
 #endif
 
+    vec<SMTSolver*> parallel_solvers;
+    
   public:
     MainSolver(Logic& l, TermMapper& tm, Egraph& uf_s, SimpSMTSolver& sat_s, Tseitin& t) :
           logic(l)
@@ -123,7 +127,6 @@ class MainSolver {
 
 
     sstat simplifyFormulas(char** err_msg);
-    sstat solve           ()       { return status = sstat(ts.solve()); }
     sstat lookaheadSplit  (int d)  { return status = sstat(sat_solver.lookaheadSplit2(d)); }
     sstat getStatus       ()       { return status; }
     bool  solverEmpty     () const { return ts.solverEmpty(); }
@@ -131,4 +134,6 @@ class MainSolver {
     bool  writeState       (const char* file, CnfState& cs, char** msg);
     bool  writeSolverState (const char* file, char** msg);
     bool  writeSolverSplits(const char* file, char** msg);
+    sstat solve();
+    void solve_split(int i,int s, int wpipefd, std::mutex *mtx);
 };

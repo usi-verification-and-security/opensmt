@@ -131,13 +131,19 @@ int main( int argc, char * argv[] )
     FILE * fin = NULL;
     int opt, i;
     WorkerClient *w;
-    while ((opt = getopt(argc, argv, "hs:")) != -1) {
+    Interpret interpreter;
+    while ((opt = getopt(argc, argv, "hs:p:")) != -1) {
         switch (opt) {
+            case 'p':
+                if(!interpreter.config.sat_split_threads(atoi(optarg))){
+                    fprintf(stderr, "Invalid parallel argument: %s\n", optarg);
+                    exit(-1);
+                }
+                break;
             case 's':
                 for(i=0;optarg[i]!=':' && optarg[i]!='\0';i++){}
                 if(optarg[i]!=':'){
-                    fprintf(stderr, "Invalid host:port argument\n",
-                            argv[0]);
+                    fprintf(stderr, "Invalid host:port argument\n");
                     return 1;
                 }
                 optarg[i]='\0';
@@ -156,15 +162,13 @@ int main( int argc, char * argv[] )
                 return 0;
         }
     }
-
-  if (argc == 1) {
+    
+  if (argc - optind == 0) {
     fin = stdin;
-    Interpret interpreter;
     int rval = interpreter.interpInteractive(fin);
   }
   else {
-    Interpret interpreter;
-    for (int i = 1; i < argc; i++) {
+    for (int i = optind; i < argc; i++) {
       const char * filename = argv[i];
       assert( filename );
       if ( strncmp( filename, "--", 2 ) == 0

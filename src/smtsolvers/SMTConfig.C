@@ -448,6 +448,8 @@ SMTConfig::initializeConfig( )
 //  proof_set_inter_algo          = 1;
   proof_certify_inter           = 0;
   proof_random_seed	        = 0;
+    
+  parallel_threads = 0;
 }
 /*
 void SMTConfig::parseConfig ( char * f )
