@@ -1223,7 +1223,7 @@ sstat MainSolver::solve()
         result = sstat((int)buf[2]);
         if (result == s_Undef || result == s_False){
             if (result == s_False) {
-                printf("thread #%d: split #%d unsat\n",(int)buf[0],(int)buf[1]);
+                cerr << "thread:" << (int)buf[0] << " split #" << (int)buf[1] << " unsat\n";
                 results[(int)buf[1]] = s_False;
                 for (i=0; i<split_threads[(int)buf[1]].size(); i++) {
                     r=split_threads[(int)buf[1]][i];
@@ -1257,7 +1257,7 @@ sstat MainSolver::solve()
         }
         else {
             if (result == s_True) {
-                printf("thread #%d: split #%d sat\n",(int)buf[0],(int)buf[1]);
+                cerr << "thread:" << (int)buf[0] << " split #" << (int)buf[1] << " sat\n";
             }
             else{
                 cerr << "Error while solving split #" << (int)buf[1] << "\n";
