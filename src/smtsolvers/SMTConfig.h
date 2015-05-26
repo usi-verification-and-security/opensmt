@@ -237,6 +237,11 @@ public:
   inline ostream & getRegularOut   ( ) { return rocset ? out : cout; }
   inline ostream & getDiagnosticOut( ) { return docset ? err : cerr; }
   inline int       getRandomSeed   ( ) { return optionTable.contains(o_random_seed) ? optionTable[o_random_seed].getValue().numval : 91648253; }
+    inline bool setRandomSeed(int seed){
+        if (optionTable.contains(o_random_seed))
+            optionTable.remove(o_random_seed);
+        optionTable.insert(o_random_seed, Option(seed));
+    }
 
   inline void setProduceModels( ) { if ( produce_models != 0 ) return; produce_models = 1; }
   inline void setProduceProofs( ) { if ( print_proofs_smtlib2 != 0 ) return; print_proofs_smtlib2 = 1; }
@@ -401,7 +406,7 @@ public:
         optionTable[o_sat_dump_learnts].getValue().numval : 0; }
     
     bool sat_split_threads(int threads){
-        if (threads<2) return false;
+        if (threads<2 || parallel_threads) return false;
         optionTable.insert(o_sat_split_type, Option(spts_scatter));
         optionTable.insert(o_sat_split_units, Option(spts_time));
         optionTable.insert(o_sat_split_inittune, Option(double(2)));

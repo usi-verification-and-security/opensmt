@@ -157,7 +157,7 @@ int main( int argc, char * argv[] )
             case 'h':
                 //    context.getConfig( ).printHelp( );
             default: /* '?' */
-                fprintf(stderr, "Usage:\n\t%s filename [...]\n\t%s -s host:port\n\t%s -h\n",
+                fprintf(stderr, "Usage:\n\t%s [-p threads] filename [...]\n\t%s -s host:port\n\t%s -h\n",
                         argv[0], argv[0], argv[0]);
                 return 0;
         }

@@ -1174,9 +1174,24 @@ sstat MainSolver::solve()
     if (!(logic.config.parallel_threads && status == s_Undef))
         return status;
     
+    opensmt::stop = false;
+    
     if (pipe(pipefd) == -1) {
         cerr << "Pipe error";
         return status;
+    }
+    
+    const vec<ERef>& ens = this->uf_solver.getEnodes();
+    for (int i = 0; i < ens.size(); i++) {
+        ERef er = ens[i];
+        PTRef tr = uf_solver.ERefToTerm(er);
+        Pterm& t = logic.getPterm(tr);
+#ifdef TERMS_HAVE_EXPLANATIONS
+        t.setExpTimeStamp(0);
+        t.setExpReason(PtAsgn(PTRef_Undef, l_Undef));
+        t.setExpParent(PTRef_Undef);
+        t.setExpRoot(tr);
+#endif
     }
     
     split_threads = new vec<int>[sat_solver.splits.size()];
@@ -1216,13 +1231,15 @@ sstat MainSolver::solve()
                         this->parallel_solvers[r]->stop = true;
                     }
                 }
+                // may empty split_threads[buf[1]] ...
             }
             r=-1;
             min = logic.config.parallel_threads;
             for (i=0; i<sat_solver.splits.size(); i++) {
-                if (results[i]!=s_Undef)
+                if (results[i]!=s_Undef){
                     continue;
-                if (split_threads[i].size() < min) {
+                }
+                if (split_threads[i].size() <= min) {
                     r = i;
                     min = split_threads[i].size();
                 }
@@ -1273,29 +1290,85 @@ void MainSolver::solve_split(int i, int s, int wpipefd, std::mutex *mtx)
     buf[0] = (char)i;
     buf[1] = (char)s;
     
+    SMTConfig config;
+    SymStore symstore;
+    IdentifierStore idstore;
+    SStore sortstore(config, idstore);
+    PtStore tstore(symstore, sortstore);
     
-    SMTConfig new_config;
-    SymStore new_symstore;
-    IdentifierStore new_idstore;
-    SStore new_sortstore(new_config, new_idstore);
-    PtStore new_tstore(new_symstore, new_sortstore);
+    std::uniform_int_distribution<uint32_t> randuint(0, 0xFFFFFF);
+    std::random_device rd;
+    config.setRandomSeed(randuint(rd));
     
-    //new_symstore.deserializeSymbols(&buf[buf[symstore_offs_idx]]);
-    //logic.compareSymStore(new_symstore);
-    //new_idstore.deserializeIdentifiers(&buf[buf[idstore_offs_idx]]);
-    //logic.compareIdStore(new_idstore);
-    //    logic.compareTermStore(new_tstore);
-    //new_tstore.deserializeTerms(&buf[buf[termstore_offs_idx]]);
+    int* termstore_buf;
+    int* symstore_buf;
+    int* idstore_buf;
+    int* sortstore_buf;
+    int* logicstore_buf;
     
-    Logic new_logic(new_config, new_idstore, new_sortstore, new_symstore, new_tstore);
-    TermMapper new_tmap(new_logic);
-    Egraph new_uf_solver(new_config, new_sortstore, new_symstore, new_tstore, new_logic, new_tmap);
-    THandler new_thandler(new_uf_solver, new_config, new_tmap, new_logic);
+    this->logic.serializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf);
     
-    this->parallel_solvers[i] = new SimpSMTSolver(new_config, new_thandler);
-    //solve
+    Logic logic(config, idstore, sortstore, symstore, tstore);
+    logic.setLogic("QF_UF");
     
-    buf[2] = (char)-1;//(i%2?1:-1);
+    logic.deserializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf);
+    free(termstore_buf);
+    free(symstore_buf);
+    free(idstore_buf);
+    free(sortstore_buf);
+    free(logicstore_buf);
+    
+    TermMapper tmap(logic);
+    Egraph uf_solver(config, sortstore, symstore, tstore, logic, tmap);
+    THandler thandler(uf_solver, config, tmap, logic);
+    SimpSMTSolver sat_solver(config, thandler);
+    sat_solver.initialize();
+    this->parallel_solvers[i] = &sat_solver;
+    
+    CnfState cs;
+    this->ts.getVarMapping(cs);
+    
+    const vec<VarPtPair>& map = cs.getMap();
+    
+    for (int i = 0; i < map.size(); i++) {
+        if (i >= sat_solver.nVars()) {
+            int j = sat_solver.newVar();
+            assert(j == i);
+        }
+        if (tmap.varToTerm.size() > i)
+            assert(tmap.varToTerm[i] == map[i].tr);
+        else
+            tmap.varToTerm.push(map[i].tr);
+        
+        if (tmap.termToVar.contains(map[i].tr))
+            assert(tmap.termToVar[map[i].tr] == i);
+        else
+            tmap.termToVar.insert(map[i].tr, i);
+        if (tmap.varToTheorySymbol.size() > i)
+            assert(tmap.varToTheorySymbol[i] == logic.getPterm(map[i].tr).symb());
+        else {
+            if (logic.isTheoryTerm(map[i].tr)) {
+                tmap.varToTheorySymbol.push(logic.getPterm(map[i].tr).symb());
+                sat_solver.setFrozen(i, true);
+            }
+            else tmap.varToTheorySymbol.push(SymRef_Undef);
+        }
+        uf_solver.declareTermTree(map[i].tr);
+    }
+
+    
+    DimacsParser dp;
+    dp.parse_DIMACS_main(this->sat_solver.splits[s].splitToString(), sat_solver);
+
+    
+    Tseitin ts(tstore, config, symstore, sortstore, logic, tmap, thandler, sat_solver);
+    
+    MainSolver solver(logic, tmap, uf_solver, sat_solver, ts);
+
+    sstat result = solver.solve();
+    
+    buf[2] = (char)result.getValue();
+    
     mtx->lock();
     ::write(wpipefd, buf, 3);
     mtx->unlock();

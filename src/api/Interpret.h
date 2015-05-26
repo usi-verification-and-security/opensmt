@@ -60,7 +60,10 @@ class LetFrame {
 
 
 class Interpret {
-  private:
+public:
+    SMTConfig       config;
+
+private:
     IdentifierStore idstore;  // Identifiers
     SStore          store;    // Sorts
     SymStore        symstore; // Symbols
@@ -110,6 +113,7 @@ class Interpret {
     vec<SRef>                   vec_sr_empty; // For faster comparison with empty vec
     vec<PTRef>                  vec_ptr_empty;
   public:
+
     // Constructor initiates a default logic.  Not sure if this is the best way to go...
     Interpret() :
           store   (config, idstore)
@@ -154,7 +158,6 @@ class Interpret {
             uf_solver.solver = &sat_solver;
         };
 
-    SMTConfig       config;
     int interpFile(FILE* in);
     int interpInteractive(FILE* in);
     int interpPipe();
