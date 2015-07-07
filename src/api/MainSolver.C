@@ -1217,7 +1217,7 @@ sstat MainSolver::solve()
     // wait for messages from the threads
     while (1) {
         r=0;
-        while (r<3) r+=::read(pipefd[0], &buf[r], 3);
+        while (r<3) r+=::read(pipefd[0], &buf[r], 3-r);
         threads[(int)buf[0]].join();
         this->parallel_solvers[(int)buf[0]] = NULL;
         result = sstat((int)buf[2]);
@@ -1300,6 +1300,7 @@ void MainSolver::solve_split(int i, int s, int wpipefd, std::mutex *mtx)
     std::random_device rd;
     config.setRandomSeed(randuint(rd));
     
+    
     int* termstore_buf;
     int* symstore_buf;
     int* idstore_buf;
@@ -1355,7 +1356,6 @@ void MainSolver::solve_split(int i, int s, int wpipefd, std::mutex *mtx)
         }
         uf_solver.declareTermTree(map[i].tr);
     }
-
     
     DimacsParser dp;
     dp.parse_DIMACS_main(this->sat_solver.splits[s].splitToString(), sat_solver);
