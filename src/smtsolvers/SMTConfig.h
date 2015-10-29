@@ -557,6 +557,7 @@ public:
 
   // parameter for parallelism
   int          parallel_threads;
+
     
 private:
 

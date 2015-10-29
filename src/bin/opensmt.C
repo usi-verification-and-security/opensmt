@@ -132,7 +132,7 @@ int main( int argc, char * argv[] )
     int opt, i;
     WorkerClient *w;
     Interpret interpreter;
-    while ((opt = getopt(argc, argv, "hs:p:")) != -1) {
+    while ((opt = getopt(argc, argv, "hs:p:r:")) != -1) {
         switch (opt) {
             case 'p':
                 if(!interpreter.config.sat_split_threads(atoi(optarg))){
@@ -154,10 +154,22 @@ int main( int argc, char * argv[] )
                     std::cout << "Exception: " << s << "\n";
                 }
                 return 0;
+            case 'r':
+                for(i=0;optarg[i]!=':' && optarg[i]!='\0';i++){}
+                if(optarg[i]!=':'){
+                    fprintf(stderr, "Invalid host:port argument\n");
+                    return 1;
+                }
+                optarg[i]='\0';
+                NetCfg::server_host=std::string(optarg);
+                NetCfg::server_port=(uint16_t)atoi(&optarg[i+1]);
+
+
+                break;
             case 'h':
                 //    context.getConfig( ).printHelp( );
             default: /* '?' */
-                fprintf(stderr, "Usage:\n\t%s [-p threads] filename [...]\n\t%s -s host:port\n\t%s -h\n",
+                fprintf(stderr, "Usage:\n\t%s [-p threads] filename [...]\n\t%s -s host:port -r host:port\n\t%s -h\n",
                         argv[0], argv[0], argv[0]);
                 return 0;
         }

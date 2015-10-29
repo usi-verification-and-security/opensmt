@@ -58,6 +58,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "SolverTypes.h"
 //#include "LA.h"
+#include "net/net.h"
 
 #ifdef PRODUCE_PROOF
 #include "ProofGraph.h"
@@ -218,11 +219,13 @@ inline char* SplitData::splitToString()
 
 class CoreSMTSolver : public SMTSolver
 {
+    friend class Sharing;
   public:
 
     // Constructor/Destructor:
     //
     CoreSMTSolver(SMTConfig&, THandler&);
+    CoreSMTSolver(SMTConfig&, THandler&, Sharing&);
     ~CoreSMTSolver();
     void     initialize       ( );
 /*
@@ -235,7 +238,7 @@ class CoreSMTSolver : public SMTSolver
 #ifdef PRODUCE_PROOF
 	              , const ipartitions_t = 0 
 #endif
-		      );                                        // Add a clause to the solver. NOTE! 'ps' may be shrunk by this method!
+		      ,bool shared=false);                                        // Add a clause to the solver. NOTE! 'ps' may be shrunk by this method!
     // Solving:
     //
     bool    simplify     ();                        // Removes already satisfied clauses.
@@ -325,7 +328,8 @@ class CoreSMTSolver : public SMTSolver
 
     // Statistics: (read-only member variable)
     //
-    uint64_t starts, decisions, rnd_decisions, propagations, conflicts;
+    uint64_t starts, decisions, rnd_decisions, propagations, conflicts, conflicts_last_update;
+    Sharing clauses_sharing;
     uint64_t clauses_literals, learnts_literals, max_literals, tot_literals;
     double learnts_size;
     uint64_t all_learnts;
@@ -354,6 +358,7 @@ class CoreSMTSolver : public SMTSolver
     // Solver state:
     //
     bool                ok;               // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
+    uint32_t n_clauses;             // number of clauses in the problem
     vec<Clause*>        clauses;          // List of problem clauses.
     vec<Clause*>        learnts;          // List of learnt clauses.
     vec<Clause*>        tmp_reas;         // Reasons for minimize_conflicts 2

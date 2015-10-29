@@ -23,6 +23,8 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
+#ifndef API_INTERPRET_H
+#define API_INTERPRET_H
 
 #include "parsers/smt2new/smt2newcontext.h"
 #include "common/StringMap.h"
@@ -164,3 +166,5 @@ private:
 
     MainSolver    main_solver;
 };
+
+#endif

@@ -65,7 +65,6 @@ namespace opensmt
 //=================================================================================================
 // Constructor/Destructor:
 
-
 CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
   // Initializes configuration and egraph
 //  : SMTSolver        ( e, c )
@@ -82,10 +81,11 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
   , expensive_ccmin  ( true )
   // Statistics: (formerly in 'SolverStats')
   //
-  , starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0)
+  , starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), conflicts_last_update(0)
+  , clauses_sharing(Sharing())
   , clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0)
   // ADDED FOR MINIMIZATION
-  , learnts_size(0) , all_learnts(0)
+  , learnts_size(0) , all_learnts(0),n_clauses(0)
   , learnt_theory_conflicts(0)
   , ok                    (true)
   , cla_inc               (1)
@@ -270,7 +270,7 @@ bool CoreSMTSolver::addClause( vec<Lit>& ps
 #ifdef PRODUCE_PROOF
                              , ipartitions_t in
 #endif
-    )
+    , bool shared)
 {
   assert( decisionLevel() == 0 );
 #ifdef PRODUCE_PROOF
@@ -392,6 +392,8 @@ bool CoreSMTSolver::addClause( vec<Lit>& ps
 #endif
 
     clauses.push(c);
+    if(!shared)
+        this->n_clauses+=1;
     attachClause(*c);
 
 #ifdef VERBOSE_SAT
@@ -780,8 +782,8 @@ Lit CoreSMTSolver::pickBranchLit(int polarity_mode, double random_var_freq)
 
 	/*
 	if ( next != var_Undef )
-	  cerr << "Generated eij " << next << ", with value " << ( value( next ) == l_True 
-	      ? "T" 
+	  cerr << "Generated eij " << next << ", with value " << ( value( next ) == l_True
+	      ? "T"
 	      : value( next ) == l_False
 	      ? "F"
 	      : "U" ) << endl;
@@ -804,7 +806,7 @@ Lit CoreSMTSolver::pickBranchLit(int polarity_mode, double random_var_freq)
 	case polarity_false: sign = true;  break;
 	case polarity_user:  sign = polarity[next]; break;
 	case polarity_rnd:   sign = irand(random_seed, 2); break;
-	default: assert(false); 
+	default: assert(false);
       }
 
       return next == var_Undef ? lit_Undef : Lit(next, sign);
@@ -1477,12 +1479,18 @@ void CoreSMTSolver::reduceDB()
 #endif
 }
 
+
+//dovrebbe funzionare
 void CoreSMTSolver::removeSatisfied(vec<Clause*>& cs)
 {
   int i,j;
   for (i = j = 0; i < cs.size(); i++){
-    if (satisfied(*cs[i]))
-      removeClause(*cs[i]);
+    if (satisfied(*cs[i])) {
+        // check if removing from the problem clauses vector: if so then update the index
+        if(&cs == &this->clauses && j<this->n_clauses)
+            this->n_clauses--;
+        removeClause(*cs[i]);
+    }
     else
       cs[j++] = cs[i];
   }
@@ -1827,10 +1835,13 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
     // Added line
     if ( opensmt::stop ) return l_Undef;
 
-    if (conflicts % 1000 == 0){
-        if ( this->stop )
-            return l_Undef;
-    }
+      if (conflicts % 1000 == 0){
+          if ( this->stop )
+              return l_Undef;
+      }
+      if (conflicts % 1000 == 0){
+          this->clauses_sharing.clausesPublish(*this);
+      }
 
     if (resource_limit >= 0 && conflicts % 1000 == 0) {
         if ((resource_units == spm_time && time(NULL) >= next_resource_limit) ||
@@ -1838,6 +1849,13 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
             opensmt::stop = true; return l_Undef;
         }
     }
+
+      if(decisionLevel()==0){
+          if(conflicts>conflicts_last_update+1000) {
+              this->clauses_sharing.clausesUpdate(*this);
+              conflicts_last_update = conflicts;
+          }
+      }
 
     Clause* confl = propagate();
     if (confl != NULL){
@@ -2102,6 +2120,7 @@ double CoreSMTSolver::progressEstimate() const
 lbool CoreSMTSolver::solve( const vec<Lit> & assumps
                           , const unsigned max_conflicts )
 {
+    this->clauses_sharing.reset("asd");
   // If splitting is enabled refresh the options
   split_type     = config.sat_split_type();
   if (split_type != spt_none) {
@@ -2214,7 +2233,7 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
     // XXX
     status = search((int)nof_conflicts, (int)nof_learnts);
     nof_conflicts = restartNextLimit( nof_conflicts );
-    cstop = cstop || ( max_conflicts != 0 
+    cstop = cstop || ( max_conflicts != 0
 	&& nLearnts() > (int)max_conflicts + (int)old_conflicts );
 
     if ( config.sat_use_luby_restart )
@@ -3005,3 +3024,4 @@ void CoreSMTSolver::printStatistics( ostream & os )
   os << "; Init clauses.............: " << clauses.size() << endl;
   os << "; Variables................: " << nVars() << endl;
 }
+

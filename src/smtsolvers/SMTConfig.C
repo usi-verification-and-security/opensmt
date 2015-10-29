@@ -450,6 +450,7 @@ SMTConfig::initializeConfig( )
   proof_random_seed	        = 0;
     
   parallel_threads = 0;
+
 }
 /*
 void SMTConfig::parseConfig ( char * f )
