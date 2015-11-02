@@ -26,19 +26,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "Cnfizer.h"
 
-Cnfizer::Cnfizer( PtStore &      ptstore_
-                , SMTConfig&     config_
-                , SymStore&      symstore_
-                , SStore&        sstore_
+Cnfizer::Cnfizer( SMTConfig&     config_
                 , Logic&         logic_
                 , TermMapper&    tmap_
                 , THandler&      thandler_
                 , SimpSMTSolver& solver_
                 ) :
-       ptstore  (ptstore_ )
-     , config   (config_  )
-     , symstore (symstore_)
-     , sstore   (sstore_  )
+       config   (config_  )
      , logic    (logic_   )
      , tmap     (tmap_    )
      , thandler (thandler_)
@@ -85,40 +79,28 @@ const Lit Cnfizer::findLit(PTRef ptr) {
     bool sgn;
     Var v;
     tmap.getTerm(ptr, p, sgn);
-    bool isnew = false;
     if (!seen.contains(p)) {
         v = solver.newVar();
-        tmap.varToTheorySymbol.push(SymRef_Undef);
-        tmap.varToTerm.push(PTRef_Undef);
-        seen.insert(p, v);
-        isnew = true;
-    }
-    else
-        v = seen[p];
-
-    Lit l = Lit(v, sgn);
-
-
-    if (isnew) {
+        tmap.addBinding(v, p);
         if (logic.isTheoryTerm(p)) {
-            Pterm& t = ptstore[p];
-            tmap.varToTheorySymbol[v] = t.symb();
-//            tmap.theoryTerms.insert(p,true);
-            assert(logic.isEquality(t.symb())        ||
-                   logic.isDisequality(t.symb())     ||
+            assert(logic.isEquality(p)        ||
+                   logic.isDisequality(p)     ||
                    logic.getTerm_true() == p          ||
                    logic.getTerm_false() == p         ||
                    logic.isUP(p)                      );
         }
-        tmap.termToVar.insert(p, v);
-//        tmap.varToTerm.insert(v, p);
-        tmap.varToTerm[v] = p;
+        seen.insert(p, v);
         if (logic.isTheoryTerm(p))
             solver.setFrozen(v, true);
 #ifdef VERBOSE_CNFIZATION
 //        cerr << "Term " << logic.printTerm(p) << " maps to var " << v << endl;
 #endif
     }
+    else
+        v = seen[p];
+
+    Lit l = Lit(v, sgn);
+
     return l;
 }
 
@@ -127,8 +109,8 @@ const Lit Cnfizer::findLit(PTRef ptr) {
 bool Cnfizer::isNPAtom(PTRef r, PTRef& p) const {
     bool sign = false;
     while (true) {
-        if (ptstore[r].symb() == logic.getSym_not() ) {
-            r = ptstore[r][0];
+        if (logic.isNot(r)) {
+            r = logic.getPterm(r)[0];
             sign = !sign;
         }
         else {
@@ -263,7 +245,7 @@ bool Cnfizer::deMorganize( PTRef formula
                          )
 {
     assert(!logic.isAnd(formula));
-    Pterm& pt = ptstore[formula];
+    Pterm& pt = logic.getPterm(formula);
 
     bool rval = true;
 
@@ -479,7 +461,7 @@ bool Cnfizer::checkConj(PTRef e)
     if (logic.isLit(e)) // A Boolean constant
         return true;
 
-    Pterm& and_t = ptstore[e];
+    Pterm& and_t = logic.getPterm(e);
 
 
     if (and_t.symb() != logic.getSym_and())
@@ -491,10 +473,10 @@ bool Cnfizer::checkConj(PTRef e)
 
         e = to_process.last(); to_process.pop();
 
-        Pterm& and_t = ptstore[e];
+        Pterm& and_t = logic.getPterm(e);
 
         for (int i = 0; i < and_t.size(); i++) {
-            if (ptstore[and_t[i]].symb() == logic.getSym_and())
+            if (logic.isAnd(and_t[i]))
                 to_process.push(and_t[i]);
             else if (!checkClause(and_t[i])) // Slightly awkward to use the same cache...
                 return false;
@@ -514,8 +496,7 @@ bool Cnfizer::checkClause(PTRef e)
 {
     assert(e != PTRef_Undef);
 
-    Pterm& or_t = ptstore[e];
-    if (or_t.symb() != logic.getSym_or())
+    if (!logic.isOr(e))
         return false;
 
     vec<PTRef> to_process;
@@ -526,10 +507,9 @@ bool Cnfizer::checkClause(PTRef e)
 
         e = to_process.last(); to_process.pop();
 
-        Pterm& or_t = ptstore[e];
+        Pterm& or_t = logic.getPterm(e);
         for (int i = 0; i < or_t.size(); i++) {
-            Pterm& arg = ptstore[or_t[i]];
-            if (arg.symb() == logic.getSym_or())
+            if (logic.isOr(or_t[i]))
                 to_process.push(or_t[i]);
             else {
                 PTRef p;
@@ -544,35 +524,6 @@ bool Cnfizer::checkClause(PTRef e)
 }
 
 
-/*
-void Cnfizer::declareAtom(PTRef ptr, TRef symb) {
-    if (!processed.contains(ptr)) {
-        processed.insert(ptr, Lit(solver.newVar()));
-        if (symb == sym_TRUE) {
-            vec<Lit> cl_true;
-            cl_true.push(findLit(ptr));
-            bool rval = solver.addSMTClause(cl_true);
-            solver.setFrozen(var(findLit(ptr)), true);
-            assert(rval);
-        }
-        else if (symb == sym_FALSE) {
-            vec<Lit> cl_false;
-            cl_false.push(~findLit(ptr));
-            bool rval = solver.addSMTClause(cl_false);
-            solver.setFrozen(var(findLit(ptr)), false);
-            assert(rval);
-        }
-    }
-}
-*/
-
-/*
-Lit Cnfizer::getPureTerm(PTRef r) const {
-    PTRef p;
-    bool sgn;
-    getPureTerm(r, p, sgn); // remove the negations and compute the sign
-}
-*/
 
 //
 // Check whether it can be easily put in clausal form by means of DeMorgan's Rules
@@ -580,8 +531,8 @@ Lit Cnfizer::getPureTerm(PTRef r) const {
 bool Cnfizer::checkDeMorgan(PTRef e)
 {
     Map<PTRef,bool,PTRefHash,Equal<PTRef> > check_cache;
-    Pterm& not_t = ptstore[e];
-    if ( not_t.symb() == logic.getSym_not() && checkPureConj(not_t[0], check_cache) ) return true;
+    Pterm& not_t = logic.getPterm(e);
+    if (logic.isNot(e) && checkPureConj(not_t[0], check_cache) ) return true;
     else return false;
 }
 
@@ -596,13 +547,13 @@ bool Cnfizer::checkPureConj(PTRef e, Map<PTRef,bool,PTRefHash,Equal<PTRef> > & c
     to_process.push(e);
 
     // Topmost needs to be and
-    if (ptstore[e].symb() != logic.getSym_and()) return false;
+    if (!logic.isAnd(e)) return false;
 
     while (to_process.size() != 0) {
         e = to_process.last(); to_process.pop();
-        Pterm& and_t = ptstore[e];
+        Pterm& and_t = logic.getPterm(e);
 
-        if (and_t.symb() == logic.getSym_and())
+        if (logic.isAnd(e))
             for (int i = 0; i < and_t.size(); i++)
                 to_process.push(and_t[i]);
         else if (!logic.isLit(e))
@@ -621,12 +572,13 @@ bool Cnfizer::addClause( vec<Lit>& c const ipartitions_t& partition)
 #endif
 {
 #ifdef PEDANTIC_DEBUG
-//    cerr << "Adding clause ";
-//    for (int i = 0; i < c.size(); i++)
-//        cerr << (sign(c[i]) ? "not " : "")
-//             << logic.printTerm(tmap.varToTerm[var(c[i])])
-//             << " ";
-//    cerr << endl;
+    cerr << "== clause start" << endl;
+    for (int i = 0; i < c.size(); i++) {
+        cerr << " * " << (sign(c[i]) ? "not " : "")
+             << logic.printTerm(tmap.varToPTRef(var(c[i])))
+             << " ";
+        cerr << endl;
+    }
 #endif
 #ifndef PRODUCE_PROOF
     return solver.addSMTClause(c);
@@ -659,9 +611,8 @@ bool Cnfizer::giveToSolver( PTRef f
     //
     // A clause
     //
-    Pterm& cand_t = ptstore[f];
 
-    if (cand_t.symb() == logic.getSym_or()) {
+    if (logic.isOr(f)) {
         vec<PTRef> lits;
         retrieveClause(f, lits);
         for (int i = 0; i < lits.size(); i++)
@@ -676,7 +627,7 @@ bool Cnfizer::giveToSolver( PTRef f
     //
     // Conjunction
     //
-    assert(cand_t.symb() == logic.getSym_and());
+    assert(logic.isAnd(f));
     vec<PTRef> conj;
     retrieveTopLevelFormulae( f, conj );
     bool result = true;
@@ -701,8 +652,8 @@ void Cnfizer::retrieveTopLevelFormulae(PTRef f, vec<PTRef>& top_level_formulae)
     to_process.push(f);
     while (to_process.size() != 0) {
         f = to_process.last(); to_process.pop();
-        Pterm& cand_t = ptstore[f];
-        if (cand_t.symb() == logic.getSym_and())
+        Pterm& cand_t = logic.getPterm(f);
+        if (logic.isAnd(f))
             for (int i = cand_t.size() - 1; i >= 0; i--)
                 to_process.push(cand_t[i]);
         else if (!seen.contains(f)) {
@@ -759,20 +710,20 @@ vec<ValPair>* Cnfizer::getModel() {
     vec<lbool>& model = solver.model;
     vec<ValPair>* out = new vec<ValPair>();
     for (Var v = 0; v < model.size(); v++) {
-        if (tmap.varToTerm[v] != PTRef_Undef)
-            out->push(ValPair(tmap.varToTerm[v], model[v]));
+        if (logic.isTheoryTerm(tmap.varToPTRef(v)))
+            out->push(ValPair(tmap.varToPTRef(v), model[v] == l_True ? "true" : (model[v] == l_False ? "false" : "unknown") ));
     }
     return out;
 }
 
-lbool Cnfizer::getTermValue(PTRef tr) {
+lbool Cnfizer::getTermValue(PTRef tr) const {
     assert(solver.okay());
     vec<lbool>& model = solver.model;
     PTRef p;
     bool sgn;
     tmap.getTerm(tr, p, sgn);
-    if (tmap.termToVar.contains(p)) {
-        Var v = tmap.termToVar[p];
+    if (logic.getPterm(p).getVar() != var_Undef) {
+        Var v = logic.getPterm(p).getVar();
         lbool val = model[v];
         assert(val != l_Undef);
         return sgn == false ? val : (val == l_True ? l_False : l_True);
@@ -801,7 +752,7 @@ PTRef Cnfizer::expandItes(vec<PtChild>& term_list) {
             SRef sr = logic.getSym(pt.symb()).rsort();
             char* name;
             asprintf(&name, ".oite%d", logic.getPterm(tr).getId());
-            PTRef o_ite = logic.mkConst(sr, name);
+            PTRef o_ite = logic.mkVar(sr, name);
             // The old term goes to PtPair
             ites.push(PtPair(tr, o_ite));
 #ifdef PEDANTIC_DEBUG
@@ -869,13 +820,13 @@ void Cnfizer::getVarMapping(CnfState& cs)
     char* old;
 #endif
     for (int i = 0; i < solver.nVars(); i++) {
-        PTRef tr = tmap.varToTerm[i];
+        PTRef tr = tmap.varToPTRef(i);
         cs.addToMap({i, tr});
 #ifdef VERBOSE_FOPS
         old = out;
         char* map_s;
-        char* term_s = logic.printTerm(tmap.varToTerm[i]);
-        asprintf(&map_s, "%d -> %d [%s]", i, tmap.varToTerm[i].x, term_s);
+        char* term_s = logic.printTerm(tmap.varToPTRef(i));
+        asprintf(&map_s, "%d -> %d [%s]", i, tmap.varToPTRef(i).x, term_s);
         free(term_s);
         asprintf(&out, "%s%s\n", old, map_s);
         free(map_s);

@@ -1,0 +1,74 @@
+(error "No such symbol ?v_52: Unknown symbol `?v_52'")
+
+; The symbol ?v_52 is not defined for the following sorts:
+; arg 0: Bool
+; There are no candidates.
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+; Failed in parsing the let scoped term
+(error "assertion returns an unknown sort")
+
+sat

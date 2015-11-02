@@ -34,11 +34,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 int main(int argc, char** argv) {
     SMTConfig cfg(argc, argv);
-    IdentifierStore id_store;
-    SStore sort_store(cfg, id_store);
-    SymStore sym_store;
-    PtStore term_store(sym_store, sort_store);
-    Logic logic(cfg, id_store, sort_store, sym_store, term_store);
+    Logic logic(cfg);
 
     assert(logic.setLogic("QF_UF"));
     SRef bsr = logic.getSort_bool();
@@ -51,7 +47,7 @@ int main(int argc, char** argv) {
     args1.push(t2);
     char* msg;
     // No simplification
-    cerr << "Term " << logic.getSym_and().x << " (" << sym_store.getName(logic.getSym_and()) << ")" << (sym_store[logic.getSym_and()].commutes() ? " commutes." : " does not commute.") << endl;
+    cerr << "Term " << logic.getSym_and().x << " (" << logic.getSymName(logic.getSym_and()) << ")" << (logic.commutes(logic.getSym_and()) ? " commutes." : " does not commute.") << endl;
     PTRef and1 = logic.insertTerm(logic.getSym_and(), args1, &msg);
 
     vec<PTRef> args2;
@@ -66,7 +62,7 @@ int main(int argc, char** argv) {
     PTRef or1 = logic.insertTerm(logic.getSym_or(), args3, &msg);
 
     Pterm& or1_t_old = logic.getPterm(or1);
-    cout << "before: " << term_store.printTerm(or1, true) << endl;
+    cout << "before: " << logic.printTerm(or1, true) << endl;
     cout << " - old term num " << or1.x << endl;
     cout << " - old term size " << or1_t_old.size() << endl;
     cout << " - old term children " << endl;

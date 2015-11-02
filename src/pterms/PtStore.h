@@ -36,6 +36,21 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //        return (uint32_t)s; }
 //};
 
+class PtermIter {
+  private:
+    int i;
+    vec<PTRef>& idToPTRef;
+  public:
+    PtermIter(vec<PTRef>& in) : i(0), idToPTRef(in) {}
+    PTRef operator* () {
+        if (i < idToPTRef.size())
+            return idToPTRef[i];
+        else
+            return PTRef_Undef;
+    }
+    const PtermIter& operator++ () { i++; return *this; }
+};
+
 class PtStore {
 #ifndef TERMS_HAVE_EXPLANATIONS
     class Explanation {
@@ -148,6 +163,8 @@ class PtStore {
 //        cplx_keys.push(k);
     }
     PTRef getFromCplxMap(PTLKey& k) { return cplx_map[k]; }
+
+    PtermIter getPtermIter() { return PtermIter(idToPTRef); }
 
     int* serializeTerms() const;
     void deserializeTerms(const int*);

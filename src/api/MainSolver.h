@@ -25,10 +25,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 #include "Logic.h"
+#include "Theory.h"
 #include "SimpSMTSolver.h"
 #include "Egraph.h"
 #include "Tseitin.h"
-#include "simplifiers/TopLevelPropagate.h"
 #include <thread>
 #include <mutex>
 #include <random>
@@ -72,15 +72,17 @@ class MainSolver {
         bool done;
         pi(PTRef x_) : x(x_), done(false) {}
     };
-    Logic&         logic;
-    TermMapper&    tmap;
-    Egraph&        uf_solver;
-    SimpSMTSolver& sat_solver;
-    Tseitin&       ts;
-    vec<PTRef>     formulas;
-    sstat          status;     // The status of the last solver call (initially s_Undef)
+    Logic&        logic;
+    TermMapper&   tmap;
+    SMTConfig&    config;
+    THandler&     thandler;
+    vec<DedElem>  deductions;
+    SimpSMTSolver sat_solver;
+    Tseitin       ts;
+    vec<PTRef>    formulas;
+    sstat         status;     // The status of the last solver call (initially s_Undef)
 
-    TopLevelPropagator tlp;
+    bool          binary_init; // Was the formula loaded from .osmt2
 
     class FContainer {
         PTRef   root;
@@ -91,43 +93,54 @@ class MainSolver {
         PTRef getRoot   ()        const         { return root; }
     };
 
-    void expandItes(FContainer& fc, vec<PtChild>& terms) const;
+    void expandItes(FContainer& fc, vec<PtChild>& terms);
 
     sstat giveToSolver(PTRef root) {
         if (ts.cnfizeAndGiveToSolver(root) == l_False) return s_False;
         return s_Undef; }
 
     FContainer simplifyEqualities(vec<PtChild>& terms);
-    FContainer propFlatten(FContainer fc);
+
+    void computeIncomingEdges(PTRef tr, Map<PTRef,int,PTRefHash>& PTRefToIncoming);
+    PTRef rewriteMaxArity(PTRef, Map<PTRef,int,PTRefHash>&);
+    PTRef mergePTRefArgs(PTRef, Map<PTRef,PTRef,PTRefHash>&, Map<PTRef,int,PTRefHash>&);
 #ifdef ENABLE_SHARING_BUG
     FContainer mergeEnodeArgs(PTRef fr, Map<PTRef, PTRef, PTRefHash>& cache, Map<PTRef, int, PTRefHash>& occs);
     FContainer rewriteMaxArity(FContainer fc, Map<PTRef, int, PTRefHash>& occs);
-
 #endif
 
-    vec<SMTSolver*> parallel_solvers;
-    
+    vec<MainSolver*> parallel_solvers;
+
   public:
-    MainSolver(Logic& l, TermMapper& tm, Egraph& uf_s, SimpSMTSolver& sat_s, Tseitin& t) :
-          logic(l)
-        , tmap(tm)
-        , uf_solver(uf_s)
-        , sat_solver(sat_s)
-        , ts(t)
-        , tlp(logic,ts)
+    MainSolver(Theory& theory, SMTConfig& c)
+        : logic(theory.getLogic())
+        , tmap(theory.getTMap())
+        , config(c)
         , status(s_Undef)
-        { formulas.push(logic.getTerm_true()); }
+        , thandler(theory.getTHandler())
+        , sat_solver( config , thandler )
+        , ts( config
+            , logic
+            , tmap
+            , thandler
+            , sat_solver )
+        , binary_init(false)
+{
+    formulas.push(logic.getTerm_true());
+}
 
     sstat insertFormula(PTRef root, char** msg) {
-        if (logic.getSort(root) != logic.getSort_bool()) {
+        if (logic.getSortRef(root) != logic.getSort_bool()) {
             asprintf(msg, "Top-level assertion sort must be %s, got %s",
-                     Logic::s_sort_bool, logic.getSortName(logic.getSort(root)));
+                     Logic::s_sort_bool, logic.getSortName(logic.getSortRef(root)));
             return s_Error; }
         formulas.push(root);
         return s_Undef; }
 
+    void initialize() { sat_solver.initialize(); ts.initialize(); }
 
     sstat simplifyFormulas(char** err_msg);
+    sstat solve           ();
     sstat lookaheadSplit  (int d)  { return status = sstat(sat_solver.lookaheadSplit2(d)); }
     sstat getStatus       ()       { return status; }
     bool  solverEmpty     () const { return ts.solverEmpty(); }
@@ -135,6 +148,9 @@ class MainSolver {
     bool  writeState       (const char* file, CnfState& cs, char** msg);
     bool  writeSolverState (const char* file, char** msg);
     bool  writeSolverSplits(const char* file, char** msg);
-    sstat solve();
+    void  deserializeSolver(const int* termstore_buf, const int* symstore_buf, const int* idstore_buf, const int* sortstore_buf, const int* logicdata_buf, CnfState& cs);
+    lbool getTermValue     (PTRef tr) const { return ts.getTermValue(tr); }
+    ValPair getValue       (PTRef tr) const;
     void solve_split(int i,int s, int wpipefd, std::mutex *mtx);
+    void stop() { sat_solver.stop = true; }
 };

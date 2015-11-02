@@ -29,145 +29,55 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <sys/wait.h>
 #include <assert.h>
 
-//
-// Return the MiniSAT Variable corresponding to
-// the positive input enode. Creates the correspondence
-// by adding a new MiniSAT variable, if it doesn't exists
-//
-// This is done in Tseitin translation
-//
-//Var THandler::enodeToVar( Enode * atm )
-//{
-//  assert( atm );
-//  assert( atm->isAtom( ) );
-//  assert( !atm->isTrue( ) );
-//  assert( !atm->isFalse( ) );
-//
-//  if ( enode_id_to_var.size( ) <= (unsigned)atm->getId( ) )
-//    enode_id_to_var.resize( atm->getId( ) + 1, var_Undef );
-//
-//  Var v = enode_id_to_var[ atm->getId( ) ];
-//
-//  if ( v == var_Undef )
-//  {
-//    lbool state = l_Undef;
-//
-//    // Store TAtom and give later
-//    // unless we are just dumping
-//    // a random interpolant
-//    if ( atm->isTAtom( )
-//      && config.sat_dump_rnd_inter == 0 )
-//    {
-//      // Give to theory solvers right away
-//      if ( config.incremental )
-//	egraph.inform( atm );
-//      // Accumulate and give to theory solvers later
-//      else
-//      {
-//	if ( static_cast< int >( tatoms_seen.size( ) ) <= atm->getId( ) )
-//	  tatoms_seen.resize( atm->getId( ) + 1, false );
-//	if ( tatoms_seen[ atm->getId( ) ] == false )
-//	{
-//	  tatoms_seen[ atm->getId( ) ] = true;
-//	  tatoms_list.push_back( atm );
-//	  tatoms_give.push_back( true );
-//	}
-//      }
-//    }
-//
-//    if ( state == l_Undef )
-//    {
-//      // There is no variable in MiniSAT for this enode
-//      // Create a new variable and store the correspondence
-//
-//      // Assign custom polarity if any
-//      if ( atm->isTAtom( ) && atm->getDecPolarity( ) != l_Undef )
-//	v = solver.newVar( atm->getDecPolarity( ) == l_False );
-//      else
-//      {
-//	if ( config.sat_polarity_mode == 3 )
-//	  v = solver.newVar( false ); // Positive polarity
-//	else if ( config.sat_polarity_mode == 4 )
-//	  v = solver.newVar( true );  // Negative polarity
-//	else
-//	{
-//	  assert( (config.sat_polarity_mode == 5 && !atm->isTAtom( ))
-//	       || (0 <= config.sat_polarity_mode && config.sat_polarity_mode <= 2 ) );
-//	  double random_seed = 91648253;
-//	  v = solver.newVar( irand( random_seed, 2 ) );
-//	}
-//      }
-//
-//      if ( atm->isTAtom( ) )
-//      {
-//	solver.setFrozen( v, true );
-//	tatoms ++;
-//      }
-//      else
-//	batoms ++;
-//
-//      enode_id_to_var[ atm->getId( ) ] = v;
-//
-//      if ( var_to_enode.size( ) <= (unsigned)v )
-//	var_to_enode.resize( v + 1, NULL );
-//
-//      assert( var_to_enode[ v ] == NULL );
-//      var_to_enode[ v ] = atm;
-//    }
-//    else if ( state == l_False )
-//    {
-//      v = var_False;
-//    }
-//    else
-//    {
-//      v = var_True;
-//    }
-//  }
-//
-//  assert( v != var_Undef );
-//  return v;
-//}
+#include "LRASolver.h"
 
-//
-// Return the MiniSAT literal corresponding to
-// the input enode literal. Creates the correspondence
-// by adding a new MiniSAT variable, if it doesn't exists
-//
-// Done in Tseitin
-//Lit THandler::enodeToLit( Enode * elit )
-//{
-//  assert( elit );
-//  assert( elit->isLit( ) );
-//
-//  bool negated = elit->isNot( );
-//  Enode * atm = negated ? elit->getCdr( )->getCar( ) : elit;
-//  Var v = enodeToVar( atm );
-//  return Lit( v, negated );
-//}
+// Declare a tree of terms
+void THandler::declareTermTree(PTRef tr)
+{
+    vec<PtChild> terms;
+    getTermList(tr, terms, getLogic());
 
-// Also in Tseitin encoder?
-//Enode * THandler::varToEnode( Var v )
-//{
-//  assert( v < (int)var_to_enode.size( ) );
-//  assert( var_to_enode[ v ] != NULL );
-//  return var_to_enode[ v ];
-//}
+    Map<PTRef,bool,PTRefHash> tr_map;
+    for (int i = 0; i < terms.size(); i++)
+    {
+        if(!tr_map.contains(terms[i].tr))
+        {
+            declareTerm(terms[i].tr);
+            tr_map.insert(terms[i].tr, true);
+        }
+    }
+}
 
-// Don't know where this is used
-//void THandler::clearVar( Var v )
-//{
-//  assert( var_to_enode[ v ] != NULL );
-//  Enode * e = var_to_enode[ v ];
-//  assert( e->getId( ) < static_cast< int >( enode_id_to_var.size( ) ) );
-//  assert( enode_id_to_var[ e->getId( ) ] == v );
-//  var_to_enode[ v ] = NULL;
-//  enode_id_to_var[ e->getId( ) ] = var_Undef;
-//}
+// Declare term to the appropriate solver
+void THandler::declareTerm(PTRef tr)
+{
+    for (int i = 0; i < tsolvers.size(); i++)
+        if (tsolvers[i] != NULL)
+            tsolvers[i]->declareTerm(tr);
+}
 
-// Push newly found literals from trail to egraph
+ValPair THandler::getValue(PTRef tr) const
+{
+    for (int i = 0; i < tsolvers.size(); i++)
+        if (tsolvers[i] != NULL) {
+            ValPair vp = tsolvers[i]->getValue(tr);
+            if (vp != ValPair_Undef)
+                return vp;
+        }
+    return ValPair(tr, "unknown");
+}
+
+void THandler::computeModel()
+{
+    for (int i = 0; i < tsolvers.size(); i++)
+        if (tsolvers[i] != NULL)
+            tsolvers[i]->computeModel();
+}
+
+// Push newly found literals from trail to the solvers
 bool THandler::assertLits(vec<Lit>& trail)
 {
-    lbool res = l_Undef;
+    bool res = true;
 
     assert( checked_trail_size == stack.size_( ) );
     assert( (int)stack.size( ) <= trail.size( ) );
@@ -177,63 +87,29 @@ bool THandler::assertLits(vec<Lit>& trail)
 #endif
 
     for ( int i = checked_trail_size;
-          i < trail.size( ) && (res != l_False);
+          i < trail.size( ) && (res != false);
           i ++ ) {
         const Lit l = trail[ i ];
         const Var v = var( l );
 
-        PTRef pt_r = tmap.varToTerm[ v ];
+        PTRef pt_r = tmap.varToPTRef(v);
         stack.push( pt_r );
+        if (!getLogic().isTheoryTerm(pt_r)) continue;
+        assert(getLogic().isTheoryTerm(pt_r));
 
-        if (tmap.varToTheorySymbol[v] == SymRef_Undef) continue;
-        assert(logic.isTheoryTerm(pt_r));
 
-
-        if ( pt_r == logic.getTerm_true() )       { assert(sign(l) == false); continue; }
-        else if ( pt_r == logic.getTerm_false() ) { assert(sign(l) == true ); continue; }
+        if ( pt_r == getLogic().getTerm_true() )       { assert(sign(l) == false); continue; }
+        else if ( pt_r == getLogic().getTerm_false() ) { assert(sign(l) == true ); continue; }
 
 #ifdef VERBOSE_EUF
         // We are interested only in theory atoms from here onwards
-        cerr << "Asserting " << (sign(l) ? "not " : "")  << logic.printTerm(pt_r) << endl;
-//        cerr << "Asserting " << (sign(l) ? "not " : "")  << logic.printTerm(pt_r) << " (" << pt_r.x << ")" << endl;
+        cerr << "Asserting " << (sign(l) ? "not " : "")  << getLogic().printTerm(pt_r) << endl;
+//        cerr << "Asserting " << (sign(l) ? "not " : "")  << getLogic().printTerm(pt_r) << " (" << pt_r.x << ")" << endl;
 
 //        cout << printAssertion(l);
 #endif
 
-        // Push backtrack point
-        egraph.pushBacktrackPoint( );
-
-        Pterm& pt = logic.term_store[pt_r];
-
-        // sign(l) == true if l is negated
-        // Watch out here! the second argument of PtAsgn constructor is
-        // in fact lbool!
-        if (logic.isEquality(pt.symb()) && !sign(l)) {
-            egraph.setPolarity(pt_r, l_True);
-            res = egraph.addEquality(PtAsgn(pt_r, l_True));
-        }
-        else if (logic.isEquality(pt.symb()) && sign(l)) {
-            egraph.setPolarity(pt_r, l_False);
-            res = egraph.addDisequality(PtAsgn(pt_r, l_False));
-        }
-        else if (logic.isDisequality(pt.symb()) && !sign(l)) {
-            egraph.setPolarity(pt_r, l_True);
-            res = egraph.addDisequality(PtAsgn(pt_r, l_True));
-        }
-        else if (logic.isDisequality(pt.symb()) && sign(l)) {
-            egraph.setPolarity(pt_r, l_False);
-            res = egraph.addEquality(PtAsgn(pt_r, l_False));
-        }
-        else if (logic.isUP(pt_r) && !sign(l)) {
-            egraph.setPolarity(pt_r, l_True);
-            res = egraph.addTrue(pt_r) == false ? l_False : l_Undef;
-        }
-        else if (logic.isUP(pt_r) && sign(l)) {
-            egraph.setPolarity(pt_r, l_False);
-            res = egraph.addFalse(pt_r) == false ? l_False : l_Undef;
-        }
-        else
-            assert(false);
+        res = assertLit(PtAsgn(pt_r, sign(l) ? l_False : l_True));
 
 
 #ifdef VERBOSE_EUF
@@ -259,17 +135,64 @@ bool THandler::assertLits(vec<Lit>& trail)
 //    cout << tmp << endl;
 //    ::free(tmp);
 #endif
-    return res != l_False;
+    return res;
+}
+
+bool THandler::assertLit(PtAsgn asgn)
+{
+    bool res = true;
+    // Push backtrack points and the assignments to the theory solvers
+    // according to the schedule
+    for (int i = 0; i < solverSchedule.size(); i++) {
+        int idx = solverSchedule[i];
+        assert(tsolvers[idx] != NULL);
+        tsolvers[idx]->pushBacktrackPoint();
+        bool res_new = tsolvers[idx]->assertLit(asgn);
+        res = (res == false) ? false : res_new;
+    }
+    return res;
+}
+
+char* THandler::printValue(PTRef tr)
+{
+    char* out = (char*)malloc(1);
+    out[0] = '\0';
+    for (int i = 0; i < tsolvers.size(); i++) {
+        if (tsolvers[i] != NULL) {
+            char* old_out = out;
+            asprintf(&out, "%s\n%s", old_out, tsolvers[i]->printValue(tr));
+            free(old_out);
+        }
+    }
+    return out;
+}
+
+char* THandler::printExplanation(PTRef tr)
+{
+    char* out = (char*)malloc(1);
+    out[0] = '\0';
+    for (int i = 0; i < tsolvers.size(); i++) {
+        if (tsolvers[i] != NULL) {
+            char* old_out = out;
+            asprintf(&out, "%s\n%s", old_out, tsolvers[i]->printExplanation(tr));
+            free(old_out);
+        }
+    }
+    return out;
 }
 
 // Check the assignment with equality solver
 bool THandler::check( bool complete, vec<Lit>& ) {
-    const bool res = egraph.check( complete );
+    int i;
+    for (i = 0; i < tsolvers.size(); i++)
+        if (tsolvers[i] != NULL)
+            if (tsolvers[i]->check(complete) == false) break;
+
+    return i == tsolvers.size();
 
 //  if ( complete && config.certification_level > 2 )
 //    verifyCallWithExternalTool( res, trail.size( ) - 1 );
 
-    return res;
 }
 
 void THandler::backtrack(int lev)
@@ -280,17 +203,19 @@ void THandler::backtrack(int lev)
         stack.pop( );
 
         // It was var_True or var_False
-        if ( e == logic.getTerm_true() || e == logic.getTerm_false() ) continue;
+        if ( e == getLogic().getTerm_true() || e == getLogic().getTerm_false() ) continue;
 
 //        if ( !tmap.theoryTerms.contains(e) ) continue;
-        if (!logic.isTheoryTerm(e)) continue;
+        if (!getLogic().isTheoryTerm(e)) continue;
 #ifdef VERBOSE_EUF
 //        printf("Backtracking term %s\n", logic.term_store.printTerm(e));
 #endif
-        egraph.popBacktrackPoint( );
+        //egraph.popBacktrackPoint( );
 
-        assert(egraph.hasPolarity(e));
-        egraph.clearPolarity(e);
+        for (int i = 0; i < tsolvers.size(); i++)
+            if (tsolvers[i] != NULL)
+                tsolvers[i]->popBacktrackPoint();
+
 //    assert( e->hasPolarity( ) );
 //    assert( e->getPolarity( ) == l_True
 //       || e->getPolarity( ) == l_False );
@@ -308,7 +233,6 @@ void THandler::getConflict (
         vec<Lit> & conflict
         , vec<int>& level
         , int & max_decision_level
-        , vec<char>& assigns
 #ifdef PEDANTIC_DEBUG
         , vec<Lit>& trail
 #endif
@@ -320,7 +244,15 @@ void THandler::getConflict (
     // wants a clause we store it in the form ( l1 | ... | ln )
     // where li is the literal corresponding with ei with polarity !pi
     vec<PtAsgn> explanation;
-    egraph.getConflict(false, explanation);
+    int i;
+    for (i = 0; i < tsolvers.size(); i++) {
+        if (tsolvers[i] != NULL && tsolvers[i]->hasExplanation()) {
+            tsolvers[i]->getConflict(false, explanation);
+            break;
+        }
+    }
+    assert(i != tsolvers.size());
+
 #ifdef VERBOSE_EUF
 //    cout << printExplanation(explanation, assigns);
 #endif
@@ -341,7 +273,7 @@ void THandler::getConflict (
     Enode * ei  = *it;
     assert( ei->hasPolarity( ) );
     assert( ei->getPolarity( ) == l_True
-	 || ei->getPolarity( ) == l_False );
+         || ei->getPolarity( ) == l_False );
     bool negate = ei->getPolarity( ) == l_False;
 
     Var v = enodeToVar( ei );
@@ -362,7 +294,7 @@ void THandler::getConflict (
         PtAsgn ta = explanation.last( );
         explanation.pop( );
 #ifdef VERBOSE_EUF
-        cerr << " " << (ta.sgn == l_False ? "" : "not ") << logic.printTerm(ta.tr) << endl;
+        cerr << " " << (ta.sgn == l_False ? "" : "not ") << getLogic().printTerm(ta.tr) << endl;
 #endif
 //    assert( ei->hasPolarity( ) );
 //    assert( ei->getPolarity( ) == l_True
@@ -413,26 +345,23 @@ Enode * THandler::getInterpolants( )
 // appearing only in clauses that are tautological.  We check this here, but it
 // would be better to remove them from egraph after simplifications are done.
 //
-Lit THandler::getDeduction(Lit& reason) {
-    PtAsgn_reason e;
+Lit THandler::getDeduction() {
+    PtAsgn_reason e = PtAsgn_reason_Undef;
     while (true) {
-        e = egraph.getDeduction();
-
+        for (int i = 0; i < tsolvers.size(); i++) {
+            if (tsolvers[i] != NULL) e = tsolvers[i]->getDeduction();
+            if (e.tr != PTRef_Undef) break;
+        }
         if ( e.tr == PTRef_Undef ) {
-            reason = lit_Undef;
             return lit_Undef;
         }
-        assert(e.reason != PTRef_Undef);
-        assert(e.sgn != l_Undef);
+        //assert(e.reason != PTRef_Undef);
+        //assert(e.sgn != l_Undef);
 #ifdef PEDANTIC_DEBUG
         if (!tmap.hasLit(e.tr))
-            cerr << "Missing (optimized) deduced literal ignored: " << logic.printTerm(e.tr) << endl;
+            cerr << "Missing (optimized) deduced literal ignored: " << getLogic().printTerm(e.tr) << endl;
 #endif
         if (!tmap.hasLit(e.tr)) continue;
-        reason = tmap.getLit(e.reason);
-        assert(reason != lit_Undef);
-        assert(egraph.isDeduced(e.tr));
-        assert(egraph.getDeduced(e.tr) == e.sgn);
         break;
     }
     return e.sgn == l_True ? tmap.getLit(e.tr) : ~tmap.getLit(e.tr);
@@ -450,7 +379,7 @@ Lit THandler::getDeduction(Lit& reason) {
 }
 
 Lit THandler::getSuggestion( ) {
-    PTRef e = egraph.getSuggestion( );
+    PTRef e = PTRef_Undef; // egraph.getSuggestion( );
 
     if ( e == PTRef_Undef )
         return lit_Undef;
@@ -475,11 +404,12 @@ void THandler::getReason( Lit l, vec< Lit > & reason, vec<char>& assigns )
 #endif
 
     Var   v = var(l);
-    PTRef e = tmap.varToTerm[ v ];
+    PTRef e = tmap.varToPTRef(v);
 
     // It must be a TAtom and already disabled
-    assert( logic.isTheoryTerm(e) );
-    assert(!egraph.hasPolarity(e));
+    assert( getLogic().isTheoryTerm(e) );
+    assert(deductions[v].polarity != l_Undef);
+    TSolver* solver = tsolvers[deductions[v].deducedBy.id];
 //  assert( !e->hasPolarity( ) );
 //  assert( e->isDeduced( ) );
 //  assert( e->getDeduced( ) != l_Undef );           // Last assigned deduction
@@ -489,7 +419,7 @@ void THandler::getReason( Lit l, vec< Lit > & reason, vec<char>& assigns )
 #else
 #endif
 
-    egraph.pushBacktrackPoint( );
+    solver->pushBacktrackPoint( );
 
     // Assign reversed polarity temporairly
 //  e->setPolarity( e->getDeduced( ) == l_True ? l_False : l_True );
@@ -498,18 +428,8 @@ void THandler::getReason( Lit l, vec< Lit > & reason, vec<char>& assigns )
 //                   egraph.check( true );
     lbool res = l_Undef;
     assert(value(l, assigns) == l_Undef);
-    if (logic.isEquality(e)) {
-        // Assign temporarily opposite polarity
-        lbool p = sign(l) ? l_True : l_False;
-        egraph.setPolarity(e, p);
-        res = sign(l) ? egraph.addEquality(PtAsgn(e, p)) : egraph.addDisequality(PtAsgn(e, p));
-    }
-    else {
-        assert(logic.isUP(e));
-        egraph.setPolarity(e, sign(l) ? l_True : l_False);
-        bool ok = sign(l) ? egraph.addTrue(e) : egraph.addFalse(e);
-        res = ok == false ? l_False : l_Undef;
-    }
+    // Assign temporarily opposite polarity
+    res = solver->assertLit(PtAsgn(e, sign(~l) ? l_False : l_True)) == false ? l_False : l_Undef;
 
 #ifdef PEDANTIC_DEBUG
     // Result must be false
@@ -523,13 +443,13 @@ void THandler::getReason( Lit l, vec< Lit > & reason, vec<char>& assigns )
 #else
     if ( res != l_False ) {
         cout << endl << "unknown" << endl;
-        exit(1);
+        assert(false);
     }
 #endif
 
     // Get Explanation
     vec<PtAsgn> explanation;
-    egraph.getConflict( true, explanation );
+    solver->getConflict( true, explanation );
     assert(explanation.size() > 0);
 
 //    if ( config.certification_level > 0 )
@@ -574,10 +494,10 @@ void THandler::getReason( Lit l, vec< Lit > & reason, vec<char>& assigns )
 //        }
     }
 
-    egraph.popBacktrackPoint( );
+    solver->popBacktrackPoint( );
 
     // Resetting polarity
-    egraph.clearPolarity(e);
+//    egraph.clearPolarity(e);
 //    e->resetPolarity( );
 #ifdef PEDANTIC_DEBUG
     return true;
@@ -938,7 +858,7 @@ const char* THandler::printAsrtClause(vec<Lit>& r) {
     for (int i = 0; i < r.size(); i++) {
         Var v = var(r[i]);
         bool sgn = sign(r[i]);
-        os << (sgn ? "not " : "") << logic.printTerm(tmap.varToTerm[var(r[i])]) << " ";
+        os << (sgn ? "not " : "") << getLogic().printTerm(tmap.varToPTRef(var(r[i]))) << " ";
     }
     return os.str().c_str();
 }
@@ -967,10 +887,10 @@ std::string THandler::printAssertion(Lit assertion) {
     stringstream os;
     os << "; assertions ";
     Var v = var(assertion);
-    PTRef pt_r = tmap.varToTerm[v];
+    PTRef pt_r = tmap.varToPTRef(v);
     if (sign(assertion))
         os << "!";
-    os << logic.term_store.printTerm(pt_r, true) << "[var " << v << "] " << endl;
+    os << getLogic().term_store.printTerm(pt_r, true) << "[var " << v << "] " << endl;
     return os.str();
 }
 
@@ -980,13 +900,13 @@ std::string THandler::printExplanation(vec<PtAsgn>& explanation, vec<char>& assi
     for ( int i = 0 ; i < explanation.size( ) ; i ++ ) {
         if ( i > 0 )
             os << ", ";
-        Var v = tmap.termToVar[explanation[i].tr];
+        Var v = tmap.getVar(explanation[i].tr);
         lbool val = toLbool(assigns[v]);
         assert(val != l_Undef);
         if ( val == l_False )
             os << "!";
 
-        os << logic.term_store.printTerm(explanation[i].tr);
+        os << getLogic().term_store.printTerm(explanation[i].tr);
         os << "[var " << v << "]";
     }
     os << endl;

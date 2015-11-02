@@ -1,0 +1,18 @@
+(set-logic QF_UF)
+(declare-sort U 0)
+(declare-fun p3 (U) Bool)
+(declare-fun f11 (U) U)
+(declare-fun f5 (U) U)
+(declare-fun c8 () U)
+(declare-fun c_0 () U)
+(declare-fun c_1 () U)
+(declare-fun c_2 () U)
+(assert
+(and
+ (not (p3 (f11 c_1)))
+ (p3 (f11 (f11 c_1)))
+ (or (= (f11 (f11 c_1)) c_0) (= (f11 (f11 c_1)) (f11 c_1)))
+ (or (= c_1 c8) (= (f11 c_1) c8))
+))
+(check-sat)
+(exit)

@@ -124,6 +124,18 @@ class PtAsgn_reason {
 
 static class PtAsgn_reason PtAsgn_reason_Undef(PTRef_Undef, l_Undef, PTRef_Undef);
 
+class ValPair
+{
+  public:
+    PTRef tr;
+    char* val;
+    ValPair() : tr(PTRef_Undef), val(NULL) {}
+    ValPair(PTRef tr, const char* val_) : tr(tr) { if (val_ != NULL) val = strdup(val_); }
+    bool operator== (const ValPair& other) const { return tr == other.tr && val == other.val; }
+    bool operator!= (const ValPair& other) const { return tr != other.tr || val != other.val; }
+};
+
+static class ValPair ValPair_Undef(PTRef_Undef, NULL);
 
 //typedef uint32_t TRef;
 typedef uint32_t PTId; // Used as an array index
@@ -137,6 +149,7 @@ class Pterm {
         unsigned size       : 26; }     header;
     PTId                                id;
     SymRef                              sym;
+    Var                                 var;  // This is defined if the PTRef has a Boolean var associated with it
 #ifdef TERMS_HAVE_EXPLANATIONS
     PtAsgn      exp_reason;
     PTRef       exp_parent;
@@ -180,6 +193,8 @@ class Pterm {
         header.noscoping = 0;           // This is an optimization to avoid expensive name lookup on logic operations
         header.size      = ps.size();
 
+        var              = var_Undef;
+
         for (int i = 0; i < ps.size(); i++) args[i] = ps[i];
 #ifdef TERMS_HAVE_EXPLANATIONS
         setExpReason(PtAsgn(PTRef_Undef, l_Undef));
@@ -194,6 +209,8 @@ class Pterm {
         header.reloced   = 0;
         header.noscoping = 0;           // This is an optimization to avoid expensive name lookup on logic operations
         header.size      = 0;
+
+        var              = var_Undef;
 
     }
 
@@ -226,6 +243,10 @@ class Pterm {
 
     int      getId() const { return id; }
     void     setId(int i) { id = i; }
+
+    void     setVar(Var v)  { assert(var == var_Undef || var == v); var = v; }
+    Var      getVar() const { return var; }
+    bool     hasVar() const { return var != var_Undef; }
 
     void     shrink(int s)               { header.size -= s; }
     void     copyTo(Pterm& to);
@@ -337,6 +358,9 @@ class PtermAllocator : public RegionAllocator<uint32_t>
 
 struct LessThan_PTRef {
     bool operator () (PTRef& x, PTRef& y) { return x.x < y.x; } };
+
+struct LessThan_PtAsgn {
+    bool operator () (PtAsgn& x, PtAsgn& y) { return x.tr.x < y.tr.x; } };
 
 inline void termSort(Pterm& t) {
 //    PTRef                               args[0]; // Either the terms or the relocation reference

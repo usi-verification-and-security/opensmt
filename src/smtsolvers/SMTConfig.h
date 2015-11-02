@@ -173,6 +173,8 @@ private:
   static const char* o_sat_split_asap;
   static const char* o_sat_split_units;
   static const char* o_sat_split_preference;
+  static const char* o_produce_models;
+  static const char* o_sat_remove_symmetries;
 
   static const char* s_err_not_str;
   static const char* s_err_not_bool;
@@ -237,13 +239,14 @@ public:
   inline ostream & getRegularOut   ( ) { return rocset ? out : cout; }
   inline ostream & getDiagnosticOut( ) { return docset ? err : cerr; }
   inline int       getRandomSeed   ( ) { return optionTable.contains(o_random_seed) ? optionTable[o_random_seed].getValue().numval : 91648253; }
-    inline bool setRandomSeed(int seed){
+  inline bool      produceModel    ( ) { return optionTable.contains(o_produce_models) ? optionTable[o_produce_models].getValue().numval == 1 : true; }
+  inline void setProduceModels( ) { if ( !optionTable.contains(o_produce_models)) optionTable.insert(o_produce_models, 1); else optionTable[o_produce_models] = 1; }
+    inline bool setRandomSeed(int seed) {
         if (optionTable.contains(o_random_seed))
             optionTable.remove(o_random_seed);
         optionTable.insert(o_random_seed, Option(seed));
     }
 
-  inline void setProduceModels( ) { if ( produce_models != 0 ) return; produce_models = 1; }
   inline void setProduceProofs( ) { if ( print_proofs_smtlib2 != 0 ) return; print_proofs_smtlib2 = 1; }
 
   inline void setRegularOutputChannel( const char * attr )
@@ -269,12 +272,16 @@ public:
   }
 
   const char * filename;                     // Holds the name of the input filename
-  logic_t      logic;                        // SMT-Logic under consideration
+  struct Logic_t logic;                        // SMT-Logic under consideration
   lbool	       status;                       // Status of the benchmark
 //  int          incremental;                  // Incremental solving
   int           isIncremental() const
      { return optionTable.contains(o_incremental) ?
         optionTable[o_incremental].getValue().numval == 1: false; }
+  int produce_models() const {
+      return optionTable.contains(o_produce_models) ?
+              optionTable[o_produce_models].getValue().numval :
+              1; }
   int          produceStats() const
      { return optionTable.contains(o_produce_stats) ?
         optionTable[o_produce_stats].getValue().numval == 1: false; }
@@ -404,7 +411,7 @@ public:
   int sat_dump_learnts() const
     { return optionTable.contains(o_sat_dump_learnts) ?
         optionTable[o_sat_dump_learnts].getValue().numval : 0; }
-    
+
     bool sat_split_threads(int threads){
         if (threads<2 || parallel_threads) return false;
         optionTable.insert(o_sat_split_type, Option(spts_scatter));
@@ -416,7 +423,7 @@ public:
         parallel_threads = threads;
         return true;
     }
-  
+
   const SpType sat_split_type() const {
       if (optionTable.contains(o_sat_split_type)) {
         const char* type = optionTable[o_sat_split_type].getValue().strval;
@@ -455,6 +462,10 @@ public:
               optionTable[o_sat_split_asap].getValue().numval :
               0; }
 
+  int remove_symmetries() const
+    { return optionTable.contains(o_sat_remove_symmetries) ?
+        optionTable[o_sat_remove_symmetries].getValue().numval : 0; }
+
   SpPref sat_split_preference() const {
     if (optionTable.contains(o_sat_split_preference)) {
         const char* type = optionTable[o_sat_split_preference].getValue().strval;
@@ -468,7 +479,6 @@ public:
 
 //  int          produce_stats;                // Should print statistics ?
   int          print_stats;                  // Should print statistics ?
-  int          produce_models;               // Should produce models ?
   int          produce_proofs;               // Should produce proofs ?
   int          print_proofs_smtlib2;         // Should print proofs ?
   int 	       print_proofs_dotty;	     // Should print proofs ?
@@ -558,7 +568,7 @@ public:
   // parameter for parallelism
   int          parallel_threads;
 
-    
+
 private:
 
   ofstream     stats_out;                    // File for statistics

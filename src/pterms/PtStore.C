@@ -66,9 +66,8 @@ char* PtStore::printTerm_(PTRef tr, bool ext) const {
 }
 
 //
-// Resolves the PTRef for name s taking into account polymorphism
-// Creates the term.
-// Returns PTRef_Undef if the name is not defined anywhere
+// Resolves the SymRef for name s taking into account polymorphism
+// Returns SymRef_Undef if the name is not defined anywhere
 //
 SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args) {
     if (symstore.contains(s)) {
@@ -104,12 +103,16 @@ SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args) {
                         return ctr;
                 }
                 else if (t.right_assoc()) {
-                    opensmt_error2("right assoc term not implemented yet", symstore.getName(ctr));
+                    opensmt_error2("right assoc term not implemented yet:", symstore.getName(ctr));
                     return SymRef_Undef;
                 }
                 else if (t.nargs() < args.size_() && t.chainable()) {
-                    opensmt_error2("chainable term not implemented yet", symstore.getName(ctr));
-                    return SymRef_Undef;
+                    int j = 0;
+                    for (; j < args.size(); j++) {
+                        SymRef argt = pta[args[j]].symb();
+                        if (symstore[argt].rsort() != t[0]) break;
+                    }
+                    if (j == args.size()) return ctr;
                 }
                 else if (t.nargs() < args.size_() && t.pairwise()) {
                     int j = 0;

@@ -1,0 +1,10 @@
+(set-logic QF_LRA)
+(declare-fun v3 () Real)
+(declare-fun v2 () Real)
+(assert (and
+  (or (= v3 (/ 1 100000)) (= v3 (/ 1 100002)))
+  (or (= v3 (* (/ 1 120030) v3)) (= v3 v2))
+  (= 0.0 v2)
+))
+(check-sat)
+(exit)

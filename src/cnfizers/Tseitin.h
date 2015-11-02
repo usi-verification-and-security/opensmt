@@ -38,19 +38,13 @@ class Tseitin : public Cnfizer
 {
 public:
 
-    Tseitin( PtStore&       ptstore_
-           , SMTConfig&     config_
-           , SymStore&      symstore_
-           , SStore&        sstore_
+    Tseitin( SMTConfig&     config_
            , Logic&         logic_
            , TermMapper&    tmap_
            , THandler&      thandler_
            , SimpSMTSolver& solver_
            )
-      : Cnfizer(ptstore_
-                , config_
-                , symstore_
-                , sstore_
+      : Cnfizer( config_
                 , logic_
                 , tmap_
                 , thandler_
@@ -88,7 +82,7 @@ private:
     void cnfizeDistinct   (vec<PTRef>&, PTRef);             // Cnfize distinctions
 #else // ENABLE_SHARING_BUG
     void cnfizeAnd        (PTRef);                          // Cnfize conjunctions
-    void cnfizeOr         (PTRef);                          // Cnfize disjunctions
+    void cnfizeOr         (PTRef, bool def=true);           // Cnfize disjunctions
     void cnfizeIff        (PTRef);                          // Cnfize iffs
     void cnfizeXor        (PTRef);                          // Cnfize xors
     void cnfizeIfthenelse (PTRef);                          // Cnfize if then elses

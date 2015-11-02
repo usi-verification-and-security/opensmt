@@ -55,7 +55,7 @@ template<class K, class D, class H, class E = Equal<K> >
 class Map {
  public:
     struct Pair { K key; D data; };
-
+    int getSize() { return size; }
  private:
     H          hash;
     E          equals;
@@ -148,6 +148,15 @@ class Map {
             if (equals(ps[i].key, k))
                 return true;
         return false;
+    }
+
+    void getKeys(vec<K>& out) const {
+        if (size == 0) return;
+        for (int i = 0; i < cap; i++) {
+            if (table[i] == NULL) continue;
+            for (int j = 0; j < table[i].size(); j++)
+                out.push(table[i][j].key);
+        }
     }
 
     // PRECONDITION: the key must exist in the map.

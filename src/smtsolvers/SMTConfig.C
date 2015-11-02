@@ -324,6 +324,7 @@ const Info& SMTConfig::getInfo(const char* name) const {
         return info_Empty;
 }
 
+const char* SMTConfig::o_produce_models = ":produce-models";
 const char* SMTConfig::o_incremental   = ":incremental";
 const char* SMTConfig::o_produce_stats = ":produce-stats";
 const char* SMTConfig::o_stats_out     = ":stats-out";
@@ -372,6 +373,7 @@ const char* SMTConfig::o_sat_split_num = ":split-num";
 const char* SMTConfig::o_sat_split_asap = ":split-asap";
 const char* SMTConfig::o_sat_split_units = ":split-units";
 const char* SMTConfig::o_sat_split_preference = ":split-preference";
+const char* SMTConfig::o_sat_remove_symmetries = ":remove-symmetries";
 
 // Error strings
 const char* SMTConfig::s_err_not_str = "expected string";
@@ -391,7 +393,7 @@ SMTConfig::initializeConfig( )
   optionTable.insert(o_incremental, Option(0));
   optionTable.insert(o_produce_stats, Option(0));
 //  produce_stats                 = 0;
-  produce_models                = 0;
+//  produce_models                = 0;
   print_stats                   = 1;
   print_proofs_smtlib2          = 0;
   print_proofs_dotty	        = 0;
@@ -448,7 +450,7 @@ SMTConfig::initializeConfig( )
 //  proof_set_inter_algo          = 1;
   proof_certify_inter           = 0;
   proof_random_seed	        = 0;
-    
+
   parallel_threads = 0;
 
 }
@@ -597,8 +599,8 @@ void SMTConfig::printConfig ( ostream & out )
   out << "produce_stats "              << getOption(o_produce_stats).toString() << endl;
   out << "# Prints statistics to screen" << endl;
   out << "print_stats "              << print_stats << endl;
-  out << "# Prints models" << endl;
-  out << "produce_models "             << produce_models << endl;
+//  out << "# Prints models" << endl;
+//  out << "produce_models "             << produce_models << endl;
   out << "# Prints proofs"  << endl;
   out << "print_proofs_smtlib2 "       << print_proofs_smtlib2 << endl;
   out << "print_proofs_dotty "         << print_proofs_dotty << endl;

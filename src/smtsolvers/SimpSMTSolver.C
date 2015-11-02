@@ -259,7 +259,7 @@ skip_theory_preproc:
     // Previous line
     // #ifndef NDEBUG
 #ifndef SMTCOMP
-    verifyModel();
+//    verifyModel();
 #endif
   }
 

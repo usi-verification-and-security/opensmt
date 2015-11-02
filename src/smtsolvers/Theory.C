@@ -194,13 +194,9 @@ int CoreSMTSolver::checkTheory( bool complete )
   int        backtrack_level;
 
 #ifdef PEDANTIC_DEBUG
-  theory_handler.getConflict(conflicting, level, max_decision_level, assigns, trail);
-  if (analyze_cnt == 2) {
-    for (int i = 0; i < conflicting.size(); i++)
-        cerr << theory_handler.egraph.printExplanationTreeDotty(theory_handler.varToTerm(var(conflicting[i])));
-  }
+  theory_handler.getConflict(conflicting, level, max_decision_level, trail);
 #else
-  theory_handler.getConflict(conflicting, level, max_decision_level, assigns);
+  theory_handler.getConflict(conflicting, level, max_decision_level);
 #endif
 #if PRODUCE_PROOF
   Enode * interp = NULL;
@@ -524,34 +520,26 @@ int CoreSMTSolver::analyzeUnsatLemma( Clause * confl )
 void CoreSMTSolver::deduceTheory(vec<LitLev>& deductions)
 {
     Lit ded = lit_Undef;
-    Lit reason = lit_Undef;
     int n_deductions = 0;
     int last_dl = -1;
 
     while (true) {
-        ded = theory_handler.getDeduction(reason);
+        ded = theory_handler.getDeduction();
         if (ded == lit_Undef)      break;
         if (value(ded) != l_Undef) continue;
 
         // Found an unassigned deduction
         n_deductions ++;
-        assert(reason != lit_Undef);
-        int lev_reason = level[var(reason)];
-        // the reasons should be coming in order
-        assert(lev_reason >= last_dl);
-        last_dl = lev_reason;
 
 #ifndef IGNORE_DL_THEORYPROPAGATION
         // Determine the decision level on which this reason should be propagated
         vec<Lit> r;
         theory_handler.getReason(ded, r, assigns);
         int max_lev = -1;
-        bool reason_found = false;
         assert(ded == r[0]);
         for (int i = 1; i < r.size(); i++) {
             Var v = var(r[i]);
             max_lev = max_lev > level[v] ? max_lev : level[v];
-            if (v == var(reason)) reason_found = true;
             assert(value(r[i]) == l_False);
         }
 

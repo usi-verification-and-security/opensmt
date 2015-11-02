@@ -33,23 +33,24 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 class TermMapper {
   private:
     Logic&      logic;
+    vec<PTRef>                                varToTerm;
+    vec<SymRef>                               varToTheorySymbol;
   public:
     TermMapper(Logic& l) : logic(l) {}
 
-    vec<PTRef>                                varToTerm;
-    // This is maintained for performance reasons for THandler
-    vec<SymRef>                               varToTheorySymbol;
-    Map<PTRef,Var,PTRefHash,Equal<PTRef> >    termToVar;
-//    Map<PTRef,bool,PTRefHash,Equal<PTRef> >   theoryTerms;
+    void addBinding(Var v, PTRef tr);
 
     // Return a "purified" term by removing sequence of nots.  sgn is false if
-    // sequence length is even, and true if it odd
+    // sequence length is even, and true if it odd.  Does not change the
+    // mapping
     void getTerm(PTRef tr, PTRef& tr_clean, bool& sgn) const;
-    Var  getVar(PTRef)    const;
-    Lit  getLit(PTRef)    const;
-    bool hasLit(PTRef tr) const { return termToVar.contains(tr); }
+    Var  getVar(PTRef)    const;                // Return the variable corresponding to the term
+    Lit  getLit(PTRef)    const;                // Return the literal corresponding to the term
+    bool hasLit(PTRef tr) const { return logic.getPterm(tr).hasVar(); }
+    PTRef varToPTRef(Var v) const { return varToTerm[v]; }
+    int  nVars()          const { return varToTerm.size(); }
 #ifdef PEDANTIC_DEBUG
-    Var  getVarDbg(int r) const { PTRef tr; tr = r; return termToVar[tr]; }
+    Var  getVarDbg(int r) const { PTRef tr; tr = {r}; return getVar(tr); }
 #endif
 };
 

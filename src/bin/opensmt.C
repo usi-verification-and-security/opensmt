@@ -37,7 +37,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //#include "Ackermanize.h"
 
 #include "Interpret.h"
-#include "net/net.h"
+//#include "net/net.h"
 
 #include <cstdlib>
 #include <cstdio>
@@ -130,12 +130,13 @@ int main( int argc, char * argv[] )
   // Accepts file from stdin if nothing specified
     FILE * fin = NULL;
     int opt, i;
-    WorkerClient *w;
-    Interpret interpreter;
+//    WorkerClient *w;
+    SMTConfig c;
+    Interpret interpreter(c);
     while ((opt = getopt(argc, argv, "hs:p:r:")) != -1) {
         switch (opt) {
             case 'p':
-                if(!interpreter.config.sat_split_threads(atoi(optarg))){
+                if(!c.sat_split_threads(atoi(optarg))){
                     fprintf(stderr, "Invalid parallel argument: %s\n", optarg);
                     exit(-1);
                 }
@@ -148,8 +149,8 @@ int main( int argc, char * argv[] )
                 }
                 optarg[i]='\0';
                 try{
-                    w = new WorkerClient(optarg, atoi(&optarg[i+1]));
-                    w->runForever();
+//                    w = new WorkerClient(optarg, atoi(&optarg[i+1]));
+//                    w->runForever();
                 }catch(char const *s){
                     std::cout << "Exception: " << s << "\n";
                 }
@@ -161,8 +162,8 @@ int main( int argc, char * argv[] )
                     return 1;
                 }
                 optarg[i]='\0';
-                NetCfg::server_host=std::string(optarg);
-                NetCfg::server_port=(uint16_t)atoi(&optarg[i+1]);
+//                NetCfg::server_host=std::string(optarg);
+//                NetCfg::server_port=(uint16_t)atoi(&optarg[i+1]);
 
 
                 break;

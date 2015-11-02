@@ -27,6 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef LRASOLVER_H
 #define LRASOLVER_H
 
+#include "LRALogic.h"
 #include "TSolver.h"
 #include "LAVar.h"
 #include "LARow.h"
@@ -35,17 +36,21 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 // Class to solve Linear Arithmetic theories
 //
-class LRASolver: public OrdinaryTSolver
+
+class LRASolver: public TSolver
 {
 private:
 
+  LRALogic& logic;
   // Structure to keep backtracking history elements
-  struct LAVarHistory
+  class LAVarHistory
   {
-    Enode * e;
+  public:
+    PTRef e;
     LAVar * v;
     unsigned bound;
-    bool bound_type;
+    BoundT bound_type;
+    LAVarHistory() : e(PTRef_Undef), v(NULL), bound_type(bound_n), bound(0) {}
   };
 
   // Possible internal states of the solver
@@ -56,49 +61,43 @@ private:
 
   typedef vector<LAVar *> VectorLAVar;
 
+  opensmt::Real delta; // The size of one delta.  Set through computeModel()
+  unsigned bland_threshold;
 public:
 
-  LRASolver( const int i
-           , const char * n
-	   , SMTConfig & c
-	   , Egraph & e
-	   , SStore & t
-	   , vector<Enode *> & x, vector<Enode *> & d, vector<Enode *> & s) 
-	   : OrdinaryTSolver( i, n, c, e, t, x, d, s ) // Constructor
-  {
-    status = INIT;
-    checks_history.push_back(0);
-    first_update_after_backtrack = true;
-  }
+  LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d);
 
   ~LRASolver( );                                      // Destructor ;-)
 
-  lbool inform             ( Enode * );               // Inform LRA about the existence of this constraint
+  lbool inform             ( PTRef );                 // Inform LRA about the existence of this constraint
+  void  declareTerm        (PTRef tr) { inform(tr); }
   bool  check              ( bool );                  // Checks the satisfiability of current constraints
-  bool  assertLit          ( Enode *, bool = false ); // Push the constraint into Solver
+  bool  assertLit          ( PtAsgn , bool = false ); // Push the constraint into Solver
   void  pushBacktrackPoint ( );                       // Push a backtrack point
   void  popBacktrackPoint  ( );                       // Backtrack to last saved point
-  bool  belongsToT         ( Enode * );               // Checks if Atom belongs to this theory
   void  computeModel       ( );                       // Computes the model into enodes
+  void getConflict(bool, vec<PtAsgn>& e) { for (int i = 0; i < explanation.size(); i++) { e.push(explanation[i]); } } // Return the conflicting bounds
+  PtAsgn_reason getDeduction() { if (deductions_next >= th_deductions.size()) return PtAsgn_reason_Undef; else return th_deductions[deductions_next++]; }
 
+  Logic& getLogic() { return logic; }
 protected:
   // vector in which witnesses for unsatisfiability are stored
   vector<Real> explanationCoefficients;
 
   VectorLAVar columns;                 // Maps terms' ID to LAVar pointers
   VectorLAVar rows;                    // Maps terms' ID to LAVar pointers, used to store basic columns
-  VectorLAVar enode_lavar;             // Maps original constraints to solver's terms and bounds
+  VectorLAVar ptermToLavar;             // Maps original constraints to solver's terms and bounds
 
   bool assertBoundOnColumn( LAVar * it, unsigned it_i);
 
   vector<unsigned> checks_history;
 
-
+  unsigned nVars() const { return columns.size(); }
 private:
   void doGaussianElimination( );                          // Performs Gaussian elimination of all redundant terms in the Tableau
   void update( LAVar *, const Delta & );                  // Updates the bounds after constraint pushing
   void pivotAndUpdate( LAVar *, LAVar *, const Delta &);  // Updates the tableau after constraint pushing
-  void getConflictingBounds( LAVar *, vector<Enode *> & );// Returns the bounds conflicting with the actual model
+  void getConflictingBounds( LAVar *, vec<PTRef> & );     // Returns the bounds conflicting with the actual model
   void refineBounds( );                                   // Compute the bounds for touched polynomials and deduces new bounds from it
   inline bool getStatus( );                               // Read the status of the solver in lbool
   inline bool setStatus( LRASolverStatus );               // Sets and return status of the solver
@@ -134,7 +133,10 @@ private:
     return out;
   }
 
-  inline int     verbose                       ( ) const { return config.verbosity; }
+  ValPair getValue(PTRef tr) const; // Computes the model and changes state.
+  inline int     verbose                       ( ) const { return config.verbosity(); }
+  char* printValue(PTRef tr) { char* tmp = (char*)malloc(1); tmp[0] = '\0'; return tmp; } // Implement later...
+  char* printExplanation(PTRef tr) { return printValue(tr); } // Implement later...
 };
 
 #endif

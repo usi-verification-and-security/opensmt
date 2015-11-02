@@ -29,6 +29,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "Global.h"
 
+using opensmt::Real;
+
 template <class T>
 class LAArray : public vector< T >
 {

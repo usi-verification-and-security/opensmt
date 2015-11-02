@@ -87,7 +87,8 @@ WorkerClient::WorkerClient(char *host, uint16_t port) {
 void WorkerClient::solve(int wpipefd, char *smt2filename, uint32_t jid) {
     char buffer[128];
     int n = 0;
-    Interpret interpreter;
+    SMTConfig c;
+    Interpret interpreter(c);
     FILE *fin;
     FrameSocket *wpipe = new FrameSocket(wpipefd);
     sstat status;
@@ -100,7 +101,7 @@ void WorkerClient::solve(int wpipefd, char *smt2filename, uint32_t jid) {
         interpreter.interpFile(fin);
         fclose(fin);
         if (!opensmt::stop) {
-            status = interpreter.main_solver.getStatus();
+            status = interpreter.main_solver->getStatus();
             n = snprintf(buffer, 128, "S%u\\%hhd", jid, status.getValue());
         }
         else {

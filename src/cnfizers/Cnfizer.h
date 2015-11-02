@@ -56,15 +56,6 @@ const ckval ck_True  = toCkval( 1);
 const ckval ck_False = toCkval(-1);
 const ckval ck_Unsat = toCkval( 0);
 
-class ValPair {
-  private:
-    PTRef       t;
-    lbool       v;
-  public:
-    ValPair(PTRef term, lbool value) : t(term), v(value) {}
-    PTRef getTerm()       const { return t; }
-    lbool getVal ()       const { return v; }
-};
 
 
 //
@@ -73,10 +64,7 @@ class ValPair {
 class Cnfizer
 {
 protected:
-    PtStore&            ptstore;         // Reference to the term store
     SMTConfig&          config;
-    SymStore&           symstore;
-    SStore &            sstore;
     Logic&              logic;
     TermMapper&         tmap;            // Map vars to proper terms
 
@@ -87,10 +75,7 @@ protected:
 
 public:
 
-    Cnfizer( PtStore &      ptstore_
-           , SMTConfig &    config_
-           , SymStore&      symstore_
-           , SStore &       sstore_
+    Cnfizer( SMTConfig &    config_
            , Logic&         logic_
            , TermMapper&    tmap_
            , THandler&      thandler_
@@ -109,7 +94,7 @@ public:
 
     vec<ValPair>* getModel ();                              // Retrieves the model (if SAT and solved)
 
-    lbool  getTermValue(PTRef);
+    lbool  getTermValue(PTRef) const;
 
     void   initialize      ();
     lbool  solve           () { return solver.solve(); }
@@ -118,8 +103,6 @@ public:
 
     PTRef  expandItes      (vec<PtChild>&);
 
-    void  purify           (PTRef r, PTRef& p, lbool& sgn) const
-        {p = r; sgn = l_True; while (ptstore[p].symb() == logic.getSym_not()) { sgn = sgn^1; p = ptstore[p][0]; };}
     bool  isNPAtom         (PTRef r, PTRef& p)    const; // Check if r is a (negated) atom.  Return true if the corresponding atom is negated.  The purified reference is placed in the second argument.
     bool  solverEmpty      ()                     const { return s_empty; }
 

@@ -28,10 +28,24 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define LAVAR_H
 
 #include "Global.h"
-#include "Enode.h"
+#include "Pterm.h"
 #include "Delta.h"
 #include "LARow.h"
 #include "LAColumn.h"
+#include "LRALogic.h"
+#include "Deductions.h"
+
+class LRASolver;
+
+struct BoundT {
+    static const char* const names[3];
+    char t;
+    bool operator== (const BoundT& o) const { return o.t == t; }
+    inline friend ostream& operator<< (ostream& o, const BoundT& b) { o << names[(int)b.t]; return o; }
+};
+const BoundT bound_l = { 0 };
+const BoundT bound_u = { 1 };
+const BoundT bound_n = { 2 };
 
 //
 // Class to store the term of constraints as a column of Simplex method tableau
@@ -42,16 +56,21 @@ public:
   // structure to store bound information
   struct LAVarBound
   {
-    Enode * e;
+    PTRef e;
     Delta * delta;
-    bool bound_type;
+    BoundT bound_type;
     bool reverse;
     bool active;
-    LAVarBound( Delta * _delta, Enode * _e, bool _boundType, bool _reverse );
+    LAVarBound( Delta * _delta, PTRef _e, BoundT _boundType, bool _reverse );
     bool operator==( const LAVarBound &b );
   };
 
 private:
+  LRALogic& logic;
+  vec<DedElem>& deduced;
+  SolverId& solver_id;
+  LRASolver& lra_solver;
+
   typedef vector<LAVarBound> VectorBounds; // type for bounds storage
 
   static Delta plus_inf_bound;            //used for a default +inf value, which is shared by every LAVar
@@ -70,7 +89,8 @@ private:
   Delta * m2;                           // one of two storages used by model switching
 
 public:
-  Enode * e;             //pointer to original Enode. In case of slack variable points to polynomial
+  static int numVars() { return column_count; }
+  PTRef e;             //pointer to original Enode. In case of slack variable points to polynomial
   LARow polynomial;      // elements of the variable polynomial (if variable is basic), list of <id, Real*>
   LAColumn binded_rows;     // rows a variable is binded to (if it is nonbasic) ,list of <id, Real*>
   bool skip;             //used to skip columns deleted during Gaussian
@@ -78,32 +98,32 @@ public:
   unsigned u_bound;      // integer pointer to the current upper bound
   unsigned l_bound;      // integer pointer to the current lower bound
 
-  LAVar( Enode * e_orig);                                              // Default constructor
-  LAVar( Enode * e_orig, Enode * e_bound, Enode * e_var, bool basic );  // Constructor with bounds
-  LAVar( Enode * e_orig, Enode * e_var, const Real & v, bool revert );        // Constructor with bounds from real
+  LAVar(LRASolver&, SolverId, vec<DedElem>& d, LRALogic&, PTRef e_orig);                                              // Default constructor
+  LAVar(LRASolver&, SolverId, vec<DedElem>& d, LRALogic&, PTRef e_orig, PTRef e_bound, PTRef e_var, bool basic);  // Constructor with bounds
+  LAVar(LRASolver&, SolverId, vec<DedElem>& d, LRALogic&, PTRef e_orig, PTRef e_var, const Real & v, bool revert);        // Constructor with bounds from real
   virtual ~LAVar( );                                                    // Destructor
 
-  void setBounds( Enode * e, Enode * e_bound);          // Set the bounds from Enode of original constraint (used on reading/construction stage)
-  void setBounds( Enode * e, const Real & v, bool revert);   // Set the bounds according to enode type and a given value (used on reading/construction stage)
+  void setBounds( PTRef e, PTRef e_bound);          // Set the bounds from Enode of original constraint (used on reading/construction stage)
+  void setBounds( PTRef e, const Real & v, bool revert);   // Set the bounds according to enode type and a given value (used on reading/construction stage)
 
   unsigned setUpperBound( const Real & v);
   unsigned setLowerBound( const Real & v);
 
-  unsigned setBound( const Real & v, bool upper);
+  unsigned setBound(const Real & v, BoundT);
   void addBoundsAndUpdateSorting(const LAVarBound & pb1, const LAVarBound & pb2);
   void addBoundAndUpdateSorting(const LAVarBound & pb);
   void updateSorting();
 
-  unsigned getBoundByValue( const Real & v, bool upper);
+  unsigned getBoundByValue(const Real & v, BoundT);
 
   void sortBounds( );   // sort bounds' list
   void printBounds( );  // print out bounds' list
 
-  void getDeducedBounds( const Delta& c, bool upper, vector<Enode *>& dst, int solver_id );     // find possible deductions by value c
-  void getDeducedBounds( bool upper, vector<Enode *>& dst, int solver_id );                     // find possible deductions for actual bounds values
-  void getSuggestions( vector<Enode *>& dst, int solver_id );                                   // find possible suggested atoms
-  void getSimpleDeductions( vector<Enode *>& dst, bool upper, int solver_id );                  // find deductions from actual bounds position
-  unsigned getIteratorByEnode( Enode * e, bool );                                               // find bound iterator by the correspondent Enode ID
+  void getDeducedBounds( const Delta& c, BoundT, vec<PtAsgn_reason>& dst, SolverId solver_id );     // find possible deductions by value c
+  void getDeducedBounds( BoundT, vec<PtAsgn_reason>& dst, SolverId solver_id );                     // find possible deductions for actual bounds values
+  void getSuggestions( vec<PTRef>& dst, SolverId solver_id );                                   // find possible suggested atoms
+  void getSimpleDeductions( vec<PtAsgn_reason>& dst, BoundT, SolverId solver_id );          // find deductions from actual bounds position
+  unsigned getIteratorByPTRef( PTRef e, bool );                                                 // find bound iterator by the correspondent Enode ID
 
   inline bool isBasic( );               // Checks if current LAVar is Basic in current solver state
   inline bool isNonbasic( );            // Checks if current LAVar is NonBasic in current solver state
@@ -136,10 +156,7 @@ public:
   // two operators for output
   inline friend ostream & operator <<( ostream & out, LAVar * v )
   {
-    if( v->e->isVar( ) || v->e->isUf( ) )
-      out << v->e;
-    else
-      out << "s" << v->ID( );
+    out << v->logic.printTerm(v->e) << endl;
     return out;
   }
   inline friend ostream & operator <<( ostream & out, LAVar & v )
@@ -200,7 +217,7 @@ const Delta LAVar::overBound( )
 
 bool LAVar::isModelInteger( )
 {
-  return !( M( ).hasDelta() || M().R().get_den() != 1);
+  return !( M( ).hasDelta() || !M().R().den_is_unit() );
 }
 
 bool LAVar::isEquality( )
@@ -297,6 +314,7 @@ void LAVar::incM( const Delta &v )
 
 void LAVar::setM( const Delta &v )
 {
+//  cerr << "; setting model of " << *this << " to " << v << endl;
   if( model_local_counter != model_global_counter )
     saveModel( );
   ( *m1 ) = v;

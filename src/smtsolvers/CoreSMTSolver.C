@@ -85,7 +85,7 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
   , clauses_sharing(Sharing())
   , clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0)
   // ADDED FOR MINIMIZATION
-  , learnts_size(0) , all_learnts(0),n_clauses(0)
+  , learnts_size(0) , all_learnts(0), n_clauses(0)
   , learnt_theory_conflicts(0)
   , ok                    (true)
   , cla_inc               (1)
@@ -263,6 +263,9 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
 
   n_occs.push(0);
 
+  // Add the deduction entry for this variable
+  theory_handler.deductions.push({SolverId_Undef, l_Undef});
+
   return v;
 }
 
@@ -361,7 +364,7 @@ bool CoreSMTSolver::addClause( vec<Lit>& ps
 	&& var(ps[0]) > 1 ) // Avoids true/false
       units_to_partition.push_back( make_pair( res, in ) );
 #endif
-#ifdef VERBOSE_SAST
+#ifdef VERBOSE_SAT
     cerr << toInt(ps[0]) << endl;
 #endif
     uncheckedEnqueue(ps[0]);
@@ -710,9 +713,9 @@ void CoreSMTSolver::cancelUntilVarTempDone( )
     vec< Lit > conflicting;
     int        max_decision_level;
 #ifdef PEDANTIC_DEBUG
-    theory_handler.getConflict( conflicting, level, max_decision_level, assigns, trail );
+    theory_handler.getConflict( conflicting, level, max_decision_level, trail );
 #else
-    theory_handler.getConflict( conflicting, level, max_decision_level, assigns );
+    theory_handler.getConflict(conflicting, level, max_decision_level);
 #endif
   }
 }
@@ -1840,7 +1843,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
               return l_Undef;
       }
       if (conflicts % 1000 == 0){
-          this->clauses_sharing.clausesPublish(*this);
+//          this->clauses_sharing.clausesPublish(*this);
       }
 
     if (resource_limit >= 0 && conflicts % 1000 == 0) {
@@ -1852,7 +1855,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 
       if(decisionLevel()==0){
           if(conflicts>conflicts_last_update+1000) {
-              this->clauses_sharing.clausesUpdate(*this);
+//              this->clauses_sharing.clausesUpdate(*this);
               conflicts_last_update = conflicts;
           }
       }
@@ -1928,11 +1931,6 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 
     }else{
       // NO CONFLICT
-#ifdef VERBOSE_SAT
-      if (thr_backtrack)
-        cerr << "Bling! No theory backtracking" << endl;
-        thr_backtrack = false;
-#endif
       if (nof_conflicts >= 0 && conflictC >= nof_conflicts){
         // Reached bound on number of conflicts:
         progress_estimate = progressEstimate();
@@ -2120,180 +2118,191 @@ double CoreSMTSolver::progressEstimate() const
 lbool CoreSMTSolver::solve( const vec<Lit> & assumps
                           , const unsigned max_conflicts )
 {
-    this->clauses_sharing.reset("asd");
-  // If splitting is enabled refresh the options
-  split_type     = config.sat_split_type();
-  if (split_type != spt_none) {
-      split_start    = config.sat_split_asap();
-      split_on       = false;
-      split_num      = config.sat_split_num();
-      split_inittune = config.sat_split_inittune();
-      split_midtune  = config.sat_split_midtune();
-      split_units    = config.sat_split_units();
-      if (split_units == spm_time)
-          split_next = config.sat_split_inittune() + cpuTime();
-      else if (split_units == spm_decisions)
-          split_next = config.sat_split_inittune() + decisions;
-      else split_next = -1;
+    // Inform theories of the variables that are actually seen by the
+    // SAT solver.
+    bool* var_seen = (bool*)calloc(nVars(), sizeof(bool));
+    for (int i = 0; i < trail.size(); i++) {
+        Var v = var(trail[i]);
+        if (!var_seen[v]) {
+            var_seen[v] = true;
+            theory_handler.declareTermTree(theory_handler.varToTerm(v));
+//            printf("Declaring trail var %s\n", theory_handler.getLogic().printTerm(theory_handler.varToTerm(v)));
+        }
+    }
+    for (int i = 0; i < clauses.size(); i++) {
+        Clause& c = *clauses[i];
+        for (int j = 0; j < c.size(); j++) {
+            Var v = var(c[j]);
+            if (!var_seen[v]) {
+                var_seen[v] = true;
+                theory_handler.declareTermTree(theory_handler.varToTerm(v));
+//                printf("Declaring clause %d var %s\n", i, theory_handler.getLogic().printTerm(theory_handler.varToTerm(v)));
+            }
+        }
+    }
+//    for (int i = 0; i < theory_handler.tsolvers.size(); i++)
+//        if (theory_handler.tsolvers[i] != NULL)
+//            theory_handler.tsolvers[i]->print(std::cerr);
+//    return l_Undef;
+    // Forbid branching on the vars that do not appear in the formula.
+    // I'm curious as to whether this is sound!
+    for (int i = 0; i < nVars(); i++) {
+        if (!var_seen[i])
+            decision_var[i] = false;
+    }
+    free(var_seen);
+//    this->clauses_sharing.reset("asd");
+    // If splitting is enabled refresh the options
+    split_type     = config.sat_split_type();
+    if (split_type != spt_none) {
+        split_start    = config.sat_split_asap();
+        split_on       = false;
+        split_num      = config.sat_split_num();
+        split_inittune = config.sat_split_inittune();
+        split_midtune  = config.sat_split_midtune();
+        split_units    = config.sat_split_units();
+        if (split_units == spm_time)
+            split_next = config.sat_split_inittune() + cpuTime();
+        else if (split_units == spm_decisions)
+            split_next = config.sat_split_inittune() + decisions;
+        else split_next = -1;
 
-      split_preference = config.sat_split_preference();
+        split_preference = config.sat_split_preference();
 
-  }
-  resource_units = config.sat_resource_units();
-  resource_limit = config.sat_resource_limit();
-  if (resource_limit >= 0) {
-      if (resource_units == spm_time)
-          next_resource_limit = cpuTime() + resource_limit;
-      else if (resource_units == spm_decisions)
-          next_resource_limit = decisions + resource_limit;
-  } else next_resource_limit = -1;
+    }
+    resource_units = config.sat_resource_units();
+    resource_limit = config.sat_resource_limit();
+    if (resource_limit >= 0) {
+        if (resource_units == spm_time)
+            next_resource_limit = cpuTime() + resource_limit;
+        else if (resource_units == spm_decisions)
+            next_resource_limit = decisions + resource_limit;
+    } else next_resource_limit = -1;
 
-  if (config.dump_only()) return l_Undef;
+    if (config.dump_only()) return l_Undef;
 
-  random_seed = config.getRandomSeed();
-//  assert( init );
-  // Check some invariants before we start ...
-  assert( config.logic != UNDEF );
-  // Incrementality should be enabled for arrays
-  // assert( config.logic != QF_AX || config.incremental );
-  // Incrementality should be enabled for lazy dtc
-  assert( config.logic != QF_UFRDL || config.sat_lazy_dtc == 0 || config.isIncremental() );
-  assert( config.logic != QF_UFIDL || config.sat_lazy_dtc == 0 || config.isIncremental() );
-  assert( config.logic != QF_UFLRA || config.sat_lazy_dtc == 0 || config.isIncremental() );
-  assert( config.logic != QF_UFLIA || config.sat_lazy_dtc == 0 || config.isIncremental() );
-  assert( config.logic != QF_UFLRA || config.sat_lazy_dtc == 0 || config.isIncremental() );
-  // UF solver should be enabled for lazy dtc
-  assert( config.sat_lazy_dtc == 0 || config.uf_disable == 0 );
+    random_seed = config.getRandomSeed();
+//    assert( init );
+    // Check some invariants before we start ...
+    assert( config.logic != UNDEF );
+    // Incrementality should be enabled for arrays
+    // assert( config.logic != QF_AX || config.incremental );
+    // Incrementality should be enabled for lazy dtc
+    assert( config.logic != QF_UFRDL || config.sat_lazy_dtc == 0 || config.isIncremental() );
+    assert( config.logic != QF_UFIDL || config.sat_lazy_dtc == 0 || config.isIncremental() );
+    assert( config.logic != QF_UFLRA || config.sat_lazy_dtc == 0 || config.isIncremental() );
+    assert( config.logic != QF_UFLIA || config.sat_lazy_dtc == 0 || config.isIncremental() );
+    assert( config.logic != QF_UFLRA || config.sat_lazy_dtc == 0 || config.isIncremental() );
+    // UF solver should be enabled for lazy dtc
+    assert( config.sat_lazy_dtc == 0 || config.uf_disable == 0 );
 #ifdef PRODUCE_PROOF
-  // Checks that every variable is associated to a non-zero partition
-  if( config.produce_inter > 0 )
-  {
-    checkPartitions( );
-    mixedVarDecActivity( );
-  }
-#endif
-
-  // Statically inform nodes created so far
-//  theory_handler->inform( );
-
-#ifndef SMTCOMP
-  if ( config.sat_dump_cnf != 0 )
-    dumpCNF( );
-
-//  if ( config.sat_dump_rnd_inter != 0 )
-//    dumpRndInter( );
-#endif
-
-  model.clear();
-  conflict.clear();
-
-  if (!ok) return l_False;
-
-  assumps.copyTo(assumptions);
-
-  double  nof_conflicts = restart_first;
-  double  nof_learnts   = nClauses() * learntsize_factor;
-  lbool   status        = l_Undef;
-
-  unsigned last_luby_k = luby_k;
-#ifndef SMTCOMP
-  double next_printout = restart_first;
-#endif
-
-  // Search:
-  const size_t old_conflicts = nLearnts( );
-  // Stop flag for cost theory solving
-  bool cstop = false;
-  while (status == l_Undef && !opensmt::stop && !cstop && !this->stop)
-  {
-#ifndef SMTCOMP
-    // Print some information. At every restart for
-    // standard mode or any 2^n intervarls for luby
-    // restarts
-    if ( conflicts == 0
-	|| conflicts >= next_printout )
-    {
-//      if ( config.verbosity() > 10 )
-      {
-	reportf( "; %9d | %8d %8d | %8.3f s | %6.3f MB\n"
-	    , (int)conflicts
-	    , (int)nof_learnts
-	    , nLearnts()
-	    , cpuTime( )
-	    , memUsed( ) / 1048576.0 );
-	fflush( stderr );
-      }
-
-      if ( config.sat_use_luby_restart )
-	next_printout *= 2;
-      else
-	next_printout *= restart_inc;
+    // Checks that every variable is associated to a non-zero partition
+    if (config.produce_inter > 0) {
+        checkPartitions( );
+        mixedVarDecActivity( );
     }
 #endif
-    // XXX
-    status = search((int)nof_conflicts, (int)nof_learnts);
-    nof_conflicts = restartNextLimit( nof_conflicts );
-    cstop = cstop || ( max_conflicts != 0
-	&& nLearnts() > (int)max_conflicts + (int)old_conflicts );
 
-    if ( config.sat_use_luby_restart )
-    {
-      if ( last_luby_k != luby_k ) {
-	nof_learnts *= 1.215;
-      }
-      last_luby_k = luby_k;
-    }
-    else {
-      nof_learnts *= learntsize_inc;
-    }
-  }
-
-  // Added line
-  if ( !cstop )
-  {
-    if (status == l_True){
 #ifndef SMTCOMP
-      // Extend & copy model:
-      model.growTo(nVars());
-      for (int i = 0; i < nVars(); i++) model[i] = value(i);
-      verifyModel( );
-      // Compute models in tsolvers
-      if ( config.produce_models
-	  && !config.isIncremental() )
-      {
-//	egraph.computeModel( );
-	printModel( );
-      }
+    if ( config.sat_dump_cnf != 0 )
+        dumpCNF( );
+
+//    if ( config.sat_dump_rnd_inter != 0 )
+//        dumpRndInter( );
 #endif
-    }else{
-      assert( opensmt::stop || status == l_False);
+
+    model.clear();
+    conflict.clear();
+
+    if (!ok) return l_False;
+
+    assumps.copyTo(assumptions);
+
+    double  nof_conflicts = restart_first;
+    double  nof_learnts   = nClauses() * learntsize_factor;
+    lbool   status        = l_Undef;
+
+    unsigned last_luby_k = luby_k;
+#ifndef SMTCOMP
+    double next_printout = restart_first;
+#endif
+
+    // Search:
+    const size_t old_conflicts = nLearnts( );
+    // Stop flag for cost theory solving
+    bool cstop = false;
+    while (status == l_Undef && !opensmt::stop && !cstop && !this->stop) {
+#ifndef SMTCOMP
+        // Print some information. At every restart for
+        // standard mode or any 2^n intervarls for luby
+        // restarts
+        if (conflicts == 0 || conflicts >= next_printout) {
+//          if ( config.verbosity() > 10 )
+            reportf( "; %9d | %8d %8d | %8.3f s | %6.3f MB\n"
+                    , (int)conflicts
+                    , (int)nof_learnts
+                    , nLearnts()
+                    , cpuTime()
+                    , memUsed( ) / 1048576.0 );
+            fflush( stderr );
+        }
+
+        if (config.sat_use_luby_restart)
+            next_printout *= 2;
+        else
+            next_printout *= restart_inc;
+#endif
+        // XXX
+        status = search((int)nof_conflicts, (int)nof_learnts);
+        nof_conflicts = restartNextLimit( nof_conflicts );
+        cstop = cstop || ( max_conflicts != 0
+            && nLearnts() > (int)max_conflicts + (int)old_conflicts );
+        if (config.sat_use_luby_restart) {
+            if (last_luby_k != luby_k) {
+                nof_learnts *= 1.215;
+            }
+            last_luby_k = luby_k;
+        } else {
+            nof_learnts *= learntsize_inc;
+        }
+    }
+
+    // Added line
+    if (!cstop) {
+        if (status == l_True) {
+#ifndef SMTCOMP
+            // Extend & copy model:
+            model.growTo(nVars());
+            for (int i = 0; i < nVars(); i++) model[i] = value(i);
+//            verifyModel();
+            // Compute models in tsolvers
+            if (config.produce_models() && !config.isIncremental()) {
+                printModel();
+            }
+#endif
+        } else {
+            assert( opensmt::stop || status == l_False);
 //      if (conflict.size() == 0)
-//	ok = false;
+//          ok = false;
+        }
     }
-  }
 
 //#ifdef BACKTRACK_AFTER_FINISHING
-  if ( !config.isIncremental() )
-  {
-    // We terminate
-    cancelUntil(-1);
-    if ( first_model_found || splits.size() > 1)
-      theory_handler.backtrack(-1);
-  }
-  else
-  {
-    // We return to level 0,
-    // ready to accept new clauses
-    cancelUntil(0);
-  }
-//#else
-//  cancelUntil(0);
-//#endif
+    if (!config.isIncremental()) {
+        // We terminate
+        cancelUntil(-1);
+        if (first_model_found || splits.size() > 1)
+            theory_handler.backtrack(-1);
+    } else {
+        // We return to level 0,
+        // ready to accept new clauses
+        cancelUntil(0);
+    }
 
-  return status;
+    return status;
 }
 
-const CoreSMTSolver::UBel CoreSMTSolver::UBel_Undef = { -1, -1 };
+const CoreSMTSolver::UBel CoreSMTSolver::UBel_Undef(-1, -1);
 
 // safeToSkip: given an exact value e for a variable b, is it safe to
 // skip checking my literal's extra value in the lookahead heuristic?
@@ -2428,32 +2437,6 @@ bool CoreSMTSolver::LApropagate_wrapper()
 // backjump.
 lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
 {
-    class LANode {
-      public:
-        // c1 & c2 are for debugging
-        LANode* c1; LANode* c2; LANode* p; Lit l; lbool v; int d;
-        LANode() : c1(NULL), c2(NULL), p(NULL), l(lit_Undef), v(l_Undef), d(0) {}
-        LANode(LANode* par, Lit li, lbool va, int dl) :
-            c1(NULL), c2(NULL), p(par), l(li), v(va), d(dl) {}
-        void print() {
-            for (int i = 0; i < d; i++)
-                printf(" ");
-            printf("%s%d [%s, %d]", sign(l) ? "-" : "", var(l), v == l_False ? "unsat" : "open", d);
-
-            if (c1 != NULL) {
-                printf(" c1");
-            }
-            if (c2 != NULL) {
-                printf(" c2");
-            }
-            printf("\n");
-            if (c1 != NULL)
-                c1->print();
-            if (c2 != NULL)
-                c2->print();
-        }
-    };
-
 
     updateRound();
     vec<LANode*> queue;
@@ -3024,4 +3007,3 @@ void CoreSMTSolver::printStatistics( ostream & os )
   os << "; Init clauses.............: " << clauses.size() << endl;
   os << "; Variables................: " << nVars() << endl;
 }
-

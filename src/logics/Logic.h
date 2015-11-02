@@ -1,7 +1,7 @@
 /*********************************************************************
 Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
 
-OpenSMT2 -- Copyright (C) 2012 - 2014 Antti Hyvarinen
+OpenSMT2 -- Copyright (C) 2012 - 2015 Antti Hyvarinen
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the
@@ -34,11 +34,20 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SymStore.h"
 #include "PtStore.h"
 
+
+
 class SStore;
 class TStore;
 
+// For breaking substitution loops
+struct NStatus { uint32_t x; bool operator== (const NStatus& o) const { return o.x == x; } };
+static NStatus ns_inStack  = {0};
+static NStatus ns_complete = {1};
+static NStatus ns_unseen   = {2};
+static NStatus ns_undef    = {INT32_MAX};
+
 class Logic {
-  private:
+  protected:
     static const char* e_argnum_mismatch;
     static const char* e_bad_constant;
 
@@ -52,13 +61,18 @@ class Logic {
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      disequalities;
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      ites;
 
-    IdentifierStore&    id_store;
-    SStore&             sort_store;
-    SymStore&           sym_store;
-  public:
+    vec<SymRef>         sortToEquality;
+    vec<bool>           constants;
+    vec<bool>           interpreted_functions;
+    PTRef top_level_ites;
+
     SMTConfig&          config;
-    PtStore&            term_store;
-  private:
+    IdentifierStore     id_store;
+    SStore              sort_store;
+    SymStore            sym_store;
+  public:
+    PtStore             term_store;
+  protected:
     bool                is_set;
     string              name;
     SymRef              sym_TRUE;
@@ -72,21 +86,12 @@ class Logic {
     SymRef              sym_DISTINCT;
     SymRef              sym_ITE;
 
-    SymRef              sym_Real_NEG;
-    SymRef              sym_Real_MINUS;
-    SymRef              sym_Real_PLUS;
-    SymRef              sym_Real_TIMES;
-    SymRef              sym_Real_DIV;
-    SymRef              sym_Real_LEQ;
-    SymRef              sym_Real_LT;
-    SymRef              sym_Real_GEQ;
-    SymRef              sym_Real_GT;
 
     SRef                sort_BOOL;
-    SRef                sort_REAL;
 
     PTRef               term_TRUE;
     PTRef               term_FALSE;
+
 
     // For depth first search
     class pi {
@@ -95,6 +100,9 @@ class Logic {
         bool done;
         pi(PTRef x_) : x(x_), done(false) {}
     };
+
+    virtual void visit(PTRef, Map<PTRef, PTRef, PTRefHash>&);
+    PTRef insertTermHash(SymRef, const vec<PTRef>&);
 
   public:
     static const char*  tk_true;
@@ -108,28 +116,53 @@ class Logic {
     static const char*  tk_distinct;
     static const char*  tk_ite;
 
-    static const char*  tk_real_neg;
-    static const char*  tk_real_minus;
-    static const char*  tk_real_plus;
-    static const char*  tk_real_times;
-    static const char*  tk_real_div;
-    static const char*  tk_real_leq;
-    static const char*  tk_real_lt;
-    static const char*  tk_real_geq;
-    static const char*  tk_real_gt;
 
     static const char*  s_sort_bool;
-    static const char*  s_sort_real;
 
-    Logic(SMTConfig& c, IdentifierStore& i, SStore& s, SymStore& t, PtStore& pt);
+    Logic(SMTConfig& c);
+
+    PTRef getTopLevelItes() { return top_level_ites; }
+    void addTopLevelIte(PTRef i)
+    {
+        if(i == PTRef_Undef) return;
+        if(top_level_ites == PTRef_Undef)
+        {
+            top_level_ites = i;
+            return;
+        }
+        vec<PTRef> args;
+        args.push(top_level_ites);
+        args.push(i);
+        top_level_ites = mkAnd(args);
+    }
+    void conjoinItes(PTRef root, PTRef& new_root)
+    {
+        PTRef tlites = getTopLevelItes();
+        if(tlites == PTRef_Undef)
+        {
+            new_root = root;
+            return;
+        }
+
+        vec<PTRef> args;
+        args.push(root);
+        args.push(tlites);
+        new_root = mkAnd(args);
+    }
 
     bool          setLogic    (const char* l);
     bool          isSet       ()                      const { return is_set;    }
+    Logic_t       getLogic    ()                      const { return config.logic; }
     const string& getName     ()                      const { return name;      }
 
+    // Identifiers
+    IdRef       newIdentifier (const char* name)            { return id_store.newIdentifier(name); }
+    IdRef       newIdentifier (const char* name, vec<int>& nl){ return id_store.newIdentifier(name, nl); }
     // Fetching sorts
+    bool        containsSort  (const char* name)      const { return sort_store.containsSort(name); }
+    SRef        newSort       (IdRef idr, const char* name, vec<SRef>& tmp) { return sort_store.newSort(idr, name, tmp); }
     SRef        getSortRef    (const char* name)      const { return sort_store[name]; }
-    SRef        getSort       (const PTRef tr)        const { return getSym(getPterm(tr).symb()).rsort(); }
+    SRef        getSortRef    (const PTRef tr)              { return getSym(getPterm(tr).symb()).rsort(); }
     Sort*       getSort       (const SRef s)                { return sort_store[s]; }
     const char* getSortName   (const SRef s)                { return sort_store.getName(s); }
 
@@ -137,36 +170,43 @@ class Logic {
     SymRef      newSymb       (const char* name, vec<SRef>& sort_args, char** msg)
                                                             { return sym_store.newSymb(name, sort_args, msg); }
 //    bool        hasSym        (const SymRef s)        const { return sym_store.contains(s); }
-    Symbol&     getSym        (const SymRef s)        const { return sym_store[s]; }
-    const char* getSymName    (const PTRef tr)        const { return sym_store.getName(getPterm(tr).symb()); }
+    const Symbol& getSym        (const SymRef s)        const { return sym_store[s]; }
+    const Symbol& getSym        (const PTRef tr)        const { return getSym(getPterm(tr).symb()); }
+    SymRef      getSymRef       (const PTRef tr)        const { return getPterm(tr).symb(); }
+    const char* getSymName      (const PTRef tr)        const { return sym_store.getName(getPterm(tr).symb()); }
+    const char* getSymName      (const SymRef s)        const { return sym_store.getName(s); }
     vec<SymRef>& symNameToRef (const char* s)               { return sym_store.nameToRef(s); }
+    bool        hasSym        (const char* s)         const { return sym_store.contains(s); }
+    bool        commutes      (const SymRef s)        const { return getSym(s).commutes(); }
     // Terms
 
-    Pterm&      getPterm      (const PTRef tr)        const { return term_store[tr];  }
+    Pterm&      getPterm      (const PTRef tr)              { return term_store[tr];  }
+    const Pterm& getPterm     (const PTRef tr)        const { return term_store[tr];  }
+    PtermIter   getPtermIter  ()                            { return term_store.getPtermIter(); }
 
     // Boolean term generation
-    PTRef       mkAnd         (vec<PTRef>& args);
-    PTRef       mkOr          (vec<PTRef>& args);
-    PTRef       mkImpl        (vec<PTRef>& args);
+    PTRef       mkAnd         (vec<PTRef>&);
+    PTRef       mkOr          (vec<PTRef>&);
+    PTRef       mkXor         (vec<PTRef>&);
+    PTRef       mkImpl        (vec<PTRef>&);
     PTRef       mkNot         (PTRef);
+    PTRef       mkIte         (vec<PTRef>&);
 
 
     // Generic equalities
     PTRef       mkEq          (vec<PTRef>& args);
 
+    // Generic variables
+    PTRef       mkVar         (SRef, const char*);
     // Generic constants
-    PTRef       mkConst       (const char*, char** msg);
-    PTRef       mkConst       (SRef, const char*);
+    virtual PTRef mkConst     (const char*, const char** msg);
+    virtual PTRef mkConst     (SRef, const char*);
 
-    SymRef      declareFun    (const char* fname, const SRef rsort, const vec<SRef>& args, char** msg);
+    SymRef      declareFun    (const char* fname, const SRef rsort, const vec<SRef>& args, char** msg, bool interpreted = false);
     SRef        declareSort   (const char* id, char** msg);
-    SRef        declareSort_Real(char** msg);
-    PTRef       mkFun         (SymRef f, vec<PTRef>& args, char** msg);
-    PTRef       mkBoolVar     (const char* name) { return mkConst(getSort_bool(), name); }
+    PTRef       mkFun         (SymRef f, const vec<PTRef>& args, char** msg);
+    PTRef       mkBoolVar     (const char* name);
 
-
-    // Clone a term
-    PTRef       cloneTerm     (const PTRef&);
 
     // The Boolean connectives
     SymRef        getSym_true      ()              const { return sym_TRUE;     }
@@ -180,13 +220,13 @@ class Logic {
     SymRef        getSym_implies   ()              const { return sym_IMPLIES;  }
     SymRef        getSym_distinct  ()              const { return sym_DISTINCT; }
     SRef          getSort_bool     ()              const { return sort_BOOL;    }
-    SRef          getSort_real     ()              const { return sort_REAL;    }
 
     PTRef         getTerm_true     ()              const { return term_TRUE;  }
     PTRef         getTerm_false    ()              const { return term_FALSE; }
 
     bool          isEquality       (SymRef tr)     const { return equalities.contains(tr);    }
     bool          isEquality       (PTRef tr)      const { return equalities.contains(term_store[tr].symb());}
+    virtual bool  isUFEquality     (PTRef tr)      const { return isEquality(tr) && !hasSortBool(getPterm(tr)[0]); }
     bool          isDisequality    (SymRef tr)     const { return disequalities.contains(tr); }
     bool          isDisequality    (PTRef tr)      const { return disequalities.contains(term_store[tr].symb()); }
     bool          isIte            (SymRef tr)     const { return ites.contains(tr);          }
@@ -199,13 +239,16 @@ class Logic {
     bool        isTheoryTerm       (PTRef tr)      const;
     bool        isBooleanOperator  (SymRef tr)     const;
     bool        isBooleanOperator  (PTRef tr)      const { return isBooleanOperator(term_store[tr].symb()); }
+    bool        isConstant         (SymRef sr)     const;
+    bool        isConstant         (PTRef tr)      const { return isConstant(getPterm(tr).symb()); }
 
-    // XXX The two Boolean constants are vars.  This is confusing.
-    bool        isVar              (PTRef tr)      const { return term_store[tr].nargs() == 0; }
-    bool        isConst            (PTRef tr)      const { return isTrue(tr) || isFalse(tr); }
+    bool        isVar              (SymRef sr)     const { return sym_store[sr].nargs() == 0 && !isConstant(sr); }
+    bool        isVar              (PTRef tr)      const { return isVar(getPterm(tr).symb()); }
     bool        isAtom             (PTRef tr)      const;
+    bool        isBoolAtom         (PTRef tr)      const { return hasSortBool(tr) && isVar(tr); }
     // Check if term is an uninterpreted predicate.
     bool        isUP               (PTRef)         const;
+    bool        isUF               (PTRef)         const;
 
     bool        isAnd(PTRef tr)  const { return getPterm(tr).symb() == getSym_and(); }
     bool        isAnd(SymRef sr) const { return sr == getSym_and(); }
@@ -220,13 +263,18 @@ class Logic {
     bool        isTrue(SymRef sr) const { return sr == getSym_true(); }
     bool        isTrue(PTRef tr)  const { return isTrue(getPterm(tr).symb()); }
     bool        isFalse(SymRef sr) const { return sr == getSym_false(); }
-    bool        isFalse(PTRef tr)  const { return isTrue(getPterm(tr).symb()); }
+    bool        isFalse(PTRef tr)  const { return isFalse(getPterm(tr).symb()); }
     bool        isDistinct(SymRef sr) const { return sr == getSym_distinct(); }
     bool        isDistinct(PTRef tr) const { return isDistinct(getPterm(tr).symb()); }
     bool        isIff(SymRef sr) const { return sr == getSym_eq(); }
     bool        isIff(PTRef tr) const { return isIff(getPterm(tr).symb()); }
 
     bool        isLit(PTRef tr) const;
+
+
+    bool        hasSortBool(PTRef tr) const { return sym_store[getPterm(tr).symb()].rsort() == sort_BOOL; }
+    bool        hasSortBool(SymRef sr) const { return sym_store[sr].rsort() == sort_BOOL; }
+    bool        hasSortInt (PTRef tr) const { return false; }
 
 
     // Return the corresponding equivalence term if yes,
@@ -240,10 +288,6 @@ class Logic {
     bool        declare_sort_hook  (SRef sr);
     inline bool isPredef           (string&)        const { return false; };
 
-    // Implement logic-aware simplifications
-    void        simplify           (SymRef& s, vec<PTRef>& args);
-    // Wrapper for simplifying terms
-    void        simplify           (PTRef& tr);
     // Simplify an equality.  TODO: See if this could be combined with
     // simplifyTree
     bool simplifyEquality(PtChild& ptc, bool simplify);
@@ -251,18 +295,117 @@ class Logic {
     // Simplify a term tree.  Return l_True, l_False, or l_Undef, if
     // simplification resulted in constant true or fale, or neither,
     // respectively
-    lbool       simplifyTree       (PTRef tr);
+    lbool       simplifyTree       (PTRef tr, PTRef& root_out);
+
     PTRef       resolveTerm        (const char* s, vec<PTRef>& args, char** msg);
     // XXX There's a need for non msg giving version
-    PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms, char** msg);
+    virtual PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms, char** msg);
 
-    void        serializeLogicData(int*& logicdata_buf) const;
-    void        deserializeLogicData(const int* logicdata_buf);
+
+    // Top-level equalities based substitutions
+    void collectFacts(PTRef root, vec<PtAsgn>& facts);
+    bool varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& substs, PTRef& tr_new);  // Do the substitution.  Return true if at least one substitution was done, and false otherwise.
+    virtual lbool retrieveSubstitutions(vec<PtAsgn>& facst, Map<PTRef,PTRef,PTRefHash>& substs);
+    virtual void computeSubstitutionFixpoint(PTRef root, PTRef& root_out);
+
+    class SubstNode {
+        Logic& logic;
+        int procChild;
+      public:
+        int index;
+        int lowlink;
+        NStatus status;
+        PTRef tr;
+        vec<PTRef> children;
+        vec<SubstNode*> child_nodes;
+        SubstNode* parent;
+        SubstNode(PTRef tr, PTRef target, SubstNode* parent, Logic& l) : logic(l), procChild(0), index(-1), lowlink(-1), status(ns_unseen), tr(tr), parent(parent) {
+            l.getVars(target, children);
+            sort(children);
+            int i, j;
+            PTRef p = PTRef_Undef;
+            for (i = j = 0; i < children.size(); i++)
+                if (children[i] != p)
+                    p = children[j++] = children[i];
+            children.shrink(i-j);
+        }
+        SubstNode* getNextChild() {
+            for (; procChild < child_nodes.size(); procChild++) {
+                if (child_nodes[procChild] != NULL)
+                    return child_nodes[procChild++];
+            }
+            return NULL;
+        }
+        void updateLowlink(int i) { lowlink = lowlink < i ? lowlink : i; }
+    };
+
+    class TarjanAlgorithm {
+        vec<SubstNode*> controlStack;
+        vec<SubstNode*> tarjanStack;
+        Logic& logic;
+        int index;
+        void addNode(SubstNode* n) {
+            n->index = index;
+            n->lowlink = index;
+            index++;
+            controlStack.push(n);
+            tarjanStack.push(n);
+            n->status = ns_inStack;
+        }
+      public:
+        TarjanAlgorithm(Logic& l) : logic(l), index(0) {}
+        void getLoops(SubstNode* startNode, vec<vec<PTRef> >& loops) {
+            addNode(startNode);
+            while (controlStack.size() > 0) {
+                SubstNode* n = controlStack.last();
+                SubstNode* c = n->getNextChild();
+                if (c != NULL) {
+                    if (c->status == ns_unseen)
+                        addNode(c);
+                    else if (c->status == ns_inStack)
+                        n->updateLowlink(c->index);
+                } else {
+                    controlStack.pop();
+                    if (controlStack.size() > 0)
+                        controlStack.last()->updateLowlink(n->lowlink);
+                    if (n->lowlink == n->index) {
+                        // Start a new SCC
+                        vec<PTRef> scc;
+                        SubstNode* w = NULL;
+                        do {
+                            w = tarjanStack.last(); tarjanStack.pop();
+                            w->status = ns_complete;
+                            scc.push(w->tr);
+                        } while (w != n);
+                        if (scc.size() > 1) {
+                            loops.push();
+                            for (int i = scc.size()-1; i >= 0; i--)
+                                loops.last().push(scc[i]);
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    void getVars(PTRef, vec<PTRef>&) const;
+    void breakSubstLoops(Map<PTRef,PTRef,PTRefHash>& substs);
+
+    bool contains(PTRef x, PTRef y);  // term x contains an occurrence of y
+
+    PTRef learnEqTransitivity(PTRef); // Learn limited transitivity information
+
+    virtual void serializeLogicData(int*& logicdata_buf) const;
+    virtual void deserializeLogicData(const int* logicdata_buf);
 
     void        serializeTermSystem(int*& termstore_buf, int*& symstore_buf, int*& idstore_buf, int*& sortstore_buf, int*& logicdata_buf) const;
     void        deserializeTermSystem(const int* termstore_buf, const int* symstore_buf, const int* idstore_buf, const int* sortstore_buf, const int* logicdata_buf);
 // Debugging
     char*       printTerm          (PTRef tr)       const { return term_store.printTerm(tr); }
+    char*       printTerm          (PTRef tr, bool l) const { return term_store.printTerm(tr, l); }
+
+    void  purify           (PTRef r, PTRef& p, lbool& sgn) const
+        {p = r; sgn = l_True; while (isNot(p)) { sgn = sgn^1; p = getPterm(p)[0]; }}
 
 #ifdef PEDANTIC_DEBUG
     void compareSymStore(SymStore& other) { sym_store.compare(other); }
@@ -272,6 +415,5 @@ class Logic {
 #endif
 
 };
-
 #endif // LOGIC_H
 

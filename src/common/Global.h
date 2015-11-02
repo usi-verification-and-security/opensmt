@@ -26,7 +26,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
+#define USE_GMP        1
+#define FAST_RATIONALS 1
+
 #include <string.h>
+#include <gmp.h>
 #include <gmpxx.h>
 #include <cassert>
 #include <string>
@@ -49,6 +53,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <stdint.h>
 #include <limits.h>
 
+#include "common/FastRational.h"
 #include "minisat/mtl/Map.h"
 
 #define opensmt_error( S )        { cerr << "# Error: " << S << " (triggered at " <<  __FILE__ << ", " << __LINE__ << ")" << endl; exit( 1 ); }
@@ -90,19 +95,117 @@ using std::stringstream;
 using std::ofstream;
 using std::ifstream;
 
-#define USE_GMP        1
-#define FAST_RATIONALS 1
-
 namespace opensmt {
 
 #if FAST_RATIONALS
-#elif USE_GMP
+typedef FastRational Real;
+#else
 typedef mpq_class Real;
 typedef mpz_class Integer;
-#else
-typedef double Real;
-typedef long Integer;
 #endif
+
+bool static inline isDigit(char c)
+{
+    return (c >= '0' && c <= '9');
+}
+bool static inline isPosDig(char c)
+{
+    return (c > '0' && c <= '9');
+}
+
+void static inline normalize(char*& rat, const char* flo, bool is_neg)
+{
+    mpq_t num;
+    mpq_init(num);
+    bool val = mpq_set_str(num, flo, 0);
+    assert(val != -1);
+    mpq_canonicalize(num);
+    if (is_neg)
+        mpq_neg(num, num);
+    gmp_asprintf(&rat, "%Qd", num);
+    mpq_clear(num);
+}
+
+bool static inline stringToRational(char*& rat, const char* flo)
+{
+    int nom_l = 0;
+    int den_l = 1;
+    int state = 0;
+    int zeroes = 0;
+    bool is_frac = false;
+    bool is_neg = false;
+
+    if (flo[0] == '-') { flo++; is_neg = true; }
+
+
+    for (int i = 0; flo[i] != '\0'; i++) {
+        if (state == 0 && flo[i] == '0') {}
+        else if (state == 0 && isPosDig(flo[i])) { nom_l ++; state = 1; }
+        else if (state == 0 && flo[i] == '.')    { state = 4; }
+        else if (state == 0 && flo[i] == '/')    { state = 5; is_frac = true; }
+        else if (state == 1 && isDigit(flo[i]))  { nom_l ++; state = 1; }
+        else if (state == 1 && flo[i] == '.')    { state = 2; }
+        else if (state == 1 && flo[i] == '/')    { state = 5; is_frac = true; }
+        else if (state == 2 && flo[i] == '0')    { zeroes ++; state = 3; }
+        else if (state == 2 && isPosDig(flo[i])) { nom_l ++; state = 2; }
+        else if (state == 3 && flo[i] == '0')    { zeroes ++; state = 3; }
+        else if (state == 3 && isPosDig(flo[i])) { nom_l += zeroes + 1; zeroes = 0; state = 2; }
+        else if (state == 4 && flo[i] == '0')    { state = 4; }
+        else if (state == 4 && isPosDig(flo[i])) { nom_l ++; state = 2; }
+        // We come here if it is a fraction already
+        else if (state == 5 && isDigit(flo[i]))  { state = 5; }
+        else {
+            rat = (char*)malloc(4);
+            strcpy(rat, "err");
+            rat[3] = '\0';
+            return false;
+        }
+    }
+
+    if (is_frac) {
+        normalize(rat, flo, is_neg);
+        return true;
+    }
+
+    if (nom_l == 0) {
+        normalize(rat, "0", false);
+        return true;
+    }
+
+    state = 0;
+    zeroes = 0;
+    for (int i = 0; flo[i] != '\0'; i++) {
+        if (state == 0 && isDigit(flo[i])) { state = 0; }
+        else if (state == 0 && flo[i] == '.')   { state = 1; }
+        else if (state == 1 && isPosDig(flo[i])) { state = 1; den_l ++; }
+        else if (state == 1 && flo[i] == '0')    { state = 2; zeroes ++; }
+        else if (state == 2 && flo[i] == '0')    { state = 2; zeroes ++; }
+        else if (state == 2 && isPosDig(flo[i])) { state = 1; den_l += zeroes + 1; zeroes = 0; }
+    }
+
+//    printf("The literal %s, once converted, will have denominator of length %d and nominator of length %d characters\n", flo, den_l, nom_l);
+    char* rat_tmp = (char*)malloc(nom_l+den_l+2);
+    rat_tmp[0] = '\0';
+
+    int i, j;
+    state = -1;
+    for (i = j = 0; j < nom_l; i++) {
+        assert(flo[i] != '\0');
+        if (state == -1 && flo[i] != '.' && flo[i] != '0') { rat_tmp[j++] = flo[i]; state = 0; }
+        else if (state == -1 && flo[i] == '.') {}
+        else if (state == -1 && flo[i] == '0') {}
+        else if (state == 0 && flo[i] != '.') { rat_tmp[j++] = flo[i]; }
+        else if (state == 0 && flo[i] == '.') {}
+    }
+    rat_tmp[j++] = '/';
+    rat_tmp[j++] = '1';
+    for (i = 0; i < den_l-1; i++) rat_tmp[j++] = '0';
+    rat_tmp[j] = '\0';
+    normalize(rat, rat_tmp, is_neg);
+    free(rat_tmp);
+    return true;
+}
+
 
 
 #define Pair( T ) pair< T, T >
@@ -136,30 +239,32 @@ typedef enodeid_pair_t snodeid_pair_t;
 // Set the bit B to 1 and leaves the others to 0
 #define SETBIT( B ) ( 1 << (B) )
 
-typedef enum
-{
-    UNDEF         // Undefined logic
-  , EMPTY         // Empty, for the template solver
-  , QF_UF         // Uninterpreted Functions
-  , QF_BV         // BitVectors
-  , QF_RDL        // Real difference logics
-  , QF_IDL        // Integer difference logics
-  , QF_LRA        // Real linear arithmetic
-  , QF_LIA        // Integer linear arithmetic
-  , QF_UFRDL      // UF + RDL
-  , QF_UFIDL      // UF + IDL
-  , QF_UFLRA      // UF + LRA
-  , QF_UFLIA      // UF + LIA
-  , QF_UFBV       // UF + BV
-  , QF_AUFBV      // Arrays + UF + BV
-  , QF_AX	  // Arrays with extensionality
-  , QF_AXDIFF	  // Arrays with extensionality and diff
-  , QF_BOOL       // Purely SAT instances
-  , QF_CT	  // Cost
-// DO NOT REMOVE THIS COMMENT !!
-// IT IS USED BY CREATE_THEORY.SH SCRIPT !!
-// NEW_THEORY_INIT
-} logic_t;
+struct Logic_t {
+    int x;
+    const char* str;
+    bool operator== (const Logic_t& o) const { return x == o.x; }
+    bool operator!= (const Logic_t& o) const { return x != o.x; }
+};
+
+static struct Logic_t UNDEF = {-1, "UNDEF"};
+static struct Logic_t EMPTY = {0, "EMPTY"};
+static struct Logic_t QF_UF = {1, "QF_UF"};
+static struct Logic_t QF_BV = {2, "QF_BV"};
+static struct Logic_t QF_RDL = {3, "QF_RDL"};
+static struct Logic_t QF_IDL = {4, "QF_IDL"};
+static struct Logic_t QF_LRA = {5, "QF_LRA"};
+static struct Logic_t QF_LIA = {6, "QF_LIA"};
+static struct Logic_t QF_UFRDL = {7, "QF_UFRDL"};
+static struct Logic_t QF_UFIDL = {8, "QF_UFIDL"};
+static struct Logic_t QF_UFLRA = {9, "QF_UFLRA"};
+static struct Logic_t QF_UFLIA = {10, "QF_UFLIA"};
+static struct Logic_t QF_UFBV = {11, "QF_UFBV"};
+static struct Logic_t QF_AX = {12, "QF_AX"};
+static struct Logic_t QF_AXDIFF = {13, "QF_AXDIFF"};
+static struct Logic_t QF_BOOL = {14, "QF_BOOL"};
+static struct Logic_t QF_AUFBV = {15, "QF_AUFBV"};
+static struct Logic_t QF_CT = {16, "QF_CT"};
+
 
 static inline double cpuTime(void)
 {
@@ -273,7 +378,7 @@ using opensmt::snodeid_t;
 using opensmt::sortid_t;
 using opensmt::enodeid_pair_t;
 using opensmt::encode;
-using opensmt::logic_t;
+using opensmt::Logic_t;
 using opensmt::UNDEF;
 using opensmt::EMPTY;        
 using opensmt::QF_UF;        
@@ -310,6 +415,10 @@ using opensmt::isAstrict;
 using opensmt::isBstrict;
 using opensmt::isAB;
 using opensmt::isABmixed;
+#endif
+
+#ifndef INT32_MAX
+#define INT32_MAX 0x7fffffffL
 #endif
 
 #endif

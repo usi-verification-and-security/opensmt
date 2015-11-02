@@ -64,14 +64,14 @@ SymRef SymStore::newSymb(const char* fname, const vec<SRef>& args, char** msg, b
     SymId id = symbols.size();
     symbols.push(tr);
 
-    if (newsym) {
-        vec<SymRef> trs;
-        symbolTable.insert(fname, trs);
-    }
-    symbolTable[fname].push(tr);           // Map the name to term reference (why not id?), used in parsing
     char* tmp_name = strdup(fname);
     idToName.push(tmp_name);            // Map the id to name, used in error reporting
     ta[tr].id = id;                     // Tell the term its id, used in error reporting, and checking whether two terms could be equal in future?
+    if (newsym) {
+        vec<SymRef> trs;
+        symbolTable.insert(tmp_name, trs);
+    }
+    symbolTable[tmp_name].push(tr);           // Map the name to term reference (why not id?), used in parsing
     return tr;
 }
 
@@ -208,6 +208,9 @@ void SymStore::deserializeSymbols(const int* buf)
         }
         p += name_sz+1;
     }
+#ifdef PEDANTIC_DEBUG
+    check();
+#endif
 }
 
 #ifdef PEDANTIC_DEBUG
@@ -228,5 +231,11 @@ void SymStore::compare(SymStore& other)
         for (int j = 0; j < my_v.size(); j++)
             assert(my_v[j] == other_v[j]);
     }
+}
+
+void SymStore::check() const
+{
+    for (int i = 0; i < symbols.size(); i++)
+        assert(operator[] (symbols[i]).id == i);
 }
 #endif

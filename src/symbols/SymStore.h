@@ -32,12 +32,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "StringMap.h"
 
 class SymStore {
+    friend class LRALogic;
   private:
     VecMap<const char*,SymRef,StringHash,Equal<const char*> >  symbolTable;
     vec<SymRef>                                 symbols;
     SymbolAllocator                             ta;
-    vec<char*>                                  idToName;
   public:
+    vec<char*>                                  idToName;
+
     ~SymStore();
     // Construct a new symbol.  The first argument in args is the return
     // sort of the symbol
@@ -56,6 +58,7 @@ class SymStore {
     void deserializeSymbols(const int* buf);
 #ifdef PEDANTIC_DEBUG
     void compare(SymStore&);
+    void check() const;
 #endif
 private:
     static const char* e_duplicate_symbol;

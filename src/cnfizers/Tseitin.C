@@ -35,6 +35,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // Figure out what's the difference between the two maps!
 bool Tseitin::cnfize(PTRef f, Map<PTRef, PTRef, PTRefHash>& valdupmap)
 {
+
     if (valdupmap.contains(f)) {
         vec<Lit> clause;
         clause.push(findLit(valdupmap[f]));
@@ -71,6 +72,7 @@ bool Tseitin::cnfize(PTRef f, Map<PTRef, PTRef, PTRefHash>& valdupmap)
 
         queue.pop();
         PTRef result = PTRef_Undef;
+
 
         if (logic.isLit(tr)) result = tr;
         else if (logic.isNot(tr)) {
@@ -190,19 +192,19 @@ bool Tseitin::cnfize(PTRef formula
 #endif
 
     assert(formula != PTRef_Undef);
-    Pterm& ft = ptstore[formula];
     // Top level formula must not be and anymore
-    assert(ft.symb() != logic.getSym_and());
+    assert(!logic.isAnd(formula));
 
     // Add the top level literal as a unit to solver.
-    vec<Lit> clause;
-    clause.push(findLit(formula));
+    if (!logic.isOr(formula)) {
+        vec<Lit> clause;
+        clause.push(findLit(formula));
 #ifdef PRODUCE_PROOF
-    if (config.produce_inter != 0)
-        addClause(clause, partitions);
+        if (config.produce_inter != 0)
+            addClause(clause, partitions);
 #endif
-    addClause( clause );
-
+        addClause( clause );
+    }
     vec<PTRef> unprocessed_terms;       // Stack for unprocessed terms
     unprocessed_terms.push(formula);    // Start with this term
     //
@@ -219,40 +221,41 @@ bool Tseitin::cnfize(PTRef formula
 
         // Here (after the checks) not safe to use Pterm& since cnfize.* can alter the table of terms
         // by calling findLit
-        SymRef symb = ptstore[ptr].symb();
-        int sz = ptstore[ptr].size();
-        if (symb == logic.getSym_and())
+        SymRef symb = logic.getPterm(ptr).symb();
+        int sz = logic.getPterm(ptr).size();
+        bool need_def = (ptr == formula ? false : true); // Definition variable not needed for top formula
+        if (logic.isAnd(ptr))
             cnfizeAnd(ptr);
-        else if (symb == logic.getSym_or())
-            cnfizeOr(ptr);
-        else if (symb == logic.getSym_xor())
+        else if (logic.isOr(ptr))
+            cnfizeOr(ptr, need_def);
+        else if (logic.isXor(ptr))
             cnfizeXor(ptr);
-        else if (symb == logic.getSym_eq())
+        else if (logic.isIff(ptr))
             cnfizeIff(ptr);
-        else if (symb == logic.getSym_implies())
+        else if (logic.isImplies(ptr))
             cnfizeImplies(ptr);
-        else if (symb == logic.getSym_distinct())
+        else if (logic.isDistinct(ptr))
             cnfizeDistinct(ptr);
-        else if (symb == logic.getSym_ite())
+        else if (logic.isIte(ptr))
             cnfizeIfthenelse(ptr);
-        else if (symb != logic.getSym_not() && sz > 0) {
+        else if (!logic.isNot(ptr) && sz > 0) {
             // XXX Cnfize equalities here
-            if (logic.isEquality(symb)) {
+            if (logic.isEquality(ptr)) {
                 goto tseitin_end;
                 // This is a bridge equality
                 // It should be treated as a literal by the SAT solver
             }
-            if (logic.lookupUPEq(ptr) != PTRef_Undef) {
+            if (logic.isDisequality(ptr) || (logic.lookupUPEq(ptr) != PTRef_Undef) ) {
                 // Uninterpreted predicate.  Special handling
                 goto tseitin_end;
             }
             else {
-                opensmt_error2("operator not handled", symstore.getName(ptstore[ptr].symb()));
+                opensmt_error2("operator not handled", logic.getSymName(ptr));
             }
         }
 
         {
-            Pterm& pt = ptstore[ptr];
+            Pterm& pt = logic.getPterm(ptr);
             for (int i = 0; i < pt.size(); i++)
                 unprocessed_terms.push(pt[i]); // It would seem that using the reference is not safe if a reallocation happened?
         }
@@ -333,8 +336,8 @@ void Tseitin::cnfizeAnd( PTRef and_term
     vec<Lit> big_clause;
     little_clause.push(~v);
     big_clause   .push(v);
-    for (int i = 0; i < ptstore[and_term].size(); i++) {
-        PTRef arg = ptstore[and_term][i];
+    for (int i = 0; i < logic.getPterm(and_term).size(); i++) {
+        PTRef arg = logic.getPterm(and_term)[i];
         little_clause.push( findLit(arg) );
         big_clause   .push(~findLit(arg));
 #ifdef PRODUCE_PROOF
@@ -412,8 +415,16 @@ void Tseitin::cnfizeOr( PTRef or_term
 #ifdef PRODUCE_PROOF
                       , const ipartitions_t partitions
 #endif
-                      )
+                      , bool def)
 {
+    if (!def) {
+        vec<Lit> big_clause;
+        for (int i = 0 ; i < logic.getPterm(or_term).size(); i++)
+            big_clause.push(findLit(logic.getPterm(or_term)[i]));
+
+        addClause(big_clause);
+        return;
+    }
 //  assert( list );
 //  assert( list->isList( ) );
     //
@@ -428,8 +439,8 @@ void Tseitin::cnfizeOr( PTRef or_term
     Lit v = findLit(or_term);
     little_clause.push( v);
     big_clause   .push(~v);
-    for (int i = 0 ; i < ptstore[or_term].size(); i++) {
-        Lit arg = findLit(ptstore[or_term][i]);
+    for (int i = 0 ; i < logic.getPterm(or_term).size(); i++) {
+        Lit arg = findLit(logic.getPterm(or_term)[i]);
         little_clause.push(~arg);
         big_clause   .push( arg);
 #ifdef PRODUCE_PROOF
@@ -572,8 +583,8 @@ void Tseitin::cnfizeXor(PTRef xor_term
 
     Lit v = findLit(xor_term);
 
-    Lit arg0 = findLit(ptstore[xor_term][0]);
-    Lit arg1 = findLit(ptstore[xor_term][1]);
+    Lit arg0 = findLit(logic.getPterm(xor_term)[0]);
+    Lit arg1 = findLit(logic.getPterm(xor_term)[1]);
     vec<Lit> clause;
 
     clause.push(~v);
@@ -739,10 +750,10 @@ void Tseitin::cnfizeIff( PTRef eq_term
     // aux = ( -aux |  a_0 | -a_1 ) & ( -aux | -a_0 |  a_1 ) &
     //       (  aux |  a_0 |  a_1 ) & (  aux | -a_0 | -a_1 )
     //
-    assert(ptstore[eq_term].size() == 2);
+    assert(logic.getPterm(eq_term).size() == 2);
     Lit v = findLit(eq_term);
-    Lit arg0 = findLit(ptstore[eq_term][0]);
-    Lit arg1 = findLit(ptstore[eq_term][1]);
+    Lit arg0 = findLit(logic.getPterm(eq_term)[0]);
+    Lit arg1 = findLit(logic.getPterm(eq_term)[1]);
     vec<Lit> clause;
 
     clause.push(~v);
@@ -884,7 +895,7 @@ void Tseitin::cnfizeIfthenelse( PTRef ite_term
     //       (  aux | -a_0 | -a_1 ) &
     //       (  aux |  a_0 | -a_2 )
     //
-    Pterm& pt_ite = ptstore[ite_term];
+    Pterm& pt_ite = logic.getPterm(ite_term);
     assert(pt_ite.size() == 3);
 
     Lit v  = findLit(ite_term);
@@ -971,7 +982,7 @@ void Tseitin::cnfizeImplies( PTRef impl_term
     //       (  aux | -a_1 )
     //
 
-    Pterm& pt_impl = ptstore[impl_term];
+    Pterm& pt_impl = logic.getPterm(impl_term);
     assert(pt_impl.size() == 2);
 
     Lit v  = findLit(impl_term);

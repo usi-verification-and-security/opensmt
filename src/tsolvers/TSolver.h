@@ -27,13 +27,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef TSOLVER_H
 #define TSOLVER_H
 
-#include "Enode.h"
+#include "Pterm.h"
 #include "SMTConfig.h"
+#include "Deductions.h"
 #include "SolverTypes.h"
+#include "Logic.h"
 
-class SimpSMTSolver;
-class Egraph;
-class SStore;
 
 #ifdef STATISTICS
 struct TSolverStats
@@ -121,38 +120,81 @@ struct TSolverStats
 
 class TSolver
 {
+protected:
+  SolverId   id;             // Solver unique identifier
+  vec<PtAsgn> explanation;    // Stores the explanation
+  vec<PtAsgn_reason> th_deductions;  // List of deductions computed by the theory
+  size_t        deductions_next;     // Index of next deduction to communicate
+  vec<size_t>   deductions_lim;      // Keeps track of deductions done up to a certain point
+  vec<size_t>   deductions_last;     // Keeps track of deductions done up to a certain point
+  vec<PTRef>    suggestions;         // List of suggestions for decisions
+  vec<DedElem> &deduced;             // Array of deductions indexed by variables
+  Map<PTRef,lbool,PTRefHash>    polarityMap;
 public:
 
-  TSolver ( const int i, const char * n, SMTConfig & c )
-    : id     ( i )
-    , name   ( n )
-    , config ( c )
-  { }
+  TSolver(SolverId id_, const char* name_, SMTConfig & c, vec<DedElem>& d)
+  : id(id_)
+  , name(name_)
+  , deductions_next(0)
+  , config  (c)
+  , deduced (d)
+  , has_explanation(false)
+  {}
 
   virtual ~TSolver ( ) { }
-
-  virtual lbool               inform              ( PTRef )               = 0;  // Inform the solver about the existence of a theory atom
-  virtual bool                assertLit           ( PTRef, bool = false ) = 0;  // Assert a theory literal
-  virtual void                pushBacktrackPoint  ( )                       = 0;  // Push a backtrack point
-  virtual void                popBacktrackPoint   ( )                       = 0;  // Backtrack to last saved point
-  virtual bool                check               ( bool )                  = 0;  // Check satisfiability
-  inline const string &       getName             ( ) { return name; }            // The name of the solver
-  virtual lbool               evaluate            ( PTRef ) { return l_Undef; } // Evaluate the expression in the current state
-#ifdef PRODUCE_PROOF
-  virtual Enode *             getInterpolants     ( logic_t & ) { return interpolants; }
+    void  setPolarity(PTRef tr, lbool p) {
+        if (polarityMap.contains(tr)) { polarityMap[tr] = p; }
+        else { polarityMap.insert(tr, p); }
+#ifdef VERBOSE_EUF
+        cerr << "Setting polarity " << getLogic().printTerm(tr) << endl;
 #endif
-
-protected:
-
-  const int                   id;               // Id of the solver
-  const string                name;             // Name of the solver
-  SMTConfig &                 config;           // Reference to configuration
-  vec< size_t >               backtrack_points; // Keeps track of backtrack points
+    }
+    virtual void print(ostream& out) = 0;
+    lbool getPolarity(PTRef tr)          { return polarityMap[tr]; }
+    void  clearPolarity(PTRef tr)        {
+        polarityMap[tr] = l_Undef;
+#ifdef VERBOSE_EUF
+        cerr << "Clearing polarity " << getLogic().printTerm(tr) << endl;
+#endif
+    }
+    bool  hasPolarity(PTRef tr)          { if (polarityMap.contains(tr)) { return polarityMap[tr] != l_Undef; } else return false; }
+    virtual lbool               inform              ( PTRef ) = 0             ;  // Inform the solver about the existence of a theory atom
+    virtual bool                assertLit           ( PtAsgn, bool = false ) = 0 ;  // Assert a theory literal
+    virtual void                pushBacktrackPoint  ( )                       ;  // Push a backtrack point
+    virtual void                popBacktrackPoint   ( )                       ;  // Backtrack to last saved point
+    virtual bool                check               ( bool ) = 0              ;  // Check satisfiability
+    inline const string &       getName             ( ) { return name; }            // The name of the solver
+    virtual lbool               evaluate            ( PTRef ) { return l_Undef; } // Evaluate the expression in the current state
+    virtual ValPair             getValue            (PTRef) const = 0;
 #ifdef PRODUCE_PROOF
-  Enode *                     interpolants;     // Store interpolants
+    virtual Enode *             getInterpolants     ( logic_t & ) { return interpolants; }
+#endif
+    virtual void computeModel() = 0;                      // Compute model for variables
+    virtual void getConflict(bool, vec<PtAsgn>&) = 0;     // Return conflict
+    virtual PtAsgn_reason getDeduction() = 0;             // Return an implied node based on the current state
+
+    SolverId getId() { return id; }
+    bool hasExplanation() { return has_explanation; }
+    virtual void declareTerm(PTRef tr) = 0;
+    virtual char* printValue(PTRef) = 0; // Debug function.  Instances are allowed to print whatever they want.
+    virtual char* printExplanation(PTRef) = 0; // Debug function.  Instances are allowed to print whatever they want.
+    virtual Logic& getLogic() = 0;
+protected:
+    Map<PTRef,bool,PTRefHash>   informed_PTRefs;
+    bool                        informed(PTRef tr) { return informed_PTRefs.contains(tr); }
+    bool                        has_explanation;  // Does the solver have an explanation (conflict detected)
+    const char*                 name;             // Name of the solver
+    SMTConfig &                 config;           // Reference to configuration
+    vec< size_t >               backtrack_points; // Keeps track of backtrack points
+#ifdef PRODUCE_PROOF
+    Enode *                     interpolants;     // Store interpolants
+#endif
+#ifdef STATISTICS
+    TSolverStats tsolver_stats;                   // Statistics for the solver
 #endif
 };
 
+/*
 class OrdinaryTSolver : public TSolver
 {
 public:
@@ -160,32 +202,23 @@ public:
   OrdinaryTSolver ( const int           i
                   , const char *        n
 		  , SMTConfig &         c
-		  , Egraph &            e
-		  , SStore &            t
-		  , vector< Enode * > & x
-		  , vector< Enode * > & d
-		  , vector< Enode * > & s )
+		  , Logic & l)
     : TSolver     ( i, n, c )
-    , egraph      ( e )
-    , sstore      ( t )
-    , explanation ( x )
-    , deductions  ( d )
-    , suggestions ( s )
+    , logic(l)
   { }
 
   virtual ~OrdinaryTSolver ( )
   { }
 
-  virtual bool belongsToT   ( Enode * ) = 0; // Atom belongs to this theory
+  virtual bool belongsToT   ( PTRef ) = 0; // Atom belongs to this theory
   virtual void computeModel ( )         = 0; // Compute model for variables
 
 protected:
 
-  Egraph &            egraph;      // Reference to egraph
-  SStore &            sstore;      // Reference to sstore
-  vector< Enode * > & explanation; // Stores the explanation
-  vector< Enode * > & deductions;  // List of deductions
-  vector< Enode * > & suggestions; // List of suggestions for decisions
+  Logic& logic;
+  vector< PTRef > explanation; // Stores the explanation
+  vector< PTRef > deductions;  // List of deductions
+  vector< PTRef > suggestions; // List of suggestions for decisions
 };
 
 class CoreTSolver : public TSolver
@@ -216,7 +249,8 @@ protected:
 
 public:
 #ifdef STATISTICS
-  TSolverStats                tsolver_stats;       // Statistical info for this solver
+  vector< TSolverStats * >    tsolvers_stats;      // Statistical info for tsolvers
+  TSolverStats tsolver_stats;
 #endif
 
 protected:
@@ -228,5 +262,6 @@ protected:
   vec< PTRef >                suggestions;         // List of suggestions for decisions
   SimpSMTSolver *             solver;              // Pointer to solver
 };
+*/
 
 #endif

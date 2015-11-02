@@ -31,6 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "Interpret.h"
+#include "Theory.h"
 
 namespace opensmt {
 bool stop;
@@ -119,6 +120,8 @@ void Interpret::getOption(ASTNode& n) {
 }
 
 void Interpret::exit() {
+    delete main_solver;
+    delete theory;
     f_exit = true;
 }
 
@@ -129,16 +132,21 @@ bool Interpret::interp(ASTNode& n) {
     if (strcmp(cmd, "set-logic") == 0) {
         ASTNode &logic_n = **(n.children->begin());
         const char* logic_name = logic_n.getValue();
-        if (logic.isSet()) {
-            notify_formatted(true, "logic has already been set to %s", logic.getName().c_str());
-        }
-        else if (!logic.setLogic(logic_name)) {
+        if (logic != NULL) {
+            notify_formatted(true, "logic has already been set to %s", logic->getName().c_str());
+        } else if (strcmp(logic_name, QF_UF.str) == 0) {
+            theory = new UFTheory(config);
+            logic = &(theory->getLogic());
+            main_solver = new MainSolver(*theory, config);
+            main_solver->initialize();
+        } else if (strcmp(logic_name, QF_LRA.str) == 0) {
+            theory = new LRATheory(config);
+            logic = &(theory->getLogic());
+            main_solver = new MainSolver(*theory, config);
+            main_solver->initialize();
+        } else {
             notify_formatted(true, "unknown logic %s", logic_name);
             return false;
-        }
-        else {
-            sat_solver.initialize();
-            ts.initialize();
         }
         return true;
     }
@@ -159,14 +167,16 @@ bool Interpret::interp(ASTNode& n) {
         return false;
     }
     if (strcmp(cmd, "declare-sort") == 0) {
-        if (logic.isSet()) {
-            bool was_new = !store.containsSort(n);
-            SRef sr = store.newSort(n);
+        if (logic->isSet()) {
+            char* name = buildSortName(n);
+            bool was_new = !logic->containsSort(name);
+            free(name);
+            SRef sr = newSort(n);
             if (!was_new) {
-                notify_formatted(true, "sort %s already declared", store.getName(sr));
+                notify_formatted(true, "sort %s already declared", logic->getSortName(sr));
                 goto declare_sort_err;
             }
-            rval = logic.declare_sort_hook(sr);
+            rval = logic->declare_sort_hook(sr);
             assert(rval);
             notify_success();
 declare_sort_err: ;
@@ -176,7 +186,7 @@ declare_sort_err: ;
         return false;
     }
     if (strcmp(cmd, "declare-fun") == 0) {
-        if (logic.isSet()) {
+        if (logic->isSet()) {
             list<ASTNode*>::iterator it = n.children->begin();
             ASTNode& name_node = **(it++);
             ASTNode& args_node = **(it++);
@@ -187,19 +197,20 @@ declare_sort_err: ;
 
             vec<SRef> args;
 
-            if (store.containsSort(ret_node)) {
-                SRef sr = store.newSort(ret_node);
+            char* name = buildSortName(ret_node);
+
+            if (logic->containsSort(name)) {
+                SRef sr = newSort(ret_node);
                 args.push(sr);
             } else {
-                char* name = store.buildName(ret_node);
                 notify_formatted(true, "Unknown return sort %s of %s", name, fname);
                 free(name);
                 goto declare_fun_err;
             }
             for (list<ASTNode*>::iterator it2 = args_node.children->begin(); it2 != args_node.children->end(); it2++) {
-                char* name = store.buildName(**it2);
-                if (store.containsSort(**it2)) {
-                    args.push(store[name]);
+                char* name = buildSortName(**it2);
+                if (logic->containsSort(name)) {
+                    args.push(logic->getSortRef(name));
                     free(name);
                 }
                 else {
@@ -215,7 +226,7 @@ declare_fun_err: ;
         return false;
     }
     if (strcmp(cmd, "assert") == 0) {
-        if (logic.isSet()) {
+        if (logic->isSet()) {
             sstat status;
             ASTNode& asrt = **(n.children->begin());
             vec<LetFrame> let_branch;
@@ -225,7 +236,7 @@ declare_fun_err: ;
             else {
 
                 char* err_msg = NULL;
-                status = main_solver.insertFormula(tr, &err_msg);
+                status = main_solver->insertFormula(tr, &err_msg);
 
                 if (status == s_Error)
                     notify_formatted(true, "Error");
@@ -248,7 +259,7 @@ declare_fun_err: ;
     }
     if (strcmp(cmd, "simplify") == 0) {
         char* msg;
-        sstat status = main_solver.simplifyFormulas(&msg);
+        sstat status = main_solver->simplifyFormulas(&msg);
         if (status == s_Error)
             notify_formatted(true, "Simplify: %s", msg);
     }
@@ -259,21 +270,24 @@ declare_fun_err: ;
     if (strcmp(cmd, "get-assignment") == 0) {
         getAssignment(cmd);
     }
+    if (strcmp(cmd, "get-value") == 0) {
+        getValue(n.children);
+    }
     if (strcmp(cmd, "write-state") == 0) {
-        if (main_solver.solverEmpty()) {
+        if (main_solver->solverEmpty()) {
             char* msg;
-            sstat status = main_solver.simplifyFormulas(&msg);
+            sstat status = main_solver->simplifyFormulas(&msg);
             if (status == s_Error)
                 notify_formatted(true, "write-state: %s", msg);
         }
         writeState((**(n.children->begin())).getValue());
     }
     if (strcmp(cmd, "read-state") == 0) {
-        if (logic.isSet()) {
+        if (logic->isSet()) {
             const char* filename = (**(n.children->begin())).getValue();
             CnfState cs;
             char* msg;
-            bool rval = main_solver.readSolverState(filename, &msg);
+            bool rval = main_solver->readSolverState(filename, &msg);
             if (!rval) {
                 notify_formatted("%s", msg);
             }
@@ -304,7 +318,7 @@ bool Interpret::addLetName(const char* s, const PTRef tr, LetFrame& frame) {
     }
     // If a term is noscoping with one name, all others are also
     // noscoping.
-    if (symstore.contains(s) && symstore[symstore.nameToRef(s)[0]].noScoping()) {
+    if (logic->hasSym(s) && logic->getSym(logic->symNameToRef(s)[0]).noScoping()) {
         comment_formatted("Names marked as no scoping cannot be overloaded with let variables: %s", s);
         return false;
     }
@@ -339,9 +353,9 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
     if (t == TERM_T) {
         const char* name = (**(term.children->begin())).getValue();
 //        comment_formatted("Processing term %s", name);
-        char* msg;
+        const char* msg;
         vec<SymRef> params;
-        PTRef tr = logic.mkConst(name, &msg);
+        PTRef tr = logic->mkConst(name, &msg);
         if (tr == PTRef_Undef)
             comment_formatted("While processing %s: %s", name, msg);
         return tr;
@@ -356,8 +370,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
 //            comment_formatted("Found a let reference to term %d", tr);
             return tr;
         }
-        else
-            tr = logic.resolveTerm(name, vec_ptr_empty, &msg);
+        tr = logic->resolveTerm(name, vec_ptr_empty, &msg);
         if (tr == PTRef_Undef)
             comment_formatted("unknown qid term %s: %s", name, msg);
         free(msg);
@@ -379,22 +392,21 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
         }
         assert(args.size() > 0);
         char* msg = NULL;
-        PTRef tr = logic.resolveTerm(name, args, &msg);
+        PTRef tr = logic->resolveTerm(name, args, &msg);
         if (tr == PTRef_Undef) {
-            // Implement a nice error reporting here
             notify_formatted(true, "No such symbol %s: %s", name, msg);
             comment_formatted("The symbol %s is not defined for the following sorts:", name);
             for (int j = 0; j < args.size(); j++)
-                comment_formatted("arg %d: %s", j, store.getName(symstore[ptstore[args[j]].symb()].rsort()));
-            if (symstore.contains(name)) {
+                comment_formatted("arg %d: %s", j, logic->getSortName(logic->getSortRef(args[j]) )); //store.getName(symstore[ptstore[args[j]].symb()].rsort()));
+            if (logic->hasSym(name)) {
                 comment_formatted("candidates are:");
-                const vec<SymRef>& trefs = symstore.nameToRef(name);
+                const vec<SymRef>& trefs = logic->symNameToRef(name);
                 for (int j = 0; j < trefs.size(); j++) {
                     SymRef ctr = trefs[j];
-                    const Symbol& t = symstore[ctr];
+                    const Symbol& t = logic->getSym(ctr);
                     comment_formatted(" candidate %d", j);
                     for (uint32_t k = 0; k < t.nargs(); k++) {
-                        comment_formatted("  arg %d: %s", k, store.getName(t[k]));
+                        comment_formatted("  arg %d: %s", k, logic->getSortName(t[k]));
                     }
                 }
             }
@@ -501,16 +513,16 @@ bool Interpret::checkSat(const char* cmd) {
             return false;
     }
     sstat res;
-    if (logic.isSet()) {
+    if (logic->isSet()) {
         sat_calls++;
         char* msg = NULL;
 
-        res = main_solver.simplifyFormulas(&msg);
+        res = main_solver->simplifyFormulas(&msg);
         if (res == s_Undef) {
             if (config.sat_split_type() == spt_lookahead)
-                res = main_solver.lookaheadSplit(getLog2Ceil(config.sat_split_num()));
+                res = main_solver->lookaheadSplit(getLog2Ceil(config.sat_split_num()));
             else
-                res = main_solver.solve();
+                res = main_solver->solve();
         }
 
         if (res == s_True) {
@@ -539,11 +551,11 @@ bool Interpret::checkSat(const char* cmd) {
 }
 
 bool Interpret::getAssignment(const char* cmd) {
-    if (!logic.isSet()) {
+    if (!logic->isSet()) {
        notify_formatted(true, "Illegal command before set-logic: %s", cmd);
        return false;
     }
-    if (main_solver.getStatus() != s_True) {
+    if (main_solver->getStatus() != s_True) {
        notify_formatted(true, "Last solver call not satisfiable");
        return false;
     }
@@ -552,7 +564,7 @@ bool Interpret::getAssignment(const char* cmd) {
     for (int i = 0; i < term_names.size(); i++) {
         const char* name = term_names[i];
         PTRef tr = nameToTerm[name];
-        lbool val = ts.getTermValue(tr);
+        lbool val = main_solver->getTermValue(tr);
         asprintf(&out_str, "%s(%s %s)%s",
                  out_str,
                  name,
@@ -566,10 +578,33 @@ bool Interpret::getAssignment(const char* cmd) {
     return true;
 }
 
+bool Interpret::getValue(const list<ASTNode*>* terms)
+{
+    vec<ValPair> values;
+    for (list<ASTNode*>::const_iterator term_it = terms->begin(); term_it != terms->end(); ++term_it) {
+        const ASTNode& term = **term_it;
+        vec<LetFrame> tmp;
+        PTRef tr = parseTerm(term, tmp);
+        if (tr != PTRef_Undef) {
+            ValPair vp = main_solver->getValue(tr);
+            values.push(vp);
+            comment_formatted("Found the term %s", logic->printTerm(tr));
+        } else
+            comment_formatted("Error parsing the term %s", (**(term.children->begin())).getValue());
+    }
+    printf("(");
+    for (int i = 0; i < values.size(); i++) {
+        char* name = logic->printTerm(values[i].tr);
+        printf("(%s %s)", name, values[i].val);
+        free(name);
+    }
+    printf(")\n");
+}
+
 void Interpret::writeState(const char* filename)
 {
     char* msg;
-    bool rval = main_solver.writeSolverState(filename, &msg);
+    bool rval = main_solver->writeSolverState(filename, &msg);
     if (!rval) {
         notify_formatted("%s", msg);
     }
@@ -578,7 +613,7 @@ void Interpret::writeState(const char* filename)
 void Interpret::writeSplits(const char* filename)
 {
     char* msg;
-    bool rval = main_solver.writeSolverSplits(filename, &msg);
+    bool rval = main_solver->writeSolverSplits(filename, &msg);
     if (!rval) {
         notify_formatted("%s", msg);
     }
@@ -586,7 +621,14 @@ void Interpret::writeSplits(const char* filename)
 
 bool Interpret::declareFun(const char* fname, const vec<SRef>& args) {
     char* msg;
-    SymRef rval = symstore.newSymb(fname, args, &msg);
+    SRef rsort = args[0];
+    vec<SRef> args2;
+
+    for (int i = 1; i < args.size(); i++)
+        args2.push(args[i]);
+
+    SymRef rval = logic->declareFun(fname, rsort, args2, &msg);
+
     if (rval == SymRef_Undef) {
         comment_formatted("While declare-fun %s: %s", fname, msg);
         free(msg);
@@ -833,6 +875,75 @@ int Interpret::interpInteractive(FILE*) {
     if (parse_buf) free(parse_buf);
     if (line_read) free(line_read);
     return rval;
+}
+
+IdRef Interpret::newIdentifier(ASTNode& n)
+{
+    if (n.children == NULL)
+        return logic->newIdentifier(n.getValue());
+    else {
+        char* s = NULL;
+        char* o = s;
+        vec<int> nl;
+        for (list<ASTNode*>::iterator it = n.children->begin(); it != n.children->end(); it++) {
+            o = s;
+            asprintf(&s, "%s %s", o, (**it).getValue());
+            free(o);
+            nl.push(atoi((**it).getValue()));
+        }
+        o = s;
+        asprintf(&s, "%s (%s)", n.getValue(), s);
+        free(o);
+        return logic->newIdentifier(n.getValue(), nl);
+    }
+}
+
+// The Traversal of the node is unnecessary and a result of a confusion
+// Code can possibly be reused when define-sort is implemented
+char* Interpret::buildSortName(ASTNode& sn)
+{
+    list<ASTNode*>::iterator it = sn.children->begin();
+    char* canon_name;
+    asprintf(&canon_name, "%s", (**it).getValue());
+    return canon_name;
+
+    asprintf(&canon_name, "%s", (**(it++)).getValue());
+    if  (it != sn.children->end()) {
+        char* arg_names;
+        char* old;
+        char* sub_name = buildSortName(**(it++));
+        asprintf(&arg_names, "%s", sub_name);
+        free(sub_name);
+        for (; it != sn.children->end(); it++) {
+            old = arg_names;
+            sub_name = buildSortName(**it);
+            asprintf(&arg_names, "%s %s", old, sub_name);
+            free(sub_name);
+            free(old);
+        }
+        old = canon_name;
+        asprintf(&canon_name, "%s (%s)", old, arg_names);
+        free(old);
+    }
+    return canon_name;
+}
+
+SRef Interpret::newSort(ASTNode& sn) {
+    IdRef idr = IdRef_Undef;
+    vec<SRef> tmp;
+    if (sn.getType() == CMD_T || sn.getType() == ID_T) {
+        list<ASTNode*>::iterator p = sn.children->begin();
+        ASTNode& sym_name = **p;
+        idr = logic->newIdentifier(sym_name.getValue());
+    } else {
+        assert(sn.getType() == LID_T);
+        // This is possibly broken: idr is undef once we exit here.
+        list<ASTNode*>::iterator it = sn.children->begin();
+        for (; it != sn.children->end(); it++)
+            tmp.push(newSort(**it));
+    }
+    char* canon_name = buildSortName(sn);
+    return logic->newSort(idr, canon_name, tmp);
 }
 
 #ifdef PRODUCE_PROOF

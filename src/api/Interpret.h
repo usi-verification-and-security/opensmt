@@ -41,6 +41,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "egraph/Egraph.h"
 #include "smtsolvers/SMTConfig.h"
 #include "api/MainSolver.h"
+#include "logics/Theory.h"
 
 class LetFrame {
   private:
@@ -62,27 +63,21 @@ class LetFrame {
 
 
 class Interpret {
-public:
-    SMTConfig       config;
+  private:
+    SMTConfig      &config;
+    Theory         *theory;
+    Logic          *logic;
 
-private:
-    IdentifierStore idstore;  // Identifiers
-    SStore          store;    // Sorts
-    SymStore        symstore; // Symbols
-    PtStore         ptstore;  // Proper terms
-    Logic           logic;
-
-    TermMapper    tmap;
-    Egraph        uf_solver;
-    THandler      thandler;
-    SimpSMTSolver sat_solver;
-    Tseitin       ts;
 
     Map<const char*,PTRef,StringHash,Equal<const char*> > nameToTerm;
     VecMap<PTRef,const char*,PTRefHash,Equal<PTRef> > termToNames;
     vec<const char*>            term_names;
 
     bool                        f_exit;
+
+    IdRef                       newIdentifier(ASTNode& n);
+    char*                       buildSortName(ASTNode& n);
+    SRef                        newSort      (ASTNode& n);
 
     void                        setInfo(ASTNode& n);
     void                        getInfo(ASTNode& n);
@@ -93,6 +88,7 @@ private:
     bool                        declareFun(const char* fname, const vec<SRef>& args);
     bool                        checkSat(const char*);
     bool                        getAssignment(const char*);
+    bool                        getValue(const list<ASTNode*>* term);
     PTRef                       parseTerm(const ASTNode& term, vec<LetFrame>& let_branch);
     void                        exit();
 #ifdef PRODUCE_PROOF
@@ -115,56 +111,21 @@ private:
     vec<SRef>                   vec_sr_empty; // For faster comparison with empty vec
     vec<PTRef>                  vec_ptr_empty;
   public:
-
-    // Constructor initiates a default logic.  Not sure if this is the best way to go...
-    Interpret() :
-          store   (config, idstore)
-        , ptstore (symstore, store)
-        , logic   (config, idstore, store, symstore, ptstore)
-        , tmap    (logic)
-
-        , uf_solver( config
-                   , store
-                   , symstore
-                   , ptstore
-                   , logic
-                   , tmap )
-
-        , thandler( uf_solver
-                  , config
-                  , tmap
-                  , logic
-                  )
-
-        , sat_solver( config
-                    , thandler )
-
-        , ts( ptstore
-            , config
-            , symstore
-            , store
-            , logic
-            , tmap
-            , thandler
-            , sat_solver )
-
-        , main_solver( logic
-                     , tmap
-                     , uf_solver
-                     , sat_solver
-                     , ts )
-
+    Interpret(SMTConfig& c)
+        : logic   (NULL)
+        , theory  (NULL)
+        , main_solver(NULL)
         , f_exit(false)
         , asrt_lev(0)
-        , sat_calls(0) {
-            uf_solver.solver = &sat_solver;
-        };
+        , sat_calls(0)
+        , config(c) { }
+
 
     int interpFile(FILE* in);
     int interpInteractive(FILE* in);
     int interpPipe();
 
-    MainSolver    main_solver;
+    MainSolver   *main_solver;
 };
 
 #endif

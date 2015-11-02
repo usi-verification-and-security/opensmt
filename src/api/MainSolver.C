@@ -48,6 +48,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 namespace opensmt { extern bool stop; }
+#include "symmetry/Symmetry.h"
 
 #ifdef USE_GZ
 int MainSolver::compress_buf(const int* buf_in, int*& buf_out, int sz, int& sz_out) const
@@ -167,6 +168,9 @@ int MainSolver::decompress_buf(int* buf_in, int*& buf_out, int sz, int& sz_out )
 #endif
 
 sstat MainSolver::simplifyFormulas(char** err_msg) {
+    if (binary_init)
+        return s_Undef;
+
     status = s_Undef;
     PTRef  root;
     // Think of something here to enable incrementality...
@@ -176,7 +180,8 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
 
     root = logic.mkAnd(formulas);
     PTRef trans = PTRef_Undef;
-    trans = tlp.learnEqTransitivity(root);
+    if (config.logic == QF_UF)
+        trans = logic.learnEqTransitivity(root);
     if (trans != PTRef_Undef) {
         vec<PTRef> enriched;
         enriched.push(trans);
@@ -186,85 +191,55 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
     // Framework for handling different logic related simplifications.
     // For soundness it is important to run this until closure
     Map<PTRef,int,PTRefHash> subst_targets;
-    while (true) {
-        // For termination it is important to have this reinitialized
-        // every time
-        Map<PTRef,PTRef,PTRefHash> substs;
-#ifdef SIMPLIFY_DEBUG
-        cerr << "retrieving" << endl;
-        vec<PTRef> subst_vars;
-        tlp.retrieveSubstitutions(root, substs, subst_targets, subst_vars);
-        cerr << "Identified substitutions: " << endl;
-        for (int i = 0; i < subst_vars.size(); i++)
-            cerr << "Substituting " << logic.printTerm(subst_vars[i]) << " with " << logic.printTerm(substs[subst_vars[i]]) << endl;
-#else
-        tlp.retrieveSubstitutions(root, substs, subst_targets);
-#endif
-
-//        if (!tlp.substitute(root)) break;
-#ifdef SIMPLIFY_DEBUG
-        cerr << "substituting" << endl;
-#endif
-#ifndef OLD_VARSUBSTITUTE
-        PTRef new_root = PTRef_Undef;
-        if (!tlp.varsubstitute(root, substs, subst_targets, new_root)) break;
-        root = new_root;
-#else
-        if (!tlp.varsubstitute(root, substs)) break;
-#endif
-        lbool res = logic.simplifyTree(root);
-        if (res == l_True) root = logic.getTerm_true(); // Trivial problem
-        else if (res == l_False) root = logic.getTerm_false(); // Trivial problem
-    }
-
-    vec<PtAsgn> tlfacts;
-#ifdef ENABLE_CONGRUENCESUBSTITUTION
-#ifdef SIMPLIFY_DEBUG
-    cerr << "Init congruence with " << logic.printTerm(root) << endl;
-#endif
-    tlp.initCongruence(root);
-
-#ifdef SIMPLIFY_DEBUG
-    cerr << "Compute congruence substitution" << endl;
-#endif
-    if (!tlp.computeCongruenceSubstitutions(root, tlfacts)) {
-        root = logic.getTerm_false(); // trivial problem
-    }
     PTRef new_root;
-    tlp.substitute(root, new_root);
-    root = new_root;
-#endif
+    logic.computeSubstitutionFixpoint(root, new_root);
+    if (logic.isTrue(new_root)) return status = s_True;
+    else if (logic.isFalse(new_root)) return status = s_False;
 
-    // Add the top level facts to the formula
-    vec<PTRef> tmp;
-    tmp.push(root);
-    for (int i = 0; i < tlfacts.size(); i++)
-        tmp.push(tlfacts[i].sgn == l_True ? tlfacts[i].tr : logic.mkNot(tlfacts[i].tr));
-    root = logic.mkAnd(tmp);
-    lbool res = logic.simplifyTree(root);
-    if (res == l_True) root = logic.getTerm_true(); // Trivial problem
-    else if (res == l_False) root = logic.getTerm_false(); // Trivial problem
     vec<PtChild> terms;
-    FContainer fc(root);
-    expandItes(fc, terms);
-    fc.setRoot(terms[terms.size()-1].tr);
+    FContainer fc(new_root);
+    //expandItes(fc, terms);
+    //fc.setRoot(terms[terms.size()-1].tr);
 
-    fc = propFlatten(fc);
+    if(config.remove_symmetries()) {
+
+        symmetry::Detector d(logic, new_root);
+        //d.toDot("/home/simone/Desktop/graph.dot");
+        d.findSBPs();
+        PTRef sbps = d.getSBPs();
+        
+        if(sbps != PTRef_Undef) {
+            std::cerr << "; [SBPs]: " << logic.printTerm(sbps) << std::endl;
+            vec<PTRef> newTerms;
+            newTerms.push(root);
+            newTerms.push(sbps);
+            PTRef newRoot = logic.mkAnd(newTerms);
+            fc.setRoot(newRoot);
+        }
+        else std::cerr << "; There are no BSPs!" << std::endl;
+    }
+
+
+//    fc = propFlatten(fc);
+    // Optimize the dag for cnfization
+    Map<PTRef,int,PTRefHash> PTRefToIncoming;
+    if (logic.isBooleanOperator(fc.getRoot())) {
+        computeIncomingEdges(fc.getRoot(), PTRefToIncoming);
+        fc.setRoot(rewriteMaxArity(fc.getRoot(), PTRefToIncoming));
+    }
     terms.clear();
-    getTermList(fc.getRoot(), terms, logic);
-    fc = simplifyEqualities(terms);
-    res = logic.simplifyTree(fc.getRoot());
 
-    uf_solver.declareTermTree(fc.getRoot());
+//  Not a good idea here since the SAT solver does simplifications
+//  removing variables and some theories (e.g., UF_LRA) slow down on
+//  extra variables.
+//    thandler.declareTermTree(fc.getRoot());
 
-    if (res == l_False) status = giveToSolver(logic.getTerm_false());
-    else if (res == l_Undef)
-        status = giveToSolver(fc.getRoot());
+    status = giveToSolver(fc.getRoot());
 
     return status;
 }
 
-void MainSolver::expandItes(FContainer& fc, vec<PtChild>& terms) const
+void MainSolver::expandItes(FContainer& fc, vec<PtChild>& terms)
 {
     // cnfization of the formula
     // Get the egraph data structure for instance from here
@@ -373,7 +348,6 @@ MainSolver::FContainer MainSolver::rewriteMaxArity(MainSolver::FContainer fc, Ma
 }
 #endif
 
-//
 // Replace subtrees consisting only of ands / ors with a single and / or term.
 // Search a maximal section of the tree consisting solely of ands / ors.  The
 // root of this subtree is called and / or root.  Collect the subtrees rooted at
@@ -384,305 +358,114 @@ MainSolver::FContainer MainSolver::rewriteMaxArity(MainSolver::FContainer fc, Ma
 // term appears as a child in more than one term, we will not flatten
 // that structure.
 //
-MainSolver::FContainer MainSolver::propFlatten(MainSolver::FContainer fc)
+
+void MainSolver::computeIncomingEdges(PTRef tr, Map<PTRef,int,PTRefHash>& PTRefToIncoming)
 {
-#ifdef SIMPLIFY_DEBUG
-    cerr << "; COMPUTE INCOMING EDGES" << endl;
-#endif
-
-    PTRef top = fc.getRoot();
-    vec<pi> qu;
-    qu.push(pi(top));
-    Map<PTRef,int,PTRefHash> occs;
-    vec<PTRef> terms;
-#ifdef SIMPLIFY_DEBUG
-    VecMap<PTRef,PTRef,PTRefHash > parents;
-#endif
-
-    while (qu.size() != 0) {
-        int ci = qu.size() - 1;
-#ifdef SIMPLIFY_DEBUG
-        cerr << "Processing " << logic.printTerm(qu[ci].x) << " (" << qu[ci].x.x << ")" << endl;
-#endif
-//        assert(!occs.contains(qu[ci].x));
-        if (occs.contains(qu[ci].x)) {
-            // fires if a term has two occurrences of the same atom
-#ifdef SIMPLIFY_DEBUG
-            cerr << "Processed before: " << logic.printTerm(qu[ci].x);
-#endif
-            occs[qu[ci].x]++;
-            qu.pop();
+    assert(tr != PTRef_Undef);
+    vec<pi*> unprocessed_ptrefs;
+    unprocessed_ptrefs.push(new pi(tr));
+    while (unprocessed_ptrefs.size() > 0) {
+        pi* pi_ptr = unprocessed_ptrefs.last();
+        if (PTRefToIncoming.contains(pi_ptr->x)) {
+            PTRefToIncoming[pi_ptr->x]++;
+            unprocessed_ptrefs.pop();
             continue;
         }
         bool unprocessed_children = false;
-#ifdef ENABLE_SHARING_BUG
-        if (logic.isBooleanOperator(qu[ci].x))
-#else
-        if (logic.isBooleanOperator(qu[ci].x) && qu[ci].done == false)
-#endif
-        {
-            Pterm& t = logic.getPterm(qu[ci].x);
+        if (logic.isBooleanOperator(pi_ptr->x) && pi_ptr->done == false) {
+            Pterm& t = logic.getPterm(pi_ptr->x);
             for (int i = 0; i < t.size(); i++) {
-                PTRef cr = t[i];
-                if (!occs.contains(cr)) {
+                // push only unprocessed Boolean operators
+                if (!PTRefToIncoming.contains(t[i])) {
+                    unprocessed_ptrefs.push(new pi(t[i]));
                     unprocessed_children = true;
-                    qu.push(pi(cr));
-                    vec<PTRef> tmp;
-                    tmp.push(qu[ci].x);
-#ifdef SIMPLIFY_DEBUG
-                    parents.insert(cr,tmp);
-#endif
-                }
-                else {
-#ifdef SIMPLIFY_DEBUG
-                    Pterm& c = logic.getPterm(cr);
-                    cerr << "Node id " << c.getId() << " Processed before 2: " << logic.printTerm(cr) << endl;
-                    cerr << "Current parent is " << logic.printTerm(qu[ci].x) << endl;
-#endif
-                    occs[cr]++;
-#ifdef SIMPLIFY_DEBUG
-                    parents[cr].push(qu[ci].x);
-                    cerr << " has parents" << endl;
-                    for (int i = 0; i < parents[cr].size(); i++)
-                        cerr << "  - " << logic.getPterm(parents[cr][i]).getId() << endl;
-#endif
+                } else {
+                    PTRefToIncoming[t[i]]++;
                 }
             }
-            qu[ci].done = true;
+            pi_ptr->done = true;
         }
         if (unprocessed_children)
             continue;
-        assert(!occs.contains(qu[ci].x));
-        occs.insert(qu[ci].x, 1);
-        terms.push(qu[ci].x);
-        qu.pop();
+
+        unprocessed_ptrefs.pop();
+        // All descendants of pi_ptr->x are processed
+        assert(logic.isBooleanOperator(pi_ptr->x) || logic.isAtom(pi_ptr->x));
+        assert(!PTRefToIncoming.contains(pi_ptr->x));
+        PTRefToIncoming.insert(pi_ptr->x, 1);
     }
+}
 
-#ifdef ENABLE_SHARING_BUG
-    fc = rewriteMaxArity(fc.getRoot(), occs);
-#else
+PTRef MainSolver::rewriteMaxArity(PTRef root, Map<PTRef,int,PTRefHash>& PTRefToIncoming)
+{
+    vec<PTRef> unprocessed_ptrefs;
+    unprocessed_ptrefs.push(root);
+    Map<PTRef,PTRef,PTRefHash> cache;
 
-    vec<PtChild> and_roots;
-    vec<PtChild> or_roots;
-    Map<PTRef,PTRef,PTRefHash,Equal<PTRef> > parent;
-
-    PTRef root = fc.getRoot();
-
-    vec<PtChild> mainq;
-    mainq.push(PtChild(root, PTRef_Undef, -1));
-    parent.insert(root, PTRef_Undef);
-    Map<PTRef, PTRef, PTRefHash> processed; // To reuse duplicate terms
-
-    while (mainq.size() != 0) {
-        // Find the and- or or-roots
-        while (mainq.size() != 0) {
-            PtChild ptc = mainq.last(); mainq.pop();
-            Pterm& t = logic.getPterm(ptc.tr);
-            if (logic.isAnd(ptc.tr))
-                and_roots.push(ptc);
-            else if (logic.isOr(ptc.tr))
-                or_roots.push(ptc);
-
-            else
-                for (int i = t.size()-1; i >= 0; i--)
-//                for (int i = 0; i < t.size(); i++)
-                    if (!parent.contains(t[i])) {
-                        assert(logic.getPterm(ptc.tr).size() > i);
-                        mainq.push(PtChild(t[i], ptc.tr, i));
-                        parent.insert(t[i], ptc.tr);
-                    }
+    while (unprocessed_ptrefs.size() > 0) {
+        PTRef tr = unprocessed_ptrefs.last();
+        if (cache.contains(tr)) {
+            unprocessed_ptrefs.pop();
+            continue;
         }
 
-        // Process starting from them
-        while (and_roots.size() + or_roots.size() != 0) {
-            if (and_roots.size() != 0) {
-                bool changed = false;  // Did we find ands to collapse
-                vec<PTRef> args;
-                vec<PTRef> queue;
-                vec<PtChild> new_ors;
-                vec<PtChild> new_ands;
-                vec<PtChild> new_mains;
-
-                PtChild and_root = and_roots.last(); and_roots.pop();
-
-#ifdef SIMPLIFY_DEBUG
-                if (and_root.parent != PTRef_Undef)
-                    assert(logic.getPterm(and_root.parent).size() > and_root.pos);
-//                cerr << "and root: " << logic.printTerm(and_root.tr) << endl;
-#endif
-                Pterm& and_root_t = logic.getPterm(and_root.tr);
- //               for (int i = 0; i < and_root_t.size(); i++)
-                for (int i = and_root_t.size()-1; i >= 0; i--)
-                    queue.push(and_root_t[i]);
-
-                while (queue.size() != 0) {
-                    PTRef tr = queue.last(); queue.pop();
-                    assert(tr != and_root.tr);
-                    Pterm& t = logic.getPterm(tr);
-                    if (logic.isAnd(tr)) {
-                        if (occs[tr] > 1) {
-                            // This tr is used elsewhere.
-                            // Open it once, store its opened version and
-                            // use the opened term next time it is seen.
-                            if (processed.contains(tr)) {
-                                args.push(processed[tr]);
-                                changed = true;
-                            } else { // The new and root
-                                args.push(tr);
-                            }
-#ifdef SIMPLIFY_DEBUG
-                            cerr << " Using shared structure (" << occs[tr];
-                            PTRef tmp_tr;
-                            if (processed.contains(tr))
-                                tmp_tr = processed[tr];
-                            else
-                                tmp_tr = tr;
-                            char* name = logic.printTerm(tmp_tr);
-                            cerr << " * " << name << endl;
-                            ::free(name);
-#endif
-                        } else {
-                            changed = true; // We need a new and
-                            for (int i = t.size()-1; i >= 0; i--)
-//                            for (int i = 0; i < t.size(); i++)
-                                queue.push(t[i]);
-                        }
-                    } else
-                        args.push(tr);
-                }
-
-                PTRef par_tr;
-
-                // Do not duplicate if nothing changed
-                if (changed) {
-                    par_tr = logic.mkAnd(args);
-                    for (int i = 0; i < args.size(); i++) {
-                        if (logic.isAnd(args[i]) && occs[args[i]] < 2)
-                            and_roots.push(PtChild(args[i], par_tr, i));
-                        else if (logic.isOr(args[i]))
-                            or_roots.push(PtChild(args[i], par_tr, i));
-                        else
-                            mainq.push(PtChild(args[i], par_tr, i));
-                    }
-                    if (occs.contains(par_tr))
-                        occs[par_tr]++;
-                    else
-                        occs.insert(par_tr, 1);
-                } else
-                    par_tr = and_root.tr;
-
-                processed.insert(and_root.tr, par_tr);
-
-                if (and_root.parent != PTRef_Undef) {
-//                    assert(logic.getPterm(and_root.parent).size() > and_root.pos);
-                    logic.getPterm(and_root.parent)[and_root.pos] = par_tr;
-#ifdef SIMPLIFY_DEBUG
-                    cerr << logic.printTerm(and_root.parent) << endl;
-#endif
-                }
-                else
-                    fc.setRoot(par_tr);
-#ifdef SIMPLIFY_DEBUG
-//                cerr << " => " << logic.printTerm(par_tr) << endl;
-#endif
+        bool unprocessed_children = false;
+        Pterm& t = logic.getPterm(tr);
+        for (int i = 0; i < t.size(); i++) {
+            if (logic.isBooleanOperator(t[i]) && !cache.contains(t[i])) {
+                unprocessed_ptrefs.push(t[i]);
+                unprocessed_children = true;
             }
-
-            if (or_roots.size() != 0) {
-                bool changed = false;  // Did we find ors to collapse
-                vec<PTRef> args;
-                vec<PTRef> queue;
-                vec<PtChild> new_ors;
-                vec<PtChild> new_ands;
-                vec<PtChild> new_mains;
-
-                PtChild or_root = or_roots.last(); or_roots.pop();
-
-#ifdef SIMPLIFY_DEBUG
-                if (or_root.parent != PTRef_Undef)
-                    assert(logic.getPterm(or_root.parent).size() > or_root.pos);
-//                cerr << "or root: " << logic.printTerm(or_root.tr) << endl;
-#endif
-                Pterm& or_root_t = logic.getPterm(or_root.tr);
-//                for (int i = 0; i < or_root_t.size(); i++)
-                for (int i = or_root_t.size()-1; i >= 0; i--)
-                    queue.push(or_root_t[i]);
-
-                while (queue.size() != 0) {
-                    PTRef tr = queue.last(); queue.pop();
-                    assert(tr != or_root.tr);
-                    Pterm& t = logic.getPterm(tr);
-                    if (logic.isOr(tr)) { // We need a new or
-                        if (occs[tr] > 1) {
-                            // This tr is used elsewhere.
-                            // Open it once, store its opened version and
-                            // use the opened term next time it is seen.
-                            if (processed.contains(tr)) {
-                                args.push(processed[tr]);
-                                changed = true; // We need a new or
-                            } else { // The new or root
-                                args.push(tr);
-                            }
-#ifdef SIMPLIFY_DEBUG
-                            cerr << " Using shared structure (" << occs[tr];
-                            PTRef tmp_tr;
-                            if (processed.contains(tr))
-                                tmp_tr = processed[tr];
-                            else
-                                tmp_tr = tr;
-                            char* name = logic.printTerm(tmp_tr);
-                            cerr << " * " << name << endl;
-                            ::free(name);
-#endif
-                        } else {
-                            changed = true; // We need a new or
-                            for (int i = t.size()-1; i >= 0; i--)
-//                            for (int i = 0; i < t.size(); i++)
-                                queue.push(t[i]);
-                        }
-                    } else
-                        args.push(tr);
-                }
-
-                PTRef par_tr;
-
-                // Do not duplicate if nothing changed
-                if (changed) {
-                    par_tr = logic.mkOr(args);
-                    for (int i = 0; i < args.size(); i++) {
-                        if (logic.isOr(args[i]) && occs[args[i]] < 2)
-                            or_roots.push(PtChild(args[i], par_tr, i));
-                        else if (logic.isAnd(args[i]))
-                            and_roots.push(PtChild(args[i], par_tr, i));
-                        else
-                            mainq.push(PtChild(args[i], par_tr, i));
-                    }
-                    if (occs.contains(par_tr))
-                        occs[par_tr]++;
-                    else
-                        occs.insert(par_tr, 1);
-                } else
-                    par_tr = or_root.tr;
-
-                processed.insert(or_root.tr, par_tr);
-
-                if (or_root.parent != PTRef_Undef) {
-//                    assert(logic.getPterm(or_root.parent).size() > or_root.pos);
-                    logic.getPterm(or_root.parent)[or_root.pos] = par_tr;
-#ifdef SIMPLIFY_DEBUG
-                    cerr << logic.printTerm(or_root.parent) << endl;
-#endif
-                }
-                else
-                    fc.setRoot(par_tr);
-
-#ifdef SIMPLIFY_DEBUG
-//                cerr << " => " << logic.printTerm(par_tr) << endl;
-#endif
-            }
+            else if (logic.isAtom(t[i]))
+                cache.insert(t[i], t[i]);
         }
+        if (unprocessed_children)
+            continue;
+
+        unprocessed_ptrefs.pop();
+        PTRef result = PTRef_Undef;
+        assert(logic.isBooleanOperator(tr));
+
+        if (logic.isAnd(tr) || logic.isOr(tr)) {
+            result = mergePTRefArgs(tr, cache, PTRefToIncoming);
+        } else {
+            result = tr;
+        }
+        assert(result != PTRef_Undef);
+        assert(!cache.contains(tr));
+        cache.insert(tr, result);
     }
-#endif
-    return fc;
+    PTRef top_tr = cache[root];
+    return top_tr;
+}
+
+PTRef MainSolver::mergePTRefArgs(PTRef tr, Map<PTRef,PTRef,PTRefHash>& cache, Map<PTRef,int,PTRefHash>& PTRefToIncoming)
+{
+    assert(logic.isAnd(tr) || logic.isOr(tr));
+    Pterm& t = logic.getPterm(tr);
+    SymRef sr = t.symb();
+    vec<PTRef> new_args;
+    for (int i = 0; i < t.size(); i++) {
+        PTRef subst = cache[t[i]];
+        if (logic.getSymRef(t[i]) != sr) {
+            new_args.push(subst);
+            continue;
+        }
+        assert(PTRefToIncoming.contains(t[i]));
+        assert(PTRefToIncoming[t[i]] >= 1);
+        if (PTRefToIncoming[t[i]] > 1) {
+            new_args.push(subst);
+            continue;
+        }
+
+        Pterm& substs_t = logic.getPterm(subst);
+        for (int j = 0; j < substs_t.size(); j++)
+            new_args.push(substs_t[j]);
+    }
+    if (sr == logic.getSym_and())
+        return logic.mkAnd(new_args);
+    else
+        return logic.mkOr(new_args);
 }
 
 //
@@ -726,6 +509,17 @@ MainSolver::FContainer MainSolver::simplifyEqualities(vec<PtChild>& terms)
         }
     }
     return FContainer(root);
+}
+
+ValPair MainSolver::getValue(PTRef tr) const
+{
+    if (logic.hasSortBool(tr)) {
+        lbool val = ts.getTermValue(tr);
+        return ValPair(tr, val == l_True ? "true" : (val == l_False ? "false" : "unknown"));
+    } else {
+        return thandler.getValue(tr);
+    }
+    return ValPair();
 }
 
 //
@@ -832,17 +626,10 @@ bool MainSolver::readSolverState(const char* file, char** msg)
     for (int i = 0; i < logicstore_sz; i++)
         logicstore_buf[i] = contents[logicstore_offs+i];
 
-    logic.deserializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf);
-    free(termstore_buf);
-    free(symstore_buf);
-    free(idstore_buf);
-    free(sortstore_buf);
-    free(logicstore_buf);
-
     char* tmp_cnf;
     asprintf(&tmp_cnf, "%s", (char*)(contents + cnf_offs));
     cs.setCnf(tmp_cnf);
-    const vec<VarPtPair>& map = cs.getMap();
+
 #ifdef VERBOSE_FOPS
     cerr << "The cnf is" << endl;
     cerr << cs.getCnf() << endl;
@@ -854,50 +641,16 @@ bool MainSolver::readSolverState(const char* file, char** msg)
     }
 #endif
 
-    for (int i = 0; i < map.size(); i++) {
-        if (i >= sat_solver.nVars()) {
-            int j = sat_solver.newVar();
-            assert(j == i);
-        }
-        if (tmap.varToTerm.size() > i)
-            assert(tmap.varToTerm[i] == map[i].tr);
-        else
-            tmap.varToTerm.push(map[i].tr);
+    deserializeSolver(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf, cs);
 
-        if (tmap.termToVar.contains(map[i].tr))
-            assert(tmap.termToVar[map[i].tr] == i);
-        else
-            tmap.termToVar.insert(map[i].tr, i);
-        if (tmap.varToTheorySymbol.size() > i)
-            assert(tmap.varToTheorySymbol[i] == logic.getPterm(map[i].tr).symb());
-        else {
-            if (logic.isTheoryTerm(map[i].tr)) {
-                tmap.varToTheorySymbol.push(logic.getPterm(map[i].tr).symb());
-                sat_solver.setFrozen(i, true);
-            }
-            else tmap.varToTheorySymbol.push(SymRef_Undef);
-        }
-        uf_solver.declareTermTree(map[i].tr);
-    }
+//    logic.deserializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf);
+    free(termstore_buf);
+    free(symstore_buf);
+    free(idstore_buf);
+    free(sortstore_buf);
+    free(logicstore_buf);
 
-#if defined(TERMS_HAVE_EXPLANATIONS)
-    const vec<ERef>& ens = uf_solver.getEnodes();
-    for (int i = 0; i < ens.size(); i++) {
-        ERef er = ens[i];
-        PTRef tr = uf_solver.ERefToTerm(er);
-        Pterm& t = logic.getPterm(tr);
-        t.setExpTimeStamp(0);
-        assert(t.getExpReason() == PtAsgn_Undef);
-        assert(t.getExpParent() == PTRef_Undef);
-        assert(t.getExpRoot() == tr);
-//        assert(t.getExpClassSize() == 1);
-//        assert(t.getExpTimeStamp() == 0);
-    }
-#endif
-    DimacsParser dp;
-    dp.parse_DIMACS_main(cs.getCnf(), sat_solver);
-    close(fd);
-    free(contents);
+
     return true;
 }
 
@@ -958,18 +711,16 @@ bool MainSolver::writeState(const char* file, CnfState& cs, char** msg)
     int* logicstore_buf;
 
     // Clear the timestamp for explanations!
-    const vec<ERef>& ens = uf_solver.getEnodes();
-    for (int i = 0; i < ens.size(); i++) {
-        ERef er = ens[i];
-        PTRef tr = uf_solver.ERefToTerm(er);
-        Pterm& t = logic.getPterm(tr);
+    for (PtermIter it = logic.getPtermIter(); *it != PTRef_Undef; ++it) {
+        Pterm& t = logic.getPterm(*it);
 #ifdef TERMS_HAVE_EXPLANATIONS
         t.setExpTimeStamp(0);
         t.setExpReason(PtAsgn(PTRef_Undef, l_Undef));
         t.setExpParent(PTRef_Undef);
-        t.setExpRoot(tr);
+        t.setExpRoot(*it);
 #endif
     }
+
 
     logic.serializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf);
 
@@ -1083,7 +834,7 @@ bool MainSolver::writeState(const char* file, CnfState& cs, char** msg)
     logic.compareSymStore(new_symstore);
     new_idstore.deserializeIdentifiers(&buf[buf[idstore_offs_idx]]);
     logic.compareIdStore(new_idstore);
-//    logic.compareTermStore(new_tstore);
+    logic.compareTermStore(new_tstore);
     new_tstore.deserializeTerms(&buf[buf[termstore_offs_idx]]);
 //    Logic new_logic(new_config, new_idstore, new_sortstore, new_symstore, new_tstore);
 //    TermMapper new_tmap(new_logic);
@@ -1133,6 +884,42 @@ bool MainSolver::writeState(const char* file, CnfState& cs, char** msg)
     return true;
 }
 
+void MainSolver::deserializeSolver(const int* termstore_buf, const int* symstore_buf, const int* idstore_buf, const int* sortstore_buf, const int* logicstore_buf, CnfState& cs)
+{
+    logic.deserializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf);
+
+    const vec<VarPtPair>& map = cs.getMap();
+    for (int i = 0; i < map.size(); i++) {
+        if (i >= sat_solver.nVars()) {
+            int j = sat_solver.newVar();
+            assert(j == i);
+        }
+        if (tmap.nVars() > i)
+            assert(tmap.varToPTRef(i) == map[i].tr);
+        else {
+            tmap.addBinding(i, map[i].tr);
+
+            if (logic.isTheoryTerm(map[i].tr))
+                sat_solver.setFrozen(i, true);
+        }
+    }
+#if defined(TERMS_HAVE_EXPLANATIONS)
+    for (PtermIter it = logic.getPtermIter(); *it != PTRef_Undef; ++it) {
+        Pterm& t = logic.getPterm(*it);
+        t.setExpTimeStamp(0);
+        assert(t.getExpReason() == PtAsgn_Undef);
+        assert(t.getExpParent() == PTRef_Undef);
+        assert(t.getExpRoot() == *it);
+    }
+#endif
+    DimacsParser dp;
+    dp.parse_DIMACS_main(cs.getCnf(), sat_solver);
+
+    binary_init = true;
+
+    return;
+}
+
 bool MainSolver::writeSolverState(const char* file, char** msg)
 {
     CnfState cs;
@@ -1149,6 +936,7 @@ bool MainSolver::writeSolverSplits(const char* file, char** msg)
         CnfState cs;
         ts.getVarMapping(cs);
         sat_solver.splits[i].cnfToString(cs);
+
         if (!writeState(name, cs, msg)) {
             free(name);
             return false;
@@ -1169,31 +957,34 @@ sstat MainSolver::solve()
     sstat result;
     sstat *results;
     vec<int> *split_threads;
-    
+
     status = sstat(ts.solve());
-    if (!(logic.config.parallel_threads && status == s_Undef))
+    if (!(config.parallel_threads && status == s_Undef)) {
+        if (status == s_True && config.produce_models())
+            thandler.computeModel();
         return status;
-    
+    }
+
     opensmt::stop = false;
     
     if (pipe(pipefd) == -1) {
         cerr << "Pipe error";
         return status;
     }
-    
-    const vec<ERef>& ens = this->uf_solver.getEnodes();
-    for (int i = 0; i < ens.size(); i++) {
-        ERef er = ens[i];
-        PTRef tr = uf_solver.ERefToTerm(er);
-        Pterm& t = logic.getPterm(tr);
-#ifdef TERMS_HAVE_EXPLANATIONS
-        t.setExpTimeStamp(0);
-        t.setExpReason(PtAsgn(PTRef_Undef, l_Undef));
-        t.setExpParent(PTRef_Undef);
-        t.setExpRoot(tr);
-#endif
-    }
-    
+
+//    const vec<ERef>& ens = this->uf_solver.getEnodes();
+//    for (int i = 0; i < ens.size(); i++) {
+//        ERef er = ens[i];
+//        PTRef tr = uf_solver.ERefToTerm(er);
+//        Pterm& t = logic.getPterm(tr);
+//#ifdef TERMS_HAVE_EXPLANATIONS
+//        t.setExpTimeStamp(0);
+//        t.setExpReason(PtAsgn(PTRef_Undef, l_Undef));
+//        t.setExpParent(PTRef_Undef);
+//        t.setExpRoot(tr);
+//#endif
+//    }
+
     split_threads = new vec<int>[sat_solver.splits.size()];
     results = new sstat[sat_solver.splits.size()];
     for (i=0; i<sat_solver.splits.size(); i++) {
@@ -1201,8 +992,8 @@ sstat MainSolver::solve()
     }
     
     // start the threads
-    threads = new std::thread[logic.config.parallel_threads];
-    for (i=0; i<logic.config.parallel_threads; i++) {
+    threads = new std::thread[config.parallel_threads];
+    for (i=0; i<config.parallel_threads; i++) {
         this->parallel_solvers.push(NULL);
         r = i%sat_solver.splits.size();
         split_threads[r].push(i);
@@ -1228,13 +1019,13 @@ sstat MainSolver::solve()
                 for (i=0; i<split_threads[(int)buf[1]].size(); i++) {
                     r=split_threads[(int)buf[1]][i];
                     if (this->parallel_solvers[r]!=NULL) {
-                        this->parallel_solvers[r]->stop = true;
+                        this->parallel_solvers[r]->stop();
                     }
                 }
                 // may empty split_threads[buf[1]] ...
             }
             r=-1;
-            min = logic.config.parallel_threads;
+            min = config.parallel_threads;
             for (i=0; i<sat_solver.splits.size(); i++) {
                 if (results[i]!=s_Undef){
                     continue;
@@ -1265,12 +1056,12 @@ sstat MainSolver::solve()
             break;
         }
     }
-    for (i=0; i<logic.config.parallel_threads; i++) {
+    for (i=0; i<config.parallel_threads; i++) {
         if (this->parallel_solvers[i]!=NULL) {
-            this->parallel_solvers[i]->stop = true;
+            this->parallel_solvers[i]->stop();
         }
     }
-    for (i=0; i<logic.config.parallel_threads; i++) {
+    for (i=0; i<config.parallel_threads; i++) {
         if (threads[i].joinable()) {
             threads[i].join();
         }
@@ -1286,89 +1077,58 @@ sstat MainSolver::solve()
 void MainSolver::solve_split(int i, int s, int wpipefd, std::mutex *mtx)
 {
     char buf[3];
-    
+
     buf[0] = (char)i;
     buf[1] = (char)s;
-    
+
     SMTConfig config;
-    SymStore symstore;
-    IdentifierStore idstore;
-    SStore sortstore(config, idstore);
-    PtStore tstore(symstore, sortstore);
-    
+
     std::uniform_int_distribution<uint32_t> randuint(0, 0xFFFFFF);
     std::random_device rd;
     config.setRandomSeed(randuint(rd));
-    
-    
+
     int* termstore_buf;
     int* symstore_buf;
     int* idstore_buf;
     int* sortstore_buf;
     int* logicstore_buf;
-    
+
     this->logic.serializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf);
-    
-    Logic logic(config, idstore, sortstore, symstore, tstore);
-    logic.setLogic("QF_UF");
-    
-    logic.deserializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf);
+    Logic_t l = logic.getLogic();
+//    Logic *new_logic = NULL;
+    Theory* theory;
+    if (l == QF_UF)
+        theory = new UFTheory(config);
+    else if (l == QF_LRA)
+        theory = new LRATheory(config);
+    else {
+        cerr << "Unsupported logic" << endl;
+        exit(1);
+    }
+
+    MainSolver* main_solver = new MainSolver(*theory, config);
+
+
+
+
+    CnfState cs;
+    this->ts.getVarMapping(cs);
+    this->ts.getSolverState(cs);
+
+    main_solver->deserializeSolver(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf, cs);
     free(termstore_buf);
     free(symstore_buf);
     free(idstore_buf);
     free(sortstore_buf);
     free(logicstore_buf);
-    
-    TermMapper tmap(logic);
-    Egraph uf_solver(config, sortstore, symstore, tstore, logic, tmap);
-    THandler thandler(uf_solver, config, tmap, logic);
-    SimpSMTSolver sat_solver(config, thandler);
-    sat_solver.initialize();
-    this->parallel_solvers[i] = &sat_solver;
-    
-    CnfState cs;
-    this->ts.getVarMapping(cs);
-    
-    const vec<VarPtPair>& map = cs.getMap();
-    
-    for (int i = 0; i < map.size(); i++) {
-        if (i >= sat_solver.nVars()) {
-            int j = sat_solver.newVar();
-            assert(j == i);
-        }
-        if (tmap.varToTerm.size() > i)
-            assert(tmap.varToTerm[i] == map[i].tr);
-        else
-            tmap.varToTerm.push(map[i].tr);
-        
-        if (tmap.termToVar.contains(map[i].tr))
-            assert(tmap.termToVar[map[i].tr] == i);
-        else
-            tmap.termToVar.insert(map[i].tr, i);
-        if (tmap.varToTheorySymbol.size() > i)
-            assert(tmap.varToTheorySymbol[i] == logic.getPterm(map[i].tr).symb());
-        else {
-            if (logic.isTheoryTerm(map[i].tr)) {
-                tmap.varToTheorySymbol.push(logic.getPterm(map[i].tr).symb());
-                sat_solver.setFrozen(i, true);
-            }
-            else tmap.varToTheorySymbol.push(SymRef_Undef);
-        }
-        uf_solver.declareTermTree(map[i].tr);
-    }
-    
-    DimacsParser dp;
-    dp.parse_DIMACS_main(this->sat_solver.splits[s].splitToString(), sat_solver);
 
-    
-    Tseitin ts(tstore, config, symstore, sortstore, logic, tmap, thandler, sat_solver);
-    
-    MainSolver solver(logic, tmap, uf_solver, sat_solver, ts);
 
-    sstat result = solver.solve();
-    
+    this->parallel_solvers[i] = main_solver;
+
+    sstat result = solve();
+
     buf[2] = (char)result.getValue();
-    
+
     mtx->lock();
     ::write(wpipefd, buf, 3);
     mtx->unlock();

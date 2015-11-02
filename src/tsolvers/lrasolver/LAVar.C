@@ -26,8 +26,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "LAVar.h"
 
+#include "LRASolver.h"
+
 int LAVar::column_count = 0;
 int LAVar::row_count = 0;
+
+const char* const BoundT::names[3] = {"[L]", "[U]", "[N]"};
 
 Delta LAVar::plus_inf_bound = Delta( Delta::UPPER );
 Delta LAVar::minus_inf_bound = Delta( Delta::LOWER );
@@ -37,7 +41,11 @@ unsigned LAVar::model_global_counter = 1;
 //
 // Default constructor
 //
-LAVar::LAVar( Enode * e_orig = NULL )
+LAVar::LAVar(LRASolver& lra, SolverId sid, vec<DedElem>& d, LRALogic& l, PTRef e_orig = PTRef_Undef)
+	: logic(l)
+	, deduced(d)
+	, solver_id(sid)
+	, lra_solver(lra)
 {
   column_id = column_count++;
   row_id = -1;
@@ -48,9 +56,9 @@ LAVar::LAVar( Enode * e_orig = NULL )
   m2 = new Delta( Delta::ZERO );
   model_local_counter = 0;
 
-  Enode * e_null = NULL;
-  LAVarBound pb1( &minus_inf_bound, e_null, false, false );
-  LAVarBound pb2( &plus_inf_bound, e_null, true, false );
+  PTRef e_null = PTRef_Undef;
+  LAVarBound pb1( &minus_inf_bound, e_null, bound_l, false );
+  LAVarBound pb2( &plus_inf_bound, e_null, bound_u, false );
   all_bounds.push_back( pb1 );
   all_bounds.push_back( pb2 );
   u_bound = 1;
@@ -62,7 +70,11 @@ LAVar::LAVar( Enode * e_orig = NULL )
 //
 // Constructor with bounds initialization
 //
-LAVar::LAVar( Enode * e_orig, Enode * e_bound, Enode * e_var, bool basic = false )
+LAVar::LAVar(LRASolver& lra, SolverId sid, vec<DedElem>& d, LRALogic& l, PTRef e_orig, PTRef e_bound, PTRef e_var, bool basic = false )
+	: logic(l)
+	, deduced(d)
+	, solver_id(sid)
+	, lra_solver(lra)
 {
   column_id = column_count++;
 
@@ -78,9 +90,9 @@ LAVar::LAVar( Enode * e_orig, Enode * e_bound, Enode * e_var, bool basic = false
   m2 = new Delta( Delta::ZERO );
   model_local_counter = 0;
 
-  Enode * e_null = NULL;
-  LAVarBound pb1( &minus_inf_bound, e_null, false, false );
-  LAVarBound pb2( &plus_inf_bound, e_null, true, false );
+  PTRef e_null = PTRef_Undef;
+  LAVarBound pb1( &minus_inf_bound, e_null, bound_l, false );
+  LAVarBound pb2( &plus_inf_bound, e_null, bound_u, false );
   all_bounds.push_back( pb1 );
   all_bounds.push_back( pb2 );
   u_bound = 1;
@@ -91,7 +103,11 @@ LAVar::LAVar( Enode * e_orig, Enode * e_bound, Enode * e_var, bool basic = false
   setBounds( e_orig, e_bound );
 }
 
-LAVar::LAVar( Enode * e_orig, Enode * e_var, const Real & v, bool revert )
+LAVar::LAVar(LRASolver& lra, SolverId sid, vec<DedElem>& d, LRALogic& l, PTRef e_orig, PTRef e_var, const Real & v, bool revert )
+	: logic(l)
+	, deduced(d)
+	, solver_id(sid)
+	, lra_solver(lra)
 {
   column_id = column_count++;
   row_id = -1;
@@ -103,9 +119,9 @@ LAVar::LAVar( Enode * e_orig, Enode * e_var, const Real & v, bool revert )
   m2 = new Delta( Delta::ZERO );
   model_local_counter = 0;
 
-  Enode * e_null = NULL;
-  LAVarBound pb1( &minus_inf_bound, e_null, false, false );
-  LAVarBound pb2( &plus_inf_bound, e_null, true, false );
+  PTRef e_null = PTRef_Undef;
+  LAVarBound pb1( &minus_inf_bound, e_null, bound_l, false );
+  LAVarBound pb2( &plus_inf_bound, e_null, bound_u, false );
   all_bounds.push_back( pb1 );
   all_bounds.push_back( pb2 );
   u_bound = 1;
@@ -145,29 +161,29 @@ LAVar::~LAVar( )
 //
 // Parse the bound value and the type of the constraint
 //
-void LAVar::setBounds( Enode * e, Enode * e_bound )
+void LAVar::setBounds( PTRef e, PTRef e_bound )
 {
-  assert( e->isAtom( ) );
-  assert( e_bound->isConstant( ) );
+  assert( logic.isAtom(e) );
+  assert( logic.isConstant(e_bound) );
 
   bool revert = false;
 
-  if( !( e->get1st( )->isConstant( ) ) )
+  if( !( logic.isConstant(logic.getPterm(e)[0] ) ))
     revert = true;
 
-  if( e_bound->isConstant( ) )
-    setBounds( e, e_bound->getComplexValue( ), revert );
+  if( logic.isConstant(e_bound ))
+    setBounds( e, logic.getRealConst(e_bound), revert );
   else
-    opensmt_error2( "unexpected Num: ", e_bound );
+    opensmt_error2( "unexpected Num: ", logic.printTerm(e_bound) );
 }
 
 //
 // Reads the type of the bounds from enode type
 //
-void LAVar::setBounds( Enode * e, const Real & v, bool revert )
+void LAVar::setBounds( PTRef e, const Real & v, bool revert )
 {
 
-  assert( e->isLeq( ) );
+  assert( logic.isRealLeq(e) );
 
   Delta * bound = NULL;
   Delta * boundRev = NULL;
@@ -190,40 +206,38 @@ void LAVar::setBounds( Enode * e, const Real & v, bool revert )
   assert( boundRev );
   assert( bound != boundRev );
 
-  LAVarBound pb1( bound, e, ( bound_type == Delta::UPPER ), false );
-  LAVarBound pb2( boundRev, e, ( bound_type != Delta::UPPER ), true );
+  LAVarBound pb1( bound, e, ( bound_type == Delta::UPPER ) ? bound_u : bound_l, false );
+  LAVarBound pb2( boundRev, e, ( bound_type != Delta::UPPER ) ? bound_u : bound_l, true );
 
   addBoundsAndUpdateSorting( pb1, pb2 );
 }
 
 unsigned LAVar::setUpperBound( const Real & v )
 {
-  return setBound( v, true );
+  return setBound(v, bound_u);
 }
 
 unsigned LAVar::setLowerBound( const Real & v )
 {
-  return setBound( v, false );
+  return setBound(v, bound_l);
 }
 
-unsigned LAVar::setBound( const Real & v, bool upper )
+unsigned LAVar::setBound(const Real & v, BoundT b)
 {
-  unsigned i = getBoundByValue( v, upper );
+  unsigned i = getBoundByValue( v, b );
   if( i != 0 )
     return i;
 
   Delta * bound = NULL;
 
-  Delta::deltaType bound_type = ( upper ? Delta::UPPER : Delta::LOWER );
-
   bound = new Delta( v );
 
   assert( bound );
 
-  LAVarBound pb( bound, NULL, ( bound_type == Delta::UPPER ), false );
+  LAVarBound pb( bound, PTRef_Undef, b, false );
 
   addBoundAndUpdateSorting( pb );
-  return getBoundByValue( v, upper );
+  return getBoundByValue(v, b);
 }
 
 void LAVar::addBoundsAndUpdateSorting( const LAVarBound & pb1, const LAVarBound & pb2 )
@@ -264,7 +278,7 @@ void LAVar::updateSorting( )
   {
     for( i = 0; i < static_cast<int> ( all_bounds.size( ) ); ++i )
     {
-      if( !all_bounds[i].bound_type && all_bounds[i].active )
+      if( (all_bounds[i].bound_type == bound_l) && all_bounds[i].active )
       {
         l_bound = i;
         all_bounds[i].active = false;
@@ -283,7 +297,7 @@ void LAVar::updateSorting( )
   {
     for( i = all_bounds.size( ) - 1; i >= 0; --i )
     {
-      if( all_bounds[i].bound_type && all_bounds[i].active )
+      if( (all_bounds[i].bound_type == bound_u) && all_bounds[i].active )
       {
         u_bound = i;
         all_bounds[u_bound].active = false;
@@ -292,33 +306,33 @@ void LAVar::updateSorting( )
     }
     assert( i != 0 );
   }
-
 }
 
 //
 // Finds the upper (lower) bounds that are deduced by existing bounds values
 //
-void LAVar::getDeducedBounds( bool upper, vector<Enode *>& dst, int solver_id )
+void LAVar::getDeducedBounds( BoundT b, vec<PtAsgn_reason>& dst, SolverId solver_id )
 {
-  getDeducedBounds( upper ? U( ) : L( ), upper, dst, solver_id );
+  getDeducedBounds( b == bound_u ? U( ) : L( ), b, dst, solver_id );
 }
 
 //
 // Finds the upper (lower) bounds that are deduced by a given bound value c
 //
-void LAVar::getDeducedBounds( const Delta& c, bool upper, vector<Enode *>& dst, int solver_id )
+void LAVar::getDeducedBounds( const Delta& c, BoundT b, vec<PtAsgn_reason>& dst, SolverId solver_id )
 {
   // check upper bound deductions
-  if( upper )
+  if (b == bound_u)
   {
     int it = u_bound - 1;
     // everything from the up-most bound until c is deduced (if wasn't before)
     while( ( *( all_bounds[it].delta ) ) >= c )
     {
-      if( all_bounds[it].bound_type && all_bounds[it].e != NULL && !all_bounds[it].e->hasPolarity( ) && !all_bounds[it].e->isDeduced( ) )
+      if( (all_bounds[it].bound_type == bound_u) && all_bounds[it].e != PTRef_Undef && !lra_solver.hasPolarity(all_bounds[it].e) && deduced[logic.getPterm(all_bounds[it].e).getVar()] == l_Undef)
       {
-        all_bounds[it].e->setDeduced( ( all_bounds[it].reverse ? l_False : l_True ), solver_id );
-        dst.push_back( all_bounds[it].e );
+        lbool pol = all_bounds[it].reverse ? l_False : l_True;
+        deduced[logic.getPterm(all_bounds[it].e).getVar()] = DedElem(solver_id, pol);
+        dst.push(PtAsgn_reason(all_bounds[it].e, pol, PTRef_Undef));
       }
       it--;
     }
@@ -330,10 +344,11 @@ void LAVar::getDeducedBounds( const Delta& c, bool upper, vector<Enode *>& dst, 
     // everything from the low-most bound until c is deduced (if wasn't before)
     while( ( *( all_bounds[it].delta ) ) <= c )
     {
-      if( !all_bounds[it].bound_type && !all_bounds[it].e->hasPolarity( ) && !all_bounds[it].e->isDeduced( ) )
+      if( (all_bounds[it].bound_type == bound_l) && all_bounds[it].e != PTRef_Undef && !lra_solver.hasPolarity(all_bounds[it].e) && deduced[logic.getPterm(all_bounds[it].e).getVar()] == l_Undef )
       {
-        all_bounds[it].e->setDeduced( ( all_bounds[it].reverse ? l_False : l_True ), solver_id );
-        dst.push_back( all_bounds[it].e );
+        lbool pol = all_bounds[it].reverse ? l_False : l_True;
+        deduced[logic.getPterm(all_bounds[it].e).getVar()] = DedElem(solver_id, pol);
+        dst.push(PtAsgn_reason(all_bounds[it].e, pol, PTRef_Undef));
       }
       it++;
     }
@@ -343,33 +358,33 @@ void LAVar::getDeducedBounds( const Delta& c, bool upper, vector<Enode *>& dst, 
 //
 // Deduces anything upper (lower) the actual bounds for this LAVar
 //
-void LAVar::getSimpleDeductions( vector<Enode *>& dst, bool upper, int solver_id )
+void LAVar::getSimpleDeductions( vec<PtAsgn_reason>& dst, BoundT b, SolverId solver_id )
 {
-  if( !upper && !all_bounds[l_bound].delta->isInf( ) )
+  if( (b == bound_l) && !all_bounds[l_bound].delta->isInf( ) )
   {
     assert( l_bound > 0 );
     // everything from the low-most bound until actual is deduced (if wasn't before)
     for( int it = l_bound - 1; it > 0; it-- )
     {
-      if( !all_bounds[it].bound_type && all_bounds[it].e != NULL && !all_bounds[it].e->hasPolarity( ) && !all_bounds[it].e->isDeduced( ) )
+      if( (all_bounds[it].bound_type == bound_l) && all_bounds[it].e != PTRef_Undef && !lra_solver.hasPolarity(all_bounds[it].e) && deduced[logic.getPterm(all_bounds[it].e).getVar()] == l_Undef)
       {
-        all_bounds[it].e->setDeduced( ( all_bounds[it].reverse ? l_False : l_True ), solver_id );
-        dst.push_back( all_bounds[it].e );
-        //        cout  << "Deduced from lower " << all_bounds[it].e << endl;
+        lbool pol = all_bounds[it].reverse ? l_False : l_True;
+        deduced[logic.getPterm(all_bounds[it].e).getVar()] = DedElem(solver_id, pol);
+        dst.push(PtAsgn_reason(all_bounds[it].e, pol, PTRef_Undef));
       }
     }
   }
 
-  if( upper && !all_bounds[u_bound].delta->isInf( ) )
+  if( (b == bound_u) && !all_bounds[u_bound].delta->isInf( ) )
   {
     // everything from the up-most bound until actual is deduced (if wasn't before)
     for( int it = u_bound + 1; it < static_cast<int> ( all_bounds.size( ) ) - 1; it++ )
     {
-      if( all_bounds[it].bound_type && all_bounds[it].e != NULL && !all_bounds[it].e->hasPolarity( ) && !all_bounds[it].e->isDeduced( ) )
+      if( (all_bounds[it].bound_type == bound_u) && all_bounds[it].e != PTRef_Undef && !lra_solver.hasPolarity(all_bounds[it].e) && deduced[logic.getPterm(all_bounds[it].e).getVar()] == l_Undef)
       {
-        all_bounds[it].e->setDeduced( ( all_bounds[it].reverse ? l_False : l_True ), solver_id );
-        dst.push_back( all_bounds[it].e );
-        //        cout  << "Deduced from upper as " << (all_bounds[it].reverse ? "FALSE " : "TRUE ") << all_bounds[it].e << endl;
+        lbool pol = all_bounds[it].reverse ? l_False : l_True;
+        deduced[logic.getPterm(all_bounds[it].e).getVar()] = DedElem(solver_id, pol);
+        dst.push(PtAsgn_reason(all_bounds[it].e, pol, PTRef_Undef));
       }
     }
   }
@@ -378,8 +393,9 @@ void LAVar::getSimpleDeductions( vector<Enode *>& dst, bool upper, int solver_id
 //
 // Proposes bounds and their polarity for main solver
 //
-void LAVar::getSuggestions( vector<Enode *>& dst, int solver_id )
+void LAVar::getSuggestions( vec<PTRef>& dst, SolverId solver_id )
 {
+/*
   ( void )solver_id;
   if( M( ) > U( ) )
   {
@@ -391,13 +407,14 @@ void LAVar::getSuggestions( vector<Enode *>& dst, int solver_id )
     all_bounds[l_bound].e->setDecPolarity( all_bounds[l_bound].reverse );
     dst.push_back( all_bounds[l_bound].e );
   }
+  */
 }
 
 //
-// Finds the bound from the bound list that correspond to the given Enode and polarity
+// Finds the bound from the bound list that correspond to the given PTRef and polarity
 //
 //TODO:: Can I do better here? Iterate from different sides? - YES
-unsigned LAVar::getIteratorByEnode( Enode * _e, bool _reverse )
+unsigned LAVar::getIteratorByPTRef( PTRef _e, bool _reverse )
 {
   unsigned it;
   it = all_bounds.size( ) - 2;
@@ -408,13 +425,16 @@ unsigned LAVar::getIteratorByEnode( Enode * _e, bool _reverse )
   return it;
 }
 
-unsigned LAVar::getBoundByValue( const Real & v, bool upper )
+unsigned LAVar::getBoundByValue(const Real & v, BoundT)
 {
+/*
   unsigned it = all_bounds.size( ) - 2;
   assert( it != 0 );
   while( it > 0 && !( all_bounds[it].delta->R( ) == v && all_bounds[it].bound_type == upper ) )
     --it;
   return it;
+*/
+      return 0;
 }
 
 //
@@ -434,8 +454,6 @@ void LAVar::sortBounds( )
 //
 void LAVar::computeModel( const Real& d )
 {
-  assert( !isModelOutOfBounds( ) );
-  this->e->setValue( M( ).R( ) + d * M( ).D( ) );
 }
 
 //
@@ -443,9 +461,11 @@ void LAVar::computeModel( const Real& d )
 //
 void LAVar::printBounds( )
 {
-  cerr << endl << this << " | ";
-  for( unsigned i = 0; i < all_bounds.size( ); i++ )
-    cerr << *( all_bounds[i].delta ) << ( all_bounds[i].bound_type ? "[U]" : "[L]" ) << ( all_bounds[i].reverse ? "rev" : "" ) << " ";
+    std::cerr << "; " << std::endl << "; " << this << " | ";
+    for( unsigned i = 0; i < all_bounds.size( ); i++ )
+        std::cerr << *( all_bounds[i].delta ) << all_bounds[i].bound_type << ( all_bounds[i].reverse ? "rev" : "" ) << " ";
+    if (all_bounds.size() > 0)
+        cerr << endl;
 }
 
 bool LAVar::LAVarBounds_ptr_cmp::operator()( LAVarBound lhs, LAVarBound rhs )
@@ -459,13 +479,14 @@ bool LAVar::LAVarBounds_ptr_cmp::operator()( LAVarBound lhs, LAVarBound rhs )
     if( lhs.bound_type == rhs.bound_type )
     {
       // if this assertion fails then you have duplicates in the bounds list. Check the canonizer.
+
       assert( lhs.delta->D( ) != rhs.delta->D( ) );
-      if( lhs.bound_type )
+      if (lhs.bound_type == bound_u)
         return ( lhs.delta->D( ) == 1 || lhs.delta->D( ) == -1 );
       else
         return ( lhs.delta->D( ) == 0 );
     }
-    else if( lhs.bound_type )
+    else if (lhs.bound_type == bound_u)
       return ( lhs.delta->D( ) == 1 || lhs.delta->D( ) == -1 || rhs.delta->D( ) == 1 );
     else
       return ( lhs.delta->D( ) == 0 && rhs.delta->D( ) == 0 );
@@ -474,7 +495,7 @@ bool LAVar::LAVarBounds_ptr_cmp::operator()( LAVarBound lhs, LAVarBound rhs )
     return *( lhs.delta ) < *( rhs.delta );
 }
 
-LAVar::LAVarBound::LAVarBound( Delta * _delta, Enode * _e, bool _boundType, bool _reverse )
+LAVar::LAVarBound::LAVarBound( Delta * _delta, PTRef _e, BoundT _boundType, bool _reverse )
 {
   delta = _delta;
   e = _e;

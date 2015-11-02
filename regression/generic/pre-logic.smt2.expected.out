@@ -1,0 +1,20 @@
+true
+quux
+Longer story
+3
+/dev/null
+(error "No value for attr :foo-option")
+
+0
+3.14159
+3736059631
+85
+( f s 1 4 1 2 ( )
+(error "No value for attr :non-existing-option")
+
+(error "no value for info :foo")
+
+:error-behavior commit-adultery
+:name OpenSMT
+:authors Muumi-peikko
+success

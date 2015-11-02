@@ -26,68 +26,20 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "SStore.h"
 
-// The Traversal of the node is unnecessary and a result of a confusion
-// Code can possibly be reused when define-sort is implemented
-char* SStore::buildName(ASTNode& sn)
+
+
+SRef SStore::newSort(IdRef id, const char* name, vec<SRef>& rest)
 {
-    list<ASTNode*>::iterator it = sn.children->begin();
-    char* canon_name;
-    asprintf(&canon_name, "%s", (**it).getValue());
-    return canon_name;
-
-    asprintf(&canon_name, "%s", (**(it++)).getValue());
-    if  (it != sn.children->end()) {
-        char* arg_names;
-        char* old;
-        char* sub_name = buildName(**(it++));
-        asprintf(&arg_names, "%s", sub_name);
-        free(sub_name);
-        for (; it != sn.children->end(); it++) {
-            old = arg_names;
-            sub_name = buildName(**it);
-            asprintf(&arg_names, "%s %s", old, sub_name);
-            free(sub_name);
-            free(old);
-        }
-        old = canon_name;
-        asprintf(&canon_name, "%s (%s)", old, arg_names);
-        free(old);
-    }
-    return canon_name;
-}
-
-SRef SStore::newSort(ASTNode& sn)
-{
-    SRef sr = SRef_Undef;
-    char* canon_name = NULL;
-    vec<SRef> tmp;
-    IdRef idr = IdRef_Undef;
-
-    if (sn.getType() == CMD_T || sn.getType() == ID_T) {
-        list<ASTNode*>::iterator p = sn.children->begin();
-        ASTNode& sym_name = **p;
-        idr = is.newIdentifier(sym_name);
-    } else if (sn.getType() == LID_T) {
-        // This is possibly broken
-        list<ASTNode*>::iterator it = sn.children->begin();
-        for (; it != sn.children->end(); it++) {
-            tmp.push(newSort(**it));
-        }
-    } else assert(false);
-
-    canon_name = buildName(sn);
-
-    if (sortTable.contains(canon_name)) {
-        return sortTable[canon_name];
-    } else {
-        SStrRef nr = ssa.alloc(canon_name);
-        sr = sa.alloc(idr, nr, tmp);
+    if (sortTable.contains(name))
+        return sortTable[name];
+    else {
+        SStrRef nr = ssa.alloc(name);
+        SRef sr = sa.alloc(id, nr, rest);
         sorts.push(sr);
-        sortTable.insert(canon_name, sr);
+        sortTable.insert(name, sr);
         return sr;
     }
 }
-
 SRef SStore::newSort(IdRef idr, vec<SRef>& rest)
 {
     SRef sr = SRef_Undef;

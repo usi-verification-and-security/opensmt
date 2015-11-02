@@ -1,0 +1,17 @@
+(set-logic QF_LRA)
+(declare-fun v41 () Real)
+(declare-fun v44 () Real)
+(declare-fun v42 () Real)
+(declare-fun v47 () Real)
+(declare-fun v1 () Real)
+(assert
+ (and
+  (<= (- v42) 5)
+  (>= (- v47 v41) 1)
+  (or (>= v44 5) (> v42 10))
+  (or (<= (- v47 v42) 3) (> (- v41 v42) 8))
+  (>= (- v47) 1)
+  (or (> (- v41 v42) 8) (< v1 3))
+))
+(check-sat)
+(exit)

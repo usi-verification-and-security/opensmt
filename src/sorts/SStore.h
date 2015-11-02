@@ -43,26 +43,9 @@ class IdentifierStore
         IdStrRef nr = isa.alloc(name);
         return ia.alloc(nr);
     }
-    IdRef newIdentifier(ASTNode& n) {
-        if (n.children == NULL) {
-            IdStrRef nr = isa.alloc(n.getValue());
-            return ia.alloc(nr);
-        } else {
-            char* s = NULL;
-            char* o = s;
-            vec<int> nl;
-            for (list<ASTNode*>::iterator it = n.children->begin(); it != n.children->end(); it++) {
-                o = s;
-                asprintf(&s, "%s %s", o, (**it).getValue());
-                free(o);
-                nl.push(atoi((**it).getValue()));
-            }
-            o = s;
-            asprintf(&s, "%s (%s)", n.getValue(), s);
-            free(o);
-            IdStrRef nr = isa.alloc(s);
-            return ia.alloc(nr, nl);
-        }
+    IdRef newIdentifier(const char* name, vec<int>& nl) {
+        IdStrRef nr = isa.alloc(name);
+        return ia.alloc(nr, nl);
     }
     const char* getName(IdRef ir) { return isa[ia[ir].getNameRef()].getName(); }
     int* serializeIdentifiers() const;
@@ -102,12 +85,10 @@ class SStore
     SRef    operator []     (const Sort& s) { return sortTable[ssa[s.getNameRef()].getName()]; }
     Sort*   operator []     (SRef sr)       { return &sa[sr]; }
 
-    char*   buildName       (ASTNode& sn);
-    SRef    newSort         (ASTNode& sn);
     SRef    newSort         (IdRef id, vec<SRef>& rest);
-    bool    containsSort    (ASTNode& sn)
-        { char* name = buildName(sn); bool rval = sortTable.contains(name);
-          free(name); return rval; }
+    SRef    newSort         (IdRef id, const char* name, vec<SRef>& rest);
+    bool    containsSort    (const char* name) const
+        { bool rval = sortTable.contains(name); return rval; }
     const char* getName     (SRef sr) { return ssa[sa[sr].getNameRef()].getName(); }
     Sort&   getSort         (SRef sr) { return sa[sr]; }
 

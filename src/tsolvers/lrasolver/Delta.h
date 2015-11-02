@@ -29,6 +29,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "Global.h"
 
+using opensmt::Real;
+
 //
 // Class to keep the delta values and bounds values for the LAVar
 //

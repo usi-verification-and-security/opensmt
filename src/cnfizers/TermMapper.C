@@ -26,6 +26,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "TermMapper.h"
 
+void TermMapper::addBinding(Var v, PTRef tr)
+{
+    assert(varToTerm.size() == v && varToTheorySymbol.size() == v);
+    logic.getPterm(tr).setVar(v);
+    if (tr != PTRef_Undef) {
+        varToTheorySymbol.push(logic.getSymRef(tr));
+        varToTerm.push(tr);
+    } else {
+        assert(false);
+    }
+}
+
 void TermMapper::getTerm(PTRef r, PTRef& p, bool& sgn) const {
     sgn = false;
     while (logic.term_store[r].symb() == logic.getSym_not()) {
@@ -40,16 +52,16 @@ Lit TermMapper::getLit(PTRef r) const {
     PTRef p;
     getTerm(r, p, sgn);
 #ifdef PEDANTIC_DEBUG
-    assert(termToVar.contains(p));
+    assert(logic.getPterm(p).hasVar());
 #endif
-    return Lit(termToVar[p], sgn);
+    return Lit(logic.getPterm(p).getVar(), sgn);
 }
 
 Var TermMapper::getVar(PTRef r) const {
     bool sgn;
     PTRef p;
     getTerm(r, p, sgn);
-    return termToVar[p];
+    return logic.getPterm(p).getVar();
 }
 
 

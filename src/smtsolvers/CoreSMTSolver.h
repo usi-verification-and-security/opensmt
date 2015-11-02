@@ -108,6 +108,7 @@ class SplitData
     char* litToString(const Lit);
     template<class C> char* clauseToString(const C&);
     char* clauseToString(const vec<Lit>&);
+    int getLitSize(const Lit l) const;
 
   public:
     SplitData(vec<Clause*>& ic, vec<Lit>& t, int tl)
@@ -145,6 +146,16 @@ class SplitData
     void  cnfToString(CnfState& cs) { cs.setCnf(splitToString()); }
 };
 
+inline int SplitData::getLitSize(const Lit l) const
+{
+    int sz = 0;
+    if (sign(l)) sz++;
+    Var v = var(l);
+    int n = v+1;
+    while (n != 0) { n /= 10; sz++; }
+    return sz;
+}
+
 inline char* SplitData::litToString(const Lit l)
 {
     char* l_str;
@@ -173,45 +184,111 @@ inline char* SplitData::clauseToString(const C& c)
 
 inline char* SplitData::splitToString()
 {
-    char* f_str = (char*)malloc(1);
-    f_str[0] = 0;
-    char* f_old = f_str;
+    int buf_cap = 1024;
+    int sz = 0;
+    char* buf = (char*) malloc(1024);
+
 
     // Units in dl 0
     for (int i = 0; i < (trail_idx > 0 ? trail_idx : trail.size()); i++) {
-        char* l_str = litToString(trail[i]);
-        f_old = f_str;
-        asprintf(&f_str, "%s%s 0\n", f_old, l_str);
-        free(l_str);
-        free(f_old);
+        int n = getLitSize(trail[i]);
+        while (buf_cap < sz + n + 4) { // The size of lit, trailing space, the zero, the newline, and NULL
+            buf_cap *= 2;
+            buf = (char*) realloc(buf, buf_cap);
+        }
+        sprintf(&buf[sz], "%s%d 0\n", sign(trail[i]) ? "-" : "", var(trail[i])+1);
+        sz += n+3; // points to NULL
     }
 
     // The constraints
     for (int i = 0; i < constraints.size(); i++) {
-        char* c_str = clauseToString<vec<Lit> >(constraints[i]);
-        f_old = f_str;
-        asprintf(&f_str, "%s\n%s", f_old, c_str);
-        free(c_str);
-        free(f_old);
+        vec<Lit>& c = constraints[i];
+        for (int j = 0; j < c.size(); j++) {
+            Lit l = c[j];
+            int n = getLitSize(l);
+            while (buf_cap < sz + n + 2) { // Lit, space, and NULL
+                buf_cap *= 2;
+                buf = (char*) realloc(buf, buf_cap);
+            }
+            sprintf(&buf[sz], "%s%d ", sign(l) ? "-" : "", var(l)+1);
+            sz += n+1; // Points to the NULL
+        }
+        while (buf_cap < sz + 3) { // 0, newline, and NULL
+            buf_cap *= 2;
+            buf = (char*) realloc(buf, buf_cap);
+        }
+        sprintf(&buf[sz], "0\n");
+        sz += 2;
     }
 
     // The instance
     for (int i = 0; i < instance.size(); i++) {
-        char* c_str = clauseToString<vec<Lit> >(instance[i]);
-        f_old = f_str;
-        asprintf(&f_str, "%s\n%s", f_old, c_str);
-        free(c_str);
-        free(f_old);
+        vec<Lit> &c = instance[i];
+        for (int j = 0; j < c.size(); j++) {
+            Lit l = c[j];
+            int n = getLitSize(l);
+            while (buf_cap < sz + n + 2) { // The size of lit, the trailing space, and NULL
+                buf_cap *= 2;
+                buf = (char*) realloc(buf, buf_cap);
+            }
+            sprintf(&buf[sz], "%s%d ", sign(l) ? "-" : "", var(l)+1);
+            sz += n+1; // points to the NULL
+        }
+        while (buf_cap < sz + 3) { // zero, newline and NULL
+            buf_cap *= 2;
+            buf = (char*) realloc(buf, buf_cap);
+        }
+        sprintf(&buf[sz], "0\n");
+        sz += 2; // points to the NULL
     }
     for (int i = 0; i < learnts.size(); i++) {
-        char* c_str = clauseToString<vec<Lit> >(learnts[i]);
-        f_old = f_str;
-        asprintf(&f_str, "%s\n%s", f_old, c_str);
-        free(c_str);
-        free(f_old);
+        vec<Lit>& c = learnts[i];
+        for (int j = 0; j < c.size(); j++) {
+            Lit l = c[j];
+            int n = getLitSize(l);
+            while (buf_cap < sz + n + 2) { // The size of lit, space, and NULL
+                buf_cap *= 2;
+                buf = (char*) realloc(buf, buf_cap);
+            }
+            sprintf(&buf[sz], "%s%d ", sign(l) ? "-" : "", var(l)+1);
+            sz += n+1; // points to the null
+        }
+        while (buf_cap < sz + 3) { // The zero, newline, and the NULL
+            buf_cap *= 2;
+            buf = (char*) realloc(buf, buf_cap);
+        }
+        sprintf(&buf[sz], "0\n");
+        sz += 2; // Points to the NULL
     }
-    return f_str;
+    buf = (char*) realloc(buf, sz+1);
+    return buf;
 }
+
+class LANode {
+  public:
+    // c1 & c2 are for debugging
+    LANode* c1; LANode* c2; LANode* p; Lit l; lbool v; int d;
+    LANode() : c1(NULL), c2(NULL), p(NULL), l(lit_Undef), v(l_Undef), d(0) {}
+    LANode(LANode* par, Lit li, lbool va, int dl) :
+        c1(NULL), c2(NULL), p(par), l(li), v(va), d(dl) {}
+    void print() {
+        for (int i = 0; i < d; i++)
+            printf(" ");
+        printf("%s%d [%s, %d]", sign(l) ? "-" : "", var(l), v == l_False ? "unsat" : "open", d);
+
+        if (c1 != NULL) {
+            printf(" c1");
+        }
+        if (c2 != NULL) {
+            printf(" c2");
+        }
+        printf("\n");
+        if (c1 != NULL)
+            c1->print();
+        if (c2 != NULL)
+            c2->print();
+    }
+};
 
 
 //=================================================================================================
