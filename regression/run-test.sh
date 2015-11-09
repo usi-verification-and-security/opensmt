@@ -12,7 +12,7 @@ mkdir ${tmpfolder}
 export outmod=false
 export errmod=false
 export rtmod=false
-tolerance=1.2
+tolerance=1.5
 
 for file in $(find . -name '*.smt2' |sort); do
     name=$(basename $file)

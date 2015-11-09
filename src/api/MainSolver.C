@@ -633,12 +633,13 @@ bool MainSolver::readSolverState(const char* file, char** msg)
 #ifdef VERBOSE_FOPS
     cerr << "The cnf is" << endl;
     cerr << cs.getCnf() << endl;
-    cerr << "The terms are" << endl;
-    for (int i = 0; i < map.size(); i++) {
-        char* tr_s = logic.printTerm(map[i].tr);
-        cerr << "  " << tr_s << endl;
-        free(tr_s);
-    }
+
+//    cerr << "The terms are" << endl;
+//    for (int i = 0; i < map.size(); i++) {
+//        char* tr_s = logic.printTerm(map[i].tr);
+//        cerr << "  " << tr_s << endl;
+//        free(tr_s);
+//    }
 #endif
 
     deserializeSolver(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf, cs);
