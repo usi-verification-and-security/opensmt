@@ -2,29 +2,33 @@
 
 SERVER_OUT='./server.out'
 OPENSMT_OUT='./opensmt.out'
+PYTHON='python' # this should be the command to python 2.7
 
-python='python' # this should be the command to python 2.7
+
 workers=2
 split=2
 mode='_lookahead'
 
 show_help() {
-	echo "Usage $0 [-S][-n WORKER_NUMBER=$workers][-s SPLIT_NUMBER=$split][-p PYTHON2.7_PATH=$python] FILE1.smt2 [FILE2.smt [...]]"
+	echo "Usage $0 [-R][-S][-n WORKER_NUMBER=$workers][-s SPLIT_NUMBER=$split][-p PYTHON2.7_PATH=$python] FILE1.smt2 [FILE2.smt [...]]"
 	echo
+	echo "-R    : use clause sharing"
 	echo "-S    : use scattering (default lookahead)"
 	exit 0
 }
 
-while getopts "hSn:s:" opt; do
+while getopts "hRSn:s:" opt; do
 	case "$opt" in
 		h|\?)
             show_help
         	;;
+        R)
+            ;;
+		S)  mode='_scattering'
+		    ;;
 		n)	workers=$OPTARG
        		;;
 		s)	split=$OPTARG
-		    ;;
-		S)  mode='_scattering'
 		    ;;
 	esac
 done
@@ -48,12 +52,12 @@ echo "# SERVER stdout will be redirected to $SERVER_OUT"
 echo "# OPENSMT solvers stdout and stderr will be redirected to $OPENSMT_OUT"
 echo '#'
 echo '# starting server... '
-$python ../wserver/sserver.py -d -f ../wserver/$mode -s $split -o ../opensmt > $SERVER_OUT 2>/dev/null &
+$PYTHON ../wserver/sserver.py -d -f ../wserver/$mode -s $split -o ../opensmt > $SERVER_OUT 2>/dev/null &
 server_pid=$!
 sleep 1
 echo '# done'
 echo '# sending the files to the server... '
-$python ../wserver/command.py 127.0.0.1 $@ > /dev/null
+$PYTHON ../wserver/command.py 127.0.0.1 $@ > /dev/null
 echo '# done'
 for i in $(seq $workers)
 do

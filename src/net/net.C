@@ -16,6 +16,8 @@ namespace opensmt {
 
 std::string NetCfg::server_host;
 uint16_t NetCfg::server_port = 0;
+std::string NetCfg::database_host;
+uint16_t NetCfg::database_port = 0;
 
 
 void error(const char *msg) {
@@ -31,6 +33,8 @@ uint32_t FrameSocket::readn(char *buffer, uint32_t n) {
     uint32_t r = 0;
     while (n > r) {
         r += (uint32_t) ::read(this->sockfd, &buffer[r], n - r);
+        if (r == 0)
+            throw "Server connection broken";
     }
     return r;
 }
@@ -60,7 +64,7 @@ uint32_t FrameSocket::write(char *frame, uint32_t length) {
 }
 
 
-WorkerClient::WorkerClient(char *host, uint16_t port) {
+WorkerClient::WorkerClient() {
     int sockfd;
     struct sockaddr_in serv_addr;
     struct hostent *he;
@@ -68,13 +72,13 @@ WorkerClient::WorkerClient(char *host, uint16_t port) {
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
         throw "Socket init";
 
-    if ((he = gethostbyname(host)) == NULL)
+    if ((he = gethostbyname(NetCfg::server_host.c_str())) == NULL)
         throw "Invalid hostname";
 
     bzero(&serv_addr, sizeof(serv_addr));
     memcpy(&serv_addr.sin_addr, he->h_addr_list[0], he->h_length);
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(port);
+    serv_addr.sin_port = htons(NetCfg::server_port);
 
     if (connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) != 0)
         throw "Connect error";
@@ -233,7 +237,7 @@ inline void Sharing::inet_source(int fd, std::string &str) {
 
 void Sharing::reset(char *channel) {
     free(this->channel);
-    if (channel == NULL || NetCfg::server_host.empty()) {
+    if (channel == NULL || NetCfg::database_host.empty()) {
         redisFree(this->c_cls_pub);
         redisFree(this->c_cls_sub);
         return;
@@ -262,7 +266,7 @@ void Sharing::reset(char *channel) {
 redisContext *Sharing::connect() {
     redisContext *context;
     struct timeval timeout = {1, 500000}; // 1.5 seconds
-    context = redisConnectWithTimeout(NetCfg::server_host.c_str(), NetCfg::server_port, timeout);
+    context = redisConnectWithTimeout(NetCfg::database_host.c_str(), NetCfg::database_port, timeout);
     if (context == NULL || context->err) {
         if (context) {
             std::cerr << "Connection error: " << context->errstr << "\n";
@@ -334,12 +338,33 @@ void Sharing::clausesUpdate(CoreSMTSolver &solver) {
     assert (reply->type == REDIS_REPLY_ARRAY && reply->elements == 3);
     assert (std::string(reply->element[0]->str).compare("message") == 0);
     std::string s = std::string(reply->element[2]->str, reply->element[2]->len); */
-
-    redisReply *reply = (redisReply *) redisCommand(this->c_cls_pub, "GET %s", this->channel);
+//ZREVRANGEBYSCORE %s +inf 0 LIMIT 0 10000
+    redisReply *reply = (redisReply *) redisCommand(this->c_cls_pub, "SRANDMEMBER %s 10000",
+                                                    this->channel);
     if (reply == NULL) {
         std::cerr << "Connection error during clause updating\n";
         return;
     }
+    if (reply->type != REDIS_REPLY_ARRAY)
+        return;
+
+    for (int i = solver.n_clauses; i < solver.clauses.size(); i++) {
+        if (i < solver.n_clauses + reply->elements)
+            solver.removeClause(*solver.clauses[i]);
+        if (i + reply->elements < solver.clauses.size())
+            solver.clauses[i] = solver.clauses[i + reply->elements];
+    }
+    solver.clauses.shrink(std::min(solver.clauses.size() - solver.n_clauses, (uint32_t) reply->elements));
+
+
+    for (int i = 0; i < reply->elements; i++) {
+        std::string str = std::string(reply->element[i]->str, reply->element[i]->len);
+        vec<Lit> lits;
+        uint32_t o = 0;
+        clauseDeserialize(str, &o, lits);
+        solver.addClause(lits, true);
+    }
+/*
     if (reply->type != REDIS_REPLY_STRING)
         return;
     std::string s = std::string(reply->str, reply->len);
@@ -353,5 +378,6 @@ void Sharing::clausesUpdate(CoreSMTSolver &solver) {
         clauseDeserialize(m.payload, &o, lits);
         solver.addClause(lits, true);
     }
+*/
     freeReplyObject(reply);
 }

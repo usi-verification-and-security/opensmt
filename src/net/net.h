@@ -30,6 +30,8 @@ class NetCfg {
 public:
     static std::string server_host;
     static uint16_t server_port;
+    static std::string database_host;
+    static uint16_t database_port;
 
     static std::string signature();
 
@@ -69,7 +71,7 @@ private:
     static void solve(int wpipefd, char *osmt2filename, uint32_t jid);
 
 public:
-    WorkerClient(char *host, uint16_t port);
+    WorkerClient();
 
     void runForever();
 };

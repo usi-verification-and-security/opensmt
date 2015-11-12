@@ -4,26 +4,6 @@
 
 #include "protocol.h"
 
-inline void int2str(uint8_t i, std::string &s) {
-    s += (char) i;
-}
-
-inline uint64_t str2int(const std::string &s, uint8_t b = 4) {
-    assert(b > 0 && b <= 8);
-    assert(s.length() >= b);
-    uint64_t i = 0;
-    while (b-- > 0)
-        i |= ((uint8_t) s[b]) << (b * 8);
-    return i;
-}
-
-inline void int2str(uint32_t i, std::string &s) {
-    s += (char) i;
-    s += (char) (i >> 8);
-    s += (char) (i >> 16);
-    s += (char) (i >> 24);
-}
-
 void Message::dump(std::string &s) {
     std::map<std::string, std::string>::iterator it;
 
@@ -65,15 +45,6 @@ void Message::load(std::string &s) {
 
 }
 
-
-void clauseSerialize(Clause &c, std::string &s) {
-    s.reserve(4 + 4 * c.size());
-    int2str((uint32_t) c.size(), s);
-    for (int i = 0; i < c.size(); i++) {
-        int2str((uint32_t) toInt(c[i]), s);
-    }
-}
-
 void clauseDeserialize(std::string &s, uint32_t *o, vec<Lit> &lits) {
     if (s.length() < *o + 4)
         return;
@@ -87,3 +58,4 @@ void clauseDeserialize(std::string &s, uint32_t *o, vec<Lit> &lits) {
     }
     return;
 }
+

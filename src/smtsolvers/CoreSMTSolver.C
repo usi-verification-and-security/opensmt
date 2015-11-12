@@ -395,8 +395,9 @@ bool CoreSMTSolver::addClause( vec<Lit>& ps
 #endif
 
     clauses.push(c);
-    if(!shared)
-        this->n_clauses+=1;
+    if(!shared) {
+        this->n_clauses += 1;
+    }
     attachClause(*c);
 
 #ifdef VERBOSE_SAT
@@ -1483,7 +1484,6 @@ void CoreSMTSolver::reduceDB()
 }
 
 
-//dovrebbe funzionare
 void CoreSMTSolver::removeSatisfied(vec<Clause*>& cs)
 {
   int i,j;
@@ -1843,7 +1843,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
               return l_Undef;
       }
       if (conflicts % 1000 == 0){
-//          this->clauses_sharing.clausesPublish(*this);
+          this->clauses_sharing.clausesPublish(*this);
       }
 
     if (resource_limit >= 0 && conflicts % 1000 == 0) {
@@ -1855,7 +1855,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 
       if(decisionLevel()==0){
           if(conflicts>conflicts_last_update+1000) {
-//              this->clauses_sharing.clausesUpdate(*this);
+              this->clauses_sharing.clausesUpdate(*this);
               conflicts_last_update = conflicts;
           }
       }
@@ -2151,7 +2151,7 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
             decision_var[i] = false;
     }
     free(var_seen);
-//    this->clauses_sharing.reset("asd");
+    this->clauses_sharing.reset("clauses");
     // If splitting is enabled refresh the options
     split_type     = config.sat_split_type();
     if (split_type != spt_none) {

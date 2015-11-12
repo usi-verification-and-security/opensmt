@@ -37,7 +37,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //#include "Ackermanize.h"
 
 #include "Interpret.h"
-//#include "net/net.h"
+#include "net/net.h"
 
 #include <cstdlib>
 #include <cstdio>
@@ -142,30 +142,23 @@ int main( int argc, char * argv[] )
                 }
                 break;
             case 's':
-                for(i=0;optarg[i]!=':' && optarg[i]!='\0';i++){}
-                if(optarg[i]!=':'){
-                    fprintf(stderr, "Invalid host:port argument\n");
-                    return 1;
-                }
-                optarg[i]='\0';
-                try{
-//                    w = new WorkerClient(optarg, atoi(&optarg[i+1]));
-//                    w->runForever();
-                }catch(char const *s){
-                    std::cout << "Exception: " << s << "\n";
-                }
-                return 0;
             case 'r':
                 for(i=0;optarg[i]!=':' && optarg[i]!='\0';i++){}
                 if(optarg[i]!=':'){
-                    fprintf(stderr, "Invalid host:port argument\n");
+                    fprintf(stderr, "Invalid host:port argument\n",
+                            argv[0]);
                     return 1;
                 }
                 optarg[i]='\0';
-//                NetCfg::server_host=std::string(optarg);
-//                NetCfg::server_port=(uint16_t)atoi(&optarg[i+1]);
 
-
+                if(opt == 's') {
+                    NetCfg::server_host = std::string(optarg);
+                    NetCfg::server_port = atoi(&optarg[i+1]);
+                }
+                if(opt == 'r'){
+                    NetCfg::database_host = std::string(optarg);
+                    NetCfg::database_port = atoi(&optarg[i+1]);
+                }
                 break;
             case 'h':
                 //    context.getConfig( ).printHelp( );
@@ -175,6 +168,17 @@ int main( int argc, char * argv[] )
                 return 0;
         }
     }
+
+    if(!NetCfg::server_host.empty()) {
+        try {
+            WorkerClient *w = new WorkerClient();
+            w->runForever();
+        } catch (char const *s) {
+            std::cout << "Exception: " << s << "\n";
+        }
+        return 0;
+    }
+
     
   if (argc - optind == 0) {
     fin = stdin;

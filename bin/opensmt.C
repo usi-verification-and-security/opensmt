@@ -37,7 +37,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //#include "Ackermanize.h"
 
 #include "Interpret.h"
-//#include "net/net.h"
+#include "net/net.h"
 
 #include <cstdlib>
 #include <cstdio>
@@ -132,9 +132,12 @@ int main( int argc, char * argv[] )
     FILE * fin = NULL;
     int opt, i;
 //    WorkerClient *w;
-    while ((opt = getopt(argc, argv, "hs:")) != -1) {
+    while ((opt = getopt(argc, argv, "hs:r:")) != -1) {
         switch (opt) {
+            // -s server to listen for problems
+            // -r clauses database
             case 's':
+            case 'r':
                 for(i=0;optarg[i]!=':' && optarg[i]!='\0';i++){}
                 if(optarg[i]!=':'){
                     fprintf(stderr, "Invalid host:port argument\n",
@@ -142,13 +145,21 @@ int main( int argc, char * argv[] )
                     return 1;
                 }
                 optarg[i]='\0';
-                try{
+
+                if(opt == 's') {
+                    try {
 //                    w = new WorkerClient(optarg, atoi(&optarg[i+1]));
 //                    w->runForever();
-                }catch(char const *s){
-                    std::cout << "Exception: " << s << "\n";
+                    } catch (char const *s) {
+                        std::cout << "Exception: " << s << "\n";
+                    }
+                    return 0;
                 }
-                return 0;
+                if(opt == 'r'){
+                    //NetCfg::database_host = std::string(optarg);
+                    //NetCfg::database_port = atoi(&optarg[i+1]);
+                }
+                break;
             case 'h':
                 //    context.getConfig( ).printHelp( );
             default: /* '?' */
@@ -189,7 +200,7 @@ int main( int argc, char * argv[] )
     fclose( fin );
   }
 
-  // 
+  //
   // Execute accumulated commands
   // function defined in OpenSMTContext.C
   //

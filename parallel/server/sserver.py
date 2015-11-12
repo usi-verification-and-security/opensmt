@@ -453,7 +453,7 @@ if __name__ == '__main__':
     t = threading.Thread(target=wserver.run_forever)
     t.start()
 
-    # try:
-    cserver.run_forever()
-    #except:
-    #   os._exit(0)
+    try:
+        cserver.run_forever()
+    except:
+       os._exit(0)

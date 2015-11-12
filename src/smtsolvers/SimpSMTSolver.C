@@ -930,21 +930,24 @@ void SimpSMTSolver::cleanUpClauses()
     if (clauses[i]->mark() == 1){
       Clause& c = *clauses[i];
       for (int k = 0; k < c.size(); k++)
-	if (!seen[var(c[k])]){
-	  seen[var(c[k])] = 1;
-	  dirty.push(var(c[k]));
-	} }
+	    if (!seen[var(c[k])]){
+	      seen[var(c[k])] = 1;
+	      dirty.push(var(c[k]));
+	    }
+    }
 
-      for (i = 0; i < dirty.size(); i++){
+  for (i = 0; i < dirty.size(); i++){
 	cleanOcc(dirty[i]);
-	seen[dirty[i]] = 0; }
-
+	seen[dirty[i]] = 0;
+  }
+  assert(clauses.size()==n_clauses);
 	for (i = j = 0; i < clauses.size(); i++)
 	  if (clauses[i]->mark() == 1)
-	    free(clauses[i]);
+        free(clauses[i]);
 	  else
 	    clauses[j++] = clauses[i];
 	clauses.shrink(i - j);
+  this->n_clauses-=(i-j);
 }
 
 //=================================================================================================
