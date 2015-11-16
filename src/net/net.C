@@ -162,7 +162,7 @@ void WorkerClient::command(char *frame, uint32_t length) {
         std::uniform_int_distribution<uint32_t> randuint(0, 0xFFFFFF);
         std::random_device rd;
         n = snprintf(buffer, 1024, "(set-option :random-seed %u)\n"
-                "(set-logic QF_UF)\n"
+                "(set-logic QF_LRA)\n"
                 "(read-state \"%s\")\n"
                 "(check-sat)\n", randuint(rd), filename);
 
