@@ -123,12 +123,6 @@ if [ $# -le 0 ]; then
     exit
 fi
 
-if ! (check ${HEURISTIC}); then
-    info 'OpenSMT not found. Compiling...'
-    make &>/dev/null
-    success '... done'
-fi
-
 require ${PYTHON}
 require ${OPENSMT} 'Please compile OpenSMT2'
 require ${SERVER}

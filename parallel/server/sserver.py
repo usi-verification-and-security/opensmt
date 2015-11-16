@@ -382,6 +382,7 @@ class CommandServer(Server):
                 name = message[2:start]
                 code = message[start + 1:]
                 temp_fd, temp_name = tempfile.mkstemp('.smt2')
+                print temp_name
                 dump_prefix = '/dev/shm/{}'.format(os.path.basename(temp_name))
                 with open(options.file_options) as options_file:
                     smt_options = options_file.read().split('\n')

@@ -48,6 +48,9 @@ int main(int argc, char **argv) {
     context_sub = connect(hostname, port);
 
 
+    reply = (redisReply *) redisCommand(context_pub, "DEL clauses");
+    freeReplyObject(reply);
+
     /* MAIN LOOP */
     reply = (redisReply *) redisCommand(context_sub, "SUBSCRIBE clauses.out");
     freeReplyObject(reply);

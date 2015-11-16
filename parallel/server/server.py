@@ -1,6 +1,9 @@
 import optparse
 import asyncio
 
+def c():
+    return 3
+
 
 @asyncio.coroutine
 def handle_echo(reader, writer):
@@ -8,6 +11,8 @@ def handle_echo(reader, writer):
     message = data.decode()
     addr = writer.get_extra_info('peername')
     print("Received %r from %r" % (message, addr))
+
+    message = eval(message)
 
     print("Send: %r" % message)
     writer.write(data)
