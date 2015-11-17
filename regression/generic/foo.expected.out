@@ -1,0 +1,1 @@
+; Error: generic/foo  extension not recognized. Please use one in { smt2, cnf } or stdin (smtlib2 is assumed) (triggered at src/bin/opensmt.C, 196)

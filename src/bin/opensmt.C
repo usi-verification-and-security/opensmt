@@ -25,17 +25,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 
-//#include "Egraph.h"
-//#include "OpenSMTContext.h"
-//#include "SimpSMTSolver.h"
-//#include "Tseitin.h"
-//#include "ExpandITEs.h"
-//#include "ArraySimplify.h"
-//#include "BVBooleanize.h"
-//#include "TopLevelProp.h"
-//#include "DLRescale.h"
-//#include "Ackermanize.h"
-
 #include "Interpret.h"
 #include "net/net.h"
 
@@ -196,15 +185,15 @@ int main( int argc, char * argv[] )
         opensmt_error( "can't open file" );
 
       const char * extension = strrchr( filename, '.' );
-      if ( strcmp( extension, ".smt" ) == 0 ) {
+      if ( extension != NULL && strcmp( extension, ".smt" ) == 0 ) {
         opensmt_error( "SMTLIB 1.2 format is not supported in this version, sorry" ); }
-      else if ( strcmp( extension, ".smt2" ) == 0 ) {
+      else if ( extension != NULL && strcmp( extension, ".smt2" ) == 0 ) {
         int rval = interpreter.interpFile(fin);
 //      smt2set_in( fin );
 //      smt2parse( );
       }
       else
-        opensmt_error2( extension, " extension not recognized. Please use one in { smt2, cnf } or stdin (smtlib2 is assumed)" );
+        opensmt_error2( filename, " extension not recognized. Please use one in { smt2, cnf } or stdin (smtlib2 is assumed)" );
     }
     fclose( fin );
   }

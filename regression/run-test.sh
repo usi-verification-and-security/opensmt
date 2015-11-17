@@ -14,7 +14,7 @@ export errmod=false
 export rtmod=false
 tolerance=1.5
 
-for file in $(find . -name '*.smt2' |sort); do
+for file in $(find . -name '*.smt2' |sort) generic/foo; do
     name=$(basename $file)
     dir=$(dirname $file)
     /usr/bin/time -p -o $tmpfolder/$name.time ${opensmt} $dir/$name > $tmpfolder/$name.out 2>$tmpfolder/$name.err.tmp
