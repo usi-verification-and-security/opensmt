@@ -1095,7 +1095,7 @@ void MainSolver::solve_split(int i, int s, int wpipefd, std::mutex *mtx)
     int* logicstore_buf;
 
     this->logic.serializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf);
-    Logic_t l = logic.getLogic();
+    Logic_t l = this->logic.getLogic();
 //    Logic *new_logic = NULL;
     Theory* theory;
     if (l == QF_UF)
@@ -1117,6 +1117,10 @@ void MainSolver::solve_split(int i, int s, int wpipefd, std::mutex *mtx)
     this->ts.getSolverState(cs);
 
     main_solver->deserializeSolver(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf, cs);
+
+    DimacsParser dp;
+    dp.parse_DIMACS_main(this->sat_solver.splits[s].splitToString(), sat_solver);
+
     free(termstore_buf);
     free(symstore_buf);
     free(idstore_buf);

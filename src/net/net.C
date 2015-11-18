@@ -121,8 +121,7 @@ void WorkerClient::solve(int wpipefd, char *smt2filename, uint32_t jid) {
 void WorkerClient::command(char *frame, uint32_t length) {
     uint32_t i, jid;
     int n;
-    char *filename;
-    FILE *file;
+    int file;
     int pipefd[2];
     char buffer[1024];
 
@@ -154,10 +153,11 @@ void WorkerClient::command(char *frame, uint32_t length) {
 
         this->jid = jid;
 
-        filename = tmpnam(NULL);
-        file = fopen(filename, "w");
-        ::fwrite(&frame[i + 1], sizeof(char), length - i - 1, file);
-        fclose(file);
+        char filename[30] = "/tmp/fileXXXXXX";
+        file = ::mkstemp(filename);
+
+        ::write(file, &frame[i + 1], length - i - 1);
+        ::close(file);
 
         std::uniform_int_distribution<uint32_t> randuint(0, 0xFFFFFF);
         std::random_device rd;
@@ -166,13 +166,17 @@ void WorkerClient::command(char *frame, uint32_t length) {
                 "(read-state \"%s\")\n"
                 "(check-sat)\n", randuint(rd), filename);
 
-        filename = tmpnam(NULL);
-        file = fopen(filename, "w");
-        ::fwrite(buffer, sizeof(char), n, file);
-        fclose(file);
+        strcpy(filename, "/tmp/fileXXXXXX");
+        file = ::mkstemp(filename);
+        ::write(file, buffer, n);
+        ::close(file);
+        std::string str = std::string(filename) + std::string(".smt2");
+        std::rename(filename, str.c_str());
+        strcpy(filename, str.c_str());
 
         this->rpipe = new FrameSocket(pipefd[0]);
         this->t = std::thread(solve, pipefd[1], filename, this->jid);
+        ::free(filename);
     }
     else if (frame[0] == 'Q') {
         if (jid == this->jid) {

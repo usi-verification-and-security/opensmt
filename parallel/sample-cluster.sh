@@ -88,23 +88,26 @@ function require_clauses {
 
 clauses=false
 mode='_lookahead'
+sbatch=false
 workers=2
 splits=2
 
 show_help() {
-	echo "Usage $0 [-r][-S][-n WORKER_NUMBER=$workers][-s SPLIT_NUMBER=$splits] FILE1.smt2 [FILE2.smt [...]]"
+	echo "Usage $0 [-r][-S][-b sbatch FILE][-n WORKER_NUMBER=$workers][-s SPLIT_NUMBER=$splits] FILE1.smt2 [FILE2.smt [...]]"
 	echo
 	echo "-r    : use clause sharing (default $clauses)"
 	echo "-S    : use scattering (default $mode)"
 	exit 0
 }
 
-while getopts "hrSn:s:" opt; do
+while getopts "hrSb:n:s:" opt; do
 	case "$opt" in
 		h|\?)
             show_help
         	;;
         r)  clauses=true
+            ;;
+        b)  sbatch=$OPTARG
             ;;
 		S)  mode='_scattering'
 		    ;;
@@ -120,6 +123,11 @@ shift $((OPTIND-1))
 if [ $# -le 0 ]; then
     error '.smt2 file(s) missing!'
     show_help
+    exit
+fi
+
+if [ ${sbatch} = false ]; then
+    error 'you must specify a batch file'
     exit
 fi
 
@@ -162,16 +170,8 @@ success 'done'
 #    heuristic_pid=$!
 #    success 'done'
 #fi
-echo -n "starting $workers solvers: "
-for i in $(seq ${workers})
-do
-    if ${clauses}; then
-        ${OPENSMT} -s127.0.0.1:3000 -r127.0.0.1:6379 > ${OPENSMT_OUT} 2>&1 &
-    else
-        ${OPENSMT} -s127.0.0.1:3000 > ${OPENSMT_OUT} 2>&1 &
-    fi
-	echo -n "|"
-done
+echo -n "starting batch "
+sbatch ${sbatch}
 success ' done'
 echo -n 'waiting for all the problems to be solved... '
 wait ${server_pid}

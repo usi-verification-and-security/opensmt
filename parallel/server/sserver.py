@@ -145,6 +145,7 @@ class WorkerServer(Server):
         -2: Job('\\ERROR'),
         -1: Job('\\IDLE')
     })
+    heuristic = None
 
     def __init__(self, port, timeout):
         self._timeout = timeout
@@ -174,8 +175,10 @@ class WorkerServer(Server):
             for sock in self._status:
                 sock.write('!')
             os._exit(0)
+        self.output.flush()
 
     def handle_message(self, sock, message):
+        self.output.flush()
         with self._lock:
             done = False
             start = message.index('\\')
@@ -208,6 +211,7 @@ class WorkerServer(Server):
                 self._jobs[jid].add_history_item(('-', 1, self._status[sock][1]))
             self._status.pop(sock)
             self._commit()
+        self.output.flush()
 
     def handle_command(self, message):
         with self._lock:
@@ -243,9 +247,9 @@ class WorkerServer(Server):
                     file = open(message[1:], 'wb')
                     pickle.dump(self._jobs, file)
                 except:
-                   self.output.write('$ DUMP ERROR: {}\n'.format(message))
+                    self.output.write('$ DUMP ERROR: {}\n'.format(message))
                 else:
-                   file.close()
+                    file.close()
             elif message[0] == 'A':
                 l = [str(sys.argv)]
                 for jid in self._jobs:
@@ -268,6 +272,7 @@ class WorkerServer(Server):
                 else:
                     with open(message[1:], 'w') as f:
                         f.write('\n'.join(l))
+
     def _commit(self):
         """
         Find job available (with POLICY) and then execute it
@@ -286,10 +291,16 @@ class WorkerServer(Server):
         jids = [jid for jid in self._jobs if jid >= 0 and self._jobs[jid]['status'] == 1]
         if not jids:
             jids = [jid for jid in self._jobs if jid >= 0 and self._jobs[jid]['status'] == 0]
+            if jids and options.heuristic:
+                if self.heuristic:
+                    self.heuristic.kill()
+                self.heuristic = subprocess.Popen(options.heuristic.split(' '))
         if jids:
             self._swap_jobs(-1, jids[0])
             return [jids[0]]
         else:
+            if self.heuristic:
+                self.heuristic.kill()
             return []
 
     def _swap_jobs(self, jid_prev, jid_next, filter=None):
@@ -372,6 +383,7 @@ class CommandServer(Server):
         super(CommandServer, self).__init__(port)
 
     def handle_message(self, sock, message):
+        self.output.flush()
         self.output.write('* {} size:{}\n'.format(sock.address, len(message)))
         if message[0] == '!':
             if len(message) > 1 and message[1] == 'S':
@@ -382,7 +394,6 @@ class CommandServer(Server):
                 name = message[2:start]
                 code = message[start + 1:]
                 temp_fd, temp_name = tempfile.mkstemp('.smt2')
-                print temp_name
                 dump_prefix = '/dev/shm/{}'.format(os.path.basename(temp_name))
                 with open(options.file_options) as options_file:
                     smt_options = options_file.read().split('\n')
@@ -423,7 +434,6 @@ class CommandServer(Server):
             self._worker_server.handle_command(message)
 
 
-
 if __name__ == '__main__':
     parser = optparse.OptionParser()
     parser.add_option('-c', '--cport', dest='cport', type='int',
@@ -435,13 +445,15 @@ if __name__ == '__main__':
     parser.add_option('-t', '--timeout', dest='timeout', type='int',
                       default=None, help='timeout for each problem')
     parser.add_option('-o', '--opensmt', dest='opensmt', type='str',
-                      default='../opensmt', help='opensmt executable')
+                      default='../../opensmt', help='opensmt executable')
     parser.add_option('-f', '--file-options', dest='file_options', type='str',
                       default=None, help='option file containig headers')
     parser.add_option('-s', '--split-num', dest='split_num', type='int',
                       default=2, help='number of splits')
     parser.add_option('-d', '--done-exit', action='store_true', dest='done_exit',
-                        default=False, help='if true server dies when all jobs are done')
+                      default=False, help='if true server dies when all jobs are done')
+    parser.add_option('-r', '--heuristic', dest='heuristic', type='str',
+                      default=None, help='heuristic executable')
 
     (options, args) = parser.parse_args()
 
@@ -457,4 +469,4 @@ if __name__ == '__main__':
     try:
         cserver.run_forever()
     except:
-       os._exit(0)
+        os._exit(0)
