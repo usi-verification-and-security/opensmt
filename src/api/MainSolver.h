@@ -145,9 +145,14 @@ class MainSolver {
     sstat getStatus       ()       { return status; }
     bool  solverEmpty     () const { return ts.solverEmpty(); }
     bool  readSolverState  (const char* file, char** msg);
+    bool  readSolverState  (int* contents, char **msg);
     bool  writeState       (const char* file, CnfState& cs, char** msg);
+    bool  writeState       (int* &contents, CnfState& cs, char** msg);
     bool  writeSolverState (const char* file, char** msg);
+    bool  writeSolverState (int* &contents, char** msg);
     bool  writeSolverSplits(const char* file, char** msg);
+    bool  writeSolverSplit (int s, int* &split, char** msg);
+    bool  writeSolverSplits(int** &splits, char** msg);
     void  deserializeSolver(const int* termstore_buf, const int* symstore_buf, const int* idstore_buf, const int* sortstore_buf, const int* logicdata_buf, CnfState& cs);
     lbool getTermValue     (PTRef tr) const { return ts.getTermValue(tr); }
     ValPair getValue       (PTRef tr) const;

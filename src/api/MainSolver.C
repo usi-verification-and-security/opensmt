@@ -527,7 +527,6 @@ ValPair MainSolver::getValue(PTRef tr) const
 //
 bool MainSolver::readSolverState(const char* file, char** msg)
 {
-    CnfState cs;
     int fd = open(file, O_RDONLY);
     if (fd == -1) {
         *msg = strerror(errno);
@@ -545,7 +544,7 @@ bool MainSolver::readSolverState(const char* file, char** msg)
     size = stat_buf.st_size;
 
     // Allocate space for the contents and a terminating '\0'.
-    int* contents = (int*)malloc(size+1);
+    int *contents = (int *) malloc((size_t)size + 1);
     res = read(fd, contents, size);
     if (res == -1) {
         *msg = strerror(errno);
@@ -564,8 +563,17 @@ bool MainSolver::readSolverState(const char* file, char** msg)
     size = sz_out;
     assert(contents[0] == sz_out);
 #endif
-    ((char*)contents)[size] = '\0'; // Add the terminating '\0'
+    ((char *)contents)[size] = '\0'; // Add the terminating '\0'
 
+    return readSolverState(contents, msg);
+}
+
+//
+// Read the solver state from a buffer (!! not checking the size!)
+//
+bool MainSolver::readSolverState(int* contents, char **msg)
+{
+    CnfState cs;
     int map_offs = contents[map_offs_idx];
     int cnf_offs = contents[cnf_offs_idx];
     int termstore_offs = contents[termstore_offs_idx];
@@ -578,11 +586,11 @@ bool MainSolver::readSolverState(const char* file, char** msg)
     cerr << "Reading the map" << endl;
 #endif
     for (int i = 0; i < contents[map_offs]-1; i++) {
-       PTRef tr;
-       tr.x = contents[i+map_offs+1];
-       cs.addToMap({i, tr});
+        PTRef tr;
+        tr.x = contents[i+map_offs+1];
+        cs.addToMap({i, tr});
 #ifdef VERBOSE_FOPS
-       cerr << "  Var " << i << " maps to PTRef " << tr.x << endl;
+        cerr << "  Var " << i << " maps to PTRef " << tr.x << endl;
 #endif
     }
 
@@ -692,6 +700,51 @@ bool MainSolver::writeState(const char* file, CnfState& cs, char** msg)
     }
     // Reset, ok.
 
+    int* buf;
+    if(!writeState(buf, cs, msg)) {
+        return false;
+    }
+    int buf_sz = buf[0];
+
+    int* buf_out;
+#ifdef USE_GZ
+    // Compress the buffer and update the write info accordingly
+    int rval = compress_buf(buf, buf_out, buf_sz-1, buf_sz);
+    if (rval != Z_OK) {
+        asprintf(msg, "compression error");
+        close(fd);
+        return false;
+    }
+    int write_sz = buf_sz;
+#else
+    buf_out = buf;
+    int write_sz = buf_sz - 1;
+#endif
+
+    int res = write(fd, buf_out, write_sz);
+    if (res == -1) {
+        *msg = strerror(errno);
+        return false;
+    } else if (res != write_sz) {
+        asprintf(msg, "Not all data was written.  Out of space?");
+        close(fd);
+        return false;
+    }
+
+#ifdef VERBOSE_FOPS
+    cerr << "Printed " << res  << " bytes" << endl;
+#endif
+    free(buf);
+    close(fd);
+    return true;
+}
+
+
+// It never returns false. in the future if that will happen
+// make sure to free contents before return.
+bool MainSolver::writeState(int* &buf, CnfState& cs, char** msg)
+{
+
 #ifdef VERBOSE_FOPS
     cerr << "Trying to write solver state" << endl;
     cerr << "Cnf: " << endl;
@@ -737,10 +790,10 @@ bool MainSolver::writeState(const char* file, CnfState& cs, char** msg)
     int hdr_sz = 8; // The offsets
     // allocate space for the map, the cnf, the offset indices and the
     // sizes
-    int buf_sz = (termstore_sz + symstore_sz + idstore_sz + sortstore_sz + map_sz + logicstore_sz)*sizeof(int)
+    size_t size = (termstore_sz + symstore_sz + idstore_sz + sortstore_sz + map_sz + logicstore_sz)*sizeof(int)
                  + (strlen(cs.getCnf())+1) + hdr_sz*sizeof(int);
 #ifdef VERBOSE_FOPS
-    cerr << "Mallocing " << buf_sz << " bytes for the buffer" << endl;
+    cerr << "Mallocing " << *size << " bytes for the buffer" << endl;
     cerr << "The cnf is " << strlen(cs.getCnf())+1 << " bytes" << endl;
     cerr << "The map is " << map_sz * sizeof(int) << " bytes" << endl;
     cerr << "The termstore is " << termstore_sz * sizeof(int) << " bytes" << endl;
@@ -749,7 +802,7 @@ bool MainSolver::writeState(const char* file, CnfState& cs, char** msg)
     cerr << "The sortstore is " << sortstore_sz * sizeof(int) << " bytes" << endl;
     cerr << "The header is " << hdr_sz*sizeof(int) << " bytes" << endl;
 #endif
-    int* buf = (int*)malloc(buf_sz);
+    buf = (int *)malloc(size);
 
     buf[map_offs_idx]        = cnf_offs_idx+1;
     buf[termstore_offs_idx]  = buf[map_offs_idx]+map_sz;
@@ -851,37 +904,7 @@ bool MainSolver::writeState(const char* file, CnfState& cs, char** msg)
 
 #endif
     // Write the size in characters
-    buf[0] = buf_sz - 1;
-    int* buf_out;
-#ifdef USE_GZ
-    // Compress the buffer and update the write info accordingly
-    int rval = compress_buf(buf, buf_out, buf_sz-1, buf_sz);
-    if (rval != Z_OK) {
-        asprintf(msg, "compression error");
-        close(fd);
-        return false;
-    }
-    int write_sz = buf_sz;
-#else
-    buf_out = buf;
-    int write_sz = buf_sz - 1;
-#endif
-
-    int res = write(fd, buf_out, write_sz);
-    if (res == -1) {
-        *msg = strerror(errno);
-        return false;
-    } else if (res != write_sz) {
-        asprintf(msg, "Not all data was written.  Out of space?");
-        close(fd);
-        return false;
-    }
-
-#ifdef VERBOSE_FOPS
-    cerr << "Printed " << res  << " bytes" << endl;
-#endif
-    free(buf);
-    close(fd);
+    buf[0] = (int)size - 1;
     return true;
 }
 
@@ -929,9 +952,17 @@ bool MainSolver::writeSolverState(const char* file, char** msg)
     return writeState(file, cs, msg);
 }
 
+bool MainSolver::writeSolverState(int* &contents, char** msg)
+{
+    CnfState cs;
+    ts.getVarMapping(cs);
+    ts.getSolverState(cs);
+    return writeState(contents, cs, msg);
+}
+
 bool MainSolver::writeSolverSplits(const char* file, char** msg)
 {
-    for (int i = 0; i < sat_solver.splits.size(); i++) { // free name!
+    for (int i = 0; i < sat_solver.splits.size(); i++) {
         char* name;
         asprintf(&name, "%s-%02d.osmt2", file, i);
         CnfState cs;
@@ -946,6 +977,37 @@ bool MainSolver::writeSolverSplits(const char* file, char** msg)
     }
     return true;
 }
+
+bool MainSolver::writeSolverSplit(int s, int* &split, char** msg)
+{
+    assert(s < sat_solver.splits.size());
+
+    CnfState cs;
+    ts.getVarMapping(cs);
+    sat_solver.splits[s].cnfToString(cs);
+    if (!writeState(split, cs, msg)) {
+        return false;
+    }
+    return true;
+}
+
+bool MainSolver::writeSolverSplits(int** &splits, char** msg)
+{
+    splits = (int **)malloc(sat_solver.splits.size() * sizeof(int *));
+
+    for (int i = 0; i < sat_solver.splits.size(); i++) {
+        if (!writeSolverSplit(i, splits[i], msg)) {
+            for (int j=0; j<i; j++){
+                free(splits[j]);
+            }
+            free(splits);
+            return false;
+        }
+    }
+    return true;
+}
+
+
 
 sstat MainSolver::solve()
 {
@@ -1088,13 +1150,13 @@ void MainSolver::solve_split(int i, int s, int wpipefd, std::mutex *mtx)
     std::random_device rd;
     config.setRandomSeed(randuint(rd));
 
-    int* termstore_buf;
-    int* symstore_buf;
-    int* idstore_buf;
-    int* sortstore_buf;
-    int* logicstore_buf;
+    //int* termstore_buf;
+    //int* symstore_buf;
+    //int* idstore_buf;
+    //int* sortstore_buf;
+    //int* logicstore_buf;
 
-    this->logic.serializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf);
+    //this->logic.serializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf);
     Logic_t l = this->logic.getLogic();
 //    Logic *new_logic = NULL;
     Theory* theory;
@@ -1107,30 +1169,44 @@ void MainSolver::solve_split(int i, int s, int wpipefd, std::mutex *mtx)
         exit(1);
     }
 
+    int* split;
+    char* msg;
+    this->writeSolverSplit(s,split,&msg);
+
     MainSolver* main_solver = new MainSolver(*theory, config);
 
+    main_solver->readSolverState(split, &msg);
+
+    /*int* split1;
+    main_solver->writeSolverState(split1, &msg);
+
+    std::cout << split[0] << " " << split1[0]<<"\n";
+    assert(split[0]==split1[0]);
+    for (int i=0; i<split[0];i++){
+        assert(split[i]==split1[i]);
+    }*/
 
 
 
-    CnfState cs;
-    this->ts.getVarMapping(cs);
-    this->ts.getSolverState(cs);
+    //CnfState cs;
+    //this->ts.getVarMapping(cs);
+    //this->ts.getSolverState(cs);
 
-    main_solver->deserializeSolver(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf, cs);
+    //main_solver->deserializeSolver(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf, cs);
 
-    DimacsParser dp;
-    dp.parse_DIMACS_main(this->sat_solver.splits[s].splitToString(), sat_solver);
-
-    free(termstore_buf);
-    free(symstore_buf);
-    free(idstore_buf);
-    free(sortstore_buf);
-    free(logicstore_buf);
+    //DimacsParser dp;
+    //dp.parse_DIMACS_main(this->sat_solver.splits[s].splitToString(), main_solver->sat_solver);
+    //main_solver->binary_init = true;
+    //free(termstore_buf);
+    //free(symstore_buf);
+    //free(idstore_buf);
+    //free(sortstore_buf);
+    //free(logicstore_buf);
 
 
     this->parallel_solvers[i] = main_solver;
 
-    sstat result = solve();
+    sstat result = main_solver->solve();
 
     buf[2] = (char)result.getValue();
 

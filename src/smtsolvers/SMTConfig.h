@@ -413,7 +413,7 @@ public:
         optionTable[o_sat_dump_learnts].getValue().numval : 0; }
 
     bool sat_split_threads(int threads){
-        if (threads<2 || parallel_threads) return false;
+        if (threads<1 || parallel_threads) return false;
         optionTable.insert(o_sat_split_type, Option(spts_scatter));
         optionTable.insert(o_sat_split_units, Option(spts_time));
         optionTable.insert(o_sat_split_inittune, Option(double(2)));
