@@ -561,7 +561,7 @@ bool MainSolver::readSolverState(const char* file, char** msg)
     free(contents);
     contents = contents_uncompressed;
     size = sz_out;
-    assert(contents[0] == sz_out);
+    assert(contents[0] == sz_out+1);
 #endif
     ((char *)contents)[size] = '\0'; // Add the terminating '\0'
 
