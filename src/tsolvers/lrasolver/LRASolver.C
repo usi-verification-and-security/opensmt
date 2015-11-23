@@ -41,6 +41,7 @@ LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
     , delta(Delta::ZERO)
     , bland_threshold(1000)
   {
+    lavarStore = new LAVarStore(*this, deduced, logic);
     status = INIT;
     checks_history.push_back(0);
     first_update_after_backtrack = true;
@@ -145,7 +146,7 @@ lbool LRASolver::inform( PTRef tr )
     {
       assert( status == INIT );
 
-      x = new LAVar(*this, getId(), deduced, logic, tr, var, *p_v, revert);
+      x = lavarStore->getNewVar(tr, var, *p_v, revert); //new LAVar(*this, getId(), deduced, logic, tr, var, *p_v, revert);
 
       ptermToLavar[logic.getPterm(var).getId()] = x;
 
@@ -185,7 +186,7 @@ lbool LRASolver::inform( PTRef tr )
       ptermToLavar[t.getId()] = x;
     } else {
       // introduce the slack variable with bounds on it
-      LAVar * s = new LAVar(*this, getId(), deduced, logic, tr, arg1, arg2, true );
+      LAVar * s = lavarStore->getNewVar(tr, arg1, arg2, true); //new LAVar(*this, getId(), deduced, logic, tr, arg1, arg2, true );
       slack_vars.push_back( s );
 
       assert( s->basicID( ) != -1 );
@@ -272,7 +273,7 @@ lbool LRASolver::inform( PTRef tr )
             x = ptermToLavar[varId];
             addVarToRow(s, x, p_r);
           } else {
-            x = new LAVar(*this, getId(), deduced,logic, var);
+            x = lavarStore->getNewVar(var); //new LAVar(*this, getId(), deduced,logic, var);
             slack_vars.push_back(x);
             ptermToLavar[varId] = x;
 
@@ -346,7 +347,7 @@ bool LRASolver::check(bool complete)
         // XXX Keep these in a heap, so that there's no need to go over all
         // of them every time!
         VectorLAVar::const_iterator it = rows.begin();
-        int max_var_id = LAVar::numVars();
+        int max_var_id = lavarStore->numVars();
         int curr_var_id = max_var_id;
         for (; it != rows.end(); ++it) {
             if ((*it)->isModelOutOfBounds()) {
@@ -751,7 +752,8 @@ void LRASolver::doGaussianElimination( )
 {
   int m;
 
-  for( unsigned i = 0; i < columns.size( ); ++i )
+  for( unsigned i = 0; i < columns.size( ); ++i ) {
+    assert(columns[i] != NULL);
     if( !columns[i]->skip && columns[i]->isNonbasic( ) && columns[i]->isUnbounded( ) && columns[i]->binded_rows.size( ) > 1 )
     {
       LAVar * x = columns[i];
@@ -843,6 +845,7 @@ void LRASolver::doGaussianElimination( )
       basis->setNonbasic( );
       rows.pop_back( );
     }
+  }
 }
 
 //

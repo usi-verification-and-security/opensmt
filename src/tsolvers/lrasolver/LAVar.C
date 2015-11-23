@@ -1,8 +1,10 @@
 /*********************************************************************
  Author: Aliaksei Tsitovich <aliaksei.tsitovich@lu.unisi.ch>
  Roberto Bruttomesso <roberto.bruttomesso@unisi.ch>
+ Antti Hyvarinen <antti.hyvarinen@gmail.com>
 
- OpenSMT2 -- Copyright (C) 2008 - 2012, Roberto Bruttomesso
+ OpenSMT2 -- Copyright (C) 2012 - 2015, Antti Hyvarinen
+                           2008 - 2012, Roberto Bruttomesso
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the
@@ -28,9 +30,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "LRASolver.h"
 
-int LAVar::column_count = 0;
-int LAVar::row_count = 0;
-
 const char* const BoundT::names[3] = {"[L]", "[U]", "[N]"};
 
 Delta LAVar::plus_inf_bound = Delta( Delta::UPPER );
@@ -41,13 +40,14 @@ unsigned LAVar::model_global_counter = 1;
 //
 // Default constructor
 //
-LAVar::LAVar(LRASolver& lra, SolverId sid, vec<DedElem>& d, LRALogic& l, PTRef e_orig = PTRef_Undef)
+LAVar::LAVar(LRASolver& lra, SolverId sid, vec<DedElem>& d, LRALogic& l, int column_id, PTRef e_orig = PTRef_Undef)
 	: logic(l)
 	, deduced(d)
 	, solver_id(sid)
 	, lra_solver(lra)
+        , column_id(column_id)
 {
-  column_id = column_count++;
+//  column_id = column_count++;
   row_id = -1;
   skip = false;
 
@@ -70,18 +70,20 @@ LAVar::LAVar(LRASolver& lra, SolverId sid, vec<DedElem>& d, LRALogic& l, PTRef e
 //
 // Constructor with bounds initialization
 //
-LAVar::LAVar(LRASolver& lra, SolverId sid, vec<DedElem>& d, LRALogic& l, PTRef e_orig, PTRef e_bound, PTRef e_var, bool basic = false )
-	: logic(l)
-	, deduced(d)
-	, solver_id(sid)
-	, lra_solver(lra)
+LAVar::LAVar(LRASolver& lra, SolverId sid, vec<DedElem>& d, LRALogic& l, PTRef e_orig, PTRef e_bound, PTRef e_var, int column_id, int row_id) //, bool basic = false )
+        : logic(l)
+        , deduced(d)
+        , solver_id(sid)
+        , lra_solver(lra)
+        , column_id(column_id)
+        , row_id(row_id)
 {
-  column_id = column_count++;
-
-  if( basic )
-    row_id = row_count++;
-  else
-    row_id = -1;
+//  column_id = column_count++;
+//
+//  if( basic )
+//    row_id = row_count++;
+//  else
+//    row_id = -1;
 
   skip = false;
 
@@ -103,13 +105,14 @@ LAVar::LAVar(LRASolver& lra, SolverId sid, vec<DedElem>& d, LRALogic& l, PTRef e
   setBounds( e_orig, e_bound );
 }
 
-LAVar::LAVar(LRASolver& lra, SolverId sid, vec<DedElem>& d, LRALogic& l, PTRef e_orig, PTRef e_var, const Real & v, bool revert )
+LAVar::LAVar(LRASolver& lra, SolverId sid, vec<DedElem>& d, LRALogic& l, PTRef e_orig, PTRef e_var, int column_id, const Real & v, bool revert )
 	: logic(l)
 	, deduced(d)
 	, solver_id(sid)
 	, lra_solver(lra)
+        , column_id(column_id)
 {
-  column_id = column_count++;
+//  column_id = column_count++;
   row_id = -1;
 
   skip = false;
@@ -511,3 +514,30 @@ bool LAVar::LAVarBound::operator==( const LAVarBound &b )
   else
     return false;
 }
+
+LAVarStore::LAVarStore(LRASolver& lra, vec<DedElem>& d, LRALogic& l)
+        : column_count(0)
+        , row_count(0)
+        , logic(l)
+        , deduced(d)
+        , solver_id(lra.getId())
+        , lra_solver(lra) {}
+
+LAVar* LAVarStore::getNewVar(PTRef e_orig) {
+    int column_id = column_count++;
+    return new LAVar(lra_solver, solver_id, deduced, logic, column_id, e_orig);
+}
+
+LAVar* LAVarStore::getNewVar(PTRef e_orig, PTRef e_bound, PTRef e_var, bool basic) {
+    int column_id = column_count++;
+    int row_id = basic ? row_count++ : -1;
+    return new LAVar(lra_solver, solver_id, deduced, logic, e_orig, e_bound, e_var, column_id, row_id);
+}
+
+LAVar* LAVarStore::getNewVar(PTRef e_orig, PTRef e_var, const Real& v, bool revert) {
+    int column_id = column_count++;
+    return new LAVar(lra_solver, solver_id, deduced, logic, e_orig, e_var, column_id, v, revert);
+}
+
+int LAVarStore::numVars() const { return column_count; }
+

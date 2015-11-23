@@ -1053,7 +1053,7 @@ sstat MainSolver::solve()
     for (i=0; i<sat_solver.splits.size(); i++) {
         results[i] = s_Undef;
     }
-    
+
     // start the threads
     threads = new std::thread[config.parallel_threads];
     for (i=0; i<config.parallel_threads; i++) {
@@ -1174,6 +1174,7 @@ void MainSolver::solve_split(int i, int s, int wpipefd, std::mutex *mtx)
     this->writeSolverSplit(s,split,&msg);
 
     MainSolver* main_solver = new MainSolver(*theory, config);
+    main_solver->initialize();
 
     main_solver->readSolverState(split, &msg);
 
@@ -1205,8 +1206,10 @@ void MainSolver::solve_split(int i, int s, int wpipefd, std::mutex *mtx)
 
 
     this->parallel_solvers[i] = main_solver;
-
-    sstat result = main_solver->solve();
+    this->parallel_solvers[i]->binary_init = true;
+    sstat result = this->parallel_solvers[i]->simplifyFormulas(&msg);
+    if (result != s_True && result != s_False)
+        result = main_solver->solve();
 
     buf[2] = (char)result.getValue();
 

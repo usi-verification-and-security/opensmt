@@ -36,6 +36,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Deductions.h"
 
 class LRASolver;
+class LAVarStore;
 
 struct BoundT {
     static const char* const names[3];
@@ -52,6 +53,7 @@ const BoundT bound_n = { 2 };
 //
 class LAVar
 {
+  friend LAVarStore;
 public:
   // structure to store bound information
   struct LAVarBound
@@ -76,9 +78,6 @@ private:
   static Delta plus_inf_bound;            //used for a default +inf value, which is shared by every LAVar
   static Delta minus_inf_bound;           //used for a default -inf value, which is shared by every LAVar
 
-  static int column_count;               // Static counter to create ID for LAVar
-  static int row_count;                  // Static counter for rows keep track of basic variables
-
   static unsigned model_global_counter;   // global counter used to inform all the LAVar if they are different from the last saved point
   unsigned model_local_counter;           // local counter used to decide when the model should be switched
 
@@ -88,8 +87,12 @@ private:
   Delta * m1;                           // one of two storages used by model switching
   Delta * m2;                           // one of two storages used by model switching
 
+  LAVar(LRASolver&, SolverId, vec<DedElem>& d, LRALogic&, int, PTRef e_orig);                                              // Default constructor
+  LAVar(LRASolver&, SolverId, vec<DedElem>& d, LRALogic&, PTRef e_orig, PTRef e_bound, PTRef e_var, int column_id, int row_id);  // Constructor with bounds
+  LAVar(LRASolver&, SolverId, vec<DedElem>& d, LRALogic&, PTRef e_orig, PTRef e_var, int column_id, const Real & v, bool revert);        // Constructor with bounds from real
+
 public:
-  static int numVars() { return column_count; }
+//  static int numVars() { return column_count; }
   PTRef e;             //pointer to original Enode. In case of slack variable points to polynomial
   LARow polynomial;      // elements of the variable polynomial (if variable is basic), list of <id, Real*>
   LAColumn binded_rows;     // rows a variable is binded to (if it is nonbasic) ,list of <id, Real*>
@@ -98,9 +101,6 @@ public:
   unsigned u_bound;      // integer pointer to the current upper bound
   unsigned l_bound;      // integer pointer to the current lower bound
 
-  LAVar(LRASolver&, SolverId, vec<DedElem>& d, LRALogic&, PTRef e_orig);                                              // Default constructor
-  LAVar(LRASolver&, SolverId, vec<DedElem>& d, LRALogic&, PTRef e_orig, PTRef e_bound, PTRef e_var, bool basic);  // Constructor with bounds
-  LAVar(LRASolver&, SolverId, vec<DedElem>& d, LRALogic&, PTRef e_orig, PTRef e_var, const Real & v, bool revert);        // Constructor with bounds from real
   virtual ~LAVar( );                                                    // Destructor
 
   void setBounds( PTRef e, PTRef e_bound);          // Set the bounds from Enode of original constraint (used on reading/construction stage)
@@ -319,5 +319,22 @@ void LAVar::setM( const Delta &v )
     saveModel( );
   ( *m1 ) = v;
 }
+
+class LAVarStore
+{
+    int column_count;               // Static counter to create ID for LAVar
+    int row_count;                  // Static counter for rows keep track of basic variables
+    LRALogic& logic;
+    vec<DedElem>& deduced;
+    SolverId solver_id;
+    LRASolver& lra_solver;
+
+  public:
+    LAVarStore(LRASolver&, vec<DedElem>&, LRALogic&);
+    LAVar* getNewVar(PTRef e_orig = PTRef_Undef);
+    LAVar* getNewVar(PTRef e_orig, PTRef e_bound, PTRef e_var, bool basic = false);
+    LAVar* getNewVar(PTRef e_orig, PTRef e_var, const Real& v, bool revert);
+    int numVars() const;
+};
 
 #endif

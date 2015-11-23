@@ -42,6 +42,7 @@ class LRASolver: public TSolver
 private:
 
   LRALogic& logic;
+  LAVarStore* lavarStore;
   // Structure to keep backtracking history elements
   class LAVarHistory
   {
