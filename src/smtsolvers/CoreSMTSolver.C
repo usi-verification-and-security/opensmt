@@ -2281,7 +2281,7 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
             }
 #endif
         } else {
-            assert( opensmt::stop || status == l_False);
+            assert( opensmt::stop || status == l_False || this->stop);
 //      if (conflict.size() == 0)
 //          ok = false;
         }

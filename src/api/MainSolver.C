@@ -1035,19 +1035,6 @@ sstat MainSolver::solve()
         return status;
     }
 
-//    const vec<ERef>& ens = this->uf_solver.getEnodes();
-//    for (int i = 0; i < ens.size(); i++) {
-//        ERef er = ens[i];
-//        PTRef tr = uf_solver.ERefToTerm(er);
-//        Pterm& t = logic.getPterm(tr);
-//#ifdef TERMS_HAVE_EXPLANATIONS
-//        t.setExpTimeStamp(0);
-//        t.setExpReason(PtAsgn(PTRef_Undef, l_Undef));
-//        t.setExpParent(PTRef_Undef);
-//        t.setExpRoot(tr);
-//#endif
-//    }
-
     split_threads = new vec<int>[sat_solver.splits.size()];
     results = new sstat[sat_solver.splits.size()];
     for (i=0; i<sat_solver.splits.size(); i++) {
@@ -1119,6 +1106,9 @@ sstat MainSolver::solve()
             break;
         }
     }
+
+    opensmt::stop = true;
+
     for (i=0; i<config.parallel_threads; i++) {
         if (this->parallel_solvers[i]!=NULL) {
             this->parallel_solvers[i]->stop();
@@ -1150,15 +1140,7 @@ void MainSolver::solve_split(int i, int s, int wpipefd, std::mutex *mtx)
     std::random_device rd;
     config.setRandomSeed(randuint(rd));
 
-    //int* termstore_buf;
-    //int* symstore_buf;
-    //int* idstore_buf;
-    //int* sortstore_buf;
-    //int* logicstore_buf;
-
-    //this->logic.serializeTermSystem(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf);
     Logic_t l = this->logic.getLogic();
-//    Logic *new_logic = NULL;
     Theory* theory;
     if (l == QF_UF)
         theory = new UFTheory(config);
@@ -1171,38 +1153,13 @@ void MainSolver::solve_split(int i, int s, int wpipefd, std::mutex *mtx)
 
     int* split;
     char* msg;
-    this->writeSolverSplit(s,split,&msg);
+    assert(this->writeSolverSplit(s,split,&msg));
 
     MainSolver* main_solver = new MainSolver(*theory, config);
     main_solver->initialize();
 
     main_solver->readSolverState(split, &msg);
-
-    /*int* split1;
-    main_solver->writeSolverState(split1, &msg);
-
-    std::cout << split[0] << " " << split1[0]<<"\n";
-    assert(split[0]==split1[0]);
-    for (int i=0; i<split[0];i++){
-        assert(split[i]==split1[i]);
-    }*/
-
-
-
-    //CnfState cs;
-    //this->ts.getVarMapping(cs);
-    //this->ts.getSolverState(cs);
-
-    //main_solver->deserializeSolver(termstore_buf, symstore_buf, idstore_buf, sortstore_buf, logicstore_buf, cs);
-
-    //DimacsParser dp;
-    //dp.parse_DIMACS_main(this->sat_solver.splits[s].splitToString(), main_solver->sat_solver);
-    //main_solver->binary_init = true;
-    //free(termstore_buf);
-    //free(symstore_buf);
-    //free(idstore_buf);
-    //free(sortstore_buf);
-    //free(logicstore_buf);
+    free(split);
 
 
     this->parallel_solvers[i] = main_solver;
@@ -1210,6 +1167,9 @@ void MainSolver::solve_split(int i, int s, int wpipefd, std::mutex *mtx)
     sstat result = this->parallel_solvers[i]->simplifyFormulas(&msg);
     if (result != s_True && result != s_False)
         result = main_solver->solve();
+
+    delete main_solver;
+    main_solver = NULL;
 
     buf[2] = (char)result.getValue();
 
