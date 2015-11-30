@@ -374,6 +374,10 @@ const char* SMTConfig::o_sat_split_asap = ":split-asap";
 const char* SMTConfig::o_sat_split_units = ":split-units";
 const char* SMTConfig::o_sat_split_preference = ":split-preference";
 const char* SMTConfig::o_sat_remove_symmetries = ":remove-symmetries";
+char* SMTConfig::server_host=NULL;
+uint16_t SMTConfig::server_port = 0;
+char* SMTConfig::database_host=NULL;
+uint16_t SMTConfig::database_port = 0;
 
 // Error strings
 const char* SMTConfig::s_err_not_str = "expected string";

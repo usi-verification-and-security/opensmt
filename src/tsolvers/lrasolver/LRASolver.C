@@ -509,8 +509,10 @@ bool LRASolver::assertLit( PtAsgn pta, bool reason )
   LAVar* it = ptermToLavar[t.getId()];
 
   // Constraint to push was not found in local storage. Most likely it was not read properly before
-  if ( it == NULL )
-    opensmt_error( "Unexpected push !" );
+  if ( it == NULL ) {
+      std::cout << logic.printTerm(pta.tr) << "\n";
+      opensmt_error("Unexpected push !");
+  }
 
   assert( !it->isUnbounded( ) );
   unsigned it_i = it->getIteratorByPTRef( pta.tr, pta.sgn == l_False );

@@ -141,12 +141,12 @@ int main( int argc, char * argv[] )
                 optarg[i]='\0';
 
                 if(opt == 's') {
-                    NetCfg::server_host = std::string(optarg);
-                    NetCfg::server_port = atoi(&optarg[i+1]);
+                    SMTConfig::server_host = optarg;
+                    SMTConfig::server_port = atoi(&optarg[i+1]);
                 }
                 if(opt == 'r'){
-                    NetCfg::database_host = std::string(optarg);
-                    NetCfg::database_port = atoi(&optarg[i+1]);
+                    SMTConfig::database_host = optarg;
+                    SMTConfig::database_port = atoi(&optarg[i+1]);
                 }
                 break;
             case 'h':
@@ -158,7 +158,7 @@ int main( int argc, char * argv[] )
         }
     }
 
-    if(!NetCfg::server_host.empty()) {
+    if(SMTConfig::server_host!=NULL) {
         try {
             WorkerClient *w = new WorkerClient();
             w->runForever();

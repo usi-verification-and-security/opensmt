@@ -14,12 +14,6 @@ namespace opensmt {
     extern bool stop;
 }
 
-std::string NetCfg::server_host;
-uint16_t NetCfg::server_port = 0;
-std::string NetCfg::database_host;
-uint16_t NetCfg::database_port = 0;
-
-
 void error(const char *msg) {
     perror(msg);
     exit(0);
@@ -72,13 +66,13 @@ WorkerClient::WorkerClient() {
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
         throw "Socket init";
 
-    if ((he = gethostbyname(NetCfg::server_host.c_str())) == NULL)
+    if ((he = gethostbyname(SMTConfig::server_host)) == NULL)
         throw "Invalid hostname";
 
     bzero(&serv_addr, sizeof(serv_addr));
     memcpy(&serv_addr.sin_addr, he->h_addr_list[0], he->h_length);
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(NetCfg::server_port);
+    serv_addr.sin_port = htons(SMTConfig::server_port);
 
     if (connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) != 0)
         throw "Connect error";
@@ -88,30 +82,50 @@ WorkerClient::WorkerClient() {
     this->rpipe = NULL;
 }
 
-void WorkerClient::solve(int wpipefd, char *smt2filename, uint32_t jid) {
+void WorkerClient::solve(int wpipefd, std::string &osmt2, uint32_t jid) {
     char buffer[128];
-    int n = 0;
-    SMTConfig c;
-    Interpret interpreter(c);
-    FILE *fin;
-    FrameSocket *wpipe = new FrameSocket(wpipefd);
-    sstat status;
 
-    if ((fin = fopen(smt2filename, "r")) == NULL) {
-        n = snprintf(buffer, 128, "E%u\\can't open file", jid);
+    std::uniform_int_distribution<uint32_t> randuint(0, 0xFFFFFF);
+    std::random_device rd;
+    SMTConfig config;
+    config.setRandomSeed(randuint(rd));
+
+    //Logic_t l = this->logic.getLogic();
+    Theory *theory;
+    //if (l == QF_UF)
+    //    theory = new UFTheory(config);
+    //else if (l == QF_LRA)
+    theory = new LRATheory(config);
+    //else {
+    //    cerr << "Unsupported logic" << endl;
+    //    exit(1);
+    //}
+
+    MainSolver *main_solver = new MainSolver(*theory, config);
+    main_solver->initialize();
+
+    char *msg;
+    bool s = main_solver->readSolverState((int *)osmt2.c_str(), osmt2.size(), true, &msg);
+    delete &osmt2;
+
+    int n = 0;
+    if(!s){
+        n = snprintf(buffer, 128, "E%u\\%s", jid, msg);
     }
-    else {
-        std::cout << "Started job " << jid << ": " << smt2filename << "\n";
-        interpreter.interpFile(fin);
-        fclose(fin);
+    else{
+        std::cout << "Started job " << jid  << "\n";
+        sstat status = main_solver->simplifyFormulas(&msg);
+        if (status != s_True && status != s_False)
+            status = main_solver->solve();
         if (!opensmt::stop) {
-            status = interpreter.main_solver->getStatus();
             n = snprintf(buffer, 128, "S%u\\%hhd", jid, status.getValue());
         }
         else {
             n = snprintf(buffer, 128, "!");
         }
     }
+
+    FrameSocket *wpipe = new FrameSocket(wpipefd);
 
     wpipe->write(buffer, n);
     close(wpipe->fd());
@@ -152,7 +166,11 @@ void WorkerClient::command(char *frame, uint32_t length) {
         }
 
         this->jid = jid;
+        this->rpipe = new FrameSocket(pipefd[0]);
+        std::string *osmt2 = new std::string(&frame[i + 1], length - i + 1);
+        this->t = std::thread(solve, pipefd[1], std::ref(*osmt2), this->jid);
 
+        /*
         char filename[30] = "/tmp/fileXXXXXX";
         file = ::mkstemp(filename);
 
@@ -177,6 +195,7 @@ void WorkerClient::command(char *frame, uint32_t length) {
         this->rpipe = new FrameSocket(pipefd[0]);
         this->t = std::thread(solve, pipefd[1], filename, this->jid);
         ::free(filename);
+         */
     }
     else if (frame[0] == 'Q') {
         if (jid == this->jid) {
@@ -211,177 +230,15 @@ void WorkerClient::runForever() {
         }
 
         if (FD_ISSET(this->s->fd(), &set) != 0) {
-            length = this->s->read(&frame);
+            try {
+                length = this->s->read(&frame);
+            }catch (char const *e) {
+                std::cout << "Server connection lost. Exit now.\n";
+                exit(0);
+            }
             this->command(frame, length);
             free(frame);
         }
 
     }
-}
-
-
-Sharing::Sharing() {
-    this->c_cls_pub = NULL;
-    this->c_cls_sub = NULL;
-    this->channel = NULL;
-}
-
-Sharing::~Sharing() {
-    this->reset(NULL);
-}
-
-inline void Sharing::inet_source(int fd, std::string &str) {
-    struct sockaddr_in sin;
-    int addrlen = sizeof(sin);
-    getsockname(fd, (struct sockaddr *) &sin, (socklen_t *) &addrlen);
-    str.append(inet_ntoa(sin.sin_addr));
-    str.append(":");
-    str.append(std::to_string(sin.sin_port));
-}
-
-void Sharing::reset(char *channel) {
-    free(this->channel);
-    if (channel == NULL || NetCfg::database_host.empty()) {
-        redisFree(this->c_cls_pub);
-        redisFree(this->c_cls_sub);
-        return;
-    }
-    this->channel = (char *) malloc(strlen(channel));
-    strcpy(this->channel, channel);
-    if (this->c_cls_pub == NULL)
-        this->c_cls_pub = this->connect();
-    if (this->c_cls_sub == NULL)
-        this->c_cls_sub = this->connect();
-    /*  non block
-    redisCommand(this->c_cls_sub, "SUBSCRIBE %s.in", this->channel);
-    this->flush(this->c_cls_sub);
-    do {
-        if (redisBufferRead(this->c_cls_sub) != REDIS_ERR)
-            redisGetReply(this->c_cls_sub, (void **) &reply);
-        else {
-            cerr << "Redis subscribe connection lost\n";
-            break;
-        }
-    } while (reply == NULL);
-    freeReplyObject(reply); */
-}
-
-
-redisContext *Sharing::connect() {
-    redisContext *context;
-    struct timeval timeout = {1, 500000}; // 1.5 seconds
-    context = redisConnectWithTimeout(NetCfg::database_host.c_str(), NetCfg::database_port, timeout);
-    if (context == NULL || context->err) {
-        if (context) {
-            std::cerr << "Connection error: " << context->errstr << "\n";
-            redisFree(context);
-        } else {
-            std::cerr << "Connection error: can't allocate redis context\n";
-        }
-        return NULL;
-    }
-
-    return context;
-}
-
-
-void Sharing::flush(redisContext *context) {
-    int wdone = 0;
-    do {
-        if (redisBufferWrite(context, &wdone) == REDIS_ERR)
-            return;
-    } while (!wdone);
-}
-
-
-void Sharing::clausesPublish(CoreSMTSolver &solver) {
-    if (this->channel == NULL || this->c_cls_pub->err != 0)
-        return;
-    std::string s;
-    for (int i = 0; i < solver.learnts.size(); i++) {
-        Clause &c = *solver.learnts[i];
-        if (c.mark() != 3) {
-            clauseSerialize(c, s);
-            c.mark(3);
-        }
-    }
-    if (s.length() == 0)
-        return;
-    Message m;
-
-    Sharing::inet_source(this->c_cls_pub->fd, m.header["from"]);
-
-    m.payload = s;
-    std::string d;
-    m.dump(d);
-
-    redisReply *reply = (redisReply *) redisCommand(this->c_cls_pub, "PUBLISH %s.out %b", this->channel, d.c_str(),
-                                                    d.length());
-    if (reply == NULL)
-        std::cerr << "Connection error during clause publishing\n";
-    freeReplyObject(reply);
-    /* non block
-    redisCommand(this->c_cls_pub, "PUBLISH %s.out %b", this->channel, d.c_str(), d.length());
-    this->flush(this->c_cls_pub);
-    if (this->c_cls_pub->err != 0)
-        cerr << "Redis publish connection lost\n"; */
-}
-
-
-void Sharing::clausesUpdate(CoreSMTSolver &solver) {
-    if (this->channel == NULL || this->c_cls_sub->err != 0)
-        return;
-
-    /* non block
-    redisReply *reply;
-    redisBufferRead(this->c_cls_sub);
-    if (redisGetReplyFromReader(this->c_cls_sub, (void **) &reply) != REDIS_OK)
-        cerr << "Redis subscribe connection lost\n";
-    if (reply == NULL)
-        return;
-    assert (reply->type == REDIS_REPLY_ARRAY && reply->elements == 3);
-    assert (std::string(reply->element[0]->str).compare("message") == 0);
-    std::string s = std::string(reply->element[2]->str, reply->element[2]->len); */
-//ZREVRANGEBYSCORE %s +inf 0 LIMIT 0 10000
-    redisReply *reply = (redisReply *) redisCommand(this->c_cls_pub, "SRANDMEMBER %s 10000",
-                                                    this->channel);
-    if (reply == NULL) {
-        std::cerr << "Connection error during clause updating\n";
-        return;
-    }
-    if (reply->type != REDIS_REPLY_ARRAY)
-        return;
-
-    for (int i = solver.n_clauses; i < solver.clauses.size(); i++) {
-        if (i < solver.n_clauses + reply->elements)
-            solver.removeClause(*solver.clauses[i]);
-        if (i + reply->elements < solver.clauses.size())
-            solver.clauses[i] = solver.clauses[i + reply->elements];
-    }
-    solver.clauses.shrink(std::min(solver.clauses.size() - solver.n_clauses, (uint32_t) reply->elements));
-
-
-    for (int i = 0; i < reply->elements; i++) {
-        std::string str = std::string(reply->element[i]->str, reply->element[i]->len);
-        vec<Lit> lits;
-        uint32_t o = 0;
-        clauseDeserialize(str, &o, lits);
-        solver.addClause(lits, true);
-    }
-/*
-    if (reply->type != REDIS_REPLY_STRING)
-        return;
-    std::string s = std::string(reply->str, reply->len);
-    Message m;
-    m.load(s);
-    //if (m.header.find("from") != m.header.end()) if (m.header["from"].compare(...) == 0)
-    //  return;
-    uint32_t o = 0;
-    while (o < m.payload.length()) {
-        vec<Lit> lits;
-        clauseDeserialize(m.payload, &o, lits);
-        solver.addClause(lits, true);
-    }
-*/
-    freeReplyObject(reply);
 }

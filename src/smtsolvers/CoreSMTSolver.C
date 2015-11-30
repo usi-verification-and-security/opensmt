@@ -82,7 +82,6 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
   // Statistics: (formerly in 'SolverStats')
   //
   , starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), conflicts_last_update(0)
-  , clauses_sharing(Sharing())
   , clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0)
   // ADDED FOR MINIMIZATION
   , learnts_size(0) , all_learnts(0), n_clauses(0)
@@ -135,6 +134,16 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
   vec< Lit > fc;
   fc.push( lit_Undef );
   fake_clause = Clause_new( fc );
+    this->clauses_sharing = {};
+    this->clauses_sharing.channel="clauses";
+}
+
+void
+CoreSMTSolver::initialize( char *channel )
+{
+    if(channel!=NULL)
+        this->clauses_sharing.channel = std::string(channel);
+    this->initialize();
 }
 
 void
@@ -177,6 +186,17 @@ CoreSMTSolver::initialize( )
     // polarity_mode = polarity_rnd;
     opensmt_warning( "Overriding polarity for AX theory" );
   }
+
+    if(SMTConfig::database_host!=NULL){
+        struct timeval timeout = {1, 500000}; // 1.5 seconds
+        this->clauses_sharing.c_cls_pub = redisConnectWithTimeout(SMTConfig::database_host, SMTConfig::database_port, timeout);
+        this->clauses_sharing.c_cls_sub = redisConnectWithTimeout(SMTConfig::database_host, SMTConfig::database_port, timeout);
+        if (this->clauses_sharing.c_cls_pub == NULL || this->clauses_sharing.c_cls_sub == NULL) {
+            std::cerr << "Connection error: can't use clause sharing!\n";
+            redisFree(this->clauses_sharing.c_cls_pub);
+            redisFree(this->clauses_sharing.c_cls_sub);
+        }
+    }
 
   init = true;
 }
@@ -248,6 +268,7 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
 
   LAupperbounds.push(); // leave space for the var
   LAexacts.push();      // leave space for the var
+    this->var_seen.push(false);
 
   insertVarOrder(v);
 
@@ -1843,7 +1864,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
               return l_Undef;
       }
       if (conflicts % 1000 == 0){
-          this->clauses_sharing.clausesPublish(*this);
+          this->clausesPublish();
       }
 
     if (resource_limit >= 0 && conflicts % 1000 == 0) {
@@ -1855,7 +1876,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 
       if(decisionLevel()==0){
           if(conflicts>conflicts_last_update+1000) {
-              this->clauses_sharing.clausesUpdate(*this);
+              this->clausesUpdate();
               conflicts_last_update = conflicts;
           }
       }
@@ -2120,7 +2141,7 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
 {
     // Inform theories of the variables that are actually seen by the
     // SAT solver.
-    bool* var_seen = (bool*)calloc(nVars(), sizeof(bool));
+    //bool* var_seen = (bool*)calloc(nVars(), sizeof(bool));
     for (int i = 0; i < trail.size(); i++) {
         Var v = var(trail[i]);
         if (!var_seen[v]) {
@@ -2150,8 +2171,7 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
         if (!var_seen[i])
             decision_var[i] = false;
     }
-    free(var_seen);
-    this->clauses_sharing.reset("clauses");
+    //free(var_seen);
     // If splitting is enabled refresh the options
     split_type     = config.sat_split_type();
     if (split_type != spt_none) {
@@ -2298,6 +2318,11 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
         // ready to accept new clauses
         cancelUntil(0);
     }
+
+    if(this->clauses_sharing.c_cls_pub!=NULL)
+        redisFree(this->clauses_sharing.c_cls_pub);
+    if(this->clauses_sharing.c_cls_sub!=NULL)
+        redisFree(this->clauses_sharing.c_cls_sub);
 
     return status;
 }
@@ -3006,4 +3031,108 @@ void CoreSMTSolver::printStatistics( ostream & os )
 //    os << "# Interf. equalities.......: " << ie_generated << " out of " << egraph.getInterfaceTermsNumber( ) * (egraph.getInterfaceTermsNumber( )-1) / 2 << endl;
   os << "; Init clauses.............: " << clauses.size() << endl;
   os << "; Variables................: " << nVars() << endl;
+}
+
+void CoreSMTSolver::clausesPublish() {
+    if (this->clauses_sharing.channel.empty() || this->clauses_sharing.c_cls_pub == NULL || this->clauses_sharing.c_cls_pub->err != 0)
+        return;
+    std::string s;
+    for (int i = 0; i < this->learnts.size(); i++) {
+        Clause &c = *this->learnts[i];
+        if (c.mark() != 3) {
+            clauseSerialize(c, s);
+            c.mark(3);
+        }
+    }
+    if (s.length() == 0)
+        return;
+    Message m;
+
+    struct sockaddr_in sin;
+    int addrlen = sizeof(sin);
+    getsockname(this->clauses_sharing.c_cls_pub->fd, (struct sockaddr *) &sin, (socklen_t *) &addrlen);
+    m.header["from"].append(inet_ntoa(sin.sin_addr));
+    m.header["from"].append(":");
+    m.header["from"].append(std::to_string(sin.sin_port));
+
+    m.payload = s;
+    std::string d;
+    m.dump(d);
+
+    redisReply *reply = (redisReply *) redisCommand(this->clauses_sharing.c_cls_pub, "PUBLISH %s.out %b", this->clauses_sharing.channel.c_str(), d.c_str(),
+                                                    d.length());
+    if (reply == NULL)
+        std::cerr << "Connection error during clause publishing\n";
+    freeReplyObject(reply);
+    /* non block
+    redisCommand(this->c_cls_pub, "PUBLISH %s.out %b", this->channel, d.c_str(), d.length());
+    this->flush(this->c_cls_pub);
+    if (this->c_cls_pub->err != 0)
+        cerr << "Redis publish connection lost\n"; */
+}
+
+
+void CoreSMTSolver::clausesUpdate() {
+    if (this->clauses_sharing.channel.empty() || this->clauses_sharing.c_cls_sub == NULL || this->clauses_sharing.c_cls_sub->err != 0)
+        return;
+    /* non block
+    redisReply *reply;
+    redisBufferRead(this->c_cls_sub);
+    if (redisGetReplyFromReader(this->c_cls_sub, (void **) &reply) != REDIS_OK)
+        cerr << "Redis subscribe connection lost\n";
+    if (reply == NULL)
+        return;
+    assert (reply->type == REDIS_REPLY_ARRAY && reply->elements == 3);
+    assert (std::string(reply->element[0]->str).compare("message") == 0);
+    std::string s = std::string(reply->element[2]->str, reply->element[2]->len); */
+//ZREVRANGEBYSCORE %s +inf 0 LIMIT 0 10000
+    redisReply *reply = (redisReply *) redisCommand(this->clauses_sharing.c_cls_sub, "SRANDMEMBER %s 10000",
+                                                    this->clauses_sharing.channel.c_str());
+    if (reply == NULL) {
+        std::cerr << "Connection error during clause updating\n";
+        return;
+    }
+    if (reply->type != REDIS_REPLY_ARRAY)
+        return;
+
+    for (int i = this->n_clauses; i < this->clauses.size(); i++) {
+        if (i < this->n_clauses + reply->elements)
+            this->removeClause(*this->clauses[i]);
+        if (i + reply->elements < this->clauses.size())
+            this->clauses[i] = this->clauses[i + reply->elements];
+    }
+    this->clauses.shrink(std::min(this->clauses.size() - this->n_clauses, (uint32_t) reply->elements));
+
+
+    for (int i = 0; i < reply->elements; i++) {
+        std::string str = std::string(reply->element[i]->str, reply->element[i]->len);
+        vec<Lit> lits;
+        uint32_t o = 0;
+        clauseDeserialize(str, &o, lits);
+        bool f=false;
+        for(int j=0; j<lits.size(); j++){
+            if(!this->var_seen[var(lits[j])]) {
+                f=true;
+                break;
+            }
+        }
+        if(!f)
+            this->addClause(lits, true);
+    }
+/*
+    if (reply->type != REDIS_REPLY_STRING)
+        return;
+    std::string s = std::string(reply->str, reply->len);
+    Message m;
+    m.load(s);
+    //if (m.header.find("from") != m.header.end()) if (m.header["from"].compare(...) == 0)
+    //  return;
+    uint32_t o = 0;
+    while (o < m.payload.length()) {
+        vec<Lit> lits;
+        clauseDeserialize(m.payload, &o, lits);
+        solver.addClause(lits, true);
+    }
+*/
+    freeReplyObject(reply);
 }

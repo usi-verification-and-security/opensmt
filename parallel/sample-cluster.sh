@@ -2,7 +2,6 @@
 
 SERVER_OUT='./server.out'
 OPENSMT_OUT='./opensmt.out'
-HEURISTIC_OUT='./heuristic.out'
 PYTHON='python' # this should be the command to python 2.7
 OPENSMT=../opensmt
 SERVER_DIR=./server
@@ -11,6 +10,8 @@ SERVER_COMMAND=${SERVER_DIR}/command.py
 HEURISTIC=./clause_sharing/build/heuristic
 
 # ----------------
+
+trap '' HUP
 
 function info {
   tput bold
@@ -146,8 +147,6 @@ echo "clause sharing:               $clauses"
 echo
 if ${clauses}; then
     require_clauses
-    echo
-    echo "HEURISTIC for clause-sharing stdout will be redirected to $HEURISTIC_OUT"
 fi
 echo "SERVER stdout will be redirected to $SERVER_OUT"
 echo "OPENSMT2 solvers stdout and stderr will be redirected to $OPENSMT_OUT"
@@ -164,21 +163,11 @@ success 'done'
 echo -n 'sending the files to the server... '
 ${PYTHON} ${SERVER_COMMAND} 127.0.0.1 $@ > /dev/null
 success 'done'
-#if ${clauses}; then
-#    echo -n 'starting heuristic for clause sharing... '
-#    ${HEURISTIC} > ${HEURISTIC_OUT} &
-#    heuristic_pid=$!
-#    success 'done'
-#fi
 echo -n "starting batch "
 sbatch ${sbatch}
 success ' done'
 echo -n 'waiting for all the problems to be solved... '
 wait ${server_pid}
-#if ${clauses}; then
-#    kill -9 ${heuristic_pid} &>/dev/null
-#    wait ${heuristic_pid} &>/dev/null
-#fi
 success 'done!'
 info "The results are in $SERVER_OUT"
 success 'bye'

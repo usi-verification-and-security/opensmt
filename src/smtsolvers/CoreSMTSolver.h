@@ -51,6 +51,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "SMTSolver.h"
 
 #include <cstdio>
+#include <arpa/inet.h>
 
 #include "Vec.h"
 #include "Heap.h"
@@ -58,7 +59,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "SolverTypes.h"
 //#include "LA.h"
-#include "net/net.h"
+#include "net/hiredis/hiredis.h"
+#include "net/protocol.h"
 
 #ifdef PRODUCE_PROOF
 #include "ProofGraph.h"
@@ -296,15 +298,14 @@ class LANode {
 
 class CoreSMTSolver : public SMTSolver
 {
-    friend class Sharing;
   public:
 
     // Constructor/Destructor:
     //
     CoreSMTSolver(SMTConfig&, THandler&);
-    CoreSMTSolver(SMTConfig&, THandler&, Sharing&);
     ~CoreSMTSolver();
     void     initialize       ( );
+    void     initialize       (char *channel);
 /*
 */
 
@@ -406,7 +407,11 @@ class CoreSMTSolver : public SMTSolver
     // Statistics: (read-only member variable)
     //
     uint64_t starts, decisions, rnd_decisions, propagations, conflicts, conflicts_last_update;
-    Sharing clauses_sharing;
+    struct ClauseSharing {
+        redisContext *c_cls_pub;
+        redisContext *c_cls_sub;
+        std::string channel;
+    } clauses_sharing;
     uint64_t clauses_literals, learnts_literals, max_literals, tot_literals;
     double learnts_size;
     uint64_t all_learnts;
@@ -448,6 +453,7 @@ class CoreSMTSolver : public SMTSolver
     double              var_inc;          // Amount to bump next variable with.
     vec<vec<Clause*> >  watches;          // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
     vec<char>           assigns;          // The current assignments (lbool:s stored as char:s).
+    vec<bool>           var_seen;
 
     // Stuff specific to the lookahead implementation
 
@@ -822,6 +828,10 @@ class CoreSMTSolver : public SMTSolver
     lbool   lookaheadSplit2(int d, int &idx);
     lbool   lookaheadSplit2(int d);
     void    printTrace() const;
+
+private:
+    void clausesPublish();
+    void clausesUpdate();
 };
 
 //=================================================================================================

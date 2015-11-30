@@ -568,6 +568,11 @@ public:
   // parameter for parallelism
   int          parallel_threads;
 
+    static char* server_host;
+    static uint16_t server_port;
+    static char* database_host;
+    static uint16_t database_port;
+
 
 private:
 

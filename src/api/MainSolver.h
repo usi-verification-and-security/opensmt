@@ -23,6 +23,8 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
+#ifndef MAINSOLVER_H
+#define MAINSOLVER_H
 
 #include "Logic.h"
 #include "Theory.h"
@@ -145,13 +147,13 @@ class MainSolver {
     sstat getStatus       ()       { return status; }
     bool  solverEmpty     () const { return ts.solverEmpty(); }
     bool  readSolverState  (const char* file, char** msg);
-    bool  readSolverState  (int* contents, char **msg);
+    bool  readSolverState  (int* buf, int buf_sz, bool compressed, char **msg);
     bool  writeState       (const char* file, CnfState& cs, char** msg);
-    bool  writeState       (int* &contents, CnfState& cs, char** msg);
+    bool  writeState       (int* &buf, int &buf_sz, bool compress, CnfState& cs, char** msg);
     bool  writeSolverState (const char* file, char** msg);
-    bool  writeSolverState (int* &contents, char** msg);
+    bool  writeSolverState (int* &buf, int &buf_sz, bool compress, char** msg);
     bool  writeSolverSplits(const char* file, char** msg);
-    bool  writeSolverSplit (int s, int* &split, char** msg);
+    bool  writeSolverSplit (int s, int* &split, int &split_sz, bool compress, char** msg);
     bool  writeSolverSplits(int** &splits, char** msg);
     void  deserializeSolver(const int* termstore_buf, const int* symstore_buf, const int* idstore_buf, const int* sortstore_buf, const int* logicdata_buf, CnfState& cs);
     lbool getTermValue     (PTRef tr) const { return ts.getTermValue(tr); }
@@ -159,3 +161,5 @@ class MainSolver {
     void solve_split(int i,int s, int wpipefd, std::mutex *mtx);
     void stop() { sat_solver.stop = true; }
 };
+
+#endif //

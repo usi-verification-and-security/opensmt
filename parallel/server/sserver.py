@@ -406,6 +406,7 @@ class CommandServer(Server):
                     ))
                 start_time = time.time()
                 subprocess.call([self._opensmt, temp_name], stdout=open('/dev/null', 'w'), stderr=subprocess.STDOUT)
+                os.remove(temp_name)
                 try:
                     tasks = subprocess.check_output('ls {}-*'.format(dump_prefix), shell=True,
                                                     stderr=open('/dev/null', 'w')).split('\n')
@@ -426,6 +427,7 @@ class CommandServer(Server):
                     self.output.flush()
             else:
                 self.output.write('{}\n'.format(self._worker_server))
+                self.output.flush()
             try:
                 sock.write('D')
             except:

@@ -544,50 +544,54 @@ bool MainSolver::readSolverState(const char* file, char** msg)
     size = stat_buf.st_size;
 
     // Allocate space for the contents and a terminating '\0'.
-    int *contents = (int *) malloc((size_t)size + 1);
+    int *contents = (int *) malloc((size_t)size);
     res = read(fd, contents, size);
     if (res == -1) {
         *msg = strerror(errno);
         return false;
     }
+    close(fd);
 
-#ifdef USE_GZ
-    int* contents_uncompressed;
-    int sz_out;
-    if (decompress_buf(contents, contents_uncompressed, size, sz_out) != Z_OK) {
-        asprintf(msg, "decompression error");
-        return false;
-    }
+    bool r = readSolverState(contents, (int)size, true, msg);
     free(contents);
-    contents = contents_uncompressed;
-    size = sz_out;
-    assert(contents[0] == sz_out+1);
-#endif
-    ((char *)contents)[size] = '\0'; // Add the terminating '\0'
 
-    return readSolverState(contents, msg);
+    return r;
 }
 
 //
-// Read the solver state from a buffer (!! not checking the size!)
+// Read the solver state from a buffer
 //
-bool MainSolver::readSolverState(int* contents, char **msg)
+bool MainSolver::readSolverState(int* buf, int buf_sz, bool compressed, char **msg)
 {
+
+    if(compressed) {
+#ifdef USE_GZ
+        int* contents_uncompressed;
+        int rval = decompress_buf(buf, contents_uncompressed, buf_sz, buf_sz);
+        if (rval != Z_OK) {
+            asprintf(msg, "decompression error");
+            return false;
+        }
+        buf = contents_uncompressed;
+        assert(buf[0] == buf_sz);
+#endif
+    }
+
     CnfState cs;
-    int map_offs = contents[map_offs_idx];
-    int cnf_offs = contents[cnf_offs_idx];
-    int termstore_offs = contents[termstore_offs_idx];
-    int symstore_offs = contents[symstore_offs_idx];
-    int idstore_offs = contents[idstore_offs_idx];
-    int sortstore_offs = contents[sortstore_offs_idx];
-    int logicstore_offs = contents[logicstore_offs_idx];
+    int map_offs = buf[map_offs_idx];
+    int cnf_offs = buf[cnf_offs_idx];
+    int termstore_offs = buf[termstore_offs_idx];
+    int symstore_offs = buf[symstore_offs_idx];
+    int idstore_offs = buf[idstore_offs_idx];
+    int sortstore_offs = buf[sortstore_offs_idx];
+    int logicstore_offs = buf[logicstore_offs_idx];
 
 #ifdef VERBOSE_FOPS
     cerr << "Reading the map" << endl;
 #endif
-    for (int i = 0; i < contents[map_offs]-1; i++) {
+    for (int i = 0; i < buf[map_offs]-1; i++) {
         PTRef tr;
-        tr.x = contents[i+map_offs+1];
+        tr.x = buf[i+map_offs+1];
         cs.addToMap({i, tr});
 #ifdef VERBOSE_FOPS
         cerr << "  Var " << i << " maps to PTRef " << tr.x << endl;
@@ -597,45 +601,45 @@ bool MainSolver::readSolverState(int* contents, char **msg)
 #ifdef VERBOSE_FOPS
     cerr << "Reading IdentifierStore" << endl;
 #endif
-    int idstore_sz = contents[idstore_offs];
-    int* idstore_buf = (int*)malloc(contents[idstore_offs]*sizeof(int));
+    int idstore_sz = buf[idstore_offs];
+    int* idstore_buf = (int*)malloc(buf[idstore_offs]*sizeof(int));
     for (int i = 0; i < idstore_sz; i++)
-        idstore_buf[i] = contents[idstore_offs+i];
+        idstore_buf[i] = buf[idstore_offs+i];
 #ifdef VERBOSE_FOPS
     cerr << "  Identifier store size in words is " << idstore_sz << endl;
     cerr << "Reading sort store" << endl;
 #endif
-    int sortstore_sz = contents[sortstore_offs];
-    int* sortstore_buf = (int*)malloc(contents[sortstore_offs]*sizeof(int));
+    int sortstore_sz = buf[sortstore_offs];
+    int* sortstore_buf = (int*)malloc(buf[sortstore_offs]*sizeof(int));
     for (int i = 0; i < sortstore_sz; i++)
-        sortstore_buf[i] = contents[sortstore_offs+i];
+        sortstore_buf[i] = buf[sortstore_offs+i];
 #ifdef VERBOSE_FOPS
     cerr << "  Sort store size in words is " << sortstore_sz << endl;
     cerr << "Reading symstore" << endl;
 #endif
-    int symstore_sz = contents[symstore_offs];
-    int *symstore_buf = (int*)malloc(contents[symstore_offs]*sizeof(int));
+    int symstore_sz = buf[symstore_offs];
+    int *symstore_buf = (int*)malloc(buf[symstore_offs]*sizeof(int));
     for (int i = 0; i < symstore_sz; i++)
-        symstore_buf[i] = contents[symstore_offs+i];
+        symstore_buf[i] = buf[symstore_offs+i];
 #ifdef VERBOSE_FOPS
     cerr << "  Symstore size is " << symstore_sz << endl;
     cerr << "Reading termstore" << endl;
 #endif
-    int termstore_sz = contents[termstore_offs];
-    int *termstore_buf = (int*)malloc(contents[termstore_offs]*sizeof(int));
+    int termstore_sz = buf[termstore_offs];
+    int *termstore_buf = (int*)malloc(buf[termstore_offs]*sizeof(int));
     for (int i = 0; i < termstore_sz; i++)
-        termstore_buf[i] = contents[termstore_offs+i];
+        termstore_buf[i] = buf[termstore_offs+i];
 #ifdef VERBOSE_FOPS
     cerr << "  Termstore size is " << termstore_sz << endl;
 #endif
 
-    int logicstore_sz = contents[logicstore_offs];
-    int *logicstore_buf = (int*)malloc(contents[logicstore_offs]*sizeof(int));
+    int logicstore_sz = buf[logicstore_offs];
+    int *logicstore_buf = (int*)malloc(buf[logicstore_offs]*sizeof(int));
     for (int i = 0; i < logicstore_sz; i++)
-        logicstore_buf[i] = contents[logicstore_offs+i];
+        logicstore_buf[i] = buf[logicstore_offs+i];
 
     char* tmp_cnf;
-    asprintf(&tmp_cnf, "%s", (char*)(contents + cnf_offs));
+    asprintf(&tmp_cnf, "%s", (char*)(buf + cnf_offs));
     cs.setCnf(tmp_cnf);
 
 #ifdef VERBOSE_FOPS
@@ -659,6 +663,11 @@ bool MainSolver::readSolverState(int* contents, char **msg)
     free(sortstore_buf);
     free(logicstore_buf);
 
+    if(compressed) {
+#ifdef USE_GZ
+        free(buf);
+#endif
+    }
 
     return true;
 }
@@ -701,27 +710,12 @@ bool MainSolver::writeState(const char* file, CnfState& cs, char** msg)
     // Reset, ok.
 
     int* buf;
-    if(!writeState(buf, cs, msg)) {
+    int write_sz;
+    if(!writeState(buf, write_sz, true, cs, msg)) {
         return false;
     }
-    int buf_sz = buf[0];
 
-    int* buf_out;
-#ifdef USE_GZ
-    // Compress the buffer and update the write info accordingly
-    int rval = compress_buf(buf, buf_out, buf_sz-1, buf_sz);
-    if (rval != Z_OK) {
-        asprintf(msg, "compression error");
-        close(fd);
-        return false;
-    }
-    int write_sz = buf_sz;
-#else
-    buf_out = buf;
-    int write_sz = buf_sz - 1;
-#endif
-
-    int res = write(fd, buf_out, write_sz);
+    int res = write(fd, buf, write_sz);
     if (res == -1) {
         *msg = strerror(errno);
         return false;
@@ -742,7 +736,7 @@ bool MainSolver::writeState(const char* file, CnfState& cs, char** msg)
 
 // It never returns false. in the future if that will happen
 // make sure to free contents before return.
-bool MainSolver::writeState(int* &buf, CnfState& cs, char** msg)
+bool MainSolver::writeState(int* &buf, int &buf_sz, bool compress, CnfState& cs, char** msg)
 {
 
 #ifdef VERBOSE_FOPS
@@ -790,8 +784,8 @@ bool MainSolver::writeState(int* &buf, CnfState& cs, char** msg)
     int hdr_sz = 8; // The offsets
     // allocate space for the map, the cnf, the offset indices and the
     // sizes
-    size_t size = (termstore_sz + symstore_sz + idstore_sz + sortstore_sz + map_sz + logicstore_sz)*sizeof(int)
-                 + (strlen(cs.getCnf())+1) + hdr_sz*sizeof(int);
+    buf_sz = (int)((termstore_sz + symstore_sz + idstore_sz + sortstore_sz + map_sz + logicstore_sz)*sizeof(int)
+                 + (strlen(cs.getCnf())+1) + hdr_sz*sizeof(int));
 #ifdef VERBOSE_FOPS
     cerr << "Mallocing " << *size << " bytes for the buffer" << endl;
     cerr << "The cnf is " << strlen(cs.getCnf())+1 << " bytes" << endl;
@@ -802,7 +796,7 @@ bool MainSolver::writeState(int* &buf, CnfState& cs, char** msg)
     cerr << "The sortstore is " << sortstore_sz * sizeof(int) << " bytes" << endl;
     cerr << "The header is " << hdr_sz*sizeof(int) << " bytes" << endl;
 #endif
-    buf = (int *)malloc(size);
+    buf = (int *)malloc(buf_sz);
 
     buf[map_offs_idx]        = cnf_offs_idx+1;
     buf[termstore_offs_idx]  = buf[map_offs_idx]+map_sz;
@@ -901,10 +895,25 @@ bool MainSolver::writeState(int* &buf, CnfState& cs, char** msg)
         Pterm& other_t = new_tstore[cs.getMap()[i].tr];
         my_t.compare(other_t);
     }
-
 #endif
+
     // Write the size in characters
-    buf[0] = (int)size - 1;
+    buf[0] = (int)buf_sz;
+
+    if(compress) {
+#ifdef USE_GZ
+        int* buf_out;
+        // Compress the buffer and update the write info accordingly
+        int rval = compress_buf(buf, buf_out, buf_sz, buf_sz);
+        free(buf);
+        buf = buf_out;
+        if (rval != Z_OK) {
+            asprintf(msg, "compression error");
+            return false;
+        }
+#endif
+    }
+
     return true;
 }
 
@@ -952,12 +961,12 @@ bool MainSolver::writeSolverState(const char* file, char** msg)
     return writeState(file, cs, msg);
 }
 
-bool MainSolver::writeSolverState(int* &contents, char** msg)
+bool MainSolver::writeSolverState(int* &buf, int &buf_sz, bool compress, char** msg)
 {
     CnfState cs;
     ts.getVarMapping(cs);
     ts.getSolverState(cs);
-    return writeState(contents, cs, msg);
+    return writeState(buf,buf_sz,compress, cs, msg);
 }
 
 bool MainSolver::writeSolverSplits(const char* file, char** msg)
@@ -978,19 +987,20 @@ bool MainSolver::writeSolverSplits(const char* file, char** msg)
     return true;
 }
 
-bool MainSolver::writeSolverSplit(int s, int* &split, char** msg)
+bool MainSolver::writeSolverSplit(int s, int* &split, int &split_sz, bool compress, char** msg)
 {
     assert(s < sat_solver.splits.size());
 
     CnfState cs;
     ts.getVarMapping(cs);
     sat_solver.splits[s].cnfToString(cs);
-    if (!writeState(split, cs, msg)) {
+    if (!writeState(split, split_sz, compress, cs, msg)) {
         return false;
     }
     return true;
 }
 
+/*
 bool MainSolver::writeSolverSplits(int** &splits, char** msg)
 {
     splits = (int **)malloc(sat_solver.splits.size() * sizeof(int *));
@@ -1006,7 +1016,7 @@ bool MainSolver::writeSolverSplits(int** &splits, char** msg)
     }
     return true;
 }
-
+*/
 
 
 sstat MainSolver::solve()
@@ -1041,6 +1051,8 @@ sstat MainSolver::solve()
         results[i] = s_Undef;
     }
 
+    std::mutex mtx1;
+
     // start the threads
     threads = new std::thread[config.parallel_threads];
     for (i=0; i<config.parallel_threads; i++) {
@@ -1052,7 +1064,8 @@ sstat MainSolver::solve()
                                  i,
                                  r,
                                  pipefd[1],
-                                 &mtx);
+                                 &mtx
+                                 );
     }
     
     // wait for messages from the threads
@@ -1094,7 +1107,8 @@ sstat MainSolver::solve()
                                                (int)buf[0],
                                                r,
                                                pipefd[1],
-                                               &mtx);
+                                               &mtx
+                                               );
         }
         else {
             if (result == s_True) {
@@ -1134,10 +1148,9 @@ void MainSolver::solve_split(int i, int s, int wpipefd, std::mutex *mtx)
     buf[0] = (char)i;
     buf[1] = (char)s;
 
-    SMTConfig config;
-
     std::uniform_int_distribution<uint32_t> randuint(0, 0xFFFFFF);
     std::random_device rd;
+    SMTConfig config;
     config.setRandomSeed(randuint(rd));
 
     Logic_t l = this->logic.getLogic();
@@ -1152,26 +1165,27 @@ void MainSolver::solve_split(int i, int s, int wpipefd, std::mutex *mtx)
     }
 
     int* split;
+    int split_sz;
     char* msg;
-    assert(this->writeSolverSplit(s,split,&msg));
+    assert(this->writeSolverSplit(s,split,split_sz,true,&msg));
 
     MainSolver* main_solver = new MainSolver(*theory, config);
     main_solver->initialize();
 
-    main_solver->readSolverState(split, &msg);
+    main_solver->readSolverState(split,split_sz,true, &msg);
     free(split);
 
-
     this->parallel_solvers[i] = main_solver;
-    this->parallel_solvers[i]->binary_init = true;
-    sstat result = this->parallel_solvers[i]->simplifyFormulas(&msg);
+
+    sstat result = main_solver->simplifyFormulas(&msg);
     if (result != s_True && result != s_False)
         result = main_solver->solve();
 
     delete main_solver;
     main_solver = NULL;
+    std::cout << (int)result.getValue() << "\n";
 
-    buf[2] = (char)result.getValue();
+    buf[2] = result.getValue();
 
     mtx->lock();
     ::write(wpipefd, buf, 3);
