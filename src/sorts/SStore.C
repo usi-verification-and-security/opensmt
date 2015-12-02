@@ -28,8 +28,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 
-SRef SStore::newSort(IdRef id, const char* name, vec<SRef>& rest)
+SRef SStore::newSort(IdRef id, const char* name_, vec<SRef>& rest)
 {
+    char* name = strdup(name_);
     if (sortTable.contains(name))
         return sortTable[name];
     else {
@@ -37,6 +38,7 @@ SRef SStore::newSort(IdRef id, const char* name, vec<SRef>& rest)
         SRef sr = sa.alloc(id, nr, rest);
         sorts.push(sr);
         sortTable.insert(name, sr);
+        sort_names.push(name);
         return sr;
     }
 }
@@ -68,6 +70,7 @@ SRef SStore::newSort(IdRef idr, vec<SRef>& rest)
         sr = sa.alloc(idr, nr, rest);
         sorts.push(sr);
         sortTable.insert(canon_name, sr);
+        sort_names.push(canon_name);
         return sr;
     }
 }
@@ -185,6 +188,7 @@ void SStore::deserializeSorts(const int* buf)
         char* canon_name;
         asprintf(&canon_name, "%s", is.getName((operator[] (sorts.last()))->getCar()));
         sortTable.insert(canon_name, sorts.last());
+        sort_names.push(canon_name);
     }
 
 }

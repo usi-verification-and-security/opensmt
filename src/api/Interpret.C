@@ -202,6 +202,7 @@ declare_sort_err: ;
             if (logic->containsSort(name)) {
                 SRef sr = newSort(ret_node);
                 args.push(sr);
+                free(name);
             } else {
                 notify_formatted(true, "Unknown return sort %s of %s", name, fname);
                 free(name);
@@ -943,7 +944,9 @@ SRef Interpret::newSort(ASTNode& sn) {
             tmp.push(newSort(**it));
     }
     char* canon_name = buildSortName(sn);
-    return logic->newSort(idr, canon_name, tmp);
+    SRef rval = logic->newSort(idr, canon_name, tmp);
+    free(canon_name);
+    return rval;
 }
 
 #ifdef PRODUCE_PROOF

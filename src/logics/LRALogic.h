@@ -69,6 +69,7 @@ class LRALogic: public Logic
     void visit(PTRef, Map<PTRef,PTRef,PTRefHash>&);
   public:
     LRALogic                  (SMTConfig& c);
+    ~LRALogic                 () { for (int i = 0; i < reals.size(); i++) delete reals[i]; }
 
     PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms, char** msg);
 

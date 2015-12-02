@@ -369,6 +369,7 @@ void MainSolver::computeIncomingEdges(PTRef tr, Map<PTRef,int,PTRefHash>& PTRefT
         if (PTRefToIncoming.contains(pi_ptr->x)) {
             PTRefToIncoming[pi_ptr->x]++;
             unprocessed_ptrefs.pop();
+            delete pi_ptr;
             continue;
         }
         bool unprocessed_children = false;
@@ -393,6 +394,7 @@ void MainSolver::computeIncomingEdges(PTRef tr, Map<PTRef,int,PTRefHash>& PTRefT
         assert(logic.isBooleanOperator(pi_ptr->x) || logic.isAtom(pi_ptr->x));
         assert(!PTRefToIncoming.contains(pi_ptr->x));
         PTRefToIncoming.insert(pi_ptr->x, 1);
+        delete pi_ptr;
     }
 }
 

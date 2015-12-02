@@ -1812,6 +1812,8 @@ LRASolver::~LRASolver( )
     delete numbers_pool.back( );
     numbers_pool.pop_back( );
   }
+  // Remove lavarStore
+  delete lavarStore;
 }
 
 #ifdef PRODUCE_PROOF

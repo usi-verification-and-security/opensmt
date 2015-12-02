@@ -328,6 +328,7 @@ PTRef LRALogic::mkConst(SRef s, const char* name)
         SymId id = sym_store[getPterm(ptr).symb()].getId();
         for (int i = reals.size(); i <= id; i++)
             reals.push(NULL);
+        if (reals[id] != NULL) { delete reals[id]; }
         reals[id] = new opensmt::Real(rat);
         free(rat);
         // Code to allow efficient constant detection.
@@ -397,6 +398,7 @@ PTRef LRALogic::mkRealNeg(PTRef tr, char** msg)
         char* rat_str;
         opensmt::stringToRational(rat_str, sym_store.getName(getPterm(tr).symb()));
         opensmt::Real v(rat_str);
+        free(rat_str);
         v = -v;
         PTRef nterm = mkConst(getSort_real(), v.get_str().c_str());
         SymRef s = getPterm(nterm).symb();
@@ -773,11 +775,13 @@ PTRef SimplifyConst::simplifyConstOp(const vec<PTRef>& terms, char** msg)
         char* rat_str;
         opensmt::stringToRational(rat_str, l.getSymName(terms[0]));
         opensmt::Real val(rat_str);
+        free(rat_str);
         return l.mkConst(l.getSort_real(), val.get_str().c_str());
     } else {
         char* rat_str;
         opensmt::stringToRational(rat_str, l.getSymName(terms[0]));
         opensmt::Real s(rat_str);
+        free(rat_str);
         for (int i = 1; i < terms.size(); i++) {
             PTRef tr = PTRef_Undef;
             if (l.isConstant(terms[i]))
@@ -789,6 +793,7 @@ PTRef SimplifyConst::simplifyConstOp(const vec<PTRef>& terms, char** msg)
             opensmt::stringToRational(rat_str, l.getSymName(tr));
 
             opensmt::Real val(rat_str);
+            free(rat_str);
             Op(s, val);
         }
         return l.mkConst(l.getSort_real(), s.get_str().c_str());

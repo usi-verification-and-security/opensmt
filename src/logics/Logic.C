@@ -399,6 +399,7 @@ Logic::mkIte(vec<PTRef>& args)
     static unsigned ite_counter = 0;
     asprintf(&name, ".oite%d", ite_counter++);
     PTRef o_ite = mkVar(sr, name);
+    free(name);
 
     vec<PTRef> eq_args;
     eq_args.push(o_ite);
@@ -724,7 +725,9 @@ SRef Logic::declareSort(const char* id, char** msg)
     declare_sort_hook(sr);
     char* sort_name;
     asprintf(&sort_name, "%s", id);
-    return sort_store[sort_name];
+    SRef rval = sort_store[sort_name];
+    free(sort_name);
+    return rval;
 }
 
 SymRef Logic::declareFun(const char* fname, const SRef rsort, const vec<SRef>& args, char** msg, bool interpreted)
@@ -1044,6 +1047,7 @@ bool Logic::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& substs, PTRef
 void Logic::breakSubstLoops(Map<PTRef,PTRef,PTRefHash>& substs)
 {
     int iters;
+    vec<SubstNode*> alloced;
     for (iters = 0; ; iters++) {
         if (substs.getSize() == 0) return;
 
@@ -1068,6 +1072,7 @@ void Logic::breakSubstLoops(Map<PTRef,PTRef,PTRefHash>& substs)
             vec<SubstNode*> queue;
             if (seen[id] == white) {
                 SubstNode* n = new SubstNode(keys[i], substs[keys[i]], NULL, *this);
+                alloced.push(n);
                 queue.push(n);
                 roots.push(n);
                 assert(!varToSubstNode.contains(keys[i]));
@@ -1084,6 +1089,7 @@ void Logic::breakSubstLoops(Map<PTRef,PTRef,PTRefHash>& substs)
                                 if (cn->parent == NULL && cn != n) cn->parent = var;
                             } else if (substs.contains(var->children[j])) {
                                 cn = new SubstNode(var->children[j], substs[var->children[j]], var, *this);
+                                alloced.push(cn);
                                 queue.push(cn);
                                 varToSubstNode.insert(cn->tr, cn);
                             }
@@ -1174,6 +1180,8 @@ void Logic::breakSubstLoops(Map<PTRef,PTRef,PTRefHash>& substs)
         for (int i = 0; i < loops.size(); i++)
             substs.remove(loops[i][0]);
     }
+    for (int i = 0; i < alloced.size(); i++)
+        delete alloced[i];
 }
 
 //

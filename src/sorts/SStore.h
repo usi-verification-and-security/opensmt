@@ -60,7 +60,7 @@ class SStore
     SortAllocator sa;
     Map<const char*,SRef,StringHash,Equal<const char*> > sortTable;
     vec<SRef>                                     sorts;
-
+    vec<char*> sort_names; // Needed for deallocating the keys in sortTable
     typedef enum {      // These constants are stored on undo_stack_oper when
         SYMB            // A new symbol is created
       , PARA            // A new parameter
@@ -74,7 +74,10 @@ class SStore
 
     SStore(SMTConfig & c, IdentifierStore& is_) : is(is_), sa(ssa), config(c) { }
 
-    ~SStore() { }
+    ~SStore() {
+        for (int i = 0; i < sort_names.size(); i++)
+            free(sort_names[i]);
+    }
 
     //===========================================================================
     // Public APIs for sort construction/destruction
