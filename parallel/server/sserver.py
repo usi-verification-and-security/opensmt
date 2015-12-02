@@ -117,7 +117,7 @@ class Task(object):
 
 
 class Job(dict):
-    def __init__(self, name, tasks=None):
+    def __init__(self, name, init_time, tasks=None):
         super(Job, self).__init__()
         self.update({
             'name': name,
@@ -126,6 +126,7 @@ class Job(dict):
         if not tasks:
             tasks = (None,)
         self.tasks = tasks
+        self.init_time = init_time
         self.started = False
 
     def add_history_item(self, item):
@@ -142,8 +143,8 @@ class WorkerServer(Server):
     _lock = threading.Lock()
     _status = {}  # sock -> (job, task_id)
     _jobs = Dict({
-        -2: Job('\\ERROR'),
-        -1: Job('\\IDLE')
+        -2: Job('\\ERROR',0),
+        -1: Job('\\IDLE',0)
     })
     heuristic = None
 
@@ -217,6 +218,12 @@ class WorkerServer(Server):
         with self._lock:
             if message[0] == 'S':
                 message = message[1:]
+                if message[0] == '!':
+                    end = message.index('\\')
+                    split_time = float(message[1:end])
+                    message = message[end + 1:]
+                else:
+                    split_time = 0
                 last = message[0] != '\\'
                 if not last:
                     message = message[1:]
@@ -232,7 +239,7 @@ class WorkerServer(Server):
                         jid = _jid
                         break
                 if jid not in self._jobs:
-                    self._jobs[jid] = Job(name, [Task(code)])
+                    self._jobs[jid] = Job(name, split_time, [Task(code)])
                 else:
                     self._jobs[jid].tasks.append(Task(code))
                 self._jobs[jid]['status'] = 0 if last else -2
@@ -251,7 +258,7 @@ class WorkerServer(Server):
                 else:
                     file.close()
             elif message[0] == 'A':
-                l = [str(sys.argv)]
+                l = ['name, sat, split, solving']
                 for jid in self._jobs:
                     if jid < 0:
                         continue
@@ -263,10 +270,13 @@ class WorkerServer(Server):
                         result = 'unsat'
                     else:
                         result = 'unknown'
-                    l.append('{} {} {:.2f}'.format(name, result, self._jobs[jid].get('elapsed', -1)))
+                    l.append('{}, {}, {:.2f}, {:.2f}'.format(name,
+                                                             result,
+                                                             self._jobs[jid].init_time,
+                                                             self._jobs[jid].get('elapsed', 0)))
                 if message[1:].startswith('!'):
-                    self.output.write('\nDONE:\n{}\n################################\n'.format(l[0]))
-                    self.output.write('\n'.join(l[1:]))
+                    self.output.write('\nDONE:\n{}\n################################\n'.format(str(sys.argv)))
+                    self.output.write('\n'.join(l))
                     self.output.write('\n')
                     self.output.flush()
                 else:
@@ -406,6 +416,7 @@ class CommandServer(Server):
                     ))
                 start_time = time.time()
                 subprocess.call([self._opensmt, temp_name], stdout=open('/dev/null', 'w'), stderr=subprocess.STDOUT)
+                split_time = time.time() - start_time
                 os.remove(temp_name)
                 try:
                     tasks = subprocess.check_output('ls {}-*'.format(dump_prefix), shell=True,
@@ -416,14 +427,15 @@ class CommandServer(Server):
                     tasks = tasks[:-1]
                     for task in tasks:
                         with open(task, 'rb') as file:
-                            self._worker_server.handle_command('S{}{}\\{}'.format(
+                            self._worker_server.handle_command('S{}{}{}\\{}'.format(
+                                '!' + str(split_time) + '\\' if task is tasks[0] else '',
                                 '' if task is tasks[-1] else '\\',
                                 name,
                                 file.read()
                             ))
                         os.remove(task)
                 finally:
-                    self.output.write('T {} {}\n'.format(name, time.time() - start_time))
+                    self.output.write('T {} {}\n'.format(name, split_time))
                     self.output.flush()
             else:
                 self.output.write('{}\n'.format(self._worker_server))

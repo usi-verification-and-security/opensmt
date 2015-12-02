@@ -42,7 +42,7 @@ uint32_t FrameSocket::read(char **frame) {
              (uint32_t) buffer[1] << 16 |
              (uint32_t) buffer[2] << 8 |
              (uint32_t) buffer[3];
-    *frame = new char[length];
+    *frame = (char *)malloc(length);
     return this->readn(*frame, length);
 }
 

@@ -5,6 +5,7 @@
 #ifndef H_MAIN
 #define H_MAIN
 
+
 #include <iostream>
 #include <string.h>
 #include <stdio.h>
@@ -18,9 +19,7 @@
 #include "SolverTypes.h"
 #include "net/protocol.h"
 
-extern "C" {
-#include <hiredis.h>
-}
+#include "clause_sharing/ClauseSharing.h"
 
 
 #endif // H_MAIN

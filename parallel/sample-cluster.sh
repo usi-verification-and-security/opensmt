@@ -1,7 +1,6 @@
 #!/bin/bash
 
 SERVER_OUT='./server.out'
-OPENSMT_OUT='./opensmt.out'
 PYTHON='python' # this should be the command to python 2.7
 OPENSMT=../opensmt
 SERVER_DIR=./server
@@ -90,18 +89,20 @@ function require_clauses {
 clauses=false
 mode='_lookahead'
 sbatch=false
-workers=2
+timeout=1000
 splits=2
+cport=5000
+wport=3000
 
 show_help() {
-	echo "Usage $0 [-r][-S][-b sbatch FILE][-n WORKER_NUMBER=$workers][-s SPLIT_NUMBER=$splits] FILE1.smt2 [FILE2.smt [...]]"
+	echo "Usage $0 [-r][-S][-b sbatch FILE][-t TIMEOUT=$timeout][-s SPLIT_NUMBER=$splits][-c CPORT=$cport][-w WPORT=$wport] FILE1.smt2 [FILE2.smt [...]]"
 	echo
 	echo "-r    : use clause sharing (default $clauses)"
 	echo "-S    : use scattering (default $mode)"
 	exit 0
 }
 
-while getopts "hrSb:n:s:" opt; do
+while getopts "hrSb:t:s:c:w:" opt; do
 	case "$opt" in
 		h|\?)
             show_help
@@ -112,9 +113,13 @@ while getopts "hrSb:n:s:" opt; do
             ;;
 		S)  mode='_scattering'
 		    ;;
-		n)	workers=$OPTARG
+		n)	timeout=$OPTARG
        		;;
 		s)	splits=$OPTARG
+		    ;;
+		c)	cport=$OPTARG
+       		;;
+		w)	wport=$OPTARG
 		    ;;
 	esac
 done
@@ -140,34 +145,31 @@ require ${SERVER_COMMAND}
 echo
 info '! PLEASE READ THE README FIRST !'
 echo
-echo "number of opensmt2 solvers:   $workers"
 echo "number of splits:             $splits"
 echo "split mode:                   $mode"
-echo "clause sharing:               $clauses"
+echo "timeout:                      $timeout"
+echo "cport:                        $cport"
+echo "wport:                        $wport"
 echo
 if ${clauses}; then
     require_clauses
 fi
 echo "SERVER stdout will be redirected to $SERVER_OUT"
-echo "OPENSMT2 solvers stdout and stderr will be redirected to $OPENSMT_OUT"
 echo
 echo -n 'starting server... '
 if ${clauses}; then
-    ${PYTHON} ${SERVER} -r ${HEURISTIC} -d -f ${SERVER_DIR}/${mode} -s ${splits} -o ${OPENSMT} > ${SERVER_OUT} 2>/dev/null &
+    ${PYTHON} ${SERVER} -r ${HEURISTIC} -c ${cport} -w ${wport} -t ${timeout} -f ${SERVER_DIR}/${mode} -s ${splits} -o ${OPENSMT} > ${SERVER_OUT} 2>/dev/null &
 else
-    ${PYTHON} ${SERVER} -d -f ${SERVER_DIR}/${mode} -s ${splits} -o ${OPENSMT} > ${SERVER_OUT} 2>/dev/null &
+    ${PYTHON} ${SERVER} -c ${cport} -w ${wport} -t ${timeout} -f ${SERVER_DIR}/${mode} -s ${splits} -o ${OPENSMT} > ${SERVER_OUT} 2>/dev/null &
 fi
 server_pid=$!
 sleep 1
 success 'done'
-echo -n 'sending the files to the server... '
-${PYTHON} ${SERVER_COMMAND} 127.0.0.1 $@ > /dev/null
-success 'done'
 echo -n "starting batch "
 sbatch ${sbatch}
 success ' done'
-echo -n 'waiting for all the problems to be solved... '
-wait ${server_pid}
-success 'done!'
-info "The results are in $SERVER_OUT"
+echo -n 'sending the files to the server... '
+${PYTHON} ${SERVER_COMMAND} 127.0.0.1 -p ${cport} $@
+success 'done'
+
 success 'bye'

@@ -6,7 +6,14 @@
 #include "settings.h"
 
 
-Settings *Settings::Load(int argc, char **argv){
+Settings *Settings::Default = new Settings();
+
+Settings::Settings() {
+    this->redis_hostname = "*";
+    this->redis_port = 6379;
+}
+
+Settings &Settings::Load(int argc, char **argv) {
     int c;
     Settings *settings = new Settings();
     /*while ((c = getopt (argc, argv, "")) != -1)
@@ -35,6 +42,6 @@ Settings *Settings::Load(int argc, char **argv){
                 abort ();
         }*/
 
-    return settings;
+    return *settings;
 }
 

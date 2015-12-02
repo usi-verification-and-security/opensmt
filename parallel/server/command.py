@@ -8,10 +8,10 @@ import os.path
 
 __author__ = 'Matteo Marescotti'
 
-class Socket(sserver.Socket):
+'''class Socket(sserver.Socket):
     def write(self, msg):
         super(Socket, self).write(msg)
-        self.read()
+        self.read()'''
 
 if __name__ == '__main__':
     parser = optparse.OptionParser("usage: %prog <host> [options]")
@@ -21,7 +21,7 @@ if __name__ == '__main__':
     if len(args) == 0:
         parser.error("missing <host> argument")
 
-    s = Socket()
+    s = sserver.Socket()
     s.connect((args[0], options.port))
 
     if len(args) == 1:
@@ -38,5 +38,6 @@ if __name__ == '__main__':
                     os.path.splitext(os.path.basename(filename))[0],
                     f.read())
                 )
+                s.read()
 
     s.close()

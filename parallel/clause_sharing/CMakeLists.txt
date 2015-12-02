@@ -1,13 +1,16 @@
 cmake_minimum_required(VERSION 2.8)
-project(clause_sharing)
+project(clause_sharing C CXX)
 
 set(OPENSMT ../..)
 set(SRC ./src)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+set(CMAKE_CXX_COMPILER "g++")
 
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -gdwarf-2 -std=gnu++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
 
 include_directories(
+        "${SRC}"
         "${OPENSMT}/src/net/hiredis"
         "${OPENSMT}/src/minisat/core"
         "${OPENSMT}/src/minisat/mtl"
@@ -29,9 +32,8 @@ add_library(protocol STATIC
         )
 
 add_subdirectory(${SRC}/settings)
+add_subdirectory(${SRC}/clause_sharing)
 
 add_executable(heuristic ${SRC}/main.cpp)
 
-target_link_libraries(heuristic hiredis)
-target_link_libraries(heuristic protocol)
-target_link_libraries(heuristic settings)
+target_link_libraries(heuristic clause_sharing)
