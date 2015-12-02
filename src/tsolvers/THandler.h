@@ -60,7 +60,11 @@ public:
     }
   }
 
-  virtual ~THandler ( ) { }
+  virtual ~THandler ( )
+  {
+    for (int i = 0; i < tsolvers.size(); i++)
+        if (tsolvers[i] != NULL) delete tsolvers[i];
+  }
 
   virtual Logic&  getLogic  ( )  = 0;
 
