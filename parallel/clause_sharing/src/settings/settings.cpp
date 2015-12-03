@@ -6,15 +6,15 @@
 #include "settings.h"
 
 
-Settings *Settings::Default = new Settings();
+Settings Settings::Default = Settings();
 
 Settings::Settings() {
-    this->redis_hostname = "*";
+    this->redis_hostname = std::string("*");
     this->redis_port = 6379;
 }
 
 Settings &Settings::Load(int argc, char **argv) {
-    int c;
+    //int c;
     Settings *settings = new Settings();
     /*while ((c = getopt (argc, argv, "")) != -1)
         switch (c)

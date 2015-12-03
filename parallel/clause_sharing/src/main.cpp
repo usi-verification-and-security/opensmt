@@ -1,8 +1,5 @@
 #include "main.h"
 
-
-
-
 void print_clause(vec<Lit> &lits) {
     for (int i = 0; i < lits.size(); i++)
         std::cout << toInt(lits[i]) << ' ';
@@ -11,9 +8,13 @@ void print_clause(vec<Lit> &lits) {
 
 
 int main(int argc, char **argv) {
-    ClauseSharing *cs = new ClauseSharing("clauses");
+    auto cs = new ClauseSharing((char *)"clauses", (char *)Settings::Default.redis_hostname.c_str(), Settings::Default.redis_port);
     cs->Start();
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     cs->Stop();
+    std::cout << "esco anche io\n";
+
+    delete cs;
     return 0;
 }
 

@@ -14,12 +14,14 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <time.h>
+#include <chrono>
+#include <thread>
 #include "Sort.h"
 #include "settings/settings.h"
 #include "SolverTypes.h"
 #include "net/protocol.h"
 
-#include "clause_sharing/ClauseSharing.h"
+#include "ClauseSharing/ClauseSharing.h"
 
 
 #endif // H_MAIN
