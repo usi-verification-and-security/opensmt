@@ -43,7 +43,7 @@ class LRATHandler : public THandler
         tsolvers[my_id.id] = lrasolver;
         solverSchedule.push(my_id.id);
     }
-    ~LRATHandler () { delete tsolvers[my_id.id]; }
+
 };
 
 

@@ -29,7 +29,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /*********************************************************************
  * Generic configuration class, used for both set-info and set-option
  *********************************************************************/
-// TODO destructor for ConfValue?
 
 ConfValue::ConfValue(const char* s) {
     type = O_STR;
@@ -86,6 +85,66 @@ ConfValue::ConfValue(const ASTNode& s_expr_n) {
         strval = strdup(s_expr_n.getValue());
     }
     else assert(false); //Not implemented
+}
+
+ConfValue::ConfValue(const ConfValue& other) {
+    type = other.type;
+    if (type == O_NUM) numval = other.numval;
+    else if (type == O_STR) strval = strdup(other.strval);
+    else if (type == O_DEC) decval = other.decval;
+    else if (type == O_LIST) {
+        configs = new list<ConfValue*>;
+        for (list<ConfValue*>::iterator i = other.configs->begin(); i != other.configs->end(); i++)
+            configs->push_back(new ConfValue(**i));
+    }
+    else if (type == O_SYM)
+        strval = strdup(other.strval);
+    else if (type == O_HEX)
+        unumval = other.unumval;
+    else if (type == O_BIN)
+        unumval = other.unumval;
+    else if (type == O_ATTR)
+        strval = strdup(other.strval);
+    else if (type == O_BOOL)
+        numval = other.numval;
+    else if (type == O_EMPTY)
+        strval = strdup("");
+    else assert(false);
+}
+
+ConfValue& ConfValue::operator=(const ConfValue& other)
+{
+    type = other.type;
+    if (type == O_NUM) numval = other.numval;
+    else if (type == O_STR) strval = strdup(other.strval);
+    else if (type == O_DEC) decval = other.decval;
+    else if (type == O_LIST) {
+        configs = new list<ConfValue*>;
+        for (list<ConfValue*>::iterator i = other.configs->begin(); i != other.configs->end(); i++)
+            configs->push_back(new ConfValue(**i));
+    }
+    else if (type == O_SYM)
+        strval = strdup(other.strval);
+    else if (type == O_HEX)
+        unumval = other.unumval;
+    else if (type == O_BIN)
+        unumval = other.unumval;
+    else if (type == O_ATTR)
+        strval = strdup(other.strval);
+    else if (type == O_BOOL)
+        numval = other.numval;
+    else if (type == O_EMPTY)
+        strval = strdup("");
+    else assert(false);
+    return *this;
+}
+
+ConfValue::~ConfValue()
+{
+    if (type == O_STR && strval != NULL) {
+        free(strval);
+        strval = NULL;
+    }
 }
 
 char* ConfValue::toString() const {
@@ -161,6 +220,11 @@ Info::Info(ASTNode& n) {
         }
         else assert(false);
     }
+}
+
+Info::Info(const Info& other)
+{
+    value = other.value;
 }
 
 /***********************************************************
@@ -241,7 +305,7 @@ bool SMTConfig::setOption(const char* name, const Option& value, const char*& ms
         if (value.getValue().type != O_STR) { msg = s_err_not_str; return false; }
         if (!optionTable.contains(name))
             stats_out.open(value.getValue().strval, std::ios_base::out);
-        else if (strcmp(optionTable[name].getValue().strval, value.getValue().strval) != 0) {
+        else if (strcmp(optionTable[name]->getValue().strval, value.getValue().strval) != 0) {
             if (stats_out.is_open()) {
                 stats_out.close();
                 stats_out.open(value.getValue().strval, std::ios_base::out);
@@ -256,21 +320,21 @@ bool SMTConfig::setOption(const char* name, const Option& value, const char*& ms
         if (value.getValue().numval == 1) {
             // Gets set to true
             if (!optionTable.contains(o_stats_out)) {
-                if (!optionTable.contains(o_produce_stats) || optionTable[o_produce_stats].getValue().numval == 0) {
+                if (!optionTable.contains(o_produce_stats) || optionTable[o_produce_stats]->getValue().numval == 0) {
                     // Insert the default value
-                    optionTable.insert(o_stats_out, Option("/dev/stdout"));
+                    optionTable.insert(o_stats_out, new Option("/dev/stdout"));
                 }
-                else if (optionTable.contains(o_produce_stats) && optionTable[o_produce_stats].getValue().numval == 1)
+                else if (optionTable.contains(o_produce_stats) && optionTable[o_produce_stats]->getValue().numval == 1)
                     assert(false);
             }
             else { } // No action required
 
-            if (!stats_out.is_open()) stats_out.open(optionTable[o_stats_out].getValue().strval, std::ios_base::out);
+            if (!stats_out.is_open()) stats_out.open(optionTable[o_stats_out]->getValue().strval, std::ios_base::out);
         }
-        else if (optionTable.contains(o_produce_stats) && optionTable[o_produce_stats].getValue().numval == 1) {
+        else if (optionTable.contains(o_produce_stats) && optionTable[o_produce_stats]->getValue().numval == 1) {
             // gets set to false and was previously true
             if (optionTable.contains(o_stats_out)) {
-                if (optionTable[o_stats_out].getValue().numval == 0) assert(false);
+                if (optionTable[o_stats_out]->getValue().numval == 0) assert(false);
                 else if (stats_out.is_open()) stats_out.close();
             }
         }
@@ -299,27 +363,31 @@ bool SMTConfig::setOption(const char* name, const Option& value, const char*& ms
     }
     if (optionTable.contains(name))
         optionTable.remove(name);
-    optionTable.insert(name, value);
+    optionTable.insert(name, new Option(value));
     return true;
 }
 
 const Option& SMTConfig::getOption(const char* name) const {
     if (optionTable.contains(name))
-        return optionTable[name];
+        return *optionTable[name];
     else
         return option_Empty;
 }
 
-bool SMTConfig::setInfo(const char* name, const Info& value) {
-    if (infoTable.contains(name))
-        infoTable.remove(name);
-    infoTable.insert(name, value);
+bool SMTConfig::setInfo(const char* name_, const Info& value) {
+    if (infoTable.contains(name_))
+        infoTable.remove(name_);
+    Info* value_new = new Info(value);
+    char* name = strdup(name_);
+    infos.push(value_new);
+    info_names.push(name);
+    infoTable.insert(name, value_new);
     return true;
 }
 
 const Info& SMTConfig::getInfo(const char* name) const {
     if (infoTable.contains(name))
-        return infoTable[name];
+        return *infoTable[name];
     else
         return info_Empty;
 }
@@ -394,8 +462,8 @@ SMTConfig::initializeConfig( )
   logic                         = UNDEF;
   status                        = l_Undef;
 //  incremental                   = 0;
-  optionTable.insert(o_incremental, Option(0));
-  optionTable.insert(o_produce_stats, Option(0));
+  insertOption(o_incremental, new Option(0));
+  insertOption(o_produce_stats, new Option(0));
 //  produce_stats                 = 0;
 //  produce_models                = 0;
   print_stats                   = 1;

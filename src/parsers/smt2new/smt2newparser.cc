@@ -2302,9 +2302,9 @@ yyreduce:
 #line 667 "smt2newparser.yy" /* yacc.c:1646  */
     {
             if (strcmp((yyvsp[0].str), "true") == 0)
-                (yyval.snode) = new ASTNode(BOOL_T, "true");
+                (yyval.snode) = new ASTNode(BOOL_T, strdup("true"));
             else if (strcmp((yyvsp[0].str), "false") == 0)
-                (yyval.snode) = new ASTNode(BOOL_T, "false");
+                (yyval.snode) = new ASTNode(BOOL_T, strdup("false"));
             else {
                 printf("Syntax error: expecting either 'true' or 'false', got '%s'\n", (yyvsp[0].str));
                 YYERROR;

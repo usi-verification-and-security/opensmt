@@ -30,10 +30,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 SRef SStore::newSort(IdRef id, const char* name_, vec<SRef>& rest)
 {
-    char* name = strdup(name_);
-    if (sortTable.contains(name))
-        return sortTable[name];
+    if (sortTable.contains(name_))
+        return sortTable[name_];
     else {
+        char* name = strdup(name_);
         SStrRef nr = ssa.alloc(name);
         SRef sr = sa.alloc(id, nr, rest);
         sorts.push(sr);

@@ -666,9 +666,9 @@ logic: '(' TK_SYM logic_attribute logic_attribute_list ')'
 b_value: TK_SYM
         {
             if (strcmp($1, "true") == 0)
-                $$ = new ASTNode(BOOL_T, "true");
+                $$ = new ASTNode(BOOL_T, strdup("true"));
             else if (strcmp($1, "false") == 0)
-                $$ = new ASTNode(BOOL_T, "false");
+                $$ = new ASTNode(BOOL_T, strdup("false"));
             else {
                 printf("Syntax error: expecting either 'true' or 'false', got '%s'\n", $1);
                 YYERROR;

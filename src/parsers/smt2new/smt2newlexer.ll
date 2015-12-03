@@ -60,7 +60,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 "DECIMAL"  { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_DECIMAL; }
 "exists"   { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_EXISTS;  }
 "forall"   { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_FORALL;  }
-"let"      { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_LET;     }
+"let"      { return TK_LET;     }
 "NUMERAL"  { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_NUMERAL; }
 "par"      { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_PAR;     }
 "STRING"   { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_STRING;  }

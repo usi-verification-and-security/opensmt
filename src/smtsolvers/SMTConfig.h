@@ -38,21 +38,24 @@ class ConfValue {
   public:
     ConfType type;
     union { char* strval; int numval; double decval; uint32_t unumval; list<ConfValue*>* configs; };
-    ConfValue() : type(O_EMPTY) {};
+    ConfValue() : type(O_EMPTY), strval(NULL) {};
     ConfValue(const ASTNode& s_expr_n);
     ConfValue(int i) : type(O_DEC), numval(i) {};
     ConfValue(double i) : type(O_DEC), decval(i) {};
     ConfValue(const char* s);
+    ConfValue(const ConfValue& other);
+    ConfValue& operator=(const ConfValue& other);
     char* toString() const;
     double getDoubleVal() const {if (type == O_NUM) return (double)numval; else if (type == O_DEC) return decval; else assert(false); return -1;}
+    ~ConfValue();
 };
 
 class Info {
   private:
-//    char*      name;
     ConfValue   value;
   public:
     Info(ASTNode& n);
+    Info(const Info& other);
     Info() {};
     bool isEmpty() const { return value.type == O_EMPTY; }
     inline char* toString() const { return value.toString(); };
@@ -186,14 +189,21 @@ private:
 private:
   Info          info_Empty;
   Option        option_Empty;
-  Map<const char*,Info,StringHash,Equal<const char*> >   infoTable;
-  Map<const char*,Option,StringHash,Equal<const char*> > optionTable;
+  vec<Option*>  options;
+  vec<Info*>    infos;
+  vec<char*>    info_names;
+  Map<const char*,Info*,StringHash,Equal<const char*> >   infoTable;
+  Map<const char*,Option*,StringHash,Equal<const char*> > optionTable;
+  void          insertOption(const char* o_name, Option* o) {
+      options.push(o);
+      if (optionTable.contains(o_name)) optionTable[o_name] = o;
+      else optionTable.insert(o_name, o); }
   //
   // For standard executable
   //
 public:
   SMTConfig ( int    argc
-	    , char * argv[ ] )
+            , char * argv[ ] )
     : filename ( argv[ argc - 1 ] )
     , rocset   ( false )
     , docset   ( false )
@@ -218,6 +228,12 @@ public:
     if ( produceStats() )  stats_out.close( );
     if ( rocset )         out.close( );
     if ( docset )         err.close( );
+    for (int i = 0; i < options.size(); i++)
+        delete options[i];
+    for (int i = 0; i < infos.size(); i++)
+        delete infos[i];
+    for (int i = 0; i < info_names.size(); i++)
+        free(info_names[i]);
   }
 
   bool          setOption(const char* name, const Option& value, const char*& msg);
@@ -238,14 +254,10 @@ public:
   inline ostream & getStatsOut     ( ) { assert( optionTable.contains(o_produce_stats) );  return stats_out; }
   inline ostream & getRegularOut   ( ) { return rocset ? out : cout; }
   inline ostream & getDiagnosticOut( ) { return docset ? err : cerr; }
-  inline int       getRandomSeed   ( ) { return optionTable.contains(o_random_seed) ? optionTable[o_random_seed].getValue().numval : 91648253; }
-  inline bool      produceModel    ( ) { return optionTable.contains(o_produce_models) ? optionTable[o_produce_models].getValue().numval == 1 : true; }
-  inline void setProduceModels( ) { if ( !optionTable.contains(o_produce_models)) optionTable.insert(o_produce_models, 1); else optionTable[o_produce_models] = 1; }
-    inline bool setRandomSeed(int seed) {
-        if (optionTable.contains(o_random_seed))
-            optionTable.remove(o_random_seed);
-        optionTable.insert(o_random_seed, Option(seed));
-    }
+  inline int       getRandomSeed   ( ) { return optionTable.contains(o_random_seed) ? optionTable[o_random_seed]->getValue().numval : 91648253; }
+  inline bool      produceModel    ( ) { return optionTable.contains(o_produce_models) ? optionTable[o_produce_models]->getValue().numval == 1 : true; }
+  inline void setProduceModels( ) { insertOption(o_produce_models, new Option(1)); }
+  inline bool setRandomSeed(int seed) { insertOption(o_random_seed, new Option(seed)); }
 
   inline void setProduceProofs( ) { if ( print_proofs_smtlib2 != 0 ) return; print_proofs_smtlib2 = 1; }
 
@@ -277,121 +289,121 @@ public:
 //  int          incremental;                  // Incremental solving
   int           isIncremental() const
      { return optionTable.contains(o_incremental) ?
-        optionTable[o_incremental].getValue().numval == 1: false; }
+        optionTable[o_incremental]->getValue().numval == 1: false; }
   int produce_models() const {
       return optionTable.contains(o_produce_models) ?
-              optionTable[o_produce_models].getValue().numval :
+              optionTable[o_produce_models]->getValue().numval :
               1; }
   int          produceStats() const
      { return optionTable.contains(o_produce_stats) ?
-        optionTable[o_produce_stats].getValue().numval == 1: false; }
+        optionTable[o_produce_stats]->getValue().numval == 1: false; }
   std::string  getStatsOut() const
      { return optionTable.contains(o_stats_out) ?
-        optionTable[o_stats_out].getValue().strval: "/dev/stdout"; }
+        optionTable[o_stats_out]->getValue().strval: "/dev/stdout"; }
 
   int sat_grow() const
     { return optionTable.contains(o_grow) ?
-        optionTable[o_grow].getValue().numval : 0; }
+        optionTable[o_grow]->getValue().numval : 0; }
   int sat_clause_lim() const
     { return optionTable.contains(o_clause_lim) ?
-        optionTable[o_clause_lim].getValue().numval : 20; }
+        optionTable[o_clause_lim]->getValue().numval : 20; }
   int sat_subsumption_lim() const
     { return optionTable.contains(o_subsumption_lim) ?
-        optionTable[o_subsumption_lim].getValue().numval : 1000; }
+        optionTable[o_subsumption_lim]->getValue().numval : 1000; }
   double sat_simp_garbage_frac() const
     { return optionTable.contains(o_simp_garbage_frac) ?
-        optionTable[o_simp_garbage_frac].getValue().decval : 0.5; }
+        optionTable[o_simp_garbage_frac]->getValue().decval : 0.5; }
   int sat_use_asymm() const
     { return optionTable.contains(o_use_asymm) ?
-        optionTable[o_use_asymm].getValue().numval == 1: false; }
+        optionTable[o_use_asymm]->getValue().numval == 1: false; }
   int sat_use_rcheck() const
     { return optionTable.contains(o_use_rcheck) ?
-        optionTable[o_use_rcheck].getValue().numval == 1: false; }
+        optionTable[o_use_rcheck]->getValue().numval == 1: false; }
   int sat_use_elim() const
     { return optionTable.contains(o_use_elim) ?
-        optionTable[o_use_elim].getValue().numval == 1: true; }
+        optionTable[o_use_elim]->getValue().numval == 1: true; }
   int sat_var_decay() const
     { return optionTable.contains(o_var_decay) ?
-        optionTable[o_var_decay].getValue().decval : 1 / 0.95; }
+        optionTable[o_var_decay]->getValue().decval : 1 / 0.95; }
   int sat_clause_decay() const
     { return optionTable.contains(o_clause_decay) ?
-        optionTable[o_clause_decay].getValue().decval : 1 / 0.999; }
+        optionTable[o_clause_decay]->getValue().decval : 1 / 0.999; }
   int sat_random_var_freq() const
     { return optionTable.contains(o_random_var_freq) ?
-        optionTable[o_random_var_freq].getValue().decval : 0.02; }
+        optionTable[o_random_var_freq]->getValue().decval : 0.02; }
   int sat_random_seed() const
     { return optionTable.contains(o_random_seed) ?
-        optionTable[o_random_seed].getValue().decval : 91648253; }
+        optionTable[o_random_seed]->getValue().decval : 91648253; }
   int sat_luby_restart() const
     { return optionTable.contains(o_luby_restart) ?
-        optionTable[o_luby_restart].getValue().numval > 0 : 1; }
+        optionTable[o_luby_restart]->getValue().numval > 0 : 1; }
   int sat_ccmin_mode() const
     { return optionTable.contains(o_ccmin_mode) ?
-        optionTable[o_ccmin_mode].getValue().numval : 2; }
+        optionTable[o_ccmin_mode]->getValue().numval : 2; }
   int sat_pcontains() const
     { return optionTable.contains(o_phase_saving) ?
-        optionTable[o_phase_saving].getValue().numval : 2; }
+        optionTable[o_phase_saving]->getValue().numval : 2; }
   int sat_rnd_pol() const
     { return optionTable.contains(o_rnd_pol) ?
-        optionTable[o_rnd_pol].getValue().numval > 0 : 0; }
+        optionTable[o_rnd_pol]->getValue().numval > 0 : 0; }
   int sat_rnd_init_act() const
     { return optionTable.contains(o_rnd_init_act) ?
-        optionTable[o_rnd_init_act].getValue().numval > 0 : 0; }
+        optionTable[o_rnd_init_act]->getValue().numval > 0 : 0; }
   double sat_garbage_frac() const
     { return optionTable.contains(o_garbage_frac) ?
-        optionTable[o_garbage_frac].getValue().decval : 0.20; }
+        optionTable[o_garbage_frac]->getValue().decval : 0.20; }
   int sat_restart_first() const
     { return optionTable.contains(o_restart_first) ?
-        optionTable[o_restart_first].getValue().numval : 100; }
+        optionTable[o_restart_first]->getValue().numval : 100; }
   double sat_restart_inc() const
     { return optionTable.contains(o_restart_inc) ?
-        optionTable[o_restart_inc].getValue().numval : 1.1; }
+        optionTable[o_restart_inc]->getValue().numval : 1.1; }
   int produce_inter() const
     { return optionTable.contains(o_produce_inter) ?
-        optionTable[o_produce_inter].getValue().numval : 0; }
+        optionTable[o_produce_inter]->getValue().numval : 0; }
   int proof_struct_hash() const
     { return optionTable.contains(o_proof_struct_hash) ?
-        optionTable[o_proof_struct_hash].getValue().numval : 1; }
+        optionTable[o_proof_struct_hash]->getValue().numval : 1; }
   int proof_num_graph_traversals() const
     { return optionTable.contains(o_proof_num_graph_traversals) ?
-        optionTable[o_proof_num_graph_traversals].getValue().numval : 3; }
+        optionTable[o_proof_num_graph_traversals]->getValue().numval : 3; }
   int proof_red_trans() const
     { return optionTable.contains(o_proof_red_trans) ?
-        optionTable[o_proof_red_trans].getValue().numval : 2; }
+        optionTable[o_proof_red_trans]->getValue().numval : 2; }
   int proof_rec_piv() const
     { return optionTable.contains(o_proof_rec_piv) ?
-        optionTable[o_proof_rec_piv].getValue().numval : 1; }
+        optionTable[o_proof_rec_piv]->getValue().numval : 1; }
   int proof_push_units() const
     { return optionTable.contains(o_proof_push_units) ?
-        optionTable[o_proof_push_units].getValue().numval : 1; }
+        optionTable[o_proof_push_units]->getValue().numval : 1; }
   int proof_transf_trav() const
     { return optionTable.contains(o_proof_transf_trav) ?
-        optionTable[o_proof_transf_trav].getValue().numval : 1; }
+        optionTable[o_proof_transf_trav]->getValue().numval : 1; }
   int proof_struct_hash_build() const
     { return optionTable.contains(o_proof_struct_hash_build) ?
-        optionTable[o_proof_struct_hash_build].getValue().numval : 0; }
+        optionTable[o_proof_struct_hash_build]->getValue().numval : 0; }
   int proof_check() const
     { return optionTable.contains(o_proof_check) ?
-        optionTable[o_proof_check].getValue().numval : 0; }
+        optionTable[o_proof_check]->getValue().numval : 0; }
   int proof_multiple_inter() const
     { return optionTable.contains(o_proof_multiple_inter) ?
-        optionTable[o_proof_multiple_inter].getValue().numval : 0; }
+        optionTable[o_proof_multiple_inter]->getValue().numval : 0; }
   int proof_alternative_inter() const
     { return optionTable.contains(o_proof_alternative_inter) ?
-        optionTable[o_proof_alternative_inter].getValue().numval : 0; }
+        optionTable[o_proof_alternative_inter]->getValue().numval : 0; }
   int proof_reduce() const
     { return optionTable.contains(o_proof_reduce) ?
-        optionTable[o_proof_reduce].getValue().numval : 0; }
+        optionTable[o_proof_reduce]->getValue().numval : 0; }
   int proof_set_inter_algo() const
     { return optionTable.contains(o_proof_set_inter_algo) ?
-        optionTable[o_proof_set_inter_algo].getValue().numval : 1; }
+        optionTable[o_proof_set_inter_algo]->getValue().numval : 1; }
   int sat_dump_rnd_inter() const
     { return optionTable.contains(o_sat_dump_rnd_inter) ?
-        optionTable[o_sat_dump_rnd_inter].getValue().numval : 2; }
+        optionTable[o_sat_dump_rnd_inter]->getValue().numval : 2; }
 
   const SpUnit sat_resource_units() const {
       if (optionTable.contains(o_sat_resource_units)) {
-          const char* type = optionTable[o_sat_resource_units].getValue().strval;
+          const char* type = optionTable[o_sat_resource_units]->getValue().strval;
           if (strcmp(type, spts_decisions) == 0)
               return spm_decisions;
           else if (strcmp(type, spts_time) == 0)
@@ -401,32 +413,32 @@ public:
     }
   double sat_resource_limit() const
     { return optionTable.contains(o_sat_resource_limit) ?
-        optionTable[o_sat_resource_limit].getValue().getDoubleVal() : -1; }
+        optionTable[o_sat_resource_limit]->getValue().getDoubleVal() : -1; }
   const char* dump_state() const
     { return optionTable.contains(o_dump_state) ?
-        optionTable[o_dump_state].getValue().strval : "out.osmt2"; }
+        optionTable[o_dump_state]->getValue().strval : "out.osmt2"; }
   int dump_only() const
     { return optionTable.contains(o_dump_only) ?
-        optionTable[o_dump_only].getValue().numval : 0; }
+        optionTable[o_dump_only]->getValue().numval : 0; }
   int sat_dump_learnts() const
     { return optionTable.contains(o_sat_dump_learnts) ?
-        optionTable[o_sat_dump_learnts].getValue().numval : 0; }
+        optionTable[o_sat_dump_learnts]->getValue().numval : 0; }
 
     bool sat_split_threads(int threads){
         if (threads<1 || parallel_threads) return false;
-        optionTable.insert(o_sat_split_type, Option(spts_scatter));
-        optionTable.insert(o_sat_split_units, Option(spts_time));
-        optionTable.insert(o_sat_split_inittune, Option(double(2)));
-        optionTable.insert(o_sat_split_midtune, Option(double(2)));
-        optionTable.insert(o_sat_split_num, Option(2));
-        optionTable.insert(o_sat_split_asap, Option(1));
+        insertOption(o_sat_split_type, new Option(spts_scatter));
+        insertOption(o_sat_split_units, new Option(spts_time));
+        insertOption(o_sat_split_inittune, new Option(double(2)));
+        insertOption(o_sat_split_midtune, new Option(double(2)));
+        insertOption(o_sat_split_num, new Option(2));
+        insertOption(o_sat_split_asap, new Option(1));
         parallel_threads = threads;
         return true;
     }
 
   const SpType sat_split_type() const {
       if (optionTable.contains(o_sat_split_type)) {
-        const char* type = optionTable[o_sat_split_type].getValue().strval;
+        const char* type = optionTable[o_sat_split_type]->getValue().strval;
         if (strcmp(type, spts_lookahead) == 0)
             return spt_lookahead;
         else if (strcmp(type, spts_scatter) == 0)
@@ -436,7 +448,7 @@ public:
 
   const SpUnit sat_split_units() const {
       if (optionTable.contains(o_sat_split_units)) {
-          const char* type = optionTable[o_sat_split_units].getValue().strval;
+          const char* type = optionTable[o_sat_split_units]->getValue().strval;
           if (strcmp(type, spts_decisions) == 0)
               return spm_decisions;
           else if (strcmp(type, spts_time) == 0)
@@ -447,28 +459,28 @@ public:
 
   double sat_split_inittune() const {
       return optionTable.contains(o_sat_split_inittune) ?
-              optionTable[o_sat_split_inittune].getValue().getDoubleVal() :
+              optionTable[o_sat_split_inittune]->getValue().getDoubleVal() :
               -1; }
   double sat_split_midtune() const {
       return optionTable.contains(o_sat_split_midtune) ?
-              optionTable[o_sat_split_midtune].getValue().getDoubleVal() :
+              optionTable[o_sat_split_midtune]->getValue().getDoubleVal() :
               -1; }
   int sat_split_num() const {
       return optionTable.contains(o_sat_split_num) ?
-              optionTable[o_sat_split_num].getValue().numval :
+              optionTable[o_sat_split_num]->getValue().numval :
               -1; }
   int sat_split_asap() const {
       return optionTable.contains(o_sat_split_asap) ?
-              optionTable[o_sat_split_asap].getValue().numval :
+              optionTable[o_sat_split_asap]->getValue().numval :
               0; }
 
   int remove_symmetries() const
     { return optionTable.contains(o_sat_remove_symmetries) ?
-        optionTable[o_sat_remove_symmetries].getValue().numval : 0; }
+        optionTable[o_sat_remove_symmetries]->getValue().numval : 0; }
 
   SpPref sat_split_preference() const {
     if (optionTable.contains(o_sat_split_preference)) {
-        const char* type = optionTable[o_sat_split_preference].getValue().strval;
+        const char* type = optionTable[o_sat_split_preference]->getValue().strval;
         if (strcmp(type, spprefs_tterm) == 0) return sppref_tterm;
         if (strcmp(type, spprefs_blind) == 0) return sppref_blind;
         if (strcmp(type, spprefs_bterm) == 0) return sppref_bterm;
@@ -488,17 +500,17 @@ public:
   int          verbosity() const             // Verbosity level
 #ifdef PEDANTIC_DEBUG
     { return optionTable.contains(":verbosity") ?
-        optionTable[":verbosity"].getValue().numval : 2; }
+        optionTable[":verbosity"]->getValue().numval : 2; }
 #elif GC_DEBUG
     { return optionTable.contains(":verbosity") ?
-        optionTable[":verbosity"].getValue().numval : 2; }
+        optionTable[":verbosity"]->getValue().numval : 2; }
 #else
     { return optionTable.contains(":verbosity") ?
-        optionTable[":verbosity"].getValue().numval : 2; }
+        optionTable[":verbosity"]->getValue().numval : 2; }
 #endif
   int          printSuccess() const
      { return optionTable.contains(":print-success") ?
-        optionTable[":print-success"].getValue().numval == 1: false; }
+        optionTable[":print-success"]->getValue().numval == 1: false; }
   int          certification_level;          // Level of certification
   char         certifying_solver[256];       // Executable used for certification
   // SAT-Solver related parameters

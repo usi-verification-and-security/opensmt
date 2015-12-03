@@ -75,4 +75,3 @@ const char* ASTNode::typestr[] = {
     , "info-flag"       , "info-flag-list"              // INFO
 };
 
-

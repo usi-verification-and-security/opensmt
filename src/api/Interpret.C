@@ -61,6 +61,7 @@ void Interpret::setInfo(ASTNode& n) {
     Info value(n);
 
     config.setInfo(name, value);
+    free(name);
 }
 
 void Interpret::getInfo(ASTNode& n) {
@@ -150,23 +151,23 @@ bool Interpret::interp(ASTNode& n) {
         }
         return true;
     }
-    if (strcmp(cmd, "set-info") == 0) {
+    else if (strcmp(cmd, "set-info") == 0) {
         setInfo(**(n.children->begin()));
         return false;
     }
-    if (strcmp(cmd, "get-info") == 0) {
+    else if (strcmp(cmd, "get-info") == 0) {
         getInfo(**(n.children->begin()));
         return false;
     }
-    if (strcmp(cmd, "set-option") == 0) {
+    else if (strcmp(cmd, "set-option") == 0) {
         setOption(**(n.children->begin()));
         return false;
     }
-    if (strcmp(cmd, "get-option") == 0) {
+    else if (strcmp(cmd, "get-option") == 0) {
         getOption(**(n.children->begin()));
         return false;
     }
-    if (strcmp(cmd, "declare-sort") == 0) {
+    else if (strcmp(cmd, "declare-sort") == 0) {
         if (logic->isSet()) {
             char* name = buildSortName(n);
             bool was_new = !logic->containsSort(name);
@@ -185,7 +186,7 @@ declare_sort_err: ;
             notify_formatted(true, "illegal command before set-logic: %s", cmd);
         return false;
     }
-    if (strcmp(cmd, "declare-fun") == 0) {
+    else if (strcmp(cmd, "declare-fun") == 0) {
         if (logic->isSet()) {
             list<ASTNode*>::iterator it = n.children->begin();
             ASTNode& name_node = **(it++);
@@ -226,7 +227,7 @@ declare_fun_err: ;
             notify_formatted(true, "illegal command before set-logic: %s", cmd);
         return false;
     }
-    if (strcmp(cmd, "assert") == 0) {
+    else if (strcmp(cmd, "assert") == 0) {
         if (logic->isSet()) {
             sstat status;
             ASTNode& asrt = **(n.children->begin());
@@ -258,23 +259,23 @@ declare_fun_err: ;
             return false;
         }
     }
-    if (strcmp(cmd, "simplify") == 0) {
+    else if (strcmp(cmd, "simplify") == 0) {
         char* msg;
         sstat status = main_solver->simplifyFormulas(&msg);
         if (status == s_Error)
             notify_formatted(true, "Simplify: %s", msg);
     }
-    if (strcmp(cmd, "check-sat") == 0) {
+    else if (strcmp(cmd, "check-sat") == 0) {
         checkSat(cmd);
     }
 
-    if (strcmp(cmd, "get-assignment") == 0) {
+    else if (strcmp(cmd, "get-assignment") == 0) {
         getAssignment(cmd);
     }
-    if (strcmp(cmd, "get-value") == 0) {
+    else if (strcmp(cmd, "get-value") == 0) {
         getValue(n.children);
     }
-    if (strcmp(cmd, "write-state") == 0) {
+    else if (strcmp(cmd, "write-state") == 0) {
         if (main_solver->solverEmpty()) {
             char* msg;
             sstat status = main_solver->simplifyFormulas(&msg);
@@ -283,7 +284,7 @@ declare_fun_err: ;
         }
         writeState((**(n.children->begin())).getValue());
     }
-    if (strcmp(cmd, "read-state") == 0) {
+    else if (strcmp(cmd, "read-state") == 0) {
         if (logic->isSet()) {
             const char* filename = (**(n.children->begin())).getValue();
             CnfState cs;
@@ -297,13 +298,14 @@ declare_fun_err: ;
             return false;
         }
     }
-    if (strcmp(cmd, "exit") == 0) {
+    else if (strcmp(cmd, "exit") == 0) {
         exit();
         notify_success();
         //
         return false;
     }
-    return false;
+    else
+        return false;
 }
 
 // Adds a new term to TermTable and a mapping to the term from this let frame.
@@ -426,7 +428,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
         std::list<ASTNode*>::iterator vbl = (**ch).children->begin();
         let_branch.push(); // The next scope, where my vars will be defined
         vec<PTRef> tmp_args;
-        vec<const char*> names;
+        vec<char*> names;
         // First read the term declarations in the let statement
         while (vbl != (**ch).children->end()) {
             PTRef let_tr = parseTerm(**((**vbl).children->begin()), let_branch);
@@ -454,6 +456,8 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
             return PTRef_Undef;
         }
         let_branch.pop(); // Now the scope is unavailable for us
+        for (int i = 0; i < names.size(); i++)
+            free(names[i]);
         return tr;
     }
 
