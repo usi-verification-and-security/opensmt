@@ -56,8 +56,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "common/FastRational.h"
 #include "minisat/mtl/Map.h"
 
-#define opensmt_error( S )        { cout << "; Error: " << S << " (triggered at " <<  __FILE__ << ", " << __LINE__ << ")" << endl; exit( 1 ); }
-#define opensmt_error2( S, T )    { cout << "; Error: " << S << " " << T << " (triggered at " <<  __FILE__ << ", " << __LINE__ << ")" << endl; exit( 1 ); }
+#define opensmt_error( S )        { cerr << "; Error: " << S << " (triggered at " <<  __FILE__ << ", " << __LINE__ << ")" << endl; exit( 1 ); }
+#define opensmt_error2( S, T )    { cerr << "; Error: " << S << " " << T << " (triggered at " <<  __FILE__ << ", " << __LINE__ << ")" << endl; exit( 1 ); }
 #define opensmt_warning( S )      { cerr << "; Warning: " << S << endl; }
 #define opensmt_warning2( S, T )  { cerr << "; Warning: " << S << " " << T << endl; }
 
