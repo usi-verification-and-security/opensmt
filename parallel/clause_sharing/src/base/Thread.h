@@ -6,19 +6,31 @@
 #define CLAUSE_SHARING_THREAD_H
 
 #include <thread>
+#include <mutex>
 #include <csignal>
 #include <exception>
+#include <iostream>
+#include <tuple>
+#include "Frame.h"
 
 
 class Thread {
 
 private:
+
+    static pthread_t main_thread;
+
+    static pthread_t b();
+
     std::thread *thread;
+    std::tuple<Frame, Frame> piper;
+    std::tuple<Frame, Frame> pipew;
+    std::mutex mtx_start;
 
     void thread_wrapper();
 
 protected:
-    virtual void thread_main() = 0;
+    virtual void main() = 0;
 
     class StopException : public std::exception {
     public:
@@ -33,6 +45,12 @@ public:
     void Start();
 
     void Stop();
+
+    void Join();
+
+    Frame &Reader();
+
+    Frame &Writer();
 
 };
 

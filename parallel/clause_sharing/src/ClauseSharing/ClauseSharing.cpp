@@ -1,5 +1,5 @@
 //
-// Created by Matteo on 02/12/15.
+// Created by Matteo Marescotti on 02/12/15.
 //
 
 #include "ClauseSharing.h"
@@ -44,40 +44,37 @@ ClauseSharing::~ClauseSharing() {
     redisFree(this->context_sub);
 }
 
-void ClauseSharing::thread_main() {
-    try {
-        redisReply *reply;
-        reply = (redisReply *) redisCommand(context_sub, "SUBSCRIBE %s.out", this->channel.c_str());
+void ClauseSharing::main() {
+    redisReply *reply;
+    reply = (redisReply *) redisCommand(context_sub, "SUBSCRIBE %s.out", this->channel.c_str());
+    freeReplyObject(reply);
+    while (redisGetReply(context_sub, (void **) &reply) == REDIS_OK) {
+        assert (reply->type == REDIS_REPLY_ARRAY && reply->elements == 3);
+        assert (std::string(reply->element[0]->str).compare("message") == 0);
+
+        channel = std::string(reply->element[1]->str);
+        std::cout << "message on channel: " << channel << "\n";
+
+        Message m;
+        std::string s = std::string(reply->element[2]->str, (size_t) reply->element[2]->len);
+        m.load(s);
         freeReplyObject(reply);
-        while (redisGetReply(context_sub, (void **) &reply) == REDIS_OK) {
-            assert (reply->type == REDIS_REPLY_ARRAY && reply->elements == 3);
-            assert (std::string(reply->element[0]->str).compare("message") == 0);
 
-            channel = std::string(reply->element[1]->str);
-            std::cout << "message on channel: " << channel << "\n";
-
-            Message m;
-            std::string s = std::string(reply->element[2]->str, (size_t) reply->element[2]->len);
-            m.load(s);
-            freeReplyObject(reply);
-
-            uint32_t o = 0;
-            while (o < m.payload.length()) {
-                vec<Lit> lits;
-                clauseDeserialize(m.payload, &o, lits);
-                if (lits.size() <= 0 || lits.size() > 50) {
-                    continue;
-                }
-                sort(lits);
-                std::string str;
-                clauseSerialize(lits, str);
-                //ZADD clauses NX %d %b
-                reply = (redisReply *) redisCommand(context_pub, "SADD clauses %b", str.c_str(), str.size());
-                //if(reply->integer==0)
-                //  std::cout << '!';
-                freeReplyObject(reply);
+        uint32_t o = 0;
+        while (o < m.payload.length()) {
+            vec<Lit> lits;
+            clauseDeserialize(m.payload, &o, lits);
+            if (lits.size() <= 0 || lits.size() > 50) {
+                continue;
             }
+            sort(lits);
+            std::string str;
+            clauseSerialize(lits, str);
+            //ZADD clauses NX %d %b
+            reply = (redisReply *) redisCommand(context_pub, "SADD clauses %b", str.c_str(), str.size());
+            //if(reply->integer==0)
+            //  std::cout << '!';
+            freeReplyObject(reply);
         }
     }
-    catch (Thread::StopException e) { }
 }

@@ -5,17 +5,13 @@
 #ifndef CLAUSE_SHARING_HEURISTIC_H
 #define CLAUSE_SHARING_HEURISTIC_H
 
-#include <thread>
 #include <iostream>
-#include <string.h>
-#include <signal.h>
-#include <csignal>
 #include "Sort.h"
-#include "Thread/Thread.h"
+#include "base/Thread.h"
 #include "net/protocol.h"
 
 extern "C" {
-#include <hiredis.h>
+#include <hiredis/hiredis.h>
 }
 
 
@@ -29,7 +25,7 @@ private:
     static redisContext *Connect(const char *hostname, int port);
 
 protected:
-    void thread_main();
+    void main();
 
 public:
     ClauseSharing(char *channel, char *hostname, uint16_t port);
