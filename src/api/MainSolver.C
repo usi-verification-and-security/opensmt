@@ -837,20 +837,23 @@ bool MainSolver::writeState(int* &buf, int &buf_sz, bool compress, CnfState& cs,
 
     for (i = 0; i < idstore_sz; i++)
         buf[buf[idstore_offs_idx]+i] = idstore_buf[i];
-
     free(idstore_buf);
 
     for (i = 0; i < sortstore_sz; i++)
         buf[buf[sortstore_offs_idx]+i] = sortstore_buf[i];
+    free(sortstore_buf);
 
     for (int i = 0; i < symstore_sz; i++)
         buf[buf[symstore_offs_idx]+i] = symstore_buf[i];
+    free(symstore_buf);
 
     for (int i = 0; i < termstore_sz; i++)
         buf[buf[termstore_offs_idx]+i] = termstore_buf[i];
+    free(termstore_buf);
 
     for (int i = 0; i < logicstore_sz; i++)
         buf[buf[logicstore_offs_idx]+i] = logicstore_buf[i];
+    free(logicstore_buf);
 
 #ifdef VERBOSE_FOPS
     cerr << "Map offset read from buf idx " << map_offs_idx << endl;

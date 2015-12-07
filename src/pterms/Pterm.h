@@ -130,7 +130,27 @@ class ValPair
     PTRef tr;
     char* val;
     ValPair() : tr(PTRef_Undef), val(NULL) {}
-    ValPair(PTRef tr, const char* val_) : tr(tr) { if (val_ != NULL) val = strdup(val_); }
+    ~ValPair() {
+        if (val != NULL)
+            free(val);
+    }
+    ValPair(PTRef tr, const char* val_) : tr(tr) {
+        if (val_ != NULL)
+            val = strdup(val_);
+        else val = NULL;
+    }
+    ValPair(const ValPair& other) {
+        tr = other.tr;
+        if (other.val != NULL)
+            val = strdup(other.val);
+        else val = NULL;
+    }
+    const ValPair& operator= (const ValPair& other) {
+        tr = other.tr;
+        if (other.val != NULL)
+            val = strdup(other.val);
+        else val = NULL;
+    }
     bool operator== (const ValPair& other) const { return tr == other.tr && val == other.val; }
     bool operator!= (const ValPair& other) const { return tr != other.tr || val != other.val; }
 };

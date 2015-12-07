@@ -17,7 +17,10 @@ tolerance=1.5
 for file in $(find . -name '*.smt2' |sort) generic/foo; do
     name=$(basename $file)
     dir=$(dirname $file)
+
     /usr/bin/time -p -o $tmpfolder/$name.time ${opensmt} $dir/$name > $tmpfolder/$name.out 2>$tmpfolder/$name.err.tmp
+    #/usr/bin/time -p -o $tmpfolder/$name.time valgrind --leak-check=full ${opensmt} $dir/$name
+    #continue
     grep -v '^;' $tmpfolder/$name.err.tmp > $tmpfolder/$name.err
     diff -q ${tmpfolder}/${name}.out ${dir}/${name}.expected.out
     if [ $? != 0 ]; then

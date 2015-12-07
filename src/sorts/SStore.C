@@ -108,6 +108,9 @@ int* IdentifierStore::serializeIdentifiers() const
     for (int i = 0; i < id_buf[0]; i++)
         buf[id_offs+i] = id_buf[i];
 
+    free(idstr_buf);
+    free(id_buf);
+
     return buf;
 }
 

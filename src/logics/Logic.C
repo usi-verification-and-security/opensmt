@@ -55,7 +55,6 @@ Logic::Logic(SMTConfig& c) :
       config(c)
     , sort_store(config, id_store)
     , term_store(sym_store, sort_store)
-    , is_set(false)
     , sym_TRUE(SymRef_Undef)
     , sym_FALSE(SymRef_Undef)
     , sym_AND(SymRef_Undef)
@@ -72,7 +71,6 @@ Logic::Logic(SMTConfig& c) :
     , top_level_ites(PTRef_Undef)
 {
     config.logic = QF_UF;
-    is_set = true;
     name = "QF_UF";
     IdRef bool_id = id_store.newIdentifier("Bool");
     vec<SRef> tmp_srefs;

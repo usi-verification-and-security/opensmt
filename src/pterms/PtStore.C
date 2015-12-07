@@ -176,6 +176,9 @@ int* PtStore::serializeTerms() const
 
     for (int i = 0; i < ptstore_buf_sz; i++)
         buf[ptstore_buf_offs+i] = ptstore_buf[i];
+
+    ::free(ptstore_buf);
+
     return buf;
 }
 

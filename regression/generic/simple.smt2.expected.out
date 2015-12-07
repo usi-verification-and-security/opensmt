@@ -1,2 +1,14 @@
 (error "unknown logic AB_CD")
 
+(error "illegal command before set-logic: declare-fun")
+
+(error "illegal command before set-logic: declare-fun")
+
+(error "illegal command before set-logic: declare-fun")
+
+(error "illegal command before set-logic: declare-fun")
+
+(error "illegal command before set-logic: declare-fun")
+
+(error "illegal command before set-logic: declare-fun")
+

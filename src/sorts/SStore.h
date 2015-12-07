@@ -47,6 +47,7 @@ class IdentifierStore
         IdStrRef nr = isa.alloc(name);
         return ia.alloc(nr, nl);
     }
+    ~IdentifierStore() {}
     const char* getName(IdRef ir) { return isa[ia[ir].getNameRef()].getName(); }
     int* serializeIdentifiers() const;
     void deserializeIdentifiers(const int*);

@@ -120,6 +120,12 @@ class Interpret {
         , sat_calls(0)
         , config(c) { }
 
+    ~Interpret() {
+        if (theory != NULL)
+            delete theory;
+        if (main_solver != NULL)
+            delete main_solver;
+    }
 
     int interpFile(FILE* in);
     int interpInteractive(FILE* in);

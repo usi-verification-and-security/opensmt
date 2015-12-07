@@ -127,7 +127,7 @@ int main( int argc, char * argv[] )
             case 'p':
                 if(!c.sat_split_threads(atoi(optarg))){
                     fprintf(stderr, "Invalid parallel argument: %s\n", optarg);
-                    exit(-1);
+                    return -1;
                 }
                 break;
             case 's':
@@ -168,7 +168,6 @@ int main( int argc, char * argv[] )
         return 0;
     }
 
-    
   if (argc - optind == 0) {
     fin = stdin;
     int rval = interpreter.interpInteractive(fin);

@@ -89,6 +89,7 @@ class StrAllocator : public RegionAllocator<uint32_t>
         return (size+1) / sizeof(uint32_t) + ((size+1) % sizeof(uint32_t) == 0 ? 0 : 1); }
   public:
     StrAllocator() {}
+    ~StrAllocator() {}
     void moveTo(StrAllocator &to) {
         RegionAllocator<uint32_t>::moveTo(to); }
     TR alloc(const char* c)

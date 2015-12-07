@@ -145,6 +145,17 @@ ConfValue::~ConfValue()
         free(strval);
         strval = NULL;
     }
+    else if (type == O_EMPTY)
+        free(strval);
+    else if (type == O_LIST) {
+        for (list<ConfValue*>::iterator i = configs->begin(); i != configs->end(); i++)
+            delete *i;
+        delete configs;
+    }
+    else if (type == O_SYM)
+        free(strval);
+    else if (type == O_ATTR)
+        free(strval);
 }
 
 char* ConfValue::toString() const {
@@ -185,7 +196,10 @@ char* ConfValue::toString() const {
         stringstream ss;
         ss << "( ";
         for (list<ConfValue*>::iterator it = configs->begin(); it != configs->end(); it++) {
-            ss << *((*it)->toString()); ss << " "; }
+            char* conf_str = (*it)->toString();
+            ss << conf_str; ss << " ";
+            free(conf_str);
+        }
         ss << ")";
         return strdup(ss.str().c_str());
     }
@@ -322,7 +336,7 @@ bool SMTConfig::setOption(const char* name, const Option& value, const char*& ms
             if (!optionTable.contains(o_stats_out)) {
                 if (!optionTable.contains(o_produce_stats) || optionTable[o_produce_stats]->getValue().numval == 0) {
                     // Insert the default value
-                    optionTable.insert(o_stats_out, new Option("/dev/stdout"));
+                    insertOption(o_stats_out, new Option("/dev/stdout"));
                 }
                 else if (optionTable.contains(o_produce_stats) && optionTable[o_produce_stats]->getValue().numval == 1)
                     assert(false);
@@ -363,7 +377,7 @@ bool SMTConfig::setOption(const char* name, const Option& value, const char*& ms
     }
     if (optionTable.contains(name))
         optionTable.remove(name);
-    optionTable.insert(name, new Option(value));
+    insertOption(name, new Option(value));
     return true;
 }
 

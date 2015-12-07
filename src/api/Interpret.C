@@ -80,8 +80,11 @@ void Interpret::getInfo(ASTNode& n) {
 
     if (value.isEmpty())
         notify_formatted(true, "no value for info %s", name);
-    else
-        notify_formatted(false, "%s %s", name, value.toString());
+    else {
+        char* val_str = value.toString();
+        notify_formatted(false, "%s %s", name, val_str);
+        free(val_str);
+    }
 }
 
 void Interpret::setOption(ASTNode& n) {
@@ -102,27 +105,27 @@ void Interpret::setOption(ASTNode& n) {
     bool rval = config.setOption(name, value, msg);
     if (rval == false)
         notify_formatted(true, "set-option failed: %s", msg);
+    free(name);
 }
 
 void Interpret::getOption(ASTNode& n) {
     assert(n.getType() == UATTR_T || n.getType() == PATTR_T );
 
     assert(n.getValue() != NULL);
-    char* name = strdup(n.getValue());
-//    Option value;
+    const char* name = n.getValue();
 
     const Option& value = config.getOption(name);
 
     if (value.isEmpty())
         notify_formatted(true, "No value for attr %s", name);
-    else
-        notify_formatted(false, "%s",value.toString());
-
+    else {
+        char* str_val = value.toString();
+        notify_formatted(false, "%s",str_val);
+        free(str_val);
+    }
 }
 
 void Interpret::exit() {
-    delete main_solver;
-    delete theory;
     f_exit = true;
 }
 
@@ -168,7 +171,7 @@ bool Interpret::interp(ASTNode& n) {
         return false;
     }
     else if (strcmp(cmd, "declare-sort") == 0) {
-        if (logic->isSet()) {
+        if (logic != NULL) {
             char* name = buildSortName(n);
             bool was_new = !logic->containsSort(name);
             free(name);
@@ -187,7 +190,7 @@ declare_sort_err: ;
         return false;
     }
     else if (strcmp(cmd, "declare-fun") == 0) {
-        if (logic->isSet()) {
+        if (logic != NULL) {
             list<ASTNode*>::iterator it = n.children->begin();
             ASTNode& name_node = **(it++);
             ASTNode& args_node = **(it++);
@@ -228,7 +231,7 @@ declare_fun_err: ;
         return false;
     }
     else if (strcmp(cmd, "assert") == 0) {
-        if (logic->isSet()) {
+        if (logic != NULL) {
             sstat status;
             ASTNode& asrt = **(n.children->begin());
             vec<LetFrame> let_branch;
@@ -285,7 +288,7 @@ declare_fun_err: ;
         writeState((**(n.children->begin())).getValue());
     }
     else if (strcmp(cmd, "read-state") == 0) {
-        if (logic->isSet()) {
+        if (logic != NULL) {
             const char* filename = (**(n.children->begin())).getValue();
             CnfState cs;
             char* msg;
@@ -444,6 +447,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
 //            args.push(tmp_args[i]);
             if (addLetName(names[i], tmp_args[i], let_branch[let_branch.size()-1]) == false) {
                 comment_formatted("Let name addition failed");
+                for (int i = 0; i < names.size(); i++) free(names[i]);
                 return PTRef_Undef;
             }
             assert(let_branch[let_branch.size()-1].contains(names[i]));
@@ -453,6 +457,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
         PTRef tr = parseTerm(**(ch), let_branch);
         if (tr == PTRef_Undef) {
             comment_formatted("Failed in parsing the let scoped term");
+            for (int i = 0; i < names.size(); i++) free(names[i]);
             return PTRef_Undef;
         }
         let_branch.pop(); // Now the scope is unavailable for us
@@ -518,7 +523,7 @@ bool Interpret::checkSat(const char* cmd) {
             return false;
     }
     sstat res;
-    if (logic->isSet()) {
+    if (logic != NULL) {
         sat_calls++;
         char* msg = NULL;
 
@@ -556,7 +561,7 @@ bool Interpret::checkSat(const char* cmd) {
 }
 
 bool Interpret::getAssignment(const char* cmd) {
-    if (!logic->isSet()) {
+    if (logic == NULL) {
        notify_formatted(true, "Illegal command before set-logic: %s", cmd);
        return false;
     }
@@ -570,14 +575,19 @@ bool Interpret::getAssignment(const char* cmd) {
         const char* name = term_names[i];
         PTRef tr = nameToTerm[name];
         lbool val = main_solver->getTermValue(tr);
-        asprintf(&out_str, "%s(%s %s)%s",
+        char*  new_str;
+        asprintf(&new_str, "%s(%s %s)%s",
                  out_str,
                  name,
                  val == l_True ? "true" : (val == l_False ? "false" : "unknown"),
                  i < term_names.size() - 1 ? " " : "");
+        free(out_str);
+        out_str = new_str;
     }
-
-    asprintf(&out_str, "%s)", out_str);
+    char* new_str;
+    asprintf(&new_str, "%s)", out_str);
+    free(out_str);
+    out_str = new_str;
     notify_formatted(false, out_str);
     free(out_str);
     return true;
@@ -591,9 +601,10 @@ bool Interpret::getValue(const list<ASTNode*>* terms)
         vec<LetFrame> tmp;
         PTRef tr = parseTerm(term, tmp);
         if (tr != PTRef_Undef) {
-            ValPair vp = main_solver->getValue(tr);
-            values.push(vp);
-            comment_formatted("Found the term %s", logic->printTerm(tr));
+            values.push(main_solver->getValue(tr));
+            char* pt_str = logic->printTerm(tr);
+            comment_formatted("Found the term %s", pt_str);
+            free(pt_str);
         } else
             comment_formatted("Error parsing the term %s", (**(term.children->begin())).getValue());
     }

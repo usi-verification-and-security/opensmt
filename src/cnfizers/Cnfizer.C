@@ -811,12 +811,10 @@ PTRef Cnfizer::expandItes(vec<PtChild>& term_list) {
 
 void Cnfizer::getVarMapping(CnfState& cs)
 {
-    char* out = (char*)malloc(1);
-    out[0] = 0;
-    // The cnf
-//    solver.cnfToString(cs);
     // The mapping to terms
 #ifdef VERBOSE_FOPS
+    char* out = (char*)malloc(1);
+    out[0] = 0;
     char* old;
 #endif
     for (int i = 0; i < solver.nVars(); i++) {

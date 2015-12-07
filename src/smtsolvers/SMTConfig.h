@@ -190,6 +190,7 @@ private:
   Info          info_Empty;
   Option        option_Empty;
   vec<Option*>  options;
+  vec<char*>    option_names;
   vec<Info*>    infos;
   vec<char*>    info_names;
   Map<const char*,Info*,StringHash,Equal<const char*> >   infoTable;
@@ -197,7 +198,12 @@ private:
   void          insertOption(const char* o_name, Option* o) {
       options.push(o);
       if (optionTable.contains(o_name)) optionTable[o_name] = o;
-      else optionTable.insert(o_name, o); }
+      else {
+          char* my_name = strdup(o_name);
+          option_names.push(my_name);
+          optionTable.insert(my_name, o);
+      }
+  }
   //
   // For standard executable
   //
@@ -230,6 +236,8 @@ public:
     if ( docset )         err.close( );
     for (int i = 0; i < options.size(); i++)
         delete options[i];
+    for (int i = 0; i < option_names.size(); i++)
+        free(option_names[i]);
     for (int i = 0; i < infos.size(); i++)
         delete infos[i];
     for (int i = 0; i < info_names.size(); i++)

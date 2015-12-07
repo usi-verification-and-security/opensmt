@@ -1,0 +1,4 @@
+(error "Illegal command before set-logic: assert")
+
+(error "unknown logic AB_CD")
+

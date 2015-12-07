@@ -73,7 +73,6 @@ class Logic {
   public:
     PtStore             term_store;
   protected:
-    bool                is_set;
     string              name;
     SymRef              sym_TRUE;
     SymRef              sym_FALSE;
@@ -151,7 +150,6 @@ class Logic {
     }
 
     bool          setLogic    (const char* l);
-    bool          isSet       ()                      const { return is_set;    }
     Logic_t       getLogic    ()                      const { return config.logic; }
     const string& getName     ()                      const { return name;      }
 

@@ -1,2 +1,8 @@
 (error "unknown logic QF_BV")
 
+(error "illegal command before set-logic: declare-fun")
+
+(error "Illegal command before set-logic: assert")
+
+(error "Illegal command before set-logic: check-sat")
+

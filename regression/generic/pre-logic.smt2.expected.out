@@ -9,7 +9,7 @@ Longer story
 3.14159
 3736059631
 85
-( f s 1 4 1 2 ( )
+( foo string 10 4075 1.23 2 ( ( ) bar ( :keyword ) ) )
 (error "No value for attr :non-existing-option")
 
 (error "no value for info :foo")
