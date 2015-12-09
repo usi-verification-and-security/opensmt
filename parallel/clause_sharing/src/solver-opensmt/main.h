@@ -15,8 +15,12 @@
 #include <ctype.h>
 #include <time.h>
 #include <chrono>
-#include <lib/Thread.h>
-#include "ClauseSharing/ClauseSharing.h"
+#include <thread>
+#include "Sort.h"
+#include "SolverTypes.h"
+#include "net/protocol.h"
+#include "lib/Settings.h"
+#include "api/MainSolver.h"
 
 
 #endif // H_MAIN

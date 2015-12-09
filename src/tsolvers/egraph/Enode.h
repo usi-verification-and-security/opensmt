@@ -210,9 +210,9 @@ public:
     ELRef& altForbid    ()              { assert(isTerm()); return ex->trm.forbid; }
     void  setForbid     (ELRef r)       { assert(isTerm()); ex->trm.forbid = r; }
 #else
-    Elist* getForbid    ()        const { assert(isTerm()); return ex->term.forbid; }
-    Elist& altForbid    ()              { assert(isTerm()); return *(ex->term.forbid); }
-    void  setForbid     (Elist* r)      { assert(isTerm()); ex->term.forbid = r; }
+    Elist* getForbid    ()        const { assert(isTerm()); return ex->trm.forbid; }
+    Elist& altForbid    ()              { assert(isTerm()); return *(ex->trm.forbid); }
+    void  setForbid     (Elist* r)      { assert(isTerm()); ex->trm.forbid = r; }
 #endif
 //    int   getDistIndex  ()        const { assert(isTerm()); return ex->trm.dist_index; }
     int   getDistIndex  ()        const { assert(!isSymb()); if (isList()) return 0; else return ex->trm.dist_index; }

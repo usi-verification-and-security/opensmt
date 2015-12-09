@@ -1,3 +1,6 @@
+//
+// Created by Matteo Marescotti.
+//
 #include "main.h"
 
 
@@ -7,40 +10,42 @@ void print_clause(vec<Lit> &lits) {
     std::cout << '\n';
 }
 
-ClauseSharing *cs;
-
-class T:public Thread{
-protected:
-    void main() {
-        char *frame;
-        auto l = this->Reader().Read(&frame);
-        std::string s(frame, l);
-        std::cout << s << l << "\n";
-        free(frame);
-    }
-};
-
 
 int main(int argc, char **argv) {
+
+    std::uniform_int_distribution<uint32_t> randuint(0, 0xFFFFFF);
+    std::random_device rd;
+    SMTConfig config;
+    config.setRandomSeed(randuint(rd));
+
+    //Logic_t l = this->logic.getLogic();
+    Theory *theory;
+    //if (l == QF_UF)
+    //    theory = new UFTheory(config);
+    //else if (l == QF_LRA)
+    theory = new LRATheory(config);
+    //else {
+    //    cerr << "Unsupported logic" << endl;
+    //    exit(1);
+    //}
+
+    MainSolver *main_solver = new MainSolver(*theory, config);
+    main_solver->initialize();
+
 //    ClauseSharing *cs = new ClauseSharing((char *) "clauses", (char *) Settings::Default.redis_hostname.c_str(),
-//                           Settings::Default.redis_port);
+//                                          Settings::Default.redis_port);
 //    cs->Start();
 //    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 //    ClauseSharing *cs1 = new ClauseSharing((char *) "clauses", (char *) Settings::Default.redis_hostname.c_str(),
-//                                          Settings::Default.redis_port);
+//                                           Settings::Default.redis_port);
 //    cs1->Start();
 //    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 //    cs->Stop();
-//    csm1->Join();
+//    cs1->Join();
 //    delete cs;
 //    delete cs1;
-    auto t = new T();
-    t->Start();
-    std::string s("coa\n");
-    std::cout << t->Writer().Write("ciao",4) << "w\n";
-    t->Join();
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    return 0;
+//    std::cout << "asd\n";
+//    return 0;
 }
 
 

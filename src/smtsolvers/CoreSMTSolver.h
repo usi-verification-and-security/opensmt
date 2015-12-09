@@ -59,8 +59,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "SolverTypes.h"
 //#include "LA.h"
-#include "net/hiredis/hiredis.h"
-#include "net/protocol.h"
 
 #ifdef PRODUCE_PROOF
 #include "ProofGraph.h"
@@ -305,7 +303,6 @@ class CoreSMTSolver : public SMTSolver
     CoreSMTSolver(SMTConfig&, THandler&);
     ~CoreSMTSolver();
     void     initialize       ( );
-    void     initialize       (char *channel);
 /*
 */
 
@@ -407,11 +404,6 @@ class CoreSMTSolver : public SMTSolver
     // Statistics: (read-only member variable)
     //
     uint64_t starts, decisions, rnd_decisions, propagations, conflicts, conflicts_last_update;
-    struct ClauseSharing {
-        redisContext *c_cls_pub;
-        redisContext *c_cls_sub;
-        std::string channel;
-    } clauses_sharing;
     uint64_t clauses_literals, learnts_literals, max_literals, tot_literals;
     double learnts_size;
     uint64_t all_learnts;

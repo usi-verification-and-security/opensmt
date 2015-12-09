@@ -553,8 +553,6 @@ AC_SUBST(config_includedirs)
 AC_CONFIG_FILES([ \
 		  Makefile \
 		  src/Makefile \
-		  src/net/Makefile \
-		  src/net/hiredis/Makefile \
 		  src/parsers/Makefile \
 		  src/parsers/smt2new/Makefile \
 		  src/pterms/Makefile \

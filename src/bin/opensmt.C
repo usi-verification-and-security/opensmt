@@ -26,7 +26,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 #include "Interpret.h"
-#include "net/net.h"
 
 #include <cstdlib>
 #include <cstdio>
@@ -122,7 +121,7 @@ int main( int argc, char * argv[] )
 //    WorkerClient *w;
     SMTConfig c;
     Interpret interpreter(c);
-    while ((opt = getopt(argc, argv, "hs:p:r:")) != -1) {
+    while ((opt = getopt(argc, argv, "hp:")) != -1) {
         switch (opt) {
             case 'p':
                 if(!c.sat_split_threads(atoi(optarg))){
@@ -130,25 +129,25 @@ int main( int argc, char * argv[] )
                     return -1;
                 }
                 break;
-            case 's':
-            case 'r':
-                for(i=0;optarg[i]!=':' && optarg[i]!='\0';i++){}
-                if(optarg[i]!=':'){
-                    fprintf(stderr, "Invalid host:port argument\n",
-                            argv[0]);
-                    return 1;
-                }
-                optarg[i]='\0';
-
-                if(opt == 's') {
-                    SMTConfig::server_host = optarg;
-                    SMTConfig::server_port = atoi(&optarg[i+1]);
-                }
-                if(opt == 'r'){
-                    SMTConfig::database_host = optarg;
-                    SMTConfig::database_port = atoi(&optarg[i+1]);
-                }
-                break;
+//            case 's':
+//            case 'r':
+//                for(i=0;optarg[i]!=':' && optarg[i]!='\0';i++){}
+//                if(optarg[i]!=':'){
+//                    fprintf(stderr, "Invalid host:port argument\n",
+//                            argv[0]);
+//                    return 1;
+//                }
+//                optarg[i]='\0';
+//
+//                if(opt == 's') {
+//                    SMTConfig::server_host = optarg;
+//                    SMTConfig::server_port = atoi(&optarg[i+1]);
+//                }
+//                if(opt == 'r'){
+//                    SMTConfig::database_host = optarg;
+//                    SMTConfig::database_port = atoi(&optarg[i+1]);
+//                }
+//                break;
             case 'h':
                 //    context.getConfig( ).printHelp( );
             default: /* '?' */
@@ -158,15 +157,15 @@ int main( int argc, char * argv[] )
         }
     }
 
-    if(SMTConfig::server_host!=NULL) {
-        try {
-            WorkerClient *w = new WorkerClient();
-            w->runForever();
-        } catch (char const *s) {
-            std::cout << "Exception: " << s << "\n";
-        }
-        return 0;
-    }
+//    if(SMTConfig::server_host!=NULL) {
+//        try {
+//            WorkerClient *w = new WorkerClient();
+//            w->runForever();
+//        } catch (char const *s) {
+//            std::cout << "Exception: " << s << "\n";
+//        }
+//        return 0;
+//    }
 
   if (argc - optind == 0) {
     fin = stdin;

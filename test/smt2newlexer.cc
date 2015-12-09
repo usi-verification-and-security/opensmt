@@ -2300,7 +2300,7 @@ static void smt2newensure_buffer_stack (yyscan_t yyscanner)
 }
 
 /** Setup the input buffer state to scan directly from a user-specified character buffer.
- * @param base the character buffer
+ * @param lib the character buffer
  * @param size the size in bytes of the character buffer
  * @param yyscanner The scanner object.
  * @return the newly allocated buffer state object. 

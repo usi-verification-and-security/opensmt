@@ -4,8 +4,8 @@ project(clause_sharing C CXX)
 
 set(CMAKE_CXX_COMPILER "g++")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -g -gdwarf-2")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -g -gdwarf-2")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall -std=c++11")
 
 #if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 #   # require at least gcc 4.8
@@ -21,36 +21,34 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -g -gdwarf-2")
 #   message(WARNING "You are using an unsupported compiler! Compilation has only been tested with Clang and GCC.")
 #endif ()
 
-set(OPENSMT ../..)
-set(SRC ./src)
+set(SRC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+set(SRC_OPENSMT ${SRC}/../../../src)
+set(SRC_HIREDIS ${SRC}/deps/redis-stable/deps/hiredis)
 
 include_directories(
         "${SRC}"
-        "${OPENSMT}/src/net/hiredis"
-        "${OPENSMT}/src/minisat/core"
-        "${OPENSMT}/src/minisat/mtl"
-        "${OPENSMT}/src"
-        "${OPENSMT}/src/common"
+        "${SRC_OPENSMT}"
+        "${SRC_OPENSMT}/minisat/core"
+        "${SRC_OPENSMT}/minisat/mtl"
+        "${SRC_OPENSMT}/common"
+        "${SRC_OPENSMT}/logics"
+        "${SRC_OPENSMT}/symbols"
+        "${SRC_OPENSMT}/api"
+        "${SRC_OPENSMT}/pterms"
+        "${SRC_OPENSMT}/sorts"
+        "${SRC_OPENSMT}/smtsolvers"
+        "${SRC_OPENSMT}/tsolvers"
+        "${SRC_OPENSMT}/cnfizers"
+        "${SRC_OPENSMT}/tsolvers/egraph"
+        "${SRC_OPENSMT}/tsolvers/lrasolver"
+        "${SRC_HIREDIS}"
 )
 
-add_library(hiredis STATIC
-        "${OPENSMT}/src/net/hiredis/hiredis.c"
-        "${OPENSMT}/src/net/hiredis/async.c"
-        "${OPENSMT}/src/net/hiredis/dict.c"
-        "${OPENSMT}/src/net/hiredis/net.c"
-        "${OPENSMT}/src/net/hiredis/sds.c"
-        "${OPENSMT}/src/net/hiredis/read.c"
-        )
-
-add_library(protocol STATIC
-        "${OPENSMT}/src/net/protocol.C"
-        )
-
-add_subdirectory(${SRC}/settings)
+add_subdirectory(${SRC}/deps)
+add_subdirectory(${SRC}/lib)
 add_subdirectory(${SRC}/ClauseSharing)
-add_subdirectory(${SRC}/Thread)
+add_subdirectory(${SRC}/solver-opensmt)
 
-add_executable(heuristic ${SRC}/main.cpp)
 
-target_link_libraries(heuristic ClauseSharing)
-target_link_libraries(heuristic settings)
+add_executable(main ${SRC}/main.cpp)
+target_link_libraries(main ClauseSharing)

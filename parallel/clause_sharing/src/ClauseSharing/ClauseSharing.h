@@ -7,11 +7,11 @@
 
 #include <iostream>
 #include "Sort.h"
-#include "base/Thread.h"
-#include "net/protocol.h"
+#include "lib/Thread.h"
+#include "lib/Protocol.h"
 
 extern "C" {
-#include <hiredis/hiredis.h>
+#include <hiredis.h>
 }
 
 
