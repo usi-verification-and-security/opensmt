@@ -12,11 +12,9 @@ ClauseSharing *cs;
 class T:public Thread{
 protected:
     void main() {
-        char *frame;
-        auto l = this->Reader().Read(&frame);
-        std::string s(frame, l);
-        std::cout << s << l << "\n";
-        free(frame);
+        std::string frame;
+        this->reader().read(frame);
+        //std::cout << frame << "\n";
     }
 };
 
@@ -34,12 +32,15 @@ int main(int argc, char **argv) {
 //    csm1->Join();
 //    delete cs;
 //    delete cs1;
+
     auto t = new T();
-    t->Start();
-    std::string s("coa\n");
-    std::cout << t->Writer().Write("ciao",4) << "w\n";
-    t->Join();
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    t->start();
+    t->writer().write("ciao",4);
+    t->join();
+    t->start();
+    t->writer().write("ciao",4);
+    t->join();
+    delete t;
     return 0;
 }
 

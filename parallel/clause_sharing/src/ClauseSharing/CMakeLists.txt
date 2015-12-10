@@ -1,5 +1,4 @@
 add_library(ClauseSharing ClauseSharing.cpp)
 
 target_link_libraries(ClauseSharing hiredis)
-target_link_libraries(ClauseSharing Thread)
-target_link_libraries(ClauseSharing Protocol)
+target_link_libraries(ClauseSharing Lib)

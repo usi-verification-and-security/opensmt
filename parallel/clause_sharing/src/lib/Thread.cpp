@@ -18,14 +18,19 @@ pthread_t Thread::main_thread = Thread::init();
 Thread::Thread() :
         thread(NULL),
         piper(Pipe::New()),
-        pipew(Pipe::New()) { }
+        pipew(Pipe::New()) {
+    pthread_barrier_init(&this->barrier, NULL, 2);
+}
 
 Thread::~Thread() {
+    pthread_barrier_destroy(&this->barrier);
     try {
         this->check_started();
-        this->Stop();
     }
-    catch (ThreadException ex) { }
+    catch (ThreadException ex) {
+        return;
+    }
+    this->stop();
 }
 
 void Thread::check_started() {
@@ -40,55 +45,51 @@ void Thread::check_stopped() {
 
 void Thread::thread_wrapper() {
     try {
-        this->mtx_start.unlock();
+        pthread_barrier_wait(&this->barrier);
         this->main();
     } catch (Thread::StopException ex) { }
 }
 
-void Thread::Start() {
-    static std::mutex mtx;
-    mtx.lock();
+void Thread::start() {
+    this->mtx.lock();
     try {
         this->check_stopped();
-        this->mtx_start.lock();
         this->thread = new std::thread(&Thread::thread_wrapper, this);
-        this->mtx_start.lock();
+        pthread_barrier_wait(&this->barrier);
     }
     catch (...) {
         mtx.unlock();
         throw;
     }
-    mtx.unlock();
+    this->mtx.unlock();
 }
 
-void Thread::Stop() {
+void Thread::stop() {
     this->check_started();
     pthread_kill(this->thread->native_handle(), SIGUSR1);
-    this->Join();
+    this->join();
 }
 
-void Thread::Join() {
-    static std::mutex mtx;
+void Thread::join() {
     try {
         this->check_started();
         this->thread->join();
-        mtx.lock();
+        this->mtx.lock();
         if (this->thread != NULL) {
             delete this->thread;
             this->thread = NULL;
-            this->mtx_start.unlock();
         }
-        mtx.unlock();
+        this->mtx.unlock();
     }
     catch (ThreadException ex) { }
 }
 
-Frame &Thread::Reader() {
+Frame &Thread::reader() {
     this->check_started();
-    return (pthread_self() == this->thread->native_handle()) ? this->piper.Reader() : this->pipew.Reader();
+    return (pthread_self() == this->thread->native_handle()) ? this->piper.reader() : this->pipew.reader();
 }
 
-Frame &Thread::Writer() {
+Frame &Thread::writer() {
     this->check_started();
-    return (pthread_self() == this->thread->native_handle()) ? this->pipew.Writer() : this->piper.Writer();
+    return (pthread_self() == this->thread->native_handle()) ? this->pipew.writer() : this->piper.writer();
 }

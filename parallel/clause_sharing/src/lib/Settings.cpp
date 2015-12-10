@@ -7,11 +7,6 @@
 
 Settings Settings::Default = Settings();
 
-Settings::Settings() {
-    this->redis_hostname = std::string("*");
-    this->redis_port = 6379;
-}
-
 Settings &Settings::Load(int argc, char **argv) {
     //int c;
     Settings *settings = new Settings();

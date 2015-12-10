@@ -2,7 +2,7 @@
 // Created by Matteo Marescotti.
 //
 
-#include "Protocol.h"
+#include "Message.h"
 
 void Message::dump(std::string &s) {
     std::map<std::string, std::string>::iterator it;

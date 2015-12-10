@@ -9,7 +9,6 @@
 #include <mutex>
 #include <csignal>
 #include <iostream>
-#include <tuple>
 #include "Exception.h"
 #include "Frame.h"
 
@@ -23,17 +22,16 @@ public:
 
 
 class Thread {
-
 private:
-
     static pthread_t main_thread;
 
     static pthread_t init();
 
     std::thread *thread;
+    pthread_barrier_t barrier;
     Pipe piper;
     Pipe pipew;
-    std::mutex mtx_start;
+    std::mutex mtx;
 
     void check_started();
 
@@ -54,15 +52,15 @@ public:
 
     virtual ~Thread();
 
-    void Start();
+    void start();
 
-    void Stop();
+    void stop();
 
-    void Join();
+    void join();
 
-    Frame &Reader();
+    Frame &reader();
 
-    Frame &Writer();
+    Frame &writer();
 
 };
 

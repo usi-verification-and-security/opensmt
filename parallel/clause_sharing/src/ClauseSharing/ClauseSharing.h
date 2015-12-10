@@ -8,7 +8,7 @@
 #include <iostream>
 #include "Sort.h"
 #include "lib/Thread.h"
-#include "lib/Protocol.h"
+#include "lib/Message.h"
 
 extern "C" {
 #include <hiredis.h>

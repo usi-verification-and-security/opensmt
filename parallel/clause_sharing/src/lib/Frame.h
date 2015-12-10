@@ -23,84 +23,24 @@ private:
     int fd;
     bool close;
 
-    inline size_t readn(char *buffer, size_t length) {
-        size_t r = 0;
-        while (length > r) {
-            ssize_t t = ::read(this->fd, &buffer[r], length - r);
-            if (t == 0)
-                throw FrameException("File descriptor closed");
-            if (t < 0)
-                throw FrameException("File descriptor error");
-            r += t;
-        }
-        return (size_t) r;
-    }
+    inline uint32_t readn(char *buffer, uint32_t length);
 
 public:
-    Frame(int fd) :
-            fd(fd),
-            close(false) { };
+    Frame(int fd);
 
-    Frame(int fd, bool close) :
-            fd(fd),
-            close(close) { };
+    Frame(int fd, bool close);
 
-    ~Frame() {
-        std::cout << "distruct!\n";
-        if (this->close)
-            ::close(fd);
-    }
+    ~Frame();
 
-    size_t Read(char **frame) {
-        size_t length = 0;
-        uint8_t buffer[4];
-        if (this->readn((char *) buffer, 4) != 4)
-            return 0;
-        length = (size_t) buffer[0] << 24 |
-                 (size_t) buffer[1] << 16 |
-                 (size_t) buffer[2] << 8 |
-                 (size_t) buffer[3];
-        *frame = (char *) malloc(length);
-        if (*frame == NULL)
-            throw FrameException("Can't malloc");
-        try {
-            length = this->readn(*frame, length);
-        }
-        catch (char const *ex) {
-            free(*frame);
-            throw ex;
-        }
-        return length;
-    }
+    uint32_t read(char **frame);
 
-    size_t Read(std::string &frame) {
-        char *c;
-        size_t lenght = this->Read(&c);
-        frame.append(c, lenght);
-        free(c);
-        return lenght;
-    }
+    uint32_t read(std::string &frame);
 
-    size_t Write(const char *frame, size_t length) {
-        uint8_t buffer[4];
-        buffer[3] = (uint8_t) length;
-        buffer[2] = (uint8_t) (length >> 8);
-        buffer[1] = (uint8_t) (length >> 16);
-        buffer[0] = (uint8_t) (length >> 24);
-        if (::write(this->fd, (char *) buffer, 4) != 4)
-            throw FrameException("Write error");
-        if ((size_t)::write(this->fd, frame, length) != length)
-            throw FrameException("Write error");
-        return length;
-    }
+    uint32_t write(const char *frame, uint32_t length);
 
-    size_t Write(std::string &frame) {
-        return this->Write(frame.c_str(), frame.size());
-    }
+    uint32_t write(std::string &frame);
 
-    inline int FileDescriptor() {
-        return this->fd;
-    }
+    int file_descriptor();
 
 };
 
@@ -110,25 +50,14 @@ private:
     Frame r;
     Frame w;
 
-    Pipe(int r, int w) :
-            r(Frame(r, true)),
-            w(Frame(w, true)) { }
+    Pipe(int r, int w);
 
 public:
-    static Pipe New() {
-        int fd[2];
-        if (::pipe(fd) == -1)
-            throw FrameException("Pipe creation error");
-        return Pipe(fd[0], fd[1]);
-    }
+    static Pipe New();
 
-    Frame &Reader() {
-        return this->r;
-    }
+    Frame &reader();
 
-    Frame &Writer() {
-        return this->w;
-    }
+    Frame &writer();
 
 };
 
