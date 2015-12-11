@@ -7,18 +7,19 @@
 
 #include <thread>
 #include <mutex>
+#include <atomic>
 #include <csignal>
 #include <iostream>
 #include "Exception.h"
 #include "Frame.h"
 
 
-class ThreadException : public Exception {
-public:
-    explicit ThreadException(const char *message) : Exception(message) { }
-
-    explicit ThreadException(const std::string &message) : Exception(message) { }
-};
+//class ThreadException : public Exception {
+//public:
+//    explicit ThreadException(const char *message) : Exception(message) { }
+//
+//    explicit ThreadException(const std::string &message) : Exception(message) { }
+//};
 
 
 class Thread {
@@ -32,15 +33,14 @@ private:
     Pipe piper;
     Pipe pipew;
     std::mutex mtx;
-
-    void check_started();
-
-    void check_stopped();
+    std::atomic<bool> stop_requested;
 
     void thread_wrapper();
 
 protected:
     virtual void main() = 0;
+
+    void start();
 
     class StopException : public std::exception {
     public:
@@ -52,11 +52,11 @@ public:
 
     virtual ~Thread();
 
-    void start();
-
     void stop();
 
     void join();
+
+    bool joinable();
 
     Frame &reader();
 

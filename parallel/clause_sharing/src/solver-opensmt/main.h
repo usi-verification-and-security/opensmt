@@ -24,7 +24,7 @@ public:
     static Settings Default;
 
     Settings() :
-            redis({.hostname=std::string("*"), .port=6379}), server({.hostname=std::string("*"), .port=3000}) { }
+            redis({.hostname=std::string("127.0.0.1"), .port=6379}), server({.hostname=std::string("127.0.0.1"), .port=3000}) { }
 
     void load(int argc, char **argv);
 
@@ -69,9 +69,10 @@ private:
 protected:
     void main();
 
+    inline void solve();
+
 public:
-    ThreadSolver(std::string &channel, std::string &osmt2) :
-            Thread(), channel(channel), osmt2(osmt2), status(s_Undef), msg(NULL) { }
+    ThreadSolver(std::string &channel, std::string &osmt2);
 
     ~ThreadSolver();
 

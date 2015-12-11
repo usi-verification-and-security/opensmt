@@ -54,7 +54,7 @@ uint32_t Frame::read(char **frame) {
 uint32_t Frame::read(std::string &frame) {
     char *c = NULL;
     uint32_t lenght = this->read(&c);
-    frame.append(c, lenght);
+    frame = std::string(c, lenght);
     free(c);
     return lenght;
 }
