@@ -5,6 +5,28 @@
 #include "Frame.h"
 
 
+Frame Frame::connect(std::string hostname, uint16_t port) {
+    int sockfd;
+    struct sockaddr_in serv_addr;
+    struct hostent *he;
+
+    if ((sockfd = ::socket(AF_INET, SOCK_STREAM, 0)) < 0)
+        throw FrameException("connect: socket init error");
+
+    if ((he = ::gethostbyname(hostname.c_str())) == NULL)
+        throw FrameException("connect: invalid hostname");
+
+    ::bzero(&serv_addr, sizeof(serv_addr));
+    ::memcpy(&serv_addr.sin_addr, he->h_addr_list[0], (size_t) he->h_length);
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(port);
+
+    if (::connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) != 0)
+        throw FrameException("connect: error");
+
+    return Frame(sockfd, true);
+}
+
 Frame::Frame(int fd) :
         fd(fd), close(false) { };
 
@@ -13,7 +35,7 @@ Frame::Frame(int fd, bool close) :
 
 Frame::~Frame() {
     if (this->close)
-        ::close(fd);
+        ::close(this->fd);
 }
 
 uint32_t Frame::readn(char *buffer, uint32_t length) {
@@ -31,13 +53,10 @@ uint32_t Frame::readn(char *buffer, uint32_t length) {
 
 uint32_t Frame::read(char **frame) {
     uint32_t length = 0;
-    char buffer[4];
-    if (this->readn(buffer, 4) != 4)
+    uint8_t buffer[4];
+    if (this->readn((char *) buffer, 4) != 4)
         return 0;
-    length = (uint32_t) buffer[0] << 24 |
-             (uint32_t) buffer[1] << 16 |
-             (uint32_t) buffer[2] << 8 |
-             (uint32_t) buffer[3];
+    length = (uint32_t) buffer[0] << 24 | (uint32_t) buffer[1] << 16 | (uint32_t) buffer[2] << 8 | (uint32_t) buffer[3];
     *frame = (char *) malloc(length);
     if (*frame == NULL)
         throw FrameException("Can't malloc");

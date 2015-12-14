@@ -1,4 +1,4 @@
-set(solver_opensmt_flags "-DIGNORE_DL_THEORYPROPAGATION -DOPTIMIZE -DNDEBUG -DOSMT1_SUBSTITUTION -DCUSTOM_EL_ALLOC -DTERMS_HAVE_EXPLANATIONS -DUSE_GZ -w -lz -lgmpxx -lgmp -lreadline -ltermcap")
+set(solver_opensmt_flags "-DIGNORE_DL_THEORYPROPAGATION -DOPTIMIZE -DNDEBUG -DOSMT1_SUBSTITUTION -DCUSTOM_EL_ALLOC -DTERMS_HAVE_EXPLANATIONS -DUSE_GZ -g -gdwarf-2 -w -lz -lgmpxx -lgmp -lreadline -ltermcap")
 
 add_library(libopensmt STATIC IMPORTED)
 set_target_properties(libopensmt PROPERTIES
@@ -12,5 +12,5 @@ set_target_properties(libsolver_opensmt PROPERTIES
 
 add_executable(solver_opensmt main.cpp)
 
-target_link_libraries(libsolver_opensmt Lib libopensmt ${solver_opensmt_flags})
+target_link_libraries(libsolver_opensmt Lib libopensmt hiredis ${solver_opensmt_flags})
 target_link_libraries(solver_opensmt libsolver_opensmt ${solver_opensmt_flags})

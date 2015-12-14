@@ -7,6 +7,10 @@
 
 #include <iostream>
 #include <unistd.h>
+#include <string.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <netdb.h>
 #include "Exception.h"
 
 
@@ -26,6 +30,8 @@ private:
     inline uint32_t readn(char *buffer, uint32_t length);
 
 public:
+    static Frame connect(std::string hostname, uint16_t port);
+
     Frame(int fd);
 
     Frame(int fd, bool close);

@@ -11,7 +11,14 @@
 #include <netdb.h>
 #include "api/MainSolver.h"
 #include "lib/Thread.h"
+#include "lib/Process.h"
 #include "lib/Message.h"
+#include "hiredis.h"
+
+
+namespace opensmt {
+    extern bool stop;
+}
 
 
 class Settings {
@@ -24,12 +31,15 @@ public:
     static Settings Default;
 
     Settings() :
-            redis({.hostname=std::string("127.0.0.1"), .port=6379}), server({.hostname=std::string("127.0.0.1"), .port=3000}) { }
+            redis({.hostname=std::string("127.0.0.1"), .port=6379}),
+            server({.hostname=std::string("127.0.0.1"), .port=3000}),
+            clause_sharing(true) { }
 
     void load(int argc, char **argv);
 
     Address redis;
     Address server;
+    bool clause_sharing;
 
 };
 
@@ -37,14 +47,17 @@ public:
 class _SMTSolver : public SimpSMTSolver {
 private:
     std::string channel;
+    redisContext *cls_pub;
+    redisContext *cls_sub;
 
     void clausesPublish();
 
     void clausesUpdate();
 
 public:
-    _SMTSolver(std::string &channel, SMTConfig &c, THandler &t) :
-            SimpSMTSolver(c, t), channel(channel) { }
+    _SMTSolver(std::string &channel, SMTConfig &c, THandler &t);
+
+    ~_SMTSolver();
 
 };
 
@@ -61,23 +74,17 @@ public:
 };
 
 
-class ThreadSolver : public Thread {
+class ProcessSolver : public Process {
 private:
-    std::string channel;
     std::string osmt2;
 
 protected:
     void main();
 
-    inline void solve();
-
 public:
-    ThreadSolver(std::string &channel, std::string &osmt2);
+    ProcessSolver(std::string &id, std::string &osmt2);
 
-    ~ThreadSolver();
-
-    sstat status;
-    char *msg;
+    std::string id;
 
 };
 
