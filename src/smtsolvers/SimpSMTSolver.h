@@ -92,7 +92,7 @@ class SimpSMTSolver : public CoreSMTSolver
 #ifdef PRODUCE_PROOF
 	              , const ipartitions_t & in = 0 
 #endif
-		      );
+            ,bool shared=false);
     // Variable mode:
     // 
     void    setFrozen (Var v, bool b); // If a variable is frozen it will not be eliminated.

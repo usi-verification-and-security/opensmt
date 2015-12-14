@@ -4,6 +4,7 @@ SERVER_OUT='./server.out'
 OPENSMT_OUT='./opensmt.out'
 PYTHON='python' # this should be the command to python 2.7
 OPENSMT=../opensmt
+OPENSMT_SOLVER=clause_sharing/build/solver_opensmt
 SERVER_DIR=./server
 SERVER=${SERVER_DIR}/sserver.py
 SERVER_COMMAND=${SERVER_DIR}/command.py
@@ -126,6 +127,7 @@ fi
 
 require ${PYTHON}
 require ${OPENSMT} 'Please compile OpenSMT2'
+require ${OPENSMT_SOLVER} 'Please compile OpenSMT2'
 require ${SERVER}
 require ${SERVER_COMMAND}
 
@@ -160,9 +162,9 @@ echo -n "starting $workers solvers: "
 for i in $(seq ${workers})
 do
     if ${clauses}; then
-        ${OPENSMT} -s127.0.0.1:3000 -r127.0.0.1:6379 >> ${OPENSMT_OUT} 2>&1 &
+        ${OPENSMT_SOLVER} -s127.0.0.1:3000 -r127.0.0.1:6379 >> ${OPENSMT_OUT} 2>&1 &
     else
-        ${OPENSMT} -s127.0.0.1:3000 >> ${OPENSMT_OUT} 2>&1 &
+        ${OPENSMT_SOLVER} -s127.0.0.1:3000 >> ${OPENSMT_OUT} 2>&1 &
     fi
 	echo -n "|"
 done

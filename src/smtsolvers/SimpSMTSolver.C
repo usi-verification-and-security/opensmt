@@ -319,7 +319,7 @@ bool SimpSMTSolver::addClause( vec<Lit> & ps
 #ifdef PRODUCE_PROOF
                              , const ipartitions_t & in 
 #endif
-			     )
+        , bool shared   )
 {
   //=================================================================================================
   // Added code

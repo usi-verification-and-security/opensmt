@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8)
 project(clause_sharing C CXX)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-set(CMAKE_CXX_COMPILER "g++")
+set(CMAKE_CXX_COMPILER "c++")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -g -gdwarf-2")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w -O3 -std=c++11")
@@ -47,7 +47,7 @@ include_directories(
 
 add_subdirectory(${SRC}/deps)
 add_subdirectory(${SRC}/lib)
-#add_subdirectory(${SRC}/ClauseSharing)
+#add_subdirectory(${SRC}/heuristic)
 add_subdirectory(${SRC}/solver-opensmt)
 
 
