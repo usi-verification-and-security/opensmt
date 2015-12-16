@@ -25,7 +25,7 @@ public:
 class Frame {
 private:
     int fd;
-    bool close;
+    bool to_be_closed;
 
     inline uint32_t readn(char *buffer, uint32_t length);
 
@@ -34,7 +34,7 @@ public:
 
     Frame(int fd);
 
-    Frame(int fd, bool close);
+    Frame(int fd, bool to_be_closed);
 
     ~Frame();
 
@@ -45,6 +45,8 @@ public:
     uint32_t write(const char *frame, uint32_t length);
 
     uint32_t write(std::string &frame);
+
+    void close();
 
     int file_descriptor();
 

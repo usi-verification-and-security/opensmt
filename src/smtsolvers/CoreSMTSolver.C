@@ -3018,7 +3018,7 @@ void CoreSMTSolver::printStatistics( ostream & os )
   os << "; Variables................: " << nVars() << endl;
 }
 
-void CoreSMTSolver::clausesPublish() {
+//void CoreSMTSolver::clausesPublish() {
 //    if (this->clauses_sharing.channel.empty() || this->clauses_sharing.c_cls_pub == NULL || this->clauses_sharing.c_cls_pub->err != 0)
 //        return;
 //    std::string s;
@@ -3054,10 +3054,10 @@ void CoreSMTSolver::clausesPublish() {
 //    this->flush(this->c_cls_pub);
 //    if (this->c_cls_pub->err != 0)
 //        cerr << "Redis publish connection lost\n"; */
-}
+//}
 
 
-void CoreSMTSolver::clausesUpdate() {
+//void CoreSMTSolver::clausesUpdate() {
 //    if (this->clauses_sharing.channel.empty() || this->clauses_sharing.c_cls_sub == NULL || this->clauses_sharing.c_cls_sub->err != 0)
 //        return;
 //    /* non block
@@ -3120,4 +3120,4 @@ void CoreSMTSolver::clausesUpdate() {
 //    }
 //*/
 //    freeReplyObject(reply);
-}
+//}

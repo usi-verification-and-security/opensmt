@@ -343,7 +343,7 @@ class WorkerServer(Server):
                 for tid in tid_workers:
                     if tid_workers[tid]:
                         job_next.add_history_item(('+', len(tid_workers[tid]), tid))
-                        self._multicast('S{}\\{}'.format(jid_next, job_next.tasks[tid].code), to=tid_workers[tid])
+                        self._multicast('S{}.{}\\{}'.format(jid_next, tid, job_next.tasks[tid].code), to=tid_workers[tid])
             else:
                 for sock in workers:
                     self._status[sock] = (job_next, 0)

@@ -63,13 +63,14 @@ const ckval ck_Unsat = toCkval( 0);
 //
 class Cnfizer
 {
+public:
+    SimpSMTSolver&      solver;
 protected:
     SMTConfig&          config;
     Logic&              logic;
     TermMapper&         tmap;            // Map vars to proper terms
 
     THandler&           thandler;
-    SimpSMTSolver&      solver;
     bool                s_empty;
 //    Egraph              uf_solver;
 

@@ -73,7 +73,7 @@ then
   config_optimization_preproc="-DOPTIMIZE -DNDEBUG"
 else
   AM_CFLAGS='-g -O0'
-  AM_CXXFLAGS='-g -O0'
+  AM_CXXFLAGS='-g -gdwarf-2 -O0'
   config_optimization_preproc=""
 fi
 AM_CONDITIONAL([ENABLE_OPTIMIZATION], [test "$enable_optimization" = "yes"])

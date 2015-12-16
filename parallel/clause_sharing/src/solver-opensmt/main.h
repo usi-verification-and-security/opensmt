@@ -50,41 +50,43 @@ private:
     redisContext *cls_pub;
     redisContext *cls_sub;
 
-    void clausesPublish();
+    void inline clausesPublish();
 
-    void clausesUpdate();
+    void inline clausesUpdate();
 
 public:
-    _SMTSolver(std::string &channel, SMTConfig &c, THandler &t);
+    _SMTSolver(Settings &s, std::string &channel, SMTConfig &c, THandler &t);
 
     ~_SMTSolver();
 
 };
 
-
-class _Solver : public MainSolver {
-private:
-    _SMTSolver sat_solver;
-    THandler &thandler;
-
-public:
-    _Solver(std::string &channel, Theory &t, SMTConfig &c) :
-            MainSolver(t, c), thandler(t.getTHandler()), sat_solver(channel, c, thandler) { }
-
-};
+//
+//class _Solver : public MainSolver {
+//protected:
+////    THandler &thandler;
+////    Tseitin ts;
+////    Logic &logic;
+////    TermMapper &tmap;
+//
+//public:
+//    _Solver(Settings &s, std::string &channel, Theory &t, SMTConfig &c, _SMTSolver *solver) :
+//            MainSolver(t,c,solver)
+//
+//};
 
 
 class ProcessSolver : public Process {
 private:
     std::string osmt2;
+    std::string channel;
+    Settings settings;
 
 protected:
     void main();
 
 public:
-    ProcessSolver(std::string &id, std::string &osmt2);
-
-    std::string id;
+    ProcessSolver(Settings &settings, std::string &channel, std::string &osmt2);
 
 };
 

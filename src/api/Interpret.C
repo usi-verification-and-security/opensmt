@@ -141,12 +141,12 @@ bool Interpret::interp(ASTNode& n) {
         } else if (strcmp(logic_name, QF_UF.str) == 0) {
             theory = new UFTheory(config);
             logic = &(theory->getLogic());
-            main_solver = new MainSolver(*theory, config);
+            main_solver = new MainSolver(*theory, config, new SimpSMTSolver(config, theory->getTHandler()));
             main_solver->initialize();
         } else if (strcmp(logic_name, QF_LRA.str) == 0) {
             theory = new LRATheory(config);
             logic = &(theory->getLogic());
-            main_solver = new MainSolver(*theory, config);
+            main_solver = new MainSolver(*theory, config, new SimpSMTSolver(config, theory->getTHandler()));
             main_solver->initialize();
         } else {
             notify_formatted(true, "unknown logic %s", logic_name);

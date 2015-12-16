@@ -23,31 +23,21 @@ int loop() {
         if (solver != NULL)
             FD_SET(solver->reader().file_descriptor(), &set);
         if (select(FD_SETSIZE, &set, NULL, NULL, NULL) == -1)
-            throw "Select error";
+            throw Exception("select error");
 
         if (solver != NULL && FD_ISSET(solver->reader().file_descriptor(), &set)) {
             solver->reader().read(frame);
-            Message m;
-            m.load(frame);
-            char *buffer = NULL;
-            int buffer_length;
-            if (m.header["msg"].empty())
-                buffer_length = asprintf(&buffer,
-                                         "S%s\\%d",
-                                         solver->id.c_str(),
-                                         (int) m.header["status"][0]
-                );
-            else
-                buffer_length = asprintf(&buffer,
-                                         "E%s\\%s",
-                                         solver->id.c_str(),
-                                         m.header["msg"].c_str()
-                );
-            if (buffer_length < 0) {
-                throw "asprintf error";
-            }
-            server.write(buffer, (uint32_t) buffer_length);
-            free(buffer);
+            Message message;
+            message.load(frame);
+            frame.clear();
+            frame.append(message.header["msg"].empty() ? "S" : "E");
+            uint8_t i;
+            for (i = 0; message.header["channel"][i] != '.' && i < (uint8_t) -1 &&
+                        i < message.header["channel"].size(); i++) { }
+            frame.append(message.header["channel"].substr(0, (size_t) i));
+            frame.append("\\");
+            frame.append(message.header["msg"].empty() ? message.header["status"] : message.header["msg"]);
+            server.write(frame);
             delete solver;
             solver = NULL;
         }
@@ -56,21 +46,20 @@ int loop() {
             try {
                 server.read(frame);
             } catch (FrameException) {
-                throw "Server connection lost. Exit now.";
+                throw Exception("Server connection lost. Exit now.");
             }
-            std::string channel, osmt2;
+            std::string id, osmt2;
             switch (frame[0]) {
                 case '!':
-                    throw "Server requested to stop. Exit now.";
+                    delete solver;
+                    throw Exception("Server requested to stop. Exit now.");
                 case 'S':
                     uint8_t i;
                     for (i = 2; frame[i] != '\\' && i < (uint8_t) -1 && i < frame.size(); i++) { }
-                    channel = frame.substr(1, (size_t) i - 1);
+                    id = frame.substr(1, (size_t) i - 1);
                     osmt2 = frame.substr(i + 1);
-                    if (solver != NULL) {
-                        delete solver;
-                    }
-                    solver = new ProcessSolver(channel, osmt2);
+                    delete solver;
+                    solver = new ProcessSolver(Settings::Default, id, osmt2);
                     break;
                 case 'Q':
                     if (solver != NULL) {
@@ -79,12 +68,40 @@ int loop() {
                     }
                     break;
                 default:
-                    std::cerr << "Warning: server sent invalid message.\n";
+                    std::cerr << "warning: server sent invalid message.\n";
             }
         }
 
     }
 }
+
+class A {
+public:
+    A() { };
+
+    void z() {
+        this->f();
+    }
+
+    virtual void f() {
+        std::cout << "A\n";
+    }
+};
+
+class B : public A {
+public:
+    B() : A() { };
+};
+
+class C : public B {
+public:
+    C() : B() { };
+
+    void f() {
+        std::cout << "C\n";
+    }
+};
+
 
 int main(int argc, char **argv) {
     try {
@@ -92,10 +109,16 @@ int main(int argc, char **argv) {
         loop();
     }
     catch (FrameException ex) {
+        std::cerr << "Frame exception: " << ex.what() << "\n";
+    }
+    catch (ProcessException ex) {
+        std::cerr << "Process exception: " << ex.what() << "\n";
+    }
+    catch (Exception ex) {
         std::cerr << ex.what() << "\n";
     }
-    catch (char const *ex) {
-        std::cerr << ex << "\n";
+    catch (...) {
+        std::cerr << "exception.\n";
     }
 }
 

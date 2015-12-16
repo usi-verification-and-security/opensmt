@@ -928,8 +928,8 @@ void MainSolver::deserializeSolver(const int* termstore_buf, const int* symstore
 
     const vec<VarPtPair>& map = cs.getMap();
     for (int i = 0; i < map.size(); i++) {
-        if (i >= sat_solver.nVars()) {
-            int j = sat_solver.newVar();
+        if (i >= ts.solver.nVars()) {
+            int j = ts.solver.newVar();
             assert(j == i);
         }
         if (tmap.nVars() > i)
@@ -938,7 +938,7 @@ void MainSolver::deserializeSolver(const int* termstore_buf, const int* symstore
             tmap.addBinding(i, map[i].tr);
 
             if (logic.isTheoryTerm(map[i].tr))
-                sat_solver.setFrozen(i, true);
+                ts.solver.setFrozen(i, true);
         }
     }
 #if defined(TERMS_HAVE_EXPLANATIONS)
@@ -951,7 +951,7 @@ void MainSolver::deserializeSolver(const int* termstore_buf, const int* symstore
     }
 #endif
     DimacsParser dp;
-    dp.parse_DIMACS_main(cs.getCnf(), sat_solver);
+    dp.parse_DIMACS_main(cs.getCnf(), ts.solver);
 
     binary_init = true;
 
@@ -976,12 +976,12 @@ bool MainSolver::writeSolverState(int* &buf, int &buf_sz, bool compress, char** 
 
 bool MainSolver::writeSolverSplits(const char* file, char** msg)
 {
-    for (int i = 0; i < sat_solver.splits.size(); i++) {
+    for (int i = 0; i < ts.solver.splits.size(); i++) {
         char* name;
         asprintf(&name, "%s-%02d.osmt2", file, i);
         CnfState cs;
         ts.getVarMapping(cs);
-        sat_solver.splits[i].cnfToString(cs);
+        ts.solver.splits[i].cnfToString(cs);
 
         if (!writeState(name, cs, msg)) {
             free(name);
@@ -994,11 +994,11 @@ bool MainSolver::writeSolverSplits(const char* file, char** msg)
 
 bool MainSolver::writeSolverSplit(int s, int* &split, int &split_sz, bool compress, char** msg)
 {
-    assert(s < sat_solver.splits.size());
+    assert(s < ts.solver.splits.size());
 
     CnfState cs;
     ts.getVarMapping(cs);
-    sat_solver.splits[s].cnfToString(cs);
+    ts.solver.splits[s].cnfToString(cs);
     if (!writeState(split, split_sz, compress, cs, msg)) {
         return false;
     }
@@ -1008,9 +1008,9 @@ bool MainSolver::writeSolverSplit(int s, int* &split, int &split_sz, bool compre
 /*
 bool MainSolver::writeSolverSplits(int** &splits, char** msg)
 {
-    splits = (int **)malloc(sat_solver.splits.size() * sizeof(int *));
+    splits = (int **)malloc(ts.solver.splits.size() * sizeof(int *));
 
-    for (int i = 0; i < sat_solver.splits.size(); i++) {
+    for (int i = 0; i < ts.solver.splits.size(); i++) {
         if (!writeSolverSplit(i, splits[i], msg)) {
             for (int j=0; j<i; j++){
                 free(splits[j]);
@@ -1050,9 +1050,9 @@ sstat MainSolver::solve()
         return status;
     }
 
-    split_threads = new vec<int>[sat_solver.splits.size()];
-    results = new sstat[sat_solver.splits.size()];
-    for (i=0; i<sat_solver.splits.size(); i++) {
+    split_threads = new vec<int>[ts.solver.splits.size()];
+    results = new sstat[ts.solver.splits.size()];
+    for (i=0; i<ts.solver.splits.size(); i++) {
         results[i] = s_Undef;
     }
 
@@ -1062,7 +1062,7 @@ sstat MainSolver::solve()
     threads = new std::thread[config.parallel_threads];
     for (i=0; i<config.parallel_threads; i++) {
         this->parallel_solvers.push(NULL);
-        r = i%sat_solver.splits.size();
+        r = i%ts.solver.splits.size();
         split_threads[r].push(i);
         threads[i] = std::thread(&MainSolver::solve_split,
                                  this,
@@ -1094,7 +1094,7 @@ sstat MainSolver::solve()
             }
             r=-1;
             min = config.parallel_threads;
-            for (i=0; i<sat_solver.splits.size(); i++) {
+            for (i=0; i<ts.solver.splits.size(); i++) {
                 if (results[i]!=s_Undef){
                     continue;
                 }
@@ -1174,7 +1174,7 @@ void MainSolver::solve_split(int i, int s, int wpipefd, std::mutex *mtx)
     char* msg;
     assert(this->writeSolverSplit(s,split,split_sz,true,&msg));
 
-    MainSolver* main_solver = new MainSolver(*theory, config);
+    MainSolver* main_solver = new MainSolver(*theory, config, new SimpSMTSolver(config, theory->getTHandler()));
     main_solver->initialize();
 
     main_solver->readSolverState(split,split_sz,true, &msg);

@@ -7,7 +7,7 @@
 
 #include <iostream>
 #include "Sort.h"
-#include "lib/Process.h"
+#include "lib/Thread.h"
 #include "lib/Message.h"
 
 extern "C" {
@@ -30,27 +30,25 @@ public:
     void load(int argc, char **argv);
 
     Address redis;
-    std::string channel;
 
 };
 
 
-class ClauseSharing : public Thread {
+class Heuristic : public Thread {
 
 private:
-    std::string channel;
     redisContext *context_pub;
     redisContext *context_sub;
 
-    static redisContext *Connect(std::string &hostname, int port);
+    static redisContext *Connect(std::string &hostname, uint16_t port);
 
 protected:
     void main();
 
 public:
-    ClauseSharing(std::string &channel, std::string &hostname, uint16_t port);
+    Heuristic(std::string &hostname, uint16_t port);
 
-    ~ClauseSharing();
+    ~Heuristic();
 
 };
 

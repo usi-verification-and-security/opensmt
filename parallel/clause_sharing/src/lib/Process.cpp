@@ -13,25 +13,19 @@ Process::~Process() {
     this->join();
 }
 
-void Process::process_wrapper() {
-    try {
-        this->main();
-        return;
-    } catch (StopException) { }
-}
-
 void Process::start() {
     this->process = fork();
     if (this->process < 0)
         throw ProcessException("fork error");
     if (this->process == 0) {
-//        ::close(this->piper.writer().file_descriptor());
-//        ::close(this->pipew.reader().file_descriptor());
-        this->process_wrapper();
+        this->piper.writer().close();
+        this->pipew.reader().close();
+        this->main();
+        exit(0);
     }
     else {
-//        ::close(this->piper.reader().file_descriptor());
-//        ::close(this->pipew.writer().file_descriptor());
+        this->piper.reader().close();
+        this->pipew.writer().close();
     }
 }
 

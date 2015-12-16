@@ -821,9 +821,9 @@ class CoreSMTSolver : public SMTSolver
     lbool   lookaheadSplit2(int d);
     void    printTrace() const;
 
-private:
-    void clausesPublish();
-    void clausesUpdate();
+protected:
+    virtual inline void clausesPublish(){};
+    virtual inline void clausesUpdate(){};
 };
 
 //=================================================================================================

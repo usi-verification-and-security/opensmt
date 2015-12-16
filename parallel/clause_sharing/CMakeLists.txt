@@ -47,7 +47,7 @@ include_directories(
 
 add_subdirectory(${SRC}/deps)
 add_subdirectory(${SRC}/lib)
-#add_subdirectory(${SRC}/heuristic)
+add_subdirectory(${SRC}/heuristic)
 add_subdirectory(${SRC}/solver-opensmt)
 
 

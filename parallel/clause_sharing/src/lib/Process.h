@@ -27,8 +27,6 @@ public:
 
 class Process {
 private:
-    void process_wrapper();
-
     pid_t process;
     Pipe piper;
     Pipe pipew;

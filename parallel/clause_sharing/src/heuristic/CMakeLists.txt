@@ -1,4 +1,4 @@
-add_library(libheuristic ClauseSharing.cpp)
+add_library(libheuristic Settings.cpp Heuristic.cpp)
 
 target_link_libraries(libheuristic hiredis Lib)
 

@@ -5,22 +5,22 @@
 #include "main.h"
 
 
-_SMTSolver::_SMTSolver(std::string &channel, SMTConfig &c, THandler &t) :
+_SMTSolver::_SMTSolver(Settings &s, std::string &channel, SMTConfig &c, THandler &t) :
         SimpSMTSolver(c, t), channel(channel), cls_pub(NULL), cls_sub(NULL) {
-    if (Settings::Default.clause_sharing) {
+    if (s.clause_sharing) {
         if (this->channel.size() <= 0)
-            throw "channel empty";
+            throw Exception("channel empty");
         struct timeval timeout = {1, 500000}; // 1.5 seconds
-        this->cls_pub = redisConnectWithTimeout(Settings::Default.redis.hostname.c_str(),
-                                                Settings::Default.redis.port,
+        this->cls_pub = redisConnectWithTimeout(s.redis.hostname.c_str(),
+                                                s.redis.port,
                                                 timeout);
-        this->cls_sub = redisConnectWithTimeout(Settings::Default.redis.hostname.c_str(),
-                                                Settings::Default.redis.port,
+        this->cls_sub = redisConnectWithTimeout(s.redis.hostname.c_str(),
+                                                s.redis.port,
                                                 timeout);
         if (this->cls_pub == NULL || this->cls_sub == NULL) {
             redisFree(this->cls_pub);
             redisFree(this->cls_sub);
-            throw "can't use clause sharing!";
+            throw Exception("redis error");
         }
     }
 }
@@ -34,9 +34,11 @@ void _SMTSolver::clausesPublish() {
     if (this->cls_pub == NULL)
         return;
     std::string s;
+    uint32_t clauses_sent=0;
     for (int i = 0; i < this->learnts.size(); i++) {
         Clause &c = *this->learnts[i];
         if (c.mark() != 3) {
+            clauses_sent++;
             clauseSerialize(c, s);
             c.mark(3);
         }
@@ -56,7 +58,7 @@ void _SMTSolver::clausesPublish() {
     std::string d;
     m.dump(d);
 
-    redisReply *reply = (redisReply *) redisCommand(this->cls_pub, "PUBLISH %s %b",
+    redisReply *reply = (redisReply *) redisCommand(this->cls_pub, "PUBLISH clauses.%s %b",
                                                     this->channel.c_str(),
                                                     d.c_str(),
                                                     d.length());
@@ -68,6 +70,7 @@ void _SMTSolver::clausesPublish() {
         return;
     }
     freeReplyObject(reply);
+    std::cerr << "published\t" << clauses_sent << "\tclauses\n";
     /* non block
     redisCommand(this->c_cls_pub, "PUBLISH %s.out %b", this->channel, d.c_str(), d.length());
     this->flush(this->c_cls_pub);
@@ -89,7 +92,7 @@ void _SMTSolver::clausesUpdate() {
     assert (std::string(reply->element[0]->str).compare("message") == 0);
     std::string s = std::string(reply->element[2]->str, reply->element[2]->len); */
 //ZREVRANGEBYSCORE %s +inf 0 LIMIT 0 10000
-    redisReply *reply = (redisReply *) redisCommand(this->cls_sub, "SRANDMEMBER %s 10000",
+    redisReply *reply = (redisReply *) redisCommand(this->cls_sub, "SRANDMEMBER clauses.%s 10000",
                                                     this->channel.c_str());
     if (reply == NULL || reply->type == REDIS_REPLY_ERROR) {
         std::cerr << "error during clause updating\n";
@@ -127,6 +130,8 @@ void _SMTSolver::clausesUpdate() {
         if (!f)
             this->addClause(lits, true);
     }
+
+    std::cerr << "updated\t\t" << reply->elements << "\tclauses\n";
 /*
     if (reply->type != REDIS_REPLY_STRING)
         return;
@@ -146,13 +151,13 @@ void _SMTSolver::clausesUpdate() {
 }
 
 
-ProcessSolver::ProcessSolver(std::string &id, std::string &osmt2) :
-        Process(), id(id), osmt2(osmt2) {
+ProcessSolver::ProcessSolver(Settings &settings, std::string &channel, std::string &osmt2) :
+        Process(), channel(channel), osmt2(osmt2), settings(settings) {
     this->start();
 }
 
 void ProcessSolver::main() {
-    std::cout << "Started new job\n";
+    std::cerr << "Started job " << this->channel << "\n";
 
     sstat status = s_Undef;
     char *msg = NULL;
@@ -164,12 +169,15 @@ void ProcessSolver::main() {
 
     Theory *theory = new LRATheory(config);
 
-    _Solver *solver = NULL;
+    MainSolver *solver = NULL;
     try {
-        solver = new _Solver(this->id, *theory, config);
+        solver = new MainSolver(
+                *theory,
+                config,
+                new _SMTSolver(this->settings, this->channel, config, theory->getTHandler()));
     }
-    catch (char const *ex) {
-        msg = strdup(ex);
+    catch (Exception ex) {
+        msg = strdup(ex.what());
         goto done;
     }
 
@@ -184,11 +192,12 @@ void ProcessSolver::main() {
 
     done:
 
-    Message m;
-    m.header["status"] = std::string(1, status.getValue());
-    m.header["msg"] = msg == NULL ? std::string() : std::string(msg);
+    Message message;
+    message.header["status"] = std::to_string((int) status.getValue());
+    message.header["msg"] = msg == NULL ? std::string() : std::string(msg);
+    message.header["channel"] = this->channel;
     std::string s;
-    m.dump(s);
+    message.dump(s);
     this->writer().write(s);
     free(msg);
 

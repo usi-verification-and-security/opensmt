@@ -11,15 +11,15 @@ void print_clause(vec<Lit> &lits) {
 int main(int argc, char **argv) {
     try {
         Settings::Default.load(argc, argv);
-        ClauseSharing *cs = new ClauseSharing(Settings::Default.channel,
-                                              (char *) Settings::Default.redis_hostname.c_str(),
-                                              Settings::Default.redis_port);
+        Heuristic *cs = new Heuristic(Settings::Default.redis.hostname,
+                                      Settings::Default.redis.port);
+        cs->join();
     }
     catch (FrameException ex) {
-        std::cerr << ex.what() << "\n";
+        std::cerr << "Frame exception: " << ex.what() << "\n";
     }
-    catch (char const *ex) {
-        std::cerr << ex << "\n";
+    catch (Exception ex) {
+        std::cerr << ex.what() << "\n";
     }
 
 

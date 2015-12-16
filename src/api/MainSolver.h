@@ -79,7 +79,7 @@ class MainSolver {
     SMTConfig&    config;
     THandler&     thandler;
     vec<DedElem>  deductions;
-    SimpSMTSolver sat_solver;
+    //SimpSMTSolver sat_solver;
     Tseitin       ts;
     vec<PTRef>    formulas;
     sstat         status;     // The status of the last solver call (initially s_Undef)
@@ -114,22 +114,26 @@ class MainSolver {
     vec<MainSolver*> parallel_solvers;
 
   public:
-    MainSolver(Theory& theory, SMTConfig& c)
+    MainSolver(Theory& theory, SMTConfig& c, SimpSMTSolver *s )
         : logic(theory.getLogic())
         , tmap(theory.getTMap())
         , config(c)
         , status(s_Undef)
         , thandler(theory.getTHandler())
-        , sat_solver( config , thandler )
+        //, sat_solver(config, thandler)
         , ts( config
             , logic
             , tmap
             , thandler
-            , sat_solver )
+            , *s )
         , binary_init(false)
 {
     formulas.push(logic.getTerm_true());
 }
+
+    ~MainSolver(){
+        delete &this->ts.solver;
+    }
 
     sstat insertFormula(PTRef root, char** msg) {
         if (logic.getSortRef(root) != logic.getSort_bool()) {
@@ -139,11 +143,11 @@ class MainSolver {
         formulas.push(root);
         return s_Undef; }
 
-    void initialize() { sat_solver.initialize(); ts.initialize(); }
+    void initialize() { ts.solver.initialize(); ts.initialize(); }
 
     sstat simplifyFormulas(char** err_msg);
     sstat solve           ();
-    sstat lookaheadSplit  (int d)  { return status = sstat(sat_solver.lookaheadSplit2(d)); }
+    sstat lookaheadSplit  (int d)  { return status = sstat(ts.solver.lookaheadSplit2(d)); }
     sstat getStatus       ()       { return status; }
     bool  solverEmpty     () const { return ts.solverEmpty(); }
     bool  readSolverState  (const char* file, char** msg);
@@ -159,7 +163,7 @@ class MainSolver {
     lbool getTermValue     (PTRef tr) const { return ts.getTermValue(tr); }
     ValPair getValue       (PTRef tr) const;
     void solve_split(int i,int s, int wpipefd, std::mutex *mtx);
-    void stop() { sat_solver.stop = true; }
+    void stop() { ts.solver.stop = true; }
 };
 
 #endif //

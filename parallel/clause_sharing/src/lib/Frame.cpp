@@ -11,10 +11,10 @@ Frame Frame::connect(std::string hostname, uint16_t port) {
     struct hostent *he;
 
     if ((sockfd = ::socket(AF_INET, SOCK_STREAM, 0)) < 0)
-        throw FrameException("connect: socket init error");
+        throw FrameException("socket init error");
 
     if ((he = ::gethostbyname(hostname.c_str())) == NULL)
-        throw FrameException("connect: invalid hostname");
+        throw FrameException("invalid hostname");
 
     ::bzero(&serv_addr, sizeof(serv_addr));
     ::memcpy(&serv_addr.sin_addr, he->h_addr_list[0], (size_t) he->h_length);
@@ -22,20 +22,19 @@ Frame Frame::connect(std::string hostname, uint16_t port) {
     serv_addr.sin_port = htons(port);
 
     if (::connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) != 0)
-        throw FrameException("connect: error");
+        throw FrameException("connect error");
 
     return Frame(sockfd, true);
 }
 
 Frame::Frame(int fd) :
-        fd(fd), close(false) { };
+        fd(fd), to_be_closed(false) { };
 
-Frame::Frame(int fd, bool close) :
-        fd(fd), close(close) { };
+Frame::Frame(int fd, bool to_be_closed) :
+        fd(fd), to_be_closed(to_be_closed) { };
 
 Frame::~Frame() {
-    if (this->close)
-        ::close(this->fd);
+    this->close();
 }
 
 uint32_t Frame::readn(char *buffer, uint32_t length) {
@@ -43,9 +42,9 @@ uint32_t Frame::readn(char *buffer, uint32_t length) {
     while (length > r) {
         ssize_t t = ::read(this->fd, &buffer[r], length - r);
         if (t == 0)
-            throw FrameException("File descriptor closed");
+            throw FrameException("file descriptor closed");
         if (t < 0)
-            throw FrameException("File descriptor error");
+            throw FrameException("file descriptor error");
         r += t;
     }
     return r;
@@ -59,11 +58,11 @@ uint32_t Frame::read(char **frame) {
     length = (uint32_t) buffer[0] << 24 | (uint32_t) buffer[1] << 16 | (uint32_t) buffer[2] << 8 | (uint32_t) buffer[3];
     *frame = (char *) malloc(length);
     if (*frame == NULL)
-        throw FrameException("Can't malloc");
+        throw FrameException("can't malloc");
     try {
         length = this->readn(*frame, length);
     }
-    catch (char const *ex) {
+    catch (FrameException ex) {
         free(*frame);
         throw ex;
     }
@@ -85,14 +84,22 @@ uint32_t Frame::write(const char *frame, uint32_t length) {
     buffer[1] = (char) (length >> 16);
     buffer[0] = (char) (length >> 24);
     if (::write(this->fd, buffer, 4) != 4)
-        throw FrameException("Write error");
+        throw FrameException("write error");
     if ((size_t) ::write(this->fd, frame, length) != length)
-        throw FrameException("Write error");
+        throw FrameException("write error");
     return length;
 }
 
 uint32_t Frame::write(std::string &frame) {
     return this->write(frame.c_str(), (uint32_t) frame.size());
+}
+
+void Frame::close() {
+    if (!this->to_be_closed)
+        return;
+    ::close(this->fd);
+    this->to_be_closed = false;
+    this->fd = -1;
 }
 
 int Frame::file_descriptor() {
@@ -106,7 +113,7 @@ Pipe::Pipe(int r, int w) :
 Pipe Pipe::New() {
     int fd[2];
     if (::pipe(fd) == -1)
-        throw FrameException("Pipe creation error");
+        throw FrameException("pipe creation error");
     return Pipe(fd[0], fd[1]);
 }
 

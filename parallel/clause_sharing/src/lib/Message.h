@@ -49,7 +49,7 @@ template<typename T>
 void clauseSerialize(T &lits, std::string &s) {
     if (lits.size() <= 0)
         return;
-    s.reserve((unsigned) 4 + 4 * lits.size());
+    s.reserve(s.size() + (unsigned) 4 + 4 * lits.size());
     int2str((uint32_t) lits.size(), s);
     for (int i = 0; i < lits.size(); i++) {
         int2str((uint32_t) toInt(lits[i]), s);
