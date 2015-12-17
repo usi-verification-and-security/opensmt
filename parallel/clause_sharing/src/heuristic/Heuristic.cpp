@@ -14,17 +14,18 @@ redisContext *Heuristic::Connect(std::string &hostname, uint16_t port) {
     context = redisConnectWithTimeout(hostname.c_str(), port, timeout);
     if (context == NULL || context->err) {
         if (context) {
+            std::string err = std::string("Connection error: ") + std::string(context->errstr);
             redisFree(context);
-            throw "Connection error"; // << context->errstr << "\n";
+            throw Exception(err);
         } else {
-            throw "Connection error: can't allocate redis context";
+            throw Exception("Connection error: can't allocate redis context");
         }
     }
 
     /* PING */
     reply = (redisReply *) redisCommand(context, "PING");
     if (reply == NULL) {
-        throw "PING to the server failed";
+        throw Exception("PING to the server failed");
     }
     freeReplyObject(reply);
 
@@ -37,7 +38,7 @@ Heuristic::Heuristic(std::string &hostname, uint16_t port) :
     this->context_sub = Heuristic::Connect(hostname, port);
     redisReply *reply = (redisReply *) redisCommand(context_pub, "KEYS clauses.*");
     if (reply == NULL)
-        throw "redis error";
+        throw Exception("redis error");
     for (size_t i = 0; i < reply->elements; i++) {
         redisReply *reply_del = (redisReply *) redisCommand(context_pub, "DEL %s", reply->element[i]->str);
         freeReplyObject(reply_del);

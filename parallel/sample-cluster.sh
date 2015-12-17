@@ -158,9 +158,9 @@ echo "SERVER stdout will be redirected to $SERVER_OUT"
 echo
 echo -n 'starting server... '
 if ${clauses}; then
-    ${PYTHON} ${SERVER} -r ${HEURISTIC} -c ${cport} -w ${wport} -t ${timeout} -f ${SERVER_DIR}/${mode} -s ${splits} -o ${OPENSMT} > ${SERVER_OUT} 2>/dev/null &
+    ${PYTHON} ${SERVER} -r ${HEURISTIC} -c ${cport} -w ${wport} -t ${timeout} -d -f ${SERVER_DIR}/${mode} -s ${splits} -o ${OPENSMT} > ${SERVER_OUT} 2>/dev/null &
 else
-    ${PYTHON} ${SERVER} -c ${cport} -w ${wport} -t ${timeout} -f ${SERVER_DIR}/${mode} -s ${splits} -o ${OPENSMT} > ${SERVER_OUT} 2>/dev/null &
+    ${PYTHON} ${SERVER} -c ${cport} -w ${wport} -t ${timeout} -d -f ${SERVER_DIR}/${mode} -s ${splits} -o ${OPENSMT} > ${SERVER_OUT} 2>/dev/null &
 fi
 server_pid=$!
 sleep 1
@@ -169,7 +169,10 @@ echo -n "starting batch "
 sbatch ${sbatch}
 success ' done'
 echo -n 'sending the files to the server... '
-${PYTHON} ${SERVER_COMMAND} 127.0.0.1 -p ${cport} $@
+${PYTHON} ${SERVER_COMMAND} 127.0.0.1 $@
 success 'done'
-
+echo -n 'waiting for all the problems to be solved... '
+wait ${server_pid}
+success 'done!'
+info "The results are in $SERVER_OUT"
 success 'bye'

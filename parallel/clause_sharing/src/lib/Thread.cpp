@@ -62,7 +62,7 @@ void Thread::join() {
 }
 
 bool Thread::joinable() {
-    return this->thread->joinable();
+    return this->thread != NULL && this->thread->joinable();
 }
 
 Frame &Thread::reader() {

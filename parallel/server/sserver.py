@@ -7,11 +7,13 @@ import optparse
 import select
 import struct
 import threading
+import signal
 import sys
 import time
 import os
 import pickle
 import tempfile
+import atexit
 
 __author__ = 'Matteo Marescotti'
 
@@ -150,7 +152,14 @@ class WorkerServer(Server):
 
     def __init__(self, port, timeout):
         self._timeout = timeout
+        if options.heuristic:
+            self.heuristic = subprocess.Popen(options.heuristic.split(' '))
         super(WorkerServer, self).__init__(port)
+
+    def quit(self):
+        if self.heuristic:
+            self.heuristic.kill()
+        os._exit(0)
 
     def handle_timeout(self):
         if not self._timeout:
@@ -175,7 +184,7 @@ class WorkerServer(Server):
             self.handle_command('A!')
             for sock in self._status:
                 sock.write('!')
-            os._exit(0)
+            self.quit()
         self.output.flush()
 
     def handle_message(self, sock, message):
@@ -202,7 +211,7 @@ class WorkerServer(Server):
                     done = True
         if done and options.done_exit:
             self.handle_command('A!')
-            os._exit(0)
+            self.quit()
 
     def handle_close(self, sock):
         with self._lock:
@@ -245,6 +254,8 @@ class WorkerServer(Server):
                 self._jobs[jid]['status'] = 0 if last else -2
                 self._commit()
             elif message[0] == 'Q':
+                if message[1] == '!':
+                    self.quit()
                 jid = int(message[1:])
                 self._jobs[jid]['status'] = -1
                 workers = self._swap_jobs(jid, -1)  # from old JOB to IDLE
@@ -301,16 +312,16 @@ class WorkerServer(Server):
         jids = [jid for jid in self._jobs if jid >= 0 and self._jobs[jid]['status'] == 1]
         if not jids:
             jids = [jid for jid in self._jobs if jid >= 0 and self._jobs[jid]['status'] == 0]
-            if jids and options.heuristic:
-                if self.heuristic:
-                    self.heuristic.kill()
-                self.heuristic = subprocess.Popen(options.heuristic.split(' '))
+            #if jids and options.heuristic:
+            #    if self.heuristic:
+            #        self.heuristic.kill()
+            #    self.heuristic = subprocess.Popen(options.heuristic.split(' '))
         if jids:
             self._swap_jobs(-1, jids[0])
             return [jids[0]]
         else:
-            if self.heuristic:
-                self.heuristic.kill()
+            #if self.heuristic:
+            #    self.heuristic.kill()
             return []
 
     def _swap_jobs(self, jid_prev, jid_next, filter=None):
@@ -483,4 +494,5 @@ if __name__ == '__main__':
     try:
         cserver.run_forever()
     except:
+        wserver.quit()
         os._exit(0)

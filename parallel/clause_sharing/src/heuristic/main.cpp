@@ -22,7 +22,6 @@ int main(int argc, char **argv) {
         std::cerr << ex.what() << "\n";
     }
 
-
 }
 
 
