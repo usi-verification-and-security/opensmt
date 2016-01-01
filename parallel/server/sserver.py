@@ -145,8 +145,8 @@ class WorkerServer(Server):
     _lock = threading.Lock()
     _status = {}  # sock -> (job, task_id)
     _jobs = Dict({
-        -2: Job('\\ERROR',0),
-        -1: Job('\\IDLE',0)
+        -2: Job('\\ERROR', 0),
+        -1: Job('\\IDLE', 0)
     })
     heuristic = None
 
@@ -269,7 +269,8 @@ class WorkerServer(Server):
                 else:
                     file.close()
             elif message[0] == 'A':
-                l = ['name, sat, split, solving']
+                l = ['name, sat, split, solving, total']
+                totals = [0, 0, 0]
                 for jid in self._jobs:
                     if jid < 0:
                         continue
@@ -281,10 +282,19 @@ class WorkerServer(Server):
                         result = 'unsat'
                     else:
                         result = 'unknown'
-                    l.append('{}, {}, {:.2f}, {:.2f}'.format(name,
-                                                             result,
-                                                             self._jobs[jid].init_time,
-                                                             self._jobs[jid].get('elapsed', 0)))
+                    split_time = float(self._jobs[jid].init_time)
+                    solving_time = float(self._jobs[jid].get('elapsed', 0))
+                    total = split_time + solving_time
+                    totals[0] += split_time
+                    totals[1] += solving_time
+                    totals[2] += total
+                    l.append('{}, {}, {:.2f}, {:.2f}, {:.2f}'.format(name,
+                                                                     result,
+                                                                     split_time,
+                                                                     solving_time,
+                                                                     total
+                                                                     ))
+                l.append(',,{:.2f}, {:.2f}, {:.2f}'.format(*totals))
                 if message[1:].startswith('!'):
                     self.output.write('\nDONE:\n{}\n################################\n'.format(str(sys.argv)))
                     self.output.write('\n'.join(l))
@@ -312,7 +322,7 @@ class WorkerServer(Server):
         jids = [jid for jid in self._jobs if jid >= 0 and self._jobs[jid]['status'] == 1]
         if not jids:
             jids = [jid for jid in self._jobs if jid >= 0 and self._jobs[jid]['status'] == 0]
-            #if jids and options.heuristic:
+            # if jids and options.heuristic:
             #    if self.heuristic:
             #        self.heuristic.kill()
             #    self.heuristic = subprocess.Popen(options.heuristic.split(' '))
@@ -320,7 +330,7 @@ class WorkerServer(Server):
             self._swap_jobs(-1, jids[0])
             return [jids[0]]
         else:
-            #if self.heuristic:
+            # if self.heuristic:
             #    self.heuristic.kill()
             return []
 
@@ -354,7 +364,8 @@ class WorkerServer(Server):
                 for tid in tid_workers:
                     if tid_workers[tid]:
                         job_next.add_history_item(('+', len(tid_workers[tid]), tid))
-                        self._multicast('S{}.{}\\{}'.format(jid_next, tid, job_next.tasks[tid].code), to=tid_workers[tid])
+                        self._multicast('S{}.{}\\{}'.format(jid_next, tid, job_next.tasks[tid].code),
+                                        to=tid_workers[tid])
             else:
                 for sock in workers:
                     self._status[sock] = (job_next, 0)

@@ -26,7 +26,14 @@ int loop() {
             throw Exception("select error");
 
         if (solver != NULL && FD_ISSET(solver->reader().file_descriptor(), &set)) {
-            solver->reader().read(frame);
+            try {
+                solver->reader().read(frame);
+            } catch (FrameClosedException){
+                std::cout << "solver reader closed!\n";
+                delete solver;
+                solver = NULL;
+                continue;
+            }
             Message message;
             message.load(frame);
             frame.clear();
@@ -45,7 +52,7 @@ int loop() {
         if (FD_ISSET(server.file_descriptor(), &set) != 0) {
             try {
                 server.read(frame);
-            } catch (FrameException) {
+            } catch (FrameClosedException) {
                 throw Exception("Server connection lost. Exit now.");
             }
             std::string id, osmt2;

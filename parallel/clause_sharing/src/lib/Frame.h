@@ -22,6 +22,12 @@ public:
 };
 
 
+class FrameClosedException : public FrameException {
+public:
+    explicit FrameClosedException() : FrameException("file descriptor closed") { }
+};
+
+
 class Frame {
 private:
     int fd;

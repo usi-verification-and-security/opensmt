@@ -7,7 +7,7 @@
 
 _SMTSolver::_SMTSolver(Settings &s, std::string &channel, SMTConfig &c, THandler &t) :
         SimpSMTSolver(c, t), channel(channel), cls_pub(NULL), cls_sub(NULL) {
-    if (s.clause_sharing) {
+    if (s.clause_sharing == true) {
         if (this->channel.size() <= 0)
             throw Exception("channel empty");
         struct timeval timeout = {1, 500000}; // 1.5 seconds
@@ -26,15 +26,17 @@ _SMTSolver::_SMTSolver(Settings &s, std::string &channel, SMTConfig &c, THandler
 }
 
 _SMTSolver::~_SMTSolver() {
-    redisFree(this->cls_pub);
-    redisFree(this->cls_sub);
+    if (this->cls_pub != NULL)
+        redisFree(this->cls_pub);
+    if (this->cls_sub != NULL)
+        redisFree(this->cls_sub);
 }
 
 void _SMTSolver::clausesPublish() {
     if (this->cls_pub == NULL)
         return;
     std::string s;
-    uint32_t clauses_sent=0;
+    uint32_t clauses_sent = 0;
     for (int i = 0; i < this->learnts.size(); i++) {
         Clause &c = *this->learnts[i];
         if (c.mark() != 3) {

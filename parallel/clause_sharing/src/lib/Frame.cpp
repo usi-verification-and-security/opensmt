@@ -42,7 +42,7 @@ uint32_t Frame::readn(char *buffer, uint32_t length) {
     while (length > r) {
         ssize_t t = ::read(this->fd, &buffer[r], length - r);
         if (t == 0)
-            throw FrameException("file descriptor closed");
+            throw FrameClosedException();
         if (t < 0)
             throw FrameException("file descriptor error");
         r += t;

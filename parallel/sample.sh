@@ -40,8 +40,8 @@ function require {
 }
 
 function require_clauses {
-    if ! (check redis-server || check ./deps/redis-server); then
-        cd deps
+    if ! (check redis-server || check ./clause_sharing/src/deps/redis-server); then
+        cd clause_sharing/src/deps
         if [ ! -d "redis-stable" ]; then
             info -n 'Downloading REDIS... '
             require wget
@@ -54,12 +54,12 @@ function require_clauses {
             info 'Compiling REDIS... '
             make
             success 'done'
-            cd ..
+            cd -
         fi
         require ./redis-stable/src/redis-server
         require ./redis-stable/src/redis-cli
         ln -s ./redis-stable/src/redis-cli ./redis-stable/src/redis-server .
-        cd ..
+        cd ../../..
     fi
 
     if (exec 9<>/dev/tcp/127.0.0.1/6379) &>/dev/null; then
@@ -72,18 +72,13 @@ function require_clauses {
         if check redis-server; then
             redis-server &>/dev/null &
         else
-            ./deps/redis-server &>/dev/null &
+            ./clause_sharing/src/deps/redis-server &>/dev/null &
         fi
         success 'done'
     fi
     exec 9>&-
     exec 9<&-
 
-    if ! (check ${HEURISTIC}); then
-        info 'Heuristic for clause sharing not found. Compiling...'
-        make &>/dev/null
-        success '... done'
-    fi
     require ${HEURISTIC}
 
 }
