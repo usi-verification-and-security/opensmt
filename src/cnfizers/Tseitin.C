@@ -257,10 +257,11 @@ bool Tseitin::cnfize(PTRef formula
         {
             Pterm& pt = logic.getPterm(ptr);
             for (int i = 0; i < pt.size(); i++)
-                unprocessed_terms.push(pt[i]); // It would seem that using the reference is not safe if a reallocation happened?
+                unprocessed_terms.push(pt[i]); // Using the PTRef is safe if a reallocation happened
         }
 tseitin_end:
-        processed.insert(ptr, true);
+        if (need_def) // Only mark as processed if the definition is formed
+            processed.insert(ptr, true);
 
     }
 
