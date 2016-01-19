@@ -30,6 +30,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define FAST_RATIONALS 1
 
 #include <string.h>
+// Workaround to allow compiling with gcc 4.9.0 and versions of gmp up
+// to 5.1.3 (see https://gcc.gnu.org/gcc-4.9/porting_to.html)
+#include <cstddef>
 #include <gmp.h>
 #include <gmpxx.h>
 #include <cassert>
