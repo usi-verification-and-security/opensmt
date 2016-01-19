@@ -39,10 +39,10 @@ static SolverId SolverId_Undef = {UINT32_MAX};
 class SolverDescr
 {
     protected:
-        static int     id_counter;
-        const SolverId id;
-        const char*    name;
-        const char*    description;
+        static uint32_t id_counter;
+        const SolverId  id;
+        const char*     name;
+        const char*     description;
 
 
     public:

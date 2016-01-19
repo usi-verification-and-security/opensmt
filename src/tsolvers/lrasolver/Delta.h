@@ -1,8 +1,10 @@
 /*********************************************************************
- Author: Aliaksei Tsitovich <aliaksei.tsitovich@lu.unisi.ch>
+ Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
+       , Aliaksei Tsitovich <aliaksei.tsitovich@lu.unisi.ch>
        , Roberto Bruttomesso <roberto.bruttomesso@unisi.ch>
 
- OpenSMT2 -- Copyright (C) 2008 - 2012, Roberto Bruttomesso
+ OpenSMT2 -- Copyright (C) 2012 - 2015, Antti Hyvarinen
+                           2008 - 2012, Roberto Bruttomesso
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the
@@ -53,7 +55,8 @@ public:
     UPPER, LOWER, ZERO
   } deltaType;
 
-  inline Delta( deltaType p );                  // Default constructor (true for +inf; false for -inf)
+  inline Delta( deltaType p );                  // Constructor (true for +inf; false for -inf)
+  inline Delta();                               // Same as Delta(UPPER)
   inline Delta( const Real &v );                // Constructor for Real delta
   inline Delta( const Real &v, const Real &d ); // Constructor for Real delta with strict part
   inline Delta( const Delta &a );               // Copy constructor
@@ -338,10 +341,18 @@ bool Delta::isGreater( const Real &c ) const
     return false;
 }
 
+Delta::Delta()
+{
+    infinite = false;
+    positive = true;
+    r = new Real(0);
+    d = new Real(0);
+}
+
 //
 // Default constructor (true for +inf; false for -inf)
 //
-Delta::Delta( deltaType p = UPPER )
+Delta::Delta( deltaType p )
 {
   infinite = ( p != ZERO );
   positive = ( p == UPPER );

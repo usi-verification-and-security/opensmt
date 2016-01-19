@@ -179,14 +179,6 @@ public:
 		for (int i = 0; i < ps.size(); i++) data[i] = ps[i];
 		if (learnt) extra.act = 0; else calcAbstraction(); }
 
-	// -- use this function instead:
-	template<class V>
-	friend Clause* Clause_new(const V& ps, bool learnt = false) {
-		assert(sizeof(Lit)      == sizeof(uint32_t));
-		assert(sizeof(float)    == sizeof(uint32_t));
-		void* mem = malloc(sizeof(Clause) + sizeof(uint32_t)*(ps.size()));
-		return new (mem) Clause(ps, learnt); }
-
 	int          size        ()      const   { return size_etc >> 3; }
 	void         shrink      (int i)         { assert(i <= size()); size_etc = (((size_etc >> 3) - i) << 3) | (size_etc & 7); }
 	void         pop         ()              { shrink(1); }
@@ -207,6 +199,15 @@ public:
 	Lit          subsumes    (const Clause& other) const;
 	void         strengthen  (Lit p);
 };
+
+// -- use this function instead:
+template<class V>
+Clause* Clause_new(const V& ps, bool learnt = false) {
+        assert(sizeof(Lit)      == sizeof(uint32_t));
+        assert(sizeof(float)    == sizeof(uint32_t));
+        void* mem = malloc(sizeof(Clause) + sizeof(uint32_t)*(ps.size()));
+        return new (mem) Clause(ps, learnt); }
+
 /*_________________________________________________________________________________________________
 |
 |  subsumes : (other : const Clause&)  ->  Lit

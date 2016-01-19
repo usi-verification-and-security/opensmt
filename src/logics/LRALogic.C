@@ -954,7 +954,7 @@ void LRALogic::deserializeLogicData(const int* logicdata_buf)
     assert(mydata_init < logicdata_buf[0]); // Inside the buffer still
     int sz = logicdata_buf[mydata_init];
     for (int i = 0; i < sz; i++) {
-        SymRef sr = {logicdata_buf[mydata_init+1+i]};
+        SymRef sr = {(uint32_t) logicdata_buf[mydata_init+1+i]};
         SymId id = sym_store[sr].getId();
         for (int j = reals.size(); j <= id; j++)
             reals.push(NULL);

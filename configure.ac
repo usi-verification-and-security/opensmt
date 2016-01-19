@@ -469,6 +469,10 @@ comp_flags=`echo ${comp_flags} |sed 's/ [ ]*/ /g'`
 #CPPFLAGS=""
 
 # Allow user to use a GMP lib in a non-standard location
+CFLAGS_OLD="$AM_CFLAGS"
+LDFLAGS_OLD="$AM_LDFLAGS"
+AM_CFLAGS=""
+AM_LDFLAGS=""
 AC_ARG_WITH([gmp],
 	    [AS_HELP_STRING([--with-gmp=prefix],
 			    [Use this when GMP is in a non-standard location (e.g /opt/local in MacPorts)])],
@@ -478,7 +482,8 @@ if test $NONSTDGMPPATH = 1 ; then
   AM_CXXFLAGS="$AM_CXXFLAGS -I$with_gmp/include"
   AM_LDFLAGS="$AM_LDFLAGS -L$with_gmp/lib"
 fi
-
+AM_CFLAGS="$AM_CFLAGS $CFLAGS_OLD"
+AM_LDFLAGS="$AM_LDFLAGS $LDFLAGS_OLD"
 # Allow user to use the readline lib in a non-standard location
 AC_ARG_WITH([readline],
 	    [AS_HELP_STRING([--with-readline=prefix],
@@ -515,7 +520,7 @@ LDFLAGS="$LDFLAGS $AM_LDFLAGS"
 CFLAGS="$CFLAGS $AM_CFLAGS"
 
 # Check for GMP header
-
+AC_LANG_PUSH(C++)
 GMP_HEADER_FOUND=1
 if test $NONSTDGMPPATH = 1 ; then
 	AC_CHECK_HEADERS($with_gmp/include/gmp.h,
@@ -532,6 +537,7 @@ AC_CHECK_LIB(gmp, __gmpz_init, ,[AC_MSG_ERROR([GMP library not found])])
 
 AC_CHECK_LIB(pthread, pthread_create,,
 	[AC_MSG_ERROR([required library pthread missing])])
+AC_LANG_POP(C++)
 
 # Check for readline library
 AX_LIB_READLINE
