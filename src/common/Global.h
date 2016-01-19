@@ -73,11 +73,6 @@ using std::pair;
 using std::make_pair;
 using std::list;
 
-using __gnu_cxx::is_heap;
-using __gnu_cxx::hash_map;
-using __gnu_cxx::hash_set;
-using __gnu_cxx::hash;
-
 //#if defined( __GNUC__ ) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
 //using __gnu_pbds::priority_queue;
 //using __gnu_pbds::pairing_heap_tag;

@@ -33,6 +33,25 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "LARow.h"
 #include "LAColumn.h"
 
+class LRASolverStats: public TSolverStats
+{
+    public:
+        int num_pivot_ops;
+        int num_bland_ops;
+        int num_vars;
+        LRASolverStats() : num_pivot_ops(0), num_bland_ops(0), num_vars(0) { TSolverStats(); }
+        void printStatistics(ostream& os)
+        {
+            cerr << "; -------------------------" << endl;
+            cerr << "; STATISTICS FOR LRA SOLVER" << endl;
+            cerr << "; -------------------------" << endl;
+            TSolverStats::printStatistics(os);
+            os << "; Number of LRA vars.......: " << num_vars << endl;
+            os << "; Pivot operations.........: " << num_pivot_ops << endl;
+            os << "; Bland operations.........: " << num_bland_ops << endl;
+        }
+};
+
 //
 // Class to solve Linear Arithmetic theories
 //
@@ -64,6 +83,7 @@ private:
 
   opensmt::Real delta; // The size of one delta.  Set through computeModel()
   unsigned bland_threshold;
+  LRASolverStats tsolver_stats;
 public:
 
   LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d);

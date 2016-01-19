@@ -234,6 +234,8 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
 //  extra variables.
 //    thandler.declareTermTree(fc.getRoot());
 
+//    std::cerr << logic.printTerm(fc.getRoot());
+
     status = giveToSolver(fc.getRoot());
 
     return status;

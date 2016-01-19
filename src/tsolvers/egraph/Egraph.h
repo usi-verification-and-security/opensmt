@@ -76,6 +76,7 @@ private:
 
   double fa_garbage_frac;
 
+  TSolverStats tsolver_stats;
 public:
 //  SimpSMTSolver* solver; // for debugging only
 
@@ -505,12 +506,6 @@ private:
   void relocAll(ELAllocator&);
 #endif
   //============================================================================
-
-#ifdef BUILD_64
-  hash_set< enodeid_pair_t >     clauses_sent;
-#else
-  hash_set< Pair( enodeid_t ) >  clauses_sent;
-#endif
 
 #ifdef PRODUCE_PROOF
   //===========================================================================

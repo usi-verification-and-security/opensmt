@@ -1300,6 +1300,10 @@ void Logic::collectFacts(PTRef root, vec<PtAsgn>& facts)
         else if (isUP(pta.tr) and pta.sgn == l_True) {
             facts.push(pta);
         }
+        else if (isXor(pta.tr) and pta.sgn == l_True) {
+            Pterm& t = getPterm(pta.tr);
+            facts.push(PtAsgn(mkEq(t[0], mkNot(t[1])), l_True));
+        }
         else {
             PTRef c;
             lbool c_sign;

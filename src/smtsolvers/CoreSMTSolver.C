@@ -2240,7 +2240,9 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
     // Search:
     const size_t old_conflicts = nLearnts( );
     // Stop flag for cost theory solving
-    bool cstop = false;
+     bool cstop = false;
+     // AEJ
+     //stop = true;
     while (status == l_Undef && !opensmt::stop && !cstop && !this->stop) {
 #ifndef SMTCOMP
         // Print some information. At every restart for

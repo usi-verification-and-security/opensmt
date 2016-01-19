@@ -150,8 +150,10 @@ lbool LRASolver::inform( PTRef tr )
 
       ptermToLavar[logic.getPterm(var).getId()] = x;
 
-      if (x->ID() >= static_cast<int> ( columns.size() ))
+      if (x->ID() >= static_cast<int> ( columns.size() )) {
         columns.resize( x->ID( ) + 1, NULL );
+        tsolver_stats.num_vars = columns.size();
+      }
       columns[x->ID( )] = x;
 
       if( t.getId() >= ( int )ptermToLavar.size( ) )
@@ -191,8 +193,10 @@ lbool LRASolver::inform( PTRef tr )
 
       assert( s->basicID( ) != -1 );
 
-      if (s->ID() >= static_cast<int>(columns.size()))
+      if (s->ID() >= static_cast<int>(columns.size())) {
         columns.resize(s->ID() + 1, NULL);
+        tsolver_stats.num_vars = columns.size();
+      }
       columns[s->ID()] = s;
 
       if (s->basicID() >= static_cast<int> (rows.size()))
@@ -277,8 +281,10 @@ lbool LRASolver::inform( PTRef tr )
             slack_vars.push_back(x);
             ptermToLavar[varId] = x;
 
-            if (x->ID() >= static_cast<int> (columns.size()))
+            if (x->ID() >= static_cast<int> (columns.size())) {
               columns.resize(x->ID() + 1, NULL);
+              tsolver_stats.num_vars = columns.size();
+            }
             columns[x->ID()] = x;
 
             x->binded_rows.add(s->basicID(), s->polynomial.add(x->ID(), x->binded_rows.free_pos(), p_r));
@@ -320,8 +326,9 @@ bool LRASolver::check(bool complete)
     VectorLAVar hist_x;
     VectorLAVar hist_y;
     bool bland_rule = false;
+    unsigned repeats = 0;
     unsigned pivot_counter = 0;
-
+    unsigned bland_counter = 0;
     // These values are from Yices
     unsigned bthreshold = bland_threshold;
     if (nVars() > 10000)
@@ -333,16 +340,16 @@ bool LRASolver::check(bool complete)
 
     // keep doing pivotAndUpdate until the SAT/UNSAT status is confirmed
     while (1) {
+        repeats++;
         // clear the explanations vector
         explanation.clear( );
         explanationCoefficients.clear( );
 
         x = NULL;
 
-        if (!bland_rule && (pivot_counter++ > columns.size())) {
-            cerr << "; pivot_counter exceeded: " << pivot_counter <<endl;
+        if (!bland_rule && (repeats > columns.size()))
             bland_rule = true;
-        }
+
         // look for the basic x with the smallest index which doesn't feat the bounds
         // XXX Keep these in a heap, so that there's no need to go over all
         // of them every time!
@@ -352,10 +359,14 @@ bool LRASolver::check(bool complete)
         for (; it != rows.end(); ++it) {
             if ((*it)->isModelOutOfBounds()) {
                 if (bland_rule) {
+                    bland_counter++;
+                    tsolver_stats.num_bland_ops++;
                     // Select the var with the smallest id
                     x = (*it)->ID() < curr_var_id ? *it : x;
                     curr_var_id = (*it)->ID() < curr_var_id ? (*it)->ID() : curr_var_id;
                 } else { // Use heuristics that prefers short polynomials
+                    pivot_counter++;
+                    tsolver_stats.num_pivot_ops++;
                     if( x == NULL )
                         x = *it;
                     else if (x->polynomial.size() > (*it)->polynomial.size())
@@ -1796,7 +1807,7 @@ ValPair LRASolver::getValue(PTRef tr) const
 //
 LRASolver::~LRASolver( )
 {
-  cerr << "; Number of vars: " << nVars() << endl;
+  tsolver_stats.printStatistics(cerr);
   // Remove slack variables
   while( !columns.empty( ) )
   {

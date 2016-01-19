@@ -193,6 +193,7 @@ class Logic {
 
     // Generic equalities
     PTRef       mkEq          (vec<PTRef>& args);
+    PTRef       mkEq          (PTRef a1, PTRef a2) { vec<PTRef> v; v.push(a1); v.push(a2); return mkEq(v); }
 
     // Generic variables
     PTRef       mkVar         (SRef, const char*);

@@ -58,7 +58,7 @@ struct TSolverStats
   { }
 
   // Statistics for theory solvers
-  void printStatistics ( ostream & os )
+  virtual void printStatistics ( ostream & os )
   {
     os << "; Satisfiable calls........: " << sat_calls << endl;
     os << "; Unsatisfiable calls......: " << uns_calls << endl;
@@ -190,7 +190,7 @@ protected:
     Enode *                     interpolants;     // Store interpolants
 #endif
 #ifdef STATISTICS
-    TSolverStats tsolver_stats;                   // Statistics for the solver
+//    TSolverStats tsolver_stats;                   // Statistics for the solver
 #endif
 };
 
