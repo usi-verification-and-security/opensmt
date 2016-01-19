@@ -14,6 +14,7 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
 #include <string>
 #include <sstream>
 #include <string.h>
+#include <cstddef>
 #include <gmpxx.h>
 #include <stdlib.h>
 #include <errno.h>
