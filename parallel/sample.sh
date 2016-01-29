@@ -2,7 +2,7 @@
 
 PYTHON='python' # this should be the command to python 2.7
 OPENSMT=../opensmt
-OPENSMT_SOLVER=/home/matteo/bin/solver_opensmt
+OPENSMT_SOLVER=./clause_sharing/build/solver_opensmt
 SERVER_DIR=./server
 SERVER=${SERVER_DIR}/sserver.py
 SERVER_COMMAND=${SERVER_DIR}/command.py
