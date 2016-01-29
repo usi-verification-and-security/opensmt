@@ -54,7 +54,7 @@ public:
 
     void close();
 
-    int file_descriptor();
+    int get_fd();
 
 };
 

@@ -19,13 +19,13 @@ int loop() {
     while (1) {
         std::string frame;
         FD_ZERO(&set);
-        FD_SET(server.file_descriptor(), &set);
+        FD_SET(server.get_fd(), &set);
         if (solver != NULL)
-            FD_SET(solver->reader().file_descriptor(), &set);
+            FD_SET(solver->reader().get_fd(), &set);
         if (select(FD_SETSIZE, &set, NULL, NULL, NULL) == -1)
             throw Exception("select error");
 
-        if (solver != NULL && FD_ISSET(solver->reader().file_descriptor(), &set)) {
+        if (solver != NULL && FD_ISSET(solver->reader().get_fd(), &set)) {
             try {
                 solver->reader().read(frame);
             } catch (FrameClosedException){
@@ -38,10 +38,13 @@ int loop() {
             message.load(frame);
             frame.clear();
             frame.append(message.header["msg"].empty() ? "S" : "E");
-            uint8_t i;
-            for (i = 0; message.header["channel"][i] != '.' && i < (uint8_t) -1 &&
-                        i < message.header["channel"].size(); i++) { }
-            frame.append(message.header["channel"].substr(0, (size_t) i));
+            //uint8_t i;
+            //for (i = 0; message.header["channel"][i] != '.' && i < (uint8_t) -1 &&
+            //            i < message.header["channel"].size(); i++) { }
+            //frame.append(message.header["channel"].substr(0, (size_t) i));
+            frame.append(message.header["channel"]);
+            frame.append(" ");
+            frame.append(message.header["seed"]);
             frame.append("\\");
             frame.append(message.header["msg"].empty() ? message.header["status"] : message.header["msg"]);
             server.write(frame);
@@ -49,7 +52,7 @@ int loop() {
             solver = NULL;
         }
 
-        if (FD_ISSET(server.file_descriptor(), &set) != 0) {
+        if (FD_ISSET(server.get_fd(), &set) != 0) {
             try {
                 server.read(frame);
             } catch (FrameClosedException) {

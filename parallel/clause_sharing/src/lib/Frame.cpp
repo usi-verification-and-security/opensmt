@@ -102,7 +102,7 @@ void Frame::close() {
     this->fd = -1;
 }
 
-int Frame::file_descriptor() {
+int Frame::get_fd() {
     return this->fd;
 }
 

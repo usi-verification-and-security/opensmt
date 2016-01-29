@@ -8,7 +8,8 @@ SERVER_DIR=./server
 SERVER=${SERVER_DIR}/sserver.py
 SERVER_COMMAND=${SERVER_DIR}/command.py
 HEURISTIC=./clause_sharing/build/heuristic
-REDIS=./clause_sharing/src/deps/redis-server
+REDIS_SERVER=./clause_sharing/src/deps/redis-server
+REDIS_CLIENT=./clause_sharing/src/deps/redis-cli
 
 # ----------------
 
@@ -120,11 +121,15 @@ success 'done'
 
 if ${clauses}; then
     echo -n 'starting REDIS... '
-    ${REDIS} --port $((6380 + ${port_offset})) > /dev/null &
+    ${REDIS_SERVER} --port $((6380 + ${port_offset})) > /dev/null &
+    sleep 1
+    echo 'config set save ""' | ${REDIS_CLIENT} -p $((6380 + ${port_offset}))
+    echo 'config get save' | ${REDIS_CLIENT} -p $((6380 + ${port_offset}))
     sleep 1
     success 'done'
     echo -n 'starting heuristic... '
-    nohup ${HEURISTIC} -r 127.0.0.1:$((6380 + ${port_offset})) > heuristic_${port_offset}.out &
+    nohup ./run-heuristic.sh ${HEURISTIC} -r127.0.0.1:$((6380 + ${port_offset})) > heuristic_${port_offset}.out &
+    #nohup ${HEURISTIC} -r 127.0.0.1:$((6380 + ${port_offset})) > heuristic_${port_offset}.out &
     success 'done'
     solver_redis_arg="-r10.1.1.1:$((6380 + ${port_offset}))"
 else

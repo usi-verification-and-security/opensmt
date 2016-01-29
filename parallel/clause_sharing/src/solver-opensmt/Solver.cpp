@@ -8,6 +8,7 @@
 _SMTSolver::_SMTSolver(Settings &s, std::string &channel, SMTConfig &c, THandler &t) :
         SimpSMTSolver(c, t), channel(channel), cls_pub(NULL), cls_sub(NULL) {
     if (s.clause_sharing == true) {
+        this->trail_sent = 0;
         if (this->channel.size() <= 0)
             throw Exception("channel empty");
         struct timeval timeout = {1, 500000}; // 1.5 seconds
@@ -45,6 +46,14 @@ void _SMTSolver::clausesPublish() {
             c.mark(3);
         }
     }
+    int trail_max = this->trail_lim.size() == 0 ? this->trail.size() : this->trail_lim[0];
+    for (int i = this->trail_sent; i < trail_max; i++) {
+        clauses_sent++;
+        this->trail_sent++;
+        vec<Lit> unary;
+        unary.push(this->trail[i]);
+        clauseSerialize(unary, s);
+    }
     if (s.length() == 0)
         return;
     Message m;
@@ -66,11 +75,14 @@ void _SMTSolver::clausesPublish() {
                                                     d.length());
     if (reply == NULL || reply->type == REDIS_REPLY_ERROR) {
         std::cerr << "error during clause publishing\n";
-        freeReplyObject(reply);
+        if (reply != NULL)
+            freeReplyObject(reply);
 //        redisFree(this->cls_pub);
 //        this->cls_pub = NULL;
         return;
     }
+    if(reply->integer == 0)
+        std::cerr << "NO subscriber!\n";
     freeReplyObject(reply);
     std::cerr << "published\t" << clauses_sent << "\tclauses\n";
     /* non block
@@ -98,7 +110,8 @@ void _SMTSolver::clausesUpdate() {
                                                     this->channel.c_str());
     if (reply == NULL || reply->type == REDIS_REPLY_ERROR) {
         std::cerr << "error during clause updating\n";
-        freeReplyObject(reply);
+        if (reply != NULL)
+            freeReplyObject(reply);
 //        redisFree(this->cls_pub);
 //        this->cls_pub = NULL;
         return;
@@ -167,8 +180,10 @@ void ProcessSolver::main() {
     std::uniform_int_distribution<uint32_t> randuint(0, 0xFFFFFF);
     std::random_device rd;
     SMTConfig config;
-    config.setRandomSeed(randuint(rd));
+    uint32_t seed = randuint(rd);
+    config.setRandomSeed(seed);
 
+    //Theory *theory = new UFTheory(config);
     Theory *theory = new LRATheory(config);
 
     MainSolver *solver = NULL;
@@ -198,6 +213,7 @@ void ProcessSolver::main() {
     message.header["status"] = std::to_string((int) status.getValue());
     message.header["msg"] = msg == NULL ? std::string() : std::string(msg);
     message.header["channel"] = this->channel;
+    message.header["seed"] = std::to_string(seed);
     std::string s;
     message.dump(s);
     this->writer().write(s);

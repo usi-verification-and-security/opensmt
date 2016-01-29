@@ -49,6 +49,7 @@ private:
     std::string channel;
     redisContext *cls_pub;
     redisContext *cls_sub;
+    uint32_t trail_sent;
 
     void inline clausesPublish();
 

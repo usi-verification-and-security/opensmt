@@ -1,14 +1,14 @@
 #!/bin/bash
 
-SERVER_OUT='./server.out'
-OPENSMT_OUT='./opensmt.out'
 PYTHON='python' # this should be the command to python 2.7
 OPENSMT=../opensmt
-OPENSMT_SOLVER=clause_sharing/build/solver_opensmt
+OPENSMT_SOLVER=/home/matteo/bin/solver_opensmt
 SERVER_DIR=./server
 SERVER=${SERVER_DIR}/sserver.py
 SERVER_COMMAND=${SERVER_DIR}/command.py
 HEURISTIC=./clause_sharing/build/heuristic
+REDIS_SERVER=./clause_sharing/src/deps/redis-server
+REDIS_CLIENT=./clause_sharing/src/deps/redis-cli
 
 # ----------------
 
@@ -40,6 +40,8 @@ function require {
 }
 
 function require_clauses {
+    require ${HEURISTIC}
+
     if ! (check redis-server || check ./clause_sharing/src/deps/redis-server); then
         cd clause_sharing/src/deps
         if [ ! -d "redis-stable" ]; then
@@ -79,24 +81,25 @@ function require_clauses {
     exec 9>&-
     exec 9<&-
 
-    require ${HEURISTIC}
-
 }
 
 clauses=false
-mode='_lookahead'
-workers=2
+mode='_scattering'
+timeout=1000
 splits=2
+solvers=1
+cport=5000
+wport=3000
 
 show_help() {
-	echo "Usage $0 [-r][-S][-n WORKER_NUMBER=$workers][-s SPLIT_NUMBER=$splits] FILE1.smt2 [FILE2.smt [...]]"
+	echo "Usage $0 [-r][-t TIMEOUT=$timeout][-s SPLIT_NUMBER=$splits][-n SOLVERS=$solvers] FILE1.smt2 [FILE2.smt [...]]"
 	echo
 	echo "-r    : use clause sharing (default $clauses)"
-	echo "-S    : use scattering (default $mode)"
+	#echo "-S    : use scattering (default $mode)"
 	exit 0
 }
 
-while getopts "hrSn:s:" opt; do
+while getopts "hrt:s:n:p:" opt; do
 	case "$opt" in
 		h|\?)
             show_help
@@ -105,10 +108,12 @@ while getopts "hrSn:s:" opt; do
             ;;
 		S)  mode='_scattering'
 		    ;;
-		n)	workers=$OPTARG
+		t)	timeout=$OPTARG
        		;;
 		s)	splits=$OPTARG
 		    ;;
+		n)	solvers=$OPTARG
+       		;;
 	esac
 done
 
@@ -122,39 +127,48 @@ fi
 
 require ${PYTHON}
 require ${OPENSMT} 'Please compile OpenSMT2'
-require ${OPENSMT_SOLVER} 'Please compile OpenSMT2'
+require ${OPENSMT_SOLVER}
 require ${SERVER}
 require ${SERVER_COMMAND}
 
-echo
-info '! PLEASE READ THE README FIRST !'
-echo
-echo "number of opensmt2 solvers:   $workers"
-echo "number of splits:             $splits"
-echo "split mode:                   $mode"
-echo "clause sharing:               $clauses"
-echo
 if ${clauses}; then
     require_clauses
 fi
-echo "SERVER stdout will be redirected to $SERVER_OUT"
-echo "OPENSMT2 solvers stdout and stderr will be redirected to $OPENSMT_OUT"
+
+info '! PLEASE READ THE README FIRST !'
 echo
+echo "number of splits:             $splits"
+echo "split mode:                   $mode"
+echo "timeout:                      $timeout"
+echo "solvers:                      $solvers"
+echo
+
+SERVER_OUT=server${solvers}-s${splits}-${clauses}.out
 echo -n 'starting server... '
-if ${clauses}; then
-    ${PYTHON} ${SERVER} -r ${HEURISTIC} -d -f ${SERVER_DIR}/${mode} -s ${splits} -o ${OPENSMT} > ${SERVER_OUT} 2>/dev/null &
-else
-    ${PYTHON} ${SERVER} -d -f ${SERVER_DIR}/${mode} -s ${splits} -o ${OPENSMT} > ${SERVER_OUT} 2>/dev/null &
-fi
+${PYTHON} ${SERVER} -c 5000 -w 3000 -t ${timeout} -d -f ${SERVER_DIR}/${mode} -s ${splits} -o ${OPENSMT} > ${SERVER_OUT} 2>/dev/null &
 server_pid=$!
 sleep 1
 success 'done'
-echo -n 'sending the files to the server... '
-${PYTHON} ${SERVER_COMMAND} 127.0.0.1 $@ > /dev/null
+
+echo 'sending the files to the server... '
+${PYTHON} ${SERVER_COMMAND} 127.0.0.1 -p 5000 $@
 success 'done'
-echo -n "starting $workers solvers: "
+
+echo
+
+if ${clauses}; then
+    echo -n 'starting heuristic... '
+    ./run-heuristic.sh ${HEURISTIC} -r127.0.0.1:6379 > heuristic.out 2>/dev/null &
+    heuristic_pid=$!
+    #nohup ${HEURISTIC} -r 127.0.0.1:$((6380 + ${port_offset})) > heuristic_${port_offset}.out &
+    success 'done'
+    echo
+fi
+
+OPENSMT_OUT=solvers${solvers}-s${splits}-${clauses}_${port_offset}.out
 > ${OPENSMT_OUT}
-for i in $(seq ${workers})
+echo -n 'starting solvers '
+for i in $(seq ${solvers})
 do
     if ${clauses}; then
         ${OPENSMT_SOLVER} -s127.0.0.1:3000 -r127.0.0.1:6379 >> ${OPENSMT_OUT} 2>&1 &
@@ -166,6 +180,11 @@ done
 success ' done'
 echo -n 'waiting for all the problems to be solved... '
 wait ${server_pid}
+if ${clauses}; then
+    kill -9 ${heuristic_pid}
+    wait ${heuristic_pid} 2>/dev/null
+    killall -9 ${HEURISTIC}
+fi
 success 'done!'
 info "The results are in $SERVER_OUT"
 success 'bye'

@@ -191,15 +191,20 @@ class WorkerServer(Server):
         self.output.flush()
         with self._lock:
             done = False
-            start = message.index('\\')
-            jid = int(message[1:start])
+            endjid = message.index('.')
+            jid = int(message[1:endjid])
             if jid < 0 or jid not in self._jobs or self._jobs[jid] != self._status[sock][0]:
                 return
+            tid_solver = int(message[endjid + 1:message.index(' ')])
+            tid = self._status[sock][1]
+            if tid_solver != tid:
+                return
+            start = message.index('\\')
             self.output.write('< worker {}: {}\n'.format(sock.address, message))
             content = message[start + 1:]
             if message[0] == 'S':  # solved
-                tid = self._status[sock][1]
                 self._jobs[jid].tasks[tid].solved = True
+                #self.output.write(' ... task: {}\n'.format(tid))
                 if content[0] == '1' or all([task.solved for task in self._jobs[jid].tasks]):  # SAT or all tasks solved
                     self._jobs[jid].add_history_item(('S', content))
                     self._jobs[jid]['status'] = 2
@@ -207,6 +212,11 @@ class WorkerServer(Server):
                 else:
                     self._jobs[jid].add_history_item(('U', content, tid))
                     self._swap_jobs(jid, -1, tid)
+                result_code = int(self._jobs[jid].get('result', 0))
+                '''if result_code == -1:
+                    for i, task in enumerate(self._jobs[jid].tasks):
+                        with open('{}_{}_{}.osmt2'.format(jid, self._jobs[jid]['name'], i), 'w') as file:
+                            file.write(task.code)'''
                 if not self._commit():
                     done = True
         if done and options.done_exit:

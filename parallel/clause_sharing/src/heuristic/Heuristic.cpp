@@ -83,7 +83,9 @@ void Heuristic::main() {
                                                 str.size());
             //if(reply->integer==0)
             //  std::cout << '!';
-            freeReplyObject(reply);
+            if (reply != NULL)
+                freeReplyObject(reply);
         }
     }
+    std::cout << "esco\n";
 }
