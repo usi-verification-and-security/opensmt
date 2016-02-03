@@ -69,6 +69,7 @@ Logic::Logic(SMTConfig& c) :
     , term_TRUE(PTRef_Undef)
     , term_FALSE(PTRef_Undef)
     , top_level_ites(PTRef_Undef)
+    , subst_num(0)
 {
     config.logic = QF_UF;
     name = "QF_UF";
@@ -166,6 +167,14 @@ Logic::Logic(SMTConfig& c) :
     sym_store[sym_ITE].setNoScoping();
 
     ites.insert(sym_ITE, true);
+}
+
+Logic::~Logic()
+{
+    cerr << "; -------------------------\n";
+    cerr << "; STATISTICS FOR LOGICS\n";
+    cerr << "; -------------------------\n";
+    cerr << "; Substitutions............: " << subst_num << endl;
 }
 
 bool Logic::isTheoryTerm(PTRef ptr) const {
@@ -946,12 +955,21 @@ void Logic::computeSubstitutionFixpoint(PTRef root, PTRef& root_out)
         root = new_root;
         if (!cont) break;
     }
+#ifdef SIMPLIFY_DEBUG
+    vec<PTRef> keys;
+    substs.getKeys(keys);
+    printf("Substitutions:\n");
+    for (int i = 0; i < keys.size(); i++) {
+        printf("  %s -> %s\n", printTerm(keys[i]), printTerm(substs[keys[i]]));
+    }
+#endif
     vec<PTRef> args;
     for (int i = 0; i < facts.size(); i++) {
         assert(facts[i].sgn == l_True || isBoolAtom(facts[i].tr));
         if (isUFEquality(facts[i].tr))
             args.push(facts[i].tr);
     }
+    subst_num = args.size();
     args.push(root);
     root_out = mkAnd(args);
 }
@@ -1128,7 +1146,9 @@ void Logic::breakSubstLoops(Map<PTRef,PTRef,PTRefHash>& substs)
             tarjan.getLoops(startNodes[i], loops);
         }
 
-#ifdef SIMPLIFICATION_DEBUG
+#ifdef SIMPLIFY_DEBUG
+        if (loops.size() == 0)
+            cerr << "No loops\n";
         for (int i = 0; i < loops.size(); i++) {
             cerr << "Loop " << i << endl;
             vec<PTRef>& loop = loops[i];

@@ -86,6 +86,7 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
   // ADDED FOR MINIMIZATION
   , learnts_size(0) , all_learnts(0), n_clauses(0)
   , learnt_theory_conflicts(0)
+  , top_level_lits        (0)
   , ok                    (true)
   , cla_inc               (1)
   , var_inc               (1)
@@ -2140,6 +2141,7 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
 //            printf("Declaring trail var %s\n", theory_handler.getLogic().printTerm(theory_handler.varToTerm(v)));
         }
     }
+    top_level_lits = trail.size();
     for (int i = 0; i < clauses.size(); i++) {
         Clause& c = *clauses[i];
         for (int j = 0; j < c.size(); j++) {
@@ -2240,9 +2242,9 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
     // Search:
     const size_t old_conflicts = nLearnts( );
     // Stop flag for cost theory solving
-     bool cstop = false;
-     // AEJ
-     //stop = true;
+    bool cstop = false;
+    // AEJ
+//    stop = true;
     while (status == l_Undef && !opensmt::stop && !cstop && !this->stop) {
 #ifndef SMTCOMP
         // Print some information. At every restart for
@@ -3008,6 +3010,7 @@ void CoreSMTSolver::printStatistics( ostream & os )
   os << "; Conflicts learnt.........: " << all_learnts << endl;
   os << "; T-conflicts learnt.......: " << learnt_theory_conflicts << endl;
   os << "; Average learnts size.....: " << learnts_size/all_learnts << endl;
+  os << "; Top level literals.......: " << top_level_lits << endl;
   if ( config.sat_preprocess_booleans != 0
       || config.sat_preprocess_theory != 0 )
     os << "; Preprocessing time.......: " << preproc_time << " s" << endl;

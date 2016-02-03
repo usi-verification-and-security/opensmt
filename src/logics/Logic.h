@@ -119,6 +119,7 @@ class Logic {
     static const char*  s_sort_bool;
 
     Logic(SMTConfig& c);
+    ~Logic();
 
     PTRef getTopLevelItes() { return top_level_ites; }
     void addTopLevelIte(PTRef i)
@@ -413,6 +414,8 @@ class Logic {
     void compareTermStore(PtStore& other) { }// term_store.compare(other); }
 #endif
 
+    // Statistics
+    int subst_num; // Number of substitutions
 };
 #endif // LOGIC_H
 
