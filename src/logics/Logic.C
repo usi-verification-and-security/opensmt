@@ -943,7 +943,9 @@ void Logic::computeSubstitutionFixpoint(PTRef root, PTRef& root_out)
     // The substitution of facts together with the call to simplifyTree
     // ensures that no fact is inserted twice to facts.
     vec<PtAsgn> facts;
-    Map<PTRef,PTRef,PTRefHash> substs;
+    // l_True : exists and is valid
+    // l_False : exists but has been disabled to break symmetries
+    Map<PTRef,PtAsgn,PTRefHash> substs;
     // fixpoint
     while (true) {
         collectFacts(root, facts);
@@ -960,7 +962,7 @@ void Logic::computeSubstitutionFixpoint(PTRef root, PTRef& root_out)
     substs.getKeys(keys);
     printf("Substitutions:\n");
     for (int i = 0; i < keys.size(); i++) {
-        printf("  %s -> %s\n", printTerm(keys[i]), printTerm(substs[keys[i]]));
+        printf("  %s -> %s (%s)\n", printTerm(keys[i]), printTerm(substs[keys[i]].tr), substs[keys[i]].sgn == l_True ? "enabled" : "disabled");
     }
 #endif
     vec<PTRef> args;
@@ -980,7 +982,7 @@ void Logic::computeSubstitutionFixpoint(PTRef root, PTRef& root_out)
 // Preconditions:
 //  - all substitutions in substs must be on variables
 //
-bool Logic::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& substs, PTRef& tr_new)
+bool Logic::varsubstitute(PTRef& root, Map<PTRef,PtAsgn,PTRefHash>& substs, PTRef& tr_new)
 {
     Map<PTRef,PTRef,PTRefHash> gen_sub;
     vec<PTRef> queue;
@@ -1010,19 +1012,19 @@ bool Logic::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& substs, PTRef
         PTRef result = PTRef_Undef;
         if (isVar(tr) || isConstant(tr)) {
             // The base case
-            if (substs.contains(tr))
-                result = substs[tr];
+            if (substs.contains(tr) && substs[tr].sgn == l_True)
+                result = substs[tr].tr;
             else
                 result = tr;
             assert(!isConstant(tr) || result == tr);
             assert(result != PTRef_Undef);
         } else {
             // The "inductive" case
-            if (substs.contains(tr)) {
+            if (substs.contains(tr) && substs[tr].sgn == l_True) {
 #ifdef SIMPLIFY_DEBUG
-                printf("Immediate substitution found: %s -> %s\n", printTerm(tr), printTerm(substs[tr]));
+                printf("Immediate substitution found: %s -> %s\n", printTerm(tr), printTerm(substs[tr].tr));
 #endif
-                result = substs[tr];
+                result = substs[tr].tr;
             }
             else {
                 vec<PTRef> args_mapped;
@@ -1060,7 +1062,7 @@ bool Logic::varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& substs, PTRef
 //
 // Identify and break any substitution loops
 //
-void Logic::breakSubstLoops(Map<PTRef,PTRef,PTRefHash>& substs)
+void Logic::breakSubstLoops(Map<PTRef,PtAsgn,PTRefHash>& substs)
 {
     int iters;
     vec<SubstNode*> alloced;
@@ -1086,8 +1088,8 @@ void Logic::breakSubstLoops(Map<PTRef,PTRef,PTRefHash>& substs)
         for (int i = 0; i < keys.size(); i++) {
             int id = getPterm(keys[i]).getId();
             vec<SubstNode*> queue;
-            if (seen[id] == white) {
-                SubstNode* n = new SubstNode(keys[i], substs[keys[i]], NULL, *this);
+            if (seen[id] == white && substs[keys[i]].sgn == l_True) {
+                SubstNode* n = new SubstNode(keys[i], substs[keys[i]].tr, NULL, *this);
                 alloced.push(n);
                 queue.push(n);
                 roots.push(n);
@@ -1103,8 +1105,8 @@ void Logic::breakSubstLoops(Map<PTRef,PTRef,PTRefHash>& substs)
                             if (varToSubstNode.contains(var->children[j])) {
                                 cn = varToSubstNode[var->children[j]];
                                 if (cn->parent == NULL && cn != n) cn->parent = var;
-                            } else if (substs.contains(var->children[j])) {
-                                cn = new SubstNode(var->children[j], substs[var->children[j]], var, *this);
+                            } else if (substs.contains(var->children[j]) && substs[var->children[j]].sgn == l_True) {
+                                cn = new SubstNode(var->children[j], substs[var->children[j]].tr, var, *this);
                                 alloced.push(cn);
                                 queue.push(cn);
                                 varToSubstNode.insert(cn->tr, cn);
@@ -1195,8 +1197,9 @@ void Logic::breakSubstLoops(Map<PTRef,PTRef,PTRefHash>& substs)
             break;
 
         // Break the found loops
-        for (int i = 0; i < loops.size(); i++)
-            substs.remove(loops[i][0]);
+        for (int i = 0; i < loops.size(); i++) {
+            substs[loops[i][0]].sgn = l_False;
+        }
     }
     for (int i = 0; i < alloced.size(); i++)
         delete alloced[i];
@@ -1205,9 +1208,8 @@ void Logic::breakSubstLoops(Map<PTRef,PTRef,PTRefHash>& substs)
 //
 // The substitutions for the term riddance from osmt1
 //
-lbool Logic::retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PTRef,PTRefHash>& substs)
+lbool Logic::retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs)
 {
-
     for (int i = 0; i < facts.size(); i++) {
         PTRef tr = facts[i].tr;
         lbool sgn = facts[i].sgn;
@@ -1238,7 +1240,9 @@ lbool Logic::retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PTRef,PTRefHash
                     if (substs.contains(var)) {
                         cerr << "Double substitution:" << endl;
                         cerr << " " << printTerm(var) << "/" << printTerm(trm) << endl;
-                        cerr << " " << printTerm(var) << "/" << printTerm(substs[var]) << endl;
+                        cerr << " " << printTerm(var) << "/" << printTerm(substs[var].tr) << endl;
+                        if (substs[var].sgn == l_False)
+                            cerr << "  disabled" << endl;
                     } else {
                         char* tmp1 = printTerm(var);
                         char* tmp2 = printTerm(trm);
@@ -1247,15 +1251,15 @@ lbool Logic::retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PTRef,PTRefHash
                     }
 #endif
                     if (!substs.contains(var)) {
-                        substs.insert(var, trm);
+                        substs.insert(var, PtAsgn(trm, l_True));
                     }
                 }
             }
         } else if (isBoolAtom(tr)) {
             PTRef term = sgn == l_True ? getTerm_true() : getTerm_false();
             if (substs.contains(tr)) {
-                if (term != substs[tr]) return l_False;
-            } else substs.insert(tr, term);
+                if (term != substs[tr].tr) return l_False;
+            } else substs.insert(tr, PtAsgn(term, l_True));
         }
     }
     breakSubstLoops(substs);

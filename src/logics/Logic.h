@@ -304,8 +304,8 @@ class Logic {
 
     // Top-level equalities based substitutions
     void collectFacts(PTRef root, vec<PtAsgn>& facts);
-    bool varsubstitute(PTRef& root, Map<PTRef,PTRef,PTRefHash>& substs, PTRef& tr_new);  // Do the substitution.  Return true if at least one substitution was done, and false otherwise.
-    virtual lbool retrieveSubstitutions(vec<PtAsgn>& facst, Map<PTRef,PTRef,PTRefHash>& substs);
+    bool varsubstitute(PTRef& root, Map<PTRef,PtAsgn,PTRefHash>& substs, PTRef& tr_new);  // Do the substitution.  Return true if at least one substitution was done, and false otherwise.
+    virtual lbool retrieveSubstitutions(vec<PtAsgn>& facst, Map<PTRef,PtAsgn,PTRefHash>& substs);
     virtual void computeSubstitutionFixpoint(PTRef root, PTRef& root_out);
 
     class SubstNode {
@@ -389,7 +389,7 @@ class Logic {
     };
 
     void getVars(PTRef, vec<PTRef>&) const;
-    void breakSubstLoops(Map<PTRef,PTRef,PTRefHash>& substs);
+    void breakSubstLoops(Map<PTRef,PtAsgn,PTRefHash>& substs);
 
     bool contains(PTRef x, PTRef y);  // term x contains an occurrence of y
 

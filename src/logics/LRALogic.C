@@ -800,7 +800,7 @@ PTRef SimplifyConst::simplifyConstOp(const vec<PTRef>& terms, char** msg)
     }
 }
 
-lbool LRALogic::retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PTRef,PTRefHash>& substs)
+lbool LRALogic::retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs)
 {
     lbool res = Logic::retrieveSubstitutions(facts, substs);
     if (res != l_Undef) return res;
@@ -814,7 +814,7 @@ lbool LRALogic::retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PTRef,PTRefH
     return arithmeticElimination(top_level_arith, substs);
 }
 
-lbool LRALogic::arithmeticElimination(vec<PTRef> &top_level_arith, Map<PTRef,PTRef,PTRefHash>& substitutions)
+lbool LRALogic::arithmeticElimination(vec<PTRef> &top_level_arith, Map<PTRef,PtAsgn,PTRefHash>& substitutions)
 {
     vec<LAExpression*> equalities;
     LRALogic& logic = *this;
@@ -848,11 +848,11 @@ lbool LRALogic::arithmeticElimination(vec<PTRef> &top_level_arith, Map<PTRef,PTR
         assert( sub.second != PTRef_Undef );
         if(substitutions.contains(sub.first))
         {
-            //cout << "ARITHMETIC ELIMINATION FOUND DOUBLE SUBSTITUTION:\n" << printTerm(sub.first) << " <- " << printTerm(sub.second) << " | " << printTerm(substitutions[sub.first]) << endl;
-            if(sub.second != substitutions[sub.first])
+            //cout << "ARITHMETIC ELIMINATION FOUND DOUBLE SUBSTITUTION:\n" << printTerm(sub.first) << " <- " << printTerm(sub.second) << " | " << printTerm(substitutions[sub.first].tr) << endl;
+            if(sub.second != substitutions[sub.first].tr)
                 return l_False;
         } else
-            substitutions.insert(sub.first, sub.second);
+            substitutions.insert(sub.first, PtAsgn(sub.second, l_True));
     } else {
         // Otherwise obtain substitutions
         // by means of Gaussian Elimination
@@ -905,10 +905,10 @@ lbool LRALogic::arithmeticElimination(vec<PTRef> &top_level_arith, Map<PTRef,PTR
             assert(sub.second != PTRef_Undef);
             //cout << printTerm(sub.first) << " <- " << printTerm(sub.second) << endl;
             if(!substitutions.contains(sub.first)) {
-                substitutions.insert(sub.first, sub.second);
+                substitutions.insert(sub.first, PtAsgn(sub.second, l_True));
 //                cerr << "; gaussian substitution: " << logic.printTerm(sub.first) << " -> " << logic.printTerm(sub.second) << endl;
             } else {
-                if (isConstant(sub.second) && isConstant(sub.first) && (sub.second != substitutions[sub.first]))
+                if (isConstant(sub.second) && isConstant(sub.first) && (sub.second != substitutions[sub.first].tr))
                     return l_False;
             }
         }
