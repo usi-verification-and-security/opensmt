@@ -230,6 +230,25 @@ fi
 AM_CONDITIONAL([ENABLE_VERBOSE_SAT], [test "$enable_verbose_sat" = "yes"])
 echo "Be verbose in SAT solver... $enable_verbose_sat"
 
+#
+# Enable printing of learnt unit literals
+#
+AC_ARG_ENABLE(print_units,
+  AC_HELP_STRING([--enable-print_units],
+                 [enable printing the unit clauses as they are learnt<:@no@:>@]),
+  [:],
+  [enable_print_units="no"])
+
+if test $enable_print_units = "yes" ;
+then
+  config_print_units="-DREPORT_DL1_THLITS"
+else
+  config_print_units=""
+fi
+AM_CONDITIONAL([ENABLE_PRINT_UNITS], [test "$enable_print_units" = "yes"])
+echo "Print units as they are learnt... $enable_print_units"
+
+
 
 #
 # Enable compression for dump files
@@ -455,7 +474,7 @@ then
   exit
 fi
 
-def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_la_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_oldsubstitution $config_custom_memalloc $config_term_explanations $config_compress $config_verbose_euf $config_verbose_eufex $config_verbose_fops $config_verbose_sat $config_verbose_cnfization $config_printclausalsize"
+def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_la_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_oldsubstitution $config_custom_memalloc $config_term_explanations $config_compress $config_verbose_euf $config_verbose_eufex $config_verbose_fops $config_verbose_sat $config_print_units $config_verbose_cnfization $config_printclausalsize"
 comp_flags="-W -Wall -g -Wno-deprecated $config_profiling"
 
 def_flags=`echo ${def_flags} |sed 's/ [ ]*/ /g'`

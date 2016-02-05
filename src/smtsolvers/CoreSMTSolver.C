@@ -287,6 +287,9 @@ bool CoreSMTSolver::addClause( vec<Lit>& ps
 #endif
     , bool shared)
 {
+#ifdef REPORT_DL1_THLITS
+  int init_cl_len = ps.size();
+#endif
   assert( decisionLevel() == 0 );
 #ifdef PRODUCE_PROOF
   assert( in == 0 || ((in & (in - 1)) == 0) );
@@ -379,13 +382,35 @@ bool CoreSMTSolver::addClause( vec<Lit>& ps
 #ifdef VERBOSE_SAT
     cerr << toInt(ps[0]) << endl;
 #endif
+#ifdef REPORT_DL1_THLITS
+    if (init_cl_len != 1) {
+        // propagation
+        char* ulit = theory_handler.getLogic().printTerm(theory_handler.varToTerm(var(ps[0])));
+        cerr << "; Made a unit in addClause " << (sign(ps[0]) ? "not " : "") << ulit << endl;
+        free(ulit);
+    }
+#endif
     uncheckedEnqueue(ps[0]);
 #ifdef PRODUCE_PROOF
     Clause * confl = propagate();
     if ( confl == NULL ) return ok = true;
     return ok = false;
 #else
-    return ok = (propagate() == NULL);
+#ifdef REPORT_DL1_THLITS
+    int prev_trail_sz = trail.size();
+#endif
+    ok = (propagate() == NULL);
+#ifdef REPORT_DL1_THLITS
+    if (trail.size() > prev_trail_sz+1) {
+        cerr << "; Found propagations in addClause:\n";
+        for (int i = prev_trail_sz+1; i < trail.size(); i++) {
+            char* ulit = theory_handler.getLogic().printTerm(theory_handler.varToTerm(var(trail[i])));
+            cerr << ";   " << (sign(trail[i]) ? "not " : "") << ulit << endl;
+            free(ulit);
+        }
+    }
+#endif
+    return ok;
 #endif
   }else{
 
@@ -1083,6 +1108,14 @@ void CoreSMTSolver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btleve
     out_btlevel       = level[var(p)];
   }
 
+#ifdef REPORT_DL1_THLITS
+  if (out_learnt.size() == 1) {
+    char* ulit = theory_handler.getLogic().printTerm(theory_handler.varToTerm(var(out_learnt[0])));
+    cerr << "; Found a unit literal " << (sign(out_learnt[0]) ? "not " : "") << ulit << endl;
+    free(ulit);
+  }
+#endif
+
 #ifdef PRODUCE_PROOF
   // Finalize proof logging with conflict clause minimization steps:
   //
@@ -1345,7 +1378,6 @@ Clause* CoreSMTSolver::propagate()
 
   while (qhead < trail.size()){
     Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.
-
     vec<Clause*>&  ws  = watches[toInt(p)];
     Clause         **i, **j, **end;
     num_props++;
@@ -1818,8 +1850,12 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 
   int res = checkTheory( false );
   if ( res == -1 ) return l_False;
-  while ( res == 2 )
+  while ( res == 2 ) {
+#ifdef REPORT_DL1_THLITS
+    
+#endif
     res = checkTheory( false );
+  }
   assert( res == 1 );
 #ifdef STATISTICS
   tsolvers_time += cpuTime( ) - start;
