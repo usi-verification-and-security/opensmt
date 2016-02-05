@@ -249,6 +249,24 @@ AM_CONDITIONAL([ENABLE_PRINT_UNITS], [test "$enable_print_units" = "yes"])
 echo "Print units as they are learnt... $enable_print_units"
 
 
+#
+# Enable verbosity flattening
+#
+AC_ARG_ENABLE(verbose_flattening,
+  AC_HELP_STRING([--enable-verbose_flattening],
+                 [enable verbosity for the flattening <:@no@:>@]),
+  [:],
+  [enable_verbose_flattening="no"])
+
+if test $enable_verbose_flattening = "yes" ;
+then
+  config_verbose_flattening="-DFLATTEN_DEBUG"
+else
+  config_verbose_flattening=""
+fi
+AM_CONDITIONAL([FLATTEN_DEBUG], [test "$enable_verbose_flattening" = "yes"])
+echo "Be verbose in flattening... $enable_verbose_flattening"
+
 
 #
 # Enable compression for dump files
@@ -474,7 +492,8 @@ then
   exit
 fi
 
-def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_la_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_oldsubstitution $config_custom_memalloc $config_term_explanations $config_compress $config_verbose_euf $config_verbose_eufex $config_verbose_fops $config_verbose_sat $config_print_units $config_verbose_cnfization $config_printclausalsize"
+def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_la_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_oldsubstitution $config_custom_memalloc $config_term_explanations $config_compress $config_verbose_euf $config_verbose_eufex $config_verbose_fops $config_verbose_sat $config_verbose_cnfization $config_printclausalsize $config_verbose_flattening"
+
 comp_flags="-W -Wall -g -Wno-deprecated $config_profiling"
 
 def_flags=`echo ${def_flags} |sed 's/ [ ]*/ /g'`

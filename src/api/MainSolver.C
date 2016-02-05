@@ -224,8 +224,15 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
     // Optimize the dag for cnfization
     Map<PTRef,int,PTRefHash> PTRefToIncoming;
     if (logic.isBooleanOperator(fc.getRoot())) {
+#ifdef FLATTEN_DEBUG
+        printf("Flattening the formula %s\n", logic.printTerm(fc.getRoot()));
+#endif
         computeIncomingEdges(fc.getRoot(), PTRefToIncoming);
-        fc.setRoot(rewriteMaxArity(fc.getRoot(), PTRefToIncoming));
+        PTRef flat_root = rewriteMaxArity(fc.getRoot(), PTRefToIncoming);
+        fc.setRoot(flat_root);
+#ifdef FLATTEN_DEBUG
+        printf("Got the formula %s\n", logic.printTerm(fc.getRoot()));
+#endif
     }
     terms.clear();
 
