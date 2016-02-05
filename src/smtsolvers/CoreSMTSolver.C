@@ -857,9 +857,6 @@ class lastToFirst_lt {  // Helper class to 'analyze' -- order literals from last
 
 void CoreSMTSolver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btlevel)
 {
-#ifdef VERBOSE_SAT
-  cerr << "analyze " << analyze_cnt++ << endl;
-#endif
 #ifdef PRODUCE_PROOF
   assert( proof.checkState( ) );
 #endif
@@ -1874,10 +1871,6 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 
     Clause* confl = propagate();
     if (confl != NULL){
-#ifdef VERBOSE_SAT
-      if (thr_backtrack == true)
-        cerr << "Bling! Theory backtrack resulted in conflict" << endl;
-#endif
       // CONFLICT
       conflicts++; conflictC++;
       if (decisionLevel() == 0) {

@@ -461,10 +461,7 @@ PTRef MainSolver::mergePTRefArgs(PTRef tr, Map<PTRef,PTRef,PTRefHash>& cache, Ma
             new_args.push(subst);
             continue;
         }
-
-        if (!logic.isAtom(subst)) {
-            // The substitution might be of the form (= a b) where a
-            // does not have a boolean sort
+        if (logic.getSymRef(subst) == sr) {
             Pterm& substs_t = logic.getPterm(subst);
             for (int j = 0; j < substs_t.size(); j++)
                 new_args.push(substs_t[j]);
