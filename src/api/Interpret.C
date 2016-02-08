@@ -262,6 +262,72 @@ declare_fun_err: ;
             return false;
         }
     }
+    else if (strcmp(cmd, "define-fun") == 0) {
+        if (logic != NULL) {
+            list<ASTNode*>::iterator it = n.children->begin();
+            ASTNode& name_node = **(it++);
+            ASTNode& args_node = **(it++);
+            ASTNode& ret_node  = **(it++);
+            ASTNode& term_node = **(it++);
+            assert(it == n.children->end());
+
+            const char* fname = name_node.getValue();
+
+            // Get the argument sorts
+            vec<SRef> args;
+            for (list<ASTNode*>::iterator it2 = args_node.children->begin(); it2 != args_node.children->end(); it2++) {
+                char* name = buildSortName(**it2);
+                if (logic->containsSort(name)) {
+                    args.push(logic->getSortRef(name));
+                    free(name);
+                }
+                else {
+                    notify_formatted(true, "Undefined sort %s in function %s", name, fname);
+                    return false;
+                }
+            }
+
+            // For now we only functions with 0 arguments since smtlib
+            // LRA only has these.
+            if (args_node.children->size() > 0) {
+                notify_formatted(true, "Only non-argument functions are supported.  Function %s has %d arguments", fname, args_node.children->size());
+                return false;
+            }
+
+            // The return sort
+            char* rsort_name = buildSortName(ret_node);
+            SRef ret_sort;
+            if (logic->containsSort(rsort_name)) {
+                ret_sort = newSort(ret_node);
+                free(rsort_name);
+            } else {
+                notify_formatted(true, "Unknown return sort %s of %s", rsort_name, fname);
+                free(rsort_name);
+                return false;
+            }
+
+            sstat status;
+            vec<LetFrame> let_branch;
+            PTRef tr = parseTerm(term_node, let_branch);
+            if (tr == PTRef_Undef) {
+                notify_formatted(true, "define-fun returns an unknown sort");
+                return false;
+            }
+            else if (logic->getSortRef(tr) != ret_sort) {
+                notify_formatted(true, "define-fun term and return sort do not match: %s and %s\n", logic->getSortName(logic->getSortRef(tr)), logic->getSortName(ret_sort));
+                return false;
+            }
+            if (defineFun(fname, tr)) notify_success();
+            else {
+                notify_formatted(true, "define-fun failed");
+                return false;
+            }
+        }
+        else {
+            notify_formatted(true, "Illegal command before set-logic: %s", cmd);
+            return false;
+        }
+    }
     else if (strcmp(cmd, "simplify") == 0) {
         char* msg;
         sstat status = main_solver->simplifyFormulas(&msg);
@@ -652,6 +718,13 @@ bool Interpret::declareFun(const char* fname, const vec<SRef>& args) {
     }
     return true;
 }
+
+bool Interpret::defineFun(const char* fname, const PTRef tr) {
+    char* msg;
+    bool rval = logic->defineFun(fname, tr);
+    return rval;
+}
+
 
 void Interpret::comment_formatted(const char* fmt_str, ...) const {
     va_list ap;

@@ -1,0 +1,2 @@
+(error "Illegal command before set-logic: define-fun")
+

@@ -369,19 +369,20 @@ lbool Logic::simplifyTree(PTRef tr, PTRef& root_out)
 PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args, char** msg) {
     SymRef sref = term_store.lookupSymbol(s, args);
     if (sref == SymRef_Undef) {
-        asprintf(msg, "Unknown symbol `%s'", s);
-        return PTRef_Undef;
+        if (defined_functions.contains(s))
+            return defined_functions[s];
+        else {
+            asprintf(msg, "Unknown symbol `%s'", s);
+            return PTRef_Undef;
+        }
     }
     assert(sref != SymRef_Undef);
     PTRef rval;
     char** msg2 = NULL;
-    if (sref == SymRef_Undef)
-        rval = PTRef_Undef;
-    else {
-        rval = insertTerm(sref, args, msg2);
-        if (rval == PTRef_Undef)
-            printf("Error in resolveTerm\n");
-    }
+    rval = insertTerm(sref, args, msg2);
+    if (rval == PTRef_Undef)
+        printf("Error in resolveTerm\n");
+
     return rval;
 }
 
@@ -756,6 +757,15 @@ SymRef Logic::declareFun(const char* fname, const SRef rsort, const vec<SRef>& a
     interpreted_functions.push(interpreted);
     return sr;
 }
+
+bool Logic::defineFun(const char* fname, const PTRef tr)
+{
+    if (defined_functions.contains(fname))
+        return false; // already there
+    defined_functions.insert(fname, tr);
+    return true;
+}
+
 PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, char** msg)
 {
     if(sym == getSym_and())

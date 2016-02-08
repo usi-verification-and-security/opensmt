@@ -61,6 +61,8 @@ class Logic {
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      disequalities;
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      ites;
 
+    Map<const char*,PTRef,StringHash,Equal<const char*> > defined_functions;
+
     vec<SymRef>         sortToEquality;
     vec<bool>           constants;
     vec<bool>           interpreted_functions;
@@ -203,6 +205,7 @@ class Logic {
     virtual PTRef mkConst     (SRef, const char*);
 
     SymRef      declareFun    (const char* fname, const SRef rsort, const vec<SRef>& args, char** msg, bool interpreted = false);
+    bool        defineFun     (const char* fname, const PTRef tr);
     SRef        declareSort   (const char* id, char** msg);
     PTRef       mkFun         (SymRef f, const vec<PTRef>& args, char** msg);
     PTRef       mkBoolVar     (const char* name);
