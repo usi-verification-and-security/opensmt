@@ -139,10 +139,13 @@ class LRALogic: public Logic
     PTRef       normalizeSum(PTRef sum); // Use for normalizing leq terms: sort the sum and divide all terms with the first factor
     PTRef       normalizeMul(PTRef mul); // Use for normalizing leq terms of form 0 <= c*v
 
+    // Logic specific simplifications: conjoin Ites, make substitutions
+    // and split equalities
+    virtual void simplify(PTRef root, PTRef& root_out);
+
     lbool retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs);
     lbool arithmeticElimination(vec<PTRef>&, Map<PTRef,PtAsgn,PTRefHash>&);
     void simplifyAndSplitEq(PTRef, PTRef&);
-    void computeSubstitutionFixpoint(PTRef root, PTRef& root_out);
 
     virtual void serializeLogicData(int*& logicdata_buf) const;
     void deserializeLogicData(const int* logicdata_buf);

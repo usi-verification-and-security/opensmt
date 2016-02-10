@@ -33,8 +33,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 const char* LRALogic::e_nonlinear_term = "Logic does not support nonlinear terms";
 
+
 void
-LRALogic::computeSubstitutionFixpoint(PTRef root, PTRef& root_out)
+LRALogic::simplify(PTRef root, PTRef& root_out)
 {
     PTRef extra_root, extra_extra_root;
     conjoinItes(root, extra_root);

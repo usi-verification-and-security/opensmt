@@ -304,6 +304,8 @@ class Logic {
     // XXX There's a need for non msg giving version
     virtual PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms, char** msg);
 
+    // Logic specific simplifications
+    virtual void simplify(PTRef root, PTRef& root_out);
 
     // Top-level equalities based substitutions
     void collectFacts(PTRef root, vec<PtAsgn>& facts);

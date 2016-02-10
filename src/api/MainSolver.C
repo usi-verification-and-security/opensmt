@@ -192,7 +192,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
     // For soundness it is important to run this until closure
     Map<PTRef,int,PTRefHash> subst_targets;
     PTRef new_root;
-    logic.computeSubstitutionFixpoint(root, new_root);
+    logic.simplify(root, new_root);
     if (logic.isTrue(new_root)) return status = s_True;
     else if (logic.isFalse(new_root)) return status = s_False;
 

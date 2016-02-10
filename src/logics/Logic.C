@@ -948,6 +948,12 @@ bool Logic::isAtom(PTRef r) const {
     return false;
 }
 
+void
+Logic::simplify(PTRef root, PTRef& root_out)
+{
+    computeSubstitutionFixpoint(root, root_out);
+}
+
 void Logic::computeSubstitutionFixpoint(PTRef root, PTRef& root_out)
 {
     // The substitution of facts together with the call to simplifyTree
