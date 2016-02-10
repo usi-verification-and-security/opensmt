@@ -1851,9 +1851,6 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
   int res = checkTheory( false );
   if ( res == -1 ) return l_False;
   while ( res == 2 ) {
-#ifdef REPORT_DL1_THLITS
-    
-#endif
     res = checkTheory( false );
   }
   assert( res == 1 );
