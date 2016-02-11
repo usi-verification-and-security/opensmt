@@ -26,6 +26,8 @@ set(SRC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(SRC_OPENSMT ${SRC}/../../../src)
 set(SRC_HIREDIS ${SRC}/deps/redis-stable/deps/hiredis)
 
+set(CMAKE_MODULE_PATH "${SRC}")
+
 include_directories(
         "${SRC}"
         "${SRC_OPENSMT}"
