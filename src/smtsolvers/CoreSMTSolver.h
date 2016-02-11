@@ -317,6 +317,7 @@ class CoreSMTSolver : public SMTSolver
     // Solving:
     //
     bool    simplify     ();                        // Removes already satisfied clauses.
+    void    declareVarsToTheories();                 // Declare the seen variables to the theories
     lbool   solve        ( const vec< Lit > & assumps );                 // Search for a model that respects a given set of assumptions.
     lbool   solve        ( const vec< Lit > & assumps, const unsigned ); // Search for a model that respects a given set of assumptions.
     lbool   solve        ();                        // Search without assumptions.
@@ -815,9 +816,6 @@ class CoreSMTSolver : public SMTSolver
       // Added Code
       //=================================================================================================
   public:
-    lbool   lookaheadSplit(int d);                  // Perform a lookahead-based split of depth d
-
-    int     lookaheadSplit(int d, const int dl, int idx); // Perform a lookahead of depth d and split.  Decision level should initially be 0.  idx is the index to the var array: the lookahead will start going through the vars from there.
     lbool   lookaheadSplit2(int d, int &idx);
     lbool   lookaheadSplit2(int d);
     void    printTrace() const;

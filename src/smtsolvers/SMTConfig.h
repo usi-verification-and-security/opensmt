@@ -120,7 +120,8 @@ static const struct SpPref sppref_undef = { 4 };
 //
 struct SMTConfig
 {
-private:
+  // The options here should be private
+public:
   static const char* o_incremental;
   static const char* o_produce_stats;
   static const char* o_stats_out;
@@ -178,6 +179,9 @@ private:
   static const char* o_sat_split_preference;
   static const char* o_produce_models;
   static const char* o_sat_remove_symmetries;
+  static const char* o_dryrun;
+
+private:
 
   static const char* s_err_not_str;
   static const char* s_err_not_bool;
@@ -186,7 +190,7 @@ private:
   static const char* s_err_unknown_split;
   static const char* s_err_unknown_units;
 
-private:
+
   Info          info_Empty;
   Option        option_Empty;
   vec<Option*>  options;
@@ -434,8 +438,8 @@ public:
 
     bool sat_split_threads(int threads){
         if (threads<1 || parallel_threads) return false;
-        insertOption(o_sat_split_type, new Option(spts_scatter));
-        //insertOption(o_sat_split_type, new Option(spts_lookahead));
+        //insertOption(o_sat_split_type, new Option(spts_scatter));
+        insertOption(o_sat_split_type, new Option(spts_lookahead));
         insertOption(o_sat_split_units, new Option(spts_time));
         insertOption(o_sat_split_inittune, new Option(double(2)));
         insertOption(o_sat_split_midtune, new Option(double(2)));
@@ -486,6 +490,10 @@ public:
   int remove_symmetries() const
     { return optionTable.contains(o_sat_remove_symmetries) ?
         optionTable[o_sat_remove_symmetries]->getValue().numval : 0; }
+
+  int dryrun() const
+    { return optionTable.contains(o_dryrun) ?
+        optionTable[o_dryrun]->getValue().numval : 0; }
 
   SpPref sat_split_preference() const {
     if (optionTable.contains(o_sat_split_preference)) {

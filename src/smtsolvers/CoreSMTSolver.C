@@ -2153,12 +2153,8 @@ double CoreSMTSolver::progressEstimate() const
   return progress / nVars();
 }
 
-lbool CoreSMTSolver::solve( const vec<Lit> & assumps
-                          , const unsigned max_conflicts )
+void CoreSMTSolver::declareVarsToTheories()
 {
-    // Inform theories of the variables that are actually seen by the
-    // SAT solver.
-    //bool* var_seen = (bool*)calloc(nVars(), sizeof(bool));
     for (int i = 0; i < trail.size(); i++) {
         Var v = var(trail[i]);
         if (!var_seen[v]) {
@@ -2179,18 +2175,24 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
             }
         }
     }
-//    for (int i = 0; i < theory_handler.tsolvers.size(); i++)
-//        if (theory_handler.tsolvers[i] != NULL)
-//            theory_handler.tsolvers[i]->print(std::cerr);
-//    return l_Undef;
+
     // Forbid branching on the vars that do not appear in the formula.
     // I'm curious as to whether this is sound!
     for (int i = 0; i < nVars(); i++) {
-        if (!var_seen[i])
+        if (!var_seen[i]) {
             decision_var[i] = false;
+            cerr << "Disabling var " << theory_handler.getLogic().printTerm(theory_handler.varToTerm(i)) << endl;
+        }
     }
-    //free(var_seen);
-    // If splitting is enabled refresh the options
+}
+
+lbool CoreSMTSolver::solve( const vec<Lit> & assumps
+                          , const unsigned max_conflicts )
+{
+    // Inform theories of the variables that are actually seen by the
+    // SAT solver.
+    declareVarsToTheories();
+
     split_type     = config.sat_split_type();
     if (split_type != spt_none) {
         split_start    = config.sat_split_asap();
@@ -2269,8 +2271,8 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
     const size_t old_conflicts = nLearnts( );
     // Stop flag for cost theory solving
     bool cstop = false;
-    // AEJ
-//    stop = true;
+    if (config.dryrun())
+        stop = true;
     while (status == l_Undef && !opensmt::stop && !cstop && !this->stop) {
 #ifndef SMTCOMP
         // Print some information. At every restart for
@@ -2373,33 +2375,8 @@ bool CoreSMTSolver::UBVal::safeToSkip(const ExVal& e) const
     return false;
 }
 
-// Entry point for lookaheadSplit
-//
-
-lbool CoreSMTSolver::lookaheadSplit(int d)
-{
-    bool first_model_found_prev = first_model_found;
-    first_model_found = true;
-    int dl = lookaheadSplit(d, 0, 0);
-    lbool res = l_Undef;
-    if (dl == -2) {
-        res = l_True;
-        model.growTo(nVars());
-        for (int i = 0; i < nVars(); i++)
-            model[i] = value(trail[i]);
-    }
-    else if (splits.size() == 0) {
-        res = l_False;
-    }
-    first_model_found = first_model_found_prev;
-
-    // Without these I get a segfault from theory solver's destructor...
-    cancelUntil(-1);
-    theory_handler.backtrack(-1);
-    return res;
-}
-
 lbool CoreSMTSolver::lookaheadSplit2(int d) {
+    declareVarsToTheories();
     int idx = 0;
     bool first_model_found_prev = first_model_found;
     first_model_found = true;
@@ -2620,6 +2597,7 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx) {
     printf("Starting lookahead loop with %d vars\n", nVars());
 #endif
     for (Var v(idx % nVars()); (LAexacts[v].getRound() != latest_round); v = Var((idx + (++i)) % nVars())) {
+        if (!decision_var[v]) continue; // Skip the non-decision vars
 #ifdef LADEBUG
         printf("Checking var %d\n", v);
 #endif
@@ -2705,161 +2683,6 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx) {
     idx = (idx + i) % nVars();
     best = getLABest();
     return l_Undef;
-}
-
-//
-// Do the splits based on the lookahead heuristics.  The function is
-// recursive
-//  - d is the depth until which the lookahead should be done, and
-//    results in 2^d splits
-//  - dl is the decision level where the function is called
-//  - idx is the index to the variable where the lookahead should start
-//    (to avoid the quadratic behavior)
-//
-int CoreSMTSolver::lookaheadSplit(int d, const int dl, int idx)
-{
-    assert(decisionLevel() == dl);
-    updateRound();
-    if (d == 0) { createSplit_lookahead(); return dl; }
-    int i = 0;
-    bool conflict_found = false;
-    printf("Starting lookahead phase at level %d\n", decisionLevel());
-    for (Var v(idx % nVars()); (LAexacts[v].getRound() != latest_round) || conflict_found; v = Var((idx + (++i)) % nVars())) {
-        if (value(v) != l_Undef || LAupperbounds[v].safeToSkip(LAexacts[var(getLABest())])) {
-            LAexacts[v].setRound(latest_round);
-            // It is possible that all variables are assigned here.
-            // In this case it seems that we have a satisfying assignment.
-            if (trail.size() == nVars()) {
-                assert(checkTheory(true) == 1);
-                for (int j = 0; j < clauses.size(); j++) {
-                    Clause& c = *clauses[j];
-                    int k;
-                    for (k = 0; k < c.size(); k++)
-                        if (value(c[k]) == l_True) break;
-                    assert(k < c.size());
-                }
-                return -2; // Stands for SAT
-            }
-            continue;
-        }
-        int p0 = 0, p1 = 0;
-        for (int p = 0; p < 2; p++) { // do for both polarities
-
-            conflict_found = false;
-
-            if (decisionLevel() == dl)
-                newDecisionLevel();
-            assert(decisionLevel() == dl+1);
-            Lit l(v, p);
-            uncheckedEnqueue(l);
-
-            bool diff;
-            do {
-                assert(decisionLevel() == dl+1 || decisionLevel() == dl);
-                diff = false;
-                int curr_asgns = trail.size();
-                Clause *c;
-                while ((c = propagate()) != NULL) {
-                    vec<Lit> out_learnt;
-                    int out_btlevel;
-                    analyze(c, out_learnt, out_btlevel);
-                    // Think this better.  If we find a conflict, it
-                    // means that the problems at the leaves of the
-                    // subtree starting from out_btlevel + 1 are
-                    // in fact unsatisfiable.  The exception is the unit
-                    // clauses.  
-                    printf("Conflict: I need to backtrack from %d to %d\n", decisionLevel(), out_btlevel);
-                    printf("The implied literal is %s%d\n", sign(out_learnt[0]) ? "-" : "", var(out_learnt[0]));
-                    cancelUntil(out_btlevel);
-                    printTrace();
-                    Clause* d = NULL;
-                    if (out_learnt.size() > 1) {
-                        d = Clause_new(out_learnt, true);
-                        learnts.push(d);
-                        attachClause(*d);
-                    }
-                    uncheckedEnqueue(out_learnt[0], d);
-                    if (out_btlevel < dl) { // Backjump
-                        if (out_btlevel == -1)
-                            return out_btlevel;
-                        else return out_btlevel+1; // To be consistent with the recursive call in normal case
-                    }
-                    conflict_found = true;
-                    diff = true;
-                    assert(decisionLevel() == dl);
-                }
-                if (!diff) {
-                    int res = checkTheory(true);
-                    if (res == -1) return -1;
-                    if (res == 2) {
-                        printf("Theory propagations\n");
-                        propagations = true;
-                        continue; // BCP
-                    }
-                    if (res == 0) { // l results in a conflict.
-                        printf("Theory conflict\n");
-                        printTrace();
-                        if (decisionLevel() < dl) // Backjump
-                            return decisionLevel();
-                        // The propagation can be continued until fix point
-                        // We can still continue the lookahead, but we are
-                        // no longer interested in the upper bounds
-                        conflict_found = true;
-                        diff = true;
-                    }
-                }
-                diff |= (trail.size() - curr_asgns > 0);
-            } while (diff);
-
-            if (!conflict_found)
-                for (int j = 0; j < trail.size(); j++)
-                    updateLAUB(trail[j], trail.size());
-            else {
-                // Which also means that there is new information
-                // available on the solver in the form of literals
-                // asserted on the previous decision level and we need
-                // to recompute the lookahead values.
-                updateRound();
-                assert(decisionLevel() == dl);
-                break;
-            }
-
-            p == 0 ? p0 = trail.size() : p1 = trail.size();
-
-            // Backtrack the decision
-            cancelUntil(decisionLevel()-1);
-        }
-
-        if (!conflict_found && value(v) == l_Undef) {
-            setLAExact(v, p0, p1);
-            updateLABest(v);
-            assert(value(getLABest()) == l_Undef);
-        }
-    }
-    printf("Lookahead phase over successfully\n");
-    assert(decisionLevel() == dl);
-    Lit best = getLABest();  // Save the best lit for this round
-    // FIXME here it is possible not to have a best literal, for
-    // instance if everything is already assigned.
-    assert(best != lit_Undef);
-    assert(value(best) == l_Undef);
-    printf("The best I found propagates high %d and low %d\n", LAexacts[var(getLABest())].getEx_h(), LAexacts[var(getLABest())].getEx_l());
-    for (int p = 0; p < 2; p++) { // repeat for both polarities
-        // Make the branch
-        newDecisionLevel();
-        Lit choice = p == 0 ? best : ~best;
-        printTrace();
-        printf("I'm making decision %s%d at dl %d\n", sign(choice) ? "-" : "", var(choice), decisionLevel());
-        uncheckedEnqueue(choice);
-        assert(decisionLevel() == dl+1);
-        int new_dl = lookaheadSplit(d-1, decisionLevel(), idx);
-        if (new_dl <= dl)
-            return new_dl;
-//        assert(decisionLevel() == dl+1); // This is not true
-        cancelUntil(dl);
-    }
-    assert(decisionLevel() == dl);
-    return dl;
 }
 
 void CoreSMTSolver::updateLABest(Var v)

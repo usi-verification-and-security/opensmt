@@ -188,9 +188,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         enriched.push(root);
         root = logic.mkAnd(enriched);
     }
-    // Framework for handling different logic related simplifications.
-    // For soundness it is important to run this until closure
-    Map<PTRef,int,PTRefHash> subst_targets;
+    // Framework for handling different logic specific simplifications.
     PTRef new_root;
     logic.simplify(root, new_root);
     if (logic.isTrue(new_root)) return status = s_True;
@@ -198,8 +196,6 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
 
     vec<PtChild> terms;
     FContainer fc(new_root);
-    //expandItes(fc, terms);
-    //fc.setRoot(terms[terms.size()-1].tr);
 
     if(config.remove_symmetries()) {
 
@@ -207,7 +203,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         //d.toDot("/home/simone/Desktop/graph.dot");
         d.findSBPs();
         PTRef sbps = d.getSBPs();
-        
+
         if(sbps != PTRef_Undef) {
             std::cerr << "; [SBPs]: " << logic.printTerm(sbps) << std::endl;
             vec<PTRef> newTerms;

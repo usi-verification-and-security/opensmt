@@ -121,7 +121,8 @@ int main( int argc, char * argv[] )
 //    WorkerClient *w;
     SMTConfig c;
     Interpret interpreter(c);
-    while ((opt = getopt(argc, argv, "hp:")) != -1) {
+    bool dryrun = false; // Run without solving
+    while ((opt = getopt(argc, argv, "hp:d")) != -1) {
         switch (opt) {
             case 'p':
                 if(!c.sat_split_threads(atoi(optarg))){
@@ -150,6 +151,11 @@ int main( int argc, char * argv[] )
 //                break;
             case 'h':
                 //    context.getConfig( ).printHelp( );
+                break;
+            case 'd':
+                const char* msg;
+                c.setOption(SMTConfig::o_dryrun, Option(true), msg);
+                break;
             default: /* '?' */
                 fprintf(stderr, "Usage:\n\t%s [-p threads] filename [...]\n\t%s -s host:port -r host:port\n\t%s -h\n",
                         argv[0], argv[0], argv[0]);
