@@ -1043,7 +1043,11 @@ sstat MainSolver::solve()
     sstat *results;
     vec<int> *split_threads;
 
-    status = sstat(ts.solve());
+    if (config.parallel_threads && config.sat_split_type() == spt_lookahead)
+        status = lookaheadSplit(getLog2Ceil(config.sat_split_num()));
+    else
+        status = sstat(ts.solve());
+
     if (!(config.parallel_threads && status == s_Undef)) {
         if (status == s_True && config.produce_models())
             thandler.computeModel();
@@ -1051,7 +1055,7 @@ sstat MainSolver::solve()
     }
 
     opensmt::stop = false;
-    
+
     if (pipe(pipefd) == -1) {
         cerr << "Pipe error";
         return status;

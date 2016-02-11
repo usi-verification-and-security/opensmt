@@ -2181,7 +2181,7 @@ void CoreSMTSolver::declareVarsToTheories()
     for (int i = 0; i < nVars(); i++) {
         if (!var_seen[i]) {
             decision_var[i] = false;
-            cerr << "Disabling var " << theory_handler.getLogic().printTerm(theory_handler.varToTerm(i)) << endl;
+//            cerr << "Disabling var " << theory_handler.getLogic().printTerm(theory_handler.varToTerm(i)) << endl;
         }
     }
 }
