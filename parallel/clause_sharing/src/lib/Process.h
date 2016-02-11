@@ -50,6 +50,8 @@ public:
 
     void join();
 
+    inline bool joinable();
+
     Frame &reader();
 
     Frame &writer();

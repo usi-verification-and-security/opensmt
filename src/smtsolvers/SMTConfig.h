@@ -435,10 +435,11 @@ public:
     bool sat_split_threads(int threads){
         if (threads<1 || parallel_threads) return false;
         insertOption(o_sat_split_type, new Option(spts_scatter));
+        //insertOption(o_sat_split_type, new Option(spts_lookahead));
         insertOption(o_sat_split_units, new Option(spts_time));
         insertOption(o_sat_split_inittune, new Option(double(2)));
         insertOption(o_sat_split_midtune, new Option(double(2)));
-        insertOption(o_sat_split_num, new Option(2));
+        insertOption(o_sat_split_num, new Option(threads));
         insertOption(o_sat_split_asap, new Option(1));
         parallel_threads = threads;
         return true;

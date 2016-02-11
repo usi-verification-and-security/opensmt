@@ -1183,23 +1183,36 @@ void MainSolver::solve_split(int i, int s, int wpipefd, std::mutex *mtx)
     int* split;
     int split_sz;
     char* msg;
-    assert(this->writeSolverSplit(s,split,split_sz,true,&msg));
+    sstat result = s_Undef;
+    MainSolver* main_solver;
+    if(!this->writeSolverSplit(s,split,split_sz,true,&msg)){
+        std::cerr << "Thread " << i << ": " << msg << "\n";
+        free(msg);
+        goto done;
+    }
 
-    MainSolver* main_solver = new MainSolver(*theory, config, new SimpSMTSolver(config, theory->getTHandler()));
+    main_solver = new MainSolver(*theory, config, new SimpSMTSolver(config, theory->getTHandler()));
     main_solver->initialize();
 
-    main_solver->readSolverState(split,split_sz,true, &msg);
-    free(split);
+    if (!main_solver->readSolverState(split,split_sz,true, &msg)) {
+        std::cerr << "Thread " << i << ": " << msg << "\n";
+        free(msg);
+        goto done;
+    }
 
+    free(split);
     this->parallel_solvers[i] = main_solver;
 
-    sstat result = main_solver->simplifyFormulas(&msg);
+    result = main_solver->simplifyFormulas(&msg);
     if (result != s_True && result != s_False)
         result = main_solver->solve();
 
+
+    done:
+
     delete main_solver;
     main_solver = NULL;
-    std::cout << (int)result.getValue() << "\n";
+    std::cout << "RISULTATO " << (int)result.getValue() << "\n";
 
     buf[2] = result.getValue();
 

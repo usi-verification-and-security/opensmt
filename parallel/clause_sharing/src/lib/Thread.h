@@ -105,7 +105,7 @@ public:
 
     void join();
 
-    bool joinable();
+    inline bool joinable();
 
     Frame &reader();
 

@@ -30,13 +30,21 @@ void Process::start() {
 }
 
 void Process::stop() {
-    if (this->process > 0)
+    if (this->joinable()) {
         kill(this->process, SIGINT);
+        this->join();
+    }
 }
 
 void Process::join() {
-    if (this->process > 0)
+    if (this->joinable()) {
         waitpid(this->process, NULL, 0);
+        this->process = 0;
+    }
+}
+
+bool Process::joinable() {
+    return this->process > 0;
 }
 
 Frame &Process::reader() {
