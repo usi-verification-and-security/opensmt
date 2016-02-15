@@ -226,13 +226,22 @@ void Egraph::expExplain(PTRef x, PTRef y)
     exp_pending.push(y);
 
 #ifdef PRODUCE_PROOF
-    if ( config.produce_inter != 0 )
-        cgraph.setConf( x, y, r );
+    if ( config.produce_inter() != 0 )
+    {
+        cgraph_->setConf( x, y, r );
+    }
 #endif
 
     initDup1();
     expExplain();
-    doneDup1();
+ #ifdef PRODUCE_PROOF
+    if ( config.produce_inter() != 0 )
+    {
+        cgraphs.push(cgraph_);
+        cgraph_ = new CGraph(*this, config, logic);
+    }
+#endif
+   doneDup1();
     expCleanup();
 }
 
@@ -305,10 +314,10 @@ void Egraph::expExplainAlongPath (PTRef x, PTRef y) {
         }
 
 #ifdef PRODUCE_PROOF
-        if ( config.produce_inter != 0 ) {
-            cgraph.addCNode( v );
-            cgraph.addCNode( p );
-            cgraph.addCEdge( v, p, r );
+        if ( config.produce_inter() != 0 ) {
+            cgraph_->addCNode( v );
+            cgraph_->addCNode( p );
+            cgraph_->addCEdge( v, p, r.tr );
         }
 #endif
 

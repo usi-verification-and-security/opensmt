@@ -98,6 +98,8 @@ class SStore
 
     int*    serializeSorts() const;
     void    deserializeSorts(const int*);
+
+    void dumpSortsToFile(ostream&);
 };
 
 #endif

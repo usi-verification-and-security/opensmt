@@ -27,6 +27,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef PTSTORE_H
 #define PTSTORE_H
 
+#include <map>
+
 #include "Pterm.h"
 #include "SymStore.h"
 #include "SStore.h"
@@ -92,6 +94,15 @@ class PtStore {
     Map<PTLKey,PTRef,PTLHash,Equal<PTLKey> >    cplx_map;  // Mapping complex terms to canonical terms
 //    vec<PTLKey> cplx_keys;
 
+    // partitions:
+    std::map<uint32_t, PTRef> partitions; //partitions, id to partition
+    std::map<uint32_t, PTRef> a_partitions; //assertions
+    std::map<const char*, PTRef> s_partitions; //partitions, name to partition
+#ifdef PRODUCE_PROOF
+    Map<SymRef,ipartitions_t,SymRefHash,Equal<SymRef> > sym_partitions;
+    Map<PTRef,ipartitions_t,PTRefHash,Equal<PTRef> > term_partitions;
+#endif
+
 #ifdef SIMPLIFY_DEBUG
     public:
 #endif
@@ -113,6 +124,37 @@ class PtStore {
         return tr;
     }
 
+   // Partitions
+     bool assignPartition(const char* pname, PTRef, char** msg); //for partitions
+    bool assignPartition(PTRef, char** msg); //for assertions
+#ifdef PRODUCE_PROOF
+    ipartitions_t getIPartitions(PTRef _t)
+    {
+        if(!term_partitions.contains(_t))
+            term_partitions.insert(_t, 0);
+        return term_partitions[_t];
+    }
+    void setIPartitions(PTRef _t, ipartitions_t _p) { term_partitions.insert(_t, _p); }
+    void addIPartitions(PTRef _t, ipartitions_t _p)
+    {
+        if(!term_partitions.contains(_t))
+            term_partitions.insert(_t, 0);
+        term_partitions[_t] |= _p;
+    }
+    ipartitions_t getIPartitions(SymRef _s)
+    {
+        if(!sym_partitions.contains(_s))
+            sym_partitions.insert(_s, 0);
+        return sym_partitions[_s];
+    }
+    void setIPartitions(SymRef _s, ipartitions_t _p) { sym_partitions.insert(_s, _p); }
+    void addIPartitions(SymRef _s, ipartitions_t _p)
+    {
+        if(!sym_partitions.contains(_s))
+            sym_partitions.insert(_s, 0);
+        sym_partitions[_s] |= _p;
+    }
+#endif
 
     void   free(PTRef r) { pta.free(r); }  // this is guaranteed to be lazy
 

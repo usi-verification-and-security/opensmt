@@ -71,8 +71,7 @@ Egraph::Egraph(SMTConfig & c, Logic& l, TermMapper& term_map , vec<DedElem>& d)
 //      , use_gmp            ( false )
 #ifdef PRODUCE_PROOF
       , iformula           ( 1 )
-      , cgraph_            ( new CGraph( *this, config ) )
-      , cgraph             ( *cgraph_ )
+      , cgraph_            ( new CGraph( *this, config, logic ) )
       , automatic_coloring ( false )
 #endif
   {
@@ -313,16 +312,29 @@ void Egraph::getConflict( bool deduction, vec<PtAsgn>& cnfl )
 }
 
 #ifdef PRODUCE_PROOF
-Enode * Egraph::getInterpolants( logic_t & l )
+//Enode * Egraph::getInterpolants( logic_t & l )
+PTRef
+Egraph::getInterpolants(const ipartitions_t & p)
 {
-  assert( config.produce_inter );
-  assert( 0 <= conf_index && conf_index < (int)tsolvers.size( ) );
-  if ( conf_index == 0 ) 
+  assert( config.produce_inter() );
+  PTRef itp = PTRef_Undef;
+  vec<PTRef> and_args;
+  for(int i = 0; i < cgraphs.size(); ++i)
   {
-    l = QF_UF;
-    return interpolants;
+      PTRef pi = cgraphs[i]->getInterpolants(p);
+      and_args.push(pi);
+      cgraphs[i]->verifyInterpolantWithExternalTool(p);
+      cerr << ";Partial interpolant " << i << ": " << logic.printTerm(pi) << endl;
   }
-  return tsolvers[ conf_index ]->getInterpolants( l );
+  itp = logic.mkAnd(and_args);
+  return itp;
+  //assert( 0 <= conf_index && conf_index < (int)tsolvers.size( ) );
+  //if ( conf_index == 0 ) 
+  //{
+  //  l = QF_UF;
+  //  return interpolants;
+  //}
+  //return tsolvers[ conf_index ]->getInterpolants( l );
 }
 #endif
 
@@ -719,10 +731,10 @@ bool Egraph::mergeLoop( PtAsgn reason )
             assert(en_qroot.getConstant() != PTRef_Undef);
             assert(enr_proot != enr_qroot);
 #ifdef PRODUCE_PROOF
-            if ( config.produce_inter > 0 ) {
-                cgraph.setConf( p->getRoot( )->getConstant( )
-                        , q->getRoot( )->getConstant( )
-                        , NULL );
+            if ( config.produce_inter() > 0 ) {
+                cgraph_->setConf( en_proot.getConstant( )
+                        , en_qroot.getConstant( )
+                        , PTRef_Undef );
             }
 #endif
             //
@@ -757,7 +769,13 @@ bool Egraph::mergeLoop( PtAsgn reason )
 #endif
             initDup1( );
             expExplain( );
-            doneDup1( );
+ #ifdef PRODUCE_PROOF
+            if ( config.produce_inter() > 0 ) {
+                cgraphs.push(cgraph_);
+                cgraph_ = new CGraph(*this, config, logic);
+            }
+#endif
+           doneDup1( );
             expCleanup(); // Should be organized better...
         }
         // Does the reason term correspond to disequality symbol
@@ -789,7 +807,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
             cerr << "Explain YYY" << endl;
 #endif
 #ifdef PRODUCE_PROOF
-            expExplain( reason_1, reason_2, reason_inequality );
+            expExplain( reason_1, reason_2, reason_inequality.tr );
 #else
             expExplain( reason_1, reason_2 );
 #endif
@@ -833,7 +851,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
             cerr << "Explain ZZZ " << logic.printTerm(reason_1) << " " << logic.printTerm(reason_2) << " " << logic.printTerm(reason_inequality.tr) << endl;
 #endif
 #ifdef PRODUCE_PROOF
-            expExplain( reason_1, reason_2, reason_inequality );
+            expExplain( reason_1, reason_2, reason_inequality.tr );
 #else
             expExplain( reason_1, reason_2 );
 #endif
@@ -895,7 +913,7 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
         cerr << "Explain XXY" << endl;
 #endif
 #ifdef PRODUCE_PROOF
-        expExplain( x, y, r );
+        expExplain( x, y, r.tr );
 #else
         expExplain( x, y );
 #endif
@@ -1066,7 +1084,7 @@ bool Egraph::assertDist( PTRef tr_d, PtAsgn tr_r )
             cerr << "Explain XYX" << endl;
 #endif
 #ifdef PRODUCE_PROOF
-            expExplain( en_c.getTerm(), enode_store[p].getTerm(), tr_r );
+            expExplain( en_c.getTerm(), enode_store[p].getTerm(), tr_r.tr );
 #else
             expExplain( en_c.getTerm(), enode_store[p].getTerm() );
 #endif
@@ -2264,6 +2282,7 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r)
 
 
 #ifdef PRODUCE_PROOF
+/*
 void Egraph::tmpMergeBegin( Enode * x, Enode * y )
 {
   assert( config.produce_inter != 0 );
@@ -2344,6 +2363,7 @@ void Egraph::tmpMergeEnd( Enode * x, Enode * y )
 
   assert( x->getRoot( ) != y->getRoot( ) );
 }
+*/
 #endif
 
 //

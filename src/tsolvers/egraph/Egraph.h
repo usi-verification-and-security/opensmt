@@ -118,6 +118,8 @@ public:
 
     void print(ostream& out) { return; }
 
+    const Enode& getEnode(ERef er) const { return enode_store[er]; }
+    const Enode& getEnode(PTRef er) const { return enode_store[er]; }
     const vec<ERef>& getEnodes() const    { return enode_store.getEnodes(); }
     PTRef ERefToTerm(ERef er)    const    { return enode_store[er].getTerm(); }
     bool  isDeduced(PTRef tr)    const    { return deduced[logic.getPterm(tr).getVar()] != l_Undef; }
@@ -245,8 +247,10 @@ public:
                                               , vec<PTRef> & );             // Exported explain
   // Temporary merge, used by array theory to merge indexes
 #ifdef PRODUCE_PROOF
+  /*
   void                tmpMergeBegin           ( ERef, ERef );
   void                tmpMergeEnd             ( ERef, ERef );
+  */
 #endif
 
   //===========================================================================
@@ -516,7 +520,7 @@ public:
   inline void     setAutomaticColoring    ( ) { assert( !automatic_coloring ); automatic_coloring = true; }
   inline unsigned getNofPartitions        ( ) { return iformula - 1; }
 
-  Enode *         getInterpolants         ( logic_t & );     
+  PTRef         getInterpolants         (const ipartitions_t &);
   Enode *         getNextAssertion        ( );
   Enode *         expandDefinitions       ( Enode * );
   void            addDefinition           ( Enode *, Enode * );
@@ -539,7 +543,7 @@ private:
   vector< Enode * >       formulae_to_tag;           // Formulae to be tagged
   vector< uint64_t >      id_to_iformula;            // From enode to iformula it belongs to
   CGraph *                cgraph_;                   // Holds congrunce graph and compute interpolant 
-  CGraph &                cgraph;                    // Holds congrunce graph and compute interpolant 
+  vec<CGraph*> cgraphs;
   bool                    automatic_coloring;        // Set automatic node coloring
   vector< Enode * >       idef_list;                 // Definition list in rev chron order
   map< Enode *, Enode * > idef_map;                  // Def to term map

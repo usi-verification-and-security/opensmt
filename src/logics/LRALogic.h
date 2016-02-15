@@ -81,7 +81,7 @@ class LRALogic: public Logic
 
     SRef        getSort_real    ()              const { return sort_REAL;    }
 
-    const opensmt::Real& getRealConst(PTRef tr)          { SymId id = sym_store[getPterm(tr).symb()].getId(); assert(id < reals.size() && reals[id] != NULL); return *reals[id]; }
+    const opensmt::Real& getRealConst(PTRef tr);
 
     bool        isRealPlus(SymRef sr) const { return sr == sym_Real_PLUS; }
     bool        isRealPlus(PTRef tr) const { return isRealPlus(getPterm(tr).symb()); }
@@ -116,6 +116,8 @@ class LRALogic: public Logic
     bool        hasSortReal(PTRef tr) const { return sym_store[getPterm(tr).symb()].rsort() == sort_REAL; }
 
     bool        isUFEquality(PTRef tr) const { return !isRealEq(tr) && Logic::isUFEquality(tr); }
+
+    bool isUF(PTRef tr) const { return !hasSortReal(tr) && Logic::isUF(tr); }
 
     PTRef       getTerm_RealZero() { return term_Real_ZERO; }
     PTRef       getTerm_RealOne() { return term_Real_ONE; }

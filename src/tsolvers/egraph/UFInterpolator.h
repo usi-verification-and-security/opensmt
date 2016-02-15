@@ -41,25 +41,23 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef UF_INTERPOLATOR_H
 #define UF_INTERPOLATOR_H
 
-#include "Enode.h"
+#include "Logic.h"
 #include "SMTConfig.h"
+#include "pterms/Pterm.h"
 
 struct CEdge;
 
 struct CNode
 {
-  CNode( const int id_
-       , Enode *   e_ )
-    : id    ( id_ )
-    , e     ( e_ )
+  CNode( PTRef   e_ )
+    :
+    e     ( e_ )
     , color ( I_UNDEF )
     , next  ( NULL )
   {
-    assert( id == e->getId( ) );
   }
 
-  const int id;
-  Enode *   e;
+  PTRef   e;
   icolor_t color;
   CEdge *   next;
 };
@@ -70,7 +68,7 @@ struct CEdge
 {
   CEdge ( CNode * s
         , CNode * t
-        , Enode * r )
+        , PTRef r )
     : source( s )
     , target( t )
     , reason( r )
@@ -82,12 +80,14 @@ struct CEdge
 
   CNode * source;
   CNode * target;
-  Enode * reason;
+  PTRef reason;
   icolor_t color;
 
   inline friend ostream & operator<<( ostream & os, CEdge * ce )
   {
-    return os << ce->source->e << " ---> " << ce->target->e;
+    //FIXME
+    return os;
+    //return os << logic.getPterm(ce->source->e) << " ---> " << logic.getPterm(ce->target->e);
   }
 };
 
@@ -98,35 +98,45 @@ class CGraph
 public:
 
   CGraph( Egraph & egraph_
-        , SMTConfig & config_ )
+        , SMTConfig & config_
+        , Logic & logic_)
     : egraph  ( egraph_ )
     , config  ( config_ )
+    , logic   ( logic_ )
     , colored ( false )
-    , conf1   ( NULL )
-    , conf2   ( NULL )
-    , conf    ( NULL )
+    , conf1   ( PTRef_Undef )
+    , conf2   ( PTRef_Undef )
+    , conf    ( PTRef_Undef )
+    , interpolant (PTRef_Undef)
+    , conf_color (I_UNDEF)
+    , max_width(0)
+    , max_height(0)
+    , flat(false)
+    , divided(false)
   { }
 
   ~CGraph( ) { clear( ); }
 
-  void     addCNode      ( Enode * );
-  void     addCEdge      ( Enode *, Enode *, Enode * );
+    void verifyInterpolantWithExternalTool( const ipartitions_t& mask );
+  void     addCNode      ( PTRef );
+  void     addCEdge      ( PTRef, PTRef, PTRef );
   void     revertEdges   ( CNode * );
-  Enode *  getInterpolant( const ipartitions_t & );
+  PTRef  getInterpolants( const ipartitions_t & );
   void     printAsDotty  ( ostream & );
 
-  inline void setConf( Enode * c1, Enode * c2, Enode * r )
+  inline void setConf( PTRef c1, PTRef c2, PTRef r )
   {
-    assert( conf1 == NULL );
-    assert( conf2 == NULL );
-    assert( c1 );
-    assert( c2 );
+//      cout << "SetConf: " << logic.printTerm(c1) << " = " << logic.printTerm(c2) << endl;
+    assert( conf1 == PTRef_Undef );
+    assert( conf2 == PTRef_Undef );
+    assert( c1 != PTRef_Undef);
+    assert( c2 != PTRef_Undef);
     conf1 = c1;
     conf2 = c2;
     conf  = r;
   }
 
-  inline Enode * getConf( ) const { return conf; }
+  inline PTRef getConf( ) const { return conf; }
 
   inline void clear     ( )
   {
@@ -143,9 +153,9 @@ public:
       cedges.pop_back( );
     }
     colored = false;
-    conf1 = NULL;
-    conf2 = NULL;
-    conf = NULL;
+    conf1 = PTRef_Undef;
+    conf2 = PTRef_Undef;
+    conf = PTRef_Undef;
     cnodes_store.clear( );
   }
 
@@ -160,31 +170,51 @@ private:
   void       colorReset     ( );
 
   bool          getSubpaths          ( const path_t &, path_t &, path_t &, path_t & );
+  bool          getSubpathsSwap          ( const path_t &, path_t &, path_t &, path_t & );
   size_t        getSortedEdges       ( CNode *, CNode *, vector< CEdge * > & );
-  Enode *       I                    ( const path_t & );
-  Enode *       Irec                 ( const path_t &, map< path_t, Enode * > & );
-  Enode *       J                    ( const path_t &, vector< path_t > & );
+  PTRef       I                    ( const path_t & );
+  PTRef       Iprime                    ( const path_t & );
+  PTRef       ISwap                    ( const path_t & );
+  PTRef       IprimeSwap                    ( const path_t & );
+  PTRef       Irec                 ( const path_t &, map< path_t, PTRef > & , unsigned int h = 0);
+  PTRef       IrecSwap                 ( const path_t &, map< path_t, PTRef > & , unsigned int h = 0);
+  PTRef       J                    ( const path_t &, vector< path_t > & );
+  PTRef       JSwap                    ( const path_t &, vector< path_t > & );
   void          B                    ( const path_t &, vector< path_t > & );
+  void          BSwap                    ( const path_t &, vector< path_t > & );
   void          Brec                 ( const path_t &, vector< path_t > &, set< path_t > & );
+  void          BrecSwap                 ( const path_t &, vector< path_t > &, set< path_t > & );
   bool          getFactorsAndParents ( const path_t &, vector< path_t > &, vector< path_t > & );
+  void labelFactors( vector<path_t> & );
+  PTRef interpolate_flat(const path_t& p);
+  bool flat;
+  bool divided;
   inline path_t path                 ( CNode * c1, CNode * c2 ) { return make_pair( c1, c2 ); }
 
   bool          checkColors          ( );
 
-  Enode *       maximize             ( Enode * );
+  PTRef       maximize             ( PTRef );
 
   Egraph &                        egraph;
   SMTConfig &                     config;
+  Logic &                         logic;
   vector< CNode * >               cnodes;
   vector< CEdge * >               cedges;
-  map< enodeid_t, CNode * >       cnodes_store;
-  set< pair< Enode *, Enode * > > path_seen;
+  map< PTRef, CNode * >       cnodes_store;
+  set< pair< PTRef, PTRef > > path_seen;
   set< CNode * >                  colored_nodes;
   set< CEdge * >                  colored_edges;
   bool                            colored;
-  Enode *                         conf1;
-  Enode *                         conf2;
-  Enode *                         conf;
+  PTRef                         conf1;
+  PTRef                         conf2;
+  PTRef                         conf;
+  map< path_t, icolor_t > L;
+  PTRef interpolant;
+  icolor_t conf_color;
+  vec<PTRef> A_basic;
+  vec<PTRef> B_basic;
+  unsigned int max_width;
+  unsigned int max_height;
 
   struct CAdjust
   {

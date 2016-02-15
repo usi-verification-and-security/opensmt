@@ -139,10 +139,20 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula
 
     assert( formula != PTRef_Undef);
 
+#ifdef PEDANTIC_DEBUG
+    cerr << "cnfizerAndGiveToSolver: " << logic.printTerm(formula) << endl;
+#endif
+
     vec<PTRef> top_level_formulae;
     // Retrieve top-level formulae - this is a list constructed from a conjunction
     retrieveTopLevelFormulae(formula, top_level_formulae);
     assert(top_level_formulae.size() != 0);
+
+#ifdef PEDANTIC_DEBUG
+    cerr << "Top level formulae:" << endl;
+    for(unsigned i = 0; i < top_level_formulae.size_(); i++)
+        cerr << "Top level formula " << i << ": " << logic.printTerm(top_level_formulae[i]) << endl;
+#endif
 
     bool res = true;
 
@@ -264,9 +274,9 @@ bool Cnfizer::deMorganize( PTRef formula
 #endif
         }
 #ifdef PRODUCE_PROOF
-        if (config.produce_inter != 0)
-            rval = addClause(clause, partition);
-        else
+//        if (config.produce_inter() != 0)
+  //          rval = addClause(clause, partition);
+    //    else
 #endif
             rval = addClause(clause);
     }
@@ -568,7 +578,7 @@ bool Cnfizer::checkPureConj(PTRef e, Map<PTRef,bool,PTRefHash,Equal<PTRef> > & c
 #ifndef PRODUCE_PROOF
 bool Cnfizer::addClause( vec<Lit>& c )
 #else
-bool Cnfizer::addClause( vec<Lit>& c const ipartitions_t& partition)
+bool Cnfizer::addClause( vec<Lit>& c, const ipartitions_t& partition)
 #endif
 {
 #ifdef PEDANTIC_DEBUG
@@ -603,8 +613,8 @@ bool Cnfizer::giveToSolver( PTRef f
     if (logic.isLit(f)) {
         clause.push(findLit(f));
 #ifdef PRODUCE_PROOF
-        if ( config.produce_inter != 0 )
-            return addClause( clause, partition );
+        //if ( config.produce_inter() != 0 )
+          //  return addClause( clause, partition );
 #endif
         return addClause( clause );
     }
@@ -618,8 +628,8 @@ bool Cnfizer::giveToSolver( PTRef f
         for (int i = 0; i < lits.size(); i++)
             clause.push(findLit(lits[i]));
 #ifdef PRODUCE_PROOF
-        if ( config.produce_inter != 0 )
-            return addClause(f, partition);
+//        if ( config.produce_inter() != 0 )
+  //          return addClause(f, partition);
 #endif
         return addClause(clause);
     }

@@ -278,14 +278,14 @@ skip_theory_preproc:
 
 bool SimpSMTSolver::addSMTClause( const vec<Lit>& smt_clause
 #ifdef PRODUCE_PROOF
-                                , const ipartitions_t in
+                                , const ipartitions_t& in
 #endif
                                 )
 {
     assert( config.sat_preprocess_theory == 0 );
 
 #ifdef PRODUCE_PROOF
-    assert(config.produce_inter == 0 || in != 0);
+    assert(config.produce_inter() == 0 || in != 0);
 #endif
 
     for (int i = 0; i < smt_clause.size(); i++) {
@@ -315,7 +315,7 @@ bool SimpSMTSolver::addSMTClause( const vec<Lit>& smt_clause
 // Added code
 //=================================================================================================
 
-bool SimpSMTSolver::addClause( vec<Lit> & ps
+bool SimpSMTSolver::addClause( const vec<Lit> & ps
 #ifdef PRODUCE_PROOF
                              , const ipartitions_t & in 
 #endif

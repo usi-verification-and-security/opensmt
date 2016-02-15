@@ -74,7 +74,7 @@ public:
   void    getConflict          ( vec<Lit>&, vec<int>&, int & ); // Returns theory conflict in terms of literals
 #endif
 #ifdef PRODUCE_PROOF
-  Enode * getInterpolants      ( );                     // Fill a vector with interpolants
+  PTRef getInterpolants      (const ipartitions_t&);                     // Fill a vector with interpolants
 #endif
   Lit     getDeduction         ();                      // Returns a literal that is implied by the current state and the reason literal
   Lit     getSuggestion        ( );                     // Returns a literal that is suggested by the current state
@@ -144,8 +144,10 @@ protected:
 //  void verifyDeductionWithExternalTool   ( Enode * = NULL );
 //  bool callCertifyingSolver              ( const char * );
 #ifdef PRODUCE_PROOF
-  void verifyInterpolantWithExternalTool ( vector< Enode * > &, Enode *, const logic_t & );
+  void verifyInterpolantWithExternalTool ( PTRef itp, const ipartitions_t & );
 #endif
+  void dumpHeaderToFile(ostream&);
+  void dumpFormulaToFile(ostream&, PTRef, bool negate = false);
 
 #ifdef PEDANTIC_DEBUG
   bool  isOnTrail     ( Lit, vec<Lit>& );

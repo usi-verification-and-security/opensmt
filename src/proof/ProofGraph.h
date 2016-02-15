@@ -170,8 +170,8 @@ public:
 
   void           printProofAsDotty             ( ostream &, bool );
 
-  inline int     verbose                       ( ) const { return config.verbosity; }
-  inline int     produceInterpolants           ( ) const { return config.produce_inter; }
+  inline int     verbose                       ( ) const { return config.verbosity(); }
+  inline int     produceInterpolants           ( ) const { return config.produce_inter(); }
   inline int     printProofSMT                 ( ) const { return config.print_proofs_smtlib2; }
   inline int     printProofDotty               ( ) const { return config.print_proofs_dotty; }
   inline int     numABMixedPredicates          ( ) { return light_vars.size(); }
@@ -222,9 +222,9 @@ public:
   set< Enode * > getPredicatesSetFromInterpolantIterative ( Enode * );
   int            getComplexityInterpolantIterative        ( Enode *, bool );
   void           topolSortingEnode                        ( vector< Enode * > &, Enode * );
-  bool           usingMcMillanInterpolation               ( ) { return ( config.proof_set_inter_algo == 0 ); }
-  bool           usingPudlakInterpolation                 ( ) { return ( config.proof_set_inter_algo == 1 ); }
-  bool           usingMcMillanPrimeInterpolation          ( ) { return ( config.proof_set_inter_algo == 2 ); }
+  bool           usingMcMillanInterpolation               ( ) { return ( config.proof_set_inter_algo() == 0 ); }
+  bool           usingPudlakInterpolation                 ( ) { return ( config.proof_set_inter_algo() == 1 ); }
+  bool           usingMcMillanPrimeInterpolation          ( ) { return ( config.proof_set_inter_algo() == 2 ); }
 
 private:
 

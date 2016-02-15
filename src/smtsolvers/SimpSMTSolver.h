@@ -60,7 +60,7 @@ class SimpSMTSolver : public CoreSMTSolver
 
     bool         addSMTClause         ( const vec<Lit> &
 #ifdef PRODUCE_PROOF
-                                      , const ipartitions_t = 0
+                                      , const ipartitions_t& = 1
 #endif
                                       );
     inline lbool smtSolve             () { return solve(); }
@@ -88,9 +88,9 @@ class SimpSMTSolver : public CoreSMTSolver
     //
 */
     Var     newVar    ( bool polarity = true, bool dvar = true );
-    bool    addClause ( vec<Lit> & ps
+    bool    addClause ( const vec<Lit> & ps
 #ifdef PRODUCE_PROOF
-	              , const ipartitions_t & in = 0 
+	              , const ipartitions_t & in = 1 
 #endif
             ,bool shared=false);
     // Variable mode:

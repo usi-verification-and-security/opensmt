@@ -66,11 +66,13 @@ private:
                           );            // Do the actual cnfization
 #endif
 #ifdef PRODUCE_PROOF
-    void cnfizeAnd        ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize conjunctions
-    void cnfizeOr         ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize disjunctions
-    void cnfizeIff        ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize iffs
-    void cnfizeXor        ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize xors
-    void cnfizeIfthenelse ( Enode *, Enode *, const ipartitions_t = 0 ); // Cnfize if then elses
+    void cnfizeAnd        ( PTRef, const ipartitions_t = 0 ); // Cnfize conjunctions
+    void cnfizeOr         ( PTRef, const ipartitions_t = 0, bool def=true ); // Cnfize disjunctions
+    void cnfizeIff        ( PTRef, const ipartitions_t = 0 ); // Cnfize iffs
+    void cnfizeXor        ( PTRef, const ipartitions_t = 0 ); // Cnfize xors
+    void cnfizeIfthenelse ( PTRef, const ipartitions_t = 0 ); // Cnfize if then elses
+    void cnfizeImplies    ( PTRef, const ipartitions_t = 0 );
+    void cnfizeDistinct   ( PTRef, const ipartitions_t = 0 );
 #else // PRODUCE_PROOF
 #ifdef ENABLE_SHARING_BUG
     void cnfizeAnd        (vec<PTRef>&, PTRef);             // Cnfize conjunctions

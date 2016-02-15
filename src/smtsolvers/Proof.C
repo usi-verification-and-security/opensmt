@@ -32,6 +32,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <sys/wait.h>
 #endif
 
+/*
 void CoreSMTSolver::dumpRndInter( )
 {
   const char * name = "rnd_inter.smt2";
@@ -116,6 +117,7 @@ void CoreSMTSolver::dumpRndInter( )
   cerr << "[Dumped " << name << "]" << endl;
   exit( 0 );
 }
+*/
 
 #ifdef PRODUCE_PROOF
 
@@ -332,6 +334,7 @@ void Proof::reset( )              { }
 
 void Proof::print( ostream & out, CoreSMTSolver & s, THandler & t )
 {
+/*
   if ( clause_to_proof_der.find( NULL ) == clause_to_proof_der.end( ) )
     opensmt_error( "there is no proof of false" );
 
@@ -454,12 +457,14 @@ void Proof::print( ostream & out, CoreSMTSolver & s, THandler & t )
   }
   out << ")" << endl;
   out << ")" << endl;
+  */
 }
 
 //=============================================================================
 // The following functions are declared in CoreSMTSolver.h
 
 // Gather mixed atoms in proof
+/*
 void CoreSMTSolver::getMixedAtoms( set< Var > & mixed )
 {
   set< Clause * > visited_set;
@@ -524,7 +529,9 @@ void CoreSMTSolver::getMixedAtoms( set< Var > & mixed )
   }
   while( !unprocessed_clauses.empty( ) );
 }
+*/
 
+/*
 void CoreSMTSolver::printProof( ostream & out )
 {
   assert( (config.print_proofs_smtlib2 != 0 ) 
@@ -551,7 +558,9 @@ void CoreSMTSolver::printProof( ostream & out )
     graph.handleProof( );
   }
 }
+*/
 
+/*
 void CoreSMTSolver::printInter( ostream & out )
 {
   assert( config.produce_inter != 0 );
@@ -614,8 +623,10 @@ void CoreSMTSolver::printInter( ostream & out )
       cerr << "OK" << endl;
   }
 }
+*/
 
 // Create interpolants with each A consisting of the specified partitions
+/*
 void CoreSMTSolver::GetInterpolants(const vector<vector<int> >& partitions,
                                     vector<Enode*>& interpolants)
 {
@@ -650,8 +661,9 @@ void CoreSMTSolver::GetInterpolants(const vector<vector<int> >& partitions,
 //			cerr << "OK" << endl;
 //	}
 }
+*/
 
-
+/*
 void CoreSMTSolver::verifyInterpolantWithExternalTool( vector< Enode * > & interpolants )
 {
   ipartitions_t mask = -1;
@@ -794,23 +806,26 @@ void CoreSMTSolver::verifyInterpolantWithExternalTool( vector< Enode * > & inter
       opensmt_error( "external tool says B & I does hold" );
   }
 }
+*/
 
 void CoreSMTSolver::mixedVarDecActivity( )
 {
-  if( config.produce_inter > 0)
+    /*
+  if( config.produce_inter() > 0)
   {
     for (int i = 2; i < nVars(); i++)
     {
       Enode * e = theory_handler->varToEnode( i );
       if ( !e->isVar( ) && e->getIPartitions( ) % 2 == 1 )
       {
-	activity[i] -= config.produce_inter > 0 ? 1 : 0;
+	activity[i] -= config.produce_inter() > 0 ? 1 : 0;
 	// Update order_heap with respect to new activity:
 	if (order_heap.inHeap(i))
 	  order_heap.decrease(i);
       }
     }
   }
+  */
 }
 #endif
 

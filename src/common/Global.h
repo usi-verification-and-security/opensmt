@@ -55,6 +55,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <unistd.h>
 #include <stdint.h>
 #include <limits.h>
+#include <cstdlib>
 
 #include "common/FastRational.h"
 #include "minisat/mtl/Map.h"

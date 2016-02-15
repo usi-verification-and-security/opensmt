@@ -267,23 +267,19 @@ void THandler::getConflict (
 
 #ifdef PRODUCE_PROOF
   max_decision_level = -1;
-  for ( vector< Enode * >::iterator it = explanation.begin( )
-      ; it != explanation.end( ) 
-      ; ++ it ) {
-    Enode * ei  = *it;
-    assert( ei->hasPolarity( ) );
-    assert( ei->getPolarity( ) == l_True
-         || ei->getPolarity( ) == l_False );
-    bool negate = ei->getPolarity( ) == l_False;
-
-    Var v = enodeToVar( ei );
-    Lit l = Lit( v, !negate );
-    conflict.push( l );
+  for(int i = 0; i < explanation.size(); ++i)
+    {
+        PtAsgn& ei = explanation[i];
+        assert( ei.sgn == l_True || ei.sgn == l_False);
+        Var v = ptrefToVar(ei.tr);
+        bool negate = ei.sgn == l_False;
+        Lit l = Lit(v, !negate);
+        conflict.push(l);
 
     if ( max_decision_level < level[ v ] )
       max_decision_level = level[ v ];
   }
-  if ( config.produce_inter == 0 )
+  if ( config.produce_inter() == 0 )
     explanation.clear( );
 #else
     max_decision_level = -1;
@@ -320,22 +316,18 @@ void THandler::getConflict (
 }
 
 #ifdef PRODUCE_PROOF
-Enode * THandler::getInterpolants( )
+PTRef THandler::getInterpolants(const ipartitions_t& p)
 {
-  vector< Enode * > & explanation = egraph.getConflict( );
-
-  assert( !explanation.empty( ) );
-  logic_t l;
-  Enode * interp_list = egraph.getInterpolants( l );
+    vec<PTRef> itps;
+    for(int i = 0; i < tsolvers.size(); ++i)
+        if(tsolvers[i] != NULL)
+            itps.push(tsolvers[i]->getInterpolants(p));
 
   // Check interpolants correctness
-  if ( config.proof_certify_inter > 1 )
-    verifyInterpolantWithExternalTool( explanation, interp_list, l );
+  //if ( config.proof_certify_inter > 1 )
+    //verifyInterpolantWithExternalTool( itps[0], p );
 
-  // Flush explanation
-  explanation.clear( );
-
-  return interp_list;
+  return itps[0];
 }
 #endif
 
@@ -710,58 +702,145 @@ bool THandler::isOnTrail( Lit l, vec<Lit>& trail ) {
 //  return tool_res;
 //}
 //
-#ifdef PRODUCE_PROOF
-void THandler::verifyInterpolantWithExternalTool( vector< Enode * > & expl
-                                                , Enode * interp_list
-                                                , const logic_t & l )
-{
-  /*
-  cerr << " Explanation: " << endl;
-  for ( size_t i = 0 ; i < expl.size( ) ; i ++ )
-    cerr << ( expl[ i ]->getPolarity( ) == l_False ? "!" : " " ) << " " << expl[ i ] << " (" << expl[ i ]->getIPartitions( ) << ")" << endl;
-  cerr << "Interpolants: " << interp_list << endl;
-  */
 
-  ipartitions_t mask = 1;
-  mask = ~mask;
-  for ( unsigned in = 1 ; in < egraph.getNofPartitions( ) ; in ++ )
-  {
-    Enode * args = interp_list;
-    // Advance in the interpolants list
-    for ( unsigned i = 0 ; i < in - 1 ; i ++ )
-      args = args->getCdr( );
-    Enode * interp = args->getCar( );
-    // mask &= ~SETBIT( in );
-    clrbit( mask, in );
-    // Check A -> I, i.e., A & !I
-    // First stage: print declarations
-    const char * name_A = "/tmp/verifyinterp_A.smt2";
-    std::ofstream dump_out( name_A );
-    egraph.dumpHeaderToFile( dump_out, l );
-    // Print only A atoms
-    dump_out << "(assert " << endl;
-    dump_out << "(and" << endl;
-    for ( size_t j = 0 ; j < expl.size( ) ; j ++ )
-    {
-      Enode * e = expl[ j ];
-      assert( e->isTAtom( ) );
-      assert( e->getPolarity( ) != l_Undef );
-      assert( ( e->getIPartitions( ) &  mask) != 0 
-    	   || ( e->getIPartitions( ) & ~mask) != 0 );
-      if ( ( e->getIPartitions( ) & ~mask) != 0 ) 
-      {
-	bool negated = e->getPolarity( ) == l_False;
-	if ( negated )
-	  dump_out << "(not ";
-	e->print( dump_out );
-	if ( negated )
-	  dump_out << ")";
+void
+THandler::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate )
+{
+	vector< PTRef > unprocessed_enodes;
+	map< PTRef, string > enode_to_def;
+	unsigned num_lets = 0;
+    Logic& logic = getLogic();
+
+	unprocessed_enodes.push_back( formula );
+	// Open assert
+	dump_out << "(assert" << endl;
+	//
+	// Visit the DAG of the formula from the leaves to the root
+	//
+	while( !unprocessed_enodes.empty( ) )
+	{
+		PTRef e = unprocessed_enodes.back( );
+		//
+		// Skip if the node has already been processed before
+		//
+		if ( enode_to_def.find( e ) != enode_to_def.end( ) )
+		{
+			unprocessed_enodes.pop_back( );
+			continue;
+		}
+
+		bool unprocessed_children = false;
+        Pterm& term = logic.getPterm(e);
+        for(int i = 0; i < term.size(); ++i)
+        {
+            PTRef pref = term[i];
+            //assert(isTerm(pref));
+			//
+			// Push only if it is unprocessed
+			//
+			if ( enode_to_def.find( pref ) == enode_to_def.end( ) && (logic.isBooleanOperator( pref ) || logic.isEquality(pref)))
+			{
+				unprocessed_enodes.push_back( pref );
+				unprocessed_children = true;
+			}
+		}
+		//
+		// SKip if unprocessed_children
+		//
+		if ( unprocessed_children ) continue;
+
+		unprocessed_enodes.pop_back( );
+
+		char buf[ 32 ];
+		sprintf( buf, "?def%d", logic.getPterm(e).getId() );
+
+		// Open let
+		dump_out << "(let ";
+		// Open binding
+		dump_out << "((" << buf << " ";
+
+		if (term.size() > 0 ) dump_out << "(";
+		dump_out << logic.printSym(term.symb());
+        for(int i = 0; i < term.size(); ++i)
+		{
+            PTRef pref = term[i];
+			if ( logic.isBooleanOperator(pref) || logic.isEquality(pref) )
+				dump_out << " " << enode_to_def[ pref ];
+			else
+			{
+				dump_out << " " << logic.printTerm(pref);
+				if ( logic.isAnd(e) ) dump_out << endl;
+			}
+		}
+		if ( term.size() > 0 ) dump_out << ")";
+
+		// Closes binding
+		dump_out << "))" << endl;
+		// Keep track of number of lets to close
+		num_lets++;
+
+		assert( enode_to_def.find( e ) == enode_to_def.end( ) );
+		enode_to_def[ e ] = buf;
+	}
 	dump_out << endl;
-      }
+	// Formula
+	if ( negate ) dump_out << "(not ";
+	dump_out << enode_to_def[ formula ] << endl;
+	if ( negate ) dump_out << ")";
+	// Close all lets
+	for( unsigned n=1; n <= num_lets; n++ ) dump_out << ")";
+	// Closes assert
+	dump_out << ")" << endl;
+}
+
+void
+THandler::dumpHeaderToFile(ostream& dump_out)
+{
+    Logic& logic = getLogic();
+    dump_out << "(set-logic QF_UF)" << endl;
+
+    /*
+	dump_out << "(set-info :source |" << endl
+			<< "Dumped with "
+			<< PACKAGE_STRING
+			<< " on "
+			<< __DATE__ << "." << endl
+			<< "|)"
+			<< endl;
+	dump_out << "(set-info :smt-lib-version 2.0)" << endl;
+    */
+
+    logic.dumpHeaderToFile(dump_out);
+}
+
+#ifdef PRODUCE_PROOF
+void
+THandler::verifyInterpolantWithExternalTool( PTRef itp, const ipartitions_t& mask )
+{
+    Logic& logic = getLogic();
+    vec<PTRef> A;
+    vec<PTRef> B;
+
+    vec<PTRef>& assertions = logic.getAssertions();
+    for(int i = 0; i < assertions.size(); ++i)
+    {
+        PTRef a = assertions[i];
+        assert((logic.getIPartitions(a) & mask) != 0 || (logic.getIPartitions(a) & ~mask) != 0);
+        if((logic.getIPartitions(a) & ~mask) != 0) A.push(a);
+        else B.push(a);
     }
 
-    dump_out << "(not " << interp << ")" << endl;
-    dump_out << "))" << endl;
+    // Check A -> I, i.e., A & !I
+    // First stage: print declarations
+    const char * name_A = "verifyinterp_A.smt2";
+    std::ofstream dump_out( name_A );
+    dumpHeaderToFile(dump_out);
+
+    // Print only A atoms
+    for(int i = 0; i < A.size(); ++i)
+        dumpFormulaToFile(dump_out, A[i]);
+
+    dumpFormulaToFile(dump_out, itp, true);
     dump_out << "(check-sat)" << endl;
     dump_out << "(exit)" << endl;
     dump_out.close( );
@@ -792,34 +871,21 @@ void THandler::verifyInterpolantWithExternalTool( vector< Enode * > & expl
     }
 
     if ( tool_res == true )
-      opensmt_error2( config.certifying_solver, " says A -> I does not hold" );
-    // Now check B & I
-    const char * name_B = "/tmp/verifyinterp_B.smt2";
-    dump_out.open( name_B );
-    egraph.dumpHeaderToFile( dump_out, l );
-    // Print only B atoms
-    dump_out << "(assert " << endl;
-    dump_out << "(and" << endl;
-    for ( size_t j = 0 ; j < expl.size( ) ; j ++ )
     {
-      Enode * e = expl[ j ];
-      assert( e->isTAtom( ) );
-      assert( e->getPolarity( ) != l_Undef );
-      assert( ( e->getIPartitions( ) &  mask) != 0 
-    	   || ( e->getIPartitions( ) & ~mask) != 0 );
-      if ( ( e->getIPartitions( ) & mask) != 0 ) 
-      {
-	bool negated = e->getPolarity( ) == l_False;
-	if ( negated )
-	  dump_out << "(not ";
-	e->print( dump_out );
-	if ( negated )
-	  dump_out << ")";
-	dump_out << endl;
-      }
+      //opensmt_error2( config.certifying_solver, " says A -> I does not hold" );
+      cerr << "Error, A -> I does not hold" << endl;
     }
-    dump_out << interp << endl;
-    dump_out << "))" << endl;
+    else
+      cerr << "A -> I holds" << endl;
+
+    // Now check B & I
+    const char * name_B = "verifyinterp_B.smt2";
+    dump_out.open( name_B );
+    dumpHeaderToFile( dump_out );
+    // Print only B atoms
+    for(int i = 0; i < B.size(); ++i)
+        dumpFormulaToFile(dump_out, B[i]);
+    dumpFormulaToFile(dump_out, itp);
     dump_out << "(check-sat)" << endl;
     dump_out << "(exit)" << endl;
     dump_out.close( );
@@ -848,8 +914,12 @@ void THandler::verifyInterpolantWithExternalTool( vector< Enode * > & expl
       exit( 1 );
     }
     if ( tool_res == true )
-      opensmt_error2( config.certifying_solver, " says B & I does not hold" );
-  }
+    {
+      //opensmt_error2( config.certifying_solver, " says B & I does not hold" );
+      cerr << "Error B & I -> false does not hold" << endl;
+    }
+    else
+      cerr << "B & I -> false holds" << endl;
 }
 #endif
 

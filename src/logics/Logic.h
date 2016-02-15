@@ -61,6 +61,9 @@ class Logic {
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      disequalities;
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      ites;
 
+    //for partitions:
+    vec<PTRef> assertions;
+
     Map<const char*,PTRef,StringHash,Equal<const char*> > defined_functions;
 
     vec<SymRef>         sortToEquality;
@@ -106,6 +109,7 @@ class Logic {
     PTRef insertTermHash(SymRef, const vec<PTRef>&);
 
   public:
+    bool existsTermHash(SymRef, const vec<PTRef>&);
     static const char*  tk_true;
     static const char*  tk_false;
     static const char*  tk_not;
@@ -190,6 +194,7 @@ class Logic {
     PTRef       mkOr          (vec<PTRef>&);
     PTRef       mkXor         (vec<PTRef>&);
     PTRef       mkImpl        (vec<PTRef>&);
+    PTRef       mkImpl        (PTRef _a, PTRef _b);
     PTRef       mkNot         (PTRef);
     PTRef       mkIte         (vec<PTRef>&);
 
@@ -210,6 +215,18 @@ class Logic {
     PTRef       mkFun         (SymRef f, const vec<PTRef>& args, char** msg);
     PTRef       mkBoolVar     (const char* name);
 
+    void dumpHeaderToFile(ostream& dump_out);
+    void dumpFormulaToFile(ostream& dump_out, PTRef formula, bool negate = false);
+
+#ifdef PRODUCE_PROOF
+    // Partitions
+    ipartitions_t getIPartitions(PTRef _t) { return term_store.getIPartitions(_t); }
+    void setIPartitions(PTRef _t, ipartitions_t _p) { term_store.setIPartitions(_t, _p); }
+    void addIPartitions(PTRef _t, ipartitions_t _p) { term_store.addIPartitions(_t, _p); }
+    ipartitions_t getIPartitions(SymRef _s) { return term_store.getIPartitions(_s); }
+    void setIPartitions(SymRef _s, ipartitions_t _p) { term_store.setIPartitions(_s, _p); }
+    void addIPartitions(SymRef _s, ipartitions_t _p) { term_store.addIPartitions(_s, _p); }
+#endif
 
     // The Boolean connectives
     SymRef        getSym_true      ()              const { return sym_TRUE;     }
@@ -252,6 +269,7 @@ class Logic {
     // Check if term is an uninterpreted predicate.
     bool        isUP               (PTRef)         const;
     bool        isUF               (PTRef)         const;
+    bool        isUF               (SymRef)         const;
 
     bool        isAnd(PTRef tr)  const { return getPterm(tr).symb() == getSym_and(); }
     bool        isAnd(SymRef sr) const { return sr == getSym_and(); }
@@ -408,6 +426,7 @@ class Logic {
 // Debugging
     char*       printTerm          (PTRef tr)       const { return term_store.printTerm(tr); }
     char*       printTerm          (PTRef tr, bool l) const { return term_store.printTerm(tr, l); }
+    const char*       printSym(SymRef sr) const { return sym_store.getName(sr); }
 
     void  purify           (PTRef r, PTRef& p, lbool& sgn) const
         {p = r; sgn = l_True; while (isNot(p)) { sgn = sgn^1; p = getPterm(p)[0]; }}
@@ -418,6 +437,22 @@ class Logic {
     void compareSortStore(SStore& other) { }
     void compareTermStore(PtStore& other) { }// term_store.compare(other); }
 #endif
+
+    //partitions:
+    bool assignPartition(const char* pname, PTRef pref, char** msg)
+    {
+        return term_store.assignPartition(pname, pref, msg);
+    }
+
+    bool assignPartition(PTRef pref, char** msg)
+    {
+        assertions.push(pref);
+        return term_store.assignPartition(pref, msg);
+    }
+#ifdef PRODUCE_PROOF
+    void setIPartitionsIte(PTRef pref);
+#endif
+    vec<PTRef>& getAssertions() { return assertions; }
 
     // Statistics
     int subst_num; // Number of substitutions

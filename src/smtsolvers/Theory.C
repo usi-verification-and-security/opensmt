@@ -199,9 +199,11 @@ int CoreSMTSolver::checkTheory( bool complete )
   theory_handler.getConflict(conflicting, level, max_decision_level);
 #endif
 #if PRODUCE_PROOF
-  Enode * interp = NULL;
-  if ( config.produce_inter > 0 )
+  /*
+  PTRef interp = PTRef_Undef;
+  if ( config.produce_inter() > 0 )
     interp = theory_handler.getInterpolants( );
+    */
 #endif
 
   assert( max_decision_level <= decisionLevel( ) );
@@ -217,14 +219,15 @@ int CoreSMTSolver::checkTheory( bool complete )
     Clause & c = *confl;
     proof.addRoot( confl, CLA_THEORY );
     tleaves.push( confl );
-    if ( config.incremental )
+    if ( config.isIncremental() )
     {
       undo_stack_oper.push_back( NEWPROOF );
       undo_stack_elem.push_back( (void *)confl );
     }
-    if ( config.produce_inter > 0 )
+    /*
+    if ( config.produce_inter() > 0 )
     {
-      assert( interp );
+      assert( interp != PTRef_Undef);
       clause_to_in[ confl ] = interp;
       if ( config.incremental )
       {
@@ -232,6 +235,7 @@ int CoreSMTSolver::checkTheory( bool complete )
 	undo_stack_elem.push_back( NULL );
       }
     }
+    */
     proof.beginChain( confl );
     for ( int k = 0; k < c.size() ; k ++ )
     {
@@ -262,7 +266,7 @@ int CoreSMTSolver::checkTheory( bool complete )
     confl = Clause_new( conflicting, config.sat_temporary_learn );
     learnts.push(confl);
 #ifndef SMTCOMP
-    if ( config.incremental )
+    if ( config.isIncremental() )
     {
       undo_stack_oper.push_back( NEWLEARNT );
       undo_stack_elem.push_back( (void *)confl );
@@ -306,14 +310,15 @@ int CoreSMTSolver::checkTheory( bool complete )
 #ifdef PRODUCE_PROOF
   proof.addRoot( confl, CLA_THEORY );
   tleaves.push( confl );
-  if ( config.incremental )
+  if ( config.isIncremental() )
   {
     undo_stack_oper.push_back( NEWPROOF );
     undo_stack_elem.push_back( (void *)confl );
   }
-  if ( config.produce_inter > 0 )
+  /*
+  if ( config.produce_inter() > 0 )
   {
-    assert( interp );
+    assert( interp != PTRef_Undef);
     clause_to_in[ confl ] = interp;
     if ( config.incremental )
     {
@@ -321,6 +326,7 @@ int CoreSMTSolver::checkTheory( bool complete )
       undo_stack_elem.push_back( NULL );
     }
   }
+  */
 #endif
 
   analyze( confl, learnt_clause, backtrack_level );
@@ -354,7 +360,7 @@ int CoreSMTSolver::checkTheory( bool complete )
 
 #ifdef PRODUCE_PROOF
     proof.endChain( c );
-    if ( config.incremental )
+    if ( config.isIncremental() )
     {
       undo_stack_oper.push_back( NEWPROOF );
       undo_stack_elem.push_back( (void *)c );
@@ -492,7 +498,7 @@ int CoreSMTSolver::analyzeUnsatLemma( Clause * confl )
 
 #ifdef PRODUCE_PROOF
     proof.endChain( c );
-    if ( config.incremental )
+    if ( config.isIncremental() )
     {
       undo_stack_oper.push_back( NEWPROOF );
       undo_stack_elem.push_back( (void *)c );

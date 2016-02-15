@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/bin/bash
 echo "This is the script for running regression tests"
 echo " - date: $(date '+%Y-%m-%d at %H:%M.%S')"
 echo " - host name $(hostname -f)"

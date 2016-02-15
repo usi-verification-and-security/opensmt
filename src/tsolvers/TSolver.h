@@ -167,7 +167,7 @@ public:
     virtual lbool               evaluate            ( PTRef ) { return l_Undef; } // Evaluate the expression in the current state
     virtual ValPair             getValue            (PTRef) const = 0;
 #ifdef PRODUCE_PROOF
-    virtual Enode *             getInterpolants     ( logic_t & ) { return interpolants; }
+    virtual PTRef getInterpolants(const ipartitions_t &) = 0;
 #endif
     virtual void computeModel() = 0;                      // Compute model for variables
     virtual void getConflict(bool, vec<PtAsgn>&) = 0;     // Return conflict
@@ -186,9 +186,9 @@ protected:
     const char*                 name;             // Name of the solver
     SMTConfig &                 config;           // Reference to configuration
     vec< size_t >               backtrack_points; // Keeps track of backtrack points
-#ifdef PRODUCE_PROOF
-    Enode *                     interpolants;     // Store interpolants
-#endif
+//#ifdef PRODUCE_PROOF
+    //Enode *                     interpolants;     // Store interpolants
+//#endif
 #ifdef STATISTICS
 //    TSolverStats tsolver_stats;                   // Statistics for the solver
 #endif

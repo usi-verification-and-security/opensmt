@@ -309,9 +309,9 @@ class CoreSMTSolver : public SMTSolver
     // Problem specification:
     //
     Var     newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
-    bool    addClause ( vec<Lit> & ps
+    bool    addClause ( const vec<Lit> & ps
 #ifdef PRODUCE_PROOF
-	              , const ipartitions_t = 0 
+	              , const ipartitions_t& = 1 
 #endif
 		      ,bool shared=false);                                        // Add a clause to the solver. NOTE! 'ps' may be shrunk by this method!
     // Solving:
@@ -744,7 +744,7 @@ class CoreSMTSolver : public SMTSolver
       bool               cuvti;                      // For cancelUntilVarTemp
       vec<Lit>           lit_to_restore;             // For cancelUntilVarTemp
       vec<char>          val_to_restore;             // For cancelUntilVarTemp
-/*
+
 #ifdef PRODUCE_PROOF
       //
       // Proof production
@@ -754,7 +754,7 @@ class CoreSMTSolver : public SMTSolver
       vec< Clause * >     pleaves;                  // Store clauses that are still involved in the proof
       vec< Clause * >     tleaves;                  // Store theory clauses to be removed
       // TODO: Maybe change to vectors
-      map< Clause *, Enode * >                  clause_to_in;        // Clause id to interpolant (for theory clauses)
+      map< Clause *, PTRef >                  clause_to_in;        // Clause id to interpolant (for theory clauses)
       vector< pair< Clause *, ipartitions_t > > units_to_partition;  // Unit clauses and their partitions
       map< Clause *, ipartitions_t >            clause_to_partition; // Clause id to interpolant partition
 #endif
@@ -763,9 +763,9 @@ class CoreSMTSolver : public SMTSolver
       //
       // vector< Enode * >  interface_terms;            // Interface terms for lazy dtc
       // set< Enode * >     interface_terms_cache;      // Interface terms for lazy dtc
-      set< Enode * >     interface_equalities;       // To check that we do not duplicate eij
-      set< Enode * >     atoms_seen;                 // Some interface equalities may already exists in the formula
-*/
+      set< PTRef >     interface_equalities;       // To check that we do not duplicate eij
+      set< PTRef >     atoms_seen;                 // Some interface equalities may already exists in the formula
+
 
       int                next_it_i;                  // Next index i
       int                next_it_j;                  // Next index j

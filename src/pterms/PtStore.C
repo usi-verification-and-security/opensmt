@@ -26,6 +26,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "PtStore.h"
 
+#include <sstream>
+
 const int PtStore::ptstore_vec_idx = 1;
 const int PtStore::ptstore_buf_idx = 2;
 
@@ -198,3 +200,32 @@ void PtStore::deserializeTerms(const int* buf)
 #endif
     }
 }
+
+bool
+PtStore::assignPartition(const char* pname, PTRef pref, char** msg)
+{
+    uint32_t n = partitions.size() + 1;
+    partitions[n] = pref;
+    s_partitions[pname] = pref;
+#ifdef PRODUCE_PROOF
+    ipartitions_t p = 0;
+    setbit(p, n);
+    addIPartitions(pref, p);
+#endif
+    //TODO check whether partition already exists
+    return true;
+}
+
+bool
+PtStore::assignPartition(PTRef pref, char** msg)
+{
+    uint32_t n = a_partitions.size() + 1;
+    a_partitions[n] = pref;
+#ifdef PRODUCE_PROOF
+    ipartitions_t p = 0;
+    setbit(p, n);
+    addIPartitions(pref, p);
+#endif
+    return true;
+}
+

@@ -281,9 +281,9 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
   return v;
 }
 
-bool CoreSMTSolver::addClause( vec<Lit>& ps
+bool CoreSMTSolver::addClause( const vec<Lit>& _ps
 #ifdef PRODUCE_PROOF
-                             , ipartitions_t in
+                             , const ipartitions_t& in
 #endif
     , bool shared)
 {
@@ -299,19 +299,21 @@ bool CoreSMTSolver::addClause( vec<Lit>& ps
   bool resolved = false;
   Clause * root = NULL;
 #endif
+  vec<Lit> ps;
+    _ps.copyTo(ps);
 
   if (!ok)
     return false;
   else{
-    // Check if clause is satisfied and remove false/duplicate literals:
+      // Check if clause is satisfied and remove false/duplicate literals:
     sort(ps);
     Lit p; int i, j;
 #ifdef PRODUCE_PROOF
     root = Clause_new( ps, false );
     proof.addRoot( root, CLA_ORIG );
     assert( config.isInit( ) );
-    if ( config.produce_inter > 0 )
-      clause_to_partition[ root ] = in;
+    //if ( config.produce_inter() > 0 )
+      //clause_to_partition[ root ] = in;
     proof.beginChain( root );
 #endif
     for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
@@ -375,9 +377,9 @@ bool CoreSMTSolver::addClause( vec<Lit>& ps
     assert( res );
     assert( units[ var(ps[0]) ] == NULL );
     units[ var(ps[0]) ] = res;
-    if ( config.produce_inter > 0
-	&& var(ps[0]) > 1 ) // Avoids true/false
-      units_to_partition.push_back( make_pair( res, in ) );
+   // if ( config.produce_inter() > 0
+//	&& var(ps[0]) > 1 ) // Avoids true/false
+  //    units_to_partition.push_back( make_pair( res, in ) );
 #endif
 #ifdef VERBOSE_SAT
     cerr << toInt(ps[0]) << endl;
@@ -421,14 +423,14 @@ bool CoreSMTSolver::addClause( vec<Lit>& ps
 #endif
 
 #ifdef PRODUCE_PROOF
-    if ( config.incremental )
+    if ( config.isIncremental() )
     {
       undo_stack_oper.push_back( NEWPROOF );
       undo_stack_elem.push_back( (void *)c );
     }
 
-    if ( config.produce_inter > 0 )
-      clause_to_partition[ c ] = in;
+    //if ( config.produce_inter() > 0 )
+     // clause_to_partition[ c ] = in;
 #endif
 
     clauses.push(c);
@@ -1001,22 +1003,24 @@ void CoreSMTSolver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btleve
       reason[var(p)] = ct;
 #ifdef PRODUCE_PROOF
       proof.addRoot( ct, CLA_THEORY );
-      if ( config.incremental )
+      if ( config.isIncremental() )
       {
 	undo_stack_oper.push_back( NEWPROOF );
 	undo_stack_elem.push_back( (void *)ct );
       }
-      if ( config.produce_inter > 0 )
+      /*
+      if ( config.produce_inter() > 0 )
       {
 //	Enode * interpolants = theory_handler->getInterpolants( );
 //	assert( interpolants );
 //	clause_to_in[ ct ] = interpolants;
-	if ( config.incremental )
+	if ( config.isIncremental() )
 	{
 	  undo_stack_oper.push_back( NEWINTER );
 	  undo_stack_elem.push_back( NULL );
 	}
       }
+      */
 #endif
     }
 
@@ -1230,22 +1234,24 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
 	reason[ v ] = ct;
 #ifdef PRODUCE_PROOF
 	proof.addRoot( ct, CLA_THEORY );
-	if ( config.incremental )
+	if ( config.isIncremental() )
 	{
 	  undo_stack_oper.push_back( NEWPROOF );
 	  undo_stack_elem.push_back( (void *)ct );
 	}
-	if ( config.produce_inter > 0 )
+    /*
+	if ( config.produce_inter() > 0 )
 	{
 	  Enode * interpolants = theory_handler->getInterpolants( );
 	  assert( interpolants );
 	  clause_to_in[ ct ] = interpolants;
-	  if ( config.incremental )
+	  if ( config.isIncremental() )
 	  {
 	    undo_stack_oper.push_back( NEWINTER );
 	    undo_stack_elem.push_back( NULL );
 	  }
 	}
+    */
 #endif
       }
     }
@@ -1948,7 +1954,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 
 #ifdef PRODUCE_PROOF
 	proof.endChain( c );
-	if ( config.incremental )
+	if ( config.isIncremental() )
 	{
 	  undo_stack_oper.push_back( NEWPROOF );
 	  undo_stack_elem.push_back( (void *)c );
@@ -2236,11 +2242,13 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
     // UF solver should be enabled for lazy dtc
     assert( config.sat_lazy_dtc == 0 || config.uf_disable == 0 );
 #ifdef PRODUCE_PROOF
+    /*
     // Checks that every variable is associated to a non-zero partition
     if (config.produce_inter > 0) {
         checkPartitions( );
         mixedVarDecActivity( );
     }
+    */
 #endif
 
 #ifndef SMTCOMP

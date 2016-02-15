@@ -239,3 +239,4 @@ void SymStore::check() const
         assert(operator[] (symbols[i]).id == i);
 }
 #endif
+

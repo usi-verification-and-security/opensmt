@@ -190,9 +190,14 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
     }
     // Framework for handling different logic specific simplifications.
     PTRef new_root;
-    logic.simplify(root, new_root);
-    if (logic.isTrue(new_root)) return status = s_True;
-    else if (logic.isFalse(new_root)) return status = s_False;
+    if(config.produce_inter() == 0)
+    {
+        logic.simplify(root, new_root);
+        if (logic.isTrue(new_root)) return status = s_True;
+        else if (logic.isFalse(new_root)) return status = s_False;
+    }
+    else
+        new_root = root;
 
     vec<PtChild> terms;
     FContainer fc(new_root);

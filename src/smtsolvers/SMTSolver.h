@@ -57,7 +57,7 @@ public:
   //
   virtual bool   addSMTClause  ( const vec<Lit> &
 #ifdef PRODUCE_PROOF
-                               , const ipartitions_t = 0 
+                               , const ipartitions_t& = 1 
 #endif
 			       ) = 0;
   virtual lbool  smtSolve      ( )                                              = 0;

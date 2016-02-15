@@ -142,7 +142,7 @@ protected:
 
 
 #ifdef PRODUCE_PROOF
-    bool  addClause                  ( vec<Lit>&, const ipartitions_t& );
+    bool  addClause                  ( vec<Lit>&, const ipartitions_t& = 1);
 #else
     bool  addClause                  ( vec<Lit>& );
 #endif

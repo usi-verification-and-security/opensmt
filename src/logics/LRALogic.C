@@ -312,6 +312,14 @@ LRALogic::LRALogic(SMTConfig& c) :
 
 }
 
+const opensmt::Real&
+LRALogic::getRealConst(PTRef tr)
+{
+    SymId id = sym_store[getPterm(tr).symb()].getId();
+    assert(id < reals.size() && reals[id] != NULL);
+    return *reals[id];
+}
+
 PTRef
 LRALogic::mkConst(const char *name, const char **msg)
 {

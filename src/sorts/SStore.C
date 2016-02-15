@@ -196,3 +196,11 @@ void SStore::deserializeSorts(const int* buf)
 
 }
 
+void
+SStore::dumpSortsToFile ( ostream & dump_out )
+{
+    for(int i = 1; i < sorts.size(); ++i)
+	{
+		dump_out << "(declare-sort " << getName(sorts[i]) << " 0)" << endl;
+	}
+}

@@ -30,6 +30,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "common/TreeOps.h"
 #include "common/Global.h"
 #include "minisat/mtl/Sort.h"
+#include <queue>
+
+using namespace std;
 
 /***********************************************************
  * Class defining logic
@@ -569,6 +572,16 @@ PTRef Logic::mkXor(vec<PTRef>& args) {
     return tr;
 }
 
+
+PTRef
+Logic::mkImpl(PTRef _a, PTRef _b)
+{
+    vec<PTRef> args;
+    args.push(_a);
+    args.push(_b);
+    return mkImpl(args);
+}
+
 PTRef Logic::mkImpl(vec<PTRef>& args) {
 
     for (int i = 0; i < args.size(); i++)
@@ -789,6 +802,38 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, char** msg)
     return insertTermHash(sym, terms);
 }
 
+bool
+Logic::existsTermHash(SymRef sym, const vec<PTRef>& terms_in)
+{
+    vec<PTRef> terms;
+    terms_in.copyTo(terms);
+    PTRef res = PTRef_Undef;
+    char **msg;
+    if (terms.size() == 0) {
+        if (term_store.hasCtermKey(sym)) //cterm_map.contains(sym))
+            return true;
+    }
+    else if (!isBooleanOperator(sym)) {
+        if (sym_store[sym].commutes()) {
+            sort(terms, LessThan_PTRef());
+        }
+        PTLKey k;
+        k.sym = sym;
+        terms.copyTo(k.args);
+        if (term_store.hasCplxKey(k))
+            return true;
+    }
+    else {
+        // Boolean operator
+        PTLKey k;
+        k.sym = sym;
+        terms.copyTo(k.args);
+        if (term_store.hasBoolKey(k))
+            return true;
+    }
+    return false;
+}
+
 PTRef
 Logic::insertTermHash(SymRef sym, const vec<PTRef>& terms_in)
 {
@@ -854,8 +899,14 @@ Logic::insertTermHash(SymRef sym, const vec<PTRef>& terms_in)
     return res;
 }
 
+bool
+Logic::isUF(SymRef sref) const
+{
+    return getSym(sref).size() > 0 && !interpreted_functions[getSym(sref).getId()];
+}
+
 bool Logic::isUF(PTRef ptr) const {
-    return (getPterm(ptr).size() > 0) && !interpreted_functions[getSym(ptr).getId()];
+    return isUF(getSymRef(ptr));
 }
 
 // Uninterpreted predicate p : U U* -> Bool
@@ -1604,6 +1655,170 @@ void Logic::deserializeTermSystem(const int* termstore_buf, const int* symstore_
     deserializeLogicData(logicdata_buf);
 }
 
+void
+Logic::dumpHeaderToFile(ostream& dump_out)
+{
+    dump_out << "(set-logic QF_UF)" << endl;
+    sort_store.dumpSortsToFile(dump_out);
+    const vec<SymRef>& symbols = sym_store.getSymbols();
+    for(int i = 2; i < symbols.size(); ++i)
+    {
+        SymRef s = symbols[i];
+        if(!isUF(s)) continue;
+        dump_out << "(declare-fun " << sym_store.getName(s) << " ";
+        Symbol& symb = sym_store[s];
+        dump_out << "(";
+        for(int j = 0; j < symb.nargs(); ++j)
+        {
+            dump_out << sort_store.getName(symb[j]) << " ";
+        }
+        dump_out << ") " << sort_store.getName(symb.rsort()) << ")" << endl;
+    }
+}
+
+void
+Logic::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate )
+{
+	vector< PTRef > unprocessed_enodes;
+	map< PTRef, string > enode_to_def;
+	unsigned num_lets = 0;
+
+	unprocessed_enodes.push_back( formula );
+	// Open assert
+	dump_out << "(assert" << endl;
+	//
+	// Visit the DAG of the formula from the leaves to the root
+	//
+	while( !unprocessed_enodes.empty( ) )
+	{
+		PTRef e = unprocessed_enodes.back( );
+		//
+		// Skip if the node has already been processed before
+		//
+		if ( enode_to_def.find( e ) != enode_to_def.end( ) )
+		{
+			unprocessed_enodes.pop_back( );
+			continue;
+		}
+
+		bool unprocessed_children = false;
+        Pterm& term = getPterm(e);
+        for(int i = 0; i < term.size(); ++i)
+        {
+            PTRef pref = term[i];
+            //assert(isTerm(pref));
+			//
+			// Push only if it is unprocessed
+			//
+			if ( enode_to_def.find( pref ) == enode_to_def.end( ) && (isBooleanOperator( pref ) || isEquality(pref)))
+			{
+				unprocessed_enodes.push_back( pref );
+				unprocessed_children = true;
+			}
+		}
+		//
+		// SKip if unprocessed_children
+		//
+		if ( unprocessed_children ) continue;
+
+		unprocessed_enodes.pop_back( );
+
+		char buf[ 32 ];
+		sprintf( buf, "?def%d", getPterm(e).getId() );
+
+		// Open let
+		dump_out << "(let ";
+		// Open binding
+		dump_out << "((" << buf << " ";
+
+		if (term.size() > 0 ) dump_out << "(";
+		dump_out << printSym(term.symb());
+        for(int i = 0; i < term.size(); ++i)
+		{
+            PTRef pref = term[i];
+			if ( isBooleanOperator(pref) || isEquality(pref) )
+				dump_out << " " << enode_to_def[ pref ];
+			else
+			{
+				dump_out << " " << printTerm(pref);
+				if ( isAnd(e) ) dump_out << endl;
+			}
+		}
+		if ( term.size() > 0 ) dump_out << ")";
+
+		// Closes binding
+		dump_out << "))" << endl;
+		// Keep track of number of lets to close
+		num_lets++;
+
+		assert( enode_to_def.find( e ) == enode_to_def.end( ) );
+		enode_to_def[ e ] = buf;
+	}
+	dump_out << endl;
+	// Formula
+	if ( negate ) dump_out << "(not ";
+	dump_out << enode_to_def[ formula ] << endl;
+	if ( negate ) dump_out << ")";
+	// Close all lets
+	for( unsigned n=1; n <= num_lets; n++ ) dump_out << ")";
+	// Closes assert
+	dump_out << ")" << endl;
+}
+
+#ifdef PRODUCE_PROOF
+void
+Logic::setIPartitionsIte(PTRef pref)
+{
+    set<PTRef> visited;
+    queue<PTRef> bfs;
+    bool unprocessed_children;
+    bfs.push(pref);
+    while(!bfs.empty())
+    {
+        PTRef p = bfs.front();
+        bfs.pop();
+        //cerr << ";Trying to visit " << printTerm(p) << endl;
+        if(visited.find(p) != visited.end()) continue;
+        
+        // fine to visit
+        visited.insert(p);
+        if(isUF(p))
+        {
+            addIPartitions(getPterm(p).symb(), getIPartitions(pref));
+            //cout << "Symb " << getSymName(getPterm(p).symb()) << " gets partition " << getIPartitions(getPterm(p).symb()) << endl;
+        }
+        addIPartitions(p, getIPartitions(pref));
+        //---------------
+
+        Pterm& t = getPterm(p);
+        unprocessed_children = false;
+        for(int i = 0; i < t.size(); ++i)
+        {
+            PTRef c = t[i];
+            if(visited.find(c) == visited.end())
+            {
+                bfs.push(c);
+                unprocessed_children = true;
+            }
+        }
+        continue;////
+        if(unprocessed_children)
+        {
+            bfs.push(p);
+            continue;
+        }
+        // fine to visit
+        visited.insert(p);
+        if(isUF(p))
+        {
+            addIPartitions(getPterm(p).symb(), getIPartitions(pref));
+            //cout << "Symb " << getSymName(getPterm(p).symb()) << " gets partition " << getIPartitions(getPterm(p).symb()) << endl;
+        }
+        addIPartitions(p, getIPartitions(pref));
+        //cout << "Term " << printTerm(p) << " gets partition " << getIPartitions(p) << endl;
+    }
+}
+#endif
 
 //bool Logic::DeclareSort(string& name, int arity) {
 //    printf("Declaring sort %s of arity %d\n", name.c_str(), arity);

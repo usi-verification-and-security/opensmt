@@ -128,7 +128,7 @@ private:
   bool checkIntegersAndSplit();                           //
 
 #ifdef PRODUCE_PROOF
-  Enode *             getInterpolants( logic_t & ); // Fill a vector with interpolants
+  PTRef             getInterpolants( const ipartitions_t & ); // Fill a vector with interpolants
 #endif
 
   bool first_update_after_backtrack;

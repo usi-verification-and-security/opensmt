@@ -1,7 +1,8 @@
 noinst_LTLIBRARIES = libegraph.la
 #noinst_PROGRAMS = test gctest test3 test4 test5
 
-libegraph_la_SOURCES = Enode.h Enode.C EnodeStore.h EnodeStore.C \
+libegraph_la_SOURCES =  UFInterpolator.h UFInterpolator.C \
+						Enode.h Enode.C EnodeStore.h EnodeStore.C \
                        EgraphSolver.C EgraphDebug.C EgraphExplain.C
 
 

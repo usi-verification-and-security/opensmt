@@ -32,6 +32,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <readline/history.h>
 #include "Interpret.h"
 #include "Theory.h"
+#include "Global.h"
 
 namespace opensmt {
 bool stop;
@@ -239,8 +240,41 @@ declare_fun_err: ;
             if (tr == PTRef_Undef)
                 notify_formatted(true, "assertion returns an unknown sort");
             else {
+                /*
+                if(logic->isAnd(tr))
+                {
+                    Pterm& pt = logic->getPterm(tr);
+                    int n = pt.nargs();
+                    cerr << "; Assertion is AND of " << n << " args" << endl;
+                    int m1 = n / 2;
+                    PTRef a1 = PTRef_Undef;
+                    vec<PTRef> args1, args2;
+                    for(int i = 0; i < m1; ++i) args1.push(pt[i]);
+                    for(int i = m1; i < n; ++i) args2.push(pt[i]);
+                    a1 = logic->mkAnd(args1);
+                    tr = logic->mkAnd(args2);
+
+                    char* err_msg = NULL;
+                    if(!logic->assignPartition(a1, &err_msg))
+                        notify_formatted(true, err_msg);
+#ifdef PRODUCE_PROOF
+                    logic->setIPartitionsIte(a1);
+#endif
+
+                    status = main_solver->insertFormula(a1, &err_msg);
+                }
+                else
+                    cerr << "; Assertion is not and" << endl;
+*/
+
 
                 char* err_msg = NULL;
+                if(!logic->assignPartition(tr, &err_msg))
+                    notify_formatted(true, err_msg);
+#ifdef PRODUCE_PROOF
+                logic->setIPartitionsIte(tr);
+#endif
+
                 status = main_solver->insertFormula(tr, &err_msg);
 
                 if (status == s_Error)
@@ -336,6 +370,13 @@ declare_fun_err: ;
     }
     else if (strcmp(cmd, "check-sat") == 0) {
         checkSat(cmd);
+    }
+    if(strcmp(cmd, "get-interpolants") == 0) {
+#ifdef PRODUCE_PROOF
+        GetInterpolants();
+#else
+        notify_formatted(true, "This binary has no support to interpolation");
+#endif
     }
 
     else if (strcmp(cmd, "get-assignment") == 0) {
@@ -568,7 +609,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
             assert(sym.getType() == SYM_T);
             const char* pname = sym.getValue();
             char* msg = NULL;
-            if (!ptstore.assignPartition(pname, tr, &msg)) {
+            if (!logic->assignPartition(pname, tr, &msg)) {
                 notify_formatted(true, "assign partition: %s", msg);
                 free(msg);
                 return PTRef_Undef;
@@ -594,6 +635,15 @@ bool Interpret::checkSat(const char* cmd) {
         char* msg = NULL;
 
         res = main_solver->simplifyFormulas(&msg);
+/*
+<<<<<<< mine
+        if (res == s_Undef) {
+            if (config.sat_split_type() == spt_lookahead)
+                res = main_solver->lookaheadSplit(getLog2Ceil(config.sat_split_num()));
+            else
+                res = main_solver->solve();
+       }
+*/
         if (res == s_Undef)
             res = main_solver->solve();
 
@@ -1036,6 +1086,7 @@ SRef Interpret::newSort(ASTNode& sn) {
 #ifdef PRODUCE_PROOF
 void Interpret::GetProof()
 {
+    /*
     if (ts.getStatus() == l_False) {
         if (config.print_proofs_smtlib2 > 0) sat_solver.printProofSMT2(config.getRegularOut());
         sat_solver.createProofGraph();
@@ -1051,10 +1102,77 @@ void Interpret::GetProof()
         sat_solver.deleteProofGraph();
     } else
         notify_formatted(true, "get-proof: formula not unsat");
+        */
 }
 
 void Interpret::GetInterpolants()
 {
+    //just test with assertions for now:
+    vec<PTRef>& partitions = logic->getAssertions();
+    if(partitions.size() < 2)
+    {
+        cerr << ";Error: Can't interpolate with only one assertion" << endl;
+        return;
+    }
+    /*
+    // P1
+    ipartitions_t p = 1;
+    p = ~p;
+    */
+    // PH-random
+    srand(2);
+    ipartitions_t p = 1;
+    for(int i = 1; i < partitions.size(); ++i)
+    {
+        p <<= 1;
+        if(rand() % 2) p += 1;
+    }
+
+/*
+    // PH
+    ipartitions_t p = 1;
+    int m0 = partitions.size() / 2;
+    int m1 = partitions.size() - m0;
+    cerr << "; Total number of partitions: " << partitions.size() << endl;
+    cerr << "; M0: " << m0 << " | M1: " << m1 << endl;
+    for(int i = 1; i < m1; ++i)
+    {
+        p <<= 1;
+        p += 1;
+    }
+    for(int i = 0; i < m0; ++i)
+        p <<= 1;
+        */
+/*
+    //PA
+    ipartitions_t p = 1;
+    for(int i = 0; i < (partitions.size() - 1); ++i)
+    {
+        p <<= 1;
+        if(i & 1)
+            p += 1;
+    }
+*/
+
+    // ABmixed bit
+    p <<= 1;
+
+    //test the partitions
+    for(int i = 0; i < partitions.size(); ++i)
+    {
+        if(isAstrict(logic->getIPartitions(partitions[i]), p))
+            cerr << "; Partition " << i << " is in A" << endl;
+        else if(isBstrict(logic->getIPartitions(partitions[i]), p))
+            cerr << "; Partition " << i << " is in B" << endl;
+        else
+            cerr << "; Partition " << i << " is weird" << endl;
+    }
+
+
+    PTRef itp = theory->getTHandler().getInterpolants(p);
+    //cerr << ";Interpolant:\n;" << logic->printTerm(itp) << endl;
+
+    /*
     if (config.produce_inter() == 0)
         notify_formatted(true, "get-interpolants: skipping since produce-interpolants is not set");
     else if (ts.getStatus() == l_False) {
@@ -1065,6 +1183,7 @@ void Interpret::GetInterpolants()
     }
     else
         notify_formatted(true, "get-interpolants: skipping since formula not shown unsat");
+        */
 }
 #endif
 

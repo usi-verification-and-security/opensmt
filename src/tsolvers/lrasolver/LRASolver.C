@@ -1287,6 +1287,35 @@ void LRASolver::getConflictingBounds( LAVar * x, vec<PTRef> & dst )
   }
 
   assert( dst.size( ) == x->polynomial.size( ) );
+
+/*
+  ipartitions_t p = 1;
+  p = ~p;
+  p <<= 1;
+  vec<PTRef> args_strong;
+  vec<PTRef> args_weak;
+  for(int i = 0; i < dst.size(); ++i)
+  {
+      if(isAstrict(logic.getIPartitions(dst[i]), p))
+          args_strong.push(dst[i]);
+      else if(isBstrict(logic.getIPartitions(dst[i]), p))
+          args_weak.push(dst[i]);
+
+      cerr << ";" << logic.printTerm(dst[i]);
+      if(isAstrict(logic.getIPartitions(dst[i]), p))
+          cerr << " is in A" << endl;
+      else if(isBstrict(logic.getIPartitions(dst[i]), p))
+          cerr << " is in B" << endl;
+      else
+          cerr << " is weird" << endl;
+  }
+
+  PTRef itp_strong = logic.mkAnd(args_strong);
+  PTRef itp_weak = logic.mkNot(logic.mkAnd(args_weak));
+
+  cerr << "; Strong itp:\n" << logic.printTerm(itp_strong) << endl;
+  cerr << "; Weak itp:\n" << logic.printTerm(itp_weak) << endl;
+  */
 }
 
 //
@@ -1831,8 +1860,12 @@ LRASolver::~LRASolver( )
 //
 // Compute interpolants for the conflict
 //
-Enode * LRASolver::getInterpolants ( logic_t & l )
+PTRef
+LRASolver::getInterpolants ( const ipartitions_t & p )
 {
+    opensmt_error("Interpolation not supported for LRA");
+    return logic.getTerm_true();
+    /** Old implementation: 
   l = config.logic == QF_LRA || config.logic == QF_UFLRA
   ? QF_LRA
   : QF_LIA;
@@ -1929,6 +1962,7 @@ Enode * LRASolver::getInterpolants ( logic_t & l )
   }
   interpolants = egraph.cons( in_list );
   return interpolants;
+  */
 }
 
 #endif
