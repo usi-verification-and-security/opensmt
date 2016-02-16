@@ -26,11 +26,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #ifndef LOGIC_H
 #define LOGIC_H
-//#include "smtsolvers/SMTConfig.h"
-//#include "SimpSMTSolver.h"
-//#include "Tseitin.h"
 #include "Sort.h"
-// For TRefHash
 #include "SymStore.h"
 #include "PtStore.h"
 
@@ -141,10 +137,11 @@ class Logic {
         args.push(i);
         top_level_ites = mkAnd(args);
     }
+
     void conjoinItes(PTRef root, PTRef& new_root)
     {
         PTRef tlites = getTopLevelItes();
-        if(tlites == PTRef_Undef)
+        if (tlites == PTRef_Undef)
         {
             new_root = root;
             return;
@@ -247,6 +244,7 @@ class Logic {
     bool          isEquality       (SymRef tr)     const { return equalities.contains(tr);    }
     bool          isEquality       (PTRef tr)      const { return equalities.contains(term_store[tr].symb());}
     virtual bool  isUFEquality     (PTRef tr)      const { return isEquality(tr) && !hasSortBool(getPterm(tr)[0]); }
+    virtual bool  isTheoryEquality (PTRef tr)      const { return isUFEquality(tr); }
     bool          isDisequality    (SymRef tr)     const { return disequalities.contains(tr); }
     bool          isDisequality    (PTRef tr)      const { return disequalities.contains(term_store[tr].symb()); }
     bool          isIte            (SymRef tr)     const { return ites.contains(tr);          }
@@ -323,13 +321,13 @@ class Logic {
     virtual PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms, char** msg);
 
     // Logic specific simplifications
-    virtual void simplify(PTRef root, PTRef& root_out);
+//    virtual bool simplify(PTRef root, PTRef& root_out);
 
     // Top-level equalities based substitutions
     void collectFacts(PTRef root, vec<PtAsgn>& facts);
     bool varsubstitute(PTRef& root, Map<PTRef,PtAsgn,PTRefHash>& substs, PTRef& tr_new);  // Do the substitution.  Return true if at least one substitution was done, and false otherwise.
     virtual lbool retrieveSubstitutions(vec<PtAsgn>& facst, Map<PTRef,PtAsgn,PTRefHash>& substs);
-    virtual void computeSubstitutionFixpoint(PTRef root, PTRef& root_out);
+//    virtual bool computeSubstitutionFixpoint(PTRef root, PTRef& root_out);
 
     class SubstNode {
         Logic& logic;

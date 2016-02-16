@@ -3,7 +3,7 @@ noinst_LTLIBRARIES = liblogics.la
 
 AM_CPPFLAGS=$(config_includedirs)
 
-liblogics_la_SOURCES = Logic.C LRALogic.C
+liblogics_la_SOURCES = Logic.C LRALogic.C Theory.C LRATheory.C UFTheory.C
 
 #testsimplify_SOURCES = TestSimplify.C
 

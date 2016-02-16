@@ -24,24 +24,27 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
-#include "THandler.h"
+#ifndef UFTHandler_h
+#define UFTHandler_h
+
+//#include "THandler.h"
+#include "logics/Logic.h"
+#include "TSolverHandler.h"
 #include "Egraph.h"
 
-class UFTHandler : public THandler
+class UFTHandler : public TSolverHandler
 {
   private:
     Logic& logic;
-    Logic& getLogic() { return logic; }
-  protected:
-    const vec<int>& getSolverSchedule() const;
+    Egraph* egraph;
+//  protected:
+//    const vec<int>& getSolverSchedule() const;
   public:
-    UFTHandler(SMTConfig& c, TermMapper& tm, Logic& l, vec<DedElem>& d)
-        : THandler(c, tm, d)
-        , logic(l)
-    {
-        Egraph *egraph = new Egraph(config, logic, tmap, deductions);
-        my_id = egraph->getId();
-        tsolvers[my_id.id] = egraph;
-        solverSchedule.push(my_id.id); // Only UF for the QF_UF logic
-    }
+    UFTHandler(SMTConfig& c, Logic& l, vec<DedElem>& d);
+    virtual ~UFTHandler();
+    bool assertLit_special(PtAsgn a);
+    void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs);
+    Logic& getLogic();
 };
+
+#endif

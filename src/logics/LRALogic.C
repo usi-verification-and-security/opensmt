@@ -33,16 +33,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 const char* LRALogic::e_nonlinear_term = "Logic does not support nonlinear terms";
 
-
-void
-LRALogic::simplify(PTRef root, PTRef& root_out)
-{
-    PTRef extra_root, extra_extra_root;
-    conjoinItes(root, extra_root);
-    Logic::computeSubstitutionFixpoint(extra_root, extra_extra_root);
-    simplifyAndSplitEq(extra_extra_root, root_out);
-}
-
 void
 LRALogic::simplifyAndSplitEq(PTRef tr, PTRef& root_out)
 {
@@ -250,7 +240,7 @@ LRALogic::LRALogic(SMTConfig& c) :
     char* m;
     char** msg = &m;
 
-	c.logic = QF_LRA;
+    c.logic = QF_LRA;
 
     sort_REAL = declareSort(s_sort_real, msg);
 

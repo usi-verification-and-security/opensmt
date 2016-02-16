@@ -23,27 +23,26 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
-#include "THandler.h"
+#ifndef LRATHandler_H
+#define LRATHandler_H
+
+//#include "THandler.h"
 #include "LRASolver.h"
 #include "LRALogic.h"
+#include "TSolverHandler.h"
 #include "Egraph.h"
 
-class LRATHandler : public THandler
+class LRATHandler : public TSolverHandler
 {
   private:
     LRALogic& logic;
-    Logic& getLogic() { return logic; }
+    LRASolver *lrasolver;
   public:
-    LRATHandler(SMTConfig& c, TermMapper& tm, LRALogic& l, vec<DedElem>& d)
-        : THandler(c, tm, d)
-        , logic(l)
-    {
-        LRASolver* lrasolver = new LRASolver(config, logic, deductions);
-        my_id = lrasolver->getId();
-        tsolvers[my_id.id] = lrasolver;
-        solverSchedule.push(my_id.id);
-    }
-
+    LRATHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d);
+    virtual ~LRATHandler();
+    void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs);
+    bool assertLit_special(PtAsgn);
+    Logic& getLogic();
 };
 
-
+#endif

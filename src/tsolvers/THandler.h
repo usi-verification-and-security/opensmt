@@ -33,40 +33,38 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Egraph.h"
 #include "Global.h"
 #include "TreeOps.h"
+#include "tsolvers/TSolverHandler.h"
+#include "logics/Theory.h"
 
 class THandler
 {
-protected:
-  SolverId my_id;
+private:
+    Theory &theory;
+#ifdef PEDANTIC_DEBUG
+public:
+#endif
+    SMTConfig &         config;                   // Reference to configuration
+    TermMapper          tmap;                     // Mappings between TRefs and Lits
 public:
 
   THandler ( SMTConfig &   c
-           , TermMapper&   tm
-           , vec<DedElem>& d
+           , Theory& tsh
            )
-    : deductions         ( d )
-    , config             ( c )
-    , tmap               ( tm )
-    , checked_trail_size ( 0 )
-    , tatoms             ( 0 )
-    , batoms             ( 0 )
-    , tatoms_given       ( 0 )
+    : theory             (tsh)
+    , config             (c)
+    , tmap               (theory.getLogic())
+    , checked_trail_size (0)
     , theoryInitialized  (false)
-  {
-    for (int i = 0; i < SolverDescr::getSolverList().size(); i++) {
-        SolverDescr* sd = SolverDescr::getSolverList()[i];
-        SolverId id = (SolverId)(*sd);
-        while (id.id >= tsolvers.size()) tsolvers.push(NULL);
-    }
-  }
+    { }
 
-  virtual ~THandler ( )
-  {
-    for (int i = 0; i < tsolvers.size(); i++)
-        if (tsolvers[i] != NULL) delete tsolvers[i];
-  }
+    virtual ~THandler ( ) { }
 
-  virtual Logic&  getLogic  ( )  = 0;
+    Theory& getTheory() { return theory; }
+    Logic&  getLogic() { return theory.getLogic(); }
+
+    TSolverHandler& getSolverHandler() { return theory.getTSolverHandler(); }
+    const TSolverHandler& getSolverHandler() const { return theory.getTSolverHandler(); }
+    TermMapper&  getTMap() { return tmap; }
 
 #ifdef PEDANTIC_DEBUG
   void    getConflict          ( vec<Lit>&, vec<int>&, int &, vec<Lit>& ); // Returns theory conflict in terms of literals
@@ -84,7 +82,7 @@ public:
   void    getReason            ( Lit, vec< Lit > &, vec<char>& );   // Returns the explanation for a deduced literal
 #endif
 
-  ValPair getValue          (PTRef tr) const;
+  ValPair getValue          (PTRef tr) const { return getSolverHandler().getValue(tr); };
 
   bool isTheoryTerm         ( Var v ) { return getLogic().isTheoryTerm(varToTerm(v)); }
   PTRef varToTerm           ( Var v ) { return tmap.varToPTRef(v); }  // Return the term ref corresponding to a variable
@@ -92,6 +90,7 @@ public:
 
   void getVarName           ( Var v, char** name ) { *name = getLogic().printTerm(tmap.varToPTRef(v)); }
 
+    void pushDeduction      () { getSolverHandler().deductions.push({SolverId_Undef, l_Undef}); }  // Add the deduction entry for a variable
     Var ptrefToVar          ( PTRef r ) { return tmap.getVar(r); }
 
 //  Var     enodeToVar           ( Enode * );             // Converts enode into boolean variable. Create a new variable if needed
@@ -100,29 +99,23 @@ public:
 //  Enode * varToEnode           ( Var );                 // Return the enode corresponding to a variable
 //  void    clearVar             ( Var );                 // Clear a Var in translation table (used in incremental solving)
 
-  void    computeModel         ();                      // Computes a model in the solver if necessary
+  void    computeModel         () { getSolverHandler().computeModel(); } // Computes a model in the solver if necessary
   bool    assertLits           (vec<Lit>&);             // Give to the TSolvers the newly added literals on the trail
-  bool    assertLit            (PtAsgn);                // Push the assignment to all theory solvers
-  void    declareTermTree      (PTRef);                 // Declare the terms in the formula recursively.
+  bool    assertLit            (PtAsgn pta) { return getSolverHandler().assertLit(pta); } // Push the assignment to all theory solvers
+  void    declareTermTree      (PTRef tr) { getSolverHandler().declareTermTree(tr); } // Declare the terms in the formula recursively.
   bool    check                (bool, vec<Lit>&);       // Check trail in the theories
-//  void    backtrack            (vec<Lit>&);             // Remove literals that are not anymore on the trail
   void    backtrack            (int);                   // Remove literals that are not anymore on the trail
 
-  double  getAtomsRatio        ( ) { return (double)batoms/((double)tatoms + 1.0); }
+//  void    inform               ( );
 
-  void    inform               ( );
+//  lbool   evaluate             ( PTRef e ) { return l_Undef; }
 
-  lbool   evaluate             ( PTRef e ) { return l_Undef; }
-
-  vec<DedElem>&       deductions; // Var v is deduced by a theory if deductions[v] != l_Undef
-
-  char*   printValue           (PTRef tr); // Debug.  Ask from the solvers what they know about value of tr
-  char*   printExplanation     (PTRef tr); // Debug.  Ask from the solvers what they know about explanation of tr
-  void declareTerm(PTRef);
+  char*   printValue           (PTRef tr) { return getSolverHandler().printValue(tr); } // Debug.  Ask from the solvers what they know about value of tr
+  char*   printExplanation     (PTRef tr) { return getSolverHandler().printExplanation(tr); } // Debug.  Ask from the solvers what they know about explanation of tr
+  void    declareTerm          (PTRef tr) { getSolverHandler().declareTerm(tr); }
 
 protected:
 
-  vec<int> solverSchedule;
 
   // Returns a random float 0 <= x < 1. Seed must never be 0.
   static inline double drand(double& seed)
@@ -130,7 +123,7 @@ protected:
     seed *= 1389796;
     int q = (int)(seed / 2147483647);
     seed -= (double)q * 2147483647;
-    return seed / 2147483647; 
+    return seed / 2147483647;
   }
 
   // Returns a random integer 0 <= x < size. Seed must never be 0.
@@ -155,33 +148,12 @@ protected:
 
 //  vector< Var >       enode_id_to_var;          // Conversion EnodeID --> Var
 //  vector< Enode * >   var_to_enode;             // Conversion Var --> EnodeID
-#ifdef PEDANTIC_DEBUG
-public:
-#endif
-  SMTConfig &         config;                   // Reference to configuration
-//  SMTSolver &         solver;                   // Reference to SMT Solver
-  TermMapper&         tmap;                     // Mappings between TRefs and Lits
-//  vec< int > &        level;                    // Reference to SMT Solver level
-//  vec< char > &       assigns;                  // Reference to SMT Solver assigns
-//  const Var           var_True;                 // To specify constantly true atoms
-//  const Var           var_False;                // To specify constantly false atoms
-//  Logic &             logic;                    // For true, false literals etc
 public:
   vec< PTRef >        stack;                    // Stacked atoms
 protected:
   size_t              checked_trail_size;       // Store last size of the trail checked by the solvers
 
-  int                 tatoms;                   // Tracks theory atoms
-  int                 batoms;                   // Tracks boolean atoms
-
-  vec< bool >         tatoms_seen;              // Atoms seen
-  unsigned            tatoms_given;             // Next atom to give
-  vec< ERef >         tatoms_list;              // List of tatoms to communicate later
-  vec< bool >         tatoms_give;              // We might want not to give some atoms
-
   inline lbool value (Lit p, vec<char>& assigns) const { return toLbool(assigns[var(p)]) ^ sign(p); }
-public:
-  vec<TSolver*>               tsolvers;         // List of ordinary theory solvers
 protected:
   bool                        theoryInitialized; // True if theory solvers are initialized
 
@@ -193,7 +165,7 @@ public:
   bool checkTrailConsistency(vec<Lit>& trail);
 protected:
 #ifdef PEDANTIC_DEBUG
-  std::string printExplanation(vec<PtAsgn>&, vec<char>&);
+//  std::string printExplanation(vec<PtAsgn>&, vec<char>&);
   std::string printAssertion(Lit);
 #endif
 };

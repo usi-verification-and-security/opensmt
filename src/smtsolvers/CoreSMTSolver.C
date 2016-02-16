@@ -276,7 +276,7 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
   n_occs.push(0);
 
   // Add the deduction entry for this variable
-  theory_handler.deductions.push({SolverId_Undef, l_Undef});
+  theory_handler.pushDeduction();
 
   return v;
 }

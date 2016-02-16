@@ -114,12 +114,12 @@ class MainSolver {
     vec<MainSolver*> parallel_solvers;
 
   public:
-    MainSolver(Theory& theory, SMTConfig& c, SimpSMTSolver *s )
-        : logic(theory.getLogic())
-        , tmap(theory.getTMap())
+    MainSolver(THandler& thandler, SMTConfig& c, SimpSMTSolver *s )
+        : logic(thandler.getLogic())
+        , tmap(thandler.getTMap())
         , config(c)
         , status(s_Undef)
-        , thandler(theory.getTHandler())
+        , thandler(thandler)
         //, sat_solver(config, thandler)
         , ts( config
             , logic
@@ -127,14 +127,16 @@ class MainSolver {
             , thandler
             , *s )
         , binary_init(false)
-{
-    formulas.push(logic.getTerm_true());
-}
+    {
+        formulas.push(logic.getTerm_true());
+    }
 
-    ~MainSolver(){
+    ~MainSolver() {
         delete &this->ts.solver;
     }
 
+    THandler& getTHandler() { return thandler; }
+    Theory&   getTheory()   { return thandler.getTheory(); }
     sstat insertFormula(PTRef root, char** msg) {
         if (logic.getSortRef(root) != logic.getSort_bool()) {
             asprintf(msg, "Top-level assertion sort must be %s, got %s",

@@ -28,6 +28,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define DEDUCTIONS_H
 
 #include "SolverTypes.h"
+
 struct SolverId {
     uint32_t id;
     bool operator== (const SolverId id2) const { return id == id2.id; }

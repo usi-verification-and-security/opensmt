@@ -28,56 +28,62 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "Deductions.h"
 #include "TermMapper.h"
+#include "Logic.h"
 #include "LRALogic.h"
 #include "LRATHandler.h"
 #include "UFTHandler.h"
 
 class Theory
 {
-protected:
-  vec<DedElem> deductions;
-public:
-  virtual Logic&      getLogic()    = 0;
-  virtual TermMapper& getTMap() = 0;
-  virtual THandler&   getTHandler() = 0;
-  vec<DedElem>& getDeductionVec() { return deductions; }
-  virtual ~Theory() {};
+  protected:
+    vec<DedElem> deductions;
+    SMTConfig &  config;
+  public:
+    virtual Logic          &getLogic()              = 0;
+    virtual TSolverHandler &getTSolverHandler()     = 0;
+    virtual TSolverHandler *getTSolverHandler_new(vec<DedElem>&) = 0;
+    virtual bool            simplify(PTRef, PTRef&) = 0;
+    vec<DedElem>           &getDeductionVec()   { return deductions; }
+    virtual bool            computeSubstitutionFixpoint(PTRef, PTRef&);
+    Theory(SMTConfig &c) : config(c) {}
+    virtual ~Theory()                           {};
 };
 
 class LRATheory : public Theory
 {
   private:
     LRALogic    lralogic;
-    TermMapper  tmap;
-    LRATHandler lrathandler;
+    LRATHandler lratshandler;
   public:
     LRATheory(SMTConfig& c)
-        : lralogic(c)
-        , tmap(getLogic())
-        , lrathandler(c, tmap, lralogic, deductions)
-    {}
-    TermMapper& getTMap() { return tmap; }
-    LRALogic&    getLogic()    { return lralogic; }
-    LRATHandler& getTHandler() { return lrathandler; }
+        : Theory(c)
+        , lralogic(c)
+        , lratshandler(c, lralogic, deductions)
+    { }
     ~LRATheory() {};
+    LRALogic&    getLogic()    { return lralogic; }
+    LRATHandler& getTSolverHandler() { return lratshandler; }
+    LRATHandler *getTSolverHandler_new(vec<DedElem> &d) { return new LRATHandler(config, lralogic, d); }
+    bool simplify(PTRef, PTRef&); // Theory specific simplifications
 };
 
 class UFTheory : public Theory
 {
   private:
     Logic      logic;
-    TermMapper tmap;
-    UFTHandler thandler;
+    UFTHandler tshandler;
   public:
     UFTheory(SMTConfig& c)
-        : logic(c)
-        , tmap(getLogic())
-        , thandler(c, tmap, logic, deductions)
-    {}
+        : Theory(c)
+        , logic(c)
+        , tshandler(c, logic, deductions)
+    { }
     ~UFTheory() {}
-    TermMapper& getTMap() { return tmap; }
-    Logic&       getLogic()    { return logic; }
-    UFTHandler&  getTHandler() { return thandler; }
+    Logic&       getLogic()             { return logic; }
+    UFTHandler&  getTSolverHandler()    { return tshandler; }
+    const UFTHandler& getTSolverHandler() const { return tshandler; }
+    UFTHandler *getTSolverHandler_new(vec<DedElem>& d) { return new UFTHandler(config, logic, d); }
+    bool simplify(PTRef, PTRef&);
 };
 
 #endif

@@ -46,10 +46,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 static SolverDescr descr_uf_solver("UF Solver", "Solver for Quantifier Free Theory of Uninterpreted Functions with Equalities");
 
-Egraph::Egraph(SMTConfig & c, Logic& l, TermMapper& term_map , vec<DedElem>& d)
+Egraph::Egraph(SMTConfig & c, Logic& l , vec<DedElem>& d)
       : TSolver            (descr_uf_solver, descr_uf_solver, c, d)
       , logic              (l)
-      , tmap               ( term_map )
 #if defined(PEDANTIC_DEBUG) && defined(CUSTOM_EL_ALLOC)
       , enode_store        ( logic, forbid_allocator )
 #else
@@ -236,7 +235,7 @@ PtAsgn_reason Egraph::getDeduction( ) {
         ERef e             = enode_store.termToERef[pta.tr];
         Enode& en_e        = enode_store[e];
         // For sure this has a deduced polarity
-        assert( deduced[logic.getPterm(pta.tr).getVar()] != l_Undef );
+        assert( logic.getPterm(pta.tr).getVar() == -1 || deduced[logic.getPterm(pta.tr).getVar()] != l_Undef );
         // If it has been pushed it is not a good candidate
         // for deduction
         if ( hasPolarity(pta.tr) )
@@ -272,7 +271,7 @@ PTRef Egraph::getSuggestion( )
     Enode& en_e = enode_store[e];
     if ( hasPolarity(tr) )
       continue;
-    if ( deduced[logic.getPterm(tr).getVar()] != l_Undef )
+    if ( logic.getPterm(tr).getVar() == -1 || deduced[logic.getPterm(tr).getVar()] != l_Undef )
       continue;
 
     return tr;
@@ -460,8 +459,8 @@ void Egraph::declareTerm(PTRef tr) {
 lbool Egraph::addEquality(PtAsgn pa) {
     Pterm& pt = logic.getPterm(pa.tr);
     assert(pt.size() == 2);
-    if (deduced[pt.getVar()] != l_Undef && deduced[pt.getVar()] == pa.sgn) {
-//    if (enode_store[pa.tr].isDeduced() && enode_store[pa.tr].getDeduced() == pa.sgn) {
+    // AEJ temp fix
+    if (pt.getVar() != -1 && deduced[pt.getVar()] != l_Undef && deduced[pt.getVar()] == pa.sgn) {
 #ifdef VERBOSE_EUF
         cerr << "Assertion already deduced: " << logic.printTerm(pa.tr) << endl;
 #endif
@@ -502,8 +501,7 @@ lbool Egraph::addDisequality(PtAsgn pa) {
     Pterm& pt = logic.getPterm(pa.tr);
     bool res = true;
 
-    if (deduced[pt.getVar()] != l_Undef && deduced[pt.getVar()] == pa.sgn) {
-//    if (enode_store[pa.tr].isDeduced() && enode_store[pa.tr].getDeduced() == pa.sgn) {
+    if (pt.getVar() != -1 && deduced[pt.getVar()] != l_Undef && deduced[pt.getVar()] == pa.sgn) {
 #ifdef VERBOSE_EUF
         cerr << "Assertion already deduced: " << logic.printTerm(pa.tr) << endl;
 #endif
@@ -542,8 +540,7 @@ lbool Egraph::addDisequality(PtAsgn pa) {
 }
 
 bool Egraph::addTrue(PTRef term) {
-    if (deduced[logic.getPterm(term).getVar()] != l_Undef && deduced[logic.getPterm(term).getVar()] == l_True) {
-//    if (enode_store[term].isDeduced() && enode_store[term].getDeduced() == l_True) {
+    if (logic.getPterm(term).getVar() != -1 && deduced[logic.getPterm(term).getVar()] != l_Undef && deduced[logic.getPterm(term).getVar()] == l_True) {
 #ifdef VERBOSE_EUF
         cerr << "Assertion already deduced: " << logic.printTerm(term) << endl;
 #endif
@@ -564,8 +561,7 @@ bool Egraph::addTrue(PTRef term) {
 }
 
 bool Egraph::addFalse(PTRef term) {
-    if (deduced[logic.getPterm(term).getVar()] != l_Undef && deduced[logic.getPterm(term).getVar()] == l_False) {
-//    if (enode_store[term].isDeduced() && enode_store[term].getDeduced() == l_False) {
+    if (logic.getPterm(term).getVar() != -1 && deduced[logic.getPterm(term).getVar()] != l_Undef && deduced[logic.getPterm(term).getVar()] == l_False) {
 #ifdef VERBOSE_EUF
         cerr << "Assertion already deduced: " << logic.printTerm(term) << endl;
 #endif
@@ -1290,7 +1286,6 @@ void Egraph::backtrackToStackSize ( size_t size ) {
         ;
         else if ( last_action == SET_POLARITY) {
             assert(hasPolarity(u.arg.ptr));
-            assert(undo_stack_main.size_() == size);
             clearPolarity(u.arg.ptr);
         } else
             opensmt_error( "unknown action" );
@@ -1764,11 +1759,11 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
         // that we previously deduced on this branch
         ERef sv = v;
         PTRef sv_tr = enode_store[sv].getTerm();
-        if (deduced[logic.getPterm(sv_tr).getVar()] == l_Undef) {
-            if (!hasPolarity(sv_tr) && deduced[logic.getPterm(sv_tr).getVar()] == l_Undef)
+        if (logic.getPterm(sv_tr).getVar() == -1 || deduced[logic.getPterm(sv_tr).getVar()] == l_Undef) {
+            if (!hasPolarity(sv_tr) && (logic.getPterm(sv_tr).getVar() == -1 || deduced[logic.getPterm(sv_tr).getVar()] == l_Undef))
             {
-                deduced[logic.getPterm(sv_tr).getVar()] = {id, deduced_polarity};
-//                enode_store[sv].setDeduced(deduced_polarity);
+                if (logic.getPterm(sv_tr).getVar() != -1) 
+                    deduced[logic.getPterm(sv_tr).getVar()] = {id, deduced_polarity};
 #ifdef VERBOSE_EUF
                 cerr << "Deducing ";
                 cerr << (deduced_polarity == l_False ? "not " : "");
@@ -2389,6 +2384,8 @@ bool Egraph::assertLit(PtAsgn pta, bool)
     lbool sgn = pta.sgn;
     PTRef pt_r = pta.tr;
     Pterm& pt = logic.term_store[pt_r];
+
+    assert(!hasPolarity(pt_r));
 
     lbool res;
     undo_stack_main.push(Undo(SET_POLARITY, pt_r));

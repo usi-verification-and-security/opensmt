@@ -65,7 +65,8 @@ class LetFrame {
 class Interpret {
   private:
     SMTConfig      &config;
-    Theory         *theory;
+//    Theory         *theory;
+    THandler       *thandler;
     Logic          *logic;
 
 
@@ -114,7 +115,7 @@ class Interpret {
   public:
     Interpret(SMTConfig& c)
         : logic   (NULL)
-        , theory  (NULL)
+        , thandler(NULL)
         , main_solver(NULL)
         , f_exit(false)
         , asrt_lev(0)
@@ -122,8 +123,8 @@ class Interpret {
         , config(c) { }
 
     ~Interpret() {
-        if (theory != NULL)
-            delete theory;
+        if (thandler != NULL)
+            delete thandler;
         if (main_solver != NULL)
             delete main_solver;
     }

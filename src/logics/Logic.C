@@ -30,6 +30,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "common/TreeOps.h"
 #include "common/Global.h"
 #include "minisat/mtl/Sort.h"
+#include "tsolvers/Deductions.h"
 #include <queue>
 
 using namespace std;
@@ -906,7 +907,7 @@ Logic::isUF(SymRef sref) const
 }
 
 bool Logic::isUF(PTRef ptr) const {
-    return isUF(getSymRef(ptr));
+    return isUF(getSymRef(ptr)); //return (getPterm(ptr).size() > 0) && !interpreted_functions[getSym(ptr).getId()];
 }
 
 // Uninterpreted predicate p : U U* -> Bool
@@ -997,50 +998,6 @@ bool Logic::isAtom(PTRef r) const {
         if (isDisequality(r)) return true;
     }
     return false;
-}
-
-void
-Logic::simplify(PTRef root, PTRef& root_out)
-{
-    computeSubstitutionFixpoint(root, root_out);
-}
-
-void Logic::computeSubstitutionFixpoint(PTRef root, PTRef& root_out)
-{
-    // The substitution of facts together with the call to simplifyTree
-    // ensures that no fact is inserted twice to facts.
-    vec<PtAsgn> facts;
-    // l_True : exists and is valid
-    // l_False : exists but has been disabled to break symmetries
-    Map<PTRef,PtAsgn,PTRefHash> substs;
-    // fixpoint
-    while (true) {
-        collectFacts(root, facts);
-        lbool res = retrieveSubstitutions(facts, substs);
-        if (res != l_Undef) root = (res == l_True ? getTerm_true() : getTerm_false());
-        PTRef new_root;
-        bool cont = varsubstitute(root, substs, new_root);
-        //simplifyTree(new_root, root);
-        root = new_root;
-        if (!cont) break;
-    }
-#ifdef SIMPLIFY_DEBUG
-    vec<PTRef> keys;
-    substs.getKeys(keys);
-    printf("Substitutions:\n");
-    for (int i = 0; i < keys.size(); i++) {
-        printf("  %s -> %s (%s)\n", printTerm(keys[i]), printTerm(substs[keys[i]].tr), substs[keys[i]].sgn == l_True ? "enabled" : "disabled");
-    }
-#endif
-    vec<PTRef> args;
-    for (int i = 0; i < facts.size(); i++) {
-        assert(facts[i].sgn == l_True || isBoolAtom(facts[i].tr));
-        if (isUFEquality(facts[i].tr))
-            args.push(facts[i].tr);
-    }
-    subst_num = args.size();
-    args.push(root);
-    root_out = mkAnd(args);
 }
 
 //

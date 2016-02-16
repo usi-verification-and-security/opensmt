@@ -116,6 +116,7 @@ class LRALogic: public Logic
     bool        hasSortReal(PTRef tr) const { return sym_store[getPterm(tr).symb()].rsort() == sort_REAL; }
 
     bool        isUFEquality(PTRef tr) const { return !isRealEq(tr) && Logic::isUFEquality(tr); }
+    bool        isTheoryEquality(PTRef tr) const { return isRealEq(tr); }
 
     bool isUF(PTRef tr) const { return !hasSortReal(tr) && Logic::isUF(tr); }
 
@@ -143,7 +144,7 @@ class LRALogic: public Logic
 
     // Logic specific simplifications: conjoin Ites, make substitutions
     // and split equalities
-    virtual void simplify(PTRef root, PTRef& root_out);
+//    virtual bool simplify(PTRef root, PTRef& root_out);
 
     lbool retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs);
     lbool arithmeticElimination(vec<PTRef>&, Map<PTRef,PtAsgn,PTRefHash>&);

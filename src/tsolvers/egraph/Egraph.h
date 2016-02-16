@@ -55,7 +55,6 @@ class Egraph : public TSolver
 {
 private:
   Logic& logic;
-  TermMapper&   tmap;
 #ifdef CUSTOM_EL_ALLOC
   ELAllocator   forbid_allocator;
 #endif
@@ -80,7 +79,9 @@ private:
 public:
 //  SimpSMTSolver* solver; // for debugging only
 
-  Egraph(SMTConfig & c , Logic& l, TermMapper& term_map , vec<DedElem>& d);
+  Egraph(SMTConfig & c , Logic& l
+//          , TermMapper& term_map
+          , vec<DedElem>& d);
 
     ~Egraph( ) {
         backtrackToStackSize( 0 );

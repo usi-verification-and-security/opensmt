@@ -269,7 +269,7 @@ public:
   inline int       getRandomSeed   ( ) { return optionTable.contains(o_random_seed) ? optionTable[o_random_seed]->getValue().numval : 91648253; }
   inline bool      produceModel    ( ) { return optionTable.contains(o_produce_models) ? optionTable[o_produce_models]->getValue().numval == 1 : true; }
   inline void setProduceModels( ) { insertOption(o_produce_models, new Option(1)); }
-  inline bool setRandomSeed(int seed) { insertOption(o_random_seed, new Option(seed)); }
+  inline bool setRandomSeed(int seed) { insertOption(o_random_seed, new Option(seed)); return true; }
 
   inline void setProduceProofs( ) { if ( print_proofs_smtlib2 != 0 ) return; print_proofs_smtlib2 = 1; }
 

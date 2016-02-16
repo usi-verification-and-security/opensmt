@@ -31,47 +31,35 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "LRASolver.h"
 
-// Declare a tree of terms
-void THandler::declareTermTree(PTRef tr)
+void THandler::backtrack(int lev)
 {
-    vec<PtChild> terms;
-    getTermList(tr, terms, getLogic());
+    // Undoes the state of theory atoms if needed
+    while ( (int)stack.size( ) > (lev > 0 ? lev : 0) ) {
+        PTRef e = stack.last( );
+        stack.pop( );
 
-    Map<PTRef,bool,PTRefHash> tr_map;
-    for (int i = 0; i < terms.size(); i++)
-    {
-        if(!tr_map.contains(terms[i].tr))
-        {
-            declareTerm(terms[i].tr);
-            tr_map.insert(terms[i].tr, true);
-        }
+        // It was var_True or var_False
+        if ( e == getLogic().getTerm_true() || e == getLogic().getTerm_false() ) continue;
+
+//        if ( !tmap.theoryTerms.contains(e) ) continue;
+        if (!getLogic().isTheoryTerm(e)) continue;
+#ifdef VERBOSE_EUF
+//        printf("Backtracking term %s\n", logic.term_store.printTerm(e));
+#endif
+        //egraph.popBacktrackPoint( );
+
+        for (int i = 0; i < getSolverHandler().tsolvers.size(); i++)
+            if (getSolverHandler().tsolvers[i] != NULL)
+                getSolverHandler().tsolvers[i]->popBacktrackPoint();
+
+//    assert( e->hasPolarity( ) );
+//    assert( e->getPolarity( ) == l_True
+//       || e->getPolarity( ) == l_False );
+    // Reset polarity
+//    e->resetPolarity( );
+//    assert( !e->hasPolarity( ) );
     }
-}
-
-// Declare term to the appropriate solver
-void THandler::declareTerm(PTRef tr)
-{
-    for (int i = 0; i < tsolvers.size(); i++)
-        if (tsolvers[i] != NULL)
-            tsolvers[i]->declareTerm(tr);
-}
-
-ValPair THandler::getValue(PTRef tr) const
-{
-    for (int i = 0; i < tsolvers.size(); i++)
-        if (tsolvers[i] != NULL) {
-            ValPair vp = tsolvers[i]->getValue(tr);
-            if (vp != ValPair_Undef)
-                return vp;
-        }
-    return ValPair(tr, "unknown");
-}
-
-void THandler::computeModel()
-{
-    for (int i = 0; i < tsolvers.size(); i++)
-        if (tsolvers[i] != NULL)
-            tsolvers[i]->computeModel();
+    checked_trail_size = stack.size( );
 }
 
 // Push newly found literals from trail to the solvers
@@ -138,92 +126,19 @@ bool THandler::assertLits(vec<Lit>& trail)
     return res;
 }
 
-bool THandler::assertLit(PtAsgn asgn)
-{
-    bool res = true;
-    // Push backtrack points and the assignments to the theory solvers
-    // according to the schedule
-    for (int i = 0; i < solverSchedule.size(); i++) {
-        int idx = solverSchedule[i];
-        assert(tsolvers[idx] != NULL);
-        tsolvers[idx]->pushBacktrackPoint();
-        bool res_new = tsolvers[idx]->assertLit(asgn);
-        res = (res == false) ? false : res_new;
-    }
-    return res;
-}
-
-char* THandler::printValue(PTRef tr)
-{
-    char* out = (char*)malloc(1);
-    out[0] = '\0';
-    for (int i = 0; i < tsolvers.size(); i++) {
-        if (tsolvers[i] != NULL) {
-            char* old_out = out;
-            asprintf(&out, "%s\n%s", old_out, tsolvers[i]->printValue(tr));
-            free(old_out);
-        }
-    }
-    return out;
-}
-
-char* THandler::printExplanation(PTRef tr)
-{
-    char* out = (char*)malloc(1);
-    out[0] = '\0';
-    for (int i = 0; i < tsolvers.size(); i++) {
-        if (tsolvers[i] != NULL) {
-            char* old_out = out;
-            asprintf(&out, "%s\n%s", old_out, tsolvers[i]->printExplanation(tr));
-            free(old_out);
-        }
-    }
-    return out;
-}
 
 // Check the assignment with equality solver
 bool THandler::check( bool complete, vec<Lit>& ) {
     int i;
-    for (i = 0; i < tsolvers.size(); i++)
-        if (tsolvers[i] != NULL)
-            if (tsolvers[i]->check(complete) == false) break;
+    for (i = 0; i < getSolverHandler().tsolvers.size(); i++)
+        if (getSolverHandler().tsolvers[i] != NULL)
+            if (getSolverHandler().tsolvers[i]->check(complete) == false) break;
 
-    return i == tsolvers.size();
+    return i == getSolverHandler().tsolvers.size();
 
 //  if ( complete && config.certification_level > 2 )
 //    verifyCallWithExternalTool( res, trail.size( ) - 1 );
 
-}
-
-void THandler::backtrack(int lev)
-{
-    // Undoes the state of theory atoms if needed
-    while ( (int)stack.size( ) > (lev > 0 ? lev : 0) ) {
-        PTRef e = stack.last( );
-        stack.pop( );
-
-        // It was var_True or var_False
-        if ( e == getLogic().getTerm_true() || e == getLogic().getTerm_false() ) continue;
-
-//        if ( !tmap.theoryTerms.contains(e) ) continue;
-        if (!getLogic().isTheoryTerm(e)) continue;
-#ifdef VERBOSE_EUF
-//        printf("Backtracking term %s\n", logic.term_store.printTerm(e));
-#endif
-        //egraph.popBacktrackPoint( );
-
-        for (int i = 0; i < tsolvers.size(); i++)
-            if (tsolvers[i] != NULL)
-                tsolvers[i]->popBacktrackPoint();
-
-//    assert( e->hasPolarity( ) );
-//    assert( e->getPolarity( ) == l_True
-//       || e->getPolarity( ) == l_False );
-    // Reset polarity
-//    e->resetPolarity( );
-//    assert( !e->hasPolarity( ) );
-    }
-    checked_trail_size = stack.size( );
 }
 
 //
@@ -245,13 +160,13 @@ void THandler::getConflict (
     // where li is the literal corresponding with ei with polarity !pi
     vec<PtAsgn> explanation;
     int i;
-    for (i = 0; i < tsolvers.size(); i++) {
-        if (tsolvers[i] != NULL && tsolvers[i]->hasExplanation()) {
-            tsolvers[i]->getConflict(false, explanation);
+    for (i = 0; i < getSolverHandler().tsolvers.size(); i++) {
+        if (getSolverHandler().tsolvers[i] != NULL && getSolverHandler().tsolvers[i]->hasExplanation()) {
+            getSolverHandler().tsolvers[i]->getConflict(false, explanation);
             break;
         }
     }
-    assert(i != tsolvers.size());
+    assert(i != getSolverHandler().tsolvers.size());
 
 #ifdef VERBOSE_EUF
 //    cout << printExplanation(explanation, assigns);
@@ -340,8 +255,8 @@ PTRef THandler::getInterpolants(const ipartitions_t& p)
 Lit THandler::getDeduction() {
     PtAsgn_reason e = PtAsgn_reason_Undef;
     while (true) {
-        for (int i = 0; i < tsolvers.size(); i++) {
-            if (tsolvers[i] != NULL) e = tsolvers[i]->getDeduction();
+        for (int i = 0; i < getSolverHandler().tsolvers.size(); i++) {
+            if (getSolverHandler().tsolvers[i] != NULL) e = getSolverHandler().tsolvers[i]->getDeduction();
             if (e.tr != PTRef_Undef) break;
         }
         if ( e.tr == PTRef_Undef ) {
@@ -383,11 +298,7 @@ Lit THandler::getSuggestion( ) {
     return tmap.getLit(e);
 }
 
-#ifdef PEDANTIC_DEBUG
-bool THandler::getReason( Lit l, vec< Lit > & reason, vec<char>& assigns )
-#else
 void THandler::getReason( Lit l, vec< Lit > & reason, vec<char>& assigns )
-#endif
 {
 #if LAZY_COMMUNICATION
     assert( checked_trail_size == stack.size( ) );
@@ -400,8 +311,8 @@ void THandler::getReason( Lit l, vec< Lit > & reason, vec<char>& assigns )
 
     // It must be a TAtom and already disabled
     assert( getLogic().isTheoryTerm(e) );
-    assert(deductions[v].polarity != l_Undef);
-    TSolver* solver = tsolvers[deductions[v].deducedBy.id];
+    assert(getSolverHandler().deductions[v].polarity != l_Undef);
+    TSolver* solver = getSolverHandler().tsolvers[getSolverHandler().deductions[v].deducedBy.id];
 //  assert( !e->hasPolarity( ) );
 //  assert( e->isDeduced( ) );
 //  assert( e->getDeduced( ) != l_Undef );           // Last assigned deduction
@@ -964,23 +875,23 @@ std::string THandler::printAssertion(Lit assertion) {
     return os.str();
 }
 
-std::string THandler::printExplanation(vec<PtAsgn>& explanation, vec<char>& assigns) {
-    stringstream os;
-    os << "; Conflict: ";
-    for ( int i = 0 ; i < explanation.size( ) ; i ++ ) {
-        if ( i > 0 )
-            os << ", ";
-        Var v = tmap.getVar(explanation[i].tr);
-        lbool val = toLbool(assigns[v]);
-        assert(val != l_Undef);
-        if ( val == l_False )
-            os << "!";
-
-        os << getLogic().term_store.printTerm(explanation[i].tr);
-        os << "[var " << v << "]";
-    }
-    os << endl;
-    return os.str();
-}
+//std::string THandler::printExplanation(vec<PtAsgn>& explanation, vec<char>& assigns) {
+//    stringstream os;
+//    os << "; Conflict: ";
+//    for ( int i = 0 ; i < explanation.size( ) ; i ++ ) {
+//        if ( i > 0 )
+//            os << ", ";
+//        Var v = tmap.getVar(explanation[i].tr);
+//        lbool val = toLbool(assigns[v]);
+//        assert(val != l_Undef);
+//        if ( val == l_False )
+//            os << "!";
+//
+//        os << getLogic().term_store.printTerm(explanation[i].tr);
+//        os << "[var " << v << "]";
+//    }
+//    os << endl;
+//    return os.str();
+//}
 #endif
 

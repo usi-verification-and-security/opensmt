@@ -264,9 +264,10 @@ class Pterm {
     int      getId() const { return id; }
     void     setId(int i) { id = i; }
 
-    void     setVar(Var v)  { assert(var == var_Undef || var == v); var = v; }
-    Var      getVar() const { return var; }
-    bool     hasVar() const { return var != var_Undef; }
+    void     setVar(Var v)   { assert(var == var_Undef || var == v); var = v; }
+    void     clearVar()      { var = var_Undef; }
+    Var      getVar() const  { return var; }
+    bool     hasVar() const  { return var != var_Undef; }
 
     void     shrink(int s)               { header.size -= s; }
     void     copyTo(Pterm& to);

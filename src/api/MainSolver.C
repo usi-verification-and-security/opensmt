@@ -188,11 +188,10 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         enriched.push(root);
         root = logic.mkAnd(enriched);
     }
-    // Framework for handling different logic specific simplifications.
+    // Framework for handling different theory specific simplifications.
     PTRef new_root;
-    if(config.produce_inter() == 0)
-    {
-        logic.simplify(root, new_root);
+    if (config.produce_inter() == 0) {
+        bool res = getTheory().simplify(root, new_root);
         if (logic.isTrue(new_root)) return status = s_True;
         else if (logic.isFalse(new_root)) return status = s_False;
     }
@@ -1196,7 +1195,7 @@ void MainSolver::solve_split(int i, int s, int wpipefd, std::mutex *mtx)
         goto done;
     }
 
-    main_solver = new MainSolver(*theory, config, new SimpSMTSolver(config, theory->getTHandler()));
+    main_solver = new MainSolver(getTHandler(), config, new SimpSMTSolver(config, getTHandler()));
     main_solver->initialize();
 
     if (!main_solver->readSolverState(split,split_sz,true, &msg)) {
