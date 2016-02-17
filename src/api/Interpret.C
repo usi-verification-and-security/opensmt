@@ -139,15 +139,17 @@ bool Interpret::interp(ASTNode& n) {
         if (logic != NULL) {
             notify_formatted(true, "logic has already been set to %s", logic->getName().c_str());
         } else if (strcmp(logic_name, QF_UF.str) == 0) {
-            UFTheory *theory = new UFTheory(config);
-            thandler = new THandler(config, *theory);
+            UFTheory *uftheory = new UFTheory(config);
+            theory = uftheory;
+            thandler = new THandler(config, *uftheory);
             logic = &(theory->getLogic());
             
             main_solver = new MainSolver(*thandler, config, new SimpSMTSolver(config, *thandler));
             main_solver->initialize();
         } else if (strcmp(logic_name, QF_LRA.str) == 0) {
-            LRATheory *theory = new LRATheory(config);
-            thandler = new THandler(config, *theory);
+            LRATheory *lratheory = new LRATheory(config);
+            theory = lratheory;
+            thandler = new THandler(config, *lratheory);
             logic = &(theory->getLogic());
             main_solver = new MainSolver(*thandler, config, new SimpSMTSolver(config, *thandler));
             main_solver->initialize();

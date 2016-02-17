@@ -65,7 +65,7 @@ class LetFrame {
 class Interpret {
   private:
     SMTConfig      &config;
-//    Theory         *theory;
+    Theory         *theory;
     THandler       *thandler;
     Logic          *logic;
 
@@ -115,6 +115,7 @@ class Interpret {
   public:
     Interpret(SMTConfig& c)
         : logic   (NULL)
+        , theory(NULL)
         , thandler(NULL)
         , main_solver(NULL)
         , f_exit(false)
@@ -127,6 +128,8 @@ class Interpret {
             delete thandler;
         if (main_solver != NULL)
             delete main_solver;
+        if (theory != NULL)
+            delete theory;
     }
 
     int interpFile(FILE* in);

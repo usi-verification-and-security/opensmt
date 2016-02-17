@@ -496,6 +496,12 @@ bool LRASolver::check(bool complete)
 bool LRASolver::assertLit( PtAsgn pta, bool reason )
 {
   ( void )reason;
+
+  // Special cases of the "inequalitites"
+  if (logic.isTrue(pta.tr) && pta.sgn == l_True) return true;
+  if (logic.isFalse(pta.tr) && pta.sgn == l_False) return true;
+  if (logic.isTrue(pta.tr) && pta.sgn == l_False) return false;
+  if (logic.isFalse(pta.tr) && pta.sgn == l_True) return false;
   // check if we stop reading constraints
   if( status == INIT )
     initSolver( );
