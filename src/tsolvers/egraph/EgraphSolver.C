@@ -318,6 +318,7 @@ Egraph::getInterpolants(const ipartitions_t & p)
   assert( config.produce_inter() );
   PTRef itp = PTRef_Undef;
   vec<PTRef> and_args;
+  cerr << "Generating interpolants for " << cgraphs.size() << " conflicts" << endl;
   for(int i = 0; i < cgraphs.size(); ++i)
   {
       PTRef pi = cgraphs[i]->getInterpolants(p);

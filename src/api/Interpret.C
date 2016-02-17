@@ -23,7 +23,6 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
-
 #include <assert.h>
 #include <stdarg.h>
 #include <string.h>
@@ -1160,6 +1159,7 @@ void Interpret::GetInterpolants()
     // ABmixed bit
     p <<= 1;
 
+/*
     //test the partitions
     for(int i = 0; i < partitions.size(); ++i)
     {
@@ -1170,7 +1170,7 @@ void Interpret::GetInterpolants()
         else
             cerr << "; Partition " << i << " is weird" << endl;
     }
-
+*/
 
     PTRef itp = theory->getTHandler().getInterpolants(p);
     //cerr << ";Interpolant:\n;" << logic->printTerm(itp) << endl;

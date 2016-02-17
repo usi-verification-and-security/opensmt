@@ -601,15 +601,19 @@ bool CGraph::colorEdgesFrom( CNode * x, const ipartitions_t & mask )
 
 	if ( x->color == I_AB )
 	{
-	  // McMillan: set AB as B
-	  if ( config.proof_set_inter_algo() == 0 )
-	    cedges.back( )->color = I_B;
-	  // McMillan: set AB as A
-	  else if ( config.proof_set_inter_algo() == 2 )
-	    cedges.back( )->color = I_A;
-	  // Pudlak: who cares
-	  else if ( config.proof_set_inter_algo() == 1 )
-	    cedges.back( )->color = I_A;
+        cedges.back( )->color = (rand() % 2) ? I_A : I_B;
+//        cerr << "; Coloring edge " << logic.printTerm(cedges.back()->source->e) << " -> " << logic.printTerm(cedges.back()->target->e) << " with color " << cedges.back()->color << endl;
+        /*
+            // McMillan: set AB as B
+            if ( config.proof_set_inter_algo() == 0 )
+                cedges.back( )->color = I_B;
+            // McMillan': set AB as A
+            else if ( config.proof_set_inter_algo() == 2 )
+                cedges.back( )->color = I_A;
+            // Random
+            else if ( config.proof_set_inter_algo() == 3 )
+                cedges.back( )->color = (rand() % 2) ? I_A : I_B;
+        */
 	}
 	else
 	  cedges.back( )->color = x->color;
@@ -626,15 +630,19 @@ bool CGraph::colorEdgesFrom( CNode * x, const ipartitions_t & mask )
 	// Choose correct color
 	if ( x->color == I_AB )
 	{
+	    x->next->color = (rand() % 2) ? I_A : I_B;
+//        cerr << "; Coloring edge " << logic.printTerm(x->next->source->e) << " -> " << logic.printTerm(x->next->target->e) << " with color " << x->next->color << endl;
+        /*
 	  // McMillan: set AB as B
 	  if ( config.proof_set_inter_algo() == 0 )
 	    x->next->color = I_B;
 	  // McMillan: set AB as A
 	  else if ( config.proof_set_inter_algo() == 2 )
 	    x->next->color = I_A;
-	  // Pudlak: who cares
-	  else if ( config.proof_set_inter_algo() == 1 )
-	    x->next->color = I_A;
+	  // Random
+	  else if ( config.proof_set_inter_algo() == 3 )
+	    x->next->color = (rand() % 2) ? I_A : I_B;
+        */
 	}
 	// Color with proper color
 	else
@@ -678,15 +686,19 @@ bool CGraph::colorEdgesFrom( CNode * x, const ipartitions_t & mask )
           A_basic.push(x->next->reason);
           //B_basic.push(x->next->reason);
 	assert( isAB( p, mask ) );
+	  x->next->color = (rand() % 2) ? I_A : I_B;
+//        cerr << "; Coloring edge " << logic.printTerm(x->next->source->e) << " -> " << logic.printTerm(x->next->target->e) << " with color " << x->next->color << endl;
+      /*
 	// McMillan: set AB as B
 	if ( config.proof_set_inter_algo() == 0 )
 	  x->next->color = I_B;
 	// McMillan: set AB as A
 	else if ( config.proof_set_inter_algo() == 2 )
 	  x->next->color = I_A;
-	// Pudlak: who cares
-	else if ( config.proof_set_inter_algo() == 1 )
-	  x->next->color = I_A;
+	// Random
+	else if ( config.proof_set_inter_algo() == 3 )
+	  x->next->color = (rand() % 2) ? I_A : I_B;
+      */
       }
 
 /*
@@ -835,9 +847,35 @@ CGraph::interpolate_flat(const path_t& p)
 PTRef
 CGraph::getInterpolants( const ipartitions_t & mask )
 {
+//    cerr << "; Interpolating QF_UF using ";
+    switch(config.proof_set_inter_algo())
+    {
+    case 0:
+  ;//      cerr << "McMillan";
+        break;
+    case 2:
+     ;//   cerr << "McMillan'";
+        break;
+    case 3:
+      ;//  cerr << "Random";
+        break;
+    case 4:
+      ;//  cerr << "McMillan + PS" << endl;
+        break;
+    case 5:
+      ;//  cerr << "McMillan' + PS" << endl;
+        break;
+    case 6:
+      ;//  cerr << "Random + PS" << endl;
+        break;
+    default:
+        opensmt_error("Interpolation algorithm does not exist");
+    }
+   // cerr << endl;
+
   assert( !colored );
 
-  srand(time(NULL));
+  srand(2);
 /*
     cerr << ";\n;\n;\n;\n;CGraph edges: " << endl;
     vec<PTRef> ced;
@@ -896,15 +934,20 @@ CGraph::getInterpolants( const ipartitions_t & mask )
     }
     else if ( isAB( p, mask ) )
     {
-      // McMillan: set AB as B
-      if ( config.proof_set_inter_algo() == 0 )
-	conf_color = I_B;
-      // McMillan: set AB as A
-      else if ( config.proof_set_inter_algo() == 2 )
-	conf_color = I_A;
-      // Pudlak: who cares
-      else if ( config.proof_set_inter_algo() == 1 )
-	conf_color = I_A;
+   //     cerr << "; CONFLICT IS AB" << endl;
+        conf_color = (rand() % 2) ? I_A : I_B;
+     //   cerr << "; Chose random side " << conf_color << endl;
+        /*
+        // McMillan: set AB as B
+        if ( config.proof_set_inter_algo() == 0 )
+            conf_color = I_B;
+        // McMillan: set AB as A
+        else if ( config.proof_set_inter_algo() == 2 )
+            conf_color = I_A;
+        // Random
+        else if ( config.proof_set_inter_algo() == 3 )
+            conf_color = (rand() % 2) ? I_A : I_B;
+        */
     }
     else if ( isAstrict( p, mask ) )
       conf_color = I_A;
@@ -965,14 +1008,14 @@ CGraph::getInterpolants( const ipartitions_t & mask )
   else
   {
     // McMillan: set AB as B
-    if ( config.proof_set_inter_algo() == 0 )
+    if ( config.proof_set_inter_algo() == 0 || config.proof_set_inter_algo() == 4)
       conf_color = I_B;
     // McMillan: set AB as A
-    else if ( config.proof_set_inter_algo() == 2 )
+    else if ( config.proof_set_inter_algo() == 2 || config.proof_set_inter_algo() == 5)
       conf_color = I_A;
-    // Pudlak: who cares
-    else if ( config.proof_set_inter_algo() == 1 )
-      conf_color = I_A;
+    // Random
+    else if ( config.proof_set_inter_algo() == 3 || config.proof_set_inter_algo() == 6)
+      conf_color = (rand() % 2) ? I_A : I_B;
   }
 
   assert( conf_color == I_A
@@ -987,14 +1030,24 @@ CGraph::getInterpolants( const ipartitions_t & mask )
   // Conflict belongs to A part
   if ( conf_color == I_A )
   {
-      result = Iprime( pi );
-      //result = logic.mkNot(ISwap(pi));
+//      cerr << "; Conflict in A" << endl;
+    if(config.proof_set_inter_algo() == 0 || config.proof_set_inter_algo() == 4)
+        result = Iprime( pi );
+    else if(config.proof_set_inter_algo() == 2 || config.proof_set_inter_algo() == 5)
+        result = logic.mkNot(ISwap(pi));
+    else if(config.proof_set_inter_algo() == 3 || config.proof_set_inter_algo() == 6)
+        result = (rand() % 2) ? Iprime(pi) : logic.mkNot(ISwap(pi));
   }
   // Much simpler case when conflict belongs to B
   else if ( conf_color == I_B )
   {
-      result = I( pi );
-      //result = logic.mkNot(IprimeSwap(pi));
+  //    cerr << "; Conflict in B" << endl;
+    if(config.proof_set_inter_algo() == 0 || config.proof_set_inter_algo() == 4)
+        result = I( pi );
+    else if(config.proof_set_inter_algo() == 2 || config.proof_set_inter_algo() == 5)
+        result = logic.mkNot(IprimeSwap(pi));
+    else if(config.proof_set_inter_algo() == 3 || config.proof_set_inter_algo() == 6)
+        result = (rand() % 2) ? I(pi) : logic.mkNot(IprimeSwap(pi));
   }
   else
   {
@@ -1335,7 +1388,7 @@ CGraph::Iprime( const path_t& pi )
 PTRef
 CGraph::IprimeSwap( const path_t& pi )
 {
-  cerr << ";Computing IprimeSwap(" << logic.printTerm(pi.first->e) << "," << logic.printTerm(pi.second->e) << ")" << endl;
+//  cerr << ";Computing IprimeSwap(" << logic.printTerm(pi.first->e) << "," << logic.printTerm(pi.second->e) << ")" << endl;
     vec<PTRef> conj;
     // Compute largest subpath of c1 -- c2
     // with B-colorable endpoints
@@ -1348,11 +1401,11 @@ CGraph::IprimeSwap( const path_t& pi )
 
     if(!empty_theta)
     {
-        cerr << ";Theta: (" << logic.printTerm(theta.first->e) << "," << logic.printTerm(theta.second->e) << ")" << endl;
+    //    cerr << ";Theta: (" << logic.printTerm(theta.first->e) << "," << logic.printTerm(theta.second->e) << ")" << endl;
         conj.push(ISwap(theta));
     }
 
-    //cerr << ";BSwap of pi1 UNION pi2 has size " << b_paths.size() << endl;
+  //  cerr << ";BSwap of pi1 UNION pi2 has size " << b_paths.size() << endl;
 
 
     for ( unsigned i = 0 ; i < b_paths.size( ) ; i ++ )
@@ -1432,17 +1485,17 @@ CGraph::Irec( const path_t & p, map< path_t, PTRef > & cache , unsigned int h)
         {
             path_t& fac = b_premise_set[i];
             assert(L.find(fac) != L.end());
-            cerr << lstr << "Checking label of path (" << logic.printTerm(fac.first->e) << ", " << logic.printTerm(fac.second->e) << ")" << endl;
+  //          cerr << "; Checking label of path (" << logic.printTerm(fac.first->e) << ", " << logic.printTerm(fac.second->e) << ") = " << L[fac] << endl;
             if(L[fac] == I_B)
             {
-                //cerr << lstr << "Not swapping" << endl;
+    //            cerr << "; Not swapping" << endl;
                 conj.push( Irec( b_premise_set[ i ], cache, h + 1 ) );
             }
             else
             {
                 //swap here
                 conj_swap.push(logic.mkNot(IprimeSwap(fac)));
-                //cerr << lstr << "Swapping from I to (not S')" << endl;
+      //          cerr << "; Swapping from I to (not S')" << endl;
             }
         }
         if(conj_swap.size() > 0)
@@ -1466,12 +1519,13 @@ CGraph::Irec( const path_t & p, map< path_t, PTRef > & cache , unsigned int h)
   }
   else
   {
-  //  cerr << lstr << "Multiple factors for path (" << logic.printTerm(p.first->e) << "," << logic.printTerm(p.second->e) << ")" << endl;
-  //    divided = true;
+    //cerr << lstr << "Multiple factors for path (" << logic.printTerm(p.first->e) << "," << logic.printTerm(p.second->e) << ")" << endl;
+    //  divided = true;
     // Recurse on factors
-    if(!divided)
+    //if(!divided)
+    if(factors.size() > 3 && config.proof_set_inter_algo() > 3)
     {
-    cerr << lstr << "Multiple factors for path (" << logic.printTerm(p.first->e) << "," << logic.printTerm(p.second->e) << ")" << endl;
+  //  cerr << lstr << "Multiple factors for path (" << logic.printTerm(p.first->e) << "," << logic.printTerm(p.second->e) << ")" << endl;
     bool la, lb, lab, ra, rb, rab;
     divided = true;
 
@@ -1481,7 +1535,7 @@ CGraph::Irec( const path_t & p, map< path_t, PTRef > & cache , unsigned int h)
         if(j >= factors.size()) j = (factors.size() - 1);
 
         path_t pf(factors[i].first, factors[j].second);
-        cerr << "; Subpath (" << logic.printTerm(pf.first->e) << "," << logic.printTerm(pf.second->e) << ")" << endl;
+//        cerr << "; Subpath (" << logic.printTerm(pf.first->e) << "," << logic.printTerm(pf.second->e) << ")" << endl;
 
         CNode *l = pf.first;
         CNode *r = pf.second;
@@ -1521,52 +1575,52 @@ CGraph::Irec( const path_t & p, map< path_t, PTRef > & cache , unsigned int h)
         else if(r->color == I_B) rb = true;
         else rab = true;
 
-        cerr << "; LA " << la << " | LB " << lb << " | LAB " << lab << endl;
-        cerr << "; RA " << ra << " | RB " << rb << " | RAB " << rab << endl;
+      //  cerr << "; LA " << la << " | LB " << lb << " | LAB " << lab << endl;
+      //  cerr << "; RA " << ra << " | RB " << rb << " | RAB " << rab << endl;
         assert(!((la && rb) || (lb && ra)));
-        bool b = rand() % 2;
+        bool b = true;//rand() % 2;
         if(la || ra) // conflict in A, call I' or not S
         {
             assert(i == 0);
-            if(b)
+            if(b && config.proof_set_inter_algo() == 4)
             {
                 conj.push(Iprime(pf));
-                cerr << "; Calling I'" << endl;
+            //    cerr << "; Calling I'" << endl;
             }
             else
             {
                 conj.push(logic.mkNot(ISwap(pf)));
-                cerr << "; Calling S" << endl;
+          //      cerr << "; Calling S" << endl;
             }
         }
         else if(lb || rb) // conflict in B, call I or not S'
         {
             assert(j == (factors.size() - 1));
-            if(b)
+            if(b && config.proof_set_inter_algo() == 4)
             {
                 conj.push(I(pf));
-                cerr << "; Calling I" << endl;
+        //        cerr << "; Calling I" << endl;
             }
             else
             {
                 conj.push(logic.mkNot(IprimeSwap(pf)));
-                cerr << "; Calling S'" << endl;
+      //          cerr << "; Calling S'" << endl;
             }
         }
         else // conflict has global endpoints
         {
-            if(b)
+            if(b && config.proof_set_inter_algo() == 4)
             {
                 conj.push(I(pf));
-                cerr << "; Calling I" << endl;
+    //            cerr << "; Calling I" << endl;
             }
             else
             {
                 conj.push(logic.mkNot(IprimeSwap(pf)));
-                cerr << "; Calling S'" << endl;
+  //              cerr << "; Calling S'" << endl;
             }
         }
-        cerr << "; Itp: " << logic.printTerm(conj[conj.size() - 1]) << endl;
+//        cerr << "; Itp: " << logic.printTerm(conj[conj.size() - 1]) << endl;
     }
     divided = false;
     }
@@ -1603,7 +1657,7 @@ CGraph::IrecSwap( const path_t & p, map< path_t, PTRef > & cache , unsigned int 
   string lstr(";");
   for(int i = 0; i < h; ++i) lstr += ' ';
 
-  //cerr << lstr << "Interpolant IrecSwap(" << logic.printTerm(p.first->e) << "," << logic.printTerm(p.second->e) << ")" << endl;
+//  cerr << lstr << "Interpolant IrecSwap(" << logic.printTerm(p.first->e) << "," << logic.printTerm(p.second->e) << ")" << endl;
   vec< PTRef > conj;
   vec< PTRef > conj_swap;
   // Will store factors
@@ -1618,30 +1672,30 @@ CGraph::IrecSwap( const path_t & p, map< path_t, PTRef > & cache , unsigned int 
 
   if ( factors.size( ) == 1 )
   {
-      //cerr << lstr << "Factor has size 1" << endl;
+    //  cerr << lstr << "Factor has size 1" << endl;
     // It's a B-path
     if ( !a_factor )
     {
-        //cerr << lstr << "Single factor is a B-factor" << endl;
+  //      cerr << lstr << "Single factor is a B-factor" << endl;
       // Compute J
       vector< path_t > b_premise_set;
       BSwap( p, b_premise_set );
       conj.push( J( p, b_premise_set ) );
-        //cerr << lstr << "A-set has size " << b_premise_set.size() << endl;
+//        cerr << lstr << "A-set has size " << b_premise_set.size() << endl;
         for ( unsigned i = 0 ; i < b_premise_set.size( ) ; i ++ )
         {
             path_t& fac = b_premise_set[i];
             assert(L.find(fac) != L.end());
-            cerr << lstr << "Checking label of path (" << logic.printTerm(fac.first->e) << ", " << logic.printTerm(fac.second->e) << ")" << endl;
+            //cerr << "; Checking label of path (" << logic.printTerm(fac.first->e) << ", " << logic.printTerm(fac.second->e) << ") = " << L[fac] << endl;
             if(L[fac] == I_A)
             {
                 conj.push( IrecSwap( fac, cache ) );
-                //cerr << lstr << "Not swapping" << endl;
+              //  cerr << "; Not swapping" << endl;
             }
             else
             {
                 conj_swap.push(logic.mkNot(Iprime(fac)));
-                //cerr << lstr << "Swapping from S to (not I')" << endl;
+                //cerr << "; Swapping from S to (not I')" << endl;
             }
         }
         if(conj_swap.size() > 0)
@@ -1657,7 +1711,7 @@ CGraph::IrecSwap( const path_t & p, map< path_t, PTRef > & cache , unsigned int 
     // It's an A-path
     else
     {
-        //cerr << lstr << "Single factor is an A-factor" << endl;
+//        cerr << lstr << "Single factor is an A-factor" << endl;
       // Recurse on parents
       for ( unsigned i = 0 ; i < parents.size( ) ; i ++ )
       {
@@ -1675,11 +1729,12 @@ CGraph::IrecSwap( const path_t & p, map< path_t, PTRef > & cache , unsigned int 
   }
   else
   {
-      //divided = true;
+//      divided = true;
     // Recurse on factors
-    if(!divided)
+   // if(!divided)
+    if(factors.size() > 3 && config.proof_set_inter_algo() > 3)
     {
-    cerr << lstr << "Multiple factors for path (" << logic.printTerm(p.first->e) << "," << logic.printTerm(p.second->e) << ")" << endl;
+//    cerr << lstr << "Multiple factors for path (" << logic.printTerm(p.first->e) << "," << logic.printTerm(p.second->e) << ")" << endl;
     bool la, lb, lab, ra, rb, rab;
     divided = true;
     for(int i = 0; i < factors.size(); i += 3)
@@ -1688,7 +1743,7 @@ CGraph::IrecSwap( const path_t & p, map< path_t, PTRef > & cache , unsigned int 
         if(j >= factors.size()) j = (factors.size() - 1);
 
         path_t pf(factors[i].first, factors[j].second);
-        cerr << "; Subpath (" << logic.printTerm(pf.first->e) << "," << logic.printTerm(pf.second->e) << ")" << endl;
+  //      cerr << "; Subpath (" << logic.printTerm(pf.first->e) << "," << logic.printTerm(pf.second->e) << ")" << endl;
 
         CNode *l = pf.first;
         CNode *r = pf.second;
@@ -1728,49 +1783,49 @@ CGraph::IrecSwap( const path_t & p, map< path_t, PTRef > & cache , unsigned int 
         else if(r->color == I_B) rb = true;
         else rab = true;
 
-        cerr << "; LA " << la << " | LB " << lb << " | LAB " << lab << endl;
-        cerr << "; RA " << ra << " | RB " << rb << " | RAB " << rab << endl;
+    //    cerr << "; LA " << la << " | LB " << lb << " | LAB " << lab << endl;
+      //  cerr << "; RA " << ra << " | RB " << rb << " | RAB " << rab << endl;
         assert(!((la && rb) || (lb && ra)));
-        bool b = rand() % 2;
+        bool b = true;//rand() % 2;
         if(la || ra) // conflict in A, call I' or not S
         {
             assert(i == 0);
-            if(b)
+            if(b && config.proof_set_inter_algo() == 4)
             {
-                conj.push(Iprime(pf));
-                cerr << "; Calling I'" << endl;
+    //            cerr << "; Calling I'" << endl;
+                conj.push(logic.mkNot(Iprime(pf)));
             }
             else
             {
-                conj.push(logic.mkNot(ISwap(pf)));
-                cerr << "; Calling S" << endl;
+      //          cerr << "; Calling S" << endl;
+                conj.push(ISwap(pf));
             }
         }
         else if(lb || rb) // conflict in B, call I or not S'
         {
             assert(j == (factors.size() - 1));
-            if(b)
+            if(b && config.proof_set_inter_algo() == 4)
             {
-                conj.push(I(pf));
-                cerr << "; Calling I" << endl;
+        //        cerr << "; Calling I'" << endl;
+                conj.push(logic.mkNot(Iprime(pf)));
             }
             else
             {
-                conj.push(logic.mkNot(IprimeSwap(pf)));
-                cerr << "; Calling S'" << endl;
+          //      cerr << "; Calling S" << endl;
+                conj.push(ISwap(pf));
             }
         }
         else // conflict has global endpoints
         {
-            if(b)
+            if(b && config.proof_set_inter_algo() == 4)
             {
-                conj.push(I(pf));
-                cerr << "; Calling I" << endl;
+            //    cerr << "; Calling I'" << endl;
+                conj.push(logic.mkNot(Iprime(pf)));
             }
             else
             {
-                conj.push(logic.mkNot(IprimeSwap(pf)));
-                cerr << "; Calling S'" << endl;
+              //  cerr << "; Calling S" << endl;
+                conj.push(ISwap(pf));
             }
         }
     }
@@ -2055,23 +2110,33 @@ bool CGraph::getFactorsAndParents( const path_t &     p
 void
 CGraph::labelFactors(vector<path_t>& factors)
 {
-    /*
-    for(int i = 0; i < factors.size(); ++i)
-    {
-        if(rand() % 2)
-        {
-            //cerr << "; Labeling factor (" << logic.printTerm(factors[i].first->e) << ", " << logic.printTerm(factors[i].second->e) << ") = B" << endl;
+    // McMillan
+    if(config.proof_set_inter_algo() == 0 || config.proof_set_inter_algo() == 4)
+        for(int i = 0; i < factors.size(); ++i)
             L[factors[i]] = I_B;
-        }
-        else
-        {
-            //cerr << "; Labeling factor (" << logic.printTerm(factors[i].first->e) << ", " << logic.printTerm(factors[i].second->e) << ") = A" << endl;
+
+    // McMillan'
+    else if(config.proof_set_inter_algo() == 2 || config.proof_set_inter_algo() == 5)
+        for(int i = 0; i < factors.size(); ++i)
             L[factors[i]] = I_A;
+
+    // Random
+    else if(config.proof_set_inter_algo() == 3 || config.proof_set_inter_algo() == 6)
+    {
+        for(int i = 0; i < factors.size(); ++i)
+        {
+            if(rand() % 2)
+            {
+                //cerr << "; Labeling factor (" << logic.printTerm(factors[i].first->e) << ", " << logic.printTerm(factors[i].second->e) << ") = B" << endl;
+                L[factors[i]] = I_B;
+            }
+            else
+            {
+                //cerr << "; Labeling factor (" << logic.printTerm(factors[i].first->e) << ", " << logic.printTerm(factors[i].second->e) << ") = A" << endl;
+                L[factors[i]] = I_A;
+            }
         }
     }
-    */
-    for(int i = 0; i < factors.size(); ++i)
-        L[factors[i]] = I_B;
 }
 
 void

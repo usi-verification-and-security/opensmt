@@ -408,7 +408,7 @@ public:
         optionTable[o_proof_reduce]->getValue().numval : 0; }
   int proof_set_inter_algo() const
     { return optionTable.contains(o_proof_set_inter_algo) ?
-        optionTable[o_proof_set_inter_algo]->getValue().numval : 1; }
+        optionTable[o_proof_set_inter_algo]->getValue().numval : 0; }
   int sat_dump_rnd_inter() const
     { return optionTable.contains(o_sat_dump_rnd_inter) ?
         optionTable[o_sat_dump_rnd_inter]->getValue().numval : 2; }
