@@ -431,6 +431,7 @@ const char* SMTConfig::o_garbage_frac  = ":garbage-frac";
 const char* SMTConfig::o_restart_first = ":restart-first";
 const char* SMTConfig::o_restart_inc   = ":restart-inc";
 const char* SMTConfig::o_produce_inter = ":produce-interpolants";
+const char* SMTConfig::o_certify_inter = ":certify-interpolants";
 const char* SMTConfig::o_proof_struct_hash       = ":proof-struct-hash";
 const char* SMTConfig::o_proof_struct_hash_build = ":proof-struct-hash-build";
 const char* SMTConfig::o_proof_check   = ":proof-check";
@@ -536,7 +537,7 @@ SMTConfig::initializeConfig( )
   proof_random_swap_application = 0;
   proof_remove_mixed            = 0;
 //  proof_set_inter_algo          = 1;
-  proof_certify_inter           = 0;
+//  proof_certify_inter           = 0;
   proof_random_seed	        = 0;
 
   parallel_threads = 0;
@@ -766,7 +767,7 @@ void SMTConfig::printConfig ( ostream & out )
   out << "# 0 - don't certify" << endl;
   out << "# 1 - certify final interpolant" << endl;
   out << "# 2 - certify final and theory interpolants" << endl;
-  out << "proof_certify_inter "      << proof_certify_inter << endl;
+//  out << "proof_certify_inter "      << proof_certify_inter << endl;
   out << "#" << endl;
   out << "# EUF SOLVER CONFIGURATION" << endl;
   out << "#" << endl;

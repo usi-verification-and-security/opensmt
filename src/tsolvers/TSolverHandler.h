@@ -63,6 +63,11 @@ public:
     }
 
     virtual Logic&  getLogic  ( )  = 0;
+
+#ifdef PRODUCE_PROOF
+    virtual PTRef getInterpolants(const ipartitions_t&) = 0;
+#endif
+
     ValPair getValue          (PTRef tr) const;
     void    computeModel      ();                      // Computes a model in the solver if necessary
     bool    assertLit         (PtAsgn);                // Push the assignment to all theory solvers

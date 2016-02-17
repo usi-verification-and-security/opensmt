@@ -32,6 +32,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "minisat/mtl/Sort.h"
 #include "tsolvers/Deductions.h"
 #include <queue>
+#include <set>
 
 using namespace std;
 
@@ -1798,4 +1799,35 @@ Logic::setIPartitionsIte(PTRef pref)
 //    return true;
 //}
 
+
+void
+Logic::collectStats(PTRef root, int& n_of_conn, int& n_of_eq, int& n_of_dist)
+{
+    set<PTRef> seen;
+    set<PTRef> seen_terms;
+    queue<PTRef> to_visit;
+    n_of_conn = n_of_eq = n_of_dist = 0;
+    to_visit.push(root);
+    while(!to_visit.empty())
+    {
+        PTRef node = to_visit.front();
+        to_visit.pop();
+        if(seen_terms.find(node) != seen_terms.end()) continue;
+        seen_terms.insert(node);
+        if(isUFEquality(node))
+        {
+            ++n_of_eq;
+            Pterm& pnode = getPterm(node);
+            if(seen.find(pnode[0]) == seen.end()) seen.insert(pnode[0]);
+            if(seen.find(pnode[1]) == seen.end()) seen.insert(pnode[1]);
+        }
+        else if(isBooleanOperator(node))
+        {
+            ++n_of_conn;
+            Pterm& pnode = getPterm(node);
+            for(int i = 0; i < pnode.size(); ++i)
+                to_visit.push(pnode[i]);
+        }
+    }
+}
 

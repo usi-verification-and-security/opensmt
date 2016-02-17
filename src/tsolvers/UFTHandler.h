@@ -45,6 +45,13 @@ class UFTHandler : public TSolverHandler
     bool assertLit_special(PtAsgn a);
     void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs);
     Logic& getLogic();
+
+#ifdef PRODUCE_PROOF
+    PTRef getInterpolants(const ipartitions_t& m)
+    {
+        return egraph->getInterpolants(m);
+    }
+#endif
 };
 
 #endif

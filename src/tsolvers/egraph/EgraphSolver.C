@@ -323,8 +323,14 @@ Egraph::getInterpolants(const ipartitions_t & p)
   {
       PTRef pi = cgraphs[i]->getInterpolants(p);
       and_args.push(pi);
-      cgraphs[i]->verifyInterpolantWithExternalTool(p);
-      cerr << ";Partial interpolant " << i << ": " << logic.printTerm(pi) << endl;
+      if(config.certify_inter())
+          cgraphs[i]->verifyInterpolantWithExternalTool(p);
+      //cerr << ";Partial interpolant " << i << ": " << logic.printTerm(pi) << endl;
+      int ncon, neq, ndist;
+      logic.collectStats(pi, ncon, neq, ndist);
+      cerr << ";Partial interpolant " << i << " data: \n";
+      cerr << ";Number of connectives: " << ncon << '\n';
+      cerr << ";Number of equalities: " << neq << endl;
   }
   itp = logic.mkAnd(and_args);
   return itp;

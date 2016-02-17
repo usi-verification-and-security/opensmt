@@ -233,6 +233,8 @@ void THandler::getConflict (
 #ifdef PRODUCE_PROOF
 PTRef THandler::getInterpolants(const ipartitions_t& p)
 {
+    return getSolverHandler().getInterpolants(p);
+    /*
     vec<PTRef> itps;
     for(int i = 0; i < tsolvers.size(); ++i)
         if(tsolvers[i] != NULL)
@@ -243,6 +245,7 @@ PTRef THandler::getInterpolants(const ipartitions_t& p)
     //verifyInterpolantWithExternalTool( itps[0], p );
 
   return itps[0];
+  */
 }
 #endif
 

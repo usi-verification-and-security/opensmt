@@ -152,6 +152,7 @@ public:
   static const char* o_restart_first;
   static const char* o_restart_inc;
   static const char* o_produce_inter;
+  static const char* o_certify_inter;
   static const char* o_proof_struct_hash;
   static const char* o_proof_num_graph_traversals;
   static const char* o_proof_red_trans;
@@ -370,6 +371,9 @@ public:
   double sat_restart_inc() const
     { return optionTable.contains(o_restart_inc) ?
         optionTable[o_restart_inc]->getValue().numval : 1.1; }
+  int certify_inter() const
+    { return optionTable.contains(o_certify_inter) ?
+        optionTable[o_certify_inter]->getValue().numval : 0; }
   int produce_inter() const
     { return optionTable.contains(o_produce_inter) ?
         optionTable[o_produce_inter]->getValue().numval : 0; }

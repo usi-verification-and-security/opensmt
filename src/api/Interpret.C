@@ -1172,7 +1172,7 @@ void Interpret::GetInterpolants()
     }
 */
 
-    PTRef itp = theory->getTHandler().getInterpolants(p);
+    PTRef itp = thandler->getInterpolants(p);
     //cerr << ";Interpolant:\n;" << logic->printTerm(itp) << endl;
 
     /*

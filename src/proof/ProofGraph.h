@@ -27,9 +27,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef PROOFGRAPH_H
 #define PROOFGRAPH_H
 
-//TODO remove
-#define PRODUCE_PROOF 1
-
 #ifdef PRODUCE_PROOF
 
 #include "ProofGlobal.h"

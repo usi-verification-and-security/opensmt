@@ -1581,7 +1581,7 @@ CGraph::Irec( const path_t & p, map< path_t, PTRef > & cache , unsigned int h)
         bool b = true;//rand() % 2;
         if(la || ra) // conflict in A, call I' or not S
         {
-            assert(i == 0);
+            assert(i == 0 || j == (factors.size() - 1));
             if(b && config.proof_set_inter_algo() == 4)
             {
                 conj.push(Iprime(pf));
@@ -1595,7 +1595,7 @@ CGraph::Irec( const path_t & p, map< path_t, PTRef > & cache , unsigned int h)
         }
         else if(lb || rb) // conflict in B, call I or not S'
         {
-            assert(j == (factors.size() - 1));
+            assert(i == 0 || j == (factors.size() - 1));
             if(b && config.proof_set_inter_algo() == 4)
             {
                 conj.push(I(pf));
@@ -1789,7 +1789,7 @@ CGraph::IrecSwap( const path_t & p, map< path_t, PTRef > & cache , unsigned int 
         bool b = true;//rand() % 2;
         if(la || ra) // conflict in A, call I' or not S
         {
-            assert(i == 0);
+            assert(i == 0 || j == (factors.size() - 1));
             if(b && config.proof_set_inter_algo() == 4)
             {
     //            cerr << "; Calling I'" << endl;
@@ -1803,7 +1803,7 @@ CGraph::IrecSwap( const path_t & p, map< path_t, PTRef > & cache , unsigned int 
         }
         else if(lb || rb) // conflict in B, call I or not S'
         {
-            assert(j == (factors.size() - 1));
+            assert(i == 0 || j == (factors.size() - 1));
             if(b && config.proof_set_inter_algo() == 4)
             {
         //        cerr << "; Calling I'" << endl;

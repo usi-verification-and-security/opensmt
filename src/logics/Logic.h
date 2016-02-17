@@ -454,6 +454,8 @@ class Logic {
 
     // Statistics
     int subst_num; // Number of substitutions
+
+    void collectStats(PTRef, int& n_of_conn, int& n_of_eq, int& n_of_dist_terms);
 };
 #endif // LOGIC_H
 
