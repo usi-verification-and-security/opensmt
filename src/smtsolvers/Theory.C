@@ -83,7 +83,7 @@ int CoreSMTSolver::checkTheory( bool complete )
   skipped_calls = 0;
 
   bool res = theory_handler.assertLits(trail)
-          && theory_handler.check(complete, trail);
+          && theory_handler.check(complete);
   //
   // Problem is T-Satisfiable
   //
@@ -145,7 +145,7 @@ int CoreSMTSolver::checkTheory( bool complete )
         if (deds.size() > 0) {
           // now check the other theories
           res = theory_handler.assertLits(trail)
-             && theory_handler.check(false, trail);
+             && theory_handler.check(false);
 
           // SAT and deductions done, time for BCP
           if ( res ) return 2;

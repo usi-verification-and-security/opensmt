@@ -128,17 +128,10 @@ bool THandler::assertLits(vec<Lit>& trail)
 
 
 // Check the assignment with equality solver
-bool THandler::check( bool complete, vec<Lit>& ) {
-    int i;
-    for (i = 0; i < getSolverHandler().tsolvers.size(); i++)
-        if (getSolverHandler().tsolvers[i] != NULL)
-            if (getSolverHandler().tsolvers[i]->check(complete) == false) break;
-
-    return i == getSolverHandler().tsolvers.size();
-
+bool THandler::check(bool complete) {
+    return getSolverHandler().check(complete);
 //  if ( complete && config.certification_level > 2 )
 //    verifyCallWithExternalTool( res, trail.size( ) - 1 );
-
 }
 
 //

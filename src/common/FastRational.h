@@ -582,7 +582,8 @@ inline void multiplication(FastRational& dst, const FastRational& a, const FastR
     word zn;
     uword zd;
     word common1 = gcd(absVal(a.num), b.den), common2 = gcd(a.den, absVal(b.num));
-    lword k1, k2, k3, k4;
+    lword k1, k2;
+    ulword k3, k4; // Changed lword => ulword
     if (common1 > 1) {
       k1 = lword(a.num)/common1;
       k4 = ulword(b.den)/common1;

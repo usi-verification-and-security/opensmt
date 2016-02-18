@@ -1163,8 +1163,8 @@ void LRASolver::initSolver( )
   if( status == INIT )
   {
     // Gaussian Elimination should not be performed in the Incremental mode!
-    if( config.lra_gaussian_elim == 1 )
-      doGaussianElimination( );
+//    if( config.lra_gaussian_elim == 1 )
+//      doGaussianElimination( );
 
     //                 sort the bounds inserted during inform stage
 //    for( unsigned it = 0; it < columns.size( ); it++ )

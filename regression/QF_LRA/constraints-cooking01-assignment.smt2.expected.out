@@ -10,4 +10,4 @@ sat
 ; Found the term NOODLES
 ; Found the term COOKING
 ; Found the term EATING
-((spy 0)(I_0 unknown)(G_6 16)(EGGS 7)(OIL 1)(LARD 3)(FIRE -1)(WATER 0)(NOODLES 2)(COOKING 9)(EATING 10))
+((spy -16)(I_0 unknown)(G_6 0)(EGGS -9)(OIL -15)(LARD -13)(FIRE -17)(WATER -16)(NOODLES -14)(COOKING -7)(EATING -6))

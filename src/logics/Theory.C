@@ -75,7 +75,8 @@ bool Theory::computeSubstitutionFixpoint(PTRef root, PTRef& root_out)
     for (int i = 0; i < keys.size(); i++)
         logic.getPterm(keys[i]).clearVar();
 
+    bool result = no_conflict && th->check(true);
     delete th;
+    return result;
 
-    return no_conflict;
 }
