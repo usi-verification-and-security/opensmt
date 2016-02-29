@@ -90,8 +90,7 @@ public:
 
   ~LRASolver( );                                      // Destructor ;-)
 
-  lbool inform             ( PTRef );                 // Inform LRA about the existence of this constraint
-  void  declareTerm        (PTRef tr) { inform(tr); }
+  lbool declareTerm        (PTRef tr);                // Inform the theory solver about the existence of a literal
   bool  check              ( bool );                  // Checks the satisfiability of current constraints
   bool  assertLit          ( PtAsgn , bool = false ); // Push the constraint into Solver
   void  pushBacktrackPoint ( );                       // Push a backtrack point
@@ -101,6 +100,7 @@ public:
   PtAsgn_reason getDeduction() { if (deductions_next >= th_deductions.size()) return PtAsgn_reason_Undef; else return th_deductions[deductions_next++]; }
 
   Logic& getLogic() { return logic; }
+  const void getRemoved(vec<PTRef>&) const;  // Fill the vector with the vars removed due to not having bounds
 protected:
   // vector in which witnesses for unsatisfiability are stored
   vector<Real> explanationCoefficients;

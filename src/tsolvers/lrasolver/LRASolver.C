@@ -50,7 +50,7 @@ LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
 //
 // Reads the constraint into the solver
 //
-lbool LRASolver::inform( PTRef tr )
+lbool LRASolver::declareTerm( PTRef tr )
 {
   if (informed(tr)) return l_Undef;
   else informed_PTRefs.insert(tr, true);
@@ -865,6 +865,7 @@ void LRASolver::doGaussianElimination( )
       rows.pop_back( );
     }
   }
+
 }
 
 //
@@ -1163,8 +1164,8 @@ void LRASolver::initSolver( )
   if( status == INIT )
   {
     // Gaussian Elimination should not be performed in the Incremental mode!
-//    if( config.lra_gaussian_elim == 1 )
-//      doGaussianElimination( );
+    if( config.lra_gaussian_elim == 1 )
+      doGaussianElimination( );
 
     //                 sort the bounds inserted during inform stage
 //    for( unsigned it = 0; it < columns.size( ); it++ )
@@ -1648,6 +1649,13 @@ void LRASolver::computeModel( )
     x->setM(v_delta/div);
     removed_by_GaussianElimination.pop_back( );
   }
+}
+
+// Fill the vector with the vars removed due to not having bounds
+const void LRASolver::getRemoved(vec<PTRef>& removed) const
+{
+    for (int i = 0; i < removed_by_GaussianElimination.size(); i++)
+        removed.push(removed_by_GaussianElimination[i]->e);
 }
 
 //

@@ -158,13 +158,13 @@ public:
 #endif
     }
     bool  hasPolarity(PTRef tr)          { if (polarityMap.contains(tr)) { return polarityMap[tr] != l_Undef; } else return false; }
-    virtual lbool               inform              ( PTRef ) = 0             ;  // Inform the solver about the existence of a theory atom
+//    virtual lbool               inform              ( PTRef ) = 0             ;  // Inform the solver about the existence of a theory atom
     virtual bool                assertLit           ( PtAsgn, bool = false ) = 0 ;  // Assert a theory literal
     virtual void                pushBacktrackPoint  ( )                       ;  // Push a backtrack point
     virtual void                popBacktrackPoint   ( )                       ;  // Backtrack to last saved point
     virtual bool                check               ( bool ) = 0              ;  // Check satisfiability
     inline const string &       getName             ( ) { return name; }            // The name of the solver
-    virtual lbool               evaluate            ( PTRef ) { return l_Undef; } // Evaluate the expression in the current state
+//    virtual lbool               evaluate            ( PTRef ) { return l_Undef; } // Evaluate the expression in the current state
     virtual ValPair             getValue            (PTRef) const = 0;
 #ifdef PRODUCE_PROOF
     virtual PTRef getInterpolants(const ipartitions_t &) = 0;
@@ -175,7 +175,7 @@ public:
 
     SolverId getId() { return id; }
     bool hasExplanation() { return has_explanation; }
-    virtual void declareTerm(PTRef tr) = 0;
+    virtual lbool declareTerm(PTRef tr) = 0;
     virtual char* printValue(PTRef) = 0; // Debug function.  Instances are allowed to print whatever they want.
     virtual char* printExplanation(PTRef) = 0; // Debug function.  Instances are allowed to print whatever they want.
     virtual Logic& getLogic() = 0;

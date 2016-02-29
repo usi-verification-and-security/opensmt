@@ -221,8 +221,6 @@ public:
   // Public APIs for Egraph Core Solver
 
   //void                initializeTheorySolvers ( SimpSMTSolver * );          // Attaches ordinary theory solvers
-  lbool               inform                  ( PTRef ) { return l_True; }   // Inform the solver about the existence of a theory atom
-//  bool                assertLit               ( PTRef, bool = false ) {return true; } // Assert a theory literal
   bool                assertLit_lowlevel      (PtAsgn);                     // No checks
   bool                assertLit               (PtAsgn, bool = false);
   void                pushBacktrackPoint      ( );                          // Push a backtrack point
@@ -231,7 +229,7 @@ public:
   PTRef               getSuggestion           ( );                          // Return a suggested literal based on the current state
   void                getConflict             ( bool, vec<PtAsgn>& );       // Get explanation
   bool                check                   ( bool );                     // Check satisfiability
-  lbool               evaluate                ( PTRef ) { assert(false); return l_Undef; }
+//  lbool               evaluate                ( PTRef ) { assert(false); return l_Undef; }
   ValPair             getValue                (PTRef tr) const { return ValPair_Undef; }
 //  void                initializeCong          ( Enode * );                  // Initialize congruence structures for a node
   void                computeModel            ( );
@@ -407,7 +405,7 @@ public:
   // solver
 //  lbool       addTerm             ( PTRef, vec<PtPair>&, vec<PTRef>& );
   // Non-recursive declare term
-  void        declareTerm         (PTRef);
+  lbool         declareTerm         (PTRef);
   // Recursive declare term
 //  void        declareTermTree     ( PTRef );
   // Remove redundancies and replace with true if

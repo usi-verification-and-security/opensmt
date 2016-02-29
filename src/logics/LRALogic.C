@@ -810,11 +810,6 @@ lbool LRALogic::retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRef
         if (isRealEq(tr) && sgn == l_True)
             top_level_arith.push(tr);
     }
-    // AEJ substitution printing for LRA
-//    cerr << "Num of substitutions " << top_level_arith.size() << endl;
-//    cerr << "Substitutions: \n";
-//    for (int i = 0; i < top_level_arith.size(); i++)
-//        cerr << "  " << printTerm(top_level_arith[i]) << endl;
 
     return arithmeticElimination(top_level_arith, substs);
 }

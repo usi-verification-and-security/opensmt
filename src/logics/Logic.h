@@ -320,14 +320,10 @@ class Logic {
     // XXX There's a need for non msg giving version
     virtual PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms, char** msg);
 
-    // Logic specific simplifications
-//    virtual bool simplify(PTRef root, PTRef& root_out);
-
     // Top-level equalities based substitutions
     void collectFacts(PTRef root, vec<PtAsgn>& facts);
     bool varsubstitute(PTRef& root, Map<PTRef,PtAsgn,PTRefHash>& substs, PTRef& tr_new);  // Do the substitution.  Return true if at least one substitution was done, and false otherwise.
     virtual lbool retrieveSubstitutions(vec<PtAsgn>& facst, Map<PTRef,PtAsgn,PTRefHash>& substs);
-//    virtual bool computeSubstitutionFixpoint(PTRef root, PTRef& root_out);
 
     class SubstNode {
         Logic& logic;

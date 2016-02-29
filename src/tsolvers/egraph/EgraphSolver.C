@@ -417,7 +417,7 @@ void Egraph::computeModel( )
 // No recursion here, we assume the caller has already introduced the
 // subterms
 //
-void Egraph::declareTerm(PTRef tr) {
+lbool Egraph::declareTerm(PTRef tr) {
 
     if (!enode_store.termToERef.contains(tr)) {
         Pterm& tm = logic.getPterm(tr);
@@ -461,12 +461,13 @@ void Egraph::declareTerm(PTRef tr) {
     if (logic.isDisequality(tr) && !enode_store.dist_classes.contains(tr))
         enode_store.addDistClass(tr);
 
+    return l_Undef;
 }
 
 lbool Egraph::addEquality(PtAsgn pa) {
     Pterm& pt = logic.getPterm(pa.tr);
     assert(pt.size() == 2);
-    // AEJ temp fix
+
     if (pt.getVar() != -1 && deduced[pt.getVar()] != l_Undef && deduced[pt.getVar()] == pa.sgn) {
 #ifdef VERBOSE_EUF
         cerr << "Assertion already deduced: " << logic.printTerm(pa.tr) << endl;

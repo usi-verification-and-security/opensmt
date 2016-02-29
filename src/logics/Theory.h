@@ -44,7 +44,7 @@ class Theory
     virtual TSolverHandler *getTSolverHandler_new(vec<DedElem>&) = 0;
     virtual bool            simplify(PTRef, PTRef&) = 0;
     vec<DedElem>           &getDeductionVec()   { return deductions; }
-    virtual bool            computeSubstitutionFixpoint(PTRef, PTRef&);
+    bool                    computeSubstitutions(PTRef, PTRef&);
     Theory(SMTConfig &c) : config(c) {}
     virtual ~Theory()                           {};
 };

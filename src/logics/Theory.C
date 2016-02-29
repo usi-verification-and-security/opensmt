@@ -1,7 +1,7 @@
 #include "logics/Theory.h"
 //#include "logics/Logic.h"
 
-bool Theory::computeSubstitutionFixpoint(PTRef root, PTRef& root_out)
+bool Theory::computeSubstitutions(PTRef root, PTRef& root_out)
 {
     // The substitution of facts together with the call to simplifyTree
     // ensures that no fact is inserted twice to facts.
@@ -21,17 +21,17 @@ bool Theory::computeSubstitutionFixpoint(PTRef root, PTRef& root_out)
         if (!cont) break;
     }
 #ifdef SIMPLIFY_DEBUG
-    vec<PTRef> keys;
-    substs.getKeys(keys);
+    vec<PTRef> keys_dbg;
+    substs.getKeys(keys_dbg);
+    cerr << "Number of gaussian substitutions: " << keys_dbg.size() << endl;
     printf("Substitutions:\n");
-    for (int i = 0; i < keys.size(); i++) {
-        printf("  %s -> %s (%s)\n", logic.printTerm(keys[i]), logic.printTerm(substs[keys[i]].tr), substs[keys[i]].sgn == l_True ? "enabled" : "disabled");
+    for (int i = 0; i < keys_dbg.size(); i++) {
+        printf("  %s -> %s (%s)\n", logic.printTerm(keys_dbg[i]), logic.printTerm(substs[keys_dbg[i]].tr), substs[keys_dbg[i]].sgn == l_True ? "enabled" : "disabled");
     }
 #endif
     vec<PTRef> args;
     for (int i = 0; i < facts.size(); i++) {
         assert(facts[i].sgn == l_True || logic.isBoolAtom(facts[i].tr));
-//        if (logic.isUFEquality(facts[i].tr))
         if (logic.isTheoryEquality(facts[i].tr))
             args.push(facts[i].tr);
     }
@@ -67,8 +67,6 @@ bool Theory::computeSubstitutionFixpoint(PTRef root, PTRef& root_out)
             break; }
 
     root_out = root;
-    //args.push(root);
-    //root_out = logic.mkAnd(args);
 
     vec<PTRef> keys;
     refs.getKeys(keys);
@@ -76,7 +74,7 @@ bool Theory::computeSubstitutionFixpoint(PTRef root, PTRef& root_out)
         logic.getPterm(keys[i]).clearVar();
 
     bool result = no_conflict && th->check(true);
+
     delete th;
     return result;
-
 }
