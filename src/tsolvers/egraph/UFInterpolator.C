@@ -29,6 +29,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "UFInterpolator.h"
 #include "Egraph.h"
 
+
+#define ITP_DEBUG
+
 void CGraph::addCNode( PTRef e )
 {
   assert( e != PTRef_Undef );
@@ -1349,7 +1352,9 @@ CGraph::J( const path_t &     p
 PTRef
 CGraph::Iprime( const path_t& pi )
 {
-//  cerr << ";Computing Iprime(" << logic.printTerm(pi.first->e) << "," << logic.printTerm(pi.second->e) << ")" << endl;
+#ifdef ITP_DEBUG
+  cerr << ";Computing Iprime(" << logic.printTerm(pi.first->e) << "," << logic.printTerm(pi.second->e) << ")" << endl;
+#endif
     vec<PTRef> conj;
     // Compute largest subpath of c1 -- c2
     // with B-colorable endpoints
@@ -1362,11 +1367,14 @@ CGraph::Iprime( const path_t& pi )
 
     if(!empty_theta)
     {
-  //      cerr << ";Theta: (" << logic.printTerm(theta.first->e) << "," << logic.printTerm(theta.second->e) << ")" << endl;
+#ifdef ITP_DEBUG
+        cerr << ";Theta: (" << logic.printTerm(theta.first->e) << "," << logic.printTerm(theta.second->e) << ")" << endl;
+#endif
         conj.push(I(theta));
     }
-
-//    cerr << ";B of pi1 UNION pi2 has size " << b_paths.size() << endl;
+#ifdef ITP_DEBUG
+    cerr << ";B of pi1 UNION pi2 has size " << b_paths.size() << endl;
+#endif
     for ( unsigned i = 0 ; i < b_paths.size( ) ; i ++ )
         conj.push( I( b_paths[ i ] ) );
     // Finally compute implication
@@ -1388,7 +1396,9 @@ CGraph::Iprime( const path_t& pi )
 PTRef
 CGraph::IprimeSwap( const path_t& pi )
 {
-//  cerr << ";Computing IprimeSwap(" << logic.printTerm(pi.first->e) << "," << logic.printTerm(pi.second->e) << ")" << endl;
+#ifdef ITP_DEBUG
+  cerr << ";Computing IprimeSwap(" << logic.printTerm(pi.first->e) << "," << logic.printTerm(pi.second->e) << ")" << endl;
+#endif
     vec<PTRef> conj;
     // Compute largest subpath of c1 -- c2
     // with B-colorable endpoints
@@ -1401,11 +1411,14 @@ CGraph::IprimeSwap( const path_t& pi )
 
     if(!empty_theta)
     {
-    //    cerr << ";Theta: (" << logic.printTerm(theta.first->e) << "," << logic.printTerm(theta.second->e) << ")" << endl;
+#ifdef ITP_DEBUG
+        cerr << ";Theta: (" << logic.printTerm(theta.first->e) << "," << logic.printTerm(theta.second->e) << ")" << endl;
+#endif
         conj.push(ISwap(theta));
     }
-
-  //  cerr << ";BSwap of pi1 UNION pi2 has size " << b_paths.size() << endl;
+#ifdef ITP_DEBUG
+    cerr << ";BSwap of pi1 UNION pi2 has size " << b_paths.size() << endl;
+#endif
 
 
     for ( unsigned i = 0 ; i < b_paths.size( ) ; i ++ )
@@ -1450,13 +1463,16 @@ CGraph::Irec( const path_t & p, map< path_t, PTRef > & cache , unsigned int h)
     string lstr(";");
     for(int i = 0; i < h; ++i) lstr += ' ';
 
-
+/*
   map< path_t, PTRef >::iterator it = cache.find( p );
   // Return previously computed value
   if ( it != cache.end( ) )
     return it->second;
+*/
 
-  //cerr << lstr << "Computing Irec(" << logic.printTerm(p.first->e) << "," << logic.printTerm(p.second->e) << ")" << endl;
+#ifdef ITP_DEBUG
+  cerr << lstr << "Computing Irec(" << logic.printTerm(p.first->e) << "," << logic.printTerm(p.second->e) << ")" << endl;
+#endif
   vec< PTRef > conj;
   vec< PTRef > conj_swap;
   // Will store factors
@@ -1471,31 +1487,43 @@ CGraph::Irec( const path_t & p, map< path_t, PTRef > & cache , unsigned int h)
 
   if ( factors.size( ) == 1 )
   {
-//    cerr << lstr << "Factor has size 1" << endl;
+#ifdef ITP_DEBUG
+    cerr << lstr << "Factor has size 1" << endl;
+#endif
     // It's an A-path
     if ( a_factor )
     {
-        //cerr << lstr << "Single factor is an A-factor" << endl;
+#ifdef ITP_DEBUG
+      cerr << lstr << "Single factor is an A-factor" << endl;
+#endif
       // Compute J
       vector< path_t > b_premise_set;
       B( p, b_premise_set );
       conj.push( J( p, b_premise_set ) );
-  //      cerr << lstr << "B-set has size " << b_premise_set.size() << endl;
+#ifdef ITP_DEBUG
+        cerr << lstr << "B-set has size " << b_premise_set.size() << endl;
+#endif
         for ( unsigned i = 0 ; i < b_premise_set.size( ) ; i ++ )
         {
             path_t& fac = b_premise_set[i];
             assert(L.find(fac) != L.end());
-  //          cerr << "; Checking label of path (" << logic.printTerm(fac.first->e) << ", " << logic.printTerm(fac.second->e) << ") = " << L[fac] << endl;
+#ifdef ITP_DEBUG
+            cerr << "; Checking label of path (" << logic.printTerm(fac.first->e) << ", " << logic.printTerm(fac.second->e) << ") = " << L[fac] << endl;
+#endif
             if(L[fac] == I_B)
             {
-    //            cerr << "; Not swapping" << endl;
+#ifdef ITP_DEBUG
+                cerr << "; Not swapping" << endl;
+#endif
                 conj.push( Irec( b_premise_set[ i ], cache, h + 1 ) );
             }
             else
             {
                 //swap here
                 conj_swap.push(logic.mkNot(IprimeSwap(fac)));
-      //          cerr << "; Swapping from I to (not S')" << endl;
+#ifdef ITP_DEBUG
+                cerr << "; Swapping from I to (not S')" << endl;
+#endif
             }
         }
         if(conj_swap.size() > 0)
@@ -1525,7 +1553,12 @@ CGraph::Irec( const path_t & p, map< path_t, PTRef > & cache , unsigned int h)
     //if(!divided)
     if(factors.size() > 3 && config.proof_set_inter_algo() > 3)
     {
-  //  cerr << lstr << "Multiple factors for path (" << logic.printTerm(p.first->e) << "," << logic.printTerm(p.second->e) << ")" << endl;
+#ifdef ITP_DEBUG
+    cerr << lstr << "Multiple factors for path (" << logic.printTerm(p.first->e) << "," << logic.printTerm(p.second->e) << ")" << endl;
+    cerr << "Factors" << endl;
+    for(int i = 0; i < factors.size(); ++i)
+        cerr << " | " << logic.printTerm(factors[i].first->e) << '-' << logic.printTerm(factors[i].second->e) << endl;
+#endif
     bool la, lb, lab, ra, rb, rab;
     divided = true;
 
@@ -1535,10 +1568,44 @@ CGraph::Irec( const path_t & p, map< path_t, PTRef > & cache , unsigned int h)
         if(j >= factors.size()) j = (factors.size() - 1);
 
         path_t pf(factors[i].first, factors[j].second);
-//        cerr << "; Subpath (" << logic.printTerm(pf.first->e) << "," << logic.printTerm(pf.second->e) << ")" << endl;
-
+#ifdef ITP_DEBUG
+        cerr << "; Subpath (" << logic.printTerm(pf.first->e) << "," << logic.printTerm(pf.second->e) << ")" << endl;
+#endif
         CNode *l = pf.first;
         CNode *r = pf.second;
+
+        vector<path_t> infactors;
+        infactors.push_back(pf);
+        vector<path_t> inparents;
+        const bool a_factor = getFactorsAndParents(pf, infactors, inparents);
+        if(j < (factors.size() - 1))
+            assert(infactors.size() >= 3);
+        if(infactors.size() >= 2)
+        {
+#ifdef ITP_DEBUG
+            cerr << "At least 2 factors" << endl;
+#endif
+            if(a_factor)
+            {
+#ifdef ITP_DEBUG
+                cerr << "A factors, calling S'" << endl;
+#endif
+                conj.push(logic.mkNot(IprimeSwap(pf)));
+            }
+            else
+            {
+#ifdef ITP_DEBUG
+                cerr << "B factors, calling I" << endl;
+#endif
+                conj.push(Irec(pf, cache, h + 1));
+            }
+            continue;
+        }
+#ifdef ITP_DEBUG
+        cerr << "Only 1 factor" << endl;
+#endif
+
+
 /*
         vector< CEdge * > sorted_edges;
         const size_t x_path_length = getSortedEdges(l, r, sorted_edges);
@@ -1584,12 +1651,12 @@ CGraph::Irec( const path_t & p, map< path_t, PTRef > & cache , unsigned int h)
             assert(i == 0 || j == (factors.size() - 1));
             if(b && config.proof_set_inter_algo() == 4)
             {
-                conj.push(Iprime(pf));
+                conj.push(Irec(pf, cache, h + 1));
             //    cerr << "; Calling I'" << endl;
             }
             else
             {
-                conj.push(logic.mkNot(ISwap(pf)));
+                conj.push(logic.mkNot(IprimeSwap(pf)));
           //      cerr << "; Calling S" << endl;
             }
         }
@@ -1598,7 +1665,7 @@ CGraph::Irec( const path_t & p, map< path_t, PTRef > & cache , unsigned int h)
             assert(i == 0 || j == (factors.size() - 1));
             if(b && config.proof_set_inter_algo() == 4)
             {
-                conj.push(I(pf));
+                conj.push(Irec(pf, cache, h + 1));
         //        cerr << "; Calling I" << endl;
             }
             else
@@ -1611,7 +1678,7 @@ CGraph::Irec( const path_t & p, map< path_t, PTRef > & cache , unsigned int h)
         {
             if(b && config.proof_set_inter_algo() == 4)
             {
-                conj.push(I(pf));
+                conj.push(Irec(pf, cache, h + 1));
     //            cerr << "; Calling I" << endl;
             }
             else
@@ -1636,7 +1703,7 @@ CGraph::Irec( const path_t & p, map< path_t, PTRef > & cache , unsigned int h)
 
   assert( res != PTRef_Undef);
 
-  cache[ p ] = res;
+  //cache[ p ] = res;
 
   //cerr << lstr << "Interpolant Irec(" << logic.printTerm(p.first->e) << "," << logic.printTerm(p.second->e) << ") = " << logic.printTerm(res) << endl;
   return res;
@@ -1649,15 +1716,19 @@ CGraph::IrecSwap( const path_t & p, map< path_t, PTRef > & cache , unsigned int 
   // True on empty path
   if ( p.first == p.second ) return logic.getTerm_true();
 
+/*
   map< path_t, PTRef >::iterator it = cache.find( p );
   // Return previously computed value
   if ( it != cache.end( ) )
     return it->second;
+*/
 
   string lstr(";");
   for(int i = 0; i < h; ++i) lstr += ' ';
 
-//  cerr << lstr << "Interpolant IrecSwap(" << logic.printTerm(p.first->e) << "," << logic.printTerm(p.second->e) << ")" << endl;
+#ifdef ITP_DEBUG
+  cerr << lstr << "Interpolant IrecSwap(" << logic.printTerm(p.first->e) << "," << logic.printTerm(p.second->e) << ")" << endl;
+#endif
   vec< PTRef > conj;
   vec< PTRef > conj_swap;
   // Will store factors
@@ -1672,30 +1743,42 @@ CGraph::IrecSwap( const path_t & p, map< path_t, PTRef > & cache , unsigned int 
 
   if ( factors.size( ) == 1 )
   {
-    //  cerr << lstr << "Factor has size 1" << endl;
+#ifdef ITP_DEBUG
+    cerr << lstr << "Factor has size 1" << endl;
+#endif
     // It's a B-path
     if ( !a_factor )
     {
-  //      cerr << lstr << "Single factor is a B-factor" << endl;
+#ifdef ITP_DEBUG
+      cerr << lstr << "Single factor is a B-factor" << endl;
+#endif
       // Compute J
       vector< path_t > b_premise_set;
       BSwap( p, b_premise_set );
       conj.push( J( p, b_premise_set ) );
-//        cerr << lstr << "A-set has size " << b_premise_set.size() << endl;
+#ifdef ITP_DEBUG
+        cerr << lstr << "A-set has size " << b_premise_set.size() << endl;
+#endif
         for ( unsigned i = 0 ; i < b_premise_set.size( ) ; i ++ )
         {
             path_t& fac = b_premise_set[i];
             assert(L.find(fac) != L.end());
-            //cerr << "; Checking label of path (" << logic.printTerm(fac.first->e) << ", " << logic.printTerm(fac.second->e) << ") = " << L[fac] << endl;
+#ifdef ITP_DEBUG
+            cerr << "; Checking label of path (" << logic.printTerm(fac.first->e) << ", " << logic.printTerm(fac.second->e) << ") = " << L[fac] << endl;
+#endif
             if(L[fac] == I_A)
             {
-                conj.push( IrecSwap( fac, cache ) );
-              //  cerr << "; Not swapping" << endl;
+#ifdef ITP_DEBUG
+                cerr << "; Not swapping" << endl;
+#endif
+                conj.push( IrecSwap( fac, cache, h + 1 ) );
             }
             else
             {
+#ifdef ITP_DEBUG
+                cerr << "; Swapping from S to (not I')" << endl;
+#endif
                 conj_swap.push(logic.mkNot(Iprime(fac)));
-                //cerr << "; Swapping from S to (not I')" << endl;
             }
         }
         if(conj_swap.size() > 0)
@@ -1711,21 +1794,18 @@ CGraph::IrecSwap( const path_t & p, map< path_t, PTRef > & cache , unsigned int 
     // It's an A-path
     else
     {
-//        cerr << lstr << "Single factor is an A-factor" << endl;
+#ifdef ITP_DEBUG
+        cerr << lstr << "Single factor is an A-factor" << endl;
+#endif
       // Recurse on parents
       for ( unsigned i = 0 ; i < parents.size( ) ; i ++ )
       {
-          conj.push( IrecSwap( parents[i], cache ) );
+#ifdef ITP_DEBUG
+          cerr << lstr << "Recursing on parent " << logic.printTerm(parents[i].first->e) << '-' << logic.printTerm(parents[i].second->e) << endl;
+#endif
+          conj.push( IrecSwap( parents[i], cache, h + 1) );
       }
     }
-    /*
-    else
-    {
-      // Recurse on parents
-      for ( unsigned i = 0 ; i < parents.size( ) ; i ++ )
-	    conj.push( Irec( parents[ i ], cache ) );
-    }
-    */
   }
   else
   {
@@ -1734,7 +1814,12 @@ CGraph::IrecSwap( const path_t & p, map< path_t, PTRef > & cache , unsigned int 
    // if(!divided)
     if(factors.size() > 3 && config.proof_set_inter_algo() > 3)
     {
-//    cerr << lstr << "Multiple factors for path (" << logic.printTerm(p.first->e) << "," << logic.printTerm(p.second->e) << ")" << endl;
+#ifdef ITP_DEBUG
+    cerr << lstr << "Multiple factors for path (" << logic.printTerm(p.first->e) << "," << logic.printTerm(p.second->e) << ")" << endl;
+    cerr << "Factors" << endl;
+    for(int i = 0; i < factors.size(); ++i)
+        cerr << " | " << logic.printTerm(factors[i].first->e) << '-' << logic.printTerm(factors[i].second->e) << endl;
+#endif
     bool la, lb, lab, ra, rb, rab;
     divided = true;
     for(int i = 0; i < factors.size(); i += 3)
@@ -1743,10 +1828,27 @@ CGraph::IrecSwap( const path_t & p, map< path_t, PTRef > & cache , unsigned int 
         if(j >= factors.size()) j = (factors.size() - 1);
 
         path_t pf(factors[i].first, factors[j].second);
-  //      cerr << "; Subpath (" << logic.printTerm(pf.first->e) << "," << logic.printTerm(pf.second->e) << ")" << endl;
-
+#ifdef ITP_DEBUG
+        cerr << "; Subpath (" << logic.printTerm(pf.first->e) << "," << logic.printTerm(pf.second->e) << ")" << endl;
+#endif
         CNode *l = pf.first;
         CNode *r = pf.second;
+
+        vector<path_t> infactors;
+        infactors.push_back(pf);
+        vector<path_t> inparents;
+        const bool a_factor = getFactorsAndParents(pf, infactors, inparents);
+        if(j < (factors.size() - 1))
+            assert(infactors.size() >= 3);
+        if(infactors.size() >= 2)
+        {
+            if(!a_factor)
+                conj.push(logic.mkNot(Iprime(pf)));
+            else
+                conj.push(IrecSwap(pf, cache, h + 1));
+            continue;
+        }
+
 /*
         vector< CEdge * > sorted_edges;
         const size_t x_path_length = getSortedEdges(l, r, sorted_edges);
@@ -1787,7 +1889,7 @@ CGraph::IrecSwap( const path_t & p, map< path_t, PTRef > & cache , unsigned int 
       //  cerr << "; RA " << ra << " | RB " << rb << " | RAB " << rab << endl;
         assert(!((la && rb) || (lb && ra)));
         bool b = true;//rand() % 2;
-        if(la || ra) // conflict in A, call I' or not S
+        if(la || ra)
         {
             assert(i == 0 || j == (factors.size() - 1));
             if(b && config.proof_set_inter_algo() == 4)
@@ -1798,10 +1900,10 @@ CGraph::IrecSwap( const path_t & p, map< path_t, PTRef > & cache , unsigned int 
             else
             {
       //          cerr << "; Calling S" << endl;
-                conj.push(ISwap(pf));
+                conj.push(IrecSwap(pf, cache, h + 1));
             }
         }
-        else if(lb || rb) // conflict in B, call I or not S'
+        else if(lb || rb)
         {
             assert(i == 0 || j == (factors.size() - 1));
             if(b && config.proof_set_inter_algo() == 4)
@@ -1812,7 +1914,7 @@ CGraph::IrecSwap( const path_t & p, map< path_t, PTRef > & cache , unsigned int 
             else
             {
           //      cerr << "; Calling S" << endl;
-                conj.push(ISwap(pf));
+                conj.push(IrecSwap(pf, cache, h + 1));
             }
         }
         else // conflict has global endpoints
@@ -1825,7 +1927,7 @@ CGraph::IrecSwap( const path_t & p, map< path_t, PTRef > & cache , unsigned int 
             else
             {
               //  cerr << "; Calling S" << endl;
-                conj.push(ISwap(pf));
+                conj.push(IrecSwap(pf, cache, h + 1));
             }
         }
     }
@@ -1833,8 +1935,16 @@ CGraph::IrecSwap( const path_t & p, map< path_t, PTRef > & cache , unsigned int 
     }
     else
     {
+#ifdef ITP_DEBUG
+        cerr << "Multiple factors, recursing on them" << endl;
+#endif
         for(int i = 0; i < factors.size(); ++i)
+        {
+#ifdef ITP_DEBUG
+            cerr << "Recursing on factor " << logic.printTerm(factors[i].first->e) << '-' << logic.printTerm(factors[i].second->e) << endl;
+#endif
             conj.push(IrecSwap(factors[i], cache, h));
+        }
     }
   }
 
@@ -1843,7 +1953,7 @@ CGraph::IrecSwap( const path_t & p, map< path_t, PTRef > & cache , unsigned int 
 
   assert( res != PTRef_Undef);
 
-  cache[ p ] = res;
+  //cache[ p ] = res;
 
   //cerr << lstr << "Interpolant IrecSwap(" << logic.printTerm(p.first->e) << "," << logic.printTerm(p.second->e) << ") = " << logic.printTerm(res) << endl;
   return res;

@@ -1801,12 +1801,11 @@ Logic::setIPartitionsIte(PTRef pref)
 
 
 void
-Logic::collectStats(PTRef root, int& n_of_conn, int& n_of_eq, int& n_of_dist)
+Logic::collectStats(PTRef root, int& n_of_conn, int& n_of_eq, int& n_of_uf)
 {
-    set<PTRef> seen;
     set<PTRef> seen_terms;
     queue<PTRef> to_visit;
-    n_of_conn = n_of_eq = n_of_dist = 0;
+    n_of_conn = n_of_eq = n_of_uf = 0;
     to_visit.push(root);
     while(!to_visit.empty())
     {
@@ -1814,16 +1813,23 @@ Logic::collectStats(PTRef root, int& n_of_conn, int& n_of_eq, int& n_of_dist)
         to_visit.pop();
         if(seen_terms.find(node) != seen_terms.end()) continue;
         seen_terms.insert(node);
-        if(isUFEquality(node))
+        if(isBooleanOperator(node))
+        {
+            ++n_of_conn;
+            Pterm& pnode = getPterm(node);
+            for(int i = 0; i < pnode.size(); ++i)
+                to_visit.push(pnode[i]);
+        }
+        else if(isUFEquality(node))
         {
             ++n_of_eq;
             Pterm& pnode = getPterm(node);
-            if(seen.find(pnode[0]) == seen.end()) seen.insert(pnode[0]);
-            if(seen.find(pnode[1]) == seen.end()) seen.insert(pnode[1]);
+            to_visit.push(pnode[0]);
+            to_visit.push(pnode[1]);
         }
-        else if(isBooleanOperator(node))
+        else if(isUF(node))
         {
-            ++n_of_conn;
+            ++n_of_uf;
             Pterm& pnode = getPterm(node);
             for(int i = 0; i < pnode.size(); ++i)
                 to_visit.push(pnode[i]);
