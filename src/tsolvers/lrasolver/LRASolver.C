@@ -765,107 +765,107 @@ void LRASolver::popBacktrackPoint( )
 }
 
 //
-// Look for unbounded terms and applies Gaussian elimination to them. Delete the column if succeeded
+// Look for unbounded terms and applies Gaussian elimination to them.
+// Delete the column if succeeded
 //
 void LRASolver::doGaussianElimination( )
 {
-  int m;
+    for (unsigned i = 0; i < columns.size( ); ++i) {
+        assert(columns[i] != NULL);
+        if (!columns[i]->skip && columns[i]->isNonbasic( ) &&
+            columns[i]->isUnbounded( ) && columns[i]->binded_rows.size( ) > 1) {
+            LAVar * x = columns[i];
 
-  for( unsigned i = 0; i < columns.size( ); ++i ) {
-    assert(columns[i] != NULL);
-    if( !columns[i]->skip && columns[i]->isNonbasic( ) && columns[i]->isUnbounded( ) && columns[i]->binded_rows.size( ) > 1 )
-    {
-      LAVar * x = columns[i];
+            LAColumn::iterator it = x->binded_rows.begin( );
 
-      LAColumn::iterator it = x->binded_rows.begin( );
+            assert( it != x->binded_rows.end( ) );
 
-      assert( it != x->binded_rows.end( ) );
+            int basisRow = it->key;
+            LAVar * basis = rows[basisRow];
 
-      int basisRow = it->key;
-      LAVar * basis = rows[basisRow];
+//            printf("; LAVar for column %d is %s and LAVar for the basis is %s\n", i, logic.printTerm(x->e), logic.printTerm(basis->e));
+            Real a( *( rows[it->key]->polynomial[it->pos_in_row].coef ) );
+            x->binded_rows.getNext( it );
 
-      Real a = Real( *( rows[it->key]->polynomial[it->pos_in_row].coef ) );
-      Real ratio = 0;
+            assert( it != x->binded_rows.end( ) );
 
-      x->binded_rows.getNext( it );
-
-      assert( it != x->binded_rows.end( ) );
-
-      for( ; it != x->binded_rows.end( ); x->binded_rows.getNext( it ) )
-      {
-        ratio = Real( ( *( rows[it->key]->polynomial[it->pos_in_row].coef ) ) / a );
-        for( LARow::iterator it2 = basis->polynomial.begin( ); it2 != basis->polynomial.end( ); basis->polynomial.getNext( it2 ) )
-        {
-          LARow::iterator a_it = rows[it->key]->polynomial.find( it2->key );
-          if( a_it == rows[it->key]->polynomial.end( ) )
-          {
-            Real * c = NULL;
-            if( !numbers_pool.empty( ) )
-            {
-              c = numbers_pool.back( );
-              numbers_pool.pop_back( );
-              *c = -ratio * ( *( basis->polynomial.find( it2->key )->coef ) );
+//            printf("; Number of rows bound to %s is %d\n", logic.printTerm(basis->e), x->binded_rows.size());
+            for (; it != x->binded_rows.end( ); x->binded_rows.getNext( it )) {
+                Real ratio( ( *( rows[it->key]->polynomial[it->pos_in_row].coef ) ) / a );
+                for (LARow::iterator it2 = basis->polynomial.begin( );
+                     it2 != basis->polynomial.end( );
+                     basis->polynomial.getNext( it2 )) {
+                    LARow::iterator a_it = rows[it->key]->polynomial.find( it2->key );
+                    if (a_it == rows[it->key]->polynomial.end( )) {
+                        // if it2->key is not in it->key's polynomial we
+                        // multiply the coefficient of it2 by it's coef/a
+                        Real val(-ratio * (*basis->polynomial.find(it2->key)->coef));
+                        Real * c = NULL;
+                        if (!numbers_pool.empty( )) {
+                            c = numbers_pool.back( );
+                            numbers_pool.pop_back( );
+                            *c = val;
+                        } else {
+                            c = new Real(val);
+                        }
+                        columns[it2->key]->binded_rows.add( it->key, rows[it->key]->polynomial.add( it2->key, columns[it2->key]->binded_rows.free_pos( ), c ) );
+                    } else {
+                        // if it2->key is in it->key's polynomial
+                        *(a_it->coef) -= ( *( basis->polynomial.find( it2->key )->coef ) ) * ratio;
+                        if (*( a_it->coef ) == 0) {
+                            // The term vanished
+                            assert( a_it->coef );
+                            // Store removed Real in memory pool
+                            numbers_pool.push_back( a_it->coef );
+                            if ( it2->key != x->ID( ) )
+                                columns[it2->key]->binded_rows.remove( a_it->pos );
+                            rows[it->key]->polynomial.remove( a_it );
+                        }
+                    }
+                }
             }
-            else
+
+            // Clear removed row
+            for (LARow::iterator it2 = basis->polynomial.begin();
+                 it2 != basis->polynomial.end();
+                 basis->polynomial.getNext(it2))
             {
-              c = new Real( -ratio * ( *( basis->polynomial.find( it2->key )->coef ) ) );
+                if (it2->key != basis->ID()) {
+                    columns[it2->key]->unbindRow( basisRow );
+                }
+                assert( it2->coef );
             }
-            columns[it2->key]->binded_rows.add( it->key, rows[it->key]->polynomial.add( it2->key, columns[it2->key]->binded_rows.free_pos( ), c ) );
-          }
-          else
-          {
-            *( a_it->coef ) -= ( *( basis->polynomial.find( it2->key )->coef ) ) * ratio;
-            if( *( a_it->coef ) == 0 )
-            {
-              assert( a_it->coef );
-              // Store removed Real in memory pool
-              numbers_pool.push_back( a_it->coef );
-              if( it2->key != x->ID( ) )
-                columns[it2->key]->binded_rows.remove( a_it->pos );
-              rows[it->key]->polynomial.remove( a_it );
+
+            // Keep polynomial in x to compute a model later
+            assert( x->polynomial.empty( ) );
+            swap( basis->polynomial, x->polynomial );
+            removed_by_GaussianElimination.push_back( x );
+            x->binded_rows.clear( );
+            x->skip = true;
+
+            // Replace basisRow slot with the last row in rows vector
+            int m = rows.size( ) - 1;
+            if (m > basisRow) {
+                for (LARow::iterator it2 = rows[m]->polynomial.begin();
+                     it2 != rows[m]->polynomial.end();
+                     rows[m]->polynomial.getNext(it2))
+                {
+                    if (it2->key != rows[m]->ID()) {
+                        columns[it2->key]->binded_rows.remove( it2->pos );
+                        columns[it2->key]->binded_rows.add( basisRow, rows[m]->polynomial.getPos( it2 ) );
+                    }
+                }
+
+                rows[basisRow] = rows[m];
+                rows[m]->setBasic( basisRow );
             }
-          }
+            basis->setNonbasic( );
+            rows.pop_back( );
+//            printf("; Removed the row %s\n", logic.printTerm(basis->e));
+//            printf("; Removed column %s\n", logic.printTerm(x->e));
+//            printf("; rows: %d, columns: %d\n", rows.size(), nVars());
         }
-      }
-
-      // Clear removed row
-      for( LARow::iterator it2 = basis->polynomial.begin( ); it2 != basis->polynomial.end( ); basis->polynomial.getNext( it2 ) )
-      {
-        if( it2->key != basis->ID( ) )
-        {
-          columns[it2->key]->unbindRow( basisRow );
-        }
-        assert( it2->coef );
-      }
-
-      // Keep polynomial in x to compute a model later
-      assert( x->polynomial.empty( ) );
-      swap( basis->polynomial, x->polynomial );
-      removed_by_GaussianElimination.push_back( x );
-      x->binded_rows.clear( );
-      x->skip = true;
-
-      // Replace basisRow slot with the last row in rows vector
-      m = rows.size( ) - 1;
-      if( m > basisRow )
-      {
-        for( LARow::iterator it2 = rows[m]->polynomial.begin( ); it2 != rows[m]->polynomial.end( ); rows[m]->polynomial.getNext( it2 ) )
-        {
-          if( it2->key != rows[m]->ID( ) )
-          {
-            columns[it2->key]->binded_rows.remove( it2->pos );
-            columns[it2->key]->binded_rows.add( basisRow, rows[m]->polynomial.getPos( it2 ) );
-          }
-        }
-
-        rows[basisRow] = rows[m];
-        rows[m]->setBasic( basisRow );
-      }
-      basis->setNonbasic( );
-      rows.pop_back( );
     }
-  }
-
 }
 
 //
@@ -1164,7 +1164,7 @@ void LRASolver::initSolver( )
   if( status == INIT )
   {
     // Gaussian Elimination should not be performed in the Incremental mode!
-    if( config.lra_gaussian_elim == 1 )
+    if( config.lra_gaussian_elim == 1 && config.do_substitutions() )
       doGaussianElimination( );
 
     //                 sort the bounds inserted during inform stage

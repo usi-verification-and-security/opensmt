@@ -181,6 +181,7 @@ public:
   static const char* o_produce_models;
   static const char* o_sat_remove_symmetries;
   static const char* o_dryrun;
+  static const char* o_do_substitutions;
 
 private:
 
@@ -508,6 +509,9 @@ public:
         if (strcmp(type, spprefs_rand)  == 0) return sppref_rand;
     } else return sppref_blind;
   }
+  int do_substitutions() const
+    { return optionTable.contains(o_do_substitutions) ?
+        optionTable[o_do_substitutions]->getValue().numval : 1; }
 
 
 //  int          produce_stats;                // Should print statistics ?

@@ -3,6 +3,10 @@
 
 bool Theory::computeSubstitutions(PTRef root, PTRef& root_out)
 {
+    if (!config.do_substitutions() || config.produce_inter()) {
+        root_out = root;
+        return true;
+    }
     // The substitution of facts together with the call to simplifyTree
     // ensures that no fact is inserted twice to facts.
     vec<PtAsgn> facts;

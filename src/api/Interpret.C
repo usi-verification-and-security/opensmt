@@ -143,10 +143,10 @@ bool Interpret::interp(ASTNode& n) {
             theory = uftheory;
             thandler = new THandler(config, *uftheory);
             logic = &(theory->getLogic());
-            
+
             main_solver = new MainSolver(*thandler, config, new SimpSMTSolver(config, *thandler));
             main_solver->initialize();
-        } else if (strcmp(logic_name, QF_LRA.str) == 0) {
+        } else if ((strcmp(logic_name, QF_LRA.str) == 0) || (strcmp(logic_name, QF_RDL.str) == 0)) {
             LRATheory *lratheory = new LRATheory(config);
             theory = lratheory;
             thandler = new THandler(config, *lratheory);

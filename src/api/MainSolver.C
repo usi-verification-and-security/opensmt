@@ -179,15 +179,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         return s_Error; }
 
     root = logic.mkAnd(formulas);
-    PTRef trans = PTRef_Undef;
-    if (config.logic == QF_UF)
-        trans = logic.learnEqTransitivity(root);
-    if (trans != PTRef_Undef) {
-        vec<PTRef> enriched;
-        enriched.push(trans);
-        enriched.push(root);
-        root = logic.mkAnd(enriched);
-    }
+
     // Framework for handling different theory specific simplifications.
     PTRef new_root;
     if (config.produce_inter() == 0) {

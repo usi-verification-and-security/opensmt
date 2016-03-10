@@ -113,7 +113,7 @@ protected:
 
   vector<unsigned> checks_history;
 
-  unsigned nVars() const { return columns.size(); }
+  unsigned nVars() const { return columns.size() - removed_by_GaussianElimination.size(); }
 private:
   void doGaussianElimination( );                          // Performs Gaussian elimination of all redundant terms in the Tableau
   void update( LAVar *, const Delta & );                  // Updates the bounds after constraint pushing

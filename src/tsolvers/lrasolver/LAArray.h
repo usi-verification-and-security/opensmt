@@ -101,8 +101,7 @@ public:
   inline void getNext( typename LAArray<T>::iterator & it )
   {
     ++it;
-    while( it != this->end( ) && it->key == -2 )
-    ++it;
+    while( it != this->end( ) && it->key == -2 ) ++it;
   }
 
   //
