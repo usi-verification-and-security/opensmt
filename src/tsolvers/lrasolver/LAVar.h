@@ -103,7 +103,7 @@ public:
 
   virtual ~LAVar( );                                                    // Destructor
 
-  void setBounds( PTRef e, PTRef e_bound);          // Set the bounds from Enode of original constraint (used on reading/construction stage)
+  void setBounds( PTRef e, PTRef e_bound, bool revert = false);          // Set the bounds from Enode of original constraint (used on reading/construction stage)
   void setBounds( PTRef e, const Real & v, bool revert);   // Set the bounds according to enode type and a given value (used on reading/construction stage)
 
   unsigned setUpperBound( const Real & v);
@@ -322,19 +322,23 @@ void LAVar::setM( const Delta &v )
 
 class LAVarStore
 {
+  private:
     int column_count;               // Static counter to create ID for LAVar
     int row_count;                  // Static counter for rows keep track of basic variables
     LRALogic& logic;
     vec<DedElem>& deduced;
     SolverId solver_id;
     LRASolver& lra_solver;
+    vec<LAVar*> lavars;
 
   public:
     LAVarStore(LRASolver&, vec<DedElem>&, LRALogic&);
+    ~LAVarStore();
     LAVar* getNewVar(PTRef e_orig = PTRef_Undef);
     LAVar* getNewVar(PTRef e_orig, PTRef e_bound, PTRef e_var, bool basic = false);
     LAVar* getNewVar(PTRef e_orig, PTRef e_var, const Real& v, bool revert);
     int numVars() const;
+    void printVars() const;
 };
 
 #endif

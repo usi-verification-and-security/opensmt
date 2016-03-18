@@ -40,274 +40,342 @@ LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
     , TSolver((SolverId)descr_lra_solver, (const char*)descr_lra_solver, c, d)
     , delta(Delta::ZERO)
     , bland_threshold(1000)
-  {
+{
     lavarStore = new LAVarStore(*this, deduced, logic);
     status = INIT;
     checks_history.push_back(0);
     first_update_after_backtrack = true;
-  }
+}
 
-//
-// Reads the constraint into the solver
-//
-lbool LRASolver::declareTerm( PTRef tr )
+// Return a slack var for the sum term tr_sum if it exists, otherwise create
+// the slack var if it does not exist.  In case there exists a var s for
+// the term tr_sum' = - tr_sum, return s and set reverse to true
+LAVar* LRASolver::getSlackVar(PTRef tr_sum, bool &reverse)
 {
-  if (informed(tr)) return l_Undef;
-  else informed_PTRefs.insert(tr, true);
+    reverse = false;
+    assert(logic.isRealPlus(tr_sum));
 
-  if (!logic.isRealLeq(tr)) return l_Undef;
+    int sum_id = logic.getPterm(tr_sum).getId();
+    // First make sure the array contains an entry for the slack var
+    if (sum_id >= (int)ptermToLavar.size())
+        ptermToLavar.resize(sum_id + 1, NULL);
 
-  if( status != INIT )
-  {
-    // Treat the PTRef as it is pushed on-the-fly
-    //    status = INCREMENT;
-    assert( status == SAT );
-  }
-  assert(logic.isAtom(tr));
-  assert(logic.isRealLeq(tr));
-  Pterm& t = logic.getPterm(tr);
-  PTRef arg1 = t[0];
-  PTRef arg2 = t[1];
-
-  bool revert = false;
-
-  if(!logic.isConstant(arg1))
-  {
-    arg2 = t[0];
-    arg1 = t[1];
-    revert = true;
-  }
-
-  Pterm& arg1_t = logic.getPterm(arg1);
-  Pterm& arg2_t = logic.getPterm(arg2);
-
-  assert(logic.isConstant(arg1));
-  assert(logic.isRealVar(arg2) || logic.isRealTimes(arg2) || logic.isRealPlus(arg2));
-
-    bool xsimpl = logic.isRealVar(arg2);
-
-  // parse the var x of the contraint a < c*x
-  if (logic.isRealTimes(arg2) || xsimpl) {
-    LAVar * x;
-    PTRef coef;
-    PTRef var;
-
-    // check the value from a
-    if (!logic.isConstant(arg1))
-        cerr << "Unexpected number a in a <= c*x: " << logic.printTerm(arg1) << endl;
-
-    Real * p_v;
-    if( !numbers_pool.empty( ) )
-    {
-      p_v = numbers_pool.back( );
-      numbers_pool.pop_back( );
-      *p_v = Real(logic.getRealConst(arg1));
+    // Then check if the var is non-null
+    LAVar* var = NULL;
+    if (ptermToLavar[sum_id] != NULL) {
+        var = ptermToLavar[sum_id];
     }
-    else
-    {
-      p_v = new Real(logic.getRealConst(arg1));
+    else {
+        // There was no entry for the sum term
+        PTRef tr_sump = logic.mkRealNeg(tr_sum);
+        int tr_sump_id = logic.getPterm(tr_sump).getId();
+        if (tr_sump_id < ptermToLavar.size() && ptermToLavar[tr_sump_id] != NULL) {
+            // Enable for the compact array
+//            var = ptermToLavar[tr_sump_id];
+//            reverse = true;
+        }
+    }
+    return var;
+}
+
+void LRASolver::addSlackVar(PTRef leq_tr)
+{
+    // The leq is of the form c <= (t1 + ... + tn).  Parse the sum term of the leq.
+    // This needs a slack variable
+
+    assert(logic.isRealLeq(leq_tr));
+    Pterm& leq_t = logic.getPterm(leq_tr);
+
+    PTRef sum_tr = leq_t[0];
+    PTRef const_tr = leq_t[1];
+    if (logic.isRealPlus(const_tr)) {
+        PTRef tmp = sum_tr;
+        sum_tr = const_tr;
+        const_tr = tmp;
     }
 
-    if(xsimpl)
-        var = arg2;
-    else
-    {
-        coef = logic.getPterm(arg2)[0];
-        var = logic.getPterm(arg2)[1];
+    assert(logic.isRealPlus(sum_tr));
+    assert(logic.isRealConst(const_tr));
 
-        if(!logic.isConstant(coef))
-        {
-            PTRef tmp = coef;
-            coef = var;
-            var = tmp;
+    Pterm& t = logic.getPterm(sum_tr);
+    int sum_id = t.getId();
+
+    int leq_id = leq_t.getId();
+
+    LAVar * s;
+    bool reverse;
+    if ((s = getSlackVar(sum_tr, reverse)) == NULL) {
+        // The slack var for the sum did not exist previously.
+        // Introduce the slack var with bounds.
+        s = lavarStore->getNewVar(leq_tr, const_tr, sum_tr, true);
+        slack_vars.push_back(s);
+
+        assert( s->basicID() != -1 );
+
+        // Update the columns
+        if (s->ID() >= static_cast<int>(columns.size())) {
+            columns.resize(s->ID() + 1, NULL);
+            tsolver_stats.num_vars = columns.size();
+        }
+        columns[s->ID()] = s;
+
+        // Update the rows
+        if (s->basicID() >= static_cast<int> (rows.size()))
+            rows.resize(s->basicID() + 1, NULL);
+        rows[s->basicID()] = s;
+
+
+
+        if (leq_id >= (int)ptermToLavar.size())
+            ptermToLavar.resize(leq_id+1, NULL);
+        ptermToLavar[leq_id] = s;
+
+        if (sum_id >= (int)ptermToLavar.size())
+            ptermToLavar.resize(sum_id+1, NULL);
+        ptermToLavar[sum_id] = s;
+
+        // Create the polynomial for the array
+        makePolynomial(s, sum_tr);
+    }
+    else {
+        if (reverse) {
+            // If reverse is true, the slack var negation exists.  We
+            // need to add the mapping from the PTRef to the
+            // corresponding slack var.
         }
 
-        // divide a by the value from c
-        const Real& c = logic.getRealConst(coef);
-
-        if( logic.isConstant(coef) )
-            *p_v /= c;
-        else
-        cerr << "Unexpected coef c in  a <= c*x : " << logic.printTerm(coef) << endl ;
-
-        if( c < 0 )
-            revert = !revert;
+        if (leq_id >= (int)ptermToLavar.size())
+            ptermToLavar.resize(leq_id+1, NULL);
+        ptermToLavar[leq_id] = s;
+        s->setBounds(leq_tr, const_tr, reverse);
     }
+}
 
-    assert(config.logic != QF_LRA || logic.isVar(var));
-    assert(config.logic != QF_LIA || logic.isVar(var));
-    assert(config.logic != QF_UFLRA || logic.isVar(var) || logic.isUF(var));
-
-    // check if we need a new LAVar for a given var
-    if( logic.getPterm(var).getId( ) >= ( int )ptermToLavar.size( ) )
-      ptermToLavar.resize(logic.getPterm(var).getId( ) + 1, NULL);
-
-    if( ptermToLavar[logic.getPterm(var).getId( )] == NULL )
-    {
-      assert( status == INIT );
-
-      x = lavarStore->getNewVar(tr, var, *p_v, revert); //new LAVar(*this, getId(), deduced, logic, tr, var, *p_v, revert);
-
-      ptermToLavar[logic.getPterm(var).getId()] = x;
-
-      if (x->ID() >= static_cast<int> ( columns.size() )) {
-        columns.resize( x->ID( ) + 1, NULL );
-        tsolver_stats.num_vars = columns.size();
-      }
-      columns[x->ID( )] = x;
-
-      if( t.getId() >= ( int )ptermToLavar.size( ) )
-        ptermToLavar.resize( t.getId() + 1, NULL );
-      ptermToLavar[t.getId()] = x;
-    }
-    else
-    {
-      x = ptermToLavar[logic.getPterm(var).getId()];
-      x->setBounds( tr, *p_v, revert );
-
-      if( t.getId() >= ( int )ptermToLavar.size() )
-        ptermToLavar.resize(t.getId()+1, NULL);
-      ptermToLavar[t.getId()] = x;
-    }
-
-    numbers_pool.push_back( p_v );
-  }
-  // parse the Plus term of the contraint
-  else if (logic.isRealPlus(arg2)) {
-      // TODO: Can this code parse terms of form (+ x1 ... xn), i.e., no
-      // constants in front of variables? Now yes!
-    if (arg2_t.getId() >= (int)ptermToLavar.size())
-      ptermToLavar.resize( arg2_t.getId() + 1, NULL );
-
-    if (ptermToLavar[arg2_t.getId()] != NULL ) {
-      LAVar * x = ptermToLavar[arg2_t.getId()];
-      x->setBounds( tr, arg1 );
-
-      if (t.getId() >= (int)ptermToLavar.size())
-        ptermToLavar.resize(t.getId() + 1, NULL);
-      ptermToLavar[t.getId()] = x;
-    } else {
-      // introduce the slack variable with bounds on it
-      LAVar * s = lavarStore->getNewVar(tr, arg1, arg2, true); //new LAVar(*this, getId(), deduced, logic, tr, arg1, arg2, true );
-      slack_vars.push_back( s );
-
-      assert( s->basicID( ) != -1 );
-
-      if (s->ID() >= static_cast<int>(columns.size())) {
-        columns.resize(s->ID() + 1, NULL);
-        tsolver_stats.num_vars = columns.size();
-      }
-      columns[s->ID()] = s;
-
-      if (s->basicID() >= static_cast<int> (rows.size()))
-        rows.resize(s->basicID() + 1, NULL);
-      rows[s->basicID()] = s;
-
-      Real * p_r;
-      if (!numbers_pool.empty()) {
+// Create a polynomial to the slack var s from the polynomial pol
+//
+void LRASolver::makePolynomial(LAVar* s, PTRef pol)
+{
+    // Create a polynomial for s
+    Real * p_r;
+    if (!numbers_pool.empty()) {
         p_r = numbers_pool.back();
         numbers_pool.pop_back();
         *p_r = Real(-1);
-      } else {
+    }
+    else {
         p_r = new Real(-1);
-      }
+    }
+    // Set -1 to position 0 of the polynomial.  Why is that?
+    s->polynomial.add(s->ID(), 0, p_r);
 
-      s->polynomial.add(s->ID(), 0, p_r);
+    Pterm& pol_t = logic.getPterm(pol);
+    // reads the argument of +
+    for (int i = 0; i < pol_t.size(); i++) {
+        PTRef pr = pol_t[i];
+        // Check the form of the term.  Can be either c * x or x for
+        // Real constant c and real variable x.
+        assert(logic.isRealTimes(pr) || logic.isRealVar(pr));
 
-      if (t.getId() >= (int)ptermToLavar.size())
-        ptermToLavar.resize(t.getId() + 1, NULL);
-      ptermToLavar[t.getId()] = s;
+        PTRef var;
+        PTRef num;
 
-      if (arg2_t.getId() >= (int)ptermToLavar.size())
-        ptermToLavar.resize(arg2_t.getId()+1, NULL);
-      ptermToLavar[arg2_t.getId()] = s;
-
-      // reads the argument of +
-      for (int i = 0; i < arg2_t.size(); i++) {
-        PTRef pr = arg2_t[i];
-        xsimpl = logic.isRealVar(pr);
-        if (logic.isRealTimes(pr) || xsimpl) {
-            if(xsimpl)
-                arg2 = pr;
-            else
-            {
-                arg1 = logic.getPterm(pr)[0];
-                arg2 = logic.getPterm(pr)[1];
+        if (logic.isRealVar(pr)) {
+            // pr is of form x
+            var = pr;
+            num = logic.getTerm_RealOne();
+        }
+        else {
+            // pr is of form c*x
+            var = logic.getPterm(pr)[0];
+            num = logic.getPterm(pr)[1];
+            if (logic.isRealConst(var)) {
+                PTRef tmp = num;
+                num = var;
+                var = tmp;
             }
+        }
+        assert(logic.isRealConst(num) && logic.isRealVar(var));
 
-          assert(config.logic != QF_LRA || logic.isVar(arg1) || logic.isVar(arg2));
-          assert(config.logic != QF_LIA || logic.isVar(arg1) || logic.isVar(arg2));
-          assert(config.logic != QF_UFLRA || logic.isVar(arg1) || logic.isVar(arg2) || logic.isUF(arg1) || logic.isUF(arg2));
+        // Get the coefficient
+        if (!numbers_pool.empty()) {
+            p_r = numbers_pool.back();
+            numbers_pool.pop_back();
+            *p_r = Real(logic.getRealConst(num));
+        } else {
+            p_r = new Real(logic.getRealConst(num));
+        }
 
-          // We store variable in var, coefficient in num
-          PTRef var, num;
-          if (xsimpl)
-          {
-              var = arg2;
-              if (!numbers_pool.empty()) {
-                    p_r = numbers_pool.back();
-                    numbers_pool.pop_back();
-                    *p_r = Real(1);
-                } else {
-                    p_r = new Real(1);
-                };
-          }
-          else
-          {
-              var = logic.isVar(arg1) || logic.isUF(arg1) ? arg1 : arg2;
-              num = logic.isVar(arg1) || logic.isUF(arg1) ? arg2 : arg1;
-              // Get the coefficient
-                if (!numbers_pool.empty()) {
-                    p_r = numbers_pool.back();
-                    numbers_pool.pop_back();
-                    *p_r = Real(logic.getRealConst(num));
-                } else {
-                    p_r = new Real(logic.getRealConst(num));
-                }
-          }
+        // check if we need a new LAVar for a given var
+        LAVar * x = NULL;
 
-          // check if we need a new LAVar for a given var
-          LAVar * x = NULL;
+        int varId = logic.getPterm(var).getId();
+        if (varId >= (int)ptermToLavar.size())
+            ptermToLavar.resize(varId + 1, NULL);
 
-          int varId = logic.getPterm(var).getId();
-          if (varId >= ( int )ptermToLavar.size( ) )
-            ptermToLavar.resize( varId + 1, NULL );
-
-          if (ptermToLavar[varId] != NULL) {
+        if (ptermToLavar[varId] != NULL) {
             x = ptermToLavar[varId];
             addVarToRow(s, x, p_r);
-          } else {
-            x = lavarStore->getNewVar(var); //new LAVar(*this, getId(), deduced,logic, var);
-            slack_vars.push_back(x);
+        }
+        else {
+            x = lavarStore->getNewVar(var);
             ptermToLavar[varId] = x;
 
             if (x->ID() >= static_cast<int> (columns.size())) {
-              columns.resize(x->ID() + 1, NULL);
-              tsolver_stats.num_vars = columns.size();
+                columns.resize(x->ID() + 1, NULL);
+                tsolver_stats.num_vars = columns.size();
             }
             columns[x->ID()] = x;
 
             x->binded_rows.add(s->basicID(), s->polynomial.add(x->ID(), x->binded_rows.free_pos(), p_r));
-          }
-
-          assert(x);
-          assert(s->basicID() != -1);
-
         }
-        else
-            assert(0);
-      }
+
+        assert(x);
+        assert(s->basicID() != -1);
     }
-  }
-  else
-  {
-    cerr << "Unexpected atom: " << logic.printTerm(tr) << endl;
-  }
+}
+
+//
+// Reads the constraint into the solver
+//
+lbool LRASolver::declareTerm(PTRef leq_tr)
+{
+    if (informed(leq_tr)) return l_Undef;
+    informed_PTRefs.insert(leq_tr, true);
+
+    if (!logic.isRealLeq(leq_tr)) return l_Undef;
+
+
+    if (status != INIT)
+    {
+        // Treat the PTRef as it is pushed on-the-fly
+        //    status = INCREMENT;
+        assert( status == SAT );
+    }
+    assert(logic.isAtom(leq_tr));
+    assert(logic.isRealLeq(leq_tr));
+    Pterm& leq_t = logic.getPterm(leq_tr);
+
+    // Terms can be of form t1 <= t2 and t2 <= t1; where
+    //  - t1 is a constant and
+    //  - t2 is either a term or a sum
+    PTRef cons = leq_t[0];
+    PTRef sum  = leq_t[1];
+
+    bool revert = false;
+
+    if (!logic.isConstant(cons)) {
+        PTRef tmp = cons;
+        cons = sum;
+        sum = tmp;
+        revert = true;
+    }
+
+    Pterm& sum_t = logic.getPterm(sum);
+
+    assert(logic.isConstant(cons));
+    assert(logic.isRealVar(sum) || logic.isRealTimes(sum) || logic.isRealPlus(sum));
+
+    if (logic.isRealTimes(sum) || logic.isRealVar(sum)) {
+        // The constraint is of the form cons <= coef*var or cons <= var
+        // parse the cons and part coef*var or var
+        LAVar * x;
+        PTRef coef;
+        PTRef var;
+
+        Real * p_v;
+        if (!numbers_pool.empty()) {
+            p_v = numbers_pool.back();
+            numbers_pool.pop_back();
+            *p_v = Real(logic.getRealConst(cons));
+        }
+        else {
+            p_v = new Real(logic.getRealConst(cons));
+        }
+
+        // p_v now contains the cons as the real
+
+        if (logic.isRealVar(sum)) {
+            coef = logic.getTerm_RealOne();
+            var  = sum;
+        }
+        else {
+            coef = logic.getPterm(sum)[0];
+            var = logic.getPterm(sum)[1];
+
+            if (!logic.isConstant(coef)) {
+                PTRef tmp = coef;
+                coef = var;
+                var = tmp;
+            }
+
+            // divide cons by the value from coef
+            const Real& c = logic.getRealConst(coef);
+
+            if (logic.isConstant(coef))
+                *p_v /= c;
+            else
+                cerr << "Unexpected coef c in  a <= c*x : " << logic.printTerm(coef) << endl ;
+
+            if (c < 0)
+                revert = !revert;
+        }
+
+        assert(config.logic != QF_LRA || logic.isVar(var));
+        assert(config.logic != QF_LIA || logic.isVar(var));
+        assert(config.logic != QF_UFLRA || logic.isVar(var) || logic.isUF(var));
+
+        // check if we need a new LAVar for a given var
+        if (logic.getPterm(var).getId() >= (int)ptermToLavar.size())
+            ptermToLavar.resize(logic.getPterm(var).getId() + 1, NULL);
+
+        if (ptermToLavar[logic.getPterm(var).getId()] == NULL) {
+            assert( status == INIT );
+
+            x = lavarStore->getNewVar(leq_tr, var, *p_v, revert);
+
+            ptermToLavar[logic.getPterm(var).getId()] = x;
+
+            if (x->ID() >= static_cast<int> ( columns.size() )) {
+                columns.resize( x->ID( ) + 1, NULL );
+                tsolver_stats.num_vars = columns.size();
+            }
+            columns[x->ID( )] = x;
+
+            if (leq_t.getId() >= (int)ptermToLavar.size())
+                ptermToLavar.resize( leq_t.getId() + 1, NULL );
+            ptermToLavar[leq_t.getId()] = x;
+        }
+        else {
+            x = ptermToLavar[logic.getPterm(var).getId()];
+            x->setBounds(leq_tr, *p_v, revert);
+
+            if (leq_t.getId() >= (int)ptermToLavar.size())
+                ptermToLavar.resize(leq_t.getId()+1, NULL);
+            ptermToLavar[leq_t.getId()] = x;
+        }
+
+        numbers_pool.push_back( p_v );
+    }
+    // parse the Plus term of the contraint
+    else if (logic.isRealPlus(sum)) {
+        // The leq is of the form c <= (t1 + ... + tn).  Parse the sum term of the leq.
+        // This needs a slack variable
+        addSlackVar(leq_tr);
+    }
+    else {
+        assert(ptermToLavar[sum_t.getId()] != NULL);
+        LAVar * x = ptermToLavar[sum_t.getId()];
+        x->setBounds(leq_tr, cons);
+        if (leq_t.getId() >= (int)ptermToLavar.size())
+            ptermToLavar.resize(leq_t.getId() + 1, NULL);
+        ptermToLavar[leq_t.getId()] = x;
+    }
+
 #if VERBOSE
-  cerr << "; Informed of constraint " << logic.printTerm(tr) << endl;
-  //  cout << this << endl;
+    cerr << "; Informed of constraint " << logic.printTerm(tr_tr) << endl;
+//    cout << this << endl;
 #endif
-  return l_Undef;
+    return l_Undef;
 }
 
 //
@@ -1663,66 +1731,54 @@ const void LRASolver::getRemoved(vec<PTRef>& removed) const
 //
 void LRASolver::addVarToRow( LAVar* s, LAVar* x, Real * p_v )
 {
-
-  if( x->isNonbasic( ) )
-  {
-    LARow::iterator p_it = s->polynomial.find( x->ID( ) );
-    if( p_it != s->polynomial.end( ) )
-    {
-      *( p_it->coef ) += *p_v;
-      if( *( p_it->coef ) == 0 )
-      {
-        numbers_pool.push_back( p_it->coef );
-        x->binded_rows.remove( p_it->pos );
-        s->polynomial.remove( p_it );
-      }
-    }
-    else
-    {
-      x->binded_rows.add( s->basicID( ), s->polynomial.add( x->ID( ), x->binded_rows.free_pos( ), p_v ) );
-    }
-  }
-  else
-  {
-    LARow::iterator it = x->polynomial.begin( );
-    for( ; it != x->polynomial.end( ); x->polynomial.getNext( it ) )
-    {
-      if( x->ID( ) == it->key )
-        continue;
-
-      assert( columns[it->key]->isNonbasic( ) );
-
-      Real * tmp_r;
-
-      if( !numbers_pool.empty( ) )
-      {
-        tmp_r = numbers_pool.back( );
-        numbers_pool.pop_back( );
-        *tmp_r = Real( *( it->coef ) * ( *p_v ) );
-      }
-      else
-      {
-        tmp_r = new Real( *( it->coef ) * ( *p_v ) );
-      }
-      LARow::iterator p_it = s->polynomial.find( it->key );
-      if( p_it != s->polynomial.end( ) )
-      {
-        *( p_it->coef ) += *tmp_r;
-        numbers_pool.push_back( tmp_r );
-        if( *( p_it->coef ) == 0 )
-        {
-          numbers_pool.push_back( p_it->coef );
-          columns[it->key]->binded_rows.remove( p_it->pos );
-          s->polynomial.remove( p_it );
+    if (x->isNonbasic()) {
+        LARow::iterator p_it = s->polynomial.find(x->ID());
+        if (p_it != s->polynomial.end()) {
+            *(p_it->coef) += *p_v;
+            if (*(p_it->coef) == 0) {
+                numbers_pool.push_back(p_it->coef);
+                x->binded_rows.remove(p_it->pos);
+                s->polynomial.remove(p_it);
+            }
         }
-      }
-      else
-      {
-        columns[it->key]->binded_rows.add( s->basicID( ), s->polynomial.add( it->key, columns[it->key]->binded_rows.free_pos( ), tmp_r ) );
-      }
+        else {
+          x->binded_rows.add( s->basicID( ), s->polynomial.add( x->ID( ), x->binded_rows.free_pos( ), p_v ) );
+        }
     }
-    numbers_pool.push_back( p_v );
-  }
+    else {
+        LARow::iterator it = x->polynomial.begin( );
+        for (; it != x->polynomial.end(); x->polynomial.getNext(it)) {
+            if (x->ID( ) == it->key)
+                continue;
+
+            assert(columns[it->key]->isNonbasic());
+
+            Real * tmp_r;
+
+            if (!numbers_pool.empty()) {
+                tmp_r = numbers_pool.back();
+                numbers_pool.pop_back();
+                *tmp_r = Real( *(it->coef) * (*p_v));
+            }
+            else {
+                tmp_r = new Real(*( it->coef ) * ( *p_v ));
+            }
+            LARow::iterator p_it = s->polynomial.find(it->key);
+            if (p_it != s->polynomial.end()) {
+                *(p_it->coef) += *tmp_r;
+                numbers_pool.push_back(tmp_r);
+                if (*(p_it->coef) == 0) {
+                    numbers_pool.push_back(p_it->coef);
+                    columns[it->key]->binded_rows.remove(p_it->pos);
+                    s->polynomial.remove(p_it);
+                }
+            }
+            else {
+                columns[it->key]->binded_rows.add( s->basicID( ), s->polynomial.add( it->key, columns[it->key]->binded_rows.free_pos( ), tmp_r ) );
+            }
+        }
+        numbers_pool.push_back( p_v );
+    }
 }
 
 bool LRASolver::checkIntegersAndSplit( )
@@ -1851,6 +1907,8 @@ ValPair LRASolver::getValue(PTRef tr) const
 LRASolver::~LRASolver( )
 {
   tsolver_stats.printStatistics(cerr);
+  // Remove lavarStore
+  delete lavarStore;
   // Remove slack variables
   while( !columns.empty( ) )
   {
@@ -1866,8 +1924,6 @@ LRASolver::~LRASolver( )
     delete numbers_pool.back( );
     numbers_pool.pop_back( );
   }
-  // Remove lavarStore
-  delete lavarStore;
 }
 
 #ifdef PRODUCE_PROOF

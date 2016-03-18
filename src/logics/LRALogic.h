@@ -76,6 +76,8 @@ class LRALogic: public Logic
     PTRef       mkConst        (const char* name, const char **msg);
     PTRef       mkConst        (SRef s, const char* name);
 
+    bool        isRealConst    (PTRef tr) { return isConstant(tr) && hasSortReal(tr); }
+
     PTRef       mkConst         (const opensmt::Real& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(sort_REAL, rat); free(rat); return tr; }
     SRef        declareSort_Real(char** msg);
 
@@ -134,6 +136,7 @@ class LRALogic: public Logic
     PTRef       mkRealDiv(const vec<PTRef>& args) { char *msg; PTRef tr = mkRealDiv(args, &msg); assert(tr != PTRef_Undef); return tr; }
     PTRef       mkRealLeq(const vec<PTRef>&, char**);
     PTRef       mkRealLeq(const vec<PTRef>& args) { char* msg; PTRef tr = mkRealLeq(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    PTRef       mkRealLeq(const PTRef arg1, const PTRef arg2) { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkRealLeq(tmp); }
     PTRef       mkRealGeq(const vec<PTRef>&, char**);
     PTRef       mkRealLt(const vec<PTRef>&, char**);
     PTRef       mkRealGt(const vec<PTRef>&, char**);

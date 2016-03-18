@@ -90,6 +90,10 @@ public:
 
   ~LRASolver( );                                      // Destructor ;-)
 
+  LAVar* getSlackVar       (PTRef tr_sum, bool& reverse); // Get a slack var for the sum term, creating it if it does not exist.  If there exists a slack var for the negation of tr_sum, set reverse to true
+  void addSlackVar         (PTRef leq);               // Initialize the slack var associated with lea having sum as the slack var, and cons as its bound
+  void makePolynomial      (LAVar *s, PTRef pol);     // Create a polynomial, introducing new LAVars if necessary, for the slack var
+  void initSlackVar        ();
   lbool declareTerm        (PTRef tr);                // Inform the theory solver about the existence of a literal
   bool  check              ( bool );                  // Checks the satisfiability of current constraints
   bool  assertLit          ( PtAsgn , bool = false ); // Push the constraint into Solver

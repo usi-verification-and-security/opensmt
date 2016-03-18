@@ -70,7 +70,7 @@ LAVar::LAVar(LRASolver& lra, SolverId sid, vec<DedElem>& d, LRALogic& l, int col
 //
 // Constructor with bounds initialization
 //
-LAVar::LAVar(LRASolver& lra, SolverId sid, vec<DedElem>& d, LRALogic& l, PTRef e_orig, PTRef e_bound, PTRef e_var, int column_id, int row_id) //, bool basic = false )
+LAVar::LAVar(LRASolver& lra, SolverId sid, vec<DedElem>& d, LRALogic& l, PTRef e_orig, PTRef e_bound, PTRef e_var, int column_id, int row_id)
         : logic(l)
         , deduced(d)
         , solver_id(sid)
@@ -164,15 +164,14 @@ LAVar::~LAVar( )
 //
 // Parse the bound value and the type of the constraint
 //
-void LAVar::setBounds( PTRef e, PTRef e_bound )
+void LAVar::setBounds( PTRef e, PTRef e_bound, bool revert )
 {
   assert( logic.isAtom(e) );
   assert( logic.isConstant(e_bound) );
 
-  bool revert = false;
 
   if( !( logic.isConstant(logic.getPterm(e)[0] ) ))
-    revert = true;
+    revert != revert;
 
   if( logic.isConstant(e_bound ))
     setBounds( e, logic.getRealConst(e_bound), revert );
@@ -420,9 +419,9 @@ void LAVar::getSuggestions( vec<PTRef>& dst, SolverId solver_id )
 unsigned LAVar::getIteratorByPTRef( PTRef _e, bool _reverse )
 {
   unsigned it;
-  it = all_bounds.size( ) - 2;
+  it = all_bounds.size() - 2;
   assert( it != 0 );
-  while( it > 0 && !( all_bounds[it].e == _e && all_bounds[it].reverse == _reverse ) )
+  while (it > 0 && !( all_bounds[it].e == _e && all_bounds[it].reverse == _reverse ))
     --it;
   assert( it != 0 ); // we assume Enode is in!
   return it;
@@ -525,19 +524,35 @@ LAVarStore::LAVarStore(LRASolver& lra, vec<DedElem>& d, LRALogic& l)
 
 LAVar* LAVarStore::getNewVar(PTRef e_orig) {
     int column_id = column_count++;
-    return new LAVar(lra_solver, solver_id, deduced, logic, column_id, e_orig);
+    LAVar* var = new LAVar(lra_solver, solver_id, deduced, logic, column_id, e_orig);
+    lavars.push(var);
+    return var;
 }
 
 LAVar* LAVarStore::getNewVar(PTRef e_orig, PTRef e_bound, PTRef e_var, bool basic) {
     int column_id = column_count++;
     int row_id = basic ? row_count++ : -1;
-    return new LAVar(lra_solver, solver_id, deduced, logic, e_orig, e_bound, e_var, column_id, row_id);
+    LAVar* var = new LAVar(lra_solver, solver_id, deduced, logic, e_orig, e_bound, e_var, column_id, row_id);
+    lavars.push(var);
+    return var;
 }
 
 LAVar* LAVarStore::getNewVar(PTRef e_orig, PTRef e_var, const Real& v, bool revert) {
     int column_id = column_count++;
-    return new LAVar(lra_solver, solver_id, deduced, logic, e_orig, e_var, column_id, v, revert);
+    LAVar* var = new LAVar(lra_solver, solver_id, deduced, logic, e_orig, e_var, column_id, v, revert);
+    lavars.push(var);
+    return var;
 }
 
 int LAVarStore::numVars() const { return column_count; }
 
+void LAVarStore::printVars() const
+{
+    for (int i = 0; i < lavars.size(); i++)
+        cerr << lavars[i];
+}
+
+LAVarStore::~LAVarStore()
+{
+//    printVars();
+}
