@@ -46,7 +46,6 @@ LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
     checks_history.push_back(0);
     first_update_after_backtrack = true;
 }
-
 // Return a slack var for the sum term tr_sum if it exists, otherwise create
 // the slack var if it does not exist.  In case there exists a var s for
 // the term tr_sum' = - tr_sum, return s and set reverse to true
@@ -291,7 +290,6 @@ lbool LRASolver::declareTerm(PTRef leq_tr)
         else {
             p_v = new Real(logic.getRealConst(cons));
         }
-
         // p_v now contains the cons as the real
 
         if (logic.isRealVar(sum)) {
