@@ -635,6 +635,8 @@ PTRef LRALogic::normalizeMul(PTRef mul)
         return v;
 }
 
+// If the call results in a leq it is guaranteed that arg[0] is a
+// constant.
 PTRef LRALogic::mkRealLeq(const vec<PTRef>& args_in, char** msg)
 {
     vec<PTRef> args;

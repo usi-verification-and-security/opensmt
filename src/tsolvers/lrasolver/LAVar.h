@@ -93,15 +93,15 @@ private:
 
 public:
 //  static int numVars() { return column_count; }
-  PTRef e;             //pointer to original Enode. In case of slack variable points to polynomial
-  LARow polynomial;      // elements of the variable polynomial (if variable is basic), list of <id, Real*>
-  LAColumn binded_rows;     // rows a variable is binded to (if it is nonbasic) ,list of <id, Real*>
-  bool skip;             //used to skip columns deleted during Gaussian
+  PTRef e;                // pointer to original PTRef. In case of slack variable points to polynomial
+  LARow polynomial;       // elements of the variable polynomial (if variable is basic), list of <id, Real*>
+  LAColumn binded_rows;   // rows a variable is binded to (if it is nonbasic) ,list of <id, Real*>
+  bool skip;              // used to skip columns deleted during Gaussian
   VectorBounds all_bounds;// array storage for all bounds of the variable
-  unsigned u_bound;      // integer pointer to the current upper bound
-  unsigned l_bound;      // integer pointer to the current lower bound
+  unsigned u_bound;       // integer pointer to the current upper bound
+  unsigned l_bound;       // integer pointer to the current lower bound
 
-  virtual ~LAVar( );                                                    // Destructor
+  virtual ~LAVar( );      // Destructor
 
   void setBounds( PTRef e, PTRef e_bound, bool revert = false);          // Set the bounds from Enode of original constraint (used on reading/construction stage)
   void setBounds( PTRef e, const Real & v, bool revert);   // Set the bounds according to enode type and a given value (used on reading/construction stage)
@@ -336,7 +336,7 @@ class LAVarStore
     ~LAVarStore();
     LAVar* getNewVar(PTRef e_orig = PTRef_Undef);
     LAVar* getNewVar(PTRef e_orig, PTRef e_bound, PTRef e_var, bool basic = false);
-    LAVar* getNewVar(PTRef e_orig, PTRef e_var, const Real& v, bool revert);
+//    LAVar* getNewVar(PTRef e_orig, PTRef e_var, const Real& v, bool revert);
     int numVars() const;
     void printVars() const;
 };

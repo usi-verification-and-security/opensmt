@@ -105,37 +105,37 @@ LAVar::LAVar(LRASolver& lra, SolverId sid, vec<DedElem>& d, LRALogic& l, PTRef e
   setBounds( e_orig, e_bound );
 }
 
-LAVar::LAVar(LRASolver& lra, SolverId sid, vec<DedElem>& d, LRALogic& l, PTRef e_orig, PTRef e_var, int column_id, const Real & v, bool revert )
-	: logic(l)
-	, deduced(d)
-	, solver_id(sid)
-	, lra_solver(lra)
-        , column_id(column_id)
-{
-//  column_id = column_count++;
-  row_id = -1;
-
-  skip = false;
-
-  // zero as default model
-  m1 = new Delta( Delta::ZERO );
-  m2 = new Delta( Delta::ZERO );
-  model_local_counter = 0;
-
-  PTRef e_null = PTRef_Undef;
-  LAVarBound pb1( &minus_inf_bound, e_null, bound_l, false );
-  LAVarBound pb2( &plus_inf_bound, e_null, bound_u, false );
-  all_bounds.push_back( pb1 );
-  all_bounds.push_back( pb2 );
-  u_bound = 1;
-  l_bound = 0;
-
-  e = e_var;
-
-  // set original bounds from Enode
-  setBounds( e_orig, v, revert );
-
-}
+//LAVar::LAVar(LRASolver& lra, SolverId sid, vec<DedElem>& d, LRALogic& l, PTRef e_orig, PTRef e_var, int column_id, const Real & v, bool revert )
+//	: logic(l)
+//	, deduced(d)
+//	, solver_id(sid)
+//	, lra_solver(lra)
+//        , column_id(column_id)
+//{
+////  column_id = column_count++;
+//  row_id = -1;
+//
+//  skip = false;
+//
+//  // zero as default model
+//  m1 = new Delta( Delta::ZERO );
+//  m2 = new Delta( Delta::ZERO );
+//  model_local_counter = 0;
+//
+//  PTRef e_null = PTRef_Undef;
+//  LAVarBound pb1( &minus_inf_bound, e_null, bound_l, false );
+//  LAVarBound pb2( &plus_inf_bound, e_null, bound_u, false );
+//  all_bounds.push_back( pb1 );
+//  all_bounds.push_back( pb2 );
+//  u_bound = 1;
+//  l_bound = 0;
+//
+//  e = e_var;
+//
+//  // set original bounds from Enode
+//  setBounds( e_orig, v, revert );
+//
+//}
 
 LAVar::~LAVar( )
 {
@@ -166,17 +166,14 @@ LAVar::~LAVar( )
 //
 void LAVar::setBounds( PTRef e, PTRef e_bound, bool revert )
 {
-  assert( logic.isAtom(e) );
-  assert( logic.isConstant(e_bound) );
+    assert( logic.isAtom(e) );
+    assert( logic.isConstant(e_bound) );
 
 
-  if( !( logic.isConstant(logic.getPterm(e)[0] ) ))
-    revert != revert;
+    if (!(logic.isConstant(logic.getPterm(e)[0])))
+        revert != revert;
 
-  if( logic.isConstant(e_bound ))
     setBounds( e, logic.getRealConst(e_bound), revert );
-  else
-    opensmt_error2( "unexpected Num: ", logic.printTerm(e_bound) );
 }
 
 //
@@ -537,12 +534,12 @@ LAVar* LAVarStore::getNewVar(PTRef e_orig, PTRef e_bound, PTRef e_var, bool basi
     return var;
 }
 
-LAVar* LAVarStore::getNewVar(PTRef e_orig, PTRef e_var, const Real& v, bool revert) {
-    int column_id = column_count++;
-    LAVar* var = new LAVar(lra_solver, solver_id, deduced, logic, e_orig, e_var, column_id, v, revert);
-    lavars.push(var);
-    return var;
-}
+//LAVar* LAVarStore::getNewVar(PTRef e_orig, PTRef e_var, const Real& v, bool revert) {
+//    int column_id = column_count++;
+//    LAVar* var = new LAVar(lra_solver, solver_id, deduced, logic, e_orig, e_var, column_id, v, revert);
+//    lavars.push(var);
+//    return var;
+//}
 
 int LAVarStore::numVars() const { return column_count; }
 

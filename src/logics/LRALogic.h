@@ -68,15 +68,16 @@ class LRALogic: public Logic
     bool split_eq;
     void visit(PTRef, Map<PTRef,PTRef,PTRefHash>&);
   public:
-    LRALogic                  (SMTConfig& c);
-    ~LRALogic                 () { for (int i = 0; i < reals.size(); i++) delete reals[i]; }
+    LRALogic                    (SMTConfig& c);
+    ~LRALogic                   () { for (int i = 0; i < reals.size(); i++) delete reals[i]; }
 
-    PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms, char** msg);
+    PTRef       insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg);
 
-    PTRef       mkConst        (const char* name, const char **msg);
-    PTRef       mkConst        (SRef s, const char* name);
+    PTRef       mkConst         (const char* name, const char **msg);
+    PTRef       mkConst         (SRef s, const char* name);
 
-    bool        isRealConst    (PTRef tr) { return isConstant(tr) && hasSortReal(tr); }
+    bool        isRealConst     (PTRef tr) { return isConstant(tr) && hasSortReal(tr); }
+    bool        isNonnegRealConst (PTRef tr) { return isRealConst(tr) && getRealConst(tr) >= 0; }
 
     PTRef       mkConst         (const opensmt::Real& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(sort_REAL, rat); free(rat); return tr; }
     SRef        declareSort_Real(char** msg);
@@ -120,7 +121,7 @@ class LRALogic: public Logic
     bool        isUFEquality(PTRef tr) const { return !isRealEq(tr) && Logic::isUFEquality(tr); }
     bool        isTheoryEquality(PTRef tr) const { return isRealEq(tr); }
 
-    bool isUF(PTRef tr) const { return !hasSortReal(tr) && Logic::isUF(tr); }
+    bool        isUF(PTRef tr) const { return !hasSortReal(tr) && Logic::isUF(tr); }
 
     PTRef       getTerm_RealZero() { return term_Real_ZERO; }
     PTRef       getTerm_RealOne() { return term_Real_ONE; }
@@ -134,6 +135,7 @@ class LRALogic: public Logic
     PTRef       mkRealTimes(const vec<PTRef>& args) { char *msg; PTRef tr = mkRealTimes(args, &msg); assert(tr != PTRef_Undef); return tr; }
     PTRef       mkRealDiv(const vec<PTRef>&, char**);
     PTRef       mkRealDiv(const vec<PTRef>& args) { char *msg; PTRef tr = mkRealDiv(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    PTRef       mkRealDiv(const PTRef nom, const PTRef den) { vec<PTRef> tmp; tmp.push(nom), tmp.push(den); return mkRealDiv(tmp); }
     PTRef       mkRealLeq(const vec<PTRef>&, char**);
     PTRef       mkRealLeq(const vec<PTRef>& args) { char* msg; PTRef tr = mkRealLeq(args, &msg); assert(tr != PTRef_Undef); return tr; }
     PTRef       mkRealLeq(const PTRef arg1, const PTRef arg2) { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkRealLeq(tmp); }

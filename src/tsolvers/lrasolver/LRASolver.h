@@ -119,6 +119,8 @@ protected:
 
   unsigned nVars() const { return columns.size() - removed_by_GaussianElimination.size(); }
 private:
+  void getReal(Real*, const PTRef);                       // Get a new real possibly using the number pool
+  LAVar *getLAVar(PTRef var);                             // Initialize a new LA var if needed, otherwise return the old var
   void doGaussianElimination( );                          // Performs Gaussian elimination of all redundant terms in the Tableau
   void update( LAVar *, const Delta & );                  // Updates the bounds after constraint pushing
   void pivotAndUpdate( LAVar *, LAVar *, const Delta &);  // Updates the tableau after constraint pushing
