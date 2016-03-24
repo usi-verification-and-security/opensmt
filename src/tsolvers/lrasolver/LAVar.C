@@ -47,7 +47,7 @@ LAVar::LAVar(LRASolver& lra, SolverId sid, vec<DedElem>& d, LRALogic& l, int col
 	, lra_solver(lra)
         , column_id(column_id)
 {
-//  column_id = column_count++;
+
   row_id = -1;
   skip = false;
 
@@ -66,76 +66,6 @@ LAVar::LAVar(LRASolver& lra, SolverId sid, vec<DedElem>& d, LRALogic& l, int col
 
   e = e_orig;
 }
-
-//
-// Constructor with bounds initialization
-//
-LAVar::LAVar(LRASolver& lra, SolverId sid, vec<DedElem>& d, LRALogic& l, PTRef e_orig, PTRef e_bound, PTRef e_var, int column_id, int row_id)
-        : logic(l)
-        , deduced(d)
-        , solver_id(sid)
-        , lra_solver(lra)
-        , column_id(column_id)
-        , row_id(row_id)
-{
-//  column_id = column_count++;
-//
-//  if( basic )
-//    row_id = row_count++;
-//  else
-//    row_id = -1;
-
-  skip = false;
-
-  // zero as default model
-  m1 = new Delta( Delta::ZERO );
-  m2 = new Delta( Delta::ZERO );
-  model_local_counter = 0;
-
-  PTRef e_null = PTRef_Undef;
-  LAVarBound pb1( &minus_inf_bound, e_null, bound_l, false );
-  LAVarBound pb2( &plus_inf_bound, e_null, bound_u, false );
-  all_bounds.push_back( pb1 );
-  all_bounds.push_back( pb2 );
-  u_bound = 1;
-  l_bound = 0;
-
-  e = e_var;
-  // set original bounds from Enode
-  setBounds( e_orig, e_bound );
-}
-
-//LAVar::LAVar(LRASolver& lra, SolverId sid, vec<DedElem>& d, LRALogic& l, PTRef e_orig, PTRef e_var, int column_id, const Real & v, bool revert )
-//	: logic(l)
-//	, deduced(d)
-//	, solver_id(sid)
-//	, lra_solver(lra)
-//        , column_id(column_id)
-//{
-////  column_id = column_count++;
-//  row_id = -1;
-//
-//  skip = false;
-//
-//  // zero as default model
-//  m1 = new Delta( Delta::ZERO );
-//  m2 = new Delta( Delta::ZERO );
-//  model_local_counter = 0;
-//
-//  PTRef e_null = PTRef_Undef;
-//  LAVarBound pb1( &minus_inf_bound, e_null, bound_l, false );
-//  LAVarBound pb2( &plus_inf_bound, e_null, bound_u, false );
-//  all_bounds.push_back( pb1 );
-//  all_bounds.push_back( pb2 );
-//  u_bound = 1;
-//  l_bound = 0;
-//
-//  e = e_var;
-//
-//  // set original bounds from Enode
-//  setBounds( e_orig, v, revert );
-//
-//}
 
 LAVar::~LAVar( )
 {
@@ -519,6 +449,7 @@ LAVarStore::LAVarStore(LRASolver& lra, vec<DedElem>& d, LRALogic& l)
         , solver_id(lra.getId())
         , lra_solver(lra) {}
 
+// The basic constructor for new vars.
 LAVar* LAVarStore::getNewVar(PTRef e_orig) {
     int column_id = column_count++;
     LAVar* var = new LAVar(lra_solver, solver_id, deduced, logic, column_id, e_orig);
@@ -526,20 +457,11 @@ LAVar* LAVarStore::getNewVar(PTRef e_orig) {
     return var;
 }
 
-LAVar* LAVarStore::getNewVar(PTRef e_orig, PTRef e_bound, PTRef e_var, bool basic) {
-    int column_id = column_count++;
-    int row_id = basic ? row_count++ : -1;
-    LAVar* var = new LAVar(lra_solver, solver_id, deduced, logic, e_orig, e_bound, e_var, column_id, row_id);
-    lavars.push(var);
-    return var;
+// Set row_id of s to current row_count, and increase the row count
+void LAVarStore::notifyRow(LAVar *s)
+{
+    s->row_id = row_count++;
 }
-
-//LAVar* LAVarStore::getNewVar(PTRef e_orig, PTRef e_var, const Real& v, bool revert) {
-//    int column_id = column_count++;
-//    LAVar* var = new LAVar(lra_solver, solver_id, deduced, logic, e_orig, e_var, column_id, v, revert);
-//    lavars.push(var);
-//    return var;
-//}
 
 int LAVarStore::numVars() const { return column_count; }
 

@@ -37,6 +37,26 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 static SolverDescr descr_lra_solver("LRA Solver", "Solver for Quantifier Free Linear Real Arithmetics");
 
+// Initialize columns and rows based on var s, and set the column id for
+// s
+void LRASolver::initSlackVar(LAVar* s)
+{
+    lavarStore->notifyRow(s);
+
+    // Update the columns
+    if (s->ID() >= static_cast<int>(columns.size())) {
+        columns.resize(s->ID() + 1, NULL);
+        tsolver_stats.num_vars = columns.size();
+    }
+    columns[s->ID()] = s;
+
+    // Update the rows
+    if (s->basicID() >= static_cast<int> (rows.size()))
+        rows.resize(s->basicID() + 1, NULL);
+    rows[s->basicID()] = s;
+}
+
+
 // I don't like this.  It probably leaks memory if numbers_pool is empty
 void LRASolver::getReal(Real* r, PTRef cons)
 {
@@ -141,28 +161,13 @@ void LRASolver::addSlackVar(PTRef leq_tr)
     if ((s = getSlackVar(sum_tr, reverse)) == NULL) {
         // The slack var for the sum did not exist previously.
         // Introduce the slack var with bounds.
-        s = lavarStore->getNewVar(leq_tr, const_tr, sum_tr, true);
+        s = lavarStore->getNewVar(sum_tr);
+
         slack_vars.push_back(s);
 
+        initSlackVar(s);
         assert( s->basicID() != -1 );
 
-        // Update the columns
-        if (s->ID() >= static_cast<int>(columns.size())) {
-            columns.resize(s->ID() + 1, NULL);
-            tsolver_stats.num_vars = columns.size();
-        }
-        columns[s->ID()] = s;
-
-        // Update the rows
-        if (s->basicID() >= static_cast<int> (rows.size()))
-            rows.resize(s->basicID() + 1, NULL);
-        rows[s->basicID()] = s;
-
-
-
-        if (leq_id >= (int)ptermToLavar.size())
-            ptermToLavar.resize(leq_id+1, NULL);
-        ptermToLavar[leq_id] = s;
 
         if (sum_id >= (int)ptermToLavar.size())
             ptermToLavar.resize(sum_id+1, NULL);
@@ -177,12 +182,13 @@ void LRASolver::addSlackVar(PTRef leq_tr)
             // need to add the mapping from the PTRef to the
             // corresponding slack var.
         }
-
-        if (leq_id >= (int)ptermToLavar.size())
-            ptermToLavar.resize(leq_id+1, NULL);
-        ptermToLavar[leq_id] = s;
-        s->setBounds(leq_tr, const_tr, reverse);
     }
+
+    if (leq_id >= (int)ptermToLavar.size())
+        ptermToLavar.resize(leq_id+1, NULL);
+    ptermToLavar[leq_id] = s;
+
+    s->setBounds(leq_tr, const_tr, reverse);
 }
 
 // Create a polynomial to the slack var s from the polynomial pol

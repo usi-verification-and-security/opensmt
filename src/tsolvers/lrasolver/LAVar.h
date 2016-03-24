@@ -88,11 +88,9 @@ private:
   Delta * m2;                           // one of two storages used by model switching
 
   LAVar(LRASolver&, SolverId, vec<DedElem>& d, LRALogic&, int, PTRef e_orig);                                              // Default constructor
-  LAVar(LRASolver&, SolverId, vec<DedElem>& d, LRALogic&, PTRef e_orig, PTRef e_bound, PTRef e_var, int column_id, int row_id);  // Constructor with bounds
-  LAVar(LRASolver&, SolverId, vec<DedElem>& d, LRALogic&, PTRef e_orig, PTRef e_var, int column_id, const Real & v, bool revert);        // Constructor with bounds from real
+  void setBounds( PTRef e, const Real & v, bool revert);   // Set the bounds according to enode type and a given value (used on reading/construction stage)
 
 public:
-//  static int numVars() { return column_count; }
   PTRef e;                // pointer to original PTRef. In case of slack variable points to polynomial
   LARow polynomial;       // elements of the variable polynomial (if variable is basic), list of <id, Real*>
   LAColumn binded_rows;   // rows a variable is binded to (if it is nonbasic) ,list of <id, Real*>
@@ -104,7 +102,6 @@ public:
   virtual ~LAVar( );      // Destructor
 
   void setBounds( PTRef e, PTRef e_bound, bool revert = false);          // Set the bounds from Enode of original constraint (used on reading/construction stage)
-  void setBounds( PTRef e, const Real & v, bool revert);   // Set the bounds according to enode type and a given value (used on reading/construction stage)
 
   unsigned setUpperBound( const Real & v);
   unsigned setLowerBound( const Real & v);
@@ -139,7 +136,6 @@ public:
   inline int basicID( );                        // Return the basicID (row id) of the basic LAVar (-1 if it is Nonbasic)
   inline void setNonbasic( );                   // Make LAVar Nonbasic
   inline void setBasic( int row );              // Make LAVar Basic and set the row number it corresponds
-//  inline void bindRow( int row, Real * a );     // bind current LAVar to a row with an attribute a
   inline void unbindRow( int row );             // remove row from the binding list
   inline void saveModel( );                     // save model locally
   inline void restoreModel( );                  // restore to last globally saved model
@@ -258,12 +254,6 @@ void LAVar::setBasic( int row )
   row_id = row;
 }
 
-//void LAVar::bindRow( int row, Real * a )
-//{
-//  assert( this->binded_rows.find( row ) == this->binded_rows.end( ) );
-//  this->binded_rows.add( row, a );
-//}
-
 void LAVar::unbindRow( int row )
 {
   assert( this->binded_rows.find( row ) != this->binded_rows.end( ) || this->isBasic( ) );
@@ -335,8 +325,7 @@ class LAVarStore
     LAVarStore(LRASolver&, vec<DedElem>&, LRALogic&);
     ~LAVarStore();
     LAVar* getNewVar(PTRef e_orig = PTRef_Undef);
-    LAVar* getNewVar(PTRef e_orig, PTRef e_bound, PTRef e_var, bool basic = false);
-//    LAVar* getNewVar(PTRef e_orig, PTRef e_var, const Real& v, bool revert);
+    void notifyRow(LAVar* s);
     int numVars() const;
     void printVars() const;
 };

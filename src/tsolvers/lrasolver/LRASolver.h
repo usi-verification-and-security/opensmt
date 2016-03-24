@@ -84,6 +84,7 @@ private:
   opensmt::Real delta; // The size of one delta.  Set through computeModel()
   unsigned bland_threshold;
   LRASolverStats tsolver_stats;
+  void initSlackVar(LAVar* s);
 public:
 
   LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d);
