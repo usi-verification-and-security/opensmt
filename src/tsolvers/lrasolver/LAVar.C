@@ -92,16 +92,13 @@ LAVar::~LAVar( )
 
 //TODO: more intelligent value parsing would be nice.
 //
-// Parse the bound value and the type of the constraint
+// Parse the bound value and the type of the constraint.
+// e_bound is e[0] multiplied by a constant.
 //
 void LAVar::setBounds( PTRef e, PTRef e_bound, bool revert )
 {
-    assert( logic.isAtom(e) );
+//    assert( logic.isAtom(e) );
     assert( logic.isConstant(e_bound) );
-
-
-    if (!(logic.isConstant(logic.getPterm(e)[0])))
-        revert != revert;
 
     setBounds( e, logic.getRealConst(e_bound), revert );
 }

@@ -37,6 +37,19 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 static SolverDescr descr_lra_solver("LRA Solver", "Solver for Quantifier Free Linear Real Arithmetics");
 
+LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
+    : logic(l)
+    , TSolver((SolverId)descr_lra_solver, (const char*)descr_lra_solver, c, d)
+    , delta(Delta::ZERO)
+    , bland_threshold(1000)
+{
+    lavarStore = new LAVarStore(*this, deduced, logic);
+    status = INIT;
+    checks_history.push_back(0);
+    first_update_after_backtrack = true;
+}
+
+
 // Initialize columns and rows based on var s, and set the column id for
 // s
 void LRASolver::initSlackVar(LAVar* s)
@@ -70,6 +83,7 @@ void LRASolver::getReal(Real* r, PTRef cons)
     }
 }
 
+// Get a possibly new LAVar for a PTRef
 LAVar* LRASolver::getLAVar(PTRef var)
 {
     LAVar* x;
@@ -95,17 +109,6 @@ LAVar* LRASolver::getLAVar(PTRef var)
     return x;
 }
 
-LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
-    : logic(l)
-    , TSolver((SolverId)descr_lra_solver, (const char*)descr_lra_solver, c, d)
-    , delta(Delta::ZERO)
-    , bland_threshold(1000)
-{
-    lavarStore = new LAVarStore(*this, deduced, logic);
-    status = INIT;
-    checks_history.push_back(0);
-    first_update_after_backtrack = true;
-}
 // Return a slack var for the sum term tr_sum if it exists, otherwise create
 // the slack var if it does not exist.  In case there exists a var s for
 // the term tr_sum' = - tr_sum, return s and set reverse to true
@@ -130,8 +133,8 @@ LAVar* LRASolver::getSlackVar(PTRef tr_sum, bool &reverse)
         int tr_sump_id = logic.getPterm(tr_sump).getId();
         if (tr_sump_id < ptermToLavar.size() && ptermToLavar[tr_sump_id] != NULL) {
             // Enable for the compact array
-//            var = ptermToLavar[tr_sump_id];
-//            reverse = true;
+            var = ptermToLavar[tr_sump_id];
+            reverse = true;
         }
     }
     return var;
@@ -181,6 +184,7 @@ void LRASolver::addSlackVar(PTRef leq_tr)
             // If reverse is true, the slack var negation exists.  We
             // need to add the mapping from the PTRef to the
             // corresponding slack var.
+            const_tr = logic.mkRealNeg(const_tr);
         }
     }
 
@@ -308,22 +312,20 @@ lbool LRASolver::declareTerm(PTRef leq_tr)
     assert(logic.isRealVar(sum) || logic.isRealTimes(sum) || logic.isRealPlus(sum));
 
     if (logic.isRealTimes(sum) || logic.isRealVar(sum)) {
-        // The constraint is of the form cons <= coef*var or cons <= var
-        // parse the cons and part coef*var or var
+        // The constraint is of the form
+        // (1) cons <= (-1)*var or
+        // (2) cons <= var
+        // parse the cons and (-1)*var or var
         LAVar * x;
-        PTRef coef;
+        int sign; // 1 in case (2), -1 in case (1)
         PTRef var;
 
-//        Real * p_v;
-//        getReal(p_v, cons);
-        // p_v now contains the cons as the real
-
         if (logic.isRealVar(sum)) {
-            coef = logic.getTerm_RealOne();
+            sign = 1;
             var  = sum;
         }
         else {
-            coef = logic.getPterm(sum)[0];
+            PTRef coef = logic.getPterm(sum)[0];
             var = logic.getPterm(sum)[1];
 
             if (!logic.isConstant(coef)) {
@@ -331,6 +333,8 @@ lbool LRASolver::declareTerm(PTRef leq_tr)
                 coef = var;
                 var = tmp;
             }
+
+            assert(logic.getTerm_RealOne() == coef || logic.mkRealNeg(logic.getTerm_RealOne()) == coef);
 
             // divide cons by the value from coef
 //            const Real& c = logic.getRealConst(coef);
@@ -365,12 +369,7 @@ lbool LRASolver::declareTerm(PTRef leq_tr)
         addSlackVar(leq_tr);
     }
     else {
-        assert(ptermToLavar[sum_t.getId()] != NULL);
-        LAVar * x = ptermToLavar[sum_t.getId()];
-        x->setBounds(leq_tr, cons);
-        if (leq_t.getId() >= (int)ptermToLavar.size())
-            ptermToLavar.resize(leq_t.getId() + 1, NULL);
-        ptermToLavar[leq_t.getId()] = x;
+        assert(false);
     }
 
 #if VERBOSE

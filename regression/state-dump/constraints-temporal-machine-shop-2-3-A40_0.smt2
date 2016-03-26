@@ -1,9 +1,9 @@
 (set-option :dump-state "state-dump/foo")
 (set-option :split-type "scattering")
-(set-option :split-units "time")
+(set-option :split-units "decisions")
 (set-option :split-asap true)
-(set-option :split-init-tune 1)
-(set-option :split-mid-tune 1)
+(set-option :split-init-tune 10)
+(set-option :split-mid-tune 10)
 (set-option :split-num 2)
 (set-logic QF_LRA)
 (set-info :source |
