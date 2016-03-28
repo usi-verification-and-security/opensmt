@@ -49,6 +49,80 @@ LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
     first_update_after_backtrack = true;
 }
 
+// Given an inequality of the form c <= t(x_1, ..., x_n), set the bound
+// for the expression on the right side.  If the inequality is of the
+// form
+//  (1) c <= x, set a lower bound for x
+//  (2) c <= -x, set an upper bound for x
+//  (3) c <= x1 + a2*x2 + ... + an*xn, set an upper bound for the slack
+//      var x1 + a2*x2 + ... + an*xn
+//  (4) c <= -x1 - a2*x2 - ... - an*xn, set a lower bound for the slack
+//      var x1 + a2*x2 + ... + an*xn
+//
+void LRASolver::setBound(PTRef leq_tr)
+{
+    Pterm& leq = logic.getPterm(leq_tr);
+    PTRef const_tr = leq[0];
+    PTRef var_tr = leq[1];
+    if (logic.isRealTimes(var_tr) || logic.isRealVar(var_tr)) {
+        // The constraint is of the form
+        // (1) cons <= var
+        // (2) cons <= (-1)*var or
+        // parse the cons and (-1)*var or var
+        Delta::deltaType bound_t; // Delta::LOWER in case (1), Delta::UPPER in case (2)
+
+        if (logic.isRealVar(var_tr)) {
+            bound_t = Delta::LOWER;
+        }
+        else {
+            // This is an upper bound.  We need to revert the const_tr.
+            bound_t = Delta::UPPER;
+
+            // Make sure coef and var_tr are the correct way round.
+            PTRef coef = logic.getPterm(var_tr)[0];
+            var_tr = logic.getPterm(var_tr)[1];
+            if (!logic.isConstant(coef)) {
+                PTRef tmp = coef;
+                coef = var_tr;
+                var_tr = tmp;
+            }
+            assert(logic.mkRealNeg(logic.getTerm_RealOne()) == coef);
+
+            const_tr = logic.mkRealNeg(const_tr);
+        }
+
+        assert(config.logic != QF_LRA || logic.isVar(var_tr));
+        assert(config.logic != QF_LIA || logic.isVar(var_tr));
+        assert(config.logic != QF_UFLRA || logic.isVar(var_tr) || logic.isUF(var_tr));
+
+        // Get the lra var and set the mapping right.
+        LAVar * x = getLAVar(var_tr);
+        Pterm& leq_t = logic.getPterm(leq_tr);
+        if (leq_t.getId() >= (int)ptermToLavar.size())
+            ptermToLavar.resize( leq_t.getId() + 1, NULL );
+        ptermToLavar[leq_t.getId()] = x;
+
+        // Set the bound
+        x->setBounds(leq_tr, logic.getRealConst(const_tr), bound_t);
+
+    }
+    else {
+        // Cases (3) and (4)
+        // The leq is of the form c <= (t1 + ... + tn).  Parse the sum term of the leq.
+        // This needs a slack variable
+        addSlackVar(leq_tr);
+
+        Pterm& leq_t = logic.getPterm(leq_tr);
+
+        PTRef const_tr = leq_t[0];
+        PTRef sum_tr = leq_t[1];
+
+        assert(logic.isRealConst(const_tr));
+        assert(logic.isRealPlus(sum_tr));
+
+
+    }
+}
 
 // Initialize columns and rows based on var s, and set the column id for
 // s
@@ -145,6 +219,8 @@ void LRASolver::addSlackVar(PTRef leq_tr)
     // The leq is of the form c <= (t1 + ... + tn).  Parse the sum term of the leq.
     // This needs a slack variable
 
+    Delta::deltaType bound_t;
+
     assert(logic.isRealLeq(leq_tr));
     Pterm& leq_t = logic.getPterm(leq_tr);
 
@@ -165,6 +241,7 @@ void LRASolver::addSlackVar(PTRef leq_tr)
         // The slack var for the sum did not exist previously.
         // Introduce the slack var with bounds.
         s = lavarStore->getNewVar(sum_tr);
+        bound_t = Delta::LOWER;
 
         slack_vars.push_back(s);
 
@@ -179,20 +256,20 @@ void LRASolver::addSlackVar(PTRef leq_tr)
         // Create the polynomial for the array
         makePolynomial(s, sum_tr);
     }
-    else {
-        if (reverse) {
-            // If reverse is true, the slack var negation exists.  We
-            // need to add the mapping from the PTRef to the
-            // corresponding slack var.
-            const_tr = logic.mkRealNeg(const_tr);
-        }
-    }
+    else if (reverse) {
+        // If reverse is true, the slack var negation exists.  We
+        // need to add the mapping from the PTRef to the
+        // corresponding slack var.
+        const_tr = logic.mkRealNeg(const_tr);
+        bound_t = Delta::UPPER;
+    } else
+        bound_t = Delta::LOWER;
 
     if (leq_id >= (int)ptermToLavar.size())
         ptermToLavar.resize(leq_id+1, NULL);
     ptermToLavar[leq_id] = s;
 
-    s->setBounds(leq_tr, const_tr, reverse);
+    s->setBounds(leq_tr, logic.getRealConst(const_tr), bound_t);
 }
 
 // Create a polynomial to the slack var s from the polynomial pol
@@ -312,61 +389,13 @@ lbool LRASolver::declareTerm(PTRef leq_tr)
     assert(logic.isRealVar(sum) || logic.isRealTimes(sum) || logic.isRealPlus(sum));
 
     if (logic.isRealTimes(sum) || logic.isRealVar(sum)) {
-        // The constraint is of the form
-        // (1) cons <= (-1)*var or
-        // (2) cons <= var
-        // parse the cons and (-1)*var or var
-        LAVar * x;
-        int sign; // 1 in case (2), -1 in case (1)
-        PTRef var;
-
-        if (logic.isRealVar(sum)) {
-            sign = 1;
-            var  = sum;
-        }
-        else {
-            PTRef coef = logic.getPterm(sum)[0];
-            var = logic.getPterm(sum)[1];
-
-            if (!logic.isConstant(coef)) {
-                PTRef tmp = coef;
-                coef = var;
-                var = tmp;
-            }
-
-            assert(logic.getTerm_RealOne() == coef || logic.mkRealNeg(logic.getTerm_RealOne()) == coef);
-
-            // divide cons by the value from coef
-//            const Real& c = logic.getRealConst(coef);
-
-            if (logic.isConstant(coef))
-                cons = logic.mkRealDiv(cons, coef); //*p_v /= c;
-            else
-                cerr << "Unexpected coef c in cons <= coef*var : " << logic.printTerm(coef) << endl ;
-
-            if (!logic.isNonnegRealConst(coef)) {
-                revert = !revert;
-            }
-        }
-
-        assert(config.logic != QF_LRA || logic.isVar(var));
-        assert(config.logic != QF_LIA || logic.isVar(var));
-        assert(config.logic != QF_UFLRA || logic.isVar(var) || logic.isUF(var));
-
-        x = getLAVar(var);
-        x->setBounds(leq_tr, cons, revert);
-
-        if (leq_t.getId() >= (int)ptermToLavar.size())
-            ptermToLavar.resize( leq_t.getId() + 1, NULL );
-        ptermToLavar[leq_t.getId()] = x;
-
-//        numbers_pool.push_back(logic.getRealConst(cons));
+        setBound(leq_tr);
     }
     // parse the Plus term of the contraint
     else if (logic.isRealPlus(sum)) {
         // The leq is of the form c <= (t1 + ... + tn).  Parse the sum term of the leq.
         // This needs a slack variable
-        addSlackVar(leq_tr);
+        setBound(leq_tr);
     }
     else {
         assert(false);

@@ -88,7 +88,7 @@ private:
   Delta * m2;                           // one of two storages used by model switching
 
   LAVar(LRASolver&, SolverId, vec<DedElem>& d, LRALogic&, int, PTRef e_orig);                                              // Default constructor
-  void setBounds( PTRef e, const Real & v, bool revert);   // Set the bounds according to enode type and a given value (used on reading/construction stage)
+//  void setBounds( PTRef e, const Real & v, bool revert);   // Set the bounds according to enode type and a given value (used on reading/construction stage)
 
 public:
   PTRef e;                // pointer to original PTRef. In case of slack variable points to polynomial
@@ -101,7 +101,7 @@ public:
 
   virtual ~LAVar( );      // Destructor
 
-  void setBounds( PTRef e, PTRef e_bound, bool revert = false);          // Set the bounds from Enode of original constraint (used on reading/construction stage)
+  void setBounds( PTRef e, const Real& e_bound, Delta::deltaType bound_t);          // Set the bounds from Enode of original constraint (used on reading/construction stage)
 
   unsigned setUpperBound( const Real & v);
   unsigned setLowerBound( const Real & v);

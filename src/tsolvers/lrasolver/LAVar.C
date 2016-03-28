@@ -90,23 +90,11 @@ LAVar::~LAVar( )
   delete ( m1 );
 }
 
-//TODO: more intelligent value parsing would be nice.
-//
-// Parse the bound value and the type of the constraint.
-// e_bound is e[0] multiplied by a constant.
-//
-void LAVar::setBounds( PTRef e, PTRef e_bound, bool revert )
-{
-//    assert( logic.isAtom(e) );
-    assert( logic.isConstant(e_bound) );
-
-    setBounds( e, logic.getRealConst(e_bound), revert );
-}
 
 //
 // Reads the type of the bounds from enode type
 //
-void LAVar::setBounds( PTRef e, const Real & v, bool revert )
+void LAVar::setBounds( PTRef e, const Real & v, Delta::deltaType bound_t)
 {
 
   assert( logic.isRealLeq(e) );
@@ -118,7 +106,7 @@ void LAVar::setBounds( PTRef e, const Real & v, bool revert )
 
   bound = new Delta( v );
 
-  if( revert )
+  if( bound_t == Delta::UPPER )
   {
     boundRev = new Delta( v, 1 );
   }

@@ -85,6 +85,7 @@ private:
   unsigned bland_threshold;
   LRASolverStats tsolver_stats;
   void initSlackVar(LAVar* s);
+  void setBound(PTRef leq);
 public:
 
   LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d);
