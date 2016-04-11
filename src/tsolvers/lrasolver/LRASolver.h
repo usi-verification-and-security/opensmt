@@ -1,8 +1,11 @@
 /*********************************************************************
- Author: Aliaksei Tsitovich <aliaksei.tsitovich@lu.unisi.ch>
+ Author: Leonardo Alt <leonardoaltt@gmail.com>
+       , Antti Hyvarinen <antti.hyvarinen@gmail.com>
+       , Aliaksei Tsitovich <aliaksei.tsitovich@lu.unisi.ch>
        , Roberto Bruttomesso <roberto.bruttomesso@unisi.ch>
 
- OpenSMT2 -- Copyright (C) 2008 - 2012, Roberto Bruttomesso
+ OpenSMT2 -- Copyright (C) 2012 - 2016, Antti Hyvarinen
+                           2008 - 2012, Roberto Bruttomesso
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the

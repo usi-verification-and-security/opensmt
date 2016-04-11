@@ -465,7 +465,7 @@ bool LRASolver::check(bool complete)
                 } else { // Use heuristics that prefers short polynomials
                     pivot_counter++;
                     tsolver_stats.num_pivot_ops++;
-                    if( x == NULL )
+                    if (x == NULL)
                         x = *it;
                     else if (x->polynomial.size() > (*it)->polynomial.size())
                         x = *it;
@@ -1007,24 +1007,24 @@ void LRASolver::pivotAndUpdate( LAVar * x, LAVar * y, const Delta & v )
   assert( x->binded_rows.empty( ) );
   assert( x->polynomial.exists( y->ID( ) ) );
 
-  // get Tetta (zero if Aij is zero)
+  // get Theta (zero if Aij is zero)
   const Real & a = *( x->polynomial.find( y->ID( ) )->coef );
   assert( a != 0 );
-  Delta tetha = ( v - x->M( ) ) / a;
+  Delta theta = ( v - x->M( ) ) / a;
 
   // update models of x and y
   x->setM( v );
-  y->incM( tetha );
+  y->incM( theta );
 
   // update model of Basic variables
-  for( LAColumn::iterator it = y->binded_rows.begin( ); it != y->binded_rows.end( ); y->binded_rows.getNext( it ) )
+  for (LAColumn::iterator it = y->binded_rows.begin( ); it != y->binded_rows.end( ); y->binded_rows.getNext( it ))
   {
 
-    if( rows[it->key] != x )
+    if (rows[it->key] != x)
     {
       LAVar & row = *( rows[it->key] );
-      row.incM( *( row.polynomial[it->pos_in_row].coef ) * tetha );
-      if( static_cast<int> ( row.polynomial.size( ) ) <= config.lra_poly_deduct_size )
+      row.incM( *( row.polynomial[it->pos_in_row].coef ) * theta );
+      if (static_cast<int> ( row.polynomial.size( ) ) <= config.lra_poly_deduct_size)
         touched_rows.insert( rows[it->key] );
     }
   }
