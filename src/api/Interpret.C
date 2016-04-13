@@ -639,17 +639,12 @@ bool Interpret::checkSat(const char* cmd) {
         char* msg = NULL;
 
         res = main_solver->simplifyFormulas(&msg);
-/*
-<<<<<<< mine
         if (res == s_Undef) {
             if (config.sat_split_type() == spt_lookahead)
                 res = main_solver->lookaheadSplit(getLog2Ceil(config.sat_split_num()));
             else
                 res = main_solver->solve();
        }
-*/
-        if (res == s_Undef)
-            res = main_solver->solve();
 
         if (res == s_True) {
             notify_formatted(false, "sat");

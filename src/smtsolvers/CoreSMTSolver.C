@@ -59,124 +59,122 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 namespace opensmt
 {
-  extern bool stop;
+    extern bool stop;
 }
 
 //=================================================================================================
 // Constructor/Destructor:
 
 CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
-  // Initializes configuration and egraph
-//  : SMTSolver        ( e, c )
-  : SMTSolver        ( c, t )
-  , axioms_checked   ( 0 )
-  // Parameters: (formerly in 'SearchParams')
-  , var_decay        ( 1 / 0.95 )
-  , clause_decay     ( 1 / 0.999 )
-  , random_var_freq  ( 0.02 )
-  , learntsize_factor((double)1/(double)3)
-  , learntsize_inc   ( 1.1 )
-  // More parameters:
-  //
-  , expensive_ccmin  ( true )
-  // Statistics: (formerly in 'SolverStats')
-  //
-  , starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), conflicts_last_update(0)
-  , clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0)
-  // ADDED FOR MINIMIZATION
-  , learnts_size(0) , all_learnts(0), n_clauses(0)
-  , learnt_theory_conflicts(0)
-  , top_level_lits        (0)
-  , ok                    (true)
-  , cla_inc               (1)
-  , var_inc               (1)
-  , latest_round          (0)
-  , qhead                 (0)
-  , simpDB_assigns        (-1)
-  , simpDB_props          (0)
-  , order_heap            (VarOrderLt(activity))
-  , random_seed           (c.getRandomSeed())
-  , progress_estimate     (0)
-  , remove_satisfied      (true)
-  , LABestLit             (lit_Undef)
-  , resource_units        (config.sat_resource_units())
-  , resource_limit        (config.sat_resource_limit())
-  , next_resource_limit   (-1)
-  , split_type            (config.sat_split_type())
-  , split_on              (false)
-  , split_start           (config.sat_split_asap())
-  , split_num             (config.sat_split_num())
-  , split_units           (config.sat_split_units())
-  , split_inittune        (config.sat_split_inittune())
-  , split_midtune         (config.sat_split_midtune())
-  , split_next            (split_units == spm_time ? cpuTime() + split_inittune : decisions + split_inittune)
-  , split_preference      (sppref_undef)
-  , learnt_t_lemmata      (0)
-  , perm_learnt_t_lemmata (0)
-  , luby_i                (0)
-  , luby_k                (1)
-  , cuvti                 (false)
+    : SMTSolver        (c, t)
+    , axioms_checked   ( 0 )
+    // Parameters: (formerly in 'SearchParams')
+    , var_decay        ( 1 / 0.95 )
+    , clause_decay     ( 1 / 0.999 )
+    , random_var_freq  ( 0.02 )
+    , learntsize_factor((double)1/(double)3)
+    , learntsize_inc   ( 1.1 )
+    // More parameters:
+    //
+    , expensive_ccmin  ( true )
+    // Statistics: (formerly in 'SolverStats')
+    //
+    , starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), conflicts_last_update(0)
+    , clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0)
+    // ADDED FOR MINIMIZATION
+    , learnts_size(0) , all_learnts(0), n_clauses(0)
+    , learnt_theory_conflicts(0)
+    , top_level_lits        (0)
+    , ok                    (true)
+    , cla_inc               (1)
+    , var_inc               (1)
+    , latest_round          (0)
+    , qhead                 (0)
+    , simpDB_assigns        (-1)
+    , simpDB_props          (0)
+    , order_heap            (VarOrderLt(activity))
+    , random_seed           (c.getRandomSeed())
+    , progress_estimate     (0)
+    , remove_satisfied      (true)
+    , LABestLit             (lit_Undef)
+    , resource_units        (config.sat_resource_units())
+    , resource_limit        (config.sat_resource_limit())
+    , next_resource_limit   (-1)
+    , split_type            (config.sat_split_type())
+    , split_on              (false)
+    , split_start           (config.sat_split_asap())
+    , split_num             (config.sat_split_num())
+    , split_units           (config.sat_split_units())
+    , split_inittune        (config.sat_split_inittune())
+    , split_midtune         (config.sat_split_midtune())
+    , split_next            (split_units == spm_time ? cpuTime() + split_inittune : decisions + split_inittune)
+    , split_preference      (sppref_undef)
+    , learnt_t_lemmata      (0)
+    , perm_learnt_t_lemmata (0)
+    , luby_i                (0)
+    , luby_k                (1)
+    , cuvti                 (false)
 #ifdef PRODUCE_PROOF
-  , proof_                ( new Proof( ) )
-  , proof                 ( * proof_ )
+    , proof_                ( new Proof( ) )
+    , proof                 ( * proof_ )
 #endif
-  , next_it_i             (0)
-  , next_it_j             (1)
+    , next_it_i             (0)
+    , next_it_j             (1)
 #ifdef STATISTICS
-  , preproc_time          (0)
-  , elim_tvars            (0)
+    , preproc_time          (0)
+    , elim_tvars            (0)
 #endif
-  , init                  (false)
+    , init                  (false)
 #ifdef PEDANTIC_DEBUG
-  , max_dl_debug          (0)
-  , analyze_cnt           (0)
+    , max_dl_debug          (0)
+    , analyze_cnt           (0)
 #endif
 {
-  vec< Lit > fc;
-  fc.push( lit_Undef );
-  fake_clause = Clause_new( fc );
+    vec< Lit > fc;
+    fc.push( lit_Undef );
+    fake_clause = Clause_new( fc );
 }
 
 void
 CoreSMTSolver::initialize( )
 {
-  assert( config.isInit( ) );
+    assert( config.isInit( ) );
 //  assert( !init );
-  random_seed = config.getRandomSeed();
-  restart_first = config.sat_restart_first();
-  restart_inc = config.sat_restart_inc();
-  // FIXME: check why this ?
-  first_model_found = config.logic == QF_UFLRA
-                   || config.logic == QF_UFIDL;
-  // Set some parameters
-  skip_step = config.sat_initial_skip_step;
-  skipped_calls = 0;
+    random_seed = config.getRandomSeed();
+    restart_first = config.sat_restart_first();
+    restart_inc = config.sat_restart_inc();
+    // FIXME: check why this ?
+    first_model_found = config.logic == QF_UFLRA
+                     || config.logic == QF_UFIDL;
+    // Set some parameters
+    skip_step = config.sat_initial_skip_step;
+    skipped_calls = 0;
 #ifdef STATISTICS
-  preproc_time = 0;
-  tsolvers_time = 0;
-  ie_generated = 0;
+    preproc_time = 0;
+    tsolvers_time = 0;
+    ie_generated = 0;
 #endif
-  //
-  // Set polarity_mode
-  //
-  switch ( config.sat_polarity_mode )
-  {
-    case 0: polarity_mode = polarity_true;  break;
-    case 1: polarity_mode = polarity_false; break;
-    case 2: polarity_mode = polarity_rnd;   break;
-    case 3: polarity_mode = polarity_user;  break; // Polarity is set in
-    case 4: polarity_mode = polarity_user;  break; // THandler.C for
-    case 5: polarity_mode = polarity_user;  break; // Boolean atoms
-  }
+    //
+    // Set polarity_mode
+    //
+    switch ( config.sat_polarity_mode )
+    {
+        case 0: polarity_mode = polarity_true;  break;
+        case 1: polarity_mode = polarity_false; break;
+        case 2: polarity_mode = polarity_rnd;   break;
+        case 3: polarity_mode = polarity_user;  break; // Polarity is set in
+        case 4: polarity_mode = polarity_user;  break; // THandler.C for
+        case 5: polarity_mode = polarity_user;  break; // Boolean atoms
+    }
 
-  if ( config.logic == QF_AX
-    || config.logic == QF_AXDIFF )
-  {
-    polarity_mode = polarity_false;
-    // polarity_mode = polarity_true;
-    // polarity_mode = polarity_rnd;
-    opensmt_warning( "Overriding polarity for AX theory" );
-  }
+    if ( config.logic == QF_AX
+            || config.logic == QF_AXDIFF )
+    {
+        polarity_mode = polarity_false;
+        // polarity_mode = polarity_true;
+        // polarity_mode = polarity_rnd;
+        opensmt_warning( "Overriding polarity for AX theory" );
+    }
 
     /*if(SMTConfig::database_host!=NULL){
         struct timeval timeout = {1, 500000}; // 1.5 seconds
@@ -189,7 +187,7 @@ CoreSMTSolver::initialize( )
         }
     }*/
 
-  init = true;
+    init = true;
 }
 
 CoreSMTSolver::~CoreSMTSolver()
@@ -205,25 +203,23 @@ CoreSMTSolver::~CoreSMTSolver()
   for (int i = 0; i < clauses.size(); i++) proof.forceDelete(clauses[i]);
   for (int i = 0; i < axioms .size(); i++) proof.forceDelete(axioms [i]);
 #else
-  for (int i = 0; i < learnts.size(); i++) free(learnts[i]);
-  for (int i = 0; i < clauses.size(); i++) free(clauses[i]);
-  for (int i = 0; i < axioms .size(); i++) free(axioms [i]);
+    for (int i = 0; i < learnts.size(); i++) free(learnts[i]);
+    for (int i = 0; i < clauses.size(); i++) free(clauses[i]);
+    for (int i = 0; i < axioms .size(); i++) free(axioms [i]);
 #endif
 
-  for (int i = 0; i < tmp_reas.size(); i++) free(tmp_reas[i]);
+    for (int i = 0; i < tmp_reas.size(); i++) free(tmp_reas[i]);
 
 #ifdef STATISTICS
-  if ( config.produceStats() != 0 )
-    printStatistics ( config.getStatsOut( ) );
-  // TODO added for convenience
-  if ( config.print_stats != 0 )
-    printStatistics ( cerr );
+    if ( config.produceStats() != 0 ) printStatistics ( config.getStatsOut( ) );
+    // TODO added for convenience
+    if ( config.print_stats != 0 ) printStatistics ( cerr );
 #endif
 
-//  delete theory_handler;
-  free(fake_clause);
+    //delete theory_handler;
+    free(fake_clause);
 #ifdef PRODUCE_PROOF
-  delete proof_;
+    delete proof_;
 #endif
 }
 
@@ -235,50 +231,50 @@ CoreSMTSolver::~CoreSMTSolver()
 //
 Var CoreSMTSolver::newVar(bool sign, bool dvar)
 {
-  int v = nVars();
-  watches   .push();          // (list for positive literal)
-  watches   .push();          // (list for negative literal)
-  reason    .push(NULL);
-  assigns   .push(toInt(l_Undef));
-  level     .push(-1);
+    int v = nVars();
+    watches  .push();          // (list for positive literal)
+    watches  .push();          // (list for negative literal)
+    reason   .push(NULL);
+    assigns  .push(toInt(l_Undef));
+    level    .push(-1);
 #ifdef PRODUCE_PROOF
-  trail_pos .push(-1);
+    trail_pos.push(-1);
 #endif
-  activity  .push(0);
-  seen      .push(0);
+    activity  .push(0);
+    seen      .push(0);
 #ifdef PRODUCE_PROOF
-  units   .push( NULL );
+    units   .push( NULL );
 #endif
 
-  polarity    .push((char)sign);
-  decision_var.push((char)dvar);
+    polarity    .push((char)sign);
+    decision_var.push((char)dvar);
 
 #if CACHE_POLARITY
-  prev_polarity.push(toInt(l_Undef));
+    prev_polarity.push(toInt(l_Undef));
 #endif
 
-  LAupperbounds.push(); // leave space for the var
-  LAexacts.push();      // leave space for the var
+    LAupperbounds.push(); // leave space for the var
+    LAexacts.push();      // leave space for the var
     this->var_seen.push(false);
 
-  insertVarOrder(v);
+    insertVarOrder(v);
 
 #ifndef SMTCOMP
-  // Added Lines
-  // Skip undo for varTrue and varFalse
-  if ( v != 0 && v != 1 )
-  {
-    undo_stack_oper.push_back( NEWVAR );
-    undo_stack_elem.push_back( reinterpret_cast< void * >( v ) );
-  }
+    // Added Lines
+    // Skip undo for varTrue and varFalse
+    if ( v != 0 && v != 1 )
+    {
+        undo_stack_oper.push_back( NEWVAR );
+        undo_stack_elem.push_back( reinterpret_cast< void * >( v ) );
+    }
 #endif
 
-  n_occs.push(0);
+    n_occs.push(0);
 
-  // Add the deduction entry for this variable
-  theory_handler.pushDeduction();
+    // Add the deduction entry for this variable
+    theory_handler.pushDeduction();
 
-  return v;
+    return v;
 }
 
 bool CoreSMTSolver::addClause( const vec<Lit>& _ps
@@ -288,171 +284,178 @@ bool CoreSMTSolver::addClause( const vec<Lit>& _ps
     , bool shared)
 {
 #ifdef REPORT_DL1_THLITS
-  int init_cl_len = ps.size();
+    int init_cl_len = ps.size();
 #endif
-  assert( decisionLevel() == 0 );
+    assert( decisionLevel() == 0 );
 #ifdef PRODUCE_PROOF
-  assert( in == 0 || ((in & (in - 1)) == 0) );
+    assert( in == 0 || ((in & (in - 1)) == 0) );
 #endif
 
 #ifdef PRODUCE_PROOF
-  bool resolved = false;
-  Clause * root = NULL;
+    bool resolved = false;
+    Clause * root = NULL;
 #endif
-  vec<Lit> ps;
+    vec<Lit> ps;
     _ps.copyTo(ps);
 
-  if (!ok)
-    return false;
-  else{
-      // Check if clause is satisfied and remove false/duplicate literals:
+    if (!ok) return false;
+    // Check if clause is satisfied and remove false/duplicate literals:
     sort(ps);
-    Lit p; int i, j;
+    Lit p;
+    int i, j;
 #ifdef PRODUCE_PROOF
     root = Clause_new( ps, false );
     proof.addRoot( root, CLA_ORIG );
     assert( config.isInit( ) );
     //if ( config.produce_inter() > 0 )
-      //clause_to_partition[ root ] = in;
+    //  clause_to_partition[ root ] = in;
     proof.beginChain( root );
 #endif
     for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
-      if (value(ps[i]) == l_True || ps[i] == ~p)
-      {
+    {
+        if (value(ps[i]) == l_True || ps[i] == ~p)
+        {
 #ifdef PRODUCE_PROOF
-        proof.endChain( );
-        proof.forceDelete( root );
+            proof.endChain( );
+            proof.forceDelete( root );
 #endif
-        // decrease the counts of those encountered so far
-        for (int k = 0; k < j; k++) {
-            n_occs[var(ps[k])] -= 1;
-            assert(n_occs[var(ps[k])] >= 0);
+            // decrease the counts of those encountered so far
+            for (int k = 0; k < j; k++)
+            {
+                n_occs[var(ps[k])] -= 1;
+                assert(n_occs[var(ps[k])] >= 0);
+            }
+            return true;
         }
-        return true;
-      }
-      else if (value(ps[i]) != l_False && ps[i] != p) {
-        ps[j++] = p = ps[i];
-        n_occs[var(ps[i])] += 1;
-      }
+        else if (value(ps[i]) != l_False && ps[i] != p)
+        {
+            ps[j++] = p = ps[i];
+            n_occs[var(ps[i])] += 1;
+        }
 #ifdef PRODUCE_PROOF
-      else if ( value(ps[i]) == l_False )
-      {
-	resolved = true;
-	proof.resolve( units[ var(ps[i]) ], var( ps[i] ) );
-      }
+        else if ( value(ps[i]) == l_False )
+        {
+            resolved = true;
+            proof.resolve( units[ var(ps[i]) ], var( ps[i] ) );
+        }
 #endif
+    }
     ps.shrink(i - j);
-  }
 
-  if (ps.size() == 0)
-  {
+    if (ps.size() == 0)
+    {
 #ifdef PRODUCE_PROOF
-    proof.endChain( NULL );
-    tleaves.push( root );
+        proof.endChain( NULL );
+        tleaves.push( root );
 #endif
-    return ok = false;
-  }
+        return ok = false;
+    }
 
 #ifdef PRODUCE_PROOF
-  Clause * res = NULL;
-  if ( resolved )
-  {
-    res = Clause_new( ps, false );
-    assert( res->size( ) < root->size( ) );
-    proof.endChain( res );
-    // Save root for removal
-    tleaves.push( root );
-  }
-  else
-  {
-    res = root;
-    // Throw away unnecessary chain
-    proof.endChain( );
-  }
-#endif
-
-  if (ps.size() == 1){
-    assert(value(ps[0]) == l_Undef);
-#ifdef PRODUCE_PROOF
-    assert( res );
-    assert( units[ var(ps[0]) ] == NULL );
-    units[ var(ps[0]) ] = res;
-   // if ( config.produce_inter() > 0
-//	&& var(ps[0]) > 1 ) // Avoids true/false
-  //    units_to_partition.push_back( make_pair( res, in ) );
-#endif
-#ifdef VERBOSE_SAT
-    cerr << toInt(ps[0]) << endl;
-#endif
-#ifdef REPORT_DL1_THLITS
-    if (init_cl_len != 1) {
-        // propagation
-        char* ulit = theory_handler.getLogic().printTerm(theory_handler.varToTerm(var(ps[0])));
-        cerr << "; Made a unit in addClause " << (sign(ps[0]) ? "not " : "") << ulit << endl;
-        free(ulit);
+    Clause * res = NULL;
+    if ( resolved )
+    {
+        res = Clause_new( ps, false );
+        assert( res->size( ) < root->size( ) );
+        proof.endChain( res );
+        // Save root for removal
+        tleaves.push( root );
+    }
+    else
+    {
+        res = root;
+        // Throw away unnecessary chain
+        proof.endChain( );
     }
 #endif
-    uncheckedEnqueue(ps[0]);
+
+    if (ps.size() == 1)
+    {
+        assert(value(ps[0]) == l_Undef);
 #ifdef PRODUCE_PROOF
-    Clause * confl = propagate();
-    if ( confl == NULL ) return ok = true;
-    return ok = false;
-#else
-#ifdef REPORT_DL1_THLITS
-    int prev_trail_sz = trail.size();
+        assert( res );
+        assert( units[ var(ps[0]) ] == NULL );
+        units[ var(ps[0]) ] = res;
+        // if ( config.produce_inter() > 0
+        //      && var(ps[0]) > 1 ) // Avoids true/false
+        //    units_to_partition.push_back( make_pair( res, in ) );
 #endif
-    ok = (propagate() == NULL);
+#ifdef VERBOSE_SAT
+        cerr << toInt(ps[0]) << endl;
+#endif
 #ifdef REPORT_DL1_THLITS
-    if (trail.size() > prev_trail_sz+1) {
-        cerr << "; Found propagations in addClause:\n";
-        for (int i = prev_trail_sz+1; i < trail.size(); i++) {
-            char* ulit = theory_handler.getLogic().printTerm(theory_handler.varToTerm(var(trail[i])));
-            cerr << ";   " << (sign(trail[i]) ? "not " : "") << ulit << endl;
+        if (init_cl_len != 1)
+        {
+            // propagation
+            char* ulit = theory_handler.getLogic().printTerm(theory_handler.varToTerm(var(ps[0])));
+            cerr << "; Made a unit in addClause " << (sign(ps[0]) ? "not " : "") << ulit << endl;
             free(ulit);
         }
-    }
 #endif
-    return ok;
-#endif
-  }else{
-
+        uncheckedEnqueue(ps[0]);
 #ifdef PRODUCE_PROOF
-    Clause * c = res;
+        Clause * confl = propagate();
+        if ( confl == NULL ) return ok = true;
+        return ok = false;
 #else
-    Clause* c = Clause_new(ps, false);
+#ifdef REPORT_DL1_THLITS
+        int prev_trail_sz = trail.size();
+#endif
+        ok = (propagate() == NULL);
+#ifdef REPORT_DL1_THLITS
+        if (trail.size() > prev_trail_sz+1)
+        {
+            cerr << "; Found propagations in addClause:\n";
+            for (int i = prev_trail_sz+1; i < trail.size(); i++)
+            {
+                char* ulit = theory_handler.getLogic().printTerm(theory_handler.varToTerm(var(trail[i])));
+                cerr << ";   " << (sign(trail[i]) ? "not " : "") << ulit << endl;
+                free(ulit);
+            }
+        }
+#endif
+        return ok;
+#endif
+    }
+    else
+    {
+
+#ifdef PRODUCE_PROOF
+        Clause * c = res;
+#else
+        Clause* c = Clause_new(ps, false);
 #endif
 
 #ifdef PRODUCE_PROOF
-    if ( config.isIncremental() )
-    {
-      undo_stack_oper.push_back( NEWPROOF );
-      undo_stack_elem.push_back( (void *)c );
-    }
+        if ( config.isIncremental() )
+        {
+            undo_stack_oper.push_back( NEWPROOF );
+            undo_stack_elem.push_back( (void *)c );
+        }
 
-    //if ( config.produce_inter() > 0 )
-     // clause_to_partition[ c ] = in;
+        //if ( config.produce_inter() > 0 ) clause_to_partition[ c ] = in;
 #endif
 
-    clauses.push(c);
-    if(!shared) {
-        this->n_clauses += 1;
-    }
-    attachClause(*c);
+        clauses.push(c);
+        if (!shared)
+        {
+            this->n_clauses += 1;
+        }
+        attachClause(*c);
 
 #ifdef VERBOSE_SAT
-    for (int i = 0; i < c->size(); i++)
-      cerr << toInt((*c)[i]) << " ";
-    cerr << endl;
+        for (int i = 0; i < c->size(); i++)
+            cerr << toInt((*c)[i]) << " ";
+        cerr << endl;
 #endif
 
 #ifndef SMTCOMP
-    undo_stack_oper.push_back( NEWCLAUSE );
-    undo_stack_elem.push_back( (void *)c );
+        undo_stack_oper.push_back( NEWCLAUSE );
+        undo_stack_elem.push_back( (void *)c );
 #endif
-  }
+    }
 
-
-  return true;
+    return true;
 }
 
 
@@ -1067,6 +1070,7 @@ void CoreSMTSolver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btleve
     // Simplify conflict clause:
     //
     int i, j;
+    out_learnt.copyTo(analyze_toclear);
     if (expensive_ccmin) {
         uint32_t abstract_level = 0;
         for (i = 1; i < out_learnt.size(); i++)
@@ -1074,7 +1078,6 @@ void CoreSMTSolver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btleve
 #ifdef PRODUCE_PROOF
         analyze_proof.clear( );
 #endif
-        out_learnt.copyTo(analyze_toclear);
 
         for (i = j = 1; i < out_learnt.size(); i++)
             if (reason[var(out_learnt[i])] == NULL || !litRedundant(out_learnt[i], abstract_level))
@@ -1085,7 +1088,6 @@ void CoreSMTSolver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btleve
     {
         // Added line
         assert( false );
-        out_learnt.copyTo(analyze_toclear);
         for (i = j = 1; i < out_learnt.size(); i++)
         {
             Clause& c = *reason[var(out_learnt[i])];
@@ -1348,6 +1350,7 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
 
 void CoreSMTSolver::uncheckedEnqueue(Lit p, Clause* from)
 {
+    assert(from != fake_clause || theory_handler.getLogic().isTheoryTerm(theory_handler.varToTerm(var(p))));
 #ifdef DEBUG_REASONS
     assert(from == fake_clause || !debug_reason_map.contains(var(p)));
 #endif
