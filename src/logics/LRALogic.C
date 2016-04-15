@@ -235,12 +235,12 @@ LRALogic::LRALogic(SMTConfig& c) :
     , sort_REAL(SRef_Undef)
     , term_Real_ZERO(PTRef_Undef)
     , term_Real_ONE(PTRef_Undef)
-	, split_eq(false)
+    , split_eq(false)
 {
     char* m;
     char** msg = &m;
 
-    c.logic = QF_LRA;
+    logic_type = QF_LRA;
 
     sort_REAL = declareSort(s_sort_real, msg);
 

@@ -29,6 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 class LRALogic: public Logic
 {
   protected:
+    Logic_t logic_type;
     vec<opensmt::Real*> reals;
     SymRef              sym_Real_ZERO;
     SymRef              sym_Real_ONE;
@@ -67,6 +68,7 @@ class LRALogic: public Logic
 
     bool split_eq;
     void visit(PTRef, Map<PTRef,PTRef,PTRefHash>&);
+    virtual const char* getName()                const { return logic_type.str; }
   public:
     LRALogic                    (SMTConfig& c);
     ~LRALogic                   () { for (int i = 0; i < reals.size(); i++) delete reals[i]; }

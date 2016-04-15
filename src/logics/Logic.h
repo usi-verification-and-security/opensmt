@@ -154,9 +154,9 @@ class Logic {
         new_root = mkAnd(args);
     }
 
-    bool          setLogic    (const char* l);
-    Logic_t       getLogic    ()                      const { return logic_type; }
-    const char*   getName     ()                      const { return logic_type.str; }
+    bool          setLogic     (const char* l);
+    Logic_t       getLogic     ()                const { return logic_type; }
+    virtual const char* getName()                const { return logic_type.str; }
 
     // Identifiers
     IdRef       newIdentifier (const char* name)            { return id_store.newIdentifier(name); }
