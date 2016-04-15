@@ -4,4 +4,5 @@
 (set-option :split-init-tune 2)
 (set-option :split-mid-tune 2)
 (set-option :split-num 4)
+(set-option :split-format "smt2")
 (set-option :dump-state "/dev/shm/asd")

@@ -95,6 +95,7 @@ class SStore
         { bool rval = sortTable.contains(name); return rval; }
     const char* getName     (SRef sr) { return ssa[sa[sr].getNameRef()].getName(); }
     Sort&   getSort         (SRef sr) { return sa[sr]; }
+    const vec<SRef>& getSorts() const { return sorts; }
 
     int*    serializeSorts() const;
     void    deserializeSorts(const int*);

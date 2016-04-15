@@ -1624,12 +1624,20 @@ void
 Logic::dumpHeaderToFile(ostream& dump_out)
 {
     dump_out << "(set-logic " << getName() << ")" << endl;
-    sort_store.dumpSortsToFile(dump_out);
+
+    const vec<SRef>& sorts = sort_store.getSorts();
+    for (int i = 0; i < sorts.size(); i++)
+    {
+        if (isBuiltinSort(sorts[i])) continue;
+        dump_out << "(declare-sort " << sort_store.getName(sorts[i]) << " 0)" << endl;
+    }
+//    sort_store.dumpSortsToFile(dump_out);
     const vec<SymRef>& symbols = sym_store.getSymbols();
     for(int i = 2; i < symbols.size(); ++i)
     {
         SymRef s = symbols[i];
-        if(!isUF(s)) continue;
+        if (!isUF(s)) continue;
+        if (isConstant(s)) continue;
         dump_out << "(declare-fun " << sym_store.getName(s) << " ";
         Symbol& symb = sym_store[s];
         dump_out << "(";

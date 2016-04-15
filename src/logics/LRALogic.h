@@ -76,6 +76,7 @@ class LRALogic: public Logic
     PTRef       mkConst         (const char* name, const char **msg);
     PTRef       mkConst         (SRef s, const char* name);
 
+    virtual bool isBuiltinSort  (SRef sr) const { return sr == sort_REAL || Logic::isBuiltinSort(sr); }
     bool        isRealConst     (PTRef tr) { return isConstant(tr) && hasSortReal(tr); }
     bool        isNonnegRealConst (PTRef tr) { return isRealConst(tr) && getRealConst(tr) >= 0; }
 

@@ -259,6 +259,7 @@ class Logic {
     bool        isTheoryTerm       (PTRef tr)      const;
     bool        isBooleanOperator  (SymRef tr)     const;
     bool        isBooleanOperator  (PTRef tr)      const { return isBooleanOperator(term_store[tr].symb()); }
+    virtual bool isBuiltinSort      (SRef sr)       const { return sr == sort_BOOL; }
     bool        isConstant         (SymRef sr)     const;
     bool        isConstant         (PTRef tr)      const { return isConstant(getPterm(tr).symb()); }
 
