@@ -193,14 +193,14 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
     vec<PtChild> terms;
     FContainer fc(new_root);
 
-    if(config.remove_symmetries()) {
+    if (config.remove_symmetries()) {
 
         symmetry::Detector d(logic, new_root);
         //d.toDot("/home/simone/Desktop/graph.dot");
         d.findSBPs();
         PTRef sbps = d.getSBPs();
 
-        if(sbps != PTRef_Undef) {
+        if (sbps != PTRef_Undef) {
             std::cerr << "; [SBPs]: " << logic.printTerm(sbps) << std::endl;
             vec<PTRef> newTerms;
             newTerms.push(root);
@@ -235,6 +235,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
 
 //    std::cerr << logic.printTerm(fc.getRoot());
 
+    root_instance = fc;
     status = giveToSolver(fc.getRoot());
 
     return status;
@@ -975,6 +976,46 @@ bool MainSolver::writeSolverState(int* &buf, int &buf_sz, bool compress, char** 
     ts.getVarMapping(cs);
     ts.getSolverState(cs);
     return writeState(buf,buf_sz,compress, cs, msg);
+}
+
+void MainSolver::addToConj(vec<vec<PtAsgn> >& in, vec<PTRef>& out)
+{
+    for (int i = 0; i < in.size(); i++) {
+        vec<PtAsgn>& constr = in[i];
+        vec<PTRef> disj_vec;
+        for (int k = 0; k < constr.size(); k++)
+            disj_vec.push(constr[k].sgn == l_True ? constr[k].tr : logic.mkNot(constr[k].tr));
+        out.push(logic.mkOr(disj_vec));
+    }
+}
+
+bool MainSolver::writeSolverSplits_smtlib2(const char* file, char** msg)
+{
+    vec<SplitData>& splits = ts.solver.splits;
+    for (int i = 0; i < splits.size(); i++) {
+        vec<PTRef> conj_vec;
+        vec<vec<PtAsgn> > constraints;
+        splits[i].constraintsToPTRefs(constraints);
+        addToConj(constraints, conj_vec);
+
+        vec<vec<PtAsgn> > learnts;
+        splits[i].learntsToPTRefs(learnts);
+        addToConj(learnts, conj_vec);
+
+        conj_vec.push(root_instance.getRoot());
+        PTRef problem = logic.mkAnd(conj_vec);
+
+        char* name;
+        asprintf(&name, "%s-%02d.smt2", file, i);
+        std::ofstream file;
+        file.open(name);
+        logic.dumpHeaderToFile(file);
+        logic.dumpFormulaToFile(file, problem);
+        logic.dumpChecksatToFile(file);
+        file.close();
+        free(name);
+    }
+    return true;
 }
 
 bool MainSolver::writeSolverSplits(const char* file, char** msg)

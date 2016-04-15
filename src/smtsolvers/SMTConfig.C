@@ -459,6 +459,7 @@ const char* SMTConfig::o_sat_split_preference = ":split-preference";
 const char* SMTConfig::o_sat_remove_symmetries = ":remove-symmetries";
 const char* SMTConfig::o_dryrun = ":dryrun";
 const char* SMTConfig::o_do_substitutions = ":do-substitutions";
+const char* SMTConfig::o_smt_split_format = ":split-format";
 
 char* SMTConfig::server_host=NULL;
 uint16_t SMTConfig::server_port = 0;

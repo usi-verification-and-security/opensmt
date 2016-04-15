@@ -1,7 +1,7 @@
 /*********************************************************************
 Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
 
-OpenSMT2 -- Copyright (C) 2012 - 2015 Antti Hyvarinen
+OpenSMT2 -- Copyright (C) 2012 - 2016 Antti Hyvarinen
                          2008 - 2012 Roberto Bruttomesso
 
 Permission is hereby granted, free of charge, to any person obtaining a
@@ -97,6 +97,7 @@ public:
 //
 class SplitData
 {
+    THandler&           theory_handler;
     vec<Clause*>&       inst_clauses;   // Reference to the instance clause database
     vec<Lit>&           trail;          // Solver's trail for level 0 unit clauses
     int                 trail_idx;      // First index not on level 0 at the time of insertion
@@ -109,17 +110,20 @@ class SplitData
     template<class C> char* clauseToString(const C&);
     char* clauseToString(const vec<Lit>&);
     int getLitSize(const Lit l) const;
+    void toPTRefs(vec<vec<PtAsgn> >& out, vec<vec<Lit> >& in);
 
   public:
-    SplitData(vec<Clause*>& ic, vec<Lit>& t, int tl)
+    SplitData(vec<Clause*>& ic, vec<Lit>& t, int tl, THandler& th)
         : inst_clauses(ic)
         , trail(t)
         , trail_idx(tl)
+        , theory_handler(th)
     {}
     SplitData(const SplitData& other)
         : inst_clauses(other.inst_clauses)
         , trail(other.trail)
         , trail_idx(other.trail_idx)
+        , theory_handler(other.theory_handler)
     { assert(other.instance.size() == 0 && other.constraints.size() == 0 && other.learnts.size() == 0); }
 
     template<class C> void addConstraint(const C& c) {
@@ -143,6 +147,8 @@ class SplitData
         }
     }
     char* splitToString();
+    inline void  constraintsToPTRefs(vec<vec<PtAsgn> >& out) { toPTRefs(out, constraints); }
+    inline void  learntsToPTRefs(vec<vec<PtAsgn> >& out) { toPTRefs(out, learnts); }
     void  cnfToString(CnfState& cs) { cs.setCnf(splitToString()); }
 };
 
@@ -262,6 +268,22 @@ inline char* SplitData::splitToString()
     }
     buf = (char*) realloc(buf, sz+1);
     return buf;
+}
+
+inline void SplitData::toPTRefs(vec<vec<PtAsgn> >& out, vec<vec<Lit> >& in)
+{
+    for (int i = 0; i < in.size(); i++)
+    {
+        vec<Lit>& c = in[i];
+        out.push();
+        vec<PtAsgn>& out_clause = out[out.size()-1];
+        for (int j = 0; j < c.size(); j++)
+        {
+            PTRef tr = theory_handler.varToTerm(var(c[j]));
+            PtAsgn pta(tr, sign(c[j]) ? l_False : l_True);
+            out_clause.push(pta);
+        }
+    }
 }
 
 class LANode {
@@ -413,6 +435,7 @@ class CoreSMTSolver : public SMTSolver
 
     // Splits
     vec<SplitData> splits;
+    vec<vec<Lit> > split_assumptions;
 
   protected:
 
@@ -991,7 +1014,7 @@ inline void CoreSMTSolver::printClause(const C& c)
 inline void CoreSMTSolver::cnfToString(CnfState& cs)
 {
     int curr_dl0_idx = trail_lim.size() > 0 ? trail_lim[0] : trail.size();
-    SplitData sd(clauses, trail, curr_dl0_idx);
+    SplitData sd(clauses, trail, curr_dl0_idx, theory_handler);
     sd.updateInstance();
     if (config.sat_dump_learnts()) {
         for (int i = 0; i < learnts.size(); i++)

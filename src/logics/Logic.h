@@ -73,8 +73,9 @@ class Logic {
     SymStore            sym_store;
   public:
     PtStore             term_store;
+
   protected:
-    string              name;
+    Logic_t             logic_type;
     SymRef              sym_TRUE;
     SymRef              sym_FALSE;
     SymRef              sym_AND;
@@ -154,8 +155,8 @@ class Logic {
     }
 
     bool          setLogic    (const char* l);
-    Logic_t       getLogic    ()                      const { return config.logic; }
-    const string& getName     ()                      const { return name;      }
+    Logic_t       getLogic    ()                      const { return logic_type; }
+    const char*   getName     ()                      const { return logic_type.str; }
 
     // Identifiers
     IdRef       newIdentifier (const char* name)            { return id_store.newIdentifier(name); }
@@ -214,6 +215,7 @@ class Logic {
 
     void dumpHeaderToFile(ostream& dump_out);
     void dumpFormulaToFile(ostream& dump_out, PTRef formula, bool negate = false);
+    void dumpChecksatToFile(ostream& dump_out);
 
 #ifdef PRODUCE_PROOF
     // Partitions

@@ -77,7 +77,7 @@ Logic::Logic(SMTConfig& c) :
     , subst_num(0)
 {
     config.logic = QF_UF;
-    name = "QF_UF";
+    logic_type = QF_UF;
     IdRef bool_id = id_store.newIdentifier("Bool");
     vec<SRef> tmp_srefs;
     sort_store.newSort(bool_id, tmp_srefs);
@@ -1614,9 +1614,16 @@ void Logic::deserializeTermSystem(const int* termstore_buf, const int* symstore_
 }
 
 void
+Logic::dumpChecksatToFile(ostream& dump_out)
+{
+    dump_out << "(check-sat)" << endl;
+    dump_out << "(exit)" << endl;
+}
+
+void
 Logic::dumpHeaderToFile(ostream& dump_out)
 {
-    dump_out << "(set-logic QF_UF)" << endl;
+    dump_out << "(set-logic " << getName() << ")" << endl;
     sort_store.dumpSortsToFile(dump_out);
     const vec<SymRef>& symbols = sym_store.getSymbols();
     for(int i = 2; i < symbols.size(); ++i)
@@ -1637,90 +1644,90 @@ Logic::dumpHeaderToFile(ostream& dump_out)
 void
 Logic::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate )
 {
-	vector< PTRef > unprocessed_enodes;
-	map< PTRef, string > enode_to_def;
-	unsigned num_lets = 0;
+    vector< PTRef > unprocessed_enodes;
+    map< PTRef, string > enode_to_def;
+    unsigned num_lets = 0;
 
-	unprocessed_enodes.push_back( formula );
-	// Open assert
-	dump_out << "(assert" << endl;
-	//
-	// Visit the DAG of the formula from the leaves to the root
-	//
-	while( !unprocessed_enodes.empty( ) )
-	{
-		PTRef e = unprocessed_enodes.back( );
-		//
-		// Skip if the node has already been processed before
-		//
-		if ( enode_to_def.find( e ) != enode_to_def.end( ) )
-		{
-			unprocessed_enodes.pop_back( );
-			continue;
-		}
+    unprocessed_enodes.push_back( formula );
+    // Open assert
+    dump_out << "(assert" << endl;
+    //
+    // Visit the DAG of the formula from the leaves to the root
+    //
+    while( !unprocessed_enodes.empty( ) )
+    {
+        PTRef e = unprocessed_enodes.back( );
+        //
+        // Skip if the node has already been processed before
+        //
+        if ( enode_to_def.find( e ) != enode_to_def.end( ) )
+        {
+            unprocessed_enodes.pop_back( );
+            continue;
+        }
 
-		bool unprocessed_children = false;
+        bool unprocessed_children = false;
         Pterm& term = getPterm(e);
         for(int i = 0; i < term.size(); ++i)
         {
             PTRef pref = term[i];
             //assert(isTerm(pref));
-			//
-			// Push only if it is unprocessed
-			//
-			if ( enode_to_def.find( pref ) == enode_to_def.end( ) && (isBooleanOperator( pref ) || isEquality(pref)))
-			{
-				unprocessed_enodes.push_back( pref );
-				unprocessed_children = true;
-			}
-		}
-		//
-		// SKip if unprocessed_children
-		//
-		if ( unprocessed_children ) continue;
+            //
+            // Push only if it is unprocessed
+            //
+            if ( enode_to_def.find( pref ) == enode_to_def.end( ) && (isBooleanOperator( pref ) || isEquality(pref)))
+            {
+                unprocessed_enodes.push_back( pref );
+                unprocessed_children = true;
+            }
+        }
+        //
+        // SKip if unprocessed_children
+        //
+        if ( unprocessed_children ) continue;
 
-		unprocessed_enodes.pop_back( );
+        unprocessed_enodes.pop_back( );
 
-		char buf[ 32 ];
-		sprintf( buf, "?def%d", getPterm(e).getId() );
+        char buf[ 32 ];
+        sprintf( buf, "?def%d", getPterm(e).getId() );
 
-		// Open let
-		dump_out << "(let ";
-		// Open binding
-		dump_out << "((" << buf << " ";
+        // Open let
+        dump_out << "(let ";
+        // Open binding
+        dump_out << "((" << buf << " ";
 
-		if (term.size() > 0 ) dump_out << "(";
-		dump_out << printSym(term.symb());
-        for(int i = 0; i < term.size(); ++i)
-		{
+        if (term.size() > 0 ) dump_out << "(";
+        dump_out << printSym(term.symb());
+        for (int i = 0; i < term.size(); ++i)
+        {
             PTRef pref = term[i];
-			if ( isBooleanOperator(pref) || isEquality(pref) )
-				dump_out << " " << enode_to_def[ pref ];
-			else
-			{
-				dump_out << " " << printTerm(pref);
-				if ( isAnd(e) ) dump_out << endl;
-			}
-		}
-		if ( term.size() > 0 ) dump_out << ")";
+            if ( isBooleanOperator(pref) || isEquality(pref) )
+                dump_out << " " << enode_to_def[ pref ];
+            else
+            {
+                dump_out << " " << printTerm(pref);
+                if ( isAnd(e) ) dump_out << endl;
+            }
+        }
+        if ( term.size() > 0 ) dump_out << ")";
 
-		// Closes binding
-		dump_out << "))" << endl;
-		// Keep track of number of lets to close
-		num_lets++;
+        // Closes binding
+        dump_out << "))" << endl;
+        // Keep track of number of lets to close
+        num_lets++;
 
-		assert( enode_to_def.find( e ) == enode_to_def.end( ) );
-		enode_to_def[ e ] = buf;
-	}
-	dump_out << endl;
-	// Formula
-	if ( negate ) dump_out << "(not ";
-	dump_out << enode_to_def[ formula ] << endl;
-	if ( negate ) dump_out << ")";
-	// Close all lets
-	for( unsigned n=1; n <= num_lets; n++ ) dump_out << ")";
-	// Closes assert
-	dump_out << ")" << endl;
+        assert( enode_to_def.find( e ) == enode_to_def.end( ) );
+        enode_to_def[ e ] = buf;
+    }
+    dump_out << endl;
+    // Formula
+    if ( negate ) dump_out << "(not ";
+    dump_out << enode_to_def[ formula ] << endl;
+    if ( negate ) dump_out << ")";
+    // Close all lets
+    for ( unsigned n=1; n <= num_lets; n++ ) dump_out << ")";
+    // Closes assert
+    dump_out << ")" << endl;
 }
 
 #ifdef PRODUCE_PROOF

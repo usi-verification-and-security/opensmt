@@ -137,7 +137,7 @@ bool Interpret::interp(ASTNode& n) {
         ASTNode &logic_n = **(n.children->begin());
         const char* logic_name = logic_n.getValue();
         if (logic != NULL) {
-            notify_formatted(true, "logic has already been set to %s", logic->getName().c_str());
+            notify_formatted(true, "logic has already been set to %s", logic->getName());
         } else if (strcmp(logic_name, QF_UF.str) == 0) {
             UFTheory *uftheory = new UFTheory(config);
             theory = uftheory;
@@ -665,8 +665,12 @@ bool Interpret::checkSat(const char* cmd) {
         const SpType o_split = config.sat_split_type();
         if (!o_dump_state.isEmpty() && o_split == spt_none)
             writeState(config.dump_state());
-        else if (o_split != spt_none)
-            writeSplits(config.dump_state());
+        else if (o_split != spt_none) {
+            if (config.smt_split_format() == spformat_smt2)
+                writeSplits_smtlib2(config.dump_state());
+            else
+                writeSplits(config.dump_state());
+        }
     }
     return true;
 }
@@ -744,6 +748,12 @@ void Interpret::writeSplits(const char* filename)
     if (!rval) {
         notify_formatted("%s", msg);
     }
+}
+
+void Interpret::writeSplits_smtlib2(const char* filename)
+{
+    char* msg;
+    main_solver->writeSolverSplits_smtlib2(filename, &msg);
 }
 
 bool Interpret::declareFun(const char* fname, const vec<SRef>& args) {

@@ -81,12 +81,16 @@ typedef struct SpType    { int t; } SpType;
 typedef struct SpUnit    { int t; } SpUnit;
 typedef struct SpPref    { int t; } SpPref;
 
+typedef struct SpFormat  { int t; } SpFormat;
+
 inline bool operator==(const SpType& s1, const SpType& s2) { return s1.t == s2.t; }
 inline bool operator==(const SpUnit& s1, const SpUnit& s2) { return s1.t == s2.t; }
 inline bool operator!=(const SpType& s1, const SpType& s2) { return s1.t != s2.t; }
 inline bool operator!=(const SpUnit& s1, const SpUnit& s2) { return s1.t != s2.t; }
 inline bool operator==(const SpPref& s1, const SpPref& s2) { return s1.t == s2.t; }
 inline bool operator!=(const SpPref& s1, const SpPref& s2) { return s1.t != s2.t; }
+inline bool operator==(const SpFormat& s1, const SpFormat& s2) { return s1.t == s2.t; }
+inline bool operator!=(const SpFormat& s1, const SpFormat& s2) { return s1.t != s2.t; }
 
 static const char* spts_lookahead = "lookahead";
 static const char* spts_scatter   = "scattering";
@@ -99,6 +103,9 @@ static const char* spprefs_tterm   = "tterm";
 static const char* spprefs_blind   = "blind";
 static const char* spprefs_bterm   = "bterm";
 static const char* spprefs_rand    = "random";
+
+static const char* spformats_smt2   = "smt2";
+static const char* spformats_osmt2  = "osmt2";
 
 static const struct SpType spt_none      = { 0 };
 static const struct SpType spt_lookahead = { 1 };
@@ -114,6 +121,9 @@ static const struct SpPref sppref_blind = { 1 };
 static const struct SpPref sppref_bterm = { 2 };
 static const struct SpPref sppref_rand  = { 3 };
 static const struct SpPref sppref_undef = { 4 };
+
+static const struct SpFormat spformat_smt2  = { 0 };
+static const struct SpFormat spformat_osmt2 = { 1 };
 
 //
 // Holds informations about the configuration of the solver
@@ -182,6 +192,7 @@ public:
   static const char* o_sat_remove_symmetries;
   static const char* o_dryrun;
   static const char* o_do_substitutions;
+  static const char* o_smt_split_format;
 
 private:
 
@@ -427,6 +438,16 @@ public:
               return spm_time;
       }
       return spm_unknown;
+    }
+  const SpFormat smt_split_format() const {
+      if (optionTable.contains(o_smt_split_format)) {
+          const char* type = optionTable[o_smt_split_format]->getValue().strval;
+          if (strcmp(type, spformats_smt2) == 0)
+              return spformat_smt2;
+          else if (strcmp(type, spformats_osmt2) == 0)
+              return spformat_osmt2;
+      }
+      return spformat_osmt2; // The default
     }
   double sat_resource_limit() const
     { return optionTable.contains(o_sat_resource_limit) ?

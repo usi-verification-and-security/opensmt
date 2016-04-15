@@ -113,6 +113,8 @@ class MainSolver {
 
     vec<MainSolver*> parallel_solvers;
 
+    FContainer root_instance; // Contains the root of the instance once simplifications are done
+
   public:
     MainSolver(THandler& thandler, SMTConfig& c, SimpSMTSolver *s )
         : logic(thandler.getLogic())
@@ -127,6 +129,7 @@ class MainSolver {
             , thandler
             , *s )
         , binary_init(false)
+        , root_instance(PTRef_Undef)
     {
         formulas.push(logic.getTerm_true());
     }
@@ -158,6 +161,9 @@ class MainSolver {
     bool  writeState       (int* &buf, int &buf_sz, bool compress, CnfState& cs, char** msg);
     bool  writeSolverState (const char* file, char** msg);
     bool  writeSolverState (int* &buf, int &buf_sz, bool compress, char** msg);
+
+    void  addToConj(vec<vec<PtAsgn> >& in, vec<PTRef>& out); // Add the contents of in as disjuncts to out
+    bool  writeSolverSplits_smtlib2(const char* file, char** msg);
     bool  writeSolverSplits(const char* file, char** msg);
     bool  writeSolverSplit (int s, int* &split, int &split_sz, bool compress, char** msg);
     bool  writeSolverSplits(int** &splits, char** msg);

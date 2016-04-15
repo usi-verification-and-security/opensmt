@@ -2832,7 +2832,7 @@ bool CoreSMTSolver::createSplit_lookahead()
     // Due to the stupidness of the minisat version this gets
     // complicated
     int curr_dl0_idx = trail_lim.size() > 0 ? trail_lim[0] : trail.size();
-    splits.push_c(SplitData(clauses, trail, curr_dl0_idx));
+    splits.push_c(SplitData(clauses, trail, curr_dl0_idx, theory_handler));
     SplitData& sp = splits.last();
 
     printf("; Outputing an instance:\n; ");
@@ -2851,18 +2851,34 @@ bool CoreSMTSolver::createSplit_lookahead()
 
 bool CoreSMTSolver::createSplit_scatter(bool last)
 {
-    // Due to the stupidness of the minisat version this gets
-    // complicated
     int curr_dl0_idx = trail_lim.size() > 0 ? trail_lim[0] : trail.size();
-    splits.push_c(SplitData(clauses, trail, curr_dl0_idx));
+    assert(splits.size() == split_assumptions.size());
+    splits.push_c(SplitData(clauses, trail, curr_dl0_idx, theory_handler));
+    split_assumptions.push();
     SplitData& sp = splits.last();
     vec<Lit> constraints_negated;
+    vec<Lit>& split_assumption = split_assumptions.last();
+    // Add the literals on the decision levels
     for (int i = 0; i < decisionLevel(); i++) {
         vec<Lit> tmp;
         Lit l = trail[trail_lim[i]];
         tmp.push(l);
+        // Add the literal
         sp.addConstraint(tmp);
+        // Remember this literal in the split assumptions vector of the
+        // SAT solver
+        split_assumption.push(l);
+        // This will be added to the SAT formula to exclude the search
+        // space
         constraints_negated.push(~l);
+    }
+    for (int i = 0; i < split_assumptions.size()-1; i++)
+    {
+        vec<Lit> tmp;
+        vec<Lit>& split_assumption = split_assumptions[i];
+        for (int j = 0; j < split_assumption.size(); j++)
+            tmp.push(~split_assumption[j]);
+        sp.addConstraint(tmp);
     }
     sp.updateInstance();
     // XXX Skipped learned clauses
