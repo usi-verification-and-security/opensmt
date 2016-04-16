@@ -121,7 +121,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ":all-statistics"            { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_ALLSTATISTICS;           }
 
 
-0|-?[1-9][0-9]*                { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_NUM; }
+0|-?[1-9][0-9]*(\/[1-9][0-9]*)?  { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_NUM; }
 -?[0-9]+\.0*[0-9]+             { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_DEC; }
 #x[0-9a-fA-F]+               { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_HEX; }
 #b[01]+                      { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_BIN; }
