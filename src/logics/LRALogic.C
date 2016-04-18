@@ -246,11 +246,13 @@ LRALogic::LRALogic(SMTConfig& c) :
 
     vec<SRef> params;
 
-    sym_Real_ZERO = declareFun(tk_real_zero, sort_BOOL, params, msg, true);
-    sym_Real_ONE = declareFun(tk_real_one, sort_BOOL, params, msg, true);
+//    sym_Real_ZERO = declareFun(tk_real_zero, sort_REAL, params, msg, true);
+//    sym_Real_ONE = declareFun(tk_real_one, sort_REAL, params, msg, true);
 
     term_Real_ZERO = mkConst(sort_REAL, tk_real_zero);
+    sym_Real_ZERO  = getSymRef(term_Real_ZERO);
     term_Real_ONE  = mkConst(sort_REAL, tk_real_one);
+    sym_Real_ONE   = getSymRef(term_Real_ONE);
 
     params.push(sort_REAL);
 
@@ -338,8 +340,8 @@ PTRef LRALogic::mkConst(SRef s, const char* name)
         ptr = Logic::mkConst(s, name);
 
     return ptr;
-
 }
+
 bool LRALogic::isRealTerm(PTRef tr) const
 {
     const Pterm& t = getPterm(tr);

@@ -767,9 +767,9 @@ SymRef Logic::declareFun(const char* fname, const SRef rsort, const vec<SRef>& a
     }
     SymRef sr = sym_store.newSymb(fname, comb_args, msg);
     SymId id = getSym(sr).getId();
-    for (int i = interpreted_functions.size(); i < id; i++)
+    for (int i = interpreted_functions.size(); i <= id; i++)
         interpreted_functions.push(false);
-    interpreted_functions.push(interpreted);
+    interpreted_functions[id] = interpreted;
     return sr;
 }
 
@@ -904,7 +904,7 @@ Logic::insertTermHash(SymRef sym, const vec<PTRef>& terms_in)
 bool
 Logic::isUF(SymRef sref) const
 {
-    return getSym(sref).size() > 0 && !interpreted_functions[getSym(sref).getId()];
+    return getSym(sref).nargs() > 0 && !interpreted_functions[getSym(sref).getId()];
 }
 
 bool Logic::isUF(PTRef ptr) const {
@@ -1633,10 +1633,10 @@ Logic::dumpHeaderToFile(ostream& dump_out)
     }
 //    sort_store.dumpSortsToFile(dump_out);
     const vec<SymRef>& symbols = sym_store.getSymbols();
-    for(int i = 2; i < symbols.size(); ++i)
+    for(int i = 0; i < symbols.size(); ++i)
     {
         SymRef s = symbols[i];
-        if (!isUF(s)) continue;
+        if (!isUF(s) && !isVar(s)) continue;
         if (isConstant(s)) continue;
         dump_out << "(declare-fun " << sym_store.getName(s) << " ";
         Symbol& symb = sym_store[s];

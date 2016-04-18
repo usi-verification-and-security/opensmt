@@ -268,9 +268,9 @@ class Logic {
     bool        isAtom             (PTRef tr)      const;
     bool        isBoolAtom         (PTRef tr)      const { return hasSortBool(tr) && isVar(tr); }
     // Check if term is an uninterpreted predicate.
-    bool        isUP               (PTRef)         const;
-    bool        isUF               (PTRef)         const;
-    bool        isUF               (SymRef)         const;
+    virtual bool isUP              (PTRef)         const;
+    virtual bool isUF              (PTRef)         const;
+    virtual bool isUF              (SymRef)        const;
 
     bool        isAnd(PTRef tr)  const { return getPterm(tr).symb() == getSym_and(); }
     bool        isAnd(SymRef sr) const { return sr == getSym_and(); }
