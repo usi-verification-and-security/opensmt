@@ -182,6 +182,74 @@ Logic::~Logic()
     cerr << "; Substitutions............: " << subst_num << endl;
 }
 
+// Escape the symbol name if it contains a prohibited character from the
+// following list:
+//  - #
+char*
+Logic::printSym(SymRef sr) const
+{
+    const char* name = sym_store.getName(sr);
+    char* name_escaped;
+    bool escape = false;
+    for (int i = 0; name[i] != '\0'; i++)
+    {
+        if (name[i] == '#')
+        {
+            escape = true;
+            break;
+        }
+    }
+    if (escape)
+        asprintf(&name_escaped, "|%s|", name);
+    else
+        asprintf(&name_escaped, "%s", name);
+
+    return name_escaped;
+}
+
+char*
+Logic::printTerm_(PTRef tr, bool ext)
+{
+    const Pterm& t = getPterm(tr);
+    SymRef sr = t.symb();
+    char* out;
+
+    char* name_escaped = printSym(sr);
+
+    if (t.size() == 0) {
+        if (ext)
+            asprintf(&out, "%s <%d>", name_escaped, tr.x);
+        else
+            asprintf(&out, "%s", name_escaped);
+        free(name_escaped);
+        return out;
+    }
+
+    // Here we know that t.size() > 0
+
+    char* old;
+    asprintf(&out, "(%s ", name_escaped);
+    free(name_escaped);
+
+    for (int i = 0; i < t.size(); i++) {
+        old = out;
+        asprintf(&out, "%s%s", old, printTerm_(t[i], ext));
+        ::free(old);
+        if (i < t.size()-1) {
+            old = out;
+            asprintf(&out, "%s ", old);
+            ::free(old);
+        }
+    }
+    old = out;
+    if (ext)
+        asprintf(&out, "%s) <%d>", old, tr.x);
+    else
+        asprintf(&out, "%s)", old);
+    ::free(old);
+    return out;
+}
+
 bool Logic::isTheoryTerm(PTRef ptr) const {
     const Pterm& p = term_store[ptr];
     SymRef sr = p.symb();
@@ -1631,14 +1699,16 @@ Logic::dumpHeaderToFile(ostream& dump_out)
         if (isBuiltinSort(sorts[i])) continue;
         dump_out << "(declare-sort " << sort_store.getName(sorts[i]) << " 0)" << endl;
     }
-//    sort_store.dumpSortsToFile(dump_out);
+
     const vec<SymRef>& symbols = sym_store.getSymbols();
     for(int i = 0; i < symbols.size(); ++i)
     {
         SymRef s = symbols[i];
         if (!isUF(s) && !isVar(s)) continue;
         if (isConstant(s)) continue;
-        dump_out << "(declare-fun " << sym_store.getName(s) << " ";
+        char* sym = printSym(s);
+        dump_out << "(declare-fun " << sym << " ";
+        free(sym);
         Symbol& symb = sym_store[s];
         dump_out << "(";
         for(int j = 0; j < symb.nargs(); ++j)
@@ -1705,7 +1775,9 @@ Logic::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate )
         dump_out << "((" << buf << " ";
 
         if (term.size() > 0 ) dump_out << "(";
+        char* sym = printSym(term.symb());
         dump_out << printSym(term.symb());
+        free(sym);
         for (int i = 0; i < term.size(); ++i)
         {
             PTRef pref = term[i];

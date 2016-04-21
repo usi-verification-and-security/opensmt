@@ -305,7 +305,7 @@ LRALogic::LRALogic(SMTConfig& c) :
 }
 
 const opensmt::Real&
-LRALogic::getRealConst(PTRef tr)
+LRALogic::getRealConst(PTRef tr) const
 {
     SymId id = sym_store[getPterm(tr).symb()].getId();
     assert(id < reals.size() && reals[id] != NULL);
@@ -967,4 +967,65 @@ void LRALogic::deserializeLogicData(const int* logicdata_buf)
             constants.push(false);
         constants[id] = true;
     }
+}
+
+// Handle the printing of real constants that are negative and the
+// rational constants
+char*
+LRALogic::printTerm_(PTRef tr, bool ext)
+{
+    char* out;
+    if (isRealConst(tr))
+    {
+        if (!isNonnegRealConst(tr))
+        {
+            PTRef tr_p = mkRealNeg(tr);
+            char *tmp = printTerm_(tr_p, ext);
+            if (ext)
+                asprintf(&out, "(- %s) <%d>", tmp, tr.x);
+            else
+                asprintf(&out, "(- %s)", tmp);
+            free(tmp);
+        }
+        else {
+            char* tmp = printSym(getSymRef(tr));
+            bool is_div = false;
+            int i = 0;
+            for (; tmp[i] != '\0'; i++)
+            {
+                if (tmp[i] == '/')
+                {
+                    is_div = true;
+                    break;
+                }
+            }
+            if (is_div)
+            {
+                int j = 0;
+                char* nom = (char*) malloc(i+1);
+                for (; j < i; j++)
+                    nom[j] = tmp[j];
+                nom[i] = '\0';
+                int len = strlen(tmp);
+                char* den = (char*) malloc(len-i);
+                i++;
+                j = 0;
+                for (; i < len; i++)
+                    den[j++] = tmp[i];
+                den[j] = '\0';
+
+                if (ext)
+                    asprintf(&out, "(/ %s %s) <%d>", nom, den, tr.x);
+                else
+                    asprintf(&out, "(/ %s %s)", nom, den);
+                free(nom);
+                free(den);
+            }
+            else
+                out = tmp;
+        }
+    }
+    else
+        out = Logic::printTerm_(tr, ext);
+    return out;
 }

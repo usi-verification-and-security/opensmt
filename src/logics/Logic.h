@@ -259,8 +259,8 @@ class Logic {
     bool        isTheoryTerm       (PTRef tr)      const;
     bool        isBooleanOperator  (SymRef tr)     const;
     bool        isBooleanOperator  (PTRef tr)      const { return isBooleanOperator(term_store[tr].symb()); }
-    virtual bool isBuiltinSort      (SRef sr)       const { return sr == sort_BOOL; }
-    bool        isConstant         (SymRef sr)     const;
+    virtual bool isBuiltinSort     (const SRef sr) const { return sr == sort_BOOL; }
+    bool        isConstant         (const SymRef sr) const;
     bool        isConstant         (PTRef tr)      const { return isConstant(getPterm(tr).symb()); }
 
     bool        isVar              (SymRef sr)     const { return sym_store[sr].nargs() == 0 && !isConstant(sr); }
@@ -420,10 +420,11 @@ class Logic {
 
     void        serializeTermSystem(int*& termstore_buf, int*& symstore_buf, int*& idstore_buf, int*& sortstore_buf, int*& logicdata_buf) const;
     void        deserializeTermSystem(const int* termstore_buf, const int* symstore_buf, const int* idstore_buf, const int* sortstore_buf, const int* logicdata_buf);
-// Debugging
-    char*       printTerm          (PTRef tr)       const { return term_store.printTerm(tr); }
-    char*       printTerm          (PTRef tr, bool l) const { return term_store.printTerm(tr, l); }
-    const char*       printSym(SymRef sr) const { return sym_store.getName(sr); }
+
+    virtual char* printTerm_       (PTRef tr, bool l);
+    char*       printTerm          (PTRef tr)         { return printTerm_(tr, false); }
+    char*       printTerm          (PTRef tr, bool l) { return printTerm_(tr, l); }
+    char*       printSym           (SymRef sr) const;
 
     void  purify           (PTRef r, PTRef& p, lbool& sgn) const
         {p = r; sgn = l_True; while (isNot(p)) { sgn = sgn^1; p = getPterm(p)[0]; }}

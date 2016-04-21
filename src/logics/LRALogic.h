@@ -79,15 +79,15 @@ class LRALogic: public Logic
     PTRef       mkConst         (SRef s, const char* name);
 
     virtual bool isBuiltinSort  (SRef sr) const { return sr == sort_REAL || Logic::isBuiltinSort(sr); }
-    bool        isRealConst     (PTRef tr) { return isConstant(tr) && hasSortReal(tr); }
-    bool        isNonnegRealConst (PTRef tr) { return isRealConst(tr) && getRealConst(tr) >= 0; }
+    bool  isRealConst     (PTRef tr)      const { return isConstant(tr) && hasSortReal(tr); }
+    bool  isNonnegRealConst (PTRef tr)    const { return isRealConst(tr) && getRealConst(tr) >= 0; }
 
     PTRef       mkConst         (const opensmt::Real& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(sort_REAL, rat); free(rat); return tr; }
     SRef        declareSort_Real(char** msg);
 
     SRef        getSort_real    ()              const { return sort_REAL;    }
 
-    const opensmt::Real& getRealConst(PTRef tr);
+    const opensmt::Real& getRealConst(PTRef tr) const;
 
     bool        isRealPlus(SymRef sr) const { return sr == sym_Real_PLUS; }
     bool        isRealPlus(PTRef tr) const { return isRealPlus(getPterm(tr).symb()); }
@@ -160,6 +160,8 @@ class LRALogic: public Logic
 
     virtual void serializeLogicData(int*& logicdata_buf) const;
     void deserializeLogicData(const int* logicdata_buf);
+
+    virtual char* printTerm_(PTRef tr, bool ext);
 };
 
 // Determine for two multiplicative terms (* k1 v1) and (* k2 v2), v1 !=
