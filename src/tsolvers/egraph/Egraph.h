@@ -228,7 +228,7 @@ public:
   PtAsgn_reason       getDeduction            ( );                          // Return an implied node based on the current state
   PTRef               getSuggestion           ( );                          // Return a suggested literal based on the current state
   void                getConflict             ( bool, vec<PtAsgn>& );       // Get explanation
-  bool                check                   ( bool );                     // Check satisfiability
+  bool                check                   ( bool ) { return true; }     // Check satisfiability
 //  lbool               evaluate                ( PTRef ) { assert(false); return l_Undef; }
   ValPair             getValue                (PTRef tr) const { return ValPair_Undef; }
 //  void                initializeCong          ( Enode * );                  // Initialize congruence structures for a node

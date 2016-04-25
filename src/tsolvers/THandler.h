@@ -47,9 +47,7 @@ public:
     TermMapper          tmap;                     // Mappings between TRefs and Lits
 public:
 
-  THandler ( SMTConfig &   c
-           , Theory& tsh
-           )
+    THandler ( SMTConfig& c, Theory& tsh)
     : theory             (tsh)
     , config             (c)
     , tmap               (theory.getLogic())
@@ -60,113 +58,101 @@ public:
     virtual ~THandler ( ) { }
 
     Theory& getTheory() { return theory; }
-    Logic&  getLogic() { return theory.getLogic(); }
+    Logic&  getLogic()  { return theory.getLogic(); }
 
-    TSolverHandler& getSolverHandler() { return theory.getTSolverHandler(); }
+    TSolverHandler&       getSolverHandler() { return theory.getTSolverHandler(); }
     const TSolverHandler& getSolverHandler() const { return theory.getTSolverHandler(); }
-    TermMapper&  getTMap() { return tmap; }
+    TermMapper&           getTMap() { return tmap; }
 
 #ifdef PEDANTIC_DEBUG
-  void    getConflict          ( vec<Lit>&, vec<int>&, int &, vec<Lit>& ); // Returns theory conflict in terms of literals
+    void    getConflict          ( vec<Lit>&, vec<int>&, int &, vec<Lit>& ); // Returns theory conflict in terms of literals
 #else
-  void    getConflict          ( vec<Lit>&, vec<int>&, int & ); // Returns theory conflict in terms of literals
+    void    getConflict          ( vec<Lit>&, vec<int>&, int & ); // Returns theory conflict in terms of literals
 #endif
 #ifdef PRODUCE_PROOF
-  PTRef getInterpolants      (const ipartitions_t&);                     // Fill a vector with interpolants
+    PTRef getInterpolants        (const ipartitions_t&);  // Fill a vector with interpolants
 #endif
-  Lit     getDeduction         ();                      // Returns a literal that is implied by the current state and the reason literal
-  Lit     getSuggestion        ( );                     // Returns a literal that is suggested by the current state
+    Lit     getDeduction         ();                      // Returns a literal that is implied by the current state and the reason literal
+    Lit     getSuggestion        ( );                     // Returns a literal that is suggested by the current state
 #ifdef PEDANTIC_DEBUG
-  bool    getReason            ( Lit, vec< Lit > &, vec<char>& );   // Returns the explanation for a deduced literal
+    bool    getReason            ( Lit, vec< Lit > &, vec<char>& );   // Returns the explanation for a deduced literal
 #else
-  void    getReason            ( Lit, vec< Lit > &, vec<char>& );   // Returns the explanation for a deduced literal
+    void    getReason            ( Lit, vec< Lit > &, vec<char>& );   // Returns the explanation for a deduced literal
 #endif
 
-  ValPair getValue          (PTRef tr) const { return getSolverHandler().getValue(tr); };
+    ValPair getValue          (PTRef tr) const { return getSolverHandler().getValue(tr); };
 
-  bool isTheoryTerm         ( Var v ) { return getLogic().isTheoryTerm(varToTerm(v)); }
-  PTRef varToTerm           ( Var v ) { return tmap.varToPTRef(v); }  // Return the term ref corresponding to a variable
-  Pterm& varToPterm         ( Var v)  { return getLogic().getPterm(tmap.varToPTRef(v)); } // Return the term corresponding to a variable
+    bool   isTheoryTerm       ( Var v ) { return getLogic().isTheoryTerm(varToTerm(v)); }
+    PTRef  varToTerm          ( Var v ) { return tmap.varToPTRef(v); }  // Return the term ref corresponding to a variable
+    Pterm& varToPterm         ( Var v)  { return getLogic().getPterm(tmap.varToPTRef(v)); } // Return the term corresponding to a variable
 
-  void getVarName           ( Var v, char** name ) { *name = getLogic().printTerm(tmap.varToPTRef(v)); }
+    void getVarName           ( Var v, char** name ) { *name = getLogic().printTerm(tmap.varToPTRef(v)); }
 
-    void pushDeduction      () { getSolverHandler().deductions.push({SolverId_Undef, l_Undef}); }  // Add the deduction entry for a variable
-    Var ptrefToVar          ( PTRef r ) { return tmap.getVar(r); }
+    void pushDeduction        () { getSolverHandler().deductions.push({SolverId_Undef, l_Undef}); }  // Add the deduction entry for a variable
+    Var ptrefToVar            ( PTRef r ) { return tmap.getVar(r); }
 
-//  Var     enodeToVar           ( Enode * );             // Converts enode into boolean variable. Create a new variable if needed
-//  Lit     enodeToLit           ( Enode * );             // Converts enode into boolean literal. Create a new variable if needed
-//  Lit     enodeToLit           ( Enode *, Var & );      // Converts enode into boolean literal. Create a new variable if needed
-//  Enode * varToEnode           ( Var );                 // Return the enode corresponding to a variable
-//  void    clearVar             ( Var );                 // Clear a Var in translation table (used in incremental solving)
+    void    computeModel      () { getSolverHandler().computeModel(); } // Computes a model in the solver if necessary
+    bool    assertLits        (vec<Lit>&);             // Give to the TSolvers the newly added literals on the trail
+    bool    assertLit         (PtAsgn pta) { return getSolverHandler().assertLit(pta); } // Push the assignment to all theory solvers
+    void    declareTermTree   (PTRef tr) { getSolverHandler().declareTermTree(tr); } // Declare the terms in the formula recursively.
+    bool    check             (bool);       // Check trail in the theories
+    void    backtrack         (int);        // Remove literals that are not anymore on the trail
 
-  void    computeModel         () { getSolverHandler().computeModel(); } // Computes a model in the solver if necessary
-  bool    assertLits           (vec<Lit>&);             // Give to the TSolvers the newly added literals on the trail
-  bool    assertLit            (PtAsgn pta) { return getSolverHandler().assertLit(pta); } // Push the assignment to all theory solvers
-  void    declareTermTree      (PTRef tr) { getSolverHandler().declareTermTree(tr); } // Declare the terms in the formula recursively.
-  bool    check                (bool);       // Check trail in the theories
-  void    backtrack            (int);        // Remove literals that are not anymore on the trail
+//    lbool   evaluate          ( PTRef e ) { return l_Undef; }
 
-//  void    inform               ( );
-
-//  lbool   evaluate             ( PTRef e ) { return l_Undef; }
-
-  char*   printValue           (PTRef tr) { return getSolverHandler().printValue(tr); } // Debug.  Ask from the solvers what they know about value of tr
-  char*   printExplanation     (PTRef tr) { return getSolverHandler().printExplanation(tr); } // Debug.  Ask from the solvers what they know about explanation of tr
-  void    declareTerm          (PTRef tr) { getSolverHandler().declareTerm(tr); }
+    char*   printValue         (PTRef tr) { return getSolverHandler().printValue(tr); } // Debug.  Ask from the solvers what they know about value of tr
+    char*   printExplanation   (PTRef tr) { return getSolverHandler().printExplanation(tr); } // Debug.  Ask from the solvers what they know about explanation of tr
+    void    declareTerm        (PTRef tr) { getSolverHandler().declareTerm(tr); }
 
 protected:
 
 
-  // Returns a random float 0 <= x < 1. Seed must never be 0.
-  static inline double drand(double& seed)
-  {
-    seed *= 1389796;
-    int q = (int)(seed / 2147483647);
-    seed -= (double)q * 2147483647;
-    return seed / 2147483647;
-  }
+    // Returns a random float 0 <= x < 1. Seed must never be 0.
+    static inline double drand(double& seed)
+    {
+        seed *= 1389796;
+        int q = (int)(seed / 2147483647);
+        seed -= (double)q * 2147483647;
+        return seed / 2147483647;
+    }
 
-  // Returns a random integer 0 <= x < size. Seed must never be 0.
-  static inline int irand(double& seed, int size) 
-  {
-    return (int)(drand(seed) * size); 
-  }
+    // Returns a random integer 0 <= x < size. Seed must never be 0.
+    static inline int irand(double& seed, int size) 
+    {
+        return (int)(drand(seed) * size); 
+    }
 
 //  void verifyCallWithExternalTool        ( bool, size_t );
 //  void verifyExplanationWithExternalTool ( vector< Enode * > & );
 //  void verifyDeductionWithExternalTool   ( Enode * = NULL );
 //  bool callCertifyingSolver              ( const char * );
 #ifdef PRODUCE_PROOF
-  void verifyInterpolantWithExternalTool ( PTRef itp, const ipartitions_t & );
+    void verifyInterpolantWithExternalTool ( PTRef itp, const ipartitions_t & );
 #endif
-  void dumpHeaderToFile(ostream&);
-  void dumpFormulaToFile(ostream&, PTRef, bool negate = false);
+    void dumpHeaderToFile(ostream&);
+    void dumpFormulaToFile(ostream&, PTRef, bool negate = false);
 
 #ifdef PEDANTIC_DEBUG
-  bool  isOnTrail     ( Lit, vec<Lit>& );
+    bool  isOnTrail     ( Lit, vec<Lit>& );
 #endif
 
-//  vector< Var >       enode_id_to_var;          // Conversion EnodeID --> Var
-//  vector< Enode * >   var_to_enode;             // Conversion Var --> EnodeID
 public:
-  vec< PTRef >        stack;                    // Stacked atoms
+    vec< PTRef >        stack;                    // Stacked atoms
 protected:
-  size_t              checked_trail_size;       // Store last size of the trail checked by the solvers
+    size_t              checked_trail_size;       // Store last size of the trail checked by the solvers
 
-  inline lbool value (Lit p, vec<char>& assigns) const { return toLbool(assigns[var(p)]) ^ sign(p); }
-protected:
-  bool                        theoryInitialized; // True if theory solvers are initialized
+    inline lbool value (Lit p, vec<char>& assigns) const { return toLbool(assigns[var(p)]) ^ sign(p); }
+    bool theoryInitialized; // True if theory solvers are initialized
 
 
 // Debug
 public:
-  const char* printAsrtClause(vec<Lit>& r);
-  const char* printAsrtClause(Clause *c);
-  bool checkTrailConsistency(vec<Lit>& trail);
+    const char* printAsrtClause(vec<Lit>& r);
+    const char* printAsrtClause(Clause *c);
+    bool checkTrailConsistency(vec<Lit>& trail);
 protected:
 #ifdef PEDANTIC_DEBUG
-//  std::string printExplanation(vec<PtAsgn>&, vec<char>&);
-  std::string printAssertion(Lit);
+    std::string printAssertion(Lit);
 #endif
 };
 

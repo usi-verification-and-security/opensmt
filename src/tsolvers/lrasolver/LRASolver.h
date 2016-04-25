@@ -42,7 +42,13 @@ class LRASolverStats: public TSolverStats
         int num_pivot_ops;
         int num_bland_ops;
         int num_vars;
-        LRASolverStats() : num_pivot_ops(0), num_bland_ops(0), num_vars(0) { TSolverStats(); }
+
+        LRASolverStats()
+        : num_pivot_ops(0)
+        , num_bland_ops(0)
+        , num_vars(0)
+        { TSolverStats(); }
+
         void printStatistics(ostream& os)
         {
             cerr << "; -------------------------" << endl;

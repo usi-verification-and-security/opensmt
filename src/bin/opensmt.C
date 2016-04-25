@@ -120,9 +120,8 @@ int main( int argc, char * argv[] )
     int opt, i;
 //    WorkerClient *w;
     SMTConfig c;
-    Interpret interpreter(c);
     bool dryrun = false; // Run without solving
-    while ((opt = getopt(argc, argv, "hp:d")) != -1) {
+    while ((opt = getopt(argc, argv, "p:dr:")) != -1) {
         switch (opt) {
             case 'p':
                 if(!c.sat_split_threads(atoi(optarg))){
@@ -149,16 +148,20 @@ int main( int argc, char * argv[] )
 //                    SMTConfig::database_port = atoi(&optarg[i+1]);
 //                }
 //                break;
-            case 'h':
-                //    context.getConfig( ).printHelp( );
-                break;
+//            case 'h':
+//                //    context.getConfig( ).printHelp( );
+//                break;
             case 'd':
                 const char* msg;
                 c.setOption(SMTConfig::o_dryrun, Option(true), msg);
                 break;
+            case 'r':
+                if (!c.setOption(SMTConfig::o_random_seed, Option(atoi(optarg)), msg))
+                    fprintf(stderr, "Error setting random seed: %s\n", msg);
+                break;
             default: /* '?' */
-                fprintf(stderr, "Usage:\n\t%s [-p threads] filename [...]\n\t%s -s host:port -r host:port\n\t%s -h\n",
-                        argv[0], argv[0], argv[0]);
+                fprintf(stderr, "Usage:\n\t%s [-p threads] [-d] [-r seed] filename [...]\n",
+                        argv[0]);
                 return 0;
         }
     }
@@ -172,41 +175,36 @@ int main( int argc, char * argv[] )
 //        }
 //        return 0;
 //    }
+    Interpret interpreter(c);
 
-  if (argc - optind == 0) {
-    fin = stdin;
-    int rval = interpreter.interpInteractive(fin);
-  }
-  else {
-    for (int i = optind; i < argc; i++) {
-      const char * filename = argv[i];
-      assert( filename );
-      if ( strncmp( filename, "--", 2 ) == 0
-           || strncmp( filename, "-", 1 ) == 0 ) {
-        opensmt_error( "input file must be last argument" ); }
-
-      else if ( (fin = fopen( filename, "rt" )) == NULL )
-        opensmt_error( "can't open file" );
-
-      const char * extension = strrchr( filename, '.' );
-      if ( extension != NULL && strcmp( extension, ".smt" ) == 0 ) {
-        opensmt_error( "SMTLIB 1.2 format is not supported in this version, sorry" ); }
-      else if ( extension != NULL && strcmp( extension, ".smt2" ) == 0 ) {
-        int rval = interpreter.interpFile(fin);
-//      smt2set_in( fin );
-//      smt2parse( );
-      }
-      else
-        opensmt_error2( filename, " extension not recognized. Please use one in { smt2, cnf } or stdin (smtlib2 is assumed)" );
+    if (argc - optind == 0) {
+        fin = stdin;
+        int rval = interpreter.interpInteractive(fin);
     }
-    fclose( fin );
-  }
+    else {
+        for (int i = optind; i < argc; i++) {
+            const char * filename = argv[i];
+            assert( filename );
+            if ( strncmp( filename, "--", 2 ) == 0
+               || strncmp( filename, "-", 1 ) == 0 ) {
+                opensmt_error( "input file must be last argument" ); }
 
-  // 
-  // Execute accumulated commands
-  // function defined in OpenSMTContext.C
-  //
-//  return context.executeCommands( );
+            else if ( (fin = fopen( filename, "rt" )) == NULL )
+                opensmt_error( "can't open file" );
+
+            const char * extension = strrchr( filename, '.' );
+            if ( extension != NULL && strcmp( extension, ".smt" ) == 0 ) {
+                opensmt_error( "SMTLIB 1.2 format is not supported in this version, sorry" );
+            }
+            else if ( extension != NULL && strcmp( extension, ".smt2" ) == 0 ) {
+                int rval = interpreter.interpFile(fin);
+            }
+            else
+                opensmt_error2( filename, " extension not recognized. Please use one in { smt2, cnf } or stdin (smtlib2 is assumed)" );
+        }
+        fclose( fin );
+    }
+
     return 0;
 }
 

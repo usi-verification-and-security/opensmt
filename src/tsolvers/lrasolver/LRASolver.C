@@ -453,15 +453,15 @@ bool LRASolver::check(bool complete)
         // of them every time!
         VectorLAVar::const_iterator it = rows.begin();
         int max_var_id = lavarStore->numVars();
-        int curr_var_id = max_var_id;
+        int curr_var_id_x = max_var_id;
         for (; it != rows.end(); ++it) {
             if ((*it)->isModelOutOfBounds()) {
                 if (bland_rule) {
                     bland_counter++;
                     tsolver_stats.num_bland_ops++;
                     // Select the var with the smallest id
-                    x = (*it)->ID() < curr_var_id ? *it : x;
-                    curr_var_id = (*it)->ID() < curr_var_id ? (*it)->ID() : curr_var_id;
+                    x = (*it)->ID() < curr_var_id_x ? *it : x;
+                    curr_var_id_x = (*it)->ID() < curr_var_id_x ? (*it)->ID() : curr_var_id_x;
                 } else { // Use heuristics that prefers short polynomials
                     pivot_counter++;
                     tsolver_stats.num_pivot_ops++;
@@ -484,7 +484,9 @@ bool LRASolver::check(bool complete)
             if (checks_history.back() < pushed_constraints.size())
                 checks_history.push_back(pushed_constraints.size());
 //            cerr << "; USUAL SAT" << endl;
-            return setStatus( SAT );
+            setStatus(SAT);
+            break;
+//            return setStatus( SAT );
         }
 
         Real * a;
@@ -494,7 +496,7 @@ bool LRASolver::check(bool complete)
         // Model doesn't feet the lower bound
         if (x->M() < x->L() ) {
             // For the Bland rule
-            curr_var_id = max_var_id;
+            int curr_var_id_y = max_var_id;
             // look for nonbasic terms to fix the unbounding
             LARow::iterator it = x->polynomial.begin( );
             for (; it != x->polynomial.end(); x->polynomial.getNext(it)) {
@@ -510,8 +512,8 @@ bool LRASolver::check(bool complete)
                 if ((a_is_pos && y->M() < y->U()) || (!a_is_pos && y->M() > y->L())) {
                     if (bland_rule) {
                         // Choose the leftmost nonbasic column with a negative (reduced) cost
-                        y_found = y->ID() < curr_var_id ? y : y_found;
-                        curr_var_id = y->ID() < curr_var_id ? y->ID() : curr_var_id;
+                        y_found = y->ID() < curr_var_id_y ? y : y_found;
+                        curr_var_id_y = y->ID() < curr_var_id_y ? y->ID() : curr_var_id_y;
                     } else {
                         if (y_found == NULL)
                             y_found = y;
@@ -533,14 +535,19 @@ bool LRASolver::check(bool complete)
                 for (unsigned i = 0; i < columns.size(); ++i)
                     if (!columns[i]->skip)
                         columns[i]->restoreModel();
-                return setStatus(UNSAT);
+                setStatus(UNSAT);
+                break;
+//                return setStatus(UNSAT);
             }
             // if it was found - pivot old Basic x with non-basic y and do the model updates
-            else
+            else {
+                if (bland_rule)
+                    printf("pivoting on x-id %d and y-id %d\n", curr_var_id_x, curr_var_id_y);
                 pivotAndUpdate(x, y_found, x->L());
+            }
         } else if (x->M() > x->U()) {
             // For the Bland rule
-            curr_var_id = max_var_id;
+            int curr_var_id_y = max_var_id;
             // look for nonbasic terms to fix the unbounding
             LARow::iterator it = x->polynomial.begin( );
             for (; it != x->polynomial.end(); x->polynomial.getNext(it)) {
@@ -555,8 +562,8 @@ bool LRASolver::check(bool complete)
                 const bool & a_is_pos = (*a) > 0;
                 if ((!a_is_pos && y->M() < y->U()) || (a_is_pos && y->M() > y->L())) {
                     if (bland_rule) {
-                        y_found = y->ID() < curr_var_id ? y : y_found;
-                        curr_var_id = y->ID() < curr_var_id ? y->ID() : curr_var_id;
+                        y_found = y->ID() < curr_var_id_y ? y : y_found;
+                        curr_var_id_y = y->ID() < curr_var_id_y ? y->ID() : curr_var_id_y;
                     } else {
                         if (y_found == NULL)
                             y_found = y;
@@ -577,15 +584,22 @@ bool LRASolver::check(bool complete)
                 for (unsigned i = 0; i < columns.size(); ++i)
                     if (!columns[i]->skip)
                         columns[i]->restoreModel();
-                return setStatus(UNSAT);
+                setStatus(UNSAT);
+                break;
+//                return setStatus(UNSAT);
             }
             // if it was found - pivot old Basic x with non-basic y and do the model updates
-            else
+            else {
+                if (bland_rule)
+                    printf("pivoting on x-id %d and y-id %d\n", curr_var_id_x, curr_var_id_y);
                 pivotAndUpdate(x, y_found, x->U());
+            }
         } else {
             opensmt_error( "Error in bounds comparison" );
         }
     }
+    getStatus() == true ? tsolver_stats.sat_calls ++ : tsolver_stats.unsat_calls ++;
+    return getStatus();
 }
 
 //
@@ -596,10 +610,22 @@ bool LRASolver::assertLit( PtAsgn pta, bool reason )
   ( void )reason;
 
   // Special cases of the "inequalitites"
-  if (logic.isTrue(pta.tr) && pta.sgn == l_True) return true;
-  if (logic.isFalse(pta.tr) && pta.sgn == l_False) return true;
-  if (logic.isTrue(pta.tr) && pta.sgn == l_False) return false;
-  if (logic.isFalse(pta.tr) && pta.sgn == l_True) return false;
+  if (logic.isTrue(pta.tr) && pta.sgn == l_True) {
+      tsolver_stats.sat_calls ++;
+      return true;
+  }
+  if (logic.isFalse(pta.tr) && pta.sgn == l_False) {
+      tsolver_stats.sat_calls ++;
+      return true;
+  }
+  if (logic.isTrue(pta.tr) && pta.sgn == l_False) {
+      tsolver_stats.unsat_calls ++;
+      return false;
+  }
+  if (logic.isFalse(pta.tr) && pta.sgn == l_True) {
+      tsolver_stats.unsat_calls ++;
+      return false;
+  }
   // check if we stop reading constraints
   if( status == INIT )
     initSolver( );
@@ -614,9 +640,11 @@ bool LRASolver::assertLit( PtAsgn pta, bool reason )
   Pterm& t = logic.getPterm(pta.tr);
 
   // skip if it was deduced by the solver itself with the same polarity
-  if (deduced[t.getVar()] != l_Undef && deduced[t.getVar()].polarity == pta.sgn && deduced[t.getVar()].deducedBy == id)
-    return getStatus( );
-  if( deduced[t.getVar()] != l_Undef && deduced[t.getVar()].deducedBy == id)
+  if (deduced[t.getVar()] != l_Undef && deduced[t.getVar()].polarity == pta.sgn && deduced[t.getVar()].deducedBy == id) {
+      getStatus() ? tsolver_stats.sat_calls ++ : tsolver_stats.unsat_calls ++;
+      return getStatus( );
+  }
+  if ( deduced[t.getVar()] != l_Undef && deduced[t.getVar()].deducedBy == id)
     is_reason = true; // This is a conflict!
 
   setPolarity(pta.tr, pta.sgn);
@@ -644,6 +672,7 @@ bool LRASolver::assertLit( PtAsgn pta, bool reason )
       return check( false );
     }
   }
+  getStatus() ? tsolver_stats.sat_calls ++ : tsolver_stats.unsat_calls ++;
   return getStatus( );
 }
 
@@ -1031,10 +1060,15 @@ void LRASolver::pivotAndUpdate( LAVar * x, LAVar * y, const Delta & v )
   // pivoting x and y
 
 #if FAST_RATIONALS
-  const Real & inverse = -FastRational_inverse( a );
+  const Real inverse = -FastRational_inverse( a );
 #else
-  const Real & inverse = -1 / a;
+  const Real inverse = -1 / a;
 #endif
+
+  // more debug
+  if (a == 1) {
+      assert(inverse == -1);
+  }
 
   // NEW VARIANT OF PIVOTING
 
@@ -1141,12 +1175,12 @@ void LRASolver::pivotAndUpdate( LAVar * x, LAVar * y, const Delta & v )
   //  }
 
   // OLD PIVOTING
-  // first change the attribute values for x  polynomial
+  // first change the attribute values for x polynomial
   for( LARow::iterator it = x->polynomial.begin( ); it != x->polynomial.end( ); x->polynomial.getNext( it ) )
     *( it->coef ) *= inverse;
 
   // value of a_y should become -1
-  assert( !( *( x->polynomial.find( y->ID( ) )->coef ) != -1 ) );
+  assert( *( x->polynomial.find( y->ID( ) )->coef ) == -1 );
 
   // now change the attribute values for all rows where y was presented
   for( LAColumn::iterator it = y->binded_rows.begin( ); it != y->binded_rows.end( ); y->binded_rows.getNext( it ) )

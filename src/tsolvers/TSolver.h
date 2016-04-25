@@ -35,11 +35,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 #ifdef STATISTICS
-struct TSolverStats
+class TSolverStats
 {
-  TSolverStats ( )
+  public:
+    long sat_calls;
+    long unsat_calls;
+
+    TSolverStats ()
     : sat_calls         ( 0 )
-    , uns_calls         ( 0 )
+    , unsat_calls       ( 0 )
     , conflicts_sent    ( 0 )
     , avg_conf_size     ( 0 )
     , max_conf_size     ( 0 )
@@ -55,93 +59,91 @@ struct TSolverStats
     , avg_sod_size      ( 0 )
     , max_sod_size      ( 0 )
     , min_sod_size      ( 32767 )
-  { }
+    {}
 
-  // Statistics for theory solvers
-  virtual void printStatistics ( ostream & os )
-  {
-    os << "; Satisfiable calls........: " << sat_calls << endl;
-    os << "; Unsatisfiable calls......: " << uns_calls << endl;
-    if ( uns_calls > 0 )
+    // Statistics for theory solvers
+    virtual void printStatistics ( ostream & os )
     {
-      os << "; Conflicts sent...........: " << conflicts_sent << endl;
-      if ( conflicts_sent > 0 )
-      {
-        os << "; Average conflict size....: " << avg_conf_size / (float)conflicts_sent << endl;
-        os << "; Max conflict size........: " << max_conf_size << endl;
-        os << "; Min conflict size........: " << min_conf_size << endl;
-      }
+        os << "; Satisfiable calls........: " << sat_calls << endl;
+        os << "; Unsatisfiable calls......: " << unsat_calls << endl;
+        if ( unsat_calls > 0 )
+        {
+            os << "; Conflicts sent...........: " << conflicts_sent << endl;
+            if ( conflicts_sent > 0 )
+            {
+                os << "; Average conflict size....: " << avg_conf_size / (float)conflicts_sent << endl;
+                os << "; Max conflict size........: " << max_conf_size << endl;
+                os << "; Min conflict size........: " << min_conf_size << endl;
+            }
+        }
+        if ( sat_calls > 0 )
+        {
+            os << "; Deductions done..........: " << deductions_done << endl;
+            os << "; Deductions sent..........: " << deductions_sent << endl;
+            os << "; Reasons sent.............: " << reasons_sent << endl;
+            if ( reasons_sent > 0 )
+            {
+                os << "; Average reason size......: " << avg_reas_size / (float)reasons_sent << endl;
+                os << "; Max reason size..........: " << max_reas_size << endl;
+                os << "; Min reason size..........: " << min_reas_size << endl;
+            }
+            os << "; SOD done.................: " << sod_done << endl;
+            os << "; SOD sent.................: " << sod_sent << endl;
+            if ( sod_sent > 0 )
+            {
+                os << "; Average reason size......: " << avg_reas_size / (float)sod_sent << endl;
+                os << "; Max reason size..........: " << max_reas_size << endl;
+                os << "; Min reason size..........: " << min_reas_size << endl;
+            }
+        }
     }
-    if ( sat_calls > 0 )
-    {
-      os << "; Deductions done..........: " << deductions_done << endl;
-      os << "; Deductions sent..........: " << deductions_sent << endl;
-      os << "; Reasons sent.............: " << reasons_sent << endl;
-      if ( reasons_sent > 0 )
-      {
-	os << "; Average reason size......: " << avg_reas_size / (float)reasons_sent << endl;
-	os << "; Max reason size..........: " << max_reas_size << endl;
-	os << "; Min reason size..........: " << min_reas_size << endl;
-      }
-      os << "; SOD done.................: " << sod_done << endl;
-      os << "; SOD sent.................: " << sod_sent << endl;
-      if ( sod_sent > 0 )
-      {
-	os << "; Average reason size......: " << avg_reas_size / (float)sod_sent << endl;
-	os << "; Max reason size..........: " << max_reas_size << endl;
-	os << "; Min reason size..........: " << min_reas_size << endl;
-      }
-    }
-  }
 
-  // Calls statistics
-  long  sat_calls;
-  long  uns_calls;
-  // Conflict statistics
-  int   conflicts_sent;
-  float avg_conf_size;
-  int   max_conf_size;
-  int   min_conf_size;
-  // Deductions statistics
-  int   deductions_done;
-  int   deductions_sent;
-  int   reasons_sent;
-  float avg_reas_size;
-  int   max_reas_size;
-  int   min_reas_size;
-  // Deductions statistics
-  int   sod_done;
-  int   sod_sent;
-  float avg_sod_size;
-  int   max_sod_size;
-  int   min_sod_size;
+    // Calls statistics
+    // Conflict statistics
+    int   conflicts_sent;
+    float avg_conf_size;
+    int   max_conf_size;
+    int   min_conf_size;
+    // Deductions statistics
+    int   deductions_done;
+    int   deductions_sent;
+    int   reasons_sent;
+    float avg_reas_size;
+    int   max_reas_size;
+    int   min_reas_size;
+    // Deductions statistics
+    int   sod_done;
+    int   sod_sent;
+    float avg_sod_size;
+    int   max_sod_size;
+    int   min_sod_size;
 };
 #endif
 
 class TSolver
 {
-protected:
-  SolverId   id;             // Solver unique identifier
-  vec<PtAsgn> explanation;    // Stores the explanation
-  vec<PtAsgn_reason> th_deductions;  // List of deductions computed by the theory
-  size_t        deductions_next;     // Index of next deduction to communicate
-  vec<size_t>   deductions_lim;      // Keeps track of deductions done up to a certain point
-  vec<size_t>   deductions_last;     // Keeps track of deductions done up to a certain point
-  vec<PTRef>    suggestions;         // List of suggestions for decisions
-  vec<DedElem> &deduced;             // Array of deductions indexed by variables
-  Map<PTRef,lbool,PTRefHash>    polarityMap;
+  protected:
+    SolverId   id;             // Solver unique identifier
+    vec<PtAsgn> explanation;    // Stores the explanation
+    vec<PtAsgn_reason> th_deductions;  // List of deductions computed by the theory
+    size_t        deductions_next;     // Index of next deduction to communicate
+    vec<size_t>   deductions_lim;      // Keeps track of deductions done up to a certain point
+    vec<size_t>   deductions_last;     // Keeps track of deductions done up to a certain point
+    vec<PTRef>    suggestions;         // List of suggestions for decisions
+    vec<DedElem> &deduced;             // Array of deductions indexed by variables
+    Map<PTRef,lbool,PTRefHash>    polarityMap;
 public:
 
-  TSolver(SolverId id_, const char* name_, SMTConfig & c, vec<DedElem>& d)
-  : id(id_)
-  , name(name_)
-  , deductions_next(0)
-  , config  (c)
-  , deduced (d)
-  , has_explanation(false)
-  {}
+    TSolver(SolverId id_, const char* name_, SMTConfig & c, vec<DedElem>& d)
+    : id(id_)
+    , name(name_)
+    , deductions_next(0)
+    , config  (c)
+    , deduced (d)
+    , has_explanation(false)
+    {}
 
-  virtual ~TSolver ( ) { }
+    virtual ~TSolver ( ) { }
     void  setPolarity(PTRef tr, lbool p) {
         if (polarityMap.contains(tr)) { polarityMap[tr] = p; }
         else { polarityMap.insert(tr, p); }
@@ -158,13 +160,11 @@ public:
 #endif
     }
     bool  hasPolarity(PTRef tr)          { if (polarityMap.contains(tr)) { return polarityMap[tr] != l_Undef; } else return false; }
-//    virtual lbool               inform              ( PTRef ) = 0             ;  // Inform the solver about the existence of a theory atom
     virtual bool                assertLit           ( PtAsgn, bool = false ) = 0 ;  // Assert a theory literal
     virtual void                pushBacktrackPoint  ( )                       ;  // Push a backtrack point
     virtual void                popBacktrackPoint   ( )                       ;  // Backtrack to last saved point
     virtual bool                check               ( bool ) = 0              ;  // Check satisfiability
     inline const string &       getName             ( ) { return name; }            // The name of the solver
-//    virtual lbool               evaluate            ( PTRef ) { return l_Undef; } // Evaluate the expression in the current state
     virtual ValPair             getValue            (PTRef) const = 0;
 #ifdef PRODUCE_PROOF
     virtual PTRef getInterpolants(const ipartitions_t &) = 0;

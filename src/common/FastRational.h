@@ -297,15 +297,6 @@ public:
   }
 
   inline FastRational inverse() const;
-/*
-  size_t hash() const {
-    if (has_word) {
-      return djb2(num, den);
-    } else {
-      return djb2(mpz_get_si(mpq_numref(mpq)), mpz_get_si(mpq_denref(mpq)));
-    }
-  }
-*/
   bool isZero() const {
     if (has_word) {
       return num==0;
@@ -712,8 +703,8 @@ inline void subtractionAssign(FastRational& a, const FastRational& b){
 
 inline void multiplicationAssign(FastRational& a, const FastRational& b){
   if (a.has_word && b.has_word) {
-    word common1 = gcd(absVal(a.num), b.den);
-    word common2 = gcd(a.den, absVal(b.num));
+    lword common1 = gcd(absVal(a.num), b.den);
+    lword common2 = gcd(a.den, absVal(b.num));
     word zn;
     uword zd;
     CHECK_WORD(zn, lword(a.num/common1) * (b.num/common2));
@@ -768,6 +759,7 @@ inline unsigned FastRational::size() const {
 }
 
 inline FastRational FastRational::inverse() const {
+
   FastRational dest;
 
   if (has_word) {

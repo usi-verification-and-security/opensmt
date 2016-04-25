@@ -121,46 +121,6 @@ Egraph::Egraph(SMTConfig & c, Logic& l , vec<DedElem>& d)
     Eq_FALSE = neq;
   }
 
-
-//
-// Checks for consistency in theories
-// Shouldn't this be done elsewhere?
-bool Egraph::check( bool complete )
-{
-  bool res = true;
-
-  // Assert literal in the other theories
-//  for ( uint32_t i = 1 ; i < tsolvers.size_( ) && res ; i ++ )
-//  {
-//    OrdinaryTSolver & t = *tsolvers[ i ];
-//#ifdef STATISTICS
-//    TSolverStats & ts = *tsolvers_stats[ i ];
-//#endif
-//
-//#ifdef STATISTICS
-//    size_t deductions_old = deductions.size( );
-//#endif
-//
-//    res = t.check( complete );
-//    if ( !res ) conf_index = i;
-//
-//#ifdef STATISTICS
-//    if ( res )
-//    {
-//      ts.sat_calls ++;
-//      ts.deductions_done += deductions.size( ) - deductions_old;
-//    }
-//    else
-//      ts.uns_calls ++;
-//#endif
-//  }
-//
-//  assert( !res || explanation.size() == 0 );
-//  assert( exp_cleanup.size() == 0 );
-
-  return res;
-}
-
 //
 // Pushes a backtrack point
 //
@@ -499,7 +459,7 @@ lbool Egraph::addEquality(PtAsgn pa) {
 
 #ifdef STATISTICS
     if (res == false)
-        tsolver_stats.uns_calls++;
+        tsolver_stats.unsat_calls++;
     // The sat_calls is increased already in addTrue
 #endif
 
@@ -541,7 +501,7 @@ lbool Egraph::addDisequality(PtAsgn pa) {
     }
 #ifdef STATISTICS
     if (!res)
-        tsolver_stats.uns_calls++;
+        tsolver_stats.unsat_calls++;
     // The sat_calls is increased already in addFalse
 #endif
 
@@ -558,7 +518,7 @@ bool Egraph::addTrue(PTRef term) {
     bool res = assertEq(term, logic.getTerm_true(), PtAsgn(term, l_True));
 #ifdef STATISTICS
     if (res == false)
-        tsolver_stats.uns_calls++;
+        tsolver_stats.unsat_calls++;
     else {
         tsolver_stats.sat_calls++;
 #ifdef VERBOSE_EUF
@@ -579,7 +539,7 @@ bool Egraph::addFalse(PTRef term) {
     bool res = assertEq(term, logic.getTerm_false(), PtAsgn(term, l_False));
 #ifdef STATISTICS
     if (res == false)
-        tsolver_stats.uns_calls++;
+        tsolver_stats.unsat_calls++;
     else {
         tsolver_stats.sat_calls++;
 #ifdef VERBOSE_EUF
@@ -2428,7 +2388,8 @@ bool Egraph::assertLit(PtAsgn pta, bool)
     else
         assert(false);
 
-    return res == l_False ? false : true;
+    (res == l_False) ? tsolver_stats.unsat_calls ++ : tsolver_stats.sat_calls ++;
+    return (res == l_False) ? false : true;
 }
 
 #if MORE_DEDUCTIONS
