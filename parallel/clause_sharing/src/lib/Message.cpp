@@ -11,7 +11,7 @@ void Message::dump(std::string &s) {
         std::string keyval[2] = {it->first, it->second};
         for (uint8_t i = 0; i < 2; i++) {
             if (keyval[i].length() > (uint8_t) -1)
-                throw "Header map's key or value too big";
+                throw "Header map's key or value is too big";
             s += (uint8_t) keyval[i].length();
             s += keyval[i];
         }
