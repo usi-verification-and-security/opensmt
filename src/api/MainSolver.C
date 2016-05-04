@@ -261,95 +261,6 @@ void MainSolver::expandItes(FContainer& fc, vec<PtChild>& terms)
 }
 
 
-#ifdef ENABLE_SHARING_BUG
-MainSolver::FContainer MainSolver::mergeEnodeArgs(PTRef fr, Map<PTRef, PTRef, PTRefHash>& cache, Map<PTRef, int, PTRefHash>& occs)
-{
-    assert(logic.isAnd(fr) || logic.isOr(fr));
-    Pterm& f = logic.getPterm(fr);
-    SymRef sr = f.symb();
-    vec<PTRef> new_args;
-#ifdef SIMPLIFY_DEBUG
-    char* name = logic.printTerm(fr);
-    cout << "; Merge: " << name << endl;
-    ::free(name);
-#endif
-    for (int i = 0; i < f.size(); i++) {
-        PTRef arg = f[i];
-        PTRef sub_arg = cache[arg];
-        SymRef sym = logic.getPterm(arg).symb();
-        if (sym != sr) {
-            new_args.push(sub_arg);
-            continue;
-        }
-        assert(occs.contains(arg));
-        assert(occs[arg] >= 1);
-
-        if (occs[arg] > 1) {
-            new_args.push(sub_arg);
-#ifdef SIMPLIFY_DEBUG
-            cout << " Using shared structure (" << occs[arg] << " * ";
-            char* name = logic.printTerm(sub_arg);
-            cout << name << endl;
-            ::free(name);
-#endif
-            continue;
-        }
-        Pterm& sa = logic.getPterm(sub_arg);
-        for (int j = 0; j < sa.size(); j++)
-            new_args.push(sa[j]);
-    }
-    const char* msg;
-    PTRef out = logic.mkFun(sr, new_args, &msg);
-#ifdef SIMPLIFY_DEBUG
-    cout << " =>    ";
-    name = logic.printTerm(out);
-    cout << name << endl;
-    ::free(name);
-#endif
-    return out;
-}
-
-MainSolver::FContainer MainSolver::rewriteMaxArity(MainSolver::FContainer fc, Map<PTRef, int, PTRefHash>& occs)
-{
-    PTRef f = fc.getRoot();
-    vec<PTRef> queue;
-    queue.push(f);
-    Map<PTRef,PTRef,PTRefHash> cache; // Cache for processed nodes
-
-    while (queue.size() != 0) {
-        PTRef tr = queue.last();
-        Pterm& t = logic.getPterm(tr);
-        if (cache.contains(tr)) {
-            queue.pop();
-            continue;
-        }
-
-        bool unprocessed_children = false;
-        for (int i = 0; i < t.size(); i++) {
-            if (logic.isBooleanOperator(t[i]) && !cache.contains(t[i])) {
-                queue.push(t[i]);
-                unprocessed_children = true;
-            } else if (logic.isAtom(t[i]))
-                cache.insert(t[i], t[i]);
-        }
-        if (unprocessed_children) continue;
-        queue.pop();
-        assert(logic.isBooleanOperator(tr) || logic.isTrue(tr) || logic.isFalse(tr));
-        PTRef result;
-        if (logic.isAnd(tr) || logic.isOr(tr))
-            result = mergeEnodeArgs(tr, cache, occs).getRoot();
-        else
-            result = tr;
-
-        assert(!cache.contains(tr));
-        cache.insert(tr, result);
-    }
-
-    fc.setRoot(cache[f]);
-    return fc;
-}
-#endif
-
 // Replace subtrees consisting only of ands / ors with a single and / or term.
 // Search a maximal section of the tree consisting solely of ands / ors.  The
 // root of this subtree is called and / or root.  Collect the subtrees rooted at
@@ -989,6 +900,27 @@ void MainSolver::addToConj(vec<vec<PtAsgn> >& in, vec<PTRef>& out)
     }
 }
 
+bool MainSolver::writeSolverState_smtlib2(const char* file, char** msg)
+{
+    char* name;
+    asprintf(&name, "%s.smt2", file);
+    std::ofstream file_s;
+    file_s.open(name);
+    if (file_s.is_open()) {
+        logic.dumpHeaderToFile(file_s);
+        logic.dumpFormulaToFile(file_s, root_instance.getRoot());
+        logic.dumpChecksatToFile(file_s);
+        file_s.close();
+    }
+    else {
+        asprintf(msg, "Failed to open file %s\n", name);
+        free(name);
+        return false;
+    }
+    free(name);
+    return true;
+}
+
 bool MainSolver::writeSolverSplits_smtlib2(const char* file, char** msg)
 {
     vec<SplitData>& splits = ts.solver.splits;
@@ -1009,10 +941,17 @@ bool MainSolver::writeSolverSplits_smtlib2(const char* file, char** msg)
         asprintf(&name, "%s-%02d.smt2", file, i);
         std::ofstream file;
         file.open(name);
-        logic.dumpHeaderToFile(file);
-        logic.dumpFormulaToFile(file, problem);
-        logic.dumpChecksatToFile(file);
-        file.close();
+        if (file.is_open()) {
+            logic.dumpHeaderToFile(file);
+            logic.dumpFormulaToFile(file, problem);
+            logic.dumpChecksatToFile(file);
+            file.close();
+        }
+        else {
+            asprintf(msg, "Failed to open file %s\n", name);
+            free(name);
+            return false;
+        }
         free(name);
     }
     return true;

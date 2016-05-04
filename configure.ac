@@ -344,23 +344,6 @@ AM_CONDITIONAL([ENABLE_TERM_EXPLANATIONS], [test "$enable_term_explanations" = "
 echo "Store explanations in terms...  ${enable_term_explanations}"
 
 
-#
-# Enable the buggy implementation of the structure sharing
-#
-AC_ARG_ENABLE(sharebug,
-  AC_HELP_STRING([--enable-sharebug],
-                 [enable the structure sharing bug in propositional flattening @<:@no@:>@]),
-  [:],
-  [enable_sharebug="no"])
-
-if test $enable_sharebug = "yes" ;
-then
-  config_sharebug="-DENABLE_SHARING_BUG"
-else
-  config_sharebug=""
-fi
-AM_CONDITIONAL([ENABLE_SHAREBUG], [test "$enable_sharebug" = "yes"])
-echo "Enable sharing bug...  ${enable_sharebug} (${config_sharebug:-none})"
 
 AC_ARG_ENABLE(congruencesubstitution,
   AC_HELP_STRING([--enable-congruencesubstitution],
@@ -492,7 +475,7 @@ then
   exit
 fi
 
-def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_la_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_sharebug $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_oldsubstitution $config_custom_memalloc $config_term_explanations $config_compress $config_verbose_euf $config_verbose_eufex $config_verbose_fops $config_verbose_sat $config_verbose_cnfization $config_printclausalsize $config_verbose_flattening"
+def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_la_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_oldsubstitution $config_custom_memalloc $config_term_explanations $config_compress $config_verbose_euf $config_verbose_eufex $config_verbose_fops $config_verbose_sat $config_verbose_cnfization $config_printclausalsize $config_verbose_flattening"
 
 comp_flags="-W -Wall -g -Wno-deprecated $config_profiling"
 

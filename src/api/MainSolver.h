@@ -106,10 +106,6 @@ class MainSolver {
     void computeIncomingEdges(PTRef tr, Map<PTRef,int,PTRefHash>& PTRefToIncoming);
     PTRef rewriteMaxArity(PTRef, Map<PTRef,int,PTRefHash>&);
     PTRef mergePTRefArgs(PTRef, Map<PTRef,PTRef,PTRefHash>&, Map<PTRef,int,PTRefHash>&);
-#ifdef ENABLE_SHARING_BUG
-    FContainer mergeEnodeArgs(PTRef fr, Map<PTRef, PTRef, PTRefHash>& cache, Map<PTRef, int, PTRefHash>& occs);
-    FContainer rewriteMaxArity(FContainer fc, Map<PTRef, int, PTRefHash>& occs);
-#endif
 
     vec<MainSolver*> parallel_solvers;
 
@@ -161,6 +157,7 @@ class MainSolver {
     bool  writeState       (int* &buf, int &buf_sz, bool compress, CnfState& cs, char** msg);
     bool  writeSolverState (const char* file, char** msg);
     bool  writeSolverState (int* &buf, int &buf_sz, bool compress, char** msg);
+    bool  writeSolverState_smtlib2 (const char* file, char** msg);
 
     void  addToConj(vec<vec<PtAsgn> >& in, vec<PTRef>& out); // Add the contents of in as disjuncts to out
     bool  writeSolverSplits_smtlib2(const char* file, char** msg);

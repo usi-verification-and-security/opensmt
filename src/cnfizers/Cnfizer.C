@@ -198,15 +198,11 @@ lbool Cnfizer::cnfizeAndGiveToSolver( PTRef formula
 #ifdef PEDANTIC_DEBUG
             cout << " => proper cnfization" << endl;
 #endif // PEDANTIC_DEBUG
-#ifdef ENABLE_SHARING_BUG
-            res = cnfize(f, valdupmap);
-#else // ENABLE_SHARING_BUG
 #ifdef PRODUCE_PROOF
             res = cnfize(f, partition);
 #else // PRODUCE_PROOF
             res = cnfize(f);                         // Perform actual cnfization (implemented in subclasses)
 #endif // PRODUCE_PROOF
-#endif // ENABLE_SHARING_BUG
         }
         s_empty = false; // solver no longer empty
     }
