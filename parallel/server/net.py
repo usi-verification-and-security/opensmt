@@ -57,7 +57,7 @@ class Socket(object):
                 i += 1
                 pair.append(content[i:i + length])
                 i += length
-            header[pair[0]] = pair[1]
+            header[pair[0].decode()] = pair[1].decode()
         i += 1
         return header, content[i:]
 
@@ -136,12 +136,10 @@ class Server(object):
                 continue
             try:
                 header, message = sock.read()
-            except ConnectionAbortedError:
+            except:
                 self.handle_close(sock)
                 sock.close()
                 self._rlist.remove(sock)
-            except:
-                self._logger.error('socket error during read')
             else:
                 self.handle_message(sock, header, message)
 

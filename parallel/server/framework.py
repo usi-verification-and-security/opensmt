@@ -2,9 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import enum
-import os
-import pprint
-import net
+import sqlite3
+import json
 
 
 class Observer(object):
@@ -125,17 +124,32 @@ class SolveState(enum.Enum):
 
 
 class SMTFormula(object):
-    def __init__(self, id, smt):
+    def __init__(self, id, smt=None, data=None):
         self.smt = smt
         self.id = id
+        self.data = data
 
     def __str__(self):
         return str(self.id)
 
+    def json_dump(self):
+        return json.dumps({'id': self.id, 'smt': self.smt, 'data': self.data})
 
-class Node(dict):
+    @staticmethod
+    def json_load(dump):
+        d = json.loads(dump)
+        return SMTFormula(d['id'], d['smt'], d['data'])
+
+
+class Node(dict, Observer.ObservedBase):
+    def __init__(self, formula):
+        super().__init__()
+        self.formula = formula
+        self['children'] = self.observed(list)
+        self['status'] = SolveState.unknown
+
     def __repr__(self):
-        return '<{} state:{}>'.format(self.__class__.__bases__[0].__name__, self['state'].name, self['children'])
+        return '<{} state:{}>'.format(self.__class__.__bases__[0].__name__, self['status'].name, self['children'])
 
     def __hash__(self):
         return id(self)
@@ -146,38 +160,115 @@ class Node(dict):
     def __eq__(self, other):
         return id(self) == id(other)
 
+    @staticmethod
+    def db_setup(conn, table_prefix=''):
+        cursor = conn.cursor()
+        cursor.execute("CREATE TABLE IF NOT EXISTS {}Node ("
+                       "fid TEXT NOT NULL, "
+                       "nid INTEGER NOT NULL, "
+                       "parent INTEGER NOT NULL, "
+                       "state TEXT NOT NULL, "
+                       "formula TEXT, "
+                       "PRIMARY KEY (fid, nid)"
+                       ");".format(table_prefix))
+        conn.commit()
 
-class AndNode(Node, Observer.ObservedBase):
-    def __init__(self, formula):
-        super().__init__()
-        self.formula = formula
-        self['children'] = self.observed(list)
-        self['state'] = SolveState.unknown
+    def db_dump(self, conn, parent_index=0, table_prefix=''):
+        if type(conn) is sqlite3.Connection:  # cursor initiated only once for all recursive calls
+            cursor = conn.cursor()
+        else:
+            cursor = conn
+
+        nid = cursor.execute("SELECT COALESCE(MAX(nid)+1,1) FROM {}Node WHERE fid=?;".format(table_prefix), (
+            self.formula.id,
+        )).fetchall()[0][0]
+        cursor.execute("INSERT INTO {}Node VALUES (?,?,?,?,?);".format(table_prefix), (
+            self.formula.id,
+            nid,
+            parent_index,
+            self['status'].name,
+            self.formula.json_dump()
+        ))
+        for i, child in enumerate(self['children']):
+            child.db_dump(cursor, parent_index=nid, table_prefix=table_prefix)
+        if type(conn) is sqlite3.Connection:
+            conn.commit()
+
+    def db_load(self, conn, nid=1, table_prefix=''):
+        if type(conn) is sqlite3.Connection:  # cursor initiated only once for all recursive calls
+            cursor = conn.cursor()
+        else:
+            cursor = conn
+
+        try:
+            row = cursor.execute("SELECT * FROM {}Node WHERE fid=? AND nid=?".format(table_prefix), (
+                self.formula.id,
+                nid
+            )).fetchall()[0]
+        except:
+            raise ValueError('requested nid={} from DB not exists'.format(nid))
+        self['status'] = SolveState.__members__[row[3]]
+        self.formula = SMTFormula.json_load(row[4])
+
+        for row in cursor.execute("SELECT nid FROM {}Node WHERE fid=? AND parent=?".format(table_prefix), (
+                self.formula.id,
+                nid
+        )).fetchall():
+            self.add_child(SMTFormula(self.formula.id)).db_load(cursor, nid=row[0], table_prefix=table_prefix)
+
+        if type(conn) is sqlite3.Connection:
+            conn.commit()
 
     def add_child(self, *args, **kwargs):
-        self.observer.or_nodes += 1
-        self['children'].append(self.observed(OrNode, *args, **kwargs))
+        raise NotImplementedError
 
 
-class OrNode(Node, Observer.ObservedBase):
-    def __init__(self, formula):
-        super().__init__()
-        self.formula = formula
-        self['children'] = self.observed(list)
-        self['state'] = SolveState.unknown
-
+class AndNode(Node):
     def add_child(self, *args, **kwargs):
-        self.observer.and_nodes += 1
-        self['children'].append(self.observed(AndNode, *args, **kwargs))
+        child = self.observer.new_node(OrNode, *args, **kwargs)
+        self['children'].append(child)
+        return child
+
+
+class OrNode(Node):
+    def add_child(self, *args, **kwargs):
+        child = self.observer.new_node(AndNode, *args, **kwargs)
+        self['children'].append(child)
+        return child
 
 
 class ParallelizationTree(Observer):
     reverse_types = (SolveState,)
 
     def __init__(self, formula):
-        self.and_nodes = 0
-        self.or_nodes = 0
+        self._and_nodes = 0
+        self._or_nodes = 0
+        self._nodes = 1
         super().__init__(AndNode, formula)
+
+    def new_node(self, cls, *args, **kwargs):
+        if issubclass(cls, AndNode):
+            self._and_nodes += 1
+        elif issubclass(cls, OrNode):
+            self._or_nodes += 1
+        else:
+            raise TypeError
+        self._nodes += 1
+        return super().observed(cls, *args, **kwargs)
+
+    def db_setup(self, conn, table_prefix=''):
+        self.root.db_setup(conn, table_prefix=table_prefix)
+
+    def db_load(self, conn, table_prefix=''):
+        self.root.db_load(conn, table_prefix=table_prefix)
+
+    def db_dump(self, conn, table_prefix=''):
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM {}Node WHERE fid=?;".format(table_prefix), (
+            self.root.formula.id,
+        ))
+        conn.commit()
+        self.root.db_dump(conn, table_prefix=table_prefix)
 
     def update_reverse(self):
         if not self.observing:
@@ -186,21 +277,20 @@ class ParallelizationTree(Observer):
         self._observe = False
         for path in self._reverse.setdefault(SolveState.sat, []) + self._reverse.setdefault(SolveState.unsat, []):
             path = [node for node in path if isinstance(node, Node)]
-            state = path[-1]['state']  # sat or unsat of the leaf
+            state = path[-1]['status']  # sat or unsat of the leaf
             for i in range(1, len(path) + 1):  # from the last one until the first (root)
                 node = path[-i]
-                if node['state'] is state:  # already labeled
+                if node['status'] is state:  # already labeled
                     continue
                 if isinstance(node, OrNode) and state is SolveState.unsat:
-                    if all([node['state'] == state for node in node['children']]):
-                        print(node['children'])
-                        node['state'] = state
+                    if all([node['status'] == state for node in node['children']]):
+                        node['status'] = state
                     else:
                         break
                 else:
-                    node['state'] = state
+                    node['status'] = state
             for node in path:
-                if node['state'] is state:
+                if node['status'] is state:
                     self.prune(node)
                     break
         self._observe = True

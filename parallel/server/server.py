@@ -24,9 +24,18 @@ __author__ = 'Matteo Marescotti'
 class SocketParallelizationTree(framework.ParallelizationTree):
     reverse_types = (framework.SolveState, net.Socket)
 
-    def __init__(self, formula, sockets=()):
+    def __init__(self, formula, conn=None, sockets=(), table_prefix=''):
         super().__init__(formula)
+        self.conn = conn
         self._sockets = set(sockets)
+        if conn:
+            self.db_setup(conn, table_prefix=table_prefix)
+            cursor = conn.cursor()
+            cursor.execute("CREATE TABLE IF NOT EXISTS {}SolvingHistory ("
+                           "id INTEGER NOT NULL PRIMARY KEY, "
+                           "ts INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))"
+                           ");".format(table_prefix))
+            conn.commit()
 
     def prune(self, node):
         if 'solvers' in node:
@@ -68,9 +77,9 @@ class SocketParallelizationTree(framework.ParallelizationTree):
             return
         if 'id' not in header or header['id'] != node.formula.id:
             return
-        if 'state' in header:
+        if 'status' in header:
             try:
-                node['state'] = framework.SolveState.__members__[header['state']]
+                node['status'] = framework.SolveState.__members__[header['status']]
             except KeyError:
                 raise ValueError('invalid state from solver')
 
@@ -88,9 +97,18 @@ class ParallelizationServer(net.Server):
         self._logger.info('new message from {}'.format(sock.remote_address))
         if 'command' in header:
             if header['command'] == 'solve':
+                header.pop('command')
                 iid = header['id'] if 'id' in header else str(len(self.trees))
-                formula = framework.SMTFormula(iid, message)
+                formula = framework.SMTFormula(iid, message, header)
                 self.trees[iid] = SocketParallelizationTree(formula)
+        elif 'eval' in header:
+            response_message = ''
+            try:
+                response_message = str(eval(header['eval']))
+            except BaseException as e:
+                response_message = str(e)
+            finally:
+                sock.write({}, response_message)
 
     def handle_close(self, sock):
         pass
@@ -100,15 +118,16 @@ class ParallelizationServer(net.Server):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     s = ParallelizationServer(port=3000)
     s.logger = logging.getLogger('server')
-    c = net.Socket()
-    c.connect(('127.0.0.1', 3000))
-    c.write({'messaggio': 1, 'asd': 'c'}, 'ciao')
+    # c = net.Socket()
+    # c.connect(('127.0.0.1', 3000))
+    # c.write({'eval': '3+3'}, '')
     try:
         s.run_forever()
-    except:
+    except BaseException as e:
+        print('exp', e)
         s.close()
         os._exit(0)
 

@@ -1,13 +1,14 @@
 import server
 import framework
 import net
+import sqlite3
 
 
 def split(node, n, level):
     if level <= 0:
         return
     for i in range(n):
-        node.add_child(framework.SMTFormula('{}.{}'.format(node.formula.id, i), node.formula.smt))
+        node.add_child(framework.SMTFormula(node.formula.id, node.formula.smt, node.formula.data))
     for children in node['children']:
         split(children, n, level - 1)
 
@@ -20,10 +21,12 @@ class Socket(net.Socket):
         Socket.i += 1
 
     def write(self, header, payload):
-        print('<write to={} {} {}'.format(self.i, header, payload))
+        # print('<write to={} {} {}'.format(self.i, header, payload))
+        pass
 
 
-m = server.SocketParallelizationTree(framework.SMTFormula('1', 'SMTDATA'))
+conn = sqlite3.Connection('test.db')
+m = server.SocketParallelizationTree(framework.SMTFormula('F1', 'SMTDATA'), conn=conn)
 # m.root['a'] = 'b'
 m.stop()
 split(m.root, 2, 4)
@@ -48,13 +51,21 @@ assert s[3] not in m.root['children'][0]['children'][0]['solvers']
 
 assert len(m.root['children'][0]['children'][0]['solvers']) == 1
 
-# m.root['children'][0]['children'][0]['children'][0]['state'] = framework.SolveState.unsat
-m.socket_message(s[6], {'id': '1.0.0.1.0', 'state': 'unsat'}, '')
+# m.root['children'][0]['children'][0]['children'][0]['status'] = framework.SolveState.unsat
+m.socket_message(s[6], {'id': 'F1', 'status': 'unsat'}, '')
 assert len(m.root['solvers']) == 1
 m.assign_socket(s[5], m.root['children'][0]['children'][1])
-# m.root['children'][0]['children'][0]['children'][1]['state'] = framework.SolveState.sat
-m.socket_message(s[7], {'id': '1.0.0.1.1', 'state': 'sat'}, '')
+# m.root['children'][0]['children'][0]['children'][1]['status'] = framework.SolveState.sat
+m.socket_message(s[7], {'id': 'F1', 'status': 'sat'}, '')
 assert len(m.root['children'][0]['children'][1]['solvers']) == 0
 assert len(m.root['solvers']) == 0
 assert all([False if isinstance(item, server.net.Socket) else True for item in m.reverse])
-assert m.root['state'] == framework.SolveState.sat
+assert m.root['status'] == framework.SolveState.sat
+
+m.db_dump(conn)
+n = server.SocketParallelizationTree(framework.SMTFormula('F1'), conn=conn)
+n.db_load(conn)
+assert n.root['status'] == m.root['status']
+assert len(n.root['children']) == len(m.root['children'])
+assert len(n.root['children'][0]['children']) == len(m.root['children'][0]['children'])
+conn.close()
