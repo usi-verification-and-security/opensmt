@@ -33,8 +33,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Egraph.h"
 #include "Global.h"
 #include "TreeOps.h"
-#include "tsolvers/TSolverHandler.h"
-#include "logics/Theory.h"
+#include "TSolverHandler.h"
+#include "Theory.h"
 
 class THandler
 {

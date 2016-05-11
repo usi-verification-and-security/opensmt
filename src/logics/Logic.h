@@ -26,7 +26,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #ifndef LOGIC_H
 #define LOGIC_H
-#include "Sort.h"
+#include "SSort.h"
 #include "SymStore.h"
 #include "PtStore.h"
 

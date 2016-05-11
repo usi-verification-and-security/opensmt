@@ -26,22 +26,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef API_INTERPRET_H
 #define API_INTERPRET_H
 
-#include "parsers/smt2new/smt2newcontext.h"
-#include "common/StringMap.h"
+#include "smt2newcontext.h"
+#include "StringMap.h"
 //#include "Egraph.h"
 #include "SimpSMTSolver.h"
 //#include "Tseitin.h"
-#include "sorts/SStore.h"
-#include "sorts/Sort.h"
-#include "logics/Logic.h"
-#include "symbols/SymStore.h"
-#include "symbols/Symbol.h"
-#include "pterms/PtStore.h"
+#include "SStore.h"
+#include "SSort.h"
+#include "Logic.h"
+#include "SymStore.h"
+#include "Symbol.h"
+#include "PtStore.h"
 #include "Tseitin.h"
-#include "egraph/Egraph.h"
-#include "smtsolvers/SMTConfig.h"
-#include "api/MainSolver.h"
-#include "logics/Theory.h"
+#include "Egraph.h"
+#include "SMTConfig.h"
+#include "MainSolver.h"
+#include "Theory.h"
 
 class LetFrame {
   private:

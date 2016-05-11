@@ -5,6 +5,9 @@ libegraph_la_SOURCES =  UFInterpolator.h UFInterpolator.C \
 						Enode.h Enode.C EnodeStore.h EnodeStore.C \
                        EgraphSolver.C EgraphDebug.C EgraphExplain.C
 
+if WANT_LIBRARY
+include_HEADERS = CgTypes.h Egraph.h Enode.h EnodeStore.h GCTest.h UFInterpolator.h
+endif
 
 #test_SOURCES = test.C
 #test_LDADD = libegraph.la ../logics/liblogics.la ../pterms/libpterms.la ../smtsolvers/libsmtsolvers.la ../symbols/libsymbols.la ../sorts/libsorts.la

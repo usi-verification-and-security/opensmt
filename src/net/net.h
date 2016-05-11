@@ -24,8 +24,8 @@
 #include "SolverTypes.h"
 #include "net.h"
 #include "protocol.h"
-#include "api/MainSolver.h"
-#include "logics/Theory.h"
+#include "MainSolver.h"
+#include "Theory.h"
 
 class FrameSocket {
 private:

@@ -131,11 +131,12 @@ class MainSolver {
     }
 
     ~MainSolver() {
-        delete &this->ts.solver;
+//        delete &this->ts.solver;
     }
 
     THandler& getTHandler() { return thandler; }
     Theory&   getTheory()   { return thandler.getTheory(); }
+    sstat push(PTRef root) { char* msg; sstat res = insertFormula(root, &msg); if (res == s_Error) { printf("%s\n", msg); } return res; }
     sstat insertFormula(PTRef root, char** msg) {
         if (logic.getSortRef(root) != logic.getSort_bool()) {
             asprintf(msg, "Top-level assertion sort must be %s, got %s",
@@ -146,8 +147,10 @@ class MainSolver {
 
     void initialize() { ts.solver.initialize(); ts.initialize(); }
 
+    sstat simplifyFormulas() { char* msg; sstat res = simplifyFormulas(&msg); if (res == s_Error) { printf("%s\n", msg); } return res; }
     sstat simplifyFormulas(char** err_msg);
     sstat solve           ();
+    sstat check           ();      // A wrapper for solve which simplifies the loaded formulas and initializes the solvers
     sstat lookaheadSplit  (int d)  { return status = sstat(ts.solver.lookaheadSplit2(d)); }
     sstat getStatus       ()       { return status; }
     bool  solverEmpty     () const { return ts.solverEmpty(); }

@@ -4,3 +4,6 @@ AM_CPPFLAGS=$(config_includedirs)
 
 libpterms_la_SOURCES = Pterm.h PtStore.h PtStore.C
 
+if WANT_LIBRARY
+include_HEADERS = PtStore.h Pterm.h
+endif

@@ -30,13 +30,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Vec.h"
 #include "Alloc.h"
 
-#include "symbols/Symbol.h"
-#include "pterms/Pterm.h"
+#include "Symbol.h"
+#include "Pterm.h"
 
 //#include "Global.h"
 //#include "EnodeTypes.h"
 //#include "Otl.h"
-#include "sorts/Sort.h"
+#include "SSort.h"
 #include "CgTypes.h"
 #include "SigMap.h"
 

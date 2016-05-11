@@ -30,69 +30,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <iostream>
 #include <stdlib.h>
 #include <list>
-
-enum ASTType {
-      CMD_T      , CMDL_T
-    , SYM_T      , SYML_T
-    , NUM_T      , NUML_T
-    , SORT_T     , SORTL_T
-    , SV_T       , SVL_T
-    , UATTR_T    , UATTRL_T
-    , PATTR_T    , PATTRL_T
-    , GATTR_T    , GATTRL_T
-    , SPECC_T    , SPECCL_T
-    , SEXPR_T    , SEXPRL_T
-    , ID_T       , IDL_T
-    , LID_T      , LIDL_T
-    , DEC_T      , DECL_T
-    , HEX_T      , HEXL_T
-    , BIN_T      , BINL_T
-    , STR_T      , STRL_T
-    , AS_T       , ASL_T
-    , VARB_T     , VARBL_T
-    , TERM_T     , TERML_T
-    , QID_T      , QITL_T
-    , LQID_T     , LQIDL_T
-    , LET_T      , LETL_T
-    , FORALL_T   , FORALLL_T
-    , EXISTS_T   , EXISTSL_T
-    , BANG_T     , BANGL_T
-    , SSYMD_T    , SSYMDL_T
-    , FSYMD_T    , FSYMDL_T
-    , PFSYMD_T   , PFSYMDL_T
-    , PFID_T     , PFIDL_T
-    , TATTR_T    , TATTRL_T
-    , TDECL_T    , TDECLL_T
-    , LATTR_T    , LATTRL_T
-    , LOGIC_T    , LOGICL_T
-    , BOOL_T     , BOOLL_T
-    , OPTION_T   , OPTIONL_T
-    , INFO_T     , INFOL_T
-};
-
-
-class ASTNode {
-  private:
-    ASTType             type;
-    char*               val;
-    static const char*  typestr[];
-  public:
-    std::list< ASTNode* >*children;
-    ASTNode(ASTType t, char* v) : type(t), val(v), children(NULL) {}
-    ~ASTNode() {
-        if (children) {
-            for (std::list<ASTNode*>::const_iterator ci = children->begin(); ci != children->end(); ci++) {
-                delete *ci;
-            };
-            delete children;
-        }
-        free(val);
-    }
-    void                  print(std::ostream& o, int indent);
-    inline const char    *typeToStr() const { return typestr[type]; }
-    inline ASTType        getType()   const { return type; }
-    inline const char    *getValue()  const { return val; }
-};
+#include "SMTConfig.h"
 
 class Smt2newContext {
   private:

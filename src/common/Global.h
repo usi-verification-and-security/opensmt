@@ -57,8 +57,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <limits.h>
 #include <cstdlib>
 
-#include "common/FastRational.h"
-#include "minisat/mtl/Map.h"
+#include "FastRational.h"
+#include "Map.h"
 
 #define opensmt_error( S )        { cerr << "; Error: " << S << " (triggered at " <<  __FILE__ << ", " << __LINE__ << ")" << endl; exit( 1 ); }
 #define opensmt_error2( S, T )    { cerr << "; Error: " << S << " " << T << " (triggered at " <<  __FILE__ << ", " << __LINE__ << ")" << endl; exit( 1 ); }

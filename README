@@ -1,23 +1,58 @@
-+----------------------------------------------------------------------------+
-|                                                       __                   |
-|             ____ ______   ____   ____   ______ ______/  |_                 |
-|            /  _ \\____ \_/ __ \ /    \ /  ___//     \   __\                |
-|           (  <_> )  |_> >  ___/|   |  \\___ \|  Y Y  \  |                  |
-|            \____/|   __/ \___  >___|  /____  >__|_|  /__|                  |
-|                  |__|        \/     \/     \/      \/                      |
-|                                                                            |
-+----------------------------------------------------------------------------+
-|                                                                            |
-| OpenSMT                                                                    |
-|                                                                            |
-| Copyright 2009 Roberto Bruttomesso <roberto.bruttomesso@gmail.com>         |
-|                                                                            |
-| Project page......: http://verify.inf.usi.ch/opensmt                       |
-| Code Repository...: http://code.google.com/p/opensmt                       |
-| Discussion Group..: http://groups.google.com/group/opensmt                 |
-|                                                                            |
-| OpenSMT is distributed in the hope that it will be useful,                 |
-| but WITHOUT ANY WARRANTY; without even the implied warranty of             |
-| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                       |
-|                                                                            |
-+----------------------------------------------------------------------------+
++------------------------------------------------------------------------------+
+| OpenSMT2                                                                     |
+|                                                                              |
+| Copyright 2016 Antti Hyvarinen <antti.hyvarinen@gmail.com>                   |
+| Copyright 2009 Roberto Bruttomesso <roberto.bruttomesso@gmail.com>           |
+|                                                                              |
+| Project page......: http://verify.inf.usi.ch/opensmt                         |
+| Discussion Group..: http://groups.google.com/group/opensmt                   |
+|                                                                              |
+| OpenSMT is distributed in the hope that it will be useful,                   |
+| but WITHOUT ANY WARRANTY; without even the implied warranty of               |
+| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                         |
++------------------------------------------------------------------------------+
+
+OpenSMT2 supports reading files in smtlib2 format and the theories QF_UF, QF_LRA
+and QF_RDL.  The system also provides an api; the distribution includes a
+minimal example how to use the API.
+
++------------------------------------------------------------------------------+
+| Compliation                                                                  |
++------------------------------------------------------------------------------+
+
+To compile the system from the source code repository, you need a c++11
+compliant compiler and the following libraries installed:
+
+ - gmp
+ - readline
+ - zlib
+
+in addition the compilation system relies on autoconf and the smtlib2 parser on
+flex and bison.  To compile OpenSMT2, use the following command
+
+$ autoreconf --force --install; ./configure; make install
+
+To enable the library compilation (if you want to use the API) you should use
+the configure flag --enable-library.  Configure supports a number of compilation
+options.  For example if gmp is not installed in a standard location, use
+--with-gmp=<path>.
+
++------------------------------------------------------------------------------+
+| Using OpenSMT2 as a library through the API                                  |
++------------------------------------------------------------------------------+
+
+There is a simple example on how to use the OpenSMT API in directory
+
+  examples/test.cc
+
+If you have installed the OpenSMT2 library you can compile this file by running
+
+ $ g++ -lreadline -lz -lgmpxx -lgmp -lopensmt2 -std=c++11 -o test test.cc
+
+If your libraries and headers are installed in non-standard locations you might
+to specify these with -L and -I, respectively.
+
+If you have questions please mail them to me at antti.hyvarinen@gmail.com, or to
+the discussion forum!
+
+

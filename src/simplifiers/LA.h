@@ -27,9 +27,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef LA_H
 #define LA_H
 
-#include "pterms/Pterm.h"
-#include "common/Global.h"
-#include "logics/LRALogic.h"
+#include "Pterm.h"
+#include "Global.h"
+#include "LRALogic.h"
 
 class LAExpression
 {

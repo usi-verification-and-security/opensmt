@@ -1,4 +1,4 @@
-#include "common/Global.h"
+#include "Global.h"
 
 int main(int argc, const char** argv)
 {

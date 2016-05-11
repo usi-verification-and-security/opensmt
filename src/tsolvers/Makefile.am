@@ -9,6 +9,10 @@ libtsolvers_la_SOURCES = THandler.C THandler.h Deductions.C Deductions.h TSolver
 #libtsolvers_la_SOURCES = TSolver.h THandler.C THandler.h
 libtsolvers_la_LIBADD = lrasolver/liblrasolver.la egraph/libegraph.la
 
+if WANT_LIBRARY
+include_HEADERS = Deductions.h LRATHandler.h THandler.h TSolver.h TSolverHandler.h UFTHandler.h
+endif
+
 #libtsolvers_la_LIBADD = axdiffsolver/libaxdiffsolver.la \
 #			bvsolver/libbvsolver.la \
 #			dlsolver/libdlsolver.la \

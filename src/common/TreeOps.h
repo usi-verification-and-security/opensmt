@@ -26,9 +26,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #ifndef Common_TreeOps_h
 #define Common_TreeOps_h
-#include "minisat/mtl/Vec.h"
-#include "pterms/Pterm.h"
-#include "logics/Logic.h"
+#include "Vec.h"
+#include "Pterm.h"
+#include "Logic.h"
 
 template<class T>
 class Qel {

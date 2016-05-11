@@ -24,13 +24,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 
-#include "sorts/SStore.h"
-#include "pterms/PtStore.h"
+#include "SStore.h"
+#include "PtStore.h"
 #include "Logic.h"
-#include "common/TreeOps.h"
-#include "common/Global.h"
-#include "minisat/mtl/Sort.h"
-#include "tsolvers/Deductions.h"
+#include "TreeOps.h"
+#include "Global.h"
+#include "Deductions.h"
 #include <queue>
 #include <set>
 

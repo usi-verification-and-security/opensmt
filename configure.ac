@@ -33,6 +33,11 @@ AC_ARG_ENABLE(library,
   want_library="yes",
   want_library="no")
 
+if test $want_library = "yes";
+then
+  includedir="$includedir/opensmt"
+  echo "Insalling libraries to... ${includedir}"
+fi
 
 AM_CONDITIONAL([WANT_LIBRARY], [test "$want_library" = "yes"])
 
@@ -571,7 +576,7 @@ LDFLAGS=$OLDLDFLAGS
 #
 #config_includedirs="-I\${top_srcdir}/src -I\${top_srcdir}/src/minisat/mtl -I\${top_srcdir}/src/minisat/core -I\${top_srcdir}/src/simplifiers -I\${top_srcdir}/src/common -I\${top_srcdir}/src/tsolvers/egraph -I\${top_srcdir}/src/sorts -I\${top_srcdir}/src/symbols -I\${top_srcdir}/src/pterms -I\${top_srcdir}/src/logics -I\${top_srcdir}/src/smtsolvers -I\${top_srcdir}/src/cnfizers -I\${top_srcdir}/src/proof -I\${top_srcdir}/src/api -I\${top_srcdir}/src/tsolvers -I\${top_srcdir}/src/tsolvers/emptysolver -I\${top_srcdir}/src/tsolvers/bvsolver -I\${top_srcdir}/src/tsolvers/bvsolver/minisatp -I\${top_srcdir}/src/tsolvers/lrasolver -I\${top_srcdir}/src/tsolvers/liasolver -I\${top_srcdir}/src/tsolvers/ctsolver -I\${top_srcdir}/src/tsolvers/axdiffsolver -I\${top_srcdir}/src/tsolvers/dlsolver -I\${top_srcdir}/src/attributes -I\${top_srcdir}/src/symmetry -I\${top_srcdir}/src/symmetry/bliss"
 
-config_includedirs="-I\${top_srcdir}/src -I\${top_srcdir}/src/minisat/mtl -I\${top_srcdir}/src/minisat/core -I\${top_srcdir}/src/simplifiers -I\${top_srcdir}/src/common -I\${top_srcdir}/src/tsolvers/egraph -I\${top_srcdir}/src/sorts -I\${top_srcdir}/src/symbols -I\${top_srcdir}/src/pterms -I\${top_srcdir}/src/logics -I\${top_srcdir}/src/smtsolvers -I\${top_srcdir}/src/cnfizers -I\${top_srcdir}/src/proof -I\${top_srcdir}/src/api -I\${top_srcdir}/src/tsolvers -I\${top_srcdir}/src/tsolvers/emptysolver -I\${top_srcdir}/src/tsolvers/bvsolver -I\${top_srcdir}/src/tsolvers/bvsolver/minisatp -I\${top_srcdir}/src/tsolvers/lrasolver -I\${top_srcdir}/src/tsolvers/liasolver -I\${top_srcdir}/src/tsolvers/ctsolver -I\${top_srcdir}/src/tsolvers/axdiffsolver -I\${top_srcdir}/src/tsolvers/dlsolver -I\${top_srcdir}/src/attributes"
+config_includedirs="-I\${top_srcdir}/src -I\${top_srcdir}/src/minisat/mtl -I\${top_srcdir}/src/minisat/core -I\${top_srcdir}/src/simplifiers -I\${top_srcdir}/src/common -I\${top_srcdir}/src/tsolvers/egraph -I\${top_srcdir}/src/sorts -I\${top_srcdir}/src/symbols -I\${top_srcdir}/src/pterms -I\${top_srcdir}/src/logics -I\${top_srcdir}/src/smtsolvers -I\${top_srcdir}/src/cnfizers -I\${top_srcdir}/src/proof -I\${top_srcdir}/src/api -I\${top_srcdir}/src/tsolvers -I\${top_srcdir}/src/tsolvers/emptysolver -I\${top_srcdir}/src/tsolvers/bvsolver -I\${top_srcdir}/src/tsolvers/bvsolver/minisatp -I\${top_srcdir}/src/tsolvers/lrasolver -I\${top_srcdir}/src/tsolvers/liasolver -I\${top_srcdir}/src/tsolvers/ctsolver -I\${top_srcdir}/src/tsolvers/axdiffsolver -I\${top_srcdir}/src/tsolvers/dlsolver -I\${top_srcdir}/src/attributes -I\${top_srcdir}/src/parsers/smt2new -I\${top_srcdir}/src/options"
 
 AM_CFLAGS="$AM_CFLAGS ${config_includedirs} ${def_flags} ${comp_flags}"
 AM_CXXFLAGS="$AM_CXXFLAGS ${config_includedirs} ${def_flags} ${comp_flags}"
@@ -604,6 +609,7 @@ AC_CONFIG_FILES([ \
 		  src/api/Makefile \
 		  src/common/Makefile \
 		  test/Makefile \
+                  src/options/Makefile \
 		  ])
 
 AC_DEFINE_UNQUOTED([CONFIGTIME_DEFFLAGS], ["`echo ${def_flags} | sed 's/  */ /g'`]", [C define flags passed after configure])

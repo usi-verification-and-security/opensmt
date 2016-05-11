@@ -30,7 +30,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "Vec.h"
 #include "Alloc.h"
-#include "sorts/Sort.h"
+#include "SSort.h"
 #include "Map.h"
 
 struct SymRef {

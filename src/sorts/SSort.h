@@ -28,10 +28,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define SORT_H
 #include <string.h>
 #include <sstream>
-#include "minisat/mtl/Vec.h"
-#include "parsers/smt2new/smt2newcontext.h"
-#include "common/Global.h"
-#include "common/IntTypes.h"
+#include "Vec.h"
+#include "Global.h"
+#include "IntTypes.h"
 #include "Alloc.h"
 
 // XXX The implementation of sorts is incomplete: the sort system should have
@@ -123,7 +122,6 @@ class Identifier {
     vec<int>      numlist;
 
   public:
-//    Identifier(ASTNode& IdNode);
     Identifier(IdStrRef name_) : nr(name_), type(IDTYPE_SIMPLE) {};
     Identifier(IdStrRef name_, vec<int>& nl) : nr(name_), type(IDTYPE_CMPLX) {
         for (int i = 0; i < nl.size(); i++) { numlist.push(nl[i]); }
@@ -185,7 +183,6 @@ class Sort {
     int         size;
     SRef        rest_sorts[0];
   public:
-//    Sort(ASTNode& sn);
     Sort(IdRef idr_, sortid_t uniq_id_, SStrRef name, vec<SRef>& rest)
         : idr(idr_)
         , uniq_id(uniq_id_)
@@ -225,51 +222,7 @@ class Sort {
 
 };
 
-/*
-class Sort {
-  private:
-    static sortid_t static_uniq_id;
 
-    SortType    type;
-    Identifier* id;
-    vec<Sort*>  rest_sorts;
-    DataType    stype;
-    sortid_t    uniq_id;
-    int         par_num;
-    char*       canon_name;
-  public:
-    Sort(ASTNode& sn);
-    Sort(Identifier& id, vec<Sort*>& rest);
-    Sort(Identifier& id);
-
-    string* toString();
-    inline const char*   getCanonName () const { return canon_name;              };
-    inline bool hasSortBool           () const { return stype == SORT_ID_BOOL;   };
-    inline bool hasSortReal           () const { return stype == SORT_ID_REAL;   };
-    inline bool hasSortInt            () const { return stype == SORT_ID_INT;    };
-    inline bool hasSortArray          () const { return stype == SORT_ID_ARRAY;  };
-    inline bool hasSortCost           () const { return stype == SORT_ID_COST;   };
-    inline bool hasSortBitvec         () const { return stype == SORT_ID_BITVEC; };
-    inline bool hasSortCmplx          () const { return stype == SORT_ID_CMPLX;  };
-    inline bool hasSortUndef          () const { return stype == SORT_ID_UNDEF;  };
-
-    inline Identifier*    getCar () const { return id;                      };
-    inline Sort*          get2nd () const { return rest_sorts[0];           };
-    inline Sort*          get3rd () const { return rest_sorts[1];           };
-    inline bool           isPara () const { return false;                   };
-    inline sortid_t       getId  () const { return uniq_id;                 };
-
-    struct idLessThan
-    {
-      inline bool operator( )( Sort * x, Sort * y )
-      {
-        return (x->getId( ) <  y->getId( )); // Too shallow? What is this for?
-//  	  || (x->getId( ) == y->getId( ) && x->getCdr( )->getId( ) < y->getCdr( )->getId( ) );
-      }
-    };
-
-};
-*/
 class SortAllocator : public RegionAllocator<uint32_t>
 {
     static sortid_t static_uniq_id;

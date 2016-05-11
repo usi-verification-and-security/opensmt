@@ -27,7 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef SIGPAIR_H
 #define SIGPAIR_H
 
-#include "minisat/mtl/Map.h"
+#include "Map.h"
 #include "CgTypes.h"
 
 //===================================================================================================

@@ -1006,6 +1006,15 @@ bool MainSolver::writeSolverSplits(int** &splits, char** msg)
 }
 */
 
+sstat MainSolver::check()
+{
+    sstat rval;
+    rval = simplifyFormulas();
+    if (rval != s_Undef)
+        return rval;
+    initialize();
+    return solve();
+}
 
 sstat MainSolver::solve()
 {

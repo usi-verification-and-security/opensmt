@@ -27,9 +27,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef SSTORE_H
 #define SSTORE_H
 
-#include "Sort.h"
+#include "SSort.h"
 #include "SMTConfig.h"
-#include "common/StringMap.h"
+#include "StringMap.h"
 #include "Alloc.h"
 
 class IdentifierStore
