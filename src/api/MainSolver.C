@@ -195,20 +195,20 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
 
     if (config.remove_symmetries()) {
 
-        symmetry::Detector d(logic, new_root);
+//        symmetry::Detector d(logic, new_root);
         //d.toDot("/home/simone/Desktop/graph.dot");
-        d.findSBPs();
-        PTRef sbps = d.getSBPs();
+//        d.findSBPs();
+//        PTRef sbps = d.getSBPs();
 
-        if (sbps != PTRef_Undef) {
-            std::cerr << "; [SBPs]: " << logic.printTerm(sbps) << std::endl;
-            vec<PTRef> newTerms;
-            newTerms.push(root);
-            newTerms.push(sbps);
-            PTRef newRoot = logic.mkAnd(newTerms);
-            fc.setRoot(newRoot);
-        }
-        else std::cerr << "; There are no BSPs!" << std::endl;
+//        if (sbps != PTRef_Undef) {
+//            std::cerr << "; [SBPs]: " << logic.printTerm(sbps) << std::endl;
+//            vec<PTRef> newTerms;
+//            newTerms.push(root);
+//            newTerms.push(sbps);
+//            PTRef newRoot = logic.mkAnd(newTerms);
+//            fc.setRoot(newRoot);
+//        }
+//        else std::cerr << "; There are no BSPs!" << std::endl;
     }
 
 

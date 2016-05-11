@@ -6,7 +6,7 @@ AC_DEFINE_UNQUOTED([CONFIG_FLAGS], ["$config_flags"], [Flags passed to configure
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(autotools)
 AM_INIT_AUTOMAKE
-AC_DISABLE_SHARED
+#AC_DISABLE_SHARED
 
 # Empty default flags
 : ${CFLAGS=""}

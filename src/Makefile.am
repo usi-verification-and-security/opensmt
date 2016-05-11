@@ -19,8 +19,6 @@ libopensmt_la_LIBADD = parsers/libparsers.la \
 		       symbols/libsymbols.la \
 		       pterms/libpterms.la \
 		       cnfizers/libcnfizers.la \
-		       symmetry/libsymmetry.la \
-		       symmetry/bliss/libbliss.la \
 		       common/libcommon.la \
 		       options/liboptions.la
 
@@ -36,8 +34,6 @@ libopensmt2_la_LIBADD = parsers/libparsers.la \
 		        symbols/libsymbols.la \
 		        pterms/libpterms.la \
 		        cnfizers/libcnfizers.la \
-		        symmetry/libsymmetry.la \
-		        symmetry/bliss/libbliss.la \
 		        common/libcommon.la \
 		        options/liboptions.la
 
