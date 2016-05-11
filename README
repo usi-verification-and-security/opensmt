@@ -47,7 +47,7 @@ There is a simple example on how to use the OpenSMT API in directory
 
 If you have installed the OpenSMT2 library you can compile this file by running
 
- $ g++ -lreadline -lz -lgmpxx -lgmp -lopensmt2 -std=c++11 -o test test.cc
+ $ g++ -std=c++11 -o test test.cc -lopensmt2 -lgmp -lgmpxx -lz -lreadline
 
 If your libraries and headers are installed in non-standard locations you might
 to specify these with -L and -I, respectively.
