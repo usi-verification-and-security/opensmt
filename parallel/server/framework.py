@@ -3,7 +3,10 @@
 
 import enum
 import sqlite3
+import hashlib
 import json
+
+__author__ = 'Matteo Marescotti'
 
 
 class Observer(object):
@@ -30,12 +33,10 @@ class Observer(object):
         def observer(self):
             raise TypeError
 
-    def __init__(self, cls, *args, **kwargs):
+    def __init__(self):
         self._reverse = {}
         self._observe = False
-        self._root = self._observed_type(cls)(*args, **kwargs)
-        self.start()
-        self.update_reverse()
+        self._root = None
 
     def stop(self):
         self._observe = False
@@ -51,6 +52,8 @@ class Observer(object):
     def update_reverse(self):
         if self.observing:
             self._reverse.clear()
+            if isinstance(self.root, self.reverse_types):
+                self._reverse[self.root] = [[]]
             for path, value in self._root.paths():
                 if isinstance(value, self.reverse_types):
                     self._reverse.setdefault(value, []).append(path)
@@ -93,11 +96,10 @@ class Observer(object):
                     raise TypeError
 
                 for _, value in items:
+                    yield [self], value
                     if issubclass(type(type(value)), type(observer).Type):
                         for path, subvalue in value.paths():
                             yield [self] + path, subvalue
-                    else:
-                        yield [self], value
 
             @property
             def observer(self):
@@ -124,25 +126,24 @@ class SolveState(enum.Enum):
 
 
 class SMTFormula(object):
-    def __init__(self, id, smt=None, data=None):
+    def __init__(self, smt=None, data=None):
         self.smt = smt
-        self.id = id
         self.data = data
 
     def __str__(self):
-        return str(self.id)
+        return str(self.smt)
 
     def json_dump(self):
-        return json.dumps({'id': self.id, 'smt': self.smt, 'data': self.data})
+        return json.dumps({'smt': self.smt, 'data': self.data})
 
     @staticmethod
     def json_load(dump):
         d = json.loads(dump)
-        return SMTFormula(d['id'], d['smt'], d['data'])
+        return SMTFormula(d['smt'], d['data'])
 
 
 class Node(dict, Observer.ObservedBase):
-    def __init__(self, formula):
+    def __init__(self, formula=None):
         super().__init__()
         self.formula = formula
         self['children'] = self.observed(list)
@@ -164,12 +165,12 @@ class Node(dict, Observer.ObservedBase):
     def db_setup(conn, table_prefix=''):
         cursor = conn.cursor()
         cursor.execute("CREATE TABLE IF NOT EXISTS {}Node ("
-                       "fid TEXT NOT NULL, "
+                       "instance TEXT NOT NULL, "
                        "nid INTEGER NOT NULL, "
                        "parent INTEGER NOT NULL, "
                        "state TEXT NOT NULL, "
                        "formula TEXT, "
-                       "PRIMARY KEY (fid, nid)"
+                       "PRIMARY KEY (instance, nid)"
                        ");".format(table_prefix))
         conn.commit()
 
@@ -179,11 +180,11 @@ class Node(dict, Observer.ObservedBase):
         else:
             cursor = conn
 
-        nid = cursor.execute("SELECT COALESCE(MAX(nid)+1,1) FROM {}Node WHERE fid=?;".format(table_prefix), (
-            self.formula.id,
+        nid = cursor.execute("SELECT COALESCE(MAX(nid)+1,1) FROM {}Node WHERE instance=?;".format(table_prefix), (
+            self.observer.name,
         )).fetchall()[0][0]
         cursor.execute("INSERT INTO {}Node VALUES (?,?,?,?,?);".format(table_prefix), (
-            self.formula.id,
+            self.observer.name,
             nid,
             parent_index,
             self['status'].name,
@@ -201,8 +202,8 @@ class Node(dict, Observer.ObservedBase):
             cursor = conn
 
         try:
-            row = cursor.execute("SELECT * FROM {}Node WHERE fid=? AND nid=?".format(table_prefix), (
-                self.formula.id,
+            row = cursor.execute("SELECT * FROM {}Node WHERE instance=? AND nid=?".format(table_prefix), (
+                self.observer.name,
                 nid
             )).fetchall()[0]
         except:
@@ -210,11 +211,11 @@ class Node(dict, Observer.ObservedBase):
         self['status'] = SolveState.__members__[row[3]]
         self.formula = SMTFormula.json_load(row[4])
 
-        for row in cursor.execute("SELECT nid FROM {}Node WHERE fid=? AND parent=?".format(table_prefix), (
-                self.formula.id,
+        for row in cursor.execute("SELECT nid FROM {}Node WHERE instance=? AND parent=?".format(table_prefix), (
+                self.observer.name,
                 nid
         )).fetchall():
-            self.add_child(SMTFormula(self.formula.id)).db_load(cursor, nid=row[0], table_prefix=table_prefix)
+            self.add_child().db_load(cursor, nid=row[0], table_prefix=table_prefix)
 
         if type(conn) is sqlite3.Connection:
             conn.commit()
@@ -238,13 +239,21 @@ class OrNode(Node):
 
 
 class ParallelizationTree(Observer):
-    reverse_types = (SolveState,)
+    reverse_types = (Node,)
 
-    def __init__(self, formula):
-        self._and_nodes = 0
+    def __init__(self, name, hash, formula=None, conn=None, table_prefix=''):
+        super().__init__()
+        self._and_nodes = 1
         self._or_nodes = 0
         self._nodes = 1
-        super().__init__(AndNode, formula)
+        self.name = name
+        self.hash = hash
+        self._conn = conn
+        self._table_prefix = table_prefix
+        self._root = self.new_node(AndNode, formula)
+        self.start()
+        if self._conn:
+            self.root.db_setup(self._conn, table_prefix=self._table_prefix)
 
     def new_node(self, cls, *args, **kwargs):
         if issubclass(cls, AndNode):
@@ -256,19 +265,29 @@ class ParallelizationTree(Observer):
         self._nodes += 1
         return super().observed(cls, *args, **kwargs)
 
-    def db_setup(self, conn, table_prefix=''):
-        self.root.db_setup(conn, table_prefix=table_prefix)
+    def db_load(self):
+        self.root.db_load(self._conn, table_prefix=self._table_prefix)
 
-    def db_load(self, conn, table_prefix=''):
-        self.root.db_load(conn, table_prefix=table_prefix)
-
-    def db_dump(self, conn, table_prefix=''):
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM {}Node WHERE fid=?;".format(table_prefix), (
-            self.root.formula.id,
+    def db_dump(self):
+        self._conn.cursor().execute("DELETE FROM {}Node WHERE instance=?;".format(self._table_prefix), (
+            self.name,
         ))
-        conn.commit()
-        self.root.db_dump(conn, table_prefix=table_prefix)
+        self._conn.commit()
+        self.root.db_dump(self._conn, table_prefix=self._table_prefix)
+
+    def node_path(self, node, keys=False):
+        if not isinstance(node, Node):
+            raise TypeError
+        if node not in self._reverse:
+            raise ValueError
+        path = self._reverse[node][0]
+        if not keys:
+            return [n for n in path if isinstance(n, Node)]
+        path = list(path + [node])
+        return [path[i].index(path[i + 1]) for i in range(1, len(path), 2)]
+
+    def node_hash(self, node):
+        return hashlib.sha1((self.hash + str(self.node_path(node, keys=True))).encode()).hexdigest()
 
     def update_reverse(self):
         if not self.observing:
@@ -296,5 +315,5 @@ class ParallelizationTree(Observer):
         self._observe = True
         super().update_reverse()
 
-    def prune(self, path):
+    def prune(self, node):
         pass

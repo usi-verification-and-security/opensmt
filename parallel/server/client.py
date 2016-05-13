@@ -5,6 +5,8 @@ import net
 import sys
 import readline
 
+__author__ = 'Matteo Marescotti'
+
 if __name__ == '__main__':
     if len(sys.argv) < 2 or len(sys.argv) > 3:
         print('Usage: {} [host=127.0.0.1] <port>'.format(sys.argv[0]))
@@ -25,9 +27,9 @@ if __name__ == '__main__':
         try:
             line = input('{}:{}> '.format(*socket.remote_address))
         except (KeyboardInterrupt, EOFError):
-            print()
             break
-        if line.strip():
-            socket.write({'eval': line.strip()}, '')
-            header, message = socket.read()
-            print(message.decode())
+        socket.write({'eval': line.strip()}, '')
+        header, message = socket.read()
+        print(message.decode())
+
+    print()

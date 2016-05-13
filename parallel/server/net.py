@@ -5,6 +5,9 @@ import socket
 import select
 import struct
 import logging
+import traceback
+
+__author__ = 'Matteo Marescotti'
 
 
 class Socket(object):
@@ -104,10 +107,12 @@ class Socket(object):
 
 
 class Server(object):
-    def __init__(self, port, timeout=None, logger=None):
-        self._sock = Socket()
-        self._sock.listen(('0.0.0.0', port))
-        self._rlist = [self._sock]
+    def __init__(self, port=None, timeout=None, logger=None):
+        self._rlist = set()
+        if port:
+            self._sock = Socket()
+            self._sock.listen(('0.0.0.0', port))
+            self._rlist.add(self._sock)
         self._timeout = None if timeout is None else float(timeout)
         self._logger = logging.getLogger() if logger is None else logger
 
@@ -124,24 +129,32 @@ class Server(object):
         pass
 
     def run_until_timeout(self):
-        rlist = select.select(self._rlist, [], [], self._timeout)[0]
-        if len(rlist) == 0:
-            self.handle_timeout()
-            return
-        for sock in rlist:
-            if sock is self._sock:
-                new_socket = self._sock.accept()
-                self._rlist.append(new_socket)
-                self.handle_accept(new_socket)
-                continue
-            try:
-                header, message = sock.read()
-            except:
-                self.handle_close(sock)
-                sock.close()
-                self._rlist.remove(sock)
-            else:
-                self.handle_message(sock, header, message)
+        try:
+            rlist = select.select(self._rlist, [], [], self._timeout)[0]
+            if len(rlist) == 0:
+                self.handle_timeout()
+                return
+            for sock in rlist:
+                if sock is self._sock:
+                    new_socket = self._sock.accept()
+                    self._rlist.add(new_socket)
+                    self.handle_accept(new_socket)
+                    continue
+                try:
+                    header, message = sock.read()
+                except:
+                    self.handle_close(sock)
+                    sock.close()
+                    self._rlist.remove(sock)
+                else:
+                    self.handle_message(sock, header, message)
+        except KeyboardInterrupt:
+            raise
+        except BaseException as exp:
+            self._logger.error('{}\n{}'.format(
+                type(exp).__name__,
+                '\n'.join(('   {}'.format(line) for line in traceback.format_exc().split('\n'))))
+            )
 
     def run_forever(self):
         while True:

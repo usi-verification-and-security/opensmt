@@ -14,107 +14,236 @@ import os
 import pickle
 import tempfile
 import atexit
+import json
 import framework
 import net
 import logging
+import traceback
+import hashlib
 
 __author__ = 'Matteo Marescotti'
 
 
 class SocketParallelizationTree(framework.ParallelizationTree):
-    reverse_types = (framework.SolveState, net.Socket)
+    reverse_types = (framework.SolveState, net.Socket, framework.Node)
 
-    def __init__(self, formula, conn=None, sockets=(), table_prefix=''):
-        super().__init__(formula)
-        self.conn = conn
-        self._sockets = set(sockets)
-        if conn:
-            self.db_setup(conn, table_prefix=table_prefix)
-            cursor = conn.cursor()
-            cursor.execute("CREATE TABLE IF NOT EXISTS {}SolvingHistory ("
-                           "id INTEGER NOT NULL PRIMARY KEY, "
-                           "ts INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))"
-                           ");".format(table_prefix))
-            conn.commit()
+    def __init__(self, name, hash, formula, conn=None, table_prefix=''):
+        super().__init__(name=name,
+                         hash=hash,
+                         formula=formula,
+                         conn=conn,
+                         table_prefix=table_prefix
+                         )
+
+        self._solvers = set()
+
+        if self._conn:
+            self._conn.cursor().execute("CREATE TABLE IF NOT EXISTS {}SolvingHistory ("
+                                        "id INTEGER NOT NULL PRIMARY KEY, "
+                                        "ts INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),"
+                                        "instance TEXT NOT NULL, "
+                                        "event TEXT NOT NULL, "
+                                        "solver TEXT, "
+                                        "node TEXT, "
+                                        "data TEXT"
+                                        ");".format(self._table_prefix))
+            self._conn.cursor().execute("DELETE FROM {}SolvingHistory WHERE instance=?;".format(table_prefix), (
+                self.name,
+            ))
+            self._conn.commit()
+            self.db_history_log('CREATE')
+
+    def new_node(self, cls, *args, **kwargs):
+        node = super().new_node(cls, *args, **kwargs)
+        node['active'] = True
+        return node
 
     def prune(self, node):
+        if node is self.root:
+            self.db_history_log('SOLVE', None, None, {'status': node['status'].name})
+        if node['active'] and 'solved_by' in node:
+            self.db_history_log('STATUS', node['solved_by'], node, {'status': node['status'].name})
+        node['active'] = False
         if 'solvers' in node:
-            for socket in list(node['solvers']):
-                self.assign_socket(socket)
+            for solver in list(node['solvers']):
+                self.assign_solvers(solver)
         for child in node['children']:
             self.prune(child)
 
-    def socket_node(self, socket):
-        if socket not in self.reverse:
+    def solver_node(self, sock):
+        if sock not in self.reverse:
             return
-        return self.reverse[socket][0][-2]
+        for path in self.reverse[sock]:
+            if len(path) > 1 and isinstance(path[-2], framework.Node) and sock in path[-2]['solvers']:
+                return path[-2]
 
     # if socket is new then it is added
     # if node is none then socket is idle
-    def assign_socket(self, sockets, node=None):
-        if not isinstance(sockets, (list, set, tuple)):
-            sockets = {sockets}
-        self._sockets.update(set(sockets))
-        for socket in sockets:
-            current_node = self.socket_node(socket)
+    def assign_solvers(self, solvers, node=None):
+        if not isinstance(solvers, (list, set, tuple)):
+            solvers = {solvers}
+        solvers = set(solvers)
+        self._solvers.update(solvers)
+        for solver in solvers:
+            current_node = self.solver_node(solver)
             if current_node and node is not current_node:
-                socket.write({'command': 'stop', 'id': current_node.formula.id}, '')
-                current_node['solvers'].remove(socket)
-
+                solver.write({
+                    'command': 'stop',
+                    'hash': self.node_hash(current_node),
+                    'instance': self.name
+                }, '')
+                current_node['solvers'].remove(solver)
+                self.db_history_log('-', solver, current_node)
+        if node is False:
+            self._solvers.difference_update(solvers)
+            return
         if node:
             if isinstance(node, framework.AndNode):
                 if node.observer is not self:
                     raise ValueError
-                for socket in sockets:
-                    socket.write({'command': 'solve', 'id': node.formula.id}, node.formula.smt)
-                node.setdefault('solvers', node.observed(set)).update(sockets)
+                for solver in solvers:
+                    solver.write({
+                        'command': 'solve',
+                        'hash': self.node_hash(node),
+                        'instance': self.name
+                    }, node.formula.smt)
+                    self.db_history_log('+', solver, node)
+                node.setdefault('solvers', node.observed(set)).update(solvers)
             else:
                 raise ValueError
 
-    def socket_message(self, socket, header, message):
-        node = self.socket_node(socket)
-        if not node:
+    def db_history_log(self, event, solver=None, node=None, data=None):
+        if not self._conn:
             return
-        if 'id' not in header or header['id'] != node.formula.id:
-            return
-        if 'status' in header:
-            try:
-                node['status'] = framework.SolveState.__members__[header['status']]
-            except KeyError:
-                raise ValueError('invalid state from solver')
+        self._conn.cursor().execute("INSERT INTO {}SolvingHistory (instance, event, solver, node, data) "
+                                    "VALUES (?,?,?,?,?)".format(self._table_prefix), (
+                                        self.name,
+                                        event,
+                                        solver.remote_address if solver else None,
+                                        str(self.node_path(node, keys=True)) if node else None,
+                                        json.dumps(data) if data else None
+                                    ))
+        self._conn.commit()
+
+
+class Solver(net.Socket):
+    def __init__(self, sock, data):
+        super().__init__(sock._sock)
+        self.data = data
+        self.tree = None
 
 
 class ParallelizationServer(net.Server):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        current = None
-        self.trees = {}
+    def __init__(self, port, conn=None, table_prefix='', timeout=None, logger=None):
+        super().__init__(port, timeout=timeout, logger=logger)
+        self._trees = []
+        self._conn = conn
+        self._table_prefix = table_prefix
 
     def handle_accept(self, sock):
         self._logger.info('new connection from {}'.format(sock.remote_address))
 
+    def handle_solver_message(self, solver, header, message):
+        self._logger.info('message from solver {}'.format(solver.remote_address))
+        if solver.tree:
+            try:
+                instance, hash = self._check(header)
+            except:
+                return
+            if solver.tree.name != instance:
+                self._logger.warning('wrong instance:"{}", expected:"{}" from solver {}'.format(
+                    instance,
+                    solver.tree.name,
+                    solver.remote_address
+                ))
+                return
+            node = solver.tree.solver_node(solver)
+            if not node or solver.tree.node_hash(node) != hash:
+                self._logger.error('wrong hash:"{}", expected:"{}" from solver {}'.format(
+                    hash,
+                    solver.tree.node_hash(node) if node else '',
+                    solver.remote_address
+                ))
+                return
+
+            if 'status' in header:
+                try:
+                    status = framework.SolveState.__members__[header['status']]
+                    if status is framework.SolveState.unknown:
+                        raise Exception
+                except:
+                    self._logger.error('wrong state:"{}" from solver {}'.format(
+                        header['status'],
+                        solver.remote_address
+                    ))
+                    return
+                self._logger.info('solver:{} solved instance:{} node:{} status:{}'.format(
+                    solver.remote_address,
+                    instance,
+                    solver.tree.node_path(node,keys=True),
+                    status
+                ))
+                node['solved_by'] = solver
+                node['status'] = status
+
     def handle_message(self, sock, header, message):
-        self._logger.info('new message from {}'.format(sock.remote_address))
+        if isinstance(sock, Solver):
+            self.handle_solver_message(sock, header, message)
+            return
+        self._logger.info('message from {}'.format(sock.remote_address))
         if 'command' in header:
             if header['command'] == 'solve':
-                header.pop('command')
-                iid = header['id'] if 'id' in header else str(len(self.trees))
-                formula = framework.SMTFormula(iid, message, header)
-                self.trees[iid] = SocketParallelizationTree(formula)
+                try:
+                    instance, hash = self._check(header)
+                except:
+                    return
+                self._logger.info('new instance:"{}" with hash:"{}"'.format(instance, hash))
+                self._trees.append(SocketParallelizationTree(
+                    name=instance,
+                    hash=hash,
+                    formula=framework.SMTFormula(message),
+                    conn=self._conn,
+                    table_prefix=self._table_prefix
+                ))
+                self.entrust()
+        elif 'solver' in header:
+            solver = Solver(sock, header)
+            self._logger.info('new solver:"{}" at {}'.format(solver.data['solver'], solver.remote_address))
+            self._rlist.remove(sock)
+            self._rlist.add(solver)
+            self.entrust()
         elif 'eval' in header:
             response_message = ''
             try:
                 response_message = str(eval(header['eval']))
-            except BaseException as e:
-                response_message = str(e)
+            except:
+                response_message = str(traceback.format_exc())
             finally:
                 sock.write({}, response_message)
 
     def handle_close(self, sock):
-        pass
+        if isinstance(sock, Solver) and sock.tree:
+            sock.tree.assign_solvers(sock, False)
 
     def handle_timeout(self):
         pass
+
+    def entrust(self):
+        trees = [tree for tree in self._trees if tree.root['status'] == framework.SolveState.unknown]
+        if trees:
+            tree = trees[0]
+            for idle_solver in (solver for solver in self._rlist if
+                                isinstance(solver, Solver) and solver.tree is None):
+                tree.assign_solvers(idle_solver)
+                idle_solver.tree = tree
+
+    def _check(self, header):
+        if not (header.get('instance') or header.get('hash')):
+            self._logger.warning('incomplete instance received')
+            raise ValueError
+        instance = header.get('instance', header.get('hash'))
+        hash = header.get('hash', header.get('instance'))
+        return instance, hash
 
 
 if __name__ == '__main__':
@@ -124,12 +253,7 @@ if __name__ == '__main__':
     # c = net.Socket()
     # c.connect(('127.0.0.1', 3000))
     # c.write({'eval': '3+3'}, '')
-    try:
-        s.run_forever()
-    except BaseException as e:
-        print('exp', e)
-        s.close()
-        os._exit(0)
+    s.run_forever()
 
 
 #
