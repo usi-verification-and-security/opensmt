@@ -30,7 +30,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Egraph.h"
 
 
-#define ITP_DEBUG
+//#define ITP_DEBUG
 
 void CGraph::addCNode( PTRef e )
 {
