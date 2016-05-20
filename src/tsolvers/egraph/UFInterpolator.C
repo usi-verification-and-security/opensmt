@@ -1218,10 +1218,10 @@ CGraph::getSubpathsSwap( const path_t & pi
 
     icolor_t scolor = x->color;
     icolor_t tcolor = y->color;
-    if(scolor == I_B || scolor == I_AB) lnode = x;
-    else if(tcolor == I_B || tcolor == I_AB) lnode = y;
-    if(tcolor == I_B || tcolor == I_AB) rnode = y;
-    else if(scolor == I_B || scolor == I_AB) rnode = x;
+    if(scolor == I_A || scolor == I_AB) lnode = x;
+    else if(tcolor == I_A || tcolor == I_AB) lnode = y;
+    if(tcolor == I_A || tcolor == I_AB) rnode = y;
+    else if(scolor == I_A || scolor == I_AB) rnode = x;
 
     bool rfound = false;
     if(rnode != NULL) rfound = true;
