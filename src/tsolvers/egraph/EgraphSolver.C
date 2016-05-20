@@ -286,12 +286,14 @@ Egraph::getInterpolants(const ipartitions_t & p)
       if(config.certify_inter())
           cgraphs[i]->verifyInterpolantWithExternalTool(p);
       cerr << ";Partial interpolant " << i << ": " << logic.printTerm(pi) << endl;
+#ifdef ITP_DEBUG
       int ncon, neq, nuf;
       logic.collectStats(pi, ncon, neq, nuf);
       cerr << ";Partial interpolant " << i << " data: \n";
       cerr << ";Number of connectives: " << ncon << '\n';
       cerr << ";Number of equalities: " << neq << '\n';
       cerr << ";Number of UF: " << nuf << endl;
+#endif
   }
   itp = logic.mkAnd(and_args);
   return itp;

@@ -850,17 +850,17 @@ CGraph::interpolate_flat(const path_t& p)
 PTRef
 CGraph::getInterpolants( const ipartitions_t & mask )
 {
-//    cerr << "; Interpolating QF_UF using ";
+    cerr << "; Interpolating QF_UF using labeling function ";
     switch(config.proof_set_inter_algo())
     {
     case 0:
-  ;//      cerr << "McMillan";
+        cerr << "Strong";
         break;
     case 2:
-     ;//   cerr << "McMillan'";
+        cerr << "Weak";
         break;
     case 3:
-      ;//  cerr << "Random";
+        cerr << "Random";
         break;
     case 4:
       ;//  cerr << "McMillan + PS" << endl;
@@ -874,7 +874,7 @@ CGraph::getInterpolants( const ipartitions_t & mask )
     default:
         opensmt_error("Interpolation algorithm does not exist");
     }
-   // cerr << endl;
+    cerr << endl;
 
   assert( !colored );
 
@@ -2331,8 +2331,10 @@ CGraph::verifyInterpolantWithExternalTool( const ipartitions_t& mask )
     }
     B = logic.mkAnd(b_args);
 */
+#ifdef ITP_DEBUG
     cerr << ";A: " << logic.printTerm(A) << endl;
     cerr << ";B: " << logic.printTerm(B) << endl;
+#endif
 
     /*
     vec<PTRef> A;
