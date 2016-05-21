@@ -866,15 +866,18 @@ inline void CoreSMTSolver::insertVarOrder(Var x) {
     if (!order_heap.inHeap(x) && decision_var[x]) order_heap.insert(x); }
 
 inline void CoreSMTSolver::varDecayActivity() { var_inc *= var_decay; }
-inline void CoreSMTSolver::varBumpActivity(Var v) {
-   if ( (activity[v] += var_inc) > 1e100 ) {
-     // Rescale:
-     for (int i = 0; i < nVars(); i++)
-       activity[i] *= 1e-100;
-     var_inc *= 1e-100; }
-     // Update order_heap with respect to new activity:
-     if (order_heap.inHeap(v))
-       order_heap.decrease(v);
+inline void CoreSMTSolver::varBumpActivity(Var v)
+{
+    if ( (activity[v] += var_inc) > 1e100 )
+    {
+        // Rescale:
+        for (int i = 0; i < nVars(); i++)
+            activity[i] *= 1e-100;
+        var_inc *= 1e-100;
+    }
+    // Update order_heap with respect to new activity:
+    if (order_heap.inHeap(v))
+        order_heap.decrease(v);
 }
 
 //=================================================================================================

@@ -415,7 +415,7 @@ public:
   int sat_clause_decay() const
     { return optionTable.contains(o_clause_decay) ?
         optionTable[o_clause_decay]->getValue().decval : 1 / 0.999; }
-  int sat_random_var_freq() const
+  double sat_random_var_freq() const
     { return optionTable.contains(o_random_var_freq) ?
         optionTable[o_random_var_freq]->getValue().decval : 0.02; }
   int sat_random_seed() const

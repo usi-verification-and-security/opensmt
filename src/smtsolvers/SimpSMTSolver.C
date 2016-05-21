@@ -141,58 +141,6 @@ Var SimpSMTSolver::newVar(bool sign, bool dvar)
   return v;
 }
 
-/*
-lbool SimpSMTSolver::solve( const vec< Enode * > & assumps
-    , bool do_simp
-    , bool turn_off_simp )
-{
-  vec<Lit> lits;
-  for ( int i=0; i<assumps.size(); ++i )
-  {
-    Enode * e = assumps[ i ];
-    if ( e->isFalse( ) )
-    {
-      return l_False;
-    }
-    if ( e->isTrue( ) )
-    {
-      continue;
-    }
-
-    Lit l = theory_handler->enodeToLit( e );
-    lits.push( l );
-  }
-  return solve( lits, do_simp, turn_off_simp );
-}
-*/
-
-/*
-lbool SimpSMTSolver::solve( const vec< Enode * > & assumps
-    , const unsigned conflicts
-    , bool do_simp
-    , bool turn_off_simp )
-{
-  vec<Lit> lits;
-  for ( int i=0; i<assumps.size(); ++i )
-  {
-    Enode * e = assumps[ i ];
-    if ( e->isFalse( ) )
-    {
-      return l_False;
-    }
-    if ( e->isTrue( ) )
-    {
-      continue;
-    }
-
-    Lit l = theory_handler->enodeToLit( e );
-
-
-    lits.push( l );
-  }
-  return solve( lits, conflicts, do_simp, turn_off_simp );
-}
-*/
 
 lbool SimpSMTSolver::solve( const vec< Lit > & assumps
     , bool do_simp
@@ -206,69 +154,69 @@ lbool SimpSMTSolver::solve( const vec< Lit > & assumps
     , bool do_simp
     , bool turn_off_simp)
 {
-  vec<Var> extra_frozen;
-  bool     result = true;
+    vec<Var> extra_frozen;
+    bool     result = true;
 
-  if ( config.sat_preprocess_theory == 0 )
-    goto skip_theory_preproc;
+    if ( config.sat_preprocess_theory == 0 )
+        goto skip_theory_preproc;
 
-  opensmt_error( "preprocess theory has been temporairly disabled in this version" );
+    opensmt_error( "preprocess theory has been temporairly disabled in this version" );
 
 skip_theory_preproc:
 
-  // Added Code
-  //=================================================================================================
+    // Added Code
+    //=================================================================================================
 
-  do_simp &= use_simplification;
+    do_simp &= use_simplification;
 
-  if (do_simp)
-  {
-    // Assumptions must be temporarily frozen to run variable elimination:
-    for (int i = 0; i < assumps.size(); i++)
+    if (do_simp)
     {
-      Var v = var(assumps[i]);
+        // Assumptions must be temporarily frozen to run variable elimination:
+        for (int i = 0; i < assumps.size(); i++)
+        {
+            Var v = var(assumps[i]);
 
-      // If an assumption has been eliminated, remember it.
-      if (isEliminated(v))
-	remember(v);
+            // If an assumption has been eliminated, remember it.
+            if (isEliminated(v))
+                remember(v);
 
-      if (!frozen[v])
-      {
-	// Freeze and store.
-	setFrozen(v, true);
-	extra_frozen.push(v);
-      }
+            if (!frozen[v])
+            {
+                // Freeze and store.
+                setFrozen(v, true);
+                extra_frozen.push(v);
+            }
+        }
+
+        result = eliminate(turn_off_simp);
     }
 
-    result = eliminate(turn_off_simp);
-  }
-
 #ifdef STATISTICS
-  CoreSMTSolver::preproc_time = cpuTime( );
+    CoreSMTSolver::preproc_time = cpuTime( );
 #endif
 
-  lbool lresult = l_Undef;
-  if (result)
-    lresult = CoreSMTSolver::solve(assumps, conflicts);
-  else
-    lresult = l_False;
+    lbool lresult = l_Undef;
+    if (result)
+        lresult = CoreSMTSolver::solve(assumps, conflicts);
+    else
+        lresult = l_False;
 
-  if (lresult == l_True)
-  {
-    extendModel();
-    // Previous line
-    // #ifndef NDEBUG
+    if (lresult == l_True)
+    {
+        extendModel();
+        // Previous line
+        // #ifndef NDEBUG
 #ifndef SMTCOMP
 //    verifyModel();
 #endif
-  }
+    }
 
-  if (do_simp)
-    // Unfreeze the assumptions that were frozen:
-    for (int i = 0; i < extra_frozen.size(); i++)
-      setFrozen(extra_frozen[i], false);
+    if (do_simp)
+        // Unfreeze the assumptions that were frozen:
+        for (int i = 0; i < extra_frozen.size(); i++)
+            setFrozen(extra_frozen[i], false);
 
-  return lresult;
+    return lresult;
 }
 
 
@@ -276,32 +224,24 @@ skip_theory_preproc:
 //=================================================================================================
 // Added code
 
-bool SimpSMTSolver::addSMTClause( const vec<Lit>& smt_clause
-#ifdef PRODUCE_PROOF
-                                , const ipartitions_t& in
-#endif
-                                )
+bool SimpSMTSolver::addSMTClause( const vec<Lit>& smt_clause)
 {
     assert( config.sat_preprocess_theory == 0 );
 
-#ifdef PRODUCE_PROOF
-    assert(config.produce_inter() == 0 || in != 0);
-#endif
+//    for (int i = 0; i < smt_clause.size(); i++) {
+//        Lit e = smt_clause[i];
+    // Do not add false literals
+    // if ( e->isFalse( ) ) continue;
+    // If a literal is true, the clause is true
+    // if ( e->isTrue( ) )
+    // return true;
 
-    for (int i = 0; i < smt_clause.size(); i++) {
-        Lit e = smt_clause[i];
-        // Do not add false literals
-        // if ( e->isFalse( ) ) continue;
-        // If a literal is true, the clause is true
-        // if ( e->isTrue( ) )
-        // return true;
-
-        // Keep track of atoms seen, as they may
-        // be interface equalities to skip later
+    // Keep track of atoms seen, as they may
+    // be interface equalities to skip later
 //        if (config.logic == QF_UFIDL || config.logic == QF_UFLRA)
 //            atoms_seen.insert( e );
 
-    }
+//    }
     vec<Lit> cl_out;
     // addClause will change the contents, and we don't want that here.
     smt_clause.copyTo(cl_out);
@@ -321,42 +261,42 @@ bool SimpSMTSolver::addClause( const vec<Lit> & ps
 #endif
         , bool shared   )
 {
-  //=================================================================================================
-  // Added code
+    //=================================================================================================
+    // Added code
 
-  if ( !use_simplification )
+    if ( !use_simplification )
 #ifdef PRODUCE_PROOF
-    return CoreSMTSolver::addClause( ps, in );
+        return CoreSMTSolver::addClause( ps, in );
 #else
-    return CoreSMTSolver::addClause( ps );
+        return CoreSMTSolver::addClause( ps );
 #endif
 
-  // Added code
-  //=================================================================================================
+    // Added code
+    //=================================================================================================
 
-  for (int i = 0; i < ps.size(); i++)
-    if (isEliminated(var(ps[i])))
-      remember(var(ps[i]));
+    for (int i = 0; i < ps.size(); i++)
+        if (isEliminated(var(ps[i])))
+            remember(var(ps[i]));
 
-  int nclauses = clauses.size();
+    int nclauses = clauses.size();
 
-  if (redundancy_check && implied(ps))
-    return true;
+    if (redundancy_check && implied(ps))
+        return true;
 
-  //=================================================================================================
-  // Added code
+    //=================================================================================================
+    // Added code
 
-  //
-  // Hack to consider clauses of size 1 that
-  // wouldn't otherwise be considered by
-  // MiniSAT
-  //
-  if ( config.sat_preprocess_theory != 0
-      && ps.size( ) == 1   // Consider unit clauses
-      && var(ps[0]) >= 2 ) // Don't consider true/false
-  {
-    Var v = var( ps[0] );
-    cerr << "XXX skipped handling of unary theory literal?" << endl;
+    //
+    // Hack to consider clauses of size 1 that
+    // wouldn't otherwise be considered by
+    // MiniSAT
+    //
+    if ( config.sat_preprocess_theory != 0
+        && ps.size( ) == 1   // Consider unit clauses
+        && var(ps[0]) >= 2 ) // Don't consider true/false
+    {
+        Var v = var( ps[0] );
+        cerr << "XXX skipped handling of unary theory literal?" << endl;
 /*
     Enode * e = theory_handler->varToEnode( v );
     if ( e->isTAtom( ) )
@@ -374,35 +314,35 @@ bool SimpSMTSolver::addClause( const vec<Lit> & ps
       t_var[ y ].insert( x->getId( ) );
     }
 */
-  }
-  // Added code
-  //=================================================================================================
-
-  if (!CoreSMTSolver::addClause(ps))
-    return false;
-
-  if (use_simplification && clauses.size() == nclauses + 1)
-  {
-    Clause& c = *clauses.last();
-
-    subsumption_queue.insert(&c);
-
-    for (int i = 0; i < c.size(); i++)
-    {
-      assert(occurs.size() > var(c[i]));
-      assert(!find(occurs[var(c[i])], &c));
-
-      occurs[var(c[i])].push(&c);
-      n_occ[toInt(c[i])]++;
-      touched[var(c[i])] = 1;
-      assert(elimtable[var(c[i])].order == 0);
-      if (elim_heap.inHeap(var(c[i])))
-	elim_heap.increase_(var(c[i]));
-
     }
-  }
+    // Added code
+    //=================================================================================================
 
-  return true;
+    if (!CoreSMTSolver::addClause(ps))
+        return false;
+
+    if (use_simplification && clauses.size() == nclauses + 1)
+    {
+        Clause& c = *clauses.last();
+
+        subsumption_queue.insert(&c);
+
+        for (int i = 0; i < c.size(); i++)
+        {
+            assert(occurs.size() > var(c[i]));
+            assert(!find(occurs[var(c[i])], &c));
+
+            occurs[var(c[i])].push(&c);
+            n_occ[toInt(c[i])]++;
+            touched[var(c[i])] = 1;
+            assert(elimtable[var(c[i])].order == 0);
+            if (elim_heap.inHeap(var(c[i])))
+                elim_heap.increase_(var(c[i]));
+
+        }
+    }
+
+    return true;
 }
 
 
@@ -851,74 +791,72 @@ next:;
 
 bool SimpSMTSolver::eliminate(bool turn_off_elim)
 {
-  if (!ok || !use_simplification)
-    return ok;
+    if (!ok || !use_simplification)
+        return ok;
 
-  // Main simplification loop:
-  // assert(subsumption_queue.size() == 0);
-  // gatherTouchedClauses();
-  while (subsumption_queue.size() > 0 || elim_heap.size() > 0)
-  {
-    //fprintf(stderr, "subsumption phase: (%d)\n", subsumption_queue.size());
-    if (!backwardSubsumptionCheck(true))
-      return false;
-
-    //fprintf(stderr, "elimination phase:\n (%d)", elim_heap.size());
-    for (int cnt = 0; !elim_heap.empty(); cnt++)
+    // Main simplification loop:
+    // assert(subsumption_queue.size() == 0);
+    // gatherTouchedClauses();
+    while (subsumption_queue.size() > 0 || elim_heap.size() > 0)
     {
-      Var elim = elim_heap.removeMin();
+        //fprintf(stderr, "subsumption phase: (%d)\n", subsumption_queue.size());
+        if (!backwardSubsumptionCheck(true))
+            return false;
 
-      if (config.verbosity() > 9 && cnt % 100 == 0)
-	reportf("# Elimination left: %10d\r", elim_heap.size());
-      if (!frozen[elim] && !eliminateVar(elim))
-	return false;
+        //fprintf(stderr, "elimination phase:\n (%d)", elim_heap.size());
+        for (int cnt = 0; !elim_heap.empty(); cnt++)
+        {
+            Var elim = elim_heap.removeMin();
+
+            if (!frozen[elim] && !eliminateVar(elim))
+                return false;
+        }
+
+        assert(subsumption_queue.size() == 0);
+        gatherTouchedClauses();
     }
 
-    assert(subsumption_queue.size() == 0);
-    gatherTouchedClauses();
-  }
+    if ( config.verbosity() >= 9 )
+        reportf("# \n");
 
-  if ( config.verbosity() >= 9 )
-    reportf("# \n");
-
-  // Cleanup:
-  cleanUpClauses();
-  order_heap.filter(VarFilter(*this));
+    // Cleanup:
+    cleanUpClauses();
+    order_heap.filter(VarFilter(*this));
 
 #ifdef INVARIANTS
-  // Check that no more subsumption is possible:
-  reportf("Checking that no more subsumption is possible\n");
-  for (int i = 0; i < clauses.size(); i++){
-    if (i % 1000 == 0)
-      reportf("left %10d\r", clauses.size() - i);
+    // Check that no more subsumption is possible:
+    reportf("Checking that no more subsumption is possible\n");
+    for (int i = 0; i < clauses.size(); i++){
+        if (i % 1000 == 0)
+            reportf("left %10d\r", clauses.size() - i);
 
-    assert(clauses[i]->mark() == 0);
-    for (int j = 0; j < i; j++)
-      assert(clauses[i]->subsumes(*clauses[j]) == lit_Error);
-  }
-  reportf("done.\n");
+        assert(clauses[i]->mark() == 0);
+        for (int j = 0; j < i; j++)
+            assert(clauses[i]->subsumes(*clauses[j]) == lit_Error);
+    }
+    reportf("done.\n");
 
-  // Check that no more elimination is possible:
-  reportf("Checking that no more elimination is possible\n");
-  for (int i = 0; i < nVars(); i++)
-    if (!frozen[i]) eliminateVar(i, true);
-  reportf("done.\n");
-  checkLiteralCount();
+    // Check that no more elimination is possible:
+    reportf("Checking that no more elimination is possible\n");
+    for (int i = 0; i < nVars(); i++)
+        if (!frozen[i]) eliminateVar(i, true);
+    reportf("done.\n");
+    checkLiteralCount();
 #endif
 
-  // If no more simplification is needed, free all simplification-related data structures:
-  if (turn_off_elim)
-  {
-    use_simplification = false;
-    touched.clear(true);
-    occurs.clear(true);
-    n_occ.clear(true);
-    subsumption_queue.clear(true);
-    elim_heap.clear(true);
-    remove_satisfied = true;
-  }
+    // If no more simplification is needed, free all simplification-related data structures:
+    if (turn_off_elim)
+    {
+        use_simplification = false;
+        touched.clear(true);
+        occurs.clear(true);
+        n_occ.clear(true);
+        subsumption_queue.clear(true);
+        elim_heap.clear(true);
+        remove_satisfied = true;
+    }
 
-  return true;
+    return true;
 }
 
 

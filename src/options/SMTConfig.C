@@ -403,7 +403,7 @@ bool SMTConfig::setOption(const char* name, const Option& value, const char*& ms
     }
 
     if (strcmp(name, o_random_seed) == 0) {
-        if (value.getValue().type != O_DEC) { msg = s_err_not_num; return false; }
+        if (value.getValue().type != O_NUM) { msg = s_err_not_num; return false; }
         int seed = value.getValue().numval;
         if (seed == 0) { msg = s_err_seed_zero; return false; }
     }

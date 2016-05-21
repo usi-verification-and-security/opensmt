@@ -68,7 +68,7 @@ class Interpret {
     Theory         *theory;
     THandler       *thandler;
     Logic          *logic;
-
+    SimpSMTSolver  *solver;
 
     Map<const char*,PTRef,StringHash,Equal<const char*> > nameToTerm;
     VecMap<PTRef,const char*,PTRefHash,Equal<PTRef> > termToNames;
@@ -118,6 +118,7 @@ class Interpret {
         : logic   (NULL)
         , theory(NULL)
         , thandler(NULL)
+        , solver(NULL)
         , main_solver(NULL)
         , f_exit(false)
         , asrt_lev(0)
@@ -131,6 +132,8 @@ class Interpret {
             delete main_solver;
         if (theory != NULL)
             delete theory;
+        if (solver != NULL)
+            delete solver;
     }
 
     int interpFile(FILE* in);

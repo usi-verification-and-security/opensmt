@@ -580,7 +580,7 @@ bool Cnfizer::addClause( vec<Lit>& c, const ipartitions_t& partition)
 #ifdef PEDANTIC_DEBUG
     cerr << "== clause start" << endl;
     for (int i = 0; i < c.size(); i++) {
-        cerr << " * " << (sign(c[i]) ? "not " : "")
+        cerr << "(" << var(c[i]) << ") * " << (sign(c[i]) ? "not " : "")
              << logic.printTerm(tmap.varToPTRef(var(c[i])))
              << " ";
         cerr << endl;

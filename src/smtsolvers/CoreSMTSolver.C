@@ -71,7 +71,7 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     // Parameters: (formerly in 'SearchParams')
     , var_decay        ( 1 / 0.95 )
     , clause_decay     ( 1 / 0.999 )
-    , random_var_freq  ( 0.02 )
+    , random_var_freq  ( c.sat_random_var_freq() )
     , learntsize_factor((double)1/(double)3)
     , learntsize_inc   ( 1.1 )
     // More parameters:
@@ -768,48 +768,60 @@ void CoreSMTSolver::cancelUntilVarTempDone( )
 
 Lit CoreSMTSolver::pickBranchLit(int polarity_mode, double random_var_freq)
 {
-  Var next = var_Undef;
+    Var next = var_Undef;
 
-  // Random decision:
-  if (((!split_on && drand(random_seed) < random_var_freq) || (split_on && split_preference == sppref_rand)) && !order_heap.empty()){
-    next = order_heap[irand(random_seed,order_heap.size())];
-    if (toLbool(assigns[next]) == l_Undef && decision_var[next])
-      rnd_decisions++; }
+    // Random decision:
+    if (((!split_on && drand(random_seed) < random_var_freq) || (split_on && split_preference == sppref_rand)) && !order_heap.empty())
+    {
+        next = order_heap[irand(random_seed,order_heap.size())];
+        if (toLbool(assigns[next]) == l_Undef && decision_var[next])
+            rnd_decisions++;
+    }
 
     // Theory suggestion-based decision
     for( ;; )
     {
-      Lit sugg = lit_Undef; //= theory_handler->getSuggestion( );
-      // No suggestions
-      if ( sugg == lit_Undef )
-	break;
-      // Atom already assigned or not to be used as decision
-      if ( toLbool(assigns[var(sugg)]) != l_Undef || !decision_var[var(sugg)] )
-	continue;
-      // If here, good decision has been found
-      return sugg;
+        Lit sugg = lit_Undef; //= theory_handler->getSuggestion( );
+        // No suggestions
+        if ( sugg == lit_Undef )
+            break;
+        // Atom already assigned or not to be used as decision
+        if ( toLbool(assigns[var(sugg)]) != l_Undef || !decision_var[var(sugg)] )
+            continue;
+        // If here, good decision has been found
+        return sugg;
     }
 
     vec<int> discarded;
 
     // Activity based decision:
-    while (next == var_Undef || toLbool(assigns[next]) != l_Undef || !decision_var[next]) {
-        if (order_heap.empty()){
-            if (split_preference == sppref_tterm || split_preference == sppref_bterm) {
+    while (next == var_Undef || toLbool(assigns[next]) != l_Undef || !decision_var[next])
+    {
+        if (order_heap.empty())
+        {
+            if (split_preference == sppref_tterm || split_preference == sppref_bterm)
+            {
                 if (discarded.size() > 0)
                     next = discarded[0];
                 else next = var_Undef;
-            } else
+            }
+            else
                 next = var_Undef;
             break;
 
-        }else {
+        }
+        else
+        {
             next = order_heap.removeMin();
-            if (split_on && next != var_Undef) {
-                if (split_preference == sppref_tterm && !theory_handler.isTheoryTerm(next)) {
+            if (split_on && next != var_Undef)
+            {
+                if (split_preference == sppref_tterm && !theory_handler.isTheoryTerm(next))
+                {
                     discarded.push(next);
                     next = var_Undef;
-                } else if (split_preference == sppref_bterm && theory_handler.isTheoryTerm(next)) {
+                }
+                else if (split_preference == sppref_bterm && theory_handler.isTheoryTerm(next))
+                {
                     discarded.push(next);
                     next = var_Undef;
                 }
@@ -818,44 +830,52 @@ Lit CoreSMTSolver::pickBranchLit(int polarity_mode, double random_var_freq)
     }
     if (split_preference == sppref_tterm || split_preference == sppref_bterm)
         for (int i = 0; i < discarded.size(); i++)
-            order_heap.insert(discarded[i]);
+           order_heap.insert(discarded[i]);
 
     if ( next == var_Undef
-          && ( config.logic == QF_UFIDL || config.logic == QF_UFLRA )
-          && config.sat_lazy_dtc != 0 )
+        && ( config.logic == QF_UFIDL || config.logic == QF_UFLRA )
+        && config.sat_lazy_dtc != 0 )
     {
-//	next = generateMoreEij( );
+    //	next = generateMoreEij( );
 
-	/*
-	if ( next != var_Undef )
-	  cerr << "Generated eij " << next << ", with value " << ( value( next ) == l_True
-	      ? "T"
-	      : value( next ) == l_False
-	      ? "F"
-	      : "U" ) << endl;
-	*/
+        /*
+        if ( next != var_Undef )
+            cerr << "Generated eij " << next << ", with value " << ( value( next ) == l_True
+                ? "T"
+                    : value( next ) == l_False
+                    ? "F"
+                        : "U" ) << endl;
+        */
     }
-
 
     if ( next == var_Undef )
         return lit_Undef;
 
 #if CACHE_POLARITY
-      if ( prev_polarity[ next ] != toInt(l_Undef) )
-	return Lit( next, prev_polarity[ next ] < 0 );
+    if ( prev_polarity[ next ] != toInt(l_Undef) )
+        return Lit( next, prev_polarity[ next ] < 0 );
 #endif
 
-      bool sign = false;
-      switch ( polarity_mode )
-      {
-	case polarity_true:  sign = false; break;
-	case polarity_false: sign = true;  break;
-	case polarity_user:  sign = polarity[next]; break;
-	case polarity_rnd:   sign = irand(random_seed, 2); break;
-	default: assert(false);
-      }
+    bool sign = false;
+    switch ( polarity_mode )
+    {
+    case polarity_true:
+        sign = false;
+        break;
+    case polarity_false:
+        sign = true;
+        break;
+    case polarity_user:
+        sign = polarity[next];
+        break;
+    case polarity_rnd:
+        sign = irand(random_seed, 2);
+        break;
+    default:
+        assert(false);
+    }
 
-      return next == var_Undef ? lit_Undef : Lit(next, sign);
+    return next == var_Undef ? lit_Undef : Lit(next, sign);
 }
 
 #ifdef PRODUCE_PROOF
@@ -1071,7 +1091,8 @@ void CoreSMTSolver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btleve
     //
     int i, j;
     out_learnt.copyTo(analyze_toclear);
-    if (expensive_ccmin) {
+    if (expensive_ccmin)
+    {
         uint32_t abstract_level = 0;
         for (i = 1; i < out_learnt.size(); i++)
             abstract_level |= abstractLevel(var(out_learnt[i])); // (maintain an abstraction of levels involved in conflict)
@@ -1143,10 +1164,9 @@ void CoreSMTSolver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btleve
         Clause & c = *reason[ v ];
         proof.resolve( &c, v );
         for ( int j = 0; j < c.size( ); j++)
-            if ( level[ var(c[j]) ] == 0 )
-            {
-                proof.resolve( units[ var(c[j]) ], var(c[j]) );
-            }
+        {
+            if ( level[ var(c[j]) ] == 0 ) proof.resolve( units[ var(c[j]) ], var(c[j]) );
+        }
     }
     // Chain will be ended outside analyze
 #endif
@@ -1318,33 +1338,38 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
 void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
 {
 #ifdef PRODUCE_PROOF
-  opensmt_error( "case not handled (yet)" );
+    opensmt_error( "case not handled (yet)" );
 #endif
-  out_conflict.clear();
-  out_conflict.push(p);
+    out_conflict.clear();
+    out_conflict.push(p);
 
-  if (decisionLevel() == 0)
-    return;
+    if (decisionLevel() == 0)
+        return;
 
-  seen[var(p)] = 1;
+    seen[var(p)] = 1;
 
-  for (int i = trail.size()-1; i >= trail_lim[0]; i--){
-    Var x = var(trail[i]);
-    if (seen[x]){
-      if (reason[x] == NULL){
-	assert(level[x] > 0);
-	out_conflict.push(~trail[i]);
-      }else{
-	Clause& c = *reason[x];
-	for (int j = 1; j < c.size(); j++)
-	  if (level[var(c[j])] > 0)
-	    seen[var(c[j])] = 1;
-      }
-      seen[x] = 0;
+    for (int i = trail.size()-1; i >= trail_lim[0]; i--)
+    {
+        Var x = var(trail[i]);
+        if (seen[x])
+        {
+            if (reason[x] == NULL)
+            {
+                assert(level[x] > 0);
+                out_conflict.push(~trail[i]);
+            }
+            else
+            {
+                Clause& c = *reason[x];
+                for (int j = 1; j < c.size(); j++)
+                    if (level[var(c[j])] > 0)
+                        seen[var(c[j])] = 1;
+            }
+            seen[x] = 0;
+        }
     }
-  }
 
-  seen[var(p)] = 0;
+    seen[var(p)] = 0;
 }
 
 
@@ -1997,6 +2022,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
             varDecayActivity();
             claDecayActivity();
 
+
         }
         else
         {
@@ -2257,7 +2283,8 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
     declareVarsToTheories();
 
     split_type     = config.sat_split_type();
-    if (split_type != spt_none) {
+    if (split_type != spt_none)
+    {
         split_start    = config.sat_split_asap();
         split_on       = false;
         split_num      = config.sat_split_num();
@@ -2275,12 +2302,14 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
     }
     resource_units = config.sat_resource_units();
     resource_limit = config.sat_resource_limit();
-    if (resource_limit >= 0) {
+    if (resource_limit >= 0)
+    {
         if (resource_units == spm_time)
             next_resource_limit = cpuTime() + resource_limit;
         else if (resource_units == spm_decisions)
             next_resource_limit = decisions + resource_limit;
-    } else next_resource_limit = -1;
+    }
+    else next_resource_limit = -1;
 
     if (config.dump_only()) return l_Undef;
 
@@ -2338,19 +2367,21 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
     bool cstop = false;
     if (config.dryrun())
         stop = true;
-    while (status == l_Undef && !opensmt::stop && !cstop && !this->stop) {
+    while (status == l_Undef && !opensmt::stop && !cstop && !this->stop)
+    {
 #ifndef SMTCOMP
         // Print some information. At every restart for
         // standard mode or any 2^n intervarls for luby
         // restarts
-        if (conflicts == 0 || conflicts >= next_printout) {
+        if (conflicts == 0 || conflicts >= next_printout)
+        {
 //          if ( config.verbosity() > 10 )
             reportf( "; %9d | %8d %8d | %8.3f s | %6.3f MB\n"
-                    , (int)conflicts
-                    , (int)nof_learnts
-                    , nLearnts()
-                    , cpuTime()
-                    , memUsed( ) / 1048576.0 );
+                     , (int)conflicts
+                     , (int)learnts.size()
+                     , nLearnts()
+                     , cpuTime()
+                     , memUsed( ) / 1048576.0 );
             fflush( stderr );
         }
 
@@ -2363,43 +2394,55 @@ lbool CoreSMTSolver::solve( const vec<Lit> & assumps
         status = search((int)nof_conflicts, (int)nof_learnts);
         nof_conflicts = restartNextLimit( nof_conflicts );
         cstop = cstop || ( max_conflicts != 0
-            && nLearnts() > (int)max_conflicts + (int)old_conflicts );
-        if (config.sat_use_luby_restart) {
-            if (last_luby_k != luby_k) {
+                           && nLearnts() > (int)max_conflicts + (int)old_conflicts );
+        if (config.sat_use_luby_restart)
+        {
+            if (last_luby_k != luby_k)
+            {
                 nof_learnts *= 1.215;
             }
             last_luby_k = luby_k;
-        } else {
+        }
+        else
+        {
             nof_learnts *= learntsize_inc;
         }
     }
 
     // Added line
-    if (!cstop) {
-        if (status == l_True) {
+    if (!cstop)
+    {
+        if (status == l_True)
+        {
 #ifndef SMTCOMP
             // Extend & copy model:
             model.growTo(nVars());
             for (int i = 0; i < nVars(); i++) model[i] = value(i);
 //            verifyModel();
             // Compute models in tsolvers
-            if (config.produce_models() && !config.isIncremental()) {
+            if (config.produce_models() && !config.isIncremental())
+            {
                 printModel();
             }
 #endif
-        } else {
+        }
+        else
+        {
             assert( opensmt::stop || status == l_False || this->stop);
 //      if (conflict.size() == 0)
 //          ok = false;
         }
     }
 
-    if (!config.isIncremental()) {
+    if (!config.isIncremental())
+    {
         // We terminate
         cancelUntil(-1);
         if (first_model_found || splits.size() > 1)
             theory_handler.backtrack(-1);
-    } else {
+    }
+    else
+    {
         // We return to level 0,
         // ready to accept new clauses
         cancelUntil(0);
@@ -2426,14 +2469,18 @@ bool CoreSMTSolver::UBVal::safeToSkip(const ExVal& e) const
 
     // If my low-polarity upper bound is less than the low exact of b there is
     // no reason to check me
-    if (ub_l.ub < e.getEx_l()) {
-        return true; }
+    if (ub_l.ub < e.getEx_l())
+    {
+        return true;
+    }
 
     // If my low-polarity upper bound is equal to the low exact of b and
     // my high-polarity upper bound is less than or equal to the high
     // exact of b there is no reason to check me
-    if (ub_l.ub ==  e.getEx_l() && ub_h.ub <= e.getEx_h()) {
-        return true; }
+    if (ub_l.ub ==  e.getEx_l() && ub_h.ub <= e.getEx_h())
+    {
+        return true;
+    }
 
     // In all other cases the value needs to be checked.
     return false;
