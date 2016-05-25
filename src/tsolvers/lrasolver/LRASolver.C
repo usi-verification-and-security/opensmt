@@ -2036,20 +2036,20 @@ LRASolver::getInterpolants ( const ipartitions_t & p )
            || color == I_AB
            || color == I_B );
 
-      assert( config.proof_set_inter_algo == 0
-           || config.proof_set_inter_algo == 1
-           || config.proof_set_inter_algo == 2 );
+      assert( usingStrong()
+           || usingWeak()
+           || usingRandom() );
 
       // McMillan algo: set AB as B
-      if ( config.proof_set_inter_algo == 0
+      if ( usingStrong()
         && color == I_AB )
         color = I_B;
       // McMillan' algo: set AB as a
-      else if ( config.proof_set_inter_algo == 2
+      else if ( usingWeak()
              && color == I_AB )
         color = I_A;
       // Pudlak algo: who cares
-      else if ( config.proof_set_inter_algo == 1
+      else if ( usindRandom()
              && color == I_AB )
         color = I_A;
 

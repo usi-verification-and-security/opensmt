@@ -399,7 +399,7 @@ Enode * CoreSMTSolver::computeAxiomInterp( vector< Enode * > & clause )
     clrbit( mask, in );
 
     // McMillan algo, set AB to B
-    if ( config.proof_set_inter_algo == 0 )
+    if ( config.itp_bool_alg() == 0 )
     {
       if ( isAstrict( clause_parts, mask ) )
 	curr_int = egraph.mkFalse( );
@@ -407,7 +407,7 @@ Enode * CoreSMTSolver::computeAxiomInterp( vector< Enode * > & clause )
 	curr_int = egraph.mkTrue( );
     }
     // McMillan' algo, set AB to A
-    else if ( config.proof_set_inter_algo == 2 )
+    else if ( config.itp_bool_alg() == 2 )
     {
       if ( isBstrict( clause_parts, mask ) )
 	curr_int = egraph.mkTrue( );
@@ -415,7 +415,7 @@ Enode * CoreSMTSolver::computeAxiomInterp( vector< Enode * > & clause )
 	curr_int = egraph.mkFalse( );
     }
     // For pudlak we don't care ...
-    else if ( config.proof_set_inter_algo == 1 
+    else if ( config.itp_bool_alg() == 1 
 	   && isAlocal( clause_parts, mask ) )
       curr_int = egraph.mkFalse( );
 

@@ -170,6 +170,10 @@ private:
   bool       colorEdgesFrom ( CNode *, const ipartitions_t & );
   void       colorReset     ( );
 
+  bool usingStrong() { return config.itp_euf_alg() == 0; }
+  bool usingWeak() { return config.itp_euf_alg() == 2; }
+  bool usingRandom() { return config.itp_euf_alg() == 3; }
+
   bool          getSubpaths          ( const path_t &, path_t &, path_t &, path_t & );
   bool          getSubpathsSwap          ( const path_t &, path_t &, path_t &, path_t & );
   size_t        getSortedEdges       ( CNode *, CNode *, vector< CEdge * > & );

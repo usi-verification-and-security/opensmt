@@ -147,6 +147,9 @@ private:
 #ifdef PRODUCE_PROOF
   TheoryInterpolator* getTheoryInterpolator() { return NULL; }
   //PTRef             getInterpolants( const ipartitions_t & ); // Fill a vector with interpolants
+  bool usingStrong() { return config.itp_lra_alg() == 0; }
+  bool usingWeak() { return config.itp_lra_alg() == 2; }
+  bool usingRandom() { return config.itp_lra_alg() == 3; }
 #endif
 
   bool first_update_after_backtrack;

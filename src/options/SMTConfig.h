@@ -235,7 +235,9 @@ public:
   static const char* o_proof_multiple_inter;
   static const char* o_proof_alternative_inter;
   static const char* o_proof_reduce;
-  static const char* o_proof_set_inter_algo;
+  static const char* o_itp_bool_alg;
+  static const char* o_itp_euf_alg;
+  static const char* o_itp_lra_alg;
   static const char* o_sat_dump_rnd_inter;
   static const char* o_sat_resource_units;
   static const char* o_sat_resource_limit;
@@ -486,9 +488,15 @@ public:
   int proof_reduce() const
     { return optionTable.has(o_proof_reduce) ?
         optionTable[o_proof_reduce]->getValue().numval : 0; }
-  int proof_set_inter_algo() const
-    { return optionTable.has(o_proof_set_inter_algo) ?
-        optionTable[o_proof_set_inter_algo]->getValue().numval : 0; }
+  int itp_bool_alg() const
+    { return optionTable.has(o_itp_bool_alg) ?
+        optionTable[o_itp_bool_alg]->getValue().numval : 0; }
+  int itp_euf_alg() const
+    { return optionTable.has(o_itp_euf_alg) ?
+        optionTable[o_itp_euf_alg]->getValue().numval : 0; }
+  int itp_lra_alg() const
+    { return optionTable.has(o_itp_lra_alg) ?
+        optionTable[o_itp_lra_alg]->getValue().numval : 0; }
   int sat_dump_rnd_inter() const
     { return optionTable.has(o_sat_dump_rnd_inter) ?
         optionTable[o_sat_dump_rnd_inter]->getValue().numval : 2; }

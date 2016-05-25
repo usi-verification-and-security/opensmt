@@ -492,7 +492,9 @@ const char* SMTConfig::o_proof_push_units = ":proof-lower-units";
 const char* SMTConfig::o_proof_transf_trav = ":proof-reduce-expose";
 const char* SMTConfig::o_proof_num_graph_traversals = ":proof-num-graph-traversals";
 const char* SMTConfig::o_proof_red_trans = ":proof-num-global-iterations";
-const char* SMTConfig::o_proof_set_inter_algo = ":proof-interpolation-algorithm";
+const char* SMTConfig::o_itp_bool_alg = ":interpolation-bool-algorithm";
+const char* SMTConfig::o_itp_euf_alg = ":interpolation-euf-algorithm";
+const char* SMTConfig::o_itp_lra_alg = ":interpolation-lra-algorithm";
 const char* SMTConfig::o_sat_resource_units = ":resource-units";
 const char* SMTConfig::o_sat_resource_limit = ":resource-limit";
 const char* SMTConfig::o_dump_state = ":dump-state";
@@ -587,7 +589,6 @@ SMTConfig::initializeConfig( )
   proof_random_context_analysis = 0;
   proof_random_swap_application = 0;
   proof_remove_mixed            = 0;
-//  proof_set_inter_algo          = 1;
 //  proof_certify_inter           = 0;
   proof_random_seed	        = 0;
 
@@ -687,7 +688,6 @@ void SMTConfig::parseConfig ( char * f )
       else if ( sscanf( buf, "proof_random_context_analysis %d\n"     , &(proof_random_context_analysis))         == 1 );
       else if ( sscanf( buf, "proof_random_swap_application %d\n"     , &(proof_random_swap_application))         == 1 );
       else if ( sscanf( buf, "proof_remove_mixed %d\n"       , &(proof_remove_mixed))           == 1 );
-      else if ( sscanf( buf, "proof_set_inter_algo %d\n"     , &(proof_set_inter_algo))         == 1 );
       else if ( sscanf( buf, "proof_certify_inter %d\n"      , &(proof_certify_inter))          == 1 );
       // EUF SOLVER CONFIGURATION
       else if ( sscanf( buf, "uf_disable %d\n"               , &(uf_disable))                   == 1 );
@@ -813,7 +813,7 @@ void SMTConfig::printConfig ( ostream & out )
   out << "# Delete AB-mixed subtrees" << endl;
   out << "proof_remove_mixed "       << proof_remove_mixed << endl;
   out << "# Set to 0,1,2 to use McMillan, Pudlak or McMillan' interpolation algorithm" << endl;
-//  out << "proof_set_inter_algo "      << proof_set_inter_algo << endl;
+//  out << "itp_bool_alg "      << itp_bool_alg << endl;
   out << "# Choose certification level for interpolants" << endl;
   out << "# 0 - don't certify" << endl;
   out << "# 1 - certify final interpolant" << endl;

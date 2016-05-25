@@ -608,13 +608,13 @@ bool CGraph::colorEdgesFrom( CNode * x, const ipartitions_t & mask )
 //        cerr << "; Coloring edge " << logic.printTerm(cedges.back()->source->e) << " -> " << logic.printTerm(cedges.back()->target->e) << " with color " << cedges.back()->color << endl;
         /*
             // McMillan: set AB as B
-            if ( config.proof_set_inter_algo() == 0 )
+            if ( usingStrong())
                 cedges.back( )->color = I_B;
             // McMillan': set AB as A
-            else if ( config.proof_set_inter_algo() == 2 )
+            else if ( usingWeak())
                 cedges.back( )->color = I_A;
             // Random
-            else if ( config.proof_set_inter_algo() == 3 )
+            else if ( usingRandom() )
                 cedges.back( )->color = (rand() % 2) ? I_A : I_B;
         */
 	}
@@ -637,13 +637,13 @@ bool CGraph::colorEdgesFrom( CNode * x, const ipartitions_t & mask )
 //        cerr << "; Coloring edge " << logic.printTerm(x->next->source->e) << " -> " << logic.printTerm(x->next->target->e) << " with color " << x->next->color << endl;
         /*
 	  // McMillan: set AB as B
-	  if ( config.proof_set_inter_algo() == 0 )
+	  if ( usingStrong()  )
 	    x->next->color = I_B;
 	  // McMillan: set AB as A
-	  else if ( config.proof_set_inter_algo() == 2 )
+	  else if ( usingWeak() )
 	    x->next->color = I_A;
 	  // Random
-	  else if ( config.proof_set_inter_algo() == 3 )
+	  else if ( usingRandom() )
 	    x->next->color = (rand() % 2) ? I_A : I_B;
         */
 	}
@@ -693,13 +693,13 @@ bool CGraph::colorEdgesFrom( CNode * x, const ipartitions_t & mask )
 //        cerr << "; Coloring edge " << logic.printTerm(x->next->source->e) << " -> " << logic.printTerm(x->next->target->e) << " with color " << x->next->color << endl;
       /*
 	// McMillan: set AB as B
-	if ( config.proof_set_inter_algo() == 0 )
+	if ( usingStrong()  )
 	  x->next->color = I_B;
 	// McMillan: set AB as A
-	else if ( config.proof_set_inter_algo() == 2 )
+	else if ( usingWeak() )
 	  x->next->color = I_A;
 	// Random
-	else if ( config.proof_set_inter_algo() == 3 )
+	else if ( usingRandom() )
 	  x->next->color = (rand() % 2) ? I_A : I_B;
       */
       }
@@ -850,31 +850,16 @@ CGraph::interpolate_flat(const path_t& p)
 PTRef
 CGraph::getInterpolant( const ipartitions_t & mask )
 {
-//    cerr << "; Interpolating QF_UF using ";
-    switch(config.proof_set_inter_algo())
-    {
-    case 0:
-  ;//      cerr << "McMillan";
-        break;
-    case 2:
-     ;//   cerr << "McMillan'";
-        break;
-    case 3:
-      ;//  cerr << "Random";
-        break;
-    case 4:
-      ;//  cerr << "McMillan + PS" << endl;
-        break;
-    case 5:
-      ;//  cerr << "McMillan' + PS" << endl;
-        break;
-    case 6:
-      ;//  cerr << "Random + PS" << endl;
-        break;
-    default:
-        opensmt_error("Interpolation algorithm does not exist");
-    }
-   // cerr << endl;
+    cerr << "; Interpolating QF_UF using ";
+    if(usingStrong())
+        cerr << "Strong";
+    else if(usingWeak())
+	cerr << "Weak";
+    else if(usingRandom())
+	cerr << "Random";
+    else
+        opensmt_error("This EUF interpolation algorithm does not exist");
+    cerr << endl;
 
   assert( !colored );
 
@@ -942,13 +927,13 @@ CGraph::getInterpolant( const ipartitions_t & mask )
      //   cerr << "; Chose random side " << conf_color << endl;
         /*
         // McMillan: set AB as B
-        if ( config.proof_set_inter_algo() == 0 )
+        if ( usingStrong() )
             conf_color = I_B;
         // McMillan: set AB as A
-        else if ( config.proof_set_inter_algo() == 2 )
+        else if ( usingWeak() )
             conf_color = I_A;
         // Random
-        else if ( config.proof_set_inter_algo() == 3 )
+        else if ( usingRandom())
             conf_color = (rand() % 2) ? I_A : I_B;
         */
     }
@@ -1011,13 +996,13 @@ CGraph::getInterpolant( const ipartitions_t & mask )
   else
   {
     // McMillan: set AB as B
-    if ( config.proof_set_inter_algo() == 0 || config.proof_set_inter_algo() == 4)
+    if ( usingStrong() )
       conf_color = I_B;
     // McMillan: set AB as A
-    else if ( config.proof_set_inter_algo() == 2 || config.proof_set_inter_algo() == 5)
+    else if ( usingWeak() )
       conf_color = I_A;
     // Random
-    else if ( config.proof_set_inter_algo() == 3 || config.proof_set_inter_algo() == 6)
+    else if ( usingRandom() )
       conf_color = (rand() % 2) ? I_A : I_B;
   }
 
@@ -1034,22 +1019,22 @@ CGraph::getInterpolant( const ipartitions_t & mask )
   if ( conf_color == I_A )
   {
 //      cerr << "; Conflict in A" << endl;
-    if(config.proof_set_inter_algo() == 0 || config.proof_set_inter_algo() == 4)
+    if(usingStrong())
         result = Iprime( pi );
-    else if(config.proof_set_inter_algo() == 2 || config.proof_set_inter_algo() == 5)
+    else if(usingWeak())
         result = logic.mkNot(ISwap(pi));
-    else if(config.proof_set_inter_algo() == 3 || config.proof_set_inter_algo() == 6)
+    else if(usingRandom())
         result = (rand() % 2) ? Iprime(pi) : logic.mkNot(ISwap(pi));
   }
   // Much simpler case when conflict belongs to B
   else if ( conf_color == I_B )
   {
   //    cerr << "; Conflict in B" << endl;
-    if(config.proof_set_inter_algo() == 0 || config.proof_set_inter_algo() == 4)
+    if(usingStrong())
         result = I( pi );
-    else if(config.proof_set_inter_algo() == 2 || config.proof_set_inter_algo() == 5)
+    else if(usingWeak())
         result = logic.mkNot(IprimeSwap(pi));
-    else if(config.proof_set_inter_algo() == 3 || config.proof_set_inter_algo() == 6)
+    else if(usingRandom())
         result = (rand() % 2) ? I(pi) : logic.mkNot(IprimeSwap(pi));
   }
   else
@@ -1553,7 +1538,7 @@ CGraph::Irec( const path_t & p, map< path_t, PTRef > & cache , unsigned int h)
     //  divided = true;
     // Recurse on factors
     //if(!divided)
-    if(factors.size() > 3 && config.proof_set_inter_algo() > 3)
+    if(factors.size() > 3 && config.itp_euf_alg() > 3)
     {
 #ifdef ITP_DEBUG
     cerr << lstr << "Multiple factors for path (" << logic.printTerm(p.first->e) << "," << logic.printTerm(p.second->e) << ")" << endl;
@@ -1651,7 +1636,7 @@ CGraph::Irec( const path_t & p, map< path_t, PTRef > & cache , unsigned int h)
         if(la || ra) // conflict in A, call I' or not S
         {
             assert(i == 0 || j == (factors.size() - 1));
-            if(b && config.proof_set_inter_algo() == 4)
+            if(b && config.itp_euf_alg() == 4)
             {
                 conj.push(Irec(pf, cache, h + 1));
             //    cerr << "; Calling I'" << endl;
@@ -1665,7 +1650,7 @@ CGraph::Irec( const path_t & p, map< path_t, PTRef > & cache , unsigned int h)
         else if(lb || rb) // conflict in B, call I or not S'
         {
             assert(i == 0 || j == (factors.size() - 1));
-            if(b && config.proof_set_inter_algo() == 4)
+            if(b && config.itp_euf_alg() == 4)
             {
                 conj.push(Irec(pf, cache, h + 1));
         //        cerr << "; Calling I" << endl;
@@ -1678,7 +1663,7 @@ CGraph::Irec( const path_t & p, map< path_t, PTRef > & cache , unsigned int h)
         }
         else // conflict has global endpoints
         {
-            if(b && config.proof_set_inter_algo() == 4)
+            if(b && config.itp_euf_alg() == 4)
             {
                 conj.push(Irec(pf, cache, h + 1));
     //            cerr << "; Calling I" << endl;
@@ -1814,7 +1799,7 @@ CGraph::IrecSwap( const path_t & p, map< path_t, PTRef > & cache , unsigned int 
 //      divided = true;
     // Recurse on factors
    // if(!divided)
-    if(factors.size() > 3 && config.proof_set_inter_algo() > 3)
+    if(factors.size() > 3 && config.itp_euf_alg() > 3)
     {
 #ifdef ITP_DEBUG
     cerr << lstr << "Multiple factors for path (" << logic.printTerm(p.first->e) << "," << logic.printTerm(p.second->e) << ")" << endl;
@@ -1894,7 +1879,7 @@ CGraph::IrecSwap( const path_t & p, map< path_t, PTRef > & cache , unsigned int 
         if(la || ra)
         {
             assert(i == 0 || j == (factors.size() - 1));
-            if(b && config.proof_set_inter_algo() == 4)
+            if(b && config.itp_euf_alg() == 4)
             {
     //            cerr << "; Calling I'" << endl;
                 conj.push(logic.mkNot(Iprime(pf)));
@@ -1908,7 +1893,7 @@ CGraph::IrecSwap( const path_t & p, map< path_t, PTRef > & cache , unsigned int 
         else if(lb || rb)
         {
             assert(i == 0 || j == (factors.size() - 1));
-            if(b && config.proof_set_inter_algo() == 4)
+            if(b && config.itp_euf_alg() == 4)
             {
         //        cerr << "; Calling I'" << endl;
                 conj.push(logic.mkNot(Iprime(pf)));
@@ -1921,7 +1906,7 @@ CGraph::IrecSwap( const path_t & p, map< path_t, PTRef > & cache , unsigned int 
         }
         else // conflict has global endpoints
         {
-            if(b && config.proof_set_inter_algo() == 4)
+            if(b && config.itp_euf_alg() == 4)
             {
             //    cerr << "; Calling I'" << endl;
                 conj.push(logic.mkNot(Iprime(pf)));
@@ -2223,17 +2208,17 @@ void
 CGraph::labelFactors(vector<path_t>& factors)
 {
     // McMillan
-    if(config.proof_set_inter_algo() == 0 || config.proof_set_inter_algo() == 4)
+    if(usingStrong())
         for(int i = 0; i < factors.size(); ++i)
             L[factors[i]] = I_B;
 
     // McMillan'
-    else if(config.proof_set_inter_algo() == 2 || config.proof_set_inter_algo() == 5)
+    else if(usingWeak())
         for(int i = 0; i < factors.size(); ++i)
             L[factors[i]] = I_A;
 
     // Random
-    else if(config.proof_set_inter_algo() == 3 || config.proof_set_inter_algo() == 6)
+    else if(usingRandom())
     {
         for(int i = 0; i < factors.size(); ++i)
         {
