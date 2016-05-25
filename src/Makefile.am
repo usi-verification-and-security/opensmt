@@ -1,5 +1,5 @@
 #SUBDIRS = parsers tsolvers smtsolvers api sorts logics symbols pterms egraph cnfizers simplifiers
-SUBDIRS = parsers tsolvers smtsolvers api sorts logics symbols pterms cnfizers simplifiers symmetry common options
+SUBDIRS = proof parsers tsolvers smtsolvers api sorts logics symbols pterms cnfizers simplifiers symmetry common options
 
 noinst_LTLIBRARIES = libopensmt.la
 
@@ -9,7 +9,8 @@ include_HEADERS = minisat/core/Solver.h minisat/core/SolverTypes.h minisat/mtl/A
 endif
 
 libopensmt_la_SOURCES =
-libopensmt_la_LIBADD = parsers/libparsers.la \
+libopensmt_la_LIBADD = proof/libproof.la \
+                       parsers/libparsers.la \
 		       tsolvers/libtsolvers.la \
 		       smtsolvers/libsmtsolvers.la \
 		       sorts/libsorts.la \
@@ -24,7 +25,8 @@ libopensmt_la_LIBADD = parsers/libparsers.la \
 
 
 libopensmt2_la_SOURCES = 
-libopensmt2_la_LIBADD = parsers/libparsers.la \
+libopensmt2_la_LIBADD = proof/libproof.la \
+			parsers/libparsers.la \
 		        tsolvers/libtsolvers.la \
 		        smtsolvers/libsmtsolvers.la \
 		        sorts/libsorts.la \

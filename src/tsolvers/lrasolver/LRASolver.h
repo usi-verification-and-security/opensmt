@@ -145,7 +145,8 @@ private:
   bool checkIntegersAndSplit();                           //
 
 #ifdef PRODUCE_PROOF
-  PTRef             getInterpolants( const ipartitions_t & ); // Fill a vector with interpolants
+  TheoryInterpolator* getTheoryInterpolator() { return NULL; }
+  //PTRef             getInterpolants( const ipartitions_t & ); // Fill a vector with interpolants
 #endif
 
   bool first_update_after_backtrack;

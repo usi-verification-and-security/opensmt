@@ -1840,6 +1840,26 @@ Logic::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate )
 
 #ifdef PRODUCE_PROOF
 void
+Logic::addVarClassMask(Var l, const ipartitions_t& toadd)
+{
+	opensmt::orbit(var_class[l], var_class[l], toadd);
+#ifdef PEDANTIC_DEBUG
+	cerr << "; Adding mask " << toadd << " to var " << l << endl;
+	cerr << "; Var " << l << " now has mask " << var_class[l] << endl;
+#endif
+}
+
+void
+Logic::addClauseClassMask(PTRef l, const ipartitions_t& toadd)
+{
+	opensmt::orbit(clause_class[l], clause_class[l], toadd);
+#ifdef PEDANTIC_DEBUG
+	cerr << "; Adding mask " << toadd << " to clause " << printTerm(l) << endl;
+	cerr << "; Clause " << printTerm(l) << " now has mask " << clause_class[l] << endl;
+#endif
+}
+
+void
 Logic::setIPartitionsIte(PTRef pref)
 {
     set<PTRef> visited;

@@ -1994,11 +1994,13 @@ LRASolver::~LRASolver( )
 //
 // Compute interpolants for the conflict
 //
+/*
 PTRef
 LRASolver::getInterpolants ( const ipartitions_t & p )
 {
     opensmt_error("Interpolation not supported for LRA");
     return logic.getTerm_true();
+*/
     /** Old implementation: 
   l = config.logic == QF_LRA || config.logic == QF_UFLRA
   ? QF_LRA
@@ -2097,7 +2099,7 @@ LRASolver::getInterpolants ( const ipartitions_t & p )
   interpolants = egraph.cons( in_list );
   return interpolants;
   */
-}
+//}
 
 #endif
 

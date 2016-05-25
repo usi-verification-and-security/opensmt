@@ -3,10 +3,12 @@ noinst_LTLIBRARIES = libproof.la
 AM_CPPFLAGS=$(config_includedirs)
 
 if WANT_LIBRARY
-include_HEADERS = ProofGlobal.h ProofGraph.h
+include_HEADERS = PG.h
 endif
 
-libproof_la_SOURCES = ProofGlobal.h \
-		      ProofGraphBuild.C ProofGraph.h \
-		      ProofGraphHelp.C ProofGraphCheck.C ProofGraphMain.C \
-		      ProofInterpolator.C
+libproof_la_SOURCES = PG.h \
+		      PGBuild.C PGCheck.C PGHelp.C \
+		      PGHeuristics.C PGInterAux.C \
+		      PGInterCheck.C PGInterpolator.C \
+		      PGMain.C PGPrint.C PGRules.C \
+		      PGTransformationAlgorithms.C

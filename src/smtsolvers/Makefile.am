@@ -4,7 +4,7 @@ AM_CPPFLAGS=$(config_includedirs)
 libsmtsolvers_la_SOURCES = Proof.C Proof.h \
 			   SimpSMTSolver.C SimpSMTSolver.h \
 			   CoreSMTSolver.C CoreSMTSolver.h \
-			   SMTSolver.h Debug.C Theory.C
+			   SMTSolver.h Debug.C Theory.C TheoryInterpolator.h
 
 if WANT_LIBRARY
 include_HEADERS = CoreSMTSolver.h Proof.h SMTSolver.h SimpSMTSolver.h

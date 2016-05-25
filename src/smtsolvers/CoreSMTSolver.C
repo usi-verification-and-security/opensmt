@@ -1052,7 +1052,6 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
                     undo_stack_elem.push_back( NULL );
                 }*/
             }
-            */
 #endif
         }
 
@@ -1282,7 +1281,6 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
                 undo_stack_oper.push_back( NEWPROOF );
                 undo_stack_elem.push_back( (void *)ct );
             }
-            /*
             if ( config.produce_inter() > 0 )
             {
                 Enode * interpolants = theory_handler->getInterpolants( );
@@ -1583,13 +1581,15 @@ void CoreSMTSolver::reduceDB()
         if (decisionLevel( ) == 0 && satisfied( *tleaves[i] ))
             proof.forceDelete( tleaves[i], true );
         else
-    */
-        if ( proof.deleted( tleaves[i] ) )
-            ; // Do nothing
-        else
-            tleaves[j++] = tleaves[i];
+	{
+            if ( proof.deleted( tleaves[i] ) )
+                ; // Do nothing
+            else
+                tleaves[j++] = tleaves[i];
+	}
     }
     tleaves.shrink(i - j);
+   
     // Remove unused leaves
     for ( i = j = 0 ; i < pleaves.size( ) ; i++ )
     {
@@ -1607,6 +1607,7 @@ void CoreSMTSolver::reduceDB()
     }
     pleaves.shrink(i - j);
     */
+    
     // Remove unused leaves
     // FIXME deal with theory lemmata when proofs will be extended to theories
     for ( i = j = 0 ; i < pleaves.size( ) ; i++ )
@@ -1616,6 +1617,7 @@ void CoreSMTSolver::reduceDB()
         if ( ! proof.deleted( cr ) ) pleaves[j++] = pleaves[i];
     }
     pleaves.shrink(i - j);
+    
 #endif
 }
 

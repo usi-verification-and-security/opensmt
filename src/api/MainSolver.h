@@ -87,7 +87,7 @@ class MainSolver {
     SMTConfig&    config;
     THandler&     thandler;
     vec<DedElem>  deductions;
-    //SimpSMTSolver sat_solver;
+    SimpSMTSolver* smt_solver;
     Tseitin       ts;
     vec<PTRef>    formulas;
     sstat         status;     // The status of the last solver call (initially s_Undef)
@@ -126,6 +126,7 @@ class MainSolver {
         , config(c)
         , status(s_Undef)
         , thandler(thandler)
+	, smt_solver(s)
         , ts( config
             , logic
             , tmap
@@ -138,6 +139,8 @@ class MainSolver {
     }
 
     ~MainSolver() { }
+
+    SimpSMTSolver& getSMTSolver() { return *smt_solver; }
 
     THandler& getTHandler() { return thandler; }
     Theory&   getTheory()   { return thandler.getTheory(); }

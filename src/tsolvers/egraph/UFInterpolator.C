@@ -1220,10 +1220,10 @@ CGraph::getSubpathsSwap( const path_t & pi
 
     icolor_t scolor = x->color;
     icolor_t tcolor = y->color;
-    if(scolor == I_B || scolor == I_AB) lnode = x;
-    else if(tcolor == I_B || tcolor == I_AB) lnode = y;
-    if(tcolor == I_B || tcolor == I_AB) rnode = y;
-    else if(scolor == I_B || scolor == I_AB) rnode = x;
+    if(scolor == I_A || scolor == I_AB) lnode = x;
+    else if(tcolor == I_A || tcolor == I_AB) lnode = y;
+    if(tcolor == I_A || tcolor == I_AB) rnode = y;
+    else if(scolor == I_A || scolor == I_AB) rnode = x;
 
     bool rfound = false;
     if(rnode != NULL) rfound = true;
@@ -2256,9 +2256,11 @@ CGraph::verifyInterpolantWithExternalTool( const ipartitions_t& mask )
 {
     if(interpolant == PTRef_Undef)
     {
-        cerr << ";Error. Can't verify interpolant. Interpolant not computed yet" << endl;
+        cerr << "; Error. Can't verify interpolant. Interpolant not computed yet" << endl;
         return;
     }
+
+    cerr << "; Verifying partial interpolant" << endl;
 
     PTRef A = PTRef_Undef;
     PTRef B = PTRef_Undef;
@@ -2333,8 +2335,10 @@ CGraph::verifyInterpolantWithExternalTool( const ipartitions_t& mask )
     }
     B = logic.mkAnd(b_args);
 */
+#ifdef ITP_DEBUG
     cerr << ";A: " << logic.printTerm(A) << endl;
     cerr << ";B: " << logic.printTerm(B) << endl;
+#endif
 
     /*
     vec<PTRef> A;
@@ -2394,10 +2398,10 @@ CGraph::verifyInterpolantWithExternalTool( const ipartitions_t& mask )
     if ( tool_res == true )
     {
       //opensmt_error2( config.certifying_solver, " says A -> I does not hold" );
-      cerr << ";Error, A -> I does not hold" << endl;
+      cerr << "; Error, A -> I does not hold" << endl;
     }
     else
-      cerr << ";A -> I holds" << endl;
+      cerr << "; A -> I holds" << endl;
 
     // Now check B & I
     const char * name_B = "verifyinterp_B.smt2";
@@ -2444,10 +2448,10 @@ CGraph::verifyInterpolantWithExternalTool( const ipartitions_t& mask )
     if ( tool_res == true )
     {
       //opensmt_error2( config.certifying_solver, " says B & I does not hold" );
-      cerr << ";Error B & I -> false does not hold" << endl;
+      cerr << "; Error B & I -> false does not hold" << endl;
     }
     else
-      cerr << ";B & I -> false holds" << endl;
+      cerr << "; B & I -> false holds" << endl;
 }
 
 void CGraph::printAsDotty( ostream & os )
