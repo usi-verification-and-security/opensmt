@@ -71,6 +71,7 @@ Egraph::Egraph(SMTConfig & c, Logic& l , vec<DedElem>& d)
 #ifdef PRODUCE_PROOF
       , iformula           ( 1 )
       , cgraph_            ( new CGraph( *this, config, logic ) )
+      , cgraph(NULL)
       , automatic_coloring ( false )
 #endif
   {
@@ -270,30 +271,30 @@ void Egraph::getConflict( bool deduction, vec<PtAsgn>& cnfl )
 #endif
 }
 
+/*
 #ifdef PRODUCE_PROOF
 //Enode * Egraph::getInterpolants( logic_t & l )
 PTRef
 Egraph::getInterpolants(const ipartitions_t & p)
 {
   assert( config.produce_inter() );
+  assert(cgraphs.size() == 1);
   PTRef itp = PTRef_Undef;
   vec<PTRef> and_args;
   cerr << "Generating interpolants for " << cgraphs.size() << " conflicts" << endl;
   for(int i = 0; i < cgraphs.size(); ++i)
   {
-      PTRef pi = cgraphs[i]->getInterpolants(p);
+      PTRef pi = cgraphs[i]->getInterpolant(p);
       and_args.push(pi);
       if(config.certify_inter())
           cgraphs[i]->verifyInterpolantWithExternalTool(p);
       cerr << ";Partial interpolant " << i << ": " << logic.printTerm(pi) << endl;
-#ifdef ITP_DEBUG
       int ncon, neq, nuf;
       logic.collectStats(pi, ncon, neq, nuf);
       cerr << ";Partial interpolant " << i << " data: \n";
       cerr << ";Number of connectives: " << ncon << '\n';
       cerr << ";Number of equalities: " << neq << '\n';
       cerr << ";Number of UF: " << nuf << endl;
-#endif
   }
   itp = logic.mkAnd(and_args);
   return itp;
@@ -306,7 +307,7 @@ Egraph::getInterpolants(const ipartitions_t & p)
   //return tsolvers[ conf_index ]->getInterpolants( l );
 }
 #endif
-
+*/
 void Egraph::computeModel( )
 {
 //  model_computed = true;
@@ -382,7 +383,7 @@ void Egraph::computeModel( )
 //
 lbool Egraph::declareTerm(PTRef tr) {
 
-    if (!enode_store.termToERef.contains(tr)) {
+    if (!enode_store.termToERef.has(tr)) {
         Pterm& tm = logic.getPterm(tr);
         ERef sym = enode_store.addSymb(tm.symb());
         ERef cdr = ERef_Nil;
@@ -421,7 +422,7 @@ lbool Egraph::declareTerm(PTRef tr) {
         assert(false);
         exit(1);
     }
-    if (logic.isDisequality(tr) && !enode_store.dist_classes.contains(tr))
+    if (logic.isDisequality(tr) && !enode_store.dist_classes.has(tr))
         enode_store.addDistClass(tr);
 
     return l_Undef;
@@ -738,7 +739,9 @@ bool Egraph::mergeLoop( PtAsgn reason )
             expExplain( );
  #ifdef PRODUCE_PROOF
             if ( config.produce_inter() > 0 ) {
-                cgraphs.push(cgraph_);
+                delete cgraph;
+                cgraph = cgraph_;
+                //cgraphs.push(cgraph_);
                 cgraph_ = new CGraph(*this, config, logic);
             }
 #endif
@@ -1033,7 +1036,7 @@ bool Egraph::assertDist( PTRef tr_d, PtAsgn tr_r )
 #ifdef VERBOSE_EUF
         cerr << "  Checking distinction member " << logic.printTerm(tr_c) << " with root " << logic.printTerm(enode_store.ERefToTerm[en_c.getRoot()]) << " (" << root_id << ")" << endl;
 #endif
-        if ( root_to_enode.contains(root_id) ) {
+        if ( root_to_enode.has(root_id) ) {
             // Two equivalent nodes in the same distinction. Conflict
             if (tr_r.tr != Eq_FALSE) {
                 explanation.push(tr_r);
@@ -1698,7 +1701,7 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
 
                 // Is there a literal for this fact?
                 PTRef eq = logic.hasEquality(args);
-                if (eq != PTRef_Undef && enode_store.termToERef.contains(eq)) {
+                if (eq != PTRef_Undef && enode_store.termToERef.has(eq)) {
                     // Found the equality, and we deduce its negation
                     ERef ded_eq = enode_store.termToERef[eq];
                     enode_store[ded_eq].setDeduced(l_False);

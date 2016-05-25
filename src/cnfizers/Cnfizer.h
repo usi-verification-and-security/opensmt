@@ -86,11 +86,7 @@ public:
 
     virtual ~Cnfizer( ) { }
 
-    lbool cnfizeAndGiveToSolver ( PTRef
-#ifdef PRODUCE_PROOF
-                                , const ipartitions_t = 0
-#endif
-                                ); // Main routine
+    lbool cnfizeAndGiveToSolver ( PTRef ); // Main routine
 //    lbool extEquals             ( PTRef new_r, PTRef old_r ); // Tell the solver that two terms are equal (used when equality deduced by a theory solver)
 
     vec<ValPair>* getModel ();                              // Retrieves the model (if SAT and solved)
@@ -111,16 +107,17 @@ public:
     void  getVarMapping    (CnfState&);
 protected:
 
-    virtual bool cnfize                 ( PTRef
 #ifdef PRODUCE_PROOF
-                                        , const ipartitions_t = 0
-#endif
-                                        ) = 0; // Actual cnfization. To be implemented in derived classes
-    bool     deMorganize                ( PTRef
+    virtual bool cnfize(PTRef, const ipartitions_t&) = 0;
+#else
+    virtual bool cnfize                 ( PTRef ) = 0; // Actual cnfization. To be implemented in derived classes
+#endif //PRODUCE_PROOF
 #ifdef PRODUCE_PROOF
-                                        , const ipartitions_t &
-#endif
-                                        );                                    // Apply deMorgan rules whenever feasible
+    bool deMorganize(PTRef, const ipartitions_t&);
+#else
+    bool     deMorganize                ( PTRef );                                    // Apply deMorgan rules whenever feasible
+#endif //PRODUCE_PROOF
+
     PTRef    rewriteMaxArity            ( PTRef, Map<PTRef, int, PTRefHash> & );   // Rewrite terms using maximum arity
 
 public:
@@ -129,15 +126,15 @@ public:
     bool     checkDeMorgan              ( PTRef );                            // Check if formula can be deMorganized
     void     retrieveTopLevelFormulae   ( PTRef, vec<PTRef> & );         // Retrieves the list of top-level formulae
 protected:
-    bool     giveToSolver               ( PTRef
 #ifdef PRODUCE_PROOF
-                                        , const ipartitions_t &
-#endif
-                                        );                              // Gives formula to the SAT solver
+    bool giveToSolver(PTRef, const ipartitions_t &);
+#else
+    bool     giveToSolver               ( PTRef );                              // Gives formula to the SAT solver
+#endif // PRODUCE_PROOF
 
 
 #ifdef PRODUCE_PROOF
-    bool  addClause                  ( vec<Lit>&, const ipartitions_t& = 1);
+    bool  addClause                  ( vec<Lit>&, const ipartitions_t& mask = 0);
 #else
     bool  addClause                  ( vec<Lit>& );
 #endif

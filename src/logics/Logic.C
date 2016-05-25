@@ -402,14 +402,14 @@ Logic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
     char *msg;
     for(int i = 0; i < p.size(); ++i) {
         PTRef tr = p[i];
-        if(tr_map.contains(tr))
+        if(tr_map.has(tr))
             newargs.push(tr_map[tr]);
         else
             newargs.push(tr);
     }
     PTRef trp = insertTerm(p.symb(), newargs, &msg);
     if (trp != tr) {
-        if (tr_map.contains(tr))
+        if (tr_map.has(tr))
             assert(tr_map[tr] == trp);
         else
             tr_map.insert(tr, trp);
@@ -430,7 +430,7 @@ lbool Logic::simplifyTree(PTRef tr, PTRef& root_out)
     while (queue.size() != 0) {
         // First find a node with all children processed.
         int i = queue.size()-1;
-        if (processed.contains(queue[i].x)) {
+        if (processed.has(queue[i].x)) {
             queue.pop();
             continue;
         }
@@ -442,7 +442,7 @@ lbool Logic::simplifyTree(PTRef tr, PTRef& root_out)
             Pterm& t = getPterm(queue[i].x);
             for (int j = 0; j < t.size(); j++) {
                 PTRef cr = t[j];
-                if (!processed.contains(cr)) {
+                if (!processed.has(cr)) {
                     unprocessed_children = true;
                     queue.push(pi(cr));
 #ifdef SIMPLIFY_DEBUG
@@ -460,7 +460,7 @@ lbool Logic::simplifyTree(PTRef tr, PTRef& root_out)
         processed.insert(queue[i].x, true);
         visit(queue[i].x, tr_map);
     }
-    if (tr_map.contains(tr))
+    if (tr_map.has(tr))
         root_out = tr_map[tr];
     else
         root_out = tr;
@@ -470,7 +470,7 @@ lbool Logic::simplifyTree(PTRef tr, PTRef& root_out)
 PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args, char** msg) {
     SymRef sref = term_store.lookupSymbol(s, args);
     if (sref == SymRef_Undef) {
-        if (defined_functions.contains(s))
+        if (defined_functions.has(s))
             return defined_functions[s];
         else {
             asprintf(msg, "Unknown symbol `%s'", s);
@@ -871,7 +871,7 @@ SymRef Logic::declareFun(const char* fname, const SRef rsort, const vec<SRef>& a
 
 bool Logic::defineFun(const char* fname, const PTRef tr)
 {
-    if (defined_functions.contains(fname))
+    if (defined_functions.has(fname))
         return false; // already there
     defined_functions.insert(fname, tr);
     return true;
@@ -1115,7 +1115,7 @@ bool Logic::varsubstitute(PTRef& root, Map<PTRef,PtAsgn,PTRefHash>& substs, PTRe
 #ifdef SIMPLIFY_DEBUG
         cerr << "processing " << printTerm(tr) << endl;
 #endif
-        if (gen_sub.contains(tr)) {
+        if (gen_sub.has(tr)) {
             // Already processed
             queue.pop();
             continue;
@@ -1123,7 +1123,7 @@ bool Logic::varsubstitute(PTRef& root, Map<PTRef,PtAsgn,PTRefHash>& substs, PTRe
         bool unprocessed_children = false;
         Pterm& t = getPterm(tr);
         for (int i = 0; i < t.size(); i++) {
-            if (!gen_sub.contains(t[i])) {
+            if (!gen_sub.has(t[i])) {
                 queue.push(t[i]);
                 unprocessed_children = true;
             }
@@ -1133,7 +1133,7 @@ bool Logic::varsubstitute(PTRef& root, Map<PTRef,PtAsgn,PTRefHash>& substs, PTRe
         PTRef result = PTRef_Undef;
         if (isVar(tr) || isConstant(tr)) {
             // The base case
-            if (substs.contains(tr) && substs[tr].sgn == l_True)
+            if (substs.has(tr) && substs[tr].sgn == l_True)
                 result = substs[tr].tr;
             else
                 result = tr;
@@ -1141,7 +1141,7 @@ bool Logic::varsubstitute(PTRef& root, Map<PTRef,PtAsgn,PTRefHash>& substs, PTRe
             assert(result != PTRef_Undef);
         } else {
             // The "inductive" case
-            if (substs.contains(tr) && substs[tr].sgn == l_True) {
+            if (substs.has(tr) && substs[tr].sgn == l_True) {
 #ifdef SIMPLIFY_DEBUG
                 printf("Immediate substitution found: %s -> %s\n", printTerm(tr), printTerm(substs[tr].tr));
 #endif
@@ -1214,7 +1214,7 @@ void Logic::breakSubstLoops(Map<PTRef,PtAsgn,PTRefHash>& substs)
                 alloced.push(n);
                 queue.push(n);
                 roots.push(n);
-                assert(!varToSubstNode.contains(keys[i]));
+                assert(!varToSubstNode.has(keys[i]));
                 varToSubstNode.insert(keys[i], n);
                 while (queue.size() > 0) {
                     SubstNode* var = queue.last();
@@ -1223,10 +1223,10 @@ void Logic::breakSubstLoops(Map<PTRef,PtAsgn,PTRefHash>& substs)
                         seen[getPterm(var_tr).getId()] = black;
                         for (int j = 0; j < var->children.size(); j++) {
                             SubstNode* cn = NULL;
-                            if (varToSubstNode.contains(var->children[j])) {
+                            if (varToSubstNode.has(var->children[j])) {
                                 cn = varToSubstNode[var->children[j]];
                                 if (cn->parent == NULL && cn != n) cn->parent = var;
-                            } else if (substs.contains(var->children[j]) && substs[var->children[j]].sgn == l_True) {
+                            } else if (substs.has(var->children[j]) && substs[var->children[j]].sgn == l_True) {
                                 cn = new SubstNode(var->children[j], substs[var->children[j]].tr, var, *this);
                                 alloced.push(cn);
                                 queue.push(cn);
@@ -1371,14 +1371,14 @@ lbool Logic::retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHas
                         ::free(tmp1); ::free(tmp2);
                     }
 #endif
-                    if (!substs.contains(var)) {
+                    if (!substs.has(var)) {
                         substs.insert(var, PtAsgn(trm, l_True));
                     }
                 }
             }
         } else if (isBoolAtom(tr)) {
             PTRef term = sgn == l_True ? getTerm_true() : getTerm_false();
-            if (substs.contains(tr)) {
+            if (substs.has(tr)) {
                 if (term != substs[tr].tr) return l_False;
             } else substs.insert(tr, PtAsgn(term, l_True));
         }
@@ -1404,7 +1404,7 @@ void Logic::collectFacts(PTRef root, vec<PtAsgn>& facts)
     while (queue.size() != 0) {
         PtAsgn pta = queue.last(); queue.pop();
 
-        if (isdup.contains(pta.tr)) continue;
+        if (isdup.has(pta.tr)) continue;
         isdup.insert(pta.tr, true);
 
         Pterm& t = getPterm(pta.tr);
@@ -1478,14 +1478,14 @@ bool Logic::contains(PTRef term, PTRef var)
     while (queue.size() != 0) {
         PTRef tr = queue.last();
         if (tr == var) return true;
-        if (proc.contains(tr)) {
+        if (proc.has(tr)) {
             queue.pop();
             continue;
         }
         bool unprocessed_children = false;
         Pterm& t = getPterm(tr);
         for (int i = 0; i < t.size(); i++)
-            if (!proc.contains(t[i])) {
+            if (!proc.has(t[i])) {
                 queue.push(t[i]);
                 unprocessed_children = true; }
         if (unprocessed_children) continue;
@@ -1506,14 +1506,14 @@ void Logic::getVars(PTRef term, vec<PTRef>& vars) const
 
     while (queue.size() != 0) {
         PTRef tr = queue.last();
-        if (proc.contains(tr)) {
+        if (proc.has(tr)) {
             queue.pop();
             continue;
         }
         bool unprocessed_children = false;
         const Pterm& t = getPterm(tr);
         for (int i = 0; i < t.size(); i++)
-            if (!proc.contains(t[i])) {
+            if (!proc.has(t[i])) {
                 queue.push(t[i]);
                 unprocessed_children = true; }
         if (unprocessed_children) continue;
@@ -1532,13 +1532,13 @@ PTRef Logic::learnEqTransitivity(PTRef formula)
     queue.push(formula);
     while (queue.size() != 0) {
         PTRef tr = queue.last();
-        if (processed.contains(tr)) {
+        if (processed.has(tr)) {
             queue.pop(); continue; }
 
         Pterm& t = getPterm(tr);
         bool unp_ch = false;
         for (int i = 0; i < t.size(); i++) {
-            if (!processed.contains(t[i])) {
+            if (!processed.has(t[i])) {
                 queue.push(t[i]);
                 unp_ch = true;
             }
@@ -1627,11 +1627,11 @@ void Logic::serializeLogicData(int*& logicdata_buf) const
 
     const vec<SymRef> &symbols = sym_store.getSymbols();
     for (int i = 0; i < symbols.size(); i++) {
-        if (equalities.contains(symbols[i]))
+        if (equalities.has(symbols[i]))
             equalities_sz ++;
-        if (disequalities.contains(symbols[i]))
+        if (disequalities.has(symbols[i]))
             disequalities_sz ++;
-        if (ites.contains(symbols[i]))
+        if (ites.has(symbols[i]))
             ites_sz ++;
     }
 
@@ -1654,11 +1654,11 @@ void Logic::serializeLogicData(int*& logicdata_buf) const
     int disequalities_p = disequalities_offs+1;
     int ites_p = ites_offs+1;
     for (int i = 0; i < symbols.size(); i++) {
-        if (equalities.contains(symbols[i]))
+        if (equalities.has(symbols[i]))
             logicdata_buf[equalities_p ++] = symbols[i].x;
-        if (disequalities.contains(symbols[i]))
+        if (disequalities.has(symbols[i]))
             logicdata_buf[disequalities_p ++] = symbols[i].x;
-        if (ites.contains(symbols[i]))
+        if (ites.has(symbols[i]))
             logicdata_buf[ites_p ++] = symbols[i].x;
     }
 }
@@ -1672,21 +1672,21 @@ void Logic::deserializeLogicData(const int* logicdata_buf)
     int eqs_sz = eqs_buf[0];
     for (int i = 0; i < eqs_sz-1; i++) {
         SymRef sr = {(uint32_t)eqs_buf[i+1]};
-        if (!equalities.contains(sr))
+        if (!equalities.has(sr))
             equalities.insert(sr, true);
     }
 
     int diseqs_sz = diseqs_buf[0];
     for (int i = 0; i < diseqs_sz - 1; i++) {
         SymRef sr = {(uint32_t)diseqs_buf[i+1]};
-        if (!disequalities.contains(sr))
+        if (!disequalities.has(sr))
             disequalities.insert(sr, true);
     }
 
     int ites_sz = ites_buf[0];
     for (int i = 0; i < ites_sz - 1; i++) {
         SymRef sr = {(uint32_t)ites_buf[i+1]};
-        if (!ites.contains(sr))
+        if (!ites.has(sr))
             ites.insert(sr, true);
     }
 }
@@ -1860,7 +1860,11 @@ Logic::setIPartitionsIte(PTRef pref)
             addIPartitions(getPterm(p).symb(), getIPartitions(pref));
             //cout << "Symb " << getSymName(getPterm(p).symb()) << " gets partition " << getIPartitions(getPterm(p).symb()) << endl;
         }
-        addIPartitions(p, getIPartitions(pref));
+        if (p != pref)
+        {
+            addIPartitions(p, getIPartitions(pref));
+            //cout << "Term " << printTerm(p) << " gets partition " << getIPartitions(p) << endl;
+        }
         //---------------
 
         Pterm& t = getPterm(p);

@@ -32,7 +32,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Deductions.h"
 #include "SolverTypes.h"
 #include "Logic.h"
-
+#ifdef PRODUCE_PROOF
+#include "TheoryInterpolator.h"
+#endif
 
 #ifdef STATISTICS
 class TSolverStats
@@ -122,7 +124,7 @@ class TSolverStats
 
 class TSolver
 {
-  protected:
+protected:
     SolverId   id;             // Solver unique identifier
     vec<PtAsgn> explanation;    // Stores the explanation
     vec<PtAsgn_reason> th_deductions;  // List of deductions computed by the theory
@@ -145,7 +147,7 @@ public:
 
     virtual ~TSolver ( ) { }
     void  setPolarity(PTRef tr, lbool p) {
-        if (polarityMap.contains(tr)) { polarityMap[tr] = p; }
+        if (polarityMap.has(tr)) { polarityMap[tr] = p; }
         else { polarityMap.insert(tr, p); }
 #ifdef VERBOSE_EUF
         cerr << "Setting polarity " << getLogic().printTerm(tr) << endl;
@@ -159,7 +161,7 @@ public:
         cerr << "Clearing polarity " << getLogic().printTerm(tr) << endl;
 #endif
     }
-    bool  hasPolarity(PTRef tr)          { if (polarityMap.contains(tr)) { return polarityMap[tr] != l_Undef; } else return false; }
+    bool  hasPolarity(PTRef tr)          { if (polarityMap.has(tr)) { return polarityMap[tr] != l_Undef; } else return false; }
     virtual bool                assertLit           ( PtAsgn, bool = false ) = 0 ;  // Assert a theory literal
     virtual void                pushBacktrackPoint  ( )                       ;  // Push a backtrack point
     virtual void                popBacktrackPoint   ( )                       ;  // Backtrack to last saved point
@@ -167,7 +169,7 @@ public:
     inline const string &       getName             ( ) { return name; }            // The name of the solver
     virtual ValPair             getValue            (PTRef) const = 0;
 #ifdef PRODUCE_PROOF
-    virtual PTRef getInterpolants(const ipartitions_t &) = 0;
+    virtual TheoryInterpolator* getTheoryInterpolator() = 0;
 #endif
     virtual void computeModel() = 0;                      // Compute model for variables
     virtual void getConflict(bool, vec<PtAsgn>&) = 0;     // Return conflict
@@ -181,7 +183,7 @@ public:
     virtual Logic& getLogic() = 0;
 protected:
     Map<PTRef,bool,PTRefHash>   informed_PTRefs;
-    bool                        informed(PTRef tr) { return informed_PTRefs.contains(tr); }
+    bool                        informed(PTRef tr) { return informed_PTRefs.has(tr); }
     bool                        has_explanation;  // Does the solver have an explanation (conflict detected)
     const char*                 name;             // Name of the solver
     SMTConfig &                 config;           // Reference to configuration

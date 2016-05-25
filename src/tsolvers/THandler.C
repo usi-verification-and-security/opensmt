@@ -1,7 +1,7 @@
 /*********************************************************************
 Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
 
-OpenSMT2 -- Copyright (C) 2012 - 2014 Antti Hyvarinen
+OpenSMT2 -- Copyright (C) 2012 - 2016 Antti Hyvarinen
                          2008 - 2012 Roberto Bruttomesso
 
 Permission is hereby granted, free of charge, to any person obtaining a
@@ -139,7 +139,7 @@ bool THandler::check(bool complete) {
 //
 void THandler::getConflict (
         vec<Lit> & conflict
-        , vec<int>& level
+        , vec<VarData>& vardata
         , int & max_decision_level
 #ifdef PEDANTIC_DEBUG
         , vec<Lit>& trail
@@ -181,11 +181,11 @@ void THandler::getConflict (
         assert( ei.sgn == l_True || ei.sgn == l_False);
         Var v = ptrefToVar(ei.tr);
         bool negate = ei.sgn == l_False;
-        Lit l = Lit(v, !negate);
+        Lit l = mkLit(v, !negate);
         conflict.push(l);
 
-    if ( max_decision_level < level[ v ] )
-      max_decision_level = level[ v ];
+    if ( max_decision_level < vardata[ v ].level )
+      max_decision_level = vardata[ v ].level;
   }
   if ( config.produce_inter() == 0 )
     explanation.clear( );
@@ -216,17 +216,25 @@ void THandler::getConflict (
 #endif
         conflict.push( ~l );
 
-        if ( max_decision_level < level[ var(l) ] )
-            max_decision_level = level[ var(l) ];
+        if ( max_decision_level < vardata[ var(l) ].level )
+            max_decision_level = vardata[ var(l) ].level;
     }
 #endif
 
 }
 
 #ifdef PRODUCE_PROOF
-PTRef THandler::getInterpolants(const ipartitions_t& p)
+
+PTRef
+THandler::getInterpolant(const ipartitions_t& mask)
 {
-    return getSolverHandler().getInterpolants(p);
+    return getSolverHandler().getInterpolant(mask);
+}
+
+
+//PTRef THandler::getInterpolants(const ipartitions_t& p)
+//{
+//    return getSolverHandler().getInterpolants(p);
     /*
     vec<PTRef> itps;
     for(int i = 0; i < tsolvers.size(); ++i)
@@ -239,7 +247,7 @@ PTRef THandler::getInterpolants(const ipartitions_t& p)
 
   return itps[0];
   */
-}
+//}
 #endif
 
 //
@@ -294,7 +302,7 @@ Lit THandler::getSuggestion( ) {
     return tmap.getLit(e);
 }
 
-void THandler::getReason( Lit l, vec< Lit > & reason, vec<char>& assigns )
+void THandler::getReason( Lit l, vec< Lit > & reason, vec<lbool>& assigns )
 {
 #if LAZY_COMMUNICATION
     assert( checked_trail_size == stack.size( ) );

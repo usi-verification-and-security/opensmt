@@ -97,14 +97,14 @@ class EnodeStore {
     char* printEnode(ERef);
 
     char getDistIndex(PTRef tr_d) const {
-        assert(dist_classes.contains(tr_d));
+        assert(dist_classes.has(tr_d));
         return dist_classes[tr_d];
     }
 
     PTRef getDistTerm(dist_t idx) { return index_to_dist[idx]; }
 
     void addDistClass(PTRef tr_d) {
-        assert(!dist_classes.contains(tr_d));
+        assert(!dist_classes.has(tr_d));
         assert(dist_idx < sizeof(dist_t)*8);
         dist_classes.insert(tr_d, dist_idx);
         assert(index_to_dist.size_() == dist_idx);
@@ -119,11 +119,11 @@ class EnodeStore {
     inline bool containsSig(ERef e) const
         { const Enode& en_e = ea[e];
           SigPair sp( ea[ea[en_e.getCar()].getRoot()].getCid(), ea[ea[en_e.getCdr()].getRoot()].getCid() );
-          return sig_tab.contains(sp); }
+          return sig_tab.has(sp); }
 
     inline bool containsSig(ERef car, ERef cdr) const
         { SigPair sp( ea[ea[car].getRoot()].getCid(), ea[ea[cdr].getRoot()].getCid() );
-          return sig_tab.contains(sp); }
+          return sig_tab.has(sp); }
 
 
     inline ERef lookupSig(ERef e) const

@@ -43,18 +43,15 @@ void CoreSMTSolver::crashTest(int rounds, Var var_true, Var var_false)
                 Var v = rand() % nVars();
                 if (v == var_true)
                 {
-                    Lit l(v, false);
-                    tmp_trail.push(l);
+                    tmp_trail.push(mkLit(v, false));
                 }
                 else if (v == var_false)
                 {
-                    Lit l(v, true);
-                    tmp_trail.push(l);
+                    tmp_trail.push(mkLit(v, true));
                 }
                 else
                 {
-                    Lit l(v, rand() % 2);
-                    tmp_trail.push(l);
+                    tmp_trail.push(mkLit(v, rand() % 2));
                 }
             }
             printf("Stack contains %d literals of which %d new\n", tmp_trail.size(), tmp_trail.size()-stack_sz);
@@ -145,7 +142,7 @@ int CoreSMTSolver::checkTheory( bool complete )
                     if (deds[i].lev < decisionLevel())
                         cancelUntil(deds[i].lev);
 #endif
-                    uncheckedEnqueue(deds[i].l, fake_clause);
+                    uncheckedEnqueue(deds[i].l, CRef_Fake);
                 }
                 if (deds.size() > 0) {
                     // now check the other theories
@@ -199,9 +196,9 @@ int CoreSMTSolver::checkTheory( bool complete )
     int        backtrack_level;
 
 #ifdef PEDANTIC_DEBUG
-    theory_handler.getConflict(conflicting, level, max_decision_level, trail);
+    theory_handler.getConflict(conflicting, vardata, max_decision_level, trail);
 #else
-    theory_handler.getConflict(conflicting, level, max_decision_level);
+    theory_handler.getConflict(conflicting, vardata, max_decision_level);
 #endif
 #if PRODUCE_PROOF
     /*
@@ -219,43 +216,43 @@ int CoreSMTSolver::checkTheory( bool complete )
 #ifdef PRODUCE_PROOF
         // This case is equivalent to "Did not find watch" in propagate( )
         // All conflicting atoms are dec-level 0
-        Clause * confl = Clause_new( conflicting, config.sat_temporary_learn );
+        CRef confl = ca.alloc(conflicting, config.sat_temporary_learn);
 
-        Clause & c = *confl;
+        Clause & c = ca[confl];
         proof.addRoot( confl, CLA_THEORY );
+        //TODO: is it correct?
+        //proof.setTheoryInterpolator(confl, theory_itpr);
+        //clause_to_itpr[ confl ] = theory_itpr;
         tleaves.push( confl );
         if ( config.isIncremental() )
         {
-            undo_stack_oper.push_back( NEWPROOF );
-            undo_stack_elem.push_back( (void *)confl );
+            // Not yet integrated
+            assert(false);
+            undo_stack.push(undo_stack_el(undo_stack_el::NEWPROOF, confl));
         }
-        /*
         if ( config.produce_inter() > 0 )
         {
-            assert(interp != PTRef_Undef);
-            clause_to_in[ confl ] = interp;
-            if ( config.incremental )
-            {
-                undo_stack_oper.push_back( NEWINTER );
-                undo_stack_elem.push_back( NULL );
-            }
+            //assert(interp != PTRef_Undef);
+            // FIXME why here?
+            //proof.resolve( units[var(c[k])], var(c[k]) );
         }
-        */
+        // Empty clause derived
+        // ADDED CODE BEGIN
         proof.beginChain( confl );
         for ( int k = 0; k < c.size() ; k ++ )
         {
-            assert( level[ var(c[k]) ] == 0 );
-            assert( value( c[k] ) == l_False );
-            assert( units[var(c[k])] != NULL );
+            //assert( level[ var(c[k]) ] == 0 );
+            //assert( value( c[k] ) == l_False );
+            //assert( units[var(c[k])] != NULL );
             proof.resolve( units[var(c[k])], var(c[k]) );
         }
-        // Empty clause derived
-        proof.endChain( NULL );
+        // ADDED CODE END
+        proof.endChain( CRef_Undef );
 #endif
         return -1;
     }
 
-    Clause * confl = NULL;
+    CRef confl = CRef_Undef;
     assert( conflicting.size( ) > 0 );
 
 #ifdef PRODUCE_PROOF
@@ -263,22 +260,21 @@ int CoreSMTSolver::checkTheory( bool complete )
     if ( conflicting.size( ) > config.sat_learn_up_to_size
             || conflicting.size( ) == 1 ) // That might happen in bit-vector theories
     {
-        confl = Clause_new(conflicting);
+        confl = ca.alloc(conflicting);
     }
     // Learn theory lemma
     else
     {
-        confl = Clause_new(conflicting, config.sat_temporary_learn);
+        confl = ca.alloc(conflicting, config.sat_temporary_learn);
         learnts.push(confl);
 #ifndef SMTCOMP
         if ( config.isIncremental() )
         {
-            undo_stack_oper.push_back( NEWLEARNT );
-            undo_stack_elem.push_back( (void *)confl );
+            undo_stack.push(undo_stack_el(undo_stack_el::NEWLEARNT, confl));
         }
 #endif
-        attachClause(*confl);
-        claBumpActivity(*confl);
+        attachClause(confl);
+        claBumpActivity(ca[confl]);
         learnt_t_lemmata ++;
         if ( !config.sat_temporary_learn )
             perm_learnt_t_lemmata ++;
@@ -288,12 +284,12 @@ int CoreSMTSolver::checkTheory( bool complete )
     if ( conflicting.size( ) > config.sat_learn_up_to_size
             || conflicting.size( ) == 1 ) // That might happen in bit-vector theories
     {
-        confl = Clause_new( conflicting );
+        confl = ca.alloc(conflicting);
     }
     // Learn theory lemma
     else
     {
-        confl = Clause_new( conflicting, config.sat_temporary_learn );
+        confl = ca.alloc(conflicting, config.sat_temporary_learn);
         learnts.push(confl);
 #ifndef SMTCOMP
 //    if ( config.incremental )
@@ -302,14 +298,14 @@ int CoreSMTSolver::checkTheory( bool complete )
 //      undo_stack_elem.push_back( (void *)confl );
 //    }
 #endif
-        attachClause(*confl);
-        claBumpActivity(*confl);
+        attachClause(confl);
+        claBumpActivity(ca[confl]);
         learnt_t_lemmata ++;
         if ( !config.sat_temporary_learn )
             perm_learnt_t_lemmata ++;
     }
 #endif
-    assert( confl );
+    assert( confl != CRef_Undef );
 
     learnt_clause.clear();
 #ifdef PRODUCE_PROOF
@@ -317,21 +313,15 @@ int CoreSMTSolver::checkTheory( bool complete )
     tleaves.push( confl );
     if ( config.isIncremental() )
     {
-        undo_stack_oper.push_back( NEWPROOF );
-        undo_stack_elem.push_back( (void *)confl );
+        undo_stack.push(undo_stack_el(undo_stack_el::NEWPROOF, confl));
     }
-    /*
     if ( config.produce_inter() > 0 )
     {
-        assert(interp != PTRef_Undef);
-        clause_to_in[ confl ] = interp;
-        if ( config.incremental )
+        if ( config.isIncremental() )
         {
-            undo_stack_oper.push_back( NEWINTER );
-            undo_stack_elem.push_back( NULL );
+            undo_stack.push(undo_stack_el(undo_stack_el::NEWINTER, CRef_Undef));
         }
     }
-    */
 #endif
 
     analyze( confl, learnt_clause, backtrack_level );
@@ -340,7 +330,7 @@ int CoreSMTSolver::checkTheory( bool complete )
     // Get rid of the temporary lemma
     if ( conflicting.size( ) > config.sat_learn_up_to_size )
     {
-        free(confl);
+        ca.free(confl);
     }
 #endif
 
@@ -351,9 +341,9 @@ int CoreSMTSolver::checkTheory( bool complete )
         uncheckedEnqueue(learnt_clause[0]);
 #ifdef PRODUCE_PROOF
         // Create a unit for the proof
-        Clause * c = Clause_new( learnt_clause, false );
-        proof.endChain( c );
-        assert( units[ var(learnt_clause[0]) ] == NULL );
+        CRef cr = ca.alloc(learnt_clause, false);
+        proof.endChain( cr );
+        //assert( units[ var(learnt_clause[0]) ] == CRef_Undef );
         units[ var(learnt_clause[0]) ] = proof.last( );
 #endif
     } else {
@@ -361,25 +351,23 @@ int CoreSMTSolver::checkTheory( bool complete )
         learnts_size += learnt_clause.size( );
         all_learnts ++;
 
-        Clause * c = Clause_new( learnt_clause, true );
+        CRef cr = ca.alloc(learnt_clause, true);
 
 #ifdef PRODUCE_PROOF
-        proof.endChain( c );
+        proof.endChain( cr );
         if ( config.isIncremental() )
         {
-            undo_stack_oper.push_back( NEWPROOF );
-            undo_stack_elem.push_back( (void *)c );
+            undo_stack.push(undo_stack_el(undo_stack_el::NEWPROOF, cr));
         }
 #endif
-        learnts.push(c);
+        learnts.push(cr);
         learnt_theory_conflicts++;
 #ifndef SMTCOMP
-        undo_stack_oper.push_back( NEWLEARNT );
-        undo_stack_elem.push_back( (void *)c );
+        undo_stack.push(undo_stack_el(undo_stack_el::NEWLEARNT, cr));
 #endif
-        attachClause(*c);
-        claBumpActivity(*c);
-        uncheckedEnqueue(learnt_clause[0], c);
+        attachClause(cr);
+        claBumpActivity(ca[cr]);
+        uncheckedEnqueue(learnt_clause[0], cr);
     }
 
     varDecayActivity();
@@ -400,8 +388,8 @@ int CoreSMTSolver::checkAxioms( )
     for ( ; axioms_checked < axioms.size( )
             ; axioms_checked ++ )
     {
-        Clause * ax_ = axioms[ axioms_checked ];
-        Clause & ax = *ax_;
+        CRef ax_ = axioms[axioms_checked];
+        Clause& ax = ca[ax_];
 
         int assigned_false = 0;
         Lit unassigned = lit_Undef;
@@ -415,8 +403,8 @@ int CoreSMTSolver::checkAxioms( )
             if ( value( ax[ i ] ) == l_False )
             {
                 assigned_false ++;
-                if ( level[ var(ax[i]) ] > max_decision_level )
-                    max_decision_level = level[ var(ax[i]) ];
+                if ( level( var(ax[i]) ) > max_decision_level )
+                    max_decision_level = level( var(ax[i]) );
             }
             else
                 unassigned = ax[ i ];
@@ -444,22 +432,22 @@ int CoreSMTSolver::checkAxioms( )
     return 1;
 }
 
-int CoreSMTSolver::analyzeUnsatLemma( Clause * confl )
+int CoreSMTSolver::analyzeUnsatLemma(CRef confl)
 {
-    assert( confl );
+    assert(confl != CRef_Undef);
 
 #ifndef PRODUCE_PROOF
   if ( decisionLevel( ) == 0 )
     return -1;
 #endif
 
-    Clause & c = *confl;
+    Clause & c = ca[confl];
 
     // Get highest decision level
-    int max_decision_level = level[ var(c[0]) ];
+    int max_decision_level = level(var(c[0]));
     for ( int i = 1 ; i < c.size( ) ; i++ )
-        if ( level[ var(c[i]) ] > max_decision_level )
-            max_decision_level = level[ var(c[i]) ];
+        if ( level(var(c[i])) > max_decision_level )
+            max_decision_level = level(var(c[i]));
 
     cancelUntil( max_decision_level );
 
@@ -469,13 +457,13 @@ int CoreSMTSolver::analyzeUnsatLemma( Clause * confl )
         proof.beginChain( confl );
         for ( int k = 0; k < c.size() ; k ++ )
         {
-            assert( level[ var(c[k]) ] == 0 );
-            assert( value( c[k] ) == l_False );
-            assert( units[ var(c[k]) ] != NULL );
-            proof.resolve( units[var(c[k])], var(c[k]) );
+            assert(level(var(c[k])) == 0);
+            assert(value( c[k] ) == l_False);
+            assert(units[ var(c[k]) ] != CRef_Undef);
+            proof.resolve(units[var(c[k])], var(c[k]));
         }
         // Empty clause reached
-        proof.endChain( NULL );
+        proof.endChain(CRef_Undef);
 #endif
         return -1;
     }
@@ -491,10 +479,10 @@ int CoreSMTSolver::analyzeUnsatLemma( Clause * confl )
         uncheckedEnqueue(learnt_clause[0]);
 #ifdef PRODUCE_PROOF
         // Create a unit for proof
-        Clause * c = Clause_new( learnt_clause, false );
-        proof.endChain( c );
-        assert( units[ var(learnt_clause[0]) ] == NULL );
-        units[ var(learnt_clause[0]) ] = proof.last( );
+        CRef cr = ca.alloc(learnt_clause, false);
+        proof.endChain(cr);
+        assert(units[var(learnt_clause[0])] == CRef_Undef);
+        units[ var(learnt_clause[0]) ] = proof.last();
 #endif
     }
     else
@@ -503,24 +491,20 @@ int CoreSMTSolver::analyzeUnsatLemma( Clause * confl )
         learnts_size += learnt_clause.size( );
         all_learnts ++;
 
-        Clause * c = Clause_new( learnt_clause, true );
+        CRef cr = ca.alloc(learnt_clause, true);
 
 #ifdef PRODUCE_PROOF
-        proof.endChain( c );
+        proof.endChain(cr);
         if ( config.isIncremental() )
-        {
-            undo_stack_oper.push_back( NEWPROOF );
-            undo_stack_elem.push_back( (void *)c );
-        }
+            undo_stack.push(undo_stack_el(undo_stack_el::NEWPROOF, cr));
 #endif
-        learnts.push(c);
+        learnts.push(cr);
 #ifndef SMTCOMP
-        undo_stack_oper.push_back( NEWLEARNT );
-        undo_stack_elem.push_back( (void *)c );
+        undo_stack.push(undo_stack_el(undo_stack_el::NEWLEARNT, cr));
 #endif
-        attachClause(*c);
-        claBumpActivity(*c);
-        uncheckedEnqueue(learnt_clause[0], c);
+        attachClause(cr);
+        claBumpActivity(ca[cr]);
+        uncheckedEnqueue(learnt_clause[0], cr);
     }
 
     varDecayActivity();
@@ -555,7 +539,7 @@ void CoreSMTSolver::deduceTheory(vec<LitLev>& deductions)
         assert(ded == r[0]);
         for (int i = 1; i < r.size(); i++) {
             Var v = var(r[i]);
-            max_lev = max_lev > level[v] ? max_lev : level[v];
+            max_lev = max_lev > level(v) ? max_lev : level(v);
             assert(value(r[i]) == l_False);
         }
 

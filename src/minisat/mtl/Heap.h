@@ -17,8 +17,8 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 **************************************************************************************************/
 
-#ifndef Heap_h
-#define Heap_h
+#ifndef Minisat_Heap_h
+#define Minisat_Heap_h
 
 #include "Vec.h"
 #include "stdio.h"
@@ -50,9 +50,23 @@ class Heap {
         heap   [i] = x;
         indices[x] = i;
     }
+//    void percolateUp(int i)
+//    {
+//        int x  = heap[i];
+//        int p  = parent(i);
+//        
+//        while (i != 0 && lt(x, heap[p])){
+//            heap[i]          = heap[p];
+//            indices[heap[p]] = i;
+//            i                = p;
+//            p                = parent(p);
+//        }
+//        heap   [i] = x;
+//        indices[x] = i;
+//    }
 
 
-    inline void percolateDown(int i)
+    void percolateDown(int i)
     {
         int x = heap[i];
         while (left(i) < heap.size()){
@@ -81,10 +95,20 @@ class Heap {
     int  operator[](int index) const { assert(index < heap.size()); return heap[index]; }
 
     void decrease  (int n) { assert(inHeap(n)); percolateUp(indices[n]); }
+    void increase  (int n) { assert(inHeap(n)); percolateDown(indices[n]); }
 
     // RENAME WHEN THE DEPRECATED INCREASE IS REMOVED.
     void increase_ (int n) { assert(inHeap(n)); percolateDown(indices[n]); }
 
+    // Fool proof variant of insert/decrease/increase
+    void update(int n)
+    {
+        if (!inHeap(n))
+            insert(n);
+        else {
+            percolateUp(indices[n]);
+            percolateDown(indices[n]); }
+    }
 
     void insert(int n)
     {
@@ -107,19 +131,19 @@ class Heap {
     void remove(int n)
     {
         assert(inHeap(n));
-	// Retrieve position of n in the heap
-	int ind = indices[n];
-	// Replace n with what is bigger in the heap
-	heap[ind] = heap.last( );
-	// Save new indices for that bigger variable
-	indices[heap[ind]] = ind;
-	// Percolate down bigger variable
-	heap.pop( );
-	// Percolate down
-	if ( heap.size( ) > 1 ) percolateDown(ind);
-	// Detach n
+        // Retrieve position of n in the heap
+        int ind = indices[n];
+        // Replace n with what is bigger in the heap
+        heap[ind] = heap.last( );
+        // Save new indices for that bigger variable
+        indices[heap[ind]] = ind;
+        // Percolate down bigger variable
+        heap.pop( );
+        // Percolate down
+        if ( heap.size( ) > 1 ) percolateDown(ind);
+        // Detach n
         indices[n] = -1;
-	assert(!inHeap(n));
+        assert(!inHeap(n));
     }
 
 // Added Code
@@ -137,29 +161,30 @@ class Heap {
     }
 
 
+    // Rebuild the heap from scratch, using the elements in 'ns':
+    void build(vec<int>& ns) {
+        for (int i = 0; i < heap.size(); i++)
+            indices[heap[i]] = -1;
+        heap.clear();
+
+        for (int i = 0; i < ns.size(); i++){
+            indices[ns[i]] = i;
+            heap.push(ns[i]); }
+
+        for (int i = heap.size() / 2 - 1; i >= 0; i--)
+            percolateDown(i);
+    }
+
     void clear(bool dealloc = false) 
-    { 
+    {
         for (int i = 0; i < heap.size(); i++)
             indices[heap[i]] = -1;
 #ifdef NDEBUG
         for (int i = 0; i < indices.size(); i++)
             assert(indices[i] == -1);
 #endif
-        heap.clear(dealloc); 
+        heap.clear(dealloc);
     }
-
-
-    // Fool proof variant of insert/decrease/increase
-    void update (int n)
-    {
-        if (!inHeap(n))
-            insert(n);
-        else {
-            percolateUp(indices[n]);
-            percolateDown(indices[n]);
-        }
-    }
-
 
     // Delete elements from the heap using a given filter function (-object).
     // *** this could probaly be replaced with a more general "buildHeap(vec<int>&)" method ***
@@ -177,7 +202,7 @@ class Heap {
         for (int i = heap.size() / 2 - 1; i >= 0; i--)
             percolateDown(i);
 
-        assert(heapProperty());
+//        assert(heapProperty());
     }
 
 
@@ -186,12 +211,7 @@ class Heap {
         return heapProperty(1); }
 
 
-    // COMPAT: should be removed
-    void setBounds (int n) { }
-    void increase  (int n) { decrease(n); }
-    int  getmin    ()      { return removeMin(); }
-
-};
+ };
 
 
 //=================================================================================================

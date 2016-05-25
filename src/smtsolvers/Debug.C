@@ -38,7 +38,7 @@ void CoreSMTSolver::dumpCNF( )
 
   for ( int i = 0 ; i < clauses.size( ) ; i ++ )
   {
-    Clause & c = *clauses[ i ];
+    Clause & c = ca[clauses[i]];
 
     if ( c.mark( ) == 1 )
       continue;
@@ -70,14 +70,14 @@ void CoreSMTSolver::verifyModel()
   bool failed = false;
   for (int i = 0; i < clauses.size(); i++)
   {
-    assert(clauses[i]->mark() == 0);
-    Clause& c = *clauses[i];
+    assert(ca[clauses[i]].mark() == 0);
+    Clause& c = ca[clauses[i]];
     for (int j = 0; j < c.size(); j++)
       if (modelValue(c[j]) == l_True)
 	goto next;
 
     reportf("unsatisfied clause: ");
-    printClause(*clauses[i]);
+    printClause<Clause>(ca[clauses[i]]);
 //    printSMTClause( cerr, *clauses[i] );
     reportf("\n");
     failed = true;
@@ -95,8 +95,8 @@ void CoreSMTSolver::checkLiteralCount()
   // Check that sizes are calculated correctly:
   int cnt = 0;
   for (int i = 0; i < clauses.size(); i++)
-    if (clauses[i]->mark() == 0)
-      cnt += clauses[i]->size();
+    if (ca[clauses[i]].mark() == 0)
+      cnt += ca[clauses[i]].size();
 
   if ((int)clauses_literals != cnt){
     fprintf(stderr, "literal count: %d, real value = %d\n", (int)clauses_literals, cnt);

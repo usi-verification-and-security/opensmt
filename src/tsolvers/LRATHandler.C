@@ -27,7 +27,7 @@ void LRATHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
     {
         PTRef tr = terms[i].tr;
         if (logic.isRealLeq(tr)) {
-            if (!refs.contains(tr)) {
+            if (!refs.has(tr)) {
                 declareTerm(tr);
                 refs.insert(tr, deductions.size());
                 logic.getPterm(tr).setVar(deductions.size());
@@ -44,13 +44,13 @@ void LRATHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
             PTRef i2 = logic.mkRealGeq(args, &msg);
             // These can simplify to true and false, and we don't
             // want them to LRA solver
-            if (!refs.contains(i1) && logic.isRealLeq(i1)) {
+            if (!refs.has(i1) && logic.isRealLeq(i1)) {
                 refs.insert(i1, deductions.size());
                 logic.getPterm(i1).setVar(deductions.size());
                 deductions.push(DedElem(getId(), l_Undef));
                 declareTerm(i1);
             }
-            if (!refs.contains(i2) && logic.isRealLeq(i2)) {
+            if (!refs.has(i2) && logic.isRealLeq(i2)) {
                 refs.insert(i2, deductions.size());
                 logic.getPterm(i2).setVar(deductions.size());
                 deductions.push(DedElem(getId(), l_Undef));

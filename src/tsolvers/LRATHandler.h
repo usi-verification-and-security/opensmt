@@ -45,7 +45,11 @@ class LRATHandler : public TSolverHandler
     Logic& getLogic();
 
 #ifdef PRODUCE_PROOF
-    PTRef getInterpolants(const ipartitions_t& m)
+    TheoryInterpolator* getTheoryInterpolator()
+    {
+        return NULL;
+    }
+    PTRef getInterpolant(const ipartitions_t& mask)
     {
         return PTRef_Undef;
     }

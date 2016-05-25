@@ -42,7 +42,15 @@ class sstat {
     bool operator == (sstat s) const { return value == s.value; }
     bool operator != (sstat s) const { return value != s.value; }
     sstat() : value(0) {}
-    sstat(lbool l) { if (l == l_True) value = 1; else if (l == l_False) value = -1; else if (l == l_Undef) value = 0; }
+    sstat(lbool l) {
+        if (l == l_True)
+            value = 1;
+        else if (l == l_False)
+            value = -1;
+        else if (l == l_Undef)
+            value = 0;
+        else assert(false);
+    }
     char getValue()            const { return value; }
     friend sstat toSstat(int v);
 };
@@ -118,7 +126,6 @@ class MainSolver {
         , config(c)
         , status(s_Undef)
         , thandler(thandler)
-        //, sat_solver(config, thandler)
         , ts( config
             , logic
             , tmap
@@ -130,9 +137,7 @@ class MainSolver {
         formulas.push(logic.getTerm_true());
     }
 
-    ~MainSolver() {
-//        delete &this->ts.solver;
-    }
+    ~MainSolver() { }
 
     THandler& getTHandler() { return thandler; }
     Theory&   getTheory()   { return thandler.getTheory(); }

@@ -130,27 +130,27 @@ class PtStore {
 #ifdef PRODUCE_PROOF
     ipartitions_t getIPartitions(PTRef _t)
     {
-        if(!term_partitions.contains(_t))
+        if(!term_partitions.has(_t))
             term_partitions.insert(_t, 0);
         return term_partitions[_t];
     }
     void setIPartitions(PTRef _t, ipartitions_t _p) { term_partitions.insert(_t, _p); }
     void addIPartitions(PTRef _t, ipartitions_t _p)
     {
-        if(!term_partitions.contains(_t))
+        if(!term_partitions.has(_t))
             term_partitions.insert(_t, 0);
         term_partitions[_t] |= _p;
     }
     ipartitions_t getIPartitions(SymRef _s)
     {
-        if(!sym_partitions.contains(_s))
+        if(!sym_partitions.has(_s))
             sym_partitions.insert(_s, 0);
         return sym_partitions[_s];
     }
     void setIPartitions(SymRef _s, ipartitions_t _p) { sym_partitions.insert(_s, _p); }
     void addIPartitions(SymRef _s, ipartitions_t _p)
     {
-        if(!sym_partitions.contains(_s))
+        if(!sym_partitions.has(_s))
             sym_partitions.insert(_s, 0);
         sym_partitions[_s] |= _p;
     }
@@ -185,21 +185,21 @@ class PtStore {
     char* printTerm(PTRef, bool ext = false) const;
     char* printTerm_(PTRef, bool ext = false) const;
 
-    bool hasCtermKey(SymRef& k) { return cterm_map.contains(k); }
+    bool hasCtermKey(SymRef& k) { return cterm_map.has(k); }
     void addToCtermMap(SymRef& k, PTRef tr) {
         cterm_map.insert(k, tr);
 //        cterm_keys.push(k);
     }
     PTRef getFromCtermMap(SymRef& k) { return cterm_map[k]; }
 
-    bool hasBoolKey(PTLKey& k) { return bool_map.contains(k); }
+    bool hasBoolKey(PTLKey& k) { return bool_map.has(k); }
     void addToBoolMap(PTLKey& k, PTRef tr) {
         bool_map.insert(k, tr);
 //        bool_keys.push(k);
     }
     PTRef getFromBoolMap(PTLKey& k) { return bool_map[k]; }
 
-    bool hasCplxKey(PTLKey& k) { return cplx_map.contains(k); }
+    bool hasCplxKey(PTLKey& k) { return cplx_map.has(k); }
     void addToCplxMap(PTLKey& k, PTRef tr) {
         cplx_map.insert(k, tr);
 //        cplx_keys.push(k);

@@ -848,19 +848,19 @@ CGraph::interpolate_flat(const path_t& p)
 // formula into A and B.
 //
 PTRef
-CGraph::getInterpolants( const ipartitions_t & mask )
+CGraph::getInterpolant( const ipartitions_t & mask )
 {
-    cerr << "; Interpolating QF_UF using labeling function ";
+//    cerr << "; Interpolating QF_UF using ";
     switch(config.proof_set_inter_algo())
     {
     case 0:
-        cerr << "Strong";
+  ;//      cerr << "McMillan";
         break;
     case 2:
-        cerr << "Weak";
+     ;//   cerr << "McMillan'";
         break;
     case 3:
-        cerr << "Random";
+      ;//  cerr << "Random";
         break;
     case 4:
       ;//  cerr << "McMillan + PS" << endl;
@@ -874,7 +874,7 @@ CGraph::getInterpolants( const ipartitions_t & mask )
     default:
         opensmt_error("Interpolation algorithm does not exist");
     }
-    cerr << endl;
+   // cerr << endl;
 
   assert( !colored );
 
@@ -1066,7 +1066,9 @@ CGraph::getInterpolants( const ipartitions_t & mask )
 
   //cerr << "; Size stats:\n; Max height: " << max_height << "\n; Max width: " << max_width << endl;
 
-  return interpolant = result;
+  interpolant = result;
+  verifyInterpolantWithExternalTool(mask);
+  return interpolant;
 }
 
 //
@@ -1218,10 +1220,10 @@ CGraph::getSubpathsSwap( const path_t & pi
 
     icolor_t scolor = x->color;
     icolor_t tcolor = y->color;
-    if(scolor == I_A || scolor == I_AB) lnode = x;
-    else if(tcolor == I_A || tcolor == I_AB) lnode = y;
-    if(tcolor == I_A || tcolor == I_AB) rnode = y;
-    else if(scolor == I_A || scolor == I_AB) rnode = x;
+    if(scolor == I_B || scolor == I_AB) lnode = x;
+    else if(tcolor == I_B || tcolor == I_AB) lnode = y;
+    if(tcolor == I_B || tcolor == I_AB) rnode = y;
+    else if(scolor == I_B || scolor == I_AB) rnode = x;
 
     bool rfound = false;
     if(rnode != NULL) rfound = true;
@@ -2331,10 +2333,8 @@ CGraph::verifyInterpolantWithExternalTool( const ipartitions_t& mask )
     }
     B = logic.mkAnd(b_args);
 */
-#ifdef ITP_DEBUG
     cerr << ";A: " << logic.printTerm(A) << endl;
     cerr << ";B: " << logic.printTerm(B) << endl;
-#endif
 
     /*
     vec<PTRef> A;

@@ -47,9 +47,14 @@ class UFTHandler : public TSolverHandler
     Logic& getLogic();
 
 #ifdef PRODUCE_PROOF
-    PTRef getInterpolants(const ipartitions_t& m)
+    TheoryInterpolator* getTheoryInterpolator()
     {
-        return egraph->getInterpolants(m);
+        return egraph->getTheoryInterpolator();
+    }
+
+    PTRef getInterpolant(const ipartitions_t& mask)
+    {
+        return egraph->getInterpolant(mask);
     }
 #endif
 };

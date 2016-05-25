@@ -100,7 +100,7 @@ void Interpret::setOption(ASTNode& n) {
     else // Normal option
         name = strdup(n.getValue());
 
-    Option value(n);
+    SMTOption value(n);
     const char* msg = "ok";
     bool rval = config.setOption(name, value, msg);
     if (rval == false)
@@ -114,7 +114,7 @@ void Interpret::getOption(ASTNode& n) {
     assert(n.getValue() != NULL);
     const char* name = n.getValue();
 
-    const Option& value = config.getOption(name);
+    const SMTOption& value = config.getOption(name);
 
     if (value.isEmpty())
         notify_formatted(true, "No value for attr %s", name);
@@ -596,7 +596,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
             ASTNode& sym = **(name_attr.children->begin());
             assert(sym.getType() == SYM_T);
             const char* name = sym.getValue();
-            if (nameToTerm.contains(name)) {
+            if (nameToTerm.has(name)) {
                 notify_formatted(true, "name %s already exists", name);
                 return PTRef_Undef;
             }
@@ -664,7 +664,7 @@ bool Interpret::checkSat(const char* cmd) {
         return false;
     }
     if (res == s_Undef) {
-        const Option& o_dump_state = config.getOption(":dump-state");
+        const SMTOption& o_dump_state = config.getOption(":dump-state");
         const SpType o_split = config.sat_split_type();
         if (!o_dump_state.isEmpty() && o_split == spt_none)
             writeState(config.dump_state());
@@ -1133,8 +1133,10 @@ void Interpret::GetInterpolants()
     */
     // PH-random
     srand(2);
-    ipartitions_t p = 1;
-    for(int i = 1; i < partitions.size(); ++i)
+    ipartitions_t p = 0; //first partition is A, second is B
+    opensmt::setbit(p, 0);
+
+    for(int i = 2; i < partitions.size(); ++i)
     {
         p <<= 1;
         if(rand() % 2) p += 1;
@@ -1182,21 +1184,14 @@ void Interpret::GetInterpolants()
     }
 */
 
-    PTRef itp = thandler->getInterpolants(p);
-    //cerr << ";Interpolant:\n;" << logic->printTerm(itp) << endl;
-
-    /*
-    if (config.produce_inter() == 0)
-        notify_formatted(true, "get-interpolants: skipping since produce-interpolants is not set");
-    else if (ts.getStatus() == l_False) {
-        sat_solver.createProofGraph();
-        if (config.proof_reduce() > 0) sat_solver.reduceProofGraph();
-        sat_solver.printInter(config.getRegularOut());
-        sat_solver.deleteProofGraph();
-    }
-    else
-        notify_formatted(true, "get-interpolants: skipping since formula not shown unsat");
-        */
+#ifdef PEDANTIC_DEBUG
+    cout << ";Interpolation mask " << p << endl;
+#endif
+    SimpSMTSolver& smt_solver = main_solver->getSMTSolver();
+    smt_solver.createProofGraph();
+    vector<PTRef> itps;
+    smt_solver.getSingleInterpolant(itps, p);
+    cerr << ";Interpolant:\n;" << logic->printTerm(itps[0]) << endl;
 }
 #endif
 

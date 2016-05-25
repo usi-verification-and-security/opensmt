@@ -32,32 +32,26 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <sys/wait.h>
 #endif
 
-/*
-void CoreSMTSolver::dumpRndInter( )
+void CoreSMTSolver::dumpRndInter(std::ofstream& dump_out)
 {
-  const char * name = "rnd_inter.smt2";
-  std::ofstream dump_out( name );
-  egraph.dumpHeaderToFile( dump_out );
-
-  dump_out << "(set-option :produce-interpolants true)" << endl;
 
   int i_c = 0, i_t = 0;
-  int step_c = clauses.size( )/(config.sat_dump_rnd_inter+1), limit_c = 0;
-  int step_t = trail.size( )/(config.sat_dump_rnd_inter+1), limit_t = 0;
+  int step_c = clauses.size( )/(config.sat_dump_rnd_inter()+1), limit_c = 0;
+  int step_t = trail.size( )/(config.sat_dump_rnd_inter()+1), limit_t = 0;
   //
   // Dump from first to last but one
   //
-  for ( int part = 1 ; part <= config.sat_dump_rnd_inter ; part ++ )
+  for ( int part = 1 ; part <= config.sat_dump_rnd_inter() ; part ++ )
   {
     limit_c += step_c;
     limit_t += step_t;
     dump_out << "; Partition " << part << endl;
     dump_out << "(assert" << endl;
-    dump_out << "(and" << endl;
+    dump_out << "(!(and" << endl;
 
     for ( ; i_c < limit_c ; i_c ++ )
     {
-      Clause & c = *clauses[ i_c ];
+      Clause& c = ca[clauses[ i_c ]];
 
       if ( c.mark( ) == 1 )
 	continue;
@@ -72,25 +66,25 @@ void CoreSMTSolver::dumpRndInter( )
     {
       Var v = var(trail[i_t]);
       if ( v <= 1 ) continue;
-      Enode * e = theory_handler->varToEnode( v );
-      dump_out << (sign(trail[i_t])?"(not ":" ") << e << (sign(trail[i_t])?") ":" ") << endl;
+      char* term_name;
+      theory_handler.getVarName(v, &term_name);
+      dump_out << (sign(trail[i_t])?"(not ":" ") << term_name << (sign(trail[i_t])?") ":" ") << endl;
     }
 
-    dump_out << "))" << endl;
+    dump_out << ") :partition p" << part << ")" << endl;
   }
   //
   // Dump last
   //
-  dump_out << "; Partition " << config.sat_dump_rnd_inter + 1 << endl;
+  dump_out << "; Partition " << config.sat_dump_rnd_inter() + 1 << endl;
   dump_out << "(assert" << endl;
-  dump_out << "(and" << endl;
+  dump_out << "(!(and" << endl;
 
   for ( ; i_c < clauses.size( ) ; i_c ++ )
   {
-    Clause & c = *clauses[ i_c ];
+    Clause & c = ca[clauses[ i_c ]];
 
-    if ( c.mark( ) == 1 )
-      continue;
+    if ( c.mark( ) == 1 ) continue;
 
     printSMTClause( dump_out, c );
     dump_out << endl;
@@ -102,51 +96,46 @@ void CoreSMTSolver::dumpRndInter( )
   {
     Var v = var(trail[i_t]);
     if ( v <= 1 ) continue;
-    Enode * e = theory_handler->varToEnode( v );
-    dump_out << (sign(trail[i_t])?"(not ":" ") << e << (sign(trail[i_t])?") ":" ") << endl;
+    char* term_name;
+    theory_handler.getVarName(v, &term_name);
+    dump_out << (sign(trail[i_t])?"(not ":" ") << term_name << (sign(trail[i_t])?")":" ") << endl;
   }
-  dump_out << "))" << endl;
-  //
-  // Add Check sat
-  //
-  dump_out << "(check-sat)" << endl;
-  dump_out << "(get-interpolants)" << endl;
-  dump_out << "(exit)" << endl;
-
-  dump_out.close( );
-  cerr << "[Dumped " << name << "]" << endl;
-  exit( 0 );
+  dump_out << ") :partition p" << config.sat_dump_rnd_inter() + 1 << ")" << endl;
 }
-*/
 
 #ifdef PRODUCE_PROOF
 
-  Proof::Proof( )
+  Proof::Proof( ClauseAllocator& cl )
   : begun     ( false )
   , chain_cla ( NULL )
   , chain_var ( NULL )
-    , last_added( NULL )
+  , last_added( CRef_Undef )
+  , cl_al		( cl )
 { }
 
 Proof::~Proof( )
 {
-  // Remove derivation for false
-  if ( clause_to_proof_der.find( NULL ) != clause_to_proof_der.end( ) )
-    delete clause_to_proof_der[ NULL ];
+    if (chain_var) delete chain_var;
+    if (chain_cla) delete chain_cla;
+    for ( map< CRef, ProofDer * >::iterator it = clause_to_proof_der.begin(); it != clause_to_proof_der.end(); it++ )
+    {
+        ProofDer* pd = it->second;
+        if (pd) delete pd;
+    }
 }
 
 //
 // Allocates the necessary structures to track
 // the derivation of this clause c
 //
-void Proof::addRoot( Clause * c, clause_type_t t )
+void Proof::addRoot( CRef c, clause_type_t t )
 {
-  assert( c );
+  assert( c != CRef_Undef );
   assert( checkState( ) );
   assert( t == CLA_ORIG || t == CLA_LEARNT || t == CLA_THEORY );
   // Do nothing. Just complies with previous interface
   ProofDer * d = new ProofDer( );
-  d->chain_cla = new vector< Clause * >;
+  d->chain_cla = new vector< CRef >;
   d->chain_var = new vector< Var >;
   // Not yet referenced
   d->ref = 0;
@@ -156,38 +145,59 @@ void Proof::addRoot( Clause * c, clause_type_t t )
   last_added = c;
 }
 
-//
-// This is the beginning of a derivation chain.
-//
-void Proof::beginChain( Clause * c )
+bool
+Proof::isTheoryInterpolator(CRef cl)
 {
-  assert( c );
-  assert( !begun );
-  begun = true;
-  assert( chain_cla == NULL );
-  assert( chain_var == NULL );
-  // Allocates the temporary store for the chain of clauses and variables
-  chain_cla = new vector< Clause * >;
-  chain_var = new vector< Var >;
-  // Sets the first clause of the chain
-  chain_cla->push_back( c );
-  assert( clause_to_proof_der.find( c ) != clause_to_proof_der.end( ) );
-  // Increase reference
-  clause_to_proof_der[ c ]->ref ++;
+    return clause_to_itpr.find(cl) != clause_to_itpr.end();
+}
+
+TheoryInterpolator*
+Proof::getTheoryInterpolator(CRef cl)
+{
+    assert(clause_to_itpr.find(cl) != clause_to_itpr.end());
+    return clause_to_itpr[cl];
+}
+
+void
+Proof::setTheoryInterpolator(CRef cl, TheoryInterpolator* itpr)
+{
+    assert(clause_to_itpr.find(cl) == clause_to_itpr.end());
+    clause_to_itpr[cl] = itpr;
 }
 
 //
-// Store a resolution step with chain_cla.back( ) and c 
+// This is the beginning of a derivation chain.
+//
+void Proof::beginChain( CRef c )
+{
+    assert( c != CRef_Undef );
+    assert( !begun );
+    begun = true;
+    assert( chain_cla == NULL );
+    assert( chain_var == NULL );
+    // Allocates the temporary store for the chain of clauses and variables
+    chain_cla = new vector< CRef >;
+    chain_var = new vector< Var >;
+    // Sets the first clause of the chain
+    chain_cla->push_back( c );
+    assert( clause_to_proof_der.find( c ) != clause_to_proof_der.end( ) );
+    // Increase reference
+    clause_to_proof_der[ c ]->ref ++;
+}
+
+//
+// Store a resolution step with chain_cla.back( ) and c
 // on the pivot variable p
 //
-void Proof::resolve( Clause * c, Var p )
+void Proof::resolve( CRef c, Var p )
 {
-  assert( c );
-  chain_cla->push_back( c );
-  chain_var->push_back( p );
-  assert( clause_to_proof_der.find( c ) != clause_to_proof_der.end( ) );
-  // Increase reference
-  clause_to_proof_der[ c ]->ref ++;
+    assert( c != CRef_Undef );
+    chain_cla->push_back( c );
+    chain_var->push_back( p );
+    assert( clause_to_proof_der.find( c ) != clause_to_proof_der.end( ) );
+    ProofDer* lala = clause_to_proof_der[c];
+    // Increase reference
+    clause_to_proof_der[ c ]->ref ++;
 }
 
 //
@@ -209,9 +219,9 @@ void Proof::endChain( )
 
 //
 // Finalize the temporary chain
-// NULL is the empty clause 
+// NULL is the empty clause
 //
-void Proof::endChain( Clause * res )
+void Proof::endChain( CRef res )
 {
   assert( begun );
   begun = false;
@@ -240,6 +250,7 @@ void Proof::endChain( Clause * res )
 
     // (*chain_cla)[0] is referenced by this
     clause_to_proof_der[ (*chain_cla)[0] ]->ref ++;
+//    ProofDer* temp = clause_to_proof_der[(*chain_cla)[0]];
     assert( clause_to_proof_der.find( res ) == clause_to_proof_der.end( ) );
     ProofDer * d = new ProofDer( );
     assert( chain_cla );
@@ -274,12 +285,12 @@ void Proof::endChain( Clause * res )
   chain_var = NULL;
 }
 
-bool Proof::deleted( Clause * c )
+bool Proof::deleted( CRef cr )
 {
   // Never remove units
-  if ( c->size( ) == 1 ) return false;
-  assert( clause_to_proof_der.find( c ) != clause_to_proof_der.end( ) );
-  ProofDer * d = clause_to_proof_der[ c ];
+  if ( cl_al[cr].size( ) == 1 ) return false;
+  assert( clause_to_proof_der.find( cr ) != clause_to_proof_der.end( ) );
+  ProofDer * d = clause_to_proof_der[ cr ];
   assert( d );
   assert( d->ref >= 0 );
   // This clause is still used somewhere else, keep it
@@ -294,16 +305,17 @@ bool Proof::deleted( Clause * c )
     dc->ref --;
   }
   assert( d->ref == 0 );
-  // Remove clause (normally is done in CoreSMTSolver::removeClause( ... ) )
-  free( c );
   // Remove derivation
   delete d;
   // Remove correspondence
-  clause_to_proof_der.erase( c );
+  clause_to_proof_der.erase( cr );
+  // Can be removed
+  cl_al.free( cr );
   // Completely removed
   return true;
 }
 
+/* NOTE old code
 void Proof::forceDelete( Clause * c, const bool deref )
 {
   assert( clause_to_proof_der.find( c ) != clause_to_proof_der.end( ) );
@@ -325,6 +337,17 @@ void Proof::forceDelete( Clause * c, const bool deref )
   free( c );
   delete d;
   clause_to_proof_der.erase( c );
+}*/
+
+void Proof::forceDelete( CRef c )
+{
+	//cerr << "Forcing deletion of " << c << endl;
+	assert( clause_to_proof_der.find( c ) != clause_to_proof_der.end( ) );
+	ProofDer * d = clause_to_proof_der[ c ];
+	assert( d );
+	delete d;
+	clause_to_proof_der.erase( c );
+	cl_al.free( c );
 }
 
 // Still stubs
@@ -334,49 +357,48 @@ void Proof::reset( )              { }
 
 void Proof::print( ostream & out, CoreSMTSolver & s, THandler & t )
 {
-/*
-  if ( clause_to_proof_der.find( NULL ) == clause_to_proof_der.end( ) )
+  if ( clause_to_proof_der.find( CRef_Undef ) == clause_to_proof_der.end( ) )
     opensmt_error( "there is no proof of false" );
 
   out << "(proof " << endl;
 
   int nof_lets = 0;
 
-  vector< Clause * > unprocessed;
-  unprocessed.push_back( NULL );
-  set< Clause * > cache;
-  set< Clause * > core;
+  vector< CRef > unprocessed;
+  unprocessed.push_back( CRef_Undef );
+  set< CRef > cache;
+  set< CRef > core;
 
   while( !unprocessed.empty( ) )
   {
-    Clause * c = unprocessed.back( );
+    CRef cr = unprocessed.back( );
     // Skip already seen
-    if ( cache.find( c ) != cache.end( ) )
+    if ( cache.find( cr ) != cache.end( ) )
     {
       unprocessed.pop_back( );
       continue;
     }
-    assert( clause_to_proof_der.find( c ) != clause_to_proof_der.end( ) );
-    ProofDer * d = clause_to_proof_der[ c ];
+    assert( clause_to_proof_der.find( cr ) != clause_to_proof_der.end( ) );
+    ProofDer * d = clause_to_proof_der[ cr ];
 
     // Special case in which there is not
     // a derivation but just an equivalence
     if ( d->chain_cla->size( ) == 1 )
     {
       // Say c is done
-      cache.insert( c );
+      cache.insert( cr );
       // Move to equiv
-      c = (*d->chain_cla)[0];
+      cr = (*d->chain_cla)[0];
       // Retrieve derivation
-      assert( clause_to_proof_der.find( c ) != clause_to_proof_der.end( ) );
-      d = clause_to_proof_der[ c ];
+      assert( clause_to_proof_der.find( cr ) != clause_to_proof_der.end( ) );
+      d = clause_to_proof_der[ cr ];
     }
     assert( d->chain_cla->size( ) != 1 );
     // Look for unprocessed children
     bool unproc_children = false;
     for ( unsigned i = 0 ; i < d->chain_cla->size( ) ; i ++ )
     {
-      Clause * cc = (*(d->chain_cla))[i];
+      CRef cc = (*(d->chain_cla))[i];
       if ( cache.find( cc ) == cache.end( ) )
       {
 	unproc_children = true;
@@ -392,15 +414,15 @@ void Proof::print( ostream & out, CoreSMTSolver & s, THandler & t )
     if ( d->chain_cla->size( ) > 0 )
     {
       out << "; ";
-      if ( c == NULL )
+      if ( cr == CRef_Undef )
 	out << "-";
       else
-	s.printSMTClause( out, *c );
+	s.printSMTClause( out, cl_al[cr] );
       out << endl;
-      out << "(let (cls_" << c;
+      out << "(let (cls_" << cr;
       nof_lets ++;
 
-      vector< Clause * > & chain_cla = (*(d->chain_cla));
+      vector< CRef > & chain_cla = (*(d->chain_cla));
       vector< Var > & chain_var = (*(d->chain_var));
 
       assert( chain_cla.size( ) == chain_var.size( ) + 1 );
@@ -412,16 +434,22 @@ void Proof::print( ostream & out, CoreSMTSolver & s, THandler & t )
 	if ( ic == 1 )
 	{
 	  assert( iv == 0 );
+	  char* name;
+	  t.getVarName(chain_var[0], &name);
 	  out << " cls_" << chain_cla[ 0 ]
 	    << " cls_" << chain_cla[ 1 ]
-	    << " " << t.varToEnode( chain_var[ 0 ] )
+	    << " " << name
 	    << ")";
+	  free(name);
 	}
 	else
 	{
+	  char* name;
+	  t.getVarName(chain_var[iv], &name);
 	  out << " cls_" << chain_cla[ ic ]
-	    << " " << t.varToEnode( chain_var[ iv ] )
+	    << " " << name
 	    << ")";
+	  free(name);
 	}
       }
       out << ")" << endl;
@@ -429,16 +457,16 @@ void Proof::print( ostream & out, CoreSMTSolver & s, THandler & t )
     else
     {
       if ( d->type == CLA_ORIG )
-	core.insert( c );
+	core.insert( cr );
       else if ( d->type == CLA_THEORY ) { }
       else { }
-      out << "(let (cls_" << c << " ";
-      s.printSMTClause( out, *c );
+      out << "(let (cls_" << cr << " ";
+      s.printSMTClause( out, cl_al[cr] );
       out << ")" << endl;
       nof_lets ++;
     }
 
-    cache.insert( c );
+    cache.insert( cr );
   }
 
   out << "cls_0"  << endl;
@@ -449,7 +477,7 @@ void Proof::print( ostream & out, CoreSMTSolver & s, THandler & t )
 
   out << ":core" << endl;
   out << "( ";
-  for ( set< Clause * >::iterator it = core.begin( )
+  for ( set< CRef >::iterator it = core.begin( )
       ; it != core.end( )
       ; it ++ )
   {
@@ -457,54 +485,54 @@ void Proof::print( ostream & out, CoreSMTSolver & s, THandler & t )
   }
   out << ")" << endl;
   out << ")" << endl;
-  */
 }
 
 //=============================================================================
 // The following functions are declared in CoreSMTSolver.h
 
 // Gather mixed atoms in proof
-/*
 void CoreSMTSolver::getMixedAtoms( set< Var > & mixed )
 {
-  set< Clause * > visited_set;
-  vector< Clause * > unprocessed_clauses;
-  map< Clause *, ProofDer * > & clause_to_proof_der = proof.getProof( );
+  set< CRef > visited_set;
+  vector< CRef > unprocessed_clauses;
+  map< CRef, ProofDer * > & clause_to_proof_der = proof.getProof( );
 
-  unprocessed_clauses.push_back( NULL );
+  unprocessed_clauses.push_back( CRef_Undef );
 
   do
   {
-    Clause * c = unprocessed_clauses.back( );
+    CRef cr = unprocessed_clauses.back( );
     unprocessed_clauses.pop_back( );
 
     // Clause not visited yet
-    if( visited_set.find( c ) == visited_set.end( ) )
+    if( visited_set.find( cr ) == visited_set.end( ) )
     {
       // Get clause derivation tree
-      ProofDer & proofder = *(clause_to_proof_der[ c ]);
+      ProofDer & proofder = *(clause_to_proof_der[ cr ]);
       // Clauses chain
-      vector< Clause * > & chain_cla = *(proofder.chain_cla);
+      vector< CRef > & chain_cla = *(proofder.chain_cla);
       clause_type_t ctype = proofder.type;
 
-      assert( ctype == CLA_THEORY 
-	   || ctype == CLA_ORIG 
+      assert( ctype == CLA_THEORY
+	   || ctype == CLA_ORIG
 	   || ctype == CLA_LEARNT
 	   );
 
-      // Mixed atoms may only appear within theory clauses 
+      // Mixed atoms may only appear within theory clauses
       if ( ctype == CLA_THEORY )
       {
 	assert( chain_cla.size( ) == 0 );
-	Clause & cla = *c;
+	Clause & cla = ca[cr];
 	for (int i = 0; i < cla.size(); i++)
 	{
 	  Var v = var(cla[i]);
 	  if ( v <= 1 ) continue;
-	  Enode * e = theory_handler->varToEnode( v );
-	  assert( e->isTAtom( ) );
+//	 PTRef e = theory_handler->varToEnode( v );
+	  PTRef tref = theory_handler.varToTerm(v);
+	  Pterm& t = theory_handler.varToPterm(v);
+//	  assert( e->isTAtom( ) );
 	  // Insert if it has mixed partitions
-	  if ( (e->getIPartitions( ) % 2) == 1 )
+	  if ( (theory_handler.getLogic().getIPartitions(tref) % 2) == 1 )
 	    mixed.insert( v );
 	}
       }
@@ -524,299 +552,161 @@ void CoreSMTSolver::getMixedAtoms( set< Var > & mixed )
       }
 
       // Mark clause as visited
-      visited_set.insert( c );
+      visited_set.insert( cr );
     }
   }
   while( !unprocessed_clauses.empty( ) );
 }
-*/
 
-/*
-void CoreSMTSolver::printProof( ostream & out )
-{
-  assert( (config.print_proofs_smtlib2 != 0 ) 
-       || (config.print_proofs_dotty != 0 ) 
-       || (config.proof_reduce > 0) );
+void CoreSMTSolver::createProofGraph ()
+{ proof_graph = new ProofGraph( config, *this, theory_handler,  proof, nVars( ) ); }
 
-  if( config.print_proofs_smtlib2 != 0 )
-    proof.print( out, *this, *theory_handler );
+void CoreSMTSolver::deleteProofGraph () { delete proof_graph; }
 
-  // No need to build graph if we are neither printing in dot format or doing reduction
-  if( config.print_proofs_dotty != 0 
-   || config.proof_reduce > 0 )
-  {
-    ProofGraph graph( config
-	            , *this
-	            , theory_handler
-	            , egraph
-	            , proof
-	            , axioms_ids
-	            , NULL
-	            , NULL
-	            , nVars( ) );
+void CoreSMTSolver::printProofSMT2( ostream & out )
+{ proof.print( out, *this, theory_handler ); }
 
-    graph.handleProof( );
-  }
-}
-*/
+void CoreSMTSolver::printProofDotty( )
+{ assert(proof_graph); proof_graph->printProofGraph(); }
 
-/*
 void CoreSMTSolver::printInter( ostream & out )
 {
-  assert( config.produce_inter != 0 );
+    assert( config.produce_inter() != 0 );
 
-  if( config.print_proofs_smtlib2 > 0 )
-    proof.print( out, *this, *theory_handler );
+    if (config.print_proofs_smtlib2 > 0) proof.print( out, *this, theory_handler );
 
-  ProofGraph graph( config
-                  , *this
-                  , theory_handler
-                  , egraph
-                  , proof
-                  , axioms_ids
-                  , NULL
-                  , NULL
-                  , nVars( ) );
+    // Compute interpolants
+    vector<PTRef> sequence_of_interpolants;
+    assert(proof_graph);
+    if( config.proof_multiple_inter() == 0)
+        proof_graph->producePathInterpolants( sequence_of_interpolants );
+    else if( config.proof_multiple_inter() == 1)
+        proof_graph->produceSimultaneousAbstraction( sequence_of_interpolants );
+    else if( config.proof_multiple_inter() == 2)
+        proof_graph->produceGenSimultaneousAbstraction( sequence_of_interpolants );
+    else if( config.proof_multiple_inter() == 3)
+        proof_graph->produceStateTransitionInterpolants( sequence_of_interpolants );
+    else
+        opensmt_error( "Please choose a value between 0 and 3" );
 
-  if ( !( config.proof_set_inter_algo == 0 
-       || config.proof_set_inter_algo == 1 
-       || config.proof_set_inter_algo == 2 ) )
-    opensmt_error( "Please choose 0/1/2 as values for proof_set_inter_algo");
 
-  if ( config.verbosity > 0 )
-  {
-    if( config.proof_set_inter_algo == 1 )
-      cerr << "# Using Pudlak interpolation" << endl;
-    else if( config.proof_set_inter_algo == 0 )
-      cerr << "# Using McMillan interpolation" << endl;
-    else if( config.proof_set_inter_algo == 2 )
-      cerr << "# Using McMillan' interpolation" << endl;
-  }
+    for( size_t i = 0 ; i < sequence_of_interpolants.size( ) ; i ++ )
+    {
+        // Before printing, we have to undo definitions
+        // for instance those introduced when converting
+        // to CNF or when replacing ITEs
+        PTRef interp = sequence_of_interpolants[ i ];
+        //interp = theory_handler.getLogic().maximize( interp );
+        //interp = theory_handler.getLogic().expandDefinitions( interp );
 
-  graph.handleProofInter( );
-
-  // Compute interpolants
-  vector< Enode * > sequence_of_interpolants;
-  // Choose symmetric or McMillan's
-  graph.produceSequenceInterpolants( sequence_of_interpolants );
-
-  for( size_t i = 0 ; i < sequence_of_interpolants.size( ) ; i ++ )
-  {
-    // Before printing, we have to undo definitions
-    // for instance those introduced when converting
-    // to CNF or when replacing ITEs
-    Enode * interp = sequence_of_interpolants[ i ];
-    out << "; Interpolant " << i << endl;
-    interp = egraph.maximize( interp );
-    interp = egraph.expandDefinitions( interp );
-    egraph.dumpFormulaToFile( out, interp );
-    // Save again
-    sequence_of_interpolants[ i ] = interp;
-  }
-
-  if ( config.proof_certify_inter > 0 )
-  {
-    if ( config.verbosity > 1 )
-      cerr << "# Certifying interpolant ... ";
-    verifyInterpolantWithExternalTool( sequence_of_interpolants );
-    if ( config.verbosity > 1 )
-      cerr << "OK" << endl;
-  }
+        // restore proper printing whenever necessary
+        out << "; Interpolant " << i << endl;
+        //out << interp << endl; // More clear, less efficient
+        theory_handler.getLogic().dumpFormulaToFile( out, interp ); // More efficient, thanks to let and ?def
+        // Save again
+        sequence_of_interpolants[ i ] = interp;
+    }
 }
-*/
 
 // Create interpolants with each A consisting of the specified partitions
-/*
-void CoreSMTSolver::GetInterpolants(const vector<vector<int> >& partitions,
-                                    vector<Enode*>& interpolants)
+void CoreSMTSolver::getInterpolants(const vector<vector<int> >& partitions, vector<PTRef>& interpolants)
+{ assert(proof_graph); proof_graph->produceConfigMatrixInterpolants( partitions, interpolants ); }
+
+void CoreSMTSolver::getInterpolants(const vector<ipartitions_t>& partitions, vector<PTRef>& interpolants)
+{ assert(proof_graph); proof_graph->produceMultipleInterpolants( partitions, interpolants ); }
+
+#ifdef FULL_LABELING
+void CoreSMTSolver::setColoringSuggestions	( vector< std::map<PTRef, icolor_t>* > * mp ){ proof_graph->setColoringSuggestions(mp); }
+#endif
+
+void CoreSMTSolver::getSingleInterpolant(vector<PTRef>& interpolants)
+{ assert(proof_graph); proof_graph->produceSingleInterpolant(interpolants); }
+
+void CoreSMTSolver::getSingleInterpolant(vector<PTRef>& interpolants, const ipartitions_t& A_mask)
+{ assert(proof_graph); proof_graph->produceSingleInterpolant(interpolants, A_mask); }
+
+bool   CoreSMTSolver::getPathInterpolants(vector<PTRef>& interpolants)
+{ assert(proof_graph); return proof_graph->producePathInterpolants( interpolants ); }
+
+bool   CoreSMTSolver::getSimultaneousAbstractionInterpolants(vector<PTRef>& interpolants)
+{ assert(proof_graph); return proof_graph->produceSimultaneousAbstraction( interpolants ); }
+
+bool   CoreSMTSolver::getGenSimultaneousAbstractionInterpolants(vector<PTRef>& interpolants)
+{ assert(proof_graph); return proof_graph->produceGenSimultaneousAbstraction( interpolants ); }
+
+bool   CoreSMTSolver::getStateTransitionInterpolants(vector<PTRef>& interpolants)
+{ assert(proof_graph); return proof_graph->produceStateTransitionInterpolants( interpolants ); }
+
+bool   CoreSMTSolver::getTreeInterpolants(opensmt::InterpolationTree* it, vector<PTRef>& interpolants)
+{ assert(proof_graph); return proof_graph->produceTreeInterpolants( it, interpolants ); }
+
+void CoreSMTSolver::reduceProofGraph()
+{ assert(proof_graph); proof_graph->transfProofForReduction( ); }
+
+bool CoreSMTSolver::checkImplication( PTRef f1, PTRef f2 )
 {
-	ProofGraph graph( config
-			, *this
-			, theory_handler
-			, egraph
-			, proof
-			, axioms_ids
-			, NULL
-			, NULL
-			, nVars( ) );
+	if( config.verbosity() > 0 ) { cerr << "# Checking implication phi_1 -> phi_2" << endl; }
+	// First stage: print declarations
+	const char * name = "verifyimplication.smt2";
+	ofstream dump_out( name );
+	theory_handler.getLogic().dumpHeaderToFile( dump_out );
+	// Add first formula
+	theory_handler.getLogic().dumpFormulaToFile( dump_out, f1, false );
+	// Add negation second formula
+	theory_handler.getLogic().dumpFormulaToFile( dump_out, f2, true );
+	dump_out << "(check-sat)" << endl;
+	dump_out << "(exit)" << endl;
+	dump_out.close( );
 
-	graph.handleProofInter( );
-
-	// Compute interpolants
-	graph.produceChosenInterpolants( partitions, interpolants );
-
-//	ostream & out = config.getRegularOut( );
-//	for( size_t i = 0 ; i < interpolants.size( ) ; i ++ )
-//	{
-//		egraph.dumpFormulaToFile( out, interpolants[ i ] );
-//	}
-
-// FIXME: Reimplement the certification check
-//	if ( config.proof_certify_inter > 0 )
-//	{
-//		if ( config.verbosity > 1 )
-//			cerr << "# Certifying interpolant ... ";
-//		verifyInterpolantWithExternalTool( sequence_of_interpolants );
-//		if ( config.verbosity > 1 )
-//			cerr << "OK" << endl;
-//	}
+	// Check !
+	bool impl_holds = true;
+	bool tool_res;
+	if ( int pid = fork() )
+	{
+		int status;
+		waitpid(pid, &status, 0);
+		switch ( WEXITSTATUS( status ) )
+		{
+		case 0:
+			tool_res = false;
+			break;
+		case 1:
+			tool_res = true;
+			break;
+		default:
+			perror( "# Error: Certifying solver returned weird answer (should be 0 or 1)" );
+			exit( EXIT_FAILURE );
+		}
+	}
+	else
+	{
+		execlp( config.certifying_solver, config.certifying_solver, name, NULL );
+		perror( "Error: Certifying solver had some problems (check that it is reachable and executable)" );
+		exit( EXIT_FAILURE );
+	}
+	remove(name);
+	if ( tool_res == true )
+	{
+		cerr << "External tool says phi_1 -> phi_2 does not hold" << endl;
+		impl_holds = false;
+	}
+	else
+	{
+		cerr << "External tool says phi_1 -> phi_2 holds" << endl;
+	}
+	return impl_holds;
 }
-*/
-
-/*
-void CoreSMTSolver::verifyInterpolantWithExternalTool( vector< Enode * > & interpolants )
-{
-  ipartitions_t mask = -1;
-  for ( unsigned in = 0 ; in < egraph.getNofPartitions( ) ; in ++ )
-  {
-    Enode * interp = interpolants[ in ];
-    // mask &= ~SETBIT( in );
-    clrbit( mask, in );
-
-    // Skip as first interpolant is always true
-    if ( in == 0 )
-      continue;
-
-    // Check A -> I, i.e., A & !I
-    // First stage: print declarations
-    const char * name = "/tmp/verifyinterp.smt2";
-    ofstream dump_out( name );
-    egraph.dumpHeaderToFile( dump_out );
-    // Print only A atoms
-    dump_out << "(assert " << endl;
-    dump_out << "(and" << endl;
-    for ( int i = 0 ; i < clauses.size( ) ; i ++ )
-    {
-      assert( isAlocal( getIPartitions( clauses[ i ] ), mask )
-	   || isBlocal( getIPartitions( clauses[ i ] ), mask ) );
-
-      if ( isAlocal( getIPartitions( clauses[ i ] ), mask ) )
-      {
-	printSMTClause( dump_out, *clauses[ i ] );
-	dump_out << endl;
-      }
-    }
-    for ( size_t i = 0 ; i < units_to_partition.size( ) ; i ++ )
-    {
-      assert( isAlocal( units_to_partition[ i ].second, mask )
-	   || isBlocal( units_to_partition[ i ].second, mask ) );
-      if ( isAlocal( units_to_partition[ i ].second, mask ) )
-      {
-	printSMTClause( dump_out, *(units_to_partition[ i ].first) );
-	dump_out << endl;
-      }
-    }
-    dump_out << "))" << endl;
-    egraph.dumpFormulaToFile( dump_out, interp, true );
-    dump_out << "(check-sat)" << endl;
-    dump_out << "(exit)" << endl;
-    dump_out.close( );
-    // Check !
-    bool tool_res;
-    if ( int pid = fork() )
-    {
-      int status;
-      waitpid(pid, &status, 0);
-      switch ( WEXITSTATUS( status ) )
-      {
-	case 0:
-	  tool_res = false;
-	  break;
-	case 1:
-	  tool_res = true;
-	  break;
-	default:
-	  perror( "# Error: Certifying solver returned weird answer (should be 0 or 1)" );
-	  exit( EXIT_FAILURE );
-      }
-    }
-    else
-    {
-      execlp( config.certifying_solver
-	  , config.certifying_solver
-	  , name
-	  , NULL );
-      perror( "# Error: Cerifying solver had some problems (check that it is reachable and executable)" );
-      exit( EXIT_FAILURE );
-    }
-
-    if ( tool_res == true )
-      opensmt_error( "external tool says A -> I does not hold" );
-    // Now check B & I
-    dump_out.open( name );
-    egraph.dumpHeaderToFile( dump_out );
-    // Print only B atoms
-    dump_out << "(assert " << endl;
-    dump_out << "(and" << endl;
-    for ( int i = 0 ; i < clauses.size( ) ; i ++ )
-    {
-      assert( isAlocal( getIPartitions( clauses[ i ] ), mask )
-	   || isBlocal( getIPartitions( clauses[ i ] ), mask ) );
-
-      if ( isBlocal( getIPartitions( clauses[ i ] ), mask ) )
-      {
-	printSMTClause( dump_out, *clauses[ i ] );
-	dump_out << endl;
-      }
-    }
-    for ( size_t i = 0 ; i < units_to_partition.size( ) ; i ++ )
-    {
-      assert( isAlocal( units_to_partition[ i ].second, mask )
-	   || isBlocal( units_to_partition[ i ].second, mask ) );
-
-      if ( isBlocal( units_to_partition[ i ].second, mask ) )
-      {
-	printSMTClause( dump_out, *(units_to_partition[ i ].first) );
-	dump_out << endl;
-      }
-    }
-    dump_out << "))" << endl;
-    egraph.dumpFormulaToFile( dump_out, interp );
-    dump_out << "(check-sat)" << endl;
-    dump_out << "(exit)" << endl;
-    dump_out.close( );
-    // Check !
-    if ( int pid = fork() )
-    {
-      int status;
-      waitpid(pid, &status, 0);
-      switch ( WEXITSTATUS( status ) )
-      {
-	case 0:
-	  tool_res = false;
-	  break;
-	case 1:
-	  tool_res = true;
-	  break;
-	default:
-	  perror( "# Error: Certifying solver returned weird answer (should be 0 or 1)" );
-	  exit( EXIT_FAILURE );
-      }
-    }
-    else
-    {
-      execlp( config.certifying_solver
-	  , config.certifying_solver
-	  , name
-	  , NULL );
-      perror( "# Error: Cerifying solver had some problems (check that it is reachable and executable)" );
-      exit( 1 );
-    }
-    if ( tool_res == true )
-      opensmt_error( "external tool says B & I does hold" );
-  }
-}
-*/
 
 void CoreSMTSolver::mixedVarDecActivity( )
 {
-    /*
+  Logic& logic = theory_handler.getLogic();
   if( config.produce_inter() > 0)
   {
     for (int i = 2; i < nVars(); i++)
     {
-      Enode * e = theory_handler->varToEnode( i );
-      if ( !e->isVar( ) && e->getIPartitions( ) % 2 == 1 )
+      PTRef er = theory_handler.varToTerm(i);
+      Pterm& e = theory_handler.varToPterm(i);
+      if ( !logic.isVar(er) && logic.getIPartitions(er) % 2 == 1 )
       {
 	activity[i] -= config.produce_inter() > 0 ? 1 : 0;
 	// Update order_heap with respect to new activity:
@@ -825,7 +715,6 @@ void CoreSMTSolver::mixedVarDecActivity( )
       }
     }
   }
-  */
 }
 #endif
 

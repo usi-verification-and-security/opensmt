@@ -60,6 +60,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "FastRational.h"
 #include "Map.h"
 
+#define opensmt_error_() 		  { cerr << "# Error (triggered at " <<  __FILE__ << ", " << __LINE__ << ")" << endl; assert(false); exit( 1 ); }
 #define opensmt_error( S )        { cerr << "; Error: " << S << " (triggered at " <<  __FILE__ << ", " << __LINE__ << ")" << endl; exit( 1 ); }
 #define opensmt_error2( S, T )    { cerr << "; Error: " << S << " " << T << " (triggered at " <<  __FILE__ << ", " << __LINE__ << ")" << endl; exit( 1 ); }
 #define opensmt_warning( S )      { cerr << "; Warning: " << S << endl; }
@@ -337,17 +338,59 @@ typedef mpz_class ipartitions_t;
 // Set-bit
 inline void setbit( ipartitions_t & p, const unsigned b ) { mpz_setbit( p.get_mpz_t( ), b ); }
 inline void clrbit( ipartitions_t & p, const unsigned b ) { mpz_clrbit( p.get_mpz_t( ), b ); }
+inline int tstbit( const ipartitions_t & p, const unsigned b ) { return mpz_tstbit( p.get_mpz_t( ), b ); }
+// Function: void mpz_and (mpz_t rop, mpz_t op1, mpz_t op2)
+// Set rop to op1 bitwise-and op2.
+inline void andbit( ipartitions_t & ipres, ipartitions_t & ip1, ipartitions_t & ip2)
+{ mpz_and( ipres.get_mpz_t( ), ip1.get_mpz_t( ), ip2.get_mpz_t( ) ); }
+// Function: void mpz_or (mpz_t rop, mpz_t op1, mpz_t op2)
+// Set rop to op1 bitwise inclusive-or op2.
+inline void orbit( ipartitions_t & ipres, ipartitions_t & ip1, const ipartitions_t & ip2)
+{ mpz_ior( ipres.get_mpz_t( ), ip1.get_mpz_t( ), ip2.get_mpz_t( ) ); }
+inline void orbit( ipartitions_t & ipres, ipartitions_t & ip1, ipartitions_t & ip2)
+{ mpz_ior( ipres.get_mpz_t( ), ip1.get_mpz_t( ), ip2.get_mpz_t( ) ); }
 // Or-bit
 // And-bit
 // Basic operations
 inline bool isABmixed( const ipartitions_t & p ) { return p % 2 == 1; }
-inline bool isAlocal ( const ipartitions_t & p, const ipartitions_t & mask ) { return !isABmixed( p ) && (p & ~mask) != 0; }
-inline bool isBlocal ( const ipartitions_t & p, const ipartitions_t & mask ) { return !isABmixed( p ) && (p &  mask) != 0; }
+inline bool isAlocal ( const ipartitions_t & p, const ipartitions_t & mask ) { return !isABmixed( p ) && (p & mask) != 0; }
+inline bool isBlocal ( const ipartitions_t & p, const ipartitions_t & mask ) { return !isABmixed( p ) && (p & ~mask) != 0; }
 inline bool isAstrict( const ipartitions_t & p, const ipartitions_t & mask ) { return !isABmixed( p ) && isAlocal( p, mask ) && !isBlocal( p, mask ); }
 inline bool isBstrict( const ipartitions_t & p, const ipartitions_t & mask ) { return !isABmixed( p ) && isBlocal( p, mask ) && !isAlocal( p, mask ); }
 inline bool isAB     ( const ipartitions_t & p, const ipartitions_t & mask ) { return !isABmixed( p ) && isAlocal( p, mask ) &&  isBlocal( p, mask ); }
 #endif
 
+#ifdef PRODUCE_PROOF
+// To specify the tree structure of a collection of partitions
+// NOTE Partitions should be tagged with consecutive ids >=1
+class InterpolationTree
+{
+public:
+    InterpolationTree(int _partition_id):
+        partition_id(_partition_id),
+        parent(NULL)
+{}
+
+void addChild (InterpolationTree* _tree){
+        children.insert(_tree);
+        (*_tree).setParent(this);
+    }
+
+    void setParent(InterpolationTree* _parent){
+        parent = _parent;
+    }
+
+    int getPartitionId() { return partition_id; }
+    set<InterpolationTree*>& getChildren() { return children; }
+    InterpolationTree* getParent() {return parent; }
+
+private:
+    // NOTE if the tree has N nodes, the partition ids go from 1 to N
+    int partition_id;                         // The integer corresponding to the partition id
+    set<InterpolationTree*>  children;        // The children of the node in the tree
+    InterpolationTree* parent;
+};
+#endif
 } // namespace opensmt
 
 struct EnodeIdHash {

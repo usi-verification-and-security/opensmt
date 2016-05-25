@@ -54,7 +54,7 @@ Lit TermMapper::getLit(PTRef r) const {
 #ifdef PEDANTIC_DEBUG
     assert(logic.getPterm(p).hasVar());
 #endif
-    return Lit(logic.getPterm(p).getVar(), sgn);
+    return mkLit(logic.getPterm(p).getVar(), sgn);
 }
 
 Var TermMapper::getVar(PTRef r) const {

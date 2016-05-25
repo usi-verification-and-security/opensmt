@@ -59,6 +59,10 @@ class Logic {
 
     //for partitions:
     vec<PTRef> assertions;
+#ifdef PRODUCE_PROOF
+    map<PTRef, ipartitions_t> clause_class;
+    map<Var, ipartitions_t> var_class;
+#endif
 
     Map<const char*,PTRef,StringHash,Equal<const char*> > defined_functions;
 
@@ -73,7 +77,6 @@ class Logic {
     SymStore            sym_store;
   public:
     PtStore             term_store;
-
   protected:
     Logic_t             logic_type;
     SymRef              sym_TRUE;
@@ -243,14 +246,14 @@ class Logic {
     PTRef         getTerm_true     ()              const { return term_TRUE;  }
     PTRef         getTerm_false    ()              const { return term_FALSE; }
 
-    bool          isEquality       (SymRef tr)     const { return equalities.contains(tr);    }
-    bool          isEquality       (PTRef tr)      const { return equalities.contains(term_store[tr].symb());}
+    bool          isEquality       (SymRef tr)     const { return equalities.has(tr);    }
+    bool          isEquality       (PTRef tr)      const { return equalities.has(term_store[tr].symb());}
     virtual bool  isUFEquality     (PTRef tr)      const { return isEquality(tr) && !hasSortBool(getPterm(tr)[0]); }
     virtual bool  isTheoryEquality (PTRef tr)      const { return isUFEquality(tr); }
-    bool          isDisequality    (SymRef tr)     const { return disequalities.contains(tr); }
-    bool          isDisequality    (PTRef tr)      const { return disequalities.contains(term_store[tr].symb()); }
-    bool          isIte            (SymRef tr)     const { return ites.contains(tr);          }
-    bool          isIte            (PTRef tr)      const { return ites.contains(term_store[tr].symb()); }
+    bool          isDisequality    (SymRef tr)     const { return disequalities.has(tr); }
+    bool          isDisequality    (PTRef tr)      const { return disequalities.has(term_store[tr].symb()); }
+    bool          isIte            (SymRef tr)     const { return ites.has(tr);          }
+    bool          isIte            (PTRef tr)      const { return ites.has(term_store[tr].symb()); }
 
     // tr is a theory symbol if it is not a boolean variable, nor one of the standard
     // boolean operators (and, not, or, etc...)
@@ -449,8 +452,28 @@ class Logic {
     }
 #ifdef PRODUCE_PROOF
     void setIPartitionsIte(PTRef pref);
+    ipartitions_t& getClauseClassMask(PTRef l) { return clause_class[l]; }
+    ipartitions_t& getVarClassMask(Var l) { return var_class[l]; }
+    void addClauseClassMask(PTRef l, const ipartitions_t& toadd);
+    void addVarClassMask(Var l, const ipartitions_t& toadd);
 #endif
     vec<PTRef>& getAssertions() { return assertions; }
+    unsigned getNofPartitions() { return assertions.size(); }
+    //TODO: make this better
+    bool isAssertion(PTRef pref)
+    {
+        for (int i = 0; i < assertions.size(); ++i)
+            if (assertions[i] == pref)
+                return true;
+        return false;
+    }
+    int assertionIndex(PTRef pref)
+    {
+        for (int i = 0; i <  assertions.size(); ++i)
+            if (assertions[i] == pref)
+                return i;
+        return -1;
+    }
 
     // Statistics
     int subst_num; // Number of substitutions

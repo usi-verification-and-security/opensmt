@@ -33,6 +33,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "TSolver.h"
 #include "Logic.h"
 #include "TreeOps.h"
+#ifdef PRODUCE_PROOF
+#include "TheoryInterpolator.h"
+#endif
 
 class THandler;
 
@@ -65,7 +68,8 @@ public:
     virtual Logic&  getLogic  ( )  = 0;
 
 #ifdef PRODUCE_PROOF
-    virtual PTRef getInterpolants(const ipartitions_t&) = 0;
+    virtual TheoryInterpolator* getTheoryInterpolator() = 0;
+    virtual PTRef getInterpolant(const ipartitions_t& mask) = 0;
 #endif
 
     ValPair getValue          (PTRef tr) const;

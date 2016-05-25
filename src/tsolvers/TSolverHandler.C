@@ -31,7 +31,7 @@ void TSolverHandler::declareTermTree(PTRef tr)
     Map<PTRef,bool,PTRefHash> tr_map;
     for (int i = 0; i < terms.size(); i++)
     {
-        if(!tr_map.contains(terms[i].tr))
+        if(!tr_map.has(terms[i].tr))
         {
             declareTerm(terms[i].tr);
             tr_map.insert(terms[i].tr, true);

@@ -237,7 +237,9 @@ void Egraph::expExplain(PTRef x, PTRef y)
  #ifdef PRODUCE_PROOF
     if ( config.produce_inter() != 0 )
     {
-        cgraphs.push(cgraph_);
+        delete cgraph;
+        cgraph = cgraph_;
+        //cgraphs.push(cgraph_);
         cgraph_ = new CGraph(*this, config, logic);
     }
 #endif

@@ -30,7 +30,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ERef EnodeStore::addSymb(SymRef t) {
     ERef rval;
     assert(t != SymRef_Undef);
-    if (symToERef.contains(t))
+    if (symToERef.has(t))
         rval = symToERef[t];
     else {
         ERef er = ea.alloc(t);
@@ -49,7 +49,7 @@ ERef EnodeStore::addSymb(SymRef t) {
 PTRef EnodeStore::addTerm(ERef sr, ERef args, PTRef term) {
     assert(ea[sr].isSymb());
     PTRef rval;
-    if (termToERef.contains(term))
+    if (termToERef.has(term))
         rval = term;
     else {
         // Term's signature might be here already, and then it should
@@ -76,7 +76,7 @@ PTRef EnodeStore::addTerm(ERef sr, ERef args, PTRef term) {
             ERef new_er = ea.alloc(sr, args, Enode::et_term, term);
             insertSig(new_er);
             termToERef.insert(term, new_er);
-            assert(!ERefToTerm.contains(new_er));
+            assert(!ERefToTerm.has(new_er));
             ERefToTerm.insert(new_er, term);
 
             enodes.push(new_er);

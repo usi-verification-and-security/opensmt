@@ -115,7 +115,7 @@ class DimacsParser {
             var = abs(parsed_lit)-1;
             assert(var < S.nVars());
             while (var >= S.nVars()) S.newVar();
-            lits.push( (parsed_lit > 0) ? Lit(var) : ~Lit(var) );
+            lits.push( (parsed_lit > 0) ? mkLit(var) : ~mkLit(var) );
         }
     }
   public:

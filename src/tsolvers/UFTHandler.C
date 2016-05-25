@@ -32,7 +32,7 @@ void UFTHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
     for (int i = 0; i < terms.size(); i++)
     {
         PTRef tr = terms[i].tr;
-        if (!refs.contains(tr)) {
+        if (!refs.has(tr)) {
             declareTerm(tr);
             refs.insert(tr, deductions.size());
             logic.getPterm(tr).setVar(deductions.size());

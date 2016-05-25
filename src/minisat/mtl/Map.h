@@ -23,6 +23,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "IntTypes.h"
 #include "Vec.h"
 
+
 //=================================================================================================
 // Default hash/equals functions
 //
@@ -141,7 +142,7 @@ class Map {
         return false;
     }
 
-    bool contains(const K& k) const {
+    bool has   (const K& k) const {
         if (size == 0) return false;
         const vec<Pair>& ps = table[index(k)];
         for (int i = 0; i < ps.size(); i++)
@@ -471,5 +472,4 @@ class VecKeyMap {
 
 
 //=================================================================================================
-
 #endif

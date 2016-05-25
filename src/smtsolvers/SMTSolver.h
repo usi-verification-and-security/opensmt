@@ -55,12 +55,8 @@ public:
   // (atom or negated atom) and feeds a
   // corresponding clause in the SAT Solver
   //
-  virtual bool   addSMTClause  ( const vec<Lit> &
-#ifdef PRODUCE_PROOF
-                               , const ipartitions_t& = 1 
-#endif
-			       ) = 0;
-  virtual lbool  smtSolve      ( )                                              = 0;
+  virtual bool   addSMTClause  ( const vec<Lit> &) = 0;
+  virtual bool   smtSolve      ( )                                              = 0;
   virtual Var    newVar        ( bool = true, bool = true )                     = 0;
   virtual void   setFrozen     ( Var, bool )                                    = 0;
 

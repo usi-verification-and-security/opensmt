@@ -65,19 +65,19 @@ public:
     TermMapper&           getTMap() { return tmap; }
 
 #ifdef PEDANTIC_DEBUG
-    void    getConflict          ( vec<Lit>&, vec<int>&, int &, vec<Lit>& ); // Returns theory conflict in terms of literals
+    void    getConflict          ( vec<Lit>&, vec<VarData>&, int &, vec<Lit>& ); // Returns theory conflict in terms of literals
 #else
-    void    getConflict          ( vec<Lit>&, vec<int>&, int & ); // Returns theory conflict in terms of literals
+    void    getConflict          ( vec<Lit>&, vec<VarData>&, int & ); // Returns theory conflict in terms of literals
 #endif
 #ifdef PRODUCE_PROOF
-    PTRef getInterpolants        (const ipartitions_t&);  // Fill a vector with interpolants
+    PTRef getInterpolant         (const ipartitions_t&);
 #endif
     Lit     getDeduction         ();                      // Returns a literal that is implied by the current state and the reason literal
     Lit     getSuggestion        ( );                     // Returns a literal that is suggested by the current state
 #ifdef PEDANTIC_DEBUG
-    bool    getReason            ( Lit, vec< Lit > &, vec<char>& );   // Returns the explanation for a deduced literal
+    bool    getReason            ( Lit, vec< Lit > &, vec<lbool>& );   // Returns the explanation for a deduced literal
 #else
-    void    getReason            ( Lit, vec< Lit > &, vec<char>& );   // Returns the explanation for a deduced literal
+    void    getReason            ( Lit, vec< Lit > &, vec<lbool>& );   // Returns the explanation for a deduced literal
 #endif
 
     ValPair getValue          (PTRef tr) const { return getSolverHandler().getValue(tr); };
@@ -117,9 +117,9 @@ protected:
     }
 
     // Returns a random integer 0 <= x < size. Seed must never be 0.
-    static inline int irand(double& seed, int size) 
+    static inline int irand(double& seed, int size)
     {
-        return (int)(drand(seed) * size); 
+        return (int)(drand(seed) * size);
     }
 
 //  void verifyCallWithExternalTool        ( bool, size_t );
@@ -141,7 +141,7 @@ public:
 protected:
     size_t              checked_trail_size;       // Store last size of the trail checked by the solvers
 
-    inline lbool value (Lit p, vec<char>& assigns) const { return toLbool(assigns[var(p)]) ^ sign(p); }
+    inline lbool value (Lit p, vec<lbool>& assigns) const { return assigns[var(p)] ^ sign(p); }
     bool theoryInitialized; // True if theory solvers are initialized
 
 

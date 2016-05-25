@@ -55,7 +55,7 @@ LRALogic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
         args.clear();
         args.push(i1); args.push(i2);
         PTRef andr = mkAnd(args);
-        assert(!tr_map.contains(tr));
+        assert(!tr_map.has(tr));
         tr_map.insert(tr, andr);
     }
     Logic::visit(tr, tr_map);
@@ -245,8 +245,6 @@ LRALogic::LRALogic(SMTConfig& c) :
 
     vec<SRef> params;
 
-//    sym_Real_ZERO = declareFun(tk_real_zero, sort_REAL, params, msg, true);
-//    sym_Real_ONE = declareFun(tk_real_one, sort_REAL, params, msg, true);
 
     term_Real_ZERO = mkConst(sort_REAL, tk_real_zero);
     sym_Real_ZERO  = getSymRef(term_Real_ZERO);
@@ -849,7 +847,7 @@ lbool LRALogic::arithmeticElimination(vec<PTRef> &top_level_arith, Map<PTRef,PtA
         pair<PTRef, PTRef> sub = lae.getSubst();
         assert( sub.first != PTRef_Undef );
         assert( sub.second != PTRef_Undef );
-        if(substitutions.contains(sub.first))
+        if(substitutions.has(sub.first))
         {
             //cout << "ARITHMETIC ELIMINATION FOUND DOUBLE SUBSTITUTION:\n" << printTerm(sub.first) << " <- " << printTerm(sub.second) << " | " << printTerm(substitutions[sub.first].tr) << endl;
             if(sub.second != substitutions[sub.first].tr)
@@ -907,7 +905,7 @@ lbool LRALogic::arithmeticElimination(vec<PTRef> &top_level_arith, Map<PTRef,PtA
             if (sub.first == PTRef_Undef) continue;
             assert(sub.second != PTRef_Undef);
             //cout << printTerm(sub.first) << " <- " << printTerm(sub.second) << endl;
-            if(!substitutions.contains(sub.first)) {
+            if(!substitutions.has(sub.first)) {
                 substitutions.insert(sub.first, PtAsgn(sub.second, l_True));
 //                cerr << "; gaussian substitution: " << logic.printTerm(sub.first) << " -> " << logic.printTerm(sub.second) << endl;
             } else {

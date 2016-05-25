@@ -112,8 +112,10 @@ public:
             enode_store.id_to_enode.pop();
         }
 #ifdef PRODUCE_PROOF
-        assert( cgraph_ );
-        delete cgraph_;
+        if(cgraph)
+            delete cgraph;
+        if(cgraph_)
+            delete cgraph_;
 #endif
     }
 
@@ -164,8 +166,8 @@ public:
   // Fast duplicates checking. Cannot be nested !
   //
   inline void initDup1 ()        { assert( !active_dup1 ); active_dup1 = true; dup_count1 ++; }
-  inline void storeDup1(PTRef e) { assert(  active_dup1 ); if (duplicates1.contains(e)) duplicates1[e] = dup_count1; else duplicates1.insert(e, dup_count1); }
-  inline bool isDup1   (PTRef e) { assert(  active_dup1 ); return !duplicates1.contains(e) ? false : duplicates1[e] == dup_count1; }
+  inline void storeDup1(PTRef e) { assert(  active_dup1 ); if (duplicates1.has(e)) duplicates1[e] = dup_count1; else duplicates1.insert(e, dup_count1); }
+  inline bool isDup1   (PTRef e) { assert(  active_dup1 ); return !duplicates1.has(e) ? false : duplicates1[e] == dup_count1; }
   inline void doneDup1 ()        { assert(  active_dup1 ); active_dup1 = false; }
   //
   // Fast duplicates checking. Cannot be nested !
@@ -519,7 +521,18 @@ public:
   inline void     setAutomaticColoring    ( ) { assert( !automatic_coloring ); automatic_coloring = true; }
   inline unsigned getNofPartitions        ( ) { return iformula - 1; }
 
-  PTRef         getInterpolants         (const ipartitions_t &);
+  PTRef getInterpolant(const ipartitions_t& mask)
+  {
+        return cgraph->getInterpolant(mask);
+  }
+
+  TheoryInterpolator*         getTheoryInterpolator()
+  {
+      return NULL;
+      //TheoryInterpolator* ret = cgraph;
+      //cgraph = new CGraph(*this, config, logic);
+      //return ret;
+  }
   Enode *         getNextAssertion        ( );
   Enode *         expandDefinitions       ( Enode * );
   void            addDefinition           ( Enode *, Enode * );
@@ -541,8 +554,9 @@ private:
   unsigned                iformula;                  // Current formula id
   vector< Enode * >       formulae_to_tag;           // Formulae to be tagged
   vector< uint64_t >      id_to_iformula;            // From enode to iformula it belongs to
+  CGraph *                cgraph;                   // Holds congrunce graph and compute interpolant 
   CGraph *                cgraph_;                   // Holds congrunce graph and compute interpolant 
-  vec<CGraph*> cgraphs;
+  //vec<CGraph*> cgraphs;
   bool                    automatic_coloring;        // Set automatic node coloring
   vector< Enode * >       idef_list;                 // Definition list in rev chron order
   map< Enode *, Enode * > idef_map;                  // Def to term map

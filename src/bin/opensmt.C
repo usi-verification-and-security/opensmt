@@ -121,7 +121,7 @@ int main( int argc, char * argv[] )
 //    WorkerClient *w;
     SMTConfig c;
     bool dryrun = false; // Run without solving
-    while ((opt = getopt(argc, argv, "p:dr:")) != -1) {
+    while ((opt = getopt(argc, argv, "hp:dr:")) != -1) {
         switch (opt) {
             case 'p':
                 if(!c.sat_split_threads(atoi(optarg))){
@@ -148,15 +148,15 @@ int main( int argc, char * argv[] )
 //                    SMTConfig::database_port = atoi(&optarg[i+1]);
 //                }
 //                break;
-//            case 'h':
-//                //    context.getConfig( ).printHelp( );
-//                break;
+            case 'h':
+                //    context.getConfig( ).printHelp( );
+                break;
             case 'd':
                 const char* msg;
-                c.setOption(SMTConfig::o_dryrun, Option(true), msg);
+                c.setOption(SMTConfig::o_dryrun, SMTOption(true), msg);
                 break;
             case 'r':
-                if (!c.setOption(SMTConfig::o_random_seed, Option(atoi(optarg)), msg))
+                if (!c.setOption(SMTConfig::o_random_seed, SMTOption(atoi(optarg)), msg))
                     fprintf(stderr, "Error setting random seed: %s\n", msg);
                 break;
             default: /* '?' */

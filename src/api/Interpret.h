@@ -51,7 +51,7 @@ class LetFrame {
 //    VecMap<const char*, PTRef, StringHash, Equal<const char*> > frameMap;
   public:
     LetFrame() : id_(id_cnt++) {}
-    bool        contains(const char* s) const { return frameMap.contains(s); }
+    bool        contains(const char* s) const { return frameMap.has(s); }
 //    void        insert  (const char* key, const vec<PTRef>& value) { frameMap.insert(key, value); }
     void        insert  (const char* key, PTRef value) { frameMap.insert(key, value); }
     uint32_t    getId   () const { return id_; }

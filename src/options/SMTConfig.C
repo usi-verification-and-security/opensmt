@@ -293,7 +293,7 @@ Info::Info(const Info& other)
  * Class defining the options, configured with set-config
  ***********************************************************/
 
-Option::Option(ASTNode& n) {
+SMTOption::SMTOption(ASTNode& n) {
     assert(n.children != NULL);
 
     n = **(n.children->begin());
@@ -359,13 +359,13 @@ Option::Option(ASTNode& n) {
 //---------------------------------------------------------------------------------
 // SMTConfig
 
-bool SMTConfig::setOption(const char* name, const Option& value, const char*& msg) {
+bool SMTConfig::setOption(const char* name, const SMTOption& value, const char*& msg) {
     msg = "ok";
     // Special options:
     // stats_out
     if (strcmp(name, o_stats_out) == 0) {
         if (value.getValue().type != O_STR) { msg = s_err_not_str; return false; }
-        if (!optionTable.contains(name))
+        if (!optionTable.has(name))
             stats_out.open(value.getValue().strval, std::ios_base::out);
         else if (strcmp(optionTable[name]->getValue().strval, value.getValue().strval) != 0) {
             if (stats_out.is_open()) {
@@ -381,21 +381,21 @@ bool SMTConfig::setOption(const char* name, const Option& value, const char*& ms
         if (value.getValue().type != O_BOOL) { msg = s_err_not_bool; return false; }
         if (value.getValue().numval == 1) {
             // Gets set to true
-            if (!optionTable.contains(o_stats_out)) {
-                if (!optionTable.contains(o_produce_stats) || optionTable[o_produce_stats]->getValue().numval == 0) {
+            if (!optionTable.has(o_stats_out)) {
+                if (!optionTable.has(o_produce_stats) || optionTable[o_produce_stats]->getValue().numval == 0) {
                     // Insert the default value
-                    insertOption(o_stats_out, new Option("/dev/stdout"));
+                    insertOption(o_stats_out, new SMTOption("/dev/stdout"));
                 }
-                else if (optionTable.contains(o_produce_stats) && optionTable[o_produce_stats]->getValue().numval == 1)
+                else if (optionTable.has(o_produce_stats) && optionTable[o_produce_stats]->getValue().numval == 1)
                     assert(false);
             }
             else { } // No action required
 
             if (!stats_out.is_open()) stats_out.open(optionTable[o_stats_out]->getValue().strval, std::ios_base::out);
         }
-        else if (optionTable.contains(o_produce_stats) && optionTable[o_produce_stats]->getValue().numval == 1) {
+        else if (optionTable.has(o_produce_stats) && optionTable[o_produce_stats]->getValue().numval == 1) {
             // gets set to false and was previously true
-            if (optionTable.contains(o_stats_out)) {
+            if (optionTable.has(o_stats_out)) {
                 if (optionTable[o_stats_out]->getValue().numval == 0) assert(false);
                 else if (stats_out.is_open()) stats_out.close();
             }
@@ -423,21 +423,21 @@ bool SMTConfig::setOption(const char* name, const Option& value, const char*& ms
                 strcmp(val, spts_decisions) != 0)
         { msg = s_err_unknown_units; return false; }
     }
-    if (optionTable.contains(name))
+    if (optionTable.has(name))
         optionTable.remove(name);
-    insertOption(name, new Option(value));
+    insertOption(name, new SMTOption(value));
     return true;
 }
 
-const Option& SMTConfig::getOption(const char* name) const {
-    if (optionTable.contains(name))
+const SMTOption& SMTConfig::getOption(const char* name) const {
+    if (optionTable.has(name))
         return *optionTable[name];
     else
         return option_Empty;
 }
 
 bool SMTConfig::setInfo(const char* name_, const Info& value) {
-    if (infoTable.contains(name_))
+    if (infoTable.has(name_))
         infoTable.remove(name_);
     Info* value_new = new Info(value);
     char* name = strdup(name_);
@@ -448,7 +448,7 @@ bool SMTConfig::setInfo(const char* name_, const Info& value) {
 }
 
 const Info& SMTConfig::getInfo(const char* name) const {
-    if (infoTable.contains(name))
+    if (infoTable.has(name))
         return *infoTable[name];
     else
         return info_Empty;
@@ -480,6 +480,7 @@ const char* SMTConfig::o_restart_first = ":restart-first";
 const char* SMTConfig::o_restart_inc   = ":restart-inc";
 const char* SMTConfig::o_produce_inter = ":produce-interpolants";
 const char* SMTConfig::o_certify_inter = ":certify-interpolants";
+const char* SMTConfig::o_interpolant_cnf = ":cnf-interpolants";
 const char* SMTConfig::o_proof_struct_hash       = ":proof-struct-hash";
 const char* SMTConfig::o_proof_struct_hash_build = ":proof-struct-hash-build";
 const char* SMTConfig::o_proof_check   = ":proof-check";
@@ -529,8 +530,8 @@ SMTConfig::initializeConfig( )
   logic                         = UNDEF;
   status                        = l_Undef;
 //  incremental                   = 0;
-  insertOption(o_incremental, new Option(0));
-  insertOption(o_produce_stats, new Option(0));
+  insertOption(o_incremental, new SMTOption(0));
+  insertOption(o_produce_stats, new SMTOption(0));
 //  produce_stats                 = 0;
 //  produce_models                = 0;
   print_stats                   = 1;

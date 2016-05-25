@@ -279,7 +279,7 @@ void MainSolver::computeIncomingEdges(PTRef tr, Map<PTRef,int,PTRefHash>& PTRefT
     unprocessed_ptrefs.push(new pi(tr));
     while (unprocessed_ptrefs.size() > 0) {
         pi* pi_ptr = unprocessed_ptrefs.last();
-        if (PTRefToIncoming.contains(pi_ptr->x)) {
+        if (PTRefToIncoming.has(pi_ptr->x)) {
             PTRefToIncoming[pi_ptr->x]++;
             unprocessed_ptrefs.pop();
             delete pi_ptr;
@@ -290,7 +290,7 @@ void MainSolver::computeIncomingEdges(PTRef tr, Map<PTRef,int,PTRefHash>& PTRefT
             Pterm& t = logic.getPterm(pi_ptr->x);
             for (int i = 0; i < t.size(); i++) {
                 // push only unprocessed Boolean operators
-                if (!PTRefToIncoming.contains(t[i])) {
+                if (!PTRefToIncoming.has(t[i])) {
                     unprocessed_ptrefs.push(new pi(t[i]));
                     unprocessed_children = true;
                 } else {
@@ -305,7 +305,7 @@ void MainSolver::computeIncomingEdges(PTRef tr, Map<PTRef,int,PTRefHash>& PTRefT
         unprocessed_ptrefs.pop();
         // All descendants of pi_ptr->x are processed
         assert(logic.isBooleanOperator(pi_ptr->x) || logic.isAtom(pi_ptr->x));
-        assert(!PTRefToIncoming.contains(pi_ptr->x));
+        assert(!PTRefToIncoming.has(pi_ptr->x));
         PTRefToIncoming.insert(pi_ptr->x, 1);
         delete pi_ptr;
     }
@@ -319,7 +319,7 @@ PTRef MainSolver::rewriteMaxArity(PTRef root, Map<PTRef,int,PTRefHash>& PTRefToI
 
     while (unprocessed_ptrefs.size() > 0) {
         PTRef tr = unprocessed_ptrefs.last();
-        if (cache.contains(tr)) {
+        if (cache.has(tr)) {
             unprocessed_ptrefs.pop();
             continue;
         }
@@ -327,7 +327,7 @@ PTRef MainSolver::rewriteMaxArity(PTRef root, Map<PTRef,int,PTRefHash>& PTRefToI
         bool unprocessed_children = false;
         Pterm& t = logic.getPterm(tr);
         for (int i = 0; i < t.size(); i++) {
-            if (logic.isBooleanOperator(t[i]) && !cache.contains(t[i])) {
+            if (logic.isBooleanOperator(t[i]) && !cache.has(t[i])) {
                 unprocessed_ptrefs.push(t[i]);
                 unprocessed_children = true;
             }
@@ -347,7 +347,7 @@ PTRef MainSolver::rewriteMaxArity(PTRef root, Map<PTRef,int,PTRefHash>& PTRefToI
             result = tr;
         }
         assert(result != PTRef_Undef);
-        assert(!cache.contains(tr));
+        assert(!cache.has(tr));
         cache.insert(tr, result);
     }
     PTRef top_tr = cache[root];
@@ -366,7 +366,7 @@ PTRef MainSolver::mergePTRefArgs(PTRef tr, Map<PTRef,PTRef,PTRefHash>& cache, Ma
             new_args.push(subst);
             continue;
         }
-        assert(PTRefToIncoming.contains(t[i]));
+        assert(PTRefToIncoming.has(t[i]));
         assert(PTRefToIncoming[t[i]] >= 1);
         if (PTRefToIncoming[t[i]] > 1) {
             new_args.push(subst);

@@ -583,8 +583,8 @@ bool SimpSolver::eliminate(bool turn_off_elim)
         for (int cnt = 0; !elim_heap.empty(); cnt++){
             Var elim = elim_heap.removeMin();
 
-            if (verbosity >= 2 && cnt % 100 == 0)
-                reportf("elimination left: %10d\r", elim_heap.size());
+//            if (verbosity >= 2 && cnt % 100 == 0)
+//                reportf("elimination left: %10d\r", elim_heap.size());
 
             if (!frozen[elim] && !eliminateVar(elim))
                 return false;

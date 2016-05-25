@@ -30,7 +30,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 SRef SStore::newSort(IdRef id, const char* name_, vec<SRef>& rest)
 {
-    if (sortTable.contains(name_))
+    if (sortTable.has(name_))
         return sortTable[name_];
     else {
         char* name = strdup(name_);
@@ -61,7 +61,7 @@ SRef SStore::newSort(IdRef idr, vec<SRef>& rest)
     } else
         asprintf(&canon_name, "%s", is.getName(idr));
 
-    if (sortTable.contains(canon_name)) {
+    if (sortTable.has(canon_name)) {
         SRef sr = sortTable[canon_name];
         free(canon_name);
         return sr;

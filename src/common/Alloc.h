@@ -41,6 +41,7 @@ class RegionAllocator
     // TODO: make this a class for better type-checking?
     typedef uint32_t Ref;
     enum { Ref_Undef = UINT32_MAX };
+    enum { Ref_Fake = UINT32_MAX-1 };
     enum { Unit_Size = sizeof(uint32_t) };
 
     explicit RegionAllocator(uint32_t start_cap = 1024*1024) : memory(NULL), sz(0), cap(0), wasted_(0){ capacity(start_cap); }

@@ -65,7 +65,7 @@ void getTermList(PTRef tr, vec<T>& list_out, Logic& logic) {
         int i = queue[q_idx].chk;
         if (i < pt.size()) {
             PtChild ptc(pt[i], queue[q_idx].x.tr, i);
-            if (!seen.contains(ptc)) {
+            if (!seen.has(ptc)) {
                 queue.push(Qel<PtChild>(ptc));
 #ifdef PEDANTIC_DEBUG
 //                assert(logic.hasSym(logic.getPterm(ptc.tr).symb()));

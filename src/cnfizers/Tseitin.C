@@ -32,16 +32,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // Performs the actual cnfization
 //
 
-bool Tseitin::cnfize(PTRef formula
 #ifdef PRODUCE_PROOF
-                    , const ipartitions_t partitions
-#endif
-                    )
+bool Tseitin::cnfize(PTRef formula, const ipartitions_t& mask)
+#else
+bool Tseitin::cnfize(PTRef formula)
+#endif //PRODUCE_PROOF
 {
-#ifdef PRODUCE_PROOF
-    //assert( config.produce_inter() == 0 || partitions != 0 );
-#endif
-
     assert(formula != PTRef_Undef);
     // Top level formula must not be and anymore
     assert(!logic.isAnd(formula));
@@ -51,10 +47,10 @@ bool Tseitin::cnfize(PTRef formula
         vec<Lit> clause;
         clause.push(findLit(formula));
 #ifdef PRODUCE_PROOF
-//        if (config.produce_inter() != 0)
-  //          addClause(clause, partitions);
-#endif
+        addClause(clause, mask);
+#else
         addClause( clause );
+#endif
     }
     vec<PTRef> unprocessed_terms;       // Stack for unprocessed terms
     unprocessed_terms.push(formula);    // Start with this term
@@ -68,7 +64,7 @@ bool Tseitin::cnfize(PTRef formula
         //
         // Skip if the node has already been processed before
         //
-        if (processed.contains(ptr))
+        if (processed.has(ptr))
             continue;
 
         // Here (after the checks) not safe to use Pterm& since cnfize.* can alter the table of terms
@@ -77,23 +73,47 @@ bool Tseitin::cnfize(PTRef formula
         int sz = logic.getPterm(ptr).size();
         bool need_def = (ptr == formula ? false : true); // Definition variable not needed for top formula
         if (logic.isAnd(ptr))
+#ifdef PRODUCE_PROOF
+            cnfizeAnd(ptr, mask);
+#else
             cnfizeAnd(ptr);
+#endif //PRODUCE_PROOF
         else if (logic.isOr(ptr))
 #ifdef PRODUCE_PROOF
-            cnfizeOr(ptr, 0, need_def); //FIXME
+            cnfizeOr(ptr, mask, need_def);
 #else
             cnfizeOr(ptr, need_def);
 #endif
         else if (logic.isXor(ptr))
+#ifdef PRODUCE_PROOF
+            cnfizeXor(ptr, mask);
+#else
             cnfizeXor(ptr);
+#endif
         else if (logic.isIff(ptr))
+#ifdef PRODUCE_PROOF
+            cnfizeIff(ptr, mask);
+#else
             cnfizeIff(ptr);
+#endif
         else if (logic.isImplies(ptr))
+#ifdef PRODUCE_PROOF
+            cnfizeImplies(ptr, mask);
+#else
             cnfizeImplies(ptr);
+#endif
         else if (logic.isDistinct(ptr))
+#ifdef PRODUCE_PROOF
+            cnfizeDistinct(ptr, mask);
+#else
             cnfizeDistinct(ptr);
+#endif
         else if (logic.isIte(ptr))
+#ifdef PRODUCE_PROOF
+            cnfizeIfthenelse(ptr, mask);
+#else
             cnfizeIfthenelse(ptr);
+#endif
         else if (!logic.isNot(ptr) && sz > 0) {
             // XXX Cnfize equalities here
             if (logic.isEquality(ptr)) {
@@ -124,11 +144,11 @@ tseitin_end:
     return true;
 }
 
-void Tseitin::cnfizeAnd( PTRef and_term
 #ifdef PRODUCE_PROOF
-                       , const ipartitions_t partitions
-#endif
-                       )
+void Tseitin::cnfizeAnd( PTRef and_term, const ipartitions_t& mask)
+#else
+void Tseitin::cnfizeAnd( PTRef and_term )
+#endif //PRODUCE_PROOF
 {
 //  assert( list );
 //  assert( list->isList( ) );
@@ -149,33 +169,37 @@ void Tseitin::cnfizeAnd( PTRef and_term
         little_clause.push( findLit(arg) );
         big_clause   .push(~findLit(arg));
 #ifdef PRODUCE_PROOF
-//        if ( config.produce_inter > 0 )
-  //          addClause( little_clause, partitions );
-    //    else
+        addClause(little_clause, mask);        // Adds a little clause to the solver
+#else
+        addClause(little_clause);        // Adds a little clause to the solver
 #endif
-            addClause(little_clause);        // Adds a little clause to the solver
         little_clause.pop();
     }
 #ifdef PRODUCE_PROOF
-//    if ( config.produce_inter > 0 )
-  //      addClause( big_clause, partitions );
-    //else
+    addClause( big_clause, mask );                    // Adds a big clause to the solver
+#else
+    addClause( big_clause );                    // Adds a big clause to the solver
 #endif
-        addClause( big_clause );                    // Adds a big clause to the solver
 }
 
-void Tseitin::cnfizeOr( PTRef or_term
+
+
 #ifdef PRODUCE_PROOF
-                      , const ipartitions_t partitions
-#endif
-                      , bool def)
+void Tseitin::cnfizeOr( PTRef or_term, const ipartitions_t& mask, bool def)
+#else
+void Tseitin::cnfizeOr( PTRef or_term, bool def)
+#endif //PRODUCE_PROOF
 {
     if (!def) {
         vec<Lit> big_clause;
         for (int i = 0 ; i < logic.getPterm(or_term).size(); i++)
             big_clause.push(findLit(logic.getPterm(or_term)[i]));
 
+#ifdef PRODUCE_PROOF
+        addClause(big_clause, mask);
+#else
         addClause(big_clause);
+#endif
         return;
     }
 //  assert( list );
@@ -197,27 +221,24 @@ void Tseitin::cnfizeOr( PTRef or_term
         little_clause.push(~arg);
         big_clause   .push( arg);
 #ifdef PRODUCE_PROOF
-//        if ( config.produce_inter > 0 )
-  //          addClause( little_clause, partitions );
-    //    else
+        addClause(little_clause, mask);        // Adds a little clause to the solver
+#else
+        addClause(little_clause);        // Adds a little clause to the solver
 #endif
-            addClause(little_clause);        // Adds a little clause to the solver
         little_clause.pop();
     }
 #ifdef PRODUCE_PROOF
-//    if (config.produce_inter > 0)
-  //      addClause( big_clause, partitions );
-    //else
+    addClause(big_clause, mask);                    // Adds a big clause to the solver
+#else
+    addClause(big_clause);                    // Adds a big clause to the solver
 #endif
-            addClause(big_clause);                    // Adds a big clause to the solver
 }
 
-
-void Tseitin::cnfizeXor(PTRef xor_term
 #ifdef PRODUCE_PROOF
-                       , const ipartitions_t partitions
-#endif
-                       )
+void Tseitin::cnfizeXor(PTRef xor_term, const ipartitions_t& mask)
+#else
+void Tseitin::cnfizeXor(PTRef xor_term)
+#endif //PRODUCE_PROOF
 {
     //
     // ( a_0 xor a_1 )
@@ -240,11 +261,10 @@ void Tseitin::cnfizeXor(PTRef xor_term
     clause.push(arg0);
     clause.push(arg1);
 #ifdef PRODUCE_PROOF
-//    if (config.produce_inter > 0)
-  //      addClause(clause, partitions);
-    //else
+    addClause(clause, mask);
+#else
+    addClause(clause); // Adds a little clause to the solver
 #endif
-        addClause(clause); // Adds a little clause to the solver
     clause.pop();
     clause.pop();
 
@@ -252,11 +272,10 @@ void Tseitin::cnfizeXor(PTRef xor_term
     clause.push(~arg0);
     clause.push(~arg1);
 #ifdef PRODUCE_PROOF
-//    if (config.produce_inter > 0)
-  //      addClause(clause, partitions);
-    //else
+    addClause(clause, mask);
+#else
+    addClause(clause); // Adds a little clause to the solver
 #endif
-        addClause(clause); // Adds a little clause to the solver
     clause.pop();
     clause.pop();
 
@@ -267,11 +286,10 @@ void Tseitin::cnfizeXor(PTRef xor_term
     clause.push(~arg0);
     clause.push( arg1);
 #ifdef PRODUCE_PROOF
-//    if (config.produce_inter > 0)
-  //      addClause(clause, partitions);
-    //else
+    addClause(clause, mask);
+#else
+    addClause(clause); // Adds a little clause to the solver
 #endif
-        addClause(clause); // Adds a little clause to the solver
     clause.pop();
     clause.pop();
 
@@ -279,19 +297,17 @@ void Tseitin::cnfizeXor(PTRef xor_term
     clause.push( arg0);
     clause.push(~arg1);
 #ifdef PRODUCE_PROOF
-//    if (config.produce_inter > 0)
-  //      addClause(clause, partitions);
-    //else
+    addClause(clause, mask);
+#else
+    addClause(clause);           // Adds a little clause to the solver
 #endif
-        addClause(clause);           // Adds a little clause to the solver
 }
 
-
-void Tseitin::cnfizeIff( PTRef eq_term
 #ifdef PRODUCE_PROOF
-                       , const ipartitions_t partitions
-#endif
-                       )
+void Tseitin::cnfizeIff( PTRef eq_term, const ipartitions_t& mask)
+#else
+void Tseitin::cnfizeIff( PTRef eq_term )
+#endif //PRODUCE_PROOF
 {
 
     //
@@ -314,11 +330,10 @@ void Tseitin::cnfizeIff( PTRef eq_term
     clause.push( arg0);
     clause.push(~arg1);
 #ifdef PRODUCE_PROOF
-//    if (config.produce_inter > 0)
-  //      addClause(clause, partitions);
-    //else
+    addClause(clause, mask);
+#else
+    addClause(clause);           // Adds a little clause to the solver
 #endif
-        addClause(clause);           // Adds a little clause to the solver
 
     clause.pop();
     clause.pop();
@@ -327,11 +342,10 @@ void Tseitin::cnfizeIff( PTRef eq_term
     clause.push(~arg0);
     clause.push( arg1);
 #ifdef PRODUCE_PROOF
-//    if (config.produce_inter > 0)
-  //      addClause(clause, partitions);
-    //else
+    addClause(clause, mask);
+#else
+    addClause(clause);           // Adds a little clause to the solver
 #endif
-        addClause(clause);           // Adds a little clause to the solver
 
     clause.pop();
     clause.pop();
@@ -343,11 +357,10 @@ void Tseitin::cnfizeIff( PTRef eq_term
     clause.push(arg0);
     clause.push(arg1);
 #ifdef PRODUCE_PROOF
-//    if ( config.produce_inter > 0 )
-  //      addClause(clause, partitions);
-    //else
+    addClause(clause, mask);
+#else
+    addClause(clause);           // Adds a little clause to the solver
 #endif
-        addClause(clause);           // Adds a little clause to the solver
     clause.pop();
     clause.pop();
 
@@ -355,19 +368,17 @@ void Tseitin::cnfizeIff( PTRef eq_term
     clause.push(~arg0);
     clause.push(~arg1);
 #ifdef PRODUCE_PROOF
-//    if (config.produce_inter > 0)
-  //      addClause(clause, partitions);
-    //else
+    addClause(clause, mask);
+#else
+    addClause(clause);           // Adds a little clause to the solver
 #endif
-        addClause(clause);           // Adds a little clause to the solver
 }
 
-
-void Tseitin::cnfizeIfthenelse( PTRef ite_term
 #ifdef PRODUCE_PROOF
-                              , const ipartitions_t partitions
+void Tseitin::cnfizeIfthenelse( PTRef ite_term, const ipartitions_t& mask)
+#else
+void Tseitin::cnfizeIfthenelse( PTRef ite_term )
 #endif
-                              )
 {
     //  (!a | !i | t) & (!a | i | e) & (a | !i | !t) & (a | i | !e)
     //
@@ -391,24 +402,42 @@ void Tseitin::cnfizeIfthenelse( PTRef ite_term
     vec<Lit> clause;
 
     clause.push(~v); clause.push(~a0); clause.push(a1);
-    addClause( clause ); clause.clear();
+#ifdef PRODUCE_PROOF
+    addClause(clause, mask);
+#else
+    addClause( clause );
+#endif
+    clause.clear();
 
     clause.push(~v); clause.push(a0); clause.push(a2);
-    addClause( clause ); clause.clear();
+#ifdef PRODUCE_PROOF
+    addClause(clause, mask);
+#else
+    addClause( clause );
+#endif
+    clause.clear();
 
     clause.push(v); clause.push(~a0); clause.push(~a1);
-    addClause( clause ); clause.clear();
+#ifdef PRODUCE_PROOF
+    addClause(clause, mask);
+#else
+    addClause( clause );
+#endif
+    clause.clear();
 
     clause.push(v); clause.push(a0); clause.push(~a2);
+#ifdef PRODUCE_PROOF
+    addClause(clause, mask);
+#else
     addClause( clause );
+#endif
 }
 
-
-void Tseitin::cnfizeImplies( PTRef impl_term
 #ifdef PRODUCE_PROOF
-                              , const ipartitions_t partitions
-#endif
-                              )
+void Tseitin::cnfizeImplies( PTRef impl_term, const ipartitions_t& mask)
+#else
+void Tseitin::cnfizeImplies( PTRef impl_term  )
+#endif //PRODUCE_PROOF
 {
     // ( a_0 => a_1 )
     //
@@ -431,31 +460,46 @@ void Tseitin::cnfizeImplies( PTRef impl_term
     clause.push(v);
 
     clause.push(a0);
-    addClause(clause); clause.pop();
+#ifdef PRODUCE_PROOF
+    addClause(clause, mask);
+#else
+    addClause(clause);
+#endif
+    clause.pop();
 
     clause.push(~a1);
-    addClause(clause); clause.clear();
+#ifdef PRODUCE_PROOF
+    addClause(clause, mask);
+#else
+    addClause(clause);
+#endif
+    clause.clear();
 
     clause.push(~v); clause.push(~a0); clause.push(a1);
+#ifdef PRODUCE_PROOF
+    addClause(clause, mask);
+#else
     addClause(clause);
+#endif
 }
 
-
 // TODO: This does not seem to be the right implementation...
-void Tseitin::cnfizeDistinct( PTRef distinct_term
 #ifdef PRODUCE_PROOF
-                              , const ipartitions_t partitions
-#endif
-                              )
+void Tseitin::cnfizeDistinct( PTRef distinct_term, const ipartitions_t& mask)
+{
+    cnfizeXor(distinct_term, mask);
+}
+#else
+void Tseitin::cnfizeDistinct( PTRef distinct_term  )
 {
     cnfizeXor(distinct_term);
 }
-
+#endif
 void Tseitin::copyArgsWithCache(PTRef tr, vec<PTRef>& args, Map<PTRef, PTRef, PTRefHash>& cache)
 {
     Pterm& t = logic.getPterm(tr);
     for (int i = 0; i < t.size(); i++) {
-        if (cache.contains(t[i]))
+        if (cache.has(t[i]))
             args.push(cache[t[i]]);
         else
             args.push(t[i]);

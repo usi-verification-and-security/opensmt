@@ -44,6 +44,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Logic.h"
 #include "SMTConfig.h"
 #include "Pterm.h"
+#include "TheoryInterpolator.h"
 
 struct CEdge;
 
@@ -93,7 +94,7 @@ struct CEdge
 
 class Egraph;
 
-class CGraph
+class CGraph : public TheoryInterpolator
 {
 public:
 
@@ -121,7 +122,7 @@ public:
   void     addCNode      ( PTRef );
   void     addCEdge      ( PTRef, PTRef, PTRef );
   void     revertEdges   ( CNode * );
-  PTRef  getInterpolants( const ipartitions_t & );
+  PTRef  getInterpolant( const ipartitions_t & );
   void     printAsDotty  ( ostream & );
 
   inline void setConf( PTRef c1, PTRef c2, PTRef r )

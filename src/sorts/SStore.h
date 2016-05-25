@@ -83,16 +83,16 @@ class SStore
     //===========================================================================
     // Public APIs for sort construction/destruction
 
-    bool    contains        (const char* s)   const { return sortTable.contains(s); }
+    bool    contains        (const char* s)   const { return sortTable.has(s); }
     SRef    operator []     (const char* s)   const { return sortTable[s]; }
-    bool    contains        (const Sort& s)   const { return sortTable.contains(ssa[s.getNameRef()].getName()); }
+    bool    contains        (const Sort& s)   const { return sortTable.has(ssa[s.getNameRef()].getName()); }
     SRef    operator []     (const Sort& s) { return sortTable[ssa[s.getNameRef()].getName()]; }
     Sort*   operator []     (SRef sr)       { return &sa[sr]; }
 
     SRef    newSort         (IdRef id, vec<SRef>& rest);
     SRef    newSort         (IdRef id, const char* name, vec<SRef>& rest);
     bool    containsSort    (const char* name) const
-        { bool rval = sortTable.contains(name); return rval; }
+        { bool rval = sortTable.has(name); return rval; }
     const char* getName     (SRef sr) { return ssa[sa[sr].getNameRef()].getName(); }
     Sort&   getSort         (SRef sr) { return sa[sr]; }
     const vec<SRef>& getSorts() const { return sorts; }
