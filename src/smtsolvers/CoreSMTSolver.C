@@ -300,7 +300,7 @@ bool CoreSMTSolver::addClause_(vec<Lit>& _ps)
 #endif
     assert( decisionLevel() == 0 );
 #ifdef PRODUCE_PROOF
-    assert( in == 0 || ((in & (in - 1)) == 0) );
+    //assert( in == 0 || ((in & (in - 1)) == 0) );
 #endif
 
 #ifdef PRODUCE_PROOF
