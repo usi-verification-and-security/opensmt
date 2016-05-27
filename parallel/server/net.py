@@ -6,6 +6,7 @@ import select
 import struct
 import logging
 import traceback
+import time
 
 __author__ = 'Matteo Marescotti'
 
@@ -45,12 +46,15 @@ class Socket(object):
     def read(self):
         content = b''
         length = self._sock.recv(4)
-        if length == 0:
-            raise ConnectionAbortedError
         if len(length) == 4:
             length = struct.unpack('!I', length)[0]
             while len(content) < length:
-                content += self._sock.recv(length - len(content))
+                buffer = self._sock.recv(length - len(content))
+                if len(buffer) == 0:
+                    raise ConnectionAbortedError
+                content += buffer
+        else:
+            raise ConnectionAbortedError
         header = {}
         i = 0
         while content[i:i + 1] != b'\x00':
@@ -128,12 +132,15 @@ class Server(object):
     def handle_timeout(self):
         pass
 
-    def run_until_timeout(self):
+    def run_until_timeout(self, timeout=None):
+        timeout_time = None
+        if timeout is None:
+            timeout = self._timeout
         try:
-            rlist = select.select(self._rlist, [], [], self._timeout)[0]
-            if len(rlist) == 0:
+            rlist = select.select(self._rlist, [], [], timeout)[0]
+            if len(rlist) == 0 or timeout == 0:
+                timeout_time = time.time()
                 self.handle_timeout()
-                return
             for sock in rlist:
                 if sock is self._sock:
                     new_socket = self._sock.accept()
@@ -142,7 +149,7 @@ class Server(object):
                     continue
                 try:
                     header, message = sock.read()
-                except:
+                except ConnectionAbortedError:
                     self.handle_close(sock)
                     sock.close()
                     self._rlist.remove(sock)
@@ -151,52 +158,25 @@ class Server(object):
         except KeyboardInterrupt:
             raise
         except BaseException as exp:
-            self._logger.error('{}\n{}'.format(
+            self.log(logging.ERROR, '{}\n{}'.format(
                 type(exp).__name__,
-                '\n'.join(('   {}'.format(line) for line in traceback.format_exc().split('\n'))))
-            )
+                '\n'.join(('   {}'.format(line) for line in traceback.format_exc().split('\n')))
+            ))
+        return timeout_time
 
     def run_forever(self):
+        last = time.time()
         while True:
-            self.run_until_timeout()
+            lts = self.run_until_timeout(max(0, self._timeout - (time.time() - last)))
+            if lts:
+                last = lts
 
     def close(self):
         self._sock.close()
 
+    def log(self, level, message):
+        self._logger.log(level, message)
+
     @property
     def address(self):
         return self._sock.local_address
-
-# class Message(object):
-#     def __init__(self):
-#         self.header = {}
-#         self.payload = b''
-#
-#     def dump(self):
-#         dump = b''
-#         for pair in self.header.items():
-#             for item in pair:
-#                 item = self._bytes(item)
-#                 dump += struct.pack('!B', len(item))
-#                 dump += item
-#         dump += b'\x00'
-#         payload = self._bytes(self.payload)
-#         dump += payload
-#         return dump
-#
-#     @staticmethod
-#     def load(dump):
-#         message = Message()
-#         message.header.clear()
-#         message.payload = b''
-#         i = 0
-#         while dump[i:i + 1] != b'\x00':
-#             pair = []
-#             for _ in range(2):
-#                 length = struct.unpack('!B', dump[i:i + 1])[0]
-#                 i += 1
-#                 pair.append(dump[i:i + length])
-#                 i += length
-#             message.header[pair[0]] = pair[1]
-#         i += 1
-#         message.payload = dump[i:]

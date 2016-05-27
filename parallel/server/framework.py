@@ -150,7 +150,11 @@ class Node(dict, Observer.ObservedBase):
         self['status'] = SolveState.unknown
 
     def __repr__(self):
-        return '<{} state:{}>'.format(self.__class__.__bases__[0].__name__, self['status'].name, self['children'])
+        return '<{} {} state:{}>'.format(
+            self.__class__.__bases__[0].__name__,
+            self.observer.node_path(self, True),
+            self['status'].name, self['children']
+        )
 
     def __hash__(self):
         return id(self)
@@ -263,7 +267,7 @@ class ParallelizationTree(Observer):
         else:
             raise TypeError
         self._nodes += 1
-        return super().observed(cls, *args, **kwargs)
+        return self.observed(cls, *args, **kwargs)
 
     def db_load(self):
         self.root.db_load(self._conn, table_prefix=self._table_prefix)
@@ -288,6 +292,18 @@ class ParallelizationTree(Observer):
 
     def node_hash(self, node):
         return hashlib.sha1((self.hash + str(self.node_path(node, keys=True))).encode()).hexdigest()
+
+    def level(self, i=0):
+        if i < 0:
+            raise ValueError
+        level = [self.root]
+        while i > 0:
+            i -= 1
+            parents = level.copy()
+            level.clear()
+            for node in parents:
+                level.extend(node['children'])
+        return level
 
     def update_reverse(self):
         if not self.observing:
