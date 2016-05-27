@@ -128,32 +128,12 @@ class PtStore {
      bool assignPartition(const char* pname, PTRef, char** msg); //for partitions
     bool assignPartition(PTRef, char** msg); //for assertions
 #ifdef PRODUCE_PROOF
-    ipartitions_t getIPartitions(PTRef _t)
-    {
-        if(!term_partitions.has(_t))
-            term_partitions.insert(_t, 0);
-        return term_partitions[_t];
-    }
-    void setIPartitions(PTRef _t, ipartitions_t _p) { term_partitions.insert(_t, _p); }
-    void addIPartitions(PTRef _t, ipartitions_t _p)
-    {
-        if(!term_partitions.has(_t))
-            term_partitions.insert(_t, 0);
-        term_partitions[_t] |= _p;
-    }
-    ipartitions_t getIPartitions(SymRef _s)
-    {
-        if(!sym_partitions.has(_s))
-            sym_partitions.insert(_s, 0);
-        return sym_partitions[_s];
-    }
-    void setIPartitions(SymRef _s, ipartitions_t _p) { sym_partitions.insert(_s, _p); }
-    void addIPartitions(SymRef _s, ipartitions_t _p)
-    {
-        if(!sym_partitions.has(_s))
-            sym_partitions.insert(_s, 0);
-        sym_partitions[_s] |= _p;
-    }
+    ipartitions_t getIPartitions(PTRef _t);
+    void setIPartitions(PTRef _t, ipartitions_t _p);
+    void addIPartitions(PTRef _t, ipartitions_t _p);
+    ipartitions_t getIPartitions(SymRef _s);
+    void setIPartitions(SymRef _s, ipartitions_t _p);
+    void addIPartitions(SymRef _s, ipartitions_t _p);
 #endif
 
     void   free(PTRef r) { pta.free(r); }  // this is guaranteed to be lazy

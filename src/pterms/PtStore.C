@@ -229,3 +229,51 @@ PtStore::assignPartition(PTRef pref, char** msg)
     return true;
 }
 
+#ifdef PRODUCE_PROOF
+
+ipartitions_t
+PtStore::getIPartitions(PTRef _t)
+{
+    if(!term_partitions.has(_t))
+        term_partitions.insert(_t, 0);
+    return term_partitions[_t];
+}
+
+void
+PtStore::setIPartitions(PTRef _t, ipartitions_t _p) 
+{ 
+    term_partitions.insert(_t, _p); 
+}
+
+void
+PtStore::addIPartitions(PTRef _t, ipartitions_t _p)
+{
+    if(!term_partitions.has(_t))
+        term_partitions.insert(_t, 0);
+    term_partitions[_t] |= _p;
+}
+
+ipartitions_t 
+PtStore::getIPartitions(SymRef _s)
+{
+    if(!sym_partitions.has(_s))
+        sym_partitions.insert(_s, 0);
+    return sym_partitions[_s];
+}
+
+void 
+PtStore::setIPartitions(SymRef _s, ipartitions_t _p) 
+{
+    sym_partitions.insert(_s, _p); 
+}
+
+void
+PtStore::addIPartitions(SymRef _s, ipartitions_t _p)
+{
+    if(!sym_partitions.has(_s))
+        sym_partitions.insert(_s, 0);
+    sym_partitions[_s] |= _p;
+}
+
+#endif
+

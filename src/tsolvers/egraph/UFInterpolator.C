@@ -29,7 +29,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "UFInterpolator.h"
 #include "Egraph.h"
 
-
 //#define ITP_DEBUG
 
 void CGraph::addCNode( PTRef e )
@@ -44,8 +43,14 @@ void CGraph::addCNode( PTRef e )
   // be a result from some congruence
   // closure operations, hence it might be
   // uncolored
+#ifdef ITP_DEBUG
+  cerr << "; Adding CNode " << logic.printTerm(e) << endl;
+#endif
   if ( logic.getIPartitions(e) == 0 )
   {
+#ifdef ITP_DEBUG
+    cerr << "; " << logic.printTerm(e) << " has empty partitioning mask" << endl;
+#endif
     ipartitions_t max_inner_parts = 0;
     // Set partitions for symbol
     if ( logic.isUF(e) )
@@ -64,6 +69,9 @@ void CGraph::addCNode( PTRef e )
         max_inner_parts &= logic.getIPartitions(arg);
     }
     assert( max_inner_parts != 0 );
+#ifdef ITP_DEBUG
+    cerr << "; " << logic.printTerm(e) << " has now partitioning mask " << max_inner_parts << endl;
+#endif
     logic.setIPartitions( e, max_inner_parts );
   }
   assert( logic.getIPartitions(e) != 0 );
@@ -90,7 +98,9 @@ icolor_t CGraph::colorNodesRec( CNode * c, const ipartitions_t & mask )
     return I_UNDEF;
   }
 */
-//  cerr << "; Coloring " << logic.printTerm(c->e) << endl;
+#ifdef ITP_DEBUG
+    cerr << "; Coloring " << logic.printTerm(c->e) << endl;
+#endif
     icolor_t color = I_UNDEF;
     Pterm& p = logic.getPterm(c->e);
     if(logic.isUF(c->e) || logic.isUP(c->e))
@@ -104,7 +114,9 @@ icolor_t CGraph::colorNodesRec( CNode * c, const ipartitions_t & mask )
             assert(isBstrict(logic.getIPartitions(p.symb()), mask));
             color = I_B;
         }
-//        cerr << "; Its symbol has color " << color << endl;
+#ifdef ITP_DEBUG
+        cerr << "; Its symbol has color " << color << endl;
+#endif
         for(int i = 0; i < p.size(); ++i)
         {
             PTRef arg = p[i];
@@ -125,7 +137,9 @@ icolor_t CGraph::colorNodesRec( CNode * c, const ipartitions_t & mask )
                 {
                     if(child_color == I_A) opensmt_error("Term I_B has child I_A");
                 }
-//                cerr << "; Now the term has color " << color << endl;
+#ifdef ITP_DEBUG
+                cerr << "; Now the term has color " << color << endl;
+#endif
             }
         }
     }
@@ -140,7 +154,9 @@ icolor_t CGraph::colorNodesRec( CNode * c, const ipartitions_t & mask )
             assert(isBstrict(logic.getIPartitions(c->e), mask));
             color = I_B;
         }
-//        cerr << "; Variable, color " << color << endl;
+#ifdef ITP_DEBUG
+        cerr << "; Variable, color " << color << endl;
+#endif
     }
     colored_nodes.insert(c);
     return c->color = color;
