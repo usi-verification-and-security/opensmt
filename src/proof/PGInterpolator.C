@@ -383,6 +383,7 @@ void ProofGraph::produceSingleInterpolant( vector<PTRef>& interpolants, const ip
             }
             else
             {
+                thandler.backtrack(-1);
                 vec<Lit> newvec;
                 vector<Lit>& oldvec = n->getClause();
                 for(int i = 0; i < oldvec.size(); ++i)

@@ -83,16 +83,17 @@ icolor_t CGraph::colorNodesRec( CNode * c, const ipartitions_t & mask )
   if ( colored_nodes.find( c ) != colored_nodes.end( ) )
     return c->color;
 
+  /*
   if ( logic.isUP(c->e) )
   {
     opensmt_error( "Cannot compute interpolants for uninterpreted predicates, sorry" );
     return I_UNDEF;
   }
-
+*/
 //  cerr << "; Coloring " << logic.printTerm(c->e) << endl;
     icolor_t color = I_UNDEF;
     Pterm& p = logic.getPterm(c->e);
-    if(logic.isUF(c->e))
+    if(logic.isUF(c->e) || logic.isUP(c->e))
     {
         if(isAB(logic.getIPartitions(p.symb()), mask))
             color = I_AB;
@@ -970,6 +971,9 @@ CGraph::getInterpolant( const ipartitions_t & mask )
 	    assert( curr_edge->source->color == I_AB );
     	// Reset for next call
 	    //colorReset( );
+	//cerr << logic.printTerm(interpolant) << " =1 " << logic.printTerm(first->e) << endl;
+	conf_color = I_B; //actually AB TODO
+	break;
         return interpolant = logic.mkEq(interpolant, first->e);
     	//return egraph.mkEq( egraph.cons( interpolant
 	      //            , egraph.cons( first->e ) ) );
@@ -981,6 +985,9 @@ CGraph::getInterpolant( const ipartitions_t & mask )
     	assert( curr_edge->source->color == I_AB );
 	    // Reset for next call
     	//colorReset( );
+	//cerr << logic.printTerm(interpolant) << " =2 " << logic.printTerm(first->e) << endl;
+	conf_color = I_B; //actually AB TODO
+	break;
         return interpolant = logic.mkNot( logic.mkEq(interpolant, first->e) );
 	    //return egraph.mkNot( egraph.cons( egraph.mkEq( egraph.cons( interpolant
 	      //                                       , egraph.cons( first->e ) ) ) ) );
@@ -989,8 +996,11 @@ CGraph::getInterpolant( const ipartitions_t & mask )
       prev_col = curr_edge->color;
       curr_edge = curr_edge->target->next;
     }
-    assert( path_colors == I_A || path_colors == I_B );
-    conf_color = path_colors;
+    if(conf_color == I_UNDEF)
+    {
+        assert( path_colors == I_A || path_colors == I_B );
+        conf_color = path_colors;
+    }
   }
   // Conflict is due to different constants not predicates
   else
