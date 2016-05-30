@@ -9,8 +9,7 @@ include_HEADERS = minisat/core/Solver.h minisat/core/SolverTypes.h minisat/mtl/A
 endif
 
 libopensmt_la_SOURCES =
-libopensmt_la_LIBADD = proof/libproof.la \
-                       parsers/libparsers.la \
+libopensmt_la_LIBADD = parsers/libparsers.la \
 		       tsolvers/libtsolvers.la \
 		       smtsolvers/libsmtsolvers.la \
 		       sorts/libsorts.la \
@@ -21,12 +20,12 @@ libopensmt_la_LIBADD = proof/libproof.la \
 		       pterms/libpterms.la \
 		       cnfizers/libcnfizers.la \
 		       common/libcommon.la \
+		       proof/libproof.la \
 		       options/liboptions.la
 
 
 libopensmt2_la_SOURCES = 
-libopensmt2_la_LIBADD = proof/libproof.la \
-			parsers/libparsers.la \
+libopensmt2_la_LIBADD = parsers/libparsers.la \
 		        tsolvers/libtsolvers.la \
 		        smtsolvers/libsmtsolvers.la \
 		        sorts/libsorts.la \
@@ -37,5 +36,6 @@ libopensmt2_la_LIBADD = proof/libproof.la \
 		        pterms/libpterms.la \
 		        cnfizers/libcnfizers.la \
 		        common/libcommon.la \
+		        proof/libproof.la \
 		        options/liboptions.la
 
