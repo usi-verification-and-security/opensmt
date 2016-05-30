@@ -1078,7 +1078,8 @@ CGraph::getInterpolant( const ipartitions_t & mask )
   //cerr << "; Size stats:\n; Max height: " << max_height << "\n; Max width: " << max_width << endl;
 
   interpolant = result;
-  verifyInterpolantWithExternalTool(mask);
+  if(config.certify_inter() >= 1)
+	  verifyInterpolantWithExternalTool(mask);
   return interpolant;
 }
 

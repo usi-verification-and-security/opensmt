@@ -26,6 +26,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "Cnfizer.h"
 
+#include <queue>
+
+using namespace std;
+
 Cnfizer::Cnfizer( SMTConfig&     config_
                 , Logic&         logic_
                 , TermMapper&    tmap_
@@ -162,13 +166,61 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula)
 #ifdef PRODUCE_PROOF
     // Create mask to spread among all literals created for this PTRef
     ipartitions_t mask = 0;
-    if(logic.isAssertion(f))
+    if(logic.isAssertion(f)) //if f is an assertion, one bit is set
     {
         mask += 1;
         mask <<= (logic.assertionIndex(f) + 1);
     }
-    else
+    else if(logic.getIPartitions(f) != 0) //f may be a subformula
         mask += logic.getIPartitions(f);
+    else //f may have been flattened etc
+    {
+	   //what to do then?! TODO
+	   set<PTRef> visited;
+	   queue<PTRef> q;
+	   q.push(f);
+	   while(!q.empty())
+	   {
+		PTRef ptr = q.front();
+		q.pop();
+		if(logic.getPterm(ptr).size() == 0)
+			assert(logic.getIPartitions(ptr) != 0);
+		if(logic.getIPartitions(ptr) != 0)
+		{
+			continue;
+		}
+		Pterm& ptm = logic.getPterm(ptr);
+		bool en_chd = false;
+		ipartitions_t local_mask = 1;
+		local_mask = ~local_mask;
+		for(int i = 0; i < ptm.size(); ++i)
+		{
+			PTRef ch = ptm[i];
+			if(logic.getIPartitions(ch) == 0)
+			{
+				q.push(ch);
+				en_chd = true;
+			}
+			else
+				local_mask &= logic.getIPartitions(ch);
+		}
+		if(en_chd)
+			q.push(ptr);
+		else
+		{
+			//cerr << "; Adding mask " << local_mask << " to term " << logic.printTerm(ptr) << endl;
+			logic.addIPartitions(ptr, local_mask);
+		}
+	   }
+	   Pterm& fm = logic.getPterm(f);
+	   mask = ~mask;
+	   for(int i = 0; i < fm.size(); ++i)
+	   {
+		   assert(logic.getIPartitions(fm[i]) != 0);
+		   mask &= logic.getIPartitions(fm[i]);
+	   }
+	   assert(mask != 0);
+    }
 #ifdef PEDANTIC_DEBUG
     cerr << "Spreading mask " << mask << endl;
 #endif // PEDANTIC_DEBUG
