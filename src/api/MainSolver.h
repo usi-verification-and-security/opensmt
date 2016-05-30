@@ -150,6 +150,12 @@ class MainSolver {
             asprintf(msg, "Top-level assertion sort must be %s, got %s",
                      Logic::s_sort_bool, logic.getSortName(logic.getSortRef(root)));
             return s_Error; }
+	char* err_msg = NULL;
+        if(!logic.assignPartition(root, &err_msg))
+            opensmt_error("Could not assign partition"); 
+#ifdef PRODUCE_PROOF
+        logic.setIPartitionsIte(root);
+#endif
         formulas.push(root);
         return s_Undef; }
 

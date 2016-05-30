@@ -116,6 +116,16 @@ public:
 
   Logic& getLogic() { return logic; }
   const void getRemoved(vec<PTRef>&) const;  // Fill the vector with the vars removed due to not having bounds
+
+#ifdef PRODUCE_PROOF
+  TheoryInterpolator* getTheoryInterpolator() { return NULL; }
+  PTRef getInterpolant( const ipartitions_t & ); // Fill a vector with interpolants
+  bool usingStrong() { return config.itp_lra_alg() == 0; }
+  bool usingWeak() { return config.itp_lra_alg() == 2; }
+  bool usingRandom() { return config.itp_lra_alg() == 3; }
+#endif
+
+
 protected:
   // vector in which witnesses for unsatisfiability are stored
   vector<Real> explanationCoefficients;
@@ -143,14 +153,6 @@ private:
   void print( ostream & out );                            // Prints terms, current bounds and the tableau
   void addVarToRow( LAVar*, LAVar*, Real*);               //
   bool checkIntegersAndSplit();                           //
-
-#ifdef PRODUCE_PROOF
-  TheoryInterpolator* getTheoryInterpolator() { return NULL; }
-  //PTRef             getInterpolants( const ipartitions_t & ); // Fill a vector with interpolants
-  bool usingStrong() { return config.itp_lra_alg() == 0; }
-  bool usingWeak() { return config.itp_lra_alg() == 2; }
-  bool usingRandom() { return config.itp_lra_alg() == 3; }
-#endif
 
   bool first_update_after_backtrack;
 

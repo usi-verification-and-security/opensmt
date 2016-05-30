@@ -51,7 +51,7 @@ class LRATHandler : public TSolverHandler
     }
     PTRef getInterpolant(const ipartitions_t& mask)
     {
-        return PTRef_Undef;
+        return lrasolver->getInterpolant(mask);
     }
 #endif
 };

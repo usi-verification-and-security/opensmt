@@ -247,41 +247,7 @@ declare_fun_err: ;
             if (tr == PTRef_Undef)
                 notify_formatted(true, "assertion returns an unknown sort");
             else {
-                /*
-                if(logic->isAnd(tr))
-                {
-                    Pterm& pt = logic->getPterm(tr);
-                    int n = pt.nargs();
-                    cerr << "; Assertion is AND of " << n << " args" << endl;
-                    int m1 = n / 2;
-                    PTRef a1 = PTRef_Undef;
-                    vec<PTRef> args1, args2;
-                    for(int i = 0; i < m1; ++i) args1.push(pt[i]);
-                    for(int i = m1; i < n; ++i) args2.push(pt[i]);
-                    a1 = logic->mkAnd(args1);
-                    tr = logic->mkAnd(args2);
-
-                    char* err_msg = NULL;
-                    if(!logic->assignPartition(a1, &err_msg))
-                        notify_formatted(true, err_msg);
-#ifdef PRODUCE_PROOF
-                    logic->setIPartitionsIte(a1);
-#endif
-
-                    status = main_solver->insertFormula(a1, &err_msg);
-                }
-                else
-                    cerr << "; Assertion is not and" << endl;
-*/
-
-
-                char* err_msg = NULL;
-                if(!logic->assignPartition(tr, &err_msg))
-                    notify_formatted(true, err_msg);
-#ifdef PRODUCE_PROOF
-                logic->setIPartitionsIte(tr);
-#endif
-
+		char* err_msg = NULL;
                 status = main_solver->insertFormula(tr, &err_msg);
 
                 if (status == s_Error)

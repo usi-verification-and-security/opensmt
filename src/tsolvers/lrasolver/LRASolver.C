@@ -1994,28 +1994,28 @@ LRASolver::~LRASolver( )
 //
 // Compute interpolants for the conflict
 //
-/*
+
 PTRef
-LRASolver::getInterpolants ( const ipartitions_t & p )
+LRASolver::getInterpolant( const ipartitions_t & p )
 {
-    opensmt_error("Interpolation not supported for LRA");
-    return logic.getTerm_true();
-*/
-    /** Old implementation: 
-  l = config.logic == QF_LRA || config.logic == QF_UFLRA
-  ? QF_LRA
-  : QF_LIA;
+    //opensmt_error("Interpolation not supported for LRA");
+    //return logic.getTerm_true();
+
+   // Old implementation: 
+  //l = config.logic == QF_LRA || config.logic == QF_UFLRA
+  //? QF_LRA
+  //: QF_LIA;
 
   assert (explanation.size()>1);
 
-  list<Enode *> in_list;
+  vec<PTRef> in_list;
 
   ipartitions_t mask = 1;
   mask = ~mask;
 
-  for( unsigned in = 1; in < egraph.getNofPartitions( ); in++ )
+  for( unsigned in = 1; in < logic.getNofPartitions( ); in++ )
   {
-    LAExpression interpolant;
+    LAExpression interpolant(logic);
     bool delta_flag=false;
 
     // mask &= ~SETBIT( in );
@@ -2023,7 +2023,7 @@ LRASolver::getInterpolants ( const ipartitions_t & p )
     for( unsigned i = 0; i < explanation.size( ); i++ )
     {
       icolor_t color = I_UNDEF;
-      const ipartitions_t & p = explanation[i]->getIPartitions( );
+      const ipartitions_t & p = logic.getIPartitions(explanation[i].tr);
 
       if ( isAB( p, mask ) )
       color = I_AB;
@@ -2049,7 +2049,7 @@ LRASolver::getInterpolants ( const ipartitions_t & p )
              && color == I_AB )
         color = I_A;
       // Pudlak algo: who cares
-      else if ( usindRandom()
+      else if ( usingRandom()
              && color == I_AB )
         color = I_A;
 
@@ -2059,13 +2059,13 @@ LRASolver::getInterpolants ( const ipartitions_t & p )
       // Add the A conflict to the interpolant (multiplied by the coefficient)
       if( color == I_A )
       {
-        if ( explanation[i]->getPolarity( ) == l_True )
+        if ( getPolarity(explanation[i].tr) == l_True )
         {
-          interpolant.addExprWithCoeff(LAExpression(explanation[i]), explanationCoefficients[i]);
+          interpolant.addExprWithCoeff(LAExpression(logic, explanation[i].tr), explanationCoefficients[i]);
         }
         else
         {
-          interpolant.addExprWithCoeff(LAExpression(explanation[i]), -explanationCoefficients[i]);
+          interpolant.addExprWithCoeff(LAExpression(logic, explanation[i].tr), -explanationCoefficients[i]);
           delta_flag=true;
         }
       }
@@ -2077,18 +2077,22 @@ LRASolver::getInterpolants ( const ipartitions_t & p )
     // Generate resulting interpolant and push it to the list
     if (interpolant.isTrue() && !delta_flag)
     {
-      in_list.push_back(egraph.mkTrue());
+      in_list.push(logic.getTerm_true());
     }
     else if (interpolant.isFalse() || ( interpolant.isTrue() && delta_flag ))
     {
-      in_list.push_back(egraph.mkFalse());
+      in_list.push(logic.getTerm_false());
     }
     else
     {
-      if (delta_flag)
-        in_list.push_back(egraph.mkLt(egraph.cons(interpolant.toEnode(egraph), egraph.cons(egraph.mkNum("0")))));
-      else
-        in_list.push_back(egraph.mkLeq(egraph.cons(interpolant.toEnode(egraph), egraph.cons(egraph.mkNum("0")))));
+	    vec<PTRef> args;
+	    args.push(logic.mkConst("0"));
+	    args.push(interpolant.toPTRef());
+	    char* msg;
+            if (delta_flag)
+                in_list.push(logic.mkRealLt(args, &msg));
+            else
+                in_list.push(logic.mkRealLeq(args, &msg));
     }
     if ( verbose() > 0 )
     {
@@ -2096,10 +2100,9 @@ LRASolver::getInterpolants ( const ipartitions_t & p )
     }
 
   }
-  interpolants = egraph.cons( in_list );
-  return interpolants;
-  */
-//}
+  PTRef itp = logic.mkAnd( in_list );
+  return itp;
+}
 
 #endif
 
