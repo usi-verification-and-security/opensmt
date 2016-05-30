@@ -84,7 +84,7 @@ int main( int argc, char * argv[] )
   cerr << "; this binary is compiled with optimizations disabled (slow)" << endl;
 #endif
 
-  cerr << "; svn rev: " << SVN_REVISION << endl;
+  cerr << "; git hash: " << SVN_REVISION << endl;
 
   cerr << "; symbol enode size: " << EnodeAllocator::symEnodeWord32Size() << endl;
   cerr << "; list enode size: " << EnodeAllocator::listEnodeWord32Size() << endl;
