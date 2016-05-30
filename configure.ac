@@ -1,5 +1,5 @@
 AC_PREREQ(2.59)
-define([svnversion], esyscmd([sh -c "svnversion -n"]))
+define([svnversion], esyscmd([sh -c "git describe --always |tr -d '\n'"]))
 AC_INIT([OpenSMT 2.0.svnversion], [(unstable)], [antti.hyvarinen@gmail.com])
 config_flags="$*"
 AC_DEFINE_UNQUOTED([CONFIG_FLAGS], ["$config_flags"], [Flags passed to configure])
