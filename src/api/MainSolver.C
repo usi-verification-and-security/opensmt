@@ -349,6 +349,17 @@ PTRef MainSolver::rewriteMaxArity(PTRef root, Map<PTRef,int,PTRefHash>& PTRefToI
         assert(result != PTRef_Undef);
         assert(!cache.has(tr));
         cache.insert(tr, result);
+        if(logic.isAssertion(tr))
+        {
+            if(logic.isAnd(result))
+            {
+                Pterm& ptm = logic.getPterm(result);
+                for(int i = 0; i < ptm.size(); ++i)
+                    logic.setOriginalAssertion(ptm[i], tr);
+            }
+            //else //should the entire conjunction also be set? TODO
+            logic.setOriginalAssertion(result, tr);
+        }
     }
     PTRef top_tr = cache[root];
     return top_tr;

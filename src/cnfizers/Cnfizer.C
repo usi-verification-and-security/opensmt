@@ -171,56 +171,18 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula)
         mask += 1;
         mask <<= (logic.assertionIndex(f) + 1);
     }
-    else if(logic.getIPartitions(f) != 0) //f may be a subformula
-        mask += logic.getIPartitions(f);
+    else if(f == logic.getTerm_true() || f == logic.getTerm_false())
+    {
+        mask = 1;
+        mask = ~mask;
+    }
     else //f may have been flattened etc
     {
-	   //what to do then?! TODO
-	   set<PTRef> visited;
-	   queue<PTRef> q;
-	   q.push(f);
-	   while(!q.empty())
-	   {
-		PTRef ptr = q.front();
-		q.pop();
-		if(logic.getPterm(ptr).size() == 0)
-			assert(logic.getIPartitions(ptr) != 0);
-		if(logic.getIPartitions(ptr) != 0)
-		{
-			continue;
-		}
-		Pterm& ptm = logic.getPterm(ptr);
-		bool en_chd = false;
-		ipartitions_t local_mask = 1;
-		local_mask = ~local_mask;
-		for(int i = 0; i < ptm.size(); ++i)
-		{
-			PTRef ch = ptm[i];
-			if(logic.getIPartitions(ch) == 0)
-			{
-				q.push(ch);
-				en_chd = true;
-			}
-			else
-				local_mask &= logic.getIPartitions(ch);
-		}
-		if(en_chd)
-			q.push(ptr);
-		else
-		{
-			//cerr << "; Adding mask " << local_mask << " to term " << logic.printTerm(ptr) << endl;
-			logic.addIPartitions(ptr, local_mask);
-		}
-	   }
-	   Pterm& fm = logic.getPterm(f);
-	   mask = ~mask;
-	   for(int i = 0; i < fm.size(); ++i)
-	   {
-		   assert(logic.getIPartitions(fm[i]) != 0);
-		   mask &= logic.getIPartitions(fm[i]);
-	   }
-	   assert(mask != 0);
+        mask = logic.getIPartitions(logic.getOriginalAssertion(f));
+        logic.setIPartitions(f, 0);
+        logic.addIPartitions(f, mask);
     }
+    assert(mask != 0);
 #ifdef PEDANTIC_DEBUG
     cerr << "Spreading mask " << mask << endl;
 #endif // PEDANTIC_DEBUG
@@ -662,6 +624,7 @@ bool Cnfizer::addClause( vec<Lit>& c )
     }
     PTRef cl_ptref = logic.mkOr(or_args);
     logic.addClauseClassMask(cl_ptref, mask);
+    //cerr << "; Adding mask " << mask << endl;
 #endif
     return solver.addSMTClause(c);
 }

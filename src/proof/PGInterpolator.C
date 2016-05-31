@@ -371,62 +371,36 @@ void ProofGraph::produceSingleInterpolant( vector<PTRef>& interpolants, const ip
 		// Generate partial interpolant for clause i
 		if(n->isLeaf())
 		{
-			if(n->getType() != CLAORIG && n->getType() != CLATHEORY) opensmt_error( "Clause is not original nor theory" );
-            if(n->getType() == CLAORIG)
-            {
-#ifdef FULL_LABELING
-		    	partial_interp = compInterpLabelingOriginal( n, A_mask , 0, PSFunction);
-			    //if ( enabledPedInterpVerif() ) verifyPartialInterpolantFromLeaves( n, A_mask );
-#else
-		    	partial_interp = compInterpLabelingOriginalSimple( n, A_mask );
-#endif
-            }
-            else
-            {
-                thandler.backtrack(-1);
-                vec<Lit> newvec;
-                vector<Lit>& oldvec = n->getClause();
-                for(int i = 0; i < oldvec.size(); ++i)
-                    newvec.push(~oldvec[i]);
-                thandler.assertLits(newvec);
-                partial_interp = thandler.getInterpolant(A_mask);
-                //cerr << "; ITP" << endl;
-                //cerr << "; " << thandler.getLogic().printTerm(partial_interp) << endl;
-                thandler.backtrack(-1);
-
-
-
-                // this leaf is a theory clause, so its partial interpolant
-                // is a theory interpolant
-                //assert(proof.isTheoryInterpolator(n->getClauseRef()));
-                //TheoryInterpolator* itpr = proof.getTheoryInterpolator(n->getClauseRef());
-                //partial_interp = itpr->getInterpolant(A_mask);
+		    if(n->getType() != CLAORIG && n->getType() != CLATHEORY) opensmt_error( "Clause is not original nor theory" );
+		    if(n->getType() == CLAORIG)
+		    {
                 /*
-                 * wrong
-                else
-                {
-                    assert(n->getPClause() != NULL);
-                    vector<Lit>& oldclause = n->getClause();
-                    for(int i = 0; i < oldclause.size(); ++i)
-                        thandler.assertLit(PtAsgn(thandler.varToTerm(var(oldclause[i])), (int(oldclause[i].x) & 1) ? l_False : l_True));
-
-                    vec<Lit> confl;
-                    vec<VarData> vdata;
-                    int mref;
-                    thandler.getConflict(confl, vdata, mref);
-                    vec<PTRef> and_args;
-                    Logic& logic = thandler.getLogic();
-                    for(int i = 0; i < confl.size(); ++i)
-                    {
-                        PTRef ter = thandler.varToTerm(var(confl[i]));
-                        if(int(confl[i].x) & 1)
-                            ter = logic.mkNot(ter);
-                        and_args.push(ter);
-                    }
-                    partial_interp = logic.mkOr(and_args);
-                }
+			    cerr << "; Original clause " << endl;
+			    vector<Lit>& cl = n->getClause();
+			    for(int i = 0; i < cl.size(); ++i)
+				    cerr << logic_.printTerm(thandler.varToTerm(var(cl[i]))) << "(" << cl[i].x << ") ";
+			    cerr << endl;
                 */
-            }
+
+#ifdef FULL_LABELING
+		        partial_interp = compInterpLabelingOriginal( n, A_mask , 0, PSFunction);
+			//if ( enabledPedInterpVerif() ) verifyPartialInterpolantFromLeaves( n, A_mask );
+#else
+			partial_interp = compInterpLabelingOriginalSimple( n, A_mask );
+#endif
+	            }
+	            else
+	            {
+            	        thandler.backtrack(-1);
+    	                vec<Lit> newvec;
+            	        vector<Lit>& oldvec = n->getClause();
+                    	for(int i = 0; i < oldvec.size(); ++i)
+    	                    newvec.push(~oldvec[i]);
+            	        thandler.assertLits(newvec);
+    	                partial_interp = thandler.getInterpolant(A_mask);
+           	        //cerr << "; ITP" << endl;
+                    	//cerr << "; " << thandler.getLogic().printTerm(partial_interp) << endl;
+                    }
 		}
 		else
 		{
