@@ -1,21 +1,36 @@
 #include <opensmt/opensmt2.h>
 #include <stdio.h>
 
+Opensmt*
+pre()
+{
+    Opensmt* osmt = new Opensmt(opensmt_logic::qf_bool);
+    return osmt;
+}
+
 int
 main(int argc, char** argv)
 {
+    
+    Opensmt* osmt = pre();
+    SMTConfig& c = osmt->getConfig();
+    MainSolver& mainSolver = osmt->getMainSolver();
+    SimpSMTSolver& solver = osmt->getSolver();
+    Logic& logic = osmt->getLogic();
+    
+
+    /*
     SMTConfig c;
-
-    const char* msg;
-    c.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
-
     UFTheory uftheory(c);
     THandler thandler(c, uftheory);
     SimpSMTSolver solver(c, thandler);
     MainSolver mainSolver(thandler, c, &solver);
-
     Logic& logic = thandler.getLogic();
+    */
 
+    const char* msg;
+    c.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    
     // Let's build two assertions
 
     // First assertion (a /\ b)

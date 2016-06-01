@@ -2,12 +2,12 @@ noinst_LTLIBRARIES = libapi.la
 
 AM_CPPFLAGS=$(config_includedirs) -I../parsers/smt2new/
 
-libapi_la_SOURCES = Interpret.C MainSolver.h MainSolver.C
+libapi_la_SOURCES = Interpret.C MainSolver.h MainSolver.C Opensmt.C
 
 libapi_la_LIBADD = -lreadline
 
 if WANT_LIBRARY
-include_HEADERS = MainSolver.h
+include_HEADERS = MainSolver.h Opensmt.h
 endif
 
 #libapi_la_SOURCES = opensmt_c.h opensmt_c.C Interpret.C
