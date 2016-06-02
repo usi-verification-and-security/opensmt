@@ -439,6 +439,17 @@ ValPair MainSolver::getValue(PTRef tr) const
     return ValPair();
 }
 
+void MainSolver::getValues(const vec<PTRef>& trs, vec<ValPair>& vals) const
+{
+    vals.clear();
+    for (int i = 0; i < trs.size(); i++)
+    {
+        PTRef tr = trs[i];
+        vals.push(getValue(tr));
+    }
+}
+
+
 //
 // Read the solver state from a file and store it to the main solver
 //

@@ -1,7 +1,8 @@
 /*********************************************************************
-Author: Roberto Bruttomesso <roberto.bruttomesso@gmail.com>
+Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
 
-OpenSMT2 -- Copyright (C) 2008 - 2012, Roberto Bruttomesso
+OpenSMT2 -- Copyright (C) 2012 - 2016, Antti Hyvarinen
+                          2008 - 2012, Roberto Bruttomesso
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the
@@ -35,9 +36,9 @@ extern "C" {
 //
 // Datatypes
 //
-typedef void * opensmt_expr;
-typedef void * opensmt_context;
-typedef enum { l_false=-1, l_undef, l_true } opensmt_result;
+typedef struct osmt_expr { int x; } osmt_expr;
+typedef struct osmt_context { void *c; } osmt_context;
+typedef enum { l_false=-1, l_undef, l_true } osmt_result;
 typedef enum
 {
     qf_uf         // Uninterpreted Functions
@@ -49,97 +50,89 @@ typedef enum
   , qf_ufidl      // UF + IDL
   , qf_uflra      // UF + LRA
   , qf_bool       // Only booleans
-  , qf_ct         // Cost 
-} opensmt_logic;
+  , qf_ct         // Cost
+} osmt_logic;
 //
 // Communication APIs
 //
-void             opensmt_set_verbosity             ( opensmt_context, int );
-char *           opensmt_version                   ( );
-void             opensmt_print_expr                ( opensmt_expr );
-opensmt_context  opensmt_mk_context                ( opensmt_logic );
-void             opensmt_del_context               ( opensmt_context );
-void             opensmt_reset                     ( opensmt_context );
-void             opensmt_push                      ( opensmt_context );
-void             opensmt_pop                       ( opensmt_context );
-void             opensmt_assert                    ( opensmt_context, opensmt_expr );
-opensmt_result   opensmt_check                     ( opensmt_context );
-opensmt_result   opensmt_check_assump              ( opensmt_context, opensmt_expr );
-opensmt_result   opensmt_check_lim_assump          ( opensmt_context, opensmt_expr, unsigned );
-unsigned         opensmt_conflicts                 ( opensmt_context );
-unsigned         opensmt_decisions                 ( opensmt_context );
-opensmt_expr     opensmt_get_value                 ( opensmt_context, opensmt_expr );
-void             opensmt_get_num                   ( opensmt_expr n, mpz_t val );
-opensmt_result   opensmt_get_bool                  ( opensmt_context c, opensmt_expr p );
-void             opensmt_prefer                    ( opensmt_expr a );
-void             opensmt_polarity                  ( opensmt_context c, opensmt_expr a, int pos );
+void             osmt_set_verbosity             ( osmt_context, int );
+char *           osmt_version                   ( );
+void             osmt_print_expr                ( osmt_context, osmt_expr );
+osmt_context     osmt_mk_context                ( osmt_logic );
+void             osmt_del_context               ( osmt_context );
+void             osmt_reset                     ( osmt_context );
+void             osmt_push                      ( osmt_context, osmt_expr );
+void             osmt_pop                       ( osmt_context );
+osmt_result      osmt_check                     ( osmt_context );
+unsigned         osmt_conflicts                 ( osmt_context );
+unsigned         osmt_decisions                 ( osmt_context );
+osmt_expr        osmt_get_value                 ( osmt_context, osmt_expr );
+void             osmt_get_num                   ( osmt_expr n, mpz_t val );
+osmt_result      osmt_get_bool                  ( osmt_context c, osmt_expr p );
+void             osmt_prefer                    ( osmt_expr a );
+void             osmt_polarity                  ( osmt_context c, osmt_expr a, int pos );
 
 
-void             opensmt_print_model               ( opensmt_context, const char * );
-void             opensmt_print_proof               ( opensmt_context, const char * );
-void             opensmt_print_interpolant         ( opensmt_context, const char * );
+void             osmt_get_model               ( osmt_context, const char * );
+void             osmt_print_proof               ( osmt_context, const char * );
+void             osmt_print_interpolant         ( osmt_context, const char * );
 
-void             opensmt_dump_assertions_to_file   ( opensmt_context, const char * );
+void             osmt_dump_assertions_to_file   ( osmt_context, const char * );
 
 //
 // Formula construction APIs
 //
-opensmt_expr     opensmt_mk_true                   ( opensmt_context );
-opensmt_expr     opensmt_mk_false                  ( opensmt_context );
-opensmt_expr     opensmt_mk_bool_var               ( opensmt_context, char * );
-opensmt_expr     opensmt_mk_int_var                ( opensmt_context, char * );
-opensmt_expr     opensmt_mk_real_var               ( opensmt_context, char * );
-/*
-opensmt_expr     opensmt_mk_bv_var                 ( opensmt_context, char *, unsigned );
-*/
-opensmt_expr     opensmt_mk_cost_var               ( opensmt_context, char * );
-opensmt_expr     opensmt_mk_or                     ( opensmt_context, opensmt_expr *, unsigned );
-opensmt_expr     opensmt_mk_and                    ( opensmt_context, opensmt_expr *, unsigned );
-opensmt_expr     opensmt_mk_eq                     ( opensmt_context, opensmt_expr, opensmt_expr );
-/*
-opensmt_expr     opensmt_mk_diseq                  ( opensmt_context, opensmt_expr, opensmt_expr );
-*/
-opensmt_expr     opensmt_mk_ite                    ( opensmt_context, opensmt_expr, opensmt_expr, opensmt_expr );
-opensmt_expr     opensmt_mk_not                    ( opensmt_context, opensmt_expr );
-opensmt_expr     opensmt_mk_num_from_string        ( opensmt_context, const char * );
-opensmt_expr     opensmt_mk_num_from_mpz           ( opensmt_context, const mpz_t );
-opensmt_expr     opensmt_mk_num_from_mpq           ( opensmt_context, const mpq_t );
-opensmt_expr     opensmt_mk_plus                   ( opensmt_context, opensmt_expr *, unsigned );
-opensmt_expr     opensmt_mk_minus                  ( opensmt_context, opensmt_expr, opensmt_expr );
-opensmt_expr     opensmt_mk_times                  ( opensmt_context, opensmt_expr *, unsigned );
-opensmt_expr     opensmt_mk_lt                     ( opensmt_context, opensmt_expr, opensmt_expr );
-opensmt_expr     opensmt_mk_leq                    ( opensmt_context, opensmt_expr, opensmt_expr );
-opensmt_expr     opensmt_mk_gt                     ( opensmt_context, opensmt_expr, opensmt_expr );
-opensmt_expr     opensmt_mk_geq                    ( opensmt_context, opensmt_expr, opensmt_expr );
-/*
-opensmt_expr     opensmt_mk_bv_constant            ( opensmt_context, unsigned, unsigned long );
-opensmt_expr     opensmt_mk_bv_constant_from_string( opensmt_context, unsigned, const char * );
-opensmt_expr     opensmt_mk_bv_add                 ( opensmt_context, opensmt_expr, opensmt_expr );
-opensmt_expr     opensmt_mk_bv_sub                 ( opensmt_context, opensmt_expr, opensmt_expr );
-opensmt_expr     opensmt_mk_bv_mul                 ( opensmt_context, opensmt_expr, opensmt_expr );
-opensmt_expr     opensmt_mk_bv_minus               ( opensmt_context, opensmt_expr );
-opensmt_expr     opensmt_mk_bv_concat              ( opensmt_context, opensmt_expr, opensmt_expr );
-opensmt_expr     opensmt_mk_bv_and                 ( opensmt_context, opensmt_expr, opensmt_expr );
-opensmt_expr     opensmt_mk_bv_or                  ( opensmt_context, opensmt_expr, opensmt_expr );
-opensmt_expr     opensmt_mk_bv_xor                 ( opensmt_context, opensmt_expr, opensmt_expr );
-opensmt_expr     opensmt_mk_bv_not                 ( opensmt_context, opensmt_expr );
-opensmt_expr     opensmt_mk_bv_extract             ( opensmt_context, unsigned, unsigned, opensmt_expr );
-opensmt_expr     opensmt_mk_bv_sign_extend         ( opensmt_context, opensmt_expr, unsigned );
-opensmt_expr     opensmt_mk_bv_shift_left0         ( opensmt_context, opensmt_expr, unsigned );
-opensmt_expr     opensmt_mk_bv_shift_left1         ( opensmt_context, opensmt_expr, unsigned );
-opensmt_expr     opensmt_mk_bv_shift_right0        ( opensmt_context, opensmt_expr, unsigned );
-opensmt_expr     opensmt_mk_bv_shift_right1        ( opensmt_context, opensmt_expr, unsigned );
-opensmt_expr     opensmt_mk_bv_lt                  ( opensmt_context, opensmt_expr, opensmt_expr );
-opensmt_expr     opensmt_mk_bv_le                  ( opensmt_context, opensmt_expr, opensmt_expr );
-opensmt_expr     opensmt_mk_bv_gt                  ( opensmt_context, opensmt_expr, opensmt_expr );
-opensmt_expr     opensmt_mk_bv_ge                  ( opensmt_context, opensmt_expr, opensmt_expr );
-opensmt_expr     opensmt_mk_bv_slt                 ( opensmt_context, opensmt_expr, opensmt_expr );
-opensmt_expr     opensmt_mk_bv_sle                 ( opensmt_context, opensmt_expr, opensmt_expr );
-opensmt_expr     opensmt_mk_bv_sgt                 ( opensmt_context, opensmt_expr, opensmt_expr );
-opensmt_expr     opensmt_mk_bv_sge                 ( opensmt_context, opensmt_expr, opensmt_expr );
-*/
-opensmt_expr     opensmt_mk_ct_incur               ( opensmt_context, opensmt_expr, opensmt_expr, opensmt_expr );
-opensmt_expr     opensmt_mk_ct_bound               ( opensmt_context, opensmt_expr, opensmt_expr );
+osmt_expr     osmt_mk_true                   ( osmt_context );
+osmt_expr     osmt_mk_false                  ( osmt_context );
+osmt_expr     osmt_mk_bool_var               ( osmt_context, const char * );
+//osmt_expr     osmt_mk_int_var                ( osmt_context, const char * );
+osmt_expr     osmt_mk_real_var               ( osmt_context, const char * );
+//osmt_expr     osmt_mk_bv_var                 ( osmt_context, const char *, unsigned );
+//osmt_expr     osmt_mk_cost_var               ( osmt_context, const char * );
+osmt_expr     osmt_mk_or                     ( osmt_context, osmt_expr *, unsigned );
+osmt_expr     osmt_mk_and                    ( osmt_context, osmt_expr *, unsigned );
+osmt_expr     osmt_mk_eq                     ( osmt_context, osmt_expr, osmt_expr );
+//osmt_expr     osmt_mk_diseq                  ( osmt_context, osmt_expr, osmt_expr );
+osmt_expr     osmt_mk_ite                    ( osmt_context, osmt_expr, osmt_expr, osmt_expr );
+osmt_expr     osmt_mk_not                    ( osmt_context, osmt_expr );
+osmt_expr     osmt_mk_num_from_string        ( osmt_context, const char * );
+osmt_expr     osmt_mk_num_from_mpz           ( osmt_context, const mpz_t );
+osmt_expr     osmt_mk_num_from_mpq           ( osmt_context, const mpq_t );
+osmt_expr     osmt_mk_plus                   ( osmt_context, osmt_expr *, unsigned );
+osmt_expr     osmt_mk_minus                  ( osmt_context, osmt_expr, osmt_expr );
+osmt_expr     osmt_mk_times                  ( osmt_context, osmt_expr *, unsigned );
+osmt_expr     osmt_mk_lt                     ( osmt_context, osmt_expr, osmt_expr );
+osmt_expr     osmt_mk_leq                    ( osmt_context, osmt_expr, osmt_expr );
+osmt_expr     osmt_mk_gt                     ( osmt_context, osmt_expr, osmt_expr );
+osmt_expr     osmt_mk_geq                    ( osmt_context, osmt_expr, osmt_expr );
+
+//osmt_expr     osmt_mk_bv_constant            ( osmt_context, unsigned, unsigned long );
+//osmt_expr     osmt_mk_bv_constant_from_string( osmt_context, unsigned, const char * );
+//osmt_expr     osmt_mk_bv_add                 ( osmt_context, osmt_expr, osmt_expr );
+//osmt_expr     osmt_mk_bv_sub                 ( osmt_context, osmt_expr, osmt_expr );
+//osmt_expr     osmt_mk_bv_mul                 ( osmt_context, osmt_expr, osmt_expr );
+//osmt_expr     osmt_mk_bv_minus               ( osmt_context, osmt_expr );
+//osmt_expr     osmt_mk_bv_concat              ( osmt_context, osmt_expr, osmt_expr );
+//osmt_expr     osmt_mk_bv_and                 ( osmt_context, osmt_expr, osmt_expr );
+//osmt_expr     osmt_mk_bv_or                  ( osmt_context, osmt_expr, osmt_expr );
+//osmt_expr     osmt_mk_bv_xor                 ( osmt_context, osmt_expr, osmt_expr );
+//osmt_expr     osmt_mk_bv_not                 ( osmt_context, osmt_expr );
+//osmt_expr     osmt_mk_bv_extract             ( osmt_context, unsigned, unsigned, osmt_expr );
+//osmt_expr     osmt_mk_bv_sign_extend         ( osmt_context, osmt_expr, unsigned );
+//osmt_expr     osmt_mk_bv_shift_left0         ( osmt_context, osmt_expr, unsigned );
+//osmt_expr     osmt_mk_bv_shift_left1         ( osmt_context, osmt_expr, unsigned );
+//osmt_expr     osmt_mk_bv_shift_right0        ( osmt_context, osmt_expr, unsigned );
+//osmt_expr     osmt_mk_bv_shift_right1        ( osmt_context, osmt_expr, unsigned );
+//osmt_expr     osmt_mk_bv_lt                  ( osmt_context, osmt_expr, osmt_expr );
+//osmt_expr     osmt_mk_bv_le                  ( osmt_context, osmt_expr, osmt_expr );
+//osmt_expr     osmt_mk_bv_gt                  ( osmt_context, osmt_expr, osmt_expr );
+//osmt_expr     osmt_mk_bv_ge                  ( osmt_context, osmt_expr, osmt_expr );
+//osmt_expr     osmt_mk_bv_slt                 ( osmt_context, osmt_expr, osmt_expr );
+//osmt_expr     osmt_mk_bv_sle                 ( osmt_context, osmt_expr, osmt_expr );
+//osmt_expr     osmt_mk_bv_sgt                 ( osmt_context, osmt_expr, osmt_expr );
+//osmt_expr     osmt_mk_bv_sge                 ( osmt_context, osmt_expr, osmt_expr );
+//osmt_expr     osmt_mk_ct_incur               ( osmt_context, osmt_expr, osmt_expr, osmt_expr );
+//osmt_expr     osmt_mk_ct_bound               ( osmt_context, osmt_expr, osmt_expr );
 
 #ifdef __cplusplus
 }

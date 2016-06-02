@@ -77,12 +77,14 @@ class LRALogic: public Logic
 
     PTRef       mkConst         (const char* name, const char **msg);
     PTRef       mkConst         (SRef s, const char* name);
+    PTRef       mkConst         (const opensmt::Real& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_real(), rat); free(rat); return tr; }
+    PTRef       mkConst         (const char* num) { return mkConst(getSort_real(), num); }
+    PTRef       mkRealVar       (const char* name) { return mkVar(getSort_real(), name); }
 
     virtual bool isBuiltinSort  (SRef sr) const { return sr == sort_REAL || Logic::isBuiltinSort(sr); }
     bool  isRealConst     (PTRef tr)      const { return isConstant(tr) && hasSortReal(tr); }
     bool  isNonnegRealConst (PTRef tr)    const { return isRealConst(tr) && getRealConst(tr) >= 0; }
 
-    PTRef       mkConst         (const opensmt::Real& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(sort_REAL, rat); free(rat); return tr; }
     SRef        declareSort_Real(char** msg);
 
     SRef        getSort_real    ()              const { return sort_REAL;    }
@@ -132,6 +134,7 @@ class LRALogic: public Logic
     PTRef       mkRealNeg(PTRef tr) {char* msg; PTRef trn = mkRealNeg(tr, &msg); assert(trn != PTRef_Undef); return trn; }
     PTRef       mkRealMinus(const vec<PTRef>&, char**);
     PTRef       mkRealMinus(const vec<PTRef>& args) { char *msg; PTRef tr = mkRealMinus(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    PTRef       mkRealMinus(const PTRef a1, const PTRef a2) { vec<PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkRealMinus(tmp); }
     PTRef       mkRealPlus(const vec<PTRef>&, char**);
     PTRef       mkRealPlus(const vec<PTRef>& args) { char *msg; PTRef tr = mkRealPlus(args, &msg); assert(tr != PTRef_Undef); return tr; }
     PTRef       mkRealTimes(const vec<PTRef>&, char**);
@@ -143,8 +146,14 @@ class LRALogic: public Logic
     PTRef       mkRealLeq(const vec<PTRef>& args) { char* msg; PTRef tr = mkRealLeq(args, &msg); assert(tr != PTRef_Undef); return tr; }
     PTRef       mkRealLeq(const PTRef arg1, const PTRef arg2) { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkRealLeq(tmp); }
     PTRef       mkRealGeq(const vec<PTRef>&, char**);
+    PTRef       mkRealGeq(const vec<PTRef>& args) { char* msg; PTRef tr = mkRealGeq(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    PTRef       mkRealGeq(const PTRef arg1, const PTRef arg2) { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkRealGeq(tmp); }
     PTRef       mkRealLt(const vec<PTRef>&, char**);
+    PTRef       mkRealLt(const vec<PTRef>& args) { char* msg; PTRef tr = mkRealLt(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    PTRef       mkRealLt(const PTRef arg1, const PTRef arg2) { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkRealLt(tmp); }
     PTRef       mkRealGt(const vec<PTRef>&, char**);
+    PTRef       mkRealGt(const vec<PTRef>& args) { char* msg; PTRef tr = mkRealGt(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    PTRef       mkRealGt(const PTRef arg1, const PTRef arg2) { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkRealGt(tmp); }
 
     void        splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac);
     PTRef       normalizeSum(PTRef sum); // Use for normalizing leq terms: sort the sum and divide all terms with the first factor

@@ -70,10 +70,6 @@ class Interpret {
     Logic          *logic;
     SimpSMTSolver  *solver;
 
-    Map<const char*,PTRef,StringHash,Equal<const char*> > nameToTerm;
-    VecMap<PTRef,const char*,PTRefHash,Equal<PTRef> > termToNames;
-    vec<const char*>            term_names;
-
     bool                        f_exit;
 
     IdRef                       newIdentifier(ASTNode& n);
@@ -90,7 +86,6 @@ class Interpret {
     bool                        declareFun(const char* fname, const vec<SRef>& args);
     bool                        defineFun(const char* fname, const PTRef tr);
     bool                        checkSat(const char*);
-    bool                        getAssignment(const char*);
     bool                        getValue(const list<ASTNode*>* term);
     PTRef                       parseTerm(const ASTNode& term, vec<LetFrame>& let_branch);
     void                        exit();
@@ -110,6 +105,11 @@ class Interpret {
     int                         asrt_lev;
 
     int                         sat_calls; // number of sat calls
+
+    // Named terms for getting variable values
+    Map<const char*,PTRef,StringHash,Equal<const char*> > nameToTerm;
+    VecMap<PTRef,const char*,PTRefHash,Equal<PTRef> > termToNames;
+    vec<const char*>            term_names;
 
     vec<SRef>                   vec_sr_empty; // For faster comparison with empty vec
     vec<PTRef>                  vec_ptr_empty;
@@ -139,6 +139,9 @@ class Interpret {
     int interpFile(FILE* in);
     int interpInteractive(FILE* in);
     int interpPipe();
+
+    ValPair getValue       (PTRef tr) const;
+    bool    getAssignment  (const char*);
 
     MainSolver   *main_solver;
 };

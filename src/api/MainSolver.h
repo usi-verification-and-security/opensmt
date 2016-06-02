@@ -119,6 +119,7 @@ class MainSolver {
 
     FContainer root_instance; // Contains the root of the instance once simplifications are done
 
+
   public:
     MainSolver(THandler& thandler, SMTConfig& c, SimpSMTSolver *s )
         : logic(thandler.getLogic())
@@ -126,7 +127,7 @@ class MainSolver {
         , config(c)
         , status(s_Undef)
         , thandler(thandler)
-	, smt_solver(s)
+        , smt_solver(s)
         , ts( config
             , logic
             , tmap
@@ -140,9 +141,11 @@ class MainSolver {
 
     ~MainSolver() { }
 
+    SMTConfig& getConfig() { return config; }
     SimpSMTSolver& getSMTSolver() { return *smt_solver; }
 
     THandler& getTHandler() { return thandler; }
+    Logic&    getLogic()    { return thandler.getLogic(); }
     Theory&   getTheory()   { return thandler.getTheory(); }
     sstat push(PTRef root) { char* msg; sstat res = insertFormula(root, &msg); if (res == s_Error) { printf("%s\n", msg); } return res; }
     sstat insertFormula(PTRef root, char** msg) {
@@ -165,6 +168,8 @@ class MainSolver {
     sstat simplifyFormulas(char** err_msg);
     sstat solve           ();
     sstat check           ();      // A wrapper for solve which simplifies the loaded formulas and initializes the solvers
+
+
     sstat lookaheadSplit  (int d)  { return status = sstat(ts.solver.lookaheadSplit2(d)); }
     sstat getStatus       ()       { return status; }
     bool  solverEmpty     () const { return ts.solverEmpty(); }
@@ -182,8 +187,14 @@ class MainSolver {
     bool  writeSolverSplit (int s, int* &split, int &split_sz, bool compress, char** msg);
     bool  writeSolverSplits(int** &splits, char** msg);
     void  deserializeSolver(const int* termstore_buf, const int* symstore_buf, const int* idstore_buf, const int* sortstore_buf, const int* logicdata_buf, CnfState& cs);
-    lbool getTermValue     (PTRef tr) const { return ts.getTermValue(tr); }
+
+    // Values
+    lbool   getTermValue   (PTRef tr) const { return ts.getTermValue(tr); }
     ValPair getValue       (PTRef tr) const;
+    void    getValues      (const vec<PTRef>&, vec<ValPair>&) const;
+    bool    getAssignment  (const char*);
+
+
     void solve_split(int i,int s, int wpipefd, std::mutex *mtx);
     void stop() { ts.solver.stop = true; }
 };
