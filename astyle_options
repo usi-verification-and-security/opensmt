@@ -1,0 +1,1 @@
+--style=allman --break-blocks --pad-oper --pad-first-paren-out --pad-header --align-pointer=name --break-closing-brackets --convert-tabs --suffix=none --preserve-date --lineend=linux

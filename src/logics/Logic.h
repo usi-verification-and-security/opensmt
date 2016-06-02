@@ -62,6 +62,7 @@ class Logic {
 #ifdef PRODUCE_PROOF
     map<PTRef, ipartitions_t> clause_class;
     map<Var, ipartitions_t> var_class;
+    map<PTRef, PTRef> flat2orig;
 #endif
 
     Map<const char*,PTRef,StringHash,Equal<const char*> > defined_functions;
@@ -223,6 +224,15 @@ class Logic {
 
 #ifdef PRODUCE_PROOF
     // Partitions
+    void setOriginalAssertion(PTRef flat, PTRef orig)
+    {
+        flat2orig[flat] = orig;
+    }
+    PTRef getOriginalAssertion(PTRef flat)
+    {
+        assert(flat2orig.find(flat) != flat2orig.end());
+        return flat2orig[flat];
+    }
     ipartitions_t getIPartitions(PTRef _t) { return term_store.getIPartitions(_t); }
     void setIPartitions(PTRef _t, ipartitions_t _p) { term_store.setIPartitions(_t, _p); }
     void addIPartitions(PTRef _t, ipartitions_t _p) { term_store.addIPartitions(_t, _p); }

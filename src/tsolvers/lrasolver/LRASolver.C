@@ -1996,7 +1996,7 @@ LRASolver::~LRASolver( )
 //
 
 PTRef
-LRASolver::getInterpolant( const ipartitions_t & p )
+LRASolver::getInterpolant( const ipartitions_t & mask )
 {
     //opensmt_error("Interpolation not supported for LRA");
     //return logic.getTerm_true();
@@ -2010,18 +2010,19 @@ LRASolver::getInterpolant( const ipartitions_t & p )
 
   vec<PTRef> in_list;
 
-  ipartitions_t mask = 1;
-  mask = ~mask;
+  //ipartitions_t mask = 1;
+  //mask = ~mask;
 
-  for( unsigned in = 1; in < logic.getNofPartitions( ); in++ )
-  {
+  //for( unsigned in = 1; in < logic.getNofPartitions( ); in++ )
+  //{
     LAExpression interpolant(logic);
     bool delta_flag=false;
 
     // mask &= ~SETBIT( in );
-    clrbit( mask, in );
+    //clrbit( mask, in );
     for( unsigned i = 0; i < explanation.size( ); i++ )
     {
+//		cerr << "; Expl " << logic.printTerm(explanation[i].tr) << endl;
       icolor_t color = I_UNDEF;
       const ipartitions_t & p = logic.getIPartitions(explanation[i].tr);
 
@@ -2086,8 +2087,8 @@ LRASolver::getInterpolant( const ipartitions_t & p )
     else
     {
 	    vec<PTRef> args;
-	    args.push(logic.mkConst("0"));
 	    args.push(interpolant.toPTRef());
+	    args.push(logic.mkConst("0"));
 	    char* msg;
             if (delta_flag)
                 in_list.push(logic.mkRealLt(args, &msg));
@@ -2099,7 +2100,8 @@ LRASolver::getInterpolant( const ipartitions_t & p )
 //      cerr << "Interpolant: " << in_list.back() << endl;
     }
 
-  }
+  //}
+  //PTRef itp = logic.mkNot(logic.mkAnd( in_list ));
   PTRef itp = logic.mkAnd( in_list );
   return itp;
 }

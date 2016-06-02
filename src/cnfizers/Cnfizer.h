@@ -177,7 +177,6 @@ protected:
     bool  isAtom           (PTRef r) const;
     void  declareAtom      (PTRef, SymRef);              // Declare an atom for the smt/sat solver
     bool  termSeen         (PTRef)                const; // True if the term has been seen and thus processed in the sense that there is already literal corresponding to it.  Sees through negations.
-
 };
 
 #endif
