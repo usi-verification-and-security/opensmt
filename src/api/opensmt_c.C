@@ -24,174 +24,131 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 #include "opensmt_c.h"
-#include "OpenSMTContext.h"
-#include "Egraph.h"
-#include "Tseitin.h"
+#include "MainSolver.h"
 #include "SimpSMTSolver.h"
+//#include "OpenSMTContext.h"
+//#include "Egraph.h"
+//#include "Tseitin.h"
 
 #ifndef SMTCOMP
 
-#define CAST( FROM, TO ) \
-  assert( FROM ); \
-  OpenSMTContext * FROM_ = static_cast< OpenSMTContext * >( FROM ); \
-  OpenSMTContext & TO = *FROM_;
+#define CAST( CONTEXT, SOLVER ) \
+  assert( CONTEXT.c ); \
+  MainSolver * SOLVER_ = static_cast< MainSolver * >( CONTEXT.c ); \
+  SOLVER = SOLVER_;
+
+#define CAST_E( EXPR, PTREF ) \
+  PTRef PTREF_ = { EXPR.x }; \
+  PTREF = PTREF_;
+//#define CAST( FROM, TO ) \
+//  assert( FROM ); \
+//  OpenSMTContext * FROM_ = static_cast< OpenSMTContext * >( FROM ); \
+//  OpenSMTContext & TO = *FROM_;
 
 //
 // Communication APIs
 //
-void opensmt_set_verbosity( opensmt_context, int )
+void osmt_set_verbosity( osmt_context c, int i)
 {
-  // assert( c );
-  // OpenSMTContext * c_ = static_cast< OpenSMTContext * >( c );
-  // OpenSMTContext & context = *c_;
+    assert(c.c);
+    MainSolver* solver;
+    CAST(c, solver);
+    const char* msg;
+    solver->getConfig().setOption("verbosity", i, msg);
 }
 
-char * opensmt_version( )
+char * osmt_version( )
 {
   return const_cast< char * >( PACKAGE_STRING );
 }
 
-opensmt_context opensmt_mk_context( opensmt_logic l )
+osmt_context osmt_mk_context( osmt_logic l )
 {
-  OpenSMTContext * c = new OpenSMTContext( );
-  OpenSMTContext & context = *c;
-  // IMPORTANT: 
-  // Any parameter in the config should be set
-  // here, BEFORE SetLogic is called. In SetLogic
-  // solvers are initialized with values taken
-  // from the config ...
-  SMTConfig & config = context.getConfig( );
-  // When API is active incremental solving must be on
-  config.incremental = 1;
-  //
-  // Set ad-hoc default parameters
-  //
-  if ( l == qf_ct )
-  {
-    // Settings copied/adapted from pbct 0.1.2
-    config.sat_polarity_mode = 1;   
-    config.sat_use_luby_restart = 1;
-    config.sat_preprocess_booleans = 0;
-    config.uf_disable = 1;
-  }
-  // Set the right logic
-  switch( l )
-  {
-    case qf_uf:    context.SetLogic( QF_UF );    break;
-    case qf_bv:    context.SetLogic( QF_BV );    break;
-    case qf_rdl:   context.SetLogic( QF_RDL );   break;
-    case qf_idl:   context.SetLogic( QF_IDL );   break;
-    case qf_lra:   context.SetLogic( QF_LRA );   break;
-    case qf_lia:   context.SetLogic( QF_LIA );   break;
-    case qf_ufidl: context.SetLogic( QF_UFIDL ); break;
-    case qf_uflra: context.SetLogic( QF_UFLRA ); break;
-    case qf_bool:  context.SetLogic( QF_BOOL );  break;
-    case qf_ct:    context.SetLogic( QF_CT );    break;
-    opensmt_error2( "unsupported logic: ", l );
-  }
-
-  // Return context
-  return static_cast< void * >( c );
+    SMTConfig *config = new SMTConfig();
+    if (l == qf_uf)
+    {
+        UFTheory *uftheory = new UFTheory(*config);
+        THandler *thandler = new THandler(*config, *uftheory);
+        SimpSMTSolver* solver = new SimpSMTSolver(*config, *thandler);
+        MainSolver* mainSolver = new MainSolver(*thandler, *config, solver);
+        // Return MainSolver
+        return { mainSolver };
+    }
+    else {
+        opensmt_error2( "unsupported logic: ", l );
+        return { NULL };
+    }
 }
 
-void opensmt_del_context( opensmt_context c )
+void osmt_del_context( osmt_context c )
 {
-  assert( c );
-  OpenSMTContext * c_ = static_cast< OpenSMTContext * >( c );
-  delete c_;
+    assert( c.c );
+    MainSolver* solver;
+    CAST(c, solver);
+    delete solver;
 }
 
-void opensmt_reset( opensmt_context c )
+void osmt_reset( osmt_context c )
 {
-  CAST( c, context );
-  context.Reset( );
+//    CAST( c, context );
+//    context.Reset( );
 }
 
-void opensmt_dump_assertions_to_file( opensmt_context c, const char * file )
+void osmt_dump_assertions_to_file( osmt_context c, const char * file )
 {
-  CAST( c, context );
-  context.DumpAssertionsToFile( file );
+//    CAST( c, context );
+//    context.DumpAssertionsToFile( file );
 }
 
-void opensmt_print_expr( opensmt_expr e )
+void osmt_print_expr( osmt_context c, osmt_expr e )
 {
-  Enode * enode = static_cast< Enode * >( e );
-  cerr << enode;
+    MainSolver* solver;
+    CAST(c, solver);
+    PTRef tr = { e.x };
+    cerr << solver->getLogic().printTerm(tr);
 }
 
-void opensmt_push( opensmt_context c )
+void osmt_push(osmt_context c, osmt_expr e)
 {
-  CAST( c, context );
-  context.Push( );
+    MainSolver* solver;
+    CAST(c, solver);
+    PTRef tr = { e.x };
+    solver->push(tr);
 }
 
-void opensmt_pop( opensmt_context c )
+void osmt_pop(osmt_context)
 {
-  CAST( c, context );
-  context.Pop( );
+//    CAST( c, context );
+//    context.Pop( );
 }
 
-void opensmt_assert( opensmt_context c, opensmt_expr e )
-{
-  assert( e );
-  CAST( c, context );
-  Enode * expr = static_cast< Enode * >( e );
-  context.Assert( expr );
-}
 
-opensmt_result opensmt_check( opensmt_context c )
+osmt_result osmt_check( osmt_context c )
 {
-  CAST( c, context );
-  lbool result = context.CheckSAT( );
-  if ( result == l_Undef ) return l_undef;
-  if ( result == l_False ) return l_false;
-  return l_true;
-}
-
-opensmt_result opensmt_check_assump( opensmt_context c, opensmt_expr l )
-{
-  CAST( c, context );
-  Enode * unit = static_cast< Enode * >( l );
-  assert( unit );
-  vec< Enode * > assumptions;
-  assumptions.push( unit );
-  lbool result = context.CheckSAT( assumptions );
-  if ( result == l_Undef ) return l_undef;
-  if ( result == l_False ) return l_false;
-  assert( result == l_True );
-  return l_true;
-}
-
-opensmt_result opensmt_check_lim_assump( opensmt_context c
-                                       , opensmt_expr l
-				       , unsigned limit )
-{
-  CAST( c, context );
-  Enode * unit = static_cast< Enode * >( l );
-  assert( unit );
-  vec< Enode * > assumptions;
-  assumptions.push( unit );
-  lbool result = context.CheckSAT( assumptions, limit );
-  if ( result == l_Undef ) return l_undef;
-  if ( result == l_False ) return l_false;
-  return l_true;
+    MainSolver* solver;
+    CAST(c, solver);
+    sstat result = solver->check();
+    if (result == s_True) return l_true;
+    if (result == s_False) return l_false;
+    return l_undef;
 }
 
 //
 // Model APIs
 //
-void opensmt_print_model( opensmt_context c, const char * filename )
+void osmt_get_model( osmt_context c, const char * filename )
 {
-  CAST( c, context );
-  ofstream os( filename );
-  context.PrintModel( os );
+    MainSolver* solver;
+    CAST(c, solver);
+    ofstream os(filename);
+//    solver->PrintModel(os);
 }
 
 #if 0
 //
 // Proof/Interpolation APIs
 //
-void opensmt_print_proof( opensmt_context
+void osmt_print_proof( osmt_context
 #ifdef PRODUCE_PROOF
     c
 #endif
@@ -212,7 +169,7 @@ void opensmt_print_proof( opensmt_context
 #endif
 }
 
-void opensmt_print_interpolant( opensmt_context
+void osmt_print_interpolant( osmt_context
 #ifdef PRODUCE_PROOF
     c
 #endif
@@ -237,235 +194,235 @@ void opensmt_print_interpolant( opensmt_context
 //
 // Formula construction APIs
 //
-opensmt_expr opensmt_mk_true( opensmt_context c )
+osmt_expr osmt_mk_true( osmt_context c )
 {
-  CAST( c, context );
-  Enode * res = context.mkTrue( );
-  return static_cast< void * >( res );
+    MainSolver* solver;
+    CAST(c, solver);
+    PTRef tr = solver->getLogic().getTerm_true();
+    return { tr.x } ;
 }
 
-opensmt_expr opensmt_mk_false( opensmt_context c )
+osmt_expr osmt_mk_false( osmt_context c )
 {
-  CAST( c, context );
-  Enode * res = context.mkFalse( );
-  return static_cast< void * >( res );
+    MainSolver* solver;
+    CAST(c, solver);
+    PTRef tr = solver->getLogic().getTerm_false( );
+    return { tr.x };
 }
 
-opensmt_expr opensmt_mk_bool_var( opensmt_context c, char * s )
+osmt_expr osmt_mk_bool_var(osmt_context c, const char * s)
 {
-  assert( s );
-  CAST( c, context );
-  Snode * sort = context.mkSortBool( );
-  context.DeclareFun( s, NULL, sort );
-  Enode * res = context.mkVar( s, true );
-  return static_cast< void * >( res );
+    assert( s );
+    MainSolver* solver;
+    CAST( c, solver);
+    PTRef tr = solver->getLogic().mkBoolVar(s);
+    return { tr.x };
 }
 
-opensmt_expr opensmt_mk_int_var( opensmt_context c, char * s )
+osmt_expr osmt_mk_int_var(osmt_context c, const char * s)
 {
-  assert( s );
-  CAST( c, context );
-  Snode * sort = context.mkSortInt( );
-  context.DeclareFun( s, NULL, sort );
-  Enode * res = context.mkVar( s, true );
-  return static_cast< void * >( res );
+//    assert( s );
+//    CAST( c, context );
+//    Snode * sort = context.mkSortInt( );
+//    context.DeclareFun( s, NULL, sort );
+//    Enode * res = context.mkVar( s, true );
+//    return static_cast< void * >( res );
 }
 
-opensmt_expr opensmt_mk_real_var( opensmt_context c, char * s )
+osmt_expr osmt_mk_real_var( osmt_context c, const char * s )
 {
-  assert( s );
-  CAST( c, context );
-  Snode * sort = context.mkSortReal( );
-  context.DeclareFun( s, NULL, sort );
-  Enode * res = context.mkVar( s, true );
-  return static_cast< void * >( res );
+    MainSolver* solver;
+    CAST(c, solver);
+    assert(solver->getLogic().getLogic() == QF_LRA);
+    assert(s);
+    PTRef tr = static_cast<LRALogic&>(solver->getLogic()).mkRealVar(s);
+    return { tr.x };
 }
 
-/*
-opensmt_expr opensmt_mk_bv_var( opensmt_context c, char * s, unsigned w )
-{
-  assert( c );
-  assert( s );
-  OpenSMTContext * c_ = static_cast< OpenSMTContext * >( c );
-  OpenSMTContext & context = *c_;
-  Enode * res = context.mkVar( s, true );
-  return static_cast< void * >( res );
-}
-*/
+//osmt_expr osmt_mk_bv_var( osmt_context c, const char * s, unsigned w )
+//{
+//  assert( c );
+//  assert( s );
+//  OpenSMTContext * c_ = static_cast< OpenSMTContext * >( c );
+//  OpenSMTContext & context = *c_;
+//  Enode * res = context.mkVar( s, true );
+//  return static_cast< void * >( res );
+//}
 
-opensmt_expr opensmt_mk_cost_var( opensmt_context c, char * s )
-{
-  assert( s );
-  CAST( c, context );
-  Snode * sort = context.mkSortCost( );
-  context.DeclareFun( s, NULL, sort );
-  Enode * res = context.mkVar( s, true );
-  return static_cast< void * >( res );
-}
+//osmt_expr osmt_mk_cost_var( osmt_context c, const char * s )
+//{
+//  assert( s );
+//  CAST( c, context );
+//  Snode * sort = context.mkSortCost( );
+//  context.DeclareFun( s, NULL, sort );
+//  Enode * res = context.mkVar( s, true );
+//  return static_cast< void * >( res );
+//}
 
-opensmt_expr opensmt_mk_or( opensmt_context c, opensmt_expr * expr_list, unsigned n )
+osmt_expr osmt_mk_or( osmt_context c, osmt_expr * expr_list, unsigned n )
 {
-  CAST( c, context );
-  assert( expr_list );
-  list< Enode * > args;
-  for ( unsigned i = 0 ; i < n ; i ++ )
-  {
-    Enode * arg = static_cast< Enode * >( expr_list[ i ] );
-    args.push_back( arg );
-  }
-  Enode * args_list = context.mkCons( args );
-  Enode * res = context.mkOr( args_list );
-  return static_cast< void * >( res );
+    MainSolver* solver;
+    CAST(c, solver);
+    assert(expr_list);
+    vec<PTRef> args;
+    for (unsigned i = 0 ; i < n ; i ++)
+    {
+        PTRef arg = { expr_list[i].x };
+        args.push(arg);
+    }
+    PTRef res = solver->getLogic().mkOr(args);
+    return { res.x };
 }
 
-opensmt_expr opensmt_mk_and( opensmt_context c, opensmt_expr * expr_list, unsigned n )
+osmt_expr osmt_mk_and( osmt_context c, osmt_expr * expr_list, unsigned n )
 {
-  CAST( c, context );
-  assert( expr_list );
-  list< Enode * > args;
-  for ( unsigned i = 0 ; i < n ; i ++ )
-  {
-    Enode * arg = static_cast< Enode * >( expr_list[ i ] );
-    args.push_back( arg );
-  }
-  Enode * args_list = context.mkCons( args );
-  Enode * res = context.mkAnd( args_list );
-  return static_cast< void * >( res );
+    MainSolver* solver;
+    CAST(c, solver);
+    assert(expr_list);
+    vec<PTRef> args;
+    for (unsigned i = 0 ; i < n ; i ++)
+    {
+        PTRef arg = { expr_list[i].x };
+        args.push(arg);
+    }
+    PTRef res = solver->getLogic().mkAnd(args);
+    return { res.x };
 }
 
-opensmt_expr opensmt_mk_eq ( opensmt_context c, opensmt_expr x, opensmt_expr y )
+osmt_expr osmt_mk_eq(osmt_context c, osmt_expr x, osmt_expr y)
 {
-  CAST( c, context );
-  Enode * args_list = context.mkCons( static_cast< Enode * >( x )
-                    , context.mkCons( static_cast< Enode * >( y ) ) );
-  Enode * res = context.mkEq( args_list );
-  return static_cast< void * >( res );
+    MainSolver* solver;
+    CAST(c, solver);
+    PTRef res = solver->getLogic().mkEq({x.x}, {y.x});
+    return { res.x };
  }
 
-opensmt_expr opensmt_mk_ite( opensmt_context c, opensmt_expr i, opensmt_expr t, opensmt_expr e )
+osmt_expr osmt_mk_ite( osmt_context c, osmt_expr i, osmt_expr t, osmt_expr e )
 {
-  CAST( c, context );
-  Enode * i_ = static_cast< Enode * >( i );
-  Enode * t_ = static_cast< Enode * >( t );
-  Enode * e_ = static_cast< Enode * >( e );
-  Enode * args = context.mkCons( i_
-               , context.mkCons( t_
-	       , context.mkCons( e_ ) ) );
-  Enode * res = context.mkIte( args );
-  return static_cast< void * >( res );
+    MainSolver* solver;
+    CAST(c, solver);
+    PTRef res = solver->getLogic().mkIte({i.x}, {t.x}, {e.x});
+    return { res.x };
 }
 
-opensmt_expr opensmt_mk_not( opensmt_context c, opensmt_expr x)
+osmt_expr osmt_mk_not( osmt_context c, osmt_expr x)
 {
-  CAST( c, context );
-  Enode * args_list = context.mkCons( static_cast< Enode * >( x ));
-  Enode * res = context.mkNot( args_list );
-  return static_cast< void * >( res );
+    MainSolver* solver;
+    CAST(c, solver);
+    PTRef res = solver->getLogic().mkNot({x.x});
+    return { res.x };
 }
 
-opensmt_expr opensmt_mk_num_from_string( opensmt_context c, const char * s )
+osmt_expr osmt_mk_num_from_string( osmt_context c, const char * s )
 {
-  CAST( c, context );
-  assert( s );
-  Enode * res = context.mkNum( s );
-  return res;
+    MainSolver* solver;
+    CAST(c, solver);
+    assert(solver->getLogic().getLogic() == QF_LRA);
+    assert(s);
+    PTRef res = static_cast<LRALogic&>(solver->getLogic()).mkConst(s);
+    return { res.x };
 }
 
-opensmt_expr opensmt_mk_num_from_mpz( opensmt_context c, const mpz_t n )
+osmt_expr osmt_mk_num_from_mpz( osmt_context c, const mpz_t n )
 {
-  assert( n );
-  CAST( c, context );
-  mpz_class n_( n );
-  Real num( n_ );
-  Enode * res = context.mkNum( num );
-  return res;
+    MainSolver* solver;
+    CAST(c, solver);
+    assert(solver->getLogic().getLogic() == QF_LRA);
+    assert(n);
+    mpz_class n_(n);
+    opensmt::Real num(n_);
+    PTRef res = static_cast<LRALogic&>(solver->getLogic()).mkConst(num);
+    return { res.x };
 }
 
-opensmt_expr opensmt_mk_num_from_mpq( opensmt_context c, const mpq_t n )
+//osmt_expr osmt_mk_num_from_mpq( osmt_context c, const mpq_t n )
+//{
+//    assert( n );
+//    MainSolver* solver;
+//    CAST(c, solver);
+//    mpq_class n_(n);
+//    opensmt::Real num( n_ );
+//    PTRef res = static_cast<LRALogic&>(solver->getLogic()).mkConst(num);
+//    return res;
+//}
+
+osmt_expr osmt_mk_plus( osmt_context c, osmt_expr * expr_list, unsigned n )
 {
-  assert( n );
-  CAST( c, context );
-  mpq_class n_( n );
-  Real num( n_ );
-  Enode * res = context.mkNum( num );
-  return res;
+    MainSolver* solver;
+    CAST(c, solver);
+    assert(solver->getLogic().getLogic() == QF_LRA);
+    vec<PTRef> args;
+    for ( unsigned i = 0 ; i < n ; i ++ )
+        args.push({expr_list[i].x});
+
+    PTRef res = static_cast<LRALogic&>(solver->getLogic()).mkRealPlus(args);
+    return { res.x };
 }
 
-opensmt_expr opensmt_mk_plus( opensmt_context c, opensmt_expr * expr_list, unsigned n )
+osmt_expr osmt_mk_minus( osmt_context c, osmt_expr x, osmt_expr y )
 {
-  CAST( c, context );
-  list< Enode * > args;
-  for ( unsigned i = 0 ; i < n ; i ++ )
-  {
-    Enode * arg = static_cast< Enode * >( expr_list[ i ] );
-    args.push_back( arg );
-  }
-  Enode * args_list = context.mkCons( args );
-  Enode * res = context.mkPlus( args_list );
-  return static_cast< void * >( res );
+    MainSolver* solver;
+    CAST(c, solver);
+    assert(solver->getLogic().getLogic() == QF_LRA);
+
+    PTRef res = static_cast<LRALogic&>(solver->getLogic()).mkRealMinus({x.x}, {y.x});
+    return { res.x };
 }
 
-opensmt_expr opensmt_mk_minus( opensmt_context c, opensmt_expr x, opensmt_expr y )
+osmt_expr osmt_mk_times( osmt_context c, osmt_expr * expr_list, unsigned n )
 {
-  CAST( c, context );
-  Enode * args_list = context.mkCons( static_cast< Enode * >( x )
-                    , context.mkCons( static_cast< Enode * >( y ) ) );
-  Enode * res = context.mkMinus( args_list );
-  return static_cast< void * >( res );
+    MainSolver* solver;
+    CAST(c, solver);
+    assert(solver->getLogic().getLogic() == QF_LRA);
+    vec<PTRef> args;
+    for ( unsigned i = 0 ; i < n ; i ++ )
+    {
+        PTRef arg = { expr_list[i].x };
+        args.push(arg);
+    }
+    PTRef res = static_cast<LRALogic&>(solver->getLogic()).mkRealTimes(args);
+    return { res.x };
 }
 
-opensmt_expr opensmt_mk_times( opensmt_context c, opensmt_expr * expr_list, unsigned n )
+osmt_expr osmt_mk_leq( osmt_context c, osmt_expr lhs, osmt_expr rhs )
 {
-  CAST( c, context );
-  list< Enode * > args;
-  for ( unsigned i = 0 ; i < n ; i ++ )
-  {
-    Enode * arg = static_cast< Enode * >( expr_list[ i ] );
-    args.push_back( arg );
-  }
-  Enode * args_list = context.mkCons( args );
-  Enode * res = context.mkTimes( args_list );
-  return static_cast< void * >( res );
+    MainSolver* solver;
+    CAST(c, solver);
+    assert(solver->getLogic().getLogic() == QF_LRA);
+    PTRef res = static_cast<LRALogic&>(solver->getLogic()).mkRealLeq({lhs.x}, {rhs.x});
+
+    return { res.x };
 }
 
-opensmt_expr opensmt_mk_leq( opensmt_context c, opensmt_expr lhs, opensmt_expr rhs )
+osmt_expr osmt_mk_lt( osmt_context c, osmt_expr lhs, osmt_expr rhs )
 {
-  CAST( c, context );
-  Enode * args_list = context.mkCons( static_cast< Enode * >( lhs )
-                    , context.mkCons( static_cast< Enode * >( rhs ) ) );
-  Enode * res = context.mkLeq( args_list );
-  return static_cast< void * >( res );
+    MainSolver* solver;
+    CAST(c, solver);
+    assert(solver->getLogic().getLogic() == QF_LRA);
+    PTRef res = static_cast<LRALogic&>(solver->getLogic()).mkRealLt({lhs.x}, {rhs.x});
+    return { res.x };
 }
 
-opensmt_expr opensmt_mk_lt( opensmt_context c, opensmt_expr lhs, opensmt_expr rhs )
+osmt_expr osmt_mk_gt( osmt_context c, osmt_expr lhs, osmt_expr rhs )
 {
-  CAST( c, context );
-  Enode * args_list = context.mkCons( static_cast< Enode * >( lhs )
-                    , context.mkCons( static_cast< Enode * >( rhs ) ) );
-  Enode * res = context.mkLt( args_list );
-  return static_cast< void * >( res );
+    MainSolver* solver;
+    CAST(c, solver);
+    assert(solver->getLogic().getLogic() == QF_LRA);
+    PTRef res = static_cast<LRALogic&>(solver->getLogic()).mkRealGt({lhs.x}, {rhs.x});
+    return { res.x };
 }
 
-opensmt_expr opensmt_mk_gt( opensmt_context c, opensmt_expr lhs, opensmt_expr rhs )
+osmt_expr osmt_mk_geq( osmt_context c, osmt_expr lhs, osmt_expr rhs )
 {
-  CAST( c, context );
-  Enode * args_list = context.mkCons( static_cast< Enode * >( lhs )
-                    , context.mkCons( static_cast< Enode * >( rhs ) ) );
-  Enode * res = context.mkGt( args_list );
-  return static_cast< void * >( res );
-}
-
-opensmt_expr opensmt_mk_geq( opensmt_context c, opensmt_expr lhs, opensmt_expr rhs )
-{
-  CAST( c, context );
-  Enode * args_list = context.mkCons( static_cast< Enode * >( lhs )
-                    , context.mkCons( static_cast< Enode * >( rhs ) ) );
-  Enode * res = context.mkGeq( args_list );
-  return static_cast< void * >( res );
+    MainSolver* solver;
+    CAST(c, solver);
+    assert(solver->getLogic().getLogic() == QF_LRA);
+    PTRef res = static_cast<LRALogic&>(solver->getLogic()).mkRealGeq({lhs.x}, {rhs.x});
+    return { res.x };
 }
 
 /*
-opensmt_expr opensmt_mk_bv_constant( opensmt_context c, unsigned w, unsigned long n )
+osmt_expr osmt_mk_bv_constant( osmt_context c, unsigned w, unsigned long n )
 {
   OpenSMTContext * c_ = static_cast< OpenSMTContext * >( c );
   OpenSMTContext & context = *c_;
@@ -475,7 +432,7 @@ opensmt_expr opensmt_mk_bv_constant( opensmt_context c, unsigned w, unsigned lon
   return res;
 }
 
-opensmt_expr opensmt_mk_bv_constant_from_string( opensmt_context c, unsigned w, const char * s )
+osmt_expr osmt_mk_bv_constant_from_string( osmt_context c, unsigned w, const char * s )
 {
   OpenSMTContext * c_ = static_cast< OpenSMTContext * >( c );
   OpenSMTContext & context = *c_;
@@ -485,7 +442,7 @@ opensmt_expr opensmt_mk_bv_constant_from_string( opensmt_context c, unsigned w, 
   return res;
 }
 
-opensmt_expr opensmt_mk_bv_add( opensmt_context c, opensmt_expr x, opensmt_expr y )
+osmt_expr osmt_mk_bv_add( osmt_context c, osmt_expr x, osmt_expr y )
 {
   OpenSMTContext * c_ = static_cast< OpenSMTContext * >( c );
   OpenSMTContext & context = *c_;
@@ -495,7 +452,7 @@ opensmt_expr opensmt_mk_bv_add( opensmt_context c, opensmt_expr x, opensmt_expr 
   return static_cast< void * >( res );
 }
 
-opensmt_expr opensmt_mk_bv_sub( opensmt_context c, opensmt_expr x, opensmt_expr y )
+osmt_expr osmt_mk_bv_sub( osmt_context c, osmt_expr x, osmt_expr y )
 {
   OpenSMTContext * c_ = static_cast< OpenSMTContext * >( c );
   OpenSMTContext & context = *c_;
@@ -505,7 +462,7 @@ opensmt_expr opensmt_mk_bv_sub( opensmt_context c, opensmt_expr x, opensmt_expr 
   return static_cast< void * >( res );
 }
 
-opensmt_expr opensmt_mk_bv_mul( opensmt_context c, opensmt_expr x, opensmt_expr y )
+osmt_expr osmt_mk_bv_mul( osmt_context c, osmt_expr x, osmt_expr y )
 {
   OpenSMTContext * c_ = static_cast< OpenSMTContext * >( c );
   OpenSMTContext & context = *c_;
@@ -515,7 +472,7 @@ opensmt_expr opensmt_mk_bv_mul( opensmt_context c, opensmt_expr x, opensmt_expr 
   return static_cast< void * >( res );
 }
 
-opensmt_expr opensmt_mk_bv_neg( opensmt_context c, opensmt_expr x )
+osmt_expr osmt_mk_bv_neg( osmt_context c, osmt_expr x )
 {
   OpenSMTContext * c_ = static_cast< OpenSMTContext * >( c );
   OpenSMTContext & context = *c_;
@@ -524,7 +481,7 @@ opensmt_expr opensmt_mk_bv_neg( opensmt_context c, opensmt_expr x )
   return static_cast< void * >( res );
 }
 
-opensmt_expr opensmt_mk_bv_concat( opensmt_context c, opensmt_expr x, opensmt_expr y )
+osmt_expr osmt_mk_bv_concat( osmt_context c, osmt_expr x, osmt_expr y )
 {
   OpenSMTContext * c_ = static_cast< OpenSMTContext * >( c );
   OpenSMTContext & context = *c_;
@@ -534,7 +491,7 @@ opensmt_expr opensmt_mk_bv_concat( opensmt_context c, opensmt_expr x, opensmt_ex
   return static_cast< void * >( res );
 }
 
-opensmt_expr opensmt_mk_bv_and( opensmt_context c, opensmt_expr x, opensmt_expr y )
+osmt_expr osmt_mk_bv_and( osmt_context c, osmt_expr x, osmt_expr y )
 {
   OpenSMTContext * c_ = static_cast< OpenSMTContext * >( c );
   OpenSMTContext & context = *c_;
@@ -544,7 +501,7 @@ opensmt_expr opensmt_mk_bv_and( opensmt_context c, opensmt_expr x, opensmt_expr 
   return static_cast< void * >( res );
 }
 
-opensmt_expr opensmt_mk_bv_or( opensmt_context c, opensmt_expr x, opensmt_expr y )
+osmt_expr osmt_mk_bv_or( osmt_context c, osmt_expr x, osmt_expr y )
 {
   OpenSMTContext * c_ = static_cast< OpenSMTContext * >( c );
   OpenSMTContext & context = *c_;
@@ -554,7 +511,7 @@ opensmt_expr opensmt_mk_bv_or( opensmt_context c, opensmt_expr x, opensmt_expr y
   return static_cast< void * >( res );
 }
 
-opensmt_expr opensmt_mk_bv_xor( opensmt_context c, opensmt_expr x, opensmt_expr y )
+osmt_expr osmt_mk_bv_xor( osmt_context c, osmt_expr x, osmt_expr y )
 {
   OpenSMTContext * c_ = static_cast< OpenSMTContext * >( c );
   OpenSMTContext & context = *c_;
@@ -564,7 +521,7 @@ opensmt_expr opensmt_mk_bv_xor( opensmt_context c, opensmt_expr x, opensmt_expr 
   return static_cast< void * >( res );
 }
 
-opensmt_expr opensmt_mk_bv_not( opensmt_context c, opensmt_expr x )
+osmt_expr osmt_mk_bv_not( osmt_context c, osmt_expr x )
 {
   OpenSMTContext * c_ = static_cast< OpenSMTContext * >( c );
   OpenSMTContext & context = *c_;
@@ -573,7 +530,7 @@ opensmt_expr opensmt_mk_bv_not( opensmt_context c, opensmt_expr x )
   return static_cast< void * >( res );
 }
 
-opensmt_expr opensmt_mk_bv_extract( opensmt_context c, unsigned msb, unsigned lsb, opensmt_expr x )
+osmt_expr osmt_mk_bv_extract( osmt_context c, unsigned msb, unsigned lsb, osmt_expr x )
 {
   assert( c );
   assert( x );
@@ -585,7 +542,7 @@ opensmt_expr opensmt_mk_bv_extract( opensmt_context c, unsigned msb, unsigned ls
   return static_cast< void * >( res );
 }
 
-opensmt_expr opensmt_mk_bv_sign_extend( opensmt_context c, opensmt_expr x, unsigned n )
+osmt_expr osmt_mk_bv_sign_extend( osmt_context c, osmt_expr x, unsigned n )
 {
   assert( c );
   assert( x );
@@ -596,7 +553,7 @@ opensmt_expr opensmt_mk_bv_sign_extend( opensmt_context c, opensmt_expr x, unsig
   return static_cast< void * >( res );
 }
 
-opensmt_expr opensmt_mk_bv_zero_extend( opensmt_context c, opensmt_expr x, unsigned n )
+osmt_expr osmt_mk_bv_zero_extend( osmt_context c, osmt_expr x, unsigned n )
 {
   assert( c );
   assert( x );
@@ -607,7 +564,7 @@ opensmt_expr opensmt_mk_bv_zero_extend( opensmt_context c, opensmt_expr x, unsig
   return static_cast< void * >( res );
 }
 
-opensmt_expr opensmt_mk_bv_shift_left( opensmt_context c, opensmt_expr x, opensmt_expr y )
+osmt_expr osmt_mk_bv_shift_left( osmt_context c, osmt_expr x, osmt_expr y )
 {
   assert( c );
   assert( x );
@@ -620,7 +577,7 @@ opensmt_expr opensmt_mk_bv_shift_left( opensmt_context c, opensmt_expr x, opensm
   return static_cast< void * >( res );
 }
 
-opensmt_expr opensmt_mk_bv_shift_right( opensmt_context c, opensmt_expr x, opensmt_expr y )
+osmt_expr osmt_mk_bv_shift_right( osmt_context c, osmt_expr x, osmt_expr y )
 {
   assert( c );
   assert( x );
@@ -633,7 +590,7 @@ opensmt_expr opensmt_mk_bv_shift_right( opensmt_context c, opensmt_expr x, opens
   return static_cast< void * >( res );
 }
 
-opensmt_expr opensmt_mk_bv_lt( opensmt_context c, opensmt_expr lhs, opensmt_expr rhs )
+osmt_expr osmt_mk_bv_lt( osmt_context c, osmt_expr lhs, osmt_expr rhs )
 {
   assert( c );
   assert( lhs );
@@ -646,7 +603,7 @@ opensmt_expr opensmt_mk_bv_lt( opensmt_context c, opensmt_expr lhs, opensmt_expr
   return static_cast< void * >( res );
 }
 
-opensmt_expr opensmt_mk_bv_le( opensmt_context c, opensmt_expr lhs, opensmt_expr rhs )
+osmt_expr osmt_mk_bv_le( osmt_context c, osmt_expr lhs, osmt_expr rhs )
 {
   assert( c );
   assert( lhs );
@@ -659,7 +616,7 @@ opensmt_expr opensmt_mk_bv_le( opensmt_context c, opensmt_expr lhs, opensmt_expr
   return static_cast< void * >( res );
 }
 
-opensmt_expr opensmt_mk_bv_gt( opensmt_context c, opensmt_expr lhs, opensmt_expr rhs )
+osmt_expr osmt_mk_bv_gt( osmt_context c, osmt_expr lhs, osmt_expr rhs )
 {
   assert( c );
   assert( lhs );
@@ -672,7 +629,7 @@ opensmt_expr opensmt_mk_bv_gt( opensmt_context c, opensmt_expr lhs, opensmt_expr
   return static_cast< void * >( res );
 }
 
-opensmt_expr opensmt_mk_bv_ge( opensmt_context c, opensmt_expr lhs, opensmt_expr rhs )
+osmt_expr osmt_mk_bv_ge( osmt_context c, osmt_expr lhs, osmt_expr rhs )
 {
   assert( c );
   assert( lhs );
@@ -685,7 +642,7 @@ opensmt_expr opensmt_mk_bv_ge( opensmt_context c, opensmt_expr lhs, opensmt_expr
   return static_cast< void * >( res );
 }
 
-opensmt_expr opensmt_mk_bv_slt( opensmt_context c, opensmt_expr lhs, opensmt_expr rhs )
+osmt_expr osmt_mk_bv_slt( osmt_context c, osmt_expr lhs, osmt_expr rhs )
 {
   assert( c );
   assert( lhs );
@@ -698,7 +655,7 @@ opensmt_expr opensmt_mk_bv_slt( opensmt_context c, opensmt_expr lhs, opensmt_exp
   return static_cast< void * >( res );
 }
 
-opensmt_expr opensmt_mk_bv_sle( opensmt_context c, opensmt_expr lhs, opensmt_expr rhs )
+osmt_expr osmt_mk_bv_sle( osmt_context c, osmt_expr lhs, osmt_expr rhs )
 {
   assert( c );
   assert( lhs );
@@ -711,7 +668,7 @@ opensmt_expr opensmt_mk_bv_sle( opensmt_context c, opensmt_expr lhs, opensmt_exp
   return static_cast< void * >( res );
 }
 
-opensmt_expr opensmt_mk_bv_sgt( opensmt_context c, opensmt_expr lhs, opensmt_expr rhs )
+osmt_expr osmt_mk_bv_sgt( osmt_context c, osmt_expr lhs, osmt_expr rhs )
 {
   assert( c );
   assert( lhs );
@@ -724,7 +681,7 @@ opensmt_expr opensmt_mk_bv_sgt( opensmt_context c, opensmt_expr lhs, opensmt_exp
   return static_cast< void * >( res );
 }
 
-opensmt_expr opensmt_mk_bv_sge( opensmt_context c, opensmt_expr lhs, opensmt_expr rhs )
+osmt_expr osmt_mk_bv_sge( osmt_context c, osmt_expr lhs, osmt_expr rhs )
 {
   assert( c );
   assert( lhs );
@@ -738,94 +695,102 @@ opensmt_expr opensmt_mk_bv_sge( opensmt_context c, opensmt_expr lhs, opensmt_exp
 }
 */
 
-opensmt_expr opensmt_mk_ct_incur( opensmt_context c
-                                , opensmt_expr    var
-				, opensmt_expr    cost
-				, opensmt_expr    id )
+//osmt_expr osmt_mk_ct_incur( osmt_context c
+//                                , osmt_expr    var
+//				, osmt_expr    cost
+//				, osmt_expr    id )
+//{
+//  CAST( c, context );
+//
+//  assert( var );
+//  assert( cost );
+//  assert( id );
+//
+//  Enode * evar  = static_cast< Enode * >( var );
+//  Enode * ecost = static_cast< Enode * >( cost );
+//  Enode * eid   = static_cast< Enode * >( id );
+//  Enode * args = context.mkCons( evar
+//	       , context.mkCons( ecost
+//	       , context.mkCons( eid ) ) );
+//  Enode * result = context.mkCostIncur( args );
+//  return static_cast< void * >( result );
+//}
+//
+//osmt_expr osmt_mk_ct_bound( osmt_context c
+//                                , osmt_expr    var
+//				, osmt_expr    cost )
+//{
+//  CAST( c, context );
+//
+//  assert( var );
+//  assert( cost );
+//
+//  Enode * evar  = static_cast< Enode * >( var );
+//  Enode * ecost = static_cast< Enode * >( cost );
+//  Enode * args = context.mkCons( evar,
+//                 context.mkCons( ecost ) );
+//  Enode * result = context.mkCostBound( args );
+//  return static_cast< void * >( result );
+//}
+
+unsigned osmt_conflicts( osmt_context c )
 {
-  CAST( c, context );
-
-  assert( var );
-  assert( cost );
-  assert( id );
-
-  Enode * evar  = static_cast< Enode * >( var );
-  Enode * ecost = static_cast< Enode * >( cost );
-  Enode * eid   = static_cast< Enode * >( id );
-  Enode * args = context.mkCons( evar
-	       , context.mkCons( ecost
-	       , context.mkCons( eid ) ) );
-  Enode * result = context.mkCostIncur( args );
-  return static_cast< void * >( result );
+    MainSolver* solver;
+    CAST(c, solver);
+    return solver->getSMTSolver().conflicts;
 }
 
-opensmt_expr opensmt_mk_ct_bound( opensmt_context c
-                                , opensmt_expr    var
-				, opensmt_expr    cost )
+unsigned osmt_decisions( osmt_context c )
 {
-  CAST( c, context );
-
-  assert( var );
-  assert( cost );
-
-  Enode * evar  = static_cast< Enode * >( var );
-  Enode * ecost = static_cast< Enode * >( cost );
-  Enode * args = context.mkCons( evar,
-                 context.mkCons( ecost ) );
-  Enode * result = context.mkCostBound( args );
-  return static_cast< void * >( result );
+    MainSolver* solver;
+    CAST(c, solver);
+    return solver->getSMTSolver().decisions;
 }
 
-unsigned opensmt_conflicts( opensmt_context c )
+osmt_expr osmt_get_value( osmt_context c, osmt_expr v )
 {
-  CAST( c, context );
-  return context.getLearnts( );
+    MainSolver* solver;
+    CAST(c, solver);
+    assert(solver->getLogic().getLogic() == QF_LRA);
+    assert(solver->getStatus() == s_True );
+    PTRef tr = { v.x };
+
+    ValPair vp = solver->getValue(tr);
+    osmt_expr vpe = osmt_mk_real_var(c, vp.val);
+    return vpe;
 }
 
-unsigned opensmt_decisions( opensmt_context c )
+//void osmt_get_num(osmt_context c, osmt_expr n, mpz_t val )
+//{
+//    MainSolver* solver;
+//    CAST(c, solver);
+//    assert(solver->getLogic().getLogic() == QF_LRA);
+//    assert( n );
+//    LRALogic& lralogic = static_cast<LRALogic&>(solver->getLogic());
+//    PTRef tr = { n.x };
+//    assert(lralogic.isConstant(tr));
+//    Real r = lralogic.getRealConst(tr);
+//    mpz_set( val, r.get_num().get_mpz_t() );
+//}
+
+osmt_result osmt_get_bool( osmt_context c, osmt_expr p )
 {
-  CAST( c, context );
-  return context.getDecisions( );
+    MainSolver* solver;
+    CAST(c, solver);
+    PTRef atom = { p.x };
+    lbool value = solver->getTermValue(atom);
+    if ( value == l_True )
+    {
+        return l_true;
+    }
+    else if ( value == l_False )
+    {
+        return l_false;
+    }
+    return l_undef;
 }
 
-opensmt_expr opensmt_get_value( opensmt_context c, opensmt_expr v )
-{
-  assert( v );
-  CAST( c, context );
-  assert( context.getStatus( ) == l_True );
-  Enode * var = static_cast< Enode * >( v );
-  const Real & value = var->getValue();
-  Enode * res = context.mkNum( value );
-  return static_cast< void * >( res );
-}
-
-void opensmt_get_num( opensmt_expr n, mpz_t val )
-{
-  assert( n );
-  Enode * num = static_cast< Enode * >( n );
-  assert( num->isConstant() );
-  Real r = num->getValue();
-  mpz_set( val, r.get_num().get_mpz_t() );
-}
-
-opensmt_result opensmt_get_bool( opensmt_context c, opensmt_expr p )
-{
-  assert( p );
-  CAST( c, context );
-  Enode * atom = static_cast< Enode * >( p );
-  lbool value = context.getModel( atom );
-  if ( value == l_True )
-  {
-    return l_true;
-  }
-  else if ( value == l_False )
-  {
-    return l_false;
-  }
-  return l_undef;
-}
-
-void opensmt_polarity( opensmt_context, opensmt_expr, int )
+void osmt_polarity( osmt_context, osmt_expr, int )
 {
   // assert( c );
   // assert( a );

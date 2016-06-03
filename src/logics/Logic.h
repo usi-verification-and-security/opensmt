@@ -199,6 +199,7 @@ class Logic {
     PTRef       mkImpl        (PTRef _a, PTRef _b);
     PTRef       mkNot         (PTRef);
     PTRef       mkIte         (vec<PTRef>&);
+    PTRef       mkIte         (PTRef c, PTRef t, PTRef e) { vec<PTRef> tmp; tmp.push(c); tmp.push(t); tmp.push(e); return mkIte(tmp); }
 
 
     // Generic equalities

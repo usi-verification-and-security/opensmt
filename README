@@ -41,18 +41,46 @@ options.  For example if gmp is not installed in a standard location, use
 | Using OpenSMT2 as a library through the API                                  |
 +------------------------------------------------------------------------------+
 
-There is a simple example on how to use the OpenSMT API in directory
+To install OpenSMT2 library you need to configure with
+
+$ ./configure --enable-library
+
+This will compile two libraries: a complete version called libopensmt2,
+and a simplified C library called libopensmt2c.
+
+There are two simple examples on how to use the OpenSMT API in directory
 
   examples/test.cc
+  examples/test_c.cc
 
-If you have installed the OpenSMT2 library you can compile this file by running
+one for using libopensmt2 and the other for using libopensmt2c
+
+If you have installed the OpenSMT2 library you can compile the first file by running
 
  $ g++ -std=c++11 -o test test.cc -lopensmt2 -lgmp -lgmpxx -lz -lreadline
 
-If your libraries and headers are installed in non-standard locations you might
-to specify these with -L and -I, respectively.
+and the second by running
 
-If you have questions please mail them to me at antti.hyvarinen@gmail.com, or to
-the discussion forum!
+ $ gcc -o test_c test_c.c -lopensmt2c -lgmp -lgmpxx -lz -lreadline
+
+If your libraries and headers are installed in non-standard locations you might
+need to specify these with -L and -I, respectively, and set the
+LD_LIBRARY_PATH variable accordingly.
+
++------------------------------------------------------------------------------+
+| Using OpenSMT2 interpolation                                                 |
++------------------------------------------------------------------------------+
+
+OpenSMT supports a range of interpolation options.  To enable
+interpolation code the compilation needs to be configured with
+
+$ ./configure --enable-proof
+
+Interpolation works also through the library, but in this case care must
+be taken that the binary to be linked against the library is configured
+with the same pre-processor directives as the library itself.
+
+If you have questions please mail them to me at
+antti.hyvarinen@gmail.com, or to the discussion forum!
 
 
