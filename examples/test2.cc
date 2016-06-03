@@ -41,6 +41,8 @@ main(int argc, char** argv)
 
         printf("var %s has value %s\n", var_a_s, v1_p.val);
         printf("var %s has value %s\n", var_b_s, v2_p.val);
+        free(var_a_s);
+        free(var_b_s);
     }
     else if (r == s_False)
         printf("unsat\n");
