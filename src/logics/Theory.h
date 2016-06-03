@@ -1,8 +1,8 @@
 /*********************************************************************
 Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
 
-OpenSMT2 -- Copyright (C) 2012 - 2014 Antti Hyvarinen
-                         2008 - 2012 Roberto Bruttomesso
+OpenSMT2 -- Copyright (C) 2012 - 2016 Antti Hyvarinen
+                          2008 - 2012 Roberto Bruttomesso
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the
@@ -45,7 +45,7 @@ class Theory
     virtual bool            simplify(PTRef, PTRef&) = 0;
     vec<DedElem>           &getDeductionVec()   { return deductions; }
     bool                    computeSubstitutions(PTRef, PTRef&);
-    Theory(SMTConfig &c) : config(c) {}
+    Theory(SMTConfig &c) : config(c)            {}
     virtual ~Theory()                           {};
 };
 
@@ -77,7 +77,7 @@ class UFTheory : public Theory
         : Theory(c)
         , logic(c)
         , tshandler(c, logic, deductions)
-    { }
+    {}
     ~UFTheory() {}
     Logic&       getLogic()             { return logic; }
     UFTHandler&  getTSolverHandler()    { return tshandler; }

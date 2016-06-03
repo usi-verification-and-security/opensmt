@@ -264,8 +264,6 @@ public:
   bool                deduceMore              ( vector< ERef > & );
 #endif
 
-  bool                isInitialized             ( );
-
 private:
 
   //===========================================================================
@@ -472,7 +470,6 @@ private:
     return "";
   }
 
-  bool                        theoryInitialized;                // True if theory solvers are initialized
   bool                        state;                            // the hell is this ?
   set< enodeid_t >            initialized;                      // Keep track of initialized nodes
   map< enodeid_t, lbool >     informed;                         // Keep track of informed nodes
@@ -609,11 +606,6 @@ private:
 
   friend class GCTest;
 };
-
-inline bool Egraph::isInitialized( )
-{
-  return theoryInitialized;
-}
 
 inline void Egraph::initDupMap1( )
 {
