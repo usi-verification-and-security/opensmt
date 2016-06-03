@@ -181,9 +181,8 @@ lbool Cnfizer::cnfizeAndGiveToSolver (PTRef formula)
         cerr << "Adding clause " << logic.printTerm (f) << endl;
 #endif
 
-        ipartitions_t mask = 0;
 #ifdef PRODUCE_PROOF
-
+        ipartitions_t mask = 0;
         if (logic.isInterpolating())
         {
             // Create mask to spread among all literals created for this PTRef
@@ -211,7 +210,6 @@ lbool Cnfizer::cnfizeAndGiveToSolver (PTRef formula)
             cerr << "Spreading mask " << mask << endl;
 #endif // PEDANTIC_DEBUG
         }
-
 #endif // PRODUCE_PROOF
 
         // Give it to the solver if already in CNF

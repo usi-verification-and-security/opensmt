@@ -264,7 +264,11 @@ bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause)
             }
         */
     }
+#ifdef PRODUCE_PROOF
     if (!CoreSMTSolver::addClause_(smt_clause, mask))
+#else
+    if (!CoreSMTSolver::addClause_(smt_clause))
+#endif
         return false;
 
     if (use_simplification && clauses.size() == nclauses + 1)
