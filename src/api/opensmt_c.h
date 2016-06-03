@@ -73,7 +73,7 @@ void             osmt_prefer                    ( osmt_expr a );
 void             osmt_polarity                  ( osmt_context c, osmt_expr a, int pos );
 
 
-void             osmt_get_model               ( osmt_context, const char * );
+void             osmt_get_model                 ( osmt_context, const char * );
 void             osmt_print_proof               ( osmt_context, const char * );
 void             osmt_print_interpolant         ( osmt_context, const char * );
 

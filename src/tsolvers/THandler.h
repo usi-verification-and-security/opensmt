@@ -52,7 +52,6 @@ public:
     , config             (c)
     , tmap               (theory.getLogic())
     , checked_trail_size (0)
-    , theoryInitialized  (false)
     { }
 
     virtual ~THandler ( ) { }
@@ -60,9 +59,9 @@ public:
     Theory& getTheory() { return theory; }
     Logic&  getLogic()  { return theory.getLogic(); }
 
-    TSolverHandler&       getSolverHandler() { return theory.getTSolverHandler(); }
+    TSolverHandler&       getSolverHandler()       { return theory.getTSolverHandler(); }
     const TSolverHandler& getSolverHandler() const { return theory.getTSolverHandler(); }
-    TermMapper&           getTMap() { return tmap; }
+    TermMapper&           getTMap()                { return tmap; }
 
 #ifdef PEDANTIC_DEBUG
     void    getConflict          ( vec<Lit>&, vec<VarData>&, int &, vec<Lit>& ); // Returns theory conflict in terms of literals
@@ -82,14 +81,14 @@ public:
 
     ValPair getValue          (PTRef tr) const { return getSolverHandler().getValue(tr); };
 
-    bool   isTheoryTerm       ( Var v ) { return getLogic().isTheoryTerm(varToTerm(v)); }
-    PTRef  varToTerm          ( Var v ) { return tmap.varToPTRef(v); }  // Return the term ref corresponding to a variable
-    Pterm& varToPterm         ( Var v)  { return getLogic().getPterm(tmap.varToPTRef(v)); } // Return the term corresponding to a variable
+    bool    isTheoryTerm       ( Var v ) { return getLogic().isTheoryTerm(varToTerm(v)); }
+    PTRef   varToTerm          ( Var v ) { return tmap.varToPTRef(v); }  // Return the term ref corresponding to a variable
+    Pterm&  varToPterm         ( Var v)  { return getLogic().getPterm(tmap.varToPTRef(v)); } // Return the term corresponding to a variable
 
-    void getVarName           ( Var v, char** name ) { *name = getLogic().printTerm(tmap.varToPTRef(v)); }
+    void    getVarName         ( Var v, char** name ) { *name = getLogic().printTerm(tmap.varToPTRef(v)); }
 
-    void pushDeduction        () { getSolverHandler().deductions.push({SolverId_Undef, l_Undef}); }  // Add the deduction entry for a variable
-    Var ptrefToVar            ( PTRef r ) { return tmap.getVar(r); }
+    void    pushDeduction      () { getSolverHandler().deductions.push({SolverId_Undef, l_Undef}); }  // Add the deduction entry for a variable
+    Var     ptrefToVar         ( PTRef r ) { return tmap.getVar(r); }
 
     void    computeModel      () { getSolverHandler().computeModel(); } // Computes a model in the solver if necessary
     bool    assertLits        (vec<Lit>&);             // Give to the TSolvers the newly added literals on the trail
@@ -142,8 +141,6 @@ protected:
     size_t              checked_trail_size;       // Store last size of the trail checked by the solvers
 
     inline lbool value (Lit p, vec<lbool>& assigns) const { return assigns[var(p)] ^ sign(p); }
-    bool theoryInitialized; // True if theory solvers are initialized
-
 
 // Debug
 public:
