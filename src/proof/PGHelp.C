@@ -125,6 +125,11 @@ void ProofGraph::topolSortingTopDown(vector<clauseid_t>& DFS)
 	ProofNode* n;
 	DFS.clear();
 	DFS.reserve(getGraphSize());
+    if(getGraphSize() == 1)
+    {
+        DFS.push_back(graph[0]->getId());
+        return;
+    }
 	clauseid_t id;
 	// Enqueue leaves first
 	q.assign(leaves_ids.begin(),leaves_ids.end());

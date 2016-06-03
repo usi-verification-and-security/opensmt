@@ -177,7 +177,12 @@ struct ProofNode
 	//
 	inline void 				resetClause() { delete clause; clause = NULL; }
 
-    void setClauseRef(CRef cref) { clause_ref = cref; }
+    void setClauseRef(CRef cref, bool itp = true)
+    {
+        clause_ref = cref;
+        if(itp)
+            setInterpPartitionMask();
+    }
     CRef getClauseRef() { return clause_ref; }
 
 	void						initClause(Clause& cla)
@@ -185,8 +190,6 @@ struct ProofNode
         assert(clause == NULL);
         clause = new vector<Lit>(cla.size());
         for(size_t k = 0; k < cla.size(); ++k) (*clause)[k] = cla[k];
-        if(i_data == NULL) initIData();
-        setInterpPartitionMask(cla);
     }
 
     void						initClause(vector<Lit>& cla)
@@ -234,7 +237,7 @@ struct ProofNode
 	inline void                  setType                ( clause_type new_type )         { type = new_type; }
 	inline void                  setPartialInterpolant  ( PTRef new_part_interp )      { assert(i_data); i_data->partial_interp = new_part_interp; }
     void setInterpPartitionMask( const ipartitions_t& mask);
-	void                  setInterpPartitionMask (Clause& cl);
+	void                  setInterpPartitionMask ();
     	void                         addRes                 ( clauseid_t id )                { resolvents.insert( id ); }
 	void                         remRes                 ( clauseid_t id )                { resolvents.erase( id ); }
 	void						 initIData() { i_data = new InterpolData(); }
@@ -320,8 +323,12 @@ public:
 		delete graph_;
 	}
 
+    bool verifyPartialInterpolant(ProofNode*, const ipartitions_t&);
+    bool verifyPartialInterpolantA(ProofNode*, const ipartitions_t&);
+    bool verifyPartialInterpolantB(ProofNode*, const ipartitions_t&);
+
+
 	bool           producePathInterpolants   	 	  ( vector< PTRef > & );
-    void verifyInterpolant(PTRef, const ipartitions_t&);
 	bool 		   verifyPathInterpolantsFromLeaves   ( vector< PTRef > & );
 	bool           produceSimultaneousAbstraction  	  ( vector< PTRef > & );
 	bool 		   verifySimultaneousAbstraction   	  ( vector< PTRef > & );
@@ -350,7 +357,7 @@ public:
 	inline int     numGraphTraversals            ( ) const { return config.proof_num_graph_traversals(); }
 	inline int	    proofCheck ( ) const { return config.proof_check(); }
 	bool 		   enabledInterpVerif			 () { return ( config.certify_inter() >= 1 ); }
-	bool 		   enabledPedInterpVerif	     () { return ( config.proof_certify_inter >= 2 ); }
+	bool 		   enabledPedInterpVerif	     () { return ( config.certify_inter() >= 2 ); }
 	bool           usingMcMillanInterpolation               ( ) { return ( config.itp_bool_alg() == 0 ); }
 	bool           usingPudlakInterpolation                 ( ) { return ( config.itp_bool_alg() == 1 ); }
 	bool           usingMcMillanPrimeInterpolation          ( ) { return ( config.itp_bool_alg() == 2 ); }
@@ -433,6 +440,7 @@ public:
 #ifdef FULL_LABELING
 	PTRef        compInterpLabelingOriginal               ( ProofNode *, const ipartitions_t &, unsigned num_config = 0 , map<Var, icolor_t>* PSFunc = NULL);
 	PTRef        compInterpLabelingInner                  ( ProofNode * );
+    void labelLeaf(ProofNode*, const ipartitions_t&, unsigned num_config = 0, map<Var, icolor_t>* PSFunc = NULL);
 	void           setLeafRandomLabeling                    ( ProofNode * );
 	void           setLeafMcMillanLabeling                  ( ProofNode * );
 	void           setLeafPudlakLabeling                    ( ProofNode * );

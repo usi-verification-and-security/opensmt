@@ -27,6 +27,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <stdarg.h>
 #include <string.h>
 #include <sstream>
+#include <ctime>
+#include <cstdlib>
+#include <cassert>
+#include <cstdio>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "Interpret.h"
@@ -641,6 +645,7 @@ bool Interpret::checkSat(const char* cmd) {
                 writeSplits(config.dump_state());
         }
     }
+
     return true;
 }
 
@@ -1087,57 +1092,23 @@ void Interpret::GetInterpolants()
 {
     //just test with assertions for now:
     vec<PTRef>& partitions = logic->getAssertions();
-    if(partitions.size() < 2)
-    {
-        cerr << ";Error: Can't interpolate with only one assertion" << endl;
-        return;
-    }
-    /*
-    // P1
-    ipartitions_t p = 1;
-    p = ~p;
-    */
-    // PH-random
-    srand(2);
+
+    if(!logic->isInterpolating())
+        opensmt_error("Cannot interpolate");
+
+    srand(time(NULL));
     ipartitions_t p = 0; //first partition is A, second is B
     opensmt::setbit(p, 0);
-
+/*
     for(int i = 2; i < partitions.size(); ++i)
-    {
-        p <<= 1;
-        if(rand() % 2) p += 1;
-    }
-
-/*
-    // PH
-    ipartitions_t p = 1;
-    int m0 = partitions.size() / 2;
-    int m1 = partitions.size() - m0;
-    cerr << "; Total number of partitions: " << partitions.size() << endl;
-    cerr << "; M0: " << m0 << " | M1: " << m1 << endl;
-    for(int i = 1; i < m1; ++i)
-    {
-        p <<= 1;
-        p += 1;
-    }
-    for(int i = 0; i < m0; ++i)
-        p <<= 1;
-        */
-/*
-    //PA
-    ipartitions_t p = 1;
-    for(int i = 0; i < (partitions.size() - 1); ++i)
-    {
-        p <<= 1;
-        if(i & 1)
-            p += 1;
-    }
+        if(rand() % 2)
+            opensmt::setbit(p, i);
 */
 
     // ABmixed bit
     p <<= 1;
 
-/*
+#ifdef ITP_DEBUG
     //test the partitions
     for(int i = 0; i < partitions.size(); ++i)
     {
@@ -1148,16 +1119,16 @@ void Interpret::GetInterpolants()
         else
             cerr << "; Partition " << i << " is weird" << endl;
     }
-*/
+#endif
 
-#ifdef PEDANTIC_DEBUG
-    cout << ";Interpolation mask " << p << endl;
+#ifdef ITP_DEBUG
+    cout << "; Interpolation mask " << p << endl;
 #endif
     SimpSMTSolver& smt_solver = main_solver->getSMTSolver();
     smt_solver.createProofGraph();
     vector<PTRef> itps;
     smt_solver.getSingleInterpolant(itps, p);
-    cerr << ";Interpolant:\n;" << logic->printTerm(itps[0]) << endl;
+    //cerr << ";Interpolant:\n;" << logic->printTerm(itps[0]) << endl;
 }
 #endif
 

@@ -369,12 +369,21 @@ public:
     //
     Var     newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
 
+#ifdef PRODUCE_PROOF
+    bool    addClause (const vec<Lit> & ps, const ipartitions_t& mask = 0);
+    bool    addEmptyClause();                                   // Add the empty clause, making the solver contradictory.
+    bool    addClause (Lit p, const ipartitions_t& mask = 0);                                  // Add a unit clause to the solver.
+    bool    addClause (Lit p, Lit q, const ipartitions_t& mask = 0);                           // Add a binary clause to the solver.
+    bool    addClause (Lit p, Lit q, Lit r, const ipartitions_t& mask = 0);                    // Add a ternary clause to the solver.
+    bool    addClause_(      vec<Lit>& ps, const ipartitions_t& mask = 0);                     // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.
+#else
     bool    addClause (const vec<Lit> & ps);
     bool    addEmptyClause();                                   // Add the empty clause, making the solver contradictory.
     bool    addClause (Lit p);                                  // Add a unit clause to the solver.
     bool    addClause (Lit p, Lit q);                           // Add a binary clause to the solver.
     bool    addClause (Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
     bool    addClause_(      vec<Lit>& ps);                     // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.
+#endif
     // Solving:
     //
     bool    simplify     ();                        // Removes already satisfied clauses.
@@ -1184,6 +1193,40 @@ inline bool     CoreSMTSolver::enqueue         (Lit p, CRef from)
 {
     return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, from), true);
 }
+
+#ifdef PRODUCE_PROOF
+inline bool     CoreSMTSolver::addClause       (const vec<Lit>& ps, const ipartitions_t& mask)
+{
+    ps.copyTo(add_tmp);
+    return addClause_(add_tmp, mask);
+}
+inline bool     CoreSMTSolver::addEmptyClause  ()
+{
+    add_tmp.clear();
+    return addClause_(add_tmp);
+}
+inline bool     CoreSMTSolver::addClause       (Lit p, const ipartitions_t& mask)
+{
+    add_tmp.clear();
+    add_tmp.push(p);
+    return addClause_(add_tmp, mask);
+}
+inline bool     CoreSMTSolver::addClause       (Lit p, Lit q, const ipartitions_t& mask)
+{
+    add_tmp.clear();
+    add_tmp.push(p);
+    add_tmp.push(q);
+    return addClause_(add_tmp, mask);
+}
+inline bool     CoreSMTSolver::addClause       (Lit p, Lit q, Lit r, const ipartitions_t& mask)
+{
+    add_tmp.clear();
+    add_tmp.push(p);
+    add_tmp.push(q);
+    add_tmp.push(r);
+    return addClause_(add_tmp, mask);
+}
+#else
 inline bool     CoreSMTSolver::addClause       (const vec<Lit>& ps)
 {
     ps.copyTo(add_tmp);
@@ -1215,6 +1258,10 @@ inline bool     CoreSMTSolver::addClause       (Lit p, Lit q, Lit r)
     add_tmp.push(r);
     return addClause_(add_tmp);
 }
+#endif
+
+
+
 inline bool     CoreSMTSolver::locked          (const Clause& c) const
 {
     return value(c[0]) == l_True && reason(var(c[0])) != CRef_Undef && reason(var(c[0])) != CRef_Fake && ca.lea(reason(var(c[0]))) == &c;

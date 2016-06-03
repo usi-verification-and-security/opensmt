@@ -21,23 +21,14 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 #include "PG.h"
 
 void
-ProofNode::setInterpPartitionMask(Clause& cl)
+ProofNode::setInterpPartitionMask()
 {
     if(i_data == NULL) initIData();
-    vec<PTRef> or_args;
     Logic& logic = thandler.getLogic();
-    for(int i = 0; i < cl.size(); ++i)
-    {
-	    PTRef aux = thandler.varToTerm(var(cl[i]));
-	    if(cl[i].x & 1)
-		    or_args.push(logic.mkNot(aux));
-	    else
-		    or_args.push(aux);
-    }
-    PTRef cl_ptref = logic.mkOr(or_args);
-    i_data->partition_mask = logic.getClauseClassMask(cl_ptref);
-#ifdef PEDANTIC_DEBUG
-    cerr << "Clause " << logic.printTerm(cl_ptref) << " has mask " << i_data->partition_mask << endl;
+    i_data->partition_mask = logic.getClauseClassMask(clause_ref);
+    assert(i_data->partition_mask != 0);
+#ifdef ITP_DEBUG
+    cerr << "In Set, Clause " << clause_ref << " has mask " << i_data->partition_mask << endl;
 #endif
 }
 
@@ -149,6 +140,23 @@ void ProofGraph::buildProofGraph( int nVars )
 		//Clause not visited yet
 		if(visitedSet.find(currClause)==visitedSet.end())
 		{
+            // in case of (assert false), clause_to_proof_der[currClause] is actually NULL
+            if(currClause==CRef_Undef && clause_to_proof_der[currClause] == NULL)
+			{
+				assert(graph.size()==0);
+				ProofNode* n=new ProofNode(thandler);
+				n->initIData();
+				// Add node to graph vector
+				int currId=(int)graph.size();
+				n->setId(currId);
+				n->setType(CLAORIG);
+				graph.push_back(n);
+				assert(getNode(currId)==n);
+				root=currId;
+				if( verbose() > 0 ) reportf( "# Empty clause given in input or generated at preprocessing time: single node proof\n" );
+				break;
+			}
+
 			//Get clause derivation tree
             assert(clause_to_proof_der[currClause] != NULL);
 			ProofDer &           proofder = *(clause_to_proof_der[currClause]); // Derivation
@@ -179,6 +187,7 @@ void ProofGraph::buildProofGraph( int nVars )
 					assert(graph.size()==0);
 					ProofNode* n=new ProofNode(thandler);
 					n->initIData();
+					//n->initClause(proof.getClause(currClause));
 					// Add node to graph vector
 					int currId=(int)graph.size();
 					n->setId(currId);
@@ -196,9 +205,9 @@ void ProofGraph::buildProofGraph( int nVars )
 					ProofNode* n=new ProofNode(thandler);
                     if(ctype == CLA_ORIG) num_leaf++;
                     else num_theory++;
-					n->initIData();
 					n->initClause(proof.getClause(currClause));
-                    n->setClauseRef(currClause);
+                    if(ctype == CLA_ORIG)
+                        n->setClauseRef(currClause);
 					// Add node to graph vector
 					int currId=(int)graph.size();
 					n->setId(currId);
@@ -246,17 +255,17 @@ void ProofGraph::buildProofGraph( int nVars )
 					if( _ctype==CLA_ORIG )
 					{
 						n->initClause(proof.getClause(clause_0));
+                        n->setClauseRef(clause_0);
 						//Sort clause literals
 						std::sort(n->getClause().begin(),n->getClause().end());
 						num_leaf++;
-                        n->setClauseRef(clause_0);
 						if( n->getClauseSize() >= max_leaf_size ) max_leaf_size = n->getClauseSize();
 						avg_leaf_size += n->getClauseSize();
 					}
 					else if (_ctype==CLA_LEARNT )
 					{
 						num_learnt++;
-                        n->setClauseRef(clause_0);
+                        //n->setClauseRef(clause_0);
 						unsigned ssize = proof.getClause(clause_0).size();
 						if( ssize >= max_learnt_size ) max_learnt_size = ssize;
 						avg_learnt_size += ssize;
@@ -264,10 +273,10 @@ void ProofGraph::buildProofGraph( int nVars )
                     else if(_ctype == CLA_THEORY)
                     {
                         n->initClause(proof.getClause(clause_0));
+                        n->setClauseRef(clause_0, false);
                         //Sort clause literals
                         std::sort(n->getClause().begin(),n->getClause().end());
                         ++num_theory;
-                        n->setClauseRef(clause_0);
                     }
 
 					//Add node to graph vector
@@ -301,6 +310,7 @@ void ProofGraph::buildProofGraph( int nVars )
 						if( _ctype==CLA_ORIG )
 						{
 							n->initClause(proof.getClause(clause_i));
+                            n->setClauseRef(clause_i);
 							//Sort clause literals
 							std::sort(n->getClause().begin(),n->getClause().end());
 							num_leaf++;
@@ -317,10 +327,10 @@ void ProofGraph::buildProofGraph( int nVars )
                         else if(_ctype == CLA_THEORY)
                         {
                             n->initClause(proof.getClause(clause_i));
+                            n->setClauseRef(clause_i, false);
                             //Sort clause literals
                             std::sort(n->getClause().begin(),n->getClause().end());
                             ++num_theory;
-                            n->setClauseRef(clause_i);
                         }
 
 						//Add node to graph vector
@@ -510,7 +520,8 @@ void ProofGraph::buildProofGraph( int nVars )
         cout << "Non null nodes: " << num_non_null << endl;
         cout << "Non null clauses: " << cl_non_null << endl;
 #endif
-		assert( num_non_null == (num_leaf + num_learnt + num_derived + num_theory) );
+        if(graph.size() > 1)
+    		assert( num_non_null == (num_leaf + num_learnt + num_derived + num_theory) );
 
 		reportf( "# Number of nodes: %d (leaves: %d - learnt: %d - derived: %d - theory: %d)\n", num_non_null, num_leaf, num_learnt, num_derived, num_theory );
 		reportf( "# Maximum, average size of leaves: %d  %.2f\n", max_leaf_size, avg_leaf_size/(double)num_leaf );

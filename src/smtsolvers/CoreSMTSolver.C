@@ -293,7 +293,11 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
     return v;
 }
 
+#ifdef PRODUCE_PROOF
+bool CoreSMTSolver::addClause_(vec<Lit>& _ps, const ipartitions_t& mask)
+#else
 bool CoreSMTSolver::addClause_(vec<Lit>& _ps)
+#endif
 {
 #ifdef REPORT_DL1_THLITS
     int init_cl_len = ps.size();
@@ -304,6 +308,7 @@ bool CoreSMTSolver::addClause_(vec<Lit>& _ps)
 #endif
 
 #ifdef PRODUCE_PROOF
+    Logic& logic = theory_handler.getLogic();
     bool resolved = false;
     CRef root = CRef_Undef;
 #endif
@@ -317,6 +322,9 @@ bool CoreSMTSolver::addClause_(vec<Lit>& _ps)
     int i, j;
 #ifdef PRODUCE_PROOF
     root = ca.alloc( ps, false );
+    logic.addClauseClassMask(root, mask);
+    for(int lt = 0; lt < ps.size(); ++lt)
+        logic.addVarClassMask(var(ps[lt]), mask);
     proof.addRoot( root, CLA_ORIG );
     assert( config.isInit( ) );
     proof.beginChain( root );
@@ -366,6 +374,9 @@ bool CoreSMTSolver::addClause_(vec<Lit>& _ps)
     if ( resolved )
     {
         res = ca.alloc( ps, false );
+        logic.addClauseClassMask(res, mask);
+        for(int lt = 0; lt < ps.size(); ++lt)
+            logic.addVarClassMask(var(ps[lt]), mask);
         assert( ca[res].size( ) < ca[root].size( ) );
         proof.endChain( res );
         // Save root for removal

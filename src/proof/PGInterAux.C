@@ -90,14 +90,14 @@ icolor_t ProofGraph::getPivotColor( ProofNode* n )
 		else
 		{
 			icolor_t var_color_1=I_UNDEF;
-			if( isColoredA( n,v ) ) var_color_1 = I_A;
-			else if ( isColoredB( n,v )  ) var_color_1 = I_B;
-			else if ( isColoredAB( n,v ) ) var_color_1 = I_AB;
+			if( isColoredA( n->getAnt1(),v ) ) var_color_1 = I_A;
+			else if ( isColoredB( n->getAnt1(),v )  ) var_color_1 = I_B;
+			else if ( isColoredAB( n->getAnt1(),v ) ) var_color_1 = I_AB;
 
 			icolor_t var_color_2=I_UNDEF;
-			if( isColoredA( n,v ) ) var_color_2 = I_A;
-			else if ( isColoredB( n,v )  ) var_color_2 = I_B;
-			else if ( isColoredAB( n,v ) ) var_color_2 = I_AB;
+			if( isColoredA( n->getAnt2(),v ) ) var_color_2 = I_A;
+			else if ( isColoredB( n->getAnt2(),v )  ) var_color_2 = I_B;
+			else if ( isColoredAB( n->getAnt2(),v ) ) var_color_2 = I_AB;
 
 			cerr << "Pivot " << v << " has colors " << var_color_1 << " " << var_color_2 <<
 					" in antecedents but no color in resolvent" << endl;
@@ -161,6 +161,9 @@ icolor_t ProofGraph::getClauseColor( const ipartitions_t & clause_mask, const ip
 	ipartitions_t B_mask = ~A_mask;
 	//Reset bit 0 to 0
 	clrbit( B_mask, 0 );
+	//cout << "Clause has mask " << clause_mask << endl;
+    //cout << "A Mask " << A_mask << endl;
+    //cout << "B Mask " << B_mask << endl;
 
 	// Check if belongs to A or B
 	const bool clause_in_A = ( (clause_mask & A_mask) != 0 );

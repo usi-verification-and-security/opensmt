@@ -33,6 +33,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <queue>
 #include <set>
 
+#ifdef PRODUCE_PROOF
+#include <sys/wait.h>
+#include <fstream>
+#include <sstream>
+#endif
+
+
 using namespace std;
 
 /***********************************************************
@@ -1839,23 +1846,140 @@ Logic::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate )
 }
 
 #ifdef PRODUCE_PROOF
+
+bool
+Logic::implies(PTRef implicant, PTRef implicated)
+{
+    Logic& logic = *this;
+    const char * implies = "implies.smt2";
+    std::ofstream dump_out( implies );
+    logic.dumpHeaderToFile(dump_out);
+
+    logic.dumpFormulaToFile(dump_out, implicant);
+    logic.dumpFormulaToFile(dump_out, implicated, true);
+    dump_out << "(check-sat)" << endl;
+    dump_out << "(exit)" << endl;
+    dump_out.close( );
+    // Check !
+    bool tool_res;
+    if ( int pid = fork() )
+    {
+      int status;
+      waitpid(pid, &status, 0);
+      switch ( WEXITSTATUS( status ) )
+      {
+	case 0:
+	  tool_res = false;
+	  break;
+	case 1:
+	  tool_res = true;
+	  break;
+	default:
+	  perror( "Tool" );
+	  exit( EXIT_FAILURE );
+      }
+    }
+    else
+    {
+      execlp( "tool_wrapper.sh", "tool_wrapper.sh", implies, NULL );
+      perror( "Tool" );
+      exit( 1 );
+    }
+
+    if ( tool_res == true )
+        return false;
+    return true;
+}
+
+bool
+Logic::verifyInterpolantA(PTRef itp, const ipartitions_t& mask)
+{
+    // Check A -> I, i.e., A & !I
+    return implies(getPartitionA(mask), itp);
+}
+
+PTRef
+Logic::getPartitionA(const ipartitions_t& mask)
+{
+    Logic& logic = *this;
+    vec<PTRef>& ass = logic.getAssertions();
+    vec<PTRef> a_args;
+    for(int i = 0; i < ass.size(); ++i)
+    {
+        PTRef a = ass[i];
+    	ipartitions_t p = 0;
+	    setbit(p, i + 1);
+        if(isAstrict(p, mask)) a_args.push(a);
+        else if(isBstrict(p, mask)) {}
+    	else opensmt_error("Assertion is neither A or B");
+    }
+    PTRef A = logic.mkAnd(a_args);
+    return A;
+}
+
+PTRef
+Logic::getPartitionB(const ipartitions_t& mask)
+{
+    Logic& logic = *this;
+    vec<PTRef>& ass = logic.getAssertions();
+    vec<PTRef> b_args;
+    for(int i = 0; i < ass.size(); ++i)
+    {
+        PTRef a = ass[i];
+    	ipartitions_t p = 0;
+	    setbit(p, i + 1);
+        if(isAstrict(p, mask)) {}
+        else if(isBstrict(p, mask)) b_args.push(a);
+    	else opensmt_error("Assertion is neither A or B");
+    }
+    PTRef B = logic.mkAnd(b_args);
+    return B;
+}
+
+bool
+Logic::verifyInterpolantB(PTRef itp, const ipartitions_t& mask)
+{
+    Logic& logic = *this;
+    PTRef nB = logic.mkNot(getPartitionB(mask));
+    // Check A -> I, i.e., A & !I
+    return implies(itp, nB);
+}
+
+bool
+Logic::verifyInterpolant(PTRef itp, const ipartitions_t& mask)
+{
+    if(verbose())
+        cout << "; Verifying final interpolant" << endl;
+    bool res = verifyInterpolantA(itp, mask);
+    if(!res)
+        opensmt_error("A -> I does not hold");
+    if(verbose())
+        cout << "; A -> I holds" << endl;
+    res = verifyInterpolantB(itp, mask);
+    if(!res)
+        opensmt_error("I -> !B does not hold");
+    if(verbose())
+        cout << "; B -> !I holds" << endl;
+    return res;
+}
+
 void
 Logic::addVarClassMask(Var l, const ipartitions_t& toadd)
 {
 	opensmt::orbit(var_class[l], var_class[l], toadd);
-#ifdef PEDANTIC_DEBUG
+#ifdef ITP_DEBUG
 	cerr << "; Adding mask " << toadd << " to var " << l << endl;
 	cerr << "; Var " << l << " now has mask " << var_class[l] << endl;
 #endif
 }
 
 void
-Logic::addClauseClassMask(PTRef l, const ipartitions_t& toadd)
+Logic::addClauseClassMask(CRef l, const ipartitions_t& toadd)
 {
 	opensmt::orbit(clause_class[l], clause_class[l], toadd);
-#ifdef PEDANTIC_DEBUG
-	cerr << "; Adding mask " << toadd << " to clause " << printTerm(l) << endl;
-	cerr << "; Clause " << printTerm(l) << " now has mask " << clause_class[l] << endl;
+#ifdef ITP_DEBUG
+	cerr << "; Adding mask " << toadd << " to clause " << l << endl;
+	cerr << "; Clause " << l << " now has mask " << clause_class[l] << endl;
 #endif
 }
 
@@ -1870,23 +1994,20 @@ Logic::setIPartitionsIte(PTRef pref)
     {
         PTRef p = bfs.front();
         bfs.pop();
-        //cerr << ";Trying to visit " << printTerm(p) << endl;
         if(visited.find(p) != visited.end()) continue;
         
         // fine to visit
         visited.insert(p);
-        if(isUF(p))
+        if(isUF(p) || isUP(p))
         {
             addIPartitions(getPterm(p).symb(), getIPartitions(pref));
-            //cout << "Symb " << getSymName(getPterm(p).symb()) << " gets partition " << getIPartitions(getPterm(p).symb()) << endl;
         }
         if (p != pref)
         {
             addIPartitions(p, getIPartitions(pref));
-            //cout << "Term " << printTerm(p) << " gets partition " << getIPartitions(p) << endl;
         }
-        //---------------
 
+        // set on children
         Pterm& t = getPterm(p);
         unprocessed_children = false;
         for(int i = 0; i < t.size(); ++i)
@@ -1898,21 +2019,6 @@ Logic::setIPartitionsIte(PTRef pref)
                 unprocessed_children = true;
             }
         }
-        continue;////
-        if(unprocessed_children)
-        {
-            bfs.push(p);
-            continue;
-        }
-        // fine to visit
-        visited.insert(p);
-        if(isUF(p))
-        {
-            addIPartitions(getPterm(p).symb(), getIPartitions(pref));
-            //cout << "Symb " << getSymName(getPterm(p).symb()) << " gets partition " << getIPartitions(getPterm(p).symb()) << endl;
-        }
-        addIPartitions(p, getIPartitions(pref));
-        //cout << "Term " << printTerm(p) << " gets partition " << getIPartitions(p) << endl;
     }
 }
 #endif

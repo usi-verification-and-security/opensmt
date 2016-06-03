@@ -22,34 +22,17 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 #include <sys/wait.h>
 #include <fstream>
 
-void
-ProofGraph::verifyInterpolant(PTRef itp, const ipartitions_t& mask)
+/*
+bool
+ProofGraph::implies(PTRef implicant, PTRef implicated)
 {
-    cerr << "; Verifying final interpolant" << endl;
-
     Logic& logic = thandler.getLogic();
-    vec<PTRef>& ass = logic.getAssertions();
-    vec<PTRef> a_args, b_args;
-    for(int i = 0; i < ass.size(); ++i)
-    {
-        PTRef a = ass[i];
-	ipartitions_t p = 0;
-	setbit(p, i+1);
-        if(isAstrict(p, mask)) a_args.push(a);
-        else if(isBstrict(p, mask)) b_args.push(a);
-	else opensmt_error("Assertion is neither A or B");
-    }
-    PTRef A = logic.mkAnd(a_args);
-    PTRef B = logic.mkAnd(b_args);
-
-    // Check A -> I, i.e., A & !I
-    // First stage: print declarations
-    const char * name_A = "verifyinterp_A.smt2";
-    std::ofstream dump_out( name_A );
+    const char * implies = "implies.smt2";
+    std::ofstream dump_out( implies );
     logic.dumpHeaderToFile(dump_out);
 
-    logic.dumpFormulaToFile(dump_out, A);
-    logic.dumpFormulaToFile(dump_out, itp, true);
+    logic.dumpFormulaToFile(dump_out, implicant);
+    logic.dumpFormulaToFile(dump_out, implicated, true);
     dump_out << "(check-sat)" << endl;
     dump_out << "(exit)" << endl;
     dump_out.close( );
@@ -74,59 +57,187 @@ ProofGraph::verifyInterpolant(PTRef itp, const ipartitions_t& mask)
     }
     else
     {
-      execlp( "tool_wrapper.sh", "tool_wrapper.sh", name_A, NULL );
+      execlp( "tool_wrapper.sh", "tool_wrapper.sh", implies, NULL );
       perror( "Tool" );
       exit( 1 );
     }
 
     if ( tool_res == true )
-    {
-      //opensmt_error2( config.certifying_solver, " says A -> I does not hold" );
-      cerr << "; Error, A -> I does not hold" << endl;
-    }
-    else
-      cerr << "; A -> I holds" << endl;
+        return false;
+    return true;
+}
 
-    // Now check B & I
-    const char * name_B = "verifyinterp_B.smt2";
-    dump_out.open( name_B );
-    logic.dumpHeaderToFile( dump_out );
-    logic.dumpFormulaToFile(dump_out, itp);
-    logic.dumpFormulaToFile(dump_out, B);
-    dump_out << "(check-sat)" << endl;
-    dump_out << "(exit)" << endl;
-    dump_out.close( );
-    // Check !
-    if ( int pid = fork() )
+bool
+ProofGraph::verifyInterpolantA(PTRef itp, const ipartitions_t& mask)
+{
+    // Check A -> I, i.e., A & !I
+    return implies(getPartitionA(mask), itp);
+}
+
+PTRef
+ProofGraph::getPartitionA(const ipartitions_t& mask)
+{
+    Logic& logic = thandler.getLogic();
+    vec<PTRef>& ass = logic.getAssertions();
+    vec<PTRef> a_args;
+    for(int i = 0; i < ass.size(); ++i)
     {
-      int status;
-      waitpid(pid, &status, 0);
-      switch ( WEXITSTATUS( status ) )
-      {
-	case 0:
-	  tool_res = false;
-	  break;
-	case 1:
-	  tool_res = true;
-	  break;
-	default:
-	  perror( "Tool" );
-	  exit( EXIT_FAILURE );
-      }
+        PTRef a = ass[i];
+    	ipartitions_t p = 0;
+	    setbit(p, i + 1);
+        if(isAstrict(p, mask)) a_args.push(a);
+        else if(isBstrict(p, mask)) {}
+    	else opensmt_error("Assertion is neither A or B");
     }
-    else
+    PTRef A = logic.mkAnd(a_args);
+    return A;
+}
+
+PTRef
+ProofGraph::getPartitionB(const ipartitions_t& mask)
+{
+    Logic& logic = thandler.getLogic();
+    vec<PTRef>& ass = logic.getAssertions();
+    vec<PTRef> b_args;
+    for(int i = 0; i < ass.size(); ++i)
     {
-      execlp( "tool_wrapper.sh", "tool_wrapper.sh", name_B, NULL );
-      perror( "Tool" );
-      exit( 1 );
+        PTRef a = ass[i];
+    	ipartitions_t p = 0;
+	    setbit(p, i + 1);
+        if(isAstrict(p, mask)) {}
+        else if(isBstrict(p, mask)) b_args.push(a);
+    	else opensmt_error("Assertion is neither A or B");
     }
-    if ( tool_res == true )
-    {
-      //opensmt_error2( config.certifying_solver, " says B & I does not hold" );
-      cerr << "; Error B & I -> false does not hold" << endl;
-    }
-    else
-      cerr << "; B & I -> false holds" << endl;
+    PTRef B = logic.mkAnd(b_args);
+    return B;
+}
+
+bool
+ProofGraph::verifyInterpolantB(PTRef itp, const ipartitions_t& mask)
+{
+    Logic& logic = thandler.getLogic();
+    vec<PTRef>& ass = logic.getAssertions();
+    PTRef nB = logic.mkNot(getPartitionB(mask));
+    // Check A -> I, i.e., A & !I
+    return implies(itp, nB);
+}
+
+bool
+ProofGraph::verifyInterpolant(PTRef itp, const ipartitions_t& mask)
+{
+    cerr << "; Verifying final interpolant" << endl;
+    bool res = verifyInterpolantA(itp, mask);
+    if(!res)
+        opensmt_error("A -> I does not hold");
+    res = verifyInterpolantB(itp, mask);
+    if(!res)
+        opensmt_error("I -> !B does not hold");
+    return res;
+}
+*/
+
+bool
+ProofGraph::verifyPartialInterpolant(ProofNode *n, const ipartitions_t& mask)
+{
+    if(verbose())
+        cout << "; Verifying partial interpolant" << endl;
+    bool res = verifyPartialInterpolantA(n, mask);
+    if(!res)
+        //assert(false);
+        opensmt_error("Partial interpolant soundness does not hold for A");
+    res = verifyPartialInterpolantB(n, mask);
+    if(!res)
+        //assert(false);
+        opensmt_error("Partial interpolant soundness does not hold for B");
+    if(verbose())
+        cout << "; Partial interpolant is sound" << endl;
+    return res;
+}
+
+bool
+ProofGraph::verifyPartialInterpolantA(ProofNode *n, const ipartitions_t& mask)
+{
+    // Check A /\ ~(C|a,ab) -> I, i.e., A /\ ~(C|a,ab) /\ ~I unsat
+    Logic& logic = thandler.getLogic();
+    icolor_t var_class;
+    icolor_t var_color;
+    vector< Lit > & cl = n->getClause();
+    vec<PTRef> restricted_clause;
+
+    const size_t size = cl.size( );
+	for( size_t i = 0 ; i < size ; i ++ )
+	{
+		Var v = var(cl[i]);
+		var_class = getVarClass2( v );
+		assert( var_class == I_B || var_class == I_A || var_class == I_AB );
+		if( var_class == I_B || var_class == I_A ) var_color = var_class;
+		else
+		{
+			// Determine color of AB variable
+			if( isColoredA( n,v ) ) var_color = I_A;
+			else if ( isColoredB( n,v )  ) var_color = I_B;
+			else if ( isColoredAB( n,v ) ) var_color = I_AB;
+			else opensmt_error( "Variable " << v << " has no color in clause " << n->getId() );
+		}
+		if( var_color == I_A || var_color == I_AB )
+        {
+            PTRef ptaux = thandler.varToTerm(var(cl[i]));
+            if(sign(cl[i]))
+                ptaux = logic.mkNot(ptaux);
+            restricted_clause.push(ptaux);
+        }
+	}
+
+    PTRef cl_ptref = logic.mkNot(logic.mkOr(restricted_clause));
+    vec<PTRef> AC_args;
+    AC_args.push(logic.getPartitionA(mask));
+    AC_args.push(cl_ptref);
+    PTRef implicant = logic.mkAnd(AC_args);
+
+    return logic.implies(implicant, n->getPartialInterpolant());
+}
+
+bool
+ProofGraph::verifyPartialInterpolantB(ProofNode *n, const ipartitions_t& mask)
+{
+    // Check B /\ ~(C|b,ab) -> ~I, i.e., B /\ ~(C|b,ab) /\ I unsat 
+    Logic& logic = thandler.getLogic();
+    icolor_t var_class;
+    icolor_t var_color;
+    vector< Lit > & cl = n->getClause();
+    vec<PTRef> restricted_clause;
+
+    const size_t size = cl.size( );
+	for( size_t i = 0 ; i < size ; i ++ )
+	{
+		Var v = var(cl[i]);
+		var_class = getVarClass2( v );
+		assert( var_class == I_B || var_class == I_A || var_class == I_AB );
+		if( var_class == I_B || var_class == I_A ) var_color = var_class;
+		else
+		{
+			// Determine color of AB variable
+			if( isColoredA( n,v ) ) var_color = I_A;
+			else if ( isColoredB( n,v )  ) var_color = I_B;
+			else if ( isColoredAB( n,v ) ) var_color = I_AB;
+			else opensmt_error( "Variable " << v << " has no color in clause " << n->getId() );
+		}
+		if( var_color == I_B || var_color == I_AB )
+        {
+            PTRef ptaux = thandler.varToTerm(var(cl[i]));
+            if(sign(cl[i]))
+                ptaux = logic.mkNot(ptaux);
+            restricted_clause.push(ptaux);
+        }
+	}
+
+    PTRef cl_ptref = logic.mkNot(logic.mkOr(restricted_clause));
+    vec<PTRef> BC_args;
+    BC_args.push(logic.getPartitionB(mask));
+    BC_args.push(cl_ptref);
+    PTRef implicant = logic.mkAnd(BC_args);
+
+    return logic.implies(implicant, logic.mkNot(n->getPartialInterpolant()));
 }
 
 /************************ VERIFICATION OF INTERPOLANTS *********************************/

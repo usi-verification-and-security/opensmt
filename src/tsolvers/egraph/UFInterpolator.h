@@ -118,6 +118,7 @@ public:
 
   ~CGraph( ) { clear( ); }
 
+	inline int     verbose                       ( ) const { return config.verbosity(); }
     void verifyInterpolantWithExternalTool( const ipartitions_t& mask );
   void     addCNode      ( PTRef );
   void     addCEdge      ( PTRef, PTRef, PTRef );

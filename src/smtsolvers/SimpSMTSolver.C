@@ -207,7 +207,11 @@ skip_theory_preproc:
 //=================================================================================================
 // Added code
 
+#ifdef PRODUCE_PROOF
+bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause, const ipartitions_t& mask)
+#else
 bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause)
+#endif
 {
     assert( config.sat_preprocess_theory == 0 );
 
@@ -260,7 +264,7 @@ bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause)
             }
         */
     }
-    if (!CoreSMTSolver::addClause_(smt_clause))
+    if (!CoreSMTSolver::addClause_(smt_clause, mask))
         return false;
 
     if (use_simplification && clauses.size() == nclauses + 1)

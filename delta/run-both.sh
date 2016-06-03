@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env bash
 
 # 0 - sat
 # 1 - unsat
@@ -9,11 +9,11 @@
 #osmt=/home/hyvaeria/src/OpenSMT/opensmt_antti/opensmt-dev/trunk/opensmt
 #osmt=/home/hyvaeria/src/OpenSMT/opensmt_antti/opensmt-dev/trunk/delta/run-dumper.sh
 #osmt=/home/hyvaeria/src/opensmt2/opensmt-dev/trunk/delta/run-dumper.sh
-osmt=/home/hyvaeria/src/opensmt2/opensmt-dev/trunk/opensmt
+osmt=/home/leonardo/devel/opensmt2/opensmt
 #z3=/u1/home/aehyvari/src/z3/z3/bin/external/z3
 #z3=/Users/aehyvari/src/z3/bin/external/z3
-z3=/home/hyvaeria/src/z3/bin/external/z3
-
+#z3=/home/hyvaeria/src/z3/bin/external/z3
+z3=/home/leonardo/devel/opensmt2/opensmt_correct
 if [[ $# != 1 ]]; then
     echo "Usage: $0 <file>"
     exit 1
@@ -43,8 +43,8 @@ fi
 echo "testing if ${res_osmt} == ${res_z3}"
 if [[ ${res_osmt} -eq ${res_z3} ]]; then
     echo "This is the case"
-    return 0
+    exit 0
 else
     echo "This is not the case"
-    return 1
+    exit 1
 fi

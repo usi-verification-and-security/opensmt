@@ -22,6 +22,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef Minisat_SolverTypes_h
 #define Minisat_SolverTypes_h
 
+#include <iostream>
+using namespace std;
 #include <assert.h>
 
 #include "IntTypes.h"
@@ -205,6 +207,7 @@ public:
 
 
 const CRef CRef_Undef = RegionAllocator<uint32_t>::Ref_Undef;
+const CRef CRef_True = RegionAllocator<uint32_t>::Ref_True;
 const CRef CRef_Fake  = RegionAllocator<uint32_t>::Ref_Fake; // The artificial clause reference for theory implications
 
 class ClauseAllocator : public RegionAllocator<uint32_t>

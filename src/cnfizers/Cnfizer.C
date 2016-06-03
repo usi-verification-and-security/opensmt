@@ -30,29 +30,30 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 using namespace std;
 
-Cnfizer::Cnfizer( SMTConfig&     config_
-                , Logic&         logic_
-                , TermMapper&    tmap_
-                , THandler&      thandler_
-                , SimpSMTSolver& solver_
-                ) :
-       config   (config_  )
-     , logic    (logic_   )
-     , tmap     (tmap_    )
-     , thandler (thandler_)
-     , solver   (solver_)
-     , s_empty  (true)
+Cnfizer::Cnfizer ( SMTConfig     &config_
+                   , Logic         &logic_
+                   , TermMapper    &tmap_
+                   , THandler      &thandler_
+                   , SimpSMTSolver &solver_
+                 ) :
+    config   (config_  )
+    , logic    (logic_   )
+    , tmap     (tmap_    )
+    , thandler (thandler_)
+    , solver   (solver_)
+    , s_empty  (true)
 { }
 
-void Cnfizer::initialize() {
+void Cnfizer::initialize()
+{
     vec<Lit> c;
-    Lit l = findLit(logic.getTerm_true());
-    c.push(l);
-    addClause(c);
+    Lit l = findLit (logic.getTerm_true());
+    c.push (l);
+    addClause (c);
     c.pop();
-    l = findLit(logic.getTerm_false());
-    c.push(~l);
-    addClause(c);
+    l = findLit (logic.getTerm_false());
+    c.push (~l);
+    addClause (c);
 }
 
 // A term is literal if its sort is Bool and
@@ -72,30 +73,38 @@ void Cnfizer::initialize() {
 //    return false;
 //}
 
-  // A term is an atom if its sort is Bool and
-  //  (i)  number of arguments is 0, or
-  //  (ii) it is an atom stating an equivalence of non-boolean terms (terms must be purified at this point)
+// A term is an atom if its sort is Bool and
+//  (i)  number of arguments is 0, or
+//  (ii) it is an atom stating an equivalence of non-boolean terms (terms must be purified at this point)
 
 // Extracts the literal corresponding to a term.
 // Accepts negations.
-const Lit Cnfizer::findLit(PTRef ptr) {
+const Lit Cnfizer::findLit (PTRef ptr)
+{
     PTRef p;
     bool sgn;
     Var v;
-    tmap.getTerm(ptr, p, sgn);
-    if (!seen.has(p)) {
+    tmap.getTerm (ptr, p, sgn);
+
+    if (!seen.has (p))
+    {
         v = solver.newVar();
-        tmap.addBinding(v, p);
-        if (logic.isTheoryTerm(p)) {
-            assert(logic.isEquality(p)        ||
-                   logic.isDisequality(p)     ||
-                   logic.getTerm_true() == p          ||
-                   logic.getTerm_false() == p         ||
-                   logic.isUP(p)                      );
+        tmap.addBinding (v, p);
+
+        if (logic.isTheoryTerm (p))
+        {
+            assert (logic.isEquality (p)        ||
+                    logic.isDisequality (p)     ||
+                    logic.getTerm_true() == p          ||
+                    logic.getTerm_false() == p         ||
+                    logic.isUP (p)                      );
         }
-        seen.insert(p, v);
-        if (logic.isTheoryTerm(p))
-            solver.setFrozen(v, true);
+
+        seen.insert (p, v);
+
+        if (logic.isTheoryTerm (p))
+            solver.setFrozen (v, true);
+
 #ifdef VERBOSE_CNFIZATION
 //        cerr << "Term " << logic.printTerm(p) << " maps to var " << v << endl;
 #endif
@@ -103,25 +112,31 @@ const Lit Cnfizer::findLit(PTRef ptr) {
     else
         v = seen[p];
 
-    Lit l = mkLit(v, sgn);
+    Lit l = mkLit (v, sgn);
 
     return l;
 }
 
 
 // A term is an npatom if it is an atom or it is a negation of an npatom
-bool Cnfizer::isNPAtom(PTRef r, PTRef& p) const {
+bool Cnfizer::isNPAtom (PTRef r, PTRef &p) const
+{
     bool sign = false;
-    while (true) {
-        if (logic.isNot(r)) {
-            r = logic.getPterm(r)[0];
+
+    while (true)
+    {
+        if (logic.isNot (r))
+        {
+            r = logic.getPterm (r)[0];
             sign = !sign;
         }
-        else {
-            if (logic.isAtom(r))
+        else
+        {
+            if (logic.isAtom (r))
                 p = r;
             else
                 p = PTRef_Undef;
+
             return sign;
         }
     }
@@ -130,90 +145,104 @@ bool Cnfizer::isNPAtom(PTRef r, PTRef& p) const {
 //
 // Main Routine. Examine formula and give it to the solver
 //
-lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula)
+lbool Cnfizer::cnfizeAndGiveToSolver (PTRef formula)
 {
-    Map<PTRef,PTRef,PTRefHash> valdupmap;
+    Map<PTRef, PTRef, PTRefHash> valdupmap;
 //  egraph.initDupMap1( );
 
     if (solver.okay() == false) return l_False;
 
-    assert( formula != PTRef_Undef);
+    assert ( formula != PTRef_Undef);
 
 #ifdef PEDANTIC_DEBUG
-    cerr << "cnfizerAndGiveToSolver: " << logic.printTerm(formula) << endl;
+    cerr << "cnfizerAndGiveToSolver: " << logic.printTerm (formula) << endl;
 #endif
 
     vec<PTRef> top_level_formulae;
     // Retrieve top-level formulae - this is a list constructed from a conjunction
-    retrieveTopLevelFormulae(formula, top_level_formulae);
-    assert(top_level_formulae.size() != 0);
+    retrieveTopLevelFormulae (formula, top_level_formulae);
+    assert (top_level_formulae.size() != 0);
 
 #ifdef PEDANTIC_DEBUG
     cerr << "Top level formulae:" << endl;
-    for(unsigned i = 0; i < top_level_formulae.size_(); i++)
-        cerr << "Top level formula " << i << ": " << logic.printTerm(top_level_formulae[i]) << endl;
+
+    for (unsigned i = 0; i < top_level_formulae.size_(); i++)
+        cerr << "Top level formula " << i << ": " << logic.printTerm (top_level_formulae[i]) << endl;
+
 #endif
 
     bool res = true;
 
     // For each top-level conjunct
-    for (unsigned i = 0 ; i < top_level_formulae.size_() && (res == true) ; i ++) {
+    for (unsigned i = 0 ; i < top_level_formulae.size_() && (res == true) ; i ++)
+    {
         PTRef f = top_level_formulae[i];
 #ifdef PEDANTIC_DEBUG
-        cerr << "Adding clause " << logic.printTerm(f) << endl;
+        cerr << "Adding clause " << logic.printTerm (f) << endl;
 #endif
 
+        ipartitions_t mask = 0;
 #ifdef PRODUCE_PROOF
-    // Create mask to spread among all literals created for this PTRef
-    ipartitions_t mask = 0;
-    if(logic.isAssertion(f)) //if f is an assertion, one bit is set
-    {
-        mask += 1;
-        mask <<= (logic.assertionIndex(f) + 1);
-    }
-    else if(f == logic.getTerm_true() || f == logic.getTerm_false())
-    {
-        mask = 1;
-        mask = ~mask;
-    }
-    else //f may have been flattened etc
-    {
-        mask = logic.getIPartitions(logic.getOriginalAssertion(f));
-        logic.setIPartitions(f, 0);
-        logic.addIPartitions(f, mask);
-    }
-    assert(mask != 0);
+
+        if (logic.isInterpolating())
+        {
+            // Create mask to spread among all literals created for this PTRef
+            if (logic.isAssertion (f)) //if f is an assertion, one bit is set
+            {
+                mask += 1;
+                mask <<= (logic.assertionIndex (f) + 1);
+            }
+            /*
+            else if(f == logic.getTerm_true() || f == logic.getTerm_false())
+            {
+                mask = 1;
+                mask = ~mask;
+            }
+            */
+            else //f may have been flattened etc
+            {
+                mask = logic.getIPartitions (logic.getOriginalAssertion (f));
+                logic.setIPartitions (f, 0);
+                logic.addIPartitions (f, mask);
+            }
+
+            assert (mask != 0);
 #ifdef PEDANTIC_DEBUG
-    cerr << "Spreading mask " << mask << endl;
+            cerr << "Spreading mask " << mask << endl;
 #endif // PEDANTIC_DEBUG
+        }
+
 #endif // PRODUCE_PROOF
 
         // Give it to the solver if already in CNF
-        if (checkCnf(f) == true || checkClause(f) == true) {
+        if (checkCnf (f) == true || checkClause (f) == true)
+        {
 #ifdef PEDANTIC_DEBUG
             cerr << " => Already in CNF" << endl;
 #endif
 #ifdef PRODUCE_PROOF
-            res = giveToSolver(f, mask);
+            res = giveToSolver (f, mask);
 #else
-            res = giveToSolver(f);
+            res = giveToSolver (f);
 #endif
             continue;
         }
 
         // Check whether it can be rewritten using deMorgan laws
 
-        else if (checkDeMorgan(f) == true) {
+        else if (checkDeMorgan (f) == true)
+        {
 #ifdef PEDANTIC_DEBUG
             cout << " => Will be de Morganized" << endl;
 #endif
 #ifdef PRODUCE_PROOF
-            res = deMorganize(f, mask);
+            res = deMorganize (f, mask);
 #else
-            res = deMorganize(f);
+            res = deMorganize (f);
 #endif
         }
-        else {
+        else
+        {
             // Otherwise perform cnfization
 //            Map<PTRef, int, PTRefHash> ptref_to_incoming_edges;
             // The following tweak is able to use shared structure in "and"
@@ -225,11 +254,12 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula)
             cout << " => proper cnfization" << endl;
 #endif // PEDANTIC_DEBUG
 #ifdef PRODUCE_PROOF
-            res = cnfize(f, mask);
+            res = cnfize (f, mask);
 #else // PRODUCE_PROOF
-            res = cnfize(f);                         // Perform actual cnfization (implemented in subclasses)
+            res = cnfize (f);                        // Perform actual cnfization (implemented in subclasses)
 #endif // PRODUCE_PROOF
         }
+
         s_empty = false; // solver no longer empty
     }
 
@@ -271,214 +301,245 @@ lbool Cnfizer::extEquals(PTRef r_new, PTRef r_old) {
 // Apply simple de Morgan laws to the formula
 //
 #ifdef PRODUCE_PROOF
-bool Cnfizer::deMorganize( PTRef formula, const ipartitions_t& mask)
+bool Cnfizer::deMorganize ( PTRef formula, const ipartitions_t &mask)
 #else
-bool Cnfizer::deMorganize( PTRef formula )
+bool Cnfizer::deMorganize ( PTRef formula )
 #endif
 {
-    assert(!logic.isAnd(formula));
-    Pterm& pt = logic.getPterm(formula);
+    assert (!logic.isAnd (formula));
+    Pterm &pt = logic.getPterm (formula);
 
     bool rval = true;
 
     //
     // Case (not (and a b)) --> (or (not a) (not b))
     //
-    if (logic.isNot(formula) && logic.isAnd(pt[0])) {
+    if (logic.isNot (formula) && logic.isAnd (pt[0]))
+    {
         vec<PTRef> conjuncts;
         vec<Lit> clause;
 
-        retrieveConjuncts(pt[0], conjuncts);
-        for (int i = 0; i < conjuncts.size(); i++) {
-            clause.push(~findLit(conjuncts[i]));
+        retrieveConjuncts (pt[0], conjuncts);
+
+        for (int i = 0; i < conjuncts.size(); i++)
+        {
+            clause.push (~findLit (conjuncts[i]));
 #ifdef PEDANTIC_DEBUG
-            cerr << "(not " << logic.printTerm(conjuncts[i]) << ")" << endl;
+            cerr << "(not " << logic.printTerm (conjuncts[i]) << ")" << endl;
 #endif
         }
+
 #ifdef PRODUCE_PROOF
-        rval = addClause(clause, mask);
+        rval = addClause (clause, mask);
 #else
-        rval = addClause(clause);
+        rval = addClause (clause);
 #endif
     }
+
     return rval;
 }
 
 //
 // Compute the number of incoming edges for e and children
 //
-void Cnfizer::computeIncomingEdges( PTRef e
-                                  , Map<PTRef, int, PTRefHash> & ptref_to_incoming_edges )
+void Cnfizer::computeIncomingEdges ( PTRef e
+                                     , Map<PTRef, int, PTRefHash> &ptref_to_incoming_edges )
 {
-  assert(e != PTRef_Undef);
+    assert (e != PTRef_Undef);
 
-  vec<PTRef> unprocessed_terms; // Stack for unprocessed enodes
-  unprocessed_terms.push(e);    // formula needs to be processed
-  //
-  // Visit the DAG of the formula from the leaves to the root
-  //
-  while(unprocessed_terms.size() > 0) {
-    PTRef tr = unprocessed_terms.last();
+    vec<PTRef> unprocessed_terms; // Stack for unprocessed enodes
+    unprocessed_terms.push (e);   // formula needs to be processed
+
     //
-    // Skip if the node has already been processed before
+    // Visit the DAG of the formula from the leaves to the root
     //
-    if (ptref_to_incoming_edges.has(tr)) {
-        ptref_to_incoming_edges[tr]++;
+    while (unprocessed_terms.size() > 0)
+    {
+        PTRef tr = unprocessed_terms.last();
+
+        //
+        // Skip if the node has already been processed before
+        //
+        if (ptref_to_incoming_edges.has (tr))
+        {
+            ptref_to_incoming_edges[tr]++;
+            unprocessed_terms.pop();
+            continue;
+        }
+
+        bool unprocessed_children = false;
+
+        if (logic.isBooleanOperator (tr))
+        {
+            Pterm &t = logic.getPterm (tr);
+
+            for ( int i = 0; i < t.size(); i++)
+            {
+                //
+                // Push only if it is an unprocessed boolean operator
+                //
+                if (!ptref_to_incoming_edges.has (t[i]))
+                {
+                    unprocessed_terms.push (t[i]);
+                    unprocessed_children = true;
+                }
+                else
+                {
+                    ptref_to_incoming_edges[t[i]]++;
+                }
+            }
+        }
+
+        //
+        // SKip if unprocessed_children
+        //
+        if ( unprocessed_children )
+            continue;
+
+        //
+        // At this point, every child has been processed
+        //
+        assert (logic.isBooleanOperator (tr) || logic.isAtom (tr));
+        assert (!ptref_to_incoming_edges.has (tr));
+        ptref_to_incoming_edges.insert (tr, 1);
         unprocessed_terms.pop();
-        continue;
     }
-
-    bool unprocessed_children = false;
-    if (logic.isBooleanOperator(tr)) {
-      Pterm& t = logic.getPterm(tr);
-      for ( int i = 0; i < t.size(); i++) {
-        //
-        // Push only if it is an unprocessed boolean operator
-        //
-        if (!ptref_to_incoming_edges.has(t[i])) {
-            unprocessed_terms.push(t[i]);
-            unprocessed_children = true;
-        }
-        else {
-            ptref_to_incoming_edges[t[i]]++;
-        }
-      }
-    }
-    //
-    // SKip if unprocessed_children
-    //
-    if ( unprocessed_children )
-      continue;
-
-    //
-    // At this point, every child has been processed
-    //
-    assert(logic.isBooleanOperator(tr) || logic.isAtom(tr));
-    assert(!ptref_to_incoming_edges.has(tr));
-    ptref_to_incoming_edges.insert(tr, 1);
-    unprocessed_terms.pop();
-  }
 }
 
 //
 // Rewrite formula with maximum arity for operators
 //
-PTRef Cnfizer::rewriteMaxArity(PTRef formula, Map<PTRef, int, PTRefHash> & ptref_to_incoming_edges )
+PTRef Cnfizer::rewriteMaxArity (PTRef formula, Map<PTRef, int, PTRefHash> &ptref_to_incoming_edges )
 {
-  assert(formula != PTRef_Undef);
+    assert (formula != PTRef_Undef);
 
-  vec<PTRef> unprocessed_terms;       // Stack for unprocessed PTRefs
-  unprocessed_terms.push(formula);    // formula needs to be processed
-  Map<PTRef,PTRef,PTRefHash> cache;   // Cache of processed nodes
-  //
-  // Visit the DAG of the formula from the leaves to the root
-  //
-  while(unprocessed_terms.size() != 0) {
-    PTRef tr = unprocessed_terms.last();
+    vec<PTRef> unprocessed_terms;       // Stack for unprocessed PTRefs
+    unprocessed_terms.push (formula);   // formula needs to be processed
+    Map<PTRef, PTRef, PTRefHash> cache; // Cache of processed nodes
+
     //
-    // Skip if the node has already been processed before
+    // Visit the DAG of the formula from the leaves to the root
     //
-    if (cache.has(tr)) {
-      unprocessed_terms.pop();
-      continue;
+    while (unprocessed_terms.size() != 0)
+    {
+        PTRef tr = unprocessed_terms.last();
+
+        //
+        // Skip if the node has already been processed before
+        //
+        if (cache.has (tr))
+        {
+            unprocessed_terms.pop();
+            continue;
+        }
+
+        bool unprocessed_children = false;
+        Pterm &t = logic.getPterm (tr);
+
+        for (int i = 0; i < t.size(); i++)
+        {
+
+            //
+            // Push only if it is an unprocessed boolean operator
+            //
+            if ( logic.isBooleanOperator (t[i]) && !cache.has (t[i]))
+            {
+                unprocessed_terms.push (t[i]);
+                unprocessed_children = true;
+            }
+            //
+            // If it is an atom (either boolean or theory) just
+            // store it in the cache
+            //
+            else if (logic.isAtom (t[i]))
+                cache.insert (t[i], t[i]);
+
+        }
+
+        //
+        // SKip if unprocessed_children
+        //
+        if (unprocessed_children)
+            continue;
+
+        unprocessed_terms.pop();
+        PTRef result = PTRef_Undef;
+        //
+        // At this point, every child has been processed
+        //
+        assert (logic.isBooleanOperator (tr));
+
+        // Construct the new lists for the operators
+        if (logic.isAnd (tr) || logic.isOr (tr))
+            result = mergeEnodeArgs ( tr, cache, ptref_to_incoming_edges );
+        else result = tr;
+
+        assert (result != PTRef_Undef);
+        assert (!cache.has (tr));
+        cache.insert (tr, result);
     }
 
-    bool unprocessed_children = false;
-    Pterm& t = logic.getPterm(tr);
-    for (int i = 0; i < t.size(); i++) {
-
-      //
-      // Push only if it is an unprocessed boolean operator
-      //
-      if ( logic.isBooleanOperator(t[i]) && !cache.has(t[i])) {
-          unprocessed_terms.push(t[i]);
-          unprocessed_children = true;
-      }
-      //
-      // If it is an atom (either boolean or theory) just
-      // store it in the cache
-      //
-      else if (logic.isAtom(t[i]))
-        cache.insert(t[i], t[i]);
-
-    }
-    //
-    // SKip if unprocessed_children
-    //
-    if (unprocessed_children)
-      continue;
-
-    unprocessed_terms.pop();
-    PTRef result = PTRef_Undef;
-    //
-    // At this point, every child has been processed
-    //
-    assert(logic.isBooleanOperator(tr));
-
-    // Construct the new lists for the operators
-    if (logic.isAnd(tr) || logic.isOr(tr))
-      result = mergeEnodeArgs( tr, cache, ptref_to_incoming_edges );
-    else result = tr;
-
-    assert(result != PTRef_Undef);
-    assert(!cache.has(tr));
-    cache.insert(tr, result);
-  }
-
-  PTRef top_term = cache[formula];
-  return top_term;
+    PTRef top_term = cache[formula];
+    return top_term;
 }
 
 //
 // Merge collected arguments for nodes
 //
-PTRef Cnfizer::mergeEnodeArgs( PTRef e
-                             , Map<PTRef, PTRef, PTRefHash> & cache
-                             , Map<PTRef, int, PTRefHash> & ptref_to_incoming_edges )
+PTRef Cnfizer::mergeEnodeArgs ( PTRef e
+                                , Map<PTRef, PTRef, PTRefHash> &cache
+                                , Map<PTRef, int, PTRefHash> &ptref_to_incoming_edges )
 {
-  assert( logic.isAnd(e) || logic.isOr(e) );
+    assert ( logic.isAnd (e) || logic.isOr (e) );
 
-  Pterm& t = logic.getPterm(e);
-  SymRef e_symb = t.symb();
-  vec<PTRef> new_args;
+    Pterm &t = logic.getPterm (e);
+    SymRef e_symb = t.symb();
+    vec<PTRef> new_args;
 
-  for (int i = 0; i < t.size(); i++) {
-    PTRef arg = t[i];
-    PTRef sub_arg = cache[arg];
-    SymRef sym = logic.getPterm(arg).symb();
+    for (int i = 0; i < t.size(); i++)
+    {
+        PTRef arg = t[i];
+        PTRef sub_arg = cache[arg];
+        SymRef sym = logic.getPterm (arg).symb();
 
-    // We're no longer looking at either or or an and.  I hope I got this right...
-    if (sym != e_symb) {
-      new_args.push(sub_arg);
-      continue;
+        // We're no longer looking at either or or an and.  I hope I got this right...
+        if (sym != e_symb)
+        {
+            new_args.push (sub_arg);
+            continue;
+        }
+
+        assert (ptref_to_incoming_edges.has (arg));
+        assert (ptref_to_incoming_edges[arg] >= 1 );
+
+        if (ptref_to_incoming_edges[arg] > 1)
+        {
+            new_args.push (sub_arg);
+            continue;
+        }
+
+        Pterm &s = logic.getPterm (sub_arg);
+
+        for (int j = 0; j < s.size(); j++)
+            new_args.push (s[j]);
     }
 
-    assert(ptref_to_incoming_edges.has(arg));
-    assert(ptref_to_incoming_edges[arg] >= 1 );
 
-    if (ptref_to_incoming_edges[arg] > 1) {
-      new_args.push(sub_arg);
-      continue;
-    }
-
-    Pterm& s = logic.getPterm(sub_arg);
-    for (int j = 0; j < s.size(); j++)
-        new_args.push(s[j]);
-  }
-
-
-  // This creates a new term with the same symbol having the arguments from new_args
-  // We know that e is either and or or
-  return logic.isAnd(e) ? logic.mkAnd(new_args) : logic.mkOr(new_args);
+    // This creates a new term with the same symbol having the arguments from new_args
+    // We know that e is either and or or
+    return logic.isAnd (e) ? logic.mkAnd (new_args) : logic.mkOr (new_args);
 }
 
 //
 // Check whether a formula is in cnf
 //
 
-bool Cnfizer::checkCnf(PTRef formula) {
-    bool res = checkConj(formula);
-    if (res == false) return checkClause(formula);
+bool Cnfizer::checkCnf (PTRef formula)
+{
+    bool res = checkConj (formula);
+
+    if (res == false) return checkClause (formula);
+
     return res;
 }
 
@@ -487,29 +548,33 @@ bool Cnfizer::checkCnf(PTRef formula) {
 // Check if a formula is a conjunction of clauses
 //
 
-bool Cnfizer::checkConj(PTRef e)
+bool Cnfizer::checkConj (PTRef e)
 {
-    if (logic.isLit(e)) // A Boolean constant
+    if (logic.isLit (e)) // A Boolean constant
         return true;
 
-    Pterm& and_t = logic.getPterm(e);
+    Pterm &and_t = logic.getPterm (e);
 
 
     if (and_t.symb() != logic.getSym_and())
         return false;
 
     vec<PTRef> to_process;
-    to_process.push(e);
-    while (to_process.size() != 0) {
+    to_process.push (e);
 
-        e = to_process.last(); to_process.pop();
+    while (to_process.size() != 0)
+    {
 
-        Pterm& and_t = logic.getPterm(e);
+        e = to_process.last();
+        to_process.pop();
 
-        for (int i = 0; i < and_t.size(); i++) {
-            if (logic.isAnd(and_t[i]))
-                to_process.push(and_t[i]);
-            else if (!checkClause(and_t[i])) // Slightly awkward to use the same cache...
+        Pterm &and_t = logic.getPterm (e);
+
+        for (int i = 0; i < and_t.size(); i++)
+        {
+            if (logic.isAnd (and_t[i]))
+                to_process.push (and_t[i]);
+            else if (!checkClause (and_t[i])) // Slightly awkward to use the same cache...
                 return false;
         }
 
@@ -523,28 +588,34 @@ bool Cnfizer::checkConj(PTRef e)
 // Check whether a formula is a clause
 //
 
-bool Cnfizer::checkClause(PTRef e)
+bool Cnfizer::checkClause (PTRef e)
 {
-    assert(e != PTRef_Undef);
+    assert (e != PTRef_Undef);
 
-    if (!logic.isOr(e))
+    if (!logic.isOr (e))
         return false;
 
     vec<PTRef> to_process;
 
-    to_process.push(e);
+    to_process.push (e);
 
-    while (to_process.size() != 0) {
+    while (to_process.size() != 0)
+    {
 
-        e = to_process.last(); to_process.pop();
+        e = to_process.last();
+        to_process.pop();
 
-        Pterm& or_t = logic.getPterm(e);
-        for (int i = 0; i < or_t.size(); i++) {
-            if (logic.isOr(or_t[i]))
-                to_process.push(or_t[i]);
-            else {
+        Pterm &or_t = logic.getPterm (e);
+
+        for (int i = 0; i < or_t.size(); i++)
+        {
+            if (logic.isOr (or_t[i]))
+                to_process.push (or_t[i]);
+            else
+            {
                 PTRef p;
-                isNPAtom(or_t[i], p);
+                isNPAtom (or_t[i], p);
+
                 if (p == PTRef_Undef)
                     return false;
             }
@@ -559,82 +630,79 @@ bool Cnfizer::checkClause(PTRef e)
 //
 // Check whether it can be easily put in clausal form by means of DeMorgan's Rules
 //
-bool Cnfizer::checkDeMorgan(PTRef e)
+bool Cnfizer::checkDeMorgan (PTRef e)
 {
-    Map<PTRef,bool,PTRefHash,Equal<PTRef> > check_cache;
-    Pterm& not_t = logic.getPterm(e);
-    if (logic.isNot(e) && checkPureConj(not_t[0], check_cache) ) return true;
+    Map<PTRef, bool, PTRefHash, Equal<PTRef> > check_cache;
+    Pterm &not_t = logic.getPterm (e);
+
+    if (logic.isNot (e) && checkPureConj (not_t[0], check_cache) ) return true;
     else return false;
 }
 
 //
 // Check whether it is a pure conjunction of literals
 //
-bool Cnfizer::checkPureConj(PTRef e, Map<PTRef,bool,PTRefHash,Equal<PTRef> > & check_cache) {
-    if (check_cache.has(e))
+bool Cnfizer::checkPureConj (PTRef e, Map<PTRef, bool, PTRefHash, Equal<PTRef> > &check_cache)
+{
+    if (check_cache.has (e))
         return true;
 
     vec<PTRef> to_process;
-    to_process.push(e);
+    to_process.push (e);
 
     // Topmost needs to be and
-    if (!logic.isAnd(e)) return false;
+    if (!logic.isAnd (e)) return false;
 
-    while (to_process.size() != 0) {
-        e = to_process.last(); to_process.pop();
-        Pterm& and_t = logic.getPterm(e);
+    while (to_process.size() != 0)
+    {
+        e = to_process.last();
+        to_process.pop();
+        Pterm &and_t = logic.getPterm (e);
 
-        if (logic.isAnd(e))
+        if (logic.isAnd (e))
             for (int i = 0; i < and_t.size(); i++)
-                to_process.push(and_t[i]);
-        else if (!logic.isLit(e))
+                to_process.push (and_t[i]);
+        else if (!logic.isLit (e))
             return false;
 
-        check_cache.insert(e, true);
+        check_cache.insert (e, true);
     }
 
     return true;
 }
 
 #ifdef PRODUCE_PROOF
-bool Cnfizer::addClause( vec<Lit>& c, const ipartitions_t& mask)
+bool Cnfizer::addClause ( vec<Lit> &c, const ipartitions_t &mask)
 #else
-bool Cnfizer::addClause( vec<Lit>& c )
+bool Cnfizer::addClause ( vec<Lit> &c )
 #endif
 {
 #ifdef PEDANTIC_DEBUG
     cerr << "== clause start" << endl;
-    for (int i = 0; i < c.size(); i++) {
-        cerr << "(" << var(c[i]) << ") * " << (sign(c[i]) ? "not " : "")
-             << logic.printTerm(tmap.varToPTRef(var(c[i])))
+
+    for (int i = 0; i < c.size(); i++)
+    {
+        cerr << "(" << c[i].x << "," << var (c[i]) << ") * " << (sign (c[i]) ? "not " : "")
+             << logic.printTerm (tmap.varToPTRef (var (c[i])))
              << " ";
         cerr << endl;
     }
+
 #endif
 #ifdef PRODUCE_PROOF
-    vec<PTRef> or_args;
-    for(int i = 0; i < c.size(); ++i)
-    {
-        logic.addVarClassMask(var(c[i]), mask);
-        PTRef aux = thandler.varToTerm(var(c[i]));
-        if (c[i].x & 1)
-            or_args.push(logic.mkNot(aux));
-        else
-            or_args.push(aux);
-    }
-    PTRef cl_ptref = logic.mkOr(or_args);
-    logic.addClauseClassMask(cl_ptref, mask);
-    //cerr << "; Adding mask " << mask << endl;
+    bool res = solver.addSMTClause (c, mask);
+#else
+    bool res = solver.addSMTClause (c);
 #endif
-    return solver.addSMTClause(c);
+    return res;
 }
 //
 // Give the formula to the solver
 //
 #ifdef PRODUCE_PROOF
-bool Cnfizer::giveToSolver( PTRef f, const ipartitions_t& mask)
+bool Cnfizer::giveToSolver ( PTRef f, const ipartitions_t &mask)
 #else
-bool Cnfizer::giveToSolver( PTRef f )
+bool Cnfizer::giveToSolver ( PTRef f )
 #endif
 {
     vec<Lit> clause;
@@ -642,42 +710,49 @@ bool Cnfizer::giveToSolver( PTRef f )
     //
     // A unit clause
     //
-    if (logic.isLit(f)) {
-        clause.push(findLit(f));
+    if (logic.isLit (f))
+    {
+        clause.push (findLit (f));
 #ifdef PRODUCE_PROOF
-        return addClause(clause, mask);
+        return addClause (clause, mask);
 #else
-        return addClause(clause);
+        return addClause (clause);
 #endif
     }
+
     //
     // A clause
     //
 
-    if (logic.isOr(f)) {
+    if (logic.isOr (f))
+    {
         vec<PTRef> lits;
-        retrieveClause(f, lits);
+        retrieveClause (f, lits);
+
         for (int i = 0; i < lits.size(); i++)
-            clause.push(findLit(lits[i]));
+            clause.push (findLit (lits[i]));
+
 #ifdef PRODUCE_PROOF
-        return addClause(clause, mask);
+        return addClause (clause, mask);
 #else
-        return addClause(clause);
+        return addClause (clause);
 #endif
     }
 
     //
     // Conjunction
     //
-    assert(logic.isAnd(f));
+    assert (logic.isAnd (f));
     vec<PTRef> conj;
-    retrieveTopLevelFormulae( f, conj );
+    retrieveTopLevelFormulae ( f, conj );
     bool result = true;
+
     for (unsigned i = 0; i < conj.size_( ) && result; i++)
 #ifdef PRODUCE_PROOF
-        result = giveToSolver(conj[i], mask);
+        result = giveToSolver (conj[i], mask);
+
 #else
-        result = giveToSolver(conj[i]);
+        result = giveToSolver (conj[i]);
 #endif
     return result;
 }
@@ -685,22 +760,27 @@ bool Cnfizer::giveToSolver( PTRef f )
 //
 // Retrieve the formulae at the top-level.  Ignore duplicates
 //
-void Cnfizer::retrieveTopLevelFormulae(PTRef f, vec<PTRef>& top_level_formulae)
+void Cnfizer::retrieveTopLevelFormulae (PTRef f, vec<PTRef> &top_level_formulae)
 {
     vec<PTRef> to_process;
 
-    Map<PTRef,bool,PTRefHash> seen;
+    Map<PTRef, bool, PTRefHash> seen;
 
-    to_process.push(f);
-    while (to_process.size() != 0) {
-        f = to_process.last(); to_process.pop();
-        Pterm& cand_t = logic.getPterm(f);
-        if (logic.isAnd(f))
+    to_process.push (f);
+
+    while (to_process.size() != 0)
+    {
+        f = to_process.last();
+        to_process.pop();
+        Pterm &cand_t = logic.getPterm (f);
+
+        if (logic.isAnd (f))
             for (int i = cand_t.size() - 1; i >= 0; i--)
-                to_process.push(cand_t[i]);
-        else if (!seen.has(f)) {
-            top_level_formulae.push(f);
-            seen.insert(f, true);
+                to_process.push (cand_t[i]);
+        else if (!seen.has (f))
+        {
+            top_level_formulae.push (f);
+            seen.insert (f, true);
         }
     }
 }
@@ -708,32 +788,36 @@ void Cnfizer::retrieveTopLevelFormulae(PTRef f, vec<PTRef>& top_level_formulae)
 //
 // Retrieve a clause
 //
-void Cnfizer::retrieveClause( PTRef f, vec<PTRef> & clause )
+void Cnfizer::retrieveClause ( PTRef f, vec<PTRef> &clause )
 {
-    assert(logic.isLit(f) || logic.isOr(f));
+    assert (logic.isLit (f) || logic.isOr (f));
 
-    if ( logic.isLit(f) )
-        clause.push(f);
-    else if ( logic.isOr(f) ) {
-        Pterm& t = logic.getPterm(f);
+    if ( logic.isLit (f) )
+        clause.push (f);
+    else if ( logic.isOr (f) )
+    {
+        Pterm &t = logic.getPterm (f);
+
         for ( int i = 0; i < t.size(); i++)
-            retrieveClause( t[i], clause );
+            retrieveClause ( t[i], clause );
     }
 }
 
 //
 // Retrieve conjuncts
 //
-void Cnfizer::retrieveConjuncts( PTRef f, vec<PTRef> & conjuncts )
+void Cnfizer::retrieveConjuncts ( PTRef f, vec<PTRef> &conjuncts )
 {
-    assert(logic.isLit(f) || logic.isAnd(f));
+    assert (logic.isLit (f) || logic.isAnd (f));
 
-    if (logic.isLit(f))
-        conjuncts.push(f);
-    else {
-        Pterm& t = logic.getPterm(f);
+    if (logic.isLit (f))
+        conjuncts.push (f);
+    else
+    {
+        Pterm &t = logic.getPterm (f);
+
         for (int i = 0; i < t.size(); i++)
-            retrieveConjuncts(t[i], conjuncts);
+            retrieveConjuncts (t[i], conjuncts);
     }
 }
 
@@ -747,129 +831,143 @@ void Cnfizer::retrieveConjuncts( PTRef f, vec<PTRef> & conjuncts )
 //}
 
 
-vec<ValPair>* Cnfizer::getModel() {
-    assert(solver.okay());
-    vec<lbool>& model = solver.model;
-    vec<ValPair>* out = new vec<ValPair>();
-    for (Var v = 0; v < model.size(); v++) {
-        if (logic.isTheoryTerm(tmap.varToPTRef(v)))
-            out->push(ValPair(tmap.varToPTRef(v), model[v] == l_True ? "true" : (model[v] == l_False ? "false" : "unknown") ));
+vec<ValPair> *Cnfizer::getModel()
+{
+    assert (solver.okay());
+    vec<lbool> &model = solver.model;
+    vec<ValPair> *out = new vec<ValPair>();
+
+    for (Var v = 0; v < model.size(); v++)
+    {
+        if (logic.isTheoryTerm (tmap.varToPTRef (v)))
+            out->push (ValPair (tmap.varToPTRef (v), model[v] == l_True ? "true" : (model[v] == l_False ? "false" : "unknown") ));
     }
+
     return out;
 }
 
-lbool Cnfizer::getTermValue(PTRef tr) const {
-    assert(solver.okay());
-    vec<lbool>& model = solver.model;
+lbool Cnfizer::getTermValue (PTRef tr) const
+{
+    assert (solver.okay());
+    vec<lbool> &model = solver.model;
     PTRef p;
     bool sgn;
-    tmap.getTerm(tr, p, sgn);
-    if (logic.getPterm(p).getVar() != var_Undef) {
-        Var v = logic.getPterm(p).getVar();
+    tmap.getTerm (tr, p, sgn);
+
+    if (logic.getPterm (p).getVar() != var_Undef)
+    {
+        Var v = logic.getPterm (p).getVar();
         lbool val = model[v];
-        assert(val != l_Undef);
+        assert (val != l_Undef);
         return sgn == false ? val : (val == l_True ? l_False : l_True);
     }
     else return l_Undef;
 }
 
 // Assumes that the root of the tree is the last element of term_list
-PTRef Cnfizer::expandItes(vec<PtChild>& term_list) {
-    assert(term_list.size() > 0);
+PTRef Cnfizer::expandItes (vec<PtChild> &term_list)
+{
+    assert (term_list.size() > 0);
     vec<PtPair> ites;
-    int l = term_list.size()-1;
-    assert(!logic.isTheoryTerm(term_list[l].tr) or !logic.isIte(logic.getPterm(term_list[l].tr).symb()));
+    int l = term_list.size() - 1;
+    assert (!logic.isTheoryTerm (term_list[l].tr) or !logic.isIte (logic.getPterm (term_list[l].tr).symb()));
 
-    for (int i = 0; i < term_list.size()-1; i++) {
+    for (int i = 0; i < term_list.size() - 1; i++)
+    {
         PtChild ptc   = term_list[i];
-        Pterm& parent = logic.getPterm(ptc.parent);
+        Pterm &parent = logic.getPterm (ptc.parent);
         PTRef tr      = ptc.tr;
         int pos       = ptc.pos;
-        Pterm& pt     = logic.getPterm(tr);
+        Pterm &pt     = logic.getPterm (tr);
 
-        if (logic.isTheoryTerm(tr) and logic.isIte(pt.symb())) {
+        if (logic.isTheoryTerm (tr) and logic.isIte (pt.symb()))
+        {
             // (1) Add a new term o_ite with no arguments and same sort as pt
             // (2) add tr to ites
             // (3) replace parent[pos] with o_ite
-            SRef sr = logic.getSym(pt.symb()).rsort();
-            char* name;
-            asprintf(&name, ".oite%d", logic.getPterm(tr).getId());
-            PTRef o_ite = logic.mkVar(sr, name);
+            SRef sr = logic.getSym (pt.symb()).rsort();
+            char *name;
+            asprintf (&name, ".oite%d", logic.getPterm (tr).getId());
+            PTRef o_ite = logic.mkVar (sr, name);
             // The old term goes to PtPair
-            ites.push(PtPair(tr, o_ite));
+            ites.push (PtPair (tr, o_ite));
 #ifdef PEDANTIC_DEBUG
-            cerr << "Added the term " << logic.printTerm(tr) << " to later processing" << endl;
-            cerr << "; changing " << logic.printTerm(parent[pos]) << " to ";
+            cerr << "Added the term " << logic.printTerm (tr) << " to later processing" << endl;
+            cerr << "; changing " << logic.printTerm (parent[pos]) << " to ";
 #endif
             parent[pos] = o_ite;
 #ifdef PEDANTIC_DEBUG
-            cerr << logic.printTerm(parent[pos]) << endl;
+            cerr << logic.printTerm (parent[pos]) << endl;
 #endif
         }
     }
 
     vec<PTRef> ite_roots;
-    ite_roots.push(term_list[l].tr);
+    ite_roots.push (term_list[l].tr);
 
-    for (int j = 0; j < ites.size(); j++) {
+    for (int j = 0; j < ites.size(); j++)
+    {
         PTRef ite  = ites[j].x;
         PTRef sbst = ites[j].y;
-        PTRef b = logic.getPterm(ite)[0];
-        PTRef t = logic.getPterm(ite)[1];
-        PTRef e = logic.getPterm(ite)[2];
+        PTRef b = logic.getPterm (ite)[0];
+        PTRef t = logic.getPterm (ite)[1];
+        PTRef e = logic.getPterm (ite)[2];
 
         // b -> (= sbst t)
         vec<PTRef> args_eq;
-        args_eq.push(sbst);
-        args_eq.push(t);
-        PTRef eq_term = logic.mkEq(args_eq);
-        assert(eq_term != PTRef_Undef);
+        args_eq.push (sbst);
+        args_eq.push (t);
+        PTRef eq_term = logic.mkEq (args_eq);
+        assert (eq_term != PTRef_Undef);
         vec<PTRef> args_impl;
-        args_impl.push(b);
-        args_impl.push(eq_term);
-        PTRef if_term = logic.mkImpl(args_impl);
-        assert(if_term != PTRef_Undef);
+        args_impl.push (b);
+        args_impl.push (eq_term);
+        PTRef if_term = logic.mkImpl (args_impl);
+        assert (if_term != PTRef_Undef);
         // \neg b -> (= sbst e)
         vec<PTRef> args_eq2;
-        args_eq2.push(sbst);
-        args_eq2.push(e);
-        PTRef eq_term2 = logic.mkEq(args_eq2);
-        assert(eq_term2 != PTRef_Undef);
-        PTRef neg_term = logic.mkNot(b);
+        args_eq2.push (sbst);
+        args_eq2.push (e);
+        PTRef eq_term2 = logic.mkEq (args_eq2);
+        assert (eq_term2 != PTRef_Undef);
+        PTRef neg_term = logic.mkNot (b);
         vec<PTRef> args_impl2;
-        args_impl2.push(neg_term);
-        args_impl2.push(eq_term2);
+        args_impl2.push (neg_term);
+        args_impl2.push (eq_term2);
 
-        PTRef else_term = logic.mkImpl(args_impl2);
-        assert(else_term != PTRef_Undef);
+        PTRef else_term = logic.mkImpl (args_impl2);
+        assert (else_term != PTRef_Undef);
 
-        ite_roots.push(if_term);
-        ite_roots.push(else_term);
+        ite_roots.push (if_term);
+        ite_roots.push (else_term);
     }
+
     if (ite_roots.size() > 1)
-        return logic.mkAnd(ite_roots);
+        return logic.mkAnd (ite_roots);
     else return term_list[l].tr;
 }
 
-void Cnfizer::getVarMapping(CnfState& cs)
+void Cnfizer::getVarMapping (CnfState &cs)
 {
     // The mapping to terms
 #ifdef VERBOSE_FOPS
-    char* out = (char*)malloc(1);
+    char *out = (char *)malloc (1);
     out[0] = 0;
-    char* old;
+    char *old;
 #endif
-    for (int i = 0; i < solver.nVars(); i++) {
-        PTRef tr = tmap.varToPTRef(i);
-        cs.addToMap({i, tr});
+
+    for (int i = 0; i < solver.nVars(); i++)
+    {
+        PTRef tr = tmap.varToPTRef (i);
+        cs.addToMap ({i, tr});
 #ifdef VERBOSE_FOPS
         old = out;
-        char* map_s;
-        char* term_s = logic.printTerm(tmap.varToPTRef(i));
-        asprintf(&map_s, "%d -> %d [%s]", i, tmap.varToPTRef(i).x, term_s);
-        free(term_s);
-        asprintf(&out, "%s%s\n", old, map_s);
-        free(map_s);
+        char *map_s;
+        char *term_s = logic.printTerm (tmap.varToPTRef (i));
+        asprintf (&map_s, "%d -> %d [%s]", i, tmap.varToPTRef (i).x, term_s);
+        free (term_s);
+        asprintf (&out, "%s%s\n", old, map_s);
+        free (map_s);
 #endif
     }
 
@@ -878,6 +976,6 @@ void Cnfizer::getVarMapping(CnfState& cs)
     cerr << cs.getCnf() << endl;
     cerr << "Map looks like " << endl;
     cerr << out << endl;
-    free(out);
+    free (out);
 #endif
 }

@@ -350,16 +350,19 @@ PTRef MainSolver::rewriteMaxArity(PTRef root, Map<PTRef,int,PTRefHash>& PTRefToI
         assert(!cache.has(tr));
         cache.insert(tr, result);
 #ifdef PRODUCE_PROOF
-        if(logic.isAssertion(tr))
+        if(logic.isInterpolating())
         {
-            if(logic.isAnd(result))
+            if(logic.isAssertion(tr))
             {
-                Pterm& ptm = logic.getPterm(result);
-                for(int i = 0; i < ptm.size(); ++i)
-                    logic.setOriginalAssertion(ptm[i], tr);
+                if(logic.isAnd(result))
+                {
+                    Pterm& ptm = logic.getPterm(result);
+                    for(int i = 0; i < ptm.size(); ++i)
+                        logic.setOriginalAssertion(ptm[i], tr);
+                }
+                //else //should the entire conjunction also be set? TODO
+                logic.setOriginalAssertion(result, tr);
             }
-            //else //should the entire conjunction also be set? TODO
-            logic.setOriginalAssertion(result, tr);
         }
 #endif
     }

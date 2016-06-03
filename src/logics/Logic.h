@@ -30,8 +30,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SymStore.h"
 #include "PtStore.h"
 
-
-
 class SStore;
 class TStore;
 
@@ -57,10 +55,12 @@ class Logic {
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      disequalities;
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      ites;
 
+
+
     //for partitions:
     vec<PTRef> assertions;
 #ifdef PRODUCE_PROOF
-    map<PTRef, ipartitions_t> clause_class;
+    map<CRef, ipartitions_t> clause_class;
     map<Var, ipartitions_t> var_class;
     map<PTRef, PTRef> flat2orig;
 #endif
@@ -222,6 +222,15 @@ class Logic {
     void dumpChecksatToFile(ostream& dump_out);
 
 #ifdef PRODUCE_PROOF
+
+    PTRef getPartitionA(const ipartitions_t&);
+    PTRef getPartitionB(const ipartitions_t&);
+    bool implies(PTRef, PTRef);
+    bool verifyInterpolantA(PTRef, const ipartitions_t&);
+    bool verifyInterpolantB(PTRef, const ipartitions_t&);
+    bool verifyInterpolant(PTRef, const ipartitions_t&);
+
+
     // Partitions
     void setOriginalAssertion(PTRef flat, PTRef orig)
     {
@@ -460,11 +469,22 @@ class Logic {
         assertions.push(pref);
         return term_store.assignPartition(pref, msg);
     }
+
+    bool isInterpolating()
+    {
+#ifdef PRODUCE_PROOF
+        return config.produce_inter() && assertions.size() >= 2;
+#else
+        return false;
+#endif //PRODUCE_PROOF
+    }
+
+
 #ifdef PRODUCE_PROOF
     void setIPartitionsIte(PTRef pref);
-    ipartitions_t& getClauseClassMask(PTRef l) { return clause_class[l]; }
+    ipartitions_t& getClauseClassMask(CRef l) { return clause_class[l]; }
     ipartitions_t& getVarClassMask(Var l) { return var_class[l]; }
-    void addClauseClassMask(PTRef l, const ipartitions_t& toadd);
+    void addClauseClassMask(CRef l, const ipartitions_t& toadd);
     void addVarClassMask(Var l, const ipartitions_t& toadd);
 #endif
     vec<PTRef>& getAssertions() { return assertions; }
@@ -489,6 +509,9 @@ class Logic {
     int subst_num; // Number of substitutions
 
     void collectStats(PTRef, int& n_of_conn, int& n_of_eq, int& n_of_uf);
+
+	inline int     verbose                       ( ) const { return config.verbosity(); }
 };
+
 #endif // LOGIC_H
 

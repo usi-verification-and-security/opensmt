@@ -867,6 +867,7 @@ CGraph::interpolate_flat(const path_t& p)
 PTRef
 CGraph::getInterpolant( const ipartitions_t & mask )
 {
+    /*
     cerr << "; Interpolating QF_UF using ";
     if(usingStrong())
         cerr << "Strong";
@@ -877,7 +878,7 @@ CGraph::getInterpolant( const ipartitions_t & mask )
     else
         opensmt_error("This EUF interpolation algorithm does not exist");
     cerr << endl;
-
+*/
   assert( !colored );
 
   srand(2);
@@ -1078,7 +1079,8 @@ CGraph::getInterpolant( const ipartitions_t & mask )
   //cerr << "; Size stats:\n; Max height: " << max_height << "\n; Max width: " << max_width << endl;
 
   interpolant = result;
-  if(config.certify_inter() >= 1)
+  if(config.certify_inter() >= 2)
+      //logic.verifyInterpolant(interpolant, mask);
 	  verifyInterpolantWithExternalTool(mask);
   return interpolant;
 }
@@ -2263,16 +2265,18 @@ CGraph::labelFactors(vector<path_t>& factors)
     }
 }
 
+
 void
 CGraph::verifyInterpolantWithExternalTool( const ipartitions_t& mask )
 {
     if(interpolant == PTRef_Undef)
     {
-        cerr << "; Error. Can't verify interpolant. Interpolant not computed yet" << endl;
+        opensmt_error("; Cannot verify interpolant. Interpolant not computed yet.");
         return;
     }
 
-    cerr << "; Verifying partial interpolant" << endl;
+    if(verbose())
+        cout << "; Verifying theory partial interpolant" << endl;
 
     PTRef A = PTRef_Undef;
     PTRef B = PTRef_Undef;
@@ -2304,67 +2308,10 @@ CGraph::verifyInterpolantWithExternalTool( const ipartitions_t& mask )
     A = logic.mkAnd(a_args);
     B = logic.mkAnd(b_args);
 
-    /*
-    cerr << ";CGraph edges inside verify: " << endl;
-    vec<PTRef> ced;
-    for(int i = 0; i < cedges.size(); ++i)
-    {
-        vec<PTRef> lala;
-        lala.push(cedges[i]->source->e);
-        lala.push(cedges[i]->target->e);
-        PTRef lalaeq = logic.mkEq(lala);
-        cerr << ';' << logic.printTerm(lalaeq) << " (" << cedges[i]->color << ") ";
-        if(cedges[i]->reason == PTRef_Undef) cerr << "; (congruence)" << endl;
-        else cerr << "; (basic)" << endl;
-        //ced.push(logic.mkEq(lala));
-    }
-    //PTRef cand = logic.mkAnd(ced);
-    //cerr << logic.printTerm(cand) << endl;
-
-    cerr << ";Conflict: " << logic.printTerm(conf1) << " = " << logic.printTerm(conf2) << " has color " << conf_color << endl;
-*/
-    /*
-    for(int i = 0; i < A_basic.size(); ++i)
-    {
-        //CEdge* ce = A_basic[i];
-        //vec<PTRef> tmp, tmp2;
-        //tmp.push(ce->source->e); tmp2.push(ce->target->e);
-        //tmp.push(ce->target->e); tmp2.push(ce->source->e);
-        //if(!logic.existsTermHash(logic.getSym_eq(), tmp) && !logic.existsTermHash(logic.getSym_eq(), tmp2))
-        //    cerr << "ERROR, weird, basic A edge contains non original A equality" << endl;
-        a_args.push(A_basic[i]);
-    }
-    A = logic.mkAnd(a_args);
-    for(int i = 0; i < B_basic.size(); ++i)
-    {
-        //CEdge* ce = B_basic[i];
-        //vec<PTRef> tmp, tmp2;
-        //tmp.push(ce->source->e); tmp2.push(ce->target->e);
-        //tmp.push(ce->target->e); tmp2.push(ce->source->e);
-        //if(!logic.existsTermHash(logic.getSym_eq(), tmp) && !logic.existsTermHash(logic.getSym_eq(), tmp2))
-        //    cerr << "ERROR, weird, basic B edge contains non original B equality" << endl;
-        b_args.push(B_basic[i]);
-    }
-    B = logic.mkAnd(b_args);
-*/
 #ifdef ITP_DEBUG
     cerr << ";A: " << logic.printTerm(A) << endl;
     cerr << ";B: " << logic.printTerm(B) << endl;
 #endif
-
-    /*
-    vec<PTRef> A;
-    vec<PTRef> B;
-
-    vec<PTRef>& assertions = logic.getAssertions();
-    for(int i = 0; i < assertions.size(); ++i)
-    {
-        PTRef a = assertions[i];
-        //if((logic.getIPartitions(a) & ~mask) != 0) A.push(a);
-        if(isAstrict(logic.getIPartitions(a), mask)) A.push(a);
-        else B.push(a);
-    }
-    */
 
     // Check A -> I, i.e., A & !I
     // First stage: print declarations
@@ -2409,11 +2356,14 @@ CGraph::verifyInterpolantWithExternalTool( const ipartitions_t& mask )
 
     if ( tool_res == true )
     {
-      //opensmt_error2( config.certifying_solver, " says A -> I does not hold" );
+      opensmt_error("A -> I does not hold");
       cerr << "; Error, A -> I does not hold" << endl;
     }
     else
-      cerr << "; A -> I holds" << endl;
+    {
+//        if(verbose())
+//            cerr << "; A -> I holds" << endl;
+    }
 
     // Now check B & I
     const char * name_B = "verifyinterp_B.smt2";
@@ -2459,11 +2409,16 @@ CGraph::verifyInterpolantWithExternalTool( const ipartitions_t& mask )
     }
     if ( tool_res == true )
     {
-      //opensmt_error2( config.certifying_solver, " says B & I does not hold" );
+      opensmt_error( " B -> !I does not hold" );
       cerr << "; Error B & I -> false does not hold" << endl;
     }
     else
-      cerr << "; B & I -> false holds" << endl;
+    {
+      //cerr << "; B & I -> false holds" << endl;
+    }
+
+    if(verbose())
+        cout << "; Theory partial interpolant is sound" << endl;
 }
 
 void CGraph::printAsDotty( ostream & os )
