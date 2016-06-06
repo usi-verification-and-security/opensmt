@@ -36,7 +36,7 @@ extern "C" {
 //
 // Datatypes
 //
-typedef struct osmt_expr { int x; } osmt_expr;
+typedef struct osmt_expr { unsigned x; } osmt_expr;
 typedef struct osmt_context { void *c; } osmt_context;
 typedef enum { l_false=-1, l_undef, l_true } osmt_result;
 typedef enum
