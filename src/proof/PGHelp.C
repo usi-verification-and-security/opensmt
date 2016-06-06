@@ -289,6 +289,7 @@ void ProofGraph::getComplexityInterpolant( PTRef int_e )
 	unsigned num_and_or_dag = 0;
 
 	q.push_back(int_e);
+    Logic& logic = thandler.getLogic();
 	do
 	{
 		e_curr=q.back();
@@ -302,6 +303,9 @@ void ProofGraph::getComplexityInterpolant( PTRef int_e )
 			{
 				// Complexity of atom is 0
 				complexity_map.insert( pair< PTRef, unsigned long >( e_curr, 0 ) );
+#ifdef PEDANTIC_DEBUG
+                cerr << "; Adding complexity of " << logic.printTerm(e_curr) << " = 0" << endl;
+#endif
 				// Add predicate to set
 				if ( e_curr != logic_.getTerm_true() && e_curr != logic_.getTerm_false() ) predicates.insert(thandler.ptrefToVar( e_curr ));
 				visited.insert(e_curr);
@@ -319,6 +323,9 @@ void ProofGraph::getComplexityInterpolant( PTRef int_e )
 				unsigned long num_args=0;
 				// Scan arguments of connective
 //				for ( PTRef alist = args ; !alist->isEnil( ) && all_visited; alist = alist->getCdr( ) )
+#ifdef PEDANTIC_DEBUG
+                cerr << "; Checking if all the children of " << logic.printTerm(e_curr) << " are visited" << endl;				
+#endif
 				Pterm& t = logic_.getPterm(e_curr);
 				for (int i = 0; i < t.size(); i++)
 				{
@@ -329,22 +336,34 @@ void ProofGraph::getComplexityInterpolant( PTRef int_e )
 					{
 						q.push_back(sub_e);
 						all_visited=false;
+#ifdef PEDANATIC_DEBUG
+                        cerr << "; Pushing " << logic.printTerm(sub_e) << endl;
+#endif
 					}
 					else
 					{
 						// Calculate complexity
 						comp_curr += complexity_map.find(sub_e)->second;
+#ifdef PEDANTIC_DEBUG
+                        cerr << "; Child " << logic.printTerm(sub_e) << " already visited, complexity " << complexity_map.find(sub_e)->second << endl;
+#endif
 						num_args++;
 					}
 				}
 				if(all_visited)
 				{
+#ifdef PEDANTIC_DEBUG
+                    cerr << "; All children of " << logic.printTerm(e_curr) << " are visited" << endl;
+#endif
 					unsigned additional_compl = 0;
 
 					// Formula tree representation
-					if( logic_.isAnd(e_curr) || logic_.isOr(e_curr) ) additional_compl = comp_curr + num_args - 1;
-					else if( logic_.isNot(e_curr) ) { assert(num_args==1); additional_compl = comp_curr + 1; }
+					if( logic_.isAnd(e_curr) || logic_.isOr(e_curr) ) additional_compl = num_args - 1;
+					else if( logic_.isNot(e_curr) ) { assert(num_args==1); additional_compl = 1; }
 					complexity_map.insert(pair<PTRef,unsigned long>(e_curr, comp_curr + additional_compl));
+#ifdef PEDANTIC_DEBUG
+                    cerr << "; Complexity of " << logic.printTerm(e_curr) << " = " << complexity_map.find(e_curr)->second << endl;
+#endif
 
 					// Formula dag representation
 					if( logic_.isAnd(e_curr) || logic_.isOr(e_curr) ) { additional_compl = num_args - 1; num_and_or_dag = num_and_or_dag + additional_compl; }
