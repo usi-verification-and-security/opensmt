@@ -323,14 +323,22 @@ osmt_expr osmt_mk_num_from_string( osmt_context c, const char * s )
     return { res.x };
 }
 
-osmt_expr osmt_mk_num_from_mpz( osmt_context c, const mpz_t n )
+osmt_expr osmt_mk_num_from_frac( osmt_context c, const int nom, const int den )
 {
     MainSolver* solver;
     CAST(c, solver);
     assert(solver->getLogic().getLogic() == QF_LRA);
-    assert(n);
-    mpz_class n_(n);
-    opensmt::Real num(n_);
+    opensmt::Real num(nom, den);
+    PTRef res = static_cast<LRALogic&>(solver->getLogic()).mkConst(num);
+    return { res.x };
+}
+
+osmt_expr osmt_mk_num_from_num( osmt_context c, const int number )
+{
+    MainSolver* solver;
+    CAST(c, solver);
+    assert(solver->getLogic().getLogic() == QF_LRA);
+    opensmt::Real num(number);
     PTRef res = static_cast<LRALogic&>(solver->getLogic()).mkConst(num);
     return { res.x };
 }
