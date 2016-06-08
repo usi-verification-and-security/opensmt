@@ -20,6 +20,7 @@ Opensmt::Opensmt(opensmt_logic _logic)
     thandler = new THandler(*config, *theory);
     solver = new SimpSMTSolver(*config, *thandler);
     mainSolver = new MainSolver(*thandler, *config, solver);
+    mainSolver->initialize();
 }
 
 Opensmt::~Opensmt()
