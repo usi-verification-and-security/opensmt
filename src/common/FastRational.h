@@ -51,6 +51,8 @@ public:
 
   FastRational( word x ) : has_mpq(false), has_word(true), num(x), den(1) { }
 
+  FastRational(word num, word den) : has_mpq(false), has_word(true), num(num), den(den) { }
+
   FastRational(const char* s, const int base = 10);
 
   inline FastRational( const FastRational & );

@@ -27,8 +27,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef OPENSMT_C_H
 #define OPENSMT_C_H
 
-#include "gmp.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -67,15 +65,14 @@ osmt_result      osmt_check                     ( osmt_context );
 unsigned         osmt_conflicts                 ( osmt_context );
 unsigned         osmt_decisions                 ( osmt_context );
 osmt_expr        osmt_get_value                 ( osmt_context, osmt_expr );
-void             osmt_get_num                   ( osmt_expr n, mpz_t val );
+//void             osmt_get_num                   ( osmt_expr n, mpz_t val );
 osmt_result      osmt_get_bool                  ( osmt_context c, osmt_expr p );
-void             osmt_prefer                    ( osmt_expr a );
 void             osmt_polarity                  ( osmt_context c, osmt_expr a, int pos );
 
 
 void             osmt_get_model                 ( osmt_context, const char * );
-void             osmt_print_proof               ( osmt_context, const char * );
-void             osmt_print_interpolant         ( osmt_context, const char * );
+//void             osmt_print_proof               ( osmt_context, const char * );
+//void             osmt_print_interpolant         ( osmt_context, const char * );
 
 void             osmt_dump_assertions_to_file   ( osmt_context, const char * );
 
@@ -85,19 +82,15 @@ void             osmt_dump_assertions_to_file   ( osmt_context, const char * );
 osmt_expr     osmt_mk_true                   ( osmt_context );
 osmt_expr     osmt_mk_false                  ( osmt_context );
 osmt_expr     osmt_mk_bool_var               ( osmt_context, const char * );
-//osmt_expr     osmt_mk_int_var                ( osmt_context, const char * );
 osmt_expr     osmt_mk_real_var               ( osmt_context, const char * );
-//osmt_expr     osmt_mk_bv_var                 ( osmt_context, const char *, unsigned );
-//osmt_expr     osmt_mk_cost_var               ( osmt_context, const char * );
 osmt_expr     osmt_mk_or                     ( osmt_context, osmt_expr *, unsigned );
 osmt_expr     osmt_mk_and                    ( osmt_context, osmt_expr *, unsigned );
 osmt_expr     osmt_mk_eq                     ( osmt_context, osmt_expr, osmt_expr );
-//osmt_expr     osmt_mk_diseq                  ( osmt_context, osmt_expr, osmt_expr );
 osmt_expr     osmt_mk_ite                    ( osmt_context, osmt_expr, osmt_expr, osmt_expr );
 osmt_expr     osmt_mk_not                    ( osmt_context, osmt_expr );
 osmt_expr     osmt_mk_num_from_string        ( osmt_context, const char * );
-osmt_expr     osmt_mk_num_from_mpz           ( osmt_context, const mpz_t );
-osmt_expr     osmt_mk_num_from_mpq           ( osmt_context, const mpq_t );
+osmt_expr     osmt_mk_num_from_frac          ( osmt_context, const int nom, const int den);
+osmt_expr     osmt_mk_num_from_num           ( osmt_context, const int num );
 osmt_expr     osmt_mk_plus                   ( osmt_context, osmt_expr *, unsigned );
 osmt_expr     osmt_mk_minus                  ( osmt_context, osmt_expr, osmt_expr );
 osmt_expr     osmt_mk_times                  ( osmt_context, osmt_expr *, unsigned );
@@ -105,6 +98,12 @@ osmt_expr     osmt_mk_lt                     ( osmt_context, osmt_expr, osmt_exp
 osmt_expr     osmt_mk_leq                    ( osmt_context, osmt_expr, osmt_expr );
 osmt_expr     osmt_mk_gt                     ( osmt_context, osmt_expr, osmt_expr );
 osmt_expr     osmt_mk_geq                    ( osmt_context, osmt_expr, osmt_expr );
+//osmt_expr     osmt_mk_int_var                ( osmt_context, const char * );
+//osmt_expr     osmt_mk_bv_var                 ( osmt_context, const char *, unsigned );
+//osmt_expr     osmt_mk_cost_var               ( osmt_context, const char * );
+//osmt_expr     osmt_mk_diseq                  ( osmt_context, osmt_expr, osmt_expr );
+//osmt_expr     osmt_mk_num_from_mpz           ( osmt_context, const mpz_t );
+//osmt_expr     osmt_mk_num_from_mpq           ( osmt_context, const mpq_t );
 
 //osmt_expr     osmt_mk_bv_constant            ( osmt_context, unsigned, unsigned long );
 //osmt_expr     osmt_mk_bv_constant_from_string( osmt_context, unsigned, const char * );
