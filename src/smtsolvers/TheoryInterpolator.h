@@ -7,7 +7,7 @@
 class TheoryInterpolator
 {
 public:
-    virtual PTRef getInterpolant(const ipartitions_t&) = 0;
+    virtual PTRef getInterpolant(const ipartitions_t&, map<PTRef, icolor_t>*) = 0;
 };
 
 #endif //THEORY_INTERPOLATOR_H

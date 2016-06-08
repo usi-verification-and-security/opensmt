@@ -50,7 +50,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "UFInterpolator.h"
 #endif
 
-
 class Egraph : public TSolver
 {
 private:
@@ -518,9 +517,9 @@ public:
   inline void     setAutomaticColoring    ( ) { assert( !automatic_coloring ); automatic_coloring = true; }
   inline unsigned getNofPartitions        ( ) { return iformula - 1; }
 
-  PTRef getInterpolant(const ipartitions_t& mask)
+  PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
   {
-        return cgraph->getInterpolant(mask);
+        return cgraph->getInterpolant(mask, labels);
   }
 
   TheoryInterpolator*         getTheoryInterpolator()

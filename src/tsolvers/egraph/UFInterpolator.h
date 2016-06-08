@@ -114,6 +114,7 @@ public:
     , max_height(0)
     , flat(false)
     , divided(false)
+    , m_labels(NULL)
   { }
 
   ~CGraph( ) { clear( ); }
@@ -123,7 +124,7 @@ public:
   void     addCNode      ( PTRef );
   void     addCEdge      ( PTRef, PTRef, PTRef );
   void     revertEdges   ( CNode * );
-  PTRef  getInterpolant( const ipartitions_t & );
+  PTRef  getInterpolant( const ipartitions_t & , map<PTRef, icolor_t>*);
   void     printAsDotty  ( ostream & );
 
   inline void setConf( PTRef c1, PTRef c2, PTRef r )
@@ -217,6 +218,7 @@ private:
   map< path_t, icolor_t > L;
   PTRef interpolant;
   icolor_t conf_color;
+  map<PTRef, icolor_t> *m_labels;
   vec<PTRef> A_basic;
   vec<PTRef> B_basic;
   unsigned int max_width;

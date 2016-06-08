@@ -33,6 +33,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "TSolver.h"
 #include "Logic.h"
 #include "TreeOps.h"
+
 #ifdef PRODUCE_PROOF
 #include "TheoryInterpolator.h"
 #endif
@@ -69,7 +70,7 @@ public:
 
 #ifdef PRODUCE_PROOF
     virtual TheoryInterpolator* getTheoryInterpolator() = 0;
-    virtual PTRef getInterpolant(const ipartitions_t& mask) = 0;
+    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t>*) = 0;
 #endif
 
     ValPair getValue          (PTRef tr) const;

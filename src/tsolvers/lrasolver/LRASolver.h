@@ -119,7 +119,7 @@ public:
 
 #ifdef PRODUCE_PROOF
   TheoryInterpolator* getTheoryInterpolator() { return NULL; }
-  PTRef getInterpolant( const ipartitions_t & ); // Fill a vector with interpolants
+  PTRef getInterpolant( const ipartitions_t &, map<PTRef, icolor_t>* ); // Fill a vector with interpolants
   bool usingStrong() { return config.itp_lra_alg() == 0; }
   bool usingWeak() { return config.itp_lra_alg() == 2; }
   bool usingRandom() { return config.itp_lra_alg() == 3; }

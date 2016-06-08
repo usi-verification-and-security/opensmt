@@ -49,9 +49,9 @@ class LRATHandler : public TSolverHandler
     {
         return NULL;
     }
-    PTRef getInterpolant(const ipartitions_t& mask)
+    PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
     {
-        return lrasolver->getInterpolant(mask);
+        return lrasolver->getInterpolant(mask, labels);
     }
 #endif
 };

@@ -226,9 +226,9 @@ void THandler::getConflict (
 #ifdef PRODUCE_PROOF
 
 PTRef
-THandler::getInterpolant(const ipartitions_t& mask)
+THandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
 {
-    return getSolverHandler().getInterpolant(mask);
+    return getSolverHandler().getInterpolant(mask, labels);
 }
 
 

@@ -52,9 +52,9 @@ class UFTHandler : public TSolverHandler
         return egraph->getTheoryInterpolator();
     }
 
-    PTRef getInterpolant(const ipartitions_t& mask)
+    PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
     {
-        return egraph->getInterpolant(mask);
+        return egraph->getInterpolant(mask, labels);
     }
 #endif
 };

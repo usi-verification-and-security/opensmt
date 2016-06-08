@@ -1996,7 +1996,7 @@ LRASolver::~LRASolver( )
 //
 
 PTRef
-LRASolver::getInterpolant( const ipartitions_t & mask )
+LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *labels)
 {
     //opensmt_error("Interpolation not supported for LRA");
     //return logic.getTerm_true();

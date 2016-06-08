@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with Periplo. If not, see <http://www.gnu.org/licenses/>.
  *********************************************************************/
 
+#include <cstdio>
 
 #ifdef PRODUCE_PROOF
 #include "PG.h"
@@ -396,6 +397,7 @@ void ProofGraph::produceSingleInterpolant ( vector<PTRef> &interpolants, const i
 
     // check leaves for False clause
     // TODO do this in a better fucking way...
+    
     for ( size_t i = 0 ; i < proof_size ; i++ )
     {
         n = getNode ( DFSv[ i ] );
@@ -408,7 +410,7 @@ void ProofGraph::produceSingleInterpolant ( vector<PTRef> &interpolants, const i
             vector<Lit> &cl = n->getClause();
             bool fal = false;
 
-            if (cl.size() <= 1 && cl[0].x == 2)
+            if (cl.size() <= 1 && thandler.varToTerm(var(cl[0])) == thandler.getLogic().getTerm_false() && !sign(cl[0]))
                 fal = true;
 
             if ((n->getType() == CLAORIG && n->getClauseRef() == CRef_Undef) || fal)
@@ -429,7 +431,7 @@ void ProofGraph::produceSingleInterpolant ( vector<PTRef> &interpolants, const i
             }
         }
     }
-
+    
     if ( verbose() > 0 ) cerr << "# Generating interpolant " << endl;
 
     map<Var, icolor_t> *PSFunction = computePSFunction (DFSv, A_mask);
@@ -474,7 +476,16 @@ void ProofGraph::produceSingleInterpolant ( vector<PTRef> &interpolants, const i
                     newvec.push (~oldvec[i]);
 
                 thandler.assertLits (newvec);
-                partial_interp = thandler.getInterpolant (A_mask);
+                map<PTRef, icolor_t> ptref2label;
+                vector<Lit>& cl = n->getClause();
+                
+                for(int i = 0; i < cl.size(); ++i)
+                {
+                    ptref2label[thandler.varToTerm(var(cl[i]))] = getVarColor(n, var(cl[i]));
+                    //cerr << "Var " << var(cl[i]) << " = PTRef " << thandler.getLogic().printTerm(thandler.varToTerm(var(cl[i]))) << " has label " << getVarColor(n, var(cl[i])) << endl;
+                }
+                
+                partial_interp = thandler.getInterpolant (A_mask, &ptref2label);
             }
 
             assert ( partial_interp != PTRef_Undef );
@@ -499,7 +510,17 @@ void ProofGraph::produceSingleInterpolant ( vector<PTRef> &interpolants, const i
     // Last clause visited is the empty clause with total interpolant
     assert (partial_interp == getRoot()->getPartialInterpolant());
 
-    if( verbose() ) getComplexityInterpolant(partial_interp);
+    if( verbose() )
+    {
+        getComplexityInterpolant(partial_interp);
+        /*
+        int nbool, neq, nuf;
+        thandler.getLogic().collectStats(partial_interp, nbool, neq, nuf);
+        cerr << "; Number of boolean connectives: " << nbool << endl;
+        cerr << "; Number of equalities " << neq << endl;
+        cerr << "; Number of uninterpreted functions: " << nuf << endl;
+        */
+    }
     //if ( enabledInterpVerif() ) verifyPartialInterpolantFromLeaves( getRoot(), A_mask );
     if ( enabledInterpVerif() )
     {
@@ -514,7 +535,7 @@ void ProofGraph::produceSingleInterpolant ( vector<PTRef> &interpolants, const i
 
     PTRef interpol = getRoot()->getPartialInterpolant();
     assert (interpol != PTRef_Undef);
-
+    cerr << "; ITP:\n" << thandler.getLogic().printTerm(interpol) << endl;
     interpolants.push_back ( interpol );
 }
 
@@ -900,8 +921,8 @@ PTRef ProofGraph::compInterpLabelingInnerSimple ( ProofNode *n, const ipartition
 
 void ProofGraph::checkInterAlgo()
 {
-    if(!usingPudlakInterpolation())
-        opensmt_error("Please use Pudlak (1) for boolean interpolation for now");
+//    if(!usingPudlakInterpolation())
+//        opensmt_error("Please use Pudlak (1) for boolean interpolation for now");
     if ( ! ( usingMcMillanInterpolation()
              || usingPudlakInterpolation()
              || usingMcMillanPrimeInterpolation()
@@ -963,9 +984,6 @@ ProofGraph::labelLeaf (ProofNode *n, const ipartitions_t &A_mask, unsigned num_c
 // Output: Labeling-based partial interpolant for the clause
 PTRef ProofGraph::compInterpLabelingOriginal ( ProofNode *n, const ipartitions_t &A_mask, unsigned num_config , map<Var, icolor_t> *PSFunction)
 {
-    // First set labeling for AB class literals
-    //labelLeaf(n, A_mask, num_config, PSFunction);
-
     // Then calculate interpolant
     icolor_t clause_color = getClauseColor ( n->getInterpPartitionMask(), A_mask );
 #ifdef ITP_DEBUG

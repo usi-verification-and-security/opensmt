@@ -64,6 +64,46 @@ void ProofGraph::computeABVariablesMapping( const ipartitions_t & A_mask )
 	}
 }
 
+
+icolor_t ProofGraph::getVarColor( ProofNode* n , Var v)
+{
+	assert( n->isLeaf() );
+	// In labeling, classes and colors are distinct
+	icolor_t var_class = getVarClass2( v );
+
+	icolor_t var_color = I_UNDEF;
+	// Determine if variable A-local, B-local or AB-common
+	if ( var_class == I_A || var_class == I_B ) var_color = var_class;
+	else if (  var_class == I_AB )
+	{
+		if( isColoredA( n,v ) ) var_color = I_A;
+		else if ( isColoredB( n,v )  ) var_color = I_B;
+		else if ( isColoredAB( n,v ) ) var_color = I_AB;
+		else
+		{
+            /*
+			icolor_t var_color_1=I_UNDEF;
+			if( isColoredA( n->getAnt1(),v ) ) var_color_1 = I_A;
+			else if ( isColoredB( n->getAnt1(),v )  ) var_color_1 = I_B;
+			else if ( isColoredAB( n->getAnt1(),v ) ) var_color_1 = I_AB;
+
+			icolor_t var_color_2=I_UNDEF;
+			if( isColoredA( n->getAnt2(),v ) ) var_color_2 = I_A;
+			else if ( isColoredB( n->getAnt2(),v )  ) var_color_2 = I_B;
+			else if ( isColoredAB( n->getAnt2(),v ) ) var_color_2 = I_AB;
+
+			cerr << "Pivot " << v << " has colors " << var_color_1 << " " << var_color_2 <<
+					" in antecedents but no color in resolvent" << endl;
+                    */
+            cerr << "Var has no label" << endl;
+			opensmt_error_();
+		}
+	}
+	else opensmt_error( "Var " << v << " has no class" );
+
+	return var_color;
+}
+
 // Input: node, current interpolant partition masks for A and B
 // e.g. 0---010 first partition in A
 // node
@@ -203,11 +243,12 @@ ProofGraph::computePSFunction(vector< clauseid_t >& DFSv, const ipartitions_t& A
 		{
 			n = getNode(DFSv[i]); assert(n);
 			if(!n->isLeaf()) continue;
+            if(n->getType() == CLATHEORY) continue;
 			if(n->getType() != CLAORIG)
 			{
-		            if(n->getType() != CLATHEORY)
-     			        opensmt_error( "Clause is not original" );
+                opensmt_error( "Clause is not original" );
 			}
+
 			icolor_t col = getClauseColor(n->getInterpPartitionMask(), A_mask);
 			vector<Lit>& lits = n->getClause();
 			if(!lits.empty())
@@ -264,10 +305,11 @@ ProofGraph::computePSFunction(vector< clauseid_t >& DFSv, const ipartitions_t& A
 				labels->insert(pair<Var, icolor_t>(v, I_B));
 			}
 		}
-		cout << avars << " A> " << aevars << " A=\n" << bvars << " B> " << bevars << " B=" << endl;
+		//cout << avars << " A> " << aevars << " A=\n" << bvars << " B> " << bevars << " B=" << endl;
 		///////////////////////////////////////////////////////////
 		time(&after);
-		cout << "Time spent computing PS labeling function: " << difftime(after, before) << "s" << endl;
+        if(verbose())
+    		cout << "; Time spent computing PS labeling function: " << difftime(after, before) << "s" << endl;
 	}
 
 	return labels;
