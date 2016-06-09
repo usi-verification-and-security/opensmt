@@ -68,6 +68,24 @@ need to specify these with -L and -I, respectively, and set the
 LD_LIBRARY_PATH variable accordingly.
 
 +------------------------------------------------------------------------------+
+| Using OpenSMT2 as a library through the Python API                           |
++------------------------------------------------------------------------------+
+
+We provide an experimental Python interface for OpenSMT2.  The interface
+is available if the library is built and you have SWIG installed.  The
+python bindings can be compiled by running the script
+
+  $ ./get-python-wrappers.sh
+
+You need to set up the scripts right for running this since compiling
+the bindings is not yet integrated to the build system.  There is an
+example python file in
+
+  examples/test.py
+
+Also here you possibly need to set the LD_LIBRARY_PATH variable
+
++------------------------------------------------------------------------------+
 | Using OpenSMT2 interpolation                                                 |
 +------------------------------------------------------------------------------+
 

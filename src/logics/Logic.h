@@ -158,9 +158,8 @@ class Logic {
         new_root = mkAnd(args);
     }
 
-    bool          setLogic     (const char* l);
-    Logic_t       getLogic     ()                const { return logic_type; }
-    virtual const char* getName()                const { return logic_type.str; }
+    virtual const Logic_t getLogic() const;
+    virtual const char* getName()    const;
 
     // Identifiers
     IdRef       newIdentifier (const char* name)            { return id_store.newIdentifier(name); }
@@ -195,6 +194,7 @@ class Logic {
     PTRef       mkAnd         (vec<PTRef>&);
     PTRef       mkOr          (vec<PTRef>&);
     PTRef       mkXor         (vec<PTRef>&);
+    PTRef       mkXor         (PTRef a1, PTRef a2) { vec <PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkXor(tmp); }
     PTRef       mkImpl        (vec<PTRef>&);
     PTRef       mkImpl        (PTRef _a, PTRef _b);
     PTRef       mkNot         (PTRef);

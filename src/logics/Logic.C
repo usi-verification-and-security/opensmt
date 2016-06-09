@@ -188,6 +188,18 @@ Logic::~Logic()
     cerr << "; Substitutions............: " << subst_num << endl;
 }
 
+const Logic_t
+Logic::getLogic() const
+{
+    return QF_LRA;
+}
+
+const char*
+Logic::getName() const
+{
+    return QF_LRA.str;
+}
+
 // Escape the symbol name if it contains a prohibited character from the
 // following list:
 //  - #
@@ -311,11 +323,6 @@ bool Logic::isTheorySymbol(SymRef tr) const {
     if (tr == sym_ITE)      return false;
     if (tr == sym_DISTINCT) return false;
     return true;
-}
-
-
-bool Logic::setLogic(const char* l) {
-    return false;
 }
 
 // description: Add equality for each new sort

@@ -88,6 +88,9 @@ osmt_expr     osmt_mk_and                    ( osmt_context, osmt_expr *, unsign
 osmt_expr     osmt_mk_eq                     ( osmt_context, osmt_expr, osmt_expr );
 osmt_expr     osmt_mk_ite                    ( osmt_context, osmt_expr, osmt_expr, osmt_expr );
 osmt_expr     osmt_mk_not                    ( osmt_context, osmt_expr );
+osmt_expr     osmt_mk_impl                   ( osmt_context, osmt_expr, osmt_expr );
+osmt_expr     osmt_mk_xor                    ( osmt_context, osmt_expr, osmt_expr );
+
 osmt_expr     osmt_mk_num_from_string        ( osmt_context, const char * );
 osmt_expr     osmt_mk_num_from_frac          ( osmt_context, const int nom, const int den);
 osmt_expr     osmt_mk_num_from_num           ( osmt_context, const int num );

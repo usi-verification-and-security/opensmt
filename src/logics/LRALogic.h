@@ -68,10 +68,12 @@ class LRALogic: public Logic
 
     bool split_eq;
     void visit(PTRef, Map<PTRef,PTRef,PTRefHash>&);
-    virtual const char* getName()                const { return logic_type.str; }
   public:
     LRALogic                    (SMTConfig& c);
     ~LRALogic                   () { for (int i = 0; i < reals.size(); i++) delete reals[i]; }
+
+    virtual const char* getName()                const { return getLogic().str; }
+    virtual const Logic_t getLogic()             const { return QF_LRA; }
 
     PTRef       insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg);
 

@@ -44,6 +44,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //  assert( FROM ); \
 //  OpenSMTContext * FROM_ = static_cast< OpenSMTContext * >( FROM ); \
 //  OpenSMTContext & TO = *FROM_;
+bool
+check_logic_compat(MainSolver* solver, Logic_t type)
+{
+    Logic_t solver_type = solver->getLogic().getLogic();
+    if (solver_type != type) {
+        printf("Expected logic %s but command expects %s\n", solver_type.str, type.str);
+        return false;
+    }
+    return true;
+}
 
 //
 // Communication APIs
@@ -72,6 +82,14 @@ osmt_context osmt_mk_context( osmt_logic l )
         SimpSMTSolver* solver = new SimpSMTSolver(*config, *thandler);
         MainSolver* mainSolver = new MainSolver(*thandler, *config, solver);
         // Return MainSolver
+        return { mainSolver };
+    }
+    else if (l == qf_lra)
+    {
+        LRATheory *lratheory = new LRATheory(*config);
+        THandler *thandler = new THandler(*config, *lratheory);
+        SimpSMTSolver* solver = new SimpSMTSolver(*config, *thandler);
+        MainSolver* mainSolver = new MainSolver(*thandler, *config, solver);
         return { mainSolver };
     }
     else {
@@ -233,7 +251,9 @@ osmt_expr osmt_mk_real_var( osmt_context c, const char * s )
 {
     MainSolver* solver;
     CAST(c, solver);
-    assert(solver->getLogic().getLogic() == QF_LRA);
+    if (!check_logic_compat(solver, QF_LRA))
+        return { PTRef_Undef.x };
+
     assert(s);
     PTRef tr = static_cast<LRALogic&>(solver->getLogic()).mkRealVar(s);
     return { tr.x };
@@ -305,6 +325,22 @@ osmt_expr osmt_mk_ite( osmt_context c, osmt_expr i, osmt_expr t, osmt_expr e )
     return { res.x };
 }
 
+osmt_expr osmt_mk_impl( osmt_context c, osmt_expr e1, osmt_expr e2 )
+{
+    MainSolver* solver;
+    CAST(c, solver);
+    PTRef res = solver->getLogic().mkImpl({e1.x}, {e2.x});
+    return { res.x };
+}
+
+osmt_expr osmt_mk_xor( osmt_context c, osmt_expr e1, osmt_expr e2 )
+{
+    MainSolver* solver;
+    CAST(c, solver);
+    PTRef res = solver->getLogic().mkImpl({e1.x}, {e2.x});
+    return { res.x };
+}
+
 osmt_expr osmt_mk_not( osmt_context c, osmt_expr x)
 {
     MainSolver* solver;
@@ -317,7 +353,10 @@ osmt_expr osmt_mk_num_from_string( osmt_context c, const char * s )
 {
     MainSolver* solver;
     CAST(c, solver);
-    assert(solver->getLogic().getLogic() == QF_LRA);
+    if (!check_logic_compat(solver, QF_LRA))
+    {
+        return { PTRef_Undef.x };
+    }
     assert(s);
     PTRef res = static_cast<LRALogic&>(solver->getLogic()).mkConst(s);
     return { res.x };
@@ -327,7 +366,10 @@ osmt_expr osmt_mk_num_from_frac( osmt_context c, const int nom, const int den )
 {
     MainSolver* solver;
     CAST(c, solver);
-    assert(solver->getLogic().getLogic() == QF_LRA);
+    if (!check_logic_compat(solver, QF_LRA))
+    {
+        return { PTRef_Undef.x };
+    }
     opensmt::Real num(nom, den);
     PTRef res = static_cast<LRALogic&>(solver->getLogic()).mkConst(num);
     return { res.x };
@@ -337,7 +379,11 @@ osmt_expr osmt_mk_num_from_num( osmt_context c, const int number )
 {
     MainSolver* solver;
     CAST(c, solver);
-    assert(solver->getLogic().getLogic() == QF_LRA);
+    if (!check_logic_compat(solver, QF_LRA))
+    {
+        return { PTRef_Undef.x };
+    }
+
     opensmt::Real num(number);
     PTRef res = static_cast<LRALogic&>(solver->getLogic()).mkConst(num);
     return { res.x };
@@ -358,7 +404,11 @@ osmt_expr osmt_mk_plus( osmt_context c, osmt_expr * expr_list, unsigned n )
 {
     MainSolver* solver;
     CAST(c, solver);
-    assert(solver->getLogic().getLogic() == QF_LRA);
+    if (!check_logic_compat(solver, QF_LRA))
+    {
+        return { PTRef_Undef.x };
+    }
+
     vec<PTRef> args;
     for ( unsigned i = 0 ; i < n ; i ++ )
         args.push({expr_list[i].x});
@@ -371,7 +421,10 @@ osmt_expr osmt_mk_minus( osmt_context c, osmt_expr x, osmt_expr y )
 {
     MainSolver* solver;
     CAST(c, solver);
-    assert(solver->getLogic().getLogic() == QF_LRA);
+    if (!check_logic_compat(solver, QF_LRA))
+    {
+        return { PTRef_Undef.x };
+    }
 
     PTRef res = static_cast<LRALogic&>(solver->getLogic()).mkRealMinus({x.x}, {y.x});
     return { res.x };
@@ -381,7 +434,10 @@ osmt_expr osmt_mk_times( osmt_context c, osmt_expr * expr_list, unsigned n )
 {
     MainSolver* solver;
     CAST(c, solver);
-    assert(solver->getLogic().getLogic() == QF_LRA);
+    if (!check_logic_compat(solver, QF_LRA))
+    {
+        return { PTRef_Undef.x };
+    }
     vec<PTRef> args;
     for ( unsigned i = 0 ; i < n ; i ++ )
     {
@@ -396,7 +452,10 @@ osmt_expr osmt_mk_leq( osmt_context c, osmt_expr lhs, osmt_expr rhs )
 {
     MainSolver* solver;
     CAST(c, solver);
-    assert(solver->getLogic().getLogic() == QF_LRA);
+    if (!check_logic_compat(solver, QF_LRA))
+    {
+        return { PTRef_Undef.x };
+    }
     PTRef res = static_cast<LRALogic&>(solver->getLogic()).mkRealLeq({lhs.x}, {rhs.x});
 
     return { res.x };
@@ -406,7 +465,10 @@ osmt_expr osmt_mk_lt( osmt_context c, osmt_expr lhs, osmt_expr rhs )
 {
     MainSolver* solver;
     CAST(c, solver);
-    assert(solver->getLogic().getLogic() == QF_LRA);
+    if (!check_logic_compat(solver, QF_LRA))
+    {
+        return { PTRef_Undef.x };
+    }
     PTRef res = static_cast<LRALogic&>(solver->getLogic()).mkRealLt({lhs.x}, {rhs.x});
     return { res.x };
 }
@@ -415,7 +477,10 @@ osmt_expr osmt_mk_gt( osmt_context c, osmt_expr lhs, osmt_expr rhs )
 {
     MainSolver* solver;
     CAST(c, solver);
-    assert(solver->getLogic().getLogic() == QF_LRA);
+    if (!check_logic_compat(solver, QF_LRA))
+    {
+        return { PTRef_Undef.x };
+    }
     PTRef res = static_cast<LRALogic&>(solver->getLogic()).mkRealGt({lhs.x}, {rhs.x});
     return { res.x };
 }
@@ -424,7 +489,10 @@ osmt_expr osmt_mk_geq( osmt_context c, osmt_expr lhs, osmt_expr rhs )
 {
     MainSolver* solver;
     CAST(c, solver);
-    assert(solver->getLogic().getLogic() == QF_LRA);
+    if (!check_logic_compat(solver, QF_LRA))
+    {
+        return { PTRef_Undef.x };
+    }
     PTRef res = static_cast<LRALogic&>(solver->getLogic()).mkRealGeq({lhs.x}, {rhs.x});
     return { res.x };
 }
@@ -759,7 +827,10 @@ osmt_expr osmt_get_value( osmt_context c, osmt_expr v )
 {
     MainSolver* solver;
     CAST(c, solver);
-    assert(solver->getLogic().getLogic() == QF_LRA);
+    if (!check_logic_compat(solver, QF_LRA))
+    {
+        return { PTRef_Undef.x };
+    }
     assert(solver->getStatus() == s_True );
     PTRef tr = { v.x };
 
