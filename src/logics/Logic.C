@@ -191,13 +191,13 @@ Logic::~Logic()
 const Logic_t
 Logic::getLogic() const
 {
-    return QF_LRA;
+    return QF_UF;
 }
 
 const char*
 Logic::getName() const
 {
-    return QF_LRA.str;
+    return getLogic().str;
 }
 
 // Escape the symbol name if it contains a prohibited character from the
