@@ -62,7 +62,22 @@ const sstat s_False = toSstat(-1);
 const sstat s_Undef = toSstat( 0);
 const sstat s_Error = toSstat( 2);
 
-class MainSolver {
+struct PushFrame
+{
+
+    void pushFrame()                            { id = id_counter++; }
+    int  getId() const                          { return id; }
+    int  size()  const                          { return formulas.size(); }
+    int  push(PTRef tr)                         { formulas.push(tr); }
+    PTRef operator[] (int i) const              { return formulas[i]; }
+ private:
+    vec<PTRef> formulas;
+    static int id_counter;
+    int id;
+};
+
+class MainSolver
+{
   private:
     const static int sz_idx              = 0;
     const static int map_offs_idx        = 1;
@@ -82,15 +97,15 @@ class MainSolver {
         bool done;
         pi(PTRef x_) : x(x_), done(false) {}
     };
-    Logic&        logic;
-    TermMapper&   tmap;
-    SMTConfig&    config;
-    THandler&     thandler;
-    vec<DedElem>  deductions;
+    Logic&         logic;
+    TermMapper&    tmap;
+    SMTConfig&     config;
+    THandler&      thandler;
+    vec<DedElem>   deductions;
     SimpSMTSolver* smt_solver;
-    Tseitin       ts;
-    vec<PTRef>    formulas;
-    sstat         status;     // The status of the last solver call (initially s_Undef)
+    Tseitin        ts;
+    vec<PushFrame> formulas;
+    sstat          status;     // The status of the last solver call (initially s_Undef)
 
     bool          binary_init; // Was the formula loaded from .osmt2
 
@@ -136,7 +151,9 @@ class MainSolver {
         , binary_init(false)
         , root_instance(PTRef_Undef)
     {
-        formulas.push(logic.getTerm_true());
+        formulas.push();
+        PushFrame& last = formulas.last();
+        last.push(logic.getTerm_true());
     }
 
     ~MainSolver() { }
@@ -147,20 +164,8 @@ class MainSolver {
     THandler& getTHandler() { return thandler; }
     Logic&    getLogic()    { return thandler.getLogic(); }
     Theory&   getTheory()   { return thandler.getTheory(); }
-    sstat push(PTRef root) { char* msg; sstat res = insertFormula(root, &msg); if (res == s_Error) { printf("%s\n", msg); } return res; }
-    sstat insertFormula(PTRef root, char** msg) {
-        if (logic.getSortRef(root) != logic.getSort_bool()) {
-            asprintf(msg, "Top-level assertion sort must be %s, got %s",
-                     Logic::s_sort_bool, logic.getSortName(logic.getSortRef(root)));
-            return s_Error; }
-	char* err_msg = NULL;
-        if(!logic.assignPartition(root, &err_msg))
-            opensmt_error("Could not assign partition"); 
-#ifdef PRODUCE_PROOF
-        logic.setIPartitionsIte(root);
-#endif
-        formulas.push(root);
-        return s_Undef; }
+    sstat push(PTRef root);
+    sstat insertFormula(PTRef root, char** msg);
 
     void initialize() { ts.solver.initialize(); ts.initialize(); }
 

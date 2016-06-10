@@ -50,6 +50,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace opensmt { extern bool stop; }
 #include "symmetry/Symmetry.h"
 
+int PushFrame::id_counter = 0;
+
 #ifdef USE_GZ
 int MainSolver::compress_buf(const int* buf_in, int*& buf_out, int sz, int& sz_out) const
 {
@@ -167,6 +169,36 @@ int MainSolver::decompress_buf(int* buf_in, int*& buf_out, int sz, int& sz_out )
 }
 #endif
 
+sstat
+MainSolver::push(PTRef root)
+{
+    formulas.push();
+    char* msg;
+    sstat res = insertFormula(root, &msg);
+    if (res == s_Error)
+        printf("%s\n", msg);
+    return res;
+}
+
+sstat
+MainSolver::insertFormula(PTRef root, char** msg)
+{
+    if (logic.getSortRef(root) != logic.getSort_bool())
+    {
+        asprintf(msg, "Top-level assertion sort must be %s, got %s",
+                 Logic::s_sort_bool, logic.getSortName(logic.getSortRef(root)));
+        return s_Error;
+    }
+    char* err_msg = NULL;
+    if (!logic.assignPartition(root, &err_msg))
+        opensmt_error("Could not assign partition"); 
+#ifdef PRODUCE_PROOF
+    logic.setIPartitionsIte(root);
+#endif
+    formulas.last().push(root);
+    return s_Undef;
+}
+
 sstat MainSolver::simplifyFormulas(char** err_msg) {
     if (binary_init)
         return s_Undef;
@@ -178,7 +210,11 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         asprintf(err_msg, "Solver already contains a simplified problem.  Cannot continue for now");
         return s_Error; }
 
-    root = logic.mkAnd(formulas);
+    vec<PTRef> coll_f;
+    for (int i = 0; i < formulas.size(); i++)
+        for (int j = 0; j < formulas[i].size(); j++)
+            coll_f.push(formulas[i][j]);
+    root = logic.mkAnd(coll_f);
 
     // Framework for handling different theory specific simplifications.
     PTRef new_root;
