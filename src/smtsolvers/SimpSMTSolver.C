@@ -215,23 +215,6 @@ bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause)
 {
     assert( config.sat_preprocess_theory == 0 );
 
-//    for (int i = 0; i < smt_clause.size(); i++) {
-//        Lit e = smt_clause[i];
-    // Do not add false literals
-    // if ( e->isFalse( ) ) continue;
-    // If a literal is true, the clause is true
-    // if ( e->isTrue( ) )
-    // return true;
-
-    // Keep track of atoms seen, as they may
-    // be interface equalities to skip later
-//        if (config.logic == QF_UFIDL || config.logic == QF_UFLRA)
-//            atoms_seen.insert( e );
-
-//    }
-    // addClause will change the contents, and we don't want that here.  This has been taken care of the method addSMTClause() already, however.
-//    vec<Lit> cl_out;
-//    smt_clause.copyTo(cl_out);
 
 #ifdef PEDANTIC_DEBUG
     for (int i = 0; i < smt_clause.size(); i++)
@@ -246,23 +229,6 @@ bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause)
     {
 //        Var v = var( smt_clause[0] );
         cerr << "XXX skipped handling of unary theory literal?" << endl;
-        /*
-            Enode * e = theory_handler->varToEnode( v );
-            if ( e->isTAtom( ) )
-            {
-              Clause * uc = Clause_new(ps, false);
-              unary_to_remove.push_back( uc );
-              Clause &c = *(unary_to_remove.back( ));
-              Enode * x, * y;
-              getDLVars( e, sign(ps[0]), &x, &y );
-              assert( x->isVar( ) );
-              assert( y->isVar( ) );
-              t_pos[ x->getId( ) ].push_back( &c );
-              t_neg[ y->getId( ) ].push_back( &c );
-              t_var[ x ].insert( y->getId( ) );
-              t_var[ y ].insert( x->getId( ) );
-            }
-        */
     }
 #ifdef PRODUCE_PROOF
     if (!CoreSMTSolver::addClause_(smt_clause, mask))
