@@ -105,7 +105,8 @@ class MainSolver
     SimpSMTSolver* smt_solver;
     Tseitin        ts;
     vec<PushFrame> formulas;
-    sstat          status;     // The status of the last solver call (initially s_Undef)
+    int            simplified_until; // The formulas have been simplified up to and including formulas[simplified_until-1].
+    sstat          status;           // The status of the last solver call (initially s_Undef)
 
     bool          binary_init; // Was the formula loaded from .osmt2
 
@@ -150,6 +151,7 @@ class MainSolver
             , *s )
         , binary_init(false)
         , root_instance(PTRef_Undef)
+        , simplified_until(0)
     {
         formulas.push();
         PushFrame& last = formulas.last();
