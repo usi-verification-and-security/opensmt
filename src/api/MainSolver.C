@@ -212,9 +212,10 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
     }
 
     vec<PTRef> coll_f;
-    for (int i = 0; i < formulas.size(); i++)
+    for (int i = simplified_until; i < formulas.size(); i++)
         for (int j = 0; j < formulas[i].size(); j++)
             coll_f.push(formulas[i][j]);
+    simplified_until = formulas.size();
     root = logic.mkAnd(coll_f);
 
     // Framework for handling different theory specific simplifications.
