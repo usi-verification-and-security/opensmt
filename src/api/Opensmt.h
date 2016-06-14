@@ -30,6 +30,11 @@ public:
 
     SMTConfig& getConfig() { return *config; }
     Logic& getLogic() { return thandler->getLogic(); }
+    LRALogic& getLRALogic()
+    {
+        LRATheory& t = (LRATheory&)thandler->getTheory();
+        return t.getLogic();
+    }
     MainSolver& getMainSolver() { return *mainSolver; }
     SimpSMTSolver& getSolver() { return *solver; }
     
