@@ -208,7 +208,8 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
     // Think of something here to enable incrementality...
     if (!ts.solverEmpty()) {
         asprintf(err_msg, "Solver already contains a simplified problem.  Cannot continue for now");
-        return s_Error; }
+        return s_Error;
+    }
 
     vec<PTRef> coll_f;
     for (int i = 0; i < formulas.size(); i++)
