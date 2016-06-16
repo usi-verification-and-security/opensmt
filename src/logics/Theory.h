@@ -33,6 +33,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "LRATHandler.h"
 #include "UFTHandler.h"
 
+// Implements the simplifications with incrementality
+struct PushFrame
+{
+    void pushFrame()                            { id = id_counter++; }
+    int  getId() const                          { return id; }
+    int  size()  const                          { return formulas.size(); }
+    void push(PTRef tr)                         { formulas.push(tr); }
+    PTRef operator[] (int i) const              { return formulas[i]; }
+    vec<PtAsgn> units; // Contains the unit (theory) clauses that are implied up to here
+    PTRef root;
+ private:
+    vec<PTRef> formulas;
+    static int id_counter;
+    int id;
+};
+
 class Theory
 {
   protected:
@@ -42,9 +58,9 @@ class Theory
     virtual Logic          &getLogic()              = 0;
     virtual TSolverHandler &getTSolverHandler()     = 0;
     virtual TSolverHandler *getTSolverHandler_new(vec<DedElem>&) = 0;
-    virtual bool            simplify(PTRef, PTRef&) = 0;
+    virtual bool            simplify(vec<PushFrame>&, int) = 0; // Simplify a vector of PushFrames in an incrementality-aware manner
     vec<DedElem>           &getDeductionVec()   { return deductions; }
-    bool                    computeSubstitutions(PTRef, PTRef&);
+    bool                    computeSubstitutions(PTRef, PushFrame&);
     Theory(SMTConfig &c) : config(c)            {}
     virtual ~Theory()                           {};
 };
@@ -64,7 +80,7 @@ class LRATheory : public Theory
     LRALogic&    getLogic()    { return lralogic; }
     LRATHandler& getTSolverHandler() { return lratshandler; }
     LRATHandler *getTSolverHandler_new(vec<DedElem> &d) { return new LRATHandler(config, lralogic, d); }
-    bool simplify(PTRef, PTRef&); // Theory specific simplifications
+    bool simplify(vec<PushFrame>&, int); // Theory specific simplifications
 };
 
 class UFTheory : public Theory
@@ -83,7 +99,7 @@ class UFTheory : public Theory
     UFTHandler&  getTSolverHandler()    { return tshandler; }
     const UFTHandler& getTSolverHandler() const { return tshandler; }
     UFTHandler *getTSolverHandler_new(vec<DedElem>& d) { return new UFTHandler(config, logic, d); }
-    bool simplify(PTRef, PTRef&);
+    bool simplify(vec<PushFrame>&, int);
 };
 
 #endif

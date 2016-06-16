@@ -192,7 +192,9 @@ class Logic {
 
     // Boolean term generation
     PTRef       mkAnd         (vec<PTRef>&);
+    PTRef       mkAnd         (PTRef a1, PTRef a2) { vec<PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkAnd(tmp); }
     PTRef       mkOr          (vec<PTRef>&);
+    PTRef       mkOr          (PTRef a1, PTRef a2) { vec<PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkOr(tmp); }
     PTRef       mkXor         (vec<PTRef>&);
     PTRef       mkXor         (PTRef a1, PTRef a2) { vec <PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkXor(tmp); }
     PTRef       mkImpl        (vec<PTRef>&);

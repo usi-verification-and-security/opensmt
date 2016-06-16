@@ -204,7 +204,6 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         return s_Undef;
 
     status = s_Undef;
-    PTRef  root;
     // Think of something here to enable incrementality...
     if (!ts.solverEmpty()) {
         asprintf(err_msg, "Solver already contains a simplified problem.  Cannot continue for now");
@@ -212,70 +211,32 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
     }
 
     vec<PTRef> coll_f;
-    for (int i = simplified_until; i < formulas.size(); i++)
-        for (int j = 0; j < formulas[i].size(); j++)
-            coll_f.push(formulas[i][j]);
-    simplified_until = formulas.size();
-    root = logic.mkAnd(coll_f);
+    for (int i = simplified_until; i < formulas.size(); i++) {
+        bool res = getTheory().simplify(formulas, i);
+        simplified_until = i+1;
+        PTRef root = formulas[i].root;
+        if (logic.isTrue(root)) return status = s_True;
+        else if (logic.isFalse(root)) return status = s_False;
 
-    // Framework for handling different theory specific simplifications.
-    PTRef new_root;
-    if (config.produce_inter() == 0) {
-        bool res = getTheory().simplify(root, new_root);
-        if (logic.isTrue(new_root)) return status = s_True;
-        else if (logic.isFalse(new_root)) return status = s_False;
-    }
-    else
-        new_root = root;
+        FContainer fc(root);
 
-    vec<PtChild> terms;
-    FContainer fc(new_root);
-
-    if (config.remove_symmetries()) {
-
-//        symmetry::Detector d(logic, new_root);
-        //d.toDot("/home/simone/Desktop/graph.dot");
-//        d.findSBPs();
-//        PTRef sbps = d.getSBPs();
-
-//        if (sbps != PTRef_Undef) {
-//            std::cerr << "; [SBPs]: " << logic.printTerm(sbps) << std::endl;
-//            vec<PTRef> newTerms;
-//            newTerms.push(root);
-//            newTerms.push(sbps);
-//            PTRef newRoot = logic.mkAnd(newTerms);
-//            fc.setRoot(newRoot);
-//        }
-//        else std::cerr << "; There are no BSPs!" << std::endl;
-    }
-
-
-//    fc = propFlatten(fc);
-    // Optimize the dag for cnfization
-    Map<PTRef,int,PTRefHash> PTRefToIncoming;
-    if (logic.isBooleanOperator(fc.getRoot())) {
+        // Optimize the dag for cnfization
+        Map<PTRef,int,PTRefHash> PTRefToIncoming;
+        if (logic.isBooleanOperator(fc.getRoot())) {
 #ifdef FLATTEN_DEBUG
-        printf("Flattening the formula %s\n", logic.printTerm(fc.getRoot()));
+            printf("Flattening the formula %s\n", logic.printTerm(fc.getRoot()));
 #endif
-        computeIncomingEdges(fc.getRoot(), PTRefToIncoming);
-        PTRef flat_root = rewriteMaxArity(fc.getRoot(), PTRefToIncoming);
-        fc.setRoot(flat_root);
+            computeIncomingEdges(fc.getRoot(), PTRefToIncoming);
+            PTRef flat_root = rewriteMaxArity(fc.getRoot(), PTRefToIncoming);
+            fc.setRoot(flat_root);
 #ifdef FLATTEN_DEBUG
-        printf("Got the formula %s\n", logic.printTerm(fc.getRoot()));
+            printf("Got the formula %s\n", logic.printTerm(fc.getRoot()));
 #endif
+        }
+
+        root_instance = fc;
+        status = giveToSolver(fc.getRoot());
     }
-    terms.clear();
-
-//  Not a good idea here since the SAT solver does simplifications
-//  removing variables and some theories (e.g., UF_LRA) slow down on
-//  extra variables.
-//    thandler.declareTermTree(fc.getRoot());
-
-//    std::cerr << logic.printTerm(fc.getRoot());
-
-    root_instance = fc;
-    status = giveToSolver(fc.getRoot());
-
     return status;
 }
 

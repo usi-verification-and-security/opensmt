@@ -62,19 +62,6 @@ const sstat s_False = toSstat(-1);
 const sstat s_Undef = toSstat( 0);
 const sstat s_Error = toSstat( 2);
 
-struct PushFrame
-{
-
-    void pushFrame()                            { id = id_counter++; }
-    int  getId() const                          { return id; }
-    int  size()  const                          { return formulas.size(); }
-    int  push(PTRef tr)                         { formulas.push(tr); }
-    PTRef operator[] (int i) const              { return formulas[i]; }
- private:
-    vec<PTRef> formulas;
-    static int id_counter;
-    int id;
-};
 
 class MainSolver
 {
@@ -105,6 +92,7 @@ class MainSolver
     SimpSMTSolver* smt_solver;
     Tseitin        ts;
     vec<PushFrame> formulas;
+    int            simplified_until;
     sstat          status;     // The status of the last solver call (initially s_Undef)
 
     bool          binary_init; // Was the formula loaded from .osmt2
@@ -150,6 +138,7 @@ class MainSolver
             , *s )
         , binary_init(false)
         , root_instance(PTRef_Undef)
+        , simplified_until(0)
     {
         formulas.push();
         PushFrame& last = formulas.last();
