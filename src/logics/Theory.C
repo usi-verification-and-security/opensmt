@@ -4,7 +4,7 @@
 
 bool Theory::computeSubstitutions(PTRef coll_f, PushFrame& frame)
 {
-    assert(frame.size() == 0);
+    assert(frame.units.size() == 0);
     vec<PTRef> curr_args;
     for (int i = 0; i < frame.size(); i++)
         curr_args.push(frame[i]);
