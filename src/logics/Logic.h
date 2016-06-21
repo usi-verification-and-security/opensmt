@@ -149,8 +149,10 @@ class Logic {
             PTRef el = queue.last();
             queue.pop();
             if (seen.has(el)) continue;
-            if (isVar(el) && isIteVar(el))
+            if (isVar(el) && isIteVar(el)) {
                 args.push(getTopLevelIte(el));
+                queue.push(getTopLevelIte(el));
+            }
             for (int i = 0; i < getPterm(el).size(); i++)
                 queue.push(getPterm(el)[i]);
             seen.insert(el, true);
