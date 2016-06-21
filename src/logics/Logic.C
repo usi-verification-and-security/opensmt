@@ -79,7 +79,6 @@ Logic::Logic(SMTConfig& c) :
     , sort_BOOL(SRef_Undef)
     , term_TRUE(PTRef_Undef)
     , term_FALSE(PTRef_Undef)
-    , top_level_ites(PTRef_Undef)
     , subst_num(0)
 {
     config.logic = QF_UF;
@@ -545,7 +544,7 @@ Logic::mkIte(vec<PTRef>& args)
     vec<PTRef> and_args;
     and_args.push(if_term);
     and_args.push(else_term);
-    addTopLevelIte(mkAnd(and_args));
+    addTopLevelIte(mkAnd(and_args), o_ite);
 
     return o_ite;
 }

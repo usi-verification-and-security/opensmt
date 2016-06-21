@@ -16,7 +16,7 @@ bool UFTheory::simplify(vec<PushFrame>& formulas, int curr)
     }
     PTRef coll_f = getLogic().mkAnd(coll_f_args);
 
-    PTRef trans = logic.learnEqTransitivity(coll_f);
+    PTRef trans = getLogic().learnEqTransitivity(coll_f);
     if (trans != PTRef_Undef) {
         coll_f = getLogic().mkAnd(coll_f, trans);
     }

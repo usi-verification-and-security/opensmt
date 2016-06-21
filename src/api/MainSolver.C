@@ -189,6 +189,7 @@ MainSolver::insertFormula(PTRef root, char** msg)
                  Logic::s_sort_bool, logic.getSortName(logic.getSortRef(root)));
         return s_Error;
     }
+    logic.conjoinItes(root, root);
     char* err_msg = NULL;
     if (!logic.assignPartition(root, &err_msg))
         opensmt_error("Could not assign partition"); 

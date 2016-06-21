@@ -86,19 +86,19 @@ class LRATheory : public Theory
 class UFTheory : public Theory
 {
   private:
-    Logic      logic;
+    Logic      uflogic;
     UFTHandler tshandler;
   public:
     UFTheory(SMTConfig& c)
         : Theory(c)
-        , logic(c)
-        , tshandler(c, logic, deductions)
+        , uflogic(c)
+        , tshandler(c, uflogic, deductions)
     {}
     ~UFTheory() {}
-    Logic&       getLogic()             { return logic; }
+    Logic&       getLogic()             { return uflogic; }
     UFTHandler&  getTSolverHandler()    { return tshandler; }
     const UFTHandler& getTSolverHandler() const { return tshandler; }
-    UFTHandler *getTSolverHandler_new(vec<DedElem>& d) { return new UFTHandler(config, logic, d); }
+    UFTHandler *getTSolverHandler_new(vec<DedElem>& d) { return new UFTHandler(config, uflogic, d); }
     bool simplify(vec<PushFrame>&, int);
 };
 

@@ -12,8 +12,8 @@ bool LRATheory::simplify(vec<PushFrame>& formulas, int curr)
     }
     PTRef coll_f = getLogic().mkAnd(coll_f_args);
 
-    PTRef extra_root, extra_extra_root;
-    lralogic.conjoinItes(coll_f, extra_root);
+//    PTRef root_with_ites;
+//    lralogic.conjoinItes(coll_f, root_with_ites);
     computeSubstitutions(coll_f, formulas[curr]);
     PTRef tmp;
     lralogic.simplifyAndSplitEq(formulas[curr].root, tmp);
