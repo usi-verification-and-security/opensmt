@@ -86,7 +86,7 @@ public:
 
     virtual ~Cnfizer( ) { }
 
-    lbool cnfizeAndGiveToSolver ( PTRef ); // Main routine
+    lbool cnfizeAndGiveToSolver (PTRef, int push_id); // Main routine
 //    lbool extEquals             ( PTRef new_r, PTRef old_r ); // Tell the solver that two terms are equal (used when equality deduced by a theory solver)
 
     vec<ValPair>* getModel ();                              // Retrieves the model (if SAT and solved)

@@ -236,7 +236,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         }
 
         root_instance = fc;
-        status = giveToSolver(fc.getRoot());
+        status = giveToSolver(fc.getRoot(), formulas[i].getId());
     }
     return status;
 }

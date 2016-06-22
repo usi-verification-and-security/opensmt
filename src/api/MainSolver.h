@@ -108,8 +108,8 @@ class MainSolver
 
     void expandItes(FContainer& fc, vec<PtChild>& terms);
 
-    sstat giveToSolver(PTRef root) {
-        if (ts.cnfizeAndGiveToSolver(root) == l_False) return s_False;
+    sstat giveToSolver(PTRef root, int push_id) {
+        if (ts.cnfizeAndGiveToSolver(root, push_id) == l_False) return s_False;
         return s_Undef; }
 
     FContainer simplifyEqualities(vec<PtChild>& terms);

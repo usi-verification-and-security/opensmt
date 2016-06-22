@@ -145,7 +145,7 @@ bool Cnfizer::isNPAtom (PTRef r, PTRef &p) const
 //
 // Main Routine. Examine formula and give it to the solver
 //
-lbool Cnfizer::cnfizeAndGiveToSolver (PTRef formula)
+lbool Cnfizer::cnfizeAndGiveToSolver (PTRef formula, int push_id)
 {
     Map<PTRef, PTRef, PTRefHash> valdupmap;
 //  egraph.initDupMap1( );
