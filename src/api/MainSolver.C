@@ -1057,9 +1057,12 @@ sstat MainSolver::solve()
 
     if (config.parallel_threads && config.sat_split_type() == spt_lookahead)
         status = lookaheadSplit(getLog2Ceil(config.sat_split_num()));
-    else
-        status = sstat(ts.solve());
-
+    else {
+        vec<int> en_frames;
+        for (int i = 0; i < formulas.size(); i++)
+            en_frames.push(formulas[i].getId());
+        status = sstat(ts.solve(en_frames));
+    }
     if (!(config.parallel_threads && status == s_Undef)) {
         if (status == s_True && config.produce_models())
             thandler.computeModel();

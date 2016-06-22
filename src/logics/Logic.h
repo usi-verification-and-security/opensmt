@@ -124,6 +124,8 @@ class Logic {
 
 
     static const char*  s_sort_bool;
+    static const char*  s_ite_prefix;
+    static const char*  s_framev_prefix;
 
     Logic(SMTConfig& c);
     ~Logic();

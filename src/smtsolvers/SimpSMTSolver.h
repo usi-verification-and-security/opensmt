@@ -107,7 +107,7 @@ class SimpSMTSolver : public CoreSMTSolver
     // Solving:
     //
     lbool    solve       (const vec<Lit>& assumps, bool do_simp = true, bool turn_off_simp = false);
-    lbool   solveLimited(const vec<Lit>& assumps, bool do_simp = true, bool turn_off_simp = false);
+    lbool    solveLimited(const vec<Lit>& assumps, bool do_simp = true, bool turn_off_simp = false);
     lbool    solve       (                     bool do_simp = true, bool turn_off_simp = false);
     lbool    solve       (Lit p       ,        bool do_simp = true, bool turn_off_simp = false);
     lbool    solve       (Lit p, Lit q,        bool do_simp = true, bool turn_off_simp = false);

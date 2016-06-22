@@ -60,6 +60,8 @@ const char* Logic::tk_distinct = "distinct";
 const char* Logic::tk_ite      = "ite";
 
 const char* Logic::s_sort_bool = "Bool";
+const char* Logic::s_ite_prefix = ".oite";
+const char* Logic::s_framev_prefix = ".frame";
 
 // The constructor initiates the base logic (Boolean)
 Logic::Logic(SMTConfig& c) :
@@ -519,7 +521,7 @@ Logic::mkIte(vec<PTRef>& args)
 
     char* name;
     static unsigned ite_counter = 0;
-    asprintf(&name, ".oite%d", ite_counter++);
+    asprintf(&name, "%s%d", s_ite_prefix, ite_counter++);
     PTRef o_ite = mkVar(sr, name);
     free(name);
 
