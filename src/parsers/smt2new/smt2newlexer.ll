@@ -39,6 +39,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <vector>
 #include <list>
 
+#include "smt2tokens.h"
 #include "smt2newcontext.h"
 #include "smt2newparser.hh"
 
@@ -56,39 +57,40 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 "!"        { return *yyget_text(yyscanner);                                                   }
 "_"        { return *yyget_text(yyscanner);                                                   }
-"as"       { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_AS;      }
-"DECIMAL"  { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_DECIMAL; }
-"exists"   { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_EXISTS;  }
-"forall"   { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_FORALL;  }
-"let"      { return TK_LET;     }
-"NUMERAL"  { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_NUMERAL; }
-"par"      { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_PAR;     }
-"STRING"   { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_STRING;  }
+"as"       { yyget_lval(yyscanner)->tok = { t_as }; return TK_AS;                            }
 
-"assert"           { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_ASSERT;        }
-"check-sat"        { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_CHECKSAT;      }
-"declare-sort"     { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_DECLARESORT;   }
-"declare-fun"      { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_DECLAREFUN;    }
-"define-sort"      { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_DEFINESORT;    }
-"define-fun"       { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_DEFINEFUN;     }
-"exit"             { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_EXIT;          }
-"get-assertions"   { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_GETASSERTIONS; }
-"get-assignment"   { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_GETASSIGNMENT; }
-"get-info"         { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_GETINFO;       }
-"get-option"       { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_GETOPTION;     }
-"get-proof"        { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_GETPROOF;      }
-"get-unsat-core"   { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_GETUNSATCORE;  }
-"get-value"        { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_GETVALUE;      }
-"pop"              { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_POP;           }
-"push"             { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_PUSH;          }
-"set-logic"        { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_SETLOGIC;      }
-"set-info"         { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_SETINFO;       }
-"set-option"       { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_SETOPTION;     }
-"get-interpolants" { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_GETITPS;       }
-"theory"           { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_THEORY;        }
-"write-state"      { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_WRSTATE;       }
-"read-state"       { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_RDSTATE;       }
-"simplify"         { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_SIMPLIFY;      }
+"DECIMAL"  { yyget_lval(yyscanner)->tok = { t_DECIMAL }; return TK_DECIMAL; }
+"exists"   { yyget_lval(yyscanner)->tok = { t_exists }; return TK_EXISTS;  }
+"forall"   { yyget_lval(yyscanner)->tok = { t_forall }; return TK_FORALL;  }
+"let"      { yyget_lval(yyscanner)->tok = { t_let }; return TK_LET;     }
+"NUMERAL"  { yyget_lval(yyscanner)->tok = { t_NUMERAL }; return TK_NUMERAL; }
+"par"      { yyget_lval(yyscanner)->tok = { t_par }; return TK_PAR;     }
+"STRING"   { yyget_lval(yyscanner)->tok = { t_STRING}; return TK_STRING;  }
+
+"assert"           { yyget_lval(yyscanner)->tok = { t_assert }; return TK_ASSERT;        }
+"check-sat"        { yyget_lval(yyscanner)->tok = { t_checksat }; return TK_CHECKSAT;      }
+"declare-sort"     { yyget_lval(yyscanner)->tok = { t_declaresort }; return TK_DECLARESORT;   }
+"declare-fun"      { yyget_lval(yyscanner)->tok = { t_declarefun }; return TK_DECLAREFUN;    }
+"define-sort"      { yyget_lval(yyscanner)->tok = { t_definesort }; return TK_DEFINESORT;    }
+"define-fun"       { yyget_lval(yyscanner)->tok = { t_definefun }; return TK_DEFINEFUN;     }
+"exit"             { yyget_lval(yyscanner)->tok = { t_exit }; return TK_EXIT;          }
+"get-assertions"   { yyget_lval(yyscanner)->tok = { t_getassertions }; return TK_GETASSERTIONS; }
+"get-assignment"   { yyget_lval(yyscanner)->tok = { t_getassignment }; return TK_GETASSIGNMENT; }
+"get-info"         { yyget_lval(yyscanner)->tok = { t_getinfo }; return TK_GETINFO;       }
+"get-option"       { yyget_lval(yyscanner)->tok = { t_getoption }; return TK_GETOPTION;     }
+"get-proof"        { yyget_lval(yyscanner)->tok = { t_getproof }; return TK_GETPROOF;      }
+"get-unsat-core"   { yyget_lval(yyscanner)->tok = { t_getunsatcore }; return TK_GETUNSATCORE;  }
+"get-value"        { yyget_lval(yyscanner)->tok = { t_getvalue }; return TK_GETVALUE;      }
+"pop"              { yyget_lval(yyscanner)->tok = { t_pop }; return TK_POP;           }
+"push"             { yyget_lval(yyscanner)->tok = { t_push }; return TK_PUSH;          }
+"set-logic"        { yyget_lval(yyscanner)->tok = { t_setlogic }; return TK_SETLOGIC;      }
+"set-info"         { yyget_lval(yyscanner)->tok = { t_setinfo }; return TK_SETINFO;       }
+"set-option"       { yyget_lval(yyscanner)->tok = { t_setoption }; return TK_SETOPTION;     }
+"get-interpolants" { yyget_lval(yyscanner)->tok = { t_getinterpolants }; return TK_GETITPS;       }
+"theory"           { yyget_lval(yyscanner)->tok = { t_theory }; return TK_THEORY;        }
+"write-state"      { yyget_lval(yyscanner)->tok = { t_writestate }; return TK_WRSTATE;       }
+"read-state"       { yyget_lval(yyscanner)->tok = { t_readstate }; return TK_RDSTATE;       }
+"simplify"         { yyget_lval(yyscanner)->tok = { t_simplify }; return TK_SIMPLIFY;      }
 
 ":sorts"                     { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_SORTS;                   }
 ":funs"                      { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_FUNS;                    }

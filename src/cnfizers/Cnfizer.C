@@ -80,6 +80,7 @@ Cnfizer::solve(vec<int>& en_frames)
 
     return solver.solve(assumps);
 }
+
 // A term is literal if its sort is Bool and
 //  (i)   number of arguments is 0
 //  (ii)  its symbol is sym_NOT and argument is a literal (nested nots

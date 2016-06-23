@@ -79,8 +79,8 @@
 #include <string.h>
 
 #include "smt2newcontext.h"
-#include "smt2newparser.h"
-
+#include "smt2newparser.hh"
+#include "smt2tokens.h"
 
 int smt2newlex(YYSTYPE* lvalp, YYLTYPE* llocp, void* scanner);
 
@@ -284,8 +284,9 @@ union YYSTYPE
   std::vector< std::string > * str_list;
   ASTNode *                    snode;
   std::list< ASTNode * > *     snode_list;
+  smt2token                    tok;
 
-#line 289 "smt2newparser.cc" /* yacc.c:355  */
+#line 290 "smt2newparser.cc" /* yacc.c:355  */
 };
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
@@ -313,7 +314,7 @@ int smt2newparse (Smt2newContext* context);
 
 /* Copy the second part of user declarations.  */
 
-#line 317 "smt2newparser.cc" /* yacc.c:358  */
+#line 318 "smt2newparser.cc" /* yacc.c:358  */
 
 #ifdef short
 # undef short
@@ -619,19 +620,19 @@ static const yytype_uint8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,    95,    95,    99,   100,   104,   110,   116,   122,   129,
-     142,   154,   167,   173,   179,   185,   189,   193,   197,   201,
-     207,   213,   217,   223,   227,   233,   239,   245,   249,   254,
-     255,   259,   261,   263,   265,   269,   271,   275,   282,   284,
-     288,   290,   298,   301,   304,   310,   314,   318,   326,   329,
-     336,   338,   340,   342,   344,   348,   350,   354,   356,   366,
-     367,   371,   376,   377,   381,   385,   386,   390,   392,   394,
-     401,   411,   421,   431,   508,   509,   666,   679,   685,   691,
-     697,   703,   709,   715,   721,   727,   733,   739,   745,   753,
-     755,   757,   759,   761,   763,   765,   767,   769,   771,   773,
-     775,   777,   779,   781,   783,   785,   787,   789,   791,   793,
-     795,   797,   799,   801,   803,   805,   807,   809,   813,   815,
-     817,   819,   821,   823,   825,   827
+       0,    97,    97,   101,   102,   106,   112,   118,   124,   131,
+     144,   156,   169,   175,   181,   187,   191,   195,   199,   203,
+     209,   215,   219,   225,   229,   235,   241,   247,   251,   256,
+     257,   261,   263,   265,   267,   271,   273,   277,   284,   286,
+     290,   292,   300,   303,   306,   312,   316,   320,   328,   331,
+     338,   340,   342,   344,   346,   350,   352,   356,   358,   368,
+     369,   373,   378,   379,   383,   387,   388,   392,   394,   396,
+     403,   413,   423,   433,   510,   511,   668,   681,   687,   693,
+     699,   705,   711,   717,   723,   729,   735,   741,   747,   755,
+     757,   759,   761,   763,   765,   767,   769,   771,   773,   775,
+     777,   779,   781,   783,   785,   787,   789,   791,   793,   795,
+     797,   799,   801,   803,   805,   807,   809,   811,   815,   817,
+     819,   821,   823,   825,   827,   829
 };
 #endif
 
@@ -1690,68 +1691,68 @@ yyreduce:
   switch (yyn)
     {
         case 2:
-#line 95 "smt2newparser.yy" /* yacc.c:1646  */
+#line 97 "smt2newparser.yy" /* yacc.c:1646  */
     { ASTNode *n = new ASTNode(CMDL_T, strdup("main-script")); n->children = (yyvsp[0].snode_list); context->insertRoot(n); }
-#line 1696 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1697 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 3:
-#line 99 "smt2newparser.yy" /* yacc.c:1646  */
+#line 101 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode_list) = new std::list<ASTNode*>(); }
-#line 1702 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1703 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 4:
-#line 101 "smt2newparser.yy" /* yacc.c:1646  */
+#line 103 "smt2newparser.yy" /* yacc.c:1646  */
     { (*(yyvsp[-1].snode_list)).push_back((yyvsp[0].snode)); (yyval.snode_list) = (yyvsp[-1].snode_list); }
-#line 1708 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1709 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 5:
-#line 105 "smt2newparser.yy" /* yacc.c:1646  */
+#line 107 "smt2newparser.yy" /* yacc.c:1646  */
     {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].str));
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].tok));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back(new ASTNode(SYM_T, (yyvsp[-1].str)));
         }
-#line 1718 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1719 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 6:
-#line 111 "smt2newparser.yy" /* yacc.c:1646  */
+#line 113 "smt2newparser.yy" /* yacc.c:1646  */
     {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].str));
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].tok));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back((yyvsp[-1].snode));
         }
-#line 1728 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1729 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 7:
-#line 117 "smt2newparser.yy" /* yacc.c:1646  */
+#line 119 "smt2newparser.yy" /* yacc.c:1646  */
     {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].str));
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].tok));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back((yyvsp[-1].snode));
         }
-#line 1738 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1739 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 8:
-#line 123 "smt2newparser.yy" /* yacc.c:1646  */
+#line 125 "smt2newparser.yy" /* yacc.c:1646  */
     {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-3].str));
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-3].tok));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back(new ASTNode(SYM_T, (yyvsp[-2].str)));
             (yyval.snode)->children->push_back(new ASTNode(NUM_T, (yyvsp[-1].str)));
         }
-#line 1749 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1750 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 9:
-#line 130 "smt2newparser.yy" /* yacc.c:1646  */
+#line 132 "smt2newparser.yy" /* yacc.c:1646  */
     {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-6].str));
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-6].tok));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back(new ASTNode(SYM_T, (yyvsp[-5].str)));
 
@@ -1761,13 +1762,13 @@ yyreduce:
 
             (yyval.snode)->children->push_back((yyvsp[-1].snode));
         }
-#line 1765 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1766 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 10:
-#line 143 "smt2newparser.yy" /* yacc.c:1646  */
+#line 145 "smt2newparser.yy" /* yacc.c:1646  */
     {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-6].str));
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-6].tok));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back(new ASTNode(SYM_T, (yyvsp[-5].str)));
 
@@ -1777,13 +1778,13 @@ yyreduce:
 
             (yyval.snode)->children->push_back((yyvsp[-1].snode));
         }
-#line 1781 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1782 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 11:
-#line 155 "smt2newparser.yy" /* yacc.c:1646  */
+#line 157 "smt2newparser.yy" /* yacc.c:1646  */
     {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-7].str));
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-7].tok));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back(new ASTNode(SYM_T, (yyvsp[-6].str)));
 
@@ -1794,444 +1795,444 @@ yyreduce:
             (yyval.snode)->children->push_back((yyvsp[-2].snode));
             (yyval.snode)->children->push_back((yyvsp[-1].snode));
         }
-#line 1798 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1799 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 12:
-#line 168 "smt2newparser.yy" /* yacc.c:1646  */
+#line 170 "smt2newparser.yy" /* yacc.c:1646  */
     {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].str));
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].tok));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back(new ASTNode(NUM_T, (yyvsp[-1].str)));
         }
-#line 1808 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1809 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 13:
-#line 174 "smt2newparser.yy" /* yacc.c:1646  */
+#line 176 "smt2newparser.yy" /* yacc.c:1646  */
     {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].str));
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].tok));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back(new ASTNode(NUM_T, (yyvsp[-1].str)));
         }
-#line 1818 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1819 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 14:
-#line 180 "smt2newparser.yy" /* yacc.c:1646  */
+#line 182 "smt2newparser.yy" /* yacc.c:1646  */
     {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].str));
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].tok));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back((yyvsp[-1].snode));
         }
-#line 1828 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1829 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 15:
-#line 186 "smt2newparser.yy" /* yacc.c:1646  */
+#line 188 "smt2newparser.yy" /* yacc.c:1646  */
     {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].str));
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].tok));
         }
-#line 1836 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1837 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 16:
-#line 190 "smt2newparser.yy" /* yacc.c:1646  */
+#line 192 "smt2newparser.yy" /* yacc.c:1646  */
     {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].str));
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].tok));
         }
-#line 1844 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1845 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 17:
-#line 194 "smt2newparser.yy" /* yacc.c:1646  */
+#line 196 "smt2newparser.yy" /* yacc.c:1646  */
     {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].str));
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].tok));
         }
-#line 1852 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1853 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 18:
-#line 198 "smt2newparser.yy" /* yacc.c:1646  */
+#line 200 "smt2newparser.yy" /* yacc.c:1646  */
     {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].str));
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].tok));
         }
-#line 1860 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1861 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 19:
-#line 202 "smt2newparser.yy" /* yacc.c:1646  */
+#line 204 "smt2newparser.yy" /* yacc.c:1646  */
     {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].str));
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].tok));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back(new ASTNode(UATTR_T, (yyvsp[-1].str)));
         }
-#line 1870 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1871 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 20:
-#line 208 "smt2newparser.yy" /* yacc.c:1646  */
+#line 210 "smt2newparser.yy" /* yacc.c:1646  */
     {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].str));
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].tok));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back(new ASTNode(UATTR_T, (yyvsp[-1].str)));
         }
-#line 1880 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1881 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 21:
-#line 214 "smt2newparser.yy" /* yacc.c:1646  */
+#line 216 "smt2newparser.yy" /* yacc.c:1646  */
     {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].str));
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].tok));
         }
-#line 1888 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1889 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 22:
-#line 218 "smt2newparser.yy" /* yacc.c:1646  */
+#line 220 "smt2newparser.yy" /* yacc.c:1646  */
     {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-5].str));
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-5].tok));
             (yyval.snode)->children = (yyvsp[-2].snode_list);
             (yyval.snode)->children->push_front((yyvsp[-3].snode));
         }
-#line 1898 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1899 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 23:
-#line 224 "smt2newparser.yy" /* yacc.c:1646  */
+#line 226 "smt2newparser.yy" /* yacc.c:1646  */
     {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].str));
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].tok));
         }
-#line 1906 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1907 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 24:
-#line 228 "smt2newparser.yy" /* yacc.c:1646  */
+#line 230 "smt2newparser.yy" /* yacc.c:1646  */
     {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].str));
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].tok));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back(new ASTNode(UATTR_T, (yyvsp[-1].str)));
         }
-#line 1916 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1917 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 25:
-#line 234 "smt2newparser.yy" /* yacc.c:1646  */
+#line 236 "smt2newparser.yy" /* yacc.c:1646  */
     {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].str));
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].tok));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back(new ASTNode(PATTR_T, (yyvsp[-1].str)));
         }
-#line 1926 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1927 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 26:
-#line 240 "smt2newparser.yy" /* yacc.c:1646  */
+#line 242 "smt2newparser.yy" /* yacc.c:1646  */
     {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].str));
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].tok));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back((yyvsp[-1].snode));
         }
-#line 1936 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1937 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 27:
-#line 246 "smt2newparser.yy" /* yacc.c:1646  */
+#line 248 "smt2newparser.yy" /* yacc.c:1646  */
     {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].str));
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].tok));
         }
-#line 1944 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1945 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 28:
-#line 250 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].str)); }
-#line 1950 "smt2newparser.cc" /* yacc.c:1646  */
+#line 252 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].tok)); }
+#line 1951 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 29:
-#line 254 "smt2newparser.yy" /* yacc.c:1646  */
+#line 256 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode_list) = new std::list<ASTNode*>(); }
-#line 1956 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1957 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 30:
-#line 256 "smt2newparser.yy" /* yacc.c:1646  */
+#line 258 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyvsp[-1].snode_list)->push_back((yyvsp[0].snode)); (yyval.snode_list) = (yyvsp[-1].snode_list); }
-#line 1962 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1963 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 31:
-#line 260 "smt2newparser.yy" /* yacc.c:1646  */
+#line 262 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = new ASTNode(UATTR_T, (yyvsp[0].str)); }
-#line 1968 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1969 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 32:
-#line 262 "smt2newparser.yy" /* yacc.c:1646  */
+#line 264 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = new ASTNode(UATTR_T, (yyvsp[-1].str)); (yyval.snode)->children = new std::list<ASTNode*>(); (yyval.snode)->children->push_back((yyvsp[0].snode)); }
-#line 1974 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1975 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 33:
-#line 264 "smt2newparser.yy" /* yacc.c:1646  */
+#line 266 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = new ASTNode(PATTR_T, (yyvsp[0].str)); }
-#line 1980 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1981 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 34:
-#line 266 "smt2newparser.yy" /* yacc.c:1646  */
+#line 268 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = new ASTNode(PATTR_T, (yyvsp[-1].str)); (yyval.snode)->children = new std::list<ASTNode*>(); (yyval.snode)->children->push_back((yyvsp[0].snode)); }
-#line 1986 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1987 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 35:
-#line 270 "smt2newparser.yy" /* yacc.c:1646  */
+#line 272 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = new ASTNode(SPECC_T, NULL); (yyval.snode)->children = new std::list<ASTNode*>(); (yyval.snode)->children->push_back((yyvsp[0].snode)); }
-#line 1992 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1993 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 36:
-#line 272 "smt2newparser.yy" /* yacc.c:1646  */
+#line 274 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(SYM_T, (yyvsp[0].str));
         }
-#line 2000 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2001 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 37:
-#line 276 "smt2newparser.yy" /* yacc.c:1646  */
+#line 278 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(SEXPRL_T, NULL);
             (yyval.snode)->children = (yyvsp[-1].snode_list);
         }
-#line 2009 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2010 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 38:
-#line 283 "smt2newparser.yy" /* yacc.c:1646  */
+#line 285 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = new ASTNode(SYM_T, (yyvsp[0].str)); }
-#line 2015 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2016 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 39:
-#line 285 "smt2newparser.yy" /* yacc.c:1646  */
+#line 287 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = new ASTNode(SYM_T, (yyvsp[-2].str)); (yyval.snode)->children = (yyvsp[-1].snode_list); }
-#line 2021 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2022 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 40:
-#line 289 "smt2newparser.yy" /* yacc.c:1646  */
+#line 291 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = new ASTNode(ID_T, NULL); (yyval.snode)->children = new std::list<ASTNode*>(); (yyval.snode)->children->push_back((yyvsp[0].snode)); }
-#line 2027 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2028 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 41:
-#line 291 "smt2newparser.yy" /* yacc.c:1646  */
+#line 293 "smt2newparser.yy" /* yacc.c:1646  */
     {
         (yyval.snode) = new ASTNode(LID_T, NULL);
         (yyval.snode)->children = (yyvsp[-1].snode_list);
         (yyval.snode)->children->push_front((yyvsp[-2].snode));
       }
-#line 2037 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2038 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 42:
-#line 299 "smt2newparser.yy" /* yacc.c:1646  */
+#line 301 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyvsp[-1].snode_list)->push_back((yyvsp[0].snode)); (yyval.snode_list) = (yyvsp[-1].snode_list); }
-#line 2043 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2044 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 43:
-#line 301 "smt2newparser.yy" /* yacc.c:1646  */
+#line 303 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode_list) = new std::list<ASTNode*>(); }
-#line 2049 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2050 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 44:
-#line 305 "smt2newparser.yy" /* yacc.c:1646  */
+#line 307 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(SPECC_T, NULL);
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back((yyvsp[0].snode));
         }
-#line 2059 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2060 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 45:
-#line 311 "smt2newparser.yy" /* yacc.c:1646  */
+#line 313 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(SYM_T, (yyvsp[0].str));
         }
-#line 2067 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2068 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 46:
-#line 315 "smt2newparser.yy" /* yacc.c:1646  */
+#line 317 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(UATTR_T, (yyvsp[0].str));
         }
-#line 2075 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2076 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 47:
-#line 319 "smt2newparser.yy" /* yacc.c:1646  */
+#line 321 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(SEXPRL_T, NULL);
             (yyval.snode)->children = (yyvsp[-1].snode_list);
         }
-#line 2084 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2085 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 48:
-#line 326 "smt2newparser.yy" /* yacc.c:1646  */
+#line 328 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode_list) = new std::list<ASTNode*>();
         }
-#line 2092 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2093 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 49:
-#line 330 "smt2newparser.yy" /* yacc.c:1646  */
+#line 332 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyvsp[-1].snode_list)->push_back((yyvsp[0].snode));
             (yyval.snode_list) = (yyvsp[-1].snode_list);
         }
-#line 2101 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2102 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 50:
-#line 337 "smt2newparser.yy" /* yacc.c:1646  */
+#line 339 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = new ASTNode(NUM_T, (yyvsp[0].str)); }
-#line 2107 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2108 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 51:
-#line 339 "smt2newparser.yy" /* yacc.c:1646  */
+#line 341 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = new ASTNode(DEC_T, (yyvsp[0].str)); }
-#line 2113 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2114 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 52:
-#line 341 "smt2newparser.yy" /* yacc.c:1646  */
+#line 343 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = new ASTNode(HEX_T, (yyvsp[0].str)); }
-#line 2119 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2120 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 53:
-#line 343 "smt2newparser.yy" /* yacc.c:1646  */
+#line 345 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = new ASTNode(BIN_T, (yyvsp[0].str)); }
-#line 2125 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2126 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 54:
-#line 345 "smt2newparser.yy" /* yacc.c:1646  */
+#line 347 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = new ASTNode(STR_T, (yyvsp[0].str)); }
-#line 2131 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2132 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 55:
-#line 349 "smt2newparser.yy" /* yacc.c:1646  */
+#line 351 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyvsp[-1].snode_list)->push_back(new ASTNode(NUM_T, (yyvsp[0].str))); (yyval.snode_list) = (yyvsp[-1].snode_list); }
-#line 2137 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2138 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 56:
-#line 351 "smt2newparser.yy" /* yacc.c:1646  */
+#line 353 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode_list) = new std::list<ASTNode*>(); (yyval.snode_list)->push_back(new ASTNode(NUM_T, (yyvsp[0].str))); }
-#line 2143 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2144 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 57:
-#line 355 "smt2newparser.yy" /* yacc.c:1646  */
+#line 357 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = (yyvsp[0].snode); }
-#line 2149 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2150 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 58:
-#line 357 "smt2newparser.yy" /* yacc.c:1646  */
+#line 359 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(AS_T, NULL);
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back((yyvsp[-2].snode));
             (yyval.snode)->children->push_back((yyvsp[-1].snode));
         }
-#line 2160 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2161 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 59:
-#line 366 "smt2newparser.yy" /* yacc.c:1646  */
+#line 368 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode_list) = new std::list<ASTNode*>(); }
-#line 2166 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2167 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 60:
-#line 368 "smt2newparser.yy" /* yacc.c:1646  */
+#line 370 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyvsp[-1].snode_list)->push_back((yyvsp[0].snode)); (yyval.snode_list) = (yyvsp[-1].snode_list); }
-#line 2172 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2173 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 61:
-#line 372 "smt2newparser.yy" /* yacc.c:1646  */
+#line 374 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = new ASTNode(VARB_T, (yyvsp[-2].str)); (yyval.snode)->children = new std::list<ASTNode*>(); (yyval.snode)->children->push_back((yyvsp[-1].snode)); }
-#line 2178 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2179 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 62:
-#line 376 "smt2newparser.yy" /* yacc.c:1646  */
+#line 378 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode_list) = new std::list<ASTNode*>(); }
-#line 2184 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2185 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 63:
-#line 378 "smt2newparser.yy" /* yacc.c:1646  */
+#line 380 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyvsp[-1].snode_list)->push_back((yyvsp[0].snode)); (yyval.snode_list) = (yyvsp[-1].snode_list); }
-#line 2190 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2191 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 64:
-#line 382 "smt2newparser.yy" /* yacc.c:1646  */
+#line 384 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = new ASTNode(SV_T, (yyvsp[-2].str));  (yyval.snode)->children = new std::list<ASTNode*>(); (yyval.snode)->children->push_back((yyvsp[-1].snode)); }
-#line 2196 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2197 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 65:
-#line 385 "smt2newparser.yy" /* yacc.c:1646  */
+#line 387 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode_list) = new std::list<ASTNode*>(); }
-#line 2202 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2203 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 66:
-#line 387 "smt2newparser.yy" /* yacc.c:1646  */
+#line 389 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyvsp[-1].snode_list)->push_back((yyvsp[0].snode)); (yyval.snode_list) = (yyvsp[-1].snode_list); }
-#line 2208 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2209 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 67:
-#line 391 "smt2newparser.yy" /* yacc.c:1646  */
+#line 393 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = new ASTNode(TERM_T, NULL); (yyval.snode)->children = new std::list<ASTNode*>(); (yyval.snode)->children->push_back((yyvsp[0].snode)); }
-#line 2214 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2215 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 68:
-#line 393 "smt2newparser.yy" /* yacc.c:1646  */
+#line 395 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = new ASTNode(QID_T, NULL); (yyval.snode)->children = new std::list<ASTNode*>(); (yyval.snode)->children->push_back((yyvsp[0].snode)); }
-#line 2220 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2221 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 69:
-#line 395 "smt2newparser.yy" /* yacc.c:1646  */
+#line 397 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(LQID_T, NULL);
             (yyval.snode)->children = (yyvsp[-1].snode_list);
             (yyval.snode)->children->push_front((yyvsp[-2].snode));
             (yyval.snode)->children->push_front((yyvsp[-3].snode));
         }
-#line 2231 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2232 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 70:
-#line 402 "smt2newparser.yy" /* yacc.c:1646  */
+#line 404 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(LET_T, NULL);
             (yyval.snode)->children = new std::list<ASTNode*>();
@@ -2241,11 +2242,11 @@ yyreduce:
             (yyval.snode)->children->push_back(vbl);
             (yyval.snode)->children->push_back((yyvsp[-1].snode));
         }
-#line 2245 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2246 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 71:
-#line 412 "smt2newparser.yy" /* yacc.c:1646  */
+#line 414 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(FORALL_T, NULL);
             (yyval.snode)->children = new std::list<ASTNode*>();
@@ -2255,11 +2256,11 @@ yyreduce:
             (yyval.snode)->children->push_back(svl);
             (yyval.snode)->children->push_back((yyvsp[-1].snode));
         }
-#line 2259 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2260 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 72:
-#line 422 "smt2newparser.yy" /* yacc.c:1646  */
+#line 424 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(EXISTS_T, NULL);
             (yyval.snode)->children = new std::list<ASTNode*>();
@@ -2269,11 +2270,11 @@ yyreduce:
             (yyval.snode)->children->push_back(svl);
             (yyval.snode)->children->push_back((yyvsp[-1].snode));
         }
-#line 2273 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2274 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 73:
-#line 432 "smt2newparser.yy" /* yacc.c:1646  */
+#line 434 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(BANG_T, NULL);
             (yyval.snode)->children = new std::list<ASTNode*>();
@@ -2283,23 +2284,23 @@ yyreduce:
             atrs->children = (yyvsp[-1].snode_list);
             (yyval.snode)->children->push_back(atrs);
         }
-#line 2287 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2288 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 74:
-#line 508 "smt2newparser.yy" /* yacc.c:1646  */
+#line 510 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode_list) = new std::list<ASTNode*>(); }
-#line 2293 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2294 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 75:
-#line 510 "smt2newparser.yy" /* yacc.c:1646  */
+#line 512 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyvsp[-1].snode_list)->push_back(new ASTNode(SYM_T, (yyvsp[0].str))); (yyval.snode_list) = (yyvsp[-1].snode_list); }
-#line 2299 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2300 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 76:
-#line 667 "smt2newparser.yy" /* yacc.c:1646  */
+#line 669 "smt2newparser.yy" /* yacc.c:1646  */
     {
             if (strcmp((yyvsp[0].str), "true") == 0)
                 (yyval.snode) = new ASTNode(BOOL_T, strdup("true"));
@@ -2310,357 +2311,357 @@ yyreduce:
                 YYERROR;
             }
         }
-#line 2314 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2315 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 77:
-#line 680 "smt2newparser.yy" /* yacc.c:1646  */
+#line 682 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(OPTION_T, (yyvsp[-1].str));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back((yyvsp[0].snode));
         }
-#line 2324 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2325 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 78:
-#line 686 "smt2newparser.yy" /* yacc.c:1646  */
+#line 688 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(OPTION_T, (yyvsp[-1].str));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back((yyvsp[0].snode));
         }
-#line 2334 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2335 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 79:
-#line 692 "smt2newparser.yy" /* yacc.c:1646  */
+#line 694 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(OPTION_T, (yyvsp[-1].str));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back((yyvsp[0].snode));
         }
-#line 2344 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2345 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 80:
-#line 698 "smt2newparser.yy" /* yacc.c:1646  */
+#line 700 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(OPTION_T, (yyvsp[-1].str));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back((yyvsp[0].snode));
         }
-#line 2354 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2355 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 81:
-#line 704 "smt2newparser.yy" /* yacc.c:1646  */
+#line 706 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(OPTION_T, (yyvsp[-1].str));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back((yyvsp[0].snode));
         }
-#line 2364 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2365 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 82:
-#line 710 "smt2newparser.yy" /* yacc.c:1646  */
+#line 712 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(OPTION_T, (yyvsp[-1].str));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back((yyvsp[0].snode));
         }
-#line 2374 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2375 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 83:
-#line 716 "smt2newparser.yy" /* yacc.c:1646  */
+#line 718 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(OPTION_T, (yyvsp[-1].str));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back((yyvsp[0].snode));
         }
-#line 2384 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2385 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 84:
-#line 722 "smt2newparser.yy" /* yacc.c:1646  */
+#line 724 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(OPTION_T, (yyvsp[-1].str));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back(new ASTNode(STR_T, (yyvsp[0].str)));
         }
-#line 2394 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2395 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 85:
-#line 728 "smt2newparser.yy" /* yacc.c:1646  */
+#line 730 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(OPTION_T, (yyvsp[-1].str));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back(new ASTNode(STR_T, (yyvsp[0].str)));
         }
-#line 2404 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2405 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 86:
-#line 734 "smt2newparser.yy" /* yacc.c:1646  */
+#line 736 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(OPTION_T, (yyvsp[-1].str));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back(new ASTNode(NUM_T, (yyvsp[0].str)));
         }
-#line 2414 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2415 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 87:
-#line 740 "smt2newparser.yy" /* yacc.c:1646  */
+#line 742 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(OPTION_T, (yyvsp[-1].str));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back(new ASTNode(NUM_T, (yyvsp[0].str)));
         }
-#line 2424 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2425 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 88:
-#line 746 "smt2newparser.yy" /* yacc.c:1646  */
+#line 748 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(OPTION_T, NULL);
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back((yyvsp[0].snode));
         }
-#line 2434 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2435 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 89:
-#line 754 "smt2newparser.yy" /* yacc.c:1646  */
+#line 756 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2440 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2441 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 90:
-#line 756 "smt2newparser.yy" /* yacc.c:1646  */
+#line 758 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2446 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2447 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 91:
-#line 758 "smt2newparser.yy" /* yacc.c:1646  */
+#line 760 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2452 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2453 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 92:
-#line 760 "smt2newparser.yy" /* yacc.c:1646  */
+#line 762 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2458 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2459 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 93:
-#line 762 "smt2newparser.yy" /* yacc.c:1646  */
+#line 764 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2464 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2465 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 94:
-#line 764 "smt2newparser.yy" /* yacc.c:1646  */
+#line 766 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2470 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2471 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 95:
-#line 766 "smt2newparser.yy" /* yacc.c:1646  */
+#line 768 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2476 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2477 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 96:
-#line 768 "smt2newparser.yy" /* yacc.c:1646  */
+#line 770 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2482 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2483 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 97:
-#line 770 "smt2newparser.yy" /* yacc.c:1646  */
+#line 772 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2488 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2489 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 98:
-#line 772 "smt2newparser.yy" /* yacc.c:1646  */
+#line 774 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2494 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2495 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 99:
-#line 774 "smt2newparser.yy" /* yacc.c:1646  */
+#line 776 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2500 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2501 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 100:
-#line 776 "smt2newparser.yy" /* yacc.c:1646  */
+#line 778 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2506 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2507 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 101:
-#line 778 "smt2newparser.yy" /* yacc.c:1646  */
+#line 780 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2512 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2513 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 102:
-#line 780 "smt2newparser.yy" /* yacc.c:1646  */
+#line 782 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2518 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2519 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 103:
-#line 782 "smt2newparser.yy" /* yacc.c:1646  */
+#line 784 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2524 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2525 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 104:
-#line 784 "smt2newparser.yy" /* yacc.c:1646  */
+#line 786 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2530 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2531 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 105:
-#line 786 "smt2newparser.yy" /* yacc.c:1646  */
+#line 788 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2536 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2537 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 106:
-#line 788 "smt2newparser.yy" /* yacc.c:1646  */
+#line 790 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2542 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2543 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 107:
-#line 790 "smt2newparser.yy" /* yacc.c:1646  */
+#line 792 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2548 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2549 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 108:
-#line 792 "smt2newparser.yy" /* yacc.c:1646  */
+#line 794 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2554 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2555 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 109:
-#line 794 "smt2newparser.yy" /* yacc.c:1646  */
+#line 796 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2560 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2561 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 110:
-#line 796 "smt2newparser.yy" /* yacc.c:1646  */
+#line 798 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2566 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2567 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 111:
-#line 798 "smt2newparser.yy" /* yacc.c:1646  */
+#line 800 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2572 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2573 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 112:
-#line 800 "smt2newparser.yy" /* yacc.c:1646  */
+#line 802 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2578 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2579 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 113:
-#line 802 "smt2newparser.yy" /* yacc.c:1646  */
+#line 804 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2584 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2585 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 114:
-#line 804 "smt2newparser.yy" /* yacc.c:1646  */
+#line 806 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2590 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2591 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 115:
-#line 806 "smt2newparser.yy" /* yacc.c:1646  */
+#line 808 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2596 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2597 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 116:
-#line 808 "smt2newparser.yy" /* yacc.c:1646  */
+#line 810 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2602 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2603 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 117:
-#line 810 "smt2newparser.yy" /* yacc.c:1646  */
+#line 812 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2608 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2609 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 118:
-#line 814 "smt2newparser.yy" /* yacc.c:1646  */
+#line 816 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = new ASTNode(INFO_T, (yyvsp[0].str)); }
-#line 2614 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2615 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 119:
-#line 816 "smt2newparser.yy" /* yacc.c:1646  */
+#line 818 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = new ASTNode(INFO_T, (yyvsp[0].str)); }
-#line 2620 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2621 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 120:
-#line 818 "smt2newparser.yy" /* yacc.c:1646  */
+#line 820 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = new ASTNode(INFO_T, (yyvsp[0].str)); }
-#line 2626 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2627 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 121:
-#line 820 "smt2newparser.yy" /* yacc.c:1646  */
+#line 822 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = new ASTNode(INFO_T, (yyvsp[0].str)); }
-#line 2632 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2633 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 122:
-#line 822 "smt2newparser.yy" /* yacc.c:1646  */
+#line 824 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = new ASTNode(INFO_T, (yyvsp[0].str)); }
-#line 2638 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2639 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 123:
-#line 824 "smt2newparser.yy" /* yacc.c:1646  */
+#line 826 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = new ASTNode(INFO_T, (yyvsp[0].str)); }
-#line 2644 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2645 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 124:
-#line 826 "smt2newparser.yy" /* yacc.c:1646  */
+#line 828 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = new ASTNode(INFO_T, (yyvsp[0].str)); }
-#line 2650 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2651 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 125:
-#line 828 "smt2newparser.yy" /* yacc.c:1646  */
+#line 830 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(INFO_T, NULL);
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back(new ASTNode(GATTR_T, (yyvsp[0].str)));
         }
-#line 2660 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2661 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
 
-#line 2664 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2665 "smt2newparser.cc" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -2895,7 +2896,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 835 "smt2newparser.yy" /* yacc.c:1906  */
+#line 837 "smt2newparser.yy" /* yacc.c:1906  */
 
 
 //=======================================================================================
