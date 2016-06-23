@@ -36,7 +36,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // Implements the simplifications with incrementality
 struct PushFrame
 {
-    void pushFrame()                            { id = id_counter++; }
+    PushFrame()                                 { id = id_counter; id_counter += 1; }
     int  getId() const                          { return id; }
     int  size()  const                          { return formulas.size(); }
     void push(PTRef tr)                         { formulas.push(tr); }

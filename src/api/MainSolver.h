@@ -154,6 +154,7 @@ class MainSolver
     Logic&    getLogic()    { return thandler.getLogic(); }
     Theory&   getTheory()   { return thandler.getTheory(); }
     sstat push(PTRef root);
+    void push();
     sstat insertFormula(PTRef root, char** msg);
 
     void initialize() { ts.solver.initialize(); ts.initialize(); }

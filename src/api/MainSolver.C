@@ -169,6 +169,12 @@ int MainSolver::decompress_buf(int* buf_in, int*& buf_out, int sz, int& sz_out )
 }
 #endif
 
+void
+MainSolver::push()
+{
+    formulas.push();
+}
+
 sstat
 MainSolver::push(PTRef root)
 {

@@ -420,7 +420,7 @@ declare_fun_err: ;
         }
         case t_push:
         {
-            return false;
+            main_solver->push();
             break;
         }
         case t_exit:
