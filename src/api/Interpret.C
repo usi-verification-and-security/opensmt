@@ -1096,14 +1096,23 @@ void Interpret::GetInterpolants()
     if(!logic->isInterpolating())
         opensmt_error("Cannot interpolate");
 
-    srand(time(NULL));
-    ipartitions_t p = 0; //first partition is A, second is B
-    opensmt::setbit(p, 0);
-/*
-    for(int i = 2; i < partitions.size(); ++i)
+    //int rseed = 1466156790;
+    int rseed = time(NULL);
+    cerr << "; Seed used for partitioning: " << rseed << endl;
+    srand(rseed);
+
+    ipartitions_t p = 1;
+    if(rand() % 2) p <<= 1;
+    //guarantees that A and B have at least one assertion each
+
+    for(int i = 2; i < partitions.size(); ++++i)
+    {
         if(rand() % 2)
             opensmt::setbit(p, i);
-*/
+        else
+            opensmt::setbit(p, i + 1);
+    }
+
 
     // ABmixed bit
     p <<= 1;
@@ -1128,7 +1137,74 @@ void Interpret::GetInterpolants()
     smt_solver.createProofGraph();
     vector<PTRef> itps;
     smt_solver.getSingleInterpolant(itps, p);
-    //cerr << ";Interpolant:\n;" << logic->printTerm(itps[0]) << endl;
+    /*
+    const char* msg;
+    const char* lnames[] = {"McMillan", "Pudlak", "McMillan", "PS", "PSw", "PSs"};
+    PTRef strongest, weakest;
+
+    for(int i = 0; i < 6; ++i) // for each Bool labeling function
+    {
+        cerr << "; Testing with " << lnames[i] << endl;
+        config.setOption(SMTConfig::o_itp_bool_alg, SMTOption(i), msg);
+    
+        // EUF stuff
+        itps.clear();
+        cerr << "; Testing with EUF Strong" << endl;
+        config.setOption(SMTConfig::o_itp_euf_alg, SMTOption(0), msg);
+        smt_solver.getSingleInterpolant(itps, p);
+        PTRef itp0 = itps[0];
+       
+        //cerr << ";Interpolant:\n;" << logic->printTerm(itps[0]) << endl;
+        itps.clear();
+        cerr << "; Testing with EUF Weak" << endl;
+        config.setOption(SMTConfig::o_itp_euf_alg, SMTOption(2), msg);
+        smt_solver.getSingleInterpolant(itps, p);
+        PTRef itp2 = itps[0];
+        //cerr << ";Interpolant:\n;" << logic->printTerm(itps[0]) << endl;
+        itps.clear();
+        cerr << "; Testing with EUF Random" << endl;
+        config.setOption(SMTConfig::o_itp_euf_alg, SMTOption(3), msg);
+        smt_solver.getSingleInterpolant(itps, p);
+        PTRef itp3 = itps[0];
+        //cerr << ";Interpolant:\n;" << logic->printTerm(itps[0]) << endl;
+        
+        if(i == 0)
+            strongest = itp0;
+        else if(i == 2)
+            weakest = itp2;
+
+        bool i02 = logic->implies(itp0, itp2);
+        if(i02) cerr << "; Strong -> Weak" << endl;
+        else cerr << "; Strong -/> Weak" << endl;
+        bool i03 = logic->implies(itp0, itp3);
+        if(i03) cerr << "; Strong -> Random" << endl;
+        else cerr << "; Strong -/> Random" << endl;
+        bool i20 = logic->implies(itp2, itp0);
+        if(i20) cerr << "; Weak -> Strong" << endl;
+        else cerr << "; Weak -/> Strong" << endl;
+        bool i23 = logic->implies(itp2, itp3);
+        if(i23) cerr << "; Weak -> Random" << endl;
+        else cerr << "; Weak -/> Random" << endl;
+        bool i30 = logic->implies(itp3, itp0);
+        if(i30) cerr << "; Random -> Strong" << endl;
+        else cerr << "; Random -/> Strong" << endl;
+        bool i32 = logic->implies(itp3, itp2);
+        if(i32) cerr << "; Random -> Weak" << endl;
+        else cerr << "; Random -/> Weak" << endl;
+    }
+    */
+
+    /*
+    cerr << "; Extremes:" << endl;
+    if(logic->implies(strongest, weakest))
+        cerr << "; McMillan+Strong -> McMillan'+Weak)" << endl;
+    else
+        cerr << "; McMillan+Strong -/> McMillan'+Weak)" << endl;
+    if(logic->implies(weakest, strongest))
+        cerr << "; McMillan'+Weak -> McMillan+Strong)" << endl;
+    else
+        cerr << "; McMillan'+Weak -/> McMillan+Strong)" << endl;
+    */
 }
 #endif
 

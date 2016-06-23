@@ -504,7 +504,7 @@ void ProofGraph::produceSingleInterpolant ( vector<PTRef> &interpolants, const i
             n->setPartialInterpolant ( partial_interp );
         }
     }
-
+    
     if (PSFunction != NULL) delete PSFunction;
 
     // Last clause visited is the empty clause with total interpolant
@@ -513,7 +513,7 @@ void ProofGraph::produceSingleInterpolant ( vector<PTRef> &interpolants, const i
     if( verbose() )
     {
         getComplexityInterpolant(partial_interp);
-        /*
+        /* 
         int nbool, neq, nuf;
         thandler.getLogic().collectStats(partial_interp, nbool, neq, nuf);
         cerr << "; Number of boolean connectives: " << nbool << endl;
@@ -535,7 +535,6 @@ void ProofGraph::produceSingleInterpolant ( vector<PTRef> &interpolants, const i
 
     PTRef interpol = getRoot()->getPartialInterpolant();
     assert (interpol != PTRef_Undef);
-    cerr << "; ITP:\n" << thandler.getLogic().printTerm(interpol) << endl;
     interpolants.push_back ( interpol );
 }
 
@@ -1178,12 +1177,20 @@ PTRef ProofGraph::compInterpLabelingInner ( ProofNode *n )
             and2_args.push (piv);
             PTRef and_2 = logic_.mkAnd (and2_args);
 
-            or_args.push (and_1);
-            or_args.push (and_2);
-            partial_interp = logic_.mkOr (or_args);
+            if (logic_.isNot (and_1) && (logic_.getPterm (and_1)[0] == and_2))
+                partial_interp = logic_.getTerm_true();
+            else if (logic_.isNot (and_2) && (logic_.getPterm (and_2)[0] == and_1))
+                partial_interp = logic_.getTerm_true();
+            else
+            {
+                or_args.push (and_1);
+                or_args.push (and_2);
+                partial_interp = logic_.mkOr (or_args);
 
-            // TODO ~piv \/ piv is not simplified, but should be!
-            assert (partial_interp != logic_.getTerm_true());
+                // TODO ~piv \/ piv is not simplified, but should be!
+                // now it should be
+                assert (partial_interp != logic_.getTerm_true());
+            }
         }
         // Standard interpolation (I_1 \/ p) /\ (I_2 \/ ~p)
         else
@@ -1237,7 +1244,8 @@ ProofGraph::setLeafPSLabeling (ProofNode *n, map<Var, icolor_t> *labels)
         if (var_class == I_AB)
         {
             map<Var, icolor_t>::iterator it = labels->find (v);
-            assert (it != labels->end());
+            set<Var>::iterator itv = theory_only.find(v);
+            assert (itv != theory_only.end() || it != labels->end());
 
             if (it->second == I_A)
                 colorA (n, v);
@@ -1267,7 +1275,8 @@ ProofGraph::setLeafPSWLabeling (ProofNode *n, map<Var, icolor_t> *labels)
         if (var_class == I_AB)
         {
             map<Var, icolor_t>::iterator it = labels->find (v);
-            assert (it != labels->end());
+            set<Var>::iterator itv = theory_only.find(v);
+            assert (itv != theory_only.end() || it != labels->end());
 
             if (it->second == I_A)
                 colorA (n, v);
@@ -1297,7 +1306,8 @@ ProofGraph::setLeafPSSLabeling (ProofNode *n, map<Var, icolor_t> *labels)
         if (var_class == I_AB)
         {
             map<Var, icolor_t>::iterator it = labels->find (v);
-            assert (it != labels->end());
+            set<Var>::iterator itv = theory_only.find(v);
+            assert (itv != theory_only.end() || it != labels->end());
 
             if (it->second == I_A)
                 colorAB (n, v);

@@ -229,6 +229,7 @@ ProofGraph::computePSFunction(vector< clauseid_t >& DFSv, const ipartitions_t& A
 
 	map<Var, icolor_t> *labels = NULL;
 	ProofNode *n;
+    theory_only.clear();
 	if(needProofStatistics())
 	{
 		labels = new map<Var, icolor_t>();
@@ -243,7 +244,20 @@ ProofGraph::computePSFunction(vector< clauseid_t >& DFSv, const ipartitions_t& A
 		{
 			n = getNode(DFSv[i]); assert(n);
 			if(!n->isLeaf()) continue;
-            if(n->getType() == CLATHEORY) continue;
+            if(n->getType() == CLATHEORY)
+            {
+                vector<Lit>& tlits = n->getClause();
+                if(!tlits.empty())
+                {
+                    for(int i = 0; i < int(tlits.size()); ++i)
+                    {
+                        int v = var(tlits.at(i));
+                        if(theory_only.find(v) == theory_only.end())
+                            theory_only.insert(v);
+                    }
+                }
+                continue;
+            }
 			if(n->getType() != CLAORIG)
 			{
                 opensmt_error( "Clause is not original" );
@@ -256,6 +270,10 @@ ProofGraph::computePSFunction(vector< clauseid_t >& DFSv, const ipartitions_t& A
 				for(int i = 0; i < int(lits.size()); ++i)
 				{
 					int v = var(lits.at(i));
+                    
+                    if(theory_only.find(v) != theory_only.end())
+                        theory_only.erase(theory_only.find(v));
+
 					icolor_t vclass = getVarClass2(v);
 					if(vclass != I_AB) continue;
 					if(col == I_A)

@@ -61,6 +61,7 @@ struct CNode
   PTRef   e;
   icolor_t color;
   CEdge *   next;
+  set<CEdge*>   prev;
 };
 
 typedef pair< CNode *, CNode * > path_t;
@@ -123,6 +124,7 @@ public:
     void verifyInterpolantWithExternalTool( const ipartitions_t& mask );
   void     addCNode      ( PTRef );
   void     addCEdge      ( PTRef, PTRef, PTRef );
+  void removeCEdge(CEdge *);
   void     revertEdges   ( CNode * );
   PTRef  getInterpolant( const ipartitions_t & , map<PTRef, icolor_t>*);
   void     printAsDotty  ( ostream & );

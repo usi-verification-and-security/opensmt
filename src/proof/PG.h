@@ -561,6 +561,7 @@ private:
 	std::set< Var >                proof_variables;             // Variables actually present in the proof
 	unsigned 					   max_id_variable;				// Highest value for a variable
 #ifdef FULL_LABELING
+    std::set<Var> theory_only;
 	// NOTE class A has value -1, class B value -2, undetermined value -3, class AB has index bit from 0 onwards
 	std::vector<int>               AB_vars_mapping;             // Variables of class AB mapping to mpz integer bit index
 	vector< std::map<PTRef, icolor_t>* > *    vars_suggested_color_map;	 // To suggest color for shared vars

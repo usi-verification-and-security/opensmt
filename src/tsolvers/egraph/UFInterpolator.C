@@ -30,6 +30,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Egraph.h"
 
 //#define ITP_DEBUG
+//#define COLOR_DEBUG
 
 void CGraph::addCNode ( PTRef e )
 {
@@ -237,6 +238,20 @@ icolor_t CGraph::colorNodesRec ( CNode *c, const ipartitions_t &mask )
       */
 }
 
+void
+CGraph::removeCEdge(CEdge *e)
+{
+    if(e == NULL) return;
+    for(int i = 0; i < cedges.size(); ++i)
+    {
+        if(cedges[i] == e)
+        {
+            cedges.erase(cedges.begin() + i);
+            break;
+        }
+    }
+}
+
 void CGraph::addCEdge ( PTRef s, PTRef t, PTRef r )
 {
     assert ( s != PTRef_Undef);
@@ -249,6 +264,7 @@ void CGraph::addCEdge ( PTRef s, PTRef t, PTRef r )
     // Storing edge in cs and ct
     assert ( cs->next == NULL );
     cs->next = edge;
+    ct->prev.insert(edge);
     cedges.push_back ( edge );
     /*
       static int ccong = 0;
@@ -335,9 +351,6 @@ void CGraph::colorReset( )
     colored = false;
 }
 
-#define ITERATIVE_COLORING 1
-
-#if ITERATIVE_COLORING
 bool CGraph::colorEdges ( CNode *c1
                           , CNode *c2
                           , const ipartitions_t &mask )
@@ -350,12 +363,18 @@ bool CGraph::colorEdges ( CNode *c1
     unprocessed_nodes.push_back ( c2 );
     bool no_mixed = true;
 
+#ifdef COLOR_DEBUG
+    cerr << "; ColorEdges from " << logic.printTerm(c1->e) << " to " << logic.printTerm(c2->e) << endl;
+#endif
     while ( !unprocessed_nodes.empty( ) && no_mixed )
     {
         assert ( unprocessed_nodes.size( ) % 2 == 0 );
         CNode *n1 = unprocessed_nodes[ unprocessed_nodes.size( ) - 2 ];
         CNode *n2 = unprocessed_nodes[ unprocessed_nodes.size( ) - 1 ];
 
+#ifdef COLOR_DEBUG
+        cerr << "; Trying to visit from " << logic.printTerm(c1->e) << " to " << logic.printTerm(c2->e) << endl;
+#endif
         //
         // Skip if path already seen
         //
@@ -476,22 +495,6 @@ bool CGraph::colorEdges ( CNode *c1
 
     return no_mixed;
 }
-#else
-bool CGraph::colorEdges ( CNode *c1
-                          , CNode *c2
-                          , const ipartitions_t &mask )
-{
-    return colorEdgesRec ( c1, c2, mask );
-}
-
-bool CGraph::colorEdgesRec ( CNode *c1
-                             , CNode *c2
-                             , const ipartitions_t &mask )
-{
-    return colorEdgesFrom ( c1, mask )
-           && colorEdgesFrom ( c2, mask );
-}
-#endif
 
 //
 // It assumes that children have been already colored
@@ -503,47 +506,37 @@ bool CGraph::colorEdgesFrom ( CNode *x, const ipartitions_t &mask )
 
     // Color from x
     CNode *n = NULL;
+    CNode *orig_x = x;
 
+#ifdef COLOR_DEBUG
+    cerr << "; ColorEdgesFrom " << logic.printTerm(x->e) << endl;
+#endif
     while ( x->next != NULL
             && x->next->color == I_UNDEF )
     {
         n = x->next->target;
 
+#ifdef COLOR_DEBUG
+        cerr << "; Target is " << logic.printTerm(n->e) << endl;
+#endif
         // Congruence edge, recurse on arguments
         if ( x->next->reason == PTRef_Undef )
         {
             assert ( logic.getPterm (x->e).size() == logic.getPterm (n->e).size() );
-#if ITERATIVE_COLORING
-#else
-            // Color children of the congruence relation, and
-            // introduce intermediate nodes if necessary
-            Pterm &px = logic.getPterm (x->e);
-            Pterm &pn = logic.getPterm (n->e);
-
-            for (int i = 0; i < pn.size(); ++i)
-            {
-                PTRef arg_x = px[i];
-                PTRef arg_n = pn[i];
-
-                if ( arg_x == arg_n ) continue;
-
-                // Check that path has not been considered yet
-                if ( !path_seen.insert ( make_pair ( arg_x, arg_n ) ).second )
-                    continue;
-
-                // Call recursively on arguments
-                colorEdgesRec ( cnodes_store[ arg_x ]
-                                , cnodes_store[ arg_n ]
-                                , mask );
-            }
-
-#endif
 
             // Incompatible colors: this is possible
             // for effect of congruence nodes: adjust
             if ( (x->color == I_A && n->color == I_B)
                     || (x->color == I_B && n->color == I_A) )
             {
+                vec<PTRef> eadj;
+                eadj.push(x->e);
+                eadj.push(n->e);
+#ifdef COLOR_DEBUG
+                cerr << "; Edge " << logic.printTerm(logic.mkEq(eadj)) << " has to be adjusted" << endl;
+                cerr << "; Node " << logic.printTerm(x->e) << " has color " << x->color << endl;
+                cerr << "; Node " << logic.printTerm(n->e) << " has color " << n->color << endl;
+#endif
                 // Need to introduce auxiliary nodes and edges
                 // For each argument, find node that is equivalent
                 // and of shared color
@@ -572,12 +565,28 @@ bool CGraph::colorEdgesFrom ( CNode *x, const ipartitions_t &mask )
                         assert ( cn_arg_x->next != NULL
                                  || cn_arg_n->next != NULL );
 
-                        // If argument of x is incompatible with n
-                        if ( ((cn_arg_x->color & n->color) == 0) )
+                        PTRef abcommon = PTRef_Undef;
+                        if(cn_arg_x->color == I_AB)
                         {
+                            abcommon = cn_arg_x->e;
+                        }
+                        else if(cn_arg_n->color == I_AB)
+                        {
+                            abcommon = cn_arg_n->e;
+                        }
+                        // If argument of x is incompatible with n
+                        else if ( ((cn_arg_x->color & n->color) == 0) )
+                        {
+#ifdef COLOR_DEBUG
+                            cerr << "; 111 Arguments " << logic.printTerm(cn_arg_x->e) << " and " << logic.printTerm(cn_arg_n->e) << " are incompatible" << endl;
+                            cerr << "; Node " << logic.printTerm(cn_arg_x->e) << " has color " << cn_arg_x->color << endl;
+                            cerr << "; Node " << logic.printTerm(cn_arg_n->e) << " has color " << cn_arg_n->color << endl;
+#endif
+
+                            /*
                             // Browse the eq-class of cn_arg_x and find an ABcommon symbol
                             PTRef v = arg_x;
-                            PTRef abcommon = PTRef_Undef;
+                            //PTRef abcommon = PTRef_Undef;
 
                             while ( abcommon == PTRef_Undef)
                             {
@@ -588,19 +597,55 @@ bool CGraph::colorEdgesFrom ( CNode *x, const ipartitions_t &mask )
 
                                 v = cand;
                             }
+                            */
+                            
+                           
+                            //cerr << "; Edges from X to N" << endl;
+                            vector<CEdge*> sorted;
+                            size_t xnl = getSortedEdges(cn_arg_x, cn_arg_n, sorted);
+                            for(int i = 0; i < sorted.size(); ++i)
+                            {
+                                CNode *from = sorted[i]->source;
+                                CNode *to = sorted[i]->target;
+                                //cerr << "; Path has edge " << logic.printTerm(sorted[i]->source->e) << ' ' << sorted[i]->source->color << " -> " << logic.printTerm(sorted[i]->target->e) << ' ' << sorted[i]->target->color << endl;
+                                if(isAB(logic.getIPartitions(from->e), mask))
+                                {
+                                    abcommon = from->e;
+                                    break;
+                                }
+                                if(isAB(logic.getIPartitions(to->e), mask))
+                                {
+                                    abcommon = to->e;
+                                    break;
+                                }
 
+                            }
+                            
+
+                            /*
                             assert ( abcommon != PTRef_Undef );
+                            cerr << "; Node " << logic.printTerm(abcommon) << " is AB" << endl;
                             assert ( cnodes_store.find ( abcommon ) != cnodes_store.end( ) );
                             CNode *new_arg_x = cnodes_store[ abcommon ];
                             assert ( new_arg_x->color == I_AB );
                             new_args.push ( abcommon );
+                            */
                         }
                         // If argument of n is incompatible with x
                         else if ( ((cn_arg_n->color & x->color) == 0) )
                         {
+#ifdef COLOR_DEBUG
+                            cerr << "; 222 Arguments " << logic.printTerm(cn_arg_x->e) << " and " << logic.printTerm(cn_arg_n->e) << " are incompatible" << endl;
+                            cerr << "; Node " << logic.printTerm(cn_arg_x->e) << " has color " << cn_arg_x->color << endl;
+                            cerr << "; Node " << logic.printTerm(cn_arg_n->e) << " has color " << cn_arg_n->color << endl;
+#endif
+
+
                             // Browse the eq-class of cn_arg_x and find an ABcommon symbol
+                            
+                            /*
                             PTRef v = arg_n;
-                            PTRef abcommon = PTRef_Undef;
+                            //PTRef abcommon = PTRef_Undef;
 
                             while ( abcommon == PTRef_Undef )
                             {
@@ -611,17 +656,50 @@ bool CGraph::colorEdgesFrom ( CNode *x, const ipartitions_t &mask )
 
                                 v = cand;
                             }
+                            */
+                            
+                           
+                            //cerr << "; Edges from X to N" << endl;
+                            vector<CEdge*> sorted;
+                            size_t xnl = getSortedEdges(cn_arg_x, cn_arg_n, sorted);
+                            for(int i = 0; i < sorted.size() - 1; ++i)
+                            {
+                                CNode *from = sorted[i]->source;
+                                CNode *to = sorted[i]->target;
+                              //  cerr << "; Path has edge " << logic.printTerm(sorted[i]->source->e) << ' ' << sorted[i]->source->color << " -> " << logic.printTerm(sorted[i]->target->e) << ' ' << sorted[i]->target->color << endl;
+                                if(isAB(logic.getIPartitions(from->e), mask))
+                                {
+                                    abcommon = from->e;
+                                    break;
+                                }
+                                if(isAB(logic.getIPartitions(to->e), mask))
+                                {
+                                    abcommon = to->e;
+                                    break;
+                                }
+                            }
+                            
 
+                            /*
                             assert ( abcommon != PTRef_Undef );
+                            cerr << "; Node " << logic.printTerm(abcommon) << " is AB" << endl;
                             assert ( cnodes_store.find ( abcommon ) != cnodes_store.end( ) );
                             CNode *new_arg_n = cnodes_store[ abcommon ];
                             assert ( new_arg_n->color == I_AB );
                             new_args.push ( abcommon );
+                            */
                         }
                         else
                         {
                             opensmt_error ( "something went wrong" );
                         }
+                        assert ( abcommon != PTRef_Undef );
+                        //cerr << "; Node " << logic.printTerm(abcommon) << " is AB" << endl;
+                        assert ( cnodes_store.find ( abcommon ) != cnodes_store.end( ) );
+                        CNode *new_arg_x = cnodes_store[ abcommon ];
+                        assert ( new_arg_x->color == I_AB );
+                        new_args.push ( abcommon );
+
 
                         // New arguments must be shared
                         assert (new_args.size() > 0);
@@ -642,19 +720,40 @@ bool CGraph::colorEdgesFrom ( CNode *x, const ipartitions_t &mask )
                 // that nn is equal to either x or n
                 assert ( nn != x->e );
                 assert ( nn != n->e );
-
                 // Adds corresponding node
-                addCNode ( nn );
+                CNode *cnn;
+                CNode *cnn_next = NULL;
+                PTRef cnn_next_reason = PTRef_Undef;
+                if(cnodes_store.find(nn) != cnodes_store.end())
+                {
+                    cnn = cnodes_store.find(nn)->second;
+                    if(cnn->next != NULL)
+                    {
+                        cnn_next = cnn->next->target;
+                        cnn_next_reason = cnn->next->reason;
+                        removeCEdge(cnn->next);
+                    }
+                    cnn->next = NULL;
+                }
+                else
+                {
+                    addCNode ( nn );
+                    cnn = cnodes.back();
+                }
+#ifdef COLOR_DEBUG
+                cerr << "; New intermediate term is " << logic.printTerm(cnn->e) << endl;
+#endif
                 // Remember this
                 assert ( x->next->target == n );
-                CNode *cnn = cnodes.back( );
 
                 // Save for later undo
                 CAdjust *adj = new CAdjust ( cnn, x, n, x->next );
                 undo_adjust.push_back ( adj );
 
                 cnn->color = I_AB;
+            
                 // Situation x --> n | then make x --> nn
+                removeCEdge(x->next);
                 x->next = NULL;
                 addCEdge ( x->e, nn, PTRef_Undef );
                 assert ( x->next->target == cnn );
@@ -665,9 +764,6 @@ bool CGraph::colorEdgesFrom ( CNode *x, const ipartitions_t &mask )
 
                 if ( x->color == I_AB )
                 {
-//                    cedges.back( )->color = (rand() % 2) ? I_A : I_B;
-//        cerr << "; Coloring edge " << logic.printTerm(cedges.back()->source->e) << " -> " << logic.printTerm(cedges.back()->target->e) << " with color " << cedges.back()->color << endl;
-                    
                         // McMillan: set AB as B
                         if ( usingStrong())
                             cedges.back( )->color = I_B;
@@ -685,6 +781,9 @@ bool CGraph::colorEdgesFrom ( CNode *x, const ipartitions_t &mask )
                 addCEdge ( nn, n->e, PTRef_Undef );
                 cedges.back( )->color = n->color;
                 x = cnn;
+
+                if(cnn_next != NULL)
+                    addCEdge(n->e, cnn_next->e, cnn_next_reason);
             }
 
             // Now all the children are colored, we can decide how to color this
@@ -804,6 +903,9 @@ bool CGraph::colorEdgesFrom ( CNode *x, const ipartitions_t &mask )
         // Pass to next node
         x = n;
     }
+#ifdef COLOR_DEBUG
+    cerr << "; End of ColorEdgesFrom" << endl;
+#endif
 
     // No abmixed if here
     return true;
@@ -961,20 +1063,22 @@ CGraph::getInterpolant ( const ipartitions_t &mask , map<PTRef, icolor_t> *label
     assert ( !colored );
 
     srand (2);
-    /*
-        cerr << ";\n;\n;\n;\n;CGraph edges: " << endl;
-        vec<PTRef> ced;
-        for(int i = 0; i < cedges.size(); ++i)
-        {
-            vec<PTRef> lala;
-            lala.push(cedges[i]->source->e);
-            lala.push(cedges[i]->target->e);
-            ced.push(logic.mkEq(lala));
-        }
-        PTRef cand = logic.mkAnd(ced);
-        cerr << ';' << logic.printTerm(cand) << endl;
-    */
-
+    
+#ifdef COLOR_DEBUG
+    cerr << "; Before coloring" << endl;  
+    for (int i = 0; i < cedges.size(); ++i)
+    {
+        CEdge *ce = cedges[i];
+        vec<PTRef> eq_args;
+        CNode *from = cedges[i]->source;
+        CNode *to = cedges[i]->target;
+        cerr << "; " << logic.printTerm(from->e) << " -> " << logic.printTerm(to->e);
+        if(cedges[i]->reason == PTRef_Undef)
+            cerr << " (derived)" << endl;
+        else
+            cerr << " (basic)" << endl;
+    }
+#endif
 
     color ( mask );
 
@@ -987,6 +1091,22 @@ CGraph::getInterpolant ( const ipartitions_t &mask , map<PTRef, icolor_t> *label
     }
 
     assert ( colored );
+
+#ifdef COLOR_DEBUG
+    cerr << "; After coloring" << endl;  
+    for (int i = 0; i < cedges.size(); ++i)
+    {
+        CEdge *ce = cedges[i];
+        vec<PTRef> eq_args;
+        CNode *from = cedges[i]->source;
+        CNode *to = cedges[i]->target;
+        cerr << "; " << logic.printTerm(from->e) << " -> " << logic.printTerm(to->e);
+        if(cedges[i]->reason == PTRef_Undef)
+            cerr << " (derived)" << endl;
+        else
+            cerr << " (basic)" << endl;
+    }
+#endif
 
     // Uncomment to print
     // static int count = 1;
@@ -1042,10 +1162,10 @@ CGraph::getInterpolant ( const ipartitions_t &mask , map<PTRef, icolor_t> *label
         else if ( isAB ( p, mask ) )
         {
             //     cerr << "; CONFLICT IS AB" << endl;
-            conf_color = (rand() % 2) ? I_A : I_B;
+            //conf_color = (rand() % 2) ? I_A : I_B;
 
             //   cerr << "; Chose random side " << conf_color << endl;
-            /*
+            
             // McMillan: set AB as B
             if ( usingStrong() )
                 conf_color = I_B;
@@ -1055,7 +1175,7 @@ CGraph::getInterpolant ( const ipartitions_t &mask , map<PTRef, icolor_t> *label
             // Random
             else if ( usingRandom())
                 conf_color = (rand() % 2) ? I_A : I_B;
-            */
+            
         }
         else if ( isAstrict ( p, mask ) )
             conf_color = I_A;
