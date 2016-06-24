@@ -85,8 +85,10 @@ class Interpret {
     void                        writeSplits_smtlib2(const char* fname);
     bool                        declareFun(const char* fname, const vec<SRef>& args);
     bool                        defineFun(const char* fname, const PTRef tr);
-    bool                        checkSat(const char*);
+    bool                        checkSat();
     bool                        getValue(const list<ASTNode*>* term);
+    bool                        push();
+    bool                        pop();
     PTRef                       parseTerm(const ASTNode& term, vec<LetFrame>& let_branch);
     void                        exit();
 #ifdef PRODUCE_PROOF
@@ -141,7 +143,7 @@ class Interpret {
     int interpPipe();
 
     ValPair getValue       (PTRef tr) const;
-    bool    getAssignment  (const char*);
+    bool    getAssignment  ();
 
     MainSolver   *main_solver;
 };

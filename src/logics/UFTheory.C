@@ -1,14 +1,34 @@
 #include "Theory.h"
 
-bool UFTheory::simplify(PTRef root, PTRef& root_out)
+// The Collate function is constructed from all frames up to the current
+// one and will be used to simplify the formulas in the current frame
+// formulas[curr].
+// (1) Construct the collate function as a conjunction of formulas up to curr.
+// (2) From the coll function compute units_{curr}
+// (3) Use units_1 /\ ... /\ units_{curr} to simplify formulas[curr]
+//
+// In addition we add the transitivie equalities as a further
+// simplification (critical for the eq_diamond instances in QF_UF of
+// smtlib).
+//
+bool UFTheory::simplify(vec<PushFrame>& formulas, int curr)
 {
-    PTRef trans = logic.learnEqTransitivity(root);
-    if (trans != PTRef_Undef) {
-        vec<PTRef> v;
-        v.push(trans);
-        v.push(root);
-        root = logic.mkAnd(v);
+    assert(curr < formulas.size());
+    vec<PTRef> coll_f_args;
+
+    // compute coll_f as (a_1^0 /\ ... /\ a_{n_1}^0) /\ ... /\ (a_1^{curr} /\ ... /\ a_{n_k}^{curr})
+    for (int i = 0; i < curr+1; i++)
+    {
+        for (int j = 0; j < formulas[i].size(); j++)
+            coll_f_args.push(formulas[i][j]);
     }
-    return computeSubstitutions(root, root_out);
+    PTRef coll_f = getLogic().mkAnd(coll_f_args);
+
+    PTRef trans = getLogic().learnEqTransitivity(coll_f);
+    if (trans != PTRef_Undef) {
+        formulas[curr].push(trans);
+    }
+    bool res = computeSubstitutions(coll_f, formulas[curr]);
+    return res;
 }
 

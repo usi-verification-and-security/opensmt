@@ -1365,9 +1365,9 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
   |________________________________________________________________________________________________@*/
 void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
 {
-#ifdef PRODUCE_PROOF
-    opensmt_error( "case not handled (yet)" );
-#endif
+//#ifdef PRODUCE_PROOF
+//    opensmt_error( "case not handled (yet)" );
+//#endif
     out_conflict.clear();
     out_conflict.push(p);
 

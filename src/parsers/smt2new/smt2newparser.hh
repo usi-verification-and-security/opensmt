@@ -196,8 +196,9 @@ union YYSTYPE
   std::vector< std::string > * str_list;
   ASTNode *                    snode;
   std::list< ASTNode * > *     snode_list;
+  smt2token                    tok;
 
-#line 201 "smt2newparser.hh" /* yacc.c:1909  */
+#line 202 "smt2newparser.hh" /* yacc.c:1909  */
 };
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1

@@ -42,7 +42,10 @@ Cnfizer::Cnfizer ( SMTConfig     &config_
     , thandler (thandler_)
     , solver   (solver_)
     , s_empty  (true)
-{ }
+{
+    frame_terms.push(logic.getTerm_true()); // frame 0 does not have a var
+    frame_term = frame_terms[0];
+}
 
 void Cnfizer::initialize()
 {
@@ -54,6 +57,28 @@ void Cnfizer::initialize()
     l = findLit (logic.getTerm_false());
     c.push (~l);
     addClause (c);
+}
+
+lbool
+Cnfizer::solve(vec<int>& en_frames)
+{
+    vec<Lit> assumps;
+    for (int i = 0; i < frame_terms.size(); i++)
+        assumps.push(findLit(frame_terms[i]));
+
+    for (int i = 0; i < en_frames.size(); i++)
+        assumps[i] = ~findLit(frame_terms[i]);
+
+    // Filter out the lit_Trues and lit_Falses used as empty values
+    Lit lit_true = findLit(logic.getTerm_true());
+    int i, j;
+    for (i = j = 0; i < assumps.size(); i++) {
+        if (assumps[i] != lit_true && assumps[i] != ~lit_true)
+            assumps[j++] = assumps[i];
+    }
+    assumps.shrink(i-j);
+
+    return solver.solve(assumps, !config.isIncremental(), config.isIncremental());
 }
 
 // A term is literal if its sort is Bool and
@@ -142,11 +167,32 @@ bool Cnfizer::isNPAtom (PTRef r, PTRef &p) const
     }
 }
 
+void Cnfizer::setFrameTerm(int frame_id)
+{
+    while (frame_terms.size() <= frame_id) {
+        frame_terms.push(logic.getTerm_true());
+    }
+    // frame_id == 0 is for the bottom frame and we don't want to add
+    // literals to it since it is never retracted.
+    if (frame_id > 0 && frame_terms[frame_id] == logic.getTerm_true()) {
+        char* name;
+        asprintf(&name, "%s%d", Logic::s_framev_prefix, frame_id);
+        PTRef frame_term = logic.mkBoolVar(name);
+        free(name);
+        frame_terms[frame_id] = frame_term;
+    }
+
+    frame_term = frame_terms[frame_id];
+}
+
 //
 // Main Routine. Examine formula and give it to the solver
 //
-lbool Cnfizer::cnfizeAndGiveToSolver (PTRef formula)
+lbool Cnfizer::cnfizeAndGiveToSolver (PTRef formula, int frame_id)
 {
+    // Get the variable for the incrementality.
+    setFrameTerm(frame_id);
+
     Map<PTRef, PTRef, PTRefHash> valdupmap;
 //  egraph.initDupMap1( );
 
@@ -675,6 +721,11 @@ bool Cnfizer::addClause ( vec<Lit> &c, const ipartitions_t &mask)
 bool Cnfizer::addClause ( vec<Lit> &c )
 #endif
 {
+    if (frame_term != logic.getTerm_true()) {
+        Lit l = findLit(frame_term);
+        solver.setFrozen(var(l), true);
+        c.push(l);
+    }
 #ifdef PEDANTIC_DEBUG
     cerr << "== clause start" << endl;
 

@@ -1,26 +1,33 @@
-#include "logics/Theory.h"
+#include "Theory.h"
+#include "MainSolver.h"
 //#include "logics/Logic.h"
 
-bool Theory::computeSubstitutions(PTRef root, PTRef& root_out)
+bool Theory::computeSubstitutions(PTRef coll_f, PushFrame& frame)
 {
+    assert(frame.units.size() == 0);
+    vec<PTRef> curr_args;
+    for (int i = 0; i < frame.size(); i++)
+        curr_args.push(frame[i]);
+    PTRef root = getLogic().mkAnd(curr_args);
+
     if (!config.do_substitutions() || config.produce_inter()) {
-        root_out = root;
+        frame.root = root;
         return true;
     }
     // The substitution of facts together with the call to simplifyTree
     // ensures that no fact is inserted twice to facts.
-    vec<PtAsgn> facts;
+//    vec<PtAsgn> facts;
     // l_True : exists and is valid
     // l_False : exists but has been disabled to break symmetries
     Map<PTRef,PtAsgn,PTRefHash> substs;
     Logic& logic = getLogic();
     // fixpoint
     while (true) {
-        logic.collectFacts(root, facts);
-        lbool res = logic.retrieveSubstitutions(facts, substs);
-        if (res != l_Undef) root = (res == l_True ? logic.getTerm_true() : logic.getTerm_false());
+        getLogic().collectFacts(coll_f, frame.units);
+        lbool res = getLogic().retrieveSubstitutions(frame.units, substs);
+        if (res != l_Undef) root = (res == l_True ? getLogic().getTerm_true() : getLogic().getTerm_false());
         PTRef new_root;
-        bool cont = logic.varsubstitute(root, substs, new_root);
+        bool cont = getLogic().varsubstitute(root, substs, new_root);
         root = new_root;
         if (!cont) break;
     }
@@ -34,10 +41,10 @@ bool Theory::computeSubstitutions(PTRef root, PTRef& root_out)
     }
 #endif
     vec<PTRef> args;
-    for (int i = 0; i < facts.size(); i++) {
-        assert(facts[i].sgn == l_True || logic.isBoolAtom(facts[i].tr));
-        if (logic.isTheoryEquality(facts[i].tr))
-            args.push(facts[i].tr);
+    for (int i = 0; i < frame.units.size(); i++) {
+        assert(frame.units[i].sgn == l_True || logic.isBoolAtom(frame.units[i].tr));
+        if (logic.isTheoryEquality(frame.units[i].tr))
+            args.push(frame.units[i].tr);
     }
 
     // Remove duplicates from args
@@ -70,7 +77,7 @@ bool Theory::computeSubstitutions(PTRef root, PTRef& root_out)
             no_conflict = false;
             break; }
 
-    root_out = root;
+    frame.root = root;
 
     vec<PTRef> keys;
     refs.getKeys(keys);

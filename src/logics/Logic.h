@@ -70,7 +70,7 @@ class Logic {
     vec<SymRef>         sortToEquality;
     vec<bool>           constants;
     vec<bool>           interpreted_functions;
-    PTRef top_level_ites;
+    Map<PTRef,PTRef,PTRefHash,Equal<PTRef> >    top_level_ites;
 
     SMTConfig&          config;
     IdentifierStore     id_store;
@@ -124,37 +124,43 @@ class Logic {
 
 
     static const char*  s_sort_bool;
+    static const char*  s_ite_prefix;
+    static const char*  s_framev_prefix;
 
     Logic(SMTConfig& c);
     ~Logic();
 
-    PTRef getTopLevelItes() { return top_level_ites; }
-    void addTopLevelIte(PTRef i)
+    bool isIteVar(PTRef tr) { return top_level_ites.has(tr); }
+    PTRef getTopLevelIte(PTRef tr) { return top_level_ites[tr]; }
+    void addTopLevelIte(PTRef i, PTRef var)
     {
-        if(i == PTRef_Undef) return;
-        if(top_level_ites == PTRef_Undef)
-        {
-            top_level_ites = i;
-            return;
-        }
-        vec<PTRef> args;
-        args.push(top_level_ites);
-        args.push(i);
-        top_level_ites = mkAnd(args);
+        if (i == PTRef_Undef || var == PTRef_Undef)
+            assert(false);
+
+        assert(!top_level_ites.has(var));
+        top_level_ites.insert(var, i);
     }
 
     void conjoinItes(PTRef root, PTRef& new_root)
     {
-        PTRef tlites = getTopLevelItes();
-        if (tlites == PTRef_Undef)
-        {
-            new_root = root;
-            return;
+        vec<PTRef> queue;
+        Map<PTRef,bool,PTRefHash> seen;
+        queue.push(root);
+        vec<PTRef> args;
+        while (queue.size() != 0) {
+            PTRef el = queue.last();
+            queue.pop();
+            if (seen.has(el)) continue;
+            if (isVar(el) && isIteVar(el)) {
+                args.push(getTopLevelIte(el));
+                queue.push(getTopLevelIte(el));
+            }
+            for (int i = 0; i < getPterm(el).size(); i++)
+                queue.push(getPterm(el)[i]);
+            seen.insert(el, true);
         }
 
-        vec<PTRef> args;
         args.push(root);
-        args.push(tlites);
         new_root = mkAnd(args);
     }
 
@@ -192,7 +198,9 @@ class Logic {
 
     // Boolean term generation
     PTRef       mkAnd         (vec<PTRef>&);
+    PTRef       mkAnd         (PTRef a1, PTRef a2) { vec<PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkAnd(tmp); }
     PTRef       mkOr          (vec<PTRef>&);
+    PTRef       mkOr          (PTRef a1, PTRef a2) { vec<PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkOr(tmp); }
     PTRef       mkXor         (vec<PTRef>&);
     PTRef       mkXor         (PTRef a1, PTRef a2) { vec <PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkXor(tmp); }
     PTRef       mkImpl        (vec<PTRef>&);

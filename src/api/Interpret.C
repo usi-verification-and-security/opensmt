@@ -36,6 +36,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Interpret.h"
 #include "Theory.h"
 #include "Global.h"
+#include "smt2tokens.h"
 
 namespace opensmt {
 bool stop;
@@ -136,263 +137,309 @@ void Interpret::exit() {
 bool Interpret::interp(ASTNode& n) {
     bool rval;
     assert(n.getType() == CMD_T);
-    const char* cmd = n.getValue();
-    if (strcmp(cmd, "set-logic") == 0) {
-        ASTNode &logic_n = **(n.children->begin());
-        const char* logic_name = logic_n.getValue();
-        if (logic != NULL) {
-            notify_formatted(true, "logic has already been set to %s", logic->getName());
-        } else if (strcmp(logic_name, QF_UF.str) == 0) {
-            UFTheory *uftheory = new UFTheory(config);
-            theory = uftheory;
-            thandler = new THandler(config, *uftheory);
-            logic = &(theory->getLogic());
-            solver = new SimpSMTSolver(config, *thandler);
+    const smt2token cmd = n.getToken();
+    switch (cmd.x) {
+        case t_setlogic:
+        {
+            ASTNode &logic_n = **(n.children->begin());
+            const char* logic_name = logic_n.getValue();
+            if (logic != NULL) {
+                notify_formatted(true, "logic has already been set to %s", logic->getName());
+            } else if (strcmp(logic_name, QF_UF.str) == 0) {
+                UFTheory *uftheory = new UFTheory(config);
+                theory = uftheory;
+                thandler = new THandler(config, *uftheory);
+                logic = &(theory->getLogic());
+                solver = new SimpSMTSolver(config, *thandler);
 
-            main_solver = new MainSolver(*thandler, config, solver);
-            main_solver->initialize();
-        } else if ((strcmp(logic_name, QF_LRA.str) == 0) || (strcmp(logic_name, QF_RDL.str) == 0)) {
-            LRATheory *lratheory = new LRATheory(config);
-            theory = lratheory;
-            thandler = new THandler(config, *lratheory);
-            logic = &(theory->getLogic());
+                main_solver = new MainSolver(*thandler, config, solver);
+                main_solver->initialize();
+            } else if ((strcmp(logic_name, QF_LRA.str) == 0) || (strcmp(logic_name, QF_RDL.str) == 0)) {
+                LRATheory *lratheory = new LRATheory(config);
+                theory = lratheory;
+                thandler = new THandler(config, *lratheory);
+                logic = &(theory->getLogic());
 
-            solver = new SimpSMTSolver(config, *thandler);
-            main_solver = new MainSolver(*thandler, config, solver);
-            main_solver->initialize();
-        } else {
-            notify_formatted(true, "unknown logic %s", logic_name);
-            return false;
-        }
-        return true;
-    }
-    else if (strcmp(cmd, "set-info") == 0) {
-        setInfo(**(n.children->begin()));
-        return false;
-    }
-    else if (strcmp(cmd, "get-info") == 0) {
-        getInfo(**(n.children->begin()));
-        return false;
-    }
-    else if (strcmp(cmd, "set-option") == 0) {
-        setOption(**(n.children->begin()));
-        return false;
-    }
-    else if (strcmp(cmd, "get-option") == 0) {
-        getOption(**(n.children->begin()));
-        return false;
-    }
-    else if (strcmp(cmd, "declare-sort") == 0) {
-        if (logic != NULL) {
-            char* name = buildSortName(n);
-            bool was_new = !logic->containsSort(name);
-            free(name);
-            SRef sr = newSort(n);
-            if (!was_new) {
-                notify_formatted(true, "sort %s already declared", logic->getSortName(sr));
-                goto declare_sort_err;
-            }
-            rval = logic->declare_sort_hook(sr);
-            assert(rval);
-            notify_success();
-declare_sort_err: ;
-        }
-        else
-            notify_formatted(true, "illegal command before set-logic: %s", cmd);
-        return false;
-    }
-    else if (strcmp(cmd, "declare-fun") == 0) {
-        if (logic != NULL) {
-            list<ASTNode*>::iterator it = n.children->begin();
-            ASTNode& name_node = **(it++);
-            ASTNode& args_node = **(it++);
-            ASTNode& ret_node  = **(it++);
-            assert(it == n.children->end());
-
-            const char* fname = name_node.getValue();
-
-            vec<SRef> args;
-
-            char* name = buildSortName(ret_node);
-
-            if (logic->containsSort(name)) {
-                SRef sr = newSort(ret_node);
-                args.push(sr);
-                free(name);
+                solver = new SimpSMTSolver(config, *thandler);
+                main_solver = new MainSolver(*thandler, config, solver);
+                main_solver->initialize();
             } else {
-                notify_formatted(true, "Unknown return sort %s of %s", name, fname);
-                free(name);
-                goto declare_fun_err;
+                notify_formatted(true, "unknown logic %s", logic_name);
+                return false;
             }
-            for (list<ASTNode*>::iterator it2 = args_node.children->begin(); it2 != args_node.children->end(); it2++) {
-                char* name = buildSortName(**it2);
-                if (logic->containsSort(name)) {
-                    args.push(logic->getSortRef(name));
-                    free(name);
+            return true;
+            break;
+        }
+        case t_setinfo:
+        {
+            setInfo(**(n.children->begin()));
+            return false;
+            break;
+        }
+        case t_getinfo:
+        {
+            getInfo(**(n.children->begin()));
+            return false;
+            break;
+        }
+        case t_setoption:
+        {
+            setOption(**(n.children->begin()));
+            return false;
+            break;
+        }
+        case  t_getoption:
+        {
+            getOption(**(n.children->begin()));
+            return false;
+            break;
+        }
+        case t_declaresort:
+        {
+            if (logic != NULL) {
+                char* name = buildSortName(n);
+                bool was_new = !logic->containsSort(name);
+                free(name);
+                SRef sr = newSort(n);
+                if (!was_new) {
+                    notify_formatted(true, "sort %s already declared", logic->getSortName(sr));
+                    goto declare_sort_err;
                 }
-                else {
-                    notify_formatted(true, "Undefined sort %s in function %s", name, fname);
+                rval = logic->declare_sort_hook(sr);
+                assert(rval);
+                notify_success();
+declare_sort_err: ;
+            }
+            else
+                notify_formatted(true, "illegal command before set-logic: declare-sort");
+            return false;
+            break;
+        }
+        case t_declarefun:
+        {
+            if (logic != NULL) {
+                list<ASTNode*>::iterator it = n.children->begin();
+                ASTNode& name_node = **(it++);
+                ASTNode& args_node = **(it++);
+                ASTNode& ret_node  = **(it++);
+                assert(it == n.children->end());
+
+                const char* fname = name_node.getValue();
+
+                vec<SRef> args;
+
+                char* name = buildSortName(ret_node);
+
+                if (logic->containsSort(name)) {
+                    SRef sr = newSort(ret_node);
+                    args.push(sr);
+                    free(name);
+                } else {
+                    notify_formatted(true, "Unknown return sort %s of %s", name, fname);
+                    free(name);
                     goto declare_fun_err;
                 }
-            }
-            if (declareFun(fname, args)) notify_success();
-declare_fun_err: ;
-        }
-        else
-            notify_formatted(true, "illegal command before set-logic: %s", cmd);
-        return false;
-    }
-    else if (strcmp(cmd, "assert") == 0) {
-        if (logic != NULL) {
-            sstat status;
-            ASTNode& asrt = **(n.children->begin());
-            vec<LetFrame> let_branch;
-            PTRef tr = parseTerm(asrt, let_branch);
-            if (tr == PTRef_Undef)
-                notify_formatted(true, "assertion returns an unknown sort");
-            else {
-		char* err_msg = NULL;
-                status = main_solver->insertFormula(tr, &err_msg);
-
-                if (status == s_Error)
-                    notify_formatted(true, "Error");
-                else if (status == s_Undef)
-                    notify_success();
-                else if (status == s_False)
-                    notify_success();
-
-                if (err_msg != NULL && status == s_Error)
-                    notify_formatted(true, err_msg);
-                if (err_msg != NULL && status != s_Error)
-                    comment_formatted(err_msg);
-                free(err_msg);
-            }
-        }
-        else {
-            notify_formatted(true, "Illegal command before set-logic: %s", cmd);
-            return false;
-        }
-    }
-    else if (strcmp(cmd, "define-fun") == 0) {
-        if (logic != NULL) {
-            list<ASTNode*>::iterator it = n.children->begin();
-            ASTNode& name_node = **(it++);
-            ASTNode& args_node = **(it++);
-            ASTNode& ret_node  = **(it++);
-            ASTNode& term_node = **(it++);
-            assert(it == n.children->end());
-
-            const char* fname = name_node.getValue();
-
-            // Get the argument sorts
-            vec<SRef> args;
-            for (list<ASTNode*>::iterator it2 = args_node.children->begin(); it2 != args_node.children->end(); it2++) {
-                char* name = buildSortName(**it2);
-                if (logic->containsSort(name)) {
-                    args.push(logic->getSortRef(name));
-                    free(name);
+                for (list<ASTNode*>::iterator it2 = args_node.children->begin(); it2 != args_node.children->end(); it2++) {
+                    char* name = buildSortName(**it2);
+                    if (logic->containsSort(name)) {
+                        args.push(logic->getSortRef(name));
+                        free(name);
+                    }
+                    else {
+                        notify_formatted(true, "Undefined sort %s in function %s", name, fname);
+                        goto declare_fun_err;
+                    }
                 }
+                if (declareFun(fname, args)) notify_success();
+declare_fun_err: ;
+            }
+            else
+                notify_formatted(true, "Illegal command before set-logic: declare-fun");
+            return false;
+            break;
+        }
+        case t_assert:
+        {
+            if (logic != NULL) {
+                sstat status;
+                ASTNode& asrt = **(n.children->begin());
+                vec<LetFrame> let_branch;
+                PTRef tr = parseTerm(asrt, let_branch);
+                if (tr == PTRef_Undef)
+                    notify_formatted(true, "assertion returns an unknown sort");
                 else {
-                    notify_formatted(true, "Undefined sort %s in function %s", name, fname);
+                    char* err_msg = NULL;
+                    status = main_solver->insertFormula(tr, &err_msg);
+
+                    if (status == s_Error)
+                        notify_formatted(true, "Error");
+                    else if (status == s_Undef)
+                        notify_success();
+                    else if (status == s_False)
+                        notify_success();
+
+                    if (err_msg != NULL && status == s_Error)
+                        notify_formatted(true, err_msg);
+                    if (err_msg != NULL && status != s_Error)
+                        comment_formatted(err_msg);
+                    free(err_msg);
+                }
+            }
+            else {
+                notify_formatted(true, "Illegal command before set-logic: assert");
+                return false;
+            }
+            break;
+        }
+        case t_definefun:
+        {
+            if (logic != NULL) {
+                list<ASTNode*>::iterator it = n.children->begin();
+                ASTNode& name_node = **(it++);
+                ASTNode& args_node = **(it++);
+                ASTNode& ret_node  = **(it++);
+                ASTNode& term_node = **(it++);
+                assert(it == n.children->end());
+
+                const char* fname = name_node.getValue();
+
+                // Get the argument sorts
+                vec<SRef> args;
+                for (list<ASTNode*>::iterator it2 = args_node.children->begin(); it2 != args_node.children->end(); it2++) {
+                    char* name = buildSortName(**it2);
+                    if (logic->containsSort(name)) {
+                        args.push(logic->getSortRef(name));
+                        free(name);
+                    }
+                    else {
+                        notify_formatted(true, "Undefined sort %s in function %s", name, fname);
+                        return false;
+                    }
+                }
+
+                // For now we only functions with 0 arguments since smtlib
+                // LRA only has these.
+                if (args_node.children->size() > 0) {
+                    notify_formatted(true, "Only non-argument functions are supported.  Function %s has %d arguments", fname, args_node.children->size());
+                    return false;
+                }
+
+                // The return sort
+                char* rsort_name = buildSortName(ret_node);
+                SRef ret_sort;
+                if (logic->containsSort(rsort_name)) {
+                    ret_sort = newSort(ret_node);
+                    free(rsort_name);
+                } else {
+                    notify_formatted(true, "Unknown return sort %s of %s", rsort_name, fname);
+                    free(rsort_name);
+                    return false;
+                }
+
+                sstat status;
+                vec<LetFrame> let_branch;
+                PTRef tr = parseTerm(term_node, let_branch);
+                if (tr == PTRef_Undef) {
+                    notify_formatted(true, "define-fun returns an unknown sort");
+                    return false;
+                }
+                else if (logic->getSortRef(tr) != ret_sort) {
+                    notify_formatted(true, "define-fun term and return sort do not match: %s and %s\n", logic->getSortName(logic->getSortRef(tr)), logic->getSortName(ret_sort));
+                    return false;
+                }
+                if (defineFun(fname, tr)) notify_success();
+                else {
+                    notify_formatted(true, "define-fun failed");
                     return false;
                 }
             }
-
-            // For now we only functions with 0 arguments since smtlib
-            // LRA only has these.
-            if (args_node.children->size() > 0) {
-                notify_formatted(true, "Only non-argument functions are supported.  Function %s has %d arguments", fname, args_node.children->size());
-                return false;
-            }
-
-            // The return sort
-            char* rsort_name = buildSortName(ret_node);
-            SRef ret_sort;
-            if (logic->containsSort(rsort_name)) {
-                ret_sort = newSort(ret_node);
-                free(rsort_name);
-            } else {
-                notify_formatted(true, "Unknown return sort %s of %s", rsort_name, fname);
-                free(rsort_name);
-                return false;
-            }
-
-            sstat status;
-            vec<LetFrame> let_branch;
-            PTRef tr = parseTerm(term_node, let_branch);
-            if (tr == PTRef_Undef) {
-                notify_formatted(true, "define-fun returns an unknown sort");
-                return false;
-            }
-            else if (logic->getSortRef(tr) != ret_sort) {
-                notify_formatted(true, "define-fun term and return sort do not match: %s and %s\n", logic->getSortName(logic->getSortRef(tr)), logic->getSortName(ret_sort));
-                return false;
-            }
-            if (defineFun(fname, tr)) notify_success();
             else {
-                notify_formatted(true, "define-fun failed");
+                notify_formatted(true, "Illegal command before set-logic: define-fun");
                 return false;
             }
+            break;
         }
-        else {
-            notify_formatted(true, "Illegal command before set-logic: %s", cmd);
-            return false;
-        }
-    }
-    else if (strcmp(cmd, "simplify") == 0) {
-        char* msg;
-        sstat status = main_solver->simplifyFormulas(&msg);
-        if (status == s_Error)
-            notify_formatted(true, "Simplify: %s", msg);
-    }
-    else if (strcmp(cmd, "check-sat") == 0) {
-        checkSat(cmd);
-    }
-    if(strcmp(cmd, "get-interpolants") == 0) {
-#ifdef PRODUCE_PROOF
-        GetInterpolants();
-#else
-        notify_formatted(true, "This binary has no support to interpolation");
-#endif
-    }
-
-    else if (strcmp(cmd, "get-assignment") == 0) {
-        getAssignment(cmd);
-    }
-    else if (strcmp(cmd, "get-value") == 0) {
-        getValue(n.children);
-    }
-    else if (strcmp(cmd, "write-state") == 0) {
-        if (main_solver->solverEmpty()) {
+        case t_simplify:
+        {
             char* msg;
             sstat status = main_solver->simplifyFormulas(&msg);
             if (status == s_Error)
-                notify_formatted(true, "write-state: %s", msg);
+                notify_formatted(true, "Simplify: %s", msg);
+            break;
         }
-        writeState((**(n.children->begin())).getValue());
-    }
-    else if (strcmp(cmd, "read-state") == 0) {
-        if (logic != NULL) {
-            const char* filename = (**(n.children->begin())).getValue();
-            CnfState cs;
-            char* msg;
-            bool rval = main_solver->readSolverState(filename, &msg);
-            if (!rval) {
-                notify_formatted("%s", msg);
+        case t_checksat:
+        {
+            checkSat();
+            break;
+        }
+        case t_getinterpolants:
+        {
+#ifdef PRODUCE_PROOF
+            GetInterpolants();
+#else
+            notify_formatted(true, "This binary has no support to interpolation");
+#endif
+            break;
+        }
+        case t_getassignment:
+        {
+            getAssignment();
+            break;
+        }
+        case t_getvalue:
+        {
+            getValue(n.children);
+            break;
+        }
+        case (t_writestate):
+        {
+            if (main_solver->solverEmpty()) {
+                char* msg;
+                sstat status = main_solver->simplifyFormulas(&msg);
+                if (status == s_Error)
+                    notify_formatted(true, "write-state: %s", msg);
             }
-        } else {
-            notify_formatted(true, "Illegal command before set-logic: %s", cmd);
+            writeState((**(n.children->begin())).getValue());
+            break;
+        }
+        case t_readstate:
+        {
+            if (logic != NULL) {
+                const char* filename = (**(n.children->begin())).getValue();
+                CnfState cs;
+                char* msg;
+                bool rval = main_solver->readSolverState(filename, &msg);
+                if (!rval) {
+                    notify_formatted("%s", msg);
+                }
+            } else {
+                notify_formatted(true, "Illegal command before set-logic: read-state");
+                return false;
+            }
+            break;
+        }
+        case t_push:
+        {
+            return push();
+            break;
+        }
+        case t_pop:
+        {
+            return pop();
+            break;
+        }
+        case t_exit:
+        {
+            exit();
+            notify_success();
+            return false;
+            break;
+        }
+        default:
+        {
             return false;
         }
     }
-    else if (strcmp(cmd, "exit") == 0) {
-        exit();
-        notify_success();
-        //
-        return false;
-    }
-    else
-        return false;
 }
 
 // Adds a new term to TermTable and a mapping to the term from this let frame.
@@ -601,7 +648,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
     return PTRef_Undef;
 }
 
-bool Interpret::checkSat(const char* cmd) {
+bool Interpret::checkSat() {
     if (sat_calls > 0 && config.isIncremental() == false) {
             comment_formatted("Incrementality not enabled but %d check-sat encountered", sat_calls);
             return false;
@@ -630,7 +677,7 @@ bool Interpret::checkSat(const char* cmd) {
             notify_formatted(true, msg);
     }
     else {
-        notify_formatted(true, "Illegal command before set-logic: %s", cmd);
+        notify_formatted(true, "Illegal command before set-logic: check-sat");
         return false;
     }
     if (res == s_Undef) {
@@ -649,9 +696,33 @@ bool Interpret::checkSat(const char* cmd) {
     return true;
 }
 
-bool Interpret::getAssignment(const char* cmd) {
+bool Interpret::push()
+{
+    if (config.isIncremental()) {
+        main_solver->push();
+        return true;
+    }
+    else {
+        notify_formatted(true, "push encountered but solver not in incremental mode");
+        return false;
+    }
+}
+
+bool Interpret::pop()
+{
+    if (config.isIncremental()) {
+        main_solver->pop();
+        return true;
+    }
+    else {
+        notify_formatted(true, "pop encountered but solver not in incremental mode");
+        return false;
+    }
+}
+
+bool Interpret::getAssignment() {
     if (logic == NULL) {
-       notify_formatted(true, "Illegal command before set-logic: %s", cmd);
+       notify_formatted(true, "Illegal command before set-logic");
        return false;
     }
     if (main_solver->getStatus() != s_True) {

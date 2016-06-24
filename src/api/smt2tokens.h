@@ -1,8 +1,7 @@
 /*********************************************************************
 Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
 
-OpenSMT2 -- Copyright (C) 2012 - 2015 Antti Hyvarinen
-                         2008 - 2012 Roberto Bruttomesso
+OpenSMT2 -- Copyright (C) 2012 - 2016 Antti Hyvarinen
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the
@@ -24,41 +23,56 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
-#ifndef UFTHandler_h
-#define UFTHandler_h
 
-//#include "THandler.h"
-#include "Logic.h"
-#include "TSolverHandler.h"
-#include "Egraph.h"
-
-class UFTHandler : public TSolverHandler
-{
-  private:
-    Logic& logic;
-    Egraph* egraph;
-//  protected:
-//    const vec<int>& getSolverSchedule() const;
-  public:
-    UFTHandler(SMTConfig& c, Logic& l, vec<DedElem>& d);
-    virtual ~UFTHandler();
-    bool assertLit_special(PtAsgn a);
-    // This is for simplification, needed to run the theory solver code
-    // as if it were running inside a SAT solver.
-    void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs);
-    Logic& getLogic();
-
-#ifdef PRODUCE_PROOF
-    TheoryInterpolator* getTheoryInterpolator()
-    {
-        return egraph->getTheoryInterpolator();
-    }
-
-    PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
-    {
-        return egraph->getInterpolant(mask, labels);
-    }
-#endif
+#ifndef APITOKENS_H
+#define APITOKENS_H
+//
+// The names for the tokens in the API for smtlib
+//
+enum token {
+    t_none,
+    t_as,
+    t_DECIMAL,
+    t_NUMERAL,
+    t_par,
+    t_STRING,
+    t_exists,
+    t_forall,
+    t_assert,
+    t_checksat,
+    t_declaresort,
+    t_definesort,
+    t_declarefun,
+    t_definefun,
+    t_exit,
+    t_getassertions,
+    t_getassignment,
+    t_getinfo,
+    t_setinfo,
+    t_getoption,
+    t_setoption,
+    t_getproof,
+    t_getunsatcore,
+    t_getvalue,
+    t_pop,
+    t_push,
+    t_setlogic,
+    t_getinterpolants,
+    t_theory,
+    t_writestate,
+    t_readstate,
+    t_simplify,
+    t_let
 };
 
+struct smt2token
+{
+    token x;
+};
+
+#define S_BANG = "!";
+static const char* S_PUSH = "push";
+static const char* S_EXISTS = "exists";
+static const char* S_FORALL = "forall";
+static const char* S_LET = "let";
 #endif

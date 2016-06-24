@@ -86,15 +86,14 @@ public:
 
     virtual ~Cnfizer( ) { }
 
-    lbool cnfizeAndGiveToSolver ( PTRef ); // Main routine
-//    lbool extEquals             ( PTRef new_r, PTRef old_r ); // Tell the solver that two terms are equal (used when equality deduced by a theory solver)
+    lbool cnfizeAndGiveToSolver (PTRef, int frame_id); // Main routine
 
     vec<ValPair>* getModel ();                              // Retrieves the model (if SAT and solved)
 
     lbool  getTermValue(PTRef) const;
 
     void   initialize      ();
-    lbool  solve           () { return solver.solve(); }
+    lbool  solve           (vec<int>& en_frames);
 
     void   crashTest       (int rounds) { solver.crashTest(rounds, tmap.getVar(logic.getTerm_true()), tmap.getVar(logic.getTerm_false())); }
 
@@ -168,6 +167,10 @@ protected:
 
     Map<PTRef,bool,PTRefHash,Equal<PTRef> >   processed;  // Is a term already processed
     Map<PTRef,Var,PTRefHash,Equal<PTRef> >    seen;       // mapping from PTRef to var
+
+    PTRef frame_term;
+    vec<PTRef> frame_terms;
+    void setFrameTerm(int frame_id);
 
 //    bool  isLit            (PTRef r);
     const Lit findLit      (PTRef ptr);

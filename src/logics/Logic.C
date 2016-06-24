@@ -60,6 +60,8 @@ const char* Logic::tk_distinct = "distinct";
 const char* Logic::tk_ite      = "ite";
 
 const char* Logic::s_sort_bool = "Bool";
+const char* Logic::s_ite_prefix = ".oite";
+const char* Logic::s_framev_prefix = ".frame";
 
 // The constructor initiates the base logic (Boolean)
 Logic::Logic(SMTConfig& c) :
@@ -79,7 +81,6 @@ Logic::Logic(SMTConfig& c) :
     , sort_BOOL(SRef_Undef)
     , term_TRUE(PTRef_Undef)
     , term_FALSE(PTRef_Undef)
-    , top_level_ites(PTRef_Undef)
     , subst_num(0)
 {
     config.logic = QF_UF;
@@ -520,7 +521,7 @@ Logic::mkIte(vec<PTRef>& args)
 
     char* name;
     static unsigned ite_counter = 0;
-    asprintf(&name, ".oite%d", ite_counter++);
+    asprintf(&name, "%s%d", s_ite_prefix, ite_counter++);
     PTRef o_ite = mkVar(sr, name);
     free(name);
 
@@ -545,7 +546,7 @@ Logic::mkIte(vec<PTRef>& args)
     vec<PTRef> and_args;
     and_args.push(if_term);
     and_args.push(else_term);
-    addTopLevelIte(mkAnd(and_args));
+    addTopLevelIte(mkAnd(and_args), o_ite);
 
     return o_ite;
 }

@@ -169,10 +169,22 @@ int MainSolver::decompress_buf(int* buf_in, int*& buf_out, int sz, int& sz_out )
 }
 #endif
 
+void
+MainSolver::push()
+{
+    formulas.push();
+}
+
+void
+MainSolver::pop()
+{
+    formulas.pop();
+}
+
 sstat
 MainSolver::push(PTRef root)
 {
-    formulas.push();
+    push();
     char* msg;
     sstat res = insertFormula(root, &msg);
     if (res == s_Error)
@@ -189,6 +201,7 @@ MainSolver::insertFormula(PTRef root, char** msg)
                  Logic::s_sort_bool, logic.getSortName(logic.getSortRef(root)));
         return s_Error;
     }
+    logic.conjoinItes(root, root);
     char* err_msg = NULL;
     if (!logic.assignPartition(root, &err_msg))
         opensmt_error("Could not assign partition"); 
@@ -204,76 +217,39 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         return s_Undef;
 
     status = s_Undef;
-    PTRef  root;
     // Think of something here to enable incrementality...
     if (!ts.solverEmpty()) {
         asprintf(err_msg, "Solver already contains a simplified problem.  Cannot continue for now");
-        return s_Error; }
+        return s_Error;
+    }
 
     vec<PTRef> coll_f;
-    for (int i = 0; i < formulas.size(); i++)
-        for (int j = 0; j < formulas[i].size(); j++)
-            coll_f.push(formulas[i][j]);
-    root = logic.mkAnd(coll_f);
+    for (int i = simplified_until; i < formulas.size(); i++) {
+        bool res = getTheory().simplify(formulas, i);
+        simplified_until = i+1;
+        PTRef root = formulas[i].root;
+        if (logic.isTrue(root)) return status = s_True;
+        else if (logic.isFalse(root)) return status = s_False;
 
-    // Framework for handling different theory specific simplifications.
-    PTRef new_root;
-    if (config.produce_inter() == 0) {
-        bool res = getTheory().simplify(root, new_root);
-        if (logic.isTrue(new_root)) return status = s_True;
-        else if (logic.isFalse(new_root)) return status = s_False;
-    }
-    else
-        new_root = root;
+        FContainer fc(root);
 
-    vec<PtChild> terms;
-    FContainer fc(new_root);
-
-    if (config.remove_symmetries()) {
-
-//        symmetry::Detector d(logic, new_root);
-        //d.toDot("/home/simone/Desktop/graph.dot");
-//        d.findSBPs();
-//        PTRef sbps = d.getSBPs();
-
-//        if (sbps != PTRef_Undef) {
-//            std::cerr << "; [SBPs]: " << logic.printTerm(sbps) << std::endl;
-//            vec<PTRef> newTerms;
-//            newTerms.push(root);
-//            newTerms.push(sbps);
-//            PTRef newRoot = logic.mkAnd(newTerms);
-//            fc.setRoot(newRoot);
-//        }
-//        else std::cerr << "; There are no BSPs!" << std::endl;
-    }
-
-
-//    fc = propFlatten(fc);
-    // Optimize the dag for cnfization
-    Map<PTRef,int,PTRefHash> PTRefToIncoming;
-    if (logic.isBooleanOperator(fc.getRoot())) {
+        // Optimize the dag for cnfization
+        Map<PTRef,int,PTRefHash> PTRefToIncoming;
+        if (logic.isBooleanOperator(fc.getRoot())) {
 #ifdef FLATTEN_DEBUG
-        printf("Flattening the formula %s\n", logic.printTerm(fc.getRoot()));
+            printf("Flattening the formula %s\n", logic.printTerm(fc.getRoot()));
 #endif
-        computeIncomingEdges(fc.getRoot(), PTRefToIncoming);
-        PTRef flat_root = rewriteMaxArity(fc.getRoot(), PTRefToIncoming);
-        fc.setRoot(flat_root);
+            computeIncomingEdges(fc.getRoot(), PTRefToIncoming);
+            PTRef flat_root = rewriteMaxArity(fc.getRoot(), PTRefToIncoming);
+            fc.setRoot(flat_root);
 #ifdef FLATTEN_DEBUG
-        printf("Got the formula %s\n", logic.printTerm(fc.getRoot()));
+            printf("Got the formula %s\n", logic.printTerm(fc.getRoot()));
 #endif
+        }
+
+        root_instance = fc;
+        status = giveToSolver(fc.getRoot(), formulas[i].getId());
     }
-    terms.clear();
-
-//  Not a good idea here since the SAT solver does simplifications
-//  removing variables and some theories (e.g., UF_LRA) slow down on
-//  extra variables.
-//    thandler.declareTermTree(fc.getRoot());
-
-//    std::cerr << logic.printTerm(fc.getRoot());
-
-    root_instance = fc;
-    status = giveToSolver(fc.getRoot());
-
     return status;
 }
 
@@ -1093,9 +1069,12 @@ sstat MainSolver::solve()
 
     if (config.parallel_threads && config.sat_split_type() == spt_lookahead)
         status = lookaheadSplit(getLog2Ceil(config.sat_split_num()));
-    else
-        status = sstat(ts.solve());
-
+    else {
+        vec<int> en_frames;
+        for (int i = 0; i < formulas.size(); i++)
+            en_frames.push(formulas[i].getId());
+        status = sstat(ts.solve(en_frames));
+    }
     if (!(config.parallel_threads && status == s_Undef)) {
         if (status == s_True && config.produce_models())
             thandler.computeModel();

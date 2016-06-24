@@ -62,19 +62,6 @@ const sstat s_False = toSstat(-1);
 const sstat s_Undef = toSstat( 0);
 const sstat s_Error = toSstat( 2);
 
-struct PushFrame
-{
-
-    void pushFrame()                            { id = id_counter++; }
-    int  getId() const                          { return id; }
-    int  size()  const                          { return formulas.size(); }
-    int  push(PTRef tr)                         { formulas.push(tr); }
-    PTRef operator[] (int i) const              { return formulas[i]; }
- private:
-    vec<PTRef> formulas;
-    static int id_counter;
-    int id;
-};
 
 class MainSolver
 {
@@ -105,6 +92,7 @@ class MainSolver
     SimpSMTSolver* smt_solver;
     Tseitin        ts;
     vec<PushFrame> formulas;
+
     int            simplified_until; // The formulas have been simplified up to and including formulas[simplified_until-1].
     sstat          status;           // The status of the last solver call (initially s_Undef)
 
@@ -121,8 +109,8 @@ class MainSolver
 
     void expandItes(FContainer& fc, vec<PtChild>& terms);
 
-    sstat giveToSolver(PTRef root) {
-        if (ts.cnfizeAndGiveToSolver(root) == l_False) return s_False;
+    sstat giveToSolver(PTRef root, int push_id) {
+        if (ts.cnfizeAndGiveToSolver(root, push_id) == l_False) return s_False;
         return s_Undef; }
 
     FContainer simplifyEqualities(vec<PtChild>& terms);
@@ -167,6 +155,8 @@ class MainSolver
     Logic&    getLogic()    { return thandler.getLogic(); }
     Theory&   getTheory()   { return thandler.getTheory(); }
     sstat push(PTRef root);
+    void push();
+    void pop();
     sstat insertFormula(PTRef root, char** msg);
 
     void initialize() { ts.solver.initialize(); ts.initialize(); }
