@@ -78,7 +78,7 @@ Cnfizer::solve(vec<int>& en_frames)
     }
     assumps.shrink(i-j);
 
-    return solver.solve(assumps);
+    return solver.solve(assumps, !config.isIncremental(), config.isIncremental());
 }
 
 // A term is literal if its sort is Bool and
@@ -721,6 +721,11 @@ bool Cnfizer::addClause ( vec<Lit> &c, const ipartitions_t &mask)
 bool Cnfizer::addClause ( vec<Lit> &c )
 #endif
 {
+    if (frame_term != logic.getTerm_true()) {
+        Lit l = findLit(frame_term);
+        solver.setFrozen(var(l), true);
+        c.push(l);
+    }
 #ifdef PEDANTIC_DEBUG
     cerr << "== clause start" << endl;
 
@@ -733,11 +738,6 @@ bool Cnfizer::addClause ( vec<Lit> &c )
     }
 
 #endif
-    if (frame_term != logic.getTerm_true()) {
-        Lit l = findLit(frame_term);
-        solver.setFrozen(var(l), true);
-        c.push(l);
-    }
 #ifdef PRODUCE_PROOF
     bool res = solver.addSMTClause (c, mask);
 #else

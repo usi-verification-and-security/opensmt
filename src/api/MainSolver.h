@@ -155,6 +155,7 @@ class MainSolver
     Theory&   getTheory()   { return thandler.getTheory(); }
     sstat push(PTRef root);
     void push();
+    void pop();
     sstat insertFormula(PTRef root, char** msg);
 
     void initialize() { ts.solver.initialize(); ts.initialize(); }

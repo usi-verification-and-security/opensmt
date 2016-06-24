@@ -420,7 +420,12 @@ declare_fun_err: ;
         }
         case t_push:
         {
-            main_solver->push();
+            return push();
+            break;
+        }
+        case t_pop:
+        {
+            return pop();
             break;
         }
         case t_exit:
@@ -689,6 +694,30 @@ bool Interpret::checkSat() {
     }
 
     return true;
+}
+
+bool Interpret::push()
+{
+    if (config.isIncremental()) {
+        main_solver->push();
+        return true;
+    }
+    else {
+        notify_formatted(true, "push encountered but solver not in incremental mode");
+        return false;
+    }
+}
+
+bool Interpret::pop()
+{
+    if (config.isIncremental()) {
+        main_solver->pop();
+        return true;
+    }
+    else {
+        notify_formatted(true, "pop encountered but solver not in incremental mode");
+        return false;
+    }
 }
 
 bool Interpret::getAssignment() {

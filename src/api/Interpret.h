@@ -87,6 +87,8 @@ class Interpret {
     bool                        defineFun(const char* fname, const PTRef tr);
     bool                        checkSat();
     bool                        getValue(const list<ASTNode*>* term);
+    bool                        push();
+    bool                        pop();
     PTRef                       parseTerm(const ASTNode& term, vec<LetFrame>& let_branch);
     void                        exit();
 #ifdef PRODUCE_PROOF

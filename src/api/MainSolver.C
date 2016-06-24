@@ -175,10 +175,16 @@ MainSolver::push()
     formulas.push();
 }
 
+void
+MainSolver::pop()
+{
+    formulas.pop();
+}
+
 sstat
 MainSolver::push(PTRef root)
 {
-    formulas.push();
+    push();
     char* msg;
     sstat res = insertFormula(root, &msg);
     if (res == s_Error)
