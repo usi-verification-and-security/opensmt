@@ -742,6 +742,11 @@ PTRef Logic::mkEq(vec<PTRef>& args) {
     return insertTermHash(eq_sym, args);
 }
 
+PTRef Logic::mkNot(vec<PTRef>& args) {
+    assert(args.size() == 1);
+    return mkNot(args[0]);
+}
+
 PTRef Logic::mkNot(PTRef arg) {
     PTRef tr = PTRef_Undef;
     if (!hasSortBool(arg)) return PTRef_Undef;
