@@ -391,7 +391,7 @@ declare_fun_err: ;
             getValue(n.children);
             break;
         }
-        case (t_writestate):
+        case t_writestate:
         {
             if (main_solver->solverEmpty()) {
                 char* msg;
@@ -780,7 +780,13 @@ bool Interpret::getValue(const list<ASTNode*>* terms)
 void Interpret::writeState(const char* filename)
 {
     char* msg;
-    bool rval = main_solver->writeSolverState(filename, &msg);
+    bool rval;
+
+    if (config.smt_split_format() == spformat_osmt2)
+        rval = main_solver->writeSolverState(filename, &msg);
+    else if (config.smt_split_format() == spformat_smt2)
+        rval = main_solver->writeSolverState_smtlib2(filename, &msg);
+
     if (!rval) {
         notify_formatted("%s", msg);
     }
