@@ -59,6 +59,7 @@ class Logic {
 
     //for partitions:
     vec<PTRef> assertions;
+    vec<PTRef> assertions_simp;
 #ifdef PRODUCE_PROOF
     map<CRef, ipartitions_t> clause_class;
     map<Var, ipartitions_t> var_class;
@@ -245,6 +246,10 @@ class Logic {
     void setOriginalAssertion(PTRef flat, PTRef orig)
     {
         flat2orig[flat] = orig;
+    }
+    bool hasOriginalAssertion(PTRef flat)
+    {
+        return flat2orig.find(flat) != flat2orig.end();
     }
     PTRef getOriginalAssertion(PTRef flat)
     {
@@ -504,6 +509,13 @@ class Logic {
     {
         for (int i = 0; i < assertions.size(); ++i)
             if (assertions[i] == pref)
+                return true;
+        return false;
+    }
+    bool isAssertionSimp(PTRef pref)
+    {
+        for (int i = 0; i < assertions_simp.size(); ++i)
+            if (assertions_simp[i] == pref)
                 return true;
         return false;
     }

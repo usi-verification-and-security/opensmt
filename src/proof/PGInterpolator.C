@@ -536,6 +536,9 @@ void ProofGraph::produceSingleInterpolant ( vector<PTRef> &interpolants, const i
     PTRef interpol = getRoot()->getPartialInterpolant();
     assert (interpol != PTRef_Undef);
     interpolants.push_back ( interpol );
+
+    if(verbose())
+        cout << "; Interpolant: " << thandler.getLogic().printTerm(interpol) << endl;
 }
 
 void ProofGraph::produceMultipleInterpolants ( const vector< ipartitions_t > &configs, vector<PTRef> &sequence_of_interpolants )

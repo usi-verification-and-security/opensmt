@@ -2059,6 +2059,7 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
 
       // Add the A conflict to the interpolant (multiplied by the coefficient)
       if( color == I_A )
+      //if(true)
       {
         if ( getPolarity(explanation[i].tr) == l_True )
         {
@@ -2069,6 +2070,7 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
           interpolant.addExprWithCoeff(LAExpression(logic, explanation[i].tr), -explanationCoefficients[i]);
           delta_flag=true;
         }
+        //cerr << interpolant << endl;
       }
     }
 
@@ -2097,12 +2099,13 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
     }
     if ( verbose() > 0 )
     {
-//      cerr << "Interpolant: " << in_list.back() << endl;
+      //cerr << "Interpolant: " << in_list.back() << endl;
     }
 
   //}
   //PTRef itp = logic.mkNot(logic.mkAnd( in_list ));
   PTRef itp = logic.mkAnd( in_list );
+  //cerr << "; LRA Itp: " << logic.printTerm(itp) << endl;
   return itp;
 }
 

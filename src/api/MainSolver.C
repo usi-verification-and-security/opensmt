@@ -228,8 +228,8 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
         bool res = getTheory().simplify(formulas, i);
         simplified_until = i+1;
         PTRef root = formulas[i].root;
-        if (logic.isTrue(root)) return status = s_True;
-        else if (logic.isFalse(root)) return status = s_False;
+        //if (logic.isTrue(root)) return status = s_True;
+        /*else */if (logic.isFalse(root)) return status = s_False;
 
         FContainer fc(root);
 
@@ -367,16 +367,19 @@ PTRef MainSolver::rewriteMaxArity(PTRef root, Map<PTRef,int,PTRefHash>& PTRefToI
 #ifdef PRODUCE_PROOF
         if(logic.isInterpolating())
         {
-            if(logic.isAssertion(tr))
+            if(logic.isAssertion(tr) || logic.isAssertionSimp(tr))
             {
+                PTRef root_tmp = tr;
+                while(logic.hasOriginalAssertion(root_tmp))
+                    root_tmp = logic.getOriginalAssertion(root_tmp);
                 if(logic.isAnd(result))
                 {
                     Pterm& ptm = logic.getPterm(result);
                     for(int i = 0; i < ptm.size(); ++i)
-                        logic.setOriginalAssertion(ptm[i], tr);
+                        logic.setOriginalAssertion(ptm[i], root_tmp);
                 }
                 //else //should the entire conjunction also be set? TODO
-                logic.setOriginalAssertion(result, tr);
+                //logic.setOriginalAssertion(result, tr);
             }
         }
 #endif

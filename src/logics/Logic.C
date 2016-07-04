@@ -474,6 +474,16 @@ lbool Logic::simplifyTree(PTRef tr, PTRef& root_out)
 #endif
         processed.insert(queue[i].x, true);
         visit(queue[i].x, tr_map);
+        PTRef qaux = queue[i].x;
+        if(tr_map.has(qaux) && isAssertion(qaux))
+        {
+            PTRef trq = tr_map[qaux];
+            if(trq != qaux)
+            {
+                setOriginalAssertion(trq, qaux);
+                assertions_simp.push(trq);
+            }
+        }
     }
     if (tr_map.has(tr))
         root_out = tr_map[tr];
