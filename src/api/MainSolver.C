@@ -247,8 +247,11 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
 #endif
         }
 
-        root_instance = fc;
-        status = giveToSolver(fc.getRoot(), formulas[i].getId());
+        // root_instance is updated to the and of the simplified formulas currently in the solver
+        root_instance.setRoot(logic.mkAnd(root_instance.getRoot(), fc.getRoot()));
+        // Stop if problem becomes unsatisfiable
+        if ((status = giveToSolver(fc.getRoot(), formulas[i].getId())) == s_False)
+            break;
     }
     return status;
 }

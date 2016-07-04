@@ -138,7 +138,7 @@ class MainSolver
             , thandler
             , *s )
         , binary_init(false)
-        , root_instance(PTRef_Undef)
+        , root_instance(logic.getTerm_true())
         , simplified_until(0)
     {
         formulas.push();
