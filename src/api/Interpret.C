@@ -50,6 +50,12 @@ uint32_t LetFrame::id_cnt = 0;
  ***********************************************************/
 
 
+PTRef
+Interpret::getParsedFormula()
+{
+    PTRef root = logic->mkAnd(assertions);
+    return root;
+}
 
 void Interpret::setInfo(ASTNode& n) {
     assert(n.getType() == UATTR_T || n.getType() == PATTR_T);
@@ -141,6 +147,11 @@ bool Interpret::interp(ASTNode& n) {
     switch (cmd.x) {
         case t_setlogic:
         {
+            if(parse_only)
+            {
+                return true;
+                break;
+            }
             ASTNode &logic_n = **(n.children->begin());
             const char* logic_name = logic_n.getValue();
             if (logic != NULL) {
@@ -172,24 +183,48 @@ bool Interpret::interp(ASTNode& n) {
         }
         case t_setinfo:
         {
+            if(parse_only)
+            {
+                return true;
+                break;
+            }
+
             setInfo(**(n.children->begin()));
             return false;
             break;
         }
         case t_getinfo:
         {
+            if(parse_only)
+            {
+                return true;
+                break;
+            }
+
             getInfo(**(n.children->begin()));
             return false;
             break;
         }
         case t_setoption:
         {
+            if(parse_only)
+            {
+                return true;
+                break;
+            }
+
             setOption(**(n.children->begin()));
             return false;
             break;
         }
         case  t_getoption:
         {
+            if(parse_only)
+            {
+                return true;
+                break;
+            }
+
             getOption(**(n.children->begin()));
             return false;
             break;
@@ -268,21 +303,25 @@ declare_fun_err: ;
                 if (tr == PTRef_Undef)
                     notify_formatted(true, "assertion returns an unknown sort");
                 else {
-                    char* err_msg = NULL;
-                    status = main_solver->insertFormula(tr, &err_msg);
+                    if(parse_only) assertions.push(tr);
+                    else
+                    {
+                        char* err_msg = NULL;
+                        status = main_solver->insertFormula(tr, &err_msg);
 
-                    if (status == s_Error)
-                        notify_formatted(true, "Error");
-                    else if (status == s_Undef)
-                        notify_success();
-                    else if (status == s_False)
-                        notify_success();
+                        if (status == s_Error)
+                            notify_formatted(true, "Error");
+                        else if (status == s_Undef)
+                            notify_success();
+                        else if (status == s_False)
+                            notify_success();
 
-                    if (err_msg != NULL && status == s_Error)
-                        notify_formatted(true, err_msg);
-                    if (err_msg != NULL && status != s_Error)
-                        comment_formatted(err_msg);
-                    free(err_msg);
+                        if (err_msg != NULL && status == s_Error)
+                            notify_formatted(true, err_msg);
+                        if (err_msg != NULL && status != s_Error)
+                            comment_formatted(err_msg);
+                        free(err_msg);
+                    }
                 }
             }
             else {
@@ -361,6 +400,9 @@ declare_fun_err: ;
         }
         case t_simplify:
         {
+            if(parse_only)
+                break;
+
             char* msg;
             sstat status = main_solver->simplifyFormulas(&msg);
             if (status == s_Error)
@@ -369,30 +411,35 @@ declare_fun_err: ;
         }
         case t_checksat:
         {
-            checkSat();
+            if(!parse_only)
+                checkSat();
             break;
         }
         case t_getinterpolants:
         {
+            if(!parse_only)
 #ifdef PRODUCE_PROOF
-            GetInterpolants();
+                GetInterpolants();
 #else
-            notify_formatted(true, "This binary has no support to interpolation");
+                notify_formatted(true, "This binary has no support to interpolation");
 #endif
             break;
         }
         case t_getassignment:
         {
-            getAssignment();
+            if(!parse_only)
+                getAssignment();
             break;
         }
         case t_getvalue:
         {
-            getValue(n.children);
+            if(!parse_only)
+                getValue(n.children);
             break;
         }
         case t_writestate:
         {
+            if(parse_only) break;
             if (main_solver->solverEmpty()) {
                 char* msg;
                 sstat status = main_solver->simplifyFormulas(&msg);
@@ -404,6 +451,7 @@ declare_fun_err: ;
         }
         case t_readstate:
         {
+            if(parse_only) break;
             if (logic != NULL) {
                 const char* filename = (**(n.children->begin())).getValue();
                 CnfState cs;
@@ -420,16 +468,19 @@ declare_fun_err: ;
         }
         case t_push:
         {
-            return push();
+            if(!parse_only)
+                return push();
             break;
         }
         case t_pop:
         {
-            return pop();
+            if(!parse_only)
+                return pop();
             break;
         }
         case t_exit:
         {
+            if(parse_only) break;
             exit();
             notify_success();
             return false;

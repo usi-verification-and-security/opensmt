@@ -115,6 +115,8 @@ class Interpret {
 
     vec<SRef>                   vec_sr_empty; // For faster comparison with empty vec
     vec<PTRef>                  vec_ptr_empty;
+
+    vec<PTRef> assertions;
   public:
     Interpret(SMTConfig& c)
         : logic   (NULL)
@@ -125,17 +127,33 @@ class Interpret {
         , f_exit(false)
         , asrt_lev(0)
         , sat_calls(0)
-        , config(c) { }
+        , config(c)
+        , parse_only(false) { }
+
+    Interpret(SMTConfig& c, Logic *_l, Theory *_t, THandler *_th, SimpSMTSolver *_s, MainSolver *_m)
+        : logic   (_l)
+        , theory(_t)
+        , thandler(_th)
+        , solver(_s)
+        , main_solver(_m)
+        , f_exit(false)
+        , asrt_lev(0)
+        , sat_calls(0)
+        , config(c)
+        , parse_only(false) { }
 
     ~Interpret() {
-        if (thandler != NULL)
-            delete thandler;
-        if (main_solver != NULL)
-            delete main_solver;
-        if (theory != NULL)
-            delete theory;
-        if (solver != NULL)
-            delete solver;
+        if(!parse_only)
+        {
+            if (thandler != NULL)
+                delete thandler;
+            if (main_solver != NULL)
+                delete main_solver;
+            if (theory != NULL)
+                delete theory;
+            if (solver != NULL)
+                delete solver;
+        }
     }
 
     int interpFile(FILE* in);
@@ -146,6 +164,9 @@ class Interpret {
     bool    getAssignment  ();
 
     MainSolver   *main_solver;
+
+    bool parse_only;
+    PTRef getParsedFormula();
 };
 
 #endif

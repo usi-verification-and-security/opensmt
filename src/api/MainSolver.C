@@ -27,6 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "MainSolver.h"
 #include "TreeOps.h"
 #include "DimacsParser.h"
+#include "Interpret.h"
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -1253,3 +1254,16 @@ void MainSolver::solve_split(int i, int s, int wpipefd, std::mutex *mtx)
     ::write(wpipefd, buf, 3);
     mtx->unlock();
 }
+
+PTRef
+MainSolver::readFormulaFromFile(const char *file)
+{
+    FILE *f;
+    if((f = fopen(file, "rt")) == NULL)
+        opensmt_error("can't open file");
+    Interpret interp(config, &logic, &getTheory(), &thandler, smt_solver, this);
+    interp.parse_only = true;
+    interp.interpFile(f);
+    return interp.getParsedFormula();
+}
+

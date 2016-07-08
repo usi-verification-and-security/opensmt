@@ -2041,6 +2041,18 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
            || usingWeak()
            || usingRandom() );
 
+      if(verbose())
+      {
+          if(usingStrong())
+              cerr << "; Using Strong for LRA interpolation" << endl;
+          else if(usingWeak())
+              cerr << "; Using Weak for LRA interpolation" << endl;
+          else if(usingRandom())
+              cerr << "; Using Random for LRA interpolation" << endl;
+          else
+              cerr << "; LRA interpolation algorithm unknown" << endl;
+      }
+
       // McMillan algo: set AB as B
       if ( usingStrong()
         && color == I_AB )
@@ -2052,13 +2064,13 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
       // Pudlak algo: who cares
       else if ( usingRandom()
              && color == I_AB )
-        color = I_A;
+        color = rand() % 2 ? I_A : I_B;
 
       assert( color == I_A
            || color == I_B );
 
       // Add the A conflict to the interpolant (multiplied by the coefficient)
-      if( color == I_A )
+      if( (color == I_A && usingStrong()) || (color == I_B && usingWeak()))
       //if(true)
       {
         if ( getPolarity(explanation[i].tr) == l_True )
@@ -2103,8 +2115,11 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
     }
 
   //}
-  //PTRef itp = logic.mkNot(logic.mkAnd( in_list ));
-  PTRef itp = logic.mkAnd( in_list );
+    PTRef itp;
+    if(usingWeak())
+        itp = logic.mkNot(logic.mkAnd( in_list ));
+    else if(usingStrong())
+        itp = logic.mkAnd( in_list );
   //cerr << "; LRA Itp: " << logic.printTerm(itp) << endl;
   return itp;
 }
