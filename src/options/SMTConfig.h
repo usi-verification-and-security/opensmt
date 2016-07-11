@@ -197,6 +197,7 @@ struct SMTConfig
   // The options here should be private
 public:
   static const char* o_incremental;
+  static const char* o_verbosity;
   static const char* o_produce_stats;
   static const char* o_stats_out;
   static const char* o_random_seed;
@@ -621,14 +622,14 @@ public:
   int          dump_formula;                 // Dump input formula
   int          verbosity() const             // Verbosity level
 #ifdef PEDANTIC_DEBUG
-    { return optionTable.has(":verbosity") ?
-        optionTable[":verbosity"]->getValue().numval : 2; }
+    { return optionTable.has(o_verbosity) ?
+        optionTable[o_verbosity]->getValue().numval : 2; }
 #elif GC_DEBUG
-    { return optionTable.has(":verbosity") ?
-        optionTable[":verbosity"]->getValue().numval : 2; }
+    { return optionTable.has(o_verbosity) ?
+        optionTable[o_verbosity]->getValue().numval : 2; }
 #else
-    { return optionTable.has(":verbosity") ?
-        optionTable[":verbosity"]->getValue().numval : 2; }
+    { return optionTable.has(o_verbosity) ?
+        optionTable[o_verbosity]->getValue().numval : 2; }
 #endif
   int          printSuccess() const
      { return optionTable.has(":print-success") ?

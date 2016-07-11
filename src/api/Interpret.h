@@ -167,6 +167,7 @@ class Interpret {
 
     bool parse_only;
     PTRef getParsedFormula();
+    vec<PTRef>& getAssertions() { return assertions; }
 };
 
 #endif

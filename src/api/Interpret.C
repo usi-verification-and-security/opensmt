@@ -49,7 +49,6 @@ uint32_t LetFrame::id_cnt = 0;
  * Class defining interpreter
  ***********************************************************/
 
-
 PTRef
 Interpret::getParsedFormula()
 {
@@ -356,12 +355,14 @@ declare_fun_err: ;
                     }
                 }
 
+                /* Removing this restriction for now..
                 // For now we only functions with 0 arguments since smtlib
                 // LRA only has these.
                 if (args_node.children->size() > 0) {
                     notify_formatted(true, "Only non-argument functions are supported.  Function %s has %d arguments", fname, args_node.children->size());
                     return false;
                 }
+                */
 
                 // The return sort
                 char* rsort_name = buildSortName(ret_node);
@@ -391,6 +392,7 @@ declare_fun_err: ;
                     notify_formatted(true, "define-fun failed");
                     return false;
                 }
+
             }
             else {
                 notify_formatted(true, "Illegal command before set-logic: define-fun");
