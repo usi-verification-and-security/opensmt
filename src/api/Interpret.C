@@ -1223,7 +1223,7 @@ void Interpret::GetInterpolants()
     //just test with assertions for now:
     vec<PTRef>& partitions = logic->getAssertions();
 
-    if(!logic->isInterpolating())
+    if(!logic->canInterpolate())
         opensmt_error("Cannot interpolate");
 
     //int rseed = 1466156790;

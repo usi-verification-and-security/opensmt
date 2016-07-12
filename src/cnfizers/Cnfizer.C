@@ -229,7 +229,7 @@ lbool Cnfizer::cnfizeAndGiveToSolver (PTRef formula, int frame_id)
 
 #ifdef PRODUCE_PROOF
         ipartitions_t mask = 0;
-        if (logic.isInterpolating())
+        if (logic.canInterpolate())
         {
             // Create mask to spread among all literals created for this PTRef
             if (logic.isAssertion (f)) //if f is an assertion, one bit is set

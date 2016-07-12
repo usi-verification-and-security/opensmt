@@ -485,7 +485,7 @@ class Logic {
         return term_store.assignPartition(pref, msg);
     }
 
-    bool isInterpolating()
+    bool canInterpolate()
     {
 #ifdef PRODUCE_PROOF
         return config.produce_inter() && assertions.size() >= 2;

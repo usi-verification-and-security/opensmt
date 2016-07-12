@@ -366,7 +366,7 @@ PTRef MainSolver::rewriteMaxArity(PTRef root, Map<PTRef,int,PTRefHash>& PTRefToI
         assert(!cache.has(tr));
         cache.insert(tr, result);
 #ifdef PRODUCE_PROOF
-        if(logic.isInterpolating())
+        if(logic.canInterpolate())
         {
             if(logic.isAssertion(tr) || logic.isAssertionSimp(tr))
             {
