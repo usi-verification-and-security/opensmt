@@ -474,6 +474,7 @@ lbool Logic::simplifyTree(PTRef tr, PTRef& root_out)
 #endif
         processed.insert(queue[i].x, true);
         visit(queue[i].x, tr_map);
+#ifdef PRODUCE_PROOF
         PTRef qaux = queue[i].x;
         if(tr_map.has(qaux) && isAssertion(qaux))
         {
@@ -484,6 +485,7 @@ lbool Logic::simplifyTree(PTRef tr, PTRef& root_out)
                 assertions_simp.push(trq);
             }
         }
+#endif
     }
     if (tr_map.has(tr))
         root_out = tr_map[tr];
@@ -1867,6 +1869,14 @@ Logic::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate )
     // Closes assert
     dump_out << ")" << endl;
 }
+
+/*
+PTRef
+Logic::instantiateFunctionTemplate(Tterm& templ, map<PTRef, PTRef> subst)
+{
+    return PTRef_Undef;
+}
+*/
 
 #ifdef PRODUCE_PROOF
 

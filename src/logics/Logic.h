@@ -29,6 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SSort.h"
 #include "SymStore.h"
 #include "PtStore.h"
+//#include "Tterm.h"
 
 class SStore;
 class TStore;
@@ -60,6 +61,7 @@ class Logic {
     //for partitions:
     vec<PTRef> assertions;
     vec<PTRef> assertions_simp;
+//    vec<Tterm*> functions;
 #ifdef PRODUCE_PROOF
     map<CRef, ipartitions_t> clause_class;
     map<Var, ipartitions_t> var_class;
@@ -231,6 +233,10 @@ class Logic {
     void dumpHeaderToFile(ostream& dump_out);
     void dumpFormulaToFile(ostream& dump_out, PTRef formula, bool negate = false);
     void dumpChecksatToFile(ostream& dump_out);
+
+//    PTRef instantiateFunctionTemplate(Tterm&, map<PTRef, PTRef>);
+//    vec<Tterm*>& getFunctions() { return functions; }
+//    void addFunction(Tterm* f) { functions.push(f); }
 
 #ifdef PRODUCE_PROOF
 
@@ -501,7 +507,6 @@ class Logic {
     ipartitions_t& getVarClassMask(Var l) { return var_class[l]; }
     void addClauseClassMask(CRef l, const ipartitions_t& toadd);
     void addVarClassMask(Var l, const ipartitions_t& toadd);
-#endif
     vec<PTRef>& getAssertions() { return assertions; }
     unsigned getNofPartitions() { return assertions.size(); }
     //TODO: make this better
@@ -526,7 +531,7 @@ class Logic {
                 return i;
         return -1;
     }
-
+#endif
     // Statistics
     int subst_num; // Number of substitutions
 
