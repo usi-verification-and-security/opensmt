@@ -24,7 +24,7 @@ class Socket(object):
 
     @staticmethod
     def _bytes(item):
-        if type(item) in [int, float]:
+        if type(item) in (int, float):
             item = str(item)
         if type(item) is str:
             item = item.encode('utf8')
@@ -57,7 +57,7 @@ class Socket(object):
             raise ConnectionAbortedError
         header = {}
         i = 0
-        while content[i:i + 1] != b'\x00':
+        while content[i:i + 1] != b'\xFF':
             pair = []
             for _ in range(2):
                 length = struct.unpack('!B', content[i:i + 1])[0]
@@ -75,7 +75,7 @@ class Socket(object):
                 item = self._bytes(item)
                 dump += struct.pack('!B', len(item))
                 dump += item
-        dump += b'\x00'
+        dump += b'\xFF'
         payload = self._bytes(payload)
         dump += payload
         length = len(dump)
