@@ -256,12 +256,25 @@ Logic::printSym(SymRef sr) const
 }
 
 char*
-Logic::printTerm_(PTRef tr, bool ext)
+Logic::printTerm_(PTRef tr, bool ext, bool safe)
 {
-    const Pterm& t = getPterm(tr);
-    SymRef sr = t.symb();
     char* out;
 
+    if(safe && this->isIteVar(tr)){
+        Ite ite = top_level_ites[tr];
+        char *str_i = printTerm_(ite.i, ext, safe);
+        char *str_t = printTerm_(ite.t, ext, safe);
+        char *str_e = printTerm_(ite.e, ext, safe);
+
+        asprintf(&out, "(ite %s %s %s)", str_i, str_t, str_e);
+
+        free(str_i); free(str_t); free(str_e);
+
+        return out;
+    }
+
+    const Pterm& t = getPterm(tr);
+    SymRef sr = t.symb();
     char* name_escaped = printSym(sr);
 
     if (t.size() == 0) {
@@ -281,7 +294,7 @@ Logic::printTerm_(PTRef tr, bool ext)
 
     for (int i = 0; i < t.size(); i++) {
         old = out;
-        asprintf(&out, "%s%s", old, printTerm_(t[i], ext));
+        asprintf(&out, "%s%s", old, printTerm_(t[i], ext, safe));
         ::free(old);
         if (i < t.size()-1) {
             old = out;
@@ -558,7 +571,19 @@ Logic::mkIte(vec<PTRef>& args)
     vec<PTRef> and_args;
     and_args.push(if_term);
     and_args.push(else_term);
-    addTopLevelIte(mkAnd(and_args), o_ite);
+
+    PTRef repr = mkAnd(and_args);
+    assert (repr != PTRef_Undef && o_ite != PTRef_Undef);
+    assert(!top_level_ites.has(o_ite));
+
+    Ite ite = {
+            .i=args[0],
+            .t=args[1],
+            .e=args[2],
+            .repr=repr
+    };
+
+    top_level_ites.insert(o_ite, ite);
 
     return o_ite;
 }
