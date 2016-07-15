@@ -70,7 +70,7 @@ uint32_t Socket::read(std::map<std::string, std::string> &header, std::string &p
 
     uint32_t i = 0;
     header.clear();
-    while (message[i] != '\xFF') {
+    while (message[i] != '\x00') {
         std::string keyval[2] = {"", ""};
         for (uint8_t j = 0; j < 2; j++) {
             uint8_t l = (uint8_t) message[i++];
@@ -91,19 +91,21 @@ uint32_t Socket::read(std::map<std::string, std::string> &header, std::string &p
 }
 
 uint32_t Socket::write(std::map<std::string, std::string> &header, std::string &payload) {
+    if (header.count(""))
+        throw SocketException("empty key is not allowed");
     std::string message;
     std::map<std::string, std::string>::iterator it;
     for (it = header.begin(); it != header.end(); it++) {
         std::string keyval[2] = {it->first, it->second};
         for (uint8_t i = 0; i < 2; i++) {
             if (keyval[i].length() > (uint8_t) -1)
-                throw SocketException("header map's key or value is too big");
+                throw SocketException("header key or value is too big");
             message += (char) keyval[i].length();
             message += keyval[i];
         }
     }
 
-    message += '\xFF';
+    message += '\x00';
     message += payload;
 
     if (message.length() > (uint32_t) -1)
