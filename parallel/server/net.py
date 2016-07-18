@@ -24,7 +24,7 @@ class Socket(object):
 
     @staticmethod
     def _bytes(item):
-        if type(item) in [int, float]:
+        if type(item) not in (str, bytes):
             item = str(item)
         if type(item) is str:
             item = item.encode('utf8')
@@ -70,11 +70,12 @@ class Socket(object):
 
     def write(self, header, payload):
         dump = b''
-        for pair in header.items():
-            for item in pair:
-                item = self._bytes(item)
-                dump += struct.pack('!B', len(item))
-                dump += item
+        for key, value in header.items():
+            key, value = map(self._bytes, (key, value))
+            if len(key) == 0:
+                raise ValueError('empty key is not allowed')
+            dump += struct.pack('!B', len(key)) + key
+            dump += struct.pack('!B', len(value)) + value
         dump += b'\x00'
         payload = self._bytes(payload)
         dump += payload
