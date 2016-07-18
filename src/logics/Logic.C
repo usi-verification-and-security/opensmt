@@ -1780,7 +1780,7 @@ Logic::dumpHeaderToFile(ostream& dump_out)
 }
 
 void
-Logic::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate )
+Logic::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate, bool toassert )
 {
     vector< PTRef > unprocessed_enodes;
     map< PTRef, string > enode_to_def;
@@ -1788,7 +1788,8 @@ Logic::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate )
 
     unprocessed_enodes.push_back( formula );
     // Open assert
-    dump_out << "(assert" << endl;
+    if(toassert)
+        dump_out << "(assert" << endl;
     //
     // Visit the DAG of the formula from the leaves to the root
     //
@@ -1867,16 +1868,27 @@ Logic::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate )
     // Close all lets
     for ( unsigned n=1; n <= num_lets; n++ ) dump_out << ")";
     // Closes assert
-    dump_out << ")" << endl;
+    if(toassert)
+        dump_out << ")" << endl;
 }
 
-/*
+void
+Logic::dumpFunction(ostream& dump_out, Tterm *function)
+{
+    dump_out << "(define-fun " << function->getName() << " ( ";
+    vec<PTRef>& args = function->getArgs();
+    for(int i = 0; i < args.size(); ++i)
+        dump_out << '(' << getSymName(args[i]) << ' ' <<  getSortName(getSortRef(args[i])) << ") ";
+    dump_out << ") Bool (";
+    dumpFormulaToFile(dump_out, function->getBody(), false, false);
+    dump_out << "))" << endl;
+}
+
 PTRef
 Logic::instantiateFunctionTemplate(Tterm& templ, map<PTRef, PTRef> subst)
 {
     return PTRef_Undef;
 }
-*/
 
 #ifdef PRODUCE_PROOF
 
