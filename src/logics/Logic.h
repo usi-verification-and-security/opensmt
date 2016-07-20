@@ -29,6 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SSort.h"
 #include "SymStore.h"
 #include "PtStore.h"
+#include "Tterm.h"
 
 class SStore;
 class TStore;
@@ -60,6 +61,7 @@ class Logic {
     //for partitions:
     vec<PTRef> assertions;
     vec<PTRef> assertions_simp;
+    vec<Tterm*> functions;
 #ifdef PRODUCE_PROOF
     map<CRef, ipartitions_t> clause_class;
     map<Var, ipartitions_t> var_class;
@@ -71,7 +73,14 @@ class Logic {
     vec<SymRef>         sortToEquality;
     vec<bool>           constants;
     vec<bool>           interpreted_functions;
-    Map<PTRef,PTRef,PTRefHash,Equal<PTRef> >    top_level_ites;
+
+    typedef struct{
+        PTRef i;
+        PTRef t;
+        PTRef e;
+        PTRef repr;
+    } Ite;
+    Map<PTRef,Ite,PTRefHash,Equal<PTRef>>    top_level_ites;
 
     SMTConfig&          config;
     IdentifierStore     id_store;
@@ -132,15 +141,7 @@ class Logic {
     ~Logic();
 
     bool isIteVar(PTRef tr) { return top_level_ites.has(tr); }
-    PTRef getTopLevelIte(PTRef tr) { return top_level_ites[tr]; }
-    void addTopLevelIte(PTRef i, PTRef var)
-    {
-        if (i == PTRef_Undef || var == PTRef_Undef)
-            assert(false);
-
-        assert(!top_level_ites.has(var));
-        top_level_ites.insert(var, i);
-    }
+    PTRef getTopLevelIte(PTRef tr) { return top_level_ites[tr].repr; }
 
     void conjoinItes(PTRef root, PTRef& new_root)
     {
@@ -229,8 +230,13 @@ class Logic {
     PTRef       mkBoolVar     (const char* name);
 
     void dumpHeaderToFile(ostream& dump_out);
-    void dumpFormulaToFile(ostream& dump_out, PTRef formula, bool negate = false);
+    void dumpFormulaToFile(ostream& dump_out, PTRef formula, bool negate = false, bool toassert = true);
     void dumpChecksatToFile(ostream& dump_out);
+
+    void dumpFunction(ostream &, Tterm*);
+    PTRef instantiateFunctionTemplate(Tterm&, map<PTRef, PTRef>);
+    vec<Tterm*>& getFunctions() { return functions; }
+    void addFunction(Tterm* f) { functions.push(f); }
 
 #ifdef PRODUCE_PROOF
 
@@ -461,9 +467,9 @@ class Logic {
     void        serializeTermSystem(int*& termstore_buf, int*& symstore_buf, int*& idstore_buf, int*& sortstore_buf, int*& logicdata_buf) const;
     void        deserializeTermSystem(const int* termstore_buf, const int* symstore_buf, const int* idstore_buf, const int* sortstore_buf, const int* logicdata_buf);
 
-    virtual char* printTerm_       (PTRef tr, bool l);
-    char*       printTerm          (PTRef tr)         { return printTerm_(tr, false); }
-    char*       printTerm          (PTRef tr, bool l) { return printTerm_(tr, l); }
+    virtual char* printTerm_       (PTRef tr, bool l, bool s);
+    char*       printTerm          (PTRef tr)         { return printTerm_(tr, false, false); }
+    char*       printTerm          (PTRef tr, bool l, bool s) { return printTerm_(tr, l, s); }
     char*       printSym           (SymRef sr) const;
 
     void  purify           (PTRef r, PTRef& p, lbool& sgn) const
@@ -504,7 +510,6 @@ class Logic {
     ipartitions_t& getVarClassMask(Var l) { return var_class[l]; }
     void addClauseClassMask(CRef l, const ipartitions_t& toadd);
     void addVarClassMask(Var l, const ipartitions_t& toadd);
-#endif
     vec<PTRef>& getAssertions() { return assertions; }
     unsigned getNofPartitions() { return assertions.size(); }
     //TODO: make this better
@@ -529,7 +534,7 @@ class Logic {
                 return i;
         return -1;
     }
-
+#endif
     // Statistics
     int subst_num; // Number of substitutions
 

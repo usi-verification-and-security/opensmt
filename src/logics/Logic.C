@@ -256,12 +256,25 @@ Logic::printSym(SymRef sr) const
 }
 
 char*
-Logic::printTerm_(PTRef tr, bool ext)
+Logic::printTerm_(PTRef tr, bool ext, bool safe)
 {
-    const Pterm& t = getPterm(tr);
-    SymRef sr = t.symb();
     char* out;
 
+    if(safe && this->isIteVar(tr)){
+        Ite ite = top_level_ites[tr];
+        char *str_i = printTerm_(ite.i, ext, safe);
+        char *str_t = printTerm_(ite.t, ext, safe);
+        char *str_e = printTerm_(ite.e, ext, safe);
+
+        asprintf(&out, "(ite %s %s %s)", str_i, str_t, str_e);
+
+        free(str_i); free(str_t); free(str_e);
+
+        return out;
+    }
+
+    const Pterm& t = getPterm(tr);
+    SymRef sr = t.symb();
     char* name_escaped = printSym(sr);
 
     if (t.size() == 0) {
@@ -281,7 +294,7 @@ Logic::printTerm_(PTRef tr, bool ext)
 
     for (int i = 0; i < t.size(); i++) {
         old = out;
-        asprintf(&out, "%s%s", old, printTerm_(t[i], ext));
+        asprintf(&out, "%s%s", old, printTerm_(t[i], ext, safe));
         ::free(old);
         if (i < t.size()-1) {
             old = out;
@@ -474,6 +487,7 @@ lbool Logic::simplifyTree(PTRef tr, PTRef& root_out)
 #endif
         processed.insert(queue[i].x, true);
         visit(queue[i].x, tr_map);
+#ifdef PRODUCE_PROOF
         PTRef qaux = queue[i].x;
         if(tr_map.has(qaux) && isAssertion(qaux))
         {
@@ -484,6 +498,7 @@ lbool Logic::simplifyTree(PTRef tr, PTRef& root_out)
                 assertions_simp.push(trq);
             }
         }
+#endif
     }
     if (tr_map.has(tr))
         root_out = tr_map[tr];
@@ -556,7 +571,19 @@ Logic::mkIte(vec<PTRef>& args)
     vec<PTRef> and_args;
     and_args.push(if_term);
     and_args.push(else_term);
-    addTopLevelIte(mkAnd(and_args), o_ite);
+
+    PTRef repr = mkAnd(and_args);
+    assert (repr != PTRef_Undef && o_ite != PTRef_Undef);
+    assert(!top_level_ites.has(o_ite));
+
+    Ite ite = {
+            .i=args[0],
+            .t=args[1],
+            .e=args[2],
+            .repr=repr
+    };
+
+    top_level_ites.insert(o_ite, ite);
 
     return o_ite;
 }
@@ -1813,7 +1840,7 @@ Logic::dumpHeaderToFile(ostream& dump_out)
 }
 
 void
-Logic::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate )
+Logic::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate, bool toassert )
 {
     vector< PTRef > unprocessed_enodes;
     map< PTRef, string > enode_to_def;
@@ -1821,7 +1848,8 @@ Logic::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate )
 
     unprocessed_enodes.push_back( formula );
     // Open assert
-    dump_out << "(assert" << endl;
+    if(toassert)
+        dump_out << "(assert" << endl;
     //
     // Visit the DAG of the formula from the leaves to the root
     //
@@ -1900,7 +1928,26 @@ Logic::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate )
     // Close all lets
     for ( unsigned n=1; n <= num_lets; n++ ) dump_out << ")";
     // Closes assert
-    dump_out << ")" << endl;
+    if(toassert)
+        dump_out << ")" << endl;
+}
+
+void
+Logic::dumpFunction(ostream& dump_out, Tterm *function)
+{
+    dump_out << "(define-fun " << function->getName() << " ( ";
+    vec<PTRef>& args = function->getArgs();
+    for(int i = 0; i < args.size(); ++i)
+        dump_out << '(' << getSymName(args[i]) << ' ' <<  getSortName(getSortRef(args[i])) << ") ";
+    dump_out << ") Bool (";
+    dumpFormulaToFile(dump_out, function->getBody(), false, false);
+    dump_out << "))" << endl;
+}
+
+PTRef
+Logic::instantiateFunctionTemplate(Tterm& templ, map<PTRef, PTRef> subst)
+{
+    return PTRef_Undef;
 }
 
 #ifdef PRODUCE_PROOF

@@ -172,7 +172,7 @@ class LRALogic: public Logic
     virtual void serializeLogicData(int*& logicdata_buf) const;
     void deserializeLogicData(const int* logicdata_buf);
 
-    virtual char* printTerm_(PTRef tr, bool ext);
+    virtual char* printTerm_(PTRef tr, bool ext, bool s);
 };
 
 // Determine for two multiplicative terms (* k1 v1) and (* k2 v2), v1 !=
