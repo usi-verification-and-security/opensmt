@@ -105,9 +105,18 @@ class PtAsgn {
     PtAsgn(PTRef tr_, lbool sgn_) : tr(tr_), sgn(sgn_) {}
     PtAsgn() : tr(PTRef_Undef), sgn(l_Undef) {}
     bool operator== (const PtAsgn& other) const { return tr == other.tr && sgn == other.sgn; }
+    bool operator!= (const PtAsgn& other) const { return !(*this == other); }
+    bool operator< (const PtAsgn& other) const { return tr < other.tr || (tr == other.tr && toInt(sgn) < toInt(other.sgn)); }
 };
 
+
 static class PtAsgn PtAsgn_Undef(PTRef_Undef, l_Undef);
+
+struct PtAsgnHash {
+    uint32_t operator () (const PtAsgn& s) const {
+        return ((uint32_t)s.tr.x << 2) + toInt(s.sgn);
+    }
+};
 
 class PtAsgn_reason {
   public:

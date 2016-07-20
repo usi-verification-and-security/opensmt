@@ -410,7 +410,6 @@ declare_fun_err: ;
 
                 templ->setBody(tr);
                 logic->addFunction(templ);
-                logic->dumpFunction(cout, templ);
             }
             else {
                 notify_formatted(true, "Illegal command before set-logic: define-fun");
