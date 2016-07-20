@@ -360,10 +360,13 @@ class Logic {
     // XXX There's a need for non msg giving version
     virtual PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms, char** msg);
 
+    // Check if an assignment is already in some previous frame's unit
+    // hashes (hashes) or the current hash (curr_hash)
+    lbool isInHashes(vec<Map<PTRef,lbool,PTRefHash>*>& hashes, Map<PTRef,lbool,PTRefHash>& curr_hash, PtAsgn tr);
     // Top-level equalities based substitutions
-    void collectFacts(PTRef root, vec<PtAsgn>& facts);
+    bool getNewFacts(PTRef root, vec<Map<PTRef,lbool,PTRefHash>*>& prev_units, Map<PTRef,lbool,PTRefHash>& facts);
     bool varsubstitute(PTRef& root, Map<PTRef,PtAsgn,PTRefHash>& substs, PTRef& tr_new);  // Do the substitution.  Return true if at least one substitution was done, and false otherwise.
-    virtual lbool retrieveSubstitutions(vec<PtAsgn>& facst, Map<PTRef,PtAsgn,PTRefHash>& substs);
+    virtual lbool retrieveSubstitutions(vec<PtAsgn>& units, Map<PTRef,PtAsgn,PTRefHash>& substs);
 
     class SubstNode {
         Logic& logic;

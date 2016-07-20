@@ -382,7 +382,7 @@ public:
 //  int          incremental;                  // Incremental solving
   int           isIncremental() const
      { return optionTable.has(o_incremental) ?
-        optionTable[o_incremental]->getValue().numval == 1: false; }
+        optionTable[o_incremental]->getValue().numval == 1: true; }
   int produce_models() const {
       return optionTable.has(o_produce_models) ?
               optionTable[o_produce_models]->getValue().numval :
