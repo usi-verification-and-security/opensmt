@@ -1255,7 +1255,7 @@ void MainSolver::solve_split(int i, int s, int wpipefd, std::mutex *mtx)
     mtx->unlock();
 }
 
-PTRef
+void
 MainSolver::readFormulaFromFile(const char *file)
 {
     FILE *f;
@@ -1264,6 +1264,5 @@ MainSolver::readFormulaFromFile(const char *file)
     Interpret interp(config, &logic, &getTheory(), &thandler, smt_solver, this);
     interp.parse_only = true;
     interp.interpFile(f);
-    return interp.getParsedFormula();
 }
 
