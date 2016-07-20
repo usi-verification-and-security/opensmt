@@ -494,7 +494,7 @@ lbool Logic::simplifyTree(PTRef tr, PTRef& root_out)
             PTRef trq = tr_map[qaux];
             if(trq != qaux)
             {
-                setOriginalAssertion(trq, qaux);
+//                setOriginalAssertion(trq, qaux);
                 assertions_simp.push(trq);
             }
         }
@@ -1415,7 +1415,7 @@ lbool Logic::retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHas
                         trm = tmp;
                     }
 #ifdef SIMPLIFY_DEBUG
-                    if (substs.contains(var)) {
+                    if (substs.has(var)) {
                         cerr << "Double substitution:" << endl;
                         cerr << " " << printTerm(var) << "/" << printTerm(trm) << endl;
                         cerr << " " << printTerm(var) << "/" << printTerm(substs[var].tr) << endl;
@@ -1444,14 +1444,38 @@ lbool Logic::retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHas
     return l_Undef;
 }
 
+lbool Logic::isInHashes(vec<Map<PTRef,lbool,PTRefHash>*>& hashes, Map<PTRef,lbool,PTRefHash>& curr_hash, PtAsgn pta)
+{
+    PTRef tr = pta.tr;
+    lbool asgn = l_Undef;
+    for (int i = 0; i < hashes.size(); i++) {
+        Map<PTRef,lbool,PTRefHash>& h = *(hashes[i]);
+        if (h.has(tr)) {
+            asgn = h[tr];
+            break;
+        }
+    }
+    if (asgn == l_Undef) {
+        if (curr_hash.has(tr))
+            asgn = curr_hash[tr];
+    }
+    if (asgn == l_Undef)
+        return l_Undef;
+    if (asgn != pta.sgn)
+        return l_False;
+    else if (asgn == pta.sgn)
+        return l_True;
+    assert(false);
+}
+
 //
 // TODO: Also this should most likely be dependent on the theory being
 // used.  Depending on the theory a fact should either be added on the
 // top level or left out to reduce e.g. simplex matrix size.
 //
-void Logic::collectFacts(PTRef root, vec<PtAsgn>& facts)
+bool Logic::getNewFacts(PTRef root, vec<Map<PTRef,lbool,PTRefHash>*>& prev_units, Map<PTRef,lbool,PTRefHash>& facts)
 {
-    Map<PTRef,bool,PTRefHash> isdup;
+    Map<PtAsgn,bool,PtAsgnHash> isdup;
     vec<PtAsgn> queue;
     PTRef p;
     lbool sign;
@@ -1461,8 +1485,8 @@ void Logic::collectFacts(PTRef root, vec<PtAsgn>& facts)
     while (queue.size() != 0) {
         PtAsgn pta = queue.last(); queue.pop();
 
-        if (isdup.has(pta.tr)) continue;
-        isdup.insert(pta.tr, true);
+        if (isdup.has(pta)) continue;
+        isdup.insert(pta, true);
 
         Pterm& t = getPterm(pta.tr);
 
@@ -1496,30 +1520,41 @@ void Logic::collectFacts(PTRef root, vec<PtAsgn>& facts)
         }
         // Found a fact.  It is important for soundness that we have also the original facts
         // asserted to the euf solver in the future even though no search will be performed there.
-        else if (isEquality(pta.tr) and pta.sgn == l_True) {
-            facts.push(pta);
-        }
-        else if (isUP(pta.tr) and pta.sgn == l_True) {
-            facts.push(pta);
-        }
-        else if (isXor(pta.tr) and pta.sgn == l_True) {
-            Pterm& t = getPterm(pta.tr);
-            facts.push(PtAsgn(mkEq(t[0], mkNot(t[1])), l_True));
-        }
         else {
-            PTRef c;
-            lbool c_sign;
-            purify(pta.tr, c, c_sign);
-            if (isBoolAtom(c)) {
-                facts.push(PtAsgn(c, c_sign^(pta.sgn == l_False)));
+            lbool prev_val = isInHashes(prev_units, facts, pta);
+            if (prev_val != l_Undef && prev_val != pta.sgn)
+                return false; // conflict
+            else if (prev_val == pta.sgn)
+                continue; // Already seen
+
+            assert(prev_val == l_Undef);
+            if (isEquality(pta.tr) and pta.sgn == l_True) {
+                facts.insert(pta.tr, pta.sgn);
+            }
+            else if (isUP(pta.tr) and pta.sgn == l_True) {
+                facts.insert(pta.tr, pta.sgn);
+            }
+            else if (isXor(pta.tr) and pta.sgn == l_True) {
+                Pterm& t = getPterm(pta.tr);
+                facts.insert(mkEq(t[0], mkNot(t[1])), l_True);
+            }
+            else {
+                PTRef c;
+                lbool c_sign;
+                purify(pta.tr, c, c_sign);
+                if (isBoolAtom(c)) {
+                    facts.insert(c, c_sign^(pta.sgn == l_False));
+                }
             }
         }
     }
 
 #ifdef SIMPLIFY_DEBUG
     cerr << "True facts" << endl;
-    for (int i = 0; i < facts.size(); i++)
-        cerr << (facts[i].sgn == l_True ? "" : "not ") << printTerm(facts[i].tr) << " (" << facts[i].tr.x << ")" << endl;
+    vec<Map<PTRef,lbool,PTRefHash>::Pair> facts_dbg;
+    facts.getKeysAndVals(facts_dbg);
+    for (int i = 0; i < facts_dbg.size(); i++)
+        cerr << (facts_dbg[i].data == l_True ? "" : "not ") << printTerm(facts_dbg[i].key) << " (" << facts_dbg[i].key.x << ")" << endl;
 #endif
 }
 
@@ -1660,7 +1695,7 @@ PTRef Logic::learnEqTransitivity(PTRef formula)
     if (implications.size() > 0)
         return mkAnd(implications);
     else
-        return PTRef_Undef;
+        return getTerm_true();
 }
 
 
@@ -1805,7 +1840,7 @@ Logic::dumpHeaderToFile(ostream& dump_out)
 }
 
 void
-Logic::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate )
+Logic::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate, bool toassert )
 {
     vector< PTRef > unprocessed_enodes;
     map< PTRef, string > enode_to_def;
@@ -1813,7 +1848,8 @@ Logic::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate )
 
     unprocessed_enodes.push_back( formula );
     // Open assert
-    dump_out << "(assert" << endl;
+    if(toassert)
+        dump_out << "(assert" << endl;
     //
     // Visit the DAG of the formula from the leaves to the root
     //
@@ -1892,16 +1928,27 @@ Logic::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate )
     // Close all lets
     for ( unsigned n=1; n <= num_lets; n++ ) dump_out << ")";
     // Closes assert
-    dump_out << ")" << endl;
+    if(toassert)
+        dump_out << ")" << endl;
 }
 
-/*
+void
+Logic::dumpFunction(ostream& dump_out, Tterm *function)
+{
+    dump_out << "(define-fun " << function->getName() << " ( ";
+    vec<PTRef>& args = function->getArgs();
+    for(int i = 0; i < args.size(); ++i)
+        dump_out << '(' << getSymName(args[i]) << ' ' <<  getSortName(getSortRef(args[i])) << ") ";
+    dump_out << ") Bool (";
+    dumpFormulaToFile(dump_out, function->getBody(), false, false);
+    dump_out << "))" << endl;
+}
+
 PTRef
 Logic::instantiateFunctionTemplate(Tterm& templ, map<PTRef, PTRef> subst)
 {
     return PTRef_Undef;
 }
-*/
 
 #ifdef PRODUCE_PROOF
 

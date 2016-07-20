@@ -1,4 +1,3 @@
-(set-option :incremental true)
 (set-logic QF_UF)
 (declare-fun x () Bool)
 (declare-fun y () Bool)

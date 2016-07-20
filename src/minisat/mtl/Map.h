@@ -159,6 +159,14 @@ class Map {
                 out.push(table[i][j].key);
         }
     }
+    void getKeysAndVals(vec<Pair>& out) const {
+        if (size == 0) return;
+        for (int i = 0; i < cap; i++) {
+            if (table[i] == NULL) continue;
+            for (int j = 0; j < table[i].size(); j++)
+                out.push(table[i][j]);
+        }
+    }
 
     // PRECONDITION: the key must exist in the map.
     void remove(const K& k) {

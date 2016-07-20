@@ -33,7 +33,34 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "LRATHandler.h"
 #include "UFTHandler.h"
 
-// Implements the simplifications with incrementality
+// Simplification in frames:
+// A frame F_i consists of:
+//  P_i : a list of asserts given on this frame
+//  U_i : the unit clauses, or facts, implied by P_1 /\ ... /\ P_i
+//  R_i : P_i simplified with U_1, ..., U_i
+//
+// We require that U_i \cap U_j = \emptyset
+// if U_1 /\ ... /\ U_i is unsatisfiable, then R_i must be false
+// R_i must not be simplified with any U_j such that j > i.
+//
+// Some of the U_i might be theory equalities.  These allow potentially
+// more simplifications.  For instance in arithmetics if (= a b) \in U_j,
+// a may be substituted everywhere in U_k, j <= k <= i.  These must be
+// simplified using a theory specific simplifier.  This will be part of
+// the simplifications we do.
+//
+// The simplification has to use information from the theory solver and
+// propositional structure to accomplish this.  The unit clauses need to
+// be derived in a closure.  For the closure we need the problem P_i
+// separately as input to computeSubstitutions.  Hence the interface
+// will be as follows:
+//  - units U_1 ... U_{curr-1}
+//  - conjunction of simplified problems R_i ... R_{curr-1}
+//  - The problem to be simplified P_{curr}
+//  - The last frame where the simplified problem R_{curr} and the new
+//    unit clauses U_{curr} will be placed
+//
+
 struct PushFrame
 {
     PushFrame()                                 { id = id_counter; id_counter += 1; }
@@ -41,7 +68,7 @@ struct PushFrame
     int  size()  const                          { return formulas.size(); }
     void push(PTRef tr)                         { formulas.push(tr); }
     PTRef operator[] (int i) const              { return formulas[i]; }
-    vec<PtAsgn> units; // Contains the unit (theory) clauses that are implied up to here
+    Map<PTRef,lbool,PTRefHash> units; // Contains the unit (theory) clauses that are implied up to here
     PTRef root;
  private:
     vec<PTRef> formulas;
@@ -54,13 +81,14 @@ class Theory
   protected:
     vec<DedElem> deductions;
     SMTConfig &  config;
+    PTRef getCollateFunction(vec<PushFrame>& formulas, int curr);
   public:
     virtual Logic          &getLogic()              = 0;
     virtual TSolverHandler &getTSolverHandler()     = 0;
     virtual TSolverHandler *getTSolverHandler_new(vec<DedElem>&) = 0;
     virtual bool            simplify(vec<PushFrame>&, int) = 0; // Simplify a vector of PushFrames in an incrementality-aware manner
     vec<DedElem>           &getDeductionVec()   { return deductions; }
-    bool                    computeSubstitutions(PTRef, PushFrame&);
+    bool                    computeSubstitutions(PTRef coll_f, vec<PushFrame>& frames, int curr);
     Theory(SMTConfig &c) : config(c)            {}
     virtual ~Theory()                           {};
 };

@@ -2,60 +2,114 @@
 #include "MainSolver.h"
 //#include "logics/Logic.h"
 
-bool Theory::computeSubstitutions(PTRef coll_f, PushFrame& frame)
+// The Collate function is constructed from all frames up to the current
+// one and will be used to simplify the formulas in the current frame
+// formulas[curr].
+// (1) Construct the collate function as a conjunction of formulas up to curr.
+// (2) From the coll function compute units_{curr}
+// (3) Use units_1 /\ ... /\ units_{curr} to simplify formulas[curr]
+//
+// In addition we add the transitivie equalities as a further
+// simplification (critical for the eq_diamond instances in QF_UF of
+// smtlib).
+//
+PTRef Theory::getCollateFunction(vec<PushFrame>& formulas, int curr)
 {
-    assert(frame.units.size() == 0);
-    vec<PTRef> curr_args;
-    for (int i = 0; i < frame.size(); i++)
-        curr_args.push(frame[i]);
-    PTRef root = getLogic().mkAnd(curr_args);
+    assert(curr < formulas.size());
+    vec<PTRef> coll_f_args;
+    // compute coll_f as (a_1^0 /\ ... /\ a_{n_1}^0) /\ ... /\ (a_1^{curr} /\ ... /\ a_{n_k}^{curr})
+    for (int i = 0; i < curr+1; i++)
+    {
+        for (int j = 0; j < formulas[i].size(); j++)
+            coll_f_args.push(formulas[i][j]);
+    }
+    return getLogic().mkAnd(coll_f_args);
+}
+
+//
+// Given coll_f = (R_1 /\ ... /\ R_{curr-1}) /\ (U_1 /\ ... /\ U_{curr-1}) /\
+// P_{curr}, compute U_{curr}.  Place U_{curr} to frame and simplify
+// the problem P_{curr} using (U_1 /\ ... /\ U_{curr}) resulting in R_i.
+//
+bool Theory::computeSubstitutions(PTRef coll_f, vec<PushFrame>& frames, int curr)
+{
 
     if (!config.do_substitutions() || config.produce_inter()) {
-        frame.root = root;
+        vec<PTRef> curr_args;
+        for (int i = 0; i < frames[curr].size(); i++)
+            curr_args.push(frames[curr][i]);
+        frames[curr].root = getLogic().mkAnd(curr_args);
         return true;
     }
-    // The substitution of facts together with the call to simplifyTree
-    // ensures that no fact is inserted twice to facts.
-//    vec<PtAsgn> facts;
+    assert(config.do_substitutions() && !config.produce_inter());
+    vec<PTRef> curr_args;
+    PushFrame& curr_frame = frames[curr];
+
+    assert(curr_frame.units.elems() == 0);
+
+    // root for the first iteration is P_{curr}
+    for (int i = 0; i < curr_frame.size(); i++)
+        curr_args.push(curr_frame[i]);
+    PTRef root = getLogic().mkAnd(curr_args);
+
     // l_True : exists and is valid
     // l_False : exists but has been disabled to break symmetries
     Map<PTRef,PtAsgn,PTRefHash> substs;
-    Logic& logic = getLogic();
-    // fixpoint
+    vec<Map<PTRef,lbool,PTRefHash>*> prev_units;
+    vec<PtAsgn> prev_units_vec;
+
+    for (int i = 0; i < curr; i++) {
+        prev_units.push(&(frames[i].units));
+        vec<Map<PTRef,lbool,PTRefHash>::Pair> tmp;
+        frames[i].units.getKeysAndVals(tmp);
+        for (int i = 0; i < tmp.size(); i++)
+            prev_units_vec.push(PtAsgn(tmp[i].key, tmp[i].data));
+    }
+
+    vec<PtAsgn> all_units_vec;
+    prev_units_vec.copyTo(all_units_vec);
+    // This computes the new unit clauses to curr_frame.units until closure
     while (true) {
-        getLogic().collectFacts(coll_f, frame.units);
-        lbool res = getLogic().retrieveSubstitutions(frame.units, substs);
-        if (res != l_Undef) root = (res == l_True ? getLogic().getTerm_true() : getLogic().getTerm_false());
+        // update the current simplification formula
+        PTRef simp_formula = getLogic().mkAnd(coll_f, root);
+        // Get U_i
+        getLogic().getNewFacts(simp_formula, prev_units, frames[curr].units);
+        // Add the newly obtained units to the list of all substitutions
+        vec<Map<PTRef,lbool,PTRefHash>::Pair> new_units;
+        // Clear the previous units
+        all_units_vec.shrink(all_units_vec.size() - prev_units_vec.size());
+        frames[curr].units.getKeysAndVals(new_units);
+        for (int i = 0; i < new_units.size(); i++) {
+            Map<PTRef,lbool,PTRefHash>::Pair unit = new_units[i];
+            all_units_vec.push(PtAsgn(unit.key, unit.data));
+        }
+        lbool res = getLogic().retrieveSubstitutions(all_units_vec, substs);
+        if (res != l_Undef)
+            root = (res == l_True ? getLogic().getTerm_true() : getLogic().getTerm_false());
         PTRef new_root;
         bool cont = getLogic().varsubstitute(root, substs, new_root);
         root = new_root;
         if (!cont) break;
     }
 #ifdef SIMPLIFY_DEBUG
-    vec<PTRef> keys_dbg;
-    substs.getKeys(keys_dbg);
-    cerr << "Number of gaussian substitutions: " << keys_dbg.size() << endl;
+    cerr << "Number of substitutions: " << all_units_vec.size() << endl;
+    vec<Map<PTRef,PtAsgn,PTRefHash>::Pair> subst_vec;
+    substs.getKeysAndVals(subst_vec);
     printf("Substitutions:\n");
-    for (int i = 0; i < keys_dbg.size(); i++) {
-        printf("  %s -> %s (%s)\n", logic.printTerm(keys_dbg[i]), logic.printTerm(substs[keys_dbg[i]].tr), substs[keys_dbg[i]].sgn == l_True ? "enabled" : "disabled");
+    for (int i = 0; i < subst_vec.size(); i++) {
+        PTRef source = subst_vec[i].key;
+        PTRef target = subst_vec[i].data.tr;
+        lbool sgn = subst_vec[i].data.sgn;
+        printf("  %s -> %s (%s)\n", getLogic().printTerm(source), getLogic().printTerm(target), sgn == l_True ? "enabled" : "disabled");
     }
 #endif
     vec<PTRef> args;
-    for (int i = 0; i < frame.units.size(); i++) {
-        assert(frame.units[i].sgn == l_True || logic.isBoolAtom(frame.units[i].tr));
-        if (logic.isTheoryEquality(frame.units[i].tr))
-            args.push(frame.units[i].tr);
+    for (int i = 0; i < all_units_vec.size(); i++) {
+        assert(all_units_vec[i].sgn == l_True || getLogic().isBoolAtom(all_units_vec[i].tr));
+        if (getLogic().isTheoryEquality(all_units_vec[i].tr))
+            args.push(all_units_vec[i].tr);
     }
 
-    // Remove duplicates from args
-    sort(args);
-    PTRef p = PTRef_Undef;
-    int i = 0, j = 0;
-    for (; i < args.size(); i++) {
-        if (args[i] != p) args[j++] = args[i];
-        p = args[i];
-    }
-    args.shrink(i-j);
 
     // Feed the top-level facts to the theory solver to check for
     // unsatisfability
@@ -64,8 +118,8 @@ bool Theory::computeSubstitutions(PTRef coll_f, PushFrame& frame)
     deds.push(DedElem_Undef); // False
     Map<PTRef,int,PTRefHash> refs;
     TSolverHandler * th = getTSolverHandler_new(deds);
-    refs.insert(logic.getTerm_true(), 0);
-    refs.insert(logic.getTerm_false(), 1);
+    refs.insert(getLogic().getTerm_true(), 0);
+    refs.insert(getLogic().getTerm_false(), 1);
     th->fillTmpDeds(root, refs);
 
     for (int i = 0; i < args.size(); i++)
@@ -77,12 +131,12 @@ bool Theory::computeSubstitutions(PTRef coll_f, PushFrame& frame)
             no_conflict = false;
             break; }
 
-    frame.root = root;
+    frames[curr].root = root;
 
     vec<PTRef> keys;
     refs.getKeys(keys);
     for (int i = 0; i < keys.size(); i++)
-        logic.getPterm(keys[i]).clearVar();
+        getLogic().getPterm(keys[i]).clearVar();
 
     bool result = no_conflict && th->check(true);
 

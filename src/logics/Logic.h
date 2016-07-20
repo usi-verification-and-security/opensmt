@@ -29,7 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SSort.h"
 #include "SymStore.h"
 #include "PtStore.h"
-//#include "Tterm.h"
+#include "Tterm.h"
 
 class SStore;
 class TStore;
@@ -61,7 +61,7 @@ class Logic {
     //for partitions:
     vec<PTRef> assertions;
     vec<PTRef> assertions_simp;
-//    vec<Tterm*> functions;
+    vec<Tterm*> functions;
 #ifdef PRODUCE_PROOF
     map<CRef, ipartitions_t> clause_class;
     map<Var, ipartitions_t> var_class;
@@ -230,12 +230,13 @@ class Logic {
     PTRef       mkBoolVar     (const char* name);
 
     void dumpHeaderToFile(ostream& dump_out);
-    void dumpFormulaToFile(ostream& dump_out, PTRef formula, bool negate = false);
+    void dumpFormulaToFile(ostream& dump_out, PTRef formula, bool negate = false, bool toassert = true);
     void dumpChecksatToFile(ostream& dump_out);
 
-//    PTRef instantiateFunctionTemplate(Tterm&, map<PTRef, PTRef>);
-//    vec<Tterm*>& getFunctions() { return functions; }
-//    void addFunction(Tterm* f) { functions.push(f); }
+    void dumpFunction(ostream &, Tterm*);
+    PTRef instantiateFunctionTemplate(Tterm&, map<PTRef, PTRef>);
+    vec<Tterm*>& getFunctions() { return functions; }
+    void addFunction(Tterm* f) { functions.push(f); }
 
 #ifdef PRODUCE_PROOF
 
@@ -365,10 +366,13 @@ class Logic {
     // XXX There's a need for non msg giving version
     virtual PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms, char** msg);
 
+    // Check if an assignment is already in some previous frame's unit
+    // hashes (hashes) or the current hash (curr_hash)
+    lbool isInHashes(vec<Map<PTRef,lbool,PTRefHash>*>& hashes, Map<PTRef,lbool,PTRefHash>& curr_hash, PtAsgn tr);
     // Top-level equalities based substitutions
-    void collectFacts(PTRef root, vec<PtAsgn>& facts);
+    bool getNewFacts(PTRef root, vec<Map<PTRef,lbool,PTRefHash>*>& prev_units, Map<PTRef,lbool,PTRefHash>& facts);
     bool varsubstitute(PTRef& root, Map<PTRef,PtAsgn,PTRefHash>& substs, PTRef& tr_new);  // Do the substitution.  Return true if at least one substitution was done, and false otherwise.
-    virtual lbool retrieveSubstitutions(vec<PtAsgn>& facst, Map<PTRef,PtAsgn,PTRefHash>& substs);
+    virtual lbool retrieveSubstitutions(vec<PtAsgn>& units, Map<PTRef,PtAsgn,PTRefHash>& substs);
 
     class SubstNode {
         Logic& logic;

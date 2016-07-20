@@ -213,16 +213,12 @@ MainSolver::insertFormula(PTRef root, char** msg)
     return s_Undef;
 }
 
-sstat MainSolver::simplifyFormulas(char** err_msg) {
+sstat MainSolver::simplifyFormulas(char** err_msg)
+{
     if (binary_init)
         return s_Undef;
 
     status = s_Undef;
-    // Think of something here to enable incrementality...
-    if (!ts.solverEmpty()) {
-        asprintf(err_msg, "Solver already contains a simplified problem.  Cannot continue for now");
-        return s_Error;
-    }
 
     vec<PTRef> coll_f;
     for (int i = simplified_until; i < formulas.size(); i++) {

@@ -37,6 +37,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Theory.h"
 #include "Global.h"
 #include "smt2tokens.h"
+#include "Tterm.h"
 
 namespace opensmt {
 bool stop;
@@ -341,16 +342,26 @@ declare_fun_err: ;
 
                 const char* fname = name_node.getValue();
 
+                Tterm* templ = new Tterm();
+                templ->setName(fname);
                 // Get the argument sorts
                 vec<SRef> args;
                 for (list<ASTNode*>::iterator it2 = args_node.children->begin(); it2 != args_node.children->end(); it2++) {
-                    char* name = buildSortName(**it2);
-                    if (logic->containsSort(name)) {
-                        args.push(logic->getSortRef(name));
-                        free(name);
+                    string varName = (**it2).getValue();
+                    list<ASTNode*>::iterator varC = (**it2).children->begin();
+                    list<ASTNode*>::iterator varCC = (**varC).children->begin();
+                    string sortName = (**varCC).getValue();
+
+                    //char* name = buildSortName(**it2);
+                    if (logic->containsSort(sortName.c_str())) {
+                        args.push(logic->getSortRef(sortName.c_str()));
+                        //free(name);
+                        PTRef pvar = logic->mkVar(args.last(), varName.c_str());
+                        templ->addArg(pvar);
                     }
                     else {
-                        notify_formatted(true, "Undefined sort %s in function %s", name, fname);
+                        notify_formatted(true, "Undefined sort %s in function %s", sortName.c_str(), fname);
+                        delete templ;
                         return false;
                     }
                 }
@@ -373,6 +384,7 @@ declare_fun_err: ;
                 } else {
                     notify_formatted(true, "Unknown return sort %s of %s", rsort_name, fname);
                     free(rsort_name);
+                    delete templ;
                     return false;
                 }
 
@@ -381,18 +393,23 @@ declare_fun_err: ;
                 PTRef tr = parseTerm(term_node, let_branch);
                 if (tr == PTRef_Undef) {
                     notify_formatted(true, "define-fun returns an unknown sort");
+                    delete templ;
                     return false;
                 }
                 else if (logic->getSortRef(tr) != ret_sort) {
                     notify_formatted(true, "define-fun term and return sort do not match: %s and %s\n", logic->getSortName(logic->getSortRef(tr)), logic->getSortName(ret_sort));
+                    delete templ;
                     return false;
                 }
                 if (defineFun(fname, tr)) notify_success();
                 else {
                     notify_formatted(true, "define-fun failed");
+                    delete templ;
                     return false;
                 }
 
+                templ->setBody(tr);
+                logic->addFunction(templ);
             }
             else {
                 notify_formatted(true, "Illegal command before set-logic: define-fun");
