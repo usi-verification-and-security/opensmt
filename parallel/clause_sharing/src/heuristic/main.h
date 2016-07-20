@@ -2,56 +2,61 @@
 // Created by Matteo Marescotti on 02/12/15.
 //
 
-#ifndef CLAUSE_SHARING_HEURISTIC_H
-#define CLAUSE_SHARING_HEURISTIC_H
+#ifndef HEURISTIC_H
+#define HEURISTIC_H
 
 #include <iostream>
+#include <vector>
 #include "Sort.h"
+#include "lib/Net.h"
 #include "lib/Thread.h"
-#include "lib/Message.h"
-
-extern "C" {
-#include <hiredis.h>
-}
+#include "lib/Log.h"
 
 
 class Settings {
 public:
-    typedef struct {
-        std::string hostname;
-        uint16_t port;
-    } Address;
-
     static Settings Default;
 
-    Settings() :
-            redis({.hostname=std::string("127.0.0.1"), .port=6379}) { }
+    Settings();
 
-    void load(int argc, char **argv);
+    void load(int, char **);
 
-    Address redis;
+    uint16_t port;
+    Address server;
 
 };
 
 
-class Heuristic : public Thread {
-
+// thread to handle the connection with the server
+class ServerThread : public Thread {
 private:
-    redisContext *context_pub;
-    redisContext *context_sub;
-
-    static redisContext *Connect(std::string &hostname, uint16_t port);
+    Settings &settings;
+    Socket *server;
 
 protected:
     void main();
 
 public:
-    Heuristic(std::string &hostname, uint16_t port);
+    ServerThread(Settings &);
 
-    ~Heuristic();
+    ~ServerThread();
 
 };
 
 
-#endif //CLAUSE_SHARING_HEURISTIC_H
+class HeuriscticServer : public Server {
+public:
+    HeuriscticServer(uint16_t port) : Server(port) { }
+
+protected:
+    void handle_accept(Socket &);
+
+    void handle_close(Socket &);
+
+    void handle_message(Socket &, std::map<std::string, std::string> &, std::string &);
+
+    void handle_exception(Socket &, SocketException &);
+};
+
+#endif //HEURISTIC_H
 

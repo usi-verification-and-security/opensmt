@@ -14,7 +14,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include "Exception.h"
-#include "Frame.h"
+#include "Net.h"
 
 
 class ProcessException : public Exception {
@@ -52,9 +52,9 @@ public:
 
     inline bool joinable();
 
-    Frame &reader();
+    Socket *reader();
 
-    Frame &writer();
+    Socket *writer();
 
 };
 
