@@ -204,7 +204,7 @@ class Solver(net.Socket):
         self.write({
             'command': 'solve',
             'hash': tree.node_hash(node),
-            'instance': tree.name
+            'name': tree.name
         }, node.formula.smt)
         self.tree, self.node = tree, node
         self.tree.db_log('+', self, node)
@@ -215,7 +215,7 @@ class Solver(net.Socket):
         self.write({
             'command': 'stop',
             'hash': self.tree.node_hash(self.node),
-            'instance': self.tree.name
+            'name': self.tree.name
         }, '')
         self.tree.db_log('-', self, self.node)
         self.tree = self.node = None
@@ -227,7 +227,7 @@ class Solver(net.Socket):
         self.write({
             'command': 'partitions',
             'hash': self.tree.node_hash(self.node),
-            'instance': self.tree.name,
+            'name': self.tree.name,
             'partitions': n
         }, '')
         if node is None:
@@ -244,9 +244,9 @@ class Solver(net.Socket):
             raise
         if self.tree is None or self.node is None:
             return header, message
-        if self.tree.name != header['instance']:
+        if self.tree.name != header['name']:
             header['error'] = 'wrong instance "{}", expected "{}"'.format(
-                header['instance'],
+                header['name'],
                 self.tree.name
             )
             return header, message
@@ -390,11 +390,11 @@ class ParallelizationServer(net.Server):
             tree.assign_solvers(idle_solver)
 
     def _check(self, header):
-        if not (header.get('instance') or header.get('hash')):
+        if not (header.get('name') or header.get('hash')):
             self.log(logging.WARNING, 'incomplete instance received', {'header': header})
             raise ValueError
-        instance = header.get('instance', header.get('hash'))
-        hash = header.get('hash', header.get('instance'))
+        instance = header.get('name', header.get('hash'))
+        hash = header.get('hash', header.get('name'))
         return instance, hash
 
     def log(self, level, message, data=None):

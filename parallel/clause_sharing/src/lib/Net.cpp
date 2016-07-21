@@ -3,6 +3,9 @@
 //
 
 #include "Net.h"
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <unistd.h>
 
 
 Address::Address(std::string hostname, uint16_t port) :
@@ -74,10 +77,12 @@ Socket::Socket(uint16_t port) {
 }
 
 Socket::Socket(int fd) :
-        fd(fd) { std::cout << "open : " << fd << "\n"; };
+        fd(fd) {
+    //std::cout << "open : " << fd << "\n";
+};
 
 Socket::~Socket() {
-    std::cout << "close: " << this->fd << "\n";
+    //std::cout << "close: " << this->fd << "\n";
     this->close();
 }
 
@@ -148,9 +153,8 @@ uint32_t Socket::write(std::map<std::string, std::string> &header, std::string &
     if (header.count(""))
         throw SocketException("empty key is not allowed");
     std::string message;
-    std::map<std::string, std::string>::iterator it;
-    for (it = header.begin(); it != header.end(); it++) {
-        std::string keyval[2] = {it->first, it->second};
+    for (auto pair = header.begin(); pair != header.end(); pair++) {
+        std::string keyval[2] = {pair->first, pair->second};
         for (uint8_t i = 0; i < 2; i++) {
             if (keyval[i].length() > (uint8_t) -1)
                 throw SocketException("header key or value is too big");
@@ -248,36 +252,36 @@ void Server::run_forever() {
         do {
             FD_ZERO(&readset);
             int max = 0;
-            for (std::vector<Socket *>::iterator it = this->sockets.begin(); it != this->sockets.end(); ++it) {
-                max = max < (*it)->get_fd() ? (*it)->get_fd() : max;
-                FD_SET((*it)->get_fd(), &readset);
+            for (auto socket = this->sockets.begin(); socket != this->sockets.end(); ++socket) {
+                max = max < (*socket)->get_fd() ? (*socket)->get_fd() : max;
+                FD_SET((*socket)->get_fd(), &readset);
             }
             result = select(max + 1, &readset, NULL, NULL, NULL);
         } while (result == -1 && errno == EINTR);
 
         while (result > 0) {
-            for (std::vector<Socket *>::iterator it = this->sockets.begin(); it != this->sockets.end(); ++it) {
+            for (auto socket = this->sockets.begin(); socket != this->sockets.end(); ++socket) {
                 //if((*it)->get_fd())
-                if (FD_ISSET((*it)->get_fd(), &readset)) {
-                    FD_CLR((*it)->get_fd(), &readset);
+                if (FD_ISSET((*socket)->get_fd(), &readset)) {
+                    FD_CLR((*socket)->get_fd(), &readset);
                     result--;
-                    if ((*it)->get_fd() == this->socket->get_fd()) {
+                    if ((*socket)->get_fd() == this->socket->get_fd()) {
                         client = this->socket->accept();
                         this->sockets.push_back(client);
                         this->handle_accept(*client);
                     }
                     else {
                         try {
-                            (*it)->read(header, payload);
-                            this->handle_message(**it, header, payload);
+                            (*socket)->read(header, payload);
+                            this->handle_message(**socket, header, payload);
                         }
                         catch (SocketClosedException ex) {
-                            this->handle_close(**it);
-                            delete *it;
-                            this->sockets.erase(it);
+                            this->handle_close(**socket);
+                            delete *socket;
+                            this->sockets.erase(socket);
                         }
                         catch (SocketException ex) {
-                            this->handle_exception(**it, ex);
+                            this->handle_exception(**socket, ex);
                         }
                     }
                     break;

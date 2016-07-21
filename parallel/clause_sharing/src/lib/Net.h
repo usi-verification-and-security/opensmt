@@ -8,11 +8,6 @@
 #include <iostream>
 #include <map>
 #include <vector>
-#include <unistd.h>
-#include <string.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <netdb.h>
 #include "Exception.h"
 
 

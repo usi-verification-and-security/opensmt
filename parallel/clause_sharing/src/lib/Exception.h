@@ -6,6 +6,7 @@
 #define CLAUSE_SHARING_EXCEPTION_H
 
 #include <exception>
+#include <iostream>
 
 
 class Exception : public std::exception {

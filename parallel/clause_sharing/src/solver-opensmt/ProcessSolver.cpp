@@ -2,18 +2,15 @@
 // Created by Matteo on 10/12/15.
 //
 
-#include "main.h"
+#include "ProcessSolver.h"
+#include "lib/Log.h"
 
 
-//_SMTSolver::_SMTSolver(Settings &s, std::string &name, std::string &hash, SMTConfig &c, THandler &t) :
-//        SimpSMTSolver(c, t), name(name), hash(hash) {
-//
-//}
-//
-//_SMTSolver::~_SMTSolver() {
-//
-//}
-//
+_SMTSolver::_SMTSolver(Settings &s, std::string name, std::string hash, SMTConfig &c, THandler &t) :
+        SimpSMTSolver(c, t), name(name), hash(hash) { }
+
+_SMTSolver::~_SMTSolver() { }
+
 //void _SMTSolver::clausesPublish() {
 //    if (this->cls_pub == NULL)
 //        return;
@@ -147,12 +144,22 @@
 //}
 //
 //
-//ProcessSolver::ProcessSolver(Settings &settings, std::string &channel, std::string &osmt2) :
-//        Process(), channel(channel), osmt2(osmt2), settings(settings) {
-//    this->start();
-//}
-//
-//void ProcessSolver::main() {
+ProcessSolver::ProcessSolver(Settings &settings, std::string name, std::string hash, std::string instance) :
+        Process(), settings(settings), name(name), hash(hash), instance(instance) {
+    this->start();
+}
+
+void ProcessSolver::main() {
+    Log::log(Log::INFO, "started: " + this->name + "(" + this->hash + ")");
+
+    std::map<std::string, std::string> header;
+    std::string payload="ciao";
+
+    //this->settings.get_clause_agent()->write(header, payload);
+    sleep(5);
+    this->writer()->write(header, payload);
+    this->reader()->read(header, payload);
+
 //    std::cerr << "Started job " << this->channel << "\n";
 //
 //    sstat status = s_Undef;
@@ -202,4 +209,4 @@
 //
 //    std::cout << "Finished job\n";
 
-//}
+}

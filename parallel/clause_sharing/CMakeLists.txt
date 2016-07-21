@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(clause_sharing C CXX)
+project(clause_server C CXX)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 set(CMAKE_CXX_COMPILER "g++")
@@ -48,7 +48,7 @@ include_directories(
 
 add_subdirectory(${SRC}/deps)
 add_subdirectory(${SRC}/lib)
-add_subdirectory(${SRC}/heuristic)
+add_subdirectory(${SRC}/clause_server)
 add_subdirectory(${SRC}/solver-opensmt)
 
 

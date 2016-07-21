@@ -101,6 +101,7 @@ Thread::~Thread() {
     this->stop();
     this->join();
     delete this->thread;
+    this->thread = NULL;
 }
 
 void Thread::thread_wrapper() {

@@ -2,10 +2,9 @@
 // Created by Matteo Marescotti on 02/12/15.
 //
 
-#include "main.h"
+#include <getopt.h>
+#include "Settings.h"
 
-
-Settings Settings::Default = Settings();
 
 Settings::Settings() :
         port(5000), server(Address(std::string(), 0)) { }
