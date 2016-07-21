@@ -494,7 +494,7 @@ lbool Logic::simplifyTree(PTRef tr, PTRef& root_out)
             PTRef trq = tr_map[qaux];
             if(trq != qaux)
             {
-//                setOriginalAssertion(trq, qaux);
+                setOriginalAssertion(trq, qaux);
                 assertions_simp.push(trq);
             }
         }
