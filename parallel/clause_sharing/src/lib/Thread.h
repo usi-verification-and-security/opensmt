@@ -11,7 +11,7 @@
 #include <csignal>
 #include <iostream>
 #include "Exception.h"
-#include "Frame.h"
+#include "Net.h"
 
 
 #ifdef __APPLE__
@@ -50,8 +50,8 @@ int pthread_barrierattr_getpshared(const pthread_barrierattr_t *attr,
 int pthread_barrierattr_setpshared(pthread_barrierattr_t *attr,
                                    int pshared);
 
-int pthread_barrier_init(pthread_barrier_t * barrier,
-                         const pthread_barrierattr_t * attr,
+int pthread_barrier_init(pthread_barrier_t *barrier,
+                         const pthread_barrierattr_t *attr,
                          unsigned int count);
 int pthread_barrier_destroy(pthread_barrier_t *barrier);
 
@@ -73,10 +73,6 @@ int pthread_barrier_wait(pthread_barrier_t *barrier);
 
 class Thread {
 private:
-    static pthread_t main_thread;
-
-    static pthread_t init();
-
     std::thread *thread;
     pthread_barrier_t barrier;
     Pipe piper;
@@ -89,12 +85,9 @@ private:
 protected:
     virtual void main() = 0;
 
-    void start();
+    //virtual void clean() { };
 
-    class StopException : public std::exception {
-    public:
-        char const *what() const throw() { return "Thread is requested to stop."; }
-    };
+    void start();
 
 public:
     Thread();
@@ -107,9 +100,9 @@ public:
 
     inline bool joinable();
 
-    Frame &reader();
+    Socket *reader();
 
-    Frame &writer();
+    Socket *writer();
 
 };
 

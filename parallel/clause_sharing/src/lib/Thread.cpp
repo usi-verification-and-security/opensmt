@@ -94,24 +94,10 @@ pthread_barrier_wait(pthread_barrier_t *barrier) {
 
 #endif /* __APPLE__ */
 
-
-pthread_t Thread::init() {
-    std::signal(SIGUSR1, [](int signal) {
-        if (pthread_self() != Thread::main_thread)
-            throw StopException();
-    });
-    return pthread_self();
-}
-
-pthread_t Thread::main_thread = Thread::init();
-
 Thread::Thread() :
-        thread(NULL), piper(Pipe::New()), pipew(Pipe::New()), stop_requested(false) {
-    pthread_barrier_init(&this->barrier, NULL, 2);
-}
+        thread(NULL), piper(Pipe::New()), pipew(Pipe::New()), stop_requested(false) { }
 
 Thread::~Thread() {
-    pthread_barrier_destroy(&this->barrier);
     this->stop();
     this->join();
     delete this->thread;
@@ -121,13 +107,20 @@ void Thread::thread_wrapper() {
     try {
         pthread_barrier_wait(&this->barrier);
         this->main();
-        return;
-    } catch (StopException) { }
+    }
+    catch (const std::exception &e) {
+        std::cout << "Unhandled exception on thread " << pthread_self() << ": " << e.what() << "\n";
+    }
+    catch (...) {
+        std::cout << "Unhandled unknown exception on thread " << pthread_self() << "\n";
+    }
+    this->stop();
 }
 
 void Thread::start() {
     if (this->thread != NULL)
         return;
+    pthread_barrier_init(&this->barrier, NULL, 2);
     this->thread = new std::thread(&Thread::thread_wrapper, this);
     pthread_barrier_wait(&this->barrier);
 }
@@ -139,26 +132,25 @@ void Thread::stop() {
         return;
     }
     this->stop_requested = true;
+    pthread_cancel(this->thread->native_handle());
     this->mtx.unlock();
-    if (pthread_self() != this->thread->native_handle())
-        pthread_kill(this->thread->native_handle(), SIGUSR1);
-    else
-        throw StopException();
 }
 
 void Thread::join() {
-    if (this->joinable())
+    if (this->joinable()) {
         this->thread->join();
+        pthread_barrier_destroy(&this->barrier);
+    }
 }
 
 bool Thread::joinable() {
     return this->thread != NULL && this->thread->joinable();
 }
 
-Frame &Thread::reader() {
+Socket *Thread::reader() {
     return (pthread_self() == this->thread->native_handle()) ? this->piper.reader() : this->pipew.reader();
 }
 
-Frame &Thread::writer() {
+Socket *Thread::writer() {
     return (pthread_self() == this->thread->native_handle()) ? this->pipew.writer() : this->piper.writer();
 }
