@@ -7,18 +7,15 @@
 
 #include <ctime>
 #include <iostream>
-#include <_types/_uint8_t.h>
+#include <mutex>
 
 class Log {
 private:
     Log() { }
 
 public:
-    static const uint8_t INFO = 1;
-    static const uint8_t WARNING = 2;
-    static const uint8_t ERROR = 3;
-
     static void log(uint8_t level, std::string message) {
+        static std::mutex mtx;
         std::string record;
         record += std::to_string(std::time(NULL));
         record += "\t";
@@ -36,8 +33,14 @@ public:
                 record += "UNKNOWN\t";
         }
         record += message;
+        mtx.lock();
         std::cerr << record << "\n";
+        mtx.unlock();
     }
+
+    static const uint8_t INFO = 1;
+    static const uint8_t WARNING = 2;
+    static const uint8_t ERROR = 3;
 };
 
 

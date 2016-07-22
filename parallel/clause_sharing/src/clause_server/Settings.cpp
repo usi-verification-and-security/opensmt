@@ -20,12 +20,7 @@ void Settings::load(int argc, char **argv) {
                 this->port = (uint16_t) atoi(optarg);
                 break;
             case 's':
-                uint8_t i;
-                for (i = 0; optarg[i] != ':' && optarg[i] != '\0' && i < (uint8_t) -1; i++) { }
-                if (optarg[i] != ':')
-                    throw Exception("invalid host:port");
-                optarg[i] = '\0';
-                this->server = Address(std::string(optarg), (uint16_t) atoi(&optarg[i + 1]));
+                this->server = Address(std::string(optarg));
                 break;
             default:
                 abort();

@@ -23,33 +23,15 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -g -gdwarf-2")
 #endif ()
 
 set(SRC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-set(SRC_OPENSMT ${SRC}/../../../src)
 
 set(CMAKE_MODULE_PATH "${SRC}")
 
-include_directories(
-        "${SRC}"
-        "${SRC_OPENSMT}"
-        "${SRC_OPENSMT}/minisat/core"
-        "${SRC_OPENSMT}/minisat/mtl"
-        "${SRC_OPENSMT}/common"
-        "${SRC_OPENSMT}/logics"
-        "${SRC_OPENSMT}/options"
-        "${SRC_OPENSMT}/symbols"
-        "${SRC_OPENSMT}/api"
-        "${SRC_OPENSMT}/pterms"
-        "${SRC_OPENSMT}/sorts"
-        "${SRC_OPENSMT}/smtsolvers"
-        "${SRC_OPENSMT}/tsolvers"
-        "${SRC_OPENSMT}/cnfizers"
-        "${SRC_OPENSMT}/tsolvers/egraph"
-        "${SRC_OPENSMT}/tsolvers/lrasolver"
-)
+include_directories("${SRC}")
 
 add_subdirectory(${SRC}/deps)
 add_subdirectory(${SRC}/lib)
 add_subdirectory(${SRC}/clause_server)
-add_subdirectory(${SRC}/solver-opensmt)
+add_subdirectory(${SRC}/solver)
 
 
 #add_executable(main ${SRC}/main.cpp)

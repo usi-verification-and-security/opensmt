@@ -21,7 +21,7 @@ public:
 
     Socket *get_clause_agent() { return this->clause_thread ? this->clause_thread->writer() : NULL; }
 
-    Address server;
+    Socket *server;
     std::vector<std::string> files;
 };
 
