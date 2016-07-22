@@ -5,21 +5,22 @@
 #include <unistd.h>
 #include "Interpret.h"
 #include "lib/Log.h"
-#include "SolverProcess.h"
+#include "client/SolverProcess.h"
 
+
+const char *SolverProcess::solver = "OpenSMT2";
 
 SolverProcess::SolverProcess(Settings &settings, std::map<std::string, std::string> &header, std::string &instance) :
         Process(),
         settings(settings),
-        name(header["name"]),
-        hash(header["hash"]),
-        instance(instance),
-        seed(seed) {
+        header(header),
+        instance(instance) {
     this->start();
 }
 
 std::string SolverProcess::toString() {
-    return "SolverProcess<" + std::string(SolverProcess::solver) + ">" + this->name + "(" + this->hash + ")";
+    auto header = this->get_header();
+    return "SolverProcess<" + std::string(SolverProcess::solver) + ">" + header["name"] + "(" + header["hash"] + ")";
 }
 
 void SolverProcess::main() {
@@ -31,12 +32,12 @@ void SolverProcess::main() {
     SMTConfig config;
     uint32_t seed = randuint(rd);
     config.setRandomSeed(seed);
-    Interpret interpret = Interpret(&config);
+    //Interpret interpret = Interpret(&config);
 
 
-    this->reader()->read(header, payload);
-    header["name"] = this->name;
-    header["hash"] = this->hash;
+    //this->reader()->read(header, payload);
+    header["name"] = this->header["name"];
+    header["hash"] = this->header["hash"];
     header["status"] = "sat";
 
     if (this->settings.get_clause_agent())

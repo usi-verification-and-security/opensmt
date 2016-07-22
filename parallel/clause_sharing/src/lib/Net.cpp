@@ -284,7 +284,9 @@ void Server::run_forever() {
             result = select(max + 1, &readset, NULL, NULL, NULL);
         } while (result == -1 && errno == EINTR);
 
-        while (result > 0) {
+        bool x = true;
+        while (x) {
+            std::cout << "NETTERE A POSTO NET.C:289\n";
             for (auto socket = this->sockets.begin(); socket != this->sockets.end(); ++socket) {
                 if (FD_ISSET((*socket)->get_fd(), &readset)) {
                     FD_CLR((*socket)->get_fd(), &readset);
@@ -310,7 +312,7 @@ void Server::run_forever() {
                     break;
                 }
             }
-
+            x = false;
         }
 //        if (result < 0) {
 //        }

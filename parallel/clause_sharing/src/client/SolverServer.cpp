@@ -20,7 +20,7 @@ void SolverServer::log(uint8_t level, std::string message) {
 
 
 bool SolverServer::check_header(std::map<std::string, std::string> &header) {
-    return header["name"] == this->solver->name && header["hash"] == this->solver->hash;
+    return header["name"] == this->solver->get_header()["name"] && header["hash"] == this->solver->get_header()["hash"];
 }
 
 
@@ -57,7 +57,7 @@ void SolverServer::handle_message(Socket &socket, std::map<std::string, std::str
             if (this->solver && this->check_header(header))
                 return;
             this->stop_solver();
-            this->solver = new SolverProcess(this->settings, header["name"], header["hash"], payload);
+            this->solver = new SolverProcess(this->settings, header, payload);
             this->log(Log::INFO, this->solver->toString() + " started");
             this->add_socket(this->solver->reader());
         }

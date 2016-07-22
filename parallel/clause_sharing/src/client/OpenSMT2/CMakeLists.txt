@@ -30,14 +30,9 @@ set_target_properties(opensmt PROPERTIES
         IMPORTED_LOCATION ${SRC_OPENSMT}/.libs/libopensmt.a
         )
 
-#add_library(solver Settings.cpp Solver.cpp)
-#set_target_properties(solver PROPERTIES
-#        COMPILE_FLAGS ${solver_opensmt_flags}
-#        )
-
-add_executable(solver_opensmt main.cpp Settings.cpp SolverProcess.cpp ClauseThread.cpp SolverServer.cpp FileThread.cpp)
+add_executable(solver_opensmt ../main.cpp SolverProcess.cpp OpenSMTSolver.cpp)
 set_target_properties(solver_opensmt PROPERTIES
         COMPILE_FLAGS ${solver_opensmt_flags}
         )
 
-target_link_libraries(solver_opensmt Lib opensmt ${solver_opensmt_flags})
+target_link_libraries(solver_opensmt client opensmt ${solver_opensmt_flags})

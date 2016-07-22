@@ -45,5 +45,7 @@ void FileThread::main() {
         header["command"] = "stop";
         this->client->write(header, content);
     }
+
     this->client->close();
+
 }

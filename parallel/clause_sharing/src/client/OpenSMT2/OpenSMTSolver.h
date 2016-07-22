@@ -5,8 +5,8 @@
 #ifndef CLAUSE_SERVER_OPENSMTSOLVER_H
 #define CLAUSE_SERVER_OPENSMTSOLVER_H
 
-
 #include "SimpSMTSolver.h"
+#include "client/Settings.h"
 
 
 namespace opensmt {

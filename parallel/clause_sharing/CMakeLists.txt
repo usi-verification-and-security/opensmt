@@ -31,7 +31,7 @@ include_directories("${SRC}")
 add_subdirectory(${SRC}/deps)
 add_subdirectory(${SRC}/lib)
 add_subdirectory(${SRC}/clause_server)
-add_subdirectory(${SRC}/solver)
+add_subdirectory(${SRC}/client)
 
 
 #add_executable(main ${SRC}/main.cpp)
