@@ -37,7 +37,6 @@ public:
     }
     MainSolver& getMainSolver() { return *mainSolver; }
     SimpSMTSolver& getSolver() { return *solver; }
-    
 private:
     SMTConfig *config;
     Theory *theory;

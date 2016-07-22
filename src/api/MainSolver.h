@@ -138,7 +138,7 @@ class MainSolver
             , thandler
             , *s )
         , binary_init(false)
-        , root_instance(PTRef_Undef)
+        , root_instance(logic.getTerm_true())
         , simplified_until(0)
     {
         formulas.push();
@@ -194,6 +194,8 @@ class MainSolver
 
     void solve_split(int i,int s, int wpipefd, std::mutex *mtx);
     void stop() { ts.solver.stop = true; }
+
+    void readFormulaFromFile(const char *file);
 };
 
 #endif //

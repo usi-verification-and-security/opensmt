@@ -5,23 +5,15 @@
 #ifndef CLAUSE_SHARING_PROCESS_H
 #define CLAUSE_SHARING_PROCESS_H
 
-#include <thread>
-#include <mutex>
-#include <atomic>
-#include <csignal>
-#include <iostream>
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <sys/wait.h>
 #include "Exception.h"
-#include "Frame.h"
+#include "Net.h"
 
 
 class ProcessException : public Exception {
 public:
-    explicit ProcessException(const char *message) : Exception(message) { }
+    explicit ProcessException(const char *message) : ProcessException(std::string(message)) { }
 
-    explicit ProcessException(const std::string &message) : Exception(message) { }
+    explicit ProcessException(const std::string &message) : Exception("ProcessException: " + message) { }
 };
 
 
@@ -36,11 +28,6 @@ protected:
 
     void start();
 
-    class StopException : public std::exception {
-    public:
-        char const *what() const throw() { return "Process is requested to stop."; }
-    };
-
 public:
     Process();
 
@@ -52,9 +39,9 @@ public:
 
     inline bool joinable();
 
-    Frame &reader();
+    Socket *reader();
 
-    Frame &writer();
+    Socket *writer();
 
 };
 

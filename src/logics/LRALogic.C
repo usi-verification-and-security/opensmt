@@ -969,7 +969,7 @@ void LRALogic::deserializeLogicData(const int* logicdata_buf)
 // Handle the printing of real constants that are negative and the
 // rational constants
 char*
-LRALogic::printTerm_(PTRef tr, bool ext)
+LRALogic::printTerm_(PTRef tr, bool ext, bool safe)
 {
     char* out;
     if (isRealConst(tr))
@@ -977,7 +977,7 @@ LRALogic::printTerm_(PTRef tr, bool ext)
         if (!isNonnegRealConst(tr))
         {
             PTRef tr_p = mkRealNeg(tr);
-            char *tmp = printTerm_(tr_p, ext);
+            char *tmp = printTerm_(tr_p, ext, safe);
             if (ext)
                 asprintf(&out, "(- %s) <%d>", tmp, tr.x);
             else
@@ -1023,6 +1023,6 @@ LRALogic::printTerm_(PTRef tr, bool ext)
         }
     }
     else
-        out = Logic::printTerm_(tr, ext);
+        out = Logic::printTerm_(tr, ext, safe);
     return out;
 }

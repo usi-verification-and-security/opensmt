@@ -86,6 +86,7 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
       // More parameters:
       //
     , expensive_ccmin  ( true )
+    , learntsize_adjust_start_confl (0)
       // Statistics: (formerly in 'SolverStats')
       //
     , solves(0), starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), conflicts_last_update(0)
@@ -1896,6 +1897,21 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
         }
         if (conflicts % 1000 == 0){
             this->clausesPublish();
+//            for (int i = 0; i < this->learnts.size(); i++) {
+//                Clause &c = this->ca[this->learnts[i]];
+//                if (c.size()>3)
+//                    continue;
+//                int siz=0;
+//                for (int j = 0; j < c.size(); j++) {
+//                    PTRef pt = this->theory_handler.varToTerm(var(c[j]));
+//                    char *s = this->theory_handler.getLogic().printTerm(pt,false, true);
+//                    printf("%s OR ",s);
+//                    siz+=strlen(s);
+//                    free(s);
+//                }
+//                //printf("%d",siz);
+//                printf("\n");
+//            }
         }
 
         if (resource_limit >= 0 && conflicts % 1000 == 0) {
@@ -1984,7 +2000,6 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 
             varDecayActivity();
             claDecayActivity();
-
             if (--learntsize_adjust_cnt == 0)
             {
                 learntsize_adjust_confl *= learntsize_adjust_inc;
@@ -2461,19 +2476,10 @@ lbool CoreSMTSolver::solve_(int max_conflicts)
         }
     }
 
-    if (!config.isIncremental())
-    {
-        // We terminate
-        cancelUntil(0);
-        if (first_model_found || splits.size() > 1)
-            theory_handler.backtrack(-1);
-    }
-    else
-    {
-        // We return to level 0,
-        // ready to accept new clauses
-        cancelUntil(0);
-    }
+    // We terminate
+    cancelUntil(0);
+    if (first_model_found || splits.size() > 1)
+        theory_handler.backtrack(-1);
 
     return status;
 }

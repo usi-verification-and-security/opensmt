@@ -536,6 +536,11 @@ void ProofGraph::produceSingleInterpolant ( vector<PTRef> &interpolants, const i
     PTRef interpol = getRoot()->getPartialInterpolant();
     assert (interpol != PTRef_Undef);
     interpolants.push_back ( interpol );
+
+    if(verbose())
+    {
+        //cout << "; Interpolant: " << thandler.getLogic().printTerm(interpol) << endl;
+    }
 }
 
 void ProofGraph::produceMultipleInterpolants ( const vector< ipartitions_t > &configs, vector<PTRef> &sequence_of_interpolants )
@@ -612,7 +617,6 @@ void ProofGraph::produceMultipleInterpolants ( const vector< ipartitions_t > &co
                 partial_interp = compInterpLabelingOriginal ( n, A_mask, curr_interp , PSFunction);
                 //if ( enabledPedInterpVerif() ) verifyPartialInterpolantFromLeaves( n, A_mask );
 #else
-//                cout << "Computing leaf interpolant" << endl;
                 partial_interp = compInterpLabelingOriginalSimple ( n, A_mask );
 #endif
             }
@@ -621,7 +625,6 @@ void ProofGraph::produceMultipleInterpolants ( const vector< ipartitions_t > &co
 #ifdef FULL_LABELING
                 partial_interp = compInterpLabelingInner ( n );
 #else
-//              cout << "Computing inner interpolant" << endl;
                 partial_interp = compInterpLabelingInnerSimple ( n, A_mask );
 #endif
             }

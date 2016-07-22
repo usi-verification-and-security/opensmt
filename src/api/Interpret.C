@@ -37,6 +37,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Theory.h"
 #include "Global.h"
 #include "smt2tokens.h"
+#include "Tterm.h"
 
 namespace opensmt {
 bool stop;
@@ -49,7 +50,12 @@ uint32_t LetFrame::id_cnt = 0;
  * Class defining interpreter
  ***********************************************************/
 
-
+PTRef
+Interpret::getParsedFormula()
+{
+    PTRef root = logic->mkAnd(assertions);
+    return root;
+}
 
 void Interpret::setInfo(ASTNode& n) {
     assert(n.getType() == UATTR_T || n.getType() == PATTR_T);
@@ -141,6 +147,11 @@ bool Interpret::interp(ASTNode& n) {
     switch (cmd.x) {
         case t_setlogic:
         {
+            if(parse_only)
+            {
+                return true;
+                break;
+            }
             ASTNode &logic_n = **(n.children->begin());
             const char* logic_name = logic_n.getValue();
             if (logic != NULL) {
@@ -172,24 +183,48 @@ bool Interpret::interp(ASTNode& n) {
         }
         case t_setinfo:
         {
+            if(parse_only)
+            {
+                return true;
+                break;
+            }
+
             setInfo(**(n.children->begin()));
             return false;
             break;
         }
         case t_getinfo:
         {
+            if(parse_only)
+            {
+                return true;
+                break;
+            }
+
             getInfo(**(n.children->begin()));
             return false;
             break;
         }
         case t_setoption:
         {
+            if(parse_only)
+            {
+                return true;
+                break;
+            }
+
             setOption(**(n.children->begin()));
             return false;
             break;
         }
         case  t_getoption:
         {
+            if(parse_only)
+            {
+                return true;
+                break;
+            }
+
             getOption(**(n.children->begin()));
             return false;
             break;
@@ -268,21 +303,25 @@ declare_fun_err: ;
                 if (tr == PTRef_Undef)
                     notify_formatted(true, "assertion returns an unknown sort");
                 else {
-                    char* err_msg = NULL;
-                    status = main_solver->insertFormula(tr, &err_msg);
+                    if(parse_only) assertions.push(tr);
+                    else
+                    {
+                        char* err_msg = NULL;
+                        status = main_solver->insertFormula(tr, &err_msg);
 
-                    if (status == s_Error)
-                        notify_formatted(true, "Error");
-                    else if (status == s_Undef)
-                        notify_success();
-                    else if (status == s_False)
-                        notify_success();
+                        if (status == s_Error)
+                            notify_formatted(true, "Error");
+                        else if (status == s_Undef)
+                            notify_success();
+                        else if (status == s_False)
+                            notify_success();
 
-                    if (err_msg != NULL && status == s_Error)
-                        notify_formatted(true, err_msg);
-                    if (err_msg != NULL && status != s_Error)
-                        comment_formatted(err_msg);
-                    free(err_msg);
+                        if (err_msg != NULL && status == s_Error)
+                            notify_formatted(true, err_msg);
+                        if (err_msg != NULL && status != s_Error)
+                            comment_formatted(err_msg);
+                        free(err_msg);
+                    }
                 }
             }
             else {
@@ -303,26 +342,38 @@ declare_fun_err: ;
 
                 const char* fname = name_node.getValue();
 
+                Tterm* templ = new Tterm();
+                templ->setName(fname);
                 // Get the argument sorts
                 vec<SRef> args;
                 for (list<ASTNode*>::iterator it2 = args_node.children->begin(); it2 != args_node.children->end(); it2++) {
-                    char* name = buildSortName(**it2);
-                    if (logic->containsSort(name)) {
-                        args.push(logic->getSortRef(name));
-                        free(name);
+                    string varName = (**it2).getValue();
+                    list<ASTNode*>::iterator varC = (**it2).children->begin();
+                    list<ASTNode*>::iterator varCC = (**varC).children->begin();
+                    string sortName = (**varCC).getValue();
+
+                    //char* name = buildSortName(**it2);
+                    if (logic->containsSort(sortName.c_str())) {
+                        args.push(logic->getSortRef(sortName.c_str()));
+                        //free(name);
+                        PTRef pvar = logic->mkVar(args.last(), varName.c_str());
+                        templ->addArg(pvar);
                     }
                     else {
-                        notify_formatted(true, "Undefined sort %s in function %s", name, fname);
+                        notify_formatted(true, "Undefined sort %s in function %s", sortName.c_str(), fname);
+                        delete templ;
                         return false;
                     }
                 }
 
+                /* Removing this restriction for now..
                 // For now we only functions with 0 arguments since smtlib
                 // LRA only has these.
                 if (args_node.children->size() > 0) {
                     notify_formatted(true, "Only non-argument functions are supported.  Function %s has %d arguments", fname, args_node.children->size());
                     return false;
                 }
+                */
 
                 // The return sort
                 char* rsort_name = buildSortName(ret_node);
@@ -333,6 +384,7 @@ declare_fun_err: ;
                 } else {
                     notify_formatted(true, "Unknown return sort %s of %s", rsort_name, fname);
                     free(rsort_name);
+                    delete templ;
                     return false;
                 }
 
@@ -341,17 +393,23 @@ declare_fun_err: ;
                 PTRef tr = parseTerm(term_node, let_branch);
                 if (tr == PTRef_Undef) {
                     notify_formatted(true, "define-fun returns an unknown sort");
+                    delete templ;
                     return false;
                 }
                 else if (logic->getSortRef(tr) != ret_sort) {
                     notify_formatted(true, "define-fun term and return sort do not match: %s and %s\n", logic->getSortName(logic->getSortRef(tr)), logic->getSortName(ret_sort));
+                    delete templ;
                     return false;
                 }
                 if (defineFun(fname, tr)) notify_success();
                 else {
                     notify_formatted(true, "define-fun failed");
+                    delete templ;
                     return false;
                 }
+
+                templ->setBody(tr);
+                logic->addFunction(templ);
             }
             else {
                 notify_formatted(true, "Illegal command before set-logic: define-fun");
@@ -361,6 +419,9 @@ declare_fun_err: ;
         }
         case t_simplify:
         {
+            if(parse_only)
+                break;
+
             char* msg;
             sstat status = main_solver->simplifyFormulas(&msg);
             if (status == s_Error)
@@ -369,30 +430,35 @@ declare_fun_err: ;
         }
         case t_checksat:
         {
-            checkSat();
+            if(!parse_only)
+                checkSat();
             break;
         }
         case t_getinterpolants:
         {
+            if(!parse_only)
 #ifdef PRODUCE_PROOF
-            GetInterpolants();
+                GetInterpolants();
 #else
-            notify_formatted(true, "This binary has no support to interpolation");
+                notify_formatted(true, "This binary has no support to interpolation");
 #endif
             break;
         }
         case t_getassignment:
         {
-            getAssignment();
+            if(!parse_only)
+                getAssignment();
             break;
         }
         case t_getvalue:
         {
-            getValue(n.children);
+            if(!parse_only)
+                getValue(n.children);
             break;
         }
         case t_writestate:
         {
+            if(parse_only) break;
             if (main_solver->solverEmpty()) {
                 char* msg;
                 sstat status = main_solver->simplifyFormulas(&msg);
@@ -404,6 +470,7 @@ declare_fun_err: ;
         }
         case t_readstate:
         {
+            if(parse_only) break;
             if (logic != NULL) {
                 const char* filename = (**(n.children->begin())).getValue();
                 CnfState cs;
@@ -420,16 +487,19 @@ declare_fun_err: ;
         }
         case t_push:
         {
-            return push();
+            if(!parse_only)
+                return push();
             break;
         }
         case t_pop:
         {
-            return pop();
+            if(!parse_only)
+                return pop();
             break;
         }
         case t_exit:
         {
+            if(parse_only) break;
             exit();
             notify_success();
             return false;
@@ -1170,7 +1240,7 @@ void Interpret::GetInterpolants()
     //just test with assertions for now:
     vec<PTRef>& partitions = logic->getAssertions();
 
-    if(!logic->isInterpolating())
+    if(!logic->canInterpolate())
         opensmt_error("Cannot interpolate");
 
     //int rseed = 1466156790;

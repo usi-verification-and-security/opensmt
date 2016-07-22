@@ -197,6 +197,7 @@ struct SMTConfig
   // The options here should be private
 public:
   static const char* o_incremental;
+  static const char* o_verbosity;
   static const char* o_produce_stats;
   static const char* o_stats_out;
   static const char* o_random_seed;
@@ -382,7 +383,7 @@ public:
 //  int          incremental;                  // Incremental solving
   int           isIncremental() const
      { return optionTable.has(o_incremental) ?
-        optionTable[o_incremental]->getValue().numval == 1: false; }
+        optionTable[o_incremental]->getValue().numval == 1: true; }
   int produce_models() const {
       return optionTable.has(o_produce_models) ?
               optionTable[o_produce_models]->getValue().numval :
@@ -623,14 +624,14 @@ public:
   int          dump_formula;                 // Dump input formula
   int          verbosity() const             // Verbosity level
 #ifdef PEDANTIC_DEBUG
-    { return optionTable.has(":verbosity") ?
-        optionTable[":verbosity"]->getValue().numval : 2; }
+    { return optionTable.has(o_verbosity) ?
+        optionTable[o_verbosity]->getValue().numval : 2; }
 #elif GC_DEBUG
-    { return optionTable.has(":verbosity") ?
-        optionTable[":verbosity"]->getValue().numval : 2; }
+    { return optionTable.has(o_verbosity) ?
+        optionTable[o_verbosity]->getValue().numval : 2; }
 #else
-    { return optionTable.has(":verbosity") ?
-        optionTable[":verbosity"]->getValue().numval : 2; }
+    { return optionTable.has(o_verbosity) ?
+        optionTable[o_verbosity]->getValue().numval : 2; }
 #endif
   int          printSuccess() const
      { return optionTable.has(":print-success") ?

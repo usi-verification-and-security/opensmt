@@ -27,6 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "MainSolver.h"
 #include "TreeOps.h"
 #include "DimacsParser.h"
+#include "Interpret.h"
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -212,24 +213,20 @@ MainSolver::insertFormula(PTRef root, char** msg)
     return s_Undef;
 }
 
-sstat MainSolver::simplifyFormulas(char** err_msg) {
+sstat MainSolver::simplifyFormulas(char** err_msg)
+{
     if (binary_init)
         return s_Undef;
 
     status = s_Undef;
-    // Think of something here to enable incrementality...
-    if (!ts.solverEmpty()) {
-        asprintf(err_msg, "Solver already contains a simplified problem.  Cannot continue for now");
-        return s_Error;
-    }
 
     vec<PTRef> coll_f;
     for (int i = simplified_until; i < formulas.size(); i++) {
         bool res = getTheory().simplify(formulas, i);
         simplified_until = i+1;
         PTRef root = formulas[i].root;
-        if (logic.isTrue(root)) return status = s_True;
-        else if (logic.isFalse(root)) return status = s_False;
+        //if (logic.isTrue(root)) return status = s_True;
+        /*else */if (logic.isFalse(root)) return status = s_False;
 
         FContainer fc(root);
 
@@ -247,8 +244,11 @@ sstat MainSolver::simplifyFormulas(char** err_msg) {
 #endif
         }
 
-        root_instance = fc;
-        status = giveToSolver(fc.getRoot(), formulas[i].getId());
+        // root_instance is updated to the and of the simplified formulas currently in the solver
+        root_instance.setRoot(logic.mkAnd(root_instance.getRoot(), fc.getRoot()));
+        // Stop if problem becomes unsatisfiable
+        if ((status = giveToSolver(fc.getRoot(), formulas[i].getId())) == s_False)
+            break;
     }
     return status;
 }
@@ -362,18 +362,21 @@ PTRef MainSolver::rewriteMaxArity(PTRef root, Map<PTRef,int,PTRefHash>& PTRefToI
         assert(!cache.has(tr));
         cache.insert(tr, result);
 #ifdef PRODUCE_PROOF
-        if(logic.isInterpolating())
+        if(logic.canInterpolate())
         {
-            if(logic.isAssertion(tr))
+            if(logic.isAssertion(tr) || logic.isAssertionSimp(tr))
             {
+                PTRef root_tmp = tr;
+                while(logic.hasOriginalAssertion(root_tmp))
+                    root_tmp = logic.getOriginalAssertion(root_tmp);
                 if(logic.isAnd(result))
                 {
                     Pterm& ptm = logic.getPterm(result);
                     for(int i = 0; i < ptm.size(); ++i)
-                        logic.setOriginalAssertion(ptm[i], tr);
+                        logic.setOriginalAssertion(ptm[i], root_tmp);
                 }
                 //else //should the entire conjunction also be set? TODO
-                logic.setOriginalAssertion(result, tr);
+                //logic.setOriginalAssertion(result, tr);
             }
         }
 #endif
@@ -1247,3 +1250,15 @@ void MainSolver::solve_split(int i, int s, int wpipefd, std::mutex *mtx)
     ::write(wpipefd, buf, 3);
     mtx->unlock();
 }
+
+void
+MainSolver::readFormulaFromFile(const char *file)
+{
+    FILE *f;
+    if((f = fopen(file, "rt")) == NULL)
+        opensmt_error("can't open file");
+    Interpret interp(config, &logic, &getTheory(), &thandler, smt_solver, this);
+    interp.parse_only = true;
+    interp.interpFile(f);
+}
+

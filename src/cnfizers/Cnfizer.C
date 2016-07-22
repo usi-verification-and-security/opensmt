@@ -229,7 +229,7 @@ lbool Cnfizer::cnfizeAndGiveToSolver (PTRef formula, int frame_id)
 
 #ifdef PRODUCE_PROOF
         ipartitions_t mask = 0;
-        if (logic.isInterpolating())
+        if (logic.canInterpolate())
         {
             // Create mask to spread among all literals created for this PTRef
             if (logic.isAssertion (f)) //if f is an assertion, one bit is set
@@ -246,7 +246,9 @@ lbool Cnfizer::cnfizeAndGiveToSolver (PTRef formula, int frame_id)
             */
             else //f may have been flattened etc
             {
-                mask = logic.getIPartitions (logic.getOriginalAssertion (f));
+                PTRef root_tmp = logic.getOriginalAssertion(f);
+                assert(!logic.hasOriginalAssertion(root_tmp));
+                mask = logic.getIPartitions(root_tmp);
                 logic.setIPartitions (f, 0);
                 logic.addIPartitions (f, mask);
             }
