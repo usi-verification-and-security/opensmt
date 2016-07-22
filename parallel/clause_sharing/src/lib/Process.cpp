@@ -3,6 +3,8 @@
 //
 
 #include "Process.h"
+#include <csignal>
+#include <unistd.h>
 
 
 Process::Process() :
@@ -14,18 +16,18 @@ Process::~Process() {
 }
 
 void Process::start() {
-    this->process = fork();
+    this->process = ::fork();
     if (this->process < 0)
         throw ProcessException("fork error");
     if (this->process == 0) {
-        this->piper.writer().close();
-        this->pipew.reader().close();
+        this->piper.writer()->close();
+        this->pipew.reader()->close();
         this->main();
         exit(0);
     }
     else {
-        this->piper.reader().close();
-        this->pipew.writer().close();
+        this->piper.reader()->close();
+        this->pipew.writer()->close();
     }
 }
 
@@ -47,10 +49,10 @@ bool Process::joinable() {
     return this->process > 0;
 }
 
-Frame &Process::reader() {
+Socket *Process::reader() {
     return (this->process == 0) ? this->piper.reader() : this->pipew.reader();
 }
 
-Frame &Process::writer() {
+Socket *Process::writer() {
     return (this->process == 0) ? this->pipew.writer() : this->piper.writer();
 }

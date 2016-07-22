@@ -227,7 +227,7 @@ int CoreSMTSolver::checkTheory( bool complete )
         if ( config.isIncremental() )
         {
             // Not yet integrated
-            assert(false);
+            //assert(false);
             undo_stack.push(undo_stack_el(undo_stack_el::NEWPROOF, confl));
         }
         if ( config.produce_inter() > 0 )

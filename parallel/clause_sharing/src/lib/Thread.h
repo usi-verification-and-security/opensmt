@@ -8,10 +8,9 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
-#include <csignal>
 #include <iostream>
 #include "Exception.h"
-#include "Frame.h"
+#include "Net.h"
 
 
 #ifdef __APPLE__
@@ -50,8 +49,8 @@ int pthread_barrierattr_getpshared(const pthread_barrierattr_t *attr,
 int pthread_barrierattr_setpshared(pthread_barrierattr_t *attr,
                                    int pshared);
 
-int pthread_barrier_init(pthread_barrier_t * barrier,
-                         const pthread_barrierattr_t * attr,
+int pthread_barrier_init(pthread_barrier_t *barrier,
+                         const pthread_barrierattr_t *attr,
                          unsigned int count);
 int pthread_barrier_destroy(pthread_barrier_t *barrier);
 
@@ -63,20 +62,9 @@ int pthread_barrier_wait(pthread_barrier_t *barrier);
 
 #endif /* __APPLE__ */
 
-//class ThreadException : public Exception {
-//public:
-//    explicit ThreadException(const char *message) : Exception(message) { }
-//
-//    explicit ThreadException(const std::string &message) : Exception(message) { }
-//};
-
 
 class Thread {
 private:
-    static pthread_t main_thread;
-
-    static pthread_t init();
-
     std::thread *thread;
     pthread_barrier_t barrier;
     Pipe piper;
@@ -91,11 +79,6 @@ protected:
 
     void start();
 
-    class StopException : public std::exception {
-    public:
-        char const *what() const throw() { return "Thread is requested to stop."; }
-    };
-
 public:
     Thread();
 
@@ -107,9 +90,9 @@ public:
 
     inline bool joinable();
 
-    Frame &reader();
+    Socket *reader();
 
-    Frame &writer();
+    Socket *writer();
 
 };
 
