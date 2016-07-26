@@ -22,10 +22,11 @@ FileThread::~FileThread() {
 }
 
 void FileThread::main() {
-    for (auto filename = this->settings.files.begin(); filename != this->settings.files.end(); ++filename) {
-        std::ifstream file(*filename);
+    uint32_t n = 0;
+    for (auto filename : this->settings.files) {
+        std::ifstream file(filename);
         if (!file.is_open()) {
-            Log::log(Log::WARNING, "unable to open: " + *filename);
+            Log::log(Log::WARNING, "unable to open: " + filename);
             continue;
         }
 
@@ -38,8 +39,8 @@ void FileThread::main() {
 
         std::map<std::string, std::string> header;
         header["command"] = "solve";
-        header["name"] = *filename;
-        header["hash"] = std::to_string(filename - this->settings.files.begin());
+        header["name"] = filename;
+        header["hash"] = std::to_string(n++);
         this->client->write(header, content);
         this->client->read(header, content);
         header["command"] = "stop";

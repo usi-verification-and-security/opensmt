@@ -32,7 +32,7 @@ void SolverServer::handle_close(Socket &socket) {
 }
 
 void SolverServer::handle_exception(Socket &socket, SocketException &exception) {
-    this->log(Log::WARNING, "exception");
+    this->log(Log::WARNING, exception.what());
 }
 
 void SolverServer::stop_solver() {
@@ -57,11 +57,13 @@ void SolverServer::handle_message(Socket &socket, std::map<std::string, std::str
             if (this->solver && this->check_header(header))
                 return;
             this->stop_solver();
+            for (auto it : this->settings.header_solve)
+                header[it.first] = it.second;
             this->solver = new SolverProcess(this->settings, header, payload);
             this->log(Log::INFO, this->solver->toString() + " started");
             this->add_socket(this->solver->reader());
         }
-        if (header["command"] == "stop" && this->solver) {
+        else if (header["command"] == "stop" && this->solver) {
             if (this->check_header(header))
                 this->stop_solver();
         }

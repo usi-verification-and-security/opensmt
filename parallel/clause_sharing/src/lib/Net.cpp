@@ -124,7 +124,10 @@ uint32_t Socket::read(std::map<std::string, std::string> &header, std::string &p
     char buffer[4];
     if (this->readn(buffer, 4) != 4)
         return 0;
-    length = (uint32_t) buffer[0] << 24 | (uint32_t) buffer[1] << 16 | (uint32_t) buffer[2] << 8 | (uint32_t) buffer[3];
+    length = (uint32_t) ((uint8_t) buffer[0]) << 24 |
+             (uint32_t) ((uint8_t) buffer[1]) << 16 |
+             (uint32_t) ((uint8_t) buffer[2]) << 8 |
+             (uint32_t) ((uint8_t) buffer[3]);
     char *message = (char *) malloc(length);
     if (message == NULL)
         throw SocketException("can't malloc");
@@ -162,8 +165,8 @@ uint32_t Socket::write(std::map<std::string, std::string> &header, std::string &
     if (header.count(""))
         throw SocketException("empty key is not allowed");
     std::string message;
-    for (auto pair = header.begin(); pair != header.end(); ++pair) {
-        std::string keyval[2] = {pair->first, pair->second};
+    for (auto pair : header) {
+        std::string keyval[2] = {pair.first, pair.second};
         for (uint8_t i = 0; i < 2; i++) {
             if (keyval[i].length() > (uint8_t) -1)
                 throw SocketException("header key or value is too big");
@@ -275,44 +278,38 @@ void Server::run_forever() {
         do {
             FD_ZERO(&readset);
             int max = 0;
-            for (auto socket = this->sockets.begin(); socket != this->sockets.end(); ++socket) {
-                max = max < (*socket)->get_fd() ? (*socket)->get_fd() : max;
-                FD_SET((*socket)->get_fd(), &readset);
+            for (auto socket : this->sockets) {
+                max = max < socket->get_fd() ? socket->get_fd() : max;
+                FD_SET(socket->get_fd(), &readset);
             }
             if (max == 0)
                 return;
             result = select(max + 1, &readset, NULL, NULL, NULL);
         } while (result == -1 && errno == EINTR);
 
-        bool x = true;
-        while (x) {
-            std::cout << "NETTERE A POSTO NET.C:289\n";
-            for (auto socket = this->sockets.begin(); socket != this->sockets.end(); ++socket) {
-                if (FD_ISSET((*socket)->get_fd(), &readset)) {
-                    FD_CLR((*socket)->get_fd(), &readset);
-                    result--;
-                    if (this->socket && (*socket)->get_fd() == this->socket->get_fd()) {
-                        client = this->socket->accept();
-                        this->sockets.push_back(client);
-                        this->handle_accept(*client);
+        for (auto socket = this->sockets.begin(); socket != this->sockets.end();) {
+            if (FD_ISSET((*socket)->get_fd(), &readset)) {
+                FD_CLR((*socket)->get_fd(), &readset);
+                if (this->socket && (*socket)->get_fd() == this->socket->get_fd()) {
+                    client = this->socket->accept();
+                    this->sockets.push_back(client);
+                    this->handle_accept(*client);
+                }
+                else {
+                    try {
+                        (*socket)->read(header, payload);
+                        this->handle_message(**socket, header, payload);
                     }
-                    else {
-                        try {
-                            (*socket)->read(header, payload);
-                            this->handle_message(**socket, header, payload);
-                        }
-                        catch (SocketClosedException ex) {
-                            this->handle_close(**socket);
-                            this->sockets.erase(socket);
-                        }
-                        catch (SocketException ex) {
-                            this->handle_exception(**socket, ex);
-                        }
+                    catch (SocketClosedException ex) {
+                        this->handle_close(**socket);
+                        socket = this->sockets.erase(socket);
                     }
-                    break;
+                    catch (SocketException ex) {
+                        this->handle_exception(**socket, ex);
+                    }
                 }
             }
-            x = false;
+            ++socket;
         }
 //        if (result < 0) {
 //        }

@@ -10,7 +10,7 @@
 
 
 int main(int argc, char **argv) {
-    Settings settings = Settings();
+    Settings settings;
     try {
         settings.load(argc, argv);
     }
@@ -24,12 +24,11 @@ int main(int argc, char **argv) {
     }
 
     if (settings.server != NULL) {
-        SolverServer ss = SolverServer(settings, *settings.server);
+        SolverServer ss(settings, *settings.server);
         ss.run_forever();
     }
 
     delete ft;
 
     Log::log(Log::INFO, "all done. bye!");
-
 }

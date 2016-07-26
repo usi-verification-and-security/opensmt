@@ -6,6 +6,7 @@
 #define CLAUSE_SERVER_OPENSMTSOLVER_H
 
 #include "SimpSMTSolver.h"
+#include "Interpret.h"
 #include "client/Settings.h"
 
 
@@ -14,19 +15,34 @@ namespace opensmt {
 }
 
 
+class OpenSMTInterpret : public Interpret {
+private:
+    std::map<std::string, std::string> &header;
+    Socket *clause_socket;
+protected:
+    void new_solver();
+
+public:
+    OpenSMTInterpret(std::map<std::string, std::string> &header, Socket *clause_socket, SMTConfig &c) :
+            Interpret(c),
+            header(header),
+            clause_socket(clause_socket) { }
+
+};
+
 class OpenSMTSolver : public SimpSMTSolver {
 private:
-    void inline clausesPublish() { }
+    std::map<std::string, std::string> &header;
+    Socket *clause_socket;
 
-    void inline clausesUpdate() { }
+    void inline clausesPublish();
 
-    std::string name;
-    std::string hash;
+    void inline clausesUpdate();
+
 public:
-    OpenSMTSolver(Settings &, std::string, std::string, SMTConfig &, THandler &);
+    OpenSMTSolver(std::map<std::string, std::string> &, Socket *, SMTConfig &, THandler &);
 
     ~OpenSMTSolver();
-
 };
 
 

@@ -5,10 +5,20 @@
 #include "OpenSMTSolver.h"
 
 
-OpenSMTSolver::OpenSMTSolver(Settings &s, std::string name, std::string hash, SMTConfig &c, THandler &t) :
+void OpenSMTInterpret::new_solver() {
+    this->solver = new OpenSMTSolver(this->header, this->clause_socket, this->config, *this->thandler);
+}
+
+
+OpenSMTSolver::OpenSMTSolver(
+        std::map<std::string, std::string> &header,
+        Socket *clause_socket,
+        SMTConfig &c,
+        THandler &t
+) :
         SimpSMTSolver(c, t),
-        name(name),
-        hash(hash) { }
+        header(header),
+        clause_socket(clause_socket) { }
 
 OpenSMTSolver::~OpenSMTSolver() { }
 
@@ -144,4 +154,14 @@ OpenSMTSolver::~OpenSMTSolver() { }
 //    freeReplyObject(reply);
 //}
 //
-//
+//OpenSMTSolver::OpenSMTSolver(std::map<std::string, std::string>& header, SMTConfig & config, THandler & handler){
+void inline OpenSMTSolver::clausesPublish() {
+    std::map<std::string, std::string> header;
+    std::string payload = "ciao";
+
+    this->clause_socket->write(header, payload);
+}
+
+void inline OpenSMTSolver::clausesUpdate() {
+    //std::cout << "b";
+}

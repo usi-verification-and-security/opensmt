@@ -7,7 +7,7 @@
 
 #include <iostream>
 #include <map>
-#include <vector>
+#include <list>
 #include "Exception.h"
 
 
@@ -96,7 +96,7 @@ public:
 class Server {
 private:
     Socket *socket;
-    std::vector<Socket *> sockets;
+    std::list<Socket *> sockets;
     bool close;
 
 
