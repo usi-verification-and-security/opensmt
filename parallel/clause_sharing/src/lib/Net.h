@@ -7,12 +7,7 @@
 
 #include <iostream>
 #include <map>
-#include <vector>
-#include <unistd.h>
-#include <string.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <netdb.h>
+#include <list>
 #include "Exception.h"
 
 
@@ -32,6 +27,8 @@ public:
 
 class Address {
 public:
+    Address(std::string);
+
     Address(std::string, uint16_t);
 
     Address(struct sockaddr_storage *);
@@ -54,7 +51,7 @@ private:
 public:
     Socket(int);
 
-    Socket(Address &);
+    Socket(Address);
 
     Socket(uint16_t);
 
@@ -79,13 +76,15 @@ public:
 
 class Pipe {
 private:
-    Socket r;
-    Socket w;
+    Socket *r;
+    Socket *w;
 
     Pipe(int, int);
 
 public:
-    static Pipe New();
+    Pipe();
+
+    ~Pipe();
 
     Socket *reader();
 
@@ -97,12 +96,15 @@ public:
 class Server {
 private:
     Socket *socket;
-    std::vector<Socket *> sockets;
+    std::list<Socket *> sockets;
     bool close;
+
 
     Server(Socket *, bool);
 
 public:
+    Server();
+
     Server(Socket &);
 
     Server(uint16_t);
@@ -111,7 +113,9 @@ public:
 
     void run_forever();
 
-    void add_socket(Socket &);
+    void add_socket(Socket *);
+
+    void del_socket(Socket *);
 
 protected:
     virtual void handle_accept(Socket &) { }

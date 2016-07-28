@@ -8,7 +8,6 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
-#include <csignal>
 #include <iostream>
 #include "Exception.h"
 #include "Net.h"
@@ -63,13 +62,6 @@ int pthread_barrier_wait(pthread_barrier_t *barrier);
 
 #endif /* __APPLE__ */
 
-//class ThreadException : public Exception {
-//public:
-//    explicit ThreadException(const char *message) : Exception(message) { }
-//
-//    explicit ThreadException(const std::string &message) : Exception(message) { }
-//};
-
 
 class Thread {
 private:
@@ -84,8 +76,6 @@ private:
 
 protected:
     virtual void main() = 0;
-
-    //virtual void clean() { };
 
     void start();
 

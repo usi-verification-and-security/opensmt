@@ -63,7 +63,7 @@ class LetFrame {
 
 
 class Interpret {
-  private:
+  protected:
     SMTConfig      &config;
     Theory         *theory;
     THandler       *thandler;
@@ -117,6 +117,11 @@ class Interpret {
     vec<PTRef>                  vec_ptr_empty;
 
     vec<PTRef> assertions;
+
+    virtual void new_solver() {
+        this->solver = new SimpSMTSolver(this->config, *this->thandler);
+    }
+
   public:
     Interpret(SMTConfig& c)
         : logic   (NULL)
@@ -157,6 +162,7 @@ class Interpret {
     }
 
     int interpFile(FILE* in);
+    int interpFile(char *content);
     int interpInteractive(FILE* in);
     int interpPipe();
 

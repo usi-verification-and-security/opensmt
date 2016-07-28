@@ -3,10 +3,12 @@
 //
 
 #include "Process.h"
+#include <csignal>
+#include <unistd.h>
 
 
 Process::Process() :
-        process(0), piper(Pipe::New()), pipew(Pipe::New()) { }
+        process(-1), piper(Pipe()), pipew(Pipe()) { }
 
 Process::~Process() {
     this->stop();
@@ -14,7 +16,7 @@ Process::~Process() {
 }
 
 void Process::start() {
-    this->process = fork();
+    this->process = ::fork();
     if (this->process < 0)
         throw ProcessException("fork error");
     if (this->process == 0) {
@@ -39,7 +41,7 @@ void Process::stop() {
 void Process::join() {
     if (this->joinable()) {
         waitpid(this->process, NULL, 0);
-        this->process = 0;
+        this->process = -1;
     }
 }
 

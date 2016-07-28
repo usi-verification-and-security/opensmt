@@ -2,7 +2,8 @@
 // Created by Matteo on 19/07/16.
 //
 
-#include "main.h"
+#include "ServerThread.h"
+#include "lib/Log.h"
 
 ServerThread::ServerThread(Settings &settings) :
         Thread(), settings(settings), server(NULL) {

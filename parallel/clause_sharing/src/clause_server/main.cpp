@@ -2,21 +2,20 @@
 
 
 int main(int argc, char **argv) {
+    Settings settings = Settings();
     try {
-        Settings::Default.load(argc, argv);
+        settings.load(argc, argv);
     }
     catch (Exception ex) {
         std::cerr << ex.what() << "\n";
     }
 
     ServerThread *st = NULL;
-
-    if (Settings::Default.server.port > 0) {
-        st = new ServerThread(Settings::Default);
+    if (settings.server.port > 0) {
+        st = new ServerThread(settings);
     }
 
-    HeuriscticServer server(Settings::Default.port);
-
+    ClauseServer server(settings.port);
     server.run_forever();
 
     delete (st);
