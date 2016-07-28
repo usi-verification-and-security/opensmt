@@ -1251,14 +1251,18 @@ void MainSolver::solve_split(int i, int s, int wpipefd, std::mutex *mtx)
     mtx->unlock();
 }
 
-void
+bool
 MainSolver::readFormulaFromFile(const char *file)
 {
     FILE *f;
     if((f = fopen(file, "rt")) == NULL)
-        opensmt_error("can't open file");
+    {
+        //opensmt_error("can't open file");
+        return false;
+    }
     Interpret interp(config, &logic, &getTheory(), &thandler, smt_solver, this);
     interp.parse_only = true;
     interp.interpFile(f);
+    return true;
 }
 
