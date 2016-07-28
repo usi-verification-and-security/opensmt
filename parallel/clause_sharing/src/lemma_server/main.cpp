@@ -1,4 +1,7 @@
-#include "main.h"
+#include <iostream>
+#include "Settings.h"
+#include "LemmaServer.h"
+#include "ServerThread.h"
 
 
 int main(int argc, char **argv) {
@@ -15,7 +18,7 @@ int main(int argc, char **argv) {
         st = new ServerThread(settings);
     }
 
-    ClauseServer server(settings.port);
+    LemmaServer server(settings.port);
     server.run_forever();
 
     delete (st);

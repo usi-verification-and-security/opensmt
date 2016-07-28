@@ -32,8 +32,11 @@ public:
 
 class OpenSMTSolver : public SimpSMTSolver {
 private:
+    static constexpr char clause_separator = '\n';
+    static constexpr uint32_t clause_request = 100;
     std::map<std::string, std::string> &header;
     Socket *clause_socket;
+    uint32_t trail_sent;
 
     void inline clausesPublish();
 

@@ -8,11 +8,12 @@
 
 
 Settings::Settings() :
-        server(NULL), clause_thread(NULL) { }
+        server(NULL),
+        clauses(NULL) { }
 
 Settings::~Settings() {
     delete this->server;
-    delete this->clause_thread;
+    delete this->clauses;
 }
 
 void Settings::load_header(std::map<std::string, std::string> &header, char *string) {
@@ -31,13 +32,17 @@ void Settings::load(int argc, char **argv) {
     while ((opt = getopt(argc, argv, "hs:c:r:")) != -1)
         switch (opt) {
             case 'h':
-                std::cout << "Usage: " << argv[0] << " [-R] [-s server-host:port][-c clause_server-host:port]\n";
+                std::cout << "Usage: " << argv[0] <<
+                " [-s server-host:port]"
+                        "[-c clause_server-host:port]"
+                        "[-r run-header-key=value [...]]"
+                        "\n";
                 exit(0);
             case 's':
                 this->server = new Socket(std::string(optarg));
                 break;
             case 'c':
-                this->clause_thread = new ClauseThread(Address(std::string(optarg)));
+                this->clauses = new Socket(std::string(optarg));
                 break;
             case 'r':
                 this->load_header(this->header_solve, optarg);

@@ -18,13 +18,18 @@ SolverProcess::SolverProcess(Settings &settings, std::map<std::string, std::stri
         settings(settings),
         header(header),
         instance(instance) {
+    if (this->header.count("seed") == 0) {
+        std::uniform_int_distribution<uint32_t> randuint(0, 0xFFFFFF);
+        std::random_device rd;
+        this->header["seed"] = std::to_string(randuint(rd));
+    }
     this->start();
 }
 
 std::string SolverProcess::toString() {
     auto header = this->get_header();
-    return "SolverProcess<" + std::string(SolverProcess::solver) + "> on " + header["name"] + "[" + header["hash"] +
-           "]";
+    return "SolverProcess<" + std::string(SolverProcess::solver) + ":" + this->header["seed"] + ">" +
+           " on " + header["name"] + "[" + header["hash"] + "]";
 }
 
 void SolverProcess::main() {
@@ -46,16 +51,9 @@ void SolverProcess::main() {
     }
 
     SMTConfig config;
+    config.setRandomSeed(atoi(this->header["seed"].c_str()));
 
-    if (this->header.count("seed") == 0) {
-        std::uniform_int_distribution<uint32_t> randuint(0, 0xFFFFFF);
-        std::random_device rd;
-        config.setRandomSeed(randuint(rd));
-    }
-    else
-        config.setRandomSeed(atoi(this->header["seed"].c_str()));
-
-    OpenSMTInterpret interpret(this->header, this->settings.get_clause_agent(), config);
+    OpenSMTInterpret interpret(this->header, this->settings.clauses, config);
 
     interpret.interpFile((char *) this->instance.c_str());
 

@@ -15,7 +15,8 @@ int main(int argc, char **argv) {
         settings.load(argc, argv);
     }
     catch (Exception ex) {
-        std::cerr << "Invalid argument: " << ex.what() << "\n";
+        std::cerr << "argument parsing error: " << ex.what() << "\n";
+        exit(1);
     }
 
     FileThread *ft = NULL;

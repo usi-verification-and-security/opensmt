@@ -1897,21 +1897,6 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
         }
         if (conflicts % 1000 == 0){
             this->clausesPublish();
-//            for (int i = 0; i < this->learnts.size(); i++) {
-//                Clause &c = this->ca[this->learnts[i]];
-//                if (c.size()>3)
-//                    continue;
-//                int siz=0;
-//                for (int j = 0; j < c.size(); j++) {
-//                    PTRef pt = this->theory_handler.varToTerm(var(c[j]));
-//                    char *s = this->theory_handler.getLogic().printTerm(pt,false, true);
-//                    printf("%s OR ",s);
-//                    siz+=strlen(s);
-//                    free(s);
-//                }
-//                //printf("%d",siz);
-//                printf("\n");
-//            }
         }
 
         if (resource_limit >= 0 && conflicts % 1000 == 0) {
