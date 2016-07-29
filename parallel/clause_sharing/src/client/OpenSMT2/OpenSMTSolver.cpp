@@ -159,6 +159,7 @@ OpenSMTSolver::~OpenSMTSolver() { }
 void inline OpenSMTSolver::clausesPublish() {
     if (this->clause_socket == NULL)
         return;
+
     std::map<std::string, std::string> header;
     std::string payload;
 
@@ -170,7 +171,7 @@ void inline OpenSMTSolver::clausesPublish() {
         PTRef pt = this->theory_handler.varToTerm(var(this->trail[i]));
         char *s = this->theory_handler.getLogic().printTerm(pt, false, true);
         payload += s;
-        payload += this->clause_separator;
+        payload += "\n";
         free(s);
     }
     if (n == 0)
@@ -178,7 +179,7 @@ void inline OpenSMTSolver::clausesPublish() {
 
     //header["name"] = this->header["name"];
     header["hash"] = this->header["hash"];
-    header["separator"] = this->clause_separator;
+    header["separator"] = "\n";
     header["lemmas"] = std::to_string(n);
 
     this->clause_socket->write(header, payload);
@@ -187,13 +188,15 @@ void inline OpenSMTSolver::clausesPublish() {
 void inline OpenSMTSolver::clausesUpdate() {
     if (this->clause_socket == NULL)
         return;
+
     std::map<std::string, std::string> header;
     std::string payload;
 
     header["lemmas"] =
             //this->header.count("lemmas") == 1 ? this->header["lemmas"] :
-            std::to_string(this->clause_request);
+            std::to_string(1000);
     header["hash"] = this->header["hash"];
+    header["exclude"] = this->clause_socket->get_local().toString();
 
     Socket clauses(this->clause_socket->get_remote().toString());
     clauses.write(header, payload);

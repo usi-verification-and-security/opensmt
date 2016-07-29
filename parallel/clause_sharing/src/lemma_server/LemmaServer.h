@@ -6,14 +6,14 @@
 #define CLAUSE_SHARING_CLAUSESERVER_H
 
 #include <map>
-#include <vector>
 #include "lib/Net.h"
-#include "SMTLiteral.h"
+#include "SMTLemma.h"
 
 
 class LemmaServer : public Server {
 private:
-    std::map<std::string, std::vector<SMTLiteral>> lemmas;
+    std::map<std::string, std::list<SMTLemma>> lemmas;                            // hash -> lemmas
+    std::map<std::string, std::map<std::string, std::list<SMTLemma *>>> solvers;  //hash -> solver -> lemmas
 
 protected:
     void handle_accept(Socket &);

@@ -24,9 +24,11 @@ public:
                 record += "INFO\t";
                 break;
             case WARNING:
+                system("tput setaf 3");
                 record += "WARNING\t";
                 break;
             case ERROR:
+                system("tput setaf 9");
                 record += "ERROR\t";
                 break;
             default:
@@ -34,7 +36,8 @@ public:
         }
         record += message;
         mtx.lock();
-        std::cerr << record << "\n";
+        std::cout << record << "\n";
+        system("tput sgr0");
         mtx.unlock();
     }
 

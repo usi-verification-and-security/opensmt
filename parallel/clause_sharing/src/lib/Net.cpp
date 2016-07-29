@@ -291,7 +291,12 @@ void Server::run_forever() {
             if (FD_ISSET((*socket)->get_fd(), &readset)) {
                 FD_CLR((*socket)->get_fd(), &readset);
                 if (this->socket && (*socket)->get_fd() == this->socket->get_fd()) {
-                    client = this->socket->accept();
+                    try {
+                        client = this->socket->accept();
+                    }
+                    catch (SocketException ex) {
+                        goto next;
+                    }
                     this->sockets.push_back(client);
                     this->handle_accept(*client);
                 }
@@ -302,6 +307,7 @@ void Server::run_forever() {
                     }
                     catch (SocketClosedException ex) {
                         this->handle_close(**socket);
+                        (*socket)->close();
                         socket = this->sockets.erase(socket);
                     }
                     catch (SocketException ex) {
@@ -309,6 +315,7 @@ void Server::run_forever() {
                     }
                 }
             }
+            next:
             ++socket;
         }
 //        if (result < 0) {
