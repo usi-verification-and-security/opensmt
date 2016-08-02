@@ -193,8 +193,7 @@ void inline OpenSMTSolver::clausesUpdate() {
     std::string payload;
 
     header["lemmas"] =
-            //this->header.count("lemmas") == 1 ? this->header["lemmas"] :
-            std::to_string(1000);
+            this->header.count("lemmas") == 1 ? this->header["lemmas"] : std::to_string(1000);
     header["hash"] = this->header["hash"];
     header["exclude"] = this->clause_socket->get_local().toString();
 
