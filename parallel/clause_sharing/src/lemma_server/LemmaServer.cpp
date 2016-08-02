@@ -2,6 +2,7 @@
 // Created by Matteo Marescotti on 02/12/15.
 //
 
+#include <algorithm>
 #include "LemmaServer.h"
 #include "lib/Log.h"
 
@@ -38,7 +39,7 @@ void LemmaServer::handle_message(Socket &client,
         uint32_t s = 0;
         uint32_t e = 0;
         while (true) {
-            while (payload[e] != header["separator"][0] && e < payload.size() && e != -1) { e++; }
+            while (payload[e] != header["separator"][0] && e < payload.size() && e != (uint32_t) -1) { e++; }
             if (s == e)
                 break;
             SMTLemma lemma(payload.substr(s, e - s));

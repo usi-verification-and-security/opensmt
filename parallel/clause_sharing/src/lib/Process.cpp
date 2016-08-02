@@ -5,6 +5,7 @@
 #include "Process.h"
 #include <csignal>
 #include <unistd.h>
+#include <sys/wait.h>
 
 
 Process::Process() :
@@ -40,7 +41,7 @@ void Process::stop() {
 
 void Process::join() {
     if (this->joinable()) {
-        waitpid(this->process, NULL, 0);
+        ::waitpid(this->process, NULL, 0);
         this->process = -1;
     }
 }
