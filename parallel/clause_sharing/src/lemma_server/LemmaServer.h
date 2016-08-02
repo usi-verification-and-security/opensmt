@@ -5,12 +5,15 @@
 #ifndef CLAUSE_SHARING_CLAUSESERVER_H
 #define CLAUSE_SHARING_CLAUSESERVER_H
 
+#include <map>
 #include "lib/Net.h"
+#include "SMTLemma.h"
 
 
-class ClauseServer : public Server {
-public:
-    ClauseServer(uint16_t port) : Server(port) { }
+class LemmaServer : public Server {
+private:
+    std::map<std::string, std::list<SMTLemma>> lemmas;                            // hash -> lemmas
+    std::map<std::string, std::map<std::string, std::list<SMTLemma *>>> solvers;  //hash -> solver -> lemmas
 
 protected:
     void handle_accept(Socket &);
@@ -20,6 +23,10 @@ protected:
     void handle_message(Socket &, std::map<std::string, std::string> &, std::string &);
 
     void handle_exception(Socket &, SocketException &);
+
+public:
+
+    LemmaServer(uint16_t port) : Server(port) { };
 };
 
 #endif //CLAUSE_SHARING_CLAUSESERVER_H

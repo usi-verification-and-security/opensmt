@@ -8,8 +8,17 @@
 #include <unistd.h>
 
 
+Address::Address(std::string address) {
+    uint8_t i;
+    for (i = 0; address[i] != ':' && i < address.size() && i < (uint8_t) -1; i++) { }
+    if (address[i] != ':')
+        throw Exception("invalid host:port");
+    new(this) Address(address.substr(0, i), (uint16_t) ::atoi(address.substr(i + 1).c_str()));
+}
+
 Address::Address(std::string hostname, uint16_t port) :
-        hostname(hostname), port(port) { }
+        hostname(hostname),
+        port(port) { }
 
 Address::Address(struct sockaddr_storage *address) {
     char ipstr[INET6_ADDRSTRLEN];
@@ -18,18 +27,18 @@ Address::Address(struct sockaddr_storage *address) {
     if (address->ss_family == AF_INET) {
         struct sockaddr_in *s = (struct sockaddr_in *) address;
         port = ntohs(s->sin_port);
-        inet_ntop(AF_INET, &s->sin_addr, ipstr, sizeof ipstr);
+        ::inet_ntop(AF_INET, &s->sin_addr, ipstr, sizeof ipstr);
     } else { // AF_INET6
         struct sockaddr_in6 *s = (struct sockaddr_in6 *) address;
         port = ntohs(s->sin6_port);
-        inet_ntop(AF_INET6, &s->sin6_addr, ipstr, sizeof ipstr);
+        ::inet_ntop(AF_INET6, &s->sin6_addr, ipstr, sizeof ipstr);
     }
 
     new(this) Address(std::string(ipstr), port);
 }
 
 
-Socket::Socket(Address &address) {
+Socket::Socket(Address address) {
     int sockfd;
     struct sockaddr_in server_addr;
     struct hostent *he;
@@ -115,7 +124,10 @@ uint32_t Socket::read(std::map<std::string, std::string> &header, std::string &p
     char buffer[4];
     if (this->readn(buffer, 4) != 4)
         return 0;
-    length = (uint32_t) buffer[0] << 24 | (uint32_t) buffer[1] << 16 | (uint32_t) buffer[2] << 8 | (uint32_t) buffer[3];
+    length = (uint32_t) ((uint8_t) buffer[0]) << 24 |
+             (uint32_t) ((uint8_t) buffer[1]) << 16 |
+             (uint32_t) ((uint8_t) buffer[2]) << 8 |
+             (uint32_t) ((uint8_t) buffer[3]);
     char *message = (char *) malloc(length);
     if (message == NULL)
         throw SocketException("can't malloc");
@@ -153,8 +165,8 @@ uint32_t Socket::write(std::map<std::string, std::string> &header, std::string &
     if (header.count(""))
         throw SocketException("empty key is not allowed");
     std::string message;
-    for (auto pair = header.begin(); pair != header.end(); pair++) {
-        std::string keyval[2] = {pair->first, pair->second};
+    for (auto pair : header) {
+        std::string keyval[2] = {pair.first, pair.second};
         for (uint8_t i = 0; i < 2; i++) {
             if (keyval[i].length() > (uint8_t) -1)
                 throw SocketException("header key or value is too big");
@@ -212,33 +224,47 @@ Address Socket::get_remote() {
 }
 
 Pipe::Pipe(int r, int w) :
-        r(Socket(r)), w(Socket(w)) { }
+        r(new Socket(r)),
+        w(new Socket(w)) { }
 
-Pipe Pipe::New() {
+Pipe::Pipe() {
     int fd[2];
     if (::pipe(fd) == -1)
         throw SocketException("pipe creation error");
-    return Pipe(fd[0], fd[1]);
+    new(this) Pipe(fd[0], fd[1]);
+}
+
+Pipe::~Pipe() {
+    delete this->r;
+    delete this->w;
 }
 
 Socket *Pipe::reader() {
-    return &this->r;
+    return this->r;
 }
 
 Socket *Pipe::writer() {
-    return &this->w;
+    return this->w;
 }
 
 Server::Server(Socket *socket, bool close) :
-        socket(socket), close(close) { this->sockets.push_back(this->socket); }
+        socket(socket),
+        close(close) {
+    if (this->socket)
+        this->sockets.push_back(this->socket);
+}
 
-Server::Server(Socket &socket) : Server(&socket, false) { }
+Server::Server() : Server(NULL, false) { }
 
-Server::Server(uint16_t port) : Server(new Socket(port), true) { }
+Server::Server(Socket &socket) :
+        Server(&socket, false) { }
+
+Server::Server(uint16_t port) :
+        Server(new Socket(port), true) { }
 
 Server::~Server() {
     if (this->close)
-        delete (&this->socket);
+        delete this->socket;
 }
 
 void Server::run_forever() {
@@ -252,49 +278,63 @@ void Server::run_forever() {
         do {
             FD_ZERO(&readset);
             int max = 0;
-            for (auto socket = this->sockets.begin(); socket != this->sockets.end(); ++socket) {
-                max = max < (*socket)->get_fd() ? (*socket)->get_fd() : max;
-                FD_SET((*socket)->get_fd(), &readset);
+            for (auto socket : this->sockets) {
+                max = max < socket->get_fd() ? socket->get_fd() : max;
+                FD_SET(socket->get_fd(), &readset);
             }
+            if (max == 0)
+                return;
             result = select(max + 1, &readset, NULL, NULL, NULL);
         } while (result == -1 && errno == EINTR);
 
-        while (result > 0) {
-            for (auto socket = this->sockets.begin(); socket != this->sockets.end(); ++socket) {
-                //if((*it)->get_fd())
-                if (FD_ISSET((*socket)->get_fd(), &readset)) {
-                    FD_CLR((*socket)->get_fd(), &readset);
-                    result--;
-                    if ((*socket)->get_fd() == this->socket->get_fd()) {
+        for (auto socket = this->sockets.begin(); socket != this->sockets.end();) {
+            if (FD_ISSET((*socket)->get_fd(), &readset)) {
+                FD_CLR((*socket)->get_fd(), &readset);
+                if (this->socket && (*socket)->get_fd() == this->socket->get_fd()) {
+                    try {
                         client = this->socket->accept();
-                        this->sockets.push_back(client);
-                        this->handle_accept(*client);
                     }
-                    else {
-                        try {
-                            (*socket)->read(header, payload);
-                            this->handle_message(**socket, header, payload);
-                        }
-                        catch (SocketClosedException ex) {
-                            this->handle_close(**socket);
-                            delete *socket;
-                            this->sockets.erase(socket);
-                        }
-                        catch (SocketException ex) {
-                            this->handle_exception(**socket, ex);
-                        }
+                    catch (SocketException ex) {
+                        goto next;
                     }
-                    break;
+                    this->sockets.push_back(client);
+                    this->handle_accept(*client);
+                }
+                else {
+                    try {
+                        (*socket)->read(header, payload);
+                        this->handle_message(**socket, header, payload);
+                    }
+                    catch (SocketClosedException ex) {
+                        this->handle_close(**socket);
+                        (*socket)->close();
+                        socket = this->sockets.erase(socket);
+                    }
+                    catch (SocketException ex) {
+                        this->handle_exception(**socket, ex);
+                    }
                 }
             }
-
+            next:
+            ++socket;
         }
 //        if (result < 0) {
 //        }
     }
 }
 
-void Server::add_socket(Socket &socket) {
-    this->sockets.push_back(&socket);
+void Server::add_socket(Socket *socket) {
+    this->sockets.push_back(socket);
 }
 
+void Server::del_socket(Socket *socket) {
+    this->sockets.erase(
+            std::remove_if(
+                    this->sockets.begin(),
+                    this->sockets.end(),
+                    [&](Socket *it) {
+                        return it == socket;
+                    }
+            ),
+            this->sockets.end());
+}

@@ -1,15 +1,27 @@
 //
-// Created by Matteo on 10/12/15.
+// Created by Matteo on 22/07/16.
 //
 
-#include "ProcessSolver.h"
-#include "lib/Log.h"
+#include "OpenSMTSolver.h"
 
 
-_SMTSolver::_SMTSolver(Settings &s, std::string name, std::string hash, SMTConfig &c, THandler &t) :
-        SimpSMTSolver(c, t), name(name), hash(hash) { }
+void OpenSMTInterpret::new_solver() {
+    this->solver = new OpenSMTSolver(this->header, this->clause_socket, this->config, *this->thandler);
+}
 
-_SMTSolver::~_SMTSolver() { }
+
+OpenSMTSolver::OpenSMTSolver(
+        std::map<std::string, std::string> &header,
+        Socket *clause_socket,
+        SMTConfig &c,
+        THandler &t
+) :
+        SimpSMTSolver(c, t),
+        header(header),
+        clause_socket(clause_socket),
+        trail_sent(0) { }
+
+OpenSMTSolver::~OpenSMTSolver() { }
 
 //void _SMTSolver::clausesPublish() {
 //    if (this->cls_pub == NULL)
@@ -47,7 +59,7 @@ _SMTSolver::~_SMTSolver() { }
 //    std::string d;
 //    m.dump(d);
 //
-//    redisReply *reply = (redisReply *) redisCommand(this->cls_pub, "PUBLISH clauses.%s %b",
+//    redisReply *reply = (redisReply *) redisCommand(this->cls_pub, "PUBLISH lemmas.%s %b",
 //                                                    this->channel.c_str(),
 //                                                    d.c_str(),
 //                                                    d.length());
@@ -84,7 +96,7 @@ _SMTSolver::~_SMTSolver() { }
 //    assert (std::string(reply->element[0]->str).compare("message") == 0);
 //    std::string s = std::string(reply->element[2]->str, reply->element[2]->len); */
 ////ZREVRANGEBYSCORE %s +inf 0 LIMIT 0 10000
-//    redisReply *reply = (redisReply *) redisCommand(this->cls_sub, "SRANDMEMBER clauses.%s 10000",
+//    redisReply *reply = (redisReply *) redisCommand(this->cls_sub, "SRANDMEMBER lemmas.%s 10000",
 //                                                    this->channel.c_str());
 //    if (reply == NULL || reply->type == REDIS_REPLY_ERROR) {
 //        std::cerr << "error during clause updating\n";
@@ -99,13 +111,13 @@ _SMTSolver::~_SMTSolver() { }
 //        return;
 //    }
 //
-//    for (int i = this->n_clauses; i < this->clauses.size(); i++) {
+//    for (int i = this->n_clauses; i < this->lemmas.size(); i++) {
 //        if (i < this->n_clauses + reply->elements)
-//            this->removeClause(*this->clauses[i]);
-//        if (i + reply->elements < this->clauses.size())
-//            this->clauses[i] = this->clauses[i + reply->elements];
+//            this->removeClause(*this->lemmas[i]);
+//        if (i + reply->elements < this->lemmas.size())
+//            this->lemmas[i] = this->lemmas[i + reply->elements];
 //    }
-//    this->clauses.shrink(std::min(this->clauses.size() - this->n_clauses, (uint32_t) reply->elements));
+//    this->lemmas.shrink(std::min(this->lemmas.size() - this->n_clauses, (uint32_t) reply->elements));
 //
 //
 //    for (int i = 0; i < reply->elements; i++) {
@@ -143,70 +155,71 @@ _SMTSolver::~_SMTSolver() { }
 //    freeReplyObject(reply);
 //}
 //
-//
-ProcessSolver::ProcessSolver(Settings &settings, std::string name, std::string hash, std::string instance) :
-        Process(), settings(settings), name(name), hash(hash), instance(instance) {
-    this->start();
-}
-
-void ProcessSolver::main() {
-    Log::log(Log::INFO, "started: " + this->name + "(" + this->hash + ")");
+//OpenSMTSolver::OpenSMTSolver(std::map<std::string, std::string>& header, SMTConfig & config, THandler & handler){
+void inline OpenSMTSolver::clausesPublish() {
+    if (this->clause_socket == NULL)
+        return;
 
     std::map<std::string, std::string> header;
-    std::string payload="ciao";
+    std::string payload;
 
-    //this->settings.get_clause_agent()->write(header, payload);
-    sleep(5);
-    this->writer()->write(header, payload);
-    this->reader()->read(header, payload);
+    uint32_t n = 0;
+    int trail_max = this->trail_lim.size() == 0 ? this->trail.size() : this->trail_lim[0];
+    for (int i = this->trail_sent; i < trail_max; i++) {
+        this->trail_sent++;
+        n++;
+        PTRef pt = this->theory_handler.varToTerm(var(this->trail[i]));
+        char *s = this->theory_handler.getLogic().printTerm(pt, false, true);
+        payload += s;
+        payload += "\n";
+        free(s);
+    }
+    if (n == 0)
+        return;
 
-//    std::cerr << "Started job " << this->channel << "\n";
-//
-//    sstat status = s_Undef;
-//    char *msg = NULL;
-//
-//    std::uniform_int_distribution<uint32_t> randuint(0, 0xFFFFFF);
-//    std::random_device rd;
-//    SMTConfig config;
-//    uint32_t seed = randuint(rd);
-//    config.setRandomSeed(seed);
-//
-//    //Theory *theory = new UFTheory(config);
-//    Theory *theory = new LRATheory(config);
-//
-//    MainSolver *solver = NULL;
-//    try {
-//        solver = new MainSolver(
-//                *theory,
-//                config,
-//                new _SMTSolver(this->settings, this->channel, config, theory->getTHandler()));
-//    }
-//    catch (Exception ex) {
-//        msg = strdup(ex.what());
-//        goto done;
-//    }
-//
-//    solver->initialize();
-//    if (solver->readSolverState((int *) this->osmt2.c_str(), (int) this->osmt2.size(), true, &msg)) {
-//        status = solver->simplifyFormulas(&msg);
-//        if (status != s_True && status != s_False)
-//            status = solver->solve();
-//    }
-//
-//    delete solver;
-//
-//    done:
-//
-//    Message message;
-//    message.header["status"] = std::to_string((int) status.getValue());
-//    message.header["msg"] = msg == NULL ? std::string() : std::string(msg);
-//    message.header["channel"] = this->channel;
-//    message.header["seed"] = std::to_string(seed);
-//    std::string s;
-//    message.dump(s);
-//    this->writer().write(s);
-//    free(msg);
-//
-//    std::cout << "Finished job\n";
+    //header["name"] = this->header["name"];
+    header["hash"] = this->header["hash"];
+    header["separator"] = "\n";
+    header["lemmas"] = std::to_string(n);
+
+    this->clause_socket->write(header, payload);
+}
+
+void inline OpenSMTSolver::clausesUpdate() {
+    if (this->clause_socket == NULL)
+        return;
+
+    std::map<std::string, std::string> header;
+    std::string payload;
+
+    header["lemmas"] =
+            this->header.count("lemmas") == 1 ? this->header["lemmas"] : std::to_string(1000);
+    header["hash"] = this->header["hash"];
+    header["exclude"] = this->clause_socket->get_local().toString();
+
+    Socket clauses(this->clause_socket->get_remote().toString());
+    clauses.write(header, payload);
+    clauses.read(header, payload);
+    if (header["hash"] != this->header["hash"] || header.count("separator") == 0)
+        return;
+
+    Interpret interp(this->config,
+                     &this->theory_handler.getLogic(),
+                     &this->theory_handler.getTheory(),
+                     &this->theory_handler,
+                     this,
+                     NULL);
+    interp.parse_only = true;
+    uint32_t s = 0;
+    uint32_t e = 0;
+    while (true) {
+        while (payload[e] != header["separator"][0] && e < payload.size() && e != -1) { e++; }
+        if (s == e)
+            break;
+        std::string lemma("(assert " + payload.substr(s, e - s) + ")");
+        interp.interpFile((char *) lemma.c_str());
+        e++;
+        s = e;
+    }
 
 }

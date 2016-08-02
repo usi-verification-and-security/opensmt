@@ -5,13 +5,14 @@
 #ifndef CLAUSE_SHARING_SETTINGS_H
 #define CLAUSE_SHARING_SETTINGS_H
 
+#include <list>
 #include "lib/Net.h"
-#include "ClauseThread.h"
 
 
 class Settings {
 private:
-    ClauseThread *clause_thread;
+    void load_header(std::map<std::string, std::string> &header, char *string);
+
 public:
     Settings();
 
@@ -19,10 +20,10 @@ public:
 
     void load(int, char **);
 
-    Socket *get_clause_agent() { return this->clause_thread ? this->clause_thread->writer() : NULL; }
-
-    Address server;
-    std::vector<std::string> files;
+    Socket *server;
+    std::list<std::string> files;
+    std::map<std::string, std::string> header_solve;
+    Socket *clauses;
 };
 
 #endif //CLAUSE_SHARING_SETTINGS_H

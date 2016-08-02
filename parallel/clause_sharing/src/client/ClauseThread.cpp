@@ -2,8 +2,9 @@
 // Created by Matteo on 20/07/16.
 //
 
+#include <unistd.h>
 #include <lib/Log.h>
-#include "main.h"
+#include "ClauseThread.h"
 
 
 ClauseThread::ClauseThread(Address address) :
@@ -15,6 +16,10 @@ ClauseThread::~ClauseThread() {
     delete this->socket;
 }
 
+void ClauseThread::log(uint8_t level, std::string message) {
+    Log::log(level, "ClauseThread: " + message);
+}
+
 void ClauseThread::main() {
     const uint8_t retry = 5;
     while (true) {
@@ -22,7 +27,7 @@ void ClauseThread::main() {
             std::map<std::string, std::string> header;
             std::string payload;
             this->socket = new Socket(this->address);
-            Log::log(Log::INFO, "clause sharing connected to " + this->address.toString());
+            this->log(Log::INFO, "connected to " + this->address.toString());
             while (true) {
                 this->reader()->read(header, payload);
                 //Log::log(Log::INFO, "ricevo: " + payload);
@@ -30,10 +35,8 @@ void ClauseThread::main() {
             }
         }
         catch (...) {
-            Log::log(Log::WARNING, "clause sharing connection closed, retry in " + std::to_string(retry) + " seconds");
+            this->log(Log::WARNING, "server closed connection, retry in " + std::to_string(retry) + " seconds");
         }
         ::sleep(retry);
     }
 }
-
-

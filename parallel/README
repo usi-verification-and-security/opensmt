@@ -25,7 +25,7 @@
   4) do step 1) and 2) if not done yet
   
   5) shell in the working path of this README:
-    $YOUR_EDITOR clause_sharing/src/solver-opensmt/Solver.cpp
+    $YOUR_EDITOR clause_server/src/solver-opensmt/Solver.cpp
   
   6) comment line 187 and uncomment line 186 then save
     make

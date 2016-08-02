@@ -195,7 +195,7 @@ class MainSolver
     void solve_split(int i,int s, int wpipefd, std::mutex *mtx);
     void stop() { ts.solver.stop = true; }
 
-    void readFormulaFromFile(const char *file);
+    bool readFormulaFromFile(const char *file);
 };
 
 #endif //

@@ -95,7 +95,7 @@ pthread_barrier_wait(pthread_barrier_t *barrier) {
 #endif /* __APPLE__ */
 
 Thread::Thread() :
-        thread(NULL), piper(Pipe::New()), pipew(Pipe::New()), stop_requested(false) { }
+        thread(NULL), piper(Pipe()), pipew(Pipe()), stop_requested(false) { }
 
 Thread::~Thread() {
     this->stop();

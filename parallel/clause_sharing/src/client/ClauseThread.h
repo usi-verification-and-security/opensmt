@@ -11,6 +11,8 @@
 
 class ClauseThread : public Thread {
 private:
+    void log(uint8_t level, std::string message);
+
     Address address;
     Socket *socket;
 

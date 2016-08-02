@@ -31,6 +31,7 @@ extern "C" {
 #endif
 
 typedef struct {
+    char c;
 } pthread_barrierattr_t;
 
 typedef struct {

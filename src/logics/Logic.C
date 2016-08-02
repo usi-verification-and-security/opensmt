@@ -219,7 +219,7 @@ Logic::printSym(SymRef sr) const
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 1, 0, 1, 0, 0, 1, 0, 0, 0, // [, ], `
+      0, 1, 0, 1, 0, 0, 1, 0, 0, 0, // [, \, ], `
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
       0, 0, 0, 1, 0, 1, 0, 0, 0, 0, // {, }
@@ -239,15 +239,20 @@ Logic::printSym(SymRef sr) const
     const char* name = sym_store.getName(sr);
     char* name_escaped;
     bool escape = false;
+    bool quoted = false;
+    char first = name[0];
+    char last;
     for (int i = 0; name[i] != '\0'; i++)
     {
         if (quotable[(int)name[i]])
         {
             escape = true;
-            break;
+            //break;
         }
+        last = name[i];
     }
-    if (escape)
+    quoted = (first == '|') && (last == '|');
+    if (!quoted && escape)
         asprintf(&name_escaped, "|%s|", name);
     else
         asprintf(&name_escaped, "%s", name);
@@ -1938,10 +1943,10 @@ Logic::dumpFunction(ostream& dump_out, Tterm *function)
     dump_out << "(define-fun " << function->getName() << " ( ";
     vec<PTRef>& args = function->getArgs();
     for(int i = 0; i < args.size(); ++i)
-        dump_out << '(' << getSymName(args[i]) << ' ' <<  getSortName(getSortRef(args[i])) << ") ";
-    dump_out << ") Bool (";
+        dump_out << '(' << printTerm(args[i]) << ' ' <<  getSortName(getSortRef(args[i])) << ") ";
+    dump_out << ") Bool ";
     dumpFormulaToFile(dump_out, function->getBody(), false, false);
-    dump_out << "))" << endl;
+    dump_out << ')' << endl;
 }
 
 PTRef

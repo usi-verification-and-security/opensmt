@@ -19,7 +19,7 @@ void ServerThread::main() {
         this->server = new Socket(settings.server);
         std::map<std::string, std::string> header;
         std::string payload;
-        header["clauses"] = ":" + std::to_string(settings.port);
+        header["lemmas"] = ":" + std::to_string(settings.port);
         this->server->write(header, payload);
         while (true) {
             this->server->read(header, payload);

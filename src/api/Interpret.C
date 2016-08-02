@@ -161,7 +161,8 @@ bool Interpret::interp(ASTNode& n) {
                 theory = uftheory;
                 thandler = new THandler(config, *uftheory);
                 logic = &(theory->getLogic());
-                solver = new SimpSMTSolver(config, *thandler);
+                //solver = new SimpSMTSolver(config, *thandler);
+                new_solver();
 
                 main_solver = new MainSolver(*thandler, config, solver);
                 main_solver->initialize();
@@ -171,7 +172,8 @@ bool Interpret::interp(ASTNode& n) {
                 thandler = new THandler(config, *lratheory);
                 logic = &(theory->getLogic());
 
-                solver = new SimpSMTSolver(config, *thandler);
+                //solver = new SimpSMTSolver(config, *thandler);
+                new_solver();
                 main_solver = new MainSolver(*thandler, config, solver);
                 main_solver->initialize();
             } else {
@@ -997,6 +999,18 @@ int Interpret::interpFile(FILE* in) {
     execute(r);
     return rval;
 }
+
+int Interpret::interpFile(char *content){
+    Smt2newContext context(content);
+    int rval = smt2newparse(&context);
+
+    if (rval != 0) return rval;
+
+    const ASTNode* r = context.getRoot();
+    execute(r);
+    return rval;
+}
+
 /*
 // For reading from pipe
 int Interpret::interpPipe() {
