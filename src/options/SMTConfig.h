@@ -248,6 +248,7 @@ public:
   static const char* o_sat_resource_limit;
   static const char* o_dump_state;
   static const char* o_dump_only;
+  static const char* o_dump_mode;
   static const char* o_sat_dump_learnts;
   static const char* o_sat_split_type;
   static const char* o_sat_split_inittune;
@@ -535,6 +536,7 @@ public:
   int dump_only() const
     { return optionTable.has(o_dump_only) ?
         optionTable[o_dump_only]->getValue().numval : 0; }
+
   int sat_dump_learnts() const
     { return optionTable.has(o_sat_dump_learnts) ?
         optionTable[o_sat_dump_learnts]->getValue().numval : 0; }
