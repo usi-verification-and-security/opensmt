@@ -76,8 +76,11 @@ void SolverServer::handle_message(Socket &socket, std::map<std::string, std::str
             return;
         if (header.count("status") == 1) {
             this->log(Log::INFO, this->solver->toString() + " status: " + header["status"]);
+            //TIMEDEBUG
             header["time"] = std::to_string(std::time(NULL) - this->start[header["name"]]);
-            this->settings.clauses->write(header, payload);
+            if (this->settings.clauses != NULL)
+                this->settings.clauses->write(header, payload);
+
             this->server.write(header, payload);
         }
     }
