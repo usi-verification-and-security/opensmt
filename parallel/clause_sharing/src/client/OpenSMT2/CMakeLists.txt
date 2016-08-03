@@ -21,6 +21,8 @@ include_directories(
 
 set(solver_opensmt_flags "-DIGNORE_DL_THEORYPROPAGATION -DOPTIMIZE -DNDEBUG -DOSMT1_SUBSTITUTION -DCUSTOM_EL_ALLOC -DTERMS_HAVE_EXPLANATIONS -DUSE_GZ -w -lz -lgmpxx -lgmp -lreadline -ltermcap -L/usr/local/opt/gmp/lib/")
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
+
 find_package(GMP REQUIRED)
 include_directories("${GMP_INCLUDE_DIR}")
 link_directories("${GMP_LIBRARY_DIR}")

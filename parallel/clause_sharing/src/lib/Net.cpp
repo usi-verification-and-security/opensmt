@@ -210,7 +210,7 @@ Address Socket::get_local() {
     socklen_t addr_len = sizeof(addr);
 
     if (::getsockname(this->fd, (struct sockaddr *) &addr, &addr_len) < 0)
-        throw SocketException("getsockname error");
+        return Address(std::string(), 0);
 
     return Address(&addr);
 }
@@ -220,7 +220,7 @@ Address Socket::get_remote() {
     socklen_t addr_len = sizeof(addr);
 
     if (::getpeername(this->fd, (struct sockaddr *) &addr, &addr_len) < 0)
-        throw SocketException("getpeername error");
+        return Address(std::string(), 0);
 
     return Address(&addr);
 }

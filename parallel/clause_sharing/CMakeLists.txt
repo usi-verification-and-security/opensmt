@@ -5,8 +5,12 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 set(CMAKE_CXX_COMPILER "g++")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -g")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w -O3 -std=c++11")
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release")
+endif ()
+message(STATUS "CMAKE_BUILD_TYPE selected to ${CMAKE_BUILD_TYPE}")
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 
 #if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 #   # require at least gcc 4.8
@@ -24,15 +28,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -g")
 
 set(SRC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-set(CMAKE_MODULE_PATH "${SRC}")
-
 include_directories("${SRC}")
 
 add_subdirectory(${SRC}/deps)
 add_subdirectory(${SRC}/lib)
 add_subdirectory(${SRC}/lemma_server)
 add_subdirectory(${SRC}/client)
-
-
-#add_executable(main ${SRC}/main.cpp)
-#target_link_libraries(main Lib)
