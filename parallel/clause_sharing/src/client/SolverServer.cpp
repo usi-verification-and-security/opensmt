@@ -60,6 +60,9 @@ void SolverServer::handle_message(Socket &socket, std::map<std::string, std::str
             for (auto it : this->settings.header_solve)
                 header[it.first] = it.second;
             this->solver = new SolverProcess(this->settings, header, payload);
+            //TIMEDEBUG
+            this->start[header["name"]] = std::time(NULL);
+
             this->log(Log::INFO, this->solver->toString() + " started");
             this->add_socket(this->solver->reader());
         }
@@ -73,6 +76,8 @@ void SolverServer::handle_message(Socket &socket, std::map<std::string, std::str
             return;
         if (header.count("status") == 1) {
             this->log(Log::INFO, this->solver->toString() + " status: " + header["status"]);
+            header["time"] = std::to_string(std::time(NULL) - this->start[header["name"]]);
+            this->settings.clauses->write(header, payload);
             this->server.write(header, payload);
         }
     }

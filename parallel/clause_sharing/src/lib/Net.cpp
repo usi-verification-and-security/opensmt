@@ -2,12 +2,13 @@
 // Created by Matteo Marescotti on 07/12/15.
 //
 
-#include "Net.h"
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <algorithm>
 #include <string.h>
+#include "Net.h"
+
 
 Address::Address(std::string address) {
     uint8_t i;

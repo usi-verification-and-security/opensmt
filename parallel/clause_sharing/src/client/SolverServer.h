@@ -5,6 +5,7 @@
 #ifndef CLAUSE_SHARING_SOLVERSERVER_H
 #define CLAUSE_SHARING_SOLVERSERVER_H
 
+#include <ctime>
 #include "lib/Net.h"
 #include "SolverProcess.h"
 
@@ -20,6 +21,8 @@ private:
     Settings &settings;
     Socket &server;
     SolverProcess *solver;
+    //TIMEDEBUG
+    std::map<std::string, time_t> start;
 protected:
     void handle_close(Socket &);
 

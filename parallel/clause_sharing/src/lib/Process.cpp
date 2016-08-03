@@ -2,10 +2,11 @@
 // Created by Matteo Marescotti on 02/12/15.
 //
 
-#include "Process.h"
 #include <csignal>
 #include <unistd.h>
 #include <sys/wait.h>
+#include "Process.h"
+#include "Process.h"
 
 
 Process::Process() :

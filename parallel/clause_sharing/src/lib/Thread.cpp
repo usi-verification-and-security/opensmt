@@ -8,6 +8,7 @@ extern "C" {
 #include <errno.h>
 }
 
+
 #ifdef __APPLE__
 
 #define __unused __attribute__((unused))

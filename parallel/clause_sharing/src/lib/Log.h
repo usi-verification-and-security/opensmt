@@ -9,6 +9,7 @@
 #include <iostream>
 #include <mutex>
 
+
 class Log {
 private:
     Log() { }

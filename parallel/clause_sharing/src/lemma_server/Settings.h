@@ -7,6 +7,7 @@
 
 #include "lib/Net.h"
 
+
 class Settings {
 public:
     Settings();
@@ -15,6 +16,7 @@ public:
 
     uint16_t port;
     Address server;
+    std::string file_times; //TIMEDEBUG
 
 };
 
