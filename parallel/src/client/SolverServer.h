@@ -18,11 +18,9 @@ private:
 
     bool check_header(std::map<std::string, std::string> &);
 
-    Settings &settings;
-    Socket &server;
+    Socket server;
+    Socket *lemmas;
     SolverProcess *solver;
-    //TIMEDEBUG
-    std::map<std::string, time_t> start;
 protected:
     void handle_close(Socket &);
 
@@ -31,7 +29,7 @@ protected:
     void handle_message(Socket &, std::map<std::string, std::string> &, std::string &);
 
 public:
-    SolverServer(Settings &, Socket &);
+    SolverServer(Address &);
 };
 
 

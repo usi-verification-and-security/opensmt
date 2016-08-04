@@ -168,7 +168,9 @@ class Server(object):
     def run_forever(self):
         last = time.time()
         while True:
-            lts = self.run_until_timeout(max(0, self._timeout - (time.time() - last)))
+            lts = self.run_until_timeout(
+                max(0, self._timeout - (time.time() - last)) if self._timeout else None
+            )
             if lts:
                 last = lts
 

@@ -11,7 +11,7 @@ Settings::Settings() :
 
 void Settings::load(int argc, char **argv) {
     int opt;
-    while ((opt = getopt(argc, argv, "hp:s:t:")) != -1) //TIMEDEBUG t:
+    while ((opt = getopt(argc, argv, "hp:s:t:")) != -1)
         switch (opt) {
             case 'h':
                 std::cout << "Usage: " << argv[0] << "\n";
@@ -21,9 +21,6 @@ void Settings::load(int argc, char **argv) {
                 break;
             case 's':
                 this->server = Address(std::string(optarg));
-                break;
-            case 't': //TIMEDEBUG
-                this->file_times = std::string(optarg);
                 break;
             default:
                 abort();

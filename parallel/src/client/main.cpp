@@ -25,7 +25,7 @@ int main(int argc, char **argv) {
     }
 
     if (settings.server != NULL) {
-        SolverServer ss(settings, *settings.server);
+        SolverServer ss(*settings.server);
         ss.run_forever();
     }
 

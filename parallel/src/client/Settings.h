@@ -20,10 +20,10 @@ public:
 
     void load(int, char **);
 
-    Socket *server;
+    Address *server;
+    Address *lemmas;
     std::list<std::string> files;
     std::map<std::string, std::string> header_solve;
-    Socket *clauses;
 };
 
 #endif //CLAUSE_SHARING_SETTINGS_H

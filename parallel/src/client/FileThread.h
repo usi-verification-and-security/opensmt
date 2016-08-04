@@ -12,7 +12,7 @@
 class FileThread : public Thread {
 private:
     Settings &settings;
-    Socket *client;
+    Socket *server;
 
 protected:
     void main();

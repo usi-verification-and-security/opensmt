@@ -6,12 +6,16 @@
 #include "SolverServer.h"
 
 
-SolverServer::SolverServer(Settings &settings, Socket &server) :
+SolverServer::SolverServer(Address &server) :
         Server(),
-        settings(settings),
-        server(server),
+        server(Socket(server)),
+        lemmas(NULL),
         solver(NULL) {
-    this->add_socket(&server);
+    std::map<std::string, std::string> header;
+    std::string payload;
+    header["solver"] = SolverProcess::solver;
+    this->server.write(header, payload);
+    this->add_socket(&this->server);
 }
 
 void SolverServer::log(uint8_t level, std::string message) {
@@ -53,16 +57,24 @@ void SolverServer::handle_message(Socket &socket, std::map<std::string, std::str
             this->log(Log::WARNING, "unexpected message from server without command");
             return;
         }
-        if (header["command"] == "solve") {
+        if (header["command"] == "lemmas" && header.count("lemmas") == 1) {
+            this->log(Log::INFO, "new lemma server " + header["lemmas"]);
+            if (this->lemmas != NULL) {
+                delete this->lemmas;
+                this->lemmas = NULL;
+            }
+            try {
+                this->lemmas = new Socket(header["lemmas"]);
+            }
+            catch (SocketException ex) {
+                this->log(Log::ERROR, "connection error to lemma server " + header["lemmas"]);
+            }
+        }
+        else if (header["command"] == "solve") {
             if (this->solver && this->check_header(header))
                 return;
             this->stop_solver();
-            for (auto it : this->settings.header_solve)
-                header[it.first] = it.second;
-            this->solver = new SolverProcess(this->settings, header, payload);
-            //TIMEDEBUG
-            this->start[header["name"]] = std::time(NULL);
-
+            this->solver = new SolverProcess(this->lemmas, header, payload);
             this->log(Log::INFO, this->solver->toString() + " started");
             this->add_socket(this->solver->reader());
         }
@@ -76,11 +88,6 @@ void SolverServer::handle_message(Socket &socket, std::map<std::string, std::str
             return;
         if (header.count("status") == 1) {
             this->log(Log::INFO, this->solver->toString() + " status: " + header["status"]);
-            //TIMEDEBUG
-            header["time"] = std::to_string(std::time(NULL) - this->start[header["name"]]);
-            if (this->settings.clauses != NULL)
-                this->settings.clauses->write(header, payload);
-
             this->server.write(header, payload);
         }
     }

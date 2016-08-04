@@ -17,6 +17,7 @@ import atexit
 import json
 import framework
 import net
+import client
 import logging
 import traceback
 import random
@@ -42,13 +43,13 @@ class SocketParallelizationTree(framework.ParallelizationTree):
             self._conn.cursor().execute("CREATE TABLE IF NOT EXISTS {}SolvingHistory ("
                                         "id INTEGER NOT NULL PRIMARY KEY, "
                                         "ts INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),"
-                                        "instance TEXT NOT NULL, "
+                                        "name TEXT NOT NULL, "
                                         "event TEXT NOT NULL, "
                                         "solver TEXT, "
                                         "node TEXT, "
                                         "data TEXT"
                                         ");".format(self._table_prefix))
-            self._conn.cursor().execute("DELETE FROM {}SolvingHistory WHERE instance=?;".format(table_prefix), (
+            self._conn.cursor().execute("DELETE FROM {}SolvingHistory WHERE name=?;".format(table_prefix), (
                 self.name,
             ))
             self._conn.commit()
@@ -131,7 +132,8 @@ class SocketParallelizationTree(framework.ParallelizationTree):
                     break
                 for node in level:
                     if node['active']:
-                        while solvers and len(node['solvers']) < self._config.portfolio_max:
+                        while solvers and \
+                                (self._config.portfolio_max <= 0 or len(node['solvers']) < self._config.portfolio_max):
                             self.assign_solvers(solvers.pop(), node)
 
             if solvers:
@@ -169,7 +171,7 @@ class SocketParallelizationTree(framework.ParallelizationTree):
     def db_log(self, event, solver=None, node=None, data=None):
         if not self._conn:
             return
-        self._conn.cursor().execute("INSERT INTO {}SolvingHistory (instance, event, solver, node, data) "
+        self._conn.cursor().execute("INSERT INTO {}SolvingHistory (name, event, solver, node, data) "
                                     "VALUES (?,?,?,?,?)".format(self._table_prefix), (
                                         self.name,
                                         event,
@@ -235,6 +237,12 @@ class Solver(net.Socket):
         self.tree.db_log('OR', self, node)
         self.or_nodes.append(node)
 
+    def set_lemma_server(self, address):
+        self.write({
+            'command': 'lemmas',
+            'lemmas': address
+        }, '')
+
     def read(self):
         try:
             header, message = super().read()
@@ -245,7 +253,7 @@ class Solver(net.Socket):
         if self.tree is None or self.node is None:
             return header, message
         if self.tree.name != header['name']:
-            header['error'] = 'wrong instance "{}", expected "{}"'.format(
+            header['error'] = 'wrong name "{}", expected "{}"'.format(
                 header['name'],
                 self.tree.name
             )
@@ -291,8 +299,8 @@ class Solver(net.Socket):
 
 
 class ParallelizationServer(net.Server):
-    def __init__(self, port, config, conn=None, table_prefix='', logger=None):
-        super().__init__(port, timeout=config.partition_timeout, logger=logger)
+    def __init__(self, config, conn=None, table_prefix='', logger=None):
+        super().__init__(port=config.port, timeout=config.partition_timeout, logger=logger)
         self._config = config
         self._conn = conn
         self._table_prefix = table_prefix
@@ -307,10 +315,11 @@ class ParallelizationServer(net.Server):
                                         "data TEXT"
                                         ");".format(self._table_prefix))
             cursor = self._conn.cursor()
-            cursor.execute("DELETE FROM {}SolvingHistory;".format(table_prefix))
+            cursor.execute("DROP TABLE IF EXISTS {}SolvingHistory;".format(table_prefix))
             cursor.execute("VACUUM;")
             self._conn.commit()
             self.log(logging.INFO, 'server start')
+        self.lemmas = None
 
     def handle_accept(self, sock):
         self.log(logging.INFO, 'new connection from {}'.format(sock.remote_address))
@@ -326,20 +335,21 @@ class ParallelizationServer(net.Server):
                 self.log(logging.INFO, 'message from solver {}'.format(
                     sock.remote_address
                 ), {'header': header, 'message': message.decode()})
+                self.entrust()
             return
         self.log(logging.INFO, 'message from {}'.format(sock.remote_address))
         if 'command' in header:
             if header['command'] == 'solve':
                 try:
-                    instance, hash = self._check(header)
+                    name, hash = self._check(header)
                 except:
                     return
                 self.log(logging.INFO, 'new instance "{}" with hash "{}"'.format(
-                    instance,
+                    name,
                     hash
                 ), {'header': header, 'message': message.decode()})
                 self._trees.append(SocketParallelizationTree(
-                    name=instance,
+                    name=name,
                     hash=hash,
                     config=self._config,
                     formula=framework.SMTFormula(message),
@@ -355,7 +365,18 @@ class ParallelizationServer(net.Server):
             ), {'header': header, 'message': message.decode()})
             self._rlist.remove(sock)
             self._rlist.add(solver)
+            if self.lemmas:
+                solver.set_lemma_server(self.lemmas[1])
             self.entrust()
+        elif 'lemmas' in header:
+            self.log(logging.INFO, 'new lemma server listening at {}'.format(
+                header['lemmas']
+            ), {'header': header, 'message': message.decode()})
+            if self.lemmas:
+                self.lemmas[0].close()
+            self.lemmas = (sock, header["lemmas"])
+            for solver in (solver for solver in self._rlist if isinstance(solver, Solver)):
+                solver.set_lemma_server(self.lemmas[1])
         elif 'eval' in header:
             response_message = ''
             try:
@@ -371,7 +392,7 @@ class ParallelizationServer(net.Server):
 
     def handle_timeout(self):
         print()
-        print('TIMEOUT: {}'.format(time.time()-self._last))
+        print('TIMEOUT: {}'.format(time.time() - self._last))
         self._last = time.time()
         print()
 
@@ -393,9 +414,9 @@ class ParallelizationServer(net.Server):
         if not (header.get('name') or header.get('hash')):
             self.log(logging.WARNING, 'incomplete instance received', {'header': header})
             raise ValueError
-        instance = header.get('name', header.get('hash'))
+        name = header.get('name', header.get('hash'))
         hash = header.get('hash', header.get('name'))
-        return instance, hash
+        return name, hash
 
     def log(self, level, message, data=None):
         super().log(level, message)
@@ -412,12 +433,13 @@ class ParallelizationServer(net.Server):
 
 if __name__ == '__main__':
     class Config:
-        portfolio_max = 1
-        partition_timeout = 10
+        port = 3000
+        portfolio_max = 0
+        partition_timeout = None
         partition_policy = [2, 2]
 
 
-    logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     parser = optparse.OptionParser()
     parser.add_option('-c', '--config', dest='config', type='str',
                       action="callback",
@@ -432,8 +454,20 @@ if __name__ == '__main__':
 
     options, args = parser.parse_args()
 
-    s = ParallelizationServer(port=3000, config=options.config, conn=options.db, logger=logging.getLogger('server'))
+    server = ParallelizationServer(config=options.config, conn=options.db, logger=logging.getLogger('server'))
+    if hasattr(options.config, 'files'):
+        def send_files(address, files):
+            for path in files:
+                try:
+                    client.send_file(address, path)
+                except:
+                    pass
+
+
+        thread = threading.Thread(target=send_files, args=(server.address, options.config.files))
+        thread.start()
+
     try:
-        s.run_forever()
+        server.run_forever()
     except KeyboardInterrupt:
         pass

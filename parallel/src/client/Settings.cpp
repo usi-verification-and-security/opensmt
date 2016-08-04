@@ -9,11 +9,11 @@
 
 Settings::Settings() :
         server(NULL),
-        clauses(NULL) { }
+        lemmas(NULL) { }
 
 Settings::~Settings() {
     delete this->server;
-    delete this->clauses;
+    delete this->lemmas;
 }
 
 void Settings::load_header(std::map<std::string, std::string> &header, char *string) {
@@ -39,10 +39,10 @@ void Settings::load(int argc, char **argv) {
                         "\n";
                 exit(0);
             case 's':
-                this->server = new Socket(std::string(optarg));
+                this->server = new Address(std::string(optarg));
                 break;
             case 'c':
-                this->clauses = new Socket(std::string(optarg));
+                this->lemmas = new Address(std::string(optarg));
                 break;
             case 'r':
                 this->load_header(this->header_solve, optarg);

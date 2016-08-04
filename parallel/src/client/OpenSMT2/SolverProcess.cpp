@@ -13,9 +13,9 @@
 
 const char *SolverProcess::solver = "OpenSMT2";
 
-SolverProcess::SolverProcess(Settings &settings, std::map<std::string, std::string> &header, std::string &instance) :
+SolverProcess::SolverProcess(Socket *lemmas, std::map<std::string, std::string> &header, std::string &instance) :
         Process(),
-        settings(settings),
+        lemmas(lemmas),
         header(header),
         instance(instance) {
     if (this->header.count("seed") == 0) {
@@ -53,7 +53,7 @@ void SolverProcess::main() {
     SMTConfig config;
     config.setRandomSeed(atoi(this->header["seed"].c_str()));
 
-    OpenSMTInterpret interpret(this->header, this->settings.clauses, config);
+    OpenSMTInterpret interpret(this->header, this->lemmas, config);
 
     interpret.interpFile((char *) this->instance.c_str());
 

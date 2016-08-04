@@ -11,14 +11,14 @@
 
 class SolverProcess : public Process {
 private:
-    Settings &settings;
+    Socket *lemmas;
     std::map<std::string, std::string> header;
 
 protected:
     void main();
 
 public:
-    SolverProcess(Settings &, std::map<std::string, std::string> &, std::string &);
+    SolverProcess(Socket *, std::map<std::string, std::string> &, std::string &);
 
     std::string toString();
 

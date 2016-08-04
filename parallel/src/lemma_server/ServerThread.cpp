@@ -25,9 +25,14 @@ void ServerThread::main() {
         while (true) {
             this->server->read(header, payload);
             if (header["command"] == "exit") {
+                Log::log(Log::INFO, "server requested to exit. bye!");
                 exit(0);
             }
         }
+    }
+    catch (SocketClosedException) {
+        Log::log(Log::INFO, "server connection closed. bye!");
+        exit(0);
     }
     catch (SocketException) {
         Log::log(Log::ERROR, "server connection error");

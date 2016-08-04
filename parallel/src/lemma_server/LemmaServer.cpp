@@ -29,28 +29,8 @@ void LemmaServer::handle_exception(Socket &client, SocketException &ex) {
 void LemmaServer::handle_message(Socket &client,
                                  std::map<std::string, std::string> &header,
                                  std::string &payload) {
-    if (header.count("hash") == 0)
+    if (header.count("hash") == 0 || header.count("lemmas") == 0)
         return;
-
-    //TIMEDEBUG
-    if (header.count("lemmas") == 0) {
-        std::cout << "times\n";
-        if (header.count("time") == 1) {
-            if (this->times.count(header["name"]) == 0 || atol(header["time"].c_str()) < this->times[header["name"]])
-                this->times[header["name"]] = atol(header["time"].c_str());
-            else
-                return;
-            if (this->settings.file_times.size() > 0) {
-                std::ofstream file(this->settings.file_times);
-                for (auto i :this->times) {
-                    file << i.first << " " << i.second << "\n";
-                }
-                file.close();
-            }
-        }
-        return;
-    }
-
 
     const uint32_t clauses_request = (uint32_t) atoi(header["lemmas"].c_str());
     std::list<SMTLemma> *lemmas = &this->lemmas[header["hash"]];
