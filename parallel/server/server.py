@@ -1,28 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import subprocess
-import socket
 import optparse
-import select
-import struct
 import threading
-import signal
-import sys
-import time
 import os
-import pickle
-import tempfile
-import atexit
 import json
 import framework
 import net
+import sys
 import client
 import logging
 import traceback
 import random
+import time
 import sqlite3
-import hashlib
 
 __author__ = 'Matteo Marescotti'
 
@@ -30,9 +21,8 @@ __author__ = 'Matteo Marescotti'
 class SocketParallelizationTree(framework.ParallelizationTree):
     reverse_types = (framework.SolveState, net.Socket, framework.Node)
 
-    def __init__(self, name, hash, formula, config, conn=None, table_prefix=''):
+    def __init__(self, name, formula, config, conn=None, table_prefix=''):
         super().__init__(name=name,
-                         hash=hash,
                          formula=formula,
                          conn=conn,
                          table_prefix=table_prefix
@@ -49,9 +39,6 @@ class SocketParallelizationTree(framework.ParallelizationTree):
                                         "node TEXT, "
                                         "data TEXT"
                                         ");".format(self._table_prefix))
-            self._conn.cursor().execute("DELETE FROM {}SolvingHistory WHERE name=?;".format(table_prefix), (
-                self.name,
-            ))
             self._conn.commit()
             self.db_log('CREATE')
 
@@ -205,9 +192,9 @@ class Solver(net.Socket):
             raise ValueError('already solving')
         self.write({
             'command': 'solve',
-            'hash': tree.node_hash(node),
-            'name': tree.name
-        }, node.formula.smt)
+            'name': tree.name,
+            'node': tree.node_path(node, keys=True)
+        }, node.formula.smtlib)
         self.tree, self.node = tree, node
         self.tree.db_log('+', self, node)
 
@@ -216,26 +203,27 @@ class Solver(net.Socket):
             raise ValueError('not solving anything')
         self.write({
             'command': 'stop',
-            'hash': self.tree.node_hash(self.node),
-            'name': self.tree.name
+            'name': self.tree.name,
+            'node': self.tree.node_path(self.node, keys=True)
         }, '')
         self.tree.db_log('-', self, self.node)
         self.tree = self.node = None
         self.or_nodes = []
 
     def ask_partitions(self, n, node=None):
-        if self.node is None:
-            raise ValueError('not solving anything')
-        self.write({
-            'command': 'partitions',
-            'hash': self.tree.node_hash(self.node),
-            'name': self.tree.name,
-            'partitions': n
-        }, '')
-        if node is None:
-            node = self.node.add_child()  # CREATING OR NODE
-        self.tree.db_log('OR', self, node)
-        self.or_nodes.append(node)
+        raise NotImplementedError
+        # if self.node is None:
+        #     raise ValueError('not solving anything')
+        # self.write({
+        #     'command': 'partitions',
+        #     'name': self.tree.name,
+        #     'node': self.tree.node_path(self.node, keys=True),
+        #     'partitions': n
+        # }, '')
+        # if node is None:
+        #     node = self.node.add_child()  # CREATING OR NODE
+        # self.tree.db_log('OR', self, node)
+        # self.or_nodes.append(node)
 
     def set_lemma_server(self, address):
         self.write({
@@ -245,156 +233,166 @@ class Solver(net.Socket):
 
     def read(self):
         try:
-            header, message = super().read()
+            header, payload = super().read()
         except:
             if self.tree:
                 self.tree.assign_solvers(self, False)
             raise
         if self.tree is None or self.node is None:
-            return header, message
+            return header, payload
         if self.tree.name != header['name']:
             header['error'] = 'wrong name "{}", expected "{}"'.format(
                 header['name'],
                 self.tree.name
             )
-            return header, message
-        if self.tree.node_hash(self.node) != header['hash']:
-            header['error'] = 'wrong hash "{}", expected "{}"'.format(
-                header['hash'],
-                self.tree.node_hash(self.node)
+            return header, payload
+        if str(self.tree.node_path(self.node, keys=True)) != header['node']:
+            header['error'] = 'wrong node "{}", expected "{}"'.format(
+                header['node'],
+                self.tree.node_path(self.node, keys=True)
             )
-            return header, message
+            return header, payload
 
         if 'status' in header:
             status = framework.SolveState.__members__[header['status']]
             if status is framework.SolveState.unknown:
                 header['error'] = 'wrong status "{}"'.format(header['status'])
-                return header, message
-            header['node'] = self.tree.node_path(self.node, keys=True)
+                return header, payload
             self.tree.db_log('STATUS', self, self.node, {'status': status.name})
             self.node['status'] = status
         elif 'partitions' in header and self.or_nodes:
-            node = self.or_nodes.pop()
-            try:
-                partitions = []
-                start = 0
-                for i in range(int(header['partitions'])):
-                    end = int(header[str(i)])
-                    if end > len(message):
-                        raise ValueError('bad partition index')
-                    partitions.append(message[start:end])
-                    start = end
-                for partition in partitions:
-                    child = node.add_child(framework.SMTFormula(partition))
-                    self.tree.db_log('AND', self, child)
-            except BaseException as ex:
-                header['error'] = 'error reading partitions: {}'.format(ex)
-                node['children'].clear()
-                self.ask_partitions(header['partitions'], node)
-                return header, message
-            else:
-                self.tree.assign_solvers()
+            raise NotImplementedError
+            # node = self.or_nodes.pop()
+            # try:
+            #     partitions = []
+            #     start = 0
+            #     for i in range(int(header['partitions'])):
+            #         end = int(header[str(i)])
+            #         if end > len(payload):
+            #             raise ValueError('bad partition index')
+            #         partitions.append(payload[start:end])
+            #         start = end
+            #     for partition in partitions:
+            #         child = node.add_child(framework.SMTFormula(partition))
+            #         self.tree.db_log('AND', self, child)
+            # except BaseException as ex:
+            #     header['error'] = 'error reading partitions: {}'.format(ex)
+            #     node['children'].clear()
+            #     self.ask_partitions(header['partitions'], node)
+            #     return header, payload
+            # else:
+            #     self.tree.assign_solvers()
 
-        return header, message
+        return header, payload
 
 
 class ParallelizationServer(net.Server):
     def __init__(self, config, conn=None, table_prefix='', logger=None):
-        super().__init__(port=config.port, timeout=config.partition_timeout, logger=logger)
+        timeout = min(
+            *[sys.maxsize + 1 if i is None else i for i in [config.partition_timeout, config.solving_timeout]]
+        )
+        if timeout > sys.maxsize:
+            timeout = None
+        super().__init__(port=config.port, timeout=timeout, logger=logger)
         self._config = config
         self._conn = conn
         self._table_prefix = table_prefix
-        self._trees = []
-        self._last = time.time()
+        self._trees = {}
         if self._conn:
-            self._conn.cursor().execute("CREATE TABLE IF NOT EXISTS {}ServerLog ("
-                                        "id INTEGER NOT NULL PRIMARY KEY, "
-                                        "ts INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),"
-                                        "level TEXT NOT NULL,"
-                                        "message TEXT NOT NULL,"
-                                        "data TEXT"
-                                        ");".format(self._table_prefix))
             cursor = self._conn.cursor()
+            cursor.execute("DROP TABLE IF EXISTS {}ServerLog;".format(table_prefix))
+            cursor.execute("CREATE TABLE IF NOT EXISTS {}ServerLog ("
+                           "id INTEGER NOT NULL PRIMARY KEY, "
+                           "ts INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),"
+                           "level TEXT NOT NULL,"
+                           "message TEXT NOT NULL,"
+                           "data TEXT"
+                           ");".format(self._table_prefix))
             cursor.execute("DROP TABLE IF EXISTS {}SolvingHistory;".format(table_prefix))
             cursor.execute("VACUUM;")
             self._conn.commit()
-            self.log(logging.INFO, 'server start')
+        self.log(logging.INFO, 'server start')
         self.lemmas = None
 
     def handle_accept(self, sock):
         self.log(logging.INFO, 'new connection from {}'.format(sock.remote_address))
 
-    def handle_message(self, sock, header, message):
+    def handle_message(self, sock, header, payload):
         if isinstance(sock, Solver):
             if 'error' in header:
                 self.log(logging.ERROR, 'invalid message from solver {}. {}'.format(
                     sock.remote_address,
                     header['error']
-                ), {'header': header, 'message': message.decode()})
+                ), {'header': header, 'payload': payload.decode()})
             else:
                 self.log(logging.INFO, 'message from solver {}'.format(
                     sock.remote_address
-                ), {'header': header, 'message': message.decode()})
+                ), {'header': header, 'payload': payload.decode()})
                 self.entrust()
             return
         self.log(logging.INFO, 'message from {}'.format(sock.remote_address))
         if 'command' in header:
             if header['command'] == 'solve':
-                try:
-                    name, hash = self._check(header)
-                except:
+                if 'name' not in header:
                     return
-                self.log(logging.INFO, 'new instance "{}" with hash "{}"'.format(
-                    name,
-                    hash
-                ), {'header': header, 'message': message.decode()})
-                self._trees.append(SocketParallelizationTree(
-                    name=name,
-                    hash=hash,
+                self.log(logging.INFO, 'new instance "{}"'.format(
+                    header['name']
+                ), {'header': header, 'payload': payload.decode()})
+                self._trees[SocketParallelizationTree(
+                    name=header['name'],
                     config=self._config,
-                    formula=framework.SMTFormula(message),
+                    formula=framework.SMTFormula(payload),
                     conn=self._conn,
                     table_prefix=self._table_prefix
-                ))
+                )] = {}
                 self.entrust()
         elif 'solver' in header:
             solver = Solver(sock, header)
             self.log(logging.INFO, 'new solver "{}" at {}'.format(
                 solver.data['solver'],
                 solver.remote_address
-            ), {'header': header, 'message': message.decode()})
+            ), {'header': header, 'payload': payload.decode()})
             self._rlist.remove(sock)
             self._rlist.add(solver)
             if self.lemmas:
                 solver.set_lemma_server(self.lemmas[1])
             self.entrust()
         elif 'lemmas' in header:
+            if header['lemmas'][0] == ':':
+                header['lemmas'] = sock.remote_address[0] + header['lemmas']
             self.log(logging.INFO, 'new lemma server listening at {}'.format(
                 header['lemmas']
-            ), {'header': header, 'message': message.decode()})
+            ), {'header': header, 'payload': payload.decode()})
             if self.lemmas:
                 self.lemmas[0].close()
             self.lemmas = (sock, header["lemmas"])
             for solver in (solver for solver in self._rlist if isinstance(solver, Solver)):
                 solver.set_lemma_server(self.lemmas[1])
         elif 'eval' in header:
-            response_message = ''
+            response_payload = ''
             try:
-                response_message = str(eval(header['eval']))
+                response_payload = str(eval(header['eval']))
             except:
-                response_message = str(traceback.format_exc())
+                response_payload = str(traceback.format_exc())
             finally:
-                sock.write({}, response_message)
+                sock.write({}, response_payload)
 
     def handle_close(self, sock):
         if isinstance(sock, Solver):
-            self.log(logging.INFO, 'connection closed from solver {}'.format(sock.remote_address))
+            self.log(logging.INFO, 'connection closed from solver "{}" at {}'.format(
+                sock.data['solver'],
+                sock.remote_address
+            ))
 
     def handle_timeout(self):
-        print()
-        print('TIMEOUT: {}'.format(time.time() - self._last))
-        self._last = time.time()
-        print()
+        if self._config.solving_timeout:
+            for tree in self._trees:
+                if 'started' not in self._trees[tree]:
+                    continue
+                if self._config.solving_timeout < time.time() - self._trees[tree]['started'] and \
+                                tree.root['status'] == framework.SolveState.unknown:
+                    tree.prune(tree.root)
+            self.entrust()
 
     # trees = [tree for tree in self._trees if tree.root['status'] == framework.SolveState.unknown]
     # if not trees:
@@ -402,21 +400,16 @@ class ParallelizationServer(net.Server):
     # tree = trees[0]
 
     def entrust(self):
-        trees = [tree for tree in self._trees if tree.root['status'] == framework.SolveState.unknown]
+        trees = [tree for tree in self._trees if
+                 tree.root['status'] == framework.SolveState.unknown and tree.root['active'] == True]
         if not trees:
             return
         tree = trees[0]
         for idle_solver in (solver for solver in self._rlist if
                             isinstance(solver, Solver) and solver.tree is None):
             tree.assign_solvers(idle_solver)
-
-    def _check(self, header):
-        if not (header.get('name') or header.get('hash')):
-            self.log(logging.WARNING, 'incomplete instance received', {'header': header})
-            raise ValueError
-        name = header.get('name', header.get('hash'))
-        hash = header.get('hash', header.get('name'))
-        return name, hash
+            if 'started' not in self._trees[tree]:
+                self._trees[tree]['started'] = time.time()
 
     def log(self, level, message, data=None):
         super().log(level, message)
@@ -437,6 +430,7 @@ if __name__ == '__main__':
         portfolio_max = 0
         partition_timeout = None
         partition_policy = [2, 2]
+        solving_timeout = None
 
 
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')

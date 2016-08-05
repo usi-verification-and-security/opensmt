@@ -177,8 +177,8 @@ void inline OpenSMTSolver::clausesPublish() {
     if (n == 0)
         return;
 
-    //header["name"] = this->header["name"];
-    header["hash"] = this->header["hash"];
+    header["name"] = this->header["name"];
+    header["node"] = this->header["node"];
     header["separator"] = "\n";
     header["lemmas"] = std::to_string(n);
 
@@ -194,13 +194,13 @@ void inline OpenSMTSolver::clausesUpdate() {
 
     header["lemmas"] =
             this->header.count("lemmas") == 1 ? this->header["lemmas"] : std::to_string(1000);
-    header["hash"] = this->header["hash"];
+    header["name"] = this->header["name"];
     header["exclude"] = this->clause_socket->get_local().toString();
 
     Socket clauses(this->clause_socket->get_remote().toString());
     clauses.write(header, payload);
     clauses.read(header, payload);
-    if (header["hash"] != this->header["hash"] || header.count("separator") == 0)
+    if (header["name"] != this->header["name"] || header.count("separator") == 0)
         return;
 
     Interpret interp(this->config,

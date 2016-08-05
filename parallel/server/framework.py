@@ -126,20 +126,19 @@ class SolveState(enum.Enum):
 
 
 class SMTFormula(object):
-    def __init__(self, smt=None, data=None):
-        self.smt = smt
-        self.data = data
+    def __init__(self, smtlib):
+        self.smtlib = smtlib
 
     def __str__(self):
-        return str(self.smt)
+        return self.smtlib
 
     def json_dump(self):
-        return json.dumps({'smt': self.smt, 'data': self.data})
+        return json.dumps({'smtlib': self.smtlib})
 
     @staticmethod
     def json_load(dump):
         d = json.loads(dump)
-        return SMTFormula(d['smt'], d['data'])
+        return SMTFormula(d['smtlib'])
 
 
 class Node(dict, Observer.ObservedBase):
@@ -245,13 +244,12 @@ class OrNode(Node):
 class ParallelizationTree(Observer):
     reverse_types = (Node,)
 
-    def __init__(self, name, hash, formula=None, conn=None, table_prefix=''):
+    def __init__(self, name, formula=None, conn=None, table_prefix=''):
         super().__init__()
         self._and_nodes = 1
         self._or_nodes = 0
         self._nodes = 1
         self.name = name
-        self.hash = hash
         self._conn = conn
         self._table_prefix = table_prefix
         self._root = self.new_node(AndNode, formula)
@@ -289,9 +287,6 @@ class ParallelizationTree(Observer):
             return [n for n in path if isinstance(n, Node)]
         path = list(path + [node])
         return [path[i].index(path[i + 1]) for i in range(1, len(path), 2)]
-
-    def node_hash(self, node):
-        return hashlib.sha1((self.hash + str(self.node_path(node, keys=True))).encode()).hexdigest()
 
     def level(self, i=0):
         if i < 0:

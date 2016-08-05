@@ -15,8 +15,8 @@
 class LemmaServer : public Server {
 private:
     Settings &settings;
-    std::map<std::string, std::list<SMTLemma>> lemmas;                            // hash -> lemmas
-    std::map<std::string, std::map<std::string, std::list<SMTLemma *>>> solvers;  //hash -> solver -> lemmas
+    std::map<std::string, std::list<SMTLemma>> lemmas;                            // name -> lemmas
+    std::map<std::string, std::map<std::string, std::list<SMTLemma *>>> solvers;  // name -> solver -> lemmas
 
 protected:
     void handle_accept(Socket &);

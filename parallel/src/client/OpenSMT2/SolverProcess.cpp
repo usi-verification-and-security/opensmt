@@ -13,7 +13,7 @@
 
 const char *SolverProcess::solver = "OpenSMT2";
 
-SolverProcess::SolverProcess(Socket *lemmas, std::map<std::string, std::string> &header, std::string &instance) :
+SolverProcess::SolverProcess(Socket *lemmas, std::map<std::string, std::string> header, std::string instance) :
         Process(),
         lemmas(lemmas),
         header(header),
@@ -27,9 +27,8 @@ SolverProcess::SolverProcess(Socket *lemmas, std::map<std::string, std::string> 
 }
 
 std::string SolverProcess::toString() {
-    auto header = this->get_header();
-    return "SolverProcess<" + std::string(SolverProcess::solver) + ":" + this->header["seed"] + ">" +
-           " on " + header["name"] + "[" + header["hash"] + "]";
+    return std::string(SolverProcess::solver) + "<" + this->header["seed"] + ">" +
+           " on " + this->header["name"] + this->header["node"];
 }
 
 void SolverProcess::main() {
@@ -68,7 +67,7 @@ void SolverProcess::main() {
     else header["status"] = "unknown";
 
     header["name"] = this->header["name"];
-    header["hash"] = this->header["hash"];
+    header["node"] = this->header["node"];
 
     this->writer()->write(header, payload);
 

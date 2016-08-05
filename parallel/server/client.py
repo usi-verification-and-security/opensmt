@@ -16,8 +16,7 @@ def send_file(address, path):
     socket.connect(address)
     socket.write({
         'command': 'solve',
-        'name': os.path.basename(path),
-        'hash': hashlib.sha1(path.encode()).hexdigest()
+        'name': os.path.basename(path)
     }, file.read())
 
 

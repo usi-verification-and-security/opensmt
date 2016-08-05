@@ -18,11 +18,11 @@ protected:
     void main();
 
 public:
-    SolverProcess(Socket *, std::map<std::string, std::string> &, std::string &);
+    SolverProcess(Socket *, std::map<std::string, std::string>, std::string);
 
     std::string toString();
 
-    std::map<std::string, std::string> get_header() { return this->header; }
+    std::map<std::string, std::string> &get_header() { return this->header; }
 
     static const char *solver;
     std::string instance;

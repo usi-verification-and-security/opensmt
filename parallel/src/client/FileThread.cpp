@@ -25,12 +25,8 @@ void FileThread::main() {
     std::string payload;
 
     Socket client = *this->server->accept();
-    client.read(header, payload);
 
-    uint32_t n = 0;
     if (this->settings.lemmas != NULL) {
-        header.clear();
-        payload.clear();
         header["command"] = "lemmas";
         header["lemmas"] = this->settings.lemmas->toString();
         client.write(header, payload);
@@ -55,9 +51,11 @@ void FileThread::main() {
             header[it.first] = it.second;
         header["command"] = "solve";
         header["name"] = filename;
-        header["hash"] = std::to_string(n++);
+        header["node"] = "[]";
         client.write(header, payload);
-        client.read(header, payload);
+        do {
+            client.read(header, payload);
+        } while (header.count("status") == 0);
         payload.clear();
         header["command"] = "stop";
         client.write(header, payload);

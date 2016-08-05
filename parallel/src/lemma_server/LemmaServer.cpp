@@ -29,14 +29,14 @@ void LemmaServer::handle_exception(Socket &client, SocketException &ex) {
 void LemmaServer::handle_message(Socket &client,
                                  std::map<std::string, std::string> &header,
                                  std::string &payload) {
-    if (header.count("hash") == 0 || header.count("lemmas") == 0)
+    if (header.count("name") == 0 || header.count("lemmas") == 0)
         return;
 
     const uint32_t clauses_request = (uint32_t) atoi(header["lemmas"].c_str());
-    std::list<SMTLemma> *lemmas = &this->lemmas[header["hash"]];
+    std::list<SMTLemma> *lemmas = &this->lemmas[header["name"]];
 
     if (header.count("separator") == 1) {
-        std::list<SMTLemma *> *lemmas_solver = &this->solvers[header["hash"]][client.get_remote().toString()];
+        std::list<SMTLemma *> *lemmas_solver = &this->solvers[header["name"]][client.get_remote().toString()];
         uint32_t pushed = 0;
         uint32_t n = 0;
         uint32_t s = 0;
@@ -61,7 +61,7 @@ void LemmaServer::handle_message(Socket &client,
             s = e;
         }
         Log::log(Log::INFO,
-                 header["hash"] + " " + client.get_remote().toString() +
+                 header["name"] + " " + client.get_remote().toString() +
                  " push [" + std::to_string(clauses_request) + "]\t" +
                  std::to_string(n) +
                  "\t(" + std::to_string(pushed) + "\tfresh, " + std::to_string(n - pushed) + "\tpresent)");
@@ -70,10 +70,10 @@ void LemmaServer::handle_message(Socket &client,
         payload.clear();
         uint32_t n = 0;
         std::list<SMTLemma *> *lemmas_solver = NULL;
-        if (header.count("exclude") && this->solvers[header["hash"]].count(header["exclude"])) {
-            lemmas_solver = &this->solvers[header["hash"]][header["exclude"]];
+        if (header.count("exclude") && this->solvers[header["name"]].count(header["exclude"])) {
+            lemmas_solver = &this->solvers[header["name"]][header["exclude"]];
         }
-        if (this->lemmas.count(header["hash"])) {
+        if (this->lemmas.count(header["name"])) {
             lemmas->sort();
             for (auto lemma = lemmas->rbegin(); lemma != lemmas->rend(); ++lemma) {
                 if (n >= clauses_request)
@@ -96,7 +96,7 @@ void LemmaServer::handle_message(Socket &client,
         }
         catch (SocketException ex) { return; }
         Log::log(Log::INFO,
-                 header["hash"] + " " + client.get_remote().toString() +
+                 header["name"] + " " + client.get_remote().toString() +
                  " pull [" + std::to_string(clauses_request) + "]\t" +
                  std::to_string(n));
     }

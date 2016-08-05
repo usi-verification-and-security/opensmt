@@ -24,7 +24,9 @@ void SolverServer::log(uint8_t level, std::string message) {
 
 
 bool SolverServer::check_header(std::map<std::string, std::string> &header) {
-    return header["name"] == this->solver->get_header()["name"] && header["hash"] == this->solver->get_header()["hash"];
+    if (this->solver == NULL)
+        return false;
+    return header["name"] == this->solver->get_header()["name"] && header["node"] == this->solver->get_header()["node"];
 }
 
 
@@ -71,16 +73,17 @@ void SolverServer::handle_message(Socket &socket, std::map<std::string, std::str
             }
         }
         else if (header["command"] == "solve") {
-            if (this->solver && this->check_header(header))
+            if (this->check_header(header))
                 return;
             this->stop_solver();
             this->solver = new SolverProcess(this->lemmas, header, payload);
+            payload.clear();
+            this->server.write(this->solver->get_header(), payload);
             this->log(Log::INFO, this->solver->toString() + " started");
             this->add_socket(this->solver->reader());
         }
-        else if (header["command"] == "stop" && this->solver) {
-            if (this->check_header(header))
-                this->stop_solver();
+        else if (header["command"] == "stop" && this->check_header(header)) {
+            this->stop_solver();
         }
     }
     else if (this->solver && socket.get_fd() == this->solver->reader()->get_fd()) {
