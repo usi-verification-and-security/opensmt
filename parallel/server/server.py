@@ -3,7 +3,6 @@
 
 import optparse
 import threading
-import os
 import json
 import framework
 import net
@@ -12,6 +11,7 @@ import client
 import logging
 import traceback
 import random
+import pathlib
 import time
 import sqlite3
 
@@ -433,17 +433,32 @@ if __name__ == '__main__':
         solving_timeout = None
 
 
+    def config_config(option, opt_str, value, parser):
+        path = pathlib.Path(value)
+        sys.path.insert(0, str(path.parent.absolute()))
+        try:
+            setattr(parser.values, option.dest, __import__(path.stem))
+        except ImportError as ex:
+            logging.log(logging.ERROR, str(ex))
+            sys.exit(1)
+
+
+    def config_database(option, opt_str, value, parser):
+        try:
+            conn = sqlite3.connect(value)
+        except BaseException as ex:
+            logging.log(logging.ERROR, str(ex))
+            sys.exit(1)
+        setattr(parser.values, option.dest, conn)
+
+
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     parser = optparse.OptionParser()
     parser.add_option('-c', '--config', dest='config', type='str',
-                      action="callback",
-                      callback=lambda option, opt_str, value, parser:
-                      setattr(parser.values, option.dest, __import__(os.path.splitext(os.path.basename(value))[0])),
+                      action="callback", callback=config_config,
                       default=Config(), help='config file path')
     parser.add_option('-d', '--database', dest='db', type='str',
-                      action="callback",
-                      callback=lambda option, opt_str, value, parser:
-                      setattr(parser.values, option.dest, sqlite3.connect(value)),
+                      action="callback", callback=config_database,
                       default=None, help='sqlite3 database file path')
 
     options, args = parser.parse_args()

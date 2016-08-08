@@ -1,4 +1,4 @@
-import glob
+import pathlib
 
 port = 3000
 portfolio_max = 0
@@ -6,7 +6,8 @@ partition_timeout = None
 partition_policy = [2, 2]
 solving_timeout = 1000
 
-files = glob.glob('../../test/std_benchmarks/*.smt2')
+_benchmarks_path = pathlib.Path(__file__).parent / '../../test/std_benchmarks'
+files = [str(i.resolve()) for i in _benchmarks_path.glob('*.smt2')]
 
 # files = """../../test/std_benchmarks/NEQ_NEQ015_size6.smt2
 # ../../test/std_benchmarks/NEQ_NEQ032_size3.smt2

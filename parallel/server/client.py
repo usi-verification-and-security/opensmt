@@ -3,8 +3,7 @@
 
 import net
 import sys
-import hashlib
-import os.path
+import pathlib
 import readline
 
 __author__ = 'Matteo Marescotti'
@@ -16,7 +15,7 @@ def send_file(address, path):
     socket.connect(address)
     socket.write({
         'command': 'solve',
-        'name': os.path.basename(path)
+        'name': pathlib.Path(path).name
     }, file.read())
 
 
