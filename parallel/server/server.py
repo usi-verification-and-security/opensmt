@@ -293,7 +293,7 @@ class ParallelizationServer(net.Server):
         )
         if timeout > sys.maxsize:
             timeout = None
-        super().__init__(port=config.port, timeout=timeout, logger=logger)
+        super().__init__(port=config.port, timeout=None if timeout is None else 30, logger=logger)
         self._config = config
         self._conn = conn
         self._table_prefix = table_prefix
@@ -389,7 +389,7 @@ class ParallelizationServer(net.Server):
             for tree in self._trees:
                 if 'started' not in self._trees[tree]:
                     continue
-                if self._config.solving_timeout < time.time() - self._trees[tree]['started'] and \
+                if self._config.solving_timeout <= time.time() - self._trees[tree]['started'] and \
                                 tree.root['status'] == framework.SolveState.unknown:
                     tree.prune(tree.root)
             self.entrust()
