@@ -25,8 +25,12 @@ void FileThread::main() {
     std::string payload;
 
     Socket client = *this->server->accept();
+    Socket *lemmas = NULL;
 
     if (this->settings.lemmas != NULL) {
+        try {
+            lemmas = new Socket(*this->settings.lemmas);
+        } catch (SocketException) { }
         header["command"] = "lemmas";
         header["lemmas"] = this->settings.lemmas->toString();
         client.write(header, payload);
@@ -57,7 +61,16 @@ void FileThread::main() {
             client.read(header, payload);
         } while (header.count("status") == 0);
         payload.clear();
+        if (lemmas != NULL)
+            try {
+                header["lemmas"] = std::string("0");
+                lemmas->write(header, payload);
+            } catch (SocketException) {
+                delete lemmas;
+                lemmas = NULL;
+            }
         header["command"] = "stop";
         client.write(header, payload);
     }
+    delete lemmas;
 }

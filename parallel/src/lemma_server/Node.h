@@ -25,7 +25,6 @@ public:
             delete (child);
         }
     }
-
 //    std::string toString(int i = 0) {
 //        auto r = std::string(i, '\t');
 //        for (auto l : this->lemmas) {

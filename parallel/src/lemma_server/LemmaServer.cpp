@@ -66,6 +66,11 @@ void LemmaServer::handle_message(Socket &client,
         node_path.push_back(node_path.back()->children[index]);
     });
 
+    if (clauses_request == 0) {
+        delete node_path.back();
+        return;
+    }
+
     if (header.count("separator") == 1) {
         std::list<SMTLemma *> *lemmas = &node_path.back()->lemmas;
         std::list<SMTLemma *> *lemmas_solver = &this->solvers[header["name"]][client.get_remote().toString()];

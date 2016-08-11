@@ -182,7 +182,12 @@ void inline OpenSMTSolver::clausesPublish() {
     header["separator"] = "\n";
     header["lemmas"] = std::to_string(n);
 
-    this->clause_socket->write(header, payload);
+    try {
+        this->clause_socket->write(header, payload);
+    } catch (SocketException) {
+        this->clause_socket = NULL;
+    }
+
 }
 
 void inline OpenSMTSolver::clausesUpdate() {
@@ -198,9 +203,15 @@ void inline OpenSMTSolver::clausesUpdate() {
     header["node"] = this->header["node"];
     header["exclude"] = this->clause_socket->get_local().toString();
 
-    Socket clauses(this->clause_socket->get_remote().toString());
-    clauses.write(header, payload);
-    clauses.read(header, payload);
+    try {
+        Socket clauses(this->clause_socket->get_remote().toString());
+        clauses.write(header, payload);
+        clauses.read(header, payload);
+    } catch (SocketException) {
+        this->clause_socket = NULL;
+        return;
+    }
+
     if (header["name"] != this->header["name"] || header.count("separator") == 0)
         return;
 

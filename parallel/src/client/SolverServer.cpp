@@ -19,6 +19,7 @@ SolverServer::SolverServer(Address &server) :
 }
 
 void SolverServer::log(uint8_t level, std::string message) {
+    //TODO log to the server as well?
     Log::log(level, "SolverServer: " + message);
 }
 
@@ -34,6 +35,11 @@ void SolverServer::handle_close(Socket &socket) {
     if (&socket == &this->server) {
         this->log(Log::INFO, "server closed the connection");
         this->stop_solver();
+    }
+    if (&socket == this->lemmas) {
+        this->log(Log::ERROR, "lemma server closed the connection");
+        delete this->lemmas;
+        this->lemmas = NULL;
     }
 }
 
@@ -67,6 +73,7 @@ void SolverServer::handle_message(Socket &socket, std::map<std::string, std::str
             }
             try {
                 this->lemmas = new Socket(header["lemmas"]);
+                this->add_socket(this->lemmas);
             }
             catch (SocketException ex) {
                 this->log(Log::ERROR, "connection error to lemma server " + header["lemmas"]);

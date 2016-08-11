@@ -314,6 +314,8 @@ class ParallelizationServer(net.Server):
         self.log(logging.INFO, 'server start')
         self.lemmas = None
 
+#TODO aggiungi che quando solvo qualcosa elimino le clausole.
+
     def handle_accept(self, sock):
         self.log(logging.INFO, 'new connection from {}'.format(sock.remote_address))
 

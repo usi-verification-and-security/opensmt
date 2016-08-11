@@ -26,10 +26,12 @@ public:
                 break;
             case WARNING:
                 system("tput setaf 3");
+                system("tput bold");
                 record += "WARNING\t";
                 break;
             case ERROR:
                 system("tput setaf 9");
+                system("tput bold");
                 record += "ERROR\t";
                 break;
             default:
