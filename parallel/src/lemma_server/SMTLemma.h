@@ -17,6 +17,11 @@ public:
             score(0),
             smtlib(smtlib) { }
 
+    //returns ​true if the first argument is less than (i.e. is ordered before) the second
+    static bool compare(const SMTLemma *const &a, SMTLemma *const &b) {
+        return a->score > b->score;
+    }
+
     void increase() { //this->score = (this->score + 1) - this->score == 1 ? this->score + 1 : this->score;
         this->score++;
     }

@@ -10,14 +10,14 @@
 #include "lib/Net.h"
 #include "SMTLemma.h"
 #include "Settings.h"
+#include "Node.h"
 
 
 class LemmaServer : public Server {
 private:
     Settings &settings;
-    std::map<std::string, std::list<SMTLemma>> lemmas;                            // name -> lemmas
+    std::map<std::string, Node *> lemmas;                            // name -> lemmas
     std::map<std::string, std::map<std::string, std::list<SMTLemma *>>> solvers;  // name -> solver -> lemmas
-
 protected:
     void handle_accept(Socket &);
 

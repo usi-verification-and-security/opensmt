@@ -32,7 +32,7 @@ void FileThread::main() {
         client.write(header, payload);
     }
 
-    for (auto filename : this->settings.files) {
+    for (auto &filename : this->settings.files) {
         std::ifstream file(filename);
         if (!file.is_open()) {
             Log::log(Log::WARNING, "unable to open: " + filename);
@@ -47,7 +47,7 @@ void FileThread::main() {
         file.close();
 
         header.clear();
-        for (auto it : this->settings.header_solve)
+        for (auto &it : this->settings.header_solve)
             header[it.first] = it.second;
         header["command"] = "solve";
         header["name"] = filename;

@@ -167,7 +167,7 @@ uint32_t Socket::write(std::map<std::string, std::string> &header, std::string &
     if (header.count(""))
         throw SocketException("empty key is not allowed");
     std::string message;
-    for (auto pair : header) {
+    for (auto &pair : header) {
         std::string keyval[2] = {pair.first, pair.second};
         for (uint8_t i = 0; i < 2; i++) {
             if (keyval[i].length() > (uint8_t) -1)
