@@ -34,9 +34,11 @@ void LemmaServer::handle_message(Socket &client,
     if (header.count("name") == 0 || header.count("node") == 0 || header.count("lemmas") == 0)
         return;
 
-    if (header["node"].size() >= 2)
-        header["node"] = header["node"].substr(1, header["node"].size() - 2);
-    else
+    if (this->lemmas.count(header["name"]) != 1) {
+        this->lemmas[header["name"]] = new Node;
+    }
+
+    if (header["node"].size() < 2)
         return;
 
     uint32_t clauses_request = 0;
@@ -48,7 +50,8 @@ void LemmaServer::handle_message(Socket &client,
 
     std::vector<Node *> node_path;
     node_path.push_back(this->lemmas[header["name"]]);
-    split(header["node"], ",", [&node_path](std::string &node_index) {
+    std::string node_indexes = header["node"].substr(1, header["node"].size() - 2);
+    split(node_indexes, ",", [&node_path](std::string &node_index) {
         int index;
         try {
             index = stoi(node_index);
@@ -57,17 +60,16 @@ void LemmaServer::handle_message(Socket &client,
         } catch (std::invalid_argument &ex) {
             return;
         }
-        while (index >= node_path.back()->children.size()) {
+        while ((unsigned) index >= node_path.back()->children.size()) {
             node_path.back()->children.push_back(new Node);
         }
         node_path.push_back(node_path.back()->children[index]);
     });
 
-    //std::list<SMTLemma *> *lemmas = &node_path.back()->lemmas;
-
     if (header.count("separator") == 1) {
         std::list<SMTLemma *> *lemmas = &node_path.back()->lemmas;
         std::list<SMTLemma *> *lemmas_solver = &this->solvers[header["name"]][client.get_remote().toString()];
+
         uint32_t pushed = 0;
         uint32_t n = 0;
         split(payload, header["separator"], [&](std::string &smtlib) {
@@ -86,44 +88,53 @@ void LemmaServer::handle_message(Socket &client,
             }
             n++;
         });
+
         Log::log(Log::INFO,
-                 header["name"] + " " + client.get_remote().toString() +
+                 header["name"] + header["node"] + " " + client.get_remote().toString() +
                  " push [" + std::to_string(clauses_request) + "]\t" +
                  std::to_string(n) +
                  "\t(" + std::to_string(pushed) + "\tfresh, " + std::to_string(n - pushed) + "\tpresent)");
+
     }
-//    else {
-//        payload.clear();
-//        uint32_t n = 0;
-//        std::list<SMTLemma *> *lemmas_solver = NULL;
-//        if (header.count("exclude") && this->solvers[header["name"]].count(header["exclude"])) {
-//            lemmas_solver = &this->solvers[header["name"]][header["exclude"]];
-//        }
-//        if (this->lemmas.count(header["name"])) {
-//            lemmas->sort();
-//            for (auto lemma = lemmas->rbegin(); lemma != lemmas->rend(); ++lemma) {
-//                if (n >= clauses_request)
-//                    break;
-//                if (lemmas_solver != NULL) {
-//                    auto fdd = std::find(lemmas_solver->begin(), lemmas_solver->end(), &*lemma);
-//                    if (fdd != lemmas_solver->end())
-//                        continue;
-//                    lemmas_solver->push_back(&*lemma);
-//                }
-//                payload += lemma->smtlib;
-//                payload += "\n";
-//                n++;
-//            }
-//        }
-//        header["lemmas"] = std::to_string(n);
-//        header["separator"] = "\n";
-//        try {
-//            client.write(header, payload);
-//        }
-//        catch (SocketException ex) { return; }
-//        Log::log(Log::INFO,
-//                 header["name"] + " " + client.get_remote().toString() +
-//                 " pull [" + std::to_string(clauses_request) + "]\t" +
-//                 std::to_string(n));
-//    }
+    else {
+        std::list<SMTLemma *> *lemmas = new std::list<SMTLemma *>();
+        std::list<SMTLemma *> *lemmas_solver = NULL;
+
+        if (header.count("exclude") && this->solvers[header["name"]].count(header["exclude"])) {
+            lemmas_solver = &this->solvers[header["name"]][header["exclude"]];
+        }
+
+        for (auto node:node_path) {
+            lemmas->merge(std::list<SMTLemma *>(node->lemmas));
+        }
+        lemmas->sort(SMTLemma::compare);
+
+        payload.clear();
+        uint32_t n = 0;
+        for (auto lemma = lemmas->rbegin(); lemma != lemmas->rend(); ++lemma) {
+            if (n >= clauses_request)
+                break;
+            if (lemmas_solver != NULL) {
+                auto it = std::find_if(lemmas_solver->begin(), lemmas_solver->end(), [&lemma](const SMTLemma *other) {
+                    return other->smtlib == (*lemma)->smtlib;
+                });
+                if (it != lemmas_solver->end())
+                    continue;
+                lemmas_solver->push_back(*lemma);
+            }
+            payload += (*lemma)->smtlib;
+            payload += "\n";
+            n++;
+        }
+        header["lemmas"] = std::to_string(n);
+        header["separator"] = "\n";
+        try {
+            client.write(header, payload);
+        }
+        catch (SocketException ex) { return; }
+        Log::log(Log::INFO,
+                 header["name"] + header["node"] + " " + client.get_remote().toString() +
+                 " pull [" + std::to_string(clauses_request) + "]\t" +
+                 std::to_string(n));
+    }
 }

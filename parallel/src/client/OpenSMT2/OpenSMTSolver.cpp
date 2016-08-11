@@ -195,6 +195,7 @@ void inline OpenSMTSolver::clausesUpdate() {
     header["lemmas"] =
             this->header.count("lemmas") == 1 ? this->header["lemmas"] : std::to_string(1000);
     header["name"] = this->header["name"];
+    header["node"] = this->header["node"];
     header["exclude"] = this->clause_socket->get_local().toString();
 
     Socket clauses(this->clause_socket->get_remote().toString());

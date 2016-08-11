@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
         st = new ServerThread(settings);
     }
 
-    LemmaServer server(settings);
+    LemmaServer server(settings.port);
     server.run_forever();
 
     delete (st);

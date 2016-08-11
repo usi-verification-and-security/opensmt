@@ -15,7 +15,6 @@
 
 class LemmaServer : public Server {
 private:
-    Settings &settings;
     std::map<std::string, Node *> lemmas;                            // name -> lemmas
     std::map<std::string, std::map<std::string, std::list<SMTLemma *>>> solvers;  // name -> solver -> lemmas
 protected:
@@ -29,7 +28,7 @@ protected:
 
 public:
 
-    LemmaServer(Settings &settings) : Server(settings.port), settings(settings) { };
+    LemmaServer(uint16_t port) : Server(port) { };
 };
 
 #endif //CLAUSE_SHARING_CLAUSESERVER_H

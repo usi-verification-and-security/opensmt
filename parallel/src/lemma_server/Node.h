@@ -14,11 +14,8 @@ class Node {
 public:
     std::list<SMTLemma *> lemmas;
     std::vector<Node *> children;
-    Node *parent;
 
-    Node() : parent(NULL) { }
-
-    Node(Node *parent) : parent(parent) { }
+    Node() { }
 
     ~Node() {
         for (auto lemma:this->lemmas) {
@@ -29,17 +26,17 @@ public:
         }
     }
 
-    std::string toString(int i = 0) {
-        auto r = std::string(i, '\t');
-        for (auto l : this->lemmas) {
-            r.append(l->smtlib + ", ");
-        }
-        r.append("\n");
-        for (auto c : this->children) {
-            r.append(c->toString(i + 1));
-        }
-        return r;
-    }
+//    std::string toString(int i = 0) {
+//        auto r = std::string(i, '\t');
+//        for (auto l : this->lemmas) {
+//            r.append(l->smtlib + ", ");
+//        }
+//        r.append("\n");
+//        for (auto c : this->children) {
+//            r.append(c->toString(i + 1));
+//        }
+//        return r;
+//    }
 };
 
 #endif //CLAUSE_SERVER_NODE_H
