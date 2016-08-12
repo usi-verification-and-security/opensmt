@@ -1,8 +1,14 @@
 //
-// Created by Matteo on 12/08/16.
+// Created by Matteo Marescotti on 07/12/15.
 //
 
-#ifndef CLAUSE_SERVER_NET_H
-#define CLAUSE_SERVER_NET_H
+#ifndef CLAUSE_SHARING_SOCKET_H
+#define CLAUSE_SHARING_SOCKET_H
 
-#endif //CLAUSE_SERVER_NET_H
+#include "net/Address.h"
+#include "net/Pipe.h"
+#include "net/Server.h"
+#include "net/Socket.h"
+
+
+#endif //CLAUSE_SHARING_SOCKET_H
