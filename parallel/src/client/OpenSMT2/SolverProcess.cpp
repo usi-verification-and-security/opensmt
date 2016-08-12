@@ -26,11 +26,6 @@ SolverProcess::SolverProcess(Socket *lemmas, std::map<std::string, std::string> 
     this->start();
 }
 
-std::string SolverProcess::toString() {
-    return std::string(SolverProcess::solver) + "<" + this->header["seed"] + ">" +
-           " on " + this->header["name"] + this->header["node"];
-}
-
 void SolverProcess::main() {
 
     if (this->header.count("stderr") == 0)
@@ -72,4 +67,3 @@ void SolverProcess::main() {
     this->writer()->write(header, payload);
 
 }
-

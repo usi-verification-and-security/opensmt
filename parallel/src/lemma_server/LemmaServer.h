@@ -7,7 +7,7 @@
 
 #include <map>
 #include <ctime>
-#include "lib/Net.h"
+#include "lib/net.h"
 #include "SMTLemma.h"
 #include "Settings.h"
 #include "Node.h"

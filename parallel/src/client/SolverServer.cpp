@@ -18,8 +18,16 @@ SolverServer::SolverServer(Address &server) :
     this->add_socket(&this->server);
 }
 
-void SolverServer::log(uint8_t level, std::string message) {
-    //TODO log to the server as well?
+void SolverServer::log(uint8_t level, std::string message, std::map<std::string, std::string> *header_solver) {
+//    std::map<std::string, std::string> header;
+//    if (header_solver != NULL) {
+//        for(auto &pair:header_solver)
+//        header["command"] = "log";
+//        header["level"] = std::to_string(level);
+//        try {
+//            this->server.write(header, message);
+//        } catch (SocketException) { }
+//    }
     Log::log(level, "SolverServer: " + message);
 }
 
@@ -35,6 +43,8 @@ void SolverServer::handle_close(Socket &socket) {
     if (&socket == &this->server) {
         this->log(Log::INFO, "server closed the connection");
         this->stop_solver();
+        if (this->lemmas != NULL)
+            delete this->lemmas;
     }
     if (&socket == this->lemmas) {
         this->log(Log::ERROR, "lemma server closed the connection");
@@ -49,7 +59,7 @@ void SolverServer::handle_exception(Socket &socket, SocketException &exception) 
 
 void SolverServer::stop_solver() {
     if (this->solver != NULL) {
-        this->log(Log::INFO, this->solver->toString() + " stop");
+        this->log(Log::INFO, " stop", &this->solver->get_header());
         this->solver->stop();
         this->solver->join();
         this->del_socket(this->solver->reader());
@@ -86,7 +96,7 @@ void SolverServer::handle_message(Socket &socket, std::map<std::string, std::str
             this->solver = new SolverProcess(this->lemmas, header, payload);
             payload.clear();
             this->server.write(this->solver->get_header(), payload);
-            this->log(Log::INFO, this->solver->toString() + " started");
+            this->log(Log::INFO, " started");
             this->add_socket(this->solver->reader());
         }
         else if (header["command"] == "stop" && this->check_header(header)) {
@@ -97,7 +107,7 @@ void SolverServer::handle_message(Socket &socket, std::map<std::string, std::str
         if (!this->check_header(header))
             return;
         if (header.count("status") == 1) {
-            this->log(Log::INFO, this->solver->toString() + " status: " + header["status"]);
+            this->log(Log::INFO, " status: " + header["status"]);
             this->server.write(header, payload);
         }
     }

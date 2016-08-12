@@ -5,7 +5,7 @@
 #ifndef CLAUSE_SHARING_SETTINGS_H
 #define CLAUSE_SHARING_SETTINGS_H
 
-#include "lib/Net.h"
+#include "lib/net.h"
 
 
 class Settings {

@@ -1,43 +1,12 @@
 //
-// Created by Matteo Marescotti on 07/12/15.
+// Created by Matteo on 12/08/16.
 //
 
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <algorithm>
-#include <string.h>
-#include "Net.h"
-
-
-Address::Address(std::string address) {
-    uint8_t i;
-    for (i = 0; address[i] != ':' && i < address.size() && i < (uint8_t) -1; i++) { }
-    if (address[i] != ':')
-        throw Exception("invalid host:port");
-    new(this) Address(address.substr(0, i), (uint16_t) ::atoi(address.substr(i + 1).c_str()));
-}
-
-Address::Address(std::string hostname, uint16_t port) :
-        hostname(hostname),
-        port(port) { }
-
-Address::Address(struct sockaddr_storage *address) {
-    char ipstr[INET6_ADDRSTRLEN];
-    uint16_t port = 0;
-
-    if (address->ss_family == AF_INET) {
-        struct sockaddr_in *s = (struct sockaddr_in *) address;
-        port = ntohs(s->sin_port);
-        ::inet_ntop(AF_INET, &s->sin_addr, ipstr, sizeof ipstr);
-    } else { // AF_INET6
-        struct sockaddr_in6 *s = (struct sockaddr_in6 *) address;
-        port = ntohs(s->sin6_port);
-        ::inet_ntop(AF_INET6, &s->sin6_addr, ipstr, sizeof ipstr);
-    }
-
-    new(this) Address(std::string(ipstr), port);
-}
+#include "Socket.h"
 
 
 Socket::Socket(Address address) {
@@ -223,120 +192,4 @@ Address Socket::get_remote() {
         return Address(std::string(), 0);
 
     return Address(&addr);
-}
-
-Pipe::Pipe(int r, int w) :
-        r(new Socket(r)),
-        w(new Socket(w)) { }
-
-Pipe::Pipe() {
-    int fd[2];
-    if (::pipe(fd) == -1)
-        throw SocketException("pipe creation error");
-    new(this) Pipe(fd[0], fd[1]);
-}
-
-Pipe::~Pipe() {
-    delete this->r;
-    delete this->w;
-}
-
-Socket *Pipe::reader() {
-    return this->r;
-}
-
-Socket *Pipe::writer() {
-    return this->w;
-}
-
-Server::Server(Socket *socket, bool close) :
-        socket(socket),
-        close(close) {
-    if (this->socket)
-        this->sockets.push_back(this->socket);
-}
-
-Server::Server() : Server(NULL, false) { }
-
-Server::Server(Socket &socket) :
-        Server(&socket, false) { }
-
-Server::Server(uint16_t port) :
-        Server(new Socket(port), true) { }
-
-Server::~Server() {
-    if (this->close)
-        delete this->socket;
-}
-
-void Server::run_forever() {
-    fd_set readset;
-    int result;
-    Socket *client;
-    std::map<std::string, std::string> header;
-    std::string payload;
-
-    while (true) {
-        do {
-            FD_ZERO(&readset);
-            int max = 0;
-            for (auto socket : this->sockets) {
-                max = max < socket->get_fd() ? socket->get_fd() : max;
-                FD_SET(socket->get_fd(), &readset);
-            }
-            if (max == 0)
-                return;
-            result = select(max + 1, &readset, NULL, NULL, NULL);
-        } while (result == -1 && errno == EINTR);
-
-        for (auto socket = this->sockets.begin(); socket != this->sockets.end();) {
-            if (FD_ISSET((*socket)->get_fd(), &readset)) {
-                FD_CLR((*socket)->get_fd(), &readset);
-                if (this->socket && (*socket)->get_fd() == this->socket->get_fd()) {
-                    try {
-                        client = this->socket->accept();
-                    }
-                    catch (SocketException ex) {
-                        goto next;
-                    }
-                    this->sockets.push_back(client);
-                    this->handle_accept(*client);
-                }
-                else {
-                    try {
-                        (*socket)->read(header, payload);
-                        this->handle_message(**socket, header, payload);
-                    }
-                    catch (SocketClosedException ex) {
-                        this->handle_close(**socket);
-                        (*socket)->close();
-                        socket = this->sockets.erase(socket);
-                    }
-                    catch (SocketException ex) {
-                        this->handle_exception(**socket, ex);
-                    }
-                }
-            }
-            next:
-            ++socket;
-        }
-//        if (result < 0) {
-//        }
-    }
-}
-
-void Server::add_socket(Socket *socket) {
-    this->sockets.push_back(socket);
-}
-
-void Server::del_socket(Socket *socket) {
-    this->sockets.erase(
-            std::remove_if(
-                    this->sockets.begin(),
-                    this->sockets.end(),
-                    [&](Socket *it) {
-                        return it == socket;
-                    }
-            ),
-            this->sockets.end());
 }

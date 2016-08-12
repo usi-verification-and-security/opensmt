@@ -6,7 +6,7 @@
 #define CLAUSE_SHARING_SOLVERSERVER_H
 
 #include <ctime>
-#include "lib/Net.h"
+#include "lib/net.h"
 #include "SolverProcess.h"
 
 
@@ -14,7 +14,7 @@ class SolverServer : public Server {
 private:
     void stop_solver();
 
-    void log(uint8_t, std::string);
+    void log(uint8_t, std::string, std::map<std::string, std::string> *_ = NULL);
 
     bool check_header(std::map<std::string, std::string> &);
 

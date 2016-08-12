@@ -10,7 +10,7 @@
 #include <atomic>
 #include <iostream>
 #include "Exception.h"
-#include "Net.h"
+#include "net.h"
 
 
 #ifdef __APPLE__

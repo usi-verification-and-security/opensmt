@@ -6,7 +6,7 @@
 #define CLAUSE_SHARING_PROCESS_H
 
 #include "Exception.h"
-#include "Net.h"
+#include "net.h"
 
 
 class ProcessException : public Exception {

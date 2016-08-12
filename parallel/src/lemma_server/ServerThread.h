@@ -6,7 +6,7 @@
 #define CLAUSE_SHARING_SERVERTHREAD_H
 
 #include "lib/Thread.h"
-#include "lib/Net.h"
+#include "lib/net.h"
 #include "Settings.h"
 
 

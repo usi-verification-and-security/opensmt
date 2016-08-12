@@ -67,7 +67,21 @@ void LemmaServer::handle_message(Socket &client,
     });
 
     if (clauses_request == 0) {
-        delete node_path.back();
+        Log::log(Log::INFO,
+                 header["name"] + header["node"] + " " + client.get_remote().toString() +
+                 " clear");
+        Node *node_remove = node_path.back();
+        node_path.pop_back();
+        if (node_path.size() > 0) {
+            std::replace(node_path.back()->children.begin(),
+                         node_path.back()->children.end(),
+                         node_remove,
+                         new Node);
+        }
+        else {
+            this->lemmas.erase(header["name"]);
+        }
+        delete node_remove;
         return;
     }
 
