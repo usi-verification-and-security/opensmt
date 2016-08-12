@@ -6,6 +6,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <algorithm>
+#include <strings.h>
 #include "Socket.h"
 
 
