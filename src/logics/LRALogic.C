@@ -414,8 +414,7 @@ PTRef LRALogic::mkRealMinus(const vec<PTRef>& args_in, char** msg)
     args_in.copyTo(args);
 
     if (args.size() == 1) {
-        s = sym_Real_NEG;
-        return mkFun(s, args, msg);
+        return mkRealNeg(args[0], msg);
     }
     assert (args.size() == 2);
     PTRef mo = mkConst(getSort_real(), "-1");
