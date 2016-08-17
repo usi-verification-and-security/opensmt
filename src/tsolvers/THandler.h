@@ -73,11 +73,7 @@ public:
 #endif
     Lit     getDeduction         ();                      // Returns a literal that is implied by the current state and the reason literal
     Lit     getSuggestion        ( );                     // Returns a literal that is suggested by the current state
-#ifdef PEDANTIC_DEBUG
-    bool    getReason            ( Lit, vec< Lit > &, vec<lbool>& );   // Returns the explanation for a deduced literal
-#else
-    void    getReason            ( Lit, vec< Lit > &, vec<lbool>& );   // Returns the explanation for a deduced literal
-#endif
+    void    getReason            ( Lit, vec< Lit > &);    // Returns the explanation for a deduced literal
 
     ValPair getValue          (PTRef tr) const { return getSolverHandler().getValue(tr); };
 
