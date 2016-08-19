@@ -85,6 +85,9 @@ Logic::Logic(SMTConfig& c) :
 {
     config.logic = QF_UF;
     logic_type = QF_UF;
+    char* msg;
+    // We can't use declareSort here since it assumes that sort_BOOL
+    // exists for making the equality symbol!
     IdRef bool_id = id_store.newIdentifier("Bool");
     vec<SRef> tmp_srefs;
     sort_store.newSort(bool_id, tmp_srefs);
@@ -92,7 +95,6 @@ Logic::Logic(SMTConfig& c) :
 
     SymRef tr;
 
-    char* msg;
     term_TRUE = mkConst(getSort_bool(), tk_true);
     if (term_TRUE == PTRef_Undef) {
         printf("Error in constructing term %s: %s\n", tk_true, msg);
@@ -839,7 +841,7 @@ PTRef Logic::mkConst(SRef s, const char* name) {
     PTRef ptr = PTRef_Undef;
     if (s == sort_BOOL) {
         if ((strcmp(name, tk_true) != 0) && (strcmp(name, tk_false) != 0)) {
-            char *msg = (char*)malloc(sizeof(e_bad_constant)+1);
+            char *msg = (char*)malloc(strlen(e_bad_constant)+1);
             strcpy(msg, e_bad_constant);
             ptr = PTRef_Undef;
         }
