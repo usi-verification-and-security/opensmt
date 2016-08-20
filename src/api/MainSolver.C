@@ -209,7 +209,14 @@ MainSolver::insertFormula(PTRef root, char** msg)
 #ifdef PRODUCE_PROOF
     logic.setIPartitionsIte(root);
 #endif
-    formulas.last().push(root);
+    if(config.produce_inter())
+    {
+        return giveToSolver(root, formulas[0].getId());
+    }
+    else
+    {
+        formulas.last().push(root);
+    }
     return s_Undef;
 }
 

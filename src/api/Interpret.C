@@ -1257,8 +1257,8 @@ void Interpret::GetInterpolants()
     if(!logic->canInterpolate())
         opensmt_error("Cannot interpolate");
 
-    //int rseed = 1466156790;
-    int rseed = time(NULL);
+    int rseed = 1466156790;
+    //int rseed = time(NULL);
     cerr << "; Seed used for partitioning: " << rseed << endl;
     srand(rseed);
 
