@@ -176,10 +176,15 @@ MainSolver::push()
     formulas.push();
 }
 
-void
+bool
 MainSolver::pop()
 {
-    formulas.pop();
+    if (formulas.size() > 1) {
+        formulas.pop();
+        return true;
+    }
+    else
+        return false;
 }
 
 sstat
@@ -233,8 +238,10 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
         simplified_until = i+1;
         PTRef root = formulas[i].root;
 
-        if (logic.isFalse(root)) return status = s_False;
-
+        if (logic.isFalse(root)) {
+            giveToSolver(getLogic().getTerm_false(), formulas[i].getId());
+            return status = s_False;
+        }
         FContainer fc(root);
 
         // Optimize the dag for cnfization
