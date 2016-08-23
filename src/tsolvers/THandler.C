@@ -302,7 +302,7 @@ Lit THandler::getSuggestion( ) {
     return tmap.getLit(e);
 }
 
-void THandler::getReason( Lit l, vec< Lit > & reason, vec<lbool>& assigns )
+void THandler::getReason( Lit l, vec< Lit > & reason)
 {
 #if LAZY_COMMUNICATION
     assert( checked_trail_size == stack.size( ) );
@@ -334,25 +334,13 @@ void THandler::getReason( Lit l, vec< Lit > & reason, vec<lbool>& assigns )
 //  const bool res = egraph.assertLit( e, true ) &&
 //                   egraph.check( true );
     lbool res = l_Undef;
-    assert(value(l, assigns) == l_Undef);
     // Assign temporarily opposite polarity
     res = solver->assertLit(PtAsgn(e, sign(~l) ? l_False : l_True)) == false ? l_False : l_Undef;
 
-#ifdef PEDANTIC_DEBUG
-    // Result must be false
-    if ( res != l_False ) {
-//        cout << endl << "unknown" << endl;
-//        cerr << egraph.printUndoTrail();
-        return false;
-    }
-    else {}
-//        cerr << endl << "ok" << endl;
-#else
     if ( res != l_False ) {
         cout << endl << "unknown" << endl;
         assert(false);
     }
-#endif
 
     // Get Explanation
     vec<PtAsgn> explanation;
@@ -406,9 +394,6 @@ void THandler::getReason( Lit l, vec< Lit > & reason, vec<lbool>& assigns )
     // Resetting polarity
 //    egraph.clearPolarity(e);
 //    e->resetPolarity( );
-#ifdef PEDANTIC_DEBUG
-    return true;
-#endif
 }
 
 //

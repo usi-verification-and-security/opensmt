@@ -783,8 +783,12 @@ bool Interpret::push()
 bool Interpret::pop()
 {
     if (config.isIncremental()) {
-        main_solver->pop();
-        return true;
+        if (main_solver->pop())
+            return true;
+        else {
+            notify_formatted(true, "Attempt to pop beyond the top of the stack");
+            return false;
+        }
     }
     else {
         notify_formatted(true, "pop encountered but solver not in incremental mode");

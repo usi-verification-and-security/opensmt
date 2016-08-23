@@ -70,10 +70,15 @@ struct PushFrame
     PTRef operator[] (int i) const              { return formulas[i]; }
     Map<PTRef,lbool,PTRefHash> units; // Contains the unit (theory) clauses that are implied up to here
     PTRef root;
+    void addSeen(PTRef tr)                      { seen.insert(tr, l_True); }
+    bool isSeen(PTRef tr)                       { return seen.has(tr); }
  private:
     vec<PTRef> formulas;
     static int id_counter;
     int id;
+    //  If a lower frame F contains a substitution x = f(Y), x = f(Y)
+    //  needs to be inserted into the root of the lower frame
+    Map<PTRef,lbool,PTRefHash> seen; // Contains all the variables x seen in this frame.
 };
 
 class Theory

@@ -536,21 +536,14 @@ void CoreSMTSolver::cancelUntil(int level)
         for (int c = trail.size()-1; c >= trail_lim[level]; c--)
         {
             Var      x  = var(trail[c]);
-            assigns [x] = l_Undef;
 #ifdef PEDANTIC_DEBUG
             assert(assigns[x] != l_Undef);
 #endif
+            assigns [x] = l_Undef;
             if (phase_saving > 1 || (phase_saving == 1) && c > trail_lim.last())
                 polarity[x] = sign(trail[c]);
             insertVarOrder(x);
         }
-#ifdef PEDANTIC_DEBUG
-        if (debug_reason_map.contains(x))
-        {
-            checkTheoryReasonClause_debug(x);
-            removeTheoryReasonClause_debug(x);
-        }
-#endif
         qhead = trail_lim[level];
         trail.shrink(trail.size() - trail_lim[level]);
         trail_lim.shrink(trail_lim.size() - level);
@@ -1009,14 +1002,14 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
 #ifdef DEBUG_REASONS
             if (theory_handler.getReason( p, r, assigns ) == false)
             {
-                assert(debug_reason_map.contains(var(p)));
+                assert(debug_reason_map.has(var(p)));
                 int idx = debug_reason_map[var(p)];
                 CRef cr = debug_reasons[idx];
                 cerr << "Could not find reason " << theory_handler.printAsrtClause(c) << endl;
                 assert(false);
             }
 #else
-            theory_handler.getReason( p, r, assigns );
+            theory_handler.getReason(p, r);
 #endif
             assert(r.size() > 0);
 #ifdef STATISTICS
@@ -1253,14 +1246,14 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
 #ifdef DEBUG_REASONS
             if (theory_handler.getReason( p, r, assigns ) == false)
             {
-                assert(debug_reason_map.contains(var(p)));
+                assert(debug_reason_map.has(var(p)));
                 int idx = debug_reason_map[var(p)];
                 Clause* c = debug_reasons[idx];
                 cerr << theory_handler.printAsrtClause(c) << endl;
                 assert(false);
             }
 #else
-            theory_handler.getReason( p, r, assigns );
+            theory_handler.getReason(p, r);
 #endif
             // Restoring trail
             cancelUntilVarTempDone( );
@@ -1406,7 +1399,7 @@ void CoreSMTSolver::uncheckedEnqueue(Lit p, CRef from)
 {
     assert(from != CRef_Fake || theory_handler.getLogic().isTheoryTerm(theory_handler.varToTerm(var(p))));
 #ifdef DEBUG_REASONS
-    assert(from == CRef_Fake || !debug_reason_map.contains(var(p)));
+    assert(from == CRef_Fake || !debug_reason_map.has(var(p)));
 #endif
     assert(value(p) == l_Undef);
     assigns[var(p)] = lbool(!sign(p));

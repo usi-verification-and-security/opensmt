@@ -723,13 +723,13 @@ bool Cnfizer::addClause ( vec<Lit> &c, const ipartitions_t &mask)
 bool Cnfizer::addClause ( vec<Lit> &c )
 #endif
 {
-    /*
+
     if (frame_term != logic.getTerm_true()) {
         Lit l = findLit(frame_term);
         solver.setFrozen(var(l), true);
         c.push(l);
     }
-    */
+
 #ifdef PEDANTIC_DEBUG
     cerr << "== clause start" << endl;
 

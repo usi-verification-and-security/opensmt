@@ -242,7 +242,7 @@ LRALogic::LRALogic(SMTConfig& c) :
     logic_type = QF_LRA;
 
     sort_REAL = declareSort(s_sort_real, msg);
-
+//    printf("Setting sort_REAL to %d at %p\n", sort_REAL.x, &(sort_REAL.x));
     vec<SRef> params;
 
 
@@ -414,8 +414,9 @@ PTRef LRALogic::mkRealMinus(const vec<PTRef>& args_in, char** msg)
     args_in.copyTo(args);
 
     if (args.size() == 1) {
-        s = sym_Real_NEG;
-        return mkFun(s, args, msg);
+        return mkRealNeg(args[0], msg);
+//        s = sym_Real_NEG;
+//        return mkFun(s, args, msg);
     }
     assert (args.size() == 2);
     PTRef mo = mkConst(getSort_real(), "-1");

@@ -29,7 +29,9 @@ PTRef Theory::getCollateFunction(vec<PushFrame>& formulas, int curr)
 //
 // Given coll_f = (R_1 /\ ... /\ R_{curr-1}) /\ (U_1 /\ ... /\ U_{curr-1}) /\
 // P_{curr}, compute U_{curr}.  Place U_{curr} to frame and simplify
-// the problem P_{curr} using (U_1 /\ ... /\ U_{curr}) resulting in R_i.
+// the problem P_{curr} using (U_1 /\ ... /\ U_{curr}) resulting in
+// R_{curr}.
+// If x = f(Y) is a newly found substitution and there is a lower frame F containing x, add x = f(Y) to R_{curr}.
 //
 bool Theory::computeSubstitutions(PTRef coll_f, vec<PushFrame>& frames, int curr)
 {
@@ -140,6 +142,72 @@ bool Theory::computeSubstitutions(PTRef coll_f, vec<PushFrame>& frames, int curr
 
     bool result = no_conflict && th->check(true);
 
+    // Traverse frames[curr].root to see all the variables.
+    vec<PTRef> queue;
+    Map<PTRef,PTRef,PTRefHash> tr_map;
+    Map<PTRef,bool,PTRefHash> processed;
+    queue.push(frames[curr].root);
+    while (queue.size() != 0)
+    {
+        PTRef tr = queue.last();
+        if (processed.has(tr)) {
+            queue.pop();
+            continue;
+        }
+        bool unprocessed_children = false;
+        Pterm& t = getLogic().getPterm(tr);
+        for (int i = 0; i < t.size(); i++) {
+            PTRef cr = t[i];
+            if (!processed.has(cr)) {
+                unprocessed_children = true;
+                queue.push(cr);
+            }
+        }
+        if (unprocessed_children) continue;
+        if (getLogic().isVar(tr))
+        {
+#ifdef PEDANTIC_DEBUG
+            char* name = getLogic().printTerm(tr);
+            printf("Found a variable %s\n", name);
+            free(name);
+#endif
+            frames[curr].addSeen(tr);
+        }
+        processed.insert(tr, true);
+        queue.pop();
+    }
+
+    // Check the previous frames to see whether a substitution needs to
+    // be inserted to frames[curr].root.
+    vec<Map<PTRef,PtAsgn,PTRefHash>::Pair> substitutions;
+        substs.getKeysAndVals(substitutions);
+    for (int i = 0; i < substitutions.size(); i++)
+    {
+        Map<PTRef,PtAsgn,PTRefHash>::Pair& p = substitutions[i];
+        PTRef var = p.key;
+        for (int i = 0; i < curr; i ++)
+        {
+            if (frames[i].isSeen(var))
+            {
+                // The substitution needs to be added to the root
+                // formula
+                PTRef subst_tr = getLogic().mkEq(var, p.data.tr);
+                subst_tr = p.data.sgn == l_True ? subst_tr : getLogic().mkNot(subst_tr);
+                frames[curr].root = getLogic().mkAnd(subst_tr, frames[curr].root);
+#ifdef PEDANTIC_DEBUG
+                char* name_var = getLogic().printTerm(var);
+                char* name_exp = getLogic().printTerm(p.data.tr);
+                char* name_sub = getLogic().printTerm(subst_tr);
+                printf("Found a substitution %s / %s with occurrence higher in the stack.\n  => Adding the formula %s to the root formula of this frame.\n",
+                        name_var, name_exp, name_sub);
+                free(name_var);
+                free(name_exp);
+                free(name_sub);
+#endif
+                continue; // Go to the next substitution
+            }
+        }
+    }
     delete th;
     return result;
 }

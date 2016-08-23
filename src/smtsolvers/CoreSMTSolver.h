@@ -1428,6 +1428,18 @@ inline void CoreSMTSolver::printClause(const C& c)
         printLit(c[i]);
         fprintf(stderr, " ");
     }
+
+    Logic& logic = theory_handler.getLogic();
+    vec<PTRef> args;
+    for (int i = 0; i < c.size(); i++)
+    {
+        PTRef tr = sign(c[i]) ? logic.mkNot(theory_handler.varToTerm(var(c[i]))) : theory_handler.varToTerm(var(c[i]));
+        args.push(tr);
+    }
+    PTRef tr = logic.mkOr(args);
+    char* clause = logic.printTerm(tr);
+    fprintf(stderr, "; %s", clause);
+    free(clause);
 }
 
 //=================================================================================================
