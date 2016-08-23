@@ -12,9 +12,8 @@ SolverServer::SolverServer(Address &server) :
         lemmas(NULL),
         solver(NULL) {
     std::map<std::string, std::string> header;
-    std::string payload;
     header["solver"] = SolverProcess::solver;
-    this->server.write(header, payload);
+    this->server.write(header, "");
     this->add_socket(&this->server);
 }
 
@@ -94,8 +93,7 @@ void SolverServer::handle_message(Socket &socket, std::map<std::string, std::str
                 return;
             this->stop_solver();
             this->solver = new SolverProcess(this->lemmas, header, payload);
-            payload.clear();
-            this->server.write(this->solver->get_header(), payload);
+            this->server.write(this->solver->get_header(), "");
             this->log(Log::INFO, " started");
             this->add_socket(this->solver->reader());
         }

@@ -43,7 +43,7 @@ public:
 
     uint32_t read(std::map<std::string, std::string> &, std::string &);
 
-    uint32_t write(std::map<std::string, std::string> &, std::string &);
+    uint32_t write(std::map<std::string, std::string> &, const std::string &);
 
     void close();
 

@@ -48,7 +48,8 @@ void Settings::load(int argc, char **argv) {
                 this->load_header(this->header_solve, optarg);
                 break;
             default:
-                abort();
+                std::cout << "unknown option '" << opt << "'" << "\n";
+                exit(-1);
         }
     for (int i = optind; i < argc; i++) {
         this->files.push_back(std::string(argv[i]));

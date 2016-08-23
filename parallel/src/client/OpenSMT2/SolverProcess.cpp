@@ -23,6 +23,9 @@ SolverProcess::SolverProcess(Socket *lemmas, std::map<std::string, std::string> 
         std::random_device rd;
         this->header["seed"] = std::to_string(randuint(rd));
     }
+    if (this->header.count("lemmas") == 0) {
+        this->header["lemmas"] = 1000;
+    }
     this->start();
 }
 
@@ -53,7 +56,6 @@ void SolverProcess::main() {
 
     sstat status = interpret.main_solver->getStatus();
     std::map<std::string, std::string> header;
-    std::string payload;
 
     if (status == s_True)
         header["status"] = "sat";
@@ -64,6 +66,6 @@ void SolverProcess::main() {
     header["name"] = this->header["name"];
     header["node"] = this->header["node"];
 
-    this->writer()->write(header, payload);
+    this->writer()->write(header, "");
 
 }

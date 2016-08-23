@@ -133,7 +133,7 @@ uint32_t Socket::read(std::map<std::string, std::string> &header, std::string &p
     return length;
 }
 
-uint32_t Socket::write(std::map<std::string, std::string> &header, std::string &payload) {
+uint32_t Socket::write(std::map<std::string, std::string> &header, const std::string &payload) {
     if (header.count(""))
         throw SocketException("empty key is not allowed");
     std::string message;

@@ -7,11 +7,11 @@
 
 
 Settings::Settings() :
-        port(5000), server(Address(std::string(), 0)) { }
+        port(5000), server(Address(std::string(), 0)), clear_lemmas(true) { }
 
 void Settings::load(int argc, char **argv) {
     int opt;
-    while ((opt = getopt(argc, argv, "hp:s:t:")) != -1)
+    while ((opt = getopt(argc, argv, "hp:s:d:C:")) != -1)
         switch (opt) {
             case 'h':
                 std::cout << "Usage: " << argv[0] << "\n";
@@ -22,8 +22,15 @@ void Settings::load(int argc, char **argv) {
             case 's':
                 this->server = Address(std::string(optarg));
                 break;
+            case 'd':
+                this->db_filename = std::string(optarg);
+                break;
+            case 'C':
+                this->clear_lemmas = false;
+                break;
             default:
-                abort();
+                std::cout << "unknown option '" << opt << "'" << "\n";
+                exit(-1);
         }
 
     for (int i = optind; i < argc; i++) { }

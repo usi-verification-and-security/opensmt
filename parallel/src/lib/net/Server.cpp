@@ -23,6 +23,9 @@ Server::Server(uint16_t port) :
         Server(new Socket(port), true) { }
 
 Server::~Server() {
+    for (auto socket:this->sockets) {
+        socket->close();
+    }
     if (this->close)
         delete this->socket;
 }
