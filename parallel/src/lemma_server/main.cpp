@@ -1,7 +1,7 @@
 #include <iostream>
+#include "lib/Log.h"
 #include "Settings.h"
 #include "LemmaServer.h"
-#include "ServerThread.h"
 
 
 int main(int argc, char **argv) {
@@ -9,17 +9,18 @@ int main(int argc, char **argv) {
     try {
         settings.load(argc, argv);
     }
-    catch (Exception ex) {
-        std::cerr << ex.what() << "\n";
+    catch (Exception &ex) {
+        Log::log(Log::ERROR, ex.what());
     }
 
-    ServerThread *st = NULL;
-    if (settings.server.port > 0) {
-        st = new ServerThread(settings);
+    try {
+        LemmaServer server(settings);
+        server.run_forever();
+    } catch (SQLiteException &ex) {
+        Log::log(Log::ERROR, ex.what());
+    } catch (SocketException &ex) {
+        Log::log(Log::ERROR, ex.what());
+    } catch (Exception &ex) {
+        Log::log(Log::INFO, ex.what());
     }
-
-    LemmaServer server(settings.port);
-    server.run_forever();
-
-    delete (st);
 }

@@ -26,7 +26,7 @@ public:
 
     Server(uint16_t);
 
-    ~Server();
+    virtual ~Server();
 
     void run_forever();
 

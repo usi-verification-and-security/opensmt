@@ -22,7 +22,6 @@ FileThread::~FileThread() {
 
 void FileThread::main() {
     std::map<std::string, std::string> header;
-    std::string payload;
 
     Socket client = *this->server->accept();
     Socket *lemmas = NULL;
@@ -33,7 +32,7 @@ void FileThread::main() {
         } catch (SocketException) { }
         header["command"] = "lemmas";
         header["lemmas"] = this->settings.lemmas->toString();
-        client.write(header, payload);
+        client.write(header, "");
     }
 
     for (auto &filename : this->settings.files) {
@@ -43,7 +42,7 @@ void FileThread::main() {
             continue;
         }
 
-        payload.clear();
+        std::string payload;
         file.seekg(0, std::ios::end);
         payload.resize((unsigned long) file.tellg());
         file.seekg(0, std::ios::beg);
@@ -60,17 +59,16 @@ void FileThread::main() {
         do {
             client.read(header, payload);
         } while (header.count("status") == 0);
-        payload.clear();
         if (lemmas != NULL)
             try {
                 header["lemmas"] = std::string("0");
-                lemmas->write(header, payload);
+                lemmas->write(header, "");
             } catch (SocketException) {
                 delete lemmas;
                 lemmas = NULL;
             }
         header["command"] = "stop";
-        client.write(header, payload);
+        client.write(header, "");
     }
     delete lemmas;
 }

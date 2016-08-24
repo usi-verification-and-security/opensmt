@@ -12,7 +12,7 @@
 
 class Node {
 public:
-    std::list<SMTLemma *> lemmas;
+    std::list<Lemma *> lemmas;
     std::vector<Node *> children;
 
     Node() { }

@@ -8,15 +8,19 @@
 #include <map>
 #include <ctime>
 #include "lib/net.h"
-#include "SMTLemma.h"
+#include "lib/sqlite3.h"
+#include "Lemma.h"
 #include "Settings.h"
 #include "Node.h"
 
 
 class LemmaServer : public Server {
 private:
+    Settings &settings;
+    Socket *server;
+    SQLite3 *db;
     std::map<std::string, Node *> lemmas;                            // name -> lemmas
-    std::map<std::string, std::map<std::string, std::list<SMTLemma *>>> solvers;  // name -> solver -> lemmas
+    std::map<std::string, std::map<std::string, std::list<Lemma *>>> solvers;  // name -> solver -> lemmas
 protected:
     void handle_accept(Socket &);
 
@@ -27,8 +31,9 @@ protected:
     void handle_exception(Socket &, SocketException &);
 
 public:
+    LemmaServer(Settings &);
 
-    LemmaServer(uint16_t port) : Server(port) { };
+    ~LemmaServer();
 };
 
 #endif //CLAUSE_SHARING_CLAUSESERVER_H

@@ -5,6 +5,7 @@
 #ifndef CLAUSE_SHARING_SETTINGS_H
 #define CLAUSE_SHARING_SETTINGS_H
 
+#include <string>
 #include "lib/net.h"
 
 
@@ -16,7 +17,8 @@ public:
 
     uint16_t port;
     Address server;
-
+    std::string db_filename;
+    bool clear_lemmas;
 };
 
 #endif //CLAUSE_SHARING_SETTINGS_H
