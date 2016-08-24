@@ -180,7 +180,7 @@ bool Theory::computeSubstitutions(PTRef coll_f, vec<PushFrame>& frames, int curr
     // Check the previous frames to see whether a substitution needs to
     // be inserted to frames[curr].root.
     vec<Map<PTRef,PtAsgn,PTRefHash>::Pair> substitutions;
-        substs.getKeysAndVals(substitutions);
+    substs.getKeysAndVals(substitutions);
     for (int i = 0; i < substitutions.size(); i++)
     {
         Map<PTRef,PtAsgn,PTRefHash>::Pair& p = substitutions[i];

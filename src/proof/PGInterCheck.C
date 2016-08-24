@@ -508,7 +508,7 @@ dump_out << varsDecl << endl;
 // Interpolants I_0 ... I_n
 // Generation I_i = Itp(phi_1 ... phi_i | phi_{i+1} ... phi_n)
 // Requirement  I_i /\ phi_{i+1} -> I_{i+1}
-bool ProofGraph::verifyPathInterpolantsFromLeaves ( vector< PTRef > & interps)
+bool ProofGraph::verifyPathInterpolantsFromLeaves ( vec< PTRef > & interps)
 {
 	if( verbose() ) cerr << "# Verifying the path interpolation property " << endl;
 	unsigned no_part = logic_.getNofPartitions();
@@ -604,7 +604,7 @@ bool ProofGraph::verifyPathInterpolantsFromLeaves ( vector< PTRef > & interps)
 // Interpolants I_1 ... I_n
 // Generation 	I_i = Itp(phi_i | phi_1 ... phi_{i-1}, phi_{i+1} ... phi_n)
 // Requirement  I_i /\ ... /\ I_n -> false
-bool ProofGraph::verifySimultaneousAbstraction( vector< PTRef > & interps)
+bool ProofGraph::verifySimultaneousAbstraction( vec< PTRef > & interps)
 {
 	if( verbose() ) cerr << "# Verifying the simultaneous abstraction property " << endl;
 
@@ -668,7 +668,7 @@ bool ProofGraph::verifySimultaneousAbstraction( vector< PTRef > & interps)
 // Generation 	for 1<=i<=n-1     I_i = Itp(phi_i | phi_1 ... phi_{i-1}, phi_{i+1} ... phi_n)
 //				for i=n			  I_n = Itp(phi_1 ... phi_{n-1} | phi_n)
 // Requirement  I_i /\ ... /\ I_{n-1} -> I_n
-bool ProofGraph::verifyGenSimultaneousAbstraction( vector< PTRef > & interps)
+bool ProofGraph::verifyGenSimultaneousAbstraction( vec< PTRef > & interps)
 {
 	if( verbose() ) cerr << "# Verifying the generalized simultaneous abstraction property " << endl;
 
@@ -734,7 +734,7 @@ bool ProofGraph::verifyGenSimultaneousAbstraction( vector< PTRef > & interps)
 // 				J_i = Itp(phi_i | phi_1 ... phi_{i-1}, phi_{i+1} ... phi_n)
 // Requirement  I_i /\ J_{i+1} -> I_{i+1}
 // NOTE the vector contains first all the path interpolants and then all the symmetric interpolants
-bool ProofGraph::verifyStateTransitionInterpolants ( vector< PTRef > & interps)
+bool ProofGraph::verifyStateTransitionInterpolants ( vec< PTRef > & interps)
 {
 	if( verbose() ) cerr << "# Verifying the state-transition interpolation property " << endl;
 
@@ -925,7 +925,7 @@ void ProofGraph::verifyTreeInterpolants( opensmt::InterpolationTree* itree, vect
 // Interpolants I_1 ... I_n
 // Generation 	I_j = Itp(F_j | all other formulae)
 // Requirement  ( /\_(j,k) I_k /\ phi_j ) -> I_j
-bool ProofGraph::verifyTreeInterpolantsFromLeaves( opensmt::InterpolationTree* itree, vector< PTRef > & interps)
+bool ProofGraph::verifyTreeInterpolantsFromLeaves( opensmt::InterpolationTree* itree, vec< PTRef > & interps)
 {
 	if( verbose() ) cerr << "# Verifying the tree interpolation property" << endl;
 

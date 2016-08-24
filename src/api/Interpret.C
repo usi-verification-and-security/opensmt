@@ -1300,7 +1300,7 @@ void Interpret::GetInterpolants()
 #endif
     SimpSMTSolver& smt_solver = main_solver->getSMTSolver();
     smt_solver.createProofGraph();
-    vector<PTRef> itps;
+    vec<PTRef> itps;
     smt_solver.getSingleInterpolant(itps, p);
     /*
     const char* msg;

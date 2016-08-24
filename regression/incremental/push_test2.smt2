@@ -1,0 +1,5 @@
+(set-logic QF_LRA)
+(check-sat)
+(assert false)
+(check-sat)
+(exit)

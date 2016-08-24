@@ -262,12 +262,12 @@ class Logic {
         assert(flat2orig.find(flat) != flat2orig.end());
         return flat2orig[flat];
     }
-    ipartitions_t getIPartitions(PTRef _t) { return term_store.getIPartitions(_t); }
-    void setIPartitions(PTRef _t, ipartitions_t _p) { term_store.setIPartitions(_t, _p); }
-    void addIPartitions(PTRef _t, ipartitions_t _p) { term_store.addIPartitions(_t, _p); }
-    ipartitions_t getIPartitions(SymRef _s) { return term_store.getIPartitions(_s); }
-    void setIPartitions(SymRef _s, ipartitions_t _p) { term_store.setIPartitions(_s, _p); }
-    void addIPartitions(SymRef _s, ipartitions_t _p) { term_store.addIPartitions(_s, _p); }
+    ipartitions_t& getIPartitions(PTRef _t) { return term_store.getIPartitions(_t); }
+    void setIPartitions(PTRef _t, ipartitions_t& _p) { term_store.setIPartitions(_t, _p); }
+    void addIPartitions(PTRef _t, ipartitions_t& _p) { term_store.addIPartitions(_t, _p); }
+    ipartitions_t& getIPartitions(SymRef _s) { return term_store.getIPartitions(_s); }
+    void setIPartitions(SymRef _s, ipartitions_t& _p) { term_store.setIPartitions(_s, _p); }
+    void addIPartitions(SymRef _s, ipartitions_t& _p) { term_store.addIPartitions(_s, _p); }
 #endif
 
     // The Boolean connectives

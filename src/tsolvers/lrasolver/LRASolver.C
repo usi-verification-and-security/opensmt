@@ -166,7 +166,7 @@ LAVar* LRASolver::getLAVar(PTRef var)
         ptermToLavar.resize(logic.getPterm(var).getId() + 1, NULL);
 
     if (ptermToLavar[logic.getPterm(var).getId()] == NULL) {
-        assert( status == INIT );
+//        assert( status == INIT );
 
         //x = lavarStore->getNewVar(leq_tr, var, *p_v, revert);
         x = lavarStore->getNewVar(var);
@@ -1291,26 +1291,19 @@ void LRASolver::pivotAndUpdate( LAVar * x, LAVar * y, const Delta & v )
 //
 // Perform all the required initialization after inform is complete
 //
-void LRASolver::initSolver( )
+void LRASolver::initSolver()
 {
-  if( status == INIT )
-  {
-    // Gaussian Elimination should not be performed in the Incremental mode!
-    if( config.lra_gaussian_elim == 1 && config.do_substitutions() )
-      doGaussianElimination( );
+    if (status == INIT)
+    {
+        // Gaussian Elimination should not be performed in the Incremental mode!
+        if (config.lra_gaussian_elim == 1 && config.do_substitutions())
+            doGaussianElimination();
 
-    //                 sort the bounds inserted during inform stage
-//    for( unsigned it = 0; it < columns.size( ); it++ )
-//      if( !( columns[it]->skip ) )
-//        columns[it]->printBounds( );
+        status = SAT;
 
-    status = SAT;
-
-    // used to apply checks in assertLit with a given probability
-    //    srand ( time( NULL ));
-  }
-  else
-    opensmt_error( "Solver can not be initialized in the state different from INIT" );
+    }
+    else
+        opensmt_error( "Solver can not be initialized in the state different from INIT" );
 }
 
 //
@@ -2001,7 +1994,7 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
     //opensmt_error("Interpolation not supported for LRA");
     //return logic.getTerm_true();
 
-   // Old implementation: 
+   // Old implementation:
   //l = config.logic == QF_LRA || config.logic == QF_UFLRA
   //? QF_LRA
   //: QF_LIA;
@@ -2020,22 +2013,30 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
 
     // mask &= ~SETBIT( in );
     //clrbit( mask, in );
-    for( unsigned i = 0; i < explanation.size( ); i++ )
+    for ( unsigned i = 0; i < explanation.size( ); i++ )
     {
-//		cerr << "; Expl " << logic.printTerm(explanation[i].tr) << endl;
+//      cerr << "; Expl " << logic.printTerm(explanation[i].tr) << endl;
       icolor_t color = I_UNDEF;
       const ipartitions_t & p = logic.getIPartitions(explanation[i].tr);
 
       if ( isAB( p, mask ) )
-      color = I_AB;
+        color = I_AB;
       else if ( isAlocal( p, mask ) )
-      color = I_A;
+        color = I_A;
       else if ( isBlocal( p, mask ) )
-      color = I_B;
+        color = I_B;
 
-      assert( color == I_A
-           || color == I_AB
-           || color == I_B );
+      if (color != I_A && color != I_AB && color != I_B)
+      {
+          printf("Error: color is not defined.\n");
+          printf("  equation: %s\n", logic.printTerm(explanation[i].tr));
+          printf("  mask: %s\n", mask.get_str().c_str());
+          printf("  p: %s\n", p.get_str().c_str());
+          assert(false);
+      }
+//      assert( color == I_A
+//           || color == I_AB
+//           || color == I_B );
 
       assert( usingStrong()
            || usingWeak()
@@ -2100,14 +2101,14 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
     }
     else
     {
-	    vec<PTRef> args;
-	    args.push(interpolant.toPTRef());
-	    args.push(logic.mkConst("0"));
-	    char* msg;
-            if (delta_flag)
-                in_list.push(logic.mkRealLt(args, &msg));
-            else
-                in_list.push(logic.mkRealLeq(args, &msg));
+        vec<PTRef> args;
+        args.push(interpolant.toPTRef());
+        args.push(logic.mkConst("0"));
+        char* msg;
+        if (delta_flag)
+            in_list.push(logic.mkRealLt(args, &msg));
+        else
+            in_list.push(logic.mkRealLeq(args, &msg));
     }
     if ( verbose() > 0 )
     {

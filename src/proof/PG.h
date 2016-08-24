@@ -328,274 +328,274 @@ public:
     bool verifyPartialInterpolantB(ProofNode*, const ipartitions_t&);
 
 
-	bool           producePathInterpolants   	 	  ( vector< PTRef > & );
-	bool 		   verifyPathInterpolantsFromLeaves   ( vector< PTRef > & );
-	bool           produceSimultaneousAbstraction  	  ( vector< PTRef > & );
-	bool 		   verifySimultaneousAbstraction   	  ( vector< PTRef > & );
-	bool		   produceStateTransitionInterpolants ( vector< PTRef > & );
-	bool		   verifyStateTransitionInterpolants  ( vector< PTRef > & );
-	bool		   produceGenSimultaneousAbstraction  ( vector< PTRef > & );
-	bool 		   verifyGenSimultaneousAbstraction   ( vector< PTRef > & );
-	void           produceConfigMatrixInterpolants    ( const vector<vector<int> > &,vector<PTRef> &);
-	bool           produceTreeInterpolants     		  ( opensmt::InterpolationTree*, vector<PTRef> &);
-	bool           verifyTreeInterpolantsFromLeaves   ( opensmt::InterpolationTree*, vector<PTRef> &);
+    bool producePathInterpolants            ( vec< PTRef > & );
+    bool verifyPathInterpolantsFromLeaves   ( vec< PTRef > & );
+    bool produceSimultaneousAbstraction     ( vec< PTRef > & );
+    bool verifySimultaneousAbstraction      ( vec< PTRef > & );
+    bool produceStateTransitionInterpolants ( vec< PTRef > & );
+    bool verifyStateTransitionInterpolants  ( vec< PTRef > & );
+    bool produceGenSimultaneousAbstraction  ( vec< PTRef > & );
+    bool verifyGenSimultaneousAbstraction   ( vec< PTRef > & );
+    void produceConfigMatrixInterpolants    ( const vec<vec<int> > &,vec<PTRef> &);
+    bool produceTreeInterpolants            ( opensmt::InterpolationTree*, vec<PTRef> &);
+    bool verifyTreeInterpolantsFromLeaves   ( opensmt::InterpolationTree*, vec<PTRef> &);
 
-	void           produceMultipleInterpolants   ( const vector< ipartitions_t >&, vector<PTRef> &);
-	void		   produceSingleInterpolant			(vector<PTRef>& interpolants);
-	void		   produceSingleInterpolant			(vector<PTRef>& interpolants, const ipartitions_t& A_mask);
-	void           printProofAsDotty             ( ostream &, ipartitions_t ip = 0);
-	//
-	// Config
-	//
-	inline int     verbose                       ( ) const { return config.verbosity(); }
-	inline int     produceInterpolants           ( ) const { return config.produce_inter(); }
-	inline int     printProofSMT                 ( ) const { return config.print_proofs_smtlib2; }
-	inline int     printProofDotty               ( ) const { return config.print_proofs_dotty; }
-	inline double  ratioReductionSolvingTime     ( ) const { return config.proof_ratio_red_solv; }
-	inline double  reductionTime                 ( ) const { return config.proof_red_time; }
-	inline int     reductionLoops                ( ) const { return config.proof_red_trans(); }
-	inline int     numGraphTraversals            ( ) const { return config.proof_num_graph_traversals(); }
-	inline int	    proofCheck ( ) const { return config.proof_check(); }
-	bool 		   enabledInterpVerif			 () { return ( config.certify_inter() >= 1 ); }
-	bool 		   enabledPedInterpVerif	     () { return ( config.certify_inter() >= 2 ); }
-	bool           usingMcMillanInterpolation               ( ) { return ( config.itp_bool_alg() == 0 ); }
-	bool           usingPudlakInterpolation                 ( ) { return ( config.itp_bool_alg() == 1 ); }
-	bool           usingMcMillanPrimeInterpolation          ( ) { return ( config.itp_bool_alg() == 2 ); }
-	bool           usingPSInterpolation          	( ) { return ( config.itp_bool_alg() == 3 ); }
-	bool           usingPSWInterpolation          	( ) { return ( config.itp_bool_alg() == 4 ); }
-	bool           usingPSSInterpolation          	( ) { return ( config.itp_bool_alg() == 5 ); }
-	bool		   needProofStatistics						() { return (config.itp_bool_alg() >= 3 && config.itp_bool_alg() <= 5); }
-	bool 		    restructuringForStrongerInterpolant	    ( ) { return ( config.proof_trans_strength == 1); }
-	bool 		    restructuringForWeakerInterpolant	    ( ) { return ( config.proof_trans_strength == 2); }
-	bool		   interpolantInCNF							( ) { return ( config.proof_interpolant_cnf() > 0 ); }
-	bool		   usingAlternativeInterpolant ( ) { return ( config.proof_alternative_inter() == 1 ); }
-	bool			enabledRecyclePivots() { return (config.proof_rec_piv() >= 1); }
-	bool			enabledPushDownUnits() { return (config.proof_push_units() >=1); }
-	bool			enabledTransfTraversals() { return (config.proof_transf_trav() >= 1); }
-	bool			enabledStructuralHashing() { return (config.proof_struct_hash() >= 1); }
-	bool			enabledStructuralHashingWhileBuilding() { return (config.proof_struct_hash_build() >= 1); }
-	// Inverts the normal order Hashing + RecyclePivots
-	bool			switchToRPHashing()			{ return (config.proof_switch_to_rp_hash >= 1);}
-	inline bool    additionalRandomization       ( ) { return ( config.proof_random_context_analysis == 1 ); }
-	//
-	// Build et al.
-	//
-	void           buildProofGraph               ( int );
-	void		   emptyProofGraph				 ();					// Empties all clauses besides leaves
-	void 		   fillProofGraph				 ();					// Explicitly compute all clauses
-	int            cleanProofGraph               ( );                   // Removes proof leftovers
-	void           removeNode                    ( clauseid_t );        // Remove node
-	unsigned       removeTree                    ( clauseid_t );        // Remove useless subproof
-	void		   normalizeAntecedentOrder		 ();					// Make sure ant1 has positive occ pivot
-	void           printProofGraph		       		 ();
-	// Returns id of new node
-	clauseid_t	   	dupliNode					 ( RuleContext& );		// Duplicates w in a context, assign to w only v as child
-	//
-	// Check et al.
-	//
-	void           checkClause                        ( clauseid_t );
-	// Checks the proof structure; if flag is true, also checks correctness of clause derivations
-	void           checkProof                         ( bool check_clauses );
-	void 	       checkClauseSorting				  ( clauseid_t );
-	void		   checkInterAlgo						();
-	//
-	// Auxiliary
-	//
-	inline size_t    getGraphSize                  ( ) const { return graph.size( ); }
-	bool			  isSetVisited1		( clauseid_t id ) { return mpz_tstbit(visited_1, id); }
-	bool			  isSetVisited2		( clauseid_t id ) { return mpz_tstbit(visited_2, id); }
-	void			  setVisited1			( clauseid_t id ) { mpz_setbit(visited_1, id); }
-	void			  setVisited2			( clauseid_t id ) { mpz_setbit(visited_2, id); }
-	void			  resetVisited1		( ) 			  { mpz_set_ui(visited_1,0); }
-	void			  resetVisited2		( ) 			  { mpz_set_ui(visited_2,0); }
+    void produceMultipleInterpolants        ( const vec< ipartitions_t >&, vec<PTRef> &);
+    void produceSingleInterpolant           (vec<PTRef>& interpolants);
+    void produceSingleInterpolant           (vec<PTRef>& interpolants, const ipartitions_t& A_mask);
+    void printProofAsDotty                  ( ostream &, ipartitions_t ip = 0);
+    //
+    // Config
+    //
+    inline int     verbose                       ( ) const { return config.verbosity(); }
+    inline int     produceInterpolants           ( ) const { return config.produce_inter(); }
+    inline int     printProofSMT                 ( ) const { return config.print_proofs_smtlib2; }
+    inline int     printProofDotty               ( ) const { return config.print_proofs_dotty; }
+    inline double  ratioReductionSolvingTime     ( ) const { return config.proof_ratio_red_solv; }
+    inline double  reductionTime                 ( ) const { return config.proof_red_time; }
+    inline int     reductionLoops                ( ) const { return config.proof_red_trans(); }
+    inline int     numGraphTraversals            ( ) const { return config.proof_num_graph_traversals(); }
+    inline int     proofCheck() const      { return config.proof_check(); }
+    bool           enabledInterpVerif()    { return ( config.certify_inter() >= 1 ); }
+    bool           enabledPedInterpVerif() { return ( config.certify_inter() >= 2 ); }
+    bool           usingMcMillanInterpolation               ( ) { return ( config.itp_bool_alg() == 0 ); }
+    bool           usingPudlakInterpolation                 ( ) { return ( config.itp_bool_alg() == 1 ); }
+    bool           usingMcMillanPrimeInterpolation          ( ) { return ( config.itp_bool_alg() == 2 ); }
+    bool           usingPSInterpolation          	( ) { return ( config.itp_bool_alg() == 3 ); }
+    bool           usingPSWInterpolation          	( ) { return ( config.itp_bool_alg() == 4 ); }
+    bool           usingPSSInterpolation          	( ) { return ( config.itp_bool_alg() == 5 ); }
+    bool		   needProofStatistics						() { return (config.itp_bool_alg() >= 3 && config.itp_bool_alg() <= 5); }
+    bool 		    restructuringForStrongerInterpolant	    ( ) { return ( config.proof_trans_strength == 1); }
+    bool 		    restructuringForWeakerInterpolant	    ( ) { return ( config.proof_trans_strength == 2); }
+    bool		   interpolantInCNF							( ) { return ( config.proof_interpolant_cnf() > 0 ); }
+    bool		   usingAlternativeInterpolant ( ) { return ( config.proof_alternative_inter() == 1 ); }
+    bool			enabledRecyclePivots() { return (config.proof_rec_piv() >= 1); }
+    bool			enabledPushDownUnits() { return (config.proof_push_units() >=1); }
+    bool			enabledTransfTraversals() { return (config.proof_transf_trav() >= 1); }
+    bool			enabledStructuralHashing() { return (config.proof_struct_hash() >= 1); }
+    bool			enabledStructuralHashingWhileBuilding() { return (config.proof_struct_hash_build() >= 1); }
+    // Inverts the normal order Hashing + RecyclePivots
+    bool			switchToRPHashing()			{ return (config.proof_switch_to_rp_hash >= 1);}
+    inline bool    additionalRandomization       ( ) { return ( config.proof_random_context_analysis == 1 ); }
+    //
+    // Build et al.
+    //
+    void           buildProofGraph               ( int );
+    void		   emptyProofGraph				 ();					// Empties all clauses besides leaves
+    void 		   fillProofGraph				 ();					// Explicitly compute all clauses
+    int            cleanProofGraph               ( );                   // Removes proof leftovers
+    void           removeNode                    ( clauseid_t );        // Remove node
+    unsigned       removeTree                    ( clauseid_t );        // Remove useless subproof
+    void		   normalizeAntecedentOrder		 ();					// Make sure ant1 has positive occ pivot
+    void           printProofGraph		       		 ();
+    // Returns id of new node
+    clauseid_t	   	dupliNode					 ( RuleContext& );		// Duplicates w in a context, assign to w only v as child
+    //
+    // Check et al.
+    //
+    void           checkClause                        ( clauseid_t );
+    // Checks the proof structure; if flag is true, also checks correctness of clause derivations
+    void           checkProof                         ( bool check_clauses );
+    void 	       checkClauseSorting				  ( clauseid_t );
+    void		   checkInterAlgo						();
+    //
+    // Auxiliary
+    //
+    inline size_t    getGraphSize                  ( ) const { return graph.size( ); }
+    bool			  isSetVisited1		( clauseid_t id ) { return mpz_tstbit(visited_1, id); }
+    bool			  isSetVisited2		( clauseid_t id ) { return mpz_tstbit(visited_2, id); }
+    void			  setVisited1			( clauseid_t id ) { mpz_setbit(visited_1, id); }
+    void			  setVisited2			( clauseid_t id ) { mpz_setbit(visited_2, id); }
+    void			  resetVisited1		( ) 			  { mpz_set_ui(visited_1,0); }
+    void			  resetVisited2		( ) 			  { mpz_set_ui(visited_2,0); }
 
-	unsigned		  getMaxIdVar			( ) { return max_id_variable; }
-	void              getGraphInfo          ( );
-	void              topolSortingTopDown   ( vector< clauseid_t > & );
-	void 			  topolSortingBotUp		( vector< clauseid_t > & );
-	void              printProofNode        ( clauseid_t );
-	void              printClause           ( ProofNode * );
-	void              printClause           ( ProofNode *, ostream & );
-	inline ProofNode* getNode	            ( clauseid_t id ) { assert( id<graph.size() ); return graph[ id ]; }
-	bool              mergeClauses          (vector<Lit>&, vector<Lit>&, vector<Lit>&, Var);
-	inline bool		  isRoot				( ProofNode* n ) { assert(n); return( n->getId() == root ); }
-	inline ProofNode* getRoot				( ) { assert( root<graph.size() );assert(graph[ root ]); return graph[ root ]; }
-	inline void		  setRoot				( clauseid_t id ) { assert( id<graph.size() ); root=id; }
-	inline void	  addLeaf(clauseid_t id)      {  leaves_ids.insert(id); }
-	inline void	  removeLeaf(clauseid_t id)   {  leaves_ids.erase(id); }
-	//
-	// Labeling based interpolation
-	//
-	icolor_t       getVarClass                              ( Var, const ipartitions_t & );
-	icolor_t       getClauseColor                           ( const ipartitions_t &, const ipartitions_t & );
-	map<Var, icolor_t>* computePSFunction(vector< clauseid_t >& DFSv, const ipartitions_t &);
-	void           getPredicatesSetFromInterpolantIterative ( PTRef, set<PTRef>& );
-	unsigned long  getComplexityInterpolantIterative        ( PTRef, bool );
-	// Get formula complexity as number of connectives, number of distinct boolean variables
-	void 	getComplexityInterpolant( PTRef int_e );
-	void           topolSortingEnode                        ( vector< PTRef > &, PTRef );
-	PTRef        compInterpLabelingOriginalSimple               ( ProofNode *, const ipartitions_t & );
-	PTRef        compInterpLabelingInnerSimple                  ( ProofNode *, const ipartitions_t & );
+    unsigned		  getMaxIdVar			( ) { return max_id_variable; }
+    void              getGraphInfo          ( );
+    void              topolSortingTopDown   ( vector< clauseid_t > & );
+    void 			  topolSortingBotUp		( vector< clauseid_t > & );
+    void              printProofNode        ( clauseid_t );
+    void              printClause           ( ProofNode * );
+    void              printClause           ( ProofNode *, ostream & );
+    inline ProofNode* getNode	            ( clauseid_t id ) { assert( id<graph.size() ); return graph[ id ]; }
+    bool              mergeClauses          (vector<Lit>&, vector<Lit>&, vector<Lit>&, Var);
+    inline bool		  isRoot				( ProofNode* n ) { assert(n); return( n->getId() == root ); }
+    inline ProofNode* getRoot				( ) { assert( root<graph.size() );assert(graph[ root ]); return graph[ root ]; }
+    inline void		  setRoot				( clauseid_t id ) { assert( id<graph.size() ); root=id; }
+    inline void	  addLeaf(clauseid_t id)      {  leaves_ids.insert(id); }
+    inline void	  removeLeaf(clauseid_t id)   {  leaves_ids.erase(id); }
+    //
+    // Labeling based interpolation
+    //
+    icolor_t       getVarClass                              ( Var, const ipartitions_t & );
+    icolor_t       getClauseColor                           ( const ipartitions_t &, const ipartitions_t & );
+    map<Var, icolor_t>* computePSFunction(vector< clauseid_t >& DFSv, const ipartitions_t &);
+    void           getPredicatesSetFromInterpolantIterative ( PTRef, set<PTRef>& );
+    unsigned long  getComplexityInterpolantIterative        ( PTRef, bool );
+    // Get formula complexity as number of connectives, number of distinct boolean variables
+    void 	getComplexityInterpolant( PTRef int_e );
+    void           topolSortingEnode                        ( vector< PTRef > &, PTRef );
+    PTRef        compInterpLabelingOriginalSimple               ( ProofNode *, const ipartitions_t & );
+    PTRef        compInterpLabelingInnerSimple                  ( ProofNode *, const ipartitions_t & );
 
 #ifdef FULL_LABELING
-	PTRef        compInterpLabelingOriginal               ( ProofNode *, const ipartitions_t &, unsigned num_config = 0 , map<Var, icolor_t>* PSFunc = NULL);
-	PTRef        compInterpLabelingInner                  ( ProofNode * );
+    PTRef        compInterpLabelingOriginal               ( ProofNode *, const ipartitions_t &, unsigned num_config = 0 , map<Var, icolor_t>* PSFunc = NULL);
+    PTRef        compInterpLabelingInner                  ( ProofNode * );
     void labelLeaf(ProofNode*, const ipartitions_t&, unsigned num_config = 0, map<Var, icolor_t>* PSFunc = NULL);
-	void           setLeafRandomLabeling                    ( ProofNode * );
-	void           setLeafMcMillanLabeling                  ( ProofNode * );
-	void           setLeafPudlakLabeling                    ( ProofNode * );
-	void           setLeafMcMillanPrimeLabeling             ( ProofNode * );
-	void 		   setLeafPSLabeling		( ProofNode*, std::map<Var, icolor_t>* PSFunction );
-	void 		   setLeafPSWLabeling		( ProofNode*, std::map<Var, icolor_t>* PSFunction );
-	void 		   setLeafPSSLabeling		( ProofNode*, std::map<Var, icolor_t>* PSFunction );
-	bool           usingLabelingSuggestions           	    ( ) { return ( config.itp_bool_alg() == 6 ); }
-	void		   setColoringSuggestions				   ( vector< std::map<PTRef, icolor_t>* > * mp ){ assert(mp); vars_suggested_color_map = mp; }
-	void		   setLabelingFromMap						( ProofNode*, unsigned );
-	icolor_t       getPivotColor                            ( ProofNode * );
-	void           computeABVariablesMapping                ( const ipartitions_t & );
-	inline int     getVarInfoFromMapping                    ( Var v )
-	{
-		assert((unsigned)v<AB_vars_mapping.size()); assert(AB_vars_mapping[v]!=-3);
-		return(AB_vars_mapping[v]);
-	}
-	// Translation from var info obtained through above function
-	inline icolor_t getVarClass2                            ( Var v )
-	{
-		int c = getVarInfoFromMapping(v); assert(c>=-2);
-		if(c==-1) return I_A; else if(c==-2) return I_B; else return I_AB;
-	}
-	inline void    resetLabeling          ( ProofNode* n ){ n->resetLabeling(); }
-	inline bool    isColoredA             ( ProofNode* n, Var v ) { assert ( AB_vars_mapping[v]>= 0); return n->isColoredA( AB_vars_mapping[v] ); }
-	inline bool    isColoredB             ( ProofNode* n, Var v ) { assert ( AB_vars_mapping[v]>= 0); return n->isColoredB( AB_vars_mapping[v] ); }
-	inline bool    isColoredAB            ( ProofNode* n, Var v ) { assert ( AB_vars_mapping[v]>= 0); return n->isColoredAB( AB_vars_mapping[v] ); }
-	inline void    colorA                 ( ProofNode* n, Var v ) { assert ( AB_vars_mapping[v]>= 0); n->colorA( AB_vars_mapping[v] ); }
-	inline void    colorB                 ( ProofNode* n, Var v ) { assert ( AB_vars_mapping[v]>= 0); n->colorB( AB_vars_mapping[v] ); }
-	inline void    colorAB                ( ProofNode* n, Var v ) { assert ( AB_vars_mapping[v]>= 0); n->colorAB( AB_vars_mapping[v] ); }
-	inline void    updateColoringfromAnts ( ProofNode* n ) { assert(!n->isLeaf()); n->updateColoringfromAnts(); }
-	inline void    updateColoringAfterRes ( ProofNode* n )
-	{
-		assert(!n->isLeaf()); assert( AB_vars_mapping[n->getPivot()]>= 0);
-		n->updateColoringAfterRes( AB_vars_mapping[n->getPivot()] );
-	}
-	icolor_t getVarColor(ProofNode* n, Var v);
+    void           setLeafRandomLabeling                    ( ProofNode * );
+    void           setLeafMcMillanLabeling                  ( ProofNode * );
+    void           setLeafPudlakLabeling                    ( ProofNode * );
+    void           setLeafMcMillanPrimeLabeling             ( ProofNode * );
+    void 		   setLeafPSLabeling		( ProofNode*, std::map<Var, icolor_t>* PSFunction );
+    void 		   setLeafPSWLabeling		( ProofNode*, std::map<Var, icolor_t>* PSFunction );
+    void 		   setLeafPSSLabeling		( ProofNode*, std::map<Var, icolor_t>* PSFunction );
+    bool           usingLabelingSuggestions           	    ( ) { return ( config.itp_bool_alg() == 6 ); }
+    void   setColoringSuggestions   ( vec< std::map<PTRef, icolor_t>* > * mp ) { assert(mp); vars_suggested_color_map = mp; }
+    void   setLabelingFromMap       ( ProofNode*, unsigned );
+    icolor_t       getPivotColor                            ( ProofNode * );
+    void           computeABVariablesMapping                ( const ipartitions_t & );
+    inline int     getVarInfoFromMapping                    ( Var v )
+    {
+    	assert((unsigned)v<AB_vars_mapping.size()); assert(AB_vars_mapping[v]!=-3);
+    	return(AB_vars_mapping[v]);
+    }
+    // Translation from var info obtained through above function
+    inline icolor_t getVarClass2                            ( Var v )
+    {
+    	int c = getVarInfoFromMapping(v); assert(c>=-2);
+    	if(c==-1) return I_A; else if(c==-2) return I_B; else return I_AB;
+    }
+    inline void    resetLabeling          ( ProofNode* n ){ n->resetLabeling(); }
+    inline bool    isColoredA             ( ProofNode* n, Var v ) { assert ( AB_vars_mapping[v]>= 0); return n->isColoredA( AB_vars_mapping[v] ); }
+    inline bool    isColoredB             ( ProofNode* n, Var v ) { assert ( AB_vars_mapping[v]>= 0); return n->isColoredB( AB_vars_mapping[v] ); }
+    inline bool    isColoredAB            ( ProofNode* n, Var v ) { assert ( AB_vars_mapping[v]>= 0); return n->isColoredAB( AB_vars_mapping[v] ); }
+    inline void    colorA                 ( ProofNode* n, Var v ) { assert ( AB_vars_mapping[v]>= 0); n->colorA( AB_vars_mapping[v] ); }
+    inline void    colorB                 ( ProofNode* n, Var v ) { assert ( AB_vars_mapping[v]>= 0); n->colorB( AB_vars_mapping[v] ); }
+    inline void    colorAB                ( ProofNode* n, Var v ) { assert ( AB_vars_mapping[v]>= 0); n->colorAB( AB_vars_mapping[v] ); }
+    inline void    updateColoringfromAnts ( ProofNode* n ) { assert(!n->isLeaf()); n->updateColoringfromAnts(); }
+    inline void    updateColoringAfterRes ( ProofNode* n )
+    {
+    	assert(!n->isLeaf()); assert( AB_vars_mapping[n->getPivot()]>= 0);
+    	n->updateColoringAfterRes( AB_vars_mapping[n->getPivot()] );
+    }
+    icolor_t getVarColor(ProofNode* n, Var v);
 #endif
 
-	void 		   analyzeProofLocality   (const ipartitions_t &);
-	void 		   verifyPartialInterpolantFromLeaves ( ProofNode*, const ipartitions_t& mask );
-	void		   verifyLeavesInconsistency ( );
-	void  		   verifyInductiveSequence ( );
-	bool		   decideOnAlternativeInterpolation(ProofNode*);
-	// For a given partition mask try to generate interpolants with few predicates
-	// Return a vector of interpolants, and for each the set of predicates which was removed
-	void 		   removeUnnecessaryPredicates( ipartitions_t & A_mask, vector<PTRef>&, vector< set<PTRef> >& );
+    void 		   analyzeProofLocality   (const ipartitions_t &);
+    void 		   verifyPartialInterpolantFromLeaves ( ProofNode*, const ipartitions_t& mask );
+    void		   verifyLeavesInconsistency ( );
+    void  		   verifyInductiveSequence ( );
+    bool		   decideOnAlternativeInterpolation(ProofNode*);
+    // For a given partition mask try to generate interpolants with few predicates
+    // Return a vector of interpolants, and for each the set of predicates which was removed
+    void 		   removeUnnecessaryPredicates( ipartitions_t & A_mask, vector<PTRef>&, vector< set<PTRef> >& );
 
-	//
-	// Trasformation
-	//
-	bool           chooseReplacingAntecedent( ProofNode* );
-	/** A loop of top down reduction sweeps; embeds the topological sorting */
-	void           proofTransformAndRestructure(const double, const int, bool do_transf,
-			short  (ProofGraph::*handleRules) ( RuleContext&,RuleContext&,const ipartitions_t& mask_), const ipartitions_t& mask= 0);
-	void		   proofPostStructuralHashing();
-	double         recyclePivotsIter();
-	void			recycleUnits();
+    //
+    // Trasformation
+    //
+    bool           chooseReplacingAntecedent( ProofNode* );
+    /** A loop of top down reduction sweeps; embeds the topological sorting */
+    void           proofTransformAndRestructure(const double, const int, bool do_transf,
+            short  (ProofGraph::*handleRules) ( RuleContext&,RuleContext&,const ipartitions_t& mask_), const ipartitions_t& mask= 0);
+    void		   proofPostStructuralHashing();
+    double         recyclePivotsIter();
+    void			recycleUnits();
 
-	bool           getRuleContext				 (clauseid_t, clauseid_t, RuleContext&);
-	// In case of A1 rule, return id of node added
-	clauseid_t      ruleApply					 	 (RuleContext&);
-	clauseid_t      applyRuleA1				 	 (RuleContext&);
-	void           applyRuleA1Prime				 (RuleContext&);
-	void           applyRuleA2					 (RuleContext&);
-	void           applyRuleB1					 (RuleContext&);
-	void           applyRuleB2					 (RuleContext&);
-	void           applyRuleB2Prime				 (RuleContext&);
-	void           applyRuleB3					 (RuleContext&);
-	void 		   printRuleApplicationStatus();
-	void           transfProofForReduction       ( );
-	double         doIt                          ( double );
-	double         doReduction                   ( double );
-	// Application of rules
-	inline bool    isSwapRule                    ( rul_type rt ) const { return ( rt==rA1 || rt==rA1B || rt==rA1prime || rt==rA2 || rt==rA2B || rt==rA2u || rt==rB2 ); }
-	inline bool    isCutRule                     ( rul_type rt ) const { return (rt==rB1 || rt==rB2prime || rt==rB3); }
-	// Reduce the proof
-	short         handleRuleApplicationForReduction( RuleContext&,RuleContext&, const ipartitions_t& );
-	bool 		   allowSwapRuleForReduction(RuleContext& );
-	bool 		   allowCutRuleForReduction( RuleContext& );
-	// Push unit clauses down in the proof
-	short          handleRuleApplicationForUnitsPushingDown( RuleContext&,RuleContext&, const ipartitions_t& );
-	bool 		   allowSwapRuleForUnitsPushingDown(RuleContext&);
-	// Push predicates in the proof
-	short          handleRuleApplicationForPredicatePushing( RuleContext&, RuleContext&, const ipartitions_t& );
-	bool 		   allowSwapRuleForPredicatePushingUp( RuleContext&,Var );
-	bool 		   allowSwapRuleForPredicatePushingDown( RuleContext&,Var );
-	bool 		   allowCutRuleForPredicatePushing( RuleContext&,Var );
-	inline void   setPredicateToPush(Var p){ pred_to_push = p; }
+    bool           getRuleContext				 (clauseid_t, clauseid_t, RuleContext&);
+    // In case of A1 rule, return id of node added
+    clauseid_t      ruleApply					 	 (RuleContext&);
+    clauseid_t      applyRuleA1				 	 (RuleContext&);
+    void           applyRuleA1Prime				 (RuleContext&);
+    void           applyRuleA2					 (RuleContext&);
+    void           applyRuleB1					 (RuleContext&);
+    void           applyRuleB2					 (RuleContext&);
+    void           applyRuleB2Prime				 (RuleContext&);
+    void           applyRuleB3					 (RuleContext&);
+    void 		   printRuleApplicationStatus();
+    void           transfProofForReduction       ( );
+    double         doIt                          ( double );
+    double         doReduction                   ( double );
+    // Application of rules
+    inline bool    isSwapRule                    ( rul_type rt ) const { return ( rt==rA1 || rt==rA1B || rt==rA1prime || rt==rA2 || rt==rA2B || rt==rA2u || rt==rB2 ); }
+    inline bool    isCutRule                     ( rul_type rt ) const { return (rt==rB1 || rt==rB2prime || rt==rB3); }
+    // Reduce the proof
+    short         handleRuleApplicationForReduction( RuleContext&,RuleContext&, const ipartitions_t& );
+    bool 		   allowSwapRuleForReduction(RuleContext& );
+    bool 		   allowCutRuleForReduction( RuleContext& );
+    // Push unit clauses down in the proof
+    short          handleRuleApplicationForUnitsPushingDown( RuleContext&,RuleContext&, const ipartitions_t& );
+    bool 		   allowSwapRuleForUnitsPushingDown(RuleContext&);
+    // Push predicates in the proof
+    short          handleRuleApplicationForPredicatePushing( RuleContext&, RuleContext&, const ipartitions_t& );
+    bool 		   allowSwapRuleForPredicatePushingUp( RuleContext&,Var );
+    bool 		   allowSwapRuleForPredicatePushingDown( RuleContext&,Var );
+    bool 		   allowCutRuleForPredicatePushing( RuleContext&,Var );
+    inline void   setPredicateToPush(Var p){ pred_to_push = p; }
 
-	// Strengthen/weaken interpolants by applying A2 rule locally
-	short 		   handleRuleApplicationForStrongerWeakerInterpolant(RuleContext& ra1,RuleContext& ra2, const ipartitions_t&);
-	bool           allowSwapRuleForStrongerWeakerInterpolant(RuleContext& ra, const ipartitions_t&);
+    // Strengthen/weaken interpolants by applying A2 rule locally
+    short 		   handleRuleApplicationForStrongerWeakerInterpolant(RuleContext& ra1,RuleContext& ra2, const ipartitions_t&);
+    bool           allowSwapRuleForStrongerWeakerInterpolant(RuleContext& ra, const ipartitions_t&);
 #ifdef FULL_LABELING
-	// Produce interpolants in CNF using McMillan algorithm - partial CNFization since no duplications allowed!
-	// See allowSwapRuleForCNFinterpolant
-	short 		   handleRuleApplicationForCNFinterpolant(RuleContext& ra1,RuleContext& ra2, const ipartitions_t&);
-	bool           allowSwapRuleForCNFinterpolant(RuleContext& ra);
+    // Produce interpolants in CNF using McMillan algorithm - partial CNFization since no duplications allowed!
+    // See allowSwapRuleForCNFinterpolant
+    short 		   handleRuleApplicationForCNFinterpolant(RuleContext& ra1,RuleContext& ra2, const ipartitions_t&);
+    bool           allowSwapRuleForCNFinterpolant(RuleContext& ra);
 #endif
 
 private:
 
-	//NOTE added for experimentation
-	Var 				  pred_to_push;
+    //NOTE added for experimentation
+    Var 				  pred_to_push;
 
-	SMTConfig &           config;
-	CoreSMTSolver &       solver;
-	THandler &        thandler;
-	//Egraph &              egraph;
-	Proof &				  proof;
-	Logic &               logic_;
+    SMTConfig &           config;
+    CoreSMTSolver &       solver;
+    THandler &        thandler;
+    //Egraph &              egraph;
+    Proof &				  proof;
+    Logic &               logic_;
 
-	vector< ProofNode * >*         graph_;                       // Graph
-	vector< ProofNode * >&         graph;
-	double                        building_time;               // Time spent building graph
-	clauseid_t                     root;                        // Proof root
-	set<clauseid_t>				   leaves_ids;					// Proof leaves, for top-down visits
-	std::set< Var >                proof_variables;             // Variables actually present in the proof
-	unsigned 					   max_id_variable;				// Highest value for a variable
+    vector< ProofNode * >*         graph_;                       // Graph
+    vector< ProofNode * >&         graph;
+    double                        building_time;               // Time spent building graph
+    clauseid_t                     root;                        // Proof root
+    set<clauseid_t>				   leaves_ids;					// Proof leaves, for top-down visits
+    std::set< Var >                proof_variables;             // Variables actually present in the proof
+    unsigned                                       max_id_variable;                             // Highest value for a variable
 #ifdef FULL_LABELING
     std::set<Var> theory_only;
-	// NOTE class A has value -1, class B value -2, undetermined value -3, class AB has index bit from 0 onwards
-	std::vector<int>               AB_vars_mapping;             // Variables of class AB mapping to mpz integer bit index
-	vector< std::map<PTRef, icolor_t>* > *    vars_suggested_color_map;	 // To suggest color for shared vars
+    // NOTE class A has value -1, class B value -2, undetermined value -3, class AB has index bit from 0 onwards
+    std::vector<int>               AB_vars_mapping;             // Variables of class AB mapping to mpz integer bit index
+    vec< std::map<PTRef, icolor_t>* > *    vars_suggested_color_map;	 // To suggest color for shared vars
 #endif
-	int 						   num_vars_limit;               // Number of variables in the problem (not nec in the proof)
+    int                                                    num_vars_limit;               // Number of variables in the problem (not nec in the proof)
 
-	// Info on graph dimension
-	int    num_nodes;
-	int    num_edges;
-	int    num_unary;
-	int    num_leaves;
+    // Info on graph dimension
+    int    num_nodes;
+    int    num_edges;
+    int    num_unary;
+    int    num_leaves;
 
-	// Info on clauses
-	double av_cla_size;
-	double var_cla_size;
-	int    max_cla_size;
+    // Info on clauses
+    double av_cla_size;
+    double var_cla_size;
+    int    max_cla_size;
 
-	// Info on rules application
-	unsigned A1;
-	unsigned A1prime;
-	unsigned A1B;
-	unsigned A2;
-	unsigned A2B;
-	unsigned A2U;
-	unsigned B1;
-	unsigned B2prime;
-	unsigned B2;
-	unsigned B3;
-	unsigned duplications;
-	unsigned swap_ties;
+    // Info on rules application
+    unsigned A1;
+    unsigned A1prime;
+    unsigned A1B;
+    unsigned A2;
+    unsigned A2B;
+    unsigned A2U;
+    unsigned B1;
+    unsigned B2prime;
+    unsigned B2;
+    unsigned B3;
+    unsigned duplications;
+    unsigned swap_ties;
 
-	// Global visit vectors
-	mpz_t visited_1;
-	mpz_t visited_2;
+    // Global visit vectors
+    mpz_t visited_1;
+    mpz_t visited_2;
 };
 
 #endif

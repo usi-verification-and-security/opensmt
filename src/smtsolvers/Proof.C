@@ -576,7 +576,7 @@ void CoreSMTSolver::printInter( ostream & out )
     if (config.print_proofs_smtlib2 > 0) proof.print( out, *this, theory_handler );
 
     // Compute interpolants
-    vector<PTRef> sequence_of_interpolants;
+    vec<PTRef> sequence_of_interpolants;
     assert(proof_graph);
     if( config.proof_multiple_inter() == 0)
         proof_graph->producePathInterpolants( sequence_of_interpolants );
@@ -609,35 +609,35 @@ void CoreSMTSolver::printInter( ostream & out )
 }
 
 // Create interpolants with each A consisting of the specified partitions
-void CoreSMTSolver::getInterpolants(const vector<vector<int> >& partitions, vector<PTRef>& interpolants)
+void CoreSMTSolver::getInterpolants(const vec<vec<int> >& partitions, vec<PTRef>& interpolants)
 { assert(proof_graph); proof_graph->produceConfigMatrixInterpolants( partitions, interpolants ); }
 
-void CoreSMTSolver::getInterpolants(const vector<ipartitions_t>& partitions, vector<PTRef>& interpolants)
+void CoreSMTSolver::getInterpolants(const vec<ipartitions_t>& partitions, vec<PTRef>& interpolants)
 { assert(proof_graph); proof_graph->produceMultipleInterpolants( partitions, interpolants ); }
 
 #ifdef FULL_LABELING
-void CoreSMTSolver::setColoringSuggestions	( vector< std::map<PTRef, icolor_t>* > * mp ){ proof_graph->setColoringSuggestions(mp); }
+void CoreSMTSolver::setColoringSuggestions	( vec< std::map<PTRef, icolor_t>* > * mp ){ proof_graph->setColoringSuggestions(mp); }
 #endif
 
-void CoreSMTSolver::getSingleInterpolant(vector<PTRef>& interpolants)
+void CoreSMTSolver::getSingleInterpolant(vec<PTRef>& interpolants)
 { assert(proof_graph); proof_graph->produceSingleInterpolant(interpolants); }
 
-void CoreSMTSolver::getSingleInterpolant(vector<PTRef>& interpolants, const ipartitions_t& A_mask)
+void CoreSMTSolver::getSingleInterpolant(vec<PTRef>& interpolants, const ipartitions_t& A_mask)
 { assert(proof_graph); proof_graph->produceSingleInterpolant(interpolants, A_mask); }
 
-bool   CoreSMTSolver::getPathInterpolants(vector<PTRef>& interpolants)
+bool   CoreSMTSolver::getPathInterpolants(vec<PTRef>& interpolants)
 { assert(proof_graph); return proof_graph->producePathInterpolants( interpolants ); }
 
-bool   CoreSMTSolver::getSimultaneousAbstractionInterpolants(vector<PTRef>& interpolants)
+bool   CoreSMTSolver::getSimultaneousAbstractionInterpolants(vec<PTRef>& interpolants)
 { assert(proof_graph); return proof_graph->produceSimultaneousAbstraction( interpolants ); }
 
-bool   CoreSMTSolver::getGenSimultaneousAbstractionInterpolants(vector<PTRef>& interpolants)
+bool   CoreSMTSolver::getGenSimultaneousAbstractionInterpolants(vec<PTRef>& interpolants)
 { assert(proof_graph); return proof_graph->produceGenSimultaneousAbstraction( interpolants ); }
 
-bool   CoreSMTSolver::getStateTransitionInterpolants(vector<PTRef>& interpolants)
+bool   CoreSMTSolver::getStateTransitionInterpolants(vec<PTRef>& interpolants)
 { assert(proof_graph); return proof_graph->produceStateTransitionInterpolants( interpolants ); }
 
-bool   CoreSMTSolver::getTreeInterpolants(opensmt::InterpolationTree* it, vector<PTRef>& interpolants)
+bool   CoreSMTSolver::getTreeInterpolants(opensmt::InterpolationTree* it, vec<PTRef>& interpolants)
 { assert(proof_graph); return proof_graph->produceTreeInterpolants( it, interpolants ); }
 
 void CoreSMTSolver::reduceProofGraph()

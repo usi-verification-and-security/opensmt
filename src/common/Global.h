@@ -325,7 +325,7 @@ static inline uint64_t memUsed() {return 0; }
 // are considered, these shorthands simplify
 // readability
 typedef enum
-{ 
+{
    I_UNDEF = 0
  , I_A     = 1
  , I_B     = 2

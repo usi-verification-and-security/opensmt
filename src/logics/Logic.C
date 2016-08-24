@@ -927,7 +927,7 @@ SymRef Logic::declareFun(const char* fname, const SRef rsort, const vec<SRef>& a
     }
     SymRef sr = sym_store.newSymb(fname, comb_args, msg);
     SymId id = getSym(sr).getId();
-    for (int i = interpreted_functions.size(); i <= id; i++)
+    for (unsigned i = interpreted_functions.size(); i <= id; i++)
         interpreted_functions.push(false);
     interpreted_functions[id] = interpreted;
     return sr;
@@ -1068,7 +1068,7 @@ Logic::isUF(SymRef sref) const
 }
 
 bool Logic::isUF(PTRef ptr) const {
-    return isUF(getSymRef(ptr)); //return (getPterm(ptr).size() > 0) && !interpreted_functions[getSym(ptr).getId()];
+    return isUF(getSymRef(ptr));
 }
 
 // Uninterpreted predicate p : U U* -> Bool
@@ -1976,26 +1976,26 @@ Logic::implies(PTRef implicant, PTRef implicated)
     bool tool_res;
     if ( int pid = fork() )
     {
-      int status;
-      waitpid(pid, &status, 0);
-      switch ( WEXITSTATUS( status ) )
-      {
-	case 0:
-	  tool_res = false;
-	  break;
-	case 1:
-	  tool_res = true;
-	  break;
-	default:
-	  perror( "Tool" );
-	  exit( EXIT_FAILURE );
-      }
+        int status;
+        waitpid(pid, &status, 0);
+        switch ( WEXITSTATUS( status ) )
+        {
+            case 0:
+                tool_res = false;
+                break;
+            case 1:
+                tool_res = true;
+                break;
+            default:
+                perror( "Tool" );
+                exit( EXIT_FAILURE );
+        }
     }
     else
     {
-      execlp( "tool_wrapper.sh", "tool_wrapper.sh", implies, NULL );
-      perror( "Tool" );
-      exit( 1 );
+        execlp( "tool_wrapper.sh", "tool_wrapper.sh", implies, NULL );
+        perror( "Tool" );
+        exit( 1 );
     }
 
     if ( tool_res == true )
@@ -2019,11 +2019,11 @@ Logic::getPartitionA(const ipartitions_t& mask)
     for(int i = 0; i < ass.size(); ++i)
     {
         PTRef a = ass[i];
-    	ipartitions_t p = 0;
-	    setbit(p, i + 1);
+        ipartitions_t p = 0;
+        setbit(p, i + 1);
         if(isAstrict(p, mask)) a_args.push(a);
         else if(isBstrict(p, mask)) {}
-    	else opensmt_error("Assertion is neither A or B");
+        else opensmt_error("Assertion is neither A or B");
     }
     PTRef A = logic.mkAnd(a_args);
     return A;
@@ -2038,11 +2038,11 @@ Logic::getPartitionB(const ipartitions_t& mask)
     for(int i = 0; i < ass.size(); ++i)
     {
         PTRef a = ass[i];
-    	ipartitions_t p = 0;
-	    setbit(p, i + 1);
-        if(isAstrict(p, mask)) {}
-        else if(isBstrict(p, mask)) b_args.push(a);
-    	else opensmt_error("Assertion is neither A or B");
+        ipartitions_t p = 0;
+        setbit(p, i + 1);
+        if (isAstrict(p, mask)) {}
+        else if (isBstrict(p, mask)) b_args.push(a);
+        else opensmt_error("Assertion is neither A or B");
     }
     PTRef B = logic.mkAnd(b_args);
     return B;
@@ -2078,84 +2078,66 @@ Logic::verifyInterpolant(PTRef itp, const ipartitions_t& mask)
 void
 Logic::addVarClassMask(Var l, const ipartitions_t& toadd)
 {
-	opensmt::orbit(var_class[l], var_class[l], toadd);
+    opensmt::orbit(var_class[l], var_class[l], toadd);
 #ifdef ITP_DEBUG
-	cerr << "; Adding mask " << toadd << " to var " << l << endl;
-	cerr << "; Var " << l << " now has mask " << var_class[l] << endl;
+    cerr << "; Adding mask " << toadd << " to var " << l << endl;
+    cerr << "; Var " << l << " now has mask " << var_class[l] << endl;
 #endif
 }
 
 void
 Logic::addClauseClassMask(CRef l, const ipartitions_t& toadd)
 {
-	opensmt::orbit(clause_class[l], clause_class[l], toadd);
+    opensmt::orbit(clause_class[l], clause_class[l], toadd);
 #ifdef ITP_DEBUG
-	cerr << "; Adding mask " << toadd << " to clause " << l << endl;
-	cerr << "; Clause " << l << " now has mask " << clause_class[l] << endl;
+    cerr << "; Adding mask " << toadd << " to clause " << l << endl;
+    cerr << "; Clause " << l << " now has mask " << clause_class[l] << endl;
 #endif
 }
 
+//
+// Visit the term dag starting from pref in pre-order
+// depth-first-search.  For each term add the partition inherited from
+// pref
+//
 void
 Logic::setIPartitionsIte(PTRef pref)
 {
+    ipartitions_t &partition = getIPartitions(pref);
     set<PTRef> visited;
     queue<PTRef> bfs;
     bool unprocessed_children;
     bfs.push(pref);
-    while(!bfs.empty())
+    while (!bfs.empty())
     {
         PTRef p = bfs.front();
         bfs.pop();
-        if(visited.find(p) != visited.end()) continue;
-        
+        if (visited.find(p) != visited.end()) continue;
+
         // fine to visit
         visited.insert(p);
-        if(isUF(p) || isUP(p))
+        if (isUF(p) || isUP(p))
         {
-            addIPartitions(getPterm(p).symb(), getIPartitions(pref));
+            addIPartitions(getPterm(p).symb(), partition);
         }
         if (p != pref)
         {
-            addIPartitions(p, getIPartitions(pref));
+            addIPartitions(p, partition);
         }
 
         // set on children
         Pterm& t = getPterm(p);
-        unprocessed_children = false;
-        for(int i = 0; i < t.size(); ++i)
+        for (int i = 0; i < t.size(); ++i)
         {
             PTRef c = t[i];
-            if(visited.find(c) == visited.end())
+            if (visited.find(c) == visited.end())
             {
                 bfs.push(c);
-                unprocessed_children = true;
             }
         }
     }
 }
 #endif
-
-//bool Logic::DeclareSort(string& name, int arity) {
-//    printf("Declaring sort %s of arity %d\n", name.c_str(), arity);
-//    sstore.newSymbol(name.c_str());
-//    return true;
-//}
-
-//bool Logic::DeclareFun(string& name, list<Sort*>& args, Sort& rets) {
-//    printf("Declaring function %s of ", name.c_str());
-//    if (args.empty())
-//        printf("no arguments ");
-//    else {
-//        printf("arguments ");
-//        for (list<Sort*>::iterator it = args.begin(); it != args.end(); it++)
-//            printf("%s ", (**it).toString()->c_str());
-//    }
-//    printf("and return sort %s\n", rets.toString()->c_str());
-//
-//    egraph.newSymbol(name.c_str(), args, rets)
-//    return true;
-//}
-
 
 void
 Logic::collectStats(PTRef root, int& n_of_conn, int& n_of_eq, int& n_of_uf)

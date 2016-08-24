@@ -63,12 +63,18 @@ lbool
 Cnfizer::solve(vec<int>& en_frames)
 {
     vec<Lit> assumps;
+    // Initialize so that by default frames are disabled
     for (int i = 0; i < frame_terms.size(); i++)
         assumps.push(findLit(frame_terms[i]));
 
-    for (int i = 0; i < en_frames.size(); i++)
-        assumps[i] = ~findLit(frame_terms[i]);
-
+    // Enable the terms which are listed in en_frames
+    // At this point assumps has the same size as frame_terms and the
+    // elements are in the same order.  We simply invert the
+    // corresponding literals
+    for (int i = 0; i < en_frames.size(); i++) {
+        int asmp_idx = en_frames[i];
+        assumps[asmp_idx] = ~assumps[asmp_idx];
+    }
     // Filter out the lit_Trues and lit_Falses used as empty values
     Lit lit_true = findLit(logic.getTerm_true());
     int i, j;
@@ -249,7 +255,8 @@ lbool Cnfizer::cnfizeAndGiveToSolver (PTRef formula, int frame_id)
                 PTRef root_tmp = logic.getOriginalAssertion(f);
                 assert(!logic.hasOriginalAssertion(root_tmp));
                 mask = logic.getIPartitions(root_tmp);
-                logic.setIPartitions (f, 0);
+
+//                logic.setIPartitions (f, 0);
                 logic.addIPartitions (f, mask);
             }
 

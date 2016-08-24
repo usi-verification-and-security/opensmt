@@ -902,16 +902,16 @@ public:
     void   printProofSMT2          ( ostream & ); // Print proof
     void   printProofDotty         ( );           // Print proof
     void   printInter              ( ostream & ); // Generate and print interpolants
-    void   getInterpolants         (const vector<vector<int> >& partitions, vector<PTRef>& interpolants);
-    void   getInterpolants         (const vector<ipartitions_t>& partitions, vector<PTRef>& interpolants);
-    void   setColoringSuggestions  (  vector< std::map<PTRef, icolor_t>* > * mp );
-    bool   getPathInterpolants(vector<PTRef>& interpolants);
-    void   getSingleInterpolant(vector<PTRef>& interpolants);
-    void   getSingleInterpolant(vector<PTRef>& interpolants, const ipartitions_t& A_mask);
-    bool   getSimultaneousAbstractionInterpolants(vector<PTRef>& interpolants);
-    bool   getGenSimultaneousAbstractionInterpolants(vector<PTRef>& interpolants);
-    bool   getStateTransitionInterpolants(vector<PTRef>& interpolants);
-    bool   getTreeInterpolants(opensmt::InterpolationTree*, vector<PTRef>& interpolants);
+    void   getInterpolants         (const vec<vec<int> >& partitions, vec<PTRef>& interpolants);
+    void   getInterpolants         (const vec<ipartitions_t>& partitions, vec<PTRef>& interpolants);
+    void   setColoringSuggestions  (  vec< std::map<PTRef, icolor_t>* > * mp );
+    bool   getPathInterpolants(vec<PTRef>& interpolants);
+    void   getSingleInterpolant(vec<PTRef>& interpolants);
+    void   getSingleInterpolant(vec<PTRef>& interpolants, const ipartitions_t& A_mask);
+    bool   getSimultaneousAbstractionInterpolants(vec<PTRef>& interpolants);
+    bool   getGenSimultaneousAbstractionInterpolants(vec<PTRef>& interpolants);
+    bool   getStateTransitionInterpolants(vec<PTRef>& interpolants);
+    bool   getTreeInterpolants(opensmt::InterpolationTree*, vec<PTRef>& interpolants);
     bool   checkImplication( PTRef f1, PTRef f2);
 
     void   createProofGraph          ();

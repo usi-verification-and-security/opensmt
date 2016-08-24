@@ -215,6 +215,9 @@ MainSolver::insertFormula(PTRef root, char** msg)
     logic.setIPartitionsIte(root);
 #endif
     formulas.last().push(root);
+    formulas.last().units.clear();
+    formulas.last().root = PTRef_Undef;
+    simplified_until = min(simplified_until, formulas.size()-1);
     return s_Undef;
 }
 
@@ -227,6 +230,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
 
     vec<PTRef> coll_f;
     for (int i = simplified_until; i < formulas.size(); i++) {
+        simplified_until = i;
         bool res = getTheory().simplify(formulas, i);
         simplified_until = i+1;
         PTRef root = formulas[i].root;

@@ -63,7 +63,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 struct PushFrame
 {
-    PushFrame()                                 { id = id_counter; id_counter += 1; }
+    PushFrame()                                 { id = id_counter; id_counter += 1; root = PTRef_Undef; }
     int  getId() const                          { return id; }
     int  size()  const                          { return formulas.size(); }
     void push(PTRef tr)                         { formulas.push(tr); }
