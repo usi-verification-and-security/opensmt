@@ -908,6 +908,8 @@ public:
     bool   getPathInterpolants(vec<PTRef>& interpolants);
     void   getSingleInterpolant(vec<PTRef>& interpolants);
     void   getSingleInterpolant(vec<PTRef>& interpolants, const ipartitions_t& A_mask);
+    void   getSingleInterpolant(std::vector<PTRef>& interpolants, const ipartitions_t& A_mask) // This is a wrapper for the above, used by hifrog
+            { vec<PTRef> itps; getSingleInterpolant(itps, A_mask); for (int i = 0; i < itps.size(); i++) interpolants.push_back(itps[i]); }
     bool   getSimultaneousAbstractionInterpolants(vec<PTRef>& interpolants);
     bool   getGenSimultaneousAbstractionInterpolants(vec<PTRef>& interpolants);
     bool   getStateTransitionInterpolants(vec<PTRef>& interpolants);
