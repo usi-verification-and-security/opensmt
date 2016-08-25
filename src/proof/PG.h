@@ -126,56 +126,56 @@ public:
 // Interpolation data for resolution proof element
 struct InterpolData
 {
-	PTRef            partial_interp;     // Stores partial interpolant
-	ipartitions_t      partition_mask;     // Stores info on partitions in a bitvector
+    PTRef            partial_interp;     // Stores partial interpolant
+    ipartitions_t    partition_mask;     // Stores info on partitions in a bitvector
 
 #ifdef FULL_LABELING
-	// NOTE labeling rules for AB variables
-	// color a:  bit 1, bit 0
-	// color b:  bit 0, bit 1
-	// color ab: bit 1, bit 1
-	// missing:  bit 0, bit 0
-	// This notation is consistent with coloring of inner nodes given by | of antecedents colorings
-	ipartitions_t      AB_vars_a_colored;
-	ipartitions_t      AB_vars_b_colored;
+    // NOTE labeling rules for AB variables
+    // color a:  bit 1, bit 0
+    // color b:  bit 0, bit 1
+    // color ab: bit 1, bit 1
+    // missing:  bit 0, bit 0
+    // This notation is consistent with coloring of inner nodes given by | of antecedents colorings
+    ipartitions_t      AB_vars_a_colored;
+    ipartitions_t      AB_vars_b_colored;
 #endif
 
-	InterpolData ()
-	: partial_interp	( PTRef_Undef )
-	, partition_mask	( 0 )
+    InterpolData ()
+    : partial_interp    ( PTRef_Undef )
+    , partition_mask    ( 0 )
 #ifdef FULL_LABELING
-	, AB_vars_a_colored	( 0 )
-	, AB_vars_b_colored ( 0 )
+    , AB_vars_a_colored ( 0 )
+    , AB_vars_b_colored ( 0 )
 #endif
-	{}
+    {}
 };
 
 // Resolution proof graph element
 struct ProofNode
 {
-	ProofNode  ( THandler& _th)
-	: clause			 ( NULL )
-	, pivot				 ( -1 )
-	, ant1               ( NULL )
-	, ant2               ( NULL )
-	, resolvents     	 (  )
-	, i_data		     ( NULL )
+    ProofNode  ( THandler& _th)
+    : clause             ( NULL )
+    , pivot                 ( -1 )
+    , ant1               ( NULL )
+    , ant2               ( NULL )
+    , resolvents          (  )
+    , i_data             ( NULL )
     , thandler (_th)
     , clause_ref(CRef_Undef)
-	{
+    {
         clause = NULL;
         i_data = NULL;
     }
 
-	~ProofNode ( )
-	{
-		delete clause;
-	}
+    ~ProofNode ( )
+    {
+        delete clause;
+    }
 
-	//
-	// Auxiliary
-	//
-	inline void 				resetClause() { delete clause; clause = NULL; }
+    //
+    // Auxiliary
+    //
+    inline void                 resetClause() { delete clause; clause = NULL; }
 
     void setClauseRef(CRef cref, bool itp = true)
     {
@@ -185,21 +185,21 @@ struct ProofNode
     }
     CRef getClauseRef() { return clause_ref; }
 
-	void						initClause(Clause& cla)
+    void                        initClause(Clause& cla)
     {
         assert(clause == NULL);
         clause = new vector<Lit>(cla.size());
         for(size_t k = 0; k < cla.size(); ++k) (*clause)[k] = cla[k];
     }
 
-    void						initClause(vector<Lit>& cla)
+    void                        initClause(vector<Lit>& cla)
     {
         assert(clause == NULL);
         clause = new vector<Lit>(cla.size());
         for(size_t k = 0; k < cla.size(); ++k) (*clause)[k] = cla[k];
     }
 
-	void						setClause(vector<Lit>& cla)
+    void                        setClause(vector<Lit>& cla)
     {
         assert(clause);
         clause->resize(cla.size());
@@ -212,80 +212,80 @@ struct ProofNode
         clause = new vector<Lit>;
     }
 
-	//
-	// Getty methods
-	//
-	inline clauseid_t            getId                  ( ) const { return id; }
-	inline vector<Lit>&       getClause              ( )       { assert(clause); return *clause; }
-	inline vector<Lit>*       getPClause              ( )       { return clause; }
-	inline size_t                getClauseSize          ( ) const { return clause->size( ); }
-	inline Var                   getPivot               ( ) const { return pivot; }
-	inline ProofNode *           getAnt1                ( ) const { return ant1; }
-	inline ProofNode *           getAnt2                ( ) const { return ant2; }
-	inline clause_type           getType                ( ) const { return type; }
-	inline PTRef               getPartialInterpolant  ( ) const { assert(i_data); return i_data->partial_interp; }
-	inline const ipartitions_t & getInterpPartitionMask ( ) const { assert(i_data); return i_data->partition_mask; }
-	unsigned                     getNumResolvents       ( ) const { return resolvents.size(); }
-	set<clauseid_t>&			 getResolvents			( ) { return resolvents; }
-	//
-	// Setty methods
-	//
-	inline void                  setId                  ( clauseid_t new_id )            { id = new_id; }
-	inline void                  setPivot               ( Var new_pivot )                { pivot = new_pivot; }
-	inline void                  setAnt1                ( ProofNode * a1 )               { ant1 = a1; }
-	inline void                  setAnt2                ( ProofNode * a2 )               { ant2 = a2; }
-	inline void                  setType                ( clause_type new_type )         { type = new_type; }
-	inline void                  setPartialInterpolant  ( PTRef new_part_interp )      { assert(i_data); i_data->partial_interp = new_part_interp; }
-    void setInterpPartitionMask( const ipartitions_t& mask);
-	void                  setInterpPartitionMask ();
-    	void                         addRes                 ( clauseid_t id )                { resolvents.insert( id ); }
-	void                         remRes                 ( clauseid_t id )                { resolvents.erase( id ); }
-	void						 initIData() { i_data = new InterpolData(); }
-	void						 delIData				( )								 { delete i_data; i_data = NULL; }
-	//
-	// Test methods
-	//
-	inline bool                  isLeaf(){ assert((ant1==NULL && ant2==NULL) || (ant1!=NULL && ant2!=NULL)); return (ant1==NULL);}
-	inline bool                  hasBeenReplaced(){ return(ant1!=NULL && ant2==NULL); }
-	// 0 if positive, 1 if negative, -1 if not found
-	short						 hasOccurrenceBin( Var );
-	// true if positive occurrence pivot is in first antecedent
-	bool 						 checkPolarityAnt();
+    //
+    // Getty methods
+    //
+    inline clauseid_t            getId                  ( ) const { return id; }
+    inline vector<Lit>&          getClause              ( )       { assert(clause); return *clause; }
+    inline vector<Lit>*          getPClause             ( )       { return clause; }
+    inline size_t                getClauseSize          ( ) const { return clause->size( ); }
+    inline Var                   getPivot               ( ) const { return pivot; }
+    inline ProofNode *           getAnt1                ( ) const { return ant1; }
+    inline ProofNode *           getAnt2                ( ) const { return ant2; }
+    inline clause_type           getType                ( ) const { return type; }
+    inline PTRef                 getPartialInterpolant  ( ) const { assert(i_data); return i_data->partial_interp; }
+    inline const ipartitions_t & getInterpPartitionMask ( ) const { assert(i_data); return i_data->partition_mask; }
+    unsigned                     getNumResolvents       ( ) const { return resolvents.size(); }
+    set<clauseid_t>&             getResolvents            ( ) { return resolvents; }
+    //
+    // Setty methods
+    //
+    inline void                  setId                  ( clauseid_t new_id )            { id = new_id; }
+    inline void                  setPivot               ( Var new_pivot )                { pivot = new_pivot; }
+    inline void                  setAnt1                ( ProofNode * a1 )               { ant1 = a1; }
+    inline void                  setAnt2                ( ProofNode * a2 )               { ant2 = a2; }
+    inline void                  setType                ( clause_type new_type )         { type = new_type; }
+    inline void                  setPartialInterpolant  ( PTRef new_part_interp )      { assert(i_data); i_data->partial_interp = new_part_interp; }
+    void                         setInterpPartitionMask( const ipartitions_t& mask);
+    void                         setInterpPartitionMask ();
+    void                         addRes                 ( clauseid_t id )                { resolvents.insert( id ); }
+    void                         remRes                 ( clauseid_t id )                { resolvents.erase( id ); }
+    void                         initIData() { i_data = new InterpolData(); }
+    void                         delIData                ( )                                 { delete i_data; i_data = NULL; }
+    //
+    // Test methods
+    //
+    inline bool                  isLeaf(){ assert((ant1==NULL && ant2==NULL) || (ant1!=NULL && ant2!=NULL)); return (ant1==NULL);}
+    inline bool                  hasBeenReplaced(){ return(ant1!=NULL && ant2==NULL); }
+    // 0 if positive, 1 if negative, -1 if not found
+    short                         hasOccurrenceBin( Var );
+    // true if positive occurrence pivot is in first antecedent
+    bool                          checkPolarityAnt();
 
 #ifdef FULL_LABELING
-	//
-	// Interpolation and labeling
-	//
-	inline void    updateColoringfromAnts ()
-	{
-		orbit( i_data->AB_vars_a_colored, getAnt1()->i_data->AB_vars_a_colored, getAnt2()->i_data->AB_vars_a_colored );
-		orbit( i_data->AB_vars_b_colored, getAnt1()->i_data->AB_vars_b_colored, getAnt2()->i_data->AB_vars_b_colored );
-	}
-	inline void    updateColoringAfterRes ( int i )
-	{
-		clrbit( i_data->AB_vars_a_colored, i );
-		clrbit( i_data->AB_vars_b_colored, i );
-	}
-	inline void    resetLabeling          () { i_data->AB_vars_a_colored = 0; i_data->AB_vars_b_colored = 0; }
-	inline bool    isColoredA             ( int i ) { return ((tstbit(i_data->AB_vars_a_colored, i ) == 1) && (tstbit(i_data->AB_vars_b_colored, i ) == 0)); }
-	inline bool    isColoredB             ( int i ) { return ((tstbit(i_data->AB_vars_a_colored, i ) == 0) && (tstbit(i_data->AB_vars_b_colored, i ) == 1)); }
-	inline bool    isColoredAB            ( int i ) { return ((tstbit(i_data->AB_vars_a_colored, i ) == 1) && (tstbit(i_data->AB_vars_b_colored, i ) == 1)); }
-	inline void    colorA                 ( int i ) { setbit( i_data->AB_vars_a_colored, i ); clrbit( i_data->AB_vars_b_colored, i ); }
-	inline void    colorB                 ( int i ) { setbit( i_data->AB_vars_b_colored, i ); clrbit( i_data->AB_vars_a_colored, i ); }
-	inline void    colorAB                ( int i ) { setbit( i_data->AB_vars_a_colored, i ); setbit( i_data->AB_vars_b_colored, i ); }
+    //
+    // Interpolation and labeling
+    //
+    inline void    updateColoringfromAnts ()
+    {
+        orbit( i_data->AB_vars_a_colored, getAnt1()->i_data->AB_vars_a_colored, getAnt2()->i_data->AB_vars_a_colored );
+        orbit( i_data->AB_vars_b_colored, getAnt1()->i_data->AB_vars_b_colored, getAnt2()->i_data->AB_vars_b_colored );
+    }
+    inline void    updateColoringAfterRes ( int i )
+    {
+        clrbit( i_data->AB_vars_a_colored, i );
+        clrbit( i_data->AB_vars_b_colored, i );
+    }
+    inline void    resetLabeling          () { i_data->AB_vars_a_colored = 0; i_data->AB_vars_b_colored = 0; }
+    inline bool    isColoredA             ( int i ) { return ((tstbit(i_data->AB_vars_a_colored, i ) == 1) && (tstbit(i_data->AB_vars_b_colored, i ) == 0)); }
+    inline bool    isColoredB             ( int i ) { return ((tstbit(i_data->AB_vars_a_colored, i ) == 0) && (tstbit(i_data->AB_vars_b_colored, i ) == 1)); }
+    inline bool    isColoredAB            ( int i ) { return ((tstbit(i_data->AB_vars_a_colored, i ) == 1) && (tstbit(i_data->AB_vars_b_colored, i ) == 1)); }
+    inline void    colorA                 ( int i ) { setbit( i_data->AB_vars_a_colored, i ); clrbit( i_data->AB_vars_b_colored, i ); }
+    inline void    colorB                 ( int i ) { setbit( i_data->AB_vars_b_colored, i ); clrbit( i_data->AB_vars_a_colored, i ); }
+    inline void    colorAB                ( int i ) { setbit( i_data->AB_vars_a_colored, i ); setbit( i_data->AB_vars_b_colored, i ); }
 #endif
 
 private:
     THandler& thandler;
-	clauseid_t         id;                 // id
-	vector<Lit>*     clause;             // Clause
+    clauseid_t         id;                 // id
+    vector<Lit>*     clause;             // Clause
     CRef clause_ref;
-	Var                pivot;              // Non-leaf node pivot
-	ProofNode *        ant1;               // Edges to antecedents
-	ProofNode *        ant2;               // Edges to antecedents
-	set< clauseid_t  > resolvents;         // Resolvents
-	clause_type        type;			   // Node type
-	InterpolData*	   i_data;			   // Data for interpolants computation
+    Var                pivot;              // Non-leaf node pivot
+    ProofNode *        ant1;               // Edges to antecedents
+    ProofNode *        ant2;               // Edges to antecedents
+    set< clauseid_t  > resolvents;         // Resolvents
+    clause_type        type;               // Node type
+    InterpolData*       i_data;               // Data for interpolants computation
 };
 
 
@@ -416,13 +416,13 @@ public:
     void              printProofNode        ( clauseid_t );
     void              printClause           ( ProofNode * );
     void              printClause           ( ProofNode *, ostream & );
-    inline ProofNode* getNode	            ( clauseid_t id ) { assert( id<graph.size() ); return graph[ id ]; }
+    inline ProofNode* getNode               ( clauseid_t id ) { assert( id<graph.size() ); return graph[ id ]; }
     bool              mergeClauses          (vector<Lit>&, vector<Lit>&, vector<Lit>&, Var);
-    inline bool		  isRoot				( ProofNode* n ) { assert(n); return( n->getId() == root ); }
-    inline ProofNode* getRoot				( ) { assert( root<graph.size() );assert(graph[ root ]); return graph[ root ]; }
-    inline void		  setRoot				( clauseid_t id ) { assert( id<graph.size() ); root=id; }
-    inline void	  addLeaf(clauseid_t id)      {  leaves_ids.insert(id); }
-    inline void	  removeLeaf(clauseid_t id)   {  leaves_ids.erase(id); }
+    inline bool       isRoot                ( ProofNode* n ) { assert(n); return( n->getId() == root ); }
+    inline ProofNode* getRoot               ( ) { assert( root<graph.size() );assert(graph[ root ]); return graph[ root ]; }
+    inline void       setRoot               ( clauseid_t id ) { assert( id<graph.size() ); root=id; }
+    inline void       addLeaf(clauseid_t id)      {  leaves_ids.insert(id); }
+    inline void       removeLeaf(clauseid_t id)   {  leaves_ids.erase(id); }
     //
     // Labeling based interpolation
     //
@@ -432,10 +432,10 @@ public:
     void           getPredicatesSetFromInterpolantIterative ( PTRef, set<PTRef>& );
     unsigned long  getComplexityInterpolantIterative        ( PTRef, bool );
     // Get formula complexity as number of connectives, number of distinct boolean variables
-    void 	getComplexityInterpolant( PTRef int_e );
+    void           getComplexityInterpolant( PTRef int_e );
     void           topolSortingEnode                        ( vector< PTRef > &, PTRef );
-    PTRef        compInterpLabelingOriginalSimple               ( ProofNode *, const ipartitions_t & );
-    PTRef        compInterpLabelingInnerSimple                  ( ProofNode *, const ipartitions_t & );
+    PTRef          compInterpLabelingOriginalSimple         ( ProofNode *, const ipartitions_t & );
+    PTRef          compInterpLabelingInnerSimple            ( ProofNode *, const ipartitions_t & );
 
 #ifdef FULL_LABELING
     PTRef        compInterpLabelingOriginal               ( ProofNode *, const ipartitions_t &, unsigned num_config = 0 , map<Var, icolor_t>* PSFunc = NULL);

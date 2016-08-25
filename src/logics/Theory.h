@@ -63,7 +63,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 struct PushFrame
 {
-    PushFrame()                                 { id = id_counter; id_counter += 1; root = PTRef_Undef; }
+    PushFrame() {
+        id = id_counter; id_counter += 1; root = PTRef_Undef;
+#ifdef PRODUCE_PROOF
+        pushed_until = 0;
+#endif
+    }
     int  getId() const                          { return id; }
     int  size()  const                          { return formulas.size(); }
     void push(PTRef tr)                         { formulas.push(tr); }
@@ -72,6 +77,9 @@ struct PushFrame
     PTRef root;
     void addSeen(PTRef tr)                      { seen.insert(tr, l_True); }
     bool isSeen(PTRef tr)                       { return seen.has(tr); }
+#ifdef PRODUCE_PROOF
+    int  pushed_until; // The formulas are pushed until here to the solver
+#endif
  private:
     vec<PTRef> formulas;
     static int id_counter;

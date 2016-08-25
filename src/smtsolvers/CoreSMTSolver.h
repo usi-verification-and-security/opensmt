@@ -680,7 +680,7 @@ protected:
     vec<double>         activity;         // A heuristic measurement of the activity of a variable.
     double              var_inc;          // Amount to bump next variable with.
     OccLists<Lit, vec<Watcher>, WatcherDeleted>  watches;          // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
-    vec<lbool>           assigns;          // The current assignments (lbool:s stored as char:s).
+    vec<lbool>          assigns;          // The current assignments (lbool:s stored as char:s).
     vec<bool>           var_seen;
 
 

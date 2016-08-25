@@ -192,32 +192,32 @@ icolor_t ProofGraph::getVarClass( Var v, const ipartitions_t & A_mask )
 // Output: returns A or B
 icolor_t ProofGraph::getClauseColor( const ipartitions_t & clause_mask, const ipartitions_t & A_mask )
 {
-	// Get partition mask clause
-	// e.g. 0---0110 variable in first and second partition
+    // Get partition mask clause
+    // e.g. 0---0110 variable in first and second partition
 
-	// TODO look at isAB methods in egraph
-	//Determine mask corresponding to B
-	ipartitions_t B_mask = ~A_mask;
-	//Reset bit 0 to 0
-	clrbit( B_mask, 0 );
-	//cout << "Clause has mask " << clause_mask << endl;
+    // TODO look at isAB methods in egraph
+    //Determine mask corresponding to B
+    ipartitions_t B_mask = ~A_mask;
+    //Reset bit 0 to 0
+    clrbit( B_mask, 0 );
+    //cout << "Clause has mask " << clause_mask << endl;
     //cout << "A Mask " << A_mask << endl;
     //cout << "B Mask " << B_mask << endl;
 
-	// Check if belongs to A or B
-	const bool clause_in_A = ( (clause_mask & A_mask) != 0 );
-	const bool clause_in_B = ( (clause_mask & B_mask) != 0 );
-	assert( clause_in_A || clause_in_B );
+    // Check if belongs to A or B
+    const bool clause_in_A = ( (clause_mask & A_mask) != 0 );
+    const bool clause_in_B = ( (clause_mask & B_mask) != 0 );
+    assert( clause_in_A || clause_in_B );
 
-	icolor_t clause_color = I_A;
+    icolor_t clause_color = I_A;
 
-	// Determine if clause belongs to A or B
-	if( clause_in_A && !clause_in_B ) clause_color = I_A;
-	else if( !clause_in_A && clause_in_B ) clause_color = I_B;
-	else if( clause_in_A && clause_in_B ) clause_color = I_AB;
-	else opensmt_error( "Clause has no color" );
+    // Determine if clause belongs to A or B
+    if( clause_in_A && !clause_in_B ) clause_color = I_A;
+    else if( !clause_in_A && clause_in_B ) clause_color = I_B;
+    else if( clause_in_A && clause_in_B ) clause_color = I_AB;
+    else opensmt_error( "Clause has no color" );
 
-	return clause_color;
+    return clause_color;
 }
 
 

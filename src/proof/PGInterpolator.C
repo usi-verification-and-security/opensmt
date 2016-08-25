@@ -409,7 +409,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
 
     // check leaves for False clause
     // TODO do this in a better fucking way...
-    
+
     for ( size_t i = 0 ; i < proof_size ; i++ )
     {
         n = getNode ( DFSv[ i ] );
@@ -422,7 +422,11 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
             vector<Lit> &cl = n->getClause();
             bool fal = false;
 
-            if (cl.size() <= 1 && thandler.varToTerm(var(cl[0])) == thandler.getLogic().getTerm_false() && !sign(cl[0]))
+            if (cl.size() == 0) {
+                opensmt_error("Empty clause found in interpolation\n");
+                assert(false);
+            }
+            if (cl.size() == 1 && thandler.varToTerm(var(cl[0])) == thandler.getLogic().getTerm_false() && !sign(cl[0]))
                 fal = true;
 
             if ((n->getType() == CLAORIG && n->getClauseRef() == CRef_Undef) || fal)
@@ -443,7 +447,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
             }
         }
     }
-    
+
     if ( verbose() > 0 ) cerr << "# Generating interpolant " << endl;
 
     map<Var, icolor_t> *PSFunction = computePSFunction (DFSv, A_mask);

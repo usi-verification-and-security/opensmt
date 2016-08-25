@@ -80,6 +80,7 @@ public:
     bool    isTheoryTerm       ( Var v ) { return getLogic().isTheoryTerm(varToTerm(v)); }
     PTRef   varToTerm          ( Var v ) { return tmap.varToPTRef(v); }  // Return the term ref corresponding to a variable
     Pterm&  varToPterm         ( Var v)  { return getLogic().getPterm(tmap.varToPTRef(v)); } // Return the term corresponding to a variable
+    Lit     PTRefToLit         ( PTRef tr) { return tmap.getLit(tr); }
 
     void    getVarName         ( Var v, char** name ) { *name = getLogic().printTerm(tmap.varToPTRef(v)); }
 

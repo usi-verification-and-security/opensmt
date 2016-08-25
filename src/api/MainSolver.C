@@ -226,11 +226,22 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
     if (binary_init)
         return s_Undef;
 
+
     status = s_Undef;
 
     vec<PTRef> coll_f;
     for (int i = simplified_until; i < formulas.size(); i++) {
-        simplified_until = i;
+#ifdef PRODUCE_PROOF
+        PushFrame& frame = formulas[i];
+        int j;
+        for (j = frame.pushed_until; j < frame.size(); j++) {
+            FContainer fc(frame[i]);
+            if ((status = giveToSolver(fc.getRoot(), formulas[j].getId())) == s_False)
+                break;
+        }
+        frame.pushed_until = j;
+        if (i < frame.size()) break; // Exit due to sat or unsat
+#else
         bool res = getTheory().simplify(formulas, i);
         simplified_until = i+1;
         PTRef root = formulas[i].root;
@@ -260,6 +271,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
         // Stop if problem becomes unsatisfiable
         if ((status = giveToSolver(fc.getRoot(), formulas[i].getId())) == s_False)
             break;
+#endif
     }
     return status;
 }

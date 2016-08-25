@@ -2,7 +2,9 @@
 
 bool UFTheory::simplify(vec<PushFrame>& formulas, int curr)
 {
-
+#ifdef PRODUCE_PROOF
+    assert(false);
+#endif
     PTRef coll_f = getCollateFunction(formulas, curr);
 
     PTRef trans = getLogic().learnEqTransitivity(coll_f);
