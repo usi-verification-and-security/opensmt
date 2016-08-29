@@ -18,7 +18,7 @@ Process::~Process() {
 }
 
 void Process::start() {
-    this->process = ::fork();
+    this->process = fork();
     if (this->process < 0)
         throw ProcessException("fork error");
     if (this->process == 0) {

@@ -13,9 +13,11 @@ class SolverProcess : public Process {
 private:
     Socket *lemmas;
     std::map<std::string, std::string> header;
+    std::string instance;
 
-protected:
     void main();
+
+    const std::string solve();
 
 public:
     SolverProcess(Socket *, std::map<std::string, std::string>, std::string);
@@ -23,7 +25,6 @@ public:
     std::map<std::string, std::string> &get_header() { return this->header; }
 
     static const char *solver;
-    std::string instance;
 };
 
 #endif //CLAUSE_SHARING_PROCESSSOLVER_H

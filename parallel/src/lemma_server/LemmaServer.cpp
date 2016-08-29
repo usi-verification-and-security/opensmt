@@ -97,6 +97,8 @@ void LemmaServer::handle_message(Socket &client,
     });
 
     if (clauses_request == 0) {
+        if (!this->settings.clear_lemmas)
+            return;
         Log::log(Log::INFO,
                  header["name"] + header["node"] + " " + client.get_remote().toString() +
                  " clear");
@@ -109,8 +111,7 @@ void LemmaServer::handle_message(Socket &client,
                          new Node);
         }
         else {
-            if (this->settings.clear_lemmas)
-                this->lemmas.erase(header["name"]);
+            this->lemmas.erase(header["name"]);
         }
         delete node_remove;
         return;

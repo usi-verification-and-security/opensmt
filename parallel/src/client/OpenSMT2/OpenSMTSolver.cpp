@@ -2,23 +2,18 @@
 // Created by Matteo on 22/07/16.
 //
 
+#include "lib/lib.h"
 #include "OpenSMTSolver.h"
 
 
 void OpenSMTInterpret::new_solver() {
-    this->solver = new OpenSMTSolver(this->header, this->clause_socket, this->config, *this->thandler);
+    this->solver = new OpenSMTSolver(*this);
 }
 
 
-OpenSMTSolver::OpenSMTSolver(
-        std::map<std::string, std::string> &header,
-        Socket *clause_socket,
-        SMTConfig &c,
-        THandler &t
-) :
-        SimpSMTSolver(c, t),
-        header(header),
-        clause_socket(clause_socket),
+OpenSMTSolver::OpenSMTSolver(OpenSMTInterpret &interpret) :
+        SimpSMTSolver(interpret.config, *interpret.thandler),
+        interpret(interpret),
         trail_sent(0) { }
 
 OpenSMTSolver::~OpenSMTSolver() { }
@@ -157,7 +152,7 @@ OpenSMTSolver::~OpenSMTSolver() { }
 //
 //OpenSMTSolver::OpenSMTSolver(std::map<std::string, std::string>& header, SMTConfig & config, THandler & handler){
 void inline OpenSMTSolver::clausesPublish() {
-    if (this->clause_socket == NULL)
+    if (this->interpret.clause_socket == NULL)
         return;
 
     std::map<std::string, std::string> header;
@@ -168,8 +163,9 @@ void inline OpenSMTSolver::clausesPublish() {
     for (int i = this->trail_sent; i < trail_max; i++) {
         this->trail_sent++;
         n++;
-        PTRef pt = this->theory_handler.varToTerm(var(this->trail[i]));
-        char *s = this->theory_handler.getLogic().printTerm(pt, false, true);
+        PTRef pt = this->interpret.thandler->varToTerm(var(this->trail[i]));
+        pt = sign(this->trail[i]) ? this->interpret.logic->mkNot(pt) : pt;
+        char *s = this->interpret.thandler->getLogic().printTerm(pt, false, true);
         payload += s;
         payload += "\n";
         free(s);
@@ -177,61 +173,52 @@ void inline OpenSMTSolver::clausesPublish() {
     if (n == 0)
         return;
 
-    header["name"] = this->header["name"];
-    header["node"] = this->header["node"];
+    header["name"] = this->interpret.header["name"];
+    header["node"] = this->interpret.header["node"];
     header["separator"] = "\n";
-    header["lemmas"] = this->header["lemmas"];
+    header["lemmas"] = this->interpret.header["lemmas"];
 
     try {
-        this->clause_socket->write(header, payload);
+        this->interpret.clause_socket->write(header, payload);
     } catch (SocketException) {
-        this->clause_socket = NULL;
+        this->interpret.clause_socket = NULL;
     }
 
 }
 
 void inline OpenSMTSolver::clausesUpdate() {
-    if (this->clause_socket == NULL)
+    if (this->interpret.clause_socket == NULL)
         return;
 
     std::map<std::string, std::string> header;
     std::string payload;
 
-    header["lemmas"] =
-            this->header.count("lemmas") == 1 ? this->header["lemmas"] : std::to_string(10000);
-    header["name"] = this->header["name"];
-    header["node"] = this->header["node"];
-    header["exclude"] = this->clause_socket->get_local().toString();
+    header["lemmas"] = this->interpret.header["lemmas"];
+    header["name"] = this->interpret.header["name"];
+    header["node"] = this->interpret.header["node"];
+    header["exclude"] = this->interpret.clause_socket->get_local().toString();
 
     try {
-        Socket clauses(this->clause_socket->get_remote().toString());
+        Socket clauses(this->interpret.clause_socket->get_remote().toString());
         clauses.write(header, "");
         clauses.read(header, payload);
     } catch (SocketException) {
-        this->clause_socket = NULL;
+        this->interpret.clause_socket = NULL;
         return;
     }
 
-    if (header["name"] != this->header["name"] || header.count("separator") == 0)
+    if (header["name"] != this->interpret.header["name"]
+        || header["node"] != this->interpret.header["node"]
+        || header.count("separator") == 0)
         return;
 
-    Interpret interp(this->config,
-                     &this->theory_handler.getLogic(),
-                     &this->theory_handler.getTheory(),
-                     &this->theory_handler,
-                     this,
-                     NULL);
-    interp.parse_only = true;
-    uint32_t s = 0;
-    uint32_t e = 0;
-    while (true) {
-        while (payload[e] != header["separator"][0] && e < payload.size() && e != -1) { e++; }
-        if (s == e)
-            break;
-        std::string lemma("(assert " + payload.substr(s, e - s) + ")");
-        interp.interpFile((char *) lemma.c_str());
-        e++;
-        s = e;
-    }
+    //this->interpret.main_solver->push();
 
+    split(payload, header["separator"], [this](std::string &lemma) {
+        if (lemma.size() == 0)
+            return;
+        lemma = "(assert " + lemma + ")";
+        this->interpret.interpFile((char *) lemma.c_str());
+    });
+    this->interpret.main_solver->simplifyFormulas();
 }

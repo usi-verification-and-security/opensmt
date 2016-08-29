@@ -1,15 +1,16 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.2)
 
 project(clause_server C CXX)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 set(CMAKE_CXX_COMPILER "g++")
 
-if(NOT CMAKE_BUILD_TYPE)
+if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
 endif ()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
 
 #if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 #   # require at least gcc 4.8
@@ -25,13 +26,13 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 #   message(WARNING "You are using an unsupported compiler! Compilation has only been tested with Clang and GCC.")
 #endif ()
 
-set(SRC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+set(CMAKE_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-include_directories("${SRC}")
+include_directories("${CMAKE_SOURCE_DIR}")
 
-add_subdirectory(${SRC}/deps)
-add_subdirectory(${SRC}/lib)
-add_subdirectory(${SRC}/lemma_server)
-add_subdirectory(${SRC}/client)
+#add_subdirectory(${CMAKE_SOURCE_DIR}/deps)
+add_subdirectory(${CMAKE_SOURCE_DIR}/lib)
+add_subdirectory(${CMAKE_SOURCE_DIR}/lemma_server)
+add_subdirectory(${CMAKE_SOURCE_DIR}/client)
 
 message(STATUS "CMAKE_BUILD_TYPE selected to ${CMAKE_BUILD_TYPE}")

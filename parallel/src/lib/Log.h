@@ -25,13 +25,17 @@ public:
                 record += "INFO\t";
                 break;
             case WARNING:
-                system("tput setaf 3");
-                system("tput bold");
+                if (getenv("TERM")) {
+                    system("tput setaf 3");
+                    system("tput bold");
+                }
                 record += "WARNING\t";
                 break;
             case ERROR:
-                system("tput setaf 9");
-                system("tput bold");
+                if (getenv("TERM")) {
+                    system("tput setaf 9");
+                    system("tput bold");
+                }
                 record += "ERROR\t";
                 break;
             default:
@@ -40,7 +44,8 @@ public:
         record += message;
         mtx.lock();
         std::cout << record << "\n";
-        system("tput sgr0");
+        if (getenv("TERM"))
+            system("tput sgr0");
         mtx.unlock();
     }
 
