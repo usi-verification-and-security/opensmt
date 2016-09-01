@@ -48,7 +48,7 @@ class TermMapper {
     Var  getVar(PTRef)    const;                // Return the variable corresponding to the term
     Lit  getLit(PTRef)    const;                // Return the literal corresponding to the term
     bool hasLit(PTRef tr) const { return logic.getPterm(tr).hasVar(); }
-    PTRef varToPTRef(Var v) const { assert(logic.getPterm(varToTerm[v]).getVar() == v); return varToTerm[v]; }
+    PTRef varToPTRef(Var v) const { assert(v >= 0); assert(logic.getPterm(varToTerm[v]).getVar() == v); return varToTerm[v]; }
     int  nVars()          const { return varToTerm.size(); }
 #ifdef PEDANTIC_DEBUG
     Var  getVarDbg(int r) const { PTRef tr; tr = {r}; return getVar(tr); }

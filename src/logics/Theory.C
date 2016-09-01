@@ -172,11 +172,6 @@ bool Theory::computeSubstitutions(PTRef coll_f, vec<PushFrame>& frames, int curr
 
     frames[curr].root = root;
 
-    vec<PTRef> keys;
-    refs.getKeys(keys);
-    for (int i = 0; i < keys.size(); i++) {
-        th->restoreVar(keys[i]);
-    }
     bool result = no_conflict && th->check(true);
 
     // Traverse frames[curr].root to see all the variables.

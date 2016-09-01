@@ -1,19 +1,5 @@
 #include "tsolvers/TSolverHandler.h"
 
-void TSolverHandler::restoreVar(PTRef tr)
-{
-    // I don't like this.  I think the system starts to become an ugly
-    // hack...
-    if (tr == getLogic().getTerm_true())
-        getLogic().getPterm(getLogic().getTerm_true()).setVar(0);
-    else if (tr == getLogic().getTerm_false())
-        getLogic().getPterm(getLogic().getTerm_false()).setVar(1);
-    else {
-        Var v = old_vars[tr];
-        getLogic().getPterm(tr).setVar(v);
-    }
-}
-
 void TSolverHandler::computeModel()
 {
     for (int i = 0; i < tsolvers.size(); i++)

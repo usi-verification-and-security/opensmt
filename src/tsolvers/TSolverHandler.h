@@ -53,7 +53,6 @@ protected:
     vec<DedElem>  &deductions;
     vec<int>       solverSchedule;   // Why is this here and not in THandler?
     vec<TSolver*>  tsolvers;         // List of ordinary theory solvers
-    Map<PTRef,Var,PTRefHash> old_vars; // Map from PTRef to the previous values of vars
 
     TSolverHandler(SMTConfig &c, vec<DedElem> &d, Logic& l, TermMapper& tmap)
         : config(c)
@@ -72,7 +71,6 @@ public:
         for (int i = 0; i < tsolvers.size(); i++)
             if (tsolvers[i] != NULL) delete tsolvers[i];
     }
-    void restoreVar(PTRef tr); // Get the variable from old_var
 
     virtual Logic&  getLogic  ( )  = 0;
 
