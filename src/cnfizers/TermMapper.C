@@ -26,8 +26,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "TermMapper.h"
 
-void TermMapper::addBinding(Var v, PTRef tr)
+Var TermMapper::addBinding(PTRef tr)
 {
+    Var v = Var(var_cnt++);
     assert(varToTerm.size() == v && varToTheorySymbol.size() == v);
     logic.getPterm(tr).setVar(v);
     if (tr != PTRef_Undef) {
@@ -36,6 +37,7 @@ void TermMapper::addBinding(Var v, PTRef tr)
     } else {
         assert(false);
     }
+    return v;
 }
 
 void TermMapper::getTerm(PTRef r, PTRef& p, bool& sgn) const {

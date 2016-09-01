@@ -2,6 +2,43 @@
 #include "MainSolver.h"
 //#include "logics/Logic.h"
 
+// Function for assigning a PTRef to a Boolean variable if the Boolean
+// variable does not yet exist.
+// Extracts the literal corresponding to a term.
+// Accepts negations.
+const Lit Theory::findLit (PTRef ptr)
+{
+    PTRef p_tr;
+    bool sgn;
+    Var v;
+    getTmap().getTerm(ptr, p_tr, sgn);
+
+    Pterm& p = getLogic().getPterm(p_tr);
+    if (p.getVar() == -1)
+    {
+        v = getTmap().addBinding(p_tr);
+
+        if (getLogic().isTheoryTerm (p_tr))
+        {
+            assert (getLogic().isEquality (p_tr)        ||
+                    getLogic().isDisequality (p_tr)     ||
+                    getLogic().getTerm_true() == p_tr   ||
+                    getLogic().getTerm_false() == p_tr  ||
+                    getLogic().isUP (p_tr)                );
+        }
+
+#ifdef VERBOSE_CNFIZATION
+//        cerr << "Term " << logic.printTerm(p_tr) << " maps to var " << v << endl;
+#endif
+    }
+
+    v = p.getVar();
+    Lit l = mkLit (v, sgn);
+
+    return l;
+}
+
+
 // The Collate function is constructed from all frames up to the current
 // one and will be used to simplify the formulas in the current frame
 // formulas[curr].
@@ -137,9 +174,9 @@ bool Theory::computeSubstitutions(PTRef coll_f, vec<PushFrame>& frames, int curr
 
     vec<PTRef> keys;
     refs.getKeys(keys);
-    for (int i = 0; i < keys.size(); i++)
-        getLogic().getPterm(keys[i]).clearVar();
-
+    for (int i = 0; i < keys.size(); i++) {
+        th->restoreVar(keys[i]);
+    }
     bool result = no_conflict && th->check(true);
 
     // Traverse frames[curr].root to see all the variables.

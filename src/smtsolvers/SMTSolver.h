@@ -60,13 +60,14 @@ public:
 #else
   virtual bool   addSMTClause  ( const vec<Lit> &) = 0;
 #endif
-  virtual bool   smtSolve      ( )                                              = 0;
-  virtual Var    newVar        ( bool = true, bool = true )                     = 0;
-  virtual void   setFrozen     ( Var, bool )                                    = 0;
-
-  virtual bool   okay          () const                                         = 0;
+  virtual bool   smtSolve      ( )                          = 0;
+  virtual void   setFrozen     ( Var, bool )                = 0;
+  virtual bool   okay          () const                     = 0;
 
 protected:
+
+  virtual void   addVar        (Var v)                      = 0;
+  virtual Var    newVar        ( bool = true, bool = true ) = 0;
 
 //  Egraph &    egraph;         // Stores Sgraph
   SMTConfig & config;         // Stores Config

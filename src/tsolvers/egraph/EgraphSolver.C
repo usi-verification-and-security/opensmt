@@ -150,34 +150,8 @@ void Egraph::popBacktrackPoint() {
     backtrack_points.pop();
     backtrackToStackSize( undo_stack_new_size );
 
-    // Pop ordinary theories <-- now done in THandler
-//    for ( uint32_t i = 1 ; i < tsolvers.size_( ) ; i ++ )
-//        tsolvers[ i ]->popBacktrackPoint( );
-
-    // Restore deduction next <-- now done in TSolver::popBacktrackPoint
+    // Restore deduction next
     TSolver::popBacktrackPoint();
-//    assert( deductions_last.size( ) > 0 );
-//    assert( deductions_lim.size( ) > 0 );
-//    deductions_next = deductions_last.last();
-//    deductions_last.pop();
-//    // Restore deductions
-//    size_t new_deductions_size = deductions_lim.last( );
-//    deductions_lim.pop( );
-//    while( th_deductions.size_() > new_deductions_size ) {
-//        PtAsgn_reason asgn = th_deductions.last();
-//        ERef e = enode_store.termToERef[asgn.tr];
-//        Enode& en_e = enode_store[e];
-//        assert(deduced[logic.getPterm(asgn.tr).getVar()] != l_Undef);
-////        assert( en_e.isDeduced() );
-//#ifdef VERBOSE_EUF
-//        cerr << "Clearing deduction " << logic.printTerm(asgn.tr) << endl;
-//#endif
-//        deduced[logic.getPterm(asgn.tr).getVar()] = DedElem_Undef;
-////        en_e.resetDeduced();
-//        th_deductions.pop();
-//    }
-//    assert( deductions_next <= th_deductions.size_() );
-//    assert( deductions_last.size( ) == deductions_lim.size( ) );
 }
 
 //

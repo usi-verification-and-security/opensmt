@@ -245,6 +245,15 @@ CoreSMTSolver::~CoreSMTSolver()
 
 //=================================================================================================
 // Minor methods:
+//
+// Add a new var v to the solver if it does not yet exist
+//
+void CoreSMTSolver::addVar(Var v)
+{
+    if (v < nVars()) return;
+    while (v >= nVars())
+        newVar();
+}
 
 // Creates a new SAT variable in the solver. If 'decision_var' is cleared, variable will not be
 // used as a decision variable (NOTE! This has effects on the meaning of a SATISFIABLE result).
@@ -2267,6 +2276,7 @@ void CoreSMTSolver::declareVarsToTheories()
             if (!var_seen[v])
             {
                 var_seen[v] = true;
+                assert(theory_handler.getLogic().getPterm(theory_handler.varToTerm(v)).getVar() != -1);
                 theory_handler.declareTermTree(theory_handler.varToTerm(v));
 //                printf("Declaring clause %d var %s\n", i, theory_handler.getLogic().printTerm(theory_handler.varToTerm(v)));
             }

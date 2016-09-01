@@ -32,13 +32,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Logic.h"
 class TermMapper {
   private:
+    int         var_cnt;
     Logic&      logic;
-    vec<PTRef>                                varToTerm;
-    vec<SymRef>                               varToTheorySymbol;
+    vec<PTRef>  varToTerm;
+    vec<SymRef> varToTheorySymbol;
   public:
-    TermMapper(Logic& l) : logic(l) {}
+    TermMapper(Logic& l) : var_cnt(0), logic(l) {}
 
-    void addBinding(Var v, PTRef tr);
+    Var addBinding(PTRef tr);
 
     // Return a "purified" term by removing sequence of nots.  sgn is false if
     // sequence length is even, and true if it odd.  Does not change the
@@ -47,7 +48,7 @@ class TermMapper {
     Var  getVar(PTRef)    const;                // Return the variable corresponding to the term
     Lit  getLit(PTRef)    const;                // Return the literal corresponding to the term
     bool hasLit(PTRef tr) const { return logic.getPterm(tr).hasVar(); }
-    PTRef varToPTRef(Var v) const { return varToTerm[v]; }
+    PTRef varToPTRef(Var v) const { assert(logic.getPterm(varToTerm[v]).getVar() == v); return varToTerm[v]; }
     int  nVars()          const { return varToTerm.size(); }
 #ifdef PEDANTIC_DEBUG
     Var  getVarDbg(int r) const { PTRef tr; tr = {r}; return getVar(tr); }

@@ -39,18 +39,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 class THandler
 {
 private:
-    Theory &theory;
+    Theory             &theory;
+    TermMapper         &tmap;                     // Mappings between TRefs and Lits
 #ifdef PEDANTIC_DEBUG
 public:
 #endif
-    SMTConfig &         config;                   // Reference to configuration
-    TermMapper          tmap;                     // Mappings between TRefs and Lits
+    SMTConfig          &config;                   // Reference to configuration
 public:
 
     THandler ( SMTConfig& c, Theory& tsh)
     : theory             (tsh)
+    , tmap               (tsh.getTmap())
     , config             (c)
-    , tmap               (theory.getLogic())
     , checked_trail_size (0)
     { }
 

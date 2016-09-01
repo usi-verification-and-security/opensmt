@@ -150,7 +150,7 @@ public:
         if (polarityMap.has(tr)) { polarityMap[tr] = p; }
         else { polarityMap.insert(tr, p); }
 #ifdef VERBOSE_EUF
-        cerr << "Setting polarity " << getLogic().printTerm(tr) << endl;
+        cerr << "Setting polarity " << getLogic().printTerm(tr) << " " << tr.x << endl;
 #endif
     }
     virtual void print(ostream& out) = 0;
@@ -158,7 +158,7 @@ public:
     void  clearPolarity(PTRef tr)        {
         polarityMap[tr] = l_Undef;
 #ifdef VERBOSE_EUF
-        cerr << "Clearing polarity " << getLogic().printTerm(tr) << endl;
+        cerr << "Clearing polarity " << getLogic().printTerm(tr) << " " << tr.x << endl;
 #endif
     }
     bool  hasPolarity(PTRef tr)          { if (polarityMap.has(tr)) { return polarityMap[tr] != l_Undef; } else return false; }

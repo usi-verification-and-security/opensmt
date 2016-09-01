@@ -85,9 +85,9 @@ class MainSolver
         pi(PTRef x_) : x(x_), done(false) {}
     };
     Logic&         logic;
-    TermMapper&    tmap;
     SMTConfig&     config;
     THandler&      thandler;
+    TermMapper&    tmap;
     vec<DedElem>   deductions;
     SimpSMTSolver* smt_solver;
     Tseitin        ts;
@@ -133,7 +133,7 @@ class MainSolver
         , thandler(thandler)
         , smt_solver(s)
         , ts( config
-            , logic
+            , getTheory()
             , tmap
             , thandler
             , *s )
@@ -151,15 +151,15 @@ class MainSolver
     SMTConfig& getConfig() { return config; }
     SimpSMTSolver& getSMTSolver() { return *smt_solver; }
 
-    THandler& getTHandler() { return thandler; }
-    Logic&    getLogic()    { return thandler.getLogic(); }
-    Theory&   getTheory()   { return thandler.getTheory(); }
-    sstat push(PTRef root);
-    void push();
-    bool pop();
-    sstat insertFormula(PTRef root, char** msg);
+    THandler &getTHandler() { return thandler; }
+    Logic    &getLogic()    { return thandler.getLogic(); }
+    Theory   &getTheory()   { return thandler.getTheory(); }
+    sstat     push(PTRef root);
+    void      push();
+    bool      pop();
+    sstat     insertFormula(PTRef root, char** msg);
 
-    void initialize() { ts.solver.initialize(); ts.initialize(); }
+    void      initialize() { ts.solver.initialize(); ts.initialize(); }
 
     sstat simplifyFormulas() { char* msg; sstat res = simplifyFormulas(&msg); if (res == s_Error) { printf("%s\n", msg); } return res; }
     sstat simplifyFormulas(char** err_msg);

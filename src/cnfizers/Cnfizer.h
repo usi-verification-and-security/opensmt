@@ -67,8 +67,9 @@ public:
     SimpSMTSolver&      solver;
 protected:
     SMTConfig&          config;
+    Theory&             theory;
     Logic&              logic;
-    TermMapper&         tmap;            // Map vars to proper terms
+    TermMapper&         tmap;
 
     THandler&           thandler;
     bool                s_empty;
@@ -77,7 +78,7 @@ protected:
 public:
 
     Cnfizer( SMTConfig &    config_
-           , Logic&         logic_
+           , Theory&        logic_
            , TermMapper&    tmap_
            , THandler&      thandler_
            , SimpSMTSolver& solver_
@@ -94,8 +95,6 @@ public:
 
     void   initialize      ();
     lbool  solve           (vec<int>& en_frames);
-
-    void   crashTest       (int rounds) { solver.crashTest(rounds, tmap.getVar(logic.getTerm_true()), tmap.getVar(logic.getTerm_false())); }
 
     PTRef  expandItes      (vec<PtChild>&);
 
@@ -173,7 +172,6 @@ protected:
     void setFrameTerm(int frame_id);
 
 //    bool  isLit            (PTRef r);
-    const Lit findLit      (PTRef ptr);
     bool  isBooleanOperator(SymRef tr) { return logic.isBooleanOperator(tr); } // (tr == logic.getSym_and()) | (tr == logic.getSym_or() ) | (tr == logic.getSym_not() ) | (tr == logic.getSym_eq() ) | (tr == logic.getSym_xor() ); }
     bool  isTheorySymbol   (SymRef tr) const { return logic.isTheorySymbol(tr); }
     bool  isIte            (SymRef tr) const { return logic.isIte(tr); }

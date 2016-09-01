@@ -367,8 +367,10 @@ public:
 
     // Problem specification:
     //
-    Var     newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
-
+protected:
+    virtual void  addVar    (Var v); // Ensure that var v exists in the solver
+    Var           newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
+public:
 #ifdef PRODUCE_PROOF
     bool    addClause (const vec<Lit> & ps, const ipartitions_t& mask = 0);
     bool    addEmptyClause();                                   // Add the empty clause, making the solver contradictory.
@@ -520,7 +522,7 @@ public:
     vec<vec<Lit> > split_assumptions;
 
 protected:
-
+    int processed_in_frozen; // The index in Theory's frozen vec until which frozennes has been processed
     // Helper structures:
     //
     static inline VarData mkVarData(CRef cr, int l)

@@ -38,7 +38,7 @@ class LRATHandler : public TSolverHandler
     LRALogic& logic;
     LRASolver *lrasolver;
   public:
-    LRATHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d);
+    LRATHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d, TermMapper& tmap);
     virtual ~LRATHandler();
     void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs);
     bool assertLit_special(PtAsgn);

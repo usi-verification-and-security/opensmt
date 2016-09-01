@@ -215,7 +215,17 @@ bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause)
 {
     assert( config.sat_preprocess_theory == 0 );
 
+    // Check that the variables exist in the solver
+    for (int i = 0; i < smt_clause.size(); i++) {
+        Lit l = smt_clause[i];
 
+        PTRef tr = theory_handler.getTMap().varToPTRef(var(l));
+        Pterm& t = theory_handler.getLogic().getPterm(tr);
+        Var v = t.getVar();
+        addVar(v);
+        if (theory_handler.getLogic().isTheoryTerm(tr))
+            setFrozen(v, true);
+    }
 #ifdef PEDANTIC_DEBUG
     for (int i = 0; i < smt_clause.size(); i++)
         assert(!isEliminated(var(smt_clause[i])));
@@ -257,6 +267,7 @@ bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause)
             n_touched++;
             if (elim_heap.inHeap(var(c[i])))
                 elim_heap.increase(var(c[i]));
+            assert(theory_handler.getLogic().getPterm(theory_handler.varToTerm(var(c[i]))).getVar() != -1);
         }
     }
 

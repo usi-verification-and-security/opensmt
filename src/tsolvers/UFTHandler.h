@@ -35,12 +35,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 class UFTHandler : public TSolverHandler
 {
   private:
-    Logic& logic;
-    Egraph* egraph;
+    Logic&     logic;
+    Egraph*    egraph;
 //  protected:
 //    const vec<int>& getSolverSchedule() const;
   public:
-    UFTHandler(SMTConfig& c, Logic& l, vec<DedElem>& d);
+    UFTHandler(SMTConfig& c, Logic& l, vec<DedElem>& d, TermMapper& tmap);
     virtual ~UFTHandler();
     bool assertLit_special(PtAsgn a);
     // This is for simplification, needed to run the theory solver code

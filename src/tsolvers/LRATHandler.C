@@ -1,8 +1,8 @@
 #include "LRATHandler.h"
 
 
-LRATHandler::LRATHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d)
-        : TSolverHandler(c, d)
+LRATHandler::LRATHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d, TermMapper& tmap)
+        : TSolverHandler(c, d, l, tmap)
         , logic(l)
 {
     lrasolver = new LRASolver(config, logic, deductions);
@@ -20,6 +20,8 @@ Logic &LRATHandler::getLogic()
 
 void LRATHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
 {
+    // XXX Reorganize so that the storing of the previous variable would
+    // not be so awkward?
     vec<PtChild> terms;
     getTermList(root, terms, getLogic());
 
@@ -29,6 +31,22 @@ void LRATHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
         if (logic.isRealLeq(tr)) {
             if (!refs.has(tr)) {
                 declareTerm(tr);
+                // It is possible that the term already has a variable from
+                // a previous check-sat, if we are in incremental mode.
+                // In this case we need to restore the variable instead of
+                // clearing it later.
+                Var v = (logic.getPterm(tr).getVar());
+                if (old_vars.has(tr))
+                    old_vars.remove(tr);
+                old_vars.insert(tr, v);
+                if (v != var_Undef) {
+                    while (deductions.size() <= v)
+                        deductions.push({getId(), l_Undef});
+                } else {
+                    v = deductions.size();
+                    deductions.push({getId(), l_Undef});
+                    logic.getPterm(tr).setVar(deductions.size());
+                }
                 refs.insert(tr, deductions.size());
                 logic.getPterm(tr).setVar(deductions.size());
                 deductions.push(DedElem(getId(), l_Undef));
@@ -49,12 +67,28 @@ void LRATHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
                 logic.getPterm(i1).setVar(deductions.size());
                 deductions.push(DedElem(getId(), l_Undef));
                 declareTerm(i1);
+                // It is possible that the term already has a variable from
+                // a previous check-sat, if we are in incremental mode.
+                // In this case we need to restore the variable instead of
+                // clearing it later.
+                Var v = (logic.getPterm(i1).getVar());
+                if (old_vars.has(i1))
+                    old_vars.remove(i1);
+                old_vars.insert(i1, v);
             }
             if (!refs.has(i2) && logic.isRealLeq(i2)) {
                 refs.insert(i2, deductions.size());
                 logic.getPterm(i2).setVar(deductions.size());
                 deductions.push(DedElem(getId(), l_Undef));
                 declareTerm(i2);
+                // It is possible that the term already has a variable from
+                // a previous check-sat, if we are in incremental mode.
+                // In this case we need to restore the variable instead of
+                // clearing it later.
+                Var v = (logic.getPterm(i2).getVar());
+                if (old_vars.has(i2))
+                    old_vars.remove(i2);
+                old_vars.insert(i2, v);
             }
         }
     }

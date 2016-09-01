@@ -30,15 +30,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 using namespace std;
 
-Cnfizer::Cnfizer ( SMTConfig     &config_
-                   , Logic         &logic_
-                   , TermMapper    &tmap_
+Cnfizer::Cnfizer ( SMTConfig       &config_
+                   , Theory        &theory
+                   , TermMapper    &tmap
                    , THandler      &thandler_
                    , SimpSMTSolver &solver_
                  ) :
     config   (config_  )
-    , logic    (logic_   )
-    , tmap     (tmap_    )
+    , theory   (theory)
+    , logic    (theory.getLogic())
+    , tmap     (tmap)
     , thandler (thandler_)
     , solver   (solver_)
     , s_empty  (true)
@@ -50,11 +51,11 @@ Cnfizer::Cnfizer ( SMTConfig     &config_
 void Cnfizer::initialize()
 {
     vec<Lit> c;
-    Lit l = findLit (logic.getTerm_true());
+    Lit l = theory.findLit (logic.getTerm_true());
     c.push (l);
     addClause (c);
     c.pop();
-    l = findLit (logic.getTerm_false());
+    l = theory.findLit (logic.getTerm_false());
     c.push (~l);
     addClause (c);
 }
@@ -65,7 +66,7 @@ Cnfizer::solve(vec<int>& en_frames)
     vec<Lit> assumps;
     // Initialize so that by default frames are disabled
     for (int i = 0; i < frame_terms.size(); i++)
-        assumps.push(findLit(frame_terms[i]));
+        assumps.push(theory.findLit(frame_terms[i]));
 
     // Enable the terms which are listed in en_frames
     // At this point assumps has the same size as frame_terms and the
@@ -76,7 +77,7 @@ Cnfizer::solve(vec<int>& en_frames)
         assumps[asmp_idx] = ~assumps[asmp_idx];
     }
     // Filter out the lit_Trues and lit_Falses used as empty values
-    Lit lit_true = findLit(logic.getTerm_true());
+    Lit lit_true = theory.findLit(logic.getTerm_true());
     int i, j;
     for (i = j = 0; i < assumps.size(); i++) {
         if (assumps[i] != lit_true && assumps[i] != ~lit_true)
@@ -107,46 +108,6 @@ Cnfizer::solve(vec<int>& en_frames)
 // A term is an atom if its sort is Bool and
 //  (i)  number of arguments is 0, or
 //  (ii) it is an atom stating an equivalence of non-boolean terms (terms must be purified at this point)
-
-// Extracts the literal corresponding to a term.
-// Accepts negations.
-const Lit Cnfizer::findLit (PTRef ptr)
-{
-    PTRef p;
-    bool sgn;
-    Var v;
-    tmap.getTerm (ptr, p, sgn);
-
-    if (!seen.has (p))
-    {
-        v = solver.newVar();
-        tmap.addBinding (v, p);
-
-        if (logic.isTheoryTerm (p))
-        {
-            assert (logic.isEquality (p)        ||
-                    logic.isDisequality (p)     ||
-                    logic.getTerm_true() == p          ||
-                    logic.getTerm_false() == p         ||
-                    logic.isUP (p)                      );
-        }
-
-        seen.insert (p, v);
-
-        if (logic.isTheoryTerm (p))
-            solver.setFrozen (v, true);
-
-#ifdef VERBOSE_CNFIZATION
-//        cerr << "Term " << logic.printTerm(p) << " maps to var " << v << endl;
-#endif
-    }
-    else
-        v = seen[p];
-
-    Lit l = mkLit (v, sgn);
-
-    return l;
-}
 
 
 // A term is an npatom if it is an atom or it is a negation of an npatom
@@ -326,14 +287,14 @@ lbool Cnfizer::cnfizeAndGiveToSolver (PTRef formula, int frame_id)
 /*
 lbool Cnfizer::extEquals(PTRef r_new, PTRef r_old) {
 
-    Lit l_new = findLit(r_new);
+    Lit l_new = theory.findLit(r_new);
 
     if (tmap.varToTheorySymbol[var(l_new)] == SymRef_Undef) {
         // The variable has already been removed
         return l_Undef;
     }
 
-    Lit l_old = findLit(r_old);
+    Lit l_old = theory.findLit(r_old);
 
     tmap.varToTheorySymbol[var(l_new)] = SymRef_Undef;
     tmap.theoryTerms.remove(r_new);
@@ -376,7 +337,7 @@ bool Cnfizer::deMorganize ( PTRef formula )
 
         for (int i = 0; i < conjuncts.size(); i++)
         {
-            clause.push (~findLit (conjuncts[i]));
+            clause.push (~theory.findLit (conjuncts[i]));
 #ifdef PEDANTIC_DEBUG
             cerr << "(not " << logic.printTerm (conjuncts[i]) << ")" << endl;
 #endif
@@ -732,7 +693,7 @@ bool Cnfizer::addClause ( vec<Lit> &c )
 {
 
     if (frame_term != logic.getTerm_true()) {
-        Lit l = findLit(frame_term);
+        Lit l = theory.findLit(frame_term);
         solver.setFrozen(var(l), true);
         c.push(l);
     }
@@ -772,7 +733,7 @@ bool Cnfizer::giveToSolver ( PTRef f )
     //
     if (logic.isLit (f))
     {
-        clause.push (findLit (f));
+        clause.push (theory.findLit (f));
 #ifdef PRODUCE_PROOF
         return addClause (clause, mask);
 #else
@@ -790,7 +751,7 @@ bool Cnfizer::giveToSolver ( PTRef f )
         retrieveClause (f, lits);
 
         for (int i = 0; i < lits.size(); i++)
-            clause.push (findLit (lits[i]));
+            clause.push (theory.findLit (lits[i]));
 
 #ifdef PRODUCE_PROOF
         return addClause (clause, mask);

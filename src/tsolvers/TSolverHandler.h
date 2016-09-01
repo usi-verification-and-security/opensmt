@@ -33,6 +33,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "TSolver.h"
 #include "Logic.h"
 #include "TreeOps.h"
+#include "TermMapper.h"
 
 #ifdef PRODUCE_PROOF
 #include "TheoryInterpolator.h"
@@ -46,13 +47,18 @@ class TSolverHandler
 protected:
     SolverId       my_id;
     SMTConfig     &config;
+public:
+    TermMapper    &tmap;
+protected:
     vec<DedElem>  &deductions;
     vec<int>       solverSchedule;   // Why is this here and not in THandler?
     vec<TSolver*>  tsolvers;         // List of ordinary theory solvers
-public:
-    TSolverHandler(SMTConfig &c, vec<DedElem> &d)
+    Map<PTRef,Var,PTRefHash> old_vars; // Map from PTRef to the previous values of vars
+
+    TSolverHandler(SMTConfig &c, vec<DedElem> &d, Logic& l, TermMapper& tmap)
         : config(c)
         , deductions(d)
+        , tmap(tmap)
     {
         for (int i = 0; i < SolverDescr::getSolverList().size(); i++) {
             SolverDescr* sd = SolverDescr::getSolverList()[i];
@@ -60,11 +66,13 @@ public:
             while (id.id >= tsolvers.size()) tsolvers.push(NULL);
         }
     }
+public:
     virtual ~TSolverHandler()
     {
         for (int i = 0; i < tsolvers.size(); i++)
             if (tsolvers[i] != NULL) delete tsolvers[i];
     }
+    void restoreVar(PTRef tr); // Get the variable from old_var
 
     virtual Logic&  getLogic  ( )  = 0;
 

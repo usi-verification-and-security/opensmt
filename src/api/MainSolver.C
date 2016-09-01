@@ -915,7 +915,7 @@ void MainSolver::deserializeSolver(const int* termstore_buf, const int* symstore
         if (tmap.nVars() > i)
             assert(tmap.varToPTRef(i) == map[i].tr);
         else {
-            tmap.addBinding(i, map[i].tr);
+            tmap.addBinding(map[i].tr);
 
             if (logic.isTheoryTerm(map[i].tr))
                 ts.solver.setFrozen(i, true);

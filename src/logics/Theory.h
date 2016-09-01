@@ -27,7 +27,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define THEORY_H
 
 #include "Deductions.h"
-#include "TermMapper.h"
 #include "Logic.h"
 #include "LRALogic.h"
 #include "LRATHandler.h"
@@ -93,16 +92,21 @@ class Theory
 {
   protected:
     vec<DedElem> deductions;
+    vec<Var>     frozen_vars;
     SMTConfig &  config;
     PTRef getCollateFunction(vec<PushFrame>& formulas, int curr);
+    Theory(SMTConfig &c) : config(c) {}
+    void addToFrozen(Var v) { frozen_vars.push(v); }  // Vars that solver should freeze
   public:
+    virtual TermMapper     &getTmap() = 0;
+    const Lit               findLit(PTRef ptr); // Bind the term to a Boolean variable
     virtual Logic          &getLogic()              = 0;
     virtual TSolverHandler &getTSolverHandler()     = 0;
     virtual TSolverHandler *getTSolverHandler_new(vec<DedElem>&) = 0;
     virtual bool            simplify(vec<PushFrame>&, int) = 0; // Simplify a vector of PushFrames in an incrementality-aware manner
     vec<DedElem>           &getDeductionVec()   { return deductions; }
     bool                    computeSubstitutions(PTRef coll_f, vec<PushFrame>& frames, int curr);
-    Theory(SMTConfig &c) : config(c)            {}
+    const vec<Var>         &getFrozenVars()     { return frozen_vars; }
     virtual ~Theory()                           {};
 };
 
@@ -110,17 +114,20 @@ class LRATheory : public Theory
 {
   private:
     LRALogic    lralogic;
+    TermMapper  tmap;
     LRATHandler lratshandler;
   public:
+    TermMapper& getTmap() { return tmap; }
     LRATheory(SMTConfig& c)
         : Theory(c)
         , lralogic(c)
-        , lratshandler(c, lralogic, deductions)
+        , tmap(lralogic)
+        , lratshandler(c, lralogic, deductions, tmap)
     { }
     ~LRATheory() {};
     LRALogic&    getLogic()    { return lralogic; }
     LRATHandler& getTSolverHandler() { return lratshandler; }
-    LRATHandler *getTSolverHandler_new(vec<DedElem> &d) { return new LRATHandler(config, lralogic, d); }
+    LRATHandler *getTSolverHandler_new(vec<DedElem> &d) { return new LRATHandler(config, lralogic, d, tmap); }
     bool simplify(vec<PushFrame>&, int); // Theory specific simplifications
 };
 
@@ -128,18 +135,21 @@ class UFTheory : public Theory
 {
   private:
     Logic      uflogic;
+    TermMapper  tmap;
     UFTHandler tshandler;
   public:
+    TermMapper& getTmap() { return tmap; }
     UFTheory(SMTConfig& c)
         : Theory(c)
         , uflogic(c)
-        , tshandler(c, uflogic, deductions)
+        , tmap(uflogic)
+        , tshandler(c, uflogic, deductions, tmap)
     {}
     ~UFTheory() {}
     Logic&       getLogic()             { return uflogic; }
     UFTHandler&  getTSolverHandler()    { return tshandler; }
     const UFTHandler& getTSolverHandler() const { return tshandler; }
-    UFTHandler *getTSolverHandler_new(vec<DedElem>& d) { return new UFTHandler(config, uflogic, d); }
+    UFTHandler *getTSolverHandler_new(vec<DedElem>& d) { return new UFTHandler(config, uflogic, d, tmap); }
     bool simplify(vec<PushFrame>&, int);
 };
 
