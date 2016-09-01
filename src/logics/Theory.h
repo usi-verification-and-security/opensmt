@@ -64,9 +64,6 @@ struct PushFrame
 {
     PushFrame() {
         id = id_counter; id_counter += 1; root = PTRef_Undef;
-#ifdef PRODUCE_PROOF
-        pushed_until = 0;
-#endif
     }
     int  getId() const                          { return id; }
     int  size()  const                          { return formulas.size(); }
@@ -76,11 +73,8 @@ struct PushFrame
     PTRef root;
     void addSeen(PTRef tr)                      { seen.insert(tr, l_True); }
     bool isSeen(PTRef tr)                       { return seen.has(tr); }
-#ifdef PRODUCE_PROOF
-    int  pushed_until; // The formulas are pushed until here to the solver
-#endif
- private:
     vec<PTRef> formulas;
+ private:
     static int id_counter;
     int id;
     //  If a lower frame F contains a substitution x = f(Y), x = f(Y)
