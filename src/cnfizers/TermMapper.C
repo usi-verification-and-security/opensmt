@@ -28,7 +28,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Var TermMapper::addBinding(PTRef tr)
 {
-    Var v = Var(var_cnt++);
+    Var v = getVar(tr);
+    if (v != -1) return v;
+    v = Var(var_cnt++);
     assert(varToTerm.size() == v && varToTheorySymbol.size() == v);
     logic.getPterm(tr).setVar(v);
     if (tr != PTRef_Undef) {
