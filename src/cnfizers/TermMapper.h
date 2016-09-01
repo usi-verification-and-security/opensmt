@@ -46,6 +46,7 @@ class TermMapper {
     // mapping
     void getTerm(PTRef tr, PTRef& tr_clean, bool& sgn) const;
     Var  getVar(PTRef)    const;                // Return the variable corresponding to the term
+    void getVar(PTRef, PTRef&, Var&) const;     // Return the variable corresponding to the term
     Lit  getLit(PTRef)    const;                // Return the literal corresponding to the term
     bool hasLit(PTRef tr) const { return logic.getPterm(tr).hasVar(); }
     PTRef varToPTRef(Var v) const { assert(v >= 0); assert(logic.getPterm(varToTerm[v]).getVar() == v); return varToTerm[v]; }
