@@ -7,7 +7,9 @@
 
 
 Settings::Settings() :
-        port(5000), server(Address(std::string(), 0)), clear_lemmas(true) { }
+        port(5000),
+        server(Address(std::string(), 0)),
+        clear_lemmas(true) { }
 
 void Settings::load(int argc, char **argv) {
     int opt;

@@ -18,7 +18,7 @@ Socket::Socket(Address address) {
     if ((sockfd = ::socket(AF_INET, SOCK_STREAM, 0)) < 0)
         throw SocketException("socket init error");
 
-    if ((he = ::gethostbyname(address.hostname.c_str())) == NULL)
+    if ((he = ::gethostbyname(address.hostname.c_str())) == nullptr)
         throw SocketException("invalid hostname");
 
     ::bzero(&server_addr, sizeof(server_addr));
@@ -101,7 +101,7 @@ uint32_t Socket::read(std::map<std::string, std::string> &header, std::string &p
              (uint32_t) ((uint8_t) buffer[2]) << 8 |
              (uint32_t) ((uint8_t) buffer[3]);
     char *message = (char *) malloc(length);
-    if (message == NULL)
+    if (message == nullptr)
         throw SocketException("can't malloc");
     try {
         length = this->readn(message, length);
@@ -133,7 +133,7 @@ uint32_t Socket::read(std::map<std::string, std::string> &header, std::string &p
     return length;
 }
 
-uint32_t Socket::write(std::map<std::string, std::string> &header, const std::string &payload) {
+uint32_t Socket::write(const std::map<std::string, std::string> &header, const std::string &payload) {
     if (header.count(""))
         throw SocketException("empty key is not allowed");
     std::string message;

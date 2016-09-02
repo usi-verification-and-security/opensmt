@@ -2,6 +2,7 @@
 // Created by Matteo on 22/07/16.
 //
 
+#include <unistd.h>
 #include "lib/Log.h"
 #include "SolverServer.h"
 
@@ -9,8 +10,8 @@
 SolverServer::SolverServer(Address &server) :
         Server(),
         server(Socket(server)),
-        lemmas(NULL),
-        solver(NULL) {
+        lemmas(nullptr),
+        solver(nullptr) {
     std::map<std::string, std::string> header;
     header["solver"] = SolverProcess::solver;
     this->server.write(header, "");
@@ -19,7 +20,7 @@ SolverServer::SolverServer(Address &server) :
 
 void SolverServer::log(uint8_t level, std::string message, std::map<std::string, std::string> *header_solver) {
 //    std::map<std::string, std::string> header;
-//    if (header_solver != NULL) {
+//    if (header_solver != nullptr) {
 //        for(auto &pair:header_solver)
 //        header["command"] = "log";
 //        header["level"] = std::to_string(level);
@@ -27,12 +28,12 @@ void SolverServer::log(uint8_t level, std::string message, std::map<std::string,
 //            this->server.write(header, message);
 //        } catch (SocketException) { }
 //    }
-    Log::log(level, "SolverServer: " + message);
+    Log::log(level, message);
 }
 
 
 bool SolverServer::check_header(std::map<std::string, std::string> &header) {
-    if (this->solver == NULL)
+    if (this->solver == nullptr)
         return false;
     return header["name"] == this->solver->get_header()["name"] && header["node"] == this->solver->get_header()["node"];
 }
@@ -42,13 +43,13 @@ void SolverServer::handle_close(Socket &socket) {
     if (&socket == &this->server) {
         this->log(Log::INFO, "server closed the connection");
         this->stop_solver();
-        if (this->lemmas != NULL)
+        if (this->lemmas != nullptr)
             delete this->lemmas;
     }
     if (&socket == this->lemmas) {
         this->log(Log::ERROR, "lemma server closed the connection");
         delete this->lemmas;
-        this->lemmas = NULL;
+        this->lemmas = nullptr;
     }
 }
 
@@ -57,13 +58,13 @@ void SolverServer::handle_exception(Socket &socket, SocketException &exception) 
 }
 
 void SolverServer::stop_solver() {
-    if (this->solver != NULL) {
+    if (this->solver != nullptr) {
         this->log(Log::INFO, " stop", &this->solver->get_header());
         this->solver->stop();
         this->solver->join();
         this->del_socket(this->solver->reader());
         delete this->solver;
-        this->solver = NULL;
+        this->solver = nullptr;
     }
 }
 
@@ -76,9 +77,9 @@ void SolverServer::handle_message(Socket &socket, std::map<std::string, std::str
         }
         if (header["command"] == "lemmas" && header.count("lemmas") == 1) {
             this->log(Log::INFO, "new lemma server " + header["lemmas"]);
-            if (this->lemmas != NULL) {
+            if (this->lemmas != nullptr) {
                 delete this->lemmas;
-                this->lemmas = NULL;
+                this->lemmas = nullptr;
             }
             try {
                 this->lemmas = new Socket(header["lemmas"]);
@@ -92,8 +93,7 @@ void SolverServer::handle_message(Socket &socket, std::map<std::string, std::str
             if (this->check_header(header))
                 return;
             this->stop_solver();
-            this->solver = new SolverProcess(this->lemmas, header, payload);
-            this->server.write(this->solver->get_header(), "");
+            this->solver = new SolverProcess(&this->server, this->lemmas, header, payload);
             this->log(Log::INFO, " started");
             this->add_socket(this->solver->reader());
         }
@@ -106,7 +106,7 @@ void SolverServer::handle_message(Socket &socket, std::map<std::string, std::str
             return;
         if (header.count("status") == 1) {
             this->log(Log::INFO, " status: " + header["status"]);
-            this->server.write(header, payload);
         }
+        this->server.write(header, payload);
     }
 }

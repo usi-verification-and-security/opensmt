@@ -96,13 +96,13 @@ pthread_barrier_wait(pthread_barrier_t *barrier) {
 #endif /* __APPLE__ */
 
 Thread::Thread() :
-        thread(NULL), piper(Pipe()), pipew(Pipe()), stop_requested(false) { }
+        thread(nullptr), piper(Pipe()), pipew(Pipe()), stop_requested(false) { }
 
 Thread::~Thread() {
     this->stop();
     this->join();
     delete this->thread;
-    this->thread = NULL;
+    this->thread = nullptr;
 }
 
 void Thread::thread_wrapper() {
@@ -120,9 +120,9 @@ void Thread::thread_wrapper() {
 }
 
 void Thread::start() {
-    if (this->thread != NULL)
+    if (this->thread != nullptr)
         return;
-    pthread_barrier_init(&this->barrier, NULL, 2);
+    pthread_barrier_init(&this->barrier, nullptr, 2);
     this->thread = new std::thread(&Thread::thread_wrapper, this);
     pthread_barrier_wait(&this->barrier);
 }
@@ -146,7 +146,7 @@ void Thread::join() {
 }
 
 bool Thread::joinable() {
-    return this->thread != NULL && this->thread->joinable();
+    return this->thread != nullptr && this->thread->joinable();
 }
 
 Socket *Thread::reader() {

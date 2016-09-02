@@ -14,7 +14,7 @@ class SolverServer : public Server {
 private:
     void stop_solver();
 
-    void log(uint8_t, std::string, std::map<std::string, std::string> *_ = NULL);
+    void log(uint8_t, std::string, std::map<std::string, std::string> *_ = nullptr);
 
     bool check_header(std::map<std::string, std::string> &);
 

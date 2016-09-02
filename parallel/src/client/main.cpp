@@ -19,17 +19,19 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    FileThread *ft = NULL;
-    if (settings.server == NULL && settings.files.size() > 0) {
+    FileThread *ft = nullptr;
+    if (settings.server == nullptr && settings.files.size() > 0) {
         ft = new FileThread(settings);
     }
 
-    if (settings.server != NULL) {
-        SolverServer ss(*settings.server);
-        ss.run_forever();
+    if (settings.server != nullptr) {
+        try {
+            SolverServer ss(*settings.server);
+            ss.run_forever();
+        } catch (SocketException &ex) {
+            Log::log(Log::ERROR, ex.what());
+        }
     }
-
     delete ft;
-
     Log::log(Log::INFO, "all done. bye!");
 }

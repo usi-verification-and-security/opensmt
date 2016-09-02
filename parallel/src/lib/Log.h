@@ -18,7 +18,7 @@ public:
     static void log(uint8_t level, std::string message) {
         static std::mutex mtx;
         std::string record;
-        record += std::to_string(std::time(NULL));
+        record += std::to_string(std::time(nullptr));
         record += "\t";
         switch (level) {
             case INFO:

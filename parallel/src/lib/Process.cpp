@@ -42,7 +42,7 @@ void Process::stop() {
 
 void Process::join() {
     if (this->joinable()) {
-        ::waitpid(this->process, NULL, 0);
+        ::waitpid(this->process, nullptr, 0);
         this->process = -1;
     }
 }
