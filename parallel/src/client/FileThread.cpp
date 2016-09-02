@@ -62,7 +62,7 @@ void FileThread::main() {
 //                std::cout << p.first << " " << p.second << "\n";
 //            }
 //            std::cout << "\n";
-        } while (header.count("status") == 0);
+        } while (header.count("status") == 0 && header.count("error") == 0);
         if (lemmas != nullptr)
             try {
                 header["lemmas"] = std::string("0");

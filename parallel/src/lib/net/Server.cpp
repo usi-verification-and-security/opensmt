@@ -8,10 +8,9 @@
 
 
 Server::Server(Socket *socket, bool close) :
-        socket(socket),
-        close(close) {
+        socket(socket) {
     if (this->socket)
-        this->sockets.push_back(this->socket);
+        this->sockets[this->socket] = close;
 }
 
 Server::Server() : Server(nullptr, false) { }
@@ -23,11 +22,10 @@ Server::Server(uint16_t port) :
         Server(new Socket(port), true) { }
 
 Server::~Server() {
-    for (auto socket:this->sockets) {
-        socket->close();
+    for (auto &pair:this->sockets) {
+        if (pair.second)
+            delete pair.first;
     }
-    if (this->close)
-        delete this->socket;
 }
 
 void Server::run_forever() {
@@ -41,47 +39,49 @@ void Server::run_forever() {
         do {
             FD_ZERO(&readset);
             int max = 0;
-            for (auto socket : this->sockets) {
-                if (socket->get_fd() < 0)
+            for (auto &pair : this->sockets) {
+                if (pair.first->get_fd() < 0)
                     continue;
-                max = max < socket->get_fd() ? socket->get_fd() : max;
-                FD_SET(socket->get_fd(), &readset);
+                max = max < pair.first->get_fd() ? pair.first->get_fd() : max;
+                FD_SET(pair.first->get_fd(), &readset);
             }
             if (max == 0)
                 return;
             result = ::select(max + 1, &readset, nullptr, nullptr, nullptr);
         } while (result == -1 && errno == EINTR);
 
-        for (auto socket = this->sockets.begin(); socket != this->sockets.end();) {
-            if (FD_ISSET((*socket)->get_fd(), &readset)) {
-                FD_CLR((*socket)->get_fd(), &readset);
-                if (this->socket && (*socket)->get_fd() == this->socket->get_fd()) {
+        auto pair = this->sockets.begin();
+        while (pair != this->sockets.end()) {
+            if (FD_ISSET(pair->first->get_fd(), &readset)) {
+                FD_CLR(pair->first->get_fd(), &readset);
+                if (this->socket && pair->first->get_fd() == this->socket->get_fd()) {
                     try {
                         client = this->socket->accept();
                     }
                     catch (SocketException ex) {
-                        goto next;
+                        pair++;
+                        continue;
                     }
-                    this->sockets.push_back(client);
+                    this->sockets[client] = true;
                     this->handle_accept(*client);
                 }
                 else {
                     try {
-                        (*socket)->read(header, payload);
-                        this->handle_message(**socket, header, payload);
+                        pair->first->read(header, payload);
+                        this->handle_message(*pair->first, header, payload);
                     }
                     catch (SocketClosedException ex) {
-                        this->handle_close(**socket);
-                        (*socket)->close();
-                        socket = this->sockets.erase(socket);
+                        this->handle_close(*pair->first);
+                        pair->first->close();
+                        this->del_socket(pair++->first);
+                        continue;
                     }
                     catch (SocketException ex) {
-                        this->handle_exception(**socket, ex);
+                        this->handle_exception(*pair->first, ex);
                     }
                 }
             }
-            next:
-            ++socket;
+            ++pair;
         }
 //        if (result < 0) {
 //        }
@@ -89,17 +89,15 @@ void Server::run_forever() {
 }
 
 void Server::add_socket(Socket *socket) {
-    this->sockets.push_back(socket);
+    if (this->sockets.count(socket) == 0)
+        this->sockets[socket] = false;
 }
 
 void Server::del_socket(Socket *socket) {
-    this->sockets.erase(
-            std::remove_if(
-                    this->sockets.begin(),
-                    this->sockets.end(),
-                    [&](Socket *it) {
-                        return it == socket;
-                    }
-            ),
-            this->sockets.end());
+    auto it = this->sockets.find(socket);
+    if (it == this->sockets.end())
+        return;
+    if (it->second)
+        delete socket;
+    this->sockets.erase(it);
 }

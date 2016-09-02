@@ -7,6 +7,7 @@
 
 #include "SimpSMTSolver.h"
 #include "Interpret.h"
+#include "client/SolverProcess.h"
 #include "client/Settings.h"
 
 
@@ -17,6 +18,7 @@ namespace opensmt {
 
 class OpenSMTInterpret : public Interpret {
     friend class OpenSMTSolver;
+    friend class SolverProcess;
 
 private:
     std::map<std::string, std::string> &header;

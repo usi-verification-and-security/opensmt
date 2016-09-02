@@ -28,14 +28,14 @@ void SolverServer::log(uint8_t level, std::string message, std::map<std::string,
 //            this->server.write(header, message);
 //        } catch (SocketException) { }
 //    }
-    Log::log(level, message);
+    Log::log(level, message + (this->solver ? ": " + this->solver->header["name"] + this->solver->header["node"] : ""));
 }
 
 
 bool SolverServer::check_header(std::map<std::string, std::string> &header) {
     if (this->solver == nullptr)
         return false;
-    return header["name"] == this->solver->get_header()["name"] && header["node"] == this->solver->get_header()["node"];
+    return header["name"] == this->solver->header["name"] && header["node"] == this->solver->header["node"];
 }
 
 
@@ -46,10 +46,19 @@ void SolverServer::handle_close(Socket &socket) {
         if (this->lemmas != nullptr)
             delete this->lemmas;
     }
-    if (&socket == this->lemmas) {
-        this->log(Log::ERROR, "lemma server closed the connection");
+    else if (&socket == this->lemmas) {
+        if (this->solver)
+            this->log(Log::WARNING, "lemma server closed the connection during solving");
+        else
+            this->log(Log::INFO, "lemma server closed the connection");
         delete this->lemmas;
         this->lemmas = nullptr;
+    }
+    else if (this->solver && &socket == this->solver->reader()) {
+        this->log(Log::ERROR, "solver quit unexpectedly");
+        this->solver->header["error"] = "unexpected quit";
+        this->server.write(this->solver->header, "");
+        this->stop_solver();
     }
 }
 
@@ -59,10 +68,9 @@ void SolverServer::handle_exception(Socket &socket, SocketException &exception) 
 
 void SolverServer::stop_solver() {
     if (this->solver != nullptr) {
-        this->log(Log::INFO, " stop", &this->solver->get_header());
+        this->del_socket(this->solver->reader());
         this->solver->stop();
         this->solver->join();
-        this->del_socket(this->solver->reader());
         delete this->solver;
         this->solver = nullptr;
     }
@@ -93,20 +101,20 @@ void SolverServer::handle_message(Socket &socket, std::map<std::string, std::str
             if (this->check_header(header))
                 return;
             this->stop_solver();
-            this->solver = new SolverProcess(&this->server, this->lemmas, header, payload);
-            this->log(Log::INFO, " started");
+            this->solver = new SolverProcess(this->lemmas, header, payload);
             this->add_socket(this->solver->reader());
+            this->log(Log::INFO, "start");
         }
         else if (header["command"] == "stop" && this->check_header(header)) {
+            this->log(Log::INFO, "stop");
             this->stop_solver();
         }
     }
     else if (this->solver && socket.get_fd() == this->solver->reader()->get_fd()) {
-        if (!this->check_header(header))
-            return;
-        if (header.count("status") == 1) {
-            this->log(Log::INFO, " status: " + header["status"]);
-        }
         this->server.write(header, payload);
+        this->solver->header = header;
+        if (header.count("status") == 1) {
+            this->log(Log::INFO, header["status"]);
+        }
     }
 }
