@@ -19,6 +19,15 @@ private:
 
     Server(Socket *, bool);
 
+protected:
+    virtual void handle_accept(Socket &) { }
+
+    virtual void handle_close(Socket &) { }
+
+    virtual void handle_message(Socket &, std::map<std::string, std::string> &, std::string &) { }
+
+    virtual void handle_exception(Socket &, SocketException &) { }
+
 public:
     Server();
 
@@ -34,14 +43,6 @@ public:
 
     void del_socket(Socket *);
 
-protected:
-    virtual void handle_accept(Socket &) { }
-
-    virtual void handle_close(Socket &) { }
-
-    virtual void handle_message(Socket &, std::map<std::string, std::string> &, std::string &) { }
-
-    virtual void handle_exception(Socket &, SocketException &) { }
 };
 
 

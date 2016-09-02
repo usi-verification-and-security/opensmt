@@ -14,7 +14,7 @@ Server::Server(Socket *socket, bool close) :
         this->sockets.push_back(this->socket);
 }
 
-Server::Server() : Server(NULL, false) { }
+Server::Server() : Server(nullptr, false) { }
 
 Server::Server(Socket &socket) :
         Server(&socket, false) { }
@@ -49,7 +49,7 @@ void Server::run_forever() {
             }
             if (max == 0)
                 return;
-            result = ::select(max + 1, &readset, NULL, NULL, NULL);
+            result = ::select(max + 1, &readset, nullptr, nullptr, nullptr);
         } while (result == -1 && errno == EINTR);
 
         for (auto socket = this->sockets.begin(); socket != this->sockets.end();) {

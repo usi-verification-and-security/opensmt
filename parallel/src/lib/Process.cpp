@@ -18,7 +18,7 @@ Process::~Process() {
 }
 
 void Process::start() {
-    this->process = ::fork();
+    this->process = fork();
     if (this->process < 0)
         throw ProcessException("fork error");
     if (this->process == 0) {
@@ -42,7 +42,7 @@ void Process::stop() {
 
 void Process::join() {
     if (this->joinable()) {
-        ::waitpid(this->process, NULL, 0);
+        ::waitpid(this->process, nullptr, 0);
         this->process = -1;
     }
 }

@@ -8,8 +8,8 @@
 #include "FileThread.h"
 
 
-FileThread::FileThread(Settings &settings) : settings(settings), server(NULL) {
-    if (settings.server != NULL)
+FileThread::FileThread(Settings &settings) : settings(settings), server(nullptr) {
+    if (settings.server != nullptr)
         throw Exception("server must be null");
     this->server = new Socket((uint16_t) 0);
     settings.server = new Address(this->server->get_local());
@@ -24,9 +24,9 @@ void FileThread::main() {
     std::map<std::string, std::string> header;
 
     Socket client = *this->server->accept();
-    Socket *lemmas = NULL;
+    Socket *lemmas = nullptr;
 
-    if (this->settings.lemmas != NULL) {
+    if (this->settings.lemmas != nullptr) {
         try {
             lemmas = new Socket(*this->settings.lemmas);
         } catch (SocketException) { }
@@ -58,14 +58,18 @@ void FileThread::main() {
         client.write(header, payload);
         do {
             client.read(header, payload);
+//            for (auto p:header) {
+//                std::cout << p.first << " " << p.second << "\n";
+//            }
+//            std::cout << "\n";
         } while (header.count("status") == 0);
-        if (lemmas != NULL)
+        if (lemmas != nullptr)
             try {
                 header["lemmas"] = std::string("0");
                 lemmas->write(header, "");
             } catch (SocketException) {
                 delete lemmas;
-                lemmas = NULL;
+                lemmas = nullptr;
             }
         header["command"] = "stop";
         client.write(header, "");

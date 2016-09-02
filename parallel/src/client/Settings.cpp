@@ -8,8 +8,8 @@
 
 
 Settings::Settings() :
-        server(NULL),
-        lemmas(NULL) { }
+        server(nullptr),
+        lemmas(nullptr) { }
 
 Settings::~Settings() {
     delete this->server;

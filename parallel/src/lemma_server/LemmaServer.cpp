@@ -15,8 +15,8 @@
 LemmaServer::LemmaServer(Settings &settings) :
         Server(settings.port),
         settings(settings),
-        server(NULL),
-        db(NULL) {
+        server(nullptr),
+        db(nullptr) {
     if (this->settings.server.port > 0) {
         this->server = new Socket(this->settings.server);
         std::map<std::string, std::string> header;
@@ -97,6 +97,8 @@ void LemmaServer::handle_message(Socket &client,
     });
 
     if (clauses_request == 0) {
+        if (!this->settings.clear_lemmas)
+            return;
         Log::log(Log::INFO,
                  header["name"] + header["node"] + " " + client.get_remote().toString() +
                  " clear");
@@ -109,8 +111,7 @@ void LemmaServer::handle_message(Socket &client,
                          new Node);
         }
         else {
-            if (this->settings.clear_lemmas)
-                this->lemmas.erase(header["name"]);
+            this->lemmas.erase(header["name"]);
         }
         delete node_remove;
         return;
@@ -170,7 +171,7 @@ void LemmaServer::handle_message(Socket &client,
     }
     else {
         std::list<Lemma *> *lemmas = new std::list<Lemma *>();
-        std::list<Lemma *> *lemmas_solver = NULL;
+        std::list<Lemma *> *lemmas_solver = nullptr;
 
         if (header.count("exclude") && this->solvers[header["name"]].count(header["exclude"])) {
             lemmas_solver = &this->solvers[header["name"]][header["exclude"]];
@@ -186,7 +187,7 @@ void LemmaServer::handle_message(Socket &client,
         for (auto lemma = lemmas->rbegin(); lemma != lemmas->rend(); ++lemma) {
             if (n >= clauses_request)
                 break;
-            if (lemmas_solver != NULL) {
+            if (lemmas_solver != nullptr) {
                 auto it = std::find_if(lemmas_solver->begin(), lemmas_solver->end(), [&lemma](const Lemma *other) {
                     return other->smtlib == (*lemma)->smtlib;
                 });

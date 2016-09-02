@@ -16,6 +16,8 @@ namespace opensmt {
 
 
 class OpenSMTInterpret : public Interpret {
+    friend class OpenSMTSolver;
+
 private:
     std::map<std::string, std::string> &header;
     Socket *clause_socket;
@@ -32,8 +34,7 @@ public:
 
 class OpenSMTSolver : public SimpSMTSolver {
 private:
-    std::map<std::string, std::string> &header;
-    Socket *clause_socket;
+    OpenSMTInterpret &interpret;
     uint32_t trail_sent;
 
     void inline clausesPublish();
@@ -41,7 +42,7 @@ private:
     void inline clausesUpdate();
 
 public:
-    OpenSMTSolver(std::map<std::string, std::string> &, Socket *, SMTConfig &, THandler &);
+    OpenSMTSolver(OpenSMTInterpret &interpret);
 
     ~OpenSMTSolver();
 };

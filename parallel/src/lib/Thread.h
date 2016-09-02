@@ -78,7 +78,7 @@ private:
 protected:
     virtual void main() = 0;
 
-    void start();
+    virtual void start();
 
 public:
     Thread();

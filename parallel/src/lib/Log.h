@@ -18,20 +18,24 @@ public:
     static void log(uint8_t level, std::string message) {
         static std::mutex mtx;
         std::string record;
-        record += std::to_string(std::time(NULL));
+        record += std::to_string(std::time(nullptr));
         record += "\t";
         switch (level) {
             case INFO:
                 record += "INFO\t";
                 break;
             case WARNING:
-                system("tput setaf 3");
-                system("tput bold");
+                if (getenv("TERM")) {
+                    system("tput setaf 3");
+                    system("tput bold");
+                }
                 record += "WARNING\t";
                 break;
             case ERROR:
-                system("tput setaf 9");
-                system("tput bold");
+                if (getenv("TERM")) {
+                    system("tput setaf 9");
+                    system("tput bold");
+                }
                 record += "ERROR\t";
                 break;
             default:
@@ -40,7 +44,8 @@ public:
         record += message;
         mtx.lock();
         std::cout << record << "\n";
-        system("tput sgr0");
+        if (getenv("TERM"))
+            system("tput sgr0");
         mtx.unlock();
     }
 

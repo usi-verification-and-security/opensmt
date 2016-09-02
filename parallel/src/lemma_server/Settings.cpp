@@ -7,11 +7,13 @@
 
 
 Settings::Settings() :
-        port(5000), server(Address(std::string(), 0)), clear_lemmas(true) { }
+        port(5000),
+        server(Address(std::string(), 0)),
+        clear_lemmas(true) { }
 
 void Settings::load(int argc, char **argv) {
     int opt;
-    while ((opt = getopt(argc, argv, "hp:s:d:C:")) != -1)
+    while ((opt = getopt(argc, argv, "hp:s:d:C")) != -1)
         switch (opt) {
             case 'h':
                 std::cout << "Usage: " << argv[0] << "\n";

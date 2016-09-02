@@ -83,8 +83,8 @@ void SQLite3::exec(const std::string &sql) {
     int rc = sqlite3_exec(
             this->db,
             sql.c_str(),
-            NULL,
-            NULL,
+            nullptr,
+            nullptr,
             &errc);
     if (rc != SQLITE_OK) {
         std::string err(errc);

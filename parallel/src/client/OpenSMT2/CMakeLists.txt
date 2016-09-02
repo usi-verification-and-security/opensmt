@@ -1,4 +1,4 @@
-set(SRC_OPENSMT ${SRC}/../../src)
+set(SRC_OPENSMT ${CMAKE_CURRENT_SOURCE_DIR}/../../../../src)
 
 include_directories(
         "${SRC_OPENSMT}"
