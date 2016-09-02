@@ -110,7 +110,7 @@ echo "Produce proofs... ${enable_proof}"
 #
 AC_ARG_ENABLE(custom_memalloc,
   AC_HELP_STRING([--enable-custom_memalloc],
-                 [enable custom memory allocation for forbid lists@<:@yes@:>@]),
+                 [enable custom memory allocation for forbid lists @<:@yes@:>@]),
   [:],
   [enable_custom_memalloc="yes"])
 
@@ -122,6 +122,25 @@ else
 fi
 AM_CONDITIONAL([ENABLE_CUSTOMMEMALLOC], [test "$enable_custom_memalloc" = "yes"])
 echo "Use custom memory allocation for forbid lists...  $enable_custom_memalloc"
+
+
+#
+# Enable Interpolation debug
+#
+AC_ARG_ENABLE(interpolation_debug,
+  AC_HELP_STRING([--enable-interpolation-debug],
+                 [enable interpolation debug @<:@no@:>@]),
+  [:],
+  [enable_interpolation_debug="no"])
+
+if test $enable_interpolation_debug = "yes" ;
+then
+  config_interpolation_debug="-DITP_DEBUG"
+else
+  config_interpolation_debug=""
+fi
+AM_CONDITIONAL([ENABLE_PEDANTIC], [test "$enable_interpolation_debug" = "yes"])
+echo "Debug interpolation... $enable_interpolation_debug"
 
 
 #
@@ -480,7 +499,7 @@ then
   exit
 fi
 
-def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_la_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_oldsubstitution $config_custom_memalloc $config_term_explanations $config_compress $config_verbose_euf $config_verbose_eufex $config_verbose_fops $config_verbose_sat $config_verbose_cnfization $config_printclausalsize $config_verbose_flattening"
+def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_la_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_oldsubstitution $config_custom_memalloc $config_term_explanations $config_compress $config_verbose_euf $config_verbose_eufex $config_verbose_fops $config_verbose_sat $config_verbose_cnfization $config_printclausalsize $config_verbose_flattening $config_interpolation_debug"
 
 comp_flags="-W -Wall -g -Wno-deprecated $config_profiling"
 
