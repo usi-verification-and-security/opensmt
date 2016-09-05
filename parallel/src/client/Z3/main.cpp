@@ -3,29 +3,24 @@
 //
 
 #include "z3++.h"
+#include <istream>
+#include <fstream>
+
 
 int main(int argc, char **argv) {
-    z3::context c;
-    z3::expr x = c.int_const("x");
-    z3::expr y = c.int_const("y");
-    z3::solver s(c);
+    std::string payload;
+    std::ifstream file(argv[1]);
+    file.seekg(0, std::ios::end);
+    payload.resize((unsigned long) file.tellg());
+    file.seekg(0, std::ios::beg);
+    file.read(&payload[0], payload.size());
+    file.close();
 
-    s.add(x >= 1);
-    s.add(y < x + 3);
-    s.check();
-    std::cout << s.check() << "\n\n";
-
-    z3::model m = s.get_model();
-    std::cout << m << "\n\n";
-    // traversing the model
-    for (unsigned i = 0; i < m.size(); i++) {
-        z3::func_decl v = m[i];
-        // this problem contains only constants
-        assert(v.arity() == 0);
-        std::cout << v.name() << " = " << m.get_const_interp(v) << "\n";
-    }
-    // we can evaluate expressions in the model.
-    std::cout << "x + y + 1 = " << m.eval(x + y + 1) << "\n";
-
+    z3::context context;
+    Z3_ast a = Z3_parse_smtlib2_string(context, payload.c_str(), 0, 0, 0, 0, 0, 0);
+    z3::expr e(context, a);
+    z3::solver solver(context);
+    solver.add(e);
+    z3::check_result status = solver.check();
     return 0;
 }

@@ -17,6 +17,8 @@ z3::solver *solver = nullptr;
 
 const char *SolverProcess::solver = "Z3";
 
+void SolverProcess::init() { }
+
 void SolverProcess::solve() {
     context = new z3::context;
     Z3_ast a = Z3_parse_smtlib2_string(*context, this->instance.c_str(), 0, 0, 0, 0, 0, 0);

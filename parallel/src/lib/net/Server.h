@@ -13,8 +13,7 @@
 class Server {
 private:
     Socket *socket;
-    std::list<Socket *> sockets;
-    bool close;
+    std::map<Socket *, bool> sockets;
 
 
     Server(Socket *, bool);
