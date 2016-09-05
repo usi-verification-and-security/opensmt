@@ -490,19 +490,19 @@ LAExpression::canonizeReal()
 
 void LAExpression::addExprWithCoeff( const LAExpression & a, const opensmt::Real & coeff )
 {
-  //
-  // Iterate over expression to add
-  //
-  for (polynome_t::const_iterator it = a.polynome.begin( ); it != a.polynome.end( ); it++)
-  {
-    polynome_t::iterator it2 = polynome.find( it->first );
-    if( it2 != polynome.end( ) )
+    //
+    // Iterate over expression to add
+    //
+    for (polynome_t::const_iterator it = a.polynome.begin( ); it != a.polynome.end( ); it++)
     {
-      it2->second += coeff * it->second;
-      if ( it2->first != PTRef_Undef && it2->second == 0 )
-             polynome.erase( it2 );
+        polynome_t::iterator it2 = polynome.find( it->first );
+        if ( it2 != polynome.end( ) )
+        {
+            it2->second += coeff * it->second;
+            if ( it2->first != PTRef_Undef && it2->second == 0 )
+                polynome.erase( it2 );
+        }
+        else
+            polynome[it->first] = coeff * it->second;
     }
-    else
-      polynome[it->first] = coeff * it->second;
-  }
 }

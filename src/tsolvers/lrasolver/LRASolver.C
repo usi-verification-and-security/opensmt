@@ -1994,20 +1994,20 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
     //opensmt_error("Interpolation not supported for LRA");
     //return logic.getTerm_true();
 
-   // Old implementation:
-  //l = config.logic == QF_LRA || config.logic == QF_UFLRA
-  //? QF_LRA
-  //: QF_LIA;
+    // Old implementation:
+    //l = config.logic == QF_LRA || config.logic == QF_UFLRA
+    //? QF_LRA
+    //: QF_LIA;
 
-  assert (explanation.size()>1);
+    assert (explanation.size()>1);
 
-  vec<PTRef> in_list;
+    vec<PTRef> in_list;
 
-  //ipartitions_t mask = 1;
-  //mask = ~mask;
+    //ipartitions_t mask = 1;
+    //mask = ~mask;
 
-  //for( unsigned in = 1; in < logic.getNofPartitions( ); in++ )
-  //{
+    //for( unsigned in = 1; in < logic.getNofPartitions( ); in++ )
+    //{
     LAExpression interpolant(logic);
     bool delta_flag=false;
 
@@ -2015,76 +2015,177 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
     //clrbit( mask, in );
     for ( unsigned i = 0; i < explanation.size( ); i++ )
     {
-//      cerr << "; Expl " << logic.printTerm(explanation[i].tr) << endl;
-      icolor_t color = I_UNDEF;
-      const ipartitions_t & p = logic.getIPartitions(explanation[i].tr);
+//        // The inequalities have the form
+//        // (0 <= t)
+//        // where t is either
+//        //   - e, or
+//        //   - (e1 + ... + en)
+//        // e, e1, ..., en either
+//        //   - (c * v), or
+//        //   - v
+//        // and v is a variable.
+//        // We need to get the variables that belong to the A part to
+//        // construct the interpolant.  They need to be multiplied by the
+//        // factor used in the proof of (0 <= t).  In the code below we
+//        // denote (0 <= t) exp.
+//        PTRef tr_exp = explanation[i].tr;
+//        Pterm& exp = logic.getPterm(tr_exp);
+//
+//        assert(exp.size() == 2);
+//        assert(logic.isRealZero(exp[0]));
+//
+//        PTRef t_tr = exp[1];
+//        assert(logic.isRealPlus(t_tr) || logic.isRealTimes(t_tr) || logic.isRealVar(t_tr));
+//
+//        if (logic.isRealVar(t_tr))
+//        {
+//            PTRef v_tr = t_tr;
+//            const ipartitions_t& p = logic.getIPartitions(v_tr);
+//            if (isAlocal(p, mask) || isAB(p, mask)) {
+//                PTRef tmp_eq = logic.mkRealLeq(logic.getTerm_RealZero(), v_tr);
+//                if (getPolarity(explanation[i].tr) == l_True)
+//                    interpolant.addExprWithCoeff(LAExpression(logic, tmp_eq), explanationCoefficients[i]);
+//                else
+//                {
+//                    interpolant.addExprWithCoeff(LAExpression(logic, tmp_eq), -explanationCoefficients[i]);
+//                    delta_flag = true;
+//                }
+//            }
+//        }
+//        else if (logic.isRealTimes(t_tr))
+//        {
+//            PTRef e_tr = t_tr;
+//            Pterm& e = logic.getPterm(t_tr);
+//            assert(logic.isRealConst(e[0]));
+//            assert(logic.isRealVar(e[1]));
+//            const ipartitions_t& p = logic.getIPartitions(e[1]);
+//            if (isAlocal(p, mask) || isAB(p, mask)) {
+//                PTRef tmp_leq = logic.mkRealLeq(logic.getTerm_RealZero(), e_tr);
+//                if (getPolarity(explanation[i].tr) == l_True)
+//                    interpolant.addExprWithCoeff(LAExpression(logic, e_tr), explanationCoefficients[i]);
+//                else
+//                {
+//                    interpolant.addExprWithCoeff(LAExpression(logic, e_tr), -explanationCoefficients[i]);
+//                    delta_flag = true;
+//                }
+//            }
+//        }
+//        else if (logic.isRealPlus(t_tr))
+//        {
+//            // We could add the sum directly, but for now we add them
+//            // element by element.  That is, we have (e1 + ... + en),
+//            // but we will add 0 <= e1, ..., 0 <= en to the Itp.
+//            PTRef sum_tr = t_tr;
+//            Pterm& sum = logic.getPterm(sum_tr);
+//            for (int i = 0; i < sum.size(); i++)
+//            {
+//                t_tr = sum[i];
+//                if (logic.isRealVar(t_tr))
+//                {
+//                    PTRef v_tr = t_tr;
+//                    const ipartitions_t& p = logic.getIPartitions(v_tr);
+//                    if (isAlocal(p, mask) || isAB(p, mask)) {
+//                        PTRef tmp_eq = logic.mkRealLeq(logic.getTerm_RealZero(), v_tr);
+//                        if (getPolarity(explanation[i].tr) == l_True)
+//                            interpolant.addExprWithCoeff(LAExpression(logic, tmp_eq), explanationCoefficients[i]);
+//                        else
+//                        {
+//                            interpolant.addExprWithCoeff(LAExpression(logic, tmp_eq), -explanationCoefficients[i]);
+//                            delta_flag = true;
+//                        }
+//                    }
+//                }
+//                else if (logic.isRealTimes(t_tr))
+//                {
+//                    PTRef e_tr = t_tr;
+//                    Pterm& e = logic.getPterm(t_tr);
+//                    assert((logic.isRealConst(e[0]) && logic.isRealVar(e[1])) ||
+//                           (logic.isRealConst(e[1]) && logic.isRealVar(e[0])));
+//                    PTRef e_var = (logic.isRealConst(e[0]) ? e[1] : e[0]);
+//                    const ipartitions_t& p = logic.getIPartitions(e_var);
+//                    if (isAlocal(p, mask) || isAB(p, mask)) {
+//                        PTRef tmp_leq = logic.mkRealLeq(logic.getTerm_RealZero(), e_tr);
+//                        if (getPolarity(explanation[i].tr) == l_True)
+//                            interpolant.addExprWithCoeff(LAExpression(logic, tmp_leq), explanationCoefficients[i]);
+//                        else
+//                        {
+//                            interpolant.addExprWithCoeff(LAExpression(logic, tmp_leq), -explanationCoefficients[i]);
+//                            delta_flag = true;
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//
 
-      if ( isAB( p, mask ) )
-        color = I_AB;
-      else if ( isAlocal( p, mask ) )
-        color = I_A;
-      else if ( isBlocal( p, mask ) )
-        color = I_B;
+        icolor_t color = I_UNDEF;
+        const ipartitions_t & p = logic.getIPartitions(explanation[i].tr);
+        Pterm& t = logic.getPterm(explanation[i].tr);
 
-      if (color != I_A && color != I_AB && color != I_B)
-      {
-          printf("Error: color is not defined.\n");
-          printf("  equation: %s\n", logic.printTerm(explanation[i].tr));
-          printf("  mask: %s\n", mask.get_str().c_str());
-          printf("  p: %s\n", p.get_str().c_str());
-          assert(false);
-      }
-//      assert( color == I_A
-//           || color == I_AB
-//           || color == I_B );
-
-      assert( usingStrong()
-           || usingWeak()
-           || usingRandom() );
-
-      if(verbose())
-      {
-          if(usingStrong())
-              cerr << "; Using Strong for LRA interpolation" << endl;
-          else if(usingWeak())
-              cerr << "; Using Weak for LRA interpolation" << endl;
-          else if(usingRandom())
-              cerr << "; Using Random for LRA interpolation" << endl;
-          else
-              cerr << "; LRA interpolation algorithm unknown" << endl;
-      }
-
-      // McMillan algo: set AB as B
-      if ( usingStrong()
-        && color == I_AB )
-        color = I_B;
-      // McMillan' algo: set AB as a
-      else if ( usingWeak()
-             && color == I_AB )
-        color = I_A;
-      // Pudlak algo: who cares
-      else if ( usingRandom()
-             && color == I_AB )
-        color = rand() % 2 ? I_A : I_B;
-
-      assert( color == I_A
-           || color == I_B );
-
-      // Add the A conflict to the interpolant (multiplied by the coefficient)
-      if( (color == I_A && usingStrong()) || (color == I_B && usingWeak()))
-      //if(true)
-      {
-        if ( getPolarity(explanation[i].tr) == l_True )
-        {
-          interpolant.addExprWithCoeff(LAExpression(logic, explanation[i].tr), explanationCoefficients[i]);
+        if ( isAB( p, mask ) ) {
+            color = I_AB;
         }
-        else
-        {
-          interpolant.addExprWithCoeff(LAExpression(logic, explanation[i].tr), -explanationCoefficients[i]);
-          delta_flag=true;
+        else if ( isAlocal( p, mask ) ) {
+            color = I_A;
         }
-        //cerr << interpolant << endl;
-      }
+        else if ( isBlocal( p, mask ) ) {
+            color = I_B;
+        }
+        if (color != I_A && color != I_AB && color != I_B)
+        {
+            printf("Error: color is not defined.\n");
+            printf("  equation: %s\n", logic.printTerm(explanation[i].tr));
+            printf("  mask: %s\n", mask.get_str().c_str());
+            printf("  p: %s\n", p.get_str().c_str());
+            assert(false);
+        }
+        assert( color == I_A
+                || color == I_AB
+                || color == I_B );
+
+        assert( usingStrong()
+                || usingWeak()
+                || usingRandom() );
+
+        if (verbose())
+        {
+            if (usingStrong())
+                cerr << "; Using Strong for LRA interpolation" << endl;
+            else if (usingWeak())
+                cerr << "; Using Weak for LRA interpolation" << endl;
+            else if(usingRandom())
+                cerr << "; Using Random for LRA interpolation" << endl;
+            else
+                cerr << "; LRA interpolation algorithm unknown" << endl;
+        }
+
+        // McMillan algo: set AB as B
+        if ( usingStrong() && color == I_AB )
+            color = I_B;
+        // McMillan' algo: set AB as a
+        else if ( usingWeak() && color == I_AB )
+            color = I_A;
+        // Pudlak algo: who cares
+        else if ( usingRandom() && color == I_AB )
+            color = rand() % 2 ? I_A : I_B;
+
+        assert( color == I_A || color == I_B );
+
+        // Add the A conflict to the interpolant (multiplied by the coefficient)
+        if ((color == I_A && usingStrong()) || (color == I_B && usingWeak()))
+        {
+            // In this one I have no idea why LAExpression swaps the
+            // sign.  But we want it unswapped again, so we negate.
+            if (explanation[i].sgn == l_False) //( getPolarity(explanation[i].tr) == l_True )
+            {
+                interpolant.addExprWithCoeff(LAExpression(logic, explanation[i].tr), explanationCoefficients[i]);
+                delta_flag=true;
+            }
+            else
+            {
+                interpolant.addExprWithCoeff(LAExpression(logic, explanation[i].tr), -explanationCoefficients[i]);
+            }
+        }
     }
 
     // TODO:: Why canonization stops the show?
@@ -2093,17 +2194,17 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
     // Generate resulting interpolant and push it to the list
     if (interpolant.isTrue() && !delta_flag)
     {
-      in_list.push(logic.getTerm_true());
+        in_list.push(logic.getTerm_true());
     }
     else if (interpolant.isFalse() || ( interpolant.isTrue() && delta_flag ))
     {
-      in_list.push(logic.getTerm_false());
+        in_list.push(logic.getTerm_false());
     }
     else
     {
         vec<PTRef> args;
-        args.push(interpolant.toPTRef());
         args.push(logic.mkConst("0"));
+        args.push(interpolant.toPTRef());
         char* msg;
         if (delta_flag)
             in_list.push(logic.mkRealLt(args, &msg));
@@ -2112,17 +2213,17 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
     }
     if ( verbose() > 0 )
     {
-      //cerr << "Interpolant: " << in_list.back() << endl;
+        //cerr << "Interpolant: " << in_list.back() << endl;
     }
 
-  //}
+    //}
     PTRef itp;
-    if(usingWeak())
+    if (usingWeak())
         itp = logic.mkNot(logic.mkAnd( in_list ));
-    else if(usingStrong())
+    else if (usingStrong())
         itp = logic.mkAnd( in_list );
-  //cerr << "; LRA Itp: " << logic.printTerm(itp) << endl;
-  return itp;
+    //cerr << "; LRA Itp: " << logic.printTerm(itp) << endl;
+    return itp;
 }
 
 #endif

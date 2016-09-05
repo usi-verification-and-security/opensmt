@@ -153,15 +153,15 @@ struct InterpolData
 // Resolution proof graph element
 struct ProofNode
 {
-    ProofNode  ( THandler& _th)
-    : clause             ( NULL )
-    , pivot                 ( -1 )
-    , ant1               ( NULL )
-    , ant2               ( NULL )
-    , resolvents          (  )
-    , i_data             ( NULL )
-    , thandler (_th)
-    , clause_ref(CRef_Undef)
+    ProofNode            (THandler& _th)
+    : clause     (NULL)
+    , pivot      (-1)
+    , ant1       (NULL)
+    , ant2       (NULL)
+    , resolvents ()
+    , i_data     (NULL)
+    , thandler   (_th)
+    , clause_ref (CRef_Undef)
     {
         clause = NULL;
         i_data = NULL;
@@ -401,18 +401,18 @@ public:
     //
     // Auxiliary
     //
-    inline size_t    getGraphSize                  ( ) const { return graph.size( ); }
-    bool			  isSetVisited1		( clauseid_t id ) { return mpz_tstbit(visited_1, id); }
-    bool			  isSetVisited2		( clauseid_t id ) { return mpz_tstbit(visited_2, id); }
-    void			  setVisited1			( clauseid_t id ) { mpz_setbit(visited_1, id); }
-    void			  setVisited2			( clauseid_t id ) { mpz_setbit(visited_2, id); }
-    void			  resetVisited1		( ) 			  { mpz_set_ui(visited_1,0); }
-    void			  resetVisited2		( ) 			  { mpz_set_ui(visited_2,0); }
+    inline size_t     getGraphSize              ( ) const { return graph.size( ); }
+    bool              isSetVisited1             ( clauseid_t id ) { return mpz_tstbit(visited_1, id); }
+    bool              isSetVisited2             ( clauseid_t id ) { return mpz_tstbit(visited_2, id); }
+    void              setVisited1               ( clauseid_t id ) { mpz_setbit(visited_1, id); }
+    void              setVisited2               ( clauseid_t id ) { mpz_setbit(visited_2, id); }
+    void              resetVisited1             ( )               { mpz_set_ui(visited_1,0); }
+    void              resetVisited2             ( )               { mpz_set_ui(visited_2,0); }
 
-    unsigned		  getMaxIdVar			( ) { return max_id_variable; }
+    unsigned          getMaxIdVar           ( ) { return max_id_variable; }
     void              getGraphInfo          ( );
     void              topolSortingTopDown   ( vector< clauseid_t > & );
-    void 			  topolSortingBotUp		( vector< clauseid_t > & );
+    void              topolSortingBotUp     ( vector< clauseid_t > & );
     void              printProofNode        ( clauseid_t );
     void              printClause           ( ProofNode * );
     void              printClause           ( ProofNode *, ostream & );
