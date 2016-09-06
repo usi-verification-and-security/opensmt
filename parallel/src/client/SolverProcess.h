@@ -24,7 +24,6 @@ typedef struct {
 
 class SolverProcess : public Process {
 private:
-    Socket *server;
     Socket *lemmas;
     Pipe pipe;
     std::string instance;
@@ -55,7 +54,7 @@ private:
         this->solve();
     }
 
-    // here the module can write class fields
+    // here the module can edit class fields
     void init();
 
     // class field are read only

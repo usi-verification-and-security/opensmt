@@ -1,0 +1,1 @@
+find(YICES yices.h yices)

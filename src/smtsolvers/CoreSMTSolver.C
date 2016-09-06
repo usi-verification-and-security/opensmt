@@ -2995,7 +2995,7 @@ bool CoreSMTSolver::scatterLevel()
             break;
         }
     }
-    return d == decisionLevel();
+    return d == decisionLevel()+assumptions.size();
 }
 
 bool CoreSMTSolver::createSplit_lookahead()
