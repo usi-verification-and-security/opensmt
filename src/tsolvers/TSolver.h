@@ -125,17 +125,17 @@ class TSolverStats
 class TSolver
 {
 protected:
-    SolverId   id;             // Solver unique identifier
-    vec<PtAsgn> explanation;    // Stores the explanation
-    vec<PtAsgn_reason> th_deductions;  // List of deductions computed by the theory
-    size_t        deductions_next;     // Index of next deduction to communicate
-    vec<size_t>   deductions_lim;      // Keeps track of deductions done up to a certain point
-    vec<size_t>   deductions_last;     // Keeps track of deductions done up to a certain point
-    vec<PTRef>    suggestions;         // List of suggestions for decisions
-    vec<DedElem> &deduced;             // Array of deductions indexed by variables
-    Map<PTRef,lbool,PTRefHash>    polarityMap;
-public:
+    SolverId                    id;              // Solver unique identifier
+    vec<PtAsgn>                 explanation;     // Stores the explanation
+    vec<PtAsgn_reason>          th_deductions;   // List of deductions computed by the theory
+    size_t                      deductions_next; // Index of next deduction to communicate
+    vec<size_t>                 deductions_lim;  // Keeps track of deductions done up to a certain point
+    vec<size_t>                 deductions_last; // Keeps track of deductions done up to a certain point
+    vec<PTRef>                  suggestions;     // List of suggestions for decisions
+    vec<DedElem>                &deduced;        // Array of deductions indexed by variables
+    Map<PTRef,lbool,PTRefHash>  polarityMap;
 
+public:
     TSolver(SolverId id_, const char* name_, SMTConfig & c, vec<DedElem>& d)
     : id(id_)
     , name(name_)
@@ -145,7 +145,11 @@ public:
     , has_explanation(false)
     {}
 
-    virtual ~TSolver ( ) { }
+    virtual ~TSolver ( ) {}
+
+    // Called after every check-sat.
+    virtual void clearSolver() {}
+
     void  setPolarity(PTRef tr, lbool p) {
         if (polarityMap.has(tr)) { polarityMap[tr] = p; }
         else { polarityMap.insert(tr, p); }

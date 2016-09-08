@@ -43,10 +43,28 @@ LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
     , delta(Delta::ZERO)
     , bland_threshold(1000)
 {
-    lavarStore = new LAVarStore(*this, deduced, logic);
+    lavarStore = new LAVarStore(*this, deduced, numbers_pool);
     status = INIT;
     checks_history.push_back(0);
     first_update_after_backtrack = true;
+}
+
+void LRASolver::clearSolver()
+{
+    status = INIT;
+    first_update_after_backtrack = true;
+    delete lavarStore;
+    pushed_constraints.clear();
+    explanationCoefficients.clear();
+    columns.clear();
+    rows.clear();
+    ptermToLavar.clear();
+    checks_history.clear();
+    checks_history.push_back(0);
+    touched_rows.clear();
+    removed_by_GaussianElimination.clear();
+
+    lavarStore = new LAVarStore(*this, deduced, numbers_pool);
 }
 
 // Given an inequality of the form c <= t(x_1, ..., x_n), set the bound
@@ -138,8 +156,9 @@ void LRASolver::initSlackVar(LAVar* s)
     columns[s->ID()] = s;
 
     // Update the rows
-    if (s->basicID() >= static_cast<int> (rows.size()))
+    if (s->basicID() >= static_cast<int> (rows.size())) {
         rows.resize(s->basicID() + 1, NULL);
+    }
     rows[s->basicID()] = s;
 }
 
@@ -242,8 +261,6 @@ void LRASolver::addSlackVar(PTRef leq_tr)
         // Introduce the slack var with bounds.
         s = lavarStore->getNewVar(sum_tr);
         bound_t = Delta::LOWER;
-
-        slack_vars.push_back(s);
 
         initSlackVar(s);
         assert( s->basicID() != -1 );
@@ -361,6 +378,7 @@ void LRASolver::makePolynomial(LAVar* s, PTRef pol)
 lbool LRASolver::declareTerm(PTRef leq_tr)
 {
     if (informed(leq_tr)) return l_Undef;
+
     informed_PTRefs.insert(leq_tr, true);
 
     if (!logic.isRealLeq(leq_tr)) return l_Undef;
@@ -455,6 +473,7 @@ bool LRASolver::check(bool complete)
         int max_var_id = lavarStore->numVars();
         int curr_var_id_x = max_var_id;
         for (; it != rows.end(); ++it) {
+            if ((*it) == NULL) continue; // There should not be nulls, since they result in quadratic slowdown?
             if ((*it)->isModelOutOfBounds()) {
                 if (bland_rule) {
                     bland_counter++;
@@ -865,30 +884,30 @@ void LRASolver::popBacktrackPoint( )
 {
 //  cerr << "; pop " << pushed_constraints.size( ) << endl;
 
-  // Undo with history
-  LAVarHistory &hist = pushed_constraints.back( );
+    // Undo with history
+    LAVarHistory &hist = pushed_constraints.back( );
 
-  if( hist.v != NULL )
-  {
-    if (hist.bound_type == bound_u)
-      hist.v->u_bound = hist.bound;
-    else
-      hist.v->l_bound = hist.bound;
-  }
+    if ( hist.v != NULL )
+    {
+        if (hist.bound_type == bound_u)
+            hist.v->u_bound = hist.bound;
+        else
+            hist.v->l_bound = hist.bound;
+    }
 
-  //TODO: Keep an eye on SAT model crossing the bounds of backtracking
-  //  if( status == UNSAT && checks_history.back( ) == pushed_constraints.size( ) )
-  if( checks_history.back( ) == pushed_constraints.size( ) )
-  {
+    //TODO: Keep an eye on SAT model crossing the bounds of backtracking
+    //  if( status == UNSAT && checks_history.back( ) == pushed_constraints.size( ) )
+    if ( checks_history.back( ) == pushed_constraints.size( ) )
+    {
 //    cerr << "; POP CHECKS " << checks_history.back( ) << endl;
-    checks_history.pop_back( );
-  }
-  first_update_after_backtrack = true;
+        checks_history.pop_back( );
+    }
+    first_update_after_backtrack = true;
 
-  pushed_constraints.pop_back( );
+    pushed_constraints.pop_back( );
 
-  setStatus(SAT);
-  TSolver::popBacktrackPoint();
+    setStatus(SAT);
+    TSolver::popBacktrackPoint();
 }
 
 //
@@ -982,7 +1001,7 @@ void LRASolver::doGaussianElimination( )
                         columns[it2->key]->binded_rows.add( basisRow, rows[m]->polynomial.getPos( it2 ) );
                     }
                 }
-
+                assert(rows[m] != NULL);
                 rows[basisRow] = rows[m];
                 rows[m]->setBasic( basisRow );
             }
@@ -1269,6 +1288,7 @@ void LRASolver::pivotAndUpdate( LAVar * x, LAVar * y, const Delta & v )
   assert( !y->polynomial.empty( ) );
   y->setBasic( x->basicID( ) );
   x->setNonbasic( );
+  assert(y != NULL);
   rows[y->basicID( )] = y;
 
   assert( y->polynomial.find( x->ID( ) ) != y->polynomial.end( ) );
@@ -1966,14 +1986,6 @@ LRASolver::~LRASolver( )
   tsolver_stats.printStatistics(cerr);
   // Remove lavarStore
   delete lavarStore;
-  // Remove slack variables
-  while( !columns.empty( ) )
-  {
-    LAVar * s = columns.back( );
-    columns.pop_back( );
-    assert( s );
-    delete s;
-  }
   // Remove numbers
   while( !numbers_pool.empty( ) )
   {

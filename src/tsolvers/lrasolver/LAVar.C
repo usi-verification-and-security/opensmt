@@ -41,11 +41,11 @@ unsigned LAVar::model_global_counter = 1;
 // Default constructor
 //
 LAVar::LAVar(LRASolver& lra, SolverId sid, vec<DedElem>& d, LRALogic& l, int column_id, PTRef e_orig = PTRef_Undef)
-	: logic(l)
-	, deduced(d)
-	, solver_id(sid)
-	, lra_solver(lra)
-        , column_id(column_id)
+    : logic(l)
+    , deduced(d)
+    , solver_id(sid)
+    , lra_solver(lra)
+    , column_id(column_id)
 {
 
   row_id = -1;
@@ -69,25 +69,25 @@ LAVar::LAVar(LRASolver& lra, SolverId sid, vec<DedElem>& d, LRALogic& l, int col
 
 LAVar::~LAVar( )
 {
-  // Remove bounds
-  while( !all_bounds.empty( ) )
-  {
-    assert( all_bounds.back( ).delta );
-    if( all_bounds.back( ).delta != &minus_inf_bound && all_bounds.back( ).delta != &plus_inf_bound )
-      delete all_bounds.back( ).delta;
-    all_bounds.pop_back( );
-  }
-  // Remove polynomial coefficients
-  for( LARow::iterator it = polynomial.begin( ); it != polynomial.end( ); polynomial.getNext( it ) )
-  {
-    assert( it->coef );
-    if( it->key != -2 )
-      delete it->coef;
+    // Remove bounds
+    while( !all_bounds.empty( ) )
+    {
+        assert( all_bounds.back( ).delta );
+        if ( all_bounds.back( ).delta != &minus_inf_bound && all_bounds.back( ).delta != &plus_inf_bound )
+            delete all_bounds.back( ).delta;
+        all_bounds.pop_back( );
+    }
+    // Remove polynomial coefficients
+    for ( LARow::iterator it = polynomial.begin( ); it != polynomial.end( ); polynomial.getNext( it ) )
+    {
+        assert( it->coef );
+        if ( it->key != -2 )
+            delete it->coef;
     //    it->second = NULL;
-  }
+    }
 
-  delete ( m2 );
-  delete ( m1 );
+    delete ( m2 );
+    delete ( m1 );
 }
 
 
@@ -426,13 +426,15 @@ bool LAVar::LAVarBound::operator==( const LAVarBound &b )
     return false;
 }
 
-LAVarStore::LAVarStore(LRASolver& lra, vec<DedElem>& d, LRALogic& l)
+LAVarStore::LAVarStore(LRASolver& lra, vec<DedElem>& d, vector<Real*>& numbers_pool)
         : column_count(0)
         , row_count(0)
-        , logic(l)
+        , logic(lra.getLogic())
         , deduced(d)
         , solver_id(lra.getId())
-        , lra_solver(lra) {}
+        , lra_solver(lra)
+        , numbers_pool(numbers_pool)
+        {}
 
 // The basic constructor for new vars.
 LAVar* LAVarStore::getNewVar(PTRef e_orig) {
@@ -456,7 +458,9 @@ void LAVarStore::printVars() const
         cerr << lavars[i];
 }
 
+
 LAVarStore::~LAVarStore()
 {
-//    printVars();
+    for (int i = 0; i < lavars.size(); i++)
+        delete lavars[i];
 }

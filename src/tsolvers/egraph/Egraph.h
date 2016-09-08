@@ -118,6 +118,8 @@ public:
 #endif
     }
 
+    void clearSolver() { return; } // Clear the solver state.
+
     void print(ostream& out) { return; }
 
     const Enode& getEnode(ERef er) const { return enode_store[er]; }

@@ -54,6 +54,14 @@ char* TSolverHandler::printValue(PTRef tr)
     return out;
 }
 
+// Clear the vars of the solvers
+void TSolverHandler::clearSolver()
+{
+    for (int i = 0; i < tsolvers.size(); i++)
+        if (tsolvers[i] != NULL)
+            tsolvers[i]->clearSolver();
+}
+
 // Declare term to the appropriate solver
 void TSolverHandler::declareTerm(PTRef tr)
 {

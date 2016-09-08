@@ -72,6 +72,8 @@ public:
             if (tsolvers[i] != NULL) delete tsolvers[i];
     }
 
+    virtual void clearSolver(); // Clear the solver state
+
     virtual Logic&  getLogic  ( )  = 0;
 
 #ifdef PRODUCE_PROOF

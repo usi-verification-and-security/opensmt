@@ -56,6 +56,8 @@ public:
 
     virtual ~THandler ( ) { }
 
+    void clear() { getSolverHandler().clearSolver(); }  // Clear the solvers from their states
+
     Theory& getTheory() { return theory; }
     Logic&  getLogic()  { return theory.getLogic(); }
 

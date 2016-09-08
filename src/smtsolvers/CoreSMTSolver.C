@@ -2256,6 +2256,9 @@ static double luby(double y, int x)
 
 void CoreSMTSolver::declareVarsToTheories()
 {
+    // First empty the solver
+    theory_handler.clear();
+
     for (int i = 0; i < trail.size(); i++)
     {
         Var v = var(trail[i]);
