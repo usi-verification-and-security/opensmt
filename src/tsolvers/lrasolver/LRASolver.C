@@ -63,6 +63,8 @@ void LRASolver::clearSolver()
     checks_history.push_back(0);
     touched_rows.clear();
     removed_by_GaussianElimination.clear();
+    TSolver::clearSolver();
+
 
     lavarStore = new LAVarStore(*this, deduced, numbers_pool);
 }
@@ -626,28 +628,28 @@ bool LRASolver::check(bool complete)
 //
 bool LRASolver::assertLit( PtAsgn pta, bool reason )
 {
-  ( void )reason;
+    ( void )reason;
 
-  // Special cases of the "inequalitites"
-  if (logic.isTrue(pta.tr) && pta.sgn == l_True) {
-      tsolver_stats.sat_calls ++;
-      return true;
-  }
-  if (logic.isFalse(pta.tr) && pta.sgn == l_False) {
-      tsolver_stats.sat_calls ++;
-      return true;
-  }
-  if (logic.isTrue(pta.tr) && pta.sgn == l_False) {
-      tsolver_stats.unsat_calls ++;
-      return false;
-  }
-  if (logic.isFalse(pta.tr) && pta.sgn == l_True) {
-      tsolver_stats.unsat_calls ++;
-      return false;
-  }
-  // check if we stop reading constraints
-  if( status == INIT )
-    initSolver( );
+    // Special cases of the "inequalitites"
+    if (logic.isTrue(pta.tr) && pta.sgn == l_True) {
+        tsolver_stats.sat_calls ++;
+        return true;
+    }
+    if (logic.isFalse(pta.tr) && pta.sgn == l_False) {
+        tsolver_stats.sat_calls ++;
+        return true;
+    }
+    if (logic.isTrue(pta.tr) && pta.sgn == l_False) {
+        tsolver_stats.unsat_calls ++;
+        return false;
+    }
+    if (logic.isFalse(pta.tr) && pta.sgn == l_True) {
+        tsolver_stats.unsat_calls ++;
+        return false;
+    }
+    // check if we stop reading constraints
+    if( status == INIT  )
+        initSolver( );
 
   assert(pta.sgn != l_Undef);
 
@@ -2056,17 +2058,17 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
                 || usingWeak()
                 || usingRandom() );
 
-        if (verbose())
-        {
-            if (usingStrong())
-                cerr << "; Using Strong for LRA interpolation" << endl;
-            else if (usingWeak())
-                cerr << "; Using Weak for LRA interpolation" << endl;
-            else if(usingRandom())
-                cerr << "; Using Random for LRA interpolation" << endl;
-            else
-                cerr << "; LRA interpolation algorithm unknown" << endl;
-        }
+//        if (verbose())
+//        {
+//            if (usingStrong())
+//                cerr << "; Using Strong for LRA interpolation" << endl;
+//            else if (usingWeak())
+//                cerr << "; Using Weak for LRA interpolation" << endl;
+//            else if(usingRandom())
+//                cerr << "; Using Random for LRA interpolation" << endl;
+//            else
+//                cerr << "; LRA interpolation algorithm unknown" << endl;
+//        }
 
         // McMillan algo: set AB as B
         if ( usingStrong() && color == I_AB )

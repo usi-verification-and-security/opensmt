@@ -2258,6 +2258,8 @@ void CoreSMTSolver::declareVarsToTheories()
 {
     // First empty the solver
     theory_handler.clear();
+    for (int i = 0; i < var_seen.size(); i++)
+        var_seen[i] = false;
 
     for (int i = 0; i < trail.size(); i++)
     {
@@ -2266,7 +2268,6 @@ void CoreSMTSolver::declareVarsToTheories()
         {
             var_seen[v] = true;
             theory_handler.declareTermTree(theory_handler.varToTerm(v));
-//            printf("Declaring trail var %s\n", theory_handler.getLogic().printTerm(theory_handler.varToTerm(v)));
         }
     }
     top_level_lits = trail.size();

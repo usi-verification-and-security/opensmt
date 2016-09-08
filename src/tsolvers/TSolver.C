@@ -1,5 +1,18 @@
 #include "TSolver.h"
 
+void TSolver::clearSolver()
+{
+    explanation.clear();
+    th_deductions.clear();
+    deductions_next = 0;
+    deductions_lim.clear();
+    deductions_last.clear();
+    suggestions.clear();
+    informed_PTRefs.clear();
+    has_explanation = false;
+    backtrack_points.clear();
+}
+
 void TSolver::popBacktrackPoint()
 {
     assert( deductions_last.size( ) > 0 );
