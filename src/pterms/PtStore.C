@@ -225,6 +225,7 @@ PtStore::assignPartition(PTRef pref, char** msg)
     ipartitions_t p = 0;
     setbit(p, n);
     addIPartitions(pref, p);
+//    printf("Assigned partition %d to PTRef %d\n", n, pref.x);
 #endif
     return true;
 }

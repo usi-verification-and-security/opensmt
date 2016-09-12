@@ -61,7 +61,7 @@ void Cnfizer::initialize()
 }
 
 lbool
-Cnfizer::solve(vec<int>& en_frames)
+Cnfizer::solve(vec<FrameId>& en_frames)
 {
     vec<Lit> assumps;
     // Initialize so that by default frames are disabled
@@ -73,7 +73,7 @@ Cnfizer::solve(vec<int>& en_frames)
     // elements are in the same order.  We simply invert the
     // corresponding literals
     for (int i = 0; i < en_frames.size(); i++) {
-        int asmp_idx = en_frames[i];
+        int asmp_idx = en_frames[i].id;
         assumps[asmp_idx] = ~assumps[asmp_idx];
     }
     // Filter out the lit_Trues and lit_Falses used as empty values
@@ -134,28 +134,28 @@ bool Cnfizer::isNPAtom (PTRef r, PTRef &p) const
     }
 }
 
-void Cnfizer::setFrameTerm(int frame_id)
+void Cnfizer::setFrameTerm(FrameId frame_id)
 {
-    while (frame_terms.size() <= frame_id) {
+    while (frame_terms.size() <= frame_id.id) {
         frame_terms.push(logic.getTerm_true());
     }
-    // frame_id == 0 is for the bottom frame and we don't want to add
+    // frame_id == {0} is for the bottom frame and we don't want to add
     // literals to it since it is never retracted.
-    if (frame_id > 0 && frame_terms[frame_id] == logic.getTerm_true()) {
+    if (frame_id != FrameId_bottom && frame_terms[frame_id.id] == logic.getTerm_true()) {
         char* name;
-        asprintf(&name, "%s%d", Logic::s_framev_prefix, frame_id);
+        asprintf(&name, "%s%d", Logic::s_framev_prefix, frame_id.id);
         PTRef frame_term = logic.mkBoolVar(name);
         free(name);
-        frame_terms[frame_id] = frame_term;
+        frame_terms[frame_id.id] = frame_term;
     }
 
-    frame_term = frame_terms[frame_id];
+    frame_term = frame_terms[frame_id.id];
 }
 
 //
 // Main Routine. Examine formula and give it to the solver
 //
-lbool Cnfizer::cnfizeAndGiveToSolver (PTRef formula, int frame_id)
+lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
 {
     // Get the variable for the incrementality.
     setFrameTerm(frame_id);

@@ -84,14 +84,15 @@ class MainSolver
         bool done;
         pi(PTRef x_) : x(x_), done(false) {}
     };
-    Logic&         logic;
-    SMTConfig&     config;
-    THandler&      thandler;
-    TermMapper&    tmap;
-    vec<DedElem>   deductions;
-    SimpSMTSolver* smt_solver;
-    Tseitin        ts;
-    vec<PushFrame> formulas;
+    Logic&              logic;
+    SMTConfig&          config;
+    THandler&           thandler;
+    PushFrameAllocator& pfstore;
+    TermMapper&         tmap;
+    vec<DedElem>        deductions;
+    SimpSMTSolver*      smt_solver;
+    Tseitin             ts;
+    vec<PFRef>          formulas;
 
     int            simplified_until; // The formulas have been simplified up to and including formulas[simplified_until-1].
     sstat          status;           // The status of the last solver call (initially s_Undef)
@@ -109,7 +110,7 @@ class MainSolver
 
     void expandItes(FContainer& fc, vec<PtChild>& terms);
 
-    sstat giveToSolver(PTRef root, int push_id) {
+    sstat giveToSolver(PTRef root, FrameId push_id) {
         if (ts.cnfizeAndGiveToSolver(root, push_id) == l_False) return s_False;
         return s_Undef; }
 
@@ -131,6 +132,7 @@ class MainSolver
         , config(c)
         , status(s_Undef)
         , thandler(thandler)
+        , pfstore(getTheory().pfstore)
         , smt_solver(s)
         , ts( config
             , getTheory()
@@ -141,8 +143,8 @@ class MainSolver
         , root_instance(logic.getTerm_true())
         , simplified_until(0)
     {
-        formulas.push();
-        PushFrame& last = formulas.last();
+        formulas.push(pfstore.alloc());
+        PushFrame& last = pfstore[formulas.last()];
         last.push(logic.getTerm_true());
     }
 

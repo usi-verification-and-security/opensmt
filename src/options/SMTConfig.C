@@ -455,13 +455,13 @@ const Info& SMTConfig::getInfo(const char* name) const {
 }
 
 const char* SMTConfig::o_produce_models = ":produce-models";
-const char* SMTConfig::o_verbosity = ":verbosity";
-const char* SMTConfig::o_incremental   = ":incremental";
-const char* SMTConfig::o_produce_stats = ":produce-stats";
-const char* SMTConfig::o_stats_out     = ":stats-out";
-const char* SMTConfig::o_random_seed   = ":random-seed";
-const char* SMTConfig::o_grow          = ":grow";
-const char* SMTConfig::o_clause_lim    = ":cl-lim";
+const char* SMTConfig::o_verbosity      = ":verbosity";
+const char* SMTConfig::o_incremental    = ":incremental";
+const char* SMTConfig::o_produce_stats  = ":produce-stats";
+const char* SMTConfig::o_stats_out      = ":stats-out";
+const char* SMTConfig::o_random_seed    = ":random-seed";
+const char* SMTConfig::o_grow           = ":grow";
+const char* SMTConfig::o_clause_lim     = ":cl-lim";
 const char* SMTConfig::o_subsumption_lim = ":sub-lim";
 const char* SMTConfig::o_simp_garbage_frac = ":simp-gc-frac";
 const char* SMTConfig::o_use_asymm     = ":asymm";

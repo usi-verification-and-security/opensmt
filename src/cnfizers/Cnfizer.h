@@ -73,7 +73,6 @@ protected:
 
     THandler&           thandler;
     bool                s_empty;
-//    Egraph              uf_solver;
 
 public:
 
@@ -87,14 +86,14 @@ public:
 
     virtual ~Cnfizer( ) { }
 
-    lbool cnfizeAndGiveToSolver (PTRef, int frame_id); // Main routine
+    lbool cnfizeAndGiveToSolver (PTRef, FrameId frame_id); // Main routine
 
     vec<ValPair>* getModel ();                              // Retrieves the model (if SAT and solved)
 
     lbool  getTermValue(PTRef) const;
 
     void   initialize      ();
-    lbool  solve           (vec<int>& en_frames);
+    lbool  solve           (vec<FrameId>& en_frames);
 
     PTRef  expandItes      (vec<PtChild>&);
 
@@ -169,7 +168,7 @@ protected:
 
     PTRef frame_term;
     vec<PTRef> frame_terms;
-    void setFrameTerm(int frame_id);
+    void setFrameTerm(FrameId frame_id);
 
 //    bool  isLit            (PTRef r);
     bool  isBooleanOperator(SymRef tr) { return logic.isBooleanOperator(tr); } // (tr == logic.getSym_and()) | (tr == logic.getSym_or() ) | (tr == logic.getSym_not() ) | (tr == logic.getSym_eq() ) | (tr == logic.getSym_xor() ); }

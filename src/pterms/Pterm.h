@@ -84,20 +84,6 @@ struct PTLHash {
         return v; }
 };
 
-/*
-template <>
-struct Equal<const PTLKey> {
-    bool operator() (const PTLKey& k1, const PTLKey& k2) {
-        if (k1.sym != k2.sym) return false;
-        if (k1.args.size() != k2.args.size()) return false;
-        int i;
-        for (i = 0; i < k1.args.size(); i++)
-            if (k1.args[i] != k2.args[i]) break;
-        return i == k1.args.size();
-    }
-};
-*/
-
 class PtAsgn {
   public:
     PTRef tr;

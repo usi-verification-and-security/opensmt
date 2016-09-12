@@ -125,7 +125,7 @@ class PtStore {
     }
 
    // Partitions
-     bool assignPartition(const char* pname, PTRef, char** msg); //for partitions
+    bool assignPartition(const char* pname, PTRef, char** msg); //for partitions
     bool assignPartition(PTRef, char** msg); //for assertions
 #ifdef PRODUCE_PROOF
     ipartitions_t& getIPartitions(PTRef _t);
