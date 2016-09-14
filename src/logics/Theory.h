@@ -134,11 +134,9 @@ class Theory
 {
   protected:
     vec<DedElem>        deductions;
-    vec<Var>            frozen_vars;
     SMTConfig &         config;
     PTRef getCollateFunction(vec<PFRef>& formulas, int curr);
     Theory(SMTConfig &c) : config(c) {}
-    void addToFrozen(Var v) { frozen_vars.push(v); }  // Vars that solver should freeze
   public:
     PushFrameAllocator      pfstore;
     virtual TermMapper     &getTmap() = 0;
@@ -149,7 +147,6 @@ class Theory
     virtual bool            simplify(vec<PFRef>&, int) = 0; // Simplify a vector of PushFrames in an incrementality-aware manner
     vec<DedElem>           &getDeductionVec()   { return deductions; }
     bool                    computeSubstitutions(PTRef coll_f, vec<PFRef>& frames, int curr);
-    const vec<Var>         &getFrozenVars()     { return frozen_vars; }
     virtual ~Theory()                           {};
 };
 

@@ -686,15 +686,17 @@ bool Cnfizer::checkPureConj (PTRef e, Map<PTRef, bool, PTRefHash, Equal<PTRef> >
 }
 
 #ifdef PRODUCE_PROOF
-bool Cnfizer::addClause ( vec<Lit> &c, const ipartitions_t &mask)
+bool Cnfizer::addClause ( const vec<Lit> &c, const ipartitions_t &mask)
 #else
-bool Cnfizer::addClause ( vec<Lit> &c )
+bool Cnfizer::addClause ( const vec<Lit> &c_in )
 #endif
 {
 
+    vec<Lit> c;
+    c_in.copyTo(c);
     if (frame_term != logic.getTerm_true()) {
         Lit l = theory.findLit(frame_term);
-        solver.setFrozen(var(l), true);
+        tmap.setFrozen(var(l));
         c.push(l);
     }
 

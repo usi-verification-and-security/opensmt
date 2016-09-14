@@ -131,9 +131,9 @@ protected:
 
 
 #ifdef PRODUCE_PROOF
-    bool  addClause                  ( vec<Lit>&, const ipartitions_t& mask = 0);
+    bool  addClause                  ( const vec<Lit>&, const ipartitions_t& mask = 0);
 #else
-    bool  addClause                  ( vec<Lit>& );
+    bool  addClause                  ( const vec<Lit>& );
 #endif
 
     void  retrieveClause             ( PTRef, vec<PTRef> & );         // Retrieve a clause from a formula

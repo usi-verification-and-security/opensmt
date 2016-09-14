@@ -147,6 +147,7 @@ lbool SimpSMTSolver::solve_(bool do_simp, bool turn_off_simp)
     if ( config.sat_preprocess_theory == 0 )
         goto skip_theory_preproc;
 
+
     opensmt_error( "preprocess theory has been temporairly disabled in this version" );
 
 skip_theory_preproc:
@@ -223,7 +224,7 @@ bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause)
         Pterm& t = theory_handler.getLogic().getPterm(tr);
         Var v = t.getVar();
         addVar(v);
-        if (theory_handler.getLogic().isTheoryTerm(tr))
+        if (theory_handler.getLogic().isTheoryTerm(tr) || theory_handler.getTMap().isFrozen(v))
             setFrozen(v, true);
     }
 #ifdef PEDANTIC_DEBUG

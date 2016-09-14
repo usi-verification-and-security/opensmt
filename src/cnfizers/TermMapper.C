@@ -47,9 +47,11 @@ Var TermMapper::addBinding(PTRef tr)
     assert(varToTerm.size() == varToTheorySymbol.size());
     assert(varToTheorySymbol.size() <= v || varToTheorySymbol[v] == logic.getSymRef(tr_p) || varToTheorySymbol[v] == SymRef_Undef);
 
+    assert(varToTerm.size() == frozen.size());
     while (varToTerm.size() <= v) {
         varToTerm.push(PTRef_Undef);
         varToTheorySymbol.push(SymRef_Undef);
+        frozen.push(false);
     }
     varToTheorySymbol[v] == logic.getSymRef(tr_p);
     varToTerm[v] = tr_p;

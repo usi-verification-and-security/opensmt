@@ -53,6 +53,9 @@ const Lit Theory::findLit (PTRef ptr)
 PTRef Theory::getCollateFunction(vec<PFRef>& formulas, int curr)
 {
     assert(curr < formulas.size());
+    // XXX
+//    getLogic().dumpHeaderToFile(std::cout);
+//    getLogic().dumpFormulaToFile(std::cout, pfstore[formulas[1]].formulas[0]);
     vec<PTRef> coll_f_args;
     // compute coll_f as (a_1^0 /\ ... /\ a_{n_1}^0) /\ ... /\ (a_1^{curr} /\ ... /\ a_{n_k}^{curr})
     for (int i = 0; i < curr+1; i++)

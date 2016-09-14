@@ -36,11 +36,13 @@ class TermMapper {
     Logic&      logic;
     vec<PTRef>  varToTerm;
     vec<SymRef> varToTheorySymbol;
+    vec<bool>   frozen;
   public:
     TermMapper(Logic& l) : var_cnt(0), logic(l) {}
 
     Var addBinding(PTRef tr);
-
+    void setFrozen(Var v) { frozen[v] = true; }
+    bool isFrozen(Var v)  { return frozen[v]; }
     // Return a "purified" term by removing sequence of nots.  sgn is false if
     // sequence length is even, and true if it odd.  Does not change the
     // mapping
