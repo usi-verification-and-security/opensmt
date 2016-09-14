@@ -250,7 +250,13 @@ CoreSMTSolver::~CoreSMTSolver()
 //
 void CoreSMTSolver::addVar(Var v)
 {
-    if (v < nVars()) return;
+    if (v < nVars()) {
+        // These are Necessary in incremental mode since previously
+        // ignored vars can now reappear
+        insertVarOrder(v);
+        decision[v] = true;
+        return;
+    }
     while (v >= nVars())
         newVar();
 }
@@ -2294,7 +2300,9 @@ void CoreSMTSolver::declareVarsToTheories()
         if (!var_seen[i])
         {
             decision[i] = false;
-//            cerr << "Disabling var " << theory_handler.getLogic().printTerm(theory_handler.varToTerm(i)) << endl;
+#ifdef PEDANTIC_DEBUG
+            cerr << "Disabling var " << theory_handler.getLogic().printTerm(theory_handler.varToTerm(i)) << endl;
+#endif
         }
     }
 }
