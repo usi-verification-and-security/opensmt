@@ -148,6 +148,14 @@ typedef struct SpPref    { int t; } SpPref;
 
 typedef struct SpFormat  { int t; } SpFormat;
 
+struct ItpAlgorithm { int x; bool operator==(const ItpAlgorithm& o) const { return x == o.x; }};
+static const struct ItpAlgorithm itp_alg_mcmillan  = { 0 };
+static const struct ItpAlgorithm itp_alg_pudlak    = { 1 };
+static const struct ItpAlgorithm itp_alg_mcmillanp = { 2 };
+static const struct ItpAlgorithm itp_alg_ps        = { 3 };
+static const struct ItpAlgorithm itp_alg_psw       = { 4 };
+static const struct ItpAlgorithm itp_alg_pss       = { 5 };
+
 inline bool operator==(const SpType& s1, const SpType& s2) { return s1.t == s2.t; }
 inline bool operator==(const SpUnit& s1, const SpUnit& s2) { return s1.t == s2.t; }
 inline bool operator!=(const SpType& s1, const SpType& s2) { return s1.t != s2.t; }
@@ -355,6 +363,10 @@ public:
 
   inline void setProduceProofs( ) { if ( print_proofs_smtlib2 != 0 ) return; print_proofs_smtlib2 = 1; }
 
+  inline void setBooleanInterpolationAlgorithm( ItpAlgorithm i ) { insertOption(o_itp_bool_alg, new SMTOption(i.x)); }
+  inline ItpAlgorithm getBooleanInterpolationAlgorithm() {
+      if (optionTable.has(o_itp_bool_alg)) { return { optionTable[o_itp_bool_alg]->getValue().numval }; }
+      else { return itp_alg_mcmillan; }}
   inline void setRegularOutputChannel( const char * attr )
   {
     if ( strcmp( attr, "stdout" ) != 0 && !rocset )

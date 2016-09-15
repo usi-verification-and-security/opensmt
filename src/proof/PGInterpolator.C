@@ -18,6 +18,9 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
  *********************************************************************/
 
 #include <cstdio>
+#include <iostream>
+#include <fstream>
+
 
 #ifdef PRODUCE_PROOF
 #include "PG.h"
@@ -344,6 +347,19 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants )
 void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipartitions_t &A_mask)
 {
     if ( verbose() ) cerr << "# Single interpolant " << endl;
+
+    PTRef tr_a = logic_.getPartitionA(A_mask);
+    PTRef tr_b = logic_.getPartitionB(A_mask);
+
+    char* fname;
+    asprintf(&fname, "itp_problem.smt2");
+    std::ofstream f;
+    f.open(fname);
+    logic_.dumpHeaderToFile(f);
+    logic_.dumpFormulaToFile(f, tr_a);
+    logic_.dumpFormulaToFile(f, tr_b);
+    logic_.dumpChecksatToFile(f);
+    f.close();
 
     // Check
     checkInterAlgo();

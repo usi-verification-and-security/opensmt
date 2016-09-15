@@ -60,6 +60,12 @@ LRALogic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
         args.clear();
         args.push(i1); args.push(i2);
         PTRef andr = mkAnd(args);
+#ifdef PRODUCE_PROOF
+        if (hasOriginalAssertion(tr)) {
+            PTRef orig = getOriginalAssertion(tr);
+            setOriginalAssertion(andr, orig);
+        }
+#endif
         assert(!tr_map.has(tr));
         tr_map.insert(tr, andr);
     }

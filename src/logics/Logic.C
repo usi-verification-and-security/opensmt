@@ -496,7 +496,7 @@ lbool Logic::simplifyTree(PTRef tr, PTRef& root_out)
         visit(queue[i].x, tr_map);
 #ifdef PRODUCE_PROOF
         PTRef qaux = queue[i].x;
-        if(tr_map.has(qaux) && isAssertion(qaux))
+        if (tr_map.has(qaux) && isAssertion(qaux))
         {
             PTRef trq = tr_map[qaux];
             if(trq != qaux)
@@ -1812,6 +1812,9 @@ void
 Logic::dumpChecksatToFile(ostream& dump_out)
 {
     dump_out << "(check-sat)" << endl;
+#ifdef PRODUCE_PROOF
+    dump_out << "(get-interpolants)" << endl;
+#endif
     dump_out << "(exit)" << endl;
 }
 
@@ -1819,7 +1822,9 @@ void
 Logic::dumpHeaderToFile(ostream& dump_out)
 {
     dump_out << "(set-logic " << getName() << ")" << endl;
-
+#ifdef PRODUCE_PROOF
+    dump_out << "(set-option :produce-interpolants true)" << endl;
+#endif
     const vec<SRef>& sorts = sort_store.getSorts();
     for (int i = 0; i < sorts.size(); i++)
     {

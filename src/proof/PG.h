@@ -347,24 +347,25 @@ public:
     //
     // Config
     //
-    inline int     verbose                       ( ) const { return config.verbosity(); }
-    inline int     produceInterpolants           ( ) const { return config.produce_inter(); }
-    inline int     printProofSMT                 ( ) const { return config.print_proofs_smtlib2; }
-    inline int     printProofDotty               ( ) const { return config.print_proofs_dotty; }
-    inline double  ratioReductionSolvingTime     ( ) const { return config.proof_ratio_red_solv; }
-    inline double  reductionTime                 ( ) const { return config.proof_red_time; }
-    inline int     reductionLoops                ( ) const { return config.proof_red_trans(); }
-    inline int     numGraphTraversals            ( ) const { return config.proof_num_graph_traversals(); }
-    inline int     proofCheck() const      { return config.proof_check(); }
-    bool           enabledInterpVerif()    { return ( config.certify_inter() >= 1 ); }
-    bool           enabledPedInterpVerif() { return ( config.certify_inter() >= 2 ); }
-    bool           usingMcMillanInterpolation               ( ) { return ( config.itp_bool_alg() == 0 ); }
-    bool           usingPudlakInterpolation                 ( ) { return ( config.itp_bool_alg() == 1 ); }
-    bool           usingMcMillanPrimeInterpolation          ( ) { return ( config.itp_bool_alg() == 2 ); }
-    bool           usingPSInterpolation          	( ) { return ( config.itp_bool_alg() == 3 ); }
-    bool           usingPSWInterpolation          	( ) { return ( config.itp_bool_alg() == 4 ); }
-    bool           usingPSSInterpolation          	( ) { return ( config.itp_bool_alg() == 5 ); }
-    bool		   needProofStatistics						() { return (config.itp_bool_alg() >= 3 && config.itp_bool_alg() <= 5); }
+    inline int     verbose                        ( ) const { return config.verbosity(); }
+    inline int     produceInterpolants            ( ) const { return config.produce_inter(); }
+    inline int     printProofSMT                  ( ) const { return config.print_proofs_smtlib2; }
+    inline int     printProofDotty                ( ) const { return config.print_proofs_dotty; }
+    inline double  ratioReductionSolvingTime      ( ) const { return config.proof_ratio_red_solv; }
+    inline double  reductionTime                  ( ) const { return config.proof_red_time; }
+    inline int     reductionLoops                 ( ) const { return config.proof_red_trans(); }
+    inline int     numGraphTraversals             ( ) const { return config.proof_num_graph_traversals(); }
+    inline int     proofCheck                     ( ) const { return config.proof_check(); }
+    bool           enabledInterpVerif             ( ) const { return ( config.certify_inter() >= 1 ); }
+    bool           enabledPedInterpVerif          ( ) const { return ( config.certify_inter() >= 2 ); }
+    bool           usingMcMillanInterpolation     ( ) const { return config.getBooleanInterpolationAlgorithm() == itp_alg_mcmillan; }
+    bool           usingPudlakInterpolation       ( ) const { return config.getBooleanInterpolationAlgorithm() == itp_alg_pudlak; }
+    bool           usingMcMillanPrimeInterpolation( ) const { return config.getBooleanInterpolationAlgorithm() == itp_alg_mcmillanp; }
+    bool           usingPSInterpolation           ( ) const { return config.getBooleanInterpolationAlgorithm() == itp_alg_ps;  }
+    bool           usingPSWInterpolation          ( ) const { return config.getBooleanInterpolationAlgorithm() == itp_alg_psw; }
+    bool           usingPSSInterpolation          ( ) const { return config.getBooleanInterpolationAlgorithm() == itp_alg_pss; }
+
+    bool           needProofStatistics            ( ) const { ItpAlgorithm ia = config.getBooleanInterpolationAlgorithm(); return ((ia == itp_alg_ps) || (ia == itp_alg_psw) || (ia == itp_alg_pss)); }
     bool 		    restructuringForStrongerInterpolant	    ( ) { return ( config.proof_trans_strength == 1); }
     bool 		    restructuringForWeakerInterpolant	    ( ) { return ( config.proof_trans_strength == 2); }
     bool		   interpolantInCNF							( ) { return ( config.proof_interpolant_cnf() > 0 ); }

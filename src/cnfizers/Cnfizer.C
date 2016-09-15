@@ -783,23 +783,28 @@ bool Cnfizer::giveToSolver ( PTRef f )
 //
 // Retrieve the formulae at the top-level.  Ignore duplicates
 //
-void Cnfizer::retrieveTopLevelFormulae (PTRef f, vec<PTRef> &top_level_formulae)
+void Cnfizer::retrieveTopLevelFormulae (PTRef root, vec<PTRef> &top_level_formulae)
 {
     vec<PTRef> to_process;
 
     Map<PTRef, bool, PTRefHash> seen;
 
-    to_process.push (f);
+    to_process.push (root);
 
     while (to_process.size() != 0)
     {
-        f = to_process.last();
+        PTRef f = to_process.last();
         to_process.pop();
         Pterm &cand_t = logic.getPterm (f);
 
         if (logic.isAnd (f))
-            for (int i = cand_t.size() - 1; i >= 0; i--)
+            for (int i = cand_t.size() - 1; i >= 0; i--) {
                 to_process.push (cand_t[i]);
+#ifdef PRODUCE_PROOF
+                if (logic.hasOriginalAssertion(f))
+                    logic.setOriginalAssertion(cand_t[i], logic.getOriginalAssertion(f));
+#endif
+            }
         else if (!seen.has (f))
         {
             top_level_formulae.push (f);

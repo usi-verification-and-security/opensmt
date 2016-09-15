@@ -247,6 +247,10 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
 #endif
             computeIncomingEdges(fc.getRoot(), PTRefToIncoming);
             PTRef flat_root = rewriteMaxArity(fc.getRoot(), PTRefToIncoming);
+#ifdef PRODUCE_PROOF
+            if (logic.hasOriginalAssertion(fc.getRoot()))
+                logic.setOriginalAssertion(flat_root, logic.getOriginalAssertion(fc.getRoot()));
+#endif
             fc.setRoot(flat_root);
 #ifdef FLATTEN_DEBUG
             printf("Got the formula %s\n", logic.printTerm(fc.getRoot()));
