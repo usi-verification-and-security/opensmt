@@ -2,7 +2,7 @@ noinst_LTLIBRARIES = libsorts.la
 
 AM_CPPFLAGS=$(config_includedirs)
 
-if WANT_LIBRARY
+if ENABLE_LIBRARY
 include_HEADERS = SSort.h SStore.h
 endif
 

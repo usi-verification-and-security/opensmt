@@ -686,7 +686,7 @@ bool Cnfizer::checkPureConj (PTRef e, Map<PTRef, bool, PTRefHash, Equal<PTRef> >
 }
 
 #ifdef PRODUCE_PROOF
-bool Cnfizer::addClause ( const vec<Lit> &c, const ipartitions_t &mask)
+bool Cnfizer::addClause ( const vec<Lit> &c_in, const ipartitions_t &mask)
 #else
 bool Cnfizer::addClause ( const vec<Lit> &c_in )
 #endif

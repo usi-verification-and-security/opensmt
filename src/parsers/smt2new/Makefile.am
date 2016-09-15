@@ -12,7 +12,7 @@ LDADD = libsmt2newparser.la
 
 noinst_LTLIBRARIES = libsmt2newparser.la
 
-if WANT_LIBRARY
+if ENABLE_LIBRARY
 include_HEADERS = smt2newcontext.h
 endif
 

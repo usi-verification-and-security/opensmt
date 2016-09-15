@@ -5,7 +5,7 @@ SUBDIRS = proof parsers tsolvers smtsolvers api sorts logics symbols pterms cnfi
 
 noinst_LTLIBRARIES = libopensmt.la
 
-if WANT_LIBRARY
+if ENABLE_LIBRARY
 lib_LTLIBRARIES = libopensmt2.la libopensmt2c.la
 include_HEADERS = minisat/core/Solver.h minisat/core/SolverTypes.h minisat/mtl/Alg.h minisat/mtl/Heap.h minisat/mtl/Map.h minisat/mtl/Queue.h minisat/mtl/Sort.h minisat/mtl/Vec.h minisat/simp/SimpSolver.h opensmt2.h api/opensmt_c.h
 libopensmt2c_la_SOURCES = api/opensmt_c.C api/opensmt_c.h

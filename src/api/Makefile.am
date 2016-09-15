@@ -6,7 +6,7 @@ libapi_la_SOURCES = Interpret.C MainSolver.h MainSolver.C Opensmt.C
 
 libapi_la_LIBADD = -lreadline
 
-if WANT_LIBRARY
+if ENABLE_LIBRARY
 include_HEADERS = MainSolver.h Opensmt.h smt2tokens.h Interpret.h
 endif
 

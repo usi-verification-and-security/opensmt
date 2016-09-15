@@ -4,7 +4,7 @@ AM_CPPFLAGS=$(config_includedirs)
 
 libsimplifiers_la_SOURCES = LA.C LA.h
 
-if WANT_LIBRARY
+if ENABLE_LIBRARY
 include_HEADERS = LA.h
 endif
 

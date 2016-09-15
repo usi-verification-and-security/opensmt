@@ -29,17 +29,17 @@ AC_DEFINE(SVN_REVISION, "svnversion", [SVN Revision])
 
 AC_ARG_ENABLE(library,
   AC_HELP_STRING([--enable-library],
-                 [produces OpenSMT libraries (default=no)]),
-  want_library="yes",
-  want_library="no")
+                 [produces OpenSMT libraries (@<:@no@:>@)]),
+  [:],
+  enable_library="no")
 
-if test $want_library = "yes";
+if test $enable_library = "yes";
 then
   includedir="$includedir/opensmt"
   echo "Insalling libraries to... ${includedir}"
 fi
 
-AM_CONDITIONAL([WANT_LIBRARY], [test "$want_library" = "yes"])
+AM_CONDITIONAL([ENABLE_LIBRARY], [test "$enable_library" = "yes"])
 
 #
 # Profiling
@@ -91,7 +91,7 @@ echo "Setting c++ compiler optimization flags to...  ${AM_CXXFLAGS}"
 #
 AC_ARG_ENABLE(proof,
   AC_HELP_STRING([--enable-proof],
-                 [enable proof production @<:@no@:>@)]),
+                 [enable proof production (@<:@no@:>@)]),
   [:],
   [enable_proof="no"])
 

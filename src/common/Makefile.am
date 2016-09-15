@@ -8,6 +8,6 @@ libcommon_la_SOURCES = Otl.h \
                        FastRational.h \
                        FastRational.C
 
-if WANT_LIBRARY
+if ENABLE_LIBRARY
 include_HEADERS = Alloc.h FastRational.h Global.h IntTypes.h Otl.h SigMap.h StringMap.h TreeOps.h XAlloc.h
 endif
