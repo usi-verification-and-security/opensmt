@@ -1999,7 +1999,7 @@ Logic::implies(PTRef implicant, PTRef implicated)
     else
     {
         execlp( "tool_wrapper.sh", "tool_wrapper.sh", implies, NULL );
-        perror( "Tool" );
+        perror( "tool_wrapper.sh" );
         exit( 1 );
     }
 

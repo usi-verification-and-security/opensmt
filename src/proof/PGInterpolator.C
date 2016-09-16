@@ -348,11 +348,12 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
 {
     if ( verbose() ) cerr << "# Single interpolant " << endl;
 
+#ifdef ITP_DEBUG
     PTRef tr_a = logic_.getPartitionA(A_mask);
     PTRef tr_b = logic_.getPartitionB(A_mask);
 
     char* fname;
-    asprintf(&fname, "itp_problem.smt2");
+    asprintf(&fname, "itp_problem_%s.smt2", A_mask.get_str(10).c_str());
     std::ofstream f;
     f.open(fname);
     logic_.dumpHeaderToFile(f);
@@ -360,6 +361,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
     logic_.dumpFormulaToFile(f, tr_b);
     logic_.dumpChecksatToFile(f);
     f.close();
+#endif
 
     // Check
     checkInterAlgo();
