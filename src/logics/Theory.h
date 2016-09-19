@@ -94,7 +94,7 @@ public:
     PushFrame() : id(FrameId_Undef), root(PTRef_Undef) {} // For pushing into vecs we need a default.
     PushFrame operator= (PushFrame& other);
  private:
-    PushFrame(int id) : id({id}), root(PTRef_Undef) {}
+    PushFrame(uint32_t id) : id({id}), root(PTRef_Undef) {}
 };
 
 struct PFRef {
