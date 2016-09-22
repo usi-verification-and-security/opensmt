@@ -152,12 +152,12 @@ class Theory
 
 class LRATheory : public Theory
 {
-  private:
+  protected:
     LRALogic    lralogic;
     TermMapper  tmap;
     LRATHandler lratshandler;
   public:
-    TermMapper& getTmap() { return tmap; }
+    virtual TermMapper& getTmap() { return tmap; }
     LRATheory(SMTConfig& c)
         : Theory(c)
         , lralogic(c)
@@ -165,10 +165,10 @@ class LRATheory : public Theory
         , lratshandler(c, lralogic, deductions, tmap)
     { }
     ~LRATheory() {};
-    LRALogic&    getLogic()    { return lralogic; }
-    LRATHandler& getTSolverHandler() { return lratshandler; }
-    LRATHandler *getTSolverHandler_new(vec<DedElem> &d) { return new LRATHandler(config, lralogic, d, tmap); }
-    bool simplify(vec<PFRef>&, int); // Theory specific simplifications
+    virtual LRALogic&    getLogic()    { return lralogic; }
+    virtual LRATHandler& getTSolverHandler() { return lratshandler; }
+    virtual LRATHandler *getTSolverHandler_new(vec<DedElem> &d) { return new LRATHandler(config, lralogic, d, tmap); }
+    virtual bool simplify(vec<PFRef>&, int); // Theory specific simplifications
 };
 
 class UFTheory : public Theory

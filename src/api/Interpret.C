@@ -35,6 +35,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <readline/history.h>
 #include "Interpret.h"
 #include "Theory.h"
+#include "UFLRATheory.h"
 #include "Global.h"
 #include "smt2tokens.h"
 #include "Tterm.h"
@@ -176,6 +177,14 @@ bool Interpret::interp(ASTNode& n) {
                 new_solver();
                 main_solver = new MainSolver(*thandler, config, solver);
                 main_solver->initialize();
+            } else if ((strcmp(logic_name, QF_UFLRA.str) == 0) || (strcmp(logic_name, QF_UFRDL.str) == 0)) {
+                    UFLRATheory* uflratheory = new UFLRATheory(config);
+                    theory = uflratheory;
+                    thandler = new THandler(config, *uflratheory);
+                    logic = &(theory->getLogic());
+                    new_solver();
+                    main_solver = new MainSolver(*thandler, config, solver);
+                    main_solver->initialize();
             } else {
                 notify_formatted(true, "unknown logic %s", logic_name);
                 return false;

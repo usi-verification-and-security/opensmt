@@ -5,7 +5,7 @@ UFTHandler::UFTHandler(SMTConfig& c, Logic& l, vec<DedElem>& d, TermMapper& tmap
     , logic(l)
 {
     egraph = new Egraph(config, logic, deductions);
-    my_id = egraph->getId();
+    SolverId my_id = egraph->getId();
     tsolvers[my_id.id] = egraph;
     solverSchedule.push(my_id.id); // Only UF for the QF_UF logic
 }
@@ -44,7 +44,7 @@ void UFTHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
                 continue;
             Var v = tmap.addBinding(tr);
             while (deductions.size() <= v)
-                deductions.push({getId(), l_Undef});
+                deductions.push({egraph->getId(), l_Undef});
             refs.insert(tr,v);
         }
     }

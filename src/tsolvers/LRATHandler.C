@@ -6,7 +6,7 @@ LRATHandler::LRATHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d, TermMapper&
         , logic(l)
 {
     lrasolver = new LRASolver(config, logic, deductions);
-    my_id = lrasolver->getId();
+    SolverId my_id = lrasolver->getId();
     tsolvers[my_id.id] = lrasolver;
     solverSchedule.push(my_id.id);
 }
@@ -33,7 +33,7 @@ void LRATHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
                 declareTerm(tr);
                 Var v = tmap.addBinding(tr);
                 while (deductions.size() <= v)
-                    deductions.push({getId(), l_Undef});
+                    deductions.push({lrasolver->getId(), l_Undef});
                 refs.insert(tr, v);
             }
         }
@@ -51,15 +51,27 @@ void LRATHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
                 declareTerm(i1);
                 Var v = tmap.addBinding(i1);
                 while (deductions.size() <= v)
-                    deductions.push(DedElem(getId(), l_Undef));
+                    deductions.push(DedElem(lrasolver->getId(), l_Undef));
                 refs.insert(i1, v);
             }
             if (!refs.has(i2) && logic.isRealLeq(i2)) {
                 declareTerm(i2);
                 Var v = tmap.addBinding(i2);
                 while (deductions.size() <= v)
-                    deductions.push(DedElem(getId(), l_Undef));
+                    deductions.push(DedElem(lrasolver->getId(), l_Undef));
                 refs.insert(i2, v);
+            }
+        } else {
+            // UF term
+            if (!refs.has(tr)) {
+                declareTerm(tr);
+                Pterm& t = logic.getPterm(tr);
+                if (logic.getSym(t.symb()).rsort() != logic.getSort_bool())
+                    continue;
+                Var v = tmap.addBinding(tr);
+                while (deductions.size() <= v)
+                    deductions.push({lrasolver->getId(), l_Undef});
+                refs.insert(tr,v);
             }
         }
     }
@@ -67,7 +79,7 @@ void LRATHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
 
 bool LRATHandler::assertLit_special(PtAsgn a)
 {
-    assert(logic.isRealEq(a.tr) || logic.isRealLeq(a.tr));
+//    assert(logic.isRealEq(a.tr) || logic.isRealLeq(a.tr));
     assert(a.sgn == l_True);
     bool res = true;
     if (logic.isRealEq(a.tr)) {

@@ -1,8 +1,7 @@
 /*********************************************************************
 Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
 
-OpenSMT2 -- Copyright (C) 2012 - 2015 Antti Hyvarinen
-                         2008 - 2012 Roberto Bruttomesso
+OpenSMT2 -- Copyright (C) 2012 - 2016 Antti Hyvarinen
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the
@@ -23,37 +22,29 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
-#ifndef LRATHandler_H
-#define LRATHandler_H
 
-//#include "THandler.h"
-#include "LRASolver.h"
-#include "LRALogic.h"
-#include "TSolverHandler.h"
-#include "Egraph.h"
+#ifndef UFLRATheory_h
+#define UFLRATheory_h
 
-class LRATHandler : public TSolverHandler
+#include "Theory.h"
+#include "UFLRATHandler.h"
+
+class UFLRATheory : public LRATheory
 {
   private:
-    LRALogic& logic;
-    LRASolver *lrasolver;
+    LRALogic      uflralogic;
+    UFLRATHandler uflratshandler;
   public:
-    LRATHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d, TermMapper& tmap);
-    virtual ~LRATHandler();
-    virtual void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs);
-    virtual bool assertLit_special(PtAsgn);
-    virtual Logic& getLogic();
-
-#ifdef PRODUCE_PROOF
-    virtual TheoryInterpolator* getTheoryInterpolator()
-    {
-        return NULL;
-    }
-    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
-    {
-        return lrasolver->getInterpolant(mask, labels);
-    }
-#endif
+    virtual TermMapper& getTmap() { return tmap; }
+    UFLRATheory(SMTConfig& c)
+        : LRATheory(c)
+        , uflralogic(c)
+        , uflratshandler(c, uflralogic, deductions, tmap)
+    { }
+    virtual LRALogic& getLogic() { return uflralogic; }
+    virtual UFLRATHandler& getTSolverHandler() { return uflratshandler; }
+    virtual UFLRATHandler *getTSolverHandler_new(vec<DedElem> &d) { return new UFLRATHandler(config, lralogic, d, tmap); }
+    virtual bool simplify(vec<PFRef>&, int);
 };
 
 #endif
