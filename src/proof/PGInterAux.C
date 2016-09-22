@@ -67,41 +67,40 @@ void ProofGraph::computeABVariablesMapping( const ipartitions_t & A_mask )
 
 icolor_t ProofGraph::getVarColor( ProofNode* n , Var v)
 {
-	assert( n->isLeaf() );
-	// In labeling, classes and colors are distinct
-	icolor_t var_class = getVarClass2( v );
-
-	icolor_t var_color = I_UNDEF;
-	// Determine if variable A-local, B-local or AB-common
-	if ( var_class == I_A || var_class == I_B ) var_color = var_class;
-	else if (  var_class == I_AB )
-	{
-		if( isColoredA( n,v ) ) var_color = I_A;
-		else if ( isColoredB( n,v )  ) var_color = I_B;
-		else if ( isColoredAB( n,v ) ) var_color = I_AB;
-		else
-		{
+    assert( n->isLeaf() );
+    // In labeling, classes and colors are distinct
+    icolor_t var_class = getVarClass2( v );
+    icolor_t var_color = I_UNDEF;
+    // Determine if variable A-local, B-local or AB-common
+    if ( var_class == I_A || var_class == I_B ) var_color = var_class;
+    else if (  var_class == I_AB )
+    {
+        if ( isColoredA( n,v ) ) var_color = I_A;
+        else if ( isColoredB( n,v )  ) var_color = I_B;
+        else if ( isColoredAB( n,v ) ) var_color = I_AB;
+        else
+        {
             /*
-			icolor_t var_color_1=I_UNDEF;
-			if( isColoredA( n->getAnt1(),v ) ) var_color_1 = I_A;
-			else if ( isColoredB( n->getAnt1(),v )  ) var_color_1 = I_B;
-			else if ( isColoredAB( n->getAnt1(),v ) ) var_color_1 = I_AB;
+            icolor_t var_color_1=I_UNDEF;
+            if( isColoredA( n->getAnt1(),v ) ) var_color_1 = I_A;
+            else if ( isColoredB( n->getAnt1(),v )  ) var_color_1 = I_B;
+            else if ( isColoredAB( n->getAnt1(),v ) ) var_color_1 = I_AB;
 
-			icolor_t var_color_2=I_UNDEF;
-			if( isColoredA( n->getAnt2(),v ) ) var_color_2 = I_A;
-			else if ( isColoredB( n->getAnt2(),v )  ) var_color_2 = I_B;
-			else if ( isColoredAB( n->getAnt2(),v ) ) var_color_2 = I_AB;
+            icolor_t var_color_2=I_UNDEF;
+            if( isColoredA( n->getAnt2(),v ) ) var_color_2 = I_A;
+            else if ( isColoredB( n->getAnt2(),v )  ) var_color_2 = I_B;
+            else if ( isColoredAB( n->getAnt2(),v ) ) var_color_2 = I_AB;
 
-			cerr << "Pivot " << v << " has colors " << var_color_1 << " " << var_color_2 <<
-					" in antecedents but no color in resolvent" << endl;
+            cerr << "Pivot " << v << " has colors " << var_color_1 << " " << var_color_2 <<
+                    " in antecedents but no color in resolvent" << endl;
                     */
             cerr << "Var has no label" << endl;
-			opensmt_error_();
-		}
-	}
-	else opensmt_error( "Var " << v << " has no class" );
+            opensmt_error_();
+        }
+    }
+    else opensmt_error( "Var " << v << " has no class" );
 
-	return var_color;
+    return var_color;
 }
 
 // Input: node, current interpolant partition masks for A and B
@@ -193,32 +192,32 @@ icolor_t ProofGraph::getVarClass( Var v, const ipartitions_t & A_mask )
 // Output: returns A or B
 icolor_t ProofGraph::getClauseColor( const ipartitions_t & clause_mask, const ipartitions_t & A_mask )
 {
-	// Get partition mask clause
-	// e.g. 0---0110 variable in first and second partition
+    // Get partition mask clause
+    // e.g. 0---0110 variable in first and second partition
 
-	// TODO look at isAB methods in egraph
-	//Determine mask corresponding to B
-	ipartitions_t B_mask = ~A_mask;
-	//Reset bit 0 to 0
-	clrbit( B_mask, 0 );
-	//cout << "Clause has mask " << clause_mask << endl;
+    // TODO look at isAB methods in egraph
+    //Determine mask corresponding to B
+    ipartitions_t B_mask = ~A_mask;
+    //Reset bit 0 to 0
+    clrbit( B_mask, 0 );
+    //cout << "Clause has mask " << clause_mask << endl;
     //cout << "A Mask " << A_mask << endl;
     //cout << "B Mask " << B_mask << endl;
 
-	// Check if belongs to A or B
-	const bool clause_in_A = ( (clause_mask & A_mask) != 0 );
-	const bool clause_in_B = ( (clause_mask & B_mask) != 0 );
-	assert( clause_in_A || clause_in_B );
+    // Check if belongs to A or B
+    const bool clause_in_A = ( (clause_mask & A_mask) != 0 );
+    const bool clause_in_B = ( (clause_mask & B_mask) != 0 );
+    assert( clause_in_A || clause_in_B );
 
-	icolor_t clause_color = I_A;
+    icolor_t clause_color = I_A;
 
-	// Determine if clause belongs to A or B
-	if( clause_in_A && !clause_in_B ) clause_color = I_A;
-	else if( !clause_in_A && clause_in_B ) clause_color = I_B;
-	else if( clause_in_A && clause_in_B ) clause_color = I_AB;
-	else opensmt_error( "Clause has no color" );
+    // Determine if clause belongs to A or B
+    if( clause_in_A && !clause_in_B ) clause_color = I_A;
+    else if( !clause_in_A && clause_in_B ) clause_color = I_B;
+    else if( clause_in_A && clause_in_B ) clause_color = I_AB;
+    else opensmt_error( "Clause has no color" );
 
-	return clause_color;
+    return clause_color;
 }
 
 

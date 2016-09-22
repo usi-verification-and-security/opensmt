@@ -30,15 +30,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 using namespace std;
 
-Cnfizer::Cnfizer ( SMTConfig     &config_
-                   , Logic         &logic_
-                   , TermMapper    &tmap_
+Cnfizer::Cnfizer ( SMTConfig       &config_
+                   , Theory        &theory
+                   , TermMapper    &tmap
                    , THandler      &thandler_
                    , SimpSMTSolver &solver_
                  ) :
     config   (config_  )
-    , logic    (logic_   )
-    , tmap     (tmap_    )
+    , theory   (theory)
+    , logic    (theory.getLogic())
+    , tmap     (tmap)
     , thandler (thandler_)
     , solver   (solver_)
     , s_empty  (true)
@@ -50,27 +51,33 @@ Cnfizer::Cnfizer ( SMTConfig     &config_
 void Cnfizer::initialize()
 {
     vec<Lit> c;
-    Lit l = findLit (logic.getTerm_true());
+    Lit l = theory.findLit (logic.getTerm_true());
     c.push (l);
     addClause (c);
     c.pop();
-    l = findLit (logic.getTerm_false());
+    l = theory.findLit (logic.getTerm_false());
     c.push (~l);
     addClause (c);
 }
 
 lbool
-Cnfizer::solve(vec<int>& en_frames)
+Cnfizer::solve(vec<FrameId>& en_frames)
 {
     vec<Lit> assumps;
+    // Initialize so that by default frames are disabled
     for (int i = 0; i < frame_terms.size(); i++)
-        assumps.push(findLit(frame_terms[i]));
+        assumps.push(theory.findLit(frame_terms[i]));
 
-    for (int i = 0; i < en_frames.size(); i++)
-        assumps[i] = ~findLit(frame_terms[i]);
-
+    // Enable the terms which are listed in en_frames
+    // At this point assumps has the same size as frame_terms and the
+    // elements are in the same order.  We simply invert the
+    // corresponding literals
+    for (int i = 0; i < en_frames.size(); i++) {
+        int asmp_idx = en_frames[i].id;
+        assumps[asmp_idx] = ~assumps[asmp_idx];
+    }
     // Filter out the lit_Trues and lit_Falses used as empty values
-    Lit lit_true = findLit(logic.getTerm_true());
+    Lit lit_true = theory.findLit(logic.getTerm_true());
     int i, j;
     for (i = j = 0; i < assumps.size(); i++) {
         if (assumps[i] != lit_true && assumps[i] != ~lit_true)
@@ -102,46 +109,6 @@ Cnfizer::solve(vec<int>& en_frames)
 //  (i)  number of arguments is 0, or
 //  (ii) it is an atom stating an equivalence of non-boolean terms (terms must be purified at this point)
 
-// Extracts the literal corresponding to a term.
-// Accepts negations.
-const Lit Cnfizer::findLit (PTRef ptr)
-{
-    PTRef p;
-    bool sgn;
-    Var v;
-    tmap.getTerm (ptr, p, sgn);
-
-    if (!seen.has (p))
-    {
-        v = solver.newVar();
-        tmap.addBinding (v, p);
-
-        if (logic.isTheoryTerm (p))
-        {
-            assert (logic.isEquality (p)        ||
-                    logic.isDisequality (p)     ||
-                    logic.getTerm_true() == p          ||
-                    logic.getTerm_false() == p         ||
-                    logic.isUP (p)                      );
-        }
-
-        seen.insert (p, v);
-
-        if (logic.isTheoryTerm (p))
-            solver.setFrozen (v, true);
-
-#ifdef VERBOSE_CNFIZATION
-//        cerr << "Term " << logic.printTerm(p) << " maps to var " << v << endl;
-#endif
-    }
-    else
-        v = seen[p];
-
-    Lit l = mkLit (v, sgn);
-
-    return l;
-}
-
 
 // A term is an npatom if it is an atom or it is a negation of an npatom
 bool Cnfizer::isNPAtom (PTRef r, PTRef &p) const
@@ -167,28 +134,28 @@ bool Cnfizer::isNPAtom (PTRef r, PTRef &p) const
     }
 }
 
-void Cnfizer::setFrameTerm(int frame_id)
+void Cnfizer::setFrameTerm(FrameId frame_id)
 {
-    while (frame_terms.size() <= frame_id) {
+    while (frame_terms.size() <= frame_id.id) {
         frame_terms.push(logic.getTerm_true());
     }
-    // frame_id == 0 is for the bottom frame and we don't want to add
+    // frame_id == {0} is for the bottom frame and we don't want to add
     // literals to it since it is never retracted.
-    if (frame_id > 0 && frame_terms[frame_id] == logic.getTerm_true()) {
+    if (frame_id != FrameId_bottom && frame_terms[frame_id.id] == logic.getTerm_true()) {
         char* name;
-        asprintf(&name, "%s%d", Logic::s_framev_prefix, frame_id);
+        asprintf(&name, "%s%d", Logic::s_framev_prefix, frame_id.id);
         PTRef frame_term = logic.mkBoolVar(name);
         free(name);
-        frame_terms[frame_id] = frame_term;
+        frame_terms[frame_id.id] = frame_term;
     }
 
-    frame_term = frame_terms[frame_id];
+    frame_term = frame_terms[frame_id.id];
 }
 
 //
 // Main Routine. Examine formula and give it to the solver
 //
-lbool Cnfizer::cnfizeAndGiveToSolver (PTRef formula, int frame_id)
+lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
 {
     // Get the variable for the incrementality.
     setFrameTerm(frame_id);
@@ -249,7 +216,8 @@ lbool Cnfizer::cnfizeAndGiveToSolver (PTRef formula, int frame_id)
                 PTRef root_tmp = logic.getOriginalAssertion(f);
                 assert(!logic.hasOriginalAssertion(root_tmp));
                 mask = logic.getIPartitions(root_tmp);
-                logic.setIPartitions (f, 0);
+
+//                logic.setIPartitions (f, 0);
                 logic.addIPartitions (f, mask);
             }
 
@@ -319,14 +287,14 @@ lbool Cnfizer::cnfizeAndGiveToSolver (PTRef formula, int frame_id)
 /*
 lbool Cnfizer::extEquals(PTRef r_new, PTRef r_old) {
 
-    Lit l_new = findLit(r_new);
+    Lit l_new = theory.findLit(r_new);
 
     if (tmap.varToTheorySymbol[var(l_new)] == SymRef_Undef) {
         // The variable has already been removed
         return l_Undef;
     }
 
-    Lit l_old = findLit(r_old);
+    Lit l_old = theory.findLit(r_old);
 
     tmap.varToTheorySymbol[var(l_new)] = SymRef_Undef;
     tmap.theoryTerms.remove(r_new);
@@ -369,7 +337,7 @@ bool Cnfizer::deMorganize ( PTRef formula )
 
         for (int i = 0; i < conjuncts.size(); i++)
         {
-            clause.push (~findLit (conjuncts[i]));
+            clause.push (~theory.findLit (conjuncts[i]));
 #ifdef PEDANTIC_DEBUG
             cerr << "(not " << logic.printTerm (conjuncts[i]) << ")" << endl;
 #endif
@@ -718,15 +686,17 @@ bool Cnfizer::checkPureConj (PTRef e, Map<PTRef, bool, PTRefHash, Equal<PTRef> >
 }
 
 #ifdef PRODUCE_PROOF
-bool Cnfizer::addClause ( vec<Lit> &c, const ipartitions_t &mask)
+bool Cnfizer::addClause ( const vec<Lit> &c_in, const ipartitions_t &mask)
 #else
-bool Cnfizer::addClause ( vec<Lit> &c )
+bool Cnfizer::addClause ( const vec<Lit> &c_in )
 #endif
 {
 
+    vec<Lit> c;
+    c_in.copyTo(c);
     if (frame_term != logic.getTerm_true()) {
-        Lit l = findLit(frame_term);
-        solver.setFrozen(var(l), true);
+        Lit l = theory.findLit(frame_term);
+        tmap.setFrozen(var(l));
         c.push(l);
     }
 
@@ -765,7 +735,7 @@ bool Cnfizer::giveToSolver ( PTRef f )
     //
     if (logic.isLit (f))
     {
-        clause.push (findLit (f));
+        clause.push (theory.findLit (f));
 #ifdef PRODUCE_PROOF
         return addClause (clause, mask);
 #else
@@ -783,7 +753,7 @@ bool Cnfizer::giveToSolver ( PTRef f )
         retrieveClause (f, lits);
 
         for (int i = 0; i < lits.size(); i++)
-            clause.push (findLit (lits[i]));
+            clause.push (theory.findLit (lits[i]));
 
 #ifdef PRODUCE_PROOF
         return addClause (clause, mask);
@@ -813,23 +783,28 @@ bool Cnfizer::giveToSolver ( PTRef f )
 //
 // Retrieve the formulae at the top-level.  Ignore duplicates
 //
-void Cnfizer::retrieveTopLevelFormulae (PTRef f, vec<PTRef> &top_level_formulae)
+void Cnfizer::retrieveTopLevelFormulae (PTRef root, vec<PTRef> &top_level_formulae)
 {
     vec<PTRef> to_process;
 
     Map<PTRef, bool, PTRefHash> seen;
 
-    to_process.push (f);
+    to_process.push (root);
 
     while (to_process.size() != 0)
     {
-        f = to_process.last();
+        PTRef f = to_process.last();
         to_process.pop();
         Pterm &cand_t = logic.getPterm (f);
 
         if (logic.isAnd (f))
-            for (int i = cand_t.size() - 1; i >= 0; i--)
+            for (int i = cand_t.size() - 1; i >= 0; i--) {
                 to_process.push (cand_t[i]);
+#ifdef PRODUCE_PROOF
+                if (logic.hasOriginalAssertion(f))
+                    logic.setOriginalAssertion(cand_t[i], logic.getOriginalAssertion(f));
+#endif
+            }
         else if (!seen.has (f))
         {
             top_level_formulae.push (f);

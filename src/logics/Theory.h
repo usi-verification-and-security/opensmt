@@ -27,11 +27,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define THEORY_H
 
 #include "Deductions.h"
-#include "TermMapper.h"
 #include "Logic.h"
 #include "LRALogic.h"
 #include "LRATHandler.h"
 #include "UFTHandler.h"
+#include "Alloc.h"
 
 // Simplification in frames:
 // A frame F_i consists of:
@@ -60,41 +60,93 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //  - The last frame where the simplified problem R_{curr} and the new
 //    unit clauses U_{curr} will be placed
 //
+class PushFrameAllocator;
+
+struct FrameId
+{
+    uint32_t id;
+    bool operator== (const FrameId other) const { return id == other.id; }
+    bool operator!= (const FrameId other) const { return id != other.id; }
+};
+
+static struct FrameId FrameId_Undef = { INT32_MAX };
+static struct FrameId FrameId_bottom = { 0 };
 
 struct PushFrame
 {
-    PushFrame()                                 { id = id_counter; id_counter += 1; }
-    int  getId() const                          { return id; }
-    int  size()  const                          { return formulas.size(); }
-    void push(PTRef tr)                         { formulas.push(tr); }
-    PTRef operator[] (int i) const              { return formulas[i]; }
-    Map<PTRef,lbool,PTRefHash> units; // Contains the unit (theory) clauses that are implied up to here
-    PTRef root;
-    void addSeen(PTRef tr)                      { seen.insert(tr, l_True); }
-    bool isSeen(PTRef tr)                       { return seen.has(tr); }
- private:
-    vec<PTRef> formulas;
-    static int id_counter;
-    int id;
+    friend PushFrameAllocator;
+private:
+    FrameId id;
     //  If a lower frame F contains a substitution x = f(Y), x = f(Y)
     //  needs to be inserted into the root of the lower frame
     Map<PTRef,lbool,PTRefHash> seen; // Contains all the variables x seen in this frame.
+public:
+    FrameId getId() const                          { return id; }
+    int     size()  const                          { return formulas.size(); }
+    void    push(PTRef tr)                         { formulas.push(tr); }
+    PTRef operator[] (int i) const                 { return formulas[i]; }
+    Map<PTRef,lbool,PTRefHash> units; // Contains the unit (theory) clauses that are implied up to here
+    PTRef root;
+    void addSeen(PTRef tr)                         { seen.insert(tr, l_True); }
+    bool isSeen(PTRef tr)                          { return seen.has(tr); }
+    vec<PTRef> formulas;
+    PushFrame(PushFrame& pf);
+    PushFrame() : id(FrameId_Undef), root(PTRef_Undef) {} // For pushing into vecs we need a default.
+    PushFrame operator= (PushFrame& other);
+ private:
+    PushFrame(uint32_t id) : id({id}), root(PTRef_Undef) {}
 };
+
+struct PFRef {
+    uint32_t x;
+    inline friend bool operator== (const PFRef& a1, const PFRef& a2) { return a1.x == a2.x; };
+};
+
+static struct PFRef PFRef_Undef = {INT32_MAX};
+
+// No global variable for storing the push frame id.  I decided to
+// implement this as my own memory allocation.  There's no free though
+// at the moment, the implementation is very minimalistic.
+class PushFrameAllocator : public RegionAllocator<uint32_t>
+{
+private:
+    int id_counter;
+public:
+    PushFrameAllocator() : id_counter(FrameId_bottom.id) {}
+    void moveTo(PushFrameAllocator& to) {
+        to.id_counter = id_counter;
+        RegionAllocator<uint32_t>::moveTo(to); }
+    PFRef alloc()
+    {
+        uint32_t v = RegionAllocator<uint32_t>::alloc(sizeof(PushFrame));
+        PFRef r = {v};
+        new (lea(r)) PushFrame(id_counter++);
+        return r;
+    }
+    PushFrame& operator[](PFRef r) { return (PushFrame&)RegionAllocator<uint32_t>::operator[](r.x); }
+    PushFrame* lea       (PFRef r) { return (PushFrame*)RegionAllocator<uint32_t>::lea(r.x); }
+    PFRef      ael       (const PushFrame* t) { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); return { r }; }
+
+};
+
 
 class Theory
 {
   protected:
-    vec<DedElem> deductions;
-    SMTConfig &  config;
-    PTRef getCollateFunction(vec<PushFrame>& formulas, int curr);
+    vec<DedElem>        deductions;
+    SMTConfig &         config;
+    PTRef getCollateFunction(vec<PFRef>& formulas, int curr);
+    Theory(SMTConfig &c) : config(c) {}
   public:
+    PushFrameAllocator      pfstore;
+    virtual TermMapper     &getTmap() = 0;
+    const Lit               findLit(PTRef ptr); // Bind the term to a Boolean variable
     virtual Logic          &getLogic()              = 0;
     virtual TSolverHandler &getTSolverHandler()     = 0;
     virtual TSolverHandler *getTSolverHandler_new(vec<DedElem>&) = 0;
-    virtual bool            simplify(vec<PushFrame>&, int) = 0; // Simplify a vector of PushFrames in an incrementality-aware manner
+    virtual bool            simplify(vec<PFRef>&, int) = 0; // Simplify a vector of PushFrames in an incrementality-aware manner
     vec<DedElem>           &getDeductionVec()   { return deductions; }
-    bool                    computeSubstitutions(PTRef coll_f, vec<PushFrame>& frames, int curr);
-    Theory(SMTConfig &c) : config(c)            {}
+    bool                    computeSubstitutions(PTRef coll_f, vec<PFRef>& frames, int curr);
     virtual ~Theory()                           {};
 };
 
@@ -102,37 +154,43 @@ class LRATheory : public Theory
 {
   private:
     LRALogic    lralogic;
+    TermMapper  tmap;
     LRATHandler lratshandler;
   public:
+    TermMapper& getTmap() { return tmap; }
     LRATheory(SMTConfig& c)
         : Theory(c)
         , lralogic(c)
-        , lratshandler(c, lralogic, deductions)
+        , tmap(lralogic)
+        , lratshandler(c, lralogic, deductions, tmap)
     { }
     ~LRATheory() {};
     LRALogic&    getLogic()    { return lralogic; }
     LRATHandler& getTSolverHandler() { return lratshandler; }
-    LRATHandler *getTSolverHandler_new(vec<DedElem> &d) { return new LRATHandler(config, lralogic, d); }
-    bool simplify(vec<PushFrame>&, int); // Theory specific simplifications
+    LRATHandler *getTSolverHandler_new(vec<DedElem> &d) { return new LRATHandler(config, lralogic, d, tmap); }
+    bool simplify(vec<PFRef>&, int); // Theory specific simplifications
 };
 
 class UFTheory : public Theory
 {
   private:
     Logic      uflogic;
+    TermMapper  tmap;
     UFTHandler tshandler;
   public:
+    TermMapper& getTmap() { return tmap; }
     UFTheory(SMTConfig& c)
         : Theory(c)
         , uflogic(c)
-        , tshandler(c, uflogic, deductions)
+        , tmap(uflogic)
+        , tshandler(c, uflogic, deductions, tmap)
     {}
     ~UFTheory() {}
     Logic&       getLogic()             { return uflogic; }
     UFTHandler&  getTSolverHandler()    { return tshandler; }
     const UFTHandler& getTSolverHandler() const { return tshandler; }
-    UFTHandler *getTSolverHandler_new(vec<DedElem>& d) { return new UFTHandler(config, uflogic, d); }
-    bool simplify(vec<PushFrame>&, int);
+    UFTHandler *getTSolverHandler_new(vec<DedElem>& d) { return new UFTHandler(config, uflogic, d, tmap); }
+    bool simplify(vec<PFRef>&, int);
 };
 
 #endif

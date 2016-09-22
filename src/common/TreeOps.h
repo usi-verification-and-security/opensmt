@@ -81,4 +81,40 @@ void getTermList(PTRef tr, vec<T>& list_out, Logic& logic) {
         }
     }
 }
+
+// Get variables starting from the root
+//
+inline void
+getVars(PTRef tr, Logic& logic, Map<PTRef,bool,PTRefHash>& vars)
+{
+    Map<PTRef,bool,PTRefHash> seen;
+
+    vec<PTRef> queue;
+    queue.push(tr);
+    while (queue.size() != 0)
+    {
+        tr = queue.last();
+        if (seen.has(tr)) {
+            queue.pop();
+            continue;
+        }
+        bool unprocessed_children = false;
+        for (int i = 0; i < logic.getPterm(tr).size(); i++)
+        {
+            PTRef c = logic.getPterm(tr)[i];
+            if (seen.has(c)) continue;
+            else {
+                queue.push(c);
+                unprocessed_children = true;
+            }
+        }
+        if (unprocessed_children == true) continue;
+        queue.pop();
+        if (logic.isVar(tr))
+            vars.insert(tr, true);
+        seen.insert(tr, true);
+    }
+    return;
+}
+
 #endif

@@ -39,22 +39,24 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 class THandler
 {
 private:
-    Theory &theory;
+    Theory             &theory;
+    TermMapper         &tmap;                     // Mappings between TRefs and Lits
 #ifdef PEDANTIC_DEBUG
 public:
 #endif
-    SMTConfig &         config;                   // Reference to configuration
-    TermMapper          tmap;                     // Mappings between TRefs and Lits
+    SMTConfig          &config;                   // Reference to configuration
 public:
 
     THandler ( SMTConfig& c, Theory& tsh)
     : theory             (tsh)
+    , tmap               (tsh.getTmap())
     , config             (c)
-    , tmap               (theory.getLogic())
     , checked_trail_size (0)
     { }
 
     virtual ~THandler ( ) { }
+
+    void clear() { getSolverHandler().clearSolver(); }  // Clear the solvers from their states
 
     Theory& getTheory() { return theory; }
     Logic&  getLogic()  { return theory.getLogic(); }
@@ -80,6 +82,7 @@ public:
     bool    isTheoryTerm       ( Var v ) { return getLogic().isTheoryTerm(varToTerm(v)); }
     PTRef   varToTerm          ( Var v ) { return tmap.varToPTRef(v); }  // Return the term ref corresponding to a variable
     Pterm&  varToPterm         ( Var v)  { return getLogic().getPterm(tmap.varToPTRef(v)); } // Return the term corresponding to a variable
+    Lit     PTRefToLit         ( PTRef tr) { return tmap.getLit(tr); }
 
     void    getVarName         ( Var v, char** name ) { *name = getLogic().printTerm(tmap.varToPTRef(v)); }
 

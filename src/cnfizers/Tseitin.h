@@ -39,13 +39,13 @@ class Tseitin : public Cnfizer
 public:
 
     Tseitin( SMTConfig&     config_
-           , Logic&         logic_
+           , Theory&        theory_
            , TermMapper&    tmap_
            , THandler&      thandler_
            , SimpSMTSolver& solver_
            )
       : Cnfizer( config_
-                , logic_
+                , theory_
                 , tmap_
                 , thandler_
                 , solver_ )

@@ -748,35 +748,35 @@ THandler::verifyInterpolantWithExternalTool( PTRef itp, const ipartitions_t& mas
     bool tool_res;
     if ( int pid = fork() )
     {
-      int status;
-      waitpid(pid, &status, 0);
-      switch ( WEXITSTATUS( status ) )
-      {
-	case 0:
-	  tool_res = false;
-	  break;
-	case 1:
-	  tool_res = true;
-	  break;
-	default:
-	  perror( "Tool" );
-	  exit( EXIT_FAILURE );
-      }
+        int status;
+        waitpid(pid, &status, 0);
+        switch ( WEXITSTATUS( status ) )
+        {
+            case 0:
+                tool_res = false;
+                break;
+            case 1:
+                tool_res = true;
+                break;
+            default:
+                perror( "Tool" );
+                exit( EXIT_FAILURE );
+        }
     }
     else
     {
-      execlp( "tool_wrapper.sh", "tool_wrapper.sh", name_A, NULL );
-      perror( "Tool" );
-      exit( 1 );
+        execlp( "tool_wrapper.sh", "tool_wrapper.sh", name_A, NULL );
+        perror( "Tool" );
+        exit( 1 );
     }
 
     if ( tool_res == true )
     {
-      //opensmt_error2( config.certifying_solver, " says A -> I does not hold" );
-      cerr << "Error, A -> I does not hold" << endl;
+        //opensmt_error2( config.certifying_solver, " says A -> I does not hold" );
+        cerr << "Error, A -> I does not hold" << endl;
     }
     else
-      cerr << "A -> I holds" << endl;
+        cerr << "A -> I holds" << endl;
 
     // Now check B & I
     const char * name_B = "verifyinterp_B.smt2";

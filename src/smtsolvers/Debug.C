@@ -67,27 +67,26 @@ void CoreSMTSolver::dumpCNF( )
 
 void CoreSMTSolver::verifyModel()
 {
-  bool failed = false;
-  for (int i = 0; i < clauses.size(); i++)
-  {
-    assert(ca[clauses[i]].mark() == 0);
-    Clause& c = ca[clauses[i]];
-    for (int j = 0; j < c.size(); j++)
-      if (modelValue(c[j]) == l_True)
-	goto next;
+    bool failed = false;
+    for (int i = 0; i < clauses.size(); i++)
+    {
+        assert(ca[clauses[i]].mark() == 0);
+        Clause& c = ca[clauses[i]];
+        for (int j = 0; j < c.size(); j++)
+            if (modelValue(c[j]) == l_True)
+                goto next;
 
-    reportf("unsatisfied clause: ");
-    printClause<Clause>(ca[clauses[i]]);
-//    printSMTClause( cerr, *clauses[i] );
-    reportf("\n");
-    failed = true;
-next:;
-  }
+        reportf("unsatisfied clause: ");
+        printClause<Clause>(ca[clauses[i]]);
+        reportf("\n");
+        failed = true;
+        next:;
+    }
 
-  assert(!failed);
+    assert(!failed);
 
-  // Removed line
-  // reportf("Verified %d original clauses.\n", clauses.size());
+    // Removed line
+    // reportf("Verified %d original clauses.\n", clauses.size());
 }
 
 void CoreSMTSolver::checkLiteralCount()
@@ -109,6 +108,7 @@ void CoreSMTSolver::printTrail( )
   for (int i = 0; i < trail.size(); i++)
   {
     printLit( trail[i] );
+    printf("%s%s\n", (sign(trail[i]) ? "not " : ""), theory_handler.getLogic().printTerm(theory_handler.varToTerm(var(trail[i]))));
     // cerr << " | ";
     // printSMTLit( cerr, trail[i] );
     cerr << endl;

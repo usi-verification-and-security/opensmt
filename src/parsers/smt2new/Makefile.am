@@ -12,5 +12,9 @@ LDADD = libsmt2newparser.la
 
 noinst_LTLIBRARIES = libsmt2newparser.la
 
+if ENABLE_LIBRARY
+include_HEADERS = smt2newcontext.h
+endif
+
 libsmt2newparser_la_SOURCES = smt2newparser.yy smt2newlexer.ll smt2newcontext.cc
 

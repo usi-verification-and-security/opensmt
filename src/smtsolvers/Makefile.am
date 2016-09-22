@@ -6,7 +6,7 @@ libsmtsolvers_la_SOURCES = Proof.C Proof.h \
 			   CoreSMTSolver.C CoreSMTSolver.h \
 			   SMTSolver.h Debug.C Theory.C TheoryInterpolator.h
 
-if WANT_LIBRARY
+if ENABLE_LIBRARY
 include_HEADERS = CoreSMTSolver.h Proof.h SMTSolver.h SimpSMTSolver.h TheoryInterpolator.h
 endif
 

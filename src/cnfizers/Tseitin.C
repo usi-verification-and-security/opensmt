@@ -45,7 +45,7 @@ bool Tseitin::cnfize(PTRef formula)
     // Add the top level literal as a unit to solver.
     if (!logic.isOr(formula)) {
         vec<Lit> clause;
-        clause.push(findLit(formula));
+        clause.push(theory.findLit(formula));
 #ifdef PRODUCE_PROOF
         addClause(clause, mask);
 #else
@@ -159,15 +159,15 @@ void Tseitin::cnfizeAnd( PTRef and_term )
     //
     // aux = ( -aux | a_0 ) & ... & ( -aux | a_{n-1} ) & ( aux & -a_0 & ... & -a_{n-1} )
     //
-    Lit v = findLit(and_term);
+    Lit v = theory.findLit(and_term);
     vec<Lit> little_clause;
     vec<Lit> big_clause;
     little_clause.push(~v);
     big_clause   .push(v);
     for (int i = 0; i < logic.getPterm(and_term).size(); i++) {
         PTRef arg = logic.getPterm(and_term)[i];
-        little_clause.push( findLit(arg) );
-        big_clause   .push(~findLit(arg));
+        little_clause.push( theory.findLit(arg) );
+        big_clause   .push(~theory.findLit(arg));
 #ifdef PRODUCE_PROOF
         addClause(little_clause, mask);        // Adds a little clause to the solver
 #else
@@ -193,7 +193,7 @@ void Tseitin::cnfizeOr( PTRef or_term, bool def)
     if (!def) {
         vec<Lit> big_clause;
         for (int i = 0 ; i < logic.getPterm(or_term).size(); i++)
-            big_clause.push(findLit(logic.getPterm(or_term)[i]));
+            big_clause.push(theory.findLit(logic.getPterm(or_term)[i]));
 
 #ifdef PRODUCE_PROOF
         addClause(big_clause, mask);
@@ -213,11 +213,11 @@ void Tseitin::cnfizeOr( PTRef or_term, bool def)
     //
     vec<Lit>    little_clause;
     vec<Lit>    big_clause;
-    Lit v = findLit(or_term);
+    Lit v = theory.findLit(or_term);
     little_clause.push( v);
     big_clause   .push(~v);
     for (int i = 0 ; i < logic.getPterm(or_term).size(); i++) {
-        Lit arg = findLit(logic.getPterm(or_term)[i]);
+        Lit arg = theory.findLit(logic.getPterm(or_term)[i]);
         little_clause.push(~arg);
         big_clause   .push( arg);
 #ifdef PRODUCE_PROOF
@@ -249,10 +249,10 @@ void Tseitin::cnfizeXor(PTRef xor_term)
     //       (  aux | -a_0 | a_1 ) & (  aux |  a_0 | -a_1 )
     //
 
-    Lit v = findLit(xor_term);
+    Lit v = theory.findLit(xor_term);
 
-    Lit arg0 = findLit(logic.getPterm(xor_term)[0]);
-    Lit arg1 = findLit(logic.getPterm(xor_term)[1]);
+    Lit arg0 = theory.findLit(logic.getPterm(xor_term)[0]);
+    Lit arg1 = theory.findLit(logic.getPterm(xor_term)[1]);
     vec<Lit> clause;
 
     clause.push(~v);
@@ -319,9 +319,9 @@ void Tseitin::cnfizeIff( PTRef eq_term )
     //       (  aux |  a_0 |  a_1 ) & (  aux | -a_0 | -a_1 )
     //
     assert(logic.getPterm(eq_term).size() == 2);
-    Lit v = findLit(eq_term);
-    Lit arg0 = findLit(logic.getPterm(eq_term)[0]);
-    Lit arg1 = findLit(logic.getPterm(eq_term)[1]);
+    Lit v = theory.findLit(eq_term);
+    Lit arg0 = theory.findLit(logic.getPterm(eq_term)[0]);
+    Lit arg1 = theory.findLit(logic.getPterm(eq_term)[1]);
     vec<Lit> clause;
 
     clause.push(~v);
@@ -394,10 +394,10 @@ void Tseitin::cnfizeIfthenelse( PTRef ite_term )
     Pterm& pt_ite = logic.getPterm(ite_term);
     assert(pt_ite.size() == 3);
 
-    Lit v  = findLit(ite_term);
-    Lit a0 = findLit(pt_ite[0]);
-    Lit a1 = findLit(pt_ite[1]);
-    Lit a2 = findLit(pt_ite[2]);
+    Lit v  = theory.findLit(ite_term);
+    Lit a0 = theory.findLit(pt_ite[0]);
+    Lit a1 = theory.findLit(pt_ite[1]);
+    Lit a2 = theory.findLit(pt_ite[2]);
 
     vec<Lit> clause;
 
@@ -451,9 +451,9 @@ void Tseitin::cnfizeImplies( PTRef impl_term  )
     Pterm& pt_impl = logic.getPterm(impl_term);
     assert(pt_impl.size() == 2);
 
-    Lit v  = findLit(impl_term);
-    Lit a0 = findLit(pt_impl[0]);
-    Lit a1 = findLit(pt_impl[1]);
+    Lit v  = theory.findLit(impl_term);
+    Lit a0 = theory.findLit(pt_impl[0]);
+    Lit a1 = theory.findLit(pt_impl[1]);
 
     vec<Lit> clause;
 

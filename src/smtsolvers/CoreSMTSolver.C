@@ -245,6 +245,21 @@ CoreSMTSolver::~CoreSMTSolver()
 
 //=================================================================================================
 // Minor methods:
+//
+// Add a new var v to the solver if it does not yet exist
+//
+void CoreSMTSolver::addVar(Var v)
+{
+    if (v < nVars()) {
+        // These are Necessary in incremental mode since previously
+        // ignored vars can now reappear
+        insertVarOrder(v);
+        decision[v] = true;
+        return;
+    }
+    while (v >= nVars())
+        newVar();
+}
 
 // Creates a new SAT variable in the solver. If 'decision_var' is cleared, variable will not be
 // used as a decision variable (NOTE! This has effects on the meaning of a SATISFIABLE result).
@@ -2247,6 +2262,11 @@ static double luby(double y, int x)
 
 void CoreSMTSolver::declareVarsToTheories()
 {
+    // First empty the solver
+    theory_handler.clear();
+    for (int i = 0; i < var_seen.size(); i++)
+        var_seen[i] = false;
+
     for (int i = 0; i < trail.size(); i++)
     {
         Var v = var(trail[i]);
@@ -2254,7 +2274,6 @@ void CoreSMTSolver::declareVarsToTheories()
         {
             var_seen[v] = true;
             theory_handler.declareTermTree(theory_handler.varToTerm(v));
-//            printf("Declaring trail var %s\n", theory_handler.getLogic().printTerm(theory_handler.varToTerm(v)));
         }
     }
     top_level_lits = trail.size();
@@ -2267,6 +2286,7 @@ void CoreSMTSolver::declareVarsToTheories()
             if (!var_seen[v])
             {
                 var_seen[v] = true;
+                assert(theory_handler.getLogic().getPterm(theory_handler.varToTerm(v)).getVar() != -1);
                 theory_handler.declareTermTree(theory_handler.varToTerm(v));
 //                printf("Declaring clause %d var %s\n", i, theory_handler.getLogic().printTerm(theory_handler.varToTerm(v)));
             }
@@ -2280,7 +2300,9 @@ void CoreSMTSolver::declareVarsToTheories()
         if (!var_seen[i])
         {
             decision[i] = false;
-//            cerr << "Disabling var " << theory_handler.getLogic().printTerm(theory_handler.varToTerm(i)) << endl;
+#ifdef PEDANTIC_DEBUG
+            cerr << "Disabling var " << theory_handler.getLogic().printTerm(theory_handler.varToTerm(i)) << endl;
+#endif
         }
     }
 }
@@ -2985,7 +3007,7 @@ bool CoreSMTSolver::scatterLevel()
             break;
         }
     }
-    return d == decisionLevel();
+    return d == decisionLevel()+assumptions.size();
 }
 
 bool CoreSMTSolver::createSplit_lookahead()

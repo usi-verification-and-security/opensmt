@@ -501,7 +501,7 @@ declare_fun_err: ;
         }
         case t_exit:
         {
-            if(parse_only) break;
+            if (parse_only) break;
             exit();
             notify_success();
             return false;
@@ -1258,21 +1258,21 @@ void Interpret::GetInterpolants()
     //just test with assertions for now:
     vec<PTRef>& partitions = logic->getAssertions();
 
-    if(!logic->canInterpolate())
+    if (!logic->canInterpolate())
         opensmt_error("Cannot interpolate");
 
-    int rseed = 1466156790;
-    //int rseed = time(NULL);
-    cerr << "; Seed used for partitioning: " << rseed << endl;
-    srand(rseed);
+    //int rseed = 1466156790;
+//    int rseed = time(NULL);
+//    cerr << "; Seed used for partitioning: " << rseed << endl;
+//    srand(rseed);
 
     ipartitions_t p = 1;
-    if(rand() % 2) p <<= 1;
+//    if (rand() % 2) p <<= 1;
     //guarantees that A and B have at least one assertion each
 
-    for(int i = 2; i < partitions.size(); ++++i)
+    for (int i = 2; i < partitions.size(); ++++i)
     {
-        if(rand() % 2)
+        if (rand() % 2)
             opensmt::setbit(p, i);
         else
             opensmt::setbit(p, i + 1);
@@ -1286,13 +1286,41 @@ void Interpret::GetInterpolants()
     //test the partitions
     for(int i = 0; i < partitions.size(); ++i)
     {
-        if(isAstrict(logic->getIPartitions(partitions[i]), p))
+        if (isAstrict(logic->getIPartitions(partitions[i]), p))
             cerr << "; Partition " << i << " is in A" << endl;
-        else if(isBstrict(logic->getIPartitions(partitions[i]), p))
+        else if (isBstrict(logic->getIPartitions(partitions[i]), p))
             cerr << "; Partition " << i << " is in B" << endl;
         else
             cerr << "; Partition " << i << " is weird" << endl;
     }
+
+    vec<PTRef> queue;
+    // Get the vars in A
+    Map<PTRef,bool,PTRefHash> a_vars;
+    getVars(partitions[0], *logic, a_vars);
+    vec<PTRef> vars_list_a;
+    a_vars.getKeys(vars_list_a);
+    printf("; Vars in A\n");
+    for (int i = 0; i < vars_list_a.size(); i++)
+        printf(";  %s\n", logic->printTerm(vars_list_a[i]));
+
+    // Get the vars in B
+    Map<PTRef,bool,PTRefHash> b_vars;
+    getVars(partitions[1], *logic, b_vars);
+    vec<PTRef> vars_list_b;
+    b_vars.getKeys(vars_list_b);
+    printf("; Vars in B\n");
+    for (int i = 0; i < vars_list_b.size(); i++)
+        printf(";  %s\n", logic->printTerm(vars_list_b[i]));
+
+    printf("; Shared vars\n");
+    Map<PTRef,bool,PTRefHash> shared_vars;
+    for (int i = 0; i < vars_list_b.size(); i++)
+        if (a_vars.has(vars_list_b[i])) {
+            shared_vars.insert(vars_list_b[i], true);
+            printf(";  %s\n", logic->printTerm(vars_list_b[i]));
+        }
+
 #endif
 
 #ifdef ITP_DEBUG
@@ -1300,8 +1328,28 @@ void Interpret::GetInterpolants()
 #endif
     SimpSMTSolver& smt_solver = main_solver->getSMTSolver();
     smt_solver.createProofGraph();
-    vector<PTRef> itps;
+    vec<PTRef> itps;
     smt_solver.getSingleInterpolant(itps, p);
+#ifdef ITP_DEBUG
+    for (int i = 0; i < itps.size(); i++)
+    {
+        printf("; Itp %d\n", i);
+        printf("%s\n", logic->printTerm(itps[i]));
+    }
+    Map<PTRef,bool,PTRefHash> itp_vars;
+    getVars(itps[0], *logic, itp_vars);
+    printf("; Vars in Itp\n");
+    const char* note = " <= not in shared";
+    vec<PTRef> itp_vars_list;
+    itp_vars.getKeys(itp_vars_list);
+    for (int i = 0; i < itp_vars_list.size(); i++) {
+        if (shared_vars.has(itp_vars_list[i]))
+            printf(";  %s\n", logic->printTerm(itp_vars_list[i]));
+        else
+            printf(";  %s %s\n", logic->printTerm(itp_vars_list[i]), note);
+    }
+
+#endif
     /*
     const char* msg;
     const char* lnames[] = {"McMillan", "Pudlak", "McMillan", "PS", "PSw", "PSs"};

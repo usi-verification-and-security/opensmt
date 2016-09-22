@@ -125,17 +125,17 @@ class TSolverStats
 class TSolver
 {
 protected:
-    SolverId   id;             // Solver unique identifier
-    vec<PtAsgn> explanation;    // Stores the explanation
-    vec<PtAsgn_reason> th_deductions;  // List of deductions computed by the theory
-    size_t        deductions_next;     // Index of next deduction to communicate
-    vec<size_t>   deductions_lim;      // Keeps track of deductions done up to a certain point
-    vec<size_t>   deductions_last;     // Keeps track of deductions done up to a certain point
-    vec<PTRef>    suggestions;         // List of suggestions for decisions
-    vec<DedElem> &deduced;             // Array of deductions indexed by variables
-    Map<PTRef,lbool,PTRefHash>    polarityMap;
-public:
+    SolverId                    id;              // Solver unique identifier
+    vec<PtAsgn>                 explanation;     // Stores the explanation
+    vec<PtAsgn_reason>          th_deductions;   // List of deductions computed by the theory
+    size_t                      deductions_next; // Index of next deduction to communicate
+    vec<size_t>                 deductions_lim;  // Keeps track of deductions done up to a certain point
+    vec<size_t>                 deductions_last; // Keeps track of deductions done up to a certain point
+    vec<PTRef>                  suggestions;     // List of suggestions for decisions
+    vec<DedElem>                &deduced;        // Array of deductions indexed by variables
+    Map<PTRef,lbool,PTRefHash>  polarityMap;
 
+public:
     TSolver(SolverId id_, const char* name_, SMTConfig & c, vec<DedElem>& d)
     : id(id_)
     , name(name_)
@@ -145,12 +145,16 @@ public:
     , has_explanation(false)
     {}
 
-    virtual ~TSolver ( ) { }
+    virtual ~TSolver ( ) {}
+
+    // Called after every check-sat.
+    virtual void clearSolver();
+
     void  setPolarity(PTRef tr, lbool p) {
         if (polarityMap.has(tr)) { polarityMap[tr] = p; }
         else { polarityMap.insert(tr, p); }
 #ifdef VERBOSE_EUF
-        cerr << "Setting polarity " << getLogic().printTerm(tr) << endl;
+        cerr << "Setting polarity " << getLogic().printTerm(tr) << " " << tr.x << endl;
 #endif
     }
     virtual void print(ostream& out) = 0;
@@ -158,7 +162,7 @@ public:
     void  clearPolarity(PTRef tr)        {
         polarityMap[tr] = l_Undef;
 #ifdef VERBOSE_EUF
-        cerr << "Clearing polarity " << getLogic().printTerm(tr) << endl;
+        cerr << "Clearing polarity " << getLogic().printTerm(tr) << " " << tr.x << endl;
 #endif
     }
     bool  hasPolarity(PTRef tr)          { if (polarityMap.has(tr)) { return polarityMap[tr] != l_Undef; } else return false; }
@@ -188,82 +192,6 @@ protected:
     const char*                 name;             // Name of the solver
     SMTConfig &                 config;           // Reference to configuration
     vec< size_t >               backtrack_points; // Keeps track of backtrack points
-//#ifdef PRODUCE_PROOF
-    //Enode *                     interpolants;     // Store interpolants
-//#endif
-#ifdef STATISTICS
-//    TSolverStats tsolver_stats;                   // Statistics for the solver
-#endif
 };
-
-/*
-class OrdinaryTSolver : public TSolver
-{
-public:
-
-  OrdinaryTSolver ( const int           i
-                  , const char *        n
-		  , SMTConfig &         c
-		  , Logic & l)
-    : TSolver     ( i, n, c )
-    , logic(l)
-  { }
-
-  virtual ~OrdinaryTSolver ( )
-  { }
-
-  virtual bool belongsToT   ( PTRef ) = 0; // Atom belongs to this theory
-  virtual void computeModel ( )         = 0; // Compute model for variables
-
-protected:
-
-  Logic& logic;
-  vector< PTRef > explanation; // Stores the explanation
-  vector< PTRef > deductions;  // List of deductions
-  vector< PTRef > suggestions; // List of suggestions for decisions
-};
-
-class CoreTSolver : public TSolver
-{
-public:
-
-  CoreTSolver ( const int    i
-              , const char * n
-	      , SMTConfig &  c )
-    : TSolver         ( i, n, c )
-    , deductions_next ( 0 )
-    , solver          ( NULL )
-  { }
-
-  virtual ~CoreTSolver ( )
-  { }
-
-//  virtual vec< PTRef > &      getConflict    ( bool = false ) = 0; // Return conflict
-  virtual void                getConflict    ( bool, vec<PtAsgn>& ) = 0; // Return conflict
-  virtual PtAsgn_reason&      getDeduction   ( )              = 0; // Return an implied node based on the current state
-  inline void                 setSolver      ( SimpSMTSolver * s ) { assert( s ); assert( solver == NULL || solver == s); solver = s; }
-  virtual void                splitOnDemand  ( vec< PTRef > &
-                                             , const int )    = 0; // For splitting on demand
-
-protected:
-
-  vec< OrdinaryTSolver * >    tsolvers;            // List of ordinary theory solvers
-
-public:
-#ifdef STATISTICS
-  vector< TSolverStats * >    tsolvers_stats;      // Statistical info for tsolvers
-  TSolverStats tsolver_stats;
-#endif
-
-protected:
-  vec< PTRef >                explanation;         // Stores the explanation
-  vec< PtAsgn_reason >        deductions;          // List of deductions
-  size_t                      deductions_next;     // Index of next deduction to communicate
-  vec< size_t >               deductions_lim;      // Keeps track of deductions done up to a certain point
-  vec< size_t >               deductions_last;     // Keeps track of deductions done up to a certain point
-  vec< PTRef >                suggestions;         // List of suggestions for decisions
-  SimpSMTSolver *             solver;              // Pointer to solver
-};
-*/
 
 #endif

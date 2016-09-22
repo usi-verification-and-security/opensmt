@@ -18,6 +18,9 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
  *********************************************************************/
 
 #include <cstdio>
+#include <iostream>
+#include <fstream>
+
 
 #ifdef PRODUCE_PROOF
 #include "PG.h"
@@ -28,7 +31,7 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 // Interpolants I_0 ... I_n
 // Generation I_i = Itp(phi_1 ... phi_i | phi_{i+1} ... phi_n)
 // Requirement  I_i /\ phi_{i+1} -> I_{i+1}
-bool ProofGraph::producePathInterpolants ( vector< PTRef > &interpolants )
+bool ProofGraph::producePathInterpolants ( vec<PTRef> &interpolants )
 {
     assert ( interpolants.size( ) == 0 );
     unsigned nparts = logic_.getNofPartitions();
@@ -48,8 +51,10 @@ bool ProofGraph::producePathInterpolants ( vector< PTRef > &interpolants )
     if ( verbose() ) cerr << "# Path interpolation " << endl;
 
     // Generate appropriate masks
-    vector< ipartitions_t > configs;
-    configs.resize (logic_.getNofPartitions() + 1, 0);
+    vec< ipartitions_t > configs;
+    while (configs.size() <= logic_.getNofPartitions()+1)
+        configs.push();
+//    configs.resize (logic_.getNofPartitions() + 1, 0);
 
     // First interpolant is true -> all partitions in B
     for ( unsigned i = 1; i < configs.size(); i++ )
@@ -72,7 +77,7 @@ bool ProofGraph::producePathInterpolants ( vector< PTRef > &interpolants )
 // Interpolants I_1 ... I_n
 // Generation   I_i = Itp(phi_i | phi_1 ... phi_{i-1}, phi_{i+1} ... phi_n)
 // Requirement  I_i /\ ... /\ I_n -> false
-bool ProofGraph::produceSimultaneousAbstraction ( vector< PTRef > &interpolants )
+bool ProofGraph::produceSimultaneousAbstraction ( vec< PTRef > &interpolants )
 {
     assert ( interpolants.size( ) == 0 );
     unsigned nparts = logic_.getNofPartitions();
@@ -92,8 +97,10 @@ bool ProofGraph::produceSimultaneousAbstraction ( vector< PTRef > &interpolants 
     if ( verbose() ) cerr << "# Simultaneous abstraction " << endl;
 
     // Generate appropriate masks
-    vector< ipartitions_t > configs;
-    configs.resize (logic_.getNofPartitions(), 0);
+    vec< ipartitions_t > configs;
+    while (configs.size() < logic_.getNofPartitions())
+        configs.push();
+//    configs.resize (logic_.getNofPartitions(), 0);
 
     for ( unsigned i = 0; i < configs.size(); i++ )
     {
@@ -115,7 +122,7 @@ bool ProofGraph::produceSimultaneousAbstraction ( vector< PTRef > &interpolants 
 // Generation   for 1<=i<=n-1     I_i = Itp(phi_i | phi_1 ... phi_{i-1}, phi_{i+1} ... phi_n)
 //              for i=n           I_n = Itp(phi_1 ... phi_{n-1} | phi_n)
 // Requirement  I_i /\ ... /\ I_{n-1} -> I_n
-bool ProofGraph::produceGenSimultaneousAbstraction ( vector< PTRef > &interpolants )
+bool ProofGraph::produceGenSimultaneousAbstraction ( vec< PTRef > &interpolants )
 {
     assert ( interpolants.size( ) == 0 );
     unsigned nparts = logic_.getNofPartitions();
@@ -135,8 +142,10 @@ bool ProofGraph::produceGenSimultaneousAbstraction ( vector< PTRef > &interpolan
     if ( verbose() ) cerr << "# Generalized simultaneous abstraction " << endl;
 
     // Generate appropriate masks
-    vector< ipartitions_t > configs;
-    configs.resize (nparts, 0);
+    vec< ipartitions_t > configs;
+    while (configs.size() < nparts)
+        configs.push();
+//    configs.resize (nparts, 0);
 
     for ( unsigned i = 0; i < nparts - 1; i++ )
     {
@@ -160,7 +169,7 @@ bool ProofGraph::produceGenSimultaneousAbstraction ( vector< PTRef > &interpolan
 // Generation   I_i = Itp(phi_1 ... phi_i | phi_{i+1} ... phi_n)
 //              J_i = Itp(phi_i | phi_1 ... phi_{i-1}, phi_{i+1} ... phi_n)
 // Requirement  I_i /\ J_{i+1} -> I_{i+1}
-bool ProofGraph::produceStateTransitionInterpolants ( vector< PTRef > &interpolants )
+bool ProofGraph::produceStateTransitionInterpolants ( vec< PTRef > &interpolants )
 {
     assert ( interpolants.size( ) == 0 );
     unsigned npart = logic_.getNofPartitions();
@@ -180,8 +189,10 @@ bool ProofGraph::produceStateTransitionInterpolants ( vector< PTRef > &interpola
     if ( verbose() ) cerr << "# State-transition interpolation " << endl;
 
     // Generate appropriate masks
-    vector< ipartitions_t > configs;
-    configs.resize ((2 * npart) + 1, 0);
+    vec< ipartitions_t > configs;
+    while (configs.size() < (2*npart) + 1)
+        configs.push();
+//    configs.resize ((2 * npart) + 1, 0);
 
     // All the path interpolants
     // First interpolant is true -> all partitions in B
@@ -208,13 +219,15 @@ bool ProofGraph::produceStateTransitionInterpolants ( vector< PTRef > &interpola
     return property_holds;
 }
 
-void ProofGraph::produceConfigMatrixInterpolants (const vector< vector<int> > &configs, vector<PTRef> &interpolants)
+void ProofGraph::produceConfigMatrixInterpolants (const vec< vec<int> > &configs, vec<PTRef> &interpolants)
 {
     if ( verbose() ) cerr << "# General interpolation via configuration matrix " << endl;
 
     // Generate appropriate masks
-    vector< ipartitions_t > parts;
-    parts.resize (configs.size(), 0);
+    vec< ipartitions_t > parts;
+    while (parts.size() < configs.size())
+        parts.push();
+//    parts.resize (configs.size(), 0);
 
     // First interpolant is true -> all partitions in B
     for ( unsigned i = 0; i < parts.size(); i++ )
@@ -236,7 +249,7 @@ void ProofGraph::produceConfigMatrixInterpolants (const vector< vector<int> > &c
 // Interpolants I_1 ... I_n
 // Generation   I_i = Itp(F_i | all other formulae)
 // Requirement  ( /\_(i,j) I_j /\ phi_i ) -> I_i
-bool ProofGraph::produceTreeInterpolants (opensmt::InterpolationTree *it, vector<PTRef> &interpolants)
+bool ProofGraph::produceTreeInterpolants (opensmt::InterpolationTree *it, vec<PTRef> &interpolants)
 {
     if ( verbose() ) cerr << "# Tree interpolation " << endl;
 
@@ -247,8 +260,10 @@ bool ProofGraph::produceTreeInterpolants (opensmt::InterpolationTree *it, vector
     // Generate appropriate masks
     // NOTE partition ids start from 1, parts vector from 0
     // parts[i] contains configuration mask for partition id i+1
-    vector< ipartitions_t > parts;
-    parts.resize (logic_.getNofPartitions(), 0);
+    vec< ipartitions_t > parts;
+    while (parts.size() < logic_.getNofPartitions())
+        parts.push();
+//    parts.resize (logic_.getNofPartitions(), 0);
 
     // Visit the tree in topological order bottom up and compute the configurations
     std::deque<opensmt::InterpolationTree *> q;
@@ -321,7 +336,7 @@ bool ProofGraph::produceTreeInterpolants (opensmt::InterpolationTree *it, vector
 /**************** MAIN INTERPOLANTS GENERATION METHODS ************************/
 
 
-void ProofGraph::produceSingleInterpolant ( vector<PTRef> &interpolants )
+void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants )
 {
     ipartitions_t A_mask = 0;
     // Set 1_th bit to 1 (bit 0 is untouched)
@@ -329,9 +344,24 @@ void ProofGraph::produceSingleInterpolant ( vector<PTRef> &interpolants )
     produceSingleInterpolant (interpolants, A_mask);
 }
 
-void ProofGraph::produceSingleInterpolant ( vector<PTRef> &interpolants, const ipartitions_t &A_mask)
+void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipartitions_t &A_mask)
 {
     if ( verbose() ) cerr << "# Single interpolant " << endl;
+
+#ifdef ITP_DEBUG
+    PTRef tr_a = logic_.getPartitionA(A_mask);
+    PTRef tr_b = logic_.getPartitionB(A_mask);
+
+    char* fname;
+    asprintf(&fname, "itp_problem_%s.smt2", A_mask.get_str(10).c_str());
+    std::ofstream f;
+    f.open(fname);
+    logic_.dumpHeaderToFile(f);
+    logic_.dumpFormulaToFile(f, tr_a);
+    logic_.dumpFormulaToFile(f, tr_b);
+    logic_.dumpChecksatToFile(f);
+    f.close();
+#endif
 
     // Check
     checkInterAlgo();
@@ -397,7 +427,7 @@ void ProofGraph::produceSingleInterpolant ( vector<PTRef> &interpolants, const i
 
     // check leaves for False clause
     // TODO do this in a better fucking way...
-    
+
     for ( size_t i = 0 ; i < proof_size ; i++ )
     {
         n = getNode ( DFSv[ i ] );
@@ -410,7 +440,11 @@ void ProofGraph::produceSingleInterpolant ( vector<PTRef> &interpolants, const i
             vector<Lit> &cl = n->getClause();
             bool fal = false;
 
-            if (cl.size() <= 1 && thandler.varToTerm(var(cl[0])) == thandler.getLogic().getTerm_false() && !sign(cl[0]))
+            if (cl.size() == 0) {
+                opensmt_error("Empty clause found in interpolation\n");
+                assert(false);
+            }
+            if (cl.size() == 1 && thandler.varToTerm(var(cl[0])) == thandler.getLogic().getTerm_false() && !sign(cl[0]))
                 fal = true;
 
             if ((n->getType() == CLAORIG && n->getClauseRef() == CRef_Undef) || fal)
@@ -420,9 +454,9 @@ void ProofGraph::produceSingleInterpolant ( vector<PTRef> &interpolants, const i
                 Logic &logic = thandler.getLogic();
 
                 if (cc == I_A)
-                    interpolants.push_back (logic.getTerm_false());
+                    interpolants.push (logic.getTerm_false());
                 else
-                    interpolants.push_back (logic.getTerm_true());
+                    interpolants.push (logic.getTerm_true());
 
                 if(verbose())
                     cout << "; Degenerate interpolant" << endl;
@@ -431,7 +465,7 @@ void ProofGraph::produceSingleInterpolant ( vector<PTRef> &interpolants, const i
             }
         }
     }
-    
+
     if ( verbose() > 0 ) cerr << "# Generating interpolant " << endl;
 
     map<Var, icolor_t> *PSFunction = computePSFunction (DFSv, A_mask);
@@ -478,19 +512,18 @@ void ProofGraph::produceSingleInterpolant ( vector<PTRef> &interpolants, const i
                 thandler.assertLits (newvec);
                 map<PTRef, icolor_t> ptref2label;
                 vector<Lit>& cl = n->getClause();
-                
+
                 for(int i = 0; i < cl.size(); ++i)
                 {
                     ptref2label[thandler.varToTerm(var(cl[i]))] = getVarColor(n, var(cl[i]));
-                    //cerr << "Var " << var(cl[i]) << " = PTRef " << thandler.getLogic().printTerm(thandler.varToTerm(var(cl[i]))) << " has label " << getVarColor(n, var(cl[i])) << endl;
                 }
-                
+
                 partial_interp = thandler.getInterpolant (A_mask, &ptref2label);
             }
 
             assert ( partial_interp != PTRef_Undef );
             n->setPartialInterpolant ( partial_interp );
-            if(enabledPedInterpVerif())
+            if (enabledPedInterpVerif())
                 verifyPartialInterpolant(n, A_mask);
         }
         else
@@ -504,7 +537,7 @@ void ProofGraph::produceSingleInterpolant ( vector<PTRef> &interpolants, const i
             n->setPartialInterpolant ( partial_interp );
         }
     }
-    
+
     if (PSFunction != NULL) delete PSFunction;
 
     // Last clause visited is the empty clause with total interpolant
@@ -513,7 +546,7 @@ void ProofGraph::produceSingleInterpolant ( vector<PTRef> &interpolants, const i
     if( verbose() )
     {
         getComplexityInterpolant(partial_interp);
-        /* 
+        /*
         int nbool, neq, nuf;
         thandler.getLogic().collectStats(partial_interp, nbool, neq, nuf);
         cerr << "; Number of boolean connectives: " << nbool << endl;
@@ -535,7 +568,7 @@ void ProofGraph::produceSingleInterpolant ( vector<PTRef> &interpolants, const i
 
     PTRef interpol = getRoot()->getPartialInterpolant();
     assert (interpol != PTRef_Undef);
-    interpolants.push_back ( interpol );
+    interpolants.push ( interpol );
 
     if(verbose())
     {
@@ -543,7 +576,7 @@ void ProofGraph::produceSingleInterpolant ( vector<PTRef> &interpolants, const i
     }
 }
 
-void ProofGraph::produceMultipleInterpolants ( const vector< ipartitions_t > &configs, vector<PTRef> &sequence_of_interpolants )
+void ProofGraph::produceMultipleInterpolants ( const vec< ipartitions_t > &configs, vec<PTRef> &sequence_of_interpolants )
 {
     /*  if( verbose() > 1 )
         {
@@ -636,7 +669,7 @@ void ProofGraph::produceMultipleInterpolants ( const vector< ipartitions_t > &co
         if (PSFunction != NULL) delete PSFunction;
 
         // Last clause visited is the empty clause with total interpolant
-        sequence_of_interpolants.push_back ( partial_interp );
+        sequence_of_interpolants.push ( partial_interp );
         assert (partial_interp == getRoot()->getPartialInterpolant());
 
         if ( verbose() ) getComplexityInterpolant (partial_interp);

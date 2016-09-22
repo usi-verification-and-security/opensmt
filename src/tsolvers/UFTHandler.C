@@ -1,7 +1,7 @@
 #include "UFTHandler.h"
 
-UFTHandler::UFTHandler(SMTConfig& c, Logic& l, vec<DedElem>& d)
-    : TSolverHandler(c, d)
+UFTHandler::UFTHandler(SMTConfig& c, Logic& l, vec<DedElem>& d, TermMapper& tmap)
+    : TSolverHandler(c, d, l, tmap)
     , logic(l)
 {
     egraph = new Egraph(config, logic, deductions);
@@ -22,6 +22,9 @@ Logic &UFTHandler::getLogic()
     return logic;
 }
 
+//
+// Starting from the root, get all terms.  Get a variable for each term.
+//
 void UFTHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
 {
     vec<PtChild> terms;
@@ -36,19 +39,13 @@ void UFTHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
         PTRef tr = terms[i].tr;
         if (!refs.has(tr)) {
             declareTerm(tr);
-            // It is possible that the term already has a variable from
-            // a previous check-sat, if we are in incremental mode.
-            Var v = (logic.getPterm(tr).getVar());
-            if (v != var_Undef) {
-                while (deductions.size() <= v)
-                    deductions.push({getId(), l_Undef});
-            } else {
-                v = deductions.size();
+            Pterm& t = logic.getPterm(tr);
+            if (logic.getSym(t.symb()).rsort() != logic.getSort_bool())
+                continue;
+            Var v = tmap.addBinding(tr);
+            while (deductions.size() <= v)
                 deductions.push({getId(), l_Undef});
-                logic.getPterm(tr).setVar(deductions.size());
-            }
             refs.insert(tr,v);
-            deductions[v] = DedElem(getId(), l_Undef);
         }
     }
 }

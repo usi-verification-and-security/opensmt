@@ -5,7 +5,7 @@ libegraph_la_SOURCES =  UFInterpolator.h UFInterpolator.C \
 						Enode.h Enode.C EnodeStore.h EnodeStore.C \
                        EgraphSolver.C EgraphDebug.C EgraphExplain.C
 
-if WANT_LIBRARY
+if ENABLE_LIBRARY
 include_HEADERS = CgTypes.h Egraph.h Enode.h EnodeStore.h GCTest.h UFInterpolator.h
 endif
 

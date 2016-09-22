@@ -2,6 +2,43 @@
 #include "MainSolver.h"
 //#include "logics/Logic.h"
 
+// Function for assigning a PTRef to a Boolean variable if the Boolean
+// variable does not yet exist.
+// Extracts the literal corresponding to a term.
+// Accepts negations.
+const Lit Theory::findLit (PTRef ptr)
+{
+    PTRef p_tr;
+    bool sgn;
+    Var v;
+    getTmap().getTerm(ptr, p_tr, sgn);
+
+    Pterm& p = getLogic().getPterm(p_tr);
+    if (p.getVar() == -1)
+    {
+        v = getTmap().addBinding(p_tr);
+
+        if (getLogic().isTheoryTerm (p_tr))
+        {
+            assert (getLogic().isEquality (p_tr)        ||
+                    getLogic().isDisequality (p_tr)     ||
+                    getLogic().getTerm_true() == p_tr   ||
+                    getLogic().getTerm_false() == p_tr  ||
+                    getLogic().isUP (p_tr)                );
+        }
+
+#ifdef VERBOSE_CNFIZATION
+//        cerr << "Term " << logic.printTerm(p_tr) << " maps to var " << v << endl;
+#endif
+    }
+
+    v = p.getVar();
+    Lit l = mkLit (v, sgn);
+
+    return l;
+}
+
+
 // The Collate function is constructed from all frames up to the current
 // one and will be used to simplify the formulas in the current frame
 // formulas[curr].
@@ -13,15 +50,18 @@
 // simplification (critical for the eq_diamond instances in QF_UF of
 // smtlib).
 //
-PTRef Theory::getCollateFunction(vec<PushFrame>& formulas, int curr)
+PTRef Theory::getCollateFunction(vec<PFRef>& formulas, int curr)
 {
     assert(curr < formulas.size());
+    // XXX
+//    getLogic().dumpHeaderToFile(std::cout);
+//    getLogic().dumpFormulaToFile(std::cout, pfstore[formulas[1]].formulas[0]);
     vec<PTRef> coll_f_args;
     // compute coll_f as (a_1^0 /\ ... /\ a_{n_1}^0) /\ ... /\ (a_1^{curr} /\ ... /\ a_{n_k}^{curr})
     for (int i = 0; i < curr+1; i++)
     {
-        for (int j = 0; j < formulas[i].size(); j++)
-            coll_f_args.push(formulas[i][j]);
+        for (int j = 0; j < pfstore[formulas[i]].size(); j++)
+            coll_f_args.push(pfstore[formulas[i]][j]);
     }
     return getLogic().mkAnd(coll_f_args);
 }
@@ -33,19 +73,19 @@ PTRef Theory::getCollateFunction(vec<PushFrame>& formulas, int curr)
 // R_{curr}.
 // If x = f(Y) is a newly found substitution and there is a lower frame F containing x, add x = f(Y) to R_{curr}.
 //
-bool Theory::computeSubstitutions(PTRef coll_f, vec<PushFrame>& frames, int curr)
+bool Theory::computeSubstitutions(PTRef coll_f, vec<PFRef>& frames, int curr)
 {
 
     if (!config.do_substitutions() || config.produce_inter()) {
         vec<PTRef> curr_args;
-        for (int i = 0; i < frames[curr].size(); i++)
-            curr_args.push(frames[curr][i]);
-        frames[curr].root = getLogic().mkAnd(curr_args);
+        for (int i = 0; i < pfstore[frames[curr]].size(); i++)
+            curr_args.push(pfstore[frames[curr]][i]);
+        pfstore[frames[curr]].root = getLogic().mkAnd(curr_args);
         return true;
     }
     assert(config.do_substitutions() && !config.produce_inter());
     vec<PTRef> curr_args;
-    PushFrame& curr_frame = frames[curr];
+    PushFrame& curr_frame = pfstore[frames[curr]];
 
     assert(curr_frame.units.elems() == 0);
 
@@ -61,9 +101,9 @@ bool Theory::computeSubstitutions(PTRef coll_f, vec<PushFrame>& frames, int curr
     vec<PtAsgn> prev_units_vec;
 
     for (int i = 0; i < curr; i++) {
-        prev_units.push(&(frames[i].units));
+        prev_units.push(&(pfstore[frames[i]].units));
         vec<Map<PTRef,lbool,PTRefHash>::Pair> tmp;
-        frames[i].units.getKeysAndVals(tmp);
+        pfstore[frames[i]].units.getKeysAndVals(tmp);
         for (int i = 0; i < tmp.size(); i++)
             prev_units_vec.push(PtAsgn(tmp[i].key, tmp[i].data));
     }
@@ -75,12 +115,12 @@ bool Theory::computeSubstitutions(PTRef coll_f, vec<PushFrame>& frames, int curr
         // update the current simplification formula
         PTRef simp_formula = getLogic().mkAnd(coll_f, root);
         // Get U_i
-        getLogic().getNewFacts(simp_formula, prev_units, frames[curr].units);
+        getLogic().getNewFacts(simp_formula, prev_units, pfstore[frames[curr]].units);
         // Add the newly obtained units to the list of all substitutions
         vec<Map<PTRef,lbool,PTRefHash>::Pair> new_units;
         // Clear the previous units
         all_units_vec.shrink(all_units_vec.size() - prev_units_vec.size());
-        frames[curr].units.getKeysAndVals(new_units);
+        pfstore[frames[curr]].units.getKeysAndVals(new_units);
         for (int i = 0; i < new_units.size(); i++) {
             Map<PTRef,lbool,PTRefHash>::Pair unit = new_units[i];
             all_units_vec.push(PtAsgn(unit.key, unit.data));
@@ -133,12 +173,7 @@ bool Theory::computeSubstitutions(PTRef coll_f, vec<PushFrame>& frames, int curr
             no_conflict = false;
             break; }
 
-    frames[curr].root = root;
-
-    vec<PTRef> keys;
-    refs.getKeys(keys);
-    for (int i = 0; i < keys.size(); i++)
-        getLogic().getPterm(keys[i]).clearVar();
+    pfstore[frames[curr]].root = root;
 
     bool result = no_conflict && th->check(true);
 
@@ -146,7 +181,7 @@ bool Theory::computeSubstitutions(PTRef coll_f, vec<PushFrame>& frames, int curr
     vec<PTRef> queue;
     Map<PTRef,PTRef,PTRefHash> tr_map;
     Map<PTRef,bool,PTRefHash> processed;
-    queue.push(frames[curr].root);
+    queue.push(pfstore[frames[curr]].root);
     while (queue.size() != 0)
     {
         PTRef tr = queue.last();
@@ -171,7 +206,7 @@ bool Theory::computeSubstitutions(PTRef coll_f, vec<PushFrame>& frames, int curr
             printf("Found a variable %s\n", name);
             free(name);
 #endif
-            frames[curr].addSeen(tr);
+            pfstore[frames[curr]].addSeen(tr);
         }
         processed.insert(tr, true);
         queue.pop();
@@ -180,20 +215,20 @@ bool Theory::computeSubstitutions(PTRef coll_f, vec<PushFrame>& frames, int curr
     // Check the previous frames to see whether a substitution needs to
     // be inserted to frames[curr].root.
     vec<Map<PTRef,PtAsgn,PTRefHash>::Pair> substitutions;
-        substs.getKeysAndVals(substitutions);
+    substs.getKeysAndVals(substitutions);
     for (int i = 0; i < substitutions.size(); i++)
     {
         Map<PTRef,PtAsgn,PTRefHash>::Pair& p = substitutions[i];
         PTRef var = p.key;
         for (int i = 0; i < curr; i ++)
         {
-            if (frames[i].isSeen(var))
+            if (pfstore[frames[i]].isSeen(var))
             {
                 // The substitution needs to be added to the root
                 // formula
                 PTRef subst_tr = getLogic().mkEq(var, p.data.tr);
                 subst_tr = p.data.sgn == l_True ? subst_tr : getLogic().mkNot(subst_tr);
-                frames[curr].root = getLogic().mkAnd(subst_tr, frames[curr].root);
+                pfstore[frames[curr]].root = getLogic().mkAnd(subst_tr, pfstore[frames[curr]].root);
 #ifdef PEDANTIC_DEBUG
                 char* name_var = getLogic().printTerm(var);
                 char* name_exp = getLogic().printTerm(p.data.tr);

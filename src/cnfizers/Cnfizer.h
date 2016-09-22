@@ -67,17 +67,17 @@ public:
     SimpSMTSolver&      solver;
 protected:
     SMTConfig&          config;
+    Theory&             theory;
     Logic&              logic;
-    TermMapper&         tmap;            // Map vars to proper terms
+    TermMapper&         tmap;
 
     THandler&           thandler;
     bool                s_empty;
-//    Egraph              uf_solver;
 
 public:
 
     Cnfizer( SMTConfig &    config_
-           , Logic&         logic_
+           , Theory&        logic_
            , TermMapper&    tmap_
            , THandler&      thandler_
            , SimpSMTSolver& solver_
@@ -86,16 +86,14 @@ public:
 
     virtual ~Cnfizer( ) { }
 
-    lbool cnfizeAndGiveToSolver (PTRef, int frame_id); // Main routine
+    lbool cnfizeAndGiveToSolver (PTRef, FrameId frame_id); // Main routine
 
     vec<ValPair>* getModel ();                              // Retrieves the model (if SAT and solved)
 
     lbool  getTermValue(PTRef) const;
 
     void   initialize      ();
-    lbool  solve           (vec<int>& en_frames);
-
-    void   crashTest       (int rounds) { solver.crashTest(rounds, tmap.getVar(logic.getTerm_true()), tmap.getVar(logic.getTerm_false())); }
+    lbool  solve           (vec<FrameId>& en_frames);
 
     PTRef  expandItes      (vec<PtChild>&);
 
@@ -133,9 +131,9 @@ protected:
 
 
 #ifdef PRODUCE_PROOF
-    bool  addClause                  ( vec<Lit>&, const ipartitions_t& mask = 0);
+    bool  addClause                  ( const vec<Lit>&, const ipartitions_t& mask = 0);
 #else
-    bool  addClause                  ( vec<Lit>& );
+    bool  addClause                  ( const vec<Lit>& );
 #endif
 
     void  retrieveClause             ( PTRef, vec<PTRef> & );         // Retrieve a clause from a formula
@@ -170,10 +168,9 @@ protected:
 
     PTRef frame_term;
     vec<PTRef> frame_terms;
-    void setFrameTerm(int frame_id);
+    void setFrameTerm(FrameId frame_id);
 
 //    bool  isLit            (PTRef r);
-    const Lit findLit      (PTRef ptr);
     bool  isBooleanOperator(SymRef tr) { return logic.isBooleanOperator(tr); } // (tr == logic.getSym_and()) | (tr == logic.getSym_or() ) | (tr == logic.getSym_not() ) | (tr == logic.getSym_eq() ) | (tr == logic.getSym_xor() ); }
     bool  isTheorySymbol   (SymRef tr) const { return logic.isTheorySymbol(tr); }
     bool  isIte            (SymRef tr) const { return logic.isIte(tr); }

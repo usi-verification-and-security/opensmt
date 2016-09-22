@@ -118,6 +118,8 @@ public:
 #endif
     }
 
+    void clearSolver() { return; } // No need to clear the solver state since egraph doesn't do internal simplifications and the external have little impact on the solving anyway.
+
     void print(ostream& out) { return; }
 
     const Enode& getEnode(ERef er) const { return enode_store[er]; }

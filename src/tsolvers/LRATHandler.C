@@ -1,8 +1,8 @@
 #include "LRATHandler.h"
 
 
-LRATHandler::LRATHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d)
-        : TSolverHandler(c, d)
+LRATHandler::LRATHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d, TermMapper& tmap)
+        : TSolverHandler(c, d, l, tmap)
         , logic(l)
 {
     lrasolver = new LRASolver(config, logic, deductions);
@@ -20,6 +20,8 @@ Logic &LRATHandler::getLogic()
 
 void LRATHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
 {
+    // XXX Reorganize so that the storing of the previous variable would
+    // not be so awkward?
     vec<PtChild> terms;
     getTermList(root, terms, getLogic());
 
@@ -29,9 +31,10 @@ void LRATHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
         if (logic.isRealLeq(tr)) {
             if (!refs.has(tr)) {
                 declareTerm(tr);
-                refs.insert(tr, deductions.size());
-                logic.getPterm(tr).setVar(deductions.size());
-                deductions.push(DedElem(getId(), l_Undef));
+                Var v = tmap.addBinding(tr);
+                while (deductions.size() <= v)
+                    deductions.push({getId(), l_Undef});
+                refs.insert(tr, v);
             }
         }
         else if (logic.isRealEq(tr)) {
@@ -45,16 +48,18 @@ void LRATHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
             // These can simplify to true and false, and we don't
             // want them to LRA solver
             if (!refs.has(i1) && logic.isRealLeq(i1)) {
-                refs.insert(i1, deductions.size());
-                logic.getPterm(i1).setVar(deductions.size());
-                deductions.push(DedElem(getId(), l_Undef));
                 declareTerm(i1);
+                Var v = tmap.addBinding(i1);
+                while (deductions.size() <= v)
+                    deductions.push(DedElem(getId(), l_Undef));
+                refs.insert(i1, v);
             }
             if (!refs.has(i2) && logic.isRealLeq(i2)) {
-                refs.insert(i2, deductions.size());
-                logic.getPterm(i2).setVar(deductions.size());
-                deductions.push(DedElem(getId(), l_Undef));
                 declareTerm(i2);
+                Var v = tmap.addBinding(i2);
+                while (deductions.size() <= v)
+                    deductions.push(DedElem(getId(), l_Undef));
+                refs.insert(i2, v);
             }
         }
     }

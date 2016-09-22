@@ -5,7 +5,7 @@ AM_CPPFLAGS=$(config_includedirs)
 
 liblogics_la_SOURCES = Logic.C LRALogic.C Theory.C LRATheory.C UFTheory.C
 
-if WANT_LIBRARY
+if ENABLE_LIBRARY
 include_HEADERS = LRALogic.h Logic.h Theory.h
 endif
 

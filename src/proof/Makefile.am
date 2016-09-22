@@ -2,7 +2,7 @@ noinst_LTLIBRARIES = libproof.la
 
 AM_CPPFLAGS=$(config_includedirs)
 
-if WANT_LIBRARY
+if ENABLE_LIBRARY
 include_HEADERS = PG.h
 endif
 

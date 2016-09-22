@@ -51,8 +51,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace opensmt { extern bool stop; }
 #include "symmetry/Symmetry.h"
 
-int PushFrame::id_counter = 0;
-
 #ifdef USE_GZ
 int MainSolver::compress_buf(const int* buf_in, int*& buf_out, int sz, int& sz_out) const
 {
@@ -173,7 +171,7 @@ int MainSolver::decompress_buf(int* buf_in, int*& buf_out, int sz, int& sz_out )
 void
 MainSolver::push()
 {
-    formulas.push();
+    formulas.push(pfstore.alloc());
 }
 
 bool
@@ -214,14 +212,10 @@ MainSolver::insertFormula(PTRef root, char** msg)
 #ifdef PRODUCE_PROOF
     logic.setIPartitionsIte(root);
 #endif
-    if(config.produce_inter())
-    {
-        return giveToSolver(root, formulas[0].getId());
-    }
-    else
-    {
-        formulas.last().push(root);
-    }
+    pfstore[formulas.last()].push(root);
+    pfstore[formulas.last()].units.clear();
+    pfstore[formulas.last()].root = PTRef_Undef;
+    simplified_until = min(simplified_until, formulas.size()-1);
     return s_Undef;
 }
 
@@ -230,16 +224,17 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
     if (binary_init)
         return s_Undef;
 
+
     status = s_Undef;
 
     vec<PTRef> coll_f;
     for (int i = simplified_until; i < formulas.size(); i++) {
         bool res = getTheory().simplify(formulas, i);
         simplified_until = i+1;
-        PTRef root = formulas[i].root;
+        PTRef root = pfstore[formulas[i]].root;
 
         if (logic.isFalse(root)) {
-            giveToSolver(getLogic().getTerm_false(), formulas[i].getId());
+            giveToSolver(getLogic().getTerm_false(), pfstore[formulas[i]].getId());
             return status = s_False;
         }
         FContainer fc(root);
@@ -252,6 +247,10 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
 #endif
             computeIncomingEdges(fc.getRoot(), PTRefToIncoming);
             PTRef flat_root = rewriteMaxArity(fc.getRoot(), PTRefToIncoming);
+#ifdef PRODUCE_PROOF
+            if (logic.hasOriginalAssertion(fc.getRoot()))
+                logic.setOriginalAssertion(flat_root, logic.getOriginalAssertion(fc.getRoot()));
+#endif
             fc.setRoot(flat_root);
 #ifdef FLATTEN_DEBUG
             printf("Got the formula %s\n", logic.printTerm(fc.getRoot()));
@@ -261,7 +260,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
         // root_instance is updated to the and of the simplified formulas currently in the solver
         root_instance.setRoot(logic.mkAnd(root_instance.getRoot(), fc.getRoot()));
         // Stop if problem becomes unsatisfiable
-        if ((status = giveToSolver(fc.getRoot(), formulas[i].getId())) == s_False)
+        if ((status = giveToSolver(fc.getRoot(), pfstore[formulas[i]].getId())) == s_False)
             break;
     }
     return status;
@@ -906,7 +905,7 @@ void MainSolver::deserializeSolver(const int* termstore_buf, const int* symstore
         if (tmap.nVars() > i)
             assert(tmap.varToPTRef(i) == map[i].tr);
         else {
-            tmap.addBinding(i, map[i].tr);
+            tmap.addBinding(map[i].tr);
 
             if (logic.isTheoryTerm(map[i].tr))
                 ts.solver.setFrozen(i, true);
@@ -1087,9 +1086,9 @@ sstat MainSolver::solve()
     if (config.parallel_threads && config.sat_split_type() == spt_lookahead)
         status = lookaheadSplit(getLog2Ceil(config.sat_split_num()));
     else {
-        vec<int> en_frames;
+        vec<FrameId> en_frames;
         for (int i = 0; i < formulas.size(); i++)
-            en_frames.push(formulas[i].getId());
+            en_frames.push(pfstore[formulas[i]].getId());
         status = sstat(ts.solve(en_frames));
     }
     if (!(config.parallel_threads && status == s_Undef)) {

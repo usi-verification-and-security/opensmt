@@ -84,20 +84,6 @@ struct PTLHash {
         return v; }
 };
 
-/*
-template <>
-struct Equal<const PTLKey> {
-    bool operator() (const PTLKey& k1, const PTLKey& k2) {
-        if (k1.sym != k2.sym) return false;
-        if (k1.args.size() != k2.args.size()) return false;
-        int i;
-        for (i = 0; i < k1.args.size(); i++)
-            if (k1.args[i] != k2.args[i]) break;
-        return i == k1.args.size();
-    }
-};
-*/
-
 class PtAsgn {
   public:
     PTRef tr;
@@ -273,7 +259,7 @@ class Pterm {
     int      getId() const { return id; }
     void     setId(int i) { id = i; }
 
-    void     setVar(Var v)   { assert(var == var_Undef || var == v); var = v; }
+    void     setVar(Var v)   { var = v; }
     void     clearVar()      { var = var_Undef; }
     Var      getVar() const  { return var; }
     bool     hasVar() const  { return var != var_Undef; }

@@ -43,10 +43,30 @@ LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
     , delta(Delta::ZERO)
     , bland_threshold(1000)
 {
-    lavarStore = new LAVarStore(*this, deduced, logic);
+    lavarStore = new LAVarStore(*this, deduced, numbers_pool);
     status = INIT;
     checks_history.push_back(0);
     first_update_after_backtrack = true;
+}
+
+void LRASolver::clearSolver()
+{
+    status = INIT;
+    first_update_after_backtrack = true;
+    delete lavarStore;
+    pushed_constraints.clear();
+    explanationCoefficients.clear();
+    columns.clear();
+    rows.clear();
+    ptermToLavar.clear();
+    checks_history.clear();
+    checks_history.push_back(0);
+    touched_rows.clear();
+    removed_by_GaussianElimination.clear();
+    TSolver::clearSolver();
+
+
+    lavarStore = new LAVarStore(*this, deduced, numbers_pool);
 }
 
 // Given an inequality of the form c <= t(x_1, ..., x_n), set the bound
@@ -138,8 +158,9 @@ void LRASolver::initSlackVar(LAVar* s)
     columns[s->ID()] = s;
 
     // Update the rows
-    if (s->basicID() >= static_cast<int> (rows.size()))
+    if (s->basicID() >= static_cast<int> (rows.size())) {
         rows.resize(s->basicID() + 1, NULL);
+    }
     rows[s->basicID()] = s;
 }
 
@@ -166,7 +187,7 @@ LAVar* LRASolver::getLAVar(PTRef var)
         ptermToLavar.resize(logic.getPterm(var).getId() + 1, NULL);
 
     if (ptermToLavar[logic.getPterm(var).getId()] == NULL) {
-        assert( status == INIT );
+//        assert( status == INIT );
 
         //x = lavarStore->getNewVar(leq_tr, var, *p_v, revert);
         x = lavarStore->getNewVar(var);
@@ -242,8 +263,6 @@ void LRASolver::addSlackVar(PTRef leq_tr)
         // Introduce the slack var with bounds.
         s = lavarStore->getNewVar(sum_tr);
         bound_t = Delta::LOWER;
-
-        slack_vars.push_back(s);
 
         initSlackVar(s);
         assert( s->basicID() != -1 );
@@ -361,6 +380,7 @@ void LRASolver::makePolynomial(LAVar* s, PTRef pol)
 lbool LRASolver::declareTerm(PTRef leq_tr)
 {
     if (informed(leq_tr)) return l_Undef;
+
     informed_PTRefs.insert(leq_tr, true);
 
     if (!logic.isRealLeq(leq_tr)) return l_Undef;
@@ -455,6 +475,7 @@ bool LRASolver::check(bool complete)
         int max_var_id = lavarStore->numVars();
         int curr_var_id_x = max_var_id;
         for (; it != rows.end(); ++it) {
+            if ((*it) == NULL) continue; // There should not be nulls, since they result in quadratic slowdown?
             if ((*it)->isModelOutOfBounds()) {
                 if (bland_rule) {
                     bland_counter++;
@@ -607,28 +628,28 @@ bool LRASolver::check(bool complete)
 //
 bool LRASolver::assertLit( PtAsgn pta, bool reason )
 {
-  ( void )reason;
+    ( void )reason;
 
-  // Special cases of the "inequalitites"
-  if (logic.isTrue(pta.tr) && pta.sgn == l_True) {
-      tsolver_stats.sat_calls ++;
-      return true;
-  }
-  if (logic.isFalse(pta.tr) && pta.sgn == l_False) {
-      tsolver_stats.sat_calls ++;
-      return true;
-  }
-  if (logic.isTrue(pta.tr) && pta.sgn == l_False) {
-      tsolver_stats.unsat_calls ++;
-      return false;
-  }
-  if (logic.isFalse(pta.tr) && pta.sgn == l_True) {
-      tsolver_stats.unsat_calls ++;
-      return false;
-  }
-  // check if we stop reading constraints
-  if( status == INIT )
-    initSolver( );
+    // Special cases of the "inequalitites"
+    if (logic.isTrue(pta.tr) && pta.sgn == l_True) {
+        tsolver_stats.sat_calls ++;
+        return true;
+    }
+    if (logic.isFalse(pta.tr) && pta.sgn == l_False) {
+        tsolver_stats.sat_calls ++;
+        return true;
+    }
+    if (logic.isTrue(pta.tr) && pta.sgn == l_False) {
+        tsolver_stats.unsat_calls ++;
+        return false;
+    }
+    if (logic.isFalse(pta.tr) && pta.sgn == l_True) {
+        tsolver_stats.unsat_calls ++;
+        return false;
+    }
+    // check if we stop reading constraints
+    if( status == INIT  )
+        initSolver( );
 
   assert(pta.sgn != l_Undef);
 
@@ -865,30 +886,30 @@ void LRASolver::popBacktrackPoint( )
 {
 //  cerr << "; pop " << pushed_constraints.size( ) << endl;
 
-  // Undo with history
-  LAVarHistory &hist = pushed_constraints.back( );
+    // Undo with history
+    LAVarHistory &hist = pushed_constraints.back( );
 
-  if( hist.v != NULL )
-  {
-    if (hist.bound_type == bound_u)
-      hist.v->u_bound = hist.bound;
-    else
-      hist.v->l_bound = hist.bound;
-  }
+    if ( hist.v != NULL )
+    {
+        if (hist.bound_type == bound_u)
+            hist.v->u_bound = hist.bound;
+        else
+            hist.v->l_bound = hist.bound;
+    }
 
-  //TODO: Keep an eye on SAT model crossing the bounds of backtracking
-  //  if( status == UNSAT && checks_history.back( ) == pushed_constraints.size( ) )
-  if( checks_history.back( ) == pushed_constraints.size( ) )
-  {
+    //TODO: Keep an eye on SAT model crossing the bounds of backtracking
+    //  if( status == UNSAT && checks_history.back( ) == pushed_constraints.size( ) )
+    if ( checks_history.back( ) == pushed_constraints.size( ) )
+    {
 //    cerr << "; POP CHECKS " << checks_history.back( ) << endl;
-    checks_history.pop_back( );
-  }
-  first_update_after_backtrack = true;
+        checks_history.pop_back( );
+    }
+    first_update_after_backtrack = true;
 
-  pushed_constraints.pop_back( );
+    pushed_constraints.pop_back( );
 
-  setStatus(SAT);
-  TSolver::popBacktrackPoint();
+    setStatus(SAT);
+    TSolver::popBacktrackPoint();
 }
 
 //
@@ -982,7 +1003,7 @@ void LRASolver::doGaussianElimination( )
                         columns[it2->key]->binded_rows.add( basisRow, rows[m]->polynomial.getPos( it2 ) );
                     }
                 }
-
+                assert(rows[m] != NULL);
                 rows[basisRow] = rows[m];
                 rows[m]->setBasic( basisRow );
             }
@@ -1269,6 +1290,7 @@ void LRASolver::pivotAndUpdate( LAVar * x, LAVar * y, const Delta & v )
   assert( !y->polynomial.empty( ) );
   y->setBasic( x->basicID( ) );
   x->setNonbasic( );
+  assert(y != NULL);
   rows[y->basicID( )] = y;
 
   assert( y->polynomial.find( x->ID( ) ) != y->polynomial.end( ) );
@@ -1291,26 +1313,19 @@ void LRASolver::pivotAndUpdate( LAVar * x, LAVar * y, const Delta & v )
 //
 // Perform all the required initialization after inform is complete
 //
-void LRASolver::initSolver( )
+void LRASolver::initSolver()
 {
-  if( status == INIT )
-  {
-    // Gaussian Elimination should not be performed in the Incremental mode!
-    if( config.lra_gaussian_elim == 1 && config.do_substitutions() )
-      doGaussianElimination( );
+    if (status == INIT)
+    {
+        // Gaussian Elimination should not be performed in the Incremental mode!
+        if (config.lra_gaussian_elim == 1 && config.do_substitutions())
+            doGaussianElimination();
 
-    //                 sort the bounds inserted during inform stage
-//    for( unsigned it = 0; it < columns.size( ); it++ )
-//      if( !( columns[it]->skip ) )
-//        columns[it]->printBounds( );
+        status = SAT;
 
-    status = SAT;
-
-    // used to apply checks in assertLit with a given probability
-    //    srand ( time( NULL ));
-  }
-  else
-    opensmt_error( "Solver can not be initialized in the state different from INIT" );
+    }
+    else
+        opensmt_error( "Solver can not be initialized in the state different from INIT" );
 }
 
 //
@@ -1973,14 +1988,6 @@ LRASolver::~LRASolver( )
   tsolver_stats.printStatistics(cerr);
   // Remove lavarStore
   delete lavarStore;
-  // Remove slack variables
-  while( !columns.empty( ) )
-  {
-    LAVar * s = columns.back( );
-    columns.pop_back( );
-    assert( s );
-    delete s;
-  }
   // Remove numbers
   while( !numbers_pool.empty( ) )
   {
@@ -2001,89 +2008,95 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
     //opensmt_error("Interpolation not supported for LRA");
     //return logic.getTerm_true();
 
-   // Old implementation: 
-  //l = config.logic == QF_LRA || config.logic == QF_UFLRA
-  //? QF_LRA
-  //: QF_LIA;
+    // Old implementation:
+    //l = config.logic == QF_LRA || config.logic == QF_UFLRA
+    //? QF_LRA
+    //: QF_LIA;
 
-  assert (explanation.size()>1);
+    assert (explanation.size()>1);
 
-  vec<PTRef> in_list;
+    vec<PTRef> in_list;
 
-  //ipartitions_t mask = 1;
-  //mask = ~mask;
+    //ipartitions_t mask = 1;
+    //mask = ~mask;
 
-  //for( unsigned in = 1; in < logic.getNofPartitions( ); in++ )
-  //{
+    //for( unsigned in = 1; in < logic.getNofPartitions( ); in++ )
+    //{
     LAExpression interpolant(logic);
     bool delta_flag=false;
 
     // mask &= ~SETBIT( in );
     //clrbit( mask, in );
-    for( unsigned i = 0; i < explanation.size( ); i++ )
+    for ( unsigned i = 0; i < explanation.size( ); i++ )
     {
-//		cerr << "; Expl " << logic.printTerm(explanation[i].tr) << endl;
-      icolor_t color = I_UNDEF;
-      const ipartitions_t & p = logic.getIPartitions(explanation[i].tr);
+        icolor_t color = I_UNDEF;
+        const ipartitions_t & p = logic.getIPartitions(explanation[i].tr);
+        Pterm& t = logic.getPterm(explanation[i].tr);
 
-      if ( isAB( p, mask ) )
-      color = I_AB;
-      else if ( isAlocal( p, mask ) )
-      color = I_A;
-      else if ( isBlocal( p, mask ) )
-      color = I_B;
-
-      assert( color == I_A
-           || color == I_AB
-           || color == I_B );
-
-      assert( usingStrong()
-           || usingWeak()
-           || usingRandom() );
-
-      if(verbose())
-      {
-          if(usingStrong())
-              cerr << "; Using Strong for LRA interpolation" << endl;
-          else if(usingWeak())
-              cerr << "; Using Weak for LRA interpolation" << endl;
-          else if(usingRandom())
-              cerr << "; Using Random for LRA interpolation" << endl;
-          else
-              cerr << "; LRA interpolation algorithm unknown" << endl;
-      }
-
-      // McMillan algo: set AB as B
-      if ( usingStrong()
-        && color == I_AB )
-        color = I_B;
-      // McMillan' algo: set AB as a
-      else if ( usingWeak()
-             && color == I_AB )
-        color = I_A;
-      // Pudlak algo: who cares
-      else if ( usingRandom()
-             && color == I_AB )
-        color = rand() % 2 ? I_A : I_B;
-
-      assert( color == I_A
-           || color == I_B );
-
-      // Add the A conflict to the interpolant (multiplied by the coefficient)
-      if( (color == I_A && usingStrong()) || (color == I_B && usingWeak()))
-      //if(true)
-      {
-        if ( getPolarity(explanation[i].tr) == l_True )
-        {
-          interpolant.addExprWithCoeff(LAExpression(logic, explanation[i].tr), explanationCoefficients[i]);
+        if ( isAB( p, mask ) ) {
+            color = I_AB;
         }
-        else
-        {
-          interpolant.addExprWithCoeff(LAExpression(logic, explanation[i].tr), -explanationCoefficients[i]);
-          delta_flag=true;
+        else if ( isAlocal( p, mask ) ) {
+            color = I_A;
         }
-        //cerr << interpolant << endl;
-      }
+        else if ( isBlocal( p, mask ) ) {
+            color = I_B;
+        }
+        if (color != I_A && color != I_AB && color != I_B)
+        {
+            printf("Error: color is not defined.\n");
+            printf("  equation: %s\n", logic.printTerm(explanation[i].tr));
+            printf("  mask: %s\n", mask.get_str().c_str());
+            printf("  p: %s\n", p.get_str().c_str());
+            assert(false);
+        }
+        assert( color == I_A
+                || color == I_AB
+                || color == I_B );
+
+        assert( usingStrong()
+                || usingWeak()
+                || usingRandom() );
+
+//        if (verbose())
+//        {
+//            if (usingStrong())
+//                cerr << "; Using Strong for LRA interpolation" << endl;
+//            else if (usingWeak())
+//                cerr << "; Using Weak for LRA interpolation" << endl;
+//            else if(usingRandom())
+//                cerr << "; Using Random for LRA interpolation" << endl;
+//            else
+//                cerr << "; LRA interpolation algorithm unknown" << endl;
+//        }
+
+        // McMillan algo: set AB as B
+        if ( usingStrong() && color == I_AB )
+            color = I_B;
+        // McMillan' algo: set AB as a
+        else if ( usingWeak() && color == I_AB )
+            color = I_A;
+        // Pudlak algo: who cares
+        else if ( usingRandom() && color == I_AB )
+            color = rand() % 2 ? I_A : I_B;
+
+        assert( color == I_A || color == I_B );
+
+        // Add the A conflict to the interpolant (multiplied by the coefficient)
+        if ((color == I_A && usingStrong()) || (color == I_B && usingWeak()))
+        {
+            // In this one I have no idea why LAExpression swaps the
+            // sign.  But we want it unswapped again, so we negate.
+            if (explanation[i].sgn == l_False) //( getPolarity(explanation[i].tr) == l_True )
+            {
+                interpolant.addExprWithCoeff(LAExpression(logic, explanation[i].tr), explanationCoefficients[i]);
+                delta_flag=true;
+            }
+            else
+            {
+                interpolant.addExprWithCoeff(LAExpression(logic, explanation[i].tr), -explanationCoefficients[i]);
+            }
+        }
     }
 
     // TODO:: Why canonization stops the show?
@@ -2092,36 +2105,36 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
     // Generate resulting interpolant and push it to the list
     if (interpolant.isTrue() && !delta_flag)
     {
-      in_list.push(logic.getTerm_true());
+        in_list.push(logic.getTerm_true());
     }
     else if (interpolant.isFalse() || ( interpolant.isTrue() && delta_flag ))
     {
-      in_list.push(logic.getTerm_false());
+        in_list.push(logic.getTerm_false());
     }
     else
     {
-	    vec<PTRef> args;
-	    args.push(interpolant.toPTRef());
-	    args.push(logic.mkConst("0"));
-	    char* msg;
-            if (delta_flag)
-                in_list.push(logic.mkRealLt(args, &msg));
-            else
-                in_list.push(logic.mkRealLeq(args, &msg));
+        vec<PTRef> args;
+        args.push(logic.mkConst("0"));
+        args.push(interpolant.toPTRef());
+        char* msg;
+        if (delta_flag)
+            in_list.push(logic.mkRealLt(args, &msg));
+        else
+            in_list.push(logic.mkRealLeq(args, &msg));
     }
     if ( verbose() > 0 )
     {
-      //cerr << "Interpolant: " << in_list.back() << endl;
+        //cerr << "Interpolant: " << in_list.back() << endl;
     }
 
-  //}
+    //}
     PTRef itp;
-    if(usingWeak())
+    if (usingWeak())
         itp = logic.mkNot(logic.mkAnd( in_list ));
-    else if(usingStrong())
+    else if (usingStrong())
         itp = logic.mkAnd( in_list );
-  //cerr << "; LRA Itp: " << logic.printTerm(itp) << endl;
-  return itp;
+    //cerr << "; LRA Itp: " << logic.printTerm(itp) << endl;
+    return itp;
 }
 
 #endif

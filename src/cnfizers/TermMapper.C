@@ -25,17 +25,37 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 #include "TermMapper.h"
-
-void TermMapper::addBinding(Var v, PTRef tr)
+//
+// Create the binding to a variable for the reference tr.  tr can be
+// negated, in which case the binding is created to (not tr).  Safe to
+// call several times for both tr and (not tr)
+//
+Var TermMapper::addBinding(PTRef tr)
 {
-    assert(varToTerm.size() == v && varToTheorySymbol.size() == v);
-    logic.getPterm(tr).setVar(v);
-    if (tr != PTRef_Undef) {
-        varToTheorySymbol.push(logic.getSymRef(tr));
-        varToTerm.push(tr);
-    } else {
-        assert(false);
+    assert(tr != PTRef_Undef);
+    PTRef tr_p; // The purified term
+    Var v;
+    getVar(tr, tr_p, v);
+    if (v == -1) {
+        v = Var(var_cnt++);
+        logic.getPterm(tr_p).setVar(v);
     }
+    // It is possible that v was already recorded in the PTRef but
+    // varTo* are not updated to contain it for instance when loading
+    // state from a file.
+    assert(varToTerm.size() <= v || varToTerm[v] == tr_p || varToTerm[v] == PTRef_Undef);
+    assert(varToTerm.size() == varToTheorySymbol.size());
+    assert(varToTheorySymbol.size() <= v || varToTheorySymbol[v] == logic.getSymRef(tr_p) || varToTheorySymbol[v] == SymRef_Undef);
+
+    assert(varToTerm.size() == frozen.size());
+    while (varToTerm.size() <= v) {
+        varToTerm.push(PTRef_Undef);
+        varToTheorySymbol.push(SymRef_Undef);
+        frozen.push(false);
+    }
+    varToTheorySymbol[v] == logic.getSymRef(tr_p);
+    varToTerm[v] = tr_p;
+    return v;
 }
 
 void TermMapper::getTerm(PTRef r, PTRef& p, bool& sgn) const {
@@ -57,10 +77,16 @@ Lit TermMapper::getLit(PTRef r) const {
     return mkLit(logic.getPterm(p).getVar(), sgn);
 }
 
-Var TermMapper::getVar(PTRef r) const {
+void TermMapper::getVar(PTRef r, PTRef& p, Var& v) const {
     bool sgn;
-    PTRef p;
     getTerm(r, p, sgn);
+    v = logic.getPterm(p).getVar();
+}
+
+Var TermMapper::getVar(PTRef r) const {
+    Var v;
+    PTRef p;
+    getVar(r, p, v);
     return logic.getPterm(p).getVar();
 }
 

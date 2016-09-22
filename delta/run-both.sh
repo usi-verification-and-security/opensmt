@@ -9,11 +9,11 @@
 #osmt=/home/hyvaeria/src/OpenSMT/opensmt_antti/opensmt-dev/trunk/opensmt
 #osmt=/home/hyvaeria/src/OpenSMT/opensmt_antti/opensmt-dev/trunk/delta/run-dumper.sh
 #osmt=/home/hyvaeria/src/opensmt2/opensmt-dev/trunk/delta/run-dumper.sh
-osmt=/home/leonardo/devel/opensmt2/opensmt
+osmt=/home/hyvaeria/src/opensmt2/opensmt-tmp
 #z3=/u1/home/aehyvari/src/z3/z3/bin/external/z3
 #z3=/Users/aehyvari/src/z3/bin/external/z3
-#z3=/home/hyvaeria/src/z3/bin/external/z3
-z3=/home/leonardo/devel/opensmt2/opensmt_correct
+z3=/home/hyvaeria/src/z3/bin/external/z3
+#z3=/home/leonardo/devel/opensmt2/opensmt_correct
 if [[ $# != 1 ]]; then
     echo "Usage: $0 <file>"
     exit 1

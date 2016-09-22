@@ -367,8 +367,10 @@ public:
 
     // Problem specification:
     //
-    Var     newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
-
+protected:
+    virtual void  addVar    (Var v); // Ensure that var v exists in the solver
+    Var           newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
+public:
 #ifdef PRODUCE_PROOF
     bool    addClause (const vec<Lit> & ps, const ipartitions_t& mask = 0);
     bool    addEmptyClause();                                   // Add the empty clause, making the solver contradictory.
@@ -520,7 +522,7 @@ public:
     vec<vec<Lit> > split_assumptions;
 
 protected:
-
+    int processed_in_frozen; // The index in Theory's frozen vec until which frozennes has been processed
     // Helper structures:
     //
     static inline VarData mkVarData(CRef cr, int l)
@@ -680,7 +682,7 @@ protected:
     vec<double>         activity;         // A heuristic measurement of the activity of a variable.
     double              var_inc;          // Amount to bump next variable with.
     OccLists<Lit, vec<Watcher>, WatcherDeleted>  watches;          // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
-    vec<lbool>           assigns;          // The current assignments (lbool:s stored as char:s).
+    vec<lbool>          assigns;          // The current assignments (lbool:s stored as char:s).
     vec<bool>           var_seen;
 
 
@@ -902,16 +904,18 @@ public:
     void   printProofSMT2          ( ostream & ); // Print proof
     void   printProofDotty         ( );           // Print proof
     void   printInter              ( ostream & ); // Generate and print interpolants
-    void   getInterpolants         (const vector<vector<int> >& partitions, vector<PTRef>& interpolants);
-    void   getInterpolants         (const vector<ipartitions_t>& partitions, vector<PTRef>& interpolants);
-    void   setColoringSuggestions  (  vector< std::map<PTRef, icolor_t>* > * mp );
-    bool   getPathInterpolants(vector<PTRef>& interpolants);
-    void   getSingleInterpolant(vector<PTRef>& interpolants);
-    void   getSingleInterpolant(vector<PTRef>& interpolants, const ipartitions_t& A_mask);
-    bool   getSimultaneousAbstractionInterpolants(vector<PTRef>& interpolants);
-    bool   getGenSimultaneousAbstractionInterpolants(vector<PTRef>& interpolants);
-    bool   getStateTransitionInterpolants(vector<PTRef>& interpolants);
-    bool   getTreeInterpolants(opensmt::InterpolationTree*, vector<PTRef>& interpolants);
+    void   getInterpolants         (const vec<vec<int> >& partitions, vec<PTRef>& interpolants);
+    void   getInterpolants         (const vec<ipartitions_t>& partitions, vec<PTRef>& interpolants);
+    void   setColoringSuggestions  (  vec< std::map<PTRef, icolor_t>* > * mp );
+    bool   getPathInterpolants(vec<PTRef>& interpolants);
+    void   getSingleInterpolant(vec<PTRef>& interpolants);
+    void   getSingleInterpolant(vec<PTRef>& interpolants, const ipartitions_t& A_mask);
+    void   getSingleInterpolant(std::vector<PTRef>& interpolants, const ipartitions_t& A_mask) // This is a wrapper for the above, used by hifrog
+            { vec<PTRef> itps; getSingleInterpolant(itps, A_mask); for (int i = 0; i < itps.size(); i++) interpolants.push_back(itps[i]); }
+    bool   getSimultaneousAbstractionInterpolants(vec<PTRef>& interpolants);
+    bool   getGenSimultaneousAbstractionInterpolants(vec<PTRef>& interpolants);
+    bool   getStateTransitionInterpolants(vec<PTRef>& interpolants);
+    bool   getTreeInterpolants(opensmt::InterpolationTree*, vec<PTRef>& interpolants);
     bool   checkImplication( PTRef f1, PTRef f2);
 
     void   createProofGraph          ();
