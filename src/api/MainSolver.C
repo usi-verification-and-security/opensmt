@@ -392,7 +392,7 @@ PTRef MainSolver::rewriteMaxArity(PTRef root, Map<PTRef,int,PTRefHash>& PTRefToI
                 {
                     //should the entire conjunction also be set? TODO
                     //apparently yes. WHy?!
-                    logic.setOriginalAssertion(result, tr);
+                    logic.setOriginalAssertion(result, root_tmp);
                 }
             }
         }
