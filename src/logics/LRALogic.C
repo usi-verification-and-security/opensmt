@@ -259,48 +259,59 @@ LRALogic::LRALogic(SMTConfig& c) :
 
     term_Real_ZERO = mkConst(sort_REAL, tk_real_zero);
     sym_Real_ZERO  = getSymRef(term_Real_ZERO);
+    sym_store.setInterpreted(sym_Real_ZERO);
     term_Real_ONE  = mkConst(sort_REAL, tk_real_one);
     sym_Real_ONE   = getSymRef(term_Real_ONE);
+    sym_store.setInterpreted(sym_Real_ONE);
 
     params.push(sort_REAL);
 
     // Negation
     sym_Real_NEG = declareFun(tk_real_neg, sort_REAL, params, msg, true);
+    sym_store.setInterpreted(sym_Real_NEG);
+
     params.push(sort_REAL);
 
     sym_Real_MINUS = declareFun(tk_real_neg, sort_REAL, params, msg, true);
     sym_store[sym_Real_MINUS].setLeftAssoc();
+    sym_store.setInterpreted(sym_Real_MINUS);
 
     sym_Real_PLUS  = declareFun(tk_real_plus, sort_REAL, params, msg, true);
     sym_store[sym_Real_PLUS].setNoScoping();
     sym_store[sym_Real_PLUS].setCommutes();
     sym_store[sym_Real_PLUS].setLeftAssoc();
+    sym_store.setInterpreted(sym_Real_PLUS);
 
     sym_Real_TIMES = declareFun(tk_real_times, sort_REAL, params, msg, true);
     sym_store[sym_Real_TIMES].setNoScoping();
     sym_store[sym_Real_TIMES].setLeftAssoc();
     sym_store[sym_Real_TIMES].setCommutes();
-
+    sym_store.setInterpreted(sym_Real_TIMES);
 
     sym_Real_DIV   = declareFun(tk_real_div, sort_REAL, params, msg, true);
     sym_store[sym_Real_DIV].setNoScoping();
     sym_store[sym_Real_DIV].setLeftAssoc();
+    sym_store.setInterpreted(sym_Real_DIV);
 
     sym_Real_LEQ  = declareFun(tk_real_leq, sort_BOOL, params, msg, true);
     sym_store[sym_Real_LEQ].setNoScoping();
     sym_store[sym_Real_LEQ].setChainable();
+    sym_store.setInterpreted(sym_Real_LEQ);
 
     sym_Real_LT   = declareFun(tk_real_lt, sort_BOOL, params, msg, true);
     sym_store[sym_Real_LT].setNoScoping();
     sym_store[sym_Real_LT].setChainable();
+    sym_store.setInterpreted(sym_Real_LT);
 
     sym_Real_GEQ  = declareFun(tk_real_geq, sort_BOOL, params, msg, true);
     sym_store[sym_Real_GEQ].setNoScoping();
     sym_store[sym_Real_GEQ].setChainable();
+    sym_store.setInterpreted(sym_Real_GEQ);
 
     sym_Real_GT   = declareFun(tk_real_gt, sort_BOOL, params, msg, true);
-    sym_store[sym_Real_GEQ].setNoScoping();
-    sym_store[sym_Real_GEQ].setChainable();
+    sym_store[sym_Real_GT].setNoScoping();
+    sym_store[sym_Real_GT].setChainable();
+    sym_store.setInterpreted(sym_Real_GEQ);
 
     vec<SRef> ite_params;
     ite_params.push(sort_BOOL);
@@ -309,7 +320,7 @@ LRALogic::LRALogic(SMTConfig& c) :
     sym_Real_ITE = declareFun(tk_ite, sort_REAL, ite_params, msg, true);
     //sym_store[sym_Real_ITE].setLeftAssoc();
     sym_store[sym_Real_ITE].setNoScoping();
-
+    sym_store.setInterpreted(sym_Real_ITE);
 }
 
 const opensmt::Real&
@@ -354,7 +365,7 @@ bool LRALogic::isRealTerm(PTRef tr) const
 {
     const Pterm& t = getPterm(tr);
     if (t.size() == 2 && isRealTimes(tr))
-        return (isRealVar(t[0]) && isConstant(t[1])) || (isRealVar(t[1]) && isConstant(t[0]));
+        return ((isRealVar(t[0]) || isUF(t[0])) && isConstant(t[1])) || ((isRealVar(t[1]) || isUF(t[1])) && isConstant(t[0]));
     else if (t.size() == 0)
         return isRealVar(tr) || isConstant(tr);
     else
@@ -535,7 +546,7 @@ PTRef LRALogic::mkRealTimes(const vec<PTRef>& tmp_args, char** msg)
     PTRef tr = mkFun(s_new, args_new, msg);
     // Either a real term or, if we constructed a multiplication of a
     // constant and a sum, a real sum.
-    if (isRealTerm(tr) || isRealPlus(tr))
+    if (isRealTerm(tr) || isRealPlus(tr) || isUF(tr))
         return tr;
     else {
 //        char* foo = strdup(e_nonlinear_term);
@@ -611,7 +622,7 @@ PTRef LRALogic::normalizeSum(PTRef sum) {
 
 void LRALogic::splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac)
 {
-    assert(isRealTimes(term) || isRealDiv(term) || isRealVar(term) || isConstant(term));
+    assert(isRealTimes(term) || isRealDiv(term) || isRealVar(term) || isConstant(term) || isUF(term));
     if (isRealTimes(term) || isRealDiv(term)) {
         assert(getPterm(term).size() == 2);
         fac = getPterm(term)[0];
@@ -622,8 +633,8 @@ void LRALogic::splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac)
             fac = t;
         }
         assert(isConstant(fac));
-        assert(isRealVar(var));
-    } else if (isRealVar(term)) {
+        assert(isRealVar(var) || isUF(var));
+    } else if (isRealVar(term) || isUF(term)) {
         var = term;
         fac = PTRef_Undef;
     } else {

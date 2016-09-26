@@ -102,6 +102,7 @@ Logic::Logic(SMTConfig& c) :
     }
     sym_TRUE = sym_store.nameToRef(tk_true)[0];
     sym_store[sym_TRUE].setNoScoping();
+    sym_store.setInterpreted(sym_TRUE);
 
     vec<PTRef> tmp;
 
@@ -112,6 +113,7 @@ Logic::Logic(SMTConfig& c) :
     }
     sym_FALSE = sym_store.nameToRef(tk_false)[0];
     sym_store[sym_FALSE].setNoScoping();
+    sym_store.setInterpreted(sym_FALSE);
 
     vec<SRef> params;
     params.push(sort_BOOL);
@@ -121,6 +123,7 @@ Logic::Logic(SMTConfig& c) :
         assert(false);
     }
     sym_store[sym_NOT].setNoScoping();
+    sym_store.setInterpreted(sym_NOT);
 
     params.push(sort_BOOL);
 
@@ -132,6 +135,7 @@ Logic::Logic(SMTConfig& c) :
     sym_store[sym_EQ].setNoScoping();
     sym_store[sym_EQ].setCommutes();
     equalities.insert(sym_EQ, true);
+    sym_store.setInterpreted(sym_EQ);
 
     if ((sym_IMPLIES = declareFun(tk_implies, sort_BOOL, params, &msg, true)) == SymRef_Undef) {
         printf("Error in declaring function %s: %s\n", tk_implies, msg);
@@ -139,6 +143,7 @@ Logic::Logic(SMTConfig& c) :
     }
     if (sym_store[sym_IMPLIES].setRightAssoc() == false) { assert(false); }
     sym_store[sym_IMPLIES].setNoScoping();
+    sym_store.setInterpreted(sym_IMPLIES);
 
     if ((sym_AND = declareFun(tk_and, sort_BOOL, params, &msg, true)) == SymRef_Undef) {
         printf("Error in declaring function %s: %s\n", tk_and, msg);
@@ -147,6 +152,7 @@ Logic::Logic(SMTConfig& c) :
     if (sym_store[sym_AND].setLeftAssoc() == false) { assert(false); }
     sym_store[sym_AND].setNoScoping();
     sym_store[sym_AND].setCommutes();
+    sym_store.setInterpreted(sym_AND);
 
     if ((sym_OR = declareFun(tk_or, sort_BOOL, params, &msg, true)) == SymRef_Undef) {
         printf("Error in declaring function %s: %s\n", tk_or, msg);
@@ -155,6 +161,7 @@ Logic::Logic(SMTConfig& c) :
     if (sym_store[sym_OR].setLeftAssoc() == false) { assert(false); }
     sym_store[sym_OR].setNoScoping();
     sym_store[sym_OR].setCommutes();
+    sym_store.setInterpreted(sym_OR);
 
     if ((sym_XOR = declareFun(tk_xor, sort_BOOL, params, &msg, true)) == SymRef_Undef) {
         printf("Error in declaring function %s: %s\n", tk_xor, msg);
@@ -163,6 +170,7 @@ Logic::Logic(SMTConfig& c) :
     if (sym_store[sym_XOR].setLeftAssoc() == false) { assert(false); }
     sym_store[sym_XOR].setNoScoping();
     sym_store[sym_XOR].setCommutes();
+    sym_store.setInterpreted(sym_OR);
 
     if ((sym_DISTINCT = declareFun(tk_distinct, sort_BOOL, params, &msg, true)) == SymRef_Undef) {
         printf("Error in declaring function %s: %s\n", tk_distinct, msg);
@@ -172,6 +180,7 @@ Logic::Logic(SMTConfig& c) :
     sym_store[sym_DISTINCT].setNoScoping();
     sym_store[sym_DISTINCT].setCommutes();
     disequalities.insert(sym_DISTINCT, true);
+    sym_store.setInterpreted(sym_DISTINCT);
 
     if ((sym_ITE = declareFun(tk_ite, sort_BOOL, params, &msg, true)) == SymRef_Undef) {
         printf("Error in declaring function %s: %s\n", tk_ite, msg);
@@ -179,6 +188,7 @@ Logic::Logic(SMTConfig& c) :
     }
     if (sym_store[sym_ITE].setLeftAssoc() == false) { assert(false); }
     sym_store[sym_ITE].setNoScoping();
+    sym_store.setInterpreted(sym_ITE);
 
     ites.insert(sym_ITE, true);
 }
@@ -1081,6 +1091,8 @@ bool Logic::isUP(PTRef ptr) const {
     if (isEquality(sr) || isDisequality(sr)) {
         return false;
     }
+    if (sym_store[getPterm(ptr).symb()].isInterpreted()) return false;
+
     const Symbol& sym = sym_store[sr];
     if (sym.nargs() == 0) return false;
     if (sym.rsort() != getSort_bool()) return false;

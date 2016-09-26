@@ -334,7 +334,7 @@ void LRASolver::makePolynomial(LAVar* s, PTRef pol)
                 var = tmp;
             }
         }
-        assert(logic.isRealConst(num) && logic.isRealVar(var));
+        assert(logic.isRealConst(num) && (logic.isRealVar(var) || logic.isUF(var)));
 
         // Get the coefficient
         if (!numbers_pool.empty()) {

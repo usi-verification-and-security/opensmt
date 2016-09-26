@@ -64,7 +64,8 @@ class Symbol {
         unsigned reloced    : 1;
         unsigned noscoping  : 1;
         unsigned constant   : 1;
-        unsigned size       : 24; }     header;
+        unsigned interpreted: 1;
+        unsigned size       : 23; }     header;
     SymId                               id;
     // This has to be the last
     union { SRef sort; SymRef rel;  }   args[0];
@@ -95,6 +96,7 @@ class Symbol {
         header.reloced   = 0;
         header.noscoping = 0;           // This is an optimization to avoid expensive name lookup on logic operations
         header.constant  = false;
+        header.interpreted = false;
         header.size      = ps.size();
 
         for (int i = 0; i < ps.size(); i++) args[i].sort = ps[i]; }
@@ -142,6 +144,7 @@ class Symbol {
 
     int      getId() const { return id; }
     void     setId(int i) { id = i; }
+    bool     isInterpreted() const       { return header.interpreted; }
 
 };
 

@@ -56,6 +56,7 @@ class SymStore {
 
     int* serializeSymbols() const;
     void deserializeSymbols(const int* buf);
+    void setInterpreted(SymRef sr)                    { ta[sr].header.interpreted = true; }
 #ifdef PEDANTIC_DEBUG
     void compare(SymStore&);
     void check() const;

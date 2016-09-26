@@ -128,7 +128,10 @@ class LRALogic: public Logic
     bool        isUFEquality(PTRef tr) const { return !isRealEq(tr) && Logic::isUFEquality(tr); }
     bool        isTheoryEquality(PTRef tr) const { return isRealEq(tr); }
 
-    bool        isUF(PTRef tr) const { return !hasSortReal(tr) && Logic::isUF(tr); }
+    virtual bool isAtom(PTRef tr) const { return isRealEq(tr) || isRealLt(tr) || isRealGt(tr) || isRealLeq(tr) || isRealGeq(tr) || Logic::isAtom(tr); }
+    // UFs are the functions that have no interpretation in real.
+    bool        isUF(PTRef tr) const { return isUF(term_store[tr].symb()); }
+    bool        isUF(SymRef sr) const { return !sym_store[sr].isInterpreted(); }
 
     PTRef       getTerm_RealZero() { return term_Real_ZERO; }
     PTRef       getTerm_RealOne() { return term_Real_ONE; }

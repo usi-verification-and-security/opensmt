@@ -355,6 +355,9 @@ void Egraph::computeModel( )
 //
 lbool Egraph::declareTerm(PTRef tr) {
 
+    if (!logic.isUFEquality(tr) && !logic.isUP(tr))
+        return l_True;
+
     if (!enode_store.termToERef.has(tr)) {
         Pterm& tm = logic.getPterm(tr);
         ERef sym = enode_store.addSymb(tm.symb());

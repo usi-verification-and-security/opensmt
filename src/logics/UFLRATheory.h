@@ -29,19 +29,21 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Theory.h"
 #include "UFLRATHandler.h"
 
-class UFLRATheory : public LRATheory
+class UFLRATheory : public Theory
 {
   private:
-    LRALogic      uflralogic;
+    LRALogic      lralogic;
+    TermMapper    tmap;
     UFLRATHandler uflratshandler;
   public:
     virtual TermMapper& getTmap() { return tmap; }
     UFLRATheory(SMTConfig& c)
-        : LRATheory(c)
-        , uflralogic(c)
-        , uflratshandler(c, uflralogic, deductions, tmap)
+        : Theory(c)
+        , lralogic(c)
+        , tmap(lralogic)
+        , uflratshandler(c, lralogic, deductions, tmap)
     { }
-    virtual LRALogic& getLogic() { return uflralogic; }
+    virtual LRALogic& getLogic() { return lralogic; }
     virtual UFLRATHandler& getTSolverHandler() { return uflratshandler; }
     virtual UFLRATHandler *getTSolverHandler_new(vec<DedElem> &d) { return new UFLRATHandler(config, lralogic, d, tmap); }
     virtual bool simplify(vec<PFRef>&, int);

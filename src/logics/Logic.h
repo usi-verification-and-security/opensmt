@@ -308,7 +308,7 @@ class Logic {
 
     bool        isVar              (SymRef sr)     const { return sym_store[sr].nargs() == 0 && !isConstant(sr); }
     bool        isVar              (PTRef tr)      const { return isVar(getPterm(tr).symb()); }
-    bool        isAtom             (PTRef tr)      const;
+    virtual bool isAtom            (PTRef tr)      const;
     bool        isBoolAtom         (PTRef tr)      const { return hasSortBool(tr) && isVar(tr); }
     // Check if term is an uninterpreted predicate.
     virtual bool isUP              (PTRef)         const;
