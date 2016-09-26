@@ -388,8 +388,12 @@ PTRef MainSolver::rewriteMaxArity(PTRef root, Map<PTRef,int,PTRefHash>& PTRefToI
                     for(int i = 0; i < ptm.size(); ++i)
                         logic.setOriginalAssertion(ptm[i], root_tmp);
                 }
-                //else //should the entire conjunction also be set? TODO
-                //logic.setOriginalAssertion(result, tr);
+                else
+                {
+                    //should the entire conjunction also be set? TODO
+                    //apparently yes. WHy?!
+                    logic.setOriginalAssertion(result, tr);
+                }
             }
         }
 #endif
