@@ -380,7 +380,7 @@ PTRef MainSolver::rewriteMaxArity(PTRef root, Map<PTRef,int,PTRefHash>& PTRefToI
             if(logic.isAssertion(tr) || logic.isAssertionSimp(tr))
             {
                 PTRef root_tmp = tr;
-                while(logic.hasOriginalAssertion(root_tmp))
+                while(logic.hasOriginalAssertion(root_tmp) && (logic.getOriginalAssertion(root_tmp) != root_tmp))
                     root_tmp = logic.getOriginalAssertion(root_tmp);
                 if(logic.isAnd(result))
                 {
