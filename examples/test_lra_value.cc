@@ -7,7 +7,11 @@ pre()
     Opensmt* osmt = new Opensmt(opensmt_logic::qf_lra);
     return osmt;
 }
-
+void
+kill(Opensmt* osmt)
+{
+    delete osmt;
+}
 int
 main(int argc, char** argv)
 {
@@ -75,21 +79,21 @@ main(int argc, char** argv)
 
     if (r == s_True) {
         printf("sat\n");
-        ValPair v = mainSolver.getValue(x1);
+        ValPair v1 = mainSolver.getValue(x1);
         char* name = logic.printTerm(x1);
-        printf("%s: %s\n", name, v.val);
+        printf("%s: %s\n", name, v1.val);
         free(name);
-        v = mainSolver.getValue(x2);
+        ValPair v2 = mainSolver.getValue(x2);
         name = logic.printTerm(x2);
-        printf("%s: %s\n", name, v.val);
+        printf("%s: %s\n", name, v2.val);
         free(name);
-        v = mainSolver.getValue(x3);
+        ValPair v3 = mainSolver.getValue(x3);
         name = logic.printTerm(x3);
-        printf("%s: %s\n", name, v.val);
+        printf("%s: %s\n", name, v3.val);
         free(name);
-        v = mainSolver.getValue(x4);
+        ValPair v4 = mainSolver.getValue(x4);
         name = logic.printTerm(x4);
-        printf("%s: %s\n", name, v.val);
+        printf("%s: %s\n", name, v4.val);
         free(name);
 
     }
@@ -125,5 +129,6 @@ main(int argc, char** argv)
     else
         printf("error\n");
 
+    kill(osmt);
     return 0;
 }
