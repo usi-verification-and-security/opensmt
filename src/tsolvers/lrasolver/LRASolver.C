@@ -2087,7 +2087,7 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
         {
             // In this one I have no idea why LAExpression swaps the
             // sign.  But we want it unswapped again, so we negate.
-            if (explanation[i].sgn == l_False) //( getPolarity(explanation[i].tr) == l_True )
+            if (explanation[i].sgn == l_False)
             {
                 interpolant.addExprWithCoeff(LAExpression(logic, explanation[i].tr), explanationCoefficients[i]);
                 delta_flag=true;
@@ -2133,7 +2133,7 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
         itp = logic.mkNot(logic.mkAnd( in_list ));
     else if (usingStrong())
         itp = logic.mkAnd( in_list );
-    //cerr << "; LRA Itp: " << logic.printTerm(itp) << endl;
+    cerr << "; LRA Itp: " << logic.printTerm(itp) << endl;
     return itp;
 }
 
