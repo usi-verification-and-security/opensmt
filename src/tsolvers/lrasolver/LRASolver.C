@@ -2005,9 +2005,6 @@ LRASolver::~LRASolver( )
 PTRef
 LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *labels)
 {
-    //opensmt_error("Interpolation not supported for LRA");
-    //return logic.getTerm_true();
-
     // Old implementation:
     //l = config.logic == QF_LRA || config.logic == QF_UFLRA
     //? QF_LRA
@@ -2017,16 +2014,11 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
 
     vec<PTRef> in_list;
 
-    //ipartitions_t mask = 1;
-    //mask = ~mask;
-
     //for( unsigned in = 1; in < logic.getNofPartitions( ); in++ )
     //{
     LAExpression interpolant(logic);
     bool delta_flag=false;
 
-    // mask &= ~SETBIT( in );
-    //clrbit( mask, in );
     for ( unsigned i = 0; i < explanation.size( ); i++ )
     {
         icolor_t color = I_UNDEF;
@@ -2070,8 +2062,11 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
 //                cerr << "; LRA interpolation algorithm unknown" << endl;
 //        }
 
+        PTRef exp_pt = explanation[i].tr;
+        if(labels != NULL && labels->find(exp_pt) != labels->end())
+            color = labels->find(exp_pt)->second;
         // McMillan algo: set AB as B
-        if ( usingStrong() && color == I_AB )
+        else if ( usingStrong() && color == I_AB )
             color = I_B;
         // McMillan' algo: set AB as a
         else if ( usingWeak() && color == I_AB )
