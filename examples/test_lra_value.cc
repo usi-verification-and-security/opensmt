@@ -7,11 +7,15 @@ pre()
     Opensmt* osmt = new Opensmt(opensmt_logic::qf_lra);
     return osmt;
 }
-
+void
+kill(Opensmt* osmt)
+{
+    delete osmt;
+}
 int
 main(int argc, char** argv)
 {
-    
+
     Opensmt* osmt = pre();
     SMTConfig& c = osmt->getConfig();
     MainSolver& mainSolver = osmt->getMainSolver();
@@ -29,9 +33,9 @@ main(int argc, char** argv)
 
     const char* msg;
     c.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
-    
+
     // Let's build two assertions
- 
+
     // Create vars
     PTRef x1 = logic.mkRealVar("x1");
     PTRef x2 = logic.mkRealVar("x2");
@@ -52,29 +56,47 @@ main(int argc, char** argv)
     args1.push(le2);
     PTRef ass1 = logic.mkAnd(args1);
 
-    // Second assertion (and (<= x2 x3) (< x4 x1))
+    // Second assertion (and (<= x2 x3) (< x4 2))
     leq_args.clear();
     leq_args.push(x2);
     leq_args.push(x3);
     PTRef le3 = logic.mkRealLeq(leq_args);
     leq_args.clear();
     leq_args.push(x4);
-    leq_args.push(x1);
+    leq_args.push(logic.mkConst("2"));
     PTRef l4 = logic.mkRealLt(leq_args);
     vec<PTRef> args2;
     args2.push(le3);
     args2.push(l4);
     PTRef ass2 = logic.mkAnd(args2);
 
-    char* msg_2;
-    mainSolver.insertFormula(ass1, &msg_2);
-    mainSolver.insertFormula(ass2, &msg_2);
+    char* msg2;
+    mainSolver.insertFormula(ass1, &msg2);
+    mainSolver.insertFormula(ass2, &msg2);
 
     // Check
     sstat r = mainSolver.check();
 
-    if (r == s_True)
+    if (r == s_True) {
         printf("sat\n");
+        ValPair v1 = mainSolver.getValue(x1);
+        char* name = logic.printTerm(x1);
+        printf("%s: %s\n", name, v1.val);
+        free(name);
+        ValPair v2 = mainSolver.getValue(x2);
+        name = logic.printTerm(x2);
+        printf("%s: %s\n", name, v2.val);
+        free(name);
+        ValPair v3 = mainSolver.getValue(x3);
+        name = logic.printTerm(x3);
+        printf("%s: %s\n", name, v3.val);
+        free(name);
+        ValPair v4 = mainSolver.getValue(x4);
+        name = logic.printTerm(x4);
+        printf("%s: %s\n", name, v4.val);
+        free(name);
+
+    }
     else if (r == s_False)
     {
         printf("unsat\n");
@@ -107,5 +129,6 @@ main(int argc, char** argv)
     else
         printf("error\n");
 
+    kill(osmt);
     return 0;
 }
