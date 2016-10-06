@@ -550,7 +550,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
         int nbool, neq, nuf;
         thandler.getLogic().collectStats(partial_interp, nbool, neq, nuf);
         cerr << "; Number of boolean connectives: " << nbool << endl;
-        cerr << "; Number of equalities " << neq << endl;
+        cerr << "; Number of equalities: " << neq << endl;
         cerr << "; Number of uninterpreted functions: " << nuf << endl;
         */
     }
