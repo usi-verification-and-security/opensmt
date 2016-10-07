@@ -155,6 +155,12 @@ static const struct ItpAlgorithm itp_alg_mcmillanp = { 2 };
 static const struct ItpAlgorithm itp_alg_ps        = { 3 };
 static const struct ItpAlgorithm itp_alg_psw       = { 4 };
 static const struct ItpAlgorithm itp_alg_pss       = { 5 };
+static const struct ItpAlgorithm itp_euf_alg_strong  = { 0 };
+static const struct ItpAlgorithm itp_euf_alg_weak  = { 2 };
+static const struct ItpAlgorithm itp_euf_alg_random  = { 3 };
+static const struct ItpAlgorithm itp_lra_alg_strong  = { 0 };
+static const struct ItpAlgorithm itp_lra_alg_weak  = { 2 };
+static const struct ItpAlgorithm itp_lra_alg_random  = { 3 };
 
 inline bool operator==(const SpType& s1, const SpType& s2) { return s1.t == s2.t; }
 inline bool operator==(const SpUnit& s1, const SpUnit& s2) { return s1.t == s2.t; }
@@ -363,10 +369,19 @@ public:
 
   inline void setProduceProofs( ) { if ( print_proofs_smtlib2 != 0 ) return; print_proofs_smtlib2 = 1; }
 
-  inline void setBooleanInterpolationAlgorithm( ItpAlgorithm i ) { insertOption(o_itp_bool_alg, new SMTOption(i.x)); }
+  inline void setBooleanInterpolationAlgorithm( ItpAlgorithm i ) { 
+      insertOption(o_itp_bool_alg, new SMTOption(i.x)); }
+  inline void setEUFInterpolationAlgorithm( ItpAlgorithm i ) { insertOption(o_itp_euf_alg, new SMTOption(i.x)); }
+  inline void setLRAInterpolationAlgorithm( ItpAlgorithm i ) { insertOption(o_itp_lra_alg, new SMTOption(i.x)); }
   inline ItpAlgorithm getBooleanInterpolationAlgorithm() {
       if (optionTable.has(o_itp_bool_alg)) { return { optionTable[o_itp_bool_alg]->getValue().numval }; }
       else { return itp_alg_mcmillan; }}
+  inline ItpAlgorithm getEUFInterpolationAlgorithm() {
+      if (optionTable.has(o_itp_euf_alg)) { return { optionTable[o_itp_euf_alg]->getValue().numval }; }
+      else { return itp_euf_alg_strong; }}
+  inline ItpAlgorithm getLRAInterpolationAlgorithm() {
+      if (optionTable.has(o_itp_lra_alg)) { return { optionTable[o_itp_lra_alg]->getValue().numval }; }
+      else { return itp_lra_alg_strong; }}
   inline void setRegularOutputChannel( const char * attr )
   {
     if ( strcmp( attr, "stdout" ) != 0 && !rocset )
