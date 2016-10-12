@@ -84,7 +84,9 @@ class LRALogic: public Logic
     PTRef       mkRealVar       (const char* name) { return mkVar(getSort_real(), name); }
 
     virtual bool isBuiltinSort  (SRef sr) const { return sr == sort_REAL || Logic::isBuiltinSort(sr); }
-    bool  isRealConst     (PTRef tr)      const { return isConstant(tr) && hasSortReal(tr); }
+    virtual bool isBuiltinConstant(SymRef sr) const { return (isRealConst(sr) || Logic::isBuiltinConstant(sr)); }
+    bool  isRealConst     (SymRef sr)     const { isConstant(sr) && hasSortReal(sr); }
+    bool  isRealConst     (PTRef tr)      const { return isRealConst(getPterm(tr).symb()); }
     bool  isNonnegRealConst (PTRef tr)    const { return isRealConst(tr) && getRealConst(tr) >= 0; }
 
     SRef        declareSort_Real(char** msg);
@@ -123,7 +125,8 @@ class LRALogic: public Logic
     // Real terms are of form c, a, or (* c a) where c is a constant and
     // a is a variable.
     bool        isRealTerm(PTRef tr) const;
-    bool        hasSortReal(PTRef tr) const { return sym_store[getPterm(tr).symb()].rsort() == sort_REAL; }
+    bool        hasSortReal(SymRef sr) const { return sym_store[sr].rsort() == sort_REAL; }
+    bool        hasSortReal(PTRef tr) const { return hasSortReal(getPterm(tr).symb()); }
 
     bool        isUFEquality(PTRef tr) const { return !isRealEq(tr) && Logic::isUFEquality(tr); }
     bool        isTheoryEquality(PTRef tr) const { return isRealEq(tr); }

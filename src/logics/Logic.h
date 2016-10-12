@@ -299,13 +299,15 @@ class Logic {
     // tr is a theory symbol if it is not a boolean variable, nor one of the standard
     // boolean operators (and, not, or, etc...)
     // Note that equivalence over non-boolean terms is not a Boolean operator.
-    bool        isTheorySymbol     (SymRef tr)     const;
-    bool        isTheoryTerm       (PTRef tr)      const;
-    bool        isBooleanOperator  (SymRef tr)     const;
-    bool        isBooleanOperator  (PTRef tr)      const { return isBooleanOperator(term_store[tr].symb()); }
-    virtual bool isBuiltinSort     (const SRef sr) const { return sr == sort_BOOL; }
-    bool        isConstant         (const SymRef sr) const;
-    bool        isConstant         (PTRef tr)      const { return isConstant(getPterm(tr).symb()); }
+    bool         isTheorySymbol     (SymRef tr)       const;
+    bool         isTheoryTerm       (PTRef tr)        const;
+    bool         isBooleanOperator  (SymRef tr)       const;
+    bool         isBooleanOperator  (PTRef tr)        const { return isBooleanOperator(term_store[tr].symb()); }
+    virtual bool isBuiltinSort      (const SRef sr)   const { return sr == sort_BOOL; }
+    virtual bool isBuiltinConstant  (const SymRef sr) const { return isConstant(sr) && (sr == sym_TRUE || sr == sym_FALSE); }
+    bool         isBuiltinConstant  (const PTRef tr)  const { return isBuiltinConstant(getPterm(tr).symb()); }
+    bool         isConstant         (const SymRef sr) const;
+    bool         isConstant         (PTRef tr)        const { return isConstant(getPterm(tr).symb()); }
 
     bool        isVar              (SymRef sr)     const { return sym_store[sr].nargs() == 0 && !isConstant(sr); }
     bool        isVar              (PTRef tr)      const { return isVar(getPterm(tr).symb()); }

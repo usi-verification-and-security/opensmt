@@ -295,6 +295,31 @@ declare_fun_err: ;
             return false;
             break;
         }
+        case t_declareconst:
+        {
+            if (logic != NULL) {
+                list<ASTNode*>::iterator it = n.children->begin();
+                ASTNode& name_node = **(it++);
+                ASTNode& args_node = **(it++);
+                ASTNode& ret_node = **(it++);
+                const char* fname = name_node.getValue();
+                char* name = buildSortName(ret_node);
+                SRef ret_sort;
+                if (logic->containsSort(name)) {
+                    ret_sort = newSort(ret_node);
+                } else {
+                    notify_formatted(true, "Unknown return sort %s of %s", name, fname);
+                    free(name);
+                    goto declare_const_err;
+                }
+                if (declareConst(fname, ret_sort)) notify_success();
+declare_const_err: ;
+            }
+            else
+                notify_formatted(true, "Illegal command before set-logic: declare-const");
+            return false;
+            break;
+        }
         case t_assert:
         {
             if (logic != NULL) {
@@ -896,6 +921,16 @@ bool Interpret::declareFun(const char* fname, const vec<SRef>& args) {
     if (rval == SymRef_Undef) {
         comment_formatted("While declare-fun %s: %s", fname, msg);
         free(msg);
+        return false;
+    }
+    return true;
+}
+
+bool Interpret::declareConst(const char* fname, const SRef ret_sort)
+{
+    PTRef rval = logic->mkConst(ret_sort, fname);
+    if (rval == PTRef_Undef) {
+        comment_formatted("While declare-const %s: %s", fname, "error");
         return false;
     }
     return true;

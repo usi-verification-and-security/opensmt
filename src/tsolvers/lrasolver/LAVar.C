@@ -368,6 +368,8 @@ void LAVar::sortBounds( )
 //
 void LAVar::computeModel( const Real& d )
 {
+    Real r = M().R() + d * M().D();
+//    printf("I think my value's %s\n", r.get_str().c_str());
 }
 
 //

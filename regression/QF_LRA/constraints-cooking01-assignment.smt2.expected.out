@@ -1,13 +1,2 @@
 sat
-; Found the term spy
-; Found the term I_0
-; Found the term G_6
-; Found the term EGGS
-; Found the term OIL
-; Found the term LARD
-; Found the term FIRE
-; Found the term WATER
-; Found the term NOODLES
-; Found the term COOKING
-; Found the term EATING
 ((spy 0)(I_0 unknown)(G_6 16)(EGGS 7)(OIL 1)(LARD 3)(FIRE -1)(WATER 0)(NOODLES 2)(COOKING 9)(EATING 10))

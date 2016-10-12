@@ -837,7 +837,7 @@ PTRef Logic::mkVar(SRef s, const char* name) {
     return ptr;
 }
 
-PTRef Logic::mkConst(SRef s, const char* name) {
+PTRef Logic::mkConst(const SRef s, const char* name) {
     PTRef ptr = PTRef_Undef;
     if (s == sort_BOOL) {
         if ((strcmp(name, tk_true) != 0) && (strcmp(name, tk_false) != 0)) {
@@ -850,7 +850,6 @@ PTRef Logic::mkConst(SRef s, const char* name) {
         ptr = mkVar(s, name);
     }
     // Code to allow efficient constant detection.
-//    int id = getPterm(ptr).getId();
     int id = sym_store[getPterm(ptr).symb()].getId();
     while (id >= constants.size())
         constants.push(false);
@@ -858,7 +857,6 @@ PTRef Logic::mkConst(SRef s, const char* name) {
 
     return ptr;
 }
-
 
 PTRef Logic::mkFun(SymRef f, const vec<PTRef>& args, char** msg)
 {
@@ -1837,9 +1835,15 @@ Logic::dumpHeaderToFile(ostream& dump_out)
     {
         SymRef s = symbols[i];
         if (!isUF(s) && !isVar(s)) continue;
-        if (isConstant(s)) continue;
+        if (isConstant(s)) {
+            if (isBuiltinConstant(s)) continue;
+            dump_out << "(declare-const ";
+        }
+        else {
+            dump_out << "(declare-fun ";
+        }
         char* sym = printSym(s);
-        dump_out << "(declare-fun " << sym << " ";
+        dump_out << sym << " ";
         free(sym);
         Symbol& symb = sym_store[s];
         dump_out << "(";

@@ -1713,6 +1713,7 @@ void LRASolver::computeModel( )
     if( columns[i]->skip )
       continue;
 
+//    printf("computing model for %s\n", logic.printTerm(columns[i]->e));
     col = columns[i];
     assert( !col->isModelOutOfBounds( ) );
 
@@ -1771,8 +1772,7 @@ void LRASolver::computeModel( )
   delta = ( minDelta ) / 2;
 
   // Compute the value for each variable. Delta is taken into account
-  for( unsigned i = 0; i < columns.size( ); ++i )
-    if( !( columns[i]->skip ) )
+  for ( unsigned i = 0; i < columns.size( ); ++i )
       columns[i]->computeModel( curDelta );
 
   // Compute the value for each variable deleted by Gaussian elimination
@@ -1794,6 +1794,8 @@ void LRASolver::computeModel( )
     }
     assert( div != 0 );
     x->setM(v_delta/div);
+//    cout << "value of " << logic.printTerm(x->e) << " is " << x->M() << endl;
+
     removed_by_GaussianElimination.pop_back( );
   }
 }
@@ -1974,6 +1976,10 @@ ValPair LRASolver::getValue(PTRef tr) const
     if (id < ptermToLavar.size() && ptermToLavar[id] != NULL) {
 //        cerr << "; getting value for term " << logic.printTerm(tr) << " (" << *ptermToLavar[id] << ")" << endl;
         const Delta v = ptermToLavar[id]->M();
+        for (int i = 0; i < removed_by_GaussianElimination.size(); i++) {
+            if (tr == removed_by_GaussianElimination[i]->e)
+                printf("Var %s removed by Gaussian elimination\n", logic.printTerm(tr));
+        }
         opensmt::Real val(v.R() + v.D() * delta);
         return ValPair(tr, val.get_str().c_str());
     }

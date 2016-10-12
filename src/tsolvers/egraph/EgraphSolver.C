@@ -72,7 +72,7 @@ Egraph::Egraph(SMTConfig & c, Logic& l , vec<DedElem>& d)
       , cgraph(NULL)
       , automatic_coloring ( false )
 #endif
-  {
+{
     // For the uninterpreted predicates to work we need to have
     // two special terms true and false, and an asserted disequality
     // true != false
@@ -118,7 +118,7 @@ Egraph::Egraph(SMTConfig & c, Logic& l , vec<DedElem>& d)
     assert(neq != PTRef_Undef);
     assertNEq(logic.getTerm_true(), logic.getTerm_false(), PtAsgn(neq, l_False));
     Eq_FALSE = neq;
-  }
+}
 
 //
 // Pushes a backtrack point
@@ -1323,7 +1323,7 @@ void Egraph::backtrackToStackSize ( size_t size ) {
 
 //
 // Merge the class of x with the class of y
-// x will become the representant
+// x will become the representative
 //
 void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
 {

@@ -43,6 +43,7 @@ enum token {
     t_declaresort,
     t_definesort,
     t_declarefun,
+    t_declareconst,
     t_definefun,
     t_exit,
     t_getassertions,
