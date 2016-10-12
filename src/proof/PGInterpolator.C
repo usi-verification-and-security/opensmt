@@ -570,9 +570,9 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
     assert (interpol != PTRef_Undef);
     interpolants.push ( interpol );
 
-    if(verbose())
+    if(verbose() > 1)
     {
-        //cout << "; Interpolant: " << thandler.getLogic().printTerm(interpol) << endl;
+        cout << "; Interpolant: " << thandler.getLogic().printTerm(interpol) << endl;
     }
 }
 

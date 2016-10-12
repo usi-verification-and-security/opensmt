@@ -1261,10 +1261,10 @@ void Interpret::GetInterpolants()
     if (!logic->canInterpolate())
         opensmt_error("Cannot interpolate");
 
-    //int rseed = 1466156790;
-//    int rseed = time(NULL);
+//    int rseed = 1466156790;
+    int rseed = time(NULL);
 //    cerr << "; Seed used for partitioning: " << rseed << endl;
-//    srand(rseed);
+    srand(rseed);
 
     ipartitions_t p = 1;
 //    if (rand() % 2) p <<= 1;
@@ -1326,10 +1326,16 @@ void Interpret::GetInterpolants()
 #ifdef ITP_DEBUG
     cout << "; Interpolation mask " << p << endl;
 #endif
+
     SimpSMTSolver& smt_solver = main_solver->getSMTSolver();
     smt_solver.createProofGraph();
+    if(config.proof_reduce())
+        smt_solver.reduceProofGraph();
     vec<PTRef> itps;
+
     smt_solver.getSingleInterpolant(itps, p);
+    //if(config.verbosity() > 1)
+    //    cout << "; Interpolant:\n" << logic->printTerm(itps[0]) << endl;
 #ifdef ITP_DEBUG
     for (int i = 0; i < itps.size(); i++)
     {
@@ -1350,14 +1356,16 @@ void Interpret::GetInterpolants()
     }
 
 #endif
+
     /*
     const char* msg;
     const char* lnames[] = {"McMillan", "Pudlak", "McMillan", "PS", "PSw", "PSs"};
     PTRef strongest, weakest;
 
+    config.setOption(SMTConfig::o_certify_inter, SMTOption(0), msg);
     for(int i = 0; i < 6; ++i) // for each Bool labeling function
     {
-        cerr << "; Testing with " << lnames[i] << endl;
+        cerr << "; Testing BOOL with " << lnames[i] << endl;
         config.setOption(SMTConfig::o_itp_bool_alg, SMTOption(i), msg);
     
         // EUF stuff
@@ -1366,20 +1374,19 @@ void Interpret::GetInterpolants()
         config.setOption(SMTConfig::o_itp_euf_alg, SMTOption(0), msg);
         smt_solver.getSingleInterpolant(itps, p);
         PTRef itp0 = itps[0];
-       
-        //cerr << ";Interpolant:\n;" << logic->printTerm(itps[0]) << endl;
+        cerr << ";Interpolant:\n;" << logic->printTerm(itps[0]) << endl;
         itps.clear();
         cerr << "; Testing with EUF Weak" << endl;
         config.setOption(SMTConfig::o_itp_euf_alg, SMTOption(2), msg);
         smt_solver.getSingleInterpolant(itps, p);
         PTRef itp2 = itps[0];
-        //cerr << ";Interpolant:\n;" << logic->printTerm(itps[0]) << endl;
+        cerr << ";Interpolant:\n;" << logic->printTerm(itps[0]) << endl;
         itps.clear();
         cerr << "; Testing with EUF Random" << endl;
         config.setOption(SMTConfig::o_itp_euf_alg, SMTOption(3), msg);
         smt_solver.getSingleInterpolant(itps, p);
         PTRef itp3 = itps[0];
-        //cerr << ";Interpolant:\n;" << logic->printTerm(itps[0]) << endl;
+        cerr << ";Interpolant:\n;" << logic->printTerm(itps[0]) << endl;
         
         if(i == 0)
             strongest = itp0;
@@ -1387,23 +1394,23 @@ void Interpret::GetInterpolants()
             weakest = itp2;
 
         bool i02 = logic->implies(itp0, itp2);
-        if(i02) cerr << "; Strong -> Weak" << endl;
-        else cerr << "; Strong -/> Weak" << endl;
+        if(i02) cerr << "; StrongWeak1" << endl;
+        else cerr << "; StrongWeak0" << endl;
         bool i03 = logic->implies(itp0, itp3);
-        if(i03) cerr << "; Strong -> Random" << endl;
-        else cerr << "; Strong -/> Random" << endl;
+        if(i03) cerr << "; StrongRandom1" << endl;
+        else cerr << "; StrongRandom0" << endl;
         bool i20 = logic->implies(itp2, itp0);
-        if(i20) cerr << "; Weak -> Strong" << endl;
-        else cerr << "; Weak -/> Strong" << endl;
+        if(i20) cerr << "; WeakStrong1" << endl;
+        else cerr << "; WeakStrong0" << endl;
         bool i23 = logic->implies(itp2, itp3);
-        if(i23) cerr << "; Weak -> Random" << endl;
-        else cerr << "; Weak -/> Random" << endl;
+        if(i23) cerr << "; WeakRandom1" << endl;
+        else cerr << "; WeakRandom0" << endl;
         bool i30 = logic->implies(itp3, itp0);
-        if(i30) cerr << "; Random -> Strong" << endl;
-        else cerr << "; Random -/> Strong" << endl;
+        if(i30) cerr << "; RandomStrong1" << endl;
+        else cerr << "; RandomStrong0" << endl;
         bool i32 = logic->implies(itp3, itp2);
-        if(i32) cerr << "; Random -> Weak" << endl;
-        else cerr << "; Random -/> Weak" << endl;
+        if(i32) cerr << "; RandomWeak1" << endl;
+        else cerr << "; RandomWeak0" << endl;
     }
     */
 
