@@ -1831,14 +1831,14 @@ Logic::dumpHeaderToFile(ostream& dump_out)
     }
 
     const vec<SymRef>& symbols = sym_store.getSymbols();
-    for(int i = 0; i < symbols.size(); ++i)
+    for (int i = 0; i < symbols.size(); ++i)
     {
         SymRef s = symbols[i];
-        if (!isUF(s) && !isVar(s)) continue;
         if (isConstant(s)) {
             if (isBuiltinConstant(s)) continue;
             dump_out << "(declare-const ";
         }
+        else if (!isUF(s) && !isVar(s)) continue;
         else {
             dump_out << "(declare-fun ";
         }
