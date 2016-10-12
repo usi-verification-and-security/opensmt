@@ -72,7 +72,7 @@ void ProofGraph::getGraphInfo()
             }
             else
             {
-                assert(n->getType()==CLAORIG);
+                assert(n->getType()==CLAORIG || n->getType() == CLATHEORY);
                 num_leaves++;
             }
 

@@ -658,7 +658,7 @@ public:
         optionTable[o_verbosity]->getValue().numval : 2; }
 #else
     { return optionTable.has(o_verbosity) ?
-        optionTable[o_verbosity]->getValue().numval : 2; }
+        optionTable[o_verbosity]->getValue().numval : 0; }
 #endif
   int          printSuccess() const
      { return optionTable.has(":print-success") ?
