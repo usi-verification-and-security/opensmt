@@ -1334,8 +1334,8 @@ void Interpret::GetInterpolants()
     vec<PTRef> itps;
 
     smt_solver.getSingleInterpolant(itps, p);
-    if(config.verbosity() > 1)
-        cout << "; Interpolant:\n" << logic->printTerm(itps[0]) << endl;
+    //if(config.verbosity() > 1)
+    //    cout << "; Interpolant:\n" << logic->printTerm(itps[0]) << endl;
 #ifdef ITP_DEBUG
     for (int i = 0; i < itps.size(); i++)
     {

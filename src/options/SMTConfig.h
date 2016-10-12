@@ -369,6 +369,10 @@ public:
 
   inline void setProduceProofs( ) { if ( print_proofs_smtlib2 != 0 ) return; print_proofs_smtlib2 = 1; }
 
+  inline void setReduction(int r) { insertOption(o_proof_reduce, new SMTOption(r)); }
+  inline void setReductionGraph(int r) { insertOption(o_proof_num_graph_traversals, new SMTOption(r)); }
+  inline void setReductionLoops(int r) { insertOption(o_proof_red_trans, new SMTOption(r)); }
+
   inline void setBooleanInterpolationAlgorithm( ItpAlgorithm i ) { 
       insertOption(o_itp_bool_alg, new SMTOption(i.x)); }
   inline void setEUFInterpolationAlgorithm( ItpAlgorithm i ) { insertOption(o_itp_euf_alg, new SMTOption(i.x)); }
