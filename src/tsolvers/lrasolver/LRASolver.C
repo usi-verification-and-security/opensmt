@@ -2123,10 +2123,6 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
         else
             in_list.push(logic.mkRealLeq(args, &msg));
     }
-    if ( verbose() > 0 )
-    {
-        //cerr << "Interpolant: " << in_list.back() << endl;
-    }
 
     //}
     PTRef itp;
@@ -2134,7 +2130,10 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
         itp = logic.mkNot(logic.mkAnd( in_list ));
     else if (usingStrong())
         itp = logic.mkAnd( in_list );
-    cerr << "; LRA Itp: " << logic.printTerm(itp) << endl;
+    if(verbose() > 1)
+    {
+        cerr << "; LRA Itp: " << logic.printTerm(itp) << endl;
+    }
     return itp;
 }
 
