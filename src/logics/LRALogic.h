@@ -84,29 +84,9 @@ class LRALogic: public Logic
     PTRef       mkRealVar       (const char* name) { return mkVar(getSort_real(), name); }
 
     virtual bool isBuiltinSort  (SRef sr) const { return sr == sort_REAL || Logic::isBuiltinSort(sr); }
-//    virtual bool isBuiltinConstant(SymRef sr) const { return (isRealConst(sr) || Logic::isBuiltinConstant(sr)); }
-    virtual bool isBuiltinConstant(SymRef sr) const
-    {
-//        printf("Checking if %s is a built-in constant:\n", printSym(sr));
-        bool isrealconst = isRealConst(sr);
-        bool isbuiltinconstant = Logic::isBuiltinConstant(sr);
-//        printf("  %sa real constant, \n", isrealconst ? "" : "not ");
-//        printf("  %sa built-in constant, \n", isbuiltinconstant ? "" : "not ");
-        bool rval = isrealconst || isbuiltinconstant;
-//        printf("-> %s\n", rval ? "yes" : "no");
-        return rval;
-    }
-//    bool  isRealConst     (SymRef sr)     const { isConstant(sr) && hasSortReal(sr); }
-    bool  isRealConst     (SymRef sr)     const {
-//        printf("Checking if %s is a real constant:\n", printSym(sr));
-        bool isconst = isConstant(sr);
-        bool hassortreal = hasSortReal(sr);
-//        printf("  %sa constant\n", isconst ? "" : "not ");
-//        printf("  %ssort real\n", hassortreal ? "" : "not ");
-        bool rval = isConstant(sr) && hasSortReal(sr);
-//        printf("->%s\n", rval ? "yes" : "no");
-        return rval;
-    }
+    virtual bool isBuiltinConstant(SymRef sr) const { return (isRealConst(sr) || Logic::isBuiltinConstant(sr)); }
+
+    bool  isRealConst     (SymRef sr)     const { return isConstant(sr) && hasSortReal(sr); }
     bool  isRealConst     (PTRef tr)      const { return isRealConst(getPterm(tr).symb()); }
     bool  isNonnegRealConst (PTRef tr)    const { return isRealConst(tr) && getRealConst(tr) >= 0; }
 
@@ -146,13 +126,7 @@ class LRALogic: public Logic
     // Real terms are of form c, a, or (* c a) where c is a constant and
     // a is a variable.
     bool        isRealTerm(PTRef tr) const;
-//    bool        hasSortReal(SymRef sr) const { return sym_store[sr].rsort() == sort_REAL; }
-    bool        hasSortReal(SymRef sr) const {
-//        printf("Checking if %s has sort real:\n", printSym(sr));
-        bool rval = sym_store[sr].rsort() == sort_REAL;
-//        printf("  %s\n", rval ? "yes" : "no");
-        return rval;
-    }
+    bool        hasSortReal(SymRef sr) const { return sym_store[sr].rsort() == sort_REAL; }
 
     bool        hasSortReal(PTRef tr) const { return hasSortReal(getPterm(tr).symb()); }
 
