@@ -30,6 +30,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef LRASOLVER_H
 #define LRASOLVER_H
 
+//#define GAUSSIAN_DEBUG
+
 #include "LRALogic.h"
 #include "TSolver.h"
 #include "LAVar.h"

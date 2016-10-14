@@ -7,7 +7,7 @@
 
  OpenSMT2 -- Copyright (C)   2012 - 2016, Antti Hyvarinen
                              2008 - 2012, Roberto Bruttomesso
- 
+
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the
 "Software"), to deal in the Software without restriction, including
@@ -916,6 +916,7 @@ void LRASolver::popBacktrackPoint( )
 // Look for unbounded terms and applies Gaussian elimination to them.
 // Delete the column if succeeded
 //
+
 void LRASolver::doGaussianElimination( )
 {
     for (unsigned i = 0; i < columns.size( ); ++i) {
@@ -1009,9 +1010,11 @@ void LRASolver::doGaussianElimination( )
             }
             basis->setNonbasic( );
             rows.pop_back( );
-//            printf("; Removed the row %s\n", logic.printTerm(basis->e));
-//            printf("; Removed column %s\n", logic.printTerm(x->e));
-//            printf("; rows: %d, columns: %d\n", rows.size(), nVars());
+#ifdef GAUSSIAN_DEBUG
+            printf("; Removed the row %s\n", logic.printTerm(basis->e));
+            printf("; Removed column %s\n", logic.printTerm(x->e));
+            printf("; rows: %d, columns: %d\n", rows.size(), nVars());
+#endif
         }
     }
 }
@@ -1317,6 +1320,14 @@ void LRASolver::initSolver()
 {
     if (status == INIT)
     {
+#ifdef GAUSSIAN_DEBUG
+        cout << "Columns:" << '\n';
+        for (int i = 0; i < columns.size(); i++)
+            cout << columns[i] << '\n';
+        cout << "Rows:" << '\n';
+        for  (int i = 0; i < rows.size(); i++)
+            cout << rows[i] << '\n';
+#endif
         // Gaussian Elimination should not be performed in the Incremental mode!
         if (config.lra_gaussian_elim == 1 && config.do_substitutions())
             doGaussianElimination();
@@ -1712,8 +1723,9 @@ void LRASolver::computeModel( )
   {
     if( columns[i]->skip )
       continue;
-
-//    printf("computing model for %s\n", logic.printTerm(columns[i]->e));
+#ifdef GAUSSIAN_DEBUG
+    printf("computing model for %s\n", logic.printTerm(columns[i]->e));
+#endif
     col = columns[i];
     assert( !col->isModelOutOfBounds( ) );
 
