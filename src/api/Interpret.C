@@ -312,7 +312,10 @@ declare_fun_err: ;
                     free(name);
                     goto declare_const_err;
                 }
-                if (declareConst(fname, ret_sort)) notify_success();
+                if (declareConst(fname, ret_sort))
+                    notify_success();
+                else
+                    notify_formatted(true, "Failed to declare constant %s", fname);
 declare_const_err: ;
             }
             else
@@ -589,6 +592,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
 //        comment_formatted("Processing term %s", name);
         const char* msg;
         vec<SymRef> params;
+        //PTRef tr = logic->resolveTerm(name, vec_ptr_empty, &msg);
         PTRef tr = logic->mkConst(name, &msg);
         if (tr == PTRef_Undef)
             comment_formatted("While processing %s: %s", name, msg);

@@ -814,8 +814,11 @@ PTRef Logic::mkNot(PTRef arg) {
 
 PTRef Logic::mkConst(const char* name, const char** msg)
 {
-    assert(0);
-    return PTRef_Undef;
+    //assert(0);
+    //return PTRef_Undef;
+    vec<PTRef> args;
+    char *msg2;
+    return resolveTerm(name, args, &msg2);
 }
 
 
@@ -1821,7 +1824,7 @@ Logic::dumpHeaderToFile(ostream& dump_out)
 {
     dump_out << "(set-logic " << getName() << ")" << endl;
 #ifdef PRODUCE_PROOF
-    dump_out << "(set-option :produce-interpolants true)" << endl;
+//    dump_out << "(set-option :produce-interpolants true)" << endl;
 #endif
     const vec<SRef>& sorts = sort_store.getSorts();
     for (int i = 0; i < sorts.size(); i++)
