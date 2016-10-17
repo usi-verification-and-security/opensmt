@@ -69,6 +69,7 @@ enum ASTType {
     , BOOL_T     , BOOLL_T
     , OPTION_T   , OPTIONL_T
     , INFO_T     , INFOL_T
+    , CONST_T    , CONSTL_T
 };
 
 class ASTNode {

@@ -82,7 +82,7 @@ void smt2newerror( YYLTYPE* locp, Smt2newContext* context, const char * s )
 
 %type <str> TK_NUM TK_SYM TK_KEY TK_STR TK_DEC TK_HEX TK_BIN meta_spec_const
 %type <str> KW_SORTS KW_FUNS KW_SORTSDESCRIPTION KW_FUNSDESCRIPTION KW_DEFINITION KW_NOTES KW_THEORIES KW_LANGUAGE KW_EXTENSIONS KW_VALUES KW_PRINTSUCCESS KW_EXPANDDEFINITIONS KW_INTERACTIVEMODE KW_PRODUCEPROOFS KW_PRODUCEUNSATCORES KW_PRODUCEMODELS KW_PRODUCEASSIGNMENTS KW_REGULAROUTPUTCHANNEL KW_DIAGNOSTICOUTPUTCHANNEL KW_RANDOMSEED KW_VERBOSITY KW_ERRORBEHAVIOR KW_NAME KW_NAMED KW_AUTHORS KW_VERSION KW_STATUS KW_REASONUNKNOWN KW_ALLSTATISTICS predef_key
-%type <snode> identifier sort command attribute attribute_value s_expr spec_const qual_identifier var_binding sorted_var term
+%type <snode> identifier sort command attribute attribute_value s_expr spec_const qual_identifier var_binding sorted_var term const_val
 %type <snode_list> sort_list command_list s_expr_list numeral_list term_list var_binding_list attribute_list sorted_var_list symbol_list
 %type <snode> sort_symbol_decl fun_symbol_decl par_fun_symbol_decl
 %type <snode_list> sort_symbol_decl_list par_fun_symbol_decl_list
@@ -153,11 +153,11 @@ command: '(' TK_SETLOGIC TK_SYM ')'
 
             $$->children->push_back($7);
         }
-    | '(' TK_DECLARECONST TK_SYM '(' ')' sort ')'
+    | '(' TK_DECLARECONST const_val '(' ')' sort ')'
         {
             $$ = new ASTNode(CMD_T, $2);
             $$->children = new std::list<ASTNode*>();
-            $$->children->push_back(new ASTNode(SYM_T, $3));
+            $$->children->push_back($3);
 
             ASTNode* sortl = new ASTNode(SORTL_T, NULL);
             sortl->children = new std::list<ASTNode*>();
@@ -347,6 +347,7 @@ s_expr_list:
         }
     ;
 
+
 spec_const: TK_NUM
         { $$ = new ASTNode(NUM_T, $1); }
     | TK_DEC
@@ -357,6 +358,12 @@ spec_const: TK_NUM
         { $$ = new ASTNode(BIN_T, $1); }
     | TK_STR
         { $$ = new ASTNode(STR_T, $1); }
+    ;
+
+const_val: TK_SYM
+        { $$ = new ASTNode(SYM_T, $1); }
+    | spec_const
+        { $$ = $1; }
     ;
 
 numeral_list: numeral_list TK_NUM
