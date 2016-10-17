@@ -2650,6 +2650,7 @@ CGraph::verifyInterpolantWithExternalTool ( const ipartitions_t &mask )
 #ifdef ITP_DEBUG
     cerr << ";A: " << logic.printTerm (A) << endl;
     cerr << ";B: " << logic.printTerm (B) << endl;
+    cerr << ";ITP " << logic.printTerm(interpolant) << endl;
 #endif
 
     // Check A -> I, i.e., A & !I

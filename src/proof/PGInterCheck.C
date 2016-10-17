@@ -143,12 +143,16 @@ ProofGraph::verifyPartialInterpolant(ProofNode *n, const ipartitions_t& mask)
         cout << "; Verifying partial interpolant" << endl;
     bool res = verifyPartialInterpolantA(n, mask);
     if(!res)
-        //assert(false);
+    {
+        assert(false);
         opensmt_error("Partial interpolant soundness does not hold for A");
+    }
     res = verifyPartialInterpolantB(n, mask);
     if(!res)
-        //assert(false);
+    {
+        assert(false);
         opensmt_error("Partial interpolant soundness does not hold for B");
+    }
     if(verbose())
         cout << "; Partial interpolant is sound" << endl;
     return res;

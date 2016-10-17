@@ -2095,6 +2095,10 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
 
         assert( color == I_A || color == I_B );
 
+        //cout << "; EXPLANATION " << logic.printTerm(explanation[i].tr) << endl;
+        //cout << "; SIGN IS " << (explanation[i].sgn == l_False ? "False" : "True") << endl;
+        //cout << "; COLOR IS " << color << endl;
+
         // Add the A conflict to the interpolant (multiplied by the coefficient)
         if ((color == I_A && usingStrong()) || (color == I_B && usingWeak()))
         {

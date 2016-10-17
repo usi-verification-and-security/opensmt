@@ -1841,7 +1841,7 @@ Logic::dumpHeaderToFile(ostream& dump_out)
             if (isBuiltinConstant(s)) continue;
             dump_out << "(declare-const ";
         }
-        else if (!isUF(s) && !isVar(s)) continue;
+        //else if (!isUF(s) && !isVar(s)) continue;
         else {
             dump_out << "(declare-fun ";
         }

@@ -554,6 +554,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
         cerr << "; Number of uninterpreted functions: " << nuf << endl;
         */
     }
+
     //if ( enabledInterpVerif() ) verifyPartialInterpolantFromLeaves( getRoot(), A_mask );
     if ( enabledInterpVerif() )
     {
@@ -572,7 +573,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
 
     if(verbose() > 1)
     {
-        cout << "; Interpolant: " << thandler.getLogic().printTerm(interpol) << endl;
+        cout << "; Interpolant: " << thandler.getLogic().printTerm(partial_interp) << endl;
     }
 }
 
