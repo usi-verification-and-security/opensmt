@@ -1724,7 +1724,8 @@ void LRASolver::computeModel( )
     if( columns[i]->skip )
       continue;
 #ifdef GAUSSIAN_DEBUG
-    printf("computing model for %s\n", logic.printTerm(columns[i]->e));
+    printf("computing model for %s (%d)\n", logic.printTerm(columns[i]->e), columns[i]->e.x);
+    cerr << "It's M is " << columns[i]->M() << '\n';
 #endif
     col = columns[i];
     assert( !col->isModelOutOfBounds( ) );
@@ -1733,13 +1734,13 @@ void LRASolver::computeModel( )
     curBound = Delta( Delta::ZERO );
 
     // Check if the lower bound can be used and at least one of delta and real parts are not 0
-    if( !col->L( ).isInf( ) 
-     && ( col->L( ).D( ) != 0 || col->M( ).D( ) != 0 ) 
+    if( !col->L( ).isInf( )
+     && ( col->L( ).D( ) != 0 || col->M( ).D( ) != 0 )
      && ( col->L( ).R( ) != 0 || col->M( ).R( ) != 0 ) )
     {
       curBound = col->L( ) - col->M( );
 
-      // if denominator is >0 than use delta for min
+      // if denominator is >0 then use delta for min
       if( curBound.D( ) > 0 )
       {
         curDelta = -( curBound.R( ) / curBound.D( ) );
@@ -1782,6 +1783,8 @@ void LRASolver::computeModel( )
   assert( minDelta >= 0 );
   assert( maxDelta <= 0 );
   delta = ( minDelta ) / 2;
+
+  cerr << "; delta: " << curDelta << '\n';
 
   // Compute the value for each variable. Delta is taken into account
   for ( unsigned i = 0; i < columns.size( ); ++i )
