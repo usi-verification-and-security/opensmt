@@ -496,6 +496,7 @@ const char* SMTConfig::o_proof_red_trans = ":proof-num-global-iterations";
 const char* SMTConfig::o_itp_bool_alg = ":interpolation-bool-algorithm";
 const char* SMTConfig::o_itp_euf_alg = ":interpolation-euf-algorithm";
 const char* SMTConfig::o_itp_lra_alg = ":interpolation-lra-algorithm";
+const char* SMTConfig::o_itp_lra_factor = ":interpolation-lra-factor";
 const char* SMTConfig::o_sat_resource_units = ":resource-units";
 const char* SMTConfig::o_sat_resource_limit = ":resource-limit";
 const char* SMTConfig::o_dump_state = ":dump-state";

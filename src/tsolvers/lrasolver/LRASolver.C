@@ -1380,7 +1380,6 @@ inline bool LRASolver::setStatus( LRASolverStatus s )
 //
 void LRASolver::getConflictingBounds( LAVar * x, vec<PTRef> & dst )
 {
-
   LAVar * y;
   if( x->M( ) < x->L( ) )
   {
@@ -2030,12 +2029,24 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
 
     assert (explanation.size()>1);
 
-    vec<PTRef> in_list;
+    /*
+    if (verbose() > 1)
+    {
+        if (usingStrong())
+            cerr << "; Using Strong for LRA interpolation" << endl;
+        else if (usingWeak())
+            cerr << "; Using Weak for LRA interpolation" << endl;
+        else if(usingRandom())
+            cerr << "; Using Random for LRA interpolation" << endl;
+        else
+            cerr << "; LRA interpolation algorithm unknown" << endl;
+    }
+    */
 
-    //for( unsigned in = 1; in < logic.getNofPartitions( ); in++ )
-    //{
     LAExpression interpolant(logic);
-    bool delta_flag=false;
+    LAExpression interpolant_dual(logic);
+    bool delta_flag = false;
+    bool delta_flag_dual = false;
 
     for ( unsigned i = 0; i < explanation.size( ); i++ )
     {
@@ -2064,25 +2075,14 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
                 || color == I_AB
                 || color == I_B );
 
-        assert( usingStrong()
-                || usingWeak()
-                || usingRandom() );
-
-//        if (verbose())
-//        {
-//            if (usingStrong())
-//                cerr << "; Using Strong for LRA interpolation" << endl;
-//            else if (usingWeak())
-//                cerr << "; Using Weak for LRA interpolation" << endl;
-//            else if(usingRandom())
-//                cerr << "; Using Random for LRA interpolation" << endl;
-//            else
-//                cerr << "; LRA interpolation algorithm unknown" << endl;
-//        }
+        //assert( usingStrong()
+        //        || usingWeak()
+        //        || usingRandom() );
 
         PTRef exp_pt = explanation[i].tr;
         if(labels != NULL && labels->find(exp_pt) != labels->end())
             color = labels->find(exp_pt)->second;
+        /*
         // McMillan algo: set AB as B
         else if ( usingStrong() && color == I_AB )
             color = I_B;
@@ -2092,15 +2092,18 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
         // Pudlak algo: who cares
         else if ( usingRandom() && color == I_AB )
             color = rand() % 2 ? I_A : I_B;
+        */
 
-        assert( color == I_A || color == I_B );
+        //assert( color == I_A || color == I_B );
 
         //cout << "; EXPLANATION " << logic.printTerm(explanation[i].tr) << endl;
+        //cout << "; COEFF IS " << explanationCoefficients[i] << endl;
         //cout << "; SIGN IS " << (explanation[i].sgn == l_False ? "False" : "True") << endl;
         //cout << "; COLOR IS " << color << endl;
 
-        // Add the A conflict to the interpolant (multiplied by the coefficient)
-        if ((color == I_A && usingStrong()) || (color == I_B && usingWeak()))
+        // Add the conflict to the interpolant (multiplied by the coefficient)
+        //if ((color == I_A && usingStrong()) || (color == I_B && usingWeak()))
+        if(color == I_A || color == I_AB)
         {
             // In this one I have no idea why LAExpression swaps the
             // sign.  But we want it unswapped again, so we negate.
@@ -2114,42 +2117,101 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
                 interpolant.addExprWithCoeff(LAExpression(logic, explanation[i].tr), -explanationCoefficients[i]);
             }
         }
+        //if ((color == I_A && usingStrong()) || (color == I_B && usingWeak()))
+        if(color == I_B || color == I_AB)
+        {
+            // In this one I have no idea why LAExpression swaps the
+            // sign.  But we want it unswapped again, so we negate.
+            if (explanation[i].sgn == l_False)
+            {
+                interpolant_dual.addExprWithCoeff(LAExpression(logic, explanation[i].tr), explanationCoefficients[i]);
+                delta_flag_dual=true;
+            }
+            else
+            {
+                interpolant_dual.addExprWithCoeff(LAExpression(logic, explanation[i].tr), -explanationCoefficients[i]);
+            }
+        }
+
     }
 
-    // TODO:: Why canonization stops the show?
-    // intp.canonizeReal();
-
-    // Generate resulting interpolant and push it to the list
+    PTRef itp;
     if (interpolant.isTrue() && !delta_flag)
-    {
-        in_list.push(logic.getTerm_true());
-    }
+        itp = logic.getTerm_true();
     else if (interpolant.isFalse() || ( interpolant.isTrue() && delta_flag ))
-    {
-        in_list.push(logic.getTerm_false());
-    }
+        itp = logic.getTerm_false();
     else
     {
         vec<PTRef> args;
-        args.push(logic.mkConst("0"));
-        args.push(interpolant.toPTRef());
-        char* msg;
-        if (delta_flag)
-            in_list.push(logic.mkRealLt(args, &msg));
+        if(usingFactor())
+        {
+            opensmt::Real const_strong = interpolant.getRealConstant();
+            opensmt::Real const_weak = interpolant_dual.getRealConstant();
+            PTRef nonconst_strong = interpolant.getPTRefNonConstant();
+            PTRef nonconst_weak = interpolant_dual.getPTRefNonConstant();
+            //cout << "; Constant Strong " << const_strong << endl;
+            //cout << "; Constant Weak " << const_weak << endl;
+            //cout << "; NonConstant Strong " << logic.printTerm(nonconst_strong) << endl;
+            //cout << "; NonConstant Weak " << logic.printTerm(nonconst_weak) << endl;
+            PTRef neg_strong = logic.mkRealNeg(nonconst_strong);
+            assert(neg_strong == nonconst_weak);
+
+            opensmt::Real lower_bound = const_strong;
+            opensmt::Real upper_bound = const_weak * -1;
+            
+            //cout << "; Lower bound is " << lower_bound << endl;
+            //cout << "; Upper bound is " << upper_bound << endl;
+            assert(upper_bound >= lower_bound);
+
+            //cout << "; Strength factor from config is " << getStrengthFactor() << endl;
+            opensmt::Real strength_factor(getStrengthFactor());
+            if(strength_factor < 0 || strength_factor >= 1)
+            {
+                opensmt_error("LRA strength factor has to be in [0,1)");
+            }
+            opensmt::Real strength_diff = (upper_bound - lower_bound);
+            //cout << "; Diff is " << strength_diff << endl;
+            //cout << "; Factor is " << strength_factor << endl;
+            opensmt::Real strength_delta = strength_diff * strength_factor;
+            //cout << "; Delta is " << strength_delta << endl;
+            opensmt::Real new_constant = lower_bound + (strength_diff * strength_factor);
+            new_constant = new_constant * -1;
+            //cout << "; New constant is " << new_constant << endl;
+            args.push(logic.mkConst(new_constant));
+            args.push(nonconst_strong);
+        }
+        else if(usingStrong())
+        {
+            args.push(logic.mkConst("0"));
+            args.push(interpolant.toPTRef());
+        }
+        else if(usingWeak())
+        {
+            args.push(logic.mkConst("0"));
+            args.push(interpolant_dual.toPTRef());
+        }
         else
-            in_list.push(logic.mkRealLeq(args, &msg));
+        {
+            opensmt_error("Error: interpolation algorithm not set for LRA.");
+        }
+
+        char* msg;
+        if(delta_flag)
+            itp = logic.mkRealLt(args, &msg);
+        else
+            itp = logic.mkRealLeq(args, &msg);
+        
+        if(usingWeak())
+        {
+            itp = logic.mkNot(itp);
+        }
     }
 
-    //}
-    PTRef itp;
-    if (usingWeak())
-        itp = logic.mkNot(logic.mkAnd( in_list ));
-    else if (usingStrong())
-        itp = logic.mkAnd( in_list );
     if(verbose() > 1)
     {
         cerr << "; LRA Itp: " << logic.printTerm(itp) << endl;
     }
+
     return itp;
 }
 

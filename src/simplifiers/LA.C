@@ -119,6 +119,62 @@ void LAExpression::initialize( PTRef e )
   canonize( );
 }
 
+PTRef LAExpression::getPTRefConstant()
+{
+    return logic.mkConst(getRealConstant());
+}
+
+opensmt::Real
+LAExpression::getRealConstant()
+{
+  assert( polynome.find( PTRef_Undef ) != polynome.end( ) );
+  assert( polynome.size( ) > 0 );
+  //
+  // There is at least one variable
+  //
+  for ( polynome_t::iterator it = polynome.begin( )
+      ; it != polynome.end( )
+      ; it ++ )
+  {
+    if ( it->first == PTRef_Undef )
+      return it->second;
+  }
+}
+
+PTRef LAExpression::getPTRefNonConstant()
+{
+  assert( polynome.find( PTRef_Undef ) != polynome.end( ) );
+  assert( polynome.size( ) > 0 );
+  //
+  // There is at least one variable
+  //
+  vec<PTRef> sum_list;
+  opensmt::Real constant = 0;
+  for ( polynome_t::iterator it = polynome.begin( )
+      ; it != polynome.end( )
+      ; it ++ )
+  {
+    if ( it->first == PTRef_Undef )
+      constant = it->second;
+    else
+    {
+      char* msg;
+      PTRef coeff = logic.mkConst(it->second);
+      PTRef vv = it->first;
+      vec<PTRef> term;
+      term.push(coeff);
+      term.push(vv);
+      sum_list.push( logic.mkRealTimes(term, &msg) );
+    }
+  }
+  if ( sum_list.size() == 0)
+  {
+    sum_list.push(logic.getTerm_RealZero());
+  }
+  PTRef poly = logic.mkRealPlus(sum_list);
+  return poly;
+}
+
 PTRef LAExpression::toPTRef()
 {
   assert( polynome.find( PTRef_Undef ) != polynome.end( ) );
