@@ -1072,6 +1072,16 @@ bool Logic::isUF(PTRef ptr) const {
     return isUF(getSymRef(ptr));
 }
 
+bool
+Logic::isIF(SymRef sref) const
+{
+    return getSym(sref).nargs() > 0 && interpreted_functions[getSym(sref).getId()];
+}
+
+bool Logic::isIF(PTRef ptr) const {
+    return isIF(getSymRef(ptr));
+}
+
 // Uninterpreted predicate p : U U* -> Bool
 bool Logic::isUP(PTRef ptr) const {
     const Pterm& t = term_store[ptr];
@@ -2152,11 +2162,11 @@ Logic::setIPartitionsIte(PTRef pref)
 #endif
 
 void
-Logic::collectStats(PTRef root, int& n_of_conn, int& n_of_eq, int& n_of_uf)
+Logic::collectStats(PTRef root, int& n_of_conn, int& n_of_eq, int& n_of_uf, int& n_of_if)
 {
     set<PTRef> seen_terms;
     queue<PTRef> to_visit;
-    n_of_conn = n_of_eq = n_of_uf = 0;
+    n_of_conn = n_of_eq = n_of_uf = n_of_if = 0;
     to_visit.push(root);
     while(!to_visit.empty())
     {
@@ -2181,6 +2191,13 @@ Logic::collectStats(PTRef root, int& n_of_conn, int& n_of_eq, int& n_of_uf)
         else if(isUF(node))
         {
             ++n_of_uf;
+            Pterm& pnode = getPterm(node);
+            for(int i = 0; i < pnode.size(); ++i)
+                to_visit.push(pnode[i]);
+        }
+        else if(isIF(node))
+        {
+            ++n_of_if;
             Pterm& pnode = getPterm(node);
             for(int i = 0; i < pnode.size(); ++i)
                 to_visit.push(pnode[i]);
