@@ -364,6 +364,7 @@ public:
     CoreSMTSolver(SMTConfig&, THandler&);
     virtual ~CoreSMTSolver();
     void     initialize       ( );
+    void     clearSearch      ();  // Backtrack SAT solver and theories to decision level 0
 
     // Problem specification:
     //

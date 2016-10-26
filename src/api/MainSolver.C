@@ -1098,8 +1098,10 @@ sstat MainSolver::solve()
     if (!(config.parallel_threads && status == s_Undef)) {
         if (status == s_True && config.produce_models())
             thandler.computeModel();
+        smt_solver->clearSearch();
         return status;
     }
+    smt_solver->clearSearch();
 
     opensmt::stop = false;
 

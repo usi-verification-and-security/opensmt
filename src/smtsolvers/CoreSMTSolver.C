@@ -1,7 +1,7 @@
 /*********************************************************************
 Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
 
-OpenSMT2 -- Copyright (C) 2012 - 2014 Antti Hyvarinen
+OpenSMT2 -- Copyright (C) 2012 - 2016 Antti Hyvarinen
                          2008 - 2012 Roberto Bruttomesso
 
 Permission is hereby granted, free of charge, to any person obtaining a
@@ -2477,11 +2477,16 @@ lbool CoreSMTSolver::solve_(int max_conflicts)
     }
 
     // We terminate
+//    clearSearch();
+
+    return status;
+}
+
+void CoreSMTSolver::clearSearch()
+{
     cancelUntil(0);
     if (first_model_found || splits.size() > 1)
         theory_handler.backtrack(-1);
-
-    return status;
 }
 
 const CoreSMTSolver::UBel CoreSMTSolver::UBel_Undef(-1, -1);
