@@ -162,7 +162,7 @@ static const struct ItpAlgorithm itp_euf_alg_random  = { 3 };
 static const struct ItpAlgorithm itp_lra_alg_strong  = { 0 };
 static const struct ItpAlgorithm itp_lra_alg_weak  = { 2 };
 static const struct ItpAlgorithm itp_lra_alg_factor  = { 3 };
-static const char *itp_lra_factor_0 = "0";
+static const char *itp_lra_factor_0 = "1/2";
 
 inline bool operator==(const SpType& s1, const SpType& s2) { return s1.t == s2.t; }
 inline bool operator==(const SpUnit& s1, const SpUnit& s2) { return s1.t == s2.t; }

@@ -1783,7 +1783,9 @@ void LRASolver::computeModel( )
   assert( maxDelta <= 0 );
   delta = ( minDelta ) / 2;
 
+#ifdef GAUSSIAN_DEBUG
   cerr << "; delta: " << curDelta << '\n';
+#endif
 
   // Compute the value for each variable. Delta is taken into account
   for ( unsigned i = 0; i < columns.size( ); ++i )
@@ -2098,12 +2100,7 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
         */
 
         //assert( color == I_A || color == I_B );
-
-        //cout << "; EXPLANATION " << logic.printTerm(explanation[i].tr) << endl;
-        //cout << "; COEFF IS " << explanationCoefficients[i] << endl;
-        //cout << "; SIGN IS " << (explanation[i].sgn == l_False ? "False" : "True") << endl;
-        //cout << "; COLOR IS " << color << endl;
-
+ 
         // Add the conflict to the interpolant (multiplied by the coefficient)
         //if ((color == I_A && usingStrong()) || (color == I_B && usingWeak()))
         if(color == I_A || color == I_AB)
@@ -2135,7 +2132,6 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
                 interpolant_dual.addExprWithCoeff(LAExpression(logic, explanation[i].tr), -explanationCoefficients[i]);
             }
         }
-
     }
 
     PTRef itp;
