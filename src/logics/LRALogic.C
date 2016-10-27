@@ -328,6 +328,7 @@ LRALogic::mkConst(const char *name, const char **msg)
 
 PTRef LRALogic::mkConst(SRef s, const char* name)
 {
+    assert(strlen(name) != 0);
     PTRef ptr = PTRef_Undef;
     if (s == sort_REAL) {
         char* rat;

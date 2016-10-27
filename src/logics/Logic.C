@@ -816,6 +816,7 @@ PTRef Logic::mkConst(const char* name, const char** msg)
 {
     //assert(0);
     //return PTRef_Undef;
+    assert(strlen(name) > 0);
     vec<PTRef> args;
     char *msg2;
     return resolveTerm(name, args, &msg2);
@@ -841,6 +842,7 @@ PTRef Logic::mkVar(SRef s, const char* name) {
 }
 
 PTRef Logic::mkConst(const SRef s, const char* name) {
+    assert(strlen(name) != 0);
     PTRef ptr = PTRef_Undef;
     if (s == sort_BOOL) {
         if ((strcmp(name, tk_true) != 0) && (strcmp(name, tk_false) != 0)) {
