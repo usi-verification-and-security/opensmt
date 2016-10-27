@@ -317,6 +317,8 @@ class Logic {
     virtual bool isUP              (PTRef)         const;
     virtual bool isUF              (PTRef)         const;
     virtual bool isUF              (SymRef)        const;
+    virtual bool isIF              (PTRef)         const;
+    virtual bool isIF              (SymRef)        const;
 
     bool        isAnd(PTRef tr)  const { return getPterm(tr).symb() == getSym_and(); }
     bool        isAnd(SymRef sr) const { return sr == getSym_and(); }
@@ -541,7 +543,7 @@ class Logic {
     // Statistics
     int subst_num; // Number of substitutions
 
-    void collectStats(PTRef, int& n_of_conn, int& n_of_eq, int& n_of_uf);
+    void collectStats(PTRef, int& n_of_conn, int& n_of_eq, int& n_of_uf, int& n_of_if);
 
 	inline int     verbose                       ( ) const { return config.verbosity(); }
 };

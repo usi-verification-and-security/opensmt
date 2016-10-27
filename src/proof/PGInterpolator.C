@@ -545,14 +545,15 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
 
     if( verbose() )
     {
-        getComplexityInterpolant(partial_interp);
-        /*
-        int nbool, neq, nuf;
-        thandler.getLogic().collectStats(partial_interp, nbool, neq, nuf);
+        //getComplexityInterpolant(partial_interp);
+        
+        int nbool, neq, nuf, nif;
+        thandler.getLogic().collectStats(partial_interp, nbool, neq, nuf, nif);
         cerr << "; Number of boolean connectives: " << nbool << endl;
         cerr << "; Number of equalities: " << neq << endl;
         cerr << "; Number of uninterpreted functions: " << nuf << endl;
-        */
+        cerr << "; Number of interpreted functions: " << nif << endl;
+        
     }
 
     //if ( enabledInterpVerif() ) verifyPartialInterpolantFromLeaves( getRoot(), A_mask );
