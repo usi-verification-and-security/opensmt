@@ -100,7 +100,6 @@ public:
 
     LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d);
 
-
     ~LRASolver( );                                      // Destructor ;-)
 
     virtual void clearSolver(); // Remove all problem specific data from the solver.  Should be called each time the solver is being used after a push or a pop in the incremental interface.
@@ -124,13 +123,12 @@ public:
 
 #ifdef PRODUCE_PROOF
     TheoryInterpolator* getTheoryInterpolator() { return NULL; }
-    PTRef getInterpolant( const ipartitions_t &, map<PTRef, icolor_t>* ); // Fill a vector with interpolants
+    PTRef getInterpolant( const ipartitions_t &, map<PTRef, icolor_t>* );
     bool usingStrong() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_strong; }
     bool usingWeak() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_weak; }
     bool usingFactor() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_factor; }
     const char*  getStrengthFactor() { return config.getLRAStrengthFactor(); }
 #endif
-
 
 protected:
     // vector in which witnesses for unsatisfiability are stored
