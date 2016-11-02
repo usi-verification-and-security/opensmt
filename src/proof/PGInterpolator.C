@@ -483,6 +483,14 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
 
             labelLeaf (n, A_mask, 0, PSFunction);
 
+            /*
+            cout << "; LEAF CLAUSE HAS LITERALS: " << endl;
+            vector<Lit> &lala = n->getClause();
+            for (int i = 0; i < lala.size(); ++i)
+                cout << lala[i].x << ' ';
+            cout << endl;
+            */
+
             if (n->getType() == CLAORIG)
             {
 #ifdef ITP_DEBUG
@@ -509,6 +517,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
                 for (int i = 0; i < oldvec.size(); ++i)
                     newvec.push (~oldvec[i]);
 
+#ifdef ITP_DEBUG
                 cout << "; ASSERTING LITS" << endl;
                 vec<PTRef> tr_vec;
                 Logic& logic = thandler.getLogic();
@@ -518,9 +527,12 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
                 }
                 PTRef tr_and = logic.mkAnd(tr_vec);
                 printf("%s\n", logic.printTerm(tr_and));
-//                    cout << newvec[i].x << ' ' << thandler.getLogic().printTerm(thandler.varToTerm(var(newvec[i]))) << endl;
+#endif
 
-                thandler.assertLits (newvec);
+                bool res = thandler.assertLits (newvec);
+                if (res)
+                    thandler.check(true);
+
                 map<PTRef, icolor_t> ptref2label;
                 vector<Lit>& cl = n->getClause();
 

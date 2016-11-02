@@ -2024,7 +2024,6 @@ LRASolver::~LRASolver( )
 //
 // Compute interpolants for the conflict
 //
-
 PTRef
 LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *labels)
 {
@@ -2033,27 +2032,34 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
     //? QF_LRA
     //: QF_LIA;
 
+    assert(status == UNSAT);
     assert (explanation.size()>1);
 
-    /*
+    /* 
     if (verbose() > 1)
     {
         if (usingStrong())
             cerr << "; Using Strong for LRA interpolation" << endl;
         else if (usingWeak())
             cerr << "; Using Weak for LRA interpolation" << endl;
-        else if(usingRandom())
+        else if(usingFactor())
             cerr << "; Using Random for LRA interpolation" << endl;
         else
             cerr << "; LRA interpolation algorithm unknown" << endl;
     }
     */
 
+    for(map<PTRef, icolor_t>::iterator it = labels->begin(); it != labels->end(); ++it)
+    {
+        //cout << "; PTRef " << logic.printTerm(it->first) << " has color " << it->second << endl;
+    }
+
     LAExpression interpolant(logic);
     LAExpression interpolant_dual(logic);
     bool delta_flag = false;
     bool delta_flag_dual = false;
 
+#ifdef ITP_DEBUG
     vec<PTRef> tr_vec;
     for (int i = 0; i < explanation.size(); i++)
     {
@@ -2063,6 +2069,7 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
     PTRef tr = logic.mkAnd(tr_vec);
     printf("; Explanation: \n");
     printf(";  %s\n", logic.printTerm(tr));
+#endif
 
     for ( unsigned i = 0; i < explanation.size( ); i++ )
     {
@@ -2097,7 +2104,10 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
 
         PTRef exp_pt = explanation[i].tr;
         if(labels != NULL && labels->find(exp_pt) != labels->end())
+        {
             color = labels->find(exp_pt)->second;
+            //cout << "; PTRef " << logic.printTerm(exp_pt) << " has Boolean color " << color << endl;
+        }
         /*
         // McMillan algo: set AB as B
         else if ( usingStrong() && color == I_AB )
