@@ -434,6 +434,7 @@ lbool LRASolver::declareTerm(PTRef leq_tr)
 //
 bool LRASolver::check(bool complete)
 {
+
     (void)complete;
     // check if we stop reading constraints
     if (status == INIT)
@@ -468,7 +469,7 @@ bool LRASolver::check(bool complete)
         if (!bland_rule && (repeats > columns.size()))
             bland_rule = true;
 
-        // look for the basic x with the smallest index which doesn't feat the bounds
+        // look for the basic x with the smallest index which doesn't fit the bounds
         // XXX Keep these in a heap, so that there's no need to go over all
         // of them every time!
         VectorLAVar::const_iterator it = rows.begin();
@@ -483,7 +484,7 @@ bool LRASolver::check(bool complete)
                     // Select the var with the smallest id
                     x = (*it)->ID() < curr_var_id_x ? *it : x;
                     curr_var_id_x = (*it)->ID() < curr_var_id_x ? (*it)->ID() : curr_var_id_x;
-                } else { // Use heuristics that prefers short polynomials
+                } else { // Use heuristics that prefer short polynomials
                     pivot_counter++;
                     tsolver_stats.num_pivot_ops++;
                     if (x == NULL)
@@ -514,12 +515,12 @@ bool LRASolver::check(bool complete)
         LAVar * y = NULL;
         LAVar * y_found = NULL;
 
-        // Model doesn't feet the lower bound
+        // Model doesn't fit the lower bound
         if (x->M() < x->L() ) {
             // For the Bland rule
             int curr_var_id_y = max_var_id;
             // look for nonbasic terms to fix the unbounding
-            LARow::iterator it = x->polynomial.begin( );
+            LARow::iterator it = x->polynomial.begin();
             for (; it != x->polynomial.end(); x->polynomial.getNext(it)) {
                 y = columns[it->key];
                 if (x == y)
@@ -532,7 +533,7 @@ bool LRASolver::check(bool complete)
                 const bool & a_is_pos = ( *a ) > 0;
                 if ((a_is_pos && y->M() < y->U()) || (!a_is_pos && y->M() > y->L())) {
                     if (bland_rule) {
-                        // Choose the leftmost nonbasic column with a negative (reduced) cost
+                        // Choose the leftmost nonbasic variable with a negative (reduced) cost
                         y_found = y->ID() < curr_var_id_y ? y : y_found;
                         curr_var_id_y = y->ID() < curr_var_id_y ? y->ID() : curr_var_id_y;
                     } else {
@@ -2053,6 +2054,16 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
     bool delta_flag = false;
     bool delta_flag_dual = false;
 
+    vec<PTRef> tr_vec;
+    for (int i = 0; i < explanation.size(); i++)
+    {
+        PTRef tr_vecel = explanation[i].tr;
+        tr_vec.push(explanation[i].sgn == l_False ? logic.mkNot(tr_vecel) : tr_vecel);
+    }
+    PTRef tr = logic.mkAnd(tr_vec);
+    printf("; Explanation: \n");
+    printf(";  %s\n", logic.printTerm(tr));
+
     for ( unsigned i = 0; i < explanation.size( ); i++ )
     {
         icolor_t color = I_UNDEF;
@@ -2100,7 +2111,7 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
         */
 
         //assert( color == I_A || color == I_B );
- 
+
         // Add the conflict to the interpolant (multiplied by the coefficient)
         //if ((color == I_A && usingStrong()) || (color == I_B && usingWeak()))
         if(color == I_A || color == I_AB)

@@ -509,6 +509,17 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
                 for (int i = 0; i < oldvec.size(); ++i)
                     newvec.push (~oldvec[i]);
 
+                cout << "; ASSERTING LITS" << endl;
+                vec<PTRef> tr_vec;
+                Logic& logic = thandler.getLogic();
+                for (int i = 0; i < newvec.size(); ++i) {
+                    PTRef tr_vecel = thandler.varToTerm(var(newvec[i]));
+                    tr_vec.push(sign(newvec[i]) ? logic.mkNot(tr_vecel) : tr_vecel);
+                }
+                PTRef tr_and = logic.mkAnd(tr_vec);
+                printf("%s\n", logic.printTerm(tr_and));
+//                    cout << newvec[i].x << ' ' << thandler.getLogic().printTerm(thandler.varToTerm(var(newvec[i]))) << endl;
+
                 thandler.assertLits (newvec);
                 map<PTRef, icolor_t> ptref2label;
                 vector<Lit>& cl = n->getClause();
