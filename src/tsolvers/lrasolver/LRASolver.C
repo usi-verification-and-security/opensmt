@@ -2035,7 +2035,7 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
     assert(status == UNSAT);
     assert (explanation.size()>1);
 
-    /* 
+    
     if (verbose() > 1)
     {
         if (usingStrong())
@@ -2043,11 +2043,11 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
         else if (usingWeak())
             cerr << "; Using Weak for LRA interpolation" << endl;
         else if(usingFactor())
-            cerr << "; Using Random for LRA interpolation" << endl;
+            cerr << "; Using Factor " << getStrengthFactor() << " for LRA interpolation" << endl;
         else
             cerr << "; LRA interpolation algorithm unknown" << endl;
     }
-    */
+    
 
     for(map<PTRef, icolor_t>::iterator it = labels->begin(); it != labels->end(); ++it)
     {
@@ -2155,6 +2155,9 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
         }
     }
 
+    //cout << "; INTERPOLANT " << interpolant << endl;
+    //cout << "; INTERPOLANT IS TRUE " << (interpolant.isTrue() ? "true" : "false") << endl;
+    //cout << "; INTERPOLANT IS FALSE " << (interpolant.isFalse() ? "true" : "false") << endl;
     PTRef itp;
     if (interpolant.isTrue() && !delta_flag)
         itp = logic.getTerm_true();
@@ -2174,7 +2177,7 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
             //cout << "; NonConstant Strong " << logic.printTerm(nonconst_strong) << endl;
             //cout << "; NonConstant Weak " << logic.printTerm(nonconst_weak) << endl;
             PTRef neg_strong = logic.mkRealNeg(nonconst_strong);
-            assert(neg_strong == nonconst_weak);
+            //assert(neg_strong == nonconst_weak);
 
             opensmt::Real lower_bound = const_strong;
             opensmt::Real upper_bound = const_weak * -1;
@@ -2216,13 +2219,19 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
         }
 
         char* msg;
-        if(delta_flag)
-            itp = logic.mkRealLt(args, &msg);
-        else
-            itp = logic.mkRealLeq(args, &msg);
-        
-        if(usingWeak())
+        if(!usingWeak())
         {
+            if(delta_flag)
+                itp = logic.mkRealLt(args, &msg);
+            else
+                itp = logic.mkRealLeq(args, &msg);
+        }
+        else
+        {
+            if(delta_flag)
+                itp = logic.mkRealLt(args, &msg);
+            else
+                itp = logic.mkRealLeq(args, &msg);
             itp = logic.mkNot(itp);
         }
     }
