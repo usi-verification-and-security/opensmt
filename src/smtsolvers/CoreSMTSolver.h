@@ -58,7 +58,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "Alg.h"
 
 #include "SolverTypes.h"
-//#include "LA.h"
+
+#include "Global.h"
 
 #ifdef PRODUCE_PROOF
 #include "PG.h"
@@ -513,6 +514,7 @@ public:
     //
     uint64_t solves, starts, decisions, rnd_decisions, propagations, conflicts, conflicts_last_update;
     uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
+    opensmt::OSMTTimeVal search_timer;
     double learnts_size;
     uint64_t all_learnts;
     uint64_t learnt_theory_conflicts;
