@@ -50,8 +50,8 @@ public:
     initialize(e);
   }
 
-  inline bool              isTrue     ( ) { return polynome.size( ) == 1 && ( r == EQ ? polynome[ PTRef_Undef ] == 0 : polynome[ PTRef_Undef ] <= 0 ); }
-  inline bool              isFalse    ( ) { return polynome.size( ) == 1 && ( r == EQ ? polynome[ PTRef_Undef ] != 0 : polynome[ PTRef_Undef ] > 0 ); }
+  inline bool              isTrue     ( ) { return polynome.size( ) == 1 && ( r == EQ ? polynome[ PTRef_Undef ] == 0 : polynome[ PTRef_Undef ] >= 0 ); }
+  inline bool              isFalse    ( ) { return polynome.size( ) == 1 && ( r == EQ ? polynome[ PTRef_Undef ] != 0 : polynome[ PTRef_Undef ] < 0 ); }
 
   typedef map< PTRef, opensmt::Real >    polynome_t;
 
