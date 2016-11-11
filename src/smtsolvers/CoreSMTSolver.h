@@ -59,7 +59,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "SolverTypes.h"
 
-#include "Global.h"
+#include "Timer.h"
 
 #ifdef PRODUCE_PROOF
 #include "PG.h"

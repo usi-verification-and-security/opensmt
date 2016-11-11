@@ -145,6 +145,7 @@ void Egraph::pushBacktrackPoint( )
 // Pops a backtrack point
 //
 void Egraph::popBacktrackPoint() {
+    opensmt::StopWatch sw(tsolver_stats.egraph_backtrack_timer);
     assert( backtrack_points.size( ) > 0 );
     size_t undo_stack_new_size = backtrack_points.last();
     backtrack_points.pop();
@@ -2327,6 +2328,7 @@ void Egraph::tmpMergeEnd( Enode * x, Enode * y )
 
 bool Egraph::assertLit(PtAsgn pta, bool)
 {
+    opensmt::StopWatch sw(tsolver_stats.egraph_asrt_timer);
     lbool sgn = pta.sgn;
     PTRef pt_r = pta.tr;
     Pterm& pt = logic.term_store[pt_r];

@@ -32,6 +32,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 //#define GAUSSIAN_DEBUG
 
+#include "Timer.h"
 #include "LRALogic.h"
 #include "TSolver.h"
 #include "LAVar.h"
@@ -42,22 +43,25 @@ class LRASolverStats: public TSolverStats
         int num_pivot_ops;
         int num_bland_ops;
         int num_vars;
+        opensmt::OSMTTimeVal simplex_timer;
 
         LRASolverStats()
         : num_pivot_ops(0)
         , num_bland_ops(0)
         , num_vars(0)
-        { TSolverStats(); }
+        , TSolverStats()
+        {}
 
         void printStatistics(ostream& os)
         {
-            cerr << "; -------------------------" << endl;
-            cerr << "; STATISTICS FOR LRA SOLVER" << endl;
-            cerr << "; -------------------------" << endl;
+            os << "; -------------------------" << endl;
+            os << "; STATISTICS FOR LRA SOLVER" << endl;
+            os << "; -------------------------" << endl;
             TSolverStats::printStatistics(os);
             os << "; Number of LRA vars.......: " << num_vars << endl;
             os << "; Pivot operations.........: " << num_pivot_ops << endl;
             os << "; Bland operations.........: " << num_bland_ops << endl;
+            os << "; Simplex time.............: " << simplex_timer.getTime() << " s\n";
         }
 };
 

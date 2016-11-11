@@ -30,6 +30,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // FIXME: make as configure option
 #define MORE_DEDUCTIONS 0
 
+#include "Timer.h"
 #include "SStore.h"
 #include "EnodeStore.h"
 #include "Enode.h"
@@ -39,8 +40,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Logic.h"
 // For debugging
 #include "TermMapper.h"
-//#include "SigTab.h"
-//#include "SplayTree.h"
 
 #ifdef PEDANTIC_DEBUG
 #include "GCTest.h"
@@ -49,6 +48,24 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifdef PRODUCE_PROOF
 #include "UFInterpolator.h"
 #endif
+
+class UFSolverStats: public TSolverStats
+{
+    public:
+        opensmt::OSMTTimeVal egraph_asrt_timer;
+        opensmt::OSMTTimeVal egraph_backtrack_timer;
+        opensmt::OSMTTimeVal egraph_explain_timer;
+        void printStatistics(ostream& os)
+        {
+            os << "; -------------------------" << endl;
+            os << "; STATISTICS FOR EUF SOLVER" << endl;
+            os << "; -------------------------" << endl;
+            TSolverStats::printStatistics(os);
+            os << "; egraph time..............: " << egraph_asrt_timer.getTime() << " s\n";
+            os << "; backtrack time...........: " << egraph_backtrack_timer.getTime() << " s\n";
+            os << "; explain time.............: " << egraph_explain_timer.getTime() << " s\n";
+        }
+};
 
 class Egraph : public TSolver
 {
@@ -74,7 +91,7 @@ private:
 
   double fa_garbage_frac;
 
-  TSolverStats tsolver_stats;
+  UFSolverStats tsolver_stats;
 public:
 //  SimpSMTSolver* solver; // for debugging only
 
@@ -86,19 +103,19 @@ public:
         backtrackToStackSize( 0 );
 #ifdef STATISTICS
         // TODO added for convenience
-        if ( config.produceStats() ) {
-            config.getStatsOut( ) << "; -------------------------" << endl;
-            config.getStatsOut( ) << "; STATISTICS FOR EUF SOLVER" << endl;
-            config.getStatsOut( ) << "; -------------------------" << endl;
-            //tsolver_stats.printStatistics( config.getStatsOut( ) );
-        }
-
-        if ( config.print_stats ) {
-            cerr << "; -------------------------" << endl;
-            cerr << "; STATISTICS FOR EUF SOLVER" << endl;
-            cerr << "; -------------------------" << endl;
-            //tsolver_stats.printStatistics( cerr );
-        }
+//        if ( config.produceStats() ) {
+//            config.getStatsOut( ) << "; -------------------------" << endl;
+//            config.getStatsOut( ) << "; STATISTICS FOR EUF SOLVER" << endl;
+//            config.getStatsOut( ) << "; -------------------------" << endl;
+//            //tsolver_stats.printStatistics( config.getStatsOut( ) );
+//        }
+//
+//        if ( config.print_stats ) {
+//            cerr << "; -------------------------" << endl;
+//            cerr << "; STATISTICS FOR EUF SOLVER" << endl;
+//            cerr << "; -------------------------" << endl;
+//            //tsolver_stats.printStatistics( cerr );
+//        }
 #endif
         //
         // Delete enodes
@@ -116,6 +133,7 @@ public:
         if(cgraph_)
             delete cgraph_;
 #endif
+        tsolver_stats.printStatistics(std::cerr);
     }
 
     void clearSolver() { return; } // No need to clear the solver state since egraph doesn't do internal simplifications and the external have little impact on the solving anyway.
