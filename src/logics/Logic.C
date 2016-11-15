@@ -518,6 +518,8 @@ PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args, char** msg) {
     SymRef sref = term_store.lookupSymbol(s, args);
     if (sref == SymRef_Undef) {
         if (defined_functions.has(s))
+            // Make a new function by substituting the arguments of defined_functions[s] with whatever is in args
+
             return defined_functions[s];
         else {
             asprintf(msg, "Unknown symbol `%s'", s);
@@ -940,7 +942,9 @@ bool Logic::defineFun(const char* fname, const PTRef tr)
 {
     if (defined_functions.has(fname))
         return false; // already there
-    defined_functions.insert(fname, tr);
+    char* fname_new = (char*)malloc(strlen(fname));
+    strcpy(fname_new, fname);
+    defined_functions.insert(fname_new, tr);
     return true;
 }
 

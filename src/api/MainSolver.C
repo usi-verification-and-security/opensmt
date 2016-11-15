@@ -260,6 +260,8 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
         // root_instance is updated to the and of the simplified formulas currently in the solver
         root_instance.setRoot(logic.mkAnd(root_instance.getRoot(), fc.getRoot()));
         // Stop if problem becomes unsatisfiable
+	logic.dumpHeaderToFile(std::cout);
+	logic.dumpFormulaToFile(std::cout, fc.getRoot());
         if ((status = giveToSolver(fc.getRoot(), pfstore[formulas[i]].getId())) == s_False)
             break;
     }
