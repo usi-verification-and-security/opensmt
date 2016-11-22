@@ -29,6 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SSort.h"
 #include "SymStore.h"
 #include "PtStore.h"
+#include "Tterm.h"
 
 class SStore;
 class TStore;
@@ -57,6 +58,12 @@ class Logic {
         }
         TFun() : ret_sort(SRef_Undef), tr_body(PTRef_Undef), name(NULL) {}
         TFun(TFun& other) : ret_sort(other.ret_sort), tr_body(other.tr_body), name(other.name) { other.args.copyTo(args); }
+        TFun(const Tterm& t, SRef rsort) : ret_sort(rsort), tr_body(t.getBody())
+        {
+            name = (char*)malloc(strlen(t.getName())+1);
+            strcpy(name, t.getName());
+            t.getArgs().copyTo(args);
+        }
         ~TFun() { free(name); }
         TFun& operator=(TFun& other) {
             if (&other != this) {
@@ -111,6 +118,7 @@ class Logic {
 #endif
 
     Map<const char*,TFun,StringHash,Equal<const char*> > defined_functions;
+    vec<Tterm> defined_functions_vec; // A strange interface through the Tterms..
 
     vec<SymRef>         sortToEquality;
     vec<bool>           constants;
@@ -270,6 +278,7 @@ class Logic {
 
     SymRef      declareFun    (const char* fname, const SRef rsort, const vec<SRef>& args, char** msg, bool interpreted = false);
     bool        defineFun     (const char* fname, const vec<PTRef>& args, SRef ret_sort, const PTRef tr);
+    vec<Tterm>& getFunctions  ();
     SRef        declareSort   (const char* id, char** msg);
     PTRef       mkFun         (SymRef f, const vec<PTRef>& args, char** msg);
     PTRef       mkBoolVar     (const char* name);
@@ -278,7 +287,10 @@ class Logic {
     void dumpFormulaToFile(ostream& dump_out, PTRef formula, bool negate = false, bool toassert = true);
     void dumpChecksatToFile(ostream& dump_out);
 
-    void dumpFunction(ostream& dump_out, const char* tpl_name) { if (defined_functions.has(tpl_name)) dumpFunction(dump_out, defined_functions[tpl_name]); else printf("Error: function %s is not defined\n", tpl_name); }
+    void dumpFunction(ostream& dump_out, const char* tpl_name) { if (defined_functions.has(tpl_name)) dumpFunction(dump_out, defined_functions[tpl_name]); else printf("; Error: function %s is not defined\n", tpl_name); }
+    void dumpFunction(ostream& dump_out, const std::string s) { dumpFunction(dump_out, s.c_str()); }
+
+    void dumpFunction(ostream& dump_out, const Tterm& t) { dumpFunction(dump_out, TFun(t, getSortRef(t.getBody()))); }
 
     PTRef instantiateFunctionTemplate(const char* fname, Map<PTRef, PTRef, PTRefHash>&);
 
