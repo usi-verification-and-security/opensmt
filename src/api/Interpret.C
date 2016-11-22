@@ -37,7 +37,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Theory.h"
 #include "Global.h"
 #include "smt2tokens.h"
-#include "Tterm.h"
 
 namespace opensmt {
 bool stop;
@@ -240,12 +239,12 @@ bool Interpret::interp(ASTNode& n) {
                 SRef sr = newSort(n);
                 if (!was_new) {
                     notify_formatted(true, "sort %s already declared", logic->getSortName(sr));
-                    goto declare_sort_err;
                 }
-                rval = logic->declare_sort_hook(sr);
-                assert(rval);
-                notify_success();
-declare_sort_err: ;
+                else {
+                    rval = logic->declare_sort_hook(sr);
+                    assert(rval);
+                    notify_success();
+                }
             }
             else
                 notify_formatted(true, "illegal command before set-logic: declare-sort");
@@ -255,40 +254,8 @@ declare_sort_err: ;
         case t_declarefun:
         {
             if (logic != NULL) {
-                list<ASTNode*>::iterator it = n.children->begin();
-                ASTNode& name_node = **(it++);
-                ASTNode& args_node = **(it++);
-                ASTNode& ret_node  = **(it++);
-                assert(it == n.children->end());
-
-                const char* fname = name_node.getValue();
-
-                vec<SRef> args;
-
-                char* name = buildSortName(ret_node);
-
-                if (logic->containsSort(name)) {
-                    SRef sr = newSort(ret_node);
-                    args.push(sr);
-                    free(name);
-                } else {
-                    notify_formatted(true, "Unknown return sort %s of %s", name, fname);
-                    free(name);
-                    goto declare_fun_err;
-                }
-                for (list<ASTNode*>::iterator it2 = args_node.children->begin(); it2 != args_node.children->end(); it2++) {
-                    char* name = buildSortName(**it2);
-                    if (logic->containsSort(name)) {
-                        args.push(logic->getSortRef(name));
-                        free(name);
-                    }
-                    else {
-                        notify_formatted(true, "Undefined sort %s in function %s", name, fname);
-                        goto declare_fun_err;
-                    }
-                }
-                if (declareFun(fname, args)) notify_success();
-declare_fun_err: ;
+                if (declareFun(n))
+                    notify_success();
             }
             else
                 notify_formatted(true, "Illegal command before set-logic: declare-fun");
@@ -298,25 +265,7 @@ declare_fun_err: ;
         case t_declareconst:
         {
             if (logic != NULL) {
-                list<ASTNode*>::iterator it = n.children->begin();
-                ASTNode& name_node = **(it++);
-                ASTNode& args_node = **(it++);
-                ASTNode& ret_node = **(it++);
-                const char* fname = name_node.getValue();
-                char* name = buildSortName(ret_node);
-                SRef ret_sort;
-                if (logic->containsSort(name)) {
-                    ret_sort = newSort(ret_node);
-                } else {
-                    notify_formatted(true, "Unknown return sort %s of %s", name, fname);
-                    free(name);
-                    goto declare_const_err;
-                }
-                if (declareConst(fname, ret_sort))
-                    notify_success();
-                else
-                    notify_formatted(true, "Failed to declare constant %s", fname);
-declare_const_err: ;
+                declareConst(n);
             }
             else
                 notify_formatted(true, "Illegal command before set-logic: declare-const");
@@ -333,7 +282,7 @@ declare_const_err: ;
                 if (tr == PTRef_Undef)
                     notify_formatted(true, "assertion returns an unknown sort");
                 else {
-                    if(parse_only) assertions.push(tr);
+                    if (parse_only) assertions.push(tr);
                     else
                     {
                         char* err_msg = NULL;
@@ -363,83 +312,7 @@ declare_const_err: ;
         case t_definefun:
         {
             if (logic != NULL) {
-                list<ASTNode*>::iterator it = n.children->begin();
-                ASTNode& name_node = **(it++);
-                ASTNode& args_node = **(it++);
-                ASTNode& ret_node  = **(it++);
-                ASTNode& term_node = **(it++);
-                assert(it == n.children->end());
-
-                const char* fname = name_node.getValue();
-
-                Tterm* templ = new Tterm();
-                templ->setName(fname);
-                // Get the argument sorts
-                vec<SRef> args;
-                for (list<ASTNode*>::iterator it2 = args_node.children->begin(); it2 != args_node.children->end(); it2++) {
-                    string varName = (**it2).getValue();
-                    list<ASTNode*>::iterator varC = (**it2).children->begin();
-                    list<ASTNode*>::iterator varCC = (**varC).children->begin();
-                    string sortName = (**varCC).getValue();
-
-                    //char* name = buildSortName(**it2);
-                    if (logic->containsSort(sortName.c_str())) {
-                        args.push(logic->getSortRef(sortName.c_str()));
-                        //free(name);
-                        PTRef pvar = logic->mkVar(args.last(), varName.c_str());
-                        templ->addArg(pvar);
-                    }
-                    else {
-                        notify_formatted(true, "Undefined sort %s in function %s", sortName.c_str(), fname);
-                        delete templ;
-                        return false;
-                    }
-                }
-
-                /* Removing this restriction for now..
-                // For now we only functions with 0 arguments since smtlib
-                // LRA only has these.
-                if (args_node.children->size() > 0) {
-                    notify_formatted(true, "Only non-argument functions are supported.  Function %s has %d arguments", fname, args_node.children->size());
-                    return false;
-                }
-                */
-
-                // The return sort
-                char* rsort_name = buildSortName(ret_node);
-                SRef ret_sort;
-                if (logic->containsSort(rsort_name)) {
-                    ret_sort = newSort(ret_node);
-                    free(rsort_name);
-                } else {
-                    notify_formatted(true, "Unknown return sort %s of %s", rsort_name, fname);
-                    free(rsort_name);
-                    delete templ;
-                    return false;
-                }
-
-                sstat status;
-                vec<LetFrame> let_branch;
-                PTRef tr = parseTerm(term_node, let_branch);
-                if (tr == PTRef_Undef) {
-                    notify_formatted(true, "define-fun returns an unknown sort");
-                    delete templ;
-                    return false;
-                }
-                else if (logic->getSortRef(tr) != ret_sort) {
-                    notify_formatted(true, "define-fun term and return sort do not match: %s and %s\n", logic->getSortName(logic->getSortRef(tr)), logic->getSortName(ret_sort));
-                    delete templ;
-                    return false;
-                }
-                if (defineFun(fname, tr)) notify_success();
-                else {
-                    notify_formatted(true, "define-fun failed");
-                    delete templ;
-                    return false;
-                }
-
-                templ->setBody(tr);
-                logic->addFunction(templ);
+                defineFun(n);
             }
             else {
                 notify_formatted(true, "Illegal command before set-logic: define-fun");
@@ -912,7 +785,40 @@ void Interpret::writeSplits_smtlib2(const char* filename)
     main_solver->writeSolverSplits_smtlib2(filename, &msg);
 }
 
-bool Interpret::declareFun(const char* fname, const vec<SRef>& args) {
+bool Interpret::declareFun(ASTNode& n) // (const char* fname, const vec<SRef>& args)
+{
+    list<ASTNode*>::iterator it = n.children->begin();
+    ASTNode& name_node = **(it++);
+    ASTNode& args_node = **(it++);
+    ASTNode& ret_node  = **(it++);
+    assert(it == n.children->end());
+
+    const char* fname = name_node.getValue();
+
+    vec<SRef> args;
+
+    char* name = buildSortName(ret_node);
+
+    if (logic->containsSort(name)) {
+        SRef sr = newSort(ret_node);
+        args.push(sr);
+        free(name);
+    } else {
+        notify_formatted(true, "Unknown return sort %s of %s", name, fname);
+        free(name);
+        return false;
+    }
+    for (list<ASTNode*>::iterator it2 = args_node.children->begin(); it2 != args_node.children->end(); it2++) {
+        char* name = buildSortName(**it2);
+        if (logic->containsSort(name)) {
+            args.push(logic->getSortRef(name));
+            free(name);
+        }
+        else {
+            notify_formatted(true, "Undefined sort %s in function %s", name, fname);
+            return false;
+        }
+    }
     char* msg;
     SRef rsort = args[0];
     vec<SRef> args2;
@@ -930,19 +836,95 @@ bool Interpret::declareFun(const char* fname, const vec<SRef>& args) {
     return true;
 }
 
-bool Interpret::declareConst(const char* fname, const SRef ret_sort)
+bool Interpret::declareConst(ASTNode& n) //(const char* fname, const SRef ret_sort)
 {
+    list<ASTNode*>::iterator it = n.children->begin();
+    ASTNode& name_node = **(it++);
+    ASTNode& args_node = **(it++);
+    ASTNode& ret_node = **(it++);
+    const char* fname = name_node.getValue();
+    char* name = buildSortName(ret_node);
+    SRef ret_sort;
+    if (logic->containsSort(name)) {
+        ret_sort = newSort(ret_node);
+    } else {
+        notify_formatted(true, "Failed to declare constant %s", fname);
+        notify_formatted(true, "Unknown return sort %s of %s", name, fname);
+        free(name);
+        return false;
+    }
+
     PTRef rval = logic->mkConst(ret_sort, fname);
     if (rval == PTRef_Undef) {
         comment_formatted("While declare-const %s: %s", fname, "error");
         return false;
     }
+    notify_success();
     return true;
 }
 
-bool Interpret::defineFun(const char* fname, const PTRef tr) {
-    char* msg;
-    bool rval = logic->defineFun(fname, tr);
+bool Interpret::defineFun(const ASTNode& n)
+{
+    list<ASTNode*>::iterator it = n.children->begin();
+    ASTNode& name_node = **(it++);
+    ASTNode& args_node = **(it++);
+    ASTNode& ret_node  = **(it++);
+    ASTNode& term_node = **(it++);
+    assert(it == n.children->end());
+
+    const char* fname = name_node.getValue();
+
+    // Get the argument sorts
+    vec<SRef> arg_sorts;
+    vec<PTRef> arg_trs;
+    for (list<ASTNode*>::iterator it2 = args_node.children->begin(); it2 != args_node.children->end(); it2++) {
+        string varName = (**it2).getValue();
+        list<ASTNode*>::iterator varC = (**it2).children->begin();
+        list<ASTNode*>::iterator varCC = (**varC).children->begin();
+        string sortName = (**varCC).getValue();
+
+        if (logic->containsSort(sortName.c_str())) {
+            arg_sorts.push(logic->getSortRef(sortName.c_str()));
+            //free(name);
+            PTRef pvar = logic->mkVar(arg_sorts.last(), varName.c_str());
+            arg_trs.push(pvar);
+        }
+        else {
+            notify_formatted(true, "Undefined sort %s in function %s", sortName.c_str(), fname);
+            return false;
+        }
+    }
+
+    // The return sort
+    char* rsort_name = buildSortName(ret_node);
+    SRef ret_sort;
+    if (logic->containsSort(rsort_name)) {
+        ret_sort = newSort(ret_node);
+        free(rsort_name);
+    } else {
+        notify_formatted(true, "Unknown return sort %s of %s", rsort_name, fname);
+        free(rsort_name);
+        return false;
+    }
+
+    sstat status;
+    vec<LetFrame> let_branch;
+    PTRef tr = parseTerm(term_node, let_branch);
+    if (tr == PTRef_Undef) {
+        notify_formatted(true, "define-fun returns an unknown sort");
+        return false;
+    }
+    else if (logic->getSortRef(tr) != ret_sort) {
+        notify_formatted(true, "define-fun term and return sort do not match: %s and %s\n", logic->getSortName(logic->getSortRef(tr)), logic->getSortName(ret_sort));
+        return false;
+    }
+    bool rval = logic->defineFun(fname, arg_trs, ret_sort, tr);
+    if (rval) notify_success();
+    else {
+        notify_formatted(true, "define-fun failed");
+        return false;
+    }
+
     return rval;
 }
 

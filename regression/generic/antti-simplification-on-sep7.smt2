@@ -1,0 +1,7 @@
+(set-logic QF_UF)
+(define-fun mod2 ((ti1 Bool) (to1 Bool)) Bool (= ti1 to1))
+(declare-fun i1 () Bool)
+(declare-fun o1 () Bool)
+(assert (mod2 i1 o1))
+(assert (not (= i1 o1)))
+(check-sat)

@@ -29,7 +29,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SSort.h"
 #include "SymStore.h"
 #include "PtStore.h"
-#include "Tterm.h"
 
 class SStore;
 class TStore;
@@ -42,6 +41,50 @@ static NStatus ns_unseen   = {2};
 static NStatus ns_undef    = {INT32_MAX};
 
 class Logic {
+    class TFun {
+        SRef ret_sort;
+        PTRef tr_body;
+        char* name;
+        vec<PTRef> args;
+      public:
+        TFun(const char* name_, const vec<PTRef>& args_, SRef ret_sort, PTRef tr_body)
+            : ret_sort(ret_sort)
+            , tr_body(tr_body)
+        {
+            name = (char*) malloc(strlen(name_)+1);
+            strcpy(name, name_);
+            args_.copyTo(args);
+        }
+        TFun() : ret_sort(SRef_Undef), tr_body(PTRef_Undef), name(NULL) {}
+        TFun(TFun& other) : ret_sort(other.ret_sort), tr_body(other.tr_body), name(other.name) { other.args.copyTo(args); }
+        ~TFun() { free(name); }
+        TFun& operator=(TFun& other) {
+            if (&other != this) {
+                free(name);
+                ret_sort = other.ret_sort;
+                tr_body = other.tr_body;
+                name = other.name;
+                other.name = NULL;
+                other.args.copyTo(args);
+            }
+            return *this;
+        }
+        TFun& operator=(const TFun& other) {
+            if (&other != this) {
+                free(name);
+                ret_sort = other.ret_sort;
+                tr_body = other.tr_body;
+                name = (char*)malloc(strlen(other.name)+1);
+                strcpy(name, other.name);
+                other.args.copyTo(args);
+            }
+            return *this;
+        }
+        const char* getName() const { return name; }
+        SRef getRetSort() const { return ret_sort; }
+        PTRef getBody() const { return tr_body; }
+        const vec<PTRef>& getArgs() const { return args; }
+    };
   protected:
     static const char* e_argnum_mismatch;
     static const char* e_bad_constant;
@@ -61,14 +104,13 @@ class Logic {
     //for partitions:
     vec<PTRef> assertions;
     vec<PTRef> assertions_simp;
-    vec<Tterm*> functions;
 #ifdef PRODUCE_PROOF
     map<CRef, ipartitions_t> clause_class;
     map<Var, ipartitions_t> var_class;
     map<PTRef, PTRef> flat2orig;
 #endif
 
-    Map<const char*,PTRef,StringHash,Equal<const char*> > defined_functions;
+    Map<const char*,TFun,StringHash,Equal<const char*> > defined_functions;
 
     vec<SymRef>         sortToEquality;
     vec<bool>           constants;
@@ -118,6 +160,8 @@ class Logic {
 
     virtual void visit(PTRef, Map<PTRef, PTRef, PTRefHash>&);
     PTRef insertTermHash(SymRef, const vec<PTRef>&);
+
+    void dumpFunction(ostream &, const TFun&);
 
   public:
     bool existsTermHash(SymRef, const vec<PTRef>&);
@@ -225,7 +269,7 @@ class Logic {
     virtual PTRef mkConst     (SRef, const char*);
 
     SymRef      declareFun    (const char* fname, const SRef rsort, const vec<SRef>& args, char** msg, bool interpreted = false);
-    bool        defineFun     (const char* fname, const PTRef tr);
+    bool        defineFun     (const char* fname, const vec<PTRef>& args, SRef ret_sort, const PTRef tr);
     SRef        declareSort   (const char* id, char** msg);
     PTRef       mkFun         (SymRef f, const vec<PTRef>& args, char** msg);
     PTRef       mkBoolVar     (const char* name);
@@ -234,10 +278,9 @@ class Logic {
     void dumpFormulaToFile(ostream& dump_out, PTRef formula, bool negate = false, bool toassert = true);
     void dumpChecksatToFile(ostream& dump_out);
 
-    void dumpFunction(ostream &, Tterm*);
-    PTRef instantiateFunctionTemplate(Tterm&, map<PTRef, PTRef>);
-    vec<Tterm*>& getFunctions() { return functions; }
-    void addFunction(Tterm* f) { functions.push(f); }
+    void dumpFunction(ostream& dump_out, const char* tpl_name) { if (defined_functions.has(tpl_name)) dumpFunction(dump_out, defined_functions[tpl_name]); else printf("Error: function %s is not defined\n", tpl_name); }
+
+    PTRef instantiateFunctionTemplate(const char* fname, Map<PTRef, PTRef, PTRefHash>&);
 
 #ifdef PRODUCE_PROOF
 

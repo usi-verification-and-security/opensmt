@@ -81,9 +81,9 @@ class Interpret {
     void                        writeState(const char* fname);
     void                        writeSplits(const char* fname);
     void                        writeSplits_smtlib2(const char* fname);
-    bool                        declareFun(const char* fname, const vec<SRef>& args);
-    bool                        declareConst(const char* fname, const SRef ret_sort);
-    bool                        defineFun(const char* fname, const PTRef tr);
+    bool                        declareFun(ASTNode& n); //(const char* fname, const vec<SRef>& args);
+    bool                        declareConst(ASTNode& n); //(const char* fname, const SRef ret_sort);
+    bool                        defineFun(const ASTNode& n);
     bool                        checkSat();
     bool                        getValue(const list<ASTNode*>* term);
     bool                        push();

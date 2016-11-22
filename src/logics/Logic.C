@@ -517,10 +517,25 @@ lbool Logic::simplifyTree(PTRef tr, PTRef& root_out)
 PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args, char** msg) {
     SymRef sref = term_store.lookupSymbol(s, args);
     if (sref == SymRef_Undef) {
-        if (defined_functions.has(s))
+        if (defined_functions.has(s)) {
             // Make a new function by substituting the arguments of defined_functions[s] with whatever is in args
-
-            return defined_functions[s];
+            const vec<PTRef>& tpl_args = defined_functions[s].getArgs();
+            Map<PTRef,PTRef,PTRefHash> subst_map;
+            if (args.size() != tpl_args.size()) {
+                asprintf(msg, "Arg size mismatch: should be %d but is %d", tpl_args.size(), args.size());
+                return PTRef_Undef;
+            }
+            for (int i = 0; i < args.size(); i++) {
+                if (getSortRef(args[i]) == getSortRef(tpl_args[i]))
+                    subst_map.insert(tpl_args[i], args[i]);
+                else {
+                    asprintf(msg, "Arg %s (%d) return sort mismatch: should be %s but is %s",
+                            printTerm(args[i]), i, getSymName(tpl_args[i]), getSymName(args[i]));
+                    return PTRef_Undef;
+                }
+            }
+            return instantiateFunctionTemplate(s, subst_map);
+        }
         else {
             asprintf(msg, "Unknown symbol `%s'", s);
             return PTRef_Undef;
@@ -938,13 +953,12 @@ SymRef Logic::declareFun(const char* fname, const SRef rsort, const vec<SRef>& a
     return sr;
 }
 
-bool Logic::defineFun(const char* fname, const PTRef tr)
+bool Logic::defineFun(const char* fname, const vec<PTRef>& args, SRef rsort, PTRef tr)
 {
     if (defined_functions.has(fname))
         return false; // already there
-    char* fname_new = (char*)malloc(strlen(fname));
-    strcpy(fname_new, fname);
-    defined_functions.insert(fname_new, tr);
+    TFun tpl_fun(fname, args, rsort, tr);
+    defined_functions.insert(fname, tpl_fun);
     return true;
 }
 
@@ -1968,21 +1982,50 @@ Logic::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate, bool t
 }
 
 void
-Logic::dumpFunction(ostream& dump_out, Tterm *function)
+Logic::dumpFunction(ostream& dump_out, const TFun& tpl_fun)
 {
-    dump_out << "(define-fun " << function->getName() << " ( ";
-    vec<PTRef>& args = function->getArgs();
-    for(int i = 0; i < args.size(); ++i)
-        dump_out << '(' << printTerm(args[i]) << ' ' <<  getSortName(getSortRef(args[i])) << ") ";
-    dump_out << ") Bool ";
-    dumpFormulaToFile(dump_out, function->getBody(), false, false);
+    PTRef tr_function = tpl_fun.getBody();
+    Pterm& t = getPterm(tr_function);
+    const char* name = tpl_fun.getName();
+    dump_out << "(define-fun " << name << " ( ";
+    const vec<PTRef>& args = tpl_fun.getArgs();
+    for (int i = 0; i < args.size(); ++i) {
+        char* arg_name = printTerm(args[i]);
+        const char* sort_name = getSortName(getSortRef(args[i]));
+        dump_out << '(' << arg_name << ' ' <<  sort_name << ") ";
+        free(arg_name);
+    }
+    const char* rsort = getSortName(tpl_fun.getRetSort());
+    dump_out << ") " << rsort;
+    dumpFormulaToFile(dump_out, tpl_fun.getBody(), false, false);
     dump_out << ')' << endl;
 }
 
 PTRef
-Logic::instantiateFunctionTemplate(Tterm& templ, map<PTRef, PTRef> subst)
+Logic::instantiateFunctionTemplate(const char* fname, Map<PTRef, PTRef,PTRefHash>& subst)
 {
-    return PTRef_Undef;
+    const TFun& tpl_fun = defined_functions[fname];
+    PTRef tr = tpl_fun.getBody();
+    Pterm& t = getPterm(tpl_fun.getBody());
+    const vec<PTRef>& args = tpl_fun.getArgs();
+    Map<PTRef,PtAsgn,PTRefHash> substs_asgn;
+    for (int i = 0; i < args.size(); i++) {
+        if (!subst.has(args[i]))
+            return PTRef_Undef;
+        PTRef subst_target_tr = subst[args[i]];
+        if (getSortRef(subst_target_tr) != getSortRef(args[i]))
+            return PTRef_Undef;
+        PtAsgn subst_target = {subst_target_tr, l_True};
+        substs_asgn.insert(args[i], subst_target);
+    }
+    PTRef tr_subst;
+    varsubstitute(tr, substs_asgn, tr_subst);
+    if (getSortRef(tr_subst) != tpl_fun.getRetSort()) {
+        printf("Error: the function return sort changed in instantiation from %s to %s\n", getSortName(tpl_fun.getRetSort()), getSortName(getSortRef(tr_subst)));
+        return PTRef_Undef;
+    }
+
+    return tr_subst;
 }
 
 #ifdef PRODUCE_PROOF
