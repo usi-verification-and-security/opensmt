@@ -37,8 +37,8 @@ namespace opensmt {
 
 // A c++ wrapper for struct timeval
 class BTime {
-    __time_t tv_sec;
-    __suseconds_t tv_usec;
+    time_t tv_sec;
+    suseconds_t tv_usec;
 public:
     BTime() : tv_sec(0), tv_usec(0) {}
     BTime(const struct timeval& tv) : tv_sec(tv.tv_sec), tv_usec(tv.tv_usec) {}
