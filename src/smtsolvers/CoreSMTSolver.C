@@ -1836,7 +1836,7 @@ void CoreSMTSolver::popBacktrackPoint()
 lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 {
     // Time my executionto search_timer
-    opensmt::StopWatch stopwatch = opensmt::StopWatch(search_timer);
+//    opensmt::StopWatch stopwatch = opensmt::StopWatch(search_timer);
 #ifdef VERBOSE_SAT
     cerr << "Units when starting search:" << endl;
     for (int i = 2; i < trail.size(); i++)
@@ -2311,7 +2311,7 @@ void CoreSMTSolver::declareVarsToTheories()
 
 lbool CoreSMTSolver::solve_(int max_conflicts)
 {
-    opensmt::PrintStopWatch watch("solve time", cerr);
+//    opensmt::PrintStopWatch watch("solve time", cerr);
 
     // Inform theories of the variables that are actually seen by the
     // SAT solver.

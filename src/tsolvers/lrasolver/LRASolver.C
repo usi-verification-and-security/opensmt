@@ -434,7 +434,7 @@ lbool LRASolver::declareTerm(PTRef leq_tr)
 //
 bool LRASolver::check(bool complete)
 {
-    opensmt::StopWatch check_timer(tsolver_stats.simplex_timer);
+//    opensmt::StopWatch check_timer(tsolver_stats.simplex_timer);
 
     (void)complete;
     // check if we stop reading constraints
