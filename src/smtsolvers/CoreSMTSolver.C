@@ -2313,6 +2313,8 @@ lbool CoreSMTSolver::solve_(int max_conflicts)
 {
 //    opensmt::PrintStopWatch watch("solve time", cerr);
 
+    this->clausesUpdate();
+
     // Inform theories of the variables that are actually seen by the
     // SAT solver.
     declareVarsToTheories();
