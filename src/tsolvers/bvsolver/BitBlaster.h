@@ -37,9 +37,9 @@ public:
 
    BitBlaster ( const int
               , SMTConfig &
-	      , Egraph &
-	      , vector< Enode * > &
-	      , vector< Enode * > &
+              , Egraph &
+              , vector< Enode * > &
+              , vector< Enode * > &
               , vector< Enode * > & );
   ~BitBlaster ( );
 
@@ -50,7 +50,7 @@ public:
   void pushBacktrackPoint  ( );
   void popBacktrackPoint   ( );
 
-  void computeModel        ( ); 
+  void computeModel        ( );
 
 private:
 
@@ -81,7 +81,7 @@ private:
   // vector< Enode * > & bbUp         ( Enode * );
 
 
-  Var      cnfizeAndGiveToSolver ( Enode *, Enode * );           // Cnfize 
+  Var      cnfizeAndGiveToSolver ( Enode *, Enode * );           // Cnfize
   void     cnfizeAnd             ( Enode *, Lit, Enode * );      // Cnfize conjunctions
   void     cnfizeOr              ( Enode *, Lit, Enode * );      // Cnfize disjunctions
   void     cnfizeIff             ( Enode *, Lit, Enode * );      // Cnfize iffs
@@ -106,7 +106,7 @@ private:
   vector< Lit >                   cnf_cache;                     // Global cache for cnfizer
   vector< Var >                   enode_id_to_var;               // Theory atom to Minisat Var correspondence
   vector< Enode * >               var_to_enode;                  // Minisat Var to Theory Atom correspondence
-                                                                 
+
   Egraph &                        E;                             // Egraph store
   SMTConfig &                     config;                        // Configuration
 

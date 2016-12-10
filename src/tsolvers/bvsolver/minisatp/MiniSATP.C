@@ -53,10 +53,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 MiniSATP::MiniSATP ( const int           i
                    , vector< Enode * > & e
                    , vector< Enode * > & d
-		   , vector< Enode * > & s
-		   , vector< Enode * > & v 
-		   , const bool          t )
-  
+                   , vector< Enode * > & s
+                   , vector< Enode * > & v
+                   , const bool          t )
+
     // Parameters: (formerly in 'SearchParams')
   : var_decay(1 / 0.95), clause_decay(1 / 0.999), random_var_freq(0.02)
   , restart_first(100)
@@ -167,9 +167,9 @@ bool MiniSATP::addClause(vec<Lit>& psin, Enode * e)
     for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
     {
       if (value(ps[i]) == l_True || ps[i] == ~p)
-	return true;
+        return true;
       else if (value(ps[i]) != l_False && ps[i] != p)
-	ps[j++] = p = ps[i];
+        ps[j++] = p = ps[i];
     }
     ps.shrink(i - j);
 
@@ -201,12 +201,12 @@ bool MiniSATP::addClause(vec<Lit>& psin, Enode * e)
       /*
       const Var v = var(ps[0]);
       if ( var_to_enode.size( ) <= v )
-	var_to_enode.resize( v + 1, NULL );
+        var_to_enode.resize( v + 1, NULL );
       var_to_enode[ v ] = e;
       */
       /*
       if ( e != NULL && seen_in_conflict.insert( e->getId( ) ).second )
-	explanation.push_back( e );
+        explanation.push_back( e );
       */
       // undo_stack_oper.push_back( NEWUNIT );
       // undo_stack_elem.push_back( (void *)v );
@@ -246,13 +246,13 @@ bool MiniSATP::addClause(vec<Lit>& psin, Enode * e)
     return true;
 }
 
-void MiniSATP::attachClause(Clause& c) 
+void MiniSATP::attachClause(Clause& c)
 {
     assert(c.size() > 1);
     watches[toInt(~c[0])].push(&c);
     watches[toInt(~c[1])].push(&c);
     if (c.learnt()) learnts_literals += c.size();
-    else            clauses_literals += c.size(); 
+    else            clauses_literals += c.size();
 }
 
 
@@ -266,17 +266,17 @@ void MiniSATP::detachClause(Clause& c) {
     else            clauses_literals -= c.size(); }
 
 // Modified Lines
-// void MiniSATP::removeClause(Clause& c) 
+// void MiniSATP::removeClause(Clause& c)
 // {
-void MiniSATP::removeClause(Clause& c) 
+void MiniSATP::removeClause(Clause& c)
 {
     // Remove clause from reasons
-    // 
+    //
     for ( int i = 0 ; i < c.size( ) ; i ++ )
     {
       const Var v = var(c[i]);
       if ( reason[ v ] == &c )
-	reason[ v ] = NULL;
+        reason[ v ] = NULL;
     }
     detachClause(c);
     removed.push( &c );
@@ -341,17 +341,17 @@ Lit MiniSATP::pickBranchLit(int polarity_mode, double random_var_freq)
 /*_________________________________________________________________________________________________
 |
 |  analyze : (confl : Clause*) (out_learnt : vec<Lit>&) (out_btlevel : int&)  ->  [void]
-|  
+|
 |  Description:
 |    Analyze conflict and produce a reason clause.
-|  
+|
 |    Pre-conditions:
 |      * 'out_learnt' is assumed to be cleared.
 |      * Current decision level must be greater than root level.
-|  
+|
 |    Post-conditions:
 |      * 'out_learnt[0]' is the asserting literal at level 'out_btlevel'.
-|  
+|
 |  Effect:
 |    Will undo part of the trail, upto but not beyond the assumption of the current decision level.
 |________________________________________________________________________________________________@*/
@@ -370,8 +370,8 @@ void MiniSATP::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btlevel)
         assert(confl != NULL);          // (otherwise should be UIP)
         Clause& c = *confl;
 
-	// Added Line
-	fillExplanation( confl );
+        // Added Line
+        fillExplanation( confl );
 
         if (c.learnt())
             claBumpActivity(c);
@@ -394,7 +394,7 @@ void MiniSATP::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btlevel)
 
         // Select next clause to look at:
         while (!seen[var(trail[index--])])
-	  ; // Do nothing
+          ; // Do nothing
         p     = trail[index+1];
         confl = reason[var(p)];
         seen[var(p)] = 0;
@@ -472,7 +472,7 @@ void MiniSATP::fillExplanation(Clause* confl)
       Lit p = c[j];
       const Var v = var(p);
       if ( isVarDup( v ) )
-	continue;
+        continue;
 
       storeVarDup( v );
 
@@ -483,7 +483,7 @@ void MiniSATP::fillExplanation(Clause* confl)
       //
       if ( reason[v] )
       {
-	unprocessed_clauses.push_back( reason[v] );
+        unprocessed_clauses.push_back( reason[v] );
       }
       //
       // Otherwise is activation var
@@ -491,21 +491,21 @@ void MiniSATP::fillExplanation(Clause* confl)
       else
       {
 #if 0
-	Map( Var, Enode * )::iterator it = var_to_enode.find( v );
-	if ( it != var_to_enode.end( ) && 
-	     seen_in_conflict.insert( it->second->getId( ) ).second )
+        Map( Var, Enode * )::iterator it = var_to_enode.find( v );
+        if ( it != var_to_enode.end( ) && 
+             seen_in_conflict.insert( it->second->getId( ) ).second )
 #else
-	assert( (int)var_to_enode.size( ) > v );
-	Enode * e = var_to_enode[ v ];
-	if ( e != NULL && !isExpDup( e ) )
+        assert( (int)var_to_enode.size( ) > v );
+        Enode * e = var_to_enode[ v ];
+        if ( e != NULL && !isExpDup( e ) )
 #endif
-	{
-	  explanation.push_back( e );
-	  storeExpDup( e );
-	}
+        {
+          explanation.push_back( e );
+          storeExpDup( e );
+        }
       }
     }
-  } 
+  }
 
   doneVarDup( );
 }
@@ -548,7 +548,7 @@ bool MiniSATP::litRedundant(Lit p, uint32_t abstract_levels)
 /*_________________________________________________________________________________________________
 |
 |  analyzeFinal : (p : Lit)  ->  [void]
-|  
+|
 |  Description:
 |    Specialized analysis procedure to express the final conflict in terms of assumptions.
 |    Calculates the (possibly empty) set of assumptions that led to the assignment of 'p', and
@@ -597,11 +597,11 @@ void MiniSATP::uncheckedEnqueue(Lit p, Clause* from)
 /*_________________________________________________________________________________________________
 |
 |  propagate : [void]  ->  [Clause*]
-|  
+|
 |  Description:
 |    Propagates all enqueued facts. If a conflict arises, the conflicting clause is returned,
 |    otherwise NULL.
-|  
+|
 |    Post-conditions:
 |      * the propagation queue is empty, even if there was a conflict.
 |________________________________________________________________________________________________@*/
@@ -647,28 +647,28 @@ Clause* MiniSATP::propagate(const bool deduce)
                     while (i < end)
                         *j++ = *i++;
                 }
-		else
-		{
-		  uncheckedEnqueue(first, &c);
+                else
+                {
+                  uncheckedEnqueue(first, &c);
 
 //=================================================================================================
 // Added Code
 
-		  assert( (int)var_to_enode.size( ) > var( first ) );
-		  if ( deduce && var_to_enode[ var( first ) ] != NULL )
-		  {
-		    Enode * e = var_to_enode[ var( first ) ];
-		    if ( !e->hasPolarity( ) && !e->isDeduced( ) )
-		    {
-		      e->setDeduced( sign( first ), solver_id );
-		      deductions.push_back( e );
-		    }
-		  }
+                  assert( (int)var_to_enode.size( ) > var( first ) );
+                  if ( deduce && var_to_enode[ var( first ) ] != NULL )
+                  {
+                    Enode * e = var_to_enode[ var( first ) ];
+                    if ( !e->hasPolarity( ) && !e->isDeduced( ) )
+                    {
+                      e->setDeduced( sign( first ), solver_id );
+                      deductions.push_back( e );
+                    }
+                  }
 
 // Added Code
 //=================================================================================================
 
-		}
+                }
             }
         FoundWatch:;
         }
@@ -683,7 +683,7 @@ Clause* MiniSATP::propagate(const bool deduce)
 /*_________________________________________________________________________________________________
 |
 |  reduceDB : ()  ->  [void]
-|  
+|
 |  Description:
 |    Remove half of the learnt clauses, minus the clauses locked by the current assignment. Locked
 |    clauses are clauses that are reason to some assignment. Binary clauses are never removed.
@@ -729,7 +729,7 @@ void MiniSATP::removeSatisfied(vec<Clause*>& cs)
 /*_________________________________________________________________________________________________
 |
 |  simplify : [void]  ->  [bool]
-|  
+|
 |  Description:
 |    Simplify the clause database according to the current top-level assigment. Currently, the only
 |    thing done here is the removal of satisfied clauses, but more things can be put here.
@@ -771,8 +771,8 @@ bool MiniSATP::simplify()
 // Added Code
 
 void
-MiniSATP::pushBacktrackPoint( ) 
-{ 
+MiniSATP::pushBacktrackPoint( )
+{
   //
   // Save undo stack size
   //
@@ -782,8 +782,8 @@ MiniSATP::pushBacktrackPoint( )
 }
 
 void
-MiniSATP::popBacktrackPoint ( ) 
-{ 
+MiniSATP::popBacktrackPoint ( )
+{
   //
   // Force restart, but retain assumptions
   //
@@ -799,7 +799,7 @@ MiniSATP::popBacktrackPoint ( )
     assigns[x] = toInt(l_Undef);
     reason [x] = NULL;
     insertVarOrder(x);
-  }  
+  }
   trail.shrink(trail.size( ) - new_trail_size);
   assert( trail_lim.size( ) == 0 );
   qhead = trail.size( );
@@ -867,9 +867,9 @@ MiniSATP::popBacktrackPoint ( )
   {
     Clause * c = removed.last( );
     removed.pop( );
-    free( c ); 
+    free( c );
   }
-    
+
   assert( undo_stack_elem.size( ) == undo_stack_oper.size( ) );
   assert( learnts.size( ) == 0 );
   assert( removed.size( ) == 0 );
@@ -881,12 +881,12 @@ MiniSATP::popBacktrackPoint ( )
 /*_________________________________________________________________________________________________
 |
 |  search : (nof_conflicts : int) (nof_learnts : int) (params : const SearchParams&)  ->  [lbool]
-|  
+|
 |  Description:
 |    Search for a model the specified number of conflicts, keeping the number of learnt clauses
 |    below the provided limit. NOTE! Use negative value for 'nof_conflicts' or 'nof_learnts' to
 |    indicate infinity.
-|  
+|
 |  Output:
 |    'l_True' if a partial assigment that is consistent with respect to the clauseset is found. If
 |    all variables are decision variables, this means that the clause set is satisfiable. 'l_False'
@@ -910,11 +910,11 @@ lbool MiniSATP::search(int nof_conflicts, int nof_learnts)
             conflicts++; conflictC++;
 
             if (decisionLevel() == 0) 
-	    {
-	      // Added Lines
-	      fillExplanation(confl);
-	      return l_False;
-	    }
+            {
+              // Added Lines
+              fillExplanation(confl);
+              return l_False;
+            }
 
             first = false;
 
@@ -929,7 +929,7 @@ lbool MiniSATP::search(int nof_conflicts, int nof_learnts)
                 Clause* c = Clause_new(learnt_clause, true);
                 learnts.push(c);
                 attachClause(*c);
-		
+
                 claBumpActivity(*c);
                 uncheckedEnqueue(learnt_clause[0], c);
             }
@@ -948,9 +948,9 @@ lbool MiniSATP::search(int nof_conflicts, int nof_learnts)
 
             // Simplify the set of problem clauses:
             if (decisionLevel() == 0 && !simplify())
-	    {
+            {
                 return l_False;
-	    }
+            }
 
             if (nof_learnts >= 0 && learnts.size()-nAssigns() >= nof_learnts)
                 // Reduce the set of learnt clauses:
@@ -978,14 +978,14 @@ lbool MiniSATP::search(int nof_conflicts, int nof_learnts)
                 next = pickBranchLit(polarity_mode, random_var_freq);
 
                 if (next == lit_Undef)
-		{
-		    // Added Line
-		    // Clear explanation vector if satisfiable
-		    explanation.clear( );
+                {
+                    // Added Line
+                    // Clear explanation vector if satisfiable
+                    explanation.clear( );
 
                     // Model found:
                     return l_True;
-		}
+                }
             }
 
             // Increase decision level and enqueue 'next'
@@ -1020,7 +1020,7 @@ bool MiniSATP::solve(const vec<Lit>& assumps)
     model.clear();
     conflict.clear();
 
-    if (!ok) { 
+    if (!ok) {
       // Added Line
       doneExpDup( );
 
@@ -1069,7 +1069,7 @@ bool MiniSATP::solve(const vec<Lit>& assumps)
     cancelUntil(0);
 
     // cerr << "SOLVE: Memory after: " << memUsed( ) / 1024.0 / 1024.0 << endl;
-    
+
     // Added Line
     doneExpDup( );
     assert( status == l_True || !explanation.empty( ) );

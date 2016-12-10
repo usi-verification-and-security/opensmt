@@ -31,19 +31,19 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "BitBlaster.h"
 
 BitBlaster::BitBlaster ( const int i
-		       , SMTConfig & c
-		       , Egraph & e
+                       , SMTConfig & c
+                       , Egraph & e
                        , vector< Enode * > & ex
                        , vector< Enode * > & d
                        , vector< Enode * > & s )
   : E           ( e )
-  , config      ( c ) 
+  , config      ( c )
   , explanation ( ex )
   , deductions  ( d )
   , suggestions ( s )
   , _solverP    ( new MiniSATP( i, ex, d, s, var_to_enode, config.bv_theory_propagation > 0 ) )
   , solverP     ( *_solverP )
-{ 
+{
   // Attach true
   constTrue = Lit( solverP.newVar( ) );
   vec< Lit > unit;
@@ -58,7 +58,7 @@ BitBlaster::BitBlaster ( const int i
 }
 
 BitBlaster::~BitBlaster ( )
-{ 
+{
   E.doneDupMap2( );
   delete _solverP;
   cleanGarbage( );
@@ -67,9 +67,9 @@ BitBlaster::~BitBlaster ( )
 //=============================================================================
 // Public Interface Routines
 
-lbool 
-BitBlaster::inform ( Enode * e ) 
-{ 
+lbool
+BitBlaster::inform ( Enode * e )
+{
   vector< Enode * > & result = bbEnode( e );
 
   assert( result.size( ) == 1 );
@@ -84,7 +84,7 @@ BitBlaster::inform ( Enode * e )
   if ( (int)enode_id_to_var.size( ) <= e->getId( ) )
     enode_id_to_var.resize( e->getId( ) + 1, var_Undef );
   assert( enode_id_to_var[ e->getId( ) ] == var_Undef );
-  enode_id_to_var[ e->getId( ) ] = var; 
+  enode_id_to_var[ e->getId( ) ] = var;
   if ( (int)var_to_enode.size( ) <= var )
     var_to_enode.resize( var + 1, NULL );
   assert( var_to_enode[ var ] == NULL );
@@ -103,7 +103,7 @@ BitBlaster::assertLit ( Enode * e, const bool n )
   assert( enode_id_to_var[ e->getId( ) ] != var_Undef );
   Var act_var = enode_id_to_var[ e->getId( ) ];
 
-  if ( (n && act_var == var(constTrue) ) 
+  if ( (n && act_var == var(constTrue) )
     ||       act_var == var(constFalse) )
     return false;
   //
@@ -111,14 +111,14 @@ BitBlaster::assertLit ( Enode * e, const bool n )
   //
   vec< Lit > clause;
   clause.push( Lit( act_var, n ) );
-  bool res = addClause( clause, e ); 
+  bool res = addClause( clause, e );
 
   return res;
 }
 
-bool 
+bool
 BitBlaster::check( )
-{ 
+{
   const bool res = solverP.solve( );
   assert( res || !explanation.empty( ) );
   return res;
@@ -132,7 +132,7 @@ BitBlaster::pushBacktrackPoint ( )
 
 void 
 BitBlaster::popBacktrackPoint ( )
-{ 
+{
   // Pop solver
   solverP.popBacktrackPoint( );
   solverP.restoreOK( );
@@ -154,10 +154,10 @@ BitBlaster::bbEnode ( Enode * e )
   */
   if ( e->isDistinct   ( ) ) return bbDistinct   ( e );
   // if ( e->isUp         ( ) ) return bbUp         ( e );
-  //                   
-  // BitBlasts terms  
   //
-  /*                   
+  // BitBlasts terms
+  //
+  /*
   if ( e->isConcat     ( ) ) return bbConcat     ( e );
   if ( e->isExtract    ( ) ) return bbExtract    ( e );
   if ( e->isBvand      ( ) ) return bbBvand      ( e );
@@ -184,9 +184,9 @@ BitBlaster::bbEnode ( Enode * e )
 //
 vector< Enode * > &
 BitBlaster::bbEq( Enode * e )
-{ 
+{
   assert( e );
-  assert( e->isEq( ) ); 
+  assert( e->isEq( ) );
 
   // Return previous result if computed
   if ( (int)bb_cache.size( ) <= e->getId( ) )
@@ -230,7 +230,7 @@ BitBlaster::bbEq( Enode * e )
 //
 vector< Enode * > &
 BitBlaster::bbBvsle( Enode * e )
-{ 
+{
   assert( e );
   // assert( e->isBvsle( ) );
 
@@ -264,15 +264,15 @@ BitBlaster::bbBvsle( Enode * e )
     // Produce ~l[i] & r[i]
     Enode * not_l   = E.mkNot( E.cons( bb_lhs[ i ] ) );
     Enode * lt_this = E.mkAnd( E.cons( not_l 
-			     , E.cons( bb_rhs[ i ] ) ) );
+                             , E.cons( bb_rhs[ i ] ) ) );
     // Produce l[i] <-> r[i]
     Enode * eq_this = E.mkIff( E.cons( bb_lhs[ i ] 
-	                     , E.cons( bb_rhs[ i ] ) ) );
+                             , E.cons( bb_rhs[ i ] ) ) );
     if ( lt_prev )
     {
       Enode * or_args = E.cons( lt_this
-		      , E.cons( E.mkAnd( E.cons( eq_this
-			               , E.cons( lt_prev ) ) ) ) );
+                      , E.cons( E.mkAnd( E.cons( eq_this
+                                       , E.cons( lt_prev ) ) ) ) );
       lt_prev = E.mkOr( or_args );
     }
     else
@@ -303,7 +303,7 @@ BitBlaster::bbBvsle( Enode * e )
 //
 vector< Enode * > &
 BitBlaster::bbBvule( Enode * e )
-{ 
+{
   assert( e );
   //
   // What ? Isn't it an eq ? Well lt are translated into le
@@ -342,15 +342,15 @@ BitBlaster::bbBvule( Enode * e )
     // Produce ~l[i] & r[i]
     Enode * not_l   = E.mkNot( E.cons( bb_lhs[ i ] ) );
     Enode * lt_this = E.mkAnd( E.cons( not_l 
-			     , E.cons( bb_rhs[ i ] ) ) );
+                             , E.cons( bb_rhs[ i ] ) ) );
     // Produce l[i] <-> r[i]
     Enode * eq_this = E.mkIff( E.cons( bb_lhs[ i ] 
-	                     , E.cons( bb_rhs[ i ] ) ) );
+                             , E.cons( bb_rhs[ i ] ) ) );
     if ( lt_prev )
     {
       Enode * or_args = E.cons( lt_this
-		      , E.cons( E.mkAnd( E.cons( eq_this
-			               , E.cons( lt_prev ) ) ) ) );
+                      , E.cons( E.mkAnd( E.cons( eq_this
+                                       , E.cons( lt_prev ) ) ) ) );
       lt_prev = E.mkOr( or_args );
     }
     else
@@ -358,7 +358,7 @@ BitBlaster::bbBvule( Enode * e )
       lt_prev = lt_this;
     }
   }
-  
+
   Enode * lt_part = lt_prev;
   vector< Enode * > & eq_part = bbEnode( E.mkEq( E.cons( lhs, E.cons( rhs ) ) ) );
   //
@@ -374,8 +374,8 @@ BitBlaster::bbBvule( Enode * e )
 // Concatenation
 //
 vector< Enode * > &
-BitBlaster::bbConcat( Enode * e ) 
-{ 
+BitBlaster::bbConcat( Enode * e )
+{
   assert( e );
   // assert( e->isConcat( ) );
 
@@ -411,12 +411,12 @@ BitBlaster::bbConcat( Enode * e )
   return *result;
 }
 
-// 
+//
 // Extraction
 //
 vector< Enode * > &
-BitBlaster::bbExtract( Enode * e ) 
-{ 
+BitBlaster::bbExtract( Enode * e )
+{
   assert( e );
 
   // Return previous result if computed
@@ -453,7 +453,7 @@ BitBlaster::bbExtract( Enode * e )
 // Bitwise AND
 //
 vector< Enode * > &
-BitBlaster::bbBvand( Enode * e ) 
+BitBlaster::bbBvand( Enode * e )
 {
   assert( e );
   // assert( e->isBvand( ) );
@@ -473,8 +473,8 @@ BitBlaster::bbBvand( Enode * e )
 
   vector< vector< Enode * > * > bb_args;
 
-  for ( Enode * list = e->getCdr( ) 
-      ; !list->isEnil( ) 
+  for ( Enode * list = e->getCdr( )
+      ; !list->isEnil( )
       ; list = list->getCdr( ) )
   {
     Enode * arg = list->getCar( );
@@ -502,7 +502,7 @@ BitBlaster::bbBvand( Enode * e )
 // Bitwise OR
 //
 vector< Enode * > &
-BitBlaster::bbBvor( Enode * e ) 
+BitBlaster::bbBvor( Enode * e )
 {
   assert( e );
   // assert( e->isBvor( ) );
@@ -520,8 +520,8 @@ BitBlaster::bbBvor( Enode * e )
 
   vector< vector< Enode * > * > bb_args;
 
-  for ( Enode * list = e->getCdr( ) 
-      ; !list->isEnil( ) 
+  for ( Enode * list = e->getCdr( )
+      ; !list->isEnil( )
       ; list = list->getCdr( ) )
   {
     Enode * arg = list->getCar( );
@@ -545,8 +545,8 @@ BitBlaster::bbBvor( Enode * e )
 // Bitwise XOR
 //
 vector< Enode * > &
-BitBlaster::bbBvxor( Enode * e ) 
-{ 
+BitBlaster::bbBvxor( Enode * e )
+{
   assert( e );
   // assert( e->isBvxor( ) );
   assert( e->getArity( ) == 2 );
@@ -579,8 +579,8 @@ BitBlaster::bbBvxor( Enode * e )
 // Bitwise NOT
 //
 vector< Enode * > &
-BitBlaster::bbBvnot( Enode * e ) 
-{ 
+BitBlaster::bbBvnot( Enode * e )
+{
   assert( e );
   // assert( e->isBvnot( ) );
   assert( e->getArity( ) == 1 );
@@ -608,8 +608,8 @@ BitBlaster::bbBvnot( Enode * e )
 }
 
 vector< Enode * > &
-BitBlaster::bbBvadd( Enode * e ) 
-{ 
+BitBlaster::bbBvadd( Enode * e )
+{
   assert( e );
   // assert( e->isBvadd( ) );
   assert( e->getArity( ) == 2 );
@@ -633,7 +633,7 @@ BitBlaster::bbBvadd( Enode * e )
 
   Enode * carry = NULL;
 
-  for( unsigned i = 0 ; i < bb_arg1.size( ) ; i++ ) 
+  for( unsigned i = 0 ; i < bb_arg1.size( ) ; i++ )
   {
     Enode * bit_1 = bb_arg1[ i ];
     Enode * bit_2 = bb_arg2[ i ];
@@ -643,18 +643,18 @@ BitBlaster::bbBvadd( Enode * e )
     Enode * xor_1 = E.mkXor( E.cons( bit_1 , E.cons( bit_2 ) ) );
     Enode * and_1 = E.mkAnd( E.cons( bit_1 , E.cons( bit_2 ) ) );
 
-    if ( carry ) 
-    {    
+    if ( carry )
+    {
       Enode * xor_2 = E.mkXor( E.cons( xor_1 , E.cons( carry ) ) );
       Enode * and_2 = E.mkAnd( E.cons( xor_1 , E.cons( carry ) ) );
       carry = E.mkOr( E.cons( and_1 , E.cons( and_2 ) ) );
       result->push_back( xor_2 );
-    }    
-    else 
-    {    
+    }
+    else
+    {
       carry = and_1;
       result->push_back( xor_1 );
-    }    
+    }
   }
 
   // Save result and return
@@ -663,8 +663,8 @@ BitBlaster::bbBvadd( Enode * e )
 }
 
 vector< Enode * > &
-BitBlaster::bbBvudiv( Enode * e ) 
-{ 
+BitBlaster::bbBvudiv( Enode * e )
+{
   assert( e );
   // assert( e->isBvudiv( ) );
   assert( e->getArity( ) == 2 );
@@ -717,21 +717,21 @@ BitBlaster::bbBvudiv( Enode * e )
     {
       // Produce ~l[j] & r[j]
       Enode * not_l   = E.mkNot( E.cons( minuend[ j ] ) );
-      Enode * lt_this = E.mkAnd( E.cons( not_l 
-	                       , E.cons( divisor[ j ] ) ) );
+      Enode * lt_this = E.mkAnd( E.cons( not_l
+                               , E.cons( divisor[ j ] ) ) );
       // Produce l[j] <-> r[j]
-      Enode * eq_this = E.mkIff( E.cons( minuend[ j ] 
-	                       , E.cons( divisor[ j ] ) ) );
+      Enode * eq_this = E.mkIff( E.cons( minuend[ j ]
+                               , E.cons( divisor[ j ] ) ) );
       if ( lt_prev )
       {
-	Enode * or_args = E.cons( lt_this
-	                , E.cons( E.mkAnd( E.cons( eq_this
-		                         , E.cons( lt_prev ) ) ) ) );
-	lt_prev = E.mkOr( or_args );
+        Enode * or_args = E.cons( lt_this
+                        , E.cons( E.mkAnd( E.cons( eq_this
+                                         , E.cons( lt_prev ) ) ) ) );
+        lt_prev = E.mkOr( or_args );
       }
       else
       {
-	lt_prev = lt_this;
+        lt_prev = lt_this;
       }
     }
 
@@ -743,20 +743,20 @@ BitBlaster::bbBvudiv( Enode * e )
     // divisor == 0 || !lt_prev
     (*result)[ i ] = E.mkOr( E.cons( div_eq_zero, E.cons( E.mkNot( E.cons( lt_prev ) ) ) ) );
     Enode * bit_i = (*result)[ i ];
-    // 
+    //
     // Construct subtrahend
-    // 
+    //
     vector< Enode * > subtrahend;
     for ( unsigned j = 0 ; j < size ; j ++ )
     {
       subtrahend.push_back( E.mkAnd( E.cons( bit_i
-	                           , E.cons( divisor[ j ] ) ) ) );
+                                   , E.cons( divisor[ j ] ) ) ) );
     }
     //
     // Subtract and store in minuend
     //
     Enode * carry = NULL;
-    for( unsigned j = 0 ; j < minuend.size( ) ; j++ ) 
+    for( unsigned j = 0 ; j < minuend.size( ) ; j++ )
     {
       Enode * bit_1 = minuend[ j ];
       Enode * bit_2 = subtrahend[ j ];
@@ -767,20 +767,20 @@ BitBlaster::bbBvudiv( Enode * e )
       Enode * xor_1 = E.mkXor( E.cons( bit_1, E.cons( bit_2_neg ) ) );
       Enode * and_1 = E.mkAnd( E.cons( bit_1, E.cons( bit_2_neg ) ) );
 
-      if ( carry ) 
-      {    
-	Enode * xor_2 = E.mkXor( E.cons( xor_1, E.cons( carry ) ) );
-	Enode * and_2 = E.mkAnd( E.cons( xor_1, E.cons( carry ) ) );
-	carry = E.mkOr( E.cons( and_1, E.cons( and_2 ) ) );
-	minuend[ j ] = xor_2;
-      }    
-      else 
-      {    
-	carry = and_1;
-	minuend[ j ] = xor_1;
-      }    
+      if ( carry )
+      {
+        Enode * xor_2 = E.mkXor( E.cons( xor_1, E.cons( carry ) ) );
+        Enode * and_2 = E.mkAnd( E.cons( xor_1, E.cons( carry ) ) );
+        carry = E.mkOr( E.cons( and_1, E.cons( and_2 ) ) );
+        minuend[ j ] = xor_2;
+      }
+      else
+      {
+        carry = and_1;
+        minuend[ j ] = xor_1;
+      }
     }
-  
+
     carry = NULL;
 
     //
@@ -796,18 +796,18 @@ BitBlaster::bbBvudiv( Enode * e )
       Enode * xor_1 = E.mkXor( E.cons( bit_1, E.cons( bit_2 ) ) );
       Enode * and_1 = E.mkAnd( E.cons( bit_1, E.cons( bit_2 ) ) );
 
-      if ( carry ) 
-      {    
-	Enode * xor_2 = E.mkXor( E.cons( xor_1, E.cons( carry ) ) );
-	Enode * and_2 = E.mkAnd( E.cons( xor_1, E.cons( carry ) ) );
-	carry = E.mkOr( E.cons( and_1, E.cons( and_2 ) ) );
-	minuend[ j ] = xor_2;
-      }    
-      else 
-      {    
-	carry = and_1;
-	minuend[ j ] = xor_1;
-      }    
+      if ( carry )
+      {
+        Enode * xor_2 = E.mkXor( E.cons( xor_1, E.cons( carry ) ) );
+        Enode * and_2 = E.mkAnd( E.cons( xor_1, E.cons( carry ) ) );
+        carry = E.mkOr( E.cons( and_1, E.cons( and_2 ) ) );
+        minuend[ j ] = xor_2;
+      }
+      else
+      {
+        carry = and_1;
+        minuend[ j ] = xor_1;
+      }
     }
 
     if ( i > 0 )
@@ -821,7 +821,7 @@ BitBlaster::bbBvudiv( Enode * e )
       //      N[2] N[1] N[0]
       //
       for ( int j = size - 1 ; j >= 1 ; j -- )
-	minuend[ j ] = minuend[ j - 1 ];
+        minuend[ j ] = minuend[ j - 1 ];
       minuend[ 0 ] = dividend[ i - 1 ];
     }
   }
@@ -833,8 +833,8 @@ BitBlaster::bbBvudiv( Enode * e )
 }
 
 vector< Enode * > &
-BitBlaster::bbBvurem( Enode * e ) 
-{ 
+BitBlaster::bbBvurem( Enode * e )
+{
   assert( e );
   // assert( e->isBvurem( ) );
   assert( e->getArity( ) == 2 );
@@ -889,39 +889,39 @@ BitBlaster::bbBvurem( Enode * e )
       // Produce ~l[j] & r[j]
       Enode * not_l   = E.mkNot( E.cons( minuend[ j ] ) );
       Enode * lt_this = E.mkAnd( E.cons( not_l 
-	                       , E.cons( divisor[ j ] ) ) );
+                               , E.cons( divisor[ j ] ) ) );
       // Produce l[j] <-> r[j]
       Enode * eq_this = E.mkIff( E.cons( minuend[ j ] 
-	                       , E.cons( divisor[ j ] ) ) );
+                               , E.cons( divisor[ j ] ) ) );
       if ( lt_prev )
       {
-	Enode * or_args = E.cons( lt_this
-	                , E.cons( E.mkAnd( E.cons( eq_this
-		                         , E.cons( lt_prev ) ) ) ) );
-	lt_prev = E.mkOr( or_args );
+        Enode * or_args = E.cons( lt_this
+                        , E.cons( E.mkAnd( E.cons( eq_this
+                                         , E.cons( lt_prev ) ) ) ) );
+        lt_prev = E.mkOr( or_args );
       }
       else
       {
-	lt_prev = lt_this;
+        lt_prev = lt_this;
       }
     }
 
     assert( lt_prev );
     Enode * bit_i = E.mkNot( E.cons( lt_prev ) );
 
-    // 
+    //
     // Construct subtrahend
-    // 
+    //
     vector< Enode * > subtrahend;
     for ( unsigned j = 0 ; j < size ; j ++ )
       subtrahend.push_back( E.mkAnd( E.cons( bit_i
-	                           , E.cons( divisor[ j ] ) ) ) );
+                                   , E.cons( divisor[ j ] ) ) ) );
     //
     // Subtract and store in minuend
     //
     Enode * carry = NULL;
 
-    for( unsigned j = 0 ; j < minuend.size( ) ; j++ ) 
+    for( unsigned j = 0 ; j < minuend.size( ) ; j++ )
     {
       Enode * bit_1 = minuend[ j ];
       Enode * bit_2 = subtrahend[ j ];
@@ -932,18 +932,18 @@ BitBlaster::bbBvurem( Enode * e )
       Enode * xor_1 = E.mkXor( E.cons( bit_1, E.cons( bit_2_neg ) ) );
       Enode * and_1 = E.mkAnd( E.cons( bit_1, E.cons( bit_2_neg ) ) );
 
-      if ( carry ) 
-      {    
-	Enode * xor_2 = E.mkXor( E.cons( xor_1, E.cons( carry ) ) );
-	Enode * and_2 = E.mkAnd( E.cons( xor_1, E.cons( carry ) ) );
-	carry = E.mkOr( E.cons( and_1, E.cons( and_2 ) ) );
-	minuend[ j ] = xor_2;
-      }    
-      else 
-      {    
-	carry = and_1;
-	minuend[ j ] = xor_1;
-      }    
+      if ( carry )
+      {
+        Enode * xor_2 = E.mkXor( E.cons( xor_1, E.cons( carry ) ) );
+        Enode * and_2 = E.mkAnd( E.cons( xor_1, E.cons( carry ) ) );
+        carry = E.mkOr( E.cons( and_1, E.cons( and_2 ) ) );
+        minuend[ j ] = xor_2;
+      }
+      else
+      {
+        carry = and_1;
+        minuend[ j ] = xor_1;
+      }
     }
 
     carry = NULL;
@@ -951,7 +951,7 @@ BitBlaster::bbBvurem( Enode * e )
     //
     // Adds one, if bit_i is one
     //
-    for( unsigned j = 0 ; j < minuend.size( ) ; j++ ) 
+    for( unsigned j = 0 ; j < minuend.size( ) ; j++ )
     {
       Enode * bit_1 = minuend[ j ];
       Enode * bit_2 = j == 0 ? E.mkTrue( ) : E.mkFalse( );
@@ -961,18 +961,18 @@ BitBlaster::bbBvurem( Enode * e )
       Enode * xor_1 = E.mkXor( E.cons( bit_1, E.cons( bit_2 ) ) );
       Enode * and_1 = E.mkAnd( E.cons( bit_1, E.cons( bit_2 ) ) );
 
-      if ( carry ) 
-      {    
-	Enode * xor_2 = E.mkXor( E.cons( xor_1, E.cons( carry ) ) );
-	Enode * and_2 = E.mkAnd( E.cons( xor_1, E.cons( carry ) ) );
-	carry = E.mkOr( E.cons( and_1, E.cons( and_2 ) ) );
-	minuend[ j ] = xor_2;
-      }    
-      else 
-      {    
-	carry = and_1;
-	minuend[ j ] = xor_1;
-      }    
+      if ( carry )
+      {
+        Enode * xor_2 = E.mkXor( E.cons( xor_1, E.cons( carry ) ) );
+        Enode * and_2 = E.mkAnd( E.cons( xor_1, E.cons( carry ) ) );
+        carry = E.mkOr( E.cons( and_1, E.cons( and_2 ) ) );
+        minuend[ j ] = xor_2;
+      }
+      else
+      {
+        carry = and_1;
+        minuend[ j ] = xor_1;
+      }
     }
 
     if ( i > 0 )
@@ -986,7 +986,7 @@ BitBlaster::bbBvurem( Enode * e )
       //      N[2] N[1] N[0]
       //
       for ( int j = size - 1 ; j >= 1 ; j -- )
-	minuend[ j ] = minuend[ j - 1 ];
+        minuend[ j ] = minuend[ j - 1 ];
       minuend[ 0 ] = dividend[ i - 1 ];
     }
     else
@@ -1006,8 +1006,8 @@ BitBlaster::bbBvurem( Enode * e )
 }
 
 vector< Enode * > &
-BitBlaster::bbBvmul( Enode * e ) 
-{ 
+BitBlaster::bbBvmul( Enode * e )
+{
   assert( e );
   // assert( e->isBvmul( ) );
   assert( e->getArity( ) == 2 );
@@ -1048,7 +1048,7 @@ BitBlaster::bbBvmul( Enode * e )
     // Accumulate computed term
     Enode * carry = NULL;
 
-    for( unsigned k = 0 ; k < size ; k++ ) 
+    for( unsigned k = 0 ; k < size ; k++ )
     {
       Enode * bit_1 = acc[ k ];
       Enode * bit_2 = addend[ k ];
@@ -1058,24 +1058,24 @@ BitBlaster::bbBvmul( Enode * e )
       Enode * xor_1 = E.mkXor( E.cons( bit_1 , E.cons( bit_2 ) ) );
       Enode * and_1 = E.mkAnd( E.cons( bit_1 , E.cons( bit_2 ) ) );
 
-      if ( carry ) 
-      {    
-	Enode * xor_2 = E.mkXor( E.cons( xor_1 , E.cons( carry ) ) );
-	Enode * and_2 = E.mkAnd( E.cons( xor_1 , E.cons( carry ) ) );
-	carry = E.mkOr( E.cons( and_1 , E.cons( and_2 ) ) );
-	if ( i == size - 1 )
-	  result->push_back( xor_2 );
-	else
-	  acc[ k ] = xor_2;
-      }    
-      else 
-      {    
-	carry = and_1;
-	if ( i == size - 1 )
-	  result->push_back( xor_1 );
-	else
-	  acc[ k ] = xor_1;
-      }    
+      if ( carry )
+      {
+        Enode * xor_2 = E.mkXor( E.cons( xor_1 , E.cons( carry ) ) );
+        Enode * and_2 = E.mkAnd( E.cons( xor_1 , E.cons( carry ) ) );
+        carry = E.mkOr( E.cons( and_1 , E.cons( and_2 ) ) );
+        if ( i == size - 1 )
+          result->push_back( xor_2 );
+        else
+          acc[ k ] = xor_2;
+      }
+      else
+      {
+        carry = and_1;
+        if ( i == size - 1 )
+          result->push_back( xor_1 );
+        else
+          acc[ k ] = xor_1;
+      }
     }
   }
 
@@ -1085,8 +1085,8 @@ BitBlaster::bbBvmul( Enode * e )
 }
 
 vector< Enode * > &
-BitBlaster::bbSignExtend( Enode * e ) 
-{ 
+BitBlaster::bbSignExtend( Enode * e )
+{
   assert( e );
   // assert( e->isSignExtend( ) );
   assert( e->getArity( ) == 1 );
@@ -1121,7 +1121,7 @@ BitBlaster::bbSignExtend( Enode * e )
 
 vector< Enode * > &
 BitBlaster::bbVar( Enode * e )
-{ 
+{
   assert( e );
   assert( e->isVar( ) );
 
@@ -1144,8 +1144,8 @@ BitBlaster::bbVar( Enode * e )
   for ( int i = 0 ; i < width ; i ++ )
   {
     sprintf( def_name, "_%s_%d", (e->getCar( )->getName( )).c_str( ), i );
-    // E.newSymbol( def_name, DTYPE_BOOL );  
-    result->push_back( E.mkVar( def_name ) ); 
+    // E.newSymbol( def_name, DTYPE_BOOL );
+    result->push_back( E.mkVar( def_name ) );
   }
   // Save result and return
   bb_cache[ e->getId( ) ] = result;
@@ -1185,10 +1185,10 @@ BitBlaster::bbConstant( Enode * e )
     assert( value.length( ) == width );
     for ( unsigned i = 0 ; i < width ; i ++ )
     {
-      result->push_back( value[ width - i - 1 ] == '1' 
-	  ? E.mkTrue( ) 
-	  : E.mkFalse( ) 
-	  );
+      result->push_back( value[ width - i - 1 ] == '1'
+          ? E.mkTrue( )
+          : E.mkFalse( )
+          );
     }
   }
   // Save result and return
@@ -1198,15 +1198,15 @@ BitBlaster::bbConstant( Enode * e )
 
 /*
 vector< Enode * > &
-BitBlaster::bbUf( Enode * ) 
-{ 
-  assert( false ); 
+BitBlaster::bbUf( Enode * )
+{
+  assert( false );
 }
 
 vector< Enode * > &
-BitBlaster::bbUp( Enode * ) 
-{ 
-  assert( false ); 
+BitBlaster::bbUp( Enode * )
+{
+  assert( false );
 }
 */
 
@@ -1225,14 +1225,14 @@ BitBlaster::bbDistinct( Enode * e )
 
   vector< Enode * > args;
 
-  for ( Enode * ll = e->getCdr( ) 
+  for ( Enode * ll = e->getCdr( )
       ; !ll->isEnil( )
       ; ll = ll->getCdr( ) )
   {
     Enode * arg = ll->getCar( );
     args.push_back( arg );
     assert( args.back( ) );
-  } 
+  }
   //
   // Quadratic encoding
   //
@@ -1260,20 +1260,20 @@ BitBlaster::bbDistinct( Enode * e )
   return *result;
 }
 
-bool 
-BitBlaster::addClause ( vec< Lit > & c, Enode * e ) 
-{ 
+bool
+BitBlaster::addClause ( vec< Lit > & c, Enode * e )
+{
   return solverP.addClause( c, e );
 }
 
 //=============================================================================
 // CNFization Routines
 
-Var 
+Var
 BitBlaster::cnfizeAndGiveToSolver( Enode * bb, Enode * atom )
 {
   // Stack for unprocessed enodes
-  vector< Enode * > unprocessed_enodes; 
+  vector< Enode * > unprocessed_enodes;
   // Cnfize and give to solver
   unprocessed_enodes.push_back( bb );
 
@@ -1281,7 +1281,7 @@ BitBlaster::cnfizeAndGiveToSolver( Enode * bb, Enode * atom )
   {
     Enode * enode = unprocessed_enodes.back( );
     assert( enode->hasSortBool( ) );
-    // 
+    //
     // Skip if the node has already been processed before
     //
     if ( (int)cnf_cache.size( ) <= enode->getId( ) )
@@ -1294,9 +1294,9 @@ BitBlaster::cnfizeAndGiveToSolver( Enode * bb, Enode * atom )
 
     bool unprocessed_children = false;
     Enode * arg_list;
-    for ( arg_list = enode->getCdr( ) ; 
-	  arg_list != E.enil ; 
-	  arg_list = arg_list->getCdr( ) )
+    for ( arg_list = enode->getCdr( ) ;
+          arg_list != E.enil ;
+          arg_list = arg_list->getCdr( ) )
     {
       Enode * arg = arg_list->getCar( );
       assert( arg->isTerm( ) );
@@ -1304,11 +1304,11 @@ BitBlaster::cnfizeAndGiveToSolver( Enode * bb, Enode * atom )
       // Push children if not processed already
       //
       if ( (int)cnf_cache.size( ) <= arg->getId( ) )
-	cnf_cache.resize( arg->getId( ) + 1, lit_Undef );
+        cnf_cache.resize( arg->getId( ) + 1, lit_Undef );
       if ( cnf_cache[ arg->getId( ) ] == lit_Undef )
       {
-	unprocessed_enodes.push_back( arg );
-	unprocessed_children = true;
+        unprocessed_enodes.push_back( arg );
+        unprocessed_children = true;
       }
     }
     //
@@ -1317,7 +1317,7 @@ BitBlaster::cnfizeAndGiveToSolver( Enode * bb, Enode * atom )
     if ( unprocessed_children )
       continue;
 
-    unprocessed_enodes.pop_back( );                      
+    unprocessed_enodes.pop_back( );
     Lit result = lit_Undef;
     //
     // At this point, every child has been processed
@@ -1342,14 +1342,14 @@ BitBlaster::cnfizeAndGiveToSolver( Enode * bb, Enode * atom )
     {
       assert( (int)cnf_cache.size( ) > enode->getId( ) );
 
-      Lit arg_def = cnf_cache[ enode->get1st( )->getId( ) ];       
+      Lit arg_def = cnf_cache[ enode->get1st( )->getId( ) ];
       assert( arg_def != lit_Undef );
       // Toggle variable
       result = ~arg_def;
     }
     else
     {
-      // 
+      //
       // Allocates a new variable for definition
       //
       Var var = solverP.newVar( );
@@ -1364,26 +1364,26 @@ BitBlaster::cnfizeAndGiveToSolver( Enode * bb, Enode * atom )
       Enode * atom_ = ( enode == bb ? atom : NULL );
 
       if ( enode->isAnd( ) )
-	cnfizeAnd( enode, result, atom_ );
+        cnfizeAnd( enode, result, atom_ );
       else if ( enode->isOr( ) )
-	cnfizeOr ( enode, result, atom_ );
+        cnfizeOr ( enode, result, atom_ );
       /*
       else if ( enode->isIff( ) )
-	cnfizeIff( enode, result, atom_ );
+        cnfizeIff( enode, result, atom_ );
       */
       else if ( enode->isXor( ) )
-	cnfizeXor( enode, result, atom_ );
+        cnfizeXor( enode, result, atom_ );
       else
-	opensmt_error2( "operator not handled ", enode->getCar( ) );
+        opensmt_error2( "operator not handled ", enode->getCar( ) );
     }
 
     assert( result != lit_Undef );
     assert( cnf_cache[ enode->getId( ) ] == lit_Undef );
-    // Store result 
+    // Store result
     cnf_cache[ enode->getId( ) ] = result;
   }
 
-  // 
+  //
   // Add an activation variable
   //
   assert( cnf_cache[ bb->getId( ) ] != lit_Undef );
@@ -1411,77 +1411,77 @@ BitBlaster::cnfizeAndGiveToSolver( Enode * bb, Enode * atom )
   return act;
 }
 
-void 
+void
 BitBlaster::cnfizeAnd( Enode * enode, Lit def, Enode * atom )
 {
   assert( enode );
   Enode * list = NULL;
   //
-  // ( a_0 & ... & a_{n-1} ) 
+  // ( a_0 & ... & a_{n-1} )
   //
   // <=>
   //
-  // aux = ( -aux | a_0 ) & ... & ( -aux | a_{n-1} ) & ( aux & -a_0 & ... & -a_{n-1} ) 
+  // aux = ( -aux | a_0 ) & ... & ( -aux | a_{n-1} ) & ( aux & -a_0 & ... & -a_{n-1} )
   //
   vec< Lit > little_clause;
   vec< Lit > big_clause;
   little_clause.push( ~def );
-  big_clause   .push(  def ); 
-  for ( list = enode->getCdr( ) 
-      ; list != E.enil 
+  big_clause   .push(  def );
+  for ( list = enode->getCdr( )
+      ; list != E.enil
       ; list = list->getCdr( ) )
   {
     Lit arg = cnf_cache[ list->getCar( )->getId( ) ];
     assert( arg != lit_Undef );
     little_clause.push(  arg );
-    big_clause   .push( ~arg );  
+    big_clause   .push( ~arg );
     addClause( little_clause, atom );
     little_clause.pop( );
   }
   addClause( big_clause, atom );
-} 
+}
 
-void 
+void
 BitBlaster::cnfizeOr( Enode * enode, Lit def, Enode * atom )
 {
   assert( enode );
   Enode * list = NULL;
   //
-  // ( a_0 | ... | a_{n-1} ) 
+  // ( a_0 | ... | a_{n-1} )
   //
   // <=>
   //
-  // aux = ( aux | -a_0 ) & ... & ( aux | -a_{n-1} ) & ( -aux | a_0 | ... | a_{n-1} ) 
+  // aux = ( aux | -a_0 ) & ... & ( aux | -a_{n-1} ) & ( -aux | a_0 | ... | a_{n-1} )
   //
   vec< Lit > little_clause;
   vec< Lit > big_clause;
   little_clause.push(  def );
-  big_clause   .push( ~def ); 
-  for ( list = enode->getCdr( ) 
-      ; list != E.enil 
+  big_clause   .push( ~def );
+  for ( list = enode->getCdr( )
+      ; list != E.enil
       ; list = list->getCdr( ) )
   {
     Lit arg = cnf_cache[ list->getCar( )->getId( ) ];
     little_clause.push( ~arg );
-    big_clause   .push(  arg );  
+    big_clause   .push(  arg );
     addClause( little_clause, atom );
     little_clause.pop( );
   }
-  addClause( big_clause, atom );  
-} 
+  addClause( big_clause, atom );
+}
 
-void 
+void
 BitBlaster::cnfizeXor( Enode * enode, Lit def, Enode * atom )
 {
   assert( enode );
   Enode * list = enode->getCdr( );
   //
-  // ( a_0 xor a_1 ) 
+  // ( a_0 xor a_1 )
   //
   // <=>
   //
   // aux = ( -aux |  a_0 | a_1 ) & ( -aux | -a_0 | -a_1 ) &
-  //	   (  aux | -a_0 | a_1 ) & (  aux |  a_0 |  a_1 ) 
+  //       (  aux | -a_0 | a_1 ) & (  aux |  a_0 |  a_1 ) 
   //
   assert( list->getArity( ) == 2 );
   Lit arg0 = cnf_cache[ list->getCar( )->getId( ) ];
@@ -1489,7 +1489,7 @@ BitBlaster::cnfizeXor( Enode * enode, Lit def, Enode * atom )
   vec< Lit > clause;
 
   clause.push( ~def );
-  
+
   // First clause
   clause  .push( ~arg0 );
   clause  .push( ~arg1 );
@@ -1500,38 +1500,38 @@ BitBlaster::cnfizeXor( Enode * enode, Lit def, Enode * atom )
   // Second clause
   clause  .push(  arg0 );
   clause  .push(  arg1 );
-  addClause( clause, atom ); 
+  addClause( clause, atom );
   clause  .pop( );
   clause  .pop( );
 
   clause.pop( );
   clause.push( def );
-  
+
   // Third clause
   clause  .push( ~arg0 );
   clause  .push(  arg1 );
-  addClause( clause, atom ); 
+  addClause( clause, atom );
   clause  .pop( );
   clause  .pop( );
 
   // Fourth clause
   clause  .push(  arg0 );
   clause  .push( ~arg1 );
-  addClause( clause, atom ); 
-} 
+  addClause( clause, atom );
+}
 
-void 
+void
 BitBlaster::cnfizeIff( Enode * enode, Lit def, Enode * atom )
 {
   assert( enode );
   Enode * list = enode->getCdr( );
   //
-  // ( a_0 <-> a_1 ) 
+  // ( a_0 <-> a_1 )
   //
   // <=>
   //
   // aux = ( -aux |  a_0 | -a_1 ) & ( -aux | -a_0 |  a_1 ) &
-  //	   (  aux |  a_0 |  a_1 ) & (  aux | -a_0 | -a_1 ) 
+  //       (  aux |  a_0 |  a_1 ) & (  aux | -a_0 | -a_1 )
   //
   assert( list->getArity( ) == 2 );
   Lit arg0 = cnf_cache[ list->getCar( )->getId( ) ];
@@ -1539,7 +1539,7 @@ BitBlaster::cnfizeIff( Enode * enode, Lit def, Enode * atom )
   vec< Lit > clause;
 
   clause.push( ~def );
-  
+
   // First clause
   clause  .push(  arg0 );
   clause  .push( ~arg1 );
@@ -1550,24 +1550,24 @@ BitBlaster::cnfizeIff( Enode * enode, Lit def, Enode * atom )
   // Second clause
   clause  .push( ~arg0 );
   clause  .push(  arg1 );
-  addClause( clause, atom ); 
+  addClause( clause, atom );
   clause  .pop( );
   clause  .pop( );
 
   clause.pop( );
   clause.push( def );
-  
+
   // Third clause
   clause  .push( ~arg0 );
   clause  .push( ~arg1 );
-  addClause( clause, atom ); 
+  addClause( clause, atom );
   clause  .pop( );
   clause  .pop( );
 
   // Fourth clause
   clause  .push(  arg0 );
   clause  .push(  arg1 );
-  addClause( clause, atom ); 
+  addClause( clause, atom );
 }
 
 void 
@@ -1576,12 +1576,12 @@ BitBlaster::cnfizeIfthenelse( Enode * enode, Lit def, Enode * atom )
   assert( enode );
   Enode * list = enode->getCdr( );
   //
-  // ( if a_0 then a_1 else a_2 ) 
+  // ( if a_0 then a_1 else a_2 )
   //
   // <=>
   //
-  // aux = ( -aux | -a_0 |  a_1 ) & 
-  //       ( -aux |  a_0 |  a_2 ) & 
+  // aux = ( -aux | -a_0 |  a_1 ) &
+  //       ( -aux |  a_0 |  a_2 ) &
   //       (  aux | -a_0 | -a_1 ) &
   //       (  aux |  a_0 | -a_2 )
   //
@@ -1591,7 +1591,7 @@ BitBlaster::cnfizeIfthenelse( Enode * enode, Lit def, Enode * atom )
   vec< Lit > clause;
 
   clause.push( ~def );
-  
+
   // First clause
   clause  .push( ~arg0 );
   clause  .push(  arg1 );
@@ -1602,24 +1602,24 @@ BitBlaster::cnfizeIfthenelse( Enode * enode, Lit def, Enode * atom )
   // Second clause
   clause  .push(  arg0 );
   clause  .push(  arg1 );
-  addClause( clause, atom ); 
+  addClause( clause, atom );
   clause  .pop( );
   clause  .pop( );
 
   clause.pop( );
   clause.push( def );
-  
+
   // Third clause
   clause  .push( ~arg0 );
   clause  .push( ~arg1 );
-  addClause( clause, atom ); 
+  addClause( clause, atom );
   clause  .pop( );
   clause  .pop( );
 
   // Fourth clause
   clause  .push(  arg0 );
   clause  .push( ~arg1 );
-  addClause( clause, atom ); 
+  addClause( clause, atom );
 }
 
 void
@@ -1655,9 +1655,9 @@ Enode * BitBlaster::simplify( Enode * formula )
 
     bool unprocessed_children = false;
     Enode * arg_list;
-    for ( arg_list = enode->getCdr( ) ; 
-	arg_list != E.enil ; 
-	arg_list = arg_list->getCdr( ) )
+    for ( arg_list = enode->getCdr( ) ;
+        arg_list != E.enil ;
+        arg_list = arg_list->getCdr( ) )
     {
       Enode * arg = arg_list->getCar( );
 
@@ -1667,8 +1667,8 @@ Enode * BitBlaster::simplify( Enode * formula )
       //
       if ( E.valDupMap2( arg ) == NULL )
       {
-	unprocessed_enodes.push_back( arg );
-	unprocessed_children = true;
+        unprocessed_enodes.push_back( arg );
+        unprocessed_children = true;
       }
     }
     //
@@ -1677,7 +1677,7 @@ Enode * BitBlaster::simplify( Enode * formula )
     if ( unprocessed_children )
       continue;
 
-    unprocessed_enodes.pop_back( );                      
+    unprocessed_enodes.pop_back( );
     Enode * result = NULL;
 
     if ( enode->isAnd( ) && enode->getArity( ) == 2 )
@@ -1692,8 +1692,8 @@ Enode * BitBlaster::simplify( Enode * formula )
       // (and x (not x)) --> false
       //
       if ( ( x->isNot( ) && x->get1st( ) == y )
-	|| ( y->isNot( ) && y->get1st( ) == x ) )
-	result = E.mkFalse( );
+        || ( y->isNot( ) && y->get1st( ) == x ) )
+        result = E.mkFalse( );
       //
       // Rule 2
       //
@@ -1701,11 +1701,11 @@ Enode * BitBlaster::simplify( Enode * formula )
       //
       else if ( x->isNot( ) && y->isNot( ) )
       {
-	Enode * z = x->get1st( );
-	Enode * w = y->get1st( );
-	assert( z );
-	assert( w );
-	result = E.mkNot( E.cons( E.mkOr( E.cons( z, E.cons( w ) ) ) ) );
+        Enode * z = x->get1st( );
+        Enode * w = y->get1st( );
+        assert( z );
+        assert( w );
+        result = E.mkNot( E.cons( E.mkOr( E.cons( z, E.cons( w ) ) ) ) );
       }
     }
     else if ( enode->isOr( ) && enode->getArity( ) == 2 )
@@ -1720,25 +1720,25 @@ Enode * BitBlaster::simplify( Enode * formula )
       // (or x (and (not x) z)) --> (or x z))
       //
       if ( y->isAnd( ) 
-	&& y->getArity( ) == 2
-	&& y->get1st( )->isNot( ) 
-	&& y->get1st( )->get1st( ) == x )
+        && y->getArity( ) == 2
+        && y->get1st( )->isNot( ) 
+        && y->get1st( )->get1st( ) == x )
       {
-	Enode * z = y->get2nd( );
-	result = E.mkOr( E.cons( x, E.cons( z ) ) );
+        Enode * z = y->get2nd( );
+        result = E.mkOr( E.cons( x, E.cons( z ) ) );
       }
       //
       // Rule 4
       //
       // (or (and (not y) z) y) --> (or z y))
       //
-      if ( x->isAnd( ) 
-	&& x->getArity( ) == 2
-	&& x->get1st( )->isNot( ) 
-	&& x->get1st( )->get1st( ) == y )
+      if ( x->isAnd( )
+        && x->getArity( ) == 2
+        && x->get1st( )->isNot( )
+        && x->get1st( )->get1st( ) == y )
       {
-	Enode * z = x->get2nd( );
-	result = E.mkOr( E.cons( y, E.cons( z ) ) );
+        Enode * z = x->get2nd( );
+        result = E.mkOr( E.cons( y, E.cons( z ) ) );
       }
     }
 
@@ -1762,12 +1762,12 @@ void BitBlaster::computeIncomingEdges( Enode * e, map< int, int > & enodeid_to_i
 {
   assert( e );
 
-  if ( !e->isBooleanOperator( ) ) 
+  if ( !e->isBooleanOperator( ) )
     return;
 
-  for ( Enode * list = e->getCdr( ) ; 
-        !list->isEnil( ) ; 
-	list = list->getCdr( ) )
+  for ( Enode * list = e->getCdr( ) ;
+        !list->isEnil( ) ;
+        list = list->getCdr( ) )
   {
     Enode * arg = list->getCar( );
     map< int, int >::iterator it = enodeid_to_incoming_edges.find( arg->getId( ) );
@@ -1795,7 +1795,7 @@ Enode * BitBlaster::rewriteMaxArity( Enode * formula, map< int, int > & enodeid_
   while( !unprocessed_enodes.empty( ) )
   {
     Enode * enode = unprocessed_enodes.back( );
-    // 
+    //
     // Skip if the node has already been processed before
     //
     if ( cache.find( enode->getId( ) ) != cache.end( ) )
@@ -1806,9 +1806,9 @@ Enode * BitBlaster::rewriteMaxArity( Enode * formula, map< int, int > & enodeid_
 
     bool unprocessed_children = false;
     Enode * arg_list;
-    for ( arg_list = enode->getCdr( ) ; 
-	  arg_list != E.enil ; 
-	  arg_list = arg_list->getCdr( ) )
+    for ( arg_list = enode->getCdr( ) ;
+          arg_list != E.enil ;
+          arg_list = arg_list->getCdr( ) )
     {
       Enode * arg = arg_list->getCar( );
 
@@ -1816,11 +1816,11 @@ Enode * BitBlaster::rewriteMaxArity( Enode * formula, map< int, int > & enodeid_
       //
       // Push only if it is an unprocessed boolean operator
       //
-      if ( arg->isBooleanOperator( ) 
-	&& cache.find( arg->getId( ) ) == cache.end( ) )
+      if ( arg->isBooleanOperator( )
+        && cache.find( arg->getId( ) ) == cache.end( ) )
       {
-	unprocessed_enodes.push_back( arg );
-	unprocessed_children = true;
+        unprocessed_enodes.push_back( arg );
+        unprocessed_children = true;
       }
       //
       // If it is an atom (either boolean or theory) just
@@ -1828,7 +1828,7 @@ Enode * BitBlaster::rewriteMaxArity( Enode * formula, map< int, int > & enodeid_
       //
       else if ( arg->isAtom( ) )
       {
-	cache.insert( make_pair( arg->getId( ), arg ) );
+        cache.insert( make_pair( arg->getId( ), arg ) );
       }
     }
     //
@@ -1837,7 +1837,7 @@ Enode * BitBlaster::rewriteMaxArity( Enode * formula, map< int, int > & enodeid_
     if ( unprocessed_children )
       continue;
 
-    unprocessed_enodes.pop_back( );                      
+    unprocessed_enodes.pop_back( );
     Enode * result = NULL;
     //
     // At this point, every child has been processed
@@ -1872,16 +1872,16 @@ Enode * BitBlaster::rewriteMaxArity( Enode * formula, map< int, int > & enodeid_
 //
 Enode * BitBlaster::mergeEnodeArgs( Enode * e
                                   , map< int, Enode * > & cache
-		                  , map< int, int > & enodeid_to_incoming_edges )
+                                  , map< int, int > & enodeid_to_incoming_edges )
 {
   assert( e->isAnd( ) || e->isOr( ) );
 
   Enode * e_symb = e->getCar( );
   vector< Enode * > new_args;
-  
-  for ( Enode * list = e->getCdr( ) ; 
+
+  for ( Enode * list = e->getCdr( ) ;
         !list->isEnil( ) ;
-	list = list->getCdr( ) )
+        list = list->getCdr( ) )
   {
     Enode * arg = list->getCar( );
     Enode * sub_arg = cache[ arg->getId( ) ];
@@ -1902,9 +1902,9 @@ Enode * BitBlaster::mergeEnodeArgs( Enode * e
       continue;
     }
 
-    for ( Enode * sub_arg_list = sub_arg->getCdr( ) ; 
-	  !sub_arg_list->isEnil( ) ; 
-	  sub_arg_list = sub_arg_list->getCdr( ) )
+    for ( Enode * sub_arg_list = sub_arg->getCdr( ) ;
+          !sub_arg_list->isEnil( ) ;
+          sub_arg_list = sub_arg_list->getCdr( ) )
       new_args.push_back( sub_arg_list->getCar( ) );
   }
 
@@ -1927,17 +1927,17 @@ void BitBlaster::computeModel( )
     Real value = 0;
     Real coeff = 1;
     // Retrieve bitblasted vector
-    vector< Enode * > & blast = *bb_cache[ e->getId( ) ]; 
+    vector< Enode * > & blast = *bb_cache[ e->getId( ) ];
     for ( unsigned j = 0 ; j < blast.size( ) ; j ++ )
     {
       Enode * b = blast[ j ];
       if ( cnf_var.find( b->getId( ) ) == cnf_var.end( ) )
-	continue;
+        continue;
       Var var = cnf_var[ b->getId( ) ];
       Real bit = solverP.getValue( var ) == l_False ? 0 : 1;
       value = value + coeff * bit;
       coeff = Real( 2 ) * coeff;
     }
     e->setValue( value );
-  } 
+  }
 }

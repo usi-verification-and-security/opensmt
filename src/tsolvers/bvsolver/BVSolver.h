@@ -35,12 +35,12 @@ public:
 
    BVSolver ( const int
             , const char *
-	    , SMTConfig &
-	    , Egraph & 
-	    , SStore &
-	    , vector< Enode * > &
-	    , vector< Enode * > &
-	    , vector< Enode * > & );
+            , SMTConfig &
+            , Egraph &
+            , SStore &
+            , vector< Enode * > &
+            , vector< Enode * > &
+            , vector< Enode * > & );
   ~BVSolver ( );
 
   lbool               inform              ( Enode * );

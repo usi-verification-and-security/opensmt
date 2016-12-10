@@ -27,37 +27,37 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 BVSolver::BVSolver ( const int           i
                    , const char *        n
-		   , SMTConfig &         c
-		   , Egraph &            e
-		   , SStore &            t
-		   , vector< Enode * > & x
-		   , vector< Enode * > & d
+                   , SMTConfig &         c
+                   , Egraph &            e
+                   , SStore &            t
+                   , vector< Enode * > & x
+                   , vector< Enode * > & d
                    , vector< Enode * > & s )
  : OrdinaryTSolver ( i, n, c, e, t, x, d, s )
-{ 
+{
   B = new BitBlaster( id, c, egraph, explanation, deductions, suggestions );  
 }
 
 BVSolver::~BVSolver ( ) 
-{ 
+{
   delete B;
 }
 
 //
 // The solver is informed of the existence of
 // atom e. It might be useful for initializing
-// the solver's data structures. This function is 
+// the solver's data structures. This function is
 // called before the actual solving starts.
-// 
-lbool BVSolver::inform( Enode * e )  
-{ 
+//
+lbool BVSolver::inform( Enode * e )
+{
   assert( e );
   assert( belongsToT( e ) );
   const lbool res = B->inform( e );
   return res;
 }
 
-// 
+//
 // Asserts a literal into the solver. If by chance
 // you are able to discover inconsistency you may
 // return false. The real consistency state will
@@ -73,9 +73,9 @@ bool BVSolver::assertLit ( Enode * e, bool reason )
   assert( e->getPolarity( ) == l_False 
        || e->getPolarity( ) == l_True );
 
-  if ( e->isDeduced( ) 
-    && e->getPolarity( ) == e->getDeduced( ) 
-    && e->getDedIndex( ) == id ) 
+  if ( e->isDeduced( )
+    && e->getPolarity( ) == e->getDeduced( )
+    && e->getDedIndex( ) == id )
     return true;
 
   const bool n = e->getPolarity( ) == l_False;
@@ -126,8 +126,8 @@ void BVSolver::popBacktrackPoint ( )
 // Check for consistency. If flag is
 // set make sure you run a complete check
 //
-bool BVSolver::check( bool complete )    
-{ 
+bool BVSolver::check( bool complete )
+{
   if ( !complete ) return true;
   assert( explanation.empty( ) );
 
@@ -152,7 +152,7 @@ bool BVSolver::belongsToT( Enode * e )
   //
   if ( e->isEq       ( )
       /*
-    || e->isBvsle    ( ) 
+    || e->isBvsle    ( )
     || e->isBvule    ( )
       */
     || e->isDistinct ( ) )
