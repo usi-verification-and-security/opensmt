@@ -1397,12 +1397,26 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
             }
             else
             {
-                Clause& c = ca[reason(x)];
-                for (int j = 1; j < c.size(); j++)
-                    if (level(var(c[j])) > 0)
-                        seen[var(c[j])] = 1;
+                if (reason(x) == CRef_Fake)
+                {
+                    cancelUntilVarTempInit(x);
+                    vec<Lit> r;
+                    theory_handler.getReason(trail[i], r);
+                    assert(r.size() > 0);
+                    for (int j = 1; j < r.size(); j++)
+                        if (level(var(r[j])) > 0)
+                            seen[var(r[j])] = 1;
+                    cancelUntilVarTempDone();
+                }
+                else
+                {
+                    Clause& c = ca[reason(x)];
+                    for (int j = 1; j < c.size(); j++)
+                        if (level(var(c[j])) > 0)
+                            seen[var(c[j])] = 1;
+                }
+                seen[x] = 0;
             }
-            seen[x] = 0;
         }
     }
 

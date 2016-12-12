@@ -107,7 +107,7 @@ class ConfValue {
     union { char* strval; int numval; double decval; uint32_t unumval; list<ConfValue*>* configs; };
     ConfValue() : type(O_EMPTY), strval(NULL) {};
     ConfValue(const ASTNode& s_expr_n);
-    ConfValue(int i) : type(O_DEC), numval(i) {};
+    ConfValue(int i) : type(O_NUM), numval(i) {};
     ConfValue(double i) : type(O_DEC), decval(i) {};
     ConfValue(const char* s);
     ConfValue(const ConfValue& other);
