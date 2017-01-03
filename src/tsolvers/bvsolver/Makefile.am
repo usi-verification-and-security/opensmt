@@ -1,4 +1,4 @@
-SUBDIRS = minisatp
+#SUBDIRS = minisatp
 
 noinst_LTLIBRARIES = libbvsolver.la
 

@@ -1,5 +1,5 @@
 #SUBDIRS = axdiffsolver bvsolver dlsolver emptysolver lrasolver ctsolver
-SUBDIRS = lrasolver egraph
+SUBDIRS = lrasolver egraph bvsolver
 
 noinst_LTLIBRARIES = libtsolvers.la
 

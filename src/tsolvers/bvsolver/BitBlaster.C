@@ -30,1170 +30,1083 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "BitBlaster.h"
 
-BitBlaster::BitBlaster ( const int i
+BitBlaster::BitBlaster ( const SolverId i
                        , SMTConfig & c
-                       , Egraph & e
-                       , vector< Enode * > & ex
-                       , vector< Enode * > & d
-                       , vector< Enode * > & s )
-  : E           ( e )
-  , config      ( c )
-  , explanation ( ex )
-  , deductions  ( d )
-  , suggestions ( s )
-  , _solverP    ( new MiniSATP( i, ex, d, s, var_to_enode, config.bv_theory_propagation > 0 ) )
-  , solverP     ( *_solverP )
+                       , MainSolver& mainSolver
+                       , vec<PtAsgn> & ex
+                       , vec<DedElem> & d
+                       , vec<PTRef> & s )
+    : config      (c)
+    , mainSolver  (mainSolver)
+    , logic       (mainSolver.getLogic())
+    , explanation (ex)
+    , deductions  (d)
+    , suggestions (s)
+    , thandler    (mainSolver.getTHandler())
+    , solverP     (mainSolver.getSMTSolver())
+    , has_model   (false)
+{ }
+
+BitBlaster::~BitBlaster ()
 {
-  // Attach true
-  constTrue = Lit( solverP.newVar( ) );
-  vec< Lit > unit;
-  unit.push( constTrue );
-  addClause( unit, E.mkTrue( ) );
-  // Attach false
-  unit.pop( );
-  constFalse = Lit( solverP.newVar( ) );
-  unit.push( ~constFalse );
-  addClause( unit, E.mkFalse( ) );
-  E.initDupMap2( );
+  cleanGarbage( );
 }
 
-BitBlaster::~BitBlaster ( )
+vec<PTRef>&
+BitBlaster::updateCache(PTRef tr)
 {
-  E.doneDupMap2( );
-  delete _solverP;
-  cleanGarbage( );
+    Pterm& t = logic.getPterm(tr);
+    // Return previous result if computed
+    if ( (int)bb_cache.size() <= t.getId() )
+        bb_cache.resize( t.getId() + 1, NULL );
+    if ( bb_cache[t.getId()] != NULL )
+        return *bb_cache[t.getId()];
+    return ptref_vec_empty;
 }
 
 //=============================================================================
 // Public Interface Routines
 
 lbool
-BitBlaster::inform ( Enode * e )
+BitBlaster::inform (PTRef tr)
 {
-  vector< Enode * > & result = bbEnode( e );
+    vec<PTRef>& result = bbTerm( tr );
 
-  assert( result.size( ) == 1 );
-  Enode * bb = result.back( );
+    assert( result.size() == 1 );
+    PTRef bb = result.last();
 
-  if ( bb->isTrue( ) )
-    return l_True;
-  if ( bb->isFalse( ) )
-    return l_False;
+    if (logic.isTrue(bb))
+        return l_True;
+    if (logic.isFalse(bb))
+        return l_False;
 
-  Var var = cnfizeAndGiveToSolver( bb, e );
-  if ( (int)enode_id_to_var.size( ) <= e->getId( ) )
-    enode_id_to_var.resize( e->getId( ) + 1, var_Undef );
-  assert( enode_id_to_var[ e->getId( ) ] == var_Undef );
-  enode_id_to_var[ e->getId( ) ] = var;
-  if ( (int)var_to_enode.size( ) <= var )
-    var_to_enode.resize( var + 1, NULL );
-  assert( var_to_enode[ var ] == NULL );
-  var_to_enode[ var ] = e;
-
-  return l_Undef;
+    char* msg;
+    sstat status = mainSolver.insertFormula(bb, &msg);
+    if (status == s_True)
+        return l_True;
+    else if (status == s_False)
+        return l_False;
+    else
+        return l_Undef;
 }
 
 bool
-BitBlaster::assertLit ( Enode * e, const bool n )
+BitBlaster::assertLit (PtAsgn pta)
 {
-  assert( e );
-  assert( e->isTAtom( ) );
+    // This needs to be re-thought.  I'd like to have this activation
+    // logic in MainSolver somehow and use the incremental interface.
+    assert( pta.tr != PTRef_Undef );
+    Pterm& p = logic.getPterm(pta.tr);
+    Var act_var = p.getVar();
 
-  assert( static_cast< int >( enode_id_to_var.size( ) ) > e->getId( ) );
-  assert( enode_id_to_var[ e->getId( ) ] != var_Undef );
-  Var act_var = enode_id_to_var[ e->getId( ) ];
+    if ( ((pta.sgn == l_False) && (thandler.varToTerm(act_var) == logic.getTerm_true() ))
+      || thandler.varToTerm(act_var) == logic.getTerm_false())
+        return false;
+    //
+    // Activate clause for e
+    //
+    vec< Lit > clause;
+    clause.push( mkLit( act_var, (pta.sgn == l_True ? false : true) ) );
+    bool res = addClause( clause, pta.tr );
 
-  if ( (n && act_var == var(constTrue) )
-    ||       act_var == var(constFalse) )
-    return false;
-  //
-  // Activate clause for e
-  //
-  vec< Lit > clause;
-  clause.push( Lit( act_var, n ) );
-  bool res = addClause( clause, e );
-
-  return res;
+    return res;
 }
 
-bool
+lbool
 BitBlaster::check( )
 {
-  const bool res = solverP.solve( );
-  assert( res || !explanation.empty( ) );
-  return res;
+    const lbool res = solverP.solve( );
+//    assert( res || (explanation.size() != 0) );
+    return res;
 }
 
 void
 BitBlaster::pushBacktrackPoint ( )
 {
-  solverP.pushBacktrackPoint( );
+    solverP.pushBacktrackPoint( );
 }
 
 void 
 BitBlaster::popBacktrackPoint ( )
 {
-  // Pop solver
-  solverP.popBacktrackPoint( );
-  solverP.restoreOK( );
+    // Pop solver
+    solverP.popBacktrackPoint( );
+    solverP.restoreOK( );
+    has_model = false;
 }
 
 //=============================================================================
 // BitBlasting Routines
 
-vector< Enode * > &
-BitBlaster::bbEnode ( Enode * e )
+vec<PTRef> &
+BitBlaster::bbTerm(PTRef tr)
 {
-  //
-  // BitBlasts predicates
-  //
-  if ( e->isEq         ( ) ) return bbEq         ( e );
-  /*
-  if ( e->isBvsle      ( ) ) return bbBvsle      ( e );
-  if ( e->isBvule      ( ) ) return bbBvule      ( e );
-  */
-  if ( e->isDistinct   ( ) ) return bbDistinct   ( e );
-  // if ( e->isUp         ( ) ) return bbUp         ( e );
-  //
-  // BitBlasts terms
-  //
-  /*
-  if ( e->isConcat     ( ) ) return bbConcat     ( e );
-  if ( e->isExtract    ( ) ) return bbExtract    ( e );
-  if ( e->isBvand      ( ) ) return bbBvand      ( e );
-  if ( e->isBvor       ( ) ) return bbBvor       ( e );
-  if ( e->isBvxor      ( ) ) return bbBvxor      ( e );
-  if ( e->isBvnot      ( ) ) return bbBvnot      ( e );
-  if ( e->isBvadd      ( ) ) return bbBvadd      ( e );
-  if ( e->isBvmul      ( ) ) return bbBvmul      ( e );
-  if ( e->isBvudiv     ( ) ) return bbBvudiv     ( e );
-  if ( e->isBvurem     ( ) ) return bbBvurem     ( e );
-  if ( e->isSignExtend ( ) ) return bbSignExtend ( e );
-  */
-  if ( e->isVar        ( ) ) return bbVar        ( e );
-  if ( e->isConstant   ( ) ) return bbConstant   ( e );
-  // if ( e->isUf         ( ) ) return bbUf         ( e );
-  //
-  // Exit if term is not handled
-  //
-  opensmt_error2( "term not handled (yet ?)", e );
+    //
+    // BitBlasts predicates
+    //
+    if ( logic.isEquality(tr)) return bbEq         ( tr );
+    /*
+    if ( e->isBvsle      ( ) ) return bbBvsle      ( e );
+    if ( e->isBvule      ( ) ) return bbBvule      ( e );
+    */
+    if ( logic.isDistinct(tr)) return bbDistinct   ( tr );
+    // if ( e->isUp         ( ) ) return bbUp         ( e );
+    //
+    // BitBlasts terms
+    //
+    /*
+    if ( e->isConcat     ( ) ) return bbConcat     ( e );
+    if ( e->isExtract    ( ) ) return bbExtract    ( e );
+    if ( e->isBvand      ( ) ) return bbBvand      ( e );
+    if ( e->isBvor       ( ) ) return bbBvor       ( e );
+    if ( e->isBvxor      ( ) ) return bbBvxor      ( e );
+    if ( e->isBvnot      ( ) ) return bbBvnot      ( e );
+    if ( e->isBvadd      ( ) ) return bbBvadd      ( e );
+    if ( e->isBvmul      ( ) ) return bbBvmul      ( e );
+    if ( e->isBvudiv     ( ) ) return bbBvudiv     ( e );
+    if ( e->isBvurem     ( ) ) return bbBvurem     ( e );
+    if ( e->isSignExtend ( ) ) return bbSignExtend ( e );
+    */
+    if ( logic.isVar(tr) )      return bbVar        ( tr );
+    if ( logic.isConstant(tr) ) return bbConstant   ( tr );
+    // if ( e->isUf         ( ) ) return bbUf         ( e );
+    //
+    // Exit if term is not handled
+    //
+    cerr << "term not handled (yet ?): " << logic.printTerm(tr) << "\n";
 }
 
 //
 // Equality
 //
-vector< Enode * > &
-BitBlaster::bbEq( Enode * e )
+vec<PTRef> &
+BitBlaster::bbEq(PTRef tr)
 {
-  assert( e );
-  assert( e->isEq( ) );
+    assert(tr != PTRef_Undef);
+    assert(logic.isEquality(tr));
+    Pterm& t = logic.getPterm(tr);
 
-  // Return previous result if computed
-  if ( (int)bb_cache.size( ) <= e->getId( ) )
-    bb_cache.resize( e->getId( ) + 1, NULL );
-  if ( bb_cache[ e->getId( ) ] != NULL )
-    return *bb_cache[ e->getId( ) ];
+    // Return previous result if computed
+    if ( (int)bb_cache.size( ) <= t.getId() )
+        bb_cache.resize( t.getId() + 1, NULL );
+    if ( bb_cache[ t.getId() ] != NULL )
+        return *bb_cache[ t.getId( ) ];
 
-  // Allocate new result
-  vector< Enode * > * result = new vector< Enode * >;
-  // Garbage collection
-  garbage.push_back( result );
+    // Allocate new result
+    vec<PTRef> *result = new vec<PTRef>;
+    // Garbage collection
+    garbage.push_back( result );
 
-  assert( e->getArity( ) == 2 );
-  Enode * lhs = e->get1st( );
-  Enode * rhs = e->get2nd( );
+    assert( t.size() == 2 );
+    PTRef lhs = t[0];
+    PTRef rhs = t[1];
 
-  assert( !lhs->isConstant( ) || !rhs->isConstant( ) );
+    assert( !(logic.isConstant(lhs)) || !(logic.isConstant(rhs)) );
 
-  // Retrieve arguments' encodings
-  vector< Enode * > & bb_lhs = bbEnode( lhs );
-  vector< Enode * > & bb_rhs = bbEnode( rhs );
+    // Retrieve arguments' encodings
+    vec<PTRef> & bb_lhs = bbTerm(lhs);
+    vec<PTRef> & bb_rhs = bbTerm(rhs);
 
-  assert( bb_lhs.size( ) == bb_rhs.size( ) );
-  assert( (int)bb_lhs.size( ) == lhs->getWidth( ) );
+    assert( bb_lhs.size( ) == bb_rhs.size( ) );
+    assert((int)bb_lhs.size( ) == logic.getPterm(lhs).size());
 
-  // Produce the result
-  Enode * result_args = const_cast< Enode * >(E.enil);
-  for ( unsigned i = 0 ; i < bb_lhs.size( ) ; i ++ )
-  {
-    Enode * args = E.cons( bb_lhs[ i ], E.cons( bb_rhs[ i ] ) );
-    result_args  = E.cons( E.mkIff( args ), result_args );
-  }
-  result->push_back( simplify( E.mkAnd( result_args ) ) );
-  // Save result and return
-  bb_cache[ e->getId( ) ] = result;
-  return *result;
+    // Produce the result
+    vec<PTRef> result_args;
+    for ( unsigned i = 0 ; i < bb_lhs.size() ; i ++ )
+    {
+        result_args.push(logic.mkEq(bb_lhs[i], bb_rhs[i]));
+    }
+    result->push( simplify( logic.mkAnd( result_args ) ) );
+    // Save result and return
+    bb_cache[t.getId()] = result;
+    return *result;
 }
 
 //
 // Signed less than equal
 //
-vector< Enode * > &
-BitBlaster::bbBvsle( Enode * e )
+vec<PTRef> &
+BitBlaster::bbBvsle(PTRef tr)
 {
-  assert( e );
-  // assert( e->isBvsle( ) );
+    assert(tr != PTRef_Undef);
+    // assert( logic.isBvsle(tr) );
 
-  // Return previous result if computed
-  if ( (int)bb_cache.size( ) <= e->getId( ) )
-    bb_cache.resize( e->getId( ) + 1, NULL );
-  if ( bb_cache[ e->getId( ) ] != NULL )
-    return *bb_cache[ e->getId( ) ];
+    // Return previous result if computed
+    Pterm& t = logic.getPterm(tr);
+    if ( (int)bb_cache.size( ) <= t.getId( ) )
+        bb_cache.resize( t.getId() + 1, NULL );
+    if ( bb_cache[ t.getId() ] != NULL )
+        return *bb_cache[ t.getId() ];
 
-  // Allocate new result
-  vector< Enode * > * result = new vector< Enode * >;
-  // Garbage collect
-  garbage.push_back( result );
+    // Allocate new result
+    vec<PTRef> * result = new vec<PTRef>;
+    // Garbage collect
+    garbage.push_back( result );
 
-  assert( e->getArity( ) == 2 );
-  Enode * lhs = e->get1st( );
-  Enode * rhs = e->get2nd( );
-  assert( lhs->getWidth( ) >= 2 );
+    assert( t.size() == 2 );
+    PTRef lhs = t[0];
+    PTRef rhs = t[1];
+    assert( logic.getPterm(lhs).size() >= 2 );
 
-  // Retrieve arguments' encodings
-  vector< Enode * > & bb_lhs = bbEnode( lhs );
-  vector< Enode * > & bb_rhs = bbEnode( rhs );
-  assert( bb_lhs.size( ) == bb_rhs.size( ) );
-  assert( (int)bb_lhs.size( ) == lhs->getWidth( ) );
-  //
-  // Produce lhs < rhs
-  //
-  Enode * lt_prev = NULL;
-  for ( unsigned i = 0 ; i < bb_lhs.size( ) - 1 ; i ++ )
-  {
-    // Produce ~l[i] & r[i]
-    Enode * not_l   = E.mkNot( E.cons( bb_lhs[ i ] ) );
-    Enode * lt_this = E.mkAnd( E.cons( not_l 
-                             , E.cons( bb_rhs[ i ] ) ) );
-    // Produce l[i] <-> r[i]
-    Enode * eq_this = E.mkIff( E.cons( bb_lhs[ i ] 
-                             , E.cons( bb_rhs[ i ] ) ) );
-    if ( lt_prev )
+    // Retrieve arguments' encodings
+    vec<PTRef> & bb_lhs = bbTerm( lhs );
+    vec<PTRef> & bb_rhs = bbTerm( rhs );
+    assert( bb_lhs.size( ) == bb_rhs.size( ) );
+    assert( (int)bb_lhs.size() == logic.getPterm(lhs).size() );
+    //
+    // Produce lhs < rhs
+    //
+    PTRef lt_prev = PTRef_Undef;
+    for ( unsigned i = 0 ; i < bb_lhs.size() - 1 ; i ++ )
     {
-      Enode * or_args = E.cons( lt_this
-                      , E.cons( E.mkAnd( E.cons( eq_this
-                                       , E.cons( lt_prev ) ) ) ) );
-      lt_prev = E.mkOr( or_args );
+        // Produce ~l[i] & r[i]
+        PTRef not_l   = logic.mkNot( bb_lhs[i] );
+        PTRef lt_this = logic.mkAnd( not_l, bb_rhs[i] );
+        // Produce l[i] <-> r[i]
+        PTRef eq_this = logic.mkEq( bb_lhs[i] , bb_rhs[i]);
+        if ( lt_prev != PTRef_Undef )
+            lt_prev = logic.mkOr( lt_this, logic.mkAnd(eq_this, lt_prev) );
+        else
+            lt_prev = lt_this;
     }
-    else
-    {
-      lt_prev = lt_this;
-    }
-  }
 
-  assert( lt_prev );
-  Enode * not_r   = E.mkNot( E.cons( bb_rhs.back( ) ) );
-  Enode * neg_pos = E.mkAnd( E.cons( bb_lhs.back( ), E.cons( not_r ) ) );
-  Enode * eq_this = E.mkIff( E.cons( bb_lhs.back( ), E.cons( bb_rhs.back( ) ) ) );
-  Enode * lt_part = E.mkOr ( E.cons( E.mkAnd( E.cons( eq_this, E.cons( lt_prev ) ) ), E.cons( neg_pos ) ) );
+    assert( lt_prev != PTRef_Undef );
+    PTRef not_r   = logic.mkNot(bb_rhs.last());
+    PTRef neg_pos = logic.mkAnd(bb_lhs.last(), not_r);
+    PTRef eq_this = logic.mkEq(bb_lhs.last(), bb_rhs.last());
+    PTRef lt_part = logic.mkOr(logic.mkAnd(eq_this, lt_prev), neg_pos) ;
 
-  vector< Enode * > & eq_part = bbEnode( E.mkEq( E.cons( lhs, E.cons( rhs ) ) ) );
-  //
-  // Produce (lhs=rhs | lhs<rhs)
-  //
-  result->push_back( simplify( E.mkOr( E.cons( eq_part.back( ), E.cons( lt_part ) ) ) ) );
+    vec<PTRef>& eq_part = bbTerm(logic.mkEq(lhs, rhs));
+    //
+    // Produce (lhs=rhs | lhs<rhs)
+    //
+    result->push(simplify(logic.mkOr(eq_part.last(), lt_part)));
 
-  // Save result and return
-  bb_cache[ e->getId( ) ] = result;
-  return *result;
+    // Save result and return
+    bb_cache[ logic.getPterm(tr).getId() ] = result;
+    return *result;
 }
 
 //
 // Unsigned less than equal
 //
-vector< Enode * > &
-BitBlaster::bbBvule( Enode * e )
+vec<PTRef> &
+BitBlaster::bbBvule(PTRef tr)
 {
-  assert( e );
-  //
-  // What ? Isn't it an eq ? Well lt are translated into le
-  // in creation, still we want to encode le as if it was
-  // an eq, as le = lt or eq
-  //
-  // Later comment: What did I mean ?? :-)
-  //
-  // assert( e->isBvule( ) );
+    assert(tr != PTRef_Undef);
+    //
+    // What ? Isn't it an eq ? Well lt are translated into le
+    // in creation, still we want to encode le as if it was
+    // an eq, as le = lt or eq
+    //
+    // Later comment: What did I mean ?? :-)
+    //
+    // assert( e->isBvule( ) );
 
-  // Return previous result if computed
-  if ( (int)bb_cache.size( ) <= e->getId( ) )
-    bb_cache.resize( e->getId( ) + 1, NULL );
-  if ( bb_cache[ e->getId( ) ] != NULL )
-    return *bb_cache[ e->getId( ) ];
+    // Return previous result if computed
+    if ( (int)bb_cache.size( ) <= logic.getPterm(tr).getId() )
+        bb_cache.resize( logic.getPterm(tr).getId() + 1, NULL );
+    if ( bb_cache[ logic.getPterm(tr).getId() ] != NULL )
+        return *bb_cache[logic.getPterm(tr).getId()];
 
-  // Allocate new result
-  vector< Enode * > * result = new vector< Enode * >;
-  // Garbage collect
-  garbage.push_back( result );
+    // Allocate new result
+    vec<PTRef> * result = new vec<PTRef>;
+    // Garbage collect
+    garbage.push_back( result );
 
-  assert( e->getArity( ) == 2 );
-  Enode * lhs = e->get1st( );
-  Enode * rhs = e->get2nd( );
-  // Retrieve arguments' encodings
-  vector< Enode * > & bb_lhs = bbEnode( lhs );
-  vector< Enode * > & bb_rhs = bbEnode( rhs );
-  assert( bb_lhs.size( ) == bb_rhs.size( ) );
-  assert( (int)bb_lhs.size( ) == lhs->getWidth( ) );
-  //
-  // Produce the result
-  //
-  Enode * lt_prev = NULL;
-  for ( unsigned i = 0 ; i < bb_lhs.size( ) ; i ++ )
-  {
-    // Produce ~l[i] & r[i]
-    Enode * not_l   = E.mkNot( E.cons( bb_lhs[ i ] ) );
-    Enode * lt_this = E.mkAnd( E.cons( not_l 
-                             , E.cons( bb_rhs[ i ] ) ) );
-    // Produce l[i] <-> r[i]
-    Enode * eq_this = E.mkIff( E.cons( bb_lhs[ i ] 
-                             , E.cons( bb_rhs[ i ] ) ) );
-    if ( lt_prev )
+    assert(logic.getPterm(tr).size() == 2 );
+    PTRef lhs = logic.getPterm(tr)[0];
+    PTRef rhs = logic.getPterm(tr)[1];
+    // Retrieve arguments' encodings
+    vec<PTRef>& bb_lhs = bbTerm(lhs);
+    vec<PTRef>& bb_rhs = bbTerm(rhs);
+    assert(bb_lhs.size() == bb_rhs.size());
+    assert((int)bb_lhs.size( ) == logic.getPterm(lhs).size()); // should be .getWidth();
+    //
+    // Produce the result
+    //
+    PTRef lt_prev = PTRef_Undef;
+    for (unsigned i = 0 ; i < bb_lhs.size() ; i ++)
     {
-      Enode * or_args = E.cons( lt_this
-                      , E.cons( E.mkAnd( E.cons( eq_this
-                                       , E.cons( lt_prev ) ) ) ) );
-      lt_prev = E.mkOr( or_args );
+        // Produce ~l[i] & r[i]
+        PTRef not_l   = logic.mkNot(bb_lhs[i]);
+        PTRef lt_this = logic.mkAnd(not_l, bb_rhs[i]);
+        // Produce l[i] <-> r[i]
+        PTRef eq_this = logic.mkEq(bb_lhs[i], bb_rhs[i]);
+        if (lt_prev != PTRef_Undef)
+            lt_prev = logic.mkOr(lt_this, logic.mkAnd(eq_this, lt_prev));
+        else
+            lt_prev = lt_this;
     }
-    else
-    {
-      lt_prev = lt_this;
-    }
-  }
 
-  Enode * lt_part = lt_prev;
-  vector< Enode * > & eq_part = bbEnode( E.mkEq( E.cons( lhs, E.cons( rhs ) ) ) );
-  //
-  // Produce (lhs=rhs | lhs<rhs)
-  //
-  result->push_back( simplify( E.mkOr( E.cons( eq_part.back( ), E.cons( lt_part ) ) ) ) );
-  // Save result and return
-  bb_cache[ e->getId( ) ] = result;
-  return *result;
+    PTRef lt_part = lt_prev;
+    vec<PTRef>& eq_part = bbTerm(logic.mkEq(lhs, rhs));
+    //
+    // Produce (lhs=rhs | lhs<rhs)
+    //
+    result->push(simplify(logic.mkOr(eq_part.last(), lt_part)));
+    // Save result and return
+    bb_cache[ logic.getPterm(tr).getId() ] = result;
+    return *result;
 }
 
 //
 // Concatenation
 //
-vector< Enode * > &
-BitBlaster::bbConcat( Enode * e )
+vec<PTRef> &
+BitBlaster::bbConcat(PTRef tr)
 {
-  assert( e );
-  // assert( e->isConcat( ) );
+    assert( tr != PTRef_Undef );
 
-  // Return previous result if computed
-  if ( (int)bb_cache.size( ) <= e->getId( ) )
-    bb_cache.resize( e->getId( ) + 1, NULL );
-  if ( bb_cache[ e->getId( ) ] != NULL )
-    return *bb_cache[ e->getId( ) ];
+    // Return previous result if computed
+    if ( (int)bb_cache.size( ) <= logic.getPterm(tr).getId() )
+        bb_cache.resize( logic.getPterm(tr).getId( ) + 1, NULL );
+    if ( bb_cache[ logic.getPterm(tr).getId() ] != NULL )
+    return *bb_cache[ logic.getPterm(tr).getId() ];
 
-  // Allocate new result
-  vector< Enode * > * result = new vector< Enode * >;
-  // Garbage collect
-  garbage.push_back( result );
+    // Allocate new result
+    vec<PTRef>* result = new vec<PTRef>;
+    // Garbage collect
+    garbage.push_back( result );
 
-  vector< Enode * > stack;
-  // Retrieve arguments and put on the stack
-  for ( Enode * list = e->getCdr( ) ; !list->isEnil( ) ; list = list->getCdr( ) )
-    stack.push_back( list->getCar( ) );
+    // Retrieve arguments and put on the stack
+    for (int i = logic.getPterm(tr).size()-1; i >= 0; i--) {
+        PTRef arg = logic.getPterm(tr)[i];
+        vec<PTRef>& bb_arg = bbTerm(arg);
+        for (int j = 0; j < bb_arg.size(); j++)
+            result->push(bb_arg[j]);
+    }
 
-  while( !stack.empty( ) )
-  {
-    Enode * arg = stack.back( );
-    stack.pop_back( );
-    // Retrieve bb encoding
-    vector< Enode * > & bb_arg = bbEnode( arg );
-    // Produce result
-    for ( unsigned i = 0 ; i < bb_arg.size( ) ; i ++ )
-      result->push_back( bb_arg[ i ] );
-  }
-
-  // Save result and return
-  bb_cache[ e->getId( ) ] = result;
-  return *result;
+    // Save result and return
+    bb_cache[ logic.getPterm(tr).getId() ] = result;
+    return *result;
 }
 
 //
 // Extraction
 //
-vector< Enode * > &
-BitBlaster::bbExtract( Enode * e )
+vec<PTRef> &
+BitBlaster::bbExtract(PTRef tr)
 {
-  assert( e );
+    assert(tr != PTRef_Undef);
 
-  // Return previous result if computed
-  if ( (int)bb_cache.size( ) <= e->getId( ) )
-    bb_cache.resize( e->getId( ) + 1, NULL );
-  if ( bb_cache[ e->getId( ) ] != NULL )
-    return *bb_cache[ e->getId( ) ];
+    // Return previous result if computed
+    if ( (int)bb_cache.size() <= logic.getPterm(tr).getId() )
+        bb_cache.resize( logic.getPterm(tr).getId() + 1, NULL );
+    if ( bb_cache[ logic.getPterm(tr).getId() ] != NULL )
+        return *bb_cache[logic.getPterm(tr).getId()];
 
-  int lsb = 0, msb = 0;
+    int lsb = 0, msb = 0;
 
-  /*
-  assert( e->isExtract( ) );
-  e->isExtract( &msb, &lsb );
-  */
-  // Allocate new result
-  vector< Enode * > * result = new vector< Enode * >;
-  // Garbage collect
-  garbage.push_back( result );
+    // Allocate new result
+    vec<PTRef> *result = new vec<PTRef>;
+    // Garbage collect
+    garbage.push_back( result );
 
-  assert( e->getArity( ) == 1 );
-  Enode * arg = e->get1st( );
-  // Retrieve arguments' encodings
-  vector< Enode * > & bb_arg = bbEnode( arg );
-  // Produce the result
-  for ( int i = lsb ; i <= msb ; i ++ )
-    result->push_back( bb_arg[ i ] );
+    assert(logic.getPterm(tr).size() == 1 );
+    PTRef arg = logic.getPterm(tr)[0];
+    // Retrieve arguments' encodings
+    vec<PTRef> & bb_arg = bbTerm(arg);
+    // Produce the result
+    for ( int i = lsb ; i <= msb ; i ++ )
+        result->push(bb_arg[i]);
 
-  // Save result and return
-  bb_cache[ e->getId( ) ] = result;
-  return *result;
+    // Save result and return
+    bb_cache[logic.getPterm(tr).getId()] = result;
+    return *result;
 }
 
 //
 // Bitwise AND
 //
-vector< Enode * > &
-BitBlaster::bbBvand( Enode * e )
+vec<PTRef> &
+BitBlaster::bbBvand(PTRef tr)
 {
-  assert( e );
-  // assert( e->isBvand( ) );
+    assert(tr != PTRef_Undef);
 
-  assert( e->get1st( )->getWidth( ) == e->get2nd( )->getWidth( ) );
+    assert(logic.getPterm(logic.getPterm(tr)[0]).size() == logic.getPterm(logic.getPterm(tr)[1]).size()); // Should be e->get2nd( )->getWidth( )
 
-  // Return previous result if computed
-  if ( (int)bb_cache.size( ) <= e->getId( ) )
-    bb_cache.resize( e->getId( ) + 1, NULL );
-  if ( bb_cache[ e->getId( ) ] != NULL )
-    return *bb_cache[ e->getId( ) ];
+    vec<PTRef>& cached = updateCache(tr);
+    if (cached.size() > 0)
+        return cached;
 
-  // Allocate new result
-  vector< Enode * > * result = new vector< Enode * >;
-  // Garbage collect
-  garbage.push_back( result );
+    // Allocate new result
+    vec<PTRef> * result = new vec<PTRef>;
+    // Garbage collect
+    garbage.push_back( result );
 
-  vector< vector< Enode * > * > bb_args;
+    vector< vec<PTRef> * > bb_args;
 
-  for ( Enode * list = e->getCdr( )
-      ; !list->isEnil( )
-      ; list = list->getCdr( ) )
-  {
-    Enode * arg = list->getCar( );
-    bb_args.push_back( &bbEnode( arg ) );
-    assert( bb_args.back( ) );
-  }
+    // Bit-blast the arguments, and put the corresponding vectors
+    // into bb_args.
+    for (int i = 0; i < logic.getPterm(tr).size(); i++)
+        bb_args.push_back(&bbTerm(logic.getPterm(tr)[i]));
 
-  for ( unsigned i = 0 ; i < bb_args.back( )->size( ) ; i ++ )
-  {
-    Enode * bb_list = const_cast< Enode * >( E.enil );
-    for ( unsigned j = 0 ; j < bb_args.size( ) ; j ++ )
-    {
-      assert( (*(bb_args[ j ]))[ i ] );
-      bb_list = E.cons( (*(bb_args[ j ]))[ i ], bb_list );
+    int n_bits = bb_args[0]->size(); // the number of bits in each argument
+    int n_args = bb_args.size(); // the number of arguments
+    // Iterate over all bits
+    for (int i = 0; i < n_bits; i++) {
+        vec<PTRef> and_args;
+        // Iterate over all arguments
+        for (int j = 0 ; j < bb_args.size(); j++) {
+            assert(bb_args[j]->size() == n_bits);
+            and_args.push((*bb_args[j])[i]);
+        }
+        result->push(logic.mkAnd(and_args));
     }
-    result->push_back( E.mkAnd( bb_list ) );
-  }
+    bb_cache[logic.getPterm(tr).getId()] = result;
 
-  // Save result and return
-  bb_cache[ e->getId( ) ] = result;
-  return *result;
+    return *result;
 }
 
 //
 // Bitwise OR
 //
-vector< Enode * > &
-BitBlaster::bbBvor( Enode * e )
+vec<PTRef> &
+BitBlaster::bbBvor(PTRef tr)
 {
-  assert( e );
-  // assert( e->isBvor( ) );
+    assert(tr != PTRef_Undef);
 
-  // Return previous result if computed
-  if ( (int)bb_cache.size( ) <= e->getId( ) )
-    bb_cache.resize( e->getId( ) + 1, NULL );
-  if ( bb_cache[ e->getId( ) ] != NULL )
-    return *bb_cache[ e->getId( ) ];
+    // Return previous result if computed
+    vec<PTRef>& cached = updateCache(tr);
+    if (cached.size() > 0)
+        return cached;
 
-  // Allocate new result
-  vector< Enode * > * result = new vector< Enode * >;
-  // Garbage collect
-  garbage.push_back( result );
+    // Allocate new result
+    vec<PTRef>* result = new vec<PTRef>;
+    // Garbage collect
+    garbage.push_back( result );
 
-  vector< vector< Enode * > * > bb_args;
+    vector< vec<PTRef> * > bb_args;
 
-  for ( Enode * list = e->getCdr( )
-      ; !list->isEnil( )
-      ; list = list->getCdr( ) )
-  {
-    Enode * arg = list->getCar( );
-    bb_args.push_back( &bbEnode( arg ) );
-  }
+    // Bit-blast the arguments, and put the corresponding vectors
+    // into bb_args.
+    for (int i = 0; i < logic.getPterm(tr).size(); i++)
+        bb_args.push_back(&bbTerm(logic.getPterm(tr)[i]));
 
-  for ( unsigned i = 0 ; i < bb_args.back( )->size( ) ; i ++ )
-  {
-    Enode * bb_list = const_cast< Enode * >( E.enil );
-    for ( unsigned j = 0 ; j < bb_args.size( ) ; j ++ )
-      bb_list = E.cons( (*(bb_args[ j ]))[ i ], bb_list );
-    result->push_back( E.mkOr( bb_list ) );
-  }
+    int n_bits = bb_args[0]->size(); // the number of bits in each argument
+    int n_args = bb_args.size(); // the number of arguments
+    // Iterate over all bits
+    for (int i = 0; i < n_bits; i++) {
+        vec<PTRef> and_args;
+        // Iterate over all arguments
+        for (int j = 0 ; j < bb_args.size(); j++) {
+            assert(bb_args[j]->size() == n_bits);
+            and_args.push((*bb_args[j])[i]);
+        }
+        result->push(logic.mkOr(and_args));
+    }
 
-  // Save result and return
-  bb_cache[ e->getId( ) ] = result;
-  return *result;
+    // Save result and return
+    bb_cache[ logic.getPterm(tr).getId() ] = result;
+    return *result;
 }
 
 //
 // Bitwise XOR
 //
-vector< Enode * > &
-BitBlaster::bbBvxor( Enode * e )
+vec<PTRef> &
+BitBlaster::bbBvxor(PTRef tr)
 {
-  assert( e );
-  // assert( e->isBvxor( ) );
-  assert( e->getArity( ) == 2 );
+    assert(tr != PTRef_Undef);
 
-  // Return previous result if computed
-  if ( (int)bb_cache.size( ) <= e->getId( ) )
-    bb_cache.resize( e->getId( ) + 1, NULL );
-  if ( bb_cache[ e->getId( ) ] != NULL )
-    return *bb_cache[ e->getId( ) ];
+    assert( logic.getPterm(tr).size() == 2 );
 
-  // Allocate new result
-  vector< Enode * > * result = new vector< Enode * >;
-  // Garbage collect
-  garbage.push_back( result );
+    // Return previous result if computed
+    vec<PTRef>& cached = updateCache(tr);
+    if (cached.size() > 0)
+        return cached;
 
-  Enode * lhs = e->get1st( );
-  Enode * rhs = e->get2nd( );
-  vector< Enode * > & bb_lhs = bbEnode( lhs );
-  vector< Enode * > & bb_rhs = bbEnode( rhs );
+    // Allocate new result
+    vec<PTRef> * result = new vec<PTRef>;
+    // Garbage collect
+    garbage.push_back( result );
 
-  for ( unsigned i = 0 ; i < bb_lhs.size( ) ; i ++ )
-    result->push_back( E.mkXor( E.cons( bb_lhs[ i ], E.cons( bb_rhs[ i ] ) ) ) );
+    PTRef lhs = logic.getPterm(tr)[0];
+    PTRef rhs = logic.getPterm(tr)[1];
+    vec<PTRef> & bb_lhs = bbTerm( lhs );
+    vec<PTRef> & bb_rhs = bbTerm( rhs );
 
-  // Save result and return
-  bb_cache[ e->getId( ) ] = result;
-  return *result;
+    assert(bb_lhs.size() == bb_rhs.size());
+
+    for ( int i = 0 ; i < bb_lhs.size( ) ; i ++ )
+        result->push( logic.mkXor(bb_lhs[i], bb_rhs[i]));
+
+    // Save result and return
+    bb_cache[ logic.getPterm(tr).getId( ) ] = result;
+    return *result;
 }
 
 //
 // Bitwise NOT
 //
-vector< Enode * > &
-BitBlaster::bbBvnot( Enode * e )
+vec<PTRef> &
+BitBlaster::bbBvnot(PTRef tr)
 {
-  assert( e );
-  // assert( e->isBvnot( ) );
-  assert( e->getArity( ) == 1 );
+    assert(tr != PTRef_Undef);
+    assert(logic.getPterm(tr).size() == 1);
 
-  // Return previous result if computed
-  if ( (int)bb_cache.size( ) <= e->getId( ) )
-    bb_cache.resize( e->getId( ) + 1, NULL );
-  if ( bb_cache[ e->getId( ) ] != NULL )
-    return *bb_cache[ e->getId( ) ];
+    vec<PTRef>& cached = updateCache(tr);
+    if (cached.size() > 0)
+        return cached;
 
-  // Allocate new result
-  vector< Enode * > * result = new vector< Enode * >;
-  // Garbage collect
-  garbage.push_back( result );
+    // Allocate new result
+    vec<PTRef>* result = new vec<PTRef>;
+    // Garbage collect
+    garbage.push_back( result );
 
-  Enode * arg = e->get1st( );
-  vector< Enode * > & bb_arg = bbEnode( arg );
+    PTRef arg = logic.getPterm(tr)[0];
+    vec<PTRef>& bb_arg = bbTerm(arg);
 
-  for ( unsigned i = 0 ; i < bb_arg.size( ) ; i ++ )
-    result->push_back( E.mkNot( E.cons( bb_arg[ i ] ) ) );
+    for ( int i = 0 ; i < bb_arg.size( ) ; i ++ )
+        result->push( logic.mkNot(bb_arg[i]));
 
-  // Save result and return
-  bb_cache[ e->getId( ) ] = result;
-  return *result;
+    // Save result and return
+    bb_cache[ logic.getPterm(tr).getId() ] = result;
+    return *result;
 }
 
-vector< Enode * > &
-BitBlaster::bbBvadd( Enode * e )
+vec<PTRef> &
+BitBlaster::bbBvadd(PTRef tr)
 {
-  assert( e );
-  // assert( e->isBvadd( ) );
-  assert( e->getArity( ) == 2 );
+    assert(tr != PTRef_Undef);
+    assert( logic.getPterm(tr).size() == 2 );
 
-  // Return previous result if computed
-  if ( (int)bb_cache.size( ) <= e->getId( ) )
-    bb_cache.resize( e->getId( ) + 1, NULL );
-  if ( bb_cache[ e->getId( ) ] != NULL )
-    return *bb_cache[ e->getId( ) ];
+    vec<PTRef>& cached = updateCache(tr);
+    if (cached.size() > 0)
+        return cached;
 
-  // Allocate new result
-  vector< Enode * > * result = new vector< Enode * >;
-  // Garbage collect
-  garbage.push_back( result );
+    // Allocate new result
+    vec<PTRef>* result = new vec<PTRef>;
+    // Garbage collect
+    garbage.push_back( result );
 
-  Enode * arg1 = e->get1st( );
-  Enode * arg2 = e->get2nd( );
-  vector< Enode * > & bb_arg1 = bbEnode( arg1 );
-  vector< Enode * > & bb_arg2 = bbEnode( arg2 );
-  assert( bb_arg1.size( ) == bb_arg2.size( ) );
+    PTRef arg1 = logic.getPterm(tr)[0];
+    PTRef arg2 = logic.getPterm(tr)[1];
+    vec<PTRef> & bb_arg1 = bbTerm(arg1);
+    vec<PTRef> & bb_arg2 = bbTerm(arg2);
+    assert( bb_arg1.size() == bb_arg2.size() );
 
-  Enode * carry = NULL;
+    PTRef carry = PTRef_Undef;
 
-  for( unsigned i = 0 ; i < bb_arg1.size( ) ; i++ )
-  {
-    Enode * bit_1 = bb_arg1[ i ];
-    Enode * bit_2 = bb_arg2[ i ];
-    assert( bit_1 );
-    assert( bit_2 );
-
-    Enode * xor_1 = E.mkXor( E.cons( bit_1 , E.cons( bit_2 ) ) );
-    Enode * and_1 = E.mkAnd( E.cons( bit_1 , E.cons( bit_2 ) ) );
-
-    if ( carry )
+    int bw = bb_arg1.size(); // the bit width
+    for (int i = 0 ; i < bw; i++)
     {
-      Enode * xor_2 = E.mkXor( E.cons( xor_1 , E.cons( carry ) ) );
-      Enode * and_2 = E.mkAnd( E.cons( xor_1 , E.cons( carry ) ) );
-      carry = E.mkOr( E.cons( and_1 , E.cons( and_2 ) ) );
-      result->push_back( xor_2 );
+        PTRef bit_1 = bb_arg1[i];
+        PTRef bit_2 = bb_arg2[i];
+        assert(bit_1 != PTRef_Undef);
+        assert(bit_2 != PTRef_Undef);
+
+        PTRef xor_1 = logic.mkXor(bit_1, bit_2);
+        PTRef and_1 = logic.mkAnd(bit_1, bit_2);
+
+        if (carry != PTRef_Undef)
+        {
+            PTRef xor_2 = logic.mkXor(xor_1, carry);
+            PTRef and_2 = logic.mkAnd(xor_1, carry);
+            carry = logic.mkOr(and_1, and_2);
+            result->push(xor_2);
+        }
+        else
+        {
+            carry = and_1;
+            result->push(xor_1);
+        }
     }
+
+    // Save result and return
+    bb_cache[ logic.getPterm(tr).getId( ) ] = result;
+    return *result;
+}
+
+vec<PTRef> &
+BitBlaster::bbBvudiv(PTRef tr)
+{
+    assert(tr != PTRef_Undef);
+    assert(logic.getPterm(tr).size() == 2);
+
+    vec<PTRef>& cached = updateCache(tr);
+    if (cached.size() > 0)
+        return cached;
+
+    //
+    // Allocate new result
+    //
+    vec<PTRef> * result = new vec<PTRef>;
+    //
+    // Garbage collect
+    //
+    garbage.push_back( result );
+
+    vec<PTRef> minuend;
+    PTRef arg1 = logic.getPterm(tr)[0];
+    PTRef arg2 = logic.getPterm(tr)[1];
+    vec<PTRef>& dividend = bbTerm(arg1);
+    vec<PTRef>& divisor = bbTerm(arg2);
+    assert(divisor.size() == dividend.size());
+    //
+    // Generate condition divisor != 0
+    //
+    PTRef zero = PTRef_Undef;
+    PTRef div_eq_zero = bbTerm(logic.mkEq(arg2, zero)).last(); // I don't think this works?!
+
+    const unsigned size = divisor.size( );
+    result->growTo(size);
+    //
+    // Initialize minuend as 0..0 q[n-1]
+    //
+    minuend.push(dividend[size - 1]);
+    for ( unsigned i = 1 ; i < size ; i ++ )
+        minuend.push(logic.getTerm_false());
+    //
+    // Main loop
+    //
+    for ( int i = size - 1 ; i >= 0 ; i -- )
+    {
+        //
+        // Compute result[ i ] = !(minuend < divisor);
+        //
+        PTRef lt_prev = PTRef_Undef;
+        for ( unsigned j = 0 ; j < size ; j ++ )
+        {
+            // Produce ~l[j] & r[j]
+            PTRef not_l = logic.mkNot(minuend[j]);
+            PTRef lt_this = logic.mkAnd(not_l, divisor[j]);
+            // Produce l[j] <-> r[j]
+            PTRef eq_this = logic.mkEq(minuend[j], divisor[j]);
+            if ( lt_prev != PTRef_Undef )
+                lt_prev = logic.mkOr(lt_this, logic.mkAnd(eq_this, lt_prev));
+            else
+                lt_prev = lt_this;
+        }
+
+        assert( lt_prev != PTRef_Undef);
+
+        (*result)[i] = logic.mkOr(div_eq_zero, logic.mkNot(lt_prev));
+        PTRef bit_i = (*result)[i];
+        //
+        // Construct subtrahend
+        //
+        vec<PTRef> subtrahend;
+        for ( unsigned j = 0 ; j < size ; j ++ )
+            subtrahend.push(logic.mkAnd(bit_i, divisor[j]));
+
+        //
+        // Subtract and store in minuend
+        //
+        PTRef carry = PTRef_Undef;
+        for (int j = 0; j < minuend.size(); j++ )
+        {
+            PTRef bit_1 = minuend[j];
+            PTRef bit_2 = subtrahend[j];
+            assert(bit_1 != PTRef_Undef);
+            assert(bit_2 != PTRef_Undef);
+
+            PTRef bit_2_neg = logic.mkNot(bit_2);
+            PTRef xor_1 = logic.mkXor(bit_1, bit_2_neg);
+            PTRef and_1 = logic.mkAnd(bit_1, bit_2_neg);
+
+            if (carry != PTRef_Undef)
+            {
+                PTRef xor_2 = logic.mkXor(xor_1, carry);
+                PTRef and_2 = logic.mkAnd(xor_1, carry);
+                carry = logic.mkOr(and_1, and_2);
+                minuend[j] = xor_2;
+            }
+            else
+            {
+                carry = and_1;
+                minuend[j] = xor_1;
+            }
+        }
+
+        carry = PTRef_Undef;
+
+        //
+        // Adds one, if bit_i is one
+        //
+        for (int j = 0 ; j < minuend.size( ) ; j++)
+        {
+            PTRef bit_1 = minuend[j];
+            PTRef bit_2 = j == 0 ? logic.getTerm_true() : logic.getTerm_false();
+            assert(bit_1 != PTRef_Undef);
+
+            PTRef xor_1 = logic.mkXor(bit_1, bit_2);
+            PTRef and_1 = logic.mkAnd(bit_1, bit_2);
+
+            if (carry != PTRef_Undef)
+            {
+                PTRef xor_2 = logic.mkXor(xor_1, carry);
+                PTRef and_2 = logic.mkAnd(xor_1, carry);
+                carry = logic.mkOr(and_1, and_2);
+                minuend[j] = xor_2;
+            }
+            else
+            {
+                carry = and_1;
+                minuend[j] = xor_1;
+            }
+        }
+
+        if ( i > 0 )
+        {
+            //
+            // Prepare new minuend
+            //
+            //                M[i-1]
+            //
+            // O[2] O[1] O[0]
+            //      N[2] N[1] N[0]
+            //
+            for (int j = size - 1 ; j >= 1 ; j --)
+                minuend[j] = minuend[j - 1];
+                minuend[0] = dividend[i - 1];
+        }
+    }
+    //
+    // Save result and return
+    //
+    bb_cache[ logic.getPterm(tr).getId() ] = result;
+    return *result;
+}
+
+vec<PTRef> &
+BitBlaster::bbBvurem(PTRef tr)
+{
+    assert(tr != PTRef_Undef);
+    assert(logic.getPterm(tr).size() == 2);
+
+    // Return previous result if computed
+    vec<PTRef>& cached = updateCache(tr);
+    if (cached.size() > 0)
+        return cached;
+
+    //
+    // Allocate new result
+    //
+    vec<PTRef>* result = new vec<PTRef>;
+    //
+    // Garbage collect
+    //
+    garbage.push_back( result );
+
+    vec<PTRef> minuend;
+    PTRef arg1 = logic.getPterm(tr)[0];
+    PTRef arg2 = logic.getPterm(tr)[1];
+    vec<PTRef>& dividend = bbTerm(arg1);
+    vec<PTRef>& divisor = bbTerm(arg2);
+    assert(divisor.size( ) == dividend.size( ));
+    //
+    // Generate condition divisor != 0
+    //
+    PTRef zero = PTRef_Undef;
+    PTRef div_eq_zero = bbTerm(logic.mkEq(arg2, zero)).last(); // Again, not working?
+
+    const unsigned size = divisor.size( );
+    result->growTo(size);
+    //
+    // Initialize minuend as 0..0 q[n-1]
+    //
+    minuend.push(dividend[ size - 1 ]);
+    for ( unsigned i = 1 ; i < size ; i ++ )
+        minuend.push(logic.getTerm_false());
+    //
+    // Main loop
+    //
+    for ( int i = size - 1 ; i >= 0 ; i -- )
+    {
+        //
+        // Compute result[ i ] = !(minuend < divisor);
+        //
+        PTRef lt_prev = PTRef_Undef;
+        for ( unsigned j = 0 ; j < size ; j ++ )
+        {
+            // Produce ~l[j] & r[j]
+            PTRef not_l   = logic.mkNot(minuend[j]);
+            PTRef lt_this = logic.mkAnd(not_l, divisor[j]);
+            // Produce l[j] <-> r[j]
+            PTRef eq_this = logic.mkEq(minuend[j], divisor[j]);
+            if (lt_prev != PTRef_Undef)
+                lt_prev = logic.mkOr(lt_this, logic.mkAnd(eq_this, lt_prev));
+            else
+                lt_prev = lt_this;
+        }
+
+        assert(lt_prev != PTRef_Undef);
+        PTRef bit_i = logic.mkNot(lt_prev);
+
+        //
+        // Construct subtrahend
+        //
+        vec<PTRef> subtrahend;
+        for ( unsigned j = 0 ; j < size ; j ++ )
+            subtrahend.push(logic.mkAnd(bit_i, divisor[j]));
+        //
+        // Subtract and store in minuend
+        //
+        PTRef carry = PTRef_Undef;
+
+        for( unsigned j = 0 ; j < minuend.size( ) ; j++ )
+        {
+            PTRef bit_1 = minuend[ j ];
+            PTRef bit_2 = subtrahend[ j ];
+            assert(bit_1 != PTRef_Undef);
+            assert(bit_2 != PTRef_Undef);
+
+            PTRef bit_2_neg = logic.mkNot(bit_2);
+            PTRef xor_1 = logic.mkXor(bit_1, bit_2_neg);
+            PTRef and_1 = logic.mkAnd(bit_1, bit_2_neg);
+
+            if (carry != PTRef_Undef)
+            {
+                PTRef xor_2 = logic.mkXor(xor_1, carry);
+                PTRef and_2 = logic.mkAnd(xor_1, carry);
+                carry = logic.mkOr(and_1, and_2);
+                minuend[j] = xor_2;
+            }
+            else
+            {
+                carry = and_1;
+                minuend[j] = xor_1;
+            }
+        }
+
+        carry = PTRef_Undef;
+
+        //
+        // Adds one, if bit_i is one
+        //
+        for (unsigned j = 0 ; j < minuend.size( ) ; j++)
+        {
+            PTRef bit_1 = minuend[ j ];
+            PTRef bit_2 = j == 0 ? logic.getTerm_true() : logic.getTerm_false();
+            assert(bit_1 != PTRef_Undef);
+
+            PTRef xor_1 = logic.mkXor(bit_1, bit_2);
+            PTRef and_1 = logic.mkAnd(bit_1, bit_2);
+
+            if (carry != PTRef_Undef)
+            {
+                PTRef xor_2 = logic.mkXor(xor_1, carry);
+                PTRef and_2 = logic.mkAnd(xor_1, carry);
+                carry = logic.mkOr(and_1, and_2);
+                minuend[j] = xor_2;
+            }
+            else
+            {
+                carry = and_1;
+                minuend[ j ] = xor_1;
+            }
+        }
+
+        if (i > 0)
+        {
+            //
+            // Prepare new minuend
+            //
+            //                M[i-1]
+            //
+            // O[2] O[1] O[0]
+            //      N[2] N[1] N[0]
+            //
+            for ( int j = size - 1 ; j >= 1 ; j -- )
+                minuend[j] = minuend[j - 1];
+            minuend[0] = dividend[i - 1];
+        }
+        else
+        {
+            for ( unsigned j = 0 ; j < size ; j ++ )
+            {
+                (*result)[j] = logic.mkOr(div_eq_zero, minuend[j]);
+            }
+        }
+    }
+
+    //
+    // Save result and return
+    //
+    bb_cache[logic.getPterm(tr).getId()] = result;
+    return *result;
+}
+
+vec<PTRef> &
+BitBlaster::bbBvmul(PTRef tr)
+{
+    assert(tr != PTRef_Undef);
+    assert(logic.getPterm(tr).size() == 2 );
+
+    vec<PTRef>& cached = updateCache(tr);
+    if (cached.size() > 0)
+        return cached;
+
+
+    // Allocate new result
+    vec<PTRef> *result = new vec<PTRef>;
+    // Garbage collect
+    garbage.push_back( result );
+
+    vec<PTRef> acc;
+    PTRef arg1 = logic.getPterm(tr)[0];
+    PTRef arg2 = logic.getPterm(tr)[1];
+    vec<PTRef> & bb_arg1 = bbTerm(arg1);
+    vec<PTRef> & bb_arg2 = bbTerm(arg2);
+    assert(bb_arg1.size() == bb_arg2.size());
+    const unsigned size = bb_arg1.size( );
+    // Compute term a_{i-1}*b_{j-1} ... a_0*b_0
+    for ( unsigned i = 0 ; i < size ; i ++ )
+        acc.push(logic.mkAnd(bb_arg2[0], bb_arg1[i]));
+    // Multi-arity adder
+    for ( unsigned i = 1 ; i < size ; i ++ )
+    {
+        vec<PTRef> addend;
+        // Push trailing 0s
+        for ( unsigned j = 0 ; j < i ; j ++ )
+            addend.push(logic.getTerm_false());
+        // Compute term a_{i-1}*b_i ... a_0*b_i 0 ... 0
+        for ( unsigned j = 0 ; j < size - i ; j ++ )
+            addend.push(logic.mkAnd(bb_arg2[i], bb_arg1[j]));
+
+        assert( addend.size( ) == size );
+        // Accumulate computed term
+        PTRef carry = PTRef_Undef;
+
+        for (unsigned k = 0 ; k < size ; k++)
+        {
+            PTRef bit_1 = acc[ k ];
+            PTRef bit_2 = addend[ k ];
+            assert(bit_1 != PTRef_Undef);
+            assert(bit_2 != PTRef_Undef);
+
+            PTRef xor_1 = logic.mkXor(bit_1, bit_2);
+            PTRef and_1 = logic.mkAnd(bit_1, bit_2 );
+
+            if (carry != PTRef_Undef)
+            {
+                PTRef xor_2 = logic.mkXor(xor_1, carry);
+                PTRef and_2 = logic.mkAnd(xor_1, carry);
+                carry = logic.mkOr(and_1, and_2);
+                if ( i == size - 1 )
+                    result->push(xor_2);
+                else
+                    acc[k] = xor_2;
+            }
+            else
+            {
+                carry = and_1;
+                if ( i == size - 1 )
+                    result->push(xor_1);
+                else
+                    acc[k] = xor_1;
+            }
+        }
+    }
+
+    // Save result and return
+    bb_cache[logic.getPterm(tr).getId()] = result;
+    return *result;
+}
+
+vec<PTRef> &
+BitBlaster::bbSignExtend(PTRef tr)
+{
+    assert(tr != PTRef_Undef);
+    assert(logic.getPterm(tr).size() == 1 );
+
+    // Return previous result if computed
+    vec<PTRef>& cached = updateCache(tr);
+    if (cached.size() > 0)
+        return cached;
+
+    // Allocate new result
+    vec<PTRef>* result = new vec<PTRef>;
+    // Garbage collect
+    garbage.push_back( result );
+
+
+    PTRef x = logic.getPterm(tr)[0];
+    vec<PTRef> & bb_x = bbTerm(x);
+    // Copy x
+    unsigned i;
+    for ( i = 0 ; i < bb_x.size( ) ; i ++ )
+        result->push(bb_x[i]);
+    // Sign extend
+    for ( ; (int)i < logic.getPterm(tr).size(); i ++ ) // Should be bit width...
+        result->push(bb_x.last());
+
+    // Save result and return
+    bb_cache[logic.getPterm(tr).getId()] = result;
+
+    return *result;
+}
+
+vec<PTRef> &
+BitBlaster::bbVar(PTRef tr)
+{
+    assert(tr != PTRef_Undef);
+    assert(logic.isVar(tr));
+
+    // Return previous result if computed
+    vec<PTRef>& cached = updateCache(tr);
+    if (cached.size() > 0)
+        return cached;
+    // Allocate new result
+    vec<PTRef>* result = new vec<PTRef>;
+    // Garbage collect
+    garbage.push_back( result );
+
+    // Save variable
+    variables.push(tr);
+
+    int width = logic.getPterm(tr).size(); // Should be bit width
+    // Allocate width new boolean variables
+    char def_name[strlen(logic.getSymName(tr)) + 10];
+    for ( int i = 0 ; i < width ; i ++ )
+    {
+        sprintf(def_name, "_%s_%d", logic.getSymName(tr), i);
+        result->push(logic.mkBoolVar(def_name));
+    }
+    // Save result and return
+    bb_cache[logic.getPterm(tr).getId()] = result;
+    return *result;
+}
+
+vec<PTRef> &
+BitBlaster::bbConstant(PTRef tr)
+{
+    assert(tr != PTRef_Undef);
+    assert(logic.isConstant(tr));
+
+
+    // Return previous result if computed
+    vec<PTRef>& cached = updateCache(tr);
+    if (cached.size() > 0)
+        return cached;
+    // Allocate new result
+    vec<PTRef>* result = new vec<PTRef>;
+    // Garbage collect
+    garbage.push_back( result );
+
+    if (logic.isTrue(tr))
+        result->push(logic.getTerm_true());
+    else if (logic.isFalse(tr))
+        result->push(logic.getTerm_false());
     else
     {
-      carry = and_1;
-      result->push_back( xor_1 );
+        unsigned width = logic.getPterm(tr).size(); // e->getWidth( );
+        const std::string value = logic.getSymName(tr);
+
+        assert( value.length() == width );
+        for ( unsigned i = 0 ; i < width ; i ++ )
+        {
+            result->push(value[width-i-1] == '1'
+                ? logic.getTerm_true()
+                : logic.getTerm_false()
+            );
+        }
     }
-  }
-
-  // Save result and return
-  bb_cache[ e->getId( ) ] = result;
-  return *result;
-}
-
-vector< Enode * > &
-BitBlaster::bbBvudiv( Enode * e )
-{
-  assert( e );
-  // assert( e->isBvudiv( ) );
-  assert( e->getArity( ) == 2 );
-
-  // Return previous result if computed
-  if ( (int)bb_cache.size( ) <= e->getId( ) )
-    bb_cache.resize( e->getId( ) + 1, NULL );
-  if ( bb_cache[ e->getId( ) ] != NULL )
-    return *bb_cache[ e->getId( ) ];
-  //
-  // Allocate new result
-  //
-  vector< Enode * > * result = new vector< Enode * >;
-  //
-  // Garbage collect
-  //
-  garbage.push_back( result );
-  vector< Enode * > minuend;
-  Enode * arg1 = e->get1st( );
-  Enode * arg2 = e->get2nd( );
-  vector< Enode * > & dividend = bbEnode( arg1 );
-  vector< Enode * > & divisor = bbEnode( arg2 );
-  assert( divisor.size( ) == dividend.size( ) );
-  //
-  // Generate condition divisor != 0
-  //
-  char buf[ 32 ];
-  sprintf( buf, "bv0[%d]", arg2->getWidth( ) );
-  Enode * zero = NULL;/*E.mkBvnum( buf );*/
-  Enode * div_eq_zero = bbEnode( E.mkEq( E.cons( arg2, E.cons( zero ) ) ) ).back( );
-
-  const unsigned size = divisor.size( );
-  (*result).resize( size, NULL );
-  //
-  // Initialize minuend as 0..0 q[n-1]
-  //
-  minuend.push_back( dividend[ size - 1 ] );
-  for ( unsigned i = 1 ; i < size ; i ++ )
-    minuend.push_back( E.mkFalse( ) );
-  //
-  // Main loop
-  //
-  for ( int i = size - 1 ; i >= 0 ; i -- )
-  {
-    //
-    // Compute result[ i ] = !(minuend < divisor);
-    //
-    Enode * lt_prev = NULL;
-    for ( unsigned j = 0 ; j < size ; j ++ )
-    {
-      // Produce ~l[j] & r[j]
-      Enode * not_l   = E.mkNot( E.cons( minuend[ j ] ) );
-      Enode * lt_this = E.mkAnd( E.cons( not_l
-                               , E.cons( divisor[ j ] ) ) );
-      // Produce l[j] <-> r[j]
-      Enode * eq_this = E.mkIff( E.cons( minuend[ j ]
-                               , E.cons( divisor[ j ] ) ) );
-      if ( lt_prev )
-      {
-        Enode * or_args = E.cons( lt_this
-                        , E.cons( E.mkAnd( E.cons( eq_this
-                                         , E.cons( lt_prev ) ) ) ) );
-        lt_prev = E.mkOr( or_args );
-      }
-      else
-      {
-        lt_prev = lt_this;
-      }
-    }
-
-    assert( lt_prev );
-
-    // Old
-    // (*result)[ i ] = E.mkNot( E.cons( lt_prev ) );
-    // divisor != 0 -> !lt_prev
-    // divisor == 0 || !lt_prev
-    (*result)[ i ] = E.mkOr( E.cons( div_eq_zero, E.cons( E.mkNot( E.cons( lt_prev ) ) ) ) );
-    Enode * bit_i = (*result)[ i ];
-    //
-    // Construct subtrahend
-    //
-    vector< Enode * > subtrahend;
-    for ( unsigned j = 0 ; j < size ; j ++ )
-    {
-      subtrahend.push_back( E.mkAnd( E.cons( bit_i
-                                   , E.cons( divisor[ j ] ) ) ) );
-    }
-    //
-    // Subtract and store in minuend
-    //
-    Enode * carry = NULL;
-    for( unsigned j = 0 ; j < minuend.size( ) ; j++ )
-    {
-      Enode * bit_1 = minuend[ j ];
-      Enode * bit_2 = subtrahend[ j ];
-      assert( bit_1 );
-      assert( bit_2 );
-
-      Enode * bit_2_neg = E.mkNot( E.cons( bit_2 ) );
-      Enode * xor_1 = E.mkXor( E.cons( bit_1, E.cons( bit_2_neg ) ) );
-      Enode * and_1 = E.mkAnd( E.cons( bit_1, E.cons( bit_2_neg ) ) );
-
-      if ( carry )
-      {
-        Enode * xor_2 = E.mkXor( E.cons( xor_1, E.cons( carry ) ) );
-        Enode * and_2 = E.mkAnd( E.cons( xor_1, E.cons( carry ) ) );
-        carry = E.mkOr( E.cons( and_1, E.cons( and_2 ) ) );
-        minuend[ j ] = xor_2;
-      }
-      else
-      {
-        carry = and_1;
-        minuend[ j ] = xor_1;
-      }
-    }
-
-    carry = NULL;
-
-    //
-    // Adds one, if bit_i is one
-    //
-    for( unsigned j = 0 ; j < minuend.size( ) ; j++ ) 
-    {
-      Enode * bit_1 = minuend[ j ];
-      Enode * bit_2 = j == 0 ? E.mkTrue( ) : E.mkFalse( );
-      assert( bit_1 );
-      assert( bit_2 );
-
-      Enode * xor_1 = E.mkXor( E.cons( bit_1, E.cons( bit_2 ) ) );
-      Enode * and_1 = E.mkAnd( E.cons( bit_1, E.cons( bit_2 ) ) );
-
-      if ( carry )
-      {
-        Enode * xor_2 = E.mkXor( E.cons( xor_1, E.cons( carry ) ) );
-        Enode * and_2 = E.mkAnd( E.cons( xor_1, E.cons( carry ) ) );
-        carry = E.mkOr( E.cons( and_1, E.cons( and_2 ) ) );
-        minuend[ j ] = xor_2;
-      }
-      else
-      {
-        carry = and_1;
-        minuend[ j ] = xor_1;
-      }
-    }
-
-    if ( i > 0 )
-    {
-      //
-      // Prepare new minuend
-      //
-      //                M[i-1]
-      //
-      // O[2] O[1] O[0]
-      //      N[2] N[1] N[0]
-      //
-      for ( int j = size - 1 ; j >= 1 ; j -- )
-        minuend[ j ] = minuend[ j - 1 ];
-      minuend[ 0 ] = dividend[ i - 1 ];
-    }
-  }
-  //
-  // Save result and return
-  //
-  bb_cache[ e->getId( ) ] = result;
-  return *result;
-}
-
-vector< Enode * > &
-BitBlaster::bbBvurem( Enode * e )
-{
-  assert( e );
-  // assert( e->isBvurem( ) );
-  assert( e->getArity( ) == 2 );
-
-  // Return previous result if computed
-  if ( (int)bb_cache.size( ) <= e->getId( ) )
-    bb_cache.resize( e->getId( ) + 1, NULL );
-  if ( bb_cache[ e->getId( ) ] != NULL )
-    return *bb_cache[ e->getId( ) ];
-  //
-  // Allocate new result
-  //
-  vector< Enode * > * result = new vector< Enode * >;
-  //
-  // Garbage collect
-  //
-  garbage.push_back( result );
-
-  vector< Enode * > minuend;
-  Enode * arg1 = e->get1st( );
-  Enode * arg2 = e->get2nd( );
-  vector< Enode * > & dividend = bbEnode( arg1 );
-  vector< Enode * > & divisor = bbEnode( arg2 );
-  assert( divisor.size( ) == dividend.size( ) );
-  //
-  // Generate condition divisor != 0
-  //
-  char buf[ 32 ];
-  sprintf( buf, "bv0[%d]", arg2->getWidth( ) );
-  Enode * zero = NULL;/*E.mkBvnum( buf );*/
-  Enode * div_eq_zero = bbEnode( E.mkEq( E.cons( arg2, E.cons( zero ) ) ) ).back( );
-
-  const unsigned size = divisor.size( );
-  (*result).resize( size, NULL );
-  //
-  // Initialize minuend as 0..0 q[n-1]
-  //
-  minuend.push_back( dividend[ size - 1 ] );
-  for ( unsigned i = 1 ; i < size ; i ++ )
-    minuend.push_back( E.mkFalse( ) );
-  //
-  // Main loop
-  //
-  for ( int i = size - 1 ; i >= 0 ; i -- )
-  {
-    //
-    // Compute result[ i ] = !(minuend < divisor);
-    //
-    Enode * lt_prev = NULL;
-    for ( unsigned j = 0 ; j < size ; j ++ )
-    {
-      // Produce ~l[j] & r[j]
-      Enode * not_l   = E.mkNot( E.cons( minuend[ j ] ) );
-      Enode * lt_this = E.mkAnd( E.cons( not_l 
-                               , E.cons( divisor[ j ] ) ) );
-      // Produce l[j] <-> r[j]
-      Enode * eq_this = E.mkIff( E.cons( minuend[ j ] 
-                               , E.cons( divisor[ j ] ) ) );
-      if ( lt_prev )
-      {
-        Enode * or_args = E.cons( lt_this
-                        , E.cons( E.mkAnd( E.cons( eq_this
-                                         , E.cons( lt_prev ) ) ) ) );
-        lt_prev = E.mkOr( or_args );
-      }
-      else
-      {
-        lt_prev = lt_this;
-      }
-    }
-
-    assert( lt_prev );
-    Enode * bit_i = E.mkNot( E.cons( lt_prev ) );
-
-    //
-    // Construct subtrahend
-    //
-    vector< Enode * > subtrahend;
-    for ( unsigned j = 0 ; j < size ; j ++ )
-      subtrahend.push_back( E.mkAnd( E.cons( bit_i
-                                   , E.cons( divisor[ j ] ) ) ) );
-    //
-    // Subtract and store in minuend
-    //
-    Enode * carry = NULL;
-
-    for( unsigned j = 0 ; j < minuend.size( ) ; j++ )
-    {
-      Enode * bit_1 = minuend[ j ];
-      Enode * bit_2 = subtrahend[ j ];
-      assert( bit_1 );
-      assert( bit_2 );
-
-      Enode * bit_2_neg = E.mkNot( E.cons( bit_2 ) );
-      Enode * xor_1 = E.mkXor( E.cons( bit_1, E.cons( bit_2_neg ) ) );
-      Enode * and_1 = E.mkAnd( E.cons( bit_1, E.cons( bit_2_neg ) ) );
-
-      if ( carry )
-      {
-        Enode * xor_2 = E.mkXor( E.cons( xor_1, E.cons( carry ) ) );
-        Enode * and_2 = E.mkAnd( E.cons( xor_1, E.cons( carry ) ) );
-        carry = E.mkOr( E.cons( and_1, E.cons( and_2 ) ) );
-        minuend[ j ] = xor_2;
-      }
-      else
-      {
-        carry = and_1;
-        minuend[ j ] = xor_1;
-      }
-    }
-
-    carry = NULL;
-
-    //
-    // Adds one, if bit_i is one
-    //
-    for( unsigned j = 0 ; j < minuend.size( ) ; j++ )
-    {
-      Enode * bit_1 = minuend[ j ];
-      Enode * bit_2 = j == 0 ? E.mkTrue( ) : E.mkFalse( );
-      assert( bit_1 );
-      assert( bit_2 );
-
-      Enode * xor_1 = E.mkXor( E.cons( bit_1, E.cons( bit_2 ) ) );
-      Enode * and_1 = E.mkAnd( E.cons( bit_1, E.cons( bit_2 ) ) );
-
-      if ( carry )
-      {
-        Enode * xor_2 = E.mkXor( E.cons( xor_1, E.cons( carry ) ) );
-        Enode * and_2 = E.mkAnd( E.cons( xor_1, E.cons( carry ) ) );
-        carry = E.mkOr( E.cons( and_1, E.cons( and_2 ) ) );
-        minuend[ j ] = xor_2;
-      }
-      else
-      {
-        carry = and_1;
-        minuend[ j ] = xor_1;
-      }
-    }
-
-    if ( i > 0 )
-    {
-      //
-      // Prepare new minuend
-      //
-      //                M[i-1]
-      //
-      // O[2] O[1] O[0]
-      //      N[2] N[1] N[0]
-      //
-      for ( int j = size - 1 ; j >= 1 ; j -- )
-        minuend[ j ] = minuend[ j - 1 ];
-      minuend[ 0 ] = dividend[ i - 1 ];
-    }
-    else
-    {
-      for ( unsigned j = 0 ; j < size ; j ++ )
-      {
-        (*result)[ j ] = E.mkOr( E.cons( div_eq_zero, E.cons( minuend[ j ] ) ) );
-      }
-    }
-  }
-
-  //
-  // Save result and return
-  //
-  bb_cache[ e->getId( ) ] = result;
-  return *result;
-}
-
-vector< Enode * > &
-BitBlaster::bbBvmul( Enode * e )
-{
-  assert( e );
-  // assert( e->isBvmul( ) );
-  assert( e->getArity( ) == 2 );
-
-  // Return previous result if computed
-  if ( (int)bb_cache.size( ) <= e->getId( ) )
-    bb_cache.resize( e->getId( ) + 1, NULL );
-  if ( bb_cache[ e->getId( ) ] != NULL )
-    return *bb_cache[ e->getId( ) ];
-
-  // Allocate new result
-  vector< Enode * > * result = new vector< Enode * >;
-  // Garbage collect
-  garbage.push_back( result );
-
-  vector< Enode * > acc;
-  Enode * arg1 = e->get1st( );
-  Enode * arg2 = e->get2nd( );
-  vector< Enode * > & bb_arg1 = bbEnode( arg1 );
-  vector< Enode * > & bb_arg2 = bbEnode( arg2 );
-  assert( bb_arg1.size( ) == bb_arg2.size( ) );
-  const unsigned size = bb_arg1.size( );
-  // Compute term a_{i-1}*b_{j-1} ... a_0*b_0
-  for ( unsigned i = 0 ; i < size ; i ++ )
-    acc.push_back( E.mkAnd( E.cons( bb_arg2[ 0 ], E.cons( bb_arg1[ i ] ) ) ) );
-  // Multi-arity adder
-  for ( unsigned i = 1 ; i < size ; i ++ )
-  {
-    vector< Enode * > addend;
-    // Push trailing 0s
-    for ( unsigned j = 0 ; j < i ; j ++ )
-      addend.push_back( E.mkFalse( ) );
-    // Compute term a_{i-1}*b_i ... a_0*b_i 0 ... 0
-    for ( unsigned j = 0 ; j < size - i ; j ++ )
-      addend.push_back( E.mkAnd( E.cons( bb_arg2[ i ], E.cons( bb_arg1[ j ] ) ) ) );
-
-    assert( addend.size( ) == size );
-    // Accumulate computed term
-    Enode * carry = NULL;
-
-    for( unsigned k = 0 ; k < size ; k++ )
-    {
-      Enode * bit_1 = acc[ k ];
-      Enode * bit_2 = addend[ k ];
-      assert( bit_1 );
-      assert( bit_2 );
-
-      Enode * xor_1 = E.mkXor( E.cons( bit_1 , E.cons( bit_2 ) ) );
-      Enode * and_1 = E.mkAnd( E.cons( bit_1 , E.cons( bit_2 ) ) );
-
-      if ( carry )
-      {
-        Enode * xor_2 = E.mkXor( E.cons( xor_1 , E.cons( carry ) ) );
-        Enode * and_2 = E.mkAnd( E.cons( xor_1 , E.cons( carry ) ) );
-        carry = E.mkOr( E.cons( and_1 , E.cons( and_2 ) ) );
-        if ( i == size - 1 )
-          result->push_back( xor_2 );
-        else
-          acc[ k ] = xor_2;
-      }
-      else
-      {
-        carry = and_1;
-        if ( i == size - 1 )
-          result->push_back( xor_1 );
-        else
-          acc[ k ] = xor_1;
-      }
-    }
-  }
-
-  // Save result and return
-  bb_cache[ e->getId( ) ] = result;
-  return *result;
-}
-
-vector< Enode * > &
-BitBlaster::bbSignExtend( Enode * e )
-{
-  assert( e );
-  // assert( e->isSignExtend( ) );
-  assert( e->getArity( ) == 1 );
-
-  // Return previous result if computed
-  if ( (int)bb_cache.size( ) <= e->getId( ) )
-    bb_cache.resize( e->getId( ) + 1, NULL );
-  if ( bb_cache[ e->getId( ) ] != NULL )
-    return *bb_cache[ e->getId( ) ];
-
-  // Allocate new result
-  vector< Enode * > * result = new vector< Enode * >;
-  // Garbage collect
-  garbage.push_back( result );
-
-
-  Enode * x = e->get1st( );
-  vector< Enode * > & bb_x = bbEnode( x );
-  // Copy x
-  unsigned i;
-  for ( i = 0 ; i < bb_x.size( ) ; i ++ ) 
-    result->push_back( bb_x[ i ] );
-  // Sign extend
-  for ( ; (int)i < e->getWidth( ) ; i ++ )
-    result->push_back( bb_x.back( ) );
-
-  // Save result and return
-  bb_cache[ e->getId( ) ] = result;
-
-  return *result;
-}
-
-vector< Enode * > &
-BitBlaster::bbVar( Enode * e )
-{
-  assert( e );
-  assert( e->isVar( ) );
-
-  // Return previous result if computed
-  if ( (int)bb_cache.size( ) <= e->getId( ) )
-    bb_cache.resize( e->getId( ) + 1, NULL );
-  if ( bb_cache[ e->getId( ) ] != NULL )
-    return *bb_cache[ e->getId( ) ];
-
-  // Save variable
-  variables.push_back( e );
-  // Allocate new result
-  vector< Enode * > * result = new vector< Enode * >;
-  // Garbage collect
-  garbage.push_back( result );
-
-  int width = e->getWidth( );
-  // Allocate width new boolean variables
-  char def_name[ (e->getCar( )->getName( )).length( ) + 10 ];
-  for ( int i = 0 ; i < width ; i ++ )
-  {
-    sprintf( def_name, "_%s_%d", (e->getCar( )->getName( )).c_str( ), i );
-    // E.newSymbol( def_name, DTYPE_BOOL );
-    result->push_back( E.mkVar( def_name ) );
-  }
-  // Save result and return
-  bb_cache[ e->getId( ) ] = result;
-  return *result;
-}
-
-vector< Enode * > &
-BitBlaster::bbConstant( Enode * e )
-{
-  assert( e );
-  assert( e->isConstant( ) );
-
-  // Return previous result if computed
-  if ( (int)bb_cache.size( ) <= e->getId( ) )
-    bb_cache.resize( e->getId( ) + 1, NULL );
-  if ( bb_cache[ e->getId( ) ] != NULL )
-    return *bb_cache[ e->getId( ) ];
-
-  // Allocate new result
-  vector< Enode * > * result = new vector< Enode * >;
-  // Garbage collect
-  garbage.push_back( result );
-
-  if ( e->isTrue( ) )
-  {
-    result->push_back( E.mkTrue( ) );
-  }
-  else if ( e->isFalse( ) )
-  {
-    result->push_back( E.mkFalse( ) );
-  }
-  else
-  {
-    unsigned width = e->getWidth( );
-    const string value = e->getCar( )->getName( );
-
-    assert( value.length( ) == width );
-    for ( unsigned i = 0 ; i < width ; i ++ )
-    {
-      result->push_back( value[ width - i - 1 ] == '1'
-          ? E.mkTrue( )
-          : E.mkFalse( )
-          );
-    }
-  }
-  // Save result and return
-  bb_cache[ e->getId( ) ] = result;
-  return *result;
+    // Save result and return
+    bb_cache[logic.getPterm(tr).getId()] = result;
+    return *result;
 }
 
 /*
@@ -1210,417 +1123,412 @@ BitBlaster::bbUp( Enode * )
 }
 */
 
-vector< Enode * > &
-BitBlaster::bbDistinct( Enode * e )
+vec<PTRef> &
+BitBlaster::bbDistinct(PTRef tr)
 {
-  assert( e );
-  assert( e->isDistinct( ) );
-  //
-  // Return previous result if computed
-  //
-  if ( (int)bb_cache.size( ) <= e->getId( ) )
-    bb_cache.resize( e->getId( ) + 1, NULL );
-  if ( bb_cache[ e->getId( ) ] != NULL )
-    return *bb_cache[ e->getId( ) ];
+    assert(tr != PTRef_Undef);
+    assert(logic.isDistinct(tr));
+    // Return previous result if computed
+    vec<PTRef>& cached = updateCache(tr);
+    if (cached.size() > 0)
+        return cached;
+    // Allocate new result
+    vec<PTRef>* result = new vec<PTRef>;
+    // Garbage collect
+    garbage.push_back( result );
 
-  vector< Enode * > args;
+    vec<PTRef> args;
 
-  for ( Enode * ll = e->getCdr( )
-      ; !ll->isEnil( )
-      ; ll = ll->getCdr( ) )
-  {
-    Enode * arg = ll->getCar( );
-    args.push_back( arg );
-    assert( args.back( ) );
-  }
-  //
-  // Quadratic encoding
-  //
-  vector< Enode * > * result = new vector< Enode * >;
-  list< Enode * > res_args;
-  for ( size_t i = 0 ; i < args.size( ) - 1 ; i ++ )
-  {
-    for ( size_t j = i + 1 ; j < args.size( ) ; j ++ )
+    for (int i = 0; i < logic.getPterm(tr).size(); i++)
+        args.push(logic.getPterm(tr)[i]);
+    //
+    // Quadratic encoding
+    //
+
+    vec<PTRef> res_args;
+    for (int i = 0; i < logic.getPterm(tr).size()-1; i++)
     {
-      vector< Enode * > & bb_pair = bbEnode( E.mkEq( E.cons( args[ i ], E.cons( args[ j ] ) ) ) );
-      assert( bb_pair.size( ) == 1 );
-      res_args.push_back( E.mkNot( E.cons( bb_pair.back( ) ) ) );
+        for (int j = i+1; j < logic.getPterm(tr).size(); j++)
+        {
+            vec<PTRef>& bb_pair = bbTerm(logic.mkEq(args[i], args[j]));
+            assert(bb_pair.size() == 1);
+            res_args.push(logic.mkNot(bb_pair.last()));
+        }
     }
-  }
 
-  result->push_back( E.mkAnd( E.cons( res_args ) ) );
-  //
-  // Garbage collect
-  //
-  garbage.push_back( result );
-  //
-  // Save result and return
-  //
-  bb_cache[ e->getId( ) ] = result;
-  return *result;
+    result->push(logic.mkAnd(res_args));
+    //
+    // Garbage collect
+    //
+    garbage.push_back( result );
+    //
+    // Save result and return
+    //
+    bb_cache[logic.getPterm(tr).getId()] = result;
+    return *result;
 }
 
 bool
-BitBlaster::addClause ( vec< Lit > & c, Enode * e )
+BitBlaster::addClause(vec< Lit > & c, PTRef tr)
 {
-  return solverP.addClause( c, e );
+    return solverP.addClause(c);
 }
 
 //=============================================================================
 // CNFization Routines
+//
+//Var
+//BitBlaster::cnfizeAndGiveToSolver( Enode * bb, Enode * atom )
+//{
+//  // Stack for unprocessed enodes
+//  vector< Enode * > unprocessed_enodes;
+//  // Cnfize and give to solver
+//  unprocessed_enodes.push_back( bb );
+//
+//  while( !unprocessed_enodes.empty( ) )
+//  {
+//    Enode * enode = unprocessed_enodes.back( );
+//    assert( enode->hasSortBool( ) );
+//    //
+//    // Skip if the node has already been processed before
+//    //
+//    if ( (int)cnf_cache.size( ) <= enode->getId( ) )
+//      cnf_cache.resize( enode->getId( ) + 1, lit_Undef );
+//    if ( cnf_cache[ enode->getId( ) ] != lit_Undef )
+//    {
+//      unprocessed_enodes.pop_back( );
+//      continue;
+//    }
+//
+//    bool unprocessed_children = false;
+//    Enode * arg_list;
+//    for ( arg_list = enode->getCdr( ) ;
+//          arg_list != E.enil ;
+//          arg_list = arg_list->getCdr( ) )
+//    {
+//      Enode * arg = arg_list->getCar( );
+//      assert( arg->isTerm( ) );
+//      //
+//      // Push children if not processed already
+//      //
+//      if ( (int)cnf_cache.size( ) <= arg->getId( ) )
+//        cnf_cache.resize( arg->getId( ) + 1, lit_Undef );
+//      if ( cnf_cache[ arg->getId( ) ] == lit_Undef )
+//      {
+//        unprocessed_enodes.push_back( arg );
+//        unprocessed_children = true;
+//      }
+//    }
+//    //
+//    // SKip if unprocessed children
+//    //
+//    if ( unprocessed_children )
+//      continue;
+//
+//    unprocessed_enodes.pop_back( );
+//    Lit result = lit_Undef;
+//    //
+//    // At this point, every child has been processed
+//    //
+//    //
+//    // Do the actual cnfization, according to the node type
+//    //
+//    if ( enode->isTrue( ) )
+//      result = constTrue;
+//    else if ( enode->isFalse( ) )
+//      result = constFalse;
+//    else if ( enode->isAtom( ) )
+//    {
+//      // Allocate a new boolean variable for this atom
+//      Var var = solverP.newVar( );
+//      // Keep track to retrieve model
+//      assert( cnf_var.find( enode->getId( ) ) == cnf_var.end( ) );
+//      cnf_var[ enode->getId( ) ] = var;
+//      result = Lit( var );
+//    }
+//    else if ( enode->isNot( ) )
+//    {
+//      assert( (int)cnf_cache.size( ) > enode->getId( ) );
+//
+//      Lit arg_def = cnf_cache[ enode->get1st( )->getId( ) ];
+//      assert( arg_def != lit_Undef );
+//      // Toggle variable
+//      result = ~arg_def;
+//    }
+//    else
+//    {
+//      //
+//      // Allocates a new variable for definition
+//      //
+//      Var var = solverP.newVar( );
+//      //
+//      // Store correspondence
+//      //
+//      result = Lit( var );
+//      //
+//      // Handle remaining cases
+//      //
+//
+//      Enode * atom_ = ( enode == bb ? atom : NULL );
+//
+//      if ( enode->isAnd( ) )
+//        cnfizeAnd( enode, result, atom_ );
+//      else if ( enode->isOr( ) )
+//        cnfizeOr ( enode, result, atom_ );
+//      /*
+//      else if ( enode->isIff( ) )
+//        cnfizeIff( enode, result, atom_ );
+//      */
+//      else if ( enode->isXor( ) )
+//        cnfizeXor( enode, result, atom_ );
+//      else
+//        opensmt_error2( "operator not handled ", enode->getCar( ) );
+//    }
+//
+//    assert( result != lit_Undef );
+//    assert( cnf_cache[ enode->getId( ) ] == lit_Undef );
+//    // Store result
+//    cnf_cache[ enode->getId( ) ] = result;
+//  }
+//
+//  //
+//  // Add an activation variable
+//  //
+//  assert( cnf_cache[ bb->getId( ) ] != lit_Undef );
+//
+//  Lit l = cnf_cache[ bb->getId( ) ];
+//
+//  Var  act = solverP.newVar( );
+//  Lit lact = Lit( act );
+//  vec< Lit > clause;
+//  //
+//  // Adds ~act | l
+//  //
+//  clause.push( ~lact );
+//  clause.push( l );
+//  addClause( clause, atom );
+//  //
+//  // Adds act | ~l
+//  //
+//  clause.pop( );
+//  clause.pop( );
+//  clause.push( lact );
+//  clause.push( ~l );
+//  addClause( clause, atom );
+//
+//  return act;
+//}
 
-Var
-BitBlaster::cnfizeAndGiveToSolver( Enode * bb, Enode * atom )
-{
-  // Stack for unprocessed enodes
-  vector< Enode * > unprocessed_enodes;
-  // Cnfize and give to solver
-  unprocessed_enodes.push_back( bb );
+//void
+//BitBlaster::cnfizeAnd( Enode * enode, Lit def, Enode * atom )
+//{
+//  assert( enode );
+//  Enode * list = NULL;
+//  //
+//  // ( a_0 & ... & a_{n-1} )
+//  //
+//  // <=>
+//  //
+//  // aux = ( -aux | a_0 ) & ... & ( -aux | a_{n-1} ) & ( aux & -a_0 & ... & -a_{n-1} )
+//  //
+//  vec< Lit > little_clause;
+//  vec< Lit > big_clause;
+//  little_clause.push( ~def );
+//  big_clause   .push(  def );
+//  for ( list = enode->getCdr( )
+//      ; list != E.enil
+//      ; list = list->getCdr( ) )
+//  {
+//    Lit arg = cnf_cache[ list->getCar( )->getId( ) ];
+//    assert( arg != lit_Undef );
+//    little_clause.push(  arg );
+//    big_clause   .push( ~arg );
+//    addClause( little_clause, atom );
+//    little_clause.pop( );
+//  }
+//  addClause( big_clause, atom );
+//}
 
-  while( !unprocessed_enodes.empty( ) )
-  {
-    Enode * enode = unprocessed_enodes.back( );
-    assert( enode->hasSortBool( ) );
-    //
-    // Skip if the node has already been processed before
-    //
-    if ( (int)cnf_cache.size( ) <= enode->getId( ) )
-      cnf_cache.resize( enode->getId( ) + 1, lit_Undef );
-    if ( cnf_cache[ enode->getId( ) ] != lit_Undef )
-    {
-      unprocessed_enodes.pop_back( );
-      continue;
-    }
+//void
+//BitBlaster::cnfizeOr( Enode * enode, Lit def, Enode * atom )
+//{
+//  assert( enode );
+//  Enode * list = NULL;
+//  //
+//  // ( a_0 | ... | a_{n-1} )
+//  //
+//  // <=>
+//  //
+//  // aux = ( aux | -a_0 ) & ... & ( aux | -a_{n-1} ) & ( -aux | a_0 | ... | a_{n-1} )
+//  //
+//  vec< Lit > little_clause;
+//  vec< Lit > big_clause;
+//  little_clause.push(  def );
+//  big_clause   .push( ~def );
+//  for ( list = enode->getCdr( )
+//      ; list != E.enil
+//      ; list = list->getCdr( ) )
+//  {
+//    Lit arg = cnf_cache[ list->getCar( )->getId( ) ];
+//    little_clause.push( ~arg );
+//    big_clause   .push(  arg );
+//    addClause( little_clause, atom );
+//    little_clause.pop( );
+//  }
+//  addClause( big_clause, atom );
+//}
 
-    bool unprocessed_children = false;
-    Enode * arg_list;
-    for ( arg_list = enode->getCdr( ) ;
-          arg_list != E.enil ;
-          arg_list = arg_list->getCdr( ) )
-    {
-      Enode * arg = arg_list->getCar( );
-      assert( arg->isTerm( ) );
-      //
-      // Push children if not processed already
-      //
-      if ( (int)cnf_cache.size( ) <= arg->getId( ) )
-        cnf_cache.resize( arg->getId( ) + 1, lit_Undef );
-      if ( cnf_cache[ arg->getId( ) ] == lit_Undef )
-      {
-        unprocessed_enodes.push_back( arg );
-        unprocessed_children = true;
-      }
-    }
-    //
-    // SKip if unprocessed children
-    //
-    if ( unprocessed_children )
-      continue;
+//void
+//BitBlaster::cnfizeXor( Enode * enode, Lit def, Enode * atom )
+//{
+//  assert( enode );
+//  Enode * list = enode->getCdr( );
+//  //
+//  // ( a_0 xor a_1 )
+//  //
+//  // <=>
+//  //
+//  // aux = ( -aux |  a_0 | a_1 ) & ( -aux | -a_0 | -a_1 ) &
+//  //       (  aux | -a_0 | a_1 ) & (  aux |  a_0 |  a_1 ) 
+//  //
+//  assert( list->getArity( ) == 2 );
+//  Lit arg0 = cnf_cache[ list->getCar( )->getId( ) ];
+//  Lit arg1 = cnf_cache[ list->getCdr( )->getCar( )->getId( ) ];
+//  vec< Lit > clause;
+//
+//  clause.push( ~def );
+//
+//  // First clause
+//  clause  .push( ~arg0 );
+//  clause  .push( ~arg1 );
+//  addClause( clause, atom );
+//  clause  .pop( );
+//  clause  .pop( );
+//
+//  // Second clause
+//  clause  .push(  arg0 );
+//  clause  .push(  arg1 );
+//  addClause( clause, atom );
+//  clause  .pop( );
+//  clause  .pop( );
+//
+//  clause.pop( );
+//  clause.push( def );
+//
+//  // Third clause
+//  clause  .push( ~arg0 );
+//  clause  .push(  arg1 );
+//  addClause( clause, atom );
+//  clause  .pop( );
+//  clause  .pop( );
+//
+//  // Fourth clause
+//  clause  .push(  arg0 );
+//  clause  .push( ~arg1 );
+//  addClause( clause, atom );
+//}
 
-    unprocessed_enodes.pop_back( );
-    Lit result = lit_Undef;
-    //
-    // At this point, every child has been processed
-    //
-    //
-    // Do the actual cnfization, according to the node type
-    //
-    if ( enode->isTrue( ) )
-      result = constTrue;
-    else if ( enode->isFalse( ) )
-      result = constFalse;
-    else if ( enode->isAtom( ) )
-    {
-      // Allocate a new boolean variable for this atom
-      Var var = solverP.newVar( );
-      // Keep track to retrieve model
-      assert( cnf_var.find( enode->getId( ) ) == cnf_var.end( ) );
-      cnf_var[ enode->getId( ) ] = var;
-      result = Lit( var );
-    }
-    else if ( enode->isNot( ) )
-    {
-      assert( (int)cnf_cache.size( ) > enode->getId( ) );
+//void
+//BitBlaster::cnfizeIff( Enode * enode, Lit def, Enode * atom )
+//{
+//  assert( enode );
+//  Enode * list = enode->getCdr( );
+//  //
+//  // ( a_0 <-> a_1 )
+//  //
+//  // <=>
+//  //
+//  // aux = ( -aux |  a_0 | -a_1 ) & ( -aux | -a_0 |  a_1 ) &
+//  //       (  aux |  a_0 |  a_1 ) & (  aux | -a_0 | -a_1 )
+//  //
+//  assert( list->getArity( ) == 2 );
+//  Lit arg0 = cnf_cache[ list->getCar( )->getId( ) ];
+//  Lit arg1 = cnf_cache[ list->getCdr( )->getCar( )->getId( ) ];
+//  vec< Lit > clause;
+//
+//  clause.push( ~def );
+//
+//  // First clause
+//  clause  .push(  arg0 );
+//  clause  .push( ~arg1 );
+//  addClause( clause, atom );
+//  clause  .pop( );
+//  clause  .pop( );
+//
+//  // Second clause
+//  clause  .push( ~arg0 );
+//  clause  .push(  arg1 );
+//  addClause( clause, atom );
+//  clause  .pop( );
+//  clause  .pop( );
+//
+//  clause.pop( );
+//  clause.push( def );
+//
+//  // Third clause
+//  clause  .push( ~arg0 );
+//  clause  .push( ~arg1 );
+//  addClause( clause, atom );
+//  clause  .pop( );
+//  clause  .pop( );
+//
+//  // Fourth clause
+//  clause  .push(  arg0 );
+//  clause  .push(  arg1 );
+//  addClause( clause, atom );
+//}
 
-      Lit arg_def = cnf_cache[ enode->get1st( )->getId( ) ];
-      assert( arg_def != lit_Undef );
-      // Toggle variable
-      result = ~arg_def;
-    }
-    else
-    {
-      //
-      // Allocates a new variable for definition
-      //
-      Var var = solverP.newVar( );
-      //
-      // Store correspondence
-      //
-      result = Lit( var );
-      //
-      // Handle remaining cases
-      //
-
-      Enode * atom_ = ( enode == bb ? atom : NULL );
-
-      if ( enode->isAnd( ) )
-        cnfizeAnd( enode, result, atom_ );
-      else if ( enode->isOr( ) )
-        cnfizeOr ( enode, result, atom_ );
-      /*
-      else if ( enode->isIff( ) )
-        cnfizeIff( enode, result, atom_ );
-      */
-      else if ( enode->isXor( ) )
-        cnfizeXor( enode, result, atom_ );
-      else
-        opensmt_error2( "operator not handled ", enode->getCar( ) );
-    }
-
-    assert( result != lit_Undef );
-    assert( cnf_cache[ enode->getId( ) ] == lit_Undef );
-    // Store result
-    cnf_cache[ enode->getId( ) ] = result;
-  }
-
-  //
-  // Add an activation variable
-  //
-  assert( cnf_cache[ bb->getId( ) ] != lit_Undef );
-
-  Lit l = cnf_cache[ bb->getId( ) ];
-
-  Var  act = solverP.newVar( );
-  Lit lact = Lit( act );
-  vec< Lit > clause;
-  //
-  // Adds ~act | l
-  //
-  clause.push( ~lact );
-  clause.push( l );
-  addClause( clause, atom );
-  //
-  // Adds act | ~l
-  //
-  clause.pop( );
-  clause.pop( );
-  clause.push( lact );
-  clause.push( ~l );
-  addClause( clause, atom );
-
-  return act;
-}
-
-void
-BitBlaster::cnfizeAnd( Enode * enode, Lit def, Enode * atom )
-{
-  assert( enode );
-  Enode * list = NULL;
-  //
-  // ( a_0 & ... & a_{n-1} )
-  //
-  // <=>
-  //
-  // aux = ( -aux | a_0 ) & ... & ( -aux | a_{n-1} ) & ( aux & -a_0 & ... & -a_{n-1} )
-  //
-  vec< Lit > little_clause;
-  vec< Lit > big_clause;
-  little_clause.push( ~def );
-  big_clause   .push(  def );
-  for ( list = enode->getCdr( )
-      ; list != E.enil
-      ; list = list->getCdr( ) )
-  {
-    Lit arg = cnf_cache[ list->getCar( )->getId( ) ];
-    assert( arg != lit_Undef );
-    little_clause.push(  arg );
-    big_clause   .push( ~arg );
-    addClause( little_clause, atom );
-    little_clause.pop( );
-  }
-  addClause( big_clause, atom );
-}
-
-void
-BitBlaster::cnfizeOr( Enode * enode, Lit def, Enode * atom )
-{
-  assert( enode );
-  Enode * list = NULL;
-  //
-  // ( a_0 | ... | a_{n-1} )
-  //
-  // <=>
-  //
-  // aux = ( aux | -a_0 ) & ... & ( aux | -a_{n-1} ) & ( -aux | a_0 | ... | a_{n-1} )
-  //
-  vec< Lit > little_clause;
-  vec< Lit > big_clause;
-  little_clause.push(  def );
-  big_clause   .push( ~def );
-  for ( list = enode->getCdr( )
-      ; list != E.enil
-      ; list = list->getCdr( ) )
-  {
-    Lit arg = cnf_cache[ list->getCar( )->getId( ) ];
-    little_clause.push( ~arg );
-    big_clause   .push(  arg );
-    addClause( little_clause, atom );
-    little_clause.pop( );
-  }
-  addClause( big_clause, atom );
-}
-
-void
-BitBlaster::cnfizeXor( Enode * enode, Lit def, Enode * atom )
-{
-  assert( enode );
-  Enode * list = enode->getCdr( );
-  //
-  // ( a_0 xor a_1 )
-  //
-  // <=>
-  //
-  // aux = ( -aux |  a_0 | a_1 ) & ( -aux | -a_0 | -a_1 ) &
-  //       (  aux | -a_0 | a_1 ) & (  aux |  a_0 |  a_1 ) 
-  //
-  assert( list->getArity( ) == 2 );
-  Lit arg0 = cnf_cache[ list->getCar( )->getId( ) ];
-  Lit arg1 = cnf_cache[ list->getCdr( )->getCar( )->getId( ) ];
-  vec< Lit > clause;
-
-  clause.push( ~def );
-
-  // First clause
-  clause  .push( ~arg0 );
-  clause  .push( ~arg1 );
-  addClause( clause, atom );
-  clause  .pop( );
-  clause  .pop( );
-
-  // Second clause
-  clause  .push(  arg0 );
-  clause  .push(  arg1 );
-  addClause( clause, atom );
-  clause  .pop( );
-  clause  .pop( );
-
-  clause.pop( );
-  clause.push( def );
-
-  // Third clause
-  clause  .push( ~arg0 );
-  clause  .push(  arg1 );
-  addClause( clause, atom );
-  clause  .pop( );
-  clause  .pop( );
-
-  // Fourth clause
-  clause  .push(  arg0 );
-  clause  .push( ~arg1 );
-  addClause( clause, atom );
-}
-
-void
-BitBlaster::cnfizeIff( Enode * enode, Lit def, Enode * atom )
-{
-  assert( enode );
-  Enode * list = enode->getCdr( );
-  //
-  // ( a_0 <-> a_1 )
-  //
-  // <=>
-  //
-  // aux = ( -aux |  a_0 | -a_1 ) & ( -aux | -a_0 |  a_1 ) &
-  //       (  aux |  a_0 |  a_1 ) & (  aux | -a_0 | -a_1 )
-  //
-  assert( list->getArity( ) == 2 );
-  Lit arg0 = cnf_cache[ list->getCar( )->getId( ) ];
-  Lit arg1 = cnf_cache[ list->getCdr( )->getCar( )->getId( ) ];
-  vec< Lit > clause;
-
-  clause.push( ~def );
-
-  // First clause
-  clause  .push(  arg0 );
-  clause  .push( ~arg1 );
-  addClause( clause, atom );
-  clause  .pop( );
-  clause  .pop( );
-
-  // Second clause
-  clause  .push( ~arg0 );
-  clause  .push(  arg1 );
-  addClause( clause, atom );
-  clause  .pop( );
-  clause  .pop( );
-
-  clause.pop( );
-  clause.push( def );
-
-  // Third clause
-  clause  .push( ~arg0 );
-  clause  .push( ~arg1 );
-  addClause( clause, atom );
-  clause  .pop( );
-  clause  .pop( );
-
-  // Fourth clause
-  clause  .push(  arg0 );
-  clause  .push(  arg1 );
-  addClause( clause, atom );
-}
-
-void 
-BitBlaster::cnfizeIfthenelse( Enode * enode, Lit def, Enode * atom )
-{
-  assert( enode );
-  Enode * list = enode->getCdr( );
-  //
-  // ( if a_0 then a_1 else a_2 )
-  //
-  // <=>
-  //
-  // aux = ( -aux | -a_0 |  a_1 ) &
-  //       ( -aux |  a_0 |  a_2 ) &
-  //       (  aux | -a_0 | -a_1 ) &
-  //       (  aux |  a_0 | -a_2 )
-  //
-  assert( list->getArity( ) == 2 );
-  Lit arg0 = cnf_cache[ list->getCar( )->getId( ) ];
-  Lit arg1 = cnf_cache[ list->getCdr( )->getCar( )->getId( ) ];
-  vec< Lit > clause;
-
-  clause.push( ~def );
-
-  // First clause
-  clause  .push( ~arg0 );
-  clause  .push(  arg1 );
-  addClause( clause, atom );
-  clause  .pop( );
-  clause  .pop( );
-
-  // Second clause
-  clause  .push(  arg0 );
-  clause  .push(  arg1 );
-  addClause( clause, atom );
-  clause  .pop( );
-  clause  .pop( );
-
-  clause.pop( );
-  clause.push( def );
-
-  // Third clause
-  clause  .push( ~arg0 );
-  clause  .push( ~arg1 );
-  addClause( clause, atom );
-  clause  .pop( );
-  clause  .pop( );
-
-  // Fourth clause
-  clause  .push(  arg0 );
-  clause  .push( ~arg1 );
-  addClause( clause, atom );
-}
+//void 
+//BitBlaster::cnfizeIfthenelse( Enode * enode, Lit def, Enode * atom )
+//{
+//  assert( enode );
+//  Enode * list = enode->getCdr( );
+//  //
+//  // ( if a_0 then a_1 else a_2 )
+//  //
+//  // <=>
+//  //
+//  // aux = ( -aux | -a_0 |  a_1 ) &
+//  //       ( -aux |  a_0 |  a_2 ) &
+//  //       (  aux | -a_0 | -a_1 ) &
+//  //       (  aux |  a_0 | -a_2 )
+//  //
+//  assert( list->getArity( ) == 2 );
+//  Lit arg0 = cnf_cache[ list->getCar( )->getId( ) ];
+//  Lit arg1 = cnf_cache[ list->getCdr( )->getCar( )->getId( ) ];
+//  vec< Lit > clause;
+//
+//  clause.push( ~def );
+//
+//  // First clause
+//  clause  .push( ~arg0 );
+//  clause  .push(  arg1 );
+//  addClause( clause, atom );
+//  clause  .pop( );
+//  clause  .pop( );
+//
+//  // Second clause
+//  clause  .push(  arg0 );
+//  clause  .push(  arg1 );
+//  addClause( clause, atom );
+//  clause  .pop( );
+//  clause  .pop( );
+//
+//  clause.pop( );
+//  clause.push( def );
+//
+//  // Third clause
+//  clause  .push( ~arg0 );
+//  clause  .push( ~arg1 );
+//  addClause( clause, atom );
+//  clause  .pop( );
+//  clause  .pop( );
+//
+//  // Fourth clause
+//  clause  .push(  arg0 );
+//  clause  .push( ~arg1 );
+//  addClause( clause, atom );
+//}
 
 void
 BitBlaster::cleanGarbage( )
@@ -1632,312 +1540,317 @@ BitBlaster::cleanGarbage( )
   }
 }
 
-Enode * BitBlaster::simplify( Enode * formula )
+PTRef BitBlaster::simplify( PTRef formula )
 {
-  assert( formula );
+    assert(formula != PTRef_Undef);
 
-  vector< Enode * > unprocessed_enodes;
-  unprocessed_enodes.push_back( formula );
-  //
-  // Visit the DAG of the formula from the leaves to the root
-  //
-  while( !unprocessed_enodes.empty( ) )
-  {
-    Enode * enode = unprocessed_enodes.back( );
-    // 
-    // Skip if the node has already been processed before
+    Map<PTRef,PTRef,PTRefHash> seen;
+
+    vec<PTRef> unprocessed_terms;
+    unprocessed_terms.push(formula);
     //
-    if ( E.valDupMap2( enode ) != NULL )
-    {
-      unprocessed_enodes.pop_back( );
-      continue;
-    }
-
-    bool unprocessed_children = false;
-    Enode * arg_list;
-    for ( arg_list = enode->getCdr( ) ;
-        arg_list != E.enil ;
-        arg_list = arg_list->getCdr( ) )
-    {
-      Enode * arg = arg_list->getCar( );
-
-      assert( arg->isTerm( ) );
-      //
-      // Push only if it is unprocessed
-      //
-      if ( E.valDupMap2( arg ) == NULL )
-      {
-        unprocessed_enodes.push_back( arg );
-        unprocessed_children = true;
-      }
-    }
+    // Visit the DAG of the formula from the leaves to the root
     //
-    // SKip if unprocessed_children
-    //
-    if ( unprocessed_children )
-      continue;
-
-    unprocessed_enodes.pop_back( );
-    Enode * result = NULL;
-
-    if ( enode->isAnd( ) && enode->getArity( ) == 2 )
+    while (unprocessed_terms.size() != 0)
     {
-      Enode * x = E.valDupMap2( enode->get1st( ) );
-      Enode * y = E.valDupMap2( enode->get2nd( ) );
-      assert( x );
-      assert( y );
-      //
-      // Rule 1
-      //
-      // (and x (not x)) --> false
-      //
-      if ( ( x->isNot( ) && x->get1st( ) == y )
-        || ( y->isNot( ) && y->get1st( ) == x ) )
-        result = E.mkFalse( );
-      //
-      // Rule 2
-      //
-      // (and (not z) (not w)) --> (not (or z w))
-      //
-      else if ( x->isNot( ) && y->isNot( ) )
-      {
-        Enode * z = x->get1st( );
-        Enode * w = y->get1st( );
-        assert( z );
-        assert( w );
-        result = E.mkNot( E.cons( E.mkOr( E.cons( z, E.cons( w ) ) ) ) );
-      }
+        PTRef tr = unprocessed_terms.last();
+        //
+        // Skip if the node has already been processed before
+        //
+        if (seen.has(tr))
+        {
+            unprocessed_terms.pop();
+            continue;
+        }
+
+        bool unprocessed_children = false;
+        Pterm& t = logic.getPterm(tr);
+        for (int i = 0; i < t.size(); i++) {
+            PTRef arg = t[i];
+            if (!seen.has(tr)) {
+                unprocessed_terms.push(arg);
+                unprocessed_children = true;
+            }
+        }
+        //
+        // SKip if unprocessed_children
+        //
+        if ( unprocessed_children )
+          continue;
+
+        unprocessed_terms.pop();
+        PTRef result = PTRef_Undef;
+
+        if ( logic.isAnd(tr) && logic.getPterm(tr).size() == 2)
+        {
+            PTRef x = seen[logic.getPterm(tr)[0]];
+            PTRef y = seen[logic.getPterm(tr)[1]];
+            assert( x != PTRef_Undef );
+            assert( y != PTRef_Undef );
+            //
+            // Rule 1
+            //
+            // (and x (not x)) --> false
+            //
+            if ( ( logic.isNot(x) && logic.getPterm(x)[0] == y )
+              || ( logic.isNot(y) && logic.getPterm(y)[0] == x))
+                result = logic.getTerm_false();
+            //
+            // Rule 2
+            //
+            // (and (not z) (not w)) --> (not (or z w))
+            //
+            else if (logic.isNot(x) && logic.isNot(y))
+            {
+                PTRef z = logic.getPterm(x)[0];
+                PTRef w = logic.getPterm(y)[0];
+                assert( z != PTRef_Undef );
+                assert( w != PTRef_Undef );
+                result = logic.mkNot(logic.mkOr(z, w));
+            }
+        }
+        else if ( logic.isOr(tr) && logic.getPterm(tr).size() == 2 )
+        {
+            PTRef x = seen[logic.getPterm(tr)[0]];
+            PTRef y = seen[logic.getPterm(tr)[1]];
+            assert( x != PTRef_Undef );
+            assert( y != PTRef_Undef );
+            //
+            // Rule 3
+            //
+            // (or x (and (not x) z)) --> (or x z))
+            //
+            if ( logic.isAnd(y)
+              && (logic.getPterm(y).size() == 2)
+              && logic.isNot(logic.getPterm(y)[0])
+              && (logic.getPterm(logic.getPterm(y)[0])[0] == x) )
+            {
+                PTRef z = logic.getPterm(y)[1];
+                result = logic.mkOr(x, z);
+            }
+            //
+            // Rule 4
+            //
+            // (or (and (not y) z) y) --> (or z y))
+            //
+            if ( logic.isAnd(x)
+              && logic.getPterm(x).size() == 2
+              && logic.isNot(logic.getPterm(x)[0])
+              && logic.getPterm(logic.getPterm(x)[0])[0] == y)
+            {
+                PTRef z = logic.getPterm(x)[1];
+                result = logic.mkOr(y, z);
+            }
+        }
+
+        if (result == PTRef_Undef)
+        {
+            result = tr;
+            //result = E.copyEnodeEtypeTermWithCache( enode, true );
+        }
+
+        assert(result != PTRef_Undef);
+        assert(!seen.has(tr));
+        seen.insert(tr, result);
     }
-    else if ( enode->isOr( ) && enode->getArity( ) == 2 )
-    {
-      Enode * x = E.valDupMap2( enode->get1st( ) );
-      Enode * y = E.valDupMap2( enode->get2nd( ) );
-      assert( x );
-      assert( y );
-      //
-      // Rule 3
-      //
-      // (or x (and (not x) z)) --> (or x z))
-      //
-      if ( y->isAnd( ) 
-        && y->getArity( ) == 2
-        && y->get1st( )->isNot( ) 
-        && y->get1st( )->get1st( ) == x )
-      {
-        Enode * z = y->get2nd( );
-        result = E.mkOr( E.cons( x, E.cons( z ) ) );
-      }
-      //
-      // Rule 4
-      //
-      // (or (and (not y) z) y) --> (or z y))
-      //
-      if ( x->isAnd( )
-        && x->getArity( ) == 2
-        && x->get1st( )->isNot( )
-        && x->get1st( )->get1st( ) == y )
-      {
-        Enode * z = x->get2nd( );
-        result = E.mkOr( E.cons( y, E.cons( z ) ) );
-      }
-    }
 
-    if ( result == NULL )
-      result = E.copyEnodeEtypeTermWithCache( enode, true );
-
-    assert( result );
-    assert( E.valDupMap2( enode ) == NULL );
-    E.storeDupMap2( enode, result );
-  }
-
-  Enode * new_formula = E.valDupMap2( formula );
-  assert( new_formula );
-  return new_formula;
+    PTRef new_formula = seen[formula];
+    assert(new_formula != PTRef_Undef);
+    return new_formula;
 }
 
 //
 // Compute the number of incoming edges for e and children
 //
-void BitBlaster::computeIncomingEdges( Enode * e, map< int, int > & enodeid_to_incoming_edges )
-{
-  assert( e );
-
-  if ( !e->isBooleanOperator( ) )
-    return;
-
-  for ( Enode * list = e->getCdr( ) ;
-        !list->isEnil( ) ;
-        list = list->getCdr( ) )
-  {
-    Enode * arg = list->getCar( );
-    map< int, int >::iterator it = enodeid_to_incoming_edges.find( arg->getId( ) );
-    if ( it == enodeid_to_incoming_edges.end( ) )
-      enodeid_to_incoming_edges[ arg->getId( ) ] = 1;
-    else
-      it->second ++;
-    computeIncomingEdges( arg, enodeid_to_incoming_edges );
-  }
-}
+//void BitBlaster::computeIncomingEdges( Enode * e, map< int, int > & enodeid_to_incoming_edges )
+//{
+//  assert( e );
+//
+//  if ( !e->isBooleanOperator( ) )
+//    return;
+//
+//  for ( Enode * list = e->getCdr( ) ;
+//        !list->isEnil( ) ;
+//        list = list->getCdr( ) )
+//  {
+//    Enode * arg = list->getCar( );
+//    map< int, int >::iterator it = enodeid_to_incoming_edges.find( arg->getId( ) );
+//    if ( it == enodeid_to_incoming_edges.end( ) )
+//      enodeid_to_incoming_edges[ arg->getId( ) ] = 1;
+//    else
+//      it->second ++;
+//    computeIncomingEdges( arg, enodeid_to_incoming_edges );
+//  }
+//}
 
 //
 // Rewrite formula with maximum arity for operators
 //
-Enode * BitBlaster::rewriteMaxArity( Enode * formula, map< int, int > & enodeid_to_incoming_edges )
-{
-  assert( formula );
-
-  vector< Enode * > unprocessed_enodes;       // Stack for unprocessed enodes
-  unprocessed_enodes.push_back( formula );    // formula needs to be processed
-  map< int, Enode * > cache;                  // Cache of processed nodes
-  //
-  // Visit the DAG of the formula from the leaves to the root
-  //
-  while( !unprocessed_enodes.empty( ) )
-  {
-    Enode * enode = unprocessed_enodes.back( );
-    //
-    // Skip if the node has already been processed before
-    //
-    if ( cache.find( enode->getId( ) ) != cache.end( ) )
-    {
-      unprocessed_enodes.pop_back( );
-      continue;
-    }
-
-    bool unprocessed_children = false;
-    Enode * arg_list;
-    for ( arg_list = enode->getCdr( ) ;
-          arg_list != E.enil ;
-          arg_list = arg_list->getCdr( ) )
-    {
-      Enode * arg = arg_list->getCar( );
-
-      assert( arg->isTerm( ) );
-      //
-      // Push only if it is an unprocessed boolean operator
-      //
-      if ( arg->isBooleanOperator( )
-        && cache.find( arg->getId( ) ) == cache.end( ) )
-      {
-        unprocessed_enodes.push_back( arg );
-        unprocessed_children = true;
-      }
-      //
-      // If it is an atom (either boolean or theory) just
-      // store it in the cache
-      //
-      else if ( arg->isAtom( ) )
-      {
-        cache.insert( make_pair( arg->getId( ), arg ) );
-      }
-    }
-    //
-    // SKip if unprocessed_children
-    //
-    if ( unprocessed_children )
-      continue;
-
-    unprocessed_enodes.pop_back( );
-    Enode * result = NULL;
-    //
-    // At this point, every child has been processed
-    //
-    assert ( enode->isBooleanOperator( ) );
-
-    if ( enode->isAnd( ) 
-      || enode->isOr ( ) )
-    {
-      assert( enode->isAnd( ) || enode->isOr( ) );
-      //
-      // Construct the new lists for the operators
-      //
-      result = mergeEnodeArgs( enode, cache, enodeid_to_incoming_edges );
-    }
-    else
-    {
-      result = enode;
-    }
-
-    assert( result );
-    assert( cache.find( enode->getId( ) ) == cache.end( ) );
-    cache[ enode->getId( ) ] = result;
-  }
-
-  Enode * top_enode = cache[ formula->getId( ) ];
-  return top_enode;
-}
+//Enode * BitBlaster::rewriteMaxArity( Enode * formula, map< int, int > & enodeid_to_incoming_edges )
+//{
+//  assert( formula );
+//
+//  vector< Enode * > unprocessed_enodes;       // Stack for unprocessed enodes
+//  unprocessed_enodes.push_back( formula );    // formula needs to be processed
+//  map< int, Enode * > cache;                  // Cache of processed nodes
+//  //
+//  // Visit the DAG of the formula from the leaves to the root
+//  //
+//  while( !unprocessed_enodes.empty( ) )
+//  {
+//    Enode * enode = unprocessed_enodes.back( );
+//    //
+//    // Skip if the node has already been processed before
+//    //
+//    if ( cache.find( enode->getId( ) ) != cache.end( ) )
+//    {
+//      unprocessed_enodes.pop_back( );
+//      continue;
+//    }
+//
+//    bool unprocessed_children = false;
+//    Enode * arg_list;
+//    for ( arg_list = enode->getCdr( ) ;
+//          arg_list != E.enil ;
+//          arg_list = arg_list->getCdr( ) )
+//    {
+//      Enode * arg = arg_list->getCar( );
+//
+//      assert( arg->isTerm( ) );
+//      //
+//      // Push only if it is an unprocessed boolean operator
+//      //
+//      if ( arg->isBooleanOperator( )
+//        && cache.find( arg->getId( ) ) == cache.end( ) )
+//      {
+//        unprocessed_enodes.push_back( arg );
+//        unprocessed_children = true;
+//      }
+//      //
+//      // If it is an atom (either boolean or theory) just
+//      // store it in the cache
+//      //
+//      else if ( arg->isAtom( ) )
+//      {
+//        cache.insert( make_pair( arg->getId( ), arg ) );
+//      }
+//    }
+//    //
+//    // SKip if unprocessed_children
+//    //
+//    if ( unprocessed_children )
+//      continue;
+//
+//    unprocessed_enodes.pop_back( );
+//    Enode * result = NULL;
+//    //
+//    // At this point, every child has been processed
+//    //
+//    assert ( enode->isBooleanOperator( ) );
+//
+//    if ( enode->isAnd( ) 
+//      || enode->isOr ( ) )
+//    {
+//      assert( enode->isAnd( ) || enode->isOr( ) );
+//      //
+//      // Construct the new lists for the operators
+//      //
+//      result = mergeEnodeArgs( enode, cache, enodeid_to_incoming_edges );
+//    }
+//    else
+//    {
+//      result = enode;
+//    }
+//
+//    assert( result );
+//    assert( cache.find( enode->getId( ) ) == cache.end( ) );
+//    cache[ enode->getId( ) ] = result;
+//  }
+//
+//  Enode * top_enode = cache[ formula->getId( ) ];
+//  return top_enode;
+//}
 
 //
 // Merge collected arguments for nodes
 //
-Enode * BitBlaster::mergeEnodeArgs( Enode * e
-                                  , map< int, Enode * > & cache
-                                  , map< int, int > & enodeid_to_incoming_edges )
-{
-  assert( e->isAnd( ) || e->isOr( ) );
-
-  Enode * e_symb = e->getCar( );
-  vector< Enode * > new_args;
-
-  for ( Enode * list = e->getCdr( ) ;
-        !list->isEnil( ) ;
-        list = list->getCdr( ) )
-  {
-    Enode * arg = list->getCar( );
-    Enode * sub_arg = cache[ arg->getId( ) ];
-    Enode * sym = arg->getCar( );
-
-    if ( sym->getId( ) != e_symb->getId( ) )
-    {
-      new_args.push_back( sub_arg );
-      continue;
-    }
-
-    assert( enodeid_to_incoming_edges.find( arg->getId( ) ) != enodeid_to_incoming_edges.end( ) );
-    assert( enodeid_to_incoming_edges[ arg->getId( ) ] >= 1 );
-
-    if ( enodeid_to_incoming_edges[ arg->getId( ) ] > 1 )
-    {
-      new_args.push_back( sub_arg );
-      continue;
-    }
-
-    for ( Enode * sub_arg_list = sub_arg->getCdr( ) ;
-          !sub_arg_list->isEnil( ) ;
-          sub_arg_list = sub_arg_list->getCdr( ) )
-      new_args.push_back( sub_arg_list->getCar( ) );
-  }
-
-  Enode * new_list = const_cast< Enode * >(E.enil);
-
-  while ( !new_args.empty( ) )
-  {
-    new_list = E.cons( new_args.back( ), new_list );
-    new_args.pop_back( );
-  }
-
-  return E.cons( e_symb, new_list );
-}
+//Enode * BitBlaster::mergeEnodeArgs( Enode * e
+//                                  , map< int, Enode * > & cache
+//                                  , map< int, int > & enodeid_to_incoming_edges )
+//{
+//  assert( e->isAnd( ) || e->isOr( ) );
+//
+//  Enode * e_symb = e->getCar( );
+//  vector< Enode * > new_args;
+//
+//  for ( Enode * list = e->getCdr( ) ;
+//        !list->isEnil( ) ;
+//        list = list->getCdr( ) )
+//  {
+//    Enode * arg = list->getCar( );
+//    Enode * sub_arg = cache[ arg->getId( ) ];
+//    Enode * sym = arg->getCar( );
+//
+//    if ( sym->getId( ) != e_symb->getId( ) )
+//    {
+//      new_args.push_back( sub_arg );
+//      continue;
+//    }
+//
+//    assert( enodeid_to_incoming_edges.find( arg->getId( ) ) != enodeid_to_incoming_edges.end( ) );
+//    assert( enodeid_to_incoming_edges[ arg->getId( ) ] >= 1 );
+//
+//    if ( enodeid_to_incoming_edges[ arg->getId( ) ] > 1 )
+//    {
+//      new_args.push_back( sub_arg );
+//      continue;
+//    }
+//
+//    for ( Enode * sub_arg_list = sub_arg->getCdr( ) ;
+//          !sub_arg_list->isEnil( ) ;
+//          sub_arg_list = sub_arg_list->getCdr( ) )
+//      new_args.push_back( sub_arg_list->getCar( ) );
+//  }
+//
+//  Enode * new_list = const_cast< Enode * >(E.enil);
+//
+//  while ( !new_args.empty( ) )
+//  {
+//    new_list = E.cons( new_args.back( ), new_list );
+//    new_args.pop_back( );
+//  }
+//
+//  return E.cons( e_symb, new_list );
+//}
 
 void BitBlaster::computeModel( )
 {
-  for ( unsigned i = 0 ; i < variables.size( ) ; i++ )
-  {
-    Enode * e = variables[ i ];
-    Real value = 0;
-    Real coeff = 1;
-    // Retrieve bitblasted vector
-    vector< Enode * > & blast = *bb_cache[ e->getId( ) ];
-    for ( unsigned j = 0 ; j < blast.size( ) ; j ++ )
+    model.clear();
+    for ( unsigned i = 0 ; i < variables.size( ) ; i++ )
     {
-      Enode * b = blast[ j ];
-      if ( cnf_var.find( b->getId( ) ) == cnf_var.end( ) )
-        continue;
-      Var var = cnf_var[ b->getId( ) ];
-      Real bit = solverP.getValue( var ) == l_False ? 0 : 1;
-      value = value + coeff * bit;
-      coeff = Real( 2 ) * coeff;
+        PTRef e = variables[ i ];
+        Real value = 0;
+        Real coeff = 1;
+        // Retrieve bitblasted vector
+        vec<PTRef> & blast = *bb_cache[logic.getPterm(e).getId()];
+        for (int j = 0; j < blast.size(); j++)
+        {
+            PTRef b = blast[j];
+            if ( cnf_var.find(logic.getPterm(b).getId()) == cnf_var.end( ) )
+                continue;
+            Var var = cnf_var[logic.getPterm(b).getId()];
+            Real bit = solverP.modelValue(var) == l_False ? 0 : 1;
+            value = value + coeff * bit;
+            coeff = Real( 2 ) * coeff;
+        }
+
+        model.insert(e, value);
     }
-    e->setValue( value );
-  }
+    has_model = true;
+}
+
+Real BitBlaster::getValue(PTRef tr)
+{
+    assert(has_model);
+    return model[tr];
 }

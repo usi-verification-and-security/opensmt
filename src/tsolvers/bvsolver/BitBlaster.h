@@ -26,100 +26,97 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef BITBLASTER_H
 #define BITBLASTER_H
 
-#include "Enode.h"
-#include "Egraph.h"
-#include "MiniSATP.h"
+#include "SimpSMTSolver.h"
+#include "MainSolver.h"
 #include "Otl.h"
 
 class BitBlaster
 {
 public:
 
-   BitBlaster ( const int
-              , SMTConfig &
-              , Egraph &
-              , vector< Enode * > &
-              , vector< Enode * > &
-              , vector< Enode * > & );
-  ~BitBlaster ( );
+    BitBlaster ( SolverId
+               , SMTConfig &
+               , MainSolver&
+               , vec<PtAsgn> &
+               , vec<DedElem> &
+               , vec<PTRef> & );
+    ~BitBlaster ( );
 
-  lbool inform             ( Enode * );
-  bool  check              ( );
-  bool  assertLit          ( Enode *, const bool );
+    lbool inform             (PTRef);
+    lbool check              ( );
+    bool  assertLit          (PtAsgn);
 
-  void pushBacktrackPoint  ( );
-  void popBacktrackPoint   ( );
+    void pushBacktrackPoint  ( );
+    void popBacktrackPoint   ( );
 
-  void computeModel        ( );
-
+    void computeModel        ( );
+    Real getValue            (PTRef);
 private:
+    vec<PTRef>&    updateCache  (PTRef tr);
+    vec<PTRef>     ptref_vec_empty;
+    SMTConfig &    config;                        // Configuration
+    MainSolver&    mainSolver;
+    Logic&         logic;                         // Egraph store
+    THandler&      thandler;
+    SimpSMTSolver& solverP;                       // Solver with proof logger
 
-  bool addClause ( vec< Lit > &, Enode * );
+    bool addClause ( vec< Lit > &, PTRef );
 
-  vector< Enode * > & bbEnode      ( Enode * );
-  // Predicates
-  vector< Enode * > & bbEq         ( Enode * );
-  vector< Enode * > & bbBvsle      ( Enode * );
-  vector< Enode * > & bbBvule      ( Enode * );
-  // Terms
-  vector< Enode * > & bbConcat     ( Enode * );
-  vector< Enode * > & bbExtract    ( Enode * );
-  vector< Enode * > & bbBvand      ( Enode * );
-  vector< Enode * > & bbBvor       ( Enode * );
-  vector< Enode * > & bbBvxor      ( Enode * );
-  vector< Enode * > & bbBvnot      ( Enode * );
-  vector< Enode * > & bbBvadd      ( Enode * );
-  vector< Enode * > & bbBvmul      ( Enode * );
-  vector< Enode * > & bbBvudiv     ( Enode * );
-  vector< Enode * > & bbBvurem     ( Enode * );
-  vector< Enode * > & bbSignExtend ( Enode * );
-  vector< Enode * > & bbVar        ( Enode * );
-  vector< Enode * > & bbConstant   ( Enode * );
-  vector< Enode * > & bbDistinct   ( Enode * );
+    vec<PTRef> & bbTerm       (PTRef);
+    // Predicates
+    vec<PTRef> & bbEq         (PTRef);
+    vec<PTRef> & bbBvsle      (PTRef);
+    vec<PTRef> & bbBvule      (PTRef);
+    // Terms
+    vec<PTRef> & bbConcat     (PTRef);
+    vec<PTRef> & bbExtract    (PTRef);
+    vec<PTRef> & bbBvand      (PTRef);
+    vec<PTRef> & bbBvor       (PTRef);
+    vec<PTRef> & bbBvxor      (PTRef);
+    vec<PTRef> & bbBvnot      (PTRef);
+    vec<PTRef> & bbBvadd      (PTRef);
+    vec<PTRef> & bbBvmul      (PTRef);
+    vec<PTRef> & bbBvudiv     (PTRef);
+    vec<PTRef> & bbBvurem     (PTRef);
+    vec<PTRef> & bbSignExtend (PTRef);
+    vec<PTRef> & bbVar        (PTRef);
+    vec<PTRef> & bbConstant   (PTRef);
+    vec<PTRef> & bbDistinct   (PTRef);
   // Not yet considered
   // vector< Enode * > & bbUf         ( Enode * );
   // vector< Enode * > & bbUp         ( Enode * );
 
 
-  Var      cnfizeAndGiveToSolver ( Enode *, Enode * );           // Cnfize
-  void     cnfizeAnd             ( Enode *, Lit, Enode * );      // Cnfize conjunctions
-  void     cnfizeOr              ( Enode *, Lit, Enode * );      // Cnfize disjunctions
-  void     cnfizeIff             ( Enode *, Lit, Enode * );      // Cnfize iffs
-  void     cnfizeXor             ( Enode *, Lit, Enode * );      // Cnfize xors
-  void     cnfizeIfthenelse      ( Enode *, Lit, Enode * );      // Cnfize if then elses
 
-  void     cleanGarbage          ( );                            // Clean garbage on demand
+    void     cleanGarbage          ( );                            // Clean garbage on demand
 
-  Enode *  simplify              ( Enode * );                    // Further simplifications
-  Enode *  rewriteMaxArity       ( Enode *
-                                 , map< int, int > & );
-  void     computeIncomingEdges  ( Enode *
-                                 , map< int, int > & );          // Computes the list of incoming edges for a node
-  Enode *  mergeEnodeArgs        ( Enode *
-                                 , map< int, Enode * > &
-                                 , map< int, int > & );          // Rewrite terms using maximum arity
+    PTRef    simplify              ( PTRef );                    // Further simplifications
+//    Enode *  rewriteMaxArity       ( Enode *
+//                                   , map< int, int > & );
+//    void     computeIncomingEdges  ( Enode *
+//                                    , map< int, int > & );          // Computes the list of incoming edges for a node
+    Enode *  mergeEnodeArgs        ( Enode *
+                                    , map< int, Enode * > &
+                                    , map< int, int > & );          // Rewrite terms using maximum arity
 
-  Lit                             constTrue;                     // Constant literal set to true
-  Lit                             constFalse;                    // Constant literal set to false
+    Lit                             constTrue;                     // Constant literal set to true
+    Lit                             constFalse;                    // Constant literal set to false
 
-  vector< vector< Enode * > * >   bb_cache;                      // Global cache for bitblasting
-  vector< Lit >                   cnf_cache;                     // Global cache for cnfizer
-  vector< Var >                   enode_id_to_var;               // Theory atom to Minisat Var correspondence
-  vector< Enode * >               var_to_enode;                  // Minisat Var to Theory Atom correspondence
+    vector< vec<PTRef> * >          bb_cache;                      // Global cache for bitblasting
+    vector< Lit >                   cnf_cache;                     // Global cache for cnfizer
+    vector< Var >                   enode_id_to_var;               // Theory atom to Minisat Var correspondence
+    vector< Enode * >               var_to_enode;                  // Minisat Var to Theory Atom correspondence
 
-  Egraph &                        E;                             // Egraph store
-  SMTConfig &                     config;                        // Configuration
 
-  vector< Enode * > &             explanation;                   // Reference to explanation
-  vector< Enode * > &             deductions;                    // Reference to deductions
-  vector< Enode * > &             suggestions;                   // Reference to suggestions
-  vector< vector< Enode * > * >   garbage;                       // Collect for removal
+    vec<PtAsgn> &                   explanation;                   // Reference to explanation
+    vec<DedElem> &                  deductions;                    // Reference to deductions
+    vec<PTRef> &                    suggestions;                   // Reference to suggestions
+    vector< vec<PTRef> * >          garbage;                       // Collect for removal
 
-  vector< Enode * >               variables;                     // Variables
-  map< int, Var >                 cnf_var;                       // BB variable to cnf var
-
-  MiniSATP *                      _solverP;                      // Solver with proof logger
-  MiniSATP &                      solverP;                       // Solver with proof logger
+    vec<PTRef>                      variables;                     // Variables
+    map< int, Var >                 cnf_var;                       // BB variable to cnf var
+    bool                            has_model;                     // Is the model computed
+    Map<PTRef,Real,PTRefHash>       model;                         // Model is stored here
 };
 
 #endif

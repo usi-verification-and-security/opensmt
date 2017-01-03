@@ -29,32 +29,27 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "TSolver.h"
 #include "BitBlaster.h"
 
-class BVSolver : public OrdinaryTSolver
+class BVSolver : public TSolver
 {
 public:
+    BVSolver ( SMTConfig &
+             , MainSolver &
+             , vec<DedElem> & );
+    ~BVSolver ( );
 
-   BVSolver ( const int
-            , const char *
-            , SMTConfig &
-            , Egraph &
-            , SStore &
-            , vector< Enode * > &
-            , vector< Enode * > &
-            , vector< Enode * > & );
-  ~BVSolver ( );
-
-  lbool               inform              ( Enode * );
-  bool                assertLit           ( Enode *, bool = false );
-  void                pushBacktrackPoint  ( );
-  void                popBacktrackPoint   ( );
-  bool                check               ( bool );
-  bool                belongsToT          ( Enode * );
-  void                computeModel        ( );
-
+    bool            assertLit          ( PtAsgn, bool = false );
+    void            pushBacktrackPoint ( );
+    void            popBacktrackPoint  ( );
+    bool            check              ( bool );
+    void            computeModel       ( );
+    virtual lbool   declareTerm        ( PTRef );
+    virtual ValPair getValue           ( PTRef );
 private:
 
-  vector< Enode * > stack;
-  BitBlaster *      B;
+    vec<PtAsgn> stack;
+    MainSolver& mainSolver;
+    Logic&      logic;
+    BitBlaster  B;
 };
 
 #endif
