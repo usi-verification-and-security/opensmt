@@ -251,6 +251,7 @@ struct Logic_t {
 static struct Logic_t UNDEF = {-1, "UNDEF"};
 static struct Logic_t EMPTY = {0, "EMPTY"};
 static struct Logic_t QF_UF = {1, "QF_UF"};
+static struct Logic_t QF_CUF = {1, "QF_CUF"};
 static struct Logic_t QF_BV = {2, "QF_BV"};
 static struct Logic_t QF_RDL = {3, "QF_RDL"};
 static struct Logic_t QF_IDL = {4, "QF_IDL"};

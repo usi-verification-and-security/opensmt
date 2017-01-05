@@ -365,27 +365,28 @@ bool LRALogic::isRealTerm(PTRef tr) const
 PTRef
 LRALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
 {
-	if(sym == sym_Real_NEG)
-		return mkRealNeg(terms[0], msg);
-	if(sym == sym_Real_MINUS)
-		return mkRealMinus(terms, msg);
-	if(sym == sym_Real_PLUS)
-		return mkRealPlus(terms, msg);
-	if(sym == sym_Real_TIMES)
-		return mkRealTimes(terms, msg);
-	if(sym == sym_Real_DIV)
-		return mkRealDiv(terms, msg);
-	if(sym == sym_Real_LEQ)
-		return mkRealLeq(terms, msg);
-	if(sym == sym_Real_LT)
-		return mkRealLt(terms, msg);
-	if(sym == sym_Real_GEQ)
-		return mkRealGeq(terms, msg);
-	if(sym == sym_Real_GT)
-		return mkRealGt(terms, msg);
-    if(sym == sym_Real_ITE)
+    if (sym == sym_Real_NEG)
+        return mkRealNeg(terms[0], msg);
+    if (sym == sym_Real_MINUS)
+        return mkRealMinus(terms, msg);
+    if (sym == sym_Real_PLUS)
+        return mkRealPlus(terms, msg);
+    if (sym == sym_Real_TIMES)
+        return mkRealTimes(terms, msg);
+    if (sym == sym_Real_DIV)
+        return mkRealDiv(terms, msg);
+    if (sym == sym_Real_LEQ)
+        return mkRealLeq(terms, msg);
+    if (sym == sym_Real_LT)
+        return mkRealLt(terms, msg);
+    if (sym == sym_Real_GEQ)
+        return mkRealGeq(terms, msg);
+    if (sym == sym_Real_GT)
+        return mkRealGt(terms, msg);
+    if (sym == sym_Real_ITE)
         return mkIte(terms);
-	return Logic::insertTerm(sym, terms, msg);
+
+    return Logic::insertTerm(sym, terms, msg);
 }
 
 PTRef LRALogic::mkRealNeg(PTRef tr, char** msg)
@@ -393,8 +394,6 @@ PTRef LRALogic::mkRealNeg(PTRef tr, char** msg)
     if (isRealNeg(tr)) return getPterm(tr)[0];
     vec<PTRef> args;
     if (isRealPlus(tr)) {
-        // Careful, this adds terms in the loop so reference is not safe!
-        Pterm& t = getPterm(tr);
         for (int i = 0; i < getPterm(tr).size(); i++) {
             PTRef tr_arg = mkRealNeg(getPterm(tr)[i], msg);
             assert(tr_arg != PTRef_Undef);

@@ -75,13 +75,13 @@ class LRALogic: public Logic
     virtual const char* getName()                const { return getLogic().str; }
     virtual const Logic_t getLogic()             const { return QF_LRA; }
 
-    PTRef       insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg);
+    virtual PTRef       insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg);
 
-    PTRef       mkConst         (const char* name, const char **msg);
-    PTRef       mkConst         (SRef s, const char* name);
-    PTRef       mkConst         (const opensmt::Real& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_real(), rat); free(rat); return tr; }
-    PTRef       mkConst         (const char* num) { return mkConst(getSort_real(), num); }
-    PTRef       mkRealVar       (const char* name) { return mkVar(getSort_real(), name); }
+    virtual PTRef       mkConst         (const char* name, const char **msg);
+    virtual PTRef       mkConst         (SRef s, const char* name);
+    virtual PTRef       mkConst         (const opensmt::Real& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_real(), rat); free(rat); return tr; }
+    virtual PTRef       mkConst         (const char* num) { return mkConst(getSort_real(), num); }
+    virtual PTRef       mkRealVar       (const char* name) { return mkVar(getSort_real(), name); }
 
     virtual bool isBuiltinSort  (SRef sr) const { return sr == sort_REAL || Logic::isBuiltinSort(sr); }
     virtual bool isBuiltinConstant(SymRef sr) const { return (isRealConst(sr) || Logic::isBuiltinConstant(sr)); }

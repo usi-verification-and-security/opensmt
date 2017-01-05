@@ -228,7 +228,8 @@ class Logic {
     bool        containsSort  (const char* name)      const { return sort_store.containsSort(name); }
     SRef        newSort       (IdRef idr, const char* name, vec<SRef>& tmp) { return sort_store.newSort(idr, name, tmp); }
     SRef        getSortRef    (const char* name)      const { return sort_store[name]; }
-    SRef        getSortRef    (const PTRef tr)              { return getSym(getPterm(tr).symb()).rsort(); }
+    SRef        getSortRef    (const PTRef tr)        const { return getSortRef(getPterm(tr).symb()); }
+    SRef        getSortRef    (const SymRef sr)       const { return getSym(sr).rsort(); }
     Sort*       getSort       (const SRef s)                { return sort_store[s]; }
     const char* getSortName   (const SRef s)                { return sort_store.getName(s); }
 

@@ -1,7 +1,7 @@
 /*********************************************************************
 Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
 
-OpenSMT2 -- Copyright (C) 2012 - 2015 Antti Hyvarinen
+OpenSMT2 -- Copyright (C) 2012 - 2017 Antti Hyvarinen
                          2008 - 2012 Roberto Bruttomesso
 
 Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,42 +24,18 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
-#ifndef UFTHandler_h
-#define UFTHandler_h
+#ifndef CUFTHandler_h
+#define CUFTHandler_h
+#include "UFTHandler.h"
+#include "CUFLogic.h"
 
-//#include "THandler.h"
-#include "Logic.h"
-#include "TSolverHandler.h"
-#include "Egraph.h"
-
-class UFTHandler : public TSolverHandler
+class CUFTHandler : public UFTHandler
 {
   private:
-    Logic&     logic;
-  protected:
-    Egraph*    egraph;
-//  protected:
-//    const vec<int>& getSolverSchedule() const;
+    CUFLogic&   logic;
   public:
-    UFTHandler(SMTConfig& c, Logic& l, vec<DedElem>& d, TermMapper& tmap);
-    virtual ~UFTHandler();
-    virtual bool assertLit_special(PtAsgn a);
-    // This is for simplification, needed to run the theory solver code
-    // as if it were running inside a SAT solver.
-    void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs);
-    virtual Logic& getLogic();
-
-#ifdef PRODUCE_PROOF
-    virtual TheoryInterpolator* getTheoryInterpolator()
-    {
-        return egraph->getTheoryInterpolator();
-    }
-
-    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
-    {
-        return egraph->getInterpolant(mask, labels);
-    }
-#endif
+    CUFTHandler(SMTConfig& c, CUFLogic& l, vec<DedElem>& d, TermMapper& tmap);
+    virtual ~CUFTHandler();
+    virtual CUFLogic& getLogic();
 };
-
 #endif

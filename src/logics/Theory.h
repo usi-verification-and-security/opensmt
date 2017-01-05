@@ -29,8 +29,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Deductions.h"
 #include "Logic.h"
 #include "LRALogic.h"
+#include "CUFLogic.h"
+
 #include "LRATHandler.h"
 #include "UFTHandler.h"
+#include "CUFTHandler.h"
 #include "Alloc.h"
 
 // Simplification in frames:
@@ -186,11 +189,30 @@ class UFTheory : public Theory
         , tshandler(c, uflogic, deductions, tmap)
     {}
     ~UFTheory() {}
-    Logic&       getLogic()             { return uflogic; }
-    UFTHandler&  getTSolverHandler()    { return tshandler; }
-    const UFTHandler& getTSolverHandler() const { return tshandler; }
-    UFTHandler *getTSolverHandler_new(vec<DedElem>& d) { return new UFTHandler(config, uflogic, d, tmap); }
-    bool simplify(vec<PFRef>&, int);
+    virtual Logic&       getLogic()             { return uflogic; }
+    virtual UFTHandler&  getTSolverHandler()    { return tshandler; }
+    virtual const UFTHandler& getTSolverHandler() const { return tshandler; }
+    virtual UFTHandler *getTSolverHandler_new(vec<DedElem>& d) { return new UFTHandler(config, uflogic, d, tmap); }
+    virtual bool simplify(vec<PFRef>&, int);
+};
+
+class CUFTheory : public UFTheory
+{
+  private:
+    CUFLogic    cuflogic;
+    TermMapper  tmap;
+    CUFTHandler tshandler;
+  public:
+    CUFTheory(SMTConfig& c)
+      : UFTheory(c)
+      , cuflogic(c)
+      , tmap(cuflogic)
+      , tshandler(c, cuflogic, deductions, tmap)
+    {}
+    virtual Logic& getLogic()                { return cuflogic; }
+    virtual CUFTHandler& getTSolverHandler() { return tshandler; }
+    virtual const CUFTHandler& getTSolverHandler() const { return tshandler; }
+    virtual CUFTHandler *getTSolverHandler_new(vec<DedElem>& d) { return new CUFTHandler(config, cuflogic, d, tmap); }
 };
 
 #endif
