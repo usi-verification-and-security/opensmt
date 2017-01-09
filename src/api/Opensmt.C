@@ -14,6 +14,9 @@ Opensmt::Opensmt(opensmt_logic _logic)
     case qf_lra:
         theory = new LRATheory(*config);
         break;
+    case qf_cuf:
+        theory = new CUFTheory(*config);
+        break;
     default:
         opensmt_error("Theory not supported");
     }
