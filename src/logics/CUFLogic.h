@@ -195,37 +195,87 @@ class CUFLogic: public Logic
     PTRef getTerm_CUFZero() { return term_CUF_ZERO; }
     PTRef getTerm_CUFOne()  { return term_CUF_ONE; }
 
+    PTRef mkCUFNeg(const vec<PTRef>& args) { assert(args.size() == 1); return mkCUFNeg(args[0]); }
     PTRef mkCUFNeg(PTRef, char**);
     PTRef mkCUFNeg(PTRef tr) {char* msg; PTRef trn = mkCUFNeg(tr, &msg); assert(trn != PTRef_Undef); return trn; }
+
+    //PTRef mkCUFMinus(const vec<PTRef>& args) { assert(args.size() == 2); return mkCUFMinus(args[0], args[1]); }
     PTRef mkCUFMinus(const vec<PTRef>&, char**);
     PTRef mkCUFMinus(const vec<PTRef>& args) { char *msg; PTRef tr = mkCUFMinus(args, &msg); assert(tr != PTRef_Undef); return tr; }
     PTRef mkCUFMinus(const PTRef a1, const PTRef a2) { vec<PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkCUFMinus(tmp); }
+
     PTRef mkCUFPlus(const vec<PTRef>& args) { assert(args.size() == 2); return mkCUFPlus(args[0], args[1]); }
     PTRef mkCUFPlus(const PTRef arg1, const PTRef arg2, char**);
     PTRef mkCUFPlus(const PTRef arg1, const PTRef arg2) { char *msg; PTRef tr = mkCUFPlus(arg1, arg2, &msg); assert(tr != PTRef_Undef); return tr; }
+
+    PTRef mkCUFTimes(const vec<PTRef>& args) {assert(args.size() == 2); return mkCUFTimes(args[0], args[1]);}
     PTRef mkCUFTimes(const PTRef, const PTRef, char**);
     PTRef mkCUFTimes(const PTRef arg1, const PTRef arg2) { char *msg; PTRef tr = mkCUFTimes(arg1, arg2, &msg); assert(tr != PTRef_Undef); return tr; }
+
+    PTRef mkCUFDiv(const vec<PTRef>& args) {assert(args.size() == 2); return mkCUFDiv(args[0], args[1]);}
     PTRef mkCUFDiv(const PTRef nom, const PTRef den);
+
+    PTRef mkCUFLeq(const vec<PTRef>& args) {assert(args.size() == 2); char *msg; return mkCUFLeq(args[0], args[1], &msg);}
     PTRef mkCUFLeq(const PTRef arg1, const PTRef arg2, char**);
+
+    PTRef mkCUFGeq(const vec<PTRef>& args) {assert(args.size() == 2); char *msg; return mkCUFGeq(args[0], args[1], &msg);}
     PTRef mkCUFGeq(const PTRef arg1, const PTRef arg2, char**);
+
+    PTRef mkCUFLt(const vec<PTRef>& args) {assert(args.size() == 2); char *msg; return mkCUFLt(args[0], args[1], &msg);}
     PTRef mkCUFLt(const PTRef arg1, const PTRef arg2, char** tmp);
+
+    PTRef mkCUFGt(const vec<PTRef>& args) {assert(args.size() == 2); char *msg; return mkCUFGt(args[0], args[1], &msg);}
     PTRef mkCUFGt(const PTRef arg1, const PTRef arg2, char** tmp);
+
+    PTRef mkCUFLshift(const vec<PTRef>& args) {assert(args.size() == 2); return mkCUFLshift(args[0], args[1]);}
     PTRef mkCUFLshift   (const PTRef, const PTRef);
+
+    PTRef mkCUFRshift(const vec<PTRef>& args) {assert(args.size() == 2); return mkCUFRshift(args[0], args[1]);}
     PTRef mkCUFRshift   (const PTRef, const PTRef);
+
+    PTRef mkCUFMod(const vec<PTRef>& args) {assert(args.size() == 2); return mkCUFMod(args[0], args[1]);}
     PTRef mkCUFMod      (const PTRef, const PTRef);
+
+    PTRef mkCUFBwAnd(const vec<PTRef>& args) {assert(args.size() == 2); return mkCUFBwAnd(args[0], args[1]);}
     PTRef mkCUFBwAnd    (const PTRef, const PTRef);
+
+    PTRef mkCUFBwOr(const vec<PTRef>& args) {assert(args.size() == 2); return mkCUFBwOr(args[0], args[1]);}
     PTRef mkCUFBwOr     (const PTRef, const PTRef);
+
+    PTRef mkCUFInc(const vec<PTRef>& args) {assert(args.size() == 1);  return mkCUFInc(args[0]);}
     PTRef mkCUFInc      (const PTRef);
+
+    PTRef mkCUFDec(const vec<PTRef>& args) {assert(args.size() == 1);  return mkCUFDec(args[0]);}
     PTRef mkCUFDec      (const PTRef);
+
+    PTRef mkCUFNeq(const vec<PTRef>& args) {assert(args.size() == 2); return mkCUFNeq(args[0], args[1]);}
     PTRef mkCUFNeq      (const PTRef, const PTRef);
+
+    PTRef mkCUFLand(const vec<PTRef>& args) {assert(args.size() == 2); return mkCUFLand(args[0], args[1]);}
     PTRef mkCUFLand     (const PTRef, const PTRef);
+
+    PTRef mkCUFLor(const vec<PTRef>& args) {assert(args.size() == 2); return mkCUFLor(args[0], args[1]);}
     PTRef mkCUFLor      (const PTRef, const PTRef);
+
+    PTRef mkCUFNot(const vec<PTRef>& args) {assert(args.size() == 1); return mkCUFNot(args[0]);}
     PTRef mkCUFNot      (const PTRef);
+
+    PTRef mkCUFBwxor(const vec<PTRef>& args) {assert(args.size() == 2); return mkCUFBwxor(args[0], args[1]);}
     PTRef mkCUFBwxor    (const PTRef, const PTRef);
+
+    PTRef mkCUFCompl(const vec<PTRef>& args) {assert(args.size() == 1); return mkCUFCompl(args[0]);}
     PTRef mkCUFCompl    (const PTRef);
+
+    PTRef mkCUFSizeof(const vec<PTRef>& args) {assert(args.size() == 1); return mkCUFSizeof(args[0]);}
     PTRef mkCUFSizeof   (const PTRef);
+
+    PTRef mkCUFAddrof(const vec<PTRef>& args) {assert(args.size() == 1); return mkCUFAddrof(args[0]);}
     PTRef mkCUFAddrof   (const PTRef);
+
+    PTRef mkCUFPtr(const vec<PTRef>& args) {assert(args.size() == 1); return mkCUFPtr(args[0]);}
     PTRef mkCUFPtr      (const PTRef);
+
+    PTRef mkCUFCond(const vec<PTRef>& args) {assert(args.size() == 3); return mkCUFCond(args[0], args[1], args[2]);}
     PTRef mkCUFCond     (const PTRef, const PTRef, const PTRef);
 
 };
