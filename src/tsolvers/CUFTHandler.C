@@ -6,6 +6,9 @@ CUFTHandler::CUFTHandler(SMTConfig& c, CUFLogic& l, vec<DedElem>& d, TermMapper&
     , logic(l)
 {}
 
+CUFTHandler::~CUFTHandler()
+{}
+
 CUFLogic&
 CUFTHandler::getLogic()
 {
