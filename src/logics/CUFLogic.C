@@ -157,6 +157,9 @@ CUFLogic::CUFLogic(SMTConfig& c) :
     sym_store[sym_CUF_BWOR].setCommutes();
 }
 
+CUFLogic::~CUFLogic()
+{}
+
 PTRef
 CUFLogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
 {
@@ -460,4 +463,9 @@ PTRef CUFLogic::mkCUFCond(const PTRef cond, PTRef i_arg, PTRef e_arg)
 PTRef CUFLogic::mkCUFNeq(const PTRef a1, const PTRef a2)
 {
     return Logic::mkNot(Logic::mkEq(a1, a2));
+}
+
+const int CUFLogic::getCUFNUMConst(PTRef tr) const
+{
+    return atoi(getSymName(tr));
 }

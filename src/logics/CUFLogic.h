@@ -227,8 +227,7 @@ class CUFLogic: public Logic
     PTRef mkCUFPtr      (const PTRef);
     PTRef mkCUFCond     (const PTRef, const PTRef, const PTRef);
 
-    virtual void serializeLogicData(int*& logicdata_buf) const;
-    void deserializeLogicData(const int* logicdata_buf);
-    virtual char* printTerm_(PTRef tr, bool ext, bool s);
+//    void deserializeLogicData(const int* logicdata_buf);
+//    virtual char* printTerm_(PTRef tr, bool ext, bool s);
 };
 #endif
