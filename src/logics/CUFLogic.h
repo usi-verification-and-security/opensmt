@@ -200,6 +200,7 @@ class CUFLogic: public Logic
     PTRef mkCUFMinus(const vec<PTRef>&, char**);
     PTRef mkCUFMinus(const vec<PTRef>& args) { char *msg; PTRef tr = mkCUFMinus(args, &msg); assert(tr != PTRef_Undef); return tr; }
     PTRef mkCUFMinus(const PTRef a1, const PTRef a2) { vec<PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkCUFMinus(tmp); }
+    PTRef mkCUFPlus(const vec<PTRef>& args) { assert(args.size() == 2); return mkCUFPlus(args[0], args[1]); }
     PTRef mkCUFPlus(const PTRef arg1, const PTRef arg2, char**);
     PTRef mkCUFPlus(const PTRef arg1, const PTRef arg2) { char *msg; PTRef tr = mkCUFPlus(arg1, arg2, &msg); assert(tr != PTRef_Undef); return tr; }
     PTRef mkCUFTimes(const PTRef, const PTRef, char**);

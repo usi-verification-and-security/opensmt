@@ -209,7 +209,7 @@ class CUFTheory : public UFTheory
       , tmap(cuflogic)
       , tshandler(c, cuflogic, deductions, tmap)
     {}
-    virtual Logic& getLogic()                { return cuflogic; }
+    virtual CUFLogic& getLogic()             { return cuflogic; }
     virtual CUFTHandler& getTSolverHandler() { return tshandler; }
     virtual const CUFTHandler& getTSolverHandler() const { return tshandler; }
     virtual CUFTHandler *getTSolverHandler_new(vec<DedElem>& d) { return new CUFTHandler(config, cuflogic, d, tmap); }
