@@ -1987,7 +1987,7 @@ bool LRASolver::checkIntegersAndSplit( )
     return false;
 }
 
-ValPair LRASolver::getValue(PTRef tr) const
+ValPair LRASolver::getValue(PTRef tr)
 {
     if (!logic.hasSortReal(tr)) return ValPair_Undef;
     int id = logic.getPterm(tr).getId();

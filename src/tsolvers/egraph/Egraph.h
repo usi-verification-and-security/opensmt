@@ -92,6 +92,11 @@ private:
   double fa_garbage_frac;
 
   UFSolverStats tsolver_stats;
+  bool values_ok;
+  Map<ERef,char*,ERefHash> values;
+
+  static const char* s_val_prefix;
+
 public:
 //  SimpSMTSolver* solver; // for debugging only
 
@@ -251,7 +256,7 @@ public:
   void                getConflict             ( bool, vec<PtAsgn>& );       // Get explanation
   bool                check                   ( bool ) { return true; }     // Check satisfiability
 //  lbool               evaluate                ( PTRef ) { assert(false); return l_Undef; }
-  ValPair             getValue                (PTRef tr) const { return ValPair_Undef; }
+  virtual ValPair     getValue                (PTRef tr);
 //  void                initializeCong          ( Enode * );                  // Initialize congruence structures for a node
   void                computeModel            ( );
 #ifndef SMTCOMP

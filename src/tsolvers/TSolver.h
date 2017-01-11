@@ -171,7 +171,7 @@ public:
     virtual void                popBacktrackPoint   ( )                       ;  // Backtrack to last saved point
     virtual bool                check               ( bool ) = 0              ;  // Check satisfiability
     inline const string &       getName             ( ) { return name; }            // The name of the solver
-    virtual ValPair             getValue            (PTRef) const = 0;
+    virtual ValPair             getValue            (PTRef) = 0;
 #ifdef PRODUCE_PROOF
     virtual TheoryInterpolator* getTheoryInterpolator() = 0;
 #endif

@@ -46,6 +46,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 static SolverDescr descr_uf_solver("UF Solver", "Solver for Quantifier Free Theory of Uninterpreted Functions with Equalities");
 
+const char* Egraph::s_val_prefix;
+
 Egraph::Egraph(SMTConfig & c, Logic& l , vec<DedElem>& d)
       : TSolver            (descr_uf_solver, descr_uf_solver, c, d)
       , logic              (l)
@@ -1084,6 +1086,8 @@ void Egraph::backtrackToStackSize ( size_t size ) {
     // (might be empty, though, if boolean backtracking happens)
     explanation.clear();
     has_explanation = false;
+    // Invalidate values
+    values_ok = false;
     //
     // Restore state at previous backtrack point
     //
@@ -2328,6 +2332,8 @@ void Egraph::tmpMergeEnd( Enode * x, Enode * y )
 
 bool Egraph::assertLit(PtAsgn pta, bool)
 {
+    // invalidate values
+    values_ok = false;
 //    opensmt::StopWatch sw(tsolver_stats.egraph_asrt_timer);
     lbool sgn = pta.sgn;
     PTRef pt_r = pta.tr;
@@ -2536,6 +2542,28 @@ void Egraph::extPopBacktrackPoint( )
   size_t undo_stack_new_size = backtrack_points.last( );
   backtrack_points.pop( );
   backtrackToStackSize( undo_stack_new_size );
+}
+
+// The value method
+
+ValPair
+Egraph::getValue(PTRef tr)
+{
+    if (!values_ok) {
+        values.clear();
+        values_ok = true;
+    }
+
+    ERef root_r = enode_store[tr].getRoot();
+    if (values.has(root_r)) {
+        return ValPair(tr, values[root_r]);
+    }
+    char* name;
+    asprintf(&name, "%s%d", s_val_prefix, values.getSize());
+
+    ValPair p = ValPair(tr, name);
+    values.insert(root_r, name);
+    return p;
 }
 
 #ifdef CUSTOM_EL_ALLOC

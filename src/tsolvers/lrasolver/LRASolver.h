@@ -182,8 +182,7 @@ private:
         solver->print( out );
         return out;
     }
-
-    ValPair getValue(PTRef tr) const; // Computes the model and changes state.
+    ValPair getValue(PTRef tr);  // Computes the model and changes state.
     inline int     verbose                       ( ) const { return config.verbosity(); }
     char* printValue(PTRef tr) { char* tmp = (char*)malloc(1); tmp[0] = '\0'; return tmp; } // Implement later...
     char* printExplanation(PTRef tr) { return printValue(tr); } // Implement later...
