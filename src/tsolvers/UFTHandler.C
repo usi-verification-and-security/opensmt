@@ -22,6 +22,11 @@ Logic &UFTHandler::getLogic()
     return logic;
 }
 
+const Logic &UFTHandler::getLogic() const
+{
+    return logic;
+}
+
 //
 // Starting from the root, get all terms.  Get a variable for each term.
 //

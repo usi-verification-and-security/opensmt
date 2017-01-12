@@ -140,6 +140,7 @@ class Theory
     SMTConfig &         config;
     PTRef getCollateFunction(vec<PFRef>& formulas, int curr);
     Theory(SMTConfig &c) : config(c) {}
+    void setSubstitutions(Map<PTRef,PtAsgn,PTRefHash>& substs) { getTSolverHandler().setSubstitutions(substs); }
   public:
     PushFrameAllocator      pfstore;
     virtual TermMapper     &getTmap() = 0;

@@ -92,10 +92,14 @@ private:
   double fa_garbage_frac;
 
   UFSolverStats tsolver_stats;
+
+  // Stuff for values on UF
   bool values_ok;
-  Map<ERef,char*,ERefHash> values;
+  Map<ERef,ERef,ERefHash> values;
 
   static const char* s_val_prefix;
+  static const char* s_val_true;
+  static const char* s_val_false;
 
 public:
 //  SimpSMTSolver* solver; // for debugging only
@@ -141,7 +145,7 @@ public:
         tsolver_stats.printStatistics(std::cerr);
     }
 
-    void clearSolver() { return; } // No need to clear the solver state since egraph doesn't do internal simplifications and the external have little impact on the solving anyway.
+    void clearSolver() { clearModel(); } // Only clear the possible computed values
 
     void print(ostream& out) { return; }
 
@@ -259,6 +263,7 @@ public:
   virtual ValPair     getValue                (PTRef tr);
 //  void                initializeCong          ( Enode * );                  // Initialize congruence structures for a node
   void                computeModel            ( );
+  void                clearModel              ( );
 #ifndef SMTCOMP
   void                printModel              ( ostream & );                // Computes and print the model
 #endif

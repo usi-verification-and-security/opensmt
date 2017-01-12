@@ -2505,8 +2505,9 @@ lbool CoreSMTSolver::solve_(int max_conflicts)
 void CoreSMTSolver::clearSearch()
 {
     cancelUntil(0);
-    if (first_model_found || splits.size() > 1)
+    if (first_model_found || splits.size() > 1) {
         theory_handler.backtrack(-1);
+    }
 }
 
 const CoreSMTSolver::UBel CoreSMTSolver::UBel_Undef(-1, -1);

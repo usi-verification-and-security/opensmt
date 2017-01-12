@@ -46,7 +46,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 static SolverDescr descr_uf_solver("UF Solver", "Solver for Quantifier Free Theory of Uninterpreted Functions with Equalities");
 
-const char* Egraph::s_val_prefix;
+const char* Egraph::s_val_prefix = "u";
+const char* Egraph::s_val_true = "true";
+const char* Egraph::s_val_false = "false";
 
 Egraph::Egraph(SMTConfig & c, Logic& l , vec<DedElem>& d)
       : TSolver            (descr_uf_solver, descr_uf_solver, c, d)
@@ -283,29 +285,26 @@ Egraph::getInterpolants(const ipartitions_t & p)
 }
 #endif
 */
+
+void Egraph::clearModel()
+{
+    values.clear();
+    values_ok = false;
+}
+
 void Egraph::computeModel( )
 {
-//  model_computed = true;
-//  //
-//  // Compute models in tsolvers
-//  //
-//  for( unsigned i = 1 ; i < tsolvers.size( ) ; i ++ )
-//    tsolvers[ i ]->computeModel( );
-//  //
-//  // Compute values for variables removed
-//  // during preprocessing, starting from
-//  // the last
-//  //
-//  for ( int i = top_level_substs.size( ) - 1 ; i >= 0 ; i -- )
-//  {
-//    Enode * var = top_level_substs[i].first;
-//    Enode * term = top_level_substs[i].second;
-//    Real r;
-//    // Compute value for term
-//    evaluateTerm( term, r );
-//    // Set value for variable
-//    var->setValue( r );
-//  }
+    if (values_ok == true)
+        return;
+
+    const vec<ERef>& enodes = enode_store.getEnodes();
+    for (int i = 0; i < enodes.size(); i++) {
+        if (values.has(enodes[i]))
+            continue;
+        ERef root_r = enode_store[enodes[i]].getRoot();
+        values.insert(enodes[i], root_r);
+    }
+    values_ok = true;
 }
 
 //void Egraph::printModel( ostream & os )
@@ -1086,8 +1085,7 @@ void Egraph::backtrackToStackSize ( size_t size ) {
     // (might be empty, though, if boolean backtracking happens)
     explanation.clear();
     has_explanation = false;
-    // Invalidate values
-    values_ok = false;
+
     //
     // Restore state at previous backtrack point
     //
@@ -2333,7 +2331,6 @@ void Egraph::tmpMergeEnd( Enode * x, Enode * y )
 bool Egraph::assertLit(PtAsgn pta, bool)
 {
     // invalidate values
-    values_ok = false;
 //    opensmt::StopWatch sw(tsolver_stats.egraph_asrt_timer);
     lbool sgn = pta.sgn;
     PTRef pt_r = pta.tr;
@@ -2550,20 +2547,24 @@ ValPair
 Egraph::getValue(PTRef tr)
 {
     if (!values_ok) {
-        values.clear();
-        values_ok = true;
+        assert(false);
+        return ValPair_Undef;
     }
 
-    ERef root_r = enode_store[tr].getRoot();
-    if (values.has(root_r)) {
-        return ValPair(tr, values[root_r]);
-    }
+    Enode& e = enode_store[tr];
+    ERef e_root = values[e.getERef()];
+
     char* name;
-    asprintf(&name, "%s%d", s_val_prefix, values.getSize());
+    if (e_root == enode_store.ERef_True)
+       asprintf(&name, "true");
+    else if (e_root == enode_store.ERef_False)
+        asprintf(&name, "false");
+    else
+        asprintf(&name, "%s%d", s_val_prefix, enode_store[e_root].getId());
 
-    ValPair p = ValPair(tr, name);
-    values.insert(root_r, name);
-    return p;
+    ValPair vp(tr, name);
+    free(name);
+    return vp;
 }
 
 #ifdef CUSTOM_EL_ALLOC

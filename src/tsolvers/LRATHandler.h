@@ -43,6 +43,7 @@ class LRATHandler : public TSolverHandler
     void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs);
     bool assertLit_special(PtAsgn);
     Logic& getLogic();
+    const Logic& getLogic() const;
 
 #ifdef PRODUCE_PROOF
     TheoryInterpolator* getTheoryInterpolator()

@@ -47,7 +47,8 @@ class UFTHandler : public TSolverHandler
     // This is for simplification, needed to run the theory solver code
     // as if it were running inside a SAT solver.
     void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs);
-    virtual Logic& getLogic();
+    virtual       Logic& getLogic();
+    virtual const Logic& getLogic() const;
 
 #ifdef PRODUCE_PROOF
     virtual TheoryInterpolator* getTheoryInterpolator()

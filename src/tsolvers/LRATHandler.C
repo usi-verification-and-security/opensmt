@@ -18,6 +18,12 @@ Logic &LRATHandler::getLogic()
     return logic;
 }
 
+const Logic &LRATHandler::getLogic() const
+{
+    return logic;
+}
+
+
 void LRATHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
 {
     // XXX Reorganize so that the storing of the previous variable would

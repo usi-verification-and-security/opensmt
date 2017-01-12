@@ -193,6 +193,7 @@ public:
     void setNext       (ERef n)        { assert(type() != et_symb); ex->lst.next = n; }
     int  getSize       ()        const { assert(type() != et_symb); return ex->lst.size; }
     void setSize       (int i)         { assert(type() != et_symb); ex->lst.size = i; }
+    ERef getERef       ()        const { return er; }
 
     // Defined for term Enodes
 //    bool  isDeduced     ()        const { assert(isTerm()); return ex->trm.deduced != l_Undef; }

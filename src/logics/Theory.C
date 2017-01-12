@@ -243,6 +243,7 @@ bool Theory::computeSubstitutions(PTRef coll_f, vec<PFRef>& frames, int curr)
             }
         }
     }
+    getTSolverHandler().setSubstitutions(substs);
     delete th;
     return result;
 }

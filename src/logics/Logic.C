@@ -263,11 +263,11 @@ Logic::printSym(SymRef sr) const
 }
 
 char*
-Logic::printTerm_(PTRef tr, bool ext, bool safe)
+Logic::printTerm_(PTRef tr, bool ext, bool safe) const
 {
     char* out;
 
-    if(safe && this->isIteVar(tr)){
+    if (safe && this->isIteVar(tr)) {
         Ite ite = top_level_ites[tr];
         char *str_i = printTerm_(ite.i, ext, safe);
         char *str_t = printTerm_(ite.t, ext, safe);

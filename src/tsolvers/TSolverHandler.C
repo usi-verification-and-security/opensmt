@@ -74,7 +74,12 @@ ValPair TSolverHandler::getValue(PTRef tr) const
 {
     for (int i = 0; i < tsolvers.size(); i++)
         if (tsolvers[i] != NULL) {
-            ValPair vp = tsolvers[i]->getValue(tr);
+            PTRef tr_subst = tr;
+            if (substs.has(tr) && (substs[tr].sgn == l_True)) {
+                tr_subst = substs[tr].tr;
+            }
+            ValPair vp = tsolvers[i]->getValue(tr_subst);
+            vp.tr = tr;
             if (vp != ValPair_Undef)
                 return vp;
         }

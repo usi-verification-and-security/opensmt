@@ -192,7 +192,7 @@ class Logic {
     Logic(SMTConfig& c);
     ~Logic();
 
-    bool isIteVar(PTRef tr) { return top_level_ites.has(tr); }
+    bool isIteVar(PTRef tr) const { return top_level_ites.has(tr); }
     PTRef getTopLevelIte(PTRef tr) { return top_level_ites[tr].repr; }
 
     void conjoinItes(PTRef root, PTRef& new_root)
@@ -528,9 +528,9 @@ class Logic {
     void        serializeTermSystem(int*& termstore_buf, int*& symstore_buf, int*& idstore_buf, int*& sortstore_buf, int*& logicdata_buf) const;
     void        deserializeTermSystem(const int* termstore_buf, const int* symstore_buf, const int* idstore_buf, const int* sortstore_buf, const int* logicdata_buf);
 
-    virtual char* printTerm_       (PTRef tr, bool l, bool s);
-    char*       printTerm          (PTRef tr)         { return printTerm_(tr, false, false); }
-    char*       printTerm          (PTRef tr, bool l, bool s) { return printTerm_(tr, l, s); }
+    virtual char* printTerm_       (PTRef tr, bool l, bool s) const;
+    char*       printTerm          (PTRef tr)                 const  { return printTerm_(tr, false, false); }
+    char*       printTerm          (PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
     char*       printSym           (SymRef sr) const;
 
     void  purify           (PTRef r, PTRef& p, lbool& sgn) const
