@@ -182,7 +182,6 @@ class UFTheory : public Theory
     TermMapper  tmap;
     UFTHandler tshandler;
   public:
-    TermMapper& getTmap() { return tmap; }
     UFTheory(SMTConfig& c)
         : Theory(c)
         , uflogic(c)
@@ -190,6 +189,7 @@ class UFTheory : public Theory
         , tshandler(c, uflogic, deductions, tmap)
     {}
     ~UFTheory() {}
+    virtual TermMapper&  getTmap()              { return tmap; }
     virtual Logic&       getLogic()             { return uflogic; }
     virtual UFTHandler&  getTSolverHandler()    { return tshandler; }
     virtual const UFTHandler& getTSolverHandler() const { return tshandler; }
@@ -197,7 +197,7 @@ class UFTheory : public Theory
     virtual bool simplify(vec<PFRef>&, int);
 };
 
-class CUFTheory : public UFTheory
+class CUFTheory : public Theory
 {
   private:
     CUFLogic    cuflogic;
@@ -205,15 +205,18 @@ class CUFTheory : public UFTheory
     CUFTHandler tshandler;
   public:
     CUFTheory(SMTConfig& c)
-      : UFTheory(c)
+      : Theory(c)
       , cuflogic(c)
       , tmap(cuflogic)
       , tshandler(c, cuflogic, deductions, tmap)
     {}
+    ~CUFTheory() {}
+    virtual TermMapper& getTmap()            { return tmap; }
     virtual CUFLogic& getLogic()             { return cuflogic; }
     virtual CUFTHandler& getTSolverHandler() { return tshandler; }
     virtual const CUFTHandler& getTSolverHandler() const { return tshandler; }
     virtual CUFTHandler *getTSolverHandler_new(vec<DedElem>& d) { return new CUFTHandler(config, cuflogic, d, tmap); }
+    virtual bool simplify(vec<PFRef>&, int);
 };
 
 #endif

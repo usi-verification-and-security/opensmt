@@ -160,12 +160,12 @@ CUFLogic::CUFLogic(SMTConfig& c) :
 CUFLogic::~CUFLogic()
 {}
 
-PTRef
-CUFLogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
-{
-    assert(false);
-    return PTRef_Undef;
-}
+//PTRef
+//CUFLogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
+//{
+//    assert(false);
+//    return PTRef_Undef;
+//}
 
 PTRef
 CUFLogic::mkCUFNeg(PTRef tr, char** msg)

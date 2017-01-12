@@ -32,7 +32,7 @@ const Lit Theory::findLit (PTRef ptr)
 #endif
     }
 
-    v = p.getVar();
+    v = getLogic().getPterm(p_tr).getVar();
     Lit l = mkLit (v, sgn);
 
     return l;
