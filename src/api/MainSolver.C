@@ -205,10 +205,10 @@ MainSolver::insertFormula(PTRef root, char** msg)
                  Logic::s_sort_bool, logic.getSortName(logic.getSortRef(root)));
         return s_Error;
     }
-    logic.conjoinItes(root, root);
+    logic.conjoinExtras(root, root);
     char* err_msg = NULL;
     if (!logic.assignPartition(root, &err_msg))
-        opensmt_error("Could not assign partition"); 
+        opensmt_error("Could not assign partition");
 #ifdef PRODUCE_PROOF
     logic.setIPartitionsIte(root);
 #endif
@@ -248,8 +248,18 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
             computeIncomingEdges(fc.getRoot(), PTRefToIncoming);
             PTRef flat_root = rewriteMaxArity(fc.getRoot(), PTRefToIncoming);
 #ifdef PRODUCE_PROOF
+            PTRef orig_asrt = PTRef_Undef;
             if (logic.hasOriginalAssertion(fc.getRoot()))
-                logic.setOriginalAssertion(flat_root, logic.getOriginalAssertion(fc.getRoot()));
+                orig_asrt = logic.getOriginalAssertion(fc.getRoot());
+//            else
+//                orig_asrt = fc.getRoot();
+
+//            logic.setOriginalAssertion(flat_root, orig_asrt);
+//            vec<PTRef> top_level_formulae;
+//            ts.retrieveTopLevelFormulae(flat_root, top_level_formulae);
+//            for (int i = 0; i < top_level_formulae.size(); i++)
+//                logic.setOriginalAssertion(top_level_formulae[i], orig_asrt);
+
 #endif
             fc.setRoot(flat_root);
 #ifdef FLATTEN_DEBUG

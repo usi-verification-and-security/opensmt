@@ -36,6 +36,10 @@ class CUFLogic: public Logic
     Map<PTRef,bool,PTRefHash> inc_diseqs;       // a++ != a (< is not safe for overflows for some compiler semantics)
     Map<PTRef,bool,PTRefHash> compl_diseqs;     // ~a != a
 
+  public:
+    void getCommEqs(vec<PTRef>& out) const { comm_eqs.getKeys(out); }
+
+  protected:
     Logic_t logic_type;
     SymRef              sym_CUF_ZERO;   // 0
     SymRef              sym_CUF_ONE;    // 1
@@ -116,6 +120,8 @@ class CUFLogic: public Logic
     virtual PTRef         mkNumVar  (const char* name) { return mkVar(sort_CUFNUM, name); }
     virtual bool          isBuiltinSort(SRef sr) const { return (sr == sort_CUFNUM) || (sr == sort_CUFSTR) || Logic::isBuiltinSort(sr); }
     virtual bool          isBuiltinConstant(SymRef sr) const { return isCUFNUMConst(sr) || Logic::isBuiltinConstant(sr); }
+
+    virtual void conjoinExtras(PTRef root, PTRef& root_out);
 
     bool isCUFNUMConst(SymRef sr) const { return isConstant(sr) && hasSortCUFNUM(sr); }
     bool isCUFNUMConst(PTRef tr)  const { return isCUFNUMConst(getPterm(tr).symb()); }

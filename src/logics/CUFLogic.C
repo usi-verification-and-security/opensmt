@@ -109,13 +109,13 @@ CUFLogic::CUFLogic(SMTConfig& c) :
 
     sym_CUF_PLUS  = declareFun(tk_cuf_plus, sort_CUFNUM, params, &msg, true);
     sym_store[sym_CUF_PLUS].setNoScoping();
-    sym_store[sym_CUF_PLUS].setCommutes();
+//    sym_store[sym_CUF_PLUS].setCommutes();
     sym_store[sym_CUF_PLUS].setLeftAssoc();
 
     sym_CUF_TIMES = declareFun(tk_cuf_times, sort_CUFNUM, params, &msg, true);
     sym_store[sym_CUF_TIMES].setNoScoping();
     sym_store[sym_CUF_TIMES].setLeftAssoc();
-    sym_store[sym_CUF_TIMES].setCommutes();
+//    sym_store[sym_CUF_TIMES].setCommutes();
 
     sym_CUF_DIV   = declareFun(tk_cuf_div, sort_CUFNUM, params, &msg, true);
     sym_store[sym_CUF_DIV].setNoScoping();
@@ -141,20 +141,20 @@ CUFLogic::CUFLogic(SMTConfig& c) :
     sym_store[sym_CUF_NEQ].setCommutes();
 
     sym_CUF_LAND   = declareFun(tk_cuf_land, sort_BOOL, params, &msg, true);
-    sym_store[sym_CUF_LAND].setCommutes();
+//    sym_store[sym_CUF_LAND].setCommutes();
 
     sym_CUF_LOR    = declareFun(tk_cuf_lor, sort_BOOL, params, &msg, true);
-    sym_store[sym_CUF_LOR].setCommutes();
+//    sym_store[sym_CUF_LOR].setCommutes();
 
     sym_CUF_LSHIFT = declareFun(tk_cuf_lshift, sort_CUFNUM, params, &msg, true);
     sym_CUF_RSHIFT = declareFun(tk_cuf_rshift, sort_CUFNUM, params, &msg, true);
 
     sym_CUF_MOD    = declareFun(tk_cuf_mod, sort_CUFNUM, params, &msg, true);
     sym_CUF_BWAND  = declareFun(tk_cuf_bwand, sort_CUFNUM, params, &msg, true);
-    sym_store[sym_CUF_BWAND].setCommutes();
+//    sym_store[sym_CUF_BWAND].setCommutes();
 
     sym_CUF_BWOR   = declareFun(tk_cuf_bwor, sort_CUFNUM, params, &msg, true);
-    sym_store[sym_CUF_BWOR].setCommutes();
+//    sym_store[sym_CUF_BWOR].setCommutes();
 }
 
 CUFLogic::~CUFLogic()
@@ -225,6 +225,70 @@ CUFLogic::mkCUFPlus(const PTRef arg1, const PTRef arg2, char** msg)
         comm_eqs.insert(tr_comm_eq, true);
     return tr;
 }
+
+// We need this since CUF wants to take care of commutativity on its own
+//PTRef
+//CUFLogic::insertTermHash(SymRef sym, const vec<PTRef>& terms_in)
+//{
+//    vec<PTRef> terms;
+//    terms_in.copyTo(terms);
+//    PTRef res = PTRef_Undef;
+//    char **msg;
+//    if (terms.size() == 0) {
+//        if (term_store.hasCtermKey(sym)) //cterm_map.contains(sym))
+//            res = term_store.getFromCtermMap(sym); //cterm_map[sym];
+//        else {
+//            res = term_store.newTerm(sym, terms);
+//            term_store.addToCtermMap(sym, res); //cterm_map.insert(sym, res);
+//        }
+//    }
+//    else if (!isBooleanOperator(sym)) {
+//        if (!sym_store[sym].left_assoc() &&
+//            !sym_store[sym].right_assoc() &&
+//            !sym_store[sym].chainable() &&
+//            !sym_store[sym].pairwise() &&
+//            sym_store[sym].nargs() != terms.size_())
+//        {
+//            *msg = (char*)malloc(strlen(e_argnum_mismatch)+1);
+//            strcpy(*msg, e_argnum_mismatch);
+//            return PTRef_Undef;
+//        }
+//        PTLKey k;
+//        k.sym = sym;
+//        terms.copyTo(k.args);
+//        if (term_store.hasCplxKey(k))
+//            res = term_store.getFromCplxMap(k);
+//        else {
+//            res = term_store.newTerm(sym, terms);
+//            term_store.addToCplxMap(k, res);
+//        }
+//    }
+//    else {
+//        // Boolean operator
+//        PTLKey k;
+//        k.sym = sym;
+//        terms.copyTo(k.args);
+//        if (term_store.hasBoolKey(k)) {
+//            res = term_store.getFromBoolMap(k); //bool_map[k];
+//#ifdef SIMPLIFY_DEBUG
+//            char* ts = printTerm(res);
+//            cerr << "duplicate: " << ts << endl;
+//            ::free(ts);
+//#endif
+//        }
+//        else {
+//            res = term_store.newTerm(sym, terms);
+//            term_store.addToBoolMap(k, res); //bool_map.insert(k, res);
+//#ifdef SIMPLIFY_DEBUG
+//            char* ts = printTerm(res);
+//            cerr << "new: " << ts << endl;
+//            ::free(ts);
+//#endif
+//        }
+//    }
+//    return res;
+//}
+
 
 PTRef
 CUFLogic::mkCUFTimes(const PTRef arg1, const PTRef arg2, char** msg)
@@ -468,4 +532,28 @@ PTRef CUFLogic::mkCUFNeq(const PTRef a1, const PTRef a2)
 const int CUFLogic::getCUFNUMConst(PTRef tr) const
 {
     return atoi(getSymName(tr));
+}
+
+void CUFLogic::conjoinExtras(PTRef root, PTRef& root_out)
+{
+    vec<PTRef> comm_eqs;
+    vec<PTRef> diseq_eqs;
+    vec<PTRef> diseq_split;
+    vec<PTRef> mod_ineqs;
+    vec<PTRef> inc_diseqs;
+    vec<PTRef> compl_diseqs;
+    getCommEqs(comm_eqs);
+    getCommEqs(diseq_eqs);
+    getCommEqs(diseq_split);
+    getCommEqs(mod_ineqs);
+    getCommEqs(inc_diseqs);
+    getCommEqs(compl_diseqs);
+    root_out = root;
+    root_out = mkAnd(root_out, mkAnd(comm_eqs));
+    root_out = mkAnd(root_out, mkAnd(diseq_eqs));
+    root_out = mkAnd(root_out, mkAnd(diseq_split));
+    root_out = mkAnd(root_out, mkAnd(mod_ineqs));
+    root_out = mkAnd(root_out, mkAnd(inc_diseqs));
+    root_out = mkAnd(root_out, mkAnd(compl_diseqs));
+    Logic::conjoinItes(root_out, root_out);
 }

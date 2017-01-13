@@ -886,7 +886,7 @@ PTRef Logic::mkFun(SymRef f, const vec<PTRef>& args, char** msg)
     if (f == SymRef_Undef)
         tr = PTRef_Undef;
     else
-        tr = Logic::insertTermHash(f, args);
+        tr = insertTermHash(f, args);
     return tr;
 }
 

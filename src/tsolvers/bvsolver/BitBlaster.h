@@ -62,6 +62,7 @@ private:
 
     bool addClause ( vec< Lit > &, PTRef );
 
+public:
     vec<PTRef> & bbTerm       (PTRef);
     // Predicates
     vec<PTRef> & bbEq         (PTRef);
@@ -86,7 +87,7 @@ private:
   // vector< Enode * > & bbUf         ( Enode * );
   // vector< Enode * > & bbUp         ( Enode * );
 
-
+private:
 
     void     cleanGarbage          ( );                            // Clean garbage on demand
 

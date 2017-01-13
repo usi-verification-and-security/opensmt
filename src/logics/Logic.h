@@ -167,9 +167,32 @@ class Logic {
     };
 
     virtual void visit(PTRef, Map<PTRef, PTRef, PTRefHash>&);
-    PTRef insertTermHash(SymRef, const vec<PTRef>&);
+    virtual PTRef insertTermHash(SymRef, const vec<PTRef>&);
 
     void dumpFunction(ostream &, const TFun&);
+
+    void conjoinItes(PTRef root, PTRef& new_root)
+    {
+        vec<PTRef> queue;
+        Map<PTRef,bool,PTRefHash> seen;
+        queue.push(root);
+        vec<PTRef> args;
+        while (queue.size() != 0) {
+            PTRef el = queue.last();
+            queue.pop();
+            if (seen.has(el)) continue;
+            if (isVar(el) && isIteVar(el)) {
+                args.push(getTopLevelIte(el));
+                queue.push(getTopLevelIte(el));
+            }
+            for (int i = 0; i < getPterm(el).size(); i++)
+                queue.push(getPterm(el)[i]);
+            seen.insert(el, true);
+        }
+
+        args.push(root);
+        new_root = mkAnd(args);
+    }
 
   public:
     bool existsTermHash(SymRef, const vec<PTRef>&);
@@ -195,28 +218,8 @@ class Logic {
     bool isIteVar(PTRef tr) const { return top_level_ites.has(tr); }
     PTRef getTopLevelIte(PTRef tr) { return top_level_ites[tr].repr; }
 
-    void conjoinItes(PTRef root, PTRef& new_root)
-    {
-        vec<PTRef> queue;
-        Map<PTRef,bool,PTRefHash> seen;
-        queue.push(root);
-        vec<PTRef> args;
-        while (queue.size() != 0) {
-            PTRef el = queue.last();
-            queue.pop();
-            if (seen.has(el)) continue;
-            if (isVar(el) && isIteVar(el)) {
-                args.push(getTopLevelIte(el));
-                queue.push(getTopLevelIte(el));
-            }
-            for (int i = 0; i < getPterm(el).size(); i++)
-                queue.push(getPterm(el)[i]);
-            seen.insert(el, true);
-        }
 
-        args.push(root);
-        new_root = mkAnd(args);
-    }
+    virtual void conjoinExtras(PTRef root, PTRef& new_root) { conjoinItes(root, new_root); }
 
     virtual const Logic_t getLogic() const;
     virtual const char* getName()    const;
