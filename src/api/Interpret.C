@@ -165,6 +165,16 @@ bool Interpret::interp(ASTNode& n) {
 
                 main_solver = new MainSolver(*thandler, config, solver);
                 main_solver->initialize();
+            } else if (strcmp(logic_name, QF_CUF.str) == 0) {
+                CUFTheory *cuftheory = new CUFTheory(config);
+                theory = cuftheory;
+                thandler = new THandler(config, *cuftheory);
+                logic = &(theory->getLogic());
+                //solver = new SimpSMTSolver(config, *thandler);
+                new_solver();
+
+                main_solver = new MainSolver(*thandler, config, solver);
+                main_solver->initialize();
             } else if ((strcmp(logic_name, QF_LRA.str) == 0) || (strcmp(logic_name, QF_RDL.str) == 0)) {
                 LRATheory *lratheory = new LRATheory(config);
                 theory = lratheory;
