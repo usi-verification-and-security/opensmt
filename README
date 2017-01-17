@@ -38,12 +38,13 @@ options.  For example if gmp is not installed in a standard location, use
 --with-gmp=<path>.
 
 +------------------------------------------------------------------------------+
-| Using OpenSMT2 as a library through the API                                  |
+| Using OpenSMT2 as a library through the C/C++ API                                  |
 +------------------------------------------------------------------------------+
 
 To install OpenSMT2 library you need to configure with
 
 $ ./configure --enable-library
+$ ./configure --disable-optimization --enable-proof --enable-library
 
 This will compile two libraries: a complete version called libopensmt2,
 and a simplified C library called libopensmt2c.
@@ -59,7 +60,7 @@ If you have installed the OpenSMT2 library you can compile the first file by run
 
  $ g++ -std=c++11 -o test test.cc -lopensmt2 -lgmp -lgmpxx -lz -lreadline
 
-and the second by running
+and the second file by running
 
  $ gcc -o test_c test_c.c -lopensmt2c -lgmp -lgmpxx -lz -lreadline
 
