@@ -31,21 +31,17 @@ const char* BVLogic::tk_bv_rshift = ">>";
 const char* BVLogic::tk_bv_mod    = "%";
 const char* BVLogic::tk_bv_bwand  = "&";
 const char* BVLogic::tk_bv_bwor   = "|";
-const char* BVLogic::tk_bv_inc    = "++";
-const char* BVLogic::tk_bv_dec    = "--";
-const char* BVLogic::tk_bv_neq    = "!=";
 const char* BVLogic::tk_bv_land   = "&&";
 const char* BVLogic::tk_bv_lor    = "||";
 const char* BVLogic::tk_bv_not    = "!";
 const char* BVLogic::tk_bv_bwxor  = "^";
 const char* BVLogic::tk_bv_compl  = "~";
-const char* BVLogic::tk_bv_sizeof = "sizeof";
-const char* BVLogic::tk_bv_addrof = "&";
-const char* BVLogic::tk_bv_ptr    = "*";
-const char* BVLogic::tk_bv_cond   = "?";
 
 const char*  BVLogic::s_sort_bvnum = "BVNum";
 //const char*  BVLogic::s_sort_bvstr = "BVStr";
+
+const char* BVLogic::s_uf_extract_base = ".ex";
+const char* BVLogic::tk_bv_coll32 = ".coll32";
 
 BVLogic::BVLogic(SMTConfig& c) :
       CUFLogic(c)
@@ -63,6 +59,17 @@ BVLogic::BVLogic(SMTConfig& c) :
     , sym_BV_GEQ(SymRef_Undef)
     , sym_BV_GT(SymRef_Undef)
     , sym_BV_BWXOR(SymRef_Undef)
+    , sym_BV_LSHIFT(SymRef_Undef)
+    , sym_BV_RSHIFT(SymRef_Undef)
+    , sym_BV_MOD(SymRef_Undef)
+    , sym_BV_BWOR(SymRef_Undef)
+    , sym_BV_BWAND(SymRef_Undef)
+    , sym_BV_LAND(SymRef_Undef)
+    , sym_BV_LOR(SymRef_Undef)
+    , sym_BV_NOT(SymRef_Undef)
+    , sym_BV_COMPL(SymRef_Undef)
+    , sym_BV_COLLATE32(SymRef_Undef)
+
     , sort_BVNUM(SRef_Undef)
     , term_BV_ZERO(PTRef_Undef)
     , term_BV_ONE(PTRef_Undef)
@@ -81,12 +88,8 @@ BVLogic::BVLogic(SMTConfig& c) :
 
     // Unary
     sym_BV_NEG    = declareFun(tk_bv_neg, sort_BVNUM, params, &msg, true);
-    sym_BV_INC    = declareFun(tk_bv_inc, sort_BVNUM, params, &msg, true);
-    sym_BV_DEC    = declareFun(tk_bv_dec, sort_BVNUM, params, &msg, true);
     sym_BV_COMPL  = declareFun(tk_bv_compl, sort_BVNUM, params, &msg, true);
-    sym_BV_SIZEOF = declareFun(tk_bv_sizeof, sort_BVNUM, params, &msg, true);
-    sym_BV_ADDROF = declareFun(tk_bv_addrof, sort_BVNUM, params, &msg, true);
-    sym_BV_PTR    = declareFun(tk_bv_ptr, sort_BVNUM, params, &msg, true);
+    sym_BV_NOT = declareFun(tk_bv_not, sort_BVNUM, params, &msg, true);
 
     params.push(sort_BVNUM);
 
@@ -128,9 +131,6 @@ BVLogic::BVLogic(SMTConfig& c) :
     sym_store[sym_BV_GEQ].setNoScoping();
     sym_store[sym_BV_GEQ].setChainable();
 
-    sym_BV_NEQ    = declareFun(tk_bv_neq, sort_BOOL, params, &msg, true);
-    sym_store[sym_BV_NEQ].setCommutes();
-
     sym_BV_LAND   = declareFun(tk_bv_land, sort_BOOL, params, &msg, true);
     sym_store[sym_BV_LAND].setCommutes();
 
@@ -141,6 +141,7 @@ BVLogic::BVLogic(SMTConfig& c) :
     sym_BV_RSHIFT = declareFun(tk_bv_rshift, sort_BVNUM, params, &msg, true);
 
     sym_BV_MOD    = declareFun(tk_bv_mod, sort_BVNUM, params, &msg, true);
+
     sym_BV_BWAND  = declareFun(tk_bv_bwand, sort_BVNUM, params, &msg, true);
     sym_store[sym_BV_BWAND].setCommutes();
 
@@ -149,6 +150,22 @@ BVLogic::BVLogic(SMTConfig& c) :
 
     sym_BV_BWXOR  = declareFun(tk_bv_bwxor, sort_BVNUM, params, &msg, true);
     sym_store[sym_BV_BWXOR].setCommutes();
+
+    declareFun(tk_bv_neg, sort_BVNUM, params, &msg, true);
+
+    vec<SRef> coll_params;
+    for (int i = 0; i < 32; i++)
+        coll_params.push(getSort_bool());
+    sym_BV_COLLATE32 = declareFun(tk_bv_coll32, sort_CUFNUM, coll_params, &msg, true);
+
+    for (int i = 0; i < 32; i++) {
+        char* sym_name;
+        asprintf(&sym_name, "%s%d", s_uf_extract_base, i);
+        vec<SRef> tmp;
+        tmp.push(sort_CUFNUM);
+        declareFun(sym_name, getSort_bool(), tmp, &msg, true);
+        free(sym_name);
+    }
 }
 
 BVLogic::~BVLogic()
@@ -514,6 +531,41 @@ const int BVLogic::getBVNUMConst(PTRef tr) const
     Logic::conjoinItes(root_out, root_out);
 }*/
 
+PTRef
+BVLogic::mkGlueBtoUF(const vec<PTRef>& bits, PTRef tr)
+{
+    assert(bits.size() == 32);
+    PTRef cr = mkCollate32(bits);
+    return mkEq(cr, tr);
+}
 
+PTRef
+BVLogic::mkGlueUFtoB(PTRef tr, const vec<PTRef>& bits)
+{
+    assert(bits.size() == 32);
+    vec<PTRef> conjs;
+    for (int i = 0; i < bits.size(); i++)
+        conjs.push(Logic::mkEq(bits[0], mkExtract(tr, i)));
+    return Logic::mkAnd(conjs);
+}
 
+PTRef
+BVLogic::mkCollate32(const vec<PTRef>& bits)
+{
+    char* msg;
+    return mkFun(sym_BV_COLLATE32, bits, &msg);
+}
 
+PTRef
+BVLogic::mkExtract(PTRef tr, int i)
+{
+    char* sym_name;
+    char* msg;
+    asprintf(&sym_name, "%s%d", s_uf_extract_base, i);
+    vec<SymRef>& srs = symNameToRef(sym_name);
+    SymRef sr = srs[0];
+    free(sym_name);
+    vec<PTRef> tmp;
+    tmp.push(tr);
+    return mkFun(sr, tmp, &msg);
+}

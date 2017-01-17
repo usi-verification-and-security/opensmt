@@ -45,15 +45,22 @@ public:
                , vec<PTRef> & );
     ~BitBlaster ( );
 
-    lbool inform             (PTRef);
+    lbool inform             (PTRef); // For the interface for bitvector solver
     lbool check              ( );
     bool  assertLit          (PtAsgn);
+
+    lbool insert             (PTRef tr, BVRef& out); // For the interface for theory refinement
 
     void pushBacktrackPoint  ( );
     void popBacktrackPoint   ( );
 
     void computeModel        ( );
     Real getValue            (PTRef);
+
+    lbool glueBtoUF          (BVRef br, PTRef tr);  // (= tr (c br_1 ... br_32))
+    lbool glueUFtoB          (PTRef tr, BVRef br);  // (= br_0 (e0 tr)) /\ ... /\ (= br_32 (e32 tr))
+    PTRef mkCollate32        (vec<PTRef>& bits);
+    PTRef mkExtract          (PTRef tr, int i);
 private:
     BVRef          updateCache  (PTRef tr);
     SMTConfig &    config;                        // Configuration

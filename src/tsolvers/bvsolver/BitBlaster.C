@@ -106,6 +106,22 @@ BitBlaster::inform (PTRef tr)
         return l_Undef;
 }
 
+lbool
+BitBlaster::insert(PTRef tr, BVRef& out)
+{
+    char* msg;
+    out = bbTerm(tr);
+    vec<PTRef> bv;
+    bs.copyTo(out, bv);
+    PTRef tr_out = logic.mkAnd(bv);
+    sstat status = mainSolver.insertFormula(tr_out, &msg);
+    if (status == s_True)
+        return l_True;
+    else if (status == s_False)
+        return l_False;
+    else return l_Undef;
+}
+
 bool
 BitBlaster::assertLit (PtAsgn pta)
 {
@@ -1761,4 +1777,37 @@ Real BitBlaster::getValue(PTRef tr)
 {
     assert(has_model);
     return model[tr];
+}
+
+lbool
+BitBlaster::glueBtoUF(BVRef br, PTRef tr)
+{
+    char* msg;
+
+    vec<PTRef> bv;
+    bs.copyTo(br, bv);
+    PTRef eq_tr = logic.mkGlueBtoUF(bv, tr);
+    sstat status = mainSolver.insertFormula(eq_tr, &msg);
+    if (status == s_True)
+        return l_True;
+    else if (status == s_False)
+        return l_False;
+    else
+        return l_Undef;
+}
+
+lbool
+BitBlaster::glueUFtoB(PTRef tr, BVRef br)
+{
+    char* msg;
+    vec<PTRef> bv;
+    bs.copyTo(br, bv);
+    PTRef and_tr = logic.mkGlueUFtoB(tr, bv);
+    sstat status = mainSolver.insertFormula(and_tr, &msg);
+    if (status == s_True)
+        return l_True;
+    else if (status == s_False)
+        return l_False;
+    else
+        return l_Undef;
 }

@@ -52,10 +52,7 @@ class BVLogic: public CUFLogic
     SymRef              sym_BV_NOT;    // !
     SymRef              sym_BV_BWXOR;  // ^
     SymRef              sym_BV_COMPL;  // ~
-    SymRef              sym_BV_SIZEOF; // sizeof
-    SymRef              sym_BV_ADDROF; // &
-    SymRef              sym_BV_PTR;    // *
-    SymRef              sym_BV_COND;   // ?
+    SymRef              sym_BV_COLLATE32; // .coll32
 
     SRef                sort_BVNUM;
 
@@ -79,21 +76,17 @@ class BVLogic: public CUFLogic
     static const char*  tk_bv_mod;
     static const char*  tk_bv_bwand;
     static const char*  tk_bv_bwor;
-    static const char*  tk_bv_inc;
-    static const char*  tk_bv_dec;
-    static const char*  tk_bv_neq;
     static const char*  tk_bv_land;
     static const char*  tk_bv_lor;
     static const char*  tk_bv_not;
     static const char*  tk_bv_bwxor;
     static const char*  tk_bv_compl;
-    static const char*  tk_bv_sizeof;
-    static const char*  tk_bv_addrof;
-    static const char*  tk_bv_ptr;
-    static const char*  tk_bv_cond;
 
     static const char*  s_sort_bvnum;
     //static const char*  s_sort_bvstr;
+
+    static const char* tk_bv_coll32;
+    static const char* s_uf_extract_base;
 
   public:
     BVLogic (SMTConfig& c);
@@ -173,14 +166,6 @@ class BVLogic: public CUFLogic
     bool isBVBwXor(PTRef tr)   const { return isBVBwXor(getPterm(tr).symb()); }
     bool isBVCompl(SymRef sr)  const { return sr == sym_BV_COMPL; }
     bool isBVCompl(PTRef tr)   const { return isBVCompl(getPterm(tr).symb()); }
-    bool isBVSizeof(SymRef sr) const { return sr == sym_BV_SIZEOF; }
-    bool isBVSizeof(PTRef tr)  const { return isBVSizeof(getPterm(tr).symb()); }
-    bool isBVAddrof(SymRef sr) const { return sr == sym_BV_ADDROF; }
-    bool isBVAddrof(PTRef tr)  const { return isBVAddrof(getPterm(tr).symb()); }
-    bool isBVPtr(SymRef sr)    const { return sr == sym_BV_PTR; }
-    bool isBVPtr(PTRef tr)     const { return isBVPtr(getPterm(tr).symb()); }
-    bool isBVCond(SymRef sr)   const { return sr == sym_BV_COND; }
-    bool isBVCond(PTRef tr)    const { return isBVCond(getPterm(tr).symb()); }
 
     bool isUFEquality(PTRef tr) const { return !isBVEq(tr) && Logic::isUFEquality(tr); }
     bool isTheoryEquality(PTRef tr) const { return isBVEq(tr); }
@@ -264,6 +249,12 @@ class BVLogic: public CUFLogic
 
     PTRef mkBVCompl(const vec<PTRef>& args) {assert(args.size() == 1); return mkBVCompl(args[0]);}
     PTRef mkBVCompl    (const PTRef);
+
+    PTRef mkGlueBtoUF(const vec<PTRef>& bits, PTRef tr);
+    PTRef mkGlueUFtoB(PTRef tr, const vec<PTRef>& bits);
+
+    PTRef mkCollate32(const vec<PTRef>& bits);
+    PTRef mkExtract(PTRef tr, int i);
 
 /*  PTRef mkBVSizeof(const vec<PTRef>& args) {assert(args.size() == 1); return mkBVSizeof(args[0]);}
     PTRef mkBVSizeof   (const PTRef);
