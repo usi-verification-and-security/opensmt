@@ -266,8 +266,8 @@ class CUFLogic: public Logic
     PTRef mkCUFNot(const vec<PTRef>& args) {assert(args.size() == 1); return mkCUFNot(args[0]);}
     PTRef mkCUFNot      (const PTRef);
 
-    PTRef mkCUFBwxor(const vec<PTRef>& args) {assert(args.size() == 2); return mkCUFBwxor(args[0], args[1]);}
-    PTRef mkCUFBwxor    (const PTRef, const PTRef);
+    PTRef mkCUFBwXor(const vec<PTRef>& args) {assert(args.size() == 2); return mkCUFBwXor(args[0], args[1]);}
+    PTRef mkCUFBwXor    (const PTRef, const PTRef);
 
     PTRef mkCUFCompl(const vec<PTRef>& args) {assert(args.size() == 1); return mkCUFCompl(args[0]);}
     PTRef mkCUFCompl    (const PTRef);

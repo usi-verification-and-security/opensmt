@@ -29,6 +29,28 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #include "BitBlaster.h"
+#include "BVStore.h"
+
+const char* BitBlaster::s_bbEq          = ".bbEq";
+const char* BitBlaster::s_bbAnd         = ".bbAnd";
+const char* BitBlaster::s_bbBvsle       = ".bbBvsle";
+const char* BitBlaster::s_bbBvule       = ".bbBvule";
+const char* BitBlaster::s_bbConcat      = ".bbConcat";
+const char* BitBlaster::s_bbExtract     = ".bbExtract";
+const char* BitBlaster::s_bbBvand       = ".bbBvand";
+const char* BitBlaster::s_bbBvor        = ".bbBvor";
+const char* BitBlaster::s_bbBvxor       = ".bbBvxor";
+const char* BitBlaster::s_bbBvnot       = ".bbBvnot";
+const char* BitBlaster::s_bbBvadd       = ".bbBvadd";
+const char* BitBlaster::s_bbBvmul       = ".bbBvmul";
+const char* BitBlaster::s_bbBvudiv      = ".bbBvudiv";
+const char* BitBlaster::s_bbBvurem      = ".bbBvurem";
+const char* BitBlaster::s_bbSignExtend  = ".bbSignExtend";
+const char* BitBlaster::s_bbVar         = ".bbVar";
+const char* BitBlaster::s_bbConstant    = ".bbConstant";
+const char* BitBlaster::s_bbDistinct    = ".bbDistinct";
+
+const int BitBlaster::i_hack_bitwidth   = 32;
 
 BitBlaster::BitBlaster ( const SolverId i
                        , SMTConfig & c
@@ -39,29 +61,26 @@ BitBlaster::BitBlaster ( const SolverId i
     : config      (c)
     , mainSolver  (mainSolver)
     , logic       (mainSolver.getLogic())
+    , thandler    (mainSolver.getTHandler())
+    , solverP     (mainSolver.getSMTSolver())
     , explanation (ex)
     , deductions  (d)
     , suggestions (s)
-    , thandler    (mainSolver.getTHandler())
-    , solverP     (mainSolver.getSMTSolver())
     , has_model   (false)
 { }
 
 BitBlaster::~BitBlaster ()
 {
-  cleanGarbage( );
+    cleanGarbage( );
 }
 
-vec<PTRef>&
+BVRef
 BitBlaster::updateCache(PTRef tr)
 {
-    Pterm& t = logic.getPterm(tr);
     // Return previous result if computed
-    if ( (int)bb_cache.size() <= t.getId() )
-        bb_cache.resize( t.getId() + 1, NULL );
-    if ( bb_cache[t.getId()] != NULL )
-        return *bb_cache[t.getId()];
-    return ptref_vec_empty;
+    if (bs.has(tr))
+        return bs.getFromPTRef(tr);
+    return BVRef_Undef;
 }
 
 //=============================================================================
@@ -70,18 +89,14 @@ BitBlaster::updateCache(PTRef tr)
 lbool
 BitBlaster::inform (PTRef tr)
 {
-    vec<PTRef>& result = bbTerm( tr );
-
-    assert( result.size() == 1 );
-    PTRef bb = result.last();
-
-    if (logic.isTrue(bb))
-        return l_True;
-    if (logic.isFalse(bb))
-        return l_False;
+    BVRef result = bbTerm( tr );
 
     char* msg;
-    sstat status = mainSolver.insertFormula(bb, &msg);
+
+    vec<PTRef> bv;
+    bs.copyTo(result, bv);
+    PTRef tr_out = logic.mkImpl(bs[result].getActVar(), logic.mkAnd(bv));
+    sstat status = mainSolver.insertFormula(tr_out, &msg);
     if (status == s_True)
         return l_True;
     else if (status == s_False)
@@ -135,10 +150,27 @@ BitBlaster::popBacktrackPoint ( )
     has_model = false;
 }
 
+char*
+BitBlaster::getName(const char* base) const
+{
+    char* out;
+    asprintf(&out, ".%s%d", base, bs.size());
+    return out;
+}
+
+PTRef
+BitBlaster::mkActVar(const char* base)
+{
+    char* name = getName(base);
+    PTRef v = logic.mkBoolVar(name);
+    free(name);
+    return v;
+}
+
 //=============================================================================
 // BitBlasting Routines
 
-vec<PTRef> &
+BVRef
 BitBlaster::bbTerm(PTRef tr)
 {
     //
@@ -179,7 +211,7 @@ BitBlaster::bbTerm(PTRef tr)
 //
 // Equality
 //
-vec<PTRef> &
+BVRef
 BitBlaster::bbEq(PTRef tr)
 {
     assert(tr != PTRef_Undef);
@@ -187,15 +219,11 @@ BitBlaster::bbEq(PTRef tr)
     Pterm& t = logic.getPterm(tr);
 
     // Return previous result if computed
-    if ( (int)bb_cache.size( ) <= t.getId() )
-        bb_cache.resize( t.getId() + 1, NULL );
-    if ( bb_cache[ t.getId() ] != NULL )
-        return *bb_cache[ t.getId( ) ];
+    if (bs.has(tr))
+        return bs.getFromPTRef(tr);
 
     // Allocate new result
-    vec<PTRef> *result = new vec<PTRef>;
-    // Garbage collection
-    garbage.push_back( result );
+    //vec<PTRef> *result = new vec<PTRef>;
 
     assert( t.size() == 2 );
     PTRef lhs = t[0];
@@ -204,28 +232,27 @@ BitBlaster::bbEq(PTRef tr)
     assert( !(logic.isConstant(lhs)) || !(logic.isConstant(rhs)) );
 
     // Retrieve arguments' encodings
-    vec<PTRef> & bb_lhs = bbTerm(lhs);
-    vec<PTRef> & bb_rhs = bbTerm(rhs);
+    BVRef bb_lhs = bbTerm(lhs);
+    BVRef bb_rhs = bbTerm(rhs);
 
-    assert( bb_lhs.size( ) == bb_rhs.size( ) );
-    assert((int)bb_lhs.size( ) == logic.getPterm(lhs).size());
+    assert( bs[bb_lhs].size( ) == bs[bb_rhs].size( ) );
 
     // Produce the result
     vec<PTRef> result_args;
-    for ( unsigned i = 0 ; i < bb_lhs.size() ; i ++ )
+    for ( unsigned i = 0 ; i < bs[bb_lhs].size() ; i ++ )
     {
-        result_args.push(logic.mkEq(bb_lhs[i], bb_rhs[i]));
+        result_args.push(logic.mkEq(bs[bb_lhs][i], bs[bb_rhs][i]));
     }
-    result->push( simplify( logic.mkAnd( result_args ) ) );
-    // Save result and return
-    bb_cache[t.getId()] = result;
-    return *result;
+    PTRef res = simplify( logic.mkAnd( result_args ) );
+    vec<PTRef> tmp;
+    tmp.push(res);
+    return bs.newBvector(res, mkActVar(s_bbEq));
 }
 
 //
 // Signed less than equal
 //
-vec<PTRef> &
+BVRef
 BitBlaster::bbBvsle(PTRef tr)
 {
     assert(tr != PTRef_Undef);
@@ -233,15 +260,10 @@ BitBlaster::bbBvsle(PTRef tr)
 
     // Return previous result if computed
     Pterm& t = logic.getPterm(tr);
-    if ( (int)bb_cache.size( ) <= t.getId( ) )
-        bb_cache.resize( t.getId() + 1, NULL );
-    if ( bb_cache[ t.getId() ] != NULL )
-        return *bb_cache[ t.getId() ];
+    if (bs.has(tr))
+        return bs[tr];
 
     // Allocate new result
-    vec<PTRef> * result = new vec<PTRef>;
-    // Garbage collect
-    garbage.push_back( result );
 
     assert( t.size() == 2 );
     PTRef lhs = t[0];
@@ -249,21 +271,20 @@ BitBlaster::bbBvsle(PTRef tr)
     assert( logic.getPterm(lhs).size() >= 2 );
 
     // Retrieve arguments' encodings
-    vec<PTRef> & bb_lhs = bbTerm( lhs );
-    vec<PTRef> & bb_rhs = bbTerm( rhs );
-    assert( bb_lhs.size( ) == bb_rhs.size( ) );
-    assert( (int)bb_lhs.size() == logic.getPterm(lhs).size() );
+    BVRef bb_lhs = bbTerm( lhs );
+    BVRef bb_rhs = bbTerm( rhs );
+    assert( bs[bb_lhs].size( ) == bs[bb_rhs].size( ) );
     //
     // Produce lhs < rhs
     //
     PTRef lt_prev = PTRef_Undef;
-    for ( unsigned i = 0 ; i < bb_lhs.size() - 1 ; i ++ )
+    for ( unsigned i = 0 ; i < bs[bb_lhs].size() - 1 ; i ++ )
     {
         // Produce ~l[i] & r[i]
-        PTRef not_l   = logic.mkNot( bb_lhs[i] );
-        PTRef lt_this = logic.mkAnd( not_l, bb_rhs[i] );
+        PTRef not_l   = logic.mkNot( bs[bb_lhs][i] );
+        PTRef lt_this = logic.mkAnd( not_l, bs[bb_rhs][i] );
         // Produce l[i] <-> r[i]
-        PTRef eq_this = logic.mkEq( bb_lhs[i] , bb_rhs[i]);
+        PTRef eq_this = logic.mkEq( bs[bb_lhs][i] , bs[bb_rhs][i]);
         if ( lt_prev != PTRef_Undef )
             lt_prev = logic.mkOr( lt_this, logic.mkAnd(eq_this, lt_prev) );
         else
@@ -271,26 +292,27 @@ BitBlaster::bbBvsle(PTRef tr)
     }
 
     assert( lt_prev != PTRef_Undef );
-    PTRef not_r   = logic.mkNot(bb_rhs.last());
-    PTRef neg_pos = logic.mkAnd(bb_lhs.last(), not_r);
-    PTRef eq_this = logic.mkEq(bb_lhs.last(), bb_rhs.last());
+    PTRef not_r   = logic.mkNot(bs[bb_rhs].last());
+    PTRef neg_pos = logic.mkAnd(bs[bb_lhs].last(), not_r);
+    PTRef eq_this = logic.mkEq(bs[bb_lhs].last(), bs[bb_rhs].last());
     PTRef lt_part = logic.mkOr(logic.mkAnd(eq_this, lt_prev), neg_pos) ;
 
-    vec<PTRef>& eq_part = bbTerm(logic.mkEq(lhs, rhs));
+    BVRef eq_part = bbTerm(logic.mkEq(lhs, rhs));
     //
     // Produce (lhs=rhs | lhs<rhs)
     //
-    result->push(simplify(logic.mkOr(eq_part.last(), lt_part)));
+    PTRef tr_out = simplify(logic.mkOr(bs[eq_part].last(), lt_part));
 
     // Save result and return
-    bb_cache[ logic.getPterm(tr).getId() ] = result;
-    return *result;
+    vec<PTRef> tmp;
+    tmp.push(tr_out);
+    return bs.newBvector(tmp, mkActVar(s_bbBvsle));
 }
 
 //
 // Unsigned less than equal
 //
-vec<PTRef> &
+BVRef
 BitBlaster::bbBvule(PTRef tr)
 {
     assert(tr != PTRef_Undef);
@@ -304,35 +326,26 @@ BitBlaster::bbBvule(PTRef tr)
     // assert( e->isBvule( ) );
 
     // Return previous result if computed
-    if ( (int)bb_cache.size( ) <= logic.getPterm(tr).getId() )
-        bb_cache.resize( logic.getPterm(tr).getId() + 1, NULL );
-    if ( bb_cache[ logic.getPterm(tr).getId() ] != NULL )
-        return *bb_cache[logic.getPterm(tr).getId()];
-
-    // Allocate new result
-    vec<PTRef> * result = new vec<PTRef>;
-    // Garbage collect
-    garbage.push_back( result );
+    if (bs.has(tr)) return bs[tr];
 
     assert(logic.getPterm(tr).size() == 2 );
     PTRef lhs = logic.getPterm(tr)[0];
     PTRef rhs = logic.getPterm(tr)[1];
     // Retrieve arguments' encodings
-    vec<PTRef>& bb_lhs = bbTerm(lhs);
-    vec<PTRef>& bb_rhs = bbTerm(rhs);
-    assert(bb_lhs.size() == bb_rhs.size());
-    assert((int)bb_lhs.size( ) == logic.getPterm(lhs).size()); // should be .getWidth();
+    BVRef bb_lhs = bbTerm(lhs);
+    BVRef bb_rhs = bbTerm(rhs);
+    assert(bs[bb_lhs].size() == bs[bb_rhs].size());
     //
     // Produce the result
     //
     PTRef lt_prev = PTRef_Undef;
-    for (unsigned i = 0 ; i < bb_lhs.size() ; i ++)
+    for (unsigned i = 0 ; i < bs[bb_lhs].size() ; i ++)
     {
         // Produce ~l[i] & r[i]
-        PTRef not_l   = logic.mkNot(bb_lhs[i]);
-        PTRef lt_this = logic.mkAnd(not_l, bb_rhs[i]);
+        PTRef not_l   = logic.mkNot(bs[bb_lhs][i]);
+        PTRef lt_this = logic.mkAnd(not_l, bs[bb_rhs][i]);
         // Produce l[i] <-> r[i]
-        PTRef eq_this = logic.mkEq(bb_lhs[i], bb_rhs[i]);
+        PTRef eq_this = logic.mkEq(bs[bb_lhs][i], bs[bb_rhs][i]);
         if (lt_prev != PTRef_Undef)
             lt_prev = logic.mkOr(lt_this, logic.mkAnd(eq_this, lt_prev));
         else
@@ -340,260 +353,213 @@ BitBlaster::bbBvule(PTRef tr)
     }
 
     PTRef lt_part = lt_prev;
-    vec<PTRef>& eq_part = bbTerm(logic.mkEq(lhs, rhs));
+    BVRef eq_part = bbTerm(logic.mkEq(lhs, rhs));
     //
     // Produce (lhs=rhs | lhs<rhs)
     //
-    result->push(simplify(logic.mkOr(eq_part.last(), lt_part)));
+    PTRef res = simplify(logic.mkOr(bs[eq_part].last(), lt_part));
+
     // Save result and return
-    bb_cache[ logic.getPterm(tr).getId() ] = result;
-    return *result;
+    return bs.newBvector(res, mkActVar(s_bbBvule));
 }
 
 //
 // Concatenation
 //
-vec<PTRef> &
+BVRef
 BitBlaster::bbConcat(PTRef tr)
 {
     assert( tr != PTRef_Undef );
 
-    // Return previous result if computed
-    if ( (int)bb_cache.size( ) <= logic.getPterm(tr).getId() )
-        bb_cache.resize( logic.getPterm(tr).getId( ) + 1, NULL );
-    if ( bb_cache[ logic.getPterm(tr).getId() ] != NULL )
-    return *bb_cache[ logic.getPterm(tr).getId() ];
+    if (bs.has(tr))
+        return bs[tr];
 
-    // Allocate new result
-    vec<PTRef>* result = new vec<PTRef>;
-    // Garbage collect
-    garbage.push_back( result );
-
+    vec<PTRef> result;
     // Retrieve arguments and put on the stack
     for (int i = logic.getPterm(tr).size()-1; i >= 0; i--) {
         PTRef arg = logic.getPterm(tr)[i];
-        vec<PTRef>& bb_arg = bbTerm(arg);
-        for (int j = 0; j < bb_arg.size(); j++)
-            result->push(bb_arg[j]);
+        BVRef bb_arg = bbTerm(arg);
+        for (int j = 0; j < bs[bb_arg].size(); j++)
+            result.push(bs[bb_arg][j]);
     }
 
     // Save result and return
-    bb_cache[ logic.getPterm(tr).getId() ] = result;
-    return *result;
+    return bs.newBvector(result, mkActVar(s_bbConcat));
 }
 
 //
 // Extraction
 //
-vec<PTRef> &
+BVRef
 BitBlaster::bbExtract(PTRef tr)
 {
     assert(tr != PTRef_Undef);
 
-    // Return previous result if computed
-    if ( (int)bb_cache.size() <= logic.getPterm(tr).getId() )
-        bb_cache.resize( logic.getPterm(tr).getId() + 1, NULL );
-    if ( bb_cache[ logic.getPterm(tr).getId() ] != NULL )
-        return *bb_cache[logic.getPterm(tr).getId()];
+    if (bs.has(tr)) return bs[tr];
 
     int lsb = 0, msb = 0;
-
-    // Allocate new result
-    vec<PTRef> *result = new vec<PTRef>;
-    // Garbage collect
-    garbage.push_back( result );
 
     assert(logic.getPterm(tr).size() == 1 );
     PTRef arg = logic.getPterm(tr)[0];
     // Retrieve arguments' encodings
-    vec<PTRef> & bb_arg = bbTerm(arg);
+    BVRef bb_arg = bbTerm(arg);
     // Produce the result
+    vec<PTRef> result;
     for ( int i = lsb ; i <= msb ; i ++ )
-        result->push(bb_arg[i]);
+        result.push(bs[bb_arg][i]);
 
     // Save result and return
-    bb_cache[logic.getPterm(tr).getId()] = result;
-    return *result;
+    return bs.newBvector(result, mkActVar(s_bbExtract));
 }
 
 //
 // Bitwise AND
 //
-vec<PTRef> &
+BVRef
 BitBlaster::bbBvand(PTRef tr)
 {
     assert(tr != PTRef_Undef);
 
     assert(logic.getPterm(logic.getPterm(tr)[0]).size() == logic.getPterm(logic.getPterm(tr)[1]).size()); // Should be e->get2nd( )->getWidth( )
 
-    vec<PTRef>& cached = updateCache(tr);
-    if (cached.size() > 0)
-        return cached;
 
-    // Allocate new result
-    vec<PTRef> * result = new vec<PTRef>;
-    // Garbage collect
-    garbage.push_back( result );
+    if (bs.has(tr)) return bs[tr];
 
-    vector< vec<PTRef> * > bb_args;
+    vec<BVRef> bb_args;
 
     // Bit-blast the arguments, and put the corresponding vectors
     // into bb_args.
     for (int i = 0; i < logic.getPterm(tr).size(); i++)
-        bb_args.push_back(&bbTerm(logic.getPterm(tr)[i]));
+        bb_args.push(bbTerm(logic.getPterm(tr)[i]));
 
-    int n_bits = bb_args[0]->size(); // the number of bits in each argument
+    int n_bits = bs[bb_args[0]].size(); // the number of bits in each argument
     int n_args = bb_args.size(); // the number of arguments
     // Iterate over all bits
+    vec<PTRef> result;
     for (int i = 0; i < n_bits; i++) {
         vec<PTRef> and_args;
         // Iterate over all arguments
         for (int j = 0 ; j < bb_args.size(); j++) {
-            assert(bb_args[j]->size() == n_bits);
-            and_args.push((*bb_args[j])[i]);
+            assert(bs[bb_args[j]].size() == n_bits);
+            and_args.push((bs[bb_args[j]])[i]);
         }
-        result->push(logic.mkAnd(and_args));
+        result.push(logic.mkAnd(and_args));
     }
-    bb_cache[logic.getPterm(tr).getId()] = result;
 
-    return *result;
+    return bs.newBvector(result, mkActVar(s_bbBvand));
 }
 
 //
 // Bitwise OR
 //
-vec<PTRef> &
+BVRef
 BitBlaster::bbBvor(PTRef tr)
 {
     assert(tr != PTRef_Undef);
 
-    // Return previous result if computed
-    vec<PTRef>& cached = updateCache(tr);
-    if (cached.size() > 0)
-        return cached;
+    if (bs.has(tr)) return bs[tr];
 
-    // Allocate new result
-    vec<PTRef>* result = new vec<PTRef>;
-    // Garbage collect
-    garbage.push_back( result );
 
-    vector< vec<PTRef> * > bb_args;
+    vec<PTRef> result;
+
+    vec<BVRef> bb_args;
 
     // Bit-blast the arguments, and put the corresponding vectors
     // into bb_args.
     for (int i = 0; i < logic.getPterm(tr).size(); i++)
-        bb_args.push_back(&bbTerm(logic.getPterm(tr)[i]));
+        bb_args.push(bbTerm(logic.getPterm(tr)[i]));
 
-    int n_bits = bb_args[0]->size(); // the number of bits in each argument
+    int n_bits = bs[bb_args[0]].size(); // the number of bits in each argument
     int n_args = bb_args.size(); // the number of arguments
     // Iterate over all bits
     for (int i = 0; i < n_bits; i++) {
         vec<PTRef> and_args;
         // Iterate over all arguments
         for (int j = 0 ; j < bb_args.size(); j++) {
-            assert(bb_args[j]->size() == n_bits);
-            and_args.push((*bb_args[j])[i]);
+            assert(bs[bb_args[j]].size() == n_bits);
+            and_args.push((bs[bb_args[j]])[i]);
         }
-        result->push(logic.mkOr(and_args));
+        result.push(logic.mkOr(and_args));
     }
 
     // Save result and return
-    bb_cache[ logic.getPterm(tr).getId() ] = result;
-    return *result;
+    return bs.newBvector(result, mkActVar(s_bbBvor));
 }
 
 //
 // Bitwise XOR
 //
-vec<PTRef> &
+BVRef
 BitBlaster::bbBvxor(PTRef tr)
 {
     assert(tr != PTRef_Undef);
 
     assert( logic.getPterm(tr).size() == 2 );
 
-    // Return previous result if computed
-    vec<PTRef>& cached = updateCache(tr);
-    if (cached.size() > 0)
-        return cached;
-
     // Allocate new result
-    vec<PTRef> * result = new vec<PTRef>;
-    // Garbage collect
-    garbage.push_back( result );
+    vec<PTRef> result;
 
     PTRef lhs = logic.getPterm(tr)[0];
     PTRef rhs = logic.getPterm(tr)[1];
-    vec<PTRef> & bb_lhs = bbTerm( lhs );
-    vec<PTRef> & bb_rhs = bbTerm( rhs );
+    BVRef bb_lhs = bbTerm( lhs );
+    BVRef bb_rhs = bbTerm( rhs );
 
-    assert(bb_lhs.size() == bb_rhs.size());
+    assert(bs[bb_lhs].size() == bs[bb_rhs].size());
 
-    for ( int i = 0 ; i < bb_lhs.size( ) ; i ++ )
-        result->push( logic.mkXor(bb_lhs[i], bb_rhs[i]));
+    for ( int i = 0 ; i < bs[bb_lhs].size() ; i ++ )
+        result.push( logic.mkXor(bs[bb_lhs][i], bs[bb_rhs][i]));
 
-    // Save result and return
-    bb_cache[ logic.getPterm(tr).getId( ) ] = result;
-    return *result;
+    return bs.newBvector(result, mkActVar(s_bbBvxor));
 }
 
 //
 // Bitwise NOT
 //
-vec<PTRef> &
+BVRef
 BitBlaster::bbBvnot(PTRef tr)
 {
     assert(tr != PTRef_Undef);
     assert(logic.getPterm(tr).size() == 1);
 
-    vec<PTRef>& cached = updateCache(tr);
-    if (cached.size() > 0)
-        return cached;
+    if (bs.has(tr)) return bs[tr];
 
     // Allocate new result
-    vec<PTRef>* result = new vec<PTRef>;
-    // Garbage collect
-    garbage.push_back( result );
+    vec<PTRef> result;
 
     PTRef arg = logic.getPterm(tr)[0];
-    vec<PTRef>& bb_arg = bbTerm(arg);
+    BVRef bb_arg = bbTerm(arg);
 
-    for ( int i = 0 ; i < bb_arg.size( ) ; i ++ )
-        result->push( logic.mkNot(bb_arg[i]));
+    for ( int i = 0 ; i < bs[bb_arg].size( ) ; i ++ )
+        result.push(logic.mkNot(bs[bb_arg][i]));
 
     // Save result and return
-    bb_cache[ logic.getPterm(tr).getId() ] = result;
-    return *result;
+    return bs.newBvector(result, mkActVar(s_bbBvnot));
 }
 
-vec<PTRef> &
+BVRef
 BitBlaster::bbBvadd(PTRef tr)
 {
     assert(tr != PTRef_Undef);
     assert( logic.getPterm(tr).size() == 2 );
 
-    vec<PTRef>& cached = updateCache(tr);
-    if (cached.size() > 0)
-        return cached;
+    if (bs.has(tr)) return bs[tr];
 
     // Allocate new result
-    vec<PTRef>* result = new vec<PTRef>;
-    // Garbage collect
-    garbage.push_back( result );
+    vec<PTRef> result;
 
     PTRef arg1 = logic.getPterm(tr)[0];
     PTRef arg2 = logic.getPterm(tr)[1];
-    vec<PTRef> & bb_arg1 = bbTerm(arg1);
-    vec<PTRef> & bb_arg2 = bbTerm(arg2);
-    assert( bb_arg1.size() == bb_arg2.size() );
+    BVRef bb_arg1 = bbTerm(arg1);
+    BVRef bb_arg2 = bbTerm(arg2);
+    assert( bs[bb_arg1].size() == bs[bb_arg2].size() );
 
     PTRef carry = PTRef_Undef;
 
-    int bw = bb_arg1.size(); // the bit width
+    int bw = bs[bb_arg1].size(); // the bit width
     for (int i = 0 ; i < bw; i++)
     {
-        PTRef bit_1 = bb_arg1[i];
-        PTRef bit_2 = bb_arg2[i];
+        PTRef bit_1 = bs[bb_arg1][i];
+        PTRef bit_2 = bs[bb_arg2][i];
         assert(bit_1 != PTRef_Undef);
         assert(bit_2 != PTRef_Undef);
 
@@ -605,57 +571,53 @@ BitBlaster::bbBvadd(PTRef tr)
             PTRef xor_2 = logic.mkXor(xor_1, carry);
             PTRef and_2 = logic.mkAnd(xor_1, carry);
             carry = logic.mkOr(and_1, and_2);
-            result->push(xor_2);
+            result.push(xor_2);
         }
         else
         {
             carry = and_1;
-            result->push(xor_1);
+            result.push(xor_1);
         }
     }
 
     // Save result and return
-    bb_cache[ logic.getPterm(tr).getId( ) ] = result;
-    return *result;
+    return bs.newBvector(result, mkActVar(s_bbBvadd));
 }
 
-vec<PTRef> &
+BVRef
 BitBlaster::bbBvudiv(PTRef tr)
 {
     assert(tr != PTRef_Undef);
     assert(logic.getPterm(tr).size() == 2);
 
-    vec<PTRef>& cached = updateCache(tr);
-    if (cached.size() > 0)
-        return cached;
+    if (bs.has(tr)) return bs[tr];
 
     //
     // Allocate new result
     //
-    vec<PTRef> * result = new vec<PTRef>;
+    vec<PTRef> result;
     //
     // Garbage collect
     //
-    garbage.push_back( result );
 
     vec<PTRef> minuend;
     PTRef arg1 = logic.getPterm(tr)[0];
     PTRef arg2 = logic.getPterm(tr)[1];
-    vec<PTRef>& dividend = bbTerm(arg1);
-    vec<PTRef>& divisor = bbTerm(arg2);
-    assert(divisor.size() == dividend.size());
+    BVRef dividend = bbTerm(arg1);
+    BVRef divisor = bbTerm(arg2);
+    assert(bs[divisor].size() == bs[dividend].size());
     //
     // Generate condition divisor != 0
     //
     PTRef zero = PTRef_Undef;
-    PTRef div_eq_zero = bbTerm(logic.mkEq(arg2, zero)).last(); // I don't think this works?!
+    PTRef div_eq_zero = bs[bbTerm(logic.mkEq(arg2, zero))].last(); // I don't think this works?!
 
-    const unsigned size = divisor.size( );
-    result->growTo(size);
+    const unsigned size = bs[divisor].size( );
+    result.growTo(size);
     //
     // Initialize minuend as 0..0 q[n-1]
     //
-    minuend.push(dividend[size - 1]);
+    minuend.push(bs[dividend][size - 1]);
     for ( unsigned i = 1 ; i < size ; i ++ )
         minuend.push(logic.getTerm_false());
     //
@@ -671,9 +633,9 @@ BitBlaster::bbBvudiv(PTRef tr)
         {
             // Produce ~l[j] & r[j]
             PTRef not_l = logic.mkNot(minuend[j]);
-            PTRef lt_this = logic.mkAnd(not_l, divisor[j]);
+            PTRef lt_this = logic.mkAnd(not_l, bs[divisor][j]);
             // Produce l[j] <-> r[j]
-            PTRef eq_this = logic.mkEq(minuend[j], divisor[j]);
+            PTRef eq_this = logic.mkEq(minuend[j], bs[divisor][j]);
             if ( lt_prev != PTRef_Undef )
                 lt_prev = logic.mkOr(lt_this, logic.mkAnd(eq_this, lt_prev));
             else
@@ -682,14 +644,14 @@ BitBlaster::bbBvudiv(PTRef tr)
 
         assert( lt_prev != PTRef_Undef);
 
-        (*result)[i] = logic.mkOr(div_eq_zero, logic.mkNot(lt_prev));
-        PTRef bit_i = (*result)[i];
+        result[i] = logic.mkOr(div_eq_zero, logic.mkNot(lt_prev));
+        PTRef bit_i = result[i];
         //
         // Construct subtrahend
         //
         vec<PTRef> subtrahend;
         for ( unsigned j = 0 ; j < size ; j ++ )
-            subtrahend.push(logic.mkAnd(bit_i, divisor[j]));
+            subtrahend.push(logic.mkAnd(bit_i, bs[divisor][j]));
 
         //
         // Subtract and store in minuend
@@ -760,54 +722,46 @@ BitBlaster::bbBvudiv(PTRef tr)
             //
             for (int j = size - 1 ; j >= 1 ; j --)
                 minuend[j] = minuend[j - 1];
-                minuend[0] = dividend[i - 1];
+                minuend[0] = bs[dividend][i - 1];
         }
     }
     //
     // Save result and return
     //
-    bb_cache[ logic.getPterm(tr).getId() ] = result;
-    return *result;
+    return bs.newBvector(result, mkActVar(s_bbBvudiv));
 }
 
-vec<PTRef> &
+BVRef
 BitBlaster::bbBvurem(PTRef tr)
 {
     assert(tr != PTRef_Undef);
     assert(logic.getPterm(tr).size() == 2);
 
-    // Return previous result if computed
-    vec<PTRef>& cached = updateCache(tr);
-    if (cached.size() > 0)
-        return cached;
+    if (bs.has(tr)) return bs[tr];
 
     //
     // Allocate new result
     //
-    vec<PTRef>* result = new vec<PTRef>;
-    //
-    // Garbage collect
-    //
-    garbage.push_back( result );
+    vec<PTRef> result;
 
     vec<PTRef> minuend;
     PTRef arg1 = logic.getPterm(tr)[0];
     PTRef arg2 = logic.getPterm(tr)[1];
-    vec<PTRef>& dividend = bbTerm(arg1);
-    vec<PTRef>& divisor = bbTerm(arg2);
-    assert(divisor.size( ) == dividend.size( ));
+    BVRef dividend = bbTerm(arg1);
+    BVRef divisor = bbTerm(arg2);
+    assert(bs[divisor].size( ) == bs[dividend].size( ));
     //
     // Generate condition divisor != 0
     //
     PTRef zero = PTRef_Undef;
-    PTRef div_eq_zero = bbTerm(logic.mkEq(arg2, zero)).last(); // Again, not working?
+    PTRef div_eq_zero = bs[bbTerm(logic.mkEq(arg2, zero))].last(); // Again, not working?
 
-    const unsigned size = divisor.size( );
-    result->growTo(size);
+    const unsigned size = bs[divisor].size();
+    result.growTo(size);
     //
     // Initialize minuend as 0..0 q[n-1]
     //
-    minuend.push(dividend[ size - 1 ]);
+    minuend.push(bs[dividend][ size - 1 ]);
     for ( unsigned i = 1 ; i < size ; i ++ )
         minuend.push(logic.getTerm_false());
     //
@@ -823,9 +777,9 @@ BitBlaster::bbBvurem(PTRef tr)
         {
             // Produce ~l[j] & r[j]
             PTRef not_l   = logic.mkNot(minuend[j]);
-            PTRef lt_this = logic.mkAnd(not_l, divisor[j]);
+            PTRef lt_this = logic.mkAnd(not_l, bs[divisor][j]);
             // Produce l[j] <-> r[j]
-            PTRef eq_this = logic.mkEq(minuend[j], divisor[j]);
+            PTRef eq_this = logic.mkEq(minuend[j], bs[divisor][j]);
             if (lt_prev != PTRef_Undef)
                 lt_prev = logic.mkOr(lt_this, logic.mkAnd(eq_this, lt_prev));
             else
@@ -840,7 +794,7 @@ BitBlaster::bbBvurem(PTRef tr)
         //
         vec<PTRef> subtrahend;
         for ( unsigned j = 0 ; j < size ; j ++ )
-            subtrahend.push(logic.mkAnd(bit_i, divisor[j]));
+            subtrahend.push(logic.mkAnd(bit_i, bs[divisor][j]));
         //
         // Subtract and store in minuend
         //
@@ -911,13 +865,13 @@ BitBlaster::bbBvurem(PTRef tr)
             //
             for ( int j = size - 1 ; j >= 1 ; j -- )
                 minuend[j] = minuend[j - 1];
-            minuend[0] = dividend[i - 1];
+            minuend[0] = bs[dividend][i - 1];
         }
         else
         {
             for ( unsigned j = 0 ; j < size ; j ++ )
             {
-                (*result)[j] = logic.mkOr(div_eq_zero, minuend[j]);
+                result[j] = logic.mkOr(div_eq_zero, minuend[j]);
             }
         }
     }
@@ -925,36 +879,30 @@ BitBlaster::bbBvurem(PTRef tr)
     //
     // Save result and return
     //
-    bb_cache[logic.getPterm(tr).getId()] = result;
-    return *result;
+    return bs.newBvector(result, mkActVar(s_bbBvurem));
 }
 
-vec<PTRef> &
+BVRef
 BitBlaster::bbBvmul(PTRef tr)
 {
     assert(tr != PTRef_Undef);
     assert(logic.getPterm(tr).size() == 2 );
 
-    vec<PTRef>& cached = updateCache(tr);
-    if (cached.size() > 0)
-        return cached;
-
+    if (bs.has(tr)) return bs[tr];
 
     // Allocate new result
-    vec<PTRef> *result = new vec<PTRef>;
-    // Garbage collect
-    garbage.push_back( result );
+    vec<PTRef> result;
 
     vec<PTRef> acc;
     PTRef arg1 = logic.getPterm(tr)[0];
     PTRef arg2 = logic.getPterm(tr)[1];
-    vec<PTRef> & bb_arg1 = bbTerm(arg1);
-    vec<PTRef> & bb_arg2 = bbTerm(arg2);
-    assert(bb_arg1.size() == bb_arg2.size());
-    const unsigned size = bb_arg1.size( );
+    BVRef bb_arg1 = bbTerm(arg1);
+    BVRef bb_arg2 = bbTerm(arg2);
+    assert(bs[bb_arg1].size() == bs[bb_arg2].size());
+    const unsigned size = bs[bb_arg1].size( );
     // Compute term a_{i-1}*b_{j-1} ... a_0*b_0
     for ( unsigned i = 0 ; i < size ; i ++ )
-        acc.push(logic.mkAnd(bb_arg2[0], bb_arg1[i]));
+        acc.push(logic.mkAnd(bs[bb_arg2][0], bs[bb_arg1][i]));
     // Multi-arity adder
     for ( unsigned i = 1 ; i < size ; i ++ )
     {
@@ -964,7 +912,7 @@ BitBlaster::bbBvmul(PTRef tr)
             addend.push(logic.getTerm_false());
         // Compute term a_{i-1}*b_i ... a_0*b_i 0 ... 0
         for ( unsigned j = 0 ; j < size - i ; j ++ )
-            addend.push(logic.mkAnd(bb_arg2[i], bb_arg1[j]));
+            addend.push(logic.mkAnd(bs[bb_arg2][i], bs[bb_arg1][j]));
 
         assert( addend.size( ) == size );
         // Accumulate computed term
@@ -986,7 +934,7 @@ BitBlaster::bbBvmul(PTRef tr)
                 PTRef and_2 = logic.mkAnd(xor_1, carry);
                 carry = logic.mkOr(and_1, and_2);
                 if ( i == size - 1 )
-                    result->push(xor_2);
+                    result.push(xor_2);
                 else
                     acc[k] = xor_2;
             }
@@ -994,119 +942,95 @@ BitBlaster::bbBvmul(PTRef tr)
             {
                 carry = and_1;
                 if ( i == size - 1 )
-                    result->push(xor_1);
+                    result.push(xor_1);
                 else
                     acc[k] = xor_1;
             }
         }
     }
 
-    // Save result and return
-    bb_cache[logic.getPterm(tr).getId()] = result;
-    return *result;
+    return bs.newBvector(result, mkActVar(s_bbBvmul));
 }
 
-vec<PTRef> &
+BVRef
 BitBlaster::bbSignExtend(PTRef tr)
 {
     assert(tr != PTRef_Undef);
     assert(logic.getPterm(tr).size() == 1 );
 
     // Return previous result if computed
-    vec<PTRef>& cached = updateCache(tr);
-    if (cached.size() > 0)
-        return cached;
+    if (bs.has(tr)) return bs[tr];
 
-    // Allocate new result
-    vec<PTRef>* result = new vec<PTRef>;
-    // Garbage collect
-    garbage.push_back( result );
-
+    vec<PTRef> result;
 
     PTRef x = logic.getPterm(tr)[0];
-    vec<PTRef> & bb_x = bbTerm(x);
+    BVRef bb_x = bbTerm(x);
     // Copy x
     unsigned i;
-    for ( i = 0 ; i < bb_x.size( ) ; i ++ )
-        result->push(bb_x[i]);
+    for ( i = 0 ; i < bs[bb_x].size( ) ; i ++ )
+        result.push(bs[bb_x][i]);
     // Sign extend
-    for ( ; (int)i < logic.getPterm(tr).size(); i ++ ) // Should be bit width...
-        result->push(bb_x.last());
+    for ( ; (int)i < i_hack_bitwidth; i ++ ) // Should be bit width of what?
+        result.push(bs[bb_x].last());
 
-    // Save result and return
-    bb_cache[logic.getPterm(tr).getId()] = result;
-
-    return *result;
+    return bs.newBvector(result, mkActVar(s_bbSignExtend));
 }
 
-vec<PTRef> &
+BVRef
 BitBlaster::bbVar(PTRef tr)
 {
     assert(tr != PTRef_Undef);
     assert(logic.isVar(tr));
 
-    // Return previous result if computed
-    vec<PTRef>& cached = updateCache(tr);
-    if (cached.size() > 0)
-        return cached;
-    // Allocate new result
-    vec<PTRef>* result = new vec<PTRef>;
-    // Garbage collect
-    garbage.push_back( result );
+    if (bs.has(tr)) return bs[tr];
+
+    vec<PTRef> result;
 
     // Save variable
     variables.push(tr);
 
-    int width = logic.getPterm(tr).size(); // Should be bit width
+    int width = i_hack_bitwidth; //logic.getPterm(tr).size(); // Should be bit width
     // Allocate width new boolean variables
     char def_name[strlen(logic.getSymName(tr)) + 10];
     for ( int i = 0 ; i < width ; i ++ )
     {
-        sprintf(def_name, "_%s_%d", logic.getSymName(tr), i);
-        result->push(logic.mkBoolVar(def_name));
+        sprintf(def_name, "._bv_%s_%d", logic.getSymName(tr), i);
+        result.push(logic.mkBoolVar(def_name));
     }
-    // Save result and return
-    bb_cache[logic.getPterm(tr).getId()] = result;
-    return *result;
+
+    return bs.newBvector(result, mkActVar(s_bbVar));
 }
 
-vec<PTRef> &
+BVRef
 BitBlaster::bbConstant(PTRef tr)
 {
     assert(tr != PTRef_Undef);
     assert(logic.isConstant(tr));
 
-
-    // Return previous result if computed
-    vec<PTRef>& cached = updateCache(tr);
-    if (cached.size() > 0)
-        return cached;
+    if (bs.has(tr)) return bs[tr];
     // Allocate new result
-    vec<PTRef>* result = new vec<PTRef>;
-    // Garbage collect
-    garbage.push_back( result );
+    vec<PTRef> result;
 
     if (logic.isTrue(tr))
-        result->push(logic.getTerm_true());
+        result.push(logic.getTerm_true());
     else if (logic.isFalse(tr))
-        result->push(logic.getTerm_false());
+        result.push(logic.getTerm_false());
     else
     {
-        unsigned width = logic.getPterm(tr).size(); // e->getWidth( );
+        unsigned width = i_hack_bitwidth;  // e->getWidth( );
         const std::string value = logic.getSymName(tr);
 
         assert( value.length() == width );
         for ( unsigned i = 0 ; i < width ; i ++ )
         {
-            result->push(value[width-i-1] == '1'
+            result.push(value[width-i-1] == '1'
                 ? logic.getTerm_true()
                 : logic.getTerm_false()
             );
         }
     }
     // Save result and return
-    bb_cache[logic.getPterm(tr).getId()] = result;
-    return *result;
+    return bs.newBvector(result, mkActVar(s_bbConstant));
 }
 
 /*
@@ -1123,19 +1047,15 @@ BitBlaster::bbUp( Enode * )
 }
 */
 
-vec<PTRef> &
+BVRef
 BitBlaster::bbDistinct(PTRef tr)
 {
     assert(tr != PTRef_Undef);
     assert(logic.isDistinct(tr));
-    // Return previous result if computed
-    vec<PTRef>& cached = updateCache(tr);
-    if (cached.size() > 0)
-        return cached;
-    // Allocate new result
-    vec<PTRef>* result = new vec<PTRef>;
-    // Garbage collect
-    garbage.push_back( result );
+
+    if (bs.has(tr)) return bs[tr];
+
+    vec<PTRef> result;
 
     vec<PTRef> args;
 
@@ -1150,22 +1070,15 @@ BitBlaster::bbDistinct(PTRef tr)
     {
         for (int j = i+1; j < logic.getPterm(tr).size(); j++)
         {
-            vec<PTRef>& bb_pair = bbTerm(logic.mkEq(args[i], args[j]));
-            assert(bb_pair.size() == 1);
-            res_args.push(logic.mkNot(bb_pair.last()));
+            BVRef bb_pair = bbTerm(logic.mkEq(args[i], args[j]));
+            assert(bs[bb_pair].size() == 1);
+            res_args.push(logic.mkNot(bs[bb_pair].last()));
         }
     }
 
-    result->push(logic.mkAnd(res_args));
-    //
-    // Garbage collect
-    //
-    garbage.push_back( result );
-    //
-    // Save result and return
-    //
-    bb_cache[logic.getPterm(tr).getId()] = result;
-    return *result;
+    result.push(logic.mkAnd(res_args));
+
+    return bs.newBvector(result, mkActVar(s_bbDistinct));
 }
 
 bool
@@ -1533,11 +1446,6 @@ BitBlaster::addClause(vec< Lit > & c, PTRef tr)
 void
 BitBlaster::cleanGarbage( )
 {
-  while ( !garbage.empty( ) )
-  {
-    delete garbage.back( );
-    garbage.pop_back( );
-  }
 }
 
 PTRef BitBlaster::simplify( PTRef formula )
@@ -1832,14 +1740,14 @@ void BitBlaster::computeModel( )
         Real value = 0;
         Real coeff = 1;
         // Retrieve bitblasted vector
-        vec<PTRef> & blast = *bb_cache[logic.getPterm(e).getId()];
-        for (int j = 0; j < blast.size(); j++)
+        BVRef blast = bs[e];
+        for (int j = 0; j < bs[blast].size(); j++)
         {
-            PTRef b = blast[j];
+            PTRef b = bs[blast][j];
             if ( cnf_var.find(logic.getPterm(b).getId()) == cnf_var.end( ) )
                 continue;
             Var var = cnf_var[logic.getPterm(b).getId()];
-            Real bit = solverP.modelValue(var) == l_False ? 0 : 1;
+            Real bit = solverP.modelValue(mkLit(var)) == l_False ? 0 : 1;
             value = value + coeff * bit;
             coeff = Real( 2 ) * coeff;
         }

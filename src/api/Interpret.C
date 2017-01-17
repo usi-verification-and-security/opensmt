@@ -165,7 +165,7 @@ bool Interpret::interp(ASTNode& n) {
 
                 main_solver = new MainSolver(*thandler, config, solver);
                 main_solver->initialize();
-            } else if (strcmp(logic_name, QF_CUF.str) == 0) {
+            } else if (strcmp(logic_name, opensmt::QF_CUF.str) == 0) {
                 CUFTheory *cuftheory = new CUFTheory(config);
                 theory = cuftheory;
                 thandler = new THandler(config, *cuftheory);

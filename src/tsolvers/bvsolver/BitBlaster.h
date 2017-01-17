@@ -29,6 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SimpSMTSolver.h"
 #include "MainSolver.h"
 #include "Otl.h"
+#include "BVStore.h"
 
 class BitBlaster
 {
@@ -52,8 +53,7 @@ public:
     void computeModel        ( );
     Real getValue            (PTRef);
 private:
-    vec<PTRef>&    updateCache  (PTRef tr);
-    vec<PTRef>     ptref_vec_empty;
+    BVRef          updateCache  (PTRef tr);
     SMTConfig &    config;                        // Configuration
     MainSolver&    mainSolver;
     Logic&         logic;                         // Egraph store
@@ -62,27 +62,49 @@ private:
 
     bool addClause ( vec< Lit > &, PTRef );
 
+    static const char* s_bbEq;
+    static const char* s_bbAnd;
+    static const char* s_bbBvsle;
+    static const char* s_bbBvule;
+    static const char* s_bbConcat;
+    static const char* s_bbExtract;
+    static const char* s_bbBvand;
+    static const char* s_bbBvor;
+    static const char* s_bbBvxor;
+    static const char* s_bbBvnot;
+    static const char* s_bbBvadd;
+    static const char* s_bbBvmul;
+    static const char* s_bbBvudiv;
+    static const char* s_bbBvurem;
+    static const char* s_bbSignExtend;
+    static const char* s_bbVar;
+    static const char* s_bbConstant;
+    static const char* s_bbDistinct;
+    static const int i_hack_bitwidth;
+    char* getName(const char* base) const;
+    PTRef mkActVar(const char* base);
 public:
-    vec<PTRef> & bbTerm       (PTRef);
+    BVRef bbTerm       (PTRef);
+private:
     // Predicates
-    vec<PTRef> & bbEq         (PTRef);
-    vec<PTRef> & bbBvsle      (PTRef);
-    vec<PTRef> & bbBvule      (PTRef);
+    BVRef bbEq         (PTRef);
+    BVRef bbBvsle      (PTRef);
+    BVRef bbBvule      (PTRef);
     // Terms
-    vec<PTRef> & bbConcat     (PTRef);
-    vec<PTRef> & bbExtract    (PTRef);
-    vec<PTRef> & bbBvand      (PTRef);
-    vec<PTRef> & bbBvor       (PTRef);
-    vec<PTRef> & bbBvxor      (PTRef);
-    vec<PTRef> & bbBvnot      (PTRef);
-    vec<PTRef> & bbBvadd      (PTRef);
-    vec<PTRef> & bbBvmul      (PTRef);
-    vec<PTRef> & bbBvudiv     (PTRef);
-    vec<PTRef> & bbBvurem     (PTRef);
-    vec<PTRef> & bbSignExtend (PTRef);
-    vec<PTRef> & bbVar        (PTRef);
-    vec<PTRef> & bbConstant   (PTRef);
-    vec<PTRef> & bbDistinct   (PTRef);
+    BVRef bbConcat     (PTRef);
+    BVRef bbExtract    (PTRef);
+    BVRef bbBvand      (PTRef);
+    BVRef bbBvor       (PTRef);
+    BVRef bbBvxor      (PTRef);
+    BVRef bbBvnot      (PTRef);
+    BVRef bbBvadd      (PTRef);
+    BVRef bbBvmul      (PTRef);
+    BVRef bbBvudiv     (PTRef);
+    BVRef bbBvurem     (PTRef);
+    BVRef bbSignExtend (PTRef);
+    BVRef bbVar        (PTRef);
+    BVRef bbConstant   (PTRef);
+    BVRef bbDistinct   (PTRef);
   // Not yet considered
   // vector< Enode * > & bbUf         ( Enode * );
   // vector< Enode * > & bbUp         ( Enode * );
@@ -96,14 +118,15 @@ private:
 //                                   , map< int, int > & );
 //    void     computeIncomingEdges  ( Enode *
 //                                    , map< int, int > & );          // Computes the list of incoming edges for a node
-    Enode *  mergeEnodeArgs        ( Enode *
-                                    , map< int, Enode * > &
-                                    , map< int, int > & );          // Rewrite terms using maximum arity
+//    Enode *  mergeEnodeArgs        ( Enode *
+//                                    , map< int, Enode * > &
+//                                    , map< int, int > & );          // Rewrite terms using maximum arity
 
     Lit                             constTrue;                     // Constant literal set to true
     Lit                             constFalse;                    // Constant literal set to false
 
-    vector< vec<PTRef> * >          bb_cache;                      // Global cache for bitblasting
+    BVStore                         bs;
+
     vector< Lit >                   cnf_cache;                     // Global cache for cnfizer
     vector< Var >                   enode_id_to_var;               // Theory atom to Minisat Var correspondence
     vector< Enode * >               var_to_enode;                  // Minisat Var to Theory Atom correspondence
@@ -112,7 +135,6 @@ private:
     vec<PtAsgn> &                   explanation;                   // Reference to explanation
     vec<DedElem> &                  deductions;                    // Reference to deductions
     vec<PTRef> &                    suggestions;                   // Reference to suggestions
-    vector< vec<PTRef> * >          garbage;                       // Collect for removal
 
     vec<PTRef>                      variables;                     // Variables
     map< int, Var >                 cnf_var;                       // BB variable to cnf var
