@@ -5,8 +5,8 @@ Module: New Logic for BitVector
  *  Author: Sepideh Asadi <sepideh.a65@gmail.com>
  *  Created on: Jan 16, 2017
 \*******************************************************************/
-#ifndef CUFLOGIC_H
-#define CUFLOGIC_H
+#ifndef BVLOGIC_H
+#define BVLOGIC_H
 #include "Logic.h"
 #include "CUFLogic.h"
 
