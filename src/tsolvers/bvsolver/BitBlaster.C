@@ -55,12 +55,13 @@ const int BitBlaster::i_hack_bitwidth   = 32;
 BitBlaster::BitBlaster ( const SolverId i
                        , SMTConfig & c
                        , MainSolver& mainSolver
+                       , BVLogic& bvlogic
                        , vec<PtAsgn> & ex
                        , vec<DedElem> & d
                        , vec<PTRef> & s )
     : config      (c)
     , mainSolver  (mainSolver)
-    , logic       (mainSolver.getLogic())
+    , logic       (bvlogic)
     , thandler    (mainSolver.getTHandler())
     , solverP     (mainSolver.getSMTSolver())
     , explanation (ex)
@@ -176,29 +177,28 @@ BitBlaster::bbTerm(PTRef tr)
     //
     // BitBlasts predicates
     //
-    if ( logic.isEquality(tr)) return bbEq         ( tr );
-    /*
-    if ( e->isBvsle      ( ) ) return bbBvsle      ( e );
-    if ( e->isBvule      ( ) ) return bbBvule      ( e );
-    */
-    if ( logic.isDistinct(tr)) return bbDistinct   ( tr );
-    // if ( e->isUp         ( ) ) return bbUp         ( e );
+    if (logic.isBVEq(tr)) return bbEq           ( tr );
+    if (logic.isBVSleq(tr)) return bbBvsle      ( tr );
+    if (logic.isBVUleq(tr)) return bbBvule      ( tr );
+    if (logic.isDistinct(tr)) return bbDistinct ( tr );
+    // if ( e->isUp         ( ) ) return bbUp   ( e );
     //
     // BitBlasts terms
     //
-    /*
-    if ( e->isConcat     ( ) ) return bbConcat     ( e );
-    if ( e->isExtract    ( ) ) return bbExtract    ( e );
-    if ( e->isBvand      ( ) ) return bbBvand      ( e );
-    if ( e->isBvor       ( ) ) return bbBvor       ( e );
-    if ( e->isBvxor      ( ) ) return bbBvxor      ( e );
-    if ( e->isBvnot      ( ) ) return bbBvnot      ( e );
-    if ( e->isBvadd      ( ) ) return bbBvadd      ( e );
-    if ( e->isBvmul      ( ) ) return bbBvmul      ( e );
-    if ( e->isBvudiv     ( ) ) return bbBvudiv     ( e );
-    if ( e->isBvurem     ( ) ) return bbBvurem     ( e );
-    if ( e->isSignExtend ( ) ) return bbSignExtend ( e );
-    */
+
+//    if ( e->isConcat     ( ) ) return bbConcat     ( e );
+//    if ( e->isExtract    ( ) ) return bbExtract    ( e );
+
+    if (logic.isBVBwAnd(tr)) return bbBvand      (tr);
+    if (logic.isBVBwOr(tr))  return bbBvor       (tr);
+    if (logic.isBVBwXor(tr)) return bbBvxor      (tr);
+    if (logic.isBVNot(tr))   return bbBvnot      (tr);
+    if (logic.isBVPlus(tr))  return bbBvadd      (tr);
+    if (logic.isBVTimes(tr)) return bbBvmul      (tr);
+    if (logic.isBVDiv(tr))   return bbBvudiv     (tr);
+    if (logic.isBVMod(tr))   return bbBvurem     (tr);
+//    if ( e->isSignExtend ( ) ) return bbSignExtend ( e );
+
     if ( logic.isVar(tr) )      return bbVar        ( tr );
     if ( logic.isConstant(tr) ) return bbConstant   ( tr );
     // if ( e->isUf         ( ) ) return bbUf         ( e );

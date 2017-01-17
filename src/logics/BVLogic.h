@@ -11,7 +11,7 @@ Module: New Logic for BitVector
 #include "CUFLogic.h"
 
 
-class BVLogic: public Logic
+class BVLogic: public CUFLogic
 {
 //  protected:
 //    Map<PTRef,bool,PTRefHash> comm_eqs;         // a+b <-> b+a
@@ -34,7 +34,8 @@ class BVLogic: public Logic
     SymRef              sym_BV_TIMES;  // *
     SymRef              sym_BV_DIV;    // /
     SymRef              sym_BV_EQ;     // ==
-    SymRef              sym_BV_LEQ;    // <=
+    SymRef              sym_BV_SLEQ;    // s<=
+    SymRef              sym_BV_ULEQ;    // u<=
     SymRef              sym_BV_LT;     // <
     SymRef              sym_BV_GEQ;    // >=
     SymRef              sym_BV_GT;     // >
@@ -68,7 +69,8 @@ class BVLogic: public Logic
     static const char*  tk_bv_plus;
     static const char*  tk_bv_times;
     static const char*  tk_bv_div;
-    static const char*  tk_bv_leq;
+    static const char*  tk_bv_sleq;
+    static const char*  tk_bv_uleq;
     static const char*  tk_bv_lt;
     static const char*  tk_bv_geq;
     static const char*  tk_bv_gt;
@@ -129,8 +131,10 @@ class BVLogic: public Logic
     bool isBVDiv(PTRef tr)     const { return isBVDiv(getPterm(tr).symb()); }
     bool isBVEq(SymRef sr)     const { return isEquality(sr) && (sym_store[sr][0] == sort_BVNUM); }
     bool isBVEq(PTRef tr)      const { return isBVEq(getPterm(tr).symb()); }
-    bool isBVLeq(SymRef sr)    const { return sr == sym_BV_LEQ; }
-    bool isBVLeq(PTRef tr)     const { return isBVLeq(getPterm(tr).symb()); }
+    bool isBVSleq(SymRef sr)   const { return sr == sym_BV_SLEQ; }
+    bool isBVSleq(PTRef tr)    const { return isBVSleq(getPterm(tr).symb()); }
+    bool isBVUleq(SymRef sr)   const { return sr == sym_BV_ULEQ; }
+    bool isBVUleq(PTRef tr)    const { return isBVUleq(getPterm(tr).symb()); }
     bool isBVLt(SymRef sr)     const { return sr == sym_BV_LT; }
     bool isBVLt(PTRef tr)      const { return isBVLt(getPterm(tr).symb()); }
     bool isBVGeq(SymRef sr)    const { return sr == sym_BV_GEQ; }
@@ -165,8 +169,8 @@ class BVLogic: public Logic
     bool isBVLor(PTRef tr)     const { return isBVLor(getPterm(tr).symb()); }
     bool isBVNot(SymRef sr)    const { return sr == sym_BV_NOT; }
     bool isBVNot(PTRef tr)     const { return isBVNot(getPterm(tr).symb()); }
-    bool isBVBwxor(SymRef sr)  const { return sr == sym_BV_BWXOR; }
-    bool isBVBwxor(PTRef tr)   const { return isBVBwxor(getPterm(tr).symb()); }
+    bool isBVBwXor(SymRef sr)  const { return sr == sym_BV_BWXOR; }
+    bool isBVBwXor(PTRef tr)   const { return isBVBwXor(getPterm(tr).symb()); }
     bool isBVCompl(SymRef sr)  const { return sr == sym_BV_COMPL; }
     bool isBVCompl(PTRef tr)   const { return isBVCompl(getPterm(tr).symb()); }
     bool isBVSizeof(SymRef sr) const { return sr == sym_BV_SIZEOF; }
@@ -204,8 +208,11 @@ class BVLogic: public Logic
     PTRef mkBVDiv(const vec<PTRef>& args) {assert(args.size() == 2); return mkBVDiv(args[0], args[1]);}
     PTRef mkBVDiv(const PTRef nom, const PTRef den);
 
-    PTRef mkBVLeq(const vec<PTRef>& args) {assert(args.size() == 2); char *msg; return mkBVLeq(args[0], args[1], &msg);}
-    PTRef mkBVLeq(const PTRef arg1, const PTRef arg2, char**);
+    PTRef mkBVSleq(const PTRef arg1, const PTRef arg2, char**);
+    PTRef mkBVSleq(const vec<PTRef>& args) {assert(args.size() == 2); char *msg; return mkBVSleq(args[0], args[1], &msg);}
+
+    PTRef mkBVUleq(const PTRef arg1, const PTRef arg2, char**);
+    PTRef mkBVUleq(const vec<PTRef>& args) {assert(args.size() == 2); char *msg; return mkBVUleq(args[0], args[1], &msg);}
 
     PTRef mkBVGeq(const vec<PTRef>& args) {assert(args.size() == 2); char *msg; return mkBVGeq(args[0], args[1], &msg);}
     PTRef mkBVGeq(const PTRef arg1, const PTRef arg2, char**);
@@ -252,8 +259,8 @@ class BVLogic: public Logic
     PTRef mkBVNot(const vec<PTRef>& args) {assert(args.size() == 1); return mkBVNot(args[0]);}
     PTRef mkBVNot      (const PTRef);
 
-    PTRef mkBVBwxor(const vec<PTRef>& args) {assert(args.size() == 2); return mkBVBwxor(args[0], args[1]);}
-    PTRef mkBVBwxor    (const PTRef, const PTRef);
+    PTRef mkBVBwXor(const vec<PTRef>& args) {assert(args.size() == 2); return mkBVBwXor(args[0], args[1]);}
+    PTRef mkBVBwXor    (const PTRef, const PTRef);
 
     PTRef mkBVCompl(const vec<PTRef>& args) {assert(args.size() == 1); return mkBVCompl(args[0]);}
     PTRef mkBVCompl    (const PTRef);

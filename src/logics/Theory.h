@@ -30,6 +30,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Logic.h"
 #include "LRALogic.h"
 #include "CUFLogic.h"
+#include "BVLogic.h"
 
 #include "LRATHandler.h"
 #include "UFTHandler.h"
@@ -200,7 +201,8 @@ class UFTheory : public Theory
 class CUFTheory : public Theory
 {
   private:
-    CUFLogic    cuflogic;
+//    CUFLogic    cuflogic;
+    BVLogic     cuflogic;
     TermMapper  tmap;
     CUFTHandler tshandler;
   public:
@@ -212,7 +214,7 @@ class CUFTheory : public Theory
     {}
     ~CUFTheory() {}
     virtual TermMapper& getTmap()            { return tmap; }
-    virtual CUFLogic& getLogic()             { return cuflogic; }
+    virtual BVLogic&  getLogic()             { return cuflogic; }
     virtual CUFTHandler& getTSolverHandler() { return tshandler; }
     virtual const CUFTHandler& getTSolverHandler() const { return tshandler; }
     virtual CUFTHandler *getTSolverHandler_new(vec<DedElem>& d) { return new CUFTHandler(config, cuflogic, d, tmap); }

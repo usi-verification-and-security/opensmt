@@ -30,6 +30,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "MainSolver.h"
 #include "Otl.h"
 #include "BVStore.h"
+#include "BVLogic.h"
 
 class BitBlaster
 {
@@ -38,6 +39,7 @@ public:
     BitBlaster ( SolverId
                , SMTConfig &
                , MainSolver&
+               , BVLogic&
                , vec<PtAsgn> &
                , vec<DedElem> &
                , vec<PTRef> & );
@@ -56,7 +58,7 @@ private:
     BVRef          updateCache  (PTRef tr);
     SMTConfig &    config;                        // Configuration
     MainSolver&    mainSolver;
-    Logic&         logic;                         // Egraph store
+    BVLogic&       logic;                         // Egraph store
     THandler&      thandler;
     SimpSMTSolver& solverP;                       // Solver with proof logger
 

@@ -21,7 +21,8 @@ const char* BVLogic::tk_bv_plus  = "+";
 const char* BVLogic::tk_bv_times = "*";
 const char* BVLogic::tk_bv_div   = "/";
 const char* BVLogic::tk_bv_lt    = "<";
-const char* BVLogic::tk_bv_leq   = "<=";
+const char* BVLogic::tk_bv_sleq   = "s<=";
+const char* BVLogic::tk_bv_uleq   = "u<=";
 const char* BVLogic::tk_bv_gt    = ">";
 const char* BVLogic::tk_bv_geq   = ">=";
 
@@ -47,7 +48,7 @@ const char*  BVLogic::s_sort_bvnum = "BVNum";
 //const char*  BVLogic::s_sort_bvstr = "BVStr";
 
 BVLogic::BVLogic(SMTConfig& c) :
-      Logic(c)
+      CUFLogic(c)
     , sym_BV_ZERO(SymRef_Undef)
     , sym_BV_ONE(SymRef_Undef)
     , sym_BV_NEG(SymRef_Undef)
@@ -56,10 +57,12 @@ BVLogic::BVLogic(SMTConfig& c) :
     , sym_BV_TIMES(SymRef_Undef)
     , sym_BV_DIV(SymRef_Undef)
     , sym_BV_EQ(SymRef_Undef)
-    , sym_BV_LEQ(SymRef_Undef)
+    , sym_BV_SLEQ(SymRef_Undef)
+    , sym_BV_ULEQ(SymRef_Undef)
     , sym_BV_LT(SymRef_Undef)
     , sym_BV_GEQ(SymRef_Undef)
     , sym_BV_GT(SymRef_Undef)
+    , sym_BV_BWXOR(SymRef_Undef)
     , sort_BVNUM(SRef_Undef)
     , term_BV_ZERO(PTRef_Undef)
     , term_BV_ONE(PTRef_Undef)
@@ -105,9 +108,13 @@ BVLogic::BVLogic(SMTConfig& c) :
     sym_store[sym_BV_DIV].setNoScoping();
     sym_store[sym_BV_DIV].setLeftAssoc();
 
-    sym_BV_LEQ  = declareFun(tk_bv_leq, sort_BOOL, params, &msg, true);
-    sym_store[sym_BV_LEQ].setNoScoping();
-    sym_store[sym_BV_LEQ].setChainable();
+    sym_BV_SLEQ  = declareFun(tk_bv_sleq, sort_BOOL, params, &msg, true);
+    sym_store[sym_BV_SLEQ].setNoScoping();
+    sym_store[sym_BV_SLEQ].setChainable();
+
+    sym_BV_ULEQ  = declareFun(tk_bv_uleq, sort_BOOL, params, &msg, true);
+    sym_store[sym_BV_ULEQ].setNoScoping();
+    sym_store[sym_BV_ULEQ].setChainable();
 
     sym_BV_LT   = declareFun(tk_bv_lt, sort_BOOL, params, &msg, true);
     sym_store[sym_BV_LT].setNoScoping();
@@ -139,6 +146,9 @@ BVLogic::BVLogic(SMTConfig& c) :
 
     sym_BV_BWOR   = declareFun(tk_bv_bwor, sort_BVNUM, params, &msg, true);
     sym_store[sym_BV_BWOR].setCommutes();
+
+    sym_BV_BWXOR  = declareFun(tk_bv_bwxor, sort_BVNUM, params, &msg, true);
+    sym_store[sym_BV_BWXOR].setCommutes();
 }
 
 BVLogic::~BVLogic()
@@ -236,11 +246,11 @@ BVLogic::mkBVDiv(const PTRef arg1, const PTRef arg2)
 PTRef
 BVLogic::mkBVGeq(const PTRef arg1, const PTRef arg2, char** msg)
 {
-    return mkBVLeq(arg2, arg1, msg);
+    return mkBVSleq(arg2, arg1, msg);
 }
 
 PTRef
-BVLogic::mkBVLeq(const PTRef arg1, const PTRef arg2, char** msg)
+BVLogic::mkBVSleq(const PTRef arg1, const PTRef arg2, char** msg)
 {
     if (isBVNUMConst(arg1) && isBVNUMConst(arg2)) {
         int c1 = getBVNUMConst(arg1);
@@ -253,8 +263,26 @@ BVLogic::mkBVLeq(const PTRef arg1, const PTRef arg2, char** msg)
     vec<PTRef> args;
     args.push(arg1);
     args.push(arg2);
-    return mkFun(sym_BV_LEQ, args, msg);
+    return mkFun(sym_BV_SLEQ, args, msg);
 }
+
+PTRef
+BVLogic::mkBVUleq(const PTRef arg1, const PTRef arg2, char** msg)
+{
+    if (isBVNUMConst(arg1) && isBVNUMConst(arg2)) {
+        int c1 = getBVNUMConst(arg1);
+        int c2 = getBVNUMConst(arg2);
+        if (c1 <= c2)
+            return getTerm_true();
+        else
+            return getTerm_false();
+    }
+    vec<PTRef> args;
+    args.push(arg1);
+    args.push(arg2);
+    return mkFun(sym_BV_ULEQ, args, msg);
+}
+
 
 PTRef
 BVLogic::mkBVGt(const PTRef arg1, const PTRef arg2, char** msg)
@@ -388,7 +416,7 @@ PTRef BVLogic::mkBVNot(const PTRef arg)
     return Logic::mkNot(arg);
 }
 
-PTRef BVLogic::mkBVBwxor(const PTRef arg1, const PTRef arg2)
+PTRef BVLogic::mkBVBwXor(const PTRef arg1, const PTRef arg2)
 {
     char** msg;
     vec<PTRef> args;

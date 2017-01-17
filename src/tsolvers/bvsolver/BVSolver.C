@@ -27,11 +27,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 static SolverDescr descr_bv_solver("UF Solver", "Solver for Quantifier Free Bit Vectors");
 
-BVSolver::BVSolver ( SMTConfig & c , MainSolver& s , vec<DedElem> & d)
+BVSolver::BVSolver (SMTConfig & c, MainSolver& s, BVLogic& l, vec<DedElem> & d)
  : TSolver ((SolverId)descr_bv_solver, (const char*)descr_bv_solver, c, d)
  , mainSolver(s)
- , logic(mainSolver.getLogic())
- , B(id, c, mainSolver, explanation, d, suggestions)
+ , logic(l)
+ , B(id, c, mainSolver, l, explanation, d, suggestions)
 { }
 
 BVSolver::~BVSolver () { }

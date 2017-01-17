@@ -28,12 +28,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "TSolver.h"
 #include "BitBlaster.h"
+#include "BVLogic.h"
 
 class BVSolver : public TSolver
 {
 public:
     BVSolver ( SMTConfig &
              , MainSolver &
+             , BVLogic&
              , vec<DedElem> & );
     ~BVSolver ( );
 
@@ -48,7 +50,7 @@ private:
 
     vec<PtAsgn> stack;
     MainSolver& mainSolver;
-    Logic&      logic;
+    BVLogic&    logic;
     BitBlaster  B;
 };
 
