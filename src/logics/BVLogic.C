@@ -13,9 +13,10 @@ Module: New Logic for BitVector
 #include "TreeOps.h"
 #include "Global.h"
 
-int BVLogic::tk_bv_zero  = 0;
-int BVLogic::tk_bv_one   = 1;
+int         BVLogic::tk_bv_zero  = 0;
+int         BVLogic::tk_bv_one   = 1;
 const char* BVLogic::tk_bv_neg   = "-";
+const char* BVLogic::tk_bv_eq    = "=";
 const char* BVLogic::tk_bv_minus = "-";
 const char* BVLogic::tk_bv_plus  = "+";
 const char* BVLogic::tk_bv_times = "*";
@@ -96,6 +97,12 @@ BVLogic::BVLogic(SMTConfig& c) :
     // Binary
     sym_BV_MINUS = declareFun(tk_bv_neg, sort_BVNUM, params, &msg, true);
     sym_store[sym_BV_MINUS].setLeftAssoc();
+
+    sym_BV_EQ    = declareFun(tk_bv_eq, sort_BVNUM, params, &msg, true);
+    equalities.insert(sym_BV_EQ, true);
+    sym_store[sym_BV_EQ].setNoScoping();
+    sym_store[sym_BV_EQ].setCommutes();
+    sym_store[sym_BV_EQ].setLeftAssoc();
 
     sym_BV_PLUS  = declareFun(tk_bv_plus, sort_BVNUM, params, &msg, true);
     sym_store[sym_BV_PLUS].setNoScoping();
@@ -273,9 +280,9 @@ BVLogic::mkBVSleq(const PTRef arg1, const PTRef arg2, char** msg)
         int c1 = getBVNUMConst(arg1);
         int c2 = getBVNUMConst(arg2);
         if (c1 <= c2)
-            return getTerm_true();
+            return term_BV_ONE;
         else
-            return getTerm_false();
+            return term_BV_ZERO;
     }
     vec<PTRef> args;
     args.push(arg1);
@@ -290,9 +297,9 @@ BVLogic::mkBVUleq(const PTRef arg1, const PTRef arg2, char** msg)
         int c1 = getBVNUMConst(arg1);
         int c2 = getBVNUMConst(arg2);
         if (c1 <= c2)
-            return getTerm_true();
+            return term_BV_ONE;
         else
-            return getTerm_false();
+            return term_BV_ZERO;
     }
     vec<PTRef> args;
     args.push(arg1);
@@ -308,9 +315,9 @@ BVLogic::mkBVGt(const PTRef arg1, const PTRef arg2, char** msg)
         int c1 = getBVNUMConst(arg1);
         int c2 = getBVNUMConst(arg2);
         if (c1 > c2)
-            return getTerm_true();
+            return term_BV_ONE;
         else
-            return getTerm_false();
+            return term_BV_ZERO;
     }
     vec<PTRef> args;
     args.push(arg1);
@@ -430,7 +437,17 @@ PTRef BVLogic::mkBVLor(const PTRef arg1, const PTRef arg2)
 
 PTRef BVLogic::mkBVNot(const PTRef arg)
 {
-    return Logic::mkNot(arg);
+    if (isBVNot(arg))
+        return getPterm(arg)[0];
+    else if (isConstant(arg) && (arg != term_BV_ZERO))
+        return term_BV_ZERO;
+    else if (arg == term_BV_ZERO)
+        return term_BV_ONE;
+    vec<PTRef> tmp;
+    tmp.push(arg);
+    char* msg;
+    PTRef tr = mkFun(sym_BV_NOT, tmp, &msg);
+    return tr;
 }
 
 PTRef BVLogic::mkBVBwXor(const PTRef arg1, const PTRef arg2)
@@ -485,8 +502,8 @@ PTRef BVLogic::mkBVPtr(const PTRef arg)
 }*/
 PTRef BVLogic::mkBVEq(const PTRef a1, const PTRef a2) {
     if(isConstant(a1) && isConstant(a2))
-        return (a1 == a2) ? getTerm_true() : getTerm_false();
-    if (a1 == a2) return getTerm_true();
+        return (a1 == a2) ? term_BV_ONE : term_BV_ZERO;
+    if (a1 == a2) return term_BV_ONE;
     char** msg;
     vec<PTRef> args;
     args.push(a1);

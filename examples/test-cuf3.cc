@@ -51,19 +51,25 @@ main(int argc, char** argv)
 
     PTRef uf1 = logic.mkCUFVar("uf1");
     PTRef uf2 = logic.mkCUFVar("uf2");
-    stat = bbb.glueUFtoB(uf1, output);
-    stat = bbb.glueBtoUF(output, uf1);
-    if (stat == l_True)
-        printf("sat after uf1\n");
-    if (stat == l_False)
-        printf("unsat after uf1\n");
+    PTRef bv1 = logic.mkNumVar("bv1");
+    PTRef bv2 = logic.mkNumVar("bv2");
+    PTRef bv_eq1 = logic.mkBVEq(bv1, eq);
+    PTRef bv_eq2 = logic.mkBVEq(bv2, eq_neg);
+    PTRef bv_eq3 = logic.mkBVEq(bv1, bv2);
 
-    stat = bbb.glueUFtoB(uf2, output2);
-    stat = bbb.glueBtoUF(output2, uf2);
-    if (stat == l_True)
-        printf("sat after uf2\n");
-    if (stat == l_False)
-        printf("unsat after uf2\n");
+    BVRef bvr1;
+    BVRef bvr2;
+    BVRef bvr3;
+
+    bbb.insert(bv_eq1, bvr1);
+    bbb.insert(bv_eq2, bvr2);
+    bbb.insert(bv_eq3, bvr3);
+
+
+    stat = bbb.glueUFtoB(uf1, bvr1);
+    stat = bbb.glueUFtoB(uf2, bvr2);
+
+    stat = bbb.glueUFtoUF(uf1, uf2);
 
     PTRef uf_eq = logic.mkEq(uf1, uf2);
     char* msg;

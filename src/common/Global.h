@@ -128,6 +128,17 @@ void static inline normalize(char*& rat, const char* flo, bool is_neg)
     mpq_clear(num);
 }
 
+void static inline uwordToBinary(int x, char*& bin)
+{
+    bin = (char*) malloc(33);
+
+    int p = 0;
+    for (unsigned i = (1 << 31); i > 0; i>>=1)
+        bin[p++] = ((x&i) == i) ? '1' : '0';
+    bin[p] = '\0';
+}
+
+
 bool static inline stringToRational(char*& rat, const char* flo)
 {
     int nom_l = 0;

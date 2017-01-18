@@ -263,7 +263,7 @@ BitBlaster::bbEq(PTRef tr)
     vec<PTRef> tmp;
     tmp.growTo(i_hack_bitwidth);
     tmp[0] = res;
-    return bs.newBvector(res, mkActVar(s_bbEq));
+    return bs.newBvector(tmp, mkActVar(s_bbEq));
 }
 
 //
@@ -376,8 +376,12 @@ BitBlaster::bbBvule(PTRef tr)
     //
     PTRef res = simplify(logic.mkOr(bs[eq_part].last(), lt_part));
 
+    vec<PTRef> tmp;
+    tmp.growTo(i_hack_bitwidth);
+    tmp[0] = res;
+
     // Save result and return
-    return bs.newBvector(res, mkActVar(s_bbBvule));
+    return bs.newBvector(tmp, mkActVar(s_bbBvule));
 }
 
 //
@@ -1496,7 +1500,7 @@ PTRef BitBlaster::simplify( PTRef formula )
         Pterm& t = logic.getPterm(tr);
         for (int i = 0; i < t.size(); i++) {
             PTRef arg = t[i];
-            if (!seen.has(tr)) {
+            if (!seen.has(arg)) {
                 unprocessed_terms.push(arg);
                 unprocessed_children = true;
             }
@@ -1808,7 +1812,30 @@ BitBlaster::glueUFtoB(PTRef tr, BVRef br)
     vec<PTRef> bv;
     bs.copyTo(br, bv);
     PTRef and_tr = logic.mkGlueUFtoB(tr, bv);
+    bs.bindPTRefToBVRef(tr,br);
     sstat status = mainSolver.insertFormula(and_tr, &msg);
+    if (status == s_True)
+        return l_True;
+    else if (status == s_False)
+        return l_False;
+    else
+        return l_Undef;
+}
+
+lbool
+BitBlaster::glueUFtoUF(PTRef tr1, PTRef tr2)
+{
+    BVRef br1 = bs.getBoundBVRef(tr1);
+    BVRef br2 = bs.getBoundBVRef(tr2);
+
+    vec<PTRef> and_args;
+    for (int i = 0; i < bs[br1].size(); i++)
+        and_args.push(logic.mkEq(bs[br1][i], bs[br2][i]));
+    PTRef iff_tr = logic.mkEq(logic.mkEq(tr1, tr2), logic.mkAnd(and_args));
+
+    char* msg;
+    sstat status = mainSolver.insertFormula(iff_tr, &msg);
+
     if (status == s_True)
         return l_True;
     else if (status == s_False)
