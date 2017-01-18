@@ -16,7 +16,6 @@ main(int argc, char** argv)
     PTRef a = logic.mkNumVar("a");
     PTRef b = logic.mkNumVar("b");
     PTRef ab = logic.mkBVBwAnd(a, b);
-    //PTRef ab_neg = logic.mkCUFNeg(ab);
 
     PTRef d = logic.mkNumVar("b");
     PTRef f = logic.mkNumVar("a");
@@ -53,16 +52,22 @@ main(int argc, char** argv)
     PTRef uf1 = logic.mkCUFVar("uf1");
     PTRef uf2 = logic.mkCUFVar("uf2");
     stat = bbb.glueUFtoB(uf1, output);
+    stat = bbb.glueBtoUF(output, uf1);
     if (stat == l_True)
         printf("sat after uf1\n");
     if (stat == l_False)
         printf("unsat after uf1\n");
 
+    stat = bbb.glueUFtoB(uf2, output2);
     stat = bbb.glueBtoUF(output2, uf2);
     if (stat == l_True)
         printf("sat after uf2\n");
     if (stat == l_False)
         printf("unsat after uf2\n");
+
+    PTRef uf_eq = logic.mkEq(uf1, uf2);
+    char* msg;
+    mainSolver.insertFormula(uf_eq, &msg);
 
     sstat r = mainSolver.check();
 

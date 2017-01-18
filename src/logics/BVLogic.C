@@ -545,7 +545,7 @@ BVLogic::mkGlueUFtoB(PTRef tr, const vec<PTRef>& bits)
     assert(bits.size() == 32);
     vec<PTRef> conjs;
     for (int i = 0; i < bits.size(); i++)
-        conjs.push(Logic::mkEq(bits[0], mkExtract(tr, i)));
+        conjs.push(Logic::mkEq(bits[i], mkExtract(tr, i)));
     return Logic::mkAnd(conjs);
 }
 

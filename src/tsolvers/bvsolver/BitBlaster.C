@@ -171,7 +171,7 @@ char*
 BitBlaster::getName(const char* base) const
 {
     char* out;
-    asprintf(&out, ".%s%d", base, bs.size());
+    asprintf(&out, "%s%d", base, bs.size());
     return out;
 }
 
@@ -261,7 +261,8 @@ BitBlaster::bbEq(PTRef tr)
     }
     PTRef res = simplify( logic.mkAnd( result_args ) );
     vec<PTRef> tmp;
-    tmp.push(res);
+    tmp.growTo(i_hack_bitwidth);
+    tmp[0] = res;
     return bs.newBvector(res, mkActVar(s_bbEq));
 }
 
@@ -1026,23 +1027,27 @@ BitBlaster::bbConstant(PTRef tr)
     if (bs.has(tr)) return bs[tr];
     // Allocate new result
     vec<PTRef> result;
+    result.growTo(i_hack_bitwidth);
+
+    for (int i = 0; i < i_hack_bitwidth; i++) {
+        char* bit_name;
+        asprintf(&bit_name, ".b%02d_", i);
+        result[i] = logic.mkNot(logic.mkBoolVar(getName(bit_name)));
+        free(bit_name);
+    }
 
     if (logic.isTrue(tr))
-        result.push(logic.getTerm_true());
+        result[0] = logic.mkNot(result[0]);
     else if (logic.isFalse(tr))
-        result.push(logic.getTerm_false());
+        ; // already ok
     else
     {
-        unsigned width = i_hack_bitwidth;  // e->getWidth( );
         const std::string value = logic.getSymName(tr);
 
-        assert( value.length() == width );
-        for ( unsigned i = 0 ; i < width ; i ++ )
+        assert(value.length() == i_hack_bitwidth);
+        for (unsigned i = 0 ; i < i_hack_bitwidth; i ++)
         {
-            result.push(value[width-i-1] == '1'
-                ? logic.getTerm_true()
-                : logic.getTerm_false()
-            );
+            result[i] = value[i_hack_bitwidth-i-1] == '1' ? logic.mkNot(result[i]) : result[i];
         }
     }
     // Save result and return
