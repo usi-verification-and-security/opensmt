@@ -117,6 +117,7 @@ class CUFLogic: public Logic
 
 //    virtual PTRef         insertTerm(SymRef sym, vec<PTRef>& terms, char** msg);
     virtual PTRef         mkConst   (const int c) { char* num; asprintf(&num, "%d", c); PTRef tr = Logic::mkConst(sort_CUFNUM, num); free(num); return tr; }
+    PTRef                 mkCUFConst   (const int c) { char* num; asprintf(&num, "%d", c); PTRef tr = Logic::mkConst(sort_CUFNUM, num); free(num); return tr; }
     virtual PTRef         mkCUFVar(const char* name) { return mkVar(sort_CUFNUM, name); }
     virtual PTRef         mkNumVar  (const char* name) { return mkVar(sort_CUFNUM, name); }
     virtual bool          isBuiltinSort(SRef sr) const { return (sr == sort_CUFNUM) || (sr == sort_CUFSTR) || Logic::isBuiltinSort(sr); }

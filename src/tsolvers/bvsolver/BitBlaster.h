@@ -49,7 +49,8 @@ public:
     lbool check              ( );
     bool  assertLit          (PtAsgn);
 
-    lbool insert             (PTRef tr, BVRef& out); // For the interface for theory refinement
+    lbool insertEq           (PTRef tr, BVRef& out); // For the interface for theory refinement
+    lbool insertOr           (PTRef tr, BVRef& out); // For the interface for theory refinement
 
     void pushBacktrackPoint  ( );
     void popBacktrackPoint   ( );
@@ -63,6 +64,7 @@ public:
     PTRef mkCollate32        (vec<PTRef>& bits);
     PTRef mkExtract          (PTRef tr, int i);
 private:
+    lbool insert             (PTRef tr, BVRef& out); // The unsafe interface for theory refinement
     BVRef          updateCache  (PTRef tr);
     SMTConfig &    config;                        // Configuration
     MainSolver&    mainSolver;
@@ -92,6 +94,7 @@ private:
     static const char* s_bbDistinct;
     static const int i_hack_bitwidth;
     char* getName(const char* base) const;
+    void  getBVVars(const char* base, vec<PTRef>& vars, int width);
     PTRef mkActVar(const char* base);
 public:
     BVRef bbTerm       (PTRef);

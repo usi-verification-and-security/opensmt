@@ -35,12 +35,12 @@ class BVStore
     BvectorAllocator bva;
     vec<BVRef>  idToBVRef;
     Map<PTRef,BVRef,PTRefHash> bv_map;  // Mapping of a BV variable to the bit vector (automatic)
-    Map<PTRef,BVRef,PTRefHash> pToB; // Mapping of a variable (not in BV) to a bit vector (explicit)
+    Map<PTRef,BVRef,PTRefHash> pToB;    // Mapping of a variable (not in BV) to a bit vector (explicit)
 
 public:
     BVStore();
-    BVRef newBvector(const vec<PTRef>& ps, PTRef act_var) {
-        BVRef br = bva.alloc(ps, act_var); idToBVRef.push(br);
+    BVRef newBvector(const vec<PTRef>& var_names, const vec<PTRef>& asgn, PTRef act_var) {
+        BVRef br = bva.alloc(var_names, asgn, act_var); idToBVRef.push(br);
         return br;
     }
     void free(BVRef r) { bva.free(r); }
@@ -50,7 +50,10 @@ public:
 
     bool  has(PTRef r) { return bv_map.has(r); }
     BVRef getFromPTRef(PTRef r) { assert(bv_map.has(r)); return bv_map[r]; }
-    void  copyTo(BVRef bv, vec<PTRef>& tr_vec) { for (int i = 0; i < operator[](bv).size(); i++) tr_vec.push(operator[](bv)[i]); }
+    void  copyAsgnTo(BVRef bv, vec<PTRef>& tr_vec)  { for (int i = 0; i < operator[](bv).size(); i++) tr_vec.push(operator[](bv)[i]); }
+    void  copyNamesTo(BVRef bv, vec<PTRef>& tr_vec) { for (int i = 0; i < operator[](bv).size(); i++) tr_vec.push(operator[](bv).namebit(i)); }
+    void  copyBVTo(BVRef bv, vec<NameAsgn>& na_vec) { for (int i = 0; i < operator[](bv).size(); i++) na_vec.push(operator[](bv).nameasgn(i)); }
+
     int size() const { return idToBVRef.size(); }
     void  bindPTRefToBVRef(PTRef tr, BVRef br) { assert(!pToB.has(tr)); pToB.insert(tr, br); }
     BVRef getBoundBVRef(PTRef tr) { assert(pToB.has(tr)); return pToB[tr]; }

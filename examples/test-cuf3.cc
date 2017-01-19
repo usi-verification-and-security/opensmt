@@ -35,18 +35,18 @@ main(int argc, char** argv)
     BVRef output;
 
     lbool stat;
-    stat = bbb.insert(eq, output);
+    stat = bbb.insertEq(eq, output);
     if (stat == l_True)
         printf("sat after eq\n");
     if (stat == l_False)
         printf("unsat after eq\n");
 
-    BVRef output2;
-    stat = bbb.insert(eq_neg, output2);
-    if (stat == l_True)
-        printf("sat after eq_neg\n");
-    if (stat == l_False)
-        printf("unsat after eq_neg\n");
+//    BVRef output2;
+//    stat = bbb.insert(eq_neg, output2);
+//    if (stat == l_True)
+//        printf("sat after eq_neg\n");
+//    if (stat == l_False)
+//        printf("unsat after eq_neg\n");
 
 
     PTRef uf1 = logic.mkCUFVar("uf1");
@@ -61,9 +61,9 @@ main(int argc, char** argv)
     BVRef bvr2;
     BVRef bvr3;
 
-    bbb.insert(bv_eq1, bvr1);
-    bbb.insert(bv_eq2, bvr2);
-    bbb.insert(bv_eq3, bvr3);
+    bbb.insertEq(bv_eq1, bvr1);
+    bbb.insertEq(bv_eq2, bvr2);
+    bbb.insertEq(bv_eq3, bvr3);
 
 
     stat = bbb.glueUFtoB(uf1, bvr1);
