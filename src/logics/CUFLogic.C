@@ -102,7 +102,6 @@ CUFLogic::CUFLogic(SMTConfig& c) :
     sym_CUF_PTR    = declareFun(tk_cuf_ptr, sort_CUFNUM, params, &msg, true);
 
     params.push(sort_CUFNUM);
-
     // Binary
     sym_CUF_MINUS = declareFun(tk_cuf_neg, sort_CUFNUM, params, &msg, true);
     sym_store[sym_CUF_MINUS].setLeftAssoc();
@@ -186,7 +185,6 @@ CUFLogic::mkCUFNeg(PTRef tr, char** msg)
         PTRef nterm = mkCUFConst(v);
         SymRef s = getPterm(nterm).symb();
         vec<PTRef> args;
-        args.push(nterm);
         return mkFun(s, args, msg);
     }
     PTRef mo = mkCUFConst(-1);
@@ -199,15 +197,18 @@ CUFLogic::mkCUFMinus(const vec<PTRef>& args_in, char** msg)
     SymRef s;
     vec<PTRef> args;
     args_in.copyTo(args);
-    if (args.size() == 1)
-        return mkCUFNeg(args[0], msg);
-
-    assert(args.size() == 2);
-    PTRef mo = mkCUFConst(-1);
-    vec<PTRef> tmp;
-    PTRef fact = mkCUFTimes(mo, args[1], msg);
-    args[1] = fact;
-    return mkCUFPlus(args[0], args[1]);
+    if (args.size() == 1) {
+        PTRef ret = mkCUFNeg(args[0], msg);
+        return ret;
+    }
+    else {
+        assert(args.size() == 2);
+        PTRef mo = mkCUFConst(-1);
+        vec<PTRef> tmp;
+        PTRef fact = mkCUFTimes(mo, args[1], msg);
+        args[1] = fact;
+        return mkCUFPlus(args[0], args[1]);
+    }
 }
 
 PTRef

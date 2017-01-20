@@ -47,6 +47,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 static SolverDescr descr_uf_solver("UF Solver", "Solver for Quantifier Free Theory of Uninterpreted Functions with Equalities");
 
 const char* Egraph::s_val_prefix = "u";
+const char* Egraph::s_const_prefix = "n";
 const char* Egraph::s_val_true = "true";
 const char* Egraph::s_val_false = "false";
 
@@ -2559,6 +2560,11 @@ Egraph::getValue(PTRef tr)
        asprintf(&name, "true");
     else if (e_root == enode_store.ERef_False)
         asprintf(&name, "false");
+    else if (isConstant(e_root)) {
+        char* const_name = logic.printTerm(enode_store[e_root].getTerm());
+        asprintf(&name, "%s%d", s_const_prefix, const_name);
+        free(const_name);
+    }
     else
         asprintf(&name, "%s%d", s_val_prefix, enode_store[e_root].getId());
 
