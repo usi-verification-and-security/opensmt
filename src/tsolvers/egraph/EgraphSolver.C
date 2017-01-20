@@ -1360,16 +1360,17 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
 
     if (an_x.isTerm()) {
         assert( !isConstant(x) || !isConstant(y) );
-        assert( !isConstant(x) || an_x.getSize() == 1 );
-        assert( !isConstant(y) || an_y.getSize() == 1 );
+//        assert( !isConstant(x) || an_x.getSize() == 1 );
+//        assert( !isConstant(y) || an_y.getSize() == 1 );
     }
     assert( an_x.getRoot( ) != an_y.getRoot( ) );
     assert( x == an_x.getRoot( ) );
     assert( y == an_y.getRoot( ) );
 
-  // Swap x,y if y has a larger eq class
-    if ( an_x.getSize() < an_y.getSize()
-        || (an_x.isTerm() && isConstant(x)) )
+    // Ensure that the constant or the one with a larger equivalence
+    // class will be in x (and will become the root)
+    if ((an_y.isTerm() && isConstant(y)) ||
+        (!(an_x.isTerm() && isConstant(x)) && (an_x.getSize() < an_y.getSize())))
     {
         ERef tmp = x;
         x = y;
@@ -1380,7 +1381,7 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     Enode& en_y = enode_store[y];
 
     assert(en_x.type() == en_y.type());
-    assert(!en_x.isTerm() || !isConstant(x));
+    assert(!en_y.isTerm() || !isConstant(y));
 
     // TODO:
     // Propagate equalities to other ordinary theories
@@ -2562,7 +2563,7 @@ Egraph::getValue(PTRef tr)
         asprintf(&name, "false");
     else if (isConstant(e_root)) {
         char* const_name = logic.printTerm(enode_store[e_root].getTerm());
-        asprintf(&name, "%s%d", s_const_prefix, const_name);
+        asprintf(&name, "%s%s", s_const_prefix, const_name);
         free(const_name);
     }
     else
