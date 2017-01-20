@@ -38,9 +38,12 @@ const char* BitBlaster::s_bbBvule       = ".bbBvule";
 const char* BitBlaster::s_bbConcat      = ".bbConcat";
 const char* BitBlaster::s_bbExtract     = ".bbExtract";
 const char* BitBlaster::s_bbBvand       = ".bbBvand";
+const char* BitBlaster::s_bbBvland      = ".bbBvland";
 const char* BitBlaster::s_bbBvor        = ".bbBvor";
+const char* BitBlaster::s_bbBvlor       = ".bbBvlor";
 const char* BitBlaster::s_bbBvxor       = ".bbBvxor";
-const char* BitBlaster::s_bbBvnot       = ".bbBvnot";
+const char* BitBlaster::s_bbBvcompl     = ".bbBvcompl";
+const char* BitBlaster::s_bbBvlnot      = ".bbBvlnot";
 const char* BitBlaster::s_bbBvadd       = ".bbBvadd";
 const char* BitBlaster::s_bbBvmul       = ".bbBvmul";
 const char* BitBlaster::s_bbBvudiv      = ".bbBvudiv";
@@ -112,7 +115,7 @@ BitBlaster::insert(PTRef tr, BVRef& out)
     char* msg;
     out = bbTerm(tr);
 
-    PTRef last_bit = logic.mkEq(bs[out].last(), logic.getTerm_true());
+    PTRef last_bit = logic.mkEq(bs[out].lsb(), logic.getTerm_true());
     sstat status = mainSolver.insertFormula(last_bit, &msg);
 
     if (status == s_True)
@@ -234,7 +237,10 @@ BitBlaster::bbTerm(PTRef tr)
     if (logic.isBVBwAnd(tr)) return bbBvand      (tr);
     if (logic.isBVBwOr(tr))  return bbBvor       (tr);
     if (logic.isBVBwXor(tr)) return bbBvxor      (tr);
-    if (logic.isBVNot(tr))   return bbBvnot      (tr);
+    if (logic.isBVCompl(tr)) return bbBvcompl    (tr);
+    if (logic.isBVNot(tr))   return bbBvlnot     (tr);
+    if (logic.isBVLand(tr))  return bbBvland     (tr);
+    if (logic.isBVLor(tr))   return bbBvlor      (tr);
     if (logic.isBVPlus(tr))  return bbBvadd      (tr);
     if (logic.isBVTimes(tr)) return bbBvmul      (tr);
     if (logic.isBVDiv(tr))   return bbBvudiv     (tr);
@@ -338,16 +344,16 @@ BitBlaster::bbBvsle(PTRef tr)
     }
 
     assert( lt_prev != PTRef_Undef );
-    PTRef not_r   = logic.mkNot(bs[bb_rhs].last());
-    PTRef neg_pos = logic.mkAnd(bs[bb_lhs].last(), not_r);
-    PTRef eq_this = logic.mkEq(bs[bb_lhs].last(), bs[bb_rhs].last());
+    PTRef not_r   = logic.mkNot(bs[bb_rhs].lsb());
+    PTRef neg_pos = logic.mkAnd(bs[bb_lhs].lsb(), not_r);
+    PTRef eq_this = logic.mkEq(bs[bb_lhs].lsb(), bs[bb_rhs].lsb());
     PTRef lt_part = logic.mkOr(logic.mkAnd(eq_this, lt_prev), neg_pos) ;
 
     BVRef eq_part = bbTerm(logic.mkEq(lhs, rhs));
     //
     // Produce (lhs=rhs | lhs<rhs)
     //
-    PTRef tr_out = simplify(logic.mkOr(bs[eq_part].last(), lt_part));
+    PTRef tr_out = simplify(logic.mkOr(bs[eq_part].lsb(), lt_part));
 
     // Save result and return
     vec<PTRef> asgns;
@@ -408,7 +414,7 @@ BitBlaster::bbBvule(PTRef tr)
     //
     // Produce (lhs=rhs | lhs<rhs)
     //
-    PTRef res = simplify(logic.mkOr(bs[eq_part].last(), lt_part));
+    PTRef res = simplify(logic.mkOr(bs[eq_part].lsb(), lt_part));
 
     vec<PTRef> asgns;
     asgns.growTo(i_hack_bitwidth);
@@ -519,6 +525,52 @@ BitBlaster::bbBvand(PTRef tr)
 }
 
 //
+// Logical AND
+//
+BVRef
+BitBlaster::bbBvland(PTRef tr)
+{
+    assert(tr != PTRef_Undef);
+
+
+
+    if (bs.has(tr)) return bs[tr];
+
+    assert(logic.getPterm(tr).size() == 2);
+
+    // Allocate new result
+    vec<PTRef> names;
+    getBVVars("lan", names, i_hack_bitwidth);
+
+    vec<BVRef> bb_args;
+
+    // Bit-blast the arguments, and put the corresponding vectors
+    // into bb_args.
+    PTRef arg1 = logic.getPterm(tr)[0];
+    PTRef arg2 = logic.getPterm(tr)[1];
+
+    BVRef bv1 = bbTerm(arg1);
+    BVRef bv2 = bbTerm(arg2);
+
+    assert(bs[bv1].size() == bs[bv2].size());
+    vec<PTRef> result;
+    result.growTo(bs[bv1].size());
+
+    vec<PTRef> bv1_bits;
+    vec<PTRef> bv2_bits;
+
+    bs.copyAsgnTo(bv1, bv1_bits);
+    bs.copyAsgnTo(bv2, bv2_bits);
+
+    result[0] = logic.mkAnd(logic.mkOr(bv1_bits), logic.mkOr(bv2_bits));
+    for (int i = 1; i < result.size(); i++)
+        result[i] = logic.getTerm_false();
+
+    return bs.newBvector(names, result, mkActVar(s_bbBvland));
+}
+
+
+//
 // Bitwise OR
 //
 BVRef
@@ -561,6 +613,45 @@ BitBlaster::bbBvor(PTRef tr)
 }
 
 //
+// Logical OR
+//
+BVRef
+BitBlaster::bbBvlor(PTRef tr)
+{
+    assert(tr != PTRef_Undef);
+    assert(logic.getPterm(tr).size() == 2);
+
+    if (bs.has(tr)) return bs[tr];
+
+
+    // Allocate new result
+    vec<PTRef> names;
+    getBVVars("lor", names, i_hack_bitwidth);
+
+    vec<PTRef> result;
+    result.growTo(32);
+
+    PTRef arg1 = logic.getPterm(tr)[0];
+    PTRef arg2 = logic.getPterm(tr)[1];
+
+    BVRef bv1 = bbTerm(arg1);
+    BVRef bv2 = bbTerm(arg2);
+
+    vec<PTRef> bv1_bits;
+    bs.copyAsgnTo(bv1, bv1_bits);
+    vec<PTRef> bv2_bits;
+    bs.copyAsgnTo(bv2, bv2_bits);
+
+    result[0] = logic.mkOr(logic.mkOr(bv1_bits), logic.mkOr(bv2_bits));
+    for (int i = 1; i < result.size(); i++)
+        result[i] = logic.getTerm_false();
+
+    // Save result and return
+    return bs.newBvector(names, result, mkActVar(s_bbBvlor));
+}
+
+
+//
 // Bitwise XOR
 //
 BVRef
@@ -593,10 +684,10 @@ BitBlaster::bbBvxor(PTRef tr)
 }
 
 //
-// Bitwise NOT
+// Bitwise complement
 //
 BVRef
-BitBlaster::bbBvnot(PTRef tr)
+BitBlaster::bbBvcompl(PTRef tr)
 {
     assert(tr != PTRef_Undef);
     assert(logic.getPterm(tr).size() == 1);
@@ -618,7 +709,40 @@ BitBlaster::bbBvnot(PTRef tr)
         result.push(logic.mkNot(bs[bb_arg][i]));
 
     // Save result and return
-    return bs.newBvector(names, result, mkActVar(s_bbBvnot));
+    return bs.newBvector(names, result, mkActVar(s_bbBvcompl));
+}
+
+//
+// Logical NOT
+//
+
+BVRef
+BitBlaster::bbBvlnot(PTRef tr)
+{
+    assert(tr != PTRef_Undef);
+    assert(logic.getPterm(tr).size() == 1);
+
+    if (bs.has(tr)) return bs[tr];
+
+    // Allocate new result
+    vec<PTRef> names;
+    getBVVars("lnot", names, i_hack_bitwidth);
+
+
+    // Allocate new result
+    vec<PTRef> result;
+
+    PTRef arg = logic.getPterm(tr)[0];
+    BVRef bb_arg = bbTerm(arg);
+
+    vec<PTRef> asgn;
+    bs.copyAsgnTo(bb_arg, asgn);
+    result[0] = logic.mkNot(logic.mkOr(asgn));
+    for ( int i = 1 ; i < i_hack_bitwidth; i ++ )
+        result[i] = logic.getTerm_false();
+
+    // Save result and return
+    return bs.newBvector(names, result, mkActVar(s_bbBvlnot));
 }
 
 BVRef
@@ -703,7 +827,7 @@ BitBlaster::bbBvudiv(PTRef tr)
     // Generate condition divisor != 0
     //
     PTRef zero = PTRef_Undef;
-    PTRef div_eq_zero = bs[bbTerm(logic.mkEq(arg2, zero))].last(); // I don't think this works?!
+    PTRef div_eq_zero = bs[bbTerm(logic.mkEq(arg2, zero))].lsb(); // I don't think this works?!
 
     const unsigned size = bs[divisor].size( );
     result.growTo(size);
@@ -851,7 +975,7 @@ BitBlaster::bbBvurem(PTRef tr)
     // Generate condition divisor != 0
     //
     PTRef zero = PTRef_Undef;
-    PTRef div_eq_zero = bs[bbTerm(logic.mkEq(arg2, zero))].last(); // Again, not working?
+    PTRef div_eq_zero = bs[bbTerm(logic.mkEq(arg2, zero))].lsb(); // Again, not working?
 
     const unsigned size = bs[divisor].size();
     result.growTo(size);
@@ -1076,7 +1200,7 @@ BitBlaster::bbSignExtend(PTRef tr)
         result.push(bs[bb_x][i]);
     // Sign extend
     for ( ; (int)i < i_hack_bitwidth; i ++ ) // Should be bit width of what?
-        result.push(bs[bb_x].last());
+        result.push(bs[bb_x].lsb());
 
     return bs.newBvector(names, result, mkActVar(s_bbSignExtend));
 }
@@ -1180,7 +1304,7 @@ BitBlaster::bbDistinct(PTRef tr)
         {
             BVRef bb_pair = bbTerm(logic.mkEq(args[i], args[j]));
             assert(bs[bb_pair].size() == 1);
-            res_args.push(logic.mkNot(bs[bb_pair].last()));
+            res_args.push(logic.mkNot(bs[bb_pair].lsb()));
         }
     }
 

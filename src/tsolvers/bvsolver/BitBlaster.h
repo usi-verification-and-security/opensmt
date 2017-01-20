@@ -81,9 +81,12 @@ private:
     static const char* s_bbConcat;
     static const char* s_bbExtract;
     static const char* s_bbBvand;
+    static const char* s_bbBvland;
     static const char* s_bbBvor;
+    static const char* s_bbBvlor;
     static const char* s_bbBvxor;
-    static const char* s_bbBvnot;
+    static const char* s_bbBvcompl;
+    static const char* s_bbBvlnot;
     static const char* s_bbBvadd;
     static const char* s_bbBvmul;
     static const char* s_bbBvudiv;
@@ -107,9 +110,12 @@ private:
     BVRef bbConcat     (PTRef);
     BVRef bbExtract    (PTRef);
     BVRef bbBvand      (PTRef);
+    BVRef bbBvland     (PTRef);
     BVRef bbBvor       (PTRef);
+    BVRef bbBvlor      (PTRef);
     BVRef bbBvxor      (PTRef);
-    BVRef bbBvnot      (PTRef);
+    BVRef bbBvcompl    (PTRef);
+    BVRef bbBvlnot     (PTRef);
     BVRef bbBvadd      (PTRef);
     BVRef bbBvmul      (PTRef);
     BVRef bbBvudiv     (PTRef);

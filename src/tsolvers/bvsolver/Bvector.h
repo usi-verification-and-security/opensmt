@@ -93,7 +93,7 @@ class Bvector {
 
     const PTRef&    operator [] (int i) const   { assert(i < size()); return args[i].asgn; }
     PTRef&          operator [] (int i)         { assert(i < size()); return args[i].asgn; }
-    const PTRef&    last        ()      const   { return operator[](size()-1); }
+    const PTRef&    lsb         ()      const   { return operator[](0); }
 
     const PTRef&    namebit(int i) const        { assert(i < size()); return args[i].name; }
     PTRef&          namebit(int i)              { assert(i < size()); return args[i].name; }
