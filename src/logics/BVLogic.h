@@ -28,7 +28,6 @@ class BVLogic: public CUFLogic
     Logic_t logic_type;
     SymRef              sym_BV_ZERO;   // 0
     SymRef              sym_BV_ONE;    // 1
-    SymRef              sym_BV_NEG;    // -
     SymRef              sym_BV_MINUS;  // -
     SymRef              sym_BV_PLUS;   // +
     SymRef              sym_BV_TIMES;  // *
@@ -49,9 +48,10 @@ class BVLogic: public CUFLogic
     SymRef              sym_BV_NEQ;    // !=
     SymRef              sym_BV_LAND;   // &&
     SymRef              sym_BV_LOR;    // ||
+    SymRef              sym_BV_NEG;    // -
     SymRef              sym_BV_NOT;    // !
-    SymRef              sym_BV_BWXOR;  // ^
     SymRef              sym_BV_COMPL;  // ~
+    SymRef              sym_BV_BWXOR;  // ^
     SymRef              sym_BV_COLLATE32; // .coll32
 
     SRef                sort_BVNUM;
