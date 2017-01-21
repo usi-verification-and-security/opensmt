@@ -85,9 +85,9 @@ CUFLogic::CUFLogic(SMTConfig& c) :
     sort_CUFNUM = declareSort(s_sort_cufnum, &msg);
 
     vec<SRef> params;
-    term_CUF_ZERO = mkConst(tk_cuf_zero);
+    term_CUF_ZERO = mkCUFConst(tk_cuf_zero);
     sym_CUF_ZERO  = getSymRef(term_CUF_ZERO);
-    term_CUF_ONE  = mkConst(tk_cuf_one);
+    term_CUF_ONE  = mkCUFConst(tk_cuf_one);
     sym_CUF_ONE   = getSymRef(term_CUF_ONE);
 
     params.push(sort_CUFNUM);
@@ -102,7 +102,6 @@ CUFLogic::CUFLogic(SMTConfig& c) :
     sym_CUF_PTR    = declareFun(tk_cuf_ptr, sort_CUFNUM, params, &msg, true);
 
     params.push(sort_CUFNUM);
-
     // Binary
     sym_CUF_MINUS = declareFun(tk_cuf_neg, sort_CUFNUM, params, &msg, true);
     sym_store[sym_CUF_MINUS].setLeftAssoc();
@@ -183,13 +182,12 @@ CUFLogic::mkCUFNeg(PTRef tr, char** msg)
     if (isConstant(tr)) {
         int v = atoi(sym_store.getName(getPterm(tr).symb()));
         v = -v;
-        PTRef nterm = mkConst(v);
+        PTRef nterm = mkCUFConst(v);
         SymRef s = getPterm(nterm).symb();
         vec<PTRef> args;
-        args.push(nterm);
         return mkFun(s, args, msg);
     }
-    PTRef mo = mkConst(-1);
+    PTRef mo = mkCUFConst(-1);
     return mkCUFTimes(mo, tr);
 }
 
@@ -199,15 +197,18 @@ CUFLogic::mkCUFMinus(const vec<PTRef>& args_in, char** msg)
     SymRef s;
     vec<PTRef> args;
     args_in.copyTo(args);
-    if (args.size() == 1)
-        return mkCUFNeg(args[0], msg);
-
-    assert(args.size() == 2);
-    PTRef mo = mkConst(-1);
-    vec<PTRef> tmp;
-    PTRef fact = mkCUFTimes(mo, args[1], msg);
-    args[1] = fact;
-    return mkCUFPlus(args[0], args[1]);
+    if (args.size() == 1) {
+        PTRef ret = mkCUFNeg(args[0], msg);
+        return ret;
+    }
+    else {
+        assert(args.size() == 2);
+        PTRef mo = mkCUFConst(-1);
+        vec<PTRef> tmp;
+        PTRef fact = mkCUFTimes(mo, args[1], msg);
+        args[1] = fact;
+        return mkCUFPlus(args[0], args[1]);
+    }
 }
 
 PTRef

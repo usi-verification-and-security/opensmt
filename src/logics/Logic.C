@@ -1035,7 +1035,7 @@ Logic::insertTermHash(SymRef sym, const vec<PTRef>& terms_in)
     vec<PTRef> terms;
     terms_in.copyTo(terms);
     PTRef res = PTRef_Undef;
-    char **msg;
+    char *msg;
     if (terms.size() == 0) {
         if (term_store.hasCtermKey(sym)) //cterm_map.contains(sym))
             res = term_store.getFromCtermMap(sym); //cterm_map[sym];
@@ -1054,8 +1054,8 @@ Logic::insertTermHash(SymRef sym, const vec<PTRef>& terms_in)
             !sym_store[sym].pairwise() &&
             sym_store[sym].nargs() != terms.size_())
         {
-            *msg = (char*)malloc(strlen(e_argnum_mismatch)+1);
-            strcpy(*msg, e_argnum_mismatch);
+            msg = (char*)malloc(strlen(e_argnum_mismatch)+1);
+            strcpy(msg, e_argnum_mismatch);
             return PTRef_Undef;
         }
         PTLKey k;

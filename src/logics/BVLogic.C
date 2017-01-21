@@ -80,9 +80,9 @@ BVLogic::BVLogic(SMTConfig& c) :
     sort_BVNUM = declareSort(s_sort_bvnum, &msg);
 
     vec<SRef> params;
-    term_BV_ZERO = mkConst(tk_bv_zero);
+    term_BV_ZERO = mkBVConst(tk_bv_zero);
     sym_BV_ZERO  = getSymRef(term_BV_ZERO);
-    term_BV_ONE  = mkConst(tk_bv_one);
+    term_BV_ONE  = mkBVConst(tk_bv_one);
     sym_BV_ONE   = getSymRef(term_BV_ONE);
 
     params.push(sort_BVNUM);
@@ -192,7 +192,7 @@ BVLogic::mkBVNeg(PTRef tr, char** msg)
     if (isConstant(tr)) {
         int v = atoi(sym_store.getName(getPterm(tr).symb()));
         v = -v;
-        PTRef nterm = mkConst(v);
+        PTRef nterm = mkBVConst(v);
       /*  SymRef s = getPterm(nterm).symb();
         vec<PTRef> args;
         args.push(nterm);
@@ -215,7 +215,7 @@ BVLogic::mkBVMinus(const vec<PTRef>& args_in, char** msg)
         return mkBVNeg(args[0], msg);
 
     assert(args.size() == 2);
-    PTRef mo = mkConst(-1);
+    PTRef mo = mkBVConst(-1);
     vec<PTRef> tmp;
     PTRef fact = mkBVTimes(mo, args[1], msg);
     args[1] = fact;
