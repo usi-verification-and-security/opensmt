@@ -39,8 +39,9 @@ class BVStore
 
 public:
     BVStore();
-    BVRef newBvector(const vec<PTRef>& var_names, const vec<PTRef>& asgn, PTRef act_var) {
+    BVRef newBvector(const vec<PTRef>& var_names, const vec<PTRef>& asgn, PTRef act_var, PTRef tr) {
         BVRef br = bva.alloc(var_names, asgn, act_var); idToBVRef.push(br);
+        bv_map.insert(tr, br);
         return br;
     }
     void free(BVRef r) { bva.free(r); }

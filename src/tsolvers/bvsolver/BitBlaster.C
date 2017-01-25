@@ -294,9 +294,9 @@ BitBlaster::bbEq(PTRef tr)
     }
     PTRef res = simplify( logic.mkAnd( result_args ) );
     vec<PTRef> tmp;
-    tmp.growTo(i_hack_bitwidth);
+    tmp.growTo(i_hack_bitwidth, logic.getTerm_false());
     tmp[0] = res;
-    return bs.newBvector(names, tmp, mkActVar(s_bbEq));
+    return bs.newBvector(names, tmp, mkActVar(s_bbEq), tr);
 }
 
 //
@@ -357,9 +357,9 @@ BitBlaster::bbBvsle(PTRef tr)
 
     // Save result and return
     vec<PTRef> asgns;
-    asgns.growTo(i_hack_bitwidth);
+    asgns.growTo(i_hack_bitwidth, logic.getTerm_false());
     asgns[0] = tr_out;
-    return bs.newBvector(names, asgns, mkActVar(s_bbBvsle));
+    return bs.newBvector(names, asgns, mkActVar(s_bbBvsle), tr);
 }
 
 //
@@ -417,11 +417,11 @@ BitBlaster::bbBvule(PTRef tr)
     PTRef res = simplify(logic.mkOr(bs[eq_part].lsb(), lt_part));
 
     vec<PTRef> asgns;
-    asgns.growTo(i_hack_bitwidth);
+    asgns.growTo(i_hack_bitwidth, logic.getTerm_false());
     asgns[0] = res;
 
     // Save result and return
-    return bs.newBvector(names, asgns, mkActVar(s_bbBvule));
+    return bs.newBvector(names, asgns, mkActVar(s_bbBvule), tr);
 }
 
 //
@@ -449,7 +449,7 @@ BitBlaster::bbConcat(PTRef tr)
     }
 
     // Save result and return
-    return bs.newBvector(names, result, mkActVar(s_bbConcat));
+    return bs.newBvector(names, result, mkActVar(s_bbConcat), tr);
 }
 
 //
@@ -475,12 +475,12 @@ BitBlaster::bbExtract(PTRef tr)
     BVRef bb_arg = bbTerm(arg);
     // Produce the result
     vec<PTRef> result;
-    result.growTo(32);
+    result.growTo(i_hack_bitwidth, logic.getTerm_false());
     for ( int i = lsb, j = 0; i <= msb ; i ++ )
         result[j++] = bs[bb_arg][i];
 
     // Save result and return
-    return bs.newBvector(names, result, mkActVar(s_bbExtract));
+    return bs.newBvector(names, result, mkActVar(s_bbExtract), tr);
 }
 
 //
@@ -521,7 +521,7 @@ BitBlaster::bbBvand(PTRef tr)
         result.push(logic.mkAnd(and_args));
     }
 
-    return bs.newBvector(names, result, mkActVar(s_bbBvand));
+    return bs.newBvector(names, result, mkActVar(s_bbBvand), tr);
 }
 
 //
@@ -554,7 +554,8 @@ BitBlaster::bbBvland(PTRef tr)
 
     assert(bs[bv1].size() == bs[bv2].size());
     vec<PTRef> result;
-    result.growTo(bs[bv1].size());
+    //result.growTo(i_hack_bitwidth, logic.getTerm_false());
+    result.growTo(bs[bv1].size(), logic.getTerm_false());
 
     vec<PTRef> bv1_bits;
     vec<PTRef> bv2_bits;
@@ -563,10 +564,10 @@ BitBlaster::bbBvland(PTRef tr)
     bs.copyAsgnTo(bv2, bv2_bits);
 
     result[0] = logic.mkAnd(logic.mkOr(bv1_bits), logic.mkOr(bv2_bits));
-    for (int i = 1; i < result.size(); i++)
-        result[i] = logic.getTerm_false();
+//    for (int i = 1; i < result.size(); i++)
+//        result[i] = logic.getTerm_false();
 
-    return bs.newBvector(names, result, mkActVar(s_bbBvland));
+    return bs.newBvector(names, result, mkActVar(s_bbBvland), tr);
 }
 
 
@@ -609,7 +610,7 @@ BitBlaster::bbBvor(PTRef tr)
     }
 
     // Save result and return
-    return bs.newBvector(names, result, mkActVar(s_bbBvor));
+    return bs.newBvector(names, result, mkActVar(s_bbBvor), tr);
 }
 
 //
@@ -629,7 +630,7 @@ BitBlaster::bbBvlor(PTRef tr)
     getBVVars("lor", names, i_hack_bitwidth);
 
     vec<PTRef> result;
-    result.growTo(32);
+    result.growTo(i_hack_bitwidth, logic.getTerm_false());
 
     PTRef arg1 = logic.getPterm(tr)[0];
     PTRef arg2 = logic.getPterm(tr)[1];
@@ -643,11 +644,11 @@ BitBlaster::bbBvlor(PTRef tr)
     bs.copyAsgnTo(bv2, bv2_bits);
 
     result[0] = logic.mkOr(logic.mkOr(bv1_bits), logic.mkOr(bv2_bits));
-    for (int i = 1; i < result.size(); i++)
-        result[i] = logic.getTerm_false();
+//    for (int i = 1; i < result.size(); i++)
+//        result[i] = logic.getTerm_false();
 
     // Save result and return
-    return bs.newBvector(names, result, mkActVar(s_bbBvlor));
+    return bs.newBvector(names, result, mkActVar(s_bbBvlor), tr);
 }
 
 
@@ -680,7 +681,7 @@ BitBlaster::bbBvxor(PTRef tr)
     for ( int i = 0 ; i < bs[bb_lhs].size() ; i ++ )
         result.push( logic.mkXor(bs[bb_lhs][i], bs[bb_rhs][i]));
 
-    return bs.newBvector(names, result, mkActVar(s_bbBvxor));
+    return bs.newBvector(names, result, mkActVar(s_bbBvxor), tr);
 }
 
 //
@@ -709,7 +710,7 @@ BitBlaster::bbBvcompl(PTRef tr)
         result.push(logic.mkNot(bs[bb_arg][i]));
 
     // Save result and return
-    return bs.newBvector(names, result, mkActVar(s_bbBvcompl));
+    return bs.newBvector(names, result, mkActVar(s_bbBvcompl), tr);
 }
 
 //
@@ -731,6 +732,7 @@ BitBlaster::bbBvlnot(PTRef tr)
 
     // Allocate new result
     vec<PTRef> result;
+    result.growTo(i_hack_bitwidth, logic.getTerm_false());
 
     PTRef arg = logic.getPterm(tr)[0];
     BVRef bb_arg = bbTerm(arg);
@@ -738,11 +740,11 @@ BitBlaster::bbBvlnot(PTRef tr)
     vec<PTRef> asgn;
     bs.copyAsgnTo(bb_arg, asgn);
     result[0] = logic.mkNot(logic.mkOr(asgn));
-    for ( int i = 1 ; i < i_hack_bitwidth; i ++ )
-        result[i] = logic.getTerm_false();
+//    for ( int i = 1 ; i < i_hack_bitwidth; i ++ )
+//        result[i] = logic.getTerm_false();
 
     // Save result and return
-    return bs.newBvector(names, result, mkActVar(s_bbBvlnot));
+    return bs.newBvector(names, result, mkActVar(s_bbBvlnot), tr);
 }
 
 BVRef
@@ -794,7 +796,7 @@ BitBlaster::bbBvadd(PTRef tr)
     }
 
     // Save result and return
-    return bs.newBvector(names, result, mkActVar(s_bbBvadd));
+    return bs.newBvector(names, result, mkActVar(s_bbBvadd), tr);
 }
 
 BVRef
@@ -945,7 +947,7 @@ BitBlaster::bbBvudiv(PTRef tr)
     //
     // Save result and return
     //
-    return bs.newBvector(names, result, mkActVar(s_bbBvudiv));
+    return bs.newBvector(names, result, mkActVar(s_bbBvudiv), tr);
 }
 
 BVRef
@@ -1100,7 +1102,7 @@ BitBlaster::bbBvurem(PTRef tr)
     //
     // Save result and return
     //
-    return bs.newBvector(names, result, mkActVar(s_bbBvurem));
+    return bs.newBvector(names, result, mkActVar(s_bbBvurem), tr);
 }
 
 BVRef
@@ -1174,7 +1176,7 @@ BitBlaster::bbBvmul(PTRef tr)
         }
     }
 
-    return bs.newBvector(names, result, mkActVar(s_bbBvmul));
+    return bs.newBvector(names, result, mkActVar(s_bbBvmul), tr);
 }
 
 BVRef
@@ -1202,7 +1204,7 @@ BitBlaster::bbSignExtend(PTRef tr)
     for ( ; (int)i < i_hack_bitwidth; i ++ ) // Should be bit width of what?
         result.push(bs[bb_x].lsb());
 
-    return bs.newBvector(names, result, mkActVar(s_bbSignExtend));
+    return bs.newBvector(names, result, mkActVar(s_bbSignExtend), tr);
 }
 
 BVRef
@@ -1224,7 +1226,7 @@ BitBlaster::bbVar(PTRef tr)
     variables.push(tr);
 
 
-    return bs.newBvector(names, result, mkActVar(s_bbVar));
+    return bs.newBvector(names, result, mkActVar(s_bbVar), tr);
 }
 
 BVRef
@@ -1239,10 +1241,10 @@ BitBlaster::bbConstant(PTRef tr)
     getBVVars("c", names, i_hack_bitwidth);
 
     vec<PTRef> asgns;
-    asgns.growTo(i_hack_bitwidth);
-    for (int i = 0; i < i_hack_bitwidth; i++) {
-        asgns[i]  = logic.getTerm_false();
-    }
+    asgns.growTo(i_hack_bitwidth,  logic.getTerm_false());
+//    for (int i = 0; i < i_hack_bitwidth; i++) {
+//        asgns[i]  = logic.getTerm_false();
+//    }
 
     if (logic.isTrue(tr))
         asgns[0] = logic.getTerm_true();
@@ -1259,7 +1261,7 @@ BitBlaster::bbConstant(PTRef tr)
         }
     }
     // Save result and return
-    return bs.newBvector(names, asgns, mkActVar(s_bbConstant));
+    return bs.newBvector(names, asgns, mkActVar(s_bbConstant), tr);
 }
 
 /*
@@ -1288,7 +1290,7 @@ BitBlaster::bbDistinct(PTRef tr)
     getBVVars("d", vars, i_hack_bitwidth);
 
     vec<PTRef> result;
-    result.growTo(i_hack_bitwidth);
+    result.growTo(i_hack_bitwidth, logic.getTerm_false());
     vec<PTRef> args;
 
     for (int i = 0; i < logic.getPterm(tr).size(); i++)
@@ -1310,7 +1312,7 @@ BitBlaster::bbDistinct(PTRef tr)
 
     result[0] = logic.mkAnd(res_args);
 
-    return bs.newBvector(vars, result, mkActVar(s_bbDistinct));
+    return bs.newBvector(vars, result, mkActVar(s_bbDistinct), tr);
 }
 
 bool
