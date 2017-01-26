@@ -828,7 +828,7 @@ BitBlaster::bbBvudiv(PTRef tr)
     //
     // Generate condition divisor != 0
     //
-    PTRef zero = PTRef_Undef;
+    PTRef zero = logic.getTerm_BVZero();
     PTRef div_eq_zero = bs[bbTerm(logic.mkEq(arg2, zero))].lsb(); // I don't think this works?!
 
     const unsigned size = bs[divisor].size( );
@@ -976,7 +976,7 @@ BitBlaster::bbBvurem(PTRef tr)
     //
     // Generate condition divisor != 0
     //
-    PTRef zero = PTRef_Undef;
+    PTRef zero = logic.getTerm_BVZero();
     PTRef div_eq_zero = bs[bbTerm(logic.mkEq(arg2, zero))].lsb(); // Again, not working?
 
     const unsigned size = bs[divisor].size();
