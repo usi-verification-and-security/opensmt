@@ -22,16 +22,16 @@ main(int argc, char** argv)
 
     // BVLogic bvlogic(c);
 
-    PTRef a = logic.mkNumVar("a");
-    PTRef const1 = logic.mkConst(1);
+    PTRef a = logic.mkBVNumVar("a");
+    PTRef const1 = logic.mkBVConst(2);
     PTRef eq1 = logic.mkBVEq(a, const1);
 
-    PTRef b = logic.mkNumVar("b");
-    PTRef const2 = logic.mkConst(1);
+    PTRef b = logic.mkBVNumVar("b");
+    PTRef const2 = logic.mkBVConst(1);
     PTRef eq2 = logic.mkBVEq(b, const2);
 
-    PTRef d = logic.mkNumVar("d");
-    PTRef const3 = logic.mkConst(0);
+    PTRef d = logic.mkBVNumVar("d");
+    PTRef const3 = logic.mkBVConst(0);
     PTRef eq3 = logic.mkBVEq(d, const3);
     //PTRef eq3_neg = logic.mkBVNot(eq3);
 
@@ -110,7 +110,7 @@ main(int argc, char** argv)
 	std::cout << logic.printTerm(eq1) << "\n";
 	std::cout << logic.printTerm(eq2) << "\n";
 	std::cout << logic.printTerm(eq3) << "\n";
-	//std::cout << logic.printTerm(eq3_neg) << "\n";
+	std::cout << logic.printTerm(d2) << "\n";
 	std::cout << logic.printTerm(eq4) << "\n";
 
     sstat r = mainSolver.check();

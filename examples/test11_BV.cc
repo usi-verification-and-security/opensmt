@@ -1,21 +1,16 @@
-/***************************************************
- * Created on: Jan 17, 2017
- * Author: Sepideh Asadi
- * d=a*b /\ a=2 /\ b=5 /\ d=1
+/************************************************
+ * Created on: Jan 25, 2017
+ * second formula
+ * a=5 /\ b=1 /\ ( not a \/ b=3 )
  *
  * For values:
- *  a=0, b=5 , d=0 :  sat
- *  a=2, b=5 , d=11 :  unsat
- *  a=2, b=5 , d=10 :  sat
- *
- * Insert four Equalities with InsertEq()
- * we cannot have such not(d=10)
- ***************************************************/
-
+ * a=1, b=0, b=3 :   unsat
+ * a=5, b=4, b=4 :   sat
+ * a=1, b=1, b=1 :   sat
+ ************************************************/
 #include <opensmt/opensmt2.h>
 #include <stdio.h>
 #include <opensmt/BitBlaster.h>
-//#include <opensmt/BVLogic.h>
 
 int main(int argc, char** argv)
 {
@@ -26,26 +21,22 @@ int main(int argc, char** argv)
     MainSolver mainSolver(thandler, c, &solver);
     BVLogic& logic = cuftheory.getLogic();
 
-   // BVLogic bvlogic(c);
-
-    PTRef const1 = logic.mkBVConst(0);
-    PTRef const2 = logic.mkBVConst(5);
-    PTRef const3 = logic.mkBVConst(0);
+    // BVLogic bvlogic(c);
 
     PTRef a = logic.mkBVNumVar("a");
-    PTRef b = logic.mkBVNumVar("b");
-    PTRef d = logic.mkBVNumVar("d");
-
+    PTRef const1 = logic.mkBVConst(5);
     PTRef eq1 = logic.mkBVEq(a, const1);
 
+    PTRef b = logic.mkBVNumVar("b");
+    PTRef const2 = logic.mkBVConst(4);
     PTRef eq2 = logic.mkBVEq(b, const2);
 
-    PTRef eq3 = logic.mkBVEq(d, const3);
-    //PTRef eq3_neg = logic.mkNot(eq3);
+    PTRef a_neg = logic.mkBVNot(a);
+    PTRef const4 = logic.mkBVConst(4);
+    PTRef eq4 = logic.mkBVEq(b, const4);
+    PTRef LOr = logic.mkBVLor(a_neg, eq4);
+    //PTRef eq4 = logic.mkBVEq(eq3, LOr);
 
-    PTRef d2 = logic.mkBVTimes(a, b);
-    PTRef eq4 = logic.mkBVEq(d, d2);
-/******************************************************/
     SolverId id = { 5 };
 	vec<PtAsgn> asgns;
 	vec<DedElem> deds;
@@ -61,16 +52,16 @@ int main(int argc, char** argv)
 	stat = bbb.insertEq(eq2, output2);
 
 	BVRef output3;
-	stat = bbb.insertEq(eq3, output3);
+	stat = bbb.insertOr(LOr, output3);
 
-	BVRef output4;
-	stat = bbb.insertEq(eq4, output4);
+//	BVRef output4;
+//	stat = bbb.insertEq(eq4, output4);
 
 	std::cout << logic.printTerm(eq1) << "\n";
 	std::cout << logic.printTerm(eq2) << "\n";
-	std::cout << logic.printTerm(eq3) << "\n";
-	//std::cout << logic.printTerm(eq3_neg) << "\n";
-	std::cout << logic.printTerm(eq4) << "\n";
+	std::cout << logic.printTerm(LOr) << "\n";
+//	std::cout << logic.printTerm(LOr) << "\n";
+//	std::cout << logic.printTerm(eq4) << "\n";
 
     sstat r = mainSolver.check();
 

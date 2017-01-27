@@ -1,21 +1,16 @@
-/***************************************************
- * Created on: Jan 17, 2017
- * Author: Sepideh Asadi
- * d=a*b /\ a=2 /\ b=5 /\ d=1
- *
- * For values:
- *  a=0, b=5 , d=0 :  sat
- *  a=2, b=5 , d=11 :  unsat
- *  a=2, b=5 , d=10 :  sat
+/************************************************
+ * Created on: Jan 25, 2017
+ * a=2 /\ b=0 /\ d=1 /\   d=((not a) || b)
  *
  * Insert four Equalities with InsertEq()
- * we cannot have such not(d=10)
- ***************************************************/
+ *
+zero means false
+anything else is True
+ ************************************************/
 
 #include <opensmt/opensmt2.h>
 #include <stdio.h>
 #include <opensmt/BitBlaster.h>
-//#include <opensmt/BVLogic.h>
 
 int main(int argc, char** argv)
 {
@@ -26,26 +21,24 @@ int main(int argc, char** argv)
     MainSolver mainSolver(thandler, c, &solver);
     BVLogic& logic = cuftheory.getLogic();
 
-   // BVLogic bvlogic(c);
-
-    PTRef const1 = logic.mkBVConst(0);
-    PTRef const2 = logic.mkBVConst(5);
-    PTRef const3 = logic.mkBVConst(0);
+    // BVLogic bvlogic(c);
 
     PTRef a = logic.mkBVNumVar("a");
-    PTRef b = logic.mkBVNumVar("b");
-    PTRef d = logic.mkBVNumVar("d");
-
+    PTRef const1 = logic.mkBVConst(2);
     PTRef eq1 = logic.mkBVEq(a, const1);
 
+    PTRef b = logic.mkBVNumVar("b");
+    PTRef const2 = logic.mkBVConst(5);
     PTRef eq2 = logic.mkBVEq(b, const2);
 
+    PTRef d = logic.mkBVNumVar("d");
+    PTRef const3 = logic.mkBVConst(1);
     PTRef eq3 = logic.mkBVEq(d, const3);
-    //PTRef eq3_neg = logic.mkNot(eq3);
 
-    PTRef d2 = logic.mkBVTimes(a, b);
-    PTRef eq4 = logic.mkBVEq(d, d2);
-/******************************************************/
+    PTRef a_neg = logic.mkBVNot(a);
+    PTRef LOr = logic.mkBVLor(a_neg, b);
+    PTRef eq4 = logic.mkBVEq(d, LOr);
+
     SolverId id = { 5 };
 	vec<PtAsgn> asgns;
 	vec<DedElem> deds;
@@ -69,7 +62,7 @@ int main(int argc, char** argv)
 	std::cout << logic.printTerm(eq1) << "\n";
 	std::cout << logic.printTerm(eq2) << "\n";
 	std::cout << logic.printTerm(eq3) << "\n";
-	//std::cout << logic.printTerm(eq3_neg) << "\n";
+	std::cout << logic.printTerm(LOr) << "\n";
 	std::cout << logic.printTerm(eq4) << "\n";
 
     sstat r = mainSolver.check();
