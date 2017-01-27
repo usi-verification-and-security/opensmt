@@ -1,4 +1,7 @@
 #include "Theory.h"
+
+const int CUFTheory::i_default_bitwidth = 32;
+
 //
 // Simplify with unit propagation, add the diamond equalities if
 // present.  If PRODUCE_PROOF is enabled, do no simplifications but just

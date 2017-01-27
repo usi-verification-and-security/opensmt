@@ -55,8 +55,8 @@ public:
     void pushBacktrackPoint  ( );
     void popBacktrackPoint   ( );
 
-    void computeModel        ( );
-    Real getValue            (PTRef);
+    void    computeModel     ( );
+    ValPair getValue         (PTRef);
 
     lbool glueBtoUF          (BVRef br, PTRef tr);  // (= tr (c br_1 ... br_32))
     lbool glueUFtoB          (PTRef tr, BVRef br);  // (= br_0 (e0 tr)) /\ ... /\ (= br_32 (e32 tr))
@@ -64,6 +64,7 @@ public:
     PTRef mkCollate32        (vec<PTRef>& bits);
     PTRef mkExtract          (PTRef tr, int i);
 private:
+    BVRef bbTerm             (PTRef);
     lbool insert             (PTRef tr, BVRef& out); // The unsafe interface for theory refinement
     BVRef          updateCache  (PTRef tr);
     SMTConfig &    config;                        // Configuration
@@ -95,13 +96,9 @@ private:
     static const char* s_bbVar;
     static const char* s_bbConstant;
     static const char* s_bbDistinct;
-    static const int i_hack_bitwidth;
     char* getName(const char* base) const;
     void  getBVVars(const char* base, vec<PTRef>& vars, int width);
     PTRef mkActVar(const char* base);
-public:
-    BVRef bbTerm       (PTRef);
-private:
     // Predicates
     BVRef bbEq         (PTRef);
     BVRef bbBvsle      (PTRef);
@@ -127,9 +124,6 @@ private:
   // Not yet considered
   // vector< Enode * > & bbUf         ( Enode * );
   // vector< Enode * > & bbUp         ( Enode * );
-
-private:
-
     void     cleanGarbage          ( );                            // Clean garbage on demand
 
     PTRef    simplify              ( PTRef );                    // Further simplifications
@@ -158,7 +152,9 @@ private:
     vec<PTRef>                      variables;                     // Variables
     map< int, Var >                 cnf_var;                       // BB variable to cnf var
     bool                            has_model;                     // Is the model computed
-    Map<PTRef,Real,PTRefHash>       model;                         // Model is stored here
+    Map<PTRef,ValPair,PTRefHash>    model;                         // Model is stored here
+
+    int                             bitwidth;
 };
 
 #endif

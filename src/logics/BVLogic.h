@@ -89,15 +89,20 @@ class BVLogic: public CUFLogic
     static const char* tk_bv_coll32;
     static const char* s_uf_extract_base;
 
+    static const int i_default_bitwidth;
+
+    int bitwidth;
+
   public:
-    BVLogic (SMTConfig& c);
+    BVLogic (SMTConfig& c, int width = i_default_bitwidth);
     ~BVLogic();
+    virtual int          getBitWidth() const { return bitwidth; }
     virtual const char*   getName()  const { return getLogic().str; }
     virtual const Logic_t getLogic() const { return opensmt::QF_BV; }
 
 //    virtual PTRef         insertTerm(SymRef sym, vec<PTRef>& terms, char** msg);
     virtual PTRef mkConst(const int c) { assert(false); return PTRef_Undef; } // Not allowed (ambiguous)
-    PTRef         mkBVConst   (const int c) { assert(c >= 0); char* num; opensmt::uwordToBinary(c, num); PTRef tr = Logic::mkConst(sort_BVNUM, num); free(num); return tr; } // Should be converting the int c to binary...
+    PTRef         mkBVConst   (const int c) { assert(c >= 0); char* num; opensmt::uwordToBinary(c, num, getBitWidth()); PTRef tr = Logic::mkConst(sort_BVNUM, num); free(num); return tr; } // Should be converting the int c to binary...
     virtual PTRef         mkNumVar  (const char* name) { assert(false); return PTRef_Undef; } // Not allowed (ambiguous)
     virtual PTRef         mkBVNumVar  (const char* name) { return mkVar(sort_BVNUM, name); }
     virtual bool          isBuiltinSort(SRef sr) const { return (sr == sort_BVNUM) /*|| (sr == sort_BVSTR)*/ || Logic::isBuiltinSort(sr); }
