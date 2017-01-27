@@ -1998,6 +1998,38 @@ ValPair BitBlaster::getValue(PTRef tr)
 }
 
 lbool
+BitBlaster::notifyEquality(PTRef tr)
+{
+    assert(logic.isEquality(tr));
+    Pterm &t =  logic.getPterm(tr);
+    PTRef eq_arg0 = t[0];
+    PTRef eq_arg1 = t[1];
+    assert(bs.isBound(eq_arg0));
+    assert(bs.isBound(eq_arg1));
+    PTRef bv_tr0 = bs.getBoundPTRef(eq_arg0);
+    PTRef bv_tr1 = bs.getBoundPTRef(eq_arg1);
+
+    BVRef bv0_r = bs[bv_tr0];
+    BVRef bv1_r = bs[bv_tr1];
+    assert(bs[bv0_r].size() == bs[bv1_r].size());
+
+    vec<PTRef> and_args;
+    for (int i = 0; i < bs[bv0_r].size(); i++)
+        and_args.push(logic.mkEq(bs[bv0_r][i], bs[bv1_r][i]));
+    PTRef iff_tr = logic.mkEq(tr, logic.mkAnd(and_args));
+
+    char* msg;
+    sstat status = mainSolver.insertFormula(iff_tr, &msg);
+
+    if (status == s_True)
+        return l_True;
+    else if (status == s_False)
+        return l_False;
+    else
+        return l_Undef;
+}
+
+lbool
 BitBlaster::glueBtoUF(BVRef br, PTRef tr)
 {
     /*
