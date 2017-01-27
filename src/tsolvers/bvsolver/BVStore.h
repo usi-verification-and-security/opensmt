@@ -35,7 +35,7 @@ class BVStore
     BvectorAllocator bva;
     vec<BVRef>  idToBVRef;
     Map<PTRef,BVRef,PTRefHash> bv_map;  // Mapping of a BV variable to the bit vector (automatic)
-    Map<PTRef,BVRef,PTRefHash> pToB;    // Mapping of a variable (not in BV) to a bit vector (explicit)
+    Map<PTRef,PTRef,PTRefHash> pToB;    // Mapping of a variable (not in BV) to a bit vector (explicit)
 
 public:
     BVStore();
@@ -56,8 +56,9 @@ public:
     void  copyBVTo(BVRef bv, vec<NameAsgn>& na_vec) { for (int i = 0; i < operator[](bv).size(); i++) na_vec.push(operator[](bv).nameasgn(i)); }
 
     int size() const { return idToBVRef.size(); }
-    void  bindPTRefToBVRef(PTRef tr, BVRef br) { assert(!pToB.has(tr)); pToB.insert(tr, br); }
-    BVRef getBoundBVRef(PTRef tr) { assert(pToB.has(tr)); return pToB[tr]; }
+    void  bindCUFToBV(PTRef cuf_tr, PTRef bv_tr) { assert(!pToB.has(cuf_tr)); pToB.insert(cuf_tr, bv_tr); }
+    PTRef getBoundPTRef(PTRef tr) { assert(pToB.has(tr)); return pToB[tr]; }
+    bool  isBound(PTRef tr) { return pToB.has(tr); }
 };
 
 #endif

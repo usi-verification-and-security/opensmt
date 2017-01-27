@@ -58,6 +58,8 @@ public:
     void    computeModel     ( );
     ValPair getValue         (PTRef);
 
+    void  bindCUFToBV        (PTRef tr_cuf, PTRef tr_bv) { bs.bindCUFToBV(tr_cuf, tr_bv); }
+    lbool notifyEquality     (PTRef tr_eq);
     lbool glueBtoUF          (BVRef br, PTRef tr);  // (= tr (c br_1 ... br_32))
     lbool glueUFtoB          (PTRef tr, BVRef br);  // (= br_0 (e0 tr)) /\ ... /\ (= br_32 (e32 tr))
     lbool glueUFtoUF         (PTRef tr1, PTRef tr2); // (= uf1 uf2) <-> (and (= .b00_0 .b00_1) ... (= .b31_0 .b31_1))
