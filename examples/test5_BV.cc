@@ -1,7 +1,14 @@
 /***************************************************
  * Created on: Jan 17, 2017
  * Author: Sepideh Asadi
- * a=5 /\ b=2 /\ d=0 /\ d=a*b
+ * d=a*b /\ a=2 /\ b=5 /\ d=1
+ *
+ * For values:
+ *  a=0, b=5 , d=0 :  sat
+ *  a=2, b=5 , d=11 :  unsat
+ *  a=2, b=5 , d=10 :  sat
+ *
+ * Insert four Equalities with InsertEq()
  * we cannot have such not(d=10)
  ***************************************************/
 
@@ -10,9 +17,7 @@
 #include <opensmt/BitBlaster.h>
 //#include <opensmt/BVLogic.h>
 
-
-int
-main(int argc, char** argv)
+int main(int argc, char** argv)
 {
     SMTConfig c;
     CUFTheory cuftheory(c);
@@ -23,13 +28,13 @@ main(int argc, char** argv)
 
    // BVLogic bvlogic(c);
 
-    PTRef const1 = logic.mkConst(1);
-    PTRef const2 = logic.mkConst(1);
-    PTRef const3 = logic.mkConst(0);
+    PTRef const1 = logic.mkBVConst(0);
+    PTRef const2 = logic.mkBVConst(5);
+    PTRef const3 = logic.mkBVConst(0);
 
-    PTRef a = logic.mkNumVar("a");
-    PTRef b = logic.mkNumVar("b");
-    PTRef d = logic.mkNumVar("d");
+    PTRef a = logic.mkBVNumVar("a");
+    PTRef b = logic.mkBVNumVar("b");
+    PTRef d = logic.mkBVNumVar("d");
 
     PTRef eq1 = logic.mkBVEq(a, const1);
 
@@ -51,43 +56,15 @@ main(int argc, char** argv)
 	BVRef output1;
 	lbool stat;
 	stat = bbb.insertEq(eq1, output1);
-//	if (stat == l_True)
-//		printf("sat after eq\n");
-//	if (stat == l_False)
-//		printf("unsat after eq\n");
 
 	BVRef output2;
 	stat = bbb.insertEq(eq2, output2);
-//	if (stat == l_True)
-//		printf("sat after eq_neg\n");
-//	if (stat == l_False)
-//		printf("unsat after eq_neg\n");
 
 	BVRef output3;
 	stat = bbb.insertEq(eq3, output3);
-//	if (stat == l_True)
-//		printf("sat after eq_neg\n");
-//	if (stat == l_False)
-//		printf("unsat after eq_neg\n");
 
 	BVRef output4;
 	stat = bbb.insertEq(eq4, output4);
-//	if (stat == l_True)
-//		printf("sat after eq_neg\n");
-//	if (stat == l_False)
-//		printf("unsat after eq_neg\n");
-
-/******************************************************/
-
- /*   vec<PTRef> args;
-    args.push(eq1);
-    args.push(eq2);
-    args.push(eq3_neg);
-    args.push(eq4);
-
-    PTRef eq = logic.mkAnd(args);
-
-    mainSolver.push(eq);*/
 
 	std::cout << logic.printTerm(eq1) << "\n";
 	std::cout << logic.printTerm(eq2) << "\n";
