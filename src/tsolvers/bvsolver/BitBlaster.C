@@ -53,8 +53,6 @@ const char* BitBlaster::s_bbVar         = ".bbVar";
 const char* BitBlaster::s_bbConstant    = ".bbConstant";
 const char* BitBlaster::s_bbDistinct    = ".bbDistinct";
 
-const int BitBlaster::i_hack_bitwidth   = 32;
-
 BitBlaster::BitBlaster ( const SolverId i
                        , SMTConfig & c
                        , MainSolver& mainSolver
@@ -71,6 +69,7 @@ BitBlaster::BitBlaster ( const SolverId i
     , deductions  (d)
     , suggestions (s)
     , has_model   (false)
+    , bitwidth    (logic.getBitWidth())
 { }
 
 BitBlaster::~BitBlaster ()
@@ -271,7 +270,7 @@ BitBlaster::bbEq(PTRef tr)
         return bs.getFromPTRef(tr);
 
     vec<PTRef> names;
-    getBVVars("eq", names, i_hack_bitwidth);
+    getBVVars("eq", names, bitwidth);
 
     Pterm& t = logic.getPterm(tr);
     assert( t.size() == 2 );
@@ -294,7 +293,7 @@ BitBlaster::bbEq(PTRef tr)
     }
     PTRef res = simplify( logic.mkAnd( result_args ) );
     vec<PTRef> tmp;
-    tmp.growTo(i_hack_bitwidth, logic.getTerm_false());
+    tmp.growTo(bitwidth, logic.getTerm_false());
     tmp[0] = res;
     return bs.newBvector(names, tmp, mkActVar(s_bbEq), tr);
 }
@@ -315,7 +314,7 @@ BitBlaster::bbBvsle(PTRef tr)
 
     // Allocate new result
     vec<PTRef> names;
-    getBVVars("sle", names, i_hack_bitwidth);
+    getBVVars("sle", names, bitwidth);
 
     assert( t.size() == 2 );
     PTRef lhs = t[0];
@@ -356,7 +355,7 @@ BitBlaster::bbBvsle(PTRef tr)
 
     // Save result and return
     vec<PTRef> asgns;
-    asgns.growTo(i_hack_bitwidth, logic.getTerm_false());
+    asgns.growTo(bitwidth, logic.getTerm_false());
     asgns[0] = tr_out;
     return bs.newBvector(names, asgns, mkActVar(s_bbBvsle), tr);
 }
@@ -382,7 +381,7 @@ BitBlaster::bbBvule(PTRef tr)
 
     // Allocate new result
     vec<PTRef> names;
-    getBVVars("ule", names, i_hack_bitwidth);
+    getBVVars("ule", names, bitwidth);
 
     assert(logic.getPterm(tr).size() == 2 );
     PTRef lhs = logic.getPterm(tr)[0];
@@ -416,7 +415,7 @@ BitBlaster::bbBvule(PTRef tr)
     PTRef res = simplify(logic.mkOr(bs[eq_part].lsb(), lt_part));
 
     vec<PTRef> asgns;
-    asgns.growTo(i_hack_bitwidth, logic.getTerm_false());
+    asgns.growTo(bitwidth, logic.getTerm_false());
     asgns[0] = res;
 
     // Save result and return
@@ -436,7 +435,7 @@ BitBlaster::bbConcat(PTRef tr)
 
     // Allocate new result
     vec<PTRef> names;
-    getBVVars("con", names, i_hack_bitwidth);
+    getBVVars("con", names, bitwidth);
 
     vec<PTRef> result;
     // Retrieve arguments and put on the stack
@@ -464,7 +463,7 @@ BitBlaster::bbExtract(PTRef tr)
 
     // Allocate new result
     vec<PTRef> names;
-    getBVVars("ex", names, i_hack_bitwidth);
+    getBVVars("ex", names, bitwidth);
 
     int lsb = 0, msb = 0;
 
@@ -474,7 +473,7 @@ BitBlaster::bbExtract(PTRef tr)
     BVRef bb_arg = bbTerm(arg);
     // Produce the result
     vec<PTRef> result;
-    result.growTo(i_hack_bitwidth, logic.getTerm_false());
+    result.growTo(bitwidth, logic.getTerm_false());
     for ( int i = lsb, j = 0; i <= msb ; i ++ )
         result[j++] = bs[bb_arg][i];
 
@@ -497,7 +496,7 @@ BitBlaster::bbBvand(PTRef tr)
 
     // Allocate new result
     vec<PTRef> names;
-    getBVVars("and", names, i_hack_bitwidth);
+    getBVVars("and", names, bitwidth);
 
     vec<BVRef> bb_args;
 
@@ -539,7 +538,7 @@ BitBlaster::bbBvland(PTRef tr)
 
     // Allocate new result
     vec<PTRef> names;
-    getBVVars("lan", names, i_hack_bitwidth);
+    getBVVars("lan", names, bitwidth);
 
     vec<BVRef> bb_args;
 
@@ -553,7 +552,7 @@ BitBlaster::bbBvland(PTRef tr)
 
     assert(bs[bv1].size() == bs[bv2].size());
     vec<PTRef> result;
-    //result.growTo(i_hack_bitwidth, logic.getTerm_false());
+    //result.growTo(bitwidth, logic.getTerm_false());
     result.growTo(bs[bv1].size(), logic.getTerm_false());
 
     vec<PTRef> bv1_bits;
@@ -583,7 +582,7 @@ BitBlaster::bbBvor(PTRef tr)
 
     // Allocate new result
     vec<PTRef> names;
-    getBVVars("or", names, i_hack_bitwidth);
+    getBVVars("or", names, bitwidth);
 
 
     vec<PTRef> result;
@@ -626,10 +625,10 @@ BitBlaster::bbBvlor(PTRef tr)
 
     // Allocate new result
     vec<PTRef> names;
-    getBVVars("lor", names, i_hack_bitwidth);
+    getBVVars("lor", names, bitwidth);
 
     vec<PTRef> result;
-    result.growTo(i_hack_bitwidth, logic.getTerm_false());
+    result.growTo(bitwidth, logic.getTerm_false());
 
     PTRef arg1 = logic.getPterm(tr)[0];
     PTRef arg2 = logic.getPterm(tr)[1];
@@ -665,7 +664,7 @@ BitBlaster::bbBvxor(PTRef tr)
 
     // Allocate new result
     vec<PTRef> names;
-    getBVVars("xor", names, i_hack_bitwidth);
+    getBVVars("xor", names, bitwidth);
 
     // Allocate new result
     vec<PTRef> result;
@@ -696,7 +695,7 @@ BitBlaster::bbBvcompl(PTRef tr)
 
     // Allocate new result
     vec<PTRef> names;
-    getBVVars("not", names, i_hack_bitwidth);
+    getBVVars("not", names, bitwidth);
 
 
     // Allocate new result
@@ -726,12 +725,12 @@ BitBlaster::bbBvlnot(PTRef tr)
 
     // Allocate new result
     vec<PTRef> names;
-    getBVVars("lnot", names, i_hack_bitwidth);
+    getBVVars("lnot", names, bitwidth);
 
 
     // Allocate new result
     vec<PTRef> result;
-    result.growTo(i_hack_bitwidth, logic.getTerm_false());
+    result.growTo(bitwidth, logic.getTerm_false());
 
     PTRef arg = logic.getPterm(tr)[0];
     BVRef bb_arg = bbTerm(arg);
@@ -739,7 +738,7 @@ BitBlaster::bbBvlnot(PTRef tr)
     vec<PTRef> asgn;
     bs.copyAsgnTo(bb_arg, asgn);
     result[0] = logic.mkNot(logic.mkOr(asgn));
-//    for ( int i = 1 ; i < i_hack_bitwidth; i ++ )
+//    for ( int i = 1 ; i < bitwidth; i ++ )
 //        result[i] = logic.getTerm_false();
 
     // Save result and return
@@ -756,7 +755,7 @@ BitBlaster::bbBvadd(PTRef tr)
 
     // Allocate new result
     vec<PTRef> names;
-    getBVVars("add", names, i_hack_bitwidth);
+    getBVVars("add", names, bitwidth);
 
     // Allocate new result
     vec<PTRef> result;
@@ -808,7 +807,7 @@ BitBlaster::bbBvudiv(PTRef tr)
 
     // Allocate new result
     vec<PTRef> names;
-    getBVVars("udi", names, i_hack_bitwidth);
+    getBVVars("udi", names, bitwidth);
 
     //
     // Allocate new result
@@ -828,7 +827,7 @@ BitBlaster::bbBvudiv(PTRef tr)
     // Generate condition divisor != 0
     //
     PTRef zero = logic.getTerm_BVZero();
-    PTRef div_eq_zero = bs[bbTerm(logic.mkEq(arg2, zero))].lsb(); // I don't think this works?!
+    PTRef div_eq_zero = bs[bbTerm(logic.mkEq(arg2, zero))].lsb();
 
     const unsigned size = bs[divisor].size( );
     result.growTo(size);
@@ -959,7 +958,7 @@ BitBlaster::bbBvurem(PTRef tr)
 
     // Allocate new result
     vec<PTRef> names;
-    getBVVars("ure", names, i_hack_bitwidth);
+    getBVVars("ure", names, bitwidth);
 
     //
     // Allocate new result
@@ -976,7 +975,7 @@ BitBlaster::bbBvurem(PTRef tr)
     // Generate condition divisor != 0
     //
     PTRef zero = logic.getTerm_BVZero();
-    PTRef div_eq_zero = bs[bbTerm(logic.mkEq(arg2, zero))].lsb(); // Again, not working?
+    PTRef div_eq_zero = bs[bbTerm(logic.mkEq(arg2, zero))].lsb();
 
     const unsigned size = bs[divisor].size();
     result.growTo(size);
@@ -1114,7 +1113,7 @@ BitBlaster::bbBvmul(PTRef tr)
 
     // Allocate new result
     vec<PTRef> names;
-    getBVVars("mul", names, i_hack_bitwidth);
+    getBVVars("mul", names, bitwidth);
 
     // Allocate new result
     vec<PTRef> result;
@@ -1189,7 +1188,7 @@ BitBlaster::bbSignExtend(PTRef tr)
 
     // Allocate new result
     vec<PTRef> names;
-    getBVVars("se", names, i_hack_bitwidth);
+    getBVVars("se", names, bitwidth);
 
     vec<PTRef> result;
 
@@ -1200,7 +1199,7 @@ BitBlaster::bbSignExtend(PTRef tr)
     for ( i = 0 ; i < bs[bb_x].size( ) ; i ++ )
         result.push(bs[bb_x][i]);
     // Sign extend
-    for ( ; (int)i < i_hack_bitwidth; i ++ ) // Should be bit width of what?
+    for ( ; (int)i < bitwidth; i ++ ) // Should be bit width of what?
         result.push(bs[bb_x].lsb());
 
     return bs.newBvector(names, result, mkActVar(s_bbSignExtend), tr);
@@ -1216,7 +1215,7 @@ BitBlaster::bbVar(PTRef tr)
 
     // Allocate new result
     vec<PTRef> names;
-    getBVVars("bv", names, i_hack_bitwidth);
+    getBVVars("bv", names, bitwidth);
 
     vec<PTRef> result;
     names.copyTo(result);
@@ -1225,7 +1224,9 @@ BitBlaster::bbVar(PTRef tr)
     variables.push(tr);
 
 
-    return bs.newBvector(names, result, mkActVar(s_bbVar), tr);
+    BVRef rval = bs.newBvector(names, result, mkActVar(s_bbVar), tr);
+
+    return rval;
 }
 
 BVRef
@@ -1237,11 +1238,11 @@ BitBlaster::bbConstant(PTRef tr)
     if (bs.has(tr)) return bs[tr];
     // Allocate new result
     vec<PTRef> names;
-    getBVVars("c", names, i_hack_bitwidth);
+    getBVVars("c", names, bitwidth);
 
     vec<PTRef> asgns;
-    asgns.growTo(i_hack_bitwidth,  logic.getTerm_false());
-//    for (int i = 0; i < i_hack_bitwidth; i++) {
+    asgns.growTo(bitwidth,  logic.getTerm_false());
+//    for (int i = 0; i < bitwidth; i++) {
 //        asgns[i]  = logic.getTerm_false();
 //    }
 
@@ -1253,10 +1254,10 @@ BitBlaster::bbConstant(PTRef tr)
     {
         const std::string value = logic.getSymName(tr);
 
-        assert(value.length() == i_hack_bitwidth);
-        for (unsigned i = 0 ; i < i_hack_bitwidth; i ++)
+        assert(value.length() == bitwidth);
+        for (unsigned i = 0 ; i < bitwidth; i ++)
         {
-            asgns[i] = value[i_hack_bitwidth-i-1] == '1' ? logic.getTerm_true() : logic.getTerm_false();
+            asgns[i] = value[bitwidth-i-1] == '1' ? logic.getTerm_true() : logic.getTerm_false();
         }
     }
     // Save result and return
@@ -1286,10 +1287,10 @@ BitBlaster::bbDistinct(PTRef tr)
     if (bs.has(tr)) return bs[tr];
 
     vec<PTRef> vars;
-    getBVVars("d", vars, i_hack_bitwidth);
+    getBVVars("d", vars, bitwidth);
 
     vec<PTRef> result;
-    result.growTo(i_hack_bitwidth, logic.getTerm_false());
+    result.growTo(bitwidth, logic.getTerm_false());
     vec<PTRef> args;
 
     for (int i = 0; i < logic.getPterm(tr).size(); i++)
@@ -1977,20 +1978,19 @@ void BitBlaster::computeModel( )
         for (int j = 0; j < bs[blast].size(); j++)
         {
             PTRef b = bs[blast][j];
-            if ( cnf_var.find(logic.getPterm(b).getId()) == cnf_var.end( ) )
-                continue;
-            Var var = cnf_var[logic.getPterm(b).getId()];
+            Var var = logic.getPterm(b).getVar();
             Real bit = solverP.modelValue(mkLit(var)) == l_False ? 0 : 1;
             value = value + coeff * bit;
             coeff = Real( 2 ) * coeff;
         }
+        ValPair v(e, value.get_str().c_str());
 
-        model.insert(e, value);
+        model.insert(e, v);
     }
     has_model = true;
 }
 
-Real BitBlaster::getValue(PTRef tr)
+ValPair BitBlaster::getValue(PTRef tr)
 {
     assert(has_model);
     return model[tr];

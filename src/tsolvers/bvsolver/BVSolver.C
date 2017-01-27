@@ -132,6 +132,5 @@ void BVSolver::computeModel( )
 ValPair
 BVSolver::getValue(PTRef tr)
 {
-    ValPair v(tr, B.getValue(tr).get_str().c_str());
-    return v;
+    return B.getValue(tr);
 }

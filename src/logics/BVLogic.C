@@ -44,7 +44,9 @@ const char*  BVLogic::s_sort_bvnum = "BVNum";
 const char* BVLogic::s_uf_extract_base = ".ex";
 const char* BVLogic::tk_bv_coll32 = ".coll32";
 
-BVLogic::BVLogic(SMTConfig& c) :
+const int BVLogic::i_default_bitwidth = 32;
+
+BVLogic::BVLogic(SMTConfig& c, int width) :
       CUFLogic(c)
     , sym_BV_ZERO(SymRef_Undef)
     , sym_BV_ONE(SymRef_Undef)
@@ -74,6 +76,7 @@ BVLogic::BVLogic(SMTConfig& c) :
     , sort_BVNUM(SRef_Undef)
     , term_BV_ZERO(PTRef_Undef)
     , term_BV_ONE(PTRef_Undef)
+    , bitwidth(width)
 {
     logic_type = opensmt::QF_BV;
     char* msg;

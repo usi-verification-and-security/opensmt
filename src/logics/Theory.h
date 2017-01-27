@@ -201,14 +201,14 @@ class UFTheory : public Theory
 class CUFTheory : public Theory
 {
   private:
-//    CUFLogic    cuflogic;
     BVLogic     cuflogic;
     TermMapper  tmap;
     CUFTHandler tshandler;
+    static const int i_default_bitwidth;
   public:
-    CUFTheory(SMTConfig& c)
+    CUFTheory(SMTConfig& c, int width = i_default_bitwidth)
       : Theory(c)
-      , cuflogic(c)
+      , cuflogic(c, width)
       , tmap(cuflogic)
       , tshandler(c, cuflogic, deductions, tmap)
     {}
