@@ -106,15 +106,8 @@ class BVLogic: public CUFLogic
     virtual const char*   getName()  const { return getLogic().str; }
     virtual const Logic_t getLogic() const { return opensmt::QF_BV; }
 
-<<<<<<< HEAD
-//  virtual PTRef         insertTerm(SymRef sym, vec<PTRef>& terms, char** msg);
-    virtual PTRef mkConst(const int c) { assert(false); return PTRef_Undef; } // Not allowed (ambiguous)
-    PTRef         mkBVConst   (const int c) { assert(c >= 0); char* num; opensmt::uwordToBinary(c, num, getBitWidth()); PTRef tr = Logic::mkConst(sort_BVNUM, num); free(num); return tr; } // Should be converting the int c to binary...
-    virtual PTRef         mkNumVar  (const char* name) { assert(false); return PTRef_Undef; } // Not allowed (ambiguous)
-=======
 //    virtual PTRef         insertTerm(SymRef sym, vec<PTRef>& terms, char** msg);
     PTRef         mkBVConst   (const int c) { char* num; opensmt::wordToBinary(c, num, getBitWidth()); PTRef tr = Logic::mkConst(sort_BVNUM, num); free(num); return tr; } // Convert the int c to binary
->>>>>>> fe7a683c2e0167ae30ad2de306fc1a112c02fc12
     virtual PTRef         mkBVNumVar  (const char* name) { return mkVar(sort_BVNUM, name); }
     virtual bool          isBuiltinSort(SRef sr) const { return (sr == sort_BVNUM) /*|| (sr == sort_BVSTR)*/ || Logic::isBuiltinSort(sr); }
     virtual bool          isBuiltinConstant(SymRef sr) const { return isBVNUMConst(sr) || Logic::isBuiltinConstant(sr); }
