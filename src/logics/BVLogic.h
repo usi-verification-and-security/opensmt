@@ -69,9 +69,12 @@ class BVLogic: public CUFLogic
     static const char*  tk_bv_div;
     static const char*  tk_bv_sleq;
     static const char*  tk_bv_uleq;
-    static const char*  tk_bv_lt;
-    static const char*  tk_bv_geq;
-    static const char*  tk_bv_gt;
+    static const char*  tk_bv_slt;
+    static const char*  tk_bv_ult;
+    static const char*  tk_bv_sgeq;
+    static const char*  tk_bv_ugeq;
+    static const char*  tk_bv_sgt;
+    static const char*  tk_bv_ugt;
     static const char*  tk_bv_lshift;
     static const char*  tk_bv_rshift;
     static const char*  tk_bv_mod;
@@ -100,10 +103,15 @@ class BVLogic: public CUFLogic
     virtual const char*   getName()  const { return getLogic().str; }
     virtual const Logic_t getLogic() const { return opensmt::QF_BV; }
 
+<<<<<<< HEAD
 //  virtual PTRef         insertTerm(SymRef sym, vec<PTRef>& terms, char** msg);
     virtual PTRef mkConst(const int c) { assert(false); return PTRef_Undef; } // Not allowed (ambiguous)
     PTRef         mkBVConst   (const int c) { assert(c >= 0); char* num; opensmt::uwordToBinary(c, num, getBitWidth()); PTRef tr = Logic::mkConst(sort_BVNUM, num); free(num); return tr; } // Should be converting the int c to binary...
     virtual PTRef         mkNumVar  (const char* name) { assert(false); return PTRef_Undef; } // Not allowed (ambiguous)
+=======
+//    virtual PTRef         insertTerm(SymRef sym, vec<PTRef>& terms, char** msg);
+    PTRef         mkBVConst   (const int c) { char* num; opensmt::wordToBinary(c, num, getBitWidth()); PTRef tr = Logic::mkConst(sort_BVNUM, num); free(num); return tr; } // Convert the int c to binary
+>>>>>>> fe7a683c2e0167ae30ad2de306fc1a112c02fc12
     virtual PTRef         mkBVNumVar  (const char* name) { return mkVar(sort_BVNUM, name); }
     virtual bool          isBuiltinSort(SRef sr) const { return (sr == sort_BVNUM) /*|| (sr == sort_BVSTR)*/ || Logic::isBuiltinSort(sr); }
     virtual bool          isBuiltinConstant(SymRef sr) const { return isBVNUMConst(sr) || Logic::isBuiltinConstant(sr); }
@@ -202,19 +210,37 @@ class BVLogic: public CUFLogic
     PTRef mkBVDiv(const PTRef nom, const PTRef den);
 
     PTRef mkBVSleq(const PTRef arg1, const PTRef arg2, char**);
-    PTRef mkBVSleq(const vec<PTRef>& args) {assert(args.size() == 2); char *msg; return mkBVSleq(args[0], args[1], &msg);}
+    PTRef mkBVSleq(const PTRef arg1, const PTRef arg2) { char* msg; return mkBVSleq(arg1, arg2, &msg); }
+    PTRef mkBVSleq(const vec<PTRef>& args) {assert(args.size() == 2); return mkBVSleq(args[0], args[1]);}
 
     PTRef mkBVUleq(const PTRef arg1, const PTRef arg2, char**);
-    PTRef mkBVUleq(const vec<PTRef>& args) {assert(args.size() == 2); char *msg; return mkBVUleq(args[0], args[1], &msg);}
+    PTRef mkBVUleq(const PTRef arg1, const PTRef arg2) { char *msg; return mkBVUleq(arg1, arg2, &msg); }
+    PTRef mkBVUleq(const vec<PTRef>& args) {assert(args.size() == 2); return mkBVUleq(args[0], args[1]);}
 
-    PTRef mkBVGeq(const vec<PTRef>& args) {assert(args.size() == 2); char *msg; return mkBVGeq(args[0], args[1], &msg);}
-    PTRef mkBVGeq(const PTRef arg1, const PTRef arg2, char**);
+    PTRef mkBVSlt(const PTRef arg1, const PTRef arg2, char**);
+    PTRef mkBVSlt(const PTRef arg1, const PTRef arg2) { char* msg; return mkBVSlt(arg1, arg2, &msg); }
+    PTRef mkBVSlt(const vec<PTRef>& args) {assert(args.size() == 2); return mkBVSlt(args[0], args[1]);}
 
-    PTRef mkBVLt(const vec<PTRef>& args) {assert(args.size() == 2); char *msg; return mkBVLt(args[0], args[1], &msg);}
-    PTRef mkBVLt(const PTRef arg1, const PTRef arg2, char** tmp);
+    PTRef mkBVUlt(const PTRef arg1, const PTRef arg2, char**);
+    PTRef mkBVUlt(const PTRef arg1, const PTRef arg2) { char *msg; return mkBVUlt(arg1, arg2, &msg); }
+    PTRef mkBVUlt(const vec<PTRef>& args) {assert(args.size() == 2); return mkBVUlt(args[0], args[1]);}
 
-    PTRef mkBVGt(const vec<PTRef>& args) {assert(args.size() == 2); char *msg; return mkBVGt(args[0], args[1], &msg);}
-    PTRef mkBVGt(const PTRef arg1, const PTRef arg2, char** tmp);
+    PTRef mkBVSgeq(const PTRef arg1, const PTRef arg2, char**);
+    PTRef mkBVSgeq(const PTRef arg1, const PTRef arg2) { char* msg; return mkBVSgeq(arg1, arg2, &msg); }
+    PTRef mkBVSgeq(const vec<PTRef>& args) { assert(args.size() == 2); return mkBVSgeq(args[0], args[1]); }
+
+    PTRef mkBVUgeq(const PTRef arg1, const PTRef arg2, char**);
+    PTRef mkBVUgeq(const PTRef arg1, const PTRef arg2) { char* msg; return mkBVUgeq(arg1, arg2, &msg); }
+    PTRef mkBVUgeq(const vec<PTRef>& args) { assert(args.size() == 2); return mkBVUgeq(args[0], args[1]); }
+
+    PTRef mkBVSgt(const PTRef arg1, const PTRef arg2, char** tmp);
+    PTRef mkBVSgt(const PTRef arg1, const PTRef arg2) { char* msg; return mkBVSgt(arg1, arg2, &msg); }
+    PTRef mkBVSgt(const vec<PTRef>& args) { assert(args.size() == 2); return mkBVSgt(args[0], args[1]); }
+
+    PTRef mkBVUgt(const PTRef arg1, const PTRef arg2, char** tmp);
+    PTRef mkBVUgt(const PTRef arg1, const PTRef arg2) { char* msg; return mkBVUgt(arg1, arg2, &msg); }
+    PTRef mkBVUgt(const vec<PTRef>& args) { assert(args.size() == 2); return mkBVUgt(args[0], args[1]); }
+
 
     PTRef mkBVLshift(const vec<PTRef>& args) {assert(args.size() == 2); return mkBVLshift(args[0], args[1]);}
     PTRef mkBVLshift   (const PTRef, const PTRef);

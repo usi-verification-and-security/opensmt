@@ -6,16 +6,19 @@ int
 main(int argc, char** argv)
 {
 
-    if (argc != 3)
+    if (argc != 5)
     {
-        printf("Computes a / b\n");
-        printf("Usage: %s <a> <b>\n", argv[0]);
+        printf("Computes a <op> b on bit width <bw>\n");
+        printf("Usage: %s <bw> <op> <a> <b>\n", argv[0]);
         return 1;
     }
-    int c1_int = atoi(argv[1]);
-    int c2_int = atoi(argv[2]);
+    char* op = argv[2];
+    int c1_int = atoi(argv[3]);
+    int c2_int = atoi(argv[4]);
+    int bw = atoi(argv[1]);
+
     SMTConfig c;
-    CUFTheory cuftheory(c, 8);
+    CUFTheory cuftheory(c, bw);
     THandler thandler(c, cuftheory);
     SimpSMTSolver solver(c, thandler);
     MainSolver mainSolver(thandler, c, &solver);
@@ -30,10 +33,49 @@ main(int argc, char** argv)
     PTRef eq1 = logic.mkEq(a, c1);
     PTRef eq2 = logic.mkEq(b, c2);
 
-    PTRef div = logic.mkBVDiv(a, b);
+    PTRef op_tr;
+    if (strcmp(op, "/") == 0)
+        op_tr = logic.mkBVDiv(a, b);
+    else if (strcmp(op, "*") == 0)
+        op_tr = logic.mkBVTimes(a, b);
+    else if (strcmp(op, "+") == 0)
+        op_tr = logic.mkBVPlus(a, b);
+    else if (strcmp(op, "-") == 0)
+        op_tr = logic.mkBVMinus(a, b);
+    else if (strcmp(op, "s<") == 0)
+        op_tr = logic.mkBVSlt(a, b);
+    else if (strcmp(op, "s<=") == 0)
+        op_tr = logic.mkBVSleq(a, b);
+    else if (strcmp(op, "u<=") == 0)
+        op_tr = logic.mkBVUleq(a, b);
+    else if (strcmp(op, "s>=") == 0)
+        op_tr = logic.mkBVSgeq(a, b);
+    else if (strcmp(op, "s>") == 0)
+        op_tr = logic.mkBVSgt(a, b);
+    else if (strcmp(op, "<<") == 0)
+        op_tr = logic.mkBVLshift(a, b);
+    else if (strcmp(op, ">>") == 0)
+        op_tr = logic.mkBVRshift(a, b);
+    else if (strcmp(op, "%") == 0)
+        op_tr = logic.mkBVMod(a, b);
+    else if (strcmp(op, "&") == 0)
+        op_tr = logic.mkBVBwAnd(a, b);
+    else if (strcmp(op, "|") == 0)
+        op_tr = logic.mkBVBwOr(a, b);
+    else if (strcmp(op, "=") == 0)
+        op_tr = logic.mkBVEq(a, b);
+    else if (strcmp(op, "&&") == 0)
+        op_tr = logic.mkBVLand(a, b);
+    else if (strcmp(op, "^") == 0)
+        op_tr = logic.mkBVBwXor(a, b);
+    else {
+        printf("Unknown operator: %s", op);
+        return 1;
+    }
+
     PTRef d = logic.mkBVNumVar("d");
 
-    PTRef eq3 = logic.mkEq(div, d);
+    PTRef eq3 = logic.mkEq(op_tr, d);
 
     SolverId id = { 5 };
     vec<PtAsgn> asgns;

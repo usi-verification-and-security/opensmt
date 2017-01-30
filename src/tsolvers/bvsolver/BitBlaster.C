@@ -253,6 +253,7 @@ BitBlaster::bbTerm(PTRef tr)
     // Exit if term is not handled
     //
     cerr << "term not handled (yet ?): " << logic.printTerm(tr) << "\n";
+    return BVRef_Undef;
 }
 
 //
