@@ -33,11 +33,14 @@ class BVLogic: public CUFLogic
     SymRef              sym_BV_TIMES;  // *
     SymRef              sym_BV_DIV;    // /
     SymRef              sym_BV_EQ;     // ==
-    SymRef              sym_BV_SLEQ;    // s<=
-    SymRef              sym_BV_ULEQ;    // u<=
-    SymRef              sym_BV_LT;     // <
-    SymRef              sym_BV_GEQ;    // >=
-    SymRef              sym_BV_GT;     // >
+    SymRef              sym_BV_SLEQ;   // s<=
+    SymRef              sym_BV_ULEQ;   // u<=
+    SymRef              sym_BV_SLT;    // s<
+    SymRef              sym_BV_ULT;    // u<
+    SymRef              sym_BV_SGEQ;   // s>=
+    SymRef              sym_BV_UGEQ;   // u>=
+    SymRef              sym_BV_SGT;    // s>
+    SymRef              sym_BV_UGT;    // u>
     SymRef              sym_BV_LSHIFT; // <<
     SymRef              sym_BV_RSHIFT; // >>
     SymRef              sym_BV_MOD;    // %
@@ -137,12 +140,14 @@ class BVLogic: public CUFLogic
     bool isBVSleq(PTRef tr)    const { return isBVSleq(getPterm(tr).symb()); }
     bool isBVUleq(SymRef sr)   const { return sr == sym_BV_ULEQ; }
     bool isBVUleq(PTRef tr)    const { return isBVUleq(getPterm(tr).symb()); }
-    bool isBVLt(SymRef sr)     const { return sr == sym_BV_LT; }
-    bool isBVLt(PTRef tr)      const { return isBVLt(getPterm(tr).symb()); }
-    bool isBVGeq(SymRef sr)    const { return sr == sym_BV_GEQ; }
-    bool isBVGeq(PTRef tr)     const { return isBVGeq(getPterm(tr).symb()); }
-    bool isBVGt(SymRef sr)     const { return sr == sym_BV_GT; }
-    bool isBVGt(PTRef tr)      const { return isBVGt(getPterm(tr).symb()); }
+    bool isBVSlt(SymRef sr)     const { return sr == sym_BV_SLT; }
+    bool isBVSlt(PTRef tr)      const { return isBVSlt(getPterm(tr).symb()); }
+    bool isBVUlt(SymRef sr)     const { return sr == sym_BV_ULT; }
+    bool isBVUlt(PTRef tr)      const { return isBVUlt(getPterm(tr).symb()); }
+    bool isBVSgeq(SymRef sr)    const { return sr == sym_BV_SGEQ; }
+    bool isBVSgeq(PTRef tr)     const { return isBVSgeq(getPterm(tr).symb()); }
+    bool isBVSgt(SymRef sr)     const { return sr == sym_BV_SGT; }
+    bool isBVSgt(PTRef tr)      const { return isBVSgt(getPterm(tr).symb()); }
     bool isBVVar(SymRef sr)    const { return isVar(sr) && sym_store[sr].rsort() == sort_BVNUM; }
     bool isBVVar(PTRef tr)     const { return isBVVar(getPterm(tr).symb()); }
     bool isBVZero(SymRef sr)   const { return sr == sym_BV_ZERO; }

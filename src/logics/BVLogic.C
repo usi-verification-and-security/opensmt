@@ -61,9 +61,12 @@ BVLogic::BVLogic(SMTConfig& c, int width) :
     , sym_BV_EQ(SymRef_Undef)
     , sym_BV_SLEQ(SymRef_Undef)
     , sym_BV_ULEQ(SymRef_Undef)
-    , sym_BV_LT(SymRef_Undef)
-    , sym_BV_GEQ(SymRef_Undef)
-    , sym_BV_GT(SymRef_Undef)
+    , sym_BV_SGEQ(SymRef_Undef)
+    , sym_BV_UGEQ(SymRef_Undef)
+    , sym_BV_SLT(SymRef_Undef)
+    , sym_BV_ULT(SymRef_Undef)
+    , sym_BV_SGT(SymRef_Undef)
+    , sym_BV_UGT(SymRef_Undef)
     , sym_BV_BWXOR(SymRef_Undef)
     , sym_BV_LSHIFT(SymRef_Undef)
     , sym_BV_RSHIFT(SymRef_Undef)
@@ -132,25 +135,29 @@ BVLogic::BVLogic(SMTConfig& c, int width) :
     sym_store[sym_BV_ULEQ].setNoScoping();
     sym_store[sym_BV_ULEQ].setChainable();
 
-    sym_BV_SLEQ  = declareFun(tk_bv_slt, sort_BVNUM, params, &msg, true);
-    sym_store[sym_BV_SLEQ].setNoScoping();
-    sym_store[sym_BV_SLEQ].setChainable();
+    sym_BV_SLT  = declareFun(tk_bv_slt, sort_BVNUM, params, &msg, true);
+    sym_store[sym_BV_SLT].setNoScoping();
+    sym_store[sym_BV_SLT].setChainable();
 
-    sym_BV_ULEQ  = declareFun(tk_bv_ult, sort_BVNUM, params, &msg, true);
-    sym_store[sym_BV_ULEQ].setNoScoping();
-    sym_store[sym_BV_ULEQ].setChainable();
+    sym_BV_ULT  = declareFun(tk_bv_ult, sort_BVNUM, params, &msg, true);
+    sym_store[sym_BV_ULT].setNoScoping();
+    sym_store[sym_BV_ULT].setChainable();
 
-    sym_BV_GEQ  = declareFun(tk_bv_sgeq, sort_BVNUM, params, &msg, true);
-    sym_store[sym_BV_GEQ].setNoScoping();
-    sym_store[sym_BV_GEQ].setChainable();
+    sym_BV_UGEQ = declareFun(tk_bv_ugeq, sort_BVNUM, params, &msg, true);
+    sym_store[sym_BV_UGEQ].setNoScoping();
+    sym_store[sym_BV_UGEQ].setChainable();
 
-    sym_BV_GT   = declareFun(tk_bv_sgt, sort_BVNUM, params, &msg, true);
-    sym_store[sym_BV_GEQ].setNoScoping();
-    sym_store[sym_BV_GEQ].setChainable();
+    sym_BV_SGEQ = declareFun(tk_bv_sgeq, sort_BVNUM, params, &msg, true);
+    sym_store[sym_BV_SGEQ].setNoScoping();
+    sym_store[sym_BV_SGEQ].setChainable();
 
-    sym_BV_GT   = declareFun(tk_bv_ugt, sort_BVNUM, params, &msg, true);
-    sym_store[sym_BV_GEQ].setNoScoping();
-    sym_store[sym_BV_GEQ].setChainable();
+    sym_BV_SGT  = declareFun(tk_bv_sgt, sort_BVNUM, params, &msg, true);
+    sym_store[sym_BV_SGT].setNoScoping();
+    sym_store[sym_BV_SGT].setChainable();
+
+    sym_BV_UGT   = declareFun(tk_bv_ugt, sort_BVNUM, params, &msg, true);
+    sym_store[sym_BV_UGT].setNoScoping();
+    sym_store[sym_BV_UGT].setChainable();
 
     sym_BV_LAND   = declareFun(tk_bv_land, sort_BVNUM, params, &msg, true);
     sym_store[sym_BV_LAND].setCommutes();
