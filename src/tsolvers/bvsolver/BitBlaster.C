@@ -253,6 +253,7 @@ BitBlaster::bbTerm(PTRef tr)
     // Exit if term is not handled
     //
     cerr << "term not handled (yet ?): " << logic.printTerm(tr) << "\n";
+    return BVRef_Undef;
 }
 
 //
@@ -319,7 +320,6 @@ BitBlaster::bbBvsle(PTRef tr)
     assert( t.size() == 2 );
     PTRef lhs = t[0];
     PTRef rhs = t[1];
-    assert( logic.getPterm(lhs).size() >= 2 );
 
     // Retrieve arguments' encodings
     BVRef bb_lhs = bbTerm( lhs );
