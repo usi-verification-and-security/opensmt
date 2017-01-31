@@ -60,6 +60,8 @@ main(int argc, char** argv)
         bbb.computeModel();
         ValPair v = bbb.getValue(a_bv);
         printf("%s\n", v.val);
+        ValPair u = mainSolver.getValue(a);
+        printf("%s\n", u.val);
 
     }
     else if (r == s_False)
