@@ -16,7 +16,7 @@ Module: New Logic for BitVector
 int         BVLogic::tk_bv_zero  = 0;
 int         BVLogic::tk_bv_one   = 1;
 const char* BVLogic::tk_bv_neg   = "-";
-const char* BVLogic::tk_bv_eq    = "bv=";
+const char* BVLogic::tk_bv_eq    = "==";
 const char* BVLogic::tk_bv_minus = "-";
 const char* BVLogic::tk_bv_plus  = "+";
 const char* BVLogic::tk_bv_times = "*";
@@ -29,7 +29,6 @@ const char* BVLogic::tk_bv_sgt    = "s>";
 const char* BVLogic::tk_bv_ugt    = "u>";
 const char* BVLogic::tk_bv_sgeq   = "s>=";
 const char* BVLogic::tk_bv_ugeq   = "u>=";
-
 const char* BVLogic::tk_bv_lshift = "<<";
 const char* BVLogic::tk_bv_rshift = ">>";
 const char* BVLogic::tk_bv_mod    = "%";
@@ -367,11 +366,7 @@ BVLogic::mkBVSleq(const PTRef arg1, const PTRef arg2, char** msg)
         else
             return term_BV_ZERO;
     }
-    vec<PTRef> args;
-    args.push(arg1);
-    args.push(arg2);
-    PTRef tr = mkFun(sym_BV_SLEQ, args, msg);
-    return tr;
+    return mkBVNot(mkBVSgt(arg1, arg2));
 }
 
 PTRef
@@ -408,7 +403,20 @@ BVLogic::mkBVSlt(const PTRef arg1, const PTRef arg2, char** msg)
 {
     assert(hasSortBVNUM(arg1));
     assert(hasSortBVNUM(arg2));
-    return mkBVNot(mkBVSleq(arg2, arg1, msg));
+
+    if (isBVNUMConst(arg1) && isBVNUMConst(arg2)) {
+        int c1 = (int)getBVNUMConst(arg1);
+        int c2 = (int)getBVNUMConst(arg2);
+        if (c1 < c2)
+            return term_BV_ONE;
+        else
+            return term_BV_ZERO;
+    }
+    vec<PTRef> args;
+    args.push(arg1);
+    args.push(arg2);
+    PTRef tr = mkFun(sym_BV_SLT, args, msg);
+    return tr;
 }
 
 

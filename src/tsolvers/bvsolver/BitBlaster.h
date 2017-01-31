@@ -79,7 +79,7 @@ private:
 
     static const char* s_bbEq;
     static const char* s_bbAnd;
-    static const char* s_bbBvsle;
+    static const char* s_bbBvslt;
     static const char* s_bbBvule;
     static const char* s_bbConcat;
     static const char* s_bbExtract;
@@ -98,12 +98,13 @@ private:
     static const char* s_bbVar;
     static const char* s_bbConstant;
     static const char* s_bbDistinct;
+    static const char* s_bbBvcarry;
     char* getName(const char* base) const;
     void  getBVVars(const char* base, vec<PTRef>& vars, int width);
     PTRef mkActVar(const char* base);
     // Predicates
     BVRef bbEq         (PTRef);
-    BVRef bbBvsle      (PTRef);
+    BVRef bbBvslt      (PTRef);
     BVRef bbBvule      (PTRef);
     // Terms
     BVRef bbConcat     (PTRef);

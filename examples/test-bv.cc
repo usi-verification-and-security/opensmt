@@ -68,6 +68,8 @@ main(int argc, char** argv)
         op_tr = logic.mkBVLand(a, b);
     else if (strcmp(op, "^") == 0)
         op_tr = logic.mkBVBwXor(a, b);
+    else if (strcmp(op, "==") == 0)
+        op_tr = logic.mkBVEq(a, b);
     else {
         printf("Unknown operator: %s", op);
         return 1;

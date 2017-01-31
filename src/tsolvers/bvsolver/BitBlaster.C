@@ -33,7 +33,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 const char* BitBlaster::s_bbEq          = ".bbEq";
 const char* BitBlaster::s_bbAnd         = ".bbAnd";
-const char* BitBlaster::s_bbBvsle       = ".bbBvsle";
+const char* BitBlaster::s_bbBvslt       = ".bbBvslt";
 const char* BitBlaster::s_bbBvule       = ".bbBvule";
 const char* BitBlaster::s_bbConcat      = ".bbConcat";
 const char* BitBlaster::s_bbExtract     = ".bbExtract";
@@ -223,7 +223,7 @@ BitBlaster::bbTerm(PTRef tr)
     // BitBlasts predicates
     //
     if (logic.isBVEq(tr)) return bbEq           ( tr );
-    if (logic.isBVSleq(tr)) return bbBvsle      ( tr );
+    if (logic.isBVSlt(tr)) return bbBvslt       ( tr );
     if (logic.isBVUleq(tr)) return bbBvule      ( tr );
     if (logic.isDistinct(tr)) return bbDistinct ( tr );
     // if ( e->isUp         ( ) ) return bbUp   ( e );
@@ -301,10 +301,10 @@ BitBlaster::bbEq(PTRef tr)
 }
 
 //
-// Signed less than or equal
+// Signed less than
 //
 BVRef
-BitBlaster::bbBvsle(PTRef tr)
+BitBlaster::bbBvslt(PTRef tr)
 {
     assert(tr != PTRef_Undef);
     // assert( logic.isBvsle(tr) );
@@ -327,21 +327,14 @@ BitBlaster::bbBvsle(PTRef tr)
     BVRef bb_rhs = bbTerm( rhs );
     assert( bs[bb_lhs].size( ) == bs[bb_rhs].size( ) );
 
-    // <a>_S < <b>_S <=> (msb(a) <=> msb(b)) xor add(a, b, 1).cout
-    PTRef lt_part_tr = logic.mkXor(logic.mkEq(bs[bb_lhs].msb(), bs[bb_rhs].msb()), bbBvadd_carryonly(logic.mkBVPlus(lhs, rhs), logic.getTerm_true()));
-
-    //
-    // Produce (lhs=rhs | lhs<rhs)
-    //
-//    PTRef tr_out = simplify(logic.mkOr(lt_part_tr, logic.mkEq(lhs, rhs)));
-    // XXX Just the less that
-    PTRef tr_out = lt_part_tr;
+    // <a>_S < <b>_S <=> (msb(a) <=> msb(b)) xor add(a, ~b, 1).cout
+    PTRef tr_out = logic.mkXor(logic.mkEq(bs[bb_lhs].msb(), bs[bb_rhs].msb()), bbBvadd_carryonly(logic.mkBVPlus(lhs, logic.mkBVCompl(rhs)), logic.getTerm_true()));
 
     // Save result and return
     vec<PTRef> asgns;
     asgns.growTo(bitwidth, logic.getTerm_false());
     asgns[0] = tr_out;
-    return bs.newBvector(names, asgns, mkActVar(s_bbBvsle), tr);
+    return bs.newBvector(names, asgns, mkActVar(s_bbBvslt), tr);
 }
 
 //
