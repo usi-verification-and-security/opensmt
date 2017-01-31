@@ -36,6 +36,7 @@ class BVStore
     vec<BVRef>  idToBVRef;
     Map<PTRef,BVRef,PTRefHash> bv_map;  // Mapping of a BV variable to the bit vector (automatic)
     Map<PTRef,PTRef,PTRefHash> pToB;    // Mapping of a variable (not in BV) to a bit vector (explicit)
+    Map<PTRef,PTRef,PTRefHash> carryonly; // A cache mapping sum PTRefs to their carry bit
 
 public:
     BVStore();
@@ -50,6 +51,9 @@ public:
     BVRef operator[] (PTRef tr) { if (!has(tr)) return BVRef_Undef; return getFromPTRef(tr); }
 
     bool  has(PTRef r) { return bv_map.has(r); }
+    bool  has_carryonly(PTRef tr) { return carryonly.has(tr); }
+    PTRef getCarryOnly(PTRef tr)  { return carryonly[tr]; }
+    void  insertCarryOnly(PTRef tr_sum, PTRef tr_carry) { carryonly.insert(tr_sum, tr_carry); }
     BVRef getFromPTRef(PTRef r) { assert(bv_map.has(r)); return bv_map[r]; }
     void  copyAsgnTo(BVRef bv, vec<PTRef>& tr_vec)  { for (int i = 0; i < operator[](bv).size(); i++) tr_vec.push(operator[](bv)[i]); }
     void  copyNamesTo(BVRef bv, vec<PTRef>& tr_vec) { for (int i = 0; i < operator[](bv).size(); i++) tr_vec.push(operator[](bv).namebit(i)); }

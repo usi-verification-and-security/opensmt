@@ -123,6 +123,8 @@ private:
     BVRef bbVar        (PTRef);
     BVRef bbConstant   (PTRef);
     BVRef bbDistinct   (PTRef);
+
+    PTRef bbBvadd_carryonly(PTRef, bool); // for signed comparison
   // Not yet considered
   // vector< Enode * > & bbUf         ( Enode * );
   // vector< Enode * > & bbUp         ( Enode * );

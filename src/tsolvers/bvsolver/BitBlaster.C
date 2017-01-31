@@ -300,7 +300,7 @@ BitBlaster::bbEq(PTRef tr)
 }
 
 //
-// Signed less than equal
+// Signed less than or equal
 //
 BVRef
 BitBlaster::bbBvsle(PTRef tr)
@@ -325,34 +325,16 @@ BitBlaster::bbBvsle(PTRef tr)
     BVRef bb_lhs = bbTerm( lhs );
     BVRef bb_rhs = bbTerm( rhs );
     assert( bs[bb_lhs].size( ) == bs[bb_rhs].size( ) );
-    //
-    // Produce lhs < rhs
-    //
-    PTRef lt_prev = PTRef_Undef;
-    for ( unsigned i = 0 ; i < bs[bb_lhs].size() - 1 ; i ++ )
-    {
-        // Produce ~l[i] & r[i]
-        PTRef not_l   = logic.mkNot( bs[bb_lhs][i] );
-        PTRef lt_this = logic.mkAnd( not_l, bs[bb_rhs][i] );
-        // Produce l[i] <-> r[i]
-        PTRef eq_this = logic.mkEq( bs[bb_lhs][i], bs[bb_rhs][i]);
-        if ( lt_prev != PTRef_Undef )
-            lt_prev = logic.mkOr( lt_this, logic.mkAnd(eq_this, lt_prev) );
-        else
-            lt_prev = lt_this;
-    }
 
-    assert( lt_prev != PTRef_Undef );
-    PTRef not_r   = logic.mkNot(bs[bb_rhs].lsb());
-    PTRef neg_pos = logic.mkAnd(bs[bb_lhs].lsb(), not_r);
-    PTRef eq_this = logic.mkEq(bs[bb_lhs].lsb(), bs[bb_rhs].lsb());
-    PTRef lt_part = logic.mkOr(logic.mkAnd(eq_this, lt_prev), neg_pos) ;
+    // <a>_S < <b>_S <=> (msb(a) <=> msb(b)) xor add(a, b, 1).cout
+    PTRef lt_part_tr = logic.mkXor(logic.mkEq(bs[bb_lhs].msb(), bs[bb_rhs].msb()), bbBvadd_carryonly(logic.mkBVPlus(lhs, rhs), true));
 
-    BVRef eq_part = bbTerm(logic.mkEq(lhs, rhs));
     //
     // Produce (lhs=rhs | lhs<rhs)
     //
-    PTRef tr_out = simplify(logic.mkOr(bs[eq_part].lsb(), lt_part));
+//    PTRef tr_out = simplify(logic.mkOr(lt_part_tr, logic.mkEq(lhs, rhs)));
+    // XXX Just the less that
+    PTRef tr_out = lt_part_tr;
 
     // Save result and return
     vec<PTRef> asgns;
@@ -797,6 +779,60 @@ BitBlaster::bbBvadd(PTRef tr)
     // Save result and return
     return bs.newBvector(names, result, mkActVar(s_bbBvadd), tr);
 }
+
+PTRef
+BitBlaster::bbBvadd_carryonly(PTRef tr, bool cin)
+{
+    assert(tr != PTRef_Undef);
+    assert( logic.getPterm(tr).size() == 2 );
+
+    if (bs.has_carryonly(tr)) return bs.getCarryOnly(tr);
+
+    // Allocate new result
+    vec<PTRef> names;
+    getBVVars("add", names, bitwidth);
+
+    // Allocate new result
+    vec<PTRef> result;
+
+    PTRef arg1 = logic.getPterm(tr)[0];
+    PTRef arg2 = logic.getPterm(tr)[1];
+    BVRef bb_arg1 = bbTerm(arg1);
+    BVRef bb_arg2 = bbTerm(arg2);
+    assert( bs[bb_arg1].size() == bs[bb_arg2].size() );
+
+    PTRef carry = (cin ? logic.getTerm_true() : logic.getTerm_false());
+
+    int bw = bs[bb_arg1].size(); // the bit width
+    for (int i = 0 ; i < bw; i++)
+    {
+        PTRef bit_1 = bs[bb_arg1][i];
+        PTRef bit_2 = bs[bb_arg2][i];
+        assert(bit_1 != PTRef_Undef);
+        assert(bit_2 != PTRef_Undef);
+
+        PTRef xor_1 = logic.mkXor(bit_1, bit_2);
+        PTRef and_1 = logic.mkAnd(bit_1, bit_2);
+
+        if (carry != PTRef_Undef)
+        {
+            PTRef xor_2 = logic.mkXor(xor_1, carry);
+            PTRef and_2 = logic.mkAnd(xor_1, carry);
+            carry = logic.mkOr(and_1, and_2);
+            result.push(xor_2);
+        }
+        else
+        {
+            carry = and_1;
+            result.push(xor_1);
+        }
+    }
+
+    bs.insertCarryOnly(tr, carry);
+    // Save result and return
+    return carry;
+}
+
 
 BVRef
 BitBlaster::bbBvudiv(PTRef tr)

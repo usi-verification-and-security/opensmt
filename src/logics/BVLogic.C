@@ -359,7 +359,7 @@ BVLogic::mkBVUlt(const PTRef arg1, const PTRef arg2, char** msg)
 PTRef
 BVLogic::mkBVSlt(const PTRef arg1, const PTRef arg2, char** msg)
 {
-    return mkBVNeg(mkBVSgeq(arg1, arg2, msg));
+    return mkBVNot(mkBVSleq(arg2, arg1, msg));
 }
 
 
