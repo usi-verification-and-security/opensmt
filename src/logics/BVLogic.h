@@ -188,6 +188,7 @@ class BVLogic: public CUFLogic
     PTRef getTerm_BVZero() { return term_BV_ZERO; }
     PTRef getTerm_BVOne()  { return term_BV_ONE; }
 
+
     PTRef mkBVNeg(const vec<PTRef>& args) { assert(args.size() == 1); return mkBVNeg(args[0]); }
     PTRef mkBVNeg(PTRef, char**);
     PTRef mkBVNeg(PTRef tr) {char* msg; PTRef trn = mkBVNeg(tr, &msg); assert(trn != PTRef_Undef); return trn; }
@@ -261,8 +262,11 @@ class BVLogic: public CUFLogic
     PTRef mkBVDec(const vec<PTRef>& args) {assert(args.size() == 1);  return mkBVDec(args[0]);}
     PTRef mkBVDec      (const PTRef);*/
 
-    PTRef mkBVEq(const vec<PTRef>& args) {assert(args.size() == 2); return mkBVEq(args[0], args[1]);}
+    PTRef mkBVEq      (const vec<PTRef>& args) {assert(args.size() == 2); return mkBVEq(args[0], args[1]);}
     PTRef mkBVEq      (const PTRef, const PTRef);
+    virtual PTRef mkEq(const PTRef a1, const PTRef a2) { if (hasSortBVNUM(a1)) assert(false); return CUFLogic::mkEq(a1, a2); }
+    virtual PTRef mkEq(vec<PTRef>& args) { if (hasSortBVNUM(args[0])) assert(false); return CUFLogic::mkEq(args); }
+
 
     PTRef mkBVNeq(const vec<PTRef>& args) {assert(args.size() == 2); return mkBVNeq(args[0], args[1]);}
     PTRef mkBVNeq      (const PTRef, const PTRef);
@@ -282,11 +286,11 @@ class BVLogic: public CUFLogic
     PTRef mkBVCompl(const vec<PTRef>& args) {assert(args.size() == 1); return mkBVCompl(args[0]);}
     PTRef mkBVCompl    (const PTRef);
 
-    PTRef mkGlueBtoUF(const vec<PTRef>& bits, PTRef tr);
-    PTRef mkGlueUFtoB(PTRef tr, const vec<PTRef>& bits);
+//    PTRef mkGlueBtoUF(const vec<PTRef>& bits, PTRef tr);
+//    PTRef mkGlueUFtoB(PTRef tr, const vec<PTRef>& bits);
 
-    PTRef mkCollate32(const vec<PTRef>& bits);
-    PTRef mkExtract(PTRef tr, int i);
+//    PTRef mkCollate32(const vec<PTRef>& bits);
+//    PTRef mkExtract(PTRef tr, int i);
 
 /*  PTRef mkBVSizeof(const vec<PTRef>& args) {assert(args.size() == 1); return mkBVSizeof(args[0]);}
     PTRef mkBVSizeof   (const PTRef);

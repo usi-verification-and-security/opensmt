@@ -124,7 +124,7 @@ private:
     BVRef bbConstant   (PTRef);
     BVRef bbDistinct   (PTRef);
 
-    PTRef bbBvadd_carryonly(PTRef, bool); // for signed comparison
+    PTRef bbBvadd_carryonly(PTRef sum, PTRef cin); // for signed comparison
   // Not yet considered
   // vector< Enode * > & bbUf         ( Enode * );
   // vector< Enode * > & bbUp         ( Enode * );

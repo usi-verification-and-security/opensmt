@@ -218,6 +218,7 @@ BitBlaster::mkActVar(const char* base)
 BVRef
 BitBlaster::bbTerm(PTRef tr)
 {
+    assert(logic.hasSortBVNUM(tr));
     //
     // BitBlasts predicates
     //
@@ -327,7 +328,7 @@ BitBlaster::bbBvsle(PTRef tr)
     assert( bs[bb_lhs].size( ) == bs[bb_rhs].size( ) );
 
     // <a>_S < <b>_S <=> (msb(a) <=> msb(b)) xor add(a, b, 1).cout
-    PTRef lt_part_tr = logic.mkXor(logic.mkEq(bs[bb_lhs].msb(), bs[bb_rhs].msb()), bbBvadd_carryonly(logic.mkBVPlus(lhs, rhs), true));
+    PTRef lt_part_tr = logic.mkXor(logic.mkEq(bs[bb_lhs].msb(), bs[bb_rhs].msb()), bbBvadd_carryonly(logic.mkBVPlus(lhs, rhs), logic.getTerm_true()));
 
     //
     // Produce (lhs=rhs | lhs<rhs)
@@ -781,51 +782,34 @@ BitBlaster::bbBvadd(PTRef tr)
 }
 
 PTRef
-BitBlaster::bbBvadd_carryonly(PTRef tr, bool cin)
+BitBlaster::bbBvadd_carryonly(PTRef tr, PTRef cin)
 {
     assert(tr != PTRef_Undef);
     assert( logic.getPterm(tr).size() == 2 );
 
     if (bs.has_carryonly(tr)) return bs.getCarryOnly(tr);
 
-    // Allocate new result
-    vec<PTRef> names;
-    getBVVars("add", names, bitwidth);
+    PTRef a = logic.getPterm(tr)[0];
+    PTRef b = logic.getPterm(tr)[1];
+    BVRef bb_a = bbTerm(a);
+    BVRef bb_b = bbTerm(b);
+    assert( bs[bb_a].size() == bs[bb_b].size() );
 
-    // Allocate new result
-    vec<PTRef> result;
+    PTRef carry = cin;
 
-    PTRef arg1 = logic.getPterm(tr)[0];
-    PTRef arg2 = logic.getPterm(tr)[1];
-    BVRef bb_arg1 = bbTerm(arg1);
-    BVRef bb_arg2 = bbTerm(arg2);
-    assert( bs[bb_arg1].size() == bs[bb_arg2].size() );
-
-    PTRef carry = (cin ? logic.getTerm_true() : logic.getTerm_false());
-
-    int bw = bs[bb_arg1].size(); // the bit width
+    int bw = bs[bb_a].size(); // the bit width
     for (int i = 0 ; i < bw; i++)
     {
-        PTRef bit_1 = bs[bb_arg1][i];
-        PTRef bit_2 = bs[bb_arg2][i];
-        assert(bit_1 != PTRef_Undef);
-        assert(bit_2 != PTRef_Undef);
+        PTRef a_i = bs[bb_a][i];
+        PTRef b_i = bs[bb_b][i];
+        assert(a_i != PTRef_Undef);
+        assert(b_i != PTRef_Undef);
 
-        PTRef xor_1 = logic.mkXor(bit_1, bit_2);
-        PTRef and_1 = logic.mkAnd(bit_1, bit_2);
+        PTRef xor_1 = logic.mkXor(a_i, b_i);
 
-        if (carry != PTRef_Undef)
-        {
-            PTRef xor_2 = logic.mkXor(xor_1, carry);
-            PTRef and_2 = logic.mkAnd(xor_1, carry);
-            carry = logic.mkOr(and_1, and_2);
-            result.push(xor_2);
-        }
-        else
-        {
-            carry = and_1;
-            result.push(xor_1);
-        }
+        PTRef and_1 = logic.mkAnd(a_i, b_i);
+        PTRef and_2 = logic.mkAnd(xor_1, carry);
+        carry = logic.mkOr(and_1, and_2);
     }
 
     bs.insertCarryOnly(tr, carry);
@@ -2017,7 +2001,10 @@ void BitBlaster::computeModel( )
             PTRef b = bs[blast][j];
             Var var = logic.getPterm(b).getVar();
             Real bit = solverP.modelValue(mkLit(var)) == l_False ? 0 : 1;
-            value = value + coeff * bit;
+            if (bs[blast].is_signed() && (j = bs[blast].size()-1))
+                value = value - coeff * bit; // The last one is negative
+            else
+                value = value + coeff * bit;
             coeff = Real( 2 ) * coeff;
         }
         ValPair v(e, value.get_str().c_str());

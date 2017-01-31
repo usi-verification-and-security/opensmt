@@ -16,7 +16,7 @@ Module: New Logic for BitVector
 int         BVLogic::tk_bv_zero  = 0;
 int         BVLogic::tk_bv_one   = 1;
 const char* BVLogic::tk_bv_neg   = "-";
-const char* BVLogic::tk_bv_eq    = "=";
+const char* BVLogic::tk_bv_eq    = "bv=";
 const char* BVLogic::tk_bv_minus = "-";
 const char* BVLogic::tk_bv_plus  = "+";
 const char* BVLogic::tk_bv_times = "*";
@@ -207,8 +207,26 @@ BVLogic::~BVLogic()
 //}
 
 PTRef
+BVLogic::mkBVEq(PTRef a1, PTRef a2)
+{
+    assert(hasSortBVNUM(a1));
+    assert(hasSortBVNUM(a2));
+
+    if (isConstant(a1) && isConstant(a2))
+        return (a1 == a2) ? getTerm_BVOne() : getTerm_BVZero();
+    if (a1 == a2) return getTerm_BVOne();
+    if (a1 == mkBVNot(a2)) return getTerm_BVZero();
+    vec<PTRef> tmp;
+    tmp.push(a1);
+    tmp.push(a2);
+    char* msg;
+    return mkFun(sym_BV_EQ, tmp, &msg);
+}
+
+PTRef
 BVLogic::mkBVNeg(PTRef tr, char** msg)
 {
+    assert(hasSortBVNUM(tr));
     if (isBVNeg(tr)) return getPterm(tr)[0];
     if (isConstant(tr)) {
         int v = atoi(sym_store.getName(getPterm(tr).symb()));
@@ -229,6 +247,9 @@ BVLogic::mkBVNeg(PTRef tr, char** msg)
 PTRef
 BVLogic::mkBVMinus(const vec<PTRef>& args_in, char** msg)
 {
+    for (int i = 0; i < args_in.size(); i++)
+        assert(hasSortBVNUM(args_in[i]));
+
     SymRef s;
     vec<PTRef> args;
     args_in.copyTo(args);
@@ -246,6 +267,10 @@ BVLogic::mkBVMinus(const vec<PTRef>& args_in, char** msg)
 PTRef
 BVLogic::mkBVPlus(const PTRef arg1, const PTRef arg2, char** msg)
 {
+
+    assert(hasSortBVNUM(arg1));
+    assert(hasSortBVNUM(arg2));
+
     vec<PTRef> sum_args;
     sum_args.push(arg1);
     sum_args.push(arg2);
@@ -263,6 +288,9 @@ BVLogic::mkBVPlus(const PTRef arg1, const PTRef arg2, char** msg)
 PTRef
 BVLogic::mkBVTimes(const PTRef arg1, const PTRef arg2, char** msg)
 {
+    assert(hasSortBVNUM(arg1));
+    assert(hasSortBVNUM(arg2));
+
     vec<PTRef> times_args;
     times_args.push(arg1);
     times_args.push(arg2);
@@ -280,6 +308,9 @@ BVLogic::mkBVTimes(const PTRef arg1, const PTRef arg2, char** msg)
 PTRef
 BVLogic::mkBVDiv(const PTRef arg1, const PTRef arg2)
 {
+    assert(hasSortBVNUM(arg1));
+    assert(hasSortBVNUM(arg2));
+
     vec<PTRef> div_args;
     div_args.push(arg1);
     div_args.push(arg2);
@@ -291,6 +322,8 @@ BVLogic::mkBVDiv(const PTRef arg1, const PTRef arg2)
 PTRef
 BVLogic::mkBVUgeq(const PTRef arg1, const PTRef arg2, char** msg)
 {
+    assert(hasSortBVNUM(arg1));
+    assert(hasSortBVNUM(arg2));
     return mkBVUleq(arg2, arg1);
 }
 
@@ -298,12 +331,16 @@ BVLogic::mkBVUgeq(const PTRef arg1, const PTRef arg2, char** msg)
 PTRef
 BVLogic::mkBVSgeq(const PTRef arg1, const PTRef arg2, char** msg)
 {
+    assert(hasSortBVNUM(arg1));
+    assert(hasSortBVNUM(arg2));
     return mkBVSleq(arg2, arg1);
 }
 
 PTRef
 BVLogic::mkBVUgt(const PTRef arg1, const PTRef arg2, char** msg)
 {
+    assert(hasSortBVNUM(arg1));
+    assert(hasSortBVNUM(arg2));
     return mkBVUlt(arg2, arg1);
 }
 
@@ -311,12 +348,17 @@ BVLogic::mkBVUgt(const PTRef arg1, const PTRef arg2, char** msg)
 PTRef
 BVLogic::mkBVSgt(const PTRef arg1, const PTRef arg2, char** msg)
 {
+    assert(hasSortBVNUM(arg1));
+    assert(hasSortBVNUM(arg2));
     return mkBVSlt(arg2, arg1);
 }
 
 PTRef
 BVLogic::mkBVSleq(const PTRef arg1, const PTRef arg2, char** msg)
 {
+    assert(hasSortBVNUM(arg1));
+    assert(hasSortBVNUM(arg2));
+
     if (isBVNUMConst(arg1) && isBVNUMConst(arg2)) {
         int c1 = (int)getBVNUMConst(arg1);
         int c2 = (int)getBVNUMConst(arg2);
@@ -335,6 +377,9 @@ BVLogic::mkBVSleq(const PTRef arg1, const PTRef arg2, char** msg)
 PTRef
 BVLogic::mkBVUleq(const PTRef arg1, const PTRef arg2, char** msg)
 {
+    assert(hasSortBVNUM(arg1));
+    assert(hasSortBVNUM(arg2));
+
     if (isBVNUMConst(arg1) && isBVNUMConst(arg2)) {
         unsigned c1 = (unsigned)getBVNUMConst(arg1);
         unsigned c2 = (unsigned)getBVNUMConst(arg2);
@@ -353,18 +398,24 @@ BVLogic::mkBVUleq(const PTRef arg1, const PTRef arg2, char** msg)
 PTRef
 BVLogic::mkBVUlt(const PTRef arg1, const PTRef arg2, char** msg)
 {
+    assert(hasSortBVNUM(arg1));
+    assert(hasSortBVNUM(arg2));
     return mkBVNeg(mkBVUgeq(arg1, arg2));
 }
 
 PTRef
 BVLogic::mkBVSlt(const PTRef arg1, const PTRef arg2, char** msg)
 {
+    assert(hasSortBVNUM(arg1));
+    assert(hasSortBVNUM(arg2));
     return mkBVNot(mkBVSleq(arg2, arg1, msg));
 }
 
 
 PTRef BVLogic::mkBVLshift(const PTRef arg1, const PTRef arg2)
 {
+    assert(hasSortBVNUM(arg1));
+    assert(hasSortBVNUM(arg2));
     if (isBVNUMConst(arg2) && getBVNUMConst(arg2) == 0)
         return arg1;
     vec<PTRef> args;
@@ -387,6 +438,9 @@ PTRef BVLogic::mkBVRshift(const PTRef arg1, const PTRef arg2)
 
 PTRef BVLogic::mkBVMod(const PTRef arg1, const PTRef arg2)
 {
+    assert(hasSortBVNUM(arg1));
+    assert(hasSortBVNUM(arg2));
+
     if (isBVNUMConst(arg2) && getBVNUMConst(arg2) == 1)
         return getTerm_BVZero();
     // if b > 0, then 0 <= a % b < b
@@ -401,6 +455,8 @@ PTRef BVLogic::mkBVMod(const PTRef arg1, const PTRef arg2)
 
 PTRef BVLogic::mkBVBwAnd(const PTRef arg1, const PTRef arg2)
 {
+    assert(hasSortBVNUM(arg1));
+    assert(hasSortBVNUM(arg2));
     vec<PTRef> args;
     args.push(arg1);
     args.push(arg2);
@@ -410,6 +466,8 @@ PTRef BVLogic::mkBVBwAnd(const PTRef arg1, const PTRef arg2)
 
 PTRef BVLogic::mkBVBwOr(const PTRef arg1, const PTRef arg2)
 {
+    assert(hasSortBVNUM(arg1));
+    assert(hasSortBVNUM(arg2));
     vec<PTRef> args;
     args.push(arg1);
     args.push(arg2);
@@ -419,6 +477,7 @@ PTRef BVLogic::mkBVBwOr(const PTRef arg1, const PTRef arg2)
 
 /*PTRef BVLogic::mkBVInc(const PTRef arg1)
 {
+    assert(hasSortBVNUM(arg1));
     vec<PTRef> args;
     args.push(arg1);
     char** msg;
@@ -431,6 +490,7 @@ PTRef BVLogic::mkBVBwOr(const PTRef arg1, const PTRef arg2)
 
 PTRef BVLogic::mkBVDec(const PTRef arg1)
 {
+    assert(hasSortBVNUM(arg1));
     vec<PTRef> args;
     args.push(arg1);
     char** msg;
@@ -443,6 +503,8 @@ PTRef BVLogic::mkBVDec(const PTRef arg1)
 
 PTRef BVLogic::mkBVLand(const PTRef arg1, const PTRef arg2)
 {
+    assert(hasSortBVNUM(arg1));
+    assert(hasSortBVNUM(arg2));
     vec<PTRef> args;
     args.push(arg1);
     args.push(arg2);
@@ -453,6 +515,8 @@ PTRef BVLogic::mkBVLand(const PTRef arg1, const PTRef arg2)
 
 PTRef BVLogic::mkBVLor(const PTRef arg1, const PTRef arg2)
 {
+    assert(hasSortBVNUM(arg1));
+    assert(hasSortBVNUM(arg2));
     vec<PTRef> args;
     args.push(arg1);
     args.push(arg2);
@@ -463,6 +527,7 @@ PTRef BVLogic::mkBVLor(const PTRef arg1, const PTRef arg2)
 
 PTRef BVLogic::mkBVNot(const PTRef arg)
 {
+    assert(hasSortBVNUM(arg));
     if (isBVNot(arg))
         return getPterm(arg)[0];
     else if (isConstant(arg) && (arg != term_BV_ZERO))
@@ -478,6 +543,8 @@ PTRef BVLogic::mkBVNot(const PTRef arg)
 
 PTRef BVLogic::mkBVBwXor(const PTRef arg1, const PTRef arg2)
 {
+    assert(hasSortBVNUM(arg1));
+    assert(hasSortBVNUM(arg2));
     char** msg;
     vec<PTRef> args;
     args.push(arg1);
@@ -487,6 +554,7 @@ PTRef BVLogic::mkBVBwXor(const PTRef arg1, const PTRef arg2)
 
 PTRef BVLogic::mkBVCompl(const PTRef arg1)
 {
+    assert(hasSortBVNUM(arg1));
     vec<PTRef> args;
     args.push(arg1);
     char** msg;
@@ -526,22 +594,14 @@ PTRef BVLogic::mkBVPtr(const PTRef arg)
 {
     return mkIte(cond, i_arg, e_arg);
 }*/
-PTRef BVLogic::mkBVEq(const PTRef a1, const PTRef a2) {
-    if(isConstant(a1) && isConstant(a2))
-        return (a1 == a2) ? term_BV_ONE : term_BV_ZERO;
-    if (a1 == a2) return term_BV_ONE;
-    char** msg;
-    vec<PTRef> args;
-    args.push(a1);
-    args.push(a2);
-    return mkFun(sym_BV_EQ, args, msg);
-}
 
 PTRef BVLogic::mkBVNeq(const PTRef a1, const PTRef a2)
 {
-	vec<PTRef> args;
-	args.push(a1);
-	args.push(a2);
+    assert(hasSortBVNUM(a1));
+    assert(hasSortBVNUM(a2));
+    vec<PTRef> args;
+    args.push(a1);
+    args.push(a2);
     return mkBVNeg(mkBVEq(args));
 }
 
@@ -574,41 +634,41 @@ const int BVLogic::getBVNUMConst(PTRef tr) const
     Logic::conjoinItes(root_out, root_out);
 }*/
 
-PTRef
-BVLogic::mkGlueBtoUF(const vec<PTRef>& bits, PTRef tr)
-{
-    assert(bits.size() == 32);
-    PTRef cr = mkCollate32(bits);
-    return mkEq(cr, tr);
-}
+//PTRef
+//BVLogic::mkGlueBtoUF(const vec<PTRef>& bits, PTRef tr)
+//{
+//    assert(bits.size() == 32);
+//    PTRef cr = mkCollate32(bits);
+//    return mkEq(cr, tr);
+//}
+//
+//PTRef
+//BVLogic::mkGlueUFtoB(PTRef tr, const vec<PTRef>& bits)
+//{
+//    assert(bits.size() == 32);
+//    vec<PTRef> conjs;
+//    for (int i = 0; i < bits.size(); i++)
+//        conjs.push(Logic::mkEq(bits[i], mkExtract(tr, i)));
+//    return Logic::mkAnd(conjs);
+//}
+//
+//PTRef
+//BVLogic::mkCollate32(const vec<PTRef>& bits)
+//{
+//    char* msg;
+//    return mkFun(sym_BV_COLLATE32, bits, &msg);
+//}
 
-PTRef
-BVLogic::mkGlueUFtoB(PTRef tr, const vec<PTRef>& bits)
-{
-    assert(bits.size() == 32);
-    vec<PTRef> conjs;
-    for (int i = 0; i < bits.size(); i++)
-        conjs.push(Logic::mkEq(bits[i], mkExtract(tr, i)));
-    return Logic::mkAnd(conjs);
-}
-
-PTRef
-BVLogic::mkCollate32(const vec<PTRef>& bits)
-{
-    char* msg;
-    return mkFun(sym_BV_COLLATE32, bits, &msg);
-}
-
-PTRef
-BVLogic::mkExtract(PTRef tr, int i)
-{
-    char* sym_name;
-    char* msg;
-    asprintf(&sym_name, "%s%d", s_uf_extract_base, i);
-    vec<SymRef>& srs = symNameToRef(sym_name);
-    SymRef sr = srs[0];
-    free(sym_name);
-    vec<PTRef> tmp;
-    tmp.push(tr);
-    return mkFun(sr, tmp, &msg);
-}
+//PTRef
+//BVLogic::mkExtract(PTRef tr, int i)
+//{
+//    char* sym_name;
+//    char* msg;
+//    asprintf(&sym_name, "%s%d", s_uf_extract_base, i);
+//    vec<SymRef>& srs = symNameToRef(sym_name);
+//    SymRef sr = srs[0];
+//    free(sym_name);
+//    vec<PTRef> tmp;
+//    tmp.push(tr);
+//    return mkFun(sr, tmp, &msg);
+//}

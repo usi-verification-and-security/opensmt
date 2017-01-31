@@ -29,8 +29,8 @@ main(int argc, char** argv)
     PTRef c1 = logic.mkBVConst(c1_int);
     PTRef c2 = logic.mkBVConst(c2_int);
 
-    PTRef eq1 = logic.mkEq(a_bv, c1);
-    PTRef eq2 = logic.mkEq(b_bv, c2);
+    PTRef eq1 = logic.mkBVEq(a_bv, c1);
+    PTRef eq2 = logic.mkBVEq(b_bv, c2);
     PTRef eq3 = logic.mkEq(a, b);
 
     char* msg;

@@ -30,8 +30,8 @@ main(int argc, char** argv)
     PTRef c1 = logic.mkBVConst(c1_int);
     PTRef c2 = logic.mkBVConst(c2_int);
 
-    PTRef eq1 = logic.mkEq(a, c1);
-    PTRef eq2 = logic.mkEq(b, c2);
+    PTRef eq1 = logic.mkBVEq(a, c1);
+    PTRef eq2 = logic.mkBVEq(b, c2);
 
     PTRef op_tr;
     if (strcmp(op, "/") == 0)
@@ -75,7 +75,7 @@ main(int argc, char** argv)
 
     PTRef d = logic.mkBVNumVar("d");
 
-    PTRef eq3 = logic.mkEq(op_tr, d);
+    PTRef eq3 = logic.mkBVEq(op_tr, d);
 
     SolverId id = { 5 };
     vec<PtAsgn> asgns;

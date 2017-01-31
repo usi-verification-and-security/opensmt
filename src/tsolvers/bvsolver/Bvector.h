@@ -56,10 +56,10 @@ struct NameAsgn {
 
 class Bvector {
     struct {
-        unsigned type       : 3;
+        unsigned is_signed  : 1;
         unsigned has_extra  : 1;
         unsigned reloced    : 1;
-        unsigned size       : 27; }     header;
+        unsigned size       : 29; }     header;
     BVId                                id;
     PTRef                               actVar;
     // This has to be the last
@@ -72,7 +72,7 @@ class Bvector {
   public:
 
     Bvector(const vec<NameAsgn>& ps, PTRef actVar) : actVar(actVar) {
-        header.type      = 0;
+        header.is_signed = 0;
         header.has_extra = 0;
         header.reloced   = 0;
         header.size      = ps.size();
@@ -80,7 +80,7 @@ class Bvector {
         for (int i = 0; i < ps.size(); i++) args[i] = ps[i];
     }
     Bvector() : actVar(PTRef_Undef) {
-        header.type      = 0;
+        header.is_signed = 0;
         header.has_extra = 0;
         header.reloced   = 0;
         header.size      = 0;
@@ -105,8 +105,8 @@ class Bvector {
     bool     reloced     ()      const   { return header.reloced; }
     BVRef    relocation  ()      const   { return { args[0].name.x }; }
     void     relocate    (BVRef t)       { header.reloced = 1; args[0] = { t.x, 0 }; }
-    uint32_t type        ()      const   { return header.type; }
-    void     type        (uint32_t m)    { header.type = m; }
+    bool     is_signed   ()      const   { return header.is_signed; }
+    void     set_signed  (bool m)    { header.is_signed = m; }
 
     int      getId() const { return id; }
     void     setId(int i) { id = i; }
@@ -173,7 +173,7 @@ class BvectorAllocator : public RegionAllocator<uint32_t>
         t.relocate(tr);
 
         // Copy extra data-fields:
-        to[tr].type(t.type());
+        to[tr].set_signed(t.is_signed());
     }
     friend class BVStore;
 };

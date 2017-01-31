@@ -788,7 +788,7 @@ PTRef Logic::mkImpl(vec<PTRef>& args) {
 
 PTRef Logic::mkEq(vec<PTRef>& args) {
     assert(args.size() == 2);
-    if(isConstant(args[0]) && isConstant(args[1]))
+    if (isConstant(args[0]) && isConstant(args[1]))
         return (args[0] == args[1]) ? getTerm_true() : getTerm_false();
     if (args[0] == args[1]) return getTerm_true();
     SymRef eq_sym = term_store.lookupSymbol(tk_equals, args);
