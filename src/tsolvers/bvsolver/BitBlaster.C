@@ -392,7 +392,7 @@ BitBlaster::bbBvule(PTRef tr)
     }
 
     PTRef lt_part = lt_prev;
-    BVRef eq_part = bbTerm(logic.mkEq(lhs, rhs));
+    BVRef eq_part = bbTerm(logic.mkBVEq(lhs, rhs));
     //
     // Produce (lhs=rhs | lhs<rhs)
     //
@@ -848,7 +848,7 @@ BitBlaster::bbBvudiv(PTRef tr)
     // Generate condition divisor != 0
     //
     PTRef zero = logic.getTerm_BVZero();
-    PTRef div_eq_zero = bs[bbTerm(logic.mkEq(arg2, zero))].lsb();
+    PTRef div_eq_zero = bs[bbTerm(logic.mkBVEq(arg2, zero))].lsb();
 
     const unsigned size = bs[divisor].size( );
     result.growTo(size);
@@ -996,7 +996,7 @@ BitBlaster::bbBvurem(PTRef tr)
     // Generate condition divisor != 0
     //
     PTRef zero = logic.getTerm_BVZero();
-    PTRef div_eq_zero = bs[bbTerm(logic.mkEq(arg2, zero))].lsb();
+    PTRef div_eq_zero = bs[bbTerm(logic.mkBVEq(arg2, zero))].lsb();
 
     const unsigned size = bs[divisor].size();
     result.growTo(size);
@@ -1325,7 +1325,7 @@ BitBlaster::bbDistinct(PTRef tr)
     {
         for (int j = i+1; j < logic.getPterm(tr).size(); j++)
         {
-            BVRef bb_pair = bbTerm(logic.mkEq(args[i], args[j]));
+            BVRef bb_pair = bbTerm(logic.mkBVEq(args[i], args[j]));
             assert(bs[bb_pair].size() == 1);
             res_args.push(logic.mkNot(bs[bb_pair].lsb()));
         }
