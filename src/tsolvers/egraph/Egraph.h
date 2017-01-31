@@ -99,6 +99,7 @@ private:
 
   static const char* s_val_prefix;
   static const char* s_const_prefix;
+  static const char* s_any_prefix;
   static const char* s_val_true;
   static const char* s_val_false;
 

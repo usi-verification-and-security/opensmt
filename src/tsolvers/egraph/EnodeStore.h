@@ -88,6 +88,8 @@ class EnodeStore {
     Map<SymRef,ERef,SymRefHash,Equal<SymRef> > symToERef;
     Map<ERef,PTRef,ERefHash,Equal<ERef> >      ERefToTerm;
 
+    bool         has(PTRef tr)         const { return termToERef.has(tr); }
+
     Enode&       operator[] (ERef e)         { return ea[e]; }
     const Enode& operator[] (ERef e)   const { return ea[e]; }
           Enode& operator[] (PTRef tr)       { return ea[termToERef[tr]]; }

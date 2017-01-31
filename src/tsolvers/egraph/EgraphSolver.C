@@ -48,6 +48,7 @@ static SolverDescr descr_uf_solver("UF Solver", "Solver for Quantifier Free Theo
 
 const char* Egraph::s_val_prefix = "u";
 const char* Egraph::s_const_prefix = "n";
+const char* Egraph::s_any_prefix = "a";
 const char* Egraph::s_val_true = "true";
 const char* Egraph::s_val_false = "false";
 
@@ -2552,23 +2553,30 @@ Egraph::getValue(PTRef tr)
         assert(false);
         return ValPair_Undef;
     }
-
-    Enode& e = enode_store[tr];
-    ERef e_root = values[e.getERef()];
-
     char* name;
-    if (e_root == enode_store.ERef_True)
-       asprintf(&name, "true");
-    else if (e_root == enode_store.ERef_False)
-        asprintf(&name, "false");
-    else if (isConstant(e_root)) {
-        char* const_name = logic.printTerm(enode_store[e_root].getTerm());
-        asprintf(&name, "%s%s", s_const_prefix, const_name);
-        free(const_name);
-    }
-    else
-        asprintf(&name, "%s%d", s_val_prefix, enode_store[e_root].getId());
 
+    if (!enode_store.has(tr)) {
+        // This variable was never pushed to Egraph so its value is not
+        // bound by anything.
+        asprintf(&name, "%s%d", s_any_prefix, logic.getPterm(tr).getId());
+    }
+    else {
+
+        Enode& e = enode_store[tr];
+        ERef e_root = values[e.getERef()];
+
+        if (e_root == enode_store.ERef_True)
+           asprintf(&name, "true");
+        else if (e_root == enode_store.ERef_False)
+            asprintf(&name, "false");
+        else if (isConstant(e_root)) {
+            char* const_name = logic.printTerm(enode_store[e_root].getTerm());
+            asprintf(&name, "%s%s", s_const_prefix, const_name);
+            free(const_name);
+        }
+        else
+            asprintf(&name, "%s%d", s_val_prefix, enode_store[e_root].getId());
+    }
     ValPair vp(tr, name);
     free(name);
     return vp;
