@@ -798,6 +798,10 @@ BitBlaster::bbBvadd_carryonly(PTRef tr, PTRef cin)
         assert(a_i != PTRef_Undef);
         assert(b_i != PTRef_Undef);
 
+     //   Carry-out for i_th bit:
+     //   C_in comes from Carry_out for previous bit so that    C_in = C_out_i-1
+     //   C_out_i = carry(a_i, b_i, C_in) = (a_i /\ b_i) \/ ( (a_i xor b_i) /\ C_in )
+
         PTRef xor_1 = logic.mkXor(a_i, b_i);
 
         PTRef and_1 = logic.mkAnd(a_i, b_i);

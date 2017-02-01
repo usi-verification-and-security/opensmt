@@ -23,15 +23,15 @@ main(int argc, char** argv)
     // BVLogic bvlogic(c);
 
     PTRef a = logic.mkBVNumVar("a");
-    PTRef const1 = logic.mkBVConst(2);
+    PTRef const1 = logic.mkBVConst(-1);
     PTRef eq1 = logic.mkBVEq(a, const1);
 
     PTRef b = logic.mkBVNumVar("b");
-    PTRef const2 = logic.mkBVConst(1);
+    PTRef const2 = logic.mkBVConst(4);
     PTRef eq2 = logic.mkBVEq(b, const2);
 
     PTRef d = logic.mkBVNumVar("d");
-    PTRef const3 = logic.mkBVConst(0);
+    PTRef const3 = logic.mkBVConst(4);
     PTRef eq3 = logic.mkBVEq(d, const3);
     //PTRef eq3_neg = logic.mkBVNot(eq3);
 
