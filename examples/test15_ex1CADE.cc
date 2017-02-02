@@ -1,9 +1,8 @@
 /************************************************
  * Created on: Jan 30, 2017
- *  unsigned  e,f;
- *  f=g
-    unsigned d = e * ( f % 2 );
-    unsigned d_p =e * ( g % 2);
+ *  unsigned  f=g;
+    unsigned d = e*( f % 2 );
+    unsigned d_p = e*( g % 2);
     assert(d == d_p);
 }
  ************************************************/
@@ -14,26 +13,29 @@
 int main(int argc, char** argv)
 {
     SMTConfig c;
-    CUFTheory cuftheory(c);
+    CUFTheory cuftheory(c , 8);
     THandler thandler(c, cuftheory);
     SimpSMTSolver solver(c, thandler);
     MainSolver mainSolver(thandler, c, &solver);
     BVLogic& logic = cuftheory.getLogic();
 
-    PTRef a = logic.mkBVNumVar("a");
-    PTRef const1 = logic.mkBVConst(5);
-    PTRef eq1 = logic.mkBVEq(a, const1);
+    PTRef const1 = logic.mkBVConst(2);
 
-    PTRef b = logic.mkBVNumVar("b");
-    PTRef const2 = logic.mkBVConst(2);
-    PTRef eq2 = logic.mkBVEq(b, const2);
 
-    PTRef d = logic.mkBVNumVar("d");
-    PTRef const3 = logic.mkBVConst(1);
-    PTRef eq3 = logic.mkBVEq(d, const3);
+    PTRef f = logic.mkBVNumVar("f");
 
-    PTRef mode = logic.mkBVMod(a, b);
-    PTRef eq4 = logic.mkBVEq(d, mode);
+    PTRef g = logic.mkBVNumVar("g");
+
+    PTRef e = logic.mkBVNumVar("e");
+    PTRef eq1 = logic.mkBVEq(f, g);
+
+
+    PTRef mod1 = logic.mkBVMod(f, const1);
+    PTRef mod2 = logic.mkBVMod(g, const1);
+
+    PTRef mul1 = logic.mkBVTimes(mod1, e );
+    PTRef mul2 = logic.mkBVTimes(mod2, e );
+    PTRef eq2 = logic.mkBVEq(mul1, mul2);
 
     SolverId id = { 5 };
 	vec<PtAsgn> asgns;
@@ -49,17 +51,9 @@ int main(int argc, char** argv)
 	BVRef output2;
 	stat = bbb.insertEq(eq2, output2);
 
-	BVRef output3;
-	stat = bbb.insertEq(eq3, output3);
-
-	BVRef output4;
-	stat = bbb.insertEq(eq4, output4);
-
 	std::cout << logic.printTerm(eq1) << "\n";
 	std::cout << logic.printTerm(eq2) << "\n";
-	std::cout << logic.printTerm(eq3) << "\n";
-//	std::cout << logic.printTerm(LOr) << "\n";
-	std::cout << logic.printTerm(eq4) << "\n";
+
 
     sstat r = mainSolver.check();
 
@@ -74,5 +68,3 @@ int main(int argc, char** argv)
 
     return 0;
 }
-
-
