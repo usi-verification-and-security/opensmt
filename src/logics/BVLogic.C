@@ -610,7 +610,7 @@ PTRef BVLogic::mkBVNeq(const PTRef a1, const PTRef a2)
     vec<PTRef> args;
     args.push(a1);
     args.push(a2);
-    return mkBVNeg(mkBVEq(args));
+    return mkBVNot(mkBVEq(args));
 }
 
 const int BVLogic::getBVNUMConst(PTRef tr) const
