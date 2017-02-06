@@ -11,6 +11,8 @@ unsigned d = e*f*c1;  						//eq3
 unsigned d_p = g*h*c2;						//eq4
 assert(d == d_p);                           //assert ((d != d_p ) = 1)
 }
+The result is UNSAT,means c1=c2 holds!
+
  ************************************************/
 #include <opensmt/opensmt2.h>
 #include <stdio.h>
@@ -25,7 +27,7 @@ int main(int argc, char** argv)
     MainSolver mainSolver(thandler, c, &solver);
     BVLogic& logic = cuftheory.getLogic();
 
-    PTRef k = logic.mkBVNumVar("k");
+   // PTRef k = logic.mkBVNumVar("k"); no need for it; by using mkBVMod it is already in the server.
     PTRef a = logic.mkBVNumVar("a");
     PTRef b = logic.mkBVNumVar("b");
     PTRef e = logic.mkBVNumVar("e");
@@ -38,20 +40,20 @@ int main(int argc, char** argv)
     PTRef eq_eg = logic.mkBVEq(e, g);
     PTRef eq_fh = logic.mkBVEq(f, h);
 
-    PTRef const1 = logic.mkBVConst(2);
-    PTRef eq_two = logic.mkBVEq(k, const1);
+    PTRef const2 = logic.mkBVConst(2);
+ //   PTRef eq_two = logic.mkBVEq(k, const2);
 
     PTRef c1 = logic.mkBVNumVar("c1");
     PTRef c2 = logic.mkBVNumVar("c2");
 
-    PTRef mod1 = logic.mkBVMod(a, const1);
-    PTRef mod2 = logic.mkBVMod(b, const1);
+    PTRef mod1 = logic.mkBVMod(a, const2);
+    PTRef mod2 = logic.mkBVMod(b, const2);
     PTRef plus1 = logic.mkBVPlus(mod1, mod2);
-    PTRef mod3 = logic.mkBVMod(plus1, const1);
+    PTRef mod3 = logic.mkBVMod(plus1, const2);
     PTRef eq1= logic.mkBVEq(mod3, c1);
 
     PTRef plus2 = logic.mkBVPlus(a, b);
-    PTRef mod4 = logic.mkBVMod(plus2, const1);
+    PTRef mod4 = logic.mkBVMod(plus2, const2);
     PTRef eq2 = logic.mkBVEq(mod4, c2);
 
     PTRef mul1 = logic.mkBVTimes(e, c1);
@@ -62,7 +64,7 @@ int main(int argc, char** argv)
     PTRef mul4 = logic.mkBVTimes(mul3, h);
     PTRef eq4= logic.mkBVEq(mul4, d_p);
 
-    PTRef NotEq = logic.mkBVNeq(d, d_p);
+    PTRef NotEq = logic.mkBVNeq(c1, c2);
 
     PTRef constOne = logic.getTerm_BVOne();
 
@@ -98,8 +100,8 @@ int main(int argc, char** argv)
 	BVRef output7;
 	stat = bbb.insertEq(eq_fh, output7);
 
-	BVRef output8;
-	stat = bbb.insertEq(eq_two, output8);
+//	BVRef output8;
+//	stat = bbb.insertEq(eq_two, output8);
 
 	BVRef output9;
 	stat = bbb.insertEq(assert, output9);

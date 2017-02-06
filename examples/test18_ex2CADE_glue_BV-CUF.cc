@@ -1,8 +1,9 @@
 /************************************************
-* Created on: Jan 30, 2017
+* test18_ex2CADE_ glue_BV-CUF.cc
+* Created on: Feb2, 2017
 unsigned a;
 unsigned b;
-unsigned c1 = (((a % 2) + (b % 2))) % 2;     //eq1
+unsigned c1 = (((a % 2) + (b % 2))) % 2;     //eq1 between mod3 and c1
 unsigned c2 = (a + b) % 2;					 //eq2
 unsigned e, f;
 e=g;
@@ -11,7 +12,6 @@ unsigned d = e*f*c1;  						//eq3
 unsigned d_p = g*h*c2;						//eq4
 assert(d == d_p);                           //assert ((d != d_p ) = 1)
 }
-The result is SAT, manifesting spurious counter-example
  ************************************************/
 #include <opensmt/opensmt2.h>
 #include <stdio.h>
@@ -19,15 +19,19 @@ The result is SAT, manifesting spurious counter-example
 
 int main(int argc, char** argv)
 {
-    SMTConfig c;
-    CUFTheory cuftheory(c , 8);
-    THandler thandler(c, cuftheory);
-    SimpSMTSolver solver(c, thandler);
-    MainSolver mainSolver(thandler, c, &solver);
-    BVLogic& logic = cuftheory.getLogic();
+	SMTConfig c;
+	CUFTheory cuftheory(c , 8);
+	THandler thandler(c, cuftheory);
+	SimpSMTSolver solver(c, thandler);
+	MainSolver mainSolver(thandler, c, &solver);
+	BVLogic& logic = cuftheory.getLogic();
 
     PTRef a = logic.mkCUFNumVar("a");
     PTRef b = logic.mkCUFNumVar("b");
+
+	PTRef a_bv = logic.mkBVNumVar("a");
+	PTRef b_bv = logic.mkBVNumVar("b");
+
     PTRef e = logic.mkCUFNumVar("e");
 	PTRef f = logic.mkCUFNumVar("f");
 	PTRef g = logic.mkCUFNumVar("g");
@@ -43,12 +47,14 @@ int main(int argc, char** argv)
     PTRef c1 = logic.mkCUFNumVar("c1");
     PTRef c2 = logic.mkCUFNumVar("c2");
 
+//CUF version of C1
     PTRef mod1 = logic.mkCUFMod(a, const2);
     PTRef mod2 = logic.mkCUFMod(b, const2);
     PTRef plus1 = logic.mkCUFPlus(mod1, mod2);
     PTRef mod3 = logic.mkCUFMod(plus1, const2);
     PTRef eq1= logic.mkEq(mod3, c1);
 
+// CUF version of C2
     PTRef plus2 = logic.mkCUFPlus(a, b);
     PTRef mod4 = logic.mkCUFMod(plus2, const2);
     PTRef eq2 = logic.mkEq(mod4, c2);
@@ -57,22 +63,15 @@ int main(int argc, char** argv)
     PTRef mul2 = logic.mkCUFTimes(mul1, f);
     PTRef eq3= logic.mkEq(mul2, d);
 
-
     PTRef mul3 = logic.mkCUFTimes(g, c2);
     PTRef mul4 = logic.mkCUFTimes(mul3, h);
     PTRef eq4= logic.mkEq(mul4, d_p);
 
-    PTRef NotEq = logic.mkCUFNeq(d, d_p); //?
+    PTRef NotEq = logic.mkCUFNeq(d, d_p);
 
 //    PTRef constOne = logic.getTerm_CUFOne();
 //
 //    PTRef assert = logic.mkEq(constOne , NotEq);
-
-
-    SolverId id = { 5 };
-	vec<PtAsgn> asgns;
-	vec<DedElem> deds;
-	vec<PTRef> foo;
 
 	char* msg;
 	mainSolver.insertFormula(eq1, &msg);
@@ -89,30 +88,60 @@ int main(int argc, char** argv)
 
 	mainSolver.insertFormula(NotEq, &msg);
 
-//	mainSolver.insertFormula(eq_two, & msg);
+//***********BV version of C1 and C2 and 2**************
 
-/*	BitBlaster bbb(id, c, mainSolver, logic, asgns, deds, foo);
+	PTRef const2_bv = logic.mkBVConst(2);
+	PTRef c1_bv = logic.mkBVNumVar("c1");
+	PTRef c2_bv = logic.mkBVNumVar("c2");
+
+// BV of C1
+	PTRef mod1_bv = logic.mkBVMod(a_bv, const2_bv);
+	PTRef mod2_bv = logic.mkBVMod(b_bv, const2_bv);
+	PTRef plus1_bv = logic.mkBVPlus(mod1_bv, mod2_bv);
+	PTRef mod3_bv = logic.mkBVMod(plus1_bv, const2_bv);
+	PTRef eq1_bv= logic.mkBVEq(mod3_bv, c1_bv);
+// BV of C2
+	PTRef plus2_bv = logic.mkBVPlus(a_bv, b_bv);
+	PTRef mod4_bv = logic.mkBVMod(plus2_bv, const2_bv);
+	PTRef eq2_bv = logic.mkBVEq(mod4_bv, c2_bv);
+
+//***** BItBlasting of C1_bv and C2_bv and two******
+	SolverId id = { 5 };
+	vec<PtAsgn> asgns;
+	vec<DedElem> deds;
+	vec<PTRef> foo;
+	BitBlaster bbb(id, c, mainSolver, logic, asgns, deds, foo);
 
 	BVRef output1;
 	lbool stat;
-	stat = bbb.insertEq(eq1, output1);
+	stat = bbb.insertEq(eq1_bv, output1);
 
 	BVRef output2;
-	stat = bbb.insertEq(eq2, output2);
+	stat = bbb.insertEq(eq2_bv, output2);
+//********End of BitBlasting***********
 
-	BVRef output3;
-	stat = bbb.insertEq(eq3, output3);  //d
+//********bind CUF to BV left-hand-side & right-hand-side***********
 
-	BVRef output4;
-	stat = bbb.insertEq(eq4, output4);  //d_p
+	bbb.bindCUFToBV(c1, c1_bv);
+	bbb.bindCUFToBV(mod3, mod3_bv);
+
+	bbb.bindCUFToBV(c2, c2_bv);
+	bbb.bindCUFToBV(mod4, mod4_bv);
+
+//*******notify********
+	bbb.notifyEquality(eq1);
+	bbb.notifyEquality(eq2);
+
+//	BVRef output4;
+//	stat = bbb.insertEq(eq4, output4);  //d_p
 
 //	BVRef output5;
 //	stat = bbb.insertEq(eq5, output5);
 
-	BVRef output6;
-	stat = bbb.insertEq(eq0, output6);
+//	BVRef output6;
+//	stat = bbb.insertEq(eq_two, output6);
 
-	BVRef output7;
+/*	BVRef output7;
 	stat = bbb.insertEq(eq00, output7);
 
 	BVRef output8;
@@ -126,7 +155,6 @@ int main(int argc, char** argv)
 	std::cout << logic.printTerm(eq3) << "\n";
 	std::cout << logic.printTerm(eq4) << "\n";
 	std::cout << logic.printTerm(NotEq) << "\n";
-	//std::cout << logic.printTerm(assert) << "\n";
     sstat r = mainSolver.check();
 
     ValPair v_a = mainSolver.getValue(a);
@@ -158,5 +186,3 @@ int main(int argc, char** argv)
 
     return 0;
 }
-
-
