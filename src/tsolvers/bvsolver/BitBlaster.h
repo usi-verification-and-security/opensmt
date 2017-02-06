@@ -109,6 +109,8 @@ private:
     static const char* s_bbConstant;
     static const char* s_bbDistinct;
     static const char* s_bbBvcarry;
+    static const char* s_bbBvlsh;
+
     char* getName(const char* base) const;
     void  getBVVars(const char* base, vec<PTRef>& vars, int width);
     PTRef mkActVar(const char* base);

@@ -1,7 +1,8 @@
 /*********************************************************************
-Author: Roberto Bruttomesso <roberto.bruttomesso@gmail.com>
+Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
 
-OpenSMT2 -- Copyright (C) 2008 - 2012, Roberto Bruttomesso
+OpenSMT2 -- Copyright (C)   2012 - 2017, Antti Hyvarinen
+                            2008 - 2012, Roberto Bruttomesso
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the
@@ -30,6 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "BitBlaster.h"
 #include "BVStore.h"
+#include "Global.h"
 
 const char* BitBlaster::s_bbEq          = ".bbEq";
 const char* BitBlaster::s_bbAnd         = ".bbAnd";
@@ -52,6 +54,7 @@ const char* BitBlaster::s_bbSignExtend  = ".bbSignExtend";
 const char* BitBlaster::s_bbVar         = ".bbVar";
 const char* BitBlaster::s_bbConstant    = ".bbConstant";
 const char* BitBlaster::s_bbDistinct    = ".bbDistinct";
+const char* BitBlaster::s_bbBvlsh       = ".bbBvlsh";
 
 BitBlaster::BitBlaster ( const SolverId i
                        , SMTConfig & c
@@ -1141,34 +1144,34 @@ BitBlaster::bbBvlshift(PTRef tr)
     vec<PTRef> acc;
     PTRef arg1 = logic.getPterm(tr)[0];
     PTRef arg2 = logic.getPterm(tr)[1];
-    BVRef bb_arg1 = bbTerm(arg1);
-    BVRef bb_arg2 = bbTerm(arg2);
+    BVRef a = bbTerm(arg1);
+    BVRef b = bbTerm(arg2);
 
-    assert(isPowOfTwo(bs[bb_arg1].size()));
-    assert(isPowOfTwo(bs[bb_arg2].size()));
+    assert(isPowOfTwo(bs[a].size()));
+    assert(isPowOfTwo(bs[b].size()));
 
-    int l = bs[bb_arg1].size();
-    int s = getLogFromPowOfTwo(bs[bb_arg1].size());
+    int l = bs[a].size();
+    int s = opensmt::getLogFromPowOfTwo(bs[a].size());
     int rounds = s+1;
-    vec<vec<PTRef> > table;
+    vec<vec<PTRef> > ls;
     for (int i = 0; i < rounds; i++) {
-        table.push();
+        ls.push();
         for (int j = 0; j < l; j++)
-            table[i].push(PTRef_Undef);
+            ls[i].push(PTRef_Undef);
     }
 
     for (int j = 0; j < l; j++)
-        table[0][j] = bs[bb_arg1][j];
+        ls[0][j] = bs[a][j];
 
     for (int s = 1; s < rounds; s++) {
         for (int i = 0; i < l; i++) {
-            if ( true /* i >= s^{s-1} */)
-                // ...
-                ;
+            if (i >= (1 << (s-1))) // i >= 2^(s-1)
+                ls[s][i] = logic.mkIte(bs[b][s], ls[s-1][i-(1 << (s-1))], ls[s-1][i]);
+            else
+                ls[s][i] = logic.mkIte(logic.mkNot(bs[b][s]), ls[s-1][i], logic.getTerm_false());
         }
     }
-
-    return BVRef_Undef;
+    return bs.newBvector(names, ls.last(), mkActVar(s_bbBvlsh), tr);
 }
 
 BVRef
