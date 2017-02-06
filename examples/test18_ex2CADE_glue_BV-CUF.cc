@@ -4,12 +4,12 @@
 unsigned a;
 unsigned b;
 unsigned c1 = (((a % 2) + (b % 2))) % 2;     //eq1 between mod3 and c1
-unsigned c2 = (a + b) % 2;					 //eq2
+unsigned c2 = (a + b) % 2;                   //eq2
 unsigned e, f;
 e=g;
 f=h;
-unsigned d = e*f*c1;  						//eq3
-unsigned d_p = g*h*c2;						//eq4
+unsigned d = e*f*c1;                        //eq3
+unsigned d_p = g*h*c2;                      //eq4
 assert(d == d_p);                           //assert ((d != d_p ) = 1)
 }
  ************************************************/
@@ -17,30 +17,35 @@ assert(d == d_p);                           //assert ((d != d_p ) = 1)
 #include <stdio.h>
 #include <opensmt/BitBlaster.h>
 
+void printValue(ValPair vp, Logic& l)
+{
+    std::cout << l.printTerm(vp.tr) << " "  << vp.val << "\n";
+}
+
 int main(int argc, char** argv)
 {
-	SMTConfig c;
-	CUFTheory cuftheory(c , 8);
-	THandler thandler(c, cuftheory);
-	SimpSMTSolver solver(c, thandler);
-	MainSolver mainSolver(thandler, c, &solver);
-	BVLogic& logic = cuftheory.getLogic();
+    SMTConfig c;
+    CUFTheory cuftheory(c , 8);
+    THandler thandler(c, cuftheory);
+    SimpSMTSolver solver(c, thandler);
+    MainSolver mainSolver(thandler, c, &solver);
+    BVLogic& logic = cuftheory.getLogic();
 
     PTRef a = logic.mkCUFNumVar("a");
     PTRef b = logic.mkCUFNumVar("b");
 
-	PTRef a_bv = logic.mkBVNumVar("a");
-	PTRef b_bv = logic.mkBVNumVar("b");
+    PTRef a_bv = logic.mkBVNumVar("a");
+    PTRef b_bv = logic.mkBVNumVar("b");
 
     PTRef e = logic.mkCUFNumVar("e");
-	PTRef f = logic.mkCUFNumVar("f");
-	PTRef g = logic.mkCUFNumVar("g");
-	PTRef h = logic.mkCUFNumVar("h");
-	PTRef d = logic.mkCUFNumVar("d");
-	PTRef d_p = logic.mkCUFNumVar("d_p");
+    PTRef f = logic.mkCUFNumVar("f");
+    PTRef g = logic.mkCUFNumVar("g");
+    PTRef h = logic.mkCUFNumVar("h");
+    PTRef d = logic.mkCUFNumVar("d");
+    PTRef d_p = logic.mkCUFNumVar("d_p");
 
-	PTRef eq_eg = logic.mkEq(e, g);
-	PTRef eq_fh = logic.mkEq(f, h);
+    PTRef eq_eg = logic.mkEq(e, g);
+    PTRef eq_fh = logic.mkEq(f, h);
 
     PTRef const2 = logic.mkCUFConst(2);
 
@@ -73,110 +78,98 @@ int main(int argc, char** argv)
 //
 //    PTRef assert = logic.mkEq(constOne , NotEq);
 
-	char* msg;
-	mainSolver.insertFormula(eq1, &msg);
+    char* msg;
+    mainSolver.insertFormula(eq1, &msg);
 
-	mainSolver.insertFormula(eq2, &msg);
+    mainSolver.insertFormula(eq2, &msg);
 
-	mainSolver.insertFormula(eq3, &msg);
+    mainSolver.insertFormula(eq3, &msg);
 
-	mainSolver.insertFormula(eq4, &msg);
+    mainSolver.insertFormula(eq4, &msg);
 
-	mainSolver.insertFormula(eq_eg, &msg);
+    mainSolver.insertFormula(eq_eg, &msg);
 
-	mainSolver.insertFormula(eq_fh, &msg);
+    mainSolver.insertFormula(eq_fh, &msg);
 
-	mainSolver.insertFormula(NotEq, &msg);
+    mainSolver.insertFormula(NotEq, &msg);
 
 //***********BV version of C1 and C2 and 2**************
 
-	PTRef const2_bv = logic.mkBVConst(2);
-	PTRef c1_bv = logic.mkBVNumVar("c1");
-	PTRef c2_bv = logic.mkBVNumVar("c2");
+    PTRef const2_bv = logic.mkBVConst(2);
+    PTRef c1_bv = logic.mkBVNumVar("c1");
+    PTRef c2_bv = logic.mkBVNumVar("c2");
 
 // BV of C1
-	PTRef mod1_bv = logic.mkBVMod(a_bv, const2_bv);
-	PTRef mod2_bv = logic.mkBVMod(b_bv, const2_bv);
-	PTRef plus1_bv = logic.mkBVPlus(mod1_bv, mod2_bv);
-	PTRef mod3_bv = logic.mkBVMod(plus1_bv, const2_bv);
-	PTRef eq1_bv= logic.mkBVEq(mod3_bv, c1_bv);
+    PTRef mod1_bv = logic.mkBVMod(a_bv, const2_bv);
+    PTRef mod2_bv = logic.mkBVMod(b_bv, const2_bv);
+    PTRef plus1_bv = logic.mkBVPlus(mod1_bv, mod2_bv);
+    PTRef mod3_bv = logic.mkBVMod(plus1_bv, const2_bv);
+    PTRef eq1_bv= logic.mkBVEq(mod3_bv, c1_bv);
 // BV of C2
-	PTRef plus2_bv = logic.mkBVPlus(a_bv, b_bv);
-	PTRef mod4_bv = logic.mkBVMod(plus2_bv, const2_bv);
-	PTRef eq2_bv = logic.mkBVEq(mod4_bv, c2_bv);
+    PTRef plus2_bv = logic.mkBVPlus(a_bv, b_bv);
+    PTRef mod4_bv = logic.mkBVMod(plus2_bv, const2_bv);
+    PTRef eq2_bv = logic.mkBVEq(mod4_bv, c2_bv);
 
 //***** BItBlasting of C1_bv and C2_bv and two******
-	SolverId id = { 5 };
-	vec<PtAsgn> asgns;
-	vec<DedElem> deds;
-	vec<PTRef> foo;
-	BitBlaster bbb(id, c, mainSolver, logic, asgns, deds, foo);
+    SolverId id = { 5 };
+    vec<PtAsgn> asgns;
+    vec<DedElem> deds;
+    vec<PTRef> foo;
+    BitBlaster bbb(id, c, mainSolver, logic, asgns, deds, foo);
 
-	BVRef output1;
-	lbool stat;
-	stat = bbb.insertEq(eq1_bv, output1);
+    BVRef output1;
+    lbool stat;
+    stat = bbb.insertEq(eq1_bv, output1);
 
-	BVRef output2;
-	stat = bbb.insertEq(eq2_bv, output2);
+    BVRef output2;
+    stat = bbb.insertEq(eq2_bv, output2);
 //********End of BitBlasting***********
 
 //********bind CUF to BV left-hand-side & right-hand-side***********
 
-	bbb.bindCUFToBV(c1, c1_bv);
-	bbb.bindCUFToBV(mod3, mod3_bv);
-
-	bbb.bindCUFToBV(c2, c2_bv);
-	bbb.bindCUFToBV(mod4, mod4_bv);
+    bbb.bindCUFToBV(mod3, mod3_bv);
+    bbb.bindCUFToBV(mod4, mod4_bv);
 
 //*******notify********
-	bbb.notifyEquality(eq1);
-	bbb.notifyEquality(eq2);
+//  bbb.notifyEquality(eq1);
+//  bbb.notifyEquality(eq2);
+    bbb.notifyEqualities();
 
-//	BVRef output4;
-//	stat = bbb.insertEq(eq4, output4);  //d_p
+//  BVRef output4;
+//  stat = bbb.insertEq(eq4, output4);  //d_p
 
-//	BVRef output5;
-//	stat = bbb.insertEq(eq5, output5);
+//  BVRef output5;
+//  stat = bbb.insertEq(eq5, output5);
 
-//	BVRef output6;
-//	stat = bbb.insertEq(eq_two, output6);
+//  BVRef output6;
+//  stat = bbb.insertEq(eq_two, output6);
 
-/*	BVRef output7;
-	stat = bbb.insertEq(eq00, output7);
+/*  BVRef output7;
+    stat = bbb.insertEq(eq00, output7);
 
-	BVRef output8;
-	stat = bbb.insertEq(eq_two, output8);
+    BVRef output8;
+    stat = bbb.insertEq(eq_two, output8);
 
-	BVRef output9;
-	stat = bbb.insertEq(assert, output9);*/
+    BVRef output9;
+    stat = bbb.insertEq(assert, output9);*/
 
-	std::cout << logic.printTerm(eq1) << "\n";
-	std::cout << logic.printTerm(eq2) << "\n";
-	std::cout << logic.printTerm(eq3) << "\n";
-	std::cout << logic.printTerm(eq4) << "\n";
-	std::cout << logic.printTerm(NotEq) << "\n";
+    std::cout << logic.printTerm(eq1) << "\n";
+    std::cout << logic.printTerm(eq2) << "\n";
+    std::cout << logic.printTerm(eq3) << "\n";
+    std::cout << logic.printTerm(eq4) << "\n";
+    std::cout << logic.printTerm(NotEq) << "\n";
     sstat r = mainSolver.check();
 
-    ValPair v_a = mainSolver.getValue(a);
-    std::cout << v_a.val << "\n";
 
-    ValPair v_b = mainSolver.getValue(b);
-    std::cout << v_b.val << "\n";
-
-    ValPair v_c1 = mainSolver.getValue(c1);
-    std::cout << v_c1.val << "\n";
-
-	ValPair v_c2 = mainSolver.getValue(c2);
-	std::cout << v_c2.val << "\n";
-
-	ValPair v_d = mainSolver.getValue(d);
-	std::cout << v_d.val << "\n";
-
-	ValPair v_dp = mainSolver.getValue(d_p);
-	std::cout << v_dp.val << "\n";
-
-    if (r == s_True)
+    if (r == s_True) {
         printf("sat\n");
+        printValue(mainSolver.getValue(a), logic);
+        printValue(mainSolver.getValue(b), logic);
+        printValue(mainSolver.getValue(c1), logic);
+        printValue(mainSolver.getValue(c2), logic);
+        printValue(mainSolver.getValue(d), logic);
+        printValue(mainSolver.getValue(d_p), logic);
+    }
     else if (r == s_False)
         printf("unsat\n");
     else if (r == s_Undef)

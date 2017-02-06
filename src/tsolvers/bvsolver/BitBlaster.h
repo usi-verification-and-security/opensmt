@@ -58,14 +58,24 @@ public:
     void    computeModel     ( );
     ValPair getValue         (PTRef);
 
-    void  bindCUFToBV        (PTRef tr_cuf, PTRef tr_bv) { bs.bindCUFToBV(tr_cuf, tr_bv); }
-    lbool notifyEquality     (PTRef tr_eq);
+    // Public Theory refinement stuff
+    lbool notifyEqualities   (); // Check all refined equalities, add explicit new terms for them
+    void  bindCUFToBV        (PTRef cuf_tr, PTRef bv_tr) { assert(!pToB.has(cuf_tr)); pToB.insert(cuf_tr, bv_tr); refined.push(cuf_tr); }
     lbool glueBtoUF          (BVRef br, PTRef tr);  // (= tr (c br_1 ... br_32))
     lbool glueUFtoB          (PTRef tr, BVRef br);  // (= br_0 (e0 tr)) /\ ... /\ (= br_32 (e32 tr))
     lbool glueUFtoUF         (PTRef tr1, PTRef tr2); // (= uf1 uf2) <-> (and (= .b00_0 .b00_1) ... (= .b31_0 .b31_1))
     PTRef mkCollate32        (vec<PTRef>& bits);
     PTRef mkExtract          (PTRef tr, int i);
 private:
+    // Theory refinement stuff
+    Map<PTRef,PTRef,PTRefHash> pToB;
+    vec<PTRef>                 refined;
+    int                        last_refined;
+    lbool                      notifyEquality(PTRef tr_eq);
+    PTRef                      getBoundPTRef (PTRef tr) { assert(pToB.has(tr)); return pToB[tr]; }
+    bool                       isBound       (PTRef tr) { return pToB.has(tr); }
+
+    // -----
     BVRef bbTerm             (PTRef);
     lbool insert             (PTRef tr, BVRef& out); // The unsafe interface for theory refinement
     BVRef          updateCache  (PTRef tr);
@@ -120,6 +130,7 @@ private:
     BVRef bbBvmul      (PTRef);
     BVRef bbBvudiv     (PTRef);
     BVRef bbBvurem     (PTRef);
+    BVRef bbBvlshift   (PTRef);
     BVRef bbSignExtend (PTRef);
     BVRef bbVar        (PTRef);
     BVRef bbConstant   (PTRef);
