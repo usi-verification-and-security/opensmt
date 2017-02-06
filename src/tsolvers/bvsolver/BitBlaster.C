@@ -245,6 +245,8 @@ BitBlaster::bbTerm(PTRef tr)
     if (logic.isBVTimes(tr)) return bbBvmul      (tr);
     if (logic.isBVDiv(tr))   return bbBvudiv     (tr);
     if (logic.isBVMod(tr))   return bbBvurem     (tr);
+    if (logic.isBVLshift(tr)) return bbBvlshift  (tr);
+
 //    if ( e->isSignExtend ( ) ) return bbSignExtend ( e );
 
     if ( logic.isVar(tr) )      return bbVar        ( tr );
@@ -1119,6 +1121,54 @@ BitBlaster::bbBvurem(PTRef tr)
     // Save result and return
     //
     return bs.newBvector(names, result, mkActVar(s_bbBvurem), tr);
+}
+
+BVRef
+BitBlaster::bbBvlshift(PTRef tr)
+{
+    assert(tr != PTRef_Undef);
+    assert(logic.getPterm(tr).size() == 2 );
+
+    if (bs.has(tr)) return bs[tr];
+
+    // Allocate new result
+    vec<PTRef> names;
+    getBVVars("lsh", names, bitwidth);
+
+    // Allocate new result
+    vec<PTRef> result;
+
+    vec<PTRef> acc;
+    PTRef arg1 = logic.getPterm(tr)[0];
+    PTRef arg2 = logic.getPterm(tr)[1];
+    BVRef bb_arg1 = bbTerm(arg1);
+    BVRef bb_arg2 = bbTerm(arg2);
+
+    assert(isPowOfTwo(bs[bb_arg1].size()));
+    assert(isPowOfTwo(bs[bb_arg2].size()));
+
+    int l = bs[bb_arg1].size();
+    int s = getLogFromPowOfTwo(bs[bb_arg1].size());
+    int rounds = s+1;
+    vec<vec<PTRef> > table;
+    for (int i = 0; i < rounds; i++) {
+        table.push();
+        for (int j = 0; j < l; j++)
+            table[i].push(PTRef_Undef);
+    }
+
+    for (int j = 0; j < l; j++)
+        table[0][j] = bs[bb_arg1][j];
+
+    for (int s = 1; s < rounds; s++) {
+        for (int i = 0; i < l; i++) {
+            if ( true /* i >= s^{s-1} */)
+                // ...
+                ;
+        }
+    }
+
+    return BVRef_Undef;
 }
 
 BVRef
@@ -2018,16 +2068,33 @@ ValPair BitBlaster::getValue(PTRef tr)
 }
 
 lbool
+BitBlaster::notifyEqualities()
+{
+    // This does not take into account the symmetry of equality.
+    lbool stat = l_Undef;
+    for (int i = last_refined; i < refined.size(); i++)
+        for (int j = 0; j < refined.size(); j++) {
+            if (i == j) continue;
+            PTRef eq = logic.mkEq(refined[i], refined[j]);
+            stat = notifyEquality(eq);
+            if ((stat == l_False) || (stat == l_True))
+                return stat;
+        }
+
+    return stat;
+}
+
+lbool
 BitBlaster::notifyEquality(PTRef tr)
 {
     assert(logic.isEquality(tr));
     Pterm &t =  logic.getPterm(tr);
     PTRef eq_arg0 = t[0];
     PTRef eq_arg1 = t[1];
-    assert(bs.isBound(eq_arg0));
-    assert(bs.isBound(eq_arg1));
-    PTRef bv_tr0 = bs.getBoundPTRef(eq_arg0);
-    PTRef bv_tr1 = bs.getBoundPTRef(eq_arg1);
+    assert(isBound(eq_arg0));
+    assert(isBound(eq_arg1));
+    PTRef bv_tr0 = getBoundPTRef(eq_arg0);
+    PTRef bv_tr1 = getBoundPTRef(eq_arg1);
 
     BVRef bv0_r = bs[bv_tr0];
     BVRef bv1_r = bs[bv_tr1];

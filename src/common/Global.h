@@ -138,6 +138,20 @@ void static inline wordToBinary(const unsigned x, char*& bin, const int width)
     bin[p] = '\0';
 }
 
+static inline bool isPowOfTwo(int b)
+{
+    return b && !(b & (b-1));
+}
+
+static inline int getLogFromPowOfTwo(int l)
+{
+    assert(isPowOfTwo(l));
+    if (l == 1) return 0;
+    int n = 0;
+    while ((2 << (n++)) != l);
+    return n;
+}
+
 bool static inline stringToRational(char*& rat, const char* flo)
 {
     int nom_l = 0;
