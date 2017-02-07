@@ -139,6 +139,9 @@ private:
     BVRef bbDistinct   (PTRef);
 
     PTRef bbBvadd_carryonly(PTRef sum, PTRef cin); // for signed comparison
+    void ls_write(int s, int i, PTRef tr, vec<vec<PTRef> >& table); // Helper function for lshift
+    PTRef ls_read(int s, int i, vec<vec<PTRef> >& table); // Helper function for lshift
+
   // Not yet considered
   // vector< Enode * > & bbUf         ( Enode * );
   // vector< Enode * > & bbUp         ( Enode * );

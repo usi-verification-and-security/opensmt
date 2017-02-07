@@ -1126,6 +1126,18 @@ BitBlaster::bbBvurem(PTRef tr)
     return bs.newBvector(names, result, mkActVar(s_bbBvurem), tr);
 }
 
+void
+BitBlaster::ls_write(int s, int i, PTRef tr, vec<vec<PTRef> >& table)
+{
+    table[s+1][i] = tr;
+}
+
+PTRef
+BitBlaster::ls_read(int s, int i, vec<vec<PTRef> >& table)
+{
+    return table[s+1][i];
+}
+
 BVRef
 BitBlaster::bbBvlshift(PTRef tr)
 {
@@ -1151,24 +1163,24 @@ BitBlaster::bbBvlshift(PTRef tr)
     assert(isPowOfTwo(bs[b].size()));
 
     int l = bs[a].size();
-    int s = opensmt::getLogFromPowOfTwo(bs[a].size());
-    int rounds = s+1;
+    int n = opensmt::getLogFromPowOfTwo(bs[a].size());
+
     vec<vec<PTRef> > ls;
-    for (int i = 0; i < rounds; i++) {
+    for (int s = -1; s <= n-1; s++) {
         ls.push();
-        for (int j = 0; j < l; j++)
-            ls[i].push(PTRef_Undef);
+        for (int i = 0; i < l; i++)
+            ls.last().push(PTRef_Undef);
     }
 
-    for (int j = 0; j < l; j++)
-        ls[0][j] = bs[a][j];
+    for (int i = 0; i < l; i++)
+        ls_write(-1, i, bs[a][i], ls);
 
-    for (int s = 1; s < rounds; s++) {
+    for (int s = 0; s <= n-1; s++) {
         for (int i = 0; i < l; i++) {
-            if (i >= (1 << (s-1))) // i >= 2^(s-1)
-                ls[s][i] = logic.mkIte(bs[b][s], ls[s-1][i-(1 << (s-1))], ls[s-1][i]);
+            if (i >= (1 << s)) // i >= 2^s
+                ls_write(s, i, logic.mkIte(bs[b][s], ls_read(s-1, i-(1 << s), ls), ls_read(s-1, i, ls)), ls);
             else
-                ls[s][i] = logic.mkIte(logic.mkNot(bs[b][s]), ls[s-1][i], logic.getTerm_false());
+                ls_write(s, i, logic.mkIte(bs[b][s], logic.getTerm_false(), ls_read(s-1, i, ls)), ls);
         }
     }
     return bs.newBvector(names, ls.last(), mkActVar(s_bbBvlsh), tr);

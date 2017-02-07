@@ -112,7 +112,7 @@ class BVLogic: public CUFLogic
     virtual bool          isBuiltinSort(SRef sr) const { return (sr == sort_BVNUM) /*|| (sr == sort_BVSTR)*/ || Logic::isBuiltinSort(sr); }
     virtual bool          isBuiltinConstant(SymRef sr) const { return isBVNUMConst(sr) || Logic::isBuiltinConstant(sr); }
 
-    virtual void conjoinExtras(PTRef root, PTRef& root_out) { root_out = root; }
+//    virtual void conjoinExtras(PTRef root, PTRef& root_out) { root_out = root; }
 
     bool isBVNUMConst(SymRef sr) const { return isConstant(sr) && hasSortBVNUM(sr); }
     bool isBVNUMConst(PTRef tr)  const { return isBVNUMConst(getPterm(tr).symb()); }

@@ -92,6 +92,9 @@ main(int argc, char** argv)
     bbb.insertEq(eq2, output);
     bbb.insertEq(eq3, output);
 
+    char* msg;
+    mainSolver.insertFormula(logic.getTerm_true(), &msg);
+
     sstat r = mainSolver.check();
 
     if (r == s_True) {
