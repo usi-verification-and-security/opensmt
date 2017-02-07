@@ -2085,16 +2085,31 @@ ValPair BitBlaster::getValue(PTRef tr)
 lbool
 BitBlaster::notifyEqualities()
 {
-    // This does not take into account the symmetry of equality.
     lbool stat = l_Undef;
-    for (int i = last_refined; i < refined.size(); i++)
-        for (int j = 0; j < refined.size(); j++) {
-            if (i == j) continue;
+    for (int i = last_refined; i < refined.size(); i++) {
+        for (int j = i+1; j < refined.size(); j++) {
+            if (logic.getSortRef(refined[i]) != logic.getSortRef(refined[j]))
+                continue;
             PTRef eq = logic.mkEq(refined[i], refined[j]);
+            if (!logic.isEquality(eq)) continue;
             stat = notifyEquality(eq);
             if ((stat == l_False) || (stat == l_True))
                 return stat;
         }
+        for (int j = last_refined - 1; j >= 0; j--) {
+            if (logic.getSortRef(refined[i]) != logic.getSortRef(refined[j]))
+                continue;
+            PTRef eq = logic.mkEq(refined[i], refined[j]);
+            if (!logic.isEquality(eq)) continue;
+            stat = notifyEquality(eq);
+            if ((stat == l_False) || (stat == l_True))
+                return stat;
+        }
+    }
+
+
+
+    last_refined = refined.size();
 
     return stat;
 }

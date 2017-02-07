@@ -339,7 +339,8 @@ CUFLogic::mkCUFLeq(const PTRef arg1, const PTRef arg2, char** msg)
     vec<PTRef> args;
     args.push(arg1);
     args.push(arg2);
-    return mkFun(sym_CUF_LEQ, args, msg);
+    PTRef leq_tr = mkFun(sym_CUF_LEQ, args, msg);
+    return mkOr(leq_tr, mkEq(arg1, arg2));
 }
 
 PTRef
