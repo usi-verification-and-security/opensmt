@@ -66,14 +66,14 @@ public:
     lbool glueUFtoUF         (PTRef tr1, PTRef tr2); // (= uf1 uf2) <-> (and (= .b00_0 .b00_1) ... (= .b31_0 .b31_1))
     PTRef mkCollate32        (vec<PTRef>& bits);
     PTRef mkExtract          (PTRef tr, int i);
-private:
     // Theory refinement stuff
+    PTRef                      getBoundPTRef (PTRef tr) { assert(pToB.has(tr)); return pToB[tr]; }
+    bool                       isBound       (PTRef tr) { return pToB.has(tr); }
+private:
     Map<PTRef,PTRef,PTRefHash> pToB;
     vec<PTRef>                 refined;
     int                        last_refined;
     lbool                      notifyEquality(PTRef tr_eq);
-    PTRef                      getBoundPTRef (PTRef tr) { assert(pToB.has(tr)); return pToB[tr]; }
-    bool                       isBound       (PTRef tr) { return pToB.has(tr); }
 
     // -----
     BVRef bbTerm             (PTRef);
