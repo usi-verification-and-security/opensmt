@@ -2,7 +2,7 @@
 
 #include "Global.h"
 
-Opensmt::Opensmt(opensmt_logic _logic)
+Opensmt::Opensmt(opensmt_logic _logic, int bw)
 {
     config = new SMTConfig();
     switch(_logic)
@@ -15,7 +15,7 @@ Opensmt::Opensmt(opensmt_logic _logic)
         theory = new LRATheory(*config);
         break;
     case qf_cuf:
-        theory = new CUFTheory(*config , 8);
+        theory = new CUFTheory(*config , bw);
         break;
     default:
         opensmt_error("Theory not supported");

@@ -63,7 +63,8 @@ BitBlaster::BitBlaster ( const SolverId i
                        , vec<PtAsgn> & ex
                        , vec<DedElem> & d
                        , vec<PTRef> & s )
-    : config      (c)
+    : last_refined(0)
+    , config      (c)
     , mainSolver  (mainSolver)
     , logic       (bvlogic)
     , thandler    (mainSolver.getTHandler())
