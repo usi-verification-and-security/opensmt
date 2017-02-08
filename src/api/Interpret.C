@@ -1287,7 +1287,8 @@ void Interpret::GetProof()
 void Interpret::GetInterpolants()
 {
     //just test with assertions for now:
-    vec<PTRef>& partitions = logic->getAssertions();
+    vec<PTRef> partitions;
+    logic->getAssertions(partitions);
 
     if (!logic->canInterpolate())
         opensmt_error("Cannot interpolate");

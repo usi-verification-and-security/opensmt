@@ -720,7 +720,8 @@ THandler::verifyInterpolantWithExternalTool( PTRef itp, const ipartitions_t& mas
     vec<PTRef> A;
     vec<PTRef> B;
 
-    vec<PTRef>& assertions = logic.getAssertions();
+    vec<PTRef> assertions;
+    logic.getAssertions(assertions);
     for(int i = 0; i < assertions.size(); ++i)
     {
         PTRef a = assertions[i];

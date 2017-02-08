@@ -204,13 +204,13 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
                 mask += 1;
                 mask <<= (logic.assertionIndex (f) + 1);
             }
-            /*
+
             else if(f == logic.getTerm_true() || f == logic.getTerm_false())
             {
                 mask = 1;
                 mask = ~mask;
             }
-            */
+
             else //f may have been flattened etc
             {
                 PTRef root_tmp = logic.getOriginalAssertion(f);

@@ -109,9 +109,10 @@ class Logic {
 
 
     //for partitions:
-    vec<PTRef> assertions;
+    Map<PTRef,int,PTRefHash> assertions;
     vec<PTRef> assertions_simp;
 #ifdef PRODUCE_PROOF
+    int asrt_idx;
     map<CRef, ipartitions_t> clause_class;
     map<Var, ipartitions_t> var_class;
     map<PTRef, PTRef> flat2orig;
@@ -554,14 +555,14 @@ class Logic {
 
     bool assignPartition(PTRef pref, char** msg)
     {
-        assertions.push(pref);
+        assertions.insert(pref, asrt_idx++);
         return term_store.assignPartition(pref, msg);
     }
 
     bool canInterpolate()
     {
 #ifdef PRODUCE_PROOF
-        return config.produce_inter() && assertions.size() >= 2;
+        return config.produce_inter() && assertions.getSize() >= 2;
 #else
         return false;
 #endif //PRODUCE_PROOF
@@ -574,15 +575,12 @@ class Logic {
     ipartitions_t& getVarClassMask(Var l) { return var_class[l]; }
     void addClauseClassMask(CRef l, const ipartitions_t& toadd);
     void addVarClassMask(Var l, const ipartitions_t& toadd);
-    vec<PTRef>& getAssertions() { return assertions; }
-    unsigned getNofPartitions() { return assertions.size(); }
+    void getAssertions(vec<PTRef>& asrts) { return assertions.getKeys(asrts); }
+    unsigned getNofPartitions() { return assertions.getSize(); }
     //TODO: make this better
     bool isAssertion(PTRef pref)
     {
-        for (int i = 0; i < assertions.size(); ++i)
-            if (assertions[i] == pref)
-                return true;
-        return false;
+        return assertions.has(pref);
     }
     bool isAssertionSimp(PTRef pref)
     {
@@ -593,10 +591,8 @@ class Logic {
     }
     int assertionIndex(PTRef pref)
     {
-        for (int i = 0; i <  assertions.size(); ++i)
-            if (assertions[i] == pref)
-                return i;
-        return -1;
+        if (isAssertion(pref)) return assertions[pref];
+        else return -1;
     }
 #endif
     // Statistics

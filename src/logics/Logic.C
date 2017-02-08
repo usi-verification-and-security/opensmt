@@ -82,6 +82,9 @@ Logic::Logic(SMTConfig& c) :
     , term_TRUE(PTRef_Undef)
     , term_FALSE(PTRef_Undef)
     , subst_num(0)
+#ifdef PRODUCE_PROOF
+    , asrt_idx(0)
+#endif
 {
     config.logic = QF_UF;
     logic_type = QF_UF;
@@ -181,6 +184,11 @@ Logic::Logic(SMTConfig& c) :
     sym_store[sym_ITE].setNoScoping();
 
     ites.insert(sym_ITE, true);
+
+#ifdef PRODUCE_PROOF
+    flat2orig[getTerm_true()] = getTerm_true();
+    flat2orig[getTerm_false()] = getTerm_false();
+#endif
 }
 
 Logic::~Logic()
@@ -2097,7 +2105,9 @@ PTRef
 Logic::getPartitionA(const ipartitions_t& mask)
 {
     Logic& logic = *this;
-    vec<PTRef>& ass = logic.getAssertions();
+
+    vec<PTRef> ass;
+    logic.getAssertions(ass);
     vec<PTRef> a_args;
     for(int i = 0; i < ass.size(); ++i)
     {
@@ -2116,7 +2126,8 @@ PTRef
 Logic::getPartitionB(const ipartitions_t& mask)
 {
     Logic& logic = *this;
-    vec<PTRef>& ass = logic.getAssertions();
+    vec<PTRef> ass;
+    logic.getAssertions(ass);
     vec<PTRef> b_args;
     for(int i = 0; i < ass.size(); ++i)
     {
