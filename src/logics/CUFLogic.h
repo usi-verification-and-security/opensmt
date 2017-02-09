@@ -54,7 +54,8 @@ class CUFLogic: public Logic
     SymRef              sym_CUF_GEQ;    // >=
     SymRef              sym_CUF_GT;     // >
     SymRef              sym_CUF_LSHIFT; // <<
-    SymRef              sym_CUF_RSHIFT; // >>
+    SymRef              sym_CUF_LRSHIFT; // l>>
+    SymRef              sym_CUF_ARSHIFT; // a>>
     SymRef              sym_CUF_MOD;    // %
     SymRef              sym_CUF_BWAND;  // &
     SymRef              sym_CUF_BWOR;   // |
@@ -89,7 +90,8 @@ class CUFLogic: public Logic
     static const char*  tk_cuf_geq;
     static const char*  tk_cuf_gt;
     static const char*  tk_cuf_lshift;
-    static const char*  tk_cuf_rshift;
+    static const char*  tk_cuf_lrshift;
+    static const char*  tk_cuf_arshift;
     static const char*  tk_cuf_mod;
     static const char*  tk_cuf_bwand;
     static const char*  tk_cuf_bwor;
@@ -162,8 +164,10 @@ class CUFLogic: public Logic
     bool isCUFOne(PTRef tr)     const { return tr == term_CUF_ONE; }
     bool isCUFLshift(SymRef sr) const { return sr == sym_CUF_LSHIFT; }
     bool isCUFLshift(PTRef tr)  const { return isCUFLshift(getPterm(tr).symb()); }
-    bool isCUFRshift(SymRef sr) const { return sr == sym_CUF_RSHIFT; }
-    bool isCUFRshift(PTRef tr)  const { return isCUFRshift(getPterm(tr).symb()); }
+    bool isCUFLRshift(SymRef sr) const { return sr == sym_CUF_LRSHIFT; }
+    bool isCUFLRshift(PTRef tr)  const { return isCUFLRshift(getPterm(tr).symb()); }
+    bool isCUFARshift(SymRef sr) const { return sr == sym_CUF_ARSHIFT; }
+    bool isCUFARshift(PTRef tr)  const { return isCUFARshift(getPterm(tr).symb()); }
     bool isCUFMod(SymRef sr)    const { return sr == sym_CUF_MOD; }
     bool isCUFMod(PTRef tr)     const { return isCUFMod(getPterm(tr).symb()); }
     bool isCUFBwAnd(SymRef sr)  const { return sr == sym_CUF_BWAND; }
@@ -237,8 +241,10 @@ class CUFLogic: public Logic
     PTRef mkCUFLshift(const vec<PTRef>& args) {assert(args.size() == 2); return mkCUFLshift(args[0], args[1]);}
     PTRef mkCUFLshift   (const PTRef, const PTRef);
 
-    PTRef mkCUFRshift(const vec<PTRef>& args) {assert(args.size() == 2); return mkCUFRshift(args[0], args[1]);}
-    PTRef mkCUFRshift   (const PTRef, const PTRef);
+    PTRef mkCUFLRshift(const vec<PTRef>& args) {assert(args.size() == 2); return mkCUFLRshift(args[0], args[1]);}
+    PTRef mkCUFLRshift(const PTRef, const PTRef);
+    PTRef mkCUFARshift(const vec<PTRef>& args) {assert(args.size() == 2); return mkCUFARshift(args[0], args[1]);}
+    PTRef mkCUFARshift(const PTRef, const PTRef);
 
     PTRef mkCUFMod(const vec<PTRef>& args) {assert(args.size() == 2); return mkCUFMod(args[0], args[1]);}
     PTRef mkCUFMod      (const PTRef, const PTRef);

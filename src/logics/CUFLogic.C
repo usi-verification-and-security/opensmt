@@ -42,7 +42,8 @@ const char* CUFLogic::tk_cuf_gt    = ">";
 const char* CUFLogic::tk_cuf_geq   = ">=";
 
 const char* CUFLogic::tk_cuf_lshift = "<<";
-const char* CUFLogic::tk_cuf_rshift = ">>";
+const char* CUFLogic::tk_cuf_lrshift = "l>>";
+const char* CUFLogic::tk_cuf_arshift = "a>>";
 const char* CUFLogic::tk_cuf_mod    = "%";
 const char* CUFLogic::tk_cuf_bwand  = "&";
 const char* CUFLogic::tk_cuf_bwor   = "|";
@@ -146,7 +147,8 @@ CUFLogic::CUFLogic(SMTConfig& c) :
 //    sym_store[sym_CUF_LOR].setCommutes();
 
     sym_CUF_LSHIFT = declareFun(tk_cuf_lshift, sort_CUFNUM, params, &msg, true);
-    sym_CUF_RSHIFT = declareFun(tk_cuf_rshift, sort_CUFNUM, params, &msg, true);
+    sym_CUF_LRSHIFT = declareFun(tk_cuf_lrshift, sort_CUFNUM, params, &msg, true);
+    sym_CUF_ARSHIFT = declareFun(tk_cuf_arshift, sort_CUFNUM, params, &msg, true);
 
     sym_CUF_MOD    = declareFun(tk_cuf_mod, sort_CUFNUM, params, &msg, true);
     sym_CUF_BWAND  = declareFun(tk_cuf_bwand, sort_CUFNUM, params, &msg, true);
@@ -383,7 +385,7 @@ PTRef CUFLogic::mkCUFLshift(const PTRef arg1, const PTRef arg2)
     return mkFun(sym_CUF_LSHIFT, args, msg);
 }
 
-PTRef CUFLogic::mkCUFRshift(const PTRef arg1, const PTRef arg2)
+PTRef CUFLogic::mkCUFLRshift(const PTRef arg1, const PTRef arg2)
 {
     if (isCUFNUMConst(arg2) && getCUFNUMConst(arg2) == 0)
         return arg1;
@@ -391,7 +393,18 @@ PTRef CUFLogic::mkCUFRshift(const PTRef arg1, const PTRef arg2)
     args.push(arg1);
     args.push(arg2);
     char** msg;
-    return mkFun(sym_CUF_RSHIFT, args, msg);
+    return mkFun(sym_CUF_LRSHIFT, args, msg);
+}
+
+PTRef CUFLogic::mkCUFARshift(const PTRef arg1, const PTRef arg2)
+{
+    if (isCUFNUMConst(arg2) && getCUFNUMConst(arg2) == 0)
+        return arg1;
+    vec<PTRef> args;
+    args.push(arg1);
+    args.push(arg2);
+    char** msg;
+    return mkFun(sym_CUF_ARSHIFT, args, msg);
 }
 
 PTRef CUFLogic::mkCUFMod(const PTRef arg1, const PTRef arg2)

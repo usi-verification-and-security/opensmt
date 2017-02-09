@@ -33,6 +33,9 @@ main(int argc, char** argv)
     PTRef eq1 = logic.mkBVEq(a, c1);
     PTRef eq2 = logic.mkBVEq(b, c2);
 
+    printf("Computing %d (%s) %s %d (%s)\n", c1_int, logic.printTerm(c1), op, c2_int, logic.printTerm(c2));
+
+
     PTRef op_tr;
     if (strcmp(op, "/") == 0)
         op_tr = logic.mkBVDiv(a, b);
@@ -54,8 +57,10 @@ main(int argc, char** argv)
         op_tr = logic.mkBVSgt(a, b);
     else if (strcmp(op, "<<") == 0)
         op_tr = logic.mkBVLshift(a, b);
-    else if (strcmp(op, ">>") == 0)
-        op_tr = logic.mkBVRshift(a, b);
+    else if (strcmp(op, "a>>") == 0)
+        op_tr = logic.mkBVARshift(a, b);
+    else if (strcmp(op, "l>>") == 0)
+        op_tr = logic.mkBVLRshift(a, b);
     else if (strcmp(op, "%") == 0)
         op_tr = logic.mkBVMod(a, b);
     else if (strcmp(op, "&") == 0)
@@ -101,7 +106,9 @@ main(int argc, char** argv)
         printf("sat\n");
         bbb.computeModel();
         ValPair v = bbb.getValue(d);
-        printf("%s\n", v.val);
+        char* bin;
+        opensmt::wordToBinary(atoi(v.val), bin, bw);
+        printf("%s (%s)\n", v.val, bin);
 
     }
     else if (r == s_False)
