@@ -110,6 +110,8 @@ private:
     static const char* s_bbDistinct;
     static const char* s_bbBvcarry;
     static const char* s_bbBvlsh;
+    static const char* s_bbBvlrsh;
+    static const char* s_bbBvarsh;
 
     char* getName(const char* base) const;
     void  getBVVars(const char* base, vec<PTRef>& vars, int width);
@@ -133,14 +135,17 @@ private:
     BVRef bbBvudiv     (PTRef);
     BVRef bbBvurem     (PTRef);
     BVRef bbBvlshift   (PTRef);
+    BVRef bbBvrshift   (PTRef, bool);
+    BVRef bbBvlrshift  (PTRef);
+    BVRef bbBvarshift  (PTRef);
     BVRef bbSignExtend (PTRef);
     BVRef bbVar        (PTRef);
     BVRef bbConstant   (PTRef);
     BVRef bbDistinct   (PTRef);
 
     PTRef bbBvadd_carryonly(PTRef sum, PTRef cin); // for signed comparison
-    void ls_write(int s, int i, PTRef tr, vec<vec<PTRef> >& table); // Helper function for lshift
-    PTRef ls_read(int s, int i, vec<vec<PTRef> >& table); // Helper function for lshift
+    void ls_write(int s, int i, PTRef tr, vec<vec<PTRef> >& table); // Helper function for shifts
+    PTRef ls_read(int s, int i, vec<vec<PTRef> >& table); // Helper function for shifts
 
   // Not yet considered
   // vector< Enode * > & bbUf         ( Enode * );

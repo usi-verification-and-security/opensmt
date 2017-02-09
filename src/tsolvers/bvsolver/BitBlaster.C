@@ -24,11 +24,6 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
-/*
- * FIXME: MANY LINES ARE DISABLED AS THEY HAVE TO BE
- *        FIXED WRT SMTLIB2
- */
-
 #include "BitBlaster.h"
 #include "BVStore.h"
 #include "Global.h"
@@ -55,6 +50,8 @@ const char* BitBlaster::s_bbVar         = ".bbVar";
 const char* BitBlaster::s_bbConstant    = ".bbConstant";
 const char* BitBlaster::s_bbDistinct    = ".bbDistinct";
 const char* BitBlaster::s_bbBvlsh       = ".bbBvlsh";
+const char* BitBlaster::s_bbBvlrsh      = "s_bbBvlrsh";
+const char* BitBlaster::s_bbBvarsh      = "s_bbBvarsh";
 
 BitBlaster::BitBlaster ( const SolverId i
                        , SMTConfig & c
@@ -238,18 +235,20 @@ BitBlaster::bbTerm(PTRef tr)
 //    if ( e->isConcat     ( ) ) return bbConcat     ( e );
 //    if ( e->isExtract    ( ) ) return bbExtract    ( e );
 
-    if (logic.isBVBwAnd(tr)) return bbBvand      (tr);
-    if (logic.isBVBwOr(tr))  return bbBvor       (tr);
-    if (logic.isBVBwXor(tr)) return bbBvxor      (tr);
-    if (logic.isBVCompl(tr)) return bbBvcompl    (tr);
-    if (logic.isBVNot(tr))   return bbBvlnot     (tr);
-    if (logic.isBVLand(tr))  return bbBvland     (tr);
-    if (logic.isBVLor(tr))   return bbBvlor      (tr);
-    if (logic.isBVPlus(tr))  return bbBvadd      (tr);
-    if (logic.isBVTimes(tr)) return bbBvmul      (tr);
-    if (logic.isBVDiv(tr))   return bbBvudiv     (tr);
-    if (logic.isBVMod(tr))   return bbBvurem     (tr);
-    if (logic.isBVLshift(tr)) return bbBvlshift  (tr);
+    if (logic.isBVBwAnd(tr))   return bbBvand      (tr);
+    if (logic.isBVBwOr(tr))    return bbBvor       (tr);
+    if (logic.isBVBwXor(tr))   return bbBvxor      (tr);
+    if (logic.isBVCompl(tr))   return bbBvcompl    (tr);
+    if (logic.isBVNot(tr))     return bbBvlnot     (tr);
+    if (logic.isBVLand(tr))    return bbBvland     (tr);
+    if (logic.isBVLor(tr))     return bbBvlor      (tr);
+    if (logic.isBVPlus(tr))    return bbBvadd      (tr);
+    if (logic.isBVTimes(tr))   return bbBvmul      (tr);
+    if (logic.isBVDiv(tr))     return bbBvudiv     (tr);
+    if (logic.isBVMod(tr))     return bbBvurem     (tr);
+    if (logic.isBVLshift(tr))  return bbBvlshift   (tr);
+    if (logic.isBVLRshift(tr)) return bbBvlrshift  (tr);
+    if (logic.isBVARshift(tr)) return bbBvarshift  (tr);
 
 //    if ( e->isSignExtend ( ) ) return bbSignExtend ( e );
 
@@ -1186,6 +1185,70 @@ BitBlaster::bbBvlshift(PTRef tr)
     }
     return bs.newBvector(names, ls.last(), mkActVar(s_bbBvlsh), tr);
 }
+
+BVRef
+BitBlaster::bbBvlrshift(PTRef tr)
+{
+    return bbBvrshift(tr, false);
+}
+
+BVRef
+BitBlaster::bbBvarshift(PTRef tr)
+{
+    return bbBvrshift(tr, true);
+}
+
+BVRef
+BitBlaster::bbBvrshift(PTRef tr, bool arith)
+{
+    assert(tr != PTRef_Undef);
+    assert(logic.getPterm(tr).size() == 2 );
+
+    if (bs.has(tr)) return bs[tr];
+
+    // Allocate new result
+    vec<PTRef> names;
+    const char* name_str = arith ? "arsh" : "lrsh";
+    getBVVars(name_str, names, bitwidth);
+
+    // Allocate new result
+    vec<PTRef> result;
+
+    vec<PTRef> acc;
+    PTRef arg1 = logic.getPterm(tr)[0];
+    PTRef arg2 = logic.getPterm(tr)[1];
+    BVRef a = bbTerm(arg1);
+    BVRef b = bbTerm(arg2);
+
+    assert(isPowOfTwo(bs[a].size()));
+    assert(isPowOfTwo(bs[b].size()));
+
+    int l = bs[a].size();
+    int n = opensmt::getLogFromPowOfTwo(bs[a].size());
+
+    vec<vec<PTRef> > ls;
+    for (int s = -1; s <= n-1; s++) {
+        ls.push();
+        for (int i = 0; i < l; i++)
+            ls.last().push(PTRef_Undef);
+    }
+
+    for (int i = 0; i < l; i++)
+        ls_write(-1, i, bs[a][i], ls);
+
+    PTRef fill = arith ? bs[a].msb() : logic.getTerm_false();
+    for (int s = 0; s <= n-1; s++) {
+        for (int i = 0; i < l; i++) {
+            if (i + (1 << s) <= l-1) // i + 2^s <= l-1
+                ls_write(s, i, logic.mkIte(bs[b][s], ls_read(s-1, i+(1 << s), ls), ls_read(s-1, i, ls)), ls);
+            else
+                ls_write(s, i, logic.mkIte(bs[b][s], fill, ls_read(s-1, i, ls)), ls);
+        }
+    }
+    PTRef actVar = arith ? mkActVar(s_bbBvarsh) : mkActVar(s_bbBvlrsh);
+    return bs.newBvector(names, ls.last(), actVar, tr);
+}
+
 
 BVRef
 BitBlaster::bbBvmul(PTRef tr)

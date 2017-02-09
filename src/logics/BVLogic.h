@@ -42,7 +42,8 @@ class BVLogic: public CUFLogic
     SymRef              sym_BV_SGT;    // s>
     SymRef              sym_BV_UGT;    // u>
     SymRef              sym_BV_LSHIFT; // <<
-    SymRef              sym_BV_RSHIFT; // >>
+    SymRef              sym_BV_LRSHIFT; // l>>
+    SymRef              sym_BV_ARSHIFT; // a>>
     SymRef              sym_BV_MOD;    // %
     SymRef              sym_BV_BWAND;  // &
     SymRef              sym_BV_BWOR;   // |
@@ -79,7 +80,8 @@ class BVLogic: public CUFLogic
     static const char*  tk_bv_sgt;
     static const char*  tk_bv_ugt;
     static const char*  tk_bv_lshift;
-    static const char*  tk_bv_rshift;
+    static const char*  tk_bv_arshift;
+    static const char*  tk_bv_lrshift;
     static const char*  tk_bv_mod;
     static const char*  tk_bv_bwand;
     static const char*  tk_bv_bwor;
@@ -156,8 +158,10 @@ class BVLogic: public CUFLogic
     bool isBVOne(PTRef tr)     const { return tr == term_BV_ONE; }
     bool isBVLshift(SymRef sr) const { return sr == sym_BV_LSHIFT; }
     bool isBVLshift(PTRef tr)  const { return isBVLshift(getPterm(tr).symb()); }
-    bool isBVRshift(SymRef sr) const { return sr == sym_BV_RSHIFT; }
-    bool isBVRshift(PTRef tr)  const { return isBVRshift(getPterm(tr).symb()); }
+    bool isBVLRshift(SymRef sr) const { return sr == sym_BV_LRSHIFT; }
+    bool isBVARshift(SymRef sr) const { return sr == sym_BV_ARSHIFT; }
+    bool isBVLRshift(PTRef tr)  const { return isBVLRshift(getPterm(tr).symb()); }
+    bool isBVARshift(PTRef tr)  const { return isBVARshift(getPterm(tr).symb()); }
     bool isBVMod(SymRef sr)    const { return sr == sym_BV_MOD; }
     bool isBVMod(PTRef tr)     const { return isBVMod(getPterm(tr).symb()); }
     bool isBVBwAnd(SymRef sr)  const { return sr == sym_BV_BWAND; }
@@ -244,8 +248,11 @@ class BVLogic: public CUFLogic
     PTRef mkBVLshift(const vec<PTRef>& args) {assert(args.size() == 2); return mkBVLshift(args[0], args[1]);}
     PTRef mkBVLshift   (const PTRef, const PTRef);
 
-    PTRef mkBVRshift(const vec<PTRef>& args) {assert(args.size() == 2); return mkBVRshift(args[0], args[1]);}
-    PTRef mkBVRshift   (const PTRef, const PTRef);
+    PTRef mkBVLRshift(const vec<PTRef>& args) {assert(args.size() == 2); return mkBVLRshift(args[0], args[1]);}
+    PTRef mkBVLRshift   (const PTRef, const PTRef);
+
+    PTRef mkBVARshift(const vec<PTRef>& args) {assert(args.size() == 2); return mkBVARshift(args[0], args[1]);}
+    PTRef mkBVARshift   (const PTRef, const PTRef);
 
     PTRef mkBVMod(const vec<PTRef>& args) {assert(args.size() == 2); return mkBVMod(args[0], args[1]);}
     PTRef mkBVMod      (const PTRef, const PTRef);

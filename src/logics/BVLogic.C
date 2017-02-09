@@ -30,7 +30,8 @@ const char* BVLogic::tk_bv_ugt    = "u>";
 const char* BVLogic::tk_bv_sgeq   = "s>=";
 const char* BVLogic::tk_bv_ugeq   = "u>=";
 const char* BVLogic::tk_bv_lshift = "<<";
-const char* BVLogic::tk_bv_rshift = ">>";
+const char* BVLogic::tk_bv_arshift = "a>>";
+const char* BVLogic::tk_bv_lrshift = "l>>";
 const char* BVLogic::tk_bv_mod    = "%";
 const char* BVLogic::tk_bv_bwand  = "&";
 const char* BVLogic::tk_bv_bwor   = "|";
@@ -68,7 +69,8 @@ BVLogic::BVLogic(SMTConfig& c, int width) :
     , sym_BV_UGT(SymRef_Undef)
     , sym_BV_BWXOR(SymRef_Undef)
     , sym_BV_LSHIFT(SymRef_Undef)
-    , sym_BV_RSHIFT(SymRef_Undef)
+    , sym_BV_LRSHIFT(SymRef_Undef)
+    , sym_BV_ARSHIFT(SymRef_Undef)
     , sym_BV_MOD(SymRef_Undef)
     , sym_BV_BWOR(SymRef_Undef)
     , sym_BV_BWAND(SymRef_Undef)
@@ -165,7 +167,9 @@ BVLogic::BVLogic(SMTConfig& c, int width) :
     sym_store[sym_BV_LOR].setCommutes();
 
     sym_BV_LSHIFT = declareFun(tk_bv_lshift, sort_BVNUM, params, &msg, true);
-    sym_BV_RSHIFT = declareFun(tk_bv_rshift, sort_BVNUM, params, &msg, true);
+
+    sym_BV_ARSHIFT = declareFun(tk_bv_arshift, sort_BVNUM, params, &msg, true);
+    sym_BV_LRSHIFT = declareFun(tk_bv_lrshift, sort_BVNUM, params, &msg, true);
 
     sym_BV_MOD    = declareFun(tk_bv_mod, sort_BVNUM, params, &msg, true);
 
@@ -433,7 +437,7 @@ PTRef BVLogic::mkBVLshift(const PTRef arg1, const PTRef arg2)
     return mkFun(sym_BV_LSHIFT, args, msg);
 }
 
-PTRef BVLogic::mkBVRshift(const PTRef arg1, const PTRef arg2)
+PTRef BVLogic::mkBVLRshift(const PTRef arg1, const PTRef arg2)
 {
     if (isBVNUMConst(arg2) && getBVNUMConst(arg2) == 0)
         return arg1;
@@ -441,8 +445,20 @@ PTRef BVLogic::mkBVRshift(const PTRef arg1, const PTRef arg2)
     args.push(arg1);
     args.push(arg2);
     char** msg;
-    return mkFun(sym_BV_RSHIFT, args, msg);
+    return mkFun(sym_BV_LRSHIFT, args, msg);
 }
+
+PTRef BVLogic::mkBVARshift(const PTRef arg1, const PTRef arg2)
+{
+    if (isBVNUMConst(arg2) && getBVNUMConst(arg2) == 0)
+        return arg1;
+    vec<PTRef> args;
+    args.push(arg1);
+    args.push(arg2);
+    char** msg;
+    return mkFun(sym_BV_ARSHIFT, args, msg);
+}
+
 
 PTRef BVLogic::mkBVMod(const PTRef arg1, const PTRef arg2)
 {
