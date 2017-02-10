@@ -72,12 +72,33 @@ CUFLogic::CUFLogic(SMTConfig& c) :
     , sym_CUF_PLUS(SymRef_Undef)
     , sym_CUF_TIMES(SymRef_Undef)
     , sym_CUF_DIV(SymRef_Undef)
-    , sym_CUF_EQ(SymRef_Undef)
+//    , sym_CUF_EQ(SymRef_Undef)
     , sym_CUF_LEQ(SymRef_Undef)
     , sym_CUF_LT(SymRef_Undef)
     , sym_CUF_GEQ(SymRef_Undef)
     , sym_CUF_GT(SymRef_Undef)
+    , sym_CUF_LSHIFT(SymRef_Undef)
+    , sym_CUF_LRSHIFT(SymRef_Undef)
+    , sym_CUF_ARSHIFT(SymRef_Undef)
+    , sym_CUF_MOD(SymRef_Undef)
+    , sym_CUF_BWAND(SymRef_Undef)
+    , sym_CUF_BWOR(SymRef_Undef)
+    , sym_CUF_INC(SymRef_Undef)
+    , sym_CUF_DEC(SymRef_Undef)
+    , sym_CUF_NEQ(SymRef_Undef)
+    , sym_CUF_LAND(SymRef_Undef)
+    , sym_CUF_LOR(SymRef_Undef)
+//    , sym_CUF_NOT(SymRef_Undef)
+    , sym_CUF_BWXOR(SymRef_Undef)
+    , sym_CUF_COMPL(SymRef_Undef)
+    , sym_CUF_SIZEOF(SymRef_Undef)
+    , sym_CUF_ADDROF(SymRef_Undef)
+    , sym_CUF_PTR(SymRef_Undef)
+//    , sym_CUF_COND(SymRef_Undef)
+
     , sort_CUFNUM(SRef_Undef)
+    , sort_CUFSTR(SRef_Undef)
+
     , term_CUF_ZERO(PTRef_Undef)
     , term_CUF_ONE(PTRef_Undef)
 {
@@ -156,6 +177,7 @@ CUFLogic::CUFLogic(SMTConfig& c) :
 
     sym_CUF_BWOR   = declareFun(tk_cuf_bwor, sort_CUFNUM, params, &msg, true);
 //    sym_store[sym_CUF_BWOR].setCommutes();
+    sym_CUF_BWXOR  = declareFun(tk_cuf_bwxor, sort_CUFNUM, params, &msg, true);
 }
 
 CUFLogic::~CUFLogic()

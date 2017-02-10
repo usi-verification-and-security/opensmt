@@ -48,7 +48,7 @@ class CUFLogic: public Logic
     SymRef              sym_CUF_PLUS;   // +
     SymRef              sym_CUF_TIMES;  // *
     SymRef              sym_CUF_DIV;    // /
-    SymRef              sym_CUF_EQ;     // ==
+//    SymRef              sym_CUF_EQ;     // ==
     SymRef              sym_CUF_LEQ;    // <=
     SymRef              sym_CUF_LT;     // <
     SymRef              sym_CUF_GEQ;    // >=
@@ -64,13 +64,13 @@ class CUFLogic: public Logic
     SymRef              sym_CUF_NEQ;    // !=
     SymRef              sym_CUF_LAND;   // &&
     SymRef              sym_CUF_LOR;    // ||
-    SymRef              sym_CUF_NOT;    // !
+//    SymRef              sym_CUF_NOT;    // !
     SymRef              sym_CUF_BWXOR;  // ^
     SymRef              sym_CUF_COMPL;  // ~
     SymRef              sym_CUF_SIZEOF; // sizeof
     SymRef              sym_CUF_ADDROF; // &
     SymRef              sym_CUF_PTR;    // *
-    SymRef              sym_CUF_COND;   // ?
+ //   SymRef              sym_CUF_COND;   // ?
 
     SRef                sort_CUFNUM;
     SRef                sort_CUFSTR;
@@ -184,8 +184,8 @@ class CUFLogic: public Logic
     bool isCUFLand(PTRef tr)    const { return isCUFLand(getPterm(tr).symb()); }
     bool isCUFLor(SymRef sr)    const { return sr == sym_CUF_LOR; }
     bool isCUFLor(PTRef tr)     const { return isCUFLor(getPterm(tr).symb()); }
-    bool isCUFNot(SymRef sr)    const { return sr == sym_CUF_NOT; }
-    bool isCUFNot(PTRef tr)     const { return isCUFNot(getPterm(tr).symb()); }
+//    bool isCUFNot(SymRef sr)    const { return sr == sym_CUF_NOT; }
+//    bool isCUFNot(PTRef tr)     const { return isCUFNot(getPterm(tr).symb()); }
     bool isCUFBwxor(SymRef sr)  const { return sr == sym_CUF_BWXOR; }
     bool isCUFBwxor(PTRef tr)   const { return isCUFBwxor(getPterm(tr).symb()); }
     bool isCUFCompl(SymRef sr)  const { return sr == sym_CUF_COMPL; }
@@ -196,8 +196,8 @@ class CUFLogic: public Logic
     bool isCUFAddrof(PTRef tr)  const { return isCUFAddrof(getPterm(tr).symb()); }
     bool isCUFPtr(SymRef sr)    const { return sr == sym_CUF_PTR; }
     bool isCUFPtr(PTRef tr)     const { return isCUFPtr(getPterm(tr).symb()); }
-    bool isCUFCond(SymRef sr)   const { return sr == sym_CUF_COND; }
-    bool isCUFCond(PTRef tr)    const { return isCUFCond(getPterm(tr).symb()); }
+//    bool isCUFCond(SymRef sr)   const { return sr == sym_CUF_COND; }
+//    bool isCUFCond(PTRef tr)    const { return isCUFCond(getPterm(tr).symb()); }
 
     bool isUFEquality(PTRef tr) const { return !isCUFEq(tr) && Logic::isUFEquality(tr); }
     bool isTheoryEquality(PTRef tr) const { return isCUFEq(tr); }
