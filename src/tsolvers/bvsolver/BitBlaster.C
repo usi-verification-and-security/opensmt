@@ -1159,8 +1159,8 @@ BitBlaster::bbBvlshift(PTRef tr)
     BVRef a = bbTerm(arg1);
     BVRef b = bbTerm(arg2);
 
-    assert(isPowOfTwo(bs[a].size()));
-    assert(isPowOfTwo(bs[b].size()));
+    assert(opensmt::isPowOfTwo(bs[a].size()));
+    assert(opensmt::isPowOfTwo(bs[b].size()));
 
     int l = bs[a].size();
     int n = opensmt::getLogFromPowOfTwo(bs[a].size());
@@ -1220,8 +1220,8 @@ BitBlaster::bbBvrshift(PTRef tr, bool arith)
     BVRef a = bbTerm(arg1);
     BVRef b = bbTerm(arg2);
 
-    assert(isPowOfTwo(bs[a].size()));
-    assert(isPowOfTwo(bs[b].size()));
+    assert(opensmt::isPowOfTwo(bs[a].size()));
+    assert(opensmt::isPowOfTwo(bs[b].size()));
 
     int l = bs[a].size();
     int n = opensmt::getLogFromPowOfTwo(bs[a].size());

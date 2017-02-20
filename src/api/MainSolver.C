@@ -207,9 +207,9 @@ MainSolver::insertFormula(PTRef root, char** msg)
     }
     logic.conjoinExtras(root, root);
     char* err_msg = NULL;
+#ifdef PRODUCE_PROOF
     if (!logic.assignPartition(root, &err_msg))
         opensmt_error("Could not assign partition");
-#ifdef PRODUCE_PROOF
     logic.setIPartitionsIte(root);
 #endif
     pfstore[formulas.last()].push(root);

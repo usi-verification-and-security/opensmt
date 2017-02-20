@@ -547,6 +547,7 @@ class Logic {
     void compareTermStore(PtStore& other) { }// term_store.compare(other); }
 #endif
 
+#ifdef PRODUCE_PROOF
     //partitions:
     bool assignPartition(const char* pname, PTRef pref, char** msg)
     {
@@ -558,6 +559,7 @@ class Logic {
         assertions.insert(pref, asrt_idx++);
         return term_store.assignPartition(pref, msg);
     }
+#endif
 
     bool canInterpolate()
     {
