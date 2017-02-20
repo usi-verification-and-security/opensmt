@@ -101,10 +101,22 @@ namespace opensmt {
 
 #if FAST_RATIONALS
 typedef FastRational Real;
+typedef mpz_class Integer;
 #else
 typedef mpq_class Real;
-typedef mpz_class Integer;
 #endif
+
+void static inline wordToBinary(const unsigned x, char*& bin, const int width)
+{
+    bin = (char*) malloc(width+1);
+
+    int p = 0;
+    opensmt::Integer one = 1;
+    for (opensmt::Integer i = (one << (width-1)); i > 0; i >>= 1)
+        bin[p++] = ((x&i) == i) ? '1' : '0';
+    bin[p] = '\0';
+}
+
 
 bool static inline isDigit(char c)
 {
@@ -126,16 +138,6 @@ void static inline normalize(char*& rat, const char* flo, bool is_neg)
         mpq_neg(num, num);
     gmp_asprintf(&rat, "%Qd", num);
     mpq_clear(num);
-}
-
-void static inline wordToBinary(const unsigned x, char*& bin, const int width)
-{
-    bin = (char*) malloc(width+1);
-
-    int p = 0;
-    for (unsigned i = (1 << (width-1)); i > 0; i >>= 1)
-        bin[p++] = ((x&i) == i) ? '1' : '0';
-    bin[p] = '\0';
 }
 
 static inline bool isPowOfTwo(int b)
