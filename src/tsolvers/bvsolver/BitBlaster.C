@@ -220,6 +220,9 @@ BVRef
 BitBlaster::bbTerm(PTRef tr)
 {
     assert(logic.hasSortBVNUM(tr));
+    // Return previous result if computed
+    if (bs.has(tr))
+        return bs.getFromPTRef(tr);
     //
     // BitBlasts predicates
     //

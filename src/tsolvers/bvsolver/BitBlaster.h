@@ -60,7 +60,7 @@ public:
 
     // Public Theory refinement stuff
     lbool notifyEqualities   (); // Check all refined equalities, add explicit new terms for them
-    void  bindCUFToBV        (PTRef cuf_tr, PTRef bv_tr) { assert(!pToB.has(cuf_tr)); pToB.insert(cuf_tr, bv_tr); refined.push(cuf_tr); }
+    void  bindCUFToBV        (PTRef cuf_tr, PTRef bv_tr) { assert(!pToB.has(cuf_tr)); bbTerm(bv_tr); pToB.insert(cuf_tr, bv_tr); refined.push(cuf_tr); }
     lbool glueBtoUF          (BVRef br, PTRef tr);  // (= tr (c br_1 ... br_32))
     lbool glueUFtoB          (PTRef tr, BVRef br);  // (= br_0 (e0 tr)) /\ ... /\ (= br_32 (e32 tr))
     lbool glueUFtoUF         (PTRef tr1, PTRef tr2); // (= uf1 uf2) <-> (and (= .b00_0 .b00_1) ... (= .b31_0 .b31_1))
