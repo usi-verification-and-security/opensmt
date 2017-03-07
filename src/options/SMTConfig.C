@@ -500,6 +500,7 @@ const char* SMTConfig::o_itp_lra_factor = ":interpolation-lra-factor";
 const char* SMTConfig::o_sat_resource_units = ":resource-units";
 const char* SMTConfig::o_sat_resource_limit = ":resource-limit";
 const char* SMTConfig::o_dump_state = ":dump-state";
+const char* SMTConfig::o_dump_query = ":dump-query";
 const char* SMTConfig::o_dump_only = ":dump-only";
 const char* SMTConfig::o_sat_dump_learnts = ":dump-learnts";
 const char* SMTConfig::o_sat_split_type = ":split-type";

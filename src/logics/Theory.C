@@ -247,3 +247,15 @@ bool Theory::computeSubstitutions(PTRef coll_f, vec<PFRef>& frames, int curr)
     delete th;
     return result;
 }
+
+void
+Theory::printFramesAsQuery(vec<PFRef>& frames)
+{
+    getLogic().dumpHeaderToFile(std::cout);
+    for (int i = 0; i < frames.size(); i++) {
+        if (i > 0)
+            std::cout << "(push 1)\n";
+        getLogic().dumpFormulaToFile(std::cout, pfstore[frames[i]].root);
+    }
+    getLogic().dumpChecksatToFile(std::cout);
+}

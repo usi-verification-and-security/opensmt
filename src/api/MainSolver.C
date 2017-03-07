@@ -1097,6 +1097,9 @@ sstat MainSolver::solve()
     sstat *results;
     vec<int> *split_threads;
 
+    if (config.dump_query())
+        printFramesAsQuery();
+
     if (config.parallel_threads && config.sat_split_type() == spt_lookahead)
         status = lookaheadSplit(getLog2Ceil(config.sat_split_num()));
     else {
