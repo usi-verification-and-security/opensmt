@@ -26,6 +26,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define LRALOGIC_H
 #include "Logic.h"
 
+class LRANonLinearException
+{
+    char* reason;
+public:
+    LRANonLinearException(const char* reason_) {
+        asprintf(&reason, "Term %s is non-linear", reason_);
+    }
+    virtual char* what() const
+    {
+        char* out;
+        asprintf(&out, "%s", reason);
+        return out;
+    }
+    ~LRANonLinearException() { free(reason); }
+};
+
 class LRALogic: public Logic
 {
   protected:

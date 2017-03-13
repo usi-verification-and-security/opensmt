@@ -154,6 +154,22 @@ static inline int getLogFromPowOfTwo(int l)
     return n;
 }
 
+class strConvException : std::exception
+{
+    char* reason;
+public:
+    strConvException(const char* reason_) {
+        asprintf(&reason, "Error converting string to rational.  %s is not a legal rational", reason_);
+    }
+    virtual char* what() const noexcept
+    {
+        char* out;
+        asprintf(&out, "%s", reason);
+        return out;
+    }
+    ~strConvException() { free(reason); }
+};
+
 bool static inline stringToRational(char*& rat, const char* flo)
 {
     int nom_l = 0;
@@ -164,7 +180,6 @@ bool static inline stringToRational(char*& rat, const char* flo)
     bool is_neg = false;
 
     if (flo[0] == '-') { flo++; is_neg = true; }
-
 
     for (int i = 0; flo[i] != '\0'; i++) {
         if (state == 0 && flo[i] == '0') {}
@@ -182,12 +197,7 @@ bool static inline stringToRational(char*& rat, const char* flo)
         else if (state == 4 && isPosDig(flo[i])) { nom_l ++; state = 2; }
         // We come here if it is a fraction already
         else if (state == 5 && isDigit(flo[i]))  { state = 5; }
-        else {
-            rat = (char*)malloc(4);
-            strcpy(rat, "err");
-            rat[3] = '\0';
-            return false;
-        }
+        else { throw strConvException(flo); }
     }
 
     if (is_frac) {

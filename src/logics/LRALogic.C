@@ -538,10 +538,7 @@ PTRef LRALogic::mkRealTimes(const vec<PTRef>& tmp_args, char** msg)
     if (isRealTerm(tr) || isRealPlus(tr))
         return tr;
     else {
-//        char* foo = strdup(e_nonlinear_term);
-//        msg = &foo;
-//        msg = &strdup(e_nonlinear_term);
-        return PTRef_Undef;
+        throw LRANonLinearException("%s");
     }
 }
 
