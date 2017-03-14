@@ -555,7 +555,7 @@ void CoreSMTSolver::cancelUntil(int level)
             assert(assigns[x] != l_Undef);
 #endif
             assigns [x] = l_Undef;
-            if (phase_saving > 1 || (phase_saving == 1) && c > trail_lim.last())
+            if (phase_saving > 1 || ((phase_saving == 1) && c > trail_lim.last()))
                 polarity[x] = sign(trail[c]);
             insertVarOrder(x);
         }
@@ -2562,8 +2562,8 @@ lbool CoreSMTSolver::lookaheadSplit2(int d)
     if (res == l_False)
         splits.clear();
     // Without these I get a segfault from theory solver's destructor...
-    cancelUntil(-1);
-    theory_handler.backtrack(-1);
+    cancelUntil(0);
+    theory_handler.backtrack(0);
     return res;
 }
 
