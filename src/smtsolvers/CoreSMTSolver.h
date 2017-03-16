@@ -102,6 +102,7 @@ public:
 //
 class SplitData
 {
+    bool                no_instance;    // Does SplitData store the instance?
     THandler&           theory_handler;
     ClauseAllocator&    ca;
     vec<CRef>&          inst_clauses;   // Reference to the instance clause database
@@ -119,12 +120,13 @@ class SplitData
     void toPTRefs(vec<vec<PtAsgn> >& out, vec<vec<Lit> >& in);
 
 public:
-    SplitData(ClauseAllocator& _ca, vec<CRef>& ic, vec<Lit>& t, int tl, THandler& th)
+    SplitData(ClauseAllocator& _ca, vec<CRef>& ic, vec<Lit>& t, int tl, THandler& th, bool no_instance = false)
         : inst_clauses(ic)
         , ca(_ca)
         , trail(t)
         , trail_idx(tl)
         , theory_handler(th)
+        , no_instance(no_instance)
     {}
     SplitData(const SplitData& other)
         : inst_clauses(other.inst_clauses)
@@ -132,6 +134,7 @@ public:
         , trail(other.trail)
         , trail_idx(other.trail_idx)
         , theory_handler(other.theory_handler)
+        , no_instance(other.no_instance)
     {
         assert(other.instance.size() == 0 && other.constraints.size() == 0 && other.learnts.size() == 0);
     }
@@ -152,6 +155,8 @@ public:
     }
     void updateInstance()
     {
+        if (no_instance) return;
+
         assert(instance.size() == 0);
         for (int i = 0; i < inst_clauses.size(); i++)
         {

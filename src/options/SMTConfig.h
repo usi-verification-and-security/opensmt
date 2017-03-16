@@ -187,6 +187,8 @@ static const char* spprefs_rand    = "random";
 
 static const char* spformats_smt2   = "smt2";
 static const char* spformats_osmt2  = "osmt2";
+static const char* spformats_brief  = "brief";
+static const char* spformats_full   = "full";
 
 static const struct SpType spt_none      = { 0 };
 static const struct SpType spt_lookahead = { 1 };
@@ -204,6 +206,8 @@ static const struct SpPref sppref_undef = { 4 };
 
 static const struct SpFormat spformat_smt2  = { 0 };
 static const struct SpFormat spformat_osmt2 = { 1 };
+static const struct SpFormat spformat_brief = { 2 };
+static const struct SpFormat spformat_full  = { 3 };
 
 //
 // Holds informations about the configuration of the solver
@@ -280,6 +284,7 @@ public:
   static const char* o_dryrun;
   static const char* o_do_substitutions;
   static const char* o_smt_split_format;
+  static const char* o_smt_split_format_length;
 
 private:
 
@@ -579,6 +584,16 @@ public:
               return spformat_osmt2;
       }
       return spformat_osmt2; // The default
+    }
+  const SpFormat smt_split_format_length() const {
+      if (optionTable.has(o_smt_split_format_length)) {
+          const char* type = optionTable[o_smt_split_format_length]->getValue().strval;
+          if (strcmp(type, spformats_brief) == 0)
+              return spformat_brief;
+          else if (strcmp(type, spformats_full) == 0)
+              return spformat_full;
+      }
+      return spformat_full; // The default
     }
   double sat_resource_limit() const
     { return optionTable.has(o_sat_resource_limit) ?

@@ -1003,7 +1003,9 @@ bool MainSolver::writeSolverSplits_smtlib2(const char* file, char** msg)
         splits[i].learntsToPTRefs(learnts);
         addToConj(learnts, conj_vec);
 
-        conj_vec.push(root_instance.getRoot());
+        if (config.smt_split_format_length() == spformat_full)
+            conj_vec.push(root_instance.getRoot());
+
         PTRef problem = logic.mkAnd(conj_vec);
 
         char* name;
@@ -1013,7 +1015,10 @@ bool MainSolver::writeSolverSplits_smtlib2(const char* file, char** msg)
         if (file.is_open()) {
             logic.dumpHeaderToFile(file);
             logic.dumpFormulaToFile(file, problem);
-            logic.dumpChecksatToFile(file);
+
+            if (config.smt_split_format_length() == spformat_full)
+                logic.dumpChecksatToFile(file);
+
             file.close();
         }
         else {

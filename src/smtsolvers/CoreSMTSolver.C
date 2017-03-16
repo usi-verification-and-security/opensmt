@@ -2712,10 +2712,6 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
             }
         }
 
-        // Decision level -1 at this point means we proved unsatisfiability
-        if (decisionLevel() == -1)
-            return l_False;
-
         if (i != -1)
         {
 #ifdef LADEBUG
@@ -2875,6 +2871,7 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
                 return l_Undef;
             }
             p == 0 ? p0 = trail.size() : p1 = trail.size();
+            // Update also the clause deletion heuristic?
             cancelUntil(decisionLevel() - 1);
         }
         if (value(v) == l_Undef)
@@ -3042,7 +3039,7 @@ bool CoreSMTSolver::createSplit_lookahead()
     // complicated
     // XXX Now that the version is updated check that this code works!
     int curr_dl0_idx = trail_lim.size() > 0 ? trail_lim[0] : trail.size();
-    splits.push_c(SplitData(ca, clauses, trail, curr_dl0_idx, theory_handler));
+    splits.push_c(SplitData(ca, clauses, trail, curr_dl0_idx, theory_handler, config.smt_split_format_length() == spformat_brief));
     SplitData& sp = splits.last();
 
     printf("; Outputing an instance:\n; ");
@@ -3055,6 +3052,7 @@ bool CoreSMTSolver::createSplit_lookahead()
         sp.addConstraint(tmp);
     }
     printf("\n");
+
     sp.updateInstance();
     assert(ok);
     return true;
@@ -3062,12 +3060,9 @@ bool CoreSMTSolver::createSplit_lookahead()
 
 bool CoreSMTSolver::createSplit_scatter(bool last)
 {
-    // Due to the stupidness of the minisat version this gets
-    // complicated
-    // XXX Check that this works with the new version of MiniSat!
     int curr_dl0_idx = trail_lim.size() > 0 ? trail_lim[0] : trail.size();
     assert(splits.size() == split_assumptions.size());
-    splits.push_c(SplitData(ca, clauses, trail, curr_dl0_idx, theory_handler));
+    splits.push_c(SplitData(ca, clauses, trail, curr_dl0_idx, theory_handler, config.smt_split_format_length() == spformat_brief));
     split_assumptions.push();
     SplitData& sp = splits.last();
     vec<Lit> constraints_negated;
@@ -3094,6 +3089,7 @@ bool CoreSMTSolver::createSplit_scatter(bool last)
             tmp.push(~split_assumption[j]);
         sp.addConstraint(tmp);
     }
+
     sp.updateInstance();
     // XXX Skipped learned clauses
     cancelUntil(0);
