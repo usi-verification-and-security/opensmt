@@ -7,7 +7,7 @@
 
  OpenSMT2 -- Copyright (C)   2012 - 2016, Antti Hyvarinen
                              2008 - 2012, Roberto Bruttomesso
- 
+
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the
 "Software"), to deal in the Software without restriction, including
@@ -374,6 +374,13 @@ void LRASolver::makePolynomial(LAVar* s, PTRef pol)
     }
 }
 
+bool LRASolver::isValid(PTRef tr)
+{
+    return logic.isRealConst(tr) || logic.isRealPlus(tr) || logic.isRealMinus(tr) || logic.isRealNeg(tr) ||
+           logic.isRealTimes(tr) || logic.isRealDiv(tr) || logic.isRealEq(tr) || logic.isRealLeq(tr) || logic.isRealLt(tr) ||
+           logic.isRealGeq(tr) || logic.isRealGt(tr) || logic.isRealVar(tr);
+}
+
 //
 // Reads the constraint into the solver
 //
@@ -421,6 +428,15 @@ lbool LRASolver::declareTerm(PTRef leq_tr)
         assert(false);
     }
 
+    if (logic.hasSortBool(leq_tr)) {
+        Pterm& t = logic.getPterm(leq_tr);
+        while (known_preds.size() <= t.getId())
+            known_preds.push(false);
+        known_preds[t.getId()] = true;
+    }
+    else
+        assert(false);
+
 #if VERBOSE
     cerr << "; Informed of constraint " << logic.printTerm(tr_tr) << endl;
 //    cout << this << endl;
@@ -434,6 +450,8 @@ lbool LRASolver::declareTerm(PTRef leq_tr)
 //
 bool LRASolver::check(bool complete)
 {
+//    opensmt::StopWatch check_timer(tsolver_stats.simplex_timer);
+
     (void)complete;
     // check if we stop reading constraints
     if (status == INIT)
@@ -468,7 +486,7 @@ bool LRASolver::check(bool complete)
         if (!bland_rule && (repeats > columns.size()))
             bland_rule = true;
 
-        // look for the basic x with the smallest index which doesn't feat the bounds
+        // look for the basic x with the smallest index which doesn't fit the bounds
         // XXX Keep these in a heap, so that there's no need to go over all
         // of them every time!
         VectorLAVar::const_iterator it = rows.begin();
@@ -483,7 +501,7 @@ bool LRASolver::check(bool complete)
                     // Select the var with the smallest id
                     x = (*it)->ID() < curr_var_id_x ? *it : x;
                     curr_var_id_x = (*it)->ID() < curr_var_id_x ? (*it)->ID() : curr_var_id_x;
-                } else { // Use heuristics that prefers short polynomials
+                } else { // Use heuristics that prefer short polynomials
                     pivot_counter++;
                     tsolver_stats.num_pivot_ops++;
                     if (x == NULL)
@@ -514,12 +532,12 @@ bool LRASolver::check(bool complete)
         LAVar * y = NULL;
         LAVar * y_found = NULL;
 
-        // Model doesn't feet the lower bound
+        // Model doesn't fit the lower bound
         if (x->M() < x->L() ) {
             // For the Bland rule
             int curr_var_id_y = max_var_id;
             // look for nonbasic terms to fix the unbounding
-            LARow::iterator it = x->polynomial.begin( );
+            LARow::iterator it = x->polynomial.begin();
             for (; it != x->polynomial.end(); x->polynomial.getNext(it)) {
                 y = columns[it->key];
                 if (x == y)
@@ -532,7 +550,7 @@ bool LRASolver::check(bool complete)
                 const bool & a_is_pos = ( *a ) > 0;
                 if ((a_is_pos && y->M() < y->U()) || (!a_is_pos && y->M() > y->L())) {
                     if (bland_rule) {
-                        // Choose the leftmost nonbasic column with a negative (reduced) cost
+                        // Choose the leftmost nonbasic variable with a negative (reduced) cost
                         y_found = y->ID() < curr_var_id_y ? y : y_found;
                         curr_var_id_y = y->ID() < curr_var_id_y ? y->ID() : curr_var_id_y;
                     } else {
@@ -675,7 +693,7 @@ bool LRASolver::assertLit( PtAsgn pta, bool reason )
   // Constraint to push was not found in local storage. Most likely it was not read properly before
   if ( it == NULL ) {
       std::cout << logic.printTerm(pta.tr) << "\n";
-      opensmt_error("Unexpected push !");
+      throw "Unexpected push";
   }
 
   assert( !it->isUnbounded( ) );
@@ -916,6 +934,7 @@ void LRASolver::popBacktrackPoint( )
 // Look for unbounded terms and applies Gaussian elimination to them.
 // Delete the column if succeeded
 //
+
 void LRASolver::doGaussianElimination( )
 {
     for (unsigned i = 0; i < columns.size( ); ++i) {
@@ -1009,9 +1028,11 @@ void LRASolver::doGaussianElimination( )
             }
             basis->setNonbasic( );
             rows.pop_back( );
-//            printf("; Removed the row %s\n", logic.printTerm(basis->e));
-//            printf("; Removed column %s\n", logic.printTerm(x->e));
-//            printf("; rows: %d, columns: %d\n", rows.size(), nVars());
+#ifdef GAUSSIAN_DEBUG
+            printf("; Removed the row %s\n", logic.printTerm(basis->e));
+            printf("; Removed column %s\n", logic.printTerm(x->e));
+            printf("; rows: %d, columns: %d\n", rows.size(), nVars());
+#endif
         }
     }
 }
@@ -1317,6 +1338,14 @@ void LRASolver::initSolver()
 {
     if (status == INIT)
     {
+#ifdef GAUSSIAN_DEBUG
+        cout << "Columns:" << '\n';
+        for (int i = 0; i < columns.size(); i++)
+            cout << columns[i] << '\n';
+        cout << "Rows:" << '\n';
+        for  (int i = 0; i < rows.size(); i++)
+            cout << rows[i] << '\n';
+#endif
         // Gaussian Elimination should not be performed in the Incremental mode!
         if (config.lra_gaussian_elim == 1 && config.do_substitutions())
             doGaussianElimination();
@@ -1369,7 +1398,6 @@ inline bool LRASolver::setStatus( LRASolverStatus s )
 //
 void LRASolver::getConflictingBounds( LAVar * x, vec<PTRef> & dst )
 {
-
   LAVar * y;
   if( x->M( ) < x->L( ) )
   {
@@ -1712,7 +1740,10 @@ void LRASolver::computeModel( )
   {
     if( columns[i]->skip )
       continue;
-
+#ifdef GAUSSIAN_DEBUG
+    printf("computing model for %s (%d)\n", logic.printTerm(columns[i]->e), columns[i]->e.x);
+    cerr << "It's M is " << columns[i]->M() << '\n';
+#endif
     col = columns[i];
     assert( !col->isModelOutOfBounds( ) );
 
@@ -1720,13 +1751,13 @@ void LRASolver::computeModel( )
     curBound = Delta( Delta::ZERO );
 
     // Check if the lower bound can be used and at least one of delta and real parts are not 0
-    if( !col->L( ).isInf( ) 
-     && ( col->L( ).D( ) != 0 || col->M( ).D( ) != 0 ) 
+    if( !col->L( ).isInf( )
+     && ( col->L( ).D( ) != 0 || col->M( ).D( ) != 0 )
      && ( col->L( ).R( ) != 0 || col->M( ).R( ) != 0 ) )
     {
       curBound = col->L( ) - col->M( );
 
-      // if denominator is >0 than use delta for min
+      // if denominator is >0 then use delta for min
       if( curBound.D( ) > 0 )
       {
         curDelta = -( curBound.R( ) / curBound.D( ) );
@@ -1770,9 +1801,12 @@ void LRASolver::computeModel( )
   assert( maxDelta <= 0 );
   delta = ( minDelta ) / 2;
 
+#ifdef GAUSSIAN_DEBUG
+  cerr << "; delta: " << curDelta << '\n';
+#endif
+
   // Compute the value for each variable. Delta is taken into account
-  for( unsigned i = 0; i < columns.size( ); ++i )
-    if( !( columns[i]->skip ) )
+  for ( unsigned i = 0; i < columns.size( ); ++i )
       columns[i]->computeModel( curDelta );
 
   // Compute the value for each variable deleted by Gaussian elimination
@@ -1794,6 +1828,8 @@ void LRASolver::computeModel( )
     }
     assert( div != 0 );
     x->setM(v_delta/div);
+//    cout << "value of " << logic.printTerm(x->e) << " is " << x->M() << endl;
+
     removed_by_GaussianElimination.pop_back( );
   }
 }
@@ -1967,13 +2003,17 @@ bool LRASolver::checkIntegersAndSplit( )
     return false;
 }
 
-ValPair LRASolver::getValue(PTRef tr) const
+ValPair LRASolver::getValue(PTRef tr)
 {
     if (!logic.hasSortReal(tr)) return ValPair_Undef;
     int id = logic.getPterm(tr).getId();
     if (id < ptermToLavar.size() && ptermToLavar[id] != NULL) {
 //        cerr << "; getting value for term " << logic.printTerm(tr) << " (" << *ptermToLavar[id] << ")" << endl;
         const Delta v = ptermToLavar[id]->M();
+        for (int i = 0; i < removed_by_GaussianElimination.size(); i++) {
+            if (tr == removed_by_GaussianElimination[i]->e)
+                printf("Var %s removed by Gaussian elimination\n", logic.printTerm(tr));
+        }
         opensmt::Real val(v.R() + v.D() * delta);
         return ValPair(tr, val.get_str().c_str());
     }
@@ -2001,32 +2041,53 @@ LRASolver::~LRASolver( )
 //
 // Compute interpolants for the conflict
 //
-
 PTRef
 LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *labels)
 {
-    //opensmt_error("Interpolation not supported for LRA");
-    //return logic.getTerm_true();
-
     // Old implementation:
     //l = config.logic == QF_LRA || config.logic == QF_UFLRA
     //? QF_LRA
     //: QF_LIA;
 
+    assert(status == UNSAT);
     assert (explanation.size()>1);
 
-    vec<PTRef> in_list;
+    
+    if (verbose() > 1)
+    {
+        if (usingStrong())
+            cerr << "; Using Strong for LRA interpolation" << endl;
+        else if (usingWeak())
+            cerr << "; Using Weak for LRA interpolation" << endl;
+        else if(usingFactor())
+            cerr << "; Using Factor " << getStrengthFactor() << " for LRA interpolation" << endl;
+        else
+            cerr << "; LRA interpolation algorithm unknown" << endl;
+    }
+    
 
-    //ipartitions_t mask = 1;
-    //mask = ~mask;
+    for(map<PTRef, icolor_t>::iterator it = labels->begin(); it != labels->end(); ++it)
+    {
+        //cout << "; PTRef " << logic.printTerm(it->first) << " has color " << it->second << endl;
+    }
 
-    //for( unsigned in = 1; in < logic.getNofPartitions( ); in++ )
-    //{
     LAExpression interpolant(logic);
-    bool delta_flag=false;
+    LAExpression interpolant_dual(logic);
+    bool delta_flag = false;
+    bool delta_flag_dual = false;
 
-    // mask &= ~SETBIT( in );
-    //clrbit( mask, in );
+#ifdef ITP_DEBUG
+    vec<PTRef> tr_vec;
+    for (int i = 0; i < explanation.size(); i++)
+    {
+        PTRef tr_vecel = explanation[i].tr;
+        tr_vec.push(explanation[i].sgn == l_False ? logic.mkNot(tr_vecel) : tr_vecel);
+    }
+    PTRef tr = logic.mkAnd(tr_vec);
+    printf("; Explanation: \n");
+    printf(";  %s\n", logic.printTerm(tr));
+#endif
+
     for ( unsigned i = 0; i < explanation.size( ); i++ )
     {
         icolor_t color = I_UNDEF;
@@ -2054,24 +2115,19 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
                 || color == I_AB
                 || color == I_B );
 
-        assert( usingStrong()
-                || usingWeak()
-                || usingRandom() );
+        //assert( usingStrong()
+        //        || usingWeak()
+        //        || usingRandom() );
 
-//        if (verbose())
-//        {
-//            if (usingStrong())
-//                cerr << "; Using Strong for LRA interpolation" << endl;
-//            else if (usingWeak())
-//                cerr << "; Using Weak for LRA interpolation" << endl;
-//            else if(usingRandom())
-//                cerr << "; Using Random for LRA interpolation" << endl;
-//            else
-//                cerr << "; LRA interpolation algorithm unknown" << endl;
-//        }
-
+        PTRef exp_pt = explanation[i].tr;
+        if(labels != NULL && labels->find(exp_pt) != labels->end())
+        {
+            color = labels->find(exp_pt)->second;
+            //cout << "; PTRef " << logic.printTerm(exp_pt) << " has Boolean color " << color << endl;
+        }
+        /*
         // McMillan algo: set AB as B
-        if ( usingStrong() && color == I_AB )
+        else if ( usingStrong() && color == I_AB )
             color = I_B;
         // McMillan' algo: set AB as a
         else if ( usingWeak() && color == I_AB )
@@ -2079,15 +2135,17 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
         // Pudlak algo: who cares
         else if ( usingRandom() && color == I_AB )
             color = rand() % 2 ? I_A : I_B;
+        */
 
-        assert( color == I_A || color == I_B );
+        //assert( color == I_A || color == I_B );
 
-        // Add the A conflict to the interpolant (multiplied by the coefficient)
-        if ((color == I_A && usingStrong()) || (color == I_B && usingWeak()))
+        // Add the conflict to the interpolant (multiplied by the coefficient)
+        //if ((color == I_A && usingStrong()) || (color == I_B && usingWeak()))
+        if(color == I_A || color == I_AB)
         {
             // In this one I have no idea why LAExpression swaps the
             // sign.  But we want it unswapped again, so we negate.
-            if (explanation[i].sgn == l_False) //( getPolarity(explanation[i].tr) == l_True )
+            if (explanation[i].sgn == l_False)
             {
                 interpolant.addExprWithCoeff(LAExpression(logic, explanation[i].tr), explanationCoefficients[i]);
                 delta_flag=true;
@@ -2097,43 +2155,109 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
                 interpolant.addExprWithCoeff(LAExpression(logic, explanation[i].tr), -explanationCoefficients[i]);
             }
         }
+        //if ((color == I_A && usingStrong()) || (color == I_B && usingWeak()))
+        if(color == I_B || color == I_AB)
+        {
+            // In this one I have no idea why LAExpression swaps the
+            // sign.  But we want it unswapped again, so we negate.
+            if (explanation[i].sgn == l_False)
+            {
+                interpolant_dual.addExprWithCoeff(LAExpression(logic, explanation[i].tr), explanationCoefficients[i]);
+                delta_flag_dual=true;
+            }
+            else
+            {
+                interpolant_dual.addExprWithCoeff(LAExpression(logic, explanation[i].tr), -explanationCoefficients[i]);
+            }
+        }
     }
 
-    // TODO:: Why canonization stops the show?
-    // intp.canonizeReal();
-
-    // Generate resulting interpolant and push it to the list
+    //cout << "; INTERPOLANT " << interpolant << endl;
+    //cout << "; INTERPOLANT IS TRUE " << (interpolant.isTrue() ? "true" : "false") << endl;
+    //cout << "; INTERPOLANT IS FALSE " << (interpolant.isFalse() ? "true" : "false") << endl;
+    PTRef itp;
     if (interpolant.isTrue() && !delta_flag)
-    {
-        in_list.push(logic.getTerm_true());
-    }
+        itp = logic.getTerm_true();
     else if (interpolant.isFalse() || ( interpolant.isTrue() && delta_flag ))
-    {
-        in_list.push(logic.getTerm_false());
-    }
+        itp = logic.getTerm_false();
     else
     {
         vec<PTRef> args;
-        args.push(logic.mkConst("0"));
-        args.push(interpolant.toPTRef());
-        char* msg;
-        if (delta_flag)
-            in_list.push(logic.mkRealLt(args, &msg));
+        if(usingFactor())
+        {
+            opensmt::Real const_strong = interpolant.getRealConstant();
+            opensmt::Real const_weak = interpolant_dual.getRealConstant();
+            PTRef nonconst_strong = interpolant.getPTRefNonConstant();
+            PTRef nonconst_weak = interpolant_dual.getPTRefNonConstant();
+            //cout << "; Constant Strong " << const_strong << endl;
+            //cout << "; Constant Weak " << const_weak << endl;
+            //cout << "; NonConstant Strong " << logic.printTerm(nonconst_strong) << endl;
+            //cout << "; NonConstant Weak " << logic.printTerm(nonconst_weak) << endl;
+            PTRef neg_strong = logic.mkRealNeg(nonconst_strong);
+            //assert(neg_strong == nonconst_weak);
+
+            opensmt::Real lower_bound = const_strong;
+            opensmt::Real upper_bound = const_weak * -1;
+            
+            //cout << "; Lower bound is " << lower_bound << endl;
+            //cout << "; Upper bound is " << upper_bound << endl;
+            assert(upper_bound >= lower_bound);
+
+            //cout << "; Strength factor from config is " << getStrengthFactor() << endl;
+            opensmt::Real strength_factor(getStrengthFactor());
+            if(strength_factor < 0 || strength_factor >= 1)
+            {
+                opensmt_error("LRA strength factor has to be in [0,1)");
+            }
+            opensmt::Real strength_diff = (upper_bound - lower_bound);
+            //cout << "; Diff is " << strength_diff << endl;
+            //cout << "; Factor is " << strength_factor << endl;
+            opensmt::Real strength_delta = strength_diff * strength_factor;
+            //cout << "; Delta is " << strength_delta << endl;
+            opensmt::Real new_constant = lower_bound + (strength_diff * strength_factor);
+            new_constant = new_constant * -1;
+            //cout << "; New constant is " << new_constant << endl;
+            args.push(logic.mkConst(new_constant));
+            args.push(nonconst_strong);
+        }
+        else if(usingStrong())
+        {
+            args.push(logic.mkConst("0"));
+            args.push(interpolant.toPTRef());
+        }
+        else if(usingWeak())
+        {
+            args.push(logic.mkConst("0"));
+            args.push(interpolant_dual.toPTRef());
+        }
         else
-            in_list.push(logic.mkRealLeq(args, &msg));
-    }
-    if ( verbose() > 0 )
-    {
-        //cerr << "Interpolant: " << in_list.back() << endl;
+        {
+            opensmt_error("Error: interpolation algorithm not set for LRA.");
+        }
+
+        char* msg;
+        if(!usingWeak())
+        {
+            if(delta_flag)
+                itp = logic.mkRealLt(args, &msg);
+            else
+                itp = logic.mkRealLeq(args, &msg);
+        }
+        else
+        {
+            if(delta_flag)
+                itp = logic.mkRealLt(args, &msg);
+            else
+                itp = logic.mkRealLeq(args, &msg);
+            itp = logic.mkNot(itp);
+        }
     }
 
-    //}
-    PTRef itp;
-    if (usingWeak())
-        itp = logic.mkNot(logic.mkAnd( in_list ));
-    else if (usingStrong())
-        itp = logic.mkAnd( in_list );
-    //cerr << "; LRA Itp: " << logic.printTerm(itp) << endl;
+    if(verbose() > 1)
+    {
+        cerr << "; LRA Itp: " << logic.printTerm(itp) << endl;
+    }
+
     return itp;
 }
 

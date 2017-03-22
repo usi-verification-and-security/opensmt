@@ -218,6 +218,7 @@ void Egraph::expExplain(PTRef x, PTRef y, PTRef r)
 void Egraph::expExplain(PTRef x, PTRef y)
 #endif
 {
+//    opensmt::StopWatch(tsolver_stats.egraph_explain_timer);
 #ifdef VERBOSE_EUFEX
     cerr << "exp pending size " << exp_pending.size() << endl;
     cerr << "explain pushing " << logic.printTerm(x) << " and " << logic.printTerm(y) << endl;

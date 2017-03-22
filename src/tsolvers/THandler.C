@@ -44,7 +44,7 @@ void THandler::backtrack(int lev)
 //        if ( !tmap.theoryTerms.contains(e) ) continue;
         if (!getLogic().isTheoryTerm(e)) continue;
 #ifdef VERBOSE_EUF
-//        printf("Backtracking term %s\n", logic.term_store.printTerm(e));
+        printf("Backtracking term %s\n", getLogic().printTerm(e));
 #endif
         //egraph.popBacktrackPoint( );
 
@@ -230,7 +230,6 @@ THandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels
 {
     return getSolverHandler().getInterpolant(mask, labels);
 }
-
 
 //PTRef THandler::getInterpolants(const ipartitions_t& p)
 //{
@@ -721,7 +720,8 @@ THandler::verifyInterpolantWithExternalTool( PTRef itp, const ipartitions_t& mas
     vec<PTRef> A;
     vec<PTRef> B;
 
-    vec<PTRef>& assertions = logic.getAssertions();
+    vec<PTRef> assertions;
+    logic.getAssertions(assertions);
     for(int i = 0; i < assertions.size(); ++i)
     {
         PTRef a = assertions[i];

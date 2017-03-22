@@ -26,100 +26,161 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef BITBLASTER_H
 #define BITBLASTER_H
 
-#include "Enode.h"
-#include "Egraph.h"
-#include "MiniSATP.h"
+#include "SimpSMTSolver.h"
+#include "MainSolver.h"
 #include "Otl.h"
+#include "BVStore.h"
+#include "BVLogic.h"
 
 class BitBlaster
 {
 public:
 
-   BitBlaster ( const int
-              , SMTConfig &
-	      , Egraph &
-	      , vector< Enode * > &
-	      , vector< Enode * > &
-              , vector< Enode * > & );
-  ~BitBlaster ( );
+    BitBlaster ( SolverId
+               , SMTConfig &
+               , MainSolver&
+               , BVLogic&
+               , vec<PtAsgn> &
+               , vec<DedElem> &
+               , vec<PTRef> & );
+    ~BitBlaster ( );
 
-  lbool inform             ( Enode * );
-  bool  check              ( );
-  bool  assertLit          ( Enode *, const bool );
+    lbool inform             (PTRef); // For the interface for bitvector solver
+    lbool check              ( );
+    bool  assertLit          (PtAsgn);
 
-  void pushBacktrackPoint  ( );
-  void popBacktrackPoint   ( );
+    lbool insertEq           (PTRef tr, BVRef& out); // For the interface for theory refinement
+    lbool insertOr           (PTRef tr, BVRef& out); // For the interface for theory refinement
 
-  void computeModel        ( ); 
+    void pushBacktrackPoint  ( );
+    void popBacktrackPoint   ( );
 
+    void    computeModel     ( );
+    ValPair getValue         (PTRef);
+
+    // Public Theory refinement stuff
+    lbool notifyEqualities   (); // Check all refined equalities, add explicit new terms for them
+    void  bindCUFToBV        (PTRef cuf_tr, PTRef bv_tr) { assert(!pToB.has(cuf_tr)); bbTerm(bv_tr); pToB.insert(cuf_tr, bv_tr); refined.push(cuf_tr); }
+    lbool glueBtoUF          (BVRef br, PTRef tr);  // (= tr (c br_1 ... br_32))
+    lbool glueUFtoB          (PTRef tr, BVRef br);  // (= br_0 (e0 tr)) /\ ... /\ (= br_32 (e32 tr))
+    lbool glueUFtoUF         (PTRef tr1, PTRef tr2); // (= uf1 uf2) <-> (and (= .b00_0 .b00_1) ... (= .b31_0 .b31_1))
+    PTRef mkCollate32        (vec<PTRef>& bits);
+    PTRef mkExtract          (PTRef tr, int i);
+    // Theory refinement stuff
+    PTRef                      getBoundPTRef (PTRef tr) { assert(pToB.has(tr)); return pToB[tr]; }
+    bool                       isBound       (PTRef tr) { return pToB.has(tr); }
 private:
+    Map<PTRef,PTRef,PTRefHash> pToB;
+    vec<PTRef>                 refined;
+    int                        last_refined;
+    lbool                      notifyEquality(PTRef tr_eq);
 
-  bool addClause ( vec< Lit > &, Enode * );
+    // -----
+    BVRef bbTerm             (PTRef);
+    lbool insert             (PTRef tr, BVRef& out); // The unsafe interface for theory refinement
+    BVRef          updateCache  (PTRef tr);
+    SMTConfig &    config;                        // Configuration
+    MainSolver&    mainSolver;
+    BVLogic&       logic;                         // Egraph store
+    THandler&      thandler;
+    SimpSMTSolver& solverP;                       // Solver with proof logger
 
-  vector< Enode * > & bbEnode      ( Enode * );
-  // Predicates
-  vector< Enode * > & bbEq         ( Enode * );
-  vector< Enode * > & bbBvsle      ( Enode * );
-  vector< Enode * > & bbBvule      ( Enode * );
-  // Terms
-  vector< Enode * > & bbConcat     ( Enode * );
-  vector< Enode * > & bbExtract    ( Enode * );
-  vector< Enode * > & bbBvand      ( Enode * );
-  vector< Enode * > & bbBvor       ( Enode * );
-  vector< Enode * > & bbBvxor      ( Enode * );
-  vector< Enode * > & bbBvnot      ( Enode * );
-  vector< Enode * > & bbBvadd      ( Enode * );
-  vector< Enode * > & bbBvmul      ( Enode * );
-  vector< Enode * > & bbBvudiv     ( Enode * );
-  vector< Enode * > & bbBvurem     ( Enode * );
-  vector< Enode * > & bbSignExtend ( Enode * );
-  vector< Enode * > & bbVar        ( Enode * );
-  vector< Enode * > & bbConstant   ( Enode * );
-  vector< Enode * > & bbDistinct   ( Enode * );
+    bool addClause ( vec< Lit > &, PTRef );
+
+    static const char* s_bbEq;
+    static const char* s_bbAnd;
+    static const char* s_bbBvslt;
+    static const char* s_bbBvule;
+    static const char* s_bbConcat;
+    static const char* s_bbExtract;
+    static const char* s_bbBvand;
+    static const char* s_bbBvland;
+    static const char* s_bbBvor;
+    static const char* s_bbBvlor;
+    static const char* s_bbBvxor;
+    static const char* s_bbBvcompl;
+    static const char* s_bbBvlnot;
+    static const char* s_bbBvadd;
+    static const char* s_bbBvmul;
+    static const char* s_bbBvudiv;
+    static const char* s_bbBvurem;
+    static const char* s_bbSignExtend;
+    static const char* s_bbVar;
+    static const char* s_bbConstant;
+    static const char* s_bbDistinct;
+    static const char* s_bbBvcarry;
+    static const char* s_bbBvlsh;
+    static const char* s_bbBvlrsh;
+    static const char* s_bbBvarsh;
+
+    char* getName(const char* base) const;
+    void  getBVVars(const char* base, vec<PTRef>& vars, int width);
+    PTRef mkActVar(const char* base);
+    // Predicates
+    BVRef bbEq         (PTRef);
+    BVRef bbBvslt      (PTRef);
+    BVRef bbBvule      (PTRef);
+    // Terms
+    BVRef bbConcat     (PTRef);
+    BVRef bbExtract    (PTRef);
+    BVRef bbBvand      (PTRef);
+    BVRef bbBvland     (PTRef);
+    BVRef bbBvor       (PTRef);
+    BVRef bbBvlor      (PTRef);
+    BVRef bbBvxor      (PTRef);
+    BVRef bbBvcompl    (PTRef);
+    BVRef bbBvlnot     (PTRef);
+    BVRef bbBvadd      (PTRef);
+    BVRef bbBvmul      (PTRef);
+    BVRef bbBvudiv     (PTRef);
+    BVRef bbBvurem     (PTRef);
+    BVRef bbBvlshift   (PTRef);
+    BVRef bbBvrshift   (PTRef, bool);
+    BVRef bbBvlrshift  (PTRef);
+    BVRef bbBvarshift  (PTRef);
+    BVRef bbSignExtend (PTRef);
+    BVRef bbVar        (PTRef);
+    BVRef bbConstant   (PTRef);
+    BVRef bbDistinct   (PTRef);
+
+    PTRef bbBvadd_carryonly(PTRef sum, PTRef cin); // for signed comparison
+    void ls_write(int s, int i, PTRef tr, vec<vec<PTRef> >& table); // Helper function for shifts
+    PTRef ls_read(int s, int i, vec<vec<PTRef> >& table); // Helper function for shifts
+
   // Not yet considered
   // vector< Enode * > & bbUf         ( Enode * );
   // vector< Enode * > & bbUp         ( Enode * );
+    void     cleanGarbage          ( );                            // Clean garbage on demand
+
+    PTRef    simplify              ( PTRef );                    // Further simplifications
+//    Enode *  rewriteMaxArity       ( Enode *
+//                                   , map< int, int > & );
+//    void     computeIncomingEdges  ( Enode *
+//                                    , map< int, int > & );          // Computes the list of incoming edges for a node
+//    Enode *  mergeEnodeArgs        ( Enode *
+//                                    , map< int, Enode * > &
+//                                    , map< int, int > & );          // Rewrite terms using maximum arity
+
+    Lit                             constTrue;                     // Constant literal set to true
+    Lit                             constFalse;                    // Constant literal set to false
+
+    BVStore                         bs;
+
+    vector< Lit >                   cnf_cache;                     // Global cache for cnfizer
+    vector< Var >                   enode_id_to_var;               // Theory atom to Minisat Var correspondence
+    vector< Enode * >               var_to_enode;                  // Minisat Var to Theory Atom correspondence
 
 
-  Var      cnfizeAndGiveToSolver ( Enode *, Enode * );           // Cnfize 
-  void     cnfizeAnd             ( Enode *, Lit, Enode * );      // Cnfize conjunctions
-  void     cnfizeOr              ( Enode *, Lit, Enode * );      // Cnfize disjunctions
-  void     cnfizeIff             ( Enode *, Lit, Enode * );      // Cnfize iffs
-  void     cnfizeXor             ( Enode *, Lit, Enode * );      // Cnfize xors
-  void     cnfizeIfthenelse      ( Enode *, Lit, Enode * );      // Cnfize if then elses
+    vec<PtAsgn> &                   explanation;                   // Reference to explanation
+    vec<DedElem> &                  deductions;                    // Reference to deductions
+    vec<PTRef> &                    suggestions;                   // Reference to suggestions
 
-  void     cleanGarbage          ( );                            // Clean garbage on demand
+    vec<PTRef>                      variables;                     // Variables
+    map< int, Var >                 cnf_var;                       // BB variable to cnf var
+    bool                            has_model;                     // Is the model computed
+    Map<PTRef,ValPair,PTRefHash>    model;                         // Model is stored here
 
-  Enode *  simplify              ( Enode * );                    // Further simplifications
-  Enode *  rewriteMaxArity       ( Enode *
-                                 , map< int, int > & );
-  void     computeIncomingEdges  ( Enode *
-                                 , map< int, int > & );          // Computes the list of incoming edges for a node
-  Enode *  mergeEnodeArgs        ( Enode *
-                                 , map< int, Enode * > &
-                                 , map< int, int > & );          // Rewrite terms using maximum arity
-
-  Lit                             constTrue;                     // Constant literal set to true
-  Lit                             constFalse;                    // Constant literal set to false
-
-  vector< vector< Enode * > * >   bb_cache;                      // Global cache for bitblasting
-  vector< Lit >                   cnf_cache;                     // Global cache for cnfizer
-  vector< Var >                   enode_id_to_var;               // Theory atom to Minisat Var correspondence
-  vector< Enode * >               var_to_enode;                  // Minisat Var to Theory Atom correspondence
-                                                                 
-  Egraph &                        E;                             // Egraph store
-  SMTConfig &                     config;                        // Configuration
-
-  vector< Enode * > &             explanation;                   // Reference to explanation
-  vector< Enode * > &             deductions;                    // Reference to deductions
-  vector< Enode * > &             suggestions;                   // Reference to suggestions
-  vector< vector< Enode * > * >   garbage;                       // Collect for removal
-
-  vector< Enode * >               variables;                     // Variables
-  map< int, Var >                 cnf_var;                       // BB variable to cnf var
-
-  MiniSATP *                      _solverP;                      // Solver with proof logger
-  MiniSATP &                      solverP;                       // Solver with proof logger
+    int                             bitwidth;
 };
 
 #endif

@@ -18,12 +18,14 @@ public:
     void setName(const char*);
     void setBody(PTRef);
 
-    vec<PTRef>& getArgs();
-    string& getName();
-    PTRef getBody();
+    const vec<PTRef>& getArgs() const;
+    const char* getName() const;
+    PTRef getBody() const;
+
+    Tterm& operator=(const Tterm& o);
 
 private:
-    std::string name;
+    char* name;
     vec<PTRef> args;
     PTRef body;
 };

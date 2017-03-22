@@ -53,6 +53,8 @@ protected:
     vec<int>       solverSchedule;   // Why is this here and not in THandler?
     vec<TSolver*>  tsolvers;         // List of ordinary theory solvers
 
+    Map<PTRef,PtAsgn,PTRefHash> substs;
+
     TSolverHandler(SMTConfig &c, vec<DedElem> &d, Logic& l, TermMapper& tmap)
         : config(c)
         , deductions(d)
@@ -73,13 +75,14 @@ public:
 
     virtual void clearSolver(); // Clear the solver state
 
-    virtual Logic&  getLogic  ( )  = 0;
-
+    virtual       Logic& getLogic() = 0;
+    virtual const Logic& getLogic() const = 0;
 #ifdef PRODUCE_PROOF
     virtual TheoryInterpolator* getTheoryInterpolator() = 0;
     virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t>*) = 0;
 #endif
 
+    void    setSubstitutions(Map<PTRef,PtAsgn,PTRefHash>& substs_) { substs_.moveTo(substs); }
     ValPair getValue          (PTRef tr) const;
     void    computeModel      ();                      // Computes a model in the solver if necessary
     bool    assertLit         (PtAsgn);                // Push the assignment to all theory solvers

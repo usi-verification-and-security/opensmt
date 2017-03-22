@@ -253,6 +253,7 @@ LRALogic::LRALogic(SMTConfig& c) :
     logic_type = QF_LRA;
 
     sort_REAL = declareSort(s_sort_real, msg);
+    ufsorts.remove(sort_REAL);
 //    printf("Setting sort_REAL to %d at %p\n", sort_REAL.x, &(sort_REAL.x));
     vec<SRef> params;
 
@@ -339,6 +340,7 @@ LRALogic::mkConst(const char *name, const char **msg)
 
 PTRef LRALogic::mkConst(SRef s, const char* name)
 {
+    assert(strlen(name) != 0);
     PTRef ptr = PTRef_Undef;
     if (s == sort_REAL) {
         char* rat;
@@ -375,27 +377,28 @@ bool LRALogic::isRealTerm(PTRef tr) const
 PTRef
 LRALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
 {
-	if(sym == sym_Real_NEG)
-		return mkRealNeg(terms[0], msg);
-	if(sym == sym_Real_MINUS)
-		return mkRealMinus(terms, msg);
-	if(sym == sym_Real_PLUS)
-		return mkRealPlus(terms, msg);
-	if(sym == sym_Real_TIMES)
-		return mkRealTimes(terms, msg);
-	if(sym == sym_Real_DIV)
-		return mkRealDiv(terms, msg);
-	if(sym == sym_Real_LEQ)
-		return mkRealLeq(terms, msg);
-	if(sym == sym_Real_LT)
-		return mkRealLt(terms, msg);
-	if(sym == sym_Real_GEQ)
-		return mkRealGeq(terms, msg);
-	if(sym == sym_Real_GT)
-		return mkRealGt(terms, msg);
-    if(sym == sym_Real_ITE)
+    if (sym == sym_Real_NEG)
+        return mkRealNeg(terms[0], msg);
+    if (sym == sym_Real_MINUS)
+        return mkRealMinus(terms, msg);
+    if (sym == sym_Real_PLUS)
+        return mkRealPlus(terms, msg);
+    if (sym == sym_Real_TIMES)
+        return mkRealTimes(terms, msg);
+    if (sym == sym_Real_DIV)
+        return mkRealDiv(terms, msg);
+    if (sym == sym_Real_LEQ)
+        return mkRealLeq(terms, msg);
+    if (sym == sym_Real_LT)
+        return mkRealLt(terms, msg);
+    if (sym == sym_Real_GEQ)
+        return mkRealGeq(terms, msg);
+    if (sym == sym_Real_GT)
+        return mkRealGt(terms, msg);
+    if (sym == sym_Real_ITE)
         return mkIte(terms);
-	return Logic::insertTerm(sym, terms, msg);
+
+    return Logic::insertTerm(sym, terms, msg);
 }
 
 PTRef LRALogic::mkRealNeg(PTRef tr, char** msg)
@@ -403,8 +406,6 @@ PTRef LRALogic::mkRealNeg(PTRef tr, char** msg)
     if (isRealNeg(tr)) return getPterm(tr)[0];
     vec<PTRef> args;
     if (isRealPlus(tr)) {
-        // Careful, this adds terms in the loop so reference is not safe!
-        Pterm& t = getPterm(tr);
         for (int i = 0; i < getPterm(tr).size(); i++) {
             PTRef tr_arg = mkRealNeg(getPterm(tr)[i], msg);
             assert(tr_arg != PTRef_Undef);
@@ -549,10 +550,7 @@ PTRef LRALogic::mkRealTimes(const vec<PTRef>& tmp_args, char** msg)
     if (isRealTerm(tr) || isRealPlus(tr) || isUF(tr))
         return tr;
     else {
-//        char* foo = strdup(e_nonlinear_term);
-//        msg = &foo;
-//        msg = &strdup(e_nonlinear_term);
-        return PTRef_Undef;
+        throw LRANonLinearException("%s");
     }
 }
 
@@ -974,7 +972,7 @@ void LRALogic::serializeLogicData(int*& logicdata_buf) const
 void LRALogic::deserializeLogicData(const int* logicdata_buf)
 {
     Logic::deserializeLogicData(logicdata_buf);
-    int mydata_init = logicdata_buf[ites_offs_idx] + logicdata_buf[logicdata_buf[ites_offs_idx]];
+    int mydata_init = logicdata_buf[constants_offs_idx] + logicdata_buf[logicdata_buf[constants_offs_idx]];
     assert(mydata_init < logicdata_buf[0]); // Inside the buffer still
     int sz = logicdata_buf[mydata_init];
     for (int i = 0; i < sz; i++) {

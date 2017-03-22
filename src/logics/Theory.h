@@ -29,8 +29,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Deductions.h"
 #include "Logic.h"
 #include "LRALogic.h"
+#include "CUFLogic.h"
+#include "BVLogic.h"
+
 #include "LRATHandler.h"
 #include "UFTHandler.h"
+#include "CUFTHandler.h"
 #include "Alloc.h"
 
 // Simplification in frames:
@@ -94,7 +98,7 @@ public:
     PushFrame() : id(FrameId_Undef), root(PTRef_Undef) {} // For pushing into vecs we need a default.
     PushFrame operator= (PushFrame& other);
  private:
-    PushFrame(int id) : id({id}), root(PTRef_Undef) {}
+    PushFrame(uint32_t id) : id({id}), root(PTRef_Undef) {}
 };
 
 struct PFRef {
@@ -137,6 +141,7 @@ class Theory
     SMTConfig &         config;
     PTRef getCollateFunction(vec<PFRef>& formulas, int curr);
     Theory(SMTConfig &c) : config(c) {}
+    void setSubstitutions(Map<PTRef,PtAsgn,PTRefHash>& substs) { getTSolverHandler().setSubstitutions(substs); }
   public:
     PushFrameAllocator      pfstore;
     virtual TermMapper     &getTmap() = 0;
@@ -147,7 +152,8 @@ class Theory
     virtual bool            simplify(vec<PFRef>&, int) = 0; // Simplify a vector of PushFrames in an incrementality-aware manner
     vec<DedElem>           &getDeductionVec()   { return deductions; }
     bool                    computeSubstitutions(PTRef coll_f, vec<PFRef>& frames, int curr);
-    virtual ~Theory()                           {};
+    void                    printFramesAsQuery(vec<PFRef>& en_frames);
+    virtual                ~Theory()                           {};
 };
 
 class LRATheory : public Theory
@@ -178,7 +184,6 @@ class UFTheory : public Theory
     TermMapper  tmap;
     UFTHandler tshandler;
   public:
-    TermMapper& getTmap() { return tmap; }
     UFTheory(SMTConfig& c)
         : Theory(c)
         , uflogic(c)
@@ -186,11 +191,35 @@ class UFTheory : public Theory
         , tshandler(c, uflogic, deductions, tmap)
     {}
     ~UFTheory() {}
-    Logic&       getLogic()             { return uflogic; }
-    UFTHandler&  getTSolverHandler()    { return tshandler; }
-    const UFTHandler& getTSolverHandler() const { return tshandler; }
-    UFTHandler *getTSolverHandler_new(vec<DedElem>& d) { return new UFTHandler(config, uflogic, d, tmap); }
-    bool simplify(vec<PFRef>&, int);
+    virtual TermMapper&  getTmap()              { return tmap; }
+    virtual Logic&       getLogic()             { return uflogic; }
+    virtual UFTHandler&  getTSolverHandler()    { return tshandler; }
+    virtual const UFTHandler& getTSolverHandler() const { return tshandler; }
+    virtual UFTHandler *getTSolverHandler_new(vec<DedElem>& d) { return new UFTHandler(config, uflogic, d, tmap); }
+    virtual bool simplify(vec<PFRef>&, int);
+};
+
+class CUFTheory : public Theory
+{
+  private:
+    BVLogic     cuflogic;
+    TermMapper  tmap;
+    CUFTHandler tshandler;
+    static const int i_default_bitwidth;
+  public:
+    CUFTheory(SMTConfig& c, int width = i_default_bitwidth)
+      : Theory(c)
+      , cuflogic(c, width)
+      , tmap(cuflogic)
+      , tshandler(c, cuflogic, deductions, tmap)
+    {}
+    ~CUFTheory() {}
+    virtual TermMapper& getTmap()            { return tmap; }
+    virtual BVLogic&  getLogic()             { return cuflogic; }
+    virtual CUFTHandler& getTSolverHandler() { return tshandler; }
+    virtual const CUFTHandler& getTSolverHandler() const { return tshandler; }
+    virtual CUFTHandler *getTSolverHandler_new(vec<DedElem>& d) { return new CUFTHandler(config, cuflogic, d, tmap); }
+    virtual bool simplify(vec<PFRef>&, int);
 };
 
 #endif

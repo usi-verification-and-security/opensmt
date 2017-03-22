@@ -42,6 +42,56 @@ static NStatus ns_unseen   = {2};
 static NStatus ns_undef    = {INT32_MAX};
 
 class Logic {
+    class TFun {
+        SRef ret_sort;
+        PTRef tr_body;
+        char* name;
+        vec<PTRef> args;
+      public:
+        TFun(const char* name_, const vec<PTRef>& args_, SRef ret_sort, PTRef tr_body)
+            : ret_sort(ret_sort)
+            , tr_body(tr_body)
+        {
+            name = (char*) malloc(strlen(name_)+1);
+            strcpy(name, name_);
+            args_.copyTo(args);
+        }
+        TFun() : ret_sort(SRef_Undef), tr_body(PTRef_Undef), name(NULL) {}
+        TFun(TFun& other) : ret_sort(other.ret_sort), tr_body(other.tr_body), name(other.name) { other.args.copyTo(args); }
+        TFun(const Tterm& t, SRef rsort) : ret_sort(rsort), tr_body(t.getBody())
+        {
+            name = (char*)malloc(strlen(t.getName())+1);
+            strcpy(name, t.getName());
+            t.getArgs().copyTo(args);
+        }
+        ~TFun() { free(name); }
+        TFun& operator=(TFun& other) {
+            if (&other != this) {
+                free(name);
+                ret_sort = other.ret_sort;
+                tr_body = other.tr_body;
+                name = other.name;
+                other.name = NULL;
+                other.args.copyTo(args);
+            }
+            return *this;
+        }
+        TFun& operator=(const TFun& other) {
+            if (&other != this) {
+                free(name);
+                ret_sort = other.ret_sort;
+                tr_body = other.tr_body;
+                name = (char*)malloc(strlen(other.name)+1);
+                strcpy(name, other.name);
+                other.args.copyTo(args);
+            }
+            return *this;
+        }
+        const char* getName() const { return name; }
+        SRef getRetSort() const { return ret_sort; }
+        PTRef getBody() const { return tr_body; }
+        const vec<PTRef>& getArgs() const { return args; }
+    };
   protected:
     static const char* e_argnum_mismatch;
     static const char* e_bad_constant;
@@ -51,24 +101,27 @@ class Logic {
     const static int equalities_offs_idx    = 1;
     const static int disequalities_offs_idx = 2;
     const static int ites_offs_idx          = 3;
+    const static int ufsorts_offs_idx       = 4;
+    const static int constants_offs_idx     = 5;
 
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      equalities;
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      disequalities;
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      ites;
-
+    Map<SRef,bool,SRefHash,Equal<SRef> >            ufsorts;
 
 
     //for partitions:
-    vec<PTRef> assertions;
+    Map<PTRef,int,PTRefHash> assertions;
     vec<PTRef> assertions_simp;
-    vec<Tterm*> functions;
 #ifdef PRODUCE_PROOF
+    int asrt_idx;
     map<CRef, ipartitions_t> clause_class;
     map<Var, ipartitions_t> var_class;
     map<PTRef, PTRef> flat2orig;
 #endif
 
-    Map<const char*,PTRef,StringHash,Equal<const char*> > defined_functions;
+    Map<const char*,TFun,StringHash,Equal<const char*> > defined_functions;
+    vec<Tterm> defined_functions_vec; // A strange interface through the Tterms..
 
     vec<SymRef>         sortToEquality;
     vec<bool>           constants;
@@ -117,31 +170,9 @@ class Logic {
     };
 
     virtual void visit(PTRef, Map<PTRef, PTRef, PTRefHash>&);
-    PTRef insertTermHash(SymRef, const vec<PTRef>&);
+    virtual PTRef insertTermHash(SymRef, const vec<PTRef>&);
 
-  public:
-    bool existsTermHash(SymRef, const vec<PTRef>&);
-    static const char*  tk_true;
-    static const char*  tk_false;
-    static const char*  tk_not;
-    static const char*  tk_equals;
-    static const char*  tk_implies;
-    static const char*  tk_and;
-    static const char*  tk_or;
-    static const char*  tk_xor;
-    static const char*  tk_distinct;
-    static const char*  tk_ite;
-
-
-    static const char*  s_sort_bool;
-    static const char*  s_ite_prefix;
-    static const char*  s_framev_prefix;
-
-    Logic(SMTConfig& c);
-    ~Logic();
-
-    bool isIteVar(PTRef tr) { return top_level_ites.has(tr); }
-    PTRef getTopLevelIte(PTRef tr) { return top_level_ites[tr].repr; }
+    void dumpFunction(ostream &, const TFun&);
 
     void conjoinItes(PTRef root, PTRef& new_root)
     {
@@ -166,6 +197,33 @@ class Logic {
         new_root = mkAnd(args);
     }
 
+  public:
+    bool existsTermHash(SymRef, const vec<PTRef>&);
+    static const char*  tk_true;
+    static const char*  tk_false;
+    static const char*  tk_not;
+    static const char*  tk_equals;
+    static const char*  tk_implies;
+    static const char*  tk_and;
+    static const char*  tk_or;
+    static const char*  tk_xor;
+    static const char*  tk_distinct;
+    static const char*  tk_ite;
+
+
+    static const char*  s_sort_bool;
+    static const char*  s_ite_prefix;
+    static const char*  s_framev_prefix;
+
+    Logic(SMTConfig& c);
+    ~Logic();
+
+    bool isIteVar(PTRef tr) const { return top_level_ites.has(tr); }
+    PTRef getTopLevelIte(PTRef tr) { return top_level_ites[tr].repr; }
+
+
+    virtual void conjoinExtras(PTRef root, PTRef& new_root) { conjoinItes(root, new_root); }
+
     virtual const Logic_t getLogic() const;
     virtual const char* getName()    const;
 
@@ -176,7 +234,8 @@ class Logic {
     bool        containsSort  (const char* name)      const { return sort_store.containsSort(name); }
     SRef        newSort       (IdRef idr, const char* name, vec<SRef>& tmp) { return sort_store.newSort(idr, name, tmp); }
     SRef        getSortRef    (const char* name)      const { return sort_store[name]; }
-    SRef        getSortRef    (const PTRef tr)              { return getSym(getPterm(tr).symb()).rsort(); }
+    SRef        getSortRef    (const PTRef tr)        const { return getSortRef(getPterm(tr).symb()); }
+    SRef        getSortRef    (const SymRef sr)       const { return getSym(sr).rsort(); }
     Sort*       getSort       (const SRef s)                { return sort_store[s]; }
     const char* getSortName   (const SRef s)                { return sort_store.getName(s); }
 
@@ -184,6 +243,7 @@ class Logic {
     SymRef      newSymb       (const char* name, vec<SRef>& sort_args, char** msg)
                                                             { return sym_store.newSymb(name, sort_args, msg); }
 //    bool        hasSym        (const SymRef s)        const { return sym_store.contains(s); }
+    Symbol& getSym        (const SymRef s)        { return sym_store[s]; }
     const Symbol& getSym        (const SymRef s)        const { return sym_store[s]; }
     const Symbol& getSym        (const PTRef tr)        const { return getSym(getPterm(tr).symb()); }
     SymRef      getSymRef       (const PTRef tr)        const { return getPterm(tr).symb(); }
@@ -224,7 +284,8 @@ class Logic {
     virtual PTRef mkConst     (SRef, const char*);
 
     SymRef      declareFun    (const char* fname, const SRef rsort, const vec<SRef>& args, char** msg, bool interpreted = false);
-    bool        defineFun     (const char* fname, const PTRef tr);
+    bool        defineFun     (const char* fname, const vec<PTRef>& args, SRef ret_sort, const PTRef tr);
+    vec<Tterm>& getFunctions  ();
     SRef        declareSort   (const char* id, char** msg);
     PTRef       mkFun         (SymRef f, const vec<PTRef>& args, char** msg);
     PTRef       mkBoolVar     (const char* name);
@@ -233,10 +294,12 @@ class Logic {
     void dumpFormulaToFile(ostream& dump_out, PTRef formula, bool negate = false, bool toassert = true);
     void dumpChecksatToFile(ostream& dump_out);
 
-    void dumpFunction(ostream &, Tterm*);
-    PTRef instantiateFunctionTemplate(Tterm&, map<PTRef, PTRef>);
-    vec<Tterm*>& getFunctions() { return functions; }
-    void addFunction(Tterm* f) { functions.push(f); }
+    void dumpFunction(ostream& dump_out, const char* tpl_name) { if (defined_functions.has(tpl_name)) dumpFunction(dump_out, defined_functions[tpl_name]); else printf("; Error: function %s is not defined\n", tpl_name); }
+    void dumpFunction(ostream& dump_out, const std::string s) { dumpFunction(dump_out, s.c_str()); }
+
+    void dumpFunction(ostream& dump_out, const Tterm& t) { dumpFunction(dump_out, TFun(t, getSortRef(t.getBody()))); }
+
+    PTRef instantiateFunctionTemplate(const char* fname, Map<PTRef, PTRef, PTRefHash>&);
 
 #ifdef PRODUCE_PROOF
 
@@ -298,13 +361,18 @@ class Logic {
     // tr is a theory symbol if it is not a boolean variable, nor one of the standard
     // boolean operators (and, not, or, etc...)
     // Note that equivalence over non-boolean terms is not a Boolean operator.
-    bool        isTheorySymbol     (SymRef tr)     const;
-    bool        isTheoryTerm       (PTRef tr)      const;
-    bool        isBooleanOperator  (SymRef tr)     const;
-    bool        isBooleanOperator  (PTRef tr)      const { return isBooleanOperator(term_store[tr].symb()); }
-    virtual bool isBuiltinSort     (const SRef sr) const { return sr == sort_BOOL; }
-    bool        isConstant         (const SymRef sr) const;
-    bool        isConstant         (PTRef tr)      const { return isConstant(getPterm(tr).symb()); }
+    bool         isTheorySymbol     (SymRef tr)       const;
+    bool         isTheoryTerm       (PTRef tr)        const;
+    bool         isBooleanOperator  (SymRef tr)       const;
+    bool         isBooleanOperator  (PTRef tr)        const { return isBooleanOperator(term_store[tr].symb()); }
+    virtual bool isBuiltinSort      (const SRef sr)   const { return sr == sort_BOOL; }
+    virtual bool isBuiltinConstant  (const SymRef sr) const { return isConstant(sr) && (sr == sym_TRUE || sr == sym_FALSE); }
+    bool         isBuiltinConstant  (const PTRef tr)  const { return isBuiltinConstant(getPterm(tr).symb()); }
+    bool         isConstant         (const SymRef sr) const;
+    bool         isConstant         (PTRef tr)        const { return isConstant(getPterm(tr).symb()); }
+    bool         isUFTerm           (PTRef tr)        const { return isUFSort(getSortRef(tr)); }
+    bool         isUFSort           (const SRef sr)   const { return ufsorts.has(sr); }
+
 
     bool        isVar              (SymRef sr)     const { return sym_store[sr].nargs() == 0 && !isConstant(sr); }
     bool        isVar              (PTRef tr)      const { return isVar(getPterm(tr).symb()); }
@@ -314,6 +382,8 @@ class Logic {
     virtual bool isUP              (PTRef)         const;
     virtual bool isUF              (PTRef)         const;
     virtual bool isUF              (SymRef)        const;
+    virtual bool isIF              (PTRef)         const;
+    virtual bool isIF              (SymRef)        const;
 
     bool        isAnd(PTRef tr)  const { return getPterm(tr).symb() == getSym_and(); }
     bool        isAnd(SymRef sr) const { return sr == getSym_and(); }
@@ -467,9 +537,9 @@ class Logic {
     void        serializeTermSystem(int*& termstore_buf, int*& symstore_buf, int*& idstore_buf, int*& sortstore_buf, int*& logicdata_buf) const;
     void        deserializeTermSystem(const int* termstore_buf, const int* symstore_buf, const int* idstore_buf, const int* sortstore_buf, const int* logicdata_buf);
 
-    virtual char* printTerm_       (PTRef tr, bool l, bool s);
-    char*       printTerm          (PTRef tr)         { return printTerm_(tr, false, false); }
-    char*       printTerm          (PTRef tr, bool l, bool s) { return printTerm_(tr, l, s); }
+    virtual char* printTerm_       (PTRef tr, bool l, bool s) const;
+    char*       printTerm          (PTRef tr)                 const  { return printTerm_(tr, false, false); }
+    char*       printTerm          (PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
     char*       printSym           (SymRef sr) const;
 
     void  purify           (PTRef r, PTRef& p, lbool& sgn) const
@@ -482,6 +552,7 @@ class Logic {
     void compareTermStore(PtStore& other) { }// term_store.compare(other); }
 #endif
 
+#ifdef PRODUCE_PROOF
     //partitions:
     bool assignPartition(const char* pname, PTRef pref, char** msg)
     {
@@ -490,14 +561,15 @@ class Logic {
 
     bool assignPartition(PTRef pref, char** msg)
     {
-        assertions.push(pref);
+        assertions.insert(pref, asrt_idx++);
         return term_store.assignPartition(pref, msg);
     }
+#endif
 
     bool canInterpolate()
     {
 #ifdef PRODUCE_PROOF
-        return config.produce_inter() && assertions.size() >= 2;
+        return config.produce_inter() && assertions.getSize() >= 2;
 #else
         return false;
 #endif //PRODUCE_PROOF
@@ -510,15 +582,12 @@ class Logic {
     ipartitions_t& getVarClassMask(Var l) { return var_class[l]; }
     void addClauseClassMask(CRef l, const ipartitions_t& toadd);
     void addVarClassMask(Var l, const ipartitions_t& toadd);
-    vec<PTRef>& getAssertions() { return assertions; }
-    unsigned getNofPartitions() { return assertions.size(); }
+    void getAssertions(vec<PTRef>& asrts) { return assertions.getKeys(asrts); }
+    unsigned getNofPartitions() { return assertions.getSize(); }
     //TODO: make this better
     bool isAssertion(PTRef pref)
     {
-        for (int i = 0; i < assertions.size(); ++i)
-            if (assertions[i] == pref)
-                return true;
-        return false;
+        return assertions.has(pref);
     }
     bool isAssertionSimp(PTRef pref)
     {
@@ -529,18 +598,16 @@ class Logic {
     }
     int assertionIndex(PTRef pref)
     {
-        for (int i = 0; i <  assertions.size(); ++i)
-            if (assertions[i] == pref)
-                return i;
-        return -1;
+        if (isAssertion(pref)) return assertions[pref];
+        else return -1;
     }
 #endif
     // Statistics
     int subst_num; // Number of substitutions
 
-    void collectStats(PTRef, int& n_of_conn, int& n_of_eq, int& n_of_uf);
+    void collectStats(PTRef, int& n_of_conn, int& n_of_eq, int& n_of_uf, int& n_of_if);
 
-	inline int     verbose                       ( ) const { return config.verbosity(); }
+    inline int     verbose                       ( ) const { return config.verbosity(); }
 };
 
 #endif // LOGIC_H

@@ -18,6 +18,12 @@ Logic &LRATHandler::getLogic()
     return logic;
 }
 
+const Logic &LRATHandler::getLogic() const
+{
+    return logic;
+}
+
+
 void LRATHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
 {
     // XXX Reorganize so that the storing of the previous variable would
@@ -62,17 +68,9 @@ void LRATHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
                 refs.insert(i2, v);
             }
         } else {
-            // UF term
-            if (!refs.has(tr)) {
-                declareTerm(tr);
-                Pterm& t = logic.getPterm(tr);
-                if (logic.getSym(t.symb()).rsort() != logic.getSort_bool())
-                    continue;
-                Var v = tmap.addBinding(tr);
-                while (deductions.size() <= v)
-                    deductions.push({lrasolver->getId(), l_Undef});
-                refs.insert(tr,v);
-            }
+            // A variable.  Will be handled as a part of an equality or
+            // inequality.
+            // assert(false); // Not an equality or inequality
         }
     }
 }

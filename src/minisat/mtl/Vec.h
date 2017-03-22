@@ -69,6 +69,7 @@ public:
     void     growTo   (int size);
     void     growTo   (int size, const T& pad);
     void     clear    (bool dealloc = false);
+    void     reset    ();
 
     // Stack interface:
     void     push  (void)              { if (sz == cap) capacity(sz+1); new (&data[sz]) T(); sz++; }
@@ -102,7 +103,7 @@ class vec<vec<T> > {
     // Don't allow copying (error prone):
     vec<vec<T> >&  operator = (vec<vec<T> >& other) { assert(0); return *this; }
                    vec        (vec<vec<T> >& other) { assert(0); }
-             
+
     // Helpers for calculating next capacity:
     static inline int  imax   (int x, int y) { int mask = (y-x) >> (sizeof(int)*8-1); return (x&mask) + (y&(~mask)); }
     //static inline void nextCap(int& cap){ cap += ((cap >> 1) + 2) & ~1; }
@@ -128,6 +129,7 @@ public:
     void     growTo   (int size);
     void     growTo   (int size, const vec<T>& pad);
     void     clear    (bool dealloc = false);
+    void     reset    ();
 
     // Stack interface:
     void     push  (void)               { if (sz == cap) capacity(sz+1); new (&data[sz]) vec<T>(); sz++; }
@@ -207,11 +209,26 @@ void vec<T>::clear(bool dealloc) {
         if (dealloc) free(data), data = NULL, cap = 0; } }
 
 template<class T>
+void vec<T>::reset() {
+    data = 0;
+    sz = 0;
+    cap = 0;
+}
+
+template<class T>
 void vec<vec<T> >::clear(bool dealloc) {
     if (data != NULL){
         for (int i = 0; i < sz; i++) data[i].~vec<T>();
         sz = 0;
         if (dealloc) free(data), data = NULL, cap = 0; } }
+
+template<class T>
+void vec<vec<T> >::reset() {
+    data = 0;
+    sz = 0;
+    cap = 0;
+}
+
 
 //=================================================================================================
 

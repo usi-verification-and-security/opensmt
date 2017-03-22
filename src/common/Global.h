@@ -1,7 +1,9 @@
 /*********************************************************************
-Author: Roberto Bruttomesso <roberto.bruttomesso@gmail.com>
+Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
+        Roberto Bruttomesso <roberto.bruttomesso@gmail.com>
 
-OpenSMT2 -- Copyright (C) 2008 - 2012, Roberto Bruttomesso
+OpenSMT2 -- Copyright (C) 2012 - 2017, Antti Hyvarinen
+                          2008 - 2012, Roberto Bruttomesso
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the
@@ -99,10 +101,22 @@ namespace opensmt {
 
 #if FAST_RATIONALS
 typedef FastRational Real;
+typedef mpz_class Integer;
 #else
 typedef mpq_class Real;
-typedef mpz_class Integer;
 #endif
+
+void static inline wordToBinary(const unsigned x, char*& bin, const int width)
+{
+    bin = (char*) malloc(width+1);
+
+    int p = 0;
+    opensmt::Integer one = 1;
+    for (opensmt::Integer i = (one << (width-1)); i > 0; i >>= 1)
+        bin[p++] = ((x&i) == i) ? '1' : '0';
+    bin[p] = '\0';
+}
+
 
 bool static inline isDigit(char c)
 {
@@ -126,6 +140,36 @@ void static inline normalize(char*& rat, const char* flo, bool is_neg)
     mpq_clear(num);
 }
 
+static inline bool isPowOfTwo(int b)
+{
+    return b && !(b & (b-1));
+}
+
+static inline int getLogFromPowOfTwo(int l)
+{
+    assert(isPowOfTwo(l));
+    if (l == 1) return 0;
+    int n = 0;
+    while ((2 << (n++)) != l);
+    return n;
+}
+
+class strConvException : std::exception
+{
+    char* reason;
+public:
+    strConvException(const char* reason_) {
+        asprintf(&reason, "Error converting string to rational.  %s is not a legal rational", reason_);
+    }
+    virtual char* what() const noexcept
+    {
+        char* out;
+        asprintf(&out, "%s", reason);
+        return out;
+    }
+    ~strConvException() { free(reason); }
+};
+
 bool static inline stringToRational(char*& rat, const char* flo)
 {
     int nom_l = 0;
@@ -136,7 +180,6 @@ bool static inline stringToRational(char*& rat, const char* flo)
     bool is_neg = false;
 
     if (flo[0] == '-') { flo++; is_neg = true; }
-
 
     for (int i = 0; flo[i] != '\0'; i++) {
         if (state == 0 && flo[i] == '0') {}
@@ -154,12 +197,7 @@ bool static inline stringToRational(char*& rat, const char* flo)
         else if (state == 4 && isPosDig(flo[i])) { nom_l ++; state = 2; }
         // We come here if it is a fraction already
         else if (state == 5 && isDigit(flo[i]))  { state = 5; }
-        else {
-            rat = (char*)malloc(4);
-            strcpy(rat, "err");
-            rat[3] = '\0';
-            return false;
-        }
+        else { throw strConvException(flo); }
     }
 
     if (is_frac) {
@@ -249,6 +287,7 @@ struct Logic_t {
 static struct Logic_t UNDEF = {-1, "UNDEF"};
 static struct Logic_t EMPTY = {0, "EMPTY"};
 static struct Logic_t QF_UF = {1, "QF_UF"};
+static struct Logic_t QF_CUF = {1, "QF_CUF"};
 static struct Logic_t QF_BV = {2, "QF_BV"};
 static struct Logic_t QF_RDL = {3, "QF_RDL"};
 static struct Logic_t QF_IDL = {4, "QF_IDL"};

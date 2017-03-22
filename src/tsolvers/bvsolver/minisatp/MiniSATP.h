@@ -65,12 +65,12 @@ public:
     //
     // Modified Lines
     MiniSATP( const int
-	    , vector< Enode * > &
-	    , vector< Enode * > &
-	    , vector< Enode * > &
-	    , vector< Enode * > &
-	    , const bool );
-    
+            , vector< Enode * > &
+            , vector< Enode * > &
+            , vector< Enode * > &
+            , vector< Enode * > &
+            , const bool );
+
     ~MiniSATP();
 
     // Problem specification:
@@ -86,7 +86,7 @@ public:
     bool    okay         () const;                  // FALSE means solver is in a conflicting state
 
     // Variable mode:
-    // 
+    //
     void    setPolarity    (Var v, bool b); // Declare which polarity the decision heuristic should use for a variable. Requires mode 'polarity_user'.
     void    setDecisionVar (Var v, bool b); // Declare if a variable should be eligible for selection in the decision heuristic.
 
@@ -174,7 +174,7 @@ protected:
     // Data structures required for communicating conflicts and deductions
     // incrementality, backtrackability ...
     //
-    enum oper_t { NEWVAR, NEWUNIT, NEWCLAUSE };         
+    enum oper_t { NEWVAR, NEWUNIT, NEWCLAUSE };
 
     const int                      solver_id;           // Id of the t-solver that wraps
     vector< Enode * > &            explanation;         // For conflict sets
@@ -193,8 +193,8 @@ protected:
 
     vector< size_t >               undo_stack_size;     // Keep track of stack_oper size
     vector< int >                  undo_trail_size;     // Keep track of trail size
-    vector< oper_t >		   undo_stack_oper;     // Keep track of operations
-    vector< void * >		   undo_stack_elem;     // Keep track of aux info
+    vector< oper_t >               undo_stack_oper;     // Keep track of operations
+    vector< void * >               undo_stack_elem;     // Keep track of aux info
 
 // Added Code
 //=================================================================================================

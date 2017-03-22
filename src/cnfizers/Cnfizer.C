@@ -204,13 +204,13 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
                 mask += 1;
                 mask <<= (logic.assertionIndex (f) + 1);
             }
-            /*
+
             else if(f == logic.getTerm_true() || f == logic.getTerm_false())
             {
                 mask = 1;
                 mask = ~mask;
             }
-            */
+
             else //f may have been flattened etc
             {
                 PTRef root_tmp = logic.getOriginalAssertion(f);
@@ -801,8 +801,10 @@ void Cnfizer::retrieveTopLevelFormulae (PTRef root, vec<PTRef> &top_level_formul
             for (int i = cand_t.size() - 1; i >= 0; i--) {
                 to_process.push (cand_t[i]);
 #ifdef PRODUCE_PROOF
-                if (logic.hasOriginalAssertion(f))
+            if (logic.hasOriginalAssertion(f))
                     logic.setOriginalAssertion(cand_t[i], logic.getOriginalAssertion(f));
+            else if (logic.isAssertion(f))
+                    logic.setOriginalAssertion(cand_t[i], f);
 #endif
             }
         else if (!seen.has (f))

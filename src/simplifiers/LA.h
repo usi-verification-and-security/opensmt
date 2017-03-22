@@ -50,8 +50,8 @@ public:
     initialize(e);
   }
 
-  inline bool              isTrue     ( ) { return polynome.size( ) == 1 && ( r == EQ ? polynome[ PTRef_Undef ] == 0 : polynome[ PTRef_Undef ] <= 0 ); }
-  inline bool              isFalse    ( ) { return polynome.size( ) == 1 && ( r == EQ ? polynome[ PTRef_Undef ] != 0 : polynome[ PTRef_Undef ] > 0 ); }
+  inline bool              isTrue     ( ) { return polynome.size( ) == 1 && ( r == EQ ? polynome[ PTRef_Undef ] == 0 : polynome[ PTRef_Undef ] >= 0 ); }
+  inline bool              isFalse    ( ) { return polynome.size( ) == 1 && ( r == EQ ? polynome[ PTRef_Undef ] != 0 : polynome[ PTRef_Undef ] < 0 ); }
 
   typedef map< PTRef, opensmt::Real >    polynome_t;
 
@@ -61,6 +61,9 @@ public:
   void                     canonizeReal ();           // Canonize (different from solve!)
   void                     canonizeInt  ();           // Canonize (different from solve!)
   PTRef                    toPTRef      ();           // Output as enode
+  PTRef                    getPTRefConstant      ();           // Output as enode
+  PTRef                    getPTRefNonConstant      ();           // Output as enode
+  opensmt::Real            getRealConstant      ();           // Output as enode
   void                     print        (ostream&);   // Output as enode
   pair< PTRef, PTRef >     getSubst     ();    // Get a valid substitution
   pair< PTRef, PTRef >     getSubstReal ();    // Get a valid substitution for reals

@@ -26,6 +26,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define LRALOGIC_H
 #include "Logic.h"
 
+class LRANonLinearException
+{
+    char* reason;
+public:
+    LRANonLinearException(const char* reason_) {
+        asprintf(&reason, "Term %s is non-linear", reason_);
+    }
+    virtual char* what() const
+    {
+        char* out;
+        asprintf(&out, "%s", reason);
+        return out;
+    }
+    ~LRANonLinearException() { free(reason); }
+};
+
 class LRALogic: public Logic
 {
   protected:
@@ -75,19 +91,22 @@ class LRALogic: public Logic
     virtual const char* getName()                const { return getLogic().str; }
     virtual const Logic_t getLogic()             const { return QF_LRA; }
 
-    PTRef       insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg);
+    virtual PTRef       insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg);
 
-    PTRef       mkConst         (const char* name, const char **msg);
-    PTRef       mkConst         (SRef s, const char* name);
-    PTRef       mkConst         (const opensmt::Real& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_real(), rat); free(rat); return tr; }
-    PTRef       mkConst         (const char* num) { return mkConst(getSort_real(), num); }
-    PTRef       mkRealVar       (const char* name) { return mkVar(getSort_real(), name); }
+    virtual PTRef       mkConst         (const char* name, const char **msg);
+    virtual PTRef       mkConst         (SRef s, const char* name);
+    virtual PTRef       mkConst         (const opensmt::Real& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_real(), rat); free(rat); return tr; }
+    virtual PTRef       mkConst         (const char* num) { return mkConst(getSort_real(), num); }
+    virtual PTRef       mkRealVar       (const char* name) { return mkVar(getSort_real(), name); }
 
     virtual bool isBuiltinSort  (SRef sr) const { return sr == sort_REAL || Logic::isBuiltinSort(sr); }
-    bool  isRealConst     (PTRef tr)      const { return isConstant(tr) && hasSortReal(tr); }
+    virtual bool isBuiltinConstant(SymRef sr) const { return (isRealConst(sr) || Logic::isBuiltinConstant(sr)); }
+
+    bool  isRealConst     (SymRef sr)     const { return isConstant(sr) && hasSortReal(sr); }
+    bool  isRealConst     (PTRef tr)      const { return isRealConst(getPterm(tr).symb()); }
     bool  isNonnegRealConst (PTRef tr)    const { return isRealConst(tr) && getRealConst(tr) >= 0; }
 
-    SRef        declareSort_Real(char** msg);
+//    SRef        declareSort_Real(char** msg);
 
     SRef        getSort_real    ()              const { return sort_REAL;    }
 
@@ -123,7 +142,9 @@ class LRALogic: public Logic
     // Real terms are of form c, a, or (* c a) where c is a constant and
     // a is a variable.
     bool        isRealTerm(PTRef tr) const;
-    bool        hasSortReal(PTRef tr) const { return sym_store[getPterm(tr).symb()].rsort() == sort_REAL; }
+    bool        hasSortReal(SymRef sr) const { return sym_store[sr].rsort() == sort_REAL; }
+
+    bool        hasSortReal(PTRef tr) const { return hasSortReal(getPterm(tr).symb()); }
 
     bool        isUFEquality(PTRef tr) const { return !isRealEq(tr) && Logic::isUFEquality(tr); }
     bool        isTheoryEquality(PTRef tr) const { return isRealEq(tr); }

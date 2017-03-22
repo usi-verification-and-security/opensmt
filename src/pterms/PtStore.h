@@ -114,7 +114,7 @@ class PtStore {
   public:
     PtStore(SymStore& symstore_, SStore& sortstore_);
 
-    PTRef  newTerm(const SymRef sym, const vec<PTRef>& ps) {
+    PTRef newTerm(const SymRef sym, const vec<PTRef>& ps) {
         PTRef tr = pta.alloc(sym, ps); idToPTRef.push(tr);
         assert(idToPTRef.size() == pta.getNumTerms());
 #ifndef TERMS_HAVE_EXPLANATIONS

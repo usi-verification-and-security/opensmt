@@ -158,6 +158,8 @@ int main( int argc, char * argv[] )
             case 'r':
                 if (!c.setOption(SMTConfig::o_random_seed, SMTOption(atoi(optarg)), msg))
                     fprintf(stderr, "Error setting random seed: %s\n", msg);
+                else
+                    fprintf(stderr, "; Using random seed %d\n", atoi(optarg));
                 break;
             default: /* '?' */
                 fprintf(stderr, "Usage:\n\t%s [-p threads] [-d] [-r seed] filename [...]\n",

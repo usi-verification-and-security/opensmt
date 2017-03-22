@@ -121,13 +121,15 @@ bool Tseitin::cnfize(PTRef formula)
                 // This is a bridge equality
                 // It should be treated as a literal by the SAT solver
             }
-            if (logic.isDisequality(ptr) || (logic.lookupUPEq(ptr) != PTRef_Undef) ) {
-                // Uninterpreted predicate.  Special handling
-                goto tseitin_end;
-            }
-            else {
-                opensmt_error2("operator not handled", logic.getSymName(ptr));
-            }
+            else
+                goto tseitin_end; // Not a boolean operator
+//            if (logic.isDisequality(ptr) || (logic.lookupUPEq(ptr) != PTRef_Undef) ) {
+//                // Uninterpreted predicate.  Special handling
+//                goto tseitin_end;
+//            }
+//            else {
+//                opensmt_error2("operator not handled", logic.getSymName(ptr));
+//            }
         }
 
         {

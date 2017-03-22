@@ -58,7 +58,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "Alg.h"
 
 #include "SolverTypes.h"
-//#include "LA.h"
+
+#include "Timer.h"
 
 #ifdef PRODUCE_PROOF
 #include "PG.h"
@@ -101,6 +102,7 @@ public:
 //
 class SplitData
 {
+    bool                no_instance;    // Does SplitData store the instance?
     THandler&           theory_handler;
     ClauseAllocator&    ca;
     vec<CRef>&          inst_clauses;   // Reference to the instance clause database
@@ -118,12 +120,13 @@ class SplitData
     void toPTRefs(vec<vec<PtAsgn> >& out, vec<vec<Lit> >& in);
 
 public:
-    SplitData(ClauseAllocator& _ca, vec<CRef>& ic, vec<Lit>& t, int tl, THandler& th)
+    SplitData(ClauseAllocator& _ca, vec<CRef>& ic, vec<Lit>& t, int tl, THandler& th, bool no_instance = false)
         : inst_clauses(ic)
         , ca(_ca)
         , trail(t)
         , trail_idx(tl)
         , theory_handler(th)
+        , no_instance(no_instance)
     {}
     SplitData(const SplitData& other)
         : inst_clauses(other.inst_clauses)
@@ -131,6 +134,7 @@ public:
         , trail(other.trail)
         , trail_idx(other.trail_idx)
         , theory_handler(other.theory_handler)
+        , no_instance(other.no_instance)
     {
         assert(other.instance.size() == 0 && other.constraints.size() == 0 && other.learnts.size() == 0);
     }
@@ -151,6 +155,8 @@ public:
     }
     void updateInstance()
     {
+        if (no_instance) return;
+
         assert(instance.size() == 0);
         for (int i = 0; i < inst_clauses.size(); i++)
         {
@@ -364,6 +370,7 @@ public:
     CoreSMTSolver(SMTConfig&, THandler&);
     virtual ~CoreSMTSolver();
     void     initialize       ( );
+    void     clearSearch      ();  // Backtrack SAT solver and theories to decision level 0
 
     // Problem specification:
     //
@@ -418,7 +425,6 @@ public:
     //
     lbool   value      (Var x) const;       // The current value of a variable.
     lbool   value      (Lit p) const;       // The current value of a literal.
-    lbool   modelValue (Var x) const;       // The value of a variable in the last model. The last call to solve must have been satisfiable.
     lbool   modelValue (Lit p) const;       // The value of a literal in the last model. The last call to solve must have been satisfiable.
     int     nAssigns   ()      const;       // The current number of assigned literals.
     int     nClauses   ()      const;       // The current number of original clauses.
@@ -512,6 +518,7 @@ public:
     //
     uint64_t solves, starts, decisions, rnd_decisions, propagations, conflicts, conflicts_last_update;
     uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
+    opensmt::OSMTTimeVal search_timer;
     double learnts_size;
     uint64_t all_learnts;
     uint64_t learnt_theory_conflicts;

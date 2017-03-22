@@ -11,6 +11,7 @@
 typedef enum
 {
     qf_uf         // Uninterpreted Functions
+  , qf_cuf        // Uninterpreted Functions for C
   , qf_bv         // BitVectors
   , qf_rdl        // Real difference logics
   , qf_idl        // Integer difference logics
@@ -25,7 +26,7 @@ typedef enum
 class Opensmt
 {
 public:
-    Opensmt(opensmt_logic _logic);
+    Opensmt(opensmt_logic _logic, int bw = 32);
     ~Opensmt();
 
     SMTConfig& getConfig() { return *config; }
@@ -33,6 +34,10 @@ public:
     LRALogic& getLRALogic()
     {
         LRATheory& t = (LRATheory&)thandler->getTheory();
+        return t.getLogic();
+    }
+    CUFLogic& getCUFLogic() {
+        CUFTheory& t = (CUFTheory&)thandler->getTheory();
         return t.getLogic();
     }
     MainSolver& getMainSolver() { return *mainSolver; }

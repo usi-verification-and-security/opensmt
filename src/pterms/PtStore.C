@@ -190,6 +190,7 @@ void PtStore::deserializeTerms(const int* buf)
     pta.deserialize(ptstore_buf);
     const int* vec_buf = &buf[buf[ptstore_vec_idx]];
     pta.setNumTerms(vec_buf[0]);
+    idToPTRef.clear();
     for (int i = 0; i < vec_buf[0]; i++) {
         PTRef tr = {(uint32_t)vec_buf[i+1]};
         idToPTRef.push(tr);
@@ -199,6 +200,7 @@ void PtStore::deserializeTerms(const int* buf)
 //        explanations.last().setRoot(tr);
 #endif
     }
+    assert(pta.getNumTerms() == idToPTRef.size());
 }
 
 bool

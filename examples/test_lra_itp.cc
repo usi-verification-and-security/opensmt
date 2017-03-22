@@ -66,8 +66,9 @@ main(int argc, char** argv)
     args2.push(l4);
     PTRef ass2 = logic.mkAnd(args2);
 
-    mainSolver.push(ass1);
-    mainSolver.push(ass2);
+    char* msg_2;
+    mainSolver.insertFormula(ass1, &msg_2);
+    mainSolver.insertFormula(ass2, &msg_2);
 
     // Check
     sstat r = mainSolver.check();

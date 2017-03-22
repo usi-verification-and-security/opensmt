@@ -171,7 +171,7 @@ public:
     virtual void                popBacktrackPoint   ( )                       ;  // Backtrack to last saved point
     virtual bool                check               ( bool ) = 0              ;  // Check satisfiability
     inline const string &       getName             ( ) { return name; }            // The name of the solver
-    virtual ValPair             getValue            (PTRef) const = 0;
+    virtual ValPair             getValue            (PTRef) = 0;
 #ifdef PRODUCE_PROOF
     virtual TheoryInterpolator* getTheoryInterpolator() = 0;
 #endif
@@ -185,6 +185,9 @@ public:
     virtual char* printValue(PTRef) = 0; // Debug function.  Instances are allowed to print whatever they want.
     virtual char* printExplanation(PTRef) = 0; // Debug function.  Instances are allowed to print whatever they want.
     virtual Logic& getLogic() = 0;
+    virtual bool isValid(PTRef tr) = 0;
+    bool         isKnown(PTRef tr);
+
 protected:
     Map<PTRef,bool,PTRefHash>   informed_PTRefs;
     bool                        informed(PTRef tr) { return informed_PTRefs.has(tr); }
@@ -192,6 +195,8 @@ protected:
     const char*                 name;             // Name of the solver
     SMTConfig &                 config;           // Reference to configuration
     vec< size_t >               backtrack_points; // Keeps track of backtrack points
+
+    vec<bool>     known_preds; // List of known PTRefs with boolean return value (that can be asserted)
 };
 
 #endif

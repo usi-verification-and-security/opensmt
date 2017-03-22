@@ -143,12 +143,16 @@ ProofGraph::verifyPartialInterpolant(ProofNode *n, const ipartitions_t& mask)
         cout << "; Verifying partial interpolant" << endl;
     bool res = verifyPartialInterpolantA(n, mask);
     if(!res)
-        //assert(false);
+    {
         opensmt_error("Partial interpolant soundness does not hold for A");
+        assert(false);
+    }
     res = verifyPartialInterpolantB(n, mask);
     if(!res)
-        //assert(false);
+    {
         opensmt_error("Partial interpolant soundness does not hold for B");
+        assert(false);
+    }
     if(verbose())
         cout << "; Partial interpolant is sound" << endl;
     return res;
@@ -194,7 +198,16 @@ ProofGraph::verifyPartialInterpolantA(ProofNode *n, const ipartitions_t& mask)
     AC_args.push(cl_ptref);
     PTRef implicant = logic.mkAnd(AC_args);
 
-    return logic.implies(implicant, n->getPartialInterpolant());
+    /*
+    cout << "; MASK IS " << mask << endl;
+    cout << "; PARTITION A IS " << logic.printTerm(logic.getPartitionA(mask)) << endl;
+    cout << "; TCLAUSE IS " << logic.printTerm(cl_ptref) << endl;
+    cout << "; PARTIAL INTERPOLANT IS " << logic.printTerm(n->getPartialInterpolant()) << endl;
+    */
+
+    bool res = logic.implies(implicant, n->getPartialInterpolant());
+    assert(res);
+    return res;
 }
 
 bool
@@ -237,7 +250,16 @@ ProofGraph::verifyPartialInterpolantB(ProofNode *n, const ipartitions_t& mask)
     BC_args.push(cl_ptref);
     PTRef implicant = logic.mkAnd(BC_args);
 
-    return logic.implies(implicant, logic.mkNot(n->getPartialInterpolant()));
+    /*
+    cout << "; MASK IS " << mask << endl;
+    cout << "; PARTITION B IS " << logic.printTerm(logic.getPartitionB(mask)) << endl;
+    cout << "; TCLAUSE IS " << logic.printTerm(cl_ptref) << endl;
+    cout << "; PARTIAL INTERPOLANT IS " << logic.printTerm(n->getPartialInterpolant()) << endl;
+    */
+
+    bool res = logic.implies(implicant, logic.mkNot(n->getPartialInterpolant()));
+    assert(res);
+    return res;
 }
 
 /************************ VERIFICATION OF INTERPOLANTS *********************************/

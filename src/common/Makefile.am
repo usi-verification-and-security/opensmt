@@ -6,8 +6,9 @@ libcommon_la_SOURCES = Otl.h \
                        TreeOps.h \
                        Global.h \
                        FastRational.h \
-                       FastRational.C
+                       FastRational.C \
+                       Timer.h
 
 if ENABLE_LIBRARY
-include_HEADERS = Alloc.h FastRational.h Global.h IntTypes.h Otl.h SigMap.h StringMap.h TreeOps.h XAlloc.h
+include_HEADERS = Alloc.h FastRational.h Global.h IntTypes.h Otl.h SigMap.h StringMap.h TreeOps.h XAlloc.h Timer.h
 endif

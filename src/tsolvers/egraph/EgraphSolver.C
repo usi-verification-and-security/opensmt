@@ -46,6 +46,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 static SolverDescr descr_uf_solver("UF Solver", "Solver for Quantifier Free Theory of Uninterpreted Functions with Equalities");
 
+const char* Egraph::s_val_prefix = "u";
+const char* Egraph::s_const_prefix = "n";
+const char* Egraph::s_any_prefix = "a";
+const char* Egraph::s_val_true = "true";
+const char* Egraph::s_val_false = "false";
+
 Egraph::Egraph(SMTConfig & c, Logic& l , vec<DedElem>& d)
       : TSolver            (descr_uf_solver, descr_uf_solver, c, d)
       , logic              (l)
@@ -72,7 +78,7 @@ Egraph::Egraph(SMTConfig & c, Logic& l , vec<DedElem>& d)
       , cgraph(NULL)
       , automatic_coloring ( false )
 #endif
-  {
+{
     // For the uninterpreted predicates to work we need to have
     // two special terms true and false, and an asserted disequality
     // true != false
@@ -118,7 +124,7 @@ Egraph::Egraph(SMTConfig & c, Logic& l , vec<DedElem>& d)
     assert(neq != PTRef_Undef);
     assertNEq(logic.getTerm_true(), logic.getTerm_false(), PtAsgn(neq, l_False));
     Eq_FALSE = neq;
-  }
+}
 
 //
 // Pushes a backtrack point
@@ -145,6 +151,7 @@ void Egraph::pushBacktrackPoint( )
 // Pops a backtrack point
 //
 void Egraph::popBacktrackPoint() {
+//    opensmt::StopWatch sw(tsolver_stats.egraph_backtrack_timer);
     assert( backtrack_points.size( ) > 0 );
     size_t undo_stack_new_size = backtrack_points.last();
     backtrack_points.pop();
@@ -280,29 +287,26 @@ Egraph::getInterpolants(const ipartitions_t & p)
 }
 #endif
 */
+
+void Egraph::clearModel()
+{
+    values.clear();
+    values_ok = false;
+}
+
 void Egraph::computeModel( )
 {
-//  model_computed = true;
-//  //
-//  // Compute models in tsolvers
-//  //
-//  for( unsigned i = 1 ; i < tsolvers.size( ) ; i ++ )
-//    tsolvers[ i ]->computeModel( );
-//  //
-//  // Compute values for variables removed
-//  // during preprocessing, starting from
-//  // the last
-//  //
-//  for ( int i = top_level_substs.size( ) - 1 ; i >= 0 ; i -- )
-//  {
-//    Enode * var = top_level_substs[i].first;
-//    Enode * term = top_level_substs[i].second;
-//    Real r;
-//    // Compute value for term
-//    evaluateTerm( term, r );
-//    // Set value for variable
-//    var->setValue( r );
-//  }
+    if (values_ok == true)
+        return;
+
+    const vec<ERef>& enodes = enode_store.getEnodes();
+    for (int i = 0; i < enodes.size(); i++) {
+        if (values.has(enodes[i]))
+            continue;
+        ERef root_r = enode_store[enodes[i]].getRoot();
+        values.insert(enodes[i], root_r);
+    }
+    values_ok = true;
 }
 
 //void Egraph::printModel( ostream & os )
@@ -349,13 +353,14 @@ void Egraph::computeModel( )
 //}
 
 
+
 //
 // No recursion here, we assume the caller has already introduced the
 // subterms
 //
 lbool Egraph::declareTerm(PTRef tr) {
 
-    if (!logic.isUFEquality(tr) && !logic.isUP(tr))
+    if (!logic.isUFEquality(tr) && !logic.isUP(tr) && !logic.isUFTerm(tr) && !logic.isDisequality(tr) && !logic.isBoolAtom(tr))
         return l_True;
 
     if (!enode_store.termToERef.has(tr)) {
@@ -400,6 +405,12 @@ lbool Egraph::declareTerm(PTRef tr) {
     if (logic.isDisequality(tr) && !enode_store.dist_classes.has(tr))
         enode_store.addDistClass(tr);
 
+    if (logic.hasSortBool(tr)) {
+        Pterm& t = logic.getPterm(tr);
+        while (known_preds.size() <= t.getId())
+            known_preds.push(false);
+        known_preds[t.getId()] = true;
+    }
     return l_Undef;
 }
 
@@ -1086,6 +1097,7 @@ void Egraph::backtrackToStackSize ( size_t size ) {
     // (might be empty, though, if boolean backtracking happens)
     explanation.clear();
     has_explanation = false;
+
     //
     // Restore state at previous backtrack point
     //
@@ -1326,7 +1338,7 @@ void Egraph::backtrackToStackSize ( size_t size ) {
 
 //
 // Merge the class of x with the class of y
-// x will become the representant
+// x will become the representative
 //
 void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
 {
@@ -1359,16 +1371,17 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
 
     if (an_x.isTerm()) {
         assert( !isConstant(x) || !isConstant(y) );
-        assert( !isConstant(x) || an_x.getSize() == 1 );
-        assert( !isConstant(y) || an_y.getSize() == 1 );
+//        assert( !isConstant(x) || an_x.getSize() == 1 );
+//        assert( !isConstant(y) || an_y.getSize() == 1 );
     }
     assert( an_x.getRoot( ) != an_y.getRoot( ) );
     assert( x == an_x.getRoot( ) );
     assert( y == an_y.getRoot( ) );
 
-  // Swap x,y if y has a larger eq class
-    if ( an_x.getSize() < an_y.getSize()
-        || (an_x.isTerm() && isConstant(x)) )
+    // Ensure that the constant or the one with a larger equivalence
+    // class will be in x (and will become the root)
+    if ((an_y.isTerm() && isConstant(y)) ||
+        (!(an_x.isTerm() && isConstant(x)) && (an_x.getSize() < an_y.getSize())))
     {
         ERef tmp = x;
         x = y;
@@ -1379,7 +1392,7 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     Enode& en_y = enode_store[y];
 
     assert(en_x.type() == en_y.type());
-    assert(!en_x.isTerm() || !isConstant(x));
+    assert(!en_y.isTerm() || !isConstant(y));
 
     // TODO:
     // Propagate equalities to other ordinary theories
@@ -2330,6 +2343,8 @@ void Egraph::tmpMergeEnd( Enode * x, Enode * y )
 
 bool Egraph::assertLit(PtAsgn pta, bool)
 {
+    // invalidate values
+//    opensmt::StopWatch sw(tsolver_stats.egraph_asrt_timer);
     lbool sgn = pta.sgn;
     PTRef pt_r = pta.tr;
     Pterm& pt = logic.term_store[pt_r];
@@ -2537,6 +2552,44 @@ void Egraph::extPopBacktrackPoint( )
   size_t undo_stack_new_size = backtrack_points.last( );
   backtrack_points.pop( );
   backtrackToStackSize( undo_stack_new_size );
+}
+
+// The value method
+
+ValPair
+Egraph::getValue(PTRef tr)
+{
+    if (!values_ok) {
+        assert(false);
+        return ValPair_Undef;
+    }
+    char* name;
+
+    if (!enode_store.has(tr)) {
+        // This variable was never pushed to Egraph so its value is not
+        // bound by anything.
+        asprintf(&name, "%s%d", s_any_prefix, logic.getPterm(tr).getId());
+    }
+    else {
+
+        Enode& e = enode_store[tr];
+        ERef e_root = values[e.getERef()];
+
+        if (e_root == enode_store.ERef_True)
+           asprintf(&name, "true");
+        else if (e_root == enode_store.ERef_False)
+            asprintf(&name, "false");
+        else if (isConstant(e_root)) {
+            char* const_name = logic.printTerm(enode_store[e_root].getTerm());
+            asprintf(&name, "%s%s", s_const_prefix, const_name);
+            free(const_name);
+        }
+        else
+            asprintf(&name, "%s%d", s_val_prefix, enode_store[e_root].getId());
+    }
+    ValPair vp(tr, name);
+    free(name);
+    return vp;
 }
 
 #ifdef CUSTOM_EL_ALLOC

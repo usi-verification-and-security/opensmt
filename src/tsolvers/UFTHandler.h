@@ -36,25 +36,27 @@ class UFTHandler : public TSolverHandler
 {
   private:
     Logic&     logic;
+  protected:
     Egraph*    egraph;
 //  protected:
 //    const vec<int>& getSolverSchedule() const;
   public:
     UFTHandler(SMTConfig& c, Logic& l, vec<DedElem>& d, TermMapper& tmap);
     virtual ~UFTHandler();
-    bool assertLit_special(PtAsgn a);
+    virtual bool assertLit_special(PtAsgn a);
     // This is for simplification, needed to run the theory solver code
     // as if it were running inside a SAT solver.
     void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs);
-    Logic& getLogic();
+    virtual       Logic& getLogic();
+    virtual const Logic& getLogic() const;
 
 #ifdef PRODUCE_PROOF
-    TheoryInterpolator* getTheoryInterpolator()
+    virtual TheoryInterpolator* getTheoryInterpolator()
     {
         return egraph->getTheoryInterpolator();
     }
 
-    PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
+    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
     {
         return egraph->getInterpolant(mask, labels);
     }

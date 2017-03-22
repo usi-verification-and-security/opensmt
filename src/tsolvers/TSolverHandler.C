@@ -16,6 +16,9 @@ bool TSolverHandler::assertLit(PtAsgn asgn)
         int idx = solverSchedule[i];
         assert(tsolvers[idx] != NULL);
         tsolvers[idx]->pushBacktrackPoint();
+        if (!tsolvers[idx]->isKnown(asgn.tr)) {
+            continue;
+        }
         bool res_new = tsolvers[idx]->assertLit(asgn);
         res = (res == false) ? false : res_new;
     }
@@ -31,7 +34,7 @@ void TSolverHandler::declareTermTree(PTRef tr)
     Map<PTRef,bool,PTRefHash> tr_map;
     for (int i = 0; i < terms.size(); i++)
     {
-        if(!tr_map.has(terms[i].tr))
+        if (!tr_map.has(terms[i].tr))
         {
             declareTerm(terms[i].tr);
             tr_map.insert(terms[i].tr, true);
@@ -65,16 +68,30 @@ void TSolverHandler::clearSolver()
 // Declare term to the appropriate solver
 void TSolverHandler::declareTerm(PTRef tr)
 {
-    for (int i = 0; i < tsolvers.size(); i++)
-        if (tsolvers[i] != NULL)
-            tsolvers[i]->declareTerm(tr);
+    for (int i = 0; i < tsolvers.size(); i++) {
+        if (tsolvers[i] != NULL) {
+//            printf("Thinking of declaring %s\n", getLogic().printTerm(tr));
+                if (tsolvers[i]->isValid(tr)) {
+                    tsolvers[i]->declareTerm(tr);
+//                    printf("Declaring %s since it's my style\n", getLogic().printTerm(tr));
+            }
+            else {
+//                printf("Not declaring %s since it's not my style\n", getLogic().printTerm(tr));
+            }
+        }
+    }
 }
 
 ValPair TSolverHandler::getValue(PTRef tr) const
 {
     for (int i = 0; i < tsolvers.size(); i++)
         if (tsolvers[i] != NULL) {
-            ValPair vp = tsolvers[i]->getValue(tr);
+            PTRef tr_subst = tr;
+            if (substs.has(tr) && (substs[tr].sgn == l_True)) {
+                tr_subst = substs[tr].tr;
+            }
+            ValPair vp = tsolvers[i]->getValue(tr_subst);
+            vp.tr = tr;
             if (vp != ValPair_Undef)
                 return vp;
         }

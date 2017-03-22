@@ -168,6 +168,7 @@ class MainSolver
     sstat solve           ();
     sstat check           ();      // A wrapper for solve which simplifies the loaded formulas and initializes the solvers
 
+    void printFramesAsQuery() { getTheory().printFramesAsQuery(formulas); }
 
     sstat lookaheadSplit  (int d)  { return status = sstat(ts.solver.lookaheadSplit2(d)); }
     sstat getStatus       ()       { return status; }

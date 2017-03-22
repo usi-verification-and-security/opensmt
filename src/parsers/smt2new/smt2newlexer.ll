@@ -71,6 +71,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 "check-sat"        { yyget_lval(yyscanner)->tok = { t_checksat }; return TK_CHECKSAT;      }
 "declare-sort"     { yyget_lval(yyscanner)->tok = { t_declaresort }; return TK_DECLARESORT;   }
 "declare-fun"      { yyget_lval(yyscanner)->tok = { t_declarefun }; return TK_DECLAREFUN;    }
+"declare-const"    { yyget_lval(yyscanner)->tok = { t_declareconst} ; return TK_DECLARECONST; }
 "define-sort"      { yyget_lval(yyscanner)->tok = { t_definesort }; return TK_DEFINESORT;    }
 "define-fun"       { yyget_lval(yyscanner)->tok = { t_definefun }; return TK_DEFINEFUN;     }
 "exit"             { yyget_lval(yyscanner)->tok = { t_exit }; return TK_EXIT;          }

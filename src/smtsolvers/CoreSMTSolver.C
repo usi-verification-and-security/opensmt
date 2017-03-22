@@ -1,7 +1,7 @@
 /*********************************************************************
 Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
 
-OpenSMT2 -- Copyright (C) 2012 - 2014 Antti Hyvarinen
+OpenSMT2 -- Copyright (C) 2012 - 2016 Antti Hyvarinen
                          2008 - 2012 Roberto Bruttomesso
 
 Permission is hereby granted, free of charge, to any person obtaining a
@@ -555,7 +555,7 @@ void CoreSMTSolver::cancelUntil(int level)
             assert(assigns[x] != l_Undef);
 #endif
             assigns [x] = l_Undef;
-            if (phase_saving > 1 || (phase_saving == 1) && c > trail_lim.last())
+            if (phase_saving > 1 || ((phase_saving == 1) && c > trail_lim.last()))
                 polarity[x] = sign(trail[c]);
             insertVarOrder(x);
         }
@@ -1397,12 +1397,26 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
             }
             else
             {
-                Clause& c = ca[reason(x)];
-                for (int j = 1; j < c.size(); j++)
-                    if (level(var(c[j])) > 0)
-                        seen[var(c[j])] = 1;
+                if (reason(x) == CRef_Fake)
+                {
+                    cancelUntilVarTempInit(x);
+                    vec<Lit> r;
+                    theory_handler.getReason(trail[i], r);
+                    assert(r.size() > 0);
+                    for (int j = 1; j < r.size(); j++)
+                        if (level(var(r[j])) > 0)
+                            seen[var(r[j])] = 1;
+                    cancelUntilVarTempDone();
+                }
+                else
+                {
+                    Clause& c = ca[reason(x)];
+                    for (int j = 1; j < c.size(); j++)
+                        if (level(var(c[j])) > 0)
+                            seen[var(c[j])] = 1;
+                }
+                seen[x] = 0;
             }
-            seen[x] = 0;
         }
     }
 
@@ -1835,6 +1849,8 @@ void CoreSMTSolver::popBacktrackPoint()
   |________________________________________________________________________________________________@*/
 lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 {
+    // Time my executionto search_timer
+//    opensmt::StopWatch stopwatch = opensmt::StopWatch(search_timer);
 #ifdef VERBOSE_SAT
     cerr << "Units when starting search:" << endl;
     for (int i = 2; i < trail.size(); i++)
@@ -2309,6 +2325,10 @@ void CoreSMTSolver::declareVarsToTheories()
 
 lbool CoreSMTSolver::solve_(int max_conflicts)
 {
+//    opensmt::PrintStopWatch watch("solve time", cerr);
+
+    this->clausesUpdate();
+
     // Inform theories of the variables that are actually seen by the
     // SAT solver.
     declareVarsToTheories();
@@ -2477,11 +2497,17 @@ lbool CoreSMTSolver::solve_(int max_conflicts)
     }
 
     // We terminate
-    cancelUntil(0);
-    if (first_model_found || splits.size() > 1)
-        theory_handler.backtrack(-1);
+//    clearSearch();
 
     return status;
+}
+
+void CoreSMTSolver::clearSearch()
+{
+    cancelUntil(0);
+    if (first_model_found || splits.size() > 1) {
+        theory_handler.backtrack(-1);
+    }
 }
 
 const CoreSMTSolver::UBel CoreSMTSolver::UBel_Undef(-1, -1);
@@ -2536,8 +2562,8 @@ lbool CoreSMTSolver::lookaheadSplit2(int d)
     if (res == l_False)
         splits.clear();
     // Without these I get a segfault from theory solver's destructor...
-    cancelUntil(-1);
-    theory_handler.backtrack(-1);
+    cancelUntil(0);
+    theory_handler.backtrack(0);
     return res;
 }
 
@@ -2685,10 +2711,6 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
                 }
             }
         }
-
-        // Decision level -1 at this point means we proved unsatisfiability
-        if (decisionLevel() == -1)
-            return l_False;
 
         if (i != -1)
         {
@@ -2849,6 +2871,7 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
                 return l_Undef;
             }
             p == 0 ? p0 = trail.size() : p1 = trail.size();
+            // Update also the clause deletion heuristic?
             cancelUntil(decisionLevel() - 1);
         }
         if (value(v) == l_Undef)
@@ -3016,7 +3039,7 @@ bool CoreSMTSolver::createSplit_lookahead()
     // complicated
     // XXX Now that the version is updated check that this code works!
     int curr_dl0_idx = trail_lim.size() > 0 ? trail_lim[0] : trail.size();
-    splits.push_c(SplitData(ca, clauses, trail, curr_dl0_idx, theory_handler));
+    splits.push_c(SplitData(ca, clauses, trail, curr_dl0_idx, theory_handler, config.smt_split_format_length() == spformat_brief));
     SplitData& sp = splits.last();
 
     printf("; Outputing an instance:\n; ");
@@ -3029,6 +3052,7 @@ bool CoreSMTSolver::createSplit_lookahead()
         sp.addConstraint(tmp);
     }
     printf("\n");
+
     sp.updateInstance();
     assert(ok);
     return true;
@@ -3036,12 +3060,9 @@ bool CoreSMTSolver::createSplit_lookahead()
 
 bool CoreSMTSolver::createSplit_scatter(bool last)
 {
-    // Due to the stupidness of the minisat version this gets
-    // complicated
-    // XXX Check that this works with the new version of MiniSat!
     int curr_dl0_idx = trail_lim.size() > 0 ? trail_lim[0] : trail.size();
     assert(splits.size() == split_assumptions.size());
-    splits.push_c(SplitData(ca, clauses, trail, curr_dl0_idx, theory_handler));
+    splits.push_c(SplitData(ca, clauses, trail, curr_dl0_idx, theory_handler, config.smt_split_format_length() == spformat_brief));
     split_assumptions.push();
     SplitData& sp = splits.last();
     vec<Lit> constraints_negated;
@@ -3068,6 +3089,7 @@ bool CoreSMTSolver::createSplit_scatter(bool last)
             tmp.push(~split_assumption[j]);
         sp.addConstraint(tmp);
     }
+
     sp.updateInstance();
     // XXX Skipped learned clauses
     cancelUntil(0);
@@ -3132,6 +3154,7 @@ void CoreSMTSolver::printStatistics( ostream & os )
     os << "; T-conflicts learnt.......: " << learnt_theory_conflicts << endl;
     os << "; Average learnts size.....: " << learnts_size/conflicts << endl;
     os << "; Top level literals.......: " << top_level_lits << endl;
+    os << "; Search time..............: " << search_timer.getTime() << " s" << endl;
     if ( config.sat_preprocess_booleans != 0
             || config.sat_preprocess_theory != 0 )
         os << "; Preprocessing time.......: " << preproc_time << " s" << endl;

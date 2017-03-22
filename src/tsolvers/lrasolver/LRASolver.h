@@ -30,6 +30,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef LRASOLVER_H
 #define LRASOLVER_H
 
+//#define GAUSSIAN_DEBUG
+
+#include "Timer.h"
 #include "LRALogic.h"
 #include "TSolver.h"
 #include "LAVar.h"
@@ -40,22 +43,25 @@ class LRASolverStats: public TSolverStats
         int num_pivot_ops;
         int num_bland_ops;
         int num_vars;
+        opensmt::OSMTTimeVal simplex_timer;
 
         LRASolverStats()
         : num_pivot_ops(0)
         , num_bland_ops(0)
         , num_vars(0)
-        { TSolverStats(); }
+        , TSolverStats()
+        {}
 
         void printStatistics(ostream& os)
         {
-            cerr << "; -------------------------" << endl;
-            cerr << "; STATISTICS FOR LRA SOLVER" << endl;
-            cerr << "; -------------------------" << endl;
+            os << "; -------------------------" << endl;
+            os << "; STATISTICS FOR LRA SOLVER" << endl;
+            os << "; -------------------------" << endl;
             TSolverStats::printStatistics(os);
             os << "; Number of LRA vars.......: " << num_vars << endl;
             os << "; Pivot operations.........: " << num_pivot_ops << endl;
             os << "; Bland operations.........: " << num_bland_ops << endl;
+            os << "; Simplex time.............: " << simplex_timer.getTime() << " s\n";
         }
 };
 
@@ -98,7 +104,6 @@ public:
 
     LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d);
 
-
     ~LRASolver( );                                      // Destructor ;-)
 
     virtual void clearSolver(); // Remove all problem specific data from the solver.  Should be called each time the solver is being used after a push or a pop in the incremental interface.
@@ -118,16 +123,17 @@ public:
     PtAsgn_reason getDeduction() { if (deductions_next >= th_deductions.size()) return PtAsgn_reason_Undef; else return th_deductions[deductions_next++]; }
 
     LRALogic&  getLogic() { return logic; }
+    bool       isValid(PTRef tr);
     const void getRemoved(vec<PTRef>&) const;  // Fill the vector with the vars removed due to not having bounds
 
 #ifdef PRODUCE_PROOF
     TheoryInterpolator* getTheoryInterpolator() { return NULL; }
-    PTRef getInterpolant( const ipartitions_t &, map<PTRef, icolor_t>* ); // Fill a vector with interpolants
-    bool usingStrong() { return config.itp_lra_alg() == 0; }
-    bool usingWeak() { return config.itp_lra_alg() == 2; }
-    bool usingRandom() { return config.itp_lra_alg() == 3; }
+    PTRef getInterpolant( const ipartitions_t &, map<PTRef, icolor_t>* );
+    bool usingStrong() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_strong; }
+    bool usingWeak() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_weak; }
+    bool usingFactor() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_factor; }
+    const char*  getStrengthFactor() { return config.getLRAStrengthFactor(); }
 #endif
-
 
 protected:
     // vector in which witnesses for unsatisfiability are stored
@@ -177,8 +183,7 @@ private:
         solver->print( out );
         return out;
     }
-
-    ValPair getValue(PTRef tr) const; // Computes the model and changes state.
+    ValPair getValue(PTRef tr);  // Computes the model and changes state.
     inline int     verbose                       ( ) const { return config.verbosity(); }
     char* printValue(PTRef tr) { char* tmp = (char*)malloc(1); tmp[0] = '\0'; return tmp; } // Implement later...
     char* printExplanation(PTRef tr) { return printValue(tr); } // Implement later...

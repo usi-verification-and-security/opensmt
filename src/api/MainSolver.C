@@ -205,11 +205,11 @@ MainSolver::insertFormula(PTRef root, char** msg)
                  Logic::s_sort_bool, logic.getSortName(logic.getSortRef(root)));
         return s_Error;
     }
-    logic.conjoinItes(root, root);
+    logic.conjoinExtras(root, root);
     char* err_msg = NULL;
-    if (!logic.assignPartition(root, &err_msg))
-        opensmt_error("Could not assign partition"); 
 #ifdef PRODUCE_PROOF
+    if (!logic.assignPartition(root, &err_msg))
+        opensmt_error("Could not assign partition");
     logic.setIPartitionsIte(root);
 #endif
     pfstore[formulas.last()].push(root);
@@ -248,8 +248,18 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
             computeIncomingEdges(fc.getRoot(), PTRefToIncoming);
             PTRef flat_root = rewriteMaxArity(fc.getRoot(), PTRefToIncoming);
 #ifdef PRODUCE_PROOF
+            PTRef orig_asrt = PTRef_Undef;
             if (logic.hasOriginalAssertion(fc.getRoot()))
-                logic.setOriginalAssertion(flat_root, logic.getOriginalAssertion(fc.getRoot()));
+                orig_asrt = logic.getOriginalAssertion(fc.getRoot());
+//            else
+//                orig_asrt = fc.getRoot();
+
+//            logic.setOriginalAssertion(flat_root, orig_asrt);
+//            vec<PTRef> top_level_formulae;
+//            ts.retrieveTopLevelFormulae(flat_root, top_level_formulae);
+//            for (int i = 0; i < top_level_formulae.size(); i++)
+//                logic.setOriginalAssertion(top_level_formulae[i], orig_asrt);
+
 #endif
             fc.setRoot(flat_root);
 #ifdef FLATTEN_DEBUG
@@ -380,7 +390,7 @@ PTRef MainSolver::rewriteMaxArity(PTRef root, Map<PTRef,int,PTRefHash>& PTRefToI
             if(logic.isAssertion(tr) || logic.isAssertionSimp(tr))
             {
                 PTRef root_tmp = tr;
-                while(logic.hasOriginalAssertion(root_tmp))
+                while(logic.hasOriginalAssertion(root_tmp) && (logic.getOriginalAssertion(root_tmp) != root_tmp))
                     root_tmp = logic.getOriginalAssertion(root_tmp);
                 if(logic.isAnd(result))
                 {
@@ -388,8 +398,12 @@ PTRef MainSolver::rewriteMaxArity(PTRef root, Map<PTRef,int,PTRefHash>& PTRefToI
                     for(int i = 0; i < ptm.size(); ++i)
                         logic.setOriginalAssertion(ptm[i], root_tmp);
                 }
-                //else //should the entire conjunction also be set? TODO
-                //logic.setOriginalAssertion(result, tr);
+                else
+                {
+                    //should the entire conjunction also be set? TODO
+                    //apparently yes. WHy?!
+                    logic.setOriginalAssertion(result, root_tmp);
+                }
             }
         }
 #endif
@@ -989,7 +1003,9 @@ bool MainSolver::writeSolverSplits_smtlib2(const char* file, char** msg)
         splits[i].learntsToPTRefs(learnts);
         addToConj(learnts, conj_vec);
 
-        conj_vec.push(root_instance.getRoot());
+        if (config.smt_split_format_length() == spformat_full)
+            conj_vec.push(root_instance.getRoot());
+
         PTRef problem = logic.mkAnd(conj_vec);
 
         char* name;
@@ -999,7 +1015,10 @@ bool MainSolver::writeSolverSplits_smtlib2(const char* file, char** msg)
         if (file.is_open()) {
             logic.dumpHeaderToFile(file);
             logic.dumpFormulaToFile(file, problem);
-            logic.dumpChecksatToFile(file);
+
+            if (config.smt_split_format_length() == spformat_full)
+                logic.dumpChecksatToFile(file);
+
             file.close();
         }
         else {
@@ -1083,6 +1102,9 @@ sstat MainSolver::solve()
     sstat *results;
     vec<int> *split_threads;
 
+    if (config.dump_query())
+        printFramesAsQuery();
+
     if (config.parallel_threads && config.sat_split_type() == spt_lookahead)
         status = lookaheadSplit(getLog2Ceil(config.sat_split_num()));
     else {
@@ -1094,8 +1116,10 @@ sstat MainSolver::solve()
     if (!(config.parallel_threads && status == s_Undef)) {
         if (status == s_True && config.produce_models())
             thandler.computeModel();
+        smt_solver->clearSearch();
         return status;
     }
+    smt_solver->clearSearch();
 
     opensmt::stop = false;
 

@@ -50,6 +50,16 @@ struct SRef {
 static struct SRef SRef_Undef = {INT32_MAX};
 static struct SRef SRef_Nil   = {INT32_MAX-1};
 
+struct SRefHash {
+    uint32_t operator () (const SRef& s) const {
+        return (uint32_t)s.x; }
+};
+
+template <>
+struct Equal<const SRef> {
+    bool operator() (const SRef& s1, const SRef& s2) const { return s1 == s2; }
+};
+
 
 enum SortType { S_EMPTY, S_ID, S_ID_LIST };
 

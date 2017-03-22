@@ -32,7 +32,7 @@ const Lit Theory::findLit (PTRef ptr)
 #endif
     }
 
-    v = p.getVar();
+    v = getLogic().getPterm(p_tr).getVar();
     Lit l = mkLit (v, sgn);
 
     return l;
@@ -243,6 +243,19 @@ bool Theory::computeSubstitutions(PTRef coll_f, vec<PFRef>& frames, int curr)
             }
         }
     }
+    getTSolverHandler().setSubstitutions(substs);
     delete th;
     return result;
+}
+
+void
+Theory::printFramesAsQuery(vec<PFRef>& frames)
+{
+    getLogic().dumpHeaderToFile(std::cout);
+    for (int i = 0; i < frames.size(); i++) {
+        if (i > 0)
+            std::cout << "(push 1)\n";
+        getLogic().dumpFormulaToFile(std::cout, pfstore[frames[i]].root);
+    }
+    getLogic().dumpChecksatToFile(std::cout);
 }

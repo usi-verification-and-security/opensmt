@@ -352,7 +352,7 @@ double ProofGraph::recyclePivotsIter()
 				}
 				else
 				{
-					assert(n->getType()==CLAORIG);
+					assert(n->getType()==CLAORIG || n->getType()==CLATHEORY);
 					assert(n->getNumResolvents() > 0);
 					for(set<clauseid_t>::iterator it = n->getResolvents().begin(); it != n->getResolvents().end(); it++ )
 						if(getNode(*it) != NULL) q.push_back(*it);

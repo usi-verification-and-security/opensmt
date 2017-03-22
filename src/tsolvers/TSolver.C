@@ -41,3 +41,11 @@ void TSolver::pushBacktrackPoint()
     deductions_last.push(deductions_next);
     assert(deductions_last.size() == deductions_lim.size());
 }
+
+bool TSolver::isKnown(PTRef tr)
+{
+    int id = getLogic().getPterm(tr).getId();
+    if (known_preds.size() <= id)
+        return false;
+    return known_preds[getLogic().getPterm(tr).getId()];
+}

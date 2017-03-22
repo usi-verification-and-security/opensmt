@@ -145,62 +145,63 @@ extern int smt2newdebug;
     TK_CHECKSAT = 267,
     TK_DECLARESORT = 268,
     TK_DECLAREFUN = 269,
-    TK_DEFINESORT = 270,
-    TK_DEFINEFUN = 271,
-    TK_EXIT = 272,
-    TK_GETASSERTIONS = 273,
-    TK_GETASSIGNMENT = 274,
-    TK_GETINFO = 275,
-    TK_GETOPTION = 276,
-    TK_GETPROOF = 277,
-    TK_GETUNSATCORE = 278,
-    TK_GETVALUE = 279,
-    TK_POP = 280,
-    TK_PUSH = 281,
-    TK_SETLOGIC = 282,
-    TK_SETINFO = 283,
-    TK_SETOPTION = 284,
-    TK_THEORY = 285,
-    TK_GETITPS = 286,
-    TK_WRSTATE = 287,
-    TK_RDSTATE = 288,
-    TK_SIMPLIFY = 289,
-    TK_NUM = 290,
-    TK_SYM = 291,
-    TK_KEY = 292,
-    TK_STR = 293,
-    TK_DEC = 294,
-    TK_HEX = 295,
-    TK_BIN = 296,
-    KW_SORTS = 297,
-    KW_FUNS = 298,
-    KW_SORTSDESCRIPTION = 299,
-    KW_FUNSDESCRIPTION = 300,
-    KW_DEFINITION = 301,
-    KW_NOTES = 302,
-    KW_THEORIES = 303,
-    KW_LANGUAGE = 304,
-    KW_EXTENSIONS = 305,
-    KW_VALUES = 306,
-    KW_PRINTSUCCESS = 307,
-    KW_EXPANDDEFINITIONS = 308,
-    KW_INTERACTIVEMODE = 309,
-    KW_PRODUCEPROOFS = 310,
-    KW_PRODUCEUNSATCORES = 311,
-    KW_PRODUCEMODELS = 312,
-    KW_PRODUCEASSIGNMENTS = 313,
-    KW_REGULAROUTPUTCHANNEL = 314,
-    KW_DIAGNOSTICOUTPUTCHANNEL = 315,
-    KW_RANDOMSEED = 316,
-    KW_VERBOSITY = 317,
-    KW_ERRORBEHAVIOR = 318,
-    KW_NAME = 319,
-    KW_NAMED = 320,
-    KW_AUTHORS = 321,
-    KW_VERSION = 322,
-    KW_STATUS = 323,
-    KW_REASONUNKNOWN = 324,
-    KW_ALLSTATISTICS = 325
+    TK_DECLARECONST = 270,
+    TK_DEFINESORT = 271,
+    TK_DEFINEFUN = 272,
+    TK_EXIT = 273,
+    TK_GETASSERTIONS = 274,
+    TK_GETASSIGNMENT = 275,
+    TK_GETINFO = 276,
+    TK_GETOPTION = 277,
+    TK_GETPROOF = 278,
+    TK_GETUNSATCORE = 279,
+    TK_GETVALUE = 280,
+    TK_POP = 281,
+    TK_PUSH = 282,
+    TK_SETLOGIC = 283,
+    TK_SETINFO = 284,
+    TK_SETOPTION = 285,
+    TK_THEORY = 286,
+    TK_GETITPS = 287,
+    TK_WRSTATE = 288,
+    TK_RDSTATE = 289,
+    TK_SIMPLIFY = 290,
+    TK_NUM = 291,
+    TK_SYM = 292,
+    TK_KEY = 293,
+    TK_STR = 294,
+    TK_DEC = 295,
+    TK_HEX = 296,
+    TK_BIN = 297,
+    KW_SORTS = 298,
+    KW_FUNS = 299,
+    KW_SORTSDESCRIPTION = 300,
+    KW_FUNSDESCRIPTION = 301,
+    KW_DEFINITION = 302,
+    KW_NOTES = 303,
+    KW_THEORIES = 304,
+    KW_LANGUAGE = 305,
+    KW_EXTENSIONS = 306,
+    KW_VALUES = 307,
+    KW_PRINTSUCCESS = 308,
+    KW_EXPANDDEFINITIONS = 309,
+    KW_INTERACTIVEMODE = 310,
+    KW_PRODUCEPROOFS = 311,
+    KW_PRODUCEUNSATCORES = 312,
+    KW_PRODUCEMODELS = 313,
+    KW_PRODUCEASSIGNMENTS = 314,
+    KW_REGULAROUTPUTCHANNEL = 315,
+    KW_DIAGNOSTICOUTPUTCHANNEL = 316,
+    KW_RANDOMSEED = 317,
+    KW_VERBOSITY = 318,
+    KW_ERRORBEHAVIOR = 319,
+    KW_NAME = 320,
+    KW_NAMED = 321,
+    KW_AUTHORS = 322,
+    KW_VERSION = 323,
+    KW_STATUS = 324,
+    KW_REASONUNKNOWN = 325,
+    KW_ALLSTATISTICS = 326
   };
 #endif
 /* Tokens.  */
@@ -216,62 +217,63 @@ extern int smt2newdebug;
 #define TK_CHECKSAT 267
 #define TK_DECLARESORT 268
 #define TK_DECLAREFUN 269
-#define TK_DEFINESORT 270
-#define TK_DEFINEFUN 271
-#define TK_EXIT 272
-#define TK_GETASSERTIONS 273
-#define TK_GETASSIGNMENT 274
-#define TK_GETINFO 275
-#define TK_GETOPTION 276
-#define TK_GETPROOF 277
-#define TK_GETUNSATCORE 278
-#define TK_GETVALUE 279
-#define TK_POP 280
-#define TK_PUSH 281
-#define TK_SETLOGIC 282
-#define TK_SETINFO 283
-#define TK_SETOPTION 284
-#define TK_THEORY 285
-#define TK_GETITPS 286
-#define TK_WRSTATE 287
-#define TK_RDSTATE 288
-#define TK_SIMPLIFY 289
-#define TK_NUM 290
-#define TK_SYM 291
-#define TK_KEY 292
-#define TK_STR 293
-#define TK_DEC 294
-#define TK_HEX 295
-#define TK_BIN 296
-#define KW_SORTS 297
-#define KW_FUNS 298
-#define KW_SORTSDESCRIPTION 299
-#define KW_FUNSDESCRIPTION 300
-#define KW_DEFINITION 301
-#define KW_NOTES 302
-#define KW_THEORIES 303
-#define KW_LANGUAGE 304
-#define KW_EXTENSIONS 305
-#define KW_VALUES 306
-#define KW_PRINTSUCCESS 307
-#define KW_EXPANDDEFINITIONS 308
-#define KW_INTERACTIVEMODE 309
-#define KW_PRODUCEPROOFS 310
-#define KW_PRODUCEUNSATCORES 311
-#define KW_PRODUCEMODELS 312
-#define KW_PRODUCEASSIGNMENTS 313
-#define KW_REGULAROUTPUTCHANNEL 314
-#define KW_DIAGNOSTICOUTPUTCHANNEL 315
-#define KW_RANDOMSEED 316
-#define KW_VERBOSITY 317
-#define KW_ERRORBEHAVIOR 318
-#define KW_NAME 319
-#define KW_NAMED 320
-#define KW_AUTHORS 321
-#define KW_VERSION 322
-#define KW_STATUS 323
-#define KW_REASONUNKNOWN 324
-#define KW_ALLSTATISTICS 325
+#define TK_DECLARECONST 270
+#define TK_DEFINESORT 271
+#define TK_DEFINEFUN 272
+#define TK_EXIT 273
+#define TK_GETASSERTIONS 274
+#define TK_GETASSIGNMENT 275
+#define TK_GETINFO 276
+#define TK_GETOPTION 277
+#define TK_GETPROOF 278
+#define TK_GETUNSATCORE 279
+#define TK_GETVALUE 280
+#define TK_POP 281
+#define TK_PUSH 282
+#define TK_SETLOGIC 283
+#define TK_SETINFO 284
+#define TK_SETOPTION 285
+#define TK_THEORY 286
+#define TK_GETITPS 287
+#define TK_WRSTATE 288
+#define TK_RDSTATE 289
+#define TK_SIMPLIFY 290
+#define TK_NUM 291
+#define TK_SYM 292
+#define TK_KEY 293
+#define TK_STR 294
+#define TK_DEC 295
+#define TK_HEX 296
+#define TK_BIN 297
+#define KW_SORTS 298
+#define KW_FUNS 299
+#define KW_SORTSDESCRIPTION 300
+#define KW_FUNSDESCRIPTION 301
+#define KW_DEFINITION 302
+#define KW_NOTES 303
+#define KW_THEORIES 304
+#define KW_LANGUAGE 305
+#define KW_EXTENSIONS 306
+#define KW_VALUES 307
+#define KW_PRINTSUCCESS 308
+#define KW_EXPANDDEFINITIONS 309
+#define KW_INTERACTIVEMODE 310
+#define KW_PRODUCEPROOFS 311
+#define KW_PRODUCEUNSATCORES 312
+#define KW_PRODUCEMODELS 313
+#define KW_PRODUCEASSIGNMENTS 314
+#define KW_REGULAROUTPUTCHANNEL 315
+#define KW_DIAGNOSTICOUTPUTCHANNEL 316
+#define KW_RANDOMSEED 317
+#define KW_VERBOSITY 318
+#define KW_ERRORBEHAVIOR 319
+#define KW_NAME 320
+#define KW_NAMED 321
+#define KW_AUTHORS 322
+#define KW_VERSION 323
+#define KW_STATUS 324
+#define KW_REASONUNKNOWN 325
+#define KW_ALLSTATISTICS 326
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -286,7 +288,7 @@ union YYSTYPE
   std::list< ASTNode * > *     snode_list;
   smt2token                    tok;
 
-#line 290 "smt2newparser.cc" /* yacc.c:355  */
+#line 292 "smt2newparser.cc" /* yacc.c:355  */
 };
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
@@ -314,7 +316,7 @@ int smt2newparse (Smt2newContext* context);
 
 /* Copy the second part of user declarations.  */
 
-#line 318 "smt2newparser.cc" /* yacc.c:358  */
+#line 320 "smt2newparser.cc" /* yacc.c:358  */
 
 #ifdef short
 # undef short
@@ -558,21 +560,21 @@ union yyalloc
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  3
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   344
+#define YYLAST   374
 
 /* YYNTOKENS -- Number of terminals.  */
-#define YYNTOKENS  75
+#define YYNTOKENS  76
 /* YYNNTS -- Number of nonterminals.  */
-#define YYNNTS  26
+#define YYNNTS  27
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  125
+#define YYNRULES  128
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  235
+#define YYNSTATES  243
 
 /* YYTRANSLATE[YYX] -- Symbol number corresponding to YYX as returned
    by yylex, with out-of-bounds checking.  */
 #define YYUNDEFTOK  2
-#define YYMAXUTOK   325
+#define YYMAXUTOK   326
 
 #define YYTRANSLATE(YYX)                                                \
   ((unsigned int) (YYX) <= YYMAXUTOK ? yytranslate[YYX] : YYUNDEFTOK)
@@ -584,13 +586,13 @@ static const yytype_uint8 yytranslate[] =
        0,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,    74,     2,     2,     2,     2,     2,     2,
-      71,    72,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,    75,     2,     2,     2,     2,     2,     2,
+      72,    73,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,    73,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,    74,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -613,7 +615,7 @@ static const yytype_uint8 yytranslate[] =
       35,    36,    37,    38,    39,    40,    41,    42,    43,    44,
       45,    46,    47,    48,    49,    50,    51,    52,    53,    54,
       55,    56,    57,    58,    59,    60,    61,    62,    63,    64,
-      65,    66,    67,    68,    69,    70
+      65,    66,    67,    68,    69,    70,    71
 };
 
 #if YYDEBUG
@@ -621,18 +623,18 @@ static const yytype_uint8 yytranslate[] =
 static const yytype_uint16 yyrline[] =
 {
        0,    97,    97,   101,   102,   106,   112,   118,   124,   131,
-     144,   156,   169,   175,   181,   187,   191,   195,   199,   203,
-     209,   215,   219,   225,   229,   235,   241,   247,   251,   256,
-     257,   261,   263,   265,   267,   271,   273,   277,   284,   286,
-     290,   292,   300,   303,   306,   312,   316,   320,   328,   331,
-     338,   340,   342,   344,   346,   350,   352,   356,   358,   368,
-     369,   373,   378,   379,   383,   387,   388,   392,   394,   396,
-     403,   413,   423,   433,   510,   511,   668,   681,   687,   693,
-     699,   705,   711,   717,   723,   729,   735,   741,   747,   755,
-     757,   759,   761,   763,   765,   767,   769,   771,   773,   775,
-     777,   779,   781,   783,   785,   787,   789,   791,   793,   795,
-     797,   799,   801,   803,   805,   807,   809,   811,   815,   817,
-     819,   821,   823,   825,   827,   829
+     144,   156,   168,   181,   187,   193,   199,   203,   207,   211,
+     215,   221,   227,   231,   237,   241,   247,   253,   259,   263,
+     268,   269,   273,   275,   277,   279,   283,   285,   289,   296,
+     298,   302,   304,   312,   315,   318,   324,   328,   332,   340,
+     343,   351,   353,   355,   357,   359,   363,   365,   369,   371,
+     375,   377,   387,   388,   392,   397,   398,   402,   406,   407,
+     411,   413,   415,   422,   432,   442,   452,   529,   530,   687,
+     700,   706,   712,   718,   724,   730,   736,   742,   748,   754,
+     760,   766,   774,   776,   778,   780,   782,   784,   786,   788,
+     790,   792,   794,   796,   798,   800,   802,   804,   806,   808,
+     810,   812,   814,   816,   818,   820,   822,   824,   826,   828,
+     830,   834,   836,   838,   840,   842,   844,   846,   848
 };
 #endif
 
@@ -643,23 +645,24 @@ static const char *const yytname[] =
 {
   "$end", "error", "$undefined", "TK_AS", "TK_DECIMAL", "TK_EXISTS",
   "TK_FORALL", "TK_LET", "TK_NUMERAL", "TK_PAR", "TK_STRING", "TK_ASSERT",
-  "TK_CHECKSAT", "TK_DECLARESORT", "TK_DECLAREFUN", "TK_DEFINESORT",
-  "TK_DEFINEFUN", "TK_EXIT", "TK_GETASSERTIONS", "TK_GETASSIGNMENT",
-  "TK_GETINFO", "TK_GETOPTION", "TK_GETPROOF", "TK_GETUNSATCORE",
-  "TK_GETVALUE", "TK_POP", "TK_PUSH", "TK_SETLOGIC", "TK_SETINFO",
-  "TK_SETOPTION", "TK_THEORY", "TK_GETITPS", "TK_WRSTATE", "TK_RDSTATE",
-  "TK_SIMPLIFY", "TK_NUM", "TK_SYM", "TK_KEY", "TK_STR", "TK_DEC",
-  "TK_HEX", "TK_BIN", "KW_SORTS", "KW_FUNS", "KW_SORTSDESCRIPTION",
-  "KW_FUNSDESCRIPTION", "KW_DEFINITION", "KW_NOTES", "KW_THEORIES",
-  "KW_LANGUAGE", "KW_EXTENSIONS", "KW_VALUES", "KW_PRINTSUCCESS",
-  "KW_EXPANDDEFINITIONS", "KW_INTERACTIVEMODE", "KW_PRODUCEPROOFS",
-  "KW_PRODUCEUNSATCORES", "KW_PRODUCEMODELS", "KW_PRODUCEASSIGNMENTS",
-  "KW_REGULAROUTPUTCHANNEL", "KW_DIAGNOSTICOUTPUTCHANNEL", "KW_RANDOMSEED",
-  "KW_VERBOSITY", "KW_ERRORBEHAVIOR", "KW_NAME", "KW_NAMED", "KW_AUTHORS",
-  "KW_VERSION", "KW_STATUS", "KW_REASONUNKNOWN", "KW_ALLSTATISTICS", "'('",
-  "')'", "'_'", "'!'", "$accept", "script", "command_list", "command",
-  "attribute_list", "attribute", "attribute_value", "identifier", "sort",
-  "sort_list", "s_expr", "s_expr_list", "spec_const", "numeral_list",
+  "TK_CHECKSAT", "TK_DECLARESORT", "TK_DECLAREFUN", "TK_DECLARECONST",
+  "TK_DEFINESORT", "TK_DEFINEFUN", "TK_EXIT", "TK_GETASSERTIONS",
+  "TK_GETASSIGNMENT", "TK_GETINFO", "TK_GETOPTION", "TK_GETPROOF",
+  "TK_GETUNSATCORE", "TK_GETVALUE", "TK_POP", "TK_PUSH", "TK_SETLOGIC",
+  "TK_SETINFO", "TK_SETOPTION", "TK_THEORY", "TK_GETITPS", "TK_WRSTATE",
+  "TK_RDSTATE", "TK_SIMPLIFY", "TK_NUM", "TK_SYM", "TK_KEY", "TK_STR",
+  "TK_DEC", "TK_HEX", "TK_BIN", "KW_SORTS", "KW_FUNS",
+  "KW_SORTSDESCRIPTION", "KW_FUNSDESCRIPTION", "KW_DEFINITION", "KW_NOTES",
+  "KW_THEORIES", "KW_LANGUAGE", "KW_EXTENSIONS", "KW_VALUES",
+  "KW_PRINTSUCCESS", "KW_EXPANDDEFINITIONS", "KW_INTERACTIVEMODE",
+  "KW_PRODUCEPROOFS", "KW_PRODUCEUNSATCORES", "KW_PRODUCEMODELS",
+  "KW_PRODUCEASSIGNMENTS", "KW_REGULAROUTPUTCHANNEL",
+  "KW_DIAGNOSTICOUTPUTCHANNEL", "KW_RANDOMSEED", "KW_VERBOSITY",
+  "KW_ERRORBEHAVIOR", "KW_NAME", "KW_NAMED", "KW_AUTHORS", "KW_VERSION",
+  "KW_STATUS", "KW_REASONUNKNOWN", "KW_ALLSTATISTICS", "'('", "')'", "'_'",
+  "'!'", "$accept", "script", "command_list", "command", "attribute_list",
+  "attribute", "attribute_value", "identifier", "sort", "sort_list",
+  "s_expr", "s_expr_list", "spec_const", "const_val", "numeral_list",
   "qual_identifier", "var_binding_list", "var_binding", "sorted_var_list",
   "sorted_var", "term_list", "term", "symbol_list", "b_value", "option",
   "predef_key", "info_flag", YY_NULLPTR
@@ -678,14 +681,14 @@ static const yytype_uint16 yytoknum[] =
      295,   296,   297,   298,   299,   300,   301,   302,   303,   304,
      305,   306,   307,   308,   309,   310,   311,   312,   313,   314,
      315,   316,   317,   318,   319,   320,   321,   322,   323,   324,
-     325,    40,    41,    95,    33
+     325,   326,    40,    41,    95,    33
 };
 # endif
 
-#define YYPACT_NINF -151
+#define YYPACT_NINF -159
 
 #define yypact_value_is_default(Yystate) \
-  (!!((Yystate) == (-151)))
+  (!!((Yystate) == (-159)))
 
 #define YYTABLE_NINF -1
 
@@ -696,30 +699,31 @@ static const yytype_uint16 yytoknum[] =
      STATE-NUM.  */
 static const yytype_int16 yypact[] =
 {
-    -151,    10,   -41,  -151,   145,  -151,    66,   -36,     5,    15,
-      20,    22,   -11,    -7,    11,    76,   203,    17,    21,     9,
-      52,    63,    67,   237,   271,    40,    78,    83,    54,  -151,
-    -151,  -151,  -151,  -151,  -151,     8,  -151,  -151,  -151,    69,
-    -151,   112,    77,    79,    80,  -151,  -151,  -151,  -151,  -151,
-    -151,  -151,  -151,  -151,  -151,  -151,    81,    82,  -151,  -151,
-    -151,  -151,  -151,  -151,  -151,  -151,  -151,  -151,  -151,  -151,
-    -151,  -151,  -151,  -151,  -151,  -151,  -151,  -151,  -151,  -151,
-    -151,  -151,  -151,  -151,  -151,  -151,  -151,   103,  -151,  -151,
-      66,   108,   110,   111,    84,   113,    84,   116,   116,   116,
-     116,   116,   116,   116,   146,   148,   114,   152,  -151,   117,
-    -151,   118,   119,  -151,   -28,   121,   122,   124,     0,   160,
-      66,    66,  -151,   125,  -151,  -151,  -151,  -151,  -151,  -151,
-    -151,  -151,  -151,  -151,  -151,  -151,  -151,  -151,  -151,  -151,
-    -151,  -151,  -151,  -151,  -151,  -151,  -151,  -151,  -151,  -151,
-    -151,  -151,  -151,  -151,  -151,   115,     1,   127,   127,   128,
-     165,   237,  -151,  -151,    14,   -24,   -39,    28,   -19,   -31,
-    -151,   129,   167,  -151,  -151,   168,  -151,  -151,   -26,  -151,
-      56,     1,  -151,  -151,     1,     1,  -151,   133,  -151,  -151,
-    -151,  -151,  -151,  -151,  -151,     1,  -151,     1,   -33,   -17,
-      66,    -1,  -151,  -151,   169,  -151,   137,   170,    66,  -151,
-     -12,  -151,   171,    66,    66,   172,    66,  -151,  -151,  -151,
-    -151,  -151,   204,  -151,    39,  -151,   205,   206,  -151,   238,
-    -151,  -151,  -151,  -151,  -151
+    -159,    11,   -47,  -159,   339,  -159,    73,   -41,    -2,     3,
+     110,     8,    17,   -18,     0,     5,    99,   210,    12,    13,
+     -12,    48,    51,    58,   244,   278,    31,    72,    77,    44,
+    -159,  -159,  -159,  -159,  -159,  -159,     2,  -159,  -159,  -159,
+      50,  -159,    92,    68,  -159,  -159,    69,    70,    76,  -159,
+    -159,  -159,  -159,  -159,  -159,  -159,  -159,  -159,  -159,  -159,
+      71,    80,  -159,  -159,  -159,  -159,  -159,  -159,  -159,  -159,
+    -159,  -159,  -159,  -159,  -159,  -159,  -159,  -159,  -159,  -159,
+    -159,  -159,  -159,  -159,  -159,  -159,  -159,  -159,  -159,  -159,
+    -159,    81,  -159,  -159,    73,    82,    83,    86,    85,    87,
+      85,   121,   121,   121,   121,   121,   121,   121,   122,   123,
+     135,   136,  -159,   100,  -159,   101,   102,  -159,   -24,   104,
+     105,   106,     7,   142,    73,    73,  -159,   107,  -159,   108,
+    -159,  -159,  -159,  -159,  -159,  -159,  -159,  -159,  -159,  -159,
+    -159,  -159,  -159,  -159,  -159,  -159,  -159,  -159,  -159,  -159,
+    -159,  -159,  -159,  -159,  -159,  -159,  -159,  -159,  -159,  -159,
+     109,   -16,   112,   112,   113,   146,   244,  -159,  -159,    -1,
+     -16,   -11,   -50,    57,   -22,   -13,  -159,   114,   149,  -159,
+    -159,   152,  -159,  -159,   -32,  -159,    66,   -16,  -159,   117,
+    -159,   -16,   -16,  -159,   118,  -159,  -159,  -159,  -159,  -159,
+    -159,  -159,   -16,  -159,   -16,   -45,   -42,    73,   -35,  -159,
+    -159,   176,  -159,   119,  -159,   120,    73,  -159,    28,  -159,
+     124,    73,    73,   125,    73,  -159,  -159,  -159,  -159,  -159,
+     126,  -159,    10,  -159,   127,   129,  -159,   130,  -159,  -159,
+    -159,  -159,  -159
 };
 
   /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -729,44 +733,45 @@ static const yytype_uint8 yydefact[] =
 {
        3,     0,     2,     1,     0,     4,     0,     0,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,    50,
-      38,    54,    51,    52,    53,     0,    57,    67,    68,     0,
-      15,     0,     0,     0,     0,    28,    16,    23,   125,   118,
-     119,   120,   121,   122,   123,   124,     0,     0,    89,    90,
-      91,    92,    93,    95,    96,    97,    98,    94,    99,   100,
-     101,   102,   103,   104,   105,   106,   107,   108,   109,   110,
-     111,   112,   113,   114,   115,   116,   117,     0,    17,    21,
-       0,     0,     0,     0,    31,     0,    33,    99,   100,   101,
-     102,   103,   104,   105,   106,   107,   108,   109,    88,     0,
-      18,     0,     0,    27,     0,     0,     0,     0,     0,     0,
-       0,     0,    14,     0,    43,    74,    62,    26,    24,    25,
-      65,    13,    12,     5,    36,    48,    32,    35,     7,    34,
-      76,    77,    78,    79,    80,    81,    82,    83,    84,    85,
-      86,    87,     6,    19,    20,     0,     0,     0,     0,     0,
-       0,     0,    65,     8,     0,     0,     0,     0,     0,     0,
-      40,     0,     0,    62,    62,     0,    59,    56,     0,    29,
-       0,     0,    42,    75,     0,     0,    63,     0,    66,    45,
-      46,    48,    37,    49,    44,     0,    58,     0,     0,     0,
-       0,     0,    55,    39,     0,    69,     0,     0,     0,    22,
-       0,    43,     0,     0,     0,     0,     0,    60,    73,    30,
-      10,     9,     0,    47,     0,    64,     0,     0,    61,     0,
-      11,    41,    72,    71,    70
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+      51,    39,    55,    52,    53,    54,     0,    60,    70,    71,
+       0,    16,     0,     0,    56,    57,     0,     0,     0,    29,
+      17,    24,   128,   121,   122,   123,   124,   125,   126,   127,
+       0,     0,    92,    93,    94,    95,    96,    98,    99,   100,
+     101,    97,   102,   103,   104,   105,   106,   107,   108,   109,
+     110,   111,   112,   113,   114,   115,   116,   117,   118,   119,
+     120,     0,    18,    22,     0,     0,     0,     0,    32,     0,
+      34,   102,   103,   104,   105,   106,   107,   108,   109,   110,
+     111,   112,    91,     0,    19,     0,     0,    28,     0,     0,
+       0,     0,     0,     0,     0,     0,    15,     0,    44,     0,
+      77,    65,    27,    25,    26,    68,    14,    13,     5,    37,
+      49,    33,    36,     7,    35,    79,    80,    81,    82,    83,
+      84,    85,    86,    87,    88,    89,    90,     6,    20,    21,
+       0,     0,     0,     0,     0,     0,     0,    68,     8,     0,
+       0,     0,     0,     0,     0,     0,    41,     0,     0,    65,
+      65,     0,    62,    59,     0,    30,     0,     0,    43,     0,
+      78,     0,     0,    66,     0,    69,    46,    47,    49,    38,
+      50,    45,     0,    61,     0,     0,     0,     0,     0,    58,
+      40,     0,    72,     0,    11,     0,     0,    23,     0,    44,
+       0,     0,     0,     0,     0,    63,    76,    31,    10,     9,
+       0,    48,     0,    67,     0,     0,    64,     0,    12,    42,
+      75,    74,    73
 };
 
   /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int16 yypgoto[] =
 {
-    -151,  -151,  -151,  -151,  -151,   -23,   179,  -107,  -150,    98,
-    -151,   120,   -92,  -151,   277,  -151,   141,   -65,   -22,   181,
-      -6,  -151,    31,  -151,   328,  -151
+    -159,  -159,  -159,  -159,  -159,   -23,    94,  -112,  -158,   -15,
+    -159,    -3,    -9,  -159,  -159,   160,  -159,     4,  -137,  -110,
+      38,    -6,  -159,    29,  -159,   189,  -159
 };
 
   /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int16 yydefgoto[] =
 {
-      -1,     1,     2,     5,   204,    95,   136,    36,   182,   164,
-     193,   168,    37,   178,    38,   201,   176,   166,   186,   167,
-     188,   165,   141,   109,    96,    56
+      -1,     1,     2,     5,   211,    99,   141,    37,   188,   169,
+     200,   174,    38,    46,   184,    39,   208,   182,   172,   193,
+     173,   195,   171,   146,   113,   100,    60
 };
 
   /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
@@ -774,146 +779,153 @@ static const yytype_int16 yydefgoto[] =
      number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_uint8 yytable[] =
 {
-      39,   108,   137,   114,   137,    30,   171,   156,    30,   202,
-       3,   114,   183,   115,   116,   117,    29,   189,   190,    31,
-      32,    33,    34,    29,   189,   190,    31,    32,    33,    34,
-       4,   206,   172,   185,   207,   208,    40,    30,   172,   213,
-     155,    41,   119,   155,    30,   211,   203,   212,   184,   170,
-      30,    42,   191,   192,   172,   214,    43,   170,    44,   191,
-     223,    45,   195,    29,    30,    46,    31,    32,    33,    34,
-     175,   216,   169,   119,   170,    30,   194,   170,   170,   118,
-      90,   119,   120,    47,   130,   169,   181,    91,   170,    88,
-     170,    29,    30,    89,    31,    32,    33,    34,    92,    35,
-     187,    29,    30,    93,    31,    32,    33,    34,   198,   199,
-     169,   231,   110,    48,   161,   162,   111,   170,   194,    29,
-     134,   112,    31,    32,    33,    34,   113,    35,   205,   142,
-     143,   144,   145,   146,   147,   173,   174,    35,   179,    49,
-      50,   122,    51,    52,    53,    54,    55,   123,   124,   150,
-     125,   126,   140,   127,   128,   135,     6,     7,     8,     9,
-      10,    11,    12,    13,    14,    15,    16,    17,    18,    19,
-      20,    21,    22,    23,    24,   129,    25,    26,    27,    28,
-     131,   219,   132,   133,   148,   138,   149,   151,   119,   152,
-     153,   154,   157,   158,   215,   159,   160,   163,   172,   175,
-     177,   196,   222,   197,   200,   209,    94,   226,   227,   220,
-     229,    58,    59,    60,    61,    62,    63,    64,    65,    66,
-      67,    68,    69,    70,    71,    72,    73,    74,    75,    76,
-      77,    78,    79,    80,    81,    82,    83,    84,    85,    86,
-      57,   218,   221,   225,   228,    58,    59,    60,    61,    62,
+      40,    45,   112,   177,   209,   118,   161,   119,   120,   121,
+     118,     3,   189,    31,    30,   196,   197,    32,    33,    34,
+      35,    31,   178,   192,    31,     4,   190,   178,   221,   213,
+     178,   222,    41,   215,   216,    42,    31,   181,   224,    31,
+      43,   210,   205,   206,   219,    47,   220,    31,   160,   176,
+     198,   199,   179,   180,    48,    49,   175,   176,   176,   160,
+      94,   123,   191,   202,    30,   196,   197,    32,    33,    34,
+      35,   175,   187,    50,   122,   176,   123,   124,    51,   176,
+     176,   123,   175,   239,    95,    92,    93,    96,   135,   142,
+     176,   142,   176,    30,    31,    97,    32,    33,    34,    35,
+     198,   231,    30,    31,   114,    32,    33,    34,    35,    30,
+      31,   115,    32,    33,    34,    35,   116,   117,   166,   167,
+     176,    30,   139,   126,    32,    33,    34,    35,   127,    36,
+     194,   147,   148,   149,   150,   151,   152,    52,    36,   212,
+     128,   129,   130,   185,   132,    36,    30,    44,   131,    32,
+      33,    34,    35,   133,   134,   136,   137,   140,   145,   138,
+     143,   153,   154,    53,    54,   201,    55,    56,    57,    58,
+      59,   155,   156,   157,   158,   159,   162,   163,   164,   165,
+     168,   170,   183,   123,   178,   181,   204,   203,   227,   207,
+     214,   217,   228,   229,   144,   218,   125,   233,   236,   238,
+     240,   223,   241,   242,   232,   186,    91,     0,     0,   201,
+     230,     0,   225,     0,    98,   234,   235,     0,   237,    62,
       63,    64,    65,    66,    67,    68,    69,    70,    71,    72,
       73,    74,    75,    76,    77,    78,    79,    80,    81,    82,
-      83,    84,    85,    86,    94,   139,   230,   232,   233,    58,
-      59,    60,    61,    62,    63,    64,    65,    66,    67,    68,
+      83,    84,    85,    86,    87,    88,    89,    90,    61,   226,
+       0,     0,     0,    62,    63,    64,    65,    66,    67,    68,
       69,    70,    71,    72,    73,    74,    75,    76,    77,    78,
-      79,    80,    81,    82,    83,    84,    85,    86,    94,   224,
-     234,   210,   121,    58,    59,    60,    61,    62,    63,    64,
-      65,    66,    67,    97,    98,    99,   100,   101,   102,   103,
-     104,   105,   106,   107,    79,    80,    81,    82,    83,    84,
-      85,    86,   217,   180,    87
+      79,    80,    81,    82,    83,    84,    85,    86,    87,    88,
+      89,    90,    98,     0,     0,     0,     0,    62,    63,    64,
+      65,    66,    67,    68,    69,    70,    71,    72,    73,    74,
+      75,    76,    77,    78,    79,    80,    81,    82,    83,    84,
+      85,    86,    87,    88,    89,    90,    98,     0,     0,     0,
+       0,    62,    63,    64,    65,    66,    67,    68,    69,    70,
+      71,   101,   102,   103,   104,   105,   106,   107,   108,   109,
+     110,   111,    83,    84,    85,    86,    87,    88,    89,    90,
+       6,     7,     8,     9,    10,    11,    12,    13,    14,    15,
+      16,    17,    18,    19,    20,    21,    22,    23,    24,    25,
+       0,    26,    27,    28,    29
 };
 
-static const yytype_uint8 yycheck[] =
+static const yytype_int16 yycheck[] =
 {
-       6,    24,    94,     3,    96,    36,   156,   114,    36,    35,
-       0,     3,    36,     5,     6,     7,    35,    36,    37,    38,
-      39,    40,    41,    35,    36,    37,    38,    39,    40,    41,
-      71,   181,    71,    72,   184,   185,    72,    36,    71,    72,
-      71,    36,    73,    71,    36,   195,    72,   197,    72,   156,
-      36,    36,    71,    72,    71,    72,    36,   164,    36,    71,
-      72,    72,   169,    35,    36,    72,    38,    39,    40,    41,
-      71,    72,    71,    73,   181,    36,   168,   184,   185,    71,
-      71,    73,    74,    72,    90,    71,    72,    35,   195,    72,
-     197,    35,    36,    72,    38,    39,    40,    41,    35,    71,
-      72,    35,    36,    36,    38,    39,    40,    41,   173,   174,
-      71,    72,    72,    37,   120,   121,    38,   224,   210,    35,
-      36,    38,    38,    39,    40,    41,    72,    71,    72,    98,
-      99,   100,   101,   102,   103,   157,   158,    71,   161,    63,
-      64,    72,    66,    67,    68,    69,    70,    35,    71,    35,
-      71,    71,    36,    72,    72,    71,    11,    12,    13,    14,
-      15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
-      25,    26,    27,    28,    29,    72,    31,    32,    33,    34,
-      72,   204,    72,    72,    38,    72,    38,    35,    73,    72,
-      72,    72,    71,    71,   200,    71,    36,    72,    71,    71,
-      35,    72,   208,    36,    36,    72,    37,   213,   214,    72,
-     216,    42,    43,    44,    45,    46,    47,    48,    49,    50,
-      51,    52,    53,    54,    55,    56,    57,    58,    59,    60,
-      61,    62,    63,    64,    65,    66,    67,    68,    69,    70,
-      37,    72,    72,    72,    72,    42,    43,    44,    45,    46,
-      47,    48,    49,    50,    51,    52,    53,    54,    55,    56,
-      57,    58,    59,    60,    61,    62,    63,    64,    65,    66,
-      67,    68,    69,    70,    37,    96,    72,    72,    72,    42,
-      43,    44,    45,    46,    47,    48,    49,    50,    51,    52,
-      53,    54,    55,    56,    57,    58,    59,    60,    61,    62,
-      63,    64,    65,    66,    67,    68,    69,    70,    37,   211,
-      72,   191,    35,    42,    43,    44,    45,    46,    47,    48,
-      49,    50,    51,    52,    53,    54,    55,    56,    57,    58,
-      59,    60,    61,    62,    63,    64,    65,    66,    67,    68,
-      69,    70,   201,   162,    16
+       6,    10,    25,   161,    36,     3,   118,     5,     6,     7,
+       3,     0,   170,    37,    36,    37,    38,    39,    40,    41,
+      42,    37,    72,    73,    37,    72,    37,    72,    73,   187,
+      72,    73,    73,   191,   192,    37,    37,    72,    73,    37,
+      37,    73,   179,   180,   202,    37,   204,    37,    72,   161,
+      72,    73,   162,   163,    37,    73,    72,   169,   170,    72,
+      72,    74,    73,   175,    36,    37,    38,    39,    40,    41,
+      42,    72,    73,    73,    72,   187,    74,    75,    73,   191,
+     192,    74,    72,    73,    36,    73,    73,    36,    94,    98,
+     202,   100,   204,    36,    37,    37,    39,    40,    41,    42,
+      72,    73,    36,    37,    73,    39,    40,    41,    42,    36,
+      37,    39,    39,    40,    41,    42,    39,    73,   124,   125,
+     232,    36,    37,    73,    39,    40,    41,    42,    36,    72,
+      73,   102,   103,   104,   105,   106,   107,    38,    72,    73,
+      72,    72,    72,   166,    73,    72,    36,    37,    72,    39,
+      40,    41,    42,    73,    73,    73,    73,    72,    37,    73,
+      73,    39,    39,    64,    65,   174,    67,    68,    69,    70,
+      71,    36,    36,    73,    73,    73,    72,    72,    72,    37,
+      73,    73,    36,    74,    72,    72,    37,    73,   211,    37,
+      73,    73,    73,    73,   100,   198,    36,    73,    73,    73,
+      73,   207,    73,    73,   219,   167,    17,    -1,    -1,   218,
+     216,    -1,   208,    -1,    38,   221,   222,    -1,   224,    43,
+      44,    45,    46,    47,    48,    49,    50,    51,    52,    53,
+      54,    55,    56,    57,    58,    59,    60,    61,    62,    63,
+      64,    65,    66,    67,    68,    69,    70,    71,    38,    73,
+      -1,    -1,    -1,    43,    44,    45,    46,    47,    48,    49,
+      50,    51,    52,    53,    54,    55,    56,    57,    58,    59,
+      60,    61,    62,    63,    64,    65,    66,    67,    68,    69,
+      70,    71,    38,    -1,    -1,    -1,    -1,    43,    44,    45,
+      46,    47,    48,    49,    50,    51,    52,    53,    54,    55,
+      56,    57,    58,    59,    60,    61,    62,    63,    64,    65,
+      66,    67,    68,    69,    70,    71,    38,    -1,    -1,    -1,
+      -1,    43,    44,    45,    46,    47,    48,    49,    50,    51,
+      52,    53,    54,    55,    56,    57,    58,    59,    60,    61,
+      62,    63,    64,    65,    66,    67,    68,    69,    70,    71,
+      11,    12,    13,    14,    15,    16,    17,    18,    19,    20,
+      21,    22,    23,    24,    25,    26,    27,    28,    29,    30,
+      -1,    32,    33,    34,    35
 };
 
   /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
      symbol of state STATE-NUM.  */
 static const yytype_uint8 yystos[] =
 {
-       0,    76,    77,     0,    71,    78,    11,    12,    13,    14,
+       0,    77,    78,     0,    72,    79,    11,    12,    13,    14,
       15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
-      25,    26,    27,    28,    29,    31,    32,    33,    34,    35,
-      36,    38,    39,    40,    41,    71,    82,    87,    89,    95,
-      72,    36,    36,    36,    36,    72,    72,    72,    37,    63,
-      64,    66,    67,    68,    69,    70,   100,    37,    42,    43,
-      44,    45,    46,    47,    48,    49,    50,    51,    52,    53,
-      54,    55,    56,    57,    58,    59,    60,    61,    62,    63,
-      64,    65,    66,    67,    68,    69,    70,    99,    72,    72,
-      71,    35,    35,    36,    37,    80,    99,    52,    53,    54,
-      55,    56,    57,    58,    59,    60,    61,    62,    80,    98,
-      72,    38,    38,    72,     3,     5,     6,     7,    71,    73,
-      74,    89,    72,    35,    71,    71,    71,    72,    72,    72,
-      95,    72,    72,    72,    36,    71,    81,    87,    72,    81,
-      36,    97,    97,    97,    97,    97,    97,    97,    38,    38,
-      35,    35,    72,    72,    72,    71,    82,    71,    71,    71,
-      36,    95,    95,    72,    84,    96,    92,    94,    86,    71,
-      82,    83,    71,    93,    93,    71,    91,    35,    88,    80,
-      94,    72,    83,    36,    72,    72,    93,    72,    95,    36,
-      37,    71,    72,    85,    87,    82,    72,    36,    92,    92,
-      36,    90,    35,    72,    79,    72,    83,    83,    83,    72,
-      86,    83,    83,    72,    72,    95,    72,    91,    72,    80,
-      72,    72,    95,    72,    84,    72,    95,    95,    72,    95,
-      72,    72,    72,    72,    72
+      25,    26,    27,    28,    29,    30,    32,    33,    34,    35,
+      36,    37,    39,    40,    41,    42,    72,    83,    88,    91,
+      97,    73,    37,    37,    37,    88,    89,    37,    37,    73,
+      73,    73,    38,    64,    65,    67,    68,    69,    70,    71,
+     102,    38,    43,    44,    45,    46,    47,    48,    49,    50,
+      51,    52,    53,    54,    55,    56,    57,    58,    59,    60,
+      61,    62,    63,    64,    65,    66,    67,    68,    69,    70,
+      71,   101,    73,    73,    72,    36,    36,    37,    38,    81,
+     101,    53,    54,    55,    56,    57,    58,    59,    60,    61,
+      62,    63,    81,   100,    73,    39,    39,    73,     3,     5,
+       6,     7,    72,    74,    75,    91,    73,    36,    72,    72,
+      72,    72,    73,    73,    73,    97,    73,    73,    73,    37,
+      72,    82,    88,    73,    82,    37,    99,    99,    99,    99,
+      99,    99,    99,    39,    39,    36,    36,    73,    73,    73,
+      72,    83,    72,    72,    72,    37,    97,    97,    73,    85,
+      73,    98,    94,    96,    87,    72,    83,    84,    72,    95,
+      95,    72,    93,    36,    90,    81,    96,    73,    84,    84,
+      37,    73,    73,    95,    73,    97,    37,    38,    72,    73,
+      86,    88,    83,    73,    37,    94,    94,    37,    92,    36,
+      73,    80,    73,    84,    73,    84,    84,    73,    87,    84,
+      84,    73,    73,    97,    73,    93,    73,    81,    73,    73,
+      97,    73,    85,    73,    97,    97,    73,    97,    73,    73,
+      73,    73,    73
 };
 
   /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
 static const yytype_uint8 yyr1[] =
 {
-       0,    75,    76,    77,    77,    78,    78,    78,    78,    78,
-      78,    78,    78,    78,    78,    78,    78,    78,    78,    78,
-      78,    78,    78,    78,    78,    78,    78,    78,    78,    79,
-      79,    80,    80,    80,    80,    81,    81,    81,    82,    82,
-      83,    83,    84,    84,    85,    85,    85,    85,    86,    86,
-      87,    87,    87,    87,    87,    88,    88,    89,    89,    90,
-      90,    91,    92,    92,    93,    94,    94,    95,    95,    95,
-      95,    95,    95,    95,    96,    96,    97,    98,    98,    98,
-      98,    98,    98,    98,    98,    98,    98,    98,    98,    99,
-      99,    99,    99,    99,    99,    99,    99,    99,    99,    99,
-      99,    99,    99,    99,    99,    99,    99,    99,    99,    99,
-      99,    99,    99,    99,    99,    99,    99,    99,   100,   100,
-     100,   100,   100,   100,   100,   100
+       0,    76,    77,    78,    78,    79,    79,    79,    79,    79,
+      79,    79,    79,    79,    79,    79,    79,    79,    79,    79,
+      79,    79,    79,    79,    79,    79,    79,    79,    79,    79,
+      80,    80,    81,    81,    81,    81,    82,    82,    82,    83,
+      83,    84,    84,    85,    85,    86,    86,    86,    86,    87,
+      87,    88,    88,    88,    88,    88,    89,    89,    90,    90,
+      91,    91,    92,    92,    93,    94,    94,    95,    96,    96,
+      97,    97,    97,    97,    97,    97,    97,    98,    98,    99,
+     100,   100,   100,   100,   100,   100,   100,   100,   100,   100,
+     100,   100,   101,   101,   101,   101,   101,   101,   101,   101,
+     101,   101,   101,   101,   101,   101,   101,   101,   101,   101,
+     101,   101,   101,   101,   101,   101,   101,   101,   101,   101,
+     101,   102,   102,   102,   102,   102,   102,   102,   102
 };
 
   /* YYR2[YYN] -- Number of symbols on the right hand side of rule YYN.  */
 static const yytype_uint8 yyr2[] =
 {
        0,     2,     1,     0,     2,     4,     4,     4,     5,     8,
-       8,     9,     4,     4,     4,     3,     3,     3,     3,     4,
-       4,     3,     7,     3,     4,     4,     4,     3,     3,     0,
-       2,     1,     2,     1,     2,     1,     1,     3,     1,     5,
-       1,     5,     2,     0,     1,     1,     1,     3,     0,     2,
-       1,     1,     1,     1,     1,     2,     1,     1,     5,     0,
-       2,     4,     0,     2,     4,     0,     2,     1,     1,     5,
-       8,     8,     8,     6,     0,     2,     1,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     1,     1,
+       8,     7,     9,     4,     4,     4,     3,     3,     3,     3,
+       4,     4,     3,     7,     3,     4,     4,     4,     3,     3,
+       0,     2,     1,     2,     1,     2,     1,     1,     3,     1,
+       5,     1,     5,     2,     0,     1,     1,     1,     3,     0,
+       2,     1,     1,     1,     1,     1,     1,     1,     2,     1,
+       1,     5,     0,     2,     4,     0,     2,     4,     0,     2,
+       1,     1,     5,     8,     8,     8,     6,     0,     2,     1,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     1,     1,     1,     1,     1,     1,     1,     1,     1,
        1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
        1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
-       1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
-       1,     1,     1,     1,     1,     1
+       1,     1,     1,     1,     1,     1,     1,     1,     1
 };
 
 
@@ -1693,19 +1705,19 @@ yyreduce:
         case 2:
 #line 97 "smt2newparser.yy" /* yacc.c:1646  */
     { ASTNode *n = new ASTNode(CMDL_T, strdup("main-script")); n->children = (yyvsp[0].snode_list); context->insertRoot(n); }
-#line 1697 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1709 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 3:
 #line 101 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode_list) = new std::list<ASTNode*>(); }
-#line 1703 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1715 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 4:
 #line 103 "smt2newparser.yy" /* yacc.c:1646  */
     { (*(yyvsp[-1].snode_list)).push_back((yyvsp[0].snode)); (yyval.snode_list) = (yyvsp[-1].snode_list); }
-#line 1709 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1721 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 5:
@@ -1715,7 +1727,7 @@ yyreduce:
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back(new ASTNode(SYM_T, (yyvsp[-1].str)));
         }
-#line 1719 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1731 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 6:
@@ -1725,7 +1737,7 @@ yyreduce:
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back((yyvsp[-1].snode));
         }
-#line 1729 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1741 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 7:
@@ -1735,7 +1747,7 @@ yyreduce:
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back((yyvsp[-1].snode));
         }
-#line 1739 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1751 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 8:
@@ -1746,7 +1758,7 @@ yyreduce:
             (yyval.snode)->children->push_back(new ASTNode(SYM_T, (yyvsp[-2].str)));
             (yyval.snode)->children->push_back(new ASTNode(NUM_T, (yyvsp[-1].str)));
         }
-#line 1750 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1762 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 9:
@@ -1762,7 +1774,7 @@ yyreduce:
 
             (yyval.snode)->children->push_back((yyvsp[-1].snode));
         }
-#line 1766 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1778 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 10:
@@ -1778,11 +1790,27 @@ yyreduce:
 
             (yyval.snode)->children->push_back((yyvsp[-1].snode));
         }
-#line 1782 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1794 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 11:
 #line 157 "smt2newparser.yy" /* yacc.c:1646  */
+    {
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-5].tok));
+            (yyval.snode)->children = new std::list<ASTNode*>();
+            (yyval.snode)->children->push_back((yyvsp[-4].snode));
+
+            ASTNode* sortl = new ASTNode(SORTL_T, NULL);
+            sortl->children = new std::list<ASTNode*>();
+            (yyval.snode)->children->push_back(sortl);
+
+            (yyval.snode)->children->push_back((yyvsp[-1].snode));
+        }
+#line 1810 "smt2newparser.cc" /* yacc.c:1646  */
+    break;
+
+  case 12:
+#line 169 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-7].tok));
             (yyval.snode)->children = new std::list<ASTNode*>();
@@ -1795,444 +1823,456 @@ yyreduce:
             (yyval.snode)->children->push_back((yyvsp[-2].snode));
             (yyval.snode)->children->push_back((yyvsp[-1].snode));
         }
-#line 1799 "smt2newparser.cc" /* yacc.c:1646  */
-    break;
-
-  case 12:
-#line 170 "smt2newparser.yy" /* yacc.c:1646  */
-    {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].tok));
-            (yyval.snode)->children = new std::list<ASTNode*>();
-            (yyval.snode)->children->push_back(new ASTNode(NUM_T, (yyvsp[-1].str)));
-        }
-#line 1809 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1827 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 13:
-#line 176 "smt2newparser.yy" /* yacc.c:1646  */
+#line 182 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].tok));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back(new ASTNode(NUM_T, (yyvsp[-1].str)));
         }
-#line 1819 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1837 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 14:
-#line 182 "smt2newparser.yy" /* yacc.c:1646  */
+#line 188 "smt2newparser.yy" /* yacc.c:1646  */
+    {
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].tok));
+            (yyval.snode)->children = new std::list<ASTNode*>();
+            (yyval.snode)->children->push_back(new ASTNode(NUM_T, (yyvsp[-1].str)));
+        }
+#line 1847 "smt2newparser.cc" /* yacc.c:1646  */
+    break;
+
+  case 15:
+#line 194 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].tok));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back((yyvsp[-1].snode));
         }
-#line 1829 "smt2newparser.cc" /* yacc.c:1646  */
-    break;
-
-  case 15:
-#line 188 "smt2newparser.yy" /* yacc.c:1646  */
-    {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].tok));
-        }
-#line 1837 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1857 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 16:
-#line 192 "smt2newparser.yy" /* yacc.c:1646  */
-    {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].tok));
-        }
-#line 1845 "smt2newparser.cc" /* yacc.c:1646  */
-    break;
-
-  case 17:
-#line 196 "smt2newparser.yy" /* yacc.c:1646  */
-    {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].tok));
-        }
-#line 1853 "smt2newparser.cc" /* yacc.c:1646  */
-    break;
-
-  case 18:
 #line 200 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].tok));
         }
-#line 1861 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1865 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
-  case 19:
+  case 17:
 #line 204 "smt2newparser.yy" /* yacc.c:1646  */
     {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].tok));
-            (yyval.snode)->children = new std::list<ASTNode*>();
-            (yyval.snode)->children->push_back(new ASTNode(UATTR_T, (yyvsp[-1].str)));
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].tok));
         }
-#line 1871 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1873 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
-  case 20:
-#line 210 "smt2newparser.yy" /* yacc.c:1646  */
+  case 18:
+#line 208 "smt2newparser.yy" /* yacc.c:1646  */
     {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].tok));
-            (yyval.snode)->children = new std::list<ASTNode*>();
-            (yyval.snode)->children->push_back(new ASTNode(UATTR_T, (yyvsp[-1].str)));
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].tok));
         }
 #line 1881 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
-  case 21:
-#line 216 "smt2newparser.yy" /* yacc.c:1646  */
+  case 19:
+#line 212 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].tok));
         }
 #line 1889 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
-  case 22:
-#line 220 "smt2newparser.yy" /* yacc.c:1646  */
-    {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-5].tok));
-            (yyval.snode)->children = (yyvsp[-2].snode_list);
-            (yyval.snode)->children->push_front((yyvsp[-3].snode));
-        }
-#line 1899 "smt2newparser.cc" /* yacc.c:1646  */
-    break;
-
-  case 23:
-#line 226 "smt2newparser.yy" /* yacc.c:1646  */
-    {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].tok));
-        }
-#line 1907 "smt2newparser.cc" /* yacc.c:1646  */
-    break;
-
-  case 24:
-#line 230 "smt2newparser.yy" /* yacc.c:1646  */
+  case 20:
+#line 216 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].tok));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back(new ASTNode(UATTR_T, (yyvsp[-1].str)));
         }
+#line 1899 "smt2newparser.cc" /* yacc.c:1646  */
+    break;
+
+  case 21:
+#line 222 "smt2newparser.yy" /* yacc.c:1646  */
+    {
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].tok));
+            (yyval.snode)->children = new std::list<ASTNode*>();
+            (yyval.snode)->children->push_back(new ASTNode(UATTR_T, (yyvsp[-1].str)));
+        }
+#line 1909 "smt2newparser.cc" /* yacc.c:1646  */
+    break;
+
+  case 22:
+#line 228 "smt2newparser.yy" /* yacc.c:1646  */
+    {
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].tok));
+        }
 #line 1917 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
+  case 23:
+#line 232 "smt2newparser.yy" /* yacc.c:1646  */
+    {
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-5].tok));
+            (yyval.snode)->children = (yyvsp[-2].snode_list);
+            (yyval.snode)->children->push_front((yyvsp[-3].snode));
+        }
+#line 1927 "smt2newparser.cc" /* yacc.c:1646  */
+    break;
+
+  case 24:
+#line 238 "smt2newparser.yy" /* yacc.c:1646  */
+    {
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].tok));
+        }
+#line 1935 "smt2newparser.cc" /* yacc.c:1646  */
+    break;
+
   case 25:
-#line 236 "smt2newparser.yy" /* yacc.c:1646  */
+#line 242 "smt2newparser.yy" /* yacc.c:1646  */
+    {
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].tok));
+            (yyval.snode)->children = new std::list<ASTNode*>();
+            (yyval.snode)->children->push_back(new ASTNode(UATTR_T, (yyvsp[-1].str)));
+        }
+#line 1945 "smt2newparser.cc" /* yacc.c:1646  */
+    break;
+
+  case 26:
+#line 248 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].tok));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back(new ASTNode(PATTR_T, (yyvsp[-1].str)));
         }
-#line 1927 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1955 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
-  case 26:
-#line 242 "smt2newparser.yy" /* yacc.c:1646  */
+  case 27:
+#line 254 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-2].tok));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back((yyvsp[-1].snode));
         }
-#line 1937 "smt2newparser.cc" /* yacc.c:1646  */
-    break;
-
-  case 27:
-#line 248 "smt2newparser.yy" /* yacc.c:1646  */
-    {
-            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].tok));
-        }
-#line 1945 "smt2newparser.cc" /* yacc.c:1646  */
+#line 1965 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 28:
-#line 252 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].tok)); }
-#line 1951 "smt2newparser.cc" /* yacc.c:1646  */
+#line 260 "smt2newparser.yy" /* yacc.c:1646  */
+    {
+            (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].tok));
+        }
+#line 1973 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 29:
-#line 256 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.snode_list) = new std::list<ASTNode*>(); }
-#line 1957 "smt2newparser.cc" /* yacc.c:1646  */
+#line 264 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.snode) = new ASTNode(CMD_T, (yyvsp[-1].tok)); }
+#line 1979 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 30:
-#line 258 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyvsp[-1].snode_list)->push_back((yyvsp[0].snode)); (yyval.snode_list) = (yyvsp[-1].snode_list); }
-#line 1963 "smt2newparser.cc" /* yacc.c:1646  */
+#line 268 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.snode_list) = new std::list<ASTNode*>(); }
+#line 1985 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 31:
-#line 262 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.snode) = new ASTNode(UATTR_T, (yyvsp[0].str)); }
-#line 1969 "smt2newparser.cc" /* yacc.c:1646  */
+#line 270 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyvsp[-1].snode_list)->push_back((yyvsp[0].snode)); (yyval.snode_list) = (yyvsp[-1].snode_list); }
+#line 1991 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 32:
-#line 264 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.snode) = new ASTNode(UATTR_T, (yyvsp[-1].str)); (yyval.snode)->children = new std::list<ASTNode*>(); (yyval.snode)->children->push_back((yyvsp[0].snode)); }
-#line 1975 "smt2newparser.cc" /* yacc.c:1646  */
+#line 274 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.snode) = new ASTNode(UATTR_T, (yyvsp[0].str)); }
+#line 1997 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 33:
-#line 266 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.snode) = new ASTNode(PATTR_T, (yyvsp[0].str)); }
-#line 1981 "smt2newparser.cc" /* yacc.c:1646  */
+#line 276 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.snode) = new ASTNode(UATTR_T, (yyvsp[-1].str)); (yyval.snode)->children = new std::list<ASTNode*>(); (yyval.snode)->children->push_back((yyvsp[0].snode)); }
+#line 2003 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 34:
-#line 268 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.snode) = new ASTNode(PATTR_T, (yyvsp[-1].str)); (yyval.snode)->children = new std::list<ASTNode*>(); (yyval.snode)->children->push_back((yyvsp[0].snode)); }
-#line 1987 "smt2newparser.cc" /* yacc.c:1646  */
+#line 278 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.snode) = new ASTNode(PATTR_T, (yyvsp[0].str)); }
+#line 2009 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 35:
-#line 272 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.snode) = new ASTNode(SPECC_T, NULL); (yyval.snode)->children = new std::list<ASTNode*>(); (yyval.snode)->children->push_back((yyvsp[0].snode)); }
-#line 1993 "smt2newparser.cc" /* yacc.c:1646  */
+#line 280 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.snode) = new ASTNode(PATTR_T, (yyvsp[-1].str)); (yyval.snode)->children = new std::list<ASTNode*>(); (yyval.snode)->children->push_back((yyvsp[0].snode)); }
+#line 2015 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 36:
-#line 274 "smt2newparser.yy" /* yacc.c:1646  */
-    {
-            (yyval.snode) = new ASTNode(SYM_T, (yyvsp[0].str));
-        }
-#line 2001 "smt2newparser.cc" /* yacc.c:1646  */
+#line 284 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.snode) = new ASTNode(SPECC_T, NULL); (yyval.snode)->children = new std::list<ASTNode*>(); (yyval.snode)->children->push_back((yyvsp[0].snode)); }
+#line 2021 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 37:
-#line 278 "smt2newparser.yy" /* yacc.c:1646  */
+#line 286 "smt2newparser.yy" /* yacc.c:1646  */
+    {
+            (yyval.snode) = new ASTNode(SYM_T, (yyvsp[0].str));
+        }
+#line 2029 "smt2newparser.cc" /* yacc.c:1646  */
+    break;
+
+  case 38:
+#line 290 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(SEXPRL_T, NULL);
             (yyval.snode)->children = (yyvsp[-1].snode_list);
         }
-#line 2010 "smt2newparser.cc" /* yacc.c:1646  */
-    break;
-
-  case 38:
-#line 285 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.snode) = new ASTNode(SYM_T, (yyvsp[0].str)); }
-#line 2016 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2038 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 39:
-#line 287 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.snode) = new ASTNode(SYM_T, (yyvsp[-2].str)); (yyval.snode)->children = (yyvsp[-1].snode_list); }
-#line 2022 "smt2newparser.cc" /* yacc.c:1646  */
+#line 297 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.snode) = new ASTNode(SYM_T, (yyvsp[0].str)); }
+#line 2044 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 40:
-#line 291 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.snode) = new ASTNode(ID_T, NULL); (yyval.snode)->children = new std::list<ASTNode*>(); (yyval.snode)->children->push_back((yyvsp[0].snode)); }
-#line 2028 "smt2newparser.cc" /* yacc.c:1646  */
+#line 299 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.snode) = new ASTNode(SYM_T, (yyvsp[-2].str)); (yyval.snode)->children = (yyvsp[-1].snode_list); }
+#line 2050 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 41:
-#line 293 "smt2newparser.yy" /* yacc.c:1646  */
+#line 303 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.snode) = new ASTNode(ID_T, NULL); (yyval.snode)->children = new std::list<ASTNode*>(); (yyval.snode)->children->push_back((yyvsp[0].snode)); }
+#line 2056 "smt2newparser.cc" /* yacc.c:1646  */
+    break;
+
+  case 42:
+#line 305 "smt2newparser.yy" /* yacc.c:1646  */
     {
         (yyval.snode) = new ASTNode(LID_T, NULL);
         (yyval.snode)->children = (yyvsp[-1].snode_list);
         (yyval.snode)->children->push_front((yyvsp[-2].snode));
       }
-#line 2038 "smt2newparser.cc" /* yacc.c:1646  */
-    break;
-
-  case 42:
-#line 301 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyvsp[-1].snode_list)->push_back((yyvsp[0].snode)); (yyval.snode_list) = (yyvsp[-1].snode_list); }
-#line 2044 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2066 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 43:
-#line 303 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.snode_list) = new std::list<ASTNode*>(); }
-#line 2050 "smt2newparser.cc" /* yacc.c:1646  */
+#line 313 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyvsp[-1].snode_list)->push_back((yyvsp[0].snode)); (yyval.snode_list) = (yyvsp[-1].snode_list); }
+#line 2072 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 44:
-#line 307 "smt2newparser.yy" /* yacc.c:1646  */
+#line 315 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.snode_list) = new std::list<ASTNode*>(); }
+#line 2078 "smt2newparser.cc" /* yacc.c:1646  */
+    break;
+
+  case 45:
+#line 319 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(SPECC_T, NULL);
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back((yyvsp[0].snode));
         }
-#line 2060 "smt2newparser.cc" /* yacc.c:1646  */
-    break;
-
-  case 45:
-#line 313 "smt2newparser.yy" /* yacc.c:1646  */
-    {
-            (yyval.snode) = new ASTNode(SYM_T, (yyvsp[0].str));
-        }
-#line 2068 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2088 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 46:
-#line 317 "smt2newparser.yy" /* yacc.c:1646  */
+#line 325 "smt2newparser.yy" /* yacc.c:1646  */
     {
-            (yyval.snode) = new ASTNode(UATTR_T, (yyvsp[0].str));
+            (yyval.snode) = new ASTNode(SYM_T, (yyvsp[0].str));
         }
-#line 2076 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2096 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 47:
-#line 321 "smt2newparser.yy" /* yacc.c:1646  */
+#line 329 "smt2newparser.yy" /* yacc.c:1646  */
+    {
+            (yyval.snode) = new ASTNode(UATTR_T, (yyvsp[0].str));
+        }
+#line 2104 "smt2newparser.cc" /* yacc.c:1646  */
+    break;
+
+  case 48:
+#line 333 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(SEXPRL_T, NULL);
             (yyval.snode)->children = (yyvsp[-1].snode_list);
         }
-#line 2085 "smt2newparser.cc" /* yacc.c:1646  */
-    break;
-
-  case 48:
-#line 328 "smt2newparser.yy" /* yacc.c:1646  */
-    {
-            (yyval.snode_list) = new std::list<ASTNode*>();
-        }
-#line 2093 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2113 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 49:
-#line 332 "smt2newparser.yy" /* yacc.c:1646  */
+#line 340 "smt2newparser.yy" /* yacc.c:1646  */
+    {
+            (yyval.snode_list) = new std::list<ASTNode*>();
+        }
+#line 2121 "smt2newparser.cc" /* yacc.c:1646  */
+    break;
+
+  case 50:
+#line 344 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyvsp[-1].snode_list)->push_back((yyvsp[0].snode));
             (yyval.snode_list) = (yyvsp[-1].snode_list);
         }
-#line 2102 "smt2newparser.cc" /* yacc.c:1646  */
-    break;
-
-  case 50:
-#line 339 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.snode) = new ASTNode(NUM_T, (yyvsp[0].str)); }
-#line 2108 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2130 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 51:
-#line 341 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.snode) = new ASTNode(DEC_T, (yyvsp[0].str)); }
-#line 2114 "smt2newparser.cc" /* yacc.c:1646  */
+#line 352 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.snode) = new ASTNode(NUM_T, (yyvsp[0].str)); }
+#line 2136 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 52:
-#line 343 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.snode) = new ASTNode(HEX_T, (yyvsp[0].str)); }
-#line 2120 "smt2newparser.cc" /* yacc.c:1646  */
+#line 354 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.snode) = new ASTNode(DEC_T, (yyvsp[0].str)); }
+#line 2142 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 53:
-#line 345 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.snode) = new ASTNode(BIN_T, (yyvsp[0].str)); }
-#line 2126 "smt2newparser.cc" /* yacc.c:1646  */
+#line 356 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.snode) = new ASTNode(HEX_T, (yyvsp[0].str)); }
+#line 2148 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 54:
-#line 347 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.snode) = new ASTNode(STR_T, (yyvsp[0].str)); }
-#line 2132 "smt2newparser.cc" /* yacc.c:1646  */
+#line 358 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.snode) = new ASTNode(BIN_T, (yyvsp[0].str)); }
+#line 2154 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 55:
-#line 351 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyvsp[-1].snode_list)->push_back(new ASTNode(NUM_T, (yyvsp[0].str))); (yyval.snode_list) = (yyvsp[-1].snode_list); }
-#line 2138 "smt2newparser.cc" /* yacc.c:1646  */
+#line 360 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.snode) = new ASTNode(STR_T, (yyvsp[0].str)); }
+#line 2160 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 56:
-#line 353 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.snode_list) = new std::list<ASTNode*>(); (yyval.snode_list)->push_back(new ASTNode(NUM_T, (yyvsp[0].str))); }
-#line 2144 "smt2newparser.cc" /* yacc.c:1646  */
+#line 364 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.snode) = new ASTNode(SYM_T, (yyvsp[0].str)); }
+#line 2166 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 57:
-#line 357 "smt2newparser.yy" /* yacc.c:1646  */
+#line 366 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = (yyvsp[0].snode); }
-#line 2150 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2172 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 58:
-#line 359 "smt2newparser.yy" /* yacc.c:1646  */
+#line 370 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyvsp[-1].snode_list)->push_back(new ASTNode(NUM_T, (yyvsp[0].str))); (yyval.snode_list) = (yyvsp[-1].snode_list); }
+#line 2178 "smt2newparser.cc" /* yacc.c:1646  */
+    break;
+
+  case 59:
+#line 372 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.snode_list) = new std::list<ASTNode*>(); (yyval.snode_list)->push_back(new ASTNode(NUM_T, (yyvsp[0].str))); }
+#line 2184 "smt2newparser.cc" /* yacc.c:1646  */
+    break;
+
+  case 60:
+#line 376 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.snode) = (yyvsp[0].snode); }
+#line 2190 "smt2newparser.cc" /* yacc.c:1646  */
+    break;
+
+  case 61:
+#line 378 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(AS_T, NULL);
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back((yyvsp[-2].snode));
             (yyval.snode)->children->push_back((yyvsp[-1].snode));
         }
-#line 2161 "smt2newparser.cc" /* yacc.c:1646  */
-    break;
-
-  case 59:
-#line 368 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.snode_list) = new std::list<ASTNode*>(); }
-#line 2167 "smt2newparser.cc" /* yacc.c:1646  */
-    break;
-
-  case 60:
-#line 370 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyvsp[-1].snode_list)->push_back((yyvsp[0].snode)); (yyval.snode_list) = (yyvsp[-1].snode_list); }
-#line 2173 "smt2newparser.cc" /* yacc.c:1646  */
-    break;
-
-  case 61:
-#line 374 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.snode) = new ASTNode(VARB_T, (yyvsp[-2].str)); (yyval.snode)->children = new std::list<ASTNode*>(); (yyval.snode)->children->push_back((yyvsp[-1].snode)); }
-#line 2179 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2201 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 62:
-#line 378 "smt2newparser.yy" /* yacc.c:1646  */
+#line 387 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode_list) = new std::list<ASTNode*>(); }
-#line 2185 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2207 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 63:
-#line 380 "smt2newparser.yy" /* yacc.c:1646  */
+#line 389 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyvsp[-1].snode_list)->push_back((yyvsp[0].snode)); (yyval.snode_list) = (yyvsp[-1].snode_list); }
-#line 2191 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2213 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 64:
-#line 384 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.snode) = new ASTNode(SV_T, (yyvsp[-2].str));  (yyval.snode)->children = new std::list<ASTNode*>(); (yyval.snode)->children->push_back((yyvsp[-1].snode)); }
-#line 2197 "smt2newparser.cc" /* yacc.c:1646  */
+#line 393 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.snode) = new ASTNode(VARB_T, (yyvsp[-2].str)); (yyval.snode)->children = new std::list<ASTNode*>(); (yyval.snode)->children->push_back((yyvsp[-1].snode)); }
+#line 2219 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 65:
-#line 387 "smt2newparser.yy" /* yacc.c:1646  */
+#line 397 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode_list) = new std::list<ASTNode*>(); }
-#line 2203 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2225 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 66:
-#line 389 "smt2newparser.yy" /* yacc.c:1646  */
+#line 399 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyvsp[-1].snode_list)->push_back((yyvsp[0].snode)); (yyval.snode_list) = (yyvsp[-1].snode_list); }
-#line 2209 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2231 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 67:
-#line 393 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.snode) = new ASTNode(TERM_T, NULL); (yyval.snode)->children = new std::list<ASTNode*>(); (yyval.snode)->children->push_back((yyvsp[0].snode)); }
-#line 2215 "smt2newparser.cc" /* yacc.c:1646  */
+#line 403 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.snode) = new ASTNode(SV_T, (yyvsp[-2].str));  (yyval.snode)->children = new std::list<ASTNode*>(); (yyval.snode)->children->push_back((yyvsp[-1].snode)); }
+#line 2237 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 68:
-#line 395 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.snode) = new ASTNode(QID_T, NULL); (yyval.snode)->children = new std::list<ASTNode*>(); (yyval.snode)->children->push_back((yyvsp[0].snode)); }
-#line 2221 "smt2newparser.cc" /* yacc.c:1646  */
+#line 406 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.snode_list) = new std::list<ASTNode*>(); }
+#line 2243 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 69:
-#line 397 "smt2newparser.yy" /* yacc.c:1646  */
+#line 408 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyvsp[-1].snode_list)->push_back((yyvsp[0].snode)); (yyval.snode_list) = (yyvsp[-1].snode_list); }
+#line 2249 "smt2newparser.cc" /* yacc.c:1646  */
+    break;
+
+  case 70:
+#line 412 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.snode) = new ASTNode(TERM_T, NULL); (yyval.snode)->children = new std::list<ASTNode*>(); (yyval.snode)->children->push_back((yyvsp[0].snode)); }
+#line 2255 "smt2newparser.cc" /* yacc.c:1646  */
+    break;
+
+  case 71:
+#line 414 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.snode) = new ASTNode(QID_T, NULL); (yyval.snode)->children = new std::list<ASTNode*>(); (yyval.snode)->children->push_back((yyvsp[0].snode)); }
+#line 2261 "smt2newparser.cc" /* yacc.c:1646  */
+    break;
+
+  case 72:
+#line 416 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(LQID_T, NULL);
             (yyval.snode)->children = (yyvsp[-1].snode_list);
             (yyval.snode)->children->push_front((yyvsp[-2].snode));
             (yyval.snode)->children->push_front((yyvsp[-3].snode));
         }
-#line 2232 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2272 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
-  case 70:
-#line 404 "smt2newparser.yy" /* yacc.c:1646  */
+  case 73:
+#line 423 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(LET_T, NULL);
             (yyval.snode)->children = new std::list<ASTNode*>();
@@ -2242,11 +2282,11 @@ yyreduce:
             (yyval.snode)->children->push_back(vbl);
             (yyval.snode)->children->push_back((yyvsp[-1].snode));
         }
-#line 2246 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2286 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
-  case 71:
-#line 414 "smt2newparser.yy" /* yacc.c:1646  */
+  case 74:
+#line 433 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(FORALL_T, NULL);
             (yyval.snode)->children = new std::list<ASTNode*>();
@@ -2256,11 +2296,11 @@ yyreduce:
             (yyval.snode)->children->push_back(svl);
             (yyval.snode)->children->push_back((yyvsp[-1].snode));
         }
-#line 2260 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2300 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
-  case 72:
-#line 424 "smt2newparser.yy" /* yacc.c:1646  */
+  case 75:
+#line 443 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(EXISTS_T, NULL);
             (yyval.snode)->children = new std::list<ASTNode*>();
@@ -2270,11 +2310,11 @@ yyreduce:
             (yyval.snode)->children->push_back(svl);
             (yyval.snode)->children->push_back((yyvsp[-1].snode));
         }
-#line 2274 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2314 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
-  case 73:
-#line 434 "smt2newparser.yy" /* yacc.c:1646  */
+  case 76:
+#line 453 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(BANG_T, NULL);
             (yyval.snode)->children = new std::list<ASTNode*>();
@@ -2284,23 +2324,23 @@ yyreduce:
             atrs->children = (yyvsp[-1].snode_list);
             (yyval.snode)->children->push_back(atrs);
         }
-#line 2288 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2328 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
-  case 74:
-#line 510 "smt2newparser.yy" /* yacc.c:1646  */
+  case 77:
+#line 529 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode_list) = new std::list<ASTNode*>(); }
-#line 2294 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2334 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
-  case 75:
-#line 512 "smt2newparser.yy" /* yacc.c:1646  */
+  case 78:
+#line 531 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyvsp[-1].snode_list)->push_back(new ASTNode(SYM_T, (yyvsp[0].str))); (yyval.snode_list) = (yyvsp[-1].snode_list); }
-#line 2300 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2340 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
-  case 76:
-#line 669 "smt2newparser.yy" /* yacc.c:1646  */
+  case 79:
+#line 688 "smt2newparser.yy" /* yacc.c:1646  */
     {
             if (strcmp((yyvsp[0].str), "true") == 0)
                 (yyval.snode) = new ASTNode(BOOL_T, strdup("true"));
@@ -2311,51 +2351,11 @@ yyreduce:
                 YYERROR;
             }
         }
-#line 2315 "smt2newparser.cc" /* yacc.c:1646  */
-    break;
-
-  case 77:
-#line 682 "smt2newparser.yy" /* yacc.c:1646  */
-    {
-            (yyval.snode) = new ASTNode(OPTION_T, (yyvsp[-1].str));
-            (yyval.snode)->children = new std::list<ASTNode*>();
-            (yyval.snode)->children->push_back((yyvsp[0].snode));
-        }
-#line 2325 "smt2newparser.cc" /* yacc.c:1646  */
-    break;
-
-  case 78:
-#line 688 "smt2newparser.yy" /* yacc.c:1646  */
-    {
-            (yyval.snode) = new ASTNode(OPTION_T, (yyvsp[-1].str));
-            (yyval.snode)->children = new std::list<ASTNode*>();
-            (yyval.snode)->children->push_back((yyvsp[0].snode));
-        }
-#line 2335 "smt2newparser.cc" /* yacc.c:1646  */
-    break;
-
-  case 79:
-#line 694 "smt2newparser.yy" /* yacc.c:1646  */
-    {
-            (yyval.snode) = new ASTNode(OPTION_T, (yyvsp[-1].str));
-            (yyval.snode)->children = new std::list<ASTNode*>();
-            (yyval.snode)->children->push_back((yyvsp[0].snode));
-        }
-#line 2345 "smt2newparser.cc" /* yacc.c:1646  */
-    break;
-
-  case 80:
-#line 700 "smt2newparser.yy" /* yacc.c:1646  */
-    {
-            (yyval.snode) = new ASTNode(OPTION_T, (yyvsp[-1].str));
-            (yyval.snode)->children = new std::list<ASTNode*>();
-            (yyval.snode)->children->push_back((yyvsp[0].snode));
-        }
 #line 2355 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
-  case 81:
-#line 706 "smt2newparser.yy" /* yacc.c:1646  */
+  case 80:
+#line 701 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(OPTION_T, (yyvsp[-1].str));
             (yyval.snode)->children = new std::list<ASTNode*>();
@@ -2364,8 +2364,8 @@ yyreduce:
 #line 2365 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
-  case 82:
-#line 712 "smt2newparser.yy" /* yacc.c:1646  */
+  case 81:
+#line 707 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(OPTION_T, (yyvsp[-1].str));
             (yyval.snode)->children = new std::list<ASTNode*>();
@@ -2374,8 +2374,8 @@ yyreduce:
 #line 2375 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
-  case 83:
-#line 718 "smt2newparser.yy" /* yacc.c:1646  */
+  case 82:
+#line 713 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(OPTION_T, (yyvsp[-1].str));
             (yyval.snode)->children = new std::list<ASTNode*>();
@@ -2384,284 +2384,324 @@ yyreduce:
 #line 2385 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
-  case 84:
-#line 724 "smt2newparser.yy" /* yacc.c:1646  */
+  case 83:
+#line 719 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(OPTION_T, (yyvsp[-1].str));
             (yyval.snode)->children = new std::list<ASTNode*>();
-            (yyval.snode)->children->push_back(new ASTNode(STR_T, (yyvsp[0].str)));
+            (yyval.snode)->children->push_back((yyvsp[0].snode));
         }
 #line 2395 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
+  case 84:
+#line 725 "smt2newparser.yy" /* yacc.c:1646  */
+    {
+            (yyval.snode) = new ASTNode(OPTION_T, (yyvsp[-1].str));
+            (yyval.snode)->children = new std::list<ASTNode*>();
+            (yyval.snode)->children->push_back((yyvsp[0].snode));
+        }
+#line 2405 "smt2newparser.cc" /* yacc.c:1646  */
+    break;
+
   case 85:
-#line 730 "smt2newparser.yy" /* yacc.c:1646  */
+#line 731 "smt2newparser.yy" /* yacc.c:1646  */
+    {
+            (yyval.snode) = new ASTNode(OPTION_T, (yyvsp[-1].str));
+            (yyval.snode)->children = new std::list<ASTNode*>();
+            (yyval.snode)->children->push_back((yyvsp[0].snode));
+        }
+#line 2415 "smt2newparser.cc" /* yacc.c:1646  */
+    break;
+
+  case 86:
+#line 737 "smt2newparser.yy" /* yacc.c:1646  */
+    {
+            (yyval.snode) = new ASTNode(OPTION_T, (yyvsp[-1].str));
+            (yyval.snode)->children = new std::list<ASTNode*>();
+            (yyval.snode)->children->push_back((yyvsp[0].snode));
+        }
+#line 2425 "smt2newparser.cc" /* yacc.c:1646  */
+    break;
+
+  case 87:
+#line 743 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(OPTION_T, (yyvsp[-1].str));
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back(new ASTNode(STR_T, (yyvsp[0].str)));
         }
-#line 2405 "smt2newparser.cc" /* yacc.c:1646  */
-    break;
-
-  case 86:
-#line 736 "smt2newparser.yy" /* yacc.c:1646  */
-    {
-            (yyval.snode) = new ASTNode(OPTION_T, (yyvsp[-1].str));
-            (yyval.snode)->children = new std::list<ASTNode*>();
-            (yyval.snode)->children->push_back(new ASTNode(NUM_T, (yyvsp[0].str)));
-        }
-#line 2415 "smt2newparser.cc" /* yacc.c:1646  */
-    break;
-
-  case 87:
-#line 742 "smt2newparser.yy" /* yacc.c:1646  */
-    {
-            (yyval.snode) = new ASTNode(OPTION_T, (yyvsp[-1].str));
-            (yyval.snode)->children = new std::list<ASTNode*>();
-            (yyval.snode)->children->push_back(new ASTNode(NUM_T, (yyvsp[0].str)));
-        }
-#line 2425 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2435 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 88:
-#line 748 "smt2newparser.yy" /* yacc.c:1646  */
+#line 749 "smt2newparser.yy" /* yacc.c:1646  */
+    {
+            (yyval.snode) = new ASTNode(OPTION_T, (yyvsp[-1].str));
+            (yyval.snode)->children = new std::list<ASTNode*>();
+            (yyval.snode)->children->push_back(new ASTNode(STR_T, (yyvsp[0].str)));
+        }
+#line 2445 "smt2newparser.cc" /* yacc.c:1646  */
+    break;
+
+  case 89:
+#line 755 "smt2newparser.yy" /* yacc.c:1646  */
+    {
+            (yyval.snode) = new ASTNode(OPTION_T, (yyvsp[-1].str));
+            (yyval.snode)->children = new std::list<ASTNode*>();
+            (yyval.snode)->children->push_back(new ASTNode(NUM_T, (yyvsp[0].str)));
+        }
+#line 2455 "smt2newparser.cc" /* yacc.c:1646  */
+    break;
+
+  case 90:
+#line 761 "smt2newparser.yy" /* yacc.c:1646  */
+    {
+            (yyval.snode) = new ASTNode(OPTION_T, (yyvsp[-1].str));
+            (yyval.snode)->children = new std::list<ASTNode*>();
+            (yyval.snode)->children->push_back(new ASTNode(NUM_T, (yyvsp[0].str)));
+        }
+#line 2465 "smt2newparser.cc" /* yacc.c:1646  */
+    break;
+
+  case 91:
+#line 767 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(OPTION_T, NULL);
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back((yyvsp[0].snode));
         }
-#line 2435 "smt2newparser.cc" /* yacc.c:1646  */
-    break;
-
-  case 89:
-#line 756 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.str) = (yyvsp[0].str); }
-#line 2441 "smt2newparser.cc" /* yacc.c:1646  */
-    break;
-
-  case 90:
-#line 758 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.str) = (yyvsp[0].str); }
-#line 2447 "smt2newparser.cc" /* yacc.c:1646  */
-    break;
-
-  case 91:
-#line 760 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.str) = (yyvsp[0].str); }
-#line 2453 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2475 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 92:
-#line 762 "smt2newparser.yy" /* yacc.c:1646  */
+#line 775 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2459 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2481 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 93:
-#line 764 "smt2newparser.yy" /* yacc.c:1646  */
+#line 777 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2465 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2487 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 94:
-#line 766 "smt2newparser.yy" /* yacc.c:1646  */
+#line 779 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2471 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2493 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 95:
-#line 768 "smt2newparser.yy" /* yacc.c:1646  */
+#line 781 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2477 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2499 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 96:
-#line 770 "smt2newparser.yy" /* yacc.c:1646  */
+#line 783 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2483 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2505 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 97:
-#line 772 "smt2newparser.yy" /* yacc.c:1646  */
+#line 785 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2489 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2511 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 98:
-#line 774 "smt2newparser.yy" /* yacc.c:1646  */
+#line 787 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2495 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2517 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 99:
-#line 776 "smt2newparser.yy" /* yacc.c:1646  */
+#line 789 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2501 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2523 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 100:
-#line 778 "smt2newparser.yy" /* yacc.c:1646  */
+#line 791 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2507 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2529 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 101:
-#line 780 "smt2newparser.yy" /* yacc.c:1646  */
+#line 793 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2513 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2535 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 102:
-#line 782 "smt2newparser.yy" /* yacc.c:1646  */
+#line 795 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2519 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2541 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 103:
-#line 784 "smt2newparser.yy" /* yacc.c:1646  */
+#line 797 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2525 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2547 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 104:
-#line 786 "smt2newparser.yy" /* yacc.c:1646  */
+#line 799 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2531 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2553 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 105:
-#line 788 "smt2newparser.yy" /* yacc.c:1646  */
+#line 801 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2537 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2559 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 106:
-#line 790 "smt2newparser.yy" /* yacc.c:1646  */
+#line 803 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2543 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2565 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 107:
-#line 792 "smt2newparser.yy" /* yacc.c:1646  */
+#line 805 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2549 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2571 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 108:
-#line 794 "smt2newparser.yy" /* yacc.c:1646  */
+#line 807 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2555 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2577 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 109:
-#line 796 "smt2newparser.yy" /* yacc.c:1646  */
+#line 809 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2561 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2583 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 110:
-#line 798 "smt2newparser.yy" /* yacc.c:1646  */
+#line 811 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2567 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2589 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 111:
-#line 800 "smt2newparser.yy" /* yacc.c:1646  */
+#line 813 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2573 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2595 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 112:
-#line 802 "smt2newparser.yy" /* yacc.c:1646  */
+#line 815 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2579 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2601 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 113:
-#line 804 "smt2newparser.yy" /* yacc.c:1646  */
+#line 817 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2585 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2607 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 114:
-#line 806 "smt2newparser.yy" /* yacc.c:1646  */
+#line 819 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2591 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2613 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 115:
-#line 808 "smt2newparser.yy" /* yacc.c:1646  */
+#line 821 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2597 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2619 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 116:
-#line 810 "smt2newparser.yy" /* yacc.c:1646  */
+#line 823 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2603 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2625 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 117:
-#line 812 "smt2newparser.yy" /* yacc.c:1646  */
+#line 825 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.str) = (yyvsp[0].str); }
-#line 2609 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2631 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 118:
-#line 816 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.snode) = new ASTNode(INFO_T, (yyvsp[0].str)); }
-#line 2615 "smt2newparser.cc" /* yacc.c:1646  */
+#line 827 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.str) = (yyvsp[0].str); }
+#line 2637 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 119:
-#line 818 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.snode) = new ASTNode(INFO_T, (yyvsp[0].str)); }
-#line 2621 "smt2newparser.cc" /* yacc.c:1646  */
+#line 829 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.str) = (yyvsp[0].str); }
+#line 2643 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 120:
-#line 820 "smt2newparser.yy" /* yacc.c:1646  */
-    { (yyval.snode) = new ASTNode(INFO_T, (yyvsp[0].str)); }
-#line 2627 "smt2newparser.cc" /* yacc.c:1646  */
+#line 831 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.str) = (yyvsp[0].str); }
+#line 2649 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 121:
-#line 822 "smt2newparser.yy" /* yacc.c:1646  */
+#line 835 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = new ASTNode(INFO_T, (yyvsp[0].str)); }
-#line 2633 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2655 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 122:
-#line 824 "smt2newparser.yy" /* yacc.c:1646  */
+#line 837 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = new ASTNode(INFO_T, (yyvsp[0].str)); }
-#line 2639 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2661 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 123:
-#line 826 "smt2newparser.yy" /* yacc.c:1646  */
+#line 839 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = new ASTNode(INFO_T, (yyvsp[0].str)); }
-#line 2645 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2667 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 124:
-#line 828 "smt2newparser.yy" /* yacc.c:1646  */
+#line 841 "smt2newparser.yy" /* yacc.c:1646  */
     { (yyval.snode) = new ASTNode(INFO_T, (yyvsp[0].str)); }
-#line 2651 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2673 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
   case 125:
-#line 830 "smt2newparser.yy" /* yacc.c:1646  */
+#line 843 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.snode) = new ASTNode(INFO_T, (yyvsp[0].str)); }
+#line 2679 "smt2newparser.cc" /* yacc.c:1646  */
+    break;
+
+  case 126:
+#line 845 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.snode) = new ASTNode(INFO_T, (yyvsp[0].str)); }
+#line 2685 "smt2newparser.cc" /* yacc.c:1646  */
+    break;
+
+  case 127:
+#line 847 "smt2newparser.yy" /* yacc.c:1646  */
+    { (yyval.snode) = new ASTNode(INFO_T, (yyvsp[0].str)); }
+#line 2691 "smt2newparser.cc" /* yacc.c:1646  */
+    break;
+
+  case 128:
+#line 849 "smt2newparser.yy" /* yacc.c:1646  */
     {
             (yyval.snode) = new ASTNode(INFO_T, NULL);
             (yyval.snode)->children = new std::list<ASTNode*>();
             (yyval.snode)->children->push_back(new ASTNode(GATTR_T, (yyvsp[0].str)));
         }
-#line 2661 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2701 "smt2newparser.cc" /* yacc.c:1646  */
     break;
 
 
-#line 2665 "smt2newparser.cc" /* yacc.c:1646  */
+#line 2705 "smt2newparser.cc" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -2896,7 +2936,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 837 "smt2newparser.yy" /* yacc.c:1906  */
+#line 856 "smt2newparser.yy" /* yacc.c:1906  */
 
 
 //=======================================================================================

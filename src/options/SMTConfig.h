@@ -69,6 +69,7 @@ enum ASTType {
     , BOOL_T     , BOOLL_T
     , OPTION_T   , OPTIONL_T
     , INFO_T     , INFOL_T
+    , CONST_T    , CONSTL_T
 };
 
 class ASTNode {
@@ -106,7 +107,7 @@ class ConfValue {
     union { char* strval; int numval; double decval; uint32_t unumval; list<ConfValue*>* configs; };
     ConfValue() : type(O_EMPTY), strval(NULL) {};
     ConfValue(const ASTNode& s_expr_n);
-    ConfValue(int i) : type(O_DEC), numval(i) {};
+    ConfValue(int i) : type(O_NUM), numval(i) {};
     ConfValue(double i) : type(O_DEC), decval(i) {};
     ConfValue(const char* s);
     ConfValue(const ConfValue& other);
@@ -155,6 +156,13 @@ static const struct ItpAlgorithm itp_alg_mcmillanp = { 2 };
 static const struct ItpAlgorithm itp_alg_ps        = { 3 };
 static const struct ItpAlgorithm itp_alg_psw       = { 4 };
 static const struct ItpAlgorithm itp_alg_pss       = { 5 };
+static const struct ItpAlgorithm itp_euf_alg_strong  = { 0 };
+static const struct ItpAlgorithm itp_euf_alg_weak  = { 2 };
+static const struct ItpAlgorithm itp_euf_alg_random  = { 3 };
+static const struct ItpAlgorithm itp_lra_alg_strong  = { 0 };
+static const struct ItpAlgorithm itp_lra_alg_weak  = { 2 };
+static const struct ItpAlgorithm itp_lra_alg_factor  = { 3 };
+static const char *itp_lra_factor_0 = "1/2";
 
 inline bool operator==(const SpType& s1, const SpType& s2) { return s1.t == s2.t; }
 inline bool operator==(const SpUnit& s1, const SpUnit& s2) { return s1.t == s2.t; }
@@ -179,6 +187,8 @@ static const char* spprefs_rand    = "random";
 
 static const char* spformats_smt2   = "smt2";
 static const char* spformats_osmt2  = "osmt2";
+static const char* spformats_brief  = "brief";
+static const char* spformats_full   = "full";
 
 static const struct SpType spt_none      = { 0 };
 static const struct SpType spt_lookahead = { 1 };
@@ -196,6 +206,8 @@ static const struct SpPref sppref_undef = { 4 };
 
 static const struct SpFormat spformat_smt2  = { 0 };
 static const struct SpFormat spformat_osmt2 = { 1 };
+static const struct SpFormat spformat_brief = { 2 };
+static const struct SpFormat spformat_full  = { 3 };
 
 //
 // Holds informations about the configuration of the solver
@@ -251,12 +263,14 @@ public:
   static const char* o_itp_bool_alg;
   static const char* o_itp_euf_alg;
   static const char* o_itp_lra_alg;
+  static const char* o_itp_lra_factor;
   static const char* o_sat_dump_rnd_inter;
   static const char* o_sat_resource_units;
   static const char* o_sat_resource_limit;
   static const char* o_dump_state;
   static const char* o_dump_only;
   static const char* o_dump_mode;
+  static const char* o_dump_query;
   static const char* o_sat_dump_learnts;
   static const char* o_sat_split_type;
   static const char* o_sat_split_inittune;
@@ -270,6 +284,7 @@ public:
   static const char* o_dryrun;
   static const char* o_do_substitutions;
   static const char* o_smt_split_format;
+  static const char* o_smt_split_format_length;
 
 private:
 
@@ -363,10 +378,41 @@ public:
 
   inline void setProduceProofs( ) { if ( print_proofs_smtlib2 != 0 ) return; print_proofs_smtlib2 = 1; }
 
-  inline void setBooleanInterpolationAlgorithm( ItpAlgorithm i ) { insertOption(o_itp_bool_alg, new SMTOption(i.x)); }
+  // Set reduction params
+  inline void setReduction(int r) { insertOption(o_proof_reduce, new SMTOption(r)); }
+
+  inline void setReductionGraph(int r) { insertOption(o_proof_num_graph_traversals, new SMTOption(r)); }
+
+  inline void setReductionLoops(int r) { insertOption(o_proof_red_trans, new SMTOption(r)); }
+
+  // Set interpolation algorithms
+  inline void setBooleanInterpolationAlgorithm( ItpAlgorithm i ) { 
+      insertOption(o_itp_bool_alg, new SMTOption(i.x)); }
+
+  inline void setEUFInterpolationAlgorithm( ItpAlgorithm i ) { insertOption(o_itp_euf_alg, new SMTOption(i.x)); }
+
+  inline void setLRAInterpolationAlgorithm( ItpAlgorithm i ) { insertOption(o_itp_lra_alg, new SMTOption(i.x)); }
+
+  inline void setLRAStrengthFactor(const char *factor) { insertOption(o_itp_lra_factor, new SMTOption(factor)); }
+
+  // Get interpolation algorithms
   inline ItpAlgorithm getBooleanInterpolationAlgorithm() {
       if (optionTable.has(o_itp_bool_alg)) { return { optionTable[o_itp_bool_alg]->getValue().numval }; }
       else { return itp_alg_mcmillan; }}
+
+  inline ItpAlgorithm getEUFInterpolationAlgorithm() {
+      if (optionTable.has(o_itp_euf_alg)) { return { optionTable[o_itp_euf_alg]->getValue().numval }; }
+      else { return itp_euf_alg_strong; }}
+
+  inline ItpAlgorithm getLRAInterpolationAlgorithm() {
+      if (optionTable.has(o_itp_lra_alg)) { return { optionTable[o_itp_lra_alg]->getValue().numval }; }
+      else { return itp_lra_alg_strong; }}
+
+  inline const char* getLRAStrengthFactor() { 
+      if (optionTable.has(o_itp_lra_factor)) { return optionTable[o_itp_lra_factor]->getValue().strval; }
+      else { return itp_lra_factor_0; }
+  }
+
   inline void setRegularOutputChannel( const char * attr )
   {
     if ( strcmp( attr, "stdout" ) != 0 && !rocset )
@@ -539,6 +585,16 @@ public:
       }
       return spformat_osmt2; // The default
     }
+  const SpFormat smt_split_format_length() const {
+      if (optionTable.has(o_smt_split_format_length)) {
+          const char* type = optionTable[o_smt_split_format_length]->getValue().strval;
+          if (strcmp(type, spformats_brief) == 0)
+              return spformat_brief;
+          else if (strcmp(type, spformats_full) == 0)
+              return spformat_full;
+      }
+      return spformat_full; // The default
+    }
   double sat_resource_limit() const
     { return optionTable.has(o_sat_resource_limit) ?
         optionTable[o_sat_resource_limit]->getValue().getDoubleVal() : -1; }
@@ -548,6 +604,9 @@ public:
   int dump_only() const
     { return optionTable.has(o_dump_only) ?
         optionTable[o_dump_only]->getValue().numval : 0; }
+  bool dump_query() const
+    { return optionTable.has(o_dump_query) ?
+        optionTable[o_dump_query]->getValue().numval : 0; }
 
   int sat_dump_learnts() const
     { return optionTable.has(o_sat_dump_learnts) ?
@@ -643,7 +702,7 @@ public:
         optionTable[o_verbosity]->getValue().numval : 2; }
 #else
     { return optionTable.has(o_verbosity) ?
-        optionTable[o_verbosity]->getValue().numval : 2; }
+        optionTable[o_verbosity]->getValue().numval : 0; }
 #endif
   int          printSuccess() const
      { return optionTable.has(":print-success") ?

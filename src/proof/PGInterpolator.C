@@ -483,6 +483,14 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
 
             labelLeaf (n, A_mask, 0, PSFunction);
 
+            /*
+            cout << "; LEAF CLAUSE HAS LITERALS: " << endl;
+            vector<Lit> &lala = n->getClause();
+            for (int i = 0; i < lala.size(); ++i)
+                cout << lala[i].x << ' ';
+            cout << endl;
+            */
+
             if (n->getType() == CLAORIG)
             {
 #ifdef ITP_DEBUG
@@ -509,7 +517,22 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
                 for (int i = 0; i < oldvec.size(); ++i)
                     newvec.push (~oldvec[i]);
 
-                thandler.assertLits (newvec);
+#ifdef ITP_DEBUG
+                cout << "; ASSERTING LITS" << endl;
+                vec<PTRef> tr_vec;
+                Logic& logic = thandler.getLogic();
+                for (int i = 0; i < newvec.size(); ++i) {
+                    PTRef tr_vecel = thandler.varToTerm(var(newvec[i]));
+                    tr_vec.push(sign(newvec[i]) ? logic.mkNot(tr_vecel) : tr_vecel);
+                }
+                PTRef tr_and = logic.mkAnd(tr_vec);
+                printf("%s\n", logic.printTerm(tr_and));
+#endif
+
+                bool res = thandler.assertLits (newvec);
+                if (res)
+                    thandler.check(true);
+
                 map<PTRef, icolor_t> ptref2label;
                 vector<Lit>& cl = n->getClause();
 
@@ -545,15 +568,17 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
 
     if( verbose() )
     {
-        getComplexityInterpolant(partial_interp);
-        /*
-        int nbool, neq, nuf;
-        thandler.getLogic().collectStats(partial_interp, nbool, neq, nuf);
+        //getComplexityInterpolant(partial_interp);
+        
+        int nbool, neq, nuf, nif;
+        thandler.getLogic().collectStats(partial_interp, nbool, neq, nuf, nif);
         cerr << "; Number of boolean connectives: " << nbool << endl;
-        cerr << "; Number of equalities " << neq << endl;
+        cerr << "; Number of equalities: " << neq << endl;
         cerr << "; Number of uninterpreted functions: " << nuf << endl;
-        */
+        cerr << "; Number of interpreted functions: " << nif << endl;
+        
     }
+
     //if ( enabledInterpVerif() ) verifyPartialInterpolantFromLeaves( getRoot(), A_mask );
     if ( enabledInterpVerif() )
     {
@@ -570,9 +595,9 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
     assert (interpol != PTRef_Undef);
     interpolants.push ( interpol );
 
-    if(verbose())
+    if(verbose() > 1)
     {
-        //cout << "; Interpolant: " << thandler.getLogic().printTerm(interpol) << endl;
+        cout << "; Interpolant: " << thandler.getLogic().printTerm(partial_interp) << endl;
     }
 }
 

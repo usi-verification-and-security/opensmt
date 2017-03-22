@@ -30,6 +30,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // FIXME: make as configure option
 #define MORE_DEDUCTIONS 0
 
+#include "Timer.h"
 #include "SStore.h"
 #include "EnodeStore.h"
 #include "Enode.h"
@@ -39,8 +40,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Logic.h"
 // For debugging
 #include "TermMapper.h"
-//#include "SigTab.h"
-//#include "SplayTree.h"
 
 #ifdef PEDANTIC_DEBUG
 #include "GCTest.h"
@@ -49,6 +48,24 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifdef PRODUCE_PROOF
 #include "UFInterpolator.h"
 #endif
+
+class UFSolverStats: public TSolverStats
+{
+    public:
+        opensmt::OSMTTimeVal egraph_asrt_timer;
+        opensmt::OSMTTimeVal egraph_backtrack_timer;
+        opensmt::OSMTTimeVal egraph_explain_timer;
+        void printStatistics(ostream& os)
+        {
+            os << "; -------------------------" << endl;
+            os << "; STATISTICS FOR EUF SOLVER" << endl;
+            os << "; -------------------------" << endl;
+            TSolverStats::printStatistics(os);
+            os << "; egraph time..............: " << egraph_asrt_timer.getTime() << " s\n";
+            os << "; backtrack time...........: " << egraph_backtrack_timer.getTime() << " s\n";
+            os << "; explain time.............: " << egraph_explain_timer.getTime() << " s\n";
+        }
+};
 
 class Egraph : public TSolver
 {
@@ -63,6 +80,8 @@ private:
 
   PTRef         Eq_FALSE; // will be set to (= true false) in constructor
 
+  bool          isValid(PTRef tr) { return logic.isUFEquality(tr) || logic.isUP(tr) || logic.isUFTerm(tr) || logic.isDisequality(tr) || logic.isBoolAtom(tr); }
+
 #ifndef TERMS_HAVE_EXPLANATIONS
   // Explanations
 //  Map<PTRef,PTRef,PTRefHash,Equal<PTRef> >  expParent;
@@ -74,7 +93,18 @@ private:
 
   double fa_garbage_frac;
 
-  TSolverStats tsolver_stats;
+  UFSolverStats tsolver_stats;
+
+  // Stuff for values on UF
+  bool values_ok;
+  Map<ERef,ERef,ERefHash> values;
+
+  static const char* s_val_prefix;
+  static const char* s_const_prefix;
+  static const char* s_any_prefix;
+  static const char* s_val_true;
+  static const char* s_val_false;
+
 public:
 //  SimpSMTSolver* solver; // for debugging only
 
@@ -86,19 +116,19 @@ public:
         backtrackToStackSize( 0 );
 #ifdef STATISTICS
         // TODO added for convenience
-        if ( config.produceStats() ) {
-            config.getStatsOut( ) << "; -------------------------" << endl;
-            config.getStatsOut( ) << "; STATISTICS FOR EUF SOLVER" << endl;
-            config.getStatsOut( ) << "; -------------------------" << endl;
-            //tsolver_stats.printStatistics( config.getStatsOut( ) );
-        }
-
-        if ( config.print_stats ) {
-            cerr << "; -------------------------" << endl;
-            cerr << "; STATISTICS FOR EUF SOLVER" << endl;
-            cerr << "; -------------------------" << endl;
-            //tsolver_stats.printStatistics( cerr );
-        }
+//        if ( config.produceStats() ) {
+//            config.getStatsOut( ) << "; -------------------------" << endl;
+//            config.getStatsOut( ) << "; STATISTICS FOR EUF SOLVER" << endl;
+//            config.getStatsOut( ) << "; -------------------------" << endl;
+//            //tsolver_stats.printStatistics( config.getStatsOut( ) );
+//        }
+//
+//        if ( config.print_stats ) {
+//            cerr << "; -------------------------" << endl;
+//            cerr << "; STATISTICS FOR EUF SOLVER" << endl;
+//            cerr << "; -------------------------" << endl;
+//            //tsolver_stats.printStatistics( cerr );
+//        }
 #endif
         //
         // Delete enodes
@@ -116,9 +146,10 @@ public:
         if(cgraph_)
             delete cgraph_;
 #endif
+        tsolver_stats.printStatistics(std::cerr);
     }
 
-    void clearSolver() { return; } // No need to clear the solver state since egraph doesn't do internal simplifications and the external have little impact on the solving anyway.
+    void clearSolver() { clearModel(); } // Only clear the possible computed values
 
     void print(ostream& out) { return; }
 
@@ -233,9 +264,10 @@ public:
   void                getConflict             ( bool, vec<PtAsgn>& );       // Get explanation
   bool                check                   ( bool ) { return true; }     // Check satisfiability
 //  lbool               evaluate                ( PTRef ) { assert(false); return l_Undef; }
-  ValPair             getValue                (PTRef tr) const { return ValPair_Undef; }
+  virtual ValPair     getValue                (PTRef tr);
 //  void                initializeCong          ( Enode * );                  // Initialize congruence structures for a node
   void                computeModel            ( );
+  void                clearModel              ( );
 #ifndef SMTCOMP
   void                printModel              ( ostream & );                // Computes and print the model
 #endif

@@ -25,66 +25,52 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "BVSolver.h"
 
-BVSolver::BVSolver ( const int           i
-                   , const char *        n
-		   , SMTConfig &         c
-		   , Egraph &            e
-		   , SStore &            t
-		   , vector< Enode * > & x
-		   , vector< Enode * > & d
-                   , vector< Enode * > & s )
- : OrdinaryTSolver ( i, n, c, e, t, x, d, s )
-{ 
-  B = new BitBlaster( id, c, egraph, explanation, deductions, suggestions );  
-}
+static SolverDescr descr_bv_solver("UF Solver", "Solver for Quantifier Free Bit Vectors");
 
-BVSolver::~BVSolver ( ) 
-{ 
-  delete B;
-}
+BVSolver::BVSolver (SMTConfig & c, MainSolver& s, BVLogic& l, vec<DedElem> & d)
+ : TSolver ((SolverId)descr_bv_solver, (const char*)descr_bv_solver, c, d)
+ , mainSolver(s)
+ , logic(l)
+ , B(id, c, mainSolver, l, explanation, d, suggestions)
+{ }
+
+BVSolver::~BVSolver () { }
 
 //
 // The solver is informed of the existence of
 // atom e. It might be useful for initializing
-// the solver's data structures. This function is 
+// the solver's data structures. This function is
 // called before the actual solving starts.
-// 
-lbool BVSolver::inform( Enode * e )  
-{ 
-  assert( e );
-  assert( belongsToT( e ) );
-  const lbool res = B->inform( e );
+//
+lbool BVSolver::declareTerm(PTRef tr)
+{
+  assert(tr != PTRef_Undef);
+  const lbool res = B.inform( tr );
   return res;
 }
 
-// 
+//
 // Asserts a literal into the solver. If by chance
 // you are able to discover inconsistency you may
 // return false. The real consistency state will
 // be checked with "check"
 //
-bool BVSolver::assertLit ( Enode * e, bool reason )
+bool BVSolver::assertLit ( PtAsgn pta, bool reason )
 {
-  (void)reason;
-  assert( e );
-  assert( belongsToT( e ) );
+    (void)reason;
+    assert( pta.tr != PTRef_Undef );
+    assert( pta.sgn != l_Undef );
 
-  assert( e->hasPolarity( ) );
-  assert( e->getPolarity( ) == l_False 
-       || e->getPolarity( ) == l_True );
+    Pterm& t = logic.getPterm(pta.tr);
+    if ( deduced[t.getVar()] != l_Undef && deduced[t.getVar()].polarity == pta.sgn && deduced[t.getVar()].deducedBy == id)
+        return true;
 
-  if ( e->isDeduced( ) 
-    && e->getPolarity( ) == e->getDeduced( ) 
-    && e->getDedIndex( ) == id ) 
-    return true;
+    stack.push(pta);
+    const bool res = B.assertLit(pta);
 
-  const bool n = e->getPolarity( ) == l_False;
-  stack.push_back( e );
-  const bool res = B->assertLit( e, n );
+    assert( res || explanation.size() != 0 );
 
-  assert( res || !explanation.empty( ) );
-
-  return res;
+    return res;
 }
 
 //
@@ -92,11 +78,11 @@ bool BVSolver::assertLit ( Enode * e, bool reason )
 //
 void BVSolver::pushBacktrackPoint ( )
 {
-  backtrack_points.push_back( stack.size( ) );
-  //
-  // Push a backtrack point inside the bitblaster
-  //
-  B->pushBacktrackPoint( );
+    backtrack_points.push( stack.size( ) );
+    //
+    // Push a backtrack point inside the bitblaster
+    //
+    B.pushBacktrackPoint( );
 }
 
 //
@@ -106,64 +92,45 @@ void BVSolver::pushBacktrackPoint ( )
 //
 void BVSolver::popBacktrackPoint ( )
 {
-  assert( backtrack_points.size( ) > 0 );
-  size_t stack_new_size = backtrack_points.back( );
-  backtrack_points.pop_back( );
-  //
-  // Restore stack size
-  //
-  while ( stack.size( ) > stack_new_size ) 
-  {
-    stack.pop_back( );
-  }
-  //
-  // Restore bitblaster state
-  //
-  B->popBacktrackPoint( );
+    assert( backtrack_points.size( ) > 0 );
+    size_t stack_new_size = backtrack_points.last();
+    backtrack_points.pop();
+    //
+    // Restore stack size
+    //
+    while ( stack.size( ) > stack_new_size ) 
+    {
+        stack.pop();
+    }
+    //
+    // Restore bitblaster state
+    //
+    B.popBacktrackPoint();
 }
 
 //
 // Check for consistency. If flag is
 // set make sure you run a complete check
 //
-bool BVSolver::check( bool complete )    
-{ 
-  if ( !complete ) return true;
-  assert( explanation.empty( ) );
-
-  // Here check for consistency
-  const bool res = B->check( );
-
-  assert( res || !explanation.empty( ) );
-  return res;
-}
-
-//
-// Return true if the enode belongs
-// to this theory. You should examine
-// the structure of the node to see
-// if it matches the theory operators
-//
-bool BVSolver::belongsToT( Enode * e )
+bool BVSolver::check( bool complete )
 {
-  assert( e );
-  //
-  // Standard BV Predicates
-  //
-  if ( e->isEq       ( )
-      /*
-    || e->isBvsle    ( ) 
-    || e->isBvule    ( )
-      */
-    || e->isDistinct ( ) )
-    return true;
-  //
-  // Otherwise does not belong
-  //
-  return false;
+    if ( !complete ) return true;
+    assert( explanation.size() == 0 );
+
+    // Here check for consistency.  No undefs allowed.
+    const bool res = (B.check() == l_True ? true : false);
+
+    assert(res || (explanation.size() != 0));
+    return res;
 }
 
 void BVSolver::computeModel( )
 {
-  B->computeModel( );
+    B.computeModel( );
+}
+
+ValPair
+BVSolver::getValue(PTRef tr)
+{
+    return B.getValue(tr);
 }

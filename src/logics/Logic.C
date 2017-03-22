@@ -82,6 +82,9 @@ Logic::Logic(SMTConfig& c) :
     , term_TRUE(PTRef_Undef)
     , term_FALSE(PTRef_Undef)
     , subst_num(0)
+#ifdef PRODUCE_PROOF
+    , asrt_idx(0)
+#endif
 {
     config.logic = QF_UF;
     logic_type = QF_UF;
@@ -191,6 +194,11 @@ Logic::Logic(SMTConfig& c) :
     sym_store.setInterpreted(sym_ITE);
 
     ites.insert(sym_ITE, true);
+
+#ifdef PRODUCE_PROOF
+    flat2orig[getTerm_true()] = getTerm_true();
+    flat2orig[getTerm_false()] = getTerm_false();
+#endif
 }
 
 Logic::~Logic()
@@ -273,11 +281,11 @@ Logic::printSym(SymRef sr) const
 }
 
 char*
-Logic::printTerm_(PTRef tr, bool ext, bool safe)
+Logic::printTerm_(PTRef tr, bool ext, bool safe) const
 {
     char* out;
 
-    if(safe && this->isIteVar(tr)){
+    if (safe && this->isIteVar(tr)) {
         Ite ite = top_level_ites[tr];
         char *str_i = printTerm_(ite.i, ext, safe);
         char *str_t = printTerm_(ite.t, ext, safe);
@@ -527,8 +535,25 @@ lbool Logic::simplifyTree(PTRef tr, PTRef& root_out)
 PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args, char** msg) {
     SymRef sref = term_store.lookupSymbol(s, args);
     if (sref == SymRef_Undef) {
-        if (defined_functions.has(s))
-            return defined_functions[s];
+        if (defined_functions.has(s)) {
+            // Make a new function by substituting the arguments of defined_functions[s] with whatever is in args
+            const vec<PTRef>& tpl_args = defined_functions[s].getArgs();
+            Map<PTRef,PTRef,PTRefHash> subst_map;
+            if (args.size() != tpl_args.size()) {
+                asprintf(msg, "Arg size mismatch: should be %d but is %d", tpl_args.size(), args.size());
+                return PTRef_Undef;
+            }
+            for (int i = 0; i < args.size(); i++) {
+                if (getSortRef(args[i]) == getSortRef(tpl_args[i]))
+                    subst_map.insert(tpl_args[i], args[i]);
+                else {
+                    asprintf(msg, "Arg %s (%d) return sort mismatch: should be %s but is %s",
+                            printTerm(args[i]), i, getSymName(tpl_args[i]), getSymName(args[i]));
+                    return PTRef_Undef;
+                }
+            }
+            return instantiateFunctionTemplate(s, subst_map);
+        }
         else {
             asprintf(msg, "Unknown symbol `%s'", s);
             return PTRef_Undef;
@@ -781,7 +806,7 @@ PTRef Logic::mkImpl(vec<PTRef>& args) {
 
 PTRef Logic::mkEq(vec<PTRef>& args) {
     assert(args.size() == 2);
-    if(isConstant(args[0]) && isConstant(args[1]))
+    if (isConstant(args[0]) && isConstant(args[1]))
         return (args[0] == args[1]) ? getTerm_true() : getTerm_false();
     if (args[0] == args[1]) return getTerm_true();
     SymRef eq_sym = term_store.lookupSymbol(tk_equals, args);
@@ -824,8 +849,12 @@ PTRef Logic::mkNot(PTRef arg) {
 
 PTRef Logic::mkConst(const char* name, const char** msg)
 {
-    assert(0);
-    return PTRef_Undef;
+    //assert(0);
+    //return PTRef_Undef;
+    assert(strlen(name) > 0);
+    vec<PTRef> args;
+    char *msg2;
+    return resolveTerm(name, args, &msg2);
 }
 
 
@@ -847,7 +876,8 @@ PTRef Logic::mkVar(SRef s, const char* name) {
     return ptr;
 }
 
-PTRef Logic::mkConst(SRef s, const char* name) {
+PTRef Logic::mkConst(const SRef s, const char* name) {
+    assert(strlen(name) != 0);
     PTRef ptr = PTRef_Undef;
     if (s == sort_BOOL) {
         if ((strcmp(name, tk_true) != 0) && (strcmp(name, tk_false) != 0)) {
@@ -860,7 +890,6 @@ PTRef Logic::mkConst(SRef s, const char* name) {
         ptr = mkVar(s, name);
     }
     // Code to allow efficient constant detection.
-//    int id = getPterm(ptr).getId();
     int id = sym_store[getPterm(ptr).symb()].getId();
     while (id >= constants.size())
         constants.push(false);
@@ -869,14 +898,13 @@ PTRef Logic::mkConst(SRef s, const char* name) {
     return ptr;
 }
 
-
 PTRef Logic::mkFun(SymRef f, const vec<PTRef>& args, char** msg)
 {
     PTRef tr;
     if (f == SymRef_Undef)
         tr = PTRef_Undef;
     else
-        tr = Logic::insertTermHash(f, args);
+        tr = insertTermHash(f, args);
     return tr;
 }
 
@@ -904,14 +932,19 @@ bool Logic::isLit(PTRef tr) const
         if (t.symb() == getSym_not() ) return isLit(t[0]);
         // At this point all arguments of equivalence have the same sort.  Check only the first
         if (isEquality(tr) && (sym_store[getPterm(t[0]).symb()].rsort() != getSort_bool())) return true;
-        if (isDisequality(tr) && !isDistinct(tr)) return true;
-        if (isUP(tr)) return true;
+        if (isBooleanOperator(tr)) return false;
+        else return true;
+//        if (isDisequality(tr) && !isDistinct(tr)) return true;
+//        if (isUP(tr)) return true;
     }
     return false;
 }
 
 SRef Logic::declareSort(const char* id, char** msg)
 {
+    if (containsSort(id))
+        return getSortRef(id);
+
     IdRef idr = id_store.newIdentifier(id);
     vec<SRef> tmp;
     SRef sr = sort_store.newSort(idr, tmp);
@@ -920,6 +953,8 @@ SRef Logic::declareSort(const char* id, char** msg)
     asprintf(&sort_name, "%s", id);
     SRef rval = sort_store[sort_name];
     free(sort_name);
+    ufsorts.insert(rval, true);
+//    printf("Inserted sort %s\n", id);
     return rval;
 }
 
@@ -943,14 +978,27 @@ SymRef Logic::declareFun(const char* fname, const SRef rsort, const vec<SRef>& a
     return sr;
 }
 
-bool Logic::defineFun(const char* fname, const PTRef tr)
+bool Logic::defineFun(const char* fname, const vec<PTRef>& args, SRef rsort, PTRef tr)
 {
     if (defined_functions.has(fname))
         return false; // already there
-    defined_functions.insert(fname, tr);
+    TFun tpl_fun(fname, args, rsort, tr);
+    defined_functions.insert(fname, tpl_fun);
+    // This part is a bit silly..
+    Tterm tmp;
+    defined_functions_vec.push(tmp);
+    Tterm& t = defined_functions_vec.last();
+    t.setName(tpl_fun.getName());
+    t.setBody(tpl_fun.getBody());
+    for (int i = 0; i < args.size(); i++)
+        t.addArg(args[i]);
     return true;
 }
 
+vec<Tterm>& Logic::getFunctions()
+{
+    return defined_functions_vec;
+}
 PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, char** msg)
 {
     if(sym == getSym_and())
@@ -1012,7 +1060,7 @@ Logic::insertTermHash(SymRef sym, const vec<PTRef>& terms_in)
     vec<PTRef> terms;
     terms_in.copyTo(terms);
     PTRef res = PTRef_Undef;
-    char **msg;
+    char *msg;
     if (terms.size() == 0) {
         if (term_store.hasCtermKey(sym)) //cterm_map.contains(sym))
             res = term_store.getFromCtermMap(sym); //cterm_map[sym];
@@ -1031,8 +1079,8 @@ Logic::insertTermHash(SymRef sym, const vec<PTRef>& terms_in)
             !sym_store[sym].pairwise() &&
             sym_store[sym].nargs() != terms.size_())
         {
-            *msg = (char*)malloc(strlen(e_argnum_mismatch)+1);
-            strcpy(*msg, e_argnum_mismatch);
+            msg = (char*)malloc(strlen(e_argnum_mismatch)+1);
+            strcpy(msg, e_argnum_mismatch);
             return PTRef_Undef;
         }
         PTLKey k;
@@ -1079,6 +1127,16 @@ Logic::isUF(SymRef sref) const
 
 bool Logic::isUF(PTRef ptr) const {
     return isUF(getSymRef(ptr));
+}
+
+bool
+Logic::isIF(SymRef sref) const
+{
+    return getSym(sref).nargs() > 0 && interpreted_functions[getSym(sref).getId()];
+}
+
+bool Logic::isIF(PTRef ptr) const {
+    return isIF(getSymRef(ptr));
 }
 
 // Uninterpreted predicate p : U U* -> Bool
@@ -1728,13 +1786,19 @@ PTRef Logic::learnEqTransitivity(PTRef formula)
 // |diseqs_size| <diseqs_data>         |
 // +---------+-+-----------------------+
 // |ites_size| <ites_data>             |
-// +---------+-------------------------+
+// +---------+--+----------------------+
+// |ufsorts_size| <ufsorts_data>       |
+// +------------+----------------------+
+// |constants_sz| <constants_data>     |
+// +------------+----------------------+
 //
 void Logic::serializeLogicData(int*& logicdata_buf) const
 {
     int equalities_sz    = 1;
     int disequalities_sz = 1;
     int ites_sz          = 1;
+    int ufsorts_sz       = 1;
+    int constants_sz     = 1;
 
     const vec<SymRef> &symbols = sym_store.getSymbols();
     for (int i = 0; i < symbols.size(); i++) {
@@ -1746,20 +1810,37 @@ void Logic::serializeLogicData(int*& logicdata_buf) const
             ites_sz ++;
     }
 
-    int logicdata_sz = equalities_sz + disequalities_sz + ites_sz + 4;
+    vec<SRef> ufsorts_keys;
+    ufsorts.getKeys(ufsorts_keys);
+    for (int i = 0; i < ufsorts_keys.size(); i++)
+    {
+        SRef s = ufsorts_keys[i];
+        if (ufsorts[s] == true)
+            ufsorts_sz++;
+    }
+
+    constants_sz += constants.size();
+
+    int logicdata_sz = equalities_sz + disequalities_sz + ites_sz + ufsorts_sz + constants_sz + 6;
     logicdata_buf = (int*) malloc(logicdata_sz*sizeof(int));
     logicdata_buf[buf_sz_idx] = logicdata_sz;
-    int equalities_offs = 4;
+    int equalities_offs = 6;
     int disequalities_offs = equalities_offs + equalities_sz;
     int ites_offs = disequalities_offs + disequalities_sz;
+    int ufsorts_offs = ites_offs + ites_sz;
+    int constants_offs = ufsorts_offs + ufsorts_sz;
 
     logicdata_buf[equalities_offs_idx] = equalities_offs;
     logicdata_buf[disequalities_offs_idx] = disequalities_offs;
     logicdata_buf[ites_offs_idx] = ites_offs;
+    logicdata_buf[ufsorts_offs_idx] = ufsorts_offs;
+    logicdata_buf[constants_offs_idx] = constants_offs;
 
     logicdata_buf[equalities_offs] = equalities_sz;
     logicdata_buf[disequalities_offs] = disequalities_sz;
     logicdata_buf[ites_offs] = ites_sz;
+    logicdata_buf[ufsorts_offs] = ufsorts_sz;
+    logicdata_buf[constants_offs] = constants_sz;
 
     int equalities_p = equalities_offs+1;
     int disequalities_p = disequalities_offs+1;
@@ -1772,6 +1853,20 @@ void Logic::serializeLogicData(int*& logicdata_buf) const
         if (ites.has(symbols[i]))
             logicdata_buf[ites_p ++] = symbols[i].x;
     }
+
+    int ufsorts_p = ufsorts_offs+1;
+    for (int i = 0; i < ufsorts_keys.size(); i++) {
+        SRef sr = ufsorts_keys[i];
+        if (ufsorts[sr] == true)
+            logicdata_buf[ufsorts_p ++] = sr.x;
+    }
+
+    int constants_p = constants_offs+1;
+//    assert(constants_p+constants.size() < logicdata_sz);
+    for (int i = 0; i < constants.size(); i++) {
+        assert(constants_p < logicdata_sz);
+        logicdata_buf[constants_p ++] = constants[i];
+    }
 }
 
 void Logic::deserializeLogicData(const int* logicdata_buf)
@@ -1779,6 +1874,8 @@ void Logic::deserializeLogicData(const int* logicdata_buf)
     const int* eqs_buf = &logicdata_buf[logicdata_buf[equalities_offs_idx]];
     const int* diseqs_buf = &logicdata_buf[logicdata_buf[disequalities_offs_idx]];
     const int* ites_buf = &logicdata_buf[logicdata_buf[ites_offs_idx]];
+    const int* ufsorts_buf = &logicdata_buf[logicdata_buf[ufsorts_offs_idx]];
+    const int* consts_buf = &logicdata_buf[logicdata_buf[constants_offs_idx]];
 
     int eqs_sz = eqs_buf[0];
     for (int i = 0; i < eqs_sz-1; i++) {
@@ -1799,6 +1896,21 @@ void Logic::deserializeLogicData(const int* logicdata_buf)
         SymRef sr = {(uint32_t)ites_buf[i+1]};
         if (!ites.has(sr))
             ites.insert(sr, true);
+    }
+
+    int ufsorts_sz = ufsorts_buf[0];
+    for (int i = 0; i < ufsorts_sz - 1; i++) {
+        SRef sr = {(uint32_t)ufsorts_buf[i+1]};
+        if (!ufsorts.has(sr))
+            ufsorts.insert(sr, true);
+    }
+
+    int consts_sz = consts_buf[0];
+    for (int i = 0; i < consts_sz - 1; i++) {
+        if (constants.size() > i)
+            assert(constants[i] == consts_buf[i+1]);
+        else
+            constants.push((bool)consts_buf[i+1]);
     }
 }
 
@@ -1835,7 +1947,7 @@ Logic::dumpHeaderToFile(ostream& dump_out)
 {
     dump_out << "(set-logic " << getName() << ")" << endl;
 #ifdef PRODUCE_PROOF
-    dump_out << "(set-option :produce-interpolants true)" << endl;
+//    dump_out << "(set-option :produce-interpolants true)" << endl;
 #endif
     const vec<SRef>& sorts = sort_store.getSorts();
     for (int i = 0; i < sorts.size(); i++)
@@ -1845,13 +1957,19 @@ Logic::dumpHeaderToFile(ostream& dump_out)
     }
 
     const vec<SymRef>& symbols = sym_store.getSymbols();
-    for(int i = 0; i < symbols.size(); ++i)
+    for (int i = 0; i < symbols.size(); ++i)
     {
         SymRef s = symbols[i];
-        if (!isUF(s) && !isVar(s)) continue;
-        if (isConstant(s)) continue;
+        if (isConstant(s)) {
+            if (isBuiltinConstant(s)) continue;
+            dump_out << "(declare-const ";
+        }
+        //else if (!isUF(s) && !isVar(s)) continue;
+        else {
+            dump_out << "(declare-fun ";
+        }
         char* sym = printSym(s);
-        dump_out << "(declare-fun " << sym << " ";
+        dump_out << sym << " ";
         free(sym);
         Symbol& symb = sym_store[s];
         dump_out << "(";
@@ -1957,21 +2075,50 @@ Logic::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate, bool t
 }
 
 void
-Logic::dumpFunction(ostream& dump_out, Tterm *function)
+Logic::dumpFunction(ostream& dump_out, const TFun& tpl_fun)
 {
-    dump_out << "(define-fun " << function->getName() << " ( ";
-    vec<PTRef>& args = function->getArgs();
-    for(int i = 0; i < args.size(); ++i)
-        dump_out << '(' << printTerm(args[i]) << ' ' <<  getSortName(getSortRef(args[i])) << ") ";
-    dump_out << ") Bool ";
-    dumpFormulaToFile(dump_out, function->getBody(), false, false);
+    PTRef tr_function = tpl_fun.getBody();
+    Pterm& t = getPterm(tr_function);
+    const char* name = tpl_fun.getName();
+    dump_out << "(define-fun " << name << " ( ";
+    const vec<PTRef>& args = tpl_fun.getArgs();
+    for (int i = 0; i < args.size(); ++i) {
+        char* arg_name = printTerm(args[i]);
+        const char* sort_name = getSortName(getSortRef(args[i]));
+        dump_out << '(' << arg_name << ' ' <<  sort_name << ") ";
+        free(arg_name);
+    }
+    const char* rsort = getSortName(tpl_fun.getRetSort());
+    dump_out << ") " << rsort;
+    dumpFormulaToFile(dump_out, tpl_fun.getBody(), false, false);
     dump_out << ')' << endl;
 }
 
 PTRef
-Logic::instantiateFunctionTemplate(Tterm& templ, map<PTRef, PTRef> subst)
+Logic::instantiateFunctionTemplate(const char* fname, Map<PTRef, PTRef,PTRefHash>& subst)
 {
-    return PTRef_Undef;
+    const TFun& tpl_fun = defined_functions[fname];
+    PTRef tr = tpl_fun.getBody();
+    Pterm& t = getPterm(tpl_fun.getBody());
+    const vec<PTRef>& args = tpl_fun.getArgs();
+    Map<PTRef,PtAsgn,PTRefHash> substs_asgn;
+    for (int i = 0; i < args.size(); i++) {
+        if (!subst.has(args[i]))
+            return PTRef_Undef;
+        PTRef subst_target_tr = subst[args[i]];
+        if (getSortRef(subst_target_tr) != getSortRef(args[i]))
+            return PTRef_Undef;
+        PtAsgn subst_target = {subst_target_tr, l_True};
+        substs_asgn.insert(args[i], subst_target);
+    }
+    PTRef tr_subst;
+    varsubstitute(tr, substs_asgn, tr_subst);
+    if (getSortRef(tr_subst) != tpl_fun.getRetSort()) {
+        printf("Error: the function return sort changed in instantiation from %s to %s\n", getSortName(tpl_fun.getRetSort()), getSortName(getSortRef(tr_subst)));
+        return PTRef_Undef;
+    }
+
+    return tr_subst;
 }
 
 #ifdef PRODUCE_PROOF
@@ -2031,7 +2178,9 @@ PTRef
 Logic::getPartitionA(const ipartitions_t& mask)
 {
     Logic& logic = *this;
-    vec<PTRef>& ass = logic.getAssertions();
+
+    vec<PTRef> ass;
+    logic.getAssertions(ass);
     vec<PTRef> a_args;
     for(int i = 0; i < ass.size(); ++i)
     {
@@ -2050,7 +2199,8 @@ PTRef
 Logic::getPartitionB(const ipartitions_t& mask)
 {
     Logic& logic = *this;
-    vec<PTRef>& ass = logic.getAssertions();
+    vec<PTRef> ass;
+    logic.getAssertions(ass);
     vec<PTRef> b_args;
     for(int i = 0; i < ass.size(); ++i)
     {
@@ -2157,11 +2307,11 @@ Logic::setIPartitionsIte(PTRef pref)
 #endif
 
 void
-Logic::collectStats(PTRef root, int& n_of_conn, int& n_of_eq, int& n_of_uf)
+Logic::collectStats(PTRef root, int& n_of_conn, int& n_of_eq, int& n_of_uf, int& n_of_if)
 {
     set<PTRef> seen_terms;
     queue<PTRef> to_visit;
-    n_of_conn = n_of_eq = n_of_uf = 0;
+    n_of_conn = n_of_eq = n_of_uf = n_of_if = 0;
     to_visit.push(root);
     while(!to_visit.empty())
     {
@@ -2186,6 +2336,13 @@ Logic::collectStats(PTRef root, int& n_of_conn, int& n_of_eq, int& n_of_uf)
         else if(isUF(node))
         {
             ++n_of_uf;
+            Pterm& pnode = getPterm(node);
+            for(int i = 0; i < pnode.size(); ++i)
+                to_visit.push(pnode[i]);
+        }
+        else if(isIF(node))
+        {
+            ++n_of_if;
             Pterm& pnode = getPterm(node);
             for(int i = 0; i < pnode.size(); ++i)
                 to_visit.push(pnode[i]);
