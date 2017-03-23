@@ -314,12 +314,12 @@ void LRASolver::makePolynomial(LAVar* s, PTRef pol)
         PTRef pr = pol_t[i];
         // Check the form of the term.  Can be either c * x or x for
         // Real constant c and real variable x.
-        assert(logic.isRealTimes(pr) || logic.isRealVar(pr));
+        assert(logic.isRealTimes(pr) || logic.isRealVar(pr) || logic.isUF(pr));
 
         PTRef var;
         PTRef num;
 
-        if (logic.isRealVar(pr)) {
+        if (logic.isRealVar(pr) || logic.isUF(pr)) {
             // pr is of form x
             var = pr;
             num = logic.getTerm_RealOne();

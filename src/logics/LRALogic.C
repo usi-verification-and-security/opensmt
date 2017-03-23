@@ -114,7 +114,9 @@ void SimplifyConst::simplify(SymRef& s, const vec<PTRef>& args, SymRef& s_new, v
         args.copyTo(args_new_2);
 
     constSimplify(s, args_new_2, s_new, args_new);
-    if (args_new.size() == 1) {
+    // A single argument for the operator, and the operator is identity
+    // in that case
+    if (args_new.size() == 1 && (l.isRealPlus(s_new) || l.isRealTimes(s_new) || l.isRealDiv(s_new))) {
         PTRef ch_tr = args_new[0];
         args_new.clear();
         s_new = l.getPterm(ch_tr).symb();
@@ -550,7 +552,9 @@ PTRef LRALogic::mkRealTimes(const vec<PTRef>& tmp_args, char** msg)
     if (isRealTerm(tr) || isRealPlus(tr) || isUF(tr))
         return tr;
     else {
-        throw LRANonLinearException("%s");
+        char* err;
+        asprintf(&err, "%s", printTerm(tr));
+        throw LRANonLinearException(err);
     }
 }
 
@@ -672,7 +676,7 @@ PTRef LRALogic::mkRealLeq(const vec<PTRef>& args_in, char** msg)
             return getTerm_false();
 
     } else {
-        assert(!isConstant(args[0]) || !isConstant(args[1]));
+
         // Should be in the form that on one side there is a constant
         // and on the other there is a sum
         PTRef tr_neg = mkRealNeg(args[0], msg);
