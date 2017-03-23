@@ -47,7 +47,7 @@ class UFLRATHandler : public LRATHandler
 #ifdef PRODUCE_PROOF
     virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
     {
-        return uflrasolver->getInterpolant(mask, labels);
+        return ufsolver->getInterpolant(mask, labels);
     }
 #endif
 };
