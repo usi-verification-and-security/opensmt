@@ -55,6 +55,7 @@ class UFSolverStats: public TSolverStats
         opensmt::OSMTTimeVal egraph_asrt_timer;
         opensmt::OSMTTimeVal egraph_backtrack_timer;
         opensmt::OSMTTimeVal egraph_explain_timer;
+        int num_eq_classes;
         void printStatistics(ostream& os)
         {
             os << "; -------------------------" << endl;
@@ -64,6 +65,7 @@ class UFSolverStats: public TSolverStats
             os << "; egraph time..............: " << egraph_asrt_timer.getTime() << " s\n";
             os << "; backtrack time...........: " << egraph_backtrack_timer.getTime() << " s\n";
             os << "; explain time.............: " << egraph_explain_timer.getTime() << " s\n";
+            os << "; # eq classes at the end..: " << num_eq_classes << "\n";
         }
 };
 
@@ -113,6 +115,11 @@ public:
           , vec<DedElem>& d);
 
     ~Egraph( ) {
+//        if (config.countEqClasses)
+//            tsolver_stats.num_eq_classes = countEqClasses();
+//        else
+//            tsolver_stats.num_eq_classes = -1;
+
         backtrackToStackSize( 0 );
 #ifdef STATISTICS
         // TODO added for convenience
@@ -243,6 +250,7 @@ public:
   Logic& getLogic() { return logic; }
 private:
 
+  int countEqClasses();
   vec< ERef > interface_terms;
   // Cache for interface terms
 //  set< Enode * > interface_terms_cache;

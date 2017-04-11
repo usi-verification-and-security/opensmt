@@ -91,6 +91,7 @@ class LRALogic: public Logic
     virtual const char* getName()                const { return getLogic().str; }
     virtual const Logic_t getLogic()             const { return QF_LRA; }
 
+    virtual bool        okForBoolVar    (PTRef) const;
     virtual PTRef       insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg);
 
     virtual PTRef       mkConst         (const char* name, const char **msg);

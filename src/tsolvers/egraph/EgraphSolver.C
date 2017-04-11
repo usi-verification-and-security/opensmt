@@ -309,6 +309,18 @@ void Egraph::computeModel( )
     values_ok = true;
 }
 
+int Egraph::countEqClasses()
+{
+    int n_classes = 0;
+    Map<ERef,bool,ERefHash> eq_classes;
+    const vec<ERef>& enodes = enode_store.getEnodes();
+    for (int i = 0; i < enodes.size(); i++) {
+        if (eq_classes.has(enodes[i]))
+            n_classes++;
+    }
+    return n_classes;
+}
+
 //void Egraph::printModel( ostream & os )
 //{
 //  assert( config.produce_models );

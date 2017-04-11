@@ -221,6 +221,16 @@ Logic::getName() const
     return getLogic().str;
 }
 
+bool
+Logic::okForBoolVar(PTRef tr) const
+{
+    return isEquality (tr)        ||
+           isDisequality (tr)     ||
+           getTerm_true() == tr   ||
+           getTerm_false() == tr  ||
+           isUP (tr)              ;
+}
+
 // Escape the symbol name if it contains a prohibited character from the
 // following list:
 //  - #

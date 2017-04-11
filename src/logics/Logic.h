@@ -198,6 +198,7 @@ class Logic {
     }
 
   public:
+    virtual bool okForBoolVar(PTRef) const; // True if the ref can have a boolean var
     bool existsTermHash(SymRef, const vec<PTRef>&);
     static const char*  tk_true;
     static const char*  tk_false;

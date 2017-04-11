@@ -20,11 +20,7 @@ const Lit Theory::findLit (PTRef ptr)
 
         if (getLogic().isTheoryTerm (p_tr))
         {
-            assert (getLogic().isEquality (p_tr)        ||
-                    getLogic().isDisequality (p_tr)     ||
-                    getLogic().getTerm_true() == p_tr   ||
-                    getLogic().getTerm_false() == p_tr  ||
-                    getLogic().isUP (p_tr)                );
+            getLogic().okForBoolVar(p_tr);
         }
 
 #ifdef VERBOSE_CNFIZATION

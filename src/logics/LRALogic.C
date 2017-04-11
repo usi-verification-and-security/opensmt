@@ -376,6 +376,12 @@ bool LRALogic::isRealTerm(PTRef tr) const
         return false;
 }
 
+bool
+LRALogic::okForBoolVar(PTRef tr) const
+{
+    return isRealLeq(tr) || Logic::okForBoolVar(tr);
+}
+
 PTRef
 LRALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
 {
