@@ -651,10 +651,7 @@ bool Interpret::checkSat() {
 
         res = main_solver->simplifyFormulas(&msg);
         if (res == s_Undef) {
-            if (config.sat_split_type() == spt_lookahead)
-                res = main_solver->lookaheadSplit(getLog2Ceil(config.sat_split_num()));
-            else
-                res = main_solver->solve();
+            res = main_solver->solve();
        }
 
         if (res == s_True) {

@@ -1096,6 +1096,11 @@ sstat MainSolver::check()
 
 sstat MainSolver::solve()
 {
+    if (config.sat_split_type() == spt_lookahead) {
+        sstat res = lookaheadSplit(getLog2Ceil(config.sat_split_num()));
+        return res;
+    }
+
     int i, r, min;
     int pipefd[2];
     char buf[3];
