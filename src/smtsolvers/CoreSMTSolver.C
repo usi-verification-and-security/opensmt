@@ -2795,7 +2795,7 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
 #ifdef LADEBUG
         printf("Checking var %d\n", v);
 #endif
-        if (value(v) != l_Undef || LAupperbounds[v].safeToSkip(LAexacts[var(getLABest())]))
+        if (value(v) != l_Undef || (getLABest() != lit_Undef && LAupperbounds[v].safeToSkip(LAexacts[var(getLABest())])))
         {
 #ifdef LADEBUG
             printf("  Var is safe to skip due to %s\n",
