@@ -474,9 +474,6 @@ BitBlaster::bbBvand(PTRef tr)
 {
     assert(tr != PTRef_Undef);
 
-    assert(logic.getPterm(logic.getPterm(tr)[0]).size() == logic.getPterm(logic.getPterm(tr)[1]).size()); // Should be e->get2nd( )->getWidth( )
-
-
     if (bs.has(tr)) return bs[tr];
 
     // Allocate new result
