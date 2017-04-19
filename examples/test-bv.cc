@@ -13,8 +13,10 @@ main(int argc, char** argv)
         return 1;
     }
     char* op = argv[2];
-    int c1_int = atoi(argv[3]);
-    int c2_int = atoi(argv[4]);
+    //int c1_int = atoi(argv[3]);
+    //int c2_int = atoi(argv[4]);
+    const char* c1_str = argv[3];
+    const char* c2_str = argv[4];
     int bw = atoi(argv[1]);
 
     SMTConfig c;
@@ -27,13 +29,16 @@ main(int argc, char** argv)
 
     PTRef a = logic.mkBVNumVar("a");
     PTRef b = logic.mkBVNumVar("b");
-    PTRef c1 = logic.mkBVConst(c1_int);
-    PTRef c2 = logic.mkBVConst(c2_int);
+    //PTRef c1 = logic.mkBVConst(c1_int);
+    PTRef c1 = logic.mkBVConst(c1_str);
+    //PTRef c2 = logic.mkBVConst(c2_int);
+    PTRef c2 = logic.mkBVConst(c2_str);
 
     PTRef eq1 = logic.mkBVEq(a, c1);
     PTRef eq2 = logic.mkBVEq(b, c2);
 
-    printf("Computing %d (%s) %s %d (%s)\n", c1_int, logic.printTerm(c1), op, c2_int, logic.printTerm(c2));
+    //printf("Computing %d (%s) %s %d (%s)\n", c1_int, logic.printTerm(c1), op, c2_int, logic.printTerm(c2));
+    printf("Computing %s (%s) %s %s (%s)\n", c1_str, logic.printTerm(c1), op, c2_str, logic.printTerm(c2));
 
 
     PTRef op_tr;
