@@ -380,9 +380,7 @@ lbool Egraph::declareTerm(PTRef tr) {
         ERef sym = enode_store.addSymb(tm.symb());
         ERef cdr = ERef_Nil;
         for (int j = tm.size()-1; j >= 0; j--) {
-#ifdef VERBOSE_EUF
-//            assert( checkParents(cdr) );
-#endif
+            assert(enode_store.termToERef.has(tm[j])); // The child was not inserted
             ERef car = enode_store.termToERef[tm[j]];
 #ifdef VERBOSE_EUF
             ERef prev_cdr = cdr;

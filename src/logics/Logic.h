@@ -233,7 +233,9 @@ class Logic {
     IdRef       newIdentifier (const char* name, vec<int>& nl){ return id_store.newIdentifier(name, nl); }
     // Fetching sorts
     bool        containsSort  (const char* name)      const { return sort_store.containsSort(name); }
+  protected:
     SRef        newSort       (IdRef idr, const char* name, vec<SRef>& tmp) { return sort_store.newSort(idr, name, tmp); }
+  public:
     SRef        getSortRef    (const char* name)      const { return sort_store[name]; }
     SRef        getSortRef    (const PTRef tr)        const { return getSortRef(getPterm(tr).symb()); }
     SRef        getSortRef    (const SymRef sr)       const { return getSym(sr).rsort(); }
