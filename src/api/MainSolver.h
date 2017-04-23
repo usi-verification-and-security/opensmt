@@ -94,6 +94,8 @@ class MainSolver
     Tseitin             ts;
     vec<PFRef>          formulas;
 
+    opensmt::OSMTTimeVal query_timer; // How much time we spend solving.
+    char*          solver_name; // Name for the solver
     int            simplified_until; // The formulas have been simplified up to and including formulas[simplified_until-1].
     sstat          status;           // The status of the last solver call (initially s_Undef)
 
@@ -126,7 +128,7 @@ class MainSolver
 
 
   public:
-    MainSolver(THandler& thandler, SMTConfig& c, SimpSMTSolver *s )
+    MainSolver(THandler& thandler, SMTConfig& c, SimpSMTSolver *s, const char* name)
         : logic(thandler.getLogic())
         , tmap(thandler.getTMap())
         , config(c)
@@ -143,12 +145,12 @@ class MainSolver
         , root_instance(logic.getTerm_true())
         , simplified_until(0)
     {
+        solver_name = strdup(name);
         formulas.push(pfstore.alloc());
         PushFrame& last = pfstore[formulas.last()];
         last.push(logic.getTerm_true());
     }
 
-    ~MainSolver() { }
 
     SMTConfig& getConfig() { return config; }
     SimpSMTSolver& getSMTSolver() { return *smt_solver; }

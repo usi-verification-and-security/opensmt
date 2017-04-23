@@ -2,7 +2,7 @@
 
 #include "Global.h"
 
-Opensmt::Opensmt(opensmt_logic _logic, int bw)
+Opensmt::Opensmt(opensmt_logic _logic, const char* name, int bw)
 {
     config = new SMTConfig();
     switch(_logic)
@@ -22,7 +22,7 @@ Opensmt::Opensmt(opensmt_logic _logic, int bw)
     }
     thandler = new THandler(*config, *theory);
     solver = new SimpSMTSolver(*config, *thandler);
-    mainSolver = new MainSolver(*thandler, *config, solver);
+    mainSolver = new MainSolver(*thandler, *config, solver, name);
     mainSolver->initialize();
 }
 

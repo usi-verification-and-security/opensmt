@@ -164,7 +164,7 @@ bool Interpret::interp(ASTNode& n) {
                 //solver = new SimpSMTSolver(config, *thandler);
                 new_solver();
 
-                main_solver = new MainSolver(*thandler, config, solver);
+                main_solver = new MainSolver(*thandler, config, solver, "qf_uf solver");
                 main_solver->initialize();
             } else if (strcmp(logic_name, opensmt::QF_CUF.str) == 0) {
                 CUFTheory *cuftheory = new CUFTheory(config);
@@ -174,7 +174,7 @@ bool Interpret::interp(ASTNode& n) {
                 //solver = new SimpSMTSolver(config, *thandler);
                 new_solver();
 
-                main_solver = new MainSolver(*thandler, config, solver);
+                main_solver = new MainSolver(*thandler, config, solver, "qf_cuf solver");
                 main_solver->initialize();
             } else if ((strcmp(logic_name, QF_LRA.str) == 0) || (strcmp(logic_name, QF_RDL.str) == 0)) {
                 LRATheory *lratheory = new LRATheory(config);
@@ -184,7 +184,7 @@ bool Interpret::interp(ASTNode& n) {
 
                 //solver = new SimpSMTSolver(config, *thandler);
                 new_solver();
-                main_solver = new MainSolver(*thandler, config, solver);
+                main_solver = new MainSolver(*thandler, config, solver, "qf_lra solver");
                 main_solver->initialize();
             } else if ((strcmp(logic_name, QF_UFLRA.str) == 0) || (strcmp(logic_name, QF_UFRDL.str) == 0)) {
                     UFLRATheory* uflratheory = new UFLRATheory(config);
@@ -192,7 +192,7 @@ bool Interpret::interp(ASTNode& n) {
                     thandler = new THandler(config, *uflratheory);
                     logic = &(theory->getLogic());
                     new_solver();
-                    main_solver = new MainSolver(*thandler, config, solver);
+                    main_solver = new MainSolver(*thandler, config, solver, "qf_uflra solver");
                     main_solver->initialize();
             } else {
                 notify_formatted(true, "unknown logic %s", logic_name);

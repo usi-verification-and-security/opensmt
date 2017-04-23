@@ -80,7 +80,7 @@ osmt_context osmt_mk_context( osmt_logic l )
         UFTheory *uftheory = new UFTheory(*config);
         THandler *thandler = new THandler(*config, *uftheory);
         SimpSMTSolver* solver = new SimpSMTSolver(*config, *thandler);
-        MainSolver* mainSolver = new MainSolver(*thandler, *config, solver);
+        MainSolver* mainSolver = new MainSolver(*thandler, *config, solver, "qf_uf solver");
         // Return MainSolver
         return { mainSolver };
     }
@@ -89,7 +89,7 @@ osmt_context osmt_mk_context( osmt_logic l )
         LRATheory *lratheory = new LRATheory(*config);
         THandler *thandler = new THandler(*config, *lratheory);
         SimpSMTSolver* solver = new SimpSMTSolver(*config, *thandler);
-        MainSolver* mainSolver = new MainSolver(*thandler, *config, solver);
+        MainSolver* mainSolver = new MainSolver(*thandler, *config, solver, "qf_lra solver");
         return { mainSolver };
     }
     else {

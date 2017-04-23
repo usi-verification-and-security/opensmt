@@ -1082,9 +1082,10 @@ bool MainSolver::writeSolverSplits(int** &splits, char** msg)
 
 sstat MainSolver::check()
 {
+    printf("; %s query time so far: %f\n", solver_name, query_timer.getTime());
+    opensmt::StopWatch sw(query_timer); // We time the queries
     sstat rval;
     rval = simplifyFormulas();
-
     if (config.dump_query())
         printFramesAsQuery();
 
@@ -1264,7 +1265,7 @@ void MainSolver::solve_split(int i, int s, int wpipefd, std::mutex *mtx)
         goto done;
     }
 
-    main_solver = new MainSolver(getTHandler(), config, new SimpSMTSolver(config, getTHandler()));
+    main_solver = new MainSolver(getTHandler(), config, new SimpSMTSolver(config, getTHandler()), "split_solver");
     main_solver->initialize();
 
     if (!main_solver->readSolverState(split,split_sz,true, &msg)) {

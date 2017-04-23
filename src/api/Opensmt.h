@@ -26,7 +26,7 @@ typedef enum
 class Opensmt
 {
 public:
-    Opensmt(opensmt_logic _logic, int bw = 32);
+    Opensmt(opensmt_logic _logic, const char* name, int bw = 32);
     ~Opensmt();
 
     SMTConfig& getConfig() { return *config; }
