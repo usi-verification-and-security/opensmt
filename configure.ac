@@ -29,14 +29,14 @@ AC_DEFINE(SVN_REVISION, "svnversion", [SVN Revision])
 
 AC_ARG_ENABLE(library,
   AC_HELP_STRING([--enable-library],
-                 [produces OpenSMT libraries (@<:@no@:>@)]),
+                 [produces OpenSMT libraries (@<:@yes@:>@)]),
   [:],
-  enable_library="no")
+  enable_library="yes")
 
 if test $enable_library = "yes";
 then
   includedir="$includedir/opensmt"
-  echo "Insalling libraries to... ${includedir}"
+  echo "Installing library headers to... ${includedir}"
 fi
 
 AM_CONDITIONAL([ENABLE_LIBRARY], [test "$enable_library" = "yes"])
