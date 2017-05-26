@@ -285,6 +285,7 @@ public:
   static const char* o_do_substitutions;
   static const char* o_smt_split_format;
   static const char* o_smt_split_format_length;
+  static const char* o_respect_logic_partitioning_hints;
 
 private:
 
@@ -595,6 +596,9 @@ public:
       }
       return spformat_full; // The default
     }
+  bool respect_logic_partitioning_hints() const
+  { return optionTable.has(o_respect_logic_partitioning_hints) ?
+      optionTable[o_respect_logic_partitioning_hints]->getValue().numval : 0; }
   double sat_resource_limit() const
     { return optionTable.has(o_sat_resource_limit) ?
         optionTable[o_sat_resource_limit]->getValue().getDoubleVal() : -1; }

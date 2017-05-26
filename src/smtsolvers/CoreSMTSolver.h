@@ -765,6 +765,7 @@ protected:
 
     SpPref   split_preference;
 
+    int         unadvised_splits; // How many times the split happened on a PTRef that the logic considers ill-advised
     // Resource contraints:
     //
     int64_t             conflict_budget;    // -1 means no budget.

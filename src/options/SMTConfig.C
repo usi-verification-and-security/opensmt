@@ -515,7 +515,7 @@ const char* SMTConfig::o_dryrun = ":dryrun";
 const char* SMTConfig::o_do_substitutions = ":do-substitutions";
 const char* SMTConfig::o_smt_split_format = ":split-format";
 const char* SMTConfig::o_smt_split_format_length = ":split-format-length"; // brief or full: output the constraints only, or the full problem
-
+const char* SMTConfig::o_respect_logic_partitioning_hints = ":respect-logic-partitioning-hints"; // Logic can have a say whether a var is good for partitioning
 char* SMTConfig::server_host=NULL;
 uint16_t SMTConfig::server_port = 0;
 char* SMTConfig::database_host=NULL;

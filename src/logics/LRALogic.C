@@ -60,6 +60,8 @@ LRALogic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
         args.clear();
         args.push(i1); args.push(i2);
         PTRef andr = mkAnd(args);
+        lra_split_inequalities.insert(i1, true);
+        lra_split_inequalities.insert(i2, true);
 #ifdef PRODUCE_PROOF
         if (hasOriginalAssertion(tr)) {
             PTRef orig = getOriginalAssertion(tr);
@@ -72,7 +74,10 @@ LRALogic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
     Logic::visit(tr, tr_map);
 }
 
-
+bool LRALogic::okToPartition(PTRef tr) const
+{
+    return !lra_split_inequalities.has(tr);
+}
 /***********************************************************
  * Class defining simplifications
  ***********************************************************/

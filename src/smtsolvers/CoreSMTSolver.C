@@ -120,6 +120,7 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , split_midtune         (config.sat_split_midtune())
     , split_next            (split_units == spm_time ? cpuTime() + split_inittune : decisions + split_inittune)
     , split_preference      (sppref_undef)
+    , unadvised_splits      (0)
     , learnt_t_lemmata      (0)
     , perm_learnt_t_lemmata (0)
     , luby_i                (0)
@@ -236,6 +237,7 @@ CoreSMTSolver::~CoreSMTSolver()
     if ( config.produceStats() != 0 ) printStatistics ( config.getStatsOut( ) );
     // TODO added for convenience
     if ( config.print_stats != 0 ) printStatistics ( cerr );
+
 #endif
 
 #ifdef PRODUCE_PROOF
@@ -2786,12 +2788,25 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
     int d = decisionLevel();
 
     int count = 0;
+    bool respect_logic_partitioning_hints = config.respect_logic_partitioning_hints();
+    int skipped_vars_due_to_logic = 0;
+
 #ifdef LADEBUG
     printf("Starting lookahead loop with %d vars\n", nVars());
 #endif
     for (Var v(idx % nVars()); (LAexacts[v].getRound() != latest_round); v = Var((idx + (++i)) % nVars()))
     {
-        if (!decision[v]) continue; // Skip the non-decision vars
+        if (!decision[v]) {
+            LAexacts[v].setRound(latest_round);
+            continue; // Skip the non-decision vars
+        }
+        if (v == (idx * nVars()) && skipped_vars_due_to_logic > 0)
+            respect_logic_partitioning_hints = false; // Allow branching on these since we looped back.
+        if (respect_logic_partitioning_hints && !(theory_handler.getLogic().okToPartition(theory_handler.varToTerm(v)))) {
+            skipped_vars_due_to_logic ++;
+
+            continue; // Skip the vars that the logic considers bad to split on
+        }
 #ifdef LADEBUG
         printf("Checking var %d\n", v);
 #endif
@@ -2825,6 +2840,11 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
                 best = lit_Undef;
                 return l_True; // Stands for SAT
             }
+            continue;
+        }
+        if (trail.size() == nVars() + skipped_vars_due_to_logic) {
+            printf("; %d vars were skipped\n", skipped_vars_due_to_logic);
+            respect_logic_partitioning_hints = false;
             continue;
         }
         count++;
@@ -2892,6 +2912,7 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
 #endif
     idx = (idx + i) % nVars();
     best = getLABest();
+    if (!theory_handler.getLogic().okToPartition(theory_handler.varToTerm(var(getLABest())))) { unadvised_splits++; }
     return l_Undef;
 }
 
@@ -3165,6 +3186,8 @@ void CoreSMTSolver::printStatistics( ostream & os )
 //    os << "# Interf. equalities.......: " << ie_generated << " out of " << egraph.getInterfaceTermsNumber( ) * (egraph.getInterfaceTermsNumber( )-1) / 2 << endl;
     os << "; Init clauses.............: " << clauses.size() << endl;
     os << "; Variables................: " << nVars() << endl;
+    if (config.sat_split_type() != spt_none)
+    os << "; Ill-adviced splits.......: " << unadvised_splits << endl;
 }
 
 //void CoreSMTSolver::clausesPublish() {

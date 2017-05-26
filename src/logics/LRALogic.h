@@ -80,13 +80,18 @@ class LRALogic: public Logic
 
     static const char*  s_sort_real;
 
-    static const char* e_nonlinear_term;
+    static const char*  e_nonlinear_term;
 
     bool split_eq;
+    Map<PTRef,bool,PTRefHash> lra_split_inequalities;
     void visit(PTRef, Map<PTRef,PTRef,PTRefHash>&);
   public:
     LRALogic                    (SMTConfig& c);
-    ~LRALogic                   () { for (int i = 0; i < reals.size(); i++) delete reals[i]; }
+    ~LRALogic                   () {
+        for (int i = 0; i < reals.size(); i++) delete reals[i];
+        if (config.sat_split_type() != spt_none)
+            cerr << "; Num of LRA equalities in input: " << lra_split_inequalities.getSize()/2 << "\n";
+    }
 
     virtual const char* getName()                const { return getLogic().str; }
     virtual const Logic_t getLogic()             const { return QF_LRA; }
@@ -194,6 +199,7 @@ class LRALogic: public Logic
     lbool arithmeticElimination(vec<PTRef>&, Map<PTRef,PtAsgn,PTRefHash>&);
     void simplifyAndSplitEq(PTRef, PTRef&);
 
+    virtual bool okToPartition(PTRef tr) const; // Partitioning hints from logic
     virtual void serializeLogicData(int*& logicdata_buf) const;
     void deserializeLogicData(const int* logicdata_buf);
 

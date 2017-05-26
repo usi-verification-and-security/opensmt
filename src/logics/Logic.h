@@ -199,6 +199,7 @@ class Logic {
 
   public:
     virtual bool okForBoolVar(PTRef) const; // True if the ref can have a boolean var
+    virtual bool okToPartition(PTRef) const { return true; } // Does the logic think this is a good var to partition on (while parallelizing)
     bool existsTermHash(SymRef, const vec<PTRef>&);
     static const char*  tk_true;
     static const char*  tk_false;
