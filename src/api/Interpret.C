@@ -671,14 +671,16 @@ bool Interpret::checkSat() {
     if (res == s_Undef) {
         const SMTOption& o_dump_state = config.getOption(":dump-state");
         const SpType o_split = config.sat_split_type();
+        char* name = config.dump_state();
         if (!o_dump_state.isEmpty() && o_split == spt_none)
-            writeState(config.dump_state());
+            writeState(name);
         else if (o_split != spt_none) {
             if (config.smt_split_format() == spformat_smt2)
-                writeSplits_smtlib2(config.dump_state());
+                writeSplits_smtlib2(name);
             else
-                writeSplits(config.dump_state());
+                writeSplits(name);
         }
+        free(name);
     }
 
     return true;

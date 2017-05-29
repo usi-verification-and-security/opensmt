@@ -2606,7 +2606,7 @@ bool CoreSMTSolver::LApropagate_wrapper()
 #ifdef LADEBUG
                 printf("Theory unsatisfiability\n");
 #endif
-                return -1; // Unsat
+                return false; // Unsat
             }
             else if (res == 2)
             {
@@ -2683,11 +2683,11 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
                 bool res = LApropagate_wrapper();
                 if (res == false)
                 {
-#ifdef LADEBUG
+
                     printf(" -> Path this far is unsatisfiable already\n");
                     printf("Marking the subtree false:\n");
                     n.print();
-#endif
+
                     n.v = l_False;
                     break;
                 }
@@ -2739,7 +2739,9 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
         lbool res = lookahead_loop(best, idx);
         assert(decisionLevel() <= n.d);
 
-        if (decisionLevel() < n.d)
+        if (res == l_False)
+            return l_False;
+        else if (decisionLevel() < n.d)
         {
 #ifdef LADEBUG
             printf("Unsatisfiability detected after lookahead\n");
@@ -2760,8 +2762,6 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
 #endif
             return l_True;
         }
-        else if (res == l_False)
-            return l_False;
 
         assert(best != lit_Undef);
 

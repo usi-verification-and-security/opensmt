@@ -181,12 +181,14 @@ int main( int argc, char * argv[] )
 
     if (argc - optind == 0) {
         fin = stdin;
+        c.setInstanceName("stdin");
         int rval = interpreter.interpInteractive(fin);
     }
     else {
         for (int i = optind; i < argc; i++) {
             const char * filename = argv[i];
             assert( filename );
+            c.setInstanceName(filename);
             if ( strncmp( filename, "--", 2 ) == 0
                || strncmp( filename, "-", 1 ) == 0 ) {
                 opensmt_error( "input file must be last argument" ); }

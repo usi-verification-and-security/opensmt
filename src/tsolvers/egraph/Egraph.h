@@ -56,6 +56,7 @@ class UFSolverStats: public TSolverStats
         opensmt::OSMTTimeVal egraph_backtrack_timer;
         opensmt::OSMTTimeVal egraph_explain_timer;
         int num_eq_classes;
+        UFSolverStats() : num_eq_classes(0) {}
         void printStatistics(ostream& os)
         {
             os << "; -------------------------" << endl;

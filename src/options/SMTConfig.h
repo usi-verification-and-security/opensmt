@@ -268,6 +268,7 @@ public:
   static const char* o_sat_resource_units;
   static const char* o_sat_resource_limit;
   static const char* o_dump_state;
+  static const char* o_inst_name;
   static const char* o_dump_only;
   static const char* o_dump_mode;
   static const char* o_dump_query;
@@ -286,6 +287,7 @@ public:
   static const char* o_smt_split_format;
   static const char* o_smt_split_format_length;
   static const char* o_respect_logic_partitioning_hints;
+  static const char* o_output_dir;
 
 private:
 
@@ -396,6 +398,8 @@ public:
 
   inline void setLRAStrengthFactor(const char *factor) { insertOption(o_itp_lra_factor, new SMTOption(factor)); }
 
+  inline void setInstanceName(const char* name) { insertOption(o_inst_name, new SMTOption(name)); }
+
   // Get interpolation algorithms
   inline ItpAlgorithm getBooleanInterpolationAlgorithm() {
       if (optionTable.has(o_itp_bool_alg)) { return { optionTable[o_itp_bool_alg]->getValue().numval }; }
@@ -409,9 +413,14 @@ public:
       if (optionTable.has(o_itp_lra_alg)) { return { optionTable[o_itp_lra_alg]->getValue().numval }; }
       else { return itp_lra_alg_strong; }}
 
-  inline const char* getLRAStrengthFactor() { 
+  inline const char* getLRAStrengthFactor() {
       if (optionTable.has(o_itp_lra_factor)) { return optionTable[o_itp_lra_factor]->getValue().strval; }
       else { return itp_lra_factor_0; }
+  }
+
+  inline const char* getInstanceName() const {
+      if (optionTable.has(o_inst_name))  { return optionTable[o_inst_name]->getValue().strval; }
+      else { return "unknown"; }
   }
 
   inline void setRegularOutputChannel( const char * attr )
@@ -602,9 +611,52 @@ public:
   double sat_resource_limit() const
     { return optionTable.has(o_sat_resource_limit) ?
         optionTable[o_sat_resource_limit]->getValue().getDoubleVal() : -1; }
-  const char* dump_state() const
-    { return optionTable.has(o_dump_state) ?
-        optionTable[o_dump_state]->getValue().strval : "out.osmt2"; }
+  char* dump_state() const
+    {
+        char* n;
+        if (optionTable.has(o_dump_state))
+            n = strdup(optionTable[o_dump_state]->getValue().strval);
+        else {
+            const char* name = getInstanceName();
+            int name_length = strlen(name)-strlen(".smt2");
+            n = (char*)malloc(name_length+1);
+            for (int i = 0; i < name_length; i++)
+                n[i] = name[i];
+            n[name_length] = '\0';
+        }
+        const char* path = output_dir();
+        // If output_dir() is not defined (or is empty), just return the
+        // path of dump_state
+        if (strlen(path) == 0)
+            return n;
+        // Otherwise, use basename from dump_state but prepend
+        // output_dir.
+        char* base = basename(n);
+        int full_length = strlen(base)+1+strlen(output_dir());
+        char *full_str = (char*)malloc(full_length+1);
+        char* ptr = full_str;
+        for (int i = 0; i < strlen(path); i++) {
+            *ptr = path[i];
+            ptr++;
+        }
+        (*ptr) = '/';
+        ptr++;
+        for (int i = 0; i < strlen(base); i++) {
+            *ptr = base[i];
+            ptr++;
+        }
+        *ptr = '\0';
+
+        free(n);
+        return full_str;
+    }
+  const char* output_dir() const
+    {
+        if (optionTable.has(o_output_dir))
+            return optionTable[o_output_dir]->getValue().strval;
+        else
+            return "";
+    }
   int dump_only() const
     { return optionTable.has(o_dump_only) ?
         optionTable[o_dump_only]->getValue().numval : 0; }
@@ -661,7 +713,7 @@ public:
   int sat_split_num() const {
       return optionTable.has(o_sat_split_num) ?
               optionTable[o_sat_split_num]->getValue().numval :
-              -1; }
+              2; }
   int sat_split_asap() const {
       return optionTable.has(o_sat_split_asap) ?
               optionTable[o_sat_split_asap]->getValue().numval :
