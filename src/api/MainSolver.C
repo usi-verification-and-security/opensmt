@@ -1062,28 +1062,30 @@ bool MainSolver::writeSolverSplit(int s, int* &split, int &split_sz, bool compre
     return true;
 }
 
-/*
-bool MainSolver::writeSolverSplits(int** &splits, char** msg)
+void MainSolver::printFramesAsQuery()
 {
-    splits = (int **)malloc(ts.solver.splits.size() * sizeof(int *));
-
-    for (int i = 0; i < ts.solver.splits.size(); i++) {
-        if (!writeSolverSplit(i, splits[i], msg)) {
-            for (int j=0; j<i; j++){
-                free(splits[j]);
-            }
-            free(splits);
-            return false;
-        }
+    char* base_name = config.dump_query_name();
+    if (base_name == NULL)
+        getTheory().printFramesAsQuery(formulas, std::cout);
+    else {
+        char* s_file_name;
+        asprintf(&s_file_name, "%s-%d.smt2", base_name, check_called);
+        std::ofstream stream;
+        stream.open(s_file_name);
+        getTheory().printFramesAsQuery(formulas, stream);
+        stream.close();
+        free(s_file_name);
     }
-    return true;
+    free(base_name);
 }
-*/
 
 sstat MainSolver::check()
 {
-    printf("; %s query time so far: %f\n", solver_name, query_timer.getTime());
-    opensmt::StopWatch sw(query_timer); // We time the queries
+    check_called ++;
+    if (config.timeQueries()) {
+        printf("; %s query time so far: %f\n", solver_name, query_timer.getTime());
+        opensmt::StopWatch sw(query_timer);
+    }
     sstat rval;
     rval = simplifyFormulas();
     if (config.dump_query())

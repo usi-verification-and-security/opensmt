@@ -97,6 +97,7 @@ class MainSolver
     opensmt::OSMTTimeVal query_timer; // How much time we spend solving.
     char*          solver_name; // Name for the solver
     int            simplified_until; // The formulas have been simplified up to and including formulas[simplified_until-1].
+    int            check_called;     // A counter on how many times check was called.
     sstat          status;           // The status of the last solver call (initially s_Undef)
 
     bool          binary_init; // Was the formula loaded from .osmt2
@@ -144,6 +145,7 @@ class MainSolver
         , binary_init(false)
         , root_instance(logic.getTerm_true())
         , simplified_until(0)
+        , check_called(0)
     {
         solver_name = strdup(name);
         formulas.push(pfstore.alloc());
@@ -170,7 +172,7 @@ class MainSolver
     sstat solve           ();
     sstat check           ();      // A wrapper for solve which simplifies the loaded formulas and initializes the solvers
 
-    void printFramesAsQuery() { getTheory().printFramesAsQuery(formulas); }
+    void printFramesAsQuery();
 
     sstat lookaheadSplit  (int d)  { return status = sstat(ts.solver.lookaheadSplit2(d)); }
     sstat getStatus       ()       { return status; }

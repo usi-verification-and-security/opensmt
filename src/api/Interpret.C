@@ -649,10 +649,7 @@ bool Interpret::checkSat() {
         sat_calls++;
         char* msg = NULL;
 
-        res = main_solver->simplifyFormulas(&msg);
-        if (res == s_Undef) {
-            res = main_solver->solve();
-       }
+        res = main_solver->check();
 
         if (res == s_True) {
             notify_formatted(false, "sat");

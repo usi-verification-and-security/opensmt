@@ -372,6 +372,7 @@ class Logic {
     virtual bool isBuiltinSort      (const SRef sr)   const { return sr == sort_BOOL; }
     virtual bool isBuiltinConstant  (const SymRef sr) const { return isConstant(sr) && (sr == sym_TRUE || sr == sym_FALSE); }
     bool         isBuiltinConstant  (const PTRef tr)  const { return isBuiltinConstant(getPterm(tr).symb()); }
+    virtual bool isBuiltinFunction  (const SymRef sr) const;
     bool         isConstant         (const SymRef sr) const;
     bool         isConstant         (PTRef tr)        const { return isConstant(getPterm(tr).symb()); }
     bool         isUFTerm           (PTRef tr)        const { return isUFSort(getSortRef(tr)); }

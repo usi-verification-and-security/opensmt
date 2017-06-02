@@ -152,7 +152,7 @@ class Theory
     virtual bool            simplify(vec<PFRef>&, int) = 0; // Simplify a vector of PushFrames in an incrementality-aware manner
     vec<DedElem>           &getDeductionVec()   { return deductions; }
     bool                    computeSubstitutions(PTRef coll_f, vec<PFRef>& frames, int curr);
-    void                    printFramesAsQuery(vec<PFRef>& en_frames);
+    void                    printFramesAsQuery(vec<PFRef>& en_frames, std::ostream& s);
     virtual                ~Theory()                           {};
 };
 

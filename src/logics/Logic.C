@@ -201,6 +201,12 @@ Logic::Logic(SMTConfig& c) :
 #endif
 }
 
+bool Logic::isBuiltinFunction(const SymRef sr) const
+{
+    if (sr == sym_TRUE || sr == sym_FALSE || sr == sym_AND || sr == sym_OR || sr == sym_XOR || sr == sym_NOT || sr == sym_EQ || sr == sym_IMPLIES || sr == sym_DISTINCT || sr == sym_ITE) return true;
+    if (isEquality(sr) || isDisequality(sr)) return true;
+}
+
 Logic::~Logic()
 {
     cerr << "; -------------------------\n";
@@ -1975,6 +1981,7 @@ Logic::dumpHeaderToFile(ostream& dump_out)
             dump_out << "(declare-const ";
         }
         //else if (!isUF(s) && !isVar(s)) continue;
+        else if (isBuiltinFunction(s)) continue;
         else {
             dump_out << "(declare-fun ";
         }

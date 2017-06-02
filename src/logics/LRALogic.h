@@ -107,6 +107,7 @@ class LRALogic: public Logic
 
     virtual bool isBuiltinSort  (SRef sr) const { return sr == sort_REAL || Logic::isBuiltinSort(sr); }
     virtual bool isBuiltinConstant(SymRef sr) const { return (isRealConst(sr) || Logic::isBuiltinConstant(sr)); }
+    virtual bool isBuiltinFunction(SymRef sr) const;
 
     bool  isRealConst     (SymRef sr)     const { return isConstant(sr) && hasSortReal(sr); }
     bool  isRealConst     (PTRef tr)      const { return isRealConst(getPterm(tr).symb()); }

@@ -268,10 +268,12 @@ public:
   static const char* o_sat_resource_units;
   static const char* o_sat_resource_limit;
   static const char* o_dump_state;
+  static const char* o_time_queries;
   static const char* o_inst_name;
   static const char* o_dump_only;
   static const char* o_dump_mode;
   static const char* o_dump_query;
+  static const char* o_dump_query_name;
   static const char* o_sat_dump_learnts;
   static const char* o_sat_split_type;
   static const char* o_sat_split_inittune;
@@ -315,6 +317,32 @@ private:
           option_names.push(my_name);
           optionTable.insert(my_name, o);
       }
+  }
+  char* append_output_dir(const char* name) const
+  {
+      const char* path = output_dir();
+      // If output_dir() is not defined (or is empty), just return (copy of) name
+      if (strlen(path) == 0)
+          return strdup(name);
+      // Otherwise, use name but prepend output_dir.
+      char* tmp_name = strdup(name);
+      char* base = basename(tmp_name);
+      int full_length = strlen(base)+1+strlen(output_dir());
+      char *full_str = (char*)malloc(full_length+1);
+      char* ptr = full_str;
+      for (int i = 0; i < strlen(path); i++) {
+          *ptr = path[i];
+          ptr++;
+      }
+      (*ptr) = '/';
+      ptr++;
+      for (int i = 0; i < strlen(base); i++) {
+          *ptr = base[i];
+          ptr++;
+      }
+      *ptr = '\0';
+      free(tmp_name);
+      return full_str;
   }
   //
   // For standard executable
@@ -381,6 +409,8 @@ public:
 
   inline void setProduceProofs( ) { if ( print_proofs_smtlib2 != 0 ) return; print_proofs_smtlib2 = 1; }
 
+  void setTimeQueries() { insertOption(o_time_queries, new SMTOption(1)); }
+  bool timeQueries()    { return optionTable.has(o_time_queries) ? optionTable[o_time_queries]->getValue().numval : false; }
   // Set reduction params
   inline void setReduction(int r) { insertOption(o_proof_reduce, new SMTOption(r)); }
 
@@ -611,6 +641,7 @@ public:
   double sat_resource_limit() const
     { return optionTable.has(o_sat_resource_limit) ?
         optionTable[o_sat_resource_limit]->getValue().getDoubleVal() : -1; }
+
   char* dump_state() const
     {
         char* n;
@@ -624,31 +655,9 @@ public:
                 n[i] = name[i];
             n[name_length] = '\0';
         }
-        const char* path = output_dir();
-        // If output_dir() is not defined (or is empty), just return the
-        // path of dump_state
-        if (strlen(path) == 0)
-            return n;
-        // Otherwise, use basename from dump_state but prepend
-        // output_dir.
-        char* base = basename(n);
-        int full_length = strlen(base)+1+strlen(output_dir());
-        char *full_str = (char*)malloc(full_length+1);
-        char* ptr = full_str;
-        for (int i = 0; i < strlen(path); i++) {
-            *ptr = path[i];
-            ptr++;
-        }
-        (*ptr) = '/';
-        ptr++;
-        for (int i = 0; i < strlen(base); i++) {
-            *ptr = base[i];
-            ptr++;
-        }
-        *ptr = '\0';
-
+        char* name = append_output_dir(n);
         free(n);
-        return full_str;
+        return name;
     }
   const char* output_dir() const
     {
@@ -663,6 +672,28 @@ public:
   bool dump_query() const
     { return optionTable.has(o_dump_query) ?
         optionTable[o_dump_query]->getValue().numval : 0; }
+
+  void set_dump_query_name(const char* dump_query_name)
+    {
+        if (optionTable.has(o_dump_query_name)) {
+            delete optionTable[o_dump_query_name];
+            optionTable[o_dump_query_name] = new SMTOption(strdup(dump_query_name));
+        }
+        else
+            insertOption(o_dump_query_name, new SMTOption(strdup(dump_query_name)));
+    }
+  char* dump_query_name() const
+    {
+        char* n;
+        if (optionTable.has(o_dump_query_name))
+            n = strdup(optionTable[o_dump_query_name]->getValue().strval);
+        else {
+            return NULL;
+        }
+        char* name = append_output_dir(n);
+        free(n);
+        return name;
+    }
 
   int sat_dump_learnts() const
     { return optionTable.has(o_sat_dump_learnts) ?

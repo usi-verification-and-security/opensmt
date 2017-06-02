@@ -331,6 +331,12 @@ LRALogic::LRALogic(SMTConfig& c) :
     sym_store.setInterpreted(sym_Real_ITE);
 }
 
+bool LRALogic::isBuiltinFunction(const SymRef sr) const
+{
+    if (sr == sym_Real_NEG || sr == sym_Real_MINUS || sr == sym_Real_PLUS || sr == sym_Real_TIMES || sr == sym_Real_DIV || sr == sym_Real_EQ || sr == sym_Real_LEQ || sr == sym_Real_LT || sr == sym_Real_GEQ || sr == sym_Real_GT || sr == sym_Real_ITE) return true;
+    else return Logic::isBuiltinFunction(sr);
+}
+
 const opensmt::Real&
 LRALogic::getRealConst(PTRef tr) const
 {
