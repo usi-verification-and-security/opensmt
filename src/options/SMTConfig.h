@@ -282,6 +282,7 @@ public:
   static const char* o_sat_split_asap;
   static const char* o_sat_split_units;
   static const char* o_sat_split_preference;
+  static const char* o_sat_split_test_cube_and_conquer;
   static const char* o_produce_models;
   static const char* o_sat_remove_symmetries;
   static const char* o_dryrun;
@@ -711,6 +712,10 @@ public:
         parallel_threads = threads;
         return true;
     }
+
+  bool sat_split_test_cube_and_conquer() const
+    { return optionTable.has(o_sat_split_test_cube_and_conquer) ?
+        optionTable[o_sat_split_test_cube_and_conquer]->getValue().numval : 0; }
 
   const SpType sat_split_type() const {
       if (optionTable.has(o_sat_split_type)) {

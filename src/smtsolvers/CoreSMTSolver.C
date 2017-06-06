@@ -2728,7 +2728,10 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
             printTrace();
 #endif
             createSplit_lookahead();
-            continue;
+            if (config.sat_split_test_cube_and_conquer())
+                return l_Undef; // The cube-and-conquer experiment
+            else
+                continue;
         }
 
         // Otherwise we will continue here by attempting to create two children for this node
