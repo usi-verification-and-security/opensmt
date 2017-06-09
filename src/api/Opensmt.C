@@ -5,6 +5,8 @@
 Opensmt::Opensmt(opensmt_logic _logic, const char* name, int bw)
 {
     config = new SMTConfig();
+    const char* msg;
+    config->setOption(SMTConfig::o_time_queries, SMTOption(1), msg);
     switch(_logic)
     {
     case qf_uf:
