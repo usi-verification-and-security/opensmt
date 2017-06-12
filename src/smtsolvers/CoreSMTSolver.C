@@ -2595,6 +2595,11 @@ bool CoreSMTSolver::LApropagate_wrapper()
                 learnts.push(crd);
                 attachClause(crd);
             }
+            if (decisionLevel() == 0 &&  !simplify())
+            {
+                return false; // Unsat
+            }
+            assert(value(out_learnt[0]) == l_Undef);
             uncheckedEnqueue(out_learnt[0], crd);
             diff = true;
         }
@@ -2679,9 +2684,10 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
 #ifdef LADEBUG
                 printf("I will propagate %s%d\n", sign(path[i]) ? "-" : "", var(path[i]));
 #endif
+                int curr_dl = decisionLevel();
                 uncheckedEnqueue(path[i]);
                 bool res = LApropagate_wrapper();
-                if (res == false)
+                if (res == false || curr_dl != decisionLevel())
                 {
 
                     printf(" -> Path this far is unsatisfiable already\n");
@@ -2811,13 +2817,15 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
             continue; // Skip the vars that the logic considers bad to split on
         }
 #ifdef LADEBUG
-        printf("Checking var %d\n", v);
+//       printf("Checking var %d\n", v);
 #endif
         if (value(v) != l_Undef || (getLABest() != lit_Undef && LAupperbounds[v].safeToSkip(LAexacts[var(getLABest())])))
         {
 #ifdef LADEBUG
-            printf("  Var is safe to skip due to %s\n",
-                   value(v) != l_Undef ? "being assigned" : "having low upper bound");
+//            printf("  Var is safe to skip due to %s\n",
+//                   value(v) != l_Undef ? "being assigned" : "having low upper bound");
+            if (value(v) == l_Undef)
+                printf("  Var is safe to skip due to having low upper bound\n");
 #endif
             LAexacts[v].setRound(latest_round);
             // It is possible that all variables are assigned here.
@@ -2859,7 +2867,7 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
             Lit l = mkLit(v, p);
             int tmp_trail_sz = trail.size();
 #ifdef LADEBUG
-            printf("Checking lit %s%d\n", p == 0 ? "" : "-", v);
+//           printf("Checking lit %s%d\n", p == 0 ? "" : "-", v);
 #endif
             uncheckedEnqueue(l);
             bool res = LApropagate_wrapper();
@@ -2871,7 +2879,7 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
             if (decisionLevel() == d+1)
             {
 #ifdef LADEBUG
-                printf(" -> Successfully propagated %d lits\n", trail.size() - tmp_trail_sz);
+//                printf(" -> Successfully propagated %d lits\n", trail.size() - tmp_trail_sz);
 #endif
                 for (int j = 0; j < trail.size(); j++)
                     updateLAUB(trail[j], trail.size());
@@ -2900,7 +2908,7 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
         if (value(v) == l_Undef)
         {
 #ifdef LADEBUG
-            printf("Updating var %d to (%d, %d)\n", v, p0, p1);
+//           printf("Updating var %d to (%d, %d)\n", v, p0, p1);
 #endif
             setLAExact(v, p0, p1);
             updateLABest(v);
