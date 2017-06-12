@@ -2149,12 +2149,14 @@ ValPair BitBlaster::getValue(PTRef tr)
 lbool
 BitBlaster::notifyEqualities()
 {
+    int added_eqs = 0;
     lbool stat = l_Undef;
     for (int i = last_refined; i < refined.size(); i++) {
         for (int j = i+1; j < refined.size(); j++) {
             if (logic.getSortRef(refined[i]) != logic.getSortRef(refined[j]))
                 continue;
             PTRef eq = logic.mkEq(refined[i], refined[j]);
+            added_eqs++;
             if (!logic.isEquality(eq)) continue;
             stat = notifyEquality(eq);
             if ((stat == l_False) || (stat == l_True))
@@ -2164,6 +2166,7 @@ BitBlaster::notifyEqualities()
             if (logic.getSortRef(refined[i]) != logic.getSortRef(refined[j]))
                 continue;
             PTRef eq = logic.mkEq(refined[i], refined[j]);
+            added_eqs++;
             if (!logic.isEquality(eq)) continue;
             stat = notifyEquality(eq);
             if ((stat == l_False) || (stat == l_True))
@@ -2171,7 +2174,7 @@ BitBlaster::notifyEqualities()
         }
     }
 
-
+    cerr << "; Added " << added_eqs << " equalities for bind" << endl;
 
     last_refined = refined.size();
 
