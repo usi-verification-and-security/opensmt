@@ -2317,7 +2317,7 @@ void CoreSMTSolver::declareVarsToTheories()
     {
         if (!var_seen[i])
         {
-            decision[i] = false;
+            setDecisionVar(decision[i], false);
 #ifdef PEDANTIC_DEBUG
             cerr << "Disabling var " << theory_handler.getLogic().printTerm(theory_handler.varToTerm(i)) << endl;
 #endif
@@ -2807,17 +2807,18 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
     {
         if (!decision[v]) {
             LAexacts[v].setRound(latest_round);
+            printf("Not a decision variable: %d (%s)\n", v, theory_handler.getLogic().printTerm(theory_handler.varToTerm(v)));
             continue; // Skip the non-decision vars
         }
         if (v == (idx * nVars()) && skipped_vars_due_to_logic > 0)
             respect_logic_partitioning_hints = false; // Allow branching on these since we looped back.
         if (respect_logic_partitioning_hints && !(theory_handler.getLogic().okToPartition(theory_handler.varToTerm(v)))) {
             skipped_vars_due_to_logic ++;
-
+            printf("Skipping %d since logic says it's not good\n", v);
             continue; // Skip the vars that the logic considers bad to split on
         }
 #ifdef LADEBUG
-       printf("Checking var %d\n", v);
+        printf("Checking var %d\n", v);
 #endif
         if (value(v) != l_Undef || (getLABest() != lit_Undef && LAupperbounds[v].safeToSkip(LAexacts[var(getLABest())])))
         {
@@ -2831,7 +2832,7 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
             // It is possible that all variables are assigned here.
             // In this case it seems that we have a satisfying assignment.
             // This is in fact a debug check
-            if (trail.size() == nVars())
+            if (trail.size() == nVars() - dec_vars)
             {
                 printf("All vars set?\n");
                 if (checkTheory(true) != 1)
@@ -2869,7 +2870,7 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
             Lit l = mkLit(v, p);
             int tmp_trail_sz = trail.size();
 #ifdef LADEBUG
-//           printf("Checking lit %s%d\n", p == 0 ? "" : "-", v);
+           printf("Checking lit %s%d\n", p == 0 ? "" : "-", v);
 #endif
             uncheckedEnqueue(l);
             bool res = LApropagate_wrapper();
@@ -2881,7 +2882,7 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
             if (decisionLevel() == d+1)
             {
 #ifdef LADEBUG
-//                printf(" -> Successfully propagated %d lits\n", trail.size() - tmp_trail_sz);
+                printf(" -> Successfully propagated %d lits\n", trail.size() - tmp_trail_sz);
 #endif
                 for (int j = 0; j < trail.size(); j++)
                     updateLAUB(trail[j], trail.size());
@@ -2910,13 +2911,14 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
         if (value(v) == l_Undef)
         {
 #ifdef LADEBUG
-//           printf("Updating var %d to (%d, %d)\n", v, p0, p1);
+           printf("Updating var %d to (%d, %d)\n", v, p0, p1);
 #endif
             setLAExact(v, p0, p1);
             updateLABest(v);
             assert(value(getLABest()) == l_Undef);
         }
     }
+    assert(getLABest() != lit_Undef);
 #ifdef LADEBUG
     printf("Lookahead phase over successfully\n");
     printf("Best I found propagates high %d and low %d\n",
@@ -2925,7 +2927,7 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
 #endif
     idx = (idx + i) % nVars();
     best = getLABest();
-    if (!theory_handler.getLogic().okToPartition(theory_handler.varToTerm(var(getLABest())))) { unadvised_splits++; }
+    if (best != lit_Undef && !theory_handler.getLogic().okToPartition(theory_handler.varToTerm(var(best)))) { unadvised_splits++; }
     return l_Undef;
 }
 
