@@ -2817,15 +2817,15 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
             continue; // Skip the vars that the logic considers bad to split on
         }
 #ifdef LADEBUG
-//       printf("Checking var %d\n", v);
+       printf("Checking var %d\n", v);
 #endif
         if (value(v) != l_Undef || (getLABest() != lit_Undef && LAupperbounds[v].safeToSkip(LAexacts[var(getLABest())])))
         {
 #ifdef LADEBUG
-//            printf("  Var is safe to skip due to %s\n",
-//                   value(v) != l_Undef ? "being assigned" : "having low upper bound");
-            if (value(v) == l_Undef)
-                printf("  Var is safe to skip due to having low upper bound\n");
+            printf("  Var is safe to skip due to %s\n",
+                   value(v) != l_Undef ? "being assigned" : "having low upper bound");
+//            if (value(v) == l_Undef)
+//                printf("  Var is safe to skip due to having low upper bound\n");
 #endif
             LAexacts[v].setRound(latest_round);
             // It is possible that all variables are assigned here.
@@ -2834,6 +2834,8 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
             if (trail.size() == nVars())
             {
                 printf("All vars set?\n");
+                if (checkTheory(true) != 1)
+                    return l_False; // Problem is trivially unsat
                 assert(checkTheory(true) == 1);
                 for (int j = 0; j < clauses.size(); j++)
                 {
