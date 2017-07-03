@@ -1114,12 +1114,16 @@ sstat MainSolver::solve()
     sstat *results;
     vec<int> *split_threads;
 
+    vec<PTRef> query;
+
     if (config.parallel_threads && config.sat_split_type() == spt_lookahead)
         status = lookaheadSplit(getLog2Ceil(config.sat_split_num()));
     else {
         vec<FrameId> en_frames;
-        for (int i = 0; i < formulas.size(); i++)
+        for (int i = 0; i < formulas.size(); i++) {
             en_frames.push(pfstore[formulas[i]].getId());
+            query.push(pfstore[formulas[i]].root);
+        }
         status = sstat(ts.solve(en_frames));
     }
     if (!(config.parallel_threads && status == s_Undef)) {
@@ -1128,6 +1132,10 @@ sstat MainSolver::solve()
         smt_solver->clearSearch();
         return status;
     }
+
+    prev_query = curr_query;
+    curr_query = logic.mkAnd(query);
+
     smt_solver->clearSearch();
 
     opensmt::stop = false;
