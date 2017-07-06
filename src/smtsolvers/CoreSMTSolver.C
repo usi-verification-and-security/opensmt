@@ -941,6 +941,7 @@ public:
 
 void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
 {
+    CRef confl_orig = confl;
 #ifdef PRODUCE_PROOF
     assert( proof.checkState( ) );
 #endif
@@ -999,6 +1000,7 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
         // Select next clause to look at:
         while (!seen[var(trail[index--])])
             ; // Do nothing
+        assert(index >= 0);
         p     = trail[index+1];
 
         if ( reason(var(p)) == CRef_Fake )
@@ -2581,6 +2583,9 @@ bool CoreSMTSolver::LApropagate_wrapper()
         diff = false;
         while ((cr = propagate()) != CRef_Undef)
         {
+            if (decisionLevel() == 0)
+                return false; // Unsat
+
             vec<Lit> out_learnt;
             int out_btlevel;
             analyze(cr, out_learnt, out_btlevel);
@@ -2594,10 +2599,6 @@ bool CoreSMTSolver::LApropagate_wrapper()
                 crd = ca.alloc(out_learnt, true);
                 learnts.push(crd);
                 attachClause(crd);
-            }
-            if (decisionLevel() == 0 &&  !simplify())
-            {
-                return false; // Unsat
             }
             assert(value(out_learnt[0]) == l_Undef);
             uncheckedEnqueue(out_learnt[0], crd);
@@ -2792,6 +2793,14 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
 
 lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
 {
+    if (checkTheory(true) != 1)
+    {
+#ifdef LADEBUG
+        printf("Already unsatisfiable at entering the lookahead loop\n");
+#endif
+        return l_False;
+    }
+
     updateRound();
     int i = 0;
     int d = decisionLevel();
@@ -2807,7 +2816,9 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
     {
         if (!decision[v]) {
             LAexacts[v].setRound(latest_round);
+#ifdef LADEBUG
             printf("Not a decision variable: %d (%s)\n", v, theory_handler.getLogic().printTerm(theory_handler.varToTerm(v)));
+#endif
             continue; // Skip the non-decision vars
         }
         if (v == (idx * nVars()) && skipped_vars_due_to_logic > 0)
@@ -2832,9 +2843,11 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
             // It is possible that all variables are assigned here.
             // In this case it seems that we have a satisfying assignment.
             // This is in fact a debug check
-            if (trail.size() == nVars() - dec_vars)
+            if (trail.size() == dec_vars)
             {
+#ifdef LADEBUG
                 printf("All vars set?\n");
+#endif
                 if (checkTheory(true) != 1)
                     return l_False; // Problem is trivially unsat
                 assert(checkTheory(true) == 1);
@@ -2917,6 +2930,13 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
             updateLABest(v);
             assert(value(getLABest()) == l_Undef);
         }
+    }
+    if (trail.size() == dec_vars && getLABest() == lit_Undef)
+    {
+#ifdef LADEBUG
+        printf("All variables are already set, so we have nothing to branch on and this is a SAT answer\n");
+#endif
+        return l_True;
     }
     assert(getLABest() != lit_Undef);
 #ifdef LADEBUG

@@ -800,6 +800,10 @@ protected:
     void     setLAExact       (Var v, int pprops, int nprops);                         // Set the exact la value
     Lit      getLABest        ()
     {
+        if (LABestLit == lit_Undef)
+            return lit_Undef;
+
+        assert(var(LABestLit) >= 0);
         if (LAexacts[var(LABestLit)].getRound() < latest_round)
         {
             return lit_Undef;
