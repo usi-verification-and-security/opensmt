@@ -1103,7 +1103,12 @@ sstat MainSolver::solve()
         return s_False;
 
     if (config.sat_split_type() == spt_lookahead) {
-        sstat res = lookaheadSplit(getLog2Ceil(config.sat_split_num()));
+        int fix_vars;
+        if (config.sat_split_fixvars() > 0)
+            fix_vars = config.sat_split_fixvars();
+        else
+            fix_vars = getLog2Ceil(config.sat_split_num());
+        sstat res = lookaheadSplit(fix_vars);
         return res;
     }
 

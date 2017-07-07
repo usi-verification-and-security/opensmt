@@ -511,6 +511,7 @@ const char* SMTConfig::o_sat_split_type = ":split-type";
 const char* SMTConfig::o_sat_split_inittune = ":split-init-tune";
 const char* SMTConfig::o_sat_split_midtune = ":split-mid-tune";
 const char* SMTConfig::o_sat_split_num = ":split-num";
+const char* SMTConfig::o_sat_split_fix_vars = ":split-fix-vars";
 const char* SMTConfig::o_sat_split_asap = ":split-asap";
 const char* SMTConfig::o_sat_split_units = ":split-units";
 const char* SMTConfig::o_sat_split_preference = ":split-preference";

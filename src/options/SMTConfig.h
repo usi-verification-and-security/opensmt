@@ -280,6 +280,7 @@ public:
   static const char* o_sat_split_inittune;
   static const char* o_sat_split_midtune;
   static const char* o_sat_split_num;
+  static const char* o_sat_split_fix_vars; // Like split_num, but give the number of vars to fix instead
   static const char* o_sat_split_asap;
   static const char* o_sat_split_units;
   static const char* o_sat_split_preference;
@@ -751,6 +752,10 @@ public:
       return optionTable.has(o_sat_split_num) ?
               optionTable[o_sat_split_num]->getValue().numval :
               2; }
+  int sat_split_fixvars() const {
+      return optionTable.has(o_sat_split_fix_vars) ?
+              optionTable[o_sat_split_fix_vars]->getValue().numval :
+              -1; }
   int sat_split_asap() const {
       return optionTable.has(o_sat_split_asap) ?
               optionTable[o_sat_split_asap]->getValue().numval :
