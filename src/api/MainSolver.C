@@ -1099,6 +1099,9 @@ sstat MainSolver::check()
 
 sstat MainSolver::solve()
 {
+    if (!smt_solver->okay())
+        return s_False;
+
     if (config.sat_split_type() == spt_lookahead) {
         sstat res = lookaheadSplit(getLog2Ceil(config.sat_split_num()));
         return res;
