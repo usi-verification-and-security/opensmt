@@ -3099,13 +3099,20 @@ bool CoreSMTSolver::createSplit_lookahead()
     SplitData& sp = splits.last();
 
     printf("; Outputing an instance:\n; ");
+    Lit p = lit_Undef;
     for (int i = 0; i < decisionLevel(); i++)
     {
         vec<Lit> tmp;
         Lit l = trail[trail_lim[i]];
-        tmp.push(l);
-        printf("%s%d ", sign(l) ? "-" : "", var(l));
-        sp.addConstraint(tmp);
+        if (p != l) {
+            // In cases where the LA solver couldn't propagate due to
+            // literal being already assigned, the literal may be
+            // duplicated.  Do not report duplicates.
+            tmp.push(l);
+            printf("%s%d ", sign(l) ? "-" : "", var(l));
+            sp.addConstraint(tmp);
+        }
+        p = l;
     }
     printf("\n");
 
