@@ -107,7 +107,7 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , random_seed           (c.getRandomSeed())
     , progress_estimate     (0)
     , remove_satisfied      (true)
-    , LABestLit             (lit_Undef)
+    , buf_LABests           (5, assigns, c.randomize_lookahead(),c.getRandomSeed())
     , resource_units        (config.sat_resource_units())
     , resource_limit        (config.sat_resource_limit())
     , next_resource_limit   (-1)
@@ -2831,7 +2831,8 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
 #ifdef LADEBUG
         printf("Checking var %d\n", v);
 #endif
-        if (value(v) != l_Undef || (getLABest() != lit_Undef && LAupperbounds[v].safeToSkip(LAexacts[var(getLABest())])))
+        Lit best = buf_LABests.getLit();
+        if (value(v) != l_Undef || (best != lit_Undef && LAupperbounds[v].safeToSkip(LAexacts[var(best)])))
         {
 #ifdef LADEBUG
             printf("  Var is safe to skip due to %s\n",
@@ -2928,26 +2929,26 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
 #endif
             setLAExact(v, p0, p1);
             updateLABest(v);
-            assert(value(getLABest()) == l_Undef);
+            assert(value(buf_LABests.getLit()) == l_Undef);
         }
     }
-    if (trail.size() == dec_vars && getLABest() == lit_Undef)
+    if (trail.size() == dec_vars && buf_LABests.getLit() == lit_Undef)
     {
 #ifdef LADEBUG
         printf("All variables are already set, so we have nothing to branch on and this is a SAT answer\n");
 #endif
         return l_True;
     }
-    assert(getLABest() != lit_Undef);
+    best = buf_LABests.getLit();
+    assert(best != lit_Undef);
 #ifdef LADEBUG
     printf("Lookahead phase over successfully\n");
     printf("Best I found propagates high %d and low %d\n",
-           LAexacts[var(getLABest())].getEx_h(),
-           LAexacts[var(getLABest())].getEx_l());
+           LAexacts[var(best)].getEx_h(),
+           LAexacts[var(best)].getEx_l());
 #endif
     idx = (idx + i) % nVars();
-    best = getLABest();
-    if (best != lit_Undef && !theory_handler.getLogic().okToPartition(theory_handler.varToTerm(var(best)))) { unadvised_splits++; }
+    if (!theory_handler.getLogic().okToPartition(theory_handler.varToTerm(var(best)))) { unadvised_splits++; }
     return l_Undef;
 }
 
@@ -2956,13 +2957,7 @@ void CoreSMTSolver::updateLABest(Var v)
     assert(value(v) == l_Undef);
     ExVal& e = LAexacts[v];
     Lit l_v = mkLit(v, e.betterPolarity());
-    if (value(LABestLit) != l_Undef)
-        LABestLit = l_v;
-    else
-    {
-        Lit prev_best = getLABest();
-        LABestLit = LAexacts[v] < LAexacts[var(prev_best)] ? prev_best : l_v;
-    }
+    buf_LABests.insert(l_v, e);
 }
 
 void CoreSMTSolver::updateLAUB(Lit l, int props)
@@ -2977,9 +2972,9 @@ void CoreSMTSolver::updateLAUB(Lit l, int props)
 void CoreSMTSolver::setLAExact(Var v, int pprops, int nprops)
 {
     LAexacts[v] = ExVal(pprops, nprops, latest_round);
-    if (LABestLit != lit_Undef)
-        LABestLit = LAexacts[var(LABestLit)] < LAexacts[v] ? mkLit(v, nprops > pprops) : LABestLit;
-    else LABestLit = mkLit(v, nprops > pprops);
+//    if (LABestLit != lit_Undef)
+//        LABestLit = LAexacts[var(LABestLit)] < LAexacts[v] ? mkLit(v, nprops > pprops) : LABestLit;
+//    else LABestLit = mkLit(v, nprops > pprops);
 }
 
 //=================================================================================================

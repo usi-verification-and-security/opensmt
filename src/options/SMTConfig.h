@@ -285,6 +285,7 @@ public:
   static const char* o_sat_split_units;
   static const char* o_sat_split_preference;
   static const char* o_sat_split_test_cube_and_conquer;
+  static const char* o_sat_split_randomize_lookahead;
   static const char* o_produce_models;
   static const char* o_sat_remove_symmetries;
   static const char* o_dryrun;
@@ -759,6 +760,10 @@ public:
   int sat_split_asap() const {
       return optionTable.has(o_sat_split_asap) ?
               optionTable[o_sat_split_asap]->getValue().numval :
+              0; }
+  int randomize_lookahead() const {
+      return optionTable.has(o_sat_split_randomize_lookahead) ?
+              optionTable[o_sat_split_randomize_lookahead]->getValue().numval :
               0; }
 
   int remove_symmetries() const
