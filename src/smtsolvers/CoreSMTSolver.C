@@ -107,7 +107,7 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , random_seed           (c.getRandomSeed())
     , progress_estimate     (0)
     , remove_satisfied      (true)
-    , LABestLit             (lit_Undef)
+    , buf_LABests           (c.randomize_lookahead_bufsz(), assigns, c.randomize_lookahead(), c.getRandomSeed())
     , resource_units        (config.sat_resource_units())
     , resource_limit        (config.sat_resource_limit())
     , next_resource_limit   (-1)
@@ -941,6 +941,7 @@ public:
 
 void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
 {
+    CRef confl_orig = confl;
 #ifdef PRODUCE_PROOF
     assert( proof.checkState( ) );
 #endif
@@ -999,6 +1000,7 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
         // Select next clause to look at:
         while (!seen[var(trail[index--])])
             ; // Do nothing
+        assert(index >= 0);
         p     = trail[index+1];
 
         if ( reason(var(p)) == CRef_Fake )
@@ -2581,6 +2583,9 @@ bool CoreSMTSolver::LApropagate_wrapper()
         diff = false;
         while ((cr = propagate()) != CRef_Undef)
         {
+            if (decisionLevel() == 0)
+                return false; // Unsat
+
             vec<Lit> out_learnt;
             int out_btlevel;
             analyze(cr, out_learnt, out_btlevel);
@@ -2594,10 +2599,6 @@ bool CoreSMTSolver::LApropagate_wrapper()
                 crd = ca.alloc(out_learnt, true);
                 learnts.push(crd);
                 attachClause(crd);
-            }
-            if (decisionLevel() == 0 &&  !simplify())
-            {
-                return false; // Unsat
             }
             assert(value(out_learnt[0]) == l_Undef);
             uncheckedEnqueue(out_learnt[0], crd);
@@ -2792,6 +2793,14 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
 
 lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
 {
+    if (checkTheory(true) != 1)
+    {
+#ifdef LADEBUG
+        printf("Already unsatisfiable at entering the lookahead loop\n");
+#endif
+        return l_False;
+    }
+
     updateRound();
     int i = 0;
     int d = decisionLevel();
@@ -2807,7 +2816,9 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
     {
         if (!decision[v]) {
             LAexacts[v].setRound(latest_round);
+#ifdef LADEBUG
             printf("Not a decision variable: %d (%s)\n", v, theory_handler.getLogic().printTerm(theory_handler.varToTerm(v)));
+#endif
             continue; // Skip the non-decision vars
         }
         if (v == (idx * nVars()) && skipped_vars_due_to_logic > 0)
@@ -2820,7 +2831,8 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
 #ifdef LADEBUG
         printf("Checking var %d\n", v);
 #endif
-        if (value(v) != l_Undef || (getLABest() != lit_Undef && LAupperbounds[v].safeToSkip(LAexacts[var(getLABest())])))
+        Lit best = buf_LABests.getLit();
+        if (value(v) != l_Undef || (best != lit_Undef && LAupperbounds[v].safeToSkip(LAexacts[var(best)])))
         {
 #ifdef LADEBUG
             printf("  Var is safe to skip due to %s\n",
@@ -2832,9 +2844,11 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
             // It is possible that all variables are assigned here.
             // In this case it seems that we have a satisfying assignment.
             // This is in fact a debug check
-            if (trail.size() == nVars() - dec_vars)
+            if (trail.size() == dec_vars)
             {
+#ifdef LADEBUG
                 printf("All vars set?\n");
+#endif
                 if (checkTheory(true) != 1)
                     return l_False; // Problem is trivially unsat
                 assert(checkTheory(true) == 1);
@@ -2915,19 +2929,26 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
 #endif
             setLAExact(v, p0, p1);
             updateLABest(v);
-            assert(value(getLABest()) == l_Undef);
+            assert(value(buf_LABests.getLit()) == l_Undef);
         }
     }
-    assert(getLABest() != lit_Undef);
+    if (trail.size() == dec_vars && buf_LABests.getLit() == lit_Undef)
+    {
+#ifdef LADEBUG
+        printf("All variables are already set, so we have nothing to branch on and this is a SAT answer\n");
+#endif
+        return l_True;
+    }
+    best = buf_LABests.getLit();
+    assert(best != lit_Undef);
 #ifdef LADEBUG
     printf("Lookahead phase over successfully\n");
     printf("Best I found propagates high %d and low %d\n",
-           LAexacts[var(getLABest())].getEx_h(),
-           LAexacts[var(getLABest())].getEx_l());
+           LAexacts[var(best)].getEx_h(),
+           LAexacts[var(best)].getEx_l());
 #endif
     idx = (idx + i) % nVars();
-    best = getLABest();
-    if (best != lit_Undef && !theory_handler.getLogic().okToPartition(theory_handler.varToTerm(var(best)))) { unadvised_splits++; }
+    if (!theory_handler.getLogic().okToPartition(theory_handler.varToTerm(var(best)))) { unadvised_splits++; }
     return l_Undef;
 }
 
@@ -2936,13 +2957,7 @@ void CoreSMTSolver::updateLABest(Var v)
     assert(value(v) == l_Undef);
     ExVal& e = LAexacts[v];
     Lit l_v = mkLit(v, e.betterPolarity());
-    if (value(LABestLit) != l_Undef)
-        LABestLit = l_v;
-    else
-    {
-        Lit prev_best = getLABest();
-        LABestLit = LAexacts[v] < LAexacts[var(prev_best)] ? prev_best : l_v;
-    }
+    buf_LABests.insert(l_v, e);
 }
 
 void CoreSMTSolver::updateLAUB(Lit l, int props)
@@ -2957,9 +2972,9 @@ void CoreSMTSolver::updateLAUB(Lit l, int props)
 void CoreSMTSolver::setLAExact(Var v, int pprops, int nprops)
 {
     LAexacts[v] = ExVal(pprops, nprops, latest_round);
-    if (LABestLit != lit_Undef)
-        LABestLit = LAexacts[var(LABestLit)] < LAexacts[v] ? mkLit(v, nprops > pprops) : LABestLit;
-    else LABestLit = mkLit(v, nprops > pprops);
+//    if (LABestLit != lit_Undef)
+//        LABestLit = LAexacts[var(LABestLit)] < LAexacts[v] ? mkLit(v, nprops > pprops) : LABestLit;
+//    else LABestLit = mkLit(v, nprops > pprops);
 }
 
 //=================================================================================================
@@ -3079,13 +3094,20 @@ bool CoreSMTSolver::createSplit_lookahead()
     SplitData& sp = splits.last();
 
     printf("; Outputing an instance:\n; ");
+    Lit p = lit_Undef;
     for (int i = 0; i < decisionLevel(); i++)
     {
         vec<Lit> tmp;
         Lit l = trail[trail_lim[i]];
-        tmp.push(l);
-        printf("%s%d ", sign(l) ? "-" : "", var(l));
-        sp.addConstraint(tmp);
+        if (p != l) {
+            // In cases where the LA solver couldn't propagate due to
+            // literal being already assigned, the literal may be
+            // duplicated.  Do not report duplicates.
+            tmp.push(l);
+            printf("%s%d ", sign(l) ? "-" : "", var(l));
+            sp.addConstraint(tmp);
+        }
+        p = l;
     }
     printf("\n");
 

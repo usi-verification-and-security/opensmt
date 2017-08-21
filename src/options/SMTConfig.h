@@ -31,6 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SolverTypes.h"
 #include "StringMap.h"
 #include "smt2tokens.h"
+#include <libgen.h>
 
 enum ASTType {
       CMD_T      , CMDL_T
@@ -279,10 +280,13 @@ public:
   static const char* o_sat_split_inittune;
   static const char* o_sat_split_midtune;
   static const char* o_sat_split_num;
+  static const char* o_sat_split_fix_vars; // Like split_num, but give the number of vars to fix instead
   static const char* o_sat_split_asap;
   static const char* o_sat_split_units;
   static const char* o_sat_split_preference;
   static const char* o_sat_split_test_cube_and_conquer;
+  static const char* o_sat_split_randomize_lookahead;
+  static const char* o_sat_split_randomize_lookahead_buf;
   static const char* o_produce_models;
   static const char* o_sat_remove_symmetries;
   static const char* o_dryrun;
@@ -471,14 +475,14 @@ public:
     {
       err.open( attr );
       if( !err )
-	opensmt_error2( "can't open ", attr );
+        opensmt_error2( "can't open ", attr );
       rocset = true;
     }
   }
 
   const char * filename;                     // Holds the name of the input filename
   struct Logic_t logic;                        // SMT-Logic under consideration
-  lbool	       status;                       // Status of the benchmark
+  lbool        status;                       // Status of the benchmark
 //  int          incremental;                  // Incremental solving
   int           isIncremental() const
      { return optionTable.has(o_incremental) ?
@@ -750,10 +754,23 @@ public:
       return optionTable.has(o_sat_split_num) ?
               optionTable[o_sat_split_num]->getValue().numval :
               2; }
+  int sat_split_fixvars() const {
+      return optionTable.has(o_sat_split_fix_vars) ?
+              optionTable[o_sat_split_fix_vars]->getValue().numval :
+              -1; }
   int sat_split_asap() const {
       return optionTable.has(o_sat_split_asap) ?
               optionTable[o_sat_split_asap]->getValue().numval :
               0; }
+  int randomize_lookahead() const {
+      return optionTable.has(o_sat_split_randomize_lookahead) ?
+              optionTable[o_sat_split_randomize_lookahead]->getValue().numval :
+              0; }
+
+  int randomize_lookahead_bufsz() const {
+      return optionTable.has(o_sat_split_randomize_lookahead_buf) ?
+              optionTable[o_sat_split_randomize_lookahead_buf]->getValue().numval :
+              5; }
 
   int remove_symmetries() const
     { return optionTable.has(o_sat_remove_symmetries) ?
@@ -781,7 +798,7 @@ public:
   int          print_stats;                  // Should print statistics ?
   int          produce_proofs;               // Should produce proofs ?
   int          print_proofs_smtlib2;         // Should print proofs ?
-  int 	       print_proofs_dotty;	     // Should print proofs ?
+  int          print_proofs_dotty;           // Should print proofs ?
   bool         rocset;                       // Regular Output Channel set ?
   bool         docset;                       // Diagnostic Output Channel set ?
   int          dump_formula;                 // Dump input formula
@@ -817,36 +834,36 @@ public:
   int          sat_dump_cnf;                 // Dump cnf formula
   int          sat_lazy_dtc;                 // Activate dtc
   int          sat_lazy_dtc_burst;           // % of eij to generate
-  int	       sat_reduce_proof;	     // Enable proof reduction
-  int 	       sat_reorder_pivots;	     // Enable pivots reordering for interpolation
+  int          sat_reduce_proof;             // Enable proof reduction
+  int          sat_reorder_pivots;           // Enable pivots reordering for interpolation
   double       sat_ratio_red_time_solv_time; // Reduction time / solving time for each global loop
   double       sat_red_time;                 // Reduction time for each global loop
-  int	       sat_num_glob_trans_loops;     // Number of loops recycle pivots + reduction
-  int	       sat_remove_mixed;             // Compression of AB-mixed subtrees
-  int		   sat_propagate_small;			 // Try to propagate first smaller clauses
-  int		   sat_restart_learnt_thresh;    // Restart solver if the current learnt has width > thresh
-  int		   sat_orig_thresh;				 // Allows original clauses of width up to thresh
+  int          sat_num_glob_trans_loops;     // Number of loops recycle pivots + reduction
+  int          sat_remove_mixed;             // Compression of AB-mixed subtrees
+  int              sat_propagate_small;                  // Try to propagate first smaller clauses
+  int              sat_restart_learnt_thresh;    // Restart solver if the current learnt has width > thresh
+  int              sat_orig_thresh;                              // Allows original clauses of width up to thresh
   // Proof manipulation parameters
   double       proof_ratio_red_solv;         // Ratio reduction time solving time for each global loop
   double       proof_red_time;               // Reduction time for each global loop
   int          proof_reorder_pivots;         // Enable pivot reordering
-  int 	       proof_reduce_while_reordering;// Enable reduction during reordering
-  int	       proof_random_context_analysis;// Examine a context with 50% probability
-  int 	       proof_random_swap_application;// Apply a chosen A1,A2,B2k rule with 50% probability
+  int          proof_reduce_while_reordering;// Enable reduction during reordering
+  int          proof_random_context_analysis;// Examine a context with 50% probability
+  int          proof_random_swap_application;// Apply a chosen A1,A2,B2k rule with 50% probability
   int          proof_remove_mixed;           // Enable removal of mixed predicates
   int          proof_certify_inter;          // Check interpolants
-  int	       proof_random_seed;	     // Randomly initialize seed for transformation
-//   int		   proof_rec_piv;				 // Enable the use of RecyclePivots for reduction
-//  int		   proof_push_units;			// Enable pushing down units heuristics
-//  int          proof_struct_hash_build;		 // Enable structural hashing while building the proof
-//  int 		   proof_struct_hash;			 // Enable structural hashing for compression
-  int 		   proof_switch_to_rp_hash;		 // Instead of hashing + rp does the opposite
-//  int 		   proof_transf_trav;			 // Enable transformation traversals
-//  int		   proof_check;					 // Enable proof checking
-//  int		   proof_alternative_inter;		 // Dual formula for AB pivots
-//  int		   proof_multiple_inter;		 // Multiple interpolants
-//  int          proof_interpolant_cnf;		 // Enable proof restructuring for interpolant in CNF
-  int          proof_trans_strength;		 // Light proof restructuring for stronger/weaker interpolants, for Pudlak/McMillan/McMillan' algorithms
+  int          proof_random_seed;            // Randomly initialize seed for transformation
+//   int                   proof_rec_piv;                                // Enable the use of RecyclePivots for reduction
+//  int            proof_push_units;                    // Enable pushing down units heuristics
+//  int          proof_struct_hash_build;                // Enable structural hashing while building the proof
+//  int                    proof_struct_hash;                    // Enable structural hashing for compression
+  int              proof_switch_to_rp_hash;              // Instead of hashing + rp does the opposite
+//  int                    proof_transf_trav;                    // Enable transformation traversals
+//  int            proof_check;                                  // Enable proof checking
+//  int            proof_alternative_inter;              // Dual formula for AB pivots
+//  int            proof_multiple_inter;                 // Multiple interpolants
+//  int          proof_interpolant_cnf;          // Enable proof restructuring for interpolant in CNF
+  int          proof_trans_strength;             // Light proof restructuring for stronger/weaker interpolants, for Pudlak/McMillan/McMillan' algorithms
   // UF-Solver related parameters
   int          uf_disable;                   // Disable the solver
   int          uf_theory_propagation;        // Enable theory propagation

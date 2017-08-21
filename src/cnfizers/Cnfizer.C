@@ -84,8 +84,8 @@ Cnfizer::solve(vec<FrameId>& en_frames)
             assumps[j++] = assumps[i];
     }
     assumps.shrink(i-j);
-
     return solver.solve(assumps, !config.isIncremental(), config.isIncremental());
+
 }
 
 // A term is literal if its sort is Bool and

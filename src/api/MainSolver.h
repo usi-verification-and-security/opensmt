@@ -98,6 +98,8 @@ class MainSolver
     char*          solver_name; // Name for the solver
     int            simplified_until; // The formulas have been simplified up to and including formulas[simplified_until-1].
     int            check_called;     // A counter on how many times check was called.
+    PTRef          prev_query;       // The previously executed query
+    PTRef          curr_query;       // The current query
     sstat          status;           // The status of the last solver call (initially s_Undef)
 
     bool          binary_init; // Was the formula loaded from .osmt2
@@ -146,6 +148,8 @@ class MainSolver
         , root_instance(logic.getTerm_true())
         , simplified_until(0)
         , check_called(0)
+        , prev_query(PTRef_Undef)
+        , curr_query(PTRef_Undef)
     {
         solver_name = strdup(name);
         formulas.push(pfstore.alloc());
@@ -203,6 +207,8 @@ class MainSolver
     void stop() { ts.solver.stop = true; }
 
     bool readFormulaFromFile(const char *file);
+
+    PTRef getPrevQuery() const { return prev_query; }
 };
 
 #endif //

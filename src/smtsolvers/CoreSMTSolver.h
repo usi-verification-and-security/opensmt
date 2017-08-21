@@ -322,6 +322,9 @@ inline void SplitData::toPTRefs(vec<vec<PtAsgn> >& out, vec<vec<Lit> >& in)
     }
 }
 
+template<class A, class B>
+struct Pair { A first; B second; };
+
 class LANode
 {
 public:
@@ -733,7 +736,64 @@ protected:
 #endif
 
     int la_round;                         // Keeps track of the lookahead round (used in lower bounds)
-    Lit LABestLit;                        // The current best literal of lookahead
+    class LABestLitBuf {
+        private:
+            int size;
+            vec<Pair<ExVal,Lit> > buf;
+            vec<lbool>& assigns;
+            inline lbool value(Lit p) const { return assigns[var(p)]^sign(p); }
+            bool randomize;
+            double rnd_seed;
+        public:
+            // Use 0 for random seed to disable randomization
+            LABestLitBuf(int sz, vec<lbool>& assigns, bool randomize, double rnd_seed)
+                : size(sz)
+                , assigns(assigns)
+                , randomize(randomize)
+                , rnd_seed(rnd_seed) {
+                for (int i = 0; i < size; i++)
+                    buf.push(Pair<ExVal,Lit>{ExVal(), lit_Undef});
+            }
+            void insert(Lit l, ExVal& val) {
+                int i;
+                for (i = 0; i < size; i++) {
+                    ExVal &buf_val = buf[i].first;
+                    Lit buf_l = buf[i].second;
+                    if ((buf_val < val) || (value(buf_l) != l_Undef))
+                        break;
+                }
+                if (i == size)
+                    return;
+
+                Pair<ExVal,Lit> new_next = buf[i];
+                buf[i++] = Pair<ExVal,Lit>{val,l};
+                for (; i < size; i++) {
+                    Pair<ExVal,Lit> tmp = buf[i];
+                    buf[i] = new_next;
+                    new_next = tmp;
+                }
+            }
+            Lit getLit(int i) {
+                assert(i < size);
+                assert(i >= 0);
+                for (int j = 0; j < size; j++) {
+                    if (i+j < size && buf[i+j].second != lit_Undef && value(buf[i+j].second) == l_Undef)
+                        return buf[i+j].second;
+                    if (i-j >= 0 && buf[i-j].second != lit_Undef && value(buf[i-j].second) == l_Undef)
+                        return buf[i-j].second;
+                }
+                return lit_Undef;
+            }
+            Lit getLit() {
+                if (randomize)
+                    return getLit(CoreSMTSolver::irand(rnd_seed, size));
+                else
+                    return getLit(0);
+            }
+            int getSize() { return size; }
+    };
+
+    LABestLitBuf buf_LABests;
 
     // Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is
     // used, exept 'seen' wich is used in several places.
@@ -798,17 +858,6 @@ protected:
     void     updateLAUB       (Lit l, int props);                                      // Check the lookahead upper bound and update it if necessary
     lbool    lookahead_loop   (Lit& best, int &idx);
     void     setLAExact       (Var v, int pprops, int nprops);                         // Set the exact la value
-    Lit      getLABest        ()
-    {
-        if (LAexacts[var(LABestLit)].getRound() < latest_round)
-        {
-            return lit_Undef;
-        }
-        else
-        {
-            return LABestLit;
-        }
-    }
     bool     LApropagate_wrapper();
 
     // Maintaining Variable/Clause activity:
