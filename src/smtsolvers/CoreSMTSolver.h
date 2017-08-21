@@ -899,6 +899,10 @@ public:
 
     void     cnfToString      (CnfState&);
 
+	PTRef    getCnf           (const vec<CRef> & crefs);
+	char  *  printCnfClauses  ();
+	char  *  printCnfLearnts  ();   
+
     bool    smtSolve         ( );             // Solve
 #ifndef SMTCOMP
     /*
@@ -1536,6 +1540,35 @@ inline void CoreSMTSolver::cnfToString(CnfState& cs)
     if (okay())
         cs.setCnf(sd.splitToString());
     else cs.setUnsat();
+}
+
+inline PTRef CoreSMTSolver::getCnf(const vec<CRef> & crefs)
+{
+	Logic& logic = theory_handler.getLogic();
+	vec<PTRef> cnf;
+	for (int i = 0; i < crefs.size(); i++) {
+		Clause& clause = ca[crefs[i]];
+		vec<PTRef> clauses;
+		for (int j = 0; j < clause.size(); j++) {
+			Lit& literal = clause[j];
+			Var v = var(literal);
+			PTRef ptr = theory_handler.varToTerm(v);
+			if (sign(literal)) ptr = logic.mkNot(ptr);
+			clauses.push(ptr);
+		}
+		cnf.push(logic.mkOr(clauses));
+	}
+	return logic.mkAnd(cnf);
+}
+
+inline char * CoreSMTSolver::printCnfClauses()
+{
+	return theory_handler.getLogic().printTerm(this->getCnf(clauses));
+}
+
+inline char * CoreSMTSolver::printCnfLearnts()
+{
+	return theory_handler.getLogic().printTerm(this->getCnf(learnts));
 }
 
 
