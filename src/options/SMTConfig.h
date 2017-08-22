@@ -780,6 +780,9 @@ public:
     { return optionTable.has(o_dryrun) ?
         optionTable[o_dryrun]->getValue().numval : 0; }
 
+  void set_dryrun(bool b)
+    { insertOption(o_dryrun, new SMTOption(b)); }
+
   SpPref sat_split_preference() const {
     if (optionTable.has(o_sat_split_preference)) {
         const char* type = optionTable[o_sat_split_preference]->getValue().strval;
