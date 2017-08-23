@@ -785,8 +785,10 @@ protected:
                 return lit_Undef;
             }
             Lit getLit() {
-                if (randomize)
-                    return getLit(CoreSMTSolver::irand(rnd_seed, size));
+                if (randomize) {
+                    int i = CoreSMTSolver::irand(rnd_seed, size);
+                    return getLit(i);
+                }
                 else
                     return getLit(0);
             }
