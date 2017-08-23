@@ -948,9 +948,9 @@ public:
 
     void     cnfToString      (CnfState&);
 
-	PTRef    getCnf           (const vec<CRef> & crefs);
+	PTRef    getCnf           (const vec<CRef> & crefs, int limit = std::numeric_limits<int>::max());
 	char  *  printCnfClauses  ();
-	char  *  printCnfLearnts  ();   
+	char  *  printCnfLearnts  ();
 
     bool    smtSolve         ( );             // Solve
 #ifndef SMTCOMP
@@ -1591,12 +1591,15 @@ inline void CoreSMTSolver::cnfToString(CnfState& cs)
     else cs.setUnsat();
 }
 
-inline PTRef CoreSMTSolver::getCnf(const vec<CRef> & crefs)
+inline PTRef CoreSMTSolver::getCnf(const vec<CRef> & crefs, int limit)
 {
 	Logic& logic = theory_handler.getLogic();
 	vec<PTRef> cnf;
 	for (int i = 0; i < crefs.size(); i++) {
 		Clause& clause = ca[crefs[i]];
+		if (clause.size() > limit) {
+			continue;
+		}
 		vec<PTRef> clauses;
 		for (int j = 0; j < clause.size(); j++) {
 			Lit& literal = clause[j];
@@ -1617,7 +1620,7 @@ inline char * CoreSMTSolver::printCnfClauses()
 
 inline char * CoreSMTSolver::printCnfLearnts()
 {
-	return theory_handler.getLogic().printTerm(this->getCnf(learnts));
+	return theory_handler.getLogic().printTerm(this->getCnf(learnts, 2));
 }
 
 
