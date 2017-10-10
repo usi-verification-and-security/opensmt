@@ -27,7 +27,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef SymStore_h
 #define SymStore_h
 
-#include <string>
 #include "Symbol.h"
 #include "StringMap.h"
 

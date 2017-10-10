@@ -1,5 +1,5 @@
 #include "Theory.h"
-#include "MainSolver.h"
+//#include "MainSolver.h"
 //#include "logics/Logic.h"
 
 // Function for assigning a PTRef to a Boolean variable if the Boolean

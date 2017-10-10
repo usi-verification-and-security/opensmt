@@ -84,16 +84,17 @@ int main( int argc, char * argv[] )
   cerr << "; this binary is compiled with optimizations disabled (slow)" << endl;
 #endif
 
-  cerr << "; git hash: " << SVN_REVISION << endl;
+  //cerr << "; git hash: " << SVN_REVISION << endl;
 
   cerr << "; symbol enode size: " << EnodeAllocator::symEnodeWord32Size() << endl;
   cerr << "; list enode size: " << EnodeAllocator::listEnodeWord32Size() << endl;
   cerr << "; term enode size: " << EnodeAllocator::termEnodeWord32Size() << endl;
-  cerr << "; Configured with args " << CONFIG_FLAGS << endl;
-  cerr << "; preprocessor definitions set in configure " << CONFIGTIME_DEFFLAGS << endl;
-  cerr << "; compiler flags set in configure " << CONFIGTIME_COMPFLAGS << endl;
+  //cerr << "; Configured with args " << CONFIG_FLAGS << endl;
+  //cerr << "; preprocessor definitions set in configure " << CONFIGTIME_DEFFLAGS << endl;
+  //cerr << "; compiler flags set in configure " << CONFIGTIME_COMPFLAGS << endl;
 #ifndef SMTCOMP
 //  if ( context.getConfig( ).verbosity > 0 )
+#if 0
   if ( false )
   {
     const int len_pack = strlen( PACKAGE_STRING );
@@ -112,6 +113,7 @@ int main( int argc, char * argv[] )
          << "# -------------------------------------------------------------------------" << endl
          << "#" << endl;
   }
+#endif
 #endif
   // Initialize pointer to context for parsing
 //  parser_ctx    = &context;

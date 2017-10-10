@@ -1,4 +1,4 @@
-#include "tsolvers/TSolverHandler.h"
+#include "TSolverHandler.h"
 
 void TSolverHandler::computeModel()
 {

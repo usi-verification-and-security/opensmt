@@ -38,7 +38,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //#include "AXDiffSolver.h"
 // Added to support compiling templates
 //#include "DLSolver.C"
-#include "SimpSMTSolver.h"
+//#include "SimpSMTSolver.h"
 #include "TreeOps.h"
 #include "Deductions.h"
 

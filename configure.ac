@@ -330,25 +330,6 @@ echo "Print clausal size... $enable_printclausalsize"
 
 
 #
-# Enable Stupid Theory Propagation
-#
-AC_ARG_ENABLE(clever_theoryprop,
-  AC_HELP_STRING([--enable-clever_theoryprop],
-                 [enable clever theorypropagation @<:@no@:>@]),
-  [:],
-  [enable_clever_theoryprop="no"])
-
-if test $enable_clever_theoryprop = "no" ;
-then
-  config_stupid_theoryprop="-DIGNORE_DL_THEORYPROPAGATION"
-else
-  config_stupid_theoryprop=""
-fi
-AM_CONDITIONAL([ENABLE_STUPID_THEORYPROP], [test "$enable_clever_theoryprop" = "yes"])
-
-echo "Propagate from theories with decision level...  ${enable_clever_theoryprop}"
-
-#
 # Store explanations in terms
 #
 AC_ARG_ENABLE(term_explanations,
