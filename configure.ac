@@ -139,8 +139,27 @@ then
 else
   config_interpolation_debug=""
 fi
-AM_CONDITIONAL([ENABLE_PEDANTIC], [test "$enable_interpolation_debug" = "yes"])
+AM_CONDITIONAL([ENABLE_ITPDEBUG], [test "$enable_interpolation_debug" = "yes"])
 echo "Debug interpolation... $enable_interpolation_debug"
+
+#
+# Enable Gaussian debug
+#
+AC_ARG_ENABLE(gaussian_debug,
+  AC_HELP_STRING([--enable-gaussian-debug],
+                 [enable gaussian debug @<:@no@:>@]),
+  [:],
+  [enable_gaussian_debug="no"])
+
+if test $enable_gaussian_debug = "yes" ;
+then
+  config_gaussian_debug="-DGAUSSIAN_DEBUG"
+else
+  config_gaussian_debug=""
+fi
+AM_CONDITIONAL([ENABLE_GAUSSIANDEBUG], [test "$enable_gaussian_debug" = "yes"])
+echo "Debug gaussian elimination... $enable_gaussian_debug"
+
 
 
 #
@@ -499,7 +518,7 @@ then
   exit
 fi
 
-def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_la_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_oldsubstitution $config_custom_memalloc $config_term_explanations $config_compress $config_verbose_euf $config_verbose_eufex $config_verbose_fops $config_verbose_sat $config_verbose_cnfization $config_printclausalsize $config_verbose_flattening $config_interpolation_debug"
+def_flags="$config_optimization $config_pedantic_debug $config_gc_debug $config_la_debug $config_smtcomp $config_static $config_proof $config_stupid_theoryprop $config_simplification_debug $config_optimization_preproc $config_congruencesubstitution $config_oldsubstitution $config_custom_memalloc $config_term_explanations $config_compress $config_verbose_euf $config_verbose_eufex $config_verbose_fops $config_verbose_sat $config_verbose_cnfization $config_printclausalsize $config_verbose_flattening $config_interpolation_debug $config_gaussian_debug"
 
 comp_flags="-W -Wall -g -Wno-deprecated $config_profiling"
 

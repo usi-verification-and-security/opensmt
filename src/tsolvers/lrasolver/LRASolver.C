@@ -522,6 +522,9 @@ bool LRASolver::check(bool complete)
             LAVar::saveModelGlobal( );
             if (checks_history.back() < pushed_constraints.size())
                 checks_history.push_back(pushed_constraints.size());
+#ifdef GAUSSIAN_DEBUG
+            computeModel();
+#endif
 //            cerr << "; USUAL SAT" << endl;
             setStatus(SAT);
             break;
@@ -1724,114 +1727,115 @@ void LRASolver::print( ostream & out )
 //
 void LRASolver::computeModel( )
 {
-  assert( status == SAT );
+    assert( status == SAT );
 
-  Real minDelta( 0 );
-  Real maxDelta( 0 );
-  Real curDelta( 0 );
-  Delta curBound( Delta::ZERO );
-  LAVar * col;
+    Real minDelta( 0 );
+    Real maxDelta( 0 );
+    Real curDelta( 0 );
+    Delta curBound( Delta::ZERO );
+    LAVar * col;
 
-  //
-  // For all columns check the min/max value for delta
-  // Note, it should be always that min > 0 and max < 0
-  //
-  for( unsigned i = 0; i < columns.size( ); ++i )
-  {
-    if( columns[i]->skip )
-      continue;
+    //
+    // For all columns check the min/max value for delta
+    // Note, it should be always that min > 0 and max < 0
+    //
+    for (unsigned i = 0; i < columns.size( ); ++i)
+    {
+        if (columns[i]->skip)
+            continue;
 #ifdef GAUSSIAN_DEBUG
-    printf("computing model for %s (%d)\n", logic.printTerm(columns[i]->e), columns[i]->e.x);
-    cerr << "It's M is " << columns[i]->M() << '\n';
+        printf("computing model for %s (%d)\n", logic.printTerm(columns[i]->e), columns[i]->e.x);
+        cerr << "Its M is " << columns[i]->M() << '\n';
+        cerr << "Its bounds are [" << columns[i]->L() << ", " << columns[i]->U() << "]" << '\n';
 #endif
-    col = columns[i];
-    assert( !col->isModelOutOfBounds( ) );
+        col = columns[i];
+        assert( !col->isModelOutOfBounds( ) );
 
-    curDelta = 0;
-    curBound = Delta( Delta::ZERO );
+        curDelta = 0;
+        curBound = Delta( Delta::ZERO );
 
-    // Check if the lower bound can be used and at least one of delta and real parts are not 0
-    if( !col->L( ).isInf( )
-     && ( col->L( ).D( ) != 0 || col->M( ).D( ) != 0 )
-     && ( col->L( ).R( ) != 0 || col->M( ).R( ) != 0 ) )
-    {
-      curBound = col->L( ) - col->M( );
+        // Check if the lower bound can be used and at least one of delta and real parts are not 0
+        if ( !col->L( ).isInf( )
+            && ( col->L( ).D( ) != 0 || col->M( ).D( ) != 0 )
+            && ( col->L( ).R( ) != 0 || col->M( ).R( ) != 0 ) )
+        {
+            curBound = col->L( ) - col->M( );
 
-      // if denominator is >0 then use delta for min
-      if( curBound.D( ) > 0 )
-      {
-        curDelta = -( curBound.R( ) / curBound.D( ) );
-        if( curDelta != 0 && ( minDelta == 0 || minDelta > curDelta ) )
-          minDelta = curDelta;
-      }
-      // if denominator is <0 than use delta for max
-      else if( curBound.D( ) < 0 )
-      {
-        curDelta = -( curBound.R( ) / curBound.D( ) );
-        if( curDelta != 0 && ( maxDelta == 0 || maxDelta < curDelta ) )
-          maxDelta = curDelta;
-      }
+            // if denominator is >0 then use delta for min
+            if ( curBound.D( ) > 0 )
+            {
+                curDelta = -( curBound.R( ) / curBound.D( ) );
+                if ( curDelta != 0 && ( minDelta == 0 || minDelta > curDelta ) )
+                    minDelta = curDelta;
+            }
+            // if denominator is <0 than use delta for max
+            else if  ( curBound.D( ) < 0 )
+            {
+                curDelta = -( curBound.R( ) / curBound.D( ) );
+                if ( curDelta != 0 && ( maxDelta == 0 || maxDelta < curDelta ) )
+                    maxDelta = curDelta;
+            }
+        }
+        // Check if the upper bound can be used and at least one of delta and real parts are not 0
+        if ( !col->U( ).isInf( )
+            && ( col->U( ).D( ) != 0 || col->M( ).D( ) != 0 )
+            && ( col->U( ).R( ) != 0 || col->M( ).R( ) != 0 ) )
+        {
+            curBound = col->M( ) - col->U( );
+
+            // if denominator is >0 than use delta for min
+            if ( curBound.D( ) > 0 )
+            {
+                curDelta = -( curBound.R( ) / curBound.D( ) );
+                if ( curDelta != 0 && ( minDelta == 0 || minDelta > curDelta ) )
+                minDelta = curDelta;
+            }
+            // if denominator is <0 than use delta for max
+            else if ( curBound.D( ) < 0 )
+            {
+                curDelta = -( curBound.R( ) / curBound.D( ) );
+                if ( curDelta != 0 && ( maxDelta == 0 || maxDelta < curDelta ) )
+                    maxDelta = curDelta;
+            }
+        }
     }
-    // Check if the upper bound can be used and at least one of delta and real parts are not 0
-    if( !col->U( ).isInf( )
-     && ( col->U( ).D( ) != 0 || col->M( ).D( ) != 0 ) 
-     && ( col->U( ).R( ) != 0 || col->M( ).R( ) != 0 ) )
-    {
-      curBound = col->M( ) - col->U( );
 
-      // if denominator is >0 than use delta for min
-      if( curBound.D( ) > 0 )
-      {
-        curDelta = -( curBound.R( ) / curBound.D( ) );
-        if( curDelta != 0 && ( minDelta == 0 || minDelta > curDelta ) )
-          minDelta = curDelta;
-      }
-      // if denominator is <0 than use delta for max
-      else if( curBound.D( ) < 0 )
-      {
-        curDelta = -( curBound.R( ) / curBound.D( ) );
-        if( curDelta != 0 && ( maxDelta == 0 || maxDelta < curDelta ) )
-          maxDelta = curDelta;
-      }
-    }
-  }
-
-  // TODO: check if it is it really true :)
-  assert( minDelta >= 0 );
-  assert( maxDelta <= 0 );
-  delta = ( minDelta ) / 2;
+    // TODO: check if it is it really true :)
+    assert( minDelta >= 0 );
+    assert( maxDelta <= 0 );
+    delta = ( minDelta ) / 2;
 
 #ifdef GAUSSIAN_DEBUG
-  cerr << "; delta: " << curDelta << '\n';
+    cerr << "; delta: " << curDelta << '\n';
 #endif
 
-  // Compute the value for each variable. Delta is taken into account
-  for ( unsigned i = 0; i < columns.size( ); ++i )
-      columns[i]->computeModel( curDelta );
+    // Compute the value for each variable. Delta is taken into account
+    for ( unsigned i = 0; i < columns.size( ); ++i )
+        columns[i]->computeModel( curDelta );
 
-  // Compute the value for each variable deleted by Gaussian elimination
-  while( !removed_by_GaussianElimination.empty( ) )
-  {
-    LAVar * x = removed_by_GaussianElimination.back( );
-    Real div = 0;
-    Delta v_delta(0);
-
-    for( LARow::iterator it = x->polynomial.begin( ); it != x->polynomial.end( ); x->polynomial.getNext( it ) )
+    // Compute the value for each variable deleted by Gaussian elimination
+    while ( !removed_by_GaussianElimination.empty( ) )
     {
-      col = columns[it->key];
-      if( col != x ) {
-            v_delta += *(it->coef) * col->M();
-      }
-      else {
-        div -= *( it->coef );
-      }
-    }
-    assert( div != 0 );
-    x->setM(v_delta/div);
-//    cout << "value of " << logic.printTerm(x->e) << " is " << x->M() << endl;
+        LAVar * x = removed_by_GaussianElimination.back( );
+        Real div = 0;
+        Delta v_delta(0);
 
-    removed_by_GaussianElimination.pop_back( );
-  }
+        for ( LARow::iterator it = x->polynomial.begin( ); it != x->polynomial.end( ); x->polynomial.getNext( it ) )
+        {
+            col = columns[it->key];
+            if ( col != x ) {
+                v_delta += *(it->coef) * col->M();
+            }
+            else {
+                div -= *( it->coef );
+            }
+        }
+        assert( div != 0 );
+        x->setM(v_delta/div);
+//        cout << "value of " << logic.printTerm(x->e) << " is " << x->M() << endl;
+
+        removed_by_GaussianElimination.pop_back( );
+    }
 }
 
 // Fill the vector with the vars removed due to not having bounds
