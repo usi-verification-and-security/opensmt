@@ -359,7 +359,6 @@ char* Egraph::printDistinctions(PTRef x) const
     const ERef er = enode_store[enode_store.termToERef[x]].getRoot();
     assert(enode_store[er].isTerm());
 
-#ifdef CUSTOM_EL_ALLOC
     ELRef elr = enode_store[er].getForbid();
     if (elr == ELRef_Undef) {
         char* tmp = out;
@@ -381,30 +380,12 @@ char* Egraph::printDistinctions(PTRef x) const
         if (next_elr == elr) break;
         c_elr = next_elr;
     }
-#else
-    Elist* elr = enode_store[er].getForbid();
-    Elist* c_elr = elr;
-
-    // c_elr == el
-    // el_o == next_elr
-    while (true) {
-        Elist* next_elr = c_elr->link;
-        old = out;
-        tmp = logic.printTerm(enode_store[next_elr->e].getTerm());
-        asprintf(&out, "%s%s ", old, tmp);
-        ::free(tmp);
-        ::free(old);
-        if (next_elr == elr) break;
-        c_elr = next_elr;
-    }
-#endif
     old = out;
     asprintf(&out, "%s]", old);
     ::free(old);
     return out;
 }
 
-#ifdef CUSTOM_EL_ALLOC
 const string Egraph::printDistinctionList( ELRef x, ELAllocator& ela, bool detailed )
 {
     if ( x == ELRef_Undef )
@@ -473,31 +454,6 @@ void Egraph::checkRefConsistency() {
         }
     }
 }
-
-#else
-const string Egraph::printDistinctionList( Elist* x )
-{
-    if ( x == NULL )
-        return "(undef)\n";
-
-    std::stringstream os;
-
-    Elist* start = x;
-    do {
-        os << "+-----------------------------------------------------------+" << endl
-           << "| Forbid list node                                          |" << endl
-           << "+-----------------------------------------------------------+" << endl
-           << "| reason: " << (x->reason.sgn == l_True ? "" : "not " ) << logic.printTerm(x->reason.tr) << endl;
-        os << "| different from enode " << x->e.x << endl;
-        if (enode_store[x->e].isTerm())
-            os << "|   term " << logic.printTerm(enode_store[x->e].getTerm()) << endl;
-        os << "+-----------------------------------------------------------+" << endl;
-
-        x = x->link;
-    } while( x != start );
-    return os.str();
-}
-#endif
 
 /*
 #ifdef PEDANTIC_DEBUG

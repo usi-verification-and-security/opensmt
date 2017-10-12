@@ -41,9 +41,7 @@ class EnodeStore {
     uint32_t       dist_idx;
 
 #ifdef PEDANTIC_DEBUG
-#ifdef CUSTOM_EL_ALLOC
     ELAllocator&   fa;
-#endif
 #endif
 
     vec<PTRef>     index_to_dist;                    // Table distinction index --> proper term
@@ -51,7 +49,7 @@ class EnodeStore {
     vec<ERef>      enodes;
 
   public:
-#if defined(PEDANTIC_DEBUG) && defined(CUSTOM_EL_ALLOC)
+#if defined(PEDANTIC_DEBUG)
     EnodeStore(Logic& l, ELAllocator& fa_)
       : logic(l)
       , ea(1024*1024, &sig_tab)

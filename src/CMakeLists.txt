@@ -24,7 +24,8 @@ if(PRODUCE_PROOF)
 	add_subdirectory(proof)
 endif()
 
-add_definitions(-DTERMS_HAVE_EXPLANATIONS)
+add_definitions(-DTERMS_HAVE_EXPLANATIONS
+)
 
 add_subdirectory(common)
 add_subdirectory(cnfizers)

@@ -74,9 +74,7 @@ class Egraph : public TSolver
 {
 private:
   Logic& logic;
-#ifdef CUSTOM_EL_ALLOC
   ELAllocator   forbid_allocator;
-#endif
 
   EnodeStore    enode_store;
   ERef          ERef_Nil;
@@ -539,7 +537,6 @@ private:
   ERef    uCons             ( ERef, ERef );                     // Undoable cons - To create dynamic terms
   void    undoCons          ( ERef );                           // Undoes a cons
 
-#ifdef CUSTOM_EL_ALLOC
   //============================================================================
   // Memory management for forbid allocator
   void faGarbageCollect();
@@ -548,7 +545,6 @@ private:
     if (forbid_allocator.wasted() > forbid_allocator.size() * gf)
         faGarbageCollect(); }
   void relocAll(ELAllocator&);
-#endif
   //============================================================================
 
 #ifdef PRODUCE_PROOF
@@ -615,11 +611,7 @@ private:
 public:
   string printExplanationTreeDotty ( PTRef );
 private:
-#ifdef CUSTOM_EL_ALLOC
   const string printDistinctionList( ELRef, ELAllocator& ela, bool detailed = true );
-#else
-  const string printDistinctionList( Elist* );
-#endif
   void checkForbidReferences       ( ERef );
   void checkRefConsistency         ( );
   string printCbeStructure         ( );
