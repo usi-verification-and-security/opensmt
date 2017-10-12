@@ -5,6 +5,8 @@ target_sources(api
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Interpret.C"
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/MainSolver.C"
 	PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/MainSolver.h"
+	PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/DimacsParser.h"
+	PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/smt2tokens.h"
 )
 
 target_include_directories(api

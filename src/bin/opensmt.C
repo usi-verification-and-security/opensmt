@@ -84,7 +84,7 @@ int main( int argc, char * argv[] )
   cerr << "; this binary is compiled with optimizations disabled (slow)" << endl;
 #endif
 
-  //cerr << "; git hash: " << SVN_REVISION << endl;
+  cerr << "; git hash: " << GIT_SHA1 << endl;
 
   cerr << "; symbol enode size: " << EnodeAllocator::symEnodeWord32Size() << endl;
   cerr << "; list enode size: " << EnodeAllocator::listEnodeWord32Size() << endl;
@@ -94,26 +94,6 @@ int main( int argc, char * argv[] )
   //cerr << "; compiler flags set in configure " << CONFIGTIME_COMPFLAGS << endl;
 #ifndef SMTCOMP
 //  if ( context.getConfig( ).verbosity > 0 )
-#if 0
-  if ( false )
-  {
-    const int len_pack = strlen( PACKAGE_STRING );
-    const char * site = "http://verify.inf.usi.ch/opensmt";
-    const int len_site = strlen( site );
-
-    cerr << "#" << endl
-         << "# -------------------------------------------------------------------------" << endl
-         << "# " << PACKAGE_STRING;
-
-    for ( int i = 0 ; i < 73 - len_site - len_pack ; i ++ )
-      cerr << " ";
-
-    cerr << site << endl
-         << "# Compiled with gcc " << __VERSION__ << " on " << __DATE__ << endl
-         << "# -------------------------------------------------------------------------" << endl
-         << "#" << endl;
-  }
-#endif
 #endif
   // Initialize pointer to context for parsing
 //  parser_ctx    = &context;

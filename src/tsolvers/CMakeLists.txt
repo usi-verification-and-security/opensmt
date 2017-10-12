@@ -19,6 +19,7 @@ INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/egraph"
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/lrasolver"
 PUBLIC "${CMAKE_SOURCE_DIR}/simplifiers"
+PUBLIC "${CMAKE_SOURCE_DIR}/pterms"
 )
 
 target_link_libraries(tsolvers cnfizers simplifiers)

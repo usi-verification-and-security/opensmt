@@ -11,3 +11,9 @@ PRIVATE "${CMAKE_CURRENT_LIST_DIR}/EgraphExplain.C"
 PRIVATE "${CMAKE_CURRENT_LIST_DIR}/EgraphDebug.C"
 )
 
+if(PRODUCE_PROOF)
+	target_sources(tsolvers
+		PUBLIC "${CMAKE_CURRENT_LIST_DIR}/UFInterpolator.h"
+		PRIVATE "${CMAKE_CURRENT_LIST_DIR}/UFInterpolator.C"
+	)
+endif()

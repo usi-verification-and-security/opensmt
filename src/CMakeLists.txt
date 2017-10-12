@@ -5,8 +5,8 @@ set(CMAKE_CXX_STANDARD 11)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake_modules/")
 
-message(${CMAKE_C_COMPILER_ID})
-message(${CMAKE_CXX_COMPILER_ID})
+#message(${CMAKE_C_COMPILER_ID})
+#message(${CMAKE_CXX_COMPILER_ID})
 
 #set the type of the build
 #set(CMAKE_BUILD_TYPE Release)
@@ -20,7 +20,7 @@ message(${CMAKE_CXX_COMPILER_ID})
 option(PRODUCE_PROOF "Produce proof" OFF)
 
 if(PRODUCE_PROOF)
-	add_definitions(-DPRODUCE_PROOF=1)
+	add_definitions(-DPRODUCE_PROOF)
 	add_subdirectory(proof)
 endif()
 

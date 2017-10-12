@@ -8,8 +8,6 @@ target_include_directories(logics
 PRIVATE "${CMAKE_SOURCE_DIR}/symbols"
 PRIVATE "${CMAKE_SOURCE_DIR}/pterms"
 PUBLIC "${CMAKE_SOURCE_DIR}/logics"
-PRIVATE "${SOLVERS_DIR}"
-PRIVATE "${SOLVERS_DIR}/lrasolver"
 PUBLIC "${CMAKE_SOURCE_DIR}/sorts"
 )
 
