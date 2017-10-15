@@ -24,4 +24,10 @@ if(PRODUCE_PROOF)
 	PUBLIC "${CMAKE_SOURCE_DIR}/proof"
 	)
 	target_link_libraries(smtsolvers minisat proof)
+	install(FILES TheoryInterpolator.h Proof.h DESTINATION ${INSTALL_HEADERS_DIR})
+
 endif()
+
+install(FILES SimpSMTSolver.h CoreSMTSolver.h SMTSolver.h 
+DESTINATION ${INSTALL_HEADERS_DIR})
+

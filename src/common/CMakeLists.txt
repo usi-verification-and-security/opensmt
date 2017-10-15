@@ -17,3 +17,9 @@ PRIVATE
 "${CMAKE_CURRENT_LIST_DIR}/Timer.h"
 "${CMAKE_CURRENT_LIST_DIR}/TreeOps.h"
 )
+
+install(FILES 
+Global.h FastRational.h XAlloc.h Alloc.h StringMap.h
+TreeOps.h SigMap.h Timer.h Otl.h
+DESTINATION ${INSTALL_HEADERS_DIR})
+

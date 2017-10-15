@@ -7,3 +7,7 @@ target_include_directories(cnfizers
 	PUBLIC "${CMAKE_SOURCE_DIR}/smtsolvers"
 	)
 target_link_libraries(cnfizers pterms minisat logics smtsolvers)
+
+install(FILES TermMapper.h Tseitin.h Cnfizer.h
+DESTINATION ${INSTALL_HEADERS_DIR})
+

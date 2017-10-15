@@ -30,3 +30,8 @@ target_sources(logics
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Tterm.h"
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Tterm.C"
 )
+
+install(FILES Theory.h Logic.h Tterm.h LRALogic.h CUFLogic.h BVLogic.h
+ DESTINATION ${INSTALL_HEADERS_DIR})
+
+

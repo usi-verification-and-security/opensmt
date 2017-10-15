@@ -11,3 +11,5 @@ find_package(Threads REQUIRED)
 target_link_libraries(exec Threads::Threads)
 
 target_link_libraries(exec api)
+
+set_target_properties(exec PROPERTIES OUTPUT_NAME opensmt)

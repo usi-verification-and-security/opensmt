@@ -23,3 +23,6 @@ PUBLIC "${CMAKE_SOURCE_DIR}/tsolvers"
 )
 target_link_libraries(proof tsolvers)
 
+install(FILES PG.h
+DESTINATION ${INSTALL_HEADERS_DIR})
+

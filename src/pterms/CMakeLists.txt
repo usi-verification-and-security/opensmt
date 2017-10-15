@@ -12,3 +12,6 @@ PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/PtStore.C"
 )
 
 target_link_libraries(pterms symbols)
+
+install(FILES Pterm.h PtStore.h DESTINATION ${INSTALL_HEADERS_DIR})
+

@@ -12,3 +12,6 @@ PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/SymStore.C"
 )
 
 target_link_libraries(symbols sorts)
+
+install(FILES Symbol.h SymStore.h DESTINATION ${INSTALL_HEADERS_DIR})
+

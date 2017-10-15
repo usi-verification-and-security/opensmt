@@ -8,3 +8,5 @@ target_include_directories(sorts
 
 target_link_libraries(sorts PUBLIC minisat)
 
+install(FILES SSort.h SStore.h DESTINATION ${INSTALL_HEADERS_DIR})
+

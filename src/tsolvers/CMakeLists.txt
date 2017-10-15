@@ -27,3 +27,8 @@ target_link_libraries(tsolvers cnfizers simplifiers)
 include(egraph/CMakeLists.txt)
 include(lrasolver/CMakeLists.txt)
 include(bvsolver/CMakeLists.txt)
+
+install(FILES Deductions.h UFTHandler.h CUFTHandler.h LRATHandler.h TSolver.h THandler.h
+TSolverHandler.h
+DESTINATION ${INSTALL_HEADERS_DIR})
+
