@@ -1,4 +1,4 @@
-add_library(symbols STATIC SymStore.C)
+add_library(symbols OBJECT SymStore.C)
 
 target_include_directories(symbols
 	PRIVATE ${CMAKE_SOURCE_DIR}/common
@@ -11,7 +11,7 @@ PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/SymStore.h"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/SymStore.C"
 )
 
-target_link_libraries(symbols sorts)
+#target_link_libraries(symbols sorts)
 
 install(FILES Symbol.h SymStore.h DESTINATION ${INSTALL_HEADERS_DIR})
 

@@ -1,4 +1,4 @@
-add_library(options STATIC SMTConfig.C)
+add_library(options OBJECT SMTConfig.C)
 
 target_include_directories(options
 	PUBLIC ${CMAKE_SOURCE_DIR}/common

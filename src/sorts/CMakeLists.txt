@@ -1,4 +1,4 @@
-add_library(sorts STATIC SSort.C SStore.C)
+add_library(sorts OBJECT SSort.C SStore.C)
 
 target_include_directories(sorts
 	PUBLIC ${CMAKE_SOURCE_DIR}/options
@@ -6,7 +6,7 @@ target_include_directories(sorts
 	PUBLIC ${CMAKE_SOURCE_DIR}/api #because of smt2tokens.h
 )
 
-target_link_libraries(sorts PUBLIC minisat)
+#target_link_libraries(sorts PUBLIC minisat)
 
 install(FILES SSort.h SStore.h DESTINATION ${INSTALL_HEADERS_DIR})
 

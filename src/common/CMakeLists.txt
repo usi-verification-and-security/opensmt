@@ -1,8 +1,8 @@
-add_library(common STATIC "FastRational.C")
+add_library(common OBJECT "FastRational.C")
 
-find_package(GMP REQUIRED)
-include_directories(${GMP_INCLUDE_DIR})
-target_link_libraries(common ${GMP_LIBRARIES} ${GMPXX_LIBRARIES})
+#find_package(GMP REQUIRED)
+#include_directories(${GMP_INCLUDE_DIR})
+#target_link_libraries(common ${GMP_LIBRARIES} ${GMPXX_LIBRARIES})
 
 target_sources(common
 PUBLIC "${CMAKE_CURRENT_LIST_DIR}/FastRational.h"

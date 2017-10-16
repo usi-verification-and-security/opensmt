@@ -1,4 +1,4 @@
-add_library(smtsolvers STATIC "")
+add_library(smtsolvers OBJECT "")
 
 target_sources(smtsolvers
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/SMTSolver.h"
@@ -11,7 +11,7 @@ PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/TheoryInterpolator.h"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Debug.C"
 )
 
-target_link_libraries(smtsolvers sorts tsolvers)
+#target_link_libraries(smtsolvers sorts tsolvers)
 if(PRODUCE_PROOF)
 	target_sources(proof
 	PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Proof.h"
@@ -23,7 +23,7 @@ if(PRODUCE_PROOF)
 	target_include_directories(smtsolvers
 	PUBLIC "${CMAKE_SOURCE_DIR}/proof"
 	)
-	target_link_libraries(smtsolvers minisat proof)
+	#target_link_libraries(smtsolvers minisat proof)
 	install(FILES TheoryInterpolator.h Proof.h DESTINATION ${INSTALL_HEADERS_DIR})
 
 endif()

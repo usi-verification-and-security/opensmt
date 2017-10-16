@@ -1,4 +1,4 @@
-add_library(tsolvers STATIC "")
+add_library(tsolvers OBJECT "")
 
 target_sources(tsolvers
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Deductions.h"
@@ -22,7 +22,7 @@ PUBLIC "${CMAKE_SOURCE_DIR}/simplifiers"
 PUBLIC "${CMAKE_SOURCE_DIR}/pterms"
 )
 
-target_link_libraries(tsolvers cnfizers simplifiers)
+#target_link_libraries(tsolvers cnfizers simplifiers)
 
 include(egraph/CMakeLists.txt)
 include(lrasolver/CMakeLists.txt)

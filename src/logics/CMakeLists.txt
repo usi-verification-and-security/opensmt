@@ -1,6 +1,6 @@
-add_library(logics STATIC "")
+add_library(logics OBJECT "")
 
-target_link_libraries(logics symbols pterms tsolvers simplifiers sorts)
+#target_link_libraries(logics symbols pterms tsolvers simplifiers sorts)
 
 set (SOLVERS_DIR "${CMAKE_SOURCE_DIR}/tsolvers") 
 

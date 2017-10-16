@@ -1,4 +1,4 @@
-add_library(pterms STATIC "")
+add_library(pterms OBJECT "")
 
 target_include_directories(pterms 
 	PRIVATE "${CMAKE_SOURCE_DIR}/common"
@@ -11,7 +11,7 @@ PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Pterm.h"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/PtStore.C"
 )
 
-target_link_libraries(pterms symbols)
+#target_link_libraries(pterms symbols)
 
 install(FILES Pterm.h PtStore.h DESTINATION ${INSTALL_HEADERS_DIR})
 

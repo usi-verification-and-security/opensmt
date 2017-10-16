@@ -1,4 +1,4 @@
-add_library(simplifiers STATIC "")
+add_library(simplifiers OBJECT "")
 
 target_sources(simplifiers
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/LA.h"
@@ -11,4 +11,4 @@ PRIVATE "${CMAKE_SOURCE_DIR}/tsolvers"
 PRIVATE "${CMAKE_SOURCE_DIR}/pterms"
 )
 
-target_link_libraries(simplifiers pterms)
+#target_link_libraries(simplifiers pterms)

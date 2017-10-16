@@ -1,4 +1,4 @@
-add_library(proof STATIC "")
+add_library(proof OBJECT "")
 
 target_sources(proof
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/PG.h"
@@ -21,7 +21,7 @@ PUBLIC "${CMAKE_SOURCE_DIR}/minisat/mtl"
 PUBLIC "${CMAKE_SOURCE_DIR}/minisat/core"
 PUBLIC "${CMAKE_SOURCE_DIR}/tsolvers"
 )
-target_link_libraries(proof tsolvers)
+#target_link_libraries(proof tsolvers)
 
 install(FILES PG.h
 DESTINATION ${INSTALL_HEADERS_DIR})
