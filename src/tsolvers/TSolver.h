@@ -192,7 +192,7 @@ protected:
     Map<PTRef,bool,PTRefHash>   informed_PTRefs;
     bool                        informed(PTRef tr) { return informed_PTRefs.has(tr); }
     bool                        has_explanation;  // Does the solver have an explanation (conflict detected)
-    const char*                 name;             // Name of the solver
+    std::string                 name;             // Name of the solver
     SMTConfig &                 config;           // Reference to configuration
     vec< size_t >               backtrack_points; // Keeps track of backtrack points
 

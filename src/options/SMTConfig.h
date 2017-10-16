@@ -790,7 +790,8 @@ public:
         if (strcmp(type, spprefs_blind) == 0) return sppref_blind;
         if (strcmp(type, spprefs_bterm) == 0) return sppref_bterm;
         if (strcmp(type, spprefs_rand)  == 0) return sppref_rand;
-    } else return sppref_blind;
+    }
+      return sppref_blind;
   }
   int do_substitutions() const
     { return optionTable.has(o_do_substitutions) ?

@@ -201,6 +201,7 @@ const Delta LAVar::overBound( )
         return ( Delta(L( ) - M( )) );
     }
     assert (false);
+    throw std::logic_error("Unreachable");
 }
 
 

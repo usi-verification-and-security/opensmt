@@ -49,7 +49,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 namespace opensmt { extern bool stop; }
-#include "symmetry/Symmetry.h"
+//#include "symmetry/Symmetry.h"
 
 #ifdef USE_GZ
 int MainSolver::compress_buf(const int* buf_in, int*& buf_out, int sz, int& sz_out) const

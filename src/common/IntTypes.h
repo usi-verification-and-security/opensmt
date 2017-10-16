@@ -32,7 +32,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define __STDC_LIMIT_MACROS
 #   include <stdint.h>
 //#   include <inttypes.h>
+#ifndef UINT32_MAX
 # define UINT32_MAX		(4294967295U)
+#endif
 //# define uint32_t               unsigned int
 
 #endif

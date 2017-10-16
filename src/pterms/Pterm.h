@@ -145,6 +145,7 @@ class ValPair
         if (other.val != NULL)
             val = strdup(other.val);
         else val = NULL;
+        return *this;
     }
     bool operator== (const ValPair& other) const { return tr == other.tr && val == other.val; }
     bool operator!= (const ValPair& other) const { return tr != other.tr || val != other.val; }
