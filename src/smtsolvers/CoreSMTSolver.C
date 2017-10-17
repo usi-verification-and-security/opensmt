@@ -2030,7 +2030,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
         else
         {
             // NO CONFLICT
-            if (nof_conflicts >= 0 && conflictC >= nof_conflicts || !withinBudget())
+            if ((nof_conflicts >= 0 && conflictC >= nof_conflicts) || !withinBudget())
             {
                 // Reached bound on number of conflicts:
                 progress_estimate = progressEstimate();

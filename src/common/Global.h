@@ -142,7 +142,7 @@ void static inline normalize(char*& rat, const char* flo, bool is_neg)
 {
     mpq_t num;
     mpq_init(num);
-    bool val = mpq_set_str(num, flo, 0);
+    int val = mpq_set_str(num, flo, 0);
     assert(val != -1);
     mpq_canonicalize(num);
     if (is_neg)

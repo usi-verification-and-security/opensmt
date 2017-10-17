@@ -22,8 +22,6 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 #ifdef PRODUCE_PROOF
 
-#define FULL_LABELING
-
 #include "Global.h"
 #include "Proof.h"
 #include "Enode.h"

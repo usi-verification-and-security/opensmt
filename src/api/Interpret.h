@@ -85,7 +85,7 @@ class Interpret {
     bool                        declareConst(ASTNode& n); //(const char* fname, const SRef ret_sort);
     bool                        defineFun(const ASTNode& n);
     bool                        checkSat();
-    bool                        getValue(const list<ASTNode*>* term);
+    void                        getValue(const list<ASTNode*>* term);
     bool                        push();
     bool                        pop();
     PTRef                       parseTerm(const ASTNode& term, vec<LetFrame>& let_branch);
@@ -94,7 +94,7 @@ class Interpret {
     void                        GetProof();
     void                        GetInterpolants();
 #endif
-    bool                        interp (ASTNode& n);
+    void                        interp (ASTNode& n);
     void                        execute(const ASTNode* n);
 
     void                        notify_formatted(bool error, const char* s, ...);

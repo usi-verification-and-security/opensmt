@@ -53,17 +53,18 @@ void ProofGraph::printProofAsDotty( ostream & out, ipartitions_t A_mask )
 				typ = "cls_";
 				out << typ << node->getId() << "[shape=plaintext, label=\"c" << node->getId() <<"  :  ";
 				printClause(node, out);
-				if( produceInterpolants() && node->getPartialInterpolant( ) != PTRef_Undef )
-					// FIXME out << "\\\\n" << node->getPartialInterpolant( );
-				if( produceInterpolants() )
-				{
-					icolor_t col = getClauseColor( node->getInterpPartitionMask(), A_mask );
-					if(col == I_A) out << "\", color=\"lightblue\",";
-					if(col == I_B) out << "\", color=\"red\",";
-					if(col == I_AB) out << "\", color=\"violet\",";
-				}
-				else
-					out << "\", color=\"lightblue\",";
+				if( produceInterpolants() && node->getPartialInterpolant( ) != PTRef_Undef ) {
+                    // FIXME out << "\\\\n" << node->getPartialInterpolant( );
+                    if (produceInterpolants()) {
+                        icolor_t col = getClauseColor(node->getInterpPartitionMask(), A_mask);
+                        if (col == I_A) out << "\", color=\"lightblue\",";
+                        if (col == I_B) out << "\", color=\"red\",";
+                        if (col == I_AB) out << "\", color=\"violet\",";
+                    }
+                }
+				else {
+                    out << "\", color=\"lightblue\",";
+                }
 				out<< " fontcolor=\"black\", style=\"filled\"]" << endl;
 			}
 			break;

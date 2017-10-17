@@ -203,7 +203,7 @@ PtAsgn_reason Egraph::getDeduction( ) {
 PTRef Egraph::getSuggestion( )
 {
   // Communicate suggestion
-  while ( !suggestions.size() == 0 )
+  while ( suggestions.size() != 0 )
   {
     PTRef tr = suggestions.last();
     ERef e = enode_store.termToERef[tr];

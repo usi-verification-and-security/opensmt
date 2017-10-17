@@ -140,7 +140,7 @@ void Interpret::exit() {
     f_exit = true;
 }
 
-bool Interpret::interp(ASTNode& n) {
+void Interpret::interp(ASTNode& n) {
     bool rval;
     assert(n.getType() == CMD_T);
     const smt2token cmd = n.getToken();
@@ -149,7 +149,6 @@ bool Interpret::interp(ASTNode& n) {
         {
             if(parse_only)
             {
-                return true;
                 break;
             }
             ASTNode &logic_n = **(n.children->begin());
@@ -196,57 +195,47 @@ bool Interpret::interp(ASTNode& n) {
                     main_solver->initialize();
             } else {
                 notify_formatted(true, "unknown logic %s", logic_name);
-                return false;
             }
-            return true;
             break;
         }
         case t_setinfo:
         {
             if(parse_only)
             {
-                return true;
                 break;
             }
 
             setInfo(**(n.children->begin()));
-            return false;
             break;
         }
         case t_getinfo:
         {
             if(parse_only)
             {
-                return true;
                 break;
             }
 
             getInfo(**(n.children->begin()));
-            return false;
             break;
         }
         case t_setoption:
         {
             if(parse_only)
             {
-                return true;
                 break;
             }
 
             setOption(**(n.children->begin()));
-            return false;
             break;
         }
         case  t_getoption:
         {
             if(parse_only)
             {
-                return true;
                 break;
             }
 
             getOption(**(n.children->begin()));
-            return false;
             break;
         }
         case t_declaresort:
@@ -265,7 +254,6 @@ bool Interpret::interp(ASTNode& n) {
             }
             else
                 notify_formatted(true, "illegal command before set-logic: declare-sort");
-            return false;
             break;
         }
         case t_declarefun:
@@ -276,7 +264,6 @@ bool Interpret::interp(ASTNode& n) {
             }
             else
                 notify_formatted(true, "Illegal command before set-logic: declare-fun");
-            return false;
             break;
         }
         case t_declareconst:
@@ -286,7 +273,6 @@ bool Interpret::interp(ASTNode& n) {
             }
             else
                 notify_formatted(true, "Illegal command before set-logic: declare-const");
-            return false;
             break;
         }
         case t_assert:
@@ -322,7 +308,6 @@ bool Interpret::interp(ASTNode& n) {
             }
             else {
                 notify_formatted(true, "Illegal command before set-logic: assert");
-                return false;
             }
             break;
         }
@@ -333,7 +318,6 @@ bool Interpret::interp(ASTNode& n) {
             }
             else {
                 notify_formatted(true, "Illegal command before set-logic: define-fun");
-                return false;
             }
             break;
         }
@@ -401,20 +385,19 @@ bool Interpret::interp(ASTNode& n) {
                 }
             } else {
                 notify_formatted(true, "Illegal command before set-logic: read-state");
-                return false;
             }
             break;
         }
         case t_push:
         {
             if(!parse_only)
-                return push();
+                push();
             break;
         }
         case t_pop:
         {
             if(!parse_only)
-                return pop();
+                pop();
             break;
         }
         case t_exit:
@@ -422,12 +405,11 @@ bool Interpret::interp(ASTNode& n) {
             if (parse_only) break;
             exit();
             notify_success();
-            return false;
             break;
         }
         default:
         {
-            return false;
+            notify_formatted(true, "Unknown command encountered!");
         }
     }
 }
@@ -744,7 +726,7 @@ bool Interpret::getAssignment() {
     return true;
 }
 
-bool Interpret::getValue(const list<ASTNode*>* terms)
+void Interpret::getValue(const list<ASTNode*>* terms)
 {
     vec<ValPair> values;
     for (list<ASTNode*>::const_iterator term_it = terms->begin(); term_it != terms->end(); ++term_it) {

@@ -70,7 +70,7 @@ public:
 private:
     LRALogic& logic;
     vec<DedElem>& deduced;
-    SolverId& solver_id;
+    SolverId solver_id;
     LRASolver& lra_solver;
 
     typedef vector<LAVarBound> VectorBounds; // type for bounds storage

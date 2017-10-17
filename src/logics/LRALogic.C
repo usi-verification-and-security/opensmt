@@ -701,7 +701,6 @@ PTRef LRALogic::mkRealLeq(const vec<PTRef>& args_in, char** msg)
         sum_args.push(args[1]);
         sum_args.push(tr_neg);
         PTRef sum_tmp = mkRealPlus(sum_args, msg); // This gives us a collapsed version of the sum
-        sum_tmp;
         if (isConstant(sum_tmp)) {
             args[0] = getTerm_RealZero();
             args[1] = sum_tmp;
@@ -772,7 +771,7 @@ PTRef LRALogic::mkRealLt(const vec<PTRef>& args, char** msg)
     tmp.push(args[0]);
     PTRef tr = mkRealLeq(tmp, msg);
     if (tr == PTRef_Undef) {
-        printf("%s\n", msg);
+        printf("%s\n", *msg);
         assert(false);
     }
     return mkNot(tr);
@@ -795,7 +794,7 @@ PTRef LRALogic::mkRealGt(const vec<PTRef>& args, char** msg)
     }
     PTRef tr = mkRealLeq(args, msg);
     if (tr == PTRef_Undef) {
-        printf("%s\n", msg);
+        printf("%s\n", *msg);
         assert(false);
     }
     return mkNot(tr);

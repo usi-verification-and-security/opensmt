@@ -14,9 +14,8 @@ set(INSTALL_HEADERS_DIR include/opensmt)
 
 option(PRODUCE_PROOF "Produce proof" OFF)
 
-
 add_definitions(-DTERMS_HAVE_EXPLANATIONS
- -DUSE_GZ -DFULL_LABELING -DOPTIMIZE
+ -DUSE_GZ -DOPTIMIZE
 )
 
 include_directories(
@@ -39,7 +38,7 @@ ${CMAKE_SOURCE_DIR}/simplifiers
 )
 
 if(PRODUCE_PROOF)
-	add_definitions(-DPRODUCE_PROOF)
+	add_definitions(-DPRODUCE_PROOF -DFULL_LABELING)
 	include_directories(${CMAKE_SOURCE_DIR}/proof)
 	add_subdirectory(proof)
 endif()

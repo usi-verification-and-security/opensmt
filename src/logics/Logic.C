@@ -205,6 +205,7 @@ bool Logic::isBuiltinFunction(const SymRef sr) const
 {
     if (sr == sym_TRUE || sr == sym_FALSE || sr == sym_AND || sr == sym_OR || sr == sym_XOR || sr == sym_NOT || sr == sym_EQ || sr == sym_IMPLIES || sr == sym_DISTINCT || sr == sym_ITE) return true;
     if (isEquality(sr) || isDisequality(sr)) return true;
+    return false;
 }
 
 Logic::~Logic()
@@ -489,7 +490,7 @@ Logic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
 //
 // XXX Comments? This method is currently under development
 //
-lbool Logic::simplifyTree(PTRef tr, PTRef& root_out)
+void Logic::simplifyTree(PTRef tr, PTRef& root_out)
 {
     vec<pi> queue;
     Map<PTRef,bool,PTRefHash> processed;
@@ -1559,6 +1560,7 @@ lbool Logic::isInHashes(vec<Map<PTRef,lbool,PTRefHash>*>& hashes, Map<PTRef,lboo
     else if (asgn == pta.sgn)
         return l_True;
     assert(false);
+    throw std::logic_error("Unreachable code!");
 }
 
 //
@@ -1566,7 +1568,7 @@ lbool Logic::isInHashes(vec<Map<PTRef,lbool,PTRefHash>*>& hashes, Map<PTRef,lboo
 // used.  Depending on the theory a fact should either be added on the
 // top level or left out to reduce e.g. simplex matrix size.
 //
-bool Logic::getNewFacts(PTRef root, vec<Map<PTRef,lbool,PTRefHash>*>& prev_units, Map<PTRef,lbool,PTRefHash>& facts)
+void Logic::getNewFacts(PTRef root, vec<Map<PTRef,lbool,PTRefHash>*>& prev_units, Map<PTRef,lbool,PTRefHash>& facts)
 {
     Map<PtAsgn,bool,PtAsgnHash> isdup;
     vec<PtAsgn> queue;
@@ -1616,7 +1618,7 @@ bool Logic::getNewFacts(PTRef root, vec<Map<PTRef,lbool,PTRefHash>*>& prev_units
         else {
             lbool prev_val = isInHashes(prev_units, facts, pta);
             if (prev_val != l_Undef && prev_val != pta.sgn)
-                return false; // conflict
+                return; // conflict
             else if (prev_val == pta.sgn)
                 continue; // Already seen
 
