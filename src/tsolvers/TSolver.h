@@ -170,7 +170,7 @@ public:
     virtual void                pushBacktrackPoint  ( )                       ;  // Push a backtrack point
     virtual void                popBacktrackPoint   ( )                       ;  // Backtrack to last saved point
     virtual bool                check               ( bool ) = 0              ;  // Check satisfiability
-    inline const string &       getName             ( ) { return name; }            // The name of the solver
+    inline string               getName             ( ) { return name; }         // The name of the solver
     virtual ValPair             getValue            (PTRef) = 0;
 #ifdef PRODUCE_PROOF
     virtual TheoryInterpolator* getTheoryInterpolator() = 0;
@@ -192,7 +192,7 @@ protected:
     Map<PTRef,bool,PTRefHash>   informed_PTRefs;
     bool                        informed(PTRef tr) { return informed_PTRefs.has(tr); }
     bool                        has_explanation;  // Does the solver have an explanation (conflict detected)
-    std::string                 name;             // Name of the solver
+    string                      name;             // Name of the solver
     SMTConfig &                 config;           // Reference to configuration
     vec< size_t >               backtrack_points; // Keeps track of backtrack points
 
