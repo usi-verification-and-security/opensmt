@@ -1,16 +1,5 @@
 add_library(logics OBJECT "")
 
-#target_link_libraries(logics symbols pterms tsolvers simplifiers sorts)
-
-set (SOLVERS_DIR "${CMAKE_SOURCE_DIR}/tsolvers") 
-
-target_include_directories(logics
-PRIVATE "${CMAKE_SOURCE_DIR}/symbols"
-PRIVATE "${CMAKE_SOURCE_DIR}/pterms"
-PUBLIC "${CMAKE_SOURCE_DIR}/logics"
-PUBLIC "${CMAKE_SOURCE_DIR}/sorts"
-)
-
 target_sources(logics
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/BVLogic.C"
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/BVLogic.h"

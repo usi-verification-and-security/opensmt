@@ -11,19 +11,11 @@ PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/TheoryInterpolator.h"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Debug.C"
 )
 
-#target_link_libraries(smtsolvers sorts tsolvers)
 if(PRODUCE_PROOF)
 	target_sources(proof
 	PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Proof.h"
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Proof.C"
 	)
-	target_include_directories(proof
-	PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}"
-	)
-	target_include_directories(smtsolvers
-	PUBLIC "${CMAKE_SOURCE_DIR}/proof"
-	)
-	#target_link_libraries(smtsolvers minisat proof)
 	install(FILES TheoryInterpolator.h Proof.h DESTINATION ${INSTALL_HEADERS_DIR})
 
 endif()

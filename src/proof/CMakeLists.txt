@@ -15,14 +15,6 @@ PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/PGRules.C"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/PGTransformationAlgorithms.C"
 )
 
-target_include_directories(proof
-PUBLIC "${CMAKE_SOURCE_DIR}/common"
-PUBLIC "${CMAKE_SOURCE_DIR}/minisat/mtl"
-PUBLIC "${CMAKE_SOURCE_DIR}/minisat/core"
-PUBLIC "${CMAKE_SOURCE_DIR}/tsolvers"
-)
-#target_link_libraries(proof tsolvers)
-
 install(FILES PG.h
 DESTINATION ${INSTALL_HEADERS_DIR})
 
