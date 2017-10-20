@@ -141,9 +141,9 @@ public:
     inline void setM( const Delta &v ); //set actual model to v
 
   // two operators for output
-    friend ostream & operator <<( ostream & out, LAVar * v );
+    friend std::ostream & operator <<( std::ostream & out, LAVar * v );
 
-    friend ostream & operator <<( ostream & out, LAVar & v )
+    friend std::ostream & operator <<( std::ostream & out, LAVar & v )
     {
         out << &v;
         return out;

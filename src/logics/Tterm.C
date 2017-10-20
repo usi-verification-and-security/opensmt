@@ -1,4 +1,5 @@
 #include "Tterm.h"
+#include <cstring>
 
 using namespace std;
 

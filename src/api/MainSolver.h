@@ -26,6 +26,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef MAINSOLVER_H
 #define MAINSOLVER_H
 
+
+#include <mutex>
 #include "Tseitin.h"
 #include "SimpSMTSolver.h"
 
