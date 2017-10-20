@@ -95,18 +95,7 @@ Egraph::Egraph(SMTConfig & c, Logic& l , vec<DedElem>& d)
 
     assert(ptr_new_true  == logic.getTerm_true());
     assert(ptr_new_false == logic.getTerm_false());
-#ifndef TERMS_HAVE_EXPLANATIONS
-//    expReason.insert(ptr_new_true, PtAsgn(PTRef_Undef, l_Undef));
-//    expReason.insert(ptr_new_false, PtAsgn(PTRef_Undef, l_Undef));
-//    expParent.insert(ptr_new_true, PTRef_Undef);
-//    expParent.insert(ptr_new_false, PTRef_Undef);
-//    expRoot.insert(ptr_new_true, ptr_new_true);
-//    expRoot.insert(ptr_new_false, ptr_new_false);
-//    expClassSize.insert(ptr_new_true, 1);
-//    expClassSize.insert(ptr_new_false, 1);
-//    expTimeStamp.insert(ptr_new_true, 0);
-//    expTimeStamp.insert(ptr_new_false, 0);
-#endif
+
     PTRef t = logic.getTerm_true();
     PTRef f = logic.getTerm_false();
     enode_store[t].setConstant(t);
@@ -572,7 +561,7 @@ bool Egraph::assertEq ( PTRef tr_x, PTRef tr_y, PtAsgn r )
     pending.push( x );
     pending.push( y );
 
-#if defined(VERBOSE_EUF)
+#ifdef VERBOSE_EUF
     cerr << "this is assertEq for " << logic.printTerm(en_x.getTerm())
          << " (enode-id " << tr_x.x << ") and "
          << logic.printTerm(en_y.getTerm()) << " (enode-id " << tr_y.x << ")" << endl;
@@ -832,11 +821,10 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
 #endif
 #ifdef GC_DEBUG
     checkRefConsistency();
-#endif
-#ifdef GC_DEBUG
+    assert(r.sgn != l_Undef);
     cerr << "Asserting distinction of " << logic.printTerm(x)
          << " and " << logic.printTerm(y)
-         << " enforced by " << (r.sgn == true ? "" : "not ")
+         << " enforced by " << (r.sgn == l_True ? "" : "not ")
          << logic.printTerm(r.tr) << endl;
 #endif
     checkFaGarbage();
@@ -1046,7 +1034,7 @@ void Egraph::undoDistinction(PTRef tr_d) {
 //
 void Egraph::backtrackToStackSize ( size_t size ) {
 #ifdef VERBOSE_EUF
-    printf("Backtracking to size %d\n", size);
+    printf("Backtracking to size %d\n", (int)size);
 #endif
     // Make sure explanation is cleared
     // (might be empty, though, if boolean backtracking happens)
@@ -2156,9 +2144,7 @@ void Egraph::tmpMergeEnd( Enode * x, Enode * y )
 //{
 //  assert( config.uf_disable == 0 );
 //  congruence_running = true;
-//#ifndef SMTCOMP
 //  model_computed = false;
-//#endif
 //
 //  bool res = assertLit_( e );
 //
@@ -2504,9 +2490,10 @@ void Egraph::relocAll(ELAllocator& to) {
             assert(e_old.isDirty() == e_new.isDirty());
             assert(e_new.isDirty() == false);
             assert(e_old.reason.tr == e_new.reason.tr);
-            ERef reason_lhs = enode_store.termToERef[term_store[e_new.reason.tr][0]];
-            ERef reason_rhs = enode_store.termToERef[term_store[e_new.reason.tr][1]];
-            assert (enode_store[reason_lhs].getRoot() != enode_store[reason_rhs].getRoot());
+            // TODO MB: next 3 lines there is some legacy code that does not compile anymore. Rewrite or remove!
+//            ERef reason_lhs = enode_store.termToERef[term_store[e_new.reason.tr][0]];
+//            ERef reason_rhs = enode_store.termToERef[term_store[e_new.reason.tr][1]];
+//            assert (enode_store[reason_lhs].getRoot() != enode_store[reason_rhs].getRoot());
             for (int j = 0; j < to.referenced_by[to[er_new].getId()].size(); j++) {
                 ERef referer = to.referenced_by[to[er_new].getId()][j];
                 if (referer == ERef_Undef) continue;

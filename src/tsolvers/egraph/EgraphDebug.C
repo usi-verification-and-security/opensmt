@@ -276,40 +276,20 @@ std::string Egraph::printExplanationTree( PTRef x )
     stringstream os;
     while ( x != PTRef_Undef ) {
         os << logic.printTerm(x);
-#ifdef TERMS_HAVE_EXPLANATIONS
         if (logic.getPterm(x).getExpParent() != PTRef_Undef) {
-#else
-        if (term_store.getParent(x) != PTRef_Undef) {
-#endif
             os << " --[";
-#ifdef TERMS_HAVE_EXPLANATIONS
             if (logic.getPterm(x).getExpReason().tr == PTRef_Undef) {
-#else
-            if (term_store.getReason(x).tr == PTRef_Undef) {
-#endif
                 os << "<";
                 for (int i = 0; i < logic.getPterm(x).size(); i++)
                     os << logic.printTerm(logic.getPterm(x)[i]) << " ";
                 os << ">";
             }
             else
-#ifdef TERMS_HAVE_EXPLANATIONS
                 os << (logic.getPterm(x).getExpReason().sgn == l_True ? "" : "not ") << logic.printTerm(logic.getPterm(x).getExpReason().tr);
-#else
-                os << (term_store.getReason(x).sgn == l_True ? "" : "not ") << term_store.printTerm(term_store.getReason(x).tr);
-#endif
-#ifdef TERMS_HAVE_EXPLANATIONS
             if ( logic.getPterm(x).getExpParent() != PTRef_Undef )
-#else
-            if (term_store.getParent(x) != PTRef_Undef)
-#endif
                 os << "]--> ";
         }
-#ifndef TERMS_HAVE_EXPLANATIONS
-        x = term_store.getParent(x);
-#else
         x = logic.getPterm(x).getExpParent();
-#endif
     }
     return os.str();
 }
@@ -324,17 +304,9 @@ std::string Egraph::printExplanationTreeDotty( PTRef x )
         char* name = logic.printTerm(x);
         os << name;
         ::free(name);
-#ifdef TERMS_HAVE_EXPLANATIONS
         if (logic.getPterm(x).getExpParent() != PTRef_Undef)
-#else
-        if (term_store.getParent(x) != PTRef_Undef)
-#endif
             os << " -> ";
-#ifdef TERMS_HAVE_EXPLANATIONS
         x = logic.getPterm(x).getExpParent();
-#else
-        x = term_store.getParent(x);
-#endif
     }
 
     os << endl << "}" << endl;

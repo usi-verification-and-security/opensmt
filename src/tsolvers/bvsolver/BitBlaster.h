@@ -29,8 +29,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SimpSMTSolver.h"
 #include "BVStore.h"
 
+// forward declarations
 class BVLogic;
 class MainSolver;
+class Enode;
 
 class BitBlaster
 {

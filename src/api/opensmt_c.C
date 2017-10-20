@@ -30,8 +30,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //#include "Egraph.h"
 //#include "Tseitin.h"
 
-#ifndef SMTCOMP
-
 #define CAST( CONTEXT, SOLVER ) \
   assert( CONTEXT.c ); \
   MainSolver * SOLVER_ = static_cast< MainSolver * >( CONTEXT.c ); \
@@ -879,5 +877,3 @@ void osmt_polarity( osmt_context, osmt_expr, int )
   // SimpSMTSolver & solver = context.solver;
   // Enode * atom = static_cast< Enode * >( a );
 }
-
-#endif

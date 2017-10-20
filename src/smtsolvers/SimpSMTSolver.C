@@ -190,9 +190,7 @@ skip_theory_preproc:
         extendModel();
         // Previous line
         // #ifndef NDEBUG
-#ifndef SMTCOMP
         verifyModel();
-#endif
     }
 
     if (do_simp)

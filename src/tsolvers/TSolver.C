@@ -50,3 +50,22 @@ bool TSolver::isKnown(PTRef tr)
         return false;
     return known_preds[getLogic().getPterm(tr).getId()];
 }
+
+// MB: setPolarity and clearPolarity moved to .C file to remove the macros from the header
+
+void  TSolver::setPolarity(PTRef tr, lbool p)
+{
+    if (polarityMap.has(tr)) { polarityMap[tr] = p; }
+    else { polarityMap.insert(tr, p); }
+#ifdef VERBOSE_EUF
+    cerr << "Setting polarity " << getLogic().printTerm(tr) << " " << tr.x << endl;
+#endif
+}
+
+void  TSolver::clearPolarity(PTRef tr)
+{
+    polarityMap[tr] = l_Undef;
+#ifdef VERBOSE_EUF
+    cerr << "Clearing polarity " << getLogic().printTerm(tr) << " " << tr.x << endl;
+#endif
+}

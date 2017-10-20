@@ -928,13 +928,11 @@ public:
 	char * printCnfLearnts  ();
 
     bool    smtSolve         ( );             // Solve
-#ifndef SMTCOMP
     /*
           lbool  getModel               ( Enode * );
     */
     void   printModel             ( );             // Wrapper
     void   printModel             ( ostream & );   // Prints model
-#endif
 
 #ifdef PRODUCE_PROOF
     void   printProofSMT2          ( ostream & ); // Print proof
@@ -1009,12 +1007,10 @@ protected:
           Var    generateMoreEij        ( );             // Generate more eij
           Var    generateNextEij        ( );             // Generate next eij
     */
-#ifndef SMTCOMP
     void   dumpCNF                ( );             // Dumps CNF to cnf.smt2
     /*
           void   dumpRndInter           ( );             // Dumps a random interpolation problem
     */
-#endif
     vec<CRef>          cleanup;                    // For cleaning up
     bool               first_model_found;          // True if we found a first boolean model
     double             skip_step;                  // Steps to skip in calling tsolvers

@@ -83,15 +83,6 @@ private:
 
   bool          isValid(PTRef tr) { return logic.isUFEquality(tr) || logic.isUP(tr) || logic.isUFTerm(tr) || logic.isDisequality(tr) || logic.isBoolAtom(tr); }
 
-#ifndef TERMS_HAVE_EXPLANATIONS
-  // Explanations
-//  Map<PTRef,PTRef,PTRefHash,Equal<PTRef> >  expParent;
-//  Map<PTRef,int,PTRefHash,Equal<PTRef> >    expTimeStamp;
-//  Map<PTRef,int,PTRefHash,Equal<PTRef> >    expClassSize;
-//  Map<PTRef,PtAsgn,PTRefHash,Equal<PTRef> > expReason;
-//  Map<PTRef,PTRef,PTRefHash,Equal<PTRef> >  expRoot;
-#endif
-
   double fa_garbage_frac;
 
   UFSolverStats tsolver_stats;
@@ -183,9 +174,6 @@ public:
   void    addAssertion            ( ERef );
 
   void          initializeStore   ( );
-#ifndef SMTCOMP
-//  inline void   addSubstitution   ( ERef s, ERef t ) { top_level_substs.push_back( make_pair( s, t ) ); }
-#endif
   inline void   setTopEnode       ( ERef e )         { assert( e != ERef_Nil ); top = e; }
   inline size_t nofEnodes         ( )                { return enode_store.id_to_enode.size( ); }
 
@@ -275,9 +263,7 @@ public:
 //  void                initializeCong          ( Enode * );                  // Initialize congruence structures for a node
   void                computeModel            ( );
   void                clearModel              ( );
-#ifndef SMTCOMP
   void                printModel              ( ostream & );                // Computes and print the model
-#endif
 //  inline void         setUseGmp               ( ) { use_gmp = true; }
 //  inline bool         getUseGmp               ( ) { return use_gmp; }
   void                splitOnDemand           ( vec<PTRef> &, int ) { };       // Splitting on demand modulo equality
@@ -378,9 +364,7 @@ private:
 //  Enode * lookupDefine ( const char * );                        // Retrieve a define
 //  Enode * insertStore  ( const enodeid_t, Enode *, Enode * );   // Insert node into the global store
 //  void    removeStore  ( Enode * );                             // Remove a node from the global store
-#ifndef SMTCOMP
 //  void    evaluateTermRec ( Enode *, Real & );                  // Evaluate node
-#endif
   //
   // Related to congruence closure
   //
@@ -421,10 +405,8 @@ private:
 //  vector< int >                  id_to_inc_edges;               // Keeps track of how many edges enter an enode
 //  bool                           has_ites;                      // True if there is at least one ite
 //  set< Enode * >                 variables;                     // List of variables
-#ifndef SMTCOMP
 //  vector< Pair( Enode * ) >      top_level_substs;              // Keep track of substitutuions in TopLevelProp.C
   bool                           model_computed;                // Has model been computed lately ?
-#endif
   bool                           congruence_running;            // True if congruence is running
 
   //===========================================================================

@@ -151,21 +151,10 @@ public:
     // Called after every check-sat.
     virtual void clearSolver();
 
-    void  setPolarity(PTRef tr, lbool p) {
-        if (polarityMap.has(tr)) { polarityMap[tr] = p; }
-        else { polarityMap.insert(tr, p); }
-#ifdef VERBOSE_EUF
-        cerr << "Setting polarity " << getLogic().printTerm(tr) << " " << tr.x << endl;
-#endif
-    }
+    void  setPolarity(PTRef tr, lbool p);
     virtual void print(ostream& out) = 0;
     lbool getPolarity(PTRef tr)          { return polarityMap[tr]; }
-    void  clearPolarity(PTRef tr)        {
-        polarityMap[tr] = l_Undef;
-#ifdef VERBOSE_EUF
-        cerr << "Clearing polarity " << getLogic().printTerm(tr) << " " << tr.x << endl;
-#endif
-    }
+    void  clearPolarity(PTRef tr);
     bool  hasPolarity(PTRef tr)          { if (polarityMap.has(tr)) { return polarityMap[tr] != l_Undef; } else return false; }
     virtual bool                assertLit           ( PtAsgn, bool = false ) = 0 ;  // Assert a theory literal
     virtual void                pushBacktrackPoint  ( )                       ;  // Push a backtrack point

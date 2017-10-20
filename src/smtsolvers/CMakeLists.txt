@@ -11,13 +11,28 @@ PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/TheoryInterpolator.h"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Debug.C"
 )
 
+if(VERBOSE_SAT)
+	target_compile_definitions(smtsolvers PRIVATE -DVERBOSE_SAT)
+endif()
+
+if(DEBUG_LOOKAHEAD)
+	target_compile_definitions(smtsolvers PRIVATE -DLADEBUG)
+endif()
+
+if(PRINT_UNITS)
+	target_compile_definitions(smtsolvers PRIVATE -DREPORT_DL1_THLITS)
+endif()
+
+if(COMPRESS)
+	target_compile_definitions(smtsolvers PRIVATE -DUSE_GZ)
+endif()
+
 if(PRODUCE_PROOF)
 	target_sources(proof
 	PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Proof.h"
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Proof.C"
 	)
 	install(FILES TheoryInterpolator.h
-			#Proof.h
 			DESTINATION ${INSTALL_HEADERS_DIR})
 
 endif()

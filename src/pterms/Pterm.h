@@ -75,13 +75,11 @@ class Pterm {
     PTId                                id;
     SymRef                              sym;
     Var                                 var;  // This is defined if the PTRef has a Boolean var associated with it
-#ifdef TERMS_HAVE_EXPLANATIONS
     PtAsgn      exp_reason;
     PTRef       exp_parent;
     PTRef       exp_root;
 //    int         exp_class_size;
     int         exp_time_stamp;
-#endif
     // This has to be the last
     PTRef                               args[0]; // Either the terms or the relocation reference
 
@@ -92,7 +90,6 @@ class Pterm {
     friend class Logic;
   public:
 
-#ifdef TERMS_HAVE_EXPLANATIONS
     PtAsgn getExpReason       () const { return exp_reason; }
     PTRef  getExpParent       () const { return exp_parent; }
     PTRef  getExpRoot         () const { return exp_root; }
@@ -104,14 +101,9 @@ class Pterm {
     void setExpRoot       (PTRef r)      { exp_root   = r; }
 //    void setExpClassSize  (const int s)  { exp_class_size   = s; }
     void setExpTimeStamp  (const int t)  { exp_time_stamp   = t; }
-#endif
 
     // Note: do not use directly (no memory allocation for args)
-#ifdef TERMS_HAVE_EXPLANATIONS
     Pterm(const SymRef sym_, const vec<PTRef>& ps, PTRef t) : sym(sym_) {
-#else
-    Pterm(const SymRef sym_, const vec<PTRef>& ps) : sym(sym_) {
-#endif
         header.type      = 0;
         header.has_extra = 0;
         header.reloced   = 0;
@@ -121,12 +113,10 @@ class Pterm {
         var              = var_Undef;
 
         for (int i = 0; i < ps.size(); i++) args[i] = ps[i];
-#ifdef TERMS_HAVE_EXPLANATIONS
         setExpReason(PtAsgn(PTRef_Undef, l_Undef));
         setExpParent(PTRef_Undef);
         setExpRoot(t);
         setExpTimeStamp(0);
-#endif
     }
     Pterm() {
         header.type      = 0;
@@ -240,11 +230,7 @@ class PtermAllocator : public RegionAllocator<uint32_t>
 
         uint32_t v = RegionAllocator<uint32_t>::alloc(ptermWord32Size(ps.size()));
         PTRef tid = {v};
-#ifdef TERMS_HAVE_EXPLANATIONS
         new (lea(tid)) Pterm(sym, ps, tid);
-#else
-        new (lea(tid)) Pterm(sym, ps);
-#endif
         operator[](tid).setId(n_terms++);
 
         return tid;

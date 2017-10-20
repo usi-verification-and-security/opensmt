@@ -807,6 +807,7 @@ public:
   bool         docset;                       // Diagnostic Output Channel set ?
   int          dump_formula;                 // Dump input formula
   int          verbosity() const             // Verbosity level
+// TODO: remove MACROS from header file
 #ifdef PEDANTIC_DEBUG
     { return optionTable.has(o_verbosity) ?
         optionTable[o_verbosity]->getValue().numval : 2; }

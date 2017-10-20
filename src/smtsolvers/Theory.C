@@ -243,12 +243,10 @@ int CoreSMTSolver::checkTheory( bool complete )
     {
         confl = ca.alloc(conflicting, config.sat_temporary_learn);
         learnts.push(confl);
-#ifndef SMTCOMP
         if ( config.isIncremental() )
         {
             undo_stack.push(undo_stack_el(undo_stack_el::NEWLEARNT, confl));
         }
-#endif
         attachClause(confl);
         claBumpActivity(ca[confl]);
         learnt_t_lemmata ++;
@@ -267,13 +265,11 @@ int CoreSMTSolver::checkTheory( bool complete )
     {
         confl = ca.alloc(conflicting, config.sat_temporary_learn);
         learnts.push(confl);
-#ifndef SMTCOMP
 //    if ( config.incremental )
 //    {
 //      undo_stack_oper.push_back( NEWLEARNT );
 //      undo_stack_elem.push_back( (void *)confl );
 //    }
-#endif
         attachClause(confl);
         claBumpActivity(ca[confl]);
         learnt_t_lemmata ++;
@@ -338,9 +334,7 @@ int CoreSMTSolver::checkTheory( bool complete )
 #endif
         learnts.push(cr);
         learnt_theory_conflicts++;
-#ifndef SMTCOMP
         undo_stack.push(undo_stack_el(undo_stack_el::NEWLEARNT, cr));
-#endif
         attachClause(cr);
         claBumpActivity(ca[cr]);
         uncheckedEnqueue(learnt_clause[0], cr);
@@ -475,9 +469,7 @@ int CoreSMTSolver::analyzeUnsatLemma(CRef confl)
             undo_stack.push(undo_stack_el(undo_stack_el::NEWPROOF, cr));
 #endif
         learnts.push(cr);
-#ifndef SMTCOMP
         undo_stack.push(undo_stack_el(undo_stack_el::NEWLEARNT, cr));
-#endif
         attachClause(cr);
         claBumpActivity(ca[cr]);
         uncheckedEnqueue(learnt_clause[0], cr);

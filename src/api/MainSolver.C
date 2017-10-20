@@ -244,9 +244,6 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
         // Optimize the dag for cnfization
         Map<PTRef,int,PTRefHash> PTRefToIncoming;
         if (logic.isBooleanOperator(fc.getRoot())) {
-#ifdef FLATTEN_DEBUG
-            printf("Flattening the formula %s\n", logic.printTerm(fc.getRoot()));
-#endif
             computeIncomingEdges(fc.getRoot(), PTRefToIncoming);
             PTRef flat_root = rewriteMaxArity(fc.getRoot(), PTRefToIncoming);
 #ifdef PRODUCE_PROOF
@@ -264,9 +261,6 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
 
 #endif
             fc.setRoot(flat_root);
-#ifdef FLATTEN_DEBUG
-            printf("Got the formula %s\n", logic.printTerm(fc.getRoot()));
-#endif
         }
 
         // root_instance is updated to the and of the simplified formulas currently in the solver
@@ -749,12 +743,10 @@ bool MainSolver::writeState(int* &buf, int &buf_sz, bool compress, CnfState& cs,
     // Clear the timestamp for explanations!
     for (PtermIter it = logic.getPtermIter(); *it != PTRef_Undef; ++it) {
         Pterm& t = logic.getPterm(*it);
-#ifdef TERMS_HAVE_EXPLANATIONS
         t.setExpTimeStamp(0);
         t.setExpReason(PtAsgn(PTRef_Undef, l_Undef));
         t.setExpParent(PTRef_Undef);
         t.setExpRoot(*it);
-#endif
     }
 
 
@@ -775,7 +767,7 @@ bool MainSolver::writeState(int* &buf, int &buf_sz, bool compress, CnfState& cs,
     buf_sz = (int)((termstore_sz + symstore_sz + idstore_sz + sortstore_sz + map_sz + logicstore_sz)*sizeof(int)
                  + (strlen(cs.getCnf())+1) + hdr_sz*sizeof(int));
 #ifdef VERBOSE_FOPS
-    cerr << "Mallocing " << *size << " bytes for the buffer" << endl;
+    cerr << "Mallocing " << buf_sz << " bytes for the buffer" << endl;
     cerr << "The cnf is " << strlen(cs.getCnf())+1 << " bytes" << endl;
     cerr << "The map is " << map_sz * sizeof(int) << " bytes" << endl;
     cerr << "The termstore is " << termstore_sz * sizeof(int) << " bytes" << endl;
@@ -927,7 +919,6 @@ void MainSolver::deserializeSolver(const int* termstore_buf, const int* symstore
                 ts.solver.setFrozen(i, true);
         }
     }
-#if defined(TERMS_HAVE_EXPLANATIONS)
     for (PtermIter it = logic.getPtermIter(); *it != PTRef_Undef; ++it) {
         Pterm& t = logic.getPterm(*it);
         t.setExpTimeStamp(0);
@@ -935,7 +926,6 @@ void MainSolver::deserializeSolver(const int* termstore_buf, const int* symstore
         assert(t.getExpParent() == PTRef_Undef);
         assert(t.getExpRoot() == *it);
     }
-#endif
     DimacsParser dp;
     dp.parse_DIMACS_main(cs.getCnf(), ts.solver);
 

@@ -43,9 +43,7 @@ public:
   SplayTree( ) 
     : last_node  ( NULL )
     , initialized( false ) 
-#ifndef SMTCOMP
     , size       ( 0 )
-#endif
   { }
 
   ~SplayTree( ) 
@@ -82,9 +80,7 @@ public:
   //
   const SplayTree & operator=( const SplayTree & rhs ) { assert( false ); }
 
-#ifndef SMTCOMP
   void printStatistics( ostream & );
-#endif
 
 private:
   //
@@ -119,9 +115,7 @@ private:
   Bnode *  bnil_node;        // nil node
   C        cmp;              // Comparison structure
   bool     initialized;      // Check if the nil node has been initialized
-#ifndef SMTCOMP
   unsigned size;             // Keep track of the size of the tree (number of nodes)
-#endif
 };
 
 //
@@ -135,9 +129,7 @@ T & SplayTree< T, C >::insert( T & x )
   if( last_node == NULL )
   {
     last_node = new Bnode;
-#ifndef SMTCOMP
     size ++;
-#endif
   }
 
   last_node->element = x;
@@ -320,7 +312,6 @@ void SplayTree< T, C >::deleteTree( Bnode * t )
   }
 }
 
-#ifndef SMTCOMP
 template <class T, class C>
 void SplayTree< T, C >::printStatistics( ostream & os )
 {
@@ -329,7 +320,4 @@ void SplayTree< T, C >::printStatistics( ostream & os )
   os << "# Bnode size in memory..: " << size * sizeof( Bnode ) / ( 1024.0 * 1024.0 ) << " MB" << endl;
   os << "# Avg size per bnode....: " << sizeof( Bnode ) << " B" << endl;
 }
-
-#endif
-
 #endif

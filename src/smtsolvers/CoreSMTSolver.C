@@ -45,21 +45,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 **************************************************************************************************/
 
 #include "CoreSMTSolver.h"
-//#include "THandler.h"
 #include "Sort.h"
 #include <cmath>
 
 #ifdef PRODUCE_PROOF
 #include "Proof.h"
 #endif
-
-#ifndef OPTIMIZE
-#include <iostream>
-#include <fstream>
-#include <sys/wait.h>
-#endif
-
-#include "time.h"
 
 namespace opensmt
 {
@@ -300,12 +291,10 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
 
     insertVarOrder(v);
 
-#ifndef SMTCOMP
     // Added Lines
     // Skip undo for varTrue and varFalse
     if ( v != 0 && v != 1 )
         undo_stack.push(undo_stack_el(undo_stack_el::NEWVAR, v));
-#endif
 
     n_occs.push(0);
 
@@ -322,7 +311,7 @@ bool CoreSMTSolver::addClause_(vec<Lit>& _ps)
 #endif
 {
 #ifdef REPORT_DL1_THLITS
-    int init_cl_len = ps.size();
+    int init_cl_len = _ps.size();
 #endif
     assert( decisionLevel() == 0 );
 #ifdef PRODUCE_PROOF
@@ -478,15 +467,7 @@ bool CoreSMTSolver::addClause_(vec<Lit>& _ps)
         clauses.push(cr);
         attachClause(cr);
 
-#ifdef VERBOSE_SAT
-        for (int i = 0; i < c->size(); i++)
-            cerr << toInt((*c)[i]) << " ";
-        cerr << endl;
-#endif
-
-#ifndef SMTCOMP
         undo_stack.push(undo_stack_el(undo_stack_el::NEWCLAUSE, cr));
-#endif
     }
 
     return true;
@@ -1051,9 +1032,7 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
                 ctr = ca.alloc(r, learnt_);
                 learnts.push(ctr);
                 attachClause(ctr);
-#ifndef SMTCOMP
                 undo_stack.push(undo_stack_el(undo_stack_el::NEWLEARNT, ctr));
-#endif
                 claBumpActivity(ca[ctr]);
                 learnt_t_lemmata ++;
                 if ( !config.sat_temporary_learn )
@@ -1290,10 +1269,8 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
             {
                 ct = ca.alloc(r, config.sat_temporary_learn);
                 learnts.push(ct);
-#ifndef SMTCOMP
                 if (config.isIncremental() != 0)
                     undo_stack.push(undo_stack_el(undo_stack_el::NEWLEARNT, ct));
-#endif
                 attachClause(ct);
                 claBumpActivity(ca[ct]);
                 learnt_t_lemmata ++;
@@ -1909,17 +1886,8 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 #ifdef PEDANTIC_DEBUG
     bool thr_backtrack = false;
 #endif
-#ifdef PRINT_CLAUSAL_SIZE
-    int prev_conflicts = conflicts;
-#endif
     while (split_type == spt_none || splits.size() < split_num - 1)
     {
-#ifdef PRINT_CLAUSAL_SIZE
-        if (conflicts % 1000 == 0 && conflicts != prev_conflicts) {
-            prev_conflicts = conflicts;
-            printf("; %d total learnt theory conflicts %d\n", conflicts, learnt_theory_conflicts);
-        }
-#endif
         // Added line
         if ( opensmt::stop ) return l_Undef;
 
@@ -2010,9 +1978,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                 attachClause(cr);
                 claBumpActivity(ca[cr]);
                 uncheckedEnqueue(learnt_clause[0], cr);
-#ifndef SMTCOMP
                 undo_stack.push(undo_stack_el(undo_stack_el::NEWLEARNT, cr));
-#endif
             }
 
             varDecayActivity();
@@ -2396,14 +2362,11 @@ lbool CoreSMTSolver::solve_(int max_conflicts)
     */
 #endif
 
-#ifndef SMTCOMP
     if ( config.sat_dump_cnf != 0 )
         dumpCNF( );
 
 //    if ( config.sat_dump_rnd_inter != 0 )
 //        dumpRndInter( );
-#endif
-
     model.clear();
     conflict.clear();
 
@@ -2427,9 +2390,7 @@ lbool CoreSMTSolver::solve_(int max_conflicts)
         fprintf(stderr, "; |           |    Vars  Clauses Literals |    Limit  Clauses Lit/Cl |          |\n");
         fprintf(stderr, "; ===============================================================================\n");
     }
-#ifndef SMTCOMP
     double next_printout = restart_first;
-#endif
 
     // Search:
     const size_t old_conflicts = nLearnts( );
@@ -2439,7 +2400,6 @@ lbool CoreSMTSolver::solve_(int max_conflicts)
         stop = true;
     while (status == l_Undef && !opensmt::stop && !cstop && !this->stop)
     {
-#ifndef SMTCOMP
         // Print some information. At every restart for
         // standard mode or any 2^n intervarls for luby
         // restarts
@@ -2459,7 +2419,6 @@ lbool CoreSMTSolver::solve_(int max_conflicts)
             next_printout *= 2;
         else
             next_printout *= restart_inc;
-#endif
         // XXX
         status = search((int)nof_conflicts, (int)nof_learnts);
         nof_conflicts = restartNextLimit( nof_conflicts );
@@ -2484,7 +2443,6 @@ lbool CoreSMTSolver::solve_(int max_conflicts)
     {
         if (status == l_True)
         {
-#ifndef SMTCOMP
             // Extend & copy model:
             model.growTo(nVars());
             for (int i = 0; i < nVars(); i++) model[i] = value(i);
@@ -2494,7 +2452,6 @@ lbool CoreSMTSolver::solve_(int max_conflicts)
             {
                 printModel();
             }
-#endif
         }
         else
         {
@@ -3034,18 +2991,6 @@ void CoreSMTSolver::garbageCollect()
 //               ca.size()*ClauseAllocator::Unit_Size, to.size()*ClauseAllocator::Unit_Size);
     to.moveTo(ca);
 }
-
-#ifndef SMTCOMP
-/*
-lbool CoreSMTSolver::getModel( Enode * atom )
-{
-  assert( atom->isAtom() );
-  Var v = theory_handler->enodeToVar( atom );
-  //assert( model[ v ] != l_Undef );
-  return model[ v ];
-}
-*/
-#endif
 
 bool CoreSMTSolver::smtSolve( )
 {

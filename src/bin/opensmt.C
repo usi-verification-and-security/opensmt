@@ -72,7 +72,7 @@ int main( int argc, char * argv[] )
   // the repeatability of experiments that might be compromised
   // by the floating point unit approximations on doubles
   //
-#if defined(__linux__) && !defined( SMTCOMP )
+#if defined(__linux__)
   fpu_control_t oldcw, newcw;
   _FPU_GETCW(oldcw); newcw = (oldcw & ~_FPU_EXTENDED) | _FPU_DOUBLE; _FPU_SETCW(newcw);
 #endif
@@ -81,8 +81,8 @@ int main( int argc, char * argv[] )
   cerr << "; pedantic assertion checking enabled (very slow)" << endl;
 #endif
 
-#ifndef OPTIMIZE
-  cerr << "; this binary is compiled with optimizations disabled (slow)" << endl;
+#ifndef NDEBUG
+  cerr << "; this binary is compiled in debug mode (slow)" << endl;
 #endif
 
   cerr << "; git hash: " << GIT_SHA1 << endl;
@@ -93,9 +93,7 @@ int main( int argc, char * argv[] )
   //cerr << "; Configured with args " << CONFIG_FLAGS << endl;
   //cerr << "; preprocessor definitions set in configure " << CONFIGTIME_DEFFLAGS << endl;
   //cerr << "; compiler flags set in configure " << CONFIGTIME_COMPFLAGS << endl;
-#ifndef SMTCOMP
-//  if ( context.getConfig( ).verbosity > 0 )
-#endif
+
   // Initialize pointer to context for parsing
 //  parser_ctx    = &context;
   // Accepts file from stdin if nothing specified
