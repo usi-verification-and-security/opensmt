@@ -49,6 +49,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "Sort.h"
 #include <cmath>
 
+#ifdef PRODUCE_PROOF
+#include "Proof.h"
+#endif
+
 #ifndef OPTIMIZE
 #include <iostream>
 #include <fstream>

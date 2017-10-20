@@ -29,6 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #ifdef PRODUCE_PROOF
 #include "Proof.h"
+#include "PG.h"
 #include <sys/wait.h>
 #endif
 

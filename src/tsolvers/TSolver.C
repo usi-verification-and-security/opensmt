@@ -1,4 +1,5 @@
 #include "TSolver.h"
+#include "Logic.h"
 
 void TSolver::clearSolver()
 {

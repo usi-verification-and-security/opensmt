@@ -7,7 +7,6 @@ PRIVATE
 "${CMAKE_CURRENT_LIST_DIR}/XAlloc.h"
 "${CMAKE_CURRENT_LIST_DIR}/Global.h"
 "${CMAKE_CURRENT_LIST_DIR}/IntTypes.h"
-#"${CMAKE_CURRENT_LIST_DIR}/Otl.h"
 "${CMAKE_CURRENT_LIST_DIR}/SigMap.h"
 "${CMAKE_CURRENT_LIST_DIR}/StringMap.h"
 "${CMAKE_CURRENT_LIST_DIR}/Timer.h"
@@ -15,9 +14,7 @@ PRIVATE
 )
 
 install(FILES 
-Global.h FastRational.h XAlloc.h Alloc.h StringMap.h
-TreeOps.h SigMap.h Timer.h 
-#Otl.h
+Global.h FastRational.h XAlloc.h Alloc.h StringMap.h SigMap.h Timer.h
 DESTINATION ${INSTALL_HEADERS_DIR})
 
 

@@ -28,7 +28,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define TERMMAPPER_H
 #include "Map.h"
 #include "SolverTypes.h"
-#include "Pterm.h"
+#include "PTRef.h"
 #include "Logic.h"
 class TermMapper {
   private:

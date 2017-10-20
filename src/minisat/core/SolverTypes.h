@@ -22,8 +22,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef Minisat_SolverTypes_h
 #define Minisat_SolverTypes_h
 
-#include <iostream>
-using namespace std;
 #include <assert.h>
 
 #include "IntTypes.h"

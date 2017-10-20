@@ -25,6 +25,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 #include "Cnfizer.h"
+#include "SimpSMTSolver.h"
 
 #include <queue>
 
@@ -1009,3 +1010,5 @@ void Cnfizer::getVarMapping (CnfState &cs)
     free (out);
 #endif
 }
+
+void  Cnfizer::getSolverState   (CnfState& cs) { solver.cnfToString(cs); }

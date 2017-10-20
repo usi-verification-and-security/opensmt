@@ -26,11 +26,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #ifndef SORT_H
 #define SORT_H
-#include <string.h>
-#include <sstream>
+
 #include "Vec.h"
 #include "Global.h"
-#include "IntTypes.h"
 #include "Alloc.h"
 
 // XXX The implementation of sorts is incomplete: the sort system should have

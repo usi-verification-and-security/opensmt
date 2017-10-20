@@ -1,4 +1,12 @@
 #include "TSolverHandler.h"
+#include "TreeOps.h"
+#include "TSolver.h"
+
+TSolverHandler::~TSolverHandler()
+{
+    for (int i = 0; i < tsolvers.size(); i++)
+        if (tsolvers[i] != NULL) delete tsolvers[i];
+}
 
 void TSolverHandler::computeModel()
 {

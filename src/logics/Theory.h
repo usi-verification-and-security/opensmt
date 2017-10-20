@@ -26,7 +26,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef THEORY_H
 #define THEORY_H
 
-#include "Deductions.h"
 #include "Logic.h"
 #include "LRALogic.h"
 #include "CUFLogic.h"

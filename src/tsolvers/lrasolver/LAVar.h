@@ -28,25 +28,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define LAVAR_H
 
 #include "Global.h"
-#include "Pterm.h"
 #include "Delta.h"
 #include "LARow.h"
 #include "LAColumn.h"
-#include "LRALogic.h"
 #include "Deductions.h"
+#include "BoundT.h"
+#include "PtStructs.h"
 
 class LRASolver;
 class LAVarStore;
-
-struct BoundT {
-    static const char* const names[3];
-    char t;
-    bool operator== (const BoundT& o) const { return o.t == t; }
-    inline friend ostream& operator<< (ostream& o, const BoundT& b) { o << names[(int)b.t]; return o; }
-};
-const BoundT bound_l = { 0 };
-const BoundT bound_u = { 1 };
-const BoundT bound_n = { 2 };
+class LRALogic;
 
 //
 // Class to store the term of constraints as a column of Simplex method tableau
@@ -150,12 +141,9 @@ public:
     inline void setM( const Delta &v ); //set actual model to v
 
   // two operators for output
-    inline friend ostream & operator <<( ostream & out, LAVar * v )
-    {
-        out << v->logic.printTerm(v->e) << endl;
-        return out;
-    }
-    inline friend ostream & operator <<( ostream & out, LAVar & v )
+    friend ostream & operator <<( ostream & out, LAVar * v );
+
+    friend ostream & operator <<( ostream & out, LAVar & v )
     {
         out << &v;
         return out;

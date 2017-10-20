@@ -1,4 +1,4 @@
-add_library(tsolvers OBJECT "")
+add_library(tsolvers OBJECT "" lrasolver/BoundT.h)
 
 target_sources(tsolvers
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Deductions.h"

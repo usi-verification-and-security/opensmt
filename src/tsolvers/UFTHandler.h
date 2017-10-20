@@ -30,7 +30,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //#include "THandler.h"
 #include "Logic.h"
 #include "TSolverHandler.h"
-#include "Egraph.h"
+//#include "Egraph.h"
+
+class Egraph;
 
 class UFTHandler : public TSolverHandler
 {
@@ -51,16 +53,10 @@ class UFTHandler : public TSolverHandler
     virtual const Logic& getLogic() const;
 
 #ifdef PRODUCE_PROOF
-    virtual TheoryInterpolator* getTheoryInterpolator()
-    {
-        return egraph->getTheoryInterpolator();
-    }
+    virtual TheoryInterpolator* getTheoryInterpolator();
 
-    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
-    {
-        return egraph->getInterpolant(mask, labels);
-    }
-#endif
+    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels);
+#endif // PRODUCE_PROOF
 };
 
 #endif

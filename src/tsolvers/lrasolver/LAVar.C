@@ -37,6 +37,11 @@ Delta LAVar::minus_inf_bound = Delta( Delta::LOWER );
 
 unsigned LAVar::model_global_counter = 1;
 
+inline ostream &operator<<(ostream &out, LAVar *v) {
+  out << v->logic.printTerm(v->e) << endl;
+  return out;
+}
+
 //
 // Default constructor
 //

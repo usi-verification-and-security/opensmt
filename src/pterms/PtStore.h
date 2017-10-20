@@ -31,7 +31,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "Pterm.h"
 #include "SymStore.h"
-#include "SStore.h"
+
+class SStore; // forward declaration
 
 //struct PTRefHash {
 //    uint32_t operator () (const PTRef s) const {

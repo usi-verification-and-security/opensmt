@@ -25,7 +25,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 #include "CoreSMTSolver.h"
-#include "THandler.h"
+
+#ifdef PRODUCE_PROOF
+#include "Proof.h"
+#endif //PRODUCE_PROOF
 
 // Stress test the theory solver
 void CoreSMTSolver::crashTest(int rounds, Var var_true, Var var_false)

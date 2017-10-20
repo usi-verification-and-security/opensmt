@@ -26,14 +26,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef MAINSOLVER_H
 #define MAINSOLVER_H
 
-#include "Logic.h"
-#include "Theory.h"
-#include "SimpSMTSolver.h"
-#include "Egraph.h"
 #include "Tseitin.h"
-#include <thread>
-#include <mutex>
-#include <random>
+#include "SimpSMTSolver.h"
+
+class Logic;
 
 class sstat {
     char value;

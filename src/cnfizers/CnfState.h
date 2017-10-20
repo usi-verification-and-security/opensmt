@@ -1,7 +1,7 @@
 /*********************************************************************
 Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
 
-OpenSMT2 -- Copyright (C) 2012 - 2015 Antti Hyvarinen
+OpenSMT2 -- Copyright (C) 2012 - 2016 Antti Hyvarinen
                          2008 - 2012 Roberto Bruttomesso
 
 Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,34 +23,39 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
-#ifndef LRATHandler_H
-#define LRATHandler_H
 
-#include "TSolverHandler.h"
+#ifndef OPENSMT_CNFSTATE_H
+#define OPENSMT_CNFSTATE_H
 
-class LRASolver;
-class LRALogic;
+#include "PTRef.h"
+#include "SolverTypes.h"
 
-class LRATHandler : public TSolverHandler
+//---------------------------------------------------------------------------------------
+// State for CNFs and mappings for terms
+//
+//
+// Struct for communicating the cnf and the mapping between variables and PTRefs
+//
+
+struct VarPtPair
 {
-  private:
-    LRALogic& logic;
-    LRASolver *lrasolver;
-  public:
-    LRATHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d, TermMapper& tmap);
-    virtual ~LRATHandler();
-    virtual void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs);
-    virtual bool assertLit_special(PtAsgn);
-    virtual Logic& getLogic();
-    virtual const Logic& getLogic() const;
-
-#ifdef PRODUCE_PROOF
-    virtual TheoryInterpolator* getTheoryInterpolator()
-    {
-        return NULL;
-    }
-    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels);
-#endif
+    Var v;
+    PTRef tr;
 };
 
-#endif
+class CnfState
+{
+    char*               cnf;
+    vec<VarPtPair>      map;
+    bool                unsat;
+public:
+    CnfState() : cnf(NULL), unsat(false) {};
+    ~CnfState() { free(cnf); }
+    void                  setUnsat()            { assert(cnf == NULL); unsat = true; }
+    const char*           getCnf()              { return unsat ? "1 -1 0" : (cnf == NULL ? "c empty" : cnf); }
+    void                  setCnf(char* cnf_)    { cnf = cnf_; }
+    const vec<VarPtPair>& getMap()              { return map; }
+    void                  addToMap(VarPtPair p) { map.push(p); }
+};
+
+#endif //OPENSMT_CNFSTATE_H

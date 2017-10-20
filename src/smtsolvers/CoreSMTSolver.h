@@ -49,53 +49,25 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define CACHE_POLARITY     0
 
 #include "SMTSolver.h"
+#include "THandler.h"
 
 #include <cstdio>
-#include <arpa/inet.h>
-
 #include "Vec.h"
 #include "Heap.h"
 #include "Alg.h"
 
 #include "SolverTypes.h"
+#include "CnfState.h"
 
 #include "Timer.h"
 
 #ifdef PRODUCE_PROOF
-#include "PG.h"
-#include "Proof.h"
-#include "TheoryInterpolator.h"
 class Proof;
 class ProofGraph;
+class Enode;
 #endif
 
-//---------------------------------------------------------------------------------------
-// State for CNFs and mappings for terms
-//
-//
-// Struct for communicating the cnf and the mapping between variables and PTRefs
-//
 
-struct VarPtPair
-{
-    Var v;
-    PTRef tr;
-};
-
-class CnfState
-{
-    char*               cnf;
-    vec<VarPtPair>      map;
-    bool                unsat;
-public:
-    CnfState() : cnf(NULL), unsat(false) {};
-    ~CnfState() { free(cnf); }
-    void                  setUnsat()            { assert(cnf == NULL); unsat = true; }
-    const char*           getCnf()              { return unsat ? "1 -1 0" : (cnf == NULL ? "c empty" : cnf); }
-    void                  setCnf(char* cnf_)    { cnf = cnf_; }
-    const vec<VarPtPair>& getMap()              { return map; }
-    void                  addToMap(VarPtPair p) { map.push(p); }
-};
 
 // -----------------------------------------------------------------------------------------
 // The splits

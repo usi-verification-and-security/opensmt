@@ -28,10 +28,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define TSEITIN_H
 
 #include "Global.h"
-//#include "Otl.h"
-#include "SMTSolver.h"
-//#include "Egraph.h"
-#include "PtStore.h"
+#include "PTRef.h"
 #include "Cnfizer.h"
 
 class Tseitin : public Cnfizer

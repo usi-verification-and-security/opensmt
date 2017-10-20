@@ -27,7 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef LA_H
 #define LA_H
 
-#include "Pterm.h"
+#include "PtStructs.h"
 #include "Global.h"
 #include "LRALogic.h"
 

@@ -31,7 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define USE_GMP        1
 #define FAST_RATIONALS 1
 
-#include <string.h>
+#include <cstring>
 // Workaround to allow compiling with gcc 4.9.0 and versions of gmp up
 // to 5.1.3 (see https://gcc.gnu.org/gcc-4.9/porting_to.html)
 #include <cstddef>
@@ -47,11 +47,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <iostream>
 #include <fstream>
 #include <queue>
-//#include <ext/hash_map>
-//#include <ext/hash_set>
-//#include "ext/pb_ds/priority_queue.hpp"
-//#include "ext/pb_ds/tag_and_trait.hpp"
-//#include <ext/algorithm>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <unistd.h>

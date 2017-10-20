@@ -26,10 +26,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "THandler.h"
 #include "CoreSMTSolver.h"
+#include "TSolver.h"
 #include <sys/wait.h>
 #include <assert.h>
-
-#include "LRASolver.h"
 
 void THandler::backtrack(int lev)
 {

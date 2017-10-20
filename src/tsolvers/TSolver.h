@@ -27,14 +27,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef TSOLVER_H
 #define TSOLVER_H
 
-#include "Pterm.h"
+#include "PtStructs.h"
 #include "SMTConfig.h"
 #include "Deductions.h"
 #include "SolverTypes.h"
-#include "Logic.h"
 #ifdef PRODUCE_PROOF
-#include "TheoryInterpolator.h"
+class TheoryInterpolator; // forward declaration
 #endif
+
+class Logic; // forward declaration
 
 #ifdef STATISTICS
 class TSolverStats

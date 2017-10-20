@@ -1,8 +1,7 @@
 /*********************************************************************
 Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
 
-OpenSMT2 -- Copyright (C) 2012 - 2015 Antti Hyvarinen
-                         2008 - 2012 Roberto Bruttomesso
+OpenSMT2 -- Copyright (C) 2012 - 2014 Antti Hyvarinen
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the
@@ -23,34 +22,30 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
-#ifndef LRATHandler_H
-#define LRATHandler_H
 
-#include "TSolverHandler.h"
+#ifndef OPENSMT_SYMREF_H
+#define OPENSMT_SYMREF_H
 
-class LRASolver;
-class LRALogic;
+#include "Map.h"
 
-class LRATHandler : public TSolverHandler
-{
-  private:
-    LRALogic& logic;
-    LRASolver *lrasolver;
-  public:
-    LRATHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d, TermMapper& tmap);
-    virtual ~LRATHandler();
-    virtual void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs);
-    virtual bool assertLit_special(PtAsgn);
-    virtual Logic& getLogic();
-    virtual const Logic& getLogic() const;
-
-#ifdef PRODUCE_PROOF
-    virtual TheoryInterpolator* getTheoryInterpolator()
-    {
-        return NULL;
-    }
-    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels);
-#endif
+struct SymRef {
+    uint32_t x;
+    void operator= (uint32_t v) { x = v; }
+    inline friend bool operator== (const SymRef& a1, const SymRef& a2) {return a1.x == a2.x; }
+    inline friend bool operator!= (const SymRef& a1, const SymRef& a2) {return a1.x != a2.x; }
 };
 
-#endif
+static struct SymRef SymRef_Undef = {INT32_MAX};
+static struct SymRef SymRef_Nil   = {INT32_MAX-1};
+
+struct SymRefHash {
+    uint32_t operator () (const SymRef& s) const {
+        return (uint32_t)s.x; }
+};
+
+template <>
+struct Equal<const SymRef> {
+    bool operator() (const SymRef& s1, const SymRef& s2) { return s1 == s2; }
+};
+
+#endif //OPENSMT_SYMREF_H

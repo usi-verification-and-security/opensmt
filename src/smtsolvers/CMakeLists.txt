@@ -16,7 +16,9 @@ if(PRODUCE_PROOF)
 	PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Proof.h"
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Proof.C"
 	)
-	install(FILES TheoryInterpolator.h Proof.h DESTINATION ${INSTALL_HEADERS_DIR})
+	install(FILES TheoryInterpolator.h
+			#Proof.h
+			DESTINATION ${INSTALL_HEADERS_DIR})
 
 endif()
 

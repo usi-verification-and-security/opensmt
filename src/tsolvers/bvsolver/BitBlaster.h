@@ -27,10 +27,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define BITBLASTER_H
 
 #include "SimpSMTSolver.h"
-#include "MainSolver.h"
-//#include "Otl.h"
 #include "BVStore.h"
-#include "BVLogic.h"
+
+class BVLogic;
+class MainSolver;
 
 class BitBlaster
 {

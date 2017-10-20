@@ -27,6 +27,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "BitBlaster.h"
 #include "BVStore.h"
 #include "Global.h"
+#include "MainSolver.h"
+
+using opensmt::Real;
+
 
 const char* BitBlaster::s_bbEq          = ".bbEq";
 const char* BitBlaster::s_bbAnd         = ".bbAnd";

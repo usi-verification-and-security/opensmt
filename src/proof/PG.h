@@ -24,18 +24,6 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 #include "Global.h"
 #include "Proof.h"
-#include "Enode.h"
-#include "CoreSMTSolver.h"
-#include <deque>
-#include <algorithm>
-#include <limits>
-#include <bitset>
-#include <cassert>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <climits>
-#include <cfloat>
 #include <map>
 #include <new>
 

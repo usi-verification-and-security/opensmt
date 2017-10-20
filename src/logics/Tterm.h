@@ -1,11 +1,9 @@
 #ifndef TTERM_H
 #define TTERM_H
 
-#include <iostream>
+#include <string>
 
-#include "SSort.h"
-#include "SymStore.h"
-#include "PtStore.h"
+#include "PTRef.h"
 
 class Tterm
 {
@@ -14,7 +12,7 @@ public:
     ~Tterm();
 
     void addArg(PTRef);
-    void setName(string&);
+    void setName(std::string&);
     void setName(const char*);
     void setBody(PTRef);
 

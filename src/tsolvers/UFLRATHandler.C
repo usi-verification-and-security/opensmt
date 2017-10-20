@@ -1,4 +1,7 @@
 #include "UFLRATHandler.h"
+#include "LRASolver.h"
+#include "TreeOps.h"
+#include "Egraph.h"
 
 UFLRATHandler::UFLRATHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d, TermMapper& tmap)
         : LRATHandler(c, l, d, tmap)
@@ -83,4 +86,10 @@ Logic &UFLRATHandler::getLogic()
     return logic;
 }
 
+#ifdef PRODUCE_PROOF
+PTRef UFLRATHandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
+    {
+        return ufsolver->getInterpolant(mask, labels);
+    }
+#endif
 

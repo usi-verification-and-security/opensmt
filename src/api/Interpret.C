@@ -38,6 +38,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "UFLRATheory.h"
 #include "Global.h"
 #include "smt2tokens.h"
+#include "MainSolver.h"
 
 namespace opensmt {
 bool stop;
@@ -49,6 +50,24 @@ uint32_t LetFrame::id_cnt = 0;
 /***********************************************************
  * Class defining interpreter
  ***********************************************************/
+
+Interpret::~Interpret() {
+    if(!parse_only)
+    {
+        if (thandler != NULL)
+            delete thandler;
+        if (main_solver != NULL)
+            delete main_solver;
+        if (theory != NULL)
+            delete theory;
+        if (solver != NULL)
+            delete solver;
+    }
+}
+
+void Interpret::new_solver() {
+    this->solver = new SimpSMTSolver(this->config, *this->thandler);
+}
 
 PTRef
 Interpret::getParsedFormula()

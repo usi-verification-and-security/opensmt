@@ -43,7 +43,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "Logic.h"
 #include "SMTConfig.h"
-#include "Pterm.h"
+#include "PTRef.h"
 #include "TheoryInterpolator.h"
 
 struct CEdge;

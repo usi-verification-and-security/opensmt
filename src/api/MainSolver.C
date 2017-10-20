@@ -28,7 +28,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "TreeOps.h"
 #include "DimacsParser.h"
 #include "Interpret.h"
-#include <string.h>
+#include "CnfState.h"
+#include <thread>
+#include <random>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -215,7 +217,7 @@ MainSolver::insertFormula(PTRef root, char** msg)
     pfstore[formulas.last()].push(root);
     pfstore[formulas.last()].units.clear();
     pfstore[formulas.last()].root = PTRef_Undef;
-    simplified_until = min(simplified_until, formulas.size()-1);
+    simplified_until = std::min(simplified_until, formulas.size()-1);
     return s_Undef;
 }
 
