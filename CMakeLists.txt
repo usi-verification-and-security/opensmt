@@ -52,7 +52,6 @@ include_directories(
 if (PRODUCE_PROOF)
     add_definitions(-DPRODUCE_PROOF -DFULL_LABELING)
     include_directories(${CMAKE_SOURCE_DIR}/proof)
-    add_subdirectory(proof)
 endif ()
 
 if (DEBUG_ITP)

@@ -1,3 +1,7 @@
+if(PRODUCE_PROOF)
+add_subdirectory(proof)
+endif()
+
 add_subdirectory(common)
 add_subdirectory(cnfizers)
 add_subdirectory(pterms)
@@ -12,3 +16,4 @@ add_subdirectory(simplifiers)
 add_subdirectory(smtsolvers)
 add_subdirectory(parsers)
 add_subdirectory(bin)
+
