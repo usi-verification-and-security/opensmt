@@ -39,4 +39,18 @@ void Delta::print( ostream & out ) const
     out << R( ) << "|" << D( );
 }
 
+char* Delta::printValue() const
+{
+    char* out;
+    if (isPlusInf())
+        asprintf(&out, "+inf");
+    else if (isMinusInf())
+        asprintf(&out, "-inf");
+    else
+        asprintf(&out, "(%s | %s)",
+                r->get_str().c_str(),
+                d->get_str().c_str());
+    return out;
+}
+
 

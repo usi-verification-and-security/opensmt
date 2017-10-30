@@ -100,9 +100,10 @@ ValPair TSolverHandler::getValue(PTRef tr) const
 
 bool TSolverHandler::check(bool complete)
 {
-    int i = 0;
-    for (; i < tsolvers.size(); i++)
-        if (tsolvers[i] != NULL && tsolvers[i]->check(complete) == false) return false;
+    for (int i = 0; i < tsolvers.size(); i++)
+        if (tsolvers[i] != NULL)
+            if (tsolvers[i]->check(complete) == false)
+                return false;
 
     return true;
 }

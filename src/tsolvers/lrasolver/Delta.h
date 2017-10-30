@@ -62,8 +62,8 @@ public:
   inline Delta( const Delta &a );               // Copy constructor
   inline ~Delta( );                             // Destructor
 
-  inline Real& R( ) const;                      // main value
-  inline Real& D( ) const;                      // delta to keep track of < / <= difference
+  inline const Real& R( ) const;                      // main value
+  inline const Real& D( ) const;                      // delta to keep track of < / <= difference
   inline bool hasDelta( ) const;                // TRUE is delta != 0
   inline bool isMinusInf( ) const;              // True if -inf
   inline bool isPlusInf( ) const;               // True if +inf
@@ -99,6 +99,7 @@ public:
   inline friend Delta operator/( const Delta &a, const Real &c );
 
   void print( ostream & out ) const;            // print the Delta
+  char* printValue() const;
   inline friend ostream & operator<<( ostream & out, const Delta & b )
   {
     b.print( out );
@@ -108,7 +109,7 @@ public:
 };
 
 // main value
-inline Real& Delta::R( ) const
+inline const Real& Delta::R( ) const
 {
   assert(!infinite);
   assert( r );
@@ -116,7 +117,7 @@ inline Real& Delta::R( ) const
 }
 
 // delta value (to keep track of < / <= difference)
-inline Real& Delta::D( ) const
+inline const Real& Delta::D( ) const
 {
   assert(!infinite);
   assert( d );

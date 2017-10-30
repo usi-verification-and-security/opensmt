@@ -98,7 +98,7 @@ bool THandler::assertLits(vec<Lit>& trail)
 #endif
 
         res = assertLit(PtAsgn(pt_r, sign(l) ? l_False : l_True));
-
+//        res &= check(true);
 
 #ifdef VERBOSE_EUF
 //        if (res == l_False) {
