@@ -298,6 +298,7 @@ class Logic {
     void dumpFormulaToFile(ostream& dump_out, PTRef formula, bool negate = false, bool toassert = true);
     void dumpChecksatToFile(ostream& dump_out);
 
+    void dumpFunctions(ostream& dump_out) { vec<const char*> names; defined_functions.getKeys(names); for (int i = 0; i < names.size(); i++) dumpFunction(dump_out, names[i]); }
     void dumpFunction(ostream& dump_out, const char* tpl_name) { if (defined_functions.has(tpl_name)) dumpFunction(dump_out, defined_functions[tpl_name]); else printf("; Error: function %s is not defined\n", tpl_name); }
     void dumpFunction(ostream& dump_out, const std::string s) { dumpFunction(dump_out, s.c_str()); }
 
@@ -542,6 +543,8 @@ class Logic {
     void        serializeTermSystem(int*& termstore_buf, int*& symstore_buf, int*& idstore_buf, int*& sortstore_buf, int*& logicdata_buf) const;
     void        deserializeTermSystem(const int* termstore_buf, const int* symstore_buf, const int* idstore_buf, const int* sortstore_buf, const int* logicdata_buf);
 
+    bool       hasQuotableChars(const char* name) const;
+    char*      protectName(const char* name) const;
     virtual char* printTerm_       (PTRef tr, bool l, bool s) const;
     char*       printTerm          (PTRef tr)                 const  { return printTerm_(tr, false, false); }
     char*       printTerm          (PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }

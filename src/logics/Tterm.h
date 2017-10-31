@@ -12,7 +12,7 @@ public:
     ~Tterm();
 
     void addArg(PTRef);
-    void setName(std::string&);
+    void setName(const std::string&);
     void setName(const char*);
     void setBody(PTRef);
 

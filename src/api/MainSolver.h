@@ -187,6 +187,8 @@ class MainSolver
     bool  writeSolverState (int* &buf, int &buf_sz, bool compress, char** msg);
     bool  writeSolverState_smtlib2 (const char* file, char** msg);
 
+    bool  writeFuns_smtlib2 (const char* file);
+
     void  addToConj(vec<vec<PtAsgn> >& in, vec<PTRef>& out); // Add the contents of in as disjuncts to out
     bool  writeSolverSplits_smtlib2(const char* file, char** msg);
     bool  writeSolverSplits(const char* file, char** msg);

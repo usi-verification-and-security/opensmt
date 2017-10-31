@@ -42,7 +42,7 @@ Tterm::addArg(PTRef arg)
 }
 
 void
-Tterm::setName(std::string& _name)
+Tterm::setName(const std::string& _name)
 {
     setName(_name.c_str());
 }

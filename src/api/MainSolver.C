@@ -961,6 +961,17 @@ void MainSolver::addToConj(vec<vec<PtAsgn> >& in, vec<PTRef>& out)
     }
 }
 
+bool MainSolver::writeFuns_smtlib2(const char* file)
+{
+    std::ofstream file_s;
+    file_s.open(file);
+    if (file_s.is_open()) {
+        logic.dumpFunctions(file_s);
+        return true;
+    }
+    return false;
+}
+
 bool MainSolver::writeSolverState_smtlib2(const char* file, char** msg)
 {
     char* name;

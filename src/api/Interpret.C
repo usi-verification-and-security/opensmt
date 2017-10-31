@@ -381,7 +381,7 @@ void Interpret::interp(ASTNode& n) {
         }
         case t_writestate:
         {
-            if(parse_only) break;
+            if (parse_only) break;
             if (main_solver->solverEmpty()) {
                 char* msg;
                 sstat status = main_solver->simplifyFormulas(&msg);
@@ -405,6 +405,12 @@ void Interpret::interp(ASTNode& n) {
             } else {
                 notify_formatted(true, "Illegal command before set-logic: read-state");
             }
+            break;
+        }
+        case t_writefuns:
+        {
+            const char* filename = (**(n.children->begin())).getValue();
+            main_solver->writeFuns_smtlib2(filename);
             break;
         }
         case t_push:
