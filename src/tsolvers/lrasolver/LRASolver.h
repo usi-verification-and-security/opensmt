@@ -36,6 +36,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "LRALogic.h"
 #include "TSolver.h"
 #include "LAVar.h"
+#include "Polynomials.h"
+#include "BindedRows.h"
+#include "LABounds.h"
 
 class LRASolverStats: public TSolverStats
 {
@@ -73,15 +76,15 @@ class LRAModel
 private:
     struct ModelEl { Delta d; int dl; };
     vec<vec<ModelEl> > int_model; // The internal model
-    LVAllocator &lva;
+    LAVarAllocator &lva;
 public:
-    LRAModel(LVAllocator &lva) : lva(lva) {}
+    LRAModel(LAVarAllocator &lva) : lva(lva) {}
     int addVar(); // Adds a variable.  Returns the total number of variables
     int nVars() { return int_model.size(); }
     Delta& operator[] (const LVRef &v);
     const Delta& operator[] (const LVRef &v) const;
     void pop(const LVRef &v);
-}
+};
 
 //
 // Class to solve Linear Arithmetic theories
@@ -91,16 +94,19 @@ class LRASolver: public TSolver
 {
 private:
 
-    vector<Real*> numbers_pool;             // Collect numbers (useful for removal)
-    LRALogic& logic;
-    LAVarAllocator lva;
-    LAVarStore lavarStore;
-    PolyAllocator  pa;
-    PolyStore      polyStore;
-    BindedRowStore boundedRowStore;
-    BindedRowAllocator bra;
-    BoundAllocator ba;
-    LABoundStore boundStore;
+    vector<Real*>        numbers_pool;    // Collect numbers.  Should work as a simple memory managemet system
+    LRALogic&            logic;
+    LAVarAllocator       lva;
+    LAVarStore           lavarStore;
+    PolyAllocator        pa;
+    PolyStore            polyStore;
+    BindedRowStore       boundedRowStore;
+    BindedRowAllocator   bra;
+    LABoundAllocator     ba;
+    LABoundListAllocator bla;
+    LABoundStore         boundStore;
+
+
 
     // Possible internal states of the solver
     typedef enum
@@ -114,7 +120,6 @@ private:
     void initSlackVar(LVRef s);
     void setBound(PTRef leq);
 
-    LRAModel model;
 
 public:
 
@@ -124,15 +129,13 @@ public:
 
     virtual void clearSolver(); // Remove all problem specific data from the solver.  Should be called each time the solver is being used after a push or a pop in the incremental interface.
 
-    LVRef getSlackVar       (PTRef tr_sum, bool& reverse); // Get a slack var for the sum term, creating it if it does not exist.  If there exists a slack var for the negation of tr_sum, set reverse to true
-    void addSlackVar         (PTRef leq);               // Initialize the slack var associated with lea having sum as the slack var, and cons as its bound
-    void initSlackVar        ();
     lbool declareTerm        (PTRef tr);                // Inform the theory solver about the existence of a literal
     bool  check              ( bool );                  // Checks the satisfiability of current constraints
     bool  assertLit          ( PtAsgn , bool = false ); // Push the constraint into Solver
     void  pushBacktrackPoint ( );                       // Push a backtrack point
     void  popBacktrackPoint  ( );                       // Backtrack to last saved point
-    void  computeModel       ( );                       // Computes the model into enodes
+
+
 
     void  getConflict(bool, vec<PtAsgn>& e) { for (int i = 0; i < explanation.size(); i++) { e.push(explanation[i]); } } // Return the conflicting bounds
     PtAsgn_reason getDeduction() { if (deductions_next >= th_deductions.size()) return PtAsgn_reason_Undef; else return th_deductions[deductions_next++]; }
@@ -186,16 +189,24 @@ private:
     bool checkIntegersAndSplit();                           //
 
     // Value system
-    inline const Delta& Ub(LVRef v) const;                  // The current upper bound of v
-    inline const Delta& Lb(LVRef v) const;                  // The current lower bound of v
-    inline bool isModelOutOfBounds(LVRef) const;            // Check if current Model for LAVar does not fit into the bounds.
-    inline bool isModelOutOfLowerBound(LVRef) const;        // Check if current Model for LAVar does not fit into the lower bound.
-    inline bool isModelOutOfUpperBound(LVRef) const;        // Check if current Model for LAVar does not fit into the upper bound.
-    inline bool isEquality(LVRef) const;
-    inline const Delta overBound(LVRef) const;
+    LRAModel model;
+    const Delta& Ub(LVRef v) const;                  // The current upper bound of v
+    const Delta& Lb(LVRef v) const;                  // The current lower bound of v
+    bool isEquality(LVRef) const;
+    const Delta overBound(LVRef) const;
+    bool isModelOutOfBounds  (LVRef v) const;
+    bool isModelOutOfUpperBound(LVRef v) const;
+    bool isModelOutOfLowerBound(LVRef v) const;
+    bool isModelInteger (LVRef v) const;
+
+    const Delta overBound(LVRef v);
+    void computeModel        ();                         // Computes the model into enodes
 
     // Binded Rows system
-    OccList& getBindedRows(LVRef);
+    BindedRowStore bindedRowStore;
+    BindedRows& getBindedRows(LVRef);
+    void unbindRow(LVRef v, int row);
+
 
     // Polynomials system
     void  makePoly      (LVRef s, PTRef pol);     // Create a polynomial, introducing new LAVars if necessary
@@ -203,7 +214,8 @@ private:
 
     // Bounds system
     vec<LABoundRefPair> ptermToLABoundRefs;
-    const LAVarBound& getBound(LVRef v, int idx) const { return ba[bla[lva[s].getBounds()][idx]]; }
+    const LABound& getBound(LVRef v, int idx) const { return ba[bla[lva[v].getBounds()][idx]]; }
+    bool isUnbounded (LVRef v) const;
 
     bool first_update_after_backtrack;
 
@@ -211,6 +223,11 @@ private:
     vec<LVRef> LATrace;                      // The variables that have been touched
     vec<int> LATrace_lim;                    // Decision level delimiters
 
+    // The variable system
+    LVRef getNBLAVar(PTRef var);
+    void addSlackVar         (PTRef leq);               // Initialize the slack var associated with lea having sum as the slack var, and cons as its bound
+    void initSlackVar        ();
+    LVRef getSlackVar(PTRef tr_sum, bool &reverse);
     vector < LAVar * > removed_by_GaussianElimination;       // Stack of variables removed during Gaussian elimination
 
     // Two reloaded output operators

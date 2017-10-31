@@ -30,33 +30,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Global.h"
 #include "Pterm.h"
 #include "Delta.h"
-#include "LARow.h"
-#include "LAColumn.h"
 #include "LRALogic.h"
 #include "Deductions.h"
+#include "LARefs.h"
 
 class LRASolver;
 class LAVarStore;
-
-struct LAVarBound
-{
-    PTRef e;
-    Delta * delta;
-    BoundT bound_type;
-    bool reverse;
-    bool active;
-    LAVarBound( Delta * _delta, PTRef _e, BoundT _boundType, bool _reverse );
-    bool operator==( const LAVarBound &b );
-};
-
-struct LVRef {
-    uint32_t x;
-    void operator= (uint32_t v) { x = v; }
-    inline friend bool operator== (const LVRef& a1, const LVRef& a2) { return a1.x == a2.x; }
-    inline friend bool operator!= (const LVRef& a1, const LVRef& a2) { return a1.x != a2.x; }
-};
-
-static struct LVRef PVRef_Undef = { INT32_MAX };
 
 //
 // Class to store the term of constraints as a column of Simplex method tableau
@@ -74,71 +53,45 @@ private:
     } header;
 
     PTRef e;          // The term in the SMT world
-    int column_id;    //
+    int col_id;       //
     int row_id;       //
 
     unsigned curr_ub;      // The current upper bound, idx to bounds table
     unsigned curr_lb;      // The current lower bound, idx to bounds table
     LABoundListRef bounds; // The bounds of this variable
 
-    union { PolyRef poly; OccRef occs; }; // If basic, the polynomial.  If not, the occs.
+    union { PolyRef poly; OccListRef occs; }; // If basic, the polynomial.  If not, the occs.
 
 public:
     // Constructor.  The e_orig from SMT world, the bounds list, and a unique id
     LAVar(PTRef e_orig, unsigned id);
-    void skip()     const   { return header.skp;                }
-    void setSkip()          { header.skip = true;               }
-    void clrSkip()          { header.skip = false;              }
-    int  getRowId() const   { assert(!basic); return row_id;    }
-    void setRowId(int i)    { assert(!basic); row_id = i;       }
-    int getColId()  const   { assert(basic);  return column_id; }
-    void setColId(int i)    { assert(basic);  col_id = i;       }
+    bool skip    ()      const { return header.skp;                }
+    void setSkip ()            { header.skp = true;                }
+    void clrSkip ()            { header.skp = false;               }
+    int  getRowId()      const { assert(!header.basic); return row_id; }
+    void setRowId(int i)       { assert(!header.basic); row_id = i;    }
+    int  getColId()      const { assert(header.basic);  return col_id; }
+    void setColId(int i)       { assert(header.basic);  col_id = i;    }
 
-    int ubound()   { return curr_ub; }
-    int lbound()   { return curr_lb; }
-    unsigned setUbound(int i) { curr_ub = i; }
-    unsigned setLbound(int i) { curr_lb = i; }
-    LABoundListRef getBounds() { return bounds; }
+    int ubound()               const { return curr_ub; }
+    int lbound()               const { return curr_lb; }
+    unsigned setUbound(int i)        { curr_ub = i; }
+    unsigned setLbound(int i)        { curr_lb = i; }
+    LABoundListRef getBounds() const { return bounds; }
+    void setBounds(LABoundListRef l) { bounds = l; }
 
-    inline bool isBasic( );               // Checks if current LAVar is Basic in current solver state
-    inline bool isUnbounded( );           // Check if LAVar has no bounds at all (it can be eliminated if possible).
-    inline bool isModelInteger( );        // Check if LAVar has an integer model.
+    inline bool isBasic()        const { return header.basic; } // Checks if current LAVar is Basic in current solver state
 
-    inline int ID( );                     // Return the ID of the LAVar
-    inline void setNonbasic();            // Make LAVar Nonbasic
-    inline void setBasic( int row );      // Make LAVar Basic and set the row number it corresponds
+    inline int ID() const { return header.id; } // Return the ID of the LAVar
+    inline void setNonbasic();           // Make LAVar Nonbasic
+    inline void setBasic(int row);       // Make LAVar Basic and set the row number it corresponds
 
     // Binded rows system
-    OccListRef getBindedRowsRef() const { assert(!basic); return occs; }
-    PolyRef    getPolyRef() const       { assert(basic); return poly; }
-    void       setPolyRef(PolyRef r)    { assert(basic); poly = r; }
-    // structure to perform comparison of two LAVarBounds
-    struct LAVarBounds_ptr_cmp
-    {
-        bool operator()( LAVarBound lhs, LAVarBound rhs );
-    };
+    OccListRef getBindedRowsRef() const { assert(!header.basic); return occs; }
+    PolyRef    getPolyRef()       const { assert(header.basic); return poly; }
+    void       setPolyRef(PolyRef r)    { assert(header.basic); poly = r; }
+
 };
-
-bool LAVar::isBasic( )
-{
-    return header.basic;;
-}
-
-
-bool LAVar::isNonbasic( )
-{
-    return !isBasic( );
-}
-
-int LAVar::getID( )
-{
-    return header.id;
-}
-
-int LAVar::getRowId( )
-{
-    return row_id;
-}
 
 void LAVar::setNonbasic( )
 {
@@ -163,15 +116,20 @@ public:
     LAVarAllocator()                   : n_vars(0) {}
     unsigned getNumVars() const { return n_vars; }
 
-    LVRef alloc(bool basic, PTRef e)
+    LVRef alloc(PTRef e)
     {
         uint32_t v = RegionAllocator<uint32_t>::alloc(lavarWord32Size());
         LVRef id = {v};
-        new (lea(id)) LAVar(e, basic, n_vars++);
+        new (lea(id)) LAVar(e, n_vars++);
         return id;
     }
-    LABound&       operator[](LABoundRef r)       { return (LABound&)RegionAllocator<uint32_t>::operator[](r.x); }
-    const LABound& operator[](LABoundRef r) const { return (LABound&)RegionAllocator<uint32_t>::operator[](r.x); }
+    LAVar&       operator[](LVRef r)       { return (LAVar&)RegionAllocator<uint32_t>::operator[](r.x); }
+    const LAVar& operator[](LVRef r) const { return (LAVar&)RegionAllocator<uint32_t>::operator[](r.x); }
+    // Deref, Load Effective Address (LEA), Inverse of LEA (AEL):
+    LAVar*       lea       (LVRef r)         { return (LAVar*)RegionAllocator<uint32_t>::lea(r.x); }
+    const LAVar* lea       (LVRef r) const   { return (LAVar*)RegionAllocator<uint32_t>::lea(r.x); }
+    LVRef        ael       (const LAVar* t)  { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); LVRef rf; rf.x = r; return rf; }
+    void       clear() {}
 };
 
 class LAVarStore
@@ -180,14 +138,13 @@ private:
     int             column_count;               // Counter to create ID for LAVar
     int             row_count;                  // Counter for rows keep track of basic variables
     vec<LAVar*>     lavars;
-    vector<Real*>&  numbers_pool;
     LAVarAllocator& lva;
 public:
-    LAVarStore(LAVarAllocator& lva, vector<Real*>& numbers_pool) : column_count(0), row_count(0), lva(lva) {}
+    LAVarStore(LAVarAllocator& lva) : column_count(0), row_count(0), lva(lva) {}
     ~LAVarStore();
     void   clear();
-    LAVar* getNewVar(PTRef e_orig = PTRef_Undef);
-    void   notifyRow(LAVar* s);
+    LVRef  getNewVar(PTRef e_orig = PTRef_Undef);
+    void   notifyRow(LVRef s);
     void   resetVars(); // Set the polynomials of the vars to the initial state
     int    numVars() const;
     void   printVars() const;

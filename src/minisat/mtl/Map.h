@@ -295,13 +295,22 @@ class VecMap {
         return false;
     }
 
-    bool contains(const K& k) const {
+    bool has(const K& k) const {
         if (size == 0) return false;
         const vec<Pair>& ps = table[index(k)];
         for (int i = 0; i < ps.size(); i++)
             if (equals(ps[i].key, k))
                 return true;
         return false;
+    }
+
+    void getKeys(vec<K>& out) const {
+        if (size == 0) return;
+        for (int i = 0; i < cap; i++) {
+            if (table[i] == NULL) continue;
+            for (int j = 0; j < table[i].size(); j++)
+                out.push(table[i][j].key);
+        }
     }
 
     // PRECONDITION: the key must exist in the map.

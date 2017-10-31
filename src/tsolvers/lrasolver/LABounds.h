@@ -1,27 +1,11 @@
+#ifndef LABOUNDS_H
+#define LABOUNDS_H
+
 #include "Delta.h"
+#include "LARefs.h"
+#include "LAVar.h"
+#include "Pterm.h"
 
-
-struct LABoundRef
-{
-    uint32_t x;
-    void operator= (uint32_t v) { x = v; }
-    inline friend bool operator== (const LVRef& a1, const LVRef& a2) { return a1.x == a2.x; }
-    inline friend bool operator!= (const LVRef& a1, const LVRef& a2) { return a1.x != a2.x; }
-}
-
-static struct LABoundRef LABoundRef_Undef = { INT32_MAX };
-static struct LABoundRef LABoundRef_Infty = { 0 };
-
-struct BoundT {
-    static const char* const names[3];
-    char t;
-    bool operator== (const BoundT& o) const { return o.t == t; }
-    BoundT operator~ (const BoundT& o) const { return { 1-o.t }; }
-    inline friend ostream& operator<< (ostream& o, const BoundT& b) { o << names[(int)b.t]; return o; }
-};
-
-const BoundT bound_l = { 0 };
-const BoundT bound_u = { 1 };
 
 class LABound
 {
@@ -30,17 +14,17 @@ class LABound
         unsigned reverse : 1;  // is this used?
         unsigned active  : 1;  // is this used?
         unsigned idx     : 29; // The index in variable's bound list
-    } header;
+    };
     Delta delta;
     PtAsgn leq_pta;
 public:
-    LABound(BoundT type, PtAsgn leq_pta, Delta& delta)
+    LABound(BoundT type, PtAsgn leq_pta, const Delta& delta)
         : type(type.t), reverse(false), active(true), idx(536870911), leq_pta(leq_pta), delta(delta)
     {}
-    void setIdx(int i)  { header.idx = i; }
-    int  getIdx() const { return header.idx; }
+    void setIdx(int i)  { idx = i; }
+    int  getIdx() const { return idx; }
     const Delta& getValue() const { return delta; }
-    BoundT getType() const { return { header.type }; }
+    BoundT getType() const { return { type }; }
     PTRef getPTRef() const { return leq_pta.tr;  }
 };
 
@@ -54,7 +38,7 @@ public:
     LABoundAllocator() : n_bounds(0) {}
     unsigned getNumBounds() const { return n_bounds; }
 
-    LABoundRef alloc(BoundT type, PtAsgn leq_pta, Delta& delta)
+    LABoundRef alloc(BoundT type, PtAsgn leq_pta, const Delta& delta)
     {
         uint32_t v = RegionAllocator<uint32_t>::alloc(laboundWord32Size());
         LABoundRef id = {v};
@@ -63,28 +47,41 @@ public:
     }
     LABound&       operator[](LABoundRef r)       { return (LABound&)RegionAllocator<uint32_t>::operator[](r.x); }
     const LABound& operator[](LABoundRef r) const { return (LABound&)RegionAllocator<uint32_t>::operator[](r.x); }
+    LABound*       lea       (LABoundRef r)       { return (LABound*)RegionAllocator<uint32_t>::lea(r.x); }
+    const LABound* lea       (LABoundRef r) const { return (LABound*)RegionAllocator<uint32_t>::lea(r.x); }
+    LABoundRef     ael       (const LABound* t)   { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); LABoundRef rf; rf.x = r; return rf; }
     void printBound(const LABoundRef r) const { }
+    void clear() {}
 };
-
-class LABoundListRef
-{
-    uint32_t x;
-    void operator= (uint32_t v) { x = v; }
-    inline friend bool operator== (const LABoundListRef& a1, const LABoundListRef& a2) { return a1.x == a2.x; }
-    inline friend bool operator!= (const LABoundListRef& a1, const LABoundListRef& a2) { return a1.x != a2.x; }
-}
-
-static struct LABoundListRef LABoundListRef_Undef = { INT32_MAX };
 
 class LABoundList
 {
-    unsigned size;
-    LVRef v;
-    LABoundRef bounds[0];
+    friend class LABoundListAllocator;
+    friend class LABoundStore; // Needed so that I can sort the bounds in the list
+    struct {
+        unsigned reloc   : 1;
+        unsigned sz      : 31;
+    };
+    LVRef          v; // Do we need this?
+    LABoundListRef reloc_target;
+    LABoundRef     bounds[0];
 public:
-    LABoundList(LVRef v, const vec<LABoundRef>& bs) : v(v), size(bs.size()) {
-        for (int i = 0; i < v.size(); i++) bounds[i] = bs[i];
+    bool           reloced   ()                 const { return reloc; }
+    LABoundListRef relocation()                 const { return reloc_target; }
+    void           relocate  (LABoundListRef r)       { reloc = 1; reloc_target = r; }
+    unsigned       size      ()                 const { return sz; }
+    LABoundRef     operator[](int i)            const { return bounds[i]; }
+    LVRef          getVar()                     const { return v; }
+    LABoundList(LVRef v, const vec<LABoundRef>& bs) : v(v), reloc(0), sz(bs.size()) {
+        for (int i = 0; i < bs.size(); i++) bounds[i] = bs[i];
     }
+};
+
+class bound_lessthan {
+    LABoundAllocator& ba;
+public:
+    bound_lessthan(LABoundAllocator& ba) : ba(ba) {}
+    bool operator() (LABoundRef r1, LABoundRef r2) const { return ba[r1].getValue() < ba[r2].getValue(); }
 };
 
 class LABoundListAllocator : public RegionAllocator<uint32_t>
@@ -92,6 +89,7 @@ class LABoundListAllocator : public RegionAllocator<uint32_t>
     unsigned n_boundlists;
     static int boundlistWord32Size(int size) {
         return (sizeof(LABoundList) + (sizeof(LABoundRef)*size)) / sizeof(uint32_t); }
+public:
     LABoundListAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), n_boundlists(0) {}
     LABoundListAllocator() : n_boundlists(0) {}
 
@@ -104,82 +102,100 @@ class LABoundListAllocator : public RegionAllocator<uint32_t>
     {
         uint32_t b = RegionAllocator<uint32_t>::alloc(boundlistWord32Size(bs.size()));
         LABoundListRef id = {b};
-        new (lea(id)) LABoundListRef(v, bs);
+        new (lea(id)) LABoundList(v, bs);
         return id;
+    }
+    LABoundListRef     alloc(LABoundList& from) {
+        vec<LABoundRef> tmp;
+        for (int i = 0; i < from.size(); i++)
+            tmp.push(from[i]);
+        return alloc(from.getVar(), tmp);
     }
     LABoundList&       operator[](LABoundListRef r)       { return (LABoundList&)RegionAllocator<uint32_t>::operator[](r.x); }
     const LABoundList& operator[](LABoundListRef r) const { return (LABoundList&)RegionAllocator<uint32_t>::operator[](r.x); }
     LABoundList*       lea(LABoundListRef r)              { return (LABoundList*)RegionAllocator<uint32_t>::lea(r.x); }
     const LABoundList* lea(LABoundListRef r) const        { return (LABoundList*)RegionAllocator<uint32_t>::lea(r.x); }
-    LABoundList        ael(const LABoundList* t)          { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); LABoundListRef rf; rf.x = r; return rf; }
+    LABoundListRef     ael(const LABoundList* t)          { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); LABoundListRef rf; rf.x = r; return rf; }
 
     void free(LABoundListRef tid)
     {
         LABoundList& b = operator[](tid);
-        RegionAllocator<uint32_t>::free(lawordlistWord32Size(b.size()));
+        RegionAllocator<uint32_t>::free(boundlistWord32Size(b.size()));
     }
     void reloc(LABoundListRef& tr, LABoundListAllocator& to)
     {
         LABoundList& bl = operator[](tr);
         if (bl.reloced()) { tr = bl.relocation(); return; }
         tr = to.alloc(bl);
-        bl.reloacate(tr);
-        to[tr].size = bl.size;
-        to[tr].v    = bl.v;
+        bl.relocate(tr);
+        to[tr].sz = bl.size();
+        to[tr].v  = bl.getVar();
     }
 };
 
+struct LABoundRefPair { LABoundRef pos; LABoundRef neg; };
+
 class LABoundStore
 {
-    struct BoundInfo { LVRef v, LABoundRef b1, LABoundRef b2, PTId leq_id };
+    struct BoundInfo { LVRef v; LABoundRef b1; LABoundRef b2; PTId leq_id; };
+    struct LABoundRefPair { LABoundRef lo; LABoundRef hi; };
     vec<BoundInfo> in_bounds;
-    LABoundAllocator ba;
-    LABoundListAllocator bla;
+    LABoundAllocator& ba;
+    LABoundListAllocator& bla;
+    LAVarAllocator& lva;
+    vec<LABoundRefPair> ptermToLABoundsRef;
+
 public:
-    void addBound(LVRef v, Real* constr, BoundT bound_t);
+    LABoundStore(LABoundAllocator& ba, LABoundListAllocator& bla, LAVarAllocator& lva);
+    void addBound(LVRef v, PTRef leq_tr, PTId leq_id, const Real& constr, BoundT bound_t);
     void buildBounds(vec<LABoundRefPair>& ptermToLABoundRef);
     LABoundRef getLowerBound(const LVRef v) const { return bla[lva[v].getBounds()][lva[v].lbound()]; }
     LABoundRef getUpperBound(const LVRef v) const { return bla[lva[v].getBounds()][lva[v].ubound()]; }
 };
 
-struct LABoundRefPair { LABoundRef pos; LABoundRef neg; };
 
-LABoundStore::addBound(LVRef v, PTRef leq_ref, PTId leq_id, Real* constr, BoundT bound_t)
+void
+LABoundStore::addBound(LVRef v, PTRef leq_ref, PTId leq_id, const Real& constr, BoundT bound_t)
 {
-    Delta *bound = NULL;
-    Delta *boundRev = NULL;
-    Delta::deltaType bound_type;
-    bound = new Delta(constr);
+    LABoundRef br_pos = ba.alloc(bound_t, PtAsgn(leq_ref, l_True), Delta(constr));
+    LABoundRef br_neg;
 
     if (bound_t == bound_u)
-        boundRev = new Delta(v, 1);
+        br_neg = ba.alloc(~bound_t, PtAsgn(leq_ref, l_False), Delta(constr, 1));
     else
-        boundRev = new Delta(v, -1);
+        br_neg = ba.alloc(~bound_t, PtAsgn(leq_ref, l_False), Delta(constr, -1));
 
-    LABoundRef br_pos = ba.alloc(bound_t, PtAsgn(leq_ref, true), bound);
-    LABoundRef br_neg = ba.alloc(~bound_t, PtAsgn(leq_ref, false), boundRev);
-
-    in_bounds.add(BoundInfo(v, br_pos, br_neg, leq_id));
+    in_bounds.push(BoundInfo{v, br_pos, br_neg, leq_id});
 }
 
 
 void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
 {
-    Map<LVRef, LABoundRef> bounds_map;
+    VecMap<LVRef, BoundInfo, LVRefHash> bounds_map;
 
     for (int i = 0; i < in_bounds.size(); i++) {
-        if (!bounds_map.has(in_bounds[i].v))
-            bounds_map.insert(v, vec<int>());
+        LVRef v = in_bounds[i].v;
+        if (!bounds_map.has(v))
+            bounds_map.insert(v, vec<BoundInfo>());
         bounds_map[v].push(in_bounds[i]);
         while (ptermToLABoundsRef.size() <= in_bounds[i].leq_id)
             ptermToLABoundsRef.push({ LABoundRef_Undef, LABoundRef_Undef });
-        ptermToLABoundsRefs[leq_id] = { br_pos, br_neg };
+        ptermToLABoundsRef[in_bounds[i].leq_id] = { in_bounds[i].b1, in_bounds[i].b2 };
     }
-    vec<LVRef> &keys = bounds_map.keys();
+    vec<LVRef> keys;
+    bounds_map.getKeys(keys);
     for (int i = 0; i < keys.size(); i++) {
-        LABoundListRef br = bla.alloc(keys[i], bounds_map[keys[i]]);
-        sort(bla[br]);
+        vec<LABoundRef> refs;
+        for (int j = 0; j < bounds_map[keys[i]].size(); i++) {
+            BoundInfo &info = bounds_map[keys[i]][j];
+            refs.push(info.b1);
+            refs.push(info.b2);
+        }
+        LABoundListRef br = bla.alloc(keys[i], refs);
+        sort<LABoundRef,bound_lessthan>(bla[br].bounds, bla[br].size(), bound_lessthan(ba));
         for (int j = 0; j < bla[br].size(); j++)
-            bla[br][j].setIdx(j);
+            ba[bla[br][j]].setIdx(j);
     }
 }
+
+#endif

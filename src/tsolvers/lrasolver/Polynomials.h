@@ -1,11 +1,4 @@
-struct PolyRef {
-    uint32_t x;
-    void operator= (uint32_t v) { x = v; }
-    inline friend bool operator== (const PolyRef& a1, const PolyRef& a2) { return a1.x == a2.x; }
-    inline friend bool operator!= (const PolyRef& a1, const PolyRef& a2) { return a1.x != a2.x; }
-};
-
-static struct PolyRef PolyRef_Undef = { INT32_MAX };
+#include "LARefs.h"
 
 struct PolyTerm
 {
@@ -30,8 +23,13 @@ public:
 class PolyAllocator : RegionAllocator<uint32_t>
 {
 public:
-    Poly& operator[] (PolyRef pr) { return (PolyRef&)RegionAllocator<uint32_t>::operator[](p.x); }
-
+    Poly& operator[] (PolyRef r) { return (Poly&)RegionAllocator<uint32_t>::operator[](r.x); }
+    const Poly& operator[](PolyRef r) const { return (Poly&)RegionAllocator<uint32_t>::operator[](r.x); }
+    // Deref, Load Effective Address (LEA), Inverse of LEA (AEL):
+    Poly*       lea       (PolyRef r)         { return (Poly*)RegionAllocator<uint32_t>::lea(r.x); }
+    const Poly* lea       (PolyRef r) const   { return (Poly*)RegionAllocator<uint32_t>::lea(r.x); }
+    PolyRef     ael       (const Poly* t)  { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); PolyRef rf; rf.x = r; return rf; }
+    void        clear() {}
 };
 
 
@@ -39,5 +37,6 @@ public:
 class PolyStore
 {
 public:
-    PolyRef getPolynomial(LVRef s) { return PolyRef_Undef; }
+    PolyRef getPoly(LVRef s) { return PolyRef_Undef; }
+    PolyRef makePoly(LVRef s, PTRef sum_tr) { return PolyRef_Undef; }
 };

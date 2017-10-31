@@ -42,7 +42,9 @@ LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
     , TSolver((SolverId)descr_lra_solver, (const char*)descr_lra_solver, c, d)
     , delta(Delta::ZERO)
     , bland_threshold(1000)
-    , lavarStore(lva, numbers_pool)
+    , lavarStore(lva)
+    , boundStore(ba, bla, lva)
+    , model(lva)
 {
     status = INIT;
     checks_history.push_back(0);
@@ -53,15 +55,11 @@ void LRASolver::clearSolver()
 {
     status = INIT;
     first_update_after_backtrack = true;
-    delete lavarStore;
-    pushed_constraints.clear();
     explanationCoefficients.clear();
     columns.clear();
     rows.clear();
-    ptermToLVRef.clear();
     checks_history.clear();
     checks_history.push_back(0);
-    touched_rows.clear();
     removed_by_GaussianElimination.clear();
     TSolver::clearSolver();
 
@@ -74,47 +72,47 @@ void LRASolver::clearSolver()
 
 const Delta& LRASolver::Ub(LVRef v) const
 {
-    LAVar& va = lva[v];
-    LABoundList& bl = bla[va.getBL()];
+    const LAVar& va = lva[v];
+    const LABoundList& bl = bla[va.getBounds()];
     return ba[bl[va.ubound()]].getValue();
 }
 
 const Delta& LRASolver::Lb(LVRef v) const
 {
-    LAVar& va = lva[v];
-    LABoundList& bl = bla[va.getBL()];
+    const LAVar& va = lva[v];
+    const LABoundList& bl = bla[va.getBounds()];
     return ba[bl[va.lbound()]].getValue();
 }
 
 //
 // The model system
 //
-bool LRASolver::isModelOutOfBounds(LVRef v)
+bool LRASolver::isModelOutOfBounds(LVRef v) const
 {
     return ( model[v] > Ub(v) || model[v] < Lb(v) );
 }
 
-bool LRASolver::isModelOutOfUpperBound(LVRef v)
+bool LRASolver::isModelOutOfUpperBound(LVRef v) const
 {
     return ( model[v] > Ub(v) );
 }
 
-bool LRASolver::isModelOutOfLowerBound(LVRef v)
+bool LRASolver::isModelOutOfLowerBound(LVRef v) const
 {
     return ( model[v] < Lb(v) );
 }
 
 
-const Delta LRASolver::overBound(LVRef v)
+const Delta LRASolver::overBound(LVRef v) const
 {
-    assert( isModelOutOfBounds( ) );
+    assert( isModelOutOfBounds(v) );
     if (isModelOutOfUpperBound(v))
     {
-        return ( Delta(model(v) - Ub(v)) );
+        return ( Delta(model[v] - Ub(v)) );
     }
     else if ( isModelOutOfLowerBound(v) )
     {
-        return ( Delta(Lb(v) - model(v)) );
+        return ( Delta(Lb(v) - model[v]) );
     }
     assert (false);
 }
@@ -137,8 +135,8 @@ bool LRASolver::isUnbounded(LVRef v) const
 
 void LRASolver::unbindRow(LVRef v, int row)
 {
-    assert(lva[v].isBasic() || lva[v].getBoundedRowRef() != OccRef_Undef);
-    boundedRowStore.remove(v, row);
+    assert(lva[v].isBasic() || lva[v].getBindedRowsRef() != OccListRef_Undef);
+    bindedRowStore.remove(v, row);
 }
 
 
@@ -190,15 +188,14 @@ void LRASolver::setBound(PTRef leq_tr)
         assert(config.logic != QF_UFLRA || logic.isVar(var_tr) || logic.isUF(var_tr));
 
         // Get the lra var and set the mapping right.
-        LVRef x = getLAVar(var_tr);
+        LVRef x = ptermToLavar[logic.getPterm(var_tr).getId()];
         Pterm& leq_t = logic.getPterm(leq_tr);
-        if (leq_t.getId() >= (int)ptermToLVRef.size())
-            ptermToLVRef.resize( leq_t.getId() + 1, NULL );
-        ptermToLVRef[leq_t.getId()] = x;
+        if (leq_t.getId() >= (int)ptermToLavar.size())
+            ptermToLavar.growTo(leq_t.getId() + 1);
+        ptermToLavar[leq_t.getId()] = x;
 
         // Set the bound
-        setBounds(x, leq_tr, logic.getRealConst(const_tr), bound_t);
-
+        boundStore.addBound(x, leq_tr, leq_t.getId(), logic.getRealConst(const_tr), bound_t);
     }
     else {
         // Cases (3) and (4)
@@ -225,8 +222,8 @@ void LRASolver::initSlackVar(LVRef s)
     lavarStore.notifyRow(s);
 
     // Update the rows
-    if (lva[s].row_id() >= static_cast<int> (rows.size())) {
-        rows.resize(lva[s].getRowId() + 1, NULL);
+    if (lva[s].getRowId() >= static_cast<int> (rows.size())) {
+        rows.growTo(lva[s].getRowId() + 1);
     }
     rows[lva[s].getRowId()] = s;
 }
@@ -251,20 +248,20 @@ LVRef LRASolver::getNBLAVar(PTRef var)
 {
     LVRef x;
     // check if we need a new LAVar for a given var
-    if (logic.getPterm(var).getId() >= (int)ptermToLVRef.size())
-        ptermToLVRef.resize(logic.getPterm(var).getId() + 1, LVRef_Undef);
+    if (logic.getPterm(var).getId() >= (int)ptermToLavar.size())
+        ptermToLavar.growTo(logic.getPterm(var).getId() + 1);
 
-    if (ptermToLVRef[logic.getPterm(var).getId()] == LVRef_Undef) {
+    if (ptermToLavar[logic.getPterm(var).getId()] == LVRef_Undef) {
         x = lavarStore.getNewVar(var);
         if (lva[x].getColId() >= static_cast<int> ( columns.size() )) {
-            columns.resize( lva[x].getColId() + 1, LVRef_Undef);
+            columns.growTo( lva[x].getColId() + 1);
             tsolver_stats.num_vars = columns.size();
         }
-        columns[lva[x].ColID()] = x;
-        ptermToLVRef[logic.getPterm(var).getId()] = x;
+        columns[lva[x].getColId()] = x;
+        ptermToLavar[logic.getPterm(var).getId()] = x;
     }
     else {
-        x = ptermToLVRef[logic.getPterm(var).getId()];
+        x = ptermToLavar[logic.getPterm(var).getId()];
     }
     return x;
 }
@@ -272,26 +269,26 @@ LVRef LRASolver::getNBLAVar(PTRef var)
 // Return a slack var for the sum term tr_sum if it exists, otherwise create
 // the slack var if it does not exist.  In case there exists a var s for
 // the term tr_sum' = - tr_sum, return s and set reverse to true
-LAVar* LRASolver::getSlackVar(PTRef tr_sum, bool &reverse)
+LVRef LRASolver::getSlackVar(PTRef tr_sum, bool &reverse)
 {
     reverse = false;
     assert(logic.isRealPlus(tr_sum));
 
     int sum_id = logic.getPterm(tr_sum).getId();
     // First make sure the array contains an entry for the slack var
-    if (sum_id >= (int)ptermToLVRef.size())
-        ptermToLVRef.resize(sum_id + 1, NULL);
+    if (sum_id >= (int)ptermToLavar.size())
+        ptermToLavar.growTo(sum_id + 1);
 
     // Then check if the var is non-null
     LVRef var = LVRef_Undef;
-    if (ptermToLVRef[sum_id] != LVRef_Undef) {
+    if (ptermToLavar[sum_id] != LVRef_Undef) {
         var = ptermToLavar[sum_id];
     }
     else {
         // There was no entry for the sum term
         PTRef tr_sump = logic.mkRealNeg(tr_sum);
         int tr_sump_id = logic.getPterm(tr_sump).getId();
-        if (tr_sump_id < ptermToLVRef.size() && ptermToLVRef[tr_sump_id] != LVRef_Undef) {
+        if (tr_sump_id < ptermToLavar.size() && ptermToLavar[tr_sump_id] != LVRef_Undef) {
             // Enable for the compact array
             var = ptermToLavar[tr_sump_id];
             reverse = true;
@@ -333,11 +330,11 @@ void LRASolver::addSlackVar(PTRef leq_tr)
         assert( lva[s].getRowId() != -1 );
 
         if (sum_id >= (int)ptermToLavar.size())
-            ptermToLVRef.resize(sum_id+1, NULL);
-        ptermToLVRef[sum_id] = s;
+            ptermToLavar.growTo(sum_id+1);
+        ptermToLavar[sum_id] = s;
 
         // Create the polynomial for the array
-        makePolynomial(s, sum_tr);
+        makePoly(s, sum_tr);
     }
     else if (reverse) {
         // If reverse is true, the slack var negation exists.  We
@@ -348,17 +345,17 @@ void LRASolver::addSlackVar(PTRef leq_tr)
     } else
         bound_t = bound_l;
 
-    if (leq_id >= (int)ptermToLVRef.size())
-        ptermToLVRef.resize(leq_id+1, NULL);
-    ptermToLVRef[leq_id] = s;
+    if (leq_id >= (int)ptermToLavar.size())
+        ptermToLavar.growTo(leq_id+1);
+    ptermToLavar[leq_id] = s;
 
-    boundStore.addBound(s, leq_tr, logic.getRealConst(const_tr), bound_t);
-    printf("  Added a slack var for %s: %d\n", logic.printTerm(sum_tr), LVA[s].ID());
+    boundStore.addBound(s, leq_tr, logic.getPterm(leq_tr).getId(), logic.getRealConst(const_tr), bound_t);
+    printf("  Added a slack var for %s: %d\n", logic.printTerm(sum_tr), lva[s].ID());
 }
 
 // Create a polynomial to the slack var s from the polynomial pol
 //
-void LRASolver::makePolynomial(LVRef s, PTRef pol)
+void LRASolver::makePoly(LVRef s, PTRef pol)
 {
     // Create a polynomial for s
     Real * p_r;
@@ -371,7 +368,7 @@ void LRASolver::makePolynomial(LVRef s, PTRef pol)
         p_r = new Real(-1);
     }
     // Set -1*s to position 0 of the polynomial.  Why is that?
-    lva[s].poly = polyStore.getPolynomial(s);
+    lva[s].setPolyRef(polyStore.getPoly(s));
 
     Pterm& pol_t = logic.getPterm(pol);
     // reads the argument of +
@@ -414,27 +411,27 @@ void LRASolver::makePolynomial(LVRef s, PTRef pol)
         LVRef x = LVRef_Undef;
 
         int varId = logic.getPterm(var).getId();
-        if (varId >= (int)ptermToLVRef.size())
-            ptermToLVRef.resize(varId + 1, LVRef_Undef);
+        if (varId >= (int)ptermToLavar.size())
+            ptermToLavar.growTo(varId + 1);
 
-        if (ptermToLVRef[varId] != LVRef_Undef) {
+        if (ptermToLavar[varId] != LVRef_Undef) {
             x = ptermToLavar[varId];
             addVarToRow(s, x, p_r);
         }
         else {
             x = lavarStore.getNewVar(var);
-            ptermToLVRef[varId] = x;
+            ptermToLavar[varId] = x;
 
             lva[x].setColId(columns.size());
             columns.push(x);
             tsolver_stats.num_vars = lva.getNumVars();
 
-            int pos = pa[lva[s].poly].add(x, p_r);
-            lva[x].binded_rows.add(x, pos);
+            int pos = pa[lva[s].getPolyRef()].add(x, p_r);
+            bra[lva[x].getBindedRowsRef()].add(x, pos);
         }
 
         assert(x != LVRef_Undef);
-        assert(LVA[s].getRowIs() != -1);
+        assert(lva[s].getRowId() != -1);
     }
 }
 
@@ -510,7 +507,7 @@ bool LRASolver::check(bool complete)
     if (status == INIT)
         initSolver();
 
-    LVRef x = NULL;
+    LVRef x = LVRef_Undef;
 
     bool bland_rule = false;
     unsigned repeats = 0;
@@ -729,7 +726,7 @@ bool LRASolver::assertLit( PtAsgn pta, bool reason )
 
     setPolarity(pta.tr, pta.sgn);
 
-    LVRef it = ptermToLVRef[t.getId()];
+    LVRef it = ptermToLavar[t.getId()];
 
     // Constraint to push was not found in local storage. Most likely it was not read properly before
     if ( it == NULL ) {
