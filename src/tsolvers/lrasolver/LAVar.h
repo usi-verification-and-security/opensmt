@@ -91,6 +91,7 @@ public:
     PolyRef    getPolyRef()       const { assert(header.basic); return poly; }
     void       setPolyRef(PolyRef r)    { assert(header.basic); poly = r; }
 
+    PTRef      getPTRef()         const { return e; }
 };
 
 void LAVar::setNonbasic( )
@@ -137,16 +138,15 @@ class LAVarStore
 private:
     int             column_count;               // Counter to create ID for LAVar
     int             row_count;                  // Counter for rows keep track of basic variables
-    vec<LAVar*>     lavars;
+    vec<LVRef>      lavars;
     LAVarAllocator& lva;
 public:
     LAVarStore(LAVarAllocator& lva) : column_count(0), row_count(0), lva(lva) {}
-    ~LAVarStore();
-    void   clear();
-    LVRef  getNewVar(PTRef e_orig = PTRef_Undef);
+    inline void   clear() {};
+    LVRef  getNewVar(PTRef e_orig = PTRef_Undef) { LVRef lv = lva.alloc(e_orig); while (lavars.size() <= lva[lv].ID()) lavars.push(LVRef_Undef); return lv; }
     void   notifyRow(LVRef s);
     void   resetVars(); // Set the polynomials of the vars to the initial state
-    int    numVars() const;
+    int    numVars() const { return lavars.size(); }
     void   printVars() const;
 };
 

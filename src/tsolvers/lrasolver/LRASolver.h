@@ -77,13 +77,15 @@ private:
     struct ModelEl { Delta d; int dl; };
     vec<vec<ModelEl> > int_model; // The internal model
     LAVarAllocator &lva;
+    int n_vars_with_model;
+    Map<LVRef,bool,LVRefHash> has_model;
 public:
     LRAModel(LAVarAllocator &lva) : lva(lva) {}
-    int addVar(); // Adds a variable.  Returns the total number of variables
-    int nVars() { return int_model.size(); }
-    Delta& operator[] (const LVRef &v);
-    const Delta& operator[] (const LVRef &v) const;
-    void pop(const LVRef &v);
+    int addVar(LVRef v); // Adds a variable.  Returns the total number of variables
+    inline int   nVars() { return n_vars_with_model; }
+    inline       Delta& operator[] (const LVRef &v);
+    inline const Delta& operator[] (const LVRef &v) const { return int_model[lva[v].ID()].last().d; }
+    inline void  pop(const LVRef &v) { int_model[lva[v].ID()].pop(); }
 };
 
 //
@@ -190,6 +192,7 @@ private:
 
     // Value system
     LRAModel model;
+    inline void  popModel(LVRef v) { };
     const Delta& Ub(LVRef v) const;                  // The current upper bound of v
     const Delta& Lb(LVRef v) const;                  // The current lower bound of v
     bool isEquality(LVRef) const;
@@ -200,11 +203,11 @@ private:
     bool isModelInteger (LVRef v) const;
 
     const Delta overBound(LVRef v);
-    void computeModel        ();                         // Computes the model into enodes
+    void computeModel();                             // The implementation for the interface
 
     // Binded Rows system
     BindedRowStore bindedRowStore;
-    BindedRows& getBindedRows(LVRef);
+    inline BindedRows& getBindedRows(LVRef v) { return bra[lva[v].getBindedRowsRef()]; }
     void unbindRow(LVRef v, int row);
 
 
@@ -228,7 +231,7 @@ private:
     void addSlackVar         (PTRef leq);               // Initialize the slack var associated with lea having sum as the slack var, and cons as its bound
     void initSlackVar        ();
     LVRef getSlackVar(PTRef tr_sum, bool &reverse);
-    vector < LAVar * > removed_by_GaussianElimination;       // Stack of variables removed during Gaussian elimination
+    vector < LVRef > removed_by_GaussianElimination;       // Stack of variables removed during Gaussian elimination
 
     // Two reloaded output operators
     inline friend ostream & operator <<( ostream & out, LRASolver & solver )

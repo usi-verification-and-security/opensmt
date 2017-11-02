@@ -183,7 +183,7 @@ void SymStore::deserializeSymbols(const int* buf)
 #ifdef VERBOSE_FOPS
             cerr << "Added new symbol " << name_out << endl;
 #endif
-            if (symbolTable.contains(name_out)) {
+            if (symbolTable.has(name_out)) {
                 vec<SymRef>& symrefs = symbolTable[name_out];
                 bool found = false;
                 for (int j = 0; j < symrefs.size(); j++) {

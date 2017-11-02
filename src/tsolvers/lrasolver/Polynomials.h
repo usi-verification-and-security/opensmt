@@ -17,6 +17,7 @@ public:
     int add(LVRef, Real* c) { return 0; }
     void remove(LVRef v) {}
     int getPos(LVRef v) { return 0; }
+    void setPos(LVRef v, int i) {}
     int size() { return sz; }
 };
 

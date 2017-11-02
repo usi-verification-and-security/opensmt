@@ -28,8 +28,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "LAVar.h"
 
-#include "LRASolver.h"
-
 const char* const BoundT::names[3] = {"[L]", "[U]", "[N]"};
 
 //Delta LAVar::plus_inf_bound = Delta( Delta::UPPER );

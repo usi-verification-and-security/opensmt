@@ -610,7 +610,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
             }
 
             nameToTerm.insert(name, tr);
-            if (!termToNames.contains(tr)) {
+            if (!termToNames.has(tr)) {
                 vec<const char*> v;
                 termToNames.insert(tr, v);
             }

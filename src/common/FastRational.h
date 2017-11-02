@@ -192,7 +192,7 @@ public:
       if (has_word)
           return den == 1;
       else
-          return mpq_denref(mpq) == unit.getUnit();
+          return false; //return mpq_denref(mpq) == 1; //unit.getUnit();
   }
 
   inline FastRational ceil( ) const

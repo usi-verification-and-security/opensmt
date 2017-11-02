@@ -518,7 +518,7 @@ PTRef LRALogic::mkRealPlus(const vec<PTRef>& args, char** msg)
             // The term is unit
             c = getTerm_RealOne();
         }
-        if (!s2t.contains(v)) {
+        if (!s2t.has(v)) {
             vec<PTRef> tmp;
             tmp.push(c);
             s2t.insert(v, tmp);

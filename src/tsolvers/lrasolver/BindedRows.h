@@ -16,6 +16,7 @@ public:
     int size() const { return sz; }
     void add(LVRef v, int pos) {}
     void remove(LVRef v) {};
+    void clear() {}
 };
 
 class OccAllocator
