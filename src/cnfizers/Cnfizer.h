@@ -27,16 +27,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef CNFIZER_H
 #define CNFIZER_H
 
-#include "TermMapper.h"
 #include "Global.h"
-//#include "Otl.h"
-//#include "SMTSolver.h"
-#include "SimpSMTSolver.h"
-#include "Egraph.h"
-#include "THandler.h"
-#include "PtStore.h"
-#include "SStore.h"
+#include "Theory.h"
 #include "Logic.h"
+
+class SimpSMTSolver;
+class CnfState;
+class THandler;
+class SMTConfig;
+class TermMapper;
 
 // A small typechecked class for checkClause type return values to enable us to check whether the formula is unsatisfiable simultaneously
 class ckval {
@@ -100,7 +99,7 @@ public:
     bool  isNPAtom         (PTRef r, PTRef& p)    const; // Check if r is a (negated) atom.  Return true if the corresponding atom is negated.  The purified reference is placed in the second argument.
     bool  solverEmpty      ()                     const { return s_empty; }
 
-    void  getSolverState   (CnfState& cs) { solver.cnfToString(cs); }
+    void  getSolverState   (CnfState& cs);
     void  getVarMapping    (CnfState&);
 protected:
 

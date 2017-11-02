@@ -26,7 +26,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #ifndef BVSTORE_H
 #define BVSTORE_H
-#include <map>
 
 #include "Bvector.h"
 

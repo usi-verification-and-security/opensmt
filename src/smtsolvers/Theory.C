@@ -25,7 +25,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 #include "CoreSMTSolver.h"
-#include "THandler.h"
+
+#ifdef PRODUCE_PROOF
+#include "Proof.h"
+#endif //PRODUCE_PROOF
 
 // Stress test the theory solver
 void CoreSMTSolver::crashTest(int rounds, Var var_true, Var var_false)
@@ -105,12 +108,6 @@ int CoreSMTSolver::checkTheory( bool complete )
                 deduceTheory(deds); // deds will be ordered by decision levels
                 for (int i = 0; i < deds.size(); i++)
                 {
-#ifndef IGNORE_DL_THEORYPROPAGATION
-                    // There are deductions
-                    // For now we just implement the propagation on the lowest
-                    // decision level in deds
-                    if (deds[0].lev != deds[i].lev) break;
-#endif
 #ifdef DEBUG_REASONS
                     // Debuggissimo
                     vec<Lit> r;
@@ -119,29 +116,8 @@ int CoreSMTSolver::checkTheory( bool complete )
                     cerr << endl;
                     addTheoryReasonClause_debug(deds[i].l, r);
 #endif
-
-#ifndef IGNORE_DL_THEORYPROPAGATION
-                    cerr << "backtracking from " << decisionLevel() <<
-                        " to " << deds[i].lev << " to propagate a new lit " <<
-                        i+1 << " / " << deds.size() << endl;
-#endif
                     if (deds[i].lev != decisionLevel()) {
-#ifndef IGNORE_DL_THEORYPROPAGATION
-                        assert(i == 0);
-#endif
-#ifndef IGNORE_DL_THEORYPROPAGATION
-                        for (int j = i+1; j < deds.size(); j++) {
-                            cerr << "Bling! would have propagated also " << toInt(deds[j].l);
-                            cerr << " on level " << deds[j].lev << endl;
-                        }
-#endif
                     }
-
-
-#ifndef IGNORE_DL_THEORYPROPAGATION
-                    if (deds[i].lev < decisionLevel())
-                        cancelUntil(deds[i].lev);
-#endif
                     uncheckedEnqueue(deds[i].l, CRef_Fake);
                 }
                 if (deds.size() > 0) {
@@ -267,12 +243,10 @@ int CoreSMTSolver::checkTheory( bool complete )
     {
         confl = ca.alloc(conflicting, config.sat_temporary_learn);
         learnts.push(confl);
-#ifndef SMTCOMP
         if ( config.isIncremental() )
         {
             undo_stack.push(undo_stack_el(undo_stack_el::NEWLEARNT, confl));
         }
-#endif
         attachClause(confl);
         claBumpActivity(ca[confl]);
         learnt_t_lemmata ++;
@@ -291,13 +265,11 @@ int CoreSMTSolver::checkTheory( bool complete )
     {
         confl = ca.alloc(conflicting, config.sat_temporary_learn);
         learnts.push(confl);
-#ifndef SMTCOMP
 //    if ( config.incremental )
 //    {
 //      undo_stack_oper.push_back( NEWLEARNT );
 //      undo_stack_elem.push_back( (void *)confl );
 //    }
-#endif
         attachClause(confl);
         claBumpActivity(ca[confl]);
         learnt_t_lemmata ++;
@@ -362,9 +334,7 @@ int CoreSMTSolver::checkTheory( bool complete )
 #endif
         learnts.push(cr);
         learnt_theory_conflicts++;
-#ifndef SMTCOMP
         undo_stack.push(undo_stack_el(undo_stack_el::NEWLEARNT, cr));
-#endif
         attachClause(cr);
         claBumpActivity(ca[cr]);
         uncheckedEnqueue(learnt_clause[0], cr);
@@ -499,9 +469,7 @@ int CoreSMTSolver::analyzeUnsatLemma(CRef confl)
             undo_stack.push(undo_stack_el(undo_stack_el::NEWPROOF, cr));
 #endif
         learnts.push(cr);
-#ifndef SMTCOMP
         undo_stack.push(undo_stack_el(undo_stack_el::NEWLEARNT, cr));
-#endif
         attachClause(cr);
         claBumpActivity(ca[cr]);
         uncheckedEnqueue(learnt_clause[0], cr);
@@ -531,26 +499,8 @@ void CoreSMTSolver::deduceTheory(vec<LitLev>& deductions)
         // Found an unassigned deduction
         n_deductions ++;
 
-#ifndef IGNORE_DL_THEORYPROPAGATION
-        // Determine the decision level on which this reason should be propagated
-        vec<Lit> r;
-        theory_handler.getReason(ded, r, assigns);
-        int max_lev = -1;
-        assert(ded == r[0]);
-        for (int i = 1; i < r.size(); i++) {
-            Var v = var(r[i]);
-            max_lev = max_lev > level(v) ? max_lev : level(v);
-            assert(value(r[i]) == l_False);
-        }
-
-        deductions.push(LitLev(ded, max_lev));
-#else
         deductions.push(LitLev(ded, decisionLevel()));
-#endif
     }
-#ifndef IGNORE_DL_THEORYPROPAGATION
-    sort<LitLev,LitLev_lt>(deductions, LitLev_lt());
-#endif
 #ifdef PEDANTIC_DEBUG
     int max_lev = -1;
     for (int i = 0; i < deductions.size(); i++) {

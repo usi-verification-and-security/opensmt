@@ -27,14 +27,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef TSOLVER_H
 #define TSOLVER_H
 
-#include "Pterm.h"
+#include "PtStructs.h"
 #include "SMTConfig.h"
 #include "Deductions.h"
 #include "SolverTypes.h"
-#include "Logic.h"
 #ifdef PRODUCE_PROOF
-#include "TheoryInterpolator.h"
+class TheoryInterpolator; // forward declaration
 #endif
+
+class Logic; // forward declaration
 
 #ifdef STATISTICS
 class TSolverStats
@@ -150,27 +151,16 @@ public:
     // Called after every check-sat.
     virtual void clearSolver();
 
-    void  setPolarity(PTRef tr, lbool p) {
-        if (polarityMap.has(tr)) { polarityMap[tr] = p; }
-        else { polarityMap.insert(tr, p); }
-#ifdef VERBOSE_EUF
-        cerr << "Setting polarity " << getLogic().printTerm(tr) << " " << tr.x << endl;
-#endif
-    }
+    void  setPolarity(PTRef tr, lbool p);
     virtual void print(ostream& out) = 0;
     lbool getPolarity(PTRef tr)          { return polarityMap[tr]; }
-    void  clearPolarity(PTRef tr)        {
-        polarityMap[tr] = l_Undef;
-#ifdef VERBOSE_EUF
-        cerr << "Clearing polarity " << getLogic().printTerm(tr) << " " << tr.x << endl;
-#endif
-    }
+    void  clearPolarity(PTRef tr);
     bool  hasPolarity(PTRef tr)          { if (polarityMap.has(tr)) { return polarityMap[tr] != l_Undef; } else return false; }
     virtual bool                assertLit           ( PtAsgn, bool = false ) = 0 ;  // Assert a theory literal
     virtual void                pushBacktrackPoint  ( )                       ;  // Push a backtrack point
     virtual void                popBacktrackPoint   ( )                       ;  // Backtrack to last saved point
     virtual bool                check               ( bool ) = 0              ;  // Check satisfiability
-    inline const string &       getName             ( ) { return name; }            // The name of the solver
+    inline string               getName             ( ) { return name; }         // The name of the solver
     virtual ValPair             getValue            (PTRef) = 0;
 #ifdef PRODUCE_PROOF
     virtual TheoryInterpolator* getTheoryInterpolator() = 0;
@@ -192,7 +182,7 @@ protected:
     Map<PTRef,bool,PTRefHash>   informed_PTRefs;
     bool                        informed(PTRef tr) { return informed_PTRefs.has(tr); }
     bool                        has_explanation;  // Does the solver have an explanation (conflict detected)
-    const char*                 name;             // Name of the solver
+    string                      name;             // Name of the solver
     SMTConfig &                 config;           // Reference to configuration
     vec< size_t >               backtrack_points; // Keeps track of backtrack points
 

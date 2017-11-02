@@ -27,7 +27,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define BVECTOR_H
 #include "Vec.h"
 #include "Alloc.h"
-#include "Pterm.h"
+#include "PTRef.h"
+
 struct BVRef {
     uint32_t x;
     void operator= (uint32_t v) { x = v; }

@@ -22,22 +22,8 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 #ifdef PRODUCE_PROOF
 
-#define FULL_LABELING
-
 #include "Global.h"
 #include "Proof.h"
-#include "Enode.h"
-#include "CoreSMTSolver.h"
-#include <deque>
-#include <algorithm>
-#include <limits>
-#include <bitset>
-#include <cassert>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <climits>
-#include <cfloat>
 #include <map>
 #include <new>
 

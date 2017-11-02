@@ -539,7 +539,7 @@ void ProofGraph::buildProofGraph( int nVars )
         num_nodes = num_non_null;
         num_edges = (num_learnt + num_derived)*2;
         //reportf( "# Number of variables - nominal: %d - actual: %d\n",  num_vars_limit, proof_variables.size() );
-        reportf( "# Number of distinct variables in the proof: %d\n", proof_variables.size() );
+        reportf( "# Number of distinct variables in the proof: %d\n", (int)proof_variables.size() );
     }
     if ( verbose() > 0 )
     {

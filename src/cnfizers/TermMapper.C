@@ -53,7 +53,7 @@ Var TermMapper::addBinding(PTRef tr)
         varToTheorySymbol.push(SymRef_Undef);
         frozen.push(false);
     }
-    varToTheorySymbol[v] == logic.getSymRef(tr_p);
+    varToTheorySymbol[v] = logic.getSymRef(tr_p);
     varToTerm[v] = tr_p;
     return v;
 }

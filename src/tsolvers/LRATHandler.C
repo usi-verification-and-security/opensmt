@@ -1,5 +1,6 @@
 #include "LRATHandler.h"
-
+#include "TreeOps.h"
+#include "LRASolver.h"
 
 LRATHandler::LRATHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d, TermMapper& tmap)
         : TSolverHandler(c, d, l, tmap)
@@ -95,5 +96,12 @@ bool LRATHandler::assertLit_special(PtAsgn a)
         res = assertLit(a);
     return res;
 }
+
+#ifdef PRODUCE_PROOF
+PTRef LRATHandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
+{
+    return lrasolver->getInterpolant(mask, labels);
+}
+#endif // PRODUCE_PROOF
 
 

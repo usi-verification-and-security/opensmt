@@ -1,4 +1,6 @@
 #include "UFTHandler.h"
+#include "TreeOps.h"
+#include "Egraph.h"
 
 UFTHandler::UFTHandler(SMTConfig& c, Logic& l, vec<DedElem>& d, TermMapper& tmap)
     : TSolverHandler(c, d, l, tmap)
@@ -54,5 +56,17 @@ void UFTHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
         }
     }
 }
+
+#ifdef PRODUCE_PROOF
+TheoryInterpolator* UFTHandler::getTheoryInterpolator()
+{
+    return egraph->getTheoryInterpolator();
+}
+
+PTRef UFTHandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
+{
+    return egraph->getInterpolant(mask, labels);
+}
+#endif
 
 

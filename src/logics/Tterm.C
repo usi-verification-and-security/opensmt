@@ -1,4 +1,5 @@
 #include "Tterm.h"
+#include <cstring>
 
 using namespace std;
 
@@ -41,7 +42,7 @@ Tterm::addArg(PTRef arg)
 }
 
 void
-Tterm::setName(string& _name)
+Tterm::setName(const std::string& _name)
 {
     setName(_name.c_str());
 }

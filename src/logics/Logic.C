@@ -205,6 +205,7 @@ bool Logic::isBuiltinFunction(const SymRef sr) const
 {
     if (sr == sym_TRUE || sr == sym_FALSE || sr == sym_AND || sr == sym_OR || sr == sym_XOR || sr == sym_NOT || sr == sym_EQ || sr == sym_IMPLIES || sr == sym_DISTINCT || sr == sym_ITE) return true;
     if (isEquality(sr) || isDisequality(sr)) return true;
+    return false;
 }
 
 Logic::~Logic()
@@ -237,63 +238,76 @@ Logic::okForBoolVar(PTRef tr) const
            isUP (tr)              ;
 }
 
+//
 // Escape the symbol name if it contains a prohibited character from the
-// following list:
-//  - #
-char*
-Logic::printSym(SymRef sr) const
+// list defined by the quotable[] table below
+//
+bool Logic::hasQuotableChars(const char* name) const
 {
     // Entry is 1 if the corresponding ascii character requires quoting
     const bool quotable[256] =
     {
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 1, 0, 1, 1, 0, 0, 0, 1, // <space>, ", #, $, '
-      1, 1, 0, 0, 1, 0, 0, 0, 0, 0, // (, ), <,>
-      0, 0, 0, 0, 0, 0, 0, 0, 1, 1, // :, ;
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 1, 0, 1, 0, 0, 1, 0, 0, 0, // [, \, ], `
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 1, 0, 1, 0, 0, 0, 0, // {, }
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 1, 0, 1, 1, 0, 0, 0, 1, // <space>, ", #, $, '
+        1, 1, 0, 0, 1, 0, 0, 0, 0, 0, // (, ), <,>
+        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, // :, ;
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 1, 0, 1, 0, 0, 1, 0, 0, 0, // [, \, ], `
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 1, 0, 1, 0, 0, 0, 0, // {, }
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     };
-    const char* name = sym_store.getName(sr);
-    char* name_escaped;
-    bool escape = false;
     bool quoted = false;
+    bool escape = false;
     char first = name[0];
     char last;
     for (int i = 0; name[i] != '\0'; i++)
     {
         if (quotable[(int)name[i]])
-        {
             escape = true;
-            //break;
-        }
         last = name[i];
     }
     quoted = (first == '|') && (last == '|');
     if (!quoted && escape)
+        return true;
+    else
+        return false;
+}
+
+//
+// Quote the name if it contains illegal characters
+//
+char*
+Logic::protectName(const char* name) const
+{
+    char *name_escaped;
+    if (hasQuotableChars(name))
         asprintf(&name_escaped, "|%s|", name);
     else
         asprintf(&name_escaped, "%s", name);
-
     return name_escaped;
+}
+
+char*
+Logic::printSym(SymRef sr) const
+{
+    return protectName(sym_store.getName(sr));
 }
 
 char*
@@ -489,7 +503,7 @@ Logic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
 //
 // XXX Comments? This method is currently under development
 //
-lbool Logic::simplifyTree(PTRef tr, PTRef& root_out)
+void Logic::simplifyTree(PTRef tr, PTRef& root_out)
 {
     vec<pi> queue;
     Map<PTRef,bool,PTRefHash> processed;
@@ -1559,6 +1573,7 @@ lbool Logic::isInHashes(vec<Map<PTRef,lbool,PTRefHash>*>& hashes, Map<PTRef,lboo
     else if (asgn == pta.sgn)
         return l_True;
     assert(false);
+    throw std::logic_error("Unreachable code!");
 }
 
 //
@@ -1566,7 +1581,7 @@ lbool Logic::isInHashes(vec<Map<PTRef,lbool,PTRefHash>*>& hashes, Map<PTRef,lboo
 // used.  Depending on the theory a fact should either be added on the
 // top level or left out to reduce e.g. simplex matrix size.
 //
-bool Logic::getNewFacts(PTRef root, vec<Map<PTRef,lbool,PTRefHash>*>& prev_units, Map<PTRef,lbool,PTRefHash>& facts)
+void Logic::getNewFacts(PTRef root, vec<Map<PTRef,lbool,PTRefHash>*>& prev_units, Map<PTRef,lbool,PTRefHash>& facts)
 {
     Map<PtAsgn,bool,PtAsgnHash> isdup;
     vec<PtAsgn> queue;
@@ -1616,7 +1631,7 @@ bool Logic::getNewFacts(PTRef root, vec<Map<PTRef,lbool,PTRefHash>*>& prev_units
         else {
             lbool prev_val = isInHashes(prev_units, facts, pta);
             if (prev_val != l_Undef && prev_val != pta.sgn)
-                return false; // conflict
+                return; // conflict
             else if (prev_val == pta.sgn)
                 continue; // Already seen
 
@@ -2097,7 +2112,10 @@ Logic::dumpFunction(ostream& dump_out, const TFun& tpl_fun)
     PTRef tr_function = tpl_fun.getBody();
     Pterm& t = getPterm(tr_function);
     const char* name = tpl_fun.getName();
-    dump_out << "(define-fun " << name << " ( ";
+    char *quoted_name = protectName(name);
+
+    dump_out << "(define-fun " << quoted_name << " ( ";
+    free(quoted_name);
     const vec<PTRef>& args = tpl_fun.getArgs();
     for (int i = 0; i < args.size(); ++i) {
         char* arg_name = printTerm(args[i]);

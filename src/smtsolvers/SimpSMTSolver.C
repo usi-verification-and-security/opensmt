@@ -45,8 +45,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "Sort.h"
 #include "SimpSMTSolver.h"
-#include "SimpSolver.h"
-#include "System.h"
+//#include "SimpSolver.h"
+//#include "System.h"
 
 //=================================================================================================
 // Constructor/Destructor:
@@ -190,9 +190,7 @@ skip_theory_preproc:
         extendModel();
         // Previous line
         // #ifndef NDEBUG
-#ifndef SMTCOMP
         verifyModel();
-#endif
     }
 
     if (do_simp)

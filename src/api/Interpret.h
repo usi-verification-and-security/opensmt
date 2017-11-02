@@ -27,19 +27,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define API_INTERPRET_H
 
 #include "smt2newcontext.h"
-#include "StringMap.h"
-//#include "Egraph.h"
-#include "SimpSMTSolver.h"
 #include "SStore.h"
-#include "SSort.h"
-#include "Logic.h"
-#include "SymStore.h"
-#include "Symbol.h"
-#include "PtStore.h"
-#include "Egraph.h"
-#include "SMTConfig.h"
-#include "MainSolver.h"
-#include "Theory.h"
+#include "PtStructs.h"
+
+// forward declarations
+class Logic;
+class SMTConfig;
+class Theory;
+class SimpSMTSolver;
+class MainSolver;
+class THandler;
 
 class LetFrame {
   private:
@@ -85,7 +82,7 @@ class Interpret {
     bool                        declareConst(ASTNode& n); //(const char* fname, const SRef ret_sort);
     bool                        defineFun(const ASTNode& n);
     bool                        checkSat();
-    bool                        getValue(const list<ASTNode*>* term);
+    void                        getValue(const list<ASTNode*>* term);
     bool                        push();
     bool                        pop();
     PTRef                       parseTerm(const ASTNode& term, vec<LetFrame>& let_branch);
@@ -94,7 +91,7 @@ class Interpret {
     void                        GetProof();
     void                        GetInterpolants();
 #endif
-    bool                        interp (ASTNode& n);
+    void                        interp (ASTNode& n);
     void                        execute(const ASTNode* n);
 
     void                        notify_formatted(bool error, const char* s, ...);
@@ -117,9 +114,7 @@ class Interpret {
 
     vec<PTRef> assertions;
 
-    virtual void new_solver() {
-        this->solver = new SimpSMTSolver(this->config, *this->thandler);
-    }
+    virtual void new_solver();
 
   public:
     Interpret(SMTConfig& c)
@@ -146,19 +141,7 @@ class Interpret {
         , config(c)
         , parse_only(false) { }
 
-    ~Interpret() {
-        if(!parse_only)
-        {
-            if (thandler != NULL)
-                delete thandler;
-            if (main_solver != NULL)
-                delete main_solver;
-            if (theory != NULL)
-                delete theory;
-            if (solver != NULL)
-                delete solver;
-        }
-    }
+    ~Interpret();
 
     int interpFile(FILE* in);
     int interpFile(char *content);

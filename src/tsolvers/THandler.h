@@ -28,13 +28,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define THANDLER_H
 
 #include "TermMapper.h"
-#include "SMTConfig.h"
-#include "Deductions.h"
-#include "Egraph.h"
 #include "Global.h"
-#include "TreeOps.h"
 #include "TSolverHandler.h"
 #include "Theory.h"
+
+class SMTConfig;
 
 class THandler
 {

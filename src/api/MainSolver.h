@@ -26,14 +26,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef MAINSOLVER_H
 #define MAINSOLVER_H
 
-#include "Logic.h"
-#include "Theory.h"
-#include "SimpSMTSolver.h"
-#include "Egraph.h"
-#include "Tseitin.h"
-#include <thread>
+
 #include <mutex>
-#include <random>
+#include "Tseitin.h"
+#include "SimpSMTSolver.h"
+
+class Logic;
 
 class sstat {
     char value;
@@ -188,6 +186,8 @@ class MainSolver
     bool  writeSolverState (const char* file, char** msg);
     bool  writeSolverState (int* &buf, int &buf_sz, bool compress, char** msg);
     bool  writeSolverState_smtlib2 (const char* file, char** msg);
+
+    bool  writeFuns_smtlib2 (const char* file);
 
     void  addToConj(vec<vec<PtAsgn> >& in, vec<PTRef>& out); // Add the contents of in as disjuncts to out
     bool  writeSolverSplits_smtlib2(const char* file, char** msg);

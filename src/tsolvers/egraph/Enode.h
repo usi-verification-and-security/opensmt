@@ -30,13 +30,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Vec.h"
 #include "Alloc.h"
 
-#include "Symbol.h"
-#include "Pterm.h"
+#include "PtStructs.h"
+#include "SymRef.h"
+#include "Global.h"
 
-//#include "Global.h"
-//#include "EnodeTypes.h"
-//#include "Otl.h"
-#include "SSort.h"
 #include "CgTypes.h"
 #include "SigMap.h"
 
@@ -55,7 +52,6 @@ static struct ERef ERef_Undef = {INT32_MAX};
 // Data structure used to store forbid lists
 //
 
-#ifdef CUSTOM_EL_ALLOC
 struct ELRef {
     uint32_t x;
     void operator= (uint32_t v) { x = v; }
@@ -67,16 +63,6 @@ struct ELRef {
 
 // FIXME this is uninitialized right now.
 static struct ELRef ELRef_Undef = {INT32_MAX};
-#else
-class Elist
-{
-public:
-    Elist  *link;              // Link to the next element in the list
-    ERef   e;                  // Enode that differs from this
-    PtAsgn reason;             // Reason for this distinction
-    Elist(ERef e_, PtAsgn r_) : link(NULL), e(e_), reason(r_) {}
-};
-#endif
 
 class Extra {
     struct {
@@ -92,11 +78,7 @@ class Extra {
     } lst;
     struct {
         PTRef       pterm;          // The corresponding pterm
-#ifdef CUSTOM_EL_ALLOC
         ELRef       forbid;         // List of unmergeable Enodes
-#else
-        Elist*      forbid;         // List of unmergeable Enodes
-#endif
         dist_t      dist_classes;   // The bit vector for distinction classes
         int         dist_index;     // My distinction index
 
@@ -205,16 +187,10 @@ private:
     void  setPterm      (PTRef tr)      { assert(isTerm()); ex->trm.pterm = tr; }
 public:
     PTRef getTerm       ()        const { assert(isTerm()); return ex->trm.pterm; }
-#ifdef CUSTOM_EL_ALLOC
 //    ELRef getForbid     ()        const { assert(isTerm()); return ex->trm.forbid; }
     ELRef getForbid     ()        const { assert(!isSymb()); if (isList()) return ELRef_Undef; else return ex->trm.forbid; }
     ELRef& altForbid    ()              { assert(isTerm()); return ex->trm.forbid; }
     void  setForbid     (ELRef r)       { assert(isTerm()); ex->trm.forbid = r; }
-#else
-    Elist* getForbid    ()        const { assert(isTerm()); return ex->trm.forbid; }
-    Elist& altForbid    ()              { assert(isTerm()); return *(ex->trm.forbid); }
-    void  setForbid     (Elist* r)      { assert(isTerm()); ex->trm.forbid = r; }
-#endif
 //    int   getDistIndex  ()        const { assert(isTerm()); return ex->trm.dist_index; }
     int   getDistIndex  ()        const { assert(!isSymb()); if (isList()) return 0; else return ex->trm.dist_index; }
     void  setDistIndex  (int i)         { assert(isTerm()); ex->trm.dist_index = i; }
@@ -336,8 +312,6 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
 
 };
 
-
-#ifdef CUSTOM_EL_ALLOC
 #define ID_BITS 30
 #define ID_MAX 2 << 30
 class Elist
@@ -481,7 +455,5 @@ public:
 #endif
     }
 };
-
-#endif
 
 #endif

@@ -194,11 +194,6 @@ void PtStore::deserializeTerms(const int* buf)
     for (int i = 0; i < vec_buf[0]; i++) {
         PTRef tr = {(uint32_t)vec_buf[i+1]};
         idToPTRef.push(tr);
-#ifndef TERMS_HAVE_EXPLANATIONS
-        explanations.push();
-        setRoot(tr, tr);
-//        explanations.last().setRoot(tr);
-#endif
     }
     assert(pta.getNumTerms() == idToPTRef.size());
 }

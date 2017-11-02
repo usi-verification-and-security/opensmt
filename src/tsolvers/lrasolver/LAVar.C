@@ -30,12 +30,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 const char* const BoundT::names[3] = {"[L]", "[U]", "[N]"};
 
-//Delta LAVar::plus_inf_bound = Delta( Delta::UPPER );
-//Delta LAVar::minus_inf_bound = Delta( Delta::LOWER );
-
-//
-// Default constructor
-//
 LAVar::LAVar(PTRef e, unsigned id)
         : col_id(-1)
         , row_id(-1)

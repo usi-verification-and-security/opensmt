@@ -29,33 +29,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define PTERM_H
 
 #include "Vec.h"
-#include "Alloc.h"
-#include "Symbol.h"
 #include "Sort.h"
 #include "SolverTypes.h"
+#include "SymRef.h"
+#include "PtStructs.h"
 
-//typedef RegionAllocator<uint32_t>::Ref PTRef;
-
-struct PTRef {
-    uint32_t x;
-    void operator= (uint32_t v) { x = v; }
-    inline friend bool operator== (const PTRef& a1, const PTRef& a2)   { return a1.x == a2.x; }
-    inline friend bool operator!= (const PTRef& a1, const PTRef& a2)   { return a1.x != a2.x; }
-    inline friend bool operator< (const PTRef& a1, const PTRef& a2)    { return a1.x > a2.x;  }
-};
-
-static struct PTRef PTRef_Undef = {INT32_MAX};
-
-struct PTRefHash {
-    uint32_t operator () (const PTRef& s) const {
-        return (uint32_t)s.x; }
-};
-
-
-template <>
-struct Equal<const PTRef> {
-    bool operator() (const PTRef& s1, const PTRef& s2) const { return s1 == s2; }
-};
 
 // A key used for pterm resolve lookups
 struct PTLKey {
@@ -84,74 +62,6 @@ struct PTLHash {
         return v; }
 };
 
-class PtAsgn {
-  public:
-    PTRef tr;
-    lbool sgn;
-    PtAsgn(PTRef tr_, lbool sgn_) : tr(tr_), sgn(sgn_) {}
-    PtAsgn() : tr(PTRef_Undef), sgn(l_Undef) {}
-    bool operator== (const PtAsgn& other) const { return tr == other.tr && sgn == other.sgn; }
-    bool operator!= (const PtAsgn& other) const { return !(*this == other); }
-    bool operator< (const PtAsgn& other) const { return tr < other.tr || (tr == other.tr && toInt(sgn) < toInt(other.sgn)); }
-};
-
-
-static class PtAsgn PtAsgn_Undef(PTRef_Undef, l_Undef);
-
-struct PtAsgnHash {
-    uint32_t operator () (const PtAsgn& s) const {
-        return ((uint32_t)s.tr.x << 2) + toInt(s.sgn);
-    }
-};
-
-class PtAsgn_reason {
-  public:
-    PTRef tr;
-    PTRef reason;
-    lbool sgn;
-    PtAsgn_reason(PTRef tr_, lbool sgn_, PTRef reason_)
-         : tr(tr_)
-         , reason(reason_)
-         , sgn(sgn_)
-         {}
-    PtAsgn_reason() : tr(PTRef_Undef), reason(PTRef_Undef), sgn(l_Undef) {}
-};
-
-static class PtAsgn_reason PtAsgn_reason_Undef(PTRef_Undef, l_Undef, PTRef_Undef);
-
-class ValPair
-{
-  public:
-    PTRef tr;
-    char* val;
-    ValPair() : tr(PTRef_Undef), val(NULL) {}
-    ~ValPair() {
-        if (val != NULL)
-            free(val);
-    }
-    ValPair(PTRef tr, const char* val_) : tr(tr) {
-        if (val_ != NULL)
-            val = strdup(val_);
-        else val = NULL;
-    }
-    ValPair(const ValPair& other) {
-        tr = other.tr;
-        if (other.val != NULL)
-            val = strdup(other.val);
-        else val = NULL;
-    }
-    const ValPair& operator= (const ValPair& other) {
-        tr = other.tr;
-        if (other.val != NULL)
-            val = strdup(other.val);
-        else val = NULL;
-    }
-    bool operator== (const ValPair& other) const { return tr == other.tr && val == other.val; }
-    bool operator!= (const ValPair& other) const { return tr != other.tr || val != other.val; }
-};
-
-static class ValPair ValPair_Undef(PTRef_Undef, NULL);
-
 //typedef uint32_t TRef;
 typedef uint32_t PTId; // Used as an array index
 
@@ -166,13 +76,11 @@ class Pterm {
     PTId                                id;
     SymRef                              sym;
     Var                                 var;  // This is defined if the PTRef has a Boolean var associated with it
-#ifdef TERMS_HAVE_EXPLANATIONS
     PtAsgn      exp_reason;
     PTRef       exp_parent;
     PTRef       exp_root;
 //    int         exp_class_size;
     int         exp_time_stamp;
-#endif
     // This has to be the last
     PTRef                               args[0]; // Either the terms or the relocation reference
 
@@ -183,7 +91,6 @@ class Pterm {
     friend class Logic;
   public:
 
-#ifdef TERMS_HAVE_EXPLANATIONS
     PtAsgn getExpReason       () const { return exp_reason; }
     PTRef  getExpParent       () const { return exp_parent; }
     PTRef  getExpRoot         () const { return exp_root; }
@@ -195,14 +102,9 @@ class Pterm {
     void setExpRoot       (PTRef r)      { exp_root   = r; }
 //    void setExpClassSize  (const int s)  { exp_class_size   = s; }
     void setExpTimeStamp  (const int t)  { exp_time_stamp   = t; }
-#endif
 
     // Note: do not use directly (no memory allocation for args)
-#ifdef TERMS_HAVE_EXPLANATIONS
     Pterm(const SymRef sym_, const vec<PTRef>& ps, PTRef t) : sym(sym_) {
-#else
-    Pterm(const SymRef sym_, const vec<PTRef>& ps) : sym(sym_) {
-#endif
         header.type      = 0;
         header.has_extra = 0;
         header.reloced   = 0;
@@ -212,12 +114,10 @@ class Pterm {
         var              = var_Undef;
 
         for (int i = 0; i < ps.size(); i++) args[i] = ps[i];
-#ifdef TERMS_HAVE_EXPLANATIONS
         setExpReason(PtAsgn(PTRef_Undef, l_Undef));
         setExpParent(PTRef_Undef);
         setExpRoot(t);
         setExpTimeStamp(0);
-#endif
     }
     Pterm() {
         header.type      = 0;
@@ -331,11 +231,7 @@ class PtermAllocator : public RegionAllocator<uint32_t>
 
         uint32_t v = RegionAllocator<uint32_t>::alloc(ptermWord32Size(ps.size()));
         PTRef tid = {v};
-#ifdef TERMS_HAVE_EXPLANATIONS
         new (lea(tid)) Pterm(sym, ps, tid);
-#else
-        new (lea(tid)) Pterm(sym, ps);
-#endif
         operator[](tid).setId(n_terms++);
 
         return tid;
@@ -372,12 +268,6 @@ class PtermAllocator : public RegionAllocator<uint32_t>
     }
     friend class PtStore;
 };
-
-struct LessThan_PTRef {
-    bool operator () (PTRef& x, PTRef& y) { return x.x < y.x; } };
-
-struct LessThan_PtAsgn {
-    bool operator () (PtAsgn& x, PtAsgn& y) { return x.tr.x < y.tr.x; } };
 
 inline void termSort(Pterm& t) {
 //    PTRef                               args[0]; // Either the terms or the relocation reference

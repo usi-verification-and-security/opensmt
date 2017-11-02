@@ -28,18 +28,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 
-#include "SMTConfig.h"
 #include "Deductions.h"
-#include "TSolver.h"
 #include "Logic.h"
-#include "TreeOps.h"
 #include "TermMapper.h"
 
 #ifdef PRODUCE_PROOF
-#include "TheoryInterpolator.h"
-#endif
+class TheoryInterpolator;
+#endif //PRODUCE_PROOF
 
 class THandler;
+class TSolver;
 
 class TSolverHandler
 {
@@ -67,11 +65,7 @@ protected:
         }
     }
 public:
-    virtual ~TSolverHandler()
-    {
-        for (int i = 0; i < tsolvers.size(); i++)
-            if (tsolvers[i] != NULL) delete tsolvers[i];
-    }
+    virtual ~TSolverHandler();
 
     virtual void clearSolver(); // Clear the solver state
 

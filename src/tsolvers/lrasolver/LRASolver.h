@@ -39,6 +39,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Polynomials.h"
 #include "BindedRows.h"
 #include "LABounds.h"
+#include "Global.h"
+
+class LAVar;
+class LAVarStore;
+class Delta;
 
 class LRASolverStats: public TSolverStats
 {
@@ -109,7 +114,6 @@ private:
     LABoundStore         boundStore;
 
 
-
     // Possible internal states of the solver
     typedef enum
     {
@@ -158,7 +162,7 @@ public:
 
 protected:
     // vector in which witnesses for unsatisfiability are stored
-    vector<Real> explanationCoefficients;
+    vector<opensmt::Real> explanationCoefficients;
 
     vec<LVRef> columns;                 // Maps terms' ID to LAVar pointers
     vec<LVRef> rows;                    // Maps terms' ID to LAVar pointers, used to store basic columns
@@ -171,7 +175,7 @@ protected:
     unsigned nVars() const { return lva.getNumVars(); }
 
 private:
-    void getReal(Real*, const PTRef);                       // Get a new real possibly using the number pool
+    void getReal(opensmt::Real*, const PTRef);              // Get a new real possibly using the number pool
     LVRef getLVRef(PTRef var);                              // Initialize a new LA var if needed, otherwise return the old var
     void doGaussianElimination( );                          // Performs Gaussian elimination of all redundant terms in the Tableau
     void update( LVRef, const Delta & );                    // Updates the bounds after constraint pushing
@@ -187,7 +191,7 @@ private:
     inline bool setStatus( LRASolverStatus );               // Sets and return status of the solver
     void initSolver( );                                     // Initializes the solver
     void print( ostream & out );                            // Prints terms, current bounds and the tableau
-    void addVarToRow( LVRef, LVRef, Real*);                 //
+    void addVarToRow( LVRef, LVRef, opensmt::Real*);
     bool checkIntegersAndSplit();                           //
 
     // Value system

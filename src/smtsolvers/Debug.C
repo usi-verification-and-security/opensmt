@@ -27,7 +27,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "CoreSMTSolver.h"
 
-#ifndef SMTCOMP
 void CoreSMTSolver::dumpCNF( )
 {
   const char * name = "cnf.smt2";
@@ -136,4 +135,3 @@ void CoreSMTSolver::printModel( ostream & out )
 //	out << ( model[ v ] == l_True ? "" : "(not " ) << e << ( model[ v ] == l_True ? "" : ")" ) << endl;
   }
 }
-#endif

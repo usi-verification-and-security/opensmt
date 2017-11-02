@@ -26,9 +26,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #ifndef LOGIC_H
 #define LOGIC_H
-#include "SSort.h"
 #include "SymStore.h"
 #include "PtStore.h"
+#include "SStore.h"
 #include "Tterm.h"
 
 class SStore;
@@ -298,6 +298,7 @@ class Logic {
     void dumpFormulaToFile(ostream& dump_out, PTRef formula, bool negate = false, bool toassert = true);
     void dumpChecksatToFile(ostream& dump_out);
 
+    void dumpFunctions(ostream& dump_out) { vec<const char*> names; defined_functions.getKeys(names); for (int i = 0; i < names.size(); i++) dumpFunction(dump_out, names[i]); }
     void dumpFunction(ostream& dump_out, const char* tpl_name) { if (defined_functions.has(tpl_name)) dumpFunction(dump_out, defined_functions[tpl_name]); else printf("; Error: function %s is not defined\n", tpl_name); }
     void dumpFunction(ostream& dump_out, const std::string s) { dumpFunction(dump_out, s.c_str()); }
 
@@ -433,9 +434,9 @@ class Logic {
     bool simplifyEquality(PtChild& ptc, bool simplify);
     void simplifyDisequality(PtChild& ptc, bool simplify = true);
     // Simplify a term tree.  Return l_True, l_False, or l_Undef, if
-    // simplification resulted in constant true or fale, or neither,
+    // simplification resulted in constant true or false, or neither,
     // respectively
-    lbool       simplifyTree       (PTRef tr, PTRef& root_out);
+    void        simplifyTree       (PTRef tr, PTRef& root_out);
 
     PTRef       resolveTerm        (const char* s, vec<PTRef>& args, char** msg);
     // XXX There's a need for non msg giving version
@@ -445,7 +446,7 @@ class Logic {
     // hashes (hashes) or the current hash (curr_hash)
     lbool isInHashes(vec<Map<PTRef,lbool,PTRefHash>*>& hashes, Map<PTRef,lbool,PTRefHash>& curr_hash, PtAsgn tr);
     // Top-level equalities based substitutions
-    bool getNewFacts(PTRef root, vec<Map<PTRef,lbool,PTRefHash>*>& prev_units, Map<PTRef,lbool,PTRefHash>& facts);
+    void getNewFacts(PTRef root, vec<Map<PTRef,lbool,PTRefHash>*>& prev_units, Map<PTRef,lbool,PTRefHash>& facts);
     bool varsubstitute(PTRef& root, Map<PTRef,PtAsgn,PTRefHash>& substs, PTRef& tr_new);  // Do the substitution.  Return true if at least one substitution was done, and false otherwise.
     virtual lbool retrieveSubstitutions(vec<PtAsgn>& units, Map<PTRef,PtAsgn,PTRefHash>& substs);
 
@@ -542,6 +543,8 @@ class Logic {
     void        serializeTermSystem(int*& termstore_buf, int*& symstore_buf, int*& idstore_buf, int*& sortstore_buf, int*& logicdata_buf) const;
     void        deserializeTermSystem(const int* termstore_buf, const int* symstore_buf, const int* idstore_buf, const int* sortstore_buf, const int* logicdata_buf);
 
+    bool       hasQuotableChars(const char* name) const;
+    char*      protectName(const char* name) const;
     virtual char* printTerm_       (PTRef tr, bool l, bool s) const;
     char*       printTerm          (PTRef tr)                 const  { return printTerm_(tr, false, false); }
     char*       printTerm          (PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }

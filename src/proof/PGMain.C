@@ -97,7 +97,7 @@ void ProofGraph::transfProofForReduction( )
 		cerr << "# Nominal num proof variables: ";
 		fprintf( stderr, "%-10d\n", num_vars_limit );
 		cerr << "# Actual num proof variables.: ";
-		fprintf( stderr, "%-10d %-10d\n", numvars, proof_variables.size() );
+		fprintf( stderr, "%-10d %-10d\n", numvars, (int)proof_variables.size() );
 		cerr << "# Nodes......................: ";
 		fprintf( stderr, "%-10d %-10d\n", numnodes, num_nodes );
 		cerr << "# Nodes variation............: ";
@@ -248,7 +248,7 @@ double ProofGraph::doReduction(double solving_time)
 		}
 		spent_time=cpuTime()-i_time;
 		// Not really meaningful to do graph traversals in the last global loop
-		if(enabledTransfTraversals() & k <= num_global_reduction_loops - 1)
+		if(enabledTransfTraversals() && k <= num_global_reduction_loops - 1)
 		{
 			if(ratioReductionSolvingTime() > 0 || reductionTime() > 0 )
 			{

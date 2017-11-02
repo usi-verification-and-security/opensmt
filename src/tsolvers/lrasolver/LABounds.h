@@ -10,9 +10,9 @@
 class LABound
 {
     struct {
-        unsigned type    : 1;  // Upper / lower
-        unsigned reverse : 1;  // is this used?
-        unsigned active  : 1;  // is this used?
+        char type    : 1;  // Upper / lower
+        char reverse : 1;  // is this used?
+        char active  : 1;  // is this used?
         unsigned idx     : 29; // The index in variable's bound list
     };
     Delta delta;

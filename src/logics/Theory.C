@@ -1,5 +1,5 @@
 #include "Theory.h"
-#include "MainSolver.h"
+//#include "MainSolver.h"
 //#include "logics/Logic.h"
 
 // Function for assigning a PTRef to a Boolean variable if the Boolean
@@ -22,10 +22,6 @@ const Lit Theory::findLit (PTRef ptr)
         {
             getLogic().okForBoolVar(p_tr);
         }
-
-#ifdef VERBOSE_CNFIZATION
-//        cerr << "Term " << logic.printTerm(p_tr) << " maps to var " << v << endl;
-#endif
     }
 
     v = getLogic().getPterm(p_tr).getVar();

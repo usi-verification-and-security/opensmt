@@ -33,25 +33,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SSort.h"
 #include "Map.h"
 
-struct SymRef {
-    uint32_t x;
-    void operator= (uint32_t v) { x = v; }
-    inline friend bool operator== (const SymRef& a1, const SymRef& a2) {return a1.x == a2.x; }
-    inline friend bool operator!= (const SymRef& a1, const SymRef& a2) {return a1.x != a2.x; }
-};
-
-static struct SymRef SymRef_Undef = {INT32_MAX};
-static struct SymRef SymRef_Nil   = {INT32_MAX-1};
-
-struct SymRefHash {
-    uint32_t operator () (const SymRef& s) const {
-        return (uint32_t)s.x; }
-};
-
-template <>
-struct Equal<const SymRef> {
-    bool operator() (const SymRef& s1, const SymRef& s2) { return s1 == s2; }
-};
+#include "SymRef.h"
 
 typedef uint32_t SymId; // Used as an array index
 

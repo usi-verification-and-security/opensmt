@@ -26,11 +26,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef LRATHandler_H
 #define LRATHandler_H
 
-//#include "THandler.h"
-#include "LRASolver.h"
-#include "LRALogic.h"
 #include "TSolverHandler.h"
-#include "Egraph.h"
+
+class LRASolver;
+class LRALogic;
 
 class LRATHandler : public TSolverHandler
 {
@@ -50,10 +49,7 @@ class LRATHandler : public TSolverHandler
     {
         return NULL;
     }
-    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
-    {
-        return lrasolver->getInterpolant(mask, labels);
-    }
+    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels);
 #endif
 };
 

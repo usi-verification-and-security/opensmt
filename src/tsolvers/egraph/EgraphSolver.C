@@ -38,7 +38,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //#include "AXDiffSolver.h"
 // Added to support compiling templates
 //#include "DLSolver.C"
-#include "SimpSMTSolver.h"
+//#include "SimpSMTSolver.h"
 #include "TreeOps.h"
 #include "Deductions.h"
 
@@ -55,7 +55,7 @@ const char* Egraph::s_val_false = "false";
 Egraph::Egraph(SMTConfig & c, Logic& l , vec<DedElem>& d)
       : TSolver            (descr_uf_solver, descr_uf_solver, c, d)
       , logic              (l)
-#if defined(PEDANTIC_DEBUG) && defined(CUSTOM_EL_ALLOC)
+#if defined(PEDANTIC_DEBUG)
       , enode_store        ( logic, forbid_allocator )
 #else
       , enode_store        ( logic )
@@ -95,18 +95,7 @@ Egraph::Egraph(SMTConfig & c, Logic& l , vec<DedElem>& d)
 
     assert(ptr_new_true  == logic.getTerm_true());
     assert(ptr_new_false == logic.getTerm_false());
-#ifndef TERMS_HAVE_EXPLANATIONS
-//    expReason.insert(ptr_new_true, PtAsgn(PTRef_Undef, l_Undef));
-//    expReason.insert(ptr_new_false, PtAsgn(PTRef_Undef, l_Undef));
-//    expParent.insert(ptr_new_true, PTRef_Undef);
-//    expParent.insert(ptr_new_false, PTRef_Undef);
-//    expRoot.insert(ptr_new_true, ptr_new_true);
-//    expRoot.insert(ptr_new_false, ptr_new_false);
-//    expClassSize.insert(ptr_new_true, 1);
-//    expClassSize.insert(ptr_new_false, 1);
-//    expTimeStamp.insert(ptr_new_true, 0);
-//    expTimeStamp.insert(ptr_new_false, 0);
-#endif
+
     PTRef t = logic.getTerm_true();
     PTRef f = logic.getTerm_false();
     enode_store[t].setConstant(t);
@@ -203,7 +192,7 @@ PtAsgn_reason Egraph::getDeduction( ) {
 PTRef Egraph::getSuggestion( )
 {
   // Communicate suggestion
-  while ( !suggestions.size() == 0 )
+  while ( suggestions.size() != 0 )
   {
     PTRef tr = suggestions.last();
     ERef e = enode_store.termToERef[tr];
@@ -572,12 +561,11 @@ bool Egraph::assertEq ( PTRef tr_x, PTRef tr_y, PtAsgn r )
     pending.push( x );
     pending.push( y );
 
-#if defined(VERBOSE_EUF)
+#ifdef VERBOSE_EUF
     cerr << "this is assertEq for " << logic.printTerm(en_x.getTerm())
          << " (enode-id " << tr_x.x << ") and "
          << logic.printTerm(en_y.getTerm()) << " (enode-id " << tr_y.x << ")" << endl;
-#endif
-#if defined(VERBOSE_EUF) && defined(CUSTOM_EL_ALLOC)
+
     ELRef elr_x = en_x.getForbid();
     ERef first_x = ERef_Undef;
     if (elr_x == ELRef_Undef)
@@ -593,23 +581,6 @@ bool Egraph::assertEq ( PTRef tr_x, PTRef tr_y, PtAsgn r )
     else {
         cerr << "asserting eq, y's forbid list is " << endl;
         cerr << printDistinctionList(elr_y, forbid_allocator, false);
-    }
-#elif defined(VERBOSE_EUF)
-    Elist* el_x = en_x.getForbid();
-    ERef first_x = ERef_Undef;
-    if (el_x == NULL)
-        cerr << "asserting eq, x's forbid list is undef" << endl;
-    else {
-        cerr << "asserting eq, x's forbid list is " << endl;
-        cerr << printDistinctionList(el_x);
-    }
-    Elist* el_y = en_y.getForbid();
-    ERef first_y = ERef_Undef;
-    if (el_y == NULL)
-        cerr << "asserting eq, y's forbid list is undef" << endl;
-    else {
-        cerr << "asserting eq, y's forbid list is " << endl;
-        cerr << printDistinctionList(el_y);
     }
 #endif
 
@@ -850,16 +821,13 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
 #endif
 #ifdef GC_DEBUG
     checkRefConsistency();
-#endif
-#ifdef GC_DEBUG
+    assert(r.sgn != l_Undef);
     cerr << "Asserting distinction of " << logic.printTerm(x)
          << " and " << logic.printTerm(y)
-         << " enforced by " << (r.sgn == true ? "" : "not ")
+         << " enforced by " << (r.sgn == l_True ? "" : "not ")
          << logic.printTerm(r.tr) << endl;
 #endif
-#ifdef CUSTOM_EL_ALLOC
     checkFaGarbage();
-#endif
 #ifdef GC_DEBUG
     checkRefConsistency();
 #endif
@@ -910,7 +878,6 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
 #ifdef VERBOSE_EUF
     cerr << "Reason is " << logic.printTerm(r.tr) << endl;
 #endif
-#ifdef CUSTOM_EL_ALLOC
     ELRef pdist = ELRef_Undef;
     Enode& en_q = enode_store[q];
     if ( en_q.getForbid() == ELRef_Undef ) {
@@ -921,15 +888,6 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
         checkRefConsistency();
 #endif
     }
-#else
-    Elist* pdist = NULL;
-    Enode& en_q = enode_store[q];
-    if ( en_q.getForbid() == NULL ) {
-        pdist = new Elist(p, r);
-        en_q.setForbid(pdist);
-        pdist->link = pdist;
-    }
-#endif
 
     // Otherwise we should put the new node after the first
     // and make the first point to pdist. This is because
@@ -938,7 +896,6 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
     // So the last insertion is either the second element or
     // the only present in the list
     else {
-#ifdef CUSTOM_EL_ALLOC
         pdist = forbid_allocator.alloc(p, r, ERef_Undef);
         forbid_allocator[pdist].link = forbid_allocator[en_q.getForbid()].link;
         forbid_allocator[en_q.getForbid()].link = pdist;
@@ -947,15 +904,9 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
         cerr << printDistinctionList(en_q.getForbid(), forbid_allocator);
         checkRefConsistency();
 #endif
-#else
-        pdist = new Elist(p, r);
-        pdist->link = en_q.getForbid()->link;
-        en_q.getForbid()->link = pdist;
-#endif
     }
 
     // Create new distinction in p
-#ifdef CUSTOM_EL_ALLOC
     ELRef qdist = ELRef_Undef;
     Enode& en_p = enode_store[p];
     if ( en_p.getForbid() == ELRef_Undef ) {
@@ -977,28 +928,10 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
         checkRefConsistency();
 #endif
     }
-#else // CUSTOM_EL_ALLOC
-    Elist* qdist = NULL;
-    Enode& en_p = enode_store[p];
-    if ( en_p.getForbid() == NULL ) {
-        qdist = new Elist(q, r);
-        en_p.setForbid( qdist );
-        qdist->link = qdist;
-    }
-    else {
-        qdist = new Elist(q, r);
-        qdist->link = en_p.getForbid()->link;
-        en_p.getForbid()->link = qdist;
-    }
-#endif
     // Save operation in undo_stack
     undo_stack_main.push( Undo(DISEQ, q) );
 #ifdef VERBOSE_EUF
-#ifdef CUSTOM_EL_ALLOC
     cerr << printDistinctionList(en_q.getForbid(), forbid_allocator, false);
-#else
-    cerr << printDistinctionList(en_q.getForbid());
-#endif
 //    undo_stack_main.last().bool_term = r.tr;
 #endif
 
@@ -1101,7 +1034,7 @@ void Egraph::undoDistinction(PTRef tr_d) {
 //
 void Egraph::backtrackToStackSize ( size_t size ) {
 #ifdef VERBOSE_EUF
-    printf("Backtracking to size %d\n", size);
+    printf("Backtracking to size %d\n", (int)size);
 #endif
     // Make sure explanation is cleared
     // (might be empty, though, if boolean backtracking happens)
@@ -1409,7 +1342,6 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     //
 
     // Update forbid list for x by adding elements of y
-#ifdef CUSTOM_EL_ALLOC
     if ( en_y.getForbid( ) != ELRef_Undef ) {
         // We assign the same forbid list
         if ( en_x.getForbid( ) == ELRef_Undef ) {
@@ -1427,20 +1359,6 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     checkRefConsistency();
     checkForbidReferences(x);
 #endif
-#else // CUSTOM_EL_ALLOC
-    if ( en_y.getForbid( ) != NULL ) {
-        // We assign the same forbid list
-        if ( en_x.getForbid( ) == NULL )
-            en_x.setForbid( en_y.getForbid( ) );
-
-        // Otherwise we splice the two lists
-        else {
-            Elist* tmp = en_x.getForbid()->link;
-            en_x.getForbid()->link = en_y.getForbid()->link;
-            en_y.getForbid()->link = tmp;
-        }
-    }
-#endif // CUSTOM_EL_ALLOC
     // Merge distinction classes
     en_x.setDistClasses( ( en_x.getDistClasses( ) | en_y.getDistClasses( ) ) );
     // Assign w to the class with fewer parents
@@ -1909,7 +1827,6 @@ skip_signature_removal:
     en_x.setDistClasses( ( en_x.getDistClasses() & ~(en_y.getDistClasses())) );
 
     // Restore forbid list for x and y
-#ifdef CUSTOM_EL_ALLOC
     if ( (en_x.getForbid( ) == en_y.getForbid() ) && en_x.getForbid() != ELRef_Undef ) {
         forbid_allocator.removeRef(x, en_x.getForbid());
         en_x.setForbid( ELRef_Undef );
@@ -1920,16 +1837,6 @@ skip_signature_removal:
         forbid_allocator[en_x.getForbid()].link = forbid_allocator[en_y.getForbid()].link;
         forbid_allocator[en_y.getForbid()].link = tmp;
     }
-#else
-    if ( (en_x.getForbid( ) == en_y.getForbid() ) && en_x.getForbid() != NULL )
-        en_x.setForbid( NULL );
-    // Unsplice back the two lists
-    else if ( en_y.getForbid( ) != NULL ) {
-        Elist* tmp = en_x.getForbid()->link;
-        en_x.getForbid()->link = en_y.getForbid()->link;
-        en_y.getForbid()->link = tmp;
-    }
-#endif
 
     if (en_y.getConstant() != PTRef_Undef) {
         PTRef yc = en_y.getConstant();
@@ -1964,7 +1871,6 @@ skip_signature_removal:
 //
 // Restore the state before the addition of a disequality
 //
-#ifdef CUSTOM_EL_ALLOC
 void Egraph::undoDisequality ( ERef x )
 {
 #ifdef GC_DEBUG
@@ -2049,66 +1955,6 @@ void Egraph::undoDisequality ( ERef x )
 #endif
 }
 
-#else // CUSTOM_EL_ALLOC
-void Egraph::undoDisequality ( ERef x )
-{
-    Enode& en_x = enode_store[x];
-    assert( en_x.getForbid() != NULL );
-
-    // We have to distinguish two cases:
-    // If there is only one node, that is the
-    // distinction to remove
-    Elist* xfirst = en_x.getForbid( );
-    ERef y = ERef_Undef;
-    if ( xfirst->link == xfirst )
-        y = xfirst->e;
-    else
-        y = xfirst->link->e;
-
-    Enode& en_y = enode_store[y];
-
-
-    Elist* yfirst = en_y.getForbid();
-
-#if VERBOSE
-    cerr << "UD: Undoing distinction of " << x << " and " << y << endl;
-#endif
-
-    // Some checks
-    assert( yfirst != NULL );
-    assert( yfirst->link != yfirst || yfirst->e == x );
-    assert( yfirst->link == yfirst || yfirst->link->e == x );
-    assert( en_x.getRoot( ) != en_y.getRoot( ) );
-
-    Elist* ydist = xfirst->link == xfirst ? xfirst : xfirst->link;
-
-    // Only one node in the list
-    if ( ydist->link == ydist )
-        en_x.setForbid( NULL );
-    // Other nodes in the list
-    else
-        xfirst->link = ydist->link;
-
-    delete ydist;
-
-    Elist* xdist = yfirst->link == yfirst ? yfirst : yfirst->link;
-
-    // Only one node in the list
-    if ( xdist->link == xdist ) {
-        assert(en_y.getForbid() != NULL);
-        en_y.setForbid( NULL );
-    }
-    // Other nodes in the list
-    else
-        yfirst->link = xdist->link;
-
-    delete xdist;
-
-#ifdef VERBOSE_EUF
-    assert( checkInvariants( ) );
-#endif
-}
-#endif // CUSTOM_EL_ALLOC
 
 bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r)
 {
@@ -2157,7 +2003,6 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r)
         assert( r.tr != PTRef_Undef );
         return true;
     }
-#ifdef CUSTOM_EL_ALLOC
     // Check forbid lists (binary distinction)
     const ELRef pstart = en_p.getForbid( );
     const ELRef qstart = en_q.getForbid( );
@@ -2199,49 +2044,6 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r)
         if ( pptr == pstart ) break;
         if ( qptr == qstart ) break;
     }
-
-#else // CUSTOM_EL_ALLOC
-
-    // Check forbid lists (binary distinction)
-    Elist* pstart = en_p.getForbid( );
-    Elist* qstart = en_q.getForbid( );
-    // If at least one is empty, they can merge
-    if ( pstart == NULL || qstart == NULL )
-        return false;
-
-    Elist* pptr = pstart;
-    Elist* qptr = qstart;
-
-    r = PtAsgn(PTRef_Undef, l_True);
-
-    for (;;) {
-        // They are unmergeable if they are on the other forbid list
-        if ( enode_store[pptr->e].getRoot( ) == q ) {
-#ifdef VERBOSE_EUF
-            cerr << "Unmergeable-q: " << logic.printTerm(enode_store[q].getTerm()) << endl;
-            cerr << " - reason: " << logic.printTerm(pptr->reason.tr) << endl;
-#endif
-            r = pptr->reason;
-            return true;
-        }
-        if ( enode_store[qptr->e].getRoot( ) == p ) {
-#ifdef VERBOSE_EUF
-            cerr << "Unmergeable-p: " << logic.printTerm(enode_store[p].getTerm()) << endl;
-            cerr << " - reason: " << logic.printTerm(qptr->reason.tr) << endl;
-#endif
-            r = qptr->reason;
-            return true;
-        }
-        // Pass to the next element
-        pptr = pptr->link;
-        qptr = qptr->link;
-        // If either list finishes, exit. This is ok because
-        // if x is on y's forbid list, then y is on x's forbid
-        // list as well
-        if ( pptr == pstart ) break;
-        if ( qptr == qstart ) break;
-    }
-#endif
     // If here they are mergable
     assert( r.tr == PTRef_Undef );
     return false;
@@ -2342,9 +2144,7 @@ void Egraph::tmpMergeEnd( Enode * x, Enode * y )
 //{
 //  assert( config.uf_disable == 0 );
 //  congruence_running = true;
-//#ifndef SMTCOMP
 //  model_computed = false;
-//#endif
 //
 //  bool res = assertLit_( e );
 //
@@ -2602,7 +2402,6 @@ Egraph::getValue(PTRef tr)
     return vp;
 }
 
-#ifdef CUSTOM_EL_ALLOC
 //=================================================================================================
 // Garbage Collection methods:
 
@@ -2691,9 +2490,10 @@ void Egraph::relocAll(ELAllocator& to) {
             assert(e_old.isDirty() == e_new.isDirty());
             assert(e_new.isDirty() == false);
             assert(e_old.reason.tr == e_new.reason.tr);
-            ERef reason_lhs = enode_store.termToERef[term_store[e_new.reason.tr][0]];
-            ERef reason_rhs = enode_store.termToERef[term_store[e_new.reason.tr][1]];
-            assert (enode_store[reason_lhs].getRoot() != enode_store[reason_rhs].getRoot());
+            // TODO MB: next 3 lines there is some legacy code that does not compile anymore. Rewrite or remove!
+//            ERef reason_lhs = enode_store.termToERef[term_store[e_new.reason.tr][0]];
+//            ERef reason_rhs = enode_store.termToERef[term_store[e_new.reason.tr][1]];
+//            assert (enode_store[reason_lhs].getRoot() != enode_store[reason_rhs].getRoot());
             for (int j = 0; j < to.referenced_by[to[er_new].getId()].size(); j++) {
                 ERef referer = to.referenced_by[to[er_new].getId()][j];
                 if (referer == ERef_Undef) continue;
@@ -2723,5 +2523,3 @@ void Egraph::faGarbageCollect() {
     checkRefConsistency();
 #endif
 }
-
-#endif

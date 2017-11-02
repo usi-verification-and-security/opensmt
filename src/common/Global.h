@@ -31,7 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define USE_GMP        1
 #define FAST_RATIONALS 1
 
-#include <string.h>
+#include <cstring>
 // Workaround to allow compiling with gcc 4.9.0 and versions of gmp up
 // to 5.1.3 (see https://gcc.gnu.org/gcc-4.9/porting_to.html)
 #include <cstddef>
@@ -47,11 +47,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <iostream>
 #include <fstream>
 #include <queue>
-#include <ext/hash_map>
-#include <ext/hash_set>
-//#include "ext/pb_ds/priority_queue.hpp"
-//#include "ext/pb_ds/tag_and_trait.hpp"
-//#include <ext/algorithm>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <unistd.h>
@@ -142,7 +137,7 @@ void static inline normalize(char*& rat, const char* flo, bool is_neg)
 {
     mpq_t num;
     mpq_init(num);
-    bool val = mpq_set_str(num, flo, 0);
+    int val = mpq_set_str(num, flo, 0);
     assert(val != -1);
     mpq_canonicalize(num);
     if (is_neg)
@@ -172,11 +167,9 @@ public:
     strConvException(const char* reason_) {
         asprintf(&reason, "Error converting string to rational.  %s is not a legal rational", reason_);
     }
-    virtual char* what() const noexcept
+    virtual const char* what() const noexcept
     {
-        char* out;
-        asprintf(&out, "%s", reason);
-        return out;
+        return reason;
     }
     ~strConvException() { free(reason); }
 };
@@ -281,9 +274,7 @@ inline enodeid_pair_t encode( enodeid_t car, enodeid_t cdr )
 #endif
 typedef enodeid_pair_t snodeid_pair_t;
 
-#ifndef SMTCOMP
 #define STATISTICS
-#endif
 
 // Set the bit B to 1 and leaves the others to 0
 #define SETBIT( B ) ( 1 << (B) )

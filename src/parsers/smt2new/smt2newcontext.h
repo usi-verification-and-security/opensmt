@@ -28,8 +28,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define SMT2NEWCONTEXT_H
 
 #include <iostream>
-#include <stdlib.h>
-#include <list>
 #include "SMTConfig.h"
 
 class Smt2newContext {

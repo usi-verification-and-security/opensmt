@@ -96,11 +96,7 @@ Enode::Enode(ERef car_,
 //        setDeduced(l_Undef);
         setDistClasses(0);
         setConstant(PTRef_Undef);
-#ifdef CUSTOM_EL_ALLOC
         setForbid(ELRef_Undef);
-#else
-        setForbid(NULL);
-#endif
         setPterm(ptr);
     }
 }

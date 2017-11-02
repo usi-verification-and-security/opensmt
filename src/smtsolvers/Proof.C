@@ -23,12 +23,12 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
-#ifndef SMTCOMP
 
 #include "CoreSMTSolver.h"
 
 #ifdef PRODUCE_PROOF
 #include "Proof.h"
+#include "PG.h"
 #include <sys/wait.h>
 #endif
 
@@ -718,4 +718,3 @@ void CoreSMTSolver::mixedVarDecActivity( )
 }
 #endif
 
-#endif

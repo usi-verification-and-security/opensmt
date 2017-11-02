@@ -28,14 +28,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define LAVAR_H
 
 #include "Global.h"
-#include "Pterm.h"
 #include "Delta.h"
 #include "LRALogic.h"
 #include "Deductions.h"
+#include "PtStructs.h"
 #include "LARefs.h"
 
 class LRASolver;
 class LAVarStore;
+class LRALogic;
 
 //
 // Class to store the term of constraints as a column of Simplex method tableau

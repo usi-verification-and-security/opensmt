@@ -26,10 +26,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef UFLRATHandler_H
 #define UFLRATHandler_H
 
-#include "LRASolver.h"
-#include "LRALogic.h"
 #include "LRATHandler.h"
-#include "Egraph.h"
+
+class Egraph;
+class LRALogc;
+class LRASolver;
 
 class UFLRATHandler : public LRATHandler
 {
@@ -45,11 +46,8 @@ class UFLRATHandler : public LRATHandler
     virtual Logic& getLogic();
 
 #ifdef PRODUCE_PROOF
-    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
-    {
-        return ufsolver->getInterpolant(mask, labels);
-    }
-#endif
+    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels);
+#endif // PRODUCE_PROOF
 };
 
 #endif

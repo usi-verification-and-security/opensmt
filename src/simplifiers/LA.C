@@ -139,6 +139,7 @@ LAExpression::getRealConstant()
     if ( it->first == PTRef_Undef )
       return it->second;
   }
+  throw std::logic_error("No constant in a polynomial");
 }
 
 PTRef LAExpression::getPTRefNonConstant()

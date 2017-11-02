@@ -16,7 +16,7 @@ struct BoundT {
     static const char* const names[3];
     char t;
     bool operator== (const BoundT& o) const { return o.t == t; }
-    BoundT operator~ () const { return { 1-t }; }
+    BoundT operator~ () const { return { (char)(1-t) }; }
     inline friend ostream& operator<< (ostream& o, const BoundT& b) { o << names[(int)b.t]; return o; }
 };
 

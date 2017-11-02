@@ -26,6 +26,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 #include "Interpret.h"
+#include "Enode.h"
 
 #include <cstdlib>
 #include <cstdio>
@@ -71,7 +72,7 @@ int main( int argc, char * argv[] )
   // the repeatability of experiments that might be compromised
   // by the floating point unit approximations on doubles
   //
-#if defined(__linux__) && !defined( SMTCOMP )
+#if defined(__linux__)
   fpu_control_t oldcw, newcw;
   _FPU_GETCW(oldcw); newcw = (oldcw & ~_FPU_EXTENDED) | _FPU_DOUBLE; _FPU_SETCW(newcw);
 #endif
@@ -80,39 +81,19 @@ int main( int argc, char * argv[] )
   cerr << "; pedantic assertion checking enabled (very slow)" << endl;
 #endif
 
-#ifndef OPTIMIZE
-  cerr << "; this binary is compiled with optimizations disabled (slow)" << endl;
+#ifndef NDEBUG
+  cerr << "; this binary is compiled in debug mode (slow)" << endl;
 #endif
 
-  cerr << "; git hash: " << SVN_REVISION << endl;
+  cerr << "; git hash: " << GIT_SHA1 << endl;
 
   cerr << "; symbol enode size: " << EnodeAllocator::symEnodeWord32Size() << endl;
   cerr << "; list enode size: " << EnodeAllocator::listEnodeWord32Size() << endl;
   cerr << "; term enode size: " << EnodeAllocator::termEnodeWord32Size() << endl;
-  cerr << "; Configured with args " << CONFIG_FLAGS << endl;
-  cerr << "; preprocessor definitions set in configure " << CONFIGTIME_DEFFLAGS << endl;
-  cerr << "; compiler flags set in configure " << CONFIGTIME_COMPFLAGS << endl;
-#ifndef SMTCOMP
-//  if ( context.getConfig( ).verbosity > 0 )
-  if ( false )
-  {
-    const int len_pack = strlen( PACKAGE_STRING );
-    const char * site = "http://verify.inf.usi.ch/opensmt";
-    const int len_site = strlen( site );
+  //cerr << "; Configured with args " << CONFIG_FLAGS << endl;
+  //cerr << "; preprocessor definitions set in configure " << CONFIGTIME_DEFFLAGS << endl;
+  //cerr << "; compiler flags set in configure " << CONFIGTIME_COMPFLAGS << endl;
 
-    cerr << "#" << endl
-         << "# -------------------------------------------------------------------------" << endl
-         << "# " << PACKAGE_STRING;
-
-    for ( int i = 0 ; i < 73 - len_site - len_pack ; i ++ )
-      cerr << " ";
-
-    cerr << site << endl
-         << "# Compiled with gcc " << __VERSION__ << " on " << __DATE__ << endl
-         << "# -------------------------------------------------------------------------" << endl
-         << "#" << endl;
-  }
-#endif
   // Initialize pointer to context for parsing
 //  parser_ctx    = &context;
   // Accepts file from stdin if nothing specified

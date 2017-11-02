@@ -28,7 +28,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define TERMMAPPER_H
 #include "Map.h"
 #include "SolverTypes.h"
-#include "Pterm.h"
+#include "PTRef.h"
 #include "Logic.h"
 class TermMapper {
   private:
@@ -54,7 +54,7 @@ class TermMapper {
     PTRef varToPTRef(Var v) const { assert(v >= 0); assert(logic.getPterm(varToTerm[v]).getVar() == v); return varToTerm[v]; }
     int  nVars()          const { return varToTerm.size(); }
 #ifdef PEDANTIC_DEBUG
-    Var  getVarDbg(int r) const { PTRef tr; tr = {r}; return getVar(tr); }
+    Var  getVarDbg(uint32_t r) const { PTRef tr; tr = {r}; return getVar(tr); }
 #endif
 };
 

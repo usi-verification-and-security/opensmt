@@ -29,13 +29,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "SolverTypes.h"
 #include "Global.h"
-#include "THandler.h"
-//#include "Egraph.h"
-#include "SMTConfig.h"
-#include "Pterm.h"
 
 class THandler; // Forward declaration
-
+class SMTConfig; // Forward declaration
 // 
 // Interface that a SATSolver should implement 
 //

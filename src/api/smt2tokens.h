@@ -63,6 +63,7 @@ enum token {
     t_writestate,
     t_readstate,
     t_simplify,
+    t_writefuns,
     t_let
 };
 
