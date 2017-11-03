@@ -66,6 +66,8 @@ class LRALogic: public Logic
     PTRef               term_Real_ZERO;
     PTRef               term_Real_ONE;
 
+    static const char*  tk_val_real_default;
+
     static const char*  tk_real_zero;
     static const char*  tk_real_one;
     static const char*  tk_real_neg;
@@ -191,6 +193,8 @@ class LRALogic: public Logic
     void        splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac);
     PTRef       normalizeSum(PTRef sum); // Use for normalizing leq terms: sort the sum and divide all terms with the first factor
     PTRef       normalizeMul(PTRef mul); // Use for normalizing leq terms of form 0 <= c*v
+
+    virtual const char* getDefaultValue(const PTRef tr) const;
 
     // Logic specific simplifications: conjoin Ites, make substitutions
     // and split equalities

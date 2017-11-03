@@ -84,18 +84,20 @@ void TSolverHandler::declareTerm(PTRef tr)
 
 ValPair TSolverHandler::getValue(PTRef tr) const
 {
-    for (int i = 0; i < tsolvers.size(); i++)
+    for (int i = 0; i < tsolvers.size(); i++) {
         if (tsolvers[i] != NULL) {
             PTRef tr_subst = tr;
             if (substs.has(tr) && (substs[tr].sgn == l_True)) {
                 tr_subst = substs[tr].tr;
             }
             ValPair vp = tsolvers[i]->getValue(tr_subst);
-            vp.tr = tr;
-            if (vp != ValPair_Undef)
+            if (vp != ValPair_Undef) {
+                vp.tr = tr;
                 return vp;
+            }
         }
-    return ValPair(tr, "unknown");
+    }
+    return { tr, NULL }; // Value is unspecified in the model
 }
 
 bool TSolverHandler::check(bool complete)

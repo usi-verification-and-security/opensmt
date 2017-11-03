@@ -2021,6 +2021,7 @@ ValPair LRASolver::getValue(PTRef tr)
         opensmt::Real val(v.R() + v.D() * delta);
         return ValPair(tr, val.get_str().c_str());
     }
+    // The value is unbound
     return ValPair_Undef;
 }
 
