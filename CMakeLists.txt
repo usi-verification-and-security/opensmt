@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_SOURCE_DIR "src")
 
 get_filename_component(CMAKE_MODULE_PATH
-"${CMAKE_SOURCE_DIR}/cmake_modules/" ABSOLUTE)
+"${CMAKE_SOURCE_DIR}/../cmake_modules/" ABSOLUTE)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
