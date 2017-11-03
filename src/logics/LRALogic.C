@@ -541,6 +541,7 @@ PTRef LRALogic::mkRealPlus(const vec<PTRef>& args, char** msg)
     }
 
     if (sum_args.size() == 1) return sum_args[0];
+    if (sum_args.size() == 0) return getTerm_RealZero();
     PTRef tr = mkFun(s_new, sum_args, msg);
 //    PTRef tr = mkFun(s_new, args_new, msg);
     return tr;
