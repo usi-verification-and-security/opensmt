@@ -43,9 +43,7 @@ set(OBJECTS_TO_ADD $<TARGET_OBJECTS:api> ${OBJECTS_TO_ADD})
 add_library(api_shared SHARED ${OBJECTS_TO_ADD})
 add_library(api_static STATIC ${OBJECTS_TO_ADD})
 
-find_package(Readline REQUIRED)
-find_package(ZLIB REQUIRED)
-find_package(GMP REQUIRED)
+
 
 target_link_libraries(api_shared ${Readline_LIBRARY} ${ZLIB_LIBRARIES} ${GMP_LIBRARIES} ${GMPXX_LIBRARIES})
 

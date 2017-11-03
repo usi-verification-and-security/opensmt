@@ -1,8 +1,8 @@
-/* A Bison parser, made by GNU Bison 3.0.2.  */
+/* A Bison parser, made by GNU Bison 3.0.4.  */
 
 /* Bison interface for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2013 Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989-1990, 2000-2015 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,8 +30,8 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
-#ifndef YY_SMT2NEW_SMT_NEWPARSER_HH_INCLUDED
-# define YY_SMT2NEW_SMT_NEWPARSER_HH_INCLUDED
+#ifndef YY_SMT2NEW_SMT2NEW_SMT2NEWPARSER_HH_INCLUDED
+# define YY_SMT2NEW_SMT2NEW_SMT2NEWPARSER_HH_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 0
@@ -78,121 +78,52 @@ extern int smt2newdebug;
     TK_WRSTATE = 288,
     TK_RDSTATE = 289,
     TK_SIMPLIFY = 290,
-    TK_NUM = 291,
-    TK_SYM = 292,
-    TK_KEY = 293,
-    TK_STR = 294,
-    TK_DEC = 295,
-    TK_HEX = 296,
-    TK_BIN = 297,
-    KW_SORTS = 298,
-    KW_FUNS = 299,
-    KW_SORTSDESCRIPTION = 300,
-    KW_FUNSDESCRIPTION = 301,
-    KW_DEFINITION = 302,
-    KW_NOTES = 303,
-    KW_THEORIES = 304,
-    KW_LANGUAGE = 305,
-    KW_EXTENSIONS = 306,
-    KW_VALUES = 307,
-    KW_PRINTSUCCESS = 308,
-    KW_EXPANDDEFINITIONS = 309,
-    KW_INTERACTIVEMODE = 310,
-    KW_PRODUCEPROOFS = 311,
-    KW_PRODUCEUNSATCORES = 312,
-    KW_PRODUCEMODELS = 313,
-    KW_PRODUCEASSIGNMENTS = 314,
-    KW_REGULAROUTPUTCHANNEL = 315,
-    KW_DIAGNOSTICOUTPUTCHANNEL = 316,
-    KW_RANDOMSEED = 317,
-    KW_VERBOSITY = 318,
-    KW_ERRORBEHAVIOR = 319,
-    KW_NAME = 320,
-    KW_NAMED = 321,
-    KW_AUTHORS = 322,
-    KW_VERSION = 323,
-    KW_STATUS = 324,
-    KW_REASONUNKNOWN = 325,
-    KW_ALLSTATISTICS = 326
+    TK_WRFUNS = 291,
+    TK_NUM = 292,
+    TK_SYM = 293,
+    TK_KEY = 294,
+    TK_STR = 295,
+    TK_DEC = 296,
+    TK_HEX = 297,
+    TK_BIN = 298,
+    KW_SORTS = 299,
+    KW_FUNS = 300,
+    KW_SORTSDESCRIPTION = 301,
+    KW_FUNSDESCRIPTION = 302,
+    KW_DEFINITION = 303,
+    KW_NOTES = 304,
+    KW_THEORIES = 305,
+    KW_LANGUAGE = 306,
+    KW_EXTENSIONS = 307,
+    KW_VALUES = 308,
+    KW_PRINTSUCCESS = 309,
+    KW_EXPANDDEFINITIONS = 310,
+    KW_INTERACTIVEMODE = 311,
+    KW_PRODUCEPROOFS = 312,
+    KW_PRODUCEUNSATCORES = 313,
+    KW_PRODUCEMODELS = 314,
+    KW_PRODUCEASSIGNMENTS = 315,
+    KW_REGULAROUTPUTCHANNEL = 316,
+    KW_DIAGNOSTICOUTPUTCHANNEL = 317,
+    KW_RANDOMSEED = 318,
+    KW_VERBOSITY = 319,
+    KW_ERRORBEHAVIOR = 320,
+    KW_NAME = 321,
+    KW_NAMED = 322,
+    KW_AUTHORS = 323,
+    KW_VERSION = 324,
+    KW_STATUS = 325,
+    KW_REASONUNKNOWN = 326,
+    KW_ALLSTATISTICS = 327
   };
 #endif
-/* Tokens.  */
-#define TK_AS 258
-#define TK_DECIMAL 259
-#define TK_EXISTS 260
-#define TK_FORALL 261
-#define TK_LET 262
-#define TK_NUMERAL 263
-#define TK_PAR 264
-#define TK_STRING 265
-#define TK_ASSERT 266
-#define TK_CHECKSAT 267
-#define TK_DECLARESORT 268
-#define TK_DECLAREFUN 269
-#define TK_DECLARECONST 270
-#define TK_DEFINESORT 271
-#define TK_DEFINEFUN 272
-#define TK_EXIT 273
-#define TK_GETASSERTIONS 274
-#define TK_GETASSIGNMENT 275
-#define TK_GETINFO 276
-#define TK_GETOPTION 277
-#define TK_GETPROOF 278
-#define TK_GETUNSATCORE 279
-#define TK_GETVALUE 280
-#define TK_POP 281
-#define TK_PUSH 282
-#define TK_SETLOGIC 283
-#define TK_SETINFO 284
-#define TK_SETOPTION 285
-#define TK_THEORY 286
-#define TK_GETITPS 287
-#define TK_WRSTATE 288
-#define TK_RDSTATE 289
-#define TK_SIMPLIFY 290
-#define TK_NUM 291
-#define TK_SYM 292
-#define TK_KEY 293
-#define TK_STR 294
-#define TK_DEC 295
-#define TK_HEX 296
-#define TK_BIN 297
-#define KW_SORTS 298
-#define KW_FUNS 299
-#define KW_SORTSDESCRIPTION 300
-#define KW_FUNSDESCRIPTION 301
-#define KW_DEFINITION 302
-#define KW_NOTES 303
-#define KW_THEORIES 304
-#define KW_LANGUAGE 305
-#define KW_EXTENSIONS 306
-#define KW_VALUES 307
-#define KW_PRINTSUCCESS 308
-#define KW_EXPANDDEFINITIONS 309
-#define KW_INTERACTIVEMODE 310
-#define KW_PRODUCEPROOFS 311
-#define KW_PRODUCEUNSATCORES 312
-#define KW_PRODUCEMODELS 313
-#define KW_PRODUCEASSIGNMENTS 314
-#define KW_REGULAROUTPUTCHANNEL 315
-#define KW_DIAGNOSTICOUTPUTCHANNEL 316
-#define KW_RANDOMSEED 317
-#define KW_VERBOSITY 318
-#define KW_ERRORBEHAVIOR 319
-#define KW_NAME 320
-#define KW_NAMED 321
-#define KW_AUTHORS 322
-#define KW_VERSION 323
-#define KW_STATUS 324
-#define KW_REASONUNKNOWN 325
-#define KW_ALLSTATISTICS 326
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-typedef union YYSTYPE YYSTYPE;
+
 union YYSTYPE
 {
-#line 66 "smt2newparser.yy" /* yacc.c:1909  */
+#line 66 "smt2new/smt2newparser.yy" /* yacc.c:1909  */
 
   char  *                      str;
   std::vector< std::string > * str_list;
@@ -200,8 +131,10 @@ union YYSTYPE
   std::list< ASTNode * > *     snode_list;
   smt2token                    tok;
 
-#line 204 "smt2newparser.hh" /* yacc.c:1909  */
+#line 135 "smt2new/smt2newparser.hh" /* yacc.c:1909  */
 };
+
+typedef union YYSTYPE YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
 #endif
@@ -224,4 +157,4 @@ struct YYLTYPE
 
 int smt2newparse (Smt2newContext* context);
 
-#endif /* !YY_SMT2NEW_SMT_NEWPARSER_HH_INCLUDED  */
+#endif /* !YY_SMT2NEW_SMT2NEW_SMT2NEWPARSER_HH_INCLUDED  */
