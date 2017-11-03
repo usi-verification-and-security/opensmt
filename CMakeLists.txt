@@ -30,6 +30,10 @@ option(DEBUG_GC "Debug garbage collection" OFF)
 option(DEBUG_LOOKAHEAD "Debug lookahead" OFF)
 #option(ENABLE_PROFILING "Enable profiling" OFF)
 
+find_package(Readline REQUIRED)
+find_package(ZLIB REQUIRED)
+find_package(GMP REQUIRED)
+
 include_directories(
     ${CMAKE_SOURCE_DIR}/minisat/mtl
     ${CMAKE_SOURCE_DIR}/minisat/core
@@ -47,6 +51,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/smtsolvers
     ${CMAKE_SOURCE_DIR}/parsers/smt2new
     ${CMAKE_SOURCE_DIR}/simplifiers
+    ${GMP_INCLUDE_DIR}
 )
 
 if (PRODUCE_PROOF)
