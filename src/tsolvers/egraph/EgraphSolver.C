@@ -406,9 +406,9 @@ lbool Egraph::declareTerm(PTRef tr) {
 
     if (logic.hasSortBool(tr)) {
         Pterm& t = logic.getPterm(tr);
-        while (known_preds.size() <= t.getId())
+        while (known_preds.size() <= Idx(t.getId()))
             known_preds.push(false);
-        known_preds[t.getId()] = true;
+        known_preds[Idx(t.getId())] = true;
     }
     return l_Undef;
 }
@@ -2378,7 +2378,7 @@ Egraph::getValue(PTRef tr)
     if (!enode_store.has(tr)) {
         // This variable was never pushed to Egraph so its value is not
         // bound by anything.
-        asprintf(&name, "%s%d", s_any_prefix, logic.getPterm(tr).getId());
+        asprintf(&name, "%s%d", s_any_prefix, Idx(logic.getPterm(tr).getId()));
     }
     else {
 

@@ -1364,14 +1364,14 @@ void Logic::breakSubstLoops(Map<PTRef,PtAsgn,PTRefHash>& substs)
         vec<char> seen;
         // Color all variables that appear as keys white
         for (int i = 0; i < keys.size(); i++) {
-            int id = getPterm(keys[i]).getId();
+            uint32_t id = Idx(getPterm(keys[i]).getId());
             while (id >= seen.size())
                 seen.push(undef);
             seen[id] = white;
         }
         vec<SubstNode*> roots;
         for (int i = 0; i < keys.size(); i++) {
-            int id = getPterm(keys[i]).getId();
+            uint32_t id = Idx(getPterm(keys[i]).getId());
             vec<SubstNode*> queue;
             if (seen[id] == white && substs[keys[i]].sgn == l_True) {
                 SubstNode* n = new SubstNode(keys[i], substs[keys[i]].tr, NULL, *this);
@@ -1383,8 +1383,8 @@ void Logic::breakSubstLoops(Map<PTRef,PtAsgn,PTRefHash>& substs)
                 while (queue.size() > 0) {
                     SubstNode* var = queue.last();
                     PTRef var_tr = var->tr;
-                    if (seen[getPterm(var_tr).getId()] == white) {
-                        seen[getPterm(var_tr).getId()] = black;
+                    if (seen[Idx(getPterm(var_tr).getId())] == white) {
+                        seen[Idx(getPterm(var_tr).getId())] = black;
                         for (int j = 0; j < var->children.size(); j++) {
                             SubstNode* cn = NULL;
                             if (varToSubstNode.has(var->children[j])) {
@@ -1399,7 +1399,7 @@ void Logic::breakSubstLoops(Map<PTRef,PtAsgn,PTRefHash>& substs)
                             var->child_nodes.push(cn);
                         }
                         continue;
-                    } else if (seen[getPterm(var_tr).getId()] == black) {
+                    } else if (seen[Idx(getPterm(var_tr).getId())] == black) {
                         queue.pop();
                         continue;
                     }
@@ -2062,7 +2062,7 @@ Logic::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate, bool t
         unprocessed_enodes.pop_back( );
 
         char buf[ 32 ];
-        sprintf( buf, "?def%d", getPterm(e).getId() );
+        sprintf( buf, "?def%d", Idx(getPterm(e).getId()) );
 
         // Open let
         dump_out << "(let ";

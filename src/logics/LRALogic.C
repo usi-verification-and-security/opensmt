@@ -638,8 +638,41 @@ PTRef LRALogic::normalizeSum(PTRef sum) {
     return mkRealPlus(args);
 }
 
+//
+// Input is expected to be of the following forms:
+// (0a)  a
+// (0b)  -a
+// (1a)  x
+// (2a) (* a x)
+// (2b) (* x a)
+// (2c) (* -a x)
+// (2d) (* a -x)
+// (3a) (+ (* a x) t_1 ... t_n)
+// (3b) (+ (* -a x) t_1 ... t_n)
+// (3c) (+ (* x a) t_1 ... t_n)
+// (3d) (+ (* x -a) t_1 ... t_n)
+// (3e) (+ x t_1 ... t_n)
+// Returns true for cases (1d), (1e), (2b), and (2d), and false for other cases.
+//
+bool LRALogic::isNegated(PTRef tr) const {
+    if (isRealConst(tr))
+        return getRealConst(tr) < 0; // Case (0a) and (0b)
+    if (isRealVar(tr))
+        return false; // Case (1a)
+    if (isRealTimes(tr)) {
+        // Cases (2)
+        PTRef v;
+        PTRef c;
+        splitTermToVarAndConst(tr, v, c);
+        return isNegated(c);
+    }
+    else {
+        // Cases(3)
+        return isNegated(getPterm(tr)[0]);
+    }
+}
 
-void LRALogic::splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac)
+void LRALogic::splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) const
 {
     assert(isRealTimes(term) || isRealDiv(term) || isRealVar(term) || isConstant(term) || isUF(term));
     if (isRealTimes(term) || isRealDiv(term)) {
@@ -661,6 +694,7 @@ void LRALogic::splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac)
         fac = term;
     }
 }
+
 
 // Normalize a product of the form (* a v) to either v or (* -1 v)
 PTRef LRALogic::normalizeMul(PTRef mul)

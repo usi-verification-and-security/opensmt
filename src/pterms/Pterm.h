@@ -63,8 +63,13 @@ struct PTLHash {
 };
 
 //typedef uint32_t TRef;
-typedef uint32_t PTId; // Used as an array index
-
+struct PTId {
+    uint32_t x;
+    inline friend bool operator== (const PTId& a1, const PTId& a2)   { return a1.x == a2.x; }
+    inline friend bool operator!= (const PTId& a1, const PTId& a2)   { return a1.x != a2.x; }
+    inline friend bool operator<  (const PTId& a1, const PTId& a2)   { return a1.x > a2.x;  }
+    inline friend uint32_t Idx(PTId p) { return p.x; }
+};
 
 class Pterm {
     struct {
@@ -73,34 +78,31 @@ class Pterm {
         unsigned reloced    : 1;
         unsigned noscoping  : 1;
         unsigned size       : 26; }     header;
-    PTId                                id;
-    SymRef                              sym;
-    Var                                 var;  // This is defined if the PTRef has a Boolean var associated with it
+    PTId        id;
+    SymRef      sym;
+    Var         var;     // This is defined if the PTRef has a Boolean var associated with it
     PtAsgn      exp_reason;
     PTRef       exp_parent;
     PTRef       exp_root;
-//    int         exp_class_size;
     int         exp_time_stamp;
     // This has to be the last
-    PTRef                               args[0]; // Either the terms or the relocation reference
+    PTRef       args[0]; // Either the terms or the relocation reference
 
 
     friend class PtermAllocator;
     friend class PTStore;
-    friend void termSort(Pterm&);
+    friend void  termSort(Pterm&);
     friend class Logic;
   public:
 
     PtAsgn getExpReason       () const { return exp_reason; }
     PTRef  getExpParent       () const { return exp_parent; }
     PTRef  getExpRoot         () const { return exp_root; }
-//    int    getExpClassSize    () const { return exp_class_size; }
     int    getExpTimeStamp    () const { return exp_time_stamp; }
 
     void setExpReason     (PtAsgn r)     { exp_reason = r; }
     void setExpParent     (PTRef r)      { exp_parent = r; }
     void setExpRoot       (PTRef r)      { exp_root   = r; }
-//    void setExpClassSize  (const int s)  { exp_class_size   = s; }
     void setExpTimeStamp  (const int t)  { exp_time_stamp   = t; }
 
     // Note: do not use directly (no memory allocation for args)
@@ -157,8 +159,8 @@ class Pterm {
     bool     setPairwise  ()             { if (header.type != 0) return false; return (header.type = 4); }
     void     setNoScoping ()             { header.noscoping = 1; }
 
-    int      getId() const { return id; }
-    void     setId(int i) { id = i; }
+    PTId     getId() const { return id; }
+    void     setId(int i) { id.x = i; }
 
     void     setVar(Var v)   { var = v; }
     void     clearVar()      { var = var_Undef; }
@@ -210,7 +212,7 @@ struct PtChildHash {
 
 class PtermAllocator : public RegionAllocator<uint32_t>
 {
-    PTId n_terms;
+    uint32_t n_terms;
     void setNumTerms(int i) { n_terms = i; }
     static int ptermWord32Size(int size){
         return (sizeof(Pterm) + (sizeof(PTRef) * size )) / sizeof(uint32_t); }

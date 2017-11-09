@@ -918,7 +918,7 @@ PTRef Cnfizer::expandItes (vec<PtChild> &term_list)
             // (3) replace parent[pos] with o_ite
             SRef sr = logic.getSym (pt.symb()).rsort();
             char *name;
-            asprintf (&name, ".oite%d", logic.getPterm (tr).getId());
+            asprintf (&name, ".oite%d", Idx(logic.getPterm (tr).getId()));
             PTRef o_ite = logic.mkVar (sr, name);
             // The old term goes to PtPair
             ites.push (PtPair (tr, o_ite));

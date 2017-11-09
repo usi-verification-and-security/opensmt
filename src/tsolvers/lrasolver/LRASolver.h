@@ -81,11 +81,13 @@ class LRAModel
 private:
     struct ModelEl { Delta d; int dl; };
     vec<vec<ModelEl> > int_model; // The internal model
+    const vec<int> &LATrace_lim;
     LAVarAllocator &lva;
     int n_vars_with_model;
     Map<LVRef,bool,LVRefHash> has_model;
+    int decisionLevel() { return LATrace_lim.size(); }
 public:
-    LRAModel(LAVarAllocator &lva) : lva(lva) {}
+    LRAModel(const vec<int> &LATrace_lim, LAVarAllocator &lva) : LATrace_lim(LATrace_lim), lva(lva), n_vars_with_model(0) {}
     int addVar(LVRef v); // Adds a variable.  Returns the total number of variables
     inline int   nVars() { return n_vars_with_model; }
     inline       Delta& operator[] (const LVRef &v);
@@ -105,10 +107,11 @@ private:
     LRALogic&            logic;
     LAVarAllocator       lva;
     LAVarStore           lavarStore;
+    PolyTermAllocator    pta;
     PolyAllocator        pa;
     PolyStore            polyStore;
-    BindedRowStore       boundedRowStore;
-    BindedRowAllocator   bra;
+//    BindedRowStore       boundedRowStore;
+    BindedRowsAllocator  bra;
     LABoundAllocator     ba;
     LABoundListAllocator bla;
     LABoundStore         boundStore;
@@ -166,7 +169,9 @@ protected:
 
     vec<LVRef> columns;                 // Maps terms' ID to LAVar pointers
     vec<LVRef> rows;                    // Maps terms' ID to LAVar pointers, used to store basic columns
-    vec<LVRef> ptermToLavar;            // Maps original constraints to solver's terms and bounds.  Could this be moved to LAVarStore?
+    vec<LVRef> leqToLavar;              // Maps Pterm constraints to solver's real variables.  Could this be moved to LAVarStore?
+    vec<LVRef> ptvarToLavar;            // Maps Pterm variables to solver's real variables
+    vec<LVRef> sumToLavar;              // Maps Pterm sums to solver's real variables
 
     bool assertBoundOnColumn( LVRef it, unsigned it_i);
 
@@ -175,8 +180,11 @@ protected:
     unsigned nVars() const { return lva.getNumVars(); }
 
 private:
-    void getReal(opensmt::Real*, const PTRef);              // Get a new real possibly using the number pool
-    LVRef getLVRef(PTRef var);                              // Initialize a new LA var if needed, otherwise return the old var
+    void getReal(opensmt::Real*&, const PTRef);              // Get a new real possibly using the number pool
+    void constructLAVarSystem(PTRef term);                 // Find a LAVar for term and all LA vars appearing in term.  Return the LAVar for the term.  iu
+    LVRef getLAVar_single(PTRef term);                      // Initialize a new LA var if needed, otherwise return the old var
+    void setNonbasic(LVRef);
+    void setBasic(LVRef);
     void doGaussianElimination( );                          // Performs Gaussian elimination of all redundant terms in the Tableau
     void update( LVRef, const Delta & );                    // Updates the bounds after constraint pushing
     void pivotAndUpdate( LVRef, LVRef, const Delta &);      // Updates the tableau after constraint pushing
@@ -210,7 +218,6 @@ private:
     void computeModel();                             // The implementation for the interface
 
     // Binded Rows system
-    BindedRowStore bindedRowStore;
     inline BindedRows& getBindedRows(LVRef v) { return bra[lva[v].getBindedRowsRef()]; }
     void unbindRow(LVRef v, int row);
 
@@ -231,7 +238,6 @@ private:
     vec<int> LATrace_lim;                    // Decision level delimiters
 
     // The variable system
-    LVRef getNBLAVar(PTRef var);
     void addSlackVar         (PTRef leq);               // Initialize the slack var associated with lea having sum as the slack var, and cons as its bound
     void initSlackVar        ();
     LVRef getSlackVar(PTRef tr_sum, bool &reverse);
@@ -253,6 +259,7 @@ private:
     inline int     verbose                       ( ) const { return config.verbosity(); }
     char* printValue(PTRef tr) { char* tmp = (char*)malloc(1); tmp[0] = '\0'; return tmp; } // Implement later...
     char* printExplanation(PTRef tr) { return printValue(tr); } // Implement later...
+    void isProperLeq(PTRef tr);  // The Leq term conforms to the assumptions of its form.  Only asserts.
 };
 
 #endif

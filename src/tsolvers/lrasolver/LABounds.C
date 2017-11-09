@@ -87,15 +87,15 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
         if (!bounds_map.has(v))
             bounds_map.insert(v, vec<BoundInfo>());
         bounds_map[v].push(in_bounds[i]);
-        while (ptermToLABoundsRef.size() <= in_bounds[i].leq_id)
+        while (ptermToLABoundsRef.size() <= Idx(in_bounds[i].leq_id))
             ptermToLABoundsRef.push({ LABoundRef_Undef, LABoundRef_Undef });
-        ptermToLABoundsRef[in_bounds[i].leq_id] = { in_bounds[i].b1, in_bounds[i].b2 };
+        ptermToLABoundsRef[Idx(in_bounds[i].leq_id)] = { in_bounds[i].b1, in_bounds[i].b2 };
     }
     vec<LVRef> keys;
     bounds_map.getKeys(keys);
     for (int i = 0; i < keys.size(); i++) {
         vec<LABoundRef> refs;
-        for (int j = 0; j < bounds_map[keys[i]].size(); i++) {
+        for (int j = 0; j < bounds_map[keys[i]].size(); j++) {
             BoundInfo &info = bounds_map[keys[i]][j];
             refs.push(info.b1);
             refs.push(info.b2);

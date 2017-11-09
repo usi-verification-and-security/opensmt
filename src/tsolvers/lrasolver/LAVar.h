@@ -47,21 +47,22 @@ class LAVar
 
 private:
     struct {
-        unsigned basic   : 1;  // Is the node basic or non-basic
-        unsigned reloced : 1;
-        unsigned skp     : 1;
+        bool basic   : 1;  // Is the node basic or non-basic
+        bool reloced : 1;
+        bool skp     : 1;
         unsigned id      : 29; // The unique id
     } header;
 
-    PTRef e;          // The term in the SMT world
-    int col_id;       //
-    int row_id;       //
+    PTRef e;               // The term in the SMT world
+    int col_id;            // Column id
+    int row_id;            // Row id
 
     unsigned curr_ub;      // The current upper bound, idx to bounds table
     unsigned curr_lb;      // The current lower bound, idx to bounds table
     LABoundListRef bounds; // The bounds of this variable
 
-    union { PolyRef poly; OccListRef occs; }; // If basic, the polynomial.  If not, the occs.
+    PolyRef poly;          // Polynomial
+    OccListRef occs;       // The occurrences in polynomials.
 
 public:
     // Constructor.  The e_orig from SMT world, the bounds list, and a unique id
@@ -74,25 +75,26 @@ public:
     int  getColId()      const { assert(header.basic);  return col_id; }
     void setColId(int i)       { assert(header.basic);  col_id = i;    }
 
-    int ubound()               const { return curr_ub; }
-    int lbound()               const { return curr_lb; }
-    unsigned setUbound(int i)        { curr_ub = i; }
-    unsigned setLbound(int i)        { curr_lb = i; }
-    LABoundListRef getBounds() const { return bounds; }
-    void setBounds(LABoundListRef l) { bounds = l; }
+    unsigned ubound()               const { return curr_ub; }
+    unsigned lbound()               const { return curr_lb; }
+    void setUbound(unsigned i)            { curr_ub = i; }
+    void setLbound(unsigned i)            { curr_lb = i; }
+    LABoundListRef getBounds()      const { return bounds; }
+    void setBounds(LABoundListRef l)      { bounds = l; }
 
-    inline bool isBasic()        const { return header.basic; } // Checks if current LAVar is Basic in current solver state
+    inline bool isBasic()           const { return header.basic; } // Checks if current LAVar is Basic in current solver state
 
-    inline int ID() const { return header.id; } // Return the ID of the LAVar
+    inline int  ID()                const { return header.id; } // Return the ID of the LAVar
     inline void setNonbasic();           // Make LAVar Nonbasic
     inline void setBasic(int row);       // Make LAVar Basic and set the row number it corresponds
 
     // Binded rows system
-    OccListRef getBindedRowsRef() const { assert(!header.basic); return occs; }
-    PolyRef    getPolyRef()       const { assert(header.basic); return poly; }
-    void       setPolyRef(PolyRef r)    { assert(header.basic); poly = r; }
+    OccListRef getBindedRowsRef() const       { assert(!header.basic); return occs; }
+    void       setBindedRowsRef(OccListRef r) { assert(!header.basic); occs = r; }
+    PolyRef    getPolyRef()       const       { assert(header.basic); return poly; }
+    void       setPolyRef(PolyRef r)          { assert(header.basic); poly = r; }
 
-    PTRef      getPTRef()         const { return e; }
+    PTRef      getPTRef()         const       { return e; }
 };
 
 void LAVar::setNonbasic( )

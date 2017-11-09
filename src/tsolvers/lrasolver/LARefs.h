@@ -1,6 +1,7 @@
 #ifndef LABOUNDREFS_H
 #define LABOUNDREFS_H
-
+#include "IntTypes.h"
+#include <ostream>
 
 struct LABoundListRef
 {
@@ -17,7 +18,7 @@ struct BoundT {
     char t;
     bool operator== (const BoundT& o) const { return o.t == t; }
     BoundT operator~ () const { return { (char)(1-t) }; }
-    inline friend ostream& operator<< (ostream& o, const BoundT& b) { o << names[(int)b.t]; return o; }
+    inline friend std::ostream& operator<< (std::ostream& o, const BoundT& b) { o << names[(int)b.t]; return o; }
 };
 
 const BoundT bound_l = { 0 };
@@ -56,6 +57,15 @@ struct PolyRef {
 };
 
 static struct PolyRef PolyRef_Undef = { INT32_MAX };
+
+struct PolyTermRef {
+    uint32_t x;
+    void operator= (uint32_t v) { x = v; }
+    inline friend bool operator== (const PolyTermRef& a1, const PolyTermRef& a2) { return a1.x == a2.x; }
+    inline friend bool operator!= (const PolyTermRef& a1, const PolyTermRef& a2) { return a1.x != a2.x; }
+};
+
+static struct PolyTermRef PolyTermRef_Undef = { INT32_MAX };
 
 struct OccListRef {
     uint32_t x;

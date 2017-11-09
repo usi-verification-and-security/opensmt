@@ -650,7 +650,7 @@ THandler::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate )
 		unprocessed_enodes.pop_back( );
 
 		char buf[ 32 ];
-		sprintf( buf, "?def%d", logic.getPterm(e).getId() );
+		sprintf( buf, "?def%d", Idx(logic.getPterm(e).getId()) );
 
 		// Open let
 		dump_out << "(let ";

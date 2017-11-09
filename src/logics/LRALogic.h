@@ -188,7 +188,9 @@ class LRALogic: public Logic
     PTRef       mkRealGt(const vec<PTRef>& args) { char* msg; PTRef tr = mkRealGt(args, &msg); assert(tr != PTRef_Undef); return tr; }
     PTRef       mkRealGt(const PTRef arg1, const PTRef arg2) { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkRealGt(tmp); }
 
-    void        splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac);
+    bool        isNegated(PTRef tr) const;
+
+    void        splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) const;
     PTRef       normalizeSum(PTRef sum); // Use for normalizing leq terms: sort the sum and divide all terms with the first factor
     PTRef       normalizeMul(PTRef mul); // Use for normalizing leq terms of form 0 <= c*v
 
