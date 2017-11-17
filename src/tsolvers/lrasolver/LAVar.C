@@ -31,16 +31,19 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 const char* const BoundT::names[3] = {"[L]", "[U]", "[N]"};
 
 LAVar::LAVar(PTRef e, unsigned id)
-        : col_id(-1)
+        : e(e)
+        , col_id(-1)
         , row_id(-1)
+        , curr_ub(-1)
+        , curr_lb(-1)
         , bounds(LABoundListRef_Undef)
+        , poly(PolyRef_Undef)
+        , occs(OccListRef_Undef)
 {
     header.basic = 0;
     header.reloced = 0;
     header.skp = 0;
     header.id = id;
-    curr_lb = -1;
-    curr_ub = -1;
 }
 
 

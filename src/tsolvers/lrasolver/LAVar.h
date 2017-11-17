@@ -57,8 +57,8 @@ private:
     int col_id;            // Column id
     int row_id;            // Row id
 
-    unsigned curr_ub;      // The current upper bound, idx to bounds table
-    unsigned curr_lb;      // The current lower bound, idx to bounds table
+    int curr_ub;      // The current upper bound, idx to bounds table
+    int curr_lb;      // The current lower bound, idx to bounds table
     LABoundListRef bounds; // The bounds of this variable
 
     PolyRef poly;          // Polynomial
@@ -70,10 +70,10 @@ public:
     bool skip    ()      const { return header.skp;                }
     void setSkip ()            { header.skp = true;                }
     void clrSkip ()            { header.skp = false;               }
-    int  getRowId()      const { assert(!header.basic); return row_id; }
-    void setRowId(int i)       { assert(!header.basic); row_id = i;    }
-    int  getColId()      const { assert(header.basic);  return col_id; }
-    void setColId(int i)       { assert(header.basic);  col_id = i;    }
+    int  getRowId()      const { assert(header.basic); return row_id; }
+    void setRowId(int i)       { assert(header.basic); row_id = i;    }
+    int  getColId()      const { assert(!header.basic);  return col_id; }
+    void setColId(int i)       { assert(!header.basic);  col_id = i;    }
 
     unsigned ubound()               const { return curr_ub; }
     unsigned lbound()               const { return curr_lb; }
@@ -86,7 +86,7 @@ public:
 
     inline int  ID()                const { return header.id; } // Return the ID of the LAVar
     inline void setNonbasic();           // Make LAVar Nonbasic
-    inline void setBasic(int row);       // Make LAVar Basic and set the row number it corresponds
+    inline void setBasic();              // Make LAVar Basic
 
     // Binded rows system
     OccListRef getBindedRowsRef() const       { assert(!header.basic); return occs; }
@@ -97,15 +97,15 @@ public:
     PTRef      getPTRef()         const       { return e; }
 };
 
-void LAVar::setNonbasic( )
+void LAVar::setNonbasic()
 {
     row_id = -1;
     header.basic = false;
 }
 
-void LAVar::setBasic( int row )
+void LAVar::setBasic()
 {
-    row_id = row;
+    col_id = -1;
     header.basic = true;
 }
 

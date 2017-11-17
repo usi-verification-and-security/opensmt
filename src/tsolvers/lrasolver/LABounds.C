@@ -94,6 +94,7 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
     vec<LVRef> keys;
     bounds_map.getKeys(keys);
     for (int i = 0; i < keys.size(); i++) {
+        printf("Adding bound for %s\n", logic.printTerm(lva[keys[i]].getPTRef()));
         vec<LABoundRef> refs;
         for (int j = 0; j < bounds_map[keys[i]].size(); j++) {
             BoundInfo &info = bounds_map[keys[i]][j];
@@ -101,6 +102,7 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
             refs.push(info.b2);
         }
         LABoundListRef br = bla.alloc(keys[i], refs);
+        lva[keys[i]].setBounds(br);
         sort<LABoundRef,bound_lessthan>(bla[br].bounds, bla[br].size(), bound_lessthan(ba));
         for (int j = 0; j < bla[br].size(); j++)
             ba[bla[br][j]].setIdx(j);

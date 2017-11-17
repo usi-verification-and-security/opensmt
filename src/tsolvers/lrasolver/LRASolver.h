@@ -167,10 +167,10 @@ protected:
     // vector in which witnesses for unsatisfiability are stored
     vector<opensmt::Real> explanationCoefficients;
 
-    vec<LVRef> columns;                 // Maps terms' ID to LAVar pointers
-    vec<LVRef> rows;                    // Maps terms' ID to LAVar pointers, used to store basic columns
+    vec<LVRef> columns;                 // The columns
+    vec<LVRef> rows;                    // The rows
     vec<LVRef> leqToLavar;              // Maps Pterm constraints to solver's real variables.  Could this be moved to LAVarStore?
-    vec<LVRef> ptvarToLavar;            // Maps Pterm variables to solver's real variables
+    vec<LVRef> ptermToLavar;            // Maps Pterm variables to solver's real variables
     vec<LVRef> sumToLavar;              // Maps Pterm sums to solver's real variables
 
     bool assertBoundOnColumn( LVRef it, unsigned it_i);
@@ -181,7 +181,7 @@ protected:
 
 private:
     void getReal(opensmt::Real*&, const PTRef);              // Get a new real possibly using the number pool
-    void constructLAVarSystem(PTRef term);                 // Find a LAVar for term and all LA vars appearing in term.  Return the LAVar for the term.  iu
+    LVRef constructLAVarSystem(PTRef term);                 // Find a LAVar for term and all LA vars appearing in term.  Return the LAVar for the term.  iu
     LVRef getLAVar_single(PTRef term);                      // Initialize a new LA var if needed, otherwise return the old var
     void setNonbasic(LVRef);
     void setBasic(LVRef);
