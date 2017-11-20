@@ -133,7 +133,8 @@ public:
     LAVar*       lea       (LVRef r)         { return (LAVar*)RegionAllocator<uint32_t>::lea(r.x); }
     const LAVar* lea       (LVRef r) const   { return (LAVar*)RegionAllocator<uint32_t>::lea(r.x); }
     LVRef        ael       (const LAVar* t)  { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); LVRef rf; rf.x = r; return rf; }
-    void       clear() {}
+    void         free      (LVRef r)         { RegionAllocator::free(lavarWord32Size()); }
+    void         clear() {}
 };
 
 class LAVarStore
@@ -147,10 +148,8 @@ public:
     LAVarStore(LAVarAllocator& lva) : column_count(0), row_count(0), lva(lva) {}
     inline void   clear() {};
     LVRef  getNewVar(PTRef e_orig = PTRef_Undef) { LVRef lv = lva.alloc(e_orig); while (lavars.size() <= lva[lv].ID()) lavars.push(LVRef_Undef); return lv; }
-    void   notifyRow(LVRef s);
-    void   resetVars(); // Set the polynomials of the vars to the initial state
     int    numVars() const { return lavars.size(); }
-    void   printVars() const;
+    void   remove(LVRef r) { lva.free(r); };
 };
 
 

@@ -241,7 +241,7 @@ private:
     void addSlackVar         (PTRef leq);               // Initialize the slack var associated with lea having sum as the slack var, and cons as its bound
     void initSlackVar        ();
     LVRef getSlackVar(PTRef tr_sum, bool &reverse);
-    vector < LVRef > removed_by_GaussianElimination;       // Stack of variables removed during Gaussian elimination
+    Map<PTRef,vec<PTRef>*,PTRefHash> removed_by_GaussianElimination;       // Stack of variables removed during Gaussian elimination
 
     // Two reloaded output operators
     inline friend ostream & operator <<( ostream & out, LRASolver & solver )

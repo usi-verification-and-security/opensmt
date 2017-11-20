@@ -28,6 +28,18 @@ PolyStore::remove(LVRef v, PolyRef pol)
 }
 
 void
+PolyStore::remove(LVRef poly_var)
+{
+    PolyRef pr = lva[poly_var].getPolyRef();
+    for (int i = 0; i < pa[pr].size(); i++) {
+        // Remove the PolyTermRef
+        PolyTermRef ptr = pa[pr][i];
+        pta.free(ptr);
+    }
+    pa.free(pr);
+}
+
+void
 PolyStore::add(LVRef poly_var, LVRef v, Real &c) {
     if (getPoly(poly_var).has(v)) {
         PolyTermRef v_term = getPoly(poly_var).find(v);

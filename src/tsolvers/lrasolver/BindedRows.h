@@ -21,18 +21,11 @@ public:
     void clear() { rows.clear(); varToIdx.clear(); }
 };
 
-class OccAllocator
-{
-public:
-    OccRef alloc(LVRef) { return OccRef_Undef; }
-};
-
-
 class BindedRowsAllocator : public RegionAllocator<uint32_t>
 {
     unsigned n_rows;
     static int bindedrowsWord32Size() {
-        return (sizeof(BindedRows)) / sizeof(uint32_t); }public:
+        return (sizeof(BindedRows)) / sizeof(uint32_t); }
 
 public:
     BindedRowsAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), n_rows(0) {}
@@ -53,6 +46,7 @@ public:
     BindedRows*       lea       (OccListRef r)         { return (BindedRows*)RegionAllocator<uint32_t>::lea(r.x); }
     const BindedRows* lea       (OccListRef r) const   { return (BindedRows*)RegionAllocator<uint32_t>::lea(r.x); }
     OccListRef        ael       (const BindedRows* t)  { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); OccListRef rf; rf.x = r; return rf; }
+    void              free      (OccListRef r)         { RegionAllocator<uint32_t>::free(bindedrowsWord32Size()); }
     void       clear() {}
 };
 #endif
