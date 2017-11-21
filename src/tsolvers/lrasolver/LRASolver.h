@@ -171,9 +171,8 @@ protected:
     vec<LVRef> rows;                    // The rows
     vec<LVRef> leqToLavar;              // Maps Pterm constraints to solver's real variables.  Could this be moved to LAVarStore?
     vec<LVRef> ptermToLavar;            // Maps Pterm variables to solver's real variables
-    vec<LVRef> sumToLavar;              // Maps Pterm sums to solver's real variables
 
-    bool assertBoundOnColumn( LVRef it, unsigned it_i);
+    bool assertBoundOnVar( LVRef it, unsigned it_i);
 
     vector<unsigned> checks_history;
 
@@ -186,6 +185,8 @@ private:
     void setNonbasic(LVRef);
     void setBasic(LVRef);
     void doGaussianElimination( );                          // Performs Gaussian elimination of all redundant terms in the Tableau
+    void removeRow(LVRef v);                                // Remove the row corresponding to v
+    void removeCol(LVRef v);                                // Remove the col corresponding to v
     void update( LVRef, const Delta & );                    // Updates the bounds after constraint pushing
     void pivotAndUpdate( LVRef, LVRef, const Delta &);      // Updates the tableau after constraint pushing
     void getConflictingBounds( LVRef, vec<PTRef> & );       // Returns the bounds conflicting with the actual model
@@ -213,6 +214,9 @@ private:
     bool isModelOutOfUpperBound(LVRef v) const;
     bool isModelOutOfLowerBound(LVRef v) const;
     bool isModelInteger (LVRef v) const;
+    void computeConcreteModel(LVRef v);
+    Delta evalSum(PTRef tr) const;
+    vec<opensmt::Real*> concrete_model;              // Save here the concrete model for the vars indexed by Id
 
     const Delta overBound(LVRef v);
     void computeModel();                             // The implementation for the interface
@@ -238,10 +242,9 @@ private:
     vec<int> LATrace_lim;                    // Decision level delimiters
 
     // The variable system
-    void addSlackVar         (PTRef leq);               // Initialize the slack var associated with lea having sum as the slack var, and cons as its bound
-    void initSlackVar        ();
-    LVRef getSlackVar(PTRef tr_sum, bool &reverse);
+
     Map<PTRef,vec<PTRef>*,PTRefHash> removed_by_GaussianElimination;       // Stack of variables removed during Gaussian elimination
+    vec<PTRef> *solveForVar(LVRef poly_var, LVRef var);
 
     // Two reloaded output operators
     inline friend ostream & operator <<( ostream & out, LRASolver & solver )

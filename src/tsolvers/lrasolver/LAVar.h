@@ -147,9 +147,10 @@ private:
 public:
     LAVarStore(LAVarAllocator& lva) : column_count(0), row_count(0), lva(lva) {}
     inline void   clear() {};
-    LVRef  getNewVar(PTRef e_orig = PTRef_Undef) { LVRef lv = lva.alloc(e_orig); while (lavars.size() <= lva[lv].ID()) lavars.push(LVRef_Undef); return lv; }
+    LVRef  getNewVar(PTRef e_orig = PTRef_Undef) { LVRef lv = lva.alloc(e_orig); while (lavars.size() <= lva[lv].ID()) lavars.push(LVRef_Undef); lavars[lva[lv].ID()] = lv; return lv; }
     int    numVars() const { return lavars.size(); }
     void   remove(LVRef r) { lva.free(r); };
+    LVRef  getVarByIdx(unsigned i) { return lavars[i]; }
 };
 
 

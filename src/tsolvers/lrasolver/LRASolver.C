@@ -349,6 +349,11 @@ lbool LRASolver::declareTerm(PTRef leq_tr)
     // Ensure that all variables exists, build the polynomial, and update the occurrences.
     LVRef v = constructLAVarSystem(term);
 
+    int idx = Idx(logic.getPterm(term).getId());
+    for (int i = leqToLavar.size(); i <= idx; i++)
+        leqToLavar.push(LVRef_Undef);
+    leqToLavar[idx] = v;
+
     // Assumes that the LRA variable has been already declared
     setBound(leq_tr);
 
@@ -550,24 +555,24 @@ bool LRASolver::check(bool complete)
 //
 // Push the constraint into the solver and increase the level
 //
-bool LRASolver::assertLit( PtAsgn pta, bool reason )
+bool LRASolver::assertLit( PtAsgn asgn, bool reason )
 {
     ( void )reason;
 
     // Special cases of the "inequalitites"
-    if (logic.isTrue(pta.tr) && pta.sgn == l_True) {
+    if (logic.isTrue(asgn.tr) && asgn.sgn == l_True) {
         tsolver_stats.sat_calls ++;
         return true;
     }
-    if (logic.isFalse(pta.tr) && pta.sgn == l_False) {
+    if (logic.isFalse(asgn.tr) && asgn.sgn == l_False) {
         tsolver_stats.sat_calls ++;
         return true;
     }
-    if (logic.isTrue(pta.tr) && pta.sgn == l_False) {
+    if (logic.isTrue(asgn.tr) && asgn.sgn == l_False) {
         tsolver_stats.unsat_calls ++;
         return false;
     }
-    if (logic.isFalse(pta.tr) && pta.sgn == l_True) {
+    if (logic.isFalse(asgn.tr) && asgn.sgn == l_True) {
         tsolver_stats.unsat_calls ++;
         return false;
     }
@@ -575,39 +580,39 @@ bool LRASolver::assertLit( PtAsgn pta, bool reason )
     if( status == INIT  )
         initSolver( );
 
-    assert(pta.sgn != l_Undef);
+    assert(asgn.sgn != l_Undef);
 
 //  cerr << "; Pushing (" << ( pta.sgn == l_False ? "not " : "") << logic.printTerm(pta.tr)
 //       << " - " << ptermToLavar[logic.getPterm(pta.tr).getId()] << endl;
 
     bool is_reason = false;
 
-    Pterm& t = logic.getPterm(pta.tr);
+    Pterm& t = logic.getPterm(asgn.tr);
 
     // skip if it was deduced by the solver itself with the same polarity
-    if (deduced[t.getVar()] != l_Undef && deduced[t.getVar()].polarity == pta.sgn && deduced[t.getVar()].deducedBy == id) {
+    if (deduced[t.getVar()] != l_Undef && deduced[t.getVar()].polarity == asgn.sgn && deduced[t.getVar()].deducedBy == id) {
         getStatus() ? tsolver_stats.sat_calls ++ : tsolver_stats.unsat_calls ++;
         return getStatus( );
     }
     if (deduced[t.getVar()] != l_Undef && deduced[t.getVar()].deducedBy == id)
         is_reason = true; // This is a conflict!
 
-    setPolarity(pta.tr, pta.sgn);
+    setPolarity(asgn.tr, asgn.sgn);
 
     LVRef it = leqToLavar[Idx(t.getId())];
 
     // Constraint to push was not found in local storage. Most likely it was not read properly before
     if ( it == LVRef_Undef ) {
-        std::cout << logic.printTerm(pta.tr) << "\n";
+        std::cout << logic.printTerm(asgn.tr) << "\n";
         throw "Unexpected push";
     }
 
     assert( !isUnbounded(it) );
 
-    LABoundRefPair p = ptermToLABoundRefs[Idx(t.getId())];
-    unsigned it_i = pta.sgn == l_False ? ba[p.neg].getIdx() : ba[p.pos].getIdx();
-    // Assert only on the non-basic variables.  No check on the basic variables.
-    if (assertBoundOnColumn( it, it_i ))
+    LABoundRefPair p = boundStore.getBoundRefPair(asgn.tr);
+    unsigned it_i = (unsigned)(asgn.sgn == l_False ? ba[p.neg].getIdx() : ba[p.pos].getIdx());
+
+    if (assertBoundOnVar( it, it_i ))
     {
         if (config.lra_theory_propagation == 1 && !is_reason)
             getSimpleDeductions(it, it_i);
@@ -622,11 +627,13 @@ bool LRASolver::assertLit( PtAsgn pta, bool reason )
     return getStatus( );
 }
 
-bool LRASolver::assertBoundOnColumn( LVRef it, unsigned it_i )
+bool LRASolver::assertBoundOnVar( LVRef it, unsigned it_i )
 {
+    // No check whether the bounds are consistent for the polynomials.  This is done later with Simplex.
+
     assert( status == SAT );
     assert( it != LVRef_Undef );
-    assert( isUnbounded(it) );
+    assert( !isUnbounded(it) );
     const LABound &itBound = getBound(it, it_i);
 
 //  cerr << "; ASSERTING bound on " << *it << endl;
@@ -714,6 +721,64 @@ void LRASolver::popBacktrackPoint( )
     TSolver::popBacktrackPoint();
 }
 
+void LRASolver::removeRow(LVRef v)
+{
+    int v_row = lva[v].getRowId();
+    // Replace basisRow slot with the last row in rows vector
+    int m = rows.size() - 1;
+    if (m > v_row) {
+        for (int j = 0; j < pa[lva[rows[m]].getPolyRef()].size(); j++) {
+            PolyTerm &pt = pta[pa[lva[rows[m]].getPolyRef()][j]];
+            if (pt.var != rows[m]) {
+                // We simply update the position here
+                bra[lva[pt.var].getBindedRowsRef()].remove(v);
+                bra[lva[pt.var].getBindedRowsRef()].add(v, pa[lva[rows[m]].getPolyRef()].getPos(pt.var));
+            }
+        }
+        assert(rows[m] != LVRef_Undef);
+        rows[v_row] = rows[m];
+        lva[rows[m]].setBasic();
+        lva[rows[m]].setRowId(v_row);
+    }
+    lva[v].setNonbasic();
+    rows.pop();
+}
+
+void LRASolver::removeCol(LVRef v)
+{
+    int v_col = lva[v].getColId();
+    if (v_col == -1)
+        return; // Already removed
+
+    // Replace v_col slot with the last column in columns vector
+    int m = columns.size() - 1;
+    if (m > v_col) {
+        lva[columns[m]].setColId(v_col);
+        columns[v_col] = columns[m];
+        lva[v].setColId(-1);
+    }
+    columns.pop();
+}
+
+vec<PTRef> *LRASolver::solveForVar(LVRef poly_var, LVRef var) {
+    Poly &p = polyStore.getPoly(poly_var);
+    int pos;
+    for (pos = 0; pos < p.size(); pos++) {
+        if (pta[p[pos]].var == var)
+            break;
+    }
+    assert(pos < p.size());
+    Real a(pta[p[pos]].coef);
+    vec<PTRef> *gaussian_eq = new vec<PTRef>();
+    gaussian_eq->push(logic.mkRealTimes(lva[poly_var].getPTRef(), logic.mkConst(a.inverse())));
+    for (int j = 0; j < p.size(); j++) {
+        if (j == pos) continue;
+        PolyTerm &pt = pta[p[j]];
+        gaussian_eq->push(logic.mkRealTimes(lva[pt.var].getPTRef(), logic.mkConst(pt.coef * (-a.inverse()))));
+    }
+    return gaussian_eq;
+}
+
 //
 // Look for unbounded terms and applies Gaussian elimination to them.
 // Delete the column if succeeded
@@ -721,35 +786,37 @@ void LRASolver::popBacktrackPoint( )
 
 void LRASolver::doGaussianElimination( )
 {
-    vec<int> elim_rows;
-    vec<int> elim_cols;
+    vec<LVRef> elim_cols;
 
     for (unsigned i = 0; i < columns.size( ); ++i) {
         assert(columns[i] != LVRef_Undef);
         LVRef x = columns[i];
 
+        if (!lva[x].skip() && isUnbounded(x) && bra[lva[x].getBindedRowsRef()].size() == 0) {
+
+        }
         if (!lva[x].skip() && isUnbounded(x) && bra[lva[x].getBindedRowsRef()].size() == 1)
         {
             // The corresponding row can always be satisfied by picking a value for x
             assert(!lva[x].isBasic());
-            elim_cols.push(i);
-            // Update BindedRows
+            elim_cols.push(x);
             LVRef my_row = bra[lva[x].getBindedRowsRef()][0].var;
-            elim_rows.push(lva[my_row].getRowId());
-            bra[lva[x].getBindedRowsRef()].remove(my_row);
-            bra.free(lva[x].getBindedRowsRef());
             // Update Polynomials:
-            //  (1) For all variables that appear on this polynomial, tell that they no longer appear there
+            //  (1) Remove refs of all poly's variables on the poly
             Poly& p = polyStore.getPoly(my_row);
             for (int j = 0; j < p.size(); j++) {
-                bra[lva[pta[p[j]].var].getBindedRowsRef()].remove(my_row);
+                LVRef var = pta[p[j]].var;
+                bra[lva[var].getBindedRowsRef()].remove(my_row);
+                if (bra[lva[var].getBindedRowsRef()].size() == 0) {
+                    bra.free(lva[var].getBindedRowsRef());
+                    elim_cols.push(var);
+                    vec<PTRef> *gauss_eq = solveForVar(my_row, var);
+                    removed_by_GaussianElimination.insert(lva[var].getPTRef(), gauss_eq);
+                }
             }
             //  (2) remove the polynomial corresponding to my_row
             polyStore.remove(my_row);
-            // Remove var
-            lavarStore.remove(x);
-            ptermToLavar[Idx(logic.getPterm(lva[x].getPTRef()).getId())] = LVRef_Undef;
-            ptermToLavar[Idx(logic.getPterm(lva[my_row].getPTRef()).getId())] = LVRef_Undef;
+            removeRow(my_row);
         }
 
         else if (!lva[x].skip() && isUnbounded(x) && bra[lva[x].getBindedRowsRef()].size() >= 2)
@@ -758,7 +825,6 @@ void LRASolver::doGaussianElimination( )
             BindedRow& row = bra[lva[x].getBindedRowsRef()][0];
             LVRef basis = row.var;
             int pos = row.pos;
-            int basisRow = lva[row.var].getRowId();
 
 //            printf("; LAVar for column %d is %s and LAVar for the basis is %s\n", i, logic.printTerm(x->e), logic.printTerm(basis->e));
             Real a(pta[polyStore.getPoly(basis)[pos]].coef);
@@ -786,39 +852,14 @@ void LRASolver::doGaussianElimination( )
             // Do this by solving basis for x, and constructing a new expression which is equal to x.  Save this as
             // a vector of PTRefs.
             assert( lva[x].getPolyRef() == PolyRef_Undef );
-            vec<PTRef> *gaussian_eq = new vec<PTRef>();
-            gaussian_eq->push(logic.mkRealTimes(lva[basis].getPTRef(), logic.mkConst(a.inverse())));
-            for (int j = 0; j < pa[lva[basis].getPolyRef()].size(); j++) {
-                if (j == pos) continue;
-                PolyTerm &pt = pta[polyStore.getPoly(basis)[j]];
-                gaussian_eq->push(logic.mkRealTimes(lva[pt.var].getPTRef(), logic.mkConst(pt.coef*(-a.inverse()))));
-            }
+            removed_by_GaussianElimination.insert(lva[x].getPTRef(), solveForVar(basis, x));
             lva[x].setPolyRef(lva[basis].getPolyRef());
             lva[basis].setPolyRef(PolyRef_Undef);
-            removed_by_GaussianElimination.insert(lva[x].getPTRef(), gaussian_eq);
             bra[lva[x].getBindedRowsRef()].clear();
             lva[x].setSkip();
-            lavarStore.remove(x);
-            ptermToLavar[Idx(logic.getPterm(lva[x].getPTRef()).getId())] = LVRef_Undef;
 
-            // Replace basisRow slot with the last row in rows vector
-            int m = rows.size() - 1;
-            if (m > basisRow) {
-                for (int j = 0; j < pa[lva[rows[m]].getPolyRef()].size(); j++) {
-                    PolyTerm &pt = pta[pa[lva[rows[m]].getPolyRef()][j]];
-                    if (pt.var != rows[m]) {
-                        // We simply update the position here
-                        bra[lva[pt.var].getBindedRowsRef()].remove(basis);
-                        bra[lva[pt.var].getBindedRowsRef()].add(basis, pa[lva[rows[m]].getPolyRef()].getPos(pt.var));
-                    }
-                }
-                assert(rows[m] != LVRef_Undef);
-                rows[basisRow] = rows[m];
-                lva[rows[m]].setBasic();
-                lva[rows[m]].setRowId(basisRow);
-            }
-            lva[basis].setNonbasic();
-            rows.pop();
+            removeRow(basis);
+
 #ifdef GAUSSIAN_DEBUG
             printf("; Removed the row %s\n", logic.printTerm(LVA[basis].e));
             printf("; Removed column %s\n", logic.printTerm(LVA[x].e));
@@ -826,6 +867,9 @@ void LRASolver::doGaussianElimination( )
 #endif
         }
     }
+
+    for (int i = 0; i < elim_cols.size(); i++)
+        removeCol(elim_cols[i]);
 }
 
 //
@@ -1406,6 +1450,59 @@ void LRASolver::print( ostream & out )
     }
 }
 
+Delta LRASolver::evalSum(PTRef tr) const {
+    Pterm& t = logic.getPterm(tr);
+    Delta val;
+    for (int i = 0; i < t.size(); i++) {
+        PTRef coef;
+        PTRef var;
+        logic.splitTermToVarAndConst(t[i], var, coef);
+        if (removed_by_GaussianElimination.has(var) &&
+            concrete_model[lva[ptermToLavar[Idx(logic.getPterm(var).getId())]].ID()] == NULL) {
+            val = Delta(0); // The default
+            break;
+        }
+        val += logic.getRealConst(coef) * model[ptermToLavar[Idx(logic.getPterm(var).getId())]];
+    }
+    return val;
+}
+
+void LRASolver::computeConcreteModel(LVRef v) {
+    while (concrete_model.size() <= lva[v].ID())
+        concrete_model.push(NULL);
+
+    PTRef tr = lva[v].getPTRef();
+    if (removed_by_GaussianElimination.has(tr)) {
+        const vec<PTRef> &expr = *(removed_by_GaussianElimination[tr]);
+        Delta val;
+        for (int i = 0; i < expr.size(); i++) {
+            if (logic.isRealPlus(expr[i])) { // Special case if it was the sum.
+                // No guarantees here that the sum exists as an LAVar.
+                int id = Idx(logic.getPterm(expr[i]).getId());
+                if (id >= ptermToLavar.size() || ptermToLavar[id] == LVRef_Undef)
+                    val += evalSum(expr[i]);
+                else
+                    val += model[ptermToLavar[id]];
+            }
+            else {
+                PTRef var;
+                PTRef coef;
+                logic.splitTermToVarAndConst(expr[i], var, coef);
+                if (removed_by_GaussianElimination.has(var) &&
+                    concrete_model[lva[ptermToLavar[Idx(logic.getPterm(var).getId())]].ID()] == NULL) {
+                    val = Delta(0); // The default
+                    break;
+                }
+                val += logic.getRealConst(coef) * model[ptermToLavar[Idx(logic.getPterm(var).getId())]];
+            }
+        }
+        concrete_model[lva[v].ID()] = new opensmt::Real(val.R() + val.D() * delta);
+    }
+    else
+        concrete_model[lva[v].ID()] = new opensmt::Real(model[v].R() + model[v].D() * delta);
+}
+
+
 //
 // Detect the appropriate value for symbolic delta and stores the model
 //
@@ -1413,10 +1510,10 @@ void LRASolver::computeModel()
 {
     assert( status == SAT );
 
-    Real minDelta( 0 );
-    Real maxDelta( 0 );
-    Real curDelta( 0 );
-    Delta curBound( Delta::ZERO );
+    Real minDelta(0);
+    Real maxDelta(0);
+    Real curDelta(0);
+    Delta curBound(Delta::ZERO);
     LVRef col;
 
     //
@@ -1474,7 +1571,7 @@ void LRASolver::computeModel()
                 if ( curDelta != 0 && ( minDelta == 0 || minDelta > curDelta ) )
                     minDelta = curDelta;
             }
-            // if denominator is < 0 than use delta for max
+            // if denominator is < 0 then use delta for max
             else if ( curBound.D() < 0 )
             {
                 curDelta = -(curBound.R() / curBound.D());
@@ -1493,11 +1590,14 @@ void LRASolver::computeModel()
     cerr << "; delta: " << curDelta << '\n';
 #endif
 
+    for ( unsigned i = 0; i < lavarStore.numVars(); i++)
+    {
+        LVRef v = lavarStore.getVarByIdx(i);
+        computeConcreteModel(v);
+    }
 //    // Compute the value for each variable. Delta is taken into account
 //    for ( unsigned i = 0; i < columns.size( ); ++i )
 //        computeConcreteModel(columns[i], curDelta);
-
-
 }
 
 //
@@ -1619,28 +1719,12 @@ bool LRASolver::checkIntegersAndSplit( )
     return false;
 }
 
-ValPair LRASolver::getValue(PTRef tr)
-{
+ValPair LRASolver::getValue(PTRef tr) {
     if (!logic.hasSortReal(tr)) return ValPair_Undef;
     int id = Idx(logic.getPterm(tr).getId());
-    if (id < ptermToLavar.size() && ptermToLavar[id] != LVRef_Undef) {
-        const Delta &v = model[ptermToLavar[id]];
-        opensmt::Real val(v.R() + v.D() * delta);
-        return ValPair(tr, val.get_str().c_str());
-    }
-    else if (removed_by_GaussianElimination.has(tr)) {
-        const vec<PTRef> &expr = *(removed_by_GaussianElimination[tr]);
-        Delta val;
-        for (int i = 0; i < expr.size(); i++) {
-            PTRef var;
-            PTRef coef;
-            logic.splitTermToVarAndConst(expr[i], var, coef);
-            val += logic.getRealConst(coef) * model[ptermToLavar[Idx(logic.getPterm(var).getId())]];
-        }
-        opensmt::Real val_delta(val.R() + val.D() * delta);
-        return ValPair(tr, val_delta.get_str().c_str());
-    }
-    return ValPair_Undef;
+    assert(id < ptermToLavar.size() && ptermToLavar[id] != LVRef_Undef);
+
+    return ValPair(tr, concrete_model[lva[ptermToLavar[id]].ID()]->get_str().c_str());
 }
 
 //
