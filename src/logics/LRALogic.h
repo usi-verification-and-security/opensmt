@@ -161,8 +161,8 @@ class LRALogic: public Logic
     bool        isUF(PTRef tr) const { return isUF(term_store[tr].symb()); }
     bool        isUF(SymRef sr) const { return !sym_store[sr].isInterpreted(); }
 
-    PTRef       getTerm_RealZero() { return term_Real_ZERO; }
-    PTRef       getTerm_RealOne() { return term_Real_ONE; }
+    PTRef       getTerm_RealZero() const { return term_Real_ZERO; }
+    PTRef       getTerm_RealOne()  const { return term_Real_ONE; }
     PTRef       mkRealNeg(PTRef, char**);
     PTRef       mkRealNeg(PTRef tr) {char* msg; PTRef trn = mkRealNeg(tr, &msg); assert(trn != PTRef_Undef); return trn; }
     PTRef       mkRealMinus(const vec<PTRef>&, char**);

@@ -41,13 +41,13 @@ PolyStore::remove(LVRef poly_var)
 
 void
 PolyStore::add(LVRef poly_var, LVRef v, Real &c) {
+    assert(!lva[v].isBasic());
     if (getPoly(poly_var).has(v)) {
         PolyTermRef v_term = getPoly(poly_var).find(v);
         pta[v_term].coef += c;
         if (pta[v_term].coef == 0) {
             pta.free(v_term);
             bra[lva[v].getBindedRowsRef()].remove(poly_var);
-            remove(v, getPolyRef(v));
         }
     }
     else {

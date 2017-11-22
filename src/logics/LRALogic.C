@@ -688,9 +688,9 @@ void LRALogic::splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac)
         assert(isRealVar(var) || isUF(var));
     } else if (isRealVar(term) || isUF(term)) {
         var = term;
-        fac = PTRef_Undef;
+        fac = getTerm_RealOne();
     } else {
-        var = PTRef_Undef;
+        var = getTerm_RealOne();
         fac = term;
     }
 }

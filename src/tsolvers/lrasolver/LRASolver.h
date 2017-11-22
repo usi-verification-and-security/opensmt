@@ -90,8 +90,8 @@ public:
     LRAModel(const vec<int> &LATrace_lim, LAVarAllocator &lva) : LATrace_lim(LATrace_lim), lva(lva), n_vars_with_model(0) {}
     int addVar(LVRef v); // Adds a variable.  Returns the total number of variables
     inline int   nVars() { return n_vars_with_model; }
-    inline       Delta& operator[] (const LVRef &v);
-    inline const Delta& operator[] (const LVRef &v) const { return int_model[lva[v].ID()].last().d; }
+    inline       void   write(const LVRef &v, const Delta&);
+    inline const Delta& read (const LVRef &v) const { return int_model[lva[v].ID()].last().d; }
     inline void  pop(const LVRef &v) { int_model[lva[v].ID()].pop(); }
 };
 
@@ -204,9 +204,7 @@ private:
     bool checkIntegersAndSplit();                           //
 
     // Value system
-    LRAModel model;
-    inline void  popModel(LVRef v) { };
-    const Delta& Ub(LVRef v) const;                  // The current upper bound of v
+    LRAModel model; inline void  popModel(LVRef v) { }; const Delta& Ub(LVRef v) const;                  // The current upper bound of v
     const Delta& Lb(LVRef v) const;                  // The current lower bound of v
     bool isEquality(LVRef) const;
     const Delta overBound(LVRef) const;
@@ -217,10 +215,8 @@ private:
     void computeConcreteModel(LVRef v);
     Delta evalSum(PTRef tr) const;
     vec<opensmt::Real*> concrete_model;              // Save here the concrete model for the vars indexed by Id
-
     const Delta overBound(LVRef v);
     void computeModel();                             // The implementation for the interface
-
     // Binded Rows system
     inline BindedRows& getBindedRows(LVRef v) { return bra[lva[v].getBindedRowsRef()]; }
     void unbindRow(LVRef v, int row);
