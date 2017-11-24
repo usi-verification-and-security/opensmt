@@ -4,7 +4,7 @@ LABound::LABound(BoundT type, PtAsgn leq_pta, const Delta& delta)
     : type(type.t)
     , reverse(false)
     , active(true)
-    , idx(536870911)
+    , idx(UINT32_MAX)
     , leq_pta(leq_pta)
     , delta(delta)
 {}
@@ -44,7 +44,7 @@ LABoundListRef LABoundListAllocator::alloc(LABoundList& from)
 {
     vec<LABoundRef> tmp;
     for (int i = 0; i < from.size(); i++)
-        tmp.push(from[i]);
+        tmp.push(from[BoundIndex(i)]);
     return alloc(from.getVar(), tmp);
 }
 
@@ -96,6 +96,8 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
     for (int i = 0; i < keys.size(); i++) {
         printf("Adding bound for %s\n", logic.printTerm(lva[keys[i]].getPTRef()));
         vec<LABoundRef> refs;
+        refs.push(LABoundRef_LB_MinusInf);
+        refs.push(LABoundRef_UB_PlusInf);
         for (int j = 0; j < bounds_map[keys[i]].size(); j++) {
             BoundInfo &info = bounds_map[keys[i]][j];
             refs.push(info.b1);
@@ -105,8 +107,22 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
         lva[keys[i]].setBounds(br);
         sort<LABoundRef,bound_lessthan>(bla[br].bounds, bla[br].size(), bound_lessthan(ba));
         for (int j = 0; j < bla[br].size(); j++)
-            ba[bla[br][j]].setIdx(j);
+            ba[bla[br][BoundIndex(j)]].setIdx(BoundIndex(j));
+        lva[keys[i]].setLbound(BoundIndex(0));
+        lva[keys[i]].setUbound(BoundIndex(bla[br].size()-1));
+    }
+    for (int i = 0; i < lavarStore.numVars(); i++) {
+        LAVar& v = lva[lavarStore.getVarByIdx(i)];
+        if (v.getBounds() == LABoundListRef_Undef) {
+            v.setBounds(empty_bounds);
+            v.setLbound(BoundIndex(0));
+            v.setUbound(BoundIndex(1));
+        }
     }
 }
 
-
+LABoundRef
+LABoundList::operator[](BoundIndex i) const
+{
+    return bounds[Idx(i)];
+}

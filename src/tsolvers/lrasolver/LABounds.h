@@ -9,18 +9,16 @@
 
 class LABound
 {
-    struct {
-        char type    : 1;  // Upper / lower
-        char reverse : 1;  // is this used?
-        char active  : 1;  // is this used?
-        unsigned idx     : 29; // The index in variable's bound list
-    };
+    char type;    // Upper / lower
+    char reverse; // is this used?
+    char active;  // is this used?
+    BoundIndex idx;   // The index in variable's bound list
     Delta delta;
     PtAsgn leq_pta;
 public:
     LABound(BoundT type, PtAsgn leq_pta, const Delta& delta);
-    inline void setIdx(int i)  { idx = i; }
-    inline int  getIdx() const { return idx; }
+    inline void setIdx(BoundIndex i)  { idx = i; }
+    inline BoundIndex getIdx() const { return idx; }
     inline const Delta& getValue() const { return delta; }
     inline BoundT getType() const { return { type }; }
     inline PTRef getPTRef() const { return leq_pta.tr;  }
@@ -63,7 +61,7 @@ public:
     inline LABoundListRef relocation()                 const { return reloc_target; }
     inline void           relocate  (LABoundListRef r)       { reloc = 1; reloc_target = r; }
     inline unsigned       size      ()                 const { return sz; }
-    inline LABoundRef     operator[](int i)            const { return bounds[i]; }
+           LABoundRef     operator[](BoundIndex i)     const;
     inline LVRef          getVar    ()                 const { return v; }
     inline LABoundList              (LVRef v, const vec<LABoundRef>& bs);
 };
@@ -107,11 +105,23 @@ class LABoundStore
     LABoundAllocator& ba;
     LABoundListAllocator& bla;
     LAVarAllocator& lva;
+    LAVarStore& lavarStore;
     vec<LABoundRefPair> ptermToLABoundsRef;
     Logic& logic;
-
+    LABoundRef LABoundRef_LB_MinusInf;
+    LABoundRef LABoundRef_UB_PlusInf;
+    LABoundListRef empty_bounds;
 public:
-    LABoundStore(LABoundAllocator& ba, LABoundListAllocator& bla, LAVarAllocator& lva, Logic& l) : ba(ba), bla(bla), lva(lva), logic(l) {}
+    LABoundStore(LABoundAllocator& ba, LABoundListAllocator& bla, LAVarAllocator& lva, LAVarStore& lavstore, Logic& l) : ba(ba), bla(bla), lva(lva), lavarStore(lavstore), logic(l) {
+        LABoundRef_LB_MinusInf = ba.alloc(bound_l, PtAsgn{ logic.getTerm_true(), l_True },  Delta_MinusInf);
+        LABoundRef_UB_PlusInf  = ba.alloc(bound_u, PtAsgn{ logic.getTerm_true(), l_True },  Delta_PlusInf);
+        vec<LABoundRef> tmp;
+        tmp.push(LABoundRef_LB_MinusInf);
+        tmp.push(LABoundRef_UB_PlusInf);
+        empty_bounds = bla.alloc(LVRef_Undef, tmp);
+    }
+    LABoundRef plusInf() { return LABoundRef_UB_PlusInf; }
+    LABoundRef minusInf() { return LABoundRef_LB_MinusInf; }
     void addBound(LVRef v, PTRef leq_tr, PTId leq_id, const Real& constr, BoundT bound_t);
     void buildBounds(vec<LABoundRefPair>& ptermToLABoundRef);
     inline LABoundRef getLowerBound(const LVRef v) const { return bla[lva[v].getBounds()][lva[v].lbound()]; }

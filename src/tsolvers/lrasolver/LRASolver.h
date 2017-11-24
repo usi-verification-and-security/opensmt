@@ -172,7 +172,7 @@ protected:
     vec<LVRef> leqToLavar;              // Maps Pterm constraints to solver's real variables.  Could this be moved to LAVarStore?
     vec<LVRef> ptermToLavar;            // Maps Pterm variables to solver's real variables
 
-    bool assertBoundOnVar( LVRef it, unsigned it_i);
+    bool assertBoundOnVar( LVRef it, BoundIndex it_i);
 
     vector<unsigned> checks_history;
 
@@ -193,7 +193,7 @@ private:
     void getDeducedBounds( const Delta& c, BoundT, vec<PtAsgn_reason>& dst, SolverId solver_id ); // find possible deductions by value c
     void getDeducedBounds( BoundT, vec<PtAsgn_reason>& dst, SolverId solver_id );                 // find possible deductions for actual bounds values
     void getSuggestions( vec<PTRef>& dst, SolverId solver_id );                                   // find possible suggested atoms
-    void getSimpleDeductions(LVRef v, int pos);             // find deductions from actual bounds position
+    void getSimpleDeductions(LVRef v, BoundIndex pos);      // find deductions from actual bounds position
     unsigned getIteratorByPTRef( PTRef e, bool );                                                 // find bound iterator by the PTRef
     void refineBounds( );                                   // Compute the bounds for touched polynomials and deduces new bounds from it
     inline bool getStatus( );                               // Read the status of the solver in lbool
@@ -228,7 +228,7 @@ private:
 
     // Bounds system
     vec<LABoundRefPair> ptermToLABoundRefs;
-    const LABound& getBound(LVRef v, int idx) const { return ba[bla[lva[v].getBounds()][idx]]; }
+    const LABound& getBound(LVRef v, BoundIndex idx) const { return ba[bla[lva[v].getBounds()][idx]]; }
     bool isUnbounded (LVRef v) const;
 
     bool first_update_after_backtrack;

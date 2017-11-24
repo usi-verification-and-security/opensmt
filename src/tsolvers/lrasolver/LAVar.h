@@ -39,6 +39,36 @@ class LAVarStore;
 class LRALogic;
 
 //
+// Bound index type.  The bounds are ordered in a list, and indexed using a number in the list.
+// To determine if a given bound is higher than another, it suffices to check the current bound index
+// and the new index.  However, we need special values for no lower bound and no upper bound.
+//
+// The values are a little special.  Two least significant bits encode whether this is the lowest
+// bound, the highest bound, or a normal bound.  Lowest bound is 00, highest bound is 11, and
+// normal bound is 01.
+//
+class BoundIndex
+{
+    friend BoundIndex mkBoundIndex(uint32_t i);
+private:
+    uint32_t i;
+public:
+    BoundIndex(const BoundIndex& o);
+    explicit BoundIndex(uint32_t i);
+    BoundIndex();
+    BoundIndex operator+ (uint32_t i);
+    BoundIndex operator- (uint32_t i);
+    friend bool operator<  (const BoundIndex& lhs, const BoundIndex& rhs);
+    friend bool operator>  (const BoundIndex& lhs, const BoundIndex& rhs);
+    friend bool operator== (const BoundIndex& lhs, const BoundIndex& rhs);
+    friend bool operator!= (const BoundIndex& lhs, const BoundIndex& rhs);
+    bool isNonNegative() const { return i != UINT32_MAX; }
+    friend uint32_t Idx(BoundIndex idx);
+};
+
+inline BoundIndex mkBoundIndex(uint32_t i) { BoundIndex b; b.i = i; return b; }
+
+//
 // Class to store the term of constraints as a column of Simplex method tableau
 //
 class LAVar
@@ -57,8 +87,8 @@ private:
     int col_id;            // Column id
     int row_id;            // Row id
 
-    int curr_ub;      // The current upper bound, idx to bounds table
-    int curr_lb;      // The current lower bound, idx to bounds table
+    BoundIndex curr_ub;      // The current upper bound, idx to bounds table
+    BoundIndex curr_lb;      // The current lower bound, idx to bounds table
     LABoundListRef bounds; // The bounds of this variable
 
     PolyRef poly;          // Polynomial
@@ -75,10 +105,10 @@ public:
     int  getColId()      const { assert(!header.basic);  return col_id; }
     void setColId(int i)       { assert(!header.basic);  col_id = i;    }
 
-    unsigned ubound()               const { return curr_ub; }
-    unsigned lbound()               const { return curr_lb; }
-    void setUbound(unsigned i)            { curr_ub = i; }
-    void setLbound(unsigned i)            { curr_lb = i; }
+    BoundIndex ubound()             const { return curr_ub; }
+    BoundIndex lbound()             const { return curr_lb; }
+    void setUbound(BoundIndex i)            { curr_ub = i; }
+    void setLbound(BoundIndex i)            { curr_lb = i; }
     LABoundListRef getBounds()      const { return bounds; }
     void setBounds(LABoundListRef l)      { bounds = l; }
 
@@ -89,10 +119,10 @@ public:
     inline void setBasic();              // Make LAVar Basic
 
     // Binded rows system
-    OccListRef getBindedRowsRef() const       { assert(!header.basic); return occs; }
-    void       setBindedRowsRef(OccListRef r) { assert(!header.basic); occs = r; }
-    PolyRef    getPolyRef()       const       { assert(header.basic); return poly; }
-    void       setPolyRef(PolyRef r)          { assert(header.basic); poly = r; }
+    OccListRef getBindedRowsRef() const       { return occs; }
+    void       setBindedRowsRef(OccListRef r) { occs = r; }
+    PolyRef    getPolyRef()       const       { return poly; }
+    void       setPolyRef(PolyRef r)          { poly = r; }
 
     PTRef      getPTRef()         const       { return e; }
 };

@@ -120,5 +120,5 @@ public:
     PolyRef makePoly  (LVRef s, vec<PolyTermRef>& terms) { PolyRef pr = pa.alloc(terms); lva[s].setPolyRef(pr); return pr; }
     void remove       (LVRef var, PolyRef pol); // Removes var from pol
     void remove       (LVRef poly_var);         // Removes the polynomial correspoding to poly_var
-    void add          (LVRef poly_var, LVRef v, Real &c);
+    int add           (LVRef poly_var, LVRef v, Real &c);
 };

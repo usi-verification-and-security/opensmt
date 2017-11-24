@@ -39,15 +39,18 @@ PolyStore::remove(LVRef poly_var)
     pa.free(pr);
 }
 
-void
+int
 PolyStore::add(LVRef poly_var, LVRef v, Real &c) {
     assert(!lva[v].isBasic());
+    int pos;
     if (getPoly(poly_var).has(v)) {
+        pos = getPoly(poly_var).getPos(v);
         PolyTermRef v_term = getPoly(poly_var).find(v);
         pta[v_term].coef += c;
         if (pta[v_term].coef == 0) {
             pta.free(v_term);
             bra[lva[v].getBindedRowsRef()].remove(poly_var);
+            pos = -1;
         }
     }
     else {
@@ -56,7 +59,9 @@ PolyStore::add(LVRef poly_var, LVRef v, Real &c) {
             PolyRef pr_new = pa.alloc(getPolyRef(poly_var), getPoly(poly_var).size() + 1);
             lva[poly_var].setPolyRef(pr_new);
         }
+        pos = getPoly(poly_var).size();
         getPoly(poly_var).append(pta.alloc(c, v));
         bra[lva[v].getBindedRowsRef()].add(v, getPoly(poly_var).size()-1);
     }
+    return pos;
 }
