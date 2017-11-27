@@ -182,6 +182,7 @@ private:
     void getReal(opensmt::Real*&, const PTRef);              // Get a new real possibly using the number pool
     LVRef constructLAVarSystem(PTRef term);                 // Find a LAVar for term and all LA vars appearing in term.  Return the LAVar for the term.  iu
     LVRef getLAVar_single(PTRef term);                      // Initialize a new LA var if needed, otherwise return the old var
+    bool hasVar(PTRef expr);
     void setNonbasic(LVRef);
     void setBasic(LVRef);
     void doGaussianElimination( );                          // Performs Gaussian elimination of all redundant terms in the Tableau
@@ -259,6 +260,7 @@ private:
     char* printValue(PTRef tr) { char* tmp = (char*)malloc(1); tmp[0] = '\0'; return tmp; } // Implement later...
     char* printExplanation(PTRef tr) { return printValue(tr); } // Implement later...
     void isProperLeq(PTRef tr);  // The Leq term conforms to the assumptions of its form.  Only asserts.
+    template<class T> inline T max(T a, T b) const { return a > b ? a : b; }
 };
 
 #endif

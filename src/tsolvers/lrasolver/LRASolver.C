@@ -220,23 +220,40 @@ void LRASolver::getReal(Real*& r, PTRef cons)
     }
 }
 
+bool LRASolver::hasVar(PTRef expr) {
+    expr =  logic.isNegated(expr) ? logic.mkRealNeg(expr) : expr;
+    PTId id = logic.getPterm(expr).getId();
+    if (ptermToLavar.size() > Idx(id) && ptermToLavar[Idx(id)] != LVRef_Undef)
+        return true;
+    return false;
+}
+
 LVRef LRASolver::getLAVar_single(PTRef expr_in) {
     PTRef expr = logic.isNegated(expr_in) ? logic.mkRealNeg(expr_in) : expr_in;
     LVRef x;
 
-    if (Idx(logic.getPterm(expr).getId()) >= ptermToLavar.size())
-        ptermToLavar.growTo(Idx(logic.getPterm(expr).getId()) + 1, LVRef_Undef);
+    PTId id_pos = logic.getPterm(expr).getId();
+    PTId id_neg = logic.getPterm(logic.mkRealNeg(expr)).getId();
+    int max_id = max(Idx(id_pos), Idx(id_neg));
 
-    if (ptermToLavar[Idx(logic.getPterm(expr).getId())] == LVRef_Undef) {
+    if (max_id >= ptermToLavar.size())
+        ptermToLavar.growTo(max_id+1, LVRef_Undef);
+
+    assert(ptermToLavar[Idx(id_pos)] == ptermToLavar[Idx(id_neg)]);
+
+    if (ptermToLavar[Idx(id_pos)] == LVRef_Undef) {
         x = lavarStore.getNewVar(expr);
-        ptermToLavar[Idx(logic.getPterm(expr).getId())] = x;
+        ptermToLavar[Idx(id_pos)] = x;
+        ptermToLavar[Idx(id_neg)] = x;
+
         model.addVar(x);
         vec<PolyTermRef> tmp;
         lva[x].setPolyRef(polyStore.makePoly(x, tmp));
         lva[x].setBindedRowsRef(bra.alloc());
     }
     else
-        x = ptermToLavar[Idx(logic.getPterm(expr).getId())];
+        x = ptermToLavar[Idx(id_pos)];
+
     return x;
 }
 
@@ -254,6 +271,8 @@ LVRef LRASolver::getLAVar_single(PTRef expr_in) {
 LVRef LRASolver::constructLAVarSystem(PTRef term) {
     LVRef x = LVRef_Undef;
     vec<PolyTermRef> sum_terms;
+    if (hasVar(term))
+        return ptermToLavar[Idx(logic.getPterm(term).getId())];
     if (logic.isRealVar(term) || logic.isRealTimes(term)) {
         // Case (1), (2a), and (2b)
         PTRef v;
@@ -281,7 +300,8 @@ LVRef LRASolver::constructLAVarSystem(PTRef term) {
             }
             Real* c_r;
             getReal(c_r, c);
-            PolyTermRef ptr = pta.alloc(*c_r, nb); sum_terms.push(ptr);
+            PolyTermRef ptr = pta.alloc(*c_r, nb);
+            sum_terms.push(ptr);
         }
         setBasic(x);
         if (lva[x].getRowId() == -1) {
@@ -346,7 +366,7 @@ lbool LRASolver::declareTerm(PTRef leq_tr)
     // Ensure that all variables exists, build the polynomial, and update the occurrences.
     LVRef v = constructLAVarSystem(term);
 
-    int idx = Idx(logic.getPterm(leq_tr).getId());
+    int idx = Idx(leq_t.getId());
     for (int i = leqToLavar.size(); i <= idx; i++)
         leqToLavar.push(LVRef_Undef);
     leqToLavar[idx] = v;

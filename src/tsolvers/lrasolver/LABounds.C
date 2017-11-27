@@ -94,7 +94,6 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
     vec<LVRef> keys;
     bounds_map.getKeys(keys);
     for (int i = 0; i < keys.size(); i++) {
-        printf("Adding bound for %s\n", logic.printTerm(lva[keys[i]].getPTRef()));
         vec<LABoundRef> refs;
         refs.push(LABoundRef_LB_MinusInf);
         refs.push(LABoundRef_UB_PlusInf);
