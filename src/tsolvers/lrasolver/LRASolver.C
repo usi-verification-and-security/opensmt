@@ -63,10 +63,15 @@ LRAModel::addVar(LVRef v)
     if (has_model.has(v))
         return n_vars_with_model;
 
-    while (int_model.size() <= lva[v].ID())
+    while (int_model.size() <= lva[v].ID()) {
         int_model.push();
+        int_lbounds.push();
+        int_ubounds.push();
+    }
     has_model.insert(v, true);
     write(v, Delta());
+    int_lbounds[lva[v].ID()].push({ bs.minusInf(), 0 });
+    int_ubounds[lva[v].ID()].push({ bs.plusInf(), 0 });
     return ++n_vars_with_model;
 }
 
@@ -79,6 +84,28 @@ LRAModel::write(const LVRef &v, const Delta& val)
     int_model[lva[v].ID()].last().d = val;
 }
 
+void
+LRAModel::pushBound(const LABoundRef) {
+}
+
+
+void
+LRAModel::popBound(const LABoundRef br)
+{
+    LABound& b = bs[br];
+    LVRef vr = b.getLVRef();
+    LABoundRef latest_bound = LABoundRef_Undef;
+    if (b.getType() == bound_u) {
+        int_ubounds[lva[vr].ID()].pop();
+        latest_bound = int_ubounds[lva[vr].ID()].last().br;
+        lva[vr].setUbound(bs[latest_bound].getIdx());
+    } else {
+        int_lbounds[lva[vr].ID()].pop();
+        latest_bound = int_lbounds[lva[vr].ID()].last().br;
+        lva[vr].setLbound(bs[latest_bound].getIdx());
+    }
+}
+
 LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
     : logic(l)
     , pa(pta)
@@ -88,7 +115,7 @@ LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
     , bland_threshold(1000)
     , lavarStore(lva)
     , boundStore(ba, bla, lva, lavarStore, l)
-    , model(LATrace_lim, lva)
+    , model(LATrace_lim, LABound_trace_lim, lva, boundStore)
 {
     status = INIT;
     checks_history.push_back(0);
@@ -627,12 +654,23 @@ bool LRASolver::assertLit( PtAsgn asgn, bool reason )
     assert( !isUnbounded(it) );
 
     LABoundRefPair p = boundStore.getBoundRefPair(asgn.tr);
-    BoundIndex it_i = asgn.sgn == l_False ? ba[p.neg].getIdx() : ba[p.pos].getIdx();
+    LABoundRef bound_ref = asgn.sgn == l_False ? p.neg : p.pos;
+    LABound& bound = ba[bound_ref];
+    BoundIndex it_i = bound.getIdx();
 
     if (assertBoundOnVar( it, it_i ))
     {
+        model.pushBound(bound_ref);
+        LABound_trace.push(bound_ref);
+        if (bound.getType() == bound_l)
+            lva[it].setLbound(it_i);
+        else
+            lva[it].setUbound(it_i);
+
+
         if (config.lra_theory_propagation == 1 && !is_reason)
             getSimpleDeductions(it, it_i);
+
 
         if (config.lra_check_on_assert != 0 && rand() % 100 < config.lra_check_on_assert)
         {
@@ -707,6 +745,7 @@ void LRASolver::pushBacktrackPoint( )
     // cerr << "; push " << pushed_constraints.size( ) << endl;
     // Check if any updates need to be repeated after backtrack
     LATrace_lim.push(LATrace.size());
+    LABound_trace_lim.push(LABound_trace.size());
 //      cerr << "; re-apply " << pushed_constraints.size( ) << " - " << checks_history.back( ) << endl;
 
     // Update the generic deductions state
@@ -726,8 +765,14 @@ void LRASolver::popBacktrackPoint( )
         LVRef var = LATrace[i];
         popModel(var);
     }
-    LATrace.shrink(LATrace_lim.last());
+    LATrace.shrink(LATrace.size() - LATrace_lim.last());
     LATrace_lim.pop();
+
+    for (int i = LABound_trace_lim.last(); i < LABound_trace.size(); i++) {
+        popBound(LABound_trace[i]);
+    }
+    LABound_trace.shrink(LABound_trace.size() - LABound_trace_lim.last());
+    LABound_trace_lim.pop();
 
     first_update_after_backtrack = true;
 
@@ -912,8 +957,6 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
     assert( lva[bv].isBasic() );
     assert( !lva[nv].isBasic() );
 
-    assert( lva[nv].getPolyRef() == PolyRef_Undef );
-    assert( lva[bv].getBindedRowsRef() == OccListRef_Undef );
     assert( pa[lva[bv].getPolyRef()].has(nv) );
 
     // get Theta (zero if Aij is zero)
@@ -925,7 +968,7 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
     model.write(bv, v);
     model.write(nv, model.read(nv)+theta);
 
-    int nv_pos = -1; // nb's position in bv's polynomial
+    int nv_pos = -1; // nv's position in bv's polynomial
     // update model of Basic variables
     for (int i = 0; i < bra[lva[nv].getBindedRowsRef()].size(); i++) {
         LVRef bv_other = bra[lva[nv].getBindedRowsRef()][i].var;
@@ -946,15 +989,28 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
 #else
     const Real inverse = -1 / a;
 #endif
+    const Real neg_inverse = -inverse;
 
-    // first change the attribute values for bv's polynomial
-    for (int i = 0; i < pa[lva[bv].getPolyRef()].size(); i++)
-        pta[pa[lva[bv].getPolyRef()][i]].coef *= inverse;
+    PolyTermRef nv_term; // The term containing nv will be stored here
+    // Solve for nv
+    PolyRef pr = lva[bv].getPolyRef();
+    for (int i = 0; i < pa[pr].size(); i++) {
+        PolyTermRef ptr = pa[pr][i];
+        if (pta[ptr].var == nv)
+            nv_term = ptr;
+        else {
+            pta[ptr].coef *= inverse;
+        }
+    }
+    polyStore.update(pr, nv_term, bv, neg_inverse);
+    pta[nv_term].var = bv;
+    pta[nv_term].coef = neg_inverse;
 
-    // value of a_y should become -1
-    assert( pta[pa[lva[bv].getPolyRef()][nv_pos]].coef == -1 );
+    // pr is now the new polynomial for nv
+    lva[nv].setPolyRef(pr);
 
-    // now change the attribute values for all rows where nb was present
+
+    // now change the attribute values for all rows where nv was present
     for (int i = 0; i < bra[lva[nv].getBindedRowsRef()].size(); i++)
     {
         // Use LRASolver::addVarToRow?
@@ -982,9 +1038,9 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
         const Real& a = *( p_a );
 
         // P_i = P_i + a_nv * P_bv (iterate over all elements of P_bv)
-        for (int j = 0; polyStore.getPoly(bv).size(); j++) {
-            LVRef col = pta[polyStore.getPoly(bv)[i]].var;
-            const Real &b = pta[polyStore.getPoly(bv)[i]].coef;
+        for (int j = 0; pa[pr].size(); j++) {
+            LVRef col = pta[pa[pr][i]].var;
+            const Real &b = pta[pa[pr][i]].coef;
 
             // insert new element to P_i
             if (!polyStore.getPoly(row).has(col)) {
@@ -1022,22 +1078,17 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
     }
 
     // swap x and y (basicID, polynomial, bindings)
-    lva[nv].setPolyRef(polyStore.getPolyRef(bv));
     lva[bv].setPolyRef(PolyRef_Undef);
     lva[bv].setNonbasic();
     lva[nv].setRowId(lva[bv].getRowId());
 
-    rows[lva[nv].getRowId()] = nv;
-
-    assert( !pa[lva[nv].getPolyRef()].has(bv) );
-    assert( pa[lva[nv].getPolyRef()].getPos(bv) >= 0 );
-    assert( pa[lva[nv].getPolyRef()].has(bv) );
+    assert( pa[pr].has(bv) );
 
     Poly &p = pa[lva[nv].getPolyRef()];
     bra[lva[bv].getBindedRowsRef()].add(nv, pa[lva[nv].getPolyRef()].getPos(bv));
     bra[lva[nv].getBindedRowsRef()].clear();
 
-    assert( pa[lva[bv].getPolyRef()].size() == 0 );
+    assert( lva[bv].getPolyRef() == PolyRef_Undef );
     assert( pa[lva[nv].getPolyRef()].size() > 0 );
     assert( bra[lva[bv].getBindedRowsRef()].size() > 0 );
 }
@@ -1212,10 +1263,10 @@ void LRASolver::getSimpleDeductions(LVRef v, BoundIndex bound_idx)
             LABound& bound_prop = ba[bound_list[it]];
             if ((bound_prop.getType() == bound_l) &&
                 !hasPolarity(bound_prop.getPTRef()) &&
-                deduced[Idx(logic.getPterm(bound_prop.getPTRef()).getId())] == l_Undef)
+                deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] == l_Undef)
             {
                 lbool pol = bound_prop.getSign();
-                deduced[Idx(logic.getPterm(bound_prop.getPTRef()).getId())] = DedElem(id, pol); // id is the solver id
+                deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] = DedElem(id, pol); // id is the solver id
                 th_deductions.push(PtAsgn_reason(bound_prop.getPTRef(), pol, PTRef_Undef));
             }
         }
@@ -1225,10 +1276,10 @@ void LRASolver::getSimpleDeductions(LVRef v, BoundIndex bound_idx)
             LABound& bound_prop = ba[bound_list[it]];
             if ((bound_prop.getType() == bound_u) &&
                 !hasPolarity(bound_prop.getPTRef()) &&
-                (deduced[Idx(logic.getPterm(bound_prop.getPTRef()).getId())]== l_Undef))
+                (deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] == l_Undef))
             {
                 lbool pol = bound_prop.getSign();
-                deduced[Idx(logic.getPterm(bound_prop.getPTRef()).getId())] = DedElem(id, pol);
+                deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] = DedElem(id, pol);
                 th_deductions.push(PtAsgn_reason(bound_prop.getPTRef(), pol, PTRef_Undef));
             }
         }

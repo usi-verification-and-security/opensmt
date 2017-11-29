@@ -65,3 +65,12 @@ PolyStore::add(LVRef poly_var, LVRef v, Real &c) {
     }
     return pos;
 }
+
+void PolyStore::update(PolyRef pr, PolyTermRef old, LVRef var, const opensmt::Real& coef)
+{
+    int idx = pa[pr].getPos(pta[old].var);
+    pa[pr].varToIdx.remove(pta[old].var);
+    pa[pr].varToIdx.insert(var, idx);
+    pta[old].var = var;
+    pta[old].coef = coef;
+}

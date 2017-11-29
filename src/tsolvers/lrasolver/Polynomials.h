@@ -69,7 +69,7 @@ public:
     void remove(LVRef v);
     int getUnusedCap() { return cap - sz; }
     void append(PolyTermRef tr) { if (sz < cap) { terms[sz] = tr; } }
-    friend PolyStore;
+    friend class PolyStore;
 };
 
 class PolyAllocator : RegionAllocator<uint32_t>
@@ -100,7 +100,7 @@ public:
     PolyRef     ael       (const Poly* t)     { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); PolyRef rf; rf.x = r; return rf; }
     void        free      (PolyRef r)         { RegionAllocator<uint32_t>::free(polyWord32Size(operator[] (r).size())); }
     void        clear()                       {}
-    friend PolyStore;
+    friend class PolyStore;
 };
 
 
@@ -121,4 +121,7 @@ public:
     void remove       (LVRef var, PolyRef pol); // Removes var from pol
     void remove       (LVRef poly_var);         // Removes the polynomial correspoding to poly_var
     int add           (LVRef poly_var, LVRef v, Real &c);
+    void update       (PolyRef pr, PolyTermRef old, LVRef var, const opensmt::Real& coef);  // Update the polytermref old to contain var * coef in pr.
 };
+
+

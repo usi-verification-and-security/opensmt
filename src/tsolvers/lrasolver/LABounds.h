@@ -13,16 +13,18 @@ class LABound
     char reverse; // is this used?
     char active;  // is this used?
     BoundIndex idx;   // The index in variable's bound list
+    LVRef var;
     Delta delta;
     PtAsgn leq_pta;
 public:
-    LABound(BoundT type, PtAsgn leq_pta, const Delta& delta);
+    LABound(BoundT type, PtAsgn leq_pta, LVRef var, const Delta& delta);
     inline void setIdx(BoundIndex i)  { idx = i; }
     inline BoundIndex getIdx() const { return idx; }
     inline const Delta& getValue() const { return delta; }
     inline BoundT getType() const { return { type }; }
     inline PTRef getPTRef() const { return leq_pta.tr;  }
     inline lbool getSign()  const { return leq_pta.sgn; }
+    inline LVRef getLVRef() const { return var; }
 };
 
 class LABoundAllocator : public RegionAllocator<uint32_t>
@@ -35,7 +37,7 @@ public:
     LABoundAllocator() : n_bounds(0) {}
     inline unsigned getNumBounds() const { return n_bounds; }
 
-    LABoundRef alloc(BoundT type, PtAsgn leq_pta, const Delta& delta);
+    LABoundRef alloc(BoundT type, PtAsgn leq_pta, LVRef var, const Delta& delta);
     inline LABound&       operator[](LABoundRef r)       { return (LABound&)RegionAllocator<uint32_t>::operator[](r.x); }
     inline const LABound& operator[](LABoundRef r) const { return (LABound&)RegionAllocator<uint32_t>::operator[](r.x); }
     inline LABound*       lea       (LABoundRef r)       { return (LABound*)RegionAllocator<uint32_t>::lea(r.x); }
@@ -113,8 +115,8 @@ class LABoundStore
     LABoundListRef empty_bounds;
 public:
     LABoundStore(LABoundAllocator& ba, LABoundListAllocator& bla, LAVarAllocator& lva, LAVarStore& lavstore, Logic& l) : ba(ba), bla(bla), lva(lva), lavarStore(lavstore), logic(l) {
-        LABoundRef_LB_MinusInf = ba.alloc(bound_l, PtAsgn{ logic.getTerm_true(), l_True },  Delta_MinusInf);
-        LABoundRef_UB_PlusInf  = ba.alloc(bound_u, PtAsgn{ logic.getTerm_true(), l_True },  Delta_PlusInf);
+        LABoundRef_LB_MinusInf = ba.alloc(bound_l, PtAsgn{ logic.getTerm_true(), l_True },  LVRef_Undef, Delta_MinusInf);
+        LABoundRef_UB_PlusInf  = ba.alloc(bound_u, PtAsgn{ logic.getTerm_true(), l_True },  LVRef_Undef, Delta_PlusInf);
         vec<LABoundRef> tmp;
         tmp.push(LABoundRef_LB_MinusInf);
         tmp.push(LABoundRef_UB_PlusInf);
@@ -127,6 +129,7 @@ public:
     inline LABoundRef getLowerBound(const LVRef v) const { return bla[lva[v].getBounds()][lva[v].lbound()]; }
     inline LABoundRef getUpperBound(const LVRef v) const { return bla[lva[v].getBounds()][lva[v].ubound()]; }
     inline LABoundRefPair getBoundRefPair(const PTRef leq) { return ptermToLABoundsRef[Idx(logic.getPterm(leq).getId())]; }
+    inline LABound& operator[] (LABoundRef br) { return ba[br]; }
 };
 
 

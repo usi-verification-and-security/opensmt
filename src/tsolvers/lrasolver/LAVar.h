@@ -100,10 +100,10 @@ public:
     bool skip    ()      const { return header.skp;                }
     void setSkip ()            { header.skp = true;                }
     void clrSkip ()            { header.skp = false;               }
-    int  getRowId()      const { assert(header.basic); return row_id; }
-    void setRowId(int i)       { assert(header.basic); row_id = i;    }
-    int  getColId()      const { assert(!header.basic);  return col_id; }
-    void setColId(int i)       { assert(!header.basic);  col_id = i;    }
+    int  getRowId()      const { return row_id; }
+    void setRowId(int i)       { row_id = i;    }
+    int  getColId()      const { return col_id; }
+    void setColId(int i)       { col_id = i;    }
 
     BoundIndex ubound()             const { return curr_ub; }
     BoundIndex lbound()             const { return curr_lb; }

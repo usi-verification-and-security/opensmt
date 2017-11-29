@@ -80,19 +80,28 @@ class LRAModel
 {
 private:
     struct ModelEl { Delta d; int dl; };
+    struct BoundEl { LABoundRef br; int dl; };
     vec<vec<ModelEl> > int_model; // The internal model
+    vec<vec<BoundEl> > int_lbounds;
+    vec<vec<BoundEl> > int_ubounds;
+
     const vec<int> &LATrace_lim;
+    const vec<int> &LABound_trace_lim;
+    const vec<LABoundRef> LABound_trace;
     LAVarAllocator &lva;
+    LABoundStore &bs;
     int n_vars_with_model;
     Map<LVRef,bool,LVRefHash> has_model;
     int decisionLevel() { return LATrace_lim.size(); }
 public:
-    LRAModel(const vec<int> &LATrace_lim, LAVarAllocator &lva) : LATrace_lim(LATrace_lim), lva(lva), n_vars_with_model(0) {}
+    LRAModel(const vec<int> &LATrace_lim, const vec<int> &LABound_trace_lim, LAVarAllocator &lva, LABoundStore& bs) : LATrace_lim(LATrace_lim), LABound_trace_lim(LABound_trace_lim), lva(lva), bs(bs), n_vars_with_model(0) {}
     int addVar(LVRef v); // Adds a variable.  Returns the total number of variables
     inline int   nVars() { return n_vars_with_model; }
     inline       void   write(const LVRef &v, const Delta&);
     inline const Delta& read (const LVRef &v) const { return int_model[lva[v].ID()].last().d; }
     inline void  pop(const LVRef &v) { int_model[lva[v].ID()].pop(); }
+    void         popBound(const LABoundRef);
+    void         pushBound(const LABoundRef br);
 };
 
 //
@@ -204,8 +213,13 @@ private:
     void addVarToRow( LVRef, LVRef, opensmt::Real*);
     bool checkIntegersAndSplit();                           //
 
-    // Value system
-    LRAModel model; inline void  popModel(LVRef v) { }; const Delta& Ub(LVRef v) const;                  // The current upper bound of v
+    // Value system + history of bounds
+    LRAModel model;
+    inline void  popModel(LVRef v)             {}
+    inline void  popBound(const LABoundRef br) {}
+
+    // Model & bounds
+    const Delta& Ub(LVRef v) const;                  // The current upper bound of v
     const Delta& Lb(LVRef v) const;                  // The current lower bound of v
     bool isEquality(LVRef) const;
     const Delta overBound(LVRef) const;
@@ -236,7 +250,10 @@ private:
 
     LRASolverStatus status;                  // Internal status of the solver (different from bool)
     vec<LVRef> LATrace;                      // The variables that have been touched
-    vec<int> LATrace_lim;                    // Decision level delimiters
+    vec<int> LATrace_lim;                    // Decision level delimiters for variable values
+
+    vec<LABoundRef> LABound_trace;           // The bounds that have been touched
+    vec<int> LABound_trace_lim;              // Decision level delimiters for bounds
 
     // The variable system
 

@@ -1,19 +1,20 @@
 #include "LABounds.h"
 
-LABound::LABound(BoundT type, PtAsgn leq_pta, const Delta& delta)
+LABound::LABound(BoundT type, PtAsgn leq_pta, LVRef var, const Delta& delta)
     : type(type.t)
     , reverse(false)
     , active(true)
     , idx(UINT32_MAX)
     , leq_pta(leq_pta)
+    , var(var)
     , delta(delta)
 {}
 
-LABoundRef LABoundAllocator::alloc(BoundT type, PtAsgn leq_pta, const Delta& delta)
+LABoundRef LABoundAllocator::alloc(BoundT type, PtAsgn leq_pta, LVRef var, const Delta& delta)
 {
     uint32_t v = RegionAllocator<uint32_t>::alloc(laboundWord32Size());
     LABoundRef id = {v};
-    new (lea(id)) LABound(type, leq_pta, delta);
+    new (lea(id)) LABound(type, leq_pta, var, delta);
     return id;
 }
 
@@ -66,13 +67,13 @@ void LABoundListAllocator::reloc(LABoundListRef& tr, LABoundListAllocator& to)
 
 void LABoundStore::addBound(LVRef v, PTRef leq_ref, PTId leq_id, const Real& constr, BoundT bound_t)
 {
-    LABoundRef br_pos = ba.alloc(bound_t, PtAsgn(leq_ref, l_True), Delta(constr));
+    LABoundRef br_pos = ba.alloc(bound_t, PtAsgn(leq_ref, l_True), v, Delta(constr));
     LABoundRef br_neg;
 
     if (bound_t == bound_u)
-        br_neg = ba.alloc(~bound_t, PtAsgn(leq_ref, l_False), Delta(constr, 1));
+        br_neg = ba.alloc(~bound_t, PtAsgn(leq_ref, l_False), v, Delta(constr, 1));
     else
-        br_neg = ba.alloc(~bound_t, PtAsgn(leq_ref, l_False), Delta(constr, -1));
+        br_neg = ba.alloc(~bound_t, PtAsgn(leq_ref, l_False), v, Delta(constr, -1));
 
     in_bounds.push(BoundInfo{v, br_pos, br_neg, leq_id});
 }
