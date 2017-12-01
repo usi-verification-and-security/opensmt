@@ -629,6 +629,7 @@ bool LRASolver::assertLit( PtAsgn asgn, bool reason )
 //  cerr << "; Pushing (" << ( pta.sgn == l_False ? "not " : "") << logic.printTerm(pta.tr)
 //       << " - " << ptermToLavar[logic.getPterm(pta.tr).getId()] << endl;
 
+    printf("Asserting %s%s\n", (asgn.sgn == l_False ? "not " : ""), logic.printTerm(asgn.tr));
     bool is_reason = false;
 
     Pterm& t = logic.getPterm(asgn.tr);
@@ -770,6 +771,7 @@ void LRASolver::popBacktrackPoint( )
 
     for (int i = LABound_trace_lim.last(); i < LABound_trace.size(); i++) {
         popBound(LABound_trace[i]);
+        printf("retracting %s%s\n", (ba[LABound_trace[i]].getSign() == l_False ? "not " : ""), logic.printTerm(ba[LABound_trace[i]].getPTRef()));
     }
     LABound_trace.shrink(LABound_trace.size() - LABound_trace_lim.last());
     LABound_trace_lim.pop();
@@ -1256,6 +1258,12 @@ void LRASolver::getSimpleDeductions(LVRef v, BoundIndex bound_idx)
 {
     LABoundList& bound_list = bla[lva[v].getBounds()];
     LABoundRef br = bound_list[bound_idx];
+
+    printf("Deducing from bound %s\n", boundStore.printBound(br));
+    printf("The full bound list for %s:\n", logic.printTerm(lva[v].getPTRef()));
+    for (BoundIndex it = BoundIndex(0); it < BoundIndex(bound_list.size()); it=it+1)
+        printf("  %s\n", boundStore.printBound(bound_list[it]));
+
     if (br == LABoundRef_Infty) return;
     LABound& bound = ba[br];
     if (bound.getType() == bound_l) {
@@ -1268,6 +1276,7 @@ void LRASolver::getSimpleDeductions(LVRef v, BoundIndex bound_idx)
                 lbool pol = bound_prop.getSign();
                 deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] = DedElem(id, pol); // id is the solver id
                 th_deductions.push(PtAsgn_reason(bound_prop.getPTRef(), pol, PTRef_Undef));
+                printf(" => deduced %s\n", boundStore.printBound(br));
             }
         }
     }
@@ -1281,6 +1290,7 @@ void LRASolver::getSimpleDeductions(LVRef v, BoundIndex bound_idx)
                 lbool pol = bound_prop.getSign();
                 deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] = DedElem(id, pol);
                 th_deductions.push(PtAsgn_reason(bound_prop.getPTRef(), pol, PTRef_Undef));
+                printf(" => deduced %s\n", boundStore.printBound(br));
             }
         }
     }

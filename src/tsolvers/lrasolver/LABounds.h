@@ -130,6 +130,8 @@ public:
     inline LABoundRef getUpperBound(const LVRef v) const { return bla[lva[v].getBounds()][lva[v].ubound()]; }
     inline LABoundRefPair getBoundRefPair(const PTRef leq) { return ptermToLABoundsRef[Idx(logic.getPterm(leq).getId())]; }
     inline LABound& operator[] (LABoundRef br) { return ba[br]; }
+    // Debug
+    char* printBound(LABoundRef br) const;
 };
 
 

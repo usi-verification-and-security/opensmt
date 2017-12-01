@@ -126,3 +126,26 @@ LABoundList::operator[](BoundIndex i) const
 {
     return bounds[Idx(i)];
 }
+
+// Debug
+
+char*
+LABoundStore::printBound(LABoundRef br) const
+{
+    char *str_out;
+    char *v_str = logic.printTerm(lva[ba[br].getLVRef()].getPTRef());
+    const Delta & d = ba[br].getValue();
+    opensmt::Real r = d.R();
+    opensmt::Real s = d.D();
+    BoundT type = ba[br].getType();
+    if ( (type == bound_l) && (s == 0) )
+        asprintf(&str_out, "%s <= %s", r.get_str().c_str(), v_str);
+    if ( (type == bound_l) && (s > 0) )
+        asprintf(&str_out, "%s < %s", r.get_str().c_str(), v_str);
+    if ( (type == bound_u) && (s == 0) )
+        asprintf(&str_out, "%s <= %s", v_str, r.get_str().c_str());
+    if ( (type == bound_u) && (s < 0) )
+        asprintf(&str_out, "%s < %s", v_str, r.get_str().c_str());
+
+    return str_out;
+}
