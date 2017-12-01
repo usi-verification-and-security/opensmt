@@ -122,8 +122,8 @@ public:
         tmp.push(LABoundRef_UB_PlusInf);
         empty_bounds = bla.alloc(LVRef_Undef, tmp);
     }
-    LABoundRef plusInf() { return LABoundRef_UB_PlusInf; }
-    LABoundRef minusInf() { return LABoundRef_LB_MinusInf; }
+    LABoundRef plusInf() const { return LABoundRef_UB_PlusInf; }
+    LABoundRef minusInf() const { return LABoundRef_LB_MinusInf; }
     void addBound(LVRef v, PTRef leq_tr, PTId leq_id, const Real& constr, BoundT bound_t);
     void buildBounds(vec<LABoundRefPair>& ptermToLABoundRef);
     inline LABoundRef getLowerBound(const LVRef v) const { return bla[lva[v].getBounds()][lva[v].lbound()]; }

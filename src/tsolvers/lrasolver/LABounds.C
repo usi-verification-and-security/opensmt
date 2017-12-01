@@ -67,13 +67,16 @@ void LABoundListAllocator::reloc(LABoundListRef& tr, LABoundListAllocator& to)
 
 void LABoundStore::addBound(LVRef v, PTRef leq_ref, PTId leq_id, const Real& constr, BoundT bound_t)
 {
-    LABoundRef br_pos = ba.alloc(bound_t, PtAsgn(leq_ref, l_True), v, Delta(constr));
-    LABoundRef br_neg;
+//    printf("Constructing bound for %s\n", logic.printTerm(leq_ref));
+//    printf("  In my opinion it's a %s bound\n", bound_t == bound_u ? "upper" : "lower");
+    LABoundRef br_pos = ba.alloc(bound_t, PtAsgn(leq_ref, l_True), v, Delta(-1*constr));
+//    printf("  It translates into %s\n", printBound(br_pos));
+    LABoundRef br_neg = ba.alloc(~bound_t, PtAsgn(leq_ref, l_False), v, Delta(constr, bound_t == bound_u ? 1 : -1));
 
-    if (bound_t == bound_u)
-        br_neg = ba.alloc(~bound_t, PtAsgn(leq_ref, l_False), v, Delta(constr, 1));
-    else
-        br_neg = ba.alloc(~bound_t, PtAsgn(leq_ref, l_False), v, Delta(constr, -1));
+//    if (bound_t == bound_u)
+//        br_neg = ba.alloc(~bound_t, PtAsgn(leq_ref, l_False), v, Delta(constr, 1));
+//    else
+//        br_neg = ba.alloc(~bound_t, PtAsgn(leq_ref, l_False), v, Delta(constr, -1));
 
     in_bounds.push(BoundInfo{v, br_pos, br_neg, leq_id});
 }
@@ -133,6 +136,14 @@ char*
 LABoundStore::printBound(LABoundRef br) const
 {
     char *str_out;
+    if (br == plusInf()) {
+        asprintf(&str_out, "var < +infty");
+        return str_out;
+    }
+    if (br == minusInf()) {
+        asprintf(&str_out, "-infty < var");
+        return str_out;
+    }
     char *v_str = logic.printTerm(lva[ba[br].getLVRef()].getPTRef());
     const Delta & d = ba[br].getValue();
     opensmt::Real r = d.R();

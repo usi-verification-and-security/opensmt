@@ -629,7 +629,7 @@ bool LRASolver::assertLit( PtAsgn asgn, bool reason )
 //  cerr << "; Pushing (" << ( pta.sgn == l_False ? "not " : "") << logic.printTerm(pta.tr)
 //       << " - " << ptermToLavar[logic.getPterm(pta.tr).getId()] << endl;
 
-    printf("Asserting %s%s\n", (asgn.sgn == l_False ? "not " : ""), logic.printTerm(asgn.tr));
+//    printf("Asserting %s%s\n", (asgn.sgn == l_False ? "not " : ""), logic.printTerm(asgn.tr));
     bool is_reason = false;
 
     Pterm& t = logic.getPterm(asgn.tr);
@@ -771,7 +771,7 @@ void LRASolver::popBacktrackPoint( )
 
     for (int i = LABound_trace_lim.last(); i < LABound_trace.size(); i++) {
         popBound(LABound_trace[i]);
-        printf("retracting %s%s\n", (ba[LABound_trace[i]].getSign() == l_False ? "not " : ""), logic.printTerm(ba[LABound_trace[i]].getPTRef()));
+//        printf("retracting %s%s\n", (ba[LABound_trace[i]].getSign() == l_False ? "not " : ""), logic.printTerm(ba[LABound_trace[i]].getPTRef()));
     }
     LABound_trace.shrink(LABound_trace.size() - LABound_trace_lim.last());
     LABound_trace_lim.pop();
@@ -1259,16 +1259,17 @@ void LRASolver::getSimpleDeductions(LVRef v, BoundIndex bound_idx)
     LABoundList& bound_list = bla[lva[v].getBounds()];
     LABoundRef br = bound_list[bound_idx];
 
-    printf("Deducing from bound %s\n", boundStore.printBound(br));
-    printf("The full bound list for %s:\n", logic.printTerm(lva[v].getPTRef()));
-    for (BoundIndex it = BoundIndex(0); it < BoundIndex(bound_list.size()); it=it+1)
-        printf("  %s\n", boundStore.printBound(bound_list[it]));
+//    printf("Deducing from bound %s\n", boundStore.printBound(br));
+//    printf("The full bound list for %s:\n", logic.printTerm(lva[v].getPTRef()));
+//    for (BoundIndex it = BoundIndex(0); it < BoundIndex(bound_list.size()); it=it+1)
+//        printf("  %s (var %d)\n", boundStore.printBound(bound_list[it]), logic.getPterm(ba[bound_list[it]].getPTRef()).getVar());
 
     if (br == LABoundRef_Infty) return;
     LABound& bound = ba[br];
     if (bound.getType() == bound_l) {
-        for (BoundIndex it = lva[v].lbound() - 1; it.isNonNegative(); it = it - 1) {
-            LABound& bound_prop = ba[bound_list[it]];
+        for (BoundIndex it = bound_idx - 1; it.isNonNegative(); it = it - 1) {
+            LABoundRef bound_prop_ref = bound_list[it];
+            LABound& bound_prop = ba[bound_prop_ref];
             if ((bound_prop.getType() == bound_l) &&
                 !hasPolarity(bound_prop.getPTRef()) &&
                 deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] == l_Undef)
@@ -1276,13 +1277,14 @@ void LRASolver::getSimpleDeductions(LVRef v, BoundIndex bound_idx)
                 lbool pol = bound_prop.getSign();
                 deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] = DedElem(id, pol); // id is the solver id
                 th_deductions.push(PtAsgn_reason(bound_prop.getPTRef(), pol, PTRef_Undef));
-                printf(" => deduced %s\n", boundStore.printBound(br));
+//                printf(" => deduced %s (var %d)\n", boundStore.printBound(bound_prop_ref), logic.getPterm(bound_prop.getPTRef()).getVar());
             }
         }
     }
     else if (bound.getType() == bound_u) {
-        for (BoundIndex it = lva[v].ubound() + 1; Idx(it) < bound_list.size()-1; it = it + 1) {
-            LABound& bound_prop = ba[bound_list[it]];
+        for (BoundIndex it = bound_idx + 1; Idx(it) < bound_list.size()-1; it = it + 1) {
+            LABoundRef bound_prop_ref = bound_list[it];
+            LABound& bound_prop = ba[bound_prop_ref];
             if ((bound_prop.getType() == bound_u) &&
                 !hasPolarity(bound_prop.getPTRef()) &&
                 (deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] == l_Undef))
@@ -1290,7 +1292,7 @@ void LRASolver::getSimpleDeductions(LVRef v, BoundIndex bound_idx)
                 lbool pol = bound_prop.getSign();
                 deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] = DedElem(id, pol);
                 th_deductions.push(PtAsgn_reason(bound_prop.getPTRef(), pol, PTRef_Undef));
-                printf(" => deduced %s\n", boundStore.printBound(br));
+//                printf(" => deduced %s\n", boundStore.printBound(bound_prop_ref));
             }
         }
     }
@@ -2022,7 +2024,7 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
     }
 
     return itp;
-
+}
 
 #endif
 
