@@ -243,7 +243,7 @@ private:
 
     // Bounds system
     vec<LABoundRefPair> ptermToLABoundRefs;
-    const LABound& getBound(LVRef v, BoundIndex idx) const { return ba[bla[lva[v].getBounds()][idx]]; }
+    const LABoundRef getBound(LVRef v, BoundIndex idx) const { return bla[lva[v].getBounds()][idx]; }
     bool isUnbounded (LVRef v) const;
 
     bool first_update_after_backtrack;

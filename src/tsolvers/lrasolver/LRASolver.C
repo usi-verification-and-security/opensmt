@@ -422,6 +422,7 @@ bool LRASolver::check(bool complete)
 {
     // opensmt::StopWatch check_timer(tsolver_stats.simplex_timer);
 
+    printf("Check\n");
     (void)complete;
     // check if we stop reading constraints
     if (status == INIT)
@@ -593,6 +594,7 @@ bool LRASolver::check(bool complete)
         }
     }
     getStatus() == true ? tsolver_stats.sat_calls ++ : tsolver_stats.unsat_calls ++;
+    printf("check ended.  Status is %s\n", getStatus() ? "sat" : "unsat");
     return getStatus();
 }
 
@@ -629,7 +631,7 @@ bool LRASolver::assertLit( PtAsgn asgn, bool reason )
 //  cerr << "; Pushing (" << ( pta.sgn == l_False ? "not " : "") << logic.printTerm(pta.tr)
 //       << " - " << ptermToLavar[logic.getPterm(pta.tr).getId()] << endl;
 
-//    printf("Asserting %s%s\n", (asgn.sgn == l_False ? "not " : ""), logic.printTerm(asgn.tr));
+    printf("Asserting %s%s\n", (asgn.sgn == l_False ? "not " : ""), logic.printTerm(asgn.tr));
     bool is_reason = false;
 
     Pterm& t = logic.getPterm(asgn.tr);
@@ -690,7 +692,8 @@ bool LRASolver::assertBoundOnVar( LVRef it, BoundIndex it_i )
     assert( status == SAT );
     assert( it != LVRef_Undef );
     assert( !isUnbounded(it) );
-    const LABound &itBound = getBound(it, it_i);
+    const LABoundRef itBound_ref = getBound(it, it_i);
+    const LABound &itBound = ba[itBound_ref];
 
 //  cerr << "; ASSERTING bound on " << *it << endl;
 
@@ -701,9 +704,9 @@ bool LRASolver::assertBoundOnVar( LVRef it, BoundIndex it_i )
 //      cerr << "; SIMPLE SAT" << endl;
         return getStatus();
     }
-    // Check if simple UNSAT can be given
-    if (((itBound.getType() == bound_l) && ( it_i > lva[it].ubound() ))
-     || ((itBound.getType() == bound_u) && ( it_i < lva[it].lbound() )))
+    // Check if simple UNSAT can be given.  The last check checks that this is not actually about asserting equality.
+    if (((itBound.getType() == bound_l) && ( it_i > lva[it].ubound() && itBound.getValue() != ba[bla[lva[it].getBounds()][lva[it].ubound()]].getValue()))
+     || ((itBound.getType() == bound_u) && ( it_i < lva[it].lbound() && itBound.getValue() != ba[bla[lva[it].getBounds()][lva[it].lbound()]].getValue())))
     {
         explanation.clear();
         explanationCoefficients.clear();
@@ -771,7 +774,7 @@ void LRASolver::popBacktrackPoint( )
 
     for (int i = LABound_trace_lim.last(); i < LABound_trace.size(); i++) {
         popBound(LABound_trace[i]);
-//        printf("retracting %s%s\n", (ba[LABound_trace[i]].getSign() == l_False ? "not " : ""), logic.printTerm(ba[LABound_trace[i]].getPTRef()));
+        printf("retracting %s%s\n", (ba[LABound_trace[i]].getSign() == l_False ? "not " : ""), logic.printTerm(ba[LABound_trace[i]].getPTRef()));
     }
     LABound_trace.shrink(LABound_trace.size() - LABound_trace_lim.last());
     LABound_trace_lim.pop();
