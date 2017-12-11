@@ -5,6 +5,15 @@
 #include "LARefs.h"
 #include "Polynomials.h"
 #include "BindedRows.h"
+Poly::Poly(Poly &old, int new_cap)
+{
+    for (int i = 0; i < old.size(); i++) {
+        terms[i] = old.terms[i];
+    }
+    old.varToIdx.moveTo(varToIdx);
+    cap = new_cap;
+    sz = old.size();
+}
 
 void Poly::remove(LVRef v)
 {
@@ -49,19 +58,21 @@ PolyStore::add(LVRef poly_var, LVRef v, Real &c) {
         pta[v_term].coef += c;
         if (pta[v_term].coef == 0) {
             pta.free(v_term);
-            bra[lva[v].getBindedRowsRef()].remove(poly_var);
+            brs.remove(poly_var, v);
+            getPoly(poly_var).remove(v);
             pos = -1;
         }
     }
     else {
         if (getPoly(poly_var).getUnusedCap() == 0) {
             // We need to allocate a new polynomial with bigger capacity.
-            PolyRef pr_new = pa.alloc(getPolyRef(poly_var), getPoly(poly_var).size() + 1);
+            PolyRef pr_new = pa.alloc(getPolyRef(poly_var), getPoly(poly_var).size() > 0 ? getPoly(poly_var).size() * 2 : 1);
             lva[poly_var].setPolyRef(pr_new);
         }
-        pos = getPoly(poly_var).size();
         getPoly(poly_var).append(pta.alloc(c, v));
-        bra[lva[v].getBindedRowsRef()].add(v, getPoly(poly_var).size()-1);
+        getPoly(poly_var).varToIdx.insert(v, getPoly(poly_var).size() - 1);
+        brs.add(poly_var, getPoly(poly_var).size()-1, v);
+        pos = getPoly(poly_var).size()-1;
     }
     return pos;
 }
@@ -73,4 +84,36 @@ void PolyStore::update(PolyRef pr, PolyTermRef old, LVRef var, const opensmt::Re
     pa[pr].varToIdx.insert(var, idx);
     pta[old].var = var;
     pta[old].coef = coef;
+}
+
+char* PolyStore::printPolyTerm(const opensmt::Real &coef, LVRef var)
+{
+    if (coef == 1)
+        return lva.printVar(var);
+
+    char *buf;
+    if (coef == -1)
+        asprintf(&buf, "-%s", lva.printVar(var));
+    else {
+        const char *coef_str = coef.get_str().c_str();
+        asprintf(&buf, "(* %s %s)", coef_str, lva.printVar(var));
+    }
+    return buf;
+}
+
+char* PolyStore::printPoly(PolyRef pr)
+{
+    Poly &p = pa[pr];
+    char *buf = NULL;
+    for (int i = 0; i < p.size(); i++) {
+        char *buf_new;
+        PolyTerm& pt = pta[p[i]];
+        asprintf(&buf_new, "%s %s", (buf == NULL ? "" : buf), printPolyTerm(pt.coef, pt.var));
+        free(buf);
+        buf = buf_new;
+    }
+    char *buf_new;
+    asprintf(&buf_new, "(+%s)", buf);
+    free(buf);
+    return buf_new;
 }

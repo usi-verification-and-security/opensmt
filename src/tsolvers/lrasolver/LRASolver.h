@@ -116,11 +116,15 @@ private:
     LRALogic&            logic;
     LAVarAllocator       lva;
     LAVarStore           lavarStore;
+
+    BindedRowsAllocator  bra;
+    BindedRowsStore      bindedRowsStore;
+
     PolyTermAllocator    pta;
     PolyAllocator        pa;
     PolyStore            polyStore;
-//    BindedRowStore       boundedRowStore;
-    BindedRowsAllocator  bra;
+
+
     LABoundAllocator     ba;
     LABoundListAllocator bla;
     LABoundStore         boundStore;
@@ -138,6 +142,7 @@ private:
     void initSlackVar(LVRef s);
     void setBound(PTRef leq);
 
+    opensmt::Real *newReal(const Real *old);
 
 public:
 
@@ -162,7 +167,6 @@ public:
     bool       isValid(PTRef tr);
     const void getRemoved(vec<PTRef>&) const;  // Fill the vector with the vars removed due to not having bounds
 
-    char* printVar(LVRef v) const;
 #ifdef PRODUCE_PROOF
     TheoryInterpolator* getTheoryInterpolator() { return NULL; }
     PTRef getInterpolant( const ipartitions_t &, map<PTRef, icolor_t>* );
@@ -274,10 +278,12 @@ private:
     }
     ValPair getValue(PTRef tr);  // Computes the model and changes state.
     inline int     verbose                       ( ) const { return config.verbosity(); }
+    template<class T> inline T max(T a, T b) const { return a > b ? a : b; }
+    // Debug stuff
     char* printValue(PTRef tr) { char* tmp = (char*)malloc(1); tmp[0] = '\0'; return tmp; } // Implement later...
     char* printExplanation(PTRef tr) { return printValue(tr); } // Implement later...
     void isProperLeq(PTRef tr);  // The Leq term conforms to the assumptions of its form.  Only asserts.
-    template<class T> inline T max(T a, T b) const { return a > b ? a : b; }
+    char* printVar(LVRef v);
 };
 
 #endif

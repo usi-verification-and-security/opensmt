@@ -2,6 +2,11 @@
 #define BINDEDROWS_H
 
 #include "LARefs.h"
+#include "LAVar.h"
+#include "Vec.h"
+#include "Map.h"
+#include "Alloc.h"
+#include "LRALogic.h"
 
 struct BindedRow
 {
@@ -11,13 +16,14 @@ struct BindedRow
 
 class BindedRows
 {
+    friend class BindedRowsStore;
     vec<BindedRow> rows;
     Map<LVRef,int,LVRefHash> varToIdx;
+    void remove(LVRef v);
 public:
     BindedRow& operator[] (int i) { return rows[i]; }
     int size() const { return rows.size(); }
-    void add(LVRef v, int pos) { assert(!varToIdx.has(v)); varToIdx.insert(v, rows.size()); rows.push({v, pos}); }
-    void remove(LVRef v) { for (int i = varToIdx[v]+1; i < rows.size(); i++) { rows[i-1] = rows[i]; varToIdx[rows[i-1].var] = i-1; } rows.shrink(1); varToIdx.remove(v); };
+    void add(LVRef v, int pos) { assert(pos >= 0); assert(!varToIdx.has(v)); varToIdx.insert(v, rows.size()); rows.push({v, pos}); }
     void clear() { rows.clear(); varToIdx.clear(); }
 };
 
@@ -49,4 +55,17 @@ public:
     void              free      (OccListRef r)         { RegionAllocator<uint32_t>::free(bindedrowsWord32Size()); }
     void       clear() {}
 };
+
+class BindedRowsStore {
+private:
+    LRALogic& logic;
+    LAVarAllocator& lva;
+    BindedRowsAllocator& bra;
+    int debug_count;
+public:
+    BindedRowsStore(LRALogic& l, LAVarAllocator& lva, BindedRowsAllocator& bra) : logic(l), lva(lva), bra(bra), debug_count(0) {}
+    void remove(LVRef v, LVRef target);
+    void add(LVRef v, int pos, LVRef target);
+};
+
 #endif

@@ -165,6 +165,8 @@ public:
     LVRef        ael       (const LAVar* t)  { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); LVRef rf; rf.x = r; return rf; }
     void         free      (LVRef r)         { RegionAllocator::free(lavarWord32Size()); }
     void         clear() {}
+    // Debug stuff
+    char*        printVar  (LVRef r)         { char* str; asprintf(&str, "v%d", r.x);  return str; }
 };
 
 class LAVarStore

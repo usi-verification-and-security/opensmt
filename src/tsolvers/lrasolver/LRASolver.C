@@ -56,6 +56,21 @@ void LRASolver::isProperLeq(PTRef tr)
     assert(!logic.isRealTimes(sum) || ((logic.isRealVar(logic.getPterm(sum)[0]) && (logic.mkRealNeg(logic.getPterm(sum)[1])) == logic.getTerm_RealOne()) ||
                                        (logic.isRealVar(logic.getPterm(sum)[1]) && (logic.mkRealNeg(logic.getPterm(sum)[0])) == logic.getTerm_RealOne())));
 }
+opensmt::Real *
+LRASolver::newReal(const Real *old) {
+    Real * p_a = NULL;
+    if (!numbers_pool.empty())
+    {
+        p_a = numbers_pool.back( );
+        numbers_pool.pop_back( );
+        *p_a = *old;
+    }
+    else
+    {
+        p_a = new Real(*old);
+    }
+    return p_a;
+}
 
 int
 LRAModel::addVar(LVRef v)
@@ -108,8 +123,9 @@ LRAModel::popBound(const LABoundRef br)
 
 LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
     : logic(l)
+    , bindedRowsStore(l, lva, bra)
     , pa(pta)
-    , polyStore(lva, pa, bra)
+    , polyStore(lva, pa, bindedRowsStore, l)
     , TSolver((SolverId)descr_lra_solver, (const char*)descr_lra_solver, c, d)
     , delta(Delta::ZERO)
     , bland_threshold(1000)
@@ -340,7 +356,8 @@ LVRef LRASolver::constructLAVarSystem(PTRef term) {
 
         for (int i = 0; i < sum_terms.size(); i++) {
             LVRef v = pta[sum_terms[i]].var;
-            bra[lva[v].getBindedRowsRef()].add(x, i);
+            assert(v != x);
+            bindedRowsStore.add(x, i, v);
         }
     }
     return x;
@@ -864,7 +881,8 @@ void LRASolver::doGaussianElimination( )
             Poly& p = polyStore.getPoly(my_row);
             for (int j = 0; j < p.size(); j++) {
                 LVRef var = pta[p[j]].var;
-                bra[lva[var].getBindedRowsRef()].remove(my_row);
+                bindedRowsStore.remove(my_row, var);
+//                bra[lva[var].getBindedRowsRef()].remove(my_row);
                 if (bra[lva[var].getBindedRowsRef()].size() == 0) {
                     bra.free(lva[var].getBindedRowsRef());
                     elim_cols.push(var);
@@ -895,16 +913,20 @@ void LRASolver::doGaussianElimination( )
                     LVRef poly_var = pta[polyStore.getPoly(basis)[k]].var;
                     opensmt::Real tmp(ratio*(pta[polyStore.getPoly(basis).find(poly_var)].coef)); // XXX or negated?
                     int pos = polyStore.add(it_var, poly_var, tmp);
-                    if (pos != -1)
-                        bra[lva[basis].getBindedRowsRef()].add(poly_var, pos);
+                    if (pos != -1) {
+                        assert(basis != poly_var);
+                        bindedRowsStore.add(poly_var, pos, basis);
+                    }
                 }
             }
 
             // Clear removed row
             for (int j = 0; j < pa[lva[basis].getPolyRef()].size(); j++) {
                 PolyTerm &pt = pta[polyStore.getPoly(basis)[j]];
-                if (pt.var != basis)
-                    bra[lva[pt.var].getBindedRowsRef()].remove(basis);
+                if (pt.var != basis) {
+                    bindedRowsStore.remove(basis, pt.var);
+//                    bra[lva[pt.var].getBindedRowsRef()].remove(basis);
+                }
             }
 
             // Keep polynomial in x to compute a model later
@@ -964,6 +986,8 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
 
     assert( pa[lva[bv].getPolyRef()].has(nv) );
 
+    printf("Basic vector %s = %s will be solved for var %s\n", lva.printVar(bv), polyStore.printPoly(lva[bv].getPolyRef()), lva.printVar(nv));
+
     // get Theta (zero if Aij is zero)
     const Real & a = pta[pa[lva[bv].getPolyRef()].find(nv)].coef;
 
@@ -1014,6 +1038,10 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
     // pr is now the new polynomial for nv
     lva[nv].setPolyRef(pr);
 
+    printf("The result is now %s = %s\n", lva.printVar(nv), polyStore.printPoly(pr));
+
+    // We will add bv to basic vectors so it needs to be set non-basic
+    lva[bv].setNonbasic();
 
     // now change the attribute values for all rows where nv was present
     for (int i = 0; i < bra[lva[nv].getBindedRowsRef()].size(); i++)
@@ -1027,70 +1055,38 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
         assert( pta[pa[lva[row].getPolyRef()][pos]].coef != 0 );
 
         // copy a to the new Real variable (use memory pool)
-        //TODO: make a function for the code below
-        Real * p_a = NULL;
-        if (!numbers_pool.empty( ))
-        {
-            p_a = numbers_pool.back( );
-            numbers_pool.pop_back( );
-            *p_a = pta[pa[lva[row].getPolyRef()][pos]].coef;
-        }
-        else
-        {
-            p_a = new Real( pta[pa[lva[row].getPolyRef()][pos]].coef );
-        }
 
-        const Real& a = *( p_a );
+        const Real& a = *newReal(&pta[pa[lva[row].getPolyRef()][pos]].coef);
 
+        printf("The var %s = %s has an occurrence of %s at pos %d\n", lva.printVar(row), polyStore.printPoly(lva[row].getPolyRef()), lva.printVar(nv), pos);
+        // Remove first nv from the poly.
+        polyStore.remove(nv, lva[row].getPolyRef());
+        printf("I removed %s.  My poly is now %s\n", lva.printVar(nv), polyStore.printPoly(lva[row].getPolyRef()));
         // P_i = P_i + a_nv * P_bv (iterate over all elements of P_bv)
-        for (int j = 0; pa[pr].size(); j++) {
-            LVRef col = pta[pa[pr][i]].var;
-            const Real &b = pta[pa[pr][i]].coef;
+        for (int j = 0; j < pa[pr].size(); j++) {
+            LVRef col = pta[pa[pr][j]].var;
+            const Real &b = pta[pa[pr][j]].coef;
 
-            // insert new element to P_i
-            if (!polyStore.getPoly(row).has(col)) {
-                // handle reals via memory pool
-                Real * p_c = NULL;
-                if (!numbers_pool.empty( )) {
-                    p_c = numbers_pool.back( );
-                    numbers_pool.pop_back( );
-                    *p_c = a * b;
-                }
-                else {
-                    p_c = new Real( a * b );
-                }
-                // Add the variable col with factor p_c to row's polynomial
-                polyStore.add(row, col, *p_c);
-            }
-            // or add to existing
-            else {
-                PolyTerm &polyt = pta[polyStore.getPoly(row).find(col)];
-                polyt.coef += b * a;
-                if ( polyt.coef == 0 ) {
-                    // delete element from P_i if it became 0
-                    // Save Real in pool
-                    numbers_pool.push_back( &polyt.coef );
+            Real tmp = a*b;
+            Real* p_c = newReal(&tmp);
 
-                    // Mark out the value from column and row
-                    if (col != nv)
-                        bra[lva[col].getBindedRowsRef()].remove(row);
-                    polyStore.remove(col, polyStore.getPolyRef(row));
-                }
-            }
+            printf("%s + %s\n", polyStore.printPoly(lva[row].getPolyRef()), polyStore.printPolyTerm(*p_c, col));
+
+            // Add the variable col with factor p_c to row's polynomial
+            polyStore.add(row, col, *p_c);
+            printf(" => %s\n", polyStore.printPoly(lva[row].getPolyRef()));
         }
-        numbers_pool.push_back( p_a );
-        assert( !polyStore.getPoly(row).has(bv) );
     }
 
     // swap x and y (basicID, polynomial, bindings)
     lva[bv].setPolyRef(PolyRef_Undef);
-    lva[bv].setNonbasic();
     lva[nv].setRowId(lva[bv].getRowId());
 
     assert( pa[pr].has(bv) );
 
     Poly &p = pa[lva[nv].getPolyRef()];
-    bra[lva[bv].getBindedRowsRef()].add(nv, pa[lva[nv].getPolyRef()].getPos(bv));
+    assert(bv != nv);
+    bindedRowsStore.add(nv, pa[lva[nv].getPolyRef()].getPos(bv), bv);
     bra[lva[nv].getBindedRowsRef()].clear();
 
     assert( lva[bv].getPolyRef() == PolyRef_Undef );

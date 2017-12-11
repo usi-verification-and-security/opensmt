@@ -54,13 +54,7 @@ public:
         }
         cap = sz = ps.size();
     }
-    Poly(Poly& old, int new_cap) {
-        for (int i = 0; i < old.size(); i++) {
-            terms[i] = old.terms[i];
-        }
-        old.varToIdx.moveTo(varToIdx);
-        cap = new_cap;
-    }
+    Poly(Poly& old, int new_cap);
     PolyTermRef operator[] (int i) const { return terms[i]; }
     bool has(LVRef v) const { return varToIdx.has(v); }
     PolyTermRef find(LVRef v) const { return terms[varToIdx[v]]; }
@@ -68,7 +62,7 @@ public:
     int size() const { return sz; }
     void remove(LVRef v);
     int getUnusedCap() { return cap - sz; }
-    void append(PolyTermRef tr) { if (sz < cap) { terms[sz] = tr; } }
+    void append(PolyTermRef tr) { if (sz < cap) { terms[sz] = tr;  sz ++; } else assert(false); }
     friend class PolyStore;
 };
 
@@ -85,11 +79,11 @@ public:
         new (lea(id)) Poly(pts, pta);
         return id;
     }
-    // Allocate a new Poly with the same contents as r but with capacity cap >= [r].size()
-    PolyRef alloc(PolyRef r, int cap) {
-        uint32_t v = RegionAllocator<uint32_t>::alloc(polyWord32Size(cap));
+    // Allocate a new Poly with the same contents as r but with capacity new_cap >= [r].size()
+    PolyRef alloc(PolyRef r, int new_cap) {
+        uint32_t v = RegionAllocator<uint32_t>::alloc(polyWord32Size(new_cap));
         PolyRef id = {v};
-        new (lea(id)) Poly(operator[](r), cap);
+        new (lea(id)) Poly(operator[](r), new_cap);
         return id;
     }
     Poly& operator[] (PolyRef r) { return (Poly&)RegionAllocator<uint32_t>::operator[](r.x); }
@@ -110,18 +104,21 @@ class PolyStore
     LAVarAllocator& lva;
     PolyAllocator& pa;
     PolyTermAllocator& pta;
-    BindedRowsAllocator& bra;
+    LRALogic& logic;
+    BindedRowsStore& brs;
 //    vec<LVRef> cols;
 //    vec<LVRef> rows;
 public:
-    PolyStore(LAVarAllocator& lva, PolyAllocator& pa, BindedRowsAllocator& bra) : lva(lva), pa(pa), pta(pa.pta), bra(bra) {}
+    PolyStore(LAVarAllocator& lva, PolyAllocator& pa, BindedRowsStore& brs, LRALogic& logic) : lva(lva), pa(pa), pta(pa.pta), brs(brs), logic(logic) {}
     PolyRef getPolyRef(LVRef s)                          { return lva[s].getPolyRef(); }
     Poly&   getPoly   (LVRef s)                          { return pa[getPolyRef(s)]; }
     PolyRef makePoly  (LVRef s, vec<PolyTermRef>& terms) { PolyRef pr = pa.alloc(terms); lva[s].setPolyRef(pr); return pr; }
     void remove       (LVRef var, PolyRef pol); // Removes var from pol
-    void remove       (LVRef poly_var);         // Removes the polynomial correspoding to poly_var
+    void remove       (LVRef poly_var);         // Removes the polynomial corresponding to poly_var
     int add           (LVRef poly_var, LVRef v, Real &c);
     void update       (PolyRef pr, PolyTermRef old, LVRef var, const opensmt::Real& coef);  // Update the polytermref old to contain var * coef in pr.
+    char* printPolyTerm(const opensmt::Real &coef, LVRef var);
+    char* printPoly   (PolyRef pr);
 };
 
 

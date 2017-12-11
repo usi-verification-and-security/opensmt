@@ -67,10 +67,7 @@ void LABoundListAllocator::reloc(LABoundListRef& tr, LABoundListAllocator& to)
 
 void LABoundStore::addBound(LVRef v, PTRef leq_ref, PTId leq_id, const Real& constr, BoundT bound_t)
 {
-    printf("Constructing bound for %s\n", logic.printTerm(leq_ref));
-    printf("  In my opinion it's a %s bound\n", bound_t == bound_u ? "upper" : "lower");
     LABoundRef br_pos = ba.alloc(bound_t, PtAsgn(leq_ref, l_True), v, bound_t == bound_u ? Delta(-constr) : Delta(constr));
-    printf("  It translates into %s\n", printBound(br_pos));
     LABoundRef br_neg = ba.alloc(~bound_t, PtAsgn(leq_ref, l_False), v, bound_t == bound_u ? Delta(constr, 1) : Delta((-constr), -1));
     // Delta(constr, bound_t == bound_u ? 1 : -1));
 
