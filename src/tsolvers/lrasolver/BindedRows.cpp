@@ -16,15 +16,15 @@ BindedRowsStore::remove(LVRef v, LVRef target) {
 }
 
 void
-BindedRowsStore::add(LVRef v, int pos, LVRef target) {
+BindedRowsStore::add(LVRef row, int pos, LVRef target) {
 //    printf("Binded rows: debug count %d\n", debug_count++);
     BindedRows& r = bra[lva[target].getBindedRowsRef()];
 //    printf("Binded rows: Before addition of %s to %s\n", logic.printTerm(lva[v].getPTRef()), logic.printTerm(lva[target].getPTRef()));
 //    for (int i = 0; i < r.rows.size(); i++) {
 //        printf("  Var %s, pos %d\n", logic.printTerm(lva[r.rows[i].var].getPTRef()), r.rows[i].pos);
 //    }
-    bra[lva[target].getBindedRowsRef()].add(v, pos);
- //   printf("Binded rows: After addition of %s\n", logic.printTerm(lva[v].getPTRef()));
+    bra[lva[target].getBindedRowsRef()].add(row, pos);
+//    printf("Binded rows: After addition of %s\n", logic.printTerm(lva[v].getPTRef()));
 //    for (int i = 0; i < r.rows.size(); i++) {
 //        printf("  Var %s, pos %d\n", logic.printTerm(lva[r.rows[i].var].getPTRef()), r.rows[i].pos);
 //    }
@@ -33,7 +33,6 @@ BindedRowsStore::add(LVRef v, int pos, LVRef target) {
 void
 BindedRows::remove(LVRef v)
 {
-
     for (int i = varToIdx[v]+1; i < rows.size(); i++) {
         assert(i > 0);
         rows[i-1] = rows[i];

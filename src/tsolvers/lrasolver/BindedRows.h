@@ -65,7 +65,8 @@ private:
 public:
     BindedRowsStore(LRALogic& l, LAVarAllocator& lva, BindedRowsAllocator& bra) : logic(l), lva(lva), bra(bra), debug_count(0) {}
     void remove(LVRef v, LVRef target);
-    void add(LVRef v, int pos, LVRef target);
+    void add(LVRef row, int pos, LVRef target);
+    BindedRows& getBindedRows(LVRef v) { return bra[lva[v].getBindedRowsRef()]; }
 };
 
 #endif

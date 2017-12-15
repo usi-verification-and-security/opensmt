@@ -495,7 +495,74 @@ class VecKeyMap {
     const vec<Pair>& bucket(int i) const { return table[i]; }
 };
 
+// A vector of maps.
+template<class K, class D, class H, class E = Equal<K> >
+class MapVec
+{
+    Map<K,D,H>* data;
+    int sz;
+    int cap;
 
+    // Don't allow copying (error prone):
+    MapVec<K,D,H>&  operator = (MapVec<K,D,H>& other) { assert(0); return *this; }
+    MapVec<K,D,H>              (MapVec<K,D,H>& other) { assert(0); }
+
+    // Helpers for calculating next capacity:
+    static inline int  imax   (int x, int y) { int mask = (y-x) >> (sizeof(int)*8-1); return (x&mask) + (y&(~mask)); }
+    //static inline void nextCap(int& cap){ cap += ((cap >> 1) + 2) & ~1; }
+    static inline void nextCap(int& cap){ cap += ((cap >> 1) + 2) & ~1; }
+public:
+    // Constructors:
+    MapVec()                                : data(NULL) , sz(0)   , cap(0)    { }
+    explicit MapVec(int size)               : data(NULL) , sz(0)   , cap(0)    { growTo(size); }
+    MapVec(int size, const Map<K,D,H>& pad) : data(NULL) , sz(0)   , cap(0)    { growTo(size, pad); }
+   ~MapVec()                                                                   { clear(true); }
+
+    // Pointer to first element:
+    operator Map<K,D,H>*       (void)           { return data; }
+
+    // Size operations:
+    int      size     (void) const     { return sz; }
+    uint32_t size_    (void) const     { assert(sz >= 0); return (uint32_t) sz; }
+    void     shrink   (int nelems)     { assert(nelems <= sz); for (int i = 0; i < nelems; i++) sz--, data[sz].~Map<K,D,H>(); }
+    void     shrink_  (int nelems)     { assert(nelems <= sz); sz -= nelems; }
+    int      capacity (void) const     { return cap; }
+    void     capacity (int min_cap) {
+        if (cap >= min_cap) return;
+        int add = imax((min_cap - cap + 1) & ~1, ((cap >> 1) + 2) & ~1);   // NOTE: grow by approximately 3/2
+        if (add > INT_MAX - cap || (((data = (Map<K,D,H,E>*)::realloc(data, (cap += add) * sizeof(Map<K,D,H>))) == NULL) && errno == ENOMEM))
+        throw OutOfMemoryException();
+    }
+    void     growTo   (int size);
+    void     growTo   (int size, const Map<K,D,H>& pad);
+    void     clear    (bool dealloc = false) {
+        if (data != NULL) {
+            for (int i = 0; i < sz; i++) data[i].~Map<K,D,H>();
+            sz = 0;
+            if (dealloc) free(data), data = NULL, cap = 0; }
+    }
+    void     reset    ();
+
+    // Stack interface:
+    void     push  (void)                   { if (sz == cap) capacity(sz+1); new (&data[sz]) Map<K,D,H>(); sz++; }
+    void     push  (const MapVec& elem)     { if (sz == cap) capacity(sz+1); elem.moveTo(data[sz++]); }
+    void     pop   (void)                   { assert(sz > 0); sz--, data[sz].~Map<K,D,H>(); }
+    // NOTE: it seems possible that overflow can happen in the 'sz+1' expression of 'push()', but
+    // in fact it can not since it requires that 'cap' is equal to INT_MAX. This in turn can not
+    // happen given the way capacities are calculated (below). Essentially, all capacities are
+    // even, but INT_MAX is odd.
+
+    const Map<K,D,H>& last  (void) const        { return data[sz-1]; }
+    Map<K,D,H>&       last  (void)              { return data[sz-1]; }
+
+    // Vector interface:
+    const Map<K,D,H>& operator [] (int index) const { return data[index]; }
+    Map<K,D,H>&       operator [] (int index)       { return data[index]; }
+
+    // Duplicatation (preferred instead):
+    void copyTo(MapVec<K,D,H>& copy) const { copy.clear(); copy.growTo(sz); for (int i = 0; i < sz; i++) data[i].copyTo(copy[i]); }
+    void moveTo(MapVec<K,D,H>& dest) { dest.clear(true); dest.data = data; dest.sz = sz; dest.cap = cap; data = NULL; sz = 0; cap = 0; }
+};
 
 //=================================================================================================
 #endif

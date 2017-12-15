@@ -100,7 +100,14 @@ LRAModel::write(const LVRef &v, const Delta& val)
 }
 
 void
-LRAModel::pushBound(const LABoundRef) {
+LRAModel::pushBound(const LABoundRef br) {
+    LABound& b = bs[br];
+    LVRef vr = b.getLVRef();
+    if (b.getType() == bound_u) {
+        int_ubounds[lva[vr].ID()].push({br, decisionLevel()});
+    }
+    else
+        int_lbounds[lva[vr].ID()].push({br, decisionLevel()});
 }
 
 
@@ -351,14 +358,9 @@ LVRef LRASolver::constructLAVarSystem(PTRef term) {
             lva[x].setRowId(rows.size());
             rows.push(x);
         }
-        PolyRef pr  = pa.alloc(sum_terms);
+        PolyRef pr  = polyStore.makePoly(x, sum_terms);
         lva[x].setPolyRef(pr);
-
-        for (int i = 0; i < sum_terms.size(); i++) {
-            LVRef v = pta[sum_terms[i]].var;
-            assert(v != x);
-            bindedRowsStore.add(x, i, v);
-        }
+        printf("I made a polynomial.  It looks like this: %s = %s\n", lva.printVar(polyStore.getPoly(x).getVar()), polyStore.printPoly(lva[x].getPolyRef()));
     }
     return x;
 }
@@ -512,7 +514,6 @@ bool LRASolver::check(bool complete)
 //            return setStatus( SAT );
         }
 
-        Real * a;
         LVRef y = LVRef_Undef;
         LVRef y_found = y;
 
@@ -524,12 +525,11 @@ bool LRASolver::check(bool complete)
             for (int i = 0; i < polyStore.getPoly(x).size(); i++) {
                 y = pta[polyStore.getPoly(x)[i]].var;
                 assert(!lva[y].isBasic() );
-                a = &pta[polyStore.getPoly(x)[i]].coef;
+                const opensmt::Real& a = pta[polyStore.getPoly(x)[i]].coef;
                 if (x == y)
                     continue;
 
-                assert(a != 0);
-                const bool & a_is_pos = ( *a ) > 0;
+                const bool & a_is_pos = (a > 0);
                 if ((a_is_pos && model.read(y) < Ub(y)) || (!a_is_pos && model.read(y) > Lb(y))) {
                     if (bland_rule) {
                         // Choose the leftmost nonbasic variable with a negative (reduced) cost
@@ -573,9 +573,9 @@ bool LRASolver::check(bool complete)
 //                cerr << "; " << *y << " for " << *x <<  " : " << y->L() << " <= " << y->M() << " <= " << y->U()<< endl;
 
                 assert( !lva[y].isBasic() );
-                a = &pta[getPoly(x)[i]].coef;
+                const opensmt::Real& a = pta[getPoly(x)[i]].coef;
                 assert(a != 0);
-                const bool & a_is_pos = (*a) > 0;
+                const bool & a_is_pos = (a > 0);
                 if ((!a_is_pos && model.read(y) < Ub(y)) || (a_is_pos && model.read(y) > Lb(y))) {
                     if (bland_rule) {
                         y_found = lva[y].ID() < curr_var_id_y ? y : y_found;
@@ -791,7 +791,8 @@ void LRASolver::popBacktrackPoint( )
 
     for (int i = LABound_trace_lim.last(); i < LABound_trace.size(); i++) {
         popBound(LABound_trace[i]);
-        printf("retracting %s%s\n", (ba[LABound_trace[i]].getSign() == l_False ? "not " : ""), logic.printTerm(ba[LABound_trace[i]].getPTRef()));
+        printf("retracting %s%s (%s)\n", (ba[LABound_trace[i]].getSign() == l_False ? "not " : ""), logic.printTerm(ba[LABound_trace[i]].getPTRef()), boundStore.printBound(LABound_trace[i]));
+
     }
     LABound_trace.shrink(LABound_trace.size() - LABound_trace_lim.last());
     LABound_trace_lim.pop();
@@ -848,7 +849,7 @@ vec<PTRef> *LRASolver::solveForVar(LVRef poly_var, LVRef var) {
     gaussian_eq->push(logic.mkRealTimes(lva[poly_var].getPTRef(), logic.mkConst(a.inverse())));
     for (int j = 0; j < p.size(); j++) {
         if (j == pos) continue;
-        PolyTerm &pt = pta[p[j]];
+        const PolyTerm &pt = pta[p[j]];
         gaussian_eq->push(logic.mkRealTimes(lva[pt.var].getPTRef(), logic.mkConst(pt.coef * (-a.inverse()))));
     }
     return gaussian_eq;
@@ -909,10 +910,11 @@ void LRASolver::doGaussianElimination( )
                 LVRef it_var = bra[lva[x].getBindedRowsRef()][j].var;
                 int   it_pos = bra[lva[x].getBindedRowsRef()][j].pos;
                 opensmt::Real ratio(pta[polyStore.getPoly(it_var)[pos]].coef / a);
-                for (int k = 0; k < pa[lva[basis].getPolyRef()].size(); k++) {
-                    LVRef poly_var = pta[polyStore.getPoly(basis)[k]].var;
-                    opensmt::Real tmp(ratio*(pta[polyStore.getPoly(basis).find(poly_var)].coef)); // XXX or negated?
-                    int pos = polyStore.add(it_var, poly_var, tmp);
+                PolyRef pr = lva[basis].getPolyRef();
+                for (int k = 0; k < pa[pr].size(); k++) {
+                    LVRef poly_var = pta[pa[pr][k]].var;
+                    opensmt::Real tmp(ratio*(pta[polyStore.find(pr, poly_var)].coef)); // XXX or negated?
+                    int pos = polyStore.add(lva[it_var].getPolyRef(), poly_var, tmp);
                     if (pos != -1) {
                         assert(basis != poly_var);
                         bindedRowsStore.add(poly_var, pos, basis);
@@ -922,7 +924,7 @@ void LRASolver::doGaussianElimination( )
 
             // Clear removed row
             for (int j = 0; j < pa[lva[basis].getPolyRef()].size(); j++) {
-                PolyTerm &pt = pta[polyStore.getPoly(basis)[j]];
+                const PolyTerm &pt = pta[polyStore.getPoly(basis)[j]];
                 if (pt.var != basis) {
                     bindedRowsStore.remove(basis, pt.var);
 //                    bra[lva[pt.var].getBindedRowsRef()].remove(basis);
@@ -984,12 +986,12 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
     assert( lva[bv].isBasic() );
     assert( !lva[nv].isBasic() );
 
-    assert( pa[lva[bv].getPolyRef()].has(nv) );
+    assert( polyStore.has(lva[bv].getPolyRef(), nv) );
 
     printf("Basic vector %s = %s will be solved for var %s\n", lva.printVar(bv), polyStore.printPoly(lva[bv].getPolyRef()), lva.printVar(nv));
 
     // get Theta (zero if Aij is zero)
-    const Real & a = pta[pa[lva[bv].getPolyRef()].find(nv)].coef;
+    const Real& a = pta[polyStore.find(lva[bv].getPolyRef(), nv)].coef;
 
     Delta theta(( v - model.read(bv) ) / a);
 
@@ -1028,12 +1030,10 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
         if (pta[ptr].var == nv)
             nv_term = ptr;
         else {
-            pta[ptr].coef *= inverse;
+            polyStore.updateCoef(ptr, pta[ptr].coef*inverse);
         }
     }
     polyStore.update(pr, nv_term, bv, neg_inverse);
-    pta[nv_term].var = bv;
-    pta[nv_term].coef = neg_inverse;
 
     // pr is now the new polynomial for nv
     lva[nv].setPolyRef(pr);
@@ -1073,7 +1073,7 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
             printf("%s + %s\n", polyStore.printPoly(lva[row].getPolyRef()), polyStore.printPolyTerm(*p_c, col));
 
             // Add the variable col with factor p_c to row's polynomial
-            polyStore.add(row, col, *p_c);
+            polyStore.add(lva[row].getPolyRef(), col, *p_c);
             printf(" => %s\n", polyStore.printPoly(lva[row].getPolyRef()));
         }
     }
@@ -1082,11 +1082,11 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
     lva[bv].setPolyRef(PolyRef_Undef);
     lva[nv].setRowId(lva[bv].getRowId());
 
-    assert( pa[pr].has(bv) );
+    assert( polyStore.has(pr, bv) );
 
     Poly &p = pa[lva[nv].getPolyRef()];
     assert(bv != nv);
-    bindedRowsStore.add(nv, pa[lva[nv].getPolyRef()].getPos(bv), bv);
+    bindedRowsStore.add(nv, polyStore.getPos(lva[nv].getPolyRef(), bv), bv);
     bra[lva[nv].getBindedRowsRef()].clear();
 
     assert( lva[bv].getPolyRef() == PolyRef_Undef );
@@ -1160,16 +1160,16 @@ inline bool LRASolver::setStatus( LRASolverStatus s )
 //
 void LRASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
 {
-    LVRef y;
     if (model.read(x) < Lb(x)) {
         // add all bounds for polynomial elements, which limit lower bound
         dst.push(ba[bla[lva[x].getBounds()][lva[x].lbound()]].getPTRef());
         explanationCoefficients.push_back( Real( 1 ) );
         for (int i = 0; i < pa[lva[x].getPolyRef()].size(); i++) {
-            PolyTerm &pt = pta[polyStore.getPoly(x)[i]];
+            const PolyTerm &pt = pta[polyStore.getPoly(x)[i]];
             const Real &a = pt.coef;
             assert( a != 0 );
-            y = columns[lva[pt.var].getColId()];
+            LVRef y = pt.var;
+            //LVRef y = columns[lva[pt.var].getColId()];
             assert(x != y);
 
             if (a < 0) {
@@ -1192,14 +1192,15 @@ void LRASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
     }
     if (model.read(x) > Ub(x)) {
         // add all bounds for polynomial elements, which limit upper bound
-        dst.push(ba[bla[lva[y].getBounds()][lva[y].ubound()]].getPTRef());
+        dst.push(ba[bla[lva[x].getBounds()][lva[x].ubound()]].getPTRef());
         explanationCoefficients.push_back( Real( 1 ) );
 
         for (int i = 0; i < pa[lva[x].getPolyRef()].size(); i++) {
-            PolyTerm &pt = pta[polyStore.getPoly(x)[i]];
+            const PolyTerm &pt = pta[polyStore.getPoly(x)[i]];
             const Real &a = pt.coef;
             assert( a != 0 );
-            y = columns[lva[pt.var].getColId()];
+            LVRef y = pt.var;
+            //LVRef y = columns[lva[pt.var].getColId()];
             assert(x != y);
 
             if (a > 0) {
@@ -1221,7 +1222,7 @@ void LRASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
         }
     }
 
-    assert( dst.size() == pa[lva[x].getPolyRef()].size() );
+    assert( dst.size() == pa[lva[x].getPolyRef()].size()+1 ); // One for each term plus the broken equality
 
 /*
     ipartitions_t p = 1;
@@ -1507,8 +1508,8 @@ void LRASolver::print( ostream & out )
     // iterate over Tableau rows
     for ( unsigned i = 0; i < rows.size( ); i++ ) {
         for (unsigned j = 0; j < columns.size(); j++) {
-            if ( polyStore.getPoly(rows[i]).has(columns[j]) )
-                out << pta[polyStore.getPoly(rows[i]).find(columns[j])].coef;
+            if (polyStore.has(lva[rows[i]].getPolyRef(), columns[j]))
+                out << pta[polyStore.find(lva[rows[i]].getPolyRef(), columns[j])].coef;
             out << "\t";
         }
         out << endl;
@@ -1674,7 +1675,7 @@ void LRASolver::addVarToRow( LVRef s, LVRef x, Real * p_v )
     assert(!lva[x].isBasic());
     assert(lva[s].isBasic());
 
-    polyStore.add(s, x, *p_v);
+    polyStore.add(lva[s].getPolyRef(), x, *p_v);
 }
 
 bool LRASolver::checkIntegersAndSplit( )

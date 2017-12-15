@@ -220,7 +220,7 @@ private:
     // Value system + history of bounds
     LRAModel model;
     inline void  popModel(LVRef v)             {}
-    inline void  popBound(const LABoundRef br) {}
+    inline void  popBound(const LABoundRef br) { model.popBound(br); }
 
     // Model & bounds
     const Delta& Ub(LVRef v) const;                  // The current upper bound of v
