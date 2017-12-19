@@ -58,7 +58,7 @@ public:
     PolyTermRef& operator[] (int i) { return terms[i]; }
     int          size() const { return sz; }
     int          getUnusedCap() { return cap - sz; }
-    void         append(PolyTermRef tr, LVRef var) { if (sz < cap) { terms[sz] = tr; } else assert(false); }
+    void         append(PolyTermRef tr, LVRef var) { if (sz < cap) { terms[sz++] = tr; } else assert(false); }
     friend class PolyAllocator;
     friend class PolyStore;
 };
@@ -115,11 +115,14 @@ public:
     PolyRef makePoly   (LVRef s, vec<PolyTermRef>& terms);
     void  remove       (LVRef var, PolyRef pol); // Removes var from pol
     void  remove       (LVRef poly_var);         // Removes the polynomial corresponding to poly_var
+    void  remove       (PolyRef pr);             // Removes the polynomial pr
     int   add          (PolyRef pr, LVRef v, Real &c);
-    void  update       (PolyRef pr, PolyTermRef old, LVRef var, const opensmt::Real& coef);  // Update the polytermref old to contain var * coef in pr.
+    void  updateTerm   (PolyRef pr, PolyTermRef term, LVRef var, const opensmt::Real& coef);  // Update the polytermref old to contain var * coef in pr.
+    void  updateVar    (PolyRef pr, LVRef v) { pa[pr].var = v; } // Update the var of the polynomial (i.e. v_old = p(x), update v := var)
     void  updateCoef   (PolyTermRef ptr, const opensmt::Real& coef) { pta.updateCoef(ptr, coef); }
     char* printPolyTerm(const opensmt::Real &coef, LVRef var);
     char* printPoly    (PolyRef pr);
+    char* printOccurrences(LVRef var);
     bool  has          (PolyRef pr, LVRef v) { return varToIdx[pa[pr].getId()].has(v); }
     PolyTermRef find   (PolyRef pr, LVRef v) { return pa[pr][varToIdx[pa[pr].getId()][v]]; }
     int   getPos       (PolyRef pr, LVRef v) { return varToIdx[pa[pr].getId()][v]; }

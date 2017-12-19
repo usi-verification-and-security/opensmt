@@ -199,7 +199,7 @@ private:
     void setNonbasic(LVRef);
     void setBasic(LVRef);
     void doGaussianElimination( );                          // Performs Gaussian elimination of all redundant terms in the Tableau
-    void removeRow(LVRef v);                                // Remove the row corresponding to v
+    void removeRow(PolyRef pr);                                // Remove the row corresponding to v
     void removeCol(LVRef v);                                // Remove the col corresponding to v
     void update( LVRef, const Delta & );                    // Updates the bounds after constraint pushing
     void pivotAndUpdate( LVRef, LVRef, const Delta &);      // Updates the tableau after constraint pushing
@@ -262,7 +262,7 @@ private:
     // The variable system
 
     Map<PTRef,vec<PTRef>*,PTRefHash> removed_by_GaussianElimination;       // Stack of variables removed during Gaussian elimination
-    vec<PTRef> *solveForVar(LVRef poly_var, LVRef var);
+    vec<PTRef> *solveForVar(PolyRef pr, LVRef var);
 
     // Two reloaded output operators
     inline friend ostream & operator <<( ostream & out, LRASolver & solver )

@@ -56,6 +56,12 @@ struct PolyRef {
     inline friend bool operator!= (const PolyRef& a1, const PolyRef& a2) { return a1.x != a2.x; }
 };
 
+struct PolyRefHash {
+    uint32_t operator() (const PolyRef& s) const {
+        return (uint32_t)s.x;
+    }
+};
+
 static struct PolyRef PolyRef_Undef = { INT32_MAX };
 
 struct PolyTermRef {

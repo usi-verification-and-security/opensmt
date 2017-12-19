@@ -10,7 +10,7 @@
 
 struct BindedRow
 {
-    LVRef var;
+    PolyRef poly;
     int pos;
 };
 
@@ -18,13 +18,14 @@ class BindedRows
 {
     friend class BindedRowsStore;
     vec<BindedRow> rows;
-    Map<LVRef,int,LVRefHash> varToIdx;
-    void remove(LVRef v);
+    Map<PolyRef,int,PolyRefHash> polyToIdx;
+    void remove(PolyRef pr);
 public:
     BindedRow& operator[] (int i) { return rows[i]; }
     int size() const { return rows.size(); }
-    void add(LVRef v, int pos) { assert(pos >= 0); assert(!varToIdx.has(v)); varToIdx.insert(v, rows.size()); rows.push({v, pos}); }
-    void clear() { rows.clear(); varToIdx.clear(); }
+    void add(PolyRef pr, int pos) { assert(pos >= 0); assert(!polyToIdx.has(pr)); polyToIdx.insert(pr, rows.size()); rows.push({pr, pos}); }
+    void updatePolyRef(int j, PolyRef pr) { PolyRef old = rows[j].poly; rows[j].poly = pr; polyToIdx.remove(old); polyToIdx.insert(pr, j); }
+    void clear() { rows.clear(); polyToIdx.clear(); }
 };
 
 class BindedRowsAllocator : public RegionAllocator<uint32_t>
@@ -64,8 +65,8 @@ private:
     int debug_count;
 public:
     BindedRowsStore(LRALogic& l, LAVarAllocator& lva, BindedRowsAllocator& bra) : logic(l), lva(lva), bra(bra), debug_count(0) {}
-    void remove(LVRef v, LVRef target);
-    void add(LVRef row, int pos, LVRef target);
+    void remove(PolyRef pr, LVRef var);  // Remove var from ref
+    void add(PolyRef pr, int pos, LVRef target); // Add occurrence of target at position pos on polynomial pr
     BindedRows& getBindedRows(LVRef v) { return bra[lva[v].getBindedRowsRef()]; }
 };
 
