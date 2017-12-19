@@ -41,12 +41,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef UF_INTERPOLATOR_H
 #define UF_INTERPOLATOR_H
 
-#include "Logic.h"
 #include "SMTConfig.h"
 #include "PTRef.h"
 #include "TheoryInterpolator.h"
 
 struct CEdge;
+class Logic;
 
 struct CNode
 {

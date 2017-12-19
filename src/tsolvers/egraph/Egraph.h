@@ -37,7 +37,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "TSolver.h"
 #include "SymStore.h"
 #include "PtStore.h"
-#include "Logic.h"
 // For debugging
 #include "TermMapper.h"
 

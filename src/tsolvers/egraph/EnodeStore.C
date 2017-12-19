@@ -26,6 +26,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "EnodeStore.h"
 #include "Symbol.h"
+#include "Logic.h"
 
 ERef EnodeStore::addSymb(SymRef t) {
     ERef rval;
