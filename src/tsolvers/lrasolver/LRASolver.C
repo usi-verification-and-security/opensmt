@@ -128,6 +128,12 @@ LRAModel::popBound(const LABoundRef br)
     }
 }
 
+void
+LRAModel::pop(const LVRef& v)
+{
+    int_model[lva[v].ID()].pop();
+}
+
 LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
     : logic(l)
     , bindedRowsStore(l, lva, bra)
@@ -514,6 +520,7 @@ bool LRASolver::check(bool complete)
 //            return setStatus( SAT );
         }
 
+
         LVRef y = LVRef_Undef;
         LVRef y_found = y;
 
@@ -804,7 +811,7 @@ void LRASolver::popBacktrackPoint( )
 }
 
 // Remove row corresponding to pr.  Assumes that the variables appearing in the row have already updated their
-// occurrence lists correspondingly.
+// occurrence lists correspondingly.  Called only from gaussianElimination
 void LRASolver::removeRow(PolyRef pr)
 {
     int v_row = lva[pa[pr].getVar()].getRowId();
@@ -951,6 +958,7 @@ void LRASolver::doGaussianElimination( )
         removeCol(elim_cols[i]);
 }
 
+
 //
 // updates the model values according to asserted bound
 //
@@ -1042,16 +1050,18 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
 
     // We will add bv to basic vectors so it needs to be set non-basic
     lva[bv].setNonbasic();
-
     // now change the attribute values for all rows where nv was present
     for (int i = 0; i < bra[lva[nv].getBindedRowsRef()].size(); i++)
     {
-        // Use LRASolver::addVarToRow?
-        // check that the modified row is not bv (it was changed already)
-        if (pa[bra[lva[nv].getBindedRowsRef()][i].poly].getVar() == bv)
-            continue;
         PolyRef row = bra[lva[nv].getBindedRowsRef()][i].poly;
         int     pos = bra[lva[nv].getBindedRowsRef()][i].pos;
+        // check that the modified row is not bv (it was changed already)
+        if (pa[row].getVar() == bv) {
+            // This code does not seem to work, we don't get here.
+            polyStore.remove(nv, row);
+            continue;
+        }
+
         assert( pta[pa[row][pos]].coef != 0 );
 
         // copy a to the new Real variable (use memory pool)
@@ -1079,11 +1089,18 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
             printf(" => %s\n", polyStore.printPoly(row));
         }
     }
+    printf("My occurrences are now %s (should be empty)\n", polyStore.printOccurrences(nv));
 
     // swap x and y (basicID, polynomial, bindings)
     lva[bv].setPolyRef(PolyRef_Undef);
-    lva[nv].setRowId(lva[bv].getRowId());
-
+    int row_id = lva[bv].getRowId();
+    lva[nv].setRowId(row_id);
+    assert(rows[row_id] == bv);
+    // Remove bv from rows, add nv to rows.
+    printf("Changing rows[%d] from %s to %s\n", row_id, lva.printVar(bv), lva.printVar(nv));
+    rows[row_id] = nv;
+    lva[bv].setNonbasic();
+    lva[nv].setBasic();
     assert( polyStore.has(pr, bv) );
 
     assert( lva[bv].getPolyRef() == PolyRef_Undef );

@@ -99,7 +99,8 @@ public:
     inline int   nVars() { return n_vars_with_model; }
     inline       void   write(const LVRef &v, const Delta&);
     inline const Delta& read (const LVRef &v) const { return int_model[lva[v].ID()].last().d; }
-    inline void  pop(const LVRef &v) { int_model[lva[v].ID()].pop(); }
+//    inline void  pop(const LVRef &v) { int_model[lva[v].ID()].pop(); }
+    void         pop(const LVRef &v);
     void         popBound(const LABoundRef);
     void         pushBound(const LABoundRef br);
 };

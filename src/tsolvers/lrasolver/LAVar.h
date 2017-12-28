@@ -129,13 +129,11 @@ public:
 
 void LAVar::setNonbasic()
 {
-    row_id = -1;
     header.basic = false;
 }
 
 void LAVar::setBasic()
 {
-    col_id = -1;
     header.basic = true;
 }
 
