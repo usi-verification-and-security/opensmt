@@ -366,7 +366,6 @@ LVRef LRASolver::constructLAVarSystem(PTRef term) {
         }
         PolyRef pr  = polyStore.makePoly(x, sum_terms);
         lva[x].setPolyRef(pr);
-        printf("I made a polynomial for %s.  It looks like this: %s\n", lva.printVar(polyStore.getPoly(x).getVar()), polyStore.printPoly(lva[x].getPolyRef()));
     }
     return x;
 }
@@ -447,7 +446,6 @@ bool LRASolver::check(bool complete)
 {
     // opensmt::StopWatch check_timer(tsolver_stats.simplex_timer);
 
-    printf("Check\n");
     (void)complete;
     // check if we stop reading constraints
     if (status == INIT)
@@ -618,7 +616,6 @@ bool LRASolver::check(bool complete)
         }
     }
     getStatus() == true ? tsolver_stats.sat_calls ++ : tsolver_stats.unsat_calls ++;
-    printf("check ended.  Status is %s\n", getStatus() ? "sat" : "unsat");
     return getStatus();
 }
 
@@ -655,7 +652,6 @@ bool LRASolver::assertLit( PtAsgn asgn, bool reason )
 //  cerr << "; Pushing (" << ( pta.sgn == l_False ? "not " : "") << logic.printTerm(pta.tr)
 //       << " - " << ptermToLavar[logic.getPterm(pta.tr).getId()] << endl;
 
-    printf("Asserting %s%s\n", (asgn.sgn == l_False ? "not " : ""), logic.printTerm(asgn.tr));
     bool is_reason = false;
 
     Pterm& t = logic.getPterm(asgn.tr);
@@ -798,7 +794,6 @@ void LRASolver::popBacktrackPoint( )
 
     for (int i = LABound_trace_lim.last(); i < LABound_trace.size(); i++) {
         popBound(LABound_trace[i]);
-        printf("retracting %s%s (%s)\n", (ba[LABound_trace[i]].getSign() == l_False ? "not " : ""), logic.printTerm(ba[LABound_trace[i]].getPTRef()), boundStore.printBound(LABound_trace[i]));
 
     }
     LABound_trace.shrink(LABound_trace.size() - LABound_trace_lim.last());
@@ -995,8 +990,6 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
 
     assert( polyStore.has(lva[bv].getPolyRef(), nv) );
 
-    printf("Basic vector %s will be solved for var %s\n", polyStore.printPoly(lva[bv].getPolyRef()), lva.printVar(nv));
-
     // get Theta (zero if Aij is zero)
     const Real& a = pta[polyStore.find(lva[bv].getPolyRef(), nv)].coef;
 
@@ -1045,33 +1038,23 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
 
     // pr is now the new polynomial for nv
     lva[nv].setPolyRef(pr);
+    lva[bv].setPolyRef(PolyRef_Undef);
 
-    printf("The result is now %s\n", polyStore.printPoly(pr));
 
     // We will add bv to basic vectors so it needs to be set non-basic
     lva[bv].setNonbasic();
     // now change the attribute values for all rows where nv was present
-    for (int i = 0; i < bra[lva[nv].getBindedRowsRef()].size(); i++)
-    {
-        PolyRef row = bra[lva[nv].getBindedRowsRef()][i].poly;
-        int     pos = bra[lva[nv].getBindedRowsRef()][i].pos;
-        // check that the modified row is not bv (it was changed already)
-        if (pa[row].getVar() == bv) {
-            // This code does not seem to work, we don't get here.
-            polyStore.remove(nv, row);
-            continue;
-        }
-
+    while (bra[lva[nv].getBindedRowsRef()].size() != 0) {
+        PolyRef row = bra[lva[nv].getBindedRowsRef()][0].poly;
+        int     pos = bra[lva[nv].getBindedRowsRef()][0].pos;
         assert( pta[pa[row][pos]].coef != 0 );
 
         // copy a to the new Real variable (use memory pool)
 
         const Real& a = *newReal(&pta[pa[row][pos]].coef);
 
-        printf("The poly %s has an occurrence of %s at pos %d\n", polyStore.printPoly(row), lva.printVar(nv), pos);
         // Remove first nv from the poly.
         polyStore.remove(nv, row);
-        printf("I removed %s.  My poly is now %s\n", lva.printVar(nv), polyStore.printPoly(row));
         // P_i = P_i + a_nv * P_bv (iterate over all elements of P_bv)
         for (int j = 0; j < pa[pr].size(); j++) {
             LVRef col = pta[pa[pr][j]].var;
@@ -1080,16 +1063,16 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
             Real tmp = a*b;
             Real* p_c = newReal(&tmp);
 
-            printf("Sum: %s + %s\n", polyStore.printPoly(row), polyStore.printPolyTerm(*p_c, col));
 
             // Add the variable col with factor p_c to row's polynomial
             polyStore.add(row, col, *p_c);
             // It could be that the poly changed so we need to update our local reference row accordingly
             row = lva[pa[row].getVar()].getPolyRef();
-            printf(" => %s\n", polyStore.printPoly(row));
         }
     }
-    printf("My occurrences are now %s (should be empty)\n", polyStore.printOccurrences(nv));
+    // nv will become the new basic var, so we need to remove its occurrences
+    BindedRows& b = bindedRowsStore.getBindedRows(nv);
+    b.clear();
 
     // swap x and y (basicID, polynomial, bindings)
     lva[bv].setPolyRef(PolyRef_Undef);
@@ -1097,7 +1080,6 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
     lva[nv].setRowId(row_id);
     assert(rows[row_id] == bv);
     // Remove bv from rows, add nv to rows.
-    printf("Changing rows[%d] from %s to %s\n", row_id, lva.printVar(bv), lva.printVar(nv));
     rows[row_id] = nv;
     lva[bv].setNonbasic();
     lva[nv].setBasic();

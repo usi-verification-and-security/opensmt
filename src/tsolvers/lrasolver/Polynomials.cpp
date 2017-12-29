@@ -100,7 +100,6 @@ PolyStore::add(PolyRef pr, LVRef v, Real &c) {
         poly_upd.append(pta.alloc(c, v), v);
         pos = poly_upd.size()-1;
         positions.insert(v, pos);
-        printf("Adding occurrence of %s at pos %d on %s\n", lva.printVar(v), pos, printPoly(pr_new));
         brs.add(pr_new, pos, v);
         assert(checkConsistency(pr_new));
     }
@@ -117,14 +116,8 @@ void PolyStore::updateTerm(PolyRef pr, PolyTermRef term, LVRef var, const opensm
     int idx = positions[old_var];
     positions.remove(old_var);
     positions.insert(var, idx);
-    printf("Removing occurrence of row %s from var %s\n", printPoly(pr), lva.printVar(old_var));
-    printf("Occurrences before removal:\n%s\n", printOccurrences(old_var));
     brs.remove(pr, old_var);
-    printf("Occurrences after removal:\n%s\n", printOccurrences(old_var));
-    printf("Adding occurrence of row %s to var %s\n", printPoly(pr), lva.printVar(var));
-    printf("Occurrences before addition:\n%s\n", printOccurrences(var));
     brs.add(pr, idx, var);
-    printf("Occurrences after addition:\n%s\n", printOccurrences(var));
     checkConsistency(pr);
 }
 
