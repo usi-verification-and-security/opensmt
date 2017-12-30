@@ -28,8 +28,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "LAVar.h"
 
-const char* const BoundT::names[3] = {"[L]", "[U]", "[N]"};
-
 BoundIndex::BoundIndex(const BoundIndex& o)
 {
     i = o.i;

@@ -28,17 +28,16 @@ PolyStore::remove(LVRef v, PolyRef pol)
 
     Map<LVRef,int,LVRefHash>& positions = varToIdx[pa[pol].getId()];
     int start_idx = positions[v]+1;
+    positions.remove(v);
     for (int i = start_idx; i < p.size(); i++) {
-        LVRef v_old = pta[p[i-1]].var;
-        positions.remove(v_old);
-        LVRef new_var = pta[p[i]].var;
-        int new_pos = i-1;
-        positions.insert(new_var, new_pos);
+        LVRef w = pta[p[i]].var;
+        positions[w] = i-1;
         p[i - 1] = p[i];
-        brs.remove(pol, new_var);
-        brs.add(pol, new_pos, new_var);
+        brs.remove(pol, w);
+        brs.add(pol, i-1, w);
     }
     p.sz --;
+    assert(positions.getSize()== p.sz);
     checkConsistency(pol);
 }
 

@@ -70,7 +70,7 @@ class PolyAllocator : RegionAllocator<uint32_t>
     static int polyWord32Size(int size) {
         return (sizeof(Poly) + (sizeof(PolyTermRef) * size )) / sizeof(uint32_t); }
 public:
-    explicit PolyAllocator(PolyTermAllocator& pta) : pta(pta) {}
+    explicit PolyAllocator(PolyTermAllocator& pta) : pta(pta), id_count(0) {}
     PolyRef alloc(vec<PolyTermRef>& pts, LVRef var) {
         uint32_t v = RegionAllocator<uint32_t>::alloc(polyWord32Size(pts.size()));
         PolyRef id = {v};

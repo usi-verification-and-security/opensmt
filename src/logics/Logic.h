@@ -306,11 +306,11 @@ class Logic {
 
     PTRef instantiateFunctionTemplate(const char* fname, Map<PTRef, PTRef, PTRefHash>&);
 
-#ifdef PRODUCE_PROOF
+    bool implies(PTRef, PTRef); // Check the result with an external solver
 
+#ifdef PRODUCE_PROOF
     PTRef getPartitionA(const ipartitions_t&);
     PTRef getPartitionB(const ipartitions_t&);
-    bool implies(PTRef, PTRef);
     bool verifyInterpolantA(PTRef, const ipartitions_t&);
     bool verifyInterpolantB(PTRef, const ipartitions_t&);
     bool verifyInterpolant(PTRef, const ipartitions_t&);
@@ -546,8 +546,9 @@ class Logic {
     bool       hasQuotableChars(const char* name) const;
     char*      protectName(const char* name) const;
     virtual char* printTerm_       (PTRef tr, bool l, bool s) const;
-    char*       printTerm          (PTRef tr)                 const  { return printTerm_(tr, false, false); }
-    char*       printTerm          (PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
+    virtual char* printTerm        (PTRef tr)                 const { return printTerm_(tr, false, false); }
+    virtual char* printTerm        (PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
+    virtual char* pp(PTRef tr); // A pretty printer
     char*       printSym           (SymRef sr) const;
 
     void  purify           (PTRef r, PTRef& p, lbool& sgn) const

@@ -445,7 +445,7 @@ lbool LRASolver::declareTerm(PTRef leq_tr)
 bool LRASolver::check(bool complete)
 {
     // opensmt::StopWatch check_timer(tsolver_stats.simplex_timer);
-
+    printf(" - check\n");
     (void)complete;
     // check if we stop reading constraints
     if (status == INIT)
@@ -616,6 +616,8 @@ bool LRASolver::check(bool complete)
         }
     }
     getStatus() == true ? tsolver_stats.sat_calls ++ : tsolver_stats.unsat_calls ++;
+    printf(" - check ended\n");
+    printf(" => %s\n", getStatus() ? "sat" : "unsat");
     return getStatus();
 }
 
@@ -656,28 +658,32 @@ bool LRASolver::assertLit( PtAsgn asgn, bool reason )
 
     Pterm& t = logic.getPterm(asgn.tr);
 
-    // skip if it was deduced by the solver itself with the same polarity
-    if (deduced[t.getVar()] != l_Undef && deduced[t.getVar()].polarity == asgn.sgn && deduced[t.getVar()].deducedBy == id) {
-        getStatus() ? tsolver_stats.sat_calls ++ : tsolver_stats.unsat_calls ++;
-        return getStatus( );
-    }
-    if (deduced[t.getVar()] != l_Undef && deduced[t.getVar()].deducedBy == id)
-        is_reason = true; // This is a conflict!
-
-    setPolarity(asgn.tr, asgn.sgn);
-
-    LVRef it = leqToLavar[Idx(t.getId())];
-
-    // Constraint to push was not found in local storage. Most likely it was not read properly before
-    if ( it == LVRef_Undef ) {
-        std::cout << logic.printTerm(asgn.tr) << "\n";
-        throw "Unexpected push";
-    }
-
-    assert( !isUnbounded(it) );
 
     LABoundRefPair p = boundStore.getBoundRefPair(asgn.tr);
     LABoundRef bound_ref = asgn.sgn == l_False ? p.neg : p.pos;
+
+    printf("Asserting %s\n", boundStore.printBound(bound_ref));
+    printf(" - equal to %s%s\n", asgn.sgn == l_True ? "" : "not ", logic.pp(asgn.tr));
+
+    LVRef it = leqToLavar[Idx(t.getId())];
+    assert( !isUnbounded(it) );
+    // Constraint to push was not found in local storage. Most likely it was not read properly before
+    if ( it == LVRef_Undef ) {
+        std::cout << logic.pp(asgn.tr) << "\n";
+        throw "Unexpected push";
+    }
+
+    // skip if it was deduced by the solver itself with the same polarity
+    if (deduced[t.getVar()] != l_Undef && deduced[t.getVar()].polarity == asgn.sgn && deduced[t.getVar()].deducedBy == id) {
+        getStatus() ? tsolver_stats.sat_calls ++ : tsolver_stats.unsat_calls ++;
+        printf(" => %s\n", getStatus() ? "sat" : "unsat");
+        return getStatus();
+    }
+    if (deduced[t.getVar()] != l_Undef && deduced[t.getVar()].deducedBy == id) {
+        is_reason = true; // This is a conflict!
+    }
+    setPolarity(asgn.tr, asgn.sgn);
+
     LABound& bound = ba[bound_ref];
     BoundIndex it_i = bound.getIdx();
 
@@ -702,7 +708,10 @@ bool LRASolver::assertLit( PtAsgn asgn, bool reason )
         }
     }
     getStatus() ? tsolver_stats.sat_calls ++ : tsolver_stats.unsat_calls ++;
-    return getStatus( );
+
+    if (!getStatus())
+        printf(" => unsat\n");
+    return getStatus();
 }
 
 bool LRASolver::assertBoundOnVar( LVRef it, BoundIndex it_i )
@@ -793,6 +802,7 @@ void LRASolver::popBacktrackPoint( )
     LATrace_lim.pop();
 
     for (int i = LABound_trace_lim.last(); i < LABound_trace.size(); i++) {
+        printf(" => Popping %s\n", boundStore.printBound(LABound_trace[i]));
         popBound(LABound_trace[i]);
 
     }
@@ -1480,7 +1490,7 @@ void LRASolver::print( ostream & out )
     // print current non-basic variables
     out << "Var:" << endl;
     for ( unsigned i = 0; i < columns.size(); i++ )
-        out << logic.printTerm(lva[columns[i]].getPTRef()) << "\t";
+        out << logic.pp(lva[columns[i]].getPTRef()) << "\t";
     out << endl;
 
     // print current model values
@@ -1564,6 +1574,26 @@ void LRASolver::computeConcreteModel(LVRef v) {
         concrete_model[lva[v].ID()] = new opensmt::Real(model.read(v).R() + model.read(v).D() * delta);
 }
 
+void LRASolver::getConflict(bool, vec<PtAsgn>& e)
+{
+    for (int i = 0; i < explanation.size(); i++) {
+        e.push(explanation[i]);
+
+    }
+    printf(" => explanation: \n");
+    for (int i = 0; i < e.size(); i++) {
+        PtAsgn asgn = e[i];
+        LABoundRefPair p = boundStore.getBoundRefPair(asgn.tr);
+        LABoundRef bound_ref = asgn.sgn == l_False ? p.neg : p.pos;
+        printf("(%s) ", boundStore.printBound(bound_ref));
+    }
+    printf("\n");
+    vec<PTRef> check_me;
+    for (int i = 0; i < e.size(); i++) {
+        check_me.push(e[i].sgn == l_False ? logic.mkNot(e[i].tr) : e[i].tr);
+    }
+    assert(logic.implies(logic.mkAnd(check_me), logic.getTerm_false()));
+}
 
 //
 // Detect the appropriate value for symbolic delta and stores the model

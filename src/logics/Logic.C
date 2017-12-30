@@ -311,6 +311,43 @@ Logic::printSym(SymRef sr) const
 }
 
 char*
+Logic::pp(PTRef tr)
+{
+    char* out;
+
+    const Pterm& t = getPterm(tr);
+    SymRef sr = t.symb();
+    char* name_escaped = printSym(sr);
+
+    if (t.size() == 0) {
+        asprintf(&out, "%s", name_escaped);
+        free(name_escaped);
+        return out;
+    }
+
+    // Here we know that t.size() > 0
+
+    char* old;
+    asprintf(&out, "(%s ", name_escaped);
+    free(name_escaped);
+
+    for (int i = 0; i < t.size(); i++) {
+        old = out;
+        asprintf(&out, "%s%s", old, pp(t[i]));
+        ::free(old);
+        if (i < t.size()-1) {
+            old = out;
+            asprintf(&out, "%s ", old);
+            ::free(old);
+        }
+    }
+    old = out;
+    asprintf(&out, "%s)", old);
+    ::free(old);
+    return out;
+}
+
+char*
 Logic::printTerm_(PTRef tr, bool ext, bool safe) const
 {
     char* out;
@@ -2156,7 +2193,6 @@ Logic::instantiateFunctionTemplate(const char* fname, Map<PTRef, PTRef,PTRefHash
     return tr_subst;
 }
 
-#ifdef PRODUCE_PROOF
 
 bool
 Logic::implies(PTRef implicant, PTRef implicated)
@@ -2202,6 +2238,7 @@ Logic::implies(PTRef implicant, PTRef implicated)
     return true;
 }
 
+#ifdef PRODUCE_PROOF
 bool
 Logic::verifyInterpolantA(PTRef itp, const ipartitions_t& mask)
 {

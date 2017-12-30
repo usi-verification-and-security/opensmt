@@ -1044,7 +1044,78 @@ void LRALogic::deserializeLogicData(const int* logicdata_buf)
 // Handle the printing of real constants that are negative and the
 // rational constants
 char*
-LRALogic::printTerm_(PTRef tr, bool ext, bool safe)
+LRALogic::printTerm_(PTRef tr, bool ext, bool safe) const
+{
+    char* out;
+    if (isRealConst(tr))
+    {
+        bool is_neg = false;
+        char* tmp_str;
+        opensmt::stringToRational(tmp_str, sym_store.getName(getPterm(tr).symb()));
+        opensmt::Real v(tmp_str);
+        if (!isNonnegRealConst(tr))
+        {
+            v = -v;
+            is_neg = true;
+        }
+        char* rat_str = strdup(v.get_str().c_str());
+        free(tmp_str);
+
+        bool is_div = false;
+        int i = 0;
+        for (; rat_str[i] != '\0'; i++)
+        {
+            if (rat_str[i] == '/')
+            {
+                is_div = true;
+                break;
+            }
+        }
+        if (is_div)
+        {
+            int j = 0;
+            char* nom = (char*) malloc(i+1);
+            for (; j < i; j++)
+                nom[j] = rat_str[j];
+            nom[i] = '\0';
+            int len = strlen(rat_str);
+            char* den = (char*) malloc(len-i);
+            i++;
+            j = 0;
+            for (; i < len; i++)
+                den[j++] = rat_str[i];
+            den[j] = '\0';
+
+            if (ext) {
+                if (is_neg)
+                    asprintf(&out, "(/ (- %s) %s) <%d>", nom, den, tr.x);
+                else
+                    asprintf(&out, "(/ %s %s) <%d>", nom, den, tr.x);
+            }
+            else {
+                if (is_neg)
+                    asprintf(&out, "(/ (- %s) %s)", nom, den);
+                else
+                    asprintf(&out, "(/ %s %s)", nom, den);
+            }
+            free(nom);
+            free(den);
+        }
+        else if (is_neg) {
+            if (ext)
+                asprintf(&out, "(- %s) <%d>", rat_str, tr.x);
+            else
+                asprintf(&out, "(- %s)", rat_str);
+        }
+        else
+            out = rat_str;
+    }
+    else
+        out = Logic::printTerm_(tr, ext, safe);
+    return out;
+}
+
+char* LRALogic::pp(PTRef tr)
 {
     char* out;
     if (isRealConst(tr))
@@ -1052,27 +1123,21 @@ LRALogic::printTerm_(PTRef tr, bool ext, bool safe)
         if (!isNonnegRealConst(tr))
         {
             PTRef tr_p = mkRealNeg(tr);
-            char *tmp = printTerm_(tr_p, ext, safe);
-            if (ext)
-                asprintf(&out, "(- %s) <%d>", tmp, tr.x);
-            else
-                asprintf(&out, "(- %s)", tmp);
+            char *tmp = pp(tr_p);
+            asprintf(&out, "-%s", tmp);
             free(tmp);
         }
         else {
             char* tmp = printSym(getSymRef(tr));
             bool is_div = false;
             int i = 0;
-            for (; tmp[i] != '\0'; i++)
-            {
-                if (tmp[i] == '/')
-                {
+            for (; tmp[i] != '\0'; i++) {
+                if (tmp[i] == '/') {
                     is_div = true;
                     break;
                 }
             }
-            if (is_div)
-            {
+            if (is_div) {
                 int j = 0;
                 char* nom = (char*) malloc(i+1);
                 for (; j < i; j++)
@@ -1085,11 +1150,7 @@ LRALogic::printTerm_(PTRef tr, bool ext, bool safe)
                 for (; i < len; i++)
                     den[j++] = tmp[i];
                 den[j] = '\0';
-
-                if (ext)
-                    asprintf(&out, "(/ %s %s) <%d>", nom, den, tr.x);
-                else
-                    asprintf(&out, "(/ %s %s)", nom, den);
+                asprintf(&out, "(/ %s %s)", nom, den);
                 free(nom);
                 free(den);
             }
@@ -1098,6 +1159,6 @@ LRALogic::printTerm_(PTRef tr, bool ext, bool safe)
         }
     }
     else
-        out = Logic::printTerm_(tr, ext, safe);
+        out = Logic::pp(tr);
     return out;
 }

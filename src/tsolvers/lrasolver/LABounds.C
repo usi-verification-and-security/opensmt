@@ -67,8 +67,12 @@ void LABoundListAllocator::reloc(LABoundListRef& tr, LABoundListAllocator& to)
 
 void LABoundStore::addBound(LVRef v, PTRef leq_ref, PTId leq_id, const Real& constr, BoundT bound_t)
 {
-    LABoundRef br_pos = ba.alloc(bound_t, PtAsgn(leq_ref, l_True), v, bound_t == bound_u ? Delta(-constr) : Delta(constr));
-    LABoundRef br_neg = ba.alloc(~bound_t, PtAsgn(leq_ref, l_False), v, bound_t == bound_u ? Delta(constr, 1) : Delta((-constr), -1));
+    printf(" -> bound store gets %s\n", logic.pp(leq_ref));
+    LABoundRef br_pos = ba.alloc( bound_t, PtAsgn(leq_ref, l_True) , v, bound_t == bound_u ? Delta(-constr)   : Delta(constr));
+//    LABoundRef br_neg = ba.alloc(~bound_t, PtAsgn(leq_ref, l_False), v, bound_t == bound_u ? Delta(constr, 1) : Delta((-constr), -1));
+    LABoundRef br_neg = ba.alloc(~bound_t, PtAsgn(leq_ref, l_False), v, bound_t == bound_u ? Delta((-constr), -1) : Delta(constr, 1));
+    printf(" --> %s\n", printBound(br_pos));
+    printf(" --> %s\n", printBound(br_neg));
     // Delta(constr, bound_t == bound_u ? 1 : -1));
 
 //    if (bound_t == bound_u)
@@ -142,18 +146,18 @@ LABoundStore::printBound(LABoundRef br) const
         asprintf(&str_out, "-infty < var");
         return str_out;
     }
-    char *v_str = logic.printTerm(lva[ba[br].getLVRef()].getPTRef());
+    char *v_str = logic.pp(lva[ba[br].getLVRef()].getPTRef());
     const Delta & d = ba[br].getValue();
     opensmt::Real r = d.R();
     opensmt::Real s = d.D();
     BoundT type = ba[br].getType();
     if ( (type == bound_l) && (s == 0) )
         asprintf(&str_out, "%s <= %s", r.get_str().c_str(), v_str);
-    if ( (type == bound_l) && (s > 0) )
+    if ( (type == bound_l) && (s != 0) )
         asprintf(&str_out, "%s < %s", r.get_str().c_str(), v_str);
     if ( (type == bound_u) && (s == 0) )
         asprintf(&str_out, "%s <= %s", v_str, r.get_str().c_str());
-    if ( (type == bound_u) && (s < 0) )
+    if ( (type == bound_u) && (s != 0) )
         asprintf(&str_out, "%s < %s", v_str, r.get_str().c_str());
 
     return str_out;

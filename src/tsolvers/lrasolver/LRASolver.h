@@ -160,8 +160,8 @@ public:
     void  popBacktrackPoint  ( );                       // Backtrack to last saved point
 
 
-
-    void  getConflict(bool, vec<PtAsgn>& e) { for (int i = 0; i < explanation.size(); i++) { e.push(explanation[i]); } } // Return the conflicting bounds
+    // Return the conflicting bounds
+    void  getConflict(bool, vec<PtAsgn>& e);
     PtAsgn_reason getDeduction() { if (deductions_next >= th_deductions.size()) return PtAsgn_reason_Undef; else return th_deductions[deductions_next++]; }
 
     LRALogic&  getLogic() { return logic; }

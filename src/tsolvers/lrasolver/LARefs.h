@@ -14,11 +14,9 @@ struct LABoundListRef
 static struct LABoundListRef LABoundListRef_Undef = {INT32_MAX};
 
 struct BoundT {
-    static const char* const names[3];
     char t;
     bool operator== (const BoundT& o) const { return o.t == t; }
     BoundT operator~ () const { return { (char)(1-t) }; }
-    inline friend std::ostream& operator<< (std::ostream& o, const BoundT& b) { o << names[(int)b.t]; return o; }
 };
 
 const BoundT bound_l = { 0 };
