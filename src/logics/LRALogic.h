@@ -210,7 +210,6 @@ class LRALogic: public Logic
     virtual char* printTerm_       (PTRef tr, bool ext, bool s) const;
     virtual char* printTerm        (PTRef tr)                 const { return printTerm_(tr, false, false); }
     virtual char* printTerm        (PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
-    virtual char* pp               (PTRef tr);
 };
 
 // Determine for two multiplicative terms (* k1 v1) and (* k2 v2), v1 !=

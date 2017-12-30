@@ -93,8 +93,9 @@ LRAModel::addVar(LVRef v)
 void
 LRAModel::write(const LVRef &v, const Delta& val)
 {
-    if ((int_model[lva[v].ID()].size() == 0) || (int_model[lva[v].ID()].last().dl != decisionLevel())) {
+    if ((int_model[lva[v].ID()].size() == 0) || (int_model[lva[v].ID()].last().dl != backtrackLevel())) {
         int_model[lva[v].ID()].push();
+        model_trace.push(v);
     }
     int_model[lva[v].ID()].last().d = val;
 }
@@ -104,34 +105,44 @@ LRAModel::pushBound(const LABoundRef br) {
     LABound& b = bs[br];
     LVRef vr = b.getLVRef();
     if (b.getType() == bound_u) {
-        int_ubounds[lva[vr].ID()].push({br, decisionLevel()});
+        int_ubounds[lva[vr].ID()].push({br, backtrackLevel()});
     }
     else
-        int_lbounds[lva[vr].ID()].push({br, decisionLevel()});
+        int_lbounds[lva[vr].ID()].push({br, backtrackLevel()});
+
+    bound_trace.push(br);
 }
 
-
 void
-LRAModel::popBound(const LABoundRef br)
+LRAModel::popBounds()
 {
-    LABound& b = bs[br];
-    LVRef vr = b.getLVRef();
-    LABoundRef latest_bound = LABoundRef_Undef;
-    if (b.getType() == bound_u) {
-        int_ubounds[lva[vr].ID()].pop();
-        latest_bound = int_ubounds[lva[vr].ID()].last().br;
-        lva[vr].setUbound(bs[latest_bound].getIdx());
-    } else {
-        int_lbounds[lva[vr].ID()].pop();
-        latest_bound = int_lbounds[lva[vr].ID()].last().br;
-        lva[vr].setLbound(bs[latest_bound].getIdx());
+    for (int i = bound_trace.size()-1; i >= bound_lim.last(); i--) {
+        LABoundRef br = bound_trace[i];
+        LABound &b = bs[br];
+        LVRef vr = b.getLVRef();
+        LABoundRef latest_bound = LABoundRef_Undef;
+        if (b.getType() == bound_u) {
+            int_ubounds[lva[vr].ID()].pop();
+            latest_bound = int_ubounds[lva[vr].ID()].last().br;
+            lva[vr].setUbound(bs[latest_bound].getIdx());
+        } else {
+            int_lbounds[lva[vr].ID()].pop();
+            latest_bound = int_lbounds[lva[vr].ID()].last().br;
+            lva[vr].setLbound(bs[latest_bound].getIdx());
+        }
     }
+    bound_trace.shrink(bound_trace.size() - bound_lim.last());
+    bound_lim.pop();
 }
 
 void
-LRAModel::pop(const LVRef& v)
+LRAModel::popModels()
 {
-    int_model[lva[v].ID()].pop();
+    assert(models_lim.size() > 0);
+    for (int i = model_trace.size(); i >= models_lim.last(); i--)
+        int_model[lva[model_trace[i]].ID()].pop();
+    model_trace.shrink(model_trace.size() - models_lim.last());
+    models_lim.pop();
 }
 
 LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
@@ -144,7 +155,7 @@ LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
     , bland_threshold(1000)
     , lavarStore(lva)
     , boundStore(ba, bla, lva, lavarStore, l)
-    , model(LATrace_lim, LABound_trace_lim, lva, boundStore)
+    , model(lva, boundStore)
 {
     status = INIT;
     checks_history.push_back(0);
@@ -775,6 +786,7 @@ bool LRASolver::assertBoundOnVar( LVRef it, BoundIndex it_i )
 //
 void LRASolver::pushBacktrackPoint( )
 {
+    printf(" -> Push backtrack point %d\n", LATrace.size());
     // cerr << "; push " << pushed_constraints.size( ) << endl;
     // Check if any updates need to be repeated after backtrack
     LATrace_lim.push(LATrace.size());
@@ -790,25 +802,12 @@ void LRASolver::pushBacktrackPoint( )
 //
 void LRASolver::popBacktrackPoint( )
 {
+    printf(" -> Pop backtrack point %d\n", LATrace.size());
 //  cerr << "; pop " << pushed_constraints.size( ) << endl;
 
     // Undo with history
 
-    for (int i = LATrace_lim.last(); i < LATrace.size(); i++) {
-        LVRef var = LATrace[i];
-        popModel(var);
-    }
-    LATrace.shrink(LATrace.size() - LATrace_lim.last());
-    LATrace_lim.pop();
-
-    for (int i = LABound_trace_lim.last(); i < LABound_trace.size(); i++) {
-        printf(" => Popping %s\n", boundStore.printBound(LABound_trace[i]));
-        popBound(LABound_trace[i]);
-
-    }
-    LABound_trace.shrink(LABound_trace.size() - LABound_trace_lim.last());
-    LABound_trace_lim.pop();
-
+    model.popBacktrackPoint();
     first_update_after_backtrack = true;
 
     setStatus(SAT);

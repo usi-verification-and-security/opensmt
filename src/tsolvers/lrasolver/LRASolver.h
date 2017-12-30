@@ -85,24 +85,28 @@ private:
     vec<vec<BoundEl> > int_lbounds;
     vec<vec<BoundEl> > int_ubounds;
 
-    const vec<int> &LATrace_lim;
-    const vec<int> &LABound_trace_lim;
-    const vec<LABoundRef> LABound_trace;
+    vec<int> models_lim;
+    vec<LVRef> model_trace;
+    vec<int> bound_lim;
+    vec<LABoundRef> bound_trace;
+
     LAVarAllocator &lva;
     LABoundStore &bs;
     int n_vars_with_model;
     Map<LVRef,bool,LVRefHash> has_model;
-    int decisionLevel() { return LATrace_lim.size(); }
+    int backtrackLevel() { assert(bound_lim.size() == models_lim.size()); return bound_lim.size(); }
 public:
-    LRAModel(const vec<int> &LATrace_lim, const vec<int> &LABound_trace_lim, LAVarAllocator &lva, LABoundStore& bs) : LATrace_lim(LATrace_lim), LABound_trace_lim(LABound_trace_lim), lva(lva), bs(bs), n_vars_with_model(0) {}
+    LRAModel(LAVarAllocator &lva, LABoundStore& bs) : lva(lva), bs(bs), n_vars_with_model(0) { models_lim.push(0); bound_lim.push(0); }
     int addVar(LVRef v); // Adds a variable.  Returns the total number of variables
     inline int   nVars() { return n_vars_with_model; }
     inline       void   write(const LVRef &v, const Delta&);
     inline const Delta& read (const LVRef &v) const { return int_model[lva[v].ID()].last().d; }
 //    inline void  pop(const LVRef &v) { int_model[lva[v].ID()].pop(); }
-    void         pop(const LVRef &v);
-    void         popBound(const LABoundRef);
+    void         popModels();
+    void         popBounds();
     void         pushBound(const LABoundRef br);
+    void         pushBacktrackPoint() { bound_lim.push(bound_trace.size()); models_lim.push(model_trace.size()); }
+    void         popBacktrackPoint() { popModels(); popBounds(); };
 };
 
 //
@@ -113,7 +117,7 @@ class LRASolver: public TSolver
 {
 private:
 
-    vector<Real*>        numbers_pool;    // Collect numbers.  Should work as a simple memory managemet system
+    vector<opensmt::Real*> numbers_pool;    // Collect numbers.  Should work as a simple memory managemet system
     LRALogic&            logic;
     LAVarAllocator       lva;
     LAVarStore           lavarStore;
@@ -220,8 +224,6 @@ private:
 
     // Value system + history of bounds
     LRAModel model;
-    inline void  popModel(LVRef v)             {}
-    inline void  popBound(const LABoundRef br) { model.popBound(br); }
 
     // Model & bounds
     const Delta& Ub(LVRef v) const;                  // The current upper bound of v
