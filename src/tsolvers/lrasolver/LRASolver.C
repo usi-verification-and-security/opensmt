@@ -97,7 +97,9 @@ LRAModel::write(const LVRef &v, const Delta& val)
         int_model[lva[v].ID()].push();
         model_trace.push(v);
     }
-    int_model[lva[v].ID()].last().d = val;
+    ModelEl& el = int_model[lva[v].ID()].last();
+    el.d  = val;
+    el.dl = backtrackLevel();
 }
 
 void
@@ -116,7 +118,7 @@ LRAModel::pushBound(const LABoundRef br) {
 void
 LRAModel::popBounds()
 {
-    for (int i = bound_trace.size()-1; i >= bound_lim.last(); i--) {
+    for (int i = bound_trace.size()-1; i >= limits.last().bound_lim; i--) {
         LABoundRef br = bound_trace[i];
         LABound &b = bs[br];
         LVRef vr = b.getLVRef();
@@ -131,18 +133,51 @@ LRAModel::popBounds()
             lva[vr].setLbound(bs[latest_bound].getIdx());
         }
     }
-    bound_trace.shrink(bound_trace.size() - bound_lim.last());
-    bound_lim.pop();
+    bound_trace.shrink(bound_trace.size() - limits.last().bound_lim);
 }
 
 void
 LRAModel::popModels()
 {
-    assert(models_lim.size() > 0);
-    for (int i = model_trace.size(); i >= models_lim.last(); i--)
+    assert(limits.size() > 0);
+    for (int i = model_trace.size()-1; i >= limits.last().model_lim; i--)
         int_model[lva[model_trace[i]].ID()].pop();
-    model_trace.shrink(model_trace.size() - models_lim.last());
-    models_lim.pop();
+    model_trace.shrink(model_trace.size() - limits.last().model_lim);
+}
+
+
+void LRAModel::printModelState()
+{
+    printf("We have %d backtrack points\n", getBacktrackSize());
+    vec<LVRef> vars;
+    has_model.getKeys(vars);
+    for (int i = 0; i < vars.size(); i++) {
+        LVRef v = vars[i];
+        if (has_model[v]) {
+            int id = lva[v].ID();
+            vec<ModelEl> &vals = int_model[id];
+            printf("Var %s has %d models\n", lva.printVar(v), vals.size());
+            char *buf = (char*) malloc(1);
+            buf[0] = '\0';
+            for (int j = 0; j < vals.size(); j++) {
+                char *tmp_buf;
+                asprintf(&tmp_buf, "%s(%s, %d) ", buf, vals[j].d.printValue(), vals[j].dl);
+                free(buf);
+                buf = tmp_buf;
+            }
+            printf(" - %s\n", buf);
+            free(buf);
+        }
+        else
+            printf("Var %s has no models\n", lva.printVar(v));
+    }
+    printf("There are %d bounds in the bound trace\n", bound_trace.size());
+    for (int i = 0; i < bound_trace.size(); i++) {
+        LABoundRef br = bound_trace[i];
+        char* str = bs.printBound(br);
+        printf(" - %s\n", str);
+        free(str);
+    }
 }
 
 LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
@@ -701,7 +736,7 @@ bool LRASolver::assertLit( PtAsgn asgn, bool reason )
     if (assertBoundOnVar( it, it_i ))
     {
         model.pushBound(bound_ref);
-        LABound_trace.push(bound_ref);
+
         if (bound.getType() == bound_l)
             lva[it].setLbound(it_i);
         else
@@ -786,11 +821,12 @@ bool LRASolver::assertBoundOnVar( LVRef it, BoundIndex it_i )
 //
 void LRASolver::pushBacktrackPoint( )
 {
-    printf(" -> Push backtrack point %d\n", LATrace.size());
     // cerr << "; push " << pushed_constraints.size( ) << endl;
     // Check if any updates need to be repeated after backtrack
-    LATrace_lim.push(LATrace.size());
-    LABound_trace_lim.push(LABound_trace.size());
+    model.pushBacktrackPoint();
+    printf(" -> Push backtrack point.  Following is the state of the model after the push\n");
+    model.printModelState();
+
 //      cerr << "; re-apply " << pushed_constraints.size( ) << " - " << checks_history.back( ) << endl;
 
     // Update the generic deductions state
@@ -802,12 +838,9 @@ void LRASolver::pushBacktrackPoint( )
 //
 void LRASolver::popBacktrackPoint( )
 {
-    printf(" -> Pop backtrack point %d\n", LATrace.size());
-//  cerr << "; pop " << pushed_constraints.size( ) << endl;
-
-    // Undo with history
-
     model.popBacktrackPoint();
+    printf(" -> Pop backtrack point.  Following is the state of the model after the pop\n");
+    model.printModelState();
     first_update_after_backtrack = true;
 
     setStatus(SAT);
@@ -1279,10 +1312,10 @@ void LRASolver::getSimpleDeductions(LVRef v, BoundIndex bound_idx)
                 !hasPolarity(bound_prop.getPTRef()) &&
                 deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] == l_Undef)
             {
+                printf(" => deduced %s (var %d)\n", boundStore.printBound(bound_prop_ref), logic.getPterm(bound_prop.getPTRef()).getVar());
                 lbool pol = bound_prop.getSign();
                 deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] = DedElem(id, pol); // id is the solver id
                 th_deductions.push(PtAsgn_reason(bound_prop.getPTRef(), pol, PTRef_Undef));
-//                printf(" => deduced %s (var %d)\n", boundStore.printBound(bound_prop_ref), logic.getPterm(bound_prop.getPTRef()).getVar());
             }
         }
     }
@@ -1294,10 +1327,10 @@ void LRASolver::getSimpleDeductions(LVRef v, BoundIndex bound_idx)
                 !hasPolarity(bound_prop.getPTRef()) &&
                 (deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] == l_Undef))
             {
+                printf(" => deduced %s\n", boundStore.printBound(bound_prop_ref));
                 lbool pol = bound_prop.getSign();
                 deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] = DedElem(id, pol);
                 th_deductions.push(PtAsgn_reason(bound_prop.getPTRef(), pol, PTRef_Undef));
-//                printf(" => deduced %s\n", boundStore.printBound(bound_prop_ref));
             }
         }
     }

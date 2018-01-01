@@ -69,10 +69,10 @@ void LABoundStore::addBound(LVRef v, PTRef leq_ref, PTId leq_id, const Real& con
 {
     printf(" -> bound store gets %s\n", logic.pp(leq_ref));
     LABoundRef br_pos = ba.alloc( bound_t, PtAsgn(leq_ref, l_True) , v, bound_t == bound_u ? Delta(-constr)   : Delta(constr));
-//    LABoundRef br_neg = ba.alloc(~bound_t, PtAsgn(leq_ref, l_False), v, bound_t == bound_u ? Delta(constr, 1) : Delta((-constr), -1));
-    LABoundRef br_neg = ba.alloc(~bound_t, PtAsgn(leq_ref, l_False), v, bound_t == bound_u ? Delta((-constr), -1) : Delta(constr, 1));
+    LABoundRef br_neg = ba.alloc(~bound_t, PtAsgn(leq_ref, l_False), v, bound_t == bound_u ? Delta((-constr), 1) : Delta(constr, -1));
     printf(" --> %s\n", printBound(br_pos));
     printf(" --> %s\n", printBound(br_neg));
+//    LABoundRef br_neg = ba.alloc(~bound_t, PtAsgn(leq_ref, l_False), v, bound_t == bound_u ? Delta(constr, 1) : Delta((-constr), -1));
     // Delta(constr, bound_t == bound_u ? 1 : -1));
 
 //    if (bound_t == bound_u)
@@ -111,6 +111,33 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
         LABoundListRef br = bla.alloc(keys[i], refs);
         lva[keys[i]].setBounds(br);
         sort<LABoundRef,bound_lessthan>(bla[br].bounds, bla[br].size(), bound_lessthan(ba));
+
+        // Check that the bounds are correctly ordered
+        vec<LABoundRef> lowerbounds;
+        vec<LABoundRef> upperbounds;
+        for (int j = 1; j < bla[br].size() - 1; j++) {
+            LABoundRef tmp = bla[br].bounds[j];
+            if (ba[tmp].getType() == bound_l)
+                lowerbounds.push(tmp);
+            else
+                upperbounds.push(tmp);
+        }
+        for (int j = 0; j < lowerbounds.size()-1; j++) {
+            LABoundRef bound_higher = lowerbounds[j+1];
+            LABoundRef bound_lower = lowerbounds[j];
+            PTRef ref_higher = ba[bound_higher].getSign() == l_False ? logic.mkNot(ba[bound_higher].getPTRef()) : ba[bound_higher].getPTRef();
+            PTRef ref_lower = ba[bound_lower].getSign() == l_False ? logic.mkNot(ba[bound_lower].getPTRef()) : ba[bound_lower].getPTRef();
+            printf("Checking that %s -> %s\n", printBound(bound_higher), printBound(bound_lower));
+            logic.implies(ref_higher, ref_lower);
+        }
+        for (int j = 0; j < upperbounds.size()-1; j++) {
+            LABoundRef bound_higher = upperbounds[j+1];
+            LABoundRef bound_lower = upperbounds[j];
+            PTRef ref_higher = ba[bound_higher].getSign() == l_False ? logic.mkNot(ba[bound_higher].getPTRef()) : ba[bound_higher].getPTRef();
+            PTRef ref_lower = ba[bound_lower].getSign() == l_False ? logic.mkNot(ba[bound_lower].getPTRef()) : ba[bound_lower].getPTRef();
+            printf("Checking that %s -> %s\n", printBound(bound_lower), printBound(bound_higher));
+            logic.implies(ref_lower, ref_higher);
+        }
         for (int j = 0; j < bla[br].size(); j++)
             ba[bla[br][BoundIndex(j)]].setIdx(BoundIndex(j));
         lva[keys[i]].setLbound(BoundIndex(0));
@@ -124,6 +151,7 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
             v.setUbound(BoundIndex(1));
         }
     }
+
 }
 
 LABoundRef

@@ -73,6 +73,11 @@ class LRASolverStats: public TSolverStats
         }
 };
 
+struct Limits
+{
+    int model_lim;
+    int bound_lim;
+};
 //
 // Class for maintaining the model of a variable
 //
@@ -85,28 +90,32 @@ private:
     vec<vec<BoundEl> > int_lbounds;
     vec<vec<BoundEl> > int_ubounds;
 
-    vec<int> models_lim;
+    vec<Limits> limits;
     vec<LVRef> model_trace;
-    vec<int> bound_lim;
     vec<LABoundRef> bound_trace;
 
     LAVarAllocator &lva;
     LABoundStore &bs;
     int n_vars_with_model;
     Map<LVRef,bool,LVRefHash> has_model;
-    int backtrackLevel() { assert(bound_lim.size() == models_lim.size()); return bound_lim.size(); }
+    int backtrackLevel() { return limits.size() - 1; }
+    void         popModels();
+    void         popBounds();
+
 public:
-    LRAModel(LAVarAllocator &lva, LABoundStore& bs) : lva(lva), bs(bs), n_vars_with_model(0) { models_lim.push(0); bound_lim.push(0); }
+    LRAModel(LAVarAllocator &lva, LABoundStore& bs) : lva(lva), bs(bs), n_vars_with_model(0) { limits.push({0, 0}); }
     int addVar(LVRef v); // Adds a variable.  Returns the total number of variables
     inline int   nVars() { return n_vars_with_model; }
     inline       void   write(const LVRef &v, const Delta&);
     inline const Delta& read (const LVRef &v) const { return int_model[lva[v].ID()].last().d; }
 //    inline void  pop(const LVRef &v) { int_model[lva[v].ID()].pop(); }
-    void         popModels();
-    void         popBounds();
-    void         pushBound(const LABoundRef br);
-    void         pushBacktrackPoint() { bound_lim.push(bound_trace.size()); models_lim.push(model_trace.size()); }
-    void         popBacktrackPoint() { popModels(); popBounds(); };
+
+    void pushBound(const LABoundRef br);
+    void pushBacktrackPoint() { limits.push({model_trace.size(), bound_trace.size()}); }
+    void popBacktrackPoint() { popModels(); popBounds(); limits.pop(); };
+    int  getBacktrackSize() const { return limits.size(); }
+
+    void printModelState();
 };
 
 //
@@ -256,11 +265,6 @@ private:
     bool first_update_after_backtrack;
 
     LRASolverStatus status;                  // Internal status of the solver (different from bool)
-    vec<LVRef> LATrace;                      // The variables that have been touched
-    vec<int> LATrace_lim;                    // Decision level delimiters for variable values
-
-    vec<LABoundRef> LABound_trace;           // The bounds that have been touched
-    vec<int> LABound_trace_lim;              // Decision level delimiters for bounds
 
     // The variable system
 
