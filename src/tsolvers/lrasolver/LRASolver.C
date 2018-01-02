@@ -1222,6 +1222,7 @@ void LRASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
                 LABoundRef l_bound = bla[lva[y].getBounds()][lva[y].lbound()];
                 assert(l_bound != LABoundRef_Infty);
                 LABound& b = ba[l_bound];
+                printf("The bound is %s\n", b.getSign() == l_True ? "positive" : "negative");
                 assert( b.getPTRef() != PTRef_Undef );
                 dst.push( b.getSign() == l_True ? b.getPTRef() : logic.mkNot(b.getPTRef()) );
 
@@ -1231,6 +1232,7 @@ void LRASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
                 LABoundRef u_bound = bla[lva[y].getBounds()][lva[y].ubound()];
                 assert( u_bound != LABoundRef_Infty );
                 LABound& b = ba[u_bound];
+                printf("The bound is %s\n", b.getSign() == l_True ? "positive" : "negative");
                 assert( b.getPTRef() != PTRef_Undef );
                 dst.push( b.getSign() == l_True ? b.getPTRef() : logic.mkNot(b.getPTRef()) );
 
@@ -1255,6 +1257,7 @@ void LRASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
                 LABoundRef l_bound = bla[lva[y].getBounds()][lva[y].lbound()];
                 assert(l_bound != LABoundRef_Infty);
                 LABound& b = ba[l_bound];
+                printf("The bound is %s\n", b.getSign() == l_True ? "positive" : "negative");
                 assert( b.getPTRef() != PTRef_Undef );
                 dst.push( b.getSign() == l_True ? b.getPTRef() : logic.mkNot(b.getPTRef()) );
                 explanationCoefficients.push_back( a );
@@ -1263,12 +1266,19 @@ void LRASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
                 LABoundRef u_bound = bla[lva[y].getBounds()][lva[y].ubound()];
                 assert( u_bound != LABoundRef_Infty );
                 LABound& b = ba[u_bound];
+                printf("The bound is %s\n", b.getSign() == l_True ? "positive" : "negative");
+
                 assert( b.getPTRef() != PTRef_Undef );
                 dst.push( b.getSign() == l_True ? b.getPTRef() : logic.mkNot(b.getPTRef()) );
                 explanationCoefficients.push_back(-a);
             }
         }
     }
+
+    printf("I now came up with an explanation.  It looks like this:\n");
+    for (int i = 0; i < dst.size(); i++)
+        printf("(%s) ", logic.printTerm(dst[i]));
+    printf("\n");
 
     assert( dst.size() == pa[lva[x].getPolyRef()].size()+1 ); // One for each term plus the broken equality
 
