@@ -158,6 +158,8 @@ private:
 
     opensmt::Real *newReal(const Real *old);
 
+    int debug_check_count;
+
 public:
 
     LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d);

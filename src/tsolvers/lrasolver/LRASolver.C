@@ -191,6 +191,7 @@ LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
     , lavarStore(lva)
     , boundStore(ba, bla, lva, lavarStore, l)
     , model(lva, boundStore)
+    , debug_check_count(0)
 {
     status = INIT;
     checks_history.push_back(0);
@@ -491,7 +492,7 @@ lbool LRASolver::declareTerm(PTRef leq_tr)
 bool LRASolver::check(bool complete)
 {
     // opensmt::StopWatch check_timer(tsolver_stats.simplex_timer);
-    printf(" - check\n");
+    printf(" - check %d\n", debug_check_count++);
     (void)complete;
     // check if we stop reading constraints
     if (status == INIT)
@@ -601,7 +602,10 @@ bool LRASolver::check(bool complete)
                 vec<PTRef> tmp;
                 getConflictingBounds(x, tmp);
                 for (int i = 0; i < tmp.size(); i++) {
-                    explanation.push(PtAsgn(tmp[i], getPolarity(tmp[i])));
+                    PTRef pure;
+                    lbool sgn;
+                    logic.purify(tmp[i], pure, sgn);
+                    explanation.push(PtAsgn(pure, sgn));
                 }
                 setStatus(UNSAT);
                 break;
@@ -646,8 +650,12 @@ bool LRASolver::check(bool complete)
                 // add the x to explanations
                 vec<PTRef> tmp;
                 getConflictingBounds(x, tmp);
-                for (int i = 0; i < tmp.size(); i++)
-                    explanation.push(PtAsgn(tmp[i], getPolarity(tmp[i])));
+                for (int i = 0; i < tmp.size(); i++) {
+                    PTRef pure;
+                    lbool sgn;
+                    logic.purify(tmp[i], pure, sgn);
+                    explanation.push(PtAsgn(pure, sgn));
+                }
                 setStatus(UNSAT);
                 break;
             }
@@ -1213,17 +1221,19 @@ void LRASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
             if (a < 0) {
                 LABoundRef l_bound = bla[lva[y].getBounds()][lva[y].lbound()];
                 assert(l_bound != LABoundRef_Infty);
-                assert(ba[l_bound].getPTRef() != PTRef_Undef);
+                LABound& b = ba[l_bound];
+                assert( b.getPTRef() != PTRef_Undef );
+                dst.push( b.getSign() == l_True ? b.getPTRef() : logic.mkNot(b.getPTRef()) );
 
-                dst.push(ba[l_bound].getPTRef());
                 explanationCoefficients.push_back( -a );
             }
             else {
                 LABoundRef u_bound = bla[lva[y].getBounds()][lva[y].ubound()];
                 assert( u_bound != LABoundRef_Infty );
-                assert( ba[u_bound].getPTRef() != PTRef_Undef );
+                LABound& b = ba[u_bound];
+                assert( b.getPTRef() != PTRef_Undef );
+                dst.push( b.getSign() == l_True ? b.getPTRef() : logic.mkNot(b.getPTRef()) );
 
-                dst.push(ba[u_bound].getPTRef());
                 explanationCoefficients.push_back(a);
             }
         }
@@ -1244,17 +1254,17 @@ void LRASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
             if (a > 0) {
                 LABoundRef l_bound = bla[lva[y].getBounds()][lva[y].lbound()];
                 assert(l_bound != LABoundRef_Infty);
-                assert( ba[l_bound].getPTRef() != PTRef_Undef );
-
-                dst.push( ba[l_bound].getPTRef() );
+                LABound& b = ba[l_bound];
+                assert( b.getPTRef() != PTRef_Undef );
+                dst.push( b.getSign() == l_True ? b.getPTRef() : logic.mkNot(b.getPTRef()) );
                 explanationCoefficients.push_back( a );
             }
             else {
                 LABoundRef u_bound = bla[lva[y].getBounds()][lva[y].ubound()];
                 assert( u_bound != LABoundRef_Infty );
-                assert( ba[u_bound].getPTRef() != PTRef_Undef );
-
-                dst.push(ba[u_bound].getPTRef());
+                LABound& b = ba[u_bound];
+                assert( b.getPTRef() != PTRef_Undef );
+                dst.push( b.getSign() == l_True ? b.getPTRef() : logic.mkNot(b.getPTRef()) );
                 explanationCoefficients.push_back(-a);
             }
         }

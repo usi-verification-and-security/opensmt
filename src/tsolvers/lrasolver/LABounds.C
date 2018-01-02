@@ -113,6 +113,7 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
         sort<LABoundRef,bound_lessthan>(bla[br].bounds, bla[br].size(), bound_lessthan(ba));
 
         // Check that the bounds are correctly ordered
+#ifdef DEBUG_BOUNDS
         vec<LABoundRef> lowerbounds;
         vec<LABoundRef> upperbounds;
         for (int j = 1; j < bla[br].size() - 1; j++) {
@@ -138,6 +139,7 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
             printf("Checking that %s -> %s\n", printBound(bound_lower), printBound(bound_higher));
             logic.implies(ref_lower, ref_higher);
         }
+#endif
         for (int j = 0; j < bla[br].size(); j++)
             ba[bla[br][BoundIndex(j)]].setIdx(BoundIndex(j));
         lva[keys[i]].setLbound(BoundIndex(0));
@@ -174,7 +176,12 @@ LABoundStore::printBound(LABoundRef br) const
         asprintf(&str_out, "-infty < var");
         return str_out;
     }
-    char *v_str = logic.pp(lva[ba[br].getLVRef()].getPTRef());
+    char *v_str_ptr = logic.pp(lva[ba[br].getLVRef()].getPTRef());
+    char *v_str_lvr = lva.printVar(ba[br].getLVRef());
+    char* v_str;
+    asprintf(&v_str, "%s [%s]", v_str_lvr, v_str_ptr);
+    free(v_str_lvr);
+    free(v_str_ptr);
     const Delta & d = ba[br].getValue();
     opensmt::Real r = d.R();
     opensmt::Real s = d.D();
@@ -187,6 +194,8 @@ LABoundStore::printBound(LABoundRef br) const
         asprintf(&str_out, "%s <= %s", v_str, r.get_str().c_str());
     if ( (type == bound_u) && (s != 0) )
         asprintf(&str_out, "%s < %s", v_str, r.get_str().c_str());
+
+    free(v_str);
 
     return str_out;
 }
