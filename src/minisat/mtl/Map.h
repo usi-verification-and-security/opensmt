@@ -505,7 +505,7 @@ class MapVec
 
     // Don't allow copying (error prone):
     MapVec<K,D,H>&  operator = (MapVec<K,D,H>& other) { assert(0); return *this; }
-    MapVec<K,D,H>              (MapVec<K,D,H>& other) { assert(0); }
+    MapVec<K,D,H,E>            (MapVec<K,D,H,E>& other) { assert(0); }
 
     // Helpers for calculating next capacity:
     static inline int  imax   (int x, int y) { int mask = (y-x) >> (sizeof(int)*8-1); return (x&mask) + (y&(~mask)); }

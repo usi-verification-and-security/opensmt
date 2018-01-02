@@ -33,8 +33,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <queue>
 #include <set>
 
-#ifdef PRODUCE_PROOF
 #include <sys/wait.h>
+#ifdef PRODUCE_PROOF
 #include <fstream>
 #include <sstream>
 #endif
@@ -2228,7 +2228,7 @@ Logic::implies(PTRef implicant, PTRef implicated)
     }
     else
     {
-        execlp( "tool_wrapper.sh", "tool_wrapper.sh", implies, NULL );
+        execlp( "./tool_wrapper.sh", "tool_wrapper.sh", implies, NULL );
         perror( "tool_wrapper.sh" );
         exit( 1 );
     }
