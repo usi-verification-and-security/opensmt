@@ -28,58 +28,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "LAVar.h"
 
-BoundIndex::BoundIndex(const BoundIndex& o)
-{
-    i = o.i;
-}
-
-BoundIndex::BoundIndex() : i(UINT32_MAX) {}
-
-BoundIndex::BoundIndex(uint32_t i) : i(i)
-{ }
-
-BoundIndex BoundIndex::operator+ (uint32_t i)
-{
-    return BoundIndex(Idx(*this) + 1);
-}
-
-BoundIndex BoundIndex::operator- (uint32_t i)
-{
-    return BoundIndex(Idx(*this) - 1);
-}
-
-bool operator< (const BoundIndex& lhs, const BoundIndex& rhs)
-{
-    return lhs.i < rhs.i;
-}
-bool operator > (const BoundIndex& lhs, const BoundIndex& rhs)
-{
-    return lhs.i > rhs.i;
-}
-
-bool operator == (const BoundIndex& lhs, const BoundIndex& rhs)
-{
-    return lhs.i == rhs.i;
-}
-
-bool operator != (const BoundIndex& lhs, const BoundIndex& rhs)
-{
-    return lhs.i != rhs.i;
-}
-
-uint32_t Idx(BoundIndex idx)
-{
-    return idx.i;
-}
 
 
 LAVar::LAVar(PTRef e, unsigned id)
         : e(e)
         , col_id(-1)
         , row_id(-1)
-        , curr_ub(UINT32_MAX)
-        , curr_lb(UINT32_MAX)
-        , bounds(LABoundListRef_Undef)
         , poly(PolyRef_Undef)
         , occs(OccListRef_Undef)
 {

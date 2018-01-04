@@ -158,6 +158,7 @@ public:
   inline bool operator==(const FastRational& b) const;
 
   inline FastRational operator-() const;
+  inline void negate();
 
 private:
 
@@ -366,6 +367,17 @@ inline FastRational FastRational::operator-() const {
     mpq_init(x.mpq);
     mpq_neg(x.mpq, mpq);
     return x;
+  }
+}
+
+inline void FastRational::negate() {
+  if (has_word && num > WORD_MIN) {
+    num = -num;
+  } else {
+    force_make_mpq();
+    has_word = false;
+    has_mpq=true;
+    mpq_neg(mpq, mpq);
   }
 }
 

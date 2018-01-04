@@ -40,6 +40,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "BindedRows.h"
 #include "LABounds.h"
 #include "Global.h"
+#include "LRAModel.h"
 
 class LAVar;
 class LAVarStore;
@@ -73,50 +74,6 @@ class LRASolverStats: public TSolverStats
         }
 };
 
-struct Limits
-{
-    int model_lim;
-    int bound_lim;
-};
-//
-// Class for maintaining the model of a variable
-//
-class LRAModel
-{
-private:
-    struct ModelEl { Delta d; int dl; };
-    struct BoundEl { LABoundRef br; int dl; };
-    vec<vec<ModelEl> > int_model; // The internal model
-    vec<vec<BoundEl> > int_lbounds;
-    vec<vec<BoundEl> > int_ubounds;
-
-    vec<Limits> limits;
-    vec<LVRef> model_trace;
-    vec<LABoundRef> bound_trace;
-
-    LAVarAllocator &lva;
-    LABoundStore &bs;
-    int n_vars_with_model;
-    Map<LVRef,bool,LVRefHash> has_model;
-    int backtrackLevel() { return limits.size() - 1; }
-    void         popModels();
-    void         popBounds();
-
-public:
-    LRAModel(LAVarAllocator &lva, LABoundStore& bs) : lva(lva), bs(bs), n_vars_with_model(0) { limits.push({0, 0}); }
-    int addVar(LVRef v); // Adds a variable.  Returns the total number of variables
-    inline int   nVars() { return n_vars_with_model; }
-    inline       void   write(const LVRef &v, const Delta&);
-    inline const Delta& read (const LVRef &v) const { return int_model[lva[v].ID()].last().d; }
-//    inline void  pop(const LVRef &v) { int_model[lva[v].ID()].pop(); }
-
-    void pushBound(const LABoundRef br);
-    void pushBacktrackPoint() { limits.push({model_trace.size(), bound_trace.size()}); }
-    void popBacktrackPoint() { popModels(); popBounds(); limits.pop(); };
-    int  getBacktrackSize() const { return limits.size(); }
-
-    void printModelState();
-};
 
 //
 // Class to solve Linear Arithmetic theories
@@ -159,6 +116,7 @@ private:
     opensmt::Real *newReal(const Real *old);
 
     int debug_check_count;
+    int debug_assert_count;
 
 public:
 
@@ -201,7 +159,7 @@ protected:
     vec<LVRef> leqToLavar;              // Maps Pterm constraints to solver's real variables.  Could this be moved to LAVarStore?
     vec<LVRef> ptermToLavar;            // Maps Pterm variables to solver's real variables
 
-    bool assertBoundOnVar( LVRef it, BoundIndex it_i);
+    bool assertBoundOnVar(LVRef it, LABoundRef it_i);
 
     vector<unsigned> checks_history;
 
@@ -223,7 +181,7 @@ private:
     void getDeducedBounds( const Delta& c, BoundT, vec<PtAsgn_reason>& dst, SolverId solver_id ); // find possible deductions by value c
     void getDeducedBounds( BoundT, vec<PtAsgn_reason>& dst, SolverId solver_id );                 // find possible deductions for actual bounds values
     void getSuggestions( vec<PTRef>& dst, SolverId solver_id );                                   // find possible suggested atoms
-    void getSimpleDeductions(LVRef v, BoundIndex pos);      // find deductions from actual bounds position
+    void getSimpleDeductions(LVRef v, LABoundRef);      // find deductions from actual bounds position
     unsigned getIteratorByPTRef( PTRef e, bool );                                                 // find bound iterator by the PTRef
     void refineBounds( );                                   // Compute the bounds for touched polynomials and deduces new bounds from it
     inline bool getStatus( );                               // Read the status of the solver in lbool
@@ -237,8 +195,6 @@ private:
     LRAModel model;
 
     // Model & bounds
-    const Delta& Ub(LVRef v) const;                  // The current upper bound of v
-    const Delta& Lb(LVRef v) const;                  // The current lower bound of v
     bool isEquality(LVRef) const;
     const Delta overBound(LVRef) const;
     bool isModelOutOfBounds  (LVRef v) const;
@@ -261,7 +217,7 @@ private:
 
     // Bounds system
     vec<LABoundRefPair> ptermToLABoundRefs;
-    const LABoundRef getBound(LVRef v, BoundIndex idx) const { return bla[lva[v].getBounds()][idx]; }
+    const LABoundRef getBound(LVRef v, BoundIndex idx) const { return boundStore.getBoundByIdx(v, idx); }
     bool isUnbounded (LVRef v) const;
 
     bool first_update_after_backtrack;
@@ -293,6 +249,7 @@ private:
     char* printExplanation(PTRef tr) { return printValue(tr); } // Implement later...
     void isProperLeq(PTRef tr);  // The Leq term conforms to the assumptions of its form.  Only asserts.
     char* printVar(LVRef v);
+    bool valueConsistent(LVRef v); // Debug: Checks that the value of v in the model is consistent with the evaluated value of the polynomial of v in the same model.
 };
 
 #endif

@@ -1,5 +1,49 @@
 #include "LABounds.h"
 
+BoundIndex::BoundIndex(const BoundIndex& o)
+{
+    i = o.i;
+}
+
+BoundIndex::BoundIndex() : i(UINT32_MAX) {}
+
+BoundIndex::BoundIndex(uint32_t i) : i(i)
+{ }
+
+BoundIndex BoundIndex::operator+ (uint32_t i)
+{
+    return BoundIndex(Idx(*this) + 1);
+}
+
+BoundIndex BoundIndex::operator- (uint32_t i)
+{
+    return BoundIndex(Idx(*this) - 1);
+}
+
+bool operator< (const BoundIndex& lhs, const BoundIndex& rhs)
+{
+    return lhs.i < rhs.i;
+}
+bool operator > (const BoundIndex& lhs, const BoundIndex& rhs)
+{
+    return lhs.i > rhs.i;
+}
+
+bool operator == (const BoundIndex& lhs, const BoundIndex& rhs)
+{
+    return lhs.i == rhs.i;
+}
+
+bool operator != (const BoundIndex& lhs, const BoundIndex& rhs)
+{
+    return lhs.i != rhs.i;
+}
+
+uint32_t Idx(BoundIndex idx)
+{
+    return idx.i;
+}
+
 LABound::LABound(BoundT type, PtAsgn leq_pta, LVRef var, const Delta& delta)
     : type(type.t)
     , reverse(false)
@@ -109,7 +153,10 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
             refs.push(info.b2);
         }
         LABoundListRef br = bla.alloc(keys[i], refs);
-        lva[keys[i]].setBounds(br);
+
+        while(var_bound_lists.size() <= lva[keys[i]].ID())
+            var_bound_lists.push(LABoundListRef_Undef);
+        var_bound_lists[lva[keys[i]].ID()] = br;
         sort<LABoundRef,bound_lessthan>(bla[br].bounds, bla[br].size(), bound_lessthan(ba));
 
         // Check that the bounds are correctly ordered
@@ -142,18 +189,13 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
 #endif
         for (int j = 0; j < bla[br].size(); j++)
             ba[bla[br][BoundIndex(j)]].setIdx(BoundIndex(j));
-        lva[keys[i]].setLbound(BoundIndex(0));
-        lva[keys[i]].setUbound(BoundIndex(bla[br].size()-1));
     }
     for (int i = 0; i < lavarStore.numVars(); i++) {
         LAVar& v = lva[lavarStore.getVarByIdx(i)];
-        if (v.getBounds() == LABoundListRef_Undef) {
-            v.setBounds(empty_bounds);
-            v.setLbound(BoundIndex(0));
-            v.setUbound(BoundIndex(1));
+        if (var_bound_lists[v.ID()] == LABoundListRef_Undef) {
+            var_bound_lists[v.ID()] = empty_bounds;
         }
     }
-
 }
 
 LABoundRef

@@ -6,6 +6,36 @@
 #include "LAVar.h"
 #include "Pterm.h"
 
+//
+// Bound index type.  The bounds are ordered in a list, and indexed using a number in the list.
+// To determine if a given bound is higher than another, it suffices to check the current bound index
+// and the new index.  However, we need special values for no lower bound and no upper bound.
+//
+// The values are a little special.  Two least significant bits encode whether this is the lowest
+// bound, the highest bound, or a normal bound.  Lowest bound is 00, highest bound is 11, and
+// normal bound is 01.
+//
+class BoundIndex
+{
+    friend BoundIndex mkBoundIndex(uint32_t i);
+private:
+    uint32_t i;
+public:
+    BoundIndex(const BoundIndex& o);
+    explicit BoundIndex(uint32_t i);
+    BoundIndex();
+    BoundIndex operator+ (uint32_t i);
+    BoundIndex operator- (uint32_t i);
+    friend bool operator<  (const BoundIndex& lhs, const BoundIndex& rhs);
+    friend bool operator>  (const BoundIndex& lhs, const BoundIndex& rhs);
+    friend bool operator== (const BoundIndex& lhs, const BoundIndex& rhs);
+    friend bool operator!= (const BoundIndex& lhs, const BoundIndex& rhs);
+    bool isNonNegative() const { return i != UINT32_MAX; }
+    friend uint32_t Idx(BoundIndex idx);
+};
+
+inline BoundIndex mkBoundIndex(uint32_t i) { BoundIndex b; b.i = i; return b; }
+
 
 class LABound
 {
@@ -113,6 +143,7 @@ class LABoundStore
     LABoundRef LABoundRef_LB_MinusInf;
     LABoundRef LABoundRef_UB_PlusInf;
     LABoundListRef empty_bounds;
+    vec<LABoundListRef> var_bound_lists;
 public:
     LABoundStore(LABoundAllocator& ba, LABoundListAllocator& bla, LAVarAllocator& lva, LAVarStore& lavstore, Logic& l) : ba(ba), bla(bla), lva(lva), lavarStore(lavstore), logic(l) {
         LABoundRef_LB_MinusInf = ba.alloc(bound_l, PtAsgn{ logic.getTerm_true(), l_True },  LVRef_Undef, Delta_MinusInf);
@@ -126,12 +157,15 @@ public:
     LABoundRef minusInf() const { return LABoundRef_LB_MinusInf; }
     void addBound(LVRef v, PTRef leq_tr, PTId leq_id, const Real& constr, BoundT bound_t);
     void buildBounds(vec<LABoundRefPair>& ptermToLABoundRef);
-    inline LABoundRef getLowerBound(const LVRef v) const { return bla[lva[v].getBounds()][lva[v].lbound()]; }
-    inline LABoundRef getUpperBound(const LVRef v) const { return bla[lva[v].getBounds()][lva[v].ubound()]; }
+//    inline LABoundRef getLowerBound(const LVRef v) const { return bla[lva[v].getBounds()][lva[v].lbound()]; }
+//    inline LABoundRef getUpperBound(const LVRef v) const { return bla[lva[v].getBounds()][lva[v].ubound()]; }
     inline LABoundRefPair getBoundRefPair(const PTRef leq) { return ptermToLABoundsRef[Idx(logic.getPterm(leq).getId())]; }
     inline LABound& operator[] (LABoundRef br) { return ba[br]; }
     // Debug
     char* printBound(LABoundRef br) const;
+    LABoundListRef getBounds(LVRef v) const { return var_bound_lists[lva[v].ID()]; }
+    LABoundRef getBoundByIdx(LVRef v, BoundIndex it) const { return bla[getBounds(v)][it]; }
+    int getBoundListSize(LVRef v) { return bla[getBounds(v)].size(); }
 };
 
 
