@@ -135,7 +135,7 @@ public:
     void         free      (LVRef r)         { RegionAllocator::free(lavarWord32Size()); }
     void         clear() {}
     // Debug stuff
-    char*        printVar  (LVRef r)         { char* str; asprintf(&str, "v%d", r.x);  return str; }
+    char*        printVar (LVRef r)  const   { char* str; asprintf(&str, "v%d", r.x);  return str; }
 };
 
 class LAVarStore

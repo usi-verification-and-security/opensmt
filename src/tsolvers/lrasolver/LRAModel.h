@@ -62,7 +62,7 @@ public:
     int  getBacktrackSize() const { return limits.size(); }
 
     bool isEquality(LVRef v) const { return bs[int_lbounds[lva[v].ID()].last().br].getIdx()+1 == bs[int_ubounds[lva[v].ID()].last().br].getIdx() && !Lb(v).isInf() && !Ub(v).isInf() && Lb(v) == Ub(v); }
-    bool isUnbounded(LVRef v) const { return bs.getBounds(v) == LABoundListRef_Undef; }
+    bool isUnbounded(LVRef v) const { return bs.isUnbounded(v); }
     bool boundSatisfied(LVRef v, LABoundRef b) const { return ((bs[b].getType() == bound_u) && !(bs[b].getIdx() < readUBound(v).getIdx())) || ((bs[b].getType() == bound_l) && !(bs[b].getIdx() > readLBound(v).getIdx())); }
     bool boundUnsatisfied(LVRef v, LABoundRef b) const
     { return ((bs[b].getType() == bound_l) && (bs[b].getIdx() > readUBound(v).getIdx() && bs[b].getValue() != Ub(v))) ||

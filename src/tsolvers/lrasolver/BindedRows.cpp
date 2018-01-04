@@ -25,6 +25,8 @@ BindedRowsStore::add(PolyRef row, int pos, LVRef target) {
 void
 BindedRows::remove(PolyRef pr)
 {
+    if (!polyToIdx.has(pr))
+        return;
     for (int i = polyToIdx[pr]+1; i < rows.size(); i++) {
         assert(i > 0);
         rows[i-1] = rows[i];

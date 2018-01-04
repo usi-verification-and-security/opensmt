@@ -158,7 +158,10 @@ bool LRASolver::isEquality(LVRef v) const
 
 bool LRASolver::isUnbounded(LVRef v) const
 {
-    return model.isUnbounded(v);
+    bool rval = model.isUnbounded(v);
+    if (rval)
+        printf("Var %s is unbounded\n", lva.printVar(v));
+    return rval;
 }
 
 void LRASolver::unbindRow(LVRef v, int row)
@@ -753,7 +756,7 @@ void LRASolver::removeCol(LVRef v)
     int v_col = lva[v].getColId();
     if (v_col == -1)
         return; // Already removed
-
+    assert(columns.size() > v_col);
     // Replace v_col slot with the last column in columns vector
     int m = columns.size() - 1;
     if (m > v_col) {
@@ -810,6 +813,7 @@ void LRASolver::doGaussianElimination( )
             Poly& p = pa[my_row];
             for (int j = 0; j < p.size(); j++) {
                 LVRef var = pta[p[j]].var;
+                if (var == x) continue;
                 bindedRowsStore.remove(my_row, var);
 //                bra[lva[var].getBindedRowsRef()].remove(my_row);
                 if (bra[lva[var].getBindedRowsRef()].size() == 0) {
@@ -1035,10 +1039,11 @@ void LRASolver::initSolver()
             cout << rows[i] << '\n';
 #endif
         boundStore.buildBounds(ptermToLABoundRefs); // Bounds are needed for gaussian elimination
-        model.initModel(lavarStore);
         // Gaussian Elimination should not be performed in the Incremental mode!
         if (config.lra_gaussian_elim == 1 && config.do_substitutions())
             doGaussianElimination();
+
+        model.initModel(lavarStore);
 
         status = SAT;
     }

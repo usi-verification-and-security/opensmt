@@ -134,6 +134,7 @@ public:
     LABoundListRef getBounds(LVRef v) const { return var_bound_lists[lva[v].ID()]; }
     LABoundRef getBoundByIdx(LVRef v, int it) const { return bla[getBounds(v)][it]; }
     int getBoundListSize(LVRef v) { return bla[getBounds(v)].size(); }
+    bool isUnbounded(LVRef v) const { return ( (bla[getBounds(v)].size() == 2) && (ba[bla[getBounds(v)][0]].getValue().isMinusInf()) && (ba[bla[getBounds(v)][1]].getValue().isPlusInf()) ); }
 };
 
 
