@@ -153,6 +153,9 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
     }
     for (int i = 0; i < lavarStore.numVars(); i++) {
         LAVar& v = lva[lavarStore.getVarByIdx(i)];
+        while (var_bound_lists.size() <= v.ID())
+            var_bound_lists.push(LABoundListRef_Undef);
+
         if (var_bound_lists[v.ID()] == LABoundListRef_Undef) {
             vec<LABoundRef> refs;
             LABoundRef lb_minusInf = ba.alloc(bound_l, PtAsgn(logic.getTerm_true(), l_True), keys[i], Delta_MinusInf);
