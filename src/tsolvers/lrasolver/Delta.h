@@ -42,7 +42,7 @@ private:
     Real * r;     // main value
     Real * d;     // delta to keep track of < / <= difference
     bool infinite;// infinite bit
-    bool positive;// +/- infinity bit
+    bool positive;// +/- infinite bit
 
     inline bool isLess( const Real &c ) const;    //basic function to use in comparison with Real operator
     inline bool isGreater( const Real &c ) const; //basic function to use in comparison with Real operator
@@ -111,7 +111,6 @@ public:
 // main value
 inline const Real& Delta::R( ) const
 {
-    assert(!infinite);
     assert( r );
     return *r;
 }
@@ -119,7 +118,6 @@ inline const Real& Delta::R( ) const
 // delta value (to keep track of < / <= difference)
 inline const Real& Delta::D( ) const
 {
-    assert(!infinite);
     assert( d );
     return *d;
 }
@@ -213,7 +211,7 @@ bool operator<( const Delta &a, const Delta &b )
 {
     if( a.isPlusInf( ) || b.isMinusInf( ) )
         return false;
-    if (a.isMinusInf( ) || b.isPlusInf( ) || a.R( ) < b.R( ) || (a.R( ) == b.R( ) && a.D( ) < b.D( )))
+    if (a.isMinusInf( ) || b.isPlusInf( ) || a.R() < b.R() || (a.R() == b.R() && a.D() < b.D()))
         return true;
     else
         return false;

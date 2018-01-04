@@ -230,7 +230,6 @@ LVRef LRASolver::getLAVar_single(PTRef expr_in) {
         ptermToLavar[Idx(id_pos)] = x;
         ptermToLavar[Idx(id_neg)] = x;
 
-        model.addVar(x);
         vec<PolyTermRef> tmp;
         lva[x].setPolyRef(polyStore.makePoly(x, tmp));
         lva[x].setBindedRowsRef(bra.alloc());
@@ -659,7 +658,7 @@ bool LRASolver::assertBoundOnVar(LVRef it, LABoundRef itBound_ref)
 
 //  cerr << "; ASSERTING bound on " << *it << endl;
 
-    // Check is simple SAT can be given
+    // Check if simple SAT can be given
     if (model.boundSatisfied(it, itBound_ref))
         return getStatus();
 
@@ -1036,6 +1035,7 @@ void LRASolver::initSolver()
             cout << rows[i] << '\n';
 #endif
         boundStore.buildBounds(ptermToLABoundRefs); // Bounds are needed for gaussian elimination
+        model.initModel(lavarStore);
         // Gaussian Elimination should not be performed in the Incremental mode!
         if (config.lra_gaussian_elim == 1 && config.do_substitutions())
             doGaussianElimination();
@@ -1195,12 +1195,15 @@ void LRASolver::getSimpleDeductions(LVRef v, LABoundRef br)
 //    for (BoundIndex it = BoundIndex(0); it < BoundIndex(bound_list.size()); it=it+1)
 //        printf("  %s (var %d)\n", boundStore.printBound(bound_list[it]), logic.getPterm(ba[bound_list[it]].getPTRef()).getVar());
 
-    if (br == LABoundRef_Infty) return;
     LABound& bound = ba[br];
+    if (bound.getValue().isInf())
+        return;
     if (bound.getType() == bound_l) {
-        for (BoundIndex it = bound.getIdx() - 1; it.isNonNegative(); it = it - 1) {
+        for (int it = bound.getIdx() - 1; it >= 0; it = it - 1) {
             LABoundRef bound_prop_ref = boundStore.getBoundByIdx(v, it);
             LABound& bound_prop = ba[bound_prop_ref];
+            if (bound_prop.getValue().isInf())
+                continue;
             if ((bound_prop.getType() == bound_l) &&
                 !hasPolarity(bound_prop.getPTRef()) &&
                 deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] == l_Undef)
@@ -1213,9 +1216,11 @@ void LRASolver::getSimpleDeductions(LVRef v, LABoundRef br)
         }
     }
     else if (bound.getType() == bound_u) {
-        for (BoundIndex it = bound.getIdx() + 1; Idx(it) < boundStore.getBoundListSize(v)-1; it = it + 1) {
+        for (int it = bound.getIdx() + 1; it < boundStore.getBoundListSize(v)-1; it = it + 1) {
             LABoundRef bound_prop_ref = boundStore.getBoundByIdx(v, it);
             LABound& bound_prop = ba[bound_prop_ref];
+            if (bound_prop.getValue().isInf())
+                continue;
             if ((bound_prop.getType() == bound_u) &&
                 !hasPolarity(bound_prop.getPTRef()) &&
                 (deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] == l_Undef))

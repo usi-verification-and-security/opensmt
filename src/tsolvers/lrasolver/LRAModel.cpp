@@ -4,6 +4,12 @@
 
 #include "LRAModel.h"
 
+void LRAModel::initModel(LAVarStore &s)
+{
+    for (int i = 0; i < s.numVars(); i++)
+        addVar(s.getVarByIdx(i));
+}
+
 int
 LRAModel::addVar(LVRef v)
 {
@@ -17,8 +23,8 @@ LRAModel::addVar(LVRef v)
     }
     has_model.insert(v, true);
     write(v, Delta());
-    int_lbounds[lva[v].ID()].push({ bs.minusInf(), 0 });
-    int_ubounds[lva[v].ID()].push({ bs.plusInf(), 0 });
+    int_lbounds[lva[v].ID()].push({ bs.getBoundByIdx(v, 0), 0 });
+    int_ubounds[lva[v].ID()].push({ bs.getBoundByIdx(v, bs.getBoundListSize(v)-1), 0 });
     return ++n_vars_with_model;
 }
 

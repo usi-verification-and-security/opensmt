@@ -1,48 +1,5 @@
 #include "LABounds.h"
 
-BoundIndex::BoundIndex(const BoundIndex& o)
-{
-    i = o.i;
-}
-
-BoundIndex::BoundIndex() : i(UINT32_MAX) {}
-
-BoundIndex::BoundIndex(uint32_t i) : i(i)
-{ }
-
-BoundIndex BoundIndex::operator+ (uint32_t i)
-{
-    return BoundIndex(Idx(*this) + 1);
-}
-
-BoundIndex BoundIndex::operator- (uint32_t i)
-{
-    return BoundIndex(Idx(*this) - 1);
-}
-
-bool operator< (const BoundIndex& lhs, const BoundIndex& rhs)
-{
-    return lhs.i < rhs.i;
-}
-bool operator > (const BoundIndex& lhs, const BoundIndex& rhs)
-{
-    return lhs.i > rhs.i;
-}
-
-bool operator == (const BoundIndex& lhs, const BoundIndex& rhs)
-{
-    return lhs.i == rhs.i;
-}
-
-bool operator != (const BoundIndex& lhs, const BoundIndex& rhs)
-{
-    return lhs.i != rhs.i;
-}
-
-uint32_t Idx(BoundIndex idx)
-{
-    return idx.i;
-}
 
 LABound::LABound(BoundT type, PtAsgn leq_pta, LVRef var, const Delta& delta)
     : type(type.t)
@@ -89,7 +46,7 @@ LABoundListRef LABoundListAllocator::alloc(LABoundList& from)
 {
     vec<LABoundRef> tmp;
     for (int i = 0; i < from.size(); i++)
-        tmp.push(from[BoundIndex(i)]);
+        tmp.push(from[i]);
     return alloc(from.getVar(), tmp);
 }
 
@@ -145,8 +102,10 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
     bounds_map.getKeys(keys);
     for (int i = 0; i < keys.size(); i++) {
         vec<LABoundRef> refs;
-        refs.push(LABoundRef_LB_MinusInf);
-        refs.push(LABoundRef_UB_PlusInf);
+        LABoundRef lb_minusInf = ba.alloc(bound_l, PtAsgn(logic.getTerm_true(), l_True), keys[i], Delta_MinusInf);
+        LABoundRef ub_plusInf = ba.alloc(bound_u, PtAsgn(logic.getTerm_true(), l_True), keys[i], Delta_PlusInf);
+        refs.push(lb_minusInf);
+        refs.push(ub_plusInf);
         for (int j = 0; j < bounds_map[keys[i]].size(); j++) {
             BoundInfo &info = bounds_map[keys[i]][j];
             refs.push(info.b1);
@@ -154,13 +113,16 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
         }
         LABoundListRef br = bla.alloc(keys[i], refs);
 
-        while(var_bound_lists.size() <= lva[keys[i]].ID())
+        while (var_bound_lists.size() <= lva[keys[i]].ID())
             var_bound_lists.push(LABoundListRef_Undef);
         var_bound_lists[lva[keys[i]].ID()] = br;
         sort<LABoundRef,bound_lessthan>(bla[br].bounds, bla[br].size(), bound_lessthan(ba));
 
+        for (int j = 0; j < bla[br].size(); j++)
+            ba[bla[br][j]].setIdx(j);
+
         // Check that the bounds are correctly ordered
-#ifdef DEBUG_BOUNDS
+#ifdef DO_BOUNDS_CHECK
         vec<LABoundRef> lowerbounds;
         vec<LABoundRef> upperbounds;
         for (int j = 1; j < bla[br].size() - 1; j++) {
@@ -187,21 +149,17 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
             logic.implies(ref_lower, ref_higher);
         }
 #endif
-        for (int j = 0; j < bla[br].size(); j++)
-            ba[bla[br][BoundIndex(j)]].setIdx(BoundIndex(j));
+
     }
     for (int i = 0; i < lavarStore.numVars(); i++) {
         LAVar& v = lva[lavarStore.getVarByIdx(i)];
-        if (var_bound_lists[v.ID()] == LABoundListRef_Undef) {
-            var_bound_lists[v.ID()] = empty_bounds;
-        }
     }
 }
 
 LABoundRef
-LABoundList::operator[](BoundIndex i) const
+LABoundList::operator[](int i) const
 {
-    return bounds[Idx(i)];
+    return bounds[i];
 }
 
 // Debug
@@ -210,14 +168,6 @@ char*
 LABoundStore::printBound(LABoundRef br) const
 {
     char *str_out;
-    if (br == plusInf()) {
-        asprintf(&str_out, "var < +infty");
-        return str_out;
-    }
-    if (br == minusInf()) {
-        asprintf(&str_out, "-infty < var");
-        return str_out;
-    }
     char *v_str_ptr = logic.pp(lva[ba[br].getLVRef()].getPTRef());
     char *v_str_lvr = lva.printVar(ba[br].getLVRef());
     char* v_str;
@@ -225,18 +175,23 @@ LABoundStore::printBound(LABoundRef br) const
     free(v_str_lvr);
     free(v_str_ptr);
     const Delta & d = ba[br].getValue();
-    opensmt::Real r = d.R();
-    opensmt::Real s = d.D();
-    BoundT type = ba[br].getType();
-    if ( (type == bound_l) && (s == 0) )
-        asprintf(&str_out, "%s <= %s", r.get_str().c_str(), v_str);
-    if ( (type == bound_l) && (s != 0) )
-        asprintf(&str_out, "%s < %s", r.get_str().c_str(), v_str);
-    if ( (type == bound_u) && (s == 0) )
-        asprintf(&str_out, "%s <= %s", v_str, r.get_str().c_str());
-    if ( (type == bound_u) && (s != 0) )
-        asprintf(&str_out, "%s < %s", v_str, r.get_str().c_str());
-
+    if (d.isMinusInf())
+        asprintf(&str_out, "- Inf <= %s", v_str);
+    else if (d.isPlusInf())
+        asprintf(&str_out, "%s <= + Inf", v_str);
+    else {
+        opensmt::Real r = d.R();
+        opensmt::Real s = d.D();
+        BoundT type = ba[br].getType();
+        if ((type == bound_l) && (s == 0))
+            asprintf(&str_out, "%s <= %s", r.get_str().c_str(), v_str);
+        if ((type == bound_l) && (s != 0))
+            asprintf(&str_out, "%s < %s", r.get_str().c_str(), v_str);
+        if ((type == bound_u) && (s == 0))
+            asprintf(&str_out, "%s <= %s", v_str, r.get_str().c_str());
+        if ((type == bound_u) && (s != 0))
+            asprintf(&str_out, "%s < %s", v_str, r.get_str().c_str());
+    }
     free(v_str);
 
     return str_out;

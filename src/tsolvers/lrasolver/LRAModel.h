@@ -45,6 +45,7 @@ private:
 
 public:
     LRAModel(LAVarAllocator &lva, LABoundStore& bs) : lva(lva), bs(bs), n_vars_with_model(0) { limits.push({0, 0}); }
+    void initModel(LAVarStore &s);
     int addVar(LVRef v); // Adds a variable.  Returns the total number of variables
     inline int   nVars() { return n_vars_with_model; }
     void   write(const LVRef &v, const Delta&);
