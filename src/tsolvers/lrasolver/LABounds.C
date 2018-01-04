@@ -152,17 +152,18 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
 
     }
     for (int i = 0; i < lavarStore.numVars(); i++) {
-        LAVar& v = lva[lavarStore.getVarByIdx(i)];
+        LVRef vr = lavarStore.getVarByIdx(i);
+        LAVar& v = lva[vr];
         while (var_bound_lists.size() <= v.ID())
             var_bound_lists.push(LABoundListRef_Undef);
 
         if (var_bound_lists[v.ID()] == LABoundListRef_Undef) {
             vec<LABoundRef> refs;
-            LABoundRef lb_minusInf = ba.alloc(bound_l, PtAsgn(logic.getTerm_true(), l_True), keys[i], Delta_MinusInf);
-            LABoundRef ub_plusInf = ba.alloc(bound_u, PtAsgn(logic.getTerm_true(), l_True), keys[i], Delta_PlusInf);
+            LABoundRef lb_minusInf = ba.alloc(bound_l, PtAsgn(logic.getTerm_true(), l_True), vr, Delta_MinusInf);
+            LABoundRef ub_plusInf = ba.alloc(bound_u, PtAsgn(logic.getTerm_true(), l_True), vr, Delta_PlusInf);
             refs.push(lb_minusInf);
             refs.push(ub_plusInf);
-            LABoundListRef br = bla.alloc(keys[i], refs);
+            LABoundListRef br = bla.alloc(vr, refs);
             var_bound_lists[v.ID()] = br;
         }
     }
