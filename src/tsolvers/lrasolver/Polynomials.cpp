@@ -5,13 +5,13 @@
 #include "LARefs.h"
 #include "Polynomials.h"
 #include "BindedRows.h"
-Poly::Poly(Poly &old, int new_cap) : id(old.id), cap(new_cap), sz(old.sz), var(old.var)
+PolyTermList::PolyTermList(PolyTermList &old, int new_cap) : cap(new_cap), sz(old.sz)
 {
     for (int i = 0; i < old.size(); i++)
         terms[i] = old.terms[i];
 }
 
-Poly::Poly(vec<PolyTermRef>& ps, LVRef var, int id) : id(id), var(var) {
+PolyTermList::PolyTermList(vec<PolyTermRef>& ps) {
     cap = sz = ps.size();
     for (int i = 0; i < ps.size(); i++)
         terms[i] = ps[i];
@@ -23,21 +23,20 @@ Poly::Poly(vec<PolyTermRef>& ps, LVRef var, int id) : id(id), var(var) {
 void
 PolyStore::remove(LVRef v, PolyRef pol)
 {
-    Poly& p = pa[pol];
     brs.remove(pol, v);
 
     Map<LVRef,int,LVRefHash>& positions = varToIdx[pa[pol].getId()];
     int start_idx = positions[v]+1;
     positions.remove(v);
-    for (int i = start_idx; i < p.size(); i++) {
-        LVRef w = pta[p[i]].var;
+    for (int i = start_idx; i < getSize(pol); i++) {
+        LVRef w = pta[readTerm(pol, i)].var;
         positions[w] = i-1;
-        p[i - 1] = p[i];
+        writeTerm(pol, i-1, readTerm(pol, i));
         brs.remove(pol, w);
         brs.add(pol, i-1, w);
     }
-    p.sz --;
-    assert(positions.getSize()== p.sz);
+    ptla[pa[pol].getTerms()].sz --;
+    assert(positions.getSize() == ptla[pa[pol].getTerms()].sz);
     checkConsistency(pol);
 }
 
@@ -49,27 +48,33 @@ void PolyStore::remove(LVRef poly_var)
 void
 PolyStore::remove(PolyRef pr)
 {
-    for (int i = 0; i < pa[pr].size(); i++) {
-        brs.remove(pr, pta[pa[pr][i]].var);
+    for (int i = 0; i < getSize(pr); i++) {
+        brs.remove(pr, pta[readTerm(pr, i)].var);
     }
-    for (int i = 0; i < pa[pr].size(); i++) {
+    for (int i = 0; i < getSize(pr); i++) {
         // Remove the PolyTermRef
-        PolyTermRef ptr = pa[pr][i];
+        PolyTermRef ptr = readTerm(pr, i);
         pta.free(ptr);
     }
+    ptla.free(pa[pr].getTerms());
     pa.free(pr);
 }
 
-int
-PolyStore::add(PolyRef pr, LVRef v, Real &c) {
-    assert(!lva[v].isBasic());
+void
+PolyStore::add(PolyRef pr, PolyTermRef ptr)
+{
+    add(pr, pta[ptr].var, pta[ptr].coef);
+}
+
+void
+PolyStore::add(PolyRef pr, LVRef v, const Real &c) {
     int pos;
     Poly& poly = pa[pr];
     LVRef poly_var = poly.getVar();
     Map<LVRef,int,LVRefHash>& positions = varToIdx[poly.getId()];
     if (positions.has(v)) {
         pos = positions[v];
-        PolyTermRef v_term = poly[positions[v]];
+        PolyTermRef v_term = readTerm(pr, positions[v]);
         pta.updateCoef(v_term, pta[v_term].coef + c);
         if (pta[v_term].coef == 0) {
             pta.free(v_term);
@@ -78,31 +83,22 @@ PolyStore::add(PolyRef pr, LVRef v, Real &c) {
         }
     }
     else {
-        PolyRef pr_new = pr;
-        if (pa[pr].getUnusedCap() == 0) {
+        PolyTermListRef terms = pa[pr].getTerms();
+        PolyTermListRef tr_new = terms;
+        if (ptla[terms].getUnusedCap() == 0) {
             // We need to allocate a new polynomial with bigger capacity.
-            pr_new = pa.alloc(pr, poly.size() > 0 ? poly.size() * 2 : 1);
-            lva[poly_var].setPolyRef(pr_new);
-            Poly& p = pa[pr_new];
-            for (int i = 0; i < p.size(); i++) {
-                const PolyTerm &pt = pta[p[i]];
-                BindedRows &br = brs.getBindedRows(pt.var);
-                for (int j = 0; j < br.size(); j++) {
-                    if (br[j].poly == pr) {
-                        br.updatePolyRef(j, pr_new);
-                        break;
-                    }
-                }
-            }
+            tr_new = ptla.alloc(terms, ptla[terms].size() > 0 ? ptla[terms].size() * 2 : 1);
+            poly.updateTermRef(tr_new);
+            ptla.free(terms);
         }
-        Poly& poly_upd = pa[pr_new];
-        poly_upd.append(pta.alloc(c, v), v);
-        pos = poly_upd.size()-1;
+
+        PolyTermList& t_new = ptla[tr_new];
+        t_new.append(pta.alloc(c, v), v);
+        pos = t_new.size()-1;
         positions.insert(v, pos);
-        brs.add(pr_new, pos, v);
-        assert(checkConsistency(pr_new));
+        brs.add(pr, pos, v);
+        assert(checkConsistency(pr));
     }
-    return pos;
 }
 
 
@@ -135,13 +131,18 @@ char* PolyStore::printPolyTerm(const opensmt::Real &coef, LVRef var)
     return buf;
 }
 
+char* PolyStore::printPolyTerm(const PolyTermRef ptr)
+{
+    return printPolyTerm(pta[ptr].coef, pta[ptr].var);
+}
+
 char* PolyStore::printPoly(PolyRef pr)
 {
     Poly &p = pa[pr];
     char *buf = NULL;
-    for (int i = 0; i < p.size(); i++) {
+    for (int i = 0; i < getSize(pr); i++) {
         char *buf_new;
-        const PolyTerm& pt = pta[p[i]];
+        const PolyTerm& pt = pta[readTerm(pr, i)];
         asprintf(&buf_new, "%s %s", (buf == NULL ? "" : buf), printPolyTerm(pt.coef, pt.var));
         free(buf);
         buf = buf_new;
@@ -170,7 +171,8 @@ char* PolyStore::printOccurrences(LVRef var)
 PolyRef
 PolyStore::makePoly(LVRef s, vec<PolyTermRef>& terms)
 {
-    PolyRef pr = pa.alloc(terms, s);
+    PolyTermListRef ptlr = ptla.alloc(terms);
+    PolyRef pr = pa.alloc(ptlr, s);
     lva[s].setPolyRef(pr);
     assert(pa[pr].getId() == varToIdx.size());
     varToIdx.push();
@@ -188,8 +190,8 @@ bool PolyStore::checkConsistency(PolyRef pr)
 {
     Poly& p = pa[pr];
     Map<LVRef,int,LVRefHash>& positions = varToIdx[pa[pr].getId()];
-    for (int i = 0; i < p.size(); i++) {
-        LVRef prs_var = pta[p[i]].var;
+    for (int i = 0; i < getSize(pr); i++) {
+        LVRef prs_var = pta[readTerm(pr, i)].var;
         if (positions[prs_var] != i) {
             assert(false);
             return false;

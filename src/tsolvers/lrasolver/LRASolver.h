@@ -225,9 +225,18 @@ private:
     LRASolverStatus status;                  // Internal status of the solver (different from bool)
 
     // The variable system
-
-    Map<PTRef,vec<PTRef>*,PTRefHash> removed_by_GaussianElimination;       // Stack of variables removed during Gaussian elimination
-    vec<PTRef> *solveForVar(PolyRef pr, LVRef var);
+    class ModelPoly {
+        vec<PolyTermRef> poly;
+    public:
+        ModelPoly() {}
+        ModelPoly(const ModelPoly &o) { o.poly.copyTo(poly); }
+        ModelPoly(const vec<PolyTermRef>& v) { v.copyTo(poly); }
+        PolyTermRef operator[](int i) const { return poly[i]; }
+        void operator=(const ModelPoly &o) { o.poly.copyTo(poly); }
+        int size() const { return poly.size(); }
+    };
+    Map<PTRef,ModelPoly,PTRefHash> removed_by_GaussianElimination;       // Stack of variables removed during Gaussian elimination
+    void solveForVar(PolyRef pr, int idx, vec<PolyTermRef>& expr);       // Solve the poly pr for the variable pr[idx] and place the resulting expression to expr
 
     // Two reloaded output operators
     inline friend ostream & operator <<( ostream & out, LRASolver & solver )

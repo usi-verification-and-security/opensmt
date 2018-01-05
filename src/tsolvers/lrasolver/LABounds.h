@@ -130,7 +130,8 @@ public:
     inline LABoundRefPair getBoundRefPair(const PTRef leq) { return ptermToLABoundsRef[Idx(logic.getPterm(leq).getId())]; }
     inline LABound& operator[] (LABoundRef br) { return ba[br]; }
     // Debug
-    char* printBound(LABoundRef br) const;
+    char* printBound(LABoundRef br) const; // Print the bound br
+    char* printBounds(LVRef v) const; // Print all bounds of v
     LABoundListRef getBounds(LVRef v) const { return var_bound_lists[lva[v].ID()]; }
     LABoundRef getBoundByIdx(LVRef v, int it) const { return bla[getBounds(v)][it]; }
     int getBoundListSize(LVRef v) { return bla[getBounds(v)].size(); }

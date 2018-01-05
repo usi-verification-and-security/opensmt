@@ -209,3 +209,20 @@ LABoundStore::printBound(LABoundRef br) const
 
     return str_out;
 }
+
+char* LABoundStore::printBounds(LVRef v) const
+{
+    LABoundListRef blr = var_bound_lists[lva[v].ID()];
+    char* bounds_str = (char*) malloc(1);
+    bounds_str[0] = '\0';
+    for (int i = 0; i < bla[blr].size(); i++) {
+        LABoundRef br = bla[blr][i];
+        char* tmp;
+        char* tmp2 = printBound(br);
+        asprintf(&tmp, "%s%s ", bounds_str, tmp2);
+        free(bounds_str);
+        free(tmp2);
+        bounds_str = tmp;
+    }
+    return bounds_str;
+}
