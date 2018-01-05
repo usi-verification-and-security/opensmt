@@ -1061,7 +1061,9 @@ void LRASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
 {
     if (model.read(x) < model.Lb(x)) {
         // add all bounds for polynomial elements, which limit lower bound
-        dst.push(model.readLBound(x).getPTRef());
+        const LABound& b_f = model.readLBound(x);
+        dst.push(b_f.getSign() == l_True ? b_f.getPTRef() : logic.mkNot(b_f.getPTRef()));
+//        dst.push(model.readLBound(x).getPTRef());
 //        dst.push(ba[bla[lva[x].getBounds()][lva[x].lbound()]].getPTRef());
         explanationCoefficients.push_back( Real( 1 ) );
         for (int i = 0; i < polyStore.getSize(lva[x].getPolyRef()); i++) {
@@ -1093,7 +1095,9 @@ void LRASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
     if (model.read(x) > model.Ub(x)) {
         // add all bounds for polynomial elements, which limit upper bound
 //        dst.push(ba[bla[lva[x].getBounds()][lva[x].ubound()]].getPTRef());
-        dst.push(model.readUBound(x).getPTRef());
+        const LABound& b_f = model.readUBound(x);
+        dst.push(b_f.getSign() == l_True ? b_f.getPTRef() : logic.mkNot(b_f.getPTRef()));
+//        dst.push(model.readUBound(x).getPTRef());
         explanationCoefficients.push_back( Real( 1 ) );
 
         for (int i = 0; i < polyStore.getSize(lva[x].getPolyRef()); i++) {
