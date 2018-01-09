@@ -145,10 +145,20 @@ private:
     int             row_count;                  // Counter for rows keep track of basic variables
     vec<LVRef>      lavars;
     LAVarAllocator& lva;
+    vec<LVRef>      leqToLavar;              // Maps Pterm constraints to solver's real variables.
+    vec<LVRef>      ptermToLavar;            // Maps Pterm variables to solver's real variables
+    LRALogic&       logic;
+    template<class T> inline T max(T a, T b) const { return a > b ? a : b; }
 public:
-    LAVarStore(LAVarAllocator& lva) : column_count(0), row_count(0), lva(lva) {}
+    LAVarStore(LAVarAllocator& lva, LRALogic& logic) : column_count(0), row_count(0), lva(lva), logic(logic) {}
     inline void   clear() {};
-    LVRef  getNewVar(PTRef e_orig = PTRef_Undef) { LVRef lv = lva.alloc(e_orig); while (lavars.size() <= lva[lv].ID()) lavars.push(LVRef_Undef); lavars[lva[lv].ID()] = lv; return lv; }
+//    LVRef  getNewVar(PTRef e_orig = PTRef_Undef) {
+    LVRef  getNewVar(PTRef e_orig);
+    LVRef  getVarByPTId(PTId i) { return ptermToLavar[Idx(i)]; }
+    void   addLeqVar(PTRef leq_tr, LVRef v); // Adds a binding from leq_tr to the "slack var" v
+    LVRef  getVarByLeqId(PTId i) { return leqToLavar[Idx(i)]; }
+    bool   hasVar(PTId i) { return ptermToLavar.size() > Idx(i) && ptermToLavar[Idx(i)] != LVRef_Undef; }
+    bool   hasVar(PTRef tr) { return hasVar(logic.getPterm(tr).getId()); }
     int    numVars() const { return lavars.size(); }
     void   remove(LVRef r) { lva.free(r); };
     LVRef  getVarByIdx(unsigned i) { return lavars[i]; }

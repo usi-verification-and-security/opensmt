@@ -32,6 +32,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 const char* LRALogic::e_nonlinear_term = "Logic does not support nonlinear terms";
 
+void LRALogic::termSort(vec<PTRef>& v) const
+{
+    sort(v, LessThan_deepPTRef(this));
+}
+
 void
 LRALogic::simplifyAndSplitEq(PTRef tr, PTRef& root_out)
 {
@@ -595,14 +600,12 @@ PTRef LRALogic::mkRealDiv(const vec<PTRef>& args, char** msg)
 }
 
 // Find the lexicographically first factor of a term and divide the other terms with it.
-// TODO: use the correct sort
 PTRef LRALogic::normalizeSum(PTRef sum) {
     vec<PTRef> args;
     Pterm& s = getPterm(sum);
     for  (int i = 0; i < s.size(); i++)
         args.push(s[i]);
-    LessThan_deepPTRef lt(this);
-    sort(args, lt); // This is the correct sort since it does not depend on the multiplicands
+    termSort(args);
     PTRef const_term = PTRef_Undef;
     for (int i = 0; i < args.size(); i++) {
         if (isRealVar(args[i])) {

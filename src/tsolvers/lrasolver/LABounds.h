@@ -117,13 +117,13 @@ class LABoundStore
     LAVarAllocator& lva;
     LAVarStore& lavarStore;
     vec<LABoundRefPair> ptermToLABoundsRef;
-    Logic& logic;
+    LRALogic& logic;
     vec<LABoundListRef> var_bound_lists;
 public:
-    LABoundStore(LABoundAllocator& ba, LABoundListAllocator& bla, LAVarAllocator& lva, LAVarStore& lavstore, Logic& l) : ba(ba), bla(bla), lva(lva), lavarStore(lavstore), logic(l) {
+    LABoundStore(LABoundAllocator& ba, LABoundListAllocator& bla, LAVarAllocator& lva, LAVarStore& lavstore, LRALogic& l) : ba(ba), bla(bla), lva(lva), lavarStore(lavstore), logic(l) {
         vec<LABoundRef> tmp;
     }
-    void addBound(LVRef v, PTRef leq_tr, PTId leq_id, const Real& constr, BoundT bound_t);
+    void addBound(PTRef leq_tr);
     void buildBounds(vec<LABoundRefPair>& ptermToLABoundRef);
 //    inline LABoundRef getLowerBound(const LVRef v) const { return bla[lva[v].getBounds()][lva[v].lbound()]; }
 //    inline LABoundRef getUpperBound(const LVRef v) const { return bla[lva[v].getBounds()][lva[v].ubound()]; }

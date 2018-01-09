@@ -91,7 +91,7 @@ class Pterm {
 
     friend class PtermAllocator;
     friend class PTStore;
-    friend void  termSort(Pterm&);
+    friend void  ptermSort(Pterm&);
     friend class Logic;
   public:
 
@@ -271,7 +271,7 @@ class PtermAllocator : public RegionAllocator<uint32_t>
     friend class PtStore;
 };
 
-inline void termSort(Pterm& t) {
+inline void ptermSort(Pterm& t) {
 //    PTRef                               args[0]; // Either the terms or the relocation reference
     sort(t.args, t.size(), LessThan_PTRef()); }
 

@@ -202,7 +202,7 @@ class LRALogic: public Logic
     lbool retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs);
     lbool arithmeticElimination(vec<PTRef>&, Map<PTRef,PtAsgn,PTRefHash>&);
     void simplifyAndSplitEq(PTRef, PTRef&);
-
+    virtual void termSort(vec<PTRef>& v) const;
     virtual bool okToPartition(PTRef tr) const; // Partitioning hints from logic
     virtual void serializeLogicData(int*& logicdata_buf) const;
     void deserializeLogicData(const int* logicdata_buf);
@@ -216,17 +216,29 @@ class LRALogic: public Logic
 // v2 which one is smaller, based on the PTRef of v1 and v2.  (i.e.
 // v1.ptref <  v2.ptref iff (* k1 v1) < (* k2 v2))
 class LessThan_deepPTRef {
-    LRALogic& l;
+    const LRALogic& l;
   public:
-    LessThan_deepPTRef(LRALogic* l) : l(*l) {}
+    LessThan_deepPTRef(const LRALogic* l) : l(*l) {}
     bool operator ()  (PTRef& x_, PTRef& y_) {
-        PTRef c_x;
-        PTRef v_x;
-        PTRef c_y;
-        PTRef v_y;
-        l.splitTermToVarAndConst(x_, v_x, c_x);
-        l.splitTermToVarAndConst(y_, v_y, c_y);
-        return v_x.x < v_y.x;
+        uint32_t id_x;
+        uint32_t id_y;
+        if (l.isRealTimes(x_)) {
+            PTRef c_x;
+            PTRef v_x;
+            l.splitTermToVarAndConst(x_, v_x, c_x);
+            id_x = v_x.x;
+        } else {
+            id_x = x_.x;
+        }
+        if (l.isRealTimes(y_)) {
+            PTRef c_y;
+            PTRef v_y;
+            l.splitTermToVarAndConst(y_, v_y, c_y);
+            id_y = v_y.x;
+        } else {
+            id_y = y_.x;
+        }
+        return id_x < id_y;
     }
 };
 

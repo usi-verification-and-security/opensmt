@@ -181,7 +181,7 @@ PolyStore::makePoly(LVRef s, vec<PolyTermRef>& terms)
         positions.insert(pta[terms[i]].var, i);
         brs.add(pr, i, pta[terms[i]].var);
     }
-    printf("Made the poly %s from PTRef %s\n", printPoly(pr), logic.pp(lva[s].getPTRef()));
+//    printf("Made the poly %s from PTRef %s\n", printPoly(pr), logic.pp(lva[s].getPTRef()));
     checkConsistency(pr);
     return pr;
 }

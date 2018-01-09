@@ -509,7 +509,7 @@ bool Logic::simplifyEquality(PtChild& ptc, bool simplify) {
             cout << term_store.printTerm(ptc.tr) << endl;
 #endif
     }
-    termSort(t);
+    ptermSort(t);
     return false;
 }
 
@@ -1138,7 +1138,7 @@ Logic::insertTermHash(SymRef sym, const vec<PTRef>& terms_in)
     }
     else if (!isBooleanOperator(sym)) {
         if (sym_store[sym].commutes()) {
-            sort(terms, LessThan_PTRef());
+            termSort(terms);
         }
         if (!sym_store[sym].left_assoc() &&
             !sym_store[sym].right_assoc() &&
@@ -1256,7 +1256,7 @@ PTRef Logic::hasEquality(vec<PTRef>& args)
 {
     SymRef sref = term_store.lookupSymbol(tk_equals, args);
     assert(sref != SymRef_Undef);
-    sort(args, LessThan_PTRef());
+    termSort(args);
     PTLKey k;
     k.sym = sref;
     args.copyTo(k.args);

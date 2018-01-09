@@ -550,6 +550,7 @@ class Logic {
     virtual char* printTerm        (PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
     virtual char* pp(PTRef tr); // A pretty printer
     char*       printSym           (SymRef sr) const;
+    virtual void termSort(vec<PTRef>& v) const { sort(v, LessThan_PTRef()); }
 
     void  purify           (PTRef r, PTRef& p, lbool& sgn) const
         {p = r; sgn = l_True; while (isNot(p)) { sgn = sgn^1; p = getPterm(p)[0]; }}

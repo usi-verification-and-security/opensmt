@@ -82,9 +82,9 @@ LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
     , TSolver((SolverId)descr_lra_solver, (const char*)descr_lra_solver, c, d)
     , delta(Delta::ZERO)
     , bland_threshold(1000)
-    , lavarStore(lva)
+    , lavarStore(lva, l)
     , boundStore(ba, bla, lva, lavarStore, l)
-    , model(lva, boundStore)
+    , model(lva, boundStore, l)
     , debug_check_count(0)
     , debug_assert_count(0)
 {
@@ -159,8 +159,8 @@ bool LRASolver::isEquality(LVRef v) const
 bool LRASolver::isUnbounded(LVRef v) const
 {
     bool rval = model.isUnbounded(v);
-    if (rval)
-        printf("Var %s is unbounded\n", lva.printVar(v));
+//    if (rval)
+//        printf("Var %s is unbounded\n", lva.printVar(v));
     return rval;
 }
 
@@ -184,12 +184,8 @@ void LRASolver::unbindRow(LVRef v, int row)
 void LRASolver::setBound(PTRef leq_tr)
 {
 //    printf("Setting bound for %s\n", logic.printTerm(leq_tr));
-    Pterm& leq = logic.getPterm(leq_tr);
-    PTRef const_tr = leq[0];
-    PTRef var_tr = leq[1];
 
-    BoundT bound_t = logic.isNegated(var_tr) ? bound_u : bound_l;
-    boundStore.addBound(getLAVar_single(var_tr), leq_tr, leq.getId(), logic.getRealConst(const_tr), bound_t);
+    boundStore.addBound(leq_tr);
 }
 
 //
@@ -210,9 +206,7 @@ void LRASolver::getReal(Real*& r, PTRef cons)
 bool LRASolver::hasVar(PTRef expr) {
     expr =  logic.isNegated(expr) ? logic.mkRealNeg(expr) : expr;
     PTId id = logic.getPterm(expr).getId();
-    if (ptermToLavar.size() > Idx(id) && ptermToLavar[Idx(id)] != LVRef_Undef)
-        return true;
-    return false;
+    return lavarStore.hasVar(id);
 }
 
 LVRef LRASolver::getLAVar_single(PTRef expr_in) {
@@ -223,22 +217,14 @@ LVRef LRASolver::getLAVar_single(PTRef expr_in) {
     PTId id_neg = logic.getPterm(logic.mkRealNeg(expr)).getId();
     int max_id = max(Idx(id_pos), Idx(id_neg));
 
-    if (max_id >= ptermToLavar.size())
-        ptermToLavar.growTo(max_id+1, LVRef_Undef);
+    if (lavarStore.hasVar(id_pos))
+        return lavarStore.getVarByPTId(id_pos);
 
-    assert(ptermToLavar[Idx(id_pos)] == ptermToLavar[Idx(id_neg)]);
+    x = lavarStore.getNewVar(expr);
 
-    if (ptermToLavar[Idx(id_pos)] == LVRef_Undef) {
-        x = lavarStore.getNewVar(expr);
-        ptermToLavar[Idx(id_pos)] = x;
-        ptermToLavar[Idx(id_neg)] = x;
-
-        vec<PolyTermRef> tmp;
-        lva[x].setPolyRef(polyStore.makePoly(x, tmp));
-        lva[x].setBindedRowsRef(bra.alloc());
-    }
-    else
-        x = ptermToLavar[Idx(id_pos)];
+    vec<PolyTermRef> tmp;
+    lva[x].setPolyRef(polyStore.makePoly(x, tmp));
+    lva[x].setBindedRowsRef(bra.alloc());
 
     return x;
 }
@@ -257,8 +243,9 @@ LVRef LRASolver::getLAVar_single(PTRef expr_in) {
 LVRef LRASolver::constructLAVarSystem(PTRef term) {
     LVRef x = LVRef_Undef;
     vec<PolyTermRef> sum_terms;
-    if (hasVar(term))
-        return ptermToLavar[Idx(logic.getPterm(term).getId())];
+    if (lavarStore.hasVar(term))
+        return lavarStore.getVarByPTId(logic.getPterm(term).getId());
+
     if (logic.isRealVar(term) || logic.isRealTimes(term)) {
         // Case (1), (2a), and (2b)
         PTRef v;
@@ -352,10 +339,7 @@ lbool LRASolver::declareTerm(PTRef leq_tr)
     // Ensure that all variables exists, build the polynomial, and update the occurrences.
     LVRef v = constructLAVarSystem(term);
 
-    int idx = Idx(leq_t.getId());
-    for (int i = leqToLavar.size(); i <= idx; i++)
-        leqToLavar.push(LVRef_Undef);
-    leqToLavar[idx] = v;
+    lavarStore.addLeqVar(leq_tr, v);
 
     // Assumes that the LRA variable has been already declared
     setBound(leq_tr);
@@ -380,7 +364,7 @@ lbool LRASolver::declareTerm(PTRef leq_tr)
 bool LRASolver::check(bool complete)
 {
     // opensmt::StopWatch check_timer(tsolver_stats.simplex_timer);
-    printf(" - check %d\n", debug_check_count++);
+//    printf(" - check %d\n", debug_check_count++);
     (void)complete;
     // check if we stop reading constraints
     if (status == INIT)
@@ -559,8 +543,8 @@ bool LRASolver::check(bool complete)
         }
     }
     getStatus() == true ? tsolver_stats.sat_calls ++ : tsolver_stats.unsat_calls ++;
-    printf(" - check ended\n");
-    printf(" => %s\n", getStatus() ? "sat" : "unsat");
+//    printf(" - check ended\n");
+//    printf(" => %s\n", getStatus() ? "sat" : "unsat");
     return getStatus();
 }
 
@@ -571,7 +555,7 @@ bool LRASolver::assertLit( PtAsgn asgn, bool reason )
 {
     ( void )reason;
 
-    printf("Assert %d\n", debug_assert_count++);
+//    printf("Assert %d\n", debug_assert_count++);
 
     // Special cases of the "inequalitites"
     if (logic.isTrue(asgn.tr) && asgn.sgn == l_True) {
@@ -607,10 +591,10 @@ bool LRASolver::assertLit( PtAsgn asgn, bool reason )
     LABoundRefPair p = boundStore.getBoundRefPair(asgn.tr);
     LABoundRef bound_ref = asgn.sgn == l_False ? p.neg : p.pos;
 
-    printf("Asserting %s\n", boundStore.printBound(bound_ref));
-    printf(" - equal to %s%s\n", asgn.sgn == l_True ? "" : "not ", logic.pp(asgn.tr));
+//    printf("Asserting %s\n", boundStore.printBound(bound_ref));
+//    printf(" - equal to %s%s\n", asgn.sgn == l_True ? "" : "not ", logic.pp(asgn.tr));
 
-    LVRef it = leqToLavar[Idx(t.getId())];
+    LVRef it = lavarStore.getVarByLeqId(t.getId());
     assert( !isUnbounded(it) );
     // Constraint to push was not found in local storage. Most likely it was not read properly before
     if ( it == LVRef_Undef ) {
@@ -621,7 +605,7 @@ bool LRASolver::assertLit( PtAsgn asgn, bool reason )
     // skip if it was deduced by the solver itself with the same polarity
     if (deduced[t.getVar()] != l_Undef && deduced[t.getVar()].polarity == asgn.sgn && deduced[t.getVar()].deducedBy == id) {
         getStatus() ? tsolver_stats.sat_calls ++ : tsolver_stats.unsat_calls ++;
-        printf(" => %s\n", getStatus() ? "sat" : "unsat");
+//        printf(" => %s\n", getStatus() ? "sat" : "unsat");
         return getStatus();
     }
     if (deduced[t.getVar()] != l_Undef && deduced[t.getVar()].deducedBy == id) {
@@ -645,8 +629,8 @@ bool LRASolver::assertLit( PtAsgn asgn, bool reason )
     }
     getStatus() ? tsolver_stats.sat_calls ++ : tsolver_stats.unsat_calls ++;
 
-    if (!getStatus())
-        printf(" => unsat\n");
+//    if (!getStatus())
+//        printf(" => unsat\n");
     return getStatus();
 }
 
@@ -711,8 +695,8 @@ void LRASolver::pushBacktrackPoint( )
     // cerr << "; push " << pushed_constraints.size( ) << endl;
     // Check if any updates need to be repeated after backtrack
     model.pushBacktrackPoint();
-    printf(" -> Push backtrack point.  Following is the state of the model after the push\n");
-    model.printModelState();
+//    printf(" -> Push backtrack point.  Following is the state of the model after the push\n");
+//    model.printModelState();
 
 //      cerr << "; re-apply " << pushed_constraints.size( ) << " - " << checks_history.back( ) << endl;
 
@@ -726,8 +710,8 @@ void LRASolver::pushBacktrackPoint( )
 void LRASolver::popBacktrackPoint( )
 {
     model.popBacktrackPoint();
-    printf(" -> Pop backtrack point.  Following is the state of the model after the pop\n");
-    model.printModelState();
+//    printf(" -> Pop backtrack point.  Following is the state of the model after the pop\n");
+//    model.printModelState();
     first_update_after_backtrack = true;
 
     setStatus(SAT);
@@ -778,10 +762,10 @@ void LRASolver::solveForVar(PolyRef pr, int idx, vec<PolyTermRef>& expr)
         Real i_coef = pta[polyStore.readTerm(pr, i)].coef*x_coef_inverse_neg;
         expr.push(pta.alloc(i_coef, pta[polyStore.readTerm(pr, i)].var));
     }
-    printf("I derived the following expression for var %s: \n", lva.printVar(x));
-    for (int i = 0; i < expr.size(); i++)
-        printf(" %s", polyStore.printPolyTerm(expr[i]));
-    printf("\n");
+//    printf("I derived the following expression for var %s: \n", lva.printVar(x));
+//    for (int i = 0; i < expr.size(); i++)
+//        printf(" %s", polyStore.printPolyTerm(expr[i]));
+//    printf("\n");
 }
 
 //
@@ -805,11 +789,11 @@ void LRASolver::doGaussianElimination( )
         if (bra[lva[x].getBindedRowsRef()].size() == 0)
             continue;
 
-        printf("Var %s is unbounded and has more than zero occurrences in the polynomials\n", lva.printVar(x));
+//        printf("Var %s is unbounded and has more than zero occurrences in the polynomials\n", lva.printVar(x));
         // Derive an expression for x based on the first polynomial it appears
         BindedRow& row = bra[lva[x].getBindedRowsRef()][0];
         PolyRef basis = row.poly;
-        printf("First occurrence of var %s is the polynomial %s\n", lva.printVar(x), polyStore.printPoly(basis));
+//        printf("First occurrence of var %s is the polynomial %s\n", lva.printVar(x), polyStore.printPoly(basis));
 
         vec<PolyTermRef> expr_for_x;
         int pos = row.pos;
@@ -822,13 +806,13 @@ void LRASolver::doGaussianElimination( )
         for (int j = 0; j < x_appearances.size(); j++) {
             PolyRef pr = x_appearances[j];
             opensmt::Real x_coef = pta[polyStore.find(pr, x)].coef;
-            printf("Removing %s from the poly %s\n", lva.printVar(x), polyStore.printPoly(pr));
+//            printf("Removing %s from the poly %s\n", lva.printVar(x), polyStore.printPoly(pr));
             polyStore.remove(x, pr);
-            printf("Resulted in %s\n", polyStore.printPoly(pr));
-            printf("Now making the substitution of %s on the poly %s\n", lva.printVar(x), polyStore.printPoly(pr));
+//            printf("Resulted in %s\n", polyStore.printPoly(pr));
+//            printf("Now making the substitution of %s on the poly %s\n", lva.printVar(x), polyStore.printPoly(pr));
             for (int k = 0; k < expr_for_x.size(); k++)
                 polyStore.add(pr, pta[expr_for_x[k]].var, pta[expr_for_x[k]].coef * x_coef);
-            printf("Resulted in %s\n", polyStore.printPoly(pr));
+//            printf("Resulted in %s\n", polyStore.printPoly(pr));
         }
 
         // Clear removed row
@@ -1076,7 +1060,7 @@ void LRASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
 
             if (a < 0) {
                 const LABound& b = model.readLBound(y);
-                printf("The bound is %s\n", b.getSign() == l_True ? "positive" : "negative");
+//                printf("The bound is %s\n", b.getSign() == l_True ? "positive" : "negative");
                 assert( b.getPTRef() != PTRef_Undef );
                 dst.push( b.getSign() == l_True ? b.getPTRef() : logic.mkNot(b.getPTRef()) );
 
@@ -1084,7 +1068,7 @@ void LRASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
             }
             else {
                 const LABound& b = model.readUBound(y);
-                printf("The bound is %s\n", b.getSign() == l_True ? "positive" : "negative");
+//                printf("The bound is %s\n", b.getSign() == l_True ? "positive" : "negative");
                 assert( b.getPTRef() != PTRef_Undef );
                 dst.push( b.getSign() == l_True ? b.getPTRef() : logic.mkNot(b.getPTRef()) );
 
@@ -1111,7 +1095,7 @@ void LRASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
             if (a > 0) {
 //                LABoundRef l_bound = bla[lva[y].getBounds()][lva[y].lbound()];
                 const LABound& b = model.readLBound(y);
-                printf("The bound is %s\n", b.getSign() == l_True ? "positive" : "negative");
+//                printf("The bound is %s\n", b.getSign() == l_True ? "positive" : "negative");
                 assert( b.getPTRef() != PTRef_Undef );
                 dst.push( b.getSign() == l_True ? b.getPTRef() : logic.mkNot(b.getPTRef()) );
                 explanationCoefficients.push_back( a );
@@ -1119,7 +1103,7 @@ void LRASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
             else {
 //                LABoundRef u_bound = bla[lva[y].getBounds()][lva[y].ubound()];
                 const LABound& b = model.readUBound(y);
-                printf("The bound is %s\n", b.getSign() == l_True ? "positive" : "negative");
+//                printf("The bound is %s\n", b.getSign() == l_True ? "positive" : "negative");
 
                 assert( b.getPTRef() != PTRef_Undef );
                 dst.push( b.getSign() == l_True ? b.getPTRef() : logic.mkNot(b.getPTRef()) );
@@ -1128,10 +1112,10 @@ void LRASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
         }
     }
 
-    printf("I now came up with an explanation.  It looks like this:\n");
-    for (int i = 0; i < dst.size(); i++)
-        printf("(%s) ", logic.printTerm(dst[i]));
-    printf("\n");
+//    printf("I now came up with an explanation.  It looks like this:\n");
+//    for (int i = 0; i < dst.size(); i++)
+//        printf("(%s) ", logic.printTerm(dst[i]));
+//    printf("\n");
 
     assert( dst.size() == polyStore.getSize(lva[x].getPolyRef())+1 ); // One for each term plus the broken equality
 
@@ -1185,7 +1169,7 @@ void LRASolver::getSimpleDeductions(LVRef v, LABoundRef br)
                 !hasPolarity(bound_prop.getPTRef()) &&
                 deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] == l_Undef)
             {
-                printf(" => deduced %s (var %d)\n", boundStore.printBound(bound_prop_ref), logic.getPterm(bound_prop.getPTRef()).getVar());
+//                printf(" => deduced %s (var %d)\n", boundStore.printBound(bound_prop_ref), logic.getPterm(bound_prop.getPTRef()).getVar());
                 lbool pol = bound_prop.getSign();
                 deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] = DedElem(id, pol); // id is the solver id
                 th_deductions.push(PtAsgn_reason(bound_prop.getPTRef(), pol, PTRef_Undef));
@@ -1202,7 +1186,7 @@ void LRASolver::getSimpleDeductions(LVRef v, LABoundRef br)
                 !hasPolarity(bound_prop.getPTRef()) &&
                 (deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] == l_Undef))
             {
-                printf(" => deduced %s\n", boundStore.printBound(bound_prop_ref));
+//                printf(" => deduced %s\n", boundStore.printBound(bound_prop_ref));
                 lbool pol = bound_prop.getSign();
                 deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] = DedElem(id, pol);
                 th_deductions.push(PtAsgn_reason(bound_prop.getPTRef(), pol, PTRef_Undef));
@@ -1407,22 +1391,6 @@ void LRASolver::print( ostream & out )
     }
 }
 
-Delta LRASolver::evalSum(PTRef tr) const {
-    Pterm& t = logic.getPterm(tr);
-    Delta val;
-    for (int i = 0; i < t.size(); i++) {
-        PTRef coef;
-        PTRef var;
-        logic.splitTermToVarAndConst(t[i], var, coef);
-        if (removed_by_GaussianElimination.has(var) &&
-            concrete_model[lva[ptermToLavar[Idx(logic.getPterm(var).getId())]].ID()] == NULL) {
-            val = Delta(0); // The default
-            break;
-        }
-        val += logic.getRealConst(coef) * model.read(ptermToLavar[Idx(logic.getPterm(var).getId())]);
-    }
-    return val;
-}
 
 void LRASolver::computeConcreteModel(LVRef v) {
     while (concrete_model.size() <= lva[v].ID())
@@ -1447,18 +1415,19 @@ void LRASolver::getConflict(bool, vec<PtAsgn>& e)
         e.push(explanation[i]);
 
     }
-    printf(" => explanation: \n");
-    for (int i = 0; i < e.size(); i++) {
-        PtAsgn asgn = e[i];
-        LABoundRefPair p = boundStore.getBoundRefPair(asgn.tr);
-        LABoundRef bound_ref = asgn.sgn == l_False ? p.neg : p.pos;
-        printf("(%s) ", boundStore.printBound(bound_ref));
-    }
-    printf("\n");
+//    printf(" => explanation: \n");
+//    for (int i = 0; i < e.size(); i++) {
+//        PtAsgn asgn = e[i];
+//        LABoundRefPair p = boundStore.getBoundRefPair(asgn.tr);
+//        LABoundRef bound_ref = asgn.sgn == l_False ? p.neg : p.pos;
+//        printf("(%s) ", boundStore.printBound(bound_ref));
+//    }
+//    printf("\n");
     vec<PTRef> check_me;
     for (int i = 0; i < e.size(); i++) {
         check_me.push(e[i].sgn == l_False ? logic.mkNot(e[i].tr) : e[i].tr);
     }
+//    printf("In PTRef this is %s\n", logic.pp(logic.mkAnd(check_me)));
     assert(logic.implies(logic.mkAnd(check_me), logic.getTerm_false()));
 }
 
@@ -1468,40 +1437,58 @@ void LRASolver::getConflict(bool, vec<PtAsgn>& e)
 void LRASolver::computeModel()
 {
     assert( status == SAT );
-
+/*
     Real minDelta(0);
     Real maxDelta(0);
-    Real curDelta(0);
+    Delta curDelta(0);
     Delta curBound(Delta::ZERO);
-    LVRef col;
+*/
+    Delta delta_abst = Delta_PlusInf;  // We support plus infinity for this one.
 
-    //
-    // For all columns check the min/max value for delta
-    // Note, it should be always that min > 0 and max < 0
-    //
-    for (unsigned i = 0; i < columns.size( ); ++i)
+    // Let x be a LV variable such that there are asserted bounds c_1 <= x and x <= c_2, where
+    // (1) c_1 = (i1 | s1), c_2 = (i2 | -s2)
+    // (2) s1, s2 \in {0, 1}
+    // (3) val(x) = (R | D).
+    // Then delta(x) := (i1+i2)/2 - R.
+    // If x is not bounded from below or above, i.e., c_1 <= x, or x <= c_2, or neither, then
+    // delta(x) := + Infty.
+    // Now D at the same time is equal to k*\delta', and we need a value for \delta'.  So
+    // \delta'(x) = D/k
+    // Finally, \delta := min_{x \in LV |delta'(x)|}.
+
+    for (unsigned i = 0; i < lavarStore.numVars(); ++i)
     {
-        if (lva[columns[i]].skip())
-            continue;
-#ifdef GAUSSIAN_DEBUG
-        printf("computing model for %s (%d)\n", logic.printTerm(lva[columns[i]].e), lva[columns[i]].e.x);
-        cerr << "Its M is " << model[columns[i]] << '\n';
-        cerr << "Its bounds are [" << ba.printBound(bla[lva[columns[i]].getBounds()][lva[columns[i]].lbound()]) << ", " << ba.printBound(bla[lva[columns[i]].getBounds()][lva[columns[i]].ubound()]) << "]" << '\n';
-#endif
-        col = columns[i];
-        assert( !isModelOutOfBounds(col) );
+        LVRef v = lavarStore.getVarByIdx(i);
+        if (model.read(v).D() == 0)
+            continue; // If values are exact we do not need to consider them for delta computation
 
-        curDelta = 0;
+        Delta D;
+
+        assert( !isModelOutOfBounds(v) );
+
+        if (model.Lb(v).isMinusInf() || model.Ub(v).isPlusInf())
+            D = Delta_PlusInf;
+        else
+            D = (model.Lb(v).R() + model.Ub(v).R())/2 - model.read(v).R();
+
+        D = D/model.read(v).D();
+
+        if (D < 0) D.negate();
+
+        if (delta_abst > D)
+            delta_abst = D;
+
+/*
         curBound = Delta( Delta::ZERO );
 
         // Check if the lower bound can be used and at least one of delta and real parts are not 0
-        const LABound& lbound = model.readLBound(col);
+        const LABound& lbound = model.readLBound(v);
         const Delta& val_l = lbound.getValue();
         if (!val_l.isMinusInf()
-            && (val_l.D() != 0 || model.read(col).D() != 0)
-            && (val_l.R() != 0 || model.read(col).R() != 0))
+            && (val_l.D() != 0 || model.read(v).D() != 0)
+            && (val_l.R() != 0 || model.read(v).R() != 0))
         {
-            curBound = lbound.getValue() - model.read(col);
+            curBound = lbound.getValue() - model.read(v);
 
             // if delta is > 0 then use delta for min
             if ( curBound.D() > 0 )
@@ -1518,13 +1505,13 @@ void LRASolver::computeModel()
                     maxDelta = curDelta;
             }
         }
-        const LABound& ubound = model.readUBound(col);
+        const LABound& ubound = model.readUBound(v);
         const Delta&  val_u = ubound.getValue();
         if (!val_u.isPlusInf()
-            && (val_u.D() != 0 || model.read(col).D() != 0)
-            && (val_u.R() != 0 || model.read(col).R() != 0))
+            && (val_u.D() != 0 || model.read(v).D() != 0)
+            && (val_u.R() != 0 || model.read(v).R() != 0))
         {
-            curBound = model.read(col) - ubound.getValue();
+            curBound = model.read(v) - ubound.getValue();
 
             // if delta is > 0 then use delta for min
             if ( curBound.D() > 0 )
@@ -1541,12 +1528,20 @@ void LRASolver::computeModel()
                     maxDelta = curDelta;
             }
         }
+*/
     }
 
+    if (delta_abst.isPlusInf())
+        delta = 1;
+    else
+        delta = delta_abst.R();
+
+/*
     // TODO: check if it is it really true :)
     assert( minDelta >= 0 );
     assert( maxDelta <= 0 );
     delta = ( minDelta ) / 2;
+*/
 
 #ifdef GAUSSIAN_DEBUG
     cerr << "; delta: " << curDelta << '\n';
@@ -1681,12 +1676,55 @@ bool LRASolver::checkIntegersAndSplit( )
     return false;
 }
 
+// We may assume that the term is of the following forms
+// (1) (* x c)
+// (2) (* c x)
+// (3) c
+opensmt::Real LRASolver::evaluateTerm(PTRef tr)
+{
+    Pterm& t = logic.getPterm(tr);
+    opensmt::Real val(0);
+    // Case (3)
+    if (logic.isRealConst(tr))
+        return logic.getRealConst(tr);
+
+    // Cases (1) & (2)
+    PTRef coef;
+    PTRef var;
+    logic.splitTermToVarAndConst(tr, var, coef);
+    PTId id = logic.getPterm(var).getId();
+    val += logic.getRealConst(coef) * *concrete_model[lva[lavarStore.getVarByPTId(id)].ID()];
+
+    return val;
+}
+
+// We may assume that the term is of one of the following forms,
+// where x is a real variables and p_i are products of a real variable and a real constant
+//
+// (1a) (* x -1)
+// (1b) (* -1 x)
+// (2) x + p_1 + ... + p_n
+// (3a) (* x -1) + p_1 + ... + p_n
+// (3b) (* -1 x) + p_1 + ... + p_n
+//
 ValPair LRASolver::getValue(PTRef tr) {
     if (!logic.hasSortReal(tr)) return ValPair_Undef;
-    int id = Idx(logic.getPterm(tr).getId());
-    assert(id < ptermToLavar.size() && ptermToLavar[id] != LVRef_Undef);
+    PTId id = logic.getPterm(tr).getId();
+    opensmt::Real val(0);
+    if (!lavarStore.hasVar(id)) {
+        // This is a linear expression.
+        if (logic.getPterm(tr).size() > 0) {
+            Pterm &t = logic.getPterm(tr);
+            for (int i = 0; i < t.size(); i++)
+                val += evaluateTerm(t[i]);
+        }
+        else
+            val = evaluateTerm(tr);
+    }
+    else
+        val = *concrete_model[lva[lavarStore.getVarByPTId(id)].ID()];
 
-    return ValPair(tr, concrete_model[lva[ptermToLavar[id]].ID()]->get_str().c_str());
+    return ValPair(tr, val.get_str().c_str());
 }
 
 //

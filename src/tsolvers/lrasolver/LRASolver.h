@@ -156,9 +156,7 @@ protected:
 
     vec<LVRef> columns;                 // The columns
     vec<LVRef> rows;                    // The rows
-    vec<LVRef> leqToLavar;              // Maps Pterm constraints to solver's real variables.  Could this be moved to LAVarStore?
-    vec<LVRef> ptermToLavar;            // Maps Pterm variables to solver's real variables
-
+    template<class T> inline T max(T a, T b) const { return a > b ? a : b; }
     bool assertBoundOnVar(LVRef it, LABoundRef it_i);
 
     vector<unsigned> checks_history;
@@ -206,6 +204,7 @@ private:
     vec<opensmt::Real*> concrete_model;              // Save here the concrete model for the vars indexed by Id
     const Delta overBound(LVRef v);
     void computeModel();                             // The implementation for the interface
+    opensmt::Real evaluateTerm(PTRef tr);
     // Binded Rows system
     inline BindedRows& getBindedRows(LVRef v) { return bra[lva[v].getBindedRowsRef()]; }
     void unbindRow(LVRef v, int row);
@@ -252,7 +251,7 @@ private:
     }
     ValPair getValue(PTRef tr);  // Computes the model and changes state.
     inline int     verbose                       ( ) const { return config.verbosity(); }
-    template<class T> inline T max(T a, T b) const { return a > b ? a : b; }
+
     // Debug stuff
     char* printValue(PTRef tr) { char* tmp = (char*)malloc(1); tmp[0] = '\0'; return tmp; } // Implement later...
     char* printExplanation(PTRef tr) { return printValue(tr); } // Implement later...

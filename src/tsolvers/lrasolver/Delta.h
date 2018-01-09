@@ -68,6 +68,7 @@ public:
     inline bool isMinusInf( ) const;              // True if -inf
     inline bool isPlusInf( ) const;               // True if +inf
     inline bool isInf( ) const;                   // True if inf (any)
+    void negate() { if (!isInf()) {r->negate(); d->negate();} else { positive = !positive; } }
 
     inline Delta& operator=( const Delta &a );    //Assign operator
 

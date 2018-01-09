@@ -66,13 +66,39 @@ void LABoundListAllocator::reloc(LABoundListRef& tr, LABoundListAllocator& to)
     to[tr].v  = bl.getVar();
 }
 
-void LABoundStore::addBound(LVRef v, PTRef leq_ref, PTId leq_id, const Real& constr, BoundT bound_t)
+void LABoundStore::addBound(PTRef leq_ref)
 {
-    printf(" -> bound store gets %s\n", logic.pp(leq_ref));
-    LABoundRef br_pos = ba.alloc( bound_t, PtAsgn(leq_ref, l_True) , v, bound_t == bound_u ? Delta(-constr)   : Delta(constr));
-    LABoundRef br_neg = ba.alloc(~bound_t, PtAsgn(leq_ref, l_False), v, bound_t == bound_u ? Delta((-constr), 1) : Delta(constr, -1));
-    printf(" --> %s\n", printBound(br_pos));
-    printf(" --> %s\n", printBound(br_neg));
+//    printf(" -> bound store gets %s\n", logic.pp(leq_ref));
+    Pterm& leq = logic.getPterm(leq_ref);
+    PTRef const_tr = leq[0];
+    PTRef sum_tr = leq[1];
+
+    const Real& constr = logic.getRealConst(const_tr);
+
+    bool sum_term_is_negated = logic.isNegated(sum_tr);
+
+    PTRef pos_sum_tr = sum_term_is_negated ? logic.mkRealNeg(sum_tr) : sum_tr;
+
+//    printf(" --> the sum / var the bound talks about (%s) is %snegative\n", logic.pp(sum_tr), sum_term_is_negated ? "" : "not ");
+
+    LVRef v = lavarStore.getVarByPTId(logic.getPterm(pos_sum_tr).getId());
+
+    LABoundRef br_pos;
+    LABoundRef br_neg;
+
+    if (sum_term_is_negated) {
+        br_pos = ba.alloc(bound_u, PtAsgn(leq_ref, l_True), v, Delta(-constr));
+        br_neg = ba.alloc(bound_l, PtAsgn(leq_ref, l_False), v, Delta(-constr, 1));
+    }
+    else {
+        br_pos = ba.alloc(bound_l, PtAsgn(leq_ref, l_True), v, Delta(constr));
+        br_neg = ba.alloc(bound_u, PtAsgn(leq_ref, l_False), v, Delta(constr, -1));
+    }
+
+//    printf(" --> %s\n", printBound(br_pos));
+//    printf(" --> %s\n", printBound(br_neg));
+    in_bounds.push(BoundInfo{v, br_pos, br_neg, leq.getId()});
+
 //    LABoundRef br_neg = ba.alloc(~bound_t, PtAsgn(leq_ref, l_False), v, bound_t == bound_u ? Delta(constr, 1) : Delta((-constr), -1));
     // Delta(constr, bound_t == bound_u ? 1 : -1));
 
@@ -81,7 +107,6 @@ void LABoundStore::addBound(LVRef v, PTRef leq_ref, PTId leq_id, const Real& con
 //    else
 //        br_neg = ba.alloc(~bound_t, PtAsgn(leq_ref, l_False), v, Delta(constr, -1));
 
-    in_bounds.push(BoundInfo{v, br_pos, br_neg, leq_id});
 }
 
 
@@ -122,7 +147,7 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
             ba[bla[br][j]].setIdx(j);
 
         // Check that the bounds are correctly ordered
-#ifdef DO_BOUNDS_CHECK
+//#ifdef DO_BOUNDS_CHECK
         vec<LABoundRef> lowerbounds;
         vec<LABoundRef> upperbounds;
         for (int j = 1; j < bla[br].size() - 1; j++) {
@@ -137,7 +162,7 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
             LABoundRef bound_lower = lowerbounds[j];
             PTRef ref_higher = ba[bound_higher].getSign() == l_False ? logic.mkNot(ba[bound_higher].getPTRef()) : ba[bound_higher].getPTRef();
             PTRef ref_lower = ba[bound_lower].getSign() == l_False ? logic.mkNot(ba[bound_lower].getPTRef()) : ba[bound_lower].getPTRef();
-            printf("Checking that %s -> %s\n", printBound(bound_higher), printBound(bound_lower));
+//            printf("Checking that %s -> %s\n", printBound(bound_higher), printBound(bound_lower));
             logic.implies(ref_higher, ref_lower);
         }
         for (int j = 0; j < upperbounds.size()-1; j++) {
@@ -145,10 +170,10 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
             LABoundRef bound_lower = upperbounds[j];
             PTRef ref_higher = ba[bound_higher].getSign() == l_False ? logic.mkNot(ba[bound_higher].getPTRef()) : ba[bound_higher].getPTRef();
             PTRef ref_lower = ba[bound_lower].getSign() == l_False ? logic.mkNot(ba[bound_lower].getPTRef()) : ba[bound_lower].getPTRef();
-            printf("Checking that %s -> %s\n", printBound(bound_lower), printBound(bound_higher));
+//            printf("Checking that %s -> %s\n", printBound(bound_lower), printBound(bound_higher));
             logic.implies(ref_lower, ref_higher);
         }
-#endif
+//#endif
 
     }
     for (int i = 0; i < lavarStore.numVars(); i++) {

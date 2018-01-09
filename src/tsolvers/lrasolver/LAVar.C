@@ -43,4 +43,34 @@ LAVar::LAVar(PTRef e, unsigned id)
     header.id = id;
 }
 
+LVRef LAVarStore::getNewVar(PTRef e_orig) {
+    assert(!logic.isNegated(e_orig));
+    LVRef lv = lva.alloc(e_orig);
+    while (lavars.size() <= lva[lv].ID())
+        lavars.push(LVRef_Undef);
+    lavars[lva[lv].ID()] = lv;
 
+    PTId id_pos = logic.getPterm(e_orig).getId();
+    PTId id_neg = logic.getPterm(logic.mkRealNeg(e_orig)).getId();
+    assert(!hasVar(id_pos));
+    int max_id = max(Idx(id_pos), Idx(id_neg));
+
+    if (max_id >= ptermToLavar.size())
+        ptermToLavar.growTo(max_id+1, LVRef_Undef);
+
+    assert(ptermToLavar[Idx(id_pos)] == ptermToLavar[Idx(id_neg)]);
+
+    ptermToLavar[Idx(id_pos)] = lv;
+    ptermToLavar[Idx(id_neg)] = lv;
+
+    return lv;
+}
+
+void LAVarStore::addLeqVar(PTRef leq_tr, LVRef v)
+{
+    Pterm& leq_t = logic.getPterm(leq_tr);
+    int idx = Idx(leq_t.getId());
+    for (int i = leqToLavar.size(); i <= idx; i++)
+        leqToLavar.push(LVRef_Undef);
+    leqToLavar[idx] = v;
+}
