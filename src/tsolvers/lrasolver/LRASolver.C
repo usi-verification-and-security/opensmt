@@ -486,8 +486,8 @@ bool LRASolver::check(bool complete)
             }
             // if it was found - pivot old Basic x with non-basic y and do the model updates
             else {
-                if (bland_rule)
-                    printf("pivoting on x-id %d and y-id %d\n", curr_var_id_x, curr_var_id_y);
+//                if (bland_rule)
+//                    printf("pivoting on x-id %d and y-id %d\n", curr_var_id_x, curr_var_id_y);
                 pivotAndUpdate(x, y_found, model.Lb(x));
             }
         } else if (model.read(x) > model.Ub(x)) {
@@ -534,8 +534,8 @@ bool LRASolver::check(bool complete)
             }
             // if it was found - pivot old Basic x with non-basic y and do the model updates
             else {
-                if (bland_rule)
-                    printf("pivoting on x-id %d and y-id %d\n", curr_var_id_x, curr_var_id_y);
+//                if (bland_rule)
+//                    printf("pivoting on x-id %d and y-id %d\n", curr_var_id_x, curr_var_id_y);
                 pivotAndUpdate(x, y_found, model.Ub(x));
             }
         } else {
