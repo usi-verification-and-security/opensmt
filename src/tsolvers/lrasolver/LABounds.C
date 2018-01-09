@@ -87,8 +87,9 @@ void LABoundStore::addBound(PTRef leq_ref)
     LABoundRef br_neg;
 
     if (sum_term_is_negated) {
-        br_pos = ba.alloc(bound_u, PtAsgn(leq_ref, l_True), v, Delta(-constr));
-        br_neg = ba.alloc(bound_l, PtAsgn(leq_ref, l_False), v, Delta(-constr, 1));
+        opensmt::Real constr_neg = -constr;
+        br_pos = ba.alloc(bound_u, PtAsgn(leq_ref, l_True), v, Delta(constr_neg));
+        br_neg = ba.alloc(bound_l, PtAsgn(leq_ref, l_False), v, Delta(constr_neg, 1));
     }
     else {
         br_pos = ba.alloc(bound_l, PtAsgn(leq_ref, l_True), v, Delta(constr));
