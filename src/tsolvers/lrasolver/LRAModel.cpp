@@ -39,6 +39,12 @@ LRAModel::write(const LVRef &v, const Delta& val)
     el.d  = val;
     el.dl = backtrackLevel();
 }
+void
+LRAModel::pushDecision(PtAsgn asgn)
+{
+    int_decisions.push({asgn, backtrackLevel()});
+    decision_trace.push(asgn);
+}
 
 void
 LRAModel::pushBound(const LABoundRef br) {
@@ -78,6 +84,21 @@ LRAModel::popModels()
         int_model[lva[model_trace[i]].ID()].pop();
     model_trace.shrink(model_trace.size() - limits.last().model_lim);
 }
+
+PtAsgn
+LRAModel::popDecisions()
+{
+    assert(limits.size() > 0);
+    assert((decision_trace.size() - limits.last().dec_lim == 0) || (decision_trace.size() - limits.last().dec_lim == 1));
+    PtAsgn popd = PtAsgn_Undef;
+    if (decision_trace.size()-limits.last().dec_lim == 1) {
+        popd = int_decisions.last().asgn;
+        int_decisions.pop();
+    }
+    decision_trace.shrink(decision_trace.size() - limits.last().dec_lim);
+    return popd;
+}
+
 
 
 void LRAModel::printModelState()

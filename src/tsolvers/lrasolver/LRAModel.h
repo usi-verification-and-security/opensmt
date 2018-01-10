@@ -16,6 +16,7 @@ struct Limits
 {
     int model_lim;
     int bound_lim;
+    int dec_lim;
 };
 
 
@@ -27,13 +28,16 @@ class LRAModel
 private:
     struct ModelEl { Delta d; int dl; };
     struct BoundEl { LABoundRef br; int dl; };
+    struct DecEl   { PtAsgn asgn; int dl; };
     vec<vec<ModelEl> > int_model; // The internal model
     vec<vec<BoundEl> > int_lbounds;
     vec<vec<BoundEl> > int_ubounds;
+    vec<DecEl>         int_decisions;
 
     vec<Limits> limits;
     vec<LVRef> model_trace;
     vec<LABoundRef> bound_trace;
+    vec<PtAsgn> decision_trace;
 
     LAVarAllocator &lva;
     LABoundStore &bs;
@@ -43,6 +47,7 @@ private:
     int backtrackLevel() { return limits.size() - 1; }
     void         popModels();
     void         popBounds();
+    PtAsgn       popDecisions();
 
 public:
     LRAModel(LAVarAllocator &lva, LABoundStore& bs, LRALogic& logic) : lva(lva), bs(bs), n_vars_with_model(0), logic(logic) { limits.push({0, 0}); }
@@ -54,12 +59,13 @@ public:
 //    inline void  pop(const LVRef &v) { int_model[lva[v].ID()].pop(); }
 
     void pushBound(const LABoundRef br);
+    void pushDecision(PtAsgn asgn);
     const LABound& readLBound(const LVRef &v) const { return bs[int_lbounds[lva[v].ID()].last().br]; }
     const LABound& readUBound(const LVRef &v) const { return bs[int_ubounds[lva[v].ID()].last().br]; }
     const Delta& Lb(LVRef v) const { return bs[int_lbounds[lva[v].ID()].last().br].getValue(); }
     const Delta& Ub(LVRef v) const { return bs[int_ubounds[lva[v].ID()].last().br].getValue(); }
-    void pushBacktrackPoint() { limits.push({model_trace.size(), bound_trace.size()}); }
-    void popBacktrackPoint() { popModels(); popBounds(); limits.pop(); };
+    void pushBacktrackPoint()      { limits.push({model_trace.size(), bound_trace.size(), decision_trace.size()}); }
+    PtAsgn popBacktrackPoint() { popModels(); popBounds(); PtAsgn popd = popDecisions(); limits.pop(); return popd; }; // Returns the decision if the backtrack point had a decision
     int  getBacktrackSize() const { return limits.size(); }
 
     bool isEquality(LVRef v) const { return bs[int_lbounds[lva[v].ID()].last().br].getIdx()+1 == bs[int_ubounds[lva[v].ID()].last().br].getIdx() && !Lb(v).isInf() && !Ub(v).isInf() && Lb(v) == Ub(v); }

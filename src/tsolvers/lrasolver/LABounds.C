@@ -77,8 +77,6 @@ void LABoundStore::addBound(PTRef leq_ref)
 
     PTRef pos_sum_tr = sum_term_is_negated ? logic.mkRealNeg(sum_tr) : sum_tr;
 
-//    printf(" --> the sum / var the bound talks about (%s) is %snegative\n", logic.pp(sum_tr), sum_term_is_negated ? "" : "not ");
-
     LVRef v = lavarStore.getVarByPTId(logic.getPterm(pos_sum_tr).getId());
 
     LABoundRef br_pos;
@@ -98,15 +96,6 @@ void LABoundStore::addBound(PTRef leq_ref)
 //    printf(" --> %s\n", printBound(br_pos));
 //    printf(" --> %s\n", printBound(br_neg));
     in_bounds.push(BoundInfo{v, br_pos, br_neg, leq.getId()});
-
-//    LABoundRef br_neg = ba.alloc(~bound_t, PtAsgn(leq_ref, l_False), v, bound_t == bound_u ? Delta(constr, 1) : Delta((-constr), -1));
-    // Delta(constr, bound_t == bound_u ? 1 : -1));
-
-//    if (bound_t == bound_u)
-//        br_neg = ba.alloc(~bound_t, PtAsgn(leq_ref, l_False), v, Delta(constr, 1));
-//    else
-//        br_neg = ba.alloc(~bound_t, PtAsgn(leq_ref, l_False), v, Delta(constr, -1));
-
 }
 
 
@@ -147,7 +136,7 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
             ba[bla[br][j]].setIdx(j);
 
         // Check that the bounds are correctly ordered
-//#ifdef DO_BOUNDS_CHECK
+#ifdef DO_BOUNDS_CHECK
         vec<LABoundRef> lowerbounds;
         vec<LABoundRef> upperbounds;
         for (int j = 1; j < bla[br].size() - 1; j++) {
@@ -173,7 +162,7 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
 //            printf("Checking that %s -> %s\n", printBound(bound_lower), printBound(bound_higher));
             logic.implies(ref_lower, ref_higher);
         }
-//#endif
+#endif
 
     }
     for (int i = 0; i < lavarStore.numVars(); i++) {
@@ -244,7 +233,7 @@ char* LABoundStore::printBounds(LVRef v) const
         LABoundRef br = bla[blr][i];
         char* tmp;
         char* tmp2 = printBound(br);
-        asprintf(&tmp, "%s%s ", bounds_str, tmp2);
+        asprintf(&tmp, "%s(%s) ", bounds_str, tmp2);
         free(bounds_str);
         free(tmp2);
         bounds_str = tmp;

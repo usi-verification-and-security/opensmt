@@ -34,6 +34,7 @@ public:
     inline PTRef getPTRef() const { return leq_pta.tr;  }
     inline lbool getSign()  const { return leq_pta.sgn; }
     inline LVRef getLVRef() const { return var; }
+    inline PtAsgn getPtAsgn() const { return leq_pta; }
 };
 
 class LABoundAllocator : public RegionAllocator<uint32_t>

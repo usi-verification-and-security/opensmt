@@ -545,6 +545,8 @@ bool LRASolver::check(bool complete)
     getStatus() == true ? tsolver_stats.sat_calls ++ : tsolver_stats.unsat_calls ++;
 //    printf(" - check ended\n");
 //    printf(" => %s\n", getStatus() ? "sat" : "unsat");
+//    if (getStatus())
+//        model.printModelState();
     return getStatus();
 }
 
@@ -591,46 +593,43 @@ bool LRASolver::assertLit( PtAsgn asgn, bool reason )
     LABoundRefPair p = boundStore.getBoundRefPair(asgn.tr);
     LABoundRef bound_ref = asgn.sgn == l_False ? p.neg : p.pos;
 
+//    printf("Model state\n");
+//    model.printModelState();
 //    printf("Asserting %s\n", boundStore.printBound(bound_ref));
 //    printf(" - equal to %s%s\n", asgn.sgn == l_True ? "" : "not ", logic.pp(asgn.tr));
 
     LVRef it = lavarStore.getVarByLeqId(t.getId());
-    assert( !isUnbounded(it) );
     // Constraint to push was not found in local storage. Most likely it was not read properly before
-    if ( it == LVRef_Undef ) {
-        std::cout << logic.pp(asgn.tr) << "\n";
-        throw "Unexpected push";
-    }
+    assert(it != LVRef_Undef);
+    assert(!isUnbounded(it));
+
 
     // skip if it was deduced by the solver itself with the same polarity
     if (deduced[t.getVar()] != l_Undef && deduced[t.getVar()].polarity == asgn.sgn && deduced[t.getVar()].deducedBy == id) {
-        getStatus() ? tsolver_stats.sat_calls ++ : tsolver_stats.unsat_calls ++;
-//        printf(" => %s\n", getStatus() ? "sat" : "unsat");
+        assert(getStatus());
+        tsolver_stats.sat_calls ++;
         return getStatus();
     }
     if (deduced[t.getVar()] != l_Undef && deduced[t.getVar()].deducedBy == id) {
         is_reason = true; // This is a conflict!
     }
-    setPolarity(asgn.tr, asgn.sgn);
 
     if (assertBoundOnVar( it, bound_ref))
     {
+        assert(getStatus());
         model.pushBound(bound_ref);
-
-        if (config.lra_theory_propagation == 1 && !is_reason)
+        assert(!is_reason);
+        if (!is_reason) {
+            setPolarity(asgn.tr, asgn.sgn);
+            model.pushDecision(asgn);
             getSimpleDeductions(it, bound_ref);
-
-
-        if (config.lra_check_on_assert != 0 && rand() % 100 < config.lra_check_on_assert)
-        {
-            // force solver to do check on assert with some probability
-            return check( false );
+            tsolver_stats.sat_calls++;
         }
-    }
-    getStatus() ? tsolver_stats.sat_calls ++ : tsolver_stats.unsat_calls ++;
 
-//    if (!getStatus())
-//        printf(" => unsat\n");
+    } else {
+        tsolver_stats.unsat_calls++;
+    }
+
     return getStatus();
 }
 
@@ -671,7 +670,7 @@ bool LRASolver::assertBoundOnVar(LVRef it, LABoundRef itBound_ref)
         }
 
         assert(itBound.getPTRef() != PTRef_Undef);
-        explanation.push(PtAsgn(itBound.getPTRef(), getPolarity(itBound.getPTRef())));
+        explanation.push(itBound.getPtAsgn());
         explanationCoefficients.push_back( Real( 1 ) );
         return setStatus( UNSAT );
     }
@@ -709,7 +708,9 @@ void LRASolver::pushBacktrackPoint( )
 //
 void LRASolver::popBacktrackPoint( )
 {
-    model.popBacktrackPoint();
+    PtAsgn dec = model.popBacktrackPoint();
+    if (dec != PtAsgn_Undef)
+        clearPolarity(dec.tr);
 //    printf(" -> Pop backtrack point.  Following is the state of the model after the pop\n");
 //    model.printModelState();
     first_update_after_backtrack = true;
@@ -1152,9 +1153,7 @@ void LRASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
 void LRASolver::getSimpleDeductions(LVRef v, LABoundRef br)
 {
 //    printf("Deducing from bound %s\n", boundStore.printBound(br));
-//    printf("The full bound list for %s:\n", logic.printTerm(lva[v].getPTRef()));
-//    for (BoundIndex it = BoundIndex(0); it < BoundIndex(bound_list.size()); it=it+1)
-//        printf("  %s (var %d)\n", boundStore.printBound(bound_list[it]), logic.getPterm(ba[bound_list[it]].getPTRef()).getVar());
+//    printf("The full bound list for %s:\n%s\n", logic.printTerm(lva[v].getPTRef()), boundStore.printBounds(v));
 
     LABound& bound = ba[br];
     if (bound.getValue().isInf())
@@ -1162,34 +1161,49 @@ void LRASolver::getSimpleDeductions(LVRef v, LABoundRef br)
     if (bound.getType() == bound_l) {
         for (int it = bound.getIdx() - 1; it >= 0; it = it - 1) {
             LABoundRef bound_prop_ref = boundStore.getBoundByIdx(v, it);
-            LABound& bound_prop = ba[bound_prop_ref];
+            LABound &bound_prop = ba[bound_prop_ref];
             if (bound_prop.getValue().isInf())
                 continue;
-            if ((bound_prop.getType() == bound_l) &&
-                !hasPolarity(bound_prop.getPTRef()) &&
-                deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] == l_Undef)
-            {
-//                printf(" => deduced %s (var %d)\n", boundStore.printBound(bound_prop_ref), logic.getPterm(bound_prop.getPTRef()).getVar());
-                lbool pol = bound_prop.getSign();
-                deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] = DedElem(id, pol); // id is the solver id
-                th_deductions.push(PtAsgn_reason(bound_prop.getPTRef(), pol, PTRef_Undef));
+            if (bound_prop.getType() == bound_l) {
+//                printf("Considering propagating %s\n", boundStore.printBound(bound_prop_ref));
+                if (!hasPolarity(bound_prop.getPTRef())) {
+                    if (deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] == l_Undef) {
+//                        printf(" => deduced %s (var %d)\n", boundStore.printBound(bound_prop_ref),
+//                               logic.getPterm(bound_prop.getPTRef()).getVar());
+                        lbool pol = bound_prop.getSign();
+                        deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] = DedElem(id, pol); // id is the solver id
+                        th_deductions.push(PtAsgn_reason(bound_prop.getPTRef(), pol, PTRef_Undef));
+                    } else {
+//                        printf(" => but its deduced -value was %s instead of l_Undef\n", deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] == l_True ? "l_True" : "l_False");
+                    }
+                }
+                else {
+//                    printf(" => but it already had a polarity\n");
+                }
             }
         }
     }
     else if (bound.getType() == bound_u) {
-        for (int it = bound.getIdx() + 1; it < boundStore.getBoundListSize(v)-1; it = it + 1) {
+        for (int it = bound.getIdx() + 1; it < boundStore.getBoundListSize(v) - 1; it = it + 1) {
             LABoundRef bound_prop_ref = boundStore.getBoundByIdx(v, it);
-            LABound& bound_prop = ba[bound_prop_ref];
+            LABound &bound_prop = ba[bound_prop_ref];
             if (bound_prop.getValue().isInf())
                 continue;
-            if ((bound_prop.getType() == bound_u) &&
-                !hasPolarity(bound_prop.getPTRef()) &&
-                (deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] == l_Undef))
-            {
-//                printf(" => deduced %s\n", boundStore.printBound(bound_prop_ref));
-                lbool pol = bound_prop.getSign();
-                deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] = DedElem(id, pol);
-                th_deductions.push(PtAsgn_reason(bound_prop.getPTRef(), pol, PTRef_Undef));
+            if (bound_prop.getType() == bound_u) {
+//                printf("Considering propagating %s\n", boundStore.printBound(bound_prop_ref));
+                if (!hasPolarity(bound_prop.getPTRef())) {
+                    if (deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] == l_Undef) {
+//                        printf(" => deduced %s\n", boundStore.printBound(bound_prop_ref));
+                        lbool pol = bound_prop.getSign();
+                        deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] = DedElem(id, pol);
+                        th_deductions.push(PtAsgn_reason(bound_prop.getPTRef(), pol, PTRef_Undef));
+                    } else {
+//                        printf(" => but its deduced -value was %s instead of l_Undef\n", deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] == l_True ? "l_True" : "l_False");
+                    }
+                }
+                else {
+//                    printf(" => but it already had a polarity\n");
+                }
             }
         }
     }
@@ -1428,7 +1442,7 @@ void LRASolver::getConflict(bool, vec<PtAsgn>& e)
         check_me.push(e[i].sgn == l_False ? logic.mkNot(e[i].tr) : e[i].tr);
     }
 //    printf("In PTRef this is %s\n", logic.pp(logic.mkAnd(check_me)));
-    assert(logic.implies(logic.mkAnd(check_me), logic.getTerm_false()));
+//    assert(logic.implies(logic.mkAnd(check_me), logic.getTerm_false()));
 }
 
 //

@@ -151,7 +151,7 @@ public:
     // Called after every check-sat.
     virtual void clearSolver();
 
-    void  setPolarity(PTRef tr, lbool p);
+    virtual void setPolarity(PTRef tr, lbool p);
     virtual void print(ostream& out) = 0;
     lbool getPolarity(PTRef tr)          { return polarityMap[tr]; }
     void  clearPolarity(PTRef tr);
