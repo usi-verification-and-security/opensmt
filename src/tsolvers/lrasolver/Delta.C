@@ -27,6 +27,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Delta.h"
 
 //
+// Set Delta to 0
+//
+void Delta::reset()
+{
+    infinite = false;
+    positive = true;
+    r->reset();
+    d->reset();
+}
+
+//
 // prints the Delta
 //
 void Delta::print( ostream & out ) const

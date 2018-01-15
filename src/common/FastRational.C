@@ -24,6 +24,11 @@ FastRational::FastRational( const char * s, const int base )
   assert( isWellFormed( ) );
 }
 
+void FastRational::reset()
+{
+  kill_mpq(); has_mpq = false; has_word = true; num  = 0; den = 1;
+}
+
 void FastRational::print(std::ostream & out) const
 {
 //  const bool sign = num < 0;

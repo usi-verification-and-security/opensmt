@@ -21,7 +21,9 @@ LRAModel::addVar(LVRef v)
         int_lbounds.push();
         int_ubounds.push();
     }
+
     has_model.insert(v, true);
+    printf("Pushing the default model for %s\n", lva.printVar(v));
     write(v, Delta());
     int_lbounds[lva[v].ID()].push({ bs.getBoundByIdx(v, 0), 0 });
     int_ubounds[lva[v].ID()].push({ bs.getBoundByIdx(v, bs.getBoundListSize(v)-1), 0 });
@@ -80,8 +82,16 @@ void
 LRAModel::popModels()
 {
     assert(limits.size() > 0);
-    for (int i = model_trace.size()-1; i >= limits.last().model_lim; i--)
-        int_model[lva[model_trace[i]].ID()].pop();
+    for (int i = model_trace.size()-1; i >= limits.last().model_lim; i--) {
+        int id = lva[model_trace[i]].ID();
+        if (int_model[id].size() == 1) {
+            ModelEl& m = int_model[id][0];
+            m.d.reset();
+            m.dl = 0;
+        } else {
+            int_model[lva[model_trace[i]].ID()].pop();
+        }
+    }
     model_trace.shrink(model_trace.size() - limits.last().model_lim);
 }
 
@@ -111,7 +121,7 @@ void LRAModel::printModelState()
         if (has_model[v]) {
             int id = lva[v].ID();
             vec<ModelEl> &vals = int_model[id];
-            printf("Var %s [%s] has %d models\n", lva.printVar(v), logic.pp(lva[v].getPTRef()), vals.size());
+            printf("Var %s [%s], %s, has %d models\n", lva.printVar(v), logic.pp(lva[v].getPTRef()), lva[v].isBasic() ? "basic" : "non-basic", vals.size());
             char *buf = (char*) malloc(1);
             buf[0] = '\0';
             for (int j = 0; j < vals.size(); j++) {

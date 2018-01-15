@@ -83,6 +83,7 @@ class LRASolver: public TSolver
 {
 private:
 
+    struct LVRefPair { LVRef p1; LVRef p2; };
     vector<opensmt::Real*> numbers_pool;    // Collect numbers.  Should work as a simple memory managemet system
     LRALogic&            logic;
     LAVarAllocator       lva;
@@ -131,6 +132,7 @@ public:
     bool  assertLit          ( PtAsgn , bool = false ); // Push the constraint into Solver
     void  pushBacktrackPoint ( );                       // Push a backtrack point
     void  popBacktrackPoint  ( );                       // Backtrack to last saved point
+    void  fixStackConsistency( );                       // Adjust the models so that non-basic (column) variables do not break asserted bounds
 
 
     // Return the conflicting bounds
@@ -258,6 +260,9 @@ private:
     void isProperLeq(PTRef tr);  // The Leq term conforms to the assumptions of its form.  Only asserts.
     char* printVar(LVRef v);
     bool valueConsistent(LVRef v); // Debug: Checks that the value of v in the model is consistent with the evaluated value of the polynomial of v in the same model.
+    bool stackOk();
+    bool checkRowConsistency();
+    bool checkColumnConsistency();
 };
 
 #endif

@@ -363,12 +363,16 @@ lbool LRASolver::declareTerm(PTRef leq_tr)
 //
 bool LRASolver::check(bool complete)
 {
+
     // opensmt::StopWatch check_timer(tsolver_stats.simplex_timer);
-//    printf(" - check %d\n", debug_check_count++);
+    printf(" - check %d\n", debug_check_count++);
     (void)complete;
     // check if we stop reading constraints
     if (status == INIT)
         initSolver();
+
+    assert(checkRowConsistency());
+    assert(checkColumnConsistency());
 
     LVRef x = LVRef_Undef;
 
@@ -543,10 +547,10 @@ bool LRASolver::check(bool complete)
         }
     }
     getStatus() == true ? tsolver_stats.sat_calls ++ : tsolver_stats.unsat_calls ++;
-//    printf(" - check ended\n");
-//    printf(" => %s\n", getStatus() ? "sat" : "unsat");
-//    if (getStatus())
-//        model.printModelState();
+    printf(" - check ended\n");
+    printf(" => %s\n", getStatus() ? "sat" : "unsat");
+    if (getStatus())
+        model.printModelState();
     return getStatus();
 }
 
@@ -557,7 +561,7 @@ bool LRASolver::assertLit( PtAsgn asgn, bool reason )
 {
     ( void )reason;
 
-//    printf("Assert %d\n", debug_assert_count++);
+    printf("Assert %d\n", debug_assert_count++);
 
     // Special cases of the "inequalitites"
     if (logic.isTrue(asgn.tr) && asgn.sgn == l_True) {
@@ -582,9 +586,6 @@ bool LRASolver::assertLit( PtAsgn asgn, bool reason )
 
     assert(asgn.sgn != l_Undef);
 
-//  cerr << "; Pushing (" << ( pta.sgn == l_False ? "not " : "") << logic.printTerm(pta.tr)
-//       << " - " << ptermToLavar[logic.getPterm(pta.tr).getId()] << endl;
-
     bool is_reason = false;
 
     Pterm& t = logic.getPterm(asgn.tr);
@@ -593,10 +594,10 @@ bool LRASolver::assertLit( PtAsgn asgn, bool reason )
     LABoundRefPair p = boundStore.getBoundRefPair(asgn.tr);
     LABoundRef bound_ref = asgn.sgn == l_False ? p.neg : p.pos;
 
-//    printf("Model state\n");
-//    model.printModelState();
-//    printf("Asserting %s\n", boundStore.printBound(bound_ref));
-//    printf(" - equal to %s%s\n", asgn.sgn == l_True ? "" : "not ", logic.pp(asgn.tr));
+    printf("Model state\n");
+    model.printModelState();
+    printf("Asserting %s\n", boundStore.printBound(bound_ref));
+    printf(" - equal to %s%s\n", asgn.sgn == l_True ? "" : "not ", logic.pp(asgn.tr));
 
     LVRef it = lavarStore.getVarByLeqId(t.getId());
     // Constraint to push was not found in local storage. Most likely it was not read properly before
@@ -675,7 +676,7 @@ bool LRASolver::assertBoundOnVar(LVRef it, LABoundRef itBound_ref)
         return setStatus( UNSAT );
     }
 
-    // Update the Tableau data if needed
+    // Update the Tableau data if a basic variable
     if (!lva[it].isBasic())
         update(it, itBound.getValue());
 
@@ -706,17 +707,42 @@ void LRASolver::pushBacktrackPoint( )
 //
 // Pop the solver one level up
 //
-void LRASolver::popBacktrackPoint( )
-{
+void LRASolver::popBacktrackPoint( ) {
     PtAsgn dec = model.popBacktrackPoint();
     if (dec != PtAsgn_Undef)
         clearPolarity(dec.tr);
 //    printf(" -> Pop backtrack point.  Following is the state of the model after the pop\n");
 //    model.printModelState();
+
+    fixStackConsistency();
+    assert(stackOk());
+
     first_update_after_backtrack = true;
+
 
     setStatus(SAT);
     TSolver::popBacktrackPoint();
+}
+
+void LRASolver::fixStackConsistency()
+{
+    for (int i = 0; i < columns.size(); i++) {
+        LVRef vr = columns[i];
+        if (!model.hasModel(vr)) {
+            printf("Non-basic (column) var %s has no model\n", lva.printVar(vr));
+            continue; // Is it ok to have stuff on columns that have no model?
+        }
+        if (isModelOutOfBounds(vr)) {
+            if (isModelOutOfLowerBound(vr)) {
+                assert(model.Lb(vr) - model.read(vr) > 0);
+                update(vr, model.Lb(vr));
+            }
+            else {
+                assert(model.read(vr) - model.Ub(vr) > 0);
+                update(vr, model.Ub(vr));
+            }
+        }
+    }
 }
 
 // Remove row corresponding to pr.  Assumes that the variables appearing in the row have already updated their
@@ -738,18 +764,19 @@ void LRASolver::removeRow(PolyRef pr)
 
 void LRASolver::removeCol(LVRef v)
 {
-    int v_col = lva[v].getColId();
-    if (v_col == -1)
-        return; // Already removed
-    assert(columns.size() > v_col);
-    // Replace v_col slot with the last column in columns vector
-    int m = columns.size() - 1;
-    if (m > v_col) {
-        lva[columns[m]].setColId(v_col);
-        columns[v_col] = columns[m];
-        lva[v].setColId(-1);
-    }
-    columns.pop();
+    lva[v].setColId(-2);
+//    int v_col = lva[v].getColId();
+//    if (v_col < 0)
+//        return; // Already removed
+//    assert(columns.size() > v_col);
+//    // Replace v_col slot with the last column in columns vector
+//    int m = columns.size() - 1;
+//    if (m > v_col) {
+//        lva[columns[m]].setColId(v_col);
+//        columns[v_col] = columns[m];
+//
+//    }
+//    columns.pop();
 }
 
 void LRASolver::solveForVar(PolyRef pr, int idx, vec<PolyTermRef>& expr)
@@ -776,7 +803,10 @@ void LRASolver::solveForVar(PolyRef pr, int idx, vec<PolyTermRef>& expr)
 
 void LRASolver::doGaussianElimination( )
 {
-    vec<LVRef> elim_cols;
+    vec<LVRefPair> subst_cols;
+
+    assert(checkRowConsistency());
+    assert(checkColumnConsistency());
 
     for (unsigned i = 0; i < columns.size( ); ++i) {
         assert(columns[i] != LVRef_Undef);
@@ -786,7 +816,6 @@ void LRASolver::doGaussianElimination( )
             continue;
 
 
-        elim_cols.push(x);
         if (bra[lva[x].getBindedRowsRef()].size() == 0)
             continue;
 
@@ -794,6 +823,10 @@ void LRASolver::doGaussianElimination( )
         // Derive an expression for x based on the first polynomial it appears
         BindedRow& row = bra[lva[x].getBindedRowsRef()][0];
         PolyRef basis = row.poly;
+        LVRef basis_var = pa[basis].getVar();
+        subst_cols.push({x, basis_var});
+
+
 //        printf("First occurrence of var %s is the polynomial %s\n", lva.printVar(x), polyStore.printPoly(basis));
 
         vec<PolyTermRef> expr_for_x;
@@ -832,8 +865,18 @@ void LRASolver::doGaussianElimination( )
 #endif
     }
 
-    for (int i = 0; i < elim_cols.size(); i++)
-        removeCol(elim_cols[i]);
+    for (int i = 0; i < subst_cols.size(); i++) {
+        LVRef s = subst_cols[i].p1;
+        LVRef t = subst_cols[i].p2;
+        int col_id = lva[s].getColId();
+        assert(columns[col_id] == s);
+        lva[t].setColId(col_id);
+        columns[col_id] = t;
+        lva[s].setColId(-2);
+    }
+
+    assert(checkRowConsistency());
+    assert(checkColumnConsistency());
 }
 
 
@@ -854,11 +897,6 @@ void LRASolver::update( LVRef x, const Delta & v )
 
         //TODO: make a separate config value for suggestions
         //TODO: sort the order of suggestion requesting based on metric (Model increase, out-of-bound distance etc)
-        //    if( config.lra_theory_propagation == 3 )
-        //    {
-        //      if( suggestions.empty( ) )
-        //        rows[it->key]->getSuggestions( suggestions, id );
-        //    }
         assert(valueConsistent(row));
     }
 //  cerr << "; UPDATED nonbasic " << *x << ": " << x->L( ) << " <= " << x->M( ) << " <= " << x->U( ) << endl;
@@ -967,6 +1005,12 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
     assert(rows[row_id] == bv);
     // Remove bv from rows, add nv to rows.
     rows[row_id] = nv;
+    // Remove nv from cols, add bv to cols
+    int col_id = lva[nv].getColId();
+    lva[bv].setColId(col_id);
+    assert(columns[col_id] == nv);
+    columns[col_id] = bv;
+
     lva[bv].setNonbasic();
     lva[nv].setBasic();
     assert( polyStore.has(pr, bv) );
@@ -974,6 +1018,9 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
     assert( lva[bv].getPolyRef() == PolyRef_Undef );
     assert( polyStore.getSize(lva[nv].getPolyRef()) > 0 );
     assert( bra[lva[bv].getBindedRowsRef()].size() > 0 );
+
+    assert(checkRowConsistency());
+    assert(checkColumnConsistency());
 }
 
 //
@@ -1441,7 +1488,7 @@ void LRASolver::getConflict(bool, vec<PtAsgn>& e)
     for (int i = 0; i < e.size(); i++) {
         check_me.push(e[i].sgn == l_False ? logic.mkNot(e[i].tr) : e[i].tr);
     }
-//    printf("In PTRef this is %s\n", logic.pp(logic.mkAnd(check_me)));
+    printf("In PTRef this is %s\n", logic.pp(logic.mkAnd(check_me)));
 //    assert(logic.implies(logic.mkAnd(check_me), logic.getTerm_false()));
 }
 
@@ -1768,9 +1815,88 @@ bool LRASolver::valueConsistent(LVRef v)
 
         sum += t.coef * model.read(t.var);
     }
+    assert(value == sum);
     return value == sum;
 }
 
+//
+// Check that the values of non-basic variables (columns) do not break asserted bounds
+//
+bool LRASolver::stackOk()
+{
+    bool rval = true;
+    for (int i = 0; i < lavarStore.numVars(); i++)
+    {
+        LVRef vr = lavarStore.getVarByIdx(i);
+        if (model.hasModel(vr)) {
+            if (!lva[vr].isBasic()) {
+                if (isModelOutOfBounds(vr)) {
+                    rval = false;
+                    printf("Non-basic (column) LRA var %s has value %s <= %s <= %s\n", lva.printVar(vr), model.Lb(vr).printValue(), model.read(vr).printValue(), model.Ub(vr).printValue());
+                    assert(false);
+                }
+            }
+        }
+    }
+    return rval;
+}
+
+bool LRASolver::checkRowConsistency()
+{
+    for (int i = 0; i < lavarStore.numVars(); i++) {
+        LVRef vr = lavarStore.getVarByIdx(i);
+        if (lva[vr].isBasic()) {
+            int row_id = lva[vr].getRowId();
+            if (row_id == -1) {
+                assert(false);
+                return false;
+            }
+            else if (rows[row_id] != vr) {
+                assert(false);
+                return false;
+            }
+        }
+    }
+
+    for (int i = 0; i < rows.size(); i++) {
+        LVRef vr = rows[i];
+        if (lva[vr].getRowId() != i) {
+            assert(false);
+            return false;
+        }
+    }
+    return true;
+}
+
+bool LRASolver::checkColumnConsistency()
+{
+    for (int i = 0; i < lavarStore.numVars(); i++) {
+        LVRef vr = lavarStore.getVarByIdx(i);
+        if (!lva[vr].isBasic()) {
+            int col_id = lva[vr].getColId();
+            if (col_id == -1) {
+                assert(false);
+                return false;
+            }
+            else if (col_id == -2) {
+                // removed by gaussian elimination
+                continue;
+            }
+            else if (columns[col_id] != vr) {
+                assert(false);
+                return false;
+            }
+        }
+    }
+    for (int i = 0; i < columns.size(); i++) {
+        LVRef vr = columns[i];
+        if (lva[vr].getColId() != i) {
+            assert(false);
+            return false;
+        }
+    }
+    return true;
+}
 #ifdef PRODUCE_PROOF
 //
 // Compute interpolants for the conflict

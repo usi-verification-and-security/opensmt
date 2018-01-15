@@ -62,13 +62,14 @@ public:
     inline Delta( const Delta &a );               // Copy constructor
     inline ~Delta( );                             // Destructor
 
-    inline const Real& R( ) const;                      // main value
-    inline const Real& D( ) const;                      // delta to keep track of < / <= difference
+    inline const Real& R( ) const;                // main value
+    inline const Real& D( ) const;                // delta to keep track of < / <= difference
     inline bool hasDelta( ) const;                // TRUE is delta != 0
     inline bool isMinusInf( ) const;              // True if -inf
     inline bool isPlusInf( ) const;               // True if +inf
     inline bool isInf( ) const;                   // True if inf (any)
     void negate() { if (!isInf()) {r->negate(); d->negate();} else { positive = !positive; } }
+    void reset();
 
     inline Delta& operator=( const Delta &a );    //Assign operator
 
@@ -348,6 +349,7 @@ Delta::Delta()
     r = new Real(0);
     d = new Real(0);
 }
+
 
 //
 // Default constructor (true for +inf; false for -inf)

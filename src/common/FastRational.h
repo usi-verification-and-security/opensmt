@@ -81,6 +81,8 @@ public:
   //
   ~FastRational( ) { kill_mpq(); }
 
+  void reset();
+
   inline FastRational & operator=( const FastRational & );
 
 private:
