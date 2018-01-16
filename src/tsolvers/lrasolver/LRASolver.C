@@ -365,7 +365,7 @@ bool LRASolver::check(bool complete)
 {
 
     // opensmt::StopWatch check_timer(tsolver_stats.simplex_timer);
-    printf(" - check %d\n", debug_check_count++);
+//    printf(" - check %d\n", debug_check_count++);
     (void)complete;
     // check if we stop reading constraints
     if (status == INIT)
@@ -547,10 +547,10 @@ bool LRASolver::check(bool complete)
         }
     }
     getStatus() == true ? tsolver_stats.sat_calls ++ : tsolver_stats.unsat_calls ++;
-    printf(" - check ended\n");
-    printf(" => %s\n", getStatus() ? "sat" : "unsat");
-    if (getStatus())
-        model.printModelState();
+//    printf(" - check ended\n");
+//    printf(" => %s\n", getStatus() ? "sat" : "unsat");
+//    if (getStatus())
+//        model.printModelState();
     return getStatus();
 }
 
@@ -561,7 +561,7 @@ bool LRASolver::assertLit( PtAsgn asgn, bool reason )
 {
     ( void )reason;
 
-    printf("Assert %d\n", debug_assert_count++);
+//    printf("Assert %d\n", debug_assert_count++);
 
     // Special cases of the "inequalitites"
     if (logic.isTrue(asgn.tr) && asgn.sgn == l_True) {
@@ -594,10 +594,10 @@ bool LRASolver::assertLit( PtAsgn asgn, bool reason )
     LABoundRefPair p = boundStore.getBoundRefPair(asgn.tr);
     LABoundRef bound_ref = asgn.sgn == l_False ? p.neg : p.pos;
 
-    printf("Model state\n");
-    model.printModelState();
-    printf("Asserting %s\n", boundStore.printBound(bound_ref));
-    printf(" - equal to %s%s\n", asgn.sgn == l_True ? "" : "not ", logic.pp(asgn.tr));
+//    printf("Model state\n");
+//    model.printModelState();
+//    printf("Asserting %s\n", boundStore.printBound(bound_ref));
+//    printf(" - equal to %s%s\n", asgn.sgn == l_True ? "" : "not ", logic.pp(asgn.tr));
 
     LVRef it = lavarStore.getVarByLeqId(t.getId());
     // Constraint to push was not found in local storage. Most likely it was not read properly before
@@ -917,23 +917,27 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
     // get Theta (zero if Aij is zero)
     const Real& a = pta[polyStore.find(lva[bv].getPolyRef(), nv)].coef;
 
+    // This tells how much we need to change nv's value so that bv will have the value v.
     Delta theta(( v - model.read(bv) ) / a);
 
-    // update models of nb and bv
+    // update models of nv and bv
     model.write(bv, v);
     model.write(nv, model.read(nv)+theta);
+    assert(valueConsistent(bv));
 
     int nv_pos = -1; // nv's position in bv's polynomial
     // update model of Basic variables
     for (int i = 0; i < bra[lva[nv].getBindedRowsRef()].size(); i++) {
-        LVRef bv_other = pa[bra[lva[nv].getBindedRowsRef()][i].poly].getVar();
-        int pos = bra[lva[nv].getBindedRowsRef()][i].pos;
-        if (bv_other != bv) {
-            model.write(bv_other, model.read(bv_other)+pta[polyStore.readTerm(lva[bv_other].getPolyRef(), pos)].coef * theta);
+        BindedRow& br = bra[lva[nv].getBindedRowsRef()][i];
+        LVRef occ_bv = pa[br.poly].getVar();
+        int pos = br.pos;
+        if (occ_bv != bv) {
+            model.write(occ_bv, model.read(occ_bv)+pta[polyStore.readTerm(br.poly, pos)].coef * theta);
         }
         else {
             nv_pos = pos;
         }
+        assert(valueConsistent(occ_bv));
     }
     assert(nv_pos != -1);
 
@@ -975,7 +979,7 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
 
         // copy a to the new Real variable (use memory pool)
 
-        const Real& a = *newReal(&pta[polyStore.readTerm(row, pos)].coef);
+        const Real& nv_coef = *newReal(&pta[polyStore.readTerm(row, pos)].coef);
 
         // Remove first nv from the poly.
         polyStore.remove(nv, row);
@@ -984,7 +988,7 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
             LVRef col = pta[polyStore.readTerm(pr, j)].var;
             const Real &b = pta[polyStore.readTerm(pr, j)].coef;
 
-            Real tmp = a*b;
+            Real tmp = nv_coef*b;
             Real* p_c = newReal(&tmp);
 
 
@@ -992,7 +996,11 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
             polyStore.add(row, col, *p_c);
             // It could be that the poly changed so we need to update our local reference row accordingly
             row = lva[pa[row].getVar()].getPolyRef();
+            // Update the value of the variable corresponding to this row
+
         }
+        LVRef row_var = pa[row].getVar();
+        assert(valueConsistent(row_var));
     }
     // nv will become the new basic var, so we need to remove its occurrences
     BindedRows& b = bindedRowsStore.getBindedRows(nv);
@@ -1488,7 +1496,7 @@ void LRASolver::getConflict(bool, vec<PtAsgn>& e)
     for (int i = 0; i < e.size(); i++) {
         check_me.push(e[i].sgn == l_False ? logic.mkNot(e[i].tr) : e[i].tr);
     }
-    printf("In PTRef this is %s\n", logic.pp(logic.mkAnd(check_me)));
+//    printf("In PTRef this is %s\n", logic.pp(logic.mkAnd(check_me)));
 //    assert(logic.implies(logic.mkAnd(check_me), logic.getTerm_false()));
 }
 

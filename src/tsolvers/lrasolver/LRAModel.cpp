@@ -23,7 +23,7 @@ LRAModel::addVar(LVRef v)
     }
 
     has_model.insert(v, true);
-    printf("Pushing the default model for %s\n", lva.printVar(v));
+//    printf("Pushing the default model for %s\n", lva.printVar(v));
     write(v, Delta());
     int_lbounds[lva[v].ID()].push({ bs.getBoundByIdx(v, 0), 0 });
     int_ubounds[lva[v].ID()].push({ bs.getBoundByIdx(v, bs.getBoundListSize(v)-1), 0 });
