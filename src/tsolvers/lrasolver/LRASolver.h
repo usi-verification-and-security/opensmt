@@ -263,6 +263,7 @@ private:
     bool stackOk();
     bool checkRowConsistency();
     bool checkColumnConsistency();
+    void crashInconsistency(LVRef v, int line);
 };
 
 #endif

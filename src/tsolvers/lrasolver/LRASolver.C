@@ -143,6 +143,8 @@ const Delta LRASolver::overBound(LVRef v) const
         return ( Delta(model.Lb(v) - model.read(v)) );
     }
     assert (false);
+    printf("Problem in overBound, LRASolver.C:%d\n", __LINE__);
+    exit(1);
 }
 
 
@@ -409,7 +411,9 @@ bool LRASolver::check(bool complete)
         for (int i = 0; i < rows.size(); i++) {
             LVRef it = rows[i];
             if (it == LVRef_Undef) continue; // There should not be nulls, since they result in quadratic slowdown?
-            assert(valueConsistent(it));
+            if (!valueConsistent(it)) {
+                crashInconsistency(it, __LINE__);
+            }
             if (isModelOutOfBounds(it)) {
                 if (bland_rule) {
                     bland_counter++;
@@ -897,7 +901,9 @@ void LRASolver::update( LVRef x, const Delta & v )
 
         //TODO: make a separate config value for suggestions
         //TODO: sort the order of suggestion requesting based on metric (Model increase, out-of-bound distance etc)
-        assert(valueConsistent(row));
+        if (!valueConsistent(row)) {
+            crashInconsistency(row, __LINE__);
+        }
     }
 //  cerr << "; UPDATED nonbasic " << *x << ": " << x->L( ) << " <= " << x->M( ) << " <= " << x->U( ) << endl;
 }
@@ -923,7 +929,8 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
     // update models of nv and bv
     model.write(bv, v);
     model.write(nv, model.read(nv)+theta);
-    assert(valueConsistent(bv));
+    if (!valueConsistent(bv))
+        crashInconsistency(bv, __LINE__);
 
     int nv_pos = -1; // nv's position in bv's polynomial
     // update model of Basic variables
@@ -937,7 +944,8 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
         else {
             nv_pos = pos;
         }
-        assert(valueConsistent(occ_bv));
+        if (!valueConsistent(occ_bv))
+           crashInconsistency(occ_bv, __LINE__);
     }
     assert(nv_pos != -1);
 
@@ -991,7 +999,6 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
             Real tmp = nv_coef*b;
             Real* p_c = newReal(&tmp);
 
-
             // Add the variable col with factor p_c to row's polynomial
             polyStore.add(row, col, *p_c);
             // It could be that the poly changed so we need to update our local reference row accordingly
@@ -1000,7 +1007,8 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
 
         }
         LVRef row_var = pa[row].getVar();
-        assert(valueConsistent(row_var));
+        if (!valueConsistent(row_var))
+           crashInconsistency(row_var, __LINE__);
     }
     // nv will become the new basic var, so we need to remove its occurrences
     BindedRows& b = bindedRowsStore.getBindedRows(nv);
@@ -1827,6 +1835,17 @@ bool LRASolver::valueConsistent(LVRef v)
     return value == sum;
 }
 
+void LRASolver::crashInconsistency(LVRef v, int line) {
+    PolyRef pr = lva[v].getPolyRef();
+    printf("Var %s = %s is not consistent with its polynomial %s\n", lva.printVar(v), model.read(v).printValue(),
+           polyStore.printPoly(pr));
+    printf("At row %d, file LRASolver.C\n", line);
+    for (int i = 0; i < polyStore.getSize(pr); i++) {
+        const PolyTerm &t = pta[polyStore.readTerm(pr, i)];
+        printf(" %s * %s\n", t.coef.get_str().c_str(), model.read(t.var).printValue());
+    }
+    exit(10);
+}
 //
 // Check that the values of non-basic variables (columns) do not break asserted bounds
 //
