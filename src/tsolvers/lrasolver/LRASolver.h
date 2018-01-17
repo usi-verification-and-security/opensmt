@@ -118,6 +118,7 @@ private:
 
     int debug_check_count;
     int debug_assert_count;
+    int debug_pivot_sum_count;
 
 public:
 

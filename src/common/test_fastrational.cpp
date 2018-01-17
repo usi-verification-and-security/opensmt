@@ -22,5 +22,12 @@ int main(int argc, char** argv)
     FastRational unit("-1");
     FastRational e4 = r/unit;
     printf("%s/%s = %s\n", r.get_str().c_str(), unit.get_str().c_str(), e4.get_str().c_str());
+    FastRational m1("-2147483647");
+    FastRational m2("-1073741825");
+    FastRational h1("3221225472");
+    FastRational r1 = m1/h1;
+    FastRational r2 = m2/h1;
+    FastRational e5 = r1+r2;
+    printf("%s + %s = %s\n", r1.get_str().c_str(), r2.get_str().c_str(), e5.get_str().c_str());
     return 0;
 }

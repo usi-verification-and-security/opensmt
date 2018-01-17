@@ -87,6 +87,7 @@ LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
     , model(lva, boundStore, l)
     , debug_check_count(0)
     , debug_assert_count(0)
+    , debug_pivot_sum_count(0)
 {
     status = INIT;
     checks_history.push_back(0);
@@ -979,25 +980,34 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
 
     // We will add bv to basic vectors so it needs to be set non-basic
     lva[bv].setNonbasic();
-    // now change the attribute values for all rows where nv was present
+    // now change the polynomials for all rows where nv was present
     while (bra[lva[nv].getBindedRowsRef()].size() != 0) {
         PolyRef row = bra[lva[nv].getBindedRowsRef()][0].poly;
         int     pos = bra[lva[nv].getBindedRowsRef()][0].pos;
         assert( pta[polyStore.readTerm(row, pos)].coef != 0 );
 
+        assert(valueConsistent(pa[row].getVar()));
+        assert(valueConsistent(nv));
         // copy a to the new Real variable (use memory pool)
 
         const Real& nv_coef = *newReal(&pta[polyStore.readTerm(row, pos)].coef);
 
+//        printf("Removing %s from the poly %s\n", polyStore.printPoly(lva[nv].getPolyRef()), polyStore.printPoly(row));
+
         // Remove first nv from the poly.
         polyStore.remove(nv, row);
+//        printf("%s\n", polyStore.printPoly(row));
         // P_i = P_i + a_nv * P_bv (iterate over all elements of P_bv)
+//        printf("Entering the phase where I will add polynomials\n");
         for (int j = 0; j < polyStore.getSize(pr); j++) {
+//            printf("pivot sum count %d\n", debug_pivot_sum_count++);
             LVRef col = pta[polyStore.readTerm(pr, j)].var;
             const Real &b = pta[polyStore.readTerm(pr, j)].coef;
 
             Real tmp = nv_coef*b;
             Real* p_c = newReal(&tmp);
+
+//            printf("%s * %s = %s\n", nv_coef.get_str().c_str(), b.get_str().c_str(), tmp.get_str().c_str());
 
             // Add the variable col with factor p_c to row's polynomial
             polyStore.add(row, col, *p_c);
@@ -1006,6 +1016,7 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
             // Update the value of the variable corresponding to this row
 
         }
+//        printf("Result is %s\n", polyStore.printPoly(row));
         LVRef row_var = pa[row].getVar();
         if (!valueConsistent(row_var))
            crashInconsistency(row_var, __LINE__);
@@ -1824,13 +1835,14 @@ bool LRASolver::valueConsistent(LVRef v)
     const Delta& value = model.read(v);
     Delta sum(0);
     PolyRef pr = lva[v].getPolyRef();
+//    printf("%s = ", value.printValue());
     for (int i = 0; i < polyStore.getSize(pr); i++) {
         const PolyTerm &t = pta[polyStore.readTerm(pr, i)];
         Pterm& smt_term = logic.getPterm(lva[t.var].getPTRef());
-
-
         sum += t.coef * model.read(t.var);
+//        printf("+(%s*%s)", t.coef.get_str().c_str(), model.read(t.var).printValue());
     }
+//    printf(" = %s\n", sum.printValue());
     assert(value == sum);
     return value == sum;
 }

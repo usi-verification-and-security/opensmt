@@ -29,6 +29,8 @@ typedef uint64_t ulword;
 #define WORD_MIN  INT_MIN
 #define WORD_MAX  INT_MAX
 #define UWORD_MAX UINT_MAX
+#define LWORD_MIN LONG_MIN
+#define LWORD_MAX LONG_MAX
 
 class MpzUnit
 {
@@ -434,6 +436,14 @@ template<uword> uword gcd(uword a, uword b);
         var = tmp;\
     } while(0)
 
+#define CHECK_SUM_OVERFLOWS_LWORD(var, s1, s2) \
+    do { \
+        if ((s1 > LWORD_MAX/2 || s2 > LWORD_MAX/2) || (s1 < LWORD_MIN/2 || s2 < LWORD_MIN/2)) { \
+            goto overflow; \
+        } \
+        var = s1 + s2;\
+    } while(0)
+
 #define CHECK_POSITIVE(value) \
     if (value < 1) abort()
 
@@ -489,7 +499,11 @@ inline void addition(FastRational& dst, const FastRational& a, const FastRationa
             CHECK_WORD(dst.num, lword(b.num) + lword(a.num)*b.den);
             dst.den = b.den;
         } else {
-            lword n = lword(a.num)*b.den + lword(b.num)*a.den;
+            lword c1 = lword(a.num)*b.den; // No overflow
+            lword c2 = lword(b.num)*a.den; // No overflow
+            lword n;
+            CHECK_SUM_OVERFLOWS_LWORD(n, c1, c2); // Overflow possible
+//            lword n = lword(a.num)*b.den + lword(b.num)*a.den;
             ulword d = ulword(a.den) * b.den;
             lword common = gcd(absVal(n), d);
             word zn;
