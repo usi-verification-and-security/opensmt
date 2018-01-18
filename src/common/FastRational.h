@@ -59,6 +59,8 @@ public:
 
     inline FastRational( const FastRational & );
 
+    // debug
+    word getNum() { return num; }
     FastRational( const mpz_class & x )
     {
         if ( x.fits_sint_p() ) {
@@ -634,8 +636,8 @@ overflow:
 
 inline void division(FastRational& dst, const FastRational& a, const FastRational& b) {
     if (a.has_word && b.has_word) {
-        word common1 = gcd(absVal(a.num), absVal(b.num));
-        word common2 = gcd(a.den, b.den);
+        uword common1 = gcd(absVal(a.num), absVal(b.num));
+        uword common2 = gcd(a.den, b.den);
         word zn;
         uword zd;
         CHECK_WORD(zn, (lword(a.num)/common1) * (b.den/common2));
@@ -676,7 +678,11 @@ inline void additionAssign(FastRational& a, const FastRational& b) {
                 a.num = b.num;
                 a.den = b.den;
             } else {
-                lword n = lword(a.num)*b.den + lword(b.num)*a.den;
+                lword c1 = lword(a.num)*b.den; // No overflow
+                lword c2 = lword(b.num)*a.den; // No overflow
+                lword n;
+                CHECK_SUM_OVERFLOWS_LWORD(n, c1, c2); // Overflow possible
+//                lword n = lword(a.num)*b.den + lword(b.num)*a.den;
                 ulword d = ulword(a.den) * b.den;
                 lword common = gcd(absVal(n), d);
                 word zn;

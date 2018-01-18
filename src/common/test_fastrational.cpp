@@ -29,5 +29,18 @@ int main(int argc, char** argv)
     FastRational r2 = m2/h1;
     FastRational e5 = r1+r2;
     printf("%s + %s = %s\n", r1.get_str().c_str(), r2.get_str().c_str(), e5.get_str().c_str());
+
+    {
+        FastRational el1("1/8589934590");
+        FastRational el2("1/2");
+        FastRational el3("-17895697/1152921504338411520");
+        FastRational el4("2147483647/1");
+        FastRational el5("1/4026531840");
+        FastRational el6("2147483647/1");
+        FastRational res1 = el1+el2;
+        FastRational res2 = res1 + el3*el4;
+        FastRational res3 = res2;// + el5*el6;
+        printf("%s\n", res3.get_str().c_str());
+    }
     return 0;
 }
