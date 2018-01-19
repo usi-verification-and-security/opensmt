@@ -37,10 +37,11 @@ int main(int argc, char** argv)
         FastRational el4("2147483647/1");
         FastRational el5("1/4026531840");
         FastRational el6("2147483647/1");
-        FastRational res1 = el1+el2;
-        FastRational res2 = res1 + el3*el4;
-        FastRational res3 = res2;// + el5*el6;
-        printf("%s\n", res3.get_str().c_str());
+        FastRational res = el1;
+        res += el2;
+        res += el3*el4;
+        res += el5*el6;
+        printf("%s\n", res.get_str().c_str());
     }
     return 0;
 }
