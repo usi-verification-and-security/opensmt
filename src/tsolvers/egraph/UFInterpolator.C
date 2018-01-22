@@ -2788,9 +2788,9 @@ void CGraph::printAsDotty ( ostream &os )
 
         if ( c->color == I_AB ) color = "green";
 
-        os << logic.getPterm (c->e).getId()
+        os << logic.getPterm (c->e).getId().x
            << " [label=\""
-           << logic.printTerm (c->e)
+           << logic.pp(c->e)
            << "\",color=\"" << color
            << "\",style=filled]"
            << endl;
@@ -2827,9 +2827,9 @@ void CGraph::printAsDotty ( ostream &os )
 
         if ( c->color == I_AB ) color = "green";
 
-        os << logic.getPterm (c->source->e).getId( )
+        os << logic.getPterm (c->source->e).getId( ).x
            << " -> "
-           << logic.getPterm (c->target->e).getId( )
+           << logic.getPterm (c->target->e).getId( ).x
            << " [color=\"" << color
            << "\",style=\"bold"
            << (c->reason == PTRef_Undef ? ",dashed" : "")
@@ -2838,9 +2838,9 @@ void CGraph::printAsDotty ( ostream &os )
     }
 
     // Print conflict
-    os << logic.printTerm (conf1)
+    os << logic.pp(conf1)
        << " -> "
-       << logic.printTerm (conf2)
+       << logic.pp(conf2)
        << " [style=bold]"
        << endl;
     os << "}" << endl;
