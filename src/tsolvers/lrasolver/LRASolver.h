@@ -33,9 +33,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //#define GAUSSIAN_DEBUG
 
 #include "Timer.h"
-#include "LRALogic.h"
 #include "TSolver.h"
 #include "LRAModel.h"
+#include "LRALogic.h"
 
 #include <unordered_set>
 #include <unordered_map>
@@ -147,9 +147,11 @@ public:
 #ifdef PRODUCE_PROOF
     TheoryInterpolator* getTheoryInterpolator() override { return nullptr; }
     PTRef getInterpolant( const ipartitions_t &, map<PTRef, icolor_t>* );
+    PTRef getExperimentalInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *labels);
     bool usingStrong() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_strong; }
     bool usingWeak() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_weak; }
     bool usingFactor() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_factor; }
+    bool usingExperimental() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_experimental; }
     const char*  getStrengthFactor() { return config.getLRAStrengthFactor(); }
 #endif
 
