@@ -133,6 +133,7 @@ public:
     bool  assertLit          ( PtAsgn , bool = false ); // Push the constraint into Solver
     void  pushBacktrackPoint ( );                       // Push a backtrack point
     void  popBacktrackPoint  ( );                       // Backtrack to last saved point
+    void  popBacktrackPoints  ( unsigned int );         // Backtrack given number of saved points
     void  fixStackConsistency( );                       // Adjust the models so that non-basic (column) variables do not break asserted bounds
 
 

@@ -32,32 +32,23 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 void THandler::backtrack(int lev)
 {
+    unsigned int backTrackPointsCounter = 0;
     // Undoes the state of theory atoms if needed
     while ( (int)stack.size( ) > (lev > 0 ? lev : 0) ) {
-        PTRef e = stack.last( );
-        stack.pop( );
+        PTRef e = stack.last();
+        stack.pop();
 
         // It was var_True or var_False
-        if ( e == getLogic().getTerm_true() || e == getLogic().getTerm_false() ) continue;
+        if (e == getLogic().getTerm_true() || e == getLogic().getTerm_false()) continue;
 
-//        if ( !tmap.theoryTerms.contains(e) ) continue;
         if (!getLogic().isTheoryTerm(e)) continue;
-#ifdef VERBOSE_EUF
-        printf("Backtracking term %s\n", getLogic().printTerm(e));
-#endif
-        //egraph.popBacktrackPoint( );
-
-        for (int i = 0; i < getSolverHandler().tsolvers.size(); i++)
-            if (getSolverHandler().tsolvers[i] != NULL)
-                getSolverHandler().tsolvers[i]->popBacktrackPoint();
-
-//    assert( e->hasPolarity( ) );
-//    assert( e->getPolarity( ) == l_True
-//       || e->getPolarity( ) == l_False );
-    // Reset polarity
-//    e->resetPolarity( );
-//    assert( !e->hasPolarity( ) );
+        ++backTrackPointsCounter;
     }
+    for (int i = 0; i < getSolverHandler().tsolvers.size(); i++) {
+        if (getSolverHandler().tsolvers[i] != nullptr)
+            getSolverHandler().tsolvers[i]->popBacktrackPoints(backTrackPointsCounter);
+    }
+
     checked_trail_size = stack.size( );
 }
 

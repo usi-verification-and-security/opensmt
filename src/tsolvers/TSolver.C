@@ -14,6 +14,12 @@ void TSolver::clearSolver()
     backtrack_points.clear();
 }
 
+void TSolver::popBacktrackPoints(unsigned int counter) {
+    for (unsigned int i = 0; i < counter; ++i) {
+        this->popBacktrackPoint();
+    }
+}
+
 void TSolver::popBacktrackPoint()
 {
     assert( deductions_last.size() > 0 );

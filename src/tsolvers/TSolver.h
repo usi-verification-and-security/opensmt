@@ -159,6 +159,7 @@ public:
     virtual bool                assertLit           ( PtAsgn, bool = false ) = 0 ;  // Assert a theory literal
     virtual void                pushBacktrackPoint  ( )                       ;  // Push a backtrack point
     virtual void                popBacktrackPoint   ( )                       ;  // Backtrack to last saved point
+    virtual void                popBacktrackPoints  ( unsigned int )          ;  // Backtrack given number of points
     virtual bool                check               ( bool ) = 0              ;  // Check satisfiability
     inline string               getName             ( ) { return name; }         // The name of the solver
     virtual ValPair             getValue            (PTRef) = 0;

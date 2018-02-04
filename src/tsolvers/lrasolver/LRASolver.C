@@ -709,24 +709,45 @@ void LRASolver::pushBacktrackPoint( )
     TSolver::pushBacktrackPoint();
 }
 
+////
+//// Pop the solver one level up
+////
+//void LRASolver::popBacktrackPoint( ) {
+//    PtAsgn dec = model.popBacktrackPoint();
+//    if (dec != PtAsgn_Undef)
+//        clearPolarity(dec.tr);
+////    printf(" -> Pop backtrack point.  Following is the state of the model after the pop\n");
+////    model.printModelState();
 //
-// Pop the solver one level up
+//    fixStackConsistency();
+//    assert(stackOk());
 //
-void LRASolver::popBacktrackPoint( ) {
-    PtAsgn dec = model.popBacktrackPoint();
-    if (dec != PtAsgn_Undef)
-        clearPolarity(dec.tr);
-//    printf(" -> Pop backtrack point.  Following is the state of the model after the pop\n");
-//    model.printModelState();
+//    first_update_after_backtrack = true;
+//
+//
+//    setStatus(SAT);
+//    TSolver::popBacktrackPoint();
+//}
 
+// Pop the solver one level up
+// NOTE: this method should not be used, pop multiple points is more efficient with popBacktrackPoints rather than popping one by one
+void LRASolver::popBacktrackPoint( ) {
+    this->popBacktrackPoints(1);
+}
+
+// Pop the solver given number of times
+//
+void LRASolver::popBacktrackPoints(unsigned int count) {
+    for ( ; count > 0; --count){
+        PtAsgn dec = model.popBacktrackPoint();
+        if (dec != PtAsgn_Undef) {
+            clearPolarity(dec.tr);
+        }
+        TSolver::popBacktrackPoint();
+    }
     fixStackConsistency();
     assert(stackOk());
-
-    first_update_after_backtrack = true;
-
-
     setStatus(SAT);
-    TSolver::popBacktrackPoint();
 }
 
 void LRASolver::fixStackConsistency()
