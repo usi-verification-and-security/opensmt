@@ -386,8 +386,10 @@ Logic::printTerm_(PTRef tr, bool ext, bool safe) const
 
     for (int i = 0; i < t.size(); i++) {
         old = out;
-        asprintf(&out, "%s%s", old, printTerm_(t[i], ext, safe));
+        char * current_term = printTerm_(t[i], ext, safe);
+        asprintf(&out, "%s%s", old, current_term);
         ::free(old);
+        ::free(current_term);
         if (i < t.size()-1) {
             old = out;
             asprintf(&out, "%s ", old);
