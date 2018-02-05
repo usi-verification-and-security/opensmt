@@ -412,9 +412,9 @@ bool LRASolver::check(bool complete)
         for (int i = 0; i < rows.size(); i++) {
             LVRef it = rows[i];
             if (it == LVRef_Undef) continue; // There should not be nulls, since they result in quadratic slowdown?
-            if (!valueConsistent(it)) {
-                crashInconsistency(it, __LINE__);
-            }
+//            if (!valueConsistent(it)) {
+//                crashInconsistency(it, __LINE__);
+//            }
             if (isModelOutOfBounds(it)) {
                 if (bland_rule) {
                     bland_counter++;
@@ -923,9 +923,9 @@ void LRASolver::update( LVRef x, const Delta & v )
 
         //TODO: make a separate config value for suggestions
         //TODO: sort the order of suggestion requesting based on metric (Model increase, out-of-bound distance etc)
-        if (!valueConsistent(row)) {
-            crashInconsistency(row, __LINE__);
-        }
+//        if (!valueConsistent(row)) {
+//            crashInconsistency(row, __LINE__);
+//        }
     }
 //  cerr << "; UPDATED nonbasic " << *x << ": " << x->L( ) << " <= " << x->M( ) << " <= " << x->U( ) << endl;
 }
@@ -951,8 +951,8 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
     // update models of nv and bv
     model.write(bv, v);
     model.write(nv, model.read(nv)+theta);
-    if (!valueConsistent(bv))
-        crashInconsistency(bv, __LINE__);
+//    if (!valueConsistent(bv))
+//        crashInconsistency(bv, __LINE__);
 
     int nv_pos = -1; // nv's position in bv's polynomial
     // update model of Basic variables
@@ -966,8 +966,8 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
         else {
             nv_pos = pos;
         }
-        if (!valueConsistent(occ_bv))
-           crashInconsistency(occ_bv, __LINE__);
+//        if (!valueConsistent(occ_bv))
+//           crashInconsistency(occ_bv, __LINE__);
     }
     assert(nv_pos != -1);
 
@@ -1039,8 +1039,8 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
         }
 //        printf("Result is %s\n", polyStore.printPoly(row));
         LVRef row_var = pa[row].getVar();
-        if (!valueConsistent(row_var))
-           crashInconsistency(row_var, __LINE__);
+//        if (!valueConsistent(row_var))
+//           crashInconsistency(row_var, __LINE__);
     }
     // nv will become the new basic var, so we need to remove its occurrences
     BindedRows& b = bindedRowsStore.getBindedRows(nv);
