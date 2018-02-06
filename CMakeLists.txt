@@ -34,6 +34,10 @@ find_package(Readline REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(GMP REQUIRED)
 
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
+
 include_directories(
     ${CMAKE_SOURCE_DIR}/minisat/mtl
     ${CMAKE_SOURCE_DIR}/minisat/core
