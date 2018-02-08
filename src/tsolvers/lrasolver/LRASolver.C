@@ -952,7 +952,7 @@ void LRASolver::update( LVRef x, const Delta & v )
 //
 // pivots x and y in solver and does all updates
 //
-void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
+void LRASolver::pivotAndUpdate( const LVRef bv, const LVRef nv, const Delta & v )
 {
 //  std::cerr << "; PIVOT AND UPDATE" << *bv << " - " << *nb << " - " << v << endl;
     assert( bv != nv );
@@ -1021,9 +1021,10 @@ void LRASolver::pivotAndUpdate( LVRef bv, LVRef nv, const Delta & v )
     // We will add bv to basic vectors so it needs to be set non-basic
     lva[bv].setNonbasic();
     // now change the polynomials for all rows where nv was present
-    while (bra[lva[nv].getBindedRowsRef()].size() != 0) {
-        PolyRef row = bra[lva[nv].getBindedRowsRef()][0].poly;
-        int     pos = bra[lva[nv].getBindedRowsRef()][0].pos;
+    auto & bindedRows = bra[lva[nv].getBindedRowsRef()];
+    while (bindedRows.size() != 0) {
+        PolyRef row = bindedRows[bindedRows.size()-1].poly;
+        int     pos = bindedRows[bindedRows.size()-1].pos;
         assert( pta[polyStore.readTerm(row, pos)].coef != 0 );
 
         assert(valueConsistent(pa[row].getVar()));

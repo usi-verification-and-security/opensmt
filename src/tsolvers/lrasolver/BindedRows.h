@@ -22,6 +22,7 @@ class BindedRows
     void remove(PolyRef pr);
 public:
     BindedRow& operator[] (int i) { return rows[i]; }
+    const BindedRow & operator[] (int i) const { return rows[i]; }
     int size() const { return rows.size(); }
     void add(PolyRef pr, int pos) { assert(pos >= 0); assert(!polyToIdx.has(pr)); polyToIdx.insert(pr, rows.size()); rows.push({pr, pos}); }
     void updatePolyRef(int j, PolyRef pr) { PolyRef old = rows[j].poly; rows[j].poly = pr; polyToIdx.remove(old); polyToIdx.insert(pr, j); }
