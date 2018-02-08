@@ -37,7 +37,7 @@ PolyStore::remove(LVRef v, PolyRef pol)
     }
     ptla[pa[pol].getTerms()].sz --;
     assert(positions.getSize() == ptla[pa[pol].getTerms()].sz);
-    checkConsistency(pol);
+//    checkConsistency(pol);
 }
 
 void PolyStore::remove(LVRef poly_var)
@@ -97,7 +97,7 @@ PolyStore::add(PolyRef pr, LVRef v, const Real &c) {
         pos = t_new.size()-1;
         positions.insert(v, pos);
         brs.add(pr, pos, v);
-        assert(checkConsistency(pr));
+//        assert(checkConsistency(pr));
     }
 }
 
@@ -182,7 +182,7 @@ PolyStore::makePoly(LVRef s, vec<PolyTermRef>& terms)
         brs.add(pr, i, pta[terms[i]].var);
     }
 //    printf("Made the poly %s from PTRef %s\n", printPoly(pr), logic.pp(lva[s].getPTRef()));
-    checkConsistency(pr);
+//    checkConsistency(pr);
     return pr;
 }
 
