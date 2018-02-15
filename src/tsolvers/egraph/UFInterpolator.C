@@ -175,6 +175,7 @@ icolor_t CGraph::colorNodesRec ( CNode *c, const ipartitions_t &mask )
     }
 
     colored_nodes.insert (c);
+    assert(color != I_UNDEF);
     return c->color = color;
 
     /*
@@ -373,7 +374,7 @@ bool CGraph::colorEdges ( CNode *c1
         CNode *n2 = unprocessed_nodes[ unprocessed_nodes.size( ) - 1 ];
 
 #ifdef COLOR_DEBUG
-        cerr << "; Trying to visit from " << logic.printTerm(c1->e) << " to " << logic.printTerm(c2->e) << endl;
+        cerr << "; Trying to visit from " << logic.printTerm(n1->e) << " to " << logic.printTerm(n2->e) << endl;
 #endif
         //
         // Skip if path already seen
@@ -607,21 +608,20 @@ bool CGraph::colorEdgesFrom ( CNode *x, const ipartitions_t &mask )
                             {
                                 CNode *from = sorted[i]->source;
                                 CNode *to = sorted[i]->target;
-                                //cerr << "; Path has edge " << logic.printTerm(sorted[i]->source->e) << ' ' << sorted[i]->source->color << " -> " << logic.printTerm(sorted[i]->target->e) << ' ' << sorted[i]->target->color << endl;
-                                if(isAB(logic.getIPartitions(from->e), mask))
-                                {
+#ifdef COLOR_DEBUG
+                                cerr << "; Path has edge " << logic.printTerm(sorted[i]->source->e) << ' ' << sorted[i]->source->color << " -> " << logic.printTerm(sorted[i]->target->e) << ' ' << sorted[i]->target->color << endl;
+#endif // COLOR_DEBUG
+                                assert(from->color != I_UNDEF);
+                                if (from->color == I_AB){
                                     abcommon = from->e;
                                     break;
                                 }
-                                if(isAB(logic.getIPartitions(to->e), mask))
-                                {
+                                assert(to->color != I_UNDEF);
+                                if (to->color == I_AB){
                                     abcommon = to->e;
                                     break;
                                 }
-
                             }
-                            
-
                             /*
                             assert ( abcommon != PTRef_Undef );
                             cerr << "; Node " << logic.printTerm(abcommon) << " is AB" << endl;
@@ -667,19 +667,17 @@ bool CGraph::colorEdgesFrom ( CNode *x, const ipartitions_t &mask )
                                 CNode *from = sorted[i]->source;
                                 CNode *to = sorted[i]->target;
                               //  cerr << "; Path has edge " << logic.printTerm(sorted[i]->source->e) << ' ' << sorted[i]->source->color << " -> " << logic.printTerm(sorted[i]->target->e) << ' ' << sorted[i]->target->color << endl;
-                                if(isAB(logic.getIPartitions(from->e), mask))
-                                {
+                                assert(from->color != I_UNDEF);
+                                if (from->color == I_AB){
                                     abcommon = from->e;
                                     break;
                                 }
-                                if(isAB(logic.getIPartitions(to->e), mask))
-                                {
+                                assert(to->color != I_UNDEF);
+                                if (to->color == I_AB) {
                                     abcommon = to->e;
                                     break;
                                 }
                             }
-                            
-
                             /*
                             assert ( abcommon != PTRef_Undef );
                             cerr << "; Node " << logic.printTerm(abcommon) << " is AB" << endl;
@@ -702,8 +700,8 @@ bool CGraph::colorEdgesFrom ( CNode *x, const ipartitions_t &mask )
 
 
                         // New arguments must be shared
-                        assert (new_args.size() > 0);
-                        assert ( cnodes_store[ new_args[0] ]->color == I_AB );
+//                        assert (new_args.size() > 0);
+//                        assert ( cnodes_store[ new_args[0] ]->color == I_AB );
                     }
                 }
 

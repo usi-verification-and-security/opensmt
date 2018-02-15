@@ -28,11 +28,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define UFTHandler_h
 
 //#include "THandler.h"
-#include "Logic.h"
 #include "TSolverHandler.h"
 //#include "Egraph.h"
 
 class Egraph;
+class Logic;
 
 class UFTHandler : public TSolverHandler
 {

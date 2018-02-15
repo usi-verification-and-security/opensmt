@@ -170,9 +170,11 @@ class LRALogic: public Logic
     PTRef       mkRealMinus(const PTRef a1, const PTRef a2) { vec<PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkRealMinus(tmp); }
     PTRef       mkRealPlus(const vec<PTRef>&, char**);
     PTRef       mkRealPlus(const vec<PTRef>& args) { char *msg; PTRef tr = mkRealPlus(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    PTRef       mkRealPlus(const std::vector<PTRef>& args) { vec<PTRef> tmp; for(PTRef arg : args) {tmp.push(arg);} return mkRealPlus(tmp);}
     PTRef       mkRealTimes(const vec<PTRef>&, char**);
     PTRef       mkRealTimes(const vec<PTRef>& args) { char *msg; PTRef tr = mkRealTimes(args, &msg); assert(tr != PTRef_Undef); return tr; }
     PTRef       mkRealTimes(const PTRef p1, const PTRef p2) { vec<PTRef> tmp; tmp.push(p1); tmp.push(p2); return mkRealTimes(tmp); }
+    PTRef       mkRealTimes(const std::vector<PTRef>& args) { vec<PTRef> tmp; for(PTRef arg : args) {tmp.push(arg);} return mkRealTimes(tmp);}
     PTRef       mkRealDiv(const vec<PTRef>&, char**);
     PTRef       mkRealDiv(const vec<PTRef>& args) { char *msg; PTRef tr = mkRealDiv(args, &msg); assert(tr != PTRef_Undef); return tr; }
     PTRef       mkRealDiv(const PTRef nom, const PTRef den) { vec<PTRef> tmp; tmp.push(nom), tmp.push(den); return mkRealDiv(tmp); }

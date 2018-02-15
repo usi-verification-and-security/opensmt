@@ -3,6 +3,9 @@
 *.la
 Makefile.in
 .deps
+.idea
+.DS_Store
+cmake-build-*
 Makefile
 .*.swp
 INSTALL

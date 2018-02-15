@@ -28,7 +28,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define ENODESTORE_H
 
 #include "Enode.h"
-#include "Logic.h"
+
+class Logic;
 
 class EnodeStore {
     Logic&         logic;

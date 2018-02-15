@@ -40,6 +40,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "smt2tokens.h"
 #include "MainSolver.h"
 
+#ifdef ITP_DEBUG
+#include "TreeOps.h"
+#endif // ITP_DEBUG
+
 namespace opensmt {
 bool stop;
 };

@@ -58,14 +58,9 @@ include_directories(
     ${GMP_INCLUDE_DIR}
 )
 
-if (PRODUCE_PROOF)
-    add_definitions(-DPRODUCE_PROOF -DFULL_LABELING)
-    include_directories(${CMAKE_SOURCE_DIR}/proof)
-endif ()
-
-if (DEBUG_ITP)
+if (ITP_DEBUG)
     add_definitions(-DITP_DEBUG)
-endif (DEBUG_ITP)
+endif (ITP_DEBUG)
 
 if (PEDANTIC_DEBUG)
     add_definitions(-DPEDANTIC_DEBUG)
@@ -91,6 +86,11 @@ endif(VERBOSE_FOPS)
 #if(ENABLE_PROFILING)
 #    add_compile_options(-pg)
 #endif()
+
+if (PRODUCE_PROOF)
+    add_definitions(-DPRODUCE_PROOF -DFULL_LABELING)
+    include_directories(${CMAKE_SOURCE_DIR}/proof)
+endif ()
 
 add_subdirectory(${CMAKE_SOURCE_DIR})
 

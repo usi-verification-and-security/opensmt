@@ -646,7 +646,7 @@ Logic::mkIte(vec<PTRef>& args)
     assert(args.size() == 3);
     if(isTrue(args[0])) return args[1];
     if(isFalse(args[0])) return args[2];
-    if(args[0] == args[1]) return args[1];
+    if(args[1] == args[2]) return args[1];
 
     SRef sr = getSortRef(args[1]);
     if(sr != getSortRef(args[2]))
