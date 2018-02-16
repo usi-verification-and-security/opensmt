@@ -124,6 +124,7 @@ void LRASolver::clearSolver()
     ba.clear();
 
     lavarStore.clear();
+    candidates.clear();
 }
 
 //
@@ -422,6 +423,38 @@ bool LRASolver::check(bool complete)
         // of them every time!
         int max_var_id = lavarStore.numVars();
         int curr_var_id_x = max_var_id;
+#define USE_CANDIDATES
+#ifdef USE_CANDIDATES
+//        for(auto i = 0; i < rows.size(); ++i) {
+//            if(candidates.find(rows[i]) == candidates.end()){
+//                if(isModelOutOfBounds(rows[i])){
+//                    auto v = rows[i];
+//                    std::cout << "Problematic variable: " << v.x;
+//                    assert(false);
+//                }
+//            }
+//        }
+        std::unordered_set<LVRef, LVRefHash> new_candidates;
+        for(auto it : candidates) {
+            assert(it != LVRef_Undef);
+            if (isModelOutOfBounds(it)) {
+                new_candidates.insert(it);
+                if (bland_rule) {
+                    bland_counter++;
+                    tsolver_stats.num_bland_ops++;
+                    // Select the var with the smallest id
+                    x = lva[it].ID() < curr_var_id_x ? it : x;
+                    curr_var_id_x = lva[it].ID() < curr_var_id_x ? lva[it].ID() : curr_var_id_x;
+                } else { // Use heuristics that prefer short polynomials
+                    pivot_counter++;
+                    tsolver_stats.num_pivot_ops++;
+                    if (x == LVRef_Undef || polyStore.getSize(lva[x].getPolyRef()) > polyStore.getSize(lva[it].getPolyRef()))
+                        x = it;
+                }
+            }
+        }
+        candidates.swap(new_candidates);
+#else
         for (int i = 0; i < rows.size(); i++) {
             LVRef it = rows[i];
             if (it == LVRef_Undef) continue; // There should not be nulls, since they result in quadratic slowdown?
@@ -443,7 +476,7 @@ bool LRASolver::check(bool complete)
                 }
             }
         }
-
+#endif
         if (x == LVRef_Undef) {
             // If not found, check if problem refinement for integers is required
             if (config.lra_integer_solver && complete)
@@ -459,7 +492,6 @@ bool LRASolver::check(bool complete)
             break;
 //            return setStatus( SAT );
         }
-
 
         LVRef y = LVRef_Undef;
         LVRef y_found = y;
@@ -694,7 +726,7 @@ bool LRASolver::assertBoundOnVar(LVRef it, LABoundRef itBound_ref)
         return setStatus( UNSAT );
     }
 
-    // Update the Tableau data if a basic variable
+    // Update the Tableau data if a non-basic variable
     if (!lva[it].isBasic()) {
         if(!isBoundSatisfied(model.read(it), itBound)){
             update(it, itBound.getValue());
@@ -702,6 +734,10 @@ bool LRASolver::assertBoundOnVar(LVRef it, LABoundRef itBound_ref)
         else{
 //            std::cout << "Bound is satisfied by current assignment, no need to update model!\n\n";
         }
+    }
+    else // basic variable got a new bound, it becomes a possible candidate
+    {
+        candidates.insert(it);
     }
 
 //  LAVar *x = it;
@@ -765,8 +801,16 @@ void LRASolver::popBacktrackPoints(unsigned int count) {
         TSolver::popBacktrackPoint();
     }
     fixStackConsistency();
+    fixCandidates();
     assert(stackOk());
     setStatus(SAT);
+}
+
+void LRASolver::fixCandidates() {
+    candidates.clear();
+    for(auto i = 0; i < rows.size(); ++i) {
+        candidates.insert(rows[i]);
+    }
 }
 
 void LRASolver::fixStackConsistency()
@@ -930,6 +974,7 @@ void LRASolver::doGaussianElimination( )
 //
 void LRASolver::update( LVRef x, const Delta & v )
 {
+    assert(!lva[x].isBasic());
     // update model value for all basic terms
     const Delta x_delta = v - model.read(x);
     model.write(x, v);
@@ -939,6 +984,8 @@ void LRASolver::update( LVRef x, const Delta & v )
         int pos   = el.pos;
         Delta increment(pta[polyStore.readTerm(lva[row].getPolyRef(), pos)].coef * x_delta);
         model.write(row, model.read(row) + increment);
+        // this could get the row out of bounds
+        candidates.insert(row);
 
         //TODO: make a separate config value for suggestions
         //TODO: sort the order of suggestion requesting based on metric (Model increase, out-of-bound distance etc)
@@ -981,6 +1028,8 @@ void LRASolver::pivotAndUpdate( const LVRef bv, const LVRef nv, const Delta & v 
         int pos = br.pos;
         if (occ_bv != bv) {
             model.write(occ_bv, model.read(occ_bv)+pta[polyStore.readTerm(br.poly, pos)].coef * theta);
+            // value of basic variable updated, this could put it out of its bounds
+            candidates.insert(occ_bv);
         }
         else {
             nv_pos = pos;
@@ -1081,6 +1130,12 @@ void LRASolver::pivotAndUpdate( const LVRef bv, const LVRef nv, const Delta & v 
 
     lva[bv].setNonbasic();
     lva[nv].setBasic();
+
+    // update the candidates for out of bounds values
+    assert(candidates.find(bv) != candidates.end());
+    candidates.erase(bv);
+    candidates.insert(nv);
+
     assert( polyStore.has(pr, bv) );
 
     assert( lva[bv].getPolyRef() == PolyRef_Undef );
@@ -1112,6 +1167,8 @@ void LRASolver::initSolver()
             doGaussianElimination();
 
         model.initModel(lavarStore);
+
+        fixCandidates();
 
         status = SAT;
     }

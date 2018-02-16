@@ -32,6 +32,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 //#define GAUSSIAN_DEBUG
 
+#include <unordered_set>
 #include "Timer.h"
 #include "LRALogic.h"
 #include "TSolver.h"
@@ -135,6 +136,7 @@ public:
     void  popBacktrackPoint  ( ) override;                       // Backtrack to last saved point
     void  popBacktrackPoints  ( unsigned int ) override;         // Backtrack given number of saved points
     void  fixStackConsistency( );                                // Adjust the models so that non-basic (column) variables do not break asserted bounds
+    void  fixCandidates( );                                      // Reset row candidates for possible out of bounds
 
 
     // Return the conflicting bounds
@@ -195,6 +197,9 @@ private:
 
     // Value system + history of bounds
     LRAModel model;
+
+    // Out of bound candidates
+    std::unordered_set<LVRef, LVRefHash> candidates;
 
     // Model & bounds
     bool isEquality(LVRef) const;
