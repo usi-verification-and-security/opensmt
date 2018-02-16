@@ -423,17 +423,7 @@ bool LRASolver::check(bool complete)
         // of them every time!
         int max_var_id = lavarStore.numVars();
         int curr_var_id_x = max_var_id;
-#define USE_CANDIDATES
-#ifdef USE_CANDIDATES
-//        for(auto i = 0; i < rows.size(); ++i) {
-//            if(candidates.find(rows[i]) == candidates.end()){
-//                if(isModelOutOfBounds(rows[i])){
-//                    auto v = rows[i];
-//                    std::cout << "Problematic variable: " << v.x;
-//                    assert(false);
-//                }
-//            }
-//        }
+
         std::unordered_set<LVRef, LVRefHash> new_candidates;
         for(auto it : candidates) {
             assert(it != LVRef_Undef);
@@ -454,29 +444,7 @@ bool LRASolver::check(bool complete)
             }
         }
         candidates.swap(new_candidates);
-#else
-        for (int i = 0; i < rows.size(); i++) {
-            LVRef it = rows[i];
-            if (it == LVRef_Undef) continue; // There should not be nulls, since they result in quadratic slowdown?
-//            if (!valueConsistent(it)) {
-//                crashInconsistency(it, __LINE__);
-//            }
-            if (isModelOutOfBounds(it)) {
-                if (bland_rule) {
-                    bland_counter++;
-                    tsolver_stats.num_bland_ops++;
-                    // Select the var with the smallest id
-                    x = lva[it].ID() < curr_var_id_x ? it : x;
-                    curr_var_id_x = lva[it].ID() < curr_var_id_x ? lva[it].ID() : curr_var_id_x;
-                } else { // Use heuristics that prefer short polynomials
-                    pivot_counter++;
-                    tsolver_stats.num_pivot_ops++;
-                    if (x == LVRef_Undef || polyStore.getSize(lva[x].getPolyRef()) > polyStore.getSize(lva[it].getPolyRef()))
-                        x = it;
-                }
-            }
-        }
-#endif
+
         if (x == LVRef_Undef) {
             // If not found, check if problem refinement for integers is required
             if (config.lra_integer_solver && complete)
