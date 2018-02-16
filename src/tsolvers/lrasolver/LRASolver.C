@@ -37,6 +37,19 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 static SolverDescr descr_lra_solver("LRA Solver", "Solver for Quantifier Free Linear Real Arithmetics");
 
+// MB: helper functions
+namespace{
+    bool isBoundSatisfied(Delta const & val, LABound const & bound ) {
+        if (bound.getType() == bound_u){
+            return val <= bound.getValue();
+        }
+        else {
+            assert(bound.getType() == bound_l);
+            return val >= bound.getValue();
+        }
+    }
+}
+
 bool LRASolver::isValid(PTRef tr)
 {
     return logic.isRealConst(tr) || logic.isRealPlus(tr) || logic.isRealMinus(tr) || logic.isRealNeg(tr) ||
@@ -682,8 +695,14 @@ bool LRASolver::assertBoundOnVar(LVRef it, LABoundRef itBound_ref)
     }
 
     // Update the Tableau data if a basic variable
-    if (!lva[it].isBasic())
-        update(it, itBound.getValue());
+    if (!lva[it].isBasic()) {
+        if(!isBoundSatisfied(model.read(it), itBound)){
+            update(it, itBound.getValue());
+        }
+        else{
+//            std::cout << "Bound is satisfied by current assignment, no need to update model!\n\n";
+        }
+    }
 
 //  LAVar *x = it;
 //  cerr << "; ASSERTED bound on " << *x << ": " << x->L( ) << " <= " << x->M( ) << " <= " << x->U( ) << endl;
