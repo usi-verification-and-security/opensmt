@@ -6,6 +6,7 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
  */
 
 #include "FastRational.h"
+#include <sstream>
 
 //mpz_init(FastRational::one);
 //mpz_set_si(FastRational::one, 1);
@@ -22,6 +23,22 @@ FastRational::FastRational( const char * s, const int base )
         kill_mpq( );
 
     assert( isWellFormed( ) );
+}
+
+FastRational::FastRational(FastRational &&other) {
+    if(other.has_word) {
+        this->has_word = true;
+        this->has_mpq = false;
+        this->num = other.num;
+        this->den = other.den;
+    }
+    else{
+        assert(other.has_mpq);
+        this->has_mpq = true;
+        this->has_word = false;
+        other.has_mpq = false;
+        std::swap(this->mpq, other.mpq);
+    }
 }
 
 void FastRational::reset()

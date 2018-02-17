@@ -8,19 +8,9 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
 #ifndef FAST_RATIONALS_H
 #define FAST_RATIONALS_H
 
-#define FR_NDEBUG 1
-
-#include <iostream>
 #include <string>
-#include <sstream>
-#include <string.h>
-#include <cstddef>
 #include <gmpxx.h>
-#include <stdlib.h>
-#include <errno.h>
 #include <cassert>
-#include <stdint.h>
-#include <limits.h>
 
 typedef int32_t  word;
 typedef uint32_t uword;
@@ -59,21 +49,7 @@ public:
 
     inline FastRational( const FastRational & );
 
-    FastRational(FastRational&& other) {
-        if(other.has_word) {
-            this->has_word = true;
-            this->has_mpq = false;
-            this->num = other.num;
-            this->den = other.den;
-        }
-        else{
-            assert(other.has_mpq);
-            this->has_mpq = true;
-            this->has_word = false;
-            other.has_mpq = false;
-            std::swap(this->mpq, other.mpq);
-        }
-    }
+    FastRational(FastRational&& other);
 
     FastRational & operator=(FastRational && other) {
         std::swap(this->has_word, other.has_word);
@@ -839,6 +815,8 @@ overflow:
     mpq_inv(dest.mpq, mpq);
     return dest;
 }
+
+
 
 inline FastRational abs(const FastRational& x) {
     if (x.sign() >= 0) {

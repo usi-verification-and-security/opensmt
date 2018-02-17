@@ -25,6 +25,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef LRALOGIC_H
 #define LRALOGIC_H
 #include "Logic.h"
+#include "Real.h"
+
 
 class LRANonLinearException
 {

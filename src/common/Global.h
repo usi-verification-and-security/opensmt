@@ -28,8 +28,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
-#define USE_GMP        1
-#define FAST_RATIONALS 1
 
 #include <cstring>
 // Workaround to allow compiling with gcc 4.9.0 and versions of gmp up
@@ -54,7 +52,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <limits.h>
 #include <cstdlib>
 
-#include "FastRational.h"
 #include "Map.h"
 
 #define opensmt_error_() 		  { cerr << "# Error (triggered at " <<  __FILE__ << ", " << __LINE__ << ")" << endl; assert(false); ::exit( 1 ); }
@@ -94,12 +91,7 @@ using std::ifstream;
 
 namespace opensmt {
 
-#if FAST_RATIONALS
-typedef FastRational Real;
 typedef mpz_class Integer;
-#else
-typedef mpq_class Real;
-#endif
 
 void static inline wordToBinary(const opensmt::Integer x, char*& bin, const int width)
 {

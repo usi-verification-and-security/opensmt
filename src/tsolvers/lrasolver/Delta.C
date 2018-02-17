@@ -40,7 +40,7 @@ void Delta::reset()
 //
 // prints the Delta
 //
-void Delta::print( ostream & out ) const
+void Delta::print( std::ostream & out ) const
 {
   if( isPlusInf( ) )
     out << "+inf";

@@ -29,7 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef DELTA_H
 #define DELTA_H
 
-#include "Global.h"
+#include "Real.h"
 
 using opensmt::Real;
 
@@ -100,9 +100,9 @@ public:
     inline friend Delta operator*( const Delta &a, const Real &c );
     inline friend Delta operator/( const Delta &a, const Real &c );
 
-    void print( ostream & out ) const;            // print the Delta
+    void print( std::ostream & out ) const;            // print the Delta
     char* printValue() const;
-    inline friend ostream & operator<<( ostream & out, const Delta & b )
+    inline friend std::ostream & operator<<( std::ostream & out, const Delta & b )
     {
         b.print( out );
         return out;

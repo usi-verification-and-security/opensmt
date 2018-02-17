@@ -1,4 +1,4 @@
-add_library(common OBJECT "FastRational.C")
+add_library(common OBJECT "FastRational.C" Real.h)
 
 target_sources(common
 PUBLIC "${CMAKE_CURRENT_LIST_DIR}/FastRational.h"
