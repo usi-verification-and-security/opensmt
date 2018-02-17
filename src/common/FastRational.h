@@ -59,6 +59,31 @@ public:
 
     inline FastRational( const FastRational & );
 
+    FastRational(FastRational&& other) {
+        if(other.has_word) {
+            this->has_word = true;
+            this->has_mpq = false;
+            this->num = other.num;
+            this->den = other.den;
+        }
+        else{
+            assert(other.has_mpq);
+            this->has_mpq = true;
+            this->has_word = false;
+            other.has_mpq = false;
+            std::swap(this->mpq, other.mpq);
+        }
+    }
+
+    FastRational & operator=(FastRational && other) {
+        std::swap(this->has_word, other.has_word);
+        std::swap(this->has_mpq, other.has_mpq);
+        std::swap(this->num, other.num);
+        std::swap(this->den, other.den);
+        std::swap(this->mpq, other.mpq);
+        return *this;
+    }
+
     // debug
     word getNum() { return num; }
     FastRational( const mpz_class & x )
