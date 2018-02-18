@@ -33,6 +33,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //#define GAUSSIAN_DEBUG
 
 #include <unordered_set>
+#include <unordered_map>
 #include "Timer.h"
 #include "LRALogic.h"
 #include "TSolver.h"
@@ -85,17 +86,17 @@ class LRASolver: public TSolver
 private:
 
     struct LVRefPair { LVRef p1; LVRef p2; };
-    vector<opensmt::Real*> numbers_pool;    // Collect numbers.  Should work as a simple memory managemet system
+//    vector<opensmt::Real*> numbers_pool;    // Collect numbers.  Should work as a simple memory managemet system
     LRALogic&            logic;
     LAVarAllocator       lva;
     LAVarStore           lavarStore;
 
-    BindedRowsAllocator  bra;
-    BindedRowsStore      bindedRowsStore;
-
-    PolyTermAllocator    pta;
-    PolyAllocator        pa;
-    PolyStore            polyStore;
+//    BindedRowsAllocator  bra;
+//    BindedRowsStore      bindedRowsStore;
+//
+//    PolyTermAllocator    pta;
+//    PolyAllocator        pa;
+//    PolyStore            polyStore;
 
 
     LABoundAllocator     ba;
@@ -115,7 +116,7 @@ private:
     void initSlackVar(LVRef s);
     void setBound(PTRef leq);
 
-    opensmt::Real *newReal(const Real *old);
+//    opensmt::Real *newReal(const Real *old);
 
     int debug_check_count;
     int debug_assert_count;
@@ -162,6 +163,8 @@ protected:
 
     vec<LVRef> columns;                 // The columns
     vec<LVRef> rows;                    // The rows
+    std::unordered_map<LVRef, std::unordered_map<LVRef, Real,LVRefHash>, LVRefHash> row_polynomials;
+    std::unordered_map<LVRef, std::unordered_set<LVRef, LVRefHash>, LVRefHash> col_occ_list;
     template<class T> inline T max(T a, T b) const { return a > b ? a : b; }
     bool assertBoundOnVar(LVRef it, LABoundRef it_i);
 
@@ -170,15 +173,16 @@ protected:
     unsigned nVars() const { return lva.getNumVars(); }
 
 private:
-    void getReal(opensmt::Real*&, const PTRef);              // Get a new real possibly using the number pool
+//    void getReal(opensmt::Real*&, const PTRef);              // Get a new real possibly using the number pool
+    opensmt::Real getReal(PTRef);
     LVRef constructLAVarSystem(PTRef term);                 // Find a LAVar for term and all LA vars appearing in term.  Return the LAVar for the term.  iu
     LVRef getLAVar_single(PTRef term);                      // Initialize a new LA var if needed, otherwise return the old var
     bool hasVar(PTRef expr);
     void setNonbasic(LVRef);
     void setBasic(LVRef);
-    void doGaussianElimination( );                          // Performs Gaussian elimination of all redundant terms in the Tableau
-    void removeRow(PolyRef pr);                                // Remove the row corresponding to v
-    void removeCol(LVRef v);                                // Remove the col corresponding to v
+//    void doGaussianElimination( );                          // Performs Gaussian elimination of all redundant terms in the Tableau
+//    void removeRow(PolyRef pr);                                // Remove the row corresponding to v
+//    void removeCol(LVRef v);                                // Remove the col corresponding to v
     void update( LVRef, const Delta & );                    // Updates the bounds after constraint pushing
     void pivotAndUpdate( LVRef, LVRef, const Delta &);      // Updates the tableau after constraint pushing
     void getConflictingBounds( LVRef, vec<PTRef> & );       // Returns the bounds conflicting with the actual model
@@ -192,7 +196,7 @@ private:
     inline bool setStatus( LRASolverStatus );               // Sets and return status of the solver
     void initSolver( );                                     // Initializes the solver
     void print( ostream & out ) override;                            // Prints terms, current bounds and the tableau
-    void addVarToRow( LVRef, LVRef, opensmt::Real*);
+//    void addVarToRow( LVRef, LVRef, opensmt::Real*);
     bool checkIntegersAndSplit();                           //
 
     // Value system + history of bounds
@@ -215,13 +219,13 @@ private:
     void computeModel() override;                             // The implementation for the interface
     opensmt::Real evaluateTerm(PTRef tr);
     // Binded Rows system
-    inline BindedRows& getBindedRows(LVRef v) { return bra[lva[v].getBindedRowsRef()]; }
-    void unbindRow(LVRef v, int row);
+//    inline BindedRows& getBindedRows(LVRef v) { return bra[lva[v].getBindedRowsRef()]; }
+//    void unbindRow(LVRef v, int row);
 
 
     // Polynomials system
-    void  makePoly      (LVRef s, PTRef pol);     // Create a polynomial, introducing new LAVars if necessary
-    Poly& getPoly       (LVRef s) { return pa[lva[s].getPolyRef()]; }
+//    void  makePoly      (LVRef s, PTRef pol);     // Create a polynomial, introducing new LAVars if necessary
+//    Poly& getPoly       (LVRef s) { return pa[lva[s].getPolyRef()]; }
 
     // Bounds system
     vec<LABoundRefPair> ptermToLABoundRefs;
@@ -244,7 +248,7 @@ private:
         int size() const { return poly.size(); }
     };
     Map<PTRef,ModelPoly,PTRefHash> removed_by_GaussianElimination;       // Stack of variables removed during Gaussian elimination
-    void solveForVar(PolyRef pr, int idx, vec<PolyTermRef>& expr);       // Solve the poly pr for the variable pr[idx] and place the resulting expression to expr
+//    void solveForVar(PolyRef pr, int idx, vec<PolyTermRef>& expr);       // Solve the poly pr for the variable pr[idx] and place the resulting expression to expr
 
     // Two reloaded output operators
     inline friend ostream & operator <<( ostream & out, LRASolver & solver )
@@ -268,6 +272,7 @@ private:
     char* printVar(LVRef v);
     bool valueConsistent(LVRef v); // Debug: Checks that the value of v in the model is consistent with the evaluated value of the polynomial of v in the same model.
     bool stackOk();
+    bool checkTableauConsistency();
     bool checkRowConsistency();
     bool checkColumnConsistency();
     void crashInconsistency(LVRef v, int line);

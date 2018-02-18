@@ -69,29 +69,29 @@ void LRASolver::isProperLeq(PTRef tr)
     assert(!logic.isRealTimes(sum) || ((logic.isRealVar(logic.getPterm(sum)[0]) && (logic.mkRealNeg(logic.getPterm(sum)[1])) == logic.getTerm_RealOne()) ||
                                        (logic.isRealVar(logic.getPterm(sum)[1]) && (logic.mkRealNeg(logic.getPterm(sum)[0])) == logic.getTerm_RealOne())));
 }
-opensmt::Real *
-LRASolver::newReal(const Real *old) {
-    Real * p_a = NULL;
-    if (!numbers_pool.empty())
-    {
-        p_a = numbers_pool.back( );
-        numbers_pool.pop_back( );
-        *p_a = *old;
-    }
-    else
-    {
-        p_a = new Real(*old);
-    }
-    return p_a;
-}
+//opensmt::Real *
+//LRASolver::newReal(const Real *old) {
+//    Real * p_a = NULL;
+//    if (!numbers_pool.empty())
+//    {
+//        p_a = numbers_pool.back( );
+//        numbers_pool.pop_back( );
+//        *p_a = *old;
+//    }
+//    else
+//    {
+//        p_a = new Real(*old);
+//    }
+//    return p_a;
+//}
 
 
 
 LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
     : logic(l)
-    , bindedRowsStore(l, lva, bra)
-    , pa(pta)
-    , polyStore(lva, pa, bindedRowsStore, l)
+//    , bindedRowsStore(l, lva, bra)
+//    , pa(pta)
+//    , polyStore(lva, pa, bindedRowsStore, l)
     , TSolver((SolverId)descr_lra_solver, (const char*)descr_lra_solver, c, d)
     , delta(Delta::ZERO)
     , bland_threshold(1000)
@@ -120,7 +120,7 @@ void LRASolver::clearSolver()
     TSolver::clearSolver();
 
     lva.clear();
-    pa.clear();
+//    pa.clear();
     ba.clear();
 
     lavarStore.clear();
@@ -181,11 +181,11 @@ bool LRASolver::isUnbounded(LVRef v) const
     return rval;
 }
 
-void LRASolver::unbindRow(LVRef v, int row)
-{
-    assert(lva[v].isBasic() || lva[v].getBindedRowsRef() != OccListRef_Undef);
-//    bindedRowStore.remove(v, row);
-}
+//void LRASolver::unbindRow(LVRef v, int row)
+//{
+//    assert(lva[v].isBasic() || lva[v].getBindedRowsRef() != OccListRef_Undef);
+////    bindedRowStore.remove(v, row);
+//}
 
 
 // Given an inequality of the form c <= t(x_1, ..., x_n), set the bound
@@ -208,16 +208,20 @@ void LRASolver::setBound(PTRef leq_tr)
 //
 // So far a temporary wrapper.  The idea is to avoid unnecessary delete & new.
 //
-void LRASolver::getReal(Real*& r, PTRef cons)
-{
-    if (!numbers_pool.empty()) {
-        r = numbers_pool.back();
-        numbers_pool.pop_back();
-        *r = Real(logic.getRealConst(cons));
-    }
-    else {
-        r = new Real(logic.getRealConst(cons));
-    }
+//void LRASolver::getReal(Real*& r, PTRef cons)
+//{
+//    if (!numbers_pool.empty()) {
+//        r = numbers_pool.back();
+//        numbers_pool.pop_back();
+//        *r = Real(logic.getRealConst(cons));
+//    }
+//    else {
+//        r = new Real(logic.getRealConst(cons));
+//    }
+//}
+
+Real LRASolver::getReal(PTRef r) {
+    return logic.getRealConst(r);
 }
 
 bool LRASolver::hasVar(PTRef expr) {
@@ -231,17 +235,17 @@ LVRef LRASolver::getLAVar_single(PTRef expr_in) {
     LVRef x;
 
     PTId id_pos = logic.getPterm(expr).getId();
-    PTId id_neg = logic.getPterm(logic.mkRealNeg(expr)).getId();
-    int max_id = max(Idx(id_pos), Idx(id_neg));
+//    PTId id_neg = logic.getPterm(logic.mkRealNeg(expr)).getId();
+//    int max_id = max(Idx(id_pos), Idx(id_neg));
 
     if (lavarStore.hasVar(id_pos))
         return lavarStore.getVarByPTId(id_pos);
 
     x = lavarStore.getNewVar(expr);
 
-    vec<PolyTermRef> tmp;
-    lva[x].setPolyRef(polyStore.makePoly(x, tmp));
-    lva[x].setBindedRowsRef(bra.alloc());
+//    vec<PolyTermRef> tmp;
+//    lva[x].setPolyRef(polyStore.makePoly(x, tmp));
+//    lva[x].setBindedRowsRef(bra.alloc());
 
     return x;
 }
@@ -273,11 +277,19 @@ LVRef LRASolver::constructLAVarSystem(PTRef term) {
         if (lva[x].getColId() == -1) {
             lva[x].setColId(columns.size());
             columns.push(x);
+            col_occ_list.emplace(x, std::unordered_set<LVRef, LVRefHash>());
         }
     }
     else {
         // Cases (3), (4a) and (4b)
         x = getLAVar_single(term);
+        setBasic(x);
+        if(lva[x].getRowId() != -1) {
+            throw "LRA Solver error: Tried to set another row for the same variable!";
+        }
+        lva[x].setRowId(rows.size());
+        rows.push(x);
+        row_polynomials.emplace(x, std::unordered_map<LVRef, Real, LVRefHash>());
         bool negated = logic.isNegated(term); // If term is negated, we need to flip the signs of the poly
         for (int i = 0; i < logic.getPterm(term).size(); i++) {
             PTRef v;
@@ -288,23 +300,21 @@ LVRef LRASolver::constructLAVarSystem(PTRef term) {
             if (lva[nb].getColId() == -1) {
                 lva[nb].setColId(columns.size());
                 columns.push(nb);
+                col_occ_list.emplace(nb, std::unordered_set<LVRef, LVRefHash>());
             }
-            Real* c_r;
-            getReal(c_r, c);
+            Real coeff = getReal(c);
 
             if (negated)
-                c_r->negate();
+                coeff.negate();
 
-            PolyTermRef ptr = pta.alloc(*c_r, nb);
-            sum_terms.push(ptr);
+//            PolyTermRef ptr = pta.alloc(*c_r, nb);
+//            sum_terms.push(ptr);
+            row_polynomials.at(x).emplace(nb, std::move(coeff));
+            col_occ_list.at(nb).insert(x);
         }
-        setBasic(x);
-        if (lva[x].getRowId() == -1) {
-            lva[x].setRowId(rows.size());
-            rows.push(x);
-        }
-        PolyRef pr  = polyStore.makePoly(x, sum_terms);
-        lva[x].setPolyRef(pr);
+
+//        PolyRef pr  = polyStore.makePoly(x, sum_terms);
+//        lva[x].setPolyRef(pr);
     }
     return x;
 }
@@ -385,12 +395,17 @@ bool LRASolver::check(bool complete)
 //    printf(" - check %d\n", debug_check_count++);
     (void)complete;
     // check if we stop reading constraints
-    if (status == INIT)
+    if (status == INIT) {
         initSolver();
-
+    }
+#ifndef NDEBUG
     assert(checkRowConsistency());
     assert(checkColumnConsistency());
-
+    for(auto row : row_polynomials) {
+        assert(valueConsistent(row.first));
+    }
+//    std::cerr << "\nAll consistent at the start fo check!" << '\n';
+#endif
     LVRef x = LVRef_Undef;
 
     bool bland_rule = false;
@@ -407,7 +422,7 @@ bool LRASolver::check(bool complete)
 
 
     // keep doing pivotAndUpdate until the SAT/UNSAT status is confirmed
-    while (1) {
+    while (true) {
         repeats++;
         // clear the explanations vector
         explanation.clear( );
@@ -425,7 +440,14 @@ bool LRASolver::check(bool complete)
         int curr_var_id_x = max_var_id;
 
         std::unordered_set<LVRef, LVRefHash> new_candidates;
-        for(auto it : candidates) {
+#ifndef NDEBUG
+        for (auto i = 0; i < rows.size(); ++i) {
+            if(candidates.find(rows[i]) == candidates.end()) {
+                assert(!isModelOutOfBounds(rows[i]));
+            }
+        }
+#endif
+        for (auto it : candidates) {
             assert(it != LVRef_Undef);
             if (isModelOutOfBounds(it)) {
                 new_candidates.insert(it);
@@ -438,7 +460,8 @@ bool LRASolver::check(bool complete)
                 } else { // Use heuristics that prefer short polynomials
                     pivot_counter++;
                     tsolver_stats.num_pivot_ops++;
-                    if (x == LVRef_Undef || polyStore.getSize(lva[x].getPolyRef()) > polyStore.getSize(lva[it].getPolyRef()))
+
+                    if (x == LVRef_Undef || row_polynomials[x].size() > row_polynomials[it].size())
                         x = it;
                 }
             }
@@ -461,23 +484,21 @@ bool LRASolver::check(bool complete)
 //            return setStatus( SAT );
         }
 
-        LVRef y = LVRef_Undef;
-        LVRef y_found = y;
+        LVRef y_found = LVRef_Undef;
 
         // Model doesn't fit the lower bound
         if (model.read(x) < model.Lb(x)) {
             // For the Bland rule
             int curr_var_id_y = max_var_id;
             // look for nonbasic terms to fix the breaking of the bound
-            for (int i = 0; i < polyStore.getSize(polyStore.getPolyRef(x)); i++) {
-                y = pta[polyStore.readTerm(polyStore.getPolyRef(x), i)].var;
-                assert(!lva[y].isBasic() );
-                const opensmt::Real& a = pta[polyStore.readTerm(polyStore.getPolyRef(x), i)].coef;
-                if (x == y)
-                    continue;
-
-                const bool & a_is_pos = (a > 0);
-                if ((a_is_pos && model.read(y) < model.Ub(y)) || (!a_is_pos && model.read(y) > model.Lb(y))) {
+            for (auto term : row_polynomials[x]){
+                auto y = term.first;
+                assert(x != y);
+                auto const & var = lva[y];
+                assert(!var.isBasic());
+                auto const & coeff = term.second;
+                const bool & coeff_is_pos = (coeff > 0);
+                if ((coeff_is_pos && model.read(y) < model.Ub(y)) || (!coeff_is_pos && model.read(y) > model.Lb(y))) {
                     if (bland_rule) {
                         // Choose the leftmost nonbasic variable with a negative (reduced) cost
                         y_found = lva[y].ID() < curr_var_id_y ? y : y_found;
@@ -485,11 +506,33 @@ bool LRASolver::check(bool complete)
                     } else {
                         if (y_found == LVRef_Undef)
                             y_found = y;
-                        else if (getBindedRows(y_found).size() > getBindedRows(y).size()) // heuristic favoring more independent vars
+                        else if (col_occ_list.at(y_found).size() > col_occ_list.at(y).size()) // heuristic favoring more independent vars
                             y_found = y;
                     }
                 }
+
             }
+//            for (int i = 0; i < polyStore.getSize(polyStore.getPolyRef(x)); i++) {
+//                y = pta[polyStore.readTerm(polyStore.getPolyRef(x), i)].var;
+//                assert(!lva[y].isBasic() );
+//                const opensmt::Real& a = pta[polyStore.readTerm(polyStore.getPolyRef(x), i)].coef;
+//                if (x == y)
+//                    continue;
+//
+//                const bool & a_is_pos = (a > 0);
+//                if ((a_is_pos && model.read(y) < model.Ub(y)) || (!a_is_pos && model.read(y) > model.Lb(y))) {
+//                    if (bland_rule) {
+//                        // Choose the leftmost nonbasic variable with a negative (reduced) cost
+//                        y_found = lva[y].ID() < curr_var_id_y ? y : y_found;
+//                        curr_var_id_y = lva[y].ID() < curr_var_id_y ? lva[y].ID() : curr_var_id_y;
+//                    } else {
+//                        if (y_found == LVRef_Undef)
+//                            y_found = y;
+//                        else if (getBindedRows(y_found).size() > getBindedRows(y).size()) // heuristic favoring more independent vars
+//                            y_found = y;
+//                    }
+//                }
+//            }
 
             // if it was not found - UNSAT
             if (y_found == LVRef_Undef) {
@@ -516,28 +559,49 @@ bool LRASolver::check(bool complete)
             // For the Bland rule
             int curr_var_id_y = max_var_id;
             // look for nonbasic terms to fix the unbounding
-            for (int i = 0; i < polyStore.getSize(polyStore.getPolyRef(x)); i++) {
-                y = pta[polyStore.readTerm(polyStore.getPolyRef(x), i)].var;
-                if (x == y)
-                    continue;
-//                cerr << "; " << *y << " for " << *x <<  " : " << y->L() << " <= " << y->M() << " <= " << y->U()<< endl;
-
-                assert( !lva[y].isBasic() );
-                const opensmt::Real& a = pta[polyStore.readTerm(polyStore.getPolyRef(x), i)].coef;
-                assert(a != 0);
-                const bool & a_is_pos = (a > 0);
-                if ((!a_is_pos && model.read(y) < model.Ub(y)) || (a_is_pos && model.read(y) > model.Lb(y))) {
+            for (auto term : row_polynomials[x]){
+                auto y = term.first;
+                assert(x != y);
+                auto const & var = lva[y];
+                assert(!var.isBasic());
+                auto const & coeff = term.second;
+                const bool & coeff_is_pos = (coeff > 0);
+                if ((!coeff_is_pos && model.read(y) < model.Ub(y)) || (coeff_is_pos && model.read(y) > model.Lb(y))) {
                     if (bland_rule) {
+                        // Choose the leftmost nonbasic variable with a negative (reduced) cost
                         y_found = lva[y].ID() < curr_var_id_y ? y : y_found;
                         curr_var_id_y = lva[y].ID() < curr_var_id_y ? lva[y].ID() : curr_var_id_y;
                     } else {
                         if (y_found == LVRef_Undef)
                             y_found = y;
-                        else if (getBindedRows(y_found).size() > getBindedRows(y).size())
+                        else if (col_occ_list.at(y_found).size() > col_occ_list.at(y).size()) // heuristic favoring more independent vars
                             y_found = y;
                     }
                 }
+
             }
+//            for (int i = 0; i < polyStore.getSize(polyStore.getPolyRef(x)); i++) {
+//                y = pta[polyStore.readTerm(polyStore.getPolyRef(x), i)].var;
+//                if (x == y)
+//                    continue;
+////                cerr << "; " << *y << " for " << *x <<  " : " << y->L() << " <= " << y->M() << " <= " << y->U()<< endl;
+//
+//                assert( !lva[y].isBasic() );
+//                const opensmt::Real& a = pta[polyStore.readTerm(polyStore.getPolyRef(x), i)].coef;
+//                assert(a != 0);
+//                const bool & a_is_pos = (a > 0);
+//                if ((!a_is_pos && model.read(y) < model.Ub(y)) || (a_is_pos && model.read(y) > model.Lb(y))) {
+//                    if (bland_rule) {
+//                        y_found = lva[y].ID() < curr_var_id_y ? y : y_found;
+//                        curr_var_id_y = lva[y].ID() < curr_var_id_y ? lva[y].ID() : curr_var_id_y;
+//                    } else {
+//                        if (y_found == LVRef_Undef)
+//                            y_found = y;
+//                        else if (getBindedRows(y_found).size() > getBindedRows(y).size())
+//                            y_found = y;
+//                    }
+//                }
+//            }
 
             // if it was not found - UNSAT
             if (y_found == LVRef_Undef) {
@@ -804,137 +868,140 @@ void LRASolver::fixStackConsistency()
 
 // Remove row corresponding to pr.  Assumes that the variables appearing in the row have already updated their
 // occurrence lists correspondingly.  Called only from gaussianElimination
-void LRASolver::removeRow(PolyRef pr)
-{
-    int v_row = lva[pa[pr].getVar()].getRowId();
-    // Replace basisRow slot with the last row in rows vector
-    int m = rows.size() - 1;
-    if (m > v_row) {
-        assert(rows[m] != LVRef_Undef);
-        rows[v_row] = rows[m];
-        lva[rows[m]].setBasic();
-        lva[rows[m]].setRowId(v_row);
-    }
-    lva[pa[pr].getVar()].setNonbasic();
-    rows.pop();
-}
-
-void LRASolver::removeCol(LVRef v)
-{
-    lva[v].setColId(-2);
-//    int v_col = lva[v].getColId();
-//    if (v_col < 0)
-//        return; // Already removed
-//    assert(columns.size() > v_col);
-//    // Replace v_col slot with the last column in columns vector
-//    int m = columns.size() - 1;
-//    if (m > v_col) {
-//        lva[columns[m]].setColId(v_col);
-//        columns[v_col] = columns[m];
-//
+//void LRASolver::removeRow(PolyRef pr)
+//{
+//    int v_row = lva[pa[pr].getVar()].getRowId();
+//    // Replace basisRow slot with the last row in rows vector
+//    int m = rows.size() - 1;
+//    if (m > v_row) {
+//        assert(rows[m] != LVRef_Undef);
+//        rows[v_row] = rows[m];
+//        lva[rows[m]].setBasic();
+//        lva[rows[m]].setRowId(v_row);
 //    }
-//    columns.pop();
-}
+//    lva[pa[pr].getVar()].setNonbasic();
+//    rows.pop();
+//}
 
-void LRASolver::solveForVar(PolyRef pr, int idx, vec<PolyTermRef>& expr)
-{
-    LVRef x = pta[polyStore.readTerm(pr, idx)].var;
-    Real x_coef_inverse = pta[polyStore.readTerm(pr, idx)].coef.inverse();
-    Real x_coef_inverse_neg = -x_coef_inverse;
-    expr.push(pta.alloc(x_coef_inverse, pa[pr].getVar()));
-    for (int i = 0; i < polyStore.getSize(pr); i++) {
-        if (i == idx) continue; // Skip x
-        Real i_coef = pta[polyStore.readTerm(pr, i)].coef*x_coef_inverse_neg;
-        expr.push(pta.alloc(i_coef, pta[polyStore.readTerm(pr, i)].var));
-    }
-//    printf("I derived the following expression for var %s: \n", lva.printVar(x));
-//    for (int i = 0; i < expr.size(); i++)
-//        printf(" %s", polyStore.printPolyTerm(expr[i]));
-//    printf("\n");
-}
+//void LRASolver::removeCol(LVRef v)
+//{
+//    lva[v].setColId(-2);
+////    int v_col = lva[v].getColId();
+////    if (v_col < 0)
+////        return; // Already removed
+////    assert(columns.size() > v_col);
+////    // Replace v_col slot with the last column in columns vector
+////    int m = columns.size() - 1;
+////    if (m > v_col) {
+////        lva[columns[m]].setColId(v_col);
+////        columns[v_col] = columns[m];
+////
+////    }
+////    columns.pop();
+//}
+
+//void LRASolver::solveForVar(PolyRef pr, int idx, vec<PolyTermRef>& expr)
+//{
+//    LVRef x = pta[polyStore.readTerm(pr, idx)].var;
+//    Real x_coef_inverse = pta[polyStore.readTerm(pr, idx)].coef.inverse();
+//    Real x_coef_inverse_neg = -x_coef_inverse;
+//    expr.push(pta.alloc(x_coef_inverse, pa[pr].getVar()));
+//    for (int i = 0; i < polyStore.getSize(pr); i++) {
+//        if (i == idx) continue; // Skip x
+//        Real i_coef = pta[polyStore.readTerm(pr, i)].coef*x_coef_inverse_neg;
+//        expr.push(pta.alloc(i_coef, pta[polyStore.readTerm(pr, i)].var));
+//    }
+////    printf("I derived the following expression for var %s: \n", lva.printVar(x));
+////    for (int i = 0; i < expr.size(); i++)
+////        printf(" %s", polyStore.printPolyTerm(expr[i]));
+////    printf("\n");
+//}
 
 //
 // Look for unbounded terms and applies Gaussian elimination to them.
 // Delete the column if succeeded
 //
 
-void LRASolver::doGaussianElimination( )
-{
-    vec<LVRefPair> subst_cols;
-
-    assert(checkRowConsistency());
-    assert(checkColumnConsistency());
-
-    for (unsigned i = 0; i < columns.size( ); ++i) {
-        assert(columns[i] != LVRef_Undef);
-        LVRef x = columns[i];
-        assert(!lva[x].isBasic());
-        if (!isUnbounded(x))
-            continue;
-
-
-        if (bra[lva[x].getBindedRowsRef()].size() == 0)
-            continue;
-
-//        printf("Var %s is unbounded and has more than zero occurrences in the polynomials\n", lva.printVar(x));
-        // Derive an expression for x based on the first polynomial it appears
-        BindedRow& row = bra[lva[x].getBindedRowsRef()][0];
-        PolyRef basis = row.poly;
-        LVRef basis_var = pa[basis].getVar();
-        subst_cols.push({x, basis_var});
-
-
-//        printf("First occurrence of var %s is the polynomial %s\n", lva.printVar(x), polyStore.printPoly(basis));
-
-        vec<PolyTermRef> expr_for_x;
-        int pos = row.pos;
-        solveForVar(basis, pos, expr_for_x);
-
-        vec<PolyRef> x_appearances;
-        for (int j = 1; j < bra[lva[x].getBindedRowsRef()].size(); j++)
-            x_appearances.push(bra[lva[x].getBindedRowsRef()][j].poly);
-
-        for (int j = 0; j < x_appearances.size(); j++) {
-            PolyRef pr = x_appearances[j];
-            opensmt::Real x_coef = pta[polyStore.find(pr, x)].coef;
-//            printf("Removing %s from the poly %s\n", lva.printVar(x), polyStore.printPoly(pr));
-            polyStore.remove(x, pr);
-//            printf("Resulted in %s\n", polyStore.printPoly(pr));
-//            printf("Now making the substitution of %s on the poly %s\n", lva.printVar(x), polyStore.printPoly(pr));
-            for (int k = 0; k < expr_for_x.size(); k++)
-                polyStore.add(pr, pta[expr_for_x[k]].var, pta[expr_for_x[k]].coef * x_coef);
-//            printf("Resulted in %s\n", polyStore.printPoly(pr));
-        }
-
-        // Clear removed row
-        polyStore.remove(basis);
-
-        // Keep polynomial in x to compute a model later
-        const ModelPoly p(expr_for_x);
-        removed_by_GaussianElimination.insert(lva[x].getPTRef(), p);
-
-        removeRow(basis);
-
-#ifdef GAUSSIAN_DEBUG
-        printf("; Removed the row %s\n", logic.printTerm(LVA[basis].e));
-        printf("; Removed column %s\n", logic.printTerm(LVA[x].e));
-        printf("; rows: %d, columns: %d\n", rows.size(), nVars());
-#endif
-    }
-
-    for (int i = 0; i < subst_cols.size(); i++) {
-        LVRef s = subst_cols[i].p1;
-        LVRef t = subst_cols[i].p2;
-        int col_id = lva[s].getColId();
-        assert(columns[col_id] == s);
-        lva[t].setColId(col_id);
-        columns[col_id] = t;
-        lva[s].setColId(-2);
-    }
-
-    assert(checkRowConsistency());
-    assert(checkColumnConsistency());
-}
+//void LRASolver::doGaussianElimination( )
+//{
+//    vec<LVRefPair> subst_cols;
+//
+//    assert(checkRowConsistency());
+//    assert(checkColumnConsistency());
+//
+//    for (unsigned i = 0; i < columns.size( ); ++i) {
+//        assert(columns[i] != LVRef_Undef);
+//        LVRef x = columns[i];
+//        assert(!lva[x].isBasic());
+//        if (!isUnbounded(x))
+//            continue;
+//
+//
+////        if (bra[lva[x].getBindedRowsRef()].size() == 0)
+////            continue;
+//        if (col_occ_list.at(x).size() == 0){
+//            continue;
+//        }
+//
+////        printf("Var %s is unbounded and has more than zero occurrences in the polynomials\n", lva.printVar(x));
+//        // Derive an expression for x based on the first polynomial it appears
+//        BindedRow& row = bra[lva[x].getBindedRowsRef()][0];
+//        PolyRef basis = row.poly;
+//        LVRef basis_var = pa[basis].getVar();
+//        subst_cols.push({x, basis_var});
+//
+//
+////        printf("First occurrence of var %s is the polynomial %s\n", lva.printVar(x), polyStore.printPoly(basis));
+//
+//        vec<PolyTermRef> expr_for_x;
+//        int pos = row.pos;
+//        solveForVar(basis, pos, expr_for_x);
+//
+//        vec<PolyRef> x_appearances;
+//        for (int j = 1; j < bra[lva[x].getBindedRowsRef()].size(); j++)
+//            x_appearances.push(bra[lva[x].getBindedRowsRef()][j].poly);
+//
+//        for (int j = 0; j < x_appearances.size(); j++) {
+//            PolyRef pr = x_appearances[j];
+//            opensmt::Real x_coef = pta[polyStore.find(pr, x)].coef;
+////            printf("Removing %s from the poly %s\n", lva.printVar(x), polyStore.printPoly(pr));
+//            polyStore.remove(x, pr);
+////            printf("Resulted in %s\n", polyStore.printPoly(pr));
+////            printf("Now making the substitution of %s on the poly %s\n", lva.printVar(x), polyStore.printPoly(pr));
+//            for (int k = 0; k < expr_for_x.size(); k++)
+//                polyStore.add(pr, pta[expr_for_x[k]].var, pta[expr_for_x[k]].coef * x_coef);
+////            printf("Resulted in %s\n", polyStore.printPoly(pr));
+//        }
+//
+//        // Clear removed row
+//        polyStore.remove(basis);
+//
+//        // Keep polynomial in x to compute a model later
+//        const ModelPoly p(expr_for_x);
+//        removed_by_GaussianElimination.insert(lva[x].getPTRef(), p);
+//
+//        removeRow(basis);
+//
+//#ifdef GAUSSIAN_DEBUG
+//        printf("; Removed the row %s\n", logic.printTerm(LVA[basis].e));
+//        printf("; Removed column %s\n", logic.printTerm(LVA[x].e));
+//        printf("; rows: %d, columns: %d\n", rows.size(), nVars());
+//#endif
+//    }
+//
+//    for (int i = 0; i < subst_cols.size(); i++) {
+//        LVRef s = subst_cols[i].p1;
+//        LVRef t = subst_cols[i].p2;
+//        int col_id = lva[s].getColId();
+//        assert(columns[col_id] == s);
+//        lva[t].setColId(col_id);
+//        columns[col_id] = t;
+//        lva[s].setColId(-2);
+//    }
+//
+//    assert(checkRowConsistency());
+//    assert(checkColumnConsistency());
+//}
 
 
 //
@@ -942,25 +1009,38 @@ void LRASolver::doGaussianElimination( )
 //
 void LRASolver::update( LVRef x, const Delta & v )
 {
+#ifndef NDEBUG
     assert(!lva[x].isBasic());
+    for(auto & row : col_occ_list.at(x)) {
+        assert(valueConsistent(row));
+    }
+#endif
     // update model value for all basic terms
     const Delta x_delta = v - model.read(x);
     model.write(x, v);
-    for (int i = 0; i < bra[lva[x].getBindedRowsRef()].size(); i++) {
-        BindedRow& el = bra[lva[x].getBindedRowsRef()][i];
-        LVRef row = pa[el.poly].getVar();
-        int pos   = el.pos;
-        Delta increment(pta[polyStore.readTerm(lva[row].getPolyRef(), pos)].coef * x_delta);
-        model.write(row, model.read(row) + increment);
-        // this could get the row out of bounds
-        candidates.insert(row);
+    for (auto row : col_occ_list.at(x)) {
+        Delta increment{row_polynomials.at(row).at(x) * x_delta};
 
-        //TODO: make a separate config value for suggestions
-        //TODO: sort the order of suggestion requesting based on metric (Model increase, out-of-bound distance etc)
-//        if (!valueConsistent(row)) {
-//            crashInconsistency(row, __LINE__);
-//        }
+        // TODO: add operator to add Delta and Real
+        model.write(row, model.read(row) + increment);
+        candidates.insert(row);
+        assert(valueConsistent(row));
     }
+//    for (int i = 0; i < bra[lva[x].getBindedRowsRef()].size(); i++) {
+//        BindedRow& el = bra[lva[x].getBindedRowsRef()][i];
+//        LVRef row = pa[el.poly].getVar();
+//        int pos   = el.pos;
+//        Delta increment(pta[polyStore.readTerm(lva[row].getPolyRef(), pos)].coef * x_delta);
+//        model.write(row, model.read(row) + increment);
+//        // this could get the row out of bounds
+//        candidates.insert(row);
+//
+//        //TODO: make a separate config value for suggestions
+//        //TODO: sort the order of suggestion requesting based on metric (Model increase, out-of-bound distance etc)
+////        if (!valueConsistent(row)) {
+////            crashInconsistency(row, __LINE__);
+////        }
+//    }
 //  cerr << "; UPDATED nonbasic " << *x << ": " << x->L( ) << " <= " << x->M( ) << " <= " << x->U( ) << endl;
 }
 
@@ -973,11 +1053,33 @@ void LRASolver::pivotAndUpdate( const LVRef bv, const LVRef nv, const Delta & v 
     assert( bv != nv );
     assert( lva[bv].isBasic() );
     assert( !lva[nv].isBasic() );
+    assert(checkRowConsistency());
+    assert(checkTableauConsistency());
 
-    assert( polyStore.has(lva[bv].getPolyRef(), nv) );
+    // steps to preserve consistency:
+    // 1. set new polynomial for new row nv
+    // 2. remove old row bv
+    // 3. fix columns present in the new polynomials (replace bv there with nv)
+    // 4. move rows for column nv to column bv, replace bv there with nv
+    // 5. fix all representations of rows where nv occurred
+    // 6. update column information for these rows -> variables could be removed or added
+
+//    assert( polyStore.has(lva[bv].getPolyRef(), nv) );
 
     // get Theta (zero if Aij is zero)
-    const Real& a = pta[polyStore.find(lva[bv].getPolyRef(), nv)].coef;
+//    const Real& a = pta[polyStore.find(lva[bv].getPolyRef(), nv)].coef;
+#ifndef NDEBUG
+    for (auto const & row : col_occ_list.at(nv)) {
+//        std::cerr << "Row variable " << row.x << '\n';
+//        for(auto & term : row_polynomials.at(row)) {
+//            std::cerr << term.second << '*' << "var_" << term.first.x << '\n';
+//            std::cerr << "Value of var: " << model.read(term.first).printValue() << '\n';
+//        }
+        assert(valueConsistent(row));
+    }
+#endif
+
+    Real const & a = row_polynomials.at(bv).at(nv);
 
     // This tells how much we need to change nv's value so that bv will have the value v.
     Delta theta(( v - model.read(bv) ) / a);
@@ -988,24 +1090,37 @@ void LRASolver::pivotAndUpdate( const LVRef bv, const LVRef nv, const Delta & v 
 //    if (!valueConsistent(bv))
 //        crashInconsistency(bv, __LINE__);
 
-    int nv_pos = -1; // nv's position in bv's polynomial
-    // update model of Basic variables
-    for (int i = 0; i < bra[lva[nv].getBindedRowsRef()].size(); i++) {
-        BindedRow& br = bra[lva[nv].getBindedRowsRef()][i];
-        LVRef occ_bv = pa[br.poly].getVar();
-        int pos = br.pos;
-        if (occ_bv != bv) {
-            model.write(occ_bv, model.read(occ_bv)+pta[polyStore.readTerm(br.poly, pos)].coef * theta);
-            // value of basic variable updated, this could put it out of its bounds
-            candidates.insert(occ_bv);
+    for (auto const & row : col_occ_list.at(nv)) {
+        if(row != bv) {
+            model.write(row, model.read(row) + (row_polynomials.at(row).at(nv) * theta));
+            candidates.insert(row);
+            assert(valueConsistent(row));
         }
         else {
-            nv_pos = pos;
+            // we have already changed the model of bv
+            assert(valueConsistent(row));
         }
-//        if (!valueConsistent(occ_bv))
-//           crashInconsistency(occ_bv, __LINE__);
+
     }
-    assert(nv_pos != -1);
+
+//    int nv_pos = -1; // nv's position in bv's polynomial
+//    // update model of Basic variables
+//    for (int i = 0; i < bra[lva[nv].getBindedRowsRef()].size(); i++) {
+//        BindedRow& br = bra[lva[nv].getBindedRowsRef()][i];
+//        LVRef occ_bv = pa[br.poly].getVar();
+//        int pos = br.pos;
+//        if (occ_bv != bv) {
+//            model.write(occ_bv, model.read(occ_bv)+pta[polyStore.readTerm(br.poly, pos)].coef * theta);
+//            // value of basic variable updated, this could put it out of its bounds
+//            candidates.insert(occ_bv);
+//        }
+//        else {
+//            nv_pos = pos;
+//        }
+////        if (!valueConsistent(occ_bv))
+////           crashInconsistency(occ_bv, __LINE__);
+//    }
+//    assert(nv_pos != -1);
 
     // pivoting bv and bv
 
@@ -1016,102 +1131,181 @@ void LRASolver::pivotAndUpdate( const LVRef bv, const LVRef nv, const Delta & v 
 #endif
     const Real neg_inverse = -inverse;
 
-    PolyTermRef nv_term; // The term containing nv will be stored here
-    // Solve for nv
-    PolyRef pr = lva[bv].getPolyRef();
-    for (int i = 0; i < polyStore.getSize(pr); i++) {
-        PolyTermRef ptr = polyStore.readTerm(pr, i);
-        if (pta[ptr].var == nv)
-            nv_term = ptr;
-        else {
-            polyStore.updateCoef(ptr, pta[ptr].coef*inverse);
-        }
+    assert(checkRowConsistency());
+    // change the representation of the row of the pivot variable
+    auto polynomial = row_polynomials.at(bv);
+    // update all coefficients
+    for (auto & term : polynomial) {
+        term.second *= inverse;
     }
-    polyStore.updateVar(pr, nv);
-    polyStore.updateTerm(pr, nv_term, bv, neg_inverse);
-
-    // pr is now the new polynomial for nv
-    lva[nv].setPolyRef(pr);
-    lva[bv].setPolyRef(PolyRef_Undef);
-
-
-    // We will add bv to basic vectors so it needs to be set non-basic
-    lva[bv].setNonbasic();
-    // now change the polynomials for all rows where nv was present
-    auto & bindedRows = bra[lva[nv].getBindedRowsRef()];
-    while (bindedRows.size() != 0) {
-        PolyRef row = bindedRows[bindedRows.size()-1].poly;
-        int     pos = bindedRows[bindedRows.size()-1].pos;
-        assert( pta[polyStore.readTerm(row, pos)].coef != 0 );
-
-        assert(valueConsistent(pa[row].getVar()));
-        assert(valueConsistent(nv));
-        // copy a to the new Real variable (use memory pool)
-
-        const Real& nv_coef = *newReal(&pta[polyStore.readTerm(row, pos)].coef);
-
-//        printf("Removing %s from the poly %s\n", polyStore.printPoly(lva[nv].getPolyRef()), polyStore.printPoly(row));
-
-        // Remove first nv from the poly.
-        polyStore.remove(nv, row);
-//        printf("%s\n", polyStore.printPoly(row));
-        // P_i = P_i + a_nv * P_bv (iterate over all elements of P_bv)
-//        printf("Entering the phase where I will add polynomials\n");
-        for (int j = 0; j < polyStore.getSize(pr); j++) {
-//            printf("pivot sum count %d\n", debug_pivot_sum_count++);
-            LVRef col = pta[polyStore.readTerm(pr, j)].var;
-            const Real &b = pta[polyStore.readTerm(pr, j)].coef;
-
-            Real tmp = nv_coef*b;
-            Real* p_c = newReal(&tmp);
-
-//            printf("%s * %s = %s\n", nv_coef.get_str().c_str(), b.get_str().c_str(), tmp.get_str().c_str());
-
-            // Add the variable col with factor p_c to row's polynomial
-            polyStore.add(row, col, *p_c);
-            // It could be that the poly changed so we need to update our local reference row accordingly
-            row = lva[pa[row].getVar()].getPolyRef();
-            // Update the value of the variable corresponding to this row
-
-        }
-//        printf("Result is %s\n", polyStore.printPoly(row));
-        LVRef row_var = pa[row].getVar();
-//        if (!valueConsistent(row_var))
-//           crashInconsistency(row_var, __LINE__);
-    }
-    // nv will become the new basic var, so we need to remove its occurrences
-    BindedRows& b = bindedRowsStore.getBindedRows(nv);
-    b.clear();
-
-    // swap x and y (basicID, polynomial, bindings)
-    lva[bv].setPolyRef(PolyRef_Undef);
+    // remove coefficient of non-basic variable and add coefficient for the basic variable
+    polynomial.erase(nv);
+    polynomial.emplace(bv, neg_inverse);
+    // fix rows data structure
     int row_id = lva[bv].getRowId();
     lva[nv].setRowId(row_id);
+    lva[bv].setRowId(-1);
     assert(rows[row_id] == bv);
-    // Remove bv from rows, add nv to rows.
     rows[row_id] = nv;
-    // Remove nv from cols, add bv to cols
-    int col_id = lva[nv].getColId();
-    lva[bv].setColId(col_id);
-    assert(columns[col_id] == nv);
-    columns[col_id] = bv;
-
+    row_polynomials.emplace(nv, polynomial); // step 1. completed
+    row_polynomials.erase(bv); // step 2. completed
     lva[bv].setNonbasic();
     lva[nv].setBasic();
+    // fix occurence lists for variables in the polynmial, they are in row nv instead of bv
+    for(auto term : polynomial) {
+        assert(lva[term.first].isBasic() == false);
+        if (term.first != bv) { //we need too fix columns bv and nv later
+            auto & col = col_occ_list.at(term.first);
+            assert(col.find(bv) != col.end());
+            col.erase(bv);
+            col.insert(nv); // step 3.
+        }
+    }
+
+    // now substitute the polynomial in all rows where the non-basic variable occurred previously
+    // we are using polynomial computed in the previous step
+    col_occ_list.at(nv).erase(bv);
+    for (auto row : col_occ_list.at(nv)) {
+        auto & current_row_poly = row_polynomials.at(row);
+        std::vector<LVRef> to_remove;
+        Real const & coeff = current_row_poly.at(nv);
+        for (auto const & term : polynomial) {
+            Real new_coeff = term.second * coeff;
+            auto res = current_row_poly.emplace(term.first, new_coeff);
+            if(!res.second) // no insertion took place, the variable is already there with some coeff
+            {
+                res.first->second += new_coeff;
+                if(res.first->second.isZero()) {
+                    assert(term.first == res.first->first);
+                    to_remove.push_back(res.first->first);
+                }
+            }
+            else // variable was not there before, record ooccurence in new row in col_occurence list
+            {
+                // bv is handled later
+                if(term.first != bv) {
+                    assert(col_occ_list.find(term.first) != col_occ_list.end());
+                    assert(col_occ_list.at(term.first).find(row) == col_occ_list.at(term.first).end());
+                    col_occ_list.at(term.first).insert(row);
+                }
+
+            }
+        }
+        // remove the non-basic variable from the row's polynomial
+        current_row_poly.erase(nv);
+        // remove variables whose coefficient summed up to 0
+        for(auto var : to_remove) {
+            assert(current_row_poly.find(var) != current_row_poly.end());
+            current_row_poly.erase(var);
+            assert(col_occ_list.at(var).find(row) != col_occ_list.at(var).end());
+            col_occ_list.at(var).erase(row);
+        }
+    }
+    assert(checkRowConsistency());
+    // fix the column representation: move the occurence list from non-basic variable to the basic variable
+    int col_id = lva[nv].getColId();
+    lva[bv].setColId(col_id);
+    lva[nv].setColId(-1);
+    assert(columns[col_id] == nv);
+    columns[col_id] = bv;
+    col_occ_list.at(nv).insert(nv);
+    col_occ_list.emplace(bv, std::move(col_occ_list.at(nv)));
+    col_occ_list.erase(nv);
+
+//    PolyTermRef nv_term; // The term containing nv will be stored here
+//    // Solve for nv
+//    PolyRef pr = lva[bv].getPolyRef();
+//    for (int i = 0; i < polyStore.getSize(pr); i++) {
+//        PolyTermRef ptr = polyStore.readTerm(pr, i);
+//        if (pta[ptr].var == nv)
+//            nv_term = ptr;
+//        else {
+//            polyStore.updateCoef(ptr, pta[ptr].coef*inverse);
+//        }
+//    }
+//    polyStore.updateVar(pr, nv);
+//    polyStore.updateTerm(pr, nv_term, bv, neg_inverse);
+//
+//    // pr is now the new polynomial for nv
+//    lva[nv].setPolyRef(pr);
+//    lva[bv].setPolyRef(PolyRef_Undef);
+
+
+//    // We will add bv to basic vectors so it needs to be set non-basic
+//    lva[bv].setNonbasic();
+//    // now change the polynomials for all rows where nv was present
+//    auto & bindedRows = bra[lva[nv].getBindedRowsRef()];
+//    while (bindedRows.size() != 0) {
+//        PolyRef row = bindedRows[bindedRows.size()-1].poly;
+//        int     pos = bindedRows[bindedRows.size()-1].pos;
+//        assert( pta[polyStore.readTerm(row, pos)].coef != 0 );
+//
+//        assert(valueConsistent(pa[row].getVar()));
+//        assert(valueConsistent(nv));
+//        // copy a to the new Real variable (use memory pool)
+//
+//        const Real& nv_coef = *newReal(&pta[polyStore.readTerm(row, pos)].coef);
+//
+////        printf("Removing %s from the poly %s\n", polyStore.printPoly(lva[nv].getPolyRef()), polyStore.printPoly(row));
+//
+//        // Remove first nv from the poly.
+//        polyStore.remove(nv, row);
+////        printf("%s\n", polyStore.printPoly(row));
+//        // P_i = P_i + a_nv * P_bv (iterate over all elements of P_bv)
+////        printf("Entering the phase where I will add polynomials\n");
+//        for (int j = 0; j < polyStore.getSize(pr); j++) {
+////            printf("pivot sum count %d\n", debug_pivot_sum_count++);
+//            LVRef col = pta[polyStore.readTerm(pr, j)].var;
+//            const Real &b = pta[polyStore.readTerm(pr, j)].coef;
+//
+//            Real tmp = nv_coef*b;
+//            Real* p_c = newReal(&tmp);
+//
+////            printf("%s * %s = %s\n", nv_coef.get_str().c_str(), b.get_str().c_str(), tmp.get_str().c_str());
+//
+//            // Add the variable col with factor p_c to row's polynomial
+//            polyStore.add(row, col, *p_c);
+//            // It could be that the poly changed so we need to update our local reference row accordingly
+//            row = lva[pa[row].getVar()].getPolyRef();
+//            // Update the value of the variable corresponding to this row
+//
+//        }
+////        printf("Result is %s\n", polyStore.printPoly(row));
+//        LVRef row_var = pa[row].getVar();
+////        if (!valueConsistent(row_var))
+////           crashInconsistency(row_var, __LINE__);
+//    }
+//    // nv will become the new basic var, so we need to remove its occurrences
+//    BindedRows& b = bindedRowsStore.getBindedRows(nv);
+//    b.clear();
+
+//    // swap x and y (basicID, polynomial, bindings)
+//    lva[bv].setPolyRef(PolyRef_Undef);
+//    int row_id = lva[bv].getRowId();
+//    lva[nv].setRowId(row_id);
+//    assert(rows[row_id] == bv);
+//    // Remove bv from rows, add nv to rows.
+//    rows[row_id] = nv;
+//    // Remove nv from cols, add bv to cols
+//    int col_id = lva[nv].getColId();
+//    lva[bv].setColId(col_id);
+//    assert(columns[col_id] == nv);
+//    columns[col_id] = bv;
 
     // update the candidates for out of bounds values
     assert(candidates.find(bv) != candidates.end());
     candidates.erase(bv);
     candidates.insert(nv);
 
-    assert( polyStore.has(pr, bv) );
+//    assert( polyStore.has(pr, bv) );
 
-    assert( lva[bv].getPolyRef() == PolyRef_Undef );
-    assert( polyStore.getSize(lva[nv].getPolyRef()) > 0 );
-    assert( bra[lva[bv].getBindedRowsRef()].size() > 0 );
+//    assert( lva[bv].getPolyRef() == PolyRef_Undef );
+//    assert( polyStore.getSize(lva[nv].getPolyRef()) > 0 );
+//    assert( bra[lva[bv].getBindedRowsRef()].size() > 0 );
 
     assert(checkRowConsistency());
     assert(checkColumnConsistency());
+    assert(checkTableauConsistency());
 }
 
 //
@@ -1131,8 +1325,8 @@ void LRASolver::initSolver()
 #endif
         boundStore.buildBounds(ptermToLABoundRefs); // Bounds are needed for gaussian elimination
         // Gaussian Elimination should not be performed in the Incremental mode!
-        if (config.lra_gaussian_elim == 1 && config.do_substitutions())
-            doGaussianElimination();
+//        if (config.lra_gaussian_elim == 1 && config.do_substitutions())
+//            doGaussianElimination();
 
         model.initModel(lavarStore);
 
@@ -1190,32 +1384,53 @@ void LRASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
         dst.push(b_f.getSign() == l_True ? b_f.getPTRef() : logic.mkNot(b_f.getPTRef()));
 //        dst.push(model.readLBound(x).getPTRef());
 //        dst.push(ba[bla[lva[x].getBounds()][lva[x].lbound()]].getPTRef());
-        explanationCoefficients.push_back( Real( 1 ) );
-        for (int i = 0; i < polyStore.getSize(lva[x].getPolyRef()); i++) {
-            const PolyTerm &pt = pta[polyStore.readTerm(polyStore.getPolyRef(x), i)];
-            const Real &a = pt.coef;
-            assert( a != 0 );
-            LVRef y = pt.var;
-            //LVRef y = columns[lva[pt.var].getColId()];
-            assert(x != y);
-
-            if (a < 0) {
-                const LABound& b = model.readLBound(y);
-//                printf("The bound is %s\n", b.getSign() == l_True ? "positive" : "negative");
+        explanationCoefficients.emplace_back( 1 );
+        for (auto const & term : row_polynomials.at(x)) {
+            Real const & coeff = term.second;
+            assert( ! coeff.isZero());
+            auto const var = term.first;
+            assert(var != x);
+            if (coeff < 0) {
+                const LABound& b = model.readLBound(var);
                 assert( b.getPTRef() != PTRef_Undef );
                 dst.push( b.getSign() == l_True ? b.getPTRef() : logic.mkNot(b.getPTRef()) );
 
-                explanationCoefficients.push_back( -a );
+                explanationCoefficients.push_back( -coeff );
             }
             else {
-                const LABound& b = model.readUBound(y);
-//                printf("The bound is %s\n", b.getSign() == l_True ? "positive" : "negative");
+                const LABound& b = model.readUBound(var);
                 assert( b.getPTRef() != PTRef_Undef );
                 dst.push( b.getSign() == l_True ? b.getPTRef() : logic.mkNot(b.getPTRef()) );
 
-                explanationCoefficients.push_back(a);
+                explanationCoefficients.push_back(coeff);
             }
         }
+
+//        for (int i = 0; i < polyStore.getSize(lva[x].getPolyRef()); i++) {
+//            const PolyTerm &pt = pta[polyStore.readTerm(polyStore.getPolyRef(x), i)];
+//            const Real &a = pt.coef;
+//            assert( a != 0 );
+//            LVRef y = pt.var;
+//            //LVRef y = columns[lva[pt.var].getColId()];
+//            assert(x != y);
+//
+//            if (a < 0) {
+//                const LABound& b = model.readLBound(y);
+////                printf("The bound is %s\n", b.getSign() == l_True ? "positive" : "negative");
+//                assert( b.getPTRef() != PTRef_Undef );
+//                dst.push( b.getSign() == l_True ? b.getPTRef() : logic.mkNot(b.getPTRef()) );
+//
+//                explanationCoefficients.push_back( -a );
+//            }
+//            else {
+//                const LABound& b = model.readUBound(y);
+////                printf("The bound is %s\n", b.getSign() == l_True ? "positive" : "negative");
+//                assert( b.getPTRef() != PTRef_Undef );
+//                dst.push( b.getSign() == l_True ? b.getPTRef() : logic.mkNot(b.getPTRef()) );
+//
+//                explanationCoefficients.push_back(a);
+//            }
+//        }
     }
     if (model.read(x) > model.Ub(x)) {
         // add all bounds for polynomial elements, which limit upper bound
@@ -1223,34 +1438,54 @@ void LRASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
         const LABound& b_f = model.readUBound(x);
         dst.push(b_f.getSign() == l_True ? b_f.getPTRef() : logic.mkNot(b_f.getPTRef()));
 //        dst.push(model.readUBound(x).getPTRef());
-        explanationCoefficients.push_back( Real( 1 ) );
+        explanationCoefficients.emplace_back( 1 );
 
-        for (int i = 0; i < polyStore.getSize(lva[x].getPolyRef()); i++) {
-            const PolyTerm &pt = pta[polyStore.readTerm(polyStore.getPolyRef(x), i)];
-            const Real &a = pt.coef;
-            assert( a != 0 );
-            LVRef y = pt.var;
-            //LVRef y = columns[lva[pt.var].getColId()];
-            assert(x != y);
-
-            if (a > 0) {
-//                LABoundRef l_bound = bla[lva[y].getBounds()][lva[y].lbound()];
-                const LABound& b = model.readLBound(y);
-//                printf("The bound is %s\n", b.getSign() == l_True ? "positive" : "negative");
+        for (auto const & term : row_polynomials.at(x)) {
+            Real const & coeff = term.second;
+            assert( ! coeff.isZero());
+            auto const var = term.first;
+            assert(var != x);
+            if (coeff > 0) {
+                const LABound& b = model.readLBound(var);
                 assert( b.getPTRef() != PTRef_Undef );
                 dst.push( b.getSign() == l_True ? b.getPTRef() : logic.mkNot(b.getPTRef()) );
-                explanationCoefficients.push_back( a );
+
+                explanationCoefficients.push_back( coeff );
             }
             else {
-//                LABoundRef u_bound = bla[lva[y].getBounds()][lva[y].ubound()];
-                const LABound& b = model.readUBound(y);
-//                printf("The bound is %s\n", b.getSign() == l_True ? "positive" : "negative");
-
+                const LABound& b = model.readUBound(var);
                 assert( b.getPTRef() != PTRef_Undef );
                 dst.push( b.getSign() == l_True ? b.getPTRef() : logic.mkNot(b.getPTRef()) );
-                explanationCoefficients.push_back(-a);
+
+                explanationCoefficients.push_back(-coeff);
             }
         }
+//        for (int i = 0; i < polyStore.getSize(lva[x].getPolyRef()); i++) {
+//            const PolyTerm &pt = pta[polyStore.readTerm(polyStore.getPolyRef(x), i)];
+//            const Real &a = pt.coef;
+//            assert( a != 0 );
+//            LVRef y = pt.var;
+//            //LVRef y = columns[lva[pt.var].getColId()];
+//            assert(x != y);
+//
+//            if (a > 0) {
+////                LABoundRef l_bound = bla[lva[y].getBounds()][lva[y].lbound()];
+//                const LABound& b = model.readLBound(y);
+////                printf("The bound is %s\n", b.getSign() == l_True ? "positive" : "negative");
+//                assert( b.getPTRef() != PTRef_Undef );
+//                dst.push( b.getSign() == l_True ? b.getPTRef() : logic.mkNot(b.getPTRef()) );
+//                explanationCoefficients.push_back( a );
+//            }
+//            else {
+////                LABoundRef u_bound = bla[lva[y].getBounds()][lva[y].ubound()];
+//                const LABound& b = model.readUBound(y);
+////                printf("The bound is %s\n", b.getSign() == l_True ? "positive" : "negative");
+//
+//                assert( b.getPTRef() != PTRef_Undef );
+//                dst.push( b.getSign() == l_True ? b.getPTRef() : logic.mkNot(b.getPTRef()) );
+//                explanationCoefficients.push_back(-a);
+//            }
+//        }
     }
 
 //    printf("I now came up with an explanation.  It looks like this:\n");
@@ -1258,7 +1493,7 @@ void LRASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
 //        printf("(%s) ", logic.printTerm(dst[i]));
 //    printf("\n");
 
-    assert( dst.size() == polyStore.getSize(lva[x].getPolyRef())+1 ); // One for each term plus the broken equality
+//    assert( dst.size() == polyStore.getSize(lva[x].getPolyRef())+1 ); // One for each term plus the broken equality
 
 /*
     ipartitions_t p = 1;
@@ -1536,9 +1771,14 @@ void LRASolver::print( ostream & out )
     // print the tableau cells (zeros are skipped)
     // iterate over Tableau rows
     for ( unsigned i = 0; i < rows.size( ); i++ ) {
+        auto const & row_poly = row_polynomials.at(rows[i]);
         for (unsigned j = 0; j < columns.size(); j++) {
-            if (polyStore.has(lva[rows[i]].getPolyRef(), columns[j]))
-                out << pta[polyStore.find(lva[rows[i]].getPolyRef(), columns[j])].coef;
+//            if (polyStore.has(lva[rows[i]].getPolyRef(), columns[j]))
+//                out << pta[polyStore.find(lva[rows[i]].getPolyRef(), columns[j])].coef;
+            auto it = row_poly.find(columns[j]);
+            if (it != row_poly.end()){
+               out << it->second;
+            }
             out << "\t";
         }
         out << endl;
@@ -1552,12 +1792,13 @@ void LRASolver::computeConcreteModel(LVRef v) {
 
     PTRef tr = lva[v].getPTRef();
     if (removed_by_GaussianElimination.has(tr)) {
-        const ModelPoly &expr = removed_by_GaussianElimination[tr];
-        Delta val;
-        for (int i = 0; i < expr.size(); i++) {
-            val += pta[expr[i]].coef * model.read(pta[expr[i]].var);
-        }
-        concrete_model[lva[v].ID()] = new opensmt::Real(val.R() + val.D() * delta);
+//        const ModelPoly &expr = removed_by_GaussianElimination[tr];
+//        Delta val;
+//        for (int i = 0; i < expr.size(); i++) {
+//            val += pta[expr[i]].coef * model.read(pta[expr[i]].var);
+//        }
+//        concrete_model[lva[v].ID()] = new opensmt::Real(val.R() + val.D() * delta);
+        throw "Gauss elimination not implemented yet!";
     }
     else
         concrete_model[lva[v].ID()] = new opensmt::Real(model.read(v).R() + model.read(v).D() * delta);
@@ -1577,11 +1818,11 @@ void LRASolver::getConflict(bool, vec<PtAsgn>& e)
 //        printf("(%s) ", boundStore.printBound(bound_ref));
 //    }
 //    printf("\n");
-    vec<PTRef> check_me;
-    for (int i = 0; i < e.size(); i++) {
-        check_me.push(e[i].sgn == l_False ? logic.mkNot(e[i].tr) : e[i].tr);
-    }
-//    printf("In PTRef this is %s\n", logic.pp(logic.mkAnd(check_me)));
+//    vec<PTRef> check_me;
+//    for (int i = 0; i < e.size(); i++) {
+//        check_me.push(e[i].sgn == l_False ? logic.mkNot(e[i].tr) : e[i].tr);
+//    }
+////    printf("In PTRef this is %s\n", logic.pp(logic.mkAnd(check_me)));
 //    assert(logic.implies(logic.mkAnd(check_me), logic.getTerm_false()));
 }
 
@@ -1715,13 +1956,13 @@ void LRASolver::computeModel()
 // Add the variable x with the coefficient p_v to the polynomial represented by
 // s
 //
-void LRASolver::addVarToRow( LVRef s, LVRef x, Real * p_v )
-{
-    assert(!lva[x].isBasic());
-    assert(lva[s].isBasic());
-
-    polyStore.add(lva[s].getPolyRef(), x, *p_v);
-}
+//void LRASolver::addVarToRow( LVRef s, LVRef x, Real * p_v )
+//{
+//    assert(!lva[x].isBasic());
+//    assert(lva[s].isBasic());
+//
+//    polyStore.add(lva[s].getPolyRef(), x, *p_v);
+//}
 
 bool LRASolver::checkIntegersAndSplit( )
 {
@@ -1888,42 +2129,56 @@ LRASolver::~LRASolver( )
 {
     tsolver_stats.printStatistics(cerr);
     // Remove numbers
-    while( !numbers_pool.empty( ) )
-    {
-        assert( numbers_pool.back( ) );
-        delete numbers_pool.back( );
-        numbers_pool.pop_back( );
-    }
+//    while( !numbers_pool.empty( ) )
+//    {
+//        assert( numbers_pool.back( ) );
+//        delete numbers_pool.back( );
+//        numbers_pool.pop_back( );
+//    }
 }
+
+//bool LRASolver::valueConsistent(LVRef v)
+//{
+//    const Delta& value = model.read(v);
+//    Delta sum(0);
+//    PolyRef pr = lva[v].getPolyRef();
+////    printf("%s = ", value.printValue());
+//    for (int i = 0; i < polyStore.getSize(pr); i++) {
+//        const PolyTerm &t = pta[polyStore.readTerm(pr, i)];
+//        Pterm& smt_term = logic.getPterm(lva[t.var].getPTRef());
+//        sum += t.coef * model.read(t.var);
+////        printf("+(%s*%s)", t.coef.get_str().c_str(), model.read(t.var).printValue());
+//    }
+////    printf(" = %s\n", sum.printValue());
+//    assert(value == sum);
+//    return value == sum;
+//}
 
 bool LRASolver::valueConsistent(LVRef v)
 {
     const Delta& value = model.read(v);
+//    std::cerr << "Value of " << v.x << " is: " << value.printValue() << '\n';
     Delta sum(0);
-    PolyRef pr = lva[v].getPolyRef();
-//    printf("%s = ", value.printValue());
-    for (int i = 0; i < polyStore.getSize(pr); i++) {
-        const PolyTerm &t = pta[polyStore.readTerm(pr, i)];
-        Pterm& smt_term = logic.getPterm(lva[t.var].getPTRef());
-        sum += t.coef * model.read(t.var);
-//        printf("+(%s*%s)", t.coef.get_str().c_str(), model.read(t.var).printValue());
+    for (auto & term : row_polynomials.at(v)){
+        sum += term.second * model.read(term.first);
     }
+//    std::cerr << "Sum is: " << sum.printValue() << '\n';
 //    printf(" = %s\n", sum.printValue());
     assert(value == sum);
     return value == sum;
 }
 
-void LRASolver::crashInconsistency(LVRef v, int line) {
-    PolyRef pr = lva[v].getPolyRef();
-    printf("Var %s = %s is not consistent with its polynomial %s\n", lva.printVar(v), model.read(v).printValue(),
-           polyStore.printPoly(pr));
-    printf("At row %d, file LRASolver.C\n", line);
-    for (int i = 0; i < polyStore.getSize(pr); i++) {
-        const PolyTerm &t = pta[polyStore.readTerm(pr, i)];
-        printf(" %s * %s\n", t.coef.get_str().c_str(), model.read(t.var).printValue());
-    }
-    exit(10);
-}
+//void LRASolver::crashInconsistency(LVRef v, int line) {
+//    PolyRef pr = lva[v].getPolyRef();
+//    printf("Var %s = %s is not consistent with its polynomial %s\n", lva.printVar(v), model.read(v).printValue(),
+//           polyStore.printPoly(pr));
+//    printf("At row %d, file LRASolver.C\n", line);
+//    for (int i = 0; i < polyStore.getSize(pr); i++) {
+//        const PolyTerm &t = pta[polyStore.readTerm(pr, i)];
+//        printf(" %s * %s\n", t.coef.get_str().c_str(), model.read(t.var).printValue());
+//    }
+//    exit(10);
+//}
 //
 // Check that the values of non-basic variables (columns) do not break asserted bounds
 //
@@ -1944,6 +2199,30 @@ bool LRASolver::stackOk()
         }
     }
     return rval;
+}
+
+bool LRASolver::checkTableauConsistency() {
+    for (auto col : col_occ_list) {
+        for (auto row : col.second) {
+            assert(row_polynomials.find(row) != row_polynomials.end());
+            auto & row_poly = row_polynomials.at(row);
+            if(row_poly.find(col.first) == row_poly.end()) {
+                assert(false);
+                return false;
+            }
+        }
+    }
+    for (auto row : row_polynomials) {
+        for (auto term : row.second) {
+            assert(col_occ_list.find(term.first) != col_occ_list.end());
+            auto & column = col_occ_list.at(term.first);
+            if(column.find(row.first) == column.end()) {
+                assert(false);
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 bool LRASolver::checkRowConsistency()
@@ -1968,6 +2247,13 @@ bool LRASolver::checkRowConsistency()
         if (lva[vr].getRowId() != i) {
             assert(false);
             return false;
+        }
+        assert(lva[vr].isBasic());
+    }
+    for(auto const & row_poly : row_polynomials) {
+        assert( lva[row_poly.first].isBasic());
+        for (auto const & term : row_poly.second) {
+            assert( lva[term.first].isBasic() == false);
         }
     }
     return true;
@@ -1999,6 +2285,7 @@ bool LRASolver::checkColumnConsistency()
             assert(false);
             return false;
         }
+        assert(!lva[vr].isBasic());
     }
     return true;
 }
