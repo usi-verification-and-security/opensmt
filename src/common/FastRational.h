@@ -49,7 +49,7 @@ public:
 
     inline FastRational( const FastRational & );
 
-    FastRational(FastRational&& other);
+    FastRational(FastRational&& other) noexcept;
 
     FastRational & operator=(FastRational && other) {
         std::swap(this->has_word, other.has_word);

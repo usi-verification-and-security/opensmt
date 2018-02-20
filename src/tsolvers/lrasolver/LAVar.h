@@ -28,7 +28,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define LAVAR_H
 
 #include "Global.h"
-#include "Delta.h"
 #include "LRALogic.h"
 #include "Deductions.h"
 #include "PtStructs.h"

@@ -5,6 +5,9 @@
 #include "LARefs.h"
 #include "Polynomials.h"
 #include "BindedRows.h"
+
+using opensmt::Real;
+
 PolyTermList::PolyTermList(PolyTermList &old, int new_cap) : cap(new_cap), sz(old.sz)
 {
     for (int i = 0; i < old.size(); i++)

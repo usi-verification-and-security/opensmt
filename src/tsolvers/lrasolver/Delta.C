@@ -33,8 +33,8 @@ void Delta::reset()
 {
     infinite = false;
     positive = true;
-    r->reset();
-    d->reset();
+    r.reset();
+    d.reset();
 }
 
 //
@@ -59,8 +59,8 @@ char* Delta::printValue() const
         asprintf(&out, "-inf");
     else
         asprintf(&out, "(%s | %s)",
-                r->get_str().c_str(),
-                d->get_str().c_str());
+                r.get_str().c_str(),
+                d.get_str().c_str());
     return out;
 }
 

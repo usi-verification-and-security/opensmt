@@ -30,17 +30,30 @@ LRAModel::addVar(LVRef v)
     return ++n_vars_with_model;
 }
 
+//void
+//LRAModel::write(const LVRef &v, const Delta& val)
+//{
+//    if ((int_model[lva[v].ID()].size() == 0) || (int_model[lva[v].ID()].last().dl != backtrackLevel())) {
+//        int_model[lva[v].ID()].push();
+//        model_trace.push(v);
+//    }
+//    ModelEl& el = int_model[lva[v].ID()].last();
+//    el.d  = val;
+//    el.dl = backtrackLevel();
+//}
+
 void
-LRAModel::write(const LVRef &v, const Delta& val)
+LRAModel::write(const LVRef &v, Delta val)
 {
     if ((int_model[lva[v].ID()].size() == 0) || (int_model[lva[v].ID()].last().dl != backtrackLevel())) {
         int_model[lva[v].ID()].push();
         model_trace.push(v);
     }
     ModelEl& el = int_model[lva[v].ID()].last();
-    el.d  = val;
+    el.d  = std::move(val);
     el.dl = backtrackLevel();
 }
+
 void
 LRAModel::pushDecision(PtAsgn asgn)
 {

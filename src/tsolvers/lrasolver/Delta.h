@@ -39,8 +39,8 @@ using opensmt::Real;
 class Delta
 {
 private:
-    Real * r;     // main value
-    Real * d;     // delta to keep track of < / <= difference
+    Real r;     // main value
+    Real d;     // delta to keep track of < / <= difference
     bool infinite;// infinite bit
     bool positive;// +/- infinite bit
 
@@ -68,10 +68,13 @@ public:
     inline bool isMinusInf( ) const;              // True if -inf
     inline bool isPlusInf( ) const;               // True if +inf
     inline bool isInf( ) const;                   // True if inf (any)
-    void negate() { if (!isInf()) {r->negate(); d->negate();} else { positive = !positive; } }
+    void negate() { if (!isInf()) {r.negate(); d.negate();} else { positive = !positive; } }
     void reset();
 
     inline Delta& operator=( const Delta &a );    //Assign operator
+    inline Delta& operator=(Delta &&) noexcept;            // Move assign operator
+    inline Delta( Delta &&);                      // Move constructor
+    inline Delta (Real &&);                       // Move constructor from Real
 
     // Comparisons overloading
     inline friend bool operator<( const Delta &a, const Delta &b );
@@ -113,20 +116,20 @@ public:
 // main value
 inline const Real& Delta::R( ) const
 {
-    assert( r );
-    return *r;
+    assert(!infinite);
+    return r;
 }
 
 // delta value (to keep track of < / <= difference)
 inline const Real& Delta::D( ) const
 {
-    assert( d );
-    return *d;
+    assert( !infinite );
+    return d;
 }
 
 bool Delta::hasDelta( ) const
 {
-    return !infinite && ( D( ) != 0 );
+    return !infinite && ( !D( ).isZero() );
 }
 
 bool Delta::isPlusInf( ) const
@@ -151,8 +154,8 @@ Delta operator+=( Delta &a, const Delta &b )
     assert( !b.isInf( ) );
     if ( !( a.isInf( ) || b.isInf( ) ) )
     {
-        *( a.r ) += b.R( );
-        *( a.d ) += b.D( );
+        a.r += b.R( );
+        a.d += b.D( );
     }
     return a;
 }
@@ -163,8 +166,8 @@ Delta operator-=( Delta &a, const Delta &b )
     assert( !b.isInf( ) );
     if ( !( a.isInf( ) || b.isInf( ) ) )
     {
-        *( a.r ) -= b.R( );
-        *( a.d ) -= b.D( );
+        a.r -= b.R( );
+        a.d -= b.D( );
     }
     return a;
 }
@@ -342,110 +345,64 @@ bool Delta::isGreater( const Real &c ) const
         return false;
 }
 
-Delta::Delta()
-{
-    infinite = false;
-    positive = true;
-    r = new Real(0);
-    d = new Real(0);
-}
-
+Delta::Delta() : infinite{false}, positive{false}, r{0}, d{0} {}
 
 //
 // Default constructor (true for +inf; false for -inf)
 //
-Delta::Delta( deltaType p )
-{
-    infinite = ( p != ZERO );
-    positive = ( p == UPPER );
-    if ( !infinite )
-    {
-        r = new Real( 0 );
-        d = new Real( 0 );
-    }
-    else
-    {
-        r = NULL;
-        d = NULL;
-    }
-}
+Delta::Delta( deltaType p ) : infinite {p!=ZERO}, positive {p == UPPER}, r{0}, d{0} {}
 
 //
 // Constructor for Real delta
 //
-Delta::Delta( const Real &v )
-{
-    infinite = false;
-    positive = false;
-    r = new Real( v );
-    d = new Real( 0 );
-}
+Delta::Delta( const Real &v ) : infinite{false}, positive{false}, r{v}, d{0} {}
+
 
 //
 // Constructor for Real delta with strict bit
 //
-Delta::Delta( const Real &v_r, const Real &v_d )
-{
-    infinite = false;
-    positive = false;
-    r = new Real( v_r );
-    d = new Real( v_d );
-}
+Delta::Delta( const Real &v_r, const Real &v_d ) : infinite{false}, positive{false}, r{v_r}, d{v_d} {}
+
 
 //
 // Copy constructor
 //
-Delta::Delta( const Delta &a )
-{
-    infinite = a.infinite;
-    positive = a.positive;
-    if( !infinite )
-    {
-        r = new Real( a.R( ) );
-        d = new Real( a.D( ) );
-    }
-    else
-    {
-        r = NULL;
-        d = NULL;
-    }
-}
+Delta::Delta( const Delta &a ) : infinite {a.infinite}, positive {a.positive}, r{a.r}, d{a.d} {}
+
 
 // Assign operator
 Delta& Delta::operator=( const Delta &a )
 {
     if ( this != &a )
     {
-        if ( !( infinite ) )
-        {
-            delete ( r );
-            delete ( d );
-        }
         infinite = a.infinite;
         positive = a.positive;
         if ( !( infinite ) )
         {
-            r = new Real( a.R( ) );
-            d = new Real( a.D( ) );
-        }
-        else
-        {
-            r = NULL;
-            d = NULL;
+            r = a.r;
+            d = a.d;
         }
     }
     return *this;
 }
 
-// Destructor
-Delta::~Delta( )
-{
-    if( !( infinite ) )
-    {
-        delete ( r );
-        delete ( d );
-    }
+// move constructor
+Delta::Delta(Delta && other) = default;
+
+// move constructor from real
+Delta::Delta(Real && other) : infinite{false}, positive {false}, r{std::move(other)}, d{0}{ }
+
+// move assign
+Delta & Delta::operator=(Delta && other) noexcept {
+    std::swap(this->infinite, other.infinite);
+    std::swap(this->positive, other.positive);
+    this->r = std::move(other.r);
+    this->d = std::move(other.d);
+    return *this;
 }
+
+// Destructor
+Delta::~Delta( ) = default;
 
 static Delta Delta_PlusInf  = Delta(Delta::UPPER);
 static Delta Delta_MinusInf = Delta(Delta::LOWER);

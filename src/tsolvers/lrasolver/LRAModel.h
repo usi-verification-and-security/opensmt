@@ -54,7 +54,8 @@ public:
     void initModel(LAVarStore &s);
     int addVar(LVRef v); // Adds a variable.  Returns the total number of variables
     inline int   nVars() { return n_vars_with_model; }
-    void         write(const LVRef &v, const Delta&);
+//    void         write(const LVRef &v, const Delta&);
+    void         write(const LVRef &v, Delta);
     inline const Delta& read (const LVRef &v) const { assert(hasModel(v)); return int_model[lva[v].ID()].last().d; }
     const  bool  hasModel(const LVRef& v) const { return (lva[v].ID() < int_model.size() && int_model[lva[v].ID()].size() > 0); }
 //    inline void  pop(const LVRef &v) { int_model[lva[v].ID()].pop(); }

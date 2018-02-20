@@ -742,19 +742,19 @@ bool LRASolver::assertBoundOnVar(LVRef it, LABoundRef itBound_ref)
             PTRef tr = model.readLBound(it).getPTRef();
 //            PTRef tr = ba[bla[lva[it].getBounds()][lva[it].lbound()]].getPTRef();
             explanation.push(PtAsgn(tr, getPolarity(tr)));
-            explanationCoefficients.push_back( Real( 1 ) );
+            explanationCoefficients.emplace_back( 1 );
         }
         else if (itBound.getType() == bound_l)
         {
             PTRef tr = model.readUBound(it).getPTRef();
 //            PTRef tr = ba[bla[lva[it].getBounds()][lva[it].ubound()]].getPTRef();
             explanation.push(PtAsgn(tr, getPolarity(tr)));
-            explanationCoefficients.push_back( Real( 1 ) );
+            explanationCoefficients.emplace_back( 1 );
         }
 
         assert(itBound.getPTRef() != PTRef_Undef);
         explanation.push(itBound.getPtAsgn());
-        explanationCoefficients.push_back( Real( 1 ) );
+        explanationCoefficients.emplace_back(1);
         return setStatus( UNSAT );
     }
 
@@ -1857,9 +1857,9 @@ void LRASolver::computeModel()
         if (model.read(v).D() == 0)
             continue; // If values are exact we do not need to consider them for delta computation
 
-        Delta D;
-
         assert( !isModelOutOfBounds(v) );
+
+        Delta D;
 
         if (model.Lb(v).isMinusInf() || model.Ub(v).isPlusInf())
             D = Delta_PlusInf;

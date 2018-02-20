@@ -7,7 +7,7 @@
 #include "Pterm.h"
 #include "LAVar.h"
 #include "BindedRows.h"
-#include <ostream>
+#include "Real.h"
 
 struct PolyTerm
 {
@@ -160,7 +160,7 @@ public:
     void  remove       (LVRef var, PolyRef pol); // Removes var from pol
     void  remove       (LVRef poly_var);         // Removes the polynomial corresponding to poly_var
     void  remove       (PolyRef pr);             // Removes the polynomial pr
-    void  add          (PolyRef pr, LVRef v, const Real &c);
+    void  add          (PolyRef pr, LVRef v, const opensmt::Real &c);
     void  add          (PolyRef pr, PolyTermRef);
     void  updateTerm   (PolyRef pr, PolyTermRef term, LVRef var, const opensmt::Real& coef);  // Update the polytermref old to contain var * coef in pr.
     void  updateVar    (PolyRef pr, LVRef v) { pa[pr].var = v; } // Update the var of the polynomial (i.e. v_old = p(x), update v := var)
