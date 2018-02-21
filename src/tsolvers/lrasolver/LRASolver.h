@@ -268,6 +268,7 @@ private:
     char* printVar(LVRef v);
     bool valueConsistent(LVRef v); // Debug: Checks that the value of v in the model is consistent with the evaluated value of the polynomial of v in the same model.
     bool stackOk();
+    bool checkConsistency();
     bool checkTableauConsistency();
     bool checkRowConsistency();
     bool checkColumnConsistency();
