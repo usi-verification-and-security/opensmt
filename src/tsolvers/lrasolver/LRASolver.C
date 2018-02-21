@@ -29,8 +29,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 #include "LRASolver.h"
-#include "LAVar.h"
-#include "Egraph.h"
 #include "LA.h"
 
 //#include "../liasolver/LIASolver.h"

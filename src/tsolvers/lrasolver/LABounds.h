@@ -128,7 +128,7 @@ public:
     void buildBounds(vec<LABoundRefPair>& ptermToLABoundRef);
 //    inline LABoundRef getLowerBound(const LVRef v) const { return bla[lva[v].getBounds()][lva[v].lbound()]; }
 //    inline LABoundRef getUpperBound(const LVRef v) const { return bla[lva[v].getBounds()][lva[v].ubound()]; }
-    inline LABoundRefPair getBoundRefPair(const PTRef leq) { return ptermToLABoundsRef[Idx(logic.getPterm(leq).getId())]; }
+    LABoundRefPair getBoundRefPair(const PTRef leq);
     inline LABound& operator[] (LABoundRef br) { return ba[br]; }
     // Debug
     char* printBound(LABoundRef br) const; // Print the bound br

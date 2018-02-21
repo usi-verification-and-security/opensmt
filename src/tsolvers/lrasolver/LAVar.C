@@ -27,6 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 #include "LAVar.h"
+#include "LRALogic.h"
 
 
 
@@ -74,3 +75,6 @@ void LAVarStore::addLeqVar(PTRef leq_tr, LVRef v)
         leqToLavar.push(LVRef_Undef);
     leqToLavar[idx] = v;
 }
+
+bool LAVarStore::hasVar(PTRef tr)
+{ return hasVar(logic.getPterm(tr).getId()); }

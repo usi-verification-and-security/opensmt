@@ -27,11 +27,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef LAVAR_H
 #define LAVAR_H
 
-#include "Global.h"
-#include "LRALogic.h"
 #include "Deductions.h"
 #include "PtStructs.h"
 #include "LARefs.h"
+#include "Pterm.h"
 
 class LRASolver;
 class LAVarStore;
@@ -157,7 +156,7 @@ public:
     void   addLeqVar(PTRef leq_tr, LVRef v); // Adds a binding from leq_tr to the "slack var" v
     LVRef  getVarByLeqId(PTId i) { return leqToLavar[Idx(i)]; }
     bool   hasVar(PTId i) { return ptermToLavar.size() > Idx(i) && ptermToLavar[Idx(i)] != LVRef_Undef; }
-    bool   hasVar(PTRef tr) { return hasVar(logic.getPterm(tr).getId()); }
+    bool   hasVar(PTRef tr);
     int    numVars() const { return lavars.size(); }
     void   remove(LVRef r) { lva.free(r); };
     LVRef  getVarByIdx(unsigned i) { return lavars[i]; }

@@ -1,5 +1,5 @@
 #include "LABounds.h"
-
+#include "LRALogic.h"
 
 LABound::LABound(BoundT type, PtAsgn leq_pta, LVRef var, const Delta& delta)
     : type(type.t)
@@ -240,3 +240,6 @@ char* LABoundStore::printBounds(LVRef v) const
     }
     return bounds_str;
 }
+
+LABoundRefPair LABoundStore::getBoundRefPair(const PTRef leq)
+{ return ptermToLABoundsRef[Idx(logic.getPterm(leq).getId())]; }

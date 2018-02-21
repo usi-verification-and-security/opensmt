@@ -28,7 +28,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define LA_H
 
 #include "PtStructs.h"
-#include "Global.h"
 #include "LRALogic.h"
 
 class LAExpression

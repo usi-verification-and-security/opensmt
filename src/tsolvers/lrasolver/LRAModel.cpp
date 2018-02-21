@@ -3,6 +3,7 @@
 //
 
 #include "LRAModel.h"
+#include "LRALogic.h"
 
 void LRAModel::initModel(LAVarStore &s)
 {

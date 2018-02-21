@@ -1,4 +1,4 @@
-add_library(tsolvers OBJECT "" lrasolver/Polynomials.cpp lrasolver/BindedRows.cpp lrasolver/LRAModel.cpp lrasolver/LRAModel.h)
+add_library(tsolvers OBJECT "")
 
 target_sources(tsolvers
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Deductions.h"

@@ -32,17 +32,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 //#define GAUSSIAN_DEBUG
 
-#include <unordered_set>
-#include <unordered_map>
 #include "Timer.h"
 #include "LRALogic.h"
 #include "TSolver.h"
-#include "LAVar.h"
-#include "Polynomials.h"
-#include "BindedRows.h"
-#include "LABounds.h"
-#include "Global.h"
 #include "LRAModel.h"
+
+#include <unordered_set>
+#include <unordered_map>
 
 class LAVar;
 class LAVarStore;
