@@ -1041,44 +1041,45 @@ void LRASolver::pivotAndUpdate( const LVRef bv, const LVRef nv, const Delta & v 
 
     // pivoting bv and bv
 
-#if FAST_RATIONALS
-    const Real inverse = -FastRational_inverse( a );
-#else
-    const Real inverse = -1 / a;
-#endif
-    const Real neg_inverse = -inverse;
-
 //    assert(checkRowConsistency());
-    // change the representation of the row of the pivot variable
-    auto polynomial = row_polynomials.at(bv);
-    // update all coefficients
-    for (auto & term : polynomial) {
-        term.second *= inverse;
-    }
-    // remove coefficient of non-basic variable and add coefficient for the basic variable
-    polynomial.erase(nv);
-    polynomial.emplace(bv, neg_inverse);
-    // fix rows data structure
-    int row_id = lva[bv].getRowId();
-    lva[nv].setRowId(row_id);
-    lva[bv].setRowId(-1);
-    assert(rows[row_id] == bv);
-    rows[row_id] = nv;
-    row_polynomials.emplace(nv, polynomial); // step 1. completed
-    row_polynomials.erase(bv); // step 2. completed
-    lva[bv].setNonbasic();
-    lva[nv].setBasic();
-    // fix occurence lists for variables in the polynmial, they are in row nv instead of bv
-    for(auto term : polynomial) {
-        assert(lva[term.first].isBasic() == false);
-        if (term.first != bv) { //we need too fix columns bv and nv later
+    // fix the row representation (express the representation for nv instead of bv, let the columns know that the row has changed
+    auto bv_row_it = row_polynomials.find(bv);
+    auto polynomial = bv_row_it->second;
+    // MB: this could be a method probably
+    {
+#if FAST_RATIONALS
+        const Real inverse = -FastRational_inverse( a );
+#else
+        const Real inverse = -1 / a;
+#endif
+        // remove the non-basicv variavble from the representations
+        polynomial.erase(nv);
+        // update all other coefficients, let the columns know the row has changed row_variable
+        for (auto & term : polynomial) {
+            assert(lva[term.first].isBasic() == false);
+            term.second *= inverse;
+            // fix the column representation
             auto & col = col_occ_list.at(term.first);
             assert(col.find(bv) != col.end());
             col.erase(bv);
             col.insert(nv); // step 3.
         }
-    }
+//        columns representations of bv and nv are fixed later!
+//        add coefficient for the basic variable
+        polynomial.emplace(bv, -inverse);
+        row_polynomials.emplace(nv, polynomial); // step 1. completed
+        row_polynomials.erase(bv_row_it); // step 2. completed
 
+        int row_id = lva[bv].getRowId();
+        lva[nv].setRowId(row_id);
+        lva[bv].setRowId(-1);
+        assert(rows[row_id] == bv);
+        rows[row_id] = nv;
+
+        lva[bv].setNonbasic();
+        lva[nv].setBasic();
+        // the row representation has been successfully swapped from bv to nv and the columns know about the changed now
+    }
     // now substitute the polynomial in all rows where the non-basic variable occurred previously
     // we are using polynomial computed in the previous step
     col_occ_list.at(nv).erase(bv);

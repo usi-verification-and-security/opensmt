@@ -698,7 +698,7 @@ inline void additionAssign(FastRational& a, const FastRational& b) {
                 a.num = zn;
                 a.den = zd;
             }
-            a.kill_mpq();
+            assert(!a.has_mpq);
             return;
         }
     }
@@ -745,7 +745,7 @@ inline void multiplicationAssign(FastRational& a, const FastRational& b) {
         CHECK_UWORD(zd, ulword(a.den/common2) * (b.den/common1));
         a.num = zn;
         a.den = zd;
-        a.kill_mpq();
+        assert(!a.has_mpq);
         return;
     }
 
