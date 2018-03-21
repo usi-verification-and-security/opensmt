@@ -14,7 +14,7 @@ PRIVATE
 )
 
 install(FILES 
-Global.h FastRational.h XAlloc.h Alloc.h StringMap.h SigMap.h Timer.h IntTypes.h
+    Global.h FastRational.h XAlloc.h Alloc.h StringMap.h SigMap.h Timer.h IntTypes.h Real.h
 DESTINATION ${INSTALL_HEADERS_DIR})
 
 
