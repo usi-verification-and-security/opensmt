@@ -1582,7 +1582,11 @@ lbool Logic::retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHas
         } else if (isBoolAtom(tr)) {
             PTRef term = sgn == l_True ? getTerm_true() : getTerm_false();
             if (substs.has(tr)) {
-                if (term != substs[tr].tr) return l_False;
+                if (substs[tr].tr==getTerm_true() || substs[tr].tr==getTerm_false()) {
+                    if (term != substs[tr].tr) {
+                        return l_False;
+                    }
+                }
             } else substs.insert(tr, PtAsgn(term, l_True));
         }
     }
