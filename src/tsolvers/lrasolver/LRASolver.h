@@ -36,6 +36,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "LRALogic.h"
 #include "TSolver.h"
 #include "LRAModel.h"
+#include "Tableau.h"
+#include "Polynomial.h"
 
 #include <unordered_set>
 #include <unordered_map>
@@ -81,19 +83,9 @@ class LRASolver: public TSolver
 {
 private:
 
-    struct LVRefPair { LVRef p1; LVRef p2; };
-//    vector<opensmt::Real*> numbers_pool;    // Collect numbers.  Should work as a simple memory managemet system
     LRALogic&            logic;
     LAVarAllocator       lva;
     LAVarStore           lavarStore;
-
-//    BindedRowsAllocator  bra;
-//    BindedRowsStore      bindedRowsStore;
-//
-//    PolyTermAllocator    pta;
-//    PolyAllocator        pa;
-//    PolyStore            polyStore;
-
 
     LABoundAllocator     ba;
     LABoundListAllocator bla;
@@ -109,14 +101,7 @@ private:
     opensmt::Real delta; // The size of one delta.  Set through computeModel()
     unsigned bland_threshold;
     LRASolverStats tsolver_stats;
-    void initSlackVar(LVRef s);
     void setBound(PTRef leq);
-
-//    opensmt::Real *newReal(const Real *old);
-
-    int debug_check_count;
-    int debug_assert_count;
-    int debug_pivot_sum_count;
 
 public:
 
@@ -133,7 +118,6 @@ public:
     void  popBacktrackPoint  ( ) override;                       // Backtrack to last saved point
     void  popBacktrackPoints  ( unsigned int ) override;         // Backtrack given number of saved points
     void  fixStackConsistency( );                                // Adjust the models so that non-basic (column) variables do not break asserted bounds
-    void  fixCandidates( );                                      // Reset row candidates for possible out of bounds
 
 
     // Return the conflicting bounds
@@ -142,7 +126,6 @@ public:
 
     LRALogic&  getLogic() override { return logic; }
     bool       isValid(PTRef tr) override;
-    const void getRemoved(vec<PTRef>&) const;  // Fill the vector with the vars removed due to not having bounds
 
 #ifdef PRODUCE_PROOF
     TheoryInterpolator* getTheoryInterpolator() override { return nullptr; }
@@ -154,24 +137,39 @@ public:
 #endif
 
 protected:
+    Tableau tableau;
+
+    LVRef exprToLVar(PTRef expr); // Ensures this term and all variables in it has corresponding LVAR.  Returns the LAVar for the term.
+    void pivot(LVRef basic, LVRef nonBasic);
+
+
+private:
+    Polynomial expressionToLVarPoly(PTRef expression);
+    LVRef getBasicVarToFixByBland() const;
+    LVRef getBasicVarToFixByShortestPoly() const;
+    LVRef findNonBasicForPivotByBland(LVRef basicVar);
+    LVRef findNonBasicForPivotByHeuristic(LVRef basicVar);
+    void updateValues(LVRef basicVar, LVRef nonBasicVar);
+
+
+
+
+
+protected:
     // vector in which witnesses for unsatisfiability are stored
     vector<opensmt::Real> explanationCoefficients;
 
-    vec<LVRef> columns;                 // The columns
-    vec<LVRef> rows;                    // The rows
-    std::unordered_map<LVRef, std::unordered_map<LVRef, Real,LVRefHash>, LVRefHash> row_polynomials;
-    std::unordered_map<LVRef, std::unordered_set<LVRef, LVRefHash>, LVRefHash> col_occ_list;
-    template<class T> inline T max(T a, T b) const { return a > b ? a : b; }
     bool assertBoundOnVar(LVRef it, LABoundRef it_i);
 
     vector<unsigned> checks_history;
 
     unsigned nVars() const { return lva.getNumVars(); }
+    void  fixCandidates( );                                      // Reset row candidates for possible out of bounds
 
 private:
 //    void getReal(opensmt::Real*&, const PTRef);              // Get a new real possibly using the number pool
     opensmt::Real getReal(PTRef);
-    LVRef constructLAVarSystem(PTRef term);                 // Find a LAVar for term and all LA vars appearing in term.  Return the LAVar for the term.  iu
+
     LVRef getLAVar_single(PTRef term);                      // Initialize a new LA var if needed, otherwise return the old var
     bool hasVar(PTRef expr);
     void setNonbasic(LVRef);
@@ -180,7 +178,7 @@ private:
 //    void removeRow(PolyRef pr);                                // Remove the row corresponding to v
 //    void removeCol(LVRef v);                                // Remove the col corresponding to v
     void update( LVRef, const Delta & );                    // Updates the bounds after constraint pushing
-    void pivotAndUpdate( LVRef, LVRef, const Delta &);      // Updates the tableau after constraint pushing
+    //void pivotAndUpdate( LVRef, LVRef, const Delta &);      // Updates the tableau after constraint pushing
     void getConflictingBounds( LVRef, vec<PTRef> & );       // Returns the bounds conflicting with the actual model
     void getDeducedBounds( const Delta& c, BoundT, vec<PtAsgn_reason>& dst, SolverId solver_id ); // find possible deductions by value c
     void getDeducedBounds( BoundT, vec<PtAsgn_reason>& dst, SolverId solver_id );                 // find possible deductions for actual bounds values
@@ -199,7 +197,7 @@ private:
     LRAModel model;
 
     // Out of bound candidates
-    std::unordered_set<LVRef, LVRefHash> candidates;
+    mutable std::unordered_set<LVRef, LVRefHash> candidates;
 
     // Model & bounds
     bool isEquality(LVRef) const;
