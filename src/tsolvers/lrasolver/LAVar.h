@@ -81,7 +81,7 @@ public:
 //    LABoundListRef getBounds()      const { return bounds; }
 //    void setBounds(LABoundListRef l)      { bounds = l; }
 
-    inline bool isBasic()           const { return header.basic; } // Checks if current LAVar is Basic in current solver state
+    //inline bool isBasic()           const { return header.basic; } // Checks if current LAVar is Basic in current solver state
 
     inline int  ID()                const { return header.id; } // Return the ID of the LAVar
     inline void setNonbasic();           // Make LAVar Nonbasic

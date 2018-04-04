@@ -117,7 +117,6 @@ public:
     void  pushBacktrackPoint ( ) override;                       // Push a backtrack point
     void  popBacktrackPoint  ( ) override;                       // Backtrack to last saved point
     void  popBacktrackPoints  ( unsigned int ) override;         // Backtrack given number of saved points
-    void  fixStackConsistency( );                                // Adjust the models so that non-basic (column) variables do not break asserted bounds
 
 
     // Return the conflicting bounds
@@ -172,12 +171,10 @@ private:
 
     LVRef getLAVar_single(PTRef term);                      // Initialize a new LA var if needed, otherwise return the old var
     bool hasVar(PTRef expr);
-    void setNonbasic(LVRef);
-    void setBasic(LVRef);
 //    void doGaussianElimination( );                          // Performs Gaussian elimination of all redundant terms in the Tableau
 //    void removeRow(PolyRef pr);                                // Remove the row corresponding to v
 //    void removeCol(LVRef v);                                // Remove the col corresponding to v
-    void update( LVRef, const Delta & );                    // Updates the bounds after constraint pushing
+    void changeValueBy( LVRef, const Delta & );                    // Updates the bounds after constraint pushing
     //void pivotAndUpdate( LVRef, LVRef, const Delta &);      // Updates the tableau after constraint pushing
     void getConflictingBounds( LVRef, vec<PTRef> & );       // Returns the bounds conflicting with the actual model
     void getDeducedBounds( const Delta& c, BoundT, vec<PtAsgn_reason>& dst, SolverId solver_id ); // find possible deductions by value c
@@ -264,12 +261,10 @@ private:
     char* printExplanation(PTRef tr) override { return printValue(tr); } // Implement later...
     void isProperLeq(PTRef tr);  // The Leq term conforms to the assumptions of its form.  Only asserts.
     char* printVar(LVRef v);
-    bool valueConsistent(LVRef v); // Debug: Checks that the value of v in the model is consistent with the evaluated value of the polynomial of v in the same model.
-    bool stackOk();
-    bool checkConsistency();
-    bool checkTableauConsistency();
-    bool checkRowConsistency();
-    bool checkColumnConsistency();
+    bool valueConsistent(LVRef v) const; // Debug: Checks that the value of v in the model is consistent with the evaluated value of the polynomial of v in the same model.
+    bool checkValueConsistency() const;
+    bool invariantHolds() const;
+    bool checkTableauConsistency() const;
     void crashInconsistency(LVRef v, int line);
 };
 

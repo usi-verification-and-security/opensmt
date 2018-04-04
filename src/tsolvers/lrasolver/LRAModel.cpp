@@ -135,7 +135,7 @@ void LRAModel::printModelState()
         if (has_model[v]) {
             int id = lva[v].ID();
             vec<ModelEl> &vals = int_model[id];
-            printf("Var %s [%s], %s, has %d models\n", lva.printVar(v), logic.pp(lva[v].getPTRef()), lva[v].isBasic() ? "basic" : "non-basic", vals.size());
+            printf("Var %s [%s], has %d models\n", lva.printVar(v), logic.pp(lva[v].getPTRef()), vals.size());
             char *buf = (char*) malloc(1);
             buf[0] = '\0';
             for (int j = 0; j < vals.size(); j++) {
