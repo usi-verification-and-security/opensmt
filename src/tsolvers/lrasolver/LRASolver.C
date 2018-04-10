@@ -733,37 +733,14 @@ bool LRASolver::assertBoundOnVar(LVRef it, LABoundRef itBound_ref)
 //
 void LRASolver::pushBacktrackPoint( )
 {
-    // cerr << "; push " << pushed_constraints.size( ) << endl;
     // Check if any updates need to be repeated after backtrack
     model.pushBacktrackPoint();
 //    printf(" -> Push backtrack point.  Following is the state of the model after the push\n");
 //    model.printModelState();
 
-//      cerr << "; re-apply " << pushed_constraints.size( ) << " - " << checks_history.back( ) << endl;
-
     // Update the generic deductions state
     TSolver::pushBacktrackPoint();
 }
-
-////
-//// Pop the solver one level up
-////
-//void LRASolver::popBacktrackPoint( ) {
-//    PtAsgn dec = model.popBacktrackPoint();
-//    if (dec != PtAsgn_Undef)
-//        clearPolarity(dec.tr);
-////    printf(" -> Pop backtrack point.  Following is the state of the model after the pop\n");
-////    model.printModelState();
-//
-//    fixStackConsistency();
-//    assert(invariantHolds());
-//
-//    first_update_after_backtrack = true;
-//
-//
-//    setStatus(SAT);
-//    TSolver::popBacktrackPoint();
-//}
 
 // Pop the solver one level up
 // NOTE: this method should not be used, pop multiple points is more efficient with popBacktrackPoints rather than popping one by one
@@ -809,6 +786,7 @@ void LRASolver::pivot( const LVRef bv, const LVRef nv){
 void LRASolver::changeValueBy(LVRef var, const Delta & diff) {
     // update var's value
     model.write(var, model.read(var) + diff);
+    candidates.insert(var);
     // update all (active) rows where var is present
     for( LVRef row : tableau.getColumn(var)){
         assert(tableau.isBasic(row));
@@ -1561,6 +1539,20 @@ bool LRASolver::invariantHolds() const
     for (auto var : tableau.getNonBasicVars()){
         assert(model.hasModel(var));
         if (isModelOutOfBounds(var)) {
+//            auto & bounds = model.int_lbounds[lva[var].ID()];
+//            for (int i = 0; i < bounds.size(); ++i){
+//                auto & b = ba[bounds[i].br];
+//                std::cout << "Bound with value: " << b.getValue().printValue() << " and level: " << bounds[i].dl << '\n';
+//            }
+//            auto & ubounds = model.int_ubounds[lva[var].ID()];
+//            for (int i = 0; i < ubounds.size(); ++i){
+//                auto & b = ba[ubounds[i].br];
+//                std::cout << "Bound with value: " << b.getValue().printValue() << " and level: " << ubounds[i].dl << '\n';
+//            }
+//            auto & vals = model.int_model[lva[var].ID()];
+//            for (int i = 0; i < vals.size(); ++i){
+//                std::cout << "Eval with value: " << vals[i].d.printValue() << " and level: " << vals[i].dl << '\n';
+//            }
             rval = false;
             printf("Non-basic (column) LRA var %s has value %s <= %s <= %s\n",
                    lva.printVar(var), model.Lb(var).printValue(),
