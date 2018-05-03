@@ -22,3 +22,5 @@ target_sources(parsers
     PRIVATE ${FLEX_smt2newScanner_OUTPUTS}
 )
 
+install(FILES smt2newcontext.h
+DESTINATION ${INSTALL_HEADERS_DIR})

@@ -1,5 +1,5 @@
 set(OBJECTS_TO_ADD
-$<TARGET_OBJECTS:smtsolvers> 
+$<TARGET_OBJECTS:smtsolvers>
 $<TARGET_OBJECTS:parsers>
 $<TARGET_OBJECTS:logics>
 $<TARGET_OBJECTS:options>
@@ -38,7 +38,7 @@ PRIVATE ${PRIVATE_SOURCES_TO_ADD}
 PUBLIC ${PUBLIC_SOURCES_TO_ADD}
 )
 
-set(OBJECTS_TO_ADD $<TARGET_OBJECTS:api> ${OBJECTS_TO_ADD}) 
+set(OBJECTS_TO_ADD $<TARGET_OBJECTS:api> ${OBJECTS_TO_ADD})
 
 add_library(api_shared SHARED ${OBJECTS_TO_ADD})
 add_library(api_static STATIC ${OBJECTS_TO_ADD})
@@ -53,6 +53,5 @@ set_target_properties(api_shared PROPERTIES OUTPUT_NAME opensmt2)
 
 install(TARGETS api_shared DESTINATION lib)
 
-install(FILES Opensmt.h smt2tokens.h MainSolver.h 
+install(FILES Opensmt.h smt2tokens.h MainSolver.h Interpret.h
 DESTINATION ${INSTALL_HEADERS_DIR})
-
