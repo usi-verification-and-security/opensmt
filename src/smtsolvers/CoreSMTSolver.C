@@ -2602,6 +2602,11 @@ bool CoreSMTSolver::LApropagate_wrapper()
 // both children have been constructed and whether any of its two
 // children has been shown unsatisfiable either directly or with a
 // backjump.
+//
+// The parameter d is the maximum depth of a path, used for splitting.
+// If d < 0, there is no maximum depth and the search continues on a
+// branch until it is shown unsatisfiable.
+//
 lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
 {
 
@@ -2689,7 +2694,7 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
 #endif
             continue;
         }
-        if (n.d == d)
+        if ((d >= 0) && n.d == d)
         {
 #ifdef LADEBUG
             printf("Producing a split:\n");;

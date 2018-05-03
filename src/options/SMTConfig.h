@@ -282,6 +282,7 @@ public:
   static const char* o_sat_split_num;
   static const char* o_sat_split_fix_vars; // Like split_num, but give the number of vars to fix instead
   static const char* o_sat_split_asap;
+  static const char* o_sat_pure_lookahead;
   static const char* o_sat_split_units;
   static const char* o_sat_split_preference;
   static const char* o_sat_split_test_cube_and_conquer;
@@ -761,6 +762,10 @@ public:
   int sat_split_asap() const {
       return optionTable.has(o_sat_split_asap) ?
               optionTable[o_sat_split_asap]->getValue().numval :
+              0; }
+  int sat_pure_lookahead() const {
+      return optionTable.has(o_sat_pure_lookahead) ?
+              optionTable[o_sat_pure_lookahead]->getValue().numval :
               0; }
   int randomize_lookahead() const {
       return optionTable.has(o_sat_split_randomize_lookahead) ?
