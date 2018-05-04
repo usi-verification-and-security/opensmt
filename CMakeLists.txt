@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.3)
 project(opensmt)
 
 set(CMAKE_CXX_STANDARD 11)
@@ -10,8 +10,8 @@ get_filename_component(CMAKE_MODULE_PATH
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-message(${CMAKE_C_COMPILER_ID})
-message(${CMAKE_CXX_COMPILER_ID})
+#message(${CMAKE_C_COMPILER_ID})
+#message(${CMAKE_CXX_COMPILER_ID})
 
 set(INSTALL_HEADERS_DIR include/opensmt)
 
@@ -98,4 +98,15 @@ endif ()
 
 add_subdirectory(${CMAKE_SOURCE_DIR})
 
+################# TESTING #############################################
+option(PACKAGE_TESTS "Build the tests" ON)
+if(PACKAGE_TESTS)
+    if(CMAKE_VERSION VERSION_LESS 3.11)
+        MESSAGE(WARNING "Minimum CMAKE version for building tests is 3.11")
+    else(CMAKE_VERSION VERSION_LESS 3.11)
+        enable_testing()
+        add_subdirectory(${PROJECT_SOURCE_DIR}/test)
+    endif(CMAKE_VERSION VERSION_LESS 3.11)
+endif()
+#########################################################################
 install(FILES ${CMAKE_SOURCE_DIR}/opensmt2.h DESTINATION ${INSTALL_HEADERS_DIR})
