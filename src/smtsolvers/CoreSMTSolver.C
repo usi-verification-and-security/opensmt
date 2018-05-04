@@ -2521,7 +2521,7 @@ lbool CoreSMTSolver::lookaheadSplit2(int d)
     if (res == l_True)
     {
         model.growTo(nVars());
-        for (int i = 0; i < nVars(); i++)
+        for (int i = 0; i < dec_vars; i++) // TODO: Fix this at some point
             model[i] = value(trail[i]);
     }
     if (res == l_False)
@@ -2554,15 +2554,19 @@ bool CoreSMTSolver::LApropagate_wrapper()
             printf("Conflict: I would need to backtrack from %d to %d\n", decisionLevel(), out_btlevel);
 #endif
             cancelUntil(out_btlevel);
-            CRef crd = CRef_Undef;
-            if (out_learnt.size() > 1)
+            assert(value(out_learnt[0]) == l_Undef);
+            if (out_learnt.size() == 1)
             {
-                crd = ca.alloc(out_learnt, true);
+                uncheckedEnqueue(out_learnt[0]);
+            }
+            else
+            {
+                CRef crd = ca.alloc(out_learnt, true);
                 learnts.push(crd);
                 attachClause(crd);
+                uncheckedEnqueue(out_learnt[0], crd);
+
             }
-            assert(value(out_learnt[0]) == l_Undef);
-            uncheckedEnqueue(out_learnt[0], crd);
             diff = true;
         }
         if (!diff)
@@ -2609,6 +2613,7 @@ bool CoreSMTSolver::LApropagate_wrapper()
 //
 lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
 {
+    int la_split_count = 0;
 
     updateRound();
     vec<LANode*> queue;
@@ -2618,6 +2623,7 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
 
     while (queue.size() != 0)
     {
+//        printf("LA split count %d\n", la_split_count++);
         LANode& n = *queue.last();
         queue.pop();
 #ifdef LADEBUG
@@ -2654,11 +2660,15 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
                 int curr_dl = decisionLevel();
                 uncheckedEnqueue(path[i]);
                 bool res = LApropagate_wrapper();
-                if (res == false || curr_dl != decisionLevel())
+                // Here it is possible that the solver is on level 0 and in an inconsistent state.  How can I check this?
+                if (res == false) {
+                    return l_False; // Indicate unsatisfiability
+                }
+                if (curr_dl != decisionLevel())
                 {
 
-                    printf(" -> Path this far is unsatisfiable already\n");
-                    printf("Marking the subtree false:\n");
+                    cerr << " -> Path this far is unsatisfiable already\n";
+                    cerr << "Marking the subtree false:\n";
                     n.print();
 
                     n.v = l_False;

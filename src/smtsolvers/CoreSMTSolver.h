@@ -313,18 +313,18 @@ public:
     void print()
     {
         for (int i = 0; i < d; i++)
-            printf(" ");
-        printf("%s%d [%s, %d]", sign(l) ? "-" : "", var(l), v == l_False ? "unsat" : "open", d);
+            dprintf(STDERR_FILENO, " ");
+        dprintf(STDERR_FILENO, "%s%d [%s, %d]", sign(l) ? "-" : "", var(l), v == l_False ? "unsat" : "open", d);
 
         if (c1 != NULL)
         {
-            printf(" c1");
+            dprintf(STDERR_FILENO, " c1");
         }
         if (c2 != NULL)
         {
-            printf(" c2");
+            dprintf(STDERR_FILENO, " c2");
         }
-        printf("\n");
+        dprintf(STDERR_FILENO, "\n");
         if (c1 != NULL)
             c1->print();
         if (c2 != NULL)
