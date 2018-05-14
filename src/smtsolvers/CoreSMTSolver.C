@@ -2667,9 +2667,9 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
                 if (curr_dl != decisionLevel())
                 {
 
-                    cerr << " -> Path this far is unsatisfiable already\n";
-                    cerr << "Marking the subtree false:\n";
-                    n.print();
+//                    cerr << " -> Path this far is unsatisfiable already\n";
+//                    cerr << "Marking the subtree false:\n";
+//                    n.print();
 
                     n.v = l_False;
                     break;
