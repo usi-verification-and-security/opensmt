@@ -2510,13 +2510,21 @@ bool CoreSMTSolver::UBVal::safeToSkip(const ExVal& e) const
     return false;
 }
 
-lbool CoreSMTSolver::lookaheadSplit2(int d)
+lbool CoreSMTSolver::lookaheadSplit(int d)
 {
     declareVarsToTheories();
+
+    double nof_conflicts = restart_first;
+    const size_t old_conflicts = nLearnts();
+
     int idx = 0;
     bool first_model_found_prev = first_model_found;
     first_model_found = true;
-    lbool res = lookaheadSplit2(d, idx);
+    lbool res = l_Undef;
+    while (res == l_Undef) {
+        lbool res = lookaheadSplit(d, idx, nof_conflicts);
+        nof_conflicts = restartNextLimit(nof_conflicts);
+    }
     first_model_found = first_model_found_prev;
     if (res == l_True)
     {
@@ -2532,10 +2540,18 @@ lbool CoreSMTSolver::lookaheadSplit2(int d)
     return res;
 }
 
-// Function for making a propagation.  Returns false if the there was a conflict.
+//
+// Function for making a propagation.
+// max_confl is a bound on the number of conflicts the wrapper is allowed to do
+// Returns l_Undef if the bound on conflicts is reached.
+// Returns l_False if the there was a conflict.
+// Returns l_True if there was no conflict.
+//
 // Backtracks the solver to the correct decision level and continues until no
 // new conflicts or propagations are available in theory or in unit propagation
-bool CoreSMTSolver::LApropagate_wrapper()
+//
+
+lbool CoreSMTSolver::LApropagate_wrapper(int& confl_quota)
 {
     CRef cr;
     bool diff;
@@ -2545,7 +2561,10 @@ bool CoreSMTSolver::LApropagate_wrapper()
         while ((cr = propagate()) != CRef_Undef)
         {
             if (decisionLevel() == 0)
-                return false; // Unsat
+                return l_False; // Unsat
+            confl_quota --;
+            if (confl_quota == 0)
+                return l_Undef;
 
             vec<Lit> out_learnt;
             int out_btlevel;
@@ -2577,7 +2596,7 @@ bool CoreSMTSolver::LApropagate_wrapper()
 #ifdef LADEBUG
                 printf("Theory unsatisfiability\n");
 #endif
-                return false; // Unsat
+                return l_False; // Unsat
             }
             else if (res == 2)
             {
@@ -2597,7 +2616,7 @@ bool CoreSMTSolver::LApropagate_wrapper()
         }
     } while (diff);
 
-    return true;
+    return l_True;
 }
 
 // The new try for the lookahead with backjumping:
@@ -2610,8 +2629,10 @@ bool CoreSMTSolver::LApropagate_wrapper()
 // The parameter d is the maximum depth of a path, used for splitting.
 // If d < 0, there is no maximum depth and the search continues on a
 // branch until it is shown unsatisfiable.
+// parameter idx store where we were last time in checking the variables
+// confl_quota is the maximum number of conflicts that we're allowed to collect before a restart
 //
-lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
+lbool CoreSMTSolver::lookaheadSplit(int d, int &idx, int confl_quota)
 {
     int la_split_count = 0;
 
@@ -2659,10 +2680,14 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
 #endif
                 int curr_dl = decisionLevel();
                 uncheckedEnqueue(path[i]);
-                bool res = LApropagate_wrapper();
+                lbool res = LApropagate_wrapper(confl_quota);
                 // Here it is possible that the solver is on level 0 and in an inconsistent state.  How can I check this?
-                if (res == false) {
+                if (res == l_False) {
                     return l_False; // Indicate unsatisfiability
+                }
+                else if (res == l_Undef) {
+                    cancelUntil(0);
+                    return l_Undef; // Do a restart
                 }
                 if (curr_dl != decisionLevel())
                 {
@@ -2722,7 +2747,7 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
         // Do the lookahead
         assert(decisionLevel() == n.d);
         Lit best;
-        lbool res = lookahead_loop(best, idx);
+        lbool res = lookahead_loop(best, idx, confl_quota);
         assert(decisionLevel() <= n.d);
 
         if (res == l_False)
@@ -2767,7 +2792,7 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
     return l_Undef;
 }
 
-lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
+lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx, int &confl_quota)
 {
     if (checkTheory(true) != 1)
     {
@@ -2828,6 +2853,7 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
                 if (checkTheory(true) != 1)
                     return l_False; // Problem is trivially unsat
                 assert(checkTheory(true) == 1);
+#ifdef LADEBUG
                 for (int j = 0; j < clauses.size(); j++)
                 {
                     Clause& c = ca[clauses[j]];
@@ -2841,6 +2867,7 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
                     }
                     assert(k < c.size());
                 }
+#endif
                 best = lit_Undef;
                 return l_True; // Stands for SAT
             }
@@ -2863,12 +2890,18 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
            printf("Checking lit %s%d\n", p == 0 ? "" : "-", v);
 #endif
             uncheckedEnqueue(l);
-            bool res = LApropagate_wrapper();
-            if (res == false)
+            lbool res = LApropagate_wrapper(confl_quota);
+            if (res == l_False)
             {
                 best = lit_Undef;
                 return l_False;
             }
+            else if (res == l_Undef)
+            {
+                cancelUntil(0);
+                return l_Undef;
+            }
+            // Else we go on
             if (decisionLevel() == d+1)
             {
 #ifdef LADEBUG

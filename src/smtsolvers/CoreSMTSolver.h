@@ -830,9 +830,9 @@ protected:
     void     rebuildOrderHeap ();
 
     void     updateLAUB       (Lit l, int props);                                      // Check the lookahead upper bound and update it if necessary
-    lbool    lookahead_loop   (Lit& best, int &idx);
+    lbool    lookahead_loop   (Lit& best, int &idx, int &confl_quota);
     void     setLAExact       (Var v, int pprops, int nprops);                         // Set the exact la value
-    bool     LApropagate_wrapper();
+    lbool    LApropagate_wrapper(int &confl_quota);
 
     // Maintaining Variable/Clause activity:
     //
@@ -1134,8 +1134,8 @@ protected:
     // Added Code
     //=================================================================================================
 public:
-    lbool   lookaheadSplit2(int d, int &idx);
-    lbool   lookaheadSplit2(int d);
+    lbool   lookaheadSplit(int d, int &idx, int confl_quota);
+    lbool   lookaheadSplit(int d);
     void    printTrace() const;
 
 protected:
