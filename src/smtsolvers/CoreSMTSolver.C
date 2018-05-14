@@ -2522,6 +2522,7 @@ lbool CoreSMTSolver::lookaheadSplit(int d)
     first_model_found = true;
     lbool res = l_Undef;
     while (res == l_Undef) {
+        cerr << "; Doing lookahead for " << nof_conflicts << " conflicts\n";
         lbool res = lookaheadSplit(d, idx, nof_conflicts);
         nof_conflicts = restartNextLimit(nof_conflicts);
     }
@@ -2563,6 +2564,7 @@ lbool CoreSMTSolver::LApropagate_wrapper(int& confl_quota)
             if (decisionLevel() == 0)
                 return l_False; // Unsat
             confl_quota --;
+            cerr << "; Got a conflict, quota now " << confl_quota << "\n";
             if (confl_quota == 0)
                 return l_Undef;
 
@@ -2612,7 +2614,10 @@ lbool CoreSMTSolver::LApropagate_wrapper(int& confl_quota)
                 printf("Theory conflict\n");
 #endif
                 diff = true;
-            }
+                confl_quota --;
+                cerr << "; Got a theory conflict, quota now " << confl_quota << "\n";
+                if (confl_quota == 0)
+                    return l_Undef;            }
         }
     } while (diff);
 
