@@ -2756,8 +2756,12 @@ lbool CoreSMTSolver::lookaheadSplit(int d, int &idx, int confl_quota)
         lbool res = lookahead_loop(best, idx, confl_quota);
         assert(decisionLevel() <= n.d);
 
-        if (res == l_False)
+        if (res == l_False) {
             return l_False;
+        }
+        else if (res == l_Undef) {
+            return l_Undef;
+        }
         else if (decisionLevel() < n.d)
         {
 #ifdef LADEBUG
