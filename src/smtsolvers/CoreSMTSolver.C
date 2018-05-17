@@ -2910,7 +2910,7 @@ CoreSMTSolver::laresult CoreSMTSolver::lookahead_loop(Lit& best, int &idx, int &
             if (res == l_False)
             {
                 best = lit_Undef;
-                return la_unsat;
+                return la_tl_unsat;
             }
             else if (res == l_Undef)
             {
