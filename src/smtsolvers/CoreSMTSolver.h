@@ -649,6 +649,23 @@ protected:
         }
     };
 
+    class laresult {
+    public:
+        enum result { tl_unsat, sat, restart, unsat, ok };
+    private:
+        result value;
+    public:
+        explicit laresult(result v) : value(v) {}
+        bool operator == (laresult o) const { return o.value == value; }
+        bool operator != (laresult o) const { return o.value != value; }
+    };
+
+    laresult la_tl_unsat;
+    laresult la_sat;
+    laresult la_restart;
+    laresult la_unsat;
+    laresult la_ok;
+
     // Solver state:
     //
     bool                ok;               // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
@@ -830,7 +847,7 @@ protected:
     void     rebuildOrderHeap ();
 
     void     updateLAUB       (Lit l, int props);                                      // Check the lookahead upper bound and update it if necessary
-    lbool    lookahead_loop   (Lit& best, int &idx, int &confl_quota);
+    laresult lookahead_loop   (Lit& best, int &idx, int &confl_quota);
     void     setLAExact       (Var v, int pprops, int nprops);                         // Set the exact la value
     lbool    LApropagate_wrapper(int &confl_quota);
 

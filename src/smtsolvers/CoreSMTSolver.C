@@ -90,6 +90,11 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , learnts_size(0) , all_learnts(0), n_clauses(0)
     , learnt_theory_conflicts(0)
     , top_level_lits        (0)
+    , la_tl_unsat           (laresult::tl_unsat)
+    , la_sat                (laresult::sat)
+    , la_restart            (laresult::restart)
+    , la_unsat              (laresult::unsat)
+    , la_ok                 (laresult::ok)
     , ok                    (true)
     , cla_inc               (1)
     , var_inc               (1)
@@ -2753,17 +2758,18 @@ lbool CoreSMTSolver::lookaheadSplit(int d, int &idx, int confl_quota)
         // Do the lookahead
         assert(decisionLevel() == n.d);
         Lit best;
-        lbool res = lookahead_loop(best, idx, confl_quota);
+        laresult res = lookahead_loop(best, idx, confl_quota);
         assert(decisionLevel() <= n.d);
 
-        if (res == l_False) {
+        if (res == la_tl_unsat) {
             return l_False;
         }
-        else if (res == l_Undef) {
+        else if (res == la_restart) {
             return l_Undef;
         }
-        else if (decisionLevel() < n.d)
+        else if (res == la_unsat)
         {
+            assert(decisionLevel() < n.d);
 #ifdef LADEBUG
             printf("Unsatisfiability detected after lookahead\n");
 #endif
@@ -2775,7 +2781,7 @@ lbool CoreSMTSolver::lookaheadSplit(int d, int &idx, int confl_quota)
             queue.push(&n);
             continue;
         }
-        else if (res == l_True)
+        else if (res == la_sat)
         {
 #ifdef LADEBUG
             printf("Lookahead claims to have found a satisfying truth assignment:\n");
@@ -2783,7 +2789,7 @@ lbool CoreSMTSolver::lookaheadSplit(int d, int &idx, int confl_quota)
 #endif
             return l_True;
         }
-
+        assert(res == la_ok);
         assert(best != lit_Undef);
 
         LANode* c1 = new LANode(&n, best, l_Undef, n.d+1);
@@ -2802,14 +2808,14 @@ lbool CoreSMTSolver::lookaheadSplit(int d, int &idx, int confl_quota)
     return l_Undef;
 }
 
-lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx, int &confl_quota)
+CoreSMTSolver::laresult CoreSMTSolver::lookahead_loop(Lit& best, int &idx, int &confl_quota)
 {
     if (checkTheory(true) != 1)
     {
 #ifdef LADEBUG
         printf("Already unsatisfiable at entering the lookahead loop\n");
 #endif
-        return l_False;
+        return la_unsat;
     }
 
     updateRound();
@@ -2861,7 +2867,7 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx, int &confl_quota)
                 printf("All vars set?\n");
 #endif
                 if (checkTheory(true) != 1)
-                    return l_False; // Problem is trivially unsat
+                    return la_tl_unsat; // Problem is trivially unsat
                 assert(checkTheory(true) == 1);
 #ifdef LADEBUG
                 for (int j = 0; j < clauses.size(); j++)
@@ -2879,7 +2885,7 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx, int &confl_quota)
                 }
 #endif
                 best = lit_Undef;
-                return l_True; // Stands for SAT
+                return la_sat; // Stands for SAT
             }
             continue;
         }
@@ -2904,12 +2910,12 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx, int &confl_quota)
             if (res == l_False)
             {
                 best = lit_Undef;
-                return l_False;
+                return la_unsat;
             }
             else if (res == l_Undef)
             {
                 cancelUntil(0);
-                return l_Undef;
+                return la_restart;
             }
             // Else we go on
             if (decisionLevel() == d+1)
@@ -2935,7 +2941,7 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx, int &confl_quota)
 #endif
                 // Backtracking should happen.
                 best = lit_Undef;
-                return l_Undef;
+                return la_restart;
             }
             p == 0 ? p0 = trail.size() : p1 = trail.size();
             // Update also the clause deletion heuristic?
@@ -2956,7 +2962,7 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx, int &confl_quota)
 #ifdef LADEBUG
         printf("All variables are already set, so we have nothing to branch on and this is a SAT answer\n");
 #endif
-        return l_True;
+        return la_sat;
     }
     best = buf_LABests.getLit();
     assert(best != lit_Undef);
@@ -2968,7 +2974,7 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx, int &confl_quota)
 #endif
     idx = (idx + i) % nVars();
     if (!theory_handler.getLogic().okToPartition(theory_handler.varToTerm(var(best)))) { unadvised_splits++; }
-    return l_Undef;
+    return la_ok;
 }
 
 void CoreSMTSolver::updateLABest(Var v)
