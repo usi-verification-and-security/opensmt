@@ -2815,7 +2815,7 @@ CoreSMTSolver::laresult CoreSMTSolver::lookahead_loop(Lit& best, int &idx, int &
 #ifdef LADEBUG
         printf("Already unsatisfiable at entering the lookahead loop\n");
 #endif
-        return la_unsat;
+        return la_tl_unsat;
     }
 
     updateRound();
