@@ -2569,7 +2569,9 @@ lbool CoreSMTSolver::LApropagate_wrapper(int& confl_quota)
             if (decisionLevel() == 0)
                 return l_False; // Unsat
             confl_quota --;
+#ifdef LADEBUG
             cerr << "; Got a conflict, quota now " << confl_quota << "\n";
+#endif
             if (confl_quota <= 0)
                 return l_Undef;
 
@@ -2620,7 +2622,9 @@ lbool CoreSMTSolver::LApropagate_wrapper(int& confl_quota)
 #endif
                 diff = true;
                 confl_quota --;
+#ifdef LADEBUG
                 cerr << "; Got a theory conflict, quota now " << confl_quota << "\n";
+#endif
                 if (confl_quota <= 0)
                     return l_Undef;
             }
