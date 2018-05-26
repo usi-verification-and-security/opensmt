@@ -190,11 +190,19 @@ public:
 
     inline unsigned size() const;
 
-    bool den_is_unit() const {
+    /* bool den_is_unit() const {
         if (has_word)
             return den == 1;
         else
             return false; //return mpq_denref(mpq) == 1; //unit.getUnit();
+    }
+    */ //I commented this out as I no loger use den_is_unit(), replaced with isInteger()
+
+    bool isInteger() const {
+        if (has_word)
+            return den == 1;
+        else
+            return mpz_fits_uint_p(mpq_denref(mpq)) && (mpz_get_ui(mpq_denref(mpq)) == 1);
     }
 
     inline FastRational ceil( ) const

@@ -163,7 +163,7 @@ const Delta LRASolver::overBound(LVRef v) const
 
 bool LRASolver::isModelInteger(LVRef v) const
 {
-    return !( model.read(v).hasDelta() || !model.read(v).R().den_is_unit() );
+    return !( model.read(v).hasDelta() || !model.read(v).R().isInteger() );
 }
 
 bool LRASolver::isEquality(LVRef v) const
@@ -1794,16 +1794,28 @@ void LRASolver::computeModel()
 //    polyStore.add(lva[s].getPolyRef(), x, *p_v);
 //}
 
+
+
+//Here starts implementation of LIA solver
+
 bool LRASolver::checkIntegersAndSplit( )
 {
-  assert(false);
-/*
+  //assert(false);
 
-  assert( config.lra_integer_solver );
-  assert( removed_by_GaussianElimination.empty( ) );
 
-  VectorLAVar::const_iterator it = columns.begin( );
-  LAVar * x;
+  //assert( config.lra_integer_solver );
+  //assert( removed_by_GaussianElimination.empty( ) );
+
+    for (int i = 0; i < columns.size(); i++) {
+        LVRef x = columns[i];
+        if (!isModelInteger(x)) {
+
+
+
+
+
+ // VectorLAVar::const_iterator it = columns.begin( );
+  //LAVar * x;
 
   //  unsigned equality_counter=0;
   //  for( ; it != columns.end( ); ++it )
@@ -1812,17 +1824,19 @@ bool LRASolver::checkIntegersAndSplit( )
   //
   //  cout << "Equalities in the complete integer check: " << equality_counter << " out of " << columns.size();
 
-  it = columns.begin( );
+  //it = columns.begin( );
 
-  for( ; it != columns.end( ); ++it )
-  {
-    assert( !( *it )->skip );
-    if( !( *it )->isModelInteger( ) )
-    {
-      x = *it;
+//  for( ; it != columns.end( ); ++it )
+//  {
+//    assert( !( *it )->skip );
+//    if( !( *it )->isModelInteger( ) )
+//    {
+      //x = *it;
 
-      // Prepare the variable to store a splitting value
+     //  Prepare the variable to store a splitting value
       Real * c = NULL;
+
+
       if( !numbers_pool.empty( ) )
       {
         c = numbers_pool.back( );
@@ -1834,20 +1848,20 @@ bool LRASolver::checkIntegersAndSplit( )
       }
 
       // Compute a splitting value
-      if( x->M( ).R( ).get_den( ) != 1 )
-      {
-        if( x->M( ).R( ).get_num( ) < 0 )
-          *c = x->M( ).R( ).get_num( ) / x->M( ).R( ).get_den( ) - 1;
-        else
-          *c = x->M( ).R( ).get_num( ) / x->M( ).R( ).get_den( );
-      }
-      else
-      {
-        if( x->M( ).D( ) < 0 )
-          *c = x->M( ).R( ) - 1;
-        else
-          *c = x->M( ).R( );
-      }
+//      if( x->M( ).R( ).get_den( ) != 1 )
+//      {
+//        if( x->M( ).R( ).get_num( ) < 0 )
+//          *c = x->M( ).R( ).get_num( ) / x->M( ).R( ).get_den( ) - 1;
+//        else
+//          *c = x->M( ).R( ).get_num( ) / x->M( ).R( ).get_den( );
+//      }
+//      else
+//      {
+//        if( x->M( ).D( ) < 0 )
+//          *c = x->M( ).R( ) - 1;
+//        else
+//          *c = x->M( ).R( );
+//      }
 
       // Check if integer splitting is possible for the current variable
       if( *c < x->L( ) && *c + 1 > x->U( ) )
@@ -1897,9 +1911,15 @@ bool LRASolver::checkIntegersAndSplit( )
   LAVar::saveModelGlobal( );
   checks_history.push_back( pushed_constraints.size( ) );
   return setStatus( SAT );
-*/
-    return false;
+
+    //return false;
 }
+}
+}
+
+// end of LIA solver implementation
+
+
 
 // We may assume that the term is of the following forms
 // (1) (* x c)
