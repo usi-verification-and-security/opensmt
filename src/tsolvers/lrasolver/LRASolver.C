@@ -1834,18 +1834,18 @@ bool LRASolver::checkIntegersAndSplit( )
       //x = *it;
 
      //  Prepare the variable to store a splitting value
-      Real * c = NULL;
-
-
-      if( !numbers_pool.empty( ) )
-      {
-        c = numbers_pool.back( );
-        numbers_pool.pop_back( );
-      }
-      else
-      {
-        c = new Real( 0 );
-      }
+//      Real * c = NULL;
+//
+//
+//      if( !numbers_pool.empty( ) )
+//      {
+//        c = numbers_pool.back( );
+//        numbers_pool.pop_back( );
+//      }
+//      else
+//      {
+//        c = new Real( 0 );
+//      }
 
       // Compute a splitting value
 //      if( x->M( ).R( ).get_den( ) != 1 )
