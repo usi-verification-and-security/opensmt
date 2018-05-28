@@ -31,6 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "LRALogic.h"
 
 class LAExpression
+
 {
     LRALogic& logic;
 public:

@@ -26,6 +26,7 @@ class LIALogic: public Logic
 {
   protected:
     Logic_t logic_type;
+    vec<opensmt::Integer*> integers;
     SymRef              sym_Int_ZERO;
     SymRef              sym_Int_ONE;
     SymRef              sym_Int_NEG;
@@ -33,8 +34,8 @@ class LIALogic: public Logic
     SymRef              sym_Int_PLUS;
     SymRef              sym_Int_TIMES;
     SymRef              sym_Int_DIV;
-    SymRef              sym_Int_MOD;
-    SymRef              sym_Int_ABS;
+    //SymRef              sym_Int_MOD;
+    //SymRef              sym_Int_ABS;
     SymRef              sym_Int_EQ; //why don't we consider equality in tk_real_eq?
     SymRef              sym_Int_LEQ;
     SymRef              sym_Int_LT;
@@ -54,14 +55,19 @@ class LIALogic: public Logic
     static const char*  tk_int_plus;
     static const char*  tk_int_times;
     static const char*  tk_int_div;
-    static const char*  tk_int_mod;
-    static const char*  tk_int_abs;
+    //static const char*  tk_int_mod;
+    //static const char*  tk_int_abs;
     static const char*  tk_int_leq;
     static const char*  tk_int_lt;
     static const char*  tk_int_geq;
     static const char*  tk_int_gt;
 
     static const char*  s_sort_integer;
+    static const char*  e_nonlinear_term;
+
+    bool split_eq;
+    Map<PTRef,bool,PTRefHash> lia_split_inequalities;
+    void visit(PTRef, Map<PTRef,PTRef,PTRefHash>&);
 
   public:
     LIALogic (SMTConfig& c);
@@ -110,14 +116,15 @@ class LIALogic: public Logic
     bool        isIntGt(PTRef tr)     const { return isIntGt(getPterm(tr).symb()); }
     bool        isIntVar(SymRef sr)   const { return isVar(sr) && sym_store[sr].rsort() == sort_INTEGER; }
     bool        isIntVar(PTRef tr)    const { return isIntVar(getPterm(tr).symb()); }
-    bool        isIntMod(PTRef tr)    const { return isIntMod(getPterm(tr).symb()); }
-    bool        isIntABS(SymRef sr)   const { return sr == sym_ABS_MOD; }
-    bool        isIntABS(PTRef tr)    const { return isIntABS(getPterm(tr).symb()); }
+    //bool        isIntMod(SymRef sr)   const { return sr == sym_Int_MOD; }
+    //bool        isIntMod(PTRef tr)    const { return isIntMod(getPterm(tr).symb()); }
+    //bool        isIntABS(SymRef sr)   const { return sr == sym_int_ABS; }
+   // bool        isIntABS(PTRef tr)    const { return isIntABS(getPterm(tr).symb()); }
     bool        isIntZero(SymRef sr)  const { return sr == sym_Int_ZERO; }
     bool        isIntZero(PTRef tr)   const { return tr == term_Int_ZERO; }
     bool        isIntOne(SymRef sr)   const { return sr == sym_Int_ONE; }
     bool        isIntOne(PTRef tr)    const { return tr == term_Int_ONE; }
-    bool        isIntMod(SymRef sr)   const { return sr == sym_Int_MOD; }
+
 
     // Integer terms are of form c, a, or (* c a) where c is a constant and a is a variable.
     bool        isIntegerTerm(PTRef tr) const;
@@ -165,12 +172,12 @@ class LIALogic: public Logic
     PTRef       mkIntGt(const PTRef arg1, const PTRef arg2) { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkIntGt(tmp); }
 
     //can you please check whether the below is correct or not for mod and abs?
-    PTRef       mkIntMod(const vec<PTRef>&, char**);
-    PTRef       mkIntMod(const vec<PTRef>& args) { char *msg; PTRef tr = mkIntMod(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    //PTRef       mkIntMod(const vec<PTRef>&, char**);
+    //PTRef       mkIntMod(const vec<PTRef>& args) { char *msg; PTRef tr = mkIntMod(args, &msg); assert(tr != PTRef_Undef); return tr; }
     //what should be in this line for calculation of the mod?
 
-    PTRef       mkIntABS(const vec<PTRef>&, char**);
-    PTRef       mkIntABS(const vec<PTRef>& args) { char *msg; PTRef tr = mkIntABS(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    //PTRef       mkIntABS(const vec<PTRef>&, char**);
+    //PTRef       mkIntABS(const vec<PTRef>& args) { char *msg; PTRef tr = mkIntABS(args, &msg); assert(tr != PTRef_Undef); return tr; }
     //what should be in this line for calculation of the abs?
 
     //should I stop here or continue to the bottom? If the latter, can you please check them for correctness (I changed few things)?
@@ -263,6 +270,5 @@ class SimplifyConstDiv : public SimplifyConst {
   public:
     SimplifyConstDiv(LIALogic& log) : SimplifyConst(log) {}
 };
-
 
 #endif
