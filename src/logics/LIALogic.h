@@ -33,15 +33,15 @@ class LIALogic: public Logic
     SymRef              sym_Int_MINUS;
     SymRef              sym_Int_PLUS;
     SymRef              sym_Int_TIMES;
-    SymRef              sym_Int_DIV;
+    //SymRef              sym_Int_DIV;
     //SymRef              sym_Int_MOD;
     //SymRef              sym_Int_ABS;
-    SymRef              sym_Int_EQ; //why don't we consider equality in tk_real_eq?
+    SymRef              sym_Int_EQ; //why don't we consider equality in tk_real_eq? So it make sense to write to write (= 0.5 (* 0.5 x)) in LIA.
     SymRef              sym_Int_LEQ;
     SymRef              sym_Int_LT;
     SymRef              sym_Int_GEQ;
     SymRef              sym_Int_GT;
-    SymRef              sym_Int_ITE; //what is this and do we need it for LIALogic?
+    SymRef              sym_Int_ITE;
 
     SRef                sort_INTEGER;
 
@@ -54,7 +54,7 @@ class LIALogic: public Logic
     static const char*  tk_int_minus;
     static const char*  tk_int_plus;
     static const char*  tk_int_times;
-    static const char*  tk_int_div;
+    //static const char*  tk_int_div;
     //static const char*  tk_int_mod;
     //static const char*  tk_int_abs;
     static const char*  tk_int_leq;
@@ -102,8 +102,8 @@ class LIALogic: public Logic
     bool        isIntNeg(PTRef tr)    const { return isIntNeg(getPterm(tr).symb()); }
     bool        isIntTimes(SymRef sr) const { return sr == sym_Int_TIMES; }
     bool        isIntTimes(PTRef tr)  const { return isIntTimes(getPterm(tr).symb()); }
-    bool        isIntDiv(SymRef sr)   const { return sr == sym_Int_DIV; }
-    bool        isIntDiv(PTRef tr)    const { return isIntDiv(getPterm(tr).symb()); }
+    //bool        isIntDiv(SymRef sr)   const { return sr == sym_Int_DIV; }
+    //bool        isIntDiv(PTRef tr)    const { return isIntDiv(getPterm(tr).symb()); }
     bool        isIntEq(SymRef sr)    const { return isEquality(sr) && (sym_store[sr][0] == sort_INTEGER); }
     bool        isIntEq(PTRef tr)     const { return isIntEq(getPterm(tr).symb()); }
     bool        isIntLeq(SymRef sr)   const { return sr == sym_Int_LEQ; }
@@ -137,7 +137,7 @@ class LIALogic: public Logic
 
     virtual bool isAtom(PTRef tr) const { return isIntEq(tr) || isIntLt(tr) || isIntGt(tr) || isIntLeq(tr) || isIntGeq(tr) || Logic::isAtom(tr); }
 
-    // UFs are the functions that have no interpretation in real. Is it the same for integers?
+    // UFs are the functions that have no interpretation in integers.
     bool        isUF(PTRef tr)  const { return isUF(term_store[tr].symb()); }
     bool        isUF(SymRef sr) const { return !sym_store[sr].isInterpreted();}
 
@@ -155,9 +155,9 @@ class LIALogic: public Logic
     PTRef       mkIntTimes(const vec<PTRef>& args) { char *msg; PTRef tr = mkIntTimes(args, &msg); assert(tr != PTRef_Undef); return tr; }
     PTRef       mkIntTimes(const PTRef p1, const PTRef p2) { vec<PTRef> tmp; tmp.push(p1); tmp.push(p2); return mkIntTimes(tmp); }
     PTRef       mkIntTimes(const std::vector<PTRef>& args) { vec<PTRef> tmp; for(PTRef arg : args) {tmp.push(arg);} return mkIntTimes(tmp);}
-    PTRef       mkIntDiv(const vec<PTRef>&, char**);
-    PTRef       mkIntDiv(const vec<PTRef>& args) { char *msg; PTRef tr = mkIntDiv(args, &msg); assert(tr != PTRef_Undef); return tr; }
-    PTRef       mkIntDiv(const PTRef nom, const PTRef den) { vec<PTRef> tmp; tmp.push(nom), tmp.push(den); return mkIntDiv(tmp); }
+   // PTRef       mkIntDiv(const vec<PTRef>&, char**);
+   // PTRef       mkIntDiv(const vec<PTRef>& args) { char *msg; PTRef tr = mkIntDiv(args, &msg); assert(tr != PTRef_Undef); return tr; }
+   // PTRef       mkIntDiv(const PTRef nom, const PTRef den) { vec<PTRef> tmp; tmp.push(nom), tmp.push(den); return mkIntDiv(tmp); }
     PTRef       mkIntLeq(const vec<PTRef>&, char**);
     PTRef       mkIntLeq(const vec<PTRef>& args) { char* msg; PTRef tr = mkIntLeq(args, &msg); assert(tr != PTRef_Undef); return tr; }
     PTRef       mkIntLeq(const PTRef arg1, const PTRef arg2) { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkIntLeq(tmp); }
@@ -170,15 +170,6 @@ class LIALogic: public Logic
     PTRef       mkIntGt(const vec<PTRef>&, char**);
     PTRef       mkIntGt(const vec<PTRef>& args) { char* msg; PTRef tr = mkIntGt(args, &msg); assert(tr != PTRef_Undef); return tr; }
     PTRef       mkIntGt(const PTRef arg1, const PTRef arg2) { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkIntGt(tmp); }
-
-    //can you please check whether the below is correct or not for mod and abs?
-    //PTRef       mkIntMod(const vec<PTRef>&, char**);
-    //PTRef       mkIntMod(const vec<PTRef>& args) { char *msg; PTRef tr = mkIntMod(args, &msg); assert(tr != PTRef_Undef); return tr; }
-    //what should be in this line for calculation of the mod?
-
-    //PTRef       mkIntABS(const vec<PTRef>&, char**);
-    //PTRef       mkIntABS(const vec<PTRef>& args) { char *msg; PTRef tr = mkIntABS(args, &msg); assert(tr != PTRef_Undef); return tr; }
-    //what should be in this line for calculation of the abs?
 
     //should I stop here or continue to the bottom? If the latter, can you please check them for correctness (I changed few things)?
     bool        isNegated(PTRef tr) const;
@@ -263,6 +254,7 @@ class SimplifyConstTimes : public SimplifyConst {
     SimplifyConstTimes(LIALogic& log) : SimplifyConst(log) {}
 };
 
+/*
 class SimplifyConstDiv : public SimplifyConst {
     void Op(opensmt::Integer& s, const opensmt::Integer& v) const { if (v == 0) { printf("explicit div by zero\n"); } s /= v; }
     opensmt::Integer getIdOp() const { return 1; }
@@ -270,5 +262,6 @@ class SimplifyConstDiv : public SimplifyConst {
   public:
     SimplifyConstDiv(LIALogic& log) : SimplifyConst(log) {}
 };
+ */
 
 #endif
