@@ -1,4 +1,4 @@
-add_library(tsolvers OBJECT "")
+add_library(tsolvers OBJECT "" lrasolver/LRA_Interpolator.cpp lrasolver/LRA_Interpolator.h)
 
 target_sources(tsolvers
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Deductions.h"

@@ -32,6 +32,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "LRASolver.h"
 #include "LAVar.h"
 #include "LA.h"
+#include "LRA_Interpolator.h"
 
 //#include "../liasolver/LIASolver.h"
 
@@ -2134,7 +2135,7 @@ bool LRASolver::checkColumnConsistency()
 
 
 enum class ItpAlg {
-    STRONG, WEAK, FACTOR, EXPERIMENTAL, UNDEF
+    STRONG, WEAK, FACTOR, EXPERIMENTAL_STRONG, EXPERIMENTAL_WEAK, UNDEF
 };
 //
 // Compute interpolants for the conflict
@@ -2154,11 +2155,10 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
         if(usingStrong()) {return ItpAlg::STRONG;}
         if(usingWeak()) {return ItpAlg::WEAK;}
         if(usingFactor()) {return ItpAlg::FACTOR;}
-        if(usingExperimental()) {return ItpAlg::EXPERIMENTAL;}
         return ItpAlg::UNDEF;
     }(); // note the parenthesis => immediate call of the lambda;
 
-    if(itpAlg == ItpAlg::EXPERIMENTAL){
+    if(usingExperimental()){
         auto itp = getExperimentalInterpolant(mask, labels);
         if (itp != PTRef_Undef) {
             return itp;
@@ -2176,11 +2176,6 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
             cerr << "; Using Factor " << getStrengthFactor() << " for LRA interpolation" << endl;
         else
             cerr << "; LRA interpolation algorithm unknown" << endl;
-    }
-
-    for(auto it = labels->begin(); it != labels->end(); ++it)
-    {
-        //cout << "; PTRef " << logic.printTerm(it->first) << " has color " << it->second << endl;
     }
 
     LAExpression interpolant(logic);
@@ -2353,315 +2348,15 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
 }
 
 
-namespace{
 
-    std::size_t getPivotRow(std::vector<std::vector<Real>> & matrix, std::size_t pivotCol, std::size_t startRow) {
-        for(auto i = startRow; i < matrix.size(); ++i) {
-            if(matrix[i][pivotCol] != 0){
-                return i;
-            }
-        }
-        return matrix.size();
-    }
-
-    void addToWithCoeff(std::vector<Real> & to, std::vector<Real> const & what, const Real coeff) {
-        assert(to.size() == what.size());
-        for(auto i = 0; i < what.size(); ++i) {
-            to[i] += coeff * what[i];
-        }
-    }
-
-    // assumes there are 0 on all position before col
-    void normalize(std::vector<Real> & row, std::size_t col) {
-#ifndef NDEBUG
-        for(auto i = 0; i < col; ++i) {
-            assert(row[i] == 0);
-        }
-#endif //NDEBUG
-        auto val = row[col].inverse();
-        for (; col < row.size(); ++col) {
-            row[col] *= val;
-        }
-    }
-
-    // assumes matrix is already in row echolon form
-    void toReducedRowEcholonForm(std::vector<std::vector<Real>> & matrix) {
-        std::vector<std::size_t> pivotColInds;
-        std::size_t column = 0;
-        for (auto & row : matrix) {
-            while(row[column].isZero()) {++column;}
-            pivotColInds.push_back(column);
-            if(row[column] != 1) {
-                normalize(row, column);
-            }
-        }
-
-        // TODO: use long instead of int?
-        for(auto rowInd = (int)(matrix.size() - 1) ; rowInd >= 0; --rowInd) {
-            auto & row = matrix[rowInd];
-            auto pivotColInd = pivotColInds.back();
-            if (row[pivotColInd].isZero()){
-                continue;
-            }
-            pivotColInds.pop_back();
-            for(int rowInd2 = rowInd - 1; rowInd2 >= 0; --rowInd2){
-                if(matrix[rowInd2][column].isZero()) {continue;}
-                addToWithCoeff(matrix[rowInd2], row, -matrix[rowInd2][column]);
-            }
-
-        }
-    }
-
-    void gaussianElimination(std::vector<std::vector<Real>> & matrix) {
-        std::size_t cols = matrix[0].size();
-        std::size_t pivotRow = 0;
-        std::size_t pivotCol = 0;
-        while(pivotCol < cols && pivotRow < matrix.size()){
-            // find the row with non-zero coefficient
-            auto nextRow = getPivotRow(matrix, pivotCol, pivotRow);
-            if(nextRow == matrix.size()){
-                // all remaining rows have 0 in this column -> continue with next column
-                ++pivotCol;
-                continue;
-            }
-            // put it to correct place
-            if(nextRow != pivotRow){
-                std::swap(matrix[pivotRow], matrix[nextRow]);
-            }
-            // now zero out the column after the current row
-            for(auto row = pivotRow + 1; row < matrix.size(); ++row) {
-                if(matrix[row][pivotCol] == 0) { continue; }
-                addToWithCoeff(matrix[row], matrix[pivotRow], -(matrix[row][pivotCol] / matrix[pivotRow][pivotCol]));
-#ifndef NDEBUG
-                for(auto col = 0; col <= pivotCol; ++col) {
-                    assert(matrix[row][col] == 0);
-                }
-#endif // NDEBUG
-            }
-            ++pivotRow;
-            ++pivotCol;
-        }
-    }
-
-    std::size_t getNullity(std::vector<std::vector<Real>> const & matrix) {
-        // nullity is the number of columns - rank
-        auto rank = std::count_if(matrix.cbegin(), matrix.cend(), [](std::vector<Real> const & row){
-            return std::any_of(row.cbegin(), row.cend(), [](Real const & r) {return r != 0;});
-        });
-        auto cols = matrix[0].size();
-        assert(cols >= rank);
-        return cols - rank;
-    }
-
-    std::vector<bool> getPivotColsBitMap(std::vector<std::vector<Real>> const & matrix){
-        std::vector<bool> pivotColsBitMap ;
-        auto cols = matrix[0].size();
-        pivotColsBitMap.resize(cols);
-        std::size_t row = 0;
-        for(std::size_t col = 0; col < cols; ++col) {
-            // check if this column is a pivot column
-            // if we are out of rows it is not a pivot
-            if(row == matrix.size() || matrix[row][col].isZero()){
-                pivotColsBitMap[col] = false;
-            }
-            else{
-                assert(matrix[row][col] == 1);
-                pivotColsBitMap[col] = true;
-                ++row;
-            }
-        }
-        return pivotColsBitMap;
-    }
-
-    // assumes matrix is in reduced row echolon form
-    std::vector<std::vector<Real>> getNullBasis(std::vector<std::vector<Real>> const & matrix) {
-        std::vector<std::vector<Real>> basis;
-        auto pivotColsBitMap = getPivotColsBitMap(matrix);
-        auto cols = matrix[0].size();
-        // for non-pivot columns generate a new base vector
-        for (std::size_t col = 0; col < cols; ++col) {
-            if(pivotColsBitMap[col]) {
-                continue;
-            }
-            basis.emplace_back();
-            auto & base_vector = basis.back();
-            // keep track of current row (with the pivot)
-            auto row = static_cast<int>(matrix.size() - 1);
-            // compute solution for a vector where pivotal columns have unknown,
-            // current non-pivotal column has 1 and other non-pivotal columns has 0
-            for (auto sol_col = static_cast<int>(cols - 1); sol_col >= 0 ; --sol_col ) {
-                assert(row >= 0 && row < matrix.size());
-                assert(cols - (sol_col + 1) == base_vector.size()); // we already have solutions for all the following columns
-                if(!pivotColsBitMap[sol_col]) {
-                    base_vector.emplace_back(sol_col == col ? 1 : 0);
-//                    solution.insert(std::make_pair(sol_col, sol_col == col ? 1 : 0));
-                }
-                else{
-                    // pivotal column -> go over the following columns for which we already have solutions
-                    assert(matrix[row][sol_col] == 1); // pivot
-                    Real column_solution {0};
-                    for(int i = sol_col + 1; i < cols; ++i) {
-                        // iterate over the row after the pivot position and multiply minus coefficient with solution of the corresponding column, sum everything
-                        std::size_t sol_index = base_vector.size() - (i - sol_col);
-                        assert(sol_index >= 0 && sol_index < base_vector.size());
-                        column_solution += (-matrix[row][i]) * (base_vector[sol_index]);
-                    }
-                    base_vector.push_back(column_solution);
-                    --row;
-                }
-            }
-            // we have pushed solutions starting from back, so we have to reverse
-            std::reverse(base_vector.begin(), base_vector.end());
-            // we are done, the basis vector is already in result
-            assert(base_vector.size() == cols);
-        }
-        return basis;
-    }
-
-    void print_matrix(std::vector<std::vector<Real>> const & matrix) {
-        for(auto const & row : matrix) {
-            for(auto const & elem : row) {
-                std::cout << elem << " ";
-            }
-            std::cout << '\n';
-        }
-        std::cout << '\n';
-    }
-}
 
 PTRef LRASolver::getExperimentalInterpolant(const ipartitions_t &mask, map<PTRef, icolor_t> *labels) {
-//    std::cout << "Partition mask: " << mask << '\n';
-    std::cout << '\n' << "Experimental interpolation algorithm" << '\n';
-    assert(explanation.size() == explanationCoefficients.size());
-    std::vector<std::size_t> a_term_inds;
-    std::unordered_map<PTRef, std::size_t, PTRefHash> a_local_vars;
-    auto a_info = std::vector<std::vector<std::pair<const PTRef, Real>>>{};
-    for(std::size_t i = 0; i < explanation.size(); ++i){
-        PTRef tr = explanation[i].tr;
-        icolor_t color = icolor_t::I_UNDEF;
-        if(labels != nullptr){
-            auto it = labels->find(tr);
-            if(it != labels->end()){
-                color = it->second;
-            }
-        }
-        assert(color != icolor_t::I_UNDEF);
-        bool expl_negated = (explanation[i].sgn == l_False);
-//        std::cout << "Explanation: " << (expl_negated ? "not " : "") << logic.printTerm(tr) << '\n';
-//        std::cout << "Color: " << color << '\n';
-        if(color == icolor_t::I_A){
-            a_term_inds.push_back(i);
-            a_info.emplace_back();
-        }
-        LAExpression expr{logic, tr};
-//        std::cout << "Explanation as expression: "<< expr << '\n';
-        for(auto factor : expr) {
-            PTRef var_ref = factor.first;
-            auto coeff = factor.second;
-            if(var_ref == PTRef_Undef){
-//                std::cout << "Constant: " << factor.second << '\n';
-            }
-            else{
-//                std::cout << "Variable: " << logic.printTerm(var_ref) << "; Coeficient: " << factor.second << '\n';
-//                std::cout << "Partition info for variable: " << logic.getIPartitions(var_ref) << '\n';
-                if(isAstrict(logic.getIPartitions(var_ref), mask)){
-                    assert(color == icolor_t::I_A);
-//                    std::cout << "A-local variable: " << logic.printTerm(var_ref) << '\n';
-                    if(expl_negated){
-                        coeff.negate();
-                    }
-                    a_info.back().emplace_back(var_ref, coeff);
-                    a_local_vars.insert(std::make_pair(var_ref, a_local_vars.size()));
-                }
-            }
-        }
+    LRA_Interpolator interpolator{logic, explanation, explanationCoefficients, mask, labels};
+    icolor_t color = config.getLRAInterpolationAlgorithm() == itp_lra_alg_experimental_strong ? icolor_t::I_A : icolor_t::I_B;
+    auto res = interpolator.getInterpolant(color);
+    if(verbose() > 1){
+        std::cerr << "; Experimental interpolation returned interpolant: " << logic.printTerm(res) << '\n';
     }
-    // if there are no A-local variables we cannot do anything
-    if(a_local_vars.empty()){
-        return PTRef_Undef;
-    }
-    // create a matrix of coefficients for A-local variables in A-inequalities
-    using matrix_t = std::vector<std::vector<Real>>;
-    matrix_t matrix{a_local_vars.size()};
-    auto colInd = 0;
-    for(auto const & column : a_info) {
-        // add coefficient to those rows whose corresponding variable occurs in the inequality
-        for(auto const & coeff_var : column) {
-            auto var = coeff_var.first;
-            auto ind = a_local_vars[var];
-            matrix[ind].push_back(coeff_var.second);
-        }
-        // add 0 to other rows
-        for(auto & row : matrix) {
-            if(row.size() <= colInd){
-                assert(row.size() == colInd);
-                // push coefficient 0
-                row.emplace_back(0);
-            }
-        }
-        ++colInd;
-    }
-//    print_matrix(matrix);
-    gaussianElimination(matrix);
-//    print_matrix(matrix);
-    auto nullity = getNullity(matrix);
-    // if the space of solutions does not have at least two vector in basis, we cannot do anything
-    if(nullity <= 1) {
-        std::cout << "Nullity space has single-vector basis" << '\n';
-        return PTRef_Undef;
-    }
-    toReducedRowEcholonForm(matrix);
-//    print_matrix(matrix);
-    auto nullBasis = getNullBasis(matrix);
-    // print the basis vectors:
-    std::cout << "Basis: " << '\n';
-    for(auto const & base : nullBasis) {
-        for(auto const & elem : base) {
-            std::cout << elem << ' ';
-        }
-        std::cout << '\n';
-    }
-    std::cout << '\n';
-    // prepare just the A-inequalities
-    std::vector<PtAsgn> a_inequalities;
-    for(auto ind : a_term_inds) {
-        assert(logic.isRealLeq(explanation[ind].tr));
-        a_inequalities.push_back(explanation[ind]);
-    }
-    auto const & a_inequalities_const = a_inequalities;
-    std::vector<PTRef> interpolant_inequalities;
-    // NOTE: PTRef represent <= with constant on LHS and everything else on RHS; LAexpression represents everything as on LSH
-    // => need to be carefful about the sign!!!
-    std::transform(nullBasis.begin(), nullBasis.end(), std::back_inserter(interpolant_inequalities),
-    [this,&a_inequalities_const](std::vector<Real> const & base_vec) {
-        LAExpression itp_ineq{logic};
-        assert(base_vec.size() == a_inequalities_const.size());
-        bool delta_flag = false;
-        for(std::size_t ind = 0; ind < a_inequalities_const.size(); ++ind){
-            if(a_inequalities_const[ind].sgn == l_False){
-                delta_flag = true;
-                itp_ineq.addExprWithCoeff(LAExpression(logic, a_inequalities_const[ind].tr), -base_vec[ind]);
-            }
-            else{
-                assert(a_inequalities_const[ind].sgn == l_True);
-                itp_ineq.addExprWithCoeff(LAExpression(logic, a_inequalities_const[ind].tr), base_vec[ind]);
-//                std::cout << "expression: " << itp_ineq << '\n';
-//                std::cout << "inequality: " << logic.printTerm(itp_ineq.toPTRef()) << '\n';
-            }
-        }
-        // here we have to compensate for the fact that we used LAexpression to compute the coefficients, so everything is multiplied by -1
-        // therefore we need to create the inequality with the terms on LHS, because they are treated like LHS when LAExpressions are created
-        std::vector<PTRef> args;
-        PTRef rhs = logic.mkConst("0");
-        PTRef lhs = itp_ineq.toPTRef();
-        return delta_flag ? logic.mkRealLt(lhs, rhs) : logic.mkRealLeq(lhs, rhs);
-    });
-    vec<PTRef> args;
-    for(auto const & itp : interpolant_inequalities) {
-        args.push(itp);
-    }
-    auto res = logic.mkAnd(args);
-    std::cout << "Experimental LRA algorithm computed this interpolant:\n" << logic.printTerm(res) << '\n' << '\n';
     return res;
 }
 

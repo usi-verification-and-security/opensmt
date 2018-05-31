@@ -151,7 +151,9 @@ public:
     bool usingStrong() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_strong; }
     bool usingWeak() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_weak; }
     bool usingFactor() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_factor; }
-    bool usingExperimental() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_experimental; }
+    bool usingExperimental() {
+        return config.getLRAInterpolationAlgorithm() == itp_lra_alg_experimental_strong ||
+               config.getLRAInterpolationAlgorithm() == itp_lra_alg_experimental_weak; }
     const char*  getStrengthFactor() { return config.getLRAStrengthFactor(); }
 #endif
 
