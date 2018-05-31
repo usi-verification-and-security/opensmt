@@ -32,7 +32,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // Notice that it won't work on non-linear
 // polynomes -- "unpredictable" result
 //
-void LAExpression::initialize( PTRef e )
+void LAExpression::initialize( PTRef e, bool do_canonize )
 {
   assert( logic.isRealEq(e) || logic.isRealLeq(e) );
   integers = false;
@@ -59,7 +59,7 @@ void LAExpression::initialize( PTRef e )
     // If it is plus, enqueue the arguments with same constant
     //
     if ( logic.isRealPlus(t) ) {
-      Pterm& term = logic.getPterm(t);
+      const Pterm& term = logic.getPterm(t);
       for (int i = 0; i < term.size(); i++) {
         PTRef arg = term[i];
         curr_term .push_back( arg );
@@ -71,7 +71,7 @@ void LAExpression::initialize( PTRef e )
     // is enqueued with a new constant
     //
     else if ( logic.isRealTimes(t) ) {
-        Pterm& term = logic.getPterm(t);
+        const Pterm& term = logic.getPterm(t);
         assert( term.size() == 2 );
         PTRef x = term[0];
         PTRef y = term[1];
@@ -116,13 +116,15 @@ void LAExpression::initialize( PTRef e )
   //
   // Canonize
   //
-  canonize( );
+    if(do_canonize){
+        canonize( );
+    }
 }
 
-PTRef LAExpression::getPTRefConstant()
-{
-    return logic.mkConst(getRealConstant());
-}
+//PTRef LAExpression::getPTRefConstant()
+//{
+//    return logic.mkConst(getRealConstant());
+//}
 
 opensmt::Real
 LAExpression::getRealConstant()
@@ -240,7 +242,7 @@ PTRef LAExpression::toPTRef()
 //
 // Print
 //
-void LAExpression::print( ostream & os )
+void LAExpression::print( ostream & os ) const
 {
   assert( polynome.find( PTRef_Undef ) != polynome.end( ) );
   assert( polynome.size( ) > 0 );
@@ -250,14 +252,14 @@ void LAExpression::print( ostream & os )
     os << "(<=";
   opensmt::Real constant = 0;
   if ( polynome.size( ) == 1 )
-    os << " " << polynome[ PTRef_Undef ];
+    os << " " << polynome.at(PTRef_Undef);
   else
   {
     //
     // There is at least one variable
     //
     os << " (+";
-    for ( polynome_t::iterator it = polynome.begin( )
+    for ( auto it = polynome.begin( )
 	; it != polynome.end( )
 	; it ++ )
     {
@@ -270,6 +272,7 @@ void LAExpression::print( ostream & os )
   }
   if ( r == EQ || r == LEQ )
     os << " " << constant << ")";
+  os << '\n';
 }
 //
 // Produce a substitution
