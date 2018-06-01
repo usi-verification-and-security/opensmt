@@ -101,28 +101,41 @@ LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
     , debug_pivot_sum_count(0)
 {
     status = INIT;
-    checks_history.push_back(0);
-    first_update_after_backtrack = true;
 }
 
 void LRASolver::clearSolver()
 {
     status = INIT;
-    first_update_after_backtrack = true;
     explanationCoefficients.clear();
+    for(int i = 0; i < columns.size(); ++i){
+        lva[columns[i]].setRowId(-1);
+        lva[columns[i]].setColId(-1);
+    }
     columns.clear();
+    for(int i = 0; i < rows.size(); ++i){
+        lva[rows[i]].setRowId(-1);
+        lva[rows[i]].setColId(-1);
+    }
     rows.clear();
-    checks_history.clear();
-    checks_history.push_back(0);
+    candidates.clear();
+    this->row_polynomials.clear();
+    this->col_occ_list.clear();
+    this->tableau_processed.clear();
     removed_by_GaussianElimination.clear();
     TSolver::clearSolver();
 
-    lva.clear();
-//    pa.clear();
-    ba.clear();
+    // MB: Let's keep the LAVar store and allocator
+//    lva.clear();
+//    lavarStore.clear();
 
-    lavarStore.clear();
-    candidates.clear();
+    // also keep the bounds allocator, bounds list allocator
+//    ba.clear();
+//    this->bla.clear();
+
+    this->model.clear();
+    // TODO: clear statistics
+//    this->tsolver_stats.clear();
+    delta = Delta::ZERO;
 }
 
 //
@@ -261,16 +274,20 @@ LVRef LRASolver::getLAVar_single(PTRef expr_in) {
 //
 LVRef LRASolver::constructLAVarSystem(PTRef term) {
     LVRef x = LVRef_Undef;
-    vec<PolyTermRef> sum_terms;
-    if (lavarStore.hasVar(term))
-        return lavarStore.getVarByPTId(logic.getPterm(term).getId());
+    if (lavarStore.hasVar(term)){
+        x = lavarStore.getVarByPTId(logic.getPterm(term).getId());
+        if(isProcessedByTableau(x))
+        { return x;}
+    }
 
     if (logic.isRealVar(term) || logic.isRealTimes(term)) {
         // Case (1), (2a), and (2b)
         PTRef v;
         PTRef c;
         logic.splitTermToVarAndConst(term, v, c);
-        x = getLAVar_single(v);
+        if(x == LVRef_Undef){
+            x = getLAVar_single(v);
+        }
         setNonbasic(x);
         if (lva[x].getColId() == -1) {
             lva[x].setColId(columns.size());
@@ -305,15 +322,13 @@ LVRef LRASolver::constructLAVarSystem(PTRef term) {
             if (negated)
                 coeff.negate();
 
-//            PolyTermRef ptr = pta.alloc(*c_r, nb);
-//            sum_terms.push(ptr);
             row_polynomials.at(x).emplace(nb, std::move(coeff));
             col_occ_list.at(nb).insert(x);
         }
 
-//        PolyRef pr  = polyStore.makePoly(x, sum_terms);
-//        lva[x].setPolyRef(pr);
     }
+    assert(x != LVRef_Undef);
+    setProcessedByTableau(x);
     return x;
 }
 
@@ -336,11 +351,11 @@ void LRASolver::setNonbasic(LVRef x)
 //
 lbool LRASolver::declareTerm(PTRef leq_tr)
 {
+    if (!logic.isRealLeq(leq_tr)) return l_Undef;
+
     if (informed(leq_tr)) return l_Undef;
 
     informed_PTRefs.insert(leq_tr, true);
-
-    if (!logic.isRealLeq(leq_tr)) return l_Undef;
 
 
     if (status != INIT)
@@ -351,23 +366,6 @@ lbool LRASolver::declareTerm(PTRef leq_tr)
     }
 
     isProperLeq(leq_tr);
-
-
-    Pterm& leq_t = logic.getPterm(leq_tr);
-
-    // Terms are of form c <= t where
-    //  - c is a constant and
-    //  - t is either a variable or a sum
-    PTRef cons = leq_t[0];
-    PTRef term = leq_t[1];
-
-    // Ensure that all variables exists, build the polynomial, and update the occurrences.
-    LVRef v = constructLAVarSystem(term);
-
-    lavarStore.addLeqVar(leq_tr, v);
-
-    // Assumes that the LRA variable has been already declared
-    setBound(leq_tr);
 
     Pterm& t = logic.getPterm(leq_tr);
 
@@ -1153,6 +1151,26 @@ void LRASolver::initSolver()
         for  (int i = 0; i < rows.size(); i++)
             cout << rows[i] << '\n';
 #endif
+        vec<PTRef> known_PTRefs;
+        informed_PTRefs.getKeys(known_PTRefs);
+        for(int i = 0; i < known_PTRefs.size(); ++i){
+            PTRef leq_tr = known_PTRefs[i];
+            Pterm& leq_t = logic.getPterm(leq_tr);
+
+            // Terms are of form c <= t where
+            //  - c is a constant and
+            //  - t is either a variable or a sum
+            PTRef cons = leq_t[0];
+            PTRef term = leq_t[1];
+
+            // Ensure that all variables exists, build the polynomial, and update the occurrences.
+            LVRef v = constructLAVarSystem(term);
+
+            lavarStore.addLeqVar(leq_tr, v);
+
+            // Assumes that the LRA variable has been already declared
+            setBound(leq_tr);
+        }
         boundStore.buildBounds(ptermToLABoundRefs); // Bounds are needed for gaussian elimination
         // Gaussian Elimination should not be performed in the Incremental mode!
 //        if (config.lra_gaussian_elim == 1 && config.do_substitutions())
