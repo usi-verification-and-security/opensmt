@@ -159,3 +159,18 @@ void LRAModel::printModelState()
     }
 }
 
+void LRAModel::clear() {
+    this->int_model.clear();
+    this->int_lbounds.clear();
+    this->bound_trace.clear();
+    this->decision_trace.clear();
+    this->has_model.clear();
+    this->int_decisions.clear();
+    this->int_ubounds.clear();
+    this->limits.clear();
+    this->model_trace.clear();
+    this->n_vars_with_model = 0;
+
+    limits.push({0, 0});
+}
+

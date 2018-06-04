@@ -161,14 +161,13 @@ protected:
     // vector in which witnesses for unsatisfiability are stored
     vector<opensmt::Real> explanationCoefficients;
 
+    std::unordered_set<LVRef, LVRefHash> tableau_processed;
     vec<LVRef> columns;                 // The columns
     vec<LVRef> rows;                    // The rows
     std::unordered_map<LVRef, std::unordered_map<LVRef, Real,LVRefHash>, LVRefHash> row_polynomials;
     std::unordered_map<LVRef, std::unordered_set<LVRef, LVRefHash>, LVRefHash> col_occ_list;
     template<class T> inline T max(T a, T b) const { return a > b ? a : b; }
     bool assertBoundOnVar(LVRef it, LABoundRef it_i);
-
-    vector<unsigned> checks_history;
 
     unsigned nVars() const { return lva.getNumVars(); }
 
@@ -198,6 +197,8 @@ private:
     void print( ostream & out ) override;                            // Prints terms, current bounds and the tableau
 //    void addVarToRow( LVRef, LVRef, opensmt::Real*);
     bool checkIntegersAndSplit();                           //
+    bool isProcessedByTableau(LVRef var) {return tableau_processed.count(var) > 0;}
+    void setProcessedByTableau(LVRef var) {tableau_processed.insert(var);}
 
     // Value system + history of bounds
     LRAModel model;
@@ -231,8 +232,6 @@ private:
     vec<LABoundRefPair> ptermToLABoundRefs;
     const LABoundRef getBound(LVRef v, int idx) const { return boundStore.getBoundByIdx(v, idx); }
     bool isUnbounded (LVRef v) const;
-
-    bool first_update_after_backtrack;
 
     LRASolverStatus status;                  // Internal status of the solver (different from bool)
 
