@@ -89,7 +89,7 @@ class Interpret {
     void                        exit();
 #ifdef PRODUCE_PROOF
     void                        GetProof();
-    void                        GetInterpolants();
+    void                        getInterpolants(const ASTNode& n);
 #endif
     void                        interp (ASTNode& n);
     void                        execute(const ASTNode* n);

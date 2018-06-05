@@ -365,7 +365,7 @@ void Interpret::interp(ASTNode& n) {
         {
             if(!parse_only)
 #ifdef PRODUCE_PROOF
-                GetInterpolants();
+                getInterpolants(n);
 #else
                 notify_formatted(true, "This binary has no support to interpolation");
 #endif
@@ -1303,7 +1303,7 @@ void Interpret::GetProof()
         */
 }
 
-void Interpret::GetInterpolants()
+void Interpret::getInterpolants(const ASTNode& n)
 {
     //just test with assertions for now:
     vec<PTRef> partitions;
