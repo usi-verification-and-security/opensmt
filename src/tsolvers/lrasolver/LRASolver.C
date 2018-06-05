@@ -1979,13 +1979,10 @@ ValPair LRASolver::getValue(PTRef tr) {
 LRASolver::~LRASolver( )
 {
     tsolver_stats.printStatistics(cerr);
-    // Remove numbers
-//    while( !numbers_pool.empty( ) )
-//    {
-//        assert( numbers_pool.back( ) );
-//        delete numbers_pool.back( );
-//        numbers_pool.pop_back( );
-//    }
+#ifdef PRODUCE_PROOF
+    std::cerr << std::endl;
+    interpolStats.print(std::cerr);
+#endif
 }
 
 //bool LRASolver::valueConsistent(LVRef v)
@@ -2169,20 +2166,28 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
     assert(status == UNSAT);
     assert (explanation.size()>1);
 
-    ItpAlg itpAlg = [this](){
+    if(usingExperimental()){
+        if (verbose() > 1){
+            std::cerr << "; Using experimental LRA interpolation\n";
+        }
+        auto itp = getExperimentalInterpolant(mask, labels);
+        assert(itp != PTRef_Undef);
+        if(logic.isBooleanOperator(itp) || (logic.isNot(itp) && logic.isBooleanOperator(logic.getPterm(itp)[0]))){
+            ++interpolStats.interestingInterpolants;
+//            std::cerr << "; Interesting interpolant computed: " << logic.printTerm(itp) << '\n';
+        }
+        else{
+            ++interpolStats.defaultInterpolants;
+        }
+        return itp;
+    }
+
+    const ItpAlg itpAlg = [this](){
         if(usingStrong()) {return ItpAlg::STRONG;}
         if(usingWeak()) {return ItpAlg::WEAK;}
         if(usingFactor()) {return ItpAlg::FACTOR;}
         return ItpAlg::UNDEF;
-    }(); // note the parenthesis => immediate call of the lambda;
-
-    if(usingExperimental()){
-        auto itp = getExperimentalInterpolant(mask, labels);
-        if (itp != PTRef_Undef) {
-            return itp;
-        }
-        itpAlg = ItpAlg::STRONG;
-    }
+    }(); // note the parenthesis => immediate call of the lambda
 
     if (verbose() > 1)
     {

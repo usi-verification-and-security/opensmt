@@ -155,6 +155,21 @@ public:
         return config.getLRAInterpolationAlgorithm() == itp_lra_alg_experimental_strong ||
                config.getLRAInterpolationAlgorithm() == itp_lra_alg_experimental_weak; }
     const char*  getStrengthFactor() { return config.getLRAStrengthFactor(); }
+
+    struct InterpolStatistics{
+        std::size_t interestingInterpolants = 0;
+        std::size_t defaultInterpolants = 0;
+
+        void print(std::ostream& os){
+            os << "; -----------------------------------" << '\n';
+            os << "; LRA SOLVER INTERPOLATION STATISTICS" << '\n';
+            os << "; -----------------------------------" << '\n';
+            os << "; Number of interesting interpolation produced: " << interestingInterpolants << '\n';
+            os << "; Number of default interpolation produced: " << defaultInterpolants << '\n';
+        }
+    };
+
+    InterpolStatistics interpolStats;
 #endif
 
 protected:
