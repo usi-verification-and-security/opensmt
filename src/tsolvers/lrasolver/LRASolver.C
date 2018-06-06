@@ -752,7 +752,7 @@ void LRASolver::popBacktrackPoints(unsigned int count) {
         TSolver::popBacktrackPoint();
     }
     assert(checkValueConsistency());
-    fixCandidates();
+//    fixCandidates();
     assert(invariantHolds());
     setStatus(SAT);
 }
