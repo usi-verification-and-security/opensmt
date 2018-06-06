@@ -77,14 +77,14 @@ class LIALogic: public Logic
     virtual const Logic_t getLogic()        const { return QF_LIA; }
 
     //    virtual PTRef         insertTerm(SymRef sym, vec<PTRef>& terms, char** msg);
-    virtual PTRef  mkConst    (const opensmt::Integer(c)) { char* num; opensmt::stringToInteger(num, c.get_str().c_str()); PTRef tr = mkConst(getSort_integer(), num); free(num); return tr; } // Convert the string to integer. This "stringToInteger" needs to be defined in Global.h
-    virtual PTRef  mkIntVar   (const char* name) { return mkVar(getSort_integer(), name); }
+    virtual PTRef  mkConst    (const opensmt::Integer(c)) { char* num; opensmt::stringToInteger(num, c.get_str().c_str()); PTRef tr = mkConst(getSort_Integer(), num); free(num); return tr; } // Convert the string to integer. This "stringToInteger" needs to be defined in Global.h
+    virtual PTRef  mkIntVar   (const char* name) { return mkVar(getSort_Integer(), name); }
 
     virtual bool isBuiltinSort(SRef sr) const { return sr == sort_INTEGER || Logic::isBuiltinSort(sr); }
     virtual bool isBuiltinConstant(SymRef sr) const { return (isIntegerConst(sr) || Logic::isBuiltinConstant(sr)); }
     virtual bool isBuiltinFunction(SymRef sr) const; //is this line needed here?
 
-    bool  isIntegerConst(SymRef sr)      const { return isConstant(sr) && hasSortInteger(sr); }
+    bool  isIntegerConst(SymRef sr)      const { return isConstant(sr) && hasSortInt(sr); }
     bool  isIntegerConst(PTRef tr)       const { return isIntegerConst(getPterm(tr).symb()); }
     bool  isNonnegIntegerConst(PTRef tr) const { return isIntegerConst(tr) && getIntegerConst(tr) >= 0; }
 
@@ -128,9 +128,9 @@ class LIALogic: public Logic
 
     // Integer terms are of form c, a, or (* c a) where c is a constant and a is a variable.
     bool        isIntegerTerm(PTRef tr) const;
-    bool        hasSortInteger(SymRef sr) const { return sym_store[sr].rsort() == sort_INTEGER; }
+    bool        hasSortInt(SymRef sr) const { return sym_store[sr].rsort() == sort_INTEGER; }
 
-    bool        hasSortInteger(PTRef tr) const { return hasSortInteger(getPterm(tr).symb()); }
+    bool        hasSortInt(PTRef tr) const { return hasSortInt(getPterm(tr).symb()); }
 
     bool        isUFEquality(PTRef tr) const { return !isIntEq(tr) && Logic::isUFEquality(tr); }
     bool        isTheoryEquality(PTRef tr) const { return isIntEq(tr); }

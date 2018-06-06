@@ -176,6 +176,27 @@ class LRATheory : public Theory
     virtual bool simplify(vec<PFRef>&, int); // Theory specific simplifications
 };
 
+class LIATheory : public Theory
+{
+protected:
+    LIALogic    lialogic;
+    TermMapper  tmap;
+    LIATHandler liatshandler;
+public:
+    virtual TermMapper& getTmap() { return tmap; }
+    LIATheory(SMTConfig& c)
+    : Theory(c)
+    , lialogic(c)
+    , tmap(lialogic)
+    , liatshandler(c, lialogic, deductions, tmap)
+    { }
+    ~LIATheory() {};
+    virtual LIALogic&    getLogic()    { return lialogic; }
+    virtual LIATHandler& getTSolverHandler() { return liatshandler; }
+    virtual LIATHandler *getTSolverHandler_new(vec<DedElem> &d) { return new LIATHandler(config, lialogic, d, tmap); }
+    virtual bool simplify(vec<PFRef>&, int);
+};
+
 class UFTheory : public Theory
 {
   private:
@@ -220,5 +241,7 @@ class CUFTheory : public Theory
     virtual CUFTHandler *getTSolverHandler_new(vec<DedElem>& d) { return new CUFTHandler(config, cuflogic, d, tmap); }
     virtual bool simplify(vec<PFRef>&, int);
 };
+
+
 
 #endif
