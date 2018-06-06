@@ -81,7 +81,7 @@ public:
 //    LABoundListRef getBounds()      const { return bounds; }
 //    void setBounds(LABoundListRef l)      { bounds = l; }
 
-    inline bool isBasic()           const { return header.basic; } // Checks if current LAVar is Basic in current solver state
+    //inline bool isBasic()           const { return header.basic; } // Checks if current LAVar is Basic in current solver state
 
     inline int  ID()                const { return header.id; } // Return the ID of the LAVar
     inline void setNonbasic();           // Make LAVar Nonbasic
@@ -144,11 +144,9 @@ private:
     vec<LVRef>      leqToLavar;              // Maps Pterm constraints to solver's real variables.
     vec<LVRef>      ptermToLavar;            // Maps Pterm variables to solver's real variables
     LRALogic&       logic;
-    template<class T> inline T max(T a, T b) const { return a > b ? a : b; }
 public:
     LAVarStore(LAVarAllocator& lva, LRALogic& logic) : lva(lva), logic(logic) {}
     inline void   clear() {};
-//    LVRef  getNewVar(PTRef e_orig = PTRef_Undef) {
     LVRef  getNewVar(PTRef e_orig);
     LVRef  getVarByPTId(PTId i) { return ptermToLavar[Idx(i)]; }
     void   addLeqVar(PTRef leq_tr, LVRef v); // Adds a binding from leq_tr to the "slack var" v

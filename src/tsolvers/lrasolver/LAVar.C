@@ -54,7 +54,7 @@ LVRef LAVarStore::getNewVar(PTRef e_orig) {
     PTId id_pos = logic.getPterm(e_orig).getId();
     PTId id_neg = logic.getPterm(logic.mkRealNeg(e_orig)).getId();
     assert(!hasVar(id_pos));
-    int max_id = max(Idx(id_pos), Idx(id_neg));
+    int max_id = std::max(Idx(id_pos), Idx(id_neg));
 
     if (max_id >= ptermToLavar.size())
         ptermToLavar.growTo(max_id+1, LVRef_Undef);
