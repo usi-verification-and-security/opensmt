@@ -42,16 +42,20 @@ class LetFrame {
   private:
     static uint32_t id_cnt;
     uint32_t id_;
-    Map<const char*, PTRef, StringHash, Equal<const char*> > frameMap;
-//    VecMap<const char*, PTRef, StringHash, Equal<const char*> > frameMap;
+    Map<const char*, PTRef, StringHash, Equal<const char*> > *frameMap;
   public:
-    LetFrame() : id_(id_cnt++) {}
-    bool        contains(const char* s) const { return frameMap.has(s); }
+    LetFrame() : id_(id_cnt++), frameMap(new Map<const char*, PTRef, StringHash, Equal<const char*>>()) {}
+    LetFrame(const Map<const char*, PTRef, StringHash, Equal<const char*>>& imap) : id_(id_cnt++), frameMap(new Map<const char*, PTRef, StringHash, Equal<const char*>>()) { imap.copyTo(*frameMap); }
+    LetFrame(LetFrame&& o) : id_(o.id_) { frameMap = o.frameMap; o.frameMap = nullptr; }
+    LetFrame(const LetFrame& o) : id_(o.id_)  { o.frameMap->copyTo(*frameMap); }
+    ~LetFrame() { if (frameMap != nullptr) delete frameMap; }
+    LetFrame& operator= (LetFrame&& o) { if (this != &o) { delete frameMap; frameMap = o.frameMap; o.frameMap = nullptr; } return *this; }
+    bool        contains(const char* s) const { return frameMap->has(s); }
 //    void        insert  (const char* key, const vec<PTRef>& value) { frameMap.insert(key, value); }
-    void        insert  (const char* key, PTRef value) { frameMap.insert(key, value); }
+    void        insert  (const char* key, PTRef value) { frameMap->insert(key, value); }
     uint32_t    getId   () const { return id_; }
-    PTRef       operator[] (const char* s) { return frameMap[s]; }
-    PTRef       operator[] (const char* s) const { return frameMap[s]; }
+    PTRef       operator[] (const char* s) { return (*frameMap)[s]; }
+    PTRef       operator[] (const char* s) const { return (*frameMap)[s]; }
 //    vec<PTRef>&  operator[] (const char* s) { return frameMap[s]; }
 //    const vec<PTRef>& operator[] (const char* s) const { return frameMap[s]; }
 };
@@ -105,7 +109,7 @@ class Interpret {
     int                         sat_calls; // number of sat calls
 
     // Named terms for getting variable values
-    Map<const char*,PTRef,StringHash,Equal<const char*> > nameToTerm;
+    Map<const char*,PTRef,StringHash,Equal<const char*>> nameToTerm;
     VecMap<PTRef,const char*,PTRefHash,Equal<PTRef> > termToNames;
     vec<const char*>            term_names;
 

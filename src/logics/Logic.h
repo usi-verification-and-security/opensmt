@@ -581,7 +581,8 @@ class Logic {
     bool canInterpolate()
     {
 #ifdef PRODUCE_PROOF
-        return config.produce_inter() && assertions.getSize() >= 2;
+//        return config.produce_inter() && assertions.getSize() >= 2;
+        return config.produce_inter();
 #else
         return false;
 #endif //PRODUCE_PROOF
