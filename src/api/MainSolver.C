@@ -1272,6 +1272,8 @@ void MainSolver::solve_split(int i, int s, int wpipefd, std::mutex *mtx)
         theory = new UFTheory(config);
     else if (l == QF_LRA)
         theory = new LRATheory(config);
+    else if (l == QF_LIA)
+        theory = new LIATheory(config);
     else {
         cerr << "Unsupported logic" << endl;
         exit(1);
