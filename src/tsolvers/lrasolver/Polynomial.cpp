@@ -36,10 +36,11 @@ void Polynomial::divideBy(const opensmt::Real &r) {
     }
 }
 
-std::__1::pair <std::__1::vector<LVRef>, std::__1::vector<LVRef>>
+MergeResult
 Polynomial::merge(const Polynomial &other, const opensmt::Real &coeff) {
-    std::vector<LVRef> added;
-    std::vector<LVRef> removed;
+    MergeResult res;
+    auto & added = res.added;
+    auto & removed = res.removed;
     for(const auto & term : other) {
         auto var = term.first;
         auto var_coeff = term.second;
@@ -58,5 +59,5 @@ Polynomial::merge(const Polynomial &other, const opensmt::Real &coeff) {
             }
         }
     }
-    return std::make_pair(std::move(added), std::move(removed));
+    return res;
 }

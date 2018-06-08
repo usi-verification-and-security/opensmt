@@ -10,6 +10,11 @@
 #include <vector>
 #include <unordered_map>
 
+struct MergeResult{
+    std::vector<LVRef> added;
+    std::vector<LVRef> removed;
+};
+
 class Polynomial{
 private:
     using poly_t = std::unordered_map<LVRef, opensmt::Real, LVRefHash>;
@@ -21,7 +26,7 @@ public:
     void removeVar(LVRef var);
     void negate();
     void divideBy(const opensmt::Real& r);
-    std::pair<std::vector<LVRef>,std::vector<LVRef>> merge(const Polynomial & other, const opensmt::Real & coeff);
+    MergeResult merge(const Polynomial & other, const opensmt::Real & coeff);
 
     using iterator = poly_t::iterator;
     using const_iterator = poly_t::const_iterator;

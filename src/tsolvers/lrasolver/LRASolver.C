@@ -837,8 +837,8 @@ void LRASolver::initSolver()
         }
         boundStore.buildBounds(ptermToLABoundRefs); // Bounds are needed for gaussian elimination
         // Gaussian Elimination should not be performed in the Incremental mode!
-//        if (config.lra_gaussian_elim == 1 && config.do_substitutions())
-//            doGaussianElimination();
+        if (config.lra_gaussian_elim == 1 && config.do_substitutions())
+            doGaussianElimination();
 
         model.initModel(lavarStore);
 
@@ -1151,20 +1151,21 @@ void LRASolver::print( ostream & out )
 
 void LRASolver::computeConcreteModel(LVRef v) {
     while (concrete_model.size() <= lva[v].ID())
-        concrete_model.push(NULL);
+        concrete_model.push(nullptr);
 
     PTRef tr = lva[v].getPTRef();
-    if (removed_by_GaussianElimination.has(tr)) {
-//        const ModelPoly &expr = removed_by_GaussianElimination[tr];
-//        Delta val;
-//        for (int i = 0; i < expr.size(); i++) {
-//            val += pta[expr[i]].coef * model.read(pta[expr[i]].var);
-//        }
-//        concrete_model[lva[v].ID()] = new opensmt::Real(val.R() + val.D() * delta);
-        throw "Gauss elimination not implemented yet!";
+    auto it = removed_by_GaussianElimination.find(v);
+    if(it != removed_by_GaussianElimination.end()){
+        auto const & representation = (*it).second;
+        Delta val;
+        for (auto const & term : representation) {
+            val += term.second * model.read(term.first);
+        }
+        concrete_model[lva[v].ID()] = new opensmt::Real(val.R() + val.D() * delta);
     }
-    else
+    else {
         concrete_model[lva[v].ID()] = new opensmt::Real(model.read(v).R() + model.read(v).D() * delta);
+    }
 }
 
 void LRASolver::getConflict(bool, vec<PtAsgn>& e)
@@ -1579,6 +1580,26 @@ bool LRASolver::checkTableauConsistency() const {
     bool res = tableau.checkConsistency();
     assert(res);
     return res;
+}
+
+void LRASolver::doGaussianElimination( )
+{
+
+    auto eliminated = tableau.doGaussianElimination([this](LVRef v){return this->isUnbounded(v);});
+    for(auto rit = eliminated.rbegin(); rit != eliminated.rend(); ++ rit) {
+        auto entry = *rit;
+        auto poly = entry.second;
+        for(auto const & term : entry.second){
+            auto var = term.first;
+            auto it = removed_by_GaussianElimination.find(var);
+            if( it != removed_by_GaussianElimination.end()){
+                auto to_substitute = (*it).second;
+                auto coeff = poly.getCoeff(var);
+                poly.merge(to_substitute, coeff);
+            }
+        }
+        removed_by_GaussianElimination.emplace(entry.first, poly);
+    }
 }
 
 #ifdef PRODUCE_PROOF

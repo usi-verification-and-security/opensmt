@@ -170,7 +170,7 @@ private:
 
     LVRef getLAVar_single(PTRef term);                      // Initialize a new LA var if needed, otherwise return the old var
     bool hasVar(PTRef expr);
-//    void doGaussianElimination( );                          // Performs Gaussian elimination of all redundant terms in the Tableau
+    void doGaussianElimination( );                          // Performs Gaussian elimination of all redundant terms in the Tableau
 //    void removeRow(PolyRef pr);                                // Remove the row corresponding to v
 //    void removeCol(LVRef v);                                // Remove the col corresponding to v
     void changeValueBy( LVRef, const Delta & );                    // Updates the bounds after constraint pushing
@@ -226,18 +226,7 @@ private:
 
     LRASolverStatus status;                  // Internal status of the solver (different from bool)
 
-    // The variable system
-    class ModelPoly {
-        vec<PolyTermRef> poly;
-    public:
-        ModelPoly() {}
-        ModelPoly(const ModelPoly &o) { o.poly.copyTo(poly); }
-        ModelPoly(const vec<PolyTermRef>& v) { v.copyTo(poly); }
-        PolyTermRef operator[](int i) const { return poly[i]; }
-        void operator=(const ModelPoly &o) { o.poly.copyTo(poly); }
-        int size() const { return poly.size(); }
-    };
-    Map<PTRef,ModelPoly,PTRefHash> removed_by_GaussianElimination;       // Stack of variables removed during Gaussian elimination
+    std::unordered_map<LVRef,Polynomial, LVRefHash> removed_by_GaussianElimination;       // Stack of variables removed during Gaussian elimination
 //    void solveForVar(PolyRef pr, int idx, vec<PolyTermRef>& expr);       // Solve the poly pr for the variable pr[idx] and place the resulting expression to expr
 
     // Two reloaded output operators

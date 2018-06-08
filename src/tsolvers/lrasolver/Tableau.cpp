@@ -156,13 +156,13 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
         poly.removeVar(nv);
         // update the column information
         assert(contains(cols, bv));
-        assert(std::find(changes.first.begin(), changes.first.end(), bv) != changes.first.end());
-        for (const auto & addedVar : changes.first) {
+        assert(std::find(changes.added.begin(), changes.added.end(), bv) != changes.added.end());
+        for (const auto & addedVar : changes.added) {
             assert(contains(cols, addedVar));
             assert(!contains(cols.at(addedVar), rowVar));
             cols.at(addedVar).insert(rowVar);
         }
-        for (const auto & removedVar : changes.second) {
+        for (const auto & removedVar : changes.removed) {
             assert(contains(cols, removedVar));
             assert(contains(cols.at(removedVar), rowVar));
             cols.at(removedVar).erase(rowVar);
@@ -200,7 +200,7 @@ void Tableau::print() const {
     std::cout << "Rows:\n";
     for(auto row : rows) {
         std::cout << "Var of the row: " << row.first.x << ';';
-        for (const auto term : this->getPoly(row.first)) {
+        for (const auto & term : this->getPoly(row.first)) {
             std::cout << "( " << term.second << " | " << term.first.x << " ) ";
         }
         std::cout << '\n';
@@ -254,4 +254,82 @@ bool Tableau::checkConsistency() const {
         }
     }
     return res;
+}
+
+std::vector<std::pair<LVRef, Polynomial>>
+Tableau::doGaussianElimination(std::function<bool(LVRef)> shouldEliminate) {
+//    print();
+    assert(checkConsistency());
+    std::vector<std::pair<LVRef, Polynomial>> removed;
+    auto old_nonbasic_vars = nonbasic_vars;
+    for (auto var : old_nonbasic_vars) {
+        assert(contains(cols, var));
+        auto col_it = cols.find(var);
+        if (!shouldEliminate(var) || col_it == cols.end() || col_it->second.empty()) { continue; }
+        // we are going to eliminate this column variable from the tableau
+        // pick row which we are going to use to express this variable
+        auto const & col = *col_it;
+        auto const & col_rows = col.second;
+        LVRef chosen_row = *(col_rows.begin());
+        auto min_size = rows.at(chosen_row).size();
+        for (auto it = ++col_rows.begin(); it != col_rows.end(); ++it) {
+            auto size = rows.at(*it).size();
+            if (size < min_size) {
+                min_size = size;
+                chosen_row = *it;
+            }
+        }
+        // remember the original polynomial
+        Polynomial poly = rows.at(chosen_row);
+        // remove the row completly, update the column information; TODO: this can be done together in one method
+        removeRow(chosen_row);
+        for (auto const & term : poly) {
+            auto l_var = term.first;
+            assert(contains(cols, l_var));
+            cols.at(l_var).erase(chosen_row);
+        }
+        assert(contains(basic_vars, chosen_row));
+        basic_vars.erase(chosen_row);
+        nonbasic_vars.insert(chosen_row);
+        cols[chosen_row];
+        // now express the chosen_row in terms of column variable
+        {
+            auto coeff = poly.getCoeff(var);
+            coeff.negate();
+            poly.removeVar(var);
+            poly.addTerm(chosen_row, -1);
+            poly.divideBy(coeff);
+        }
+        // remember the polynomial for removed var
+        removed.emplace_back(var, poly);
+        // now substitute in other rows where var is present
+        for (auto rowVar : col_rows) {
+            if (rowVar == chosen_row) { continue; }
+            assert(rows.find(rowVar) != rows.end());
+            auto & row_poly = rows.at(rowVar);
+            auto coeff = row_poly.getCoeff(var);
+            row_poly.removeVar(var);
+            auto res = row_poly.merge(poly, coeff);
+            // process added and removed vars
+            // TODO: unite the operation done here an during pivoting
+            for (const auto & addedVar : res.added) {
+                assert(contains(cols, addedVar));
+                assert(!contains(cols.at(addedVar), rowVar));
+                cols.at(addedVar).insert(rowVar);
+            }
+            for (const auto & removedVar : res.removed) {
+                assert(contains(cols, removedVar));
+                assert(contains(cols.at(removedVar), rowVar));
+                cols.at(removedVar).erase(rowVar);
+            }
+        }
+        // remove the eliminated column
+        assert(contains(nonbasic_vars, var));
+        nonbasic_vars.erase(var);
+        assert(contains(cols, var));
+        cols.erase(var);
+//        print();
+    }
+    assert(checkConsistency());
+    return removed;
 }

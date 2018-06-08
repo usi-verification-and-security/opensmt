@@ -13,6 +13,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <vector>
+#include <functional>
 
 class Tableau{
 
@@ -69,6 +70,10 @@ public:
     bool isNonBasic(LVRef v) const;
 
     bool isProcessed(LVRef v) const;
+
+    // returns map of eliminated variables to their corresponding polynomials
+    // NOTE: Variables eliminate sooner can contain variables eliminated later!
+    std::vector<std::pair<LVRef, Polynomial>> doGaussianElimination(std::function<bool(LVRef)>);
 
     // debug
     void print() const;
