@@ -1584,7 +1584,6 @@ bool LRASolver::checkTableauConsistency() const {
 
 void LRASolver::doGaussianElimination( )
 {
-
     auto eliminated = tableau.doGaussianElimination([this](LVRef v){return this->isUnbounded(v);});
     for(auto rit = eliminated.rbegin(); rit != eliminated.rend(); ++ rit) {
         auto entry = *rit;
@@ -1592,7 +1591,7 @@ void LRASolver::doGaussianElimination( )
         for(auto const & term : entry.second){
             auto var = term.first;
             auto it = removed_by_GaussianElimination.find(var);
-            if( it != removed_by_GaussianElimination.end()){
+            if( it != removed_by_GaussianElimination.end() && poly.contains(var)) {
                 auto to_substitute = (*it).second;
                 auto coeff = poly.getCoeff(var);
                 poly.merge(to_substitute, coeff);
