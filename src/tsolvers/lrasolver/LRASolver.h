@@ -158,7 +158,6 @@ protected:
     // vector in which witnesses for unsatisfiability are stored
     vector<opensmt::Real> explanationCoefficients;
 
-    std::unordered_set<LVRef, LVRefHash> tableau_processed;
     bool assertBoundOnVar(LVRef it, LABoundRef it_i);
 
     unsigned nVars() const { return lva.getNumVars(); }
@@ -189,7 +188,6 @@ private:
 //    void addVarToRow( LVRef, LVRef, opensmt::Real*);
     bool checkIntegersAndSplit();                           //
     bool isProcessedByTableau(LVRef var) {return tableau.isProcessed(var);}
-    void setProcessedByTableau(LVRef var) {tableau_processed.insert(var);}
 
     // Value system + history of bounds
     LRAModel model;

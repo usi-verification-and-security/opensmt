@@ -105,7 +105,6 @@ void LRASolver::clearSolver()
     status = INIT;
     explanationCoefficients.clear();
     candidates.clear();
-    this->tableau_processed.clear();
     // TODO set information about columns and rows in LAVars
     this->tableau.clear();
     removed_by_GaussianElimination.clear();
