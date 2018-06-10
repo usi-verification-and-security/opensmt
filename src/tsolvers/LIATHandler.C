@@ -2,7 +2,7 @@
 #include "TreeOps.h"
 #include "LIASolver.h"
 
-LIATHandler::LIATHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d, TermMapper& tmap)
+LIATHandler::LIATHandler(SMTConfig& c, LIALogic& l, vec<DedElem>& d, TermMapper& tmap)
         : TSolverHandler(c, d, l, tmap)
         , logic(l)
 {
@@ -58,14 +58,14 @@ void LIATHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
                 declareTerm(i1);
                 Var v = tmap.addBinding(i1);
                 while (deductions.size() <= v)
-                    deductions.push(DedElem(lrasolver->getId(), l_Undef));
+                    deductions.push(DedElem(liasolver->getId(), l_Undef));
                 refs.insert(i1, v);
             }
             if (!refs.has(i2) && logic.isIntLeq(i2)) {
                 declareTerm(i2);
                 Var v = tmap.addBinding(i2);
                 while (deductions.size() <= v)
-                    deductions.push(DedElem(lrasolver->getId(), l_Undef));
+                    deductions.push(DedElem(liasolver->getId(), l_Undef));
                 refs.insert(i2, v);
             }
         } else {

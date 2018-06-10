@@ -28,10 +28,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "Logic.h"
 #include "LRALogic.h"
+#include "LIALogic.h"
 #include "CUFLogic.h"
 #include "BVLogic.h"
 
 #include "LRATHandler.h"
+#include "LIATHandler.h"
 #include "UFTHandler.h"
 #include "CUFTHandler.h"
 #include "Alloc.h"

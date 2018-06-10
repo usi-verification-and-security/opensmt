@@ -1,8 +1,10 @@
 #ifndef LIALOGIC_H
 #define LIALOGIC_H
+
 #include "Logic.h"
-//#include "Real.h"
-#include "Sort.h"
+#include "Real.h"
+//#include "Sort.h"
+
 
 
 
@@ -26,7 +28,8 @@ class LIALogic: public Logic
 {
   protected:
     Logic_t logic_type;
-    vec<opensmt::Integer*> integers;
+    vec<opensmt::Real*> reals;
+    //vec<opensmt::Integer*> integers;
     SymRef              sym_Int_ZERO;
     SymRef              sym_Int_ONE;
     SymRef              sym_Int_NEG;

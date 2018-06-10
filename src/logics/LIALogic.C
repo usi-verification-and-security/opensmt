@@ -3,6 +3,7 @@
 #include "LIALogic.h"
 #include "TreeOps.h"
 #include "Global.h"
+#include "LA.h"
 
 const char* LIALogic::e_nonlinear_term = "Logic does not support nonlinear terms";
 

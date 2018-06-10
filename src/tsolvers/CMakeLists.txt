@@ -7,6 +7,7 @@ PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/TSolverHandler.h"
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/TSolver.h"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/CUFTHandler.C"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LRATHandler.C"
+PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LIATHandler.C"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/THandler.C"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/TSolverHandler.C"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/UFLRATHandler.C"
@@ -26,7 +27,7 @@ include(egraph/CMakeLists.txt)
 include(lrasolver/CMakeLists.txt)
 include(bvsolver/CMakeLists.txt)
 
-install(FILES Deductions.h UFTHandler.h CUFTHandler.h LRATHandler.h TSolver.h THandler.h
+install(FILES Deductions.h UFTHandler.h CUFTHandler.h LRATHandler.h LIATHandler.h TSolver.h THandler.h
 TSolverHandler.h
 DESTINATION ${INSTALL_HEADERS_DIR})
 

@@ -30,7 +30,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "PtStore.h"
 #include "SStore.h"
 #include "Tterm.h"
-#include "LIALogic.h"
+
 
 
 class SStore;
@@ -419,7 +419,7 @@ class Logic {
 
     bool        hasSortBool(PTRef tr) const { return sym_store[getPterm(tr).symb()].rsort() == sort_BOOL; }
     bool        hasSortBool(SymRef sr) const { return sym_store[sr].rsort() == sort_BOOL; }
-    bool        hasSortInt (PTRef tr) const { return sym_store[getPterm(tr).symb()].rsort() == sort_INTEGER; }
+    //bool        hasSortInt (PTRef tr) const { return sym_store[getPterm(tr).symb()].rsort() == sort_INTEGER; }
 
 
     // Return the corresponding equivalence term if yes,

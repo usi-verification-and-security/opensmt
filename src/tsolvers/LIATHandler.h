@@ -12,7 +12,7 @@ class LIATHandler : public TSolverHandler
     LIALogic& logic;
     LIASolver *liasolver;
   public:
-    LIATHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d, TermMapper& tmap);
+    LIATHandler(SMTConfig& c, LIALogic& l, vec<DedElem>& d, TermMapper& tmap);
     virtual ~LIATHandler();
     virtual void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs);
     virtual bool assertLit_special(PtAsgn);
