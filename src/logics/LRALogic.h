@@ -98,11 +98,13 @@ class LRALogic: public Logic
     virtual const char* getName()                const { return getLogic().str; }
     virtual const Logic_t getLogic()             const { return QF_LRA; }
 
-    virtual bool        okForBoolVar    (PTRef) const; //shall be removed
-    virtual PTRef       insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg); //shall be removed
+    /*
+    virtual bool        okForBoolVar    (PTRef) const;
+    virtual PTRef       insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg);
+    */
 
-    virtual PTRef       mkConst         (const char* name, const char **msg); //might be useful to have it
-    virtual PTRef       mkConst         (SRef s, const char* name); //might be useful to have it
+    virtual PTRef       mkConst         (const char* name, const char **msg);
+    virtual PTRef       mkConst         (SRef s, const char* name);
     virtual PTRef       mkConst         (const opensmt::Real& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_real(), rat); free(rat); return tr; }
     virtual PTRef       mkConst         (const char* num) { return mkConst(getSort_real(), num); }
     virtual PTRef       mkRealVar       (const char* name) { return mkVar(getSort_real(), name); }

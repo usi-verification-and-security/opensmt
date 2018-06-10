@@ -71,13 +71,16 @@ class LIALogic: public Logic
 
   public:
     LIALogic (SMTConfig& c);
-    ~LIALogic ();
+    ~LIALogic () {
+        for (int i = 0; i < reals.size(); i++) delete reals[i];
+    }
 
     virtual const char*   getName()         const { return getLogic().str; }
     virtual const Logic_t getLogic()        const { return QF_LIA; }
 
-    //    virtual PTRef         insertTerm(SymRef sym, vec<PTRef>& terms, char** msg);
-    virtual PTRef  mkConst    (const opensmt::Integer(c)) { char* num; opensmt::stringToInteger(num, c.get_str().c_str()); PTRef tr = mkConst(getSort_Integer(), num); free(num); return tr; } // Convert the string to integer. This "stringToInteger" needs to be defined in Global.h
+    virtual PTRef       mkConst         (const char* name, const char **msg);
+    virtual PTRef       mkConst         (SRef s, const char* name);
+    virtual PTRef  mkConst    (const opensmt::Integer(c)) { char* num; opensmt::stringToRational(num, c.get_str().c_str()); PTRef tr = mkConst(getSort_Integer(), num); free(num); return tr; }
     virtual PTRef  mkIntVar   (const char* name) { return mkVar(getSort_Integer(), name); }
 
     virtual bool isBuiltinSort(SRef sr) const { return sr == sort_INTEGER || Logic::isBuiltinSort(sr); }
@@ -89,7 +92,7 @@ class LIALogic: public Logic
     bool  isNonnegIntegerConst(PTRef tr) const { return isIntegerConst(tr) && getIntegerConst(tr) >= 0; }
 
 
-    SRef   declareSort_Integer(char** msg); //do I need to comment this out like in LRASolver?
+    //SRef   declareSort_Integer(char** msg);
     SRef   getSort_Integer()  const {return sort_INTEGER;}
     const int getIntegerConst(PTRef tr) const;
 
