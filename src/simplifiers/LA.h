@@ -67,7 +67,7 @@ public:
   void                     canonize     ();           // Canonize (different from solve!)
   void                     canonizeReal ();           // Canonize (different from solve!)
   void                     canonizeInt  ();           // Canonize (different from solve!)
-  PTRef                    toPTRef      ();           // Output as enode
+  PTRef                    toPTRef      () const;     // Output as enode
   PTRef                    getPTRefConstant      ();           // Output as enode
   PTRef                    getPTRefNonConstant      ();           // Output as enode
   opensmt::Real            getRealConstant      ();           // Output as enode

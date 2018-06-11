@@ -2,6 +2,19 @@
 // Created by Martin Blicha on 22.05.18.
 //
 
+#ifdef PRODUCE_PROOF
+
+//#ifndef NDEBUG
+//#define TRACE
+//#endif
+
+#ifdef TRACE
+#define trace(x) x
+#else
+#define trace(x)
+#endif
+
+
 #include <unordered_map>
 #include "LRA_Interpolator.h"
 #include <Real.h>
@@ -16,11 +29,6 @@ using matrix_t = std::vector<std::vector<Real>>;
 struct ItpHelper {
     ItpHelper(LRALogic & logic, PtAsgn ineq, Real coeff) : explanation{ineq.tr}, negated{ineq.sgn == l_False},
                                                            expl_coeff{std::move(coeff)}, expr{logic, ineq.tr, false} {}
-//    ItpHelper(ItpHelper&& other) = default;
-//    ItpHelper(const ItpHelper& other) = default;
-//    ItpHelper & operator=(ItpHelper&& other) = default;
-//    ItpHelper & operator=(const ItpHelper& other) = default;
-
     PTRef explanation;
     bool negated;
     Real expl_coeff;
@@ -29,6 +37,13 @@ struct ItpHelper {
 
 namespace {
 
+    /**
+     *
+     * @param matrix
+     * @param pivotCol
+     * @param startRow
+     * @return Index of row >= startRow that contains the pivot for given column pivotCol
+     */
     std::size_t getPivotRow(const matrix_t & matrix, std::size_t pivotCol, std::size_t startRow) {
         for (auto i = startRow; i < matrix.size(); ++i) {
             if (matrix[i][pivotCol] != 0) {
@@ -38,7 +53,13 @@ namespace {
         return matrix.size();
     }
 
-    void addToWithCoeff(std::vector<Real> & to, std::vector<Real> const & what, const Real coeff) {
+    /** Adds a multiple of vector of Reals to another vector with equal size.
+     *
+     * @param to vector to which we add
+     * @param what vector being added
+     * @param coeff The multiple
+     */
+    void addToWithCoeff(std::vector<Real> & to, std::vector<Real> const & what, const Real & coeff) {
         assert(to.size() == what.size());
         for (auto i = 0; i < what.size(); ++i) {
             to[i] += coeff * what[i];
@@ -58,7 +79,10 @@ namespace {
         }
     }
 
-    // assumes matrix is already in row echolon form
+    /** Transforms a matrix in a Row Echolon Form to matrix in Reduced Row Echolob Form
+     *
+     * @param matrix Matrix in REF
+     */
     void toReducedRowEcholonForm(std::vector<std::vector<Real>> & matrix) {
         std::vector<std::size_t> pivotColInds;
         std::size_t column = 0;
@@ -86,6 +110,10 @@ namespace {
         }
     }
 
+    /** Transforms a matrix to Row Echolon Form
+     *
+     * @param matrix
+     */
     void gaussianElimination(matrix_t & matrix) {
         std::size_t cols = matrix[0].size();
         std::size_t pivotRow = 0;
@@ -117,6 +145,9 @@ namespace {
         }
     }
 
+    /*
+     * Returns nullity (dimension of the null space) of given matrix
+     */
     std::size_t getNullity(std::vector<std::vector<Real>> const & matrix) {
         // nullity is the number of columns - rank
         auto rank = std::count_if(matrix.cbegin(), matrix.cend(), [](std::vector<Real> const & row) {
@@ -127,7 +158,9 @@ namespace {
         return cols - rank;
     }
 
-    // assumes the matrix is in echolon form; reurns bitmap which columns contain pivot
+    /*
+     * Given matrix in REF, return bitmap of columns with pivot columns identified
+     */
     std::vector<bool> getPivotColsBitMap(std::vector<std::vector<Real>> const & matrix) {
         std::vector<bool> pivotColsBitMap;
         auto cols = matrix[0].size();
@@ -147,8 +180,12 @@ namespace {
         return pivotColsBitMap;
     }
 
-    // assumes matrix is in reduced row echolon form
-    // check the algorithm at wiki: https://en.wikibooks.org/wiki/Linear_Algebra/Null_Spaces
+    /** Given matrix in RREF computes and returns a basis of its null space
+     *
+     * @see https://en.wikibooks.org/wiki/Linear_Algebra/Null_Spaces
+     * @param matrix in RREF
+     * @return Basis of null space of givern matrix
+     */
     std::vector<std::vector<Real>> getNullBasis(std::vector<std::vector<Real>> const & matrix) {
         std::vector<std::vector<Real>> basis;
         auto pivotColsBitMap = getPivotColsBitMap(matrix);
@@ -199,6 +236,9 @@ namespace {
         return std::any_of(vec.begin(), vec.end(), [](const Real & val) { return val < 0; });
     }
 
+    /*
+     * Tries to replace a vector in basis with a negative coordinate with another vector having less negative coordinates.
+     */
     bool tryFixVec(std::vector<Real> & vec, std::vector<std::vector<Real>> & basis){
         auto neg = std::find_if(vec.begin(), vec.end(), [](const Real& val) {return val < 0;});
         assert(neg != vec.end());
@@ -214,8 +254,12 @@ namespace {
         return true;
     }
 
-    // TODO: make this more efficient if necessary
+    /*
+     * Given a basis of vector space where some vector contains negative coordinate, it tries to find a different basis
+     * for the space where all coordinates of all vectors of the basis would be non-negative
+     */
     bool tryFixBase(std::vector<std::vector<Real>> & basis){
+        // TODO: make this more efficient if necessary
         auto first_unchecked_it = basis.begin();
         auto vec_with_neg_it = first_unchecked_it;
         while(vec_with_neg_it != basis.end()){
@@ -268,18 +312,23 @@ namespace {
         bool delta_flag = false;
         for (; it_ineq != ineqs.end(); ++it_ineq, ++it_coeff) {
             auto const & ineq = *it_ineq;
+            trace(std::cout << "Original explanation: " << logic.printTerm(ineq.explanation) << "; negated: " << ineq.negated << '\n';)
+            trace(std::cout << "LAExpr as PTrEf: " << logic.printTerm(ineq.expr.toPTRef()) << '\n';)
+            trace(std::cout << "LAExpr as stored: ";)
+            trace(ineq.expr.print(std::cout); std::cout << std::endl;)
             if (ineq.negated) {
                 delta_flag = true;
                 init.addExprWithCoeff(ineq.expr, -(*it_coeff));
             } else {
                 init.addExprWithCoeff(ineq.expr, *it_coeff);
             }
-//            init.print(std::cout);
+            trace(init.print(std::cout);)
         }
         // here we have to compensate for the fact that we used LAexpression to compute the coefficients, so everything is multiplied by -1
         // therefore we need to create the inequality with the terms on LHS, because they are treated like LHS when LAExpressions are created
         PTRef rhs = logic.mkConst("0");
         PTRef lhs = init.toPTRef();
+//        std::cout << "LHS: " << logic.printTerm(lhs) << '\n';
         return delta_flag ? logic.mkRealLt(lhs, rhs) : logic.mkRealLeq(lhs, rhs);
     }
 
@@ -301,15 +350,15 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color) {
     assert(explanations.size() == explanation_coeffs.size());
     for (std::size_t i = 0; i < explanations.size(); ++i) {
         candidates.emplace_back(explanations[i], explanation_coeffs[i]);
-//        std::cout << "Explanation " << logic.printTerm(explanations[i].tr) << " with coeff "
-//                  << explanation_coeffs[i] << " is negated: " << (explanations[i].sgn == l_False) << '\n';
+        trace(std::cout << "Explanation " << logic.printTerm(explanations[i].tr) << " with coeff "
+                  << explanation_coeffs[i] << " is negated: " << (explanations[i].sgn == l_False) << '\n';)
         bool isA = this->isInPartitionOfColor(icolor_t::I_A, explanations[i].tr);
         bool isB = this->isInPartitionOfColor(icolor_t::I_B, explanations[i].tr);
         if(isA){
-//            std::cout << "This explanation is from A\n";
+            trace(std::cout << "This explanation is from A\n";)
         }
         if(isB){
-//            std::cout << "This explanation is from B\n";
+            trace(std::cout << "This explanation is from B\n";)
         }
 
     }
@@ -391,9 +440,9 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color) {
             }
             ++colInd;
         }
-//        print_matrix(matrix);
+        trace(print_matrix(matrix);)
         gaussianElimination(matrix);
-//        print_matrix(matrix);
+        trace(print_matrix(matrix);)
         auto nullity = getNullity(matrix);
         // if the space of solutions does not have at least two vector in basis, we cannot do anything
         if (nullity <= 1) {
@@ -401,10 +450,9 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color) {
             interpolant_inequalities.push_back(sumInequalities(explanations_with_locals, logic));
         } else {
             toReducedRowEcholonForm(matrix);
-//            print_matrix(matrix);
+            trace(print_matrix(matrix);)
             auto nullBasis = getNullBasis(matrix);
-            // print the basis vectors:
-//            print_basis(nullBasis);
+            trace(print_basis(nullBasis);)
             bool isGood = tryFixBase(nullBasis);
             if(!isGood){
                 // default behaviour, sum up with original coefficient
@@ -441,3 +489,5 @@ bool LRA_Interpolator::isALocal(PTRef var) const {
 bool LRA_Interpolator::isBLocal(PTRef var) const {
     return isBstrict(logic.getIPartitions(var), mask);
 }
+
+#endif // PRODUCE_PROOF

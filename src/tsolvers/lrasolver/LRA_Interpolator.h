@@ -5,6 +5,8 @@
 #ifndef OPENSMT_LRA_INTERPOLATOR_H
 #define OPENSMT_LRA_INTERPOLATOR_H
 
+#ifdef PRODUCE_PROOF
+
 #include <PtStructs.h>
 #include <Global.h>
 #include <Real.h>
@@ -57,5 +59,5 @@ private:
     std::map<PTRef, icolor_t> * labels;
 };
 
-
+#endif // PRODUCE_PROOF
 #endif //OPENSMT_LRA_INTERPOLATOR_H

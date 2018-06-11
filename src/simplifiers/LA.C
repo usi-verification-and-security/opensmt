@@ -178,7 +178,7 @@ PTRef LAExpression::getPTRefNonConstant()
   return poly;
 }
 
-PTRef LAExpression::toPTRef()
+PTRef LAExpression::toPTRef() const
 {
   assert( polynome.find( PTRef_Undef ) != polynome.end( ) );
   assert( polynome.size( ) > 0 );
@@ -187,7 +187,7 @@ PTRef LAExpression::toPTRef()
   //
   vec<PTRef> sum_list;
   opensmt::Real constant = 0;
-  for ( polynome_t::iterator it = polynome.begin( )
+  for ( auto it = polynome.begin( )
       ; it != polynome.end( )
       ; it ++ )
   {
