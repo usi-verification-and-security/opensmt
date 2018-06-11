@@ -37,7 +37,7 @@ Cnfizer::Cnfizer ( SMTConfig       &config_
                    , THandler      &thandler_
                    , SimpSMTSolver &solver_
                  ) :
-    config   (config_  )
+      config   (config_  )
     , theory   (theory)
     , logic    (theory.getLogic())
     , tmap     (tmap)
@@ -195,39 +195,37 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
         cerr << "Adding clause " << logic.printTerm (f) << endl;
 #endif
 
-#ifdef PRODUCE_PROOF
-        ipartitions_t mask = 0;
-        if (logic.canInterpolate())
-        {
-            // Create mask to spread among all literals created for this PTRef
-            if (logic.isAssertion (f)) //if f is an assertion, one bit is set
-            {
-                mask += 1;
-                mask <<= (logic.assertionIndex (f) + 1);
-            }
-
-            else if(f == logic.getTerm_true() || f == logic.getTerm_false())
-            {
-                mask = 1;
-                mask = ~mask;
-            }
-
-            else //f may have been flattened etc
-            {
-                PTRef root_tmp = logic.getOriginalAssertion(f);
-                assert(!logic.hasOriginalAssertion(root_tmp));
-                mask = logic.getIPartitions(root_tmp);
-
-//                logic.setIPartitions (f, 0);
-                logic.addIPartitions (f, mask);
-            }
-
-            assert (mask != 0);
-#ifdef PEDANTIC_DEBUG
-            cerr << "Spreading mask " << mask << endl;
-#endif // PEDANTIC_DEBUG
-        }
-#endif // PRODUCE_PROOF
+//#ifdef PRODUCE_PROOF
+//        ipartitions_t mask = 0;
+//        if (logic.canInterpolate())
+//        {
+//            // Create mask to spread among all literals created for this PTRef
+//            if (logic.isPartition(f)) //if f is an assertion, one bit is set
+//            {
+//                mask += 1;
+//                mask <<= (logic.partitionIndex (f) + 1);
+//            }
+//
+//            else if (f == logic.getTerm_true() || f == logic.getTerm_false())
+//            {
+//                mask = 1;
+//                mask = ~mask;
+//            }
+//
+//            else //f may have been flattened etc
+//            {
+//                PTRef root_tmp = logic.getOriginalPartition(f);
+//                assert(!logic.hasOriginalPartition(root_tmp));
+//                mask = logic.getIPartitions(root_tmp);
+//                logic.addIPartitions (f, mask);
+//            }
+//
+//            assert (mask != 0);
+//#ifdef PEDANTIC_DEBUG
+//            cerr << "Spreading mask " << mask << endl;
+//#endif // PEDANTIC_DEBUG
+//        }
+//#endif // PRODUCE_PROOF
 
         // Give it to the solver if already in CNF
         if (checkCnf (f) == true || checkClause (f) == true)
@@ -235,11 +233,8 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
 #ifdef PEDANTIC_DEBUG
             cerr << " => Already in CNF" << endl;
 #endif
-#ifdef PRODUCE_PROOF
-            res = giveToSolver (f, mask);
-#else
+
             res = giveToSolver (f);
-#endif
             continue;
         }
 
@@ -250,11 +245,8 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
 #ifdef PEDANTIC_DEBUG
             cout << " => Will be de Morganized" << endl;
 #endif
-#ifdef PRODUCE_PROOF
-            res = deMorganize (f, mask);
-#else
+
             res = deMorganize (f);
-#endif
         }
         else
         {
@@ -268,11 +260,8 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
 #ifdef PEDANTIC_DEBUG
             cout << " => proper cnfization" << endl;
 #endif // PEDANTIC_DEBUG
-#ifdef PRODUCE_PROOF
-            res = cnfize (f, mask);
-#else // PRODUCE_PROOF
+
             res = cnfize (f);                        // Perform actual cnfization (implemented in subclasses)
-#endif // PRODUCE_PROOF
         }
 
         s_empty = false; // solver no longer empty
@@ -315,11 +304,8 @@ lbool Cnfizer::extEquals(PTRef r_new, PTRef r_old) {
 //
 // Apply simple de Morgan laws to the formula
 //
-#ifdef PRODUCE_PROOF
-bool Cnfizer::deMorganize ( PTRef formula, const ipartitions_t &mask)
-#else
+
 bool Cnfizer::deMorganize ( PTRef formula )
-#endif
 {
     assert (!logic.isAnd (formula));
     Pterm &pt = logic.getPterm (formula);
@@ -345,7 +331,7 @@ bool Cnfizer::deMorganize ( PTRef formula )
         }
 
 #ifdef PRODUCE_PROOF
-        rval = addClause (clause, mask);
+        rval = addClause (clause, logic.getIPartitions(formula));
 #else
         rval = addClause (clause);
 #endif
@@ -357,193 +343,193 @@ bool Cnfizer::deMorganize ( PTRef formula )
 //
 // Compute the number of incoming edges for e and children
 //
-void Cnfizer::computeIncomingEdges ( PTRef e
-                                     , Map<PTRef, int, PTRefHash> &ptref_to_incoming_edges )
-{
-    assert (e != PTRef_Undef);
-
-    vec<PTRef> unprocessed_terms; // Stack for unprocessed enodes
-    unprocessed_terms.push (e);   // formula needs to be processed
-
-    //
-    // Visit the DAG of the formula from the leaves to the root
-    //
-    while (unprocessed_terms.size() > 0)
-    {
-        PTRef tr = unprocessed_terms.last();
-
-        //
-        // Skip if the node has already been processed before
-        //
-        if (ptref_to_incoming_edges.has (tr))
-        {
-            ptref_to_incoming_edges[tr]++;
-            unprocessed_terms.pop();
-            continue;
-        }
-
-        bool unprocessed_children = false;
-
-        if (logic.isBooleanOperator (tr))
-        {
-            Pterm &t = logic.getPterm (tr);
-
-            for ( int i = 0; i < t.size(); i++)
-            {
-                //
-                // Push only if it is an unprocessed boolean operator
-                //
-                if (!ptref_to_incoming_edges.has (t[i]))
-                {
-                    unprocessed_terms.push (t[i]);
-                    unprocessed_children = true;
-                }
-                else
-                {
-                    ptref_to_incoming_edges[t[i]]++;
-                }
-            }
-        }
-
-        //
-        // SKip if unprocessed_children
-        //
-        if ( unprocessed_children )
-            continue;
-
-        //
-        // At this point, every child has been processed
-        //
-        assert (logic.isBooleanOperator (tr) || logic.isAtom (tr));
-        assert (!ptref_to_incoming_edges.has (tr));
-        ptref_to_incoming_edges.insert (tr, 1);
-        unprocessed_terms.pop();
-    }
-}
+//void Cnfizer::computeIncomingEdges ( PTRef e
+//                                     , Map<PTRef, int, PTRefHash> &ptref_to_incoming_edges )
+//{
+//    assert (e != PTRef_Undef);
+//
+//    vec<PTRef> unprocessed_terms; // Stack for unprocessed enodes
+//    unprocessed_terms.push (e);   // formula needs to be processed
+//
+//    //
+//    // Visit the DAG of the formula from the leaves to the root
+//    //
+//    while (unprocessed_terms.size() > 0)
+//    {
+//        PTRef tr = unprocessed_terms.last();
+//
+//        //
+//        // Skip if the node has already been processed before
+//        //
+//        if (ptref_to_incoming_edges.has (tr))
+//        {
+//            ptref_to_incoming_edges[tr]++;
+//            unprocessed_terms.pop();
+//            continue;
+//        }
+//
+//        bool unprocessed_children = false;
+//
+//        if (logic.isBooleanOperator (tr))
+//        {
+//            Pterm &t = logic.getPterm (tr);
+//
+//            for ( int i = 0; i < t.size(); i++)
+//            {
+//                //
+//                // Push only if it is an unprocessed boolean operator
+//                //
+//                if (!ptref_to_incoming_edges.has (t[i]))
+//                {
+//                    unprocessed_terms.push (t[i]);
+//                    unprocessed_children = true;
+//                }
+//                else
+//                {
+//                    ptref_to_incoming_edges[t[i]]++;
+//                }
+//            }
+//        }
+//
+//        //
+//        // SKip if unprocessed_children
+//        //
+//        if ( unprocessed_children )
+//            continue;
+//
+//        //
+//        // At this point, every child has been processed
+//        //
+//        assert (logic.isBooleanOperator (tr) || logic.isAtom (tr));
+//        assert (!ptref_to_incoming_edges.has (tr));
+//        ptref_to_incoming_edges.insert (tr, 1);
+//        unprocessed_terms.pop();
+//    }
+//}
 
 //
 // Rewrite formula with maximum arity for operators
 //
-PTRef Cnfizer::rewriteMaxArity (PTRef formula, Map<PTRef, int, PTRefHash> &ptref_to_incoming_edges )
-{
-    assert (formula != PTRef_Undef);
-
-    vec<PTRef> unprocessed_terms;       // Stack for unprocessed PTRefs
-    unprocessed_terms.push (formula);   // formula needs to be processed
-    Map<PTRef, PTRef, PTRefHash> cache; // Cache of processed nodes
-
-    //
-    // Visit the DAG of the formula from the leaves to the root
-    //
-    while (unprocessed_terms.size() != 0)
-    {
-        PTRef tr = unprocessed_terms.last();
-
-        //
-        // Skip if the node has already been processed before
-        //
-        if (cache.has (tr))
-        {
-            unprocessed_terms.pop();
-            continue;
-        }
-
-        bool unprocessed_children = false;
-        Pterm &t = logic.getPterm (tr);
-
-        for (int i = 0; i < t.size(); i++)
-        {
-
-            //
-            // Push only if it is an unprocessed boolean operator
-            //
-            if ( logic.isBooleanOperator (t[i]) && !cache.has (t[i]))
-            {
-                unprocessed_terms.push (t[i]);
-                unprocessed_children = true;
-            }
-            //
-            // If it is an atom (either boolean or theory) just
-            // store it in the cache
-            //
-            else if (logic.isAtom (t[i]))
-                cache.insert (t[i], t[i]);
-
-        }
-
-        //
-        // SKip if unprocessed_children
-        //
-        if (unprocessed_children)
-            continue;
-
-        unprocessed_terms.pop();
-        PTRef result = PTRef_Undef;
-        //
-        // At this point, every child has been processed
-        //
-        assert (logic.isBooleanOperator (tr));
-
-        // Construct the new lists for the operators
-        if (logic.isAnd (tr) || logic.isOr (tr))
-            result = mergeEnodeArgs ( tr, cache, ptref_to_incoming_edges );
-        else result = tr;
-
-        assert (result != PTRef_Undef);
-        assert (!cache.has (tr));
-        cache.insert (tr, result);
-    }
-
-    PTRef top_term = cache[formula];
-    return top_term;
-}
+//PTRef Cnfizer::rewriteMaxArity (PTRef formula, Map<PTRef, int, PTRefHash> &ptref_to_incoming_edges )
+//{
+//    assert (formula != PTRef_Undef);
+//
+//    vec<PTRef> unprocessed_terms;       // Stack for unprocessed PTRefs
+//    unprocessed_terms.push (formula);   // formula needs to be processed
+//    Map<PTRef, PTRef, PTRefHash> cache; // Cache of processed nodes
+//
+//    //
+//    // Visit the DAG of the formula from the leaves to the root
+//    //
+//    while (unprocessed_terms.size() != 0)
+//    {
+//        PTRef tr = unprocessed_terms.last();
+//
+//        //
+//        // Skip if the node has already been processed before
+//        //
+//        if (cache.has (tr))
+//        {
+//            unprocessed_terms.pop();
+//            continue;
+//        }
+//
+//        bool unprocessed_children = false;
+//        Pterm &t = logic.getPterm (tr);
+//
+//        for (int i = 0; i < t.size(); i++)
+//        {
+//
+//            //
+//            // Push only if it is an unprocessed boolean operator
+//            //
+//            if ( logic.isBooleanOperator (t[i]) && !cache.has (t[i]))
+//            {
+//                unprocessed_terms.push (t[i]);
+//                unprocessed_children = true;
+//            }
+//            //
+//            // If it is an atom (either boolean or theory) just
+//            // store it in the cache
+//            //
+//            else if (logic.isAtom (t[i]))
+//                cache.insert (t[i], t[i]);
+//
+//        }
+//
+//        //
+//        // SKip if unprocessed_children
+//        //
+//        if (unprocessed_children)
+//            continue;
+//
+//        unprocessed_terms.pop();
+//        PTRef result = PTRef_Undef;
+//        //
+//        // At this point, every child has been processed
+//        //
+//        assert (logic.isBooleanOperator (tr));
+//
+//        // Construct the new lists for the operators
+//        if (logic.isAnd (tr) || logic.isOr (tr))
+//            result = mergeEnodeArgs ( tr, cache, ptref_to_incoming_edges );
+//        else result = tr;
+//
+//        assert (result != PTRef_Undef);
+//        assert (!cache.has (tr));
+//        cache.insert (tr, result);
+//    }
+//
+//    PTRef top_term = cache[formula];
+//    return top_term;
+//}
 
 //
 // Merge collected arguments for nodes
 //
-PTRef Cnfizer::mergeEnodeArgs ( PTRef e
-                                , Map<PTRef, PTRef, PTRefHash> &cache
-                                , Map<PTRef, int, PTRefHash> &ptref_to_incoming_edges )
-{
-    assert ( logic.isAnd (e) || logic.isOr (e) );
-
-    Pterm &t = logic.getPterm (e);
-    SymRef e_symb = t.symb();
-    vec<PTRef> new_args;
-
-    for (int i = 0; i < t.size(); i++)
-    {
-        PTRef arg = t[i];
-        PTRef sub_arg = cache[arg];
-        SymRef sym = logic.getPterm (arg).symb();
-
-        // We're no longer looking at either or or an and.  I hope I got this right...
-        if (sym != e_symb)
-        {
-            new_args.push (sub_arg);
-            continue;
-        }
-
-        assert (ptref_to_incoming_edges.has (arg));
-        assert (ptref_to_incoming_edges[arg] >= 1 );
-
-        if (ptref_to_incoming_edges[arg] > 1)
-        {
-            new_args.push (sub_arg);
-            continue;
-        }
-
-        Pterm &s = logic.getPterm (sub_arg);
-
-        for (int j = 0; j < s.size(); j++)
-            new_args.push (s[j]);
-    }
-
-
-    // This creates a new term with the same symbol having the arguments from new_args
-    // We know that e is either and or or
-    return logic.isAnd (e) ? logic.mkAnd (new_args) : logic.mkOr (new_args);
-}
+//PTRef Cnfizer::mergeEnodeArgs ( PTRef e
+//                                , Map<PTRef, PTRef, PTRefHash> &cache
+//                                , Map<PTRef, int, PTRefHash> &ptref_to_incoming_edges )
+//{
+//    assert ( logic.isAnd (e) || logic.isOr (e) );
+//
+//    Pterm &t = logic.getPterm (e);
+//    SymRef e_symb = t.symb();
+//    vec<PTRef> new_args;
+//
+//    for (int i = 0; i < t.size(); i++)
+//    {
+//        PTRef arg = t[i];
+//        PTRef sub_arg = cache[arg];
+//        SymRef sym = logic.getPterm (arg).symb();
+//
+//        // We're no longer looking at either or or an and.  I hope I got this right...
+//        if (sym != e_symb)
+//        {
+//            new_args.push (sub_arg);
+//            continue;
+//        }
+//
+//        assert (ptref_to_incoming_edges.has (arg));
+//        assert (ptref_to_incoming_edges[arg] >= 1 );
+//
+//        if (ptref_to_incoming_edges[arg] > 1)
+//        {
+//            new_args.push (sub_arg);
+//            continue;
+//        }
+//
+//        Pterm &s = logic.getPterm (sub_arg);
+//
+//        for (int j = 0; j < s.size(); j++)
+//            new_args.push (s[j]);
+//    }
+//
+//
+//    // This creates a new term with the same symbol having the arguments from new_args
+//    // We know that e is either and or or
+//    return logic.isAnd (e) ? logic.mkAnd (new_args) : logic.mkOr (new_args);
+//}
 
 //
 // Check whether a formula is in cnf
@@ -723,11 +709,8 @@ bool Cnfizer::addClause ( const vec<Lit> &c_in )
 //
 // Give the formula to the solver
 //
-#ifdef PRODUCE_PROOF
-bool Cnfizer::giveToSolver ( PTRef f, const ipartitions_t &mask)
-#else
+
 bool Cnfizer::giveToSolver ( PTRef f )
-#endif
 {
     vec<Lit> clause;
 
@@ -738,7 +721,7 @@ bool Cnfizer::giveToSolver ( PTRef f )
     {
         clause.push (theory.findLit (f));
 #ifdef PRODUCE_PROOF
-        return addClause (clause, mask);
+        return addClause (clause, logic.getIPartitions(f));
 #else
         return addClause (clause);
 #endif
@@ -757,7 +740,7 @@ bool Cnfizer::giveToSolver ( PTRef f )
             clause.push (theory.findLit (lits[i]));
 
 #ifdef PRODUCE_PROOF
-        return addClause (clause, mask);
+        return addClause (clause, logic.getIPartitions(f));
 #else
         return addClause (clause);
 #endif
@@ -772,12 +755,7 @@ bool Cnfizer::giveToSolver ( PTRef f )
     bool result = true;
 
     for (unsigned i = 0; i < conj.size_( ) && result; i++)
-#ifdef PRODUCE_PROOF
-        result = giveToSolver (conj[i], mask);
-
-#else
         result = giveToSolver (conj[i]);
-#endif
     return result;
 }
 
@@ -801,12 +779,6 @@ void Cnfizer::retrieveTopLevelFormulae (PTRef root, vec<PTRef> &top_level_formul
         if (logic.isAnd (f))
             for (int i = cand_t.size() - 1; i >= 0; i--) {
                 to_process.push (cand_t[i]);
-#ifdef PRODUCE_PROOF
-            if (logic.hasOriginalAssertion(f))
-                    logic.setOriginalAssertion(cand_t[i], logic.getOriginalAssertion(f));
-            else if (logic.isAssertion(f))
-                    logic.setOriginalAssertion(cand_t[i], f);
-#endif
             }
         else if (!seen.has (f))
         {

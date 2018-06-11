@@ -120,8 +120,8 @@ class MainSolver
     FContainer simplifyEqualities(vec<PtChild>& terms);
 
     void computeIncomingEdges(PTRef tr, Map<PTRef,int,PTRefHash>& PTRefToIncoming);
-    PTRef rewriteMaxArity(PTRef, Map<PTRef,int,PTRefHash>&);
-    PTRef mergePTRefArgs(PTRef, Map<PTRef,PTRef,PTRefHash>&, Map<PTRef,int,PTRefHash>&);
+    PTRef rewriteMaxArity(PTRef, const Map<PTRef,int,PTRefHash>&);
+    PTRef mergePTRefArgs(PTRef, Map<PTRef,PTRef,PTRefHash>&, const Map<PTRef,int,PTRefHash>&);
 
     vec<MainSolver*> parallel_solvers;
 
@@ -166,11 +166,18 @@ class MainSolver
     void      push();
     bool      pop();
     sstat     insertFormula(PTRef root, char** msg);
+    int       simplifiedUntil() const { return simplified_until; }
 
+#ifdef PRODUCE_PROOF
+    void      assignPartition(int n, PTRef tr); // Assign partition numbers to individual PTRefs
+    void      computePartitionMasks(int from, int to); // Extend the partitions as masks to the whole PTRef structure.  `From' and `to' refer to indices in the formulas vector.
+#endif
     void      initialize() { ts.solver.initialize(); ts.initialize(); }
 
-    sstat simplifyFormulas() { char* msg; sstat res = simplifyFormulas(&msg); if (res == s_Error) { printf("%s\n", msg); } return res; }
-    sstat simplifyFormulas(char** err_msg);
+    // Simplify formulas from formulas[from] onwards until all are simplified or the instance is detected unsatisfiable.  the index up to which simplification was done is stored in `to'.
+    sstat simplifyFormulas(int from, int& to) { char* msg; sstat res = simplifyFormulas(from, to, &msg); if (res == s_Error) { printf("%s\n", msg); } return res; }
+    sstat simplifyFormulas(int from, int& to, char** err_msg);
+    sstat simplifyFormulas() { int to; sstat rval = simplifyFormulas(simplifiedUntil(), to); simplified_until = to; return rval; }
     sstat solve           ();
     sstat check           ();      // A wrapper for solve which simplifies the loaded formulas and initializes the solvers
 

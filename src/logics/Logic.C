@@ -83,7 +83,7 @@ Logic::Logic(SMTConfig& c) :
     , term_FALSE(PTRef_Undef)
     , subst_num(0)
 #ifdef PRODUCE_PROOF
-    , asrt_idx(0)
+    , partition_idx(0)
 #endif
 {
     config.logic = QF_UF;
@@ -196,8 +196,10 @@ Logic::Logic(SMTConfig& c) :
     ites.insert(sym_ITE, true);
 
 #ifdef PRODUCE_PROOF
-    flat2orig[getTerm_true()] = getTerm_true();
-    flat2orig[getTerm_false()] = getTerm_false();
+    ipartitions_t mask = 1;
+    mask = ~mask;
+    setIPartitions(getTerm_true(), mask);
+    setIPartitions(getTerm_false(), mask);
 #endif
 }
 
@@ -583,13 +585,13 @@ void Logic::simplifyTree(PTRef tr, PTRef& root_out)
         visit(queue[i].x, tr_map);
 #ifdef PRODUCE_PROOF
         PTRef qaux = queue[i].x;
-        if (tr_map.has(qaux) && isAssertion(qaux))
+        if (tr_map.has(qaux) && isPartition(qaux))
         {
             PTRef trq = tr_map[qaux];
-            if(trq != qaux)
+            if (trq != qaux)
             {
-                setOriginalAssertion(trq, qaux);
-                assertions_simp.push(trq);
+                addIPartitions(trq, getIPartitions(qaux));
+                partitions_simp.push(trq);
             }
         }
 #endif
@@ -2257,12 +2259,12 @@ Logic::getPartitionA(const ipartitions_t& mask)
 {
     Logic& logic = *this;
 
-    vec<PTRef> ass;
-    logic.getAssertions(ass);
+    vec<PTRef> part;
+    logic.getPartitions(part);
     vec<PTRef> a_args;
-    for(int i = 0; i < ass.size(); ++i)
+    for(int i = 0; i < part.size(); ++i)
     {
-        PTRef a = ass[i];
+        PTRef a = part[i];
         ipartitions_t p = 0;
         setbit(p, i + 1);
         if(isAstrict(p, mask)) a_args.push(a);
@@ -2277,12 +2279,12 @@ PTRef
 Logic::getPartitionB(const ipartitions_t& mask)
 {
     Logic& logic = *this;
-    vec<PTRef> ass;
-    logic.getAssertions(ass);
+    vec<PTRef> part;
+    logic.getPartitions(part);
     vec<PTRef> b_args;
-    for(int i = 0; i < ass.size(); ++i)
+    for(int i = 0; i < part.size(); ++i)
     {
-        PTRef a = ass[i];
+        PTRef a = part[i];
         ipartitions_t p = 0;
         setbit(p, i + 1);
         if (isAstrict(p, mask)) {}

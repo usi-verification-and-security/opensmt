@@ -67,12 +67,7 @@ LRALogic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
         PTRef andr = mkAnd(args);
         lra_split_inequalities.insert(i1, true);
         lra_split_inequalities.insert(i2, true);
-#ifdef PRODUCE_PROOF
-        if (hasOriginalAssertion(tr)) {
-            PTRef orig = getOriginalAssertion(tr);
-            setOriginalAssertion(andr, orig);
-        }
-#endif
+
         assert(!tr_map.has(tr));
         tr_map.insert(tr, andr);
     }

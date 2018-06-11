@@ -710,11 +710,11 @@ THandler::verifyInterpolantWithExternalTool( PTRef itp, const ipartitions_t& mas
     vec<PTRef> A;
     vec<PTRef> B;
 
-    vec<PTRef> assertions;
-    logic.getAssertions(assertions);
-    for(int i = 0; i < assertions.size(); ++i)
+    vec<PTRef> partitions;
+    logic.getPartitions(partitions);
+    for(int i = 0; i < partitions.size(); ++i)
     {
-        PTRef a = assertions[i];
+        PTRef a = partitions[i];
         assert((logic.getIPartitions(a) & mask) != 0 || (logic.getIPartitions(a) & ~mask) != 0);
         if((logic.getIPartitions(a) & ~mask) != 0) A.push(a);
         else B.push(a);

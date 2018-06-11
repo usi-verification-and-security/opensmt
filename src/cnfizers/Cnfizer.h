@@ -103,18 +103,10 @@ public:
     void  getVarMapping    (CnfState&);
 protected:
 
-#ifdef PRODUCE_PROOF
-    virtual bool cnfize(PTRef, const ipartitions_t&) = 0;
-#else
     virtual bool cnfize                 ( PTRef ) = 0; // Actual cnfization. To be implemented in derived classes
-#endif //PRODUCE_PROOF
-#ifdef PRODUCE_PROOF
-    bool deMorganize(PTRef, const ipartitions_t&);
-#else
     bool     deMorganize                ( PTRef );                                    // Apply deMorgan rules whenever feasible
-#endif //PRODUCE_PROOF
 
-    PTRef    rewriteMaxArity            ( PTRef, Map<PTRef, int, PTRefHash> & );   // Rewrite terms using maximum arity
+//    PTRef    rewriteMaxArity            ( PTRef, Map<PTRef, int, PTRefHash> & );   // Rewrite terms using maximum arity
 
 public:
     bool     checkClause                ( PTRef ); // Check if a formula is a clause
@@ -122,11 +114,8 @@ public:
     bool     checkDeMorgan              ( PTRef );                            // Check if formula can be deMorganized
     void     retrieveTopLevelFormulae   ( PTRef, vec<PTRef> & );         // Retrieves the list of top-level formulae
 protected:
-#ifdef PRODUCE_PROOF
-    bool giveToSolver(PTRef, const ipartitions_t &);
-#else
+
     bool     giveToSolver               ( PTRef );                              // Gives formula to the SAT solver
-#endif // PRODUCE_PROOF
 
 
 #ifdef PRODUCE_PROOF
@@ -150,10 +139,10 @@ private:
         pi(PTRef x_) : x(x_), done(false) {}
     };
 
-    void    computeIncomingEdges (PTRef, Map<PTRef, int, PTRefHash> & );         // Computes the list of incoming edges for a node
-    PTRef   mergeEnodeArgs       ( PTRef
-                                 , Map<PTRef, PTRef, PTRefHash> &
-                                 , Map<PTRef, int, PTRefHash> & );  // Subroutine for rewriteMaxArity
+//    void    computeIncomingEdges (PTRef, Map<PTRef, int, PTRefHash> & );         // Computes the list of incoming edges for a node
+//    PTRef   mergeEnodeArgs       ( PTRef
+//                                 , Map<PTRef, PTRef, PTRefHash> &
+//                                 , Map<PTRef, int, PTRefHash> & );  // Subroutine for rewriteMaxArity
 
     bool    checkConj            (PTRef); // Check if a formula is a conjunction
     bool    checkPureConj        (PTRef, Map<PTRef,bool,PTRefHash>& check_cache); // Check if a formula is purely a conjuntion

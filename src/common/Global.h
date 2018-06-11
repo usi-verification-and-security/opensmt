@@ -385,7 +385,7 @@ inline void orbit( ipartitions_t & ipres, ipartitions_t & ip1, ipartitions_t & i
 // Or-bit
 // And-bit
 // Basic operations
-inline bool isABmixed( const ipartitions_t & p ) { return p % 2 == 1; }
+inline bool isABmixed( const ipartitions_t & p ) { return false; } //{ return p % 2 == 1; }
 inline bool isAlocal ( const ipartitions_t & p, const ipartitions_t & mask ) { return !isABmixed( p ) && (p & mask) != 0; }
 inline bool isBlocal ( const ipartitions_t & p, const ipartitions_t & mask ) { return !isABmixed( p ) && (p & ~mask) != 0; }
 inline bool isAstrict( const ipartitions_t & p, const ipartitions_t & mask ) { return !isABmixed( p ) && isAlocal( p, mask ) && !isBlocal( p, mask ); }

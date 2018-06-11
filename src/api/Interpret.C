@@ -350,7 +350,8 @@ void Interpret::interp(ASTNode& n) {
                 break;
 
             char* msg;
-            sstat status = main_solver->simplifyFormulas(&msg);
+            int to;
+            sstat status = main_solver->simplifyFormulas();
             if (status == s_Error)
                 notify_formatted(true, "Simplify: %s", msg);
             break;
@@ -388,7 +389,8 @@ void Interpret::interp(ASTNode& n) {
             if (parse_only) break;
             if (main_solver->solverEmpty()) {
                 char* msg;
-                sstat status = main_solver->simplifyFormulas(&msg);
+                int to;
+                sstat status = main_solver->simplifyFormulas();
                 if (status == s_Error)
                     notify_formatted(true, "write-state: %s", msg);
             }
@@ -627,22 +629,26 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
             }
             termToNames[tr].push(name);
             term_names.push(name);
-        }
 #ifdef PRODUCE_PROOF
-        if (strcmp(name_attr.getValue(), ":partition") == 0) {
-            // Get the symbolic name of the partition
-            ASTNode& sym = **(name_attr.children->begin());
-            assert(sym.getType() == SYM_T);
-            const char* pname = sym.getValue();
-            char* msg = NULL;
-            if (!logic->assignPartition(pname, tr, &msg)) {
-                notify_formatted(true, "assign partition: %s", msg);
-                free(msg);
-                return PTRef_Undef;
-            }
-            assert(msg == NULL);
-        }
+            nameToPartition.insert(name, term_names.size()-1);
 #endif
+        }
+
+//#ifdef PRODUCE_PROOF
+//        if (strcmp(name_attr.getValue(), ":partition") == 0) {
+//            // Get the symbolic name of the partition
+//            ASTNode& sym = **(name_attr.children->begin());
+//            assert(sym.getType() == SYM_T);
+//            const char* pname = sym.getValue();
+//            char* msg = NULL;
+//            if (!logic->assignPartition(pname, tr, &msg)) {
+//                notify_formatted(true, "assign partition: %s", msg);
+//                free(msg);
+//                return PTRef_Undef;
+//            }
+//            assert(msg == NULL);
+//        }
+//#endif
         return tr;
     }
     else
@@ -659,6 +665,11 @@ bool Interpret::checkSat() {
     if (logic != NULL) {
         sat_calls++;
         char* msg = NULL;
+
+#ifdef PRODUCE_PROOF
+        for (int i = 0; i < term_names.size(); i++)
+            main_solver->assignPartition(i, nameToTerm[term_names[i]]);
+#endif
 
         res = main_solver->check();
 
@@ -1305,121 +1316,159 @@ void Interpret::GetProof()
 
 void Interpret::getInterpolants(const ASTNode& n)
 {
-    vec<const char*> keys;
-    nameToTerm.getKeys(keys);
-    for (int i = 0; i < keys.size(); i++) {
-        printf("Named thing: %s\n", keys[i]);
-    }
+//    vec<const char*> keys;
+//    nameToTerm.getKeys(keys);
+//    for (int i = 0; i < keys.size(); i++) {
+//        printf("Named thing: %s\n", keys[i]);
+//    }
     auto exps = *n.children;
-    vec<PTRef> partitions;
+    vec<PTRef> grouping; // Consists of PTRefs that we want to group
     for (auto e : exps) {
         ASTNode& c = *e;
         vec<LetFrame> v;
         v.push_m(LetFrame(nameToTerm));
         PTRef tr = parseTerm(c, v);
-        printf("Itp'ing a term %s\n", logic->pp(tr));
-        partitions.push(tr);
+//        printf("Itp'ing a term %s\n", logic->pp(tr));
+        grouping.push(tr);
     }
-    //just test with assertions for now:
-//    logic->getAssertions(partitions);
 
     if (!logic->canInterpolate())
         opensmt_error("Cannot interpolate");
 
-    int rseed = config.sat_random_seed();
+#ifdef PRODUCE_PROOF
+    assert(grouping.size() >= 2);
+    ipartitions_t p = 0;
+    for (int i = 0; i < grouping.size()-1; i++)
+    {
+        PTRef group = grouping[i];
+        if (termToNames.has(group)) {
+            assert(termToNames[group].size() == 1);
+            opensmt::setbit(p, nameToPartition[termToNames[group][0]]);
+//            cerr << "; name " << termToNames[group][0] << " itp mask " << p << endl;
+        }
+        else {
+            assert(logic->isAnd(group));
+            Pterm& and_t = logic->getPterm(group);
+//            cerr << "; name (and ";
+            for (int j = 0; j < and_t.size(); j++) {
+                PTRef tr = and_t[j];
+                assert(termToNames.has(tr));
+                assert(termToNames[tr].size() == 1);
+                opensmt::setbit(p, nameToPartition[termToNames[tr][0]]);
+//                cerr << termToNames[tr][0] << " ";
+            }
+//            cerr << ") itp mask " << p << endl;
+        }
+//        p <<= 1; // ABmixed bit. I think this is some special partition for those
+        SimpSMTSolver& smt_solver = main_solver->getSMTSolver();
+        smt_solver.createProofGraph();
+        if(config.proof_reduce())
+            smt_solver.reduceProofGraph();
+//        cerr << "Computing interpolant with mask " << p << endl;
+        vec<PTRef> itps;
+        smt_solver.getSingleInterpolant(itps, p);
+
+        for (int j = 0; j < itps.size(); j++) {
+            char* itp = logic->pp(itps[j]);
+            notify_formatted(false, "%s", itp);
+            free(itp);
+        }
+    }
+#endif
+//    int rseed = config.sat_random_seed();
 //    cerr << "; Seed used for partitioning: " << rseed << endl;
 //    srand(rseed);
 
-    ipartitions_t p = 1;
+//    ipartitions_t p = 1;
 //    if (rand() % 2) p <<= 1;
     //guarantees that A and B have at least one assertion each
 
-    for (int i = 2; i < partitions.size(); ++++i)
-    {
-        if (rand() % 2)
-            opensmt::setbit(p, i);
-        else
-            opensmt::setbit(p, i + 1);
-    }
-
-
-    // ABmixed bit
-    p <<= 1;
-
-#ifdef ITP_DEBUG
-    //test the partitions
-    for(int i = 0; i < partitions.size(); ++i)
-    {
-        if (isAstrict(logic->getIPartitions(partitions[i]), p))
-            cerr << "; Partition " << i << " is in A" << endl;
-        else if (isBstrict(logic->getIPartitions(partitions[i]), p))
-            cerr << "; Partition " << i << " is in B" << endl;
-        else
-            cerr << "; Partition " << i << " is weird" << endl;
-    }
-
-    vec<PTRef> queue;
-    // Get the vars in A
-    Map<PTRef,bool,PTRefHash> a_vars;
-    getVars(partitions[0], *logic, a_vars);
-    vec<PTRef> vars_list_a;
-    a_vars.getKeys(vars_list_a);
-    printf("; Vars in A\n");
-    for (int i = 0; i < vars_list_a.size(); i++)
-        printf(";  %s\n", logic->printTerm(vars_list_a[i]));
-
-    // Get the vars in B
-    Map<PTRef,bool,PTRefHash> b_vars;
-    getVars(partitions[1], *logic, b_vars);
-    vec<PTRef> vars_list_b;
-    b_vars.getKeys(vars_list_b);
-    printf("; Vars in B\n");
-    for (int i = 0; i < vars_list_b.size(); i++)
-        printf(";  %s\n", logic->printTerm(vars_list_b[i]));
-
-    printf("; Shared vars\n");
-    Map<PTRef,bool,PTRefHash> shared_vars;
-    for (int i = 0; i < vars_list_b.size(); i++)
-        if (a_vars.has(vars_list_b[i])) {
-            shared_vars.insert(vars_list_b[i], true);
-            printf(";  %s\n", logic->printTerm(vars_list_b[i]));
-        }
-
-#endif
-
-#ifdef ITP_DEBUG
-    cout << "; Interpolation mask " << p << endl;
-#endif
-
-    SimpSMTSolver& smt_solver = main_solver->getSMTSolver();
-    smt_solver.createProofGraph();
-    if(config.proof_reduce())
-        smt_solver.reduceProofGraph();
-    vec<PTRef> itps;
-
-    smt_solver.getSingleInterpolant(itps, p);
-    //if(config.verbosity() > 1)
-    //    cout << "; Interpolant:\n" << logic->printTerm(itps[0]) << endl;
-#ifdef ITP_DEBUG
-    for (int i = 0; i < itps.size(); i++)
-    {
-        printf("; Itp %d\n", i);
-        printf("%s\n", logic->printTerm(itps[i]));
-    }
-    Map<PTRef,bool,PTRefHash> itp_vars;
-    getVars(itps[0], *logic, itp_vars);
-    printf("; Vars in Itp\n");
-    const char* note = " <= not in shared";
-    vec<PTRef> itp_vars_list;
-    itp_vars.getKeys(itp_vars_list);
-    for (int i = 0; i < itp_vars_list.size(); i++) {
-        if (shared_vars.has(itp_vars_list[i]))
-            printf(";  %s\n", logic->printTerm(itp_vars_list[i]));
-        else
-            printf(";  %s %s\n", logic->printTerm(itp_vars_list[i]), note);
-    }
-
-#endif
+//    for (int i = 2; i < partitions.size(); ++++i)
+//    {
+//        if (rand() % 2)
+//            opensmt::setbit(p, i);
+//        else
+//            opensmt::setbit(p, i + 1);
+//    }
+//
+//
+//    // ABmixed bit
+//    p <<= 1;
+//
+//#ifdef ITP_DEBUG
+//    //test the partitions
+//    for(int i = 0; i < partitions.size(); ++i)
+//    {
+//        if (isAstrict(logic->getIPartitions(partitions[i]), p))
+//            cerr << "; Partition " << i << " is in A" << endl;
+//        else if (isBstrict(logic->getIPartitions(partitions[i]), p))
+//            cerr << "; Partition " << i << " is in B" << endl;
+//        else
+//            cerr << "; Partition " << i << " is weird" << endl;
+//    }
+//
+//    vec<PTRef> queue;
+//    // Get the vars in A
+//    Map<PTRef,bool,PTRefHash> a_vars;
+//    getVars(partitions[0], *logic, a_vars);
+//    vec<PTRef> vars_list_a;
+//    a_vars.getKeys(vars_list_a);
+//    printf("; Vars in A\n");
+//    for (int i = 0; i < vars_list_a.size(); i++)
+//        printf(";  %s\n", logic->printTerm(vars_list_a[i]));
+//
+//    // Get the vars in B
+//    Map<PTRef,bool,PTRefHash> b_vars;
+//    getVars(partitions[1], *logic, b_vars);
+//    vec<PTRef> vars_list_b;
+//    b_vars.getKeys(vars_list_b);
+//    printf("; Vars in B\n");
+//    for (int i = 0; i < vars_list_b.size(); i++)
+//        printf(";  %s\n", logic->printTerm(vars_list_b[i]));
+//
+//    printf("; Shared vars\n");
+//    Map<PTRef,bool,PTRefHash> shared_vars;
+//    for (int i = 0; i < vars_list_b.size(); i++)
+//        if (a_vars.has(vars_list_b[i])) {
+//            shared_vars.insert(vars_list_b[i], true);
+//            printf(";  %s\n", logic->printTerm(vars_list_b[i]));
+//        }
+//
+//#endif
+//
+//#ifdef ITP_DEBUG
+//    cout << "; Interpolation mask " << p << endl;
+//#endif
+//
+//    SimpSMTSolver& smt_solver = main_solver->getSMTSolver();
+//    smt_solver.createProofGraph();
+//    if(config.proof_reduce())
+//        smt_solver.reduceProofGraph();
+//    vec<PTRef> itps;
+//
+//    smt_solver.getSingleInterpolant(itps, p);
+//    //if(config.verbosity() > 1)
+//    //    cout << "; Interpolant:\n" << logic->printTerm(itps[0]) << endl;
+//#ifdef ITP_DEBUG
+//    for (int i = 0; i < itps.size(); i++)
+//    {
+//        printf("; Itp %d\n", i);
+//        printf("%s\n", logic->printTerm(itps[i]));
+//    }
+//    Map<PTRef,bool,PTRefHash> itp_vars;
+//    getVars(itps[0], *logic, itp_vars);
+//    printf("; Vars in Itp\n");
+//    const char* note = " <= not in shared";
+//    vec<PTRef> itp_vars_list;
+//    itp_vars.getKeys(itp_vars_list);
+//    for (int i = 0; i < itp_vars_list.size(); i++) {
+//        if (shared_vars.has(itp_vars_list[i]))
+//            printf(";  %s\n", logic->printTerm(itp_vars_list[i]));
+//        else
+//            printf(";  %s %s\n", logic->printTerm(itp_vars_list[i]), note);
+//    }
+//
+//#endif
 }
 #endif
 

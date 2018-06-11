@@ -198,7 +198,17 @@ void PtStore::deserializeTerms(const int* buf)
     assert(pta.getNumTerms() == idToPTRef.size());
 }
 
-bool
+#ifdef PRODUCE_PROOF
+void
+PtStore::assignPartition(int n, PTRef ptr) {
+    a_partitions[n] = ptr;
+    ipartitions_t p = 0;
+    setbit(p, n);
+    addIPartitions(ptr, p);
+}
+#endif
+
+void
 PtStore::assignPartition(const char* pname, PTRef pref, char** msg)
 {
     uint32_t n = partitions.size() + 1;
@@ -210,10 +220,9 @@ PtStore::assignPartition(const char* pname, PTRef pref, char** msg)
     addIPartitions(pref, p);
 #endif
     //TODO check whether partition already exists
-    return true;
 }
 
-bool
+void
 PtStore::assignPartition(PTRef pref, char** msg)
 {
     uint32_t n = a_partitions.size() + 1;
@@ -224,7 +233,6 @@ PtStore::assignPartition(PTRef pref, char** msg)
     addIPartitions(pref, p);
 //    printf("Assigned partition %d to PTRef %d\n", n, pref.x);
 #endif
-    return true;
 }
 
 #ifdef PRODUCE_PROOF

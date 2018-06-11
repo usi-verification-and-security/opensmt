@@ -110,11 +110,11 @@ class Logic {
     Map<SRef,bool,SRefHash,Equal<SRef> >            ufsorts;
 
 
-    //for partitions:
-    Map<PTRef,int,PTRefHash> assertions;
-    vec<PTRef> assertions_simp;
 #ifdef PRODUCE_PROOF
-    int asrt_idx;
+    //for partitions:
+    Map<PTRef,int,PTRefHash> partitions;
+    vec<PTRef> partitions_simp;
+    int partition_idx;
     map<CRef, ipartitions_t> clause_class;
     map<Var, ipartitions_t> var_class;
     map<PTRef, PTRef> flat2orig;
@@ -318,20 +318,20 @@ class Logic {
     bool verifyInterpolant(PTRef, const ipartitions_t&);
 
 
-    // Partitions
-    void setOriginalAssertion(PTRef flat, PTRef orig)
-    {
-        flat2orig[flat] = orig;
-    }
-    bool hasOriginalAssertion(PTRef flat)
-    {
-        return flat2orig.find(flat) != flat2orig.end();
-    }
-    PTRef getOriginalAssertion(PTRef flat)
-    {
-        assert(flat2orig.find(flat) != flat2orig.end());
-        return flat2orig[flat];
-    }
+//    // Partitions
+//    void setOriginalPartition(PTRef flat, PTRef orig)
+//    {
+//        flat2orig[flat] = orig;
+//    }
+//    bool hasOriginalPartition(PTRef flat)
+//    {
+//        return flat2orig.find(flat) != flat2orig.end();
+//    }
+//    PTRef getOriginalPartition(PTRef flat)
+//    {
+//        assert(flat2orig.find(flat) != flat2orig.end());
+//        return flat2orig[flat];
+//    }
     ipartitions_t& getIPartitions(PTRef _t) { return term_store.getIPartitions(_t); }
     void setIPartitions(PTRef _t, ipartitions_t& _p) { term_store.setIPartitions(_t, _p); }
     void addIPartitions(PTRef _t, ipartitions_t& _p) { term_store.addIPartitions(_t, _p); }
@@ -566,22 +566,26 @@ class Logic {
 
 #ifdef PRODUCE_PROOF
     //partitions:
-    bool assignPartition(const char* pname, PTRef pref, char** msg)
+    void assignPartition(int n, PTRef tr)
     {
-        return term_store.assignPartition(pname, pref, msg);
+        term_store.assignPartition(n, tr);
+    }
+    void assignPartition(const char* pname, PTRef pref, char** msg)
+    {
+        term_store.assignPartition(pname, pref, msg);
     }
 
-    bool assignPartition(PTRef pref, char** msg)
+    void assignPartition(PTRef pref, char** msg)
     {
-        assertions.insert(pref, asrt_idx++);
-        return term_store.assignPartition(pref, msg);
+        partitions.insert(pref, partition_idx++);
+        term_store.assignPartition(pref, msg);
     }
 #endif
 
     bool canInterpolate()
     {
 #ifdef PRODUCE_PROOF
-//        return config.produce_inter() && assertions.getSize() >= 2;
+//        return config.produce_inter() && partitions.getSize() >= 2;
         return config.produce_inter();
 #else
         return false;
@@ -595,23 +599,23 @@ class Logic {
     ipartitions_t& getVarClassMask(Var l) { return var_class[l]; }
     void addClauseClassMask(CRef l, const ipartitions_t& toadd);
     void addVarClassMask(Var l, const ipartitions_t& toadd);
-    void getAssertions(vec<PTRef>& asrts) { return assertions.getKeys(asrts); }
-    unsigned getNofPartitions() { return assertions.getSize(); }
-    //TODO: make this better
-    bool isAssertion(PTRef pref)
+    void getPartitions(vec<PTRef>& asrts) { return partitions.getKeys(asrts); }
+    unsigned getNofPartitions() { return partitions.getSize(); }
+
+    bool isPartition(PTRef pref)
     {
-        return assertions.has(pref);
+        return partitions.has(pref);
     }
-    bool isAssertionSimp(PTRef pref)
+    bool isPartitionSimp(PTRef pref)
     {
-        for (int i = 0; i < assertions_simp.size(); ++i)
-            if (assertions_simp[i] == pref)
+        for (int i = 0; i < partitions_simp.size(); ++i)
+            if (partitions_simp[i] == pref)
                 return true;
         return false;
     }
-    int assertionIndex(PTRef pref)
+    int partitionIndex(PTRef pref)
     {
-        if (isAssertion(pref)) return assertions[pref];
+        if (isPartition(pref)) return partitions[pref];
         else return -1;
     }
 #endif

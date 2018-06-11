@@ -90,9 +90,11 @@ class PtStore {
     }
 
    // Partitions
-    bool assignPartition(const char* pname, PTRef, char** msg); //for partitions
-    bool assignPartition(PTRef, char** msg); //for assertions
+    void assignPartition(const char* pname, PTRef, char** msg); //for partitions
+    void assignPartition(PTRef, char** msg); //for assertions
+
 #ifdef PRODUCE_PROOF
+    void assignPartition(int n, PTRef tr); // The new partition system
     ipartitions_t& getIPartitions(PTRef _t);
     void setIPartitions(PTRef _t, ipartitions_t& _p);
     void addIPartitions(PTRef _t, ipartitions_t& _p);
