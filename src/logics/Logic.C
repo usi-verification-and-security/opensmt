@@ -322,7 +322,14 @@ Logic::pp(PTRef tr)
     char* name_escaped = printSym(sr);
 
     if (t.size() == 0) {
+#ifdef PARTITION_PRETTYPRINT
+        std::stringstream o;
+        o << getIPartitions(tr);
+        const char* parts = o.str().c_str();
+        asprintf(&out, "%s [%s]", name_escaped, parts);
+#else
         asprintf(&out, "%s", name_escaped);
+#endif
         free(name_escaped);
         return out;
     }
@@ -344,7 +351,14 @@ Logic::pp(PTRef tr)
         }
     }
     old = out;
+#ifdef PARTITION_PRETTYPRINT
+    std::stringstream o;
+    o << getIPartitions(tr);
+    const char* parts = o.str().c_str();
+    asprintf(&out, "%s) [%s]", old, parts);
+#else
     asprintf(&out, "%s)", old);
+#endif
     ::free(old);
     return out;
 }
