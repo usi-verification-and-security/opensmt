@@ -2251,7 +2251,7 @@ void Logic::computePartitionMasks(const vec<PTRef> &roots) {
 
     vec<PtChild> list_out;
     getTermsList(roots, list_out, *this);
-    for (int i = 0; i < list_out.size(); i++)
+    for (int i = list_out.size()-1; i >= 0; i--)
     {
         PTRef tr = list_out[i].tr;
         Pterm& t = getPterm(tr);

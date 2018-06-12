@@ -200,7 +200,7 @@ class Logic {
     PTRef getTopLevelIte(PTRef tr) { return top_level_ites[tr].repr; }
 
 
-    virtual void conjoinExtras(PTRef root, PTRef& new_root) { cerr << "; conjoinExtras called" << endl; conjoinItes(root, new_root); }
+    virtual void conjoinExtras(PTRef root, PTRef& new_root) { conjoinItes(root, new_root); }
 
     virtual const Logic_t getLogic() const;
     virtual const char* getName()    const;
