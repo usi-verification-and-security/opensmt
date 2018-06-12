@@ -621,19 +621,18 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
                 notify_formatted(true, "name %s already exists", name);
                 return PTRef_Undef;
             }
-
+#ifdef PRODUCE_PROOF
+            main_solver->assignPartition(term_names.size(), tr);
+            nameToPartition.insert(name, term_names.size());
+#endif
+            term_names.push(name);
             nameToTerm.insert(name, tr);
             if (!termToNames.has(tr)) {
                 vec<const char*> v;
                 termToNames.insert(tr, v);
             }
             termToNames[tr].push(name);
-            term_names.push(name);
-#ifdef PRODUCE_PROOF
-            nameToPartition.insert(name, term_names.size()-1);
-#endif
         }
-
 //#ifdef PRODUCE_PROOF
 //        if (strcmp(name_attr.getValue(), ":partition") == 0) {
 //            // Get the symbolic name of the partition
@@ -1004,8 +1003,6 @@ void Interpret::notify_formatted(bool error, const char* fmt_str, ...) {
     char c1, *t;
     if (error)
         cout << "(error \"";
-//    else
-//        cout << "(";
 
     va_start(ap, fmt_str);
     while (true) {

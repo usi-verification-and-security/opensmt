@@ -1093,38 +1093,6 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, char** msg)
     return insertTermHash(sym, terms);
 }
 
-bool
-Logic::existsTermHash(SymRef sym, const vec<PTRef>& terms_in)
-{
-    vec<PTRef> terms;
-    terms_in.copyTo(terms);
-    PTRef res = PTRef_Undef;
-    char **msg;
-    if (terms.size() == 0) {
-        if (term_store.hasCtermKey(sym)) //cterm_map.contains(sym))
-            return true;
-    }
-    else if (!isBooleanOperator(sym)) {
-        if (sym_store[sym].commutes()) {
-            sort(terms, LessThan_PTRef());
-        }
-        PTLKey k;
-        k.sym = sym;
-        terms.copyTo(k.args);
-        if (term_store.hasCplxKey(k))
-            return true;
-    }
-    else {
-        // Boolean operator
-        PTLKey k;
-        k.sym = sym;
-        terms.copyTo(k.args);
-        if (term_store.hasBoolKey(k))
-            return true;
-    }
-    return false;
-}
-
 PTRef
 Logic::insertTermHash(SymRef sym, const vec<PTRef>& terms_in)
 {
@@ -2246,7 +2214,53 @@ Logic::implies(PTRef implicant, PTRef implicated)
     return true;
 }
 
+void Logic::conjoinItes(PTRef root, PTRef& new_root)
+{
+    vec<PTRef> queue;
+    Map<PTRef,bool,PTRefHash> seen;
+    queue.push(root);
+    vec<PTRef> args;
+    while (queue.size() != 0) {
+        PTRef el = queue.last();
+        queue.pop();
+        if (seen.has(el)) continue;
+        if (isVar(el) && isIteVar(el)) {
+            PTRef ite = getTopLevelIte(el);
+            args.push(ite);
+            queue.push(ite);
 #ifdef PRODUCE_PROOF
+            setIPartitions(ite, getIPartitions(el));
+#endif
+        }
+        for (int i = 0; i < getPterm(el).size(); i++)
+            queue.push(getPterm(el)[i]);
+        seen.insert(el, true);
+    }
+#ifdef PRODUCE_PROOF
+    computePartitionMasks(args);
+#endif
+    args.push(root);
+    new_root = mkAnd(args);
+}
+
+#ifdef PRODUCE_PROOF
+
+// Given a vector roots of ptrefs, compute the partitions for each term rooted at roots
+// so that a term has the partitions of its ancestors.
+void Logic::computePartitionMasks(const vec<PTRef> &roots) {
+
+    vec<PtChild> list_out;
+    getTermsList(roots, list_out, *this);
+    for (int i = 0; i < list_out.size(); i++)
+    {
+        PTRef tr = list_out[i].tr;
+        Pterm& t = getPterm(tr);
+        ipartitions_t& p = getIPartitions(tr);
+        for (int j = 0; j < t.size(); j++)
+            addIPartitions(t[j], p);
+    }
+}
+
 bool
 Logic::verifyInterpolantA(PTRef itp, const ipartitions_t& mask)
 {
@@ -2340,49 +2354,6 @@ Logic::addClauseClassMask(CRef l, const ipartitions_t& toadd)
     cerr << "; Adding mask " << toadd << " to clause " << l << endl;
     cerr << "; Clause " << l << " now has mask " << clause_class[l] << endl;
 #endif
-}
-
-//
-// Visit the term dag starting from pref in pre-order
-// depth-first-search.  For each term add the partition inherited from
-// pref
-//
-void
-Logic::setIPartitionsIte(PTRef pref)
-{
-    ipartitions_t &partition = getIPartitions(pref);
-    set<PTRef> visited;
-    queue<PTRef> bfs;
-    bool unprocessed_children;
-    bfs.push(pref);
-    while (!bfs.empty())
-    {
-        PTRef p = bfs.front();
-        bfs.pop();
-        if (visited.find(p) != visited.end()) continue;
-
-        // fine to visit
-        visited.insert(p);
-        if (isUF(p) || isUP(p))
-        {
-            addIPartitions(getPterm(p).symb(), partition);
-        }
-        if (p != pref)
-        {
-            addIPartitions(p, partition);
-        }
-
-        // set on children
-        Pterm& t = getPterm(p);
-        for (int i = 0; i < t.size(); ++i)
-        {
-            PTRef c = t[i];
-            if (visited.find(c) == visited.end())
-            {
-                bfs.push(c);
-            }
-        }
-    }
 }
 #endif
 

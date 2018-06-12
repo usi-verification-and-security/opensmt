@@ -111,8 +111,6 @@ class MainSolver
         PTRef getRoot   ()        const         { return root; }
     };
 
-    void expandItes(FContainer& fc, vec<PtChild>& terms);
-
     sstat giveToSolver(PTRef root, FrameId push_id) {
         if (ts.cnfizeAndGiveToSolver(root, push_id) == l_False) return s_False;
         return s_Undef; }

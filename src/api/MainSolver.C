@@ -203,7 +203,6 @@ void
 MainSolver::assignPartition(int n, PTRef tr)
 {
     logic.assignPartition(n, tr);
-    logic.setIPartitionsIte(tr);
 }
 #endif
 
@@ -216,13 +215,13 @@ MainSolver::insertFormula(PTRef root, char** msg)
                  Logic::s_sort_bool, logic.getSortName(logic.getSortRef(root)));
         return s_Error;
     }
-    logic.conjoinExtras(root, root);
-    char* err_msg = NULL;
 #ifdef PRODUCE_PROOF
-//    if (!logic.assignPartition(root, &err_msg))
-//        opensmt_error("Could not assign partition");
-//    logic.setIPartitionsIte(root);
+    // Label the formula with a partition mask.  This needs to be done before conjoining the extras
+    // since otherwise we loose the connection between Ites and partitions.
+    logic.computePartitionMasks(root);
 #endif
+    logic.conjoinExtras(root, root);
+
     pfstore[formulas.last()].push(root);
     pfstore[formulas.last()].units.clear();
     pfstore[formulas.last()].root = PTRef_Undef;
@@ -271,42 +270,14 @@ sstat MainSolver::simplifyFormulas(int from, int& to, char** err_msg)
 void
 MainSolver::computePartitionMasks(int from, int to)
 {
+    cerr << "; computePartitionMasks called" << endl;
     vec<PTRef> roots;
     for (int i = from; i < to; i++)
         roots.push(pfstore[formulas[i]].root);
 
-    vec<PtChild> list_out;
-    getTermsList(roots, list_out, logic);
-
-    for (int i = 0; i < list_out.size(); i++)
-    {
-        PTRef tr = list_out[i].tr;
-        Pterm& t = logic.getPterm(tr);
-        ipartitions_t& p = logic.getIPartitions(tr);
-        for (int j = 0; j < t.size(); j++)
-            logic.addIPartitions(t[j], p);
-    }
+    logic.computePartitionMasks(roots);
 }
 #endif
-
-void MainSolver::expandItes(FContainer& fc, vec<PtChild>& terms)
-{
-    // cnfization of the formula
-    // Get the egraph data structure for instance from here
-    // Terms need to be purified before cnfization?
-
-    PTRef root = fc.getRoot();
-
-    getTermList<PtChild>(root, terms, logic);
-
-    if (terms.size() > 0) {
-        root = ts.expandItes(terms);
-        terms.clear();
-        // This seems a bit subtle way of updating the terms vector
-        getTermList<PtChild>(root, terms, logic);
-    }
-    fc.setRoot(root);
-}
 
 
 // Replace subtrees consisting only of ands / ors with a single and / or term.
@@ -319,7 +290,6 @@ void MainSolver::expandItes(FContainer& fc, vec<PtChild>& terms)
 // term appears as a child in more than one term, we will not flatten
 // that structure.
 //
-
 void MainSolver::computeIncomingEdges(PTRef tr, Map<PTRef,int,PTRefHash>& PTRefToIncoming)
 {
     assert(tr != PTRef_Undef);
@@ -1087,10 +1057,7 @@ sstat MainSolver::check()
     sstat rval;
     int simplified_to;
     rval = simplifyFormulas(simplified_until, simplified_to);
-#ifdef PRODUCE_PROOF
-    // Label the formula with a partition mask
-    computePartitionMasks(simplified_until, simplified_to);
-#endif
+
     simplified_until = simplified_to;
     if (config.dump_query())
         printFramesAsQuery();

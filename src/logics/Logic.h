@@ -117,13 +117,11 @@ class Logic {
     int partition_idx;
     map<CRef, ipartitions_t> clause_class;
     map<Var, ipartitions_t> var_class;
-    map<PTRef, PTRef> flat2orig;
 #endif
 
     Map<const char*,TFun,StringHash,Equal<const char*> > defined_functions;
     vec<Tterm> defined_functions_vec; // A strange interface through the Tterms..
 
-    vec<SymRef>         sortToEquality;
     vec<bool>           constants;
     vec<bool>           interpreted_functions;
 
@@ -174,33 +172,11 @@ class Logic {
 
     void dumpFunction(ostream &, const TFun&);
 
-    void conjoinItes(PTRef root, PTRef& new_root)
-    {
-        vec<PTRef> queue;
-        Map<PTRef,bool,PTRefHash> seen;
-        queue.push(root);
-        vec<PTRef> args;
-        while (queue.size() != 0) {
-            PTRef el = queue.last();
-            queue.pop();
-            if (seen.has(el)) continue;
-            if (isVar(el) && isIteVar(el)) {
-                args.push(getTopLevelIte(el));
-                queue.push(getTopLevelIte(el));
-            }
-            for (int i = 0; i < getPterm(el).size(); i++)
-                queue.push(getPterm(el)[i]);
-            seen.insert(el, true);
-        }
-
-        args.push(root);
-        new_root = mkAnd(args);
-    }
+    void conjoinItes(PTRef root, PTRef& new_root);
 
   public:
     virtual bool okForBoolVar(PTRef) const; // True if the ref can have a boolean var
     virtual bool okToPartition(PTRef) const { return true; } // Does the logic think this is a good var to partition on (while parallelizing)
-    bool existsTermHash(SymRef, const vec<PTRef>&);
     static const char*  tk_true;
     static const char*  tk_false;
     static const char*  tk_not;
@@ -224,7 +200,7 @@ class Logic {
     PTRef getTopLevelIte(PTRef tr) { return top_level_ites[tr].repr; }
 
 
-    virtual void conjoinExtras(PTRef root, PTRef& new_root) { conjoinItes(root, new_root); }
+    virtual void conjoinExtras(PTRef root, PTRef& new_root) { cerr << "; conjoinExtras called" << endl; conjoinItes(root, new_root); }
 
     virtual const Logic_t getLogic() const;
     virtual const char* getName()    const;
@@ -246,7 +222,6 @@ class Logic {
     // Symbols
     SymRef      newSymb       (const char* name, vec<SRef>& sort_args, char** msg)
                                                             { return sym_store.newSymb(name, sort_args, msg); }
-//    bool        hasSym        (const SymRef s)        const { return sym_store.contains(s); }
     Symbol& getSym        (const SymRef s)        { return sym_store[s]; }
     const Symbol& getSym        (const SymRef s)        const { return sym_store[s]; }
     const Symbol& getSym        (const PTRef tr)        const { return getSym(getPterm(tr).symb()); }
@@ -317,27 +292,14 @@ class Logic {
     bool verifyInterpolantB(PTRef, const ipartitions_t&);
     bool verifyInterpolant(PTRef, const ipartitions_t&);
 
-
-//    // Partitions
-//    void setOriginalPartition(PTRef flat, PTRef orig)
-//    {
-//        flat2orig[flat] = orig;
-//    }
-//    bool hasOriginalPartition(PTRef flat)
-//    {
-//        return flat2orig.find(flat) != flat2orig.end();
-//    }
-//    PTRef getOriginalPartition(PTRef flat)
-//    {
-//        assert(flat2orig.find(flat) != flat2orig.end());
-//        return flat2orig[flat];
-//    }
     ipartitions_t& getIPartitions(PTRef _t) { return term_store.getIPartitions(_t); }
     void setIPartitions(PTRef _t, ipartitions_t& _p) { term_store.setIPartitions(_t, _p); }
     void addIPartitions(PTRef _t, ipartitions_t& _p) { term_store.addIPartitions(_t, _p); }
     ipartitions_t& getIPartitions(SymRef _s) { return term_store.getIPartitions(_s); }
     void setIPartitions(SymRef _s, ipartitions_t& _p) { term_store.setIPartitions(_s, _p); }
     void addIPartitions(SymRef _s, ipartitions_t& _p) { term_store.addIPartitions(_s, _p); }
+    void computePartitionMasks(const vec<PTRef> & roots);
+    void computePartitionMasks(PTRef tr) { vec<PTRef> trs = {tr}; computePartitionMasks(trs); }
 #endif
 
     // The Boolean connectives
@@ -428,8 +390,7 @@ class Logic {
     // args is sorted before lookup, but not simplified otherwise
     PTRef       hasEquality        (vec<PTRef>& args);
     // Override for different logics...
-    bool        declare_sort_hook  (SRef sr);
-    inline bool isPredef           (string&)        const { return false; };
+    virtual bool declare_sort_hook  (SRef sr);
 
     // Simplify an equality.  TODO: See if this could be combined with
     // simplifyTree
@@ -594,7 +555,7 @@ class Logic {
 
 
 #ifdef PRODUCE_PROOF
-    void setIPartitionsIte(PTRef pref);
+//    void setIPartitionsIte(PTRef pref);
     ipartitions_t& getClauseClassMask(CRef l) { return clause_class[l]; }
     ipartitions_t& getVarClassMask(Var l) { return var_class[l]; }
     void addClauseClassMask(CRef l, const ipartitions_t& toadd);
