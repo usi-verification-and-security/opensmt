@@ -28,20 +28,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Real.h"
 
 
-class LRANonLinearException
+class LRANonLinearException : std::logic_error
 {
-    char* reason;
 public:
-    LRANonLinearException(const char* reason_) {
-        asprintf(&reason, "Term %s is non-linear", reason_);
+    LRANonLinearException(const char* reason_) : std::logic_error(reason_) {
     }
-    virtual char* what() const
-    {
-        char* out;
-        asprintf(&out, "%s", reason);
-        return out;
+
+    LRANonLinearException(std::string const & reason) : std::logic_error(reason) {
     }
-    ~LRANonLinearException() { free(reason); }
+    ~LRANonLinearException() = default;
 };
 
 class LRALogic: public Logic

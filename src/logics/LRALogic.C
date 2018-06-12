@@ -582,9 +582,11 @@ PTRef LRALogic::mkRealTimes(const vec<PTRef>& tmp_args, char** msg)
     if (isRealTerm(tr) || isRealPlus(tr) || isUF(tr))
         return tr;
     else {
-        char* err;
-        asprintf(&err, "%s", printTerm(tr));
-        throw LRANonLinearException(err);
+        std::string reason{"Nonlinear term encountered: "};
+        auto term = printTerm(tr);
+        reason += term;
+        free(term);
+        throw LRANonLinearException(reason);
     }
 }
 
@@ -598,6 +600,9 @@ PTRef LRALogic::mkRealDiv(const vec<PTRef>& args, char** msg)
     assert(args.size() == 2);
 
     if (isRealDiv(s_new)) {
+        if(!isConstant(args_new[1])) {
+            throw LRANonLinearException("Division by non-constant is not permitted in LRA");
+        }
         assert(isRealTerm(args_new[0]) && isConstant(args_new[1]));
         args_new[1] = mkConst(FastRational_inverse(getRealConst(args_new[1]))); //mkConst(1/getRealConst(args_new[1]));
         return mkRealTimes(args_new);
