@@ -2223,7 +2223,6 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
         icolor_t color = I_UNDEF;
         const ipartitions_t & p = logic.getIPartitions(explanation[i].tr);
         Pterm& t = logic.getPterm(explanation[i].tr);
-
         if ( isAB( p, mask ) ) {
             color = I_AB;
         }
@@ -2248,6 +2247,9 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
         PTRef exp_pt = explanation[i].tr;
         if(labels != nullptr && labels->find(exp_pt) != labels->end())
         {
+            if(color != I_UNDEF){
+                assert(color == labels->find(exp_pt)->second);
+            }
             color = labels->find(exp_pt)->second;
             //cout << "; PTRef " << logic.printTerm(exp_pt) << " has Boolean color " << color << endl;
         }
@@ -2259,24 +2261,25 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
         {
             if (explanation[i].sgn == l_False)
             {
-                interpolant.addExprWithCoeff(LAExpression(logic, explanation[i].tr), explanationCoefficients[i]);
+                interpolant.addExprWithCoeff(LAExpression(logic, explanation[i].tr, false), explanationCoefficients[i]);
                 delta_flag=true;
             }
             else
             {
-                interpolant.addExprWithCoeff(LAExpression(logic, explanation[i].tr), -explanationCoefficients[i]);
+                interpolant.addExprWithCoeff(LAExpression(logic, explanation[i].tr, false), -explanationCoefficients[i]);
             }
         }
         if(color == I_B || color == I_AB)
         {
             if (explanation[i].sgn == l_False)
             {
-                interpolant_dual.addExprWithCoeff(LAExpression(logic, explanation[i].tr), explanationCoefficients[i]);
+                interpolant_dual.addExprWithCoeff(LAExpression(logic, explanation[i].tr, false), explanationCoefficients[i]);
+                // TODO: investigate where delta_flag_dual should be used and how it should be used properly
                 delta_flag_dual=true;
             }
             else
             {
-                interpolant_dual.addExprWithCoeff(LAExpression(logic, explanation[i].tr), -explanationCoefficients[i]);
+                interpolant_dual.addExprWithCoeff(LAExpression(logic, explanation[i].tr, false), -explanationCoefficients[i]);
             }
         }
     }
