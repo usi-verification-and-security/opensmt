@@ -196,7 +196,7 @@ Logic::Logic(SMTConfig& c) :
     ites.insert(sym_ITE, true);
 
 #ifdef PRODUCE_PROOF
-    ipartitions_t mask = 1;
+    ipartitions_t mask = 0;
     mask = ~mask;
     setIPartitions(getTerm_true(), mask);
     setIPartitions(getTerm_false(), mask);
