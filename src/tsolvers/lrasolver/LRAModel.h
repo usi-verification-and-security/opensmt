@@ -10,7 +10,6 @@
 #include "LABounds.h"
 #include "Vec.h"
 #include "LARefs.h"
-#include "LAVar.h"
 
 struct Limits
 {

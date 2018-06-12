@@ -33,9 +33,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //#define GAUSSIAN_DEBUG
 
 #include "Timer.h"
-#include "LRALogic.h"
 #include "TSolver.h"
 #include "LRAModel.h"
+#include "LRALogic.h"
 
 #include <unordered_set>
 #include <unordered_map>
@@ -147,10 +147,29 @@ public:
 #ifdef PRODUCE_PROOF
     TheoryInterpolator* getTheoryInterpolator() override { return nullptr; }
     PTRef getInterpolant( const ipartitions_t &, map<PTRef, icolor_t>* );
+    PTRef getExperimentalInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *labels);
     bool usingStrong() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_strong; }
     bool usingWeak() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_weak; }
     bool usingFactor() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_factor; }
+    bool usingExperimental() {
+        return config.getLRAInterpolationAlgorithm() == itp_lra_alg_experimental_strong ||
+               config.getLRAInterpolationAlgorithm() == itp_lra_alg_experimental_weak; }
     const char*  getStrengthFactor() { return config.getLRAStrengthFactor(); }
+
+    struct InterpolStatistics{
+        std::size_t interestingInterpolants = 0;
+        std::size_t defaultInterpolants = 0;
+
+        void print(std::ostream& os){
+            os << "; -----------------------------------" << '\n';
+            os << "; LRA SOLVER INTERPOLATION STATISTICS" << '\n';
+            os << "; -----------------------------------" << '\n';
+            os << "; Number of interesting interpolation produced: " << interestingInterpolants << '\n';
+            os << "; Number of default interpolation produced: " << defaultInterpolants << '\n';
+        }
+    };
+
+    InterpolStatistics interpolStats;
 #endif
 
 protected:

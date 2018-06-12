@@ -42,28 +42,36 @@ public:
     polynome[PTRef_Undef] = 0;
   }
 
-  LAExpression  (LRALogic& l, PTRef e)
+  LAExpression  (LRALogic& l, PTRef e, bool do_canonize)
     : logic     (l)
     , r         (l.isRealEq(e) ? EQ : (l.isRealLeq(e) ? LEQ : UNDEF))
   {
-    initialize(e);
+    initialize(e, do_canonize);
   }
+
+    LAExpression  (LRALogic& l, PTRef e) : LAExpression(l,e,true) {}
+
+
+//  LAExpression & operator=(LAExpression&& other) = default;
+//  LAExpression & operator=(const LAExpression& other) = default;
+//  LAExpression(const LAExpression& other) = default;
+//  LAExpression(LAExpression&& other) = default;
 
   inline bool              isTrue     ( ) { return polynome.size( ) == 1 && ( r == EQ ? polynome[ PTRef_Undef ] == 0 : polynome[ PTRef_Undef ] >= 0 ); }
   inline bool              isFalse    ( ) { return polynome.size( ) == 1 && ( r == EQ ? polynome[ PTRef_Undef ] != 0 : polynome[ PTRef_Undef ] < 0 ); }
 
   typedef map< PTRef, opensmt::Real >    polynome_t;
 
-  void                     initialize   (PTRef);      // Initialize
+  void                     initialize   (PTRef, bool canonize = true);      // Initialize
   PTRef                    solve        ();           // Solve w.r.t. some variable
   void                     canonize     ();           // Canonize (different from solve!)
   void                     canonizeReal ();           // Canonize (different from solve!)
   void                     canonizeInt  ();           // Canonize (different from solve!)
-  PTRef                    toPTRef      ();           // Output as enode
+  PTRef                    toPTRef      () const;     // Output as enode
   PTRef                    getPTRefConstant      ();           // Output as enode
   PTRef                    getPTRefNonConstant      ();           // Output as enode
   opensmt::Real            getRealConstant      ();           // Output as enode
-  void                     print        (ostream&);   // Output as enode
+  void                     print        (ostream&) const;   // Output as enode
   pair< PTRef, PTRef >     getSubst     ();    // Get a valid substitution
   pair< PTRef, PTRef >     getSubstReal ();    // Get a valid substitution for reals
   pair< PTRef, PTRef >     getSubstInt  ();    // Get a valid substitution for integers
@@ -72,9 +80,12 @@ public:
   //
   // Export iterator in order to allow external procedures to read the polynomes
   //
-  typedef polynome_t::iterator iterator;
+  using iterator = polynome_t::iterator;
+  using const_iterator = polynome_t::const_iterator;
   inline iterator begin   ( ) { return polynome.begin( ); }
   inline iterator end     ( ) { return polynome.end( ); }
+    inline const_iterator begin   ( ) const { return polynome.begin( ); }
+    inline const_iterator end     ( ) const { return polynome.end( ); }
 
   bool                     checkIntCoefficients ( );
 

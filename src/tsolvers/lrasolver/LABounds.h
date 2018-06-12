@@ -4,7 +4,6 @@
 #include "Delta.h"
 #include "LARefs.h"
 #include "LAVar.h"
-#include "Pterm.h"
 
 //
 // Bound index type.  The bounds are ordered in a list, and indexed using a number in the list.
