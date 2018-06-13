@@ -1356,7 +1356,7 @@ void Interpret::getInterpolants(const ASTNode& n)
             }
 //            cerr << ") itp mask " << p << endl;
         }
-//        p <<= 1; // ABmixed bit. I think this is some special partition for those
+
         SimpSMTSolver& smt_solver = main_solver->getSMTSolver();
         smt_solver.createProofGraph();
         if(config.proof_reduce())
