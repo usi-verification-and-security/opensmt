@@ -16,6 +16,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(INSTALL_HEADERS_DIR include/opensmt)
 
 option(PRODUCE_PROOF "Produce proof" OFF)
+option(PARTITION_PRETTYPRINT "Term pretty printing shows partitions" OFF)
 option(ITP_DEBUG "Debug interpolation" OFF)
 option(PEDANTIC_DEBUG "Pedantic debug" OFF)
 option(DEBUG_REASONS "Debug ..." OFF)

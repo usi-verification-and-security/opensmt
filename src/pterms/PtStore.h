@@ -96,11 +96,11 @@ class PtStore {
 #ifdef PRODUCE_PROOF
     void assignPartition(int n, PTRef tr); // The new partition system
     ipartitions_t& getIPartitions(PTRef _t);
-    void setIPartitions(PTRef _t, ipartitions_t& _p);
-    void addIPartitions(PTRef _t, ipartitions_t& _p);
+    void setIPartitions(PTRef _t, const ipartitions_t& _p);
+    void addIPartitions(PTRef _t, const ipartitions_t& _p);
     ipartitions_t& getIPartitions(SymRef _s);
-    void setIPartitions(SymRef _s, ipartitions_t& _p);
-    void addIPartitions(SymRef _s, ipartitions_t& _p);
+    void setIPartitions(SymRef _s, const ipartitions_t& _p);
+    void addIPartitions(SymRef _s, const ipartitions_t& _p);
 #endif
 
     void   free(PTRef r) { pta.free(r); }  // this is guaranteed to be lazy

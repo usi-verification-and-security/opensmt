@@ -248,14 +248,14 @@ PtStore::getIPartitions(PTRef _t)
 }
 
 void
-PtStore::setIPartitions(PTRef _t, ipartitions_t& _p)
+PtStore::setIPartitions(PTRef _t, const ipartitions_t& _p)
 {
     ipartitions_t* new_p = new ipartitions_t(_p);
     term_partitions.insert(_t, new_p);
 }
 
 void
-PtStore::addIPartitions(PTRef _t, ipartitions_t& _p)
+PtStore::addIPartitions(PTRef _t, const ipartitions_t& _p)
 {
     if (!term_partitions.has(_t)) {
         ipartitions_t* new_p = new ipartitions_t(0);
@@ -275,7 +275,7 @@ PtStore::getIPartitions(SymRef _s)
 }
 
 void
-PtStore::setIPartitions(SymRef _s, ipartitions_t& _p)
+PtStore::setIPartitions(SymRef _s, const ipartitions_t& _p)
 {
     assert(!sym_partitions.has(_s));
     ipartitions_t* p_new = new ipartitions_t(_p);
@@ -283,7 +283,7 @@ PtStore::setIPartitions(SymRef _s, ipartitions_t& _p)
 }
 
 void
-PtStore::addIPartitions(SymRef _s, ipartitions_t& _p)
+PtStore::addIPartitions(SymRef _s, const ipartitions_t& _p)
 {
     if (!sym_partitions.has(_s)) {
         ipartitions_t* p_new = new ipartitions_t(0);

@@ -1053,7 +1053,7 @@ PTRef ProofGraph::compInterpLabelingOriginal ( ProofNode *n, const ipartitions_t
 
     if (clause_color == I_AB)
     {
-        opensmt_error ("Clause has color I_AB");
+        // Think of a heuristic for choosing the partition?
         clause_color = I_A;
     }
 

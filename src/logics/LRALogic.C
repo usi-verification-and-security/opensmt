@@ -57,14 +57,15 @@ LRALogic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
         args.push(a1); args.push(a2);
         PTRef i1 = mkRealLeq(args, &msg);
         PTRef i2 = mkRealGeq(args, &msg);
-#ifdef PRODUCE_PROOF
-        ipartitions_t &part = getIPartitions(tr);
-        addIPartitions(i1, part);
-        addIPartitions(i2, part);
-#endif
         args.clear();
         args.push(i1); args.push(i2);
         PTRef andr = mkAnd(args);
+#ifdef PRODUCE_PROOF
+        const ipartitions_t &part = getIPartitions(tr);
+        addIPartitions(andr, part);
+        addIPartitions(i1, part);
+        addIPartitions(i2, part);
+#endif
         lra_split_inequalities.insert(i1, true);
         lra_split_inequalities.insert(i2, true);
 

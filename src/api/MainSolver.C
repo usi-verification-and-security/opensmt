@@ -260,6 +260,11 @@ sstat MainSolver::simplifyFormulas(int from, int& to, char** err_msg)
         // root_instance is updated to the and of the simplified formulas currently in the solver
         root_instance.setRoot(logic.mkAnd(root_instance.getRoot(), fc.getRoot()));
         // Stop if problem becomes unsatisfiable
+#ifdef PRODUCE_PROOF
+        // Label the formula with a partition mask.  Needs to be done here (also) since
+        // simplify can change the instance (e.g., LRA splits equalities)
+        logic.computePartitionMasks(fc.getRoot());
+#endif
         if ((status = giveToSolver(fc.getRoot(), pfstore[formulas[i]].getId())) == s_False)
             break;
     }

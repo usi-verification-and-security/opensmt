@@ -54,11 +54,11 @@ void Cnfizer::initialize()
     vec<Lit> c;
     Lit l = theory.findLit (logic.getTerm_true());
     c.push (l);
-    addClause (c);
+    addClause (c, logic.getTerm_true());
     c.pop();
     l = theory.findLit (logic.getTerm_false());
     c.push (~l);
-    addClause (c);
+    addClause (c, logic.getTerm_false());
 }
 
 lbool
@@ -238,11 +238,7 @@ bool Cnfizer::deMorganize ( PTRef formula )
 #endif
         }
 
-#ifdef PRODUCE_PROOF
-        rval = addClause (clause, logic.getIPartitions(formula));
-#else
-        rval = addClause (clause);
-#endif
+        rval = addClause (clause, formula);
     }
 
     return rval;
@@ -391,11 +387,8 @@ bool Cnfizer::checkPureConj (PTRef e, Map<PTRef, bool, PTRefHash, Equal<PTRef> >
     return true;
 }
 
-#ifdef PRODUCE_PROOF
-bool Cnfizer::addClause ( const vec<Lit> &c_in, const ipartitions_t &mask)
-#else
-bool Cnfizer::addClause ( const vec<Lit> &c_in )
-#endif
+bool Cnfizer::addClause (const vec<Lit> &c_in, PTRef f)
+
 {
 
     vec<Lit> c;
@@ -419,7 +412,7 @@ bool Cnfizer::addClause ( const vec<Lit> &c_in )
 
 #endif
 #ifdef PRODUCE_PROOF
-    bool res = solver.addSMTClause (c, mask);
+    bool res = solver.addSMTClause(c, logic.getIPartitions(f));
 #else
     bool res = solver.addSMTClause (c);
 #endif
@@ -439,11 +432,7 @@ bool Cnfizer::giveToSolver ( PTRef f )
     if (logic.isLit (f))
     {
         clause.push (theory.findLit (f));
-#ifdef PRODUCE_PROOF
-        return addClause (clause, logic.getIPartitions(f));
-#else
-        return addClause (clause);
-#endif
+        return addClause (clause, f);
     }
 
     //
@@ -458,11 +447,7 @@ bool Cnfizer::giveToSolver ( PTRef f )
         for (int i = 0; i < lits.size(); i++)
             clause.push (theory.findLit (lits[i]));
 
-#ifdef PRODUCE_PROOF
-        return addClause (clause, logic.getIPartitions(f));
-#else
-        return addClause (clause);
-#endif
+        return addClause (clause, f);
     }
 
     //

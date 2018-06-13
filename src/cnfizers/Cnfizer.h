@@ -116,11 +116,7 @@ protected:
     bool     giveToSolver               ( PTRef );                              // Gives formula to the SAT solver
 
 
-#ifdef PRODUCE_PROOF
-    bool  addClause                  ( const vec<Lit>&, const ipartitions_t& mask = 0);
-#else
-    bool  addClause                  ( const vec<Lit>& );
-#endif
+    bool  addClause                  (const vec<Lit>&, PTRef f);
 
     void  retrieveClause             ( PTRef, vec<PTRef> & );         // Retrieve a clause from a formula
     void  retrieveConjuncts          ( PTRef, vec<PTRef> & );         // Retrieve the list of conjuncts

@@ -538,14 +538,17 @@ Logic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
     Pterm& p = getPterm(tr);
     vec<PTRef> newargs;
     char *msg;
-    for(int i = 0; i < p.size(); ++i) {
+    for (int i = 0; i < p.size(); ++i) {
         PTRef tr = p[i];
-        if(tr_map.has(tr))
+        if (tr_map.has(tr))
             newargs.push(tr_map[tr]);
         else
             newargs.push(tr);
     }
     PTRef trp = insertTerm(p.symb(), newargs, &msg);
+#ifdef PRODUCE_PROOF
+    addIPartitions(trp, getIPartitions(tr));
+#endif
     if (trp != tr) {
         if (tr_map.has(tr))
             assert(tr_map[tr] == trp);
@@ -599,7 +602,7 @@ void Logic::simplifyTree(PTRef tr, PTRef& root_out)
         visit(queue[i].x, tr_map);
 #ifdef PRODUCE_PROOF
         PTRef qaux = queue[i].x;
-        if (tr_map.has(qaux) && isPartition(qaux))
+        if (tr_map.has(qaux))
         {
             PTRef trq = tr_map[qaux];
             if (trq != qaux)
@@ -753,7 +756,7 @@ PTRef Logic::mkAnd(vec<PTRef>& args) {
             else if(newargs.size() == 1)
                 tr = newargs[0];
             else
-                tr = insertTermHash(getSym_and(), newargs);
+                tr = mkFun(getSym_and(), newargs);
         }
     }
 
@@ -807,7 +810,7 @@ PTRef Logic::mkOr(vec<PTRef>& args) {
         vec<PTRef> newargs;
         for (int i = 0; i < tmp_args.size(); i++)
             newargs.push(tmp_args[i].sgn == l_True? tmp_args[i].tr : mkNot(tmp_args[i].tr));
-        tr = insertTermHash(getSym_or(), newargs);
+        tr = mkFun(getSym_or(), newargs);
     }
 
     if(tr == PTRef_Undef) {
@@ -839,7 +842,7 @@ PTRef Logic::mkXor(vec<PTRef>& args) {
     vec<PTRef> newargs;
     args.copyTo(newargs);
     sort(newargs);
-    tr = insertTermHash(getSym_xor(), newargs);
+    tr = mkFun(getSym_xor(), newargs);
 
     if(tr == PTRef_Undef) {
         printf("Error in mkXor");
@@ -903,7 +906,7 @@ PTRef Logic::mkEq(vec<PTRef>& args) {
         if (args[0] == getTerm_false() || args[1] == getTerm_false())
             return args[0] == getTerm_false() ? mkNot(args[1]) : mkNot(args[0]);
     }
-    return insertTermHash(eq_sym, args);
+    return mkFun(eq_sym, args);
 }
 
 PTRef Logic::mkNot(vec<PTRef>& args) {
@@ -921,7 +924,7 @@ PTRef Logic::mkNot(PTRef arg) {
     else {
         vec<PTRef> tmp;
         tmp.push(arg);
-        tr = insertTermHash(getSym_not(), tmp);
+        tr = mkFun(getSym_not(), tmp);
     }
 
     if(tr == PTRef_Undef) {
@@ -1104,7 +1107,7 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, char** msg)
         return getTerm_true();
     if(sym == getSym_false())
         return getTerm_false();
-    return insertTermHash(sym, terms);
+    return mkFun(sym, terms);
 }
 
 PTRef

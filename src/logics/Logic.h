@@ -269,6 +269,7 @@ class Logic {
     vec<Tterm>& getFunctions  ();
     SRef        declareSort   (const char* id, char** msg);
     PTRef       mkFun         (SymRef f, const vec<PTRef>& args, char** msg);
+    PTRef       mkFun         (SymRef f, const vec<PTRef>& args) { char* msg; return mkFun(f, args, &msg); };
     PTRef       mkBoolVar     (const char* name);
 
     void dumpHeaderToFile(ostream& dump_out);
@@ -293,11 +294,11 @@ class Logic {
     bool verifyInterpolant(PTRef, const ipartitions_t&);
 
     ipartitions_t& getIPartitions(PTRef _t) { return term_store.getIPartitions(_t); }
-    void setIPartitions(PTRef _t, ipartitions_t& _p) { term_store.setIPartitions(_t, _p); }
-    void addIPartitions(PTRef _t, ipartitions_t& _p) { term_store.addIPartitions(_t, _p); }
+    void setIPartitions(PTRef _t, const ipartitions_t& _p) { term_store.setIPartitions(_t, _p); }
+    void addIPartitions(PTRef _t, const ipartitions_t& _p) { term_store.addIPartitions(_t, _p); }
     ipartitions_t& getIPartitions(SymRef _s) { return term_store.getIPartitions(_s); }
-    void setIPartitions(SymRef _s, ipartitions_t& _p) { term_store.setIPartitions(_s, _p); }
-    void addIPartitions(SymRef _s, ipartitions_t& _p) { term_store.addIPartitions(_s, _p); }
+    void setIPartitions(SymRef _s, const ipartitions_t& _p) { term_store.setIPartitions(_s, _p); }
+    void addIPartitions(SymRef _s, const ipartitions_t& _p) { term_store.addIPartitions(_s, _p); }
     void computePartitionMasks(const vec<PTRef> & roots);
     void computePartitionMasks(PTRef tr) { vec<PTRef> trs = {tr}; computePartitionMasks(trs); }
 #endif
