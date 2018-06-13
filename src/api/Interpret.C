@@ -661,14 +661,8 @@ bool Interpret::checkSat() {
             return false;
     }
     sstat res;
-    if (logic != NULL) {
+    if (logic != nullptr) {
         sat_calls++;
-        char* msg = NULL;
-
-#ifdef PRODUCE_PROOF
-        for (int i = 0; i < term_names.size(); i++)
-            main_solver->assignPartition(i, nameToTerm[term_names[i]]);
-#endif
 
         res = main_solver->check();
 
@@ -679,8 +673,6 @@ bool Interpret::checkSat() {
             notify_formatted(false, "unsat");
         else
             notify_formatted(false, "unknown");
-        if (msg != NULL)
-            notify_formatted(true, msg);
     }
     else {
         notify_formatted(true, "Illegal command before set-logic: check-sat");
