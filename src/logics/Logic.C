@@ -82,9 +82,6 @@ Logic::Logic(SMTConfig& c) :
     , term_TRUE(PTRef_Undef)
     , term_FALSE(PTRef_Undef)
     , subst_num(0)
-#ifdef PRODUCE_PROOF
-    , partition_idx(0)
-#endif
 {
     config.logic = QF_UF;
     logic_type = QF_UF;
@@ -2202,33 +2199,41 @@ Logic::implies(PTRef implicant, PTRef implicated)
     dump_out.close( );
     // Check !
     bool tool_res;
-    if ( int pid = fork() )
-    {
+    int pid = fork();
+    if(pid == -1){
+        std::cerr << "Failed to fork\n";
+        // consider throwing and exception
+        return false;
+    }
+    else if( pid == 0){
+        // child process
+        execlp( config.certifying_solver, config.certifying_solver, implies, NULL );
+        perror( "Child process error: " );
+        exit( 1 );
+    }
+    else{
+        // parent
         int status;
         waitpid(pid, &status, 0);
         switch ( WEXITSTATUS( status ) )
         {
             case 0:
+//                std::cerr << "Implication holds!\n";
                 tool_res = false;
                 break;
             case 1:
+//                std::cerr << "Implication does not hold!\n";
+//                std::cerr << "Antecedent: " << logic.printTerm(implicant) << '\n';
+//                std::cerr << "Consequent: " << logic.printTerm(implicated) << '\n';
                 tool_res = true;
                 break;
             default:
-                perror( "Tool" );
+                perror( "Parent process error" );
                 exit( EXIT_FAILURE );
         }
     }
-    else
-    {
-        execlp( "./tool_wrapper.sh", "tool_wrapper.sh", implies, NULL );
-        perror( "tool_wrapper.sh" );
-        exit( 1 );
-    }
 
-    if ( tool_res == true )
-        return false;
-    return true;
+    return !tool_res;
 }
 
 void Logic::conjoinItes(PTRef root, PTRef& new_root)
@@ -2289,18 +2294,17 @@ PTRef
 Logic::getPartitionA(const ipartitions_t& mask)
 {
     Logic& logic = *this;
-
-    vec<PTRef> part;
-    logic.getPartitions(part);
+    auto parts = logic.getPartitions();
     vec<PTRef> a_args;
-    for(int i = 0; i < part.size(); ++i)
+    for(auto part : parts)
     {
-        PTRef a = part[i];
-        ipartitions_t p = 0;
-        setbit(p, i + 1);
-        if(isAstrict(p, mask)) a_args.push(a);
-        else if(isBstrict(p, mask)) {}
-        else opensmt_error("Assertion is neither A or B");
+        const auto & p_mask = logic.getIPartitions(part);
+        if(isAlocal(p_mask, mask)) {
+            a_args.push(part);
+        }
+        else if(!isBlocal(p_mask, mask)) {
+            opensmt_error("Assertion is neither A or B");
+        }
     }
     PTRef A = logic.mkAnd(a_args);
     return A;
@@ -2310,17 +2314,17 @@ PTRef
 Logic::getPartitionB(const ipartitions_t& mask)
 {
     Logic& logic = *this;
-    vec<PTRef> part;
-    logic.getPartitions(part);
+    auto parts = logic.getPartitions();
     vec<PTRef> b_args;
-    for(int i = 0; i < part.size(); ++i)
+    for(auto part : parts)
     {
-        PTRef a = part[i];
-        ipartitions_t p = 0;
-        setbit(p, i + 1);
-        if (isAstrict(p, mask)) {}
-        else if (isBstrict(p, mask)) b_args.push(a);
-        else opensmt_error("Assertion is neither A or B");
+        const auto & p_mask = logic.getIPartitions(part);
+        if(isBlocal(p_mask, mask)) {
+            b_args.push(part);
+        }
+        else if(!isAlocal(p_mask, mask)) {
+            opensmt_error("Assertion is neither A or B");
+        }
     }
     PTRef B = logic.mkAnd(b_args);
     return B;

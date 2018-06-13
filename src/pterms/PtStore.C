@@ -201,41 +201,11 @@ void PtStore::deserializeTerms(const int* buf)
 #ifdef PRODUCE_PROOF
 void
 PtStore::assignPartition(int n, PTRef ptr) {
-    a_partitions[n] = ptr;
+    assert(n >= 0);
     ipartitions_t p = 0;
     setbit(p, n);
     addIPartitions(ptr, p);
 }
-#endif
-
-void
-PtStore::assignPartition(const char* pname, PTRef pref, char** msg)
-{
-    uint32_t n = partitions.size() + 1;
-    partitions[n] = pref;
-    s_partitions[pname] = pref;
-#ifdef PRODUCE_PROOF
-    ipartitions_t p = 0;
-    setbit(p, n);
-    addIPartitions(pref, p);
-#endif
-    //TODO check whether partition already exists
-}
-
-void
-PtStore::assignPartition(PTRef pref, char** msg)
-{
-    uint32_t n = a_partitions.size() + 1;
-    a_partitions[n] = pref;
-#ifdef PRODUCE_PROOF
-    ipartitions_t p = 0;
-    setbit(p, n);
-    addIPartitions(pref, p);
-//    printf("Assigned partition %d to PTRef %d\n", n, pref.x);
-#endif
-}
-
-#ifdef PRODUCE_PROOF
 
 ipartitions_t&
 PtStore::getIPartitions(PTRef _t)

@@ -112,9 +112,9 @@ class Logic {
 
 #ifdef PRODUCE_PROOF
     //for partitions:
-    Map<PTRef,int,PTRefHash> partitions;
+    //Map<PTRef,int,PTRefHash> partitions;
+    std::map<int, PTRef> partitions; // map of partition indices to PTRefs of partitions
     vec<PTRef> partitions_simp;
-    int partition_idx;
     map<CRef, ipartitions_t> clause_class;
     map<Var, ipartitions_t> var_class;
 #endif
@@ -530,17 +530,9 @@ class Logic {
     //partitions:
     void assignPartition(int n, PTRef tr)
     {
+        assert(partitions.find(n) == partitions.end()); // do not reassign existing partition index
+        partitions.emplace(n,tr);
         term_store.assignPartition(n, tr);
-    }
-    void assignPartition(const char* pname, PTRef pref, char** msg)
-    {
-        term_store.assignPartition(pname, pref, msg);
-    }
-
-    void assignPartition(PTRef pref, char** msg)
-    {
-        partitions.insert(pref, partition_idx++);
-        term_store.assignPartition(pref, msg);
     }
 #endif
 
@@ -548,7 +540,7 @@ class Logic {
     {
 #ifdef PRODUCE_PROOF
 //        return config.produce_inter() && partitions.getSize() >= 2;
-        return config.produce_inter();
+        return config.produce_inter() > 0;
 #else
         return false;
 #endif //PRODUCE_PROOF
@@ -561,25 +553,15 @@ class Logic {
     ipartitions_t& getVarClassMask(Var l) { return var_class[l]; }
     void addClauseClassMask(CRef l, const ipartitions_t& toadd);
     void addVarClassMask(Var l, const ipartitions_t& toadd);
-    void getPartitions(vec<PTRef>& asrts) { return partitions.getKeys(asrts); }
-    unsigned getNofPartitions() { return partitions.getSize(); }
-
-    bool isPartition(PTRef pref)
+    std::vector<PTRef> getPartitions()
     {
-        return partitions.has(pref);
+        std::vector<PTRef> top_level_ptrefs;
+        for(auto const & val : partitions) {
+            top_level_ptrefs.push_back(val.second);
+        }
+        return top_level_ptrefs;
     }
-    bool isPartitionSimp(PTRef pref)
-    {
-        for (int i = 0; i < partitions_simp.size(); ++i)
-            if (partitions_simp[i] == pref)
-                return true;
-        return false;
-    }
-    int partitionIndex(PTRef pref)
-    {
-        if (isPartition(pref)) return partitions[pref];
-        else return -1;
-    }
+    unsigned getNofPartitions() { return partitions.size(); }
 #endif
     // Statistics
     int subst_num; // Number of substitutions
