@@ -2357,7 +2357,7 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
         }
         else
         {
-            if (delta_flag)
+            if (delta_flag_dual)
                 itp = logic.mkRealLt(args, &msg);
             else
                 itp = logic.mkRealLeq(args, &msg);
