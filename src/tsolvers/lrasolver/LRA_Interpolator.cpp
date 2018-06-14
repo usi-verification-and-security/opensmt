@@ -311,6 +311,8 @@ namespace {
         auto it_coeff = coeffs.begin();
         bool delta_flag = false;
         for (; it_ineq != ineqs.end(); ++it_ineq, ++it_coeff) {
+            auto const & coeff = *it_coeff;
+            if(coeff.isZero()) {continue;} // when some basis is found, some coordinates could be zero; ignore those
             auto const & ineq = *it_ineq;
             trace(std::cout << "Original explanation: " << logic.printTerm(ineq.explanation) << "; negated: " << ineq.negated << '\n';)
             trace(std::cout << "LAExpr as PTrEf: " << logic.printTerm(ineq.expr.toPTRef()) << '\n';)
@@ -318,9 +320,9 @@ namespace {
             trace(ineq.expr.print(std::cout); std::cout << std::endl;)
             if (ineq.negated) {
                 delta_flag = true;
-                init.addExprWithCoeff(ineq.expr, -(*it_coeff));
+                init.addExprWithCoeff(ineq.expr, -(coeff));
             } else {
-                init.addExprWithCoeff(ineq.expr, *it_coeff);
+                init.addExprWithCoeff(ineq.expr, coeff);
             }
             trace(init.print(std::cout);)
         }
