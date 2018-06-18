@@ -331,7 +331,30 @@ bool ProofGraph::produceTreeInterpolants (opensmt::InterpolationTree *it, vec<PT
     return property_holds;
 }
 
+bool ProofGraph::producePathInterpolants ( vec<PTRef> &interpolants, const vec<ipartitions_t> &A_masks){
+    // check that masks are subset of each other
 
+
+    bool propertySatisfied = true;
+    for(int i = 0; i < A_masks.size()-1; ++i) {
+        assert((A_masks[i] & A_masks[i+1]) == A_masks[i]);
+        produceSingleInterpolant(interpolants, A_masks[i]);
+        if(i > 0 && enabledInterpVerif()){
+            PTRef previous_itp = interpolants[interpolants.size() - 2];
+            PTRef next_itp = interpolants[interpolants.size() -1];
+            PTRef movedPartitions = logic_.mkAnd(logic_.getPartitions(A_masks[i] ^ A_masks[i-1]));
+            propertySatisfied &= logic_.implies(logic_.mkAnd(previous_itp, movedPartitions), next_itp);
+            if (!propertySatisfied){
+                std::cerr << "Path interpolation does not hold for:\n"
+                             << "First interpolant: " << logic_.printTerm(previous_itp) << '\n'
+                            << "Moved partitions: " << logic_.printTerm(movedPartitions) << '\n'
+                            << "Second interpolant: " << logic_.printTerm(next_itp) << '\n';
+            }
+        }
+    }
+    assert(propertySatisfied);
+    return propertySatisfied;
+}
 
 /**************** MAIN INTERPOLANTS GENERATION METHODS ************************/
 

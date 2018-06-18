@@ -200,7 +200,7 @@ MainSolver::push(PTRef root)
 
 #ifdef PRODUCE_PROOF
 void
-MainSolver::assignPartition(int n, PTRef tr)
+MainSolver::assignPartition(unsigned int n, PTRef tr)
 {
     logic.assignPartition(n, tr);
 }

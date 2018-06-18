@@ -1326,6 +1326,7 @@ void Interpret::getInterpolants(const ASTNode& n)
 
 #ifdef PRODUCE_PROOF
     assert(grouping.size() >= 2);
+    vec<ipartitions_t> partitionings;
     ipartitions_t p = 0;
     for (int i = 0; i < grouping.size()-1; i++)
     {
@@ -1337,7 +1338,7 @@ void Interpret::getInterpolants(const ASTNode& n)
         }
         else {
             assert(logic->isAnd(group));
-            Pterm& and_t = logic->getPterm(group);
+            Pterm & and_t = logic->getPterm(group);
 //            cerr << "; name (and ";
             for (int j = 0; j < and_t.size(); j++) {
                 PTRef tr = and_t[j];
@@ -1348,21 +1349,22 @@ void Interpret::getInterpolants(const ASTNode& n)
             }
 //            cerr << ") itp mask " << p << endl;
         }
-
+        partitionings.push_c(p);
+    }
         SimpSMTSolver& smt_solver = main_solver->getSMTSolver();
         smt_solver.createProofGraph();
         if(config.proof_reduce())
             smt_solver.reduceProofGraph();
 //        cerr << "Computing interpolant with mask " << p << endl;
         vec<PTRef> itps;
-        smt_solver.getSingleInterpolant(itps, p);
+        smt_solver.getPathInterpolants(itps, partitionings);
 
         for (int j = 0; j < itps.size(); j++) {
             char* itp = logic->pp(itps[j]);
             notify_formatted(false, "%s", itp);
             free(itp);
         }
-    }
+
 #endif
 //    int rseed = config.sat_random_seed();
 //    cerr << "; Seed used for partitioning: " << rseed << endl;

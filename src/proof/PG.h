@@ -313,7 +313,7 @@ public:
     bool verifyPartialInterpolantA(ProofNode*, const ipartitions_t&);
     bool verifyPartialInterpolantB(ProofNode*, const ipartitions_t&);
 
-
+    bool producePathInterpolants            ( vec<PTRef>& interpolants, const vec<ipartitions_t>& A_mask);
     bool producePathInterpolants            ( vec< PTRef > & );
     bool verifyPathInterpolantsFromLeaves   ( vec< PTRef > & );
     bool produceSimultaneousAbstraction     ( vec< PTRef > & );

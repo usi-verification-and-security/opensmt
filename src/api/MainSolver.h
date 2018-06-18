@@ -167,7 +167,7 @@ class MainSolver
     int       simplifiedUntil() const { return simplified_until; }
 
 #ifdef PRODUCE_PROOF
-    void      assignPartition(int n, PTRef tr); // Assign partition numbers to individual PTRefs
+    void      assignPartition(unsigned int n, PTRef tr); // Assign partition numbers to individual PTRefs
     void      computePartitionMasks(int from, int to); // Extend the partitions as masks to the whole PTRef structure.  `From' and `to' refer to indices in the formulas vector.
 #endif
     void      initialize() { ts.solver.initialize(); ts.initialize(); }

@@ -200,7 +200,7 @@ void PtStore::deserializeTerms(const int* buf)
 
 #ifdef PRODUCE_PROOF
 void
-PtStore::assignPartition(int n, PTRef ptr) {
+PtStore::assignPartition(unsigned int n, PTRef ptr) {
     assert(n >= 0);
     ipartitions_t p = 0;
     setbit(p, n);

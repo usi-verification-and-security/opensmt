@@ -86,7 +86,7 @@ class PtStore {
     }
 
 #ifdef PRODUCE_PROOF
-    void assignPartition(int n, PTRef tr); // The new partition system
+    void assignPartition(unsigned int n, PTRef tr); // The new partition system
     ipartitions_t& getIPartitions(PTRef _t);
     void setIPartitions(PTRef _t, const ipartitions_t& _p);
     void addIPartitions(PTRef _t, const ipartitions_t& _p);

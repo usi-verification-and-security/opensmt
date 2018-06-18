@@ -113,7 +113,7 @@ class Logic {
 #ifdef PRODUCE_PROOF
     //for partitions:
     //Map<PTRef,int,PTRefHash> partitions;
-    std::map<int, PTRef> partitions; // map of partition indices to PTRefs of partitions
+    std::map<unsigned int, PTRef> partitions; // map of partition indices to PTRefs of partitions
     vec<PTRef> partitions_simp;
     map<CRef, ipartitions_t> clause_class;
     map<Var, ipartitions_t> var_class;
@@ -528,7 +528,7 @@ class Logic {
 
 #ifdef PRODUCE_PROOF
     //partitions:
-    void assignPartition(int n, PTRef tr)
+    void assignPartition(unsigned int n, PTRef tr)
     {
         assert(partitions.find(n) == partitions.end()); // do not reassign existing partition index
         partitions.emplace(n,tr);
@@ -555,12 +555,23 @@ class Logic {
     void addVarClassMask(Var l, const ipartitions_t& toadd);
     std::vector<PTRef> getPartitions()
     {
-        std::vector<PTRef> top_level_ptrefs;
+        std::vector<PTRef> all_partitions;
         for(auto const & val : partitions) {
-            top_level_ptrefs.push_back(val.second);
+            all_partitions.push_back(val.second);
         }
-        return top_level_ptrefs;
+        return all_partitions;
     }
+
+    std::vector<PTRef> getPartitions(ipartitions_t const & mask){
+        std::vector<PTRef> res;
+        for(auto const & entry : partitions) {
+            if(opensmt::tstbit(mask, entry.first)){
+                res.push_back(entry.second);
+            }
+        }
+        return res;
+    }
+
     unsigned getNofPartitions() { return partitions.size(); }
 #endif
     // Statistics
