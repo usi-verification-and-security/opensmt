@@ -1315,7 +1315,10 @@ void Interpret::getInterpolants(const ASTNode& n)
 //    nameToTerm.getKeys(keys);
 //    for (int i = 0; i < keys.size(); i++) {
 //        printf("Named thing: %s\n", keys[i]);
+//        std::cout << keys[i] << " : " << logic->printTerm(nameToTerm[keys[i]]) << '\n';
+//        std::cout << keys[i] << " : " << nameToPartition[keys[i]] << '\n';
 //    }
+
     auto exps = *n.children;
     vec<PTRef> grouping; // Consists of PTRefs that we want to group
     for (auto e : exps) {
@@ -1326,7 +1329,6 @@ void Interpret::getInterpolants(const ASTNode& n)
 //        printf("Itp'ing a term %s\n", logic->pp(tr));
         grouping.push(tr);
     }
-
     if (!logic->canInterpolate())
         opensmt_error("Cannot interpolate");
 
@@ -1334,27 +1336,30 @@ void Interpret::getInterpolants(const ASTNode& n)
     assert(grouping.size() >= 2);
     vec<ipartitions_t> partitionings;
     ipartitions_t p = 0;
-    for (int i = 0; i < grouping.size()-1; i++)
+    // We assume that together the groupings cover all query, so we ignore the last argument, since that should contain all that was missing at that point
+    for (int i = 0; i < grouping.size() - 1; i++)
     {
         PTRef group = grouping[i];
         if (termToNames.has(group)) {
-            for (int i = 0; i < termToNames[group].size(); i++)
+            for (int i = 0; i < termToNames[group].size(); i++) {
                 opensmt::setbit(p, nameToPartition[termToNames[group][i]]);
-//            cerr << "; name " << termToNames[group][0] << " itp mask " << p << endl;
+//                std::cerr << "; name " << termToNames[group][i] << " itp mask " << p << std::endl;
+            }
         }
         else {
             assert(logic->isAnd(group));
             Pterm & and_t = logic->getPterm(group);
-//            cerr << "; name (and ";
+//            std::cerr << "; name (and ";
             for (int j = 0; j < and_t.size(); j++) {
                 PTRef tr = and_t[j];
                 assert(termToNames.has(tr));
                 assert(termToNames[tr].size() == 1);
                 opensmt::setbit(p, nameToPartition[termToNames[tr][0]]);
-//                cerr << termToNames[tr][0] << " ";
+//                std::cerr << termToNames[tr][0] << " ";
             }
-//            cerr << ") itp mask " << p << endl;
+//            std::cerr << ") itp mask " << p << std::endl;
         }
+//        std::cerr << "Pushing mask: " << p << '\n';
         partitionings.push_c(p);
     }
         SimpSMTSolver& smt_solver = main_solver->getSMTSolver();
