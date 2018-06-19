@@ -333,10 +333,18 @@ bool ProofGraph::produceTreeInterpolants (opensmt::InterpolationTree *it, vec<PT
 
 bool ProofGraph::producePathInterpolants ( vec<PTRef> &interpolants, const vec<ipartitions_t> &A_masks){
     bool propertySatisfied = true;
+    // check that masks are subset of each other
+#ifndef NDEBUG
     for(int i = 0; i < A_masks.size()-1; ++i) {
-        // check that masks are subset of each other
         assert((A_masks[i] & A_masks[i+1]) == A_masks[i]);
+    }
+#endif // NDEBUG
+    for(int i = 0; i < A_masks.size(); ++i) {
         produceSingleInterpolant(interpolants, A_masks[i]);
+//        if(verbose() > 1){
+//            std::cerr << "; Interpolant for mask: " << A_masks[i] << " is: "
+//                      << logic_.printTerm(interpolants[interpolants.size() - 1]);
+//        }
         if(i > 0 && enabledInterpVerif()){
             PTRef previous_itp = interpolants[interpolants.size() - 2];
             PTRef next_itp = interpolants[interpolants.size() -1];
