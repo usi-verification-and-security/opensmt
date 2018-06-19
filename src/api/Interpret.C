@@ -1332,8 +1332,8 @@ void Interpret::getInterpolants(const ASTNode& n)
     {
         PTRef group = grouping[i];
         if (termToNames.has(group)) {
-            assert(termToNames[group].size() == 1);
-            opensmt::setbit(p, nameToPartition[termToNames[group][0]]);
+            for (int i = 0; i < termToNames[group].size(); i++)
+                opensmt::setbit(p, nameToPartition[termToNames[group][i]]);
 //            cerr << "; name " << termToNames[group][0] << " itp mask " << p << endl;
         }
         else {
