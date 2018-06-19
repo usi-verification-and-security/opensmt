@@ -419,6 +419,12 @@ void Interpret::interp(ASTNode& n) {
             main_solver->writeFuns_smtlib2(filename);
             break;
         }
+        case t_echo:
+        {
+            const char* str = (**(n.children->begin())).getValue();
+            notify_formatted(false, "%s", str);
+            break;
+        }
         case t_push:
         {
             if(!parse_only)

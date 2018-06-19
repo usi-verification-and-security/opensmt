@@ -64,7 +64,8 @@ enum token {
     t_readstate,
     t_simplify,
     t_writefuns,
-    t_let
+    t_let,
+    t_echo
 };
 
 struct smt2token
