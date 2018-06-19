@@ -2248,8 +2248,14 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
         if(labels != nullptr && labels->find(exp_pt) != labels->end())
         {
             if(color != I_UNDEF){
-                assert(color == labels->find(exp_pt)->second);
+                // Partitioning and labels can disagree under conditions that according to partitioning
+                // the explanation can be in both parts, but the label can be more strict
+//                std::cerr << "Color disagreement for term: " << logic.printTerm(explanation[i].tr) << '\n';
+//                std::cerr << "Color from partitioning: " << color << '\n';
+//                std::cerr << "Color from labels: " << labels->find(exp_pt)->second << '\n';
+                assert(color == I_AB || color == labels->find(exp_pt)->second);
             }
+            // labels have priority of simple partitioning information
             color = labels->find(exp_pt)->second;
             //cout << "; PTRef " << logic.printTerm(exp_pt) << " has Boolean color " << color << endl;
         }
