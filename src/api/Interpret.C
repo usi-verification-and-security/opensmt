@@ -1357,7 +1357,12 @@ void Interpret::getInterpolants(const ASTNode& n)
             smt_solver.reduceProofGraph();
 //        cerr << "Computing interpolant with mask " << p << endl;
         vec<PTRef> itps;
-        smt_solver.getPathInterpolants(itps, partitionings);
+        if(partitionings.size() > 1){
+            smt_solver.getPathInterpolants(itps, partitionings);
+        }
+        else{
+            smt_solver.getSingleInterpolant(itps, partitionings[0]);
+        }
 
         for (int j = 0; j < itps.size(); j++) {
             char* itp = logic->pp(itps[j]);
