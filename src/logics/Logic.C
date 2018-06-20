@@ -315,7 +315,7 @@ Logic::printSym(SymRef sr) const
 }
 
 char*
-Logic::pp(PTRef tr)
+Logic::pp(PTRef tr) const
 {
     char* out;
 
