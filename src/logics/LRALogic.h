@@ -98,10 +98,10 @@ class LRALogic: public Logic
     virtual const char* getName()                const { return getLogic().str; }
     virtual const Logic_t getLogic()             const { return QF_LRA; }
 
-    /*
+
     virtual bool        okForBoolVar    (PTRef) const;
     virtual PTRef       insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg);
-    */
+
 
     virtual PTRef       mkConst         (const char* name, const char **msg);
     virtual PTRef       mkConst         (SRef s, const char* name);
@@ -218,9 +218,13 @@ class LRALogic: public Logic
     virtual char* printTerm        (PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
 };
 
+// from here onwards needs to be removed, as now in Superclass
+
+
 // Determine for two multiplicative terms (* k1 v1) and (* k2 v2), v1 !=
 // v2 which one is smaller, based on the PTRef of v1 and v2.  (i.e.
 // v1.ptref <  v2.ptref iff (* k1 v1) < (* k2 v2))
+
 class LessThan_deepPTRef {
     const LRALogic& l;
   public:
@@ -276,6 +280,8 @@ class SimplifyConstTimes : public SimplifyConst {
   public:
     SimplifyConstTimes(LRALogic& log) : SimplifyConst(log) {}
 };
+
+//up to now needs to be removed, as now in the superclass
 
 class SimplifyConstDiv : public SimplifyConst {
     void Op(opensmt::Real& s, const opensmt::Real& v) const { if (v == 0) { printf("explicit div by zero\n"); } s /= v; }

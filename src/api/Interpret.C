@@ -208,6 +208,7 @@ void Interpret::interp(ASTNode& n) {
                 new_solver();
                 main_solver = new MainSolver(*thandler, config, solver, "qf_lra solver");
                 main_solver->initialize();
+            }
             else if ((strcmp(logic_name, QF_LIA.str) == 0) || (strcmp(logic_name, QF_RDL.str) == 0)) {
                 LIATheory *liatheory = new LIATheory(config);
                 theory = liatheory;

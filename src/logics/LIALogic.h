@@ -29,7 +29,7 @@ class LIALogic: public Logic
   protected:
     Logic_t logic_type;
     vec<opensmt::Real*> reals;
-    //vec<opensmt::Integer*> integers;
+    vec<opensmt::Integer*> integers;
     SymRef              sym_Int_ZERO;
     SymRef              sym_Int_ONE;
     SymRef              sym_Int_NEG;
@@ -81,6 +81,10 @@ class LIALogic: public Logic
     virtual const char*   getName()         const { return getLogic().str; }
     virtual const Logic_t getLogic()        const { return QF_LIA; }
 
+    virtual bool        okForBoolVar    (PTRef) const;
+    virtual PTRef       insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg);
+
+
     virtual PTRef       mkConst         (const char* name, const char **msg);
     virtual PTRef       mkConst         (SRef s, const char* name);
     virtual PTRef  mkConst    (const opensmt::Integer(c)) { char* num; opensmt::stringToRational(num, c.get_str().c_str()); PTRef tr = mkConst(getSort_Integer(), num); free(num); return tr; }
@@ -97,7 +101,8 @@ class LIALogic: public Logic
 
     //SRef   declareSort_Integer(char** msg);
     SRef   getSort_Integer()  const {return sort_INTEGER;}
-    const int getIntegerConst(PTRef tr) const;
+    //const int getIntegerConst(PTRef tr) const;
+    const opensmt::Integer& getIntegerConst(PTRef tr) const;
 
 
     bool        isIntPlus(SymRef sr)  const { return sr == sym_Int_PLUS; }
@@ -177,12 +182,11 @@ class LIALogic: public Logic
     PTRef       mkIntGt(const vec<PTRef>& args) { char* msg; PTRef tr = mkIntGt(args, &msg); assert(tr != PTRef_Undef); return tr; }
     PTRef       mkIntGt(const PTRef arg1, const PTRef arg2) { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkIntGt(tmp); }
 
-    //should I stop here or continue to the bottom? If the latter, can you please check them for correctness (I changed few things)?
-    bool        isNegated(PTRef tr) const;
+    bool        isIntNegated(PTRef tr) const;
 
-    void        splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) const;
-    PTRef       normalizeSum(PTRef sum); // Use for normalizing leq terms: sort the sum and divide all terms with the first factor
-    PTRef       normalizeMul(PTRef mul); // Use for normalizing leq terms of form 0 <= c*v
+    void        LIAsplitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) const;
+    PTRef       LIAnormalizeSum(PTRef sum); // Use for normalizing leq terms: sort the sum and divide all terms with the first factor
+    PTRef       LIAnormalizeMul(PTRef mul); // Use for normalizing leq terms of form 0 <= c*v
 
     // Logic specific simplifications: conjoin Ites, make substitutions
     // and split equalities
@@ -204,17 +208,18 @@ class LIALogic: public Logic
 // Determine for two multiplicative terms (* k1 v1) and (* k2 v2), v1 !=
 // v2 which one is smaller, based on the PTRef of v1 and v2.  (i.e.
 // v1.ptref <  v2.ptref iff (* k1 v1) < (* k2 v2))
-class LessThan_deepPTRef {
+
+class LIALessThan_deepPTRef {
     const LIALogic& l;
   public:
-    LessThan_deepPTRef(const LIALogic* l) : l(*l) {}
+    LIALessThan_deepPTRef(const LIALogic* l) : l(*l) {}
     bool operator ()  (PTRef& x_, PTRef& y_) {
         uint32_t id_x;
         uint32_t id_y;
         if (l.isIntTimes(x_)) {
             PTRef c_x;
             PTRef v_x;
-            l.splitTermToVarAndConst(x_, v_x, c_x);
+            l.LIAsplitTermToVarAndConst(x_, v_x, c_x);
             id_x = v_x.x;
         } else {
             id_x = x_.x;
@@ -222,7 +227,7 @@ class LessThan_deepPTRef {
         if (l.isIntTimes(y_)) {
             PTRef c_y;
             PTRef v_y;
-            l.splitTermToVarAndConst(y_, v_y, c_y);
+            l.LIAsplitTermToVarAndConst(y_, v_y, c_y);
             id_y = v_y.x;
         } else {
             id_y = y_.x;
@@ -232,7 +237,7 @@ class LessThan_deepPTRef {
 };
 
 
-class SimplifyConst {
+class LIASimplifyConst {
   protected:
     LIALogic& l;
     PTRef simplifyConstOp(const vec<PTRef>& const_terms, char** msg);
@@ -240,24 +245,24 @@ class SimplifyConst {
     virtual opensmt::Integer getIdOp() const = 0;
     virtual void constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const = 0;
   public:
-    SimplifyConst(LIALogic& log) : l(log) {}
+    LIASimplifyConst(LIALogic& log) : l(log) {}
     void simplify(SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new, char** msg);
 };
 
-class SimplifyConstSum : public SimplifyConst {
+class LIASimplifyConstSum : public LIASimplifyConst {
     void Op(opensmt::Integer& s, const opensmt::Integer& v) const { s += v; }
     opensmt::Integer getIdOp() const { return 0; }
     void constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const;
   public:
-    SimplifyConstSum(LIALogic& log) : SimplifyConst(log) {}
+    LIASimplifyConstSum(LIALogic& log) : LIASimplifyConst(log) {}
 };
 
-class SimplifyConstTimes : public SimplifyConst {
+class LIASimplifyConstTimes : public LIASimplifyConst {
     void Op(opensmt::Integer& s, const opensmt::Integer& v) const { s *= v; }
     opensmt::Integer getIdOp() const { return 1; }
     void constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const;
   public:
-    SimplifyConstTimes(LIALogic& log) : SimplifyConst(log) {}
+    LIASimplifyConstTimes(LIALogic& log) : LIASimplifyConst(log) {}
 };
 
 /*

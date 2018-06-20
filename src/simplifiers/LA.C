@@ -97,7 +97,7 @@ void LAExpression::initialize( PTRef e )
         const opensmt::Real tval(logic.getSymName(t));
         polynome[ PTRef_Undef ] += tval * c;
       } else {
-        if (logic.hasSortInt(t))
+        if (logic.hasSortReal(t))
           integers = true;
 
         polynome_t::iterator it = polynome.find( t );

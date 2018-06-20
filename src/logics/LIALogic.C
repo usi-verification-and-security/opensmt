@@ -2,6 +2,7 @@
 #include "PtStore.h"
 #include "LIALogic.h"
 #include "TreeOps.h"
+//#include "LRALogic.h"
 #include "Global.h"
 #include "LA.h"
 
@@ -9,7 +10,7 @@ const char* LIALogic::e_nonlinear_term = "Logic does not support nonlinear terms
 
 void LIALogic::termSort(vec<PTRef>& v) const
 {
-    sort(v, LessThan_deepPTRef(this));
+    sort(v, LIALessThan_deepPTRef(this));
 }
 
 void
@@ -68,7 +69,7 @@ bool LIALogic::okToPartition(PTRef tr) const
 // corresponding simplifications.  Examples include 0 with
 // multiplication and summation, e.g.
 //
-void SimplifyConst::simplify(SymRef& s, const vec<PTRef>& args, SymRef& s_new, vec<PTRef>& args_new, char** msg)
+void LIASimplifyConst::simplify(SymRef& s, const vec<PTRef>& args, SymRef& s_new, vec<PTRef>& args_new, char** msg)
 {
     vec<int> const_idx;
     vec<PTRef> args_new_2;
@@ -101,7 +102,7 @@ void SimplifyConst::simplify(SymRef& s, const vec<PTRef>& args, SymRef& s_new, v
     constSimplify(s, args_new_2, s_new, args_new);
     // A single argument for the operator, and the operator is identity
     // in that case
-    if (args_new.size() == 1 && (l.isIntPlus(s_new) || l.isIntTimes(s_new) || l.isIntDiv(s_new))) {
+    if (args_new.size() == 1 && (l.isIntPlus(s_new) || l.isIntTimes(s_new))) {
         PTRef ch_tr = args_new[0];
         args_new.clear();
         s_new = l.getPterm(ch_tr).symb();
@@ -110,7 +111,7 @@ void SimplifyConst::simplify(SymRef& s, const vec<PTRef>& args, SymRef& s_new, v
     }
 }
 
-void SimplifyConstSum::constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const
+void LIASimplifyConstSum::constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const
 {
     assert(terms_new.size() == 0);
     int i;
@@ -126,7 +127,7 @@ void SimplifyConstSum::constSimplify(const SymRef& s, const vec<PTRef>& terms, S
     s_new = s;
 }
 
-void SimplifyConstTimes::constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const
+void LIASimplifyConstTimes::constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const
 {
     //distribute the constant over the first sum
     int i;
@@ -175,6 +176,7 @@ void SimplifyConstTimes::constSimplify(const SymRef& s, const vec<PTRef>& terms,
     s_new = s;
 }
 
+/*
 void SimplifyConstDiv::constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const
 {
     assert(terms_new.size() == 0);
@@ -200,17 +202,17 @@ void SimplifyConstDiv::constSimplify(const SymRef& s, const vec<PTRef>& terms, S
     s_new = s;
 }
 
+ */
+
 const char* LIALogic::tk_int_zero  = "0";
 const char* LIALogic::tk_int_one   = "1";
 const char* LIALogic::tk_int_neg   = "-";
 const char* LIALogic::tk_int_minus = "-";
 const char* LIALogic::tk_int_plus  = "+";
 const char* LIALogic::tk_int_times = "*";
-const char* LIALogic::tk_int_div   = "/";
+//const char* LIALogic::tk_int_div   = "/";
 const char* LIALogic::tk_int_lt    = "<";
 const char* LIALogic::tk_int_leq   = "<=";
-const char* LIALogic::tk_int_gt    = ">";
-const char* LIALogic::tk_int_geq   = ">=";
 const char* LIALogic::tk_int_gt    = ">";
 const char* LIALogic::tk_int_geq   = ">=";
 //mod and abs are needed?
@@ -225,7 +227,7 @@ LIALogic::LIALogic(SMTConfig& c) :
     , sym_Int_MINUS(SymRef_Undef)
     , sym_Int_PLUS(SymRef_Undef)
     , sym_Int_TIMES(SymRef_Undef)
-    , sym_Int_DIV(SymRef_Undef)
+    //, sym_Int_DIV(SymRef_Undef)
     , sym_Int_EQ(SymRef_Undef)
     , sym_Int_LEQ(SymRef_Undef)
     , sym_Int_LT(SymRef_Undef)
@@ -280,10 +282,13 @@ LIALogic::LIALogic(SMTConfig& c) :
     sym_store[sym_Int_TIMES].setCommutes();
     sym_store.setInterpreted(sym_Int_TIMES);
 
+    /*
     sym_Int_DIV   = declareFun(tk_int_div, sort_INTEGER, params, msg, true);
     sym_store[sym_Int_DIV].setNoScoping();
     sym_store[sym_Int_DIV].setLeftAssoc();
     sym_store.setInterpreted(sym_Int_DIV);
+
+     */
 
     sym_Int_LEQ  = declareFun(tk_int_leq, sort_BOOL, params, msg, true);
     sym_store[sym_Int_LEQ].setNoScoping();
@@ -317,7 +322,7 @@ LIALogic::LIALogic(SMTConfig& c) :
 
 bool LIALogic::isBuiltinFunction(const SymRef sr) const
 {
-    if (sr == sym_Int_NEG || sr == sym_Int_MINUS || sr == sym_Int_PLUS || sr == sym_Int_TIMES || sr == sym_Int_DIV || sr == sym_Int_EQ || sr == sym_Int_LEQ || sr == sym_Int_LT || sr == sym_Int_GEQ || sr == sym_Int_GT || sr == sym_Int_ITE) return true;
+    if (sr == sym_Int_NEG || sr == sym_Int_MINUS || sr == sym_Int_PLUS || sr == sym_Int_TIMES || sr == sym_Int_EQ || sr == sym_Int_LEQ || sr == sym_Int_LT || sr == sym_Int_GEQ || sr == sym_Int_GT || sr == sym_Int_ITE) return true;
     else return Logic::isBuiltinFunction(sr);
 }
 
@@ -325,15 +330,18 @@ const opensmt::Integer&
 LIALogic::getIntegerConst(PTRef tr) const
 {
     SymId id = sym_store[getPterm(tr).symb()].getId();
-    assert(id < integers.size() && integers[id] != NULL);
+    assert(id < reals.size() && reals[id] != NULL);
     return *integers[id];
 }
+
+
 
 PTRef
 LIALogic::mkConst(const char *name, const char **msg)
 {
-    return mkConst(getSort_integer(), name);
+    return mkConst(getSort_Integer(), name);
 }
+
 
 PTRef LIALogic::mkConst(SRef s, const char* name)
 {
@@ -341,14 +349,14 @@ PTRef LIALogic::mkConst(SRef s, const char* name)
     PTRef ptr = PTRef_Undef;
     if (s == sort_INTEGER) {
         char* rat;
-        opensmt::stringToInteger(rat, name);
+        opensmt::stringToRational(rat, name);
         ptr = mkVar(s, rat);
         // Store the value of the number as a real, and we need to store it as Integer?
         SymId id = sym_store[getPterm(ptr).symb()].getId();
-        for (int i = integers.size(); i <= id; i++)
-            integers.push(NULL);
-        if (integers[id] != NULL) { delete integers[id]; }
-        integers[id] = new opensmt::Integer(rat);
+        for (int i = reals.size(); i <= id; i++)
+            reals.push(NULL);
+        if (reals[id] != NULL) { delete reals[id]; }
+        reals[id] = new opensmt::Real(rat);
         free(rat);
         // Code to allow efficient constant detection.
         while (id >= constants.size())
@@ -388,8 +396,8 @@ LIALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
         return mkIntPlus(terms, msg);
     if (sym == sym_Int_TIMES)
         return mkIntTimes(terms, msg);
-    if (sym == sym_Int_DIV)
-        return mkIntDiv(terms, msg);
+    //if (sym == sym_Int_DIV)
+       // return mkIntDiv(terms, msg);
     if (sym == sym_Int_LEQ)
         return mkIntLeq(terms, msg);
     if (sym == sym_Int_LT)
@@ -420,15 +428,15 @@ PTRef LIALogic::mkIntNeg(PTRef tr, char** msg)
     }
     if (isConstant(tr)) {
         char* rat_str;
-        opensmt::stringToInteger(rat_str, sym_store.getName(getPterm(tr).symb()));
+        opensmt::stringToRational(rat_str, sym_store.getName(getPterm(tr).symb()));
         opensmt::Integer v(rat_str);
         free(rat_str);
         v = -v;
-        PTRef nterm = mkConst(getSort_integer(), v.get_str().c_str());
+        PTRef nterm = mkConst(getSort_Integer(), v.get_str().c_str());
         SymRef s = getPterm(nterm).symb();
         return mkFun(s, args, msg);
     }
-    PTRef mo = mkConst(getSort_integer(), "-1");
+    PTRef mo = mkConst(getSort_Integer(), "-1");
     args.push(mo); args.push(tr);
     return mkIntTimes(args);
 }
@@ -445,7 +453,7 @@ PTRef LIALogic::mkIntMinus(const vec<PTRef>& args_in, char** msg)
 //        return mkFun(s, args, msg);
     }
     assert (args.size() == 2);
-    PTRef mo = mkConst(getSort_integer(), "-1");
+    PTRef mo = mkConst(getSort_Integer(), "-1");
     if (mo == PTRef_Undef) {
         printf("Error: %s\n", *msg);
         assert(false);
@@ -483,7 +491,7 @@ PTRef LIALogic::mkIntPlus(const vec<PTRef>& args, char** msg)
     //for (int i = 0; i < new_args.size(); i++)
     //    args.push(new_args[i]);
 
-    SimplifyConstSum simp(*this);
+    LIASimplifyConstSum simp(*this);
     vec<PTRef> args_new;
     SymRef s_new;
     simp.simplify(sym_Int_PLUS, tmp_args, s_new, args_new, msg);
@@ -497,7 +505,7 @@ PTRef LIALogic::mkIntPlus(const vec<PTRef>& args, char** msg)
     for (int i = 0; i < args_new.size(); ++i) {
         PTRef v;
         PTRef c;
-        splitTermToVarAndConst(args_new[i], v, c);
+        LIAsplitTermToVarAndConst(args_new[i], v, c);
         if (c == PTRef_Undef) {
             // The term is unit
             c = getTerm_IntOne();
@@ -543,14 +551,14 @@ PTRef LIALogic::mkIntTimes(const vec<PTRef>& tmp_args, char** msg)
             args.push(tmp_args[i]);
         }
     }
-    SimplifyConstTimes simp(*this);
+    LIASimplifyConstTimes simp(*this);
     vec<PTRef> args_new;
     SymRef s_new;
     simp.simplify(sym_Int_TIMES, args, s_new, args_new, msg);
     PTRef tr = mkFun(s_new, args_new, msg);
     // Either a real term or, if we constructed a multiplication of a
     // constant and a sum, a real sum.
-    if (isIntTerm(tr) || isIntPlus(tr) || isUF(tr))
+    if (isIntegerTerm(tr) || isIntPlus(tr) || isUF(tr))
         return tr;
     else {
         char* err;
@@ -558,6 +566,9 @@ PTRef LIALogic::mkIntTimes(const vec<PTRef>& tmp_args, char** msg)
         throw LIANonLinearException(err);
     }
 }
+
+
+/*
 
 PTRef LIALogic::mkIntDiv(const vec<PTRef>& args, char** msg)
 {
@@ -579,8 +590,10 @@ PTRef LIALogic::mkIntDiv(const vec<PTRef>& args, char** msg)
     return tr;
 }
 
+ */
+
 // Find the lexicographically first factor of a term and divide the other terms with it.
-PTRef LIALogic::normalizeSum(PTRef sum) {
+PTRef LIALogic::LIAnormalizeSum(PTRef sum) {
     vec<PTRef> args;
     Pterm& s = getPterm(sum);
     for  (int i = 0; i < s.size(); i++)
@@ -610,6 +623,8 @@ PTRef LIALogic::normalizeSum(PTRef sum) {
     assert(isConstant(t[0]) || isConstant(t[1]));
     // We need to go through the real values since negative constant
     // terms are are not real negations.
+
+    /*
     opensmt::Integer k = abs(isConstant(t[0]) ? getIntegerConst(t[0]) : getIntegerConst(t[1]));
     PTRef divisor = mkConst(k);
     for (int i = 0; i < args.size(); i++) {
@@ -618,6 +633,8 @@ PTRef LIALogic::normalizeSum(PTRef sum) {
         tmp.push(divisor);
         args[i] = mkIntDiv(tmp);
     }
+     */
+
     return mkIntPlus(args);
 }
 
@@ -637,7 +654,7 @@ PTRef LIALogic::normalizeSum(PTRef sum) {
 // (3e) (+ x t_1 ... t_n)
 // Returns true for cases (1d), (1e), (2b), and (2d), and false for other cases.
 //
-bool LIALogic::isNegated(PTRef tr) const {
+bool LIALogic::isIntNegated(PTRef tr) const {
     if (isIntegerConst(tr))
         return getIntegerConst(tr) < 0; // Case (0a) and (0b)
     if (isIntVar(tr))
@@ -646,19 +663,19 @@ bool LIALogic::isNegated(PTRef tr) const {
         // Cases (2)
         PTRef v;
         PTRef c;
-        splitTermToVarAndConst(tr, v, c);
-        return isNegated(c);
+        LIAsplitTermToVarAndConst(tr, v, c);
+        return isIntNegated(c);
     }
     else {
         // Cases(3)
-        return isNegated(getPterm(tr)[0]);
+        return isIntNegated(getPterm(tr)[0]);
     }
 }
 
-void LIALogic::splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) const
+void LIALogic::LIAsplitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) const
 {
-    assert(isIntTimes(term) || isIntDiv(term) || isIntVar(term) || isConstant(term) || isUF(term));
-    if (isIntTimes(term) || isIntDiv(term)) {
+    assert(isIntTimes(term)  || isIntVar(term) || isConstant(term) || isUF(term));
+    if (isIntTimes(term)) {
         assert(getPterm(term).size() == 2);
         fac = getPterm(term)[0];
         var = getPterm(term)[1];
@@ -680,13 +697,13 @@ void LIALogic::splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac)
 
 
 // Normalize a product of the form (* a v) to either v or (* -1 v)
-PTRef LIALogic::normalizeMul(PTRef mul)
+PTRef LIALogic::LIAnormalizeMul(PTRef mul)
 {
     assert(isIntTimes(mul));
     PTRef v = PTRef_Undef;
     PTRef c = PTRef_Undef;
-    splitTermToVarAndConst(mul, v, c);
-    opensmt::Integer r = getIntConst(c);
+    LIAsplitTermToVarAndConst(mul, v, c);
+    opensmt::Integer r = getIntegerConst(c);
     if (r < 0)
         return mkIntNeg(v);
     else
@@ -723,10 +740,10 @@ PTRef LIALogic::mkIntLeq(const vec<PTRef>& args_in, char** msg)
             args[1] = sum_tmp;
             return mkIntLeq(args, msg); // either true or false
         } if (isIntTimes(sum_tmp)) {
-            sum_tmp = normalizeMul(sum_tmp);
+            sum_tmp = LIAnormalizeMul(sum_tmp);
         } else if (isIntPlus(sum_tmp)) {
             // Normalize the sum
-            sum_tmp = normalizeSum(sum_tmp); //Now the sum is normalized by dividing with the "first" factor.
+            sum_tmp = LIAnormalizeSum(sum_tmp); //Now the sum is normalized by dividing with the "first" factor.
         }
         // Otherwise no operation, already normalized
 
@@ -771,8 +788,8 @@ PTRef LIALogic::mkIntLt(const vec<PTRef>& args, char** msg)
 {
     if (isConstant(args[0]) && isConstant(args[1])) {
         char *rat_str1, *rat_str2;
-        opensmt::stringToInteger(rat_str1, sym_store.getName(getPterm(args[0]).symb()));
-        opensmt::stringToInteger(rat_str2, sym_store.getName(getPterm(args[1]).symb()));
+        opensmt::stringToRational(rat_str1, sym_store.getName(getPterm(args[0]).symb()));
+        opensmt::stringToRational(rat_str2, sym_store.getName(getPterm(args[1]).symb()));
         opensmt::Integer v1(rat_str1);
         opensmt::Integer v2(rat_str2);
         free(rat_str1);
@@ -798,8 +815,8 @@ PTRef LIALogic::mkIntGt(const vec<PTRef>& args, char** msg)
 {
     if (isConstant(args[0]) && isConstant(args[1])) {
         char *rat_str1, *rat_str2;
-        opensmt::stringToInteger(rat_str1, sym_store.getName(getPterm(args[0]).symb()));
-        opensmt::stringToIntegerl(rat_str2, sym_store.getName(getPterm(args[1]).symb()));
+        opensmt::stringToRational(rat_str1, sym_store.getName(getPterm(args[0]).symb()));
+        opensmt::stringToRational(rat_str2, sym_store.getName(getPterm(args[1]).symb()));
         opensmt::Integer v1(rat_str1);
         opensmt::Integer v2(rat_str2);
         free(rat_str1);
@@ -823,21 +840,21 @@ PTRef LIALogic::mkIntGt(const vec<PTRef>& args, char** msg)
 // terms.  The list may contain terms of the form (* -1 a) for constant
 // a.
 
-PTRef SimplifyConst::simplifyConstOp(const vec<PTRef>& terms, char** msg)
+PTRef LIASimplifyConst::simplifyConstOp(const vec<PTRef>& terms, char** msg)
 {
     opensmt::Integer s = getIdOp();
     if (terms.size() == 0) {
         opensmt::Integer s = getIdOp();
-        return l.mkConst(l.getSort_integer(), s.get_str().c_str());
+        return l.mkConst(l.getSort_Integer(), s.get_str().c_str());
     } else if (terms.size() == 1) {
         char* rat_str;
-        opensmt::stringToInteger(rat_str, l.getSymName(terms[0]));
+        opensmt::stringToRational(rat_str, l.getSymName(terms[0]));
         opensmt::Integer val(rat_str);
         free(rat_str);
-        return l.mkConst(l.getSort_integer(), val.get_str().c_str());
+        return l.mkConst(l.getSort_Integer(), val.get_str().c_str());
     } else {
         char* rat_str;
-        opensmt::stringToInteger(rat_str, l.getSymName(terms[0]));
+        opensmt::stringToRational(rat_str, l.getSymName(terms[0]));
         opensmt::Integer s(rat_str);
         free(rat_str);
         for (int i = 1; i < terms.size(); i++) {
@@ -848,16 +865,17 @@ PTRef SimplifyConst::simplifyConstOp(const vec<PTRef>& terms, char** msg)
                 tr = l.getPterm(terms[i])[0];
             else continue;
             char* rat_str;
-            opensmt::stringToInteger(rat_str, l.getSymName(tr));
+            opensmt::stringToRational(rat_str, l.getSymName(tr));
 
             opensmt::Integer val(rat_str);
             free(rat_str);
             Op(s, val);
         }
-        return l.mkConst(l.getSort_integer(), s.get_str().c_str());
+        return l.mkConst(l.getSort_Integer(), s.get_str().c_str());
     }
 }
 
+/*
 lbool LIALogic::retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs)
 {
     lbool res = Logic::retrieveSubstitutions(facts, substs);
@@ -980,6 +998,8 @@ lbool LIALogic::arithmeticElimination(vec<PTRef> &top_level_arith, Map<PTRef,PtA
     return l_Undef;
 }
 
+ */
+
 //
 // LRALogic data contains Logic data and the maps for reals.
 // +-------------------------------------------------+
@@ -991,8 +1011,8 @@ void LIALogic::serializeLogicData(int*& logicdata_buf) const
 {
     Logic::serializeLogicData(logicdata_buf);
     vec<SymRef> integer_syms;
-    for (int i = 0; i < integers.size(); i++)
-        if (integers[i] != NULL)
+    for (int i = 0; i < reals.size(); i++)
+        if (reals[i] != NULL)
             integer_syms.push(sym_store.symbols[i]);
 
 #ifdef VERBOSE_FOPS
@@ -1016,9 +1036,9 @@ void LIALogic::deserializeLogicData(const int* logicdata_buf)
     for (int i = 0; i < sz; i++) {
         SymRef sr = {(uint32_t) logicdata_buf[mydata_init+1+i]};
         SymId id = sym_store[sr].getId();
-        for (int j = integers.size(); j <= id; j++)
-            integers.push(NULL);
-        integers[id] = new opensmt::integer(sym_store.idToName[id]);
+        for (int j = reals.size(); j <= id; j++)
+            reals.push(NULL);
+        reals[id] = new opensmt::Real(sym_store.idToName[id]);
         while (id >= constants.size())
             constants.push(false);
         constants[id] = true;
@@ -1037,7 +1057,7 @@ LIALogic::printTerm_(PTRef tr, bool ext, bool safe) const
     {
         bool is_neg = false;
         char* tmp_str;
-        opensmt::stringToInteger(tmp_str, sym_store.getName(getPterm(tr).symb()));
+        opensmt::stringToRational(tmp_str, sym_store.getName(getPterm(tr).symb()));
         opensmt::Integer v(tmp_str);
         if (!isNonnegIntegerConst(tr))
         {

@@ -32,6 +32,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 class SymStore {
     friend class LRALogic;
+    friend class LIALogic;
   private:
     VecMap<const char*,SymRef,StringHash,Equal<const char*> >  symbolTable;
     vec<SymRef>                                 symbols;
