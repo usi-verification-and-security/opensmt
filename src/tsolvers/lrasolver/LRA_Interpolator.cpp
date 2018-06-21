@@ -15,11 +15,11 @@
 #endif
 
 
-#include <unordered_map>
 #include "LRA_Interpolator.h"
 #include <Real.h>
 #include <LA.h>
 #include <unordered_set>
+#include <unordered_map>
 
 using namespace opensmt;
 
