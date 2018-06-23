@@ -516,8 +516,7 @@ bool Logic::simplifyEquality(PtChild& ptc, bool simplify) {
 }
 
 
-void
-Logic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
+void Logic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
 {
     Pterm& p = getPterm(tr);
     vec<PTRef> newargs;

@@ -30,6 +30,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Global.h"
 #include "LA.h"
 
+
+
 const char* LRALogic::e_nonlinear_term = "Logic does not support nonlinear terms";
 
 void LRALogic::termSort(vec<PTRef>& v) const
@@ -37,16 +39,14 @@ void LRALogic::termSort(vec<PTRef>& v) const
     sort(v, LessThan_deepPTRef(this));
 }
 
-void
-LRALogic::simplifyAndSplitEq(PTRef tr, PTRef& root_out)
+void LRALogic::simplifyAndSplitEq(PTRef tr, PTRef& root_out)
 {
     split_eq = true;
     simplifyTree(tr, root_out);
     split_eq = false;
 }
 
-void
-LRALogic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
+void LRALogic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
 {
     if (split_eq && isRealEq(tr)) {
         char *msg;
@@ -350,8 +350,7 @@ LRALogic::getRealConst(PTRef tr) const
     return *reals[id];
 }
 
-PTRef
-LRALogic::mkConst(const char *name, const char **msg)
+PTRef LRALogic::mkConst(const char *name, const char **msg)
 {
     return mkConst(getSort_real(), name);
 }
@@ -398,8 +397,7 @@ LRALogic::okForBoolVar(PTRef tr) const
     return isRealLeq(tr) || Logic::okForBoolVar(tr);
 }
 
-PTRef
-LRALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
+PTRef LRALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
 {
     if (sym == sym_Real_NEG)
         return mkRealNeg(terms[0], msg);

@@ -3,7 +3,8 @@
 
 #include "Logic.h"
 #include "Real.h"
-//#include "Sort.h"
+#include "LALogic.h"
+
 
 
 
@@ -24,7 +25,7 @@ public:
     ~LIANonLinearException() { free(reason); }
 };
 
-class LIALogic: public Logic
+class LIALogic: public Logic, public LALogic
 {
   protected:
     Logic_t logic_type;
@@ -36,10 +37,10 @@ class LIALogic: public Logic
     SymRef              sym_Int_MINUS;
     SymRef              sym_Int_PLUS;
     SymRef              sym_Int_TIMES;
-    //SymRef              sym_Int_DIV;
+    //SymRef              sym_Int_DIV; //PS. ???
     //SymRef              sym_Int_MOD;
     //SymRef              sym_Int_ABS;
-    SymRef              sym_Int_EQ; //why don't we consider equality in tk_real_eq? So it make sense to write to write (= 0.5 (* 0.5 x)) in LIA.
+    SymRef              sym_Int_EQ;
     SymRef              sym_Int_LEQ;
     SymRef              sym_Int_LT;
     SymRef              sym_Int_GEQ;
@@ -57,7 +58,7 @@ class LIALogic: public Logic
     static const char*  tk_int_minus;
     static const char*  tk_int_plus;
     static const char*  tk_int_times;
-    //static const char*  tk_int_div;
+    //static const char*  tk_int_div; //PS. ???
     //static const char*  tk_int_mod;
     //static const char*  tk_int_abs;
     static const char*  tk_int_leq;
@@ -68,7 +69,7 @@ class LIALogic: public Logic
     static const char*  s_sort_integer;
     static const char*  e_nonlinear_term;
 
-    bool split_eq;
+    //bool split_eq;
     Map<PTRef,bool,PTRefHash> lia_split_inequalities;
     void visit(PTRef, Map<PTRef,PTRef,PTRefHash>&);
 
@@ -84,15 +85,15 @@ class LIALogic: public Logic
     virtual bool        okForBoolVar    (PTRef) const;
     virtual PTRef       insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg);
 
-
     virtual PTRef       mkConst         (const char* name, const char **msg);
     virtual PTRef       mkConst         (SRef s, const char* name);
-    virtual PTRef  mkConst    (const opensmt::Integer(c)) { char* num; opensmt::stringToRational(num, c.get_str().c_str()); PTRef tr = mkConst(getSort_Integer(), num); free(num); return tr; }
-    virtual PTRef  mkIntVar   (const char* name) { return mkVar(getSort_Integer(), name); }
+    virtual PTRef       mkConst         (const opensmt::Integer& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_Integer(), rat); free(rat); return tr; }
+    virtual PTRef       mkConst         (const char* num) { return mkConst(getSort_Integer(), num); }
+    virtual PTRef       mkIntVar        (const char* name) { return mkVar(getSort_Integer(), name); }
 
     virtual bool isBuiltinSort(SRef sr) const { return sr == sort_INTEGER || Logic::isBuiltinSort(sr); }
     virtual bool isBuiltinConstant(SymRef sr) const { return (isIntegerConst(sr) || Logic::isBuiltinConstant(sr)); }
-    virtual bool isBuiltinFunction(SymRef sr) const; //is this line needed here?
+    virtual bool isBuiltinFunction(SymRef sr) const;
 
     bool  isIntegerConst(SymRef sr)      const { return isConstant(sr) && hasSortInt(sr); }
     bool  isIntegerConst(PTRef tr)       const { return isIntegerConst(getPterm(tr).symb()); }
@@ -101,46 +102,56 @@ class LIALogic: public Logic
 
     //SRef   declareSort_Integer(char** msg);
     SRef   getSort_Integer()  const {return sort_INTEGER;}
-    //const int getIntegerConst(PTRef tr) const;
     const opensmt::Integer& getIntegerConst(PTRef tr) const;
 
 
     bool        isIntPlus(SymRef sr)  const { return sr == sym_Int_PLUS; }
-    bool        isIntPlus(PTRef tr)   const { return isIntPlus(getPterm(tr).symb()); }
+    //bool      isIntPlus(PTRef tr)   const { return isIntPlus(getPterm(tr).symb()); }
+    bool        isNumPlus(PTRef tr)   const override { return isIntPlus(tr); }
     bool        isIntMinus(SymRef sr) const { return sr == sym_Int_MINUS; }
-    bool        isIntMinus(PTRef tr)  const { return isIntMinus(getPterm(tr).symb()); }
+    //bool      isIntMinus(PTRef tr)  const { return isIntMinus(getPterm(tr).symb()); }
+    bool        isNumMinus(PTRef tr)  const override { return isIntMinus(tr); }
     bool        isIntNeg(SymRef sr)   const { return sr == sym_Int_NEG; }
-    bool        isIntNeg(PTRef tr)    const { return isIntNeg(getPterm(tr).symb()); }
+    //bool      isIntNeg(PTRef tr)    const { return isIntNeg(getPterm(tr).symb()); }
+    bool        isNumNeg(PTRef tr)    const override { return isIntNeg(tr); }
     bool        isIntTimes(SymRef sr) const { return sr == sym_Int_TIMES; }
-    bool        isIntTimes(PTRef tr)  const { return isIntTimes(getPterm(tr).symb()); }
+    //bool      isIntTimes(PTRef tr)  const { return isIntTimes(getPterm(tr).symb()); }
+    bool        isNumTimes(PTRef tr)  const override { return isIntTimes(tr); }
     //bool        isIntDiv(SymRef sr)   const { return sr == sym_Int_DIV; }
     //bool        isIntDiv(PTRef tr)    const { return isIntDiv(getPterm(tr).symb()); }
     bool        isIntEq(SymRef sr)    const { return isEquality(sr) && (sym_store[sr][0] == sort_INTEGER); }
-    bool        isIntEq(PTRef tr)     const { return isIntEq(getPterm(tr).symb()); }
+    //bool      isIntEq(PTRef tr)     const { return isIntEq(getPterm(tr).symb()); }
+    bool        isNumEq(PTRef tr)     const override { return isIntEq(tr); }
     bool        isIntLeq(SymRef sr)   const { return sr == sym_Int_LEQ; }
-    bool        isIntLeq(PTRef tr)    const { return isIntLeq(getPterm(tr).symb()); }
+    //bool      isIntLeq(PTRef tr)    const { return isIntLeq(getPterm(tr).symb()); }
+    bool        isNumLeq(PTRef tr)    const override { return isIntLeq(tr); }
     bool        isIntLt(SymRef sr)    const { return sr == sym_Int_LT; }
-    bool        isIntLt(PTRef tr)     const { return isIntLt(getPterm(tr).symb()); }
+    //bool      isIntLt(PTRef tr)     const { return isIntLt(getPterm(tr).symb()); }
+    bool        isNumLt(PTRef tr)     const override { return isIntLt(tr); }
     bool        isIntGeq(SymRef sr)   const { return sr == sym_Int_GEQ; }
-    bool        isIntGeq(PTRef tr)    const { return isIntGeq(getPterm(tr).symb()); }
+    //bool      isIntGeq(PTRef tr)    const { return isIntGeq(getPterm(tr).symb()); }
+    bool        isNumGeq(PTRef tr)    const override { return isIntGeq(tr); }
     bool        isIntGt(SymRef sr)    const { return sr == sym_Int_GT; }
-    bool        isIntGt(PTRef tr)     const { return isIntGt(getPterm(tr).symb()); }
+    //bool      isIntGt(PTRef tr)     const { return isIntGt(getPterm(tr).symb()); }
+    bool        isNumGt(PTRef tr)     const override { return isIntGt(tr); }
     bool        isIntVar(SymRef sr)   const { return isVar(sr) && sym_store[sr].rsort() == sort_INTEGER; }
-    bool        isIntVar(PTRef tr)    const { return isIntVar(getPterm(tr).symb()); }
-    //bool        isIntMod(SymRef sr)   const { return sr == sym_Int_MOD; }
-    //bool        isIntMod(PTRef tr)    const { return isIntMod(getPterm(tr).symb()); }
-    //bool        isIntABS(SymRef sr)   const { return sr == sym_int_ABS; }
-   // bool        isIntABS(PTRef tr)    const { return isIntABS(getPterm(tr).symb()); }
+    //bool      isIntVar(PTRef tr)    const { return isIntVar(getPterm(tr).symb()); }
+    bool        isNumVar(PTRef tr)    const override { return isIntVar(tr); }
+    //bool      isIntMod(SymRef sr)   const { return sr == sym_Int_MOD; }
+    //bool      isIntMod(PTRef tr)    const { return isIntMod(getPterm(tr).symb()); }
+    //bool      isIntABS(SymRef sr)   const { return sr == sym_int_ABS; }
+    //bool      isIntABS(PTRef tr)    const { return isIntABS(getPterm(tr).symb()); }
     bool        isIntZero(SymRef sr)  const { return sr == sym_Int_ZERO; }
-    bool        isIntZero(PTRef tr)   const { return tr == term_Int_ZERO; }
+    //bool      isIntZero(PTRef tr)   const { return tr == term_Int_ZERO; }
+    bool        isNumZero(PTRef tr)   const override { return tr == term_Int_ZERO; }
     bool        isIntOne(SymRef sr)   const { return sr == sym_Int_ONE; }
-    bool        isIntOne(PTRef tr)    const { return tr == term_Int_ONE; }
+    //bool      isIntOne(PTRef tr)    const { return tr == term_Int_ONE; }
+    bool        isNumOne(PTRef tr)    const override { return tr == term_Int_ONE; }
 
 
     // Integer terms are of form c, a, or (* c a) where c is a constant and a is a variable.
     bool        isIntegerTerm(PTRef tr) const;
     bool        hasSortInt(SymRef sr) const { return sym_store[sr].rsort() == sort_INTEGER; }
-
     bool        hasSortInt(PTRef tr) const { return hasSortInt(getPterm(tr).symb()); }
 
     bool        isUFEquality(PTRef tr) const { return !isIntEq(tr) && Logic::isUFEquality(tr); }
@@ -151,6 +162,7 @@ class LIALogic: public Logic
     // UFs are the functions that have no interpretation in integers.
     bool        isUF(PTRef tr)  const { return isUF(term_store[tr].symb()); }
     bool        isUF(SymRef sr) const { return !sym_store[sr].isInterpreted();}
+
 
     PTRef       getTerm_IntZero() const { return term_Int_ZERO; }
     PTRef       getTerm_IntOne()  const { return term_Int_ONE; }
@@ -182,11 +194,11 @@ class LIALogic: public Logic
     PTRef       mkIntGt(const vec<PTRef>& args) { char* msg; PTRef tr = mkIntGt(args, &msg); assert(tr != PTRef_Undef); return tr; }
     PTRef       mkIntGt(const PTRef arg1, const PTRef arg2) { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkIntGt(tmp); }
 
-    bool        isIntNegated(PTRef tr) const;
+    virtual bool        isIntNegated(PTRef tr) const;
 
-    void        LIAsplitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) const;
-    PTRef       LIAnormalizeSum(PTRef sum); // Use for normalizing leq terms: sort the sum and divide all terms with the first factor
-    PTRef       LIAnormalizeMul(PTRef mul); // Use for normalizing leq terms of form 0 <= c*v
+    virtual void        splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) const;
+    virtual PTRef       normalizeSum(PTRef sum); // Use for normalizing leq terms: sort the sum and divide all terms with the first factor
+    virtual PTRef       normalizeMul(PTRef mul); // Use for normalizing leq terms of form 0 <= c*v
 
     // Logic specific simplifications: conjoin Ites, make substitutions
     // and split equalities
@@ -219,7 +231,7 @@ class LIALessThan_deepPTRef {
         if (l.isIntTimes(x_)) {
             PTRef c_x;
             PTRef v_x;
-            l.LIAsplitTermToVarAndConst(x_, v_x, c_x);
+            l.splitTermToVarAndConst(x_, v_x, c_x);
             id_x = v_x.x;
         } else {
             id_x = x_.x;
@@ -227,7 +239,7 @@ class LIALessThan_deepPTRef {
         if (l.isIntTimes(y_)) {
             PTRef c_y;
             PTRef v_y;
-            l.LIAsplitTermToVarAndConst(y_, v_y, c_y);
+            l.splitTermToVarAndConst(y_, v_y, c_y);
             id_y = v_y.x;
         } else {
             id_y = y_.x;

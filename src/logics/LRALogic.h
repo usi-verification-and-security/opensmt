@@ -25,6 +25,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef LRALOGIC_H
 #define LRALOGIC_H
 #include "Logic.h"
+#include "LALogic.h"
 #include "Real.h"
 
 
@@ -44,7 +45,7 @@ public:
     ~LRANonLinearException() { free(reason); }
 };
 
-class LRALogic: public Logic
+class LRALogic: public Logic, public LALogic
 {
   protected:
     Logic_t logic_type;
@@ -81,12 +82,12 @@ class LRALogic: public Logic
     static const char*  tk_real_gt;
 
     static const char*  s_sort_real;
-
     static const char*  e_nonlinear_term;
 
-    bool split_eq;
+    //bool split_eq;
     Map<PTRef,bool,PTRefHash> lra_split_inequalities;
     void visit(PTRef, Map<PTRef,PTRef,PTRefHash>&);
+
   public:
     LRALogic                    (SMTConfig& c);
     ~LRALogic                   () {
@@ -117,54 +118,66 @@ class LRALogic: public Logic
     bool  isRealConst     (PTRef tr)      const { return isRealConst(getPterm(tr).symb()); }
     bool  isNonnegRealConst (PTRef tr)    const { return isRealConst(tr) && getRealConst(tr) >= 0; }
 
-//    SRef        declareSort_Real(char** msg);
+    //SRef        declareSort_Real(char** msg);
 
     SRef        getSort_real    ()              const { return sort_REAL;    }
-
     const opensmt::Real& getRealConst(PTRef tr) const;
 
     bool        isRealPlus(SymRef sr) const { return sr == sym_Real_PLUS; }
-    bool        isRealPlus(PTRef tr) const { return isRealPlus(getPterm(tr).symb()); }
+    //bool        isRealPlus(PTRef tr) const { return isRealPlus(getPterm(tr).symb()); }
+    bool        isNumPlus(PTRef tr) const override { return isRealPlus(tr); }
     bool        isRealMinus(SymRef sr) const { return sr == sym_Real_MINUS; }
-    bool        isRealMinus(PTRef tr) const { return isRealMinus(getPterm(tr).symb()); }
+    //bool        isRealMinus(PTRef tr) const { return isRealMinus(getPterm(tr).symb()); }
+    bool        isNumMinus(PTRef tr) const override { return isRealMinus(tr); }
     bool        isRealNeg(SymRef sr) const { return sr == sym_Real_NEG; }
-    bool        isRealNeg(PTRef tr) const { return isRealNeg(getPterm(tr).symb()); }
+    //bool        isRealNeg(PTRef tr) const { return isRealNeg(getPterm(tr).symb()); }
+    bool        isNumNeg(PTRef tr) const override { return isRealNeg(tr); }
     bool        isRealTimes(SymRef sr) const { return sr == sym_Real_TIMES; }
-    bool        isRealTimes(PTRef tr) const { return isRealTimes(getPterm(tr).symb()); }
+    //bool        isRealTimes(PTRef tr) const { return isRealTimes(getPterm(tr).symb()); }
+    bool        isNumTimes(PTRef tr) const override { return isRealTimes(tr); }
     bool        isRealDiv(SymRef sr) const { return sr == sym_Real_DIV; }
-    bool        isRealDiv(PTRef tr) const { return isRealDiv(getPterm(tr).symb()); }
+    //bool        isRealDiv(PTRef tr) const { return isRealDiv(getPterm(tr).symb()); }
+    bool        isNumDiv(PTRef tr) const override { return isRealDiv(tr); }
     bool        isRealEq(SymRef sr) const { return isEquality(sr) && (sym_store[sr][0] == sort_REAL); }
-    bool        isRealEq(PTRef tr) const { return isRealEq(getPterm(tr).symb()); }
+    //bool        isRealEq(PTRef tr) const { return isRealEq(getPterm(tr).symb()); }
+    bool        isNumEq(PTRef tr) const override { return isRealEq(tr); }
     bool        isRealLeq(SymRef sr) const { return sr == sym_Real_LEQ; }
-    bool        isRealLeq(PTRef tr) const { return isRealLeq(getPterm(tr).symb()); }
+    //bool        isRealLeq(PTRef tr) const { return isRealLeq(getPterm(tr).symb()); }
+    bool        isNumLeq(PTRef tr) const override { return isRealLeq(tr); }
     bool        isRealLt(SymRef sr) const { return sr == sym_Real_LT; }
-    bool        isRealLt(PTRef tr) const { return isRealLt(getPterm(tr).symb()); }
+    //bool        isRealLt(PTRef tr) const { return isRealLt(getPterm(tr).symb()); }
+    bool        isNumLt(PTRef tr) const override { return isRealLt(tr); }
     bool        isRealGeq(SymRef sr) const { return sr == sym_Real_GEQ; }
-    bool        isRealGeq(PTRef tr) const { return isRealGeq(getPterm(tr).symb()); }
+    //bool        isRealGeq(PTRef tr) const { return isRealGeq(getPterm(tr).symb()); }
+    bool        isNumGeq(PTRef tr) const override { return isRealGeq(tr); }
     bool        isRealGt(SymRef sr) const { return sr == sym_Real_GT; }
-    bool        isRealGt(PTRef tr) const { return isRealGt(getPterm(tr).symb()); }
+    //bool        isRealGt(PTRef tr) const { return isRealGt(getPterm(tr).symb()); }
+    bool        isNumGt(PTRef tr) const override { return isRealGt(tr); }
     bool        isRealVar(SymRef sr) const { return isVar(sr) && sym_store[sr].rsort() == sort_REAL; }
-    bool        isRealVar(PTRef tr) const { return isRealVar(getPterm(tr).symb()); }
+    //bool        isRealVar(PTRef tr) const { return isRealVar(getPterm(tr).symb()); }
+    bool        isNumVar(PTRef tr) const override { return isRealVar(tr); }
     bool        isRealZero(SymRef sr) const { return sr == sym_Real_ZERO; }
-    bool        isRealZero(PTRef tr) const { return tr == term_Real_ZERO; }
+    //bool        isRealZero(PTRef tr) const { return tr == term_Real_ZERO; }
+    bool        isNumZero(PTRef tr) const override { return tr == term_Real_ZERO; }
     bool        isRealOne(SymRef sr) const { return sr == sym_Real_ONE; }
-    bool        isRealOne(PTRef tr) const { return tr == term_Real_ONE; }
+    //bool        isRealOne(PTRef tr) const { return tr == term_Real_ONE; }
+    bool        isNumOne(PTRef tr) const override { return tr == term_Real_ONE; }
 
     // Real terms are of form c, a, or (* c a) where c is a constant and
     // a is a variable.
     bool        isRealTerm(PTRef tr) const;
     bool        hasSortReal(SymRef sr) const { return sym_store[sr].rsort() == sort_REAL; }
-
     bool        hasSortReal(PTRef tr) const { return hasSortReal(getPterm(tr).symb()); }
 
     bool        isUFEquality(PTRef tr) const { return !isRealEq(tr) && Logic::isUFEquality(tr); }
     bool        isTheoryEquality(PTRef tr) const { return isRealEq(tr); }
 
-    virtual bool isAtom(PTRef tr) const { return isRealEq(tr) || isRealLt(tr) || isRealGt(tr) || isRealLeq(tr) || isRealGeq(tr) || Logic::isAtom(tr); }
+    virtual bool isAtom(PTRef tr) const  { return isRealEq(tr) || isRealLt(tr) || isRealGt(tr) || isRealLeq(tr) || isRealGeq(tr) || Logic::isAtom(tr); }
     // UFs are the functions that have no interpretation in real.
     bool        isUF(PTRef tr) const { return isUF(term_store[tr].symb()); }
     bool        isUF(SymRef sr) const { return !sym_store[sr].isInterpreted(); }
 
+    //PS. is the part below needs to be rewritten
     PTRef       getTerm_RealZero() const { return term_Real_ZERO; }
     PTRef       getTerm_RealOne()  const { return term_Real_ONE; }
     PTRef       mkRealNeg(PTRef, char**);
@@ -195,15 +208,15 @@ class LRALogic: public Logic
     PTRef       mkRealGt(const vec<PTRef>& args) { char* msg; PTRef tr = mkRealGt(args, &msg); assert(tr != PTRef_Undef); return tr; }
     PTRef       mkRealGt(const PTRef arg1, const PTRef arg2) { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkRealGt(tmp); }
 
-    bool        isNegated(PTRef tr) const;
+    virtual bool  isNegated(PTRef tr) const; //PS. is this method now uses LALogic method but with overridden functions like isNumConst? as above we override method isNumConst. And how to be with LRALogic.C file? comment out this method implementation or call it with LRA:: methodname?
 
-    void        splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) const;
-    PTRef       normalizeSum(PTRef sum); // Use for normalizing leq terms: sort the sum and divide all terms with the first factor
-    PTRef       normalizeMul(PTRef mul); // Use for normalizing leq terms of form 0 <= c*v
+    virtual void  splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) const; //PS. is this method now uses LALogic method but with overridden functions like isNumConst? as above we override method isNumConst
+    virtual PTRef       normalizeSum(PTRef sum); // Use for normalizing leq terms: sort the sum and divide all terms with the first factor
+    virtual PTRef       normalizeMul(PTRef mul); // Use for normalizing leq terms of form 0 <= c*v
 
     // Logic specific simplifications: conjoin Ites, make substitutions
     // and split equalities
-//    virtual bool simplify(PTRef root, PTRef& root_out);
+    virtual bool simplify(PTRef root, PTRef& root_out);
 
     lbool retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs);
     lbool arithmeticElimination(vec<PTRef>&, Map<PTRef,PtAsgn,PTRefHash>&);
@@ -217,8 +230,6 @@ class LRALogic: public Logic
     virtual char* printTerm        (PTRef tr)                 const { return printTerm_(tr, false, false); }
     virtual char* printTerm        (PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
 };
-
-// from here onwards needs to be removed, as now in Superclass
 
 
 // Determine for two multiplicative terms (* k1 v1) and (* k2 v2), v1 !=
