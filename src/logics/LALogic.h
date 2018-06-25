@@ -1,346 +1,410 @@
 #ifndef LALOGIC_H
 #define LALOGIC_H
 
-class LALogic {
-  protected:
-    Logic_t logic_type;
+#include "Logic.h"
 
-    SymRef              sym_Num_ZERO;
-    SymRef              sym_Num_ONE;
-    SymRef              sym_Num_NEG;
-    SymRef              sym_Num_MINUS;
-    SymRef              sym_Num_PLUS;
-    SymRef              sym_Num_TIMES;
-    SymRef              sym_Num_DIV;
-    SymRef              sym_Num_EQ;
-    SymRef              sym_Num_LEQ;
-    SymRef              sym_Num_LT;
-    SymRef              sym_Num_GEQ;
-    SymRef              sym_Num_GT;
-    SymRef              sym_Num_ITE;
+class LALogic: public Logic  //PS. shall this class extend logic?
+{
 
-    //SRef                sort_REAL //PS. what type should I have here for later use? Maybe sort_MIXED this anyway declaration of variable of type SRef
+    protected:
 
-    PTRef               term_Num_ZERO;
-    PTRef               term_Num_ONE;
+        Logic_t logic_type;
 
-    static const char*  tk_num_zero;
-    static const char*  tk_num_one;
-    static const char*  tk_num_neg;
-    static const char*  tk_num_minus;
-    static const char*  tk_num_plus;
-    static const char*  tk_num_times;
-    static const char*  tk_num_div;
-    static const char*  tk_num_leq;
-    static const char*  tk_num_lt;
-    static const char*  tk_num_geq;
-    static const char*  tk_num_gt;
-
-    bool split_eq;
-
-  public:
-    LALogic                    (SMTConfig& c);
-    ~LALogic                   () {}
-
-    bool        isNumPlus(SymRef sr) const { return sr == sym_Num_PLUS; }
-    virtual bool        isNumPlus(PTRef tr) const { return isNumPlus(getPterm(tr).symb()); }
-    bool        isNumMinus(SymRef sr) const { return sr == sym_Num_MINUS; }
-    virtual bool        isNumMinus(PTRef tr) const { return isNumMinus(getPterm(tr).symb()); }
-    bool        isNumNeg(SymRef sr) const { return sr == sym_Num_NEG; }
-    virtual bool        isNumNeg(PTRef tr) const { return isNumNeg(getPterm(tr).symb()); }
-    bool        isNumTimes(SymRef sr) const { return sr == sym_Num_TIMES; }
-    virtual bool        isNumTimes(PTRef tr) const { return isNumTimes(getPterm(tr).symb()); }
-    bool        isNumDiv(SymRef sr) const { return sr == sym_Num_DIV; }
-    virtual bool        isNumDiv(PTRef tr) const { return isNumDiv(getPterm(tr).symb()); }
-    bool        isNumEq(SymRef sr) const { return isEquality(sr) && (sym_store[sr][0] == sort_BOOL); } //what sort to write here?
-    virtual bool        isNumEq(PTRef tr) const { return isNumEq(getPterm(tr).symb()); }
-    bool        isNumLeq(SymRef sr) const { return sr == sym_Num_LEQ; }
-    virtual bool        isNumLeq(PTRef tr) const { return isNumLeq(getPterm(tr).symb()); }
-    bool        isNumLt(SymRef sr) const { return sr == sym_Num_LT; }
-    virtual bool        isNumLt(PTRef tr) const { return isNumLt(getPterm(tr).symb()); }
-    bool        isNumGeq(SymRef sr) const { return sr == sym_Num_GEQ; }
-    virtual bool        isNumGeq(PTRef tr) const { return isNumGeq(getPterm(tr).symb()); }
-    bool        isNumGt(SymRef sr) const { return sr == sym_Num_GT; }
-    virtual bool        isNumGt(PTRef tr) const { return isNumGt(getPterm(tr).symb()); }
-    bool        isNumVar(SymRef sr) const { return isVar(sr) && sym_store[sr].rsort() == sort_BOOL; } //??
-    virtual bool        isNumVar(PTRef tr) const { return isNumVar(getPterm(tr).symb()); }
-    bool        isNumZero(SymRef sr) const { return sr == sym_Num_ZERO; }
-    virtual bool        isNumZero(PTRef tr) const { return tr == term_Num_ZERO; }
-    bool        isNumOne(SymRef sr) const { return sr == sym_Num_ONE; }
-    virtual bool        isNumOne(PTRef tr) const { return tr == term_Num_ONE; }
-
-    // Real terms are of form c, a, or (* c a) where c is a constant and
-    // a is a variable.
-    bool        isNumTerm(PTRef tr) const;
-
-    //PS. the rest also needs to be overriden, but how?
-
-    PTRef       getTerm_NumZero() const { return term_Num_ZERO; }
-    PTRef       getTerm_NumOne()  const { return term_Num_ONE; }
-    PTRef       mkNumNeg(PTRef, char**);
-    PTRef       mkNumNeg(PTRef tr) {char* msg; PTRef trn = mkNumNeg(tr, &msg); assert(trn != PTRef_Undef); return trn; }
-    PTRef       mkNumMinus(const vec<PTRef>&, char**);
-    PTRef       mkNumMinus(const vec<PTRef>& args) { char *msg; PTRef tr = mkNumMinus(args, &msg); assert(tr != PTRef_Undef); return tr; }
-    PTRef       mkNumMinus(const PTRef a1, const PTRef a2) { vec<PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkNumMinus(tmp); }
-    PTRef       mkNumPlus(const vec<PTRef>&, char**);
-    PTRef       mkNumPlus(const vec<PTRef>& args) { char *msg; PTRef tr = mkNumPlus(args, &msg); assert(tr != PTRef_Undef); return tr; }
-    PTRef       mkNumPlus(const std::vector<PTRef>& args) { vec<PTRef> tmp; for(PTRef arg : args) {tmp.push(arg);} return mkNumPlus(tmp);}
-    PTRef       mkNumTimes(const vec<PTRef>&, char**);
-    PTRef       mkNumTimes(const vec<PTRef>& args) { char *msg; PTRef tr = mkNumTimes(args, &msg); assert(tr != PTRef_Undef); return tr; }
-    PTRef       mkNumTimes(const PTRef p1, const PTRef p2) { vec<PTRef> tmp; tmp.push(p1); tmp.push(p2); return mkNumTimes(tmp); }
-    PTRef       mkNumTimes(const std::vector<PTRef>& args) { vec<PTRef> tmp; for(PTRef arg : args) {tmp.push(arg);} return mkNumTimes(tmp);}
-    PTRef       mkNumDiv(const vec<PTRef>&, char**);
-    PTRef       mkNumDiv(const vec<PTRef>& args) { char *msg; PTRef tr = mkNumDiv(args, &msg); assert(tr != PTRef_Undef); return tr; }
-    PTRef       mkNumDiv(const PTRef nom, const PTRef den) { vec<PTRef> tmp; tmp.push(nom), tmp.push(den); return mkNumDiv(tmp); }
-    PTRef       mkNumLeq(const vec<PTRef>&, char**);
-    PTRef       mkNumLeq(const vec<PTRef>& args) { char* msg; PTRef tr = mkNumLeq(args, &msg); assert(tr != PTRef_Undef); return tr; }
-    PTRef       mkNumLeq(const PTRef arg1, const PTRef arg2) { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkNumLeq(tmp); }
-    PTRef       mkNumGeq(const vec<PTRef>&, char**);
-    PTRef       mkNumGeq(const vec<PTRef>& args) { char* msg; PTRef tr = mkNumGeq(args, &msg); assert(tr != PTRef_Undef); return tr; }
-    PTRef       mkNumGeq(const PTRef arg1, const PTRef arg2) { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkNumGeq(tmp); }
-    PTRef       mkNumLt(const vec<PTRef>&, char**);
-    PTRef       mkNumLt(const vec<PTRef>& args) { char* msg; PTRef tr = mkNumLt(args, &msg); assert(tr != PTRef_Undef); return tr; }
-    PTRef       mkNumLt(const PTRef arg1, const PTRef arg2) { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkNumLt(tmp); }
-    PTRef       mkNumGt(const vec<PTRef>&, char**);
-    PTRef       mkNumGt(const vec<PTRef>& args) { char* msg; PTRef tr = mkNumGt(args, &msg); assert(tr != PTRef_Undef); return tr; }
-    PTRef       mkNumGt(const PTRef arg1, const PTRef arg2) { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkNumGt(tmp); }
-
-    //bool        isNegated(PTRef tr) const;
-
-    virtual bool isNegated(PTRef tr) const {
-      if (isNumConst(tr))
-          return getNumConst(tr) < 0; // Case (0a) and (0b) //PS. getNumConst needs to be overriden for LIA and LRA
-      if (isNumVar(tr))
-          return false; // Case (1a)
-      if (isNumTimes(tr)) {
-          // Cases (2)
-          PTRef v;
-          PTRef c;
-          splitTermToVarAndConst(tr, v, c); //PS. splitTermToVarAndConst needs to be in this classs defined and implemented
-          return isNegated(c);
-      }
-      else {
-          // Cases(3)
-          return isNegated(getPterm(tr)[0]);
-      }
-    }
+        //PS. below variables should not needed in LRA and LIA i guess, check carefully
+        SymRef sym_Num_ZERO;
+        SymRef sym_Num_ONE;
+        SymRef sym_Num_NEG;
+        SymRef sym_Num_MINUS;
+        SymRef sym_Num_PLUS;
+        SymRef sym_Num_TIMES;
+        SymRef sym_Num_DIV;
+        SymRef sym_Num_EQ;
+        SymRef sym_Num_LEQ;
+        SymRef sym_Num_LT;
+        SymRef sym_Num_GEQ;
+        SymRef sym_Num_GT;
+        SymRef sym_Num_ITE;
 
 
-    //void        splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) const;
+        PTRef term_Num_ZERO;
+        PTRef term_Num_ONE;
 
-    //PS. be careful with below function implementation as it contains DIV, for LIA you may need to activate it, or rewrite new implementation for LIA
+        SRef      sort_NUM;
 
-    virtual void splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) const {
-      assert(isNumTimes(term) || isNumDiv(term) || isNumVar(term) || isConstant(term) || isUF(term));
-      if (isNumTimes(term) || isNumDiv(term)) {
-          assert(getPterm(term).size() == 2);
-          fac = getPterm(term)[0];
-          var = getPterm(term)[1];
-          if (!isConstant(fac)) {
-              PTRef t = var;
-              var = fac;
-              fac = t;
-          }
-          assert(isConstant(fac));
-          assert(isNumVar(var) || isUF(var));
-      } else if (isNumVar(term) || isUF(term)) {
-          var = term;
-          fac = getTerm_RealOne();
-      } else {
-          var = getTerm_RealOne();
-          fac = term;
-      }
-    }
+        static const char *tk_num_zero;
+        static const char *tk_num_one;
+        static const char *tk_num_neg;
+        static const char *tk_num_minus;
+        static const char *tk_num_plus;
+        static const char *tk_num_times;
+        static const char *tk_num_div;
+        static const char *tk_num_leq;
+        static const char *tk_num_lt;
+        static const char *tk_num_geq;
+        static const char *tk_num_gt;
 
-    //PTRef       normalizeSum(PTRef sum); // Use for normalizing leq terms: sort the sum and divide all terms with the first factor
+        bool split_eq;
 
-    virtual PTRef normalizeSum(PTRef sum) {
-      vec<PTRef> args;
-      Pterm& s = getPterm(sum);
-      for  (int i = 0; i < s.size(); i++)
-          args.push(s[i]);
-      termSort(args);
-      PTRef const_term = PTRef_Undef;
-      for (int i = 0; i < args.size(); i++) {
-          if (isNumVar(args[i])) {
-              // The lex first term has an implicit unit factor, no need to do anything.
-              return sum;
-          }
-          if (isNumTimes(args[i])) {
-              assert(!isNumZero(getPterm(args[i])[0]) && !isNumZero(getPterm(args[i])[1]));
-              const_term = args[i];
-              break;
-          }
-      }
+    public:
+        LALogic(SMTConfig &c);
+        ~LALogic() {}
 
-      if (const_term == PTRef_Undef) {
-          // No factor qualifies, only constants in the sum
-          return sum;
-      }
+        virtual bool    isBuiltinFunction(SymRef sr) const;
+        virtual PTRef   insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg);
+        virtual SRef    getSort_num    ()              const { return sort_NUM; }
 
-      // here we have const_term != PTRef_Undef
-      Pterm& t = getPterm(const_term);
-      assert(t.size() == 2);
-      assert(isConstant(t[0]) || isConstant(t[1]));
-      // We need to go through the real values since negative constant
-      // terms are are not real negations.
-      opensmt::Real k = abs(isConstant(t[0]) ? getNumConst(t[0]) : getNumConst(t[1])); //PS. how to be with opensmt: Real? in case of integer? override method and reimplement?
-      PTRef divisor = mkConst(k); //PS. how this implementation will differentiate between mkConst of LRA and LIA? And how at all say in this base class that mkConst is from where? logic.h?
-      for (int i = 0; i < args.size(); i++) {
-          vec<PTRef> tmp;
-          tmp.push(args[i]);
-          tmp.push(divisor);
-          args[i] = mkNumDiv(tmp);
-      }
-      return mkNumPlus(args);
-    }
+        //PS. be careful with the following, the main problem is with type opensmt:: Real, can i say either of the types? or how to say it? Line 58-60 has to be written properly and non of the methods needs to present in LRALogic.h file
+
+        virtual PTRef       mkConst         (const char* name, const char **msg);
+        virtual PTRef       mkConst         (SRef s, const char* name);
+        virtual PTRef       mkConst         (const opensmt::Real& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_num(), rat); free(rat); return tr; }
+        virtual PTRef       mkConst         (const char* num) { return mkConst(getSort_num(), num); }
+        virtual PTRef       mkRealVar       (const char* name) { return mkVar(getSort_num(), name); }
+
+        virtual bool isBuiltinSort  (SRef sr) const { return sr == sort_NUM || Logic::isBuiltinSort(sr); }
+        virtual bool isBuiltinConstant(SymRef sr) const { return (isNumConst(sr) || Logic::isBuiltinConstant(sr)); }
 
 
-    //PTRef       normalizeMul(PTRef mul); // Use for normalizing leq terms of form 0 <= c*v
+        virtual bool  isNumConst     (SymRef sr)     const { return isConstant(sr) && hasSortNum(sr); }
+        virtual bool  isNumConst     (PTRef tr)      const { return isNumConst(getPterm(tr).symb()); }
+        virtual bool  isNonnegNumConst (PTRef tr)    const { return isNumConst(tr) && getNumConst(tr) >= 0; }
 
-    virtual PTRef  normalizeMul(PTRef mul)
-    {
-        assert(isNumTimes(mul));
-        PTRef v = PTRef_Undef;
-        PTRef c = PTRef_Undef;
-        splitTermToVarAndConst(mul, v, c);
-        opensmt::Real r = getNumConst(c);
-        if (r < 0)
-            return mkNumNeg(v); //PS. how to override mk methods?
-        else
-            return v;
-    }
+        virtual bool   hasSortNum(SymRef sr) const { return sym_store[sr].rsort() == sort_NUM; }
+        virtual bool   hasSortNum(PTRef tr) const { return hasSortNum(getPterm(tr).symb()); }
 
-    // Logic specific simplifications: conjoin Ites, make substitutions
-    // and split equalities
-
-    //lbool arithmeticElimination(vec<PTRef>&, Map<PTRef,PtAsgn,PTRefHash>&);
+        virtual const  getNumConst(PTRef tr) const; //PS. how to be with the type here ??? the same correction do i LRALOgixc.h line 126
+        //PS. up to here
 
 
-    virtual lbool arithmeticElimination(vec<PTRef> &top_level_arith, Map<PTRef,PtAsgn,PTRefHash>& substitutions)
-    {
-        vec<LAExpression*> equalities; //PS. u need to change somethin inside LAExpression
-        LALogic& logic = *this;
-        // I don't know if reversing the order makes any sense but osmt1
-        // does that.
-        for (int i = top_level_arith.size()-1; i >= 0; i--) {
-            equalities.push(new LAExpression(logic, top_level_arith[i]));
+                bool isNumPlus(SymRef sr) const { return sr == sym_Num_PLUS; }
+        virtual bool isNumPlus(PTRef tr) const { return isNumPlus(getPterm(tr).symb()); }
+
+                bool isNumMinus(SymRef sr) const { return sr == sym_Num_MINUS; }
+        virtual bool isNumMinus(PTRef tr) const { return isNumMinus(getPterm(tr).symb()); }
+
+                bool isNumNeg(SymRef sr) const { return sr == sym_Num_NEG; }
+        virtual bool isNumNeg(PTRef tr) const { return isNumNeg(getPterm(tr).symb()); }
+
+                bool isNumTimes(SymRef sr) const { return sr == sym_Num_TIMES; }
+        virtual bool isNumTimes(PTRef tr) const { return isNumTimes(getPterm(tr).symb()); }
+
+                bool isNumDiv(SymRef sr) const { return sr == sym_Num_DIV; }
+        virtual bool isNumDiv(PTRef tr) const { return isNumDiv(getPterm(tr).symb()); }
+
+                bool isNumEq(SymRef sr) const { return isEquality(sr) && (sym_store[sr][0] == sort_NUM);}
+        virtual bool isNumEq(PTRef tr) const { return isNumEq(getPterm(tr).symb()); }
+
+                bool isNumLeq(SymRef sr) const { return sr == sym_Num_LEQ; }
+        virtual bool isNumLeq(PTRef tr) const { return isNumLeq(getPterm(tr).symb()); }
+
+                bool isNumLt(SymRef sr) const { return sr == sym_Num_LT; }
+        virtual bool isNumLt(PTRef tr) const { return isNumLt(getPterm(tr).symb()); }
+
+                bool isNumGeq(SymRef sr) const { return sr == sym_Num_GEQ; }
+        virtual bool isNumGeq(PTRef tr) const { return isNumGeq(getPterm(tr).symb()); }
+
+                bool isNumGt(SymRef sr) const { return sr == sym_Num_GT; }
+        virtual bool isNumGt(PTRef tr) const { return isNumGt(getPterm(tr).symb()); }
+
+                bool isNumVar(SymRef sr) const { return isVar(sr) && sym_store[sr].rsort() == sort_NUM; }
+        virtual bool isNumVar(PTRef tr) const { return isNumVar(getPterm(tr).symb()); }
+
+                bool isNumZero(SymRef sr) const { return sr == sym_Num_ZERO; }
+        virtual bool isNumZero(PTRef tr) const { return tr == term_Num_ZERO; }
+
+                bool isNumOne(SymRef sr) const { return sr == sym_Num_ONE; }
+        virtual bool isNumOne(PTRef tr) const { return tr == term_Num_ONE; }
+
+        // Real terms are of form c, a, or (* c a) where c is a constant and
+        // a is a variable.
+        virtual bool isNumTerm(PTRef tr) const;
+        virtual bool okForBoolVar(PTRef) const;
+
+        virtual PTRef getTerm_NumZero() const { return term_Num_ZERO; }
+        virtual PTRef getTerm_NumOne() const { return term_Num_ONE; }
+
+
+        PTRef mkNumNeg(PTRef, char **);
+        PTRef mkNumNeg(PTRef tr) {
+            char *msg;
+            PTRef trn = mkNumNeg(tr, &msg);
+            assert(trn != PTRef_Undef);
+            return trn;
         }
-    #ifdef SIMPLIFY_DEBUG
-        for (int i = 0; i < equalities.size(); i++) {
-            cerr << "; ";
-            equalities[i]->print(cerr);
-            cerr << endl;
-        }
-    #endif
-        //
-        // If just one equality, produce substitution right away
-        //
-        if ( equalities.size( ) == 0 )
-            ; // Do nothing
-        else if ( equalities.size( ) == 1 ) {
-            LAExpression & lae = *equalities[ 0 ];
-            if (lae.solve() == PTRef_Undef) {
-                // Constant substituted by a constant.  No new info from
-                // here.
-    //            printf("there is something wrong here\n");
-                return l_Undef;
-            }
-            pair<PTRef, PTRef> sub = lae.getSubst();
-            assert( sub.first != PTRef_Undef );
-            assert( sub.second != PTRef_Undef );
-            if(substitutions.has(sub.first))
-            {
-                //cout << "ARITHMETIC ELIMINATION FOUND DOUBLE SUBSTITUTION:\n" << printTerm(sub.first) << " <- " << printTerm(sub.second) << " | " << printTerm(substitutions[sub.first].tr) << endl;
-                if(sub.second != substitutions[sub.first].tr)
-                    return l_False;
-            } else
-                substitutions.insert(sub.first, PtAsgn(sub.second, l_True));
-        } else {
-            // Otherwise obtain substitutions
-            // by means of Gaussian Elimination
-            //
-            // FORWARD substitution
-            // We put the matrix equalities into upper triangular form
-            //
-            for (uint32_t i = 0; i < equalities.size()-1; i++) {
-                LAExpression &s = *equalities[i];
-                // Solve w.r.t. first variable
-                if (s.solve( ) == PTRef_Undef) {
-                    if (logic.isTrue(s.toPTRef())) continue;
-                    assert(logic.isFalse(s.toPTRef()));
-                    return l_False;
-                }
-                // Use the first variable x in s to generate a
-                // substitution and replace x in lac
-                for ( unsigned j = i + 1 ; j < equalities.size( ) ; j ++ ) {
-                    LAExpression & lac = *equalities[ j ];
-                    combine( s, lac );
-                }
-            }
-            //
-            // BACKWARD substitution
-            // From the last equality to the first we put
-            // the matrix equalities into canonical form
-            //
-            for (int i = equalities.size() - 1; i >= 1; i--) {
-                LAExpression & s = *equalities[i];
-                // Solve w.r.t. first variable
-                if (s.solve() == PTRef_Undef) {
-                    if (logic.isTrue(s.toPTRef())) continue;
-                    assert(logic.isFalse(s.toPTRef()));
-                    return l_False;
-                }
-                // Use the first variable x in s as a
-                // substitution and replace x in lac
-                for (int j = i - 1; j >= 0; j--) {
-                    LAExpression& lac = *equalities[j];
-                    combine(s, lac);
-                }
-            }
-            //
-            // Now, for each row we get a substitution
-            //
-            for (unsigned i = 0 ;i < equalities.size(); i++) {
-                LAExpression& lae = *equalities[i];
-                pair<PTRef, PTRef> sub = lae.getSubst();
-                if (sub.first == PTRef_Undef) continue;
-                assert(sub.second != PTRef_Undef);
-                //cout << printTerm(sub.first) << " <- " << printTerm(sub.second) << endl;
-                if(!substitutions.has(sub.first)) {
-                    substitutions.insert(sub.first, PtAsgn(sub.second, l_True));
-    //                cerr << "; gaussian substitution: " << logic.printTerm(sub.first) << " -> " << logic.printTerm(sub.second) << endl;
-                } else {
-                    if (isConstant(sub.second) && isConstant(sub.first) && (sub.second != substitutions[sub.first].tr))
-                        return l_False;
-                }
-            }
-        }
-        // Clean constraints
-        for (int i = 0; i < equalities.size(); i++)
-            delete equalities[i];
 
-        return l_Undef;
+        PTRef mkNumMinus(const vec<PTRef> &, char **);
+        PTRef mkNumMinus(const vec<PTRef> &args) {
+            char *msg;
+            PTRef tr = mkNumMinus(args, &msg);
+            assert(tr != PTRef_Undef);
+            return tr;
+        }
+        PTRef mkNumMinus(const PTRef a1, const PTRef a2) {
+            vec<PTRef> tmp;
+            tmp.push(a1);
+            tmp.push(a2);
+            return mkNumMinus(tmp);
+        }
+
+        PTRef mkNumPlus(const vec<PTRef> &, char **);
+        PTRef mkNumPlus(const vec<PTRef> &args) {
+            char *msg;
+            PTRef tr = mkNumPlus(args, &msg);
+            assert(tr != PTRef_Undef);
+            return tr;
+        }
+        PTRef mkNumPlus(const std::vector<PTRef> &args) {
+            vec<PTRef> tmp;
+            for (PTRef arg : args) { tmp.push(arg); }
+            return mkNumPlus(tmp);
+        }
+
+        PTRef mkNumTimes(const vec<PTRef> &, char **);
+        PTRef mkNumTimes(const vec<PTRef> &args) {
+            char *msg;
+            PTRef tr = mkNumTimes(args, &msg);
+            assert(tr != PTRef_Undef);
+            return tr;
+        }
+        PTRef mkNumTimes(const PTRef p1, const PTRef p2) {
+            vec<PTRef> tmp;
+            tmp.push(p1);
+            tmp.push(p2);
+            return mkNumTimes(tmp);
+        }
+        PTRef mkNumTimes(const std::vector<PTRef> &args) {
+            vec<PTRef> tmp;
+            for (PTRef arg : args) { tmp.push(arg); }
+            return mkNumTimes(tmp);
+        }
+
+        PTRef mkNumDiv(const vec<PTRef> &, char **);
+        PTRef mkNumDiv(const vec<PTRef> &args) {
+            char *msg;
+            PTRef tr = mkNumDiv(args, &msg);
+            assert(tr != PTRef_Undef);
+            return tr;
+        }
+        PTRef mkNumDiv(const PTRef nom, const PTRef den) {
+            vec<PTRef> tmp;
+            tmp.push(nom), tmp.push(den);
+            return mkNumDiv(tmp);
+        }
+
+        PTRef mkNumLeq(const vec<PTRef> &, char **);
+        PTRef mkNumLeq(const vec<PTRef> &args) {
+            char *msg;
+            PTRef tr = mkNumLeq(args, &msg);
+            assert(tr != PTRef_Undef);
+            return tr;
+        }
+        PTRef mkNumLeq(const PTRef arg1, const PTRef arg2) {
+            vec<PTRef> tmp;
+            tmp.push(arg1);
+            tmp.push(arg2);
+            return mkNumLeq(tmp);
+        }
+
+        PTRef mkNumGeq(const vec<PTRef> &, char **);
+        PTRef mkNumGeq(const vec<PTRef> &args) {
+            char *msg;
+            PTRef tr = mkNumGeq(args, &msg);
+            assert(tr != PTRef_Undef);
+            return tr;
+        }
+        PTRef mkNumGeq(const PTRef arg1, const PTRef arg2) {
+            vec<PTRef> tmp;
+            tmp.push(arg1);
+            tmp.push(arg2);
+            return mkNumGeq(tmp);
+        }
+
+        PTRef mkNumLt(const vec<PTRef> &, char **);
+        PTRef mkNumLt(const vec<PTRef> &args) {
+            char *msg;
+            PTRef tr = mkNumLt(args, &msg);
+            assert(tr != PTRef_Undef);
+            return tr;
+        }
+        PTRef mkNumLt(const PTRef arg1, const PTRef arg2) {
+            vec<PTRef> tmp;
+            tmp.push(arg1);
+            tmp.push(arg2);
+            return mkNumLt(tmp);
+        }
+
+        PTRef mkNumGt(const vec<PTRef> &, char **);
+        PTRef mkNumGt(const vec<PTRef> &args) {
+            char *msg;
+            PTRef tr = mkNumGt(args, &msg);
+            assert(tr != PTRef_Undef);
+            return tr;
+        }
+        PTRef mkNumGt(const PTRef arg1, const PTRef arg2) {
+            vec<PTRef> tmp;
+            tmp.push(arg1);
+            tmp.push(arg2);
+            return mkNumGt(tmp);
+        }
+
+        //from here
+        virtual bool isNegated(PTRef tr) const;
+        virtual void splitTermToVarAndConst(const PTRef &term, PTRef &var, PTRef &fac) const;
+
+        virtual PTRef normalizeSum(PTRef sum); // Use for normalizing leq terms: sort the sum and divide all terms with the first factor
+        virtual PTRef normalizeMul(PTRef mul);
+
+        virtual lbool arithmeticElimination(vec<PTRef> &, Map<PTRef, PtAsgn, PTRefHash> &);
+        virtual void simplifyAndSplitEq(PTRef, PTRef &);
+        //up to here are methods specific for LRA
+
+        //from here
+        virtual void visit(PTRef, Map<PTRef, PTRef, PTRefHash> &);
+        virtual lbool retrieveSubstitutions(vec<PtAsgn> &facts, Map<PTRef, PtAsgn, PTRefHash> &substs);
+        virtual void termSort(vec<PTRef> &v) const;
+        virtual bool okToPartition(PTRef tr) const; // Partitioning hints from logic
+
+        virtual void serializeLogicData(int *&logicdata_buf) const;
+        virtual void deserializeLogicData(const int *logicdata_buf);
+
+        virtual char *printTerm_(PTRef tr, bool ext, bool s) const;
+        virtual char *printTerm(PTRef tr) const { return printTerm_(tr, false, false); }
+        virtual char *printTerm(PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
+        //up to here are methods that you can also find in Logic.h and Logic.C files
+
+
+    //delete all below
+    virtual void
+    SimplifyConst::simplify(SymRef &s, const vec<PTRef> &args, SymRef &s_new, vec<PTRef> &args_new, char **msg) {
+        vec<int> const_idx;
+        vec<PTRef> args_new_2;
+        for (int i = 0; i < args.size(); i++) {
+            if (l.isConstant(args[i]) || (l.isNumNeg(args[i]) && l.isConstant(l.getPterm(args[i])[0])))
+                const_idx.push(i);
+        }
+        if (const_idx.size() > 1) {
+            vec<PTRef> const_terms;
+            for (int i = 0; i < const_idx.size(); i++)
+                const_terms.push(args[const_idx[i]]);
+
+            PTRef tr = simplifyConstOp(const_terms, msg);
+            if (tr == PTRef_Undef) {
+                printf("%s\n", *msg);
+                assert(false);
+            }
+            int i, j, k;
+            for (i = j = k = 0; i < args.size() && k < const_terms.size(); i++) {
+                if (i != const_idx[k]) args_new_2.push(args[i]);
+                else k++;
+            }
+            // Copy also the rest
+            for (; i < args.size(); i++)
+                args_new_2.push(args[i]);
+            args_new_2.push(tr);
+        } else
+            args.copyTo(args_new_2);
+
+        constSimplify(s, args_new_2, s_new, args_new);
+        // A single argument for the operator, and the operator is identity
+        // in that case
+        if (args_new.size() == 1 && (l.isNumPlus(s_new) || l.isNumTimes(s_new) || l.isNumDiv(s_new))) {
+            PTRef ch_tr = args_new[0];
+            args_new.clear();
+            s_new = l.getPterm(ch_tr).symb();
+            for (int i = 0; i < l.getPterm(ch_tr).size(); i++)
+                args_new.push(l.getPterm(ch_tr)[i]);
+        }
     }
 
-    //void simplifyAndSplitEq(PTRef, PTRef&);
-
-    virtual void simplifyAndSplitEq(PTRef tr, PTRef& root_out)
-    {
-        split_eq = true;
-        simplifyTree(tr, root_out);
-        split_eq = false;
+    void SimplifyConstSum::constSimplify(const SymRef &s, const vec<PTRef> &terms, SymRef &s_new,
+                                         vec<PTRef> &terms_new) const {
+        assert(terms_new.size() == 0);
+        int i;
+        for (i = 0; i < terms.size(); i++)
+            if (!l.isNumZero(terms[i]))
+                terms_new.push(terms[i]);
+        if (terms_new.size() == 0) {
+            // The term was sum of all zeroes
+            terms_new.clear();
+            s_new = l.getPterm(l.getTerm_NumZero()).symb();
+            return;
+        }
+        s_new = s;
     }
 
-    virtual void termSort(vec<PTRef>& v) const;
-    virtual bool okToPartition(PTRef tr) const; // Partitioning hints from logic
-    virtual void serializeLogicData(int*& logicdata_buf) const;
-    void deserializeLogicData(const int* logicdata_buf);
+    virtual void SimplifyConstTimes::constSimplify(const SymRef &s, const vec<PTRef> &terms, SymRef &s_new,
+                                                   vec<PTRef> &terms_new) const {
+        //distribute the constant over the first sum
+        int i;
+        PTRef con, plus;
+        con = plus = PTRef_Undef;
+        for (i = 0; i < terms.size(); i++) {
+            if (l.isNumZero(terms[i])) {
+                terms_new.clear();
+                s_new = l.getPterm(l.getTerm_NumZero()).symb();
+                return;
+            }
+            if (!l.isNumOne(terms[i])) {
+                if (l.isNumPlus(terms[i]))
+                    plus = terms[i];
+                else if (l.isConstant(terms[i]))
+                    con = terms[i];
+                else
+                    terms_new.push(terms[i]);
+            }
+        }
+        if (con == PTRef_Undef && plus == PTRef_Undef);
+        else if (con == PTRef_Undef && plus != PTRef_Undef)
+            terms_new.push(plus);
+        else if (con != PTRef_Undef && plus == PTRef_Undef)
+            terms_new.push(con);
+        else {
+            Pterm &p = l.getPterm(plus);
+            vec<PTRef> sum_args;
+            for (int i = 0; i < p.size(); ++i) {
+                vec<PTRef> times_args;
+                times_args.push(con);
+                times_args.push(p[i]);
+                sum_args.push(l.mkNumTimes(times_args));
+            }
+            terms_new.push(l.mkNumPlus(sum_args));
+        }
+        if (terms_new.size() == 0) {
+            // The term was multiplication of all ones
+            terms_new.clear();
+            s_new = l.getPterm(l.getTerm_NumOne()).symb();
+            return;
+        }
+        s_new = s;
+    }
 
-    virtual char* printTerm_       (PTRef tr, bool ext, bool s) const;
-    virtual char* printTerm        (PTRef tr)                 const { return printTerm_(tr, false, false); }
-    virtual char* printTerm        (PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
+    virtual void SimplifyConstDiv::constSimplify(const SymRef &s, const vec<PTRef> &terms, SymRef &s_new,
+                                                 vec<PTRef> &terms_new) const {
+        assert(terms_new.size() == 0);
+        assert(terms.size() <= 2);
+        if (terms.size() == 2 && l.isNumZero(terms[1])) {
+            printf("Explicit div by zero\n");
+            assert(false);
+        }
+        if (l.isNumOne(terms[terms.size() - 1])) {
+            terms_new.clear();
+            s_new = l.getPterm(terms[0]).symb();
+            for (int i = 0; i < l.getPterm(terms[0]).size(); i++)
+                terms_new.push(l.getPterm(terms[0])[i]);
+            return;
+        } else if (l.isNumZero(terms[0])) {
+            terms_new.clear();
+            s_new = l.getPterm(terms[0]).symb();
+            return;
+        }
+        for (int i = 0; i < terms.size(); i++)
+            terms_new.push(terms[i]);
+        s_new = s;
+    }
+
+
 };
+
 
 // Determine for two multiplicative terms (* k1 v1) and (* k2 v2), v1 !=
 // v2 which one is smaller, based on the PTRef of v1 and v2.  (i.e.
@@ -376,7 +440,7 @@ class LessThan_deepPTRef {
     }
 };
 
-
+//PS. can I write implementation of the following in above although class defined after };???
 class SimplifyConst {
   protected:
     LALogic& l;

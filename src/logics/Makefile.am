@@ -3,10 +3,10 @@ noinst_LTLIBRARIES = liblogics.la
 
 AM_CPPFLAGS=$(config_includedirs)
 
-liblogics_la_SOURCES = Logic.C LRALogic.C LIALogic.C Theory.C LRATheory.C LIATheory.C UFTheory.C UFLRATheory.C Tterm.C CUFLogic.C CUFTheory.C BVLogic.C
+liblogics_la_SOURCES = Logic.C LALogic.C LRALogic.C LIALogic.C Theory.C LRATheory.C LIATheory.C UFTheory.C UFLRATheory.C Tterm.C CUFLogic.C CUFTheory.C BVLogic.C
 
 if ENABLE_LIBRARY
-include_HEADERS = LRALogic.h LIALogic.h Logic.h Theory.h UFLRATheory.h Tterm.h CUFLogic.h BVLogic.h
+include_HEADERS = LRALogic.h LIALogic.h Logic.h LALogic.h Theory.h UFLRATheory.h Tterm.h CUFLogic.h BVLogic.h
 endif
 
 #testsimplify_SOURCES = TestSimplify.C

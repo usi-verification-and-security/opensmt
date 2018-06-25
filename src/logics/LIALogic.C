@@ -1,8 +1,8 @@
 #include "SStore.h"
 #include "PtStore.h"
 #include "LIALogic.h"
+#include "LALogic.h"
 #include "TreeOps.h"
-//#include "LRALogic.h"
 #include "Global.h"
 #include "LA.h"
 

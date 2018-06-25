@@ -34,10 +34,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 const char* LRALogic::e_nonlinear_term = "Logic does not support nonlinear terms";
 
+
+/*
 void LRALogic::termSort(vec<PTRef>& v) const
 {
     sort(v, LessThan_deepPTRef(this));
 }
+
 
 void LRALogic::simplifyAndSplitEq(PTRef tr, PTRef& root_out)
 {
@@ -45,6 +48,8 @@ void LRALogic::simplifyAndSplitEq(PTRef tr, PTRef& root_out)
     simplifyTree(tr, root_out);
     split_eq = false;
 }
+
+
 
 void LRALogic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
 {
@@ -83,6 +88,12 @@ bool LRALogic::okToPartition(PTRef tr) const
 {
     return !lra_split_inequalities.has(tr);
 }
+
+
+*/
+
+
+
 /***********************************************************
  * Class defining simplifications
  ***********************************************************/
@@ -336,11 +347,16 @@ LRALogic::LRALogic(SMTConfig& c) :
     sym_store.setInterpreted(sym_Real_ITE);
 }
 
+/*
 bool LRALogic::isBuiltinFunction(const SymRef sr) const
 {
     if (sr == sym_Real_NEG || sr == sym_Real_MINUS || sr == sym_Real_PLUS || sr == sym_Real_TIMES || sr == sym_Real_DIV || sr == sym_Real_EQ || sr == sym_Real_LEQ || sr == sym_Real_LT || sr == sym_Real_GEQ || sr == sym_Real_GT || sr == sym_Real_ITE) return true;
     else return Logic::isBuiltinFunction(sr);
 }
+
+ */
+
+//PS. find a way how to add this method to superclass
 
 const opensmt::Real&
 LRALogic::getRealConst(PTRef tr) const
@@ -350,12 +366,14 @@ LRALogic::getRealConst(PTRef tr) const
     return *reals[id];
 }
 
+/*
 PTRef LRALogic::mkConst(const char *name, const char **msg)
 {
     return mkConst(getSort_real(), name);
 }
+ */
 
-PTRef LRALogic::mkConst(SRef s, const char* name)
+PTRef LRALogic::mkConst(SRef s, const char* name) //PS. how to rewrite this?
 {
     assert(strlen(name) != 0);
     PTRef ptr = PTRef_Undef;
@@ -380,6 +398,8 @@ PTRef LRALogic::mkConst(SRef s, const char* name)
     return ptr;
 }
 
+/*
+
 bool LRALogic::isRealTerm(PTRef tr) const
 {
     const Pterm& t = getPterm(tr);
@@ -397,6 +417,10 @@ LRALogic::okForBoolVar(PTRef tr) const
     return isRealLeq(tr) || Logic::okForBoolVar(tr);
 }
 
+*/
+
+
+/*
 PTRef LRALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
 {
     if (sym == sym_Real_NEG)
@@ -422,6 +446,7 @@ PTRef LRALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
 
     return Logic::insertTerm(sym, terms, msg);
 }
+
 
 PTRef LRALogic::mkRealNeg(PTRef tr, char** msg)
 {
@@ -597,6 +622,8 @@ PTRef LRALogic::mkRealDiv(const vec<PTRef>& args, char** msg)
     return tr;
 }
 
+
+
 // Find the lexicographically first factor of a term and divide the other terms with it.
 PTRef LRALogic::normalizeSum(PTRef sum) {
     vec<PTRef> args;
@@ -710,6 +737,7 @@ PTRef LRALogic::normalizeMul(PTRef mul)
     else
         return v;
 }
+
 
 // If the call results in a leq it is guaranteed that arg[0] is a
 // constant, and arg[1][0] has factor 1 or -1
@@ -834,7 +862,7 @@ PTRef LRALogic::mkRealGt(const vec<PTRef>& args, char** msg)
     }
     return mkNot(tr);
 }
-
+*/
 
 
 // Return a term corresponding to the operation applied to the constant
@@ -862,7 +890,7 @@ PTRef SimplifyConst::simplifyConstOp(const vec<PTRef>& terms, char** msg)
             PTRef tr = PTRef_Undef;
             if (l.isConstant(terms[i]))
                 tr = terms[i];
-            else if (l.isRealNeg(terms[i]))
+            else if (l.isRealNeg(terms[i]))  //PS. can we give pointer to LRALogic& l if we define the simplification class in different header file and lralogic class in different header file?
                 tr = l.getPterm(terms[i])[0];
             else continue;
             char* rat_str;
@@ -876,6 +904,7 @@ PTRef SimplifyConst::simplifyConstOp(const vec<PTRef>& terms, char** msg)
     }
 }
 
+/*
 lbool LRALogic::retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs)
 {
     lbool res = Logic::retrieveSubstitutions(facts, substs);
@@ -1114,5 +1143,5 @@ LRALogic::printTerm_(PTRef tr, bool ext, bool safe) const
     else
         out = Logic::printTerm_(tr, ext, safe);
     return out;
-}
+}*/
 

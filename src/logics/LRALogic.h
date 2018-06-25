@@ -45,11 +45,11 @@ public:
     ~LRANonLinearException() { free(reason); }
 };
 
-class LRALogic: public Logic, public LALogic
+class LRALogic: public LALogic  //class LRALogic should extend only class LALogic, as the latter extends class Logic
 {
   protected:
     Logic_t logic_type;
-    vec<opensmt::Real*> reals;
+    vec<opensmt::Real*> reals; //PS. how to be with this?
     SymRef              sym_Real_ZERO;
     SymRef              sym_Real_ONE;
     SymRef              sym_Real_NEG;
@@ -86,7 +86,7 @@ class LRALogic: public Logic, public LALogic
 
     //bool split_eq;
     Map<PTRef,bool,PTRefHash> lra_split_inequalities;
-    void visit(PTRef, Map<PTRef,PTRef,PTRefHash>&);
+    //void visit(PTRef, Map<PTRef,PTRef,PTRefHash>&);
 
   public:
     LRALogic                    (SMTConfig& c);
@@ -96,31 +96,34 @@ class LRALogic: public Logic, public LALogic
             cerr << "; Num of LRA equalities in input: " << lra_split_inequalities.getSize()/2 << "\n";
     }
 
-    virtual const char* getName()                const { return getLogic().str; }
-    virtual const Logic_t getLogic()             const { return QF_LRA; }
+    virtual const char*   getName()              const override { return getLogic().str; }
+    virtual const Logic_t getLogic()             const override { return QF_LRA; }
 
 
-    virtual bool        okForBoolVar    (PTRef) const;
-    virtual PTRef       insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg);
+    //virtual bool        okForBoolVar    (PTRef) const;
+    //virtual PTRef       insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg);
 
-
-    virtual PTRef       mkConst         (const char* name, const char **msg);
+    //PS. how to be with mkConst here override it from LOGIC class, o
+    //virtual PTRef       mkConst         (const char* name, const char **msg);
     virtual PTRef       mkConst         (SRef s, const char* name);
-    virtual PTRef       mkConst         (const opensmt::Real& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_real(), rat); free(rat); return tr; }
-    virtual PTRef       mkConst         (const char* num) { return mkConst(getSort_real(), num); }
-    virtual PTRef       mkRealVar       (const char* name) { return mkVar(getSort_real(), name); }
+    virtual PTRef       mkConst         (const opensmt::Real& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_num(), rat); free(rat); return tr; }
+    virtual PTRef       mkConst         (const char* num) { return mkConst(getSort_num(), num); }
+    virtual PTRef       mkRealVar       (const char* name) { return mkVar(getSort_num(), name); }
 
-    virtual bool isBuiltinSort  (SRef sr) const { return sr == sort_REAL || Logic::isBuiltinSort(sr); }
-    virtual bool isBuiltinConstant(SymRef sr) const { return (isRealConst(sr) || Logic::isBuiltinConstant(sr)); }
-    virtual bool isBuiltinFunction(SymRef sr) const;
+    virtual bool isBuiltinSort  (SRef sr) const override { return sr == sort_REAL || Logic::isBuiltinSort(sr); }
+    //virtual bool isBuiltinConstant(SymRef sr) const { return (isNumConst(sr) || Logic::isBuiltinConstant(sr)); }
+    //virtual bool isBuiltinFunction(SymRef sr) const;
 
-    bool  isRealConst     (SymRef sr)     const { return isConstant(sr) && hasSortReal(sr); }
-    bool  isRealConst     (PTRef tr)      const { return isRealConst(getPterm(tr).symb()); }
-    bool  isNonnegRealConst (PTRef tr)    const { return isRealConst(tr) && getRealConst(tr) >= 0; }
+    //bool  isNumConst     (SymRef sr)     const override { return isConstant(sr) && hasSortNum(sr); }
+    //bool  isNumConst     (PTRef tr)      const override { return isNumConst(getPterm(tr).symb()); }
+    //bool  isNonnegNumConst (PTRef tr)    const override { return isNumConst(tr) && getNumConst(tr) >= 0; }
 
     //SRef        declareSort_Real(char** msg);
 
-    SRef        getSort_real    ()              const { return sort_REAL;    }
+    SRef        getSort_num    ()              const override { return sort_REAL;}
+
+    //PS. override method getNumConst according to getRealConst. const getNumConst(PTRef tr) const override {return getRealConst(tr);} Can I write this like this?
+    const void getNumConst(PTRef tr) const override {return getRealConst(tr);}
     const opensmt::Real& getRealConst(PTRef tr) const;
 
     bool        isRealPlus(SymRef sr) const { return sr == sym_Real_PLUS; }
@@ -165,9 +168,10 @@ class LRALogic: public Logic, public LALogic
 
     // Real terms are of form c, a, or (* c a) where c is a constant and
     // a is a variable.
-    bool        isRealTerm(PTRef tr) const;
-    bool        hasSortReal(SymRef sr) const { return sym_store[sr].rsort() == sort_REAL; }
-    bool        hasSortReal(PTRef tr) const { return hasSortReal(getPterm(tr).symb()); }
+    //bool        isRealTerm(PTRef tr) const;
+
+    bool        hasSortNum(SymRef sr) const override { return sym_store[sr].rsort() == sort_REAL; }
+    //bool        hasSortReal(PTRef tr) const { return hasSortReal(getPterm(tr).symb()); }
 
     bool        isUFEquality(PTRef tr) const { return !isRealEq(tr) && Logic::isUFEquality(tr); }
     bool        isTheoryEquality(PTRef tr) const { return isRealEq(tr); }
@@ -178,8 +182,10 @@ class LRALogic: public Logic, public LALogic
     bool        isUF(SymRef sr) const { return !sym_store[sr].isInterpreted(); }
 
     //PS. is the part below needs to be rewritten
-    PTRef       getTerm_RealZero() const { return term_Real_ZERO; }
-    PTRef       getTerm_RealOne()  const { return term_Real_ONE; }
+    PTRef       getTerm_NumZero() const override { return term_Real_ZERO; }
+    PTRef       getTerm_NumOne()  const override { return term_Real_ONE; }
+
+    /*
     PTRef       mkRealNeg(PTRef, char**);
     PTRef       mkRealNeg(PTRef tr) {char* msg; PTRef trn = mkRealNeg(tr, &msg); assert(trn != PTRef_Undef); return trn; }
     PTRef       mkRealMinus(const vec<PTRef>&, char**);
@@ -207,28 +213,29 @@ class LRALogic: public Logic, public LALogic
     PTRef       mkRealGt(const vec<PTRef>&, char**);
     PTRef       mkRealGt(const vec<PTRef>& args) { char* msg; PTRef tr = mkRealGt(args, &msg); assert(tr != PTRef_Undef); return tr; }
     PTRef       mkRealGt(const PTRef arg1, const PTRef arg2) { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkRealGt(tmp); }
+    */
 
-    virtual bool  isNegated(PTRef tr) const; //PS. is this method now uses LALogic method but with overridden functions like isNumConst? as above we override method isNumConst. And how to be with LRALogic.C file? comment out this method implementation or call it with LRA:: methodname?
+    //virtual bool  isNegated(PTRef tr) const; //PS. is this method now uses LALogic method but with overridden functions like isNumConst? as above we override method isNumConst. And how to be with LRALogic.C file? comment out this method implementation or call it with LRA:: methodname?
 
-    virtual void  splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) const; //PS. is this method now uses LALogic method but with overridden functions like isNumConst? as above we override method isNumConst
-    virtual PTRef       normalizeSum(PTRef sum); // Use for normalizing leq terms: sort the sum and divide all terms with the first factor
-    virtual PTRef       normalizeMul(PTRef mul); // Use for normalizing leq terms of form 0 <= c*v
+    //virtual void  splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) const; //PS. is this method now uses LALogic method but with overridden functions like isNumConst? as above we override method isNumConst
+    //virtual PTRef       normalizeSum(PTRef sum); // Use for normalizing leq terms: sort the sum and divide all terms with the first factor
+    //virtual PTRef       normalizeMul(PTRef mul); // Use for normalizing leq terms of form 0 <= c*v
 
     // Logic specific simplifications: conjoin Ites, make substitutions
     // and split equalities
-    virtual bool simplify(PTRef root, PTRef& root_out);
+    virtual bool simplify(PTRef root, PTRef& root_out); //PS this is never used anywhere in the code, shall we remove it?
 
-    lbool retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs);
-    lbool arithmeticElimination(vec<PTRef>&, Map<PTRef,PtAsgn,PTRefHash>&);
-    void simplifyAndSplitEq(PTRef, PTRef&);
-    virtual void termSort(vec<PTRef>& v) const;
-    virtual bool okToPartition(PTRef tr) const; // Partitioning hints from logic
-    virtual void serializeLogicData(int*& logicdata_buf) const;
-    void deserializeLogicData(const int* logicdata_buf);
+    //lbool retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs);
+    //lbool arithmeticElimination(vec<PTRef>&, Map<PTRef,PtAsgn,PTRefHash>&);
+    //void simplifyAndSplitEq(PTRef, PTRef&);
+    //virtual void termSort(vec<PTRef>& v) const;
+    //virtual bool okToPartition(PTRef tr) const; // Partitioning hints from logic
+    //virtual void serializeLogicData(int*& logicdata_buf) const;
+    //void deserializeLogicData(const int* logicdata_buf);
 
-    virtual char* printTerm_       (PTRef tr, bool ext, bool s) const;
-    virtual char* printTerm        (PTRef tr)                 const { return printTerm_(tr, false, false); }
-    virtual char* printTerm        (PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
+    //virtual char* printTerm_       (PTRef tr, bool ext, bool s) const;
+    //virtual char* printTerm        (PTRef tr)                 const { return printTerm_(tr, false, false); }
+    //virtual char* printTerm        (PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
 };
 
 

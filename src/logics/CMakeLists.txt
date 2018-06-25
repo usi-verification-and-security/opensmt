@@ -14,6 +14,8 @@ target_sources(logics
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LIATheory.C"
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Logic.C"
 	PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Logic.h"
+	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LALogic.h"
+	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LALogic.C"
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Theory.C"
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Theory.h"
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/UFLRATheory.h"
@@ -23,7 +25,7 @@ target_sources(logics
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Tterm.C"
 )
 
-install(FILES Theory.h Logic.h Tterm.h LRALogic.h LIALogic.h CUFLogic.h BVLogic.h
+install(FILES Theory.h Logic.h LALogic.h Tterm.h LRALogic.h LIALogic.h CUFLogic.h BVLogic.h
  DESTINATION ${INSTALL_HEADERS_DIR})
 
 
