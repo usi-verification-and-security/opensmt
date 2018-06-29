@@ -25,11 +25,11 @@ public:
     ~LIANonLinearException() { free(reason); }
 };
 
-class LIALogic: public Logic, public LALogic
+class LIALogic: public LALogic
 {
   protected:
     Logic_t logic_type;
-    vec<opensmt::Real*> reals;
+    vec<opensmt::Real*> reals; //use only integers
     vec<opensmt::Integer*> integers;
     SymRef              sym_Int_ZERO;
     SymRef              sym_Int_ONE;
@@ -37,7 +37,7 @@ class LIALogic: public Logic, public LALogic
     SymRef              sym_Int_MINUS;
     SymRef              sym_Int_PLUS;
     SymRef              sym_Int_TIMES;
-    //SymRef              sym_Int_DIV; //PS. ???
+    SymRef              sym_Int_DIV; //PS. ???
     //SymRef              sym_Int_MOD;
     //SymRef              sym_Int_ABS;
     SymRef              sym_Int_EQ;
@@ -58,7 +58,7 @@ class LIALogic: public Logic, public LALogic
     static const char*  tk_int_minus;
     static const char*  tk_int_plus;
     static const char*  tk_int_times;
-    //static const char*  tk_int_div; //PS. ???
+    static const char*  tk_int_div; //PS. ???
     //static const char*  tk_int_mod;
     //static const char*  tk_int_abs;
     static const char*  tk_int_leq;
@@ -70,8 +70,8 @@ class LIALogic: public Logic, public LALogic
     static const char*  e_nonlinear_term;
 
     //bool split_eq;
-    Map<PTRef,bool,PTRefHash> lia_split_inequalities;
-    void visit(PTRef, Map<PTRef,PTRef,PTRefHash>&);
+    //Map<PTRef,bool,PTRefHash> lia_split_inequalities;
+    //void visit(PTRef, Map<PTRef,PTRef,PTRefHash>&);
 
   public:
     LIALogic (SMTConfig& c);
@@ -79,64 +79,66 @@ class LIALogic: public Logic, public LALogic
         for (int i = 0; i < reals.size(); i++) delete reals[i];
     }
 
-    virtual const char*   getName()         const { return getLogic().str; }
-    virtual const Logic_t getLogic()        const { return QF_LIA; }
+    virtual const char*   getName()         const override { return getLogic().str; }
+    virtual const Logic_t getLogic()        const override { return QF_LIA; }
 
-    virtual bool        okForBoolVar    (PTRef) const;
-    virtual PTRef       insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg);
+    //virtual bool        okForBoolVar    (PTRef) const;
+    //virtual PTRef       insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg);
 
     virtual PTRef       mkConst         (const char* name, const char **msg);
     virtual PTRef       mkConst         (SRef s, const char* name);
-    virtual PTRef       mkConst         (const opensmt::Integer& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_Integer(), rat); free(rat); return tr; }
-    virtual PTRef       mkConst         (const char* num) { return mkConst(getSort_Integer(), num); }
-    virtual PTRef       mkIntVar        (const char* name) { return mkVar(getSort_Integer(), name); }
+    virtual PTRef       mkConst         (const opensmt::Integer& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_num(), rat); free(rat); return tr; }
+    virtual PTRef       mkConst         (const char* num) { return mkConst(getSort_num(), num); }
+    virtual PTRef       mkIntVar        (const char* name) { return mkVar(getSort_num(), name); }
 
-    virtual bool isBuiltinSort(SRef sr) const { return sr == sort_INTEGER || Logic::isBuiltinSort(sr); }
-    virtual bool isBuiltinConstant(SymRef sr) const { return (isIntegerConst(sr) || Logic::isBuiltinConstant(sr)); }
-    virtual bool isBuiltinFunction(SymRef sr) const;
+    virtual bool isBuiltinSort(SRef sr) const override { return sr == sort_INTEGER || Logic::isBuiltinSort(sr); }
+    //virtual bool isBuiltinConstant(SymRef sr) const { return (isIntegerConst(sr) || Logic::isBuiltinConstant(sr)); }
+    //virtual bool isBuiltinFunction(SymRef sr) const;
 
-    bool  isIntegerConst(SymRef sr)      const { return isConstant(sr) && hasSortInt(sr); }
-    bool  isIntegerConst(PTRef tr)       const { return isIntegerConst(getPterm(tr).symb()); }
-    bool  isNonnegIntegerConst(PTRef tr) const { return isIntegerConst(tr) && getIntegerConst(tr) >= 0; }
+    //bool  isIntegerConst(SymRef sr)      const { return isConstant(sr) && hasSortInt(sr); }
+    //bool  isIntegerConst(PTRef tr)       const { return isIntegerConst(getPterm(tr).symb()); }
+    virtual bool  isNonnegNumConst(PTRef tr) const override { return isNumConst(tr) && getIntegerConst(tr) >= 0; }
 
 
     //SRef   declareSort_Integer(char** msg);
-    SRef   getSort_Integer()  const {return sort_INTEGER;}
+    virtual SRef   getSort_num()  const override {return sort_INTEGER;}
+    const void* getNumConst(PTRef tr) const override {return (const void*) &getIntegerConst(tr);}
     const opensmt::Integer& getIntegerConst(PTRef tr) const;
 
 
     bool        isIntPlus(SymRef sr)  const { return sr == sym_Int_PLUS; }
     //bool      isIntPlus(PTRef tr)   const { return isIntPlus(getPterm(tr).symb()); }
-    bool        isNumPlus(PTRef tr)   const override { return isIntPlus(tr); }
+    bool        isNumPlus(PTRef tr)   const override { return isIntPlus(getPterm(tr).symb()); }
     bool        isIntMinus(SymRef sr) const { return sr == sym_Int_MINUS; }
     //bool      isIntMinus(PTRef tr)  const { return isIntMinus(getPterm(tr).symb()); }
-    bool        isNumMinus(PTRef tr)  const override { return isIntMinus(tr); }
+    bool        isNumMinus(PTRef tr)  const override { return isIntMinus(getPterm(tr).symb()); }
     bool        isIntNeg(SymRef sr)   const { return sr == sym_Int_NEG; }
     //bool      isIntNeg(PTRef tr)    const { return isIntNeg(getPterm(tr).symb()); }
-    bool        isNumNeg(PTRef tr)    const override { return isIntNeg(tr); }
+    bool        isNumNeg(PTRef tr)    const override { return isIntNeg(getPterm(tr).symb()); }
     bool        isIntTimes(SymRef sr) const { return sr == sym_Int_TIMES; }
     //bool      isIntTimes(PTRef tr)  const { return isIntTimes(getPterm(tr).symb()); }
-    bool        isNumTimes(PTRef tr)  const override { return isIntTimes(tr); }
-    //bool        isIntDiv(SymRef sr)   const { return sr == sym_Int_DIV; }
+    bool        isNumTimes(PTRef tr)  const override { return isIntTimes(getPterm(tr).symb()); }
+    bool        isIntDiv(SymRef sr)   const { return sr == sym_Int_DIV; }
     //bool        isIntDiv(PTRef tr)    const { return isIntDiv(getPterm(tr).symb()); }
+    bool        isNumDiv(PTRef tr)    const override { return isIntDiv(getPterm(tr).symb()); }
     bool        isIntEq(SymRef sr)    const { return isEquality(sr) && (sym_store[sr][0] == sort_INTEGER); }
     //bool      isIntEq(PTRef tr)     const { return isIntEq(getPterm(tr).symb()); }
-    bool        isNumEq(PTRef tr)     const override { return isIntEq(tr); }
+    bool        isNumEq(PTRef tr)     const override { return isIntEq(getPterm(tr).symb()); }
     bool        isIntLeq(SymRef sr)   const { return sr == sym_Int_LEQ; }
     //bool      isIntLeq(PTRef tr)    const { return isIntLeq(getPterm(tr).symb()); }
-    bool        isNumLeq(PTRef tr)    const override { return isIntLeq(tr); }
+    bool        isNumLeq(PTRef tr)    const override { return isIntLeq(getPterm(tr).symb()); }
     bool        isIntLt(SymRef sr)    const { return sr == sym_Int_LT; }
     //bool      isIntLt(PTRef tr)     const { return isIntLt(getPterm(tr).symb()); }
-    bool        isNumLt(PTRef tr)     const override { return isIntLt(tr); }
+    bool        isNumLt(PTRef tr)     const override { return isIntLt(getPterm(tr).symb()); }
     bool        isIntGeq(SymRef sr)   const { return sr == sym_Int_GEQ; }
     //bool      isIntGeq(PTRef tr)    const { return isIntGeq(getPterm(tr).symb()); }
-    bool        isNumGeq(PTRef tr)    const override { return isIntGeq(tr); }
+    bool        isNumGeq(PTRef tr)    const override { return isIntGeq(getPterm(tr).symb()); }
     bool        isIntGt(SymRef sr)    const { return sr == sym_Int_GT; }
     //bool      isIntGt(PTRef tr)     const { return isIntGt(getPterm(tr).symb()); }
-    bool        isNumGt(PTRef tr)     const override { return isIntGt(tr); }
+    bool        isNumGt(PTRef tr)     const override { return isIntGt(getPterm(tr).symb()); }
     bool        isIntVar(SymRef sr)   const { return isVar(sr) && sym_store[sr].rsort() == sort_INTEGER; }
     //bool      isIntVar(PTRef tr)    const { return isIntVar(getPterm(tr).symb()); }
-    bool        isNumVar(PTRef tr)    const override { return isIntVar(tr); }
+    bool        isNumVar(PTRef tr)    const override { return isIntVar(getPterm(tr).symb());}
     //bool      isIntMod(SymRef sr)   const { return sr == sym_Int_MOD; }
     //bool      isIntMod(PTRef tr)    const { return isIntMod(getPterm(tr).symb()); }
     //bool      isIntABS(SymRef sr)   const { return sr == sym_int_ABS; }
@@ -150,22 +152,25 @@ class LIALogic: public Logic, public LALogic
 
 
     // Integer terms are of form c, a, or (* c a) where c is a constant and a is a variable.
-    bool        isIntegerTerm(PTRef tr) const;
+    //bool        isIntegerTerm(PTRef tr) const;
+
     bool        hasSortInt(SymRef sr) const { return sym_store[sr].rsort() == sort_INTEGER; }
-    bool        hasSortInt(PTRef tr) const { return hasSortInt(getPterm(tr).symb()); }
+    bool        hasSortNum(PTRef tr) const override { return hasSortInt(getPterm(tr).symb()); }
 
-    bool        isUFEquality(PTRef tr) const { return !isIntEq(tr) && Logic::isUFEquality(tr); }
-    bool        isTheoryEquality(PTRef tr) const { return isIntEq(tr); }
+    //bool        isUFEquality(PTRef tr) const { return !isIntEq(tr) && Logic::isUFEquality(tr); }
+    //bool        isTheoryEquality(PTRef tr) const { return isIntEq(tr); }
 
-    virtual bool isAtom(PTRef tr) const { return isIntEq(tr) || isIntLt(tr) || isIntGt(tr) || isIntLeq(tr) || isIntGeq(tr) || Logic::isAtom(tr); }
+    //virtual bool isAtom(PTRef tr) const { return isIntEq(tr) || isIntLt(tr) || isIntGt(tr) || isIntLeq(tr) || isIntGeq(tr) || Logic::isAtom(tr); }
 
     // UFs are the functions that have no interpretation in integers.
-    bool        isUF(PTRef tr)  const { return isUF(term_store[tr].symb()); }
-    bool        isUF(SymRef sr) const { return !sym_store[sr].isInterpreted();}
+    //bool        isUF(PTRef tr)  const { return isUF(term_store[tr].symb()); }
+    //bool        isUF(SymRef sr) const { return !sym_store[sr].isInterpreted();}
 
 
-    PTRef       getTerm_IntZero() const { return term_Int_ZERO; }
-    PTRef       getTerm_IntOne()  const { return term_Int_ONE; }
+    PTRef       getTerm_NumZero() const override { return term_Int_ZERO; }
+    PTRef       getTerm_NumOne()  const override { return term_Int_ONE; }
+
+    /*
     PTRef       mkIntNeg(PTRef, char**);
     PTRef       mkIntNeg(PTRef tr) {char* msg; PTRef trn = mkIntNeg(tr, &msg); assert(trn != PTRef_Undef); return trn; }
     PTRef       mkIntMinus(const vec<PTRef>&, char**);
@@ -193,34 +198,36 @@ class LIALogic: public Logic, public LALogic
     PTRef       mkIntGt(const vec<PTRef>&, char**);
     PTRef       mkIntGt(const vec<PTRef>& args) { char* msg; PTRef tr = mkIntGt(args, &msg); assert(tr != PTRef_Undef); return tr; }
     PTRef       mkIntGt(const PTRef arg1, const PTRef arg2) { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkIntGt(tmp); }
+*/
+    //virtual bool        isIntNegated(PTRef tr) const;
 
-    virtual bool        isIntNegated(PTRef tr) const;
-
-    virtual void        splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) const;
-    virtual PTRef       normalizeSum(PTRef sum); // Use for normalizing leq terms: sort the sum and divide all terms with the first factor
-    virtual PTRef       normalizeMul(PTRef mul); // Use for normalizing leq terms of form 0 <= c*v
+    //virtual void        splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) const;
+    //virtual PTRef       normalizeSum(PTRef sum); // Use for normalizing leq terms: sort the sum and divide all terms with the first factor
+    //virtual PTRef       normalizeMul(PTRef mul); // Use for normalizing leq terms of form 0 <= c*v
 
     // Logic specific simplifications: conjoin Ites, make substitutions
     // and split equalities
     virtual bool simplify(PTRef root, PTRef& root_out);
 
-    lbool retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs);
-    lbool arithmeticElimination(vec<PTRef>&, Map<PTRef,PtAsgn,PTRefHash>&);
-    void simplifyAndSplitEq(PTRef, PTRef&);
-    virtual void termSort(vec<PTRef>& v) const;
-    virtual bool okToPartition(PTRef tr) const; // Partitioning hints from logic
-    virtual void serializeLogicData(int*& logicdata_buf) const;
-    void deserializeLogicData(const int* logicdata_buf);
+    virtual PTRef getNTerm(char* rat_str);
 
-    virtual char* printTerm_       (PTRef tr, bool ext, bool s) const;
-    virtual char* printTerm        (PTRef tr)                 const { return printTerm_(tr, false, false); }
-    virtual char* printTerm        (PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
+    //lbool retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs);
+    //lbool arithmeticElimination(vec<PTRef>&, Map<PTRef,PtAsgn,PTRefHash>&);
+    //void simplifyAndSplitEq(PTRef, PTRef&);
+    //virtual void termSort(vec<PTRef>& v) const;
+    //virtual bool okToPartition(PTRef tr) const; // Partitioning hints from logic
+    //virtual void serializeLogicData(int*& logicdata_buf) const;
+    //void deserializeLogicData(const int* logicdata_buf);
+
+    //virtual char* printTerm_       (PTRef tr, bool ext, bool s) const;
+    //virtual char* printTerm        (PTRef tr)                 const { return printTerm_(tr, false, false); }
+    //virtual char* printTerm        (PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
 };
 
 // Determine for two multiplicative terms (* k1 v1) and (* k2 v2), v1 !=
 // v2 which one is smaller, based on the PTRef of v1 and v2.  (i.e.
 // v1.ptref <  v2.ptref iff (* k1 v1) < (* k2 v2))
-
+/*
 class LIALessThan_deepPTRef {
     const LIALogic& l;
   public:
@@ -245,10 +252,9 @@ class LIALessThan_deepPTRef {
             id_y = y_.x;
         }
         return id_x < id_y;
-    }
-};
+    }*/
 
-
+/*
 class LIASimplifyConst {
   protected:
     LIALogic& l;
@@ -277,7 +283,6 @@ class LIASimplifyConstTimes : public LIASimplifyConst {
     LIASimplifyConstTimes(LIALogic& log) : LIASimplifyConst(log) {}
 };
 
-/*
 class SimplifyConstDiv : public SimplifyConst {
     void Op(opensmt::Integer& s, const opensmt::Integer& v) const { if (v == 0) { printf("explicit div by zero\n"); } s /= v; }
     opensmt::Integer getIdOp() const { return 1; }

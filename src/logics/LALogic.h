@@ -2,15 +2,15 @@
 #define LALOGIC_H
 
 #include "Logic.h"
+#include "Real.h"
 
-class LALogic: public Logic  //PS. shall this class extend logic?
+class LALogic: public Logic
 {
 
     protected:
 
         Logic_t logic_type;
 
-        //PS. below variables should not needed in LRA and LIA i guess, check carefully
         SymRef sym_Num_ZERO;
         SymRef sym_Num_ONE;
         SymRef sym_Num_NEG;
@@ -44,6 +44,7 @@ class LALogic: public Logic  //PS. shall this class extend logic?
         static const char *tk_num_gt;
 
         bool split_eq;
+        Map<PTRef,bool,PTRefHash> la_split_inequalities;
 
     public:
         LALogic(SMTConfig &c);
@@ -56,10 +57,10 @@ class LALogic: public Logic  //PS. shall this class extend logic?
         //PS. be careful with the following, the main problem is with type opensmt:: Real, can i say either of the types? or how to say it? Line 58-60 has to be written properly and non of the methods needs to present in LRALogic.h file
 
         virtual PTRef       mkConst         (const char* name, const char **msg);
-        virtual PTRef       mkConst         (SRef s, const char* name);
-        virtual PTRef       mkConst         (const opensmt::Real& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_num(), rat); free(rat); return tr; }
-        virtual PTRef       mkConst         (const char* num) { return mkConst(getSort_num(), num); }
-        virtual PTRef       mkRealVar       (const char* name) { return mkVar(getSort_num(), name); }
+        //virtual PTRef       mkConst         (SRef s, const char* name);
+       // virtual PTRef       mkConst         (const opensmt::Real& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_num(), rat); free(rat); return tr; }
+       // virtual PTRef       mkConst         (const char* num) { return mkConst(getSort_num(), num); }
+       // virtual PTRef       mkRealVar       (const char* name) { return mkVar(getSort_num(), name); }
 
         virtual bool isBuiltinSort  (SRef sr) const { return sr == sort_NUM || Logic::isBuiltinSort(sr); }
         virtual bool isBuiltinConstant(SymRef sr) const { return (isNumConst(sr) || Logic::isBuiltinConstant(sr)); }
@@ -67,12 +68,20 @@ class LALogic: public Logic  //PS. shall this class extend logic?
 
         virtual bool  isNumConst     (SymRef sr)     const { return isConstant(sr) && hasSortNum(sr); }
         virtual bool  isNumConst     (PTRef tr)      const { return isNumConst(getPterm(tr).symb()); }
-        virtual bool  isNonnegNumConst (PTRef tr)    const { return isNumConst(tr) && getNumConst(tr) >= 0; }
+        virtual bool  isNonnegNumConst (PTRef tr)    const; //{ return isNumConst(tr) && getNumConst(tr) >= 0; } //PS. will be done later
 
         virtual bool   hasSortNum(SymRef sr) const { return sym_store[sr].rsort() == sort_NUM; }
         virtual bool   hasSortNum(PTRef tr) const { return hasSortNum(getPterm(tr).symb()); }
 
-        virtual const  getNumConst(PTRef tr) const; //PS. how to be with the type here ??? the same correction do i LRALOgixc.h line 126
+        virtual const void* getNumConst(PTRef tr) const; //PS. how to be with the type here ??? the same correction do i LRALOgixc.h line 126
+
+        virtual bool        isUFEquality(PTRef tr) const { return !isNumEq(tr) && Logic::isUFEquality(tr); }
+        virtual bool        isTheoryEquality(PTRef tr) const { return isNumEq(tr); }
+
+        virtual bool isAtom(PTRef tr) const  { return isNumEq(tr) || isNumLt(tr) || isNumGt(tr) || isNumLeq(tr) || isNumGeq(tr) || Logic::isAtom(tr); }
+
+        virtual bool        isUF(PTRef tr) const { return isUF(term_store[tr].symb()); }
+        virtual bool        isUF(SymRef sr) const { return !sym_store[sr].isInterpreted(); }
         //PS. up to here
 
 
@@ -119,6 +128,8 @@ class LALogic: public Logic  //PS. shall this class extend logic?
         // a is a variable.
         virtual bool isNumTerm(PTRef tr) const;
         virtual bool okForBoolVar(PTRef) const;
+
+        virtual PTRef getNterm(char* rat_str) =0;
 
         virtual PTRef getTerm_NumZero() const { return term_Num_ZERO; }
         virtual PTRef getTerm_NumOne() const { return term_Num_ONE; }
@@ -272,7 +283,7 @@ class LALogic: public Logic  //PS. shall this class extend logic?
         virtual char *printTerm(PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
         //up to here are methods that you can also find in Logic.h and Logic.C files
 
-
+/*
     //delete all below
     virtual void
     SimplifyConst::simplify(SymRef &s, const vec<PTRef> &args, SymRef &s_new, vec<PTRef> &args_new, char **msg) {
@@ -402,7 +413,7 @@ class LALogic: public Logic  //PS. shall this class extend logic?
         s_new = s;
     }
 
-
+*/
 };
 
 
@@ -441,40 +452,52 @@ class LessThan_deepPTRef {
 };
 
 //PS. can I write implementation of the following in above although class defined after };???
+template <class Number = opensmt::Real>
 class SimplifyConst {
   protected:
     LALogic& l;
     PTRef simplifyConstOp(const vec<PTRef>& const_terms, char** msg);
-    virtual void Op(opensmt::Real& s, const opensmt::Real& v) const = 0; //PS. how to be with opensmt::Real?
-    virtual opensmt::Real getIdOp() const = 0;
+    virtual void Op(Number& s, const Number& v) const = 0; //PS. how to be with opensmt::Real?
+    //virtual void Op(void* s, const void* v) const = 0;
+    virtual Number getIdOp() const = 0;
+    //virtual void* getIdOp() const = 0;
     virtual void constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const = 0;
   public:
     SimplifyConst(LALogic& log) : l(log) {}
     void simplify(SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new, char** msg);
 };
 
-class SimplifyConstSum : public SimplifyConst {
-    void Op(opensmt::Real& s, const opensmt::Real& v) const { s += v; }
-    opensmt::Real getIdOp() const { return 0; }
+template <class Number = opensmt::Real>
+class SimplifyConstSum : public SimplifyConst <Number>{
+    void Op(Number& s, const Number& v) const { s += v; }
+    //void Op(void* s, const void* v) const { s += v; }
+    Number getIdOp() const { return 0; }
+    //void* getIdOp() const { return 0; }
     void constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const;
   public:
-    SimplifyConstSum(LALogic& log) : SimplifyConst(log) {}
+    SimplifyConstSum(LALogic& log) : SimplifyConst <Number> (log) {}
 };
 
-class SimplifyConstTimes : public SimplifyConst {
-    void Op(opensmt::Real& s, const opensmt::Real& v) const { s *= v; }
-    opensmt::Real getIdOp() const { return 1; }
+template <class Number = opensmt::Real>
+class SimplifyConstTimes : public SimplifyConst <Number>{
+    void Op(Number& s, const Number& v) const { s *= v; }
+    //void Op(void* s, const void* v) const { s *= v; }
+    Number getIdOp() const { return 1; }
+    //void* getIdOp() const { return 1; }
     void constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const;
   public:
-    SimplifyConstTimes(LALogic& log) : SimplifyConst(log) {}
+    SimplifyConstTimes(LALogic& log) : SimplifyConst <Number> (log) {}
 };
 
-class SimplifyConstDiv : public SimplifyConst {
-    void Op(opensmt::Real& s, const opensmt::Real& v) const { if (v == 0) { printf("explicit div by zero\n"); } s /= v; }
-    opensmt::Real getIdOp() const { return 1; }
+template <class Number = opensmt::Real>
+class SimplifyConstDiv : public SimplifyConst <Number>{
+    void Op(Number& s, const Number& v) const { if (v == 0) { printf("explicit div by zero\n"); } s /= v; }
+    //void Op(void* s, const void* v) const { if (v == 0) { printf("explicit div by zero\n"); } s /= v; }
+    Number getIdOp() const { return 1; }
+    //void* getIdOp() const { return 1; }
     void constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const;
   public:
-    SimplifyConstDiv(LALogic& log) : SimplifyConst(log) {}
+    SimplifyConstDiv(LALogic& log) : SimplifyConst <Number> (log) {}
 };
 
 

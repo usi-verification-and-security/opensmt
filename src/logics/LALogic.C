@@ -1,6 +1,14 @@
 //include all necessary header files
 //in LALogic.h file make all methods shared by other virtual
 
+#include "SStore.h"
+#include "PtStore.h"
+#include "LRALogic.h"
+#include "TreeOps.h"
+#include "Global.h"
+#include "LA.h"
+
+
 
 bool LALogic::isNegated(PTRef tr) const {
     if (isNumConst(tr))
@@ -351,14 +359,15 @@ PTRef LALogic::mkNumNeg(PTRef tr, char** msg)
     if (isConstant(tr)) {
         char* rat_str;
         opensmt::stringToRational(rat_str, sym_store.getName(getPterm(tr).symb()));
-        opensmt::Real v(rat_str);
+        //opensmt::Real v(rat_str);
+        PTRef nterm = getNTerm(rat_str); //PS. this generalise line 362, 365, 366
         free(rat_str);
-        v = -v;
-        PTRef nterm = mkConst(getSort_real(), v.get_str().c_str());
+        //v = -v;
+        //PTRef nterm = mkConst(getSort_num(), v.get_str().c_str());
         SymRef s = getPterm(nterm).symb();
         return mkFun(s, args, msg);
     }
-    PTRef mo = mkConst(getSort_real(), "-1");
+    PTRef mo = mkConst(getSort_num(), "-1");
     args.push(mo); args.push(tr);
     return mkNumTimes(args);
 }
@@ -375,7 +384,7 @@ PTRef LALogic::mkNumMinus(const vec<PTRef>& args_in, char** msg)
 //        return mkFun(s, args, msg);
     }
     assert (args.size() == 2);
-    PTRef mo = mkConst(getSort_real(), "-1");
+    PTRef mo = mkConst(getSort_num(), "-1");
     if (mo == PTRef_Undef) {
         printf("Error: %s\n", *msg);
         assert(false);
@@ -665,6 +674,188 @@ PTRef LALogic::mkConst(const char *name, const char **msg)
     return mkConst(getSort_num(), name);
 }
 
+/***********************************************************
+ * Class defining simplifications
+ ***********************************************************/
+
+//
+// Identify all constants, and combine them into one using the operator
+// rules.  If the constant is special for that operator, do the
+// corresponding simplifications.  Examples include 0 with
+// multiplication and summation, e.g.
+//
+
+
+void SimplifyConst::simplify(SymRef& s, const vec<PTRef>& args, SymRef& s_new, vec<PTRef>& args_new, char** msg)
+{
+    vec<int> const_idx;
+    vec<PTRef> args_new_2;
+    for (int i = 0; i < args.size(); i++) {
+        if (l.isConstant(args[i]) || (l.isNumNeg(args[i]) && l.isConstant(l.getPterm(args[i])[0])))
+            const_idx.push(i);
+    }
+    if (const_idx.size() > 1) {
+        vec<PTRef> const_terms;
+        for (int i = 0; i < const_idx.size(); i++)
+            const_terms.push(args[const_idx[i]]);
+
+        PTRef tr = simplifyConstOp(const_terms, msg);
+        if (tr == PTRef_Undef) {
+            printf("%s\n", *msg);
+            assert(false);
+        }
+        int i, j, k;
+        for (i = j = k = 0; i < args.size() && k < const_terms.size(); i++) {
+            if (i != const_idx[k]) args_new_2.push(args[i]);
+            else k++;
+        }
+        // Copy also the rest
+        for (; i < args.size(); i++)
+            args_new_2.push(args[i]);
+        args_new_2.push(tr);
+    } else
+        args.copyTo(args_new_2);
+
+    constSimplify(s, args_new_2, s_new, args_new);
+    // A single argument for the operator, and the operator is identity
+    // in that case
+    if (args_new.size() == 1 && (l.isNumPlus(s_new) || l.isNumTimes(s_new) || l.isNumDiv(s_new))) {
+        PTRef ch_tr = args_new[0];
+        args_new.clear();
+        s_new = l.getPterm(ch_tr).symb();
+        for (int i = 0; i < l.getPterm(ch_tr).size(); i++)
+            args_new.push(l.getPterm(ch_tr)[i]);
+    }
+}
+
+void SimplifyConstSum::constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const
+{
+    assert(terms_new.size() == 0);
+    int i;
+    for (i = 0; i < terms.size(); i++)
+        if (!l.isNumZero(terms[i]))
+            terms_new.push(terms[i]);
+    if (terms_new.size() == 0) {
+        // The term was sum of all zeroes
+        terms_new.clear();
+        s_new = l.getPterm(l.getTerm_NumZero()).symb();
+        return;
+    }
+    s_new = s;
+}
+
+void SimplifyConstTimes::constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const
+{
+    //distribute the constant over the first sum
+    int i;
+    PTRef con, plus;
+    con = plus = PTRef_Undef;
+    for (i = 0; i < terms.size(); i++) {
+        if (l.isNumZero(terms[i])) {
+            terms_new.clear();
+            s_new = l.getPterm(l.getTerm_NumZero()).symb();
+            return;
+        }
+        if (!l.isNumOne(terms[i]))
+        {
+            if(l.isNumPlus(terms[i]))
+                plus = terms[i];
+            else if(l.isConstant(terms[i]))
+                con = terms[i];
+            else
+                terms_new.push(terms[i]);
+        }
+    }
+    if(con == PTRef_Undef && plus == PTRef_Undef);
+    else if(con == PTRef_Undef && plus != PTRef_Undef)
+        terms_new.push(plus);
+    else if(con != PTRef_Undef && plus == PTRef_Undef)
+        terms_new.push(con);
+    else
+    {
+        Pterm& p = l.getPterm(plus);
+        vec<PTRef> sum_args;
+        for(int i = 0; i < p.size(); ++i)
+        {
+            vec<PTRef> times_args;
+            times_args.push(con);
+            times_args.push(p[i]);
+            sum_args.push(l.mkNumTimes(times_args));
+        }
+        terms_new.push(l.mkNumPlus(sum_args));
+    }
+    if (terms_new.size() == 0) {
+        // The term was multiplication of all ones
+        terms_new.clear();
+        s_new = l.getPterm(l.getTerm_NumOne()).symb();
+        return;
+    }
+    s_new = s;
+}
+
+void SimplifyConstDiv::constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const
+{
+    assert(terms_new.size() == 0);
+    assert(terms.size() <= 2);
+    if (terms.size() == 2 && l.isNumZero(terms[1])) {
+        printf("Explicit div by zero\n");
+        assert(false);
+    }
+    if (l.isNumOne(terms[terms.size()-1])) {
+        terms_new.clear();
+        s_new = l.getPterm(terms[0]).symb();
+        for (int i = 0; i < l.getPterm(terms[0]).size(); i++)
+            terms_new.push(l.getPterm(terms[0])[i]);
+        return;
+    }
+    else if (l.isNumZero(terms[0])) {
+        terms_new.clear();
+        s_new = l.getPterm(terms[0]).symb();
+        return;
+    }
+    for (int i = 0; i < terms.size(); i++)
+        terms_new.push(terms[i]);
+    s_new = s;
+}
+
+// Return a term corresponding to the operation applied to the constant
+// terms.  The list may contain terms of the form (* -1 a) for constant
+// a.
+
+virtual PTRef SimplifyConst::simplifyConstOp(const vec<PTRef>& terms, char** msg)
+{
+    opensmt::Real s = getIdOp();
+    if (terms.size() == 0) {
+        opensmt::Real s = getIdOp();
+        return l.mkConst(l.getSort_num(), s.get_str().c_str());
+    } else if (terms.size() == 1) {
+        char* rat_str;
+        opensmt::stringToRational(rat_str, l.getSymName(terms[0]));
+        opensmt::Real val(rat_str);
+        free(rat_str);
+        return l.mkConst(l.getSort_num(), val.get_str().c_str());
+    } else {
+        char* rat_str;
+        opensmt::stringToRational(rat_str, l.getSymName(terms[0]));
+        opensmt::Real s(rat_str);
+        free(rat_str);
+        for (int i = 1; i < terms.size(); i++) {
+            PTRef tr = PTRef_Undef;
+            if (l.isConstant(terms[i]))
+                tr = terms[i];
+            else if (l.isNumNeg(terms[i]))  //PS. can we give pointer to LRALogic& l if we define the simplification class in different header file and lralogic class in different header file?
+                tr = l.getPterm(terms[i])[0];
+            else continue;
+            char* rat_str;
+            opensmt::stringToRational(rat_str, l.getSymName(tr));
+
+            opensmt::Real val(rat_str);
+            free(rat_str);
+            Op(s, val);
+        }
+        return l.mkConst(l.getSort_num(), s.get_str().c_str());
+    }
+}
 
 // Handle the printing of real constants that are negative and the
 // rational constants
@@ -676,7 +867,7 @@ LALogic::printTerm_(PTRef tr, bool ext, bool safe) const
     {
         bool is_neg = false;
         char* tmp_str;
-        opensmt::stringToRational(tmp_str, sym_store.getName(getPterm(tr).symb()));
+        opensmt::stringToRational(tmp_str, sym_store.getName(getPterm(tr).symb())); //PS.  how to be here?
         opensmt::Real v(tmp_str);
         if (!isNonnegNumConst(tr))
         {

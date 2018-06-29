@@ -27,8 +27,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "PtStore.h"
 #include "LRALogic.h"
 #include "TreeOps.h"
-#include "Global.h"
-#include "LA.h"
+//#include "Global.h"
+//#include "LA.h"
 
 
 
@@ -93,17 +93,19 @@ bool LRALogic::okToPartition(PTRef tr) const
 */
 
 
-
+/*
 /***********************************************************
  * Class defining simplifications
  ***********************************************************/
-
+*/
 //
 // Identify all constants, and combine them into one using the operator
 // rules.  If the constant is special for that operator, do the
 // corresponding simplifications.  Examples include 0 with
 // multiplication and summation, e.g.
 //
+
+/*
 void SimplifyConst::simplify(SymRef& s, const vec<PTRef>& args, SymRef& s_new, vec<PTRef>& args_new, char** msg)
 {
     vec<int> const_idx;
@@ -234,7 +236,7 @@ void SimplifyConstDiv::constSimplify(const SymRef& s, const vec<PTRef>& terms, S
     for (int i = 0; i < terms.size(); i++)
         terms_new.push(terms[i]);
     s_new = s;
-}
+}*/
 
 const char* LRALogic::tk_real_zero  = "0";
 const char* LRALogic::tk_real_one   = "1";
@@ -398,6 +400,13 @@ PTRef LRALogic::mkConst(SRef s, const char* name) //PS. how to rewrite this?
     return ptr;
 }
 
+PTRef LRALogic::getNTerm(char* rat_str) override
+{
+    opensmt::Real v(rat_str);
+    v = -v;
+    return mkConst(getSort_num(), v.get_str().c_str();
+}
+
 /*
 
 bool LRALogic::isRealTerm(PTRef tr) const
@@ -417,10 +426,9 @@ LRALogic::okForBoolVar(PTRef tr) const
     return isRealLeq(tr) || Logic::okForBoolVar(tr);
 }
 
-*/
 
 
-/*
+//this method is general in LA so no need here and all sym_REal_.. needs to be removed from LRALogic.h
 PTRef LRALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
 {
     if (sym == sym_Real_NEG)
@@ -864,7 +872,7 @@ PTRef LRALogic::mkRealGt(const vec<PTRef>& args, char** msg)
 }
 */
 
-
+/*
 // Return a term corresponding to the operation applied to the constant
 // terms.  The list may contain terms of the form (* -1 a) for constant
 // a.
@@ -904,7 +912,7 @@ PTRef SimplifyConst::simplifyConstOp(const vec<PTRef>& terms, char** msg)
     }
 }
 
-/*
+
 lbool LRALogic::retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs)
 {
     lbool res = Logic::retrieveSubstitutions(facts, substs);

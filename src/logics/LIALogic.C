@@ -8,6 +8,9 @@
 
 const char* LIALogic::e_nonlinear_term = "Logic does not support nonlinear terms";
 
+//make sure you call all methods neede for each LIA and LRA here and override it properly
+
+/*
 void LIALogic::termSort(vec<PTRef>& v) const
 {
     sort(v, LIALessThan_deepPTRef(this));
@@ -59,6 +62,9 @@ bool LIALogic::okToPartition(PTRef tr) const
 {
     return !lia_split_inequalities.has(tr);
 }
+
+ */
+
 /***********************************************************
  * Class defining simplifications
  ***********************************************************/
@@ -69,7 +75,9 @@ bool LIALogic::okToPartition(PTRef tr) const
 // corresponding simplifications.  Examples include 0 with
 // multiplication and summation, e.g.
 //
-void LIASimplifyConst::simplify(SymRef& s, const vec<PTRef>& args, SymRef& s_new, vec<PTRef>& args_new, char** msg)
+
+/*
+void SimplifyConst::simplify(SymRef& s, const vec<PTRef>& args, SymRef& s_new, vec<PTRef>& args_new, char** msg)
 {
     vec<int> const_idx;
     vec<PTRef> args_new_2;
@@ -111,7 +119,7 @@ void LIASimplifyConst::simplify(SymRef& s, const vec<PTRef>& args, SymRef& s_new
     }
 }
 
-void LIASimplifyConstSum::constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const
+void SimplifyConstSum::constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const
 {
     assert(terms_new.size() == 0);
     int i;
@@ -176,7 +184,6 @@ void LIASimplifyConstTimes::constSimplify(const SymRef& s, const vec<PTRef>& ter
     s_new = s;
 }
 
-/*
 void SimplifyConstDiv::constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const
 {
     assert(terms_new.size() == 0);
@@ -320,12 +327,13 @@ LIALogic::LIALogic(SMTConfig& c) :
     sym_store.setInterpreted(sym_Int_ITE);
 }
 
+/*
 bool LIALogic::isBuiltinFunction(const SymRef sr) const
 {
     if (sr == sym_Int_NEG || sr == sym_Int_MINUS || sr == sym_Int_PLUS || sr == sym_Int_TIMES || sr == sym_Int_EQ || sr == sym_Int_LEQ || sr == sym_Int_LT || sr == sym_Int_GEQ || sr == sym_Int_GT || sr == sym_Int_ITE) return true;
     else return Logic::isBuiltinFunction(sr);
 }
-
+*/
 const opensmt::Integer&
 LIALogic::getIntegerConst(PTRef tr) const
 {
@@ -335,13 +343,13 @@ LIALogic::getIntegerConst(PTRef tr) const
 }
 
 
-
+/*
 PTRef
 LIALogic::mkConst(const char *name, const char **msg)
 {
     return mkConst(getSort_Integer(), name);
 }
-
+*/
 
 PTRef LIALogic::mkConst(SRef s, const char* name)
 {
@@ -368,6 +376,7 @@ PTRef LIALogic::mkConst(SRef s, const char* name)
     return ptr;
 }
 
+/*
 bool LIALogic::isIntegerTerm(PTRef tr) const
 {
     const Pterm& t = getPterm(tr);
@@ -384,6 +393,7 @@ LIALogic::okForBoolVar(PTRef tr) const
 {
     return isIntLeq(tr) || Logic::okForBoolVar(tr);
 }
+
 
 PTRef
 LIALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
@@ -412,7 +422,9 @@ LIALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
     return Logic::insertTerm(sym, terms, msg);
 }
 
-PTRef LIALogic::mkIntNeg(PTRef tr, char** msg)
+
+
+PTRef LALogic::mkNUmNeg(PTRef tr, char** msg) override
 {
     if (isIntNeg(tr)) return getPterm(tr)[0];
     vec<PTRef> args;
@@ -440,6 +452,21 @@ PTRef LIALogic::mkIntNeg(PTRef tr, char** msg)
     args.push(mo); args.push(tr);
     return mkIntTimes(args);
 }
+
+*/
+
+//PS. we have LIALogic here as we are not using method, but creating it
+
+PTRef LIALogic::getNTerm(char* rat_str) override
+{
+    opensmt::Integer v(rat_str);
+    v = -v;
+    return mkConst(getSort_num(), v.get_str().c_str();
+}
+
+
+
+/*
 
 PTRef LIALogic::mkIntMinus(const vec<PTRef>& args_in, char** msg)
 {
@@ -469,14 +496,19 @@ PTRef LIALogic::mkIntMinus(const vec<PTRef>& args_in, char** msg)
     args[1] = fact;
     return mkIntPlus(args);
 }
+*/
 
-PTRef LIALogic::mkIntPlus(const vec<PTRef>& args, char** msg)
+//PS how do I override methods from BASE class
+
+PTRef LALogic::mkNumPlus(const vec<PTRef>& args, char** msg) override
 {
-    vec<PTRef> new_args;
+    //PS when I override method I dont need the below members to rewrite again but only the part tht method something changes?
+     vec<PTRef> new_args;
 
     // Flatten possible internal sums.  This needs not be done properly,
     // with a post-order dfs, since we are guaranteed that the inner
     // sums are already flattened.
+
     for (int i = 0; i < args.size(); i++) {
         if (isIntPlus(args[i])) {
             Pterm& t = getPterm(args[i]);
@@ -491,10 +523,12 @@ PTRef LIALogic::mkIntPlus(const vec<PTRef>& args, char** msg)
     //for (int i = 0; i < new_args.size(); i++)
     //    args.push(new_args[i]);
 
-    LIASimplifyConstSum simp(*this);
+    SimplifyConstSum<opensmt::Integer> simp(*this);
+
     vec<PTRef> args_new;
     SymRef s_new;
     simp.simplify(sym_Int_PLUS, tmp_args, s_new, args_new, msg);
+
     if (args_new.size() == 1)
         return args_new[0];
 
@@ -505,7 +539,7 @@ PTRef LIALogic::mkIntPlus(const vec<PTRef>& args, char** msg)
     for (int i = 0; i < args_new.size(); ++i) {
         PTRef v;
         PTRef c;
-        LIAsplitTermToVarAndConst(args_new[i], v, c);
+        splitTermToVarAndConst(args_new[i], v, c);
         if (c == PTRef_Undef) {
             // The term is unit
             c = getTerm_IntOne();
@@ -567,12 +601,9 @@ PTRef LIALogic::mkIntTimes(const vec<PTRef>& tmp_args, char** msg)
     }
 }
 
-
-/*
-
 PTRef LIALogic::mkIntDiv(const vec<PTRef>& args, char** msg)
 {
-    SimplifyConstDiv simp(*this);
+    LIASimplifyConstDiv simp(*this);
     vec<PTRef> args_new;
     SymRef s_new;
 
@@ -590,10 +621,10 @@ PTRef LIALogic::mkIntDiv(const vec<PTRef>& args, char** msg)
     return tr;
 }
 
- */
+/*
 
 // Find the lexicographically first factor of a term and divide the other terms with it.
-PTRef LIALogic::LIAnormalizeSum(PTRef sum) {
+PTRef LIALogic::normalizeSum(PTRef sum) {
     vec<PTRef> args;
     Pterm& s = getPterm(sum);
     for  (int i = 0; i < s.size(); i++)
@@ -624,7 +655,7 @@ PTRef LIALogic::LIAnormalizeSum(PTRef sum) {
     // We need to go through the real values since negative constant
     // terms are are not real negations.
 
-    /*
+    //coment from here
     opensmt::Integer k = abs(isConstant(t[0]) ? getIntegerConst(t[0]) : getIntegerConst(t[1]));
     PTRef divisor = mkConst(k);
     for (int i = 0; i < args.size(); i++) {
@@ -633,10 +664,12 @@ PTRef LIALogic::LIAnormalizeSum(PTRef sum) {
         tmp.push(divisor);
         args[i] = mkIntDiv(tmp);
     }
-     */
+    //to here
 
     return mkIntPlus(args);
 }
+*/
+
 
 //
 // Input is expected to be of the following forms:
@@ -654,6 +687,8 @@ PTRef LIALogic::LIAnormalizeSum(PTRef sum) {
 // (3e) (+ x t_1 ... t_n)
 // Returns true for cases (1d), (1e), (2b), and (2d), and false for other cases.
 //
+
+/*
 bool LIALogic::isIntNegated(PTRef tr) const {
     if (isIntegerConst(tr))
         return getIntegerConst(tr) < 0; // Case (0a) and (0b)
@@ -672,7 +707,7 @@ bool LIALogic::isIntNegated(PTRef tr) const {
     }
 }
 
-void LIALogic::LIAsplitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) const
+void LIALogic::splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) const
 {
     assert(isIntTimes(term)  || isIntVar(term) || isConstant(term) || isUF(term));
     if (isIntTimes(term)) {
@@ -696,8 +731,9 @@ void LIALogic::LIAsplitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& f
 }
 
 
+
 // Normalize a product of the form (* a v) to either v or (* -1 v)
-PTRef LIALogic::LIAnormalizeMul(PTRef mul)
+PTRef LIALogic::normalizeMul(PTRef mul)
 {
     assert(isIntTimes(mul));
     PTRef v = PTRef_Undef;
@@ -710,8 +746,10 @@ PTRef LIALogic::LIAnormalizeMul(PTRef mul)
         return v;
 }
 
+*/
 // If the call results in a leq it is guaranteed that arg[0] is a
 // constant, and arg[1][0] has factor 1 or -1
+
 PTRef LIALogic::mkIntLeq(const vec<PTRef>& args_in, char** msg)
 {
     vec<PTRef> args;
@@ -776,6 +814,7 @@ PTRef LIALogic::mkIntLeq(const vec<PTRef>& args_in, char** msg)
     }
 }
 
+/*
 PTRef LIALogic::mkIntGeq(const vec<PTRef>& args, char** msg)
 {
     vec<PTRef> new_args;
@@ -835,12 +874,11 @@ PTRef LIALogic::mkIntGt(const vec<PTRef>& args, char** msg)
 }
 
 
-
 // Return a term corresponding to the operation applied to the constant
 // terms.  The list may contain terms of the form (* -1 a) for constant
 // a.
 
-PTRef LIASimplifyConst::simplifyConstOp(const vec<PTRef>& terms, char** msg)
+PTRef SimplifyConst::simplifyConstOp(const vec<PTRef>& terms, char** msg)
 {
     opensmt::Integer s = getIdOp();
     if (terms.size() == 0) {
@@ -875,7 +913,9 @@ PTRef LIASimplifyConst::simplifyConstOp(const vec<PTRef>& terms, char** msg)
     }
 }
 
-/*
+
+
+
 lbool LIALogic::retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs)
 {
     lbool res = Logic::retrieveSubstitutions(facts, substs);
@@ -998,7 +1038,7 @@ lbool LIALogic::arithmeticElimination(vec<PTRef> &top_level_arith, Map<PTRef,PtA
     return l_Undef;
 }
 
- */
+
 
 //
 // LRALogic data contains Logic data and the maps for reals.
@@ -1049,6 +1089,8 @@ void LIALogic::deserializeLogicData(const int* logicdata_buf)
 
 // Handle the printing of real constants that are negative and the
 // rational constants
+
+
 char*
 LIALogic::printTerm_(PTRef tr, bool ext, bool safe) const
 {
@@ -1120,3 +1162,4 @@ LIALogic::printTerm_(PTRef tr, bool ext, bool safe) const
         out = Logic::printTerm_(tr, ext, safe);
     return out;
 }
+*/

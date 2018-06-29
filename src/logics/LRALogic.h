@@ -50,7 +50,7 @@ class LRALogic: public LALogic  //class LRALogic should extend only class LALogi
   protected:
     Logic_t logic_type;
     vec<opensmt::Real*> reals; //PS. how to be with this?
-    SymRef              sym_Real_ZERO;
+    SymRef              sym_Real_ZERO; //PS. all these needs to be rewritten as sym_Num_ZERO
     SymRef              sym_Real_ONE;
     SymRef              sym_Real_NEG;
     SymRef              sym_Real_MINUS;
@@ -85,7 +85,7 @@ class LRALogic: public LALogic  //class LRALogic should extend only class LALogi
     static const char*  e_nonlinear_term;
 
     //bool split_eq;
-    Map<PTRef,bool,PTRefHash> lra_split_inequalities;
+    //Map<PTRef,bool,PTRefHash> lra_split_inequalities;
     //void visit(PTRef, Map<PTRef,PTRef,PTRefHash>&);
 
   public:
@@ -93,7 +93,7 @@ class LRALogic: public LALogic  //class LRALogic should extend only class LALogi
     ~LRALogic                   () {
         for (int i = 0; i < reals.size(); i++) delete reals[i];
         if (config.sat_split_type() != spt_none)
-            cerr << "; Num of LRA equalities in input: " << lra_split_inequalities.getSize()/2 << "\n";
+            cerr << "; Num of LRA equalities in input: " << la_split_inequalities.getSize()/2 << "\n";
     }
 
     virtual const char*   getName()              const override { return getLogic().str; }
@@ -104,7 +104,7 @@ class LRALogic: public LALogic  //class LRALogic should extend only class LALogi
     //virtual PTRef       insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg);
 
     //PS. how to be with mkConst here override it from LOGIC class, o
-    //virtual PTRef       mkConst         (const char* name, const char **msg);
+    virtual PTRef       mkConst         (const char* name, const char **msg);
     virtual PTRef       mkConst         (SRef s, const char* name);
     virtual PTRef       mkConst         (const opensmt::Real& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_num(), rat); free(rat); return tr; }
     virtual PTRef       mkConst         (const char* num) { return mkConst(getSort_num(), num); }
@@ -116,49 +116,49 @@ class LRALogic: public LALogic  //class LRALogic should extend only class LALogi
 
     //bool  isNumConst     (SymRef sr)     const override { return isConstant(sr) && hasSortNum(sr); }
     //bool  isNumConst     (PTRef tr)      const override { return isNumConst(getPterm(tr).symb()); }
-    //bool  isNonnegNumConst (PTRef tr)    const override { return isNumConst(tr) && getNumConst(tr) >= 0; }
+    virtual bool  isNonnegNumConst (PTRef tr)    const override { return isNumConst(tr) && getRealConst(tr) >= 0; }
 
     //SRef        declareSort_Real(char** msg);
 
     SRef        getSort_num    ()              const override { return sort_REAL;}
 
     //PS. override method getNumConst according to getRealConst. const getNumConst(PTRef tr) const override {return getRealConst(tr);} Can I write this like this?
-    const void getNumConst(PTRef tr) const override {return getRealConst(tr);}
+    const void* getNumConst(PTRef tr) const override {return (const void*) &getRealConst(tr);} //PS. this will be rewritten once we have a superclass for numbers
     const opensmt::Real& getRealConst(PTRef tr) const;
 
     bool        isRealPlus(SymRef sr) const { return sr == sym_Real_PLUS; }
     //bool        isRealPlus(PTRef tr) const { return isRealPlus(getPterm(tr).symb()); }
-    bool        isNumPlus(PTRef tr) const override { return isRealPlus(tr); }
+    bool        isNumPlus(PTRef tr) const override { return isRealPlus(getPterm(tr).symb()); }
     bool        isRealMinus(SymRef sr) const { return sr == sym_Real_MINUS; }
     //bool        isRealMinus(PTRef tr) const { return isRealMinus(getPterm(tr).symb()); }
-    bool        isNumMinus(PTRef tr) const override { return isRealMinus(tr); }
+    bool        isNumMinus(PTRef tr) const override { return isRealMinus(getPterm(tr).symb()); }
     bool        isRealNeg(SymRef sr) const { return sr == sym_Real_NEG; }
     //bool        isRealNeg(PTRef tr) const { return isRealNeg(getPterm(tr).symb()); }
-    bool        isNumNeg(PTRef tr) const override { return isRealNeg(tr); }
+    bool        isNumNeg(PTRef tr) const override { return isRealNeg(getPterm(tr).symb()); }
     bool        isRealTimes(SymRef sr) const { return sr == sym_Real_TIMES; }
     //bool        isRealTimes(PTRef tr) const { return isRealTimes(getPterm(tr).symb()); }
-    bool        isNumTimes(PTRef tr) const override { return isRealTimes(tr); }
+    bool        isNumTimes(PTRef tr) const override { return isRealTimes(getPterm(tr).symb()); }
     bool        isRealDiv(SymRef sr) const { return sr == sym_Real_DIV; }
     //bool        isRealDiv(PTRef tr) const { return isRealDiv(getPterm(tr).symb()); }
-    bool        isNumDiv(PTRef tr) const override { return isRealDiv(tr); }
+    bool        isNumDiv(PTRef tr) const override { return isRealDiv(getPterm(tr).symb());  }
     bool        isRealEq(SymRef sr) const { return isEquality(sr) && (sym_store[sr][0] == sort_REAL); }
     //bool        isRealEq(PTRef tr) const { return isRealEq(getPterm(tr).symb()); }
-    bool        isNumEq(PTRef tr) const override { return isRealEq(tr); }
+    bool        isNumEq(PTRef tr) const override { return isRealEq(getPterm(tr).symb()); }
     bool        isRealLeq(SymRef sr) const { return sr == sym_Real_LEQ; }
     //bool        isRealLeq(PTRef tr) const { return isRealLeq(getPterm(tr).symb()); }
-    bool        isNumLeq(PTRef tr) const override { return isRealLeq(tr); }
+    bool        isNumLeq(PTRef tr) const override { return isRealLeq(getPterm(tr).symb()); }
     bool        isRealLt(SymRef sr) const { return sr == sym_Real_LT; }
     //bool        isRealLt(PTRef tr) const { return isRealLt(getPterm(tr).symb()); }
-    bool        isNumLt(PTRef tr) const override { return isRealLt(tr); }
+    bool        isNumLt(PTRef tr) const override { return isRealLt(getPterm(tr).symb());  }
     bool        isRealGeq(SymRef sr) const { return sr == sym_Real_GEQ; }
     //bool        isRealGeq(PTRef tr) const { return isRealGeq(getPterm(tr).symb()); }
-    bool        isNumGeq(PTRef tr) const override { return isRealGeq(tr); }
+    bool        isNumGeq(PTRef tr) const override { return isRealGeq(getPterm(tr).symb()); }
     bool        isRealGt(SymRef sr) const { return sr == sym_Real_GT; }
     //bool        isRealGt(PTRef tr) const { return isRealGt(getPterm(tr).symb()); }
-    bool        isNumGt(PTRef tr) const override { return isRealGt(tr); }
+    bool        isNumGt(PTRef tr) const override { return isRealGt(getPterm(tr).symb()); }
     bool        isRealVar(SymRef sr) const { return isVar(sr) && sym_store[sr].rsort() == sort_REAL; }
     //bool        isRealVar(PTRef tr) const { return isRealVar(getPterm(tr).symb()); }
-    bool        isNumVar(PTRef tr) const override { return isRealVar(tr); }
+    bool        isNumVar(PTRef tr) const override {return isRealVar(getPterm(tr).symb());}
     bool        isRealZero(SymRef sr) const { return sr == sym_Real_ZERO; }
     //bool        isRealZero(PTRef tr) const { return tr == term_Real_ZERO; }
     bool        isNumZero(PTRef tr) const override { return tr == term_Real_ZERO; }
@@ -170,18 +170,17 @@ class LRALogic: public LALogic  //class LRALogic should extend only class LALogi
     // a is a variable.
     //bool        isRealTerm(PTRef tr) const;
 
-    bool        hasSortNum(SymRef sr) const override { return sym_store[sr].rsort() == sort_REAL; }
-    //bool        hasSortReal(PTRef tr) const { return hasSortReal(getPterm(tr).symb()); }
+    bool        hasSortReal(SymRef sr) const { return sym_store[sr].rsort() == sort_REAL; }
+    bool        hasSortNum(PTRef tr) const override { return hasSortReal(getPterm(tr).symb()); }
 
-    bool        isUFEquality(PTRef tr) const { return !isRealEq(tr) && Logic::isUFEquality(tr); }
-    bool        isTheoryEquality(PTRef tr) const { return isRealEq(tr); }
+    //bool        isUFEquality(PTRef tr) const { return !isRealEq(tr) && Logic::isUFEquality(tr); }
+    //bool        isTheoryEquality(PTRef tr) const { return isRealEq(tr); }
 
-    virtual bool isAtom(PTRef tr) const  { return isRealEq(tr) || isRealLt(tr) || isRealGt(tr) || isRealLeq(tr) || isRealGeq(tr) || Logic::isAtom(tr); }
+    //virtual bool isAtom(PTRef tr) const  { return isRealEq(tr) || isRealLt(tr) || isRealGt(tr) || isRealLeq(tr) || isRealGeq(tr) || Logic::isAtom(tr); }
     // UFs are the functions that have no interpretation in real.
-    bool        isUF(PTRef tr) const { return isUF(term_store[tr].symb()); }
-    bool        isUF(SymRef sr) const { return !sym_store[sr].isInterpreted(); }
+    //bool        isUF(PTRef tr) const { return isUF(term_store[tr].symb()); }
+    //bool        isUF(SymRef sr) const { return !sym_store[sr].isInterpreted(); }
 
-    //PS. is the part below needs to be rewritten
     PTRef       getTerm_NumZero() const override { return term_Real_ZERO; }
     PTRef       getTerm_NumOne()  const override { return term_Real_ONE; }
 
@@ -225,6 +224,8 @@ class LRALogic: public LALogic  //class LRALogic should extend only class LALogi
     // and split equalities
     virtual bool simplify(PTRef root, PTRef& root_out); //PS this is never used anywhere in the code, shall we remove it?
 
+    virtual PTRef getNTerm(char* rat_str);
+
     //lbool retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs);
     //lbool arithmeticElimination(vec<PTRef>&, Map<PTRef,PtAsgn,PTRefHash>&);
     //void simplifyAndSplitEq(PTRef, PTRef&);
@@ -243,6 +244,7 @@ class LRALogic: public LALogic  //class LRALogic should extend only class LALogi
 // v2 which one is smaller, based on the PTRef of v1 and v2.  (i.e.
 // v1.ptref <  v2.ptref iff (* k1 v1) < (* k2 v2))
 
+/*
 class LessThan_deepPTRef {
     const LRALogic& l;
   public:
@@ -270,7 +272,9 @@ class LessThan_deepPTRef {
     }
 };
 
+*/
 
+/*
 class SimplifyConst {
   protected:
     LRALogic& l;
@@ -307,7 +311,7 @@ class SimplifyConstDiv : public SimplifyConst {
     void constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const;
   public:
     SimplifyConstDiv(LRALogic& log) : SimplifyConst(log) {}
-};
+};*/
 
 
 #endif
