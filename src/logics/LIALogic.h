@@ -8,7 +8,7 @@
 
 
 
-
+/*
 class LIANonLinearException
 {
     char* reason;
@@ -24,12 +24,13 @@ public:
     }
     ~LIANonLinearException() { free(reason); }
 };
+ */
+
 
 class LIALogic: public LALogic
 {
   protected:
     Logic_t logic_type;
-    vec<opensmt::Real*> reals; //use only integers
     vec<opensmt::Integer*> integers;
     SymRef              sym_Int_ZERO;
     SymRef              sym_Int_ONE;
@@ -37,7 +38,7 @@ class LIALogic: public LALogic
     SymRef              sym_Int_MINUS;
     SymRef              sym_Int_PLUS;
     SymRef              sym_Int_TIMES;
-    SymRef              sym_Int_DIV; //PS. ???
+    SymRef              sym_Int_DIV;
     //SymRef              sym_Int_MOD;
     //SymRef              sym_Int_ABS;
     SymRef              sym_Int_EQ;
@@ -58,7 +59,7 @@ class LIALogic: public LALogic
     static const char*  tk_int_minus;
     static const char*  tk_int_plus;
     static const char*  tk_int_times;
-    static const char*  tk_int_div; //PS. ???
+    static const char*  tk_int_div;
     //static const char*  tk_int_mod;
     //static const char*  tk_int_abs;
     static const char*  tk_int_leq;
@@ -69,24 +70,24 @@ class LIALogic: public LALogic
     static const char*  s_sort_integer;
     static const char*  e_nonlinear_term;
 
-    //bool split_eq;
+    bool split_eq;
     //Map<PTRef,bool,PTRefHash> lia_split_inequalities;
     //void visit(PTRef, Map<PTRef,PTRef,PTRefHash>&);
 
   public:
     LIALogic (SMTConfig& c);
     ~LIALogic () {
-        for (int i = 0; i < reals.size(); i++) delete reals[i];
+        for (int i = 0; i < integers.size(); i++) delete integers[i];
     }
 
     virtual const char*   getName()         const override { return getLogic().str; }
     virtual const Logic_t getLogic()        const override { return QF_LIA; }
 
     //virtual bool        okForBoolVar    (PTRef) const;
-    //virtual PTRef       insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg);
+    virtual PTRef       insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg) override;
 
-    virtual PTRef       mkConst         (const char* name, const char **msg);
-    virtual PTRef       mkConst         (SRef s, const char* name);
+    virtual PTRef       mkConst         (const char* name, const char **msg) override;
+    virtual PTRef       mkConst         (SRef s, const char* name) override;
     virtual PTRef       mkConst         (const opensmt::Integer& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_num(), rat); free(rat); return tr; }
     virtual PTRef       mkConst         (const char* num) { return mkConst(getSort_num(), num); }
     virtual PTRef       mkIntVar        (const char* name) { return mkVar(getSort_num(), name); }
@@ -209,7 +210,7 @@ class LIALogic: public LALogic
     // and split equalities
     virtual bool simplify(PTRef root, PTRef& root_out);
 
-    virtual PTRef getNTerm(char* rat_str);
+    virtual PTRef getNTerm(char* rat_str) override;
 
     //lbool retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs);
     //lbool arithmeticElimination(vec<PTRef>&, Map<PTRef,PtAsgn,PTRefHash>&);

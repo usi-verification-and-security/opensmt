@@ -50,22 +50,22 @@ namespace{
 
 bool LRASolver::isValid(PTRef tr)
 {
-    return logic.isRealConst(tr) || logic.isRealPlus(tr) || logic.isRealMinus(tr) || logic.isRealNeg(tr) ||
-           logic.isRealTimes(tr) || logic.isRealDiv(tr) || logic.isRealEq(tr) || logic.isRealLeq(tr) || logic.isRealLt(tr) ||
-           logic.isRealGeq(tr) || logic.isRealGt(tr) || logic.isRealVar(tr);
+    return logic.isNumConst(tr) || logic.isNumPlus(tr) || logic.isNumMinus(tr) || logic.isNumNeg(tr) ||
+           logic.isNumTimes(tr) || logic.isNumDiv(tr) || logic.isNumEq(tr) || logic.isNumLeq(tr) || logic.isNumLt(tr) ||
+           logic.isNumGeq(tr) || logic.isNumGt(tr) || logic.isNumVar(tr);
 }
 
 void LRASolver::isProperLeq(PTRef tr)
 {
     assert(logic.isAtom(tr));
-    assert(logic.isRealLeq(tr));
+    assert(logic.isNumLeq(tr));
     Pterm& leq_t = logic.getPterm(tr);
     PTRef cons = leq_t[0];
     PTRef sum  = leq_t[1];
     assert(logic.isConstant(cons));
-    assert(logic.isRealVar(sum) || logic.isRealPlus(sum) || logic.isRealTimes(sum));
-    assert(!logic.isRealTimes(sum) || ((logic.isRealVar(logic.getPterm(sum)[0]) && (logic.mkRealNeg(logic.getPterm(sum)[1])) == logic.getTerm_RealOne()) ||
-                                       (logic.isRealVar(logic.getPterm(sum)[1]) && (logic.mkRealNeg(logic.getPterm(sum)[0])) == logic.getTerm_RealOne())));
+    assert(logic.isNumVar(sum) || logic.isNumPlus(sum) || logic.isNumTimes(sum));
+    assert(!logic.isNumTimes(sum) || ((logic.isNumVar(logic.getPterm(sum)[0]) && (logic.mkNumNeg(logic.getPterm(sum)[1])) == logic.getTerm_NumOne()) ||
+                                       (logic.isNumVar(logic.getPterm(sum)[1]) && (logic.mkNumNeg(logic.getPterm(sum)[0])) == logic.getTerm_NumOne())));
 }
 //opensmt::Real *
 //LRASolver::newReal(const Real *old) {
@@ -223,13 +223,13 @@ Real LRASolver::getReal(PTRef r) {
 }
 
 bool LRASolver::hasVar(PTRef expr) {
-    expr =  logic.isNegated(expr) ? logic.mkRealNeg(expr) : expr;
+    expr =  logic.isNegated(expr) ? logic.mkNumNeg(expr) : expr;
     PTId id = logic.getPterm(expr).getId();
     return lavarStore.hasVar(id);
 }
 
 LVRef LRASolver::getLAVar_single(PTRef expr_in) {
-    PTRef expr = logic.isNegated(expr_in) ? logic.mkRealNeg(expr_in) : expr_in;
+    PTRef expr = logic.isNegated(expr_in) ? logic.mkNumNeg(expr_in) : expr_in;
     LVRef x;
 
     PTId id_pos = logic.getPterm(expr).getId();
@@ -265,7 +265,7 @@ LVRef LRASolver::constructLAVarSystem(PTRef term) {
     if (lavarStore.hasVar(term))
         return lavarStore.getVarByPTId(logic.getPterm(term).getId());
 
-    if (logic.isRealVar(term) || logic.isRealTimes(term)) {
+    if (logic.isNumVar(term) || logic.isNumTimes(term)) {
         // Case (1), (2a), and (2b)
         PTRef v;
         PTRef c;
@@ -340,7 +340,7 @@ lbool LRASolver::declareTerm(PTRef leq_tr)
 
     informed_PTRefs.insert(leq_tr, true);
 
-    if (!logic.isRealLeq(leq_tr)) return l_Undef;
+    if (!logic.isNumLeq(leq_tr)) return l_Undef;
 
 
     if (status != INIT)
@@ -1795,7 +1795,7 @@ void LRASolver::computeModel()
 //}
 
 
-
+/*
 //Here starts implementation of LIA solver
 
 bool LRASolver::checkIntegersAndSplit( )
@@ -1919,7 +1919,7 @@ bool LRASolver::checkIntegersAndSplit( )
 
 // end of LIA solver implementation
 
-
+*/
 
 // We may assume that the term is of the following forms
 // (1) (* x c)
@@ -1930,7 +1930,7 @@ opensmt::Real LRASolver::evaluateTerm(PTRef tr)
     Pterm& t = logic.getPterm(tr);
     opensmt::Real val(0);
     // Case (3)
-    if (logic.isRealConst(tr))
+    if (logic.isNumConst(tr))
         return logic.getRealConst(tr);
 
     // Cases (1) & (2)
@@ -1953,7 +1953,7 @@ opensmt::Real LRASolver::evaluateTerm(PTRef tr)
 // (3b) (* -1 x) + p_1 + ... + p_n
 //
 ValPair LRASolver::getValue(PTRef tr) {
-    if (!logic.hasSortReal(tr)) return ValPair_Undef;
+    if (!logic.hasSortNum(tr)) return ValPair_Undef;
     PTId id = logic.getPterm(tr).getId();
     opensmt::Real val(0);
     if (!lavarStore.hasVar(id)) {

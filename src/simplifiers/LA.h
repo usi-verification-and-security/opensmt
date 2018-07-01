@@ -45,7 +45,7 @@ public:
 
   LAExpression  (LRALogic& l, PTRef e)
     : logic     (l)
-    , r         (l.isRealEq(e) ? EQ : (l.isRealLeq(e) ? LEQ : UNDEF))
+    , r         (l.isNumEq(e) ? EQ : (l.isNumLeq(e) ? LEQ : UNDEF))
   {
     initialize(e);
   }

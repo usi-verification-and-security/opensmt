@@ -75,7 +75,7 @@ void LABoundStore::addBound(PTRef leq_ref)
 
     bool sum_term_is_negated = logic.isNegated(sum_tr);
 
-    PTRef pos_sum_tr = sum_term_is_negated ? logic.mkRealNeg(sum_tr) : sum_tr;
+    PTRef pos_sum_tr = sum_term_is_negated ? logic.mkNumNeg(sum_tr) : sum_tr;
 
     LVRef v = lavarStore.getVarByPTId(logic.getPterm(pos_sum_tr).getId());
 

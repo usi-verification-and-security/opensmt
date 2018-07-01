@@ -1,14 +1,10 @@
-//include all necessary header files
-//in LALogic.h file make all methods shared by other virtual
-
 #include "SStore.h"
 #include "PtStore.h"
 #include "LRALogic.h"
 #include "TreeOps.h"
 #include "Global.h"
 #include "LA.h"
-
-
+#include "LALogic.h"
 
 bool LALogic::isNegated(PTRef tr) const {
     if (isNumConst(tr))
@@ -100,14 +96,13 @@ PTRef LALogic::normalizeMul(PTRef mul)
     PTRef v = PTRef_Undef;
     PTRef c = PTRef_Undef;
     splitTermToVarAndConst(mul, v, c);
-    opensmt::Real r = getNumConst(c);
-    if (r < 0)
+    opensmt::Real r = getNumConst(c); //PS. shall I add opensmt::Integer j = getNumConst(c)
+    if (r < 0) //PS. OR (l < 0)
         return mkNumNeg(v);
     else
         return v;
 }
 
-//PS. do we at all need this method for LIA
 
 lbool LALogic::arithmeticElimination(vec<PTRef> &top_level_arith, Map<PTRef,PtAsgn,PTRefHash>& substitutions)
 {
@@ -360,7 +355,7 @@ PTRef LALogic::mkNumNeg(PTRef tr, char** msg)
         char* rat_str;
         opensmt::stringToRational(rat_str, sym_store.getName(getPterm(tr).symb()));
         //opensmt::Real v(rat_str);
-        PTRef nterm = getNTerm(rat_str); //PS. this generalise line 362, 365, 366
+        PTRef nterm = getNTerm(rat_str); //PS. getNTerm generalise line 358, 361, 362
         free(rat_str);
         //v = -v;
         //PTRef nterm = mkConst(getSort_num(), v.get_str().c_str());
@@ -498,7 +493,6 @@ PTRef LALogic::mkNumTimes(const vec<PTRef>& tmp_args, char** msg)
     }
 }
 
-//PS. this method and alike you should make virtual and in LRA and LIA classes override approprietly
 PTRef LALogic::mkNumDiv(const vec<PTRef>& args, char** msg)
 {
     SimplifyConstDiv simp(*this);
@@ -510,7 +504,7 @@ PTRef LALogic::mkNumDiv(const vec<PTRef>& args, char** msg)
 
     if (isNumDiv(s_new)) {
         assert(isNumTerm(args_new[0]) && isConstant(args_new[1]));
-        args_new[1] = mkConst(FastRational_inverse(getNumConst(args_new[1]))); //mkConst(1/getRealConst(args_new[1])); //PS. how to be with this part?
+        args_new[1] = mkConst(FastRational_inverse(getNumConst(args_new[1]))); //mkConst(1/getRealConst(args_new[1]));
         return mkNumTimes(args_new);
     }
 
@@ -528,9 +522,9 @@ PTRef LALogic::mkNumLeq(const vec<PTRef>& args_in, char** msg)
     assert(args.size() == 2);
 
     if (isConstant(args[0]) && isConstant(args[1])) {
-        opensmt::Real v1(sym_store.getName(getPterm(args[0]).symb()));
-        opensmt::Real v2(sym_store.getName(getPterm(args[1]).symb()));
-        if (v1 <= v2)
+        opensmt::Real v1(sym_store.getName(getPterm(args[0]).symb())); //PS. can I add here also opensmt::Integer v3(sym_store.getName(getPterm(args[0]).symb()))
+        opensmt::Real v2(sym_store.getName(getPterm(args[1]).symb())); //PS. and  opensmt::Integer v4(sym_store.getName(getPterm(args[0]).symb()))
+        if (v1 <= v2) //PS. OR (v3<=v4)
             return getTerm_true();
         else
             return getTerm_false();
@@ -599,11 +593,11 @@ PTRef LALogic::mkNumLt(const vec<PTRef>& args, char** msg)
         char *rat_str1, *rat_str2;
         opensmt::stringToRational(rat_str1, sym_store.getName(getPterm(args[0]).symb()));
         opensmt::stringToRational(rat_str2, sym_store.getName(getPterm(args[1]).symb()));
-        opensmt::Real v1(rat_str1);
+        opensmt::Real v1(rat_str1); //PS. may I add here opensmt::Integer v3(rat_str1) and opensmt::Integer v4(rat_str2)
         opensmt::Real v2(rat_str2);
         free(rat_str1);
         free(rat_str2);
-        if (v1 < v2) {
+        if (v1 < v2) { //PS. OR (v3 < v4)
             return getTerm_true();
         } else {
             return getTerm_false();
@@ -626,11 +620,11 @@ PTRef LALogic::mkNumGt(const vec<PTRef>& args, char** msg)
         char *rat_str1, *rat_str2;
         opensmt::stringToRational(rat_str1, sym_store.getName(getPterm(args[0]).symb()));
         opensmt::stringToRational(rat_str2, sym_store.getName(getPterm(args[1]).symb()));
-        opensmt::Real v1(rat_str1);
+        opensmt::Real v1(rat_str1); //PS. opensmt::Integer v3(rat_str1) and opensmt::Integer v4(rat_str2);
         opensmt::Real v2(rat_str2);
         free(rat_str1);
         free(rat_str2);
-        if (v1 > v2)
+        if (v1 > v2) //PS. OR (v3 > v4)
             return getTerm_true();
         else
             return getTerm_false();
@@ -643,7 +637,9 @@ PTRef LALogic::mkNumGt(const vec<PTRef>& args, char** msg)
     return mkNot(tr);
 }
 
-PTRef LALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)  //PS change this as if sym = sym_Num_NEG return as is???
+PTRef LALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)  //PS. shall I override this method in LRA and LIA
+//PS. as if (sym == sym_Real_NEG) ANYWAY return mkNumNeg(terms[0], msg); and etc.???
+
 {
     if (sym == sym_Num_NEG)
         return mkNumNeg(terms[0], msg);
@@ -822,7 +818,10 @@ void SimplifyConstDiv::constSimplify(const SymRef& s, const vec<PTRef>& terms, S
 // terms.  The list may contain terms of the form (* -1 a) for constant
 // a.
 
-virtual PTRef SimplifyConst::simplifyConstOp(const vec<PTRef>& terms, char** msg)
+PTRef SimplifyConst::simplifyConstOp(const vec<PTRef>& terms, char** msg) //PS. do I leave this method as is with opensmt:: Real
+//PS. and I am not overriding this method for LIA? Instead whereever this method is used in LIA I use <opensmt::Integer>?
+//PS. Then does it mean all those methods I call in LIA and override with this type?
+
 {
     opensmt::Real s = getIdOp();
     if (terms.size() == 0) {
@@ -843,7 +842,7 @@ virtual PTRef SimplifyConst::simplifyConstOp(const vec<PTRef>& terms, char** msg
             PTRef tr = PTRef_Undef;
             if (l.isConstant(terms[i]))
                 tr = terms[i];
-            else if (l.isNumNeg(terms[i]))  //PS. can we give pointer to LRALogic& l if we define the simplification class in different header file and lralogic class in different header file?
+            else if (l.isNumNeg(terms[i]))
                 tr = l.getPterm(terms[i])[0];
             else continue;
             char* rat_str;
@@ -857,6 +856,117 @@ virtual PTRef SimplifyConst::simplifyConstOp(const vec<PTRef>& terms, char** msg
     }
 }
 
+const char* LALogic::tk_num_zero  = "0";
+const char* LALogic::tk_num_one   = "1";
+const char* LALogic::tk_num_neg   = "-";
+const char* LALogic::tk_num_minus = "-";
+const char* LALogic::tk_num_plus  = "+";
+const char* LALogic::tk_num_times = "*";
+const char* LALogic::tk_num_div   = "/";
+const char* LALogic::tk_num_lt    = "<";
+const char* LALogic::tk_num_leq   = "<=";
+const char* LALogic::tk_num_gt    = ">";
+const char* LALogic::tk_num_geq   = ">=";
+
+const char* LALogic::s_sort_num = "Number";
+
+LALogic::LALogic(SMTConfig& c) :
+        Logic(c)
+        , sym_Num_ZERO(SymRef_Undef)
+        , sym_Num_ONE(SymRef_Undef)
+        , sym_Num_NEG(SymRef_Undef)
+        , sym_Num_MINUS(SymRef_Undef)
+        , sym_Num_PLUS(SymRef_Undef)
+        , sym_Num_TIMES(SymRef_Undef)
+        , sym_Num_DIV(SymRef_Undef)
+        , sym_Num_EQ(SymRef_Undef)
+        , sym_Num_LEQ(SymRef_Undef)
+        , sym_Num_LT(SymRef_Undef)
+        , sym_Num_GEQ(SymRef_Undef)
+        , sym_Num_GT(SymRef_Undef)
+        , sym_Num_ITE(SymRef_Undef)
+        , sort_NUM(SRef_Undef)
+        , term_Num_ZERO(PTRef_Undef)
+        , term_Num_ONE(PTRef_Undef)
+        , split_eq(false)
+{
+    char* m;
+    char** msg = &m;
+
+    //logic_type = QF_LA;
+
+    sort_NUM = declareSort(s_sort_num, msg);
+    ufsorts.remove(sort_NUM);
+//    printf("Setting sort_REAL to %d at %p\n", sort_REAL.x, &(sort_REAL.x));
+    vec<SRef> params;
+
+
+    term_Num_ZERO = mkConst(sort_NUM, tk_num_zero);
+    sym_Num_ZERO  = getSymRef(term_Num_ZERO);
+    sym_store.setInterpreted(sym_Num_ZERO);
+    term_Num_ONE  = mkConst(sort_NUM, tk_num_one);
+    sym_Num_ONE   = getSymRef(term_Num_ONE);
+    sym_store.setInterpreted(sym_Num_ONE);
+
+    params.push(sort_NUM);
+
+    // Negation
+    sym_Num_NEG = declareFun(tk_num_neg, sort_NUM, params, msg, true);
+    sym_store.setInterpreted(sym_Num_NEG);
+
+    params.push(sort_NUM);
+
+    sym_Num_MINUS = declareFun(tk_num_neg, sort_NUM, params, msg, true);
+    sym_store[sym_Num_MINUS].setLeftAssoc();
+    sym_store.setInterpreted(sym_Num_MINUS);
+
+    sym_Num_PLUS  = declareFun(tk_num_plus, sort_NUM, params, msg, true);
+    sym_store[sym_Num_PLUS].setNoScoping();
+    sym_store[sym_Num_PLUS].setCommutes();
+    sym_store[sym_Num_PLUS].setLeftAssoc();
+    sym_store.setInterpreted(sym_Num_PLUS);
+
+    sym_Num_TIMES = declareFun(tk_num_times, sort_NUM, params, msg, true);
+    sym_store[sym_Num_TIMES].setNoScoping();
+    sym_store[sym_Num_TIMES].setLeftAssoc();
+    sym_store[sym_Num_TIMES].setCommutes();
+    sym_store.setInterpreted(sym_Num_TIMES);
+
+    sym_Num_DIV   = declareFun(tk_num_div, sort_NUM, params, msg, true);
+    sym_store[sym_Num_DIV].setNoScoping();
+    sym_store[sym_Num_DIV].setLeftAssoc();
+    sym_store.setInterpreted(sym_Num_DIV);
+
+    sym_Num_LEQ  = declareFun(tk_num_leq, sort_BOOL, params, msg, true);
+    sym_store[sym_Num_LEQ].setNoScoping();
+    sym_store[sym_Num_LEQ].setChainable();
+    sym_store.setInterpreted(sym_Num_LEQ);
+
+    sym_Num_LT   = declareFun(tk_num_lt, sort_BOOL, params, msg, true);
+    sym_store[sym_Num_LT].setNoScoping();
+    sym_store[sym_Num_LT].setChainable();
+    sym_store.setInterpreted(sym_Num_LT);
+
+    sym_Num_GEQ  = declareFun(tk_num_geq, sort_BOOL, params, msg, true);
+    sym_store[sym_Num_GEQ].setNoScoping();
+    sym_store[sym_Num_GEQ].setChainable();
+    sym_store.setInterpreted(sym_Num_GEQ);
+
+    sym_Num_GT   = declareFun(tk_num_gt, sort_BOOL, params, msg, true);
+    sym_store[sym_Num_GT].setNoScoping();
+    sym_store[sym_Num_GT].setChainable();
+    sym_store.setInterpreted(sym_Num_GEQ);
+
+    vec<SRef> ite_params;
+    ite_params.push(sort_BOOL);
+    ite_params.push(sort_NUM);
+    ite_params.push(sort_NUM);
+    sym_Num_ITE = declareFun(tk_ite, sort_NUM, ite_params, msg, true);
+    //sym_store[sym_Real_ITE].setLeftAssoc();
+    sym_store[sym_Num_ITE].setNoScoping();
+    sym_store.setInterpreted(sym_Num_ITE);
+}
+
 // Handle the printing of real constants that are negative and the
 // rational constants
 char*
@@ -867,7 +977,7 @@ LALogic::printTerm_(PTRef tr, bool ext, bool safe) const
     {
         bool is_neg = false;
         char* tmp_str;
-        opensmt::stringToRational(tmp_str, sym_store.getName(getPterm(tr).symb())); //PS.  how to be here?
+        opensmt::stringToRational(tmp_str, sym_store.getName(getPterm(tr).symb()));
         opensmt::Real v(tmp_str);
         if (!isNonnegNumConst(tr))
         {

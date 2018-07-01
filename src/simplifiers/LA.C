@@ -34,7 +34,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 void LAExpression::initialize( PTRef e )
 {
-  assert( logic.isRealEq(e) || logic.isRealLeq(e) );
+  assert( logic.isNumEq(e) || logic.isNumLeq(e) );
   integers = false;
 
   vector< PTRef > curr_term;
@@ -58,7 +58,7 @@ void LAExpression::initialize( PTRef e )
     //
     // If it is plus, enqueue the arguments with same constant
     //
-    if ( logic.isRealPlus(t) ) {
+    if ( logic.isNumPlus(t) ) {
       Pterm& term = logic.getPterm(t);
       for (int i = 0; i < term.size(); i++) {
         PTRef arg = term[i];
@@ -70,7 +70,7 @@ void LAExpression::initialize( PTRef e )
     // If it is times, then one side must be constant, other
     // is enqueued with a new constant
     //
-    else if ( logic.isRealTimes(t) ) {
+    else if ( logic.isNumTimes(t) ) {
         Pterm& term = logic.getPterm(t);
         assert( term.size() == 2 );
         PTRef x = term[0];
@@ -97,7 +97,7 @@ void LAExpression::initialize( PTRef e )
         const opensmt::Real tval(logic.getSymName(t));
         polynome[ PTRef_Undef ] += tval * c;
       } else {
-        if (logic.hasSortReal(t))
+        if (logic.hasSortNum(t))
           integers = true;
 
         polynome_t::iterator it = polynome.find( t );
@@ -165,14 +165,14 @@ PTRef LAExpression::getPTRefNonConstant()
       vec<PTRef> term;
       term.push(coeff);
       term.push(vv);
-      sum_list.push( logic.mkRealTimes(term, &msg) );
+      sum_list.push( logic.mkNumTimes(term, &msg) );
     }
   }
   if ( sum_list.size() == 0)
   {
-    sum_list.push(logic.getTerm_RealZero());
+    sum_list.push(logic.getTerm_NumZero());
   }
-  PTRef poly = logic.mkRealPlus(sum_list);
+  PTRef poly = logic.mkNumPlus(sum_list);
   return poly;
 }
 
@@ -199,19 +199,19 @@ PTRef LAExpression::toPTRef()
       vec<PTRef> term;
       term.push(coeff);
       term.push(vv);
-      sum_list.push( logic.mkRealTimes(term, &msg) );
+      sum_list.push( logic.mkNumTimes(term, &msg) );
     }
   }
   if ( sum_list.size() == 0)
   {
-    sum_list.push(logic.getTerm_RealZero());
+    sum_list.push(logic.getTerm_NumZero());
   }
   //
   // Return in the form ax + by + ... = -c
   //
   if ( r == EQ || r == LEQ )
   {
-    PTRef poly = logic.mkRealPlus(sum_list);
+    PTRef poly = logic.mkNumPlus(sum_list);
     constant = -constant;
     PTRef c = logic.mkConst(constant);
 //    Enode * c = egraph.mkNum( constant );
@@ -223,7 +223,7 @@ PTRef LAExpression::toPTRef()
 //      return egraph.mkEq( egraph.cons( poly, egraph.cons( c ) ) );
     }
     else {
-       return logic.mkRealLeq(args);
+       return logic.mkNumLeq(args);
 //      return egraph.mkLeq( egraph.cons( poly, egraph.cons( c ) ) );
     }
   }
@@ -232,7 +232,7 @@ PTRef LAExpression::toPTRef()
   //
   assert( r == UNDEF );
   sum_list.push(logic.mkConst(constant));
-  PTRef poly = logic.mkRealPlus(sum_list);
+  PTRef poly = logic.mkNumPlus(sum_list);
 //  Enode * poly = egraph.mkPlus( egraph.cons( sum_list ) );
 
   return poly;
@@ -353,12 +353,12 @@ pair<PTRef, PTRef> LAExpression::getSubstReal()
           vec<PTRef> term;
           term.push(c);
           term.push(vv);
-          sum_list.push(logic.mkRealTimes(term));
+          sum_list.push(logic.mkNumTimes(term));
       }
     }
   }
   sum_list.push(logic.mkConst(constant ));
-  PTRef poly = logic.mkRealPlus(sum_list);
+  PTRef poly = logic.mkNumPlus(sum_list);
 
   return make_pair( var, poly );
 }

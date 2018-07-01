@@ -93,11 +93,12 @@ bool LRALogic::okToPartition(PTRef tr) const
 */
 
 
-/*
+
 /***********************************************************
  * Class defining simplifications
  ***********************************************************/
-*/
+
+
 //
 // Identify all constants, and combine them into one using the operator
 // rules.  If the constant is special for that operator, do the
@@ -253,7 +254,7 @@ const char* LRALogic::tk_real_geq   = ">=";
 const char* LRALogic::s_sort_real = "Real";
 
 LRALogic::LRALogic(SMTConfig& c) :
-      Logic(c)
+      LALogic(c)
     , sym_Real_ZERO(SymRef_Undef)
     , sym_Real_ONE(SymRef_Undef)
     , sym_Real_NEG(SymRef_Undef)
@@ -400,11 +401,11 @@ PTRef LRALogic::mkConst(SRef s, const char* name) //PS. how to rewrite this?
     return ptr;
 }
 
-PTRef LRALogic::getNTerm(char* rat_str) override
+PTRef LRALogic::getNTerm(char* rat_str)
 {
     opensmt::Real v(rat_str);
     v = -v;
-    return mkConst(getSort_num(), v.get_str().c_str();
+    return mkConst(getSort_num(), v.get_str().c_str());
 }
 
 /*
@@ -426,36 +427,36 @@ LRALogic::okForBoolVar(PTRef tr) const
     return isRealLeq(tr) || Logic::okForBoolVar(tr);
 }
 
+*/
 
 
-//this method is general in LA so no need here and all sym_REal_.. needs to be removed from LRALogic.h
 PTRef LRALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
 {
     if (sym == sym_Real_NEG)
-        return mkRealNeg(terms[0], msg);
+        return mkNumNeg(terms[0], msg);
     if (sym == sym_Real_MINUS)
-        return mkRealMinus(terms, msg);
+        return mkNumMinus(terms, msg);
     if (sym == sym_Real_PLUS)
-        return mkRealPlus(terms, msg);
+        return mkNumPlus(terms, msg);
     if (sym == sym_Real_TIMES)
-        return mkRealTimes(terms, msg);
+        return mkNumTimes(terms, msg);
     if (sym == sym_Real_DIV)
-        return mkRealDiv(terms, msg);
+        return mkNumDiv(terms, msg);
     if (sym == sym_Real_LEQ)
-        return mkRealLeq(terms, msg);
+        return mkNumLeq(terms, msg);
     if (sym == sym_Real_LT)
-        return mkRealLt(terms, msg);
+        return mkNumLt(terms, msg);
     if (sym == sym_Real_GEQ)
-        return mkRealGeq(terms, msg);
+        return mkNumGeq(terms, msg);
     if (sym == sym_Real_GT)
-        return mkRealGt(terms, msg);
+        return mkNumGt(terms, msg);
     if (sym == sym_Real_ITE)
         return mkIte(terms);
 
     return Logic::insertTerm(sym, terms, msg);
 }
 
-
+/*
 PTRef LRALogic::mkRealNeg(PTRef tr, char** msg)
 {
     if (isRealNeg(tr)) return getPterm(tr)[0];

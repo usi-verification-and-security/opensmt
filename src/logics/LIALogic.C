@@ -217,24 +217,24 @@ const char* LIALogic::tk_int_neg   = "-";
 const char* LIALogic::tk_int_minus = "-";
 const char* LIALogic::tk_int_plus  = "+";
 const char* LIALogic::tk_int_times = "*";
-//const char* LIALogic::tk_int_div   = "/";
+const char* LIALogic::tk_int_div   = "/";
 const char* LIALogic::tk_int_lt    = "<";
 const char* LIALogic::tk_int_leq   = "<=";
 const char* LIALogic::tk_int_gt    = ">";
 const char* LIALogic::tk_int_geq   = ">=";
-//mod and abs are needed?
+
 
 const char* LIALogic::s_sort_integer = "Integer";
 
 LIALogic::LIALogic(SMTConfig& c) :
-      Logic(c)
+      LALogic(c)
     , sym_Int_ZERO(SymRef_Undef)
     , sym_Int_ONE(SymRef_Undef)
     , sym_Int_NEG(SymRef_Undef)
     , sym_Int_MINUS(SymRef_Undef)
     , sym_Int_PLUS(SymRef_Undef)
     , sym_Int_TIMES(SymRef_Undef)
-    //, sym_Int_DIV(SymRef_Undef)
+    , sym_Int_DIV(SymRef_Undef)
     , sym_Int_EQ(SymRef_Undef)
     , sym_Int_LEQ(SymRef_Undef)
     , sym_Int_LT(SymRef_Undef)
@@ -289,13 +289,12 @@ LIALogic::LIALogic(SMTConfig& c) :
     sym_store[sym_Int_TIMES].setCommutes();
     sym_store.setInterpreted(sym_Int_TIMES);
 
-    /*
+
     sym_Int_DIV   = declareFun(tk_int_div, sort_INTEGER, params, msg, true);
     sym_store[sym_Int_DIV].setNoScoping();
     sym_store[sym_Int_DIV].setLeftAssoc();
     sym_store.setInterpreted(sym_Int_DIV);
 
-     */
 
     sym_Int_LEQ  = declareFun(tk_int_leq, sort_BOOL, params, msg, true);
     sym_store[sym_Int_LEQ].setNoScoping();
@@ -338,7 +337,7 @@ const opensmt::Integer&
 LIALogic::getIntegerConst(PTRef tr) const
 {
     SymId id = sym_store[getPterm(tr).symb()].getId();
-    assert(id < reals.size() && reals[id] != NULL);
+    assert(id < integers.size() && integers[id] != NULL);
     return *integers[id];
 }
 
@@ -361,10 +360,10 @@ PTRef LIALogic::mkConst(SRef s, const char* name)
         ptr = mkVar(s, rat);
         // Store the value of the number as a real, and we need to store it as Integer?
         SymId id = sym_store[getPterm(ptr).symb()].getId();
-        for (int i = reals.size(); i <= id; i++)
-            reals.push(NULL);
-        if (reals[id] != NULL) { delete reals[id]; }
-        reals[id] = new opensmt::Real(rat);
+        for (int i = integers.size(); i <= id; i++)
+            integers.push(NULL);
+        if (integers[id] != NULL) { delete integers[id]; }
+        integers[id] = new opensmt::Integer(rat);
         free(rat);
         // Code to allow efficient constant detection.
         while (id >= constants.size())
@@ -393,29 +392,28 @@ LIALogic::okForBoolVar(PTRef tr) const
 {
     return isIntLeq(tr) || Logic::okForBoolVar(tr);
 }
+*/
 
-
-PTRef
-LIALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
+PTRef LIALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
 {
     if (sym == sym_Int_NEG)
-        return mkIntNeg(terms[0], msg);
+        return mkNumNeg(terms[0], msg);
     if (sym == sym_Int_MINUS)
-        return mkIntMinus(terms, msg);
+        return mkNumMinus(terms, msg);
     if (sym == sym_Int_PLUS)
-        return mkIntPlus(terms, msg);
+        return mkNumPlus(terms, msg);
     if (sym == sym_Int_TIMES)
-        return mkIntTimes(terms, msg);
+        return mkNumTimes(terms, msg);
     //if (sym == sym_Int_DIV)
        // return mkIntDiv(terms, msg);
     if (sym == sym_Int_LEQ)
-        return mkIntLeq(terms, msg);
+        return mkNumLeq(terms, msg);
     if (sym == sym_Int_LT)
-        return mkIntLt(terms, msg);
+        return mkNumLt(terms, msg);
     if (sym == sym_Int_GEQ)
-        return mkIntGeq(terms, msg);
+        return mkNumGeq(terms, msg);
     if (sym == sym_Int_GT)
-        return mkIntGt(terms, msg);
+        return mkNumGt(terms, msg);
     if (sym == sym_Int_ITE)
         return mkIte(terms);
 
@@ -423,7 +421,7 @@ LIALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
 }
 
 
-
+/*
 PTRef LALogic::mkNUmNeg(PTRef tr, char** msg) override
 {
     if (isIntNeg(tr)) return getPterm(tr)[0];
@@ -457,11 +455,11 @@ PTRef LALogic::mkNUmNeg(PTRef tr, char** msg) override
 
 //PS. we have LIALogic here as we are not using method, but creating it
 
-PTRef LIALogic::getNTerm(char* rat_str) override
+PTRef LIALogic::getNTerm(char* rat_str)
 {
     opensmt::Integer v(rat_str);
     v = -v;
-    return mkConst(getSort_num(), v.get_str().c_str();
+    return mkConst(getSort_num(), v.get_str().c_str());
 }
 
 
@@ -496,9 +494,9 @@ PTRef LIALogic::mkIntMinus(const vec<PTRef>& args_in, char** msg)
     args[1] = fact;
     return mkIntPlus(args);
 }
-*/
 
-//PS how do I override methods from BASE class
+
+//PS. how do I override methods from BASE class??
 
 PTRef LALogic::mkNumPlus(const vec<PTRef>& args, char** msg) override
 {
@@ -619,7 +617,7 @@ PTRef LIALogic::mkIntDiv(const vec<PTRef>& args, char** msg)
 
     PTRef tr = mkFun(s_new, args_new, msg);
     return tr;
-}
+}*/
 
 /*
 
@@ -746,7 +744,7 @@ PTRef LIALogic::normalizeMul(PTRef mul)
         return v;
 }
 
-*/
+
 // If the call results in a leq it is guaranteed that arg[0] is a
 // constant, and arg[1][0] has factor 1 or -1
 
@@ -814,7 +812,7 @@ PTRef LIALogic::mkIntLeq(const vec<PTRef>& args_in, char** msg)
     }
 }
 
-/*
+
 PTRef LIALogic::mkIntGeq(const vec<PTRef>& args, char** msg)
 {
     vec<PTRef> new_args;

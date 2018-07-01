@@ -28,7 +28,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "LALogic.h"
 #include "Real.h"
 
-
+/*
 class LRANonLinearException
 {
     char* reason;
@@ -45,12 +45,14 @@ public:
     ~LRANonLinearException() { free(reason); }
 };
 
-class LRALogic: public LALogic  //class LRALogic should extend only class LALogic, as the latter extends class Logic
+ */
+
+class LRALogic: public LALogic
 {
   protected:
     Logic_t logic_type;
-    vec<opensmt::Real*> reals; //PS. how to be with this?
-    SymRef              sym_Real_ZERO; //PS. all these needs to be rewritten as sym_Num_ZERO
+    vec<opensmt::Real*> reals;
+    SymRef              sym_Real_ZERO;
     SymRef              sym_Real_ONE;
     SymRef              sym_Real_NEG;
     SymRef              sym_Real_MINUS;
@@ -84,7 +86,7 @@ class LRALogic: public LALogic  //class LRALogic should extend only class LALogi
     static const char*  s_sort_real;
     static const char*  e_nonlinear_term;
 
-    //bool split_eq;
+    bool split_eq;
     //Map<PTRef,bool,PTRefHash> lra_split_inequalities;
     //void visit(PTRef, Map<PTRef,PTRef,PTRefHash>&);
 
@@ -101,11 +103,10 @@ class LRALogic: public LALogic  //class LRALogic should extend only class LALogi
 
 
     //virtual bool        okForBoolVar    (PTRef) const;
-    //virtual PTRef       insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg);
+    virtual PTRef       insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg) override;
 
-    //PS. how to be with mkConst here override it from LOGIC class, o
-    virtual PTRef       mkConst         (const char* name, const char **msg);
-    virtual PTRef       mkConst         (SRef s, const char* name);
+    virtual PTRef       mkConst         (const char* name, const char **msg) override;
+    virtual PTRef       mkConst         (SRef s, const char* name) override;
     virtual PTRef       mkConst         (const opensmt::Real& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_num(), rat); free(rat); return tr; }
     virtual PTRef       mkConst         (const char* num) { return mkConst(getSort_num(), num); }
     virtual PTRef       mkRealVar       (const char* name) { return mkVar(getSort_num(), name); }
@@ -122,8 +123,7 @@ class LRALogic: public LALogic  //class LRALogic should extend only class LALogi
 
     SRef        getSort_num    ()              const override { return sort_REAL;}
 
-    //PS. override method getNumConst according to getRealConst. const getNumConst(PTRef tr) const override {return getRealConst(tr);} Can I write this like this?
-    const void* getNumConst(PTRef tr) const override {return (const void*) &getRealConst(tr);} //PS. this will be rewritten once we have a superclass for numbers
+    const void* getNumConst(PTRef tr) const override {return (const void*) &getRealConst(tr);} //PS. this will be rewritten properly once we have a superclass for numbers
     const opensmt::Real& getRealConst(PTRef tr) const;
 
     bool        isRealPlus(SymRef sr) const { return sr == sym_Real_PLUS; }
@@ -214,17 +214,17 @@ class LRALogic: public LALogic  //class LRALogic should extend only class LALogi
     PTRef       mkRealGt(const PTRef arg1, const PTRef arg2) { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkRealGt(tmp); }
     */
 
-    //virtual bool  isNegated(PTRef tr) const; //PS. is this method now uses LALogic method but with overridden functions like isNumConst? as above we override method isNumConst. And how to be with LRALogic.C file? comment out this method implementation or call it with LRA:: methodname?
+    //virtual bool  isNegated(PTRef tr) const;
 
-    //virtual void  splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) const; //PS. is this method now uses LALogic method but with overridden functions like isNumConst? as above we override method isNumConst
+    //virtual void  splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) const;
     //virtual PTRef       normalizeSum(PTRef sum); // Use for normalizing leq terms: sort the sum and divide all terms with the first factor
     //virtual PTRef       normalizeMul(PTRef mul); // Use for normalizing leq terms of form 0 <= c*v
 
     // Logic specific simplifications: conjoin Ites, make substitutions
     // and split equalities
-    virtual bool simplify(PTRef root, PTRef& root_out); //PS this is never used anywhere in the code, shall we remove it?
+    virtual bool simplify(PTRef root, PTRef& root_out); //PS. this is never used anywhere in the code, shall we remove it?
 
-    virtual PTRef getNTerm(char* rat_str);
+    virtual PTRef getNTerm(char* rat_str) override;
 
     //lbool retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs);
     //lbool arithmeticElimination(vec<PTRef>&, Map<PTRef,PtAsgn,PTRefHash>&);

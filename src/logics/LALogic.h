@@ -4,6 +4,23 @@
 #include "Logic.h"
 #include "Real.h"
 
+class LANonLinearException
+{
+    char* reason;
+public:
+    LANonLinearException(const char* reason_) {
+        asprintf(&reason, "Term %s is non-linear", reason_);
+    }
+    virtual char* what() const
+    {
+        char* out;
+        asprintf(&out, "%s", reason);
+        return out;
+    }
+    ~LANonLinearException() { free(reason); }
+};
+
+
 class LALogic: public Logic
 {
 
@@ -31,6 +48,8 @@ class LALogic: public Logic
 
         SRef      sort_NUM;
 
+        bool split_eq;
+
         static const char *tk_num_zero;
         static const char *tk_num_one;
         static const char *tk_num_neg;
@@ -43,7 +62,9 @@ class LALogic: public Logic
         static const char *tk_num_geq;
         static const char *tk_num_gt;
 
-        bool split_eq;
+        static const char*  s_sort_num;
+
+
         Map<PTRef,bool,PTRefHash> la_split_inequalities;
 
     public:
@@ -54,13 +75,13 @@ class LALogic: public Logic
         virtual PTRef   insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg);
         virtual SRef    getSort_num    ()              const { return sort_NUM; }
 
-        //PS. be careful with the following, the main problem is with type opensmt:: Real, can i say either of the types? or how to say it? Line 58-60 has to be written properly and non of the methods needs to present in LRALogic.h file
+        //PS. be careful with the following, the main problem is with type opensmt:: Real, which in LIA needs to be opensmt:: Integer
 
         virtual PTRef       mkConst         (const char* name, const char **msg);
-        //virtual PTRef       mkConst         (SRef s, const char* name);
-       // virtual PTRef       mkConst         (const opensmt::Real& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_num(), rat); free(rat); return tr; }
-       // virtual PTRef       mkConst         (const char* num) { return mkConst(getSort_num(), num); }
-       // virtual PTRef       mkRealVar       (const char* name) { return mkVar(getSort_num(), name); }
+        //virtual PTRef     mkConst         (SRef s, const char* name);
+        //virtual PTRef     mkConst         (const opensmt::Real& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_num(), rat); free(rat); return tr; }
+        //virtual PTRef     mkConst         (const char* num) { return mkConst(getSort_num(), num); }
+        //virtual PTRef     mkRealVar       (const char* name) { return mkVar(getSort_num(), name); }
 
         virtual bool isBuiltinSort  (SRef sr) const { return sr == sort_NUM || Logic::isBuiltinSort(sr); }
         virtual bool isBuiltinConstant(SymRef sr) const { return (isNumConst(sr) || Logic::isBuiltinConstant(sr)); }
@@ -68,12 +89,12 @@ class LALogic: public Logic
 
         virtual bool  isNumConst     (SymRef sr)     const { return isConstant(sr) && hasSortNum(sr); }
         virtual bool  isNumConst     (PTRef tr)      const { return isNumConst(getPterm(tr).symb()); }
-        virtual bool  isNonnegNumConst (PTRef tr)    const; //{ return isNumConst(tr) && getNumConst(tr) >= 0; } //PS. will be done later
+        virtual bool  isNonnegNumConst (PTRef tr)    const; //{ return isNumConst(tr) && getNumConst(tr) >= 0; } //PS. this method will be rewritten properly later
 
         virtual bool   hasSortNum(SymRef sr) const { return sym_store[sr].rsort() == sort_NUM; }
-        virtual bool   hasSortNum(PTRef tr) const { return hasSortNum(getPterm(tr).symb()); }
+        virtual bool   hasSortNum(PTRef tr)  const { return hasSortNum(getPterm(tr).symb()); }
 
-        virtual const void* getNumConst(PTRef tr) const; //PS. how to be with the type here ??? the same correction do i LRALOgixc.h line 126
+        virtual const void* getNumConst(PTRef tr) const; //PS. this method will be rewritten properly later
 
         virtual bool        isUFEquality(PTRef tr) const { return !isNumEq(tr) && Logic::isUFEquality(tr); }
         virtual bool        isTheoryEquality(PTRef tr) const { return isNumEq(tr); }
@@ -124,12 +145,11 @@ class LALogic: public Logic
                 bool isNumOne(SymRef sr) const { return sr == sym_Num_ONE; }
         virtual bool isNumOne(PTRef tr) const { return tr == term_Num_ONE; }
 
-        // Real terms are of form c, a, or (* c a) where c is a constant and
-        // a is a variable.
+        // Real terms are of form c, a, or (* c a) where c is a constant and a is a variable.
         virtual bool isNumTerm(PTRef tr) const;
         virtual bool okForBoolVar(PTRef) const;
 
-        virtual PTRef getNterm(char* rat_str) =0;
+        virtual PTRef getNTerm(char* rat_str) =0;
 
         virtual PTRef getTerm_NumZero() const { return term_Num_ZERO; }
         virtual PTRef getTerm_NumOne() const { return term_Num_ONE; }
@@ -281,139 +301,8 @@ class LALogic: public Logic
         virtual char *printTerm_(PTRef tr, bool ext, bool s) const;
         virtual char *printTerm(PTRef tr) const { return printTerm_(tr, false, false); }
         virtual char *printTerm(PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
-        //up to here are methods that you can also find in Logic.h and Logic.C files
+        //up to here are methods that you can also find in Logic class
 
-/*
-    //delete all below
-    virtual void
-    SimplifyConst::simplify(SymRef &s, const vec<PTRef> &args, SymRef &s_new, vec<PTRef> &args_new, char **msg) {
-        vec<int> const_idx;
-        vec<PTRef> args_new_2;
-        for (int i = 0; i < args.size(); i++) {
-            if (l.isConstant(args[i]) || (l.isNumNeg(args[i]) && l.isConstant(l.getPterm(args[i])[0])))
-                const_idx.push(i);
-        }
-        if (const_idx.size() > 1) {
-            vec<PTRef> const_terms;
-            for (int i = 0; i < const_idx.size(); i++)
-                const_terms.push(args[const_idx[i]]);
-
-            PTRef tr = simplifyConstOp(const_terms, msg);
-            if (tr == PTRef_Undef) {
-                printf("%s\n", *msg);
-                assert(false);
-            }
-            int i, j, k;
-            for (i = j = k = 0; i < args.size() && k < const_terms.size(); i++) {
-                if (i != const_idx[k]) args_new_2.push(args[i]);
-                else k++;
-            }
-            // Copy also the rest
-            for (; i < args.size(); i++)
-                args_new_2.push(args[i]);
-            args_new_2.push(tr);
-        } else
-            args.copyTo(args_new_2);
-
-        constSimplify(s, args_new_2, s_new, args_new);
-        // A single argument for the operator, and the operator is identity
-        // in that case
-        if (args_new.size() == 1 && (l.isNumPlus(s_new) || l.isNumTimes(s_new) || l.isNumDiv(s_new))) {
-            PTRef ch_tr = args_new[0];
-            args_new.clear();
-            s_new = l.getPterm(ch_tr).symb();
-            for (int i = 0; i < l.getPterm(ch_tr).size(); i++)
-                args_new.push(l.getPterm(ch_tr)[i]);
-        }
-    }
-
-    void SimplifyConstSum::constSimplify(const SymRef &s, const vec<PTRef> &terms, SymRef &s_new,
-                                         vec<PTRef> &terms_new) const {
-        assert(terms_new.size() == 0);
-        int i;
-        for (i = 0; i < terms.size(); i++)
-            if (!l.isNumZero(terms[i]))
-                terms_new.push(terms[i]);
-        if (terms_new.size() == 0) {
-            // The term was sum of all zeroes
-            terms_new.clear();
-            s_new = l.getPterm(l.getTerm_NumZero()).symb();
-            return;
-        }
-        s_new = s;
-    }
-
-    virtual void SimplifyConstTimes::constSimplify(const SymRef &s, const vec<PTRef> &terms, SymRef &s_new,
-                                                   vec<PTRef> &terms_new) const {
-        //distribute the constant over the first sum
-        int i;
-        PTRef con, plus;
-        con = plus = PTRef_Undef;
-        for (i = 0; i < terms.size(); i++) {
-            if (l.isNumZero(terms[i])) {
-                terms_new.clear();
-                s_new = l.getPterm(l.getTerm_NumZero()).symb();
-                return;
-            }
-            if (!l.isNumOne(terms[i])) {
-                if (l.isNumPlus(terms[i]))
-                    plus = terms[i];
-                else if (l.isConstant(terms[i]))
-                    con = terms[i];
-                else
-                    terms_new.push(terms[i]);
-            }
-        }
-        if (con == PTRef_Undef && plus == PTRef_Undef);
-        else if (con == PTRef_Undef && plus != PTRef_Undef)
-            terms_new.push(plus);
-        else if (con != PTRef_Undef && plus == PTRef_Undef)
-            terms_new.push(con);
-        else {
-            Pterm &p = l.getPterm(plus);
-            vec<PTRef> sum_args;
-            for (int i = 0; i < p.size(); ++i) {
-                vec<PTRef> times_args;
-                times_args.push(con);
-                times_args.push(p[i]);
-                sum_args.push(l.mkNumTimes(times_args));
-            }
-            terms_new.push(l.mkNumPlus(sum_args));
-        }
-        if (terms_new.size() == 0) {
-            // The term was multiplication of all ones
-            terms_new.clear();
-            s_new = l.getPterm(l.getTerm_NumOne()).symb();
-            return;
-        }
-        s_new = s;
-    }
-
-    virtual void SimplifyConstDiv::constSimplify(const SymRef &s, const vec<PTRef> &terms, SymRef &s_new,
-                                                 vec<PTRef> &terms_new) const {
-        assert(terms_new.size() == 0);
-        assert(terms.size() <= 2);
-        if (terms.size() == 2 && l.isNumZero(terms[1])) {
-            printf("Explicit div by zero\n");
-            assert(false);
-        }
-        if (l.isNumOne(terms[terms.size() - 1])) {
-            terms_new.clear();
-            s_new = l.getPterm(terms[0]).symb();
-            for (int i = 0; i < l.getPterm(terms[0]).size(); i++)
-                terms_new.push(l.getPterm(terms[0])[i]);
-            return;
-        } else if (l.isNumZero(terms[0])) {
-            terms_new.clear();
-            s_new = l.getPterm(terms[0]).symb();
-            return;
-        }
-        for (int i = 0; i < terms.size(); i++)
-            terms_new.push(terms[i]);
-        s_new = s;
-    }
-
-*/
 };
 
 
@@ -421,9 +310,7 @@ class LALogic: public Logic
 // v2 which one is smaller, based on the PTRef of v1 and v2.  (i.e.
 // v1.ptref <  v2.ptref iff (* k1 v1) < (* k2 v2))
 
-//PS. how to access these classes from LIA and LRA? or not needed having them in LALogic class is enough?
-// PS. what this means "but both logics could use LALessThan_deepPTRef directly."?
-//PS. how to be with the functions we included in this file in the .C files of LIA and LRA? how call and use them?
+
 class LessThan_deepPTRef {
     const LALogic& l;
   public:
@@ -451,16 +338,14 @@ class LessThan_deepPTRef {
     }
 };
 
-//PS. can I write implementation of the following in above although class defined after };???
+
 template <class Number = opensmt::Real>
 class SimplifyConst {
   protected:
     LALogic& l;
     PTRef simplifyConstOp(const vec<PTRef>& const_terms, char** msg);
-    virtual void Op(Number& s, const Number& v) const = 0; //PS. how to be with opensmt::Real?
-    //virtual void Op(void* s, const void* v) const = 0;
+    virtual void Op(Number& s, const Number& v) const = 0; //PS. instead of opensmt:: REal we write Number
     virtual Number getIdOp() const = 0;
-    //virtual void* getIdOp() const = 0;
     virtual void constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const = 0;
   public:
     SimplifyConst(LALogic& log) : l(log) {}
@@ -470,9 +355,7 @@ class SimplifyConst {
 template <class Number = opensmt::Real>
 class SimplifyConstSum : public SimplifyConst <Number>{
     void Op(Number& s, const Number& v) const { s += v; }
-    //void Op(void* s, const void* v) const { s += v; }
     Number getIdOp() const { return 0; }
-    //void* getIdOp() const { return 0; }
     void constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const;
   public:
     SimplifyConstSum(LALogic& log) : SimplifyConst <Number> (log) {}
@@ -481,9 +364,7 @@ class SimplifyConstSum : public SimplifyConst <Number>{
 template <class Number = opensmt::Real>
 class SimplifyConstTimes : public SimplifyConst <Number>{
     void Op(Number& s, const Number& v) const { s *= v; }
-    //void Op(void* s, const void* v) const { s *= v; }
     Number getIdOp() const { return 1; }
-    //void* getIdOp() const { return 1; }
     void constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const;
   public:
     SimplifyConstTimes(LALogic& log) : SimplifyConst <Number> (log) {}
@@ -492,9 +373,7 @@ class SimplifyConstTimes : public SimplifyConst <Number>{
 template <class Number = opensmt::Real>
 class SimplifyConstDiv : public SimplifyConst <Number>{
     void Op(Number& s, const Number& v) const { if (v == 0) { printf("explicit div by zero\n"); } s /= v; }
-    //void Op(void* s, const void* v) const { if (v == 0) { printf("explicit div by zero\n"); } s /= v; }
     Number getIdOp() const { return 1; }
-    //void* getIdOp() const { return 1; }
     void constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const;
   public:
     SimplifyConstDiv(LALogic& log) : SimplifyConst <Number> (log) {}

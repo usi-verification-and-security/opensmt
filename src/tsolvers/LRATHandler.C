@@ -35,7 +35,7 @@ void LRATHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
     for (int i = 0; i < terms.size(); i++)
     {
         PTRef tr = terms[i].tr;
-        if (logic.isRealLeq(tr)) {
+        if (logic.isNumLeq(tr)) {
             if (!refs.has(tr)) {
                 declareTerm(tr);
                 Var v = tmap.addBinding(tr);
@@ -44,24 +44,24 @@ void LRATHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
                 refs.insert(tr, v);
             }
         }
-        else if (logic.isRealEq(tr)) {
+        else if (logic.isNumEq(tr)) {
             vec<PTRef> args;
             Pterm& p = logic.getPterm(tr);
             args.push(p[0]);
             args.push(p[1]);
             char* msg;
-            PTRef i1 = logic.mkRealLeq(args, &msg);
-            PTRef i2 = logic.mkRealGeq(args, &msg);
+            PTRef i1 = logic.mkNumLeq(args, &msg);
+            PTRef i2 = logic.mkNumGeq(args, &msg);
             // These can simplify to true and false, and we don't
             // want them to LRA solver
-            if (!refs.has(i1) && logic.isRealLeq(i1)) {
+            if (!refs.has(i1) && logic.isNumLeq(i1)) {
                 declareTerm(i1);
                 Var v = tmap.addBinding(i1);
                 while (deductions.size() <= v)
                     deductions.push(DedElem(lrasolver->getId(), l_Undef));
                 refs.insert(i1, v);
             }
-            if (!refs.has(i2) && logic.isRealLeq(i2)) {
+            if (!refs.has(i2) && logic.isNumLeq(i2)) {
                 declareTerm(i2);
                 Var v = tmap.addBinding(i2);
                 while (deductions.size() <= v)
@@ -81,14 +81,14 @@ bool LRATHandler::assertLit_special(PtAsgn a)
 //    assert(logic.isRealEq(a.tr) || logic.isRealLeq(a.tr));
     assert(a.sgn == l_True);
     bool res = true;
-    if (logic.isRealEq(a.tr)) {
+    if (logic.isNumEq(a.tr)) {
         Pterm& p = logic.getPterm(a.tr);
         vec<PTRef> args;
         args.push(p[0]);
         args.push(p[1]);
         char* msg;
-        PTRef i1 = logic.mkRealLeq(args, &msg);
-        PTRef i2 = logic.mkRealGeq(args, &msg);
+        PTRef i1 = logic.mkNumLeq(args, &msg);
+        PTRef i2 = logic.mkNumGeq(args, &msg);
         res &= assertLit(PtAsgn(i1, l_True));
         res &= assertLit(PtAsgn(i2, l_True));
     }
