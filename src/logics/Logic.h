@@ -203,6 +203,8 @@ class Logic {
     virtual bool okForBoolVar(PTRef) const; // True if the ref can have a boolean var
     virtual bool okToPartition(PTRef) const { return true; } // Does the logic think this is a good var to partition on (while parallelizing)
     bool existsTermHash(SymRef, const vec<PTRef>&);
+    static const char*  tk_val_uf_default;
+    static const char*  tk_val_bool_default;
     static const char*  tk_true;
     static const char*  tk_false;
     static const char*  tk_not;
@@ -263,6 +265,9 @@ class Logic {
     Pterm&      getPterm      (const PTRef tr)              { return term_store[tr];  }
     const Pterm& getPterm     (const PTRef tr)        const { return term_store[tr];  }
     PtermIter   getPtermIter  ()                            { return term_store.getPtermIter(); }
+
+    // Default values for the logic
+    virtual const char* getDefaultValue(const PTRef tr) const;
 
     // Boolean term generation
     PTRef       mkAnd         (vec<PTRef>&);
@@ -552,7 +557,7 @@ class Logic {
     virtual char* printTerm_       (PTRef tr, bool l, bool s) const;
     virtual char* printTerm        (PTRef tr)                 const { return printTerm_(tr, false, false); }
     virtual char* printTerm        (PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
-    virtual char* pp(PTRef tr); // A pretty printer
+    virtual char* pp(PTRef tr) const; // A pretty printer
     char*       printSym           (SymRef sr) const;
     virtual void termSort(vec<PTRef>& v) const { sort(v, LessThan_PTRef()); }
 
@@ -583,7 +588,8 @@ class Logic {
     bool canInterpolate()
     {
 #ifdef PRODUCE_PROOF
-        return config.produce_inter() && assertions.getSize() >= 2;
+//        return config.produce_inter() && assertions.getSize() >= 2;
+        return config.produce_inter();
 #else
         return false;
 #endif //PRODUCE_PROOF

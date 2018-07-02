@@ -488,9 +488,11 @@ ValPair MainSolver::getValue(PTRef tr) const
         lbool val = ts.getTermValue(tr);
         return ValPair(tr, val == l_True ? "true" : (val == l_False ? "false" : "unknown"));
     } else {
-        return thandler.getValue(tr);
+        ValPair vp = thandler.getValue(tr);
+        if (vp.val == NULL)
+            vp.val = strdup(logic.getDefaultValue(tr));
+        return vp;
     }
-    return ValPair();
 }
 
 void MainSolver::getValues(const vec<PTRef>& trs, vec<ValPair>& vals) const

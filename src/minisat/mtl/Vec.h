@@ -22,9 +22,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef Minisat_Vec_h
 #define Minisat_Vec_h
 
-#include <assert.h>
+#include <cassert>
 #include <new>
-
+#include <initializer_list>
+#include <utility>
 #include "IntTypes.h"
 #include "XAlloc.h"
 
@@ -54,6 +55,7 @@ public:
     vec()                       : data(NULL) , sz(0)   , cap(0)    { }
     explicit vec(int size)      : data(NULL) , sz(0)   , cap(0)    { growTo(size); }
     vec(int size, const T& pad) : data(NULL) , sz(0)   , cap(0)    { growTo(size, pad); }
+    vec(const std::initializer_list<T> &iList);
    ~vec()                                                          { clear(true); }
 
     // Pointer to first element:
@@ -74,6 +76,7 @@ public:
     // Stack interface:
     void     push  (void)              { if (sz == cap) capacity(sz+1); new (&data[sz]) T(); sz++; }
     void     push  (const T& elem)     { if (sz == cap) capacity(sz+1); data[sz++] = elem; }
+    void     push_m(T&& elem)          { int sz_old = sz; if (sz_old == cap) capacity(sz_old+1); growTo(sz_old+1); data[sz_old] = std::move(elem); }
     void     push_c(const T& elem)     { if (sz == cap) { cap = imax(2, (cap*3+1)>>1); data = (T*)realloc(data, cap * sizeof(T)); } new (&data[sz]) T(elem); sz++; }
     void     push_ (const T& elem)     { assert(sz < cap); data[sz++] = elem; }
     void     pop   (void)              { assert(sz > 0); sz--, data[sz].~T(); }
@@ -114,6 +117,7 @@ public:
     vec()                            : data(NULL) , sz(0)   , cap(0)    { }
     explicit vec(int size)           : data(NULL) , sz(0)   , cap(0)    { growTo(size); }
     vec(int size, const vec<T>& pad) : data(NULL) , sz(0)   , cap(0)    { growTo(size, pad); }
+    vec(const std::initializer_list<std::initializer_list<T> > &iList);
    ~vec()                                                          { clear(true); }
 
     // Pointer to first element:
@@ -153,6 +157,15 @@ public:
     void copyTo(vec<vec<T> >& copy) const { copy.clear(); copy.growTo(sz); for (int i = 0; i < sz; i++) copy[i] = data[i]; }
     void moveTo(vec<vec<T> >& dest) { dest.clear(true); dest.data = data; dest.sz = sz; dest.cap = cap; data = NULL; sz = 0; cap = 0; }
 };
+
+template<class T>
+vec<T>::vec(const std::initializer_list<T> &iList) : data(NULL), sz(0), cap(0) {
+    this->growTo(iList.size());
+    int i = 0;
+    for (const T &elem : iList) {
+        data[i++] = elem;
+    }
+}
 
 template<class T>
 void vec<T>::capacity(int min_cap) {

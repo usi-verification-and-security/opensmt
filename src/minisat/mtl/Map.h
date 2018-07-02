@@ -210,6 +210,16 @@ class Map {
         size = cap = 0;
     }
 
+    void copyTo(Map& other) const {
+        if (other.table != NULL) delete [] other.table;
+        other.table = new vec<Pair>[cap];
+        for (int i = 0; i < cap; i++) {
+            table[i].copyTo(other.table[i]);
+        }
+        other.cap = cap;
+        other.size = size;
+    }
+
     // NOTE: given a bit more time, I could make a more C++-style iterator out of this:
     const vec<Pair>& bucket(int i) const { return table[i]; }
 };

@@ -78,6 +78,8 @@ public:
              ((bs[b].getType() == bound_u) && (bs[b].getIdx() < readLBound(v).getIdx() && bs[b].getValue() != Lb(v))); }
 
     void printModelState();
+
+    void clear();
 };
 
 #endif //OPENSMT_LRAMODEL_H

@@ -376,7 +376,7 @@ void Interpret::interp(ASTNode& n) {
         {
             if(!parse_only)
 #ifdef PRODUCE_PROOF
-                GetInterpolants();
+                getInterpolants(n);
 #else
                 notify_formatted(true, "This binary has no support to interpolation");
 #endif
@@ -1314,18 +1314,32 @@ void Interpret::GetProof()
         */
 }
 
-void Interpret::GetInterpolants()
+void Interpret::getInterpolants(const ASTNode& n)
 {
-    //just test with assertions for now:
+    vec<const char*> keys;
+    nameToTerm.getKeys(keys);
+    for (int i = 0; i < keys.size(); i++) {
+        printf("Named thing: %s\n", keys[i]);
+    }
+    auto exps = *n.children;
     vec<PTRef> partitions;
-    logic->getAssertions(partitions);
+    for (auto e : exps) {
+        ASTNode& c = *e;
+        vec<LetFrame> v;
+        v.push_m(LetFrame(nameToTerm));
+        PTRef tr = parseTerm(c, v);
+        printf("Itp'ing a term %s\n", logic->pp(tr));
+        partitions.push(tr);
+    }
+    //just test with assertions for now:
+//    logic->getAssertions(partitions);
 
     if (!logic->canInterpolate())
         opensmt_error("Cannot interpolate");
 
     int rseed = config.sat_random_seed();
 //    cerr << "; Seed used for partitioning: " << rseed << endl;
-    srand(rseed);
+//    srand(rseed);
 
     ipartitions_t p = 1;
 //    if (rand() % 2) p <<= 1;
@@ -1417,75 +1431,6 @@ void Interpret::GetInterpolants()
     }
 
 #endif
-
-    /*
-    const char* msg;
-    const char* lnames[] = {"McMillan", "Pudlak", "McMillan", "PS", "PSw", "PSs"};
-    PTRef strongest, weakest;
-
-    config.setOption(SMTConfig::o_certify_inter, SMTOption(0), msg);
-    for(int i = 0; i < 6; ++i) // for each Bool labeling function
-    {
-        cerr << "; Testing BOOL with " << lnames[i] << endl;
-        config.setOption(SMTConfig::o_itp_bool_alg, SMTOption(i), msg);
-    
-        // EUF stuff
-        itps.clear();
-        cerr << "; Testing with EUF Strong" << endl;
-        config.setOption(SMTConfig::o_itp_euf_alg, SMTOption(0), msg);
-        smt_solver.getSingleInterpolant(itps, p);
-        PTRef itp0 = itps[0];
-        cerr << ";Interpolant:\n;" << logic->printTerm(itps[0]) << endl;
-        itps.clear();
-        cerr << "; Testing with EUF Weak" << endl;
-        config.setOption(SMTConfig::o_itp_euf_alg, SMTOption(2), msg);
-        smt_solver.getSingleInterpolant(itps, p);
-        PTRef itp2 = itps[0];
-        cerr << ";Interpolant:\n;" << logic->printTerm(itps[0]) << endl;
-        itps.clear();
-        cerr << "; Testing with EUF Random" << endl;
-        config.setOption(SMTConfig::o_itp_euf_alg, SMTOption(3), msg);
-        smt_solver.getSingleInterpolant(itps, p);
-        PTRef itp3 = itps[0];
-        cerr << ";Interpolant:\n;" << logic->printTerm(itps[0]) << endl;
-        
-        if(i == 0)
-            strongest = itp0;
-        else if(i == 2)
-            weakest = itp2;
-
-        bool i02 = logic->implies(itp0, itp2);
-        if(i02) cerr << "; StrongWeak1" << endl;
-        else cerr << "; StrongWeak0" << endl;
-        bool i03 = logic->implies(itp0, itp3);
-        if(i03) cerr << "; StrongRandom1" << endl;
-        else cerr << "; StrongRandom0" << endl;
-        bool i20 = logic->implies(itp2, itp0);
-        if(i20) cerr << "; WeakStrong1" << endl;
-        else cerr << "; WeakStrong0" << endl;
-        bool i23 = logic->implies(itp2, itp3);
-        if(i23) cerr << "; WeakRandom1" << endl;
-        else cerr << "; WeakRandom0" << endl;
-        bool i30 = logic->implies(itp3, itp0);
-        if(i30) cerr << "; RandomStrong1" << endl;
-        else cerr << "; RandomStrong0" << endl;
-        bool i32 = logic->implies(itp3, itp2);
-        if(i32) cerr << "; RandomWeak1" << endl;
-        else cerr << "; RandomWeak0" << endl;
-    }
-    */
-
-    /*
-    cerr << "; Extremes:" << endl;
-    if(logic->implies(strongest, weakest))
-        cerr << "; McMillan+Strong -> McMillan'+Weak)" << endl;
-    else
-        cerr << "; McMillan+Strong -/> McMillan'+Weak)" << endl;
-    if(logic->implies(weakest, strongest))
-        cerr << "; McMillan'+Weak -> McMillan+Strong)" << endl;
-    else
-        cerr << "; McMillan'+Weak -/> McMillan+Strong)" << endl;
-    */
 }
 #endif
 
