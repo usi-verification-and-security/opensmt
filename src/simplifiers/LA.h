@@ -33,7 +33,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 class LAExpression
 
 {
-    LRALogic& logic;
+    //LRALogic& logic;
+    LALogic& logic;
 public:
 
   LAExpression  (LRALogic& l)

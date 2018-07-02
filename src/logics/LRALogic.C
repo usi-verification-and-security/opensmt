@@ -239,7 +239,7 @@ void SimplifyConstDiv::constSimplify(const SymRef& s, const vec<PTRef>& terms, S
     s_new = s;
 }*/
 
-const char* LRALogic::tk_val_real_default = "1";
+//const char* LRALogic::tk_val_real_default = "1";
 
 const char* LRALogic::tk_real_zero  = "0";
 const char* LRALogic::tk_real_one   = "1";
@@ -645,6 +645,7 @@ PTRef LRALogic::mkRealDiv(const vec<PTRef>& args, char** msg)
 }
 */
 
+/* //PS. SEE if getDefaultValue method used in LRASOLVER? then you will know how this methods used in other parts of the code and then you will know that LALogic you have to specify before method and double collons. This method is shared between LRA and LIA and needs to be overridden for return sort real or lia? or automatically will be ?
 const char*
 LRALogic::getDefaultValue(const PTRef tr) const
 {
@@ -653,7 +654,7 @@ LRALogic::getDefaultValue(const PTRef tr) const
     else
         return Logic::getDefaultValue(tr);
 }
-
+*/
 /*
 
 // Find the lexicographically first factor of a term and divide the other terms with it.

@@ -278,7 +278,7 @@ LVRef LRASolver::exprToLVar(PTRef expr) {
         PTRef c;
 
         logic.splitTermToVarAndConst(expr, v, c);
-        assert(logic.isRealVar(v) || (logic.isNegated(v) && logic.isRealVar(logic.mkNumNeg(v))));
+        assert(logic.isNumVar(v) || (logic.isNegated(v) && logic.isNumVar(logic.mkNumNeg(v))));
         x = getLAVar_single(v);
         tableau.newNonbasicVar(x);
     }

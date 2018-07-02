@@ -50,6 +50,8 @@ class LALogic: public Logic
 
         bool split_eq;
 
+        static const char*  tk_val_num_default;
+
         static const char *tk_num_zero;
         static const char *tk_num_one;
         static const char *tk_num_neg;
@@ -103,6 +105,8 @@ class LALogic: public Logic
 
         virtual bool        isUF(PTRef tr) const { return isUF(term_store[tr].symb()); }
         virtual bool        isUF(SymRef sr) const { return !sym_store[sr].isInterpreted(); }
+
+        virtual const char* getDefaultValue(const PTRef tr) const;
         //PS. up to here
 
 

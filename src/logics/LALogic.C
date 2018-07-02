@@ -856,6 +856,8 @@ PTRef SimplifyConst::simplifyConstOp(const vec<PTRef>& terms, char** msg) //PS. 
     }
 }
 
+const char* LALogic::tk_val_num_default = "1";
+
 const char* LALogic::tk_num_zero  = "0";
 const char* LALogic::tk_num_one   = "1";
 const char* LALogic::tk_num_neg   = "-";
@@ -965,6 +967,15 @@ LALogic::LALogic(SMTConfig& c) :
     //sym_store[sym_Real_ITE].setLeftAssoc();
     sym_store[sym_Num_ITE].setNoScoping();
     sym_store.setInterpreted(sym_Num_ITE);
+}
+
+const char*
+LALogic::getDefaultValue(const PTRef tr) const
+{
+    if (hasSortNum(tr))
+        return tk_val_num_default;
+    else
+        return Logic::getDefaultValue(tr);
 }
 
 // Handle the printing of real constants that are negative and the
