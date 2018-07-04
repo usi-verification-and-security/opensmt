@@ -96,7 +96,7 @@ public:
     virtual bool   hasSortNum(SymRef sr) const { return sym_store[sr].rsort() == sort_NUM; }
     virtual bool   hasSortNum(PTRef tr)  const { return hasSortNum(getPterm(tr).symb()); }
 
-    virtual const Number& getNumConst(PTRef tr) const; //PS. this method will be rewritten properly later
+    virtual const opensmt::Number& getNumConst(PTRef tr) const; //PS. this method will be rewritten properly later
 
     virtual bool        isUFEquality(PTRef tr) const { return !isNumEq(tr) && Logic::isUFEquality(tr); }
     virtual bool        isTheoryEquality(PTRef tr) const { return isNumEq(tr); }

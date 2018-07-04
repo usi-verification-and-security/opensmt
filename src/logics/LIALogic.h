@@ -105,7 +105,7 @@ class LIALogic: public LALogic
 
     //SRef   declareSort_Integer(char** msg);
     virtual SRef   getSort_num()  const override {return sort_INTEGER;}
-    const Number& getNumConst(PTRef tr) const override {return getIntegerConst(tr);}
+    const opensmt::Number& getNumConst(PTRef tr) const override {return getIntegerConst(tr);}
     const opensmt::Integer& getIntegerConst(PTRef tr) const;
 
 

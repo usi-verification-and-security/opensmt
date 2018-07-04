@@ -121,7 +121,7 @@ class LRALogic: public LALogic
 
     SRef        getSort_num    ()              const override { return sort_REAL;}
 
-    const Number& getNumConst(PTRef tr) const override {return getRealConst(tr);}
+    const opensmt::Number& getNumConst(PTRef tr) const override {return getRealConst(tr);}
     const opensmt::Real& getRealConst(PTRef tr) const;
 
     bool        isRealPlus(SymRef sr) const { return sr == sym_Real_PLUS; }
