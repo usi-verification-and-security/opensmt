@@ -47,7 +47,7 @@ class LRALogic: public LALogic
 {
   protected:
     Logic_t logic_type;
-    vec<opensmt::Real*> reals;
+    vec<opensmt::Real*> reals; //PS replace this with opensmt::Number?
     SymRef              sym_Real_ZERO;
     SymRef              sym_Real_ONE;
     SymRef              sym_Real_NEG;
@@ -115,13 +115,13 @@ class LRALogic: public LALogic
 
     //bool  isNumConst     (SymRef sr)     const override { return isConstant(sr) && hasSortNum(sr); }
     //bool  isNumConst     (PTRef tr)      const override { return isNumConst(getPterm(tr).symb()); }
-    virtual bool  isNonnegNumConst (PTRef tr)    const override { return isNumConst(tr) && getRealConst(tr) >= 0; }
+    virtual bool  isNonnegNumConst (PTRef tr)    const override { return isNumConst(tr) && getNumConst(tr) >= 0; }
 
     //SRef        declareSort_Real(char** msg);
 
     SRef        getSort_num    ()              const override { return sort_REAL;}
 
-    const void* getNumConst(PTRef tr) const override {return (const void*) &getRealConst(tr);} //PS. this will be rewritten properly once we have a superclass for numbers
+    const Number& getNumConst(PTRef tr) const override {return getRealConst(tr);}
     const opensmt::Real& getRealConst(PTRef tr) const;
 
     bool        isRealPlus(SymRef sr) const { return sr == sym_Real_PLUS; }
@@ -224,7 +224,7 @@ class LRALogic: public LALogic
     // and split equalities
     virtual bool simplify(PTRef root, PTRef& root_out); //PS. this is never used anywhere in the code, shall we remove it?
 
-    virtual PTRef getNTerm(char* rat_str) override;
+    //virtual PTRef getNTerm(char* rat_str) override;
 
     //lbool retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs);
     //lbool arithmeticElimination(vec<PTRef>&, Map<PTRef,PtAsgn,PTRefHash>&);

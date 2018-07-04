@@ -403,13 +403,14 @@ PTRef LRALogic::mkConst(SRef s, const char* name) //PS. how to rewrite this?
     return ptr;
 }*/
 
+/*
 PTRef LRALogic::getNTerm(char* rat_str)
 {
     opensmt::Real v(rat_str);
     v = -v;
     return mkConst(getSort_num(), v.get_str().c_str());
 }
-
+*/
 /*
 
 bool LRALogic::isRealTerm(PTRef tr) const

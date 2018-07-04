@@ -3,7 +3,9 @@
 
 #include "Logic.h"
 #include "Real.h"
+#include "Integer.h"
 #include "LALogic.h"
+
 
 
 
@@ -31,7 +33,7 @@ class LIALogic: public LALogic
 {
   protected:
     Logic_t logic_type;
-    vec<opensmt::Integer*> integers;
+    vec<opensmt::Integer*> integers;//PS. replace this with Number?
     SymRef              sym_Int_ZERO;
     SymRef              sym_Int_ONE;
     SymRef              sym_Int_NEG;
@@ -98,12 +100,12 @@ class LIALogic: public LALogic
 
     //bool  isIntegerConst(SymRef sr)      const { return isConstant(sr) && hasSortInt(sr); }
     //bool  isIntegerConst(PTRef tr)       const { return isIntegerConst(getPterm(tr).symb()); }
-    virtual bool  isNonnegNumConst(PTRef tr) const override { return isNumConst(tr) && getIntegerConst(tr) >= 0; }
+    virtual bool  isNonnegNumConst(PTRef tr) const override { return isNumConst(tr) && getNumConst(tr) >= 0; }
 
 
     //SRef   declareSort_Integer(char** msg);
     virtual SRef   getSort_num()  const override {return sort_INTEGER;}
-    const void* getNumConst(PTRef tr) const override {return (const void*) &getIntegerConst(tr);}
+    const Number& getNumConst(PTRef tr) const override {return getIntegerConst(tr);}
     const opensmt::Integer& getIntegerConst(PTRef tr) const;
 
 
@@ -210,7 +212,7 @@ class LIALogic: public LALogic
     // and split equalities
     virtual bool simplify(PTRef root, PTRef& root_out);
 
-    virtual PTRef getNTerm(char* rat_str) override;
+    //virtual PTRef getNTerm(char* rat_str) override;
 
     //lbool retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs);
     //lbool arithmeticElimination(vec<PTRef>&, Map<PTRef,PtAsgn,PTRefHash>&);

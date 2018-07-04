@@ -5,7 +5,7 @@
 #ifndef OPENSMT_REAL_H
 #define OPENSMT_REAL_H
 
-#define FAST_RATIONALS 1
+/*#define FAST_RATIONALS 1
 
 #ifdef FAST_RATIONALS
 
@@ -21,5 +21,14 @@ namespace opensmt {
     typedef mpq_class Real;
 #endif
 }
+*/
+
+
+#include "Number.h"
+
+namespace opensmt {
+    typedef Number Real;
+}
 
 #endif //OPENSMT_REAL_H
+

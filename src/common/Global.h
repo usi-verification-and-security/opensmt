@@ -91,7 +91,8 @@ using std::ifstream;
 
 namespace opensmt {
 
-typedef mpz_class Integer;
+/*
+//typedef mpz_class Integer;
 
 void static inline wordToBinary(const opensmt::Integer x, char*& bin, const int width)
 {
@@ -103,211 +104,211 @@ void static inline wordToBinary(const opensmt::Integer x, char*& bin, const int 
         bin[p++] = ((x&i) == i) ? '1' : '0';
     bin[p] = '\0';
 }
-
-void static inline wordToBinary(const unsigned x, char*& bin, const int width)
-{
-    bin = (char*) malloc(width+1);
-
-    int p = 0;
-    opensmt::Integer one = 1;
-    for (opensmt::Integer i = (one << (width-1)); i > 0; i >>= 1)
-        bin[p++] = ((x&i) == i) ? '1' : '0';
-    bin[p] = '\0';
-}
-
-
-bool static inline isDigit(char c)
-{
-    return (c >= '0' && c <= '9');
-}
-bool static inline isPosDig(char c)
-{
-    return (c > '0' && c <= '9');
-}
-
-void static inline normalize(char*& rat, const char* flo, bool is_neg)
-{
-    mpq_t num;
-    mpq_init(num);
-    int val = mpq_set_str(num, flo, 0);
-    assert(val != -1);
-    mpq_canonicalize(num);
-    if (is_neg)
-        mpq_neg(num, num);
-    gmp_asprintf(&rat, "%Qd", num);
-    mpq_clear(num);
-}
-
-static inline bool isPowOfTwo(int b)
-{
-    return b && !(b & (b-1));
-}
-
-static inline int getLogFromPowOfTwo(int l)
-{
-    assert(isPowOfTwo(l));
-    if (l == 1) return 0;
-    int n = 0;
-    while ((2 << (n++)) != l);
-    return n;
-}
-
-class strConvException : std::exception
-{
-    char* reason;
-public:
-    strConvException(const char* reason_) {
-        asprintf(&reason, "Error converting string to rational.  %s is not a legal rational", reason_);
-    }
-    virtual const char* what() const noexcept
+*/
+    void static inline wordToBinary(const unsigned x, char*& bin, const int width)
     {
-        return reason;
-    }
-    ~strConvException() { free(reason); }
-};
+        bin = (char*) malloc(width+1);
 
-bool static inline stringToRational(char*& rat, const char* flo)
-{
-    int nom_l = 0;
-    int den_l = 1;
-    int state = 0;
-    int zeroes = 0;
-    bool is_frac = false;
-    bool is_neg = false;
-
-    if (flo[0] == '-') { flo++; is_neg = true; }
-
-    for (int i = 0; flo[i] != '\0'; i++) {
-        if (state == 0 && flo[i] == '0') {}
-        else if (state == 0 && isPosDig(flo[i])) { nom_l ++; state = 1; }
-        else if (state == 0 && flo[i] == '.')    { state = 4; }
-        else if (state == 0 && flo[i] == '/')    { state = 5; is_frac = true; }
-        else if (state == 1 && isDigit(flo[i]))  { nom_l ++; state = 1; }
-        else if (state == 1 && flo[i] == '.')    { state = 2; }
-        else if (state == 1 && flo[i] == '/')    { state = 5; is_frac = true; }
-        else if (state == 2 && flo[i] == '0')    { zeroes ++; state = 3; }
-        else if (state == 2 && isPosDig(flo[i])) { nom_l ++; state = 2; }
-        else if (state == 3 && flo[i] == '0')    { zeroes ++; state = 3; }
-        else if (state == 3 && isPosDig(flo[i])) { nom_l += zeroes + 1; zeroes = 0; state = 2; }
-        else if (state == 4 && flo[i] == '0')    { state = 4; }
-        else if (state == 4 && isPosDig(flo[i])) { nom_l ++; state = 2; }
-        // We come here if it is a fraction already
-        else if (state == 5 && isDigit(flo[i]))  { state = 5; }
-        else { throw strConvException(flo); }
+        int p = 0;
+        opensmt::Integer one = 1;
+        for (opensmt::Integer i = (one << (width-1)); i > 0; i >>= 1)
+            bin[p++] = ((x&i) == i) ? '1' : '0';
+        bin[p] = '\0';
     }
 
-    if (is_frac) {
-        normalize(rat, flo, is_neg);
-        return true;
+
+    bool static inline isDigit(char c)
+    {
+        return (c >= '0' && c <= '9');
+    }
+    bool static inline isPosDig(char c)
+    {
+        return (c > '0' && c <= '9');
     }
 
-    if (nom_l == 0) {
-        normalize(rat, "0", false);
-        return true;
+    void static inline normalize(char*& rat, const char* flo, bool is_neg)
+    {
+        mpq_t num;
+        mpq_init(num);
+        int val = mpq_set_str(num, flo, 0);
+        assert(val != -1);
+        mpq_canonicalize(num);
+        if (is_neg)
+            mpq_neg(num, num);
+        gmp_asprintf(&rat, "%Qd", num);
+        mpq_clear(num);
     }
 
-    state = 0;
-    zeroes = 0;
-    for (int i = 0; flo[i] != '\0'; i++) {
-        if (state == 0 && isDigit(flo[i])) { state = 0; }
-        else if (state == 0 && flo[i] == '.')   { state = 1; }
-        else if (state == 1 && isPosDig(flo[i])) { state = 1; den_l ++; }
-        else if (state == 1 && flo[i] == '0')    { state = 2; zeroes ++; }
-        else if (state == 2 && flo[i] == '0')    { state = 2; zeroes ++; }
-        else if (state == 2 && isPosDig(flo[i])) { state = 1; den_l += zeroes + 1; zeroes = 0; }
+    static inline bool isPowOfTwo(int b)
+    {
+        return b && !(b & (b-1));
     }
+
+    static inline int getLogFromPowOfTwo(int l)
+    {
+        assert(isPowOfTwo(l));
+        if (l == 1) return 0;
+        int n = 0;
+        while ((2 << (n++)) != l);
+        return n;
+    }
+
+    class strConvException : std::exception
+    {
+        char* reason;
+    public:
+        strConvException(const char* reason_) {
+            asprintf(&reason, "Error converting string to rational.  %s is not a legal rational", reason_);
+        }
+        virtual const char* what() const noexcept
+        {
+            return reason;
+        }
+        ~strConvException() { free(reason); }
+    };
+
+    bool static inline stringToRational(char*& rat, const char* flo)
+    {
+        int nom_l = 0;
+        int den_l = 1;
+        int state = 0;
+        int zeroes = 0;
+        bool is_frac = false;
+        bool is_neg = false;
+
+        if (flo[0] == '-') { flo++; is_neg = true; }
+
+        for (int i = 0; flo[i] != '\0'; i++) {
+            if (state == 0 && flo[i] == '0') {}
+            else if (state == 0 && isPosDig(flo[i])) { nom_l ++; state = 1; }
+            else if (state == 0 && flo[i] == '.')    { state = 4; }
+            else if (state == 0 && flo[i] == '/')    { state = 5; is_frac = true; }
+            else if (state == 1 && isDigit(flo[i]))  { nom_l ++; state = 1; }
+            else if (state == 1 && flo[i] == '.')    { state = 2; }
+            else if (state == 1 && flo[i] == '/')    { state = 5; is_frac = true; }
+            else if (state == 2 && flo[i] == '0')    { zeroes ++; state = 3; }
+            else if (state == 2 && isPosDig(flo[i])) { nom_l ++; state = 2; }
+            else if (state == 3 && flo[i] == '0')    { zeroes ++; state = 3; }
+            else if (state == 3 && isPosDig(flo[i])) { nom_l += zeroes + 1; zeroes = 0; state = 2; }
+            else if (state == 4 && flo[i] == '0')    { state = 4; }
+            else if (state == 4 && isPosDig(flo[i])) { nom_l ++; state = 2; }
+                // We come here if it is a fraction already
+            else if (state == 5 && isDigit(flo[i]))  { state = 5; }
+            else { throw strConvException(flo); }
+        }
+
+        if (is_frac) {
+            normalize(rat, flo, is_neg);
+            return true;
+        }
+
+        if (nom_l == 0) {
+            normalize(rat, "0", false);
+            return true;
+        }
+
+        state = 0;
+        zeroes = 0;
+        for (int i = 0; flo[i] != '\0'; i++) {
+            if (state == 0 && isDigit(flo[i])) { state = 0; }
+            else if (state == 0 && flo[i] == '.')   { state = 1; }
+            else if (state == 1 && isPosDig(flo[i])) { state = 1; den_l ++; }
+            else if (state == 1 && flo[i] == '0')    { state = 2; zeroes ++; }
+            else if (state == 2 && flo[i] == '0')    { state = 2; zeroes ++; }
+            else if (state == 2 && isPosDig(flo[i])) { state = 1; den_l += zeroes + 1; zeroes = 0; }
+        }
 
 //    printf("The literal %s, once converted, will have denominator of length %d and nominator of length %d characters\n", flo, den_l, nom_l);
-    char* rat_tmp = (char*)malloc(nom_l+den_l+2);
-    rat_tmp[0] = '\0';
+        char* rat_tmp = (char*)malloc(nom_l+den_l+2);
+        rat_tmp[0] = '\0';
 
-    int i, j;
-    state = -1;
-    for (i = j = 0; j < nom_l; i++) {
-        assert(flo[i] != '\0');
-        if (state == -1 && flo[i] != '.' && flo[i] != '0') { rat_tmp[j++] = flo[i]; state = 0; }
-        else if (state == -1 && flo[i] == '.') {}
-        else if (state == -1 && flo[i] == '0') {}
-        else if (state == 0 && flo[i] != '.') { rat_tmp[j++] = flo[i]; }
-        else if (state == 0 && flo[i] == '.') {}
+        int i, j;
+        state = -1;
+        for (i = j = 0; j < nom_l; i++) {
+            assert(flo[i] != '\0');
+            if (state == -1 && flo[i] != '.' && flo[i] != '0') { rat_tmp[j++] = flo[i]; state = 0; }
+            else if (state == -1 && flo[i] == '.') {}
+            else if (state == -1 && flo[i] == '0') {}
+            else if (state == 0 && flo[i] != '.') { rat_tmp[j++] = flo[i]; }
+            else if (state == 0 && flo[i] == '.') {}
+        }
+        rat_tmp[j++] = '/';
+        rat_tmp[j++] = '1';
+        for (i = 0; i < den_l-1; i++) rat_tmp[j++] = '0';
+        rat_tmp[j] = '\0';
+        normalize(rat, rat_tmp, is_neg);
+        free(rat_tmp);
+        return true;
     }
-    rat_tmp[j++] = '/';
-    rat_tmp[j++] = '1';
-    for (i = 0; i < den_l-1; i++) rat_tmp[j++] = '0';
-    rat_tmp[j] = '\0';
-    normalize(rat, rat_tmp, is_neg);
-    free(rat_tmp);
-    return true;
-}
 
 
 
 #define Pair( T ) pair< T, T >
 
-typedef int       enodeid_t;
+    typedef int       enodeid_t;
 
 
-typedef enodeid_t snodeid_t;
-typedef enodeid_t sortid_t;
+    typedef enodeid_t snodeid_t;
+    typedef enodeid_t sortid_t;
 #ifdef BUILD_64
-typedef long enodeid_pair_t;
-inline enodeid_pair_t encode( enodeid_t car, enodeid_t cdr )
-{
-  enodeid_pair_t p = car;
-  p = p<<(sizeof(enodeid_t)*8);
-  enodeid_pair_t q = cdr;
-  p |= q;
-  return p;
-}
+    typedef long enodeid_pair_t;
+    inline enodeid_pair_t encode( enodeid_t car, enodeid_t cdr )
+    {
+        enodeid_pair_t p = car;
+        p = p<<(sizeof(enodeid_t)*8);
+        enodeid_pair_t q = cdr;
+        p |= q;
+        return p;
+    }
 #else
-typedef Pair( enodeid_t ) enodeid_pair_t;
+    typedef Pair( enodeid_t ) enodeid_pair_t;
 inline enodeid_pair_t encode( enodeid_t car, enodeid_t cdr )
 { return make_pair( car, cdr ); }
 #endif
-typedef enodeid_pair_t snodeid_pair_t;
+    typedef enodeid_pair_t snodeid_pair_t;
 
 #define STATISTICS
 
 // Set the bit B to 1 and leaves the others to 0
 #define SETBIT( B ) ( 1 << (B) )
 
-struct Logic_t {
-    int x;
-    const char* str;
-    bool operator== (const Logic_t& o) const { return x == o.x; }
-    bool operator!= (const Logic_t& o) const { return x != o.x; }
-};
+    struct Logic_t {
+        int x;
+        const char* str;
+        bool operator== (const Logic_t& o) const { return x == o.x; }
+        bool operator!= (const Logic_t& o) const { return x != o.x; }
+    };
 
-static struct Logic_t UNDEF = {-1, "UNDEF"};
-static struct Logic_t EMPTY = {0, "EMPTY"};
-static struct Logic_t QF_UF = {1, "QF_UF"};
-static struct Logic_t QF_CUF = {1, "QF_CUF"};
-static struct Logic_t QF_BV = {2, "QF_BV"};
-static struct Logic_t QF_RDL = {3, "QF_RDL"};
-static struct Logic_t QF_IDL = {4, "QF_IDL"};
-static struct Logic_t QF_LRA = {5, "QF_LRA"};
-static struct Logic_t QF_LIA = {6, "QF_LIA"};
-static struct Logic_t QF_UFRDL = {7, "QF_UFRDL"};
-static struct Logic_t QF_UFIDL = {8, "QF_UFIDL"};
-static struct Logic_t QF_UFLRA = {9, "QF_UFLRA"};
-static struct Logic_t QF_UFLIA = {10, "QF_UFLIA"};
-static struct Logic_t QF_UFBV = {11, "QF_UFBV"};
-static struct Logic_t QF_AX = {12, "QF_AX"};
-static struct Logic_t QF_AXDIFF = {13, "QF_AXDIFF"};
-static struct Logic_t QF_BOOL = {14, "QF_BOOL"};
-static struct Logic_t QF_AUFBV = {15, "QF_AUFBV"};
-static struct Logic_t QF_CT = {16, "QF_CT"};
+    static struct Logic_t UNDEF = {-1, "UNDEF"};
+    static struct Logic_t EMPTY = {0, "EMPTY"};
+    static struct Logic_t QF_UF = {1, "QF_UF"};
+    static struct Logic_t QF_CUF = {1, "QF_CUF"};
+    static struct Logic_t QF_BV = {2, "QF_BV"};
+    static struct Logic_t QF_RDL = {3, "QF_RDL"};
+    static struct Logic_t QF_IDL = {4, "QF_IDL"};
+    static struct Logic_t QF_LRA = {5, "QF_LRA"};
+    static struct Logic_t QF_LIA = {6, "QF_LIA"};
+    static struct Logic_t QF_UFRDL = {7, "QF_UFRDL"};
+    static struct Logic_t QF_UFIDL = {8, "QF_UFIDL"};
+    static struct Logic_t QF_UFLRA = {9, "QF_UFLRA"};
+    static struct Logic_t QF_UFLIA = {10, "QF_UFLIA"};
+    static struct Logic_t QF_UFBV = {11, "QF_UFBV"};
+    static struct Logic_t QF_AX = {12, "QF_AX"};
+    static struct Logic_t QF_AXDIFF = {13, "QF_AXDIFF"};
+    static struct Logic_t QF_BOOL = {14, "QF_BOOL"};
+    static struct Logic_t QF_AUFBV = {15, "QF_AUFBV"};
+    static struct Logic_t QF_CT = {16, "QF_CT"};
 
 
-static inline double cpuTime(void)
-{
-    struct rusage ru;
-    getrusage(RUSAGE_SELF, &ru);
-    return (double)ru.ru_utime.tv_sec + (double)ru.ru_utime.tv_usec / 1000000;
-}
+    static inline double cpuTime(void)
+    {
+        struct rusage ru;
+        getrusage(RUSAGE_SELF, &ru);
+        return (double)ru.ru_utime.tv_sec + (double)ru.ru_utime.tv_usec / 1000000;
+    }
 
 #if defined(__linux__)
-static inline int memReadStat(int field)
+    static inline int memReadStat(int field)
 {
     char name[256];
     pid_t pid = getpid();
@@ -324,25 +325,25 @@ static inline int memReadStat(int field)
 static inline uint64_t memUsed() { return (uint64_t)memReadStat(0) * (uint64_t)getpagesize(); }
 
 #elif defined(__FreeBSD__) || defined(__OSX__) || defined(__APPLE__)
-static inline uint64_t memUsed()
-{
-  char name[256];
-  FILE *pipe;
-  char buf[1024];
-  uint64_t value=0;
-  pid_t pid = getpid();
-  sprintf(name,"ps -o rss -p %d | grep -v RSS", pid);
-  pipe = popen(name, "r");
-  if (pipe)
-  {
-    fgets(buf, 1024, pipe);
-    value = 1024 * strtoul(buf, NULL, 10);
-    pclose(pipe);
-  }
-  return value;
-}
+    static inline uint64_t memUsed()
+    {
+        char name[256];
+        FILE *pipe;
+        char buf[1024];
+        uint64_t value=0;
+        pid_t pid = getpid();
+        sprintf(name,"ps -o rss -p %d | grep -v RSS", pid);
+        pipe = popen(name, "r");
+        if (pipe)
+        {
+            fgets(buf, 1024, pipe);
+            value = 1024 * strtoul(buf, NULL, 10);
+            pclose(pipe);
+        }
+        return value;
+    }
 #else // stub to support every platform
-static inline uint64_t memUsed() {return 0; }
+    static inline uint64_t memUsed() {return 0; }
 #endif
 
 #define CNF_STR "CNF_%d_%d"
@@ -354,7 +355,7 @@ static inline uint64_t memUsed() {return 0; }
 #define ARR_STR "ARR_%d"
 
 #ifdef PRODUCE_PROOF
-// For interpolation. When only 2 partitions
+    // For interpolation. When only 2 partitions
 // are considered, these shorthands simplify
 // readability
 typedef enum
@@ -394,7 +395,7 @@ inline bool isAB     ( const ipartitions_t & p, const ipartitions_t & mask ) { r
 #endif
 
 #ifdef PRODUCE_PROOF
-// To specify the tree structure of a collection of partitions
+    // To specify the tree structure of a collection of partitions
 // NOTE Partitions should be tagged with consecutive ids >=1
 class InterpolationTree
 {
@@ -455,25 +456,25 @@ using opensmt::enodeid_pair_t;
 using opensmt::encode;
 using opensmt::Logic_t;
 using opensmt::UNDEF;
-using opensmt::EMPTY;        
-using opensmt::QF_UF;        
-using opensmt::QF_BV;        
-using opensmt::QF_RDL;        
-using opensmt::QF_IDL;       
-using opensmt::QF_LRA;       
-using opensmt::QF_LIA;       
-using opensmt::QF_UFRDL;      
+using opensmt::EMPTY;
+using opensmt::QF_UF;
+using opensmt::QF_BV;
+using opensmt::QF_RDL;
+using opensmt::QF_IDL;
+using opensmt::QF_LRA;
+using opensmt::QF_LIA;
+using opensmt::QF_UFRDL;
 using opensmt::QF_UFIDL;
-using opensmt::QF_UFLRA;     
-using opensmt::QF_UFLIA;     
-using opensmt::QF_UFBV;     
-using opensmt::QF_AUFBV;      
-using opensmt::QF_AX;  
-using opensmt::QF_AXDIFF;  
-using opensmt::QF_BOOL;       
-using opensmt::QF_CT;       
-using opensmt::cpuTime;       
-using opensmt::memUsed;       
+using opensmt::QF_UFLRA;
+using opensmt::QF_UFLIA;
+using opensmt::QF_UFBV;
+using opensmt::QF_AUFBV;
+using opensmt::QF_AX;
+using opensmt::QF_AXDIFF;
+using opensmt::QF_BOOL;
+using opensmt::QF_CT;
+using opensmt::cpuTime;
+using opensmt::memUsed;
 #ifdef PRODUCE_PROOF
 using opensmt::icolor_t;
 using opensmt::I_UNDEF;
@@ -484,7 +485,7 @@ using opensmt::ipartitions_t;
 using opensmt::setbit;
 using opensmt::clrbit;
 using opensmt::ipartitions_t;
-using opensmt::isAlocal; 
+using opensmt::isAlocal;
 using opensmt::isBlocal;
 using opensmt::isAstrict;
 using opensmt::isBstrict;

@@ -454,14 +454,14 @@ PTRef LALogic::mkNUmNeg(PTRef tr, char** msg) override
 */
 
 //PS. we have LIALogic here as we are not using method, but creating it
-
+/*
 PTRef LIALogic::getNTerm(char* rat_str)
 {
     opensmt::Integer v(rat_str);
     v = -v;
     return mkConst(getSort_num(), v.get_str().c_str());
 }
-
+*/
 
 
 /*

@@ -6,13 +6,12 @@
 #include "LA.h"
 #include "LALogic.h"
 
+
+
 bool LALogic::isNegated(PTRef tr) const {
     //static const opensmt::Integer zero = 0;
     if (isNumConst(tr))
-        //return getNumConst(tr) < 0; // Case (0a) and (0b)
-        return ((typeid(getNumConst(tr)).hash_code() == typeid( const opensmt::Real*).hash_code())
-                ? (*((const opensmt::Real*) (getNumConst(tr))) < 0)
-                : (*((const opensmt::Integer*) (getNumConst(tr))) < 0));
+        return getNumConst(tr) < 0; // Case (0a) and (0b)
     if (isNumVar(tr))
         return false; // Case (1a)
     if (isNumTimes(tr)) {
@@ -82,7 +81,7 @@ PTRef LALogic::normalizeSum(PTRef sum) {
     assert(isConstant(t[0]) || isConstant(t[1]));
     // We need to go through the real values since negative constant
     // terms are are not real negations.
-    opensmt::Real k = abs(isConstant(t[0]) ? getNumConst(t[0]) : getNumConst(t[1]));
+    opensmt::Number k = abs(isConstant(t[0]) ? getNumConst(t[0]) : getNumConst(t[1]));
     PTRef divisor = mkConst(k);
     for (int i = 0; i < args.size(); i++) {
         vec<PTRef> tmp;
@@ -100,7 +99,7 @@ PTRef LALogic::normalizeMul(PTRef mul)
     PTRef v = PTRef_Undef;
     PTRef c = PTRef_Undef;
     splitTermToVarAndConst(mul, v, c);
-    opensmt::Real r = getNumConst(c); //PS. shall I add opensmt::Integer j = getNumConst(c)
+    opensmt::Number r = getNumConst(c); //PS. shall I add opensmt::Integer j = getNumConst(c)
 
     if (r < 0) //PS. OR (l < 0)
         return mkNumNeg(v);
@@ -251,20 +250,20 @@ bool LALogic::okToPartition(PTRef tr) const
 void LALogic::serializeLogicData(int*& logicdata_buf) const
 {
     Logic::serializeLogicData(logicdata_buf);
-    vec<SymRef> real_syms;
-    for (int i = 0; i < reals.size(); i++)
-        if (reals[i] != NULL)
-            real_syms.push(sym_store.symbols[i]);
+    vec<SymRef> number_syms;
+    for (int i = 0; i < numbers.size(); i++)
+        if (numbers[i] != NULL)
+            number_syms.push(sym_store.symbols[i]);
 
 #ifdef VERBOSE_FOPS
     printf("Found %d real symbols\n", real_syms.size());
 #endif
     int size_old = logicdata_buf[buf_sz_idx];
-    int size_new = size_old + real_syms.size() + 2;
+    int size_new = size_old + number_syms.size() + 2;
     logicdata_buf = (int*) realloc(logicdata_buf, size_new*sizeof(int));
-    logicdata_buf[size_old] = real_syms.size();
-    for (int i = 0; i < real_syms.size(); i++)
-        logicdata_buf[size_old+1+i] = real_syms[i].x;
+    logicdata_buf[size_old] = number_syms.size();
+    for (int i = 0; i < number_syms.size(); i++)
+        logicdata_buf[size_old+1+i] = number_syms[i].x;
     logicdata_buf[buf_sz_idx] = size_new;
 }
 
@@ -277,9 +276,9 @@ void LALogic::deserializeLogicData(const int* logicdata_buf)
     for (int i = 0; i < sz; i++) {
         SymRef sr = {(uint32_t) logicdata_buf[mydata_init+1+i]};
         SymId id = sym_store[sr].getId();
-        for (int j = reals.size(); j <= id; j++)
-            reals.push(NULL);
-        reals[id] = new opensmt::Real(sym_store.idToName[id]);
+        for (int j = numbers.size(); j <= id; j++)
+            numbers.push(NULL);
+        numbers[id] = new opensmt::Number(sym_store.idToName[id]);
         while (id >= constants.size())
             constants.push(false);
         constants[id] = true;
@@ -359,11 +358,11 @@ PTRef LALogic::mkNumNeg(PTRef tr, char** msg)
     if (isConstant(tr)) {
         char* rat_str;
         opensmt::stringToRational(rat_str, sym_store.getName(getPterm(tr).symb()));
-        //opensmt::Real v(rat_str);
-        PTRef nterm = getNTerm(rat_str); //PS. getNTerm generalise line 358, 361, 362
+        opensmt::Number v(rat_str);
+        //PTRef nterm = getNTerm(rat_str); //PS. getNTerm generalise line 358, 361, 362
         free(rat_str);
-        //v = -v;
-        //PTRef nterm = mkConst(getSort_num(), v.get_str().c_str());
+        v = -v;
+        PTRef nterm = mkConst(getSort_num(), v.get_str().c_str());
         SymRef s = getPterm(nterm).symb();
         return mkFun(s, args, msg);
     }
@@ -509,13 +508,7 @@ PTRef LALogic::mkNumDiv(const vec<PTRef>& args, char** msg)
 
     if (isNumDiv(s_new)) {
         assert(isNumTerm(args_new[0]) && isConstant(args_new[1]));
-        //args_new[1] = mkConst(FastRational_inverse(getNumConst(args_new[1]))); //mkConst(1/getRealConst(args_new[1]));
-
-        args_new[1] = mkConst(FastRational_inverse(
-                ((typeid(getNumConst(args_new[1])).hash_code() == typeid(opensmt::Real&).hash_code()) //PS. I need to create fastratonal from integer
-                 ? ((opensmt::Real&) (getNumConst(args_new[1])))
-                 : ((opensmt::Integer&) (getNumConst(args_new[1])))
-        )));
+        args_new[1] = mkConst(FastRational_inverse(getNumConst(args_new[1]))); //mkConst(1/getRealConst(args_new[1]));
         return mkNumTimes(args_new);
     }
 
@@ -533,8 +526,8 @@ PTRef LALogic::mkNumLeq(const vec<PTRef>& args_in, char** msg)
     assert(args.size() == 2);
 
     if (isConstant(args[0]) && isConstant(args[1])) {
-        opensmt::Real v1(sym_store.getName(getPterm(args[0]).symb())); //PS. can I add here also opensmt::Integer v3(sym_store.getName(getPterm(args[0]).symb()))
-        opensmt::Real v2(sym_store.getName(getPterm(args[1]).symb())); //PS. and  opensmt::Integer v4(sym_store.getName(getPterm(args[0]).symb()))
+        opensmt::Number v1(sym_store.getName(getPterm(args[0]).symb())); //PS. can I add here also opensmt::Integer v3(sym_store.getName(getPterm(args[0]).symb()))
+        opensmt::Number v2(sym_store.getName(getPterm(args[1]).symb())); //PS. and  opensmt::Integer v4(sym_store.getName(getPterm(args[0]).symb()))
         if (v1 <= v2) //PS. OR (v3<=v4)
             return getTerm_true();
         else
@@ -604,8 +597,8 @@ PTRef LALogic::mkNumLt(const vec<PTRef>& args, char** msg)
         char *rat_str1, *rat_str2;
         opensmt::stringToRational(rat_str1, sym_store.getName(getPterm(args[0]).symb()));
         opensmt::stringToRational(rat_str2, sym_store.getName(getPterm(args[1]).symb()));
-        opensmt::Real v1(rat_str1); //PS. may I add here opensmt::Integer v3(rat_str1) and opensmt::Integer v4(rat_str2)
-        opensmt::Real v2(rat_str2);
+        opensmt::Number v1(rat_str1); //PS. may I add here opensmt::Integer v3(rat_str1) and opensmt::Integer v4(rat_str2)
+        opensmt::Number v2(rat_str2);
         free(rat_str1);
         free(rat_str2);
         if (v1 < v2) { //PS. OR (v3 < v4)
@@ -631,8 +624,8 @@ PTRef LALogic::mkNumGt(const vec<PTRef>& args, char** msg)
         char *rat_str1, *rat_str2;
         opensmt::stringToRational(rat_str1, sym_store.getName(getPterm(args[0]).symb()));
         opensmt::stringToRational(rat_str2, sym_store.getName(getPterm(args[1]).symb()));
-        opensmt::Real v1(rat_str1); //PS. opensmt::Integer v3(rat_str1) and opensmt::Integer v4(rat_str2);
-        opensmt::Real v2(rat_str2);
+        opensmt::Number v1(rat_str1); //PS. opensmt::Integer v3(rat_str1) and opensmt::Integer v4(rat_str2);
+        opensmt::Number v2(rat_str2);
         free(rat_str1);
         free(rat_str2);
         if (v1 > v2) //PS. OR (v3 > v4)
@@ -691,10 +684,10 @@ PTRef LALogic::mkConst(SRef s, const char* name) //PS. how to rewrite this?
         ptr = mkVar(s, rat);
         // Store the value of the number as a real
         SymId id = sym_store[getPterm(ptr).symb()].getId();
-        for (int i = reals.size(); i <= id; i++)
-            reals.push(NULL);
-        if (reals[id] != NULL) { delete reals[id]; }
-        reals[id] = new opensmt::Real(rat);
+        for (int i = numbers.size(); i <= id; i++)
+            numbers.push(NULL);
+        if (numbers[id] != NULL) { delete numbers[id]; }
+        numbers[id] = new opensmt::Number(rat);
         free(rat);
         // Code to allow efficient constant detection.
         while (id >= constants.size())
@@ -859,20 +852,20 @@ PTRef SimplifyConst::simplifyConstOp(const vec<PTRef>& terms, char** msg) //PS. 
 //PS. Then does it mean all those methods I call in LIA and override with this type?
 
 {
-    opensmt::Real s = getIdOp();
+    opensmt::Number s = getIdOp();
     if (terms.size() == 0) {
-        opensmt::Real s = getIdOp();
+        opensmt::Number s = getIdOp();
         return l.mkConst(l.getSort_num(), s.get_str().c_str());
     } else if (terms.size() == 1) {
         char* rat_str;
         opensmt::stringToRational(rat_str, l.getSymName(terms[0]));
-        opensmt::Real val(rat_str);
+        opensmt::Number val(rat_str);
         free(rat_str);
         return l.mkConst(l.getSort_num(), val.get_str().c_str());
     } else {
         char* rat_str;
         opensmt::stringToRational(rat_str, l.getSymName(terms[0]));
-        opensmt::Real s(rat_str);
+        opensmt::Number s(rat_str);
         free(rat_str);
         for (int i = 1; i < terms.size(); i++) {
             PTRef tr = PTRef_Undef;
@@ -884,7 +877,7 @@ PTRef SimplifyConst::simplifyConstOp(const vec<PTRef>& terms, char** msg) //PS. 
             char* rat_str;
             opensmt::stringToRational(rat_str, l.getSymName(tr));
 
-            opensmt::Real val(rat_str);
+            opensmt::Number val(rat_str);
             free(rat_str);
             Op(s, val);
         }
@@ -1025,7 +1018,7 @@ LALogic::printTerm_(PTRef tr, bool ext, bool safe) const
         bool is_neg = false;
         char* tmp_str;
         opensmt::stringToRational(tmp_str, sym_store.getName(getPterm(tr).symb()));
-        opensmt::Real v(tmp_str);
+        opensmt::Number v(tmp_str);
         if (!isNonnegNumConst(tr))
         {
             v = -v;
