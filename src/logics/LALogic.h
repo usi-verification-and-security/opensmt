@@ -79,11 +79,11 @@ class LALogic: public Logic
 
         //PS. be careful with the following, the main problem is with type opensmt:: Real, which in LIA needs to be opensmt:: Integer
 
-        virtual PTRef       mkConst         (const char* name, const char **msg);
-        //virtual PTRef     mkConst         (SRef s, const char* name);
-        //virtual PTRef     mkConst         (const opensmt::Real& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_num(), rat); free(rat); return tr; }
-        //virtual PTRef     mkConst         (const char* num) { return mkConst(getSort_num(), num); }
-        //virtual PTRef     mkRealVar       (const char* name) { return mkVar(getSort_num(), name); }
+        virtual PTRef     mkConst         (const char* name, const char **msg);
+        virtual PTRef     mkConst         (SRef s, const char* name);
+        virtual PTRef     mkConst         (const opensmt::Real& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_num(), rat); free(rat); return tr; }
+        virtual PTRef     mkConst         (const char* num) { return mkConst(getSort_num(), num); }
+        virtual PTRef     mkNumVar       (const char* name) { return mkVar(getSort_num(), name); }
 
         virtual bool isBuiltinSort  (SRef sr) const { return sr == sort_NUM || Logic::isBuiltinSort(sr); }
         virtual bool isBuiltinConstant(SymRef sr) const { return (isNumConst(sr) || Logic::isBuiltinConstant(sr)); }

@@ -7,8 +7,12 @@
 #include "LALogic.h"
 
 bool LALogic::isNegated(PTRef tr) const {
+    //static const opensmt::Integer zero = 0;
     if (isNumConst(tr))
-        return getNumConst(tr) < 0; // Case (0a) and (0b)
+        //return getNumConst(tr) < 0; // Case (0a) and (0b)
+        return ((typeid(getNumConst(tr)).hash_code() == typeid( const opensmt::Real*).hash_code())
+                ? (*((const opensmt::Real*) (getNumConst(tr))) < 0)
+                : (*((const opensmt::Integer*) (getNumConst(tr))) < 0));
     if (isNumVar(tr))
         return false; // Case (1a)
     if (isNumTimes(tr)) {
@@ -97,6 +101,7 @@ PTRef LALogic::normalizeMul(PTRef mul)
     PTRef c = PTRef_Undef;
     splitTermToVarAndConst(mul, v, c);
     opensmt::Real r = getNumConst(c); //PS. shall I add opensmt::Integer j = getNumConst(c)
+
     if (r < 0) //PS. OR (l < 0)
         return mkNumNeg(v);
     else
@@ -504,7 +509,13 @@ PTRef LALogic::mkNumDiv(const vec<PTRef>& args, char** msg)
 
     if (isNumDiv(s_new)) {
         assert(isNumTerm(args_new[0]) && isConstant(args_new[1]));
-        args_new[1] = mkConst(FastRational_inverse(getNumConst(args_new[1]))); //mkConst(1/getRealConst(args_new[1]));
+        //args_new[1] = mkConst(FastRational_inverse(getNumConst(args_new[1]))); //mkConst(1/getRealConst(args_new[1]));
+
+        args_new[1] = mkConst(FastRational_inverse(
+                ((typeid(getNumConst(args_new[1])).hash_code() == typeid(opensmt::Real&).hash_code()) //PS. I need to create fastratonal from integer
+                 ? ((opensmt::Real&) (getNumConst(args_new[1])))
+                 : ((opensmt::Integer&) (getNumConst(args_new[1])))
+        )));
         return mkNumTimes(args_new);
     }
 
@@ -668,6 +679,31 @@ PTRef LALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)  //PS. shal
 PTRef LALogic::mkConst(const char *name, const char **msg)
 {
     return mkConst(getSort_num(), name);
+}
+
+PTRef LALogic::mkConst(SRef s, const char* name) //PS. how to rewrite this?
+{
+    assert(strlen(name) != 0);
+    PTRef ptr = PTRef_Undef;
+    if (s == sort_NUM) {
+        char* rat;
+        opensmt::stringToRational(rat, name);
+        ptr = mkVar(s, rat);
+        // Store the value of the number as a real
+        SymId id = sym_store[getPterm(ptr).symb()].getId();
+        for (int i = reals.size(); i <= id; i++)
+            reals.push(NULL);
+        if (reals[id] != NULL) { delete reals[id]; }
+        reals[id] = new opensmt::Real(rat);
+        free(rat);
+        // Code to allow efficient constant detection.
+        while (id >= constants.size())
+            constants.push(false);
+        constants[id] = true;
+    } else
+        ptr = Logic::mkConst(s, name);
+
+    return ptr;
 }
 
 /***********************************************************

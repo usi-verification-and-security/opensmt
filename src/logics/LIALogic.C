@@ -349,7 +349,7 @@ LIALogic::mkConst(const char *name, const char **msg)
     return mkConst(getSort_Integer(), name);
 }
 */
-
+/*
 PTRef LIALogic::mkConst(SRef s, const char* name)
 {
     assert(strlen(name) != 0);
@@ -373,7 +373,7 @@ PTRef LIALogic::mkConst(SRef s, const char* name)
         ptr = Logic::mkConst(s, name);
 
     return ptr;
-}
+}*/
 
 /*
 bool LIALogic::isIntegerTerm(PTRef tr) const

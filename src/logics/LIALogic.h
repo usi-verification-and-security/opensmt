@@ -89,8 +89,8 @@ class LIALogic: public LALogic
     virtual PTRef       mkConst         (const char* name, const char **msg) override;
     virtual PTRef       mkConst         (SRef s, const char* name) override;
     virtual PTRef       mkConst         (const opensmt::Integer& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_num(), rat); free(rat); return tr; }
-    virtual PTRef       mkConst         (const char* num) { return mkConst(getSort_num(), num); }
-    virtual PTRef       mkIntVar        (const char* name) { return mkVar(getSort_num(), name); }
+    virtual PTRef       mkConst         (const char* num) override { return mkConst(getSort_num(), num); }
+    virtual PTRef       mkNumVar        (const char* name) override { return mkVar(getSort_num(), name); }
 
     virtual bool isBuiltinSort(SRef sr) const override { return sr == sort_INTEGER || Logic::isBuiltinSort(sr); }
     //virtual bool isBuiltinConstant(SymRef sr) const { return (isIntegerConst(sr) || Logic::isBuiltinConstant(sr)); }

@@ -377,7 +377,7 @@ PTRef LRALogic::mkConst(const char *name, const char **msg)
     return mkConst(getSort_real(), name);
 }
  */
-
+/*
 PTRef LRALogic::mkConst(SRef s, const char* name) //PS. how to rewrite this?
 {
     assert(strlen(name) != 0);
@@ -401,7 +401,7 @@ PTRef LRALogic::mkConst(SRef s, const char* name) //PS. how to rewrite this?
         ptr = Logic::mkConst(s, name);
 
     return ptr;
-}
+}*/
 
 PTRef LRALogic::getNTerm(char* rat_str)
 {
