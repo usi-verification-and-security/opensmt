@@ -1,11 +1,10 @@
 #include "SStore.h"
 #include "PtStore.h"
-#include "LRALogic.h"
+//#include "LRALogic.h"
 #include "TreeOps.h"
 #include "Global.h"
 #include "LA.h"
 #include "LALogic.h"
-
 
 
 bool LALogic::isNegated(PTRef tr) const {

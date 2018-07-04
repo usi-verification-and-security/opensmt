@@ -153,7 +153,7 @@ public:
     virtual bool isNumTerm(PTRef tr) const;
     virtual bool okForBoolVar(PTRef) const;
 
-    virtual PTRef getNTerm(char* rat_str) =0;
+    //virtual PTRef getNTerm(char* rat_str) =0;
 
     virtual PTRef getTerm_NumZero() const { return term_Num_ZERO; }
     virtual PTRef getTerm_NumOne() const { return term_Num_ONE; }

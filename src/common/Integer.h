@@ -8,7 +8,7 @@
 #include "Number.h"
 
 namespace opensmt {
-    typedef Number Integer;
+    typedef Number Integer2;
 }
 
 #endif //OPENSMT_INTEGER_H

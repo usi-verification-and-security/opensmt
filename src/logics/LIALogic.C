@@ -333,7 +333,7 @@ bool LIALogic::isBuiltinFunction(const SymRef sr) const
     else return Logic::isBuiltinFunction(sr);
 }
 */
-const opensmt::Integer&
+const opensmt::Integer2&
 LIALogic::getIntegerConst(PTRef tr) const
 {
     SymId id = sym_store[getPterm(tr).symb()].getId();

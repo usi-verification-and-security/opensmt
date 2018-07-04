@@ -2,7 +2,7 @@
 #define LIALOGIC_H
 
 #include "Logic.h"
-#include "Real.h"
+//#include "Real.h"
 #include "Integer.h"
 #include "LALogic.h"
 
@@ -33,7 +33,7 @@ class LIALogic: public LALogic
 {
   protected:
     Logic_t logic_type;
-    vec<opensmt::Integer*> integers;//PS. replace this with Number?
+    vec<opensmt::Integer2*> integers;//PS. replace this with Number?
     SymRef              sym_Int_ZERO;
     SymRef              sym_Int_ONE;
     SymRef              sym_Int_NEG;
@@ -90,7 +90,7 @@ class LIALogic: public LALogic
 
     virtual PTRef       mkConst         (const char* name, const char **msg) override;
     virtual PTRef       mkConst         (SRef s, const char* name) override;
-    virtual PTRef       mkConst         (const opensmt::Integer& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_num(), rat); free(rat); return tr; }
+    virtual PTRef       mkConst         (const opensmt::Integer2& c) override { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_num(), rat); free(rat); return tr; }
     virtual PTRef       mkConst         (const char* num) override { return mkConst(getSort_num(), num); }
     virtual PTRef       mkNumVar        (const char* name) override { return mkVar(getSort_num(), name); }
 
@@ -106,7 +106,7 @@ class LIALogic: public LALogic
     //SRef   declareSort_Integer(char** msg);
     virtual SRef   getSort_num()  const override {return sort_INTEGER;}
     const opensmt::Number& getNumConst(PTRef tr) const override {return getIntegerConst(tr);}
-    const opensmt::Integer& getIntegerConst(PTRef tr) const;
+    const opensmt::Integer2& getIntegerConst(PTRef tr) const;
 
 
     bool        isIntPlus(SymRef sr)  const { return sr == sym_Int_PLUS; }

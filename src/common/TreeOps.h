@@ -28,6 +28,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define Common_TreeOps_h
 #include "Vec.h"
 #include "Pterm.h"
+#include "Logic.h"
+
 
 class Logic;
 
