@@ -1,6 +1,6 @@
 #include "LRATHandler.h"
 #include "TreeOps.h"
-#include "LRASolver.h"
+#include "lrasolver/LRASolver.h"
 
 LRATHandler::LRATHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d, TermMapper& tmap)
         : TSolverHandler(c, d, l, tmap)

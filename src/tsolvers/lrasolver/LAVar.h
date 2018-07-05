@@ -34,7 +34,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 class LRASolver;
 class LAVarStore;
-class LRALogic;
+class LALogic;
 
 
 //
@@ -143,9 +143,9 @@ private:
     LAVarAllocator& lva;
     vec<LVRef>      leqToLavar;              // Maps Pterm constraints to solver's real variables.
     vec<LVRef>      ptermToLavar;            // Maps Pterm variables to solver's real variables
-    LRALogic&       logic;
+    LALogic&       logic;
 public:
-    LAVarStore(LAVarAllocator& lva, LRALogic& logic) : lva(lva), logic(logic) {}
+    LAVarStore(LAVarAllocator& lva, LALogic& logic) : lva(lva), logic(logic) {}
     inline void   clear() {};
     LVRef  getNewVar(PTRef e_orig);
     LVRef  getVarByPTId(PTId i) { return ptermToLavar[Idx(i)]; }

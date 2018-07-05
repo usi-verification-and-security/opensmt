@@ -1,6 +1,6 @@
 #include "LIATHandler.h"
 #include "TreeOps.h"
-#include <lrasolver/LIASolver.h>
+#include <liasolver/LIASolver.h>
 
 LIATHandler::LIATHandler(SMTConfig& c, LIALogic& l, vec<DedElem>& d, TermMapper& tmap)
         : TSolverHandler(c, d, l, tmap)

@@ -42,7 +42,7 @@ private:
     LAVarAllocator &lva;
     LABoundStore &bs;
     int n_vars_with_model;
-    LRALogic& logic; // Needed just for debug prints
+    LALogic& logic; // Needed just for debug prints
     Map<LVRef,bool,LVRefHash> has_model;
     int backtrackLevel() { return limits.size() - 1; }
     void         popModels();
@@ -50,7 +50,7 @@ private:
     PtAsgn       popDecisions();
 
 public:
-    LRAModel(LAVarAllocator &lva, LABoundStore& bs, LRALogic& logic) : lva(lva), bs(bs), n_vars_with_model(0), logic(logic) { limits.push({0, 0}); }
+    LRAModel(LAVarAllocator &lva, LABoundStore& bs, LALogic& logic) : lva(lva), bs(bs), n_vars_with_model(0), logic(logic) { limits.push({0, 0}); }
     void initModel(LAVarStore &s);
     int addVar(LVRef v); // Adds a variable.  Returns the total number of variables
     inline int   nVars() { return n_vars_with_model; }

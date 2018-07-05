@@ -1,5 +1,5 @@
 #include "UFLRATHandler.h"
-#include "LRASolver.h"
+#include "lrasolver/LRASolver.h"
 #include "TreeOps.h"
 #include "Egraph.h"
 

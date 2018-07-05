@@ -1,64 +1,18 @@
-/*********************************************************************
- Author:
-   Leonardo Alt <leonardoaltt@gmail.com>
- , Antti Hyvarinen <antti.hyvarinen@gmail.com>
- , Aliaksei Tsitovich <aliaksei.tsitovich@lu.unisi.ch>
- , Roberto Bruttomesso <roberto.bruttomesso@unisi.ch>
-
- OpenSMT2 -- Copyright (C)   2012 - 2016, Antti Hyvarinen
-                             2008 - 2012, Roberto Bruttomesso
-
-Permission is hereby granted, free of charge, to any person obtaining a
-copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
-
-The above copyright notice and this permission notice shall be included
-in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*********************************************************************/
-
-#include "LRASolver.h"
 #include "LASolver.h"
-
 #include "LA.h"
 
-//#include "../liasolver/LIASolver.h"
 
-static SolverDescr descr_lra_solver("LRA Solver", "Solver for Quantifier Free Linear Real Arithmetics");
+static SolverDescr descr_la_solver("LA Solver", "Solver for Quantifier Free Linear Arithmetics");
 
-// MB: helper functions
-namespace{
-    bool isBoundSatisfied(Delta const & val, LABound const & bound ) {
-        if (bound.getType() == bound_u){
-            return val <= bound.getValue();
-        }
-        else {
-            assert(bound.getType() == bound_l);
-            return val >= bound.getValue();
-        }
-    }
-}
 
-/*
-bool LRASolver::isValid(PTRef tr)
+bool LASolver::isValid(PTRef tr)
 {
     return logic.isNumConst(tr) || logic.isNumPlus(tr) || logic.isNumMinus(tr) || logic.isNumNeg(tr) ||
            logic.isNumTimes(tr) || logic.isNumDiv(tr) || logic.isNumEq(tr) || logic.isNumLeq(tr) || logic.isNumLt(tr) ||
            logic.isNumGeq(tr) || logic.isNumGt(tr) || logic.isNumVar(tr);
 }
 
-void LRASolver::isProperLeq(PTRef tr)
+void LASolver::isProperLeq(PTRef tr)
 {
     assert(logic.isAtom(tr));
     assert(logic.isNumLeq(tr));
@@ -68,45 +22,25 @@ void LRASolver::isProperLeq(PTRef tr)
     assert(logic.isConstant(cons));
     assert(logic.isNumVar(sum) || logic.isNumPlus(sum) || logic.isNumTimes(sum));
     assert(!logic.isNumTimes(sum) || ((logic.isNumVar(logic.getPterm(sum)[0]) && (logic.mkNumNeg(logic.getPterm(sum)[1])) == logic.getTerm_NumOne()) ||
-                                       (logic.isNumVar(logic.getPterm(sum)[1]) && (logic.mkNumNeg(logic.getPterm(sum)[0])) == logic.getTerm_NumOne())));
-}*/
+                                      (logic.isNumVar(logic.getPterm(sum)[1]) && (logic.mkNumNeg(logic.getPterm(sum)[0])) == logic.getTerm_NumOne())));
+}
 
-
-//opensmt::Real *
-//LRASolver::newReal(const Real *old) {
-//    Real * p_a = NULL;
-//    if (!numbers_pool.empty())
-//    {
-//        p_a = numbers_pool.back( );
-//        numbers_pool.pop_back( );
-//        *p_a = *old;
-//    }
-//    else
-//    {
-//        p_a = new Real(*old);
-//    }
-//    return p_a;
-//}
-
-
-
-LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
-    : logic(l)
+LASolver::LASolver(SMTConfig & c, LALogic& l, vec<DedElem>& d)
+        : logic(l)
 //    , bindedRowsStore(l, lva, bra)
 //    , pa(pta)
 //    , polyStore(lva, pa, bindedRowsStore, l)
-    , LASolver((SolverId)descr_lra_solver, (const char*)descr_lra_solver, c, d)
-    , delta(Delta::ZERO)
-    , bland_threshold(1000)
-    , lavarStore(lva, l)
-    , boundStore(ba, bla, lva, lavarStore, l)
-    , model(lva, boundStore, l)
+        , TSolver((SolverId)descr_la_solver, (const char*)descr_la_solver, c, d)
+        , delta(Delta::ZERO)
+        , bland_threshold(1000)
+        , lavarStore(lva, l)
+        , boundStore(ba, bla, lva, lavarStore, l)
+        , model(lva, boundStore, l)
 {
     status = INIT;
 }
 
-/*
-void LRASolver::clearSolver()
+void LASolver::clearSolver()
 {
     status = INIT;
     explanationCoefficients.clear();
@@ -133,23 +67,23 @@ void LRASolver::clearSolver()
 //
 // The model system
 //
-bool LRASolver::isModelOutOfBounds(LVRef v) const
+bool LASolver::isModelOutOfBounds(LVRef v) const
 {
     return ( (model.read(v) > model.Ub(v)) || (model.read(v) < model.Lb(v)) );
 }
 
-bool LRASolver::isModelOutOfUpperBound(LVRef v) const
+bool LASolver::isModelOutOfUpperBound(LVRef v) const
 {
     return ( model.read(v)> model.Ub(v) );
 }
 
-bool LRASolver::isModelOutOfLowerBound(LVRef v) const
+bool LASolver::isModelOutOfLowerBound(LVRef v) const
 {
     return ( model.read(v) < model.Lb(v) );
 }
 
 
-const Delta LRASolver::overBound(LVRef v) const
+const Delta LASolver::overBound(LVRef v) const
 {
     assert( isModelOutOfBounds(v) );
     if (isModelOutOfUpperBound(v))
@@ -165,74 +99,38 @@ const Delta LRASolver::overBound(LVRef v) const
     exit(1);
 }
 
-
-bool LRASolver::isModelInteger(LVRef v) const
-{
-    return !( model.read(v).hasDelta() || !model.read(v).R().isInteger() );
-}
-
-bool LRASolver::isEquality(LVRef v) const
+bool LASolver::isEquality(LVRef v) const
 {
     return model.isEquality(v);
 }
 
-bool LRASolver::isUnbounded(LVRef v) const
+bool LASolver::isUnbounded(LVRef v) const
 {
     bool rval = model.isUnbounded(v);
 //    if (rval)
 //        printf("Var %s is unbounded\n", lva.printVar(v));
     return rval;
 }
-*/
 
-// Given an inequality of the form c <= t(x_1, ..., x_n), set the bound
-// for the expression on the right side.  If the inequality is of the
-// form
-//  (1) c <= x, set a lower bound for x
-//  (2) c <= -x, set an upper bound for x
-//  (3) c <= x1 + a2*x2 + ... + an*xn, set an upper bound for the slack
-//      var x1 + a2*x2 + ... + an*xn
-//  (4) c <= -x1 - a2*x2 - ... - an*xn, set a lower bound for the slack
-//      var x1 + a2*x2 + ... + an*xn
-//
-
-/*
-void LRASolver::setBound(PTRef leq_tr)
+void LASolver::setBound(PTRef leq_tr)
 {
 //    printf("Setting bound for %s\n", logic.printTerm(leq_tr));
 
     boundStore.addBound(leq_tr);
 }
-*/
 
-//
-// So far a temporary wrapper.  The idea is to avoid unnecessary delete & new.
-//
-//void LRASolver::getReal(Real*& r, PTRef cons)
-//{
-//    if (!numbers_pool.empty()) {
-//        r = numbers_pool.back();
-//        numbers_pool.pop_back();
-//        *r = Real(logic.getRealConst(cons));
-//    }
-//    else {
-//        r = new Real(logic.getRealConst(cons));
-//    }
-//}
-
-
-Real LRASolver::getReal(PTRef r) {
+opensmt::Number LASolver::getNum(PTRef r) {
     return logic.getNumConst(r);
 }
 
-/*
-bool LRASolver::hasVar(PTRef expr) {
+
+bool LASolver::hasVar(PTRef expr) {
     expr =  logic.isNegated(expr) ? logic.mkNumNeg(expr) : expr;
     PTId id = logic.getPterm(expr).getId();
     return lavarStore.hasVar(id);
 }
 
-LVRef LRASolver::getLAVar_single(PTRef expr_in) {
+LVRef LASolver::getLAVar_single(PTRef expr_in) {
 
     PTRef expr = logic.isNegated(expr_in) ? logic.mkNumNeg(expr_in) : expr_in;
 
@@ -245,7 +143,7 @@ LVRef LRASolver::getLAVar_single(PTRef expr_in) {
     return x;
 }
 
-Polynomial LRASolver::expressionToLVarPoly(PTRef term) {
+Polynomial LASolver::expressionToLVarPoly(PTRef term) {
     Polynomial poly;
     // If term is negated, we need to flip the signs of the poly
     bool negated = logic.isNegated(term);
@@ -255,7 +153,7 @@ Polynomial LRASolver::expressionToLVarPoly(PTRef term) {
         logic.splitTermToVarAndConst(logic.getPterm(term)[i], v, c);
         LVRef var = getLAVar_single(v);
         tableau.nonbasicVar(var);
-        Real coeff = getReal(c);
+        Real coeff = getNum(c);
 
         if (negated) {
             coeff.negate();
@@ -264,7 +162,6 @@ Polynomial LRASolver::expressionToLVarPoly(PTRef term) {
     }
     return poly;
 }
-
 
 //
 // Get a possibly new LAVar for a PTRef term.  We may assume that the term is of one of the following forms,
@@ -277,7 +174,7 @@ Polynomial LRASolver::expressionToLVarPoly(PTRef term) {
 // (4a) (* x -1) + p_1 + ... + p_n
 // (4b) (* -1 x) + p_1 + ... + p_n
 //
-LVRef LRASolver::exprToLVar(PTRef expr) {
+LVRef LASolver::exprToLVar(PTRef expr) {
     LVRef x = LVRef_Undef;
     if (lavarStore.hasVar(expr)){
         x = lavarStore.getVarByPTId(logic.getPterm(expr).getId());
@@ -307,7 +204,7 @@ LVRef LRASolver::exprToLVar(PTRef expr) {
 //
 // Reads the constraint into the solver
 //
-lbool LRASolver::declareTerm(PTRef leq_tr)
+lbool LASolver::declareTerm(PTRef leq_tr)
 {
     if (!logic.isNumLeq(leq_tr)) return l_Undef;
 
@@ -337,36 +234,9 @@ lbool LRASolver::declareTerm(PTRef leq_tr)
 #endif
     return l_Undef;
 }
-*/
 
-//LVRef LRASolver::getBasicVarToFix() const {
-//    int curr_var_id_x = max_var_id;
-//    std::unordered_set<LVRef, LVRefHash> new_candidates;
-//    for (auto it : candidates) {
-//        assert(it != LVRef_Undef);
-//        std::size_t current_poly_size = static_cast<std::size_t>(-1);
-//        if (isModelOutOfBounds(it)) {
-//            new_candidates.insert(it);
-//            if (bland_rule) {
-//                bland_counter++;
-//                tsolver_stats.num_bland_ops++;
-//                // Select the var with the smallest id
-//                x = lva[it].ID() < curr_var_id_x ? it : x;
-//                curr_var_id_x = lva[it].ID() < curr_var_id_x ? lva[it].ID() : curr_var_id_x;
-//            } else { // Use heuristics that prefer short polynomials
-//                pivot_counter++;
-//                tsolver_stats.num_pivot_ops++;
-//
-//                if (x == LVRef_Undef || current_poly_size > tableau.getPolySize(it))
-//                    x = it;
-//            }
-//        }
-//    }
-//    candidates.swap(new_candidates);
-//}
 
-/*
-LVRef LRASolver::getBasicVarToFixByShortestPoly() const {
+LVRef LASolver::getBasicVarToFixByShortestPoly() const {
     std::unordered_set<LVRef, LVRefHash> new_candidates;
     LVRef current = LVRef_Undef;
     std::size_t current_poly_size = static_cast<std::size_t>(-1);
@@ -385,7 +255,7 @@ LVRef LRASolver::getBasicVarToFixByShortestPoly() const {
     return current;
 }
 
-LVRef LRASolver::getBasicVarToFixByBland() const {
+LVRef LASolver::getBasicVarToFixByBland() const {
     std::unordered_set<LVRef, LVRefHash> new_candidates;
     int curr_var_id_x = lavarStore.numVars();
     LVRef current = LVRef_Undef;
@@ -393,16 +263,16 @@ LVRef LRASolver::getBasicVarToFixByBland() const {
         assert(it != LVRef_Undef);
         if (isModelOutOfBounds(it)) {
             new_candidates.insert(it);
-                // Select the var with the smallest id
-                current = lva[it].ID() < curr_var_id_x ? it : current;
-                curr_var_id_x = lva[it].ID() < curr_var_id_x ? lva[it].ID() : curr_var_id_x;
-            }
+            // Select the var with the smallest id
+            current = lva[it].ID() < curr_var_id_x ? it : current;
+            curr_var_id_x = lva[it].ID() < curr_var_id_x ? lva[it].ID() : curr_var_id_x;
         }
+    }
     candidates.swap(new_candidates);
     return current;
 }
 
-LVRef LRASolver::findNonBasicForPivotByHeuristic(LVRef basicVar) {
+LVRef LASolver::findNonBasicForPivotByHeuristic(LVRef basicVar) {
     // favor more independent variables: those present in less rows
     assert(tableau.isBasic(basicVar));
     LVRef v_found = LVRef_Undef;
@@ -454,7 +324,7 @@ LVRef LRASolver::findNonBasicForPivotByHeuristic(LVRef basicVar) {
     return v_found;
 }
 
-LVRef LRASolver::findNonBasicForPivotByBland(LVRef basicVar) {
+LVRef LASolver::findNonBasicForPivotByBland(LVRef basicVar) {
     int max_var_id = lavarStore.numVars();
     LVRef y_found = LVRef_Undef;
     // Model doesn't fit the lower bound
@@ -496,117 +366,18 @@ LVRef LRASolver::findNonBasicForPivotByBland(LVRef basicVar) {
     return y_found;
 }
 
-*/
+bool LASolver::check(bool complete) {
 
-//
-// Performs the main Check procedure to see if the current constraints
-// and Tableau are satisfiable
-//
-bool LRASolver::check(bool complete) {
-
-    return check_simplex(complete);
+    return 0;
 
 }
 
-bool LRASolver::check_simplex(bool complete) {
-    // opensmt::StopWatch check_timer(tsolver_stats.simplex_timer);
-//    printf(" - check %d\n", debug_check_count++);
-    (void)complete;
-    // check if we stop reading constraints
-    if (status == INIT) {
-        initSolver();
-    }
 
-    bool bland_rule = false;
-    unsigned repeats = 0;
-    unsigned pivot_counter = 0;
-    unsigned bland_counter = 0;
-    // These values are from Yices
-    unsigned bthreshold = bland_threshold;
-    if (nVars() > 10000)
-        bthreshold *= 1000;
-    else if (nVars() > 1000)
-        bthreshold *= 100;
-
-    // keep doing pivotAndUpdate until the SAT/UNSAT status is confirmed
-    while (true) {
-        repeats++;
-        // clear the explanations vector
-        explanation.clear( );
-        explanationCoefficients.clear( );
-
-        LVRef x = LVRef_Undef;
-
-        if (!bland_rule && (repeats > tableau.getNumOfCols()))
-            bland_rule = true;
-
-        if(bland_rule){
-            x = getBasicVarToFixByBland();
-            ++bland_counter;
-            ++tsolver_stats.num_bland_ops;
-        }
-        else{
-            x = getBasicVarToFixByShortestPoly();
-            ++pivot_counter;
-            ++tsolver_stats.num_pivot_ops;
-        }
-
-        if (x == LVRef_Undef) {
-            // If not found, check if problem refinement for integers is required
-            //if (config.lra_integer_solver && complete)
-                //return checkIntegersAndSplit( );
-
-            // Otherwise - SAT
-            refineBounds();
-#ifdef GAUSSIAN_DEBUG
-            computeModel();
-#endif
-//            cerr << "; USUAL SAT" << endl;
-            setStatus(SAT);
-            break;
-//            return setStatus( SAT );
-        }
-
-        LVRef y_found = LVRef_Undef;
-        if(bland_rule){
-            y_found = findNonBasicForPivotByBland(x);
-        }
-        else{
-            y_found = findNonBasicForPivotByHeuristic(x);
-        }
-        // if it was not found - UNSAT
-        if (y_found == LVRef_Undef) {
-            vec<PTRef> tmp;
-            getConflictingBounds(x, tmp);
-            for (int i = 0; i < tmp.size(); i++) {
-                PTRef pure;
-                lbool sgn;
-                logic.purify(tmp[i], pure, sgn);
-                explanation.push(PtAsgn(pure, sgn));
-            }
-            setStatus(UNSAT);
-            break;
-        }
-        // if it was found - pivot old Basic x with non-basic y and do the model updates
-        else {
-            pivot(x, y_found);
-        }
-    }
-    getStatus() ? tsolver_stats.sat_calls ++ : tsolver_stats.unsat_calls ++;
-//    printf(" - check ended\n");
-//    printf(" => %s\n", getStatus() ? "sat" : "unsat");
-//    if (getStatus())
-//        model.printModelState();
-    return getStatus();
-}
-
-
-/*
 
 //
 // Push the constraint into the solver and increase the level
 //
-bool LRASolver::assertLit( PtAsgn asgn, bool reason )
+bool LASolver::assertLit( PtAsgn asgn, bool reason )
 {
     ( void )reason;
 
@@ -683,7 +454,7 @@ bool LRASolver::assertLit( PtAsgn asgn, bool reason )
     return getStatus();
 }
 
-bool LRASolver::assertBoundOnVar(LVRef it, LABoundRef itBound_ref)
+bool LASolver::assertBoundOnVar(LVRef it, LABoundRef itBound_ref)
 {
     // No check whether the bounds are consistent for the polynomials.  This is done later with Simplex.
 
@@ -750,7 +521,7 @@ bool LRASolver::assertBoundOnVar(LVRef it, LABoundRef itBound_ref)
 //
 // Push the solver one level down
 //
-void LRASolver::pushBacktrackPoint( )
+void LASolver::pushBacktrackPoint( )
 {
     // Check if any updates need to be repeated after backtrack
     model.pushBacktrackPoint();
@@ -763,13 +534,13 @@ void LRASolver::pushBacktrackPoint( )
 
 // Pop the solver one level up
 // NOTE: this method should not be used, pop multiple points is more efficient with popBacktrackPoints rather than popping one by one
-void LRASolver::popBacktrackPoint( ) {
+void LASolver::popBacktrackPoint( ) {
     this->popBacktrackPoints(1);
 }
 
 // Pop the solver given number of times
 //
-void LRASolver::popBacktrackPoints(unsigned int count) {
+void LASolver::popBacktrackPoints(unsigned int count) {
     for ( ; count > 0; --count){
         PtAsgn dec = model.popBacktrackPoint();
         if (dec != PtAsgn_Undef) {
@@ -783,14 +554,14 @@ void LRASolver::popBacktrackPoints(unsigned int count) {
     setStatus(SAT);
 }
 
-void LRASolver::fixCandidates() {
+void LASolver::fixCandidates() {
     candidates.clear();
     for (const auto & row : tableau.getRows()) {
         candidates.insert(row.first);
     }
 }
 
-void LRASolver::pivot( const LVRef bv, const LVRef nv){
+void LASolver::pivot( const LVRef bv, const LVRef nv){
     assert(tableau.isBasic(bv));
     assert(tableau.isNonBasic(nv));
     assert(valueConsistent(bv));
@@ -802,7 +573,7 @@ void LRASolver::pivot( const LVRef bv, const LVRef nv){
     assert(checkTableauConsistency());
 }
 
-void LRASolver::changeValueBy(LVRef var, const Delta & diff) {
+void LASolver::changeValueBy(LVRef var, const Delta & diff) {
     // update var's value
     model.write(var, model.read(var) + diff);
     candidates.insert(var);
@@ -816,7 +587,7 @@ void LRASolver::changeValueBy(LVRef var, const Delta & diff) {
     }
 }
 
-void LRASolver::updateValues(const LVRef bv, const LVRef nv){
+void LASolver::updateValues(const LVRef bv, const LVRef nv){
     assert(model.read(bv) < model.Lb(bv) || model.read(bv) > model.Ub(bv));
     auto bvNewVal = (model.read(bv) < model.Lb(bv)) ? model.Lb(bv) : model.Ub(bv);
     const auto & coeff = tableau.getCoeff(bv, nv);
@@ -826,10 +597,8 @@ void LRASolver::updateValues(const LVRef bv, const LVRef nv){
     changeValueBy(nv, nvDiff);
 }
 
-//
-// Perform all the required initialization after inform is complete
-//
-void LRASolver::initSolver()
+
+void LASolver::initSolver()
 {
     if (status == INIT)
     {
@@ -873,13 +642,13 @@ void LRASolver::initSolver()
         status = SAT;
     }
     else
-        opensmt_error( "Solver can not be initialized in the state different from INIT" );
+    opensmt_error( "Solver can not be initialized in the state different from INIT" );
 }
 
 //
 // Returns boolean value correspondent to the current solver status
 //
-inline bool LRASolver::getStatus( )
+inline bool LASolver::getStatus( )
 {
     switch( status ) {
         case SAT:
@@ -895,28 +664,26 @@ inline bool LRASolver::getStatus( )
         case INIT:
         case ERROR:
         default:
-            opensmt_error( "Status is undef!" );
-        return false;
+        opensmt_error( "Status is undef!" );
+            return false;
     }
 }
 
 //
 // Sets the new solver status and returns the correspondent lbool value
 //
-inline bool LRASolver::setStatus( LRASolverStatus s )
+inline bool LASolver::setStatus( LASolverStatus s )
 {
     status = s;
     if (s == UNSAT)
         has_explanation = true;
     return getStatus( );
 }
-*/
 
-/*
 //
 // Returns the bounds conflicting with the actual model.
 //
-void LRASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
+void LASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
 {
     if (model.read(x) < model.Lb(x)) {
         // add all bounds for polynomial elements, which limit lower bound
@@ -1062,11 +829,10 @@ void LRASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
 
     cerr << "; Strong itp:\n" << logic.printTerm(itp_strong) << endl;
     cerr << "; Weak itp:\n" << logic.printTerm(itp_weak) << endl;
-  }*/
+  */
+}
 
-
-/*
-void LRASolver::getSimpleDeductions(LVRef v, LABoundRef br)
+void LASolver::getSimpleDeductions(LVRef v, LABoundRef br)
 {
 //    printf("Deducing from bound %s\n", boundStore.printBound(br));
 //    printf("The full bound list for %s:\n%s\n", logic.printTerm(lva[v].getPTRef()), boundStore.printBounds(v));
@@ -1125,13 +891,10 @@ void LRASolver::getSimpleDeductions(LVRef v, LABoundRef br)
     }
 }
 
-*/
-
-/*
 //
 // Compute the current bounds for each row and tries to deduce something useful
 //
-void LRASolver::refineBounds( )
+void LASolver::refineBounds( )
 {
 
     // Check if polynomial deduction is enabled
@@ -1142,7 +905,7 @@ void LRASolver::refineBounds( )
 //
 // Prints the current state of the solver (terms, bounds, tableau)
 //
-void LRASolver::print( ostream & out )
+void LASolver::print( ostream & out )
 {
     model.printModelState();
     throw "Not implemented yet!";
@@ -1181,7 +944,7 @@ void LRASolver::print( ostream & out )
 }
 
 
-void LRASolver::computeConcreteModel(LVRef v) {
+void LASolver::computeConcreteModel(LVRef v) {
     while (concrete_model.size() <= lva[v].ID())
         concrete_model.push(nullptr);
 
@@ -1200,10 +963,7 @@ void LRASolver::computeConcreteModel(LVRef v) {
     }
 }
 
-
-
-
-void LRASolver::getConflict(bool, vec<PtAsgn>& e)
+void LASolver::getConflict(bool, vec<PtAsgn>& e)
 {
     for (int i = 0; i < explanation.size(); i++) {
         e.push(explanation[i]);
@@ -1225,16 +985,18 @@ void LRASolver::getConflict(bool, vec<PtAsgn>& e)
 //    assert(logic.implies(logic.mkAnd(check_me), logic.getTerm_false()));
 }
 
- */
-
-/*
 //
 // Detect the appropriate value for symbolic delta and stores the model
 //
-void LRASolver::computeModel()
+void LASolver::computeModel()
 {
     assert( status == SAT );
-
+/*
+    Real minDelta(0);
+    Real maxDelta(0);
+    Delta curDelta(0);
+    Delta curBound(Delta::ZERO);
+*/
     Delta delta_abst = Delta_PlusInf;  // We support plus infinity for this one.
 
     // Let x be a LV variable such that there are asserted bounds c_1 <= x and x <= c_2, where
@@ -1270,14 +1032,70 @@ void LRASolver::computeModel()
         if (delta_abst > D)
             delta_abst = D;
 
-    }
+/*
+        curBound = Delta( Delta::ZERO );
 
+        // Check if the lower bound can be used and at least one of delta and real parts are not 0
+        const LABound& lbound = model.readLBound(v);
+        const Delta& val_l = lbound.getValue();
+        if (!val_l.isMinusInf()
+            && (val_l.D() != 0 || model.read(v).D() != 0)
+            && (val_l.R() != 0 || model.read(v).R() != 0))
+        {
+            curBound = lbound.getValue() - model.read(v);
+
+            // if delta is > 0 then use delta for min
+            if ( curBound.D() > 0 )
+            {
+                curDelta = -(curBound.R() / curBound.D());
+                if ( curDelta != 0 && ( minDelta == 0 || minDelta > curDelta ) )
+                    minDelta = curDelta;
+            }
+            // if delta is < 0 than use delta for max
+            else if  ( curBound.D() < 0 )
+            {
+                curDelta = -( curBound.R() / curBound.D() );
+                if ( curDelta != 0 && ( maxDelta == 0 || maxDelta < curDelta ) )
+                    maxDelta = curDelta;
+            }
+        }
+        const LABound& ubound = model.readUBound(v);
+        const Delta&  val_u = ubound.getValue();
+        if (!val_u.isPlusInf()
+            && (val_u.D() != 0 || model.read(v).D() != 0)
+            && (val_u.R() != 0 || model.read(v).R() != 0))
+        {
+            curBound = model.read(v) - ubound.getValue();
+
+            // if delta is > 0 then use delta for min
+            if ( curBound.D() > 0 )
+            {
+                curDelta = -(curBound.R() / curBound.D() );
+                if ( curDelta != 0 && ( minDelta == 0 || minDelta > curDelta ) )
+                    minDelta = curDelta;
+            }
+            // if denominator is < 0 then use delta for max
+            else if ( curBound.D() < 0 )
+            {
+                curDelta = -(curBound.R() / curBound.D());
+                if ( curDelta != 0 && ( maxDelta == 0 || maxDelta < curDelta ) )
+                    maxDelta = curDelta;
+            }
+        }
+*/
+    }
 
     if (delta_abst.isPlusInf())
         delta = 1;
     else
         delta = delta_abst.R();
 
+/*
+    // TODO: check if it is it really true :)
+    assert( minDelta >= 0 );
+    assert( maxDelta <= 0 );
+    delta = ( minDelta ) / 2;
+*/
 
 #ifdef GAUSSIAN_DEBUG
     cerr << "; delta: " << curDelta << '\n';
@@ -1292,8 +1110,6 @@ void LRASolver::computeModel()
 //    for ( unsigned i = 0; i < columns.size( ); ++i )
 //        computeConcreteModel(columns[i], curDelta);
 }
-*/
-
 
 //
 // Add the variable x with the coefficient p_v to the polynomial represented by
@@ -1309,25 +1125,25 @@ void LRASolver::computeModel()
 
 
 
-/*
+
 // We may assume that the term is of the following forms
 // (1) (* x c)
 // (2) (* c x)
 // (3) c
-opensmt::Real LRASolver::evaluateTerm(PTRef tr)
+opensmt::Number LASolver::evaluateTerm(PTRef tr)
 {
     Pterm& t = logic.getPterm(tr);
     opensmt::Real val(0);
     // Case (3)
     if (logic.isNumConst(tr))
-        return logic.getRealConst(tr);
+        return logic.getNumConst(tr);
 
     // Cases (1) & (2)
     PTRef coef;
     PTRef var;
     logic.splitTermToVarAndConst(tr, var, coef);
     PTId id = logic.getPterm(var).getId();
-    val += logic.getRealConst(coef) * *concrete_model[lva[lavarStore.getVarByPTId(id)].ID()];
+    val += logic.getNumConst(coef) * *concrete_model[lva[lavarStore.getVarByPTId(id)].ID()];
 
     return val;
 }
@@ -1341,7 +1157,7 @@ opensmt::Real LRASolver::evaluateTerm(PTRef tr)
 // (3a) (* x -1) + p_1 + ... + p_n
 // (3b) (* -1 x) + p_1 + ... + p_n
 //
-ValPair LRASolver::getValue(PTRef tr) {
+ValPair LASolver::getValue(PTRef tr) {
     if (!logic.hasSortNum(tr)) return ValPair_Undef;
     PTId id = logic.getPterm(tr).getId();
     opensmt::Real val(0);
@@ -1361,42 +1177,8 @@ ValPair LRASolver::getValue(PTRef tr) {
     return ValPair(tr, val.get_str().c_str());
 }
 
-*/
 
-//
-// Destructor
-//
-LRASolver::~LRASolver( )
-{
-    lasolverstats.printStatistics(cerr);
-    // Remove numbers
-//    while( !numbers_pool.empty( ) )
-//    {
-//        assert( numbers_pool.back( ) );
-//        delete numbers_pool.back( );
-//        numbers_pool.pop_back( );
-//    }
-}
-
-/*
-//bool LRASolver::valueConsistent(LVRef v)
-//{
-//    const Delta& value = model.read(v);
-//    Delta sum(0);
-//    PolyRef pr = lva[v].getPolyRef();
-////    printf("%s = ", value.printValue());
-//    for (int i = 0; i < polyStore.getSize(pr); i++) {
-//        const PolyTerm &t = pta[polyStore.readTerm(pr, i)];
-//        Pterm& smt_term = logic.getPterm(lva[t.var].getPTRef());
-//        sum += t.coef * model.read(t.var);
-////        printf("+(%s*%s)", t.coef.get_str().c_str(), model.read(t.var).printValue());
-//    }
-////    printf(" = %s\n", sum.printValue());
-//    assert(value == sum);
-//    return value == sum;
-//}
-
-bool LRASolver::checkValueConsistency() const{
+bool LASolver::checkValueConsistency() const{
     bool res = true;
     for(auto row : tableau.getRows()) {
         if(tableau.isActive(row.first)){
@@ -1407,7 +1189,7 @@ bool LRASolver::checkValueConsistency() const{
     return res;
 }
 
-bool LRASolver::valueConsistent(LVRef v) const
+bool LASolver::valueConsistent(LVRef v) const
 {
     const Delta& value = model.read(v);
 //    std::cerr << "Value of " << v.x << " is: " << value.printValue() << '\n';
@@ -1437,7 +1219,7 @@ bool LRASolver::valueConsistent(LVRef v) const
 //
 // Check that the values of non-basic variables (columns) do not break asserted bounds
 //
-bool LRASolver::invariantHolds() const
+bool LASolver::invariantHolds() const
 {
     bool rval = true;
     for (auto var : tableau.getNonBasicVars()){
@@ -1466,13 +1248,13 @@ bool LRASolver::invariantHolds() const
     }
     return rval;
 }
-bool LRASolver::checkTableauConsistency() const {
+bool LASolver::checkTableauConsistency() const {
     bool res = tableau.checkConsistency();
     assert(res);
     return res;
 }
 
-void LRASolver::doGaussianElimination( )
+void LASolver::doGaussianElimination( )
 {
     auto eliminated = tableau.doGaussianElimination([this](LVRef v){return this->isUnbounded(v);});
     for(auto rit = eliminated.rbegin(); rit != eliminated.rend(); ++ rit) {
@@ -1489,225 +1271,4 @@ void LRASolver::doGaussianElimination( )
         }
         removed_by_GaussianElimination.emplace(entry.first, poly);
     }
-}*/
-
-#ifdef PRODUCE_PROOF
-//
-// Compute interpolants for the conflict
-//
-PTRef
-LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *labels)
-{
-    // Old implementation:
-    //l = config.logic == QF_LRA || config.logic == QF_UFLRA
-    //? QF_LRA
-    //: QF_LIA;
-
-    assert(status == UNSAT);
-    assert (explanation.size()>1);
-
-    if (verbose() > 1)
-    {
-        if (usingStrong())
-            cerr << "; Using Strong for LRA interpolation" << endl;
-        else if (usingWeak())
-            cerr << "; Using Weak for LRA interpolation" << endl;
-        else if(usingFactor())
-            cerr << "; Using Factor " << getStrengthFactor() << " for LRA interpolation" << endl;
-        else
-            cerr << "; LRA interpolation algorithm unknown" << endl;
-    }
-
-    for(map<PTRef, icolor_t>::iterator it = labels->begin(); it != labels->end(); ++it)
-    {
-        //cout << "; PTRef " << logic.printTerm(it->first) << " has color " << it->second << endl;
-    }
-
-    LAExpression interpolant(logic);
-    LAExpression interpolant_dual(logic);
-    bool delta_flag = false;
-    bool delta_flag_dual = false;
-
-#ifdef ITP_DEBUG
-    vec<PTRef> tr_vec;
-    for (int i = 0; i < explanation.size(); i++)
-    {
-        PTRef tr_vecel = explanation[i].tr;
-        tr_vec.push(explanation[i].sgn == l_False ? logic.mkNot(tr_vecel) : tr_vecel);
-    }
-    PTRef tr = logic.mkAnd(tr_vec);
-    printf("; Explanation: \n");
-    printf(";  %s\n", logic.printTerm(tr));
-#endif
-
-    for ( unsigned i = 0; i < explanation.size( ); i++ )
-    {
-        icolor_t color = I_UNDEF;
-        const ipartitions_t & p = logic.getIPartitions(explanation[i].tr);
-        Pterm& t = logic.getPterm(explanation[i].tr);
-
-        if ( isAB( p, mask ) ) {
-            color = I_AB;
-        }
-        else if ( isAlocal( p, mask ) ) {
-            color = I_A;
-        }
-        else if ( isBlocal( p, mask ) ) {
-            color = I_B;
-        }
-        if (color != I_A && color != I_AB && color != I_B)
-        {
-            printf("Error: color is not defined.\n");
-            printf("  equation: %s\n", logic.printTerm(explanation[i].tr));
-            printf("  mask: %s\n", mask.get_str().c_str());
-            printf("  p: %s\n", p.get_str().c_str());
-            assert(false);
-        }
-        assert( color == I_A
-                || color == I_AB
-                || color == I_B );
-
-        //assert( usingStrong()
-        //        || usingWeak()
-        //        || usingRandom() );
-
-        PTRef exp_pt = explanation[i].tr;
-        if(labels != NULL && labels->find(exp_pt) != labels->end())
-        {
-            color = labels->find(exp_pt)->second;
-            //cout << "; PTRef " << logic.printTerm(exp_pt) << " has Boolean color " << color << endl;
-        }
-        /*
-        // McMillan algo: set AB as B
-        else if ( usingStrong() && color == I_AB )
-            color = I_B;
-        // McMillan' algo: set AB as a
-        else if ( usingWeak() && color == I_AB )
-            color = I_A;
-        // Pudlak algo: who cares
-        else if ( usingRandom() && color == I_AB )
-            color = rand() % 2 ? I_A : I_B;
-        */
-
-        //assert( color == I_A || color == I_B );
-
-        // Add the conflict to the interpolant (multiplied by the coefficient)
-        //if ((color == I_A && usingStrong()) || (color == I_B && usingWeak()))
-        if(color == I_A || color == I_AB)
-        {
-            if (explanation[i].sgn == l_False)
-            {
-                interpolant.addExprWithCoeff(LAExpression(logic, explanation[i].tr), explanationCoefficients[i]);
-                delta_flag=true;
-            }
-            else
-            {
-                interpolant.addExprWithCoeff(LAExpression(logic, explanation[i].tr), -explanationCoefficients[i]);
-            }
-        }
-        //if ((color == I_A && usingStrong()) || (color == I_B && usingWeak()))
-        if(color == I_B || color == I_AB)
-        {
-            if (explanation[i].sgn == l_False)
-            {
-                interpolant_dual.addExprWithCoeff(LAExpression(logic, explanation[i].tr), explanationCoefficients[i]);
-                delta_flag_dual=true;
-            }
-            else
-            {
-                interpolant_dual.addExprWithCoeff(LAExpression(logic, explanation[i].tr), -explanationCoefficients[i]);
-            }
-        }
-    }
-
-    //cout << "; INTERPOLANT " << interpolant << endl;
-    //cout << "; INTERPOLANT IS TRUE " << (interpolant.isTrue() ? "true" : "false") << endl;
-    //cout << "; INTERPOLANT IS FALSE " << (interpolant.isFalse() ? "true" : "false") << endl;
-    PTRef itp;
-    if (interpolant.isTrue() && !delta_flag)
-        itp = logic.getTerm_true();
-    else if (interpolant.isFalse() || ( interpolant.isTrue() && delta_flag ))
-        itp = logic.getTerm_false();
-    else
-    {
-        vec<PTRef> args;
-        if (usingFactor())
-        {
-            opensmt::Real const_strong = interpolant.getRealConstant();
-            opensmt::Real const_weak = interpolant_dual.getRealConstant();
-            PTRef nonconst_strong = interpolant.getPTRefNonConstant();
-            PTRef nonconst_weak = interpolant_dual.getPTRefNonConstant();
-            //cout << "; Constant Strong " << const_strong << endl;
-            //cout << "; Constant Weak " << const_weak << endl;
-            //cout << "; NonConstant Strong " << logic.printTerm(nonconst_strong) << endl;
-            //cout << "; NonConstant Weak " << logic.printTerm(nonconst_weak) << endl;
-            PTRef neg_strong = logic.mkRealNeg(nonconst_strong);
-            //assert(neg_strong == nonconst_weak);
-
-            opensmt::Real lower_bound = const_strong;
-            opensmt::Real upper_bound = const_weak * -1;
-
-            //cout << "; Lower bound is " << lower_bound << endl;
-            //cout << "; Upper bound is " << upper_bound << endl;
-            assert(upper_bound >= lower_bound);
-
-            //cout << "; Strength factor from config is " << getStrengthFactor() << endl;
-            opensmt::Real strength_factor(getStrengthFactor());
-            if (strength_factor < 0 || strength_factor >= 1)
-            {
-                opensmt_error("LRA strength factor has to be in [0,1)");
-            }
-            opensmt::Real strength_diff = (upper_bound - lower_bound);
-            //cout << "; Diff is " << strength_diff << endl;
-            //cout << "; Factor is " << strength_factor << endl;
-            opensmt::Real strength_delta = strength_diff * strength_factor;
-            //cout << "; Delta is " << strength_delta << endl;
-            opensmt::Real new_constant = lower_bound + (strength_diff * strength_factor);
-            new_constant = new_constant * -1;
-            //cout << "; New constant is " << new_constant << endl;
-            args.push(logic.mkConst(new_constant));
-            args.push(nonconst_strong);
-        }
-        else if (usingStrong())
-        {
-            args.push(logic.mkConst("0"));
-            args.push(interpolant.toPTRef());
-        }
-        else if (usingWeak())
-        {
-            args.push(logic.mkConst("0"));
-            args.push(interpolant_dual.toPTRef());
-        }
-        else
-        {
-            opensmt_error("Error: interpolation algorithm not set for LRA.");
-        }
-
-        char* msg;
-        if (!usingWeak())
-        {
-            if (delta_flag)
-                itp = logic.mkRealLt(args, &msg);
-            else
-                itp = logic.mkRealLeq(args, &msg);
-        }
-        else
-        {
-            if (delta_flag)
-                itp = logic.mkRealLt(args, &msg);
-            else
-                itp = logic.mkRealLeq(args, &msg);
-            itp = logic.mkNot(itp);
-        }
-    }
-
-    if (verbose() > 1)
-    {
-        cerr << "; LRA Itp: " << logic.printTerm(itp) << endl;
-    }
-
-    return itp;
 }
-
-#endif
-
