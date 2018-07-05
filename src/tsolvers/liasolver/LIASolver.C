@@ -7,7 +7,7 @@ static SolverDescr descr_lra_solver("LRA Solver", "Solver for Quantifier Free Li
 
 
 bool  LIASolver:: check  ( bool complete) {
-    bool rval = LRASolver::check_simplex(complete);
+    bool rval = check_simplex(complete);
     if (rval == true)
         return checkIntegersAndSplit( );
     return rval;
@@ -33,6 +33,74 @@ LIASolver::~LIASolver( )
 //        numbers_pool.pop_back( );
 //    }
 }
+
+void LIASolver::computeConcreteModel(LVRef v) {
+    while (concrete_model.size() <= lva[v].ID())
+        concrete_model.push(nullptr);
+
+    PTRef tr = lva[v].getPTRef();
+    auto it = removed_by_GaussianElimination.find(v);
+    if(it != removed_by_GaussianElimination.end()){
+        auto const & representation = (*it).second;
+        Delta val;
+        for (auto const & term : representation) {
+            val += term.second * model.read(term.first);
+        }
+        concrete_model[lva[v].ID()] = new opensmt::Real(val.R());
+    }
+    else {
+        concrete_model[lva[v].ID()] = new opensmt::Real(model.read(v).R());
+    }
+}
+
+
+//
+// Detect the appropriate value for symbolic delta and stores the model
+//
+
+void LIASolver::computeModel()
+{
+    assert( status == SAT );
+/*
+    Real minDelta(0);
+    Real maxDelta(0);
+    Delta curDelta(0);
+    Delta curBound(Delta::ZERO);
+*/
+    Delta delta_abst = Delta_PlusInf;  // We support plus infinity for this one.
+
+    // Let x be a LV variable such that there are asserted bounds c_1 <= x and x <= c_2, where
+    // (1) c_1 = (i1 | s1), c_2 = (i2 | -s2)
+    // (2) s1, s2 \in {0, 1}
+    // (3) val(x) = (R | D).
+    // Then delta(x) := (i1+i2)/2 - R.
+    // If x is not bounded from below or above, i.e., c_1 <= x, or x <= c_2, or neither, then
+    // delta(x) := + Infty.
+    // Now D at the same time is equal to k*\delta', and we need a value for \delta'.  So
+    // \delta'(x) = D/k
+    // Finally, \delta := min_{x \in LV |delta'(x)|}.
+
+    for (unsigned i = 0; i < lavarStore.numVars(); ++i)
+    {
+        LVRef v = lavarStore.getVarByIdx(i);
+        assert (model.read(v).D() == 0);
+
+    }
+
+#ifdef GAUSSIAN_DEBUG
+    cerr << "; delta: " << curDelta << '\n';
+#endif
+
+    for ( unsigned i = 0; i < lavarStore.numVars(); i++)
+    {
+        LVRef v = lavarStore.getVarByIdx(i);
+        computeConcreteModel(v);
+    }
+//    // Compute the value for each variable. Delta is taken into account
+//    for ( unsigned i = 0; i < columns.size( ); ++i )
+//        computeConcreteModel(columns[i], curDelta);
+}
+
 
 /*
 //Here starts implementation of LIA solver

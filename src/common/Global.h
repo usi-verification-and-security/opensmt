@@ -168,6 +168,8 @@ void static inline wordToBinary(const opensmt::Integer x, char*& bin, const int 
         ~strConvException() { free(reason); }
     };
 
+
+
     bool static inline stringToRational(char*& rat, const char* flo)
     {
         int nom_l = 0;

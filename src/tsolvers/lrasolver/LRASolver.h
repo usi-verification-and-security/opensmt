@@ -87,7 +87,9 @@ public:
 
     //lbool declareTerm        (PTRef tr) override;                // Inform the theory solver about the existence of a literal
     bool  check         ( bool ) override;                  // Checks the satisfiability of current constraints
-    bool check_simplex  (bool);
+    void computeConcreteModel(LVRef v) override;
+    void computeModel() override;
+    //bool check_simplex  (bool);
     //bool  assertLit          ( PtAsgn , bool = false ) override; // Push the constraint into Solver
     //void  pushBacktrackPoint ( ) override;                       // Push a backtrack point
   //  void  popBacktrackPoint  ( ) override;                       // Backtrack to last saved point
@@ -115,7 +117,7 @@ protected:
 
     //LVRef exprToLVar(PTRef expr); // Ensures this term and all variables in it has corresponding LVAR.  Returns the LAVar for the term.
   //  void pivot(LVRef basic, LVRef nonBasic);
-
+    opensmt::Real delta;
 
 private:
   /*
@@ -144,7 +146,7 @@ protected:
 private:
 
     // Value system + history of bounds
-    LRAModel model;
+    //LRAModel model;
     opensmt::Real getReal(PTRef);
 
   /*

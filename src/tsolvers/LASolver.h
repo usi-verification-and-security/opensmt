@@ -71,14 +71,14 @@ protected:
         INIT, INCREMENT, SAT, UNSAT, ERROR
     } LASolverStatus;
 
-    opensmt::Real delta; // The size of one delta.  Set through computeModel()
+    //opensmt::Real delta; // The size of one delta.  Set through computeModel()
     unsigned bland_threshold;
     LASolverStats tsolver_stats;
     void setBound(PTRef leq);
 
 public:
 
-    LASolver(SMTConfig & c, LALogic& l, vec<DedElem>& d);
+    LASolver(SolverDescr dls, SMTConfig & c, LALogic& l, vec<DedElem>& d);
 
     ~LASolver( );                                      // Destructor ;-)
 
@@ -86,6 +86,7 @@ public:
 
     lbool declareTerm        (PTRef tr) override;                // Inform the theory solver about the existence of a literal
     bool  check              ( bool ) override;                  // Checks the satisfiability of current constraints
+    bool  check_simplex  (bool);
     bool  assertLit          ( PtAsgn , bool = false ) override; // Push the constraint into Solver
     void  pushBacktrackPoint ( ) override;                       // Push a backtrack point
     void  popBacktrackPoint  ( ) override;                       // Backtrack to last saved point
@@ -115,7 +116,6 @@ protected:
     void pivot(LVRef basic, LVRef nonBasic);
 
 
-private:
     Polynomial expressionToLVarPoly(PTRef expression);
     LVRef getBasicVarToFixByBland() const;
     LVRef getBasicVarToFixByShortestPoly() const;
@@ -124,7 +124,7 @@ private:
     void updateValues(LVRef basicVar, LVRef nonBasicVar);
 
 
-protected:
+//protected:
     // vector in which witnesses for unsatisfiability are stored
     vector<opensmt::Real> explanationCoefficients;
 
@@ -172,11 +172,11 @@ protected:
     bool isModelOutOfUpperBound(LVRef v) const;
     bool isModelOutOfLowerBound(LVRef v) const;
     //bool isModelInteger (LVRef v) const;
-    void computeConcreteModel(LVRef v);
+    virtual void computeConcreteModel(LVRef v);
     Delta evalSum(PTRef tr) const;
     vec<opensmt::Real*> concrete_model;              // Save here the concrete model for the vars indexed by Id
     const Delta overBound(LVRef v);
-    void computeModel() override;                             // The implementation for the interface
+    virtual void computeModel() override;                             // The implementation for the interface
     opensmt::Real evaluateTerm(PTRef tr);
     // Binded Rows system
 //    inline BindedRows& getBindedRows(LVRef v) { return bra[lva[v].getBindedRowsRef()]; }

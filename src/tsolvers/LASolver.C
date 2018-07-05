@@ -4,6 +4,20 @@
 
 static SolverDescr descr_la_solver("LA Solver", "Solver for Quantifier Free Linear Arithmetics");
 
+// MB: helper functions
+namespace{
+    bool isBoundSatisfied(Delta const & val, LABound const & bound ) {
+        if (bound.getType() == bound_u){
+            return val <= bound.getValue();
+        }
+        else {
+            assert(bound.getType() == bound_l);
+            return val >= bound.getValue();
+        }
+    }
+}
+
+
 
 bool LASolver::isValid(PTRef tr)
 {
@@ -25,13 +39,13 @@ void LASolver::isProperLeq(PTRef tr)
                                       (logic.isNumVar(logic.getPterm(sum)[1]) && (logic.mkNumNeg(logic.getPterm(sum)[0])) == logic.getTerm_NumOne())));
 }
 
-LASolver::LASolver(SMTConfig & c, LALogic& l, vec<DedElem>& d)
+LASolver::LASolver(SolverDescr dls, SMTConfig & c, LALogic& l, vec<DedElem>& d)
         : logic(l)
 //    , bindedRowsStore(l, lva, bra)
 //    , pa(pta)
 //    , polyStore(lva, pa, bindedRowsStore, l)
         , TSolver((SolverId)descr_la_solver, (const char*)descr_la_solver, c, d)
-        , delta(Delta::ZERO)
+        //, delta(Delta::ZERO)
         , bland_threshold(1000)
         , lavarStore(lva, l)
         , boundStore(ba, bla, lva, lavarStore, l)
@@ -61,7 +75,100 @@ void LASolver::clearSolver()
     this->model.clear();
     // TODO: clear statistics
 //    this->tsolver_stats.clear();
-    delta = Delta::ZERO;
+    //delta = Delta::ZERO;
+}
+
+
+bool LASolver::check_simplex(bool complete) {
+    // opensmt::StopWatch check_timer(tsolver_stats.simplex_timer);
+//    printf(" - check %d\n", debug_check_count++);
+    (void)complete;
+    // check if we stop reading constraints
+    if (status == INIT) {
+        initSolver();
+    }
+
+    bool bland_rule = false;
+    unsigned repeats = 0;
+    unsigned pivot_counter = 0;
+    unsigned bland_counter = 0;
+    // These values are from Yices
+    unsigned bthreshold = bland_threshold;
+    if (nVars() > 10000)
+        bthreshold *= 1000;
+    else if (nVars() > 1000)
+        bthreshold *= 100;
+
+    // keep doing pivotAndUpdate until the SAT/UNSAT status is confirmed
+    while (true) {
+        repeats++;
+        // clear the explanations vector
+        explanation.clear( );
+        explanationCoefficients.clear( );
+
+        LVRef x = LVRef_Undef;
+
+        if (!bland_rule && (repeats > tableau.getNumOfCols()))
+            bland_rule = true;
+
+        if(bland_rule){
+            x = getBasicVarToFixByBland();
+            ++bland_counter;
+            ++tsolver_stats.num_bland_ops;
+        }
+        else{
+            x = getBasicVarToFixByShortestPoly();
+            ++pivot_counter;
+            ++tsolver_stats.num_pivot_ops;
+        }
+
+        if (x == LVRef_Undef) {
+            // If not found, check if problem refinement for integers is required
+            //if (config.lra_integer_solver && complete)
+            //return checkIntegersAndSplit( );
+
+            // Otherwise - SAT
+            refineBounds();
+#ifdef GAUSSIAN_DEBUG
+            computeModel();
+#endif
+//            cerr << "; USUAL SAT" << endl;
+            setStatus(SAT);
+            break;
+//            return setStatus( SAT );
+        }
+
+        LVRef y_found = LVRef_Undef;
+        if(bland_rule){
+            y_found = findNonBasicForPivotByBland(x);
+        }
+        else{
+            y_found = findNonBasicForPivotByHeuristic(x);
+        }
+        // if it was not found - UNSAT
+        if (y_found == LVRef_Undef) {
+            vec<PTRef> tmp;
+            getConflictingBounds(x, tmp);
+            for (int i = 0; i < tmp.size(); i++) {
+                PTRef pure;
+                lbool sgn;
+                logic.purify(tmp[i], pure, sgn);
+                explanation.push(PtAsgn(pure, sgn));
+            }
+            setStatus(UNSAT);
+            break;
+        }
+            // if it was found - pivot old Basic x with non-basic y and do the model updates
+        else {
+            pivot(x, y_found);
+        }
+    }
+    getStatus() ? tsolver_stats.sat_calls ++ : tsolver_stats.unsat_calls ++;
+//    printf(" - check ended\n");
+//    printf(" => %s\n", getStatus() ? "sat" : "unsat");
+//    if (getStatus())
+//        model.printModelState();
+    return getStatus();
 }
 
 //
@@ -944,25 +1051,6 @@ void LASolver::print( ostream & out )
 }
 
 
-void LASolver::computeConcreteModel(LVRef v) {
-    while (concrete_model.size() <= lva[v].ID())
-        concrete_model.push(nullptr);
-
-    PTRef tr = lva[v].getPTRef();
-    auto it = removed_by_GaussianElimination.find(v);
-    if(it != removed_by_GaussianElimination.end()){
-        auto const & representation = (*it).second;
-        Delta val;
-        for (auto const & term : representation) {
-            val += term.second * model.read(term.first);
-        }
-        concrete_model[lva[v].ID()] = new opensmt::Real(val.R() + val.D() * delta);
-    }
-    else {
-        concrete_model[lva[v].ID()] = new opensmt::Real(model.read(v).R() + model.read(v).D() * delta);
-    }
-}
-
 void LASolver::getConflict(bool, vec<PtAsgn>& e)
 {
     for (int i = 0; i < explanation.size(); i++) {
@@ -985,131 +1073,6 @@ void LASolver::getConflict(bool, vec<PtAsgn>& e)
 //    assert(logic.implies(logic.mkAnd(check_me), logic.getTerm_false()));
 }
 
-//
-// Detect the appropriate value for symbolic delta and stores the model
-//
-void LASolver::computeModel()
-{
-    assert( status == SAT );
-/*
-    Real minDelta(0);
-    Real maxDelta(0);
-    Delta curDelta(0);
-    Delta curBound(Delta::ZERO);
-*/
-    Delta delta_abst = Delta_PlusInf;  // We support plus infinity for this one.
-
-    // Let x be a LV variable such that there are asserted bounds c_1 <= x and x <= c_2, where
-    // (1) c_1 = (i1 | s1), c_2 = (i2 | -s2)
-    // (2) s1, s2 \in {0, 1}
-    // (3) val(x) = (R | D).
-    // Then delta(x) := (i1+i2)/2 - R.
-    // If x is not bounded from below or above, i.e., c_1 <= x, or x <= c_2, or neither, then
-    // delta(x) := + Infty.
-    // Now D at the same time is equal to k*\delta', and we need a value for \delta'.  So
-    // \delta'(x) = D/k
-    // Finally, \delta := min_{x \in LV |delta'(x)|}.
-
-    for (unsigned i = 0; i < lavarStore.numVars(); ++i)
-    {
-        LVRef v = lavarStore.getVarByIdx(i);
-        if (model.read(v).D() == 0)
-            continue; // If values are exact we do not need to consider them for delta computation
-
-        assert( !isModelOutOfBounds(v) );
-
-        Delta D;
-
-        if (model.Lb(v).isMinusInf() || model.Ub(v).isPlusInf())
-            D = Delta_PlusInf;
-        else
-            D = (model.Lb(v).R() + model.Ub(v).R())/2 - model.read(v).R();
-
-        D = D/model.read(v).D();
-
-        if (D < 0) D.negate();
-
-        if (delta_abst > D)
-            delta_abst = D;
-
-/*
-        curBound = Delta( Delta::ZERO );
-
-        // Check if the lower bound can be used and at least one of delta and real parts are not 0
-        const LABound& lbound = model.readLBound(v);
-        const Delta& val_l = lbound.getValue();
-        if (!val_l.isMinusInf()
-            && (val_l.D() != 0 || model.read(v).D() != 0)
-            && (val_l.R() != 0 || model.read(v).R() != 0))
-        {
-            curBound = lbound.getValue() - model.read(v);
-
-            // if delta is > 0 then use delta for min
-            if ( curBound.D() > 0 )
-            {
-                curDelta = -(curBound.R() / curBound.D());
-                if ( curDelta != 0 && ( minDelta == 0 || minDelta > curDelta ) )
-                    minDelta = curDelta;
-            }
-            // if delta is < 0 than use delta for max
-            else if  ( curBound.D() < 0 )
-            {
-                curDelta = -( curBound.R() / curBound.D() );
-                if ( curDelta != 0 && ( maxDelta == 0 || maxDelta < curDelta ) )
-                    maxDelta = curDelta;
-            }
-        }
-        const LABound& ubound = model.readUBound(v);
-        const Delta&  val_u = ubound.getValue();
-        if (!val_u.isPlusInf()
-            && (val_u.D() != 0 || model.read(v).D() != 0)
-            && (val_u.R() != 0 || model.read(v).R() != 0))
-        {
-            curBound = model.read(v) - ubound.getValue();
-
-            // if delta is > 0 then use delta for min
-            if ( curBound.D() > 0 )
-            {
-                curDelta = -(curBound.R() / curBound.D() );
-                if ( curDelta != 0 && ( minDelta == 0 || minDelta > curDelta ) )
-                    minDelta = curDelta;
-            }
-            // if denominator is < 0 then use delta for max
-            else if ( curBound.D() < 0 )
-            {
-                curDelta = -(curBound.R() / curBound.D());
-                if ( curDelta != 0 && ( maxDelta == 0 || maxDelta < curDelta ) )
-                    maxDelta = curDelta;
-            }
-        }
-*/
-    }
-
-    if (delta_abst.isPlusInf())
-        delta = 1;
-    else
-        delta = delta_abst.R();
-
-/*
-    // TODO: check if it is it really true :)
-    assert( minDelta >= 0 );
-    assert( maxDelta <= 0 );
-    delta = ( minDelta ) / 2;
-*/
-
-#ifdef GAUSSIAN_DEBUG
-    cerr << "; delta: " << curDelta << '\n';
-#endif
-
-    for ( unsigned i = 0; i < lavarStore.numVars(); i++)
-    {
-        LVRef v = lavarStore.getVarByIdx(i);
-        computeConcreteModel(v);
-    }
-//    // Compute the value for each variable. Delta is taken into account
-//    for ( unsigned i = 0; i < columns.size( ); ++i )
-//        computeConcreteModel(columns[i], curDelta);
-}
 
 //
 // Add the variable x with the coefficient p_v to the polynomial represented by

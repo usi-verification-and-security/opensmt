@@ -37,6 +37,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 static SolverDescr descr_lra_solver("LRA Solver", "Solver for Quantifier Free Linear Real Arithmetics");
 
+/*
 // MB: helper functions
 namespace{
     bool isBoundSatisfied(Delta const & val, LABound const & bound ) {
@@ -49,7 +50,7 @@ namespace{
         }
     }
 }
-
+*/
 /*
 bool LRASolver::isValid(PTRef tr)
 {
@@ -95,41 +96,171 @@ LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
 //    , bindedRowsStore(l, lva, bra)
 //    , pa(pta)
 //    , polyStore(lva, pa, bindedRowsStore, l)
-    , LASolver((SolverId)descr_lra_solver, (const char*)descr_lra_solver, c, d)
+    , LASolver(descr_lra_solver, c, l, d)
     , delta(Delta::ZERO)
-    , bland_threshold(1000)
-    , lavarStore(lva, l)
-    , boundStore(ba, bla, lva, lavarStore, l)
-    , model(lva, boundStore, l)
+    //, bland_threshold(1000)
+    //, lavarStore(lva, l)
+    //, boundStore(ba, bla, lva, lavarStore, l)
+    //, model(lva, boundStore, l)
 {
     status = INIT;
 }
 
-/*
+
 void LRASolver::clearSolver()
 {
-    status = INIT;
-    explanationCoefficients.clear();
-    candidates.clear();
-    // TODO set information about columns and rows in LAVars
-    this->tableau.clear();
-    removed_by_GaussianElimination.clear();
-    TSolver::clearSolver();
 
-    // MB: Let's keep the LAVar store and allocator
-//    lva.clear();
-//    lavarStore.clear();
-
-    // also keep the bounds allocator, bounds list allocator
-//    ba.clear();
-//    this->bla.clear();
-
-    this->model.clear();
-    // TODO: clear statistics
-//    this->tsolver_stats.clear();
+    LASolver::clearSolver();
     delta = Delta::ZERO;
 }
 
+void LRASolver::computeConcreteModel(LVRef v) {
+    while (concrete_model.size() <= lva[v].ID())
+        concrete_model.push(nullptr);
+
+    PTRef tr = lva[v].getPTRef();
+    auto it = removed_by_GaussianElimination.find(v);
+    if(it != removed_by_GaussianElimination.end()){
+        auto const & representation = (*it).second;
+        Delta val;
+        for (auto const & term : representation) {
+            val += term.second * model.read(term.first);
+        }
+        concrete_model[lva[v].ID()] = new opensmt::Real(val.R() + val.D() * delta);
+    }
+    else {
+        concrete_model[lva[v].ID()] = new opensmt::Real(model.read(v).R() + model.read(v).D() * delta);
+    }
+}
+
+//
+// Detect the appropriate value for symbolic delta and stores the model
+//
+
+void LRASolver::computeModel()
+{
+    assert( status == SAT );
+/*
+    Real minDelta(0);
+    Real maxDelta(0);
+    Delta curDelta(0);
+    Delta curBound(Delta::ZERO);
+*/
+    Delta delta_abst = Delta_PlusInf;  // We support plus infinity for this one.
+
+    // Let x be a LV variable such that there are asserted bounds c_1 <= x and x <= c_2, where
+    // (1) c_1 = (i1 | s1), c_2 = (i2 | -s2)
+    // (2) s1, s2 \in {0, 1}
+    // (3) val(x) = (R | D).
+    // Then delta(x) := (i1+i2)/2 - R.
+    // If x is not bounded from below or above, i.e., c_1 <= x, or x <= c_2, or neither, then
+    // delta(x) := + Infty.
+    // Now D at the same time is equal to k*\delta', and we need a value for \delta'.  So
+    // \delta'(x) = D/k
+    // Finally, \delta := min_{x \in LV |delta'(x)|}.
+
+    for (unsigned i = 0; i < lavarStore.numVars(); ++i)
+    {
+        LVRef v = lavarStore.getVarByIdx(i);
+        if (model.read(v).D() == 0)
+            continue; // If values are exact we do not need to consider them for delta computation
+
+        assert( !isModelOutOfBounds(v) );
+
+        Delta D;
+
+        if (model.Lb(v).isMinusInf() || model.Ub(v).isPlusInf())
+            D = Delta_PlusInf;
+        else
+            D = (model.Lb(v).R() + model.Ub(v).R())/2 - model.read(v).R();
+
+        D = D/model.read(v).D();
+
+        if (D < 0) D.negate();
+
+        if (delta_abst > D)
+            delta_abst = D;
+
+/*
+        curBound = Delta( Delta::ZERO );
+
+        // Check if the lower bound can be used and at least one of delta and real parts are not 0
+        const LABound& lbound = model.readLBound(v);
+        const Delta& val_l = lbound.getValue();
+        if (!val_l.isMinusInf()
+            && (val_l.D() != 0 || model.read(v).D() != 0)
+            && (val_l.R() != 0 || model.read(v).R() != 0))
+        {
+            curBound = lbound.getValue() - model.read(v);
+
+            // if delta is > 0 then use delta for min
+            if ( curBound.D() > 0 )
+            {
+                curDelta = -(curBound.R() / curBound.D());
+                if ( curDelta != 0 && ( minDelta == 0 || minDelta > curDelta ) )
+                    minDelta = curDelta;
+            }
+            // if delta is < 0 than use delta for max
+            else if  ( curBound.D() < 0 )
+            {
+                curDelta = -( curBound.R() / curBound.D() );
+                if ( curDelta != 0 && ( maxDelta == 0 || maxDelta < curDelta ) )
+                    maxDelta = curDelta;
+            }
+        }
+        const LABound& ubound = model.readUBound(v);
+        const Delta&  val_u = ubound.getValue();
+        if (!val_u.isPlusInf()
+            && (val_u.D() != 0 || model.read(v).D() != 0)
+            && (val_u.R() != 0 || model.read(v).R() != 0))
+        {
+            curBound = model.read(v) - ubound.getValue();
+
+            // if delta is > 0 then use delta for min
+            if ( curBound.D() > 0 )
+            {
+                curDelta = -(curBound.R() / curBound.D() );
+                if ( curDelta != 0 && ( minDelta == 0 || minDelta > curDelta ) )
+                    minDelta = curDelta;
+            }
+            // if denominator is < 0 then use delta for max
+            else if ( curBound.D() < 0 )
+            {
+                curDelta = -(curBound.R() / curBound.D());
+                if ( curDelta != 0 && ( maxDelta == 0 || maxDelta < curDelta ) )
+                    maxDelta = curDelta;
+            }
+        }
+*/
+    }
+
+    if (delta_abst.isPlusInf())
+        delta = 1;
+    else
+        delta = delta_abst.R();
+
+/*
+    // TODO: check if it is it really true :)
+    assert( minDelta >= 0 );
+    assert( maxDelta <= 0 );
+    delta = ( minDelta ) / 2;
+*/
+
+#ifdef GAUSSIAN_DEBUG
+    cerr << "; delta: " << curDelta << '\n';
+#endif
+
+    for ( unsigned i = 0; i < lavarStore.numVars(); i++)
+    {
+        LVRef v = lavarStore.getVarByIdx(i);
+        computeConcreteModel(v);
+    }
+//    // Compute the value for each variable. Delta is taken into account
+//    for ( unsigned i = 0; i < columns.size( ); ++i )
+//        computeConcreteModel(columns[i], curDelta);
+}
+
+/*
 //
 // The model system
 //
@@ -508,6 +639,8 @@ bool LRASolver::check(bool complete) {
 
 }
 
+/*
+
 bool LRASolver::check_simplex(bool complete) {
     // opensmt::StopWatch check_timer(tsolver_stats.simplex_timer);
 //    printf(" - check %d\n", debug_check_count++);
@@ -600,8 +733,6 @@ bool LRASolver::check_simplex(bool complete) {
     return getStatus();
 }
 
-
-/*
 
 //
 // Push the constraint into the solver and increase the level
@@ -1035,7 +1166,6 @@ void LRASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
 
 //    assert( dst.size() == polyStore.getSize(lva[x].getPolyRef())+1 ); // One for each term plus the broken equality
 
-/*
     ipartitions_t p = 1;
     p = ~p;
     p <<= 1;
