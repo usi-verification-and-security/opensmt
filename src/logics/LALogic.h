@@ -83,7 +83,7 @@ public:
     virtual PTRef     mkConst         (SRef s, const char* name);
     virtual PTRef     mkConst         (const opensmt::Number& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_num(), rat); free(rat); return tr; }
     virtual PTRef     mkConst         (const char* num) { return mkConst(getSort_num(), num); }
-    virtual PTRef     mkNumVar       (const char* name) { return mkVar(getSort_num(), name); }
+    virtual PTRef     mkNumVar        (const char* name) { return mkVar(getSort_num(), name); }
 
     virtual bool isBuiltinSort  (SRef sr) const { return sr == sort_NUM || Logic::isBuiltinSort(sr); }
     virtual bool isBuiltinConstant(SymRef sr) const { return (isNumConst(sr) || Logic::isBuiltinConstant(sr)); }

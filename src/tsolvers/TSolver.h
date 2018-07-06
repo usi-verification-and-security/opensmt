@@ -135,6 +135,7 @@ protected:
     vec<PTRef>                  suggestions;     // List of suggestions for decisions
     vec<DedElem>                &deduced;        // Array of deductions indexed by variables
     Map<PTRef,lbool,PTRefHash>  polarityMap;
+    vec<PTRef>                  splitondemand;
 
 public:
     TSolver(SolverId id_, const char* name_, SMTConfig & c, vec<DedElem>& d)

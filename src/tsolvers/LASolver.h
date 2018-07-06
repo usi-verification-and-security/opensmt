@@ -40,8 +40,8 @@ class LASolverStats: public TSolverStats
             os << "; -------------------------" << endl;
             TSolverStats::printStatistics(os);
             os << "; Number of LA vars.......: " << num_vars << endl;
-            //os << "; Pivot operations.........: " << num_pivot_ops << endl;
-            //os << "; Bland operations.........: " << num_bland_ops << endl;
+            os << "; Pivot operations.........: " << num_pivot_ops << endl;
+            os << "; Bland operations.........: " << num_bland_ops << endl;
             os << "; LA time.............: " << timer.getTime() << " s\n";
         }
 };
@@ -116,7 +116,7 @@ protected:
     void pivot(LVRef basic, LVRef nonBasic);
 
 
-    Polynomial expressionToLVarPoly(PTRef expression);
+    virtual Polynomial expressionToLVarPoly(PTRef expression);
     LVRef getBasicVarToFixByBland() const;
     LVRef getBasicVarToFixByShortestPoly() const;
     LVRef findNonBasicForPivotByBland(LVRef basicVar);

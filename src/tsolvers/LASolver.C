@@ -473,11 +473,12 @@ LVRef LASolver::findNonBasicForPivotByBland(LVRef basicVar) {
     return y_found;
 }
 
+/*
 bool LASolver::check(bool complete) {
 
     return 0;
 
-}
+}*/
 
 
 
@@ -786,7 +787,6 @@ inline bool LASolver::setStatus( LASolverStatus s )
         has_explanation = true;
     return getStatus( );
 }
-
 //
 // Returns the bounds conflicting with the actual model.
 //

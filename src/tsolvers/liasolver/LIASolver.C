@@ -3,7 +3,7 @@
 #include "lrasolver/LRASolver.h"
 
 
-static SolverDescr descr_lra_solver("LRA Solver", "Solver for Quantifier Free Linear Real Arithmetics");
+static SolverDescr descr_lia_solver("LIA Solver", "Solver for Quantifier Free Linear Integer Arithmetics");
 
 
 bool  LIASolver:: check  ( bool complete) {
@@ -101,129 +101,104 @@ void LIASolver::computeModel()
 //        computeConcreteModel(columns[i], curDelta);
 }
 
-
 /*
-//Here starts implementation of LIA solver
+Polynomial LIASolver::expressionToLVarPoly(PTRef term) {
 
-bool LIASolver::checkIntegersAndSplit( )
-{
-  //assert(false);
+    LASolver::expressionToLVarPoly(term);
+    for (int i = 0; i < logic.getPterm(term).size(); i++) {
+        int_vars.insert(var); //PS. maybe use insert with getVar?
 
-
-  //assert( config.lra_integer_solver );
-  //assert( removed_by_GaussianElimination.empty( ) );
-
-    for (int i = 0; i < columns.size(); i++) {
-        LVRef x = columns[i];
-        if (!isModelInteger(x)) {
-
-
-
-
-
- // VectorLAVar::const_iterator it = columns.begin( );
-  //LAVar * x;
-
-  //  unsigned equality_counter=0;
-  //  for( ; it != columns.end( ); ++it )
-  //    if (( *it )->isEquality())
-  //      equality_counter++;
-  //
-  //  cout << "Equalities in the complete integer check: " << equality_counter << " out of " << columns.size();
-
-  //it = columns.begin( );
-
-//  for( ; it != columns.end( ); ++it )
-//  {
-//    assert( !( *it )->skip );
-//    if( !( *it )->isModelInteger( ) )
-//    {
-      //x = *it;
-
-     //  Prepare the variable to store a splitting value
-//      Real * c = NULL;
-//
-//
-//      if( !numbers_pool.empty( ) )
-//      {
-//        c = numbers_pool.back( );
-//        numbers_pool.pop_back( );
-//      }
-//      else
-//      {
-//        c = new Real( 0 );
-//      }
-
-      // Compute a splitting value
-//      if( x->M( ).R( ).get_den( ) != 1 )
-//      {
-//        if( x->M( ).R( ).get_num( ) < 0 )
-//          *c = x->M( ).R( ).get_num( ) / x->M( ).R( ).get_den( ) - 1;
-//        else
-//          *c = x->M( ).R( ).get_num( ) / x->M( ).R( ).get_den( );
-//      }
-//      else
-//      {
-//        if( x->M( ).D( ) < 0 )
-//          *c = x->M( ).R( ) - 1;
-//        else
-//          *c = x->M( ).R( );
-//      }
-
-      // Check if integer splitting is possible for the current variable
-      if( *c < x->L( ) && *c + 1 > x->U( ) )
-      {
-        vec<PTRef> tmp;
-        getConflictingBounds( x, tmp);
-        for (int i = 0; i < tmp.size; i++) {
-            explanation.push(PtAsgn(tmp[i], getPolarity(tmp[i])));
-        }
-        for( unsigned i = 0; i < columns.size( ); ++i )
-          if( !columns[i]->skip )
-            columns[i]->restoreModel( );
-        return setStatus( UNSAT );
-      }
-
-      vector<Enode *> splitting;
-
-      // Prepare left branch
-      Enode * or1 = egraph.mkLeq( egraph.cons( x->e, egraph.cons( egraph.mkNum( *c ) ) ) );
-      LAExpression a( or1 );
-      or1 = a.toEnode( egraph );
-      egraph.inform( or1 );
-      splitting.push_back( or1 );
-
-      // Prepare right branch
-      Enode * or2 = egraph.mkGeq( egraph.cons( x->e, egraph.cons( egraph.mkNum( *c + 1 ) ) ) );
-      LAExpression b( or2 );
-      or2 = b.toEnode( egraph );
-      egraph.inform( or2 );
-      splitting.push_back( or2 );
-
-      //      cout << or1 <<endl;
-      //      cout << or2 <<endl;
-      // Push splitting clause
-      egraph.splitOnDemand( splitting, id );
-
-      // We don't need splitting value anymore
-      numbers_pool.push_back( c );
-
-      // We are lazy: save the model and return on the first splitting
-      LAVar::saveModelGlobal( );
-      checks_history.push_back( pushed_constraints.size( ) );
-      return setStatus( SAT );
     }
-  }
-  // Cool! The model is already integer!
-  LAVar::saveModelGlobal( );
-  checks_history.push_back( pushed_constraints.size( ) );
-  return setStatus( SAT );
+}*/
 
-    //return false;
-}
-}
+Polynomial LIASolver::expressionToLVarPoly(PTRef term) {
+    Polynomial poly;
+    // If term is negated, we need to flip the signs of the poly
+    bool negated = logic.isNegated(term);
+    for (int i = 0; i < logic.getPterm(term).size(); i++) {
+        PTRef v;
+        PTRef c;
+        logic.splitTermToVarAndConst(logic.getPterm(term)[i], v, c);
+        LVRef var = getLAVar_single(v);
+        if (!int_vars.has(var)) {
+            int_vars.insert(var, true);
+        }
+        tableau.nonbasicVar(var);
+        Real coeff = getNum(c);
+
+        if (negated) {
+            coeff.negate();
+        }
+        poly.addTerm(var, std::move(coeff));
+    }
+    return poly;
 }
 
-// end of LIA solver implementation
+bool LIASolver::checkIntegersAndSplit( ) {
+    //assert(false);
+    // assert( config.lra_integer_solver );
+    //assert( removed_by_GaussianElimination.empty( ) );
 
-*/
+    vec<LVRef> keys;
+    int_vars.getKeys(keys);
+    for(int i = 0; i < keys.size(); i++){
+
+        LVRef x = keys[i];
+
+        if (!isModelInteger(x)) {
+            //Prepare the variable to store a splitting value
+            opensmt::Real c;
+
+            // if val of int variable is not int, set it to integer by getting floor (c) and ceiling (c+1)
+            // if real part of int var is int, then delta must be non-zero
+
+            if (!model.read(x).R().isInteger()) {
+                c = model.read(x).R().floor();
+            } else { //but if the value from LRA solver returned is integer(which is here subset of real), then we consider delta part
+                assert(model.read(x).D() != 0);
+                if (model.read(x).D() < 0) {
+                    c = model.read(x).R() - 1;
+                } else {
+                    c = model.read(x).R();
+                }
+            }
+
+            // Check if integer splitting is possible for the current variable
+            if (c < model.Lb(x) && c + 1 > model.Ub(x)) { //then splitting not possible, and we create explanation
+
+                explanation.push(model.readLBound(x).getPtAsgn());
+                explanation.push(model.readUBound(x).getPtAsgn());
+                //explanation = {model.readLBound(x).getPtAsgn(), model.readUBound(x).getPtAsgn()};
+                return setStatus(UNSAT);
+            }
+
+            //constructing new constraint
+            //x <= c || x >= c+1;
+            PTRef constr = logic.mkOr(logic.mkNumLeq(lva[x].getPTRef(), logic.mkConst(c)),
+                       logic.mkNumGeq(lva[x].getPTRef(), logic.mkConst(c + 1)));
+
+            splitondemand.push(constr);
+            return setStatus(UNSAT);
+
+            //what if more than one of the variables have fractional part? Shall we implement selection rule?
+            //we also have to take care of not changing the values that already assigned to integers, here gomory cuts are important
+            //branch and cut faster than branch and bound, so we need to add cut to the problem that cannot find int solution?
+
+            //we need to add new constraints x <= c || x >= c+1 to problem constraints. Which vector stores problem constraints?
+            //and ask LRASolver to check for them
+            //what if LRA returns non int vals and again and again the process will be needed to be repeated
+            //and we need to make sure it stops at some point
+            //And will it go in depth first manner, or hybride?
+            //if the model already integer we print stats SAT, else we continue on splitting until?(we need to stop) and print UNSAT
+
+
+
+        }
+
+
+    }
+
+    return setStatus(SAT);
+}
+
+

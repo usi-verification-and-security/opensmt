@@ -6,6 +6,8 @@
 
 #include "LIALogic.h"
 #include "LASolver.h"
+#include "lrasolver/LARefs.h"
+
 
 
 class LIASolverStats: public LASolverStats  //PS. check all opensmt::real and should I change them to opensmt::integer
@@ -45,13 +47,6 @@ private:
     struct LVRefPair { LVRef p1; LVRef p2; };
 //    vector<opensmt::Real*> numbers_pool;    // Collect numbers.  Should work as a simple memory managemet system
     LIALogic&            logic; //PS. shall I declare logic as LIA?
-
-    typedef enum
-    {
-        INIT, INCREMENT, SAT, UNSAT, ERROR
-    } LIASolverStatus;
-
-
     LIASolverStats lasolverstats;
 
 
@@ -70,63 +65,22 @@ public:
 
 protected:
 
-private:
+    Polynomial expressionToLVarPoly(PTRef expression) override;
 
-    inline bool setStatus( LIASolverStatus );               // Sets and return status of the solver
+
+    //inline bool setStatus( LASolverStatus );               // Sets and return status of the solver //PS. use only LASolverStats
     void initSolver( );                                     // Initializes the solver
 
 //    void addVarToRow( LVRef, LVRef, opensmt::Real*);
     bool checkIntegersAndSplit();                           //
     bool isModelInteger (LVRef v) const;
+   // extern inline bool setStatus( LASolverStatus ) override;
 
-    LIASolverStatus status;                  // Internal status of the solver (different from bool)
+    //LASolverStatus status;                  // Internal status of the solver (different from bool)
 
     opensmt::Integer2 getInt(PTRef r) ;
-/*
-    // The variable system
-    class ModelPoly {
-        vec<PolyTermRef> poly;
-    public:
-        ModelPoly() {}
-        ModelPoly(const ModelPoly &o) { o.poly.copyTo(poly); }
-        ModelPoly(const vec<PolyTermRef>& v) { v.copyTo(poly); }
-        PolyTermRef operator[](int i) const { return poly[i]; }
-        void operator=(const ModelPoly &o) { o.poly.copyTo(poly); }
-        int size() const { return poly.size(); }
-    };
-    Map<PTRef,ModelPoly,PTRefHash> removed_by_GaussianElimination;  */     // Stack of variables removed during Gaussian elimination
-//    void solveForVar(PolyRef pr, int idx, vec<PolyTermRef>& expr);       // Solve the poly pr for the variable pr[idx] and place the resulting expression to expr
+    Map<LVRef, bool, LVRefHash> int_vars; //stores problem variables
 
-//PS. do I need to have the rest in LIA and LRA solver or having in LASOlver is enough?
-
-/*
-    // Two reloaded output operators
-    inline friend ostream & operator <<( ostream & out, LIASolver & solver )
-    {
-        solver.print( out );
-        return out;
-    }
-
-    inline friend ostream & operator <<( ostream & out, LIASolver * solver )
-    {
-        solver->print( out );
-        return out;
-    }
-    ValPair getValue(PTRef tr) override;  // Computes the model and changes state.
-    inline int     verbose                       ( ) const { return config.verbosity(); }
-
-    // Debug stuff
-    char* printValue(PTRef tr) override { char* tmp = (char*)malloc(1); tmp[0] = '\0'; return tmp; } // Implement later...
-    char* printExplanation(PTRef tr) override { return printValue(tr); } // Implement later...
-    void isProperLeq(PTRef tr);  // The Leq term conforms to the assumptions of its form.  Only asserts.
-    char* printVar(LVRef v);
-    bool valueConsistent(LVRef v); // Debug: Checks that the value of v in the model is consistent with the evaluated value of the polynomial of v in the same model.
-    bool stackOk();
-    bool checkConsistency();
-    bool checkTableauConsistency();
-    bool checkRowConsistency();
-    bool checkColumnConsistency();
-    void crashInconsistency(LVRef v, int line);*/
 };
 
 #endif
