@@ -91,7 +91,8 @@ public:
 
     virtual bool  isNumConst     (SymRef sr)     const { return isConstant(sr) && hasSortNum(sr); }
     virtual bool  isNumConst     (PTRef tr)      const { return isNumConst(getPterm(tr).symb()); }
-    virtual bool  isNonnegNumConst (PTRef tr)    const; //{ return isNumConst(tr) && getNumConst(tr) >= 0; } //PS. this method will be rewritten properly later
+   // virtual bool  isNonnegNumConst (PTRef tr)    const; //{ return isNumConst(tr) && getNumConst(tr) >= 0; } //PS. this method will be rewritten properly later
+    virtual bool  isNonnegNumConst (PTRef tr)  const { return isNumConst(tr) && getNumConst(tr) >= 0; }
 
     virtual bool   hasSortNum(SymRef sr) const { return sym_store[sr].rsort() == sort_NUM; }
     virtual bool   hasSortNum(PTRef tr)  const { return hasSortNum(getPterm(tr).symb()); }

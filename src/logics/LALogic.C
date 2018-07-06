@@ -26,6 +26,14 @@ bool LALogic::isNegated(PTRef tr) const {
     }
 }
 
+const opensmt::Number&
+LALogic::getNumConst(PTRef tr) const
+{
+    SymId id = sym_store[getPterm(tr).symb()].getId();
+    assert(id < numbers.size() && numbers[id] != NULL);
+    return *numbers[id];
+}
+
 void LALogic::splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) const
 {
     assert(isNumTimes(term) || isNumDiv(term) || isNumVar(term) || isConstant(term) || isUF(term));

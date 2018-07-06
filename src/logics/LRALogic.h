@@ -222,7 +222,7 @@ class LRALogic: public LALogic
 
     // Logic specific simplifications: conjoin Ites, make substitutions
     // and split equalities
-    virtual bool simplify(PTRef root, PTRef& root_out); //PS. this is never used anywhere in the code, shall we remove it?
+    //virtual bool simplify(PTRef root, PTRef& root_out); //PS. this is never used anywhere in the code, shall we remove it?
 
     //virtual PTRef getNTerm(char* rat_str) override;
 

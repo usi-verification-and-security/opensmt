@@ -780,7 +780,7 @@ inline bool LASolver::getStatus( )
 //
 // Sets the new solver status and returns the correspondent lbool value
 //
-inline bool LASolver::setStatus( LASolverStatus s )
+bool LASolver::setStatus( LASolverStatus s )
 {
     status = s;
     if (s == UNSAT)

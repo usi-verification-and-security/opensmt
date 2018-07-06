@@ -152,7 +152,8 @@ protected:
     unsigned getIteratorByPTRef( PTRef e, bool );                                                 // find bound iterator by the PTRef
     void refineBounds( );                                   // Compute the bounds for touched polynomials and deduces new bounds from it
     inline bool getStatus( );                               // Read the status of the solver in lbool
-    inline bool setStatus( LASolverStatus );               // Sets and return status of the solver
+    //inline bool setStatus( LASolverStatus );               // Sets and return status of the solver
+    bool setStatus( LASolverStatus );               // Sets and return status of the solver
     void initSolver( );                                     // Initializes the solver
     void print( ostream & out ) override;                            // Prints terms, current bounds and the tableau
 //    void addVarToRow( LVRef, LVRef, opensmt::Real*);

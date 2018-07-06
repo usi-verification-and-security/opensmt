@@ -210,7 +210,7 @@ class LIALogic: public LALogic
 
     // Logic specific simplifications: conjoin Ites, make substitutions
     // and split equalities
-    virtual bool simplify(PTRef root, PTRef& root_out);
+    //virtual bool simplify(PTRef root, PTRef& root_out);
 
     //virtual PTRef getNTerm(char* rat_str) override;
 
