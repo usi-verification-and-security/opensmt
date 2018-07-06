@@ -129,9 +129,11 @@ bool LASolver::check_simplex(bool complete) {
 
             // Otherwise - SAT
             refineBounds();
-#ifdef GAUSSIAN_DEBUG
+/*#ifdef GAUSSIAN_DEBUG
             computeModel();
 #endif
+
+ */
 //            cerr << "; USUAL SAT" << endl;
             setStatus(SAT);
             break;
@@ -1234,4 +1236,16 @@ void LASolver::doGaussianElimination( )
         }
         removed_by_GaussianElimination.emplace(entry.first, poly);
     }
+}
+
+LASolver::~LASolver( )
+{
+    tsolver_stats.printStatistics(cerr);
+    // Remove numbers
+//    while( !numbers_pool.empty( ) )
+//    {
+//        assert( numbers_pool.back( ) );
+//        delete numbers_pool.back( );
+//        numbers_pool.pop_back( );
+//    }
 }

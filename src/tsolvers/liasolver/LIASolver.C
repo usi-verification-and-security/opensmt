@@ -1,6 +1,6 @@
 #include "LIASolver.h"
 #include "LASolver.h"
-#include "lrasolver/LRASolver.h"
+
 
 
 static SolverDescr descr_lia_solver("LIA Solver", "Solver for Quantifier Free Linear Integer Arithmetics");
@@ -22,18 +22,12 @@ opensmt::Integer2 LIASolver::getInt(PTRef r) {
     return logic.getNumConst(r);
 }
 
-LIASolver::~LIASolver( )
+void LIASolver::clearSolver()
 {
-    lasolverstats.printStatistics(cerr);
-    // Remove numbers
-//    while( !numbers_pool.empty( ) )
-//    {
-//        assert( numbers_pool.back( ) );
-//        delete numbers_pool.back( );
-//        numbers_pool.pop_back( );
-//    }
-}
 
+    LASolver::clearSolver();
+    //delta = Delta::ZERO;
+}
 void LIASolver::computeConcreteModel(LVRef v) {
     while (concrete_model.size() <= lva[v].ID())
         concrete_model.push(nullptr);
@@ -201,4 +195,29 @@ bool LIASolver::checkIntegersAndSplit( ) {
     return setStatus(SAT);
 }
 
+LIASolver::LIASolver(SMTConfig & c, LIALogic& l, vec<DedElem>& d)
+        : logic(l)
+//    , bindedRowsStore(l, lva, bra)
+//    , pa(pta)
+//    , polyStore(lva, pa, bindedRowsStore, l)
+        , LASolver(descr_lia_solver, c, l, d)
 
+//, bland_threshold(1000)
+//, lavarStore(lva, l)
+//, boundStore(ba, bla, lva, lavarStore, l)
+//, model(lva, boundStore, l)
+{
+    status = INIT;
+}
+
+LIASolver::~LIASolver( )
+{
+    lasolverstats.printStatistics(cerr);
+    // Remove numbers
+//    while( !numbers_pool.empty( ) )
+//    {
+//        assert( numbers_pool.back( ) );
+//        delete numbers_pool.back( );
+//        numbers_pool.pop_back( );
+//    }
+}

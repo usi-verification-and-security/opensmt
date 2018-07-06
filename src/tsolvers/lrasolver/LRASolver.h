@@ -75,13 +75,13 @@ public:
 
     LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d);
 
-    ~LRASolver( );                                      // Destructor ;-)
+    ~LRASolver( ) ;                                      // Destructor ;-)
 
     virtual void clearSolver() override; // Remove all problem specific data from the solver.  Should be called each time the solver is being used after a push or a pop in the incremental interface.
 
     //lbool declareTerm        (PTRef tr) override;                // Inform the theory solver about the existence of a literal
     bool  check         ( bool ) override;                  // Checks the satisfiability of current constraints
-    void computeConcreteModel(LVRef v) override;
+    void computeConcreteModel(LVRef v);
     void computeModel() override;
     //bool check_simplex  (bool);
     //bool  assertLit          ( PtAsgn , bool = false ) override; // Push the constraint into Solver
