@@ -47,25 +47,25 @@ struct PTLKey {
             if (k1.args[i] != k2.args[i]) break;
         return i == k1.args.size();
     }
-    void operator= (const PTLKey& k) {
+    void operator= (const PTLKey& k);/* {
         sym = k.sym;
         k.args.copyTo(args);
-    }
+    }*/
 };
 
 
 struct PTLHash {
-    uint32_t operator () (const PTLKey& s) const {
+    uint32_t operator () (const PTLKey& s) const; /* {
         uint32_t v = (uint32_t)s.sym.x;
         for (int i = 0; i < s.args.size(); i++)
             v += (uint32_t)s.args[i].x;
-        return v; }
+        return v; }*/
 };
 
 //typedef uint32_t TRef;
 struct PTId {
     uint32_t x;
-    inline friend bool operator== (const PTId& a1, const PTId& a2)   { return a1.x == a2.x; }
+    inline friend bool operator== (const PTId& a1, const PTId& a2)  { return a1.x == a2.x; }
     inline friend bool operator!= (const PTId& a1, const PTId& a2)   { return a1.x != a2.x; }
     inline friend bool operator<  (const PTId& a1, const PTId& a2)   { return a1.x > a2.x;  }
     inline friend uint32_t Idx(PTId p) { return p.x; }
@@ -198,16 +198,16 @@ class PtChild {
     int pos;
     PtChild(PTRef tr_, PTRef parent_, int pos_) : tr(tr_), parent(parent_), pos(pos_) {}
     PtChild() : tr(PTRef_Undef), parent(PTRef_Undef), pos(-1) {}
-    inline friend bool operator== (const PtChild& a1, const PtChild& a2);
-        //{ return (a1.tr == a2.tr) && (a1.parent == a2.parent) && (a1.pos == a2.pos); }
-    inline friend bool operator!= (const PtChild& a1, const PtChild& a2);
-       // { return (a1.tr != a2.tr) || (a1.parent != a2.parent) || (a1.pos != a2.pos); }
+    inline friend bool operator== (const PtChild& a1, const PtChild& a2)
+        { return (a1.tr == a2.tr) && (a1.parent == a2.parent) && (a1.pos == a2.pos); }
+    inline friend bool operator!= (const PtChild& a1, const PtChild& a2)
+        { return (a1.tr != a2.tr) || (a1.parent != a2.parent) || (a1.pos != a2.pos); }
 //    inline friend bool operator< (const PTRef& a1, const PTRef& a2)    { return a1.x < a2.x;  }
 };
 
 struct PtChildHash {
-    uint32_t operator () (const PtChild& s) const {
-        return (uint32_t)s.tr.x+(uint32_t)s.parent.x+(uint32_t)s.pos; }
+    uint32_t operator () (const PtChild& s) const; /* {
+        return (uint32_t)s.tr.x+(uint32_t)s.parent.x+(uint32_t)s.pos; }*/
 };
 
 class PtermAllocator : public RegionAllocator<uint32_t>
@@ -227,8 +227,8 @@ class PtermAllocator : public RegionAllocator<uint32_t>
         to.n_terms = n_terms;
         RegionAllocator<uint32_t>::moveTo(to); }*/
 
-    PTRef alloc(const SymRef sym, const vec<PTRef>& ps, bool extra = false);
-    /*{
+    PTRef alloc(const SymRef sym, const vec<PTRef>& ps, bool extra = false)
+    {
         assert(sizeof(PTRef) == sizeof(uint32_t));
 
         uint32_t v = RegionAllocator<uint32_t>::alloc(ptermWord32Size(ps.size()));
@@ -237,7 +237,7 @@ class PtermAllocator : public RegionAllocator<uint32_t>
         operator[](tid).setId(n_terms++);
 
         return tid;
-    }*/
+    }
 
     PTRef alloc(Pterm&, bool);// { assert(false); return PTRef_Undef; }
 

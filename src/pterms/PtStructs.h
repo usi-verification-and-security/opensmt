@@ -36,18 +36,18 @@ public:
     lbool sgn;
     PtAsgn(PTRef tr_, lbool sgn_) : tr(tr_), sgn(sgn_) {}
     PtAsgn() : tr(PTRef_Undef), sgn(l_Undef) {}
-    bool operator== (const PtAsgn& other) const { return tr == other.tr && sgn == other.sgn; }
-    bool operator!= (const PtAsgn& other) const { return !(*this == other); }
-    bool operator< (const PtAsgn& other) const { return tr < other.tr || (tr == other.tr && toInt(sgn) < toInt(other.sgn)); }
+    bool operator== (const PtAsgn& other) const;// { return tr == other.tr && sgn == other.sgn; }
+    bool operator!= (const PtAsgn& other) const ;//{ return !(*this == other); }
+    bool operator< (const PtAsgn& other) const;// { return tr < other.tr || (tr == other.tr && toInt(sgn) < toInt(other.sgn)); }
 };
 
 
 static class PtAsgn PtAsgn_Undef(PTRef_Undef, l_Undef);
 
 struct PtAsgnHash {
-    uint32_t operator () (const PtAsgn& s) const {
+    uint32_t operator () (const PtAsgn& s) const;/* {
         return ((uint32_t)s.tr.x << 2) + toInt(s.sgn);
-    }
+    }*/
 };
 
 class PtAsgn_reason {
@@ -66,10 +66,10 @@ public:
 static class PtAsgn_reason PtAsgn_reason_Undef(PTRef_Undef, l_Undef, PTRef_Undef);
 
 struct LessThan_PTRef {
-    bool operator () (PTRef& x, PTRef& y) { return x.x < y.x; } };
+    bool operator () (PTRef& x, PTRef& y);// { return x.x < y.x; } };
 
 struct LessThan_PtAsgn {
-    bool operator () (PtAsgn& x, PtAsgn& y) { return x.tr.x < y.tr.x; } };
+    bool operator () (PtAsgn& x, PtAsgn& y);// { return x.tr.x < y.tr.x; } };
 
 class ValPair
 {
@@ -77,30 +77,30 @@ public:
     PTRef tr;
     char* val;
     ValPair() : tr(PTRef_Undef), val(NULL) {}
-    ~ValPair() {
+    ~ValPair();/* {
         if (val != NULL)
             free(val);
-    }
+    }*/
     ValPair(PTRef tr, const char* val_) : tr(tr) {
         if (val_ != NULL)
             val = strdup(val_);
         else val = NULL;
     }
-    ValPair(const ValPair& other) {
+    ValPair(const ValPair& other);/* {
         tr = other.tr;
         if (other.val != NULL)
             val = strdup(other.val);
         else val = NULL;
-    }
-    const ValPair& operator= (const ValPair& other) {
+    }*/
+    const ValPair& operator= (const ValPair& other);/* {
         tr = other.tr;
         if (other.val != NULL)
             val = strdup(other.val);
         else val = NULL;
         return *this;
-    }
-    bool operator== (const ValPair& other) const { return tr == other.tr && val == other.val; }
-    bool operator!= (const ValPair& other) const { return tr != other.tr || val != other.val; }
+    }*/
+    bool operator== (const ValPair& other) const;// { return tr == other.tr && val == other.val; }
+    bool operator!= (const ValPair& other) const;// { return tr != other.tr || val != other.val; }
 };
 
 static class ValPair ValPair_Undef(PTRef_Undef, NULL);
