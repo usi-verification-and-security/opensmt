@@ -82,8 +82,8 @@ class LIALogic: public LALogic
         for (int i = 0; i < integers.size(); i++) delete integers[i];
     }
 
-    virtual const char*   getName()         const override { return getLogic().str; }
-    virtual const Logic_t getLogic()        const override { return QF_LIA; }
+    virtual const char*   getName()         const override;// { return getLogic().str; }
+    virtual const Logic_t getLogic()        const override;// { return QF_LIA; }
 
     //virtual bool        okForBoolVar    (PTRef) const;
     virtual PTRef       insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg) override;
@@ -94,71 +94,71 @@ class LIALogic: public LALogic
     //virtual PTRef       mkConst         (const char* num) override { return mkConst(getSort_num(), num); }
     //virtual PTRef       mkNumVar        (const char* name) override { return mkVar(getSort_num(), name); }
 
-    virtual bool isBuiltinSort(SRef sr) const override { return sr == sort_INTEGER || Logic::isBuiltinSort(sr); }
+    virtual bool isBuiltinSort(SRef sr) const override;// { return sr == sort_INTEGER || Logic::isBuiltinSort(sr); }
     //virtual bool isBuiltinConstant(SymRef sr) const { return (isIntegerConst(sr) || Logic::isBuiltinConstant(sr)); }
     //virtual bool isBuiltinFunction(SymRef sr) const;
 
     //bool  isIntegerConst(SymRef sr)      const { return isConstant(sr) && hasSortInt(sr); }
     //bool  isIntegerConst(PTRef tr)       const { return isIntegerConst(getPterm(tr).symb()); }
-    virtual bool  isNonnegNumConst(PTRef tr) const override { return isNumConst(tr) && getNumConst(tr) >= 0; }
+    virtual bool  isNonnegNumConst(PTRef tr) const override;// { return isNumConst(tr) && getNumConst(tr) >= 0; }
 
 
     //SRef   declareSort_Integer(char** msg);
-    virtual SRef   getSort_num()  const override {return sort_INTEGER;}
-    const opensmt::Number& getNumConst(PTRef tr) const override {return getIntegerConst(tr);}
+    virtual SRef   getSort_num()  const override;// {return sort_INTEGER;}
+    const opensmt::Number& getNumConst(PTRef tr) const override;// {return getIntegerConst(tr);}
     const opensmt::Integer2& getIntegerConst(PTRef tr) const;
 
 
-    bool        isIntPlus(SymRef sr)  const { return sr == sym_Int_PLUS; }
+    bool        isIntPlus(SymRef sr)  const;// { return sr == sym_Int_PLUS; }
     //bool      isIntPlus(PTRef tr)   const { return isIntPlus(getPterm(tr).symb()); }
-    bool        isNumPlus(PTRef tr)   const override { return isIntPlus(getPterm(tr).symb()); }
-    bool        isIntMinus(SymRef sr) const { return sr == sym_Int_MINUS; }
+    bool        isNumPlus(PTRef tr)   const override;// { return isIntPlus(getPterm(tr).symb()); }
+    bool        isIntMinus(SymRef sr) const;// { return sr == sym_Int_MINUS; }
     //bool      isIntMinus(PTRef tr)  const { return isIntMinus(getPterm(tr).symb()); }
-    bool        isNumMinus(PTRef tr)  const override { return isIntMinus(getPterm(tr).symb()); }
-    bool        isIntNeg(SymRef sr)   const { return sr == sym_Int_NEG; }
+    bool        isNumMinus(PTRef tr)  const override;// { return isIntMinus(getPterm(tr).symb()); }
+    bool        isIntNeg(SymRef sr)   const;// { return sr == sym_Int_NEG; }
     //bool      isIntNeg(PTRef tr)    const { return isIntNeg(getPterm(tr).symb()); }
-    bool        isNumNeg(PTRef tr)    const override { return isIntNeg(getPterm(tr).symb()); }
-    bool        isIntTimes(SymRef sr) const { return sr == sym_Int_TIMES; }
+    bool        isNumNeg(PTRef tr)    const override;// { return isIntNeg(getPterm(tr).symb()); }
+    bool        isIntTimes(SymRef sr) const;// { return sr == sym_Int_TIMES; }
     //bool      isIntTimes(PTRef tr)  const { return isIntTimes(getPterm(tr).symb()); }
-    bool        isNumTimes(PTRef tr)  const override { return isIntTimes(getPterm(tr).symb()); }
-    bool        isIntDiv(SymRef sr)   const { return sr == sym_Int_DIV; }
+    bool        isNumTimes(PTRef tr)  const override;// { return isIntTimes(getPterm(tr).symb()); }
+    bool        isIntDiv(SymRef sr)   const;// { return sr == sym_Int_DIV; }
     //bool        isIntDiv(PTRef tr)    const { return isIntDiv(getPterm(tr).symb()); }
-    bool        isNumDiv(PTRef tr)    const override { return isIntDiv(getPterm(tr).symb()); }
-    bool        isIntEq(SymRef sr)    const { return isEquality(sr) && (sym_store[sr][0] == sort_INTEGER); }
+    bool        isNumDiv(PTRef tr)    const override ;//{ return isIntDiv(getPterm(tr).symb()); }
+    bool        isIntEq(SymRef sr)    const;// { return isEquality(sr) && (sym_store[sr][0] == sort_INTEGER); }
     //bool      isIntEq(PTRef tr)     const { return isIntEq(getPterm(tr).symb()); }
-    bool        isNumEq(PTRef tr)     const override { return isIntEq(getPterm(tr).symb()); }
-    bool        isIntLeq(SymRef sr)   const { return sr == sym_Int_LEQ; }
+    bool        isNumEq(PTRef tr)     const override;// { return isIntEq(getPterm(tr).symb()); }
+    bool        isIntLeq(SymRef sr)   const;// { return sr == sym_Int_LEQ; }
     //bool      isIntLeq(PTRef tr)    const { return isIntLeq(getPterm(tr).symb()); }
-    bool        isNumLeq(PTRef tr)    const override { return isIntLeq(getPterm(tr).symb()); }
-    bool        isIntLt(SymRef sr)    const { return sr == sym_Int_LT; }
+    bool        isNumLeq(PTRef tr)    const override;// { return isIntLeq(getPterm(tr).symb()); }
+    bool        isIntLt(SymRef sr)    const;// { return sr == sym_Int_LT; }
     //bool      isIntLt(PTRef tr)     const { return isIntLt(getPterm(tr).symb()); }
-    bool        isNumLt(PTRef tr)     const override { return isIntLt(getPterm(tr).symb()); }
-    bool        isIntGeq(SymRef sr)   const { return sr == sym_Int_GEQ; }
+    bool        isNumLt(PTRef tr)     const override;// { return isIntLt(getPterm(tr).symb()); }
+    bool        isIntGeq(SymRef sr)   const;// { return sr == sym_Int_GEQ; }
     //bool      isIntGeq(PTRef tr)    const { return isIntGeq(getPterm(tr).symb()); }
-    bool        isNumGeq(PTRef tr)    const override { return isIntGeq(getPterm(tr).symb()); }
-    bool        isIntGt(SymRef sr)    const { return sr == sym_Int_GT; }
+    bool        isNumGeq(PTRef tr)    const override;// { return isIntGeq(getPterm(tr).symb()); }
+    bool        isIntGt(SymRef sr)    const;// { return sr == sym_Int_GT; }
     //bool      isIntGt(PTRef tr)     const { return isIntGt(getPterm(tr).symb()); }
-    bool        isNumGt(PTRef tr)     const override { return isIntGt(getPterm(tr).symb()); }
-    bool        isIntVar(SymRef sr)   const { return isVar(sr) && sym_store[sr].rsort() == sort_INTEGER; }
+    bool        isNumGt(PTRef tr)     const override;// { return isIntGt(getPterm(tr).symb()); }
+    bool        isIntVar(SymRef sr)   const;// { return isVar(sr) && sym_store[sr].rsort() == sort_INTEGER; }
     //bool      isIntVar(PTRef tr)    const { return isIntVar(getPterm(tr).symb()); }
-    bool        isNumVar(PTRef tr)    const override { return isIntVar(getPterm(tr).symb());}
+    bool        isNumVar(PTRef tr)    const override;// { return isIntVar(getPterm(tr).symb());}
     //bool      isIntMod(SymRef sr)   const { return sr == sym_Int_MOD; }
     //bool      isIntMod(PTRef tr)    const { return isIntMod(getPterm(tr).symb()); }
     //bool      isIntABS(SymRef sr)   const { return sr == sym_int_ABS; }
     //bool      isIntABS(PTRef tr)    const { return isIntABS(getPterm(tr).symb()); }
-    bool        isIntZero(SymRef sr)  const { return sr == sym_Int_ZERO; }
+    bool        isIntZero(SymRef sr)  const;// { return sr == sym_Int_ZERO; }
     //bool      isIntZero(PTRef tr)   const { return tr == term_Int_ZERO; }
-    bool        isNumZero(PTRef tr)   const override { return tr == term_Int_ZERO; }
-    bool        isIntOne(SymRef sr)   const { return sr == sym_Int_ONE; }
+    bool        isNumZero(PTRef tr)   const override;// { return tr == term_Int_ZERO; }
+    bool        isIntOne(SymRef sr)   const;// { return sr == sym_Int_ONE; }
     //bool      isIntOne(PTRef tr)    const { return tr == term_Int_ONE; }
-    bool        isNumOne(PTRef tr)    const override { return tr == term_Int_ONE; }
+    bool        isNumOne(PTRef tr)    const override ;//{ return tr == term_Int_ONE; }
 
 
     // Integer terms are of form c, a, or (* c a) where c is a constant and a is a variable.
     //bool        isIntegerTerm(PTRef tr) const;
 
-    bool        hasSortInt(SymRef sr) const { return sym_store[sr].rsort() == sort_INTEGER; }
-    bool        hasSortNum(PTRef tr) const override { return hasSortInt(getPterm(tr).symb()); }
+    bool        hasSortInt(SymRef sr) const;// { return sym_store[sr].rsort() == sort_INTEGER; }
+    bool        hasSortNum(PTRef tr) const override ;//{ return hasSortInt(getPterm(tr).symb()); }
 
     //bool        isUFEquality(PTRef tr) const { return !isIntEq(tr) && Logic::isUFEquality(tr); }
     //bool        isTheoryEquality(PTRef tr) const { return isIntEq(tr); }
@@ -170,8 +170,8 @@ class LIALogic: public LALogic
     //bool        isUF(SymRef sr) const { return !sym_store[sr].isInterpreted();}
 
 
-    PTRef       getTerm_NumZero() const override { return term_Int_ZERO; }
-    PTRef       getTerm_NumOne()  const override { return term_Int_ONE; }
+    PTRef       getTerm_NumZero() const override;// { return term_Int_ZERO; }
+    PTRef       getTerm_NumOne()  const override;// { return term_Int_ONE; }
 
     /*
     PTRef       mkIntNeg(PTRef, char**);

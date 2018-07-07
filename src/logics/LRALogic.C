@@ -371,6 +371,74 @@ LRALogic::getRealConst(PTRef tr) const
     return *reals[id];
 }
 
+const char*   LRALogic::getName()              const  { return getLogic().str; }
+const Logic_t LRALogic::getLogic()             const  { return QF_LRA; }
+
+bool LRALogic::isBuiltinSort  (SRef sr) const  { return sr == sort_REAL || Logic::isBuiltinSort(sr); }
+//virtual bool isBuiltinConstant(SymRef sr) const { return (isNumConst(sr) || Logic::isBuiltinConstant(sr)); }
+//virtual bool isBuiltinFunction(SymRef sr) const;
+
+//bool  isNumConst     (SymRef sr)     const override { return isConstant(sr) && hasSortNum(sr); }
+//bool  isNumConst     (PTRef tr)      const override { return isNumConst(getPterm(tr).symb()); }
+bool  LRALogic::isNonnegNumConst (PTRef tr)    const  { return isNumConst(tr) && getNumConst(tr) >= 0; }
+
+//SRef        declareSort_Real(char** msg);
+
+SRef   LRALogic::getSort_num()   const  { return sort_REAL;}
+
+const opensmt::Number& LRALogic::getNumConst(PTRef tr) const  {return getRealConst(tr);}
+
+bool        LRALogic::isRealPlus(SymRef sr) const { return sr == sym_Real_PLUS; }
+//bool        isRealPlus(PTRef tr) const { return isRealPlus(getPterm(tr).symb()); }
+bool        LRALogic::isNumPlus(PTRef tr) const  { return isRealPlus(getPterm(tr).symb()); }
+bool        LRALogic::isRealMinus(SymRef sr) const { return sr == sym_Real_MINUS; }
+//bool        isRealMinus(PTRef tr) const { return isRealMinus(getPterm(tr).symb()); }
+bool        LRALogic::isNumMinus(PTRef tr) const  { return isRealMinus(getPterm(tr).symb()); }
+bool        LRALogic::isRealNeg(SymRef sr) const { return sr == sym_Real_NEG; }
+//bool        isRealNeg(PTRef tr) const { return isRealNeg(getPterm(tr).symb()); }
+bool        LRALogic::isNumNeg(PTRef tr) const  { return isRealNeg(getPterm(tr).symb()); }
+bool        LRALogic::isRealTimes(SymRef sr) const { return sr == sym_Real_TIMES; }
+//bool        isRealTimes(PTRef tr) const { return isRealTimes(getPterm(tr).symb()); }
+bool        LRALogic::isNumTimes(PTRef tr) const  { return isRealTimes(getPterm(tr).symb()); }
+bool        LRALogic::isRealDiv(SymRef sr) const { return sr == sym_Real_DIV; }
+//bool        isRealDiv(PTRef tr) const { return isRealDiv(getPterm(tr).symb()); }
+bool        LRALogic::isNumDiv(PTRef tr) const  { return isRealDiv(getPterm(tr).symb());  }
+bool        LRALogic::isRealEq(SymRef sr) const { return isEquality(sr) && (sym_store[sr][0] == sort_REAL); }
+//bool        isRealEq(PTRef tr) const { return isRealEq(getPterm(tr).symb()); }
+bool        LRALogic::isNumEq(PTRef tr) const  { return isRealEq(getPterm(tr).symb()); }
+bool        LRALogic::isRealLeq(SymRef sr) const { return sr == sym_Real_LEQ; }
+//bool        isRealLeq(PTRef tr) const { return isRealLeq(getPterm(tr).symb()); }
+bool        LRALogic::isNumLeq(PTRef tr) const  { return isRealLeq(getPterm(tr).symb()); }
+bool        LRALogic::isRealLt(SymRef sr) const { return sr == sym_Real_LT; }
+//bool        isRealLt(PTRef tr) const { return isRealLt(getPterm(tr).symb()); }
+bool        LRALogic::isNumLt(PTRef tr) const  { return isRealLt(getPterm(tr).symb());  }
+bool        LRALogic::isRealGeq(SymRef sr) const { return sr == sym_Real_GEQ; }
+//bool        isRealGeq(PTRef tr) const { return isRealGeq(getPterm(tr).symb()); }
+bool        LRALogic::isNumGeq(PTRef tr) const  { return isRealGeq(getPterm(tr).symb()); }
+bool        LRALogic::isRealGt(SymRef sr) const { return sr == sym_Real_GT; }
+//bool        isRealGt(PTRef tr) const { return isRealGt(getPterm(tr).symb()); }
+bool        LRALogic::isNumGt(PTRef tr) const  { return isRealGt(getPterm(tr).symb()); }
+bool        LRALogic::isRealVar(SymRef sr) const { return isVar(sr) && sym_store[sr].rsort() == sort_REAL; }
+//bool        isRealVar(PTRef tr) const { return isRealVar(getPterm(tr).symb()); }
+bool        LRALogic::isNumVar(PTRef tr) const  {return isRealVar(getPterm(tr).symb());}
+bool        LRALogic::isRealZero(SymRef sr) const { return sr == sym_Real_ZERO; }
+//bool        isRealZero(PTRef tr) const { return tr == term_Real_ZERO; }
+bool        LRALogic::isNumZero(PTRef tr) const  { return tr == term_Real_ZERO; }
+bool        LRALogic::isRealOne(SymRef sr) const { return sr == sym_Real_ONE; }
+//bool        isRealOne(PTRef tr) const { return tr == term_Real_ONE; }
+bool        LRALogic::isNumOne(PTRef tr) const  { return tr == term_Real_ONE; }
+
+// Real terms are of form c, a, or (* c a) where c is a constant and
+// a is a variable.
+//bool        isRealTerm(PTRef tr) const;
+
+bool        LRALogic::hasSortReal(SymRef sr) const { return sym_store[sr].rsort() == sort_REAL; }
+bool        LRALogic::hasSortNum(PTRef tr) const  { return hasSortReal(getPterm(tr).symb()); }
+
+PTRef       LRALogic::getTerm_NumZero() const  { return term_Real_ZERO; }
+PTRef       LRALogic::getTerm_NumOne()  const  { return term_Real_ONE; }
+
+
 /*
 PTRef LRALogic::mkConst(const char *name, const char **msg)
 {

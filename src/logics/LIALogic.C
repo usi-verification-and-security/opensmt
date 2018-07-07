@@ -224,7 +224,7 @@ const char* LIALogic::tk_int_gt    = ">";
 const char* LIALogic::tk_int_geq   = ">=";
 
 
-const char* LIALogic::s_sort_integer = "Integer";
+const char* LIALogic::s_sort_integer = "Int";
 
 LIALogic::LIALogic(SMTConfig& c) :
       LALogic(c)
@@ -341,7 +341,66 @@ LIALogic::getIntegerConst(PTRef tr) const
     return *integers[id];
 }
 
+const char*   LIALogic::getName()         const  { return getLogic().str; }
+const Logic_t LIALogic::getLogic()        const  { return QF_LIA; }
 
+bool LIALogic::isBuiltinSort(SRef sr) const  { return sr == sort_INTEGER || Logic::isBuiltinSort(sr); }
+bool  LIALogic::isNonnegNumConst(PTRef tr) const  { return isNumConst(tr) && getNumConst(tr) >= 0; }
+
+
+//SRef   declareSort_Integer(char** msg);
+SRef   LIALogic::getSort_num()  const  {return sort_INTEGER;}
+const opensmt::Number& LIALogic::getNumConst(PTRef tr) const  {return getIntegerConst(tr);}
+
+bool        LIALogic::isIntPlus(SymRef sr)  const { return sr == sym_Int_PLUS; }
+//bool      isIntPlus(PTRef tr)   const { return isIntPlus(getPterm(tr).symb()); }
+bool        LIALogic::isNumPlus(PTRef tr)   const  { return isIntPlus(getPterm(tr).symb()); }
+bool        LIALogic::isIntMinus(SymRef sr) const { return sr == sym_Int_MINUS; }
+//bool      isIntMinus(PTRef tr)  const { return isIntMinus(getPterm(tr).symb()); }
+bool        LIALogic::isNumMinus(PTRef tr)  const  { return isIntMinus(getPterm(tr).symb()); }
+bool        LIALogic::isIntNeg(SymRef sr)   const { return sr == sym_Int_NEG; }
+//bool      isIntNeg(PTRef tr)    const { return isIntNeg(getPterm(tr).symb()); }
+bool        LIALogic::isNumNeg(PTRef tr)    const  { return isIntNeg(getPterm(tr).symb()); }
+bool        LIALogic::isIntTimes(SymRef sr) const { return sr == sym_Int_TIMES; }
+//bool      isIntTimes(PTRef tr)  const { return isIntTimes(getPterm(tr).symb()); }
+bool        LIALogic::isNumTimes(PTRef tr)  const  { return isIntTimes(getPterm(tr).symb()); }
+bool        LIALogic::isIntDiv(SymRef sr)   const { return sr == sym_Int_DIV; }
+//bool        isIntDiv(PTRef tr)    const { return isIntDiv(getPterm(tr).symb()); }
+bool        LIALogic::isNumDiv(PTRef tr)    const  { return isIntDiv(getPterm(tr).symb()); }
+bool        LIALogic::isIntEq(SymRef sr)    const { return isEquality(sr) && (sym_store[sr][0] == sort_INTEGER); }
+//bool      isIntEq(PTRef tr)     const { return isIntEq(getPterm(tr).symb()); }
+bool        LIALogic::isNumEq(PTRef tr)     const  { return isIntEq(getPterm(tr).symb()); }
+bool        LIALogic::isIntLeq(SymRef sr)   const { return sr == sym_Int_LEQ; }
+//bool      isIntLeq(PTRef tr)    const { return isIntLeq(getPterm(tr).symb()); }
+bool        LIALogic::isNumLeq(PTRef tr)    const  { return isIntLeq(getPterm(tr).symb()); }
+bool        LIALogic::isIntLt(SymRef sr)    const { return sr == sym_Int_LT; }
+//bool      isIntLt(PTRef tr)     const { return isIntLt(getPterm(tr).symb()); }
+bool        LIALogic::isNumLt(PTRef tr)     const  { return isIntLt(getPterm(tr).symb()); }
+bool        LIALogic::isIntGeq(SymRef sr)   const { return sr == sym_Int_GEQ; }
+//bool      isIntGeq(PTRef tr)    const { return isIntGeq(getPterm(tr).symb()); }
+bool        LIALogic::isNumGeq(PTRef tr)    const  { return isIntGeq(getPterm(tr).symb()); }
+bool        LIALogic::isIntGt(SymRef sr)    const { return sr == sym_Int_GT; }
+//bool      isIntGt(PTRef tr)     const { return isIntGt(getPterm(tr).symb()); }
+bool        LIALogic::isNumGt(PTRef tr)     const  { return isIntGt(getPterm(tr).symb()); }
+bool        LIALogic::isIntVar(SymRef sr)   const { return isVar(sr) && sym_store[sr].rsort() == sort_INTEGER; }
+//bool      isIntVar(PTRef tr)    const { return isIntVar(getPterm(tr).symb()); }
+bool        LIALogic::isNumVar(PTRef tr)    const  { return isIntVar(getPterm(tr).symb());}
+//bool      isIntMod(SymRef sr)   const { return sr == sym_Int_MOD; }
+//bool      isIntMod(PTRef tr)    const { return isIntMod(getPterm(tr).symb()); }
+//bool      isIntABS(SymRef sr)   const { return sr == sym_int_ABS; }
+//bool      isIntABS(PTRef tr)    const { return isIntABS(getPterm(tr).symb()); }
+bool        LIALogic::isIntZero(SymRef sr)  const { return sr == sym_Int_ZERO; }
+//bool      isIntZero(PTRef tr)   const { return tr == term_Int_ZERO; }
+bool        LIALogic::isNumZero(PTRef tr)   const  { return tr == term_Int_ZERO; }
+bool        LIALogic::isIntOne(SymRef sr)   const { return sr == sym_Int_ONE; }
+//bool      isIntOne(PTRef tr)    const { return tr == term_Int_ONE; }
+bool        LIALogic::isNumOne(PTRef tr)    const  { return tr == term_Int_ONE; }
+
+bool        LIALogic::hasSortInt(SymRef sr) const { return sym_store[sr].rsort() == sort_INTEGER; }
+bool        LIALogic::hasSortNum(PTRef tr) const  { return hasSortInt(getPterm(tr).symb()); }
+
+PTRef       LIALogic::getTerm_NumZero() const  { return term_Int_ZERO; }
+PTRef      LIALogic::getTerm_NumOne()  const  { return term_Int_ONE; }
 /*
 PTRef
 LIALogic::mkConst(const char *name, const char **msg)

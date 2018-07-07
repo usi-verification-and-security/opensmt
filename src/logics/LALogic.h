@@ -75,80 +75,80 @@ public:
 
     virtual bool    isBuiltinFunction(SymRef sr) const;
     virtual PTRef   insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg);
-    virtual SRef    getSort_num    ()              const { return sort_NUM; }
+    virtual SRef    getSort_num    ()              const; // { return sort_NUM; }
 
     //PS. be careful with the following, the main problem is with type opensmt:: Real, which in LIA needs to be opensmt:: Integer
 
     virtual PTRef     mkConst         (const char* name, const char **msg);
     virtual PTRef     mkConst         (SRef s, const char* name);
-    virtual PTRef     mkConst         (const opensmt::Number& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_num(), rat); free(rat); return tr; }
-    virtual PTRef     mkConst         (const char* num) { return mkConst(getSort_num(), num); }
-    virtual PTRef     mkNumVar        (const char* name) { return mkVar(getSort_num(), name); }
+    virtual PTRef     mkConst         (const opensmt::Number& c); // { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_num(), rat); free(rat); return tr; }
+    virtual PTRef     mkConst         (const char* num); // { return mkConst(getSort_num(), num); }
+    virtual PTRef     mkNumVar        (const char* name); // { return mkVar(getSort_num(), name); }
 
-    virtual bool isBuiltinSort  (SRef sr) const { return sr == sort_NUM || Logic::isBuiltinSort(sr); }
-    virtual bool isBuiltinConstant(SymRef sr) const { return (isNumConst(sr) || Logic::isBuiltinConstant(sr)); }
+    virtual bool isBuiltinSort  (SRef sr) const; // { return sr == sort_NUM || Logic::isBuiltinSort(sr); }
+    virtual bool isBuiltinConstant(SymRef sr) const; // { return (isNumConst(sr) || Logic::isBuiltinConstant(sr)); }
 
 
-    virtual bool  isNumConst     (SymRef sr)     const { return isConstant(sr) && hasSortNum(sr); }
-    virtual bool  isNumConst     (PTRef tr)      const { return isNumConst(getPterm(tr).symb()); }
+    virtual bool  isNumConst     (SymRef sr)     const; // { return isConstant(sr) && hasSortNum(sr); }
+    virtual bool  isNumConst     (PTRef tr)      const; // { return isNumConst(getPterm(tr).symb()); }
    // virtual bool  isNonnegNumConst (PTRef tr)    const; //{ return isNumConst(tr) && getNumConst(tr) >= 0; } //PS. this method will be rewritten properly later
-    virtual bool  isNonnegNumConst (PTRef tr)  const { return isNumConst(tr) && getNumConst(tr) >= 0; }
+    virtual bool  isNonnegNumConst (PTRef tr)  const; // { return isNumConst(tr) && getNumConst(tr) >= 0; }
 
-    virtual bool   hasSortNum(SymRef sr) const { return sym_store[sr].rsort() == sort_NUM; }
-    virtual bool   hasSortNum(PTRef tr)  const { return hasSortNum(getPterm(tr).symb()); }
+    virtual bool   hasSortNum(SymRef sr) const; // { return sym_store[sr].rsort() == sort_NUM; }
+    virtual bool   hasSortNum(PTRef tr)  const; // { return hasSortNum(getPterm(tr).symb()); }
 
     virtual const opensmt::Number& getNumConst(PTRef tr) const; //PS. this method will be rewritten properly later
 
-    virtual bool        isUFEquality(PTRef tr) const { return !isNumEq(tr) && Logic::isUFEquality(tr); }
-    virtual bool        isTheoryEquality(PTRef tr) const { return isNumEq(tr); }
+    virtual bool        isUFEquality(PTRef tr) const; // { return !isNumEq(tr) && Logic::isUFEquality(tr); }
+    virtual bool        isTheoryEquality(PTRef tr) const; // { return isNumEq(tr); }
 
-    virtual bool isAtom(PTRef tr) const  { return isNumEq(tr) || isNumLt(tr) || isNumGt(tr) || isNumLeq(tr) || isNumGeq(tr) || Logic::isAtom(tr); }
+    virtual bool isAtom(PTRef tr) const; //  { return isNumEq(tr) || isNumLt(tr) || isNumGt(tr) || isNumLeq(tr) || isNumGeq(tr) || Logic::isAtom(tr); }
 
-    virtual bool        isUF(PTRef tr) const { return isUF(term_store[tr].symb()); }
-    virtual bool        isUF(SymRef sr) const { return !sym_store[sr].isInterpreted(); }
+    virtual bool        isUF(PTRef tr) const; // { return isUF(term_store[tr].symb()); }
+    virtual bool        isUF(SymRef sr) const; // { return !sym_store[sr].isInterpreted(); }
 
     virtual const char* getDefaultValue(const PTRef tr) const;
     //PS. up to here
 
 
-    bool isNumPlus(SymRef sr) const { return sr == sym_Num_PLUS; }
-    virtual bool isNumPlus(PTRef tr) const { return isNumPlus(getPterm(tr).symb()); }
+    bool isNumPlus(SymRef sr) const; // { return sr == sym_Num_PLUS; }
+    virtual bool isNumPlus(PTRef tr) const; // { return isNumPlus(getPterm(tr).symb()); }
 
-    bool isNumMinus(SymRef sr) const { return sr == sym_Num_MINUS; }
-    virtual bool isNumMinus(PTRef tr) const { return isNumMinus(getPterm(tr).symb()); }
+    bool isNumMinus(SymRef sr) const; // { return sr == sym_Num_MINUS; }
+    virtual bool isNumMinus(PTRef tr) const ; //{ return isNumMinus(getPterm(tr).symb()); }
 
-    bool isNumNeg(SymRef sr) const { return sr == sym_Num_NEG; }
-    virtual bool isNumNeg(PTRef tr) const { return isNumNeg(getPterm(tr).symb()); }
+    bool isNumNeg(SymRef sr) const ; //{ return sr == sym_Num_NEG; }
+    virtual bool isNumNeg(PTRef tr) const ; // { return isNumNeg(getPterm(tr).symb()); }
 
-    bool isNumTimes(SymRef sr) const { return sr == sym_Num_TIMES; }
-    virtual bool isNumTimes(PTRef tr) const { return isNumTimes(getPterm(tr).symb()); }
+    bool isNumTimes(SymRef sr) const; // { return sr == sym_Num_TIMES; }
+    virtual bool isNumTimes(PTRef tr) const ; //{ return isNumTimes(getPterm(tr).symb()); }
 
-    bool isNumDiv(SymRef sr) const { return sr == sym_Num_DIV; }
-    virtual bool isNumDiv(PTRef tr) const { return isNumDiv(getPterm(tr).symb()); }
+    bool isNumDiv(SymRef sr) const; // { return sr == sym_Num_DIV; }
+    virtual bool isNumDiv(PTRef tr) const; // { return isNumDiv(getPterm(tr).symb()); }
 
-    bool isNumEq(SymRef sr) const { return isEquality(sr) && (sym_store[sr][0] == sort_NUM);}
-    virtual bool isNumEq(PTRef tr) const { return isNumEq(getPterm(tr).symb()); }
+    bool isNumEq(SymRef sr) const ; //{ return isEquality(sr) && (sym_store[sr][0] == sort_NUM);}
+    virtual bool isNumEq(PTRef tr) const ; //{ return isNumEq(getPterm(tr).symb()); }
 
-    bool isNumLeq(SymRef sr) const { return sr == sym_Num_LEQ; }
-    virtual bool isNumLeq(PTRef tr) const { return isNumLeq(getPterm(tr).symb()); }
+    bool isNumLeq(SymRef sr) const; // { return sr == sym_Num_LEQ; }
+    virtual bool isNumLeq(PTRef tr) const ; //{ return isNumLeq(getPterm(tr).symb()); }
 
-    bool isNumLt(SymRef sr) const { return sr == sym_Num_LT; }
-    virtual bool isNumLt(PTRef tr) const { return isNumLt(getPterm(tr).symb()); }
+    bool isNumLt(SymRef sr) const; // { return sr == sym_Num_LT; }
+    virtual bool isNumLt(PTRef tr) const; // { return isNumLt(getPterm(tr).symb()); }
 
-    bool isNumGeq(SymRef sr) const { return sr == sym_Num_GEQ; }
-    virtual bool isNumGeq(PTRef tr) const { return isNumGeq(getPterm(tr).symb()); }
+    bool isNumGeq(SymRef sr) const; // { return sr == sym_Num_GEQ; }
+    virtual bool isNumGeq(PTRef tr) const; // { return isNumGeq(getPterm(tr).symb()); }
 
-    bool isNumGt(SymRef sr) const { return sr == sym_Num_GT; }
-    virtual bool isNumGt(PTRef tr) const { return isNumGt(getPterm(tr).symb()); }
+    bool isNumGt(SymRef sr) const ; //{ return sr == sym_Num_GT; }
+    virtual bool isNumGt(PTRef tr) const; // { return isNumGt(getPterm(tr).symb()); }
 
-    bool isNumVar(SymRef sr) const { return isVar(sr) && sym_store[sr].rsort() == sort_NUM; }
-    virtual bool isNumVar(PTRef tr) const { return isNumVar(getPterm(tr).symb()); }
+    bool isNumVar(SymRef sr) const; // { return isVar(sr) && sym_store[sr].rsort() == sort_NUM; }
+    virtual bool isNumVar(PTRef tr) const; // { return isNumVar(getPterm(tr).symb()); }
 
-    bool isNumZero(SymRef sr) const { return sr == sym_Num_ZERO; }
-    virtual bool isNumZero(PTRef tr) const { return tr == term_Num_ZERO; }
+    bool isNumZero(SymRef sr) const; // { return sr == sym_Num_ZERO; }
+    virtual bool isNumZero(PTRef tr) const; // { return tr == term_Num_ZERO; }
 
-    bool isNumOne(SymRef sr) const { return sr == sym_Num_ONE; }
-    virtual bool isNumOne(PTRef tr) const { return tr == term_Num_ONE; }
+    bool isNumOne(SymRef sr) const; // { return sr == sym_Num_ONE; }
+    virtual bool isNumOne(PTRef tr) const; // { return tr == term_Num_ONE; }
 
     // Real terms are of form c, a, or (* c a) where c is a constant and a is a variable.
     virtual bool isNumTerm(PTRef tr) const;
@@ -156,132 +156,45 @@ public:
 
     //virtual PTRef getNTerm(char* rat_str) =0;
 
-    virtual PTRef getTerm_NumZero() const { return term_Num_ZERO; }
-    virtual PTRef getTerm_NumOne() const { return term_Num_ONE; }
+    virtual PTRef getTerm_NumZero() const; // { return term_Num_ZERO; }
+    virtual PTRef getTerm_NumOne() const; // { return term_Num_ONE; }
 
 
     PTRef mkNumNeg(PTRef, char **);
-    PTRef mkNumNeg(PTRef tr) {
-        char *msg;
-        PTRef trn = mkNumNeg(tr, &msg);
-        assert(trn != PTRef_Undef);
-        return trn;
-    }
+    PTRef mkNumNeg(PTRef tr); // { char *msg; PTRef trn = mkNumNeg(tr, &msg); assert(trn != PTRef_Undef); return trn;}
 
     PTRef mkNumMinus(const vec<PTRef> &, char **);
-    PTRef mkNumMinus(const vec<PTRef> &args) {
-        char *msg;
-        PTRef tr = mkNumMinus(args, &msg);
-        assert(tr != PTRef_Undef);
-        return tr;
-    }
-    PTRef mkNumMinus(const PTRef a1, const PTRef a2) {
-        vec<PTRef> tmp;
-        tmp.push(a1);
-        tmp.push(a2);
-        return mkNumMinus(tmp);
-    }
+    PTRef mkNumMinus(const vec<PTRef> &args); // { char *msg; PTRef tr = mkNumMinus(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    PTRef mkNumMinus(const PTRef a1, const PTRef a2); // { vec<PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkNumMinus(tmp); }
 
     PTRef mkNumPlus(const vec<PTRef> &, char **);
-    PTRef mkNumPlus(const vec<PTRef> &args) {
-        char *msg;
-        PTRef tr = mkNumPlus(args, &msg);
-        assert(tr != PTRef_Undef);
-        return tr;
-    }
-    PTRef mkNumPlus(const std::vector<PTRef> &args) {
-        vec<PTRef> tmp;
-        for (PTRef arg : args) { tmp.push(arg); }
-        return mkNumPlus(tmp);
-    }
+    PTRef mkNumPlus(const vec<PTRef> &args); // { char *msg; PTRef tr = mkNumPlus(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    PTRef mkNumPlus(const std::vector<PTRef> &args); // { vec<PTRef> tmp; for (PTRef arg : args) { tmp.push(arg); } return mkNumPlus(tmp); }
 
     PTRef mkNumTimes(const vec<PTRef> &, char **);
-    PTRef mkNumTimes(const vec<PTRef> &args) {
-        char *msg;
-        PTRef tr = mkNumTimes(args, &msg);
-        assert(tr != PTRef_Undef);
-        return tr;
-    }
-    PTRef mkNumTimes(const PTRef p1, const PTRef p2) {
-        vec<PTRef> tmp;
-        tmp.push(p1);
-        tmp.push(p2);
-        return mkNumTimes(tmp);
-    }
-    PTRef mkNumTimes(const std::vector<PTRef> &args) {
-        vec<PTRef> tmp;
-        for (PTRef arg : args) { tmp.push(arg); }
-        return mkNumTimes(tmp);
-    }
+    PTRef mkNumTimes(const vec<PTRef> &args); // { char *msg; PTRef tr = mkNumTimes(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    PTRef mkNumTimes(const PTRef p1, const PTRef p2); // { vec<PTRef> tmp; tmp.push(p1); tmp.push(p2); return mkNumTimes(tmp); }
+    PTRef mkNumTimes(const std::vector<PTRef> &args); // { vec<PTRef> tmp; for (PTRef arg : args) { tmp.push(arg); } return mkNumTimes(tmp); }
 
     PTRef mkNumDiv(const vec<PTRef> &, char **);
-    PTRef mkNumDiv(const vec<PTRef> &args) {
-        char *msg;
-        PTRef tr = mkNumDiv(args, &msg);
-        assert(tr != PTRef_Undef);
-        return tr;
-    }
-    PTRef mkNumDiv(const PTRef nom, const PTRef den) {
-        vec<PTRef> tmp;
-        tmp.push(nom), tmp.push(den);
-        return mkNumDiv(tmp);
-    }
+    PTRef mkNumDiv(const vec<PTRef> &args); // { char *msg; PTRef tr = mkNumDiv(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    PTRef mkNumDiv(const PTRef nom, const PTRef den); // { vec<PTRef> tmp; tmp.push(nom), tmp.push(den); return mkNumDiv(tmp); }
 
     PTRef mkNumLeq(const vec<PTRef> &, char **);
-    PTRef mkNumLeq(const vec<PTRef> &args) {
-        char *msg;
-        PTRef tr = mkNumLeq(args, &msg);
-        assert(tr != PTRef_Undef);
-        return tr;
-    }
-    PTRef mkNumLeq(const PTRef arg1, const PTRef arg2) {
-        vec<PTRef> tmp;
-        tmp.push(arg1);
-        tmp.push(arg2);
-        return mkNumLeq(tmp);
-    }
+    PTRef mkNumLeq(const vec<PTRef> &args); // { char *msg; PTRef tr = mkNumLeq(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    PTRef mkNumLeq(const PTRef arg1, const PTRef arg2); // {vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkNumLeq(tmp); }
 
     PTRef mkNumGeq(const vec<PTRef> &, char **);
-    PTRef mkNumGeq(const vec<PTRef> &args) {
-        char *msg;
-        PTRef tr = mkNumGeq(args, &msg);
-        assert(tr != PTRef_Undef);
-        return tr;
-    }
-    PTRef mkNumGeq(const PTRef arg1, const PTRef arg2) {
-        vec<PTRef> tmp;
-        tmp.push(arg1);
-        tmp.push(arg2);
-        return mkNumGeq(tmp);
-    }
+    PTRef mkNumGeq(const vec<PTRef> &args); // { char *msg; PTRef tr = mkNumGeq(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    PTRef mkNumGeq(const PTRef arg1, const PTRef arg2); // { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkNumGeq(tmp); }
 
     PTRef mkNumLt(const vec<PTRef> &, char **);
-    PTRef mkNumLt(const vec<PTRef> &args) {
-        char *msg;
-        PTRef tr = mkNumLt(args, &msg);
-        assert(tr != PTRef_Undef);
-        return tr;
-    }
-    PTRef mkNumLt(const PTRef arg1, const PTRef arg2) {
-        vec<PTRef> tmp;
-        tmp.push(arg1);
-        tmp.push(arg2);
-        return mkNumLt(tmp);
-    }
+    PTRef mkNumLt(const vec<PTRef> &args); // { char *msg; PTRef tr = mkNumLt(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    PTRef mkNumLt(const PTRef arg1, const PTRef arg2); // { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkNumLt(tmp); }
 
     PTRef mkNumGt(const vec<PTRef> &, char **);
-    PTRef mkNumGt(const vec<PTRef> &args) {
-        char *msg;
-        PTRef tr = mkNumGt(args, &msg);
-        assert(tr != PTRef_Undef);
-        return tr;
-    }
-    PTRef mkNumGt(const PTRef arg1, const PTRef arg2) {
-        vec<PTRef> tmp;
-        tmp.push(arg1);
-        tmp.push(arg2);
-        return mkNumGt(tmp);
-    }
+    PTRef mkNumGt(const vec<PTRef> &args); // { char *msg; PTRef tr = mkNumGt(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    PTRef mkNumGt(const PTRef arg1, const PTRef arg2); // { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkNumGt(tmp); }
 
     //from here
     virtual bool isNegated(PTRef tr) const;
@@ -304,8 +217,8 @@ public:
     virtual void deserializeLogicData(const int *logicdata_buf);
 
     virtual char *printTerm_(PTRef tr, bool ext, bool s) const;
-    virtual char *printTerm(PTRef tr) const { return printTerm_(tr, false, false); }
-    virtual char *printTerm(PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
+    virtual char *printTerm(PTRef tr) const; // { return printTerm_(tr, false, false); }
+    virtual char *printTerm(PTRef tr, bool l, bool s) const; // { return printTerm_(tr, l, s); }
     //up to here are methods that you can also find in Logic class
 
 };
@@ -357,24 +270,24 @@ public:
 };
 
 class SimplifyConstSum : public SimplifyConst{
-    void Op(opensmt::Number& s, const opensmt::Number& v) const { s += v; }
-    opensmt::Number getIdOp() const { return 0; }
+    void Op(opensmt::Number& s, const opensmt::Number& v) const;// { s += v; }
+    opensmt::Number getIdOp() const;// { return 0; }
     void constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const;
 public:
     SimplifyConstSum(LALogic& log) : SimplifyConst(log) {}
 };
 
 class SimplifyConstTimes : public SimplifyConst{
-    void Op(opensmt::Number& s, const opensmt::Number& v) const { s *= v; }
-    opensmt::Number getIdOp() const { return 1; }
+    void Op(opensmt::Number& s, const opensmt::Number& v) const;// { s *= v; }
+    opensmt::Number getIdOp() const;// { return 1; }
     void constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const;
 public:
     SimplifyConstTimes(LALogic& log) : SimplifyConst(log) {}
 };
 
 class SimplifyConstDiv : public SimplifyConst{
-    void Op(opensmt::Number& s, const opensmt::Number& v) const { if (v == 0) { printf("explicit div by zero\n"); } s /= v; }
-    opensmt::Number getIdOp() const { return 1; }
+    void Op(opensmt::Number& s, const opensmt::Number& v) const;// { if (v == 0) { printf("explicit div by zero\n"); } s /= v; }
+    opensmt::Number getIdOp() const;// { return 1; }
     void constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const;
 public:
     SimplifyConstDiv(LALogic& log) : SimplifyConst(log) {}

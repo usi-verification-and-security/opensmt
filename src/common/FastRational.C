@@ -4,14 +4,10 @@ David Monniaux, VERIMAG 2008-2009
 
 Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
  */
-
 #include "FastRational.h"
 #include <sstream>
-
 //mpz_init(FastRational::one);
 //mpz_set_si(FastRational::one, 1);
-
-
 FastRational::FastRational( const char * s, const int base )
 {
     mpq_init(mpq);
@@ -21,20 +17,16 @@ FastRational::FastRational( const char * s, const int base )
     make_word( );
     if ( has_word )
         kill_mpq( );
-
     assert( isWellFormed( ) );
 }
-
 FastRational::FastRational(FastRational &&other) noexcept : has_word{other.has_word}, has_mpq{other.has_mpq}, num{other.num}, den{other.den}  {
     std::swap(this->mpq, other.mpq);
     other.has_mpq = false;
 }
-
 void FastRational::reset()
 {
     kill_mpq(); has_mpq = false; has_word = true; num  = 0; den = 1;
 }
-
 void FastRational::print(std::ostream & out) const
 {
 //  const bool sign = num < 0;
@@ -50,10 +42,9 @@ void FastRational::print(std::ostream & out) const
         assert(has_mpq);
         mpq_class mpq_c( mpq );
         if ( sign ) mpq_c = -mpq_c;
-            out << (sign?"(- ":"") << mpq_c << (sign?")":"");
+        out << (sign?"(- ":"") << mpq_c << (sign?")":"");
     }
 }
-
 void FastRational::print_(std::ostream & out) const
 {
     if (has_word) {
@@ -67,11 +58,9 @@ void FastRational::print_(std::ostream & out) const
         out << mpq;
     }
 }
-
 std::string FastRational::get_str() const
 {
     std::ostringstream os;
     print_(os);
     return os.str();
 }
-

@@ -5,6 +5,7 @@
 #include "Global.h"
 #include "LA.h"
 #include "LALogic.h"
+#include "FastRational.h"
 
 
 bool LALogic::isNegated(PTRef tr) const {
@@ -377,6 +378,203 @@ PTRef LALogic::mkNumNeg(PTRef tr, char** msg)
     args.push(mo); args.push(tr);
     return mkNumTimes(args);
 }
+
+SRef LALogic::getSort_num () const { return sort_NUM; }
+
+PTRef  LALogic::mkConst  (const opensmt::Number& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_num(), rat); free(rat); return tr; }
+PTRef  LALogic::mkConst  (const char* num) { return mkConst(getSort_num(), num); }
+PTRef  LALogic::mkNumVar (const char* name) { return mkVar(getSort_num(), name); }
+
+bool LALogic::isBuiltinSort  (SRef sr) const { return sr == sort_NUM || Logic::isBuiltinSort(sr); }
+bool LALogic::isBuiltinConstant(SymRef sr) const { return (isNumConst(sr) || Logic::isBuiltinConstant(sr)); }
+
+
+bool  LALogic::isNumConst     (SymRef sr)     const { return isConstant(sr) && hasSortNum(sr); }
+bool  LALogic::isNumConst     (PTRef tr)      const { return isNumConst(getPterm(tr).symb()); }
+// virtual bool  isNonnegNumConst (PTRef tr)    const; //{ return isNumConst(tr) && getNumConst(tr) >= 0; } //PS. this method will be rewritten properly later
+bool  LALogic::isNonnegNumConst (PTRef tr)  const { return isNumConst(tr) && getNumConst(tr) >= 0; }
+
+bool   LALogic::hasSortNum(SymRef sr) const { return sym_store[sr].rsort() == sort_NUM; }
+bool   LALogic::hasSortNum(PTRef tr)  const { return hasSortNum(getPterm(tr).symb()); }
+
+bool        LALogic::isUFEquality(PTRef tr) const { return !isNumEq(tr) && Logic::isUFEquality(tr); }
+bool        LALogic::isTheoryEquality(PTRef tr) const { return isNumEq(tr); }
+
+bool LALogic::isAtom(PTRef tr) const  { return isNumEq(tr) || isNumLt(tr) || isNumGt(tr) || isNumLeq(tr) || isNumGeq(tr) || Logic::isAtom(tr); }
+
+bool        LALogic::isUF(PTRef tr) const { return isUF(term_store[tr].symb()); }
+bool        LALogic::isUF(SymRef sr) const { return !sym_store[sr].isInterpreted(); }
+
+bool LALogic::isNumPlus(SymRef sr) const { return sr == sym_Num_PLUS; }
+bool LALogic::isNumPlus(PTRef tr) const { return isNumPlus(getPterm(tr).symb()); }
+
+bool LALogic::isNumMinus(SymRef sr) const { return sr == sym_Num_MINUS; }
+bool LALogic::isNumMinus(PTRef tr) const { return isNumMinus(getPterm(tr).symb()); }
+
+bool LALogic::isNumNeg(SymRef sr) const { return sr == sym_Num_NEG; }
+bool LALogic::isNumNeg(PTRef tr) const { return isNumNeg(getPterm(tr).symb()); }
+
+bool LALogic::isNumTimes(SymRef sr) const { return sr == sym_Num_TIMES; }
+bool LALogic::isNumTimes(PTRef tr) const { return isNumTimes(getPterm(tr).symb()); }
+
+bool LALogic::isNumDiv(SymRef sr) const { return sr == sym_Num_DIV; }
+bool LALogic::isNumDiv(PTRef tr) const { return isNumDiv(getPterm(tr).symb()); }
+
+bool LALogic::isNumEq(SymRef sr) const { return isEquality(sr) && (sym_store[sr][0] == sort_NUM);}
+bool LALogic::isNumEq(PTRef tr) const { return isNumEq(getPterm(tr).symb()); }
+
+bool LALogic::isNumLeq(SymRef sr) const { return sr == sym_Num_LEQ; }
+bool LALogic::isNumLeq(PTRef tr) const { return isNumLeq(getPterm(tr).symb()); }
+
+bool LALogic::isNumLt(SymRef sr) const { return sr == sym_Num_LT; }
+bool LALogic::isNumLt(PTRef tr) const { return isNumLt(getPterm(tr).symb()); }
+
+bool LALogic::isNumGeq(SymRef sr) const { return sr == sym_Num_GEQ; }
+bool LALogic::isNumGeq(PTRef tr) const { return isNumGeq(getPterm(tr).symb()); }
+
+bool LALogic::isNumGt(SymRef sr) const { return sr == sym_Num_GT; }
+bool LALogic::isNumGt(PTRef tr) const { return isNumGt(getPterm(tr).symb()); }
+
+bool LALogic::isNumVar(SymRef sr) const { return isVar(sr) && sym_store[sr].rsort() == sort_NUM; }
+bool LALogic::isNumVar(PTRef tr) const { return isNumVar(getPterm(tr).symb()); }
+
+bool LALogic::isNumZero(SymRef sr) const { return sr == sym_Num_ZERO; }
+bool LALogic::isNumZero(PTRef tr) const { return tr == term_Num_ZERO; }
+
+bool LALogic::isNumOne(SymRef sr) const { return sr == sym_Num_ONE; }
+bool LALogic::isNumOne(PTRef tr) const { return tr == term_Num_ONE; }
+
+PTRef LALogic::getTerm_NumZero() const { return term_Num_ZERO; }
+PTRef LALogic::getTerm_NumOne() const { return term_Num_ONE; }
+
+PTRef mkNumNeg(PTRef, char **);
+PTRef LALogic::mkNumNeg(PTRef tr) {
+    char *msg;
+    PTRef trn = mkNumNeg(tr, &msg);
+    assert(trn != PTRef_Undef);
+    return trn;
+}
+
+PTRef mkNumMinus(const vec<PTRef> &, char **);
+PTRef LALogic::mkNumMinus(const vec<PTRef> &args) {
+    char *msg;
+    PTRef tr = mkNumMinus(args, &msg);
+    assert(tr != PTRef_Undef);
+    return tr;
+}
+PTRef LALogic::mkNumMinus(const PTRef a1, const PTRef a2) {
+    vec<PTRef> tmp;
+    tmp.push(a1);
+    tmp.push(a2);
+    return mkNumMinus(tmp);
+}
+
+PTRef mkNumPlus(const vec<PTRef> &, char **);
+PTRef LALogic::mkNumPlus(const vec<PTRef> &args) {
+    char *msg;
+    PTRef tr = mkNumPlus(args, &msg);
+    assert(tr != PTRef_Undef);
+    return tr;
+}
+PTRef LALogic::mkNumPlus(const std::vector<PTRef> &args) {
+    vec<PTRef> tmp;
+    for (PTRef arg : args) { tmp.push(arg); }
+    return mkNumPlus(tmp);
+}
+
+PTRef mkNumTimes(const vec<PTRef> &, char **);
+PTRef LALogic::mkNumTimes(const vec<PTRef> &args) {
+    char *msg;
+    PTRef tr = mkNumTimes(args, &msg);
+    assert(tr != PTRef_Undef);
+    return tr;
+}
+PTRef LALogic::mkNumTimes(const PTRef p1, const PTRef p2) {
+    vec<PTRef> tmp;
+    tmp.push(p1);
+    tmp.push(p2);
+    return mkNumTimes(tmp);
+}
+PTRef LALogic::mkNumTimes(const std::vector<PTRef> &args) {
+    vec<PTRef> tmp;
+    for (PTRef arg : args) { tmp.push(arg); }
+    return mkNumTimes(tmp);
+}
+
+PTRef mkNumDiv(const vec<PTRef> &, char **);
+PTRef LALogic::mkNumDiv(const vec<PTRef> &args) {
+    char *msg;
+    PTRef tr = mkNumDiv(args, &msg);
+    assert(tr != PTRef_Undef);
+    return tr;
+}
+PTRef LALogic::mkNumDiv(const PTRef nom, const PTRef den) {
+    vec<PTRef> tmp;
+    tmp.push(nom), tmp.push(den);
+    return mkNumDiv(tmp);
+}
+
+PTRef mkNumLeq(const vec<PTRef> &, char **);
+PTRef LALogic::mkNumLeq(const vec<PTRef> &args) {
+    char *msg;
+    PTRef tr = mkNumLeq(args, &msg);
+    assert(tr != PTRef_Undef);
+    return tr;
+}
+PTRef LALogic::mkNumLeq(const PTRef arg1, const PTRef arg2) {
+    vec<PTRef> tmp;
+    tmp.push(arg1);
+    tmp.push(arg2);
+    return mkNumLeq(tmp);
+}
+
+PTRef mkNumGeq(const vec<PTRef> &, char **);
+PTRef LALogic::mkNumGeq(const vec<PTRef> &args) {
+    char *msg;
+    PTRef tr = mkNumGeq(args, &msg);
+    assert(tr != PTRef_Undef);
+    return tr;
+}
+PTRef LALogic::mkNumGeq(const PTRef arg1, const PTRef arg2) {
+    vec<PTRef> tmp;
+    tmp.push(arg1);
+    tmp.push(arg2);
+    return mkNumGeq(tmp);
+}
+
+PTRef mkNumLt(const vec<PTRef> &, char **);
+PTRef LALogic::mkNumLt(const vec<PTRef> &args) {
+    char *msg;
+    PTRef tr = mkNumLt(args, &msg);
+    assert(tr != PTRef_Undef);
+    return tr;
+}
+PTRef LALogic::mkNumLt(const PTRef arg1, const PTRef arg2) {
+    vec<PTRef> tmp;
+    tmp.push(arg1);
+    tmp.push(arg2);
+    return mkNumLt(tmp);
+}
+
+PTRef mkNumGt(const vec<PTRef> &, char **);
+PTRef LALogic::mkNumGt(const vec<PTRef> &args) {
+    char *msg;
+    PTRef tr = mkNumGt(args, &msg);
+    assert(tr != PTRef_Undef);
+    return tr;
+}
+PTRef LALogic::mkNumGt(const PTRef arg1, const PTRef arg2) {
+    vec<PTRef> tmp;
+    tmp.push(arg1);
+    tmp.push(arg2);
+    return mkNumGt(tmp);
+}
+
+//virtual char *printTerm_(PTRef tr, bool ext, bool s) const;
+char* LALogic::printTerm(PTRef tr) const { return printTerm_(tr, false, false); }
+char* LALogic::printTerm(PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
+
+
 
 PTRef LALogic::mkNumMinus(const vec<PTRef>& args_in, char** msg)
 {
@@ -1087,3 +1285,16 @@ LALogic::printTerm_(PTRef tr, bool ext, bool safe) const
         out = Logic::printTerm_(tr, ext, safe);
     return out;
 }
+
+
+//MOVINGFROMCLASSSIMPLIFICATION
+
+void SimplifyConstSum::Op(opensmt::Number& s, const opensmt::Number& v) const { s += v; }
+opensmt::Number SimplifyConstSum::getIdOp() const { return 0; }
+
+
+void SimplifyConstTimes::Op(opensmt::Number& s, const opensmt::Number& v) const { s *= v; }
+opensmt::Number SimplifyConstTimes::getIdOp() const { return 1; }
+
+void SimplifyConstDiv::Op(opensmt::Number& s, const opensmt::Number& v) const { if (v == 0) { printf("explicit div by zero\n"); } s /= v; }
+opensmt::Number SimplifyConstDiv::getIdOp() const { return 1; }

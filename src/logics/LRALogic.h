@@ -96,8 +96,8 @@ class LRALogic: public LALogic
             cerr << "; Num of LRA equalities in input: " << la_split_inequalities.getSize()/2 << "\n";
     }
 
-    virtual const char*   getName()              const override { return getLogic().str; }
-    virtual const Logic_t getLogic()             const override { return QF_LRA; }
+    virtual const char*   getName()              const override;// { return getLogic().str; }
+    virtual const Logic_t getLogic()             const override;// { return QF_LRA; }
 
 
     //virtual bool        okForBoolVar    (PTRef) const;
@@ -109,67 +109,67 @@ class LRALogic: public LALogic
     //virtual PTRef       mkConst         (const char* num) override { return mkConst(getSort_num(), num); }
     //virtual PTRef       mkNumVar       (const char* name) override { return mkVar(getSort_num(), name); }
 
-    virtual bool isBuiltinSort  (SRef sr) const override { return sr == sort_REAL || Logic::isBuiltinSort(sr); }
+    virtual bool isBuiltinSort  (SRef sr) const override;// { return sr == sort_REAL || Logic::isBuiltinSort(sr); }
     //virtual bool isBuiltinConstant(SymRef sr) const { return (isNumConst(sr) || Logic::isBuiltinConstant(sr)); }
     //virtual bool isBuiltinFunction(SymRef sr) const;
 
     //bool  isNumConst     (SymRef sr)     const override { return isConstant(sr) && hasSortNum(sr); }
     //bool  isNumConst     (PTRef tr)      const override { return isNumConst(getPterm(tr).symb()); }
-    virtual bool  isNonnegNumConst (PTRef tr)    const override { return isNumConst(tr) && getNumConst(tr) >= 0; }
+    virtual bool  isNonnegNumConst (PTRef tr)    const override;// { return isNumConst(tr) && getNumConst(tr) >= 0; }
 
     //SRef        declareSort_Real(char** msg);
 
-    SRef        getSort_num    ()              const override { return sort_REAL;}
+    SRef        getSort_num    ()              const override;// { return sort_REAL;}
 
-    const opensmt::Number& getNumConst(PTRef tr) const override {return getRealConst(tr);}
+    const opensmt::Number& getNumConst(PTRef tr) const override;// {return getRealConst(tr);}
     const opensmt::Real& getRealConst(PTRef tr) const;
 
-    bool        isRealPlus(SymRef sr) const { return sr == sym_Real_PLUS; }
+    bool        isRealPlus(SymRef sr) const;// { return sr == sym_Real_PLUS; }
     //bool        isRealPlus(PTRef tr) const { return isRealPlus(getPterm(tr).symb()); }
-    bool        isNumPlus(PTRef tr) const override { return isRealPlus(getPterm(tr).symb()); }
-    bool        isRealMinus(SymRef sr) const { return sr == sym_Real_MINUS; }
+    bool        isNumPlus(PTRef tr) const override;// { return isRealPlus(getPterm(tr).symb()); }
+    bool        isRealMinus(SymRef sr) const;// { return sr == sym_Real_MINUS; }
     //bool        isRealMinus(PTRef tr) const { return isRealMinus(getPterm(tr).symb()); }
-    bool        isNumMinus(PTRef tr) const override { return isRealMinus(getPterm(tr).symb()); }
-    bool        isRealNeg(SymRef sr) const { return sr == sym_Real_NEG; }
+    bool        isNumMinus(PTRef tr) const override;// { return isRealMinus(getPterm(tr).symb()); }
+    bool        isRealNeg(SymRef sr) const;// { return sr == sym_Real_NEG; }
     //bool        isRealNeg(PTRef tr) const { return isRealNeg(getPterm(tr).symb()); }
-    bool        isNumNeg(PTRef tr) const override { return isRealNeg(getPterm(tr).symb()); }
-    bool        isRealTimes(SymRef sr) const { return sr == sym_Real_TIMES; }
+    bool        isNumNeg(PTRef tr) const override;// { return isRealNeg(getPterm(tr).symb()); }
+    bool        isRealTimes(SymRef sr) const;// { return sr == sym_Real_TIMES; }
     //bool        isRealTimes(PTRef tr) const { return isRealTimes(getPterm(tr).symb()); }
-    bool        isNumTimes(PTRef tr) const override { return isRealTimes(getPterm(tr).symb()); }
-    bool        isRealDiv(SymRef sr) const { return sr == sym_Real_DIV; }
+    bool        isNumTimes(PTRef tr) const override;// { return isRealTimes(getPterm(tr).symb()); }
+    bool        isRealDiv(SymRef sr) const;// { return sr == sym_Real_DIV; }
     //bool        isRealDiv(PTRef tr) const { return isRealDiv(getPterm(tr).symb()); }
-    bool        isNumDiv(PTRef tr) const override { return isRealDiv(getPterm(tr).symb());  }
-    bool        isRealEq(SymRef sr) const { return isEquality(sr) && (sym_store[sr][0] == sort_REAL); }
+    bool        isNumDiv(PTRef tr) const override;// { return isRealDiv(getPterm(tr).symb());  }
+    bool        isRealEq(SymRef sr) const;// { return isEquality(sr) && (sym_store[sr][0] == sort_REAL); }
     //bool        isRealEq(PTRef tr) const { return isRealEq(getPterm(tr).symb()); }
-    bool        isNumEq(PTRef tr) const override { return isRealEq(getPterm(tr).symb()); }
-    bool        isRealLeq(SymRef sr) const { return sr == sym_Real_LEQ; }
+    bool        isNumEq(PTRef tr) const override;// { return isRealEq(getPterm(tr).symb()); }
+    bool        isRealLeq(SymRef sr) const;// { return sr == sym_Real_LEQ; }
     //bool        isRealLeq(PTRef tr) const { return isRealLeq(getPterm(tr).symb()); }
-    bool        isNumLeq(PTRef tr) const override { return isRealLeq(getPterm(tr).symb()); }
-    bool        isRealLt(SymRef sr) const { return sr == sym_Real_LT; }
+    bool        isNumLeq(PTRef tr) const override;// { return isRealLeq(getPterm(tr).symb()); }
+    bool        isRealLt(SymRef sr) const;// { return sr == sym_Real_LT; }
     //bool        isRealLt(PTRef tr) const { return isRealLt(getPterm(tr).symb()); }
-    bool        isNumLt(PTRef tr) const override { return isRealLt(getPterm(tr).symb());  }
-    bool        isRealGeq(SymRef sr) const { return sr == sym_Real_GEQ; }
+    bool        isNumLt(PTRef tr) const override;// { return isRealLt(getPterm(tr).symb());  }
+    bool        isRealGeq(SymRef sr) const;// { return sr == sym_Real_GEQ; }
     //bool        isRealGeq(PTRef tr) const { return isRealGeq(getPterm(tr).symb()); }
-    bool        isNumGeq(PTRef tr) const override { return isRealGeq(getPterm(tr).symb()); }
-    bool        isRealGt(SymRef sr) const { return sr == sym_Real_GT; }
+    bool        isNumGeq(PTRef tr) const override;// { return isRealGeq(getPterm(tr).symb()); }
+    bool        isRealGt(SymRef sr) const;// { return sr == sym_Real_GT; }
     //bool        isRealGt(PTRef tr) const { return isRealGt(getPterm(tr).symb()); }
-    bool        isNumGt(PTRef tr) const override { return isRealGt(getPterm(tr).symb()); }
-    bool        isRealVar(SymRef sr) const { return isVar(sr) && sym_store[sr].rsort() == sort_REAL; }
+    bool        isNumGt(PTRef tr) const override;// { return isRealGt(getPterm(tr).symb()); }
+    bool        isRealVar(SymRef sr) const;// { return isVar(sr) && sym_store[sr].rsort() == sort_REAL; }
     //bool        isRealVar(PTRef tr) const { return isRealVar(getPterm(tr).symb()); }
-    bool        isNumVar(PTRef tr) const override {return isRealVar(getPterm(tr).symb());}
-    bool        isRealZero(SymRef sr) const { return sr == sym_Real_ZERO; }
+    bool        isNumVar(PTRef tr) const override;// {return isRealVar(getPterm(tr).symb());}
+    bool        isRealZero(SymRef sr) const;// { return sr == sym_Real_ZERO; }
     //bool        isRealZero(PTRef tr) const { return tr == term_Real_ZERO; }
-    bool        isNumZero(PTRef tr) const override { return tr == term_Real_ZERO; }
-    bool        isRealOne(SymRef sr) const { return sr == sym_Real_ONE; }
+    bool        isNumZero(PTRef tr) const override;// { return tr == term_Real_ZERO; }
+    bool        isRealOne(SymRef sr) const;// { return sr == sym_Real_ONE; }
     //bool        isRealOne(PTRef tr) const { return tr == term_Real_ONE; }
-    bool        isNumOne(PTRef tr) const override { return tr == term_Real_ONE; }
+    bool        isNumOne(PTRef tr) const override;// { return tr == term_Real_ONE; }
 
     // Real terms are of form c, a, or (* c a) where c is a constant and
     // a is a variable.
     //bool        isRealTerm(PTRef tr) const;
 
-    bool        hasSortReal(SymRef sr) const { return sym_store[sr].rsort() == sort_REAL; }
-    bool        hasSortNum(PTRef tr) const override { return hasSortReal(getPterm(tr).symb()); }
+    bool        hasSortReal(SymRef sr) const;// { return sym_store[sr].rsort() == sort_REAL; }
+    bool        hasSortNum(PTRef tr) const override;// { return hasSortReal(getPterm(tr).symb()); }
 
     //bool        isUFEquality(PTRef tr) const { return !isRealEq(tr) && Logic::isUFEquality(tr); }
     //bool        isTheoryEquality(PTRef tr) const { return isRealEq(tr); }
@@ -179,8 +179,8 @@ class LRALogic: public LALogic
     //bool        isUF(PTRef tr) const { return isUF(term_store[tr].symb()); }
     //bool        isUF(SymRef sr) const { return !sym_store[sr].isInterpreted(); }
 
-    PTRef       getTerm_NumZero() const override { return term_Real_ZERO; }
-    PTRef       getTerm_NumOne()  const override { return term_Real_ONE; }
+    PTRef       getTerm_NumZero() const override;// { return term_Real_ZERO; }
+    PTRef       getTerm_NumOne()  const override;// { return term_Real_ONE; }
 
     /*
     PTRef       mkRealNeg(PTRef, char**);
