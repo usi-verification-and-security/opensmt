@@ -874,3 +874,49 @@ std::string THandler::printAssertion(Lit assertion) {
 //}
 #endif
 
+void THandler::clear() { getSolverHandler().clearSolver(); }  // Clear the solvers from their states
+
+Theory& THandler::getTheory() { return theory; }
+Logic&  THandler::getLogic()  { return theory.getLogic(); }
+
+TSolverHandler&       THandler::getSolverHandler()       { return theory.getTSolverHandler(); }
+const TSolverHandler& THandler::getSolverHandler() const { return theory.getTSolverHandler(); }
+TermMapper&           THandler::getTMap()                { return tmap; }
+
+ValPair THandler::getValue          (PTRef tr) const { return getSolverHandler().getValue(tr); };
+
+bool    THandler::isTheoryTerm       ( Var v ) { return getLogic().isTheoryTerm(varToTerm(v)); }
+PTRef   THandler::varToTerm          ( Var v ) { return tmap.varToPTRef(v); }  // Return the term ref corresponding to a variable
+Pterm&  THandler::varToPterm         ( Var v)  { return getLogic().getPterm(tmap.varToPTRef(v)); } // Return the term corresponding to a variable
+Lit     THandler::PTRefToLit         ( PTRef tr) { return tmap.getLit(tr); }
+
+void    THandler::getVarName         ( Var v, char** name ) { *name = getLogic().printTerm(tmap.varToPTRef(v)); }
+
+void    THandler::pushDeduction      () { getSolverHandler().deductions.push({SolverId_Undef, l_Undef}); }  // Add the deduction entry for a variable
+Var     THandler::ptrefToVar         ( PTRef r ) { return tmap.getVar(r); }
+
+void    THandler::computeModel      () { getSolverHandler().computeModel(); } // Computes a model in the solver if necessary
+void    THandler::clearModel        () { /*getSolverHandler().clearModel();*/ }   // Clear the model if necessary
+
+bool    THandler::assertLit         (PtAsgn pta) { return getSolverHandler().assertLit(pta); } // Push the assignment to all theory solvers
+void    THandler::declareTermTree   (PTRef tr) { getSolverHandler().declareTermTree(tr); }
+
+char*   THandler::printValue         (PTRef tr) { return getSolverHandler().printValue(tr); } // Debug.  Ask from the solvers what they know about value of tr
+char*   THandler::printExplanation   (PTRef tr) { return getSolverHandler().printExplanation(tr); } // Debug.  Ask from the solvers what they know about explanation of tr
+void    THandler::declareTerm        (PTRef tr) { getSolverHandler().declareTerm(tr); }
+
+inline double THandler::drand(double& seed)
+{
+    seed *= 1389796;
+    int q = (int)(seed / 2147483647);
+    seed -= (double)q * 2147483647;
+    return seed / 2147483647;
+}
+
+// Returns a random integer 0 <= x < size. Seed must never be 0.
+inline int THandler::irand(double& seed, int size)
+{
+    return (int)(drand(seed) * size);
+}
+
+inline lbool THandler::value (Lit p, vec<lbool>& assigns) const { return assigns[var(p)] ^ sign(p); }

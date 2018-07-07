@@ -1510,6 +1510,9 @@ LRASolver::~LRASolver( )
 //    }
 }
 
+LRALogic&  LRASolver::getLogic() { return logic; }
+
+
 /*
 //bool LRASolver::valueConsistent(LVRef v)
 //{
@@ -1604,6 +1607,8 @@ bool LRASolver::checkTableauConsistency() const {
     return res;
 }
 
+
+
 void LRASolver::doGaussianElimination( )
 {
     auto eliminated = tableau.doGaussianElimination([this](LVRef v){return this->isUnbounded(v);});
@@ -1622,6 +1627,8 @@ void LRASolver::doGaussianElimination( )
         removed_by_GaussianElimination.emplace(entry.first, poly);
     }
 }*/
+
+
 
 #ifdef PRODUCE_PROOF
 //

@@ -1249,3 +1249,18 @@ LASolver::~LASolver( )
 //        numbers_pool.pop_back( );
 //    }
 }
+
+PtAsgn_reason LASolver::getDeduction()  { if (deductions_next >= th_deductions.size()) return PtAsgn_reason_Undef; else return th_deductions[deductions_next++]; }
+
+LALogic&  LASolver::getLogic()  { return logic; }
+
+unsigned LASolver::nVars() const { return lva.getNumVars(); }
+
+bool LASolver::isProcessedByTableau(LVRef var) {return tableau.isProcessed(var);}
+
+const LABoundRef LASolver::getBound(LVRef v, int idx) const { return boundStore.getBoundByIdx(v, idx); }
+inline int     LASolver::verbose                       ( ) const { return config.verbosity(); }
+
+char* LASolver::printValue(PTRef tr)  { char* tmp = (char*)malloc(1); tmp[0] = '\0'; return tmp; } // Implement later...
+char* LASolver::printExplanation(PTRef tr)  { return printValue(tr); }
+

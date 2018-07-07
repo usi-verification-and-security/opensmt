@@ -66,10 +66,12 @@ public:
 static class PtAsgn_reason PtAsgn_reason_Undef(PTRef_Undef, l_Undef, PTRef_Undef);
 
 struct LessThan_PTRef {
-    bool operator () (PTRef& x, PTRef& y);// { return x.x < y.x; } };
+    bool operator () (PTRef& x, PTRef& y);// { return x.x < y.x; }
+};
 
 struct LessThan_PtAsgn {
-    bool operator () (PtAsgn& x, PtAsgn& y);// { return x.tr.x < y.tr.x; } };
+    bool operator () (PtAsgn& x, PtAsgn& y);// { return x.tr.x < y.tr.x; }
+};
 
 class ValPair
 {

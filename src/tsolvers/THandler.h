@@ -54,14 +54,14 @@ public:
 
     virtual ~THandler ( ) { }
 
-    void clear() { getSolverHandler().clearSolver(); }  // Clear the solvers from their states
+    void clear();// { getSolverHandler().clearSolver(); }  // Clear the solvers from their states
 
-    Theory& getTheory() { return theory; }
-    Logic&  getLogic()  { return theory.getLogic(); }
+    Theory& getTheory();// { return theory; }
+    Logic&  getLogic() ;// { return theory.getLogic(); }
 
-    TSolverHandler&       getSolverHandler()       { return theory.getTSolverHandler(); }
-    const TSolverHandler& getSolverHandler() const { return theory.getTSolverHandler(); }
-    TermMapper&           getTMap()                { return tmap; }
+    TSolverHandler&       getSolverHandler() ;//      { return theory.getTSolverHandler(); }
+    const TSolverHandler& getSolverHandler() const;// { return theory.getTSolverHandler(); }
+    TermMapper&           getTMap()      ;//          { return tmap; }
 
 #ifdef PEDANTIC_DEBUG
     void    getConflict          ( vec<Lit>&, vec<VarData>&, int &, vec<Lit>& ); // Returns theory conflict in terms of literals
@@ -75,49 +75,49 @@ public:
     Lit     getSuggestion        ( );                     // Returns a literal that is suggested by the current state
     void    getReason            ( Lit, vec< Lit > &);    // Returns the explanation for a deduced literal
 
-    ValPair getValue          (PTRef tr) const { return getSolverHandler().getValue(tr); };
+    ValPair getValue          (PTRef tr) const ;//{ return getSolverHandler().getValue(tr); };
 
-    bool    isTheoryTerm       ( Var v ) { return getLogic().isTheoryTerm(varToTerm(v)); }
-    PTRef   varToTerm          ( Var v ) { return tmap.varToPTRef(v); }  // Return the term ref corresponding to a variable
-    Pterm&  varToPterm         ( Var v)  { return getLogic().getPterm(tmap.varToPTRef(v)); } // Return the term corresponding to a variable
-    Lit     PTRefToLit         ( PTRef tr) { return tmap.getLit(tr); }
+    bool    isTheoryTerm       ( Var v ) ;//{ return getLogic().isTheoryTerm(varToTerm(v)); }
+    PTRef   varToTerm          ( Var v ) ;//{ return tmap.varToPTRef(v); }  // Return the term ref corresponding to a variable
+    Pterm&  varToPterm         ( Var v) ;// { return getLogic().getPterm(tmap.varToPTRef(v)); } // Return the term corresponding to a variable
+    Lit     PTRefToLit         ( PTRef tr);// { return tmap.getLit(tr); }
 
-    void    getVarName         ( Var v, char** name ) { *name = getLogic().printTerm(tmap.varToPTRef(v)); }
+    void    getVarName         ( Var v, char** name );// { *name = getLogic().printTerm(tmap.varToPTRef(v)); }
 
-    void    pushDeduction      () { getSolverHandler().deductions.push({SolverId_Undef, l_Undef}); }  // Add the deduction entry for a variable
-    Var     ptrefToVar         ( PTRef r ) { return tmap.getVar(r); }
+    void    pushDeduction      ();// { getSolverHandler().deductions.push({SolverId_Undef, l_Undef}); }  // Add the deduction entry for a variable
+    Var     ptrefToVar         ( PTRef r );// { return tmap.getVar(r); }
 
-    void    computeModel      () { getSolverHandler().computeModel(); } // Computes a model in the solver if necessary
-    void    clearModel        () { /*getSolverHandler().clearModel();*/ }   // Clear the model if necessary
+    void    computeModel      () ;//{ getSolverHandler().computeModel(); } // Computes a model in the solver if necessary
+    void    clearModel        ();// { /*getSolverHandler().clearModel();*/ }   // Clear the model if necessary
     bool    assertLits        (vec<Lit>&);             // Give to the TSolvers the newly added literals on the trail
-    bool    assertLit         (PtAsgn pta) { return getSolverHandler().assertLit(pta); } // Push the assignment to all theory solvers
-    void    declareTermTree   (PTRef tr) { getSolverHandler().declareTermTree(tr); } // Declare the terms in the formula recursively.
+    bool    assertLit         (PtAsgn pta);// { return getSolverHandler().assertLit(pta); } // Push the assignment to all theory solvers
+    void    declareTermTree   (PTRef tr);// { getSolverHandler().declareTermTree(tr); } // Declare the terms in the formula recursively.
     bool    check             (bool);       // Check trail in the theories
     void    backtrack         (int);        // Remove literals that are not anymore on the trail
 
 //    lbool   evaluate          ( PTRef e ) { return l_Undef; }
 
-    char*   printValue         (PTRef tr) { return getSolverHandler().printValue(tr); } // Debug.  Ask from the solvers what they know about value of tr
-    char*   printExplanation   (PTRef tr) { return getSolverHandler().printExplanation(tr); } // Debug.  Ask from the solvers what they know about explanation of tr
-    void    declareTerm        (PTRef tr) { getSolverHandler().declareTerm(tr); }
+    char*   printValue         (PTRef tr);// { return getSolverHandler().printValue(tr); } // Debug.  Ask from the solvers what they know about value of tr
+    char*   printExplanation   (PTRef tr);// { return getSolverHandler().printExplanation(tr); } // Debug.  Ask from the solvers what they know about explanation of tr
+    void    declareTerm        (PTRef tr);// { getSolverHandler().declareTerm(tr); }
 
 protected:
 
 
     // Returns a random float 0 <= x < 1. Seed must never be 0.
-    static inline double drand(double& seed)
-    {
+    static inline double drand(double& seed);
+    /*{
         seed *= 1389796;
         int q = (int)(seed / 2147483647);
         seed -= (double)q * 2147483647;
         return seed / 2147483647;
-    }
+    }*/
 
     // Returns a random integer 0 <= x < size. Seed must never be 0.
-    static inline int irand(double& seed, int size)
-    {
+    static inline int irand(double& seed, int size);
+    /*{
         return (int)(drand(seed) * size);
-    }
+    }*/
 
 //  void verifyCallWithExternalTool        ( bool, size_t );
 //  void verifyExplanationWithExternalTool ( vector< Enode * > & );
@@ -138,7 +138,7 @@ public:
 protected:
     size_t              checked_trail_size;       // Store last size of the trail checked by the solvers
 
-    inline lbool value (Lit p, vec<lbool>& assigns) const { return assigns[var(p)] ^ sign(p); }
+    inline lbool value (Lit p, vec<lbool>& assigns) const;// { return assigns[var(p)] ^ sign(p); }
 
 // Debug
 public:

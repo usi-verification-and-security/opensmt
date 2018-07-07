@@ -174,3 +174,22 @@ void LRAModel::clear() {
     limits.push({0, 0});
 }
 
+int LRAModel::backtrackLevel() { return limits.size() - 1; }
+inline int   LRAModel::nVars() { return n_vars_with_model; }
+//inline const Delta& LRAModel::read (const LVRef &v) const { assert(hasModel(v)); return int_model[lva[v].ID()].last().d; }
+const  bool  LRAModel::hasModel(const LVRef& v) const { return (lva[v].ID() < int_model.size() && int_model[lva[v].ID()].size() > 0); }
+
+const LABound& LRAModel::readLBound(const LVRef &v) const { return bs[int_lbounds[lva[v].ID()].last().br]; }
+const LABound& LRAModel::readUBound(const LVRef &v) const { return bs[int_ubounds[lva[v].ID()].last().br]; }
+const Delta& LRAModel::Lb(LVRef v) const { return bs[int_lbounds[lva[v].ID()].last().br].getValue(); }
+const Delta& LRAModel::Ub(LVRef v) const { return bs[int_ubounds[lva[v].ID()].last().br].getValue(); }
+void LRAModel::pushBacktrackPoint()      { limits.push({model_trace.size(), bound_trace.size(), decision_trace.size()}); }
+PtAsgn LRAModel::popBacktrackPoint() { popModels(); popBounds(); PtAsgn popd = popDecisions(); limits.pop(); return popd; }; // Returns the decision if the backtrack point had a decision
+int  LRAModel::getBacktrackSize() const { return limits.size(); }
+
+bool LRAModel::isEquality(LVRef v) const { return bs[int_lbounds[lva[v].ID()].last().br].getIdx()+1 == bs[int_ubounds[lva[v].ID()].last().br].getIdx() && !Lb(v).isInf() && !Ub(v).isInf() && Lb(v) == Ub(v); }
+bool LRAModel::isUnbounded(LVRef v) const { return bs.isUnbounded(v); }
+bool LRAModel::boundSatisfied(LVRef v, LABoundRef b) const { return ((bs[b].getType() == bound_u) && !(bs[b].getIdx() < readUBound(v).getIdx())) || ((bs[b].getType() == bound_l) && !(bs[b].getIdx() > readLBound(v).getIdx())); }
+bool LRAModel::boundUnsatisfied(LVRef v, LABoundRef b) const
+{ return ((bs[b].getType() == bound_l) && (bs[b].getIdx() > readUBound(v).getIdx() && bs[b].getValue() != Ub(v))) ||
+         ((bs[b].getType() == bound_u) && (bs[b].getIdx() < readLBound(v).getIdx() && bs[b].getValue() != Lb(v))); }

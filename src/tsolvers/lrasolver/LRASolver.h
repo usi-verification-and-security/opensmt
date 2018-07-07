@@ -94,7 +94,7 @@ public:
   //  void  getConflict(bool, vec<PtAsgn>& e) override;
   //  PtAsgn_reason getDeduction() override { if (deductions_next >= th_deductions.size()) return PtAsgn_reason_Undef; else return th_deductions[deductions_next++]; }
 
-    LRALogic&  getLogic() override { return logic; }
+    LRALogic&  getLogic() override;// { return logic; }
   //  bool       isValid(PTRef tr) override;
 
 #ifdef PRODUCE_PROOF

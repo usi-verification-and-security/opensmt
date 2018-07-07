@@ -76,5 +76,64 @@ void LAVarStore::addLeqVar(PTRef leq_tr, LVRef v)
     leqToLavar[idx] = v;
 }
 
-bool LAVarStore::hasVar(PTRef tr)
-{ return hasVar(logic.getPterm(tr).getId()); }
+bool LAVarStore::hasVar(PTRef tr) { return hasVar(logic.getPterm(tr).getId()); }
+
+bool LAVar::skip    ()      const { return header.skp;                }
+void LAVar::setSkip ()            { header.skp = true;                }
+void LAVar::clrSkip ()            { header.skp = false;               }
+int  LAVar::getRowId()      const { return row_id; }
+void LAVar::setRowId(int i)       { row_id = i;    }
+int  LAVar::getColId()      const { return col_id; }
+void LAVar::setColId(int i)       { col_id = i;    }
+
+inline int  LAVar::ID()                const { return header.id; } // Return the ID of the LAVar
+
+// Binded rows system
+OccListRef LAVar::getBindedRowsRef() const       { return occs; }
+void       LAVar::setBindedRowsRef(OccListRef r) { occs = r; }
+PolyRef    LAVar::getPolyRef()       const       { return poly; }
+void       LAVar::setPolyRef(PolyRef r)          { poly = r; }
+
+PTRef      LAVar::getPTRef()         const       { return e; }
+
+void LAVar::setNonbasic()
+{
+    header.basic = false;
+}
+
+void LAVar::setBasic()
+{
+    header.basic = true;
+}
+
+int LAVarAllocator::lavarWord32Size() {
+    return (sizeof(LAVar)) / sizeof(uint32_t); }
+
+unsigned LAVarAllocator::getNumVars() const { return n_vars; }
+
+LVRef LAVarAllocator::alloc(PTRef e)
+{
+    uint32_t v = RegionAllocator<uint32_t>::alloc(lavarWord32Size());
+    LVRef id = {v};
+    new (lea(id)) LAVar(e, n_vars++);
+    return id;
+}
+LAVar&       LAVarAllocator::operator[](LVRef r)       { return (LAVar&)RegionAllocator<uint32_t>::operator[](r.x); }
+const LAVar& LAVarAllocator::operator[](LVRef r) const { return (LAVar&)RegionAllocator<uint32_t>::operator[](r.x); }
+// Deref, Load Effective Address (LEA), Inverse of LEA (AEL):
+LAVar*       LAVarAllocator::lea       (LVRef r)         { return (LAVar*)RegionAllocator<uint32_t>::lea(r.x); }
+const LAVar* LAVarAllocator::lea       (LVRef r) const   { return (LAVar*)RegionAllocator<uint32_t>::lea(r.x); }
+LVRef        LAVarAllocator::ael       (const LAVar* t)  { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); LVRef rf; rf.x = r; return rf; }
+void         LAVarAllocator::free      (LVRef r)         { RegionAllocator::free(lavarWord32Size()); }
+
+// Debug stuff
+char*        LAVarAllocator::printVar (LVRef r)  const   { char* str; asprintf(&str, "v%d", r.x);  return str; }
+
+LVRef  LAVarStore::getVarByPTId(PTId i) { return ptermToLavar[Idx(i)]; }
+
+LVRef  LAVarStore::getVarByLeqId(PTId i) { return leqToLavar[Idx(i)]; }
+bool   LAVarStore::hasVar(PTId i) { return ptermToLavar.size() > Idx(i) && ptermToLavar[Idx(i)] != LVRef_Undef; }
+
+int    LAVarStore::numVars() const { return lavars.size(); }
+void   LAVarStore::remove(LVRef r) { lva.free(r); };
+LVRef  LAVarStore::getVarByIdx(unsigned i) { return lavars[i]; }

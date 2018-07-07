@@ -221,3 +221,5 @@ LIASolver::~LIASolver( )
 //        numbers_pool.pop_back( );
 //    }
 }
+
+LIALogic&  LIASolver::getLogic()  { return logic; }

@@ -95,9 +95,9 @@ public:
 
     // Return the conflicting bounds
     void  getConflict(bool, vec<PtAsgn>& e) override;
-    PtAsgn_reason getDeduction() override { if (deductions_next >= th_deductions.size()) return PtAsgn_reason_Undef; else return th_deductions[deductions_next++]; }
+    PtAsgn_reason getDeduction() override;// { if (deductions_next >= th_deductions.size()) return PtAsgn_reason_Undef; else return th_deductions[deductions_next++]; }
 
-    LALogic&  getLogic() override { return logic; }
+    LALogic&  getLogic() override;// { return logic; }
     bool       isValid(PTRef tr) override;
 
 #ifdef PRODUCE_PROOF
@@ -130,7 +130,7 @@ protected:
 
     bool assertBoundOnVar(LVRef it, LABoundRef it_i);
 
-    unsigned nVars() const { return lva.getNumVars(); }
+    unsigned nVars() const;// { return lva.getNumVars(); }
     void  fixCandidates( );                                      // Reset row candidates for possible out of bounds
 
 //private:
@@ -158,7 +158,7 @@ protected:
     void print( ostream & out ) override;                            // Prints terms, current bounds and the tableau
 //    void addVarToRow( LVRef, LVRef, opensmt::Real*);
     //bool checkIntegersAndSplit();                           //PS. needs to be defined in LIASOLVER.H
-    bool isProcessedByTableau(LVRef var) {return tableau.isProcessed(var);}
+    bool isProcessedByTableau(LVRef var);// {return tableau.isProcessed(var);}
 
     // Value system + history of bounds
     LRAModel model;
@@ -190,7 +190,7 @@ protected:
 
     // Bounds system
     vec<LABoundRefPair> ptermToLABoundRefs;
-    const LABoundRef getBound(LVRef v, int idx) const { return boundStore.getBoundByIdx(v, idx); }
+    const LABoundRef getBound(LVRef v, int idx) const ;//{ return boundStore.getBoundByIdx(v, idx); }
     bool isUnbounded (LVRef v) const;
 
     LASolverStatus status;                  // Internal status of the solver (different from bool)
@@ -211,11 +211,11 @@ protected:
         return out;
     }
     ValPair getValue(PTRef tr) override;  // Computes the model and changes state.
-    inline int     verbose                       ( ) const { return config.verbosity(); }
+    inline int     verbose                       ( ) const;// { return config.verbosity(); }
 
     // Debug stuff
-    char* printValue(PTRef tr) override { char* tmp = (char*)malloc(1); tmp[0] = '\0'; return tmp; } // Implement later...
-    char* printExplanation(PTRef tr) override { return printValue(tr); } // Implement later...
+    char* printValue(PTRef tr) override ;//{ char* tmp = (char*)malloc(1); tmp[0] = '\0'; return tmp; } // Implement later...
+    char* printExplanation(PTRef tr) override ;//{ return printValue(tr); } // Implement later...
     void isProperLeq(PTRef tr);  // The Leq term conforms to the assumptions of its form.  Only asserts.
     char* printVar(LVRef v);
     bool valueConsistent(LVRef v) const; // Debug: Checks that the value of v in the model is consistent with the evaluated value of the polynomial of v in the same model.
