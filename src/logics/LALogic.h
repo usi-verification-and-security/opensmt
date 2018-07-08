@@ -160,41 +160,41 @@ public:
     virtual PTRef getTerm_NumOne() const; // { return term_Num_ONE; }
 
 
-    PTRef mkNumNeg(PTRef, char **);
-    PTRef mkNumNeg(PTRef tr); // { char *msg; PTRef trn = mkNumNeg(tr, &msg); assert(trn != PTRef_Undef); return trn;}
+    virtual PTRef mkNumNeg(PTRef, char **);
+    virtual PTRef mkNumNeg(PTRef tr); // { char *msg; PTRef trn = mkNumNeg(tr, &msg); assert(trn != PTRef_Undef); return trn;}
 
-    PTRef mkNumMinus(const vec<PTRef> &, char **);
-    PTRef mkNumMinus(const vec<PTRef> &args); // { char *msg; PTRef tr = mkNumMinus(args, &msg); assert(tr != PTRef_Undef); return tr; }
-    PTRef mkNumMinus(const PTRef a1, const PTRef a2); // { vec<PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkNumMinus(tmp); }
+    virtual PTRef mkNumMinus(const vec<PTRef> &, char **);
+    virtual PTRef mkNumMinus(const vec<PTRef> &args); // { char *msg; PTRef tr = mkNumMinus(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    virtual  PTRef mkNumMinus(const PTRef a1, const PTRef a2); // { vec<PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkNumMinus(tmp); }
 
-    PTRef mkNumPlus(const vec<PTRef> &, char **);
-    PTRef mkNumPlus(const vec<PTRef> &args); // { char *msg; PTRef tr = mkNumPlus(args, &msg); assert(tr != PTRef_Undef); return tr; }
-    PTRef mkNumPlus(const std::vector<PTRef> &args); // { vec<PTRef> tmp; for (PTRef arg : args) { tmp.push(arg); } return mkNumPlus(tmp); }
+    virtual PTRef mkNumPlus(const vec<PTRef> &, char **);
+    virtual PTRef mkNumPlus(const vec<PTRef> &args); // { char *msg; PTRef tr = mkNumPlus(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    virtual  PTRef mkNumPlus(const std::vector<PTRef> &args); // { vec<PTRef> tmp; for (PTRef arg : args) { tmp.push(arg); } return mkNumPlus(tmp); }
 
-    PTRef mkNumTimes(const vec<PTRef> &, char **);
-    PTRef mkNumTimes(const vec<PTRef> &args); // { char *msg; PTRef tr = mkNumTimes(args, &msg); assert(tr != PTRef_Undef); return tr; }
-    PTRef mkNumTimes(const PTRef p1, const PTRef p2); // { vec<PTRef> tmp; tmp.push(p1); tmp.push(p2); return mkNumTimes(tmp); }
-    PTRef mkNumTimes(const std::vector<PTRef> &args); // { vec<PTRef> tmp; for (PTRef arg : args) { tmp.push(arg); } return mkNumTimes(tmp); }
+    virtual PTRef mkNumTimes(const vec<PTRef> &, char **);
+    virtual PTRef mkNumTimes(const vec<PTRef> &args); // { char *msg; PTRef tr = mkNumTimes(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    virtual  PTRef mkNumTimes(const PTRef p1, const PTRef p2); // { vec<PTRef> tmp; tmp.push(p1); tmp.push(p2); return mkNumTimes(tmp); }
+    virtual  PTRef mkNumTimes(const std::vector<PTRef> &args); // { vec<PTRef> tmp; for (PTRef arg : args) { tmp.push(arg); } return mkNumTimes(tmp); }
 
-    PTRef mkNumDiv(const vec<PTRef> &, char **);
-    PTRef mkNumDiv(const vec<PTRef> &args); // { char *msg; PTRef tr = mkNumDiv(args, &msg); assert(tr != PTRef_Undef); return tr; }
-    PTRef mkNumDiv(const PTRef nom, const PTRef den); // { vec<PTRef> tmp; tmp.push(nom), tmp.push(den); return mkNumDiv(tmp); }
+    virtual PTRef mkNumDiv(const vec<PTRef> &, char **);
+    virtual  PTRef mkNumDiv(const vec<PTRef> &args); // { char *msg; PTRef tr = mkNumDiv(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    virtual  PTRef mkNumDiv(const PTRef nom, const PTRef den); // { vec<PTRef> tmp; tmp.push(nom), tmp.push(den); return mkNumDiv(tmp); }
 
-    PTRef mkNumLeq(const vec<PTRef> &, char **);
-    PTRef mkNumLeq(const vec<PTRef> &args); // { char *msg; PTRef tr = mkNumLeq(args, &msg); assert(tr != PTRef_Undef); return tr; }
-    PTRef mkNumLeq(const PTRef arg1, const PTRef arg2); // {vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkNumLeq(tmp); }
+    virtual PTRef mkNumLeq(const vec<PTRef> &, char **);
+    virtual PTRef mkNumLeq(const vec<PTRef> &args); // { char *msg; PTRef tr = mkNumLeq(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    virtual PTRef mkNumLeq(const PTRef arg1, const PTRef arg2); // {vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkNumLeq(tmp); }
 
-    PTRef mkNumGeq(const vec<PTRef> &, char **);
-    PTRef mkNumGeq(const vec<PTRef> &args); // { char *msg; PTRef tr = mkNumGeq(args, &msg); assert(tr != PTRef_Undef); return tr; }
-    PTRef mkNumGeq(const PTRef arg1, const PTRef arg2); // { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkNumGeq(tmp); }
+    virtual PTRef mkNumGeq(const vec<PTRef> &, char **);
+    virtual PTRef mkNumGeq(const vec<PTRef> &args); // { char *msg; PTRef tr = mkNumGeq(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    virtual PTRef mkNumGeq(const PTRef arg1, const PTRef arg2); // { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkNumGeq(tmp); }
 
-    PTRef mkNumLt(const vec<PTRef> &, char **);
-    PTRef mkNumLt(const vec<PTRef> &args); // { char *msg; PTRef tr = mkNumLt(args, &msg); assert(tr != PTRef_Undef); return tr; }
-    PTRef mkNumLt(const PTRef arg1, const PTRef arg2); // { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkNumLt(tmp); }
+    virtual  PTRef mkNumLt(const vec<PTRef> &, char **);
+    virtual PTRef mkNumLt(const vec<PTRef> &args); // { char *msg; PTRef tr = mkNumLt(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    virtual  PTRef mkNumLt(const PTRef arg1, const PTRef arg2); // { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkNumLt(tmp); }
 
-    PTRef mkNumGt(const vec<PTRef> &, char **);
-    PTRef mkNumGt(const vec<PTRef> &args); // { char *msg; PTRef tr = mkNumGt(args, &msg); assert(tr != PTRef_Undef); return tr; }
-    PTRef mkNumGt(const PTRef arg1, const PTRef arg2); // { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkNumGt(tmp); }
+    virtual PTRef mkNumGt(const vec<PTRef> &, char **);
+    virtual PTRef mkNumGt(const vec<PTRef> &args); // { char *msg; PTRef tr = mkNumGt(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    virtual PTRef mkNumGt(const PTRef arg1, const PTRef arg2); // { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkNumGt(tmp); }
 
     //from here
     virtual bool isNegated(PTRef tr) const;

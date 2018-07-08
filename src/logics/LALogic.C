@@ -447,7 +447,7 @@ bool LALogic::isNumOne(PTRef tr) const { return tr == term_Num_ONE; }
 PTRef LALogic::getTerm_NumZero() const { return term_Num_ZERO; }
 PTRef LALogic::getTerm_NumOne() const { return term_Num_ONE; }
 
-PTRef mkNumNeg(PTRef, char **);
+//PTRef mkNumNeg(PTRef, char **);
 PTRef LALogic::mkNumNeg(PTRef tr) {
     char *msg;
     PTRef trn = mkNumNeg(tr, &msg);
@@ -469,7 +469,7 @@ PTRef LALogic::mkNumMinus(const PTRef a1, const PTRef a2) {
     return mkNumMinus(tmp);
 }
 
-PTRef mkNumPlus(const vec<PTRef> &, char **);
+//PTRef mkNumPlus(const vec<PTRef> &, char **);
 PTRef LALogic::mkNumPlus(const vec<PTRef> &args) {
     char *msg;
     PTRef tr = mkNumPlus(args, &msg);
@@ -482,7 +482,7 @@ PTRef LALogic::mkNumPlus(const std::vector<PTRef> &args) {
     return mkNumPlus(tmp);
 }
 
-PTRef mkNumTimes(const vec<PTRef> &, char **);
+//PTRef mkNumTimes(const vec<PTRef> &, char **);
 PTRef LALogic::mkNumTimes(const vec<PTRef> &args) {
     char *msg;
     PTRef tr = mkNumTimes(args, &msg);
@@ -514,7 +514,7 @@ PTRef LALogic::mkNumDiv(const PTRef nom, const PTRef den) {
     return mkNumDiv(tmp);
 }
 
-PTRef mkNumLeq(const vec<PTRef> &, char **);
+//PTRef mkNumLeq(const vec<PTRef> &, char **);
 PTRef LALogic::mkNumLeq(const vec<PTRef> &args) {
     char *msg;
     PTRef tr = mkNumLeq(args, &msg);
@@ -528,7 +528,7 @@ PTRef LALogic::mkNumLeq(const PTRef arg1, const PTRef arg2) {
     return mkNumLeq(tmp);
 }
 
-PTRef mkNumGeq(const vec<PTRef> &, char **);
+//PTRef mkNumGeq(const vec<PTRef> &, char **);
 PTRef LALogic::mkNumGeq(const vec<PTRef> &args) {
     char *msg;
     PTRef tr = mkNumGeq(args, &msg);
@@ -542,7 +542,7 @@ PTRef LALogic::mkNumGeq(const PTRef arg1, const PTRef arg2) {
     return mkNumGeq(tmp);
 }
 
-PTRef mkNumLt(const vec<PTRef> &, char **);
+//PTRef mkNumLt(const vec<PTRef> &, char **);
 PTRef LALogic::mkNumLt(const vec<PTRef> &args) {
     char *msg;
     PTRef tr = mkNumLt(args, &msg);
@@ -556,7 +556,7 @@ PTRef LALogic::mkNumLt(const PTRef arg1, const PTRef arg2) {
     return mkNumLt(tmp);
 }
 
-PTRef mkNumGt(const vec<PTRef> &, char **);
+//PTRef mkNumGt(const vec<PTRef> &, char **);
 PTRef LALogic::mkNumGt(const vec<PTRef> &args) {
     char *msg;
     PTRef tr = mkNumGt(args, &msg);

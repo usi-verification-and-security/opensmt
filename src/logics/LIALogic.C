@@ -329,10 +329,11 @@ LIALogic::LIALogic(SMTConfig& c) :
 /*
 bool LIALogic::isBuiltinFunction(const SymRef sr) const
 {
-    if (sr == sym_Int_NEG || sr == sym_Int_MINUS || sr == sym_Int_PLUS || sr == sym_Int_TIMES || sr == sym_Int_EQ || sr == sym_Int_LEQ || sr == sym_Int_LT || sr == sym_Int_GEQ || sr == sym_Int_GT || sr == sym_Int_ITE) return true;
-    else return Logic::isBuiltinFunction(sr);
-}
-*/
+    if (sr == sym_Int_NEG || sr == sym_Int_MINUS || sr == sym_Int_PLUS || sr == sym_Int_TIMES || sr == sym_Int_DIV || sr == sym_Int_EQ || sr == sym_Int_LEQ || sr == sym_Int_LT || sr == sym_Int_GEQ || sr == sym_Int_GT || sr == sym_Int_ITE) return true;
+    else return LALogic::isBuiltinFunction(sr);
+}*/
+
+
 const opensmt::Integer2&
 LIALogic::getIntegerConst(PTRef tr) const
 {
@@ -453,6 +454,7 @@ LIALogic::okForBoolVar(PTRef tr) const
 }
 */
 
+/*
 PTRef LIALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
 {
     if (sym == sym_Int_NEG)
@@ -478,7 +480,404 @@ PTRef LIALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
 
     return Logic::insertTerm(sym, terms, msg);
 }
+*/
 
+PTRef LIALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
+{
+    if (sym == sym_Int_NEG)
+        return mkNumNeg(terms[0], msg);
+    if (sym == sym_Int_MINUS)
+        return mkNumMinus(terms, msg);
+    if (sym == sym_Int_PLUS)
+        return mkNumPlus(terms, msg);
+    if (sym == sym_Int_TIMES)
+        return mkNumTimes(terms, msg);
+    if (sym == sym_Int_DIV)
+       return mkNumDiv(terms, msg);
+    if (sym == sym_Int_LEQ)
+        return mkNumLeq(terms, msg);
+    if (sym == sym_Int_LT)
+        return mkNumLt(terms, msg);
+    if (sym == sym_Int_GEQ)
+        return mkNumGeq(terms, msg);
+    if (sym == sym_Int_GT)
+        return mkNumGt(terms, msg);
+    if (sym == sym_Int_ITE)
+        return mkIte(terms);
+
+    return LALogic::insertTerm(sym, terms, msg);
+}
+
+PTRef LIALogic::mkNumTimes(const vec<PTRef>& tmp_args, char** msg)
+{
+    vec<PTRef> args;
+    // Flatten possible internal multiplications
+    for (int i = 0; i < tmp_args.size(); i++) {
+        if (isNumTimes(tmp_args[i])) {
+            Pterm& t = getPterm(tmp_args[i]);
+            for (int j = 0; j < t.size(); j++)
+                args.push(t[j]);
+        } else {
+            args.push(tmp_args[i]);
+        }
+    }
+    SimplifyConstTimes simp(*this);
+    vec<PTRef> args_new;
+    SymRef s_new;
+    simp.simplify(sym_Int_TIMES, args, s_new, args_new, msg);
+    PTRef tr = mkFun(s_new, args_new, msg);
+    // Either a real term or, if we constructed a multiplication of a
+    // constant and a sum, a real sum.
+    if (isNumTerm(tr) || isNumPlus(tr) || isUF(tr))
+        return tr;
+    else {
+        char* err;
+        asprintf(&err, "%s", printTerm(tr));
+        throw LIANonLinearException(err);
+    }
+}
+
+PTRef LIALogic::mkNumTimes(const vec<PTRef> &args) {
+    char *msg;
+    PTRef tr = mkNumTimes(args, &msg);
+    assert(tr != PTRef_Undef);
+    return tr;
+}
+
+
+PTRef LIALogic::mkNumDiv(const vec<PTRef>& args, char** msg)
+{
+    SimplifyConstDiv simp(*this);
+    vec<PTRef> args_new;
+    SymRef s_new;
+
+    simp.simplify(sym_Int_DIV, args, s_new, args_new, msg);
+    assert(args.size() == 2);
+
+    if (isIntDiv(s_new)) {
+        assert(isNumTerm(args_new[0]) && isConstant(args_new[1]));
+        args_new[1] = mkConst(FastRational_inverse(getNumConst(args_new[1]))); //mkConst(1/getRealConst(args_new[1]));
+        return mkNumTimes(args_new);
+    }
+
+    PTRef tr = mkFun(s_new, args_new, msg);
+    return tr;
+}
+
+
+// If the call results in a leq it is guaranteed that arg[0] is a
+// constant, and arg[1][0] has factor 1 or -1
+PTRef LIALogic::mkNumLeq(const vec<PTRef>& args_in, char** msg)
+{
+    vec<PTRef> args;
+    args_in.copyTo(args);
+    assert(args.size() == 2);
+
+    if (isConstant(args[0]) && isConstant(args[1])) {
+        opensmt::Number v1(sym_store.getName(getPterm(args[0]).symb())); //PS. can I add here also opensmt::Integer v3(sym_store.getName(getPterm(args[0]).symb()))
+        opensmt::Number v2(sym_store.getName(getPterm(args[1]).symb())); //PS. and  opensmt::Integer v4(sym_store.getName(getPterm(args[0]).symb()))
+        if (v1 <= v2) //PS. OR (v3<=v4)
+            return getTerm_true();
+        else
+            return getTerm_false();
+
+    } else {
+
+        // Should be in the form that on one side there is a constant
+        // and on the other there is a sum
+        PTRef tr_neg = mkNumNeg(args[0], msg);
+        vec<PTRef> sum_args;
+        sum_args.push(args[1]);
+        sum_args.push(tr_neg);
+        PTRef sum_tmp = mkNumPlus(sum_args, msg); // This gives us a collapsed version of the sum
+        if (isConstant(sum_tmp)) {
+            args[0] = getTerm_NumZero();
+            args[1] = sum_tmp;
+            return mkNumLeq(args, msg); // either true or false
+        } if (isNumTimes(sum_tmp)) {
+            sum_tmp = normalizeMul(sum_tmp);
+        } else if (isNumPlus(sum_tmp)) {
+            // Normalize the sum
+            sum_tmp = normalizeSum(sum_tmp); //Now the sum is normalized by dividing with the "first" factor.
+        }
+        // Otherwise no operation, already normalized
+
+        vec<PTRef> nonconst_args;
+        PTRef c = PTRef_Undef;
+        if (isNumPlus(sum_tmp)) {
+            Pterm& t = getPterm(sum_tmp);
+            for (int i = 0; i < t.size(); i++) {
+                if (!isConstant(t[i]))
+                    nonconst_args.push(t[i]);
+                else {
+                    assert(c == PTRef_Undef);
+                    c = t[i];
+                }
+            }
+            if (c == PTRef_Undef) {
+                args[0] = getTerm_NumZero();
+                args[1] = mkNumPlus(nonconst_args);
+            } else {
+                args[0] = mkNumNeg(c);
+                args[1] = mkNumPlus(nonconst_args);
+            }
+        } else if (isNumVar(sum_tmp) || isNumTimes(sum_tmp)) {
+            args[0] = getTerm_NumZero();
+            args[1] = sum_tmp;
+        } else assert(false);
+
+        PTRef r = mkFun(sym_Int_LEQ, args, msg);
+        return r;
+    }
+}
+
+PTRef LIALogic::mkNumPlus(const vec<PTRef> &args) {
+    char *msg;
+    PTRef tr = mkNumPlus(args, &msg);
+    assert(tr != PTRef_Undef);
+    return tr;
+}
+
+/*
+
+PTRef LIALogic::mkNumLeq(const vec<PTRef> &args) {
+    char *msg;
+    PTRef tr = mkNumLeq(args, &msg);
+    assert(tr != PTRef_Undef);
+    return tr;
+}
+
+PTRef LIALogic::mkNumLeq(const PTRef arg1, const PTRef arg2) {
+    vec<PTRef> tmp;
+    tmp.push(arg1);
+    tmp.push(arg2);
+    return mkNumLeq(tmp);
+}
+
+
+
+PTRef LIALogic::mkNumLt(const vec<PTRef> &args) {
+    char *msg;
+    PTRef tr = mkNumLt(args, &msg);
+    assert(tr != PTRef_Undef);
+    return tr;
+}
+PTRef LIALogic::mkNumLt(const PTRef arg1, const PTRef arg2) {
+    vec<PTRef> tmp;
+    tmp.push(arg1);
+    tmp.push(arg2);
+    return mkNumLt(tmp);
+}
+
+PTRef LIALogic::mkNumLt(const vec<PTRef>& args, char** msg)
+{
+    if (isConstant(args[0]) && isConstant(args[1])) {
+        char *rat_str1, *rat_str2;
+        opensmt::stringToRational(rat_str1, sym_store.getName(getPterm(args[0]).symb()));
+        opensmt::stringToRational(rat_str2, sym_store.getName(getPterm(args[1]).symb()));
+        opensmt::Number v1(rat_str1); //PS. may I add here opensmt::Integer v3(rat_str1) and opensmt::Integer v4(rat_str2)
+        opensmt::Number v2(rat_str2);
+        free(rat_str1);
+        free(rat_str2);
+        if (v1 < v2) { //PS. OR (v3 < v4)
+            return getTerm_true();
+        } else {
+            return getTerm_false();
+        }
+    }
+    vec<PTRef> tmp;
+    tmp.push(args[1]);
+    tmp.push(args[0]);
+    PTRef tr = mkNumLeq(tmp, msg);
+    if (tr == PTRef_Undef) {
+        printf("%s\n", *msg);
+        assert(false);
+    }
+    return mkNot(tr);
+}
+
+PTRef LIALogic::mkNumGeq(const vec<PTRef>& args, char** msg)
+{
+    vec<PTRef> new_args;
+    new_args.push(args[1]);
+    new_args.push(args[0]);
+    return mkNumLeq(new_args, msg);
+}
+
+PTRef LIALogic::mkNumGeq(const vec<PTRef> &args) {
+    char *msg;
+    PTRef tr = mkNumGeq(args, &msg);
+    assert(tr != PTRef_Undef);
+    return tr;
+}
+PTRef LIALogic::mkNumGeq(const PTRef arg1, const PTRef arg2) {
+    vec<PTRef> tmp;
+    tmp.push(arg1);
+    tmp.push(arg2);
+    return mkNumGeq(tmp);
+}
+
+
+PTRef LIALogic::mkNumGt(const vec<PTRef>& args, char** msg)
+{
+    if (isConstant(args[0]) && isConstant(args[1])) {
+        char *rat_str1, *rat_str2;
+        opensmt::stringToRational(rat_str1, sym_store.getName(getPterm(args[0]).symb()));
+        opensmt::stringToRational(rat_str2, sym_store.getName(getPterm(args[1]).symb()));
+        opensmt::Number v1(rat_str1); //PS. opensmt::Integer v3(rat_str1) and opensmt::Integer v4(rat_str2);
+        opensmt::Number v2(rat_str2);
+        free(rat_str1);
+        free(rat_str2);
+        if (v1 > v2) //PS. OR (v3 > v4)
+            return getTerm_true();
+        else
+            return getTerm_false();
+    }
+    PTRef tr = mkNumLeq(args, msg);
+    if (tr == PTRef_Undef) {
+        printf("%s\n", *msg);
+        assert(false);
+    }
+    return mkNot(tr);
+}
+
+PTRef LIALogic::mkNumGt(const vec<PTRef> &args) {
+    char *msg;
+    PTRef tr = mkNumGt(args, &msg);
+    assert(tr != PTRef_Undef);
+    return tr;
+}
+PTRef LIALogic::mkNumGt(const PTRef arg1, const PTRef arg2) {
+    vec<PTRef> tmp;
+    tmp.push(arg1);
+    tmp.push(arg2);
+    return mkNumGt(tmp);
+}*/
+
+
+PTRef LIALogic::mkNumPlus(const vec<PTRef>& args, char** msg)
+{
+    vec<PTRef> new_args;
+
+    // Flatten possible internal sums.  This needs not be done properly,
+    // with a post-order dfs, since we are guaranteed that the inner
+    // sums are already flattened.
+    for (int i = 0; i < args.size(); i++) {
+        if (isNumPlus(args[i])) {
+            Pterm& t = getPterm(args[i]);
+            for (int j = 0; j < t.size(); j++)
+                new_args.push(t[j]);
+        } else {
+            new_args.push(args[i]);
+        }
+    }
+    vec<PTRef> tmp_args;
+    new_args.copyTo(tmp_args);
+    //for (int i = 0; i < new_args.size(); i++)
+    //    args.push(new_args[i]);
+
+    SimplifyConstSum simp(*this);
+    vec<PTRef> args_new;
+    SymRef s_new;
+    simp.simplify(sym_Int_PLUS, tmp_args, s_new, args_new, msg);
+    if (args_new.size() == 1)
+        return args_new[0];
+
+
+    // This code takes polynomials (+ (* v c1) (* v c2)) and converts them to the form (* v c3) where c3 = c1+c2
+    VecMap<PTRef,PTRef,PTRefHash> s2t;
+    vec<PTRef> keys;
+    for (int i = 0; i < args_new.size(); ++i) {
+        PTRef v;
+        PTRef c;
+        splitTermToVarAndConst(args_new[i], v, c);
+        if (c == PTRef_Undef) {
+            // The term is unit
+            c = getTerm_NumOne();
+        }
+        if (!s2t.has(v)) {
+            vec<PTRef> tmp;
+            tmp.push(c);
+            s2t.insert(v, tmp);
+            keys.push(v);
+        } else
+            s2t[v].push(c);
+    }
+    vec<PTRef> sum_args;
+    for (int i = 0; i < keys.size(); i++) {
+        vec<PTRef>& consts = s2t[keys[i]];
+        PTRef consts_summed = mkNumPlus(consts);
+        vec<PTRef> term_args;
+        term_args.push(consts_summed);
+        if (keys[i] != PTRef_Undef)
+            term_args.push(keys[i]);
+        else term_args.push(getTerm_NumOne());
+        PTRef term = mkNumTimes(term_args);
+        if (!isNumZero(term))
+            sum_args.push(term);
+    }
+
+    if (sum_args.size() == 1) return sum_args[0];
+    PTRef tr = mkFun(s_new, sum_args, msg);
+//    PTRef tr = mkFun(s_new, args_new, msg);
+    return tr;
+}
+
+/*
+PTRef LIALogic::mkNumPlus(const vec<PTRef> &args) {
+    char *msg;
+    PTRef tr = mkNumPlus(args, &msg);
+    assert(tr != PTRef_Undef);
+    return tr;
+}
+PTRef LIALogic::mkNumPlus(const std::vector<PTRef> &args) {
+    vec<PTRef> tmp;
+    for (PTRef arg : args) { tmp.push(arg); }
+    return mkNumPlus(tmp);
+}
+
+
+PTRef LIALogic::mkNumNeg(PTRef tr) {
+    char *msg;
+    PTRef trn = mkNumNeg(tr, &msg);
+    assert(trn != PTRef_Undef);
+    return trn;
+}
+
+
+PTRef LIALogic::mkNumNeg(PTRef tr, char** msg)
+{
+    if (isNumNeg(tr)) return getPterm(tr)[0];
+    vec<PTRef> args;
+    if (isNumPlus(tr)) {
+        for (int i = 0; i < getPterm(tr).size(); i++) {
+            PTRef tr_arg = mkNumNeg(getPterm(tr)[i], msg);
+            assert(tr_arg != PTRef_Undef);
+            args.push(tr_arg);
+        }
+        PTRef tr_n = mkNumPlus(args, msg);
+        assert(tr_n != PTRef_Undef);
+        return tr_n;
+    }
+    if (isConstant(tr)) {
+        char* rat_str;
+        opensmt::stringToRational(rat_str, sym_store.getName(getPterm(tr).symb()));
+        opensmt::Number v(rat_str);
+        //PTRef nterm = getNTerm(rat_str); //PS. getNTerm generalise line 358, 361, 362
+        free(rat_str);
+        v = -v;
+        PTRef nterm = mkConst(getSort_num(), v.get_str().c_str());
+        SymRef s = getPterm(nterm).symb();
+        return mkFun(s, args, msg);
+    }
+    PTRef mo = mkConst(getSort_num(), "-1");
+    args.push(mo); args.push(tr);
+    return mkNumTimes(args);
+}
+*/
+
+
+//PTRef   LIALogic::mkIntTimes(const vec<PTRef>&, char**) {return mkNumTimes;}
 
 /*
 PTRef LALogic::mkNUmNeg(PTRef tr, char** msg) override

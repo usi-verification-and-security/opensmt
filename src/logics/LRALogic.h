@@ -29,7 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Real.h"
 
 
-/*
+
 class LRANonLinearException : std::logic_error
 {
 public:
@@ -41,7 +41,7 @@ public:
     ~LRANonLinearException() = default;
 };
 
- */
+
 
 class LRALogic: public LALogic
 {
@@ -182,6 +182,20 @@ class LRALogic: public LALogic
     PTRef       getTerm_NumZero() const override;// { return term_Real_ZERO; }
     PTRef       getTerm_NumOne()  const override;// { return term_Real_ONE; }
 
+    virtual PTRef mkNumPlus(const vec<PTRef> &, char **) override;
+    virtual PTRef mkNumPlus(const vec<PTRef> &args) override; // { char *msg; PTRef tr = mkNumPlus(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    //virtual  PTRef mkNumPlus(const std::vector<PTRef> &args) override; // { vec<PTRef> tmp; for (PTRef arg : args) { tmp.push(arg); } return mkNumPlus(tmp); }
+
+    virtual PTRef mkNumTimes(const vec<PTRef> &, char **) override;
+    virtual PTRef mkNumTimes(const vec<PTRef> &args) override; // { char *msg; PTRef tr = mkNumTimes(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    //virtual  PTRef mkNumTimes(const PTRef p1, const PTRef p2) override; // { vec<PTRef> tmp; tmp.push(p1); tmp.push(p2); return mkNumTimes(tmp); }
+    //virtual  PTRef mkNumTimes(const std::vector<PTRef> &args) override; // { vec<PTRef> tmp; for (PTRef arg : args) { tmp.push(arg); } return mkNumTimes(tmp); }
+
+    virtual PTRef mkNumDiv(const vec<PTRef> &, char **) override;
+    //virtual  PTRef mkNumDiv(const vec<PTRef> &args) override; // { char *msg; PTRef tr = mkNumDiv(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    //virtual  PTRef mkNumDiv(const PTRef nom, const PTRef den) override; // { vec<PTRef> tmp; tmp.push(nom), tmp.push(den); return mkNumDiv(tmp); }
+
+    virtual PTRef mkNumLeq(const vec<PTRef> &, char **) override;
     /*
     PTRef       mkRealNeg(PTRef, char**);
     PTRef       mkRealNeg(PTRef tr) {char* msg; PTRef trn = mkRealNeg(tr, &msg); assert(trn != PTRef_Undef); return trn; }

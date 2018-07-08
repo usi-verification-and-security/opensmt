@@ -527,6 +527,204 @@ PTRef LRALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
     return Logic::insertTerm(sym, terms, msg);
 }
 
+PTRef LRALogic::mkNumTimes(const vec<PTRef>& tmp_args, char** msg)
+{
+    vec<PTRef> args;
+    // Flatten possible internal multiplications
+    for (int i = 0; i < tmp_args.size(); i++) {
+        if (isNumTimes(tmp_args[i])) {
+            Pterm& t = getPterm(tmp_args[i]);
+            for (int j = 0; j < t.size(); j++)
+                args.push(t[j]);
+        } else {
+            args.push(tmp_args[i]);
+        }
+    }
+    SimplifyConstTimes simp(*this);
+    vec<PTRef> args_new;
+    SymRef s_new;
+    simp.simplify(sym_Real_TIMES, args, s_new, args_new, msg);
+    PTRef tr = mkFun(s_new, args_new, msg);
+    // Either a real term or, if we constructed a multiplication of a
+    // constant and a sum, a real sum.
+    if (isNumTerm(tr) || isNumPlus(tr) || isUF(tr))
+        return tr;
+    else {
+        char* err;
+        asprintf(&err, "%s", printTerm(tr));
+        throw LRANonLinearException(err);
+    }
+}
+
+PTRef LRALogic::mkNumTimes(const vec<PTRef> &args) {
+    char *msg;
+    PTRef tr = mkNumTimes(args, &msg);
+    assert(tr != PTRef_Undef);
+    return tr;
+}
+
+
+PTRef LRALogic::mkNumDiv(const vec<PTRef>& args, char** msg)
+{
+    SimplifyConstDiv simp(*this);
+    vec<PTRef> args_new;
+    SymRef s_new;
+
+    simp.simplify(sym_Real_DIV, args, s_new, args_new, msg);
+    assert(args.size() == 2);
+
+    if (isRealDiv(s_new)) {
+        assert(isNumTerm(args_new[0]) && isConstant(args_new[1]));
+        args_new[1] = mkConst(FastRational_inverse(getNumConst(args_new[1]))); //mkConst(1/getRealConst(args_new[1]));
+        return mkNumTimes(args_new);
+    }
+
+    PTRef tr = mkFun(s_new, args_new, msg);
+    return tr;
+}
+
+
+// If the call results in a leq it is guaranteed that arg[0] is a
+// constant, and arg[1][0] has factor 1 or -1
+PTRef LRALogic::mkNumLeq(const vec<PTRef>& args_in, char** msg)
+{
+    vec<PTRef> args;
+    args_in.copyTo(args);
+    assert(args.size() == 2);
+
+    if (isConstant(args[0]) && isConstant(args[1])) {
+        opensmt::Number v1(sym_store.getName(getPterm(args[0]).symb())); //PS. can I add here also opensmt::Integer v3(sym_store.getName(getPterm(args[0]).symb()))
+        opensmt::Number v2(sym_store.getName(getPterm(args[1]).symb())); //PS. and  opensmt::Integer v4(sym_store.getName(getPterm(args[0]).symb()))
+        if (v1 <= v2) //PS. OR (v3<=v4)
+            return getTerm_true();
+        else
+            return getTerm_false();
+
+    } else {
+
+        // Should be in the form that on one side there is a constant
+        // and on the other there is a sum
+        PTRef tr_neg = mkNumNeg(args[0], msg);
+        vec<PTRef> sum_args;
+        sum_args.push(args[1]);
+        sum_args.push(tr_neg);
+        PTRef sum_tmp = mkNumPlus(sum_args, msg); // This gives us a collapsed version of the sum
+        if (isConstant(sum_tmp)) {
+            args[0] = getTerm_NumZero();
+            args[1] = sum_tmp;
+            return mkNumLeq(args, msg); // either true or false
+        } if (isNumTimes(sum_tmp)) {
+            sum_tmp = normalizeMul(sum_tmp);
+        } else if (isNumPlus(sum_tmp)) {
+            // Normalize the sum
+            sum_tmp = normalizeSum(sum_tmp); //Now the sum is normalized by dividing with the "first" factor.
+        }
+        // Otherwise no operation, already normalized
+
+        vec<PTRef> nonconst_args;
+        PTRef c = PTRef_Undef;
+        if (isNumPlus(sum_tmp)) {
+            Pterm& t = getPterm(sum_tmp);
+            for (int i = 0; i < t.size(); i++) {
+                if (!isConstant(t[i]))
+                    nonconst_args.push(t[i]);
+                else {
+                    assert(c == PTRef_Undef);
+                    c = t[i];
+                }
+            }
+            if (c == PTRef_Undef) {
+                args[0] = getTerm_NumZero();
+                args[1] = mkNumPlus(nonconst_args);
+            } else {
+                args[0] = mkNumNeg(c);
+                args[1] = mkNumPlus(nonconst_args);
+            }
+        } else if (isNumVar(sum_tmp) || isNumTimes(sum_tmp)) {
+            args[0] = getTerm_NumZero();
+            args[1] = sum_tmp;
+        } else assert(false);
+
+        PTRef r = mkFun(sym_Real_LEQ, args, msg);
+        return r;
+    }
+}
+
+PTRef LRALogic::mkNumPlus(const vec<PTRef> &args) {
+    char *msg;
+    PTRef tr = mkNumPlus(args, &msg);
+    assert(tr != PTRef_Undef);
+    return tr;
+}
+
+PTRef LRALogic::mkNumPlus(const vec<PTRef>& args, char** msg)
+{
+    vec<PTRef> new_args;
+
+    // Flatten possible internal sums.  This needs not be done properly,
+    // with a post-order dfs, since we are guaranteed that the inner
+    // sums are already flattened.
+    for (int i = 0; i < args.size(); i++) {
+        if (isNumPlus(args[i])) {
+            Pterm& t = getPterm(args[i]);
+            for (int j = 0; j < t.size(); j++)
+                new_args.push(t[j]);
+        } else {
+            new_args.push(args[i]);
+        }
+    }
+    vec<PTRef> tmp_args;
+    new_args.copyTo(tmp_args);
+    //for (int i = 0; i < new_args.size(); i++)
+    //    args.push(new_args[i]);
+
+    SimplifyConstSum simp(*this);
+    vec<PTRef> args_new;
+    SymRef s_new;
+    simp.simplify(sym_Real_PLUS, tmp_args, s_new, args_new, msg);
+    if (args_new.size() == 1)
+        return args_new[0];
+
+
+    // This code takes polynomials (+ (* v c1) (* v c2)) and converts them to the form (* v c3) where c3 = c1+c2
+    VecMap<PTRef,PTRef,PTRefHash> s2t;
+    vec<PTRef> keys;
+    for (int i = 0; i < args_new.size(); ++i) {
+        PTRef v;
+        PTRef c;
+        splitTermToVarAndConst(args_new[i], v, c);
+        if (c == PTRef_Undef) {
+            // The term is unit
+            c = getTerm_NumOne();
+        }
+        if (!s2t.has(v)) {
+            vec<PTRef> tmp;
+            tmp.push(c);
+            s2t.insert(v, tmp);
+            keys.push(v);
+        } else
+            s2t[v].push(c);
+    }
+    vec<PTRef> sum_args;
+    for (int i = 0; i < keys.size(); i++) {
+        vec<PTRef>& consts = s2t[keys[i]];
+        PTRef consts_summed = mkNumPlus(consts);
+        vec<PTRef> term_args;
+        term_args.push(consts_summed);
+        if (keys[i] != PTRef_Undef)
+            term_args.push(keys[i]);
+        else term_args.push(getTerm_NumOne());
+        PTRef term = mkNumTimes(term_args);
+        if (!isNumZero(term))
+            sum_args.push(term);
+    }
+
+    if (sum_args.size() == 1) return sum_args[0];
+    PTRef tr = mkFun(s_new, sum_args, msg);
+//    PTRef tr = mkFun(s_new, args_new, msg);
+    return tr;
+}
+
 /*
 PTRef LRALogic::mkRealNeg(PTRef tr, char** msg)
 {
