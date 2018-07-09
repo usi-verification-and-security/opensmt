@@ -135,5 +135,5 @@ LVRef  LAVarStore::getVarByLeqId(PTId i) { return leqToLavar[Idx(i)]; }
 bool   LAVarStore::hasVar(PTId i) { return ptermToLavar.size() > Idx(i) && ptermToLavar[Idx(i)] != LVRef_Undef; }
 
 int    LAVarStore::numVars() const { return lavars.size(); }
-void   LAVarStore::remove(LVRef r) { lva.free(r); };
+void   LAVarStore::remove(LVRef r) { lva.free(r); }
 LVRef  LAVarStore::getVarByIdx(unsigned i) { return lavars[i]; }

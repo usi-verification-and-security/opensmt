@@ -79,6 +79,7 @@ protected:
     //LASolverStatus status;                  // Internal status of the solver (different from bool)
 
     opensmt::Integer2 getInt(PTRef r) ;
+
     Map<LVRef, bool, LVRefHash> int_vars; //stores problem variables
 
 };

@@ -211,6 +211,89 @@ void SimplifyConstDiv::constSimplify(const SymRef& s, const vec<PTRef>& terms, S
 
  */
 
+LIALogic::LIALogic(SMTConfig& c) :
+        LALogic(c)
+
+{
+    char* m;
+    char** msg = &m;
+
+    logic_type = QF_LIA;
+
+    sort_NUM = declareSort(s_sort_num, msg);
+    ufsorts.remove(sort_NUM);
+//    printf("Setting sort_REAL to %d at %p\n", sort_REAL.x, &(sort_REAL.x));
+    vec<SRef> params;
+
+
+    term_Num_ZERO = mkConst(sort_NUM, tk_num_zero);
+    sym_Num_ZERO  = getSymRef(term_Num_ZERO);
+    sym_store.setInterpreted(sym_Num_ZERO);
+    term_Num_ONE  = mkConst(sort_NUM, tk_num_one);
+    sym_Num_ONE   = getSymRef(term_Num_ONE);
+    sym_store.setInterpreted(sym_Num_ONE);
+
+    params.push(sort_NUM);
+
+    // Negation
+    sym_Num_NEG = declareFun(tk_num_neg, sort_NUM, params, msg, true);
+    sym_store.setInterpreted(sym_Num_NEG);
+
+    params.push(sort_NUM);
+
+    sym_Num_MINUS = declareFun(tk_num_neg, sort_NUM, params, msg, true);
+    sym_store[sym_Num_MINUS].setLeftAssoc();
+    sym_store.setInterpreted(sym_Num_MINUS);
+
+    sym_Num_PLUS  = declareFun(tk_num_plus, sort_NUM, params, msg, true);
+    sym_store[sym_Num_PLUS].setNoScoping();
+    sym_store[sym_Num_PLUS].setCommutes();
+    sym_store[sym_Num_PLUS].setLeftAssoc();
+    sym_store.setInterpreted(sym_Num_PLUS);
+
+    sym_Num_TIMES = declareFun(tk_num_times, sort_NUM, params, msg, true);
+    sym_store[sym_Num_TIMES].setNoScoping();
+    sym_store[sym_Num_TIMES].setLeftAssoc();
+    sym_store[sym_Num_TIMES].setCommutes();
+    sym_store.setInterpreted(sym_Num_TIMES);
+
+    sym_Num_DIV   = declareFun(tk_num_div, sort_NUM, params, msg, true);
+    sym_store[sym_Num_DIV].setNoScoping();
+    sym_store[sym_Num_DIV].setLeftAssoc();
+    sym_store.setInterpreted(sym_Num_DIV);
+
+    sym_Num_LEQ  = declareFun(tk_num_leq, sort_BOOL, params, msg, true);
+    sym_store[sym_Num_LEQ].setNoScoping();
+    sym_store[sym_Num_LEQ].setChainable();
+    sym_store.setInterpreted(sym_Num_LEQ);
+
+    sym_Num_LT   = declareFun(tk_num_lt, sort_BOOL, params, msg, true);
+    sym_store[sym_Num_LT].setNoScoping();
+    sym_store[sym_Num_LT].setChainable();
+    sym_store.setInterpreted(sym_Num_LT);
+
+    sym_Num_GEQ  = declareFun(tk_num_geq, sort_BOOL, params, msg, true);
+    sym_store[sym_Num_GEQ].setNoScoping();
+    sym_store[sym_Num_GEQ].setChainable();
+    sym_store.setInterpreted(sym_Num_GEQ);
+
+    sym_Num_GT   = declareFun(tk_num_gt, sort_BOOL, params, msg, true);
+    sym_store[sym_Num_GT].setNoScoping();
+    sym_store[sym_Num_GT].setChainable();
+    sym_store.setInterpreted(sym_Num_GEQ);
+
+    vec<SRef> ite_params;
+    ite_params.push(sort_BOOL);
+    ite_params.push(sort_NUM);
+    ite_params.push(sort_NUM);
+    sym_Num_ITE = declareFun(tk_ite, sort_NUM, ite_params, msg, true);
+    //sym_store[sym_Real_ITE].setLeftAssoc();
+    sym_store[sym_Num_ITE].setNoScoping();
+    sym_store.setInterpreted(sym_Num_ITE);
+}
+
+/*
+
 const char* LIALogic::tk_int_zero  = "0";
 const char* LIALogic::tk_int_one   = "1";
 const char* LIALogic::tk_int_neg   = "-";
@@ -324,7 +407,7 @@ LIALogic::LIALogic(SMTConfig& c) :
     //sym_store[sym_Real_ITE].setLeftAssoc();
     sym_store[sym_Int_ITE].setNoScoping();
     sym_store.setInterpreted(sym_Int_ITE);
-}
+}*/
 
 /*
 bool LIALogic::isBuiltinFunction(const SymRef sr) const
@@ -333,7 +416,7 @@ bool LIALogic::isBuiltinFunction(const SymRef sr) const
     else return LALogic::isBuiltinFunction(sr);
 }*/
 
-
+/*
 const opensmt::Integer2&
 LIALogic::getIntegerConst(PTRef tr) const
 {
@@ -341,10 +424,11 @@ LIALogic::getIntegerConst(PTRef tr) const
     assert(id < integers.size() && integers[id] != NULL);
     return *integers[id];
 }
-
+*/
 const char*   LIALogic::getName()         const  { return getLogic().str; }
 const Logic_t LIALogic::getLogic()        const  { return QF_LIA; }
 
+/*
 bool LIALogic::isBuiltinSort(SRef sr) const  { return sr == sort_INTEGER || Logic::isBuiltinSort(sr); }
 bool  LIALogic::isNonnegNumConst(PTRef tr) const  { return isNumConst(tr) && getNumConst(tr) >= 0; }
 
@@ -353,9 +437,9 @@ bool  LIALogic::isNonnegNumConst(PTRef tr) const  { return isNumConst(tr) && get
 SRef   LIALogic::getSort_num()  const  {return sort_INTEGER;}
 const opensmt::Number& LIALogic::getNumConst(PTRef tr) const  {return getIntegerConst(tr);}
 
-bool        LIALogic::isIntPlus(SymRef sr)  const { return sr == sym_Int_PLUS; }
+bool        LIALogic::isNumPlus(SymRef sr)  const { return sr == sym_Int_PLUS; }
 //bool      isIntPlus(PTRef tr)   const { return isIntPlus(getPterm(tr).symb()); }
-bool        LIALogic::isNumPlus(PTRef tr)   const  { return isIntPlus(getPterm(tr).symb()); }
+bool        LIALogic::isNumPlus(PTRef tr)   const  { return isNumPlus(getPterm(tr).symb()); }
 bool        LIALogic::isIntMinus(SymRef sr) const { return sr == sym_Int_MINUS; }
 //bool      isIntMinus(PTRef tr)  const { return isIntMinus(getPterm(tr).symb()); }
 bool        LIALogic::isNumMinus(PTRef tr)  const  { return isIntMinus(getPterm(tr).symb()); }
@@ -481,6 +565,8 @@ PTRef LIALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
     return Logic::insertTerm(sym, terms, msg);
 }
 */
+
+/*
 
 PTRef LIALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
 {
@@ -634,6 +720,7 @@ PTRef LIALogic::mkNumLeq(const vec<PTRef>& args_in, char** msg)
 PTRef LIALogic::mkNumPlus(const vec<PTRef> &args) {
     char *msg;
     PTRef tr = mkNumPlus(args, &msg);
+
     assert(tr != PTRef_Undef);
     return tr;
 }
@@ -753,7 +840,7 @@ PTRef LIALogic::mkNumGt(const PTRef arg1, const PTRef arg2) {
     tmp.push(arg1);
     tmp.push(arg2);
     return mkNumGt(tmp);
-}*/
+}
 
 
 PTRef LIALogic::mkNumPlus(const vec<PTRef>& args, char** msg)

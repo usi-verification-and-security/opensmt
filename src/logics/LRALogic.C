@@ -241,6 +241,104 @@ void SimplifyConstDiv::constSimplify(const SymRef& s, const vec<PTRef>& terms, S
 
 //const char* LRALogic::tk_val_real_default = "1";
 
+/*const char* LALogic::tk_val_num_default = "1";
+
+const char* LALogic::tk_num_zero  = "0";
+const char* LALogic::tk_num_one   = "1";
+const char* LALogic::tk_num_neg   = "-";
+const char* LALogic::tk_num_minus = "-";
+const char* LALogic::tk_num_plus  = "+";
+const char* LALogic::tk_num_times = "*";
+const char* LALogic::tk_num_div   = "/";
+const char* LALogic::tk_num_lt    = "<";
+const char* LALogic::tk_num_leq   = "<=";
+const char* LALogic::tk_num_gt    = ">";
+const char* LALogic::tk_num_geq   = ">=";
+
+const char* LALogic::s_sort_num = "Number";*/
+
+LRALogic::LRALogic(SMTConfig& c) :
+        LALogic(c)
+
+{
+    char* m;
+    char** msg = &m;
+
+    logic_type = QF_LRA;
+
+    sort_NUM = declareSort(s_sort_num, msg);
+    ufsorts.remove(sort_NUM);
+//    printf("Setting sort_REAL to %d at %p\n", sort_REAL.x, &(sort_REAL.x));
+    vec<SRef> params;
+
+
+    term_Num_ZERO = mkConst(sort_NUM, tk_num_zero);
+    sym_Num_ZERO  = getSymRef(term_Num_ZERO);
+    sym_store.setInterpreted(sym_Num_ZERO);
+    term_Num_ONE  = mkConst(sort_NUM, tk_num_one);
+    sym_Num_ONE   = getSymRef(term_Num_ONE);
+    sym_store.setInterpreted(sym_Num_ONE);
+
+    params.push(sort_NUM);
+
+    // Negation
+    sym_Num_NEG = declareFun(tk_num_neg, sort_NUM, params, msg, true);
+    sym_store.setInterpreted(sym_Num_NEG);
+
+    params.push(sort_NUM);
+
+    sym_Num_MINUS = declareFun(tk_num_neg, sort_NUM, params, msg, true);
+    sym_store[sym_Num_MINUS].setLeftAssoc();
+    sym_store.setInterpreted(sym_Num_MINUS);
+
+    sym_Num_PLUS  = declareFun(tk_num_plus, sort_NUM, params, msg, true);
+    sym_store[sym_Num_PLUS].setNoScoping();
+    sym_store[sym_Num_PLUS].setCommutes();
+    sym_store[sym_Num_PLUS].setLeftAssoc();
+    sym_store.setInterpreted(sym_Num_PLUS);
+
+    sym_Num_TIMES = declareFun(tk_num_times, sort_NUM, params, msg, true);
+    sym_store[sym_Num_TIMES].setNoScoping();
+    sym_store[sym_Num_TIMES].setLeftAssoc();
+    sym_store[sym_Num_TIMES].setCommutes();
+    sym_store.setInterpreted(sym_Num_TIMES);
+
+    sym_Num_DIV   = declareFun(tk_num_div, sort_NUM, params, msg, true);
+    sym_store[sym_Num_DIV].setNoScoping();
+    sym_store[sym_Num_DIV].setLeftAssoc();
+    sym_store.setInterpreted(sym_Num_DIV);
+
+    sym_Num_LEQ  = declareFun(tk_num_leq, sort_BOOL, params, msg, true);
+    sym_store[sym_Num_LEQ].setNoScoping();
+    sym_store[sym_Num_LEQ].setChainable();
+    sym_store.setInterpreted(sym_Num_LEQ);
+
+    sym_Num_LT   = declareFun(tk_num_lt, sort_BOOL, params, msg, true);
+    sym_store[sym_Num_LT].setNoScoping();
+    sym_store[sym_Num_LT].setChainable();
+    sym_store.setInterpreted(sym_Num_LT);
+
+    sym_Num_GEQ  = declareFun(tk_num_geq, sort_BOOL, params, msg, true);
+    sym_store[sym_Num_GEQ].setNoScoping();
+    sym_store[sym_Num_GEQ].setChainable();
+    sym_store.setInterpreted(sym_Num_GEQ);
+
+    sym_Num_GT   = declareFun(tk_num_gt, sort_BOOL, params, msg, true);
+    sym_store[sym_Num_GT].setNoScoping();
+    sym_store[sym_Num_GT].setChainable();
+    sym_store.setInterpreted(sym_Num_GEQ);
+
+    vec<SRef> ite_params;
+    ite_params.push(sort_BOOL);
+    ite_params.push(sort_NUM);
+    ite_params.push(sort_NUM);
+    sym_Num_ITE = declareFun(tk_ite, sort_NUM, ite_params, msg, true);
+    //sym_store[sym_Real_ITE].setLeftAssoc();
+    sym_store[sym_Num_ITE].setNoScoping();
+    sym_store.setInterpreted(sym_Num_ITE);
+}
+
+/*
 const char* LRALogic::tk_real_zero  = "0";
 const char* LRALogic::tk_real_one   = "1";
 const char* LRALogic::tk_real_neg   = "-";
@@ -350,7 +448,7 @@ LRALogic::LRALogic(SMTConfig& c) :
     //sym_store[sym_Real_ITE].setLeftAssoc();
     sym_store[sym_Real_ITE].setNoScoping();
     sym_store.setInterpreted(sym_Real_ITE);
-}
+}*/
 
 /*
 bool LRALogic::isBuiltinFunction(const SymRef sr) const
@@ -363,16 +461,19 @@ bool LRALogic::isBuiltinFunction(const SymRef sr) const
 
 //PS. find a way how to add this method to superclass
 
+/*
 const opensmt::Real&
 LRALogic::getRealConst(PTRef tr) const
 {
     SymId id = sym_store[getPterm(tr).symb()].getId();
     assert(id < reals.size() && reals[id] != NULL);
     return *reals[id];
-}
+}*/
 
 const char*   LRALogic::getName()              const  { return getLogic().str; }
 const Logic_t LRALogic::getLogic()             const  { return QF_LRA; }
+
+/*
 
 bool LRALogic::isBuiltinSort  (SRef sr) const  { return sr == sort_REAL || Logic::isBuiltinSort(sr); }
 //virtual bool isBuiltinConstant(SymRef sr) const { return (isNumConst(sr) || Logic::isBuiltinConstant(sr)); }
@@ -438,7 +539,7 @@ bool        LRALogic::hasSortNum(PTRef tr) const  { return hasSortReal(getPterm(
 PTRef       LRALogic::getTerm_NumZero() const  { return term_Real_ZERO; }
 PTRef       LRALogic::getTerm_NumOne()  const  { return term_Real_ONE; }
 
-
+*/
 /*
 PTRef LRALogic::mkConst(const char *name, const char **msg)
 {
@@ -492,15 +593,14 @@ bool LRALogic::isRealTerm(PTRef tr) const
         return false;
 }
 
-bool
-LRALogic::okForBoolVar(PTRef tr) const
+bool LRALogic::okForBoolVar(PTRef tr) const
 {
     return isRealLeq(tr) || Logic::okForBoolVar(tr);
 }
 
 */
 
-
+/*
 PTRef LRALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
 {
     if (sym == sym_Real_NEG)

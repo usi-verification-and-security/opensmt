@@ -3,6 +3,8 @@
 
 #include "TSolverHandler.h"
 
+#include "LIALogic.h"
+
 class LIASolver;
 class LIALogic;
 

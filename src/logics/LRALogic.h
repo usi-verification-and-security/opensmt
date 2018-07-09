@@ -43,11 +43,12 @@ public:
 
 
 
-class LRALogic: public LALogic
-{
-  protected:
+class LRALogic: public LALogic {
+protected:
     Logic_t logic_type;
-    vec<opensmt::Real*> reals; //PS replace this with opensmt::Number?
+    vec<opensmt::Real *> reals; //PS replace this with opensmt::Number?
+    static const char*  e_nonlinear_term;
+    /*
     SymRef              sym_Real_ZERO;
     SymRef              sym_Real_ONE;
     SymRef              sym_Real_NEG;
@@ -67,6 +68,7 @@ class LRALogic: public LALogic
     PTRef               term_Real_ZERO;
     PTRef               term_Real_ONE;
 
+
     //static const char*  tk_val_real_default;
 
     static const char*  tk_real_zero;
@@ -82,24 +84,27 @@ class LRALogic: public LALogic
     static const char*  tk_real_gt;
 
     static const char*  s_sort_real;
-    static const char*  e_nonlinear_term;
+
+
 
     bool split_eq;
     //Map<PTRef,bool,PTRefHash> lra_split_inequalities;
     //void visit(PTRef, Map<PTRef,PTRef,PTRefHash>&);
+*/
+public:
+    LRALogic(SMTConfig &c);
 
-  public:
-    LRALogic                    (SMTConfig& c);
-    ~LRALogic                   () {
+    ~LRALogic() {
         for (int i = 0; i < reals.size(); i++) delete reals[i];
         if (config.sat_split_type() != spt_none)
-            cerr << "; Num of LRA equalities in input: " << la_split_inequalities.getSize()/2 << "\n";
+            cerr << "; Num of LRA equalities in input: " << la_split_inequalities.getSize() / 2 << "\n";
     }
 
-    virtual const char*   getName()              const override;// { return getLogic().str; }
-    virtual const Logic_t getLogic()             const override;// { return QF_LRA; }
+    virtual const char *getName() const override;// { return getLogic().str; }
+    virtual const Logic_t getLogic() const override;// { return QF_LRA; }
 
-
+};
+/*
     //virtual bool        okForBoolVar    (PTRef) const;
     virtual PTRef       insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg) override;
 
@@ -123,6 +128,7 @@ class LRALogic: public LALogic
 
     const opensmt::Number& getNumConst(PTRef tr) const override;// {return getRealConst(tr);}
     const opensmt::Real& getRealConst(PTRef tr) const;
+
 
     bool        isRealPlus(SymRef sr) const;// { return sr == sym_Real_PLUS; }
     //bool        isRealPlus(PTRef tr) const { return isRealPlus(getPterm(tr).symb()); }
@@ -182,6 +188,7 @@ class LRALogic: public LALogic
     PTRef       getTerm_NumZero() const override;// { return term_Real_ZERO; }
     PTRef       getTerm_NumOne()  const override;// { return term_Real_ONE; }
 
+
     virtual PTRef mkNumPlus(const vec<PTRef> &, char **) override;
     virtual PTRef mkNumPlus(const vec<PTRef> &args) override; // { char *msg; PTRef tr = mkNumPlus(args, &msg); assert(tr != PTRef_Undef); return tr; }
     //virtual  PTRef mkNumPlus(const std::vector<PTRef> &args) override; // { vec<PTRef> tmp; for (PTRef arg : args) { tmp.push(arg); } return mkNumPlus(tmp); }
@@ -196,7 +203,7 @@ class LRALogic: public LALogic
     //virtual  PTRef mkNumDiv(const PTRef nom, const PTRef den) override; // { vec<PTRef> tmp; tmp.push(nom), tmp.push(den); return mkNumDiv(tmp); }
 
     virtual PTRef mkNumLeq(const vec<PTRef> &, char **) override;
-    /*
+
     PTRef       mkRealNeg(PTRef, char**);
     PTRef       mkRealNeg(PTRef tr) {char* msg; PTRef trn = mkRealNeg(tr, &msg); assert(trn != PTRef_Undef); return trn; }
     PTRef       mkRealMinus(const vec<PTRef>&, char**);
@@ -224,7 +231,7 @@ class LRALogic: public LALogic
     PTRef       mkRealGt(const vec<PTRef>&, char**);
     PTRef       mkRealGt(const vec<PTRef>& args) { char* msg; PTRef tr = mkRealGt(args, &msg); assert(tr != PTRef_Undef); return tr; }
     PTRef       mkRealGt(const PTRef arg1, const PTRef arg2) { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkRealGt(tmp); }
-    */
+
 
     //virtual bool  isNegated(PTRef tr) const;
 
@@ -258,7 +265,7 @@ class LRALogic: public LALogic
 // v2 which one is smaller, based on the PTRef of v1 and v2.  (i.e.
 // v1.ptref <  v2.ptref iff (* k1 v1) < (* k2 v2))
 
-/*
+
 class LessThan_deepPTRef {
     const LRALogic& l;
   public:

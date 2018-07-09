@@ -28,11 +28,14 @@ public:
 };
 
 
-class LIALogic: public LALogic
-{
-  protected:
+class LIALogic: public LALogic {
+protected:
     Logic_t logic_type;
-    vec<opensmt::Integer2*> integers;//PS. replace this with Number?
+
+
+    vec<opensmt::Integer2 *> integers;//PS. replace this with Number?
+    static const char*  e_nonlinear_term;
+    /*
     SymRef              sym_Int_ZERO;
     SymRef              sym_Int_ONE;
     SymRef              sym_Int_NEG;
@@ -74,16 +77,20 @@ class LIALogic: public LALogic
     bool split_eq;
     //Map<PTRef,bool,PTRefHash> lia_split_inequalities;
     //void visit(PTRef, Map<PTRef,PTRef,PTRefHash>&);
+*/
+public:
+    LIALogic(SMTConfig &c);
 
-  public:
-    LIALogic (SMTConfig& c);
-    ~LIALogic () {
+    ~LIALogic() {
         for (int i = 0; i < integers.size(); i++) delete integers[i];
     }
 
-    virtual const char*   getName()         const override;// { return getLogic().str; }
-    virtual const Logic_t getLogic()        const override;// { return QF_LIA; }
+    virtual const char *getName() const override;// { return getLogic().str; }
+    virtual const Logic_t getLogic() const override;// { return QF_LIA; }
 
+};
+
+    /*
     //virtual bool        okForBoolVar    (PTRef) const;
     virtual PTRef       insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg) override;
 
@@ -108,7 +115,7 @@ class LIALogic: public LALogic
     const opensmt::Integer2& getIntegerConst(PTRef tr) const;
 
 
-    bool        isIntPlus(SymRef sr)  const;// { return sr == sym_Int_PLUS; }
+    bool        isNumPlus(SymRef sr)  const override;// { return sr == sym_Int_PLUS; }
     //bool      isIntPlus(PTRef tr)   const { return isIntPlus(getPterm(tr).symb()); }
     bool        isNumPlus(PTRef tr)   const override;// { return isIntPlus(getPterm(tr).symb()); }
     bool        isIntMinus(SymRef sr) const;// { return sr == sym_Int_MINUS; }
@@ -202,7 +209,7 @@ class LIALogic: public LALogic
     PTRef       mkIntGt(const vec<PTRef>&, char**);
     PTRef       mkIntGt(const vec<PTRef>& args) { char* msg; PTRef tr = mkNumGt(args, &msg); assert(tr != PTRef_Undef); return tr; }
     PTRef       mkIntGt(const PTRef arg1, const PTRef arg2) { vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkNumGt(tmp); }
-*/
+
 
     //virtual PTRef mkNumNeg(PTRef, char **) override ;
     //virtual PTRef mkNumNeg(PTRef tr) override; // { char *msg; PTRef trn = mkNumNeg(tr, &msg); assert(trn != PTRef_Undef); return trn;}

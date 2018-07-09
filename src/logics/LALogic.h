@@ -111,43 +111,43 @@ public:
     //PS. up to here
 
 
-    bool isNumPlus(SymRef sr) const; // { return sr == sym_Num_PLUS; }
+    virtual bool isNumPlus(SymRef sr) const; // { return sr == sym_Num_PLUS; }
     virtual bool isNumPlus(PTRef tr) const; // { return isNumPlus(getPterm(tr).symb()); }
 
-    bool isNumMinus(SymRef sr) const; // { return sr == sym_Num_MINUS; }
+    virtual bool isNumMinus(SymRef sr) const; // { return sr == sym_Num_MINUS; }
     virtual bool isNumMinus(PTRef tr) const ; //{ return isNumMinus(getPterm(tr).symb()); }
 
-    bool isNumNeg(SymRef sr) const ; //{ return sr == sym_Num_NEG; }
+    virtual bool isNumNeg(SymRef sr) const ; //{ return sr == sym_Num_NEG; }
     virtual bool isNumNeg(PTRef tr) const ; // { return isNumNeg(getPterm(tr).symb()); }
 
-    bool isNumTimes(SymRef sr) const; // { return sr == sym_Num_TIMES; }
+    virtual bool isNumTimes(SymRef sr) const; // { return sr == sym_Num_TIMES; }
     virtual bool isNumTimes(PTRef tr) const ; //{ return isNumTimes(getPterm(tr).symb()); }
 
-    bool isNumDiv(SymRef sr) const; // { return sr == sym_Num_DIV; }
+    virtual bool isNumDiv(SymRef sr) const; // { return sr == sym_Num_DIV; }
     virtual bool isNumDiv(PTRef tr) const; // { return isNumDiv(getPterm(tr).symb()); }
 
-    bool isNumEq(SymRef sr) const ; //{ return isEquality(sr) && (sym_store[sr][0] == sort_NUM);}
+    virtual bool isNumEq(SymRef sr) const ; //{ return isEquality(sr) && (sym_store[sr][0] == sort_NUM);}
     virtual bool isNumEq(PTRef tr) const ; //{ return isNumEq(getPterm(tr).symb()); }
 
-    bool isNumLeq(SymRef sr) const; // { return sr == sym_Num_LEQ; }
+    virtual bool isNumLeq(SymRef sr) const; // { return sr == sym_Num_LEQ; }
     virtual bool isNumLeq(PTRef tr) const ; //{ return isNumLeq(getPterm(tr).symb()); }
 
-    bool isNumLt(SymRef sr) const; // { return sr == sym_Num_LT; }
+    virtual  bool isNumLt(SymRef sr) const; // { return sr == sym_Num_LT; }
     virtual bool isNumLt(PTRef tr) const; // { return isNumLt(getPterm(tr).symb()); }
 
-    bool isNumGeq(SymRef sr) const; // { return sr == sym_Num_GEQ; }
+    virtual bool isNumGeq(SymRef sr) const; // { return sr == sym_Num_GEQ; }
     virtual bool isNumGeq(PTRef tr) const; // { return isNumGeq(getPterm(tr).symb()); }
 
-    bool isNumGt(SymRef sr) const ; //{ return sr == sym_Num_GT; }
+    virtual bool isNumGt(SymRef sr) const ; //{ return sr == sym_Num_GT; }
     virtual bool isNumGt(PTRef tr) const; // { return isNumGt(getPterm(tr).symb()); }
 
-    bool isNumVar(SymRef sr) const; // { return isVar(sr) && sym_store[sr].rsort() == sort_NUM; }
+    virtual bool isNumVar(SymRef sr) const; // { return isVar(sr) && sym_store[sr].rsort() == sort_NUM; }
     virtual bool isNumVar(PTRef tr) const; // { return isNumVar(getPterm(tr).symb()); }
 
-    bool isNumZero(SymRef sr) const; // { return sr == sym_Num_ZERO; }
+    virtual bool isNumZero(SymRef sr) const; // { return sr == sym_Num_ZERO; }
     virtual bool isNumZero(PTRef tr) const; // { return tr == term_Num_ZERO; }
 
-    bool isNumOne(SymRef sr) const; // { return sr == sym_Num_ONE; }
+    virtual  bool isNumOne(SymRef sr) const; // { return sr == sym_Num_ONE; }
     virtual bool isNumOne(PTRef tr) const; // { return tr == term_Num_ONE; }
 
     // Real terms are of form c, a, or (* c a) where c is a constant and a is a variable.
