@@ -638,7 +638,7 @@ PTRef LIALogic::mkNumPlus(const vec<PTRef> &args) {
     return tr;
 }
 
-/*
+
 
 PTRef LIALogic::mkNumLeq(const vec<PTRef> &args) {
     char *msg;
@@ -647,6 +647,7 @@ PTRef LIALogic::mkNumLeq(const vec<PTRef> &args) {
     return tr;
 }
 
+
 PTRef LIALogic::mkNumLeq(const PTRef arg1, const PTRef arg2) {
     vec<PTRef> tmp;
     tmp.push(arg1);
@@ -654,7 +655,7 @@ PTRef LIALogic::mkNumLeq(const PTRef arg1, const PTRef arg2) {
     return mkNumLeq(tmp);
 }
 
-
+/*
 
 PTRef LIALogic::mkNumLt(const vec<PTRef> &args) {
     char *msg;

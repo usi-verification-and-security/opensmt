@@ -225,8 +225,8 @@ class LIALogic: public LALogic
     //virtual  PTRef mkNumDiv(const PTRef nom, const PTRef den) override; // { vec<PTRef> tmp; tmp.push(nom), tmp.push(den); return mkNumDiv(tmp); }
 
     virtual PTRef mkNumLeq(const vec<PTRef> &, char **) override;
-    //virtual PTRef mkNumLeq(const vec<PTRef> &args) override; // { char *msg; PTRef tr = mkNumLeq(args, &msg); assert(tr != PTRef_Undef); return tr; }
-    //virtual PTRef mkNumLeq(const PTRef arg1, const PTRef arg2) override; // {vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkNumLeq(tmp); }
+    virtual PTRef mkNumLeq(const vec<PTRef> &args) override; // { char *msg; PTRef tr = mkNumLeq(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    virtual PTRef mkNumLeq(const PTRef arg1, const PTRef arg2) override; // {vec<PTRef> tmp; tmp.push(arg1); tmp.push(arg2); return mkNumLeq(tmp); }
 
     //virtual PTRef mkNumGeq(const vec<PTRef> &, char **) override;
     //virtual PTRef mkNumGeq(const vec<PTRef> &args) override; // { char *msg; PTRef tr = mkNumGeq(args, &msg); assert(tr != PTRef_Undef); return tr; }
