@@ -280,10 +280,10 @@ pair<PTRef, PTRef> LAExpression::getSubst()
   assert( polynome.find( PTRef_Undef ) != polynome.end( ) );
   assert( r != UNDEF );
 
-  if ( integers )
-    return getSubstInt();
-  else
-    return getSubstReal();
+//  if ( integers )
+//    return getSubstInt();
+//  else
+  return getSubstReal();
 }
 
 //pair< Enode *, Enode * > LAExpression::getSubstInt( Egraph & egraph )
