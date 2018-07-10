@@ -62,6 +62,7 @@ public:
     bool  check    ( bool complete) override; // Checks the satisfiability of current constraints //PS. add the implementation to LIASolver.C
     void computeConcreteModel(LVRef v);
     void computeModel() override;
+    void getNewSplits(vec<PTRef>& splits) override;
 
 protected:
 

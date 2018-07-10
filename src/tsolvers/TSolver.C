@@ -72,3 +72,8 @@ void  TSolver::clearPolarity(PTRef tr)
     cerr << "Clearing polarity " << getLogic().printTerm(tr) << " " << tr.x << endl;
 #endif
 }
+
+void TSolver::getNewSplits(vec<PTRef>&)
+{
+    // Default implementation does not give splits
+}

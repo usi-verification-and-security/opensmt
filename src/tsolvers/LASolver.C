@@ -771,6 +771,11 @@ inline bool LASolver::getStatus( )
             return false;
             break;
         }
+        case NEWSPLIT:
+        {
+            return true;
+            break;
+        }
         case INIT:
         case ERROR:
         default:

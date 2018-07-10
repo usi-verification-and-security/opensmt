@@ -170,9 +170,10 @@ bool LIASolver::checkIntegersAndSplit( ) {
             //x <= c || x >= c+1;
             PTRef constr = logic.mkOr(logic.mkNumLeq(lva[x].getPTRef(), logic.mkConst(c)),
                        logic.mkNumGeq(lva[x].getPTRef(), logic.mkConst(c + 1)));
+            printf("LIA solver constraint %s\n", logic.pp(constr));
 
             splitondemand.push(constr);
-            return setStatus(UNSAT);
+            return setStatus(NEWSPLIT);
 
             //what if more than one of the variables have fractional part? Shall we implement selection rule?
             //we also have to take care of not changing the values that already assigned to integers, here gomory cuts are important
@@ -193,6 +194,14 @@ bool LIASolver::checkIntegersAndSplit( ) {
     }
 
     return setStatus(SAT);
+}
+
+void
+LIASolver::getNewSplits(vec<PTRef>& splits)
+{
+    splitondemand.copyTo(splits);
+    splitondemand.clear();
+    setStatus(SAT);
 }
 
 LIASolver::LIASolver(SMTConfig & c, LIALogic& l, vec<DedElem>& d)

@@ -67,6 +67,7 @@ public:
     void    getConflict          ( vec<Lit>&, vec<VarData>&, int &, vec<Lit>& ); // Returns theory conflict in terms of literals
 #else
     void    getConflict          ( vec<Lit>&, vec<VarData>&, int & ); // Returns theory conflict in terms of literals
+    void    getNewSplits         ( vec<Lit>& ); // Return the new splits as a vector of literals that needs to be interpreted as a clause.
 #endif
 #ifdef PRODUCE_PROOF
     PTRef getInterpolant         (const ipartitions_t&, map<PTRef, icolor_t>*);

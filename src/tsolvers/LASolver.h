@@ -68,7 +68,7 @@ protected:
     // Possible internal states of the solver
     typedef enum
     {
-        INIT, INCREMENT, SAT, UNSAT, ERROR
+        INIT, INCREMENT, SAT, UNSAT, NEWSPLIT, ERROR
     } LASolverStatus;
 
     //opensmt::Real delta; // The size of one delta.  Set through computeModel()

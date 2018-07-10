@@ -100,6 +100,11 @@ int CoreSMTSolver::checkTheory( bool complete )
         // Increments skip step for sat calls
         skip_step *= config.sat_skip_step_factor;
 
+        vec<Lit> new_splits;
+        theory_handler.getNewSplits(new_splits);
+        if (new_splits.size() > 0)
+            addClause_(new_splits);
+
         if ( config.sat_theory_propagation > 0 )
         {
             if ( !complete )
