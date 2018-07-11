@@ -367,6 +367,9 @@ public:
     bool    addClause (Lit p, Lit q);                           // Add a binary clause to the solver.
     bool    addClause (Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
     bool    addClause_(      vec<Lit>& ps);                     // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.
+
+    virtual bool addSMTClause_(vec<Lit>&) = 0;                  // For adding SMT clauses within the solver
+
 #endif
     // Solving:
     //
@@ -504,6 +507,8 @@ public:
     vec<vec<Lit> > split_assumptions;
 
 protected:
+    Lit forced_split; // If theory solver tells that we must split the instance, a literal with unknown value is inserted here for the splitting heuristic
+    Lit theory_split_deduction; // Theory solve tells we must split the instance to l1 \/ l2, but the literal l2 is false and l1 unknown.  Store l1 here.
     int processed_in_frozen; // The index in Theory's frozen vec until which frozennes has been processed
     // Helper structures:
     //

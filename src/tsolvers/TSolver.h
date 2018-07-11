@@ -169,6 +169,7 @@ public:
 #endif
     virtual void computeModel() = 0;                      // Compute model for variables
     virtual void getConflict(bool, vec<PtAsgn>&) = 0;     // Return conflict
+    virtual bool hasNewSplits();                          // Are there new splits?
     virtual void getNewSplits(vec<PTRef>&);               // Return new splits if any
     virtual PtAsgn_reason getDeduction() = 0;             // Return an implied node based on the current state
 

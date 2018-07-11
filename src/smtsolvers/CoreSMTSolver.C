@@ -116,6 +116,8 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , split_next            (split_units == spm_time ? cpuTime() + split_inittune : decisions + split_inittune)
     , split_preference      (sppref_undef)
     , unadvised_splits      (0)
+    , forced_split          (lit_Undef)
+    , theory_split_deduction(lit_Undef)
     , learnt_t_lemmata      (0)
     , perm_learnt_t_lemmata (0)
     , luby_i                (0)
@@ -780,6 +782,12 @@ void CoreSMTSolver::cancelUntilVarTempDone( )
 
 Lit CoreSMTSolver::pickBranchLit()
 {
+    if (forced_split != lit_Undef) {
+        Lit fs = forced_split;
+        forced_split = lit_Undef;
+        return fs;
+    }
+
     Var next = var_Undef;
 
     // Random decision:

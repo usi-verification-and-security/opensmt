@@ -128,7 +128,7 @@ void THandler::getNewSplits(vec<Lit> &splits) {
     int i;
     vec<PTRef> split_terms;
     for (i = 0; i < getSolverHandler().tsolvers.size(); i++) {
-        if (getSolverHandler().tsolvers[i] != NULL && getSolverHandler().tsolvers[i]->hasExplanation()) {
+        if (getSolverHandler().tsolvers[i] != NULL && getSolverHandler().tsolvers[i]->hasNewSplits()) {
             getSolverHandler().tsolvers[i]->getNewSplits(split_terms);
             break;
         }
@@ -138,7 +138,7 @@ void THandler::getNewSplits(vec<Lit> &splits) {
         return;
     }
 
-    assert(split_terms.size() == 0);
+    assert(split_terms.size() == 1);
     PTRef tr = split_terms[0];
     split_terms.pop();
     assert(getLogic().isOr(tr));

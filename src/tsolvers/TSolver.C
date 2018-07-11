@@ -77,3 +77,7 @@ void TSolver::getNewSplits(vec<PTRef>&)
 {
     // Default implementation does not give splits
 }
+
+bool TSolver::hasNewSplits() {
+    return splitondemand.size() > 0;
+}

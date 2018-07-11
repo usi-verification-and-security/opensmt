@@ -102,8 +102,69 @@ int CoreSMTSolver::checkTheory( bool complete )
 
         vec<Lit> new_splits;
         theory_handler.getNewSplits(new_splits);
-        if (new_splits.size() > 0)
-            addClause_(new_splits);
+        if (new_splits.size() > 0) {
+            addSMTClause_(new_splits);
+            Lit l1 = new_splits[0];
+            Lit l2 = new_splits[1];
+            if (value(l1) == l_Undef && value(l2) == l_Undef)
+                forced_split = ~l1;
+            else {
+                // Neither one can be true
+                assert(value(l1) != l_True);
+                assert(value(l2) != l_True);
+                if (value(l1) == l_False && value(l2) == l_Undef)
+                    theory_split_deduction = l2;
+                else if (value(l1) == l_Undef && value(l2) == l_False)
+                    theory_split_deduction = l1;
+                else if (value(l1) == l_False && value(l2) == l_False) {
+                    // The query was unsatisfiable in the end.
+                    int lev_l1 = vardata[var(l1)].level;
+                    int lev_l2 = vardata[var(l2)].level;
+                    int bt_level = lev_l1 > lev_l2 ? lev_l2 : lev_l1;
+                    cancelUntil(bt_level);
+                    if (decisionLevel() == 0) {
+#ifdef PRODUCE_PROOF
+                        // This case is equivalent to "Did not find watch" in propagate( )
+            // All conflicting atoms are dec-level 0
+            CRef confl = ca.alloc(conflicting, config.sat_temporary_learn);
+
+            Clause & c = ca[confl];
+            proof.addRoot( confl, CLA_THEORY );
+            //TODO: is it correct?
+            //proof.setTheoryInterpolator(confl, theory_itpr);
+            //clause_to_itpr[ confl ] = theory_itpr;
+            tleaves.push( confl );
+            if ( config.isIncremental() )
+            {
+                // Not yet integrated
+                //assert(false);
+                undo_stack.push(undo_stack_el(undo_stack_el::NEWPROOF, confl));
+            }
+            if ( config.produce_inter() > 0 )
+            {
+                //assert(interp != PTRef_Undef);
+                // FIXME why here?
+                //proof.resolve( units[var(c[k])], var(c[k]) );
+            }
+            // Empty clause derived
+            // ADDED CODE BEGIN
+            proof.beginChain( confl );
+            for ( int k = 0; k < c.size() ; k ++ )
+            {
+                //assert( level[ var(c[k]) ] == 0 );
+                //assert( value( c[k] ) == l_False );
+                //assert( units[var(c[k])] != NULL );
+                proof.resolve( units[var(c[k])], var(c[k]) );
+            }
+            // ADDED CODE END
+            proof.endChain( CRef_Undef );
+#endif
+                        return -1;
+                    }
+                    return 0;
+                }
+            }
+        }
 
         if ( config.sat_theory_propagation > 0 )
         {
@@ -494,6 +555,12 @@ void CoreSMTSolver::deduceTheory(vec<LitLev>& deductions)
     Lit ded = lit_Undef;
     int n_deductions = 0;
     int last_dl = -1;
+
+    // Force deduction on the split clause literal from theory split if it should be propagated
+    if (theory_split_deduction != lit_Undef) {
+        deductions.push(LitLev(theory_split_deduction, decisionLevel()));
+        theory_split_deduction = lit_Undef;
+    }
 
     while (true)
     {

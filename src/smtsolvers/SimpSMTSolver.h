@@ -91,7 +91,7 @@ class SimpSMTSolver : public CoreSMTSolver
 #else
     bool    addClause (const vec<Lit>& ps);
     bool    addSMTClause (const  vec<Lit>&);
-    bool    addSMTClause_(       vec<Lit>&);
+    bool    addSMTClause_(       vec<Lit>&) override;
     bool    addEmptyClause();                // Add the empty clause to the solver.
     bool    addClause (Lit p);               // Add a unit clause to the solver.
     bool    addClause (Lit p, Lit q);        // Add a binary clause to the solver.
