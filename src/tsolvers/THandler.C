@@ -145,6 +145,7 @@ void THandler::getNewSplits(vec<Lit> &splits) {
     Pterm& t = getLogic().getPterm(tr);
     for (int i = 0; i < t.size(); i++) {
         tmap.addBinding(t[i]);
+        declareTermTree(t[i]);
         splits.push(tmap.getLit(t[i]));
     }
 }
