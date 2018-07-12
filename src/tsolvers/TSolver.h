@@ -176,6 +176,7 @@ public:
     SolverId getId() { return id; }
     bool hasExplanation() { return has_explanation; }
     virtual lbool declareTerm(PTRef tr) = 0;
+    virtual void  informNewSplit(PTRef tr) { };
     virtual char* printValue(PTRef) = 0; // Debug function.  Instances are allowed to print whatever they want.
     virtual char* printExplanation(PTRef) = 0; // Debug function.  Instances are allowed to print whatever they want.
     virtual Logic& getLogic() = 0;

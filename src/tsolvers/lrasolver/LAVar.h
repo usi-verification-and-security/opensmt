@@ -144,7 +144,7 @@ private:
     LAVarAllocator& lva;
     vec<LVRef>      leqToLavar;              // Maps Pterm constraints to solver's real variables.
     vec<LVRef>      ptermToLavar;            // Maps Pterm variables to solver's real variables
-    LALogic&       logic;
+    LALogic&        logic;
 public:
     LAVarStore(LAVarAllocator& lva, LALogic& logic) : lva(lva), logic(logic) {}
     inline void   clear() {};

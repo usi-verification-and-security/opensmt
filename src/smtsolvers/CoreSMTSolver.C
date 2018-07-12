@@ -315,7 +315,7 @@ bool CoreSMTSolver::addClause_(vec<Lit>& _ps)
 #ifdef REPORT_DL1_THLITS
     int init_cl_len = _ps.size();
 #endif
-    assert( decisionLevel() == 0 );
+//    assert( decisionLevel() == 0 );
 #ifdef PRODUCE_PROOF
     //assert( in == 0 || ((in & (in - 1)) == 0) );
 #endif

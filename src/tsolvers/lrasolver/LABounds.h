@@ -111,7 +111,9 @@ struct LABoundRefPair { LABoundRef pos; LABoundRef neg; };
 
 class LABoundStore
 {
+public:
     struct BoundInfo { LVRef v; LABoundRef b1; LABoundRef b2; PTId leq_id; };
+private:
     vec<BoundInfo> in_bounds;
     LABoundAllocator& ba;
     LABoundListAllocator& bla;
@@ -124,8 +126,9 @@ public:
     LABoundStore(LABoundAllocator& ba, LABoundListAllocator& bla, LAVarAllocator& lva, LAVarStore& lavstore, LALogic& l) : ba(ba), bla(bla), lva(lva), lavarStore(lavstore), logic(l) {
         vec<LABoundRef> tmp;
     }
-    void addBound(PTRef leq_tr);
+    BoundInfo addBound(PTRef leq_tr);
     void buildBounds(vec<LABoundRefPair>& ptermToLABoundRef);
+    void updateBound(PTRef leq_tr); // Update a single bound.
 //    inline LABoundRef getLowerBound(const LVRef v) const { return bla[lva[v].getBounds()][lva[v].lbound()]; }
 //    inline LABoundRef getUpperBound(const LVRef v) const { return bla[lva[v].getBounds()][lva[v].ubound()]; }
     LABoundRefPair getBoundRefPair(const PTRef leq);

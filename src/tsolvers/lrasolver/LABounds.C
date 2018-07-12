@@ -66,7 +66,7 @@ void LABoundListAllocator::reloc(LABoundListRef& tr, LABoundListAllocator& to)
     to[tr].v  = bl.getVar();
 }
 
-void LABoundStore::addBound(PTRef leq_ref)
+LABoundStore::BoundInfo LABoundStore::addBound(PTRef leq_ref)
 {
 //    printf(" -> bound store gets %s\n", logic.pp(leq_ref));
     Pterm& leq = logic.getPterm(leq_ref);
@@ -95,9 +95,36 @@ void LABoundStore::addBound(PTRef leq_ref)
 
 //    printf(" --> %s\n", printBound(br_pos));
 //    printf(" --> %s\n", printBound(br_neg));
-    in_bounds.push(BoundInfo{v, br_pos, br_neg, leq.getId()});
+    BoundInfo bi{v, br_pos, br_neg, leq.getId()};
+    in_bounds.push(bi);
+    return bi;
 }
 
+void LABoundStore::updateBound(PTRef tr)
+{
+    BoundInfo bi = addBound(tr);
+    LVRef vr = bi.v;
+    while (ptermToLABoundsRef.size() <= Idx(bi.leq_id))
+        ptermToLABoundsRef.push({ LABoundRef_Undef, LABoundRef_Undef });
+
+    ptermToLABoundsRef[Idx(bi.leq_id)] = { bi.b1, bi.b2 };
+    // Fix this to do a linear traverse
+    vec<LABoundRef> new_bounds;
+    LABoundListRef blr = var_bound_lists[lva[vr].ID()];
+
+    for (int i = 0; i < bla[blr].size(); i++)
+        new_bounds.push(bla[blr][i]);
+
+    new_bounds.push(bi.b1);
+    new_bounds.push(bi.b2);
+
+    LABoundListRef br = bla.alloc(vr, new_bounds);
+    var_bound_lists[lva[vr].ID()] = br;
+    sort<LABoundRef,bound_lessthan>(bla[br].bounds, bla[br].size(), bound_lessthan(ba));
+
+    for (int j = 0; j < bla[br].size(); j++)
+        ba[bla[br][j]].setIdx(j);
+}
 
 void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
 {
@@ -165,6 +192,8 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
 #endif
 
     }
+
+    // make sure all variables have at least the trivial bounds
     for (int i = 0; i < lavarStore.numVars(); i++) {
         LVRef vr = lavarStore.getVarByIdx(i);
         LAVar& v = lva[vr];

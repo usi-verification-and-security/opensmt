@@ -90,6 +90,17 @@ void TSolverHandler::declareTerm(PTRef tr)
     }
 }
 
+void TSolverHandler::informNewSplit(PTRef tr)
+{
+    for (int i = 0; i < tsolvers.size(); i++) {
+        if (tsolvers[i] != NULL) {
+                if (tsolvers[i]->isValid(tr)) {
+                    tsolvers[i]->informNewSplit(tr);
+            }
+        }
+    }
+}
+
 ValPair TSolverHandler::getValue(PTRef tr) const
 {
     for (int i = 0; i < tsolvers.size(); i++) {

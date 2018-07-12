@@ -344,6 +344,13 @@ lbool LASolver::declareTerm(PTRef leq_tr)
     return l_Undef;
 }
 
+void LASolver::informNewSplit(PTRef tr)
+{
+    PTRef term = logic.getPterm(tr)[1];
+    LVRef v = exprToLVar(term);
+    lavarStore.addLeqVar(tr, v);
+    boundStore.updateBound(tr);
+}
 
 LVRef LASolver::getBasicVarToFixByShortestPoly() const {
     std::unordered_set<LVRef, LVRefHash> new_candidates;

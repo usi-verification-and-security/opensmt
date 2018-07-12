@@ -93,6 +93,7 @@ public:
     bool    assertLits        (vec<Lit>&);             // Give to the TSolvers the newly added literals on the trail
     bool    assertLit         (PtAsgn pta);// { return getSolverHandler().assertLit(pta); } // Push the assignment to all theory solvers
     void    declareTermTree   (PTRef tr);// { getSolverHandler().declareTermTree(tr); } // Declare the terms in the formula recursively.
+    void    informNewSplit    (PTRef tr); // Splitting variable data structure updates (e.g., recompute bounds list)
     bool    check             (bool);       // Check trail in the theories
     void    backtrack         (int);        // Remove literals that are not anymore on the trail
 

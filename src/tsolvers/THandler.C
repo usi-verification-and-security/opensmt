@@ -146,6 +146,7 @@ void THandler::getNewSplits(vec<Lit> &splits) {
     for (int i = 0; i < t.size(); i++) {
         tmap.addBinding(t[i]);
         declareTermTree(t[i]);
+        informNewSplit(t[i]);
         splits.push(tmap.getLit(t[i]));
     }
 }
@@ -926,6 +927,7 @@ void    THandler::clearModel        () { /*getSolverHandler().clearModel();*/ } 
 
 bool    THandler::assertLit         (PtAsgn pta) { return getSolverHandler().assertLit(pta); } // Push the assignment to all theory solvers
 void    THandler::declareTermTree   (PTRef tr) { getSolverHandler().declareTermTree(tr); }
+void    THandler::informNewSplit    (PTRef tr) { getSolverHandler().informNewSplit(tr);  } // The splitting variable might need data structure changes in the solver (e.g. LIA needs to re-build bounds)
 
 char*   THandler::printValue         (PTRef tr) { return getSolverHandler().printValue(tr); } // Debug.  Ask from the solvers what they know about value of tr
 char*   THandler::printExplanation   (PTRef tr) { return getSolverHandler().printExplanation(tr); } // Debug.  Ask from the solvers what they know about explanation of tr

@@ -81,6 +81,7 @@ public:
     bool    assertLit         (PtAsgn);                // Push the assignment to all theory solvers
     virtual bool assertLit_special(PtAsgn) = 0;        // Push the assignnment to the theory solver, with equality splitting if necessary
     void    declareTermTree      (PTRef);                 // Declare the terms in the formula recursively.
+    void    informNewSplit(PTRef);                     // Recompute split datastructures
     char*   printValue(PTRef tr);
     char*   printExplanation(PTRef tr);
     void    declareTerm(PTRef tr);              // Declare the term to the appropriate solver
