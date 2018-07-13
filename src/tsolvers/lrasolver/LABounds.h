@@ -107,7 +107,12 @@ public:
     void reloc(LABoundListRef& tr, LABoundListAllocator& to);
 };
 
-struct LABoundRefPair { LABoundRef pos; LABoundRef neg; };
+class LABoundRefPair {
+public:
+    LABoundRef pos;
+    LABoundRef neg;
+    bool operator== (const LABoundRefPair& o) const { return (pos == o.pos) && (neg == o.neg); }
+};
 
 class LABoundStore
 {

@@ -117,7 +117,6 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , split_preference      (sppref_undef)
     , unadvised_splits      (0)
     , forced_split          (lit_Undef)
-    , theory_split_deduction(lit_Undef)
     , learnt_t_lemmata      (0)
     , perm_learnt_t_lemmata (0)
     , luby_i                (0)
@@ -1878,11 +1877,8 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 
     int res = checkTheory( false );
     if ( res == -1 ) return l_False;
-    while ( res == 2 )
-    {
-        res = checkTheory( false );
-    }
-    assert( res == 1 );
+
+    assert( res == 1 || res == 0 ); // Either good for decision (from TSolver's perspective) or propagate
 #ifdef STATISTICS
     tsolvers_time += cpuTime( ) - start;
 #endif
@@ -2064,11 +2060,6 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                     continue; // Theory conflict: time for bcp
                 case  1:
                     break;                 // Sat and no deductions: go ahead
-                case  2:                        // Sat and deductions: time for bcp
-#ifdef PEDANTIC_DEBUG
-                    thr_backtrack = (decisionLevel() != prev_dl);
-#endif
-                    continue;
                 default:
                     assert( false );
                 }

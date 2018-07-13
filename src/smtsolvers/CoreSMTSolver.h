@@ -508,7 +508,6 @@ public:
 
 protected:
     Lit forced_split; // If theory solver tells that we must split the instance, a literal with unknown value is inserted here for the splitting heuristic
-    Lit theory_split_deduction; // Theory solve tells we must split the instance to l1 \/ l2, but the literal l2 is false and l1 unknown.  Store l1 here.
     int processed_in_frozen; // The index in Theory's frozen vec until which frozennes has been processed
     // Helper structures:
     //

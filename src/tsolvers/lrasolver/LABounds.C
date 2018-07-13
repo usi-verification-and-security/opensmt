@@ -102,6 +102,11 @@ LABoundStore::BoundInfo LABoundStore::addBound(PTRef leq_ref)
 
 void LABoundStore::updateBound(PTRef tr)
 {
+    // Check if the bound already exists.  If so, don't do anything.
+    if ((ptermToLABoundsRef.size() > Idx(logic.getPterm(tr).getId())) &&
+            !(ptermToLABoundsRef[Idx(logic.getPterm(tr).getId())] == LABoundRefPair{LABoundRef_Undef, LABoundRef_Undef}))
+        return;
+
     BoundInfo bi = addBound(tr);
     LVRef vr = bi.v;
     while (ptermToLABoundsRef.size() <= Idx(bi.leq_id))

@@ -95,77 +95,43 @@ int CoreSMTSolver::checkTheory( bool complete )
     //
     // Problem is T-Satisfiable
     //
-    vec<Lit> new_splits; // In case the theory is not convex the new split var is inserted here
     if ( res )
     {
         // Increments skip step for sat calls
         skip_step *= config.sat_skip_step_factor;
 
+        vec<Lit> new_splits; // In case the theory is not convex the new split var is inserted here
         theory_handler.getNewSplits(new_splits);
 
-        if ( !complete )
-        {
-            vec<LitLev> deds;
-            deduceTheory(deds); // deds will be ordered by decision levels
-            for (int i = 0; i < deds.size(); i++)
-            {
-#ifdef DEBUG_REASONS
-                // Debuggissimo
-                vec<Lit> r;
-                theory_handler.getReason(deds[i].l, r, assigns);
-                cerr << "deduced " << theory_handler.printAsrtClause(r);
-                cerr << endl;
-                addTheoryReasonClause_debug(deds[i].l, r);
-#endif
-                if (deds[i].lev != decisionLevel()) {
-                }
-                uncheckedEnqueue(deds[i].l, CRef_Fake);
-            }
-            if (deds.size() > 0) {
-                // now check the other theories
-                res = theory_handler.assertLits(trail)
-                    && theory_handler.check(false);
-                if (new_splits.size() == 0)
-                    theory_handler.getNewSplits(new_splits); // If we didn't already have splits, update the new_splits here
-                else {
-                    vec<Lit> tmp_splits;
-                    theory_handler.getNewSplits(tmp_splits);
-                }
-                // SAT and deductions done, time for BCP
-                if ( res ) return 2;
-                // Otherwise goto Problem is T-Unsatisfiable
-                // This case can happen only during DTC
-                assert( res == 0 );
-                assert( ( ( config.logic == QF_UFIDL
-                        || config.logic == QF_UFLRA )
-                        && config.sat_lazy_dtc != 0 )
-                    || config.logic == QF_AXDIFF
-                    || config.logic == QF_AX );
-            }
-            // SAT and there are no deductions, time for decision
-            else
-            {
-                skip_step *= config.sat_skip_step_factor;
-                return 1; // SAT and nothing to deduce, time for decision
-            }
-        }
-        else
-            return 1; // SAT and complete call, we are done
+
 
         if (new_splits.size() > 0) {
+            printf(" -> Adding the new split\n");
+
+            vec<LitLev> deds;
+            deduceTheory(deds); // To remove possible theory deductions
+
             addSMTClause_(new_splits);
             Lit l1 = new_splits[0];
             Lit l2 = new_splits[1];
-            if (value(l1) == l_Undef && value(l2) == l_Undef)
+            if (value(l1) == l_Undef && value(l2) == l_Undef) {
                 forced_split = ~l1;
+                return 1;
+            }
             else {
                 // Neither one can be true
-                assert(value(l1) != l_True);
-                assert(value(l2) != l_True);
-                if (value(l1) == l_False && value(l2) == l_Undef)
-                    theory_split_deduction = l2;
-                else if (value(l1) == l_Undef && value(l2) == l_False)
-                    theory_split_deduction = l1;
+//                assert(value(l1) != l_True);
+//                assert(value(l2) != l_True);
+                if (value(l1) == l_False && value(l2) == l_Undef) {
+                    int lev = vardata[var(l1)].level;
+                    cancelUntil(lev);
+                    return 0;
+                }
+                else if (value(l1) == l_Undef && value(l2) == l_False) {
+                    int lev = vardata[var(l2)].level;
+                    cancelUntil(lev);
+                    return 0;
+                }
                 else if (value(l1) == l_False && value(l2) == l_False) {
                     // The query was unsatisfiable in the end.
                     int lev_l1 = vardata[var(l1)].level;
@@ -173,48 +139,24 @@ int CoreSMTSolver::checkTheory( bool complete )
                     int bt_level = lev_l1 > lev_l2 ? lev_l2 : lev_l1;
                     cancelUntil(bt_level);
                     if (decisionLevel() == 0) {
-#ifdef PRODUCE_PROOF
-                        assert(false);
-                        // This case is equivalent to "Did not find watch" in propagate( )
-                        // All conflicting atoms are dec-level 0
-                        CRef confl = ca.alloc(conflicting, config.sat_temporary_learn);
-
-                        Clause & c = ca[confl];
-                        proof.addRoot( confl, CLA_THEORY );
-                        //TODO: is it correct?
-                        //proof.setTheoryInterpolator(confl, theory_itpr);
-                        //clause_to_itpr[ confl ] = theory_itpr;
-                        tleaves.push( confl );
-                        if ( config.isIncremental() )
-                        {
-                            // Not yet integrated
-                            //assert(false);
-                            undo_stack.push(undo_stack_el(undo_stack_el::NEWPROOF, confl));
-                        }
-                        if ( config.produce_inter() > 0 )
-                        {
-                            //assert(interp != PTRef_Undef);
-                            // FIXME why here?
-                            //proof.resolve( units[var(c[k])], var(c[k]) );
-                        }
-                        // Empty clause derived
-                        // ADDED CODE BEGIN
-                        proof.beginChain( confl );
-                        for ( int k = 0; k < c.size() ; k ++ )
-                        {
-                            //assert( level[ var(c[k]) ] == 0 );
-                            //assert( value( c[k] ) == l_False );
-                            //assert( units[var(c[k])] != NULL );
-                            proof.resolve( units[var(c[k])], var(c[k]) );
-                        }
-                        // ADDED CODE END
-                        proof.endChain( CRef_Undef );
-#endif
                         return -1;
                     }
                     return 0;
                 }
             }
+        }
+        vec<LitLev> deds;
+        deduceTheory(deds); // deds will be ordered by decision levels
+        for (int i = 0; i < deds.size(); i++)
+        {
+            if (deds[i].lev != decisionLevel()) {
+                // Maybe do something someday?
+            }
+            uncheckedEnqueue(deds[i].l, CRef_Fake);
+        }
+        if (deds.size() > 0)
+        {
+            return 0;
         }
         else
         {
@@ -559,12 +501,6 @@ void CoreSMTSolver::deduceTheory(vec<LitLev>& deductions)
     Lit ded = lit_Undef;
     int n_deductions = 0;
     int last_dl = -1;
-
-    // Force deduction on the split clause literal from theory split if it should be propagated
-    if (theory_split_deduction != lit_Undef) {
-        deductions.push(LitLev(theory_split_deduction, decisionLevel()));
-        theory_split_deduction = lit_Undef;
-    }
 
     while (true)
     {
