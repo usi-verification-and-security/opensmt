@@ -106,7 +106,7 @@ int CoreSMTSolver::checkTheory( bool complete )
 
 
         if (new_splits.size() > 0) {
-            printf(" -> Adding the new split\n");
+            //printf(" -> Adding the new split\n");
 
             vec<LitLev> deds;
             deduceTheory(deds); // To remove possible theory deductions
