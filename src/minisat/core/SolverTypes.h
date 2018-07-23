@@ -367,6 +367,26 @@ class CMap
 };
 
 
+//=================================================================================================
+// TPropRes-- a class for containing the result of a theory propagation:
+class TPropRes
+{
+private:
+    int x;
+public:
+    TPropRes() : x(INT32_MAX) {}
+    TPropRes(int x) : x(x) {}
+    TPropRes(const TPropRes& o) : x(o.x) {}
+    TPropRes &operator= (const TPropRes& o) { x = o.x; return *this; }
+    bool operator== (const TPropRes& o) { return x == o.x; }
+    bool operator!= (const TPropRes& o) { return x != o.x; }
+};
+
+static struct TPropRes tpr_Undef     = {INT32_MAX};
+static struct TPropRes tpr_Unsat     = {-1};
+static struct TPropRes tpr_Propagate = {0};
+static struct TPropRes tpr_Decide    = {1};
+
 /*_________________________________________________________________________________________________
 |
 |  subsumes : (other : const Clause&)  ->  Lit
@@ -416,6 +436,7 @@ inline void Clause::strengthen(Lit p)
     remove(*this, p);
     calcAbstraction();
 }
+
 
 //=================================================================================================
 

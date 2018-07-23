@@ -307,17 +307,25 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
 
 #ifdef PRODUCE_PROOF
 bool CoreSMTSolver::addClause_(vec<Lit>& _ps, const ipartitions_t& mask)
+{
+    CRef cr;
+    return addClause_(_ps, mask, cr);
+}
 #else
 bool CoreSMTSolver::addClause_(vec<Lit>& _ps)
+{
+    CRef cr;
+    return addClause_(_ps, cr);
+}
+#endif
+
+#ifdef PRODUCE_PROOF
+bool CoreSMTSolver::addClause_(vec<Lit>& _ps, const ipartitions_t& mask, CRef& cr_o)
+#else
+bool CoreSMTSolver::addClause_(vec<Lit>& _ps, CRef& cr_o)
 #endif
 {
-#ifdef REPORT_DL1_THLITS
-    int init_cl_len = _ps.size();
-#endif
-//    assert( decisionLevel() == 0 );
-#ifdef PRODUCE_PROOF
-    //assert( in == 0 || ((in & (in - 1)) == 0) );
-#endif
+    cr_o = CRef_Undef;
 
 #ifdef PRODUCE_PROOF
     Logic& logic = theory_handler.getLogic();
@@ -343,7 +351,7 @@ bool CoreSMTSolver::addClause_(vec<Lit>& _ps)
 #endif
     for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
     {
-        if (value(ps[i]) == l_True || ps[i] == ~p)
+        if ((value(ps[i]) == l_True && vardata[var(ps[i])].level == 0) || ps[i] == ~p)
         {
 #ifdef PRODUCE_PROOF
             proof.endChain( );
@@ -357,7 +365,7 @@ bool CoreSMTSolver::addClause_(vec<Lit>& _ps)
             }
             return true;
         }
-        else if (value(ps[i]) != l_False && ps[i] != p)
+        else if ((value(ps[i]) != l_False || vardata[var(ps[i])].level > 0) && ps[i] != p)
         {
             ps[j++] = p = ps[i];
             n_occs[var(ps[i])] += 1;
@@ -404,6 +412,7 @@ bool CoreSMTSolver::addClause_(vec<Lit>& _ps)
 
     if (ps.size() == 1)
     {
+        assert(decisionLevel() == 0);
         assert(value(ps[0]) == l_Undef);
 #ifdef PRODUCE_PROOF
         assert( res != CRef_Undef );
@@ -455,7 +464,7 @@ bool CoreSMTSolver::addClause_(vec<Lit>& _ps)
 #else
         CRef cr = ca.alloc(ps, false);
 #endif
-
+      cr_o = cr;
 #ifdef PRODUCE_PROOF
         /*
             if ( config.isIncremental() )
@@ -465,8 +474,10 @@ bool CoreSMTSolver::addClause_(vec<Lit>& _ps)
             }
         */
 #endif
-        clauses.push(cr);
-        attachClause(cr);
+        if (ca[cr].size() != 1) {
+            clauses.push(cr);
+            attachClause(cr);
+        }
 
         undo_stack.push(undo_stack_el(undo_stack_el::NEWCLAUSE, cr));
     }
@@ -1825,6 +1836,52 @@ void CoreSMTSolver::popBacktrackPoint()
     assert( isOK( ) );
 }
 
+bool CoreSMTSolver::okContinue()
+{
+    // Added line
+    if ( opensmt::stop ) return false;
+
+    if (conflicts % 1000 == 0) {
+        if ( this->stop )
+            return false;
+    }
+    if (resource_limit >= 0 && conflicts % 1000 == 0) {
+        if ((resource_units == spm_time && time(NULL) >= next_resource_limit) ||
+            (resource_units == spm_decisions && decisions >= next_resource_limit)) {
+            opensmt::stop = true;
+            return false;
+        }
+    }
+    return true;
+}
+
+void CoreSMTSolver::learntSizeAdjust() {
+    if (--learntsize_adjust_cnt == 0) {
+        learntsize_adjust_confl *= learntsize_adjust_inc;
+        learntsize_adjust_cnt = (int) learntsize_adjust_confl;
+        max_learnts *= learntsize_inc;
+
+        if (verbosity >= 1)
+            fprintf(stderr, ";| %9d | %7d %8d %8d | %8d %8d %6.0f | %6.3f %% |\n",
+                    (int) conflicts,
+                    (int) dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(),
+                    (int) clauses_literals,
+                    (int) max_learnts, nLearnts(), (double) learnts_literals / nLearnts(), progressEstimate() * 100);
+    }
+}
+
+void CoreSMTSolver::runPeriodics()
+{
+    if (conflicts % 1000 == 0)
+        clausesPublish();
+
+    if (decisionLevel() == 0) {
+        if (conflicts > conflicts_last_update + 1000) {
+            clausesUpdate();
+            conflicts_last_update = conflicts;
+        }
+    }
+}
 
 /*_________________________________________________________________________________________________
   |
@@ -1875,10 +1932,10 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 #endif
     // (Incomplete) Check of Level-0 atoms
 
-    int res = checkTheory( false );
-    if ( res == -1 ) return l_False;
+    TPropRes res = checkTheory(false, conflictC);
+    if ( res == tpr_Unsat ) return l_False;
 
-    assert( res == 1 || res == 0 ); // Either good for decision (from TSolver's perspective) or propagate
+    assert( res == tpr_Decide || res == tpr_Propagate ); // Either good for decision (from TSolver's perspective) or propagate
 #ifdef STATISTICS
     tsolvers_time += cpuTime( ) - start;
 #endif
@@ -1893,32 +1950,9 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 #endif
     while (split_type == spt_none || splits.size() < split_num - 1)
     {
-        // Added line
-        if ( opensmt::stop ) return l_Undef;
-
-        if (conflicts % 1000 == 0){
-            if ( this->stop )
-                return l_Undef;
-        }
-        if (conflicts % 1000 == 0){
-            this->clausesPublish();
-        }
-
-        if (resource_limit >= 0 && conflicts % 1000 == 0) {
-            if ((resource_units == spm_time && time(NULL) >= next_resource_limit) ||
-                (resource_units == spm_decisions && decisions >= next_resource_limit)){
-                opensmt::stop = true; return l_Undef;
-            }
-        }
-
-        if (decisionLevel() == 0)
-        {
-            if (conflicts > conflicts_last_update + 1000)
-            {
-                this->clausesUpdate();
-                conflicts_last_update = conflicts;
-            }
-        }
+        if (!okContinue())
+            return l_Undef;
+        runPeriodics();
 
 
         CRef confl = propagate();
@@ -1940,17 +1974,8 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
             learnt_clause.clear();
             analyze(confl, learnt_clause, backtrack_level);
 
-#ifdef VERBOSE_SAT
-            cerr << "Backtracking due to SAT conflict " << decisionLevel() - backtrack_level << endl;
-            int init_trail_sz = trail.size();
-#endif
-
             cancelUntil(backtrack_level);
-#ifdef VERBOSE_SAT
-            cerr << "Backtracking due to SAT conflict done" << endl;
-            cerr << "Backtracked " << init_trail_sz - trail.size()
-                 << " variables." << endl;
-#endif
+
             assert(value(learnt_clause[0]) == l_Undef);
 
             if (learnt_clause.size() == 1)
@@ -1965,7 +1990,6 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
             }
             else
             {
-
                 // ADDED FOR NEW MINIMIZATION
                 learnts_size += learnt_clause.size( );
                 all_learnts ++;
@@ -1974,33 +1998,17 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 
 #ifdef PRODUCE_PROOF
                 proof.endChain(cr);
-                /*if ( config.isIncremental() ){
-                    undo_stack_oper.push_back(NEWPROOF);
-                    undo_stack_elem.push_back(cr);
-                }*/
 #endif
                 learnts.push(cr);
                 attachClause(cr);
                 claBumpActivity(ca[cr]);
                 uncheckedEnqueue(learnt_clause[0], cr);
-                undo_stack.push(undo_stack_el(undo_stack_el::NEWLEARNT, cr));
             }
 
             varDecayActivity();
             claDecayActivity();
-            if (--learntsize_adjust_cnt == 0)
-            {
-                learntsize_adjust_confl *= learntsize_adjust_inc;
-                learntsize_adjust_cnt    = (int)learntsize_adjust_confl;
-                max_learnts             *= learntsize_inc;
 
-                if (verbosity >= 1)
-                    fprintf(stderr, ";| %9d | %7d %8d %8d | %8d %8d %6.0f | %6.3f %% |\n",
-                           (int)conflicts,
-                           (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(), (int)clauses_literals,
-                           (int)max_learnts, nLearnts(), (double)learnts_literals/nLearnts(), progressEstimate()*100);
-            }
-
+            learntSizeAdjust();
         }
         else
         {
@@ -2034,33 +2042,23 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
             {
                 // Early Pruning Call
                 // Step 1: check if the current assignment is theory-consistent
-#ifdef STATISTICS
-                const double start = cpuTime( );
-#endif
-#ifdef PEDANTIC_DEBUG
-                int prev_dl = decisionLevel();
-#endif
-                int res = checkTheory( false );
-#ifdef STATISTICS
-                tsolvers_time += cpuTime( ) - start;
-#endif
-                switch( res )
-                {
-                case -1:
-                {
-                    if (splits.size() > 0)
-                    {
+
+                TPropRes res = checkTheory(false, conflictC);
+                if (res == tpr_Unsat) {
+                    if (splits.size() > 0) {
                         opensmt::stop = true;
                         return l_Undef;
                     }
                     else return l_False;    // Top-Level conflict: unsat
                 }
-                case  0:
+                else if (res == tpr_Propagate) {
                     conflictC++;
                     continue; // Theory conflict: time for bcp
-                case  1:
-                    break;                 // Sat and no deductions: go ahead
-                default:
+                }
+                else if (res == tpr_Decide) {
+                    ;                 // Sat and no deductions: go ahead
+                }
+                else {
                     assert( false );
                 }
 
@@ -2140,16 +2138,16 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 #ifdef STATISTICS
                     const double start = cpuTime( );
 #endif
-                    int res = checkTheory( true );
+                    TPropRes res = checkTheory(true, conflictC);
 #ifdef STATISTICS
                     tsolvers_time += cpuTime( ) - start;
 #endif
-                    if ( res == 0 )
+                    if ( res == tpr_Propagate )
                     {
                         conflictC++;
                         continue;
                     }
-                    if ( res == -1 )
+                    if ( res == tpr_Unsat )
                     {
                         if (splits.size() > 0)
                         {
@@ -2158,7 +2156,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                         }
                         else return l_False;
                     }
-                    assert( res == 1 );
+                    assert( res == tpr_Decide );
 
 #ifdef STATISTICS
                     const double start2 = cpuTime( );
@@ -2571,28 +2569,21 @@ bool CoreSMTSolver::LApropagate_wrapper()
         }
         if (!diff)
         {
-            int res = checkTheory(true);
-            if (res == -1)
+            TPropRes res = checkTheory(true);
+            if (res == tpr_Unsat)
             {
 #ifdef LADEBUG
                 printf("Theory unsatisfiability\n");
 #endif
                 return false; // Unsat
             }
-            else if (res == 2)
+            else if (res == tpr_Propagate)
             {
 #ifdef LADEBUG
                 printf("Theory propagation\n");
 #endif
                 diff = true;
                 continue;
-            }
-            else if (res == 0)
-            {
-#ifdef LADEBUG
-                printf("Theory conflict\n");
-#endif
-                diff = true;
             }
         }
     } while (diff);
@@ -2769,7 +2760,7 @@ lbool CoreSMTSolver::lookaheadSplit2(int d, int &idx)
 
 lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
 {
-    if (checkTheory(true) != 1)
+    if (checkTheory(true) != tpr_Decide)
     {
 #ifdef LADEBUG
         printf("Already unsatisfiable at entering the lookahead loop\n");
@@ -2825,9 +2816,9 @@ lbool CoreSMTSolver::lookahead_loop(Lit& best, int &idx)
 #ifdef LADEBUG
                 printf("All vars set?\n");
 #endif
-                if (checkTheory(true) != 1)
+                if (checkTheory(true) != tpr_Decide)
                     return l_False; // Problem is trivially unsat
-                assert(checkTheory(true) == 1);
+                assert(checkTheory(true) == tpr_Decide);
                 for (int j = 0; j < clauses.size(); j++)
                 {
                     Clause& c = ca[clauses[j]];

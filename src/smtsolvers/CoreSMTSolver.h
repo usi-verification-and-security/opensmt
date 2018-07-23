@@ -360,6 +360,11 @@ public:
     bool    addClause (Lit p, Lit q, const ipartitions_t& mask = 0);                           // Add a binary clause to the solver.
     bool    addClause (Lit p, Lit q, Lit r, const ipartitions_t& mask = 0);                    // Add a ternary clause to the solver.
     bool    addClause_(      vec<Lit>& ps, const ipartitions_t& mask = 0);                     // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.
+protected:
+    bool    addClause_(      vec<Lit>& ps, const ipartitions_t& mask = 0, CRef& cr);                     // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.  Writes the new clause ref to cr
+    virtual bool addSMTClause_(vec<Lit>&, CRef& cr) = 0;        // For adding SMT clauses within the solver, returning the clause ref
+public:
+    virtual bool addSMTClause_(vec<Lit>&) = 0;                  // For adding SMT clauses within the solver
 #else
     bool    addClause (const vec<Lit> & ps);
     bool    addEmptyClause();                                   // Add the empty clause, making the solver contradictory.
@@ -367,9 +372,11 @@ public:
     bool    addClause (Lit p, Lit q);                           // Add a binary clause to the solver.
     bool    addClause (Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
     bool    addClause_(      vec<Lit>& ps);                     // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.
-
     virtual bool addSMTClause_(vec<Lit>&) = 0;                  // For adding SMT clauses within the solver
-
+protected:
+    bool    addClause_(      vec<Lit>& ps, CRef& cr);           // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.  Write the new clause to cr
+    virtual bool addSMTClause_(vec<Lit>&, CRef& cr) = 0;        // For adding SMT clauses within the solver, returning the clause ref
+public:
 #endif
     // Solving:
     //
@@ -403,6 +410,9 @@ public:
     //
     lbool   value      (Var x) const;       // The current value of a variable.
     lbool   value      (Lit p) const;       // The current value of a literal.
+    lbool   safeValue  (Var x) const;       // The current value of a variable.  l_Undef if the variable does not exist.
+    lbool   safeValue  (Lit p) const;       // The current value of a literal.  l_Undef if the literal does not exist.
+
     lbool   modelValue (Lit p) const;       // The value of a literal in the last model. The last call to solve must have been satisfiable.
     int     nAssigns   ()      const;       // The current number of assigned literals.
     int     nClauses   ()      const;       // The current number of original clauses.
@@ -828,6 +838,9 @@ protected:
     void     analyzeFinal     (Lit p, vec<Lit>& out_conflict);                         // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
     bool     litRedundant     (Lit p, uint32_t abstract_levels);                       // (helper method for 'analyze()')
     lbool    search           (int nof_conflicts, int nof_learnts);                    // Search for a given number of conflicts.
+    bool     okContinue       ();                                                      // Check search termination conditions
+    void     runPeriodics     ();                                                      // Run the periodic functions from searcha
+    void     learntSizeAdjust ();                                                      // Adjust learnts size and print something
     lbool    solve_           (int max_conflicts = 0);                                                      // Main solve method (assumptions given in 'assumptions').
     void     reduceDB         ();                                                      // Reduce the set of learnt clauses.
     void     removeSatisfied  (vec<CRef>& cs);                                         // Shrink 'cs' to contain only non-satisfied clauses.
@@ -995,7 +1008,8 @@ protected:
     void   printStatistics        ( ostream & );   // Prints statistics
 #endif
     void   printTrail             ( );             // Prints the trail (debugging)
-    int    checkTheory            ( bool );        // Checks consistency in theory
+    TPropRes checkTheory          (bool, int&);    // Checks consistency in theory.  The second arg is conflictC
+    TPropRes checkTheory          (bool complete) { int tmp; return checkTheory(complete, tmp); }
 
     void   deduceTheory           (vec<LitLev>&);  // Perform theory-deductions
 
@@ -1323,6 +1337,8 @@ inline int      CoreSMTSolver::decisionLevel ()      const                { retu
 inline uint32_t CoreSMTSolver::abstractLevel (Var x) const                { return 1 << (level(x) & 31); }
 inline lbool    CoreSMTSolver::value         (Var x) const                { return assigns[x]; }
 inline lbool    CoreSMTSolver::value         (Lit p) const                { return assigns[var(p)] ^ sign(p); }
+inline lbool    CoreSMTSolver::safeValue     (Var x) const                { if (x < assigns.size()) return value(x); else return l_Undef; }
+inline lbool    CoreSMTSolver::safeValue     (Lit p) const                { return safeValue(var(p)); }
 inline lbool    CoreSMTSolver::modelValue    (Lit p) const                { return model[var(p)] ^ sign(p); }
 inline int      CoreSMTSolver::nAssigns      ()      const                { return trail.size(); }
 inline int      CoreSMTSolver::nClauses      ()      const                { return clauses.size(); }
