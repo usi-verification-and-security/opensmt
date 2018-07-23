@@ -77,7 +77,7 @@ void CoreSMTSolver::crashTest(int rounds, Var var_true, Var var_false)
     }
 }
 
-int CoreSMTSolver::checkTheory( bool complete )
+TPropRes CoreSMTSolver::checkTheory(bool complete, int& conflictC)
 {
     // Skip calls to theory solvers
     // (does not seem to be helpful ...)
@@ -85,7 +85,7 @@ int CoreSMTSolver::checkTheory( bool complete )
             && skipped_calls + config.sat_initial_skip_step < skip_step )
     {
         skipped_calls ++;
-        return 1;
+        return tpr_Decide;
     }
 
     skipped_calls = 0;
@@ -111,38 +111,33 @@ int CoreSMTSolver::checkTheory( bool complete )
             vec<LitLev> deds;
             deduceTheory(deds); // To remove possible theory deductions
 
-            addSMTClause_(new_splits);
             Lit l1 = new_splits[0];
             Lit l2 = new_splits[1];
-            if (value(l1) == l_Undef && value(l2) == l_Undef) {
+
+            assert(safeValue(l1) == l_Undef || safeValue(l2) == l_Undef);
+            assert(safeValue(l1) != l_True);
+            assert(safeValue(l2) != l_True);
+
+            if (safeValue(l1) == l_Undef && safeValue(l2) == l_Undef) {
+                addSMTClause_(new_splits);
                 forced_split = ~l1;
-                return 1;
+                return tpr_Decide;
             }
             else {
-                // Neither one can be true
-//                assert(value(l1) != l_True);
-//                assert(value(l2) != l_True);
-                if (value(l1) == l_False && value(l2) == l_Undef) {
-                    int lev = vardata[var(l1)].level;
-                    cancelUntil(lev);
-                    return 0;
+
+                Lit l_f = value(l1) == l_False ? l1 : l2; // false literal
+                Lit l_i = value(l1) == l_False ? l2 : l1; // implied literal
+
+                int lev = vardata[var(l_f)].level;
+                cancelUntil(lev);
+                CRef cr;
+                addSMTClause_(new_splits, cr);
+                if (decisionLevel() > 0) {
+                    // DL0 implications are already enqueued in addSMTClause_
+                    assert(cr != CRef_Undef);
+                    uncheckedEnqueue(l_i, cr);
                 }
-                else if (value(l1) == l_Undef && value(l2) == l_False) {
-                    int lev = vardata[var(l2)].level;
-                    cancelUntil(lev);
-                    return 0;
-                }
-                else if (value(l1) == l_False && value(l2) == l_False) {
-                    // The query was unsatisfiable in the end.
-                    int lev_l1 = vardata[var(l1)].level;
-                    int lev_l2 = vardata[var(l2)].level;
-                    int bt_level = lev_l1 > lev_l2 ? lev_l2 : lev_l1;
-                    cancelUntil(bt_level);
-                    if (decisionLevel() == 0) {
-                        return -1;
-                    }
-                    return 0;
-                }
+                return tpr_Propagate;
             }
         }
         vec<LitLev> deds;
@@ -161,11 +156,11 @@ int CoreSMTSolver::checkTheory( bool complete )
         else
         {
             skip_step *= config.sat_skip_step_factor;
-            return 1; // Sat and nothing to deduce, time for decision
+            return tpr_Decide; // Sat and nothing to deduce, time for decision
         }
     }
     //
-    // Problem is T-Unsatisfiable
+    // Query is T-Unsatisfiable
     //
     assert( res == 0 );
     // Reset skip step for uns calls
@@ -178,6 +173,7 @@ int CoreSMTSolver::checkTheory( bool complete )
 #endif
 
     conflicts++;
+    conflictC++;
     vec< Lit > conflicting;
     vec< Lit > learnt_clause;
     int        max_decision_level;
@@ -237,7 +233,7 @@ int CoreSMTSolver::checkTheory( bool complete )
         // ADDED CODE END
         proof.endChain( CRef_Undef );
 #endif
-        return -1;
+        return tpr_Unsat;
     }
 
     CRef confl = CRef_Undef;
@@ -321,7 +317,7 @@ int CoreSMTSolver::checkTheory( bool complete )
     cancelUntil(backtrack_level);
     assert(value(learnt_clause[0]) == l_Undef);
 
-    if (learnt_clause.size() == 1){
+    if (learnt_clause.size() == 1) {
         uncheckedEnqueue(learnt_clause[0]);
 #ifdef PRODUCE_PROOF
         // Create a unit for the proof
@@ -359,7 +355,7 @@ int CoreSMTSolver::checkTheory( bool complete )
     assert( proof.checkState( ) );
 #endif
 
-    return 0;
+    return tpr_Propagate;
 }
 
 //
