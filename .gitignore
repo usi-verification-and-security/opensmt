@@ -52,7 +52,6 @@ regression/state-dump/foo-00.osmt2
 regression/state-dump/foo-01.osmt2
 src/PySMT/opensmt_python_wrap.c
 src/api/.dirstamp
-test/
 test/bmwlin_20_5_1.inter.mbc_k100_first.smt2
 test/bmwlin_20_5_1.inter.mbc_k100_first_simplified_0.smt2
 test/equality-simple.smt2

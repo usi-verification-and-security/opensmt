@@ -759,7 +759,8 @@ overflow:
 inline void divisionAssign(FastRational& a, const FastRational& b) {
 
     if (a.has_word && b.has_word) {
-        word common1 = gcd(absVal(a.num), absVal(b.num)), common2 = gcd(a.den, b.den);
+        lword common1 = gcd(absVal(a.num), absVal(b.num));
+        lword common2 = gcd(a.den, b.den);
         assert( common1 != 0 );
         assert( common2 != 0 );
 

@@ -156,8 +156,8 @@ CoreSMTSolver::initialize( )
     restart_first = config.sat_restart_first();
     restart_inc = config.sat_restart_inc();
     // FIXME: check why this ?
-    first_model_found = config.logic == QF_UFLRA
-                        || config.logic == QF_UFIDL;
+//    first_model_found = config.logic == QF_UFLRA
+//                        || config.logic == QF_UFIDL;
     // Set some parameters
     skip_step = config.sat_initial_skip_step;
     skipped_calls = 0;
@@ -555,7 +555,8 @@ void CoreSMTSolver::cancelUntil(int level)
         trail.shrink(trail.size() - trail_lim[level]);
         trail_lim.shrink(trail_lim.size() - level);
 
-        if ( first_model_found ) theory_handler.backtrack(trail.size());
+        //if ( first_model_found )
+        theory_handler.backtrack(trail.size());
     }
 }
 
@@ -1613,7 +1614,7 @@ void CoreSMTSolver::reduceDB()
 	}
     }
     tleaves.shrink(i - j);
-   
+
     // Remove unused leaves
     for ( i = j = 0 ; i < pleaves.size( ) ; i++ )
     {
@@ -1631,7 +1632,7 @@ void CoreSMTSolver::reduceDB()
     }
     pleaves.shrink(i - j);
     */
-    
+
     // Remove unused leaves
     // FIXME deal with theory lemmata when proofs will be extended to theories
     for ( i = j = 0 ; i < pleaves.size( ) ; i++ )
@@ -1641,7 +1642,7 @@ void CoreSMTSolver::reduceDB()
         if ( ! proof.deleted( cr ) ) pleaves[j++] = pleaves[i];
     }
     pleaves.shrink(i - j);
-    
+
 #endif
 }
 
@@ -1886,7 +1887,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
     //
     // Decrease activity for booleans
     //
-    boolVarDecActivity( );
+//    boolVarDecActivity( );
 
 #ifdef PEDANTIC_DEBUG
     bool thr_backtrack = false;
@@ -2025,12 +2026,12 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
             }
             // Two ways of reducing the clause.  The latter one seems to be working
             // better (not running proper tests since the cluster is down...)
-            // if ((learnts.size()-nAssigns()) >= max_learnts) 
+            // if ((learnts.size()-nAssigns()) >= max_learnts)
             if (nof_learnts >= 0 && learnts.size()-nAssigns() >= nof_learnts)
                 // Reduce the set of learnt clauses:
                 reduceDB();
 
-            if ( first_model_found )
+//            if ( first_model_found )
             {
                 // Early Pruning Call
                 // Step 1: check if the current assignment is theory-consistent
@@ -2141,7 +2142,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                 // Complete Call
                 if ( next == lit_Undef )
                 {
-                    first_model_found = true;
+//                    first_model_found = true;
 #ifdef STATISTICS
                     const double start = cpuTime( );
 #endif
@@ -2475,9 +2476,9 @@ lbool CoreSMTSolver::solve_(int max_conflicts)
 void CoreSMTSolver::clearSearch()
 {
     cancelUntil(0);
-    if (first_model_found || splits.size() > 1) {
+//    if (first_model_found || splits.size() > 1) {
         theory_handler.backtrack(-1);
-    }
+//    }
 }
 
 const CoreSMTSolver::UBel CoreSMTSolver::UBel_Undef(-1, -1);
@@ -2523,15 +2524,15 @@ lbool CoreSMTSolver::lookaheadSplit(int d)
     const size_t old_conflicts = nLearnts();
 
     int idx = 0;
-    bool first_model_found_prev = first_model_found;
-    first_model_found = true;
+//    bool first_model_found_prev = first_model_found;
+//    first_model_found = true;
     lbool res = l_Undef;
     while (res == l_Undef) {
-        cerr << "; Doing lookahead for " << nof_conflicts << " conflicts\n";
+        //cerr << "; Doing lookahead for " << nof_conflicts << " conflicts\n";
         res = lookaheadSplit(d, idx, (int)nof_conflicts);
         nof_conflicts = restartNextLimit(nof_conflicts);
     }
-    first_model_found = first_model_found_prev;
+//    first_model_found = first_model_found_prev;
     if (res == l_True)
     {
         model.growTo(nVars());

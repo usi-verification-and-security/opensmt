@@ -208,9 +208,10 @@ command: '(' TK_SETLOGIC TK_SYM ')'
         {
             $$ = new ASTNode(CMD_T, $2);
         }
-    | '(' TK_GETITPS ')'
+    | '(' TK_GETITPS term_list ')'
         {
             $$ = new ASTNode(CMD_T, $2);
+            $$->children = $3;
         }
     | '(' TK_WRSTATE TK_STR ')'
         {

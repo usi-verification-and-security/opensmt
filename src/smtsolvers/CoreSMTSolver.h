@@ -858,7 +858,7 @@ protected:
     void     varBumpActivity  (Var v);                 // Increase a variable with the current 'bump' value.
 
     // Added Line
-    void     boolVarDecActivity( );                    // Decrease boolean atoms activity
+//    void     boolVarDecActivity( );                    // Decrease boolean atoms activity
     void     claDecayActivity  ( );                    // Decay all clauses with the specified factor. Implemented by increasing the 'bump' value instead.
     void     claBumpActivity   ( Clause & c );         // Increase a clause with the current 'bump' value.
     void     mixedVarDecActivity( );                   // Increase a clause with the current 'bump' value.
@@ -1029,7 +1029,7 @@ protected:
           void   dumpRndInter           ( );             // Dumps a random interpolation problem
     */
     vec<CRef>          cleanup;                    // For cleaning up
-    bool               first_model_found;          // True if we found a first boolean model
+//    bool               first_model_found;          // True if we found a first boolean model
     double             skip_step;                  // Steps to skip in calling tsolvers
     long               skipped_calls;              // Calls skipped so far
     long               learnt_t_lemmata;           // T-Lemmata stored during search
@@ -1497,36 +1497,36 @@ inline void CoreSMTSolver::printClause(const C& c)
 
 //=================================================================================================
 // Added Code
-inline void CoreSMTSolver::boolVarDecActivity( )
-{
-#if 1
-    if (first_model_found)
-        return;
-    /*
-      for (int i = 2; i < nVars(); i++)
-      {
-        Enode * e = theory_handler->varToEnode( i );
-    #if 1
-        if ( !e->isVar( ) && !first_model_found )
-        {
-          activity[i] += e->getWeightInc( ) * var_inc;
-          // Update order_heap with respect to new activity:
-          if (order_heap.inHeap(i))
-        order_heap.decrease(i);
-        }
-    #else
-        if ( e->isVar( ) && !first_model_found )
-        {
-          activity[i] += var_inc;
-          // Update order_heap with respect to new activity:
-          if (order_heap.inHeap(i))
-        order_heap.decrease(i);
-        }
-    #endif
-      }
-    */
-#endif
-}
+//inline void CoreSMTSolver::boolVarDecActivity( )
+//{
+//#if 1
+//    if (first_model_found)
+//        return;
+//    /*
+//      for (int i = 2; i < nVars(); i++)
+//      {
+//        Enode * e = theory_handler->varToEnode( i );
+//    #if 1
+//        if ( !e->isVar( ) && !first_model_found )
+//        {
+//          activity[i] += e->getWeightInc( ) * var_inc;
+//          // Update order_heap with respect to new activity:
+//          if (order_heap.inHeap(i))
+//        order_heap.decrease(i);
+//        }
+//    #else
+//        if ( e->isVar( ) && !first_model_found )
+//        {
+//          activity[i] += var_inc;
+//          // Update order_heap with respect to new activity:
+//          if (order_heap.inHeap(i))
+//        order_heap.decrease(i);
+//        }
+//    #endif
+//      }
+//    */
+//#endif
+//}
 
 #ifdef PRODUCE_PROOF
 
