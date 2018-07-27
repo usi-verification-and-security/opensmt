@@ -30,6 +30,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "Deductions.h"
 #include "TermMapper.h"
+#include "TSolver.h"
 
 #ifdef PRODUCE_PROOF
 class TheoryInterpolator;
@@ -87,6 +88,6 @@ public:
     void    declareTerm(PTRef tr);              // Declare the term to the appropriate solver
 //    virtual SolverId getId() const { return my_id; }
     virtual void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs) = 0;
-    bool check(bool);
+    TRes    check(bool);
 };
 #endif

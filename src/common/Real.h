@@ -17,6 +17,7 @@
 namespace opensmt {
 #ifdef FAST_RATIONALS
     typedef FastRational Real;
+    typedef FastRationalHash RealHash;
 #else
     typedef mpq_class Real;
 #endif

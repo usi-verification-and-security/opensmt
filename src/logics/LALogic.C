@@ -303,6 +303,7 @@ void LALogic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
     }
     Logic::visit(tr, tr_map);
 }
+
 bool LALogic::isBuiltinFunction(const SymRef sr) const
 {
     if (sr == get_sym_Num_NEG() || sr == get_sym_Num_MINUS() || sr == get_sym_Num_PLUS() || sr == get_sym_Num_TIMES() || sr == get_sym_Num_DIV() || sr == get_sym_Num_EQ() || sr == get_sym_Num_LEQ() || sr == get_sym_Num_LT() || sr == get_sym_Num_GEQ() || sr == get_sym_Num_GT() || sr == get_sym_Num_ITE()) return true;

@@ -783,6 +783,10 @@ inline bool LASolver::getStatus( )
             return true;
             break;
         }
+        case UNKNOWN:
+            cerr << "LA Solver status is unknown" << endl;
+            status = SAT;
+            return true;
         case INIT:
         case ERROR:
         default:

@@ -1,6 +1,6 @@
 #include "TSolverHandler.h"
 #include "TreeOps.h"
-#include "TSolver.h"
+#include "TResult.h"
 
 TSolverHandler::~TSolverHandler()
 {
@@ -119,14 +119,20 @@ ValPair TSolverHandler::getValue(PTRef tr) const
     return { tr, NULL }; // Value is unspecified in the model
 }
 
-bool TSolverHandler::check(bool complete)
+TRes TSolverHandler::check(bool complete)
 {
-    for (int i = 0; i < tsolvers.size(); i++)
-        if (tsolvers[i] != NULL)
-            if (tsolvers[i]->check(complete) == false)
-                return false;
+    TRes res_final = TR_SAT;
+    for (int i = 0; i < tsolvers.size(); i++) {
+        if (tsolvers[i] != NULL) {
+            TRes res = tsolvers[i]->check(complete);
+            if (res == TR_UNSAT)
+                return TR_UNSAT;
+            else if (res == TR_UNKNOWN)
+                res_final = TR_UNKNOWN;
+        }
+    }
 
-    return true;
+    return res_final;
 }
 
 

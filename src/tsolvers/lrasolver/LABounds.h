@@ -27,13 +27,13 @@ class LABound
     PtAsgn leq_pta;
 public:
     LABound(BoundT type, PtAsgn leq_pta, LVRef var, const Delta& delta);
-    inline void setIdx(int i);//  { idx = i; }
+    inline void setIdx(int i)  { idx = i; }
     inline int getIdx() const { return idx; }
-    inline const Delta& getValue() const ;//{ return delta; }
-    inline BoundT getType() const ;//{ return { type }; }
+    inline const Delta& getValue() const { return delta; }
+    inline BoundT getType() const { return { type }; }
     inline PTRef getPTRef() const { return leq_pta.tr;  }
     inline lbool getSign()  const { return leq_pta.sgn; }
-    inline LVRef getLVRef() const ;//{ return var; }
+    inline LVRef getLVRef() const { return var; }
     inline PtAsgn getPtAsgn() const { return leq_pta; }
 };
 

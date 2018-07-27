@@ -633,9 +633,12 @@ LVRef LRASolver::findNonBasicForPivotByBland(LVRef basicVar) {
 // Performs the main Check procedure to see if the current constraints
 // and Tableau are satisfiable
 //
-bool LRASolver::check(bool complete) {
+TRes LRASolver::check(bool complete) {
 
-    return check_simplex(complete);
+    if (check_simplex(complete))
+        return TR_SAT;
+    else
+        return TR_UNSAT;
 
 }
 

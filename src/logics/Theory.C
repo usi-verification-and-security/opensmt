@@ -125,7 +125,7 @@ bool Theory::computeSubstitutions(PTRef coll_f, vec<PFRef>& frames, int curr)
         root = new_root;
         if (!cont) break;
     }
-#ifdef SIMPLIFY_DEBUG
+//#ifdef SIMPLIFY_DEBUG
     cerr << "Number of substitutions: " << all_units_vec.size() << endl;
     vec<Map<PTRef,PtAsgn,PTRefHash>::Pair> subst_vec;
     substs.getKeysAndVals(subst_vec);
@@ -136,7 +136,7 @@ bool Theory::computeSubstitutions(PTRef coll_f, vec<PFRef>& frames, int curr)
         lbool sgn = subst_vec[i].data.sgn;
         printf("  %s -> %s (%s)\n", getLogic().printTerm(source), getLogic().printTerm(target), sgn == l_True ? "enabled" : "disabled");
     }
-#endif
+//#endif
     vec<PTRef> args;
     for (int i = 0; i < all_units_vec.size(); i++) {
         assert(all_units_vec[i].sgn == l_True || getLogic().isBoolAtom(all_units_vec[i].tr));
@@ -167,7 +167,7 @@ bool Theory::computeSubstitutions(PTRef coll_f, vec<PFRef>& frames, int curr)
 
     pfstore[frames[curr]].root = root;
 
-    bool result = no_conflict && th->check(true);
+    bool result = no_conflict && (th->check(true) == TR_SAT);
 
     // Traverse frames[curr].root to see all the variables.
     vec<PTRef> queue;

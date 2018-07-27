@@ -26,6 +26,7 @@ public:
     MpzUnit() { mpz_init(unit); mpz_set_si(unit, 1); }
     const mpz_t& getUnit() const { return unit; }
 };
+
 class FastRational
 {
     static const MpzUnit unit;
@@ -47,8 +48,7 @@ public:
         std::swap(this->mpq, other.mpq);
         return *this;
     }
-    // debug
-    word getNum() { return num; }
+
     FastRational( const mpz_class & x )
     {
         if ( x.fits_sint_p() ) {
@@ -154,13 +154,26 @@ public:
     bool operator>=( const FastRational & b ) const { return compare(b) >= 0; }
     bool operator!=( const FastRational & b ) const { return !(*this == b); }
     inline unsigned size() const;
-    /* bool den_is_unit() const {
-        if (has_word)
-            return den == 1;
-        else
-            return false; //return mpq_denref(mpq) == 1; //unit.getUnit();
+
+    uint32_t getHashValue() const {
+        if  (has_word) {
+            return 37*(uint32_t)num + 13*(uint32_t)den;
+        }
+        else {
+            uint32_t h_n = 2166136261U;
+            for (int i = 0; i < mpq->_mp_num._mp_size; i++) {
+                h_n *= 16777619U;
+                h_n ^=  mpq->_mp_num._mp_d[i];
+            }
+            uint32_t h_d = 2166136261U;
+            for (int i = 0; i < mpq->_mp_den._mp_size; i++) {
+                h_d *= 16777619U;
+                h_d ^=  mpq->_mp_den._mp_d[i];
+            }
+            return h_n + h_d;
+        }
     }
-    */ //I commented this out as I no loger use den_is_unit(), replaced with isInteger()
+
     bool isInteger() const {
         if (has_word)
             return den == 1;
@@ -264,6 +277,13 @@ public:
         }
     }
 };
+
+struct FastRationalHash {
+    uint32_t operator() (const FastRational& s) const {
+        return (uint32_t)s.getHashValue();
+    }
+};
+
 inline std::ostream & operator<<(std::ostream & out, const FastRational & r)
 {
     r.print(out);

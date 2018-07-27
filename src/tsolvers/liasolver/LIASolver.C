@@ -6,11 +6,11 @@
 static SolverDescr descr_lia_solver("LIA Solver", "Solver for Quantifier Free Linear Integer Arithmetics");
 
 
-bool  LIASolver:: check  ( bool complete) {
+TRes LIASolver::check( bool complete) {
     bool rval = check_simplex(complete);
     if (rval == true)
-        return checkIntegersAndSplit( );
-    return rval;
+        return checkIntegersAndSplit();
+    return rval ? TR_SAT : TR_UNSAT;
 }
 
 bool LIASolver::isModelInteger(LVRef v) const
@@ -28,6 +28,7 @@ void LIASolver::clearSolver()
     LASolver::clearSolver();
     //delta = Delta::ZERO;
 }
+
 void LIASolver::computeConcreteModel(LVRef v) {
     while (concrete_model.size() <= lva[v].ID())
         concrete_model.push(nullptr);
@@ -117,6 +118,9 @@ Polynomial LIASolver::expressionToLVarPoly(PTRef term) {
         if (!int_vars.has(var)) {
             int_vars.insert(var, true);
         }
+        while(cuts.size() <= lva[var].ID())
+            cuts.push();
+
         tableau.nonbasicVar(var);
         Real coeff = getNum(c);
 
@@ -128,18 +132,25 @@ Polynomial LIASolver::expressionToLVarPoly(PTRef term) {
     return poly;
 }
 
-bool LIASolver::checkIntegersAndSplit( ) {
+TRes LIASolver::checkIntegersAndSplit() {
     //assert(false);
     // assert( config.lra_integer_solver );
     //assert( removed_by_GaussianElimination.empty( ) );
 
     vec<LVRef> keys;
     int_vars.getKeys(keys);
-    for(int i = 0; i < keys.size(); i++){
+
+    bool nonint_models = false;  // Keep track whether non-integer models are seen
+
+    for (int i = 0; i < keys.size(); i++) {
 
         LVRef x = keys[i];
-
+        if (removed_by_GaussianElimination.find(x) != removed_by_GaussianElimination.end()) {
+            computeConcreteModel(x);
+            model.write(x, Delta(*concrete_model[lva[x].ID()]));
+        }
         if (!isModelInteger(x)) {
+            nonint_models = true;
             //Prepare the variable to store a splitting value
             opensmt::Real c;
 
@@ -157,23 +168,34 @@ bool LIASolver::checkIntegersAndSplit( ) {
                 }
             }
 
+            // We might have this blocked already, and then the solver should essentially return "I don't know, please go ahead".
+            if (cuts[lva[x].ID()].has(c)) {
+                continue;
+            }
+            cuts[lva[x].ID()].insert(c, true);
+
             // Check if integer splitting is possible for the current variable
             if (c < model.Lb(x) && c + 1 > model.Ub(x)) { //then splitting not possible, and we create explanation
 
                 explanation.push(model.readLBound(x).getPtAsgn());
                 explanation.push(model.readUBound(x).getPtAsgn());
                 //explanation = {model.readLBound(x).getPtAsgn(), model.readUBound(x).getPtAsgn()};
-                return setStatus(UNSAT);
+                setStatus(UNSAT);
+                return TR_UNSAT;
             }
+
+
 
             //constructing new constraint
             //x <= c || x >= c+1;
             PTRef constr = logic.mkOr(logic.mkNumLeq(lva[x].getPTRef(), logic.mkConst(c)),
                        logic.mkNumGeq(lva[x].getPTRef(), logic.mkConst(c + 1)));
-            //printf("LIA solver constraint %s\n", logic.pp(constr));
+            printf("LIA solver constraint %s\n", logic.pp(constr));
 
             splitondemand.push(constr);
-            return setStatus(NEWSPLIT);
+            setStatus(NEWSPLIT);
+            return TR_SAT;
+
 
             //what if more than one of the variables have fractional part? Shall we implement selection rule?
             //we also have to take care of not changing the values that already assigned to integers, here gomory cuts are important
@@ -185,15 +207,17 @@ bool LIASolver::checkIntegersAndSplit( ) {
             //and we need to make sure it stops at some point
             //And will it go in depth first manner, or hybride?
             //if the model already integer we print stats SAT, else we continue on splitting until?(we need to stop) and print UNSAT
-
-
-
         }
 
-
     }
-
-    return setStatus(SAT);
+    if (nonint_models) {// We could not block these, so we tell the solver that we don't know the satisfiability.
+        setStatus(UNKNOWN);
+        return TR_UNKNOWN;
+    }
+    else {
+        setStatus(SAT);
+        return TR_SAT;
+    }
 }
 
 void

@@ -86,8 +86,6 @@ void LAVar::setRowId(int i)       { row_id = i;    }
 int  LAVar::getColId()      const { return col_id; }
 void LAVar::setColId(int i)       { col_id = i;    }
 
-inline int  LAVar::ID()                const { return header.id; } // Return the ID of the LAVar
-
 // Binded rows system
 OccListRef LAVar::getBindedRowsRef() const       { return occs; }
 void       LAVar::setBindedRowsRef(OccListRef r) { occs = r; }

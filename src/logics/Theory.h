@@ -92,6 +92,7 @@ public:
     PTRef operator[] (int i) const                 { return formulas[i]; }
     Map<PTRef,lbool,PTRefHash> units; // Contains the unit (theory) clauses that are implied up to here
     PTRef root;
+    PTRef substs;                     // Contains the substitutions as a conjunction (equalities possibly split)
     void addSeen(PTRef tr)                       { seen.insert(tr, l_True); }
     bool isSeen(PTRef tr)                       { return seen.has(tr); }
     vec<PTRef> formulas;

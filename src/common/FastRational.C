@@ -19,6 +19,7 @@ FastRational::FastRational( const char * s, const int base )
         kill_mpq( );
     assert( isWellFormed( ) );
 }
+
 FastRational::FastRational(FastRational &&other) noexcept : has_word{other.has_word}, has_mpq{other.has_mpq}, num{other.num}, den{other.den}  {
     std::swap(this->mpq, other.mpq);
     other.has_mpq = false;

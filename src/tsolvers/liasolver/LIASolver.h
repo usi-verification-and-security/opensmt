@@ -59,7 +59,7 @@ public:
     virtual void clearSolver() override; // Remove all problem specific data from the solver.  Should be called each time the solver is being used after a push or a pop in the incremental interface.
 
     LIALogic&  getLogic() override;// { return logic; }
-    bool  check    ( bool complete) override; // Checks the satisfiability of current constraints //PS. add the implementation to LIASolver.C
+    TRes check    ( bool complete) override; // Checks the satisfiability of current constraints //PS. add the implementation to LIASolver.C
     void computeConcreteModel(LVRef v);
     void computeModel() override;
     void getNewSplits(vec<PTRef>& splits) override;
@@ -73,7 +73,7 @@ protected:
     void initSolver( );                                     // Initializes the solver
 
 //    void addVarToRow( LVRef, LVRef, opensmt::Real*);
-    bool checkIntegersAndSplit();                           //
+    TRes checkIntegersAndSplit();                           //
     bool isModelInteger (LVRef v) const;
    // extern inline bool setStatus( LASolverStatus ) override;
 
@@ -82,6 +82,7 @@ protected:
     opensmt::Integer2 getInt(PTRef r) ;
 
     Map<LVRef, bool, LVRefHash> int_vars; //stores problem variables
+    vec<Map<opensmt::Real, bool, FastRationalHash> > cuts;
 
 };
 

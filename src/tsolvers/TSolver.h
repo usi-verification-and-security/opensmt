@@ -31,6 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SMTConfig.h"
 #include "Deductions.h"
 #include "SolverTypes.h"
+#include "TResult.h"
 #ifdef PRODUCE_PROOF
 class TheoryInterpolator; // forward declaration
 #endif
@@ -123,6 +124,8 @@ class TSolverStats
 };
 #endif
 
+
+
 class TSolver
 {
 protected:
@@ -138,6 +141,9 @@ protected:
     vec<PTRef>                  splitondemand;
 
 public:
+    // The states of the TSolver check query
+
+
     TSolver(SolverId id_, const char* name_, SMTConfig & c, vec<DedElem>& d)
     : id(id_)
     , name(name_)
@@ -145,6 +151,7 @@ public:
     , config  (c)
     , deduced (d)
     , has_explanation(false)
+
     {}
 
     virtual ~TSolver ( ) {}
@@ -161,7 +168,7 @@ public:
     virtual void                pushBacktrackPoint  ( )                       ;  // Push a backtrack point
     virtual void                popBacktrackPoint   ( )                       ;  // Backtrack to last saved point
     virtual void                popBacktrackPoints  ( unsigned int )          ;  // Backtrack given number of points
-    virtual bool                check               ( bool ) = 0              ;  // Check satisfiability
+    virtual TRes                check               ( bool ) = 0              ;  // Check satisfiability
     inline string               getName             ( ) { return name; }         // The name of the solver
     virtual ValPair             getValue            (PTRef) = 0;
 #ifdef PRODUCE_PROOF

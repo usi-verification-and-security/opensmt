@@ -361,7 +361,7 @@ public:
     bool    addClause (Lit p, Lit q, Lit r, const ipartitions_t& mask = 0);                    // Add a ternary clause to the solver.
     bool    addClause_(      vec<Lit>& ps, const ipartitions_t& mask = 0);                     // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.
 protected:
-    bool    addClause_(      vec<Lit>& ps, const ipartitions_t& mask = 0, CRef& cr);                     // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.  Writes the new clause ref to cr
+    bool    addClause_(      vec<Lit>& ps, CRef& cr, const ipartitions_t& mask = 0);                     // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.  Writes the new clause ref to cr
     virtual bool addSMTClause_(vec<Lit>&, CRef& cr) = 0;        // For adding SMT clauses within the solver, returning the clause ref
 public:
     virtual bool addSMTClause_(vec<Lit>&) = 0;                  // For adding SMT clauses within the solver
@@ -1010,6 +1010,9 @@ protected:
     void   printTrail             ( );             // Prints the trail (debugging)
     TPropRes checkTheory          (bool, int&);    // Checks consistency in theory.  The second arg is conflictC
     TPropRes checkTheory          (bool complete) { int tmp; return checkTheory(complete, tmp); }
+    TPropRes handleSat            (int&);          // Theory check resulted in sat
+    TPropRes handleUnsat          (int&);          // Theory check resulted in unsat
+    TPropRes handleUnknown        (int&);          // Theory check resulted in unknown
 
     void   deduceTheory           (vec<LitLev>&);  // Perform theory-deductions
 

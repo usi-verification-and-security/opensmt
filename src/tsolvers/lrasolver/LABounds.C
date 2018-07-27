@@ -278,14 +278,6 @@ char* LABoundStore::printBounds(LVRef v) const
 LABoundRefPair LABoundStore::getBoundRefPair(const PTRef leq)
 { return ptermToLABoundsRef[Idx(logic.getPterm(leq).getId())]; }
 
-inline void LABound::setIdx(int i)  { idx = i; }
-//inline int LABound::getIdx() const { return idx; }
-inline const Delta& LABound::getValue() const { return delta; }
-inline BoundT LABound::getType() const { return { type }; }
-//inline PTRef LABound::getPTRef() const { return leq_pta.tr;  }
-//inline lbool LABound::getSign()  const { return leq_pta.sgn; }
-inline LVRef LABound::getLVRef() const { return var; }
-//inline PtAsgn LABound::getPtAsgn() const { return leq_pta; }
 
 int LABoundAllocator::laboundWord32Size() {
     return (sizeof(LABound)) / sizeof(uint32_t); }

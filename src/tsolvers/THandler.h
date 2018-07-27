@@ -31,6 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Global.h"
 #include "TSolverHandler.h"
 #include "Theory.h"
+#include "TSolver.h"
 
 class SMTConfig;
 
@@ -94,7 +95,7 @@ public:
     bool    assertLit         (PtAsgn pta);// { return getSolverHandler().assertLit(pta); } // Push the assignment to all theory solvers
     void    declareTermTree   (PTRef tr);// { getSolverHandler().declareTermTree(tr); } // Declare the terms in the formula recursively.
     void    informNewSplit    (PTRef tr); // Splitting variable data structure updates (e.g., recompute bounds list)
-    bool    check             (bool);       // Check trail in the theories
+    TRes    check             (bool);       // Check trail in the theories
     void    backtrack         (int);        // Remove literals that are not anymore on the trail
 
 //    lbool   evaluate          ( PTRef e ) { return l_Undef; }
