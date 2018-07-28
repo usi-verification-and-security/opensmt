@@ -167,6 +167,10 @@ class MainSolver
     int       simplifiedUntil() const { return simplified_until; }
 
 #ifdef PRODUCE_PROOF
+    sstat     insertFormula(PTRef root, unsigned int n, char** msg) { // Insert formula with given partition index;
+        assignPartition(n, root);
+        return insertFormula(root, msg);
+    }
     void      assignPartition(unsigned int n, PTRef tr); // Assign partition numbers to individual PTRefs
     void      computePartitionMasks(int from, int to); // Extend the partitions as masks to the whole PTRef structure.  `From' and `to' refer to indices in the formulas vector.
 #endif
