@@ -28,20 +28,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Real.h"
 
 
-class LRANonLinearException
+class LRANonLinearException : std::logic_error
 {
-    char* reason;
 public:
-    LRANonLinearException(const char* reason_) {
-        asprintf(&reason, "Term %s is non-linear", reason_);
+    LRANonLinearException(const char* reason_) : std::logic_error(reason_) {
     }
-    virtual char* what() const
-    {
-        char* out;
-        asprintf(&out, "%s", reason);
-        return out;
+
+    LRANonLinearException(std::string const & reason) : std::logic_error(reason) {
     }
-    ~LRANonLinearException() { free(reason); }
+    ~LRANonLinearException() = default;
 };
 
 class LRALogic: public Logic
@@ -67,6 +62,8 @@ class LRALogic: public Logic
 
     PTRef               term_Real_ZERO;
     PTRef               term_Real_ONE;
+
+    static const char*  tk_val_real_default;
 
     static const char*  tk_real_zero;
     static const char*  tk_real_one;
@@ -198,6 +195,8 @@ class LRALogic: public Logic
     void        splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) const;
     PTRef       normalizeSum(PTRef sum); // Use for normalizing leq terms: sort the sum and divide all terms with the first factor
     PTRef       normalizeMul(PTRef mul); // Use for normalizing leq terms of form 0 <= c*v
+
+    virtual const char* getDefaultValue(const PTRef tr) const;
 
     // Logic specific simplifications: conjoin Ites, make substitutions
     // and split equalities

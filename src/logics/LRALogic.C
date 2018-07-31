@@ -225,6 +225,8 @@ void SimplifyConstDiv::constSimplify(const SymRef& s, const vec<PTRef>& terms, S
     s_new = s;
 }
 
+const char* LRALogic::tk_val_real_default = "1";
+
 const char* LRALogic::tk_real_zero  = "0";
 const char* LRALogic::tk_real_one   = "1";
 const char* LRALogic::tk_real_neg   = "-";
@@ -510,6 +512,11 @@ PTRef LRALogic::mkRealPlus(const vec<PTRef>& args, char** msg)
     simp.simplify(sym_Real_PLUS, tmp_args, s_new, args_new, msg);
     if (args_new.size() == 1)
         return args_new[0];
+    else if (args_new.size() == 0 && (isRealVar(s_new) || isRealConst(s_new))) {
+        // The sum was simplified to a single variable or a constant
+        PTRef tr = mkFun(s_new, args_new, msg);
+        return tr;
+    }
 
 
     // This code takes polynomials (+ (* v c1) (* v c2)) and converts them to the form (* v c3) where c3 = c1+c2
@@ -546,6 +553,7 @@ PTRef LRALogic::mkRealPlus(const vec<PTRef>& args, char** msg)
     }
 
     if (sum_args.size() == 1) return sum_args[0];
+    if (sum_args.size() == 0) return getTerm_RealZero();
     PTRef tr = mkFun(s_new, sum_args, msg);
 //    PTRef tr = mkFun(s_new, args_new, msg);
     return tr;
@@ -574,9 +582,11 @@ PTRef LRALogic::mkRealTimes(const vec<PTRef>& tmp_args, char** msg)
     if (isRealTerm(tr) || isRealPlus(tr) || isUF(tr))
         return tr;
     else {
-        char* err;
-        asprintf(&err, "%s", printTerm(tr));
-        throw LRANonLinearException(err);
+        std::string reason{"Nonlinear term encountered: "};
+        auto term = printTerm(tr);
+        reason += term;
+        free(term);
+        throw LRANonLinearException(reason);
     }
 }
 
@@ -590,6 +600,9 @@ PTRef LRALogic::mkRealDiv(const vec<PTRef>& args, char** msg)
     assert(args.size() == 2);
 
     if (isRealDiv(s_new)) {
+        if(!isConstant(args_new[1])) {
+            throw LRANonLinearException("Division by non-constant is not permitted in LRA");
+        }
         assert(isRealTerm(args_new[0]) && isConstant(args_new[1]));
         args_new[1] = mkConst(FastRational_inverse(getRealConst(args_new[1]))); //mkConst(1/getRealConst(args_new[1]));
         return mkRealTimes(args_new);
@@ -597,6 +610,15 @@ PTRef LRALogic::mkRealDiv(const vec<PTRef>& args, char** msg)
 
     PTRef tr = mkFun(s_new, args_new, msg);
     return tr;
+}
+
+const char*
+LRALogic::getDefaultValue(const PTRef tr) const
+{
+    if (hasSortReal(tr))
+        return tk_val_real_default;
+    else
+        return Logic::getDefaultValue(tr);
 }
 
 // Find the lexicographically first factor of a term and divide the other terms with it.
