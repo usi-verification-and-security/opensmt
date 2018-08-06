@@ -1206,21 +1206,21 @@ bool LASolver::invariantHolds() const
     for (auto var : tableau.getNonBasicVars()){
         assert(model.hasModel(var));
         if (isModelOutOfBounds(var)) {
-            std::cout << "Problem with variable " << logic.pp(lva[var].getPTRef()) << endl;
-            auto & lbounds = model.int_lbounds[lva[var].ID()];
-            for (int i = 0; i < lbounds.size(); ++i){
-                auto & b = ba[lbounds[i].br];
-                std::cout << "Lower bound with value: " << b.getValue().printValue() << " and level: " << lbounds[i].dl << '\n';
-            }
-            auto & ubounds = model.int_ubounds[lva[var].ID()];
-            for (int i = 0; i < ubounds.size(); ++i){
-                auto & b = ba[ubounds[i].br];
-                std::cout << "Upper bound with value: " << b.getValue().printValue() << " and level: " << ubounds[i].dl << '\n';
-            }
-            auto & vals = model.int_model[lva[var].ID()];
-            for (int i = 0; i < vals.size(); ++i){
-                std::cout << "Eval with value: " << vals[i].d.printValue() << " and level: " << vals[i].dl << '\n';
-            }
+//            std::cout << "Problem with variable " << logic.pp(lva[var].getPTRef()) << endl;
+//            auto & lbounds = model.int_lbounds[lva[var].ID()];
+//            for (int i = 0; i < lbounds.size(); ++i){
+//                auto & b = ba[lbounds[i].br];
+//                std::cout << "Lower bound with value: " << b.getValue().printValue() << " and level: " << lbounds[i].dl << '\n';
+//            }
+//            auto & ubounds = model.int_ubounds[lva[var].ID()];
+//            for (int i = 0; i < ubounds.size(); ++i){
+//                auto & b = ba[ubounds[i].br];
+//                std::cout << "Upper bound with value: " << b.getValue().printValue() << " and level: " << ubounds[i].dl << '\n';
+//            }
+//            auto & vals = model.int_model[lva[var].ID()];
+//            for (int i = 0; i < vals.size(); ++i){
+//                std::cout << "Eval with value: " << vals[i].d.printValue() << " and level: " << vals[i].dl << '\n';
+//            }
             rval = false;
             printf("Non-basic (column) LRA var %s has value %s <= %s <= %s\n",
                    lva.printVar(var), model.Lb(var).printValue(),
