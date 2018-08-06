@@ -1206,15 +1206,15 @@ bool LASolver::invariantHolds() const
     for (auto var : tableau.getNonBasicVars()){
         assert(model.hasModel(var));
         if (isModelOutOfBounds(var)) {
-//            auto & bounds = model.int_lbounds[lva[var].ID()];
-//            for (int i = 0; i < bounds.size(); ++i){
-//                auto & b = ba[bounds[i].br];
-//                std::cout << "Bound with value: " << b.getValue().printValue() << " and level: " << bounds[i].dl << '\n';
+//            auto & lbounds = model.int_lbounds[lva[var].ID()];
+//            for (int i = 0; i < lbounds.size(); ++i){
+//                auto & b = ba[lbounds[i].br];
+//                std::cout << "Lower bound with value: " << b.getValue().printValue() << " and level: " << lbounds[i].dl << '\n';
 //            }
 //            auto & ubounds = model.int_ubounds[lva[var].ID()];
 //            for (int i = 0; i < ubounds.size(); ++i){
 //                auto & b = ba[ubounds[i].br];
-//                std::cout << "Bound with value: " << b.getValue().printValue() << " and level: " << ubounds[i].dl << '\n';
+//                std::cout << "Upper bound with value: " << b.getValue().printValue() << " and level: " << ubounds[i].dl << '\n';
 //            }
 //            auto & vals = model.int_model[lva[var].ID()];
 //            for (int i = 0; i < vals.size(); ++i){

@@ -90,6 +90,9 @@ CoreSMTSolver::handleSat(int& conflicTC)
 
 
     if (new_splits.size() > 0) {
+
+        assert(new_splits.size() == 2); // For now we handle the binary case only.
+
         //printf(" -> Adding the new split\n");
 
         vec<LitLev> deds;
@@ -112,6 +115,8 @@ CoreSMTSolver::handleSat(int& conflicTC)
             Lit l_f = value(l1) == l_False ? l1 : l2; // false literal
             Lit l_i = value(l1) == l_False ? l2 : l1; // implied literal
 
+
+
             int lev = vardata[var(l_f)].level;
             cancelUntil(lev);
             CRef cr;
@@ -119,6 +124,8 @@ CoreSMTSolver::handleSat(int& conflicTC)
             if (decisionLevel() > 0) {
                 // DL0 implications are already enqueued in addSMTClause_
                 assert(cr != CRef_Undef);
+                ca[cr][0] = l_i;
+                ca[cr][1] = l_f;
                 uncheckedEnqueue(l_i, cr);
             }
             return tpr_Propagate;
@@ -344,12 +351,6 @@ CoreSMTSolver::handleUnsat(int& conflictC)
 #endif
 
     return tpr_Propagate;
-}
-
-TPropRes
-CoreSMTSolver::handleUnknown(int& conflictC)
-{
-
 }
 
 TPropRes CoreSMTSolver::checkTheory(bool complete, int& conflictC)

@@ -48,8 +48,8 @@ public:
     inline unsigned getNumBounds() const;// { return n_bounds; }
 
     LABoundRef alloc(BoundT type, PtAsgn leq_pta, LVRef var, const Delta& delta);
-    inline LABound&       operator[](LABoundRef r);//       { return (LABound&)RegionAllocator<uint32_t>::operator[](r.x); }
-    inline const LABound& operator[](LABoundRef r) const;// { return (LABound&)RegionAllocator<uint32_t>::operator[](r.x); }
+    inline LABound&       operator[](LABoundRef r)       { return (LABound&)RegionAllocator<uint32_t>::operator[](r.x); }
+    inline const LABound& operator[](LABoundRef r) const { return (LABound&)RegionAllocator<uint32_t>::operator[](r.x); }
     inline LABound*       lea       (LABoundRef r);//       { return (LABound*)RegionAllocator<uint32_t>::lea(r.x); }
     inline const LABound* lea       (LABoundRef r) const ;//{ return (LABound*)RegionAllocator<uint32_t>::lea(r.x); }
     inline LABoundRef     ael       (const LABound* t) ;//  { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); LABoundRef rf; rf.x = r; return rf; }

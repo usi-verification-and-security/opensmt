@@ -927,7 +927,7 @@ public:
 
 /*_________________________________________________________________________________________________
   |
-  |  analyze : (confl : Clause*) (out_learnt : vec<Lit>&) (out_btlevel : int&)  ->  [void]
+  |  analyze : (confl : CRef) (out_learnt : vec<Lit>&) (out_btlevel : int&)  ->  [void]
   |
   |  Description:
   |    Analyze conflict and produce a reason clause.
@@ -1102,6 +1102,7 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
         //  however the appropriate propagation level for
         //  8 is 0. You should always backtrack to the appropriate
         //  level before doing propagations
+        //  AH: Do also remember that the first literal of the clause needs to be the implying literal.
         assert( pathC == 1 || confl != CRef_Undef );
         seen[var(p)] = 0;
         pathC--;

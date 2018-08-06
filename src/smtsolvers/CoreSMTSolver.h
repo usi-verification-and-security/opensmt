@@ -1012,7 +1012,6 @@ protected:
     TPropRes checkTheory          (bool complete) { int tmp; return checkTheory(complete, tmp); }
     TPropRes handleSat            (int&);          // Theory check resulted in sat
     TPropRes handleUnsat          (int&);          // Theory check resulted in unsat
-    TPropRes handleUnknown        (int&);          // Theory check resulted in unknown
 
     void   deduceTheory           (vec<LitLev>&);  // Perform theory-deductions
 
