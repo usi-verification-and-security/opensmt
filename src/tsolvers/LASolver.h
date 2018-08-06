@@ -117,7 +117,7 @@ protected:
     void pivot(LVRef basic, LVRef nonBasic);
 
 
-    virtual Polynomial expressionToLVarPoly(PTRef expression);
+    Polynomial expressionToLVarPoly(PTRef expression);
     LVRef getBasicVarToFixByBland() const;
     LVRef getBasicVarToFixByShortestPoly() const;
     LVRef findNonBasicForPivotByBland(LVRef basicVar);
@@ -141,6 +141,7 @@ protected:
     LVRef getLAVar_single(PTRef term);                      // Initialize a new LA var if needed, otherwise return the old var
     bool hasVar(PTRef expr);
     virtual void doGaussianElimination( ) = 0;                     // Performs Gaussian elimination of all redundant terms in the Tableau if applicable
+    virtual void notifyVar(LVRef v) {}                             // Notify the solver of the existence of the var. This is so that LIA can add it to integer vars list.
 //    void removeRow(PolyRef pr);                              // Remove the row corresponding to v
 //    void removeCol(LVRef v);                                // Remove the col corresponding to v
     void changeValueBy( LVRef, const Delta & );                    // Updates the bounds after constraint pushing

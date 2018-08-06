@@ -261,7 +261,10 @@ Polynomial LASolver::expressionToLVarPoly(PTRef term) {
         PTRef c;
         logic.splitTermToVarAndConst(logic.getPterm(term)[i], v, c);
         LVRef var = getLAVar_single(v);
+        notifyVar(var);
+
         tableau.nonbasicVar(var);
+
         Real coeff = getNum(c);
 
         if (negated) {
@@ -300,10 +303,11 @@ LVRef LASolver::exprToLVar(PTRef expr) {
         assert(logic.isNumVar(v) || (logic.isNegated(v) && logic.isNumVar(logic.mkNumNeg(v))));
         x = getLAVar_single(v);
         tableau.newNonbasicVar(x);
+        notifyVar(x);
     }
     else {
         // Cases (3), (4a) and (4b)
-        x= getLAVar_single(expr);
+        x = getLAVar_single(expr);
         tableau.newBasicVar(x, expressionToLVarPoly(expr));
     }
     assert(x != LVRef_Undef);

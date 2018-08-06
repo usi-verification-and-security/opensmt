@@ -106,30 +106,14 @@ Polynomial LIASolver::expressionToLVarPoly(PTRef term) {
     }
 }*/
 
-Polynomial LIASolver::expressionToLVarPoly(PTRef term) {
-    Polynomial poly;
-    // If term is negated, we need to flip the signs of the poly
-    bool negated = logic.isNegated(term);
-    for (int i = 0; i < logic.getPterm(term).size(); i++) {
-        PTRef v;
-        PTRef c;
-        logic.splitTermToVarAndConst(logic.getPterm(term)[i], v, c);
-        LVRef var = getLAVar_single(v);
-        if (!int_vars.has(var)) {
-            int_vars.insert(var, true);
-        }
-        while(cuts.size() <= lva[var].ID())
-            cuts.push();
-
-        tableau.nonbasicVar(var);
-        Real coeff = getNum(c);
-
-        if (negated) {
-            coeff.negate();
-        }
-        poly.addTerm(var, std::move(coeff));
+void LIASolver::notifyVar(LVRef v)
+{
+    if (!int_vars.has(v)) {
+        int_vars.insert(v, true);
     }
-    return poly;
+
+    while(cuts.size() <= lva[v].ID())
+        cuts.push();
 }
 
 TRes LIASolver::checkIntegersAndSplit() {

@@ -66,7 +66,7 @@ public:
 
 protected:
 
-    Polynomial expressionToLVarPoly(PTRef expression) override;
+    void notifyVar(LVRef v) override;
     void doGaussianElimination() override { return; }        // For now we do not Gaussian eliminate in LIA
 
     //inline bool setStatus( LASolverStatus );               // Sets and return status of the solver //PS. use only LASolverStats
