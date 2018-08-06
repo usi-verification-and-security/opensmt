@@ -133,6 +133,25 @@ void LRASolver::computeConcreteModel(LVRef v) {
     }
 }
 
+void LRASolver::doGaussianElimination( )
+{
+    auto eliminated = tableau.doGaussianElimination([this](LVRef v){return this->isUnbounded(v);});
+    for(auto rit = eliminated.rbegin(); rit != eliminated.rend(); ++ rit) {
+        auto entry = *rit;
+        auto poly = entry.second;
+        for(auto const & term : entry.second){
+            auto var = term.first;
+            auto it = removed_by_GaussianElimination.find(var);
+            if( it != removed_by_GaussianElimination.end() && poly.contains(var)) {
+                auto to_substitute = (*it).second;
+                auto coeff = poly.getCoeff(var);
+                poly.merge(to_substitute, coeff);
+            }
+        }
+        removed_by_GaussianElimination.emplace(entry.first, poly);
+    }
+}
+
 //
 // Detect the appropriate value for symbolic delta and stores the model
 //

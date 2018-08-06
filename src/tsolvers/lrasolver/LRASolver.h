@@ -112,7 +112,7 @@ protected:
     //LVRef exprToLVar(PTRef expr); // Ensures this term and all variables in it has corresponding LVAR.  Returns the LAVar for the term.
   //  void pivot(LVRef basic, LVRef nonBasic);
     opensmt::Real delta;
-
+    void doGaussianElimination() override;
 
 private:
 

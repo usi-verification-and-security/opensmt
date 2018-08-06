@@ -190,7 +190,7 @@ TRes LIASolver::checkIntegersAndSplit() {
             //x <= c || x >= c+1;
             PTRef constr = logic.mkOr(logic.mkNumLeq(lva[x].getPTRef(), logic.mkConst(c)),
                        logic.mkNumGeq(lva[x].getPTRef(), logic.mkConst(c + 1)));
-            printf("LIA solver constraint %s\n", logic.pp(constr));
+//            printf("LIA solver constraint %s\n", logic.pp(constr));
 
             splitondemand.push(constr);
             setStatus(NEWSPLIT);

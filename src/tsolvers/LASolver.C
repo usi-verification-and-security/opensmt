@@ -533,7 +533,7 @@ bool LASolver::assertLit( PtAsgn asgn, bool reason )
 
 //    printf("Model state\n");
 //    model.printModelState();
-//    printf("Asserting %s\n", boundStore.printBound(bound_ref));
+//    printf("Asserting %s (%d)\n", boundStore.printBound(bound_ref), asgn.tr.x);
 //    printf(" - equal to %s%s\n", asgn.sgn == l_True ? "" : "not ", logic.pp(asgn.tr));
 
     LVRef it = lavarStore.getVarByLeqId(t.getId());
@@ -695,9 +695,9 @@ void LASolver::changeValueBy(LVRef var, const Delta & diff) {
     model.write(var, model.read(var) + diff);
     candidates.insert(var);
     // update all (active) rows where var is present
-    for( LVRef row : tableau.getColumn(var)){
+    for ( LVRef row : tableau.getColumn(var)){
         assert(tableau.isBasic(row));
-        if(tableau.isActive(row)){
+        if (tableau.isActive(row)) {
             model.write(row, model.read(row) + (tableau.getCoeff(row, var) * diff));
             candidates.insert(row);
         }
@@ -784,7 +784,7 @@ inline bool LASolver::getStatus( )
             break;
         }
         case UNKNOWN:
-            cerr << "LA Solver status is unknown" << endl;
+//            cerr << "LA Solver status is unknown" << endl;
             status = SAT;
             return true;
         case INIT:
@@ -1206,20 +1206,21 @@ bool LASolver::invariantHolds() const
     for (auto var : tableau.getNonBasicVars()){
         assert(model.hasModel(var));
         if (isModelOutOfBounds(var)) {
-//            auto & lbounds = model.int_lbounds[lva[var].ID()];
-//            for (int i = 0; i < lbounds.size(); ++i){
-//                auto & b = ba[lbounds[i].br];
-//                std::cout << "Lower bound with value: " << b.getValue().printValue() << " and level: " << lbounds[i].dl << '\n';
-//            }
-//            auto & ubounds = model.int_ubounds[lva[var].ID()];
-//            for (int i = 0; i < ubounds.size(); ++i){
-//                auto & b = ba[ubounds[i].br];
-//                std::cout << "Upper bound with value: " << b.getValue().printValue() << " and level: " << ubounds[i].dl << '\n';
-//            }
-//            auto & vals = model.int_model[lva[var].ID()];
-//            for (int i = 0; i < vals.size(); ++i){
-//                std::cout << "Eval with value: " << vals[i].d.printValue() << " and level: " << vals[i].dl << '\n';
-//            }
+            std::cout << "Problem with variable " << logic.pp(lva[var].getPTRef()) << endl;
+            auto & lbounds = model.int_lbounds[lva[var].ID()];
+            for (int i = 0; i < lbounds.size(); ++i){
+                auto & b = ba[lbounds[i].br];
+                std::cout << "Lower bound with value: " << b.getValue().printValue() << " and level: " << lbounds[i].dl << '\n';
+            }
+            auto & ubounds = model.int_ubounds[lva[var].ID()];
+            for (int i = 0; i < ubounds.size(); ++i){
+                auto & b = ba[ubounds[i].br];
+                std::cout << "Upper bound with value: " << b.getValue().printValue() << " and level: " << ubounds[i].dl << '\n';
+            }
+            auto & vals = model.int_model[lva[var].ID()];
+            for (int i = 0; i < vals.size(); ++i){
+                std::cout << "Eval with value: " << vals[i].d.printValue() << " and level: " << vals[i].dl << '\n';
+            }
             rval = false;
             printf("Non-basic (column) LRA var %s has value %s <= %s <= %s\n",
                    lva.printVar(var), model.Lb(var).printValue(),
@@ -1235,24 +1236,6 @@ bool LASolver::checkTableauConsistency() const {
     return res;
 }
 
-void LASolver::doGaussianElimination( )
-{
-    auto eliminated = tableau.doGaussianElimination([this](LVRef v){return this->isUnbounded(v);});
-    for(auto rit = eliminated.rbegin(); rit != eliminated.rend(); ++ rit) {
-        auto entry = *rit;
-        auto poly = entry.second;
-        for(auto const & term : entry.second){
-            auto var = term.first;
-            auto it = removed_by_GaussianElimination.find(var);
-            if( it != removed_by_GaussianElimination.end() && poly.contains(var)) {
-                auto to_substitute = (*it).second;
-                auto coeff = poly.getCoeff(var);
-                poly.merge(to_substitute, coeff);
-            }
-        }
-        removed_by_GaussianElimination.emplace(entry.first, poly);
-    }
-}
 
 LASolver::~LASolver( )
 {
