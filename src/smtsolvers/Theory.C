@@ -79,7 +79,7 @@ void CoreSMTSolver::crashTest(int rounds, Var var_true, Var var_false)
 }
 
 TPropRes
-CoreSMTSolver::handleSat(int& conflicTC)
+CoreSMTSolver::handleSat(int& conflictC)
 {
     // Increments skip step for sat calls
     skip_step *= config.sat_skip_step_factor;
@@ -115,7 +115,7 @@ CoreSMTSolver::handleSat(int& conflicTC)
             Lit l_f = value(l1) == l_False ? l1 : l2; // false literal
             Lit l_i = value(l1) == l_False ? l2 : l1; // implied literal
 
-
+            conflictC++;
 
             int lev = vardata[var(l_f)].level;
             cancelUntil(lev);
@@ -142,7 +142,7 @@ CoreSMTSolver::handleSat(int& conflicTC)
     }
     if (deds.size() > 0)
     {
-        return 0;
+        return tpr_Propagate;
     }
     else
     {
@@ -164,7 +164,7 @@ CoreSMTSolver::handleUnsat(int& conflictC)
 #ifndef PRODUCE_PROOF
     // Top-level conflict, problem is T-Unsatisfiable
     if ( decisionLevel( ) == 0 )
-        return -1;
+        return tpr_Unsat;
 #endif
 
     conflicts++;

@@ -375,17 +375,17 @@ private:
     int x;
 public:
     TPropRes() : x(INT32_MAX) {}
-    TPropRes(int x) : x(x) {}
+    explicit TPropRes(int x) noexcept : x(x) {}
     TPropRes(const TPropRes& o) : x(o.x) {}
     TPropRes &operator= (const TPropRes& o) { x = o.x; return *this; }
     bool operator== (const TPropRes& o) { return x == o.x; }
     bool operator!= (const TPropRes& o) { return x != o.x; }
 };
 
-static struct TPropRes tpr_Undef     = {INT32_MAX};
-static struct TPropRes tpr_Unsat     = {-1};
-static struct TPropRes tpr_Propagate = {0};
-static struct TPropRes tpr_Decide    = {1};
+static struct TPropRes tpr_Undef     = TPropRes(INT32_MAX);
+static struct TPropRes tpr_Unsat     = TPropRes(-1);
+static struct TPropRes tpr_Propagate = TPropRes(0);
+static struct TPropRes tpr_Decide    = TPropRes(1);
 
 /*_________________________________________________________________________________________________
 |

@@ -2609,15 +2609,7 @@ lbool CoreSMTSolver::LApropagate_wrapper(int& confl_quota)
             else if (res == tpr_Propagate)
             {
 #ifdef LADEBUG
-                printf("Theory propagation\n");
-#endif
-                diff = true;
-                continue;
-            }
-            else if (res == 0)
-            {
-#ifdef LADEBUG
-                printf("Theory conflict\n");
+                printf("Theory propagation / conflict\n");
 #endif
                 diff = true;
                 confl_quota --;
@@ -2813,7 +2805,8 @@ lbool CoreSMTSolver::lookaheadSplit(int d, int &idx, int confl_quota)
 
 CoreSMTSolver::laresult CoreSMTSolver::lookahead_loop(Lit& best, int &idx, int &confl_quota)
 {
-    if (checkTheory(true) != tpr_Decide)
+    printf("Entering lookahead loop\n");
+    if (checkTheory(true) == tpr_Unsat)
     {
 #ifdef LADEBUG
         printf("Already unsatisfiable at entering the lookahead loop\n");
