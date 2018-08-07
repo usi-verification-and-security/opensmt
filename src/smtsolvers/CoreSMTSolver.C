@@ -2805,7 +2805,6 @@ lbool CoreSMTSolver::lookaheadSplit(int d, int &idx, int confl_quota)
 
 CoreSMTSolver::laresult CoreSMTSolver::lookahead_loop(Lit& best, int &idx, int &confl_quota)
 {
-    printf("Entering lookahead loop\n");
     if (checkTheory(true) == tpr_Unsat)
     {
 #ifdef LADEBUG
