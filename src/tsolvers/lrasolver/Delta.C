@@ -64,4 +64,3 @@ char* Delta::printValue() const
     return out;
 }
 
-

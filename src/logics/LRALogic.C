@@ -22,31 +22,30 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
-
 #include "SStore.h"
 #include "PtStore.h"
 #include "LRALogic.h"
 #include "TreeOps.h"
-#include "Global.h"
-#include "LA.h"
-
+//#include "Global.h"
+//#include "LA.h"
 const char* LRALogic::e_nonlinear_term = "Logic does not support nonlinear terms";
-
+/*
 void LRALogic::termSort(vec<PTRef>& v) const
 {
     sort(v, LessThan_deepPTRef(this));
 }
 
-void
-LRALogic::simplifyAndSplitEq(PTRef tr, PTRef& root_out)
+
+void LRALogic::simplifyAndSplitEq(PTRef tr, PTRef& root_out)
 {
     split_eq = true;
     simplifyTree(tr, root_out);
     split_eq = false;
 }
 
-void
-LRALogic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
+
+
+void LRALogic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
 {
     if (split_eq && isRealEq(tr)) {
         char *msg;
@@ -83,16 +82,19 @@ bool LRALogic::okToPartition(PTRef tr) const
 {
     return !lra_split_inequalities.has(tr);
 }
+
+
+*/
 /***********************************************************
  * Class defining simplifications
  ***********************************************************/
-
 //
 // Identify all constants, and combine them into one using the operator
 // rules.  If the constant is special for that operator, do the
 // corresponding simplifications.  Examples include 0 with
 // multiplication and summation, e.g.
 //
+/*
 void SimplifyConst::simplify(SymRef& s, const vec<PTRef>& args, SymRef& s_new, vec<PTRef>& args_new, char** msg)
 {
     vec<int> const_idx;
@@ -223,10 +225,8 @@ void SimplifyConstDiv::constSimplify(const SymRef& s, const vec<PTRef>& terms, S
     for (int i = 0; i < terms.size(); i++)
         terms_new.push(terms[i]);
     s_new = s;
-}
-
-const char* LRALogic::tk_val_real_default = "1";
-
+}*/
+//const char* LRALogic::tk_val_real_default = "1";
 const char* LRALogic::tk_real_zero  = "0";
 const char* LRALogic::tk_real_one   = "1";
 const char* LRALogic::tk_real_neg   = "-";
@@ -238,96 +238,79 @@ const char* LRALogic::tk_real_lt    = "<";
 const char* LRALogic::tk_real_leq   = "<=";
 const char* LRALogic::tk_real_gt    = ">";
 const char* LRALogic::tk_real_geq   = ">=";
-
 const char* LRALogic::s_sort_real = "Real";
 
 LRALogic::LRALogic(SMTConfig& c) :
-      Logic(c)
-    , sym_Real_ZERO(SymRef_Undef)
-    , sym_Real_ONE(SymRef_Undef)
-    , sym_Real_NEG(SymRef_Undef)
-    , sym_Real_MINUS(SymRef_Undef)
-    , sym_Real_PLUS(SymRef_Undef)
-    , sym_Real_TIMES(SymRef_Undef)
-    , sym_Real_DIV(SymRef_Undef)
-    , sym_Real_EQ(SymRef_Undef)
-    , sym_Real_LEQ(SymRef_Undef)
-    , sym_Real_LT(SymRef_Undef)
-    , sym_Real_GEQ(SymRef_Undef)
-    , sym_Real_GT(SymRef_Undef)
-    , sym_Real_ITE(SymRef_Undef)
-    , sort_REAL(SRef_Undef)
-    , term_Real_ZERO(PTRef_Undef)
-    , term_Real_ONE(PTRef_Undef)
-    , split_eq(false)
+        LALogic(c)
+        , sym_Real_ZERO(SymRef_Undef)
+        , sym_Real_ONE(SymRef_Undef)
+        , sym_Real_NEG(SymRef_Undef)
+        , sym_Real_MINUS(SymRef_Undef)
+        , sym_Real_PLUS(SymRef_Undef)
+        , sym_Real_TIMES(SymRef_Undef)
+        , sym_Real_DIV(SymRef_Undef)
+        , sym_Real_EQ(SymRef_Undef)
+        , sym_Real_LEQ(SymRef_Undef)
+        , sym_Real_LT(SymRef_Undef)
+        , sym_Real_GEQ(SymRef_Undef)
+        , sym_Real_GT(SymRef_Undef)
+        , sym_Real_ITE(SymRef_Undef)
+        , sort_REAL(SRef_Undef)
+        , term_Real_ZERO(PTRef_Undef)
+        , term_Real_ONE(PTRef_Undef)
+        , split_eq(false)
 {
     char* m;
     char** msg = &m;
-
     logic_type = QF_LRA;
-
     sort_REAL = declareSort(s_sort_real, msg);
     ufsorts.remove(sort_REAL);
 //    printf("Setting sort_REAL to %d at %p\n", sort_REAL.x, &(sort_REAL.x));
     vec<SRef> params;
-
-
     term_Real_ZERO = mkConst(sort_REAL, tk_real_zero);
     sym_Real_ZERO  = getSymRef(term_Real_ZERO);
     sym_store.setInterpreted(sym_Real_ZERO);
     term_Real_ONE  = mkConst(sort_REAL, tk_real_one);
     sym_Real_ONE   = getSymRef(term_Real_ONE);
     sym_store.setInterpreted(sym_Real_ONE);
-
     params.push(sort_REAL);
-
     // Negation
     sym_Real_NEG = declareFun(tk_real_neg, sort_REAL, params, msg, true);
     sym_store.setInterpreted(sym_Real_NEG);
-
     params.push(sort_REAL);
-
     sym_Real_MINUS = declareFun(tk_real_neg, sort_REAL, params, msg, true);
     sym_store[sym_Real_MINUS].setLeftAssoc();
     sym_store.setInterpreted(sym_Real_MINUS);
-
     sym_Real_PLUS  = declareFun(tk_real_plus, sort_REAL, params, msg, true);
     sym_store[sym_Real_PLUS].setNoScoping();
     sym_store[sym_Real_PLUS].setCommutes();
     sym_store[sym_Real_PLUS].setLeftAssoc();
     sym_store.setInterpreted(sym_Real_PLUS);
-
     sym_Real_TIMES = declareFun(tk_real_times, sort_REAL, params, msg, true);
     sym_store[sym_Real_TIMES].setNoScoping();
     sym_store[sym_Real_TIMES].setLeftAssoc();
     sym_store[sym_Real_TIMES].setCommutes();
     sym_store.setInterpreted(sym_Real_TIMES);
-
     sym_Real_DIV   = declareFun(tk_real_div, sort_REAL, params, msg, true);
     sym_store[sym_Real_DIV].setNoScoping();
     sym_store[sym_Real_DIV].setLeftAssoc();
     sym_store.setInterpreted(sym_Real_DIV);
-
     sym_Real_LEQ  = declareFun(tk_real_leq, sort_BOOL, params, msg, true);
     sym_store[sym_Real_LEQ].setNoScoping();
     sym_store[sym_Real_LEQ].setChainable();
     sym_store.setInterpreted(sym_Real_LEQ);
-
     sym_Real_LT   = declareFun(tk_real_lt, sort_BOOL, params, msg, true);
     sym_store[sym_Real_LT].setNoScoping();
     sym_store[sym_Real_LT].setChainable();
     sym_store.setInterpreted(sym_Real_LT);
-
     sym_Real_GEQ  = declareFun(tk_real_geq, sort_BOOL, params, msg, true);
     sym_store[sym_Real_GEQ].setNoScoping();
     sym_store[sym_Real_GEQ].setChainable();
     sym_store.setInterpreted(sym_Real_GEQ);
-
     sym_Real_GT   = declareFun(tk_real_gt, sort_BOOL, params, msg, true);
     sym_store[sym_Real_GT].setNoScoping();
     sym_store[sym_Real_GT].setChainable();
     sym_store.setInterpreted(sym_Real_GEQ);
-
     vec<SRef> ite_params;
     ite_params.push(sort_BOOL);
     ite_params.push(sort_REAL);
@@ -337,28 +320,90 @@ LRALogic::LRALogic(SMTConfig& c) :
     sym_store[sym_Real_ITE].setNoScoping();
     sym_store.setInterpreted(sym_Real_ITE);
 }
-
+/*
 bool LRALogic::isBuiltinFunction(const SymRef sr) const
 {
     if (sr == sym_Real_NEG || sr == sym_Real_MINUS || sr == sym_Real_PLUS || sr == sym_Real_TIMES || sr == sym_Real_DIV || sr == sym_Real_EQ || sr == sym_Real_LEQ || sr == sym_Real_LT || sr == sym_Real_GEQ || sr == sym_Real_GT || sr == sym_Real_ITE) return true;
     else return Logic::isBuiltinFunction(sr);
 }
+*/
 
+/*
+//PS. find a way how to add this method to superclass
 const opensmt::Real&
 LRALogic::getRealConst(PTRef tr) const
 {
     SymId id = sym_store[getPterm(tr).symb()].getId();
     assert(id < reals.size() && reals[id] != NULL);
     return *reals[id];
-}
+}*/
 
-PTRef
-LRALogic::mkConst(const char *name, const char **msg)
+/*
+const char*   LRALogic::getName()              const  { return getLogic().str; }
+const Logic_t LRALogic::getLogic()             const  { return QF_LRA; }
+bool LRALogic::isBuiltinSort  (SRef sr) const  { return sr == sort_REAL || Logic::isBuiltinSort(sr); }
+//virtual bool isBuiltinConstant(SymRef sr) const { return (isNumConst(sr) || Logic::isBuiltinConstant(sr)); }
+//virtual bool isBuiltinFunction(SymRef sr) const;
+//bool  isNumConst     (SymRef sr)     const override { return isConstant(sr) && hasSortNum(sr); }
+//bool  isNumConst     (PTRef tr)      const override { return isNumConst(getPterm(tr).symb()); }
+bool  LRALogic::isNonnegNumConst (PTRef tr)    const  { return isNumConst(tr) && getNumConst(tr) >= 0; }
+//SRef        declareSort_Real(char** msg);
+SRef   LRALogic::getSort_num()   const  { return sort_REAL;}
+const opensmt::Number& LRALogic::getNumConst(PTRef tr) const  {return getRealConst(tr);}
+bool        LRALogic::isRealPlus(SymRef sr) const { return sr == sym_Real_PLUS; }
+//bool        isRealPlus(PTRef tr) const { return isRealPlus(getPterm(tr).symb()); }
+bool        LRALogic::isNumPlus(PTRef tr) const  { return isRealPlus(getPterm(tr).symb()); }
+bool        LRALogic::isRealMinus(SymRef sr) const { return sr == sym_Real_MINUS; }
+//bool        isRealMinus(PTRef tr) const { return isRealMinus(getPterm(tr).symb()); }
+bool        LRALogic::isNumMinus(PTRef tr) const  { return isRealMinus(getPterm(tr).symb()); }
+bool        LRALogic::isRealNeg(SymRef sr) const { return sr == sym_Real_NEG; }
+//bool        isRealNeg(PTRef tr) const { return isRealNeg(getPterm(tr).symb()); }
+bool        LRALogic::isNumNeg(PTRef tr) const  { return isRealNeg(getPterm(tr).symb()); }
+bool        LRALogic::isRealTimes(SymRef sr) const { return sr == sym_Real_TIMES; }
+//bool        isRealTimes(PTRef tr) const { return isRealTimes(getPterm(tr).symb()); }
+bool        LRALogic::isNumTimes(PTRef tr) const  { return isRealTimes(getPterm(tr).symb()); }
+bool        LRALogic::isRealDiv(SymRef sr) const { return sr == sym_Real_DIV; }
+//bool        isRealDiv(PTRef tr) const { return isRealDiv(getPterm(tr).symb()); }
+bool        LRALogic::isNumDiv(PTRef tr) const  { return isRealDiv(getPterm(tr).symb());  }
+bool        LRALogic::isRealEq(SymRef sr) const { return isEquality(sr) && (sym_store[sr][0] == sort_REAL); }
+//bool        isRealEq(PTRef tr) const { return isRealEq(getPterm(tr).symb()); }
+bool        LRALogic::isNumEq(PTRef tr) const  { return isRealEq(getPterm(tr).symb()); }
+bool        LRALogic::isRealLeq(SymRef sr) const { return sr == sym_Real_LEQ; }
+//bool        isRealLeq(PTRef tr) const { return isRealLeq(getPterm(tr).symb()); }
+bool        LRALogic::isNumLeq(PTRef tr) const  { return isRealLeq(getPterm(tr).symb()); }
+bool        LRALogic::isRealLt(SymRef sr) const { return sr == sym_Real_LT; }
+//bool        isRealLt(PTRef tr) const { return isRealLt(getPterm(tr).symb()); }
+bool        LRALogic::isNumLt(PTRef tr) const  { return isRealLt(getPterm(tr).symb());  }
+bool        LRALogic::isRealGeq(SymRef sr) const { return sr == sym_Real_GEQ; }
+//bool        isRealGeq(PTRef tr) const { return isRealGeq(getPterm(tr).symb()); }
+bool        LRALogic::isNumGeq(PTRef tr) const  { return isRealGeq(getPterm(tr).symb()); }
+bool        LRALogic::isRealGt(SymRef sr) const { return sr == sym_Real_GT; }
+//bool        isRealGt(PTRef tr) const { return isRealGt(getPterm(tr).symb()); }
+bool        LRALogic::isNumGt(PTRef tr) const  { return isRealGt(getPterm(tr).symb()); }
+bool        LRALogic::isRealVar(SymRef sr) const { return isVar(sr) && sym_store[sr].rsort() == sort_REAL; }
+//bool        isRealVar(PTRef tr) const { return isRealVar(getPterm(tr).symb()); }
+bool        LRALogic::isNumVar(PTRef tr) const  {return isRealVar(getPterm(tr).symb());}
+bool        LRALogic::isRealZero(SymRef sr) const { return sr == sym_Real_ZERO; }
+//bool        isRealZero(PTRef tr) const { return tr == term_Real_ZERO; }
+bool        LRALogic::isNumZero(PTRef tr) const  { return tr == term_Real_ZERO; }
+bool        LRALogic::isRealOne(SymRef sr) const { return sr == sym_Real_ONE; }
+//bool        isRealOne(PTRef tr) const { return tr == term_Real_ONE; }
+bool        LRALogic::isNumOne(PTRef tr) const  { return tr == term_Real_ONE; }
+// Real terms are of form c, a, or (* c a) where c is a constant and
+// a is a variable.
+//bool        isRealTerm(PTRef tr) const;
+bool        LRALogic::hasSortReal(SymRef sr) const { return sym_store[sr].rsort() == sort_REAL; }
+bool        LRALogic::hasSortNum(PTRef tr) const  { return hasSortReal(getPterm(tr).symb()); }
+PTRef       LRALogic::getTerm_NumZero() const  { return term_Real_ZERO; }
+PTRef       LRALogic::getTerm_NumOne()  const  { return term_Real_ONE; }
+/*
+PTRef LRALogic::mkConst(const char *name, const char **msg)
 {
     return mkConst(getSort_real(), name);
 }
-
-PTRef LRALogic::mkConst(SRef s, const char* name)
+ */
+/*
+PTRef LRALogic::mkConst(SRef s, const char* name) //PS. how to rewrite this?
 {
     assert(strlen(name) != 0);
     PTRef ptr = PTRef_Undef;
@@ -381,7 +426,16 @@ PTRef LRALogic::mkConst(SRef s, const char* name)
         ptr = Logic::mkConst(s, name);
 
     return ptr;
+}*/
+/*
+PTRef LRALogic::getNTerm(char* rat_str)
+{
+    opensmt::Real v(rat_str);
+    v = -v;
+    return mkConst(getSort_num(), v.get_str().c_str());
 }
+*/
+/*
 
 bool LRALogic::isRealTerm(PTRef tr) const
 {
@@ -400,31 +454,207 @@ LRALogic::okForBoolVar(PTRef tr) const
     return isRealLeq(tr) || Logic::okForBoolVar(tr);
 }
 
-PTRef
-LRALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
+
+PTRef LRALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
 {
     if (sym == sym_Real_NEG)
-        return mkRealNeg(terms[0], msg);
+        return mkNumNeg(terms[0], msg);
     if (sym == sym_Real_MINUS)
-        return mkRealMinus(terms, msg);
+        return mkNumMinus(terms, msg);
     if (sym == sym_Real_PLUS)
-        return mkRealPlus(terms, msg);
+        return mkNumPlus(terms, msg);
     if (sym == sym_Real_TIMES)
-        return mkRealTimes(terms, msg);
+        return mkNumTimes(terms, msg);
     if (sym == sym_Real_DIV)
-        return mkRealDiv(terms, msg);
+        return mkNumDiv(terms, msg);
     if (sym == sym_Real_LEQ)
-        return mkRealLeq(terms, msg);
+        return mkNumLeq(terms, msg);
     if (sym == sym_Real_LT)
-        return mkRealLt(terms, msg);
+        return mkNumLt(terms, msg);
     if (sym == sym_Real_GEQ)
-        return mkRealGeq(terms, msg);
+        return mkNumGeq(terms, msg);
     if (sym == sym_Real_GT)
-        return mkRealGt(terms, msg);
+        return mkNumGt(terms, msg);
     if (sym == sym_Real_ITE)
         return mkIte(terms);
-
     return Logic::insertTerm(sym, terms, msg);
+}
+PTRef LRALogic::mkNumTimes(const vec<PTRef>& tmp_args, char** msg)
+{
+    vec<PTRef> args;
+    // Flatten possible internal multiplications
+    for (int i = 0; i < tmp_args.size(); i++) {
+        if (isNumTimes(tmp_args[i])) {
+            Pterm& t = getPterm(tmp_args[i]);
+            for (int j = 0; j < t.size(); j++)
+                args.push(t[j]);
+        } else {
+            args.push(tmp_args[i]);
+        }
+    }
+    SimplifyConstTimes simp(*this);
+    vec<PTRef> args_new;
+    SymRef s_new;
+    simp.simplify(sym_Real_TIMES, args, s_new, args_new, msg);
+    PTRef tr = mkFun(s_new, args_new, msg);
+    // Either a real term or, if we constructed a multiplication of a
+    // constant and a sum, a real sum.
+    if (isNumTerm(tr) || isNumPlus(tr) || isUF(tr))
+        return tr;
+    else {
+        char* err;
+        asprintf(&err, "%s", printTerm(tr));
+        throw LRANonLinearException(err);
+    }
+}
+PTRef LRALogic::mkNumTimes(const vec<PTRef> &args) {
+    char *msg;
+    PTRef tr = mkNumTimes(args, &msg);
+    assert(tr != PTRef_Undef);
+    return tr;
+}
+PTRef LRALogic::mkNumDiv(const vec<PTRef>& args, char** msg)
+{
+    SimplifyConstDiv simp(*this);
+    vec<PTRef> args_new;
+    SymRef s_new;
+    simp.simplify(sym_Real_DIV, args, s_new, args_new, msg);
+    assert(args.size() == 2);
+    if (isRealDiv(s_new)) {
+        assert(isNumTerm(args_new[0]) && isConstant(args_new[1]));
+        args_new[1] = mkConst(FastRational_inverse(getNumConst(args_new[1]))); //mkConst(1/getRealConst(args_new[1]));
+        return mkNumTimes(args_new);
+    }
+    PTRef tr = mkFun(s_new, args_new, msg);
+    return tr;
+}
+// If the call results in a leq it is guaranteed that arg[0] is a
+// constant, and arg[1][0] has factor 1 or -1
+PTRef LRALogic::mkNumLeq(const vec<PTRef>& args_in, char** msg)
+{
+    vec<PTRef> args;
+    args_in.copyTo(args);
+    assert(args.size() == 2);
+    if (isConstant(args[0]) && isConstant(args[1])) {
+        opensmt::Number v1(sym_store.getName(getPterm(args[0]).symb())); //PS. can I add here also opensmt::Integer v3(sym_store.getName(getPterm(args[0]).symb()))
+        opensmt::Number v2(sym_store.getName(getPterm(args[1]).symb())); //PS. and  opensmt::Integer v4(sym_store.getName(getPterm(args[0]).symb()))
+        if (v1 <= v2) //PS. OR (v3<=v4)
+            return getTerm_true();
+        else
+            return getTerm_false();
+    } else {
+        // Should be in the form that on one side there is a constant
+        // and on the other there is a sum
+        PTRef tr_neg = mkNumNeg(args[0], msg);
+        vec<PTRef> sum_args;
+        sum_args.push(args[1]);
+        sum_args.push(tr_neg);
+        PTRef sum_tmp = mkNumPlus(sum_args, msg); // This gives us a collapsed version of the sum
+        if (isConstant(sum_tmp)) {
+            args[0] = getTerm_NumZero();
+            args[1] = sum_tmp;
+            return mkNumLeq(args, msg); // either true or false
+        } if (isNumTimes(sum_tmp)) {
+            sum_tmp = normalizeMul(sum_tmp);
+        } else if (isNumPlus(sum_tmp)) {
+            // Normalize the sum
+            sum_tmp = normalizeSum(sum_tmp); //Now the sum is normalized by dividing with the "first" factor.
+        }
+        // Otherwise no operation, already normalized
+        vec<PTRef> nonconst_args;
+        PTRef c = PTRef_Undef;
+        if (isNumPlus(sum_tmp)) {
+            Pterm& t = getPterm(sum_tmp);
+            for (int i = 0; i < t.size(); i++) {
+                if (!isConstant(t[i]))
+                    nonconst_args.push(t[i]);
+                else {
+                    assert(c == PTRef_Undef);
+                    c = t[i];
+                }
+            }
+            if (c == PTRef_Undef) {
+                args[0] = getTerm_NumZero();
+                args[1] = mkNumPlus(nonconst_args);
+            } else {
+                args[0] = mkNumNeg(c);
+                args[1] = mkNumPlus(nonconst_args);
+            }
+        } else if (isNumVar(sum_tmp) || isNumTimes(sum_tmp)) {
+            args[0] = getTerm_NumZero();
+            args[1] = sum_tmp;
+        } else assert(false);
+        PTRef r = mkFun(sym_Real_LEQ, args, msg);
+        return r;
+    }
+}
+PTRef LRALogic::mkNumPlus(const vec<PTRef> &args) {
+    char *msg;
+    PTRef tr = mkNumPlus(args, &msg);
+    assert(tr != PTRef_Undef);
+    return tr;
+}
+PTRef LRALogic::mkNumPlus(const vec<PTRef>& args, char** msg)
+{
+    vec<PTRef> new_args;
+    // Flatten possible internal sums.  This needs not be done properly,
+    // with a post-order dfs, since we are guaranteed that the inner
+    // sums are already flattened.
+    for (int i = 0; i < args.size(); i++) {
+        if (isNumPlus(args[i])) {
+            Pterm& t = getPterm(args[i]);
+            for (int j = 0; j < t.size(); j++)
+                new_args.push(t[j]);
+        } else {
+            new_args.push(args[i]);
+        }
+    }
+    vec<PTRef> tmp_args;
+    new_args.copyTo(tmp_args);
+    //for (int i = 0; i < new_args.size(); i++)
+    //    args.push(new_args[i]);
+    SimplifyConstSum simp(*this);
+    vec<PTRef> args_new;
+    SymRef s_new;
+    simp.simplify(sym_Real_PLUS, tmp_args, s_new, args_new, msg);
+    if (args_new.size() == 1)
+        return args_new[0];
+    // This code takes polynomials (+ (* v c1) (* v c2)) and converts them to the form (* v c3) where c3 = c1+c2
+    VecMap<PTRef,PTRef,PTRefHash> s2t;
+    vec<PTRef> keys;
+    for (int i = 0; i < args_new.size(); ++i) {
+        PTRef v;
+        PTRef c;
+        splitTermToVarAndConst(args_new[i], v, c);
+        if (c == PTRef_Undef) {
+            // The term is unit
+            c = getTerm_NumOne();
+        }
+        if (!s2t.has(v)) {
+            vec<PTRef> tmp;
+            tmp.push(c);
+            s2t.insert(v, tmp);
+            keys.push(v);
+        } else
+            s2t[v].push(c);
+    }
+    vec<PTRef> sum_args;
+    for (int i = 0; i < keys.size(); i++) {
+        vec<PTRef>& consts = s2t[keys[i]];
+        PTRef consts_summed = mkNumPlus(consts);
+        vec<PTRef> term_args;
+        term_args.push(consts_summed);
+        if (keys[i] != PTRef_Undef)
+            term_args.push(keys[i]);
+        else term_args.push(getTerm_NumOne());
+        PTRef term = mkNumTimes(term_args);
+        if (!isNumZero(term))
+            sum_args.push(term);
+    }
+    if (sum_args.size() == 1) return sum_args[0];
+    PTRef tr = mkFun(s_new, sum_args, msg);
+//    PTRef tr = mkFun(s_new, args_new, msg);
+    return tr;
 }
 
 PTRef LRALogic::mkRealNeg(PTRef tr, char** msg)
@@ -611,7 +841,8 @@ PTRef LRALogic::mkRealDiv(const vec<PTRef>& args, char** msg)
     PTRef tr = mkFun(s_new, args_new, msg);
     return tr;
 }
-
+*/
+/* //PS. SEE if getDefaultValue method used in LRASOLVER? then you will know how this methods used in other parts of the code and then you will know that LALogic you have to specify before method and double collons. This method is shared between LRA and LIA and needs to be overridden for return sort real or lia? or automatically will be ?
 const char*
 LRALogic::getDefaultValue(const PTRef tr) const
 {
@@ -620,6 +851,8 @@ LRALogic::getDefaultValue(const PTRef tr) const
     else
         return Logic::getDefaultValue(tr);
 }
+*/
+/*
 
 // Find the lexicographically first factor of a term and divide the other terms with it.
 PTRef LRALogic::normalizeSum(PTRef sum) {
@@ -734,6 +967,7 @@ PTRef LRALogic::normalizeMul(PTRef mul)
     else
         return v;
 }
+
 
 // If the call results in a leq it is guaranteed that arg[0] is a
 // constant, and arg[1][0] has factor 1 or -1
@@ -858,9 +1092,8 @@ PTRef LRALogic::mkRealGt(const vec<PTRef>& args, char** msg)
     }
     return mkNot(tr);
 }
-
-
-
+*/
+/*
 // Return a term corresponding to the operation applied to the constant
 // terms.  The list may contain terms of the form (* -1 a) for constant
 // a.
@@ -886,7 +1119,7 @@ PTRef SimplifyConst::simplifyConstOp(const vec<PTRef>& terms, char** msg)
             PTRef tr = PTRef_Undef;
             if (l.isConstant(terms[i]))
                 tr = terms[i];
-            else if (l.isRealNeg(terms[i]))
+            else if (l.isRealNeg(terms[i]))  //PS. can we give pointer to LRALogic& l if we define the simplification class in different header file and lralogic class in different header file?
                 tr = l.getPterm(terms[i])[0];
             else continue;
             char* rat_str;
@@ -899,6 +1132,7 @@ PTRef SimplifyConst::simplifyConstOp(const vec<PTRef>& terms, char** msg)
         return l.mkConst(l.getSort_real(), s.get_str().c_str());
     }
 }
+
 
 lbool LRALogic::retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs)
 {
@@ -1138,5 +1372,25 @@ LRALogic::printTerm_(PTRef tr, bool ext, bool safe) const
     else
         out = Logic::printTerm_(tr, ext, safe);
     return out;
-}
+}*/
 
+const SymRef LRALogic::get_sym_Num_TIMES () const {return sym_Real_TIMES;}
+const SymRef LRALogic::get_sym_Num_DIV () const {return sym_Real_DIV;}
+const SymRef LRALogic::get_sym_Num_MINUS () const {return sym_Real_MINUS;}
+const SymRef LRALogic::get_sym_Num_PLUS () const {return sym_Real_PLUS;}
+const SymRef LRALogic::get_sym_Num_NEG () const {return sym_Real_NEG;}
+const SymRef LRALogic::get_sym_Num_LEQ () const {return sym_Real_LEQ;}
+const SymRef LRALogic::get_sym_Num_GEQ () const {return sym_Real_GEQ;}
+const SymRef LRALogic::get_sym_Num_LT () const {return sym_Real_LT;}
+const SymRef LRALogic::get_sym_Num_GT () const {return sym_Real_GT;}
+const SymRef LRALogic::get_sym_Num_EQ () const {return sym_Real_EQ;}
+const SymRef LRALogic::get_sym_Num_ZERO () const {return sym_Real_ZERO;}
+const SymRef LRALogic::get_sym_Num_ONE () const {return sym_Real_ONE;}
+const SymRef LRALogic::get_sym_Num_ITE () const {return sym_Real_ITE;}
+const SRef LRALogic::get_sort_NUM () const {return sort_REAL;}
+
+PTRef    LRALogic::getTerm_NumZero() const  { return term_Real_ZERO; }
+PTRef      LRALogic::getTerm_NumOne()  const  { return term_Real_ONE; }
+bool        LRALogic::hasSortNum(PTRef tr) const  { return hasSortReal(getPterm(tr).symb()); }
+
+//bool        LRALogic::hasSortNum(PTRef tr) const  { return hasSortInt(getPterm(tr).symb()); }

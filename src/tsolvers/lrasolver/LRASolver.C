@@ -29,12 +29,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 #include "LRASolver.h"
+#include "LASolver.h"
+
 #include "LA.h"
 
 //#include "../liasolver/LIASolver.h"
 
 static SolverDescr descr_lra_solver("LRA Solver", "Solver for Quantifier Free Linear Real Arithmetics");
 
+/*
 // MB: helper functions
 namespace{
     bool isBoundSatisfied(Delta const & val, LABound const & bound ) {
@@ -47,26 +50,29 @@ namespace{
         }
     }
 }
-
+*/
+/*
 bool LRASolver::isValid(PTRef tr)
 {
-    return logic.isRealConst(tr) || logic.isRealPlus(tr) || logic.isRealMinus(tr) || logic.isRealNeg(tr) ||
-           logic.isRealTimes(tr) || logic.isRealDiv(tr) || logic.isRealEq(tr) || logic.isRealLeq(tr) || logic.isRealLt(tr) ||
-           logic.isRealGeq(tr) || logic.isRealGt(tr) || logic.isRealVar(tr);
+    return logic.isNumConst(tr) || logic.isNumPlus(tr) || logic.isNumMinus(tr) || logic.isNumNeg(tr) ||
+           logic.isNumTimes(tr) || logic.isNumDiv(tr) || logic.isNumEq(tr) || logic.isNumLeq(tr) || logic.isNumLt(tr) ||
+           logic.isNumGeq(tr) || logic.isNumGt(tr) || logic.isNumVar(tr);
 }
 
 void LRASolver::isProperLeq(PTRef tr)
 {
     assert(logic.isAtom(tr));
-    assert(logic.isRealLeq(tr));
+    assert(logic.isNumLeq(tr));
     Pterm& leq_t = logic.getPterm(tr);
     PTRef cons = leq_t[0];
     PTRef sum  = leq_t[1];
     assert(logic.isConstant(cons));
-    assert(logic.isRealVar(sum) || logic.isRealPlus(sum) || logic.isRealTimes(sum));
-    assert(!logic.isRealTimes(sum) || ((logic.isRealVar(logic.getPterm(sum)[0]) && (logic.mkRealNeg(logic.getPterm(sum)[1])) == logic.getTerm_RealOne()) ||
-                                       (logic.isRealVar(logic.getPterm(sum)[1]) && (logic.mkRealNeg(logic.getPterm(sum)[0])) == logic.getTerm_RealOne())));
-}
+    assert(logic.isNumVar(sum) || logic.isNumPlus(sum) || logic.isNumTimes(sum));
+    assert(!logic.isNumTimes(sum) || ((logic.isNumVar(logic.getPterm(sum)[0]) && (logic.mkNumNeg(logic.getPterm(sum)[1])) == logic.getTerm_NumOne()) ||
+                                       (logic.isNumVar(logic.getPterm(sum)[1]) && (logic.mkNumNeg(logic.getPterm(sum)[0])) == logic.getTerm_NumOne())));
+}*/
+
+
 //opensmt::Real *
 //LRASolver::newReal(const Real *old) {
 //    Real * p_a = NULL;
@@ -90,40 +96,190 @@ LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
 //    , bindedRowsStore(l, lva, bra)
 //    , pa(pta)
 //    , polyStore(lva, pa, bindedRowsStore, l)
-    , TSolver((SolverId)descr_lra_solver, (const char*)descr_lra_solver, c, d)
+    , LASolver(descr_lra_solver, c, l, d)
     , delta(Delta::ZERO)
-    , bland_threshold(1000)
-    , lavarStore(lva, l)
-    , boundStore(ba, bla, lva, lavarStore, l)
-    , model(lva, boundStore, l)
+    //, bland_threshold(1000)
+    //, lavarStore(lva, l)
+    //, boundStore(ba, bla, lva, lavarStore, l)
+    //, model(lva, boundStore, l)
 {
     status = INIT;
 }
+
 
 void LRASolver::clearSolver()
 {
-    status = INIT;
-    explanationCoefficients.clear();
-    candidates.clear();
-    // TODO set information about columns and rows in LAVars
-    this->tableau.clear();
-    removed_by_GaussianElimination.clear();
-    TSolver::clearSolver();
 
-    // MB: Let's keep the LAVar store and allocator
-//    lva.clear();
-//    lavarStore.clear();
-
-    // also keep the bounds allocator, bounds list allocator
-//    ba.clear();
-//    this->bla.clear();
-
-    this->model.clear();
-    // TODO: clear statistics
-//    this->tsolver_stats.clear();
+    LASolver::clearSolver();
     delta = Delta::ZERO;
 }
 
+void LRASolver::computeConcreteModel(LVRef v) {
+    while (concrete_model.size() <= lva[v].ID())
+        concrete_model.push(nullptr);
+
+    PTRef tr = lva[v].getPTRef();
+    auto it = removed_by_GaussianElimination.find(v);
+    if(it != removed_by_GaussianElimination.end()){
+        auto const & representation = (*it).second;
+        Delta val;
+        for (auto const & term : representation) {
+            val += term.second * model.read(term.first);
+        }
+        concrete_model[lva[v].ID()] = new opensmt::Real(val.R() + val.D() * delta);
+    }
+    else {
+        concrete_model[lva[v].ID()] = new opensmt::Real(model.read(v).R() + model.read(v).D() * delta);
+    }
+}
+
+void LRASolver::doGaussianElimination( )
+{
+    auto eliminated = tableau.doGaussianElimination([this](LVRef v){return this->isUnbounded(v);});
+    for(auto rit = eliminated.rbegin(); rit != eliminated.rend(); ++ rit) {
+        auto entry = *rit;
+        auto poly = entry.second;
+        for(auto const & term : entry.second){
+            auto var = term.first;
+            auto it = removed_by_GaussianElimination.find(var);
+            if( it != removed_by_GaussianElimination.end() && poly.contains(var)) {
+                auto to_substitute = (*it).second;
+                auto coeff = poly.getCoeff(var);
+                poly.merge(to_substitute, coeff);
+            }
+        }
+        removed_by_GaussianElimination.emplace(entry.first, poly);
+    }
+}
+
+//
+// Detect the appropriate value for symbolic delta and stores the model
+//
+
+void LRASolver::computeModel()
+{
+    assert( status == SAT );
+/*
+    Real minDelta(0);
+    Real maxDelta(0);
+    Delta curDelta(0);
+    Delta curBound(Delta::ZERO);
+*/
+    Delta delta_abst = Delta_PlusInf;  // We support plus infinity for this one.
+
+    // Let x be a LV variable such that there are asserted bounds c_1 <= x and x <= c_2, where
+    // (1) c_1 = (i1 | s1), c_2 = (i2 | -s2)
+    // (2) s1, s2 \in {0, 1}
+    // (3) val(x) = (R | D).
+    // Then delta(x) := (i1+i2)/2 - R.
+    // If x is not bounded from below or above, i.e., c_1 <= x, or x <= c_2, or neither, then
+    // delta(x) := + Infty.
+    // Now D at the same time is equal to k*\delta', and we need a value for \delta'.  So
+    // \delta'(x) = D/k
+    // Finally, \delta := min_{x \in LV |delta'(x)|}.
+
+    for (unsigned i = 0; i < lavarStore.numVars(); ++i)
+    {
+        LVRef v = lavarStore.getVarByIdx(i);
+        if (model.read(v).D() == 0)
+            continue; // If values are exact we do not need to consider them for delta computation
+
+        assert( !isModelOutOfBounds(v) );
+
+        Delta D;
+
+        if (model.Lb(v).isMinusInf() || model.Ub(v).isPlusInf())
+            D = Delta_PlusInf;
+        else
+            D = (model.Lb(v).R() + model.Ub(v).R())/2 - model.read(v).R();
+
+        D = D/model.read(v).D();
+
+        if (D < 0) D.negate();
+
+        if (delta_abst > D)
+            delta_abst = D;
+
+/*
+        curBound = Delta( Delta::ZERO );
+
+        // Check if the lower bound can be used and at least one of delta and real parts are not 0
+        const LABound& lbound = model.readLBound(v);
+        const Delta& val_l = lbound.getValue();
+        if (!val_l.isMinusInf()
+            && (val_l.D() != 0 || model.read(v).D() != 0)
+            && (val_l.R() != 0 || model.read(v).R() != 0))
+        {
+            curBound = lbound.getValue() - model.read(v);
+
+            // if delta is > 0 then use delta for min
+            if ( curBound.D() > 0 )
+            {
+                curDelta = -(curBound.R() / curBound.D());
+                if ( curDelta != 0 && ( minDelta == 0 || minDelta > curDelta ) )
+                    minDelta = curDelta;
+            }
+            // if delta is < 0 than use delta for max
+            else if  ( curBound.D() < 0 )
+            {
+                curDelta = -( curBound.R() / curBound.D() );
+                if ( curDelta != 0 && ( maxDelta == 0 || maxDelta < curDelta ) )
+                    maxDelta = curDelta;
+            }
+        }
+        const LABound& ubound = model.readUBound(v);
+        const Delta&  val_u = ubound.getValue();
+        if (!val_u.isPlusInf()
+            && (val_u.D() != 0 || model.read(v).D() != 0)
+            && (val_u.R() != 0 || model.read(v).R() != 0))
+        {
+            curBound = model.read(v) - ubound.getValue();
+
+            // if delta is > 0 then use delta for min
+            if ( curBound.D() > 0 )
+            {
+                curDelta = -(curBound.R() / curBound.D() );
+                if ( curDelta != 0 && ( minDelta == 0 || minDelta > curDelta ) )
+                    minDelta = curDelta;
+            }
+            // if denominator is < 0 then use delta for max
+            else if ( curBound.D() < 0 )
+            {
+                curDelta = -(curBound.R() / curBound.D());
+                if ( curDelta != 0 && ( maxDelta == 0 || maxDelta < curDelta ) )
+                    maxDelta = curDelta;
+            }
+        }
+*/
+    }
+
+    if (delta_abst.isPlusInf())
+        delta = 1;
+    else
+        delta = delta_abst.R();
+
+/*
+    // TODO: check if it is it really true :)
+    assert( minDelta >= 0 );
+    assert( maxDelta <= 0 );
+    delta = ( minDelta ) / 2;
+*/
+
+#ifdef GAUSSIAN_DEBUG
+    cerr << "; delta: " << curDelta << '\n';
+#endif
+
+    for ( unsigned i = 0; i < lavarStore.numVars(); i++)
+    {
+        LVRef v = lavarStore.getVarByIdx(i);
+        computeConcreteModel(v);
+    }
+//    // Compute the value for each variable. Delta is taken into account
+//    for ( unsigned i = 0; i < columns.size( ); ++i )
+//        computeConcreteModel(columns[i], curDelta);
+}
+
+/*
 //
 // The model system
 //
@@ -162,7 +318,7 @@ const Delta LRASolver::overBound(LVRef v) const
 
 bool LRASolver::isModelInteger(LVRef v) const
 {
-    return !( model.read(v).hasDelta() || !model.read(v).R().den_is_unit() );
+    return !( model.read(v).hasDelta() || !model.read(v).R().isInteger() );
 }
 
 bool LRASolver::isEquality(LVRef v) const
@@ -177,7 +333,7 @@ bool LRASolver::isUnbounded(LVRef v) const
 //        printf("Var %s is unbounded\n", lva.printVar(v));
     return rval;
 }
-
+*/
 
 // Given an inequality of the form c <= t(x_1, ..., x_n), set the bound
 // for the expression on the right side.  If the inequality is of the
@@ -189,12 +345,15 @@ bool LRASolver::isUnbounded(LVRef v) const
 //  (4) c <= -x1 - a2*x2 - ... - an*xn, set a lower bound for the slack
 //      var x1 + a2*x2 + ... + an*xn
 //
+
+/*
 void LRASolver::setBound(PTRef leq_tr)
 {
 //    printf("Setting bound for %s\n", logic.printTerm(leq_tr));
 
     boundStore.addBound(leq_tr);
 }
+*/
 
 //
 // So far a temporary wrapper.  The idea is to avoid unnecessary delete & new.
@@ -211,18 +370,22 @@ void LRASolver::setBound(PTRef leq_tr)
 //    }
 //}
 
+
 Real LRASolver::getReal(PTRef r) {
-    return logic.getRealConst(r);
+    return logic.getNumConst(r);
 }
 
+/*
 bool LRASolver::hasVar(PTRef expr) {
-    expr =  logic.isNegated(expr) ? logic.mkRealNeg(expr) : expr;
+    expr =  logic.isNegated(expr) ? logic.mkNumNeg(expr) : expr;
     PTId id = logic.getPterm(expr).getId();
     return lavarStore.hasVar(id);
 }
 
 LVRef LRASolver::getLAVar_single(PTRef expr_in) {
-    PTRef expr = logic.isNegated(expr_in) ? logic.mkRealNeg(expr_in) : expr_in;
+
+    PTRef expr = logic.isNegated(expr_in) ? logic.mkNumNeg(expr_in) : expr_in;
+
     PTId id_pos = logic.getPterm(expr).getId();
 
     if (lavarStore.hasVar(id_pos))
@@ -251,6 +414,8 @@ Polynomial LRASolver::expressionToLVarPoly(PTRef term) {
     }
     return poly;
 }
+
+
 //
 // Get a possibly new LAVar for a PTRef term.  We may assume that the term is of one of the following forms,
 // where x is a real variables and p_i are products of a real variable and a real constant
@@ -270,13 +435,13 @@ LVRef LRASolver::exprToLVar(PTRef expr) {
         { return x;}
     }
 
-    if (logic.isRealVar(expr) || logic.isRealTimes(expr)) {
+    if (logic.isNumVar(expr) || logic.isNumTimes(expr)) {
         // Case (1), (2a), and (2b)
         PTRef v;
         PTRef c;
 
         logic.splitTermToVarAndConst(expr, v, c);
-        assert(logic.isRealVar(v) || (logic.isNegated(v) && logic.isRealVar(logic.mkRealNeg(v))));
+        assert(logic.isNumVar(v) || (logic.isNegated(v) && logic.isNumVar(logic.mkNumNeg(v))));
         x = getLAVar_single(v);
         tableau.newNonbasicVar(x);
     }
@@ -294,7 +459,7 @@ LVRef LRASolver::exprToLVar(PTRef expr) {
 //
 lbool LRASolver::declareTerm(PTRef leq_tr)
 {
-    if (!logic.isRealLeq(leq_tr)) return l_Undef;
+    if (!logic.isNumLeq(leq_tr)) return l_Undef;
 
     if (informed(leq_tr)) return l_Undef;
 
@@ -322,6 +487,7 @@ lbool LRASolver::declareTerm(PTRef leq_tr)
 #endif
     return l_Undef;
 }
+*/
 
 //LVRef LRASolver::getBasicVarToFix() const {
 //    int curr_var_id_x = max_var_id;
@@ -349,6 +515,7 @@ lbool LRASolver::declareTerm(PTRef leq_tr)
 //    candidates.swap(new_candidates);
 //}
 
+/*
 LVRef LRASolver::getBasicVarToFixByShortestPoly() const {
     std::unordered_set<LVRef, LVRefHash> new_candidates;
     LVRef current = LVRef_Undef;
@@ -478,13 +645,25 @@ LVRef LRASolver::findNonBasicForPivotByBland(LVRef basicVar) {
     }
     return y_found;
 }
+
+*/
+
 //
 // Performs the main Check procedure to see if the current constraints
 // and Tableau are satisfiable
 //
-bool LRASolver::check(bool complete)
-{
+TRes LRASolver::check(bool complete) {
 
+    if (check_simplex(complete))
+        return TR_SAT;
+    else
+        return TR_UNSAT;
+
+}
+
+/*
+
+bool LRASolver::check_simplex(bool complete) {
     // opensmt::StopWatch check_timer(tsolver_stats.simplex_timer);
 //    printf(" - check %d\n", debug_check_count++);
     (void)complete;
@@ -529,8 +708,8 @@ bool LRASolver::check(bool complete)
 
         if (x == LVRef_Undef) {
             // If not found, check if problem refinement for integers is required
-            if (config.lra_integer_solver && complete)
-                return checkIntegersAndSplit( );
+            //if (config.lra_integer_solver && complete)
+                //return checkIntegersAndSplit( );
 
             // Otherwise - SAT
             refineBounds();
@@ -575,6 +754,7 @@ bool LRASolver::check(bool complete)
 //        model.printModelState();
     return getStatus();
 }
+
 
 //
 // Push the constraint into the solver and increase the level
@@ -883,7 +1063,9 @@ inline bool LRASolver::setStatus( LRASolverStatus s )
         has_explanation = true;
     return getStatus( );
 }
+*/
 
+/*
 //
 // Returns the bounds conflicting with the actual model.
 //
@@ -1006,7 +1188,6 @@ void LRASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
 
 //    assert( dst.size() == polyStore.getSize(lva[x].getPolyRef())+1 ); // One for each term plus the broken equality
 
-/*
     ipartitions_t p = 1;
     p = ~p;
     p <<= 1;
@@ -1033,9 +1214,10 @@ void LRASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
 
     cerr << "; Strong itp:\n" << logic.printTerm(itp_strong) << endl;
     cerr << "; Weak itp:\n" << logic.printTerm(itp_weak) << endl;
-  */
-}
+  }*/
 
+
+/*
 void LRASolver::getSimpleDeductions(LVRef v, LABoundRef br)
 {
 //    printf("Deducing from bound %s\n", boundStore.printBound(br));
@@ -1095,6 +1277,9 @@ void LRASolver::getSimpleDeductions(LVRef v, LABoundRef br)
     }
 }
 
+*/
+
+/*
 //
 // Compute the current bounds for each row and tries to deduce something useful
 //
@@ -1167,6 +1352,9 @@ void LRASolver::computeConcreteModel(LVRef v) {
     }
 }
 
+
+
+
 void LRASolver::getConflict(bool, vec<PtAsgn>& e)
 {
     for (int i = 0; i < explanation.size(); i++) {
@@ -1189,18 +1377,16 @@ void LRASolver::getConflict(bool, vec<PtAsgn>& e)
 //    assert(logic.implies(logic.mkAnd(check_me), logic.getTerm_false()));
 }
 
+ */
+
+/*
 //
 // Detect the appropriate value for symbolic delta and stores the model
 //
 void LRASolver::computeModel()
 {
     assert( status == SAT );
-/*
-    Real minDelta(0);
-    Real maxDelta(0);
-    Delta curDelta(0);
-    Delta curBound(Delta::ZERO);
-*/
+
     Delta delta_abst = Delta_PlusInf;  // We support plus infinity for this one.
 
     // Let x be a LV variable such that there are asserted bounds c_1 <= x and x <= c_2, where
@@ -1236,70 +1422,14 @@ void LRASolver::computeModel()
         if (delta_abst > D)
             delta_abst = D;
 
-/*
-        curBound = Delta( Delta::ZERO );
-
-        // Check if the lower bound can be used and at least one of delta and real parts are not 0
-        const LABound& lbound = model.readLBound(v);
-        const Delta& val_l = lbound.getValue();
-        if (!val_l.isMinusInf()
-            && (val_l.D() != 0 || model.read(v).D() != 0)
-            && (val_l.R() != 0 || model.read(v).R() != 0))
-        {
-            curBound = lbound.getValue() - model.read(v);
-
-            // if delta is > 0 then use delta for min
-            if ( curBound.D() > 0 )
-            {
-                curDelta = -(curBound.R() / curBound.D());
-                if ( curDelta != 0 && ( minDelta == 0 || minDelta > curDelta ) )
-                    minDelta = curDelta;
-            }
-            // if delta is < 0 than use delta for max
-            else if  ( curBound.D() < 0 )
-            {
-                curDelta = -( curBound.R() / curBound.D() );
-                if ( curDelta != 0 && ( maxDelta == 0 || maxDelta < curDelta ) )
-                    maxDelta = curDelta;
-            }
-        }
-        const LABound& ubound = model.readUBound(v);
-        const Delta&  val_u = ubound.getValue();
-        if (!val_u.isPlusInf()
-            && (val_u.D() != 0 || model.read(v).D() != 0)
-            && (val_u.R() != 0 || model.read(v).R() != 0))
-        {
-            curBound = model.read(v) - ubound.getValue();
-
-            // if delta is > 0 then use delta for min
-            if ( curBound.D() > 0 )
-            {
-                curDelta = -(curBound.R() / curBound.D() );
-                if ( curDelta != 0 && ( minDelta == 0 || minDelta > curDelta ) )
-                    minDelta = curDelta;
-            }
-            // if denominator is < 0 then use delta for max
-            else if ( curBound.D() < 0 )
-            {
-                curDelta = -(curBound.R() / curBound.D());
-                if ( curDelta != 0 && ( maxDelta == 0 || maxDelta < curDelta ) )
-                    maxDelta = curDelta;
-            }
-        }
-*/
     }
+
 
     if (delta_abst.isPlusInf())
         delta = 1;
     else
         delta = delta_abst.R();
 
-/*
-    // TODO: check if it is it really true :)
-    assert( minDelta >= 0 );
-    assert( maxDelta <= 0 );
-    delta = ( minDelta ) / 2;
-*/
 
 #ifdef GAUSSIAN_DEBUG
     cerr << "; delta: " << curDelta << '\n';
@@ -1314,114 +1444,24 @@ void LRASolver::computeModel()
 //    for ( unsigned i = 0; i < columns.size( ); ++i )
 //        computeConcreteModel(columns[i], curDelta);
 }
-
-bool LRASolver::checkIntegersAndSplit( )
-{
-  assert(false);
-/*
-
-  assert( config.lra_integer_solver );
-  assert( removed_by_GaussianElimination.empty( ) );
-
-  VectorLAVar::const_iterator it = columns.begin( );
-  LAVar * x;
-
-  //  unsigned equality_counter=0;
-  //  for( ; it != columns.end( ); ++it )
-  //    if (( *it )->isEquality())
-  //      equality_counter++;
-  //
-  //  cout << "Equalities in the complete integer check: " << equality_counter << " out of " << columns.size();
-
-  it = columns.begin( );
-
-  for( ; it != columns.end( ); ++it )
-  {
-    assert( !( *it )->skip );
-    if( !( *it )->isModelInteger( ) )
-    {
-      x = *it;
-
-      // Prepare the variable to store a splitting value
-      Real * c = NULL;
-      if( !numbers_pool.empty( ) )
-      {
-        c = numbers_pool.back( );
-        numbers_pool.pop_back( );
-      }
-      else
-      {
-        c = new Real( 0 );
-      }
-
-      // Compute a splitting value
-      if( x->M( ).R( ).get_den( ) != 1 )
-      {
-        if( x->M( ).R( ).get_num( ) < 0 )
-          *c = x->M( ).R( ).get_num( ) / x->M( ).R( ).get_den( ) - 1;
-        else
-          *c = x->M( ).R( ).get_num( ) / x->M( ).R( ).get_den( );
-      }
-      else
-      {
-        if( x->M( ).D( ) < 0 )
-          *c = x->M( ).R( ) - 1;
-        else
-          *c = x->M( ).R( );
-      }
-
-      // Check if integer splitting is possible for the current variable
-      if( *c < x->L( ) && *c + 1 > x->U( ) )
-      {
-        vec<PTRef> tmp;
-        getConflictingBounds( x, tmp);
-        for (int i = 0; i < tmp.size; i++) {
-            explanation.push(PtAsgn(tmp[i], getPolarity(tmp[i])));
-        }
-        for( unsigned i = 0; i < columns.size( ); ++i )
-          if( !columns[i]->skip )
-            columns[i]->restoreModel( );
-        return setStatus( UNSAT );
-      }
-
-      vector<Enode *> splitting;
-
-      // Prepare left branch
-      Enode * or1 = egraph.mkLeq( egraph.cons( x->e, egraph.cons( egraph.mkNum( *c ) ) ) );
-      LAExpression a( or1 );
-      or1 = a.toEnode( egraph );
-      egraph.inform( or1 );
-      splitting.push_back( or1 );
-
-      // Prepare right branch
-      Enode * or2 = egraph.mkGeq( egraph.cons( x->e, egraph.cons( egraph.mkNum( *c + 1 ) ) ) );
-      LAExpression b( or2 );
-      or2 = b.toEnode( egraph );
-      egraph.inform( or2 );
-      splitting.push_back( or2 );
-
-      //      cout << or1 <<endl;
-      //      cout << or2 <<endl;
-      // Push splitting clause
-      egraph.splitOnDemand( splitting, id );
-
-      // We don't need splitting value anymore
-      numbers_pool.push_back( c );
-
-      // We are lazy: save the model and return on the first splitting
-      LAVar::saveModelGlobal( );
-      checks_history.push_back( pushed_constraints.size( ) );
-      return setStatus( SAT );
-    }
-  }
-  // Cool! The model is already integer!
-  LAVar::saveModelGlobal( );
-  checks_history.push_back( pushed_constraints.size( ) );
-  return setStatus( SAT );
 */
-    return false;
-}
 
+
+//
+// Add the variable x with the coefficient p_v to the polynomial represented by
+// s
+//
+//void LRASolver::addVarToRow( LVRef s, LVRef x, Real * p_v )
+//{
+//    assert(!lva[x].isBasic());
+//    assert(lva[s].isBasic());
+//
+//    polyStore.add(lva[s].getPolyRef(), x, *p_v);
+//}
+
+
+
+/*
 // We may assume that the term is of the following forms
 // (1) (* x c)
 // (2) (* c x)
@@ -1431,7 +1471,7 @@ opensmt::Real LRASolver::evaluateTerm(PTRef tr)
     Pterm& t = logic.getPterm(tr);
     opensmt::Real val(0);
     // Case (3)
-    if (logic.isRealConst(tr))
+    if (logic.isNumConst(tr))
         return logic.getRealConst(tr);
 
     // Cases (1) & (2)
@@ -1454,7 +1494,7 @@ opensmt::Real LRASolver::evaluateTerm(PTRef tr)
 // (3b) (* -1 x) + p_1 + ... + p_n
 //
 ValPair LRASolver::getValue(PTRef tr) {
-    if (!logic.hasSortReal(tr)) return ValPair_Undef;
+    if (!logic.hasSortNum(tr)) return ValPair_Undef;
     PTId id = logic.getPterm(tr).getId();
     opensmt::Real val(0);
     if (!lavarStore.hasVar(id)) {
@@ -1473,12 +1513,16 @@ ValPair LRASolver::getValue(PTRef tr) {
     return ValPair(tr, val.get_str().c_str());
 }
 
+*/
+
+
+
 //
 // Destructor
 //
 LRASolver::~LRASolver( )
 {
-    tsolver_stats.printStatistics(cerr);
+    lasolverstats.printStatistics(cerr);
     // Remove numbers
 //    while( !numbers_pool.empty( ) )
 //    {
@@ -1488,6 +1532,10 @@ LRASolver::~LRASolver( )
 //    }
 }
 
+LRALogic&  LRASolver::getLogic() { return logic; }
+
+
+/*
 //bool LRASolver::valueConsistent(LVRef v)
 //{
 //    const Delta& value = model.read(v);
@@ -1581,6 +1629,8 @@ bool LRASolver::checkTableauConsistency() const {
     return res;
 }
 
+
+
 void LRASolver::doGaussianElimination( )
 {
     auto eliminated = tableau.doGaussianElimination([this](LVRef v){return this->isUnbounded(v);});
@@ -1598,7 +1648,9 @@ void LRASolver::doGaussianElimination( )
         }
         removed_by_GaussianElimination.emplace(entry.first, poly);
     }
-}
+}*/
+
+
 
 #ifdef PRODUCE_PROOF
 //

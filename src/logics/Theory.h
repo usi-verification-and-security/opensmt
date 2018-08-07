@@ -28,10 +28,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "Logic.h"
 #include "LRALogic.h"
+#include "LIALogic.h"
 #include "CUFLogic.h"
 #include "BVLogic.h"
 
 #include "LRATHandler.h"
+#include "LIATHandler.h"
 #include "UFTHandler.h"
 #include "CUFTHandler.h"
 #include "Alloc.h"
@@ -85,13 +87,14 @@ private:
     Map<PTRef,lbool,PTRefHash> seen; // Contains all the variables x seen in this frame.
 public:
     FrameId getId() const                          { return id; }
-    int     size()  const                          { return formulas.size(); }
-    void    push(PTRef tr)                         { formulas.push(tr); }
+    int     size()  const                         { return formulas.size(); }
+    void    push(PTRef tr)                        { formulas.push(tr); }
     PTRef operator[] (int i) const                 { return formulas[i]; }
     Map<PTRef,lbool,PTRefHash> units; // Contains the unit (theory) clauses that are implied up to here
     PTRef root;
-    void addSeen(PTRef tr)                         { seen.insert(tr, l_True); }
-    bool isSeen(PTRef tr)                          { return seen.has(tr); }
+    PTRef substs;                     // Contains the substitutions as a conjunction (equalities possibly split)
+    void addSeen(PTRef tr)                       { seen.insert(tr, l_True); }
+    bool isSeen(PTRef tr)                       { return seen.has(tr); }
     vec<PTRef> formulas;
     PushFrame(PushFrame& pf);
     PushFrame() : id(FrameId_Undef), root(PTRef_Undef) {} // For pushing into vecs we need a default.
@@ -116,19 +119,19 @@ private:
     int id_counter;
 public:
     PushFrameAllocator() : id_counter(FrameId_bottom.id) {}
-    void moveTo(PushFrameAllocator& to) {
+    void moveTo(PushFrameAllocator& to);/* {
         to.id_counter = id_counter;
-        RegionAllocator<uint32_t>::moveTo(to); }
-    PFRef alloc()
-    {
+        RegionAllocator<uint32_t>::moveTo(to); }*/
+    PFRef alloc();
+/*    {
         uint32_t v = RegionAllocator<uint32_t>::alloc(sizeof(PushFrame));
         PFRef r = {v};
         new (lea(r)) PushFrame(id_counter++);
         return r;
-    }
-    PushFrame& operator[](PFRef r) { return (PushFrame&)RegionAllocator<uint32_t>::operator[](r.x); }
-    PushFrame* lea       (PFRef r) { return (PushFrame*)RegionAllocator<uint32_t>::lea(r.x); }
-    PFRef      ael       (const PushFrame* t) { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); return { r }; }
+    }*/
+    PushFrame& operator[](PFRef r);// { return (PushFrame&)RegionAllocator<uint32_t>::operator[](r.x); }
+    PushFrame* lea       (PFRef r);// { return (PushFrame*)RegionAllocator<uint32_t>::lea(r.x); }
+    PFRef      ael       (const PushFrame* t);// { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); return { r }; }
 
 };
 
@@ -140,7 +143,7 @@ class Theory
     SMTConfig &         config;
     PTRef getCollateFunction(vec<PFRef>& formulas, int curr);
     Theory(SMTConfig &c) : config(c) {}
-    void setSubstitutions(Map<PTRef,PtAsgn,PTRefHash>& substs) { getTSolverHandler().setSubstitutions(substs); }
+    void setSubstitutions(Map<PTRef,PtAsgn,PTRefHash>& substs);// { getTSolverHandler().setSubstitutions(substs); }
   public:
     PushFrameAllocator      pfstore;
     virtual TermMapper     &getTmap() = 0;
@@ -149,7 +152,7 @@ class Theory
     virtual TSolverHandler &getTSolverHandler()     = 0;
     virtual TSolverHandler *getTSolverHandler_new(vec<DedElem>&) = 0;
     virtual bool            simplify(vec<PFRef>&, int) = 0; // Simplify a vector of PushFrames in an incrementality-aware manner
-    vec<DedElem>           &getDeductionVec()   { return deductions; }
+    vec<DedElem>           &getDeductionVec();//   { return deductions; }
     bool                    computeSubstitutions(PTRef coll_f, vec<PFRef>& frames, int curr);
     void                    printFramesAsQuery(vec<PFRef>& en_frames, std::ostream& s);
     virtual                ~Theory()                           {};
@@ -162,7 +165,7 @@ class LRATheory : public Theory
     TermMapper  tmap;
     LRATHandler lratshandler;
   public:
-    virtual TermMapper& getTmap() { return tmap; }
+    virtual TermMapper& getTmap();// { return tmap; }
     LRATheory(SMTConfig& c)
         : Theory(c)
         , lralogic(c)
@@ -170,10 +173,31 @@ class LRATheory : public Theory
         , lratshandler(c, lralogic, deductions, tmap)
     { }
     ~LRATheory() {};
-    virtual LRALogic&    getLogic()    { return lralogic; }
-    virtual LRATHandler& getTSolverHandler() { return lratshandler; }
-    virtual LRATHandler *getTSolverHandler_new(vec<DedElem> &d) { return new LRATHandler(config, lralogic, d, tmap); }
+    virtual LRALogic&    getLogic();//    { return lralogic; }
+    virtual LRATHandler& getTSolverHandler();// { return lratshandler; }
+    virtual LRATHandler *getTSolverHandler_new(vec<DedElem> &d);// { return new LRATHandler(config, lralogic, d, tmap); }
     virtual bool simplify(vec<PFRef>&, int); // Theory specific simplifications
+};
+
+class LIATheory : public Theory
+{
+protected:
+    LIALogic    lialogic;
+    TermMapper  tmap;
+    LIATHandler liatshandler;
+public:
+    virtual TermMapper& getTmap();// { return tmap; }
+    LIATheory(SMTConfig& c)
+    : Theory(c)
+    , lialogic(c)
+    , tmap(lialogic)
+    , liatshandler(c, lialogic, deductions, tmap)
+    { }
+    ~LIATheory() {};
+    virtual LIALogic&    getLogic();//    { return lialogic; }
+    virtual LIATHandler& getTSolverHandler();// { return liatshandler; }
+    virtual LIATHandler *getTSolverHandler_new(vec<DedElem> &d);// { return new LIATHandler(config, lialogic, d, tmap); }
+    virtual bool simplify(vec<PFRef>&, int);
 };
 
 class UFTheory : public Theory
@@ -220,5 +244,7 @@ class CUFTheory : public Theory
     virtual CUFTHandler *getTSolverHandler_new(vec<DedElem>& d) { return new CUFTHandler(config, cuflogic, d, tmap); }
     virtual bool simplify(vec<PFRef>&, int);
 };
+
+
 
 #endif

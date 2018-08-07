@@ -81,9 +81,12 @@ class SimpSMTSolver : public CoreSMTSolver
     //
     Var     newVar    (bool polarity = true, bool dvar = true);
 #ifdef PRODUCE_PROOF
-    bool    addClause (const vec<Lit>& ps, const ipartitions_t& mask = 0);
-    bool    addSMTClause (const  vec<Lit>&, const ipartitions_t& mask = 0);
-    bool    addSMTClause_(       vec<Lit>&, const ipartitions_t& mask = 0);
+    bool    addClause (const vec<Lit>& ps, const ipartitions_t& mask = 0) override;
+    bool    addSMTClause (const  vec<Lit>&, const ipartitions_t& mask = 0) override;
+    bool    addSMTClause_(       vec<Lit>&, const ipartitions_t& mask = 0) override;
+protected:
+    bool    addSMTClause_(       vec<Lit>&, CRef& cr, const ipartitions_t& mask = 0) override;
+public:
     bool    addEmptyClause();                // Add the empty clause to the solver.
     bool    addClause (Lit p, const ipartitions_t& mask = 0);               // Add a unit clause to the solver.
     bool    addClause (Lit p, Lit q, const ipartitions_t& mask = 0);        // Add a binary clause to the solver.
@@ -91,7 +94,10 @@ class SimpSMTSolver : public CoreSMTSolver
 #else
     bool    addClause (const vec<Lit>& ps);
     bool    addSMTClause (const  vec<Lit>&);
-    bool    addSMTClause_(       vec<Lit>&);
+    bool    addSMTClause_(       vec<Lit>&) override;
+protected:
+    bool    addSMTClause_(       vec<Lit>&, CRef& cr) override;
+public:
     bool    addEmptyClause();                // Add the empty clause to the solver.
     bool    addClause (Lit p);               // Add a unit clause to the solver.
     bool    addClause (Lit p, Lit q);        // Add a binary clause to the solver.

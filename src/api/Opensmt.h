@@ -36,6 +36,11 @@ public:
         LRATheory& t = (LRATheory&)thandler->getTheory();
         return t.getLogic();
     }
+    LIALogic& getLIALogic()
+    {
+        LIATheory& t = (LIATheory&)thandler->getTheory();
+        return t.getLogic();
+    }
     CUFLogic& getCUFLogic() {
         CUFTheory& t = (CUFTheory&)thandler->getTheory();
         return t.getLogic();

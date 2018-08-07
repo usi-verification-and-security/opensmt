@@ -112,16 +112,16 @@ void BVSolver::popBacktrackPoint ( )
 // Check for consistency. If flag is
 // set make sure you run a complete check
 //
-bool BVSolver::check( bool complete )
+TRes BVSolver::check( bool complete )
 {
-    if ( !complete ) return true;
+    if ( !complete ) return TR_SAT;
     assert( explanation.size() == 0 );
 
     // Here check for consistency.  No undefs allowed.
     const bool res = (B.check() == l_True ? true : false);
 
     assert(res || (explanation.size() != 0));
-    return res;
+    return res ? TR_SAT : TR_UNSAT;
 }
 
 void BVSolver::computeModel( )

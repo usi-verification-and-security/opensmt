@@ -31,6 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SMTConfig.h"
 #include "Deductions.h"
 #include "SolverTypes.h"
+#include "TResult.h"
 #ifdef PRODUCE_PROOF
 class TheoryInterpolator; // forward declaration
 #endif
@@ -123,6 +124,8 @@ class TSolverStats
 };
 #endif
 
+
+
 class TSolver
 {
 protected:
@@ -135,8 +138,12 @@ protected:
     vec<PTRef>                  suggestions;     // List of suggestions for decisions
     vec<DedElem>                &deduced;        // Array of deductions indexed by variables
     Map<PTRef,lbool,PTRefHash>  polarityMap;
+    vec<PTRef>                  splitondemand;
 
 public:
+    // The states of the TSolver check query
+
+
     TSolver(SolverId id_, const char* name_, SMTConfig & c, vec<DedElem>& d)
     : id(id_)
     , name(name_)
@@ -144,6 +151,7 @@ public:
     , config  (c)
     , deduced (d)
     , has_explanation(false)
+
     {}
 
     virtual ~TSolver ( ) {}
@@ -160,7 +168,7 @@ public:
     virtual void                pushBacktrackPoint  ( )                       ;  // Push a backtrack point
     virtual void                popBacktrackPoint   ( )                       ;  // Backtrack to last saved point
     virtual void                popBacktrackPoints  ( unsigned int )          ;  // Backtrack given number of points
-    virtual bool                check               ( bool ) = 0              ;  // Check satisfiability
+    virtual TRes                check               ( bool ) = 0              ;  // Check satisfiability
     inline string               getName             ( ) { return name; }         // The name of the solver
     virtual ValPair             getValue            (PTRef) = 0;
 #ifdef PRODUCE_PROOF
@@ -168,11 +176,14 @@ public:
 #endif
     virtual void computeModel() = 0;                      // Compute model for variables
     virtual void getConflict(bool, vec<PtAsgn>&) = 0;     // Return conflict
+    virtual bool hasNewSplits();                          // Are there new splits?
+    virtual void getNewSplits(vec<PTRef>&);               // Return new splits if any
     virtual PtAsgn_reason getDeduction() = 0;             // Return an implied node based on the current state
 
     SolverId getId() { return id; }
     bool hasExplanation() { return has_explanation; }
     virtual lbool declareTerm(PTRef tr) = 0;
+    virtual void  informNewSplit(PTRef tr) { };
     virtual char* printValue(PTRef) = 0; // Debug function.  Instances are allowed to print whatever they want.
     virtual char* printExplanation(PTRef) = 0; // Debug function.  Instances are allowed to print whatever they want.
     virtual Logic& getLogic() = 0;

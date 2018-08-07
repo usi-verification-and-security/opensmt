@@ -263,8 +263,9 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
             fc.setRoot(flat_root);
         }
 
-        // root_instance is updated to the and of the simplified formulas currently in the solver
-        root_instance.setRoot(logic.mkAnd(root_instance.getRoot(), fc.getRoot()));
+        // root_instance is updated to the and of the simplified formulas currently in the solver, together with the substitutions
+        fc.setRoot(logic.mkAnd(fc.getRoot(), pfstore[formulas[i]].substs));
+        root_instance.setRoot(fc.getRoot());
         // Stop if problem becomes unsatisfiable
         if ((status = giveToSolver(fc.getRoot(), pfstore[formulas[i]].getId())) == s_False)
             break;
@@ -1274,6 +1275,8 @@ void MainSolver::solve_split(int i, int s, int wpipefd, std::mutex *mtx)
         theory = new UFTheory(config);
     else if (l == QF_LRA)
         theory = new LRATheory(config);
+    else if (l == QF_LIA)
+        theory = new LIATheory(config);
     else {
         cerr << "Unsupported logic" << endl;
         exit(1);

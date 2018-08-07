@@ -42,7 +42,7 @@ public:
     bool            assertLit          ( PtAsgn, bool = false );
     void            pushBacktrackPoint ( );
     void            popBacktrackPoint  ( );
-    bool            check              ( bool );
+    TRes            check              ( bool );
     void            computeModel       ( );
     virtual lbool   declareTerm        ( PTRef );
     virtual ValPair getValue           ( PTRef );
