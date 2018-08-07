@@ -58,6 +58,7 @@ include_directories(
     ${GMP_INCLUDE_DIR}
 )
 
+
 if (ITP_DEBUG)
     add_definitions(-DITP_DEBUG)
 endif (ITP_DEBUG)

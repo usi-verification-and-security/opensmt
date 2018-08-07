@@ -2,12 +2,16 @@
 find_path(Readline_ROOT_DIR
     NAMES include/readline/readline.h
 )
+
+MESSAGE(STATUS "Readline root dir: " ${Readline_ROOT_DIR})
  
 # Search for include directory
 find_path(Readline_INCLUDE_DIR
     NAMES readline/readline.h
     HINTS ${Readline_ROOT_DIR}/include
 )
+
+MESSAGE(STATUS "Readline include dir: " ${Readline_INCLUDE_DIR})
  
 # Search for library
 find_library(Readline_LIBRARY
