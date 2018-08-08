@@ -2527,7 +2527,12 @@ lbool CoreSMTSolver::lookaheadSplit(int d)
     lbool res = l_Undef;
     while (res == l_Undef) {
         //cerr << "; Doing lookahead for " << nof_conflicts << " conflicts\n";
-        res = lookaheadSplit(d, idx, (int)nof_conflicts);
+        ConflQuota conflict_quota;
+        if (false) { //if (config.lookahead_restarts()) {
+            conflict_quota = ConflQuota((int)nof_conflicts);
+        }
+        res = lookaheadSplit(d, idx, conflict_quota);
+
         nof_conflicts = restartNextLimit(nof_conflicts);
     }
 //    first_model_found = first_model_found_prev;
@@ -2556,7 +2561,7 @@ lbool CoreSMTSolver::lookaheadSplit(int d)
 // new conflicts or propagations are available in theory or in unit propagation
 //
 
-lbool CoreSMTSolver::LApropagate_wrapper(int& confl_quota)
+lbool CoreSMTSolver::LApropagate_wrapper(ConflQuota& confl_quota)
 {
     CRef cr;
     bool diff;
@@ -2567,7 +2572,7 @@ lbool CoreSMTSolver::LApropagate_wrapper(int& confl_quota)
         {
             if (decisionLevel() == 0)
                 return l_False; // Unsat
-            confl_quota --;
+            -- confl_quota;
 #ifdef LADEBUG
             cerr << "; Got a conflict, quota now " << confl_quota << "\n";
 #endif
@@ -2612,7 +2617,7 @@ lbool CoreSMTSolver::LApropagate_wrapper(int& confl_quota)
                 printf("Theory propagation / conflict\n");
 #endif
                 diff = true;
-                confl_quota --;
+                -- confl_quota;
 #ifdef LADEBUG
                 cerr << "; Got a theory conflict, quota now " << confl_quota << "\n";
 #endif
@@ -2638,7 +2643,7 @@ lbool CoreSMTSolver::LApropagate_wrapper(int& confl_quota)
 // parameter idx store where we were last time in checking the variables
 // confl_quota is the maximum number of conflicts that we're allowed to collect before a restart
 //
-lbool CoreSMTSolver::lookaheadSplit(int d, int &idx, int confl_quota)
+lbool CoreSMTSolver::lookaheadSplit(int d, int &idx, ConflQuota confl_quota)
 {
     int la_split_count = 0;
 
@@ -2803,9 +2808,11 @@ lbool CoreSMTSolver::lookaheadSplit(int d, int &idx, int confl_quota)
     return l_Undef;
 }
 
-CoreSMTSolver::laresult CoreSMTSolver::lookahead_loop(Lit& best, int &idx, int &confl_quota)
+CoreSMTSolver::laresult CoreSMTSolver::lookahead_loop(Lit& best, int &idx, ConflQuota &confl_quota)
 {
-    if (checkTheory(true) == tpr_Unsat)
+    printf("Entering lookahead loop\n");
+    ConflQuota unlimited;
+    if (LApropagate_wrapper(unlimited) == l_False)
     {
 #ifdef LADEBUG
         printf("Already unsatisfiable at entering the lookahead loop\n");
@@ -2861,7 +2868,7 @@ CoreSMTSolver::laresult CoreSMTSolver::lookahead_loop(Lit& best, int &idx, int &
 #ifdef LADEBUG
                 printf("All vars set?\n");
 #endif
-                if (checkTheory(true) != tpr_Decide)
+                if (checkTheory(true) != tpr_Decide) // TODO could also be tpr_Propagate
                     return la_tl_unsat; // Problem is trivially unsat
                 assert(checkTheory(true) == tpr_Decide);
 #ifdef LADEBUG
