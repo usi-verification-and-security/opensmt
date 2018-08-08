@@ -437,6 +437,19 @@ inline void Clause::strengthen(Lit p)
     calcAbstraction();
 }
 
+class ConflQuota {
+    bool disabled;
+    int quota;
+public:
+    ConflQuota(int quota) : disabled(false), quota(quota) {}
+    ConflQuota() : disabled(true), quota(0) {}
+    ConflQuota(ConflQuota &q) : disabled(q.disabled), quota(q.quota) {}
+    void operator= (ConflQuota&& o) { disabled = o.disabled; quota = o.quota; };
+    bool operator<  (int i) { if (disabled) return false; else return quota < i; }
+    bool operator<= (int i) { if (disabled) return false; else return quota < i; }
+    bool operator>  (int i) { if (disabled) return true;  else return quota > i; }
+    ConflQuota& operator-- () { if (!disabled) { quota --; } return *this; }
+};
 
 //=================================================================================================
 
