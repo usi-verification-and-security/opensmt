@@ -108,8 +108,9 @@ Polynomial LIASolver::expressionToLVarPoly(PTRef term) {
 
 void LIASolver::notifyVar(LVRef v)
 {
-    if (!int_vars.has(v)) {
-        int_vars.insert(v, true);
+    if (!int_vars_map.has(v)) {
+        int_vars_map.insert(v, true);
+        int_vars.push(v);
     }
 
     while(cuts.size() <= lva[v].ID())
@@ -121,14 +122,11 @@ TRes LIASolver::checkIntegersAndSplit() {
     // assert( config.lra_integer_solver );
     //assert( removed_by_GaussianElimination.empty( ) );
 
-    vec<LVRef> keys;
-    int_vars.getKeys(keys);
-
     bool nonint_models = false;  // Keep track whether non-integer models are seen
 
-    for (int i = 0; i < keys.size(); i++) {
+    for (int i = 0; i < int_vars.size(); i++) {
 
-        LVRef x = keys[i];
+        LVRef x = int_vars[i];
         if (removed_by_GaussianElimination.find(x) != removed_by_GaussianElimination.end()) {
             computeConcreteModel(x);
             model.write(x, Delta(*concrete_model[lva[x].ID()]));

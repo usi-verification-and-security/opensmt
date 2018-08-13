@@ -81,7 +81,8 @@ protected:
 
     opensmt::Integer2 getInt(PTRef r) ;
 
-    Map<LVRef, bool, LVRefHash> int_vars; //stores problem variables
+    Map<LVRef, bool, LVRefHash> int_vars_map; // stores problem variables for duplicate check
+    vec<LVRef> int_vars;                      // stores the list of problem variables without duplicates
     vec<Map<opensmt::Real, bool, FastRationalHash> > cuts;
 
 };

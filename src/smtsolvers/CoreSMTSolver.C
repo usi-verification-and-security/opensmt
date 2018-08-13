@@ -2810,7 +2810,6 @@ lbool CoreSMTSolver::lookaheadSplit(int d, int &idx, ConflQuota confl_quota)
 
 CoreSMTSolver::laresult CoreSMTSolver::lookahead_loop(Lit& best, int &idx, ConflQuota &confl_quota)
 {
-    printf("Entering lookahead loop\n");
     ConflQuota unlimited;
     if (LApropagate_wrapper(unlimited) == l_False)
     {
