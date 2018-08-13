@@ -210,7 +210,7 @@ skip_theory_preproc:
 bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause, const ipartitions_t& mask)
 {
     CRef cr;
-    return addSMTClause_(smt_clause, mask, cr);
+    return addSMTClause_(smt_clause, cr, mask);
 }
 #else
 bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause)
@@ -221,7 +221,7 @@ bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause)
 #endif
 
 #ifdef PRODUCE_PROOF
-bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause, const ipartitions_t& mask, CRef& cr)
+bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause, CRef& cr, const ipartitions_t& mask)
 #else
 bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause, CRef& cr)
 #endif
@@ -255,7 +255,7 @@ bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause, CRef& cr)
         cerr << "XXX skipped handling of unary theory literal?" << endl;
     }
 #ifdef PRODUCE_PROOF
-    if (!CoreSMTSolver::addClause_(smt_clause, mask, cr))
+    if (!CoreSMTSolver::addClause_(smt_clause, cr, mask))
 #else
     if (!CoreSMTSolver::addClause_(smt_clause, cr))
 #endif

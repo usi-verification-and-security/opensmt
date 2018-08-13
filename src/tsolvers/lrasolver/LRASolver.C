@@ -1802,7 +1802,7 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
             //cout << "; Constant Weak " << const_weak << endl;
             //cout << "; NonConstant Strong " << logic.printTerm(nonconst_strong) << endl;
             //cout << "; NonConstant Weak " << logic.printTerm(nonconst_weak) << endl;
-            PTRef neg_strong = logic.mkRealNeg(nonconst_strong);
+            PTRef neg_strong = logic.mkNumNeg(nonconst_strong);
             //assert(neg_strong == nonconst_weak);
 
             opensmt::Real lower_bound = const_strong;
@@ -1848,16 +1848,16 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
         if (!usingWeak())
         {
             if (delta_flag)
-                itp = logic.mkRealLt(args, &msg);
+                itp = logic.mkNumLt(args, &msg);
             else
-                itp = logic.mkRealLeq(args, &msg);
+                itp = logic.mkNumLeq(args, &msg);
         }
         else
         {
             if (delta_flag)
-                itp = logic.mkRealLt(args, &msg);
+                itp = logic.mkNumLt(args, &msg);
             else
-                itp = logic.mkRealLeq(args, &msg);
+                itp = logic.mkNumLeq(args, &msg);
             itp = logic.mkNot(itp);
         }
     }

@@ -101,14 +101,6 @@ public:
     LALogic&  getLogic() override;// { return logic; }
     bool       isValid(PTRef tr) override;
 
-#ifdef PRODUCE_PROOF
-    TheoryInterpolator* getTheoryInterpolator() override { return nullptr; }
-    PTRef getInterpolant( const ipartitions_t &, map<PTRef, icolor_t>* );
-    bool usingStrong() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_strong; }
-    bool usingWeak() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_weak; }
-    bool usingFactor() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_factor; }
-    const char*  getStrengthFactor() { return config.getLRAStrengthFactor(); }
-#endif
 
 protected:
     Tableau tableau;
@@ -213,7 +205,7 @@ protected:
         return out;
     }
     ValPair getValue(PTRef tr) override;  // Computes the model and changes state.
-    inline int     verbose                       ( ) const;// { return config.verbosity(); }
+    inline int     verbose                       ( ) const { return config.verbosity(); }
 
     // Debug stuff
     char* printValue(PTRef tr) override ;//{ char* tmp = (char*)malloc(1); tmp[0] = '\0'; return tmp; } // Implement later...

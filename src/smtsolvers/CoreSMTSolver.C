@@ -309,7 +309,7 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
 bool CoreSMTSolver::addClause_(vec<Lit>& _ps, const ipartitions_t& mask)
 {
     CRef cr;
-    return addClause_(_ps, mask, cr);
+    return addClause_(_ps, cr, mask);
 }
 #else
 bool CoreSMTSolver::addClause_(vec<Lit>& _ps)
@@ -320,7 +320,7 @@ bool CoreSMTSolver::addClause_(vec<Lit>& _ps)
 #endif
 
 #ifdef PRODUCE_PROOF
-bool CoreSMTSolver::addClause_(vec<Lit>& _ps, const ipartitions_t& mask, CRef& cr_o)
+bool CoreSMTSolver::addClause_(vec<Lit>& _ps, CRef& cr_o, const ipartitions_t& mask)
 #else
 bool CoreSMTSolver::addClause_(vec<Lit>& _ps, CRef& cr_o)
 #endif

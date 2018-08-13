@@ -362,9 +362,9 @@ public:
     bool    addClause_(      vec<Lit>& ps, const ipartitions_t& mask = 0);                     // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.
 protected:
     bool    addClause_(      vec<Lit>& ps, CRef& cr, const ipartitions_t& mask = 0);                     // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.  Writes the new clause ref to cr
-    virtual bool addSMTClause_(vec<Lit>&, CRef& cr) = 0;        // For adding SMT clauses within the solver, returning the clause ref
+    virtual bool addSMTClause_(vec<Lit>&, CRef& cr, const ipartitions_t& mask = 0) = 0;        // For adding SMT clauses within the solver, returning the clause ref
 public:
-    virtual bool addSMTClause_(vec<Lit>&) = 0;                  // For adding SMT clauses within the solver
+    virtual bool addSMTClause_(vec<Lit>&, const ipartitions_t& mask = 0) = 0;                  // For adding SMT clauses within the solver
 #else
     bool    addClause (const vec<Lit> & ps);
     bool    addEmptyClause();                                   // Add the empty clause, making the solver contradictory.

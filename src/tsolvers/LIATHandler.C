@@ -98,8 +98,9 @@ bool LIATHandler::assertLit_special(PtAsgn a)
 }
 
 #ifdef PRODUCE_PROOF
+
 PTRef LIATHandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
 {
-    return liasolver->getInterpolant(mask, labels);
+    throw std::logic_error{"Interpolatiomn currently not supported in LIA"};
 }
 #endif // PRODUCE_PROOF
