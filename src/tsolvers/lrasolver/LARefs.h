@@ -15,8 +15,8 @@ static struct LABoundListRef LABoundListRef_Undef = {INT32_MAX};
 
 struct BoundT {
     char t;
-    bool operator== (const BoundT& o) const;// { return o.t == t; }
-    BoundT operator~ () const;// { return { (char)(1-t) }; }
+    bool operator== (const BoundT& o) const;
+    BoundT operator~ () const;
 };
 
 const BoundT bound_l = { 0 };
@@ -35,29 +35,26 @@ static struct LABoundRef LABoundRef_Infty = { 0 };
 
 struct LVRef {
     uint32_t x;
-    void operator= (uint32_t v);// { x = v; }
+    void operator= (uint32_t v);
     inline friend bool operator== (const LVRef& a1, const LVRef& a2) { return a1.x == a2.x; }
     inline friend bool operator!= (const LVRef& a1, const LVRef& a2) { return a1.x != a2.x; }
 };
 
 struct LVRefHash {
-    uint32_t operator() (const LVRef& s) const;/* {
-        return (uint32_t)s.x/8; }*/
+    uint32_t operator() (const LVRef& s) const;
 };
 
 static struct LVRef LVRef_Undef = { INT32_MAX };
 
 struct PolyRef {
     uint32_t x;
-    void operator= (uint32_t v);// { x = v; }
+    void operator= (uint32_t v);
     inline friend bool operator== (const PolyRef& a1, const PolyRef& a2) { return a1.x == a2.x; }
     inline friend bool operator!= (const PolyRef& a1, const PolyRef& a2) { return a1.x != a2.x; }
 };
 
 struct PolyRefHash {
-    uint32_t operator() (const PolyRef& s) const ;/*{
-        return (uint32_t)s.x;
-    }*/
+    uint32_t operator() (const PolyRef& s) const ;
 };
 
 static struct PolyRef PolyRef_Undef = { INT32_MAX };

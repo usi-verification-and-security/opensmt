@@ -175,7 +175,7 @@ void LRAModel::clear() {
 }
 
 int LRAModel::backtrackLevel() { return limits.size() - 1; }
-inline int   LRAModel::nVars() { return n_vars_with_model; }
+
 //inline const Delta& LRAModel::read (const LVRef &v) const { assert(hasModel(v)); return int_model[lva[v].ID()].last().d; }
 const  bool  LRAModel::hasModel(const LVRef& v) const { return (lva[v].ID() < int_model.size() && int_model[lva[v].ID()].size() > 0); }
 

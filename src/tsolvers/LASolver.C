@@ -129,11 +129,7 @@ bool LASolver::check_simplex(bool complete) {
 
             // Otherwise - SAT
             refineBounds();
-/*#ifdef GAUSSIAN_DEBUG
-            computeModel();
-#endif
 
- */
 //            cerr << "; USUAL SAT" << endl;
             setStatus(SAT);
             break;
@@ -485,14 +481,6 @@ LVRef LASolver::findNonBasicForPivotByBland(LVRef basicVar) {
     }
     return y_found;
 }
-
-/*
-bool LASolver::check(bool complete) {
-
-    return 0;
-
-}*/
-
 
 
 //
@@ -931,34 +919,6 @@ void LASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
 
 //    assert( dst.size() == polyStore.getSize(lva[x].getPolyRef())+1 ); // One for each term plus the broken equality
 
-/*
-    ipartitions_t p = 1;
-    p = ~p;
-    p <<= 1;
-    vec<PTRef> args_strong;
-    vec<PTRef> args_weak;
-    for(int i = 0; i < dst.size(); ++i)
-    {
-        if(isAstrict(logic.getIPartitions(dst[i]), p))
-            args_strong.push(dst[i]);
-        else if(isBstrict(logic.getIPartitions(dst[i]), p))
-            args_weak.push(dst[i]);
-
-        cerr << ";" << logic.printTerm(dst[i]);
-        if(isAstrict(logic.getIPartitions(dst[i]), p))
-            cerr << " is in A" << endl;
-        else if(isBstrict(logic.getIPartitions(dst[i]), p))
-            cerr << " is in B" << endl;
-        else
-            cerr << " is weird" << endl;
-    }
-
-    PTRef itp_strong = logic.mkAnd(args_strong);
-    PTRef itp_weak = logic.mkNot(logic.mkAnd(args_weak));
-
-    cerr << "; Strong itp:\n" << logic.printTerm(itp_strong) << endl;
-    cerr << "; Weak itp:\n" << logic.printTerm(itp_weak) << endl;
-  */
 }
 
 void LASolver::getSimpleDeductions(LVRef v, LABoundRef br)
@@ -1073,8 +1033,7 @@ void LASolver::print( ostream & out )
 }
 
 
-void LASolver::getConflict(bool, vec<PtAsgn>& e)
-{
+void LASolver::getConflict(bool, vec<PtAsgn>& e) {
     for (int i = 0; i < explanation.size(); i++) {
         e.push(explanation[i]);
 
@@ -1094,22 +1053,6 @@ void LASolver::getConflict(bool, vec<PtAsgn>& e)
 ////    printf("In PTRef this is %s\n", logic.pp(logic.mkAnd(check_me)));
 //    assert(logic.implies(logic.mkAnd(check_me), logic.getTerm_false()));
 }
-
-
-//
-// Add the variable x with the coefficient p_v to the polynomial represented by
-// s
-//
-//void LRASolver::addVarToRow( LVRef s, LVRef x, Real * p_v )
-//{
-//    assert(!lva[x].isBasic());
-//    assert(lva[s].isBasic());
-//
-//    polyStore.add(lva[s].getPolyRef(), x, *p_v);
-//}
-
-
-
 
 // We may assume that the term is of the following forms
 // (1) (* x c)
@@ -1177,54 +1120,21 @@ bool LASolver::checkValueConsistency() const{
 bool LASolver::valueConsistent(LVRef v) const
 {
     const Delta& value = model.read(v);
-//    std::cerr << "Value of " << v.x << " is: " << value.printValue() << '\n';
     Delta sum(0);
     for (auto & term : tableau.getPoly(v)){
-//        std::cerr << "Value of " << term.first.x << " is: " << model.read(term.first).printValue() << '\n';
-//        std::cerr << "Coeff of " << term.first.x << " is: " << term.second << '\n';
-        sum += term.second * model.read(term.first);
+      sum += term.second * model.read(term.first);
     }
-//    std::cerr << "Sum is: " << sum.printValue() << '\n';
-//    printf(" = %s\n", sum.printValue());
+
     assert(value == sum);
     return value == sum;
 }
 
-//void LRASolver::crashInconsistency(LVRef v, int line) {
-//    PolyRef pr = lva[v].getPolyRef();
-//    printf("Var %s = %s is not consistent with its polynomial %s\n", lva.printVar(v), model.read(v).printValue(),
-//           polyStore.printPoly(pr));
-//    printf("At row %d, file LRASolver.C\n", line);
-//    for (int i = 0; i < polyStore.getSize(pr); i++) {
-//        const PolyTerm &t = pta[polyStore.readTerm(pr, i)];
-//        printf(" %s * %s\n", t.coef.get_str().c_str(), model.read(t.var).printValue());
-//    }
-//    exit(10);
-//}
-//
-// Check that the values of non-basic variables (columns) do not break asserted bounds
-//
 bool LASolver::invariantHolds() const
 {
     bool rval = true;
     for (auto var : tableau.getNonBasicVars()){
         assert(model.hasModel(var));
         if (isModelOutOfBounds(var)) {
-//            std::cout << "Problem with variable " << logic.pp(lva[var].getPTRef()) << endl;
-//            auto & lbounds = model.int_lbounds[lva[var].ID()];
-//            for (int i = 0; i < lbounds.size(); ++i){
-//                auto & b = ba[lbounds[i].br];
-//                std::cout << "Lower bound with value: " << b.getValue().printValue() << " and level: " << lbounds[i].dl << '\n';
-//            }
-//            auto & ubounds = model.int_ubounds[lva[var].ID()];
-//            for (int i = 0; i < ubounds.size(); ++i){
-//                auto & b = ba[ubounds[i].br];
-//                std::cout << "Upper bound with value: " << b.getValue().printValue() << " and level: " << ubounds[i].dl << '\n';
-//            }
-//            auto & vals = model.int_model[lva[var].ID()];
-//            for (int i = 0; i < vals.size(); ++i){
-//                std::cout << "Eval with value: " << vals[i].d.printValue() << " and level: " << vals[i].dl << '\n';
-//            }
             rval = false;
             printf("Non-basic (column) LRA var %s has value %s <= %s <= %s\n",
                    lva.printVar(var), model.Lb(var).printValue(),
@@ -1244,13 +1154,6 @@ bool LASolver::checkTableauConsistency() const {
 LASolver::~LASolver( )
 {
     tsolver_stats.printStatistics(cerr);
-    // Remove numbers
-//    while( !numbers_pool.empty( ) )
-//    {
-//        assert( numbers_pool.back( ) );
-//        delete numbers_pool.back( );
-//        numbers_pool.pop_back( );
-//    }
 }
 
 PtAsgn_reason LASolver::getDeduction()  { if (deductions_next >= th_deductions.size()) return PtAsgn_reason_Undef; else return th_deductions[deductions_next++]; }

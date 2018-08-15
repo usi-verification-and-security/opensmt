@@ -1,16 +1,13 @@
 #ifndef LIASOLVER_H
 #define LIASOLVER_H
 
-//#define GAUSSIAN_DEBUG
-
-
 #include "LIALogic.h"
 #include "LASolver.h"
 #include "lrasolver/LARefs.h"
 
 
 
-class LIASolverStats: public LASolverStats  //PS. check all opensmt::real and should I change them to opensmt::integer
+class LIASolverStats: public LASolverStats
 {
 public:
 
@@ -45,8 +42,8 @@ class LIASolver: public LASolver
 private:
 
     struct LVRefPair { LVRef p1; LVRef p2; };
-//    vector<opensmt::Real*> numbers_pool;    // Collect numbers.  Should work as a simple memory managemet system
-    LIALogic&            logic; //PS. shall I declare logic as LIA?
+
+    LIALogic&            logic;
     LIASolverStats lasolverstats;
 
 
@@ -69,15 +66,12 @@ protected:
     void notifyVar(LVRef v) override;
     void doGaussianElimination() override { return; }        // For now we do not Gaussian eliminate in LIA
 
-    //inline bool setStatus( LASolverStatus );               // Sets and return status of the solver //PS. use only LASolverStats
     void initSolver( );                                     // Initializes the solver
 
-//    void addVarToRow( LVRef, LVRef, opensmt::Real*);
-    TRes checkIntegersAndSplit();                           //
+    TRes checkIntegersAndSplit();
     bool isModelInteger (LVRef v) const;
-   // extern inline bool setStatus( LASolverStatus ) override;
 
-    //LASolverStatus status;                  // Internal status of the solver (different from bool)
+
 
     opensmt::Integer2 getInt(PTRef r) ;
 

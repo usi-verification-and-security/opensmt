@@ -66,13 +66,13 @@ private:
 public:
     // Constructor.  The e_orig from SMT world, the bounds list, and a unique id
     LAVar(PTRef e_orig, unsigned id);
-    bool skip    ()      const;// { return header.skp;                }
-    void setSkip ()     ;//       { header.skp = true;                }
-    void clrSkip ()       ;//     { header.skp = false;               }
-    int  getRowId()      const;// { return row_id; }
-    void setRowId(int i)      ;// { row_id = i;    }
-    int  getColId()      const;// { return col_id; }
-    void setColId(int i)     ;//  { col_id = i;    }
+    bool skip    ()      const;
+    void setSkip ()     ;
+    void clrSkip ()       ;
+    int  getRowId()      const;
+    void setRowId(int i)      ;
+    int  getColId()      const;
+    void setColId(int i)     ;
 
 //    BoundIndex ubound()             const { return curr_ub; }
 //    BoundIndex lbound()             const { return curr_lb; }
@@ -88,25 +88,14 @@ public:
     inline void setBasic();              // Make LAVar Basic
 
     // Binded rows system
-    OccListRef getBindedRowsRef() const   ;//    { return occs; }
-    void       setBindedRowsRef(OccListRef r) ;//{ occs = r; }
-    PolyRef    getPolyRef()       const    ;//   { return poly; }
-    void       setPolyRef(PolyRef r)       ;//   { poly = r; }
+    OccListRef getBindedRowsRef() const   ;
+    void       setBindedRowsRef(OccListRef r) ;
+    PolyRef    getPolyRef()       const    ;
+    void       setPolyRef(PolyRef r)       ;
 
-    PTRef      getPTRef()         const   ;//    { return e; }
+    PTRef      getPTRef()         const   ;
 };
 
-/*
-void LAVar::setNonbasic()
-{
-    header.basic = false;
-}
-
-void LAVar::setBasic()
-{
-    header.basic = true;
-}
-*/
 
 class LAVarAllocator : public RegionAllocator<uint32_t>
 {
@@ -116,25 +105,20 @@ class LAVarAllocator : public RegionAllocator<uint32_t>
 public:
     LAVarAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), n_vars(0) {}
     LAVarAllocator()                   : n_vars(0) {}
-    unsigned getNumVars() const;// { return n_vars; }
+    unsigned getNumVars() const;
 
     LVRef alloc(PTRef e);
-    /*{
-        uint32_t v = RegionAllocator<uint32_t>::alloc(lavarWord32Size());
-        LVRef id = {v};
-        new (lea(id)) LAVar(e, n_vars++);
-        return id;
-    }*/
-    LAVar&       operator[](LVRef r) ;//      { return (LAVar&)RegionAllocator<uint32_t>::operator[](r.x); }
-    const LAVar& operator[](LVRef r) const ;//{ return (LAVar&)RegionAllocator<uint32_t>::operator[](r.x); }
+
+    LAVar&       operator[](LVRef r) ;
+    const LAVar& operator[](LVRef r) const ;
     // Deref, Load Effective Address (LEA), Inverse of LEA (AEL):
-    LAVar*       lea       (LVRef r)    ;//     { return (LAVar*)RegionAllocator<uint32_t>::lea(r.x); }
-    const LAVar* lea       (LVRef r) const  ;// { return (LAVar*)RegionAllocator<uint32_t>::lea(r.x); }
-    LVRef        ael       (const LAVar* t) ;// { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); LVRef rf; rf.x = r; return rf; }
-    void         free      (LVRef r)        ;// { RegionAllocator::free(lavarWord32Size()); }
+    LAVar*       lea       (LVRef r)    ;
+    const LAVar* lea       (LVRef r) const  ;
+    LVRef        ael       (const LAVar* t) ;
+    void         free      (LVRef r)        ;
     void         clear() {}
     // Debug stuff
-    char*        printVar (LVRef r)  const ;//  { char* str; asprintf(&str, "v%d", r.x);  return str; }
+    char*        printVar (LVRef r)  const ;
 };
 
 class LAVarStore
@@ -149,14 +133,14 @@ public:
     LAVarStore(LAVarAllocator& lva, LALogic& logic) : lva(lva), logic(logic) {}
     inline void   clear() {};
     LVRef  getNewVar(PTRef e_orig);
-    LVRef  getVarByPTId(PTId i);// { return ptermToLavar[Idx(i)]; }
+    LVRef  getVarByPTId(PTId i);
     void   addLeqVar(PTRef leq_tr, LVRef v); // Adds a binding from leq_tr to the "slack var" v
-    LVRef  getVarByLeqId(PTId i);// { return leqToLavar[Idx(i)]; }
-    bool   hasVar(PTId i) ;//{ return ptermToLavar.size() > Idx(i) && ptermToLavar[Idx(i)] != LVRef_Undef; }
+    LVRef  getVarByLeqId(PTId i);
+    bool   hasVar(PTId i) ;
     bool   hasVar(PTRef tr);
-    int    numVars() const ;//{ return lavars.size(); }
-    void   remove(LVRef r) ;//{ lva.free(r); };
-    LVRef  getVarByIdx(unsigned i) ;//{ return lavars[i]; }
+    int    numVars() const ;
+    void   remove(LVRef r) ;
+    LVRef  getVarByIdx(unsigned i) ;
 };
 
 

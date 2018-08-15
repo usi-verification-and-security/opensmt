@@ -56,24 +56,8 @@ void LIASolver::computeConcreteModel(LVRef v) {
 void LIASolver::computeModel()
 {
     assert( status == SAT );
-/*
-    Real minDelta(0);
-    Real maxDelta(0);
-    Delta curDelta(0);
-    Delta curBound(Delta::ZERO);
-*/
-    Delta delta_abst = Delta_PlusInf;  // We support plus infinity for this one.
 
-    // Let x be a LV variable such that there are asserted bounds c_1 <= x and x <= c_2, where
-    // (1) c_1 = (i1 | s1), c_2 = (i2 | -s2)
-    // (2) s1, s2 \in {0, 1}
-    // (3) val(x) = (R | D).
-    // Then delta(x) := (i1+i2)/2 - R.
-    // If x is not bounded from below or above, i.e., c_1 <= x, or x <= c_2, or neither, then
-    // delta(x) := + Infty.
-    // Now D at the same time is equal to k*\delta', and we need a value for \delta'.  So
-    // \delta'(x) = D/k
-    // Finally, \delta := min_{x \in LV |delta'(x)|}.
+    Delta delta_abst = Delta_PlusInf;  // We support plus infinity for this one.
 
     for (unsigned i = 0; i < lavarStore.numVars(); ++i)
     {
@@ -91,20 +75,7 @@ void LIASolver::computeModel()
         LVRef v = lavarStore.getVarByIdx(i);
         computeConcreteModel(v);
     }
-//    // Compute the value for each variable. Delta is taken into account
-//    for ( unsigned i = 0; i < columns.size( ); ++i )
-//        computeConcreteModel(columns[i], curDelta);
 }
-
-/*
-Polynomial LIASolver::expressionToLVarPoly(PTRef term) {
-
-    LASolver::expressionToLVarPoly(term);
-    for (int i = 0; i < logic.getPterm(term).size(); i++) {
-        int_vars.insert(var); //PS. maybe use insert with getVar?
-
-    }
-}*/
 
 void LIASolver::notifyVar(LVRef v)
 {
@@ -118,9 +89,6 @@ void LIASolver::notifyVar(LVRef v)
 }
 
 TRes LIASolver::checkIntegersAndSplit() {
-    //assert(false);
-    // assert( config.lra_integer_solver );
-    //assert( removed_by_GaussianElimination.empty( ) );
 
     bool nonint_models = false;  // Keep track whether non-integer models are seen
 
@@ -166,29 +134,15 @@ TRes LIASolver::checkIntegersAndSplit() {
                 return TR_UNSAT;
             }
 
-
-
             //constructing new constraint
             //x <= c || x >= c+1;
             PTRef constr = logic.mkOr(logic.mkNumLeq(lva[x].getPTRef(), logic.mkConst(c)),
                        logic.mkNumGeq(lva[x].getPTRef(), logic.mkConst(c + 1)));
-//            printf("LIA solver constraint %s\n", logic.pp(constr));
+            //printf("LIA solver constraint %s\n", logic.pp(constr));
 
             splitondemand.push(constr);
             setStatus(NEWSPLIT);
             return TR_SAT;
-
-
-            //what if more than one of the variables have fractional part? Shall we implement selection rule?
-            //we also have to take care of not changing the values that already assigned to integers, here gomory cuts are important
-            //branch and cut faster than branch and bound, so we need to add cut to the problem that cannot find int solution?
-
-            //we need to add new constraints x <= c || x >= c+1 to problem constraints. Which vector stores problem constraints?
-            //and ask LRASolver to check for them
-            //what if LRA returns non int vals and again and again the process will be needed to be repeated
-            //and we need to make sure it stops at some point
-            //And will it go in depth first manner, or hybride?
-            //if the model already integer we print stats SAT, else we continue on splitting until?(we need to stop) and print UNSAT
         }
 
     }
@@ -212,15 +166,8 @@ LIASolver::getNewSplits(vec<PTRef>& splits)
 
 LIASolver::LIASolver(SMTConfig & c, LIALogic& l, vec<DedElem>& d)
         : logic(l)
-//    , bindedRowsStore(l, lva, bra)
-//    , pa(pta)
-//    , polyStore(lva, pa, bindedRowsStore, l)
         , LASolver(descr_lia_solver, c, l, d)
 
-//, bland_threshold(1000)
-//, lavarStore(lva, l)
-//, boundStore(ba, bla, lva, lavarStore, l)
-//, model(lva, boundStore, l)
 {
     status = INIT;
 }
@@ -228,13 +175,7 @@ LIASolver::LIASolver(SMTConfig & c, LIALogic& l, vec<DedElem>& d)
 LIASolver::~LIASolver( )
 {
     lasolverstats.printStatistics(cerr);
-    // Remove numbers
-//    while( !numbers_pool.empty( ) )
-//    {
-//        assert( numbers_pool.back( ) );
-//        delete numbers_pool.back( );
-//        numbers_pool.pop_back( );
-//    }
+
 }
 
 LIALogic&  LIASolver::getLogic()  { return logic; }

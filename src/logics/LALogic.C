@@ -1,6 +1,5 @@
 #include "SStore.h"
 #include "PtStore.h"
-//#include "LRALogic.h"
 #include "TreeOps.h"
 #include "Global.h"
 #include "LA.h"
@@ -353,23 +352,22 @@ PTRef LALogic::mkNumNeg(PTRef tr, char** msg)
     args.push(mo); args.push(tr);
     return mkNumTimes(args);
 }
-SRef LALogic::getSort_num () const { return get_sort_NUM(); }
+SRef   LALogic::getSort_num () const { return get_sort_NUM(); }
 PTRef  LALogic::mkConst  (const opensmt::Number& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_num(), rat); free(rat); return tr; }
 PTRef  LALogic::mkConst  (const char* num) { return mkConst(getSort_num(), num); }
 PTRef  LALogic::mkNumVar (const char* name) { return mkVar(getSort_num(), name); }
 bool LALogic::isBuiltinSort  (SRef sr) const { return sr == get_sort_NUM() || Logic::isBuiltinSort(sr); }
 bool LALogic::isBuiltinConstant(SymRef sr) const { return (isNumConst(sr) || Logic::isBuiltinConstant(sr)); }
-bool  LALogic::isNumConst     (SymRef sr)     const { return isConstant(sr) && hasSortNum(sr); }
-bool  LALogic::isNumConst     (PTRef tr)      const { return isNumConst(getPterm(tr).symb()); }
-// virtual bool  isNonnegNumConst (PTRef tr)    const; //{ return isNumConst(tr) && getNumConst(tr) >= 0; } //PS. this method will be rewritten properly later
-bool  LALogic::isNonnegNumConst (PTRef tr)  const { return isNumConst(tr) && getNumConst(tr) >= 0; }
-bool   LALogic::hasSortNum(SymRef sr) const { return sym_store[sr].rsort() == get_sort_NUM(); }
-bool   LALogic::hasSortNum(PTRef tr)  const { return hasSortNum(getPterm(tr).symb()); }
-bool        LALogic::isUFEquality(PTRef tr) const { return !isNumEq(tr) && Logic::isUFEquality(tr); }
-bool        LALogic::isTheoryEquality(PTRef tr) const { return isNumEq(tr); }
+bool LALogic::isNumConst     (SymRef sr)     const { return isConstant(sr) && hasSortNum(sr); }
+bool LALogic::isNumConst     (PTRef tr)      const { return isNumConst(getPterm(tr).symb()); }
+bool LALogic::isNonnegNumConst (PTRef tr)  const { return isNumConst(tr) && getNumConst(tr) >= 0; }
+bool LALogic::hasSortNum(SymRef sr) const { return sym_store[sr].rsort() == get_sort_NUM(); }
+bool LALogic::hasSortNum(PTRef tr)  const { return hasSortNum(getPterm(tr).symb()); }
+bool LALogic::isUFEquality(PTRef tr) const { return !isNumEq(tr) && Logic::isUFEquality(tr); }
+bool LALogic::isTheoryEquality(PTRef tr) const { return isNumEq(tr); }
 bool LALogic::isAtom(PTRef tr) const  { return isNumEq(tr) || isNumLt(tr) || isNumGt(tr) || isNumLeq(tr) || isNumGeq(tr) || Logic::isAtom(tr); }
-bool        LALogic::isUF(PTRef tr) const { return isUF(term_store[tr].symb()); }
-bool        LALogic::isUF(SymRef sr) const { return !sym_store[sr].isInterpreted(); }
+bool LALogic::isUF(PTRef tr) const { return isUF(term_store[tr].symb()); }
+bool LALogic::isUF(SymRef sr) const { return !sym_store[sr].isInterpreted(); }
 bool LALogic::isNumPlus(SymRef sr) const { return sr == get_sym_Num_PLUS(); }
 bool LALogic::isNumPlus(PTRef tr) const { return isNumPlus(getPterm(tr).symb()); }
 bool LALogic::isNumMinus(SymRef sr) const { return sr == get_sym_Num_MINUS(); }
@@ -429,7 +427,7 @@ PTRef LALogic::mkNumPlus(const std::vector<PTRef> &args) {
     for (PTRef arg : args) { tmp.push(arg); }
     return mkNumPlus(tmp);
 }
-//PTRef mkNumTimes(const vec<PTRef> &, char **);
+
 PTRef LALogic::mkNumTimes(const vec<PTRef> &args) {
     char *msg;
     PTRef tr = mkNumTimes(args, &msg);
@@ -459,7 +457,7 @@ PTRef LALogic::mkNumDiv(const PTRef nom, const PTRef den) {
     tmp.push(nom), tmp.push(den);
     return mkNumDiv(tmp);
 }
-//PTRef mkNumLeq(const vec<PTRef> &, char **);
+
 PTRef LALogic::mkNumLeq(const vec<PTRef> &args) {
     char *msg;
     PTRef tr = mkNumLeq(args, &msg);
@@ -472,7 +470,7 @@ PTRef LALogic::mkNumLeq(const PTRef arg1, const PTRef arg2) {
     tmp.push(arg2);
     return mkNumLeq(tmp);
 }
-//PTRef mkNumGeq(const vec<PTRef> &, char **);
+
 PTRef LALogic::mkNumGeq(const vec<PTRef> &args) {
     char *msg;
     PTRef tr = mkNumGeq(args, &msg);
@@ -485,7 +483,7 @@ PTRef LALogic::mkNumGeq(const PTRef arg1, const PTRef arg2) {
     tmp.push(arg2);
     return mkNumGeq(tmp);
 }
-//PTRef mkNumLt(const vec<PTRef> &, char **);
+
 PTRef LALogic::mkNumLt(const vec<PTRef> &args) {
     char *msg;
     PTRef tr = mkNumLt(args, &msg);
@@ -498,7 +496,7 @@ PTRef LALogic::mkNumLt(const PTRef arg1, const PTRef arg2) {
     tmp.push(arg2);
     return mkNumLt(tmp);
 }
-//PTRef mkNumGt(const vec<PTRef> &, char **);
+
 PTRef LALogic::mkNumGt(const vec<PTRef> &args) {
     char *msg;
     PTRef tr = mkNumGt(args, &msg);
@@ -511,7 +509,7 @@ PTRef LALogic::mkNumGt(const PTRef arg1, const PTRef arg2) {
     tmp.push(arg2);
     return mkNumGt(tmp);
 }
-//virtual char *printTerm_(PTRef tr, bool ext, bool s) const;
+
 char* LALogic::printTerm(PTRef tr) const { return printTerm_(tr, false, false); }
 char* LALogic::printTerm(PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
 PTRef LALogic::mkNumMinus(const vec<PTRef>& args_in, char** msg)
@@ -654,8 +652,8 @@ PTRef LALogic::mkNumLeq(const vec<PTRef>& args_in, char** msg)
     args_in.copyTo(args);
     assert(args.size() == 2);
     if (isConstant(args[0]) && isConstant(args[1])) {
-        opensmt::Number v1(sym_store.getName(getPterm(args[0]).symb())); //PS. can I add here also opensmt::Integer v3(sym_store.getName(getPterm(args[0]).symb()))
-        opensmt::Number v2(sym_store.getName(getPterm(args[1]).symb())); //PS. and  opensmt::Integer v4(sym_store.getName(getPterm(args[0]).symb()))
+        opensmt::Number v1(sym_store.getName(getPterm(args[0]).symb()));
+        opensmt::Number v2(sym_store.getName(getPterm(args[1]).symb()));
         if (v1 <= v2) //PS. OR (v3<=v4)
             return getTerm_true();
         else
@@ -719,7 +717,7 @@ PTRef LALogic::mkNumLt(const vec<PTRef>& args, char** msg)
         char *rat_str1, *rat_str2;
         opensmt::stringToRational(rat_str1, sym_store.getName(getPterm(args[0]).symb()));
         opensmt::stringToRational(rat_str2, sym_store.getName(getPterm(args[1]).symb()));
-        opensmt::Number v1(rat_str1); //PS. may I add here opensmt::Integer v3(rat_str1) and opensmt::Integer v4(rat_str2)
+        opensmt::Number v1(rat_str1);
         opensmt::Number v2(rat_str2);
         free(rat_str1);
         free(rat_str2);
@@ -745,7 +743,7 @@ PTRef LALogic::mkNumGt(const vec<PTRef>& args, char** msg)
         char *rat_str1, *rat_str2;
         opensmt::stringToRational(rat_str1, sym_store.getName(getPterm(args[0]).symb()));
         opensmt::stringToRational(rat_str2, sym_store.getName(getPterm(args[1]).symb()));
-        opensmt::Number v1(rat_str1); //PS. opensmt::Integer v3(rat_str1) and opensmt::Integer v4(rat_str2);
+        opensmt::Number v1(rat_str1);
         opensmt::Number v2(rat_str2);
         free(rat_str1);
         free(rat_str2);
@@ -761,8 +759,8 @@ PTRef LALogic::mkNumGt(const vec<PTRef>& args, char** msg)
     }
     return mkNot(tr);
 }
-PTRef LALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)  //PS. shall I override this method in LRA and LIA
-//PS. as if (sym == sym_Real_NEG) ANYWAY return mkNumNeg(terms[0], msg); and etc.???
+PTRef LALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
+
 {
     if (sym == get_sym_Num_NEG())
         return mkNumNeg(terms[0], msg);
@@ -790,7 +788,7 @@ PTRef LALogic::mkConst(const char *name, const char **msg)
 {
     return mkConst(getSort_num(), name);
 }
-PTRef LALogic::mkConst(SRef s, const char* name) //PS. how to rewrite this?
+PTRef LALogic::mkConst(SRef s, const char* name)
 {
     assert(strlen(name) != 0);
     PTRef ptr = PTRef_Undef;
@@ -951,9 +949,7 @@ void SimplifyConstDiv::constSimplify(const SymRef& s, const vec<PTRef>& terms, S
 // Return a term corresponding to the operation applied to the constant
 // terms.  The list may contain terms of the form (* -1 a) for constant
 // a.
-PTRef SimplifyConst::simplifyConstOp(const vec<PTRef>& terms, char** msg) //PS. do I leave this method as is with opensmt:: Real
-//PS. and I am not overriding this method for LIA? Instead whereever this method is used in LIA I use <opensmt::Integer>?
-//PS. Then does it mean all those methods I call in LIA and override with this type?
+PTRef SimplifyConst::simplifyConstOp(const vec<PTRef>& terms, char** msg)
 {
     opensmt::Number s = getIdOp();
     if (terms.size() == 0) {
@@ -1004,69 +1000,7 @@ LALogic::LALogic(SMTConfig& c) :
         Logic(c)
         , split_eq(false)
 {}
-    /*
-     char* m;
-    char** msg = &m;
-    //logic_type = QF_LA;
 
-
-    sort_NUM = declareSort(s_sort_num, msg);
-    ufsorts.remove(sort_NUM);
-//    printf("Setting sort_REAL to %d at %p\n", sort_REAL.x, &(sort_REAL.x));
-    vec<SRef> params;
-
-    term_Num_ZERO = mkConst(sort_NUM, tk_num_zero);
-    sym_Num_ZERO  = getSymRef(term_Num_ZERO);
-    sym_store.setInterpreted(sym_Num_ZERO);
-    term_Num_ONE  = mkConst(sort_NUM, tk_num_one);
-    sym_Num_ONE   = getSymRef(term_Num_ONE);
-    sym_store.setInterpreted(sym_Num_ONE);
-    params.push(sort_NUM);
-    // Negation
-    sym_Num_NEG = declareFun(tk_num_neg, sort_NUM, params, msg, true);
-    sym_store.setInterpreted(sym_Num_NEG);
-    params.push(sort_NUM);
-    sym_Num_MINUS = declareFun(tk_num_neg, sort_NUM, params, msg, true);
-    sym_store[sym_Num_MINUS].setLeftAssoc();
-    sym_store.setInterpreted(sym_Num_MINUS);
-    sym_Num_PLUS  = declareFun(tk_num_plus, sort_NUM, params, msg, true);
-    sym_store[sym_Num_PLUS].setNoScoping();
-    sym_store[sym_Num_PLUS].setCommutes();
-    sym_store[sym_Num_PLUS].setLeftAssoc();
-    sym_store.setInterpreted(sym_Num_PLUS);
-    sym_Num_TIMES = declareFun(tk_num_times, sort_NUM, params, msg, true);
-    sym_store[sym_Num_TIMES].setNoScoping();
-    sym_store[sym_Num_TIMES].setLeftAssoc();
-    sym_store[sym_Num_TIMES].setCommutes();
-    sym_store.setInterpreted(sym_Num_TIMES);
-    sym_Num_DIV   = declareFun(tk_num_div, sort_NUM, params, msg, true);
-    sym_store[sym_Num_DIV].setNoScoping();
-    sym_store[sym_Num_DIV].setLeftAssoc();
-    sym_store.setInterpreted(sym_Num_DIV);
-    sym_Num_LEQ  = declareFun(tk_num_leq, sort_BOOL, params, msg, true);
-    sym_store[sym_Num_LEQ].setNoScoping();
-    sym_store[sym_Num_LEQ].setChainable();
-    sym_store.setInterpreted(sym_Num_LEQ);
-    sym_Num_LT   = declareFun(tk_num_lt, sort_BOOL, params, msg, true);
-    sym_store[sym_Num_LT].setNoScoping();
-    sym_store[sym_Num_LT].setChainable();
-    sym_store.setInterpreted(sym_Num_LT);
-    sym_Num_GEQ  = declareFun(tk_num_geq, sort_BOOL, params, msg, true);
-    sym_store[sym_Num_GEQ].setNoScoping();
-    sym_store[sym_Num_GEQ].setChainable();
-    sym_store.setInterpreted(sym_Num_GEQ);
-    sym_Num_GT   = declareFun(tk_num_gt, sort_BOOL, params, msg, true);
-    sym_store[sym_Num_GT].setNoScoping();
-    sym_store[sym_Num_GT].setChainable();
-    sym_store.setInterpreted(sym_Num_GEQ);
-    vec<SRef> ite_params;
-    ite_params.push(sort_BOOL);
-    ite_params.push(sort_NUM);
-    ite_params.push(sort_NUM);
-    sym_Num_ITE = declareFun(tk_ite, sort_NUM, ite_params, msg, true);
-    //sym_store[sym_Real_ITE].setLeftAssoc();
-    sym_store[sym_Num_ITE].setNoScoping();
-    sym_store.setInterpreted(sym_Num_ITE);*/
 
 const char*
 LALogic::getDefaultValue(const PTRef tr) const
@@ -1147,7 +1081,7 @@ LALogic::printTerm_(PTRef tr, bool ext, bool safe) const
         out = Logic::printTerm_(tr, ext, safe);
     return out;
 }
-//MOVINGFROMCLASSSIMPLIFICATION
+
 void SimplifyConstSum::Op(opensmt::Number& s, const opensmt::Number& v) const { s += v; }
 opensmt::Number SimplifyConstSum::getIdOp() const { return 0; }
 void SimplifyConstTimes::Op(opensmt::Number& s, const opensmt::Number& v) const { s *= v; }
