@@ -19,7 +19,7 @@ for file in $(find . -name '*.smt2' |sort) generic/foo; do
     dir=$(dirname $file)
 
     #/usr/bin/time -p -o $tmpfolder/$name.time ${opensmt} $dir/$name > $tmpfolder/$name.out 2>$tmpfolder/$name.err.tmp
-    ${opensmt} $dir/$name > $tmpfolder/$name.out 2>$tmpfolder/$name.err.tmp
+    sh -c "ulimit -St 60; ${opensmt} $dir/$name > $tmpfolder/$name.out 2>$tmpfolder/$name.err.tmp"
     #/usr/bin/time -p -o $tmpfolder/$name.time valgrind --leak-check=full ${opensmt} $dir/$name
     #continue
     grep -v '^;' $tmpfolder/$name.err.tmp > $tmpfolder/$name.err
