@@ -1,10 +1,11 @@
-add_library(tsolvers OBJECT "" lrasolver/Tableau.h lrasolver/Polynomial.h lrasolver/Tableau.cpp lrasolver/Polynomial.cpp TResult.h)
+add_library(tsolvers OBJECT "" lrasolver/Tableau.h lrasolver/Polynomial.h lrasolver/Tableau.cpp lrasolver/Polynomial.cpp)
 
 target_sources(tsolvers
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Deductions.h"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Deductions.C"
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/TSolverHandler.h"
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/TSolver.h"
+PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/TResult.h"
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/LASolver.h"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/CUFTHandler.C"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LRATHandler.C"
@@ -31,6 +32,6 @@ include(bvsolver/CMakeLists.txt)
 include(liasolver/CMakeLists.txt)
 
 install(FILES Deductions.h UFTHandler.h CUFTHandler.h LRATHandler.h LIATHandler.h TSolver.h LASolver.h THandler.h
-TSolverHandler.h
+TSolverHandler.h TResult.h
 DESTINATION ${INSTALL_HEADERS_DIR})
 

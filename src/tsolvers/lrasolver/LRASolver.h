@@ -98,7 +98,6 @@ public:
   //  bool       isValid(PTRef tr) override;
 
 #ifdef PRODUCE_PROOF
-    TheoryInterpolator* getTheoryInterpolator() override { return nullptr; }
     PTRef getInterpolant( const ipartitions_t &, map<PTRef, icolor_t>* );
     bool usingStrong() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_strong; }
     bool usingWeak() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_weak; }

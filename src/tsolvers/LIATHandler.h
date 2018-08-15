@@ -16,17 +16,17 @@ class LIATHandler : public TSolverHandler
   public:
     LIATHandler(SMTConfig& c, LIALogic& l, vec<DedElem>& d, TermMapper& tmap);
     virtual ~LIATHandler();
-    virtual void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs);
-    virtual bool assertLit_special(PtAsgn);
-    virtual Logic& getLogic();
-    virtual const Logic& getLogic() const;
+    virtual void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs) override;
+    virtual bool assertLit_special(PtAsgn) override;
+    virtual Logic& getLogic() override;
+    virtual const Logic& getLogic() const override;
 
 #ifdef PRODUCE_PROOF
-    virtual TheoryInterpolator* getTheoryInterpolator()
+    virtual TheoryInterpolator* getTheoryInterpolator() override
     {
-        return NULL;
+        return nullptr;
     }
-    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels);
+    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels) override;
 #endif
 };
 
