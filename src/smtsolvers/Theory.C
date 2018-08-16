@@ -131,24 +131,21 @@ CoreSMTSolver::handleSat(int& conflictC)
             return tpr_Propagate;
         }
     }
-    vec<LitLev> deds;
-    deduceTheory(deds); // deds will be ordered by decision levels
-    for (int i = 0; i < deds.size(); i++)
-    {
-        if (deds[i].lev != decisionLevel()) {
-            // Maybe do something someday?
+    if (config.sat_theory_propagation > 0) {
+        vec<LitLev> deds;
+        deduceTheory(deds); // deds will be ordered by decision levels
+        for (int i = 0; i < deds.size(); i++) {
+            if (deds[i].lev != decisionLevel()) {
+                // Maybe do something someday?
+            }
+            uncheckedEnqueue(deds[i].l, CRef_Fake);
         }
-        uncheckedEnqueue(deds[i].l, CRef_Fake);
+        if (deds.size() > 0) {
+            return tpr_Propagate;
+        }
     }
-    if (deds.size() > 0)
-    {
-        return tpr_Propagate;
-    }
-    else
-    {
-        skip_step *= config.sat_skip_step_factor;
-        return tpr_Decide; // Sat and nothing to deduce, time for decision
-    }
+    skip_step *= config.sat_skip_step_factor;
+    return tpr_Decide; // Sat and nothing to deduce, time for decision
 }
 
 TPropRes
