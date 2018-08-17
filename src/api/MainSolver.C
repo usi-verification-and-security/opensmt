@@ -400,13 +400,22 @@ PTRef MainSolver::mergePTRefArgs(PTRef tr, Map<PTRef,PTRef,PTRefHash>& cache, co
             Pterm& substs_t = logic.getPterm(subst);
             for (int j = 0; j < substs_t.size(); j++)
                 new_args.push(substs_t[j]);
+
         } else
             new_args.push(subst);
     }
-    if (sr == logic.getSym_and())
-        return logic.mkAnd(new_args);
-    else
-        return logic.mkOr(new_args);
+    PTRef new_tr;
+    if (sr == logic.getSym_and()) {
+        new_tr = logic.mkAnd(new_args);
+    }
+    else {
+        new_tr = logic.mkOr(new_args);
+    }
+#ifdef PRODUCE_PROOF
+    // copy the partition of tr to the resulting new term
+    logic.setIPartitions(new_tr, logic.getIPartitions(tr));
+#endif
+    return new_tr;
 }
 
 //
