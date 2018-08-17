@@ -24,6 +24,16 @@ bool CUFTheory::simplify(vec<PFRef>& formulas, int curr)
     pfstore[formulas[curr]].push(trans);
 
     bool res = computeSubstitutions(coll_f, formulas, curr);
+    vec<Map<PTRef,lbool,PTRefHash>::Pair> units;
+    pfstore[formulas[curr]].units.getKeysAndVals(units);
+    vec<PTRef> substs_vec;
+    for (int i = 0; i < units.size(); i++) {
+        if (units[i].data == l_True) {
+            substs_vec.push(units[i].key);
+        }
+    }
+    PTRef substs_formula = cuflogic.mkAnd(substs_vec);
+    pfstore[formulas[curr]].substs = substs_formula;
     return res;
 }
 

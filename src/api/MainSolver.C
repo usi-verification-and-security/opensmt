@@ -217,6 +217,7 @@ MainSolver::insertFormula(PTRef root, char** msg)
     pfstore[formulas.last()].push(root);
     pfstore[formulas.last()].units.clear();
     pfstore[formulas.last()].root = PTRef_Undef;
+    pfstore[formulas.last()].substs = logic.getTerm_true();
     simplified_until = std::min(simplified_until, formulas.size()-1);
     return s_Undef;
 }
