@@ -1,0 +1,38 @@
+(set-info :smt-lib-version 2.6)
+(set-logic QF_LIA)
+(set-info :source |
+Older mathsat benchmarks.  Contact Mathsat group at http://mathsat.itc.it/ for
+more information.
+
+This benchmark was automatically translated into SMT-LIB format from
+CVC format using CVC Lite
+|)
+(set-info :category "industrial")
+(set-info :status sat)
+(declare-fun AT0_PROC1_X () Int)
+(declare-fun AT0_ID0 () Bool)
+(declare-fun AT0_ID1 () Bool)
+(declare-fun AT0_PROC1_C () Bool)
+(declare-fun AT0_PROC1_B () Bool)
+(declare-fun AT0_PROC1_A () Bool)
+(declare-fun AT1_ID0 () Bool)
+(declare-fun AT1_ID1 () Bool)
+(declare-fun AT0_PROC1_SW_CS_A_TAU () Bool)
+(declare-fun AT1_PROC1_X () Int)
+(declare-fun AT1_Z () Int)
+(declare-fun AT0_PROC1_SW_C_B_TAU () Bool)
+(declare-fun AT0_PROC1_CS () Bool)
+(declare-fun AT0_PROC1_TAU () Bool)
+(declare-fun AT0_PROC1_SW_C_CS_TAU () Bool)
+(declare-fun AT0_PROC1_WAIT () Bool)
+(declare-fun AT1_PROC1_C () Bool)
+(declare-fun AT1_PROC1_B () Bool)
+(declare-fun AT1_PROC1_A () Bool)
+(declare-fun AT0_DELTA () Bool)
+(declare-fun AT1_PROC1_CS () Bool)
+(declare-fun AT0_PROC1_SW_A_B_TAU () Bool)
+(declare-fun AT0_Z () Int)
+(declare-fun AT0_PROC1_SW_B_C_TAU () Bool)
+(assert (let ((?v_0 (not AT0_PROC1_A)) (?v_1 (not AT0_PROC1_B)) (?v_2 (not AT0_PROC1_C)) (?v_3 (not AT0_PROC1_CS)) (?v_4 (not AT1_PROC1_A)) (?v_5 (not AT1_PROC1_B)) (?v_6 (not AT1_PROC1_C)) (?v_7 (not AT1_PROC1_CS)) (?v_8 (= AT0_PROC1_X AT0_Z)) (?v_9 (> AT0_PROC1_X AT0_Z))) (let ((?v_29 (not ?v_8)) (?v_10 (= AT1_PROC1_X AT1_Z)) (?v_11 (> AT1_PROC1_X AT1_Z))) (let ((?v_28 (not ?v_10)) (?v_17 (- AT0_PROC1_X AT0_Z))) (let ((?v_14 (<= ?v_17 10)) (?v_12 (not AT0_PROC1_SW_A_B_TAU)) (?v_13 (not AT0_PROC1_SW_B_C_TAU)) (?v_15 (not AT0_PROC1_SW_C_B_TAU)) (?v_16 (not AT0_PROC1_SW_C_CS_TAU)) (?v_21 (= AT1_PROC1_X AT0_PROC1_X)) (?v_18 (not AT0_PROC1_SW_CS_A_TAU)) (?v_19 (= AT1_Z AT0_Z)) (?v_20 (not AT0_PROC1_WAIT)) (?v_23 (not AT0_PROC1_TAU)) (?v_22 (not AT0_DELTA)) (?v_25 (< AT1_Z AT0_Z)) (?v_24 (< AT1_PROC1_X AT0_PROC1_X))) (let ((?v_26 (not ?v_21)) (?v_27 (not ?v_19)) (?v_31 (not ?v_25))) (let ((?v_30 (or ?v_29 ?v_26)) (?v_33 (not AT0_ID0)) (?v_32 (not AT0_ID1)) (?v_34 (not AT1_ID1)) (?v_35 (- AT1_PROC1_X AT1_Z))) (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (and (or ?v_0 ?v_1) (or ?v_0 ?v_2)) (or ?v_0 ?v_3)) (or ?v_1 ?v_2)) (or ?v_1 ?v_3)) (or ?v_2 ?v_3)) (or ?v_4 ?v_5)) (or ?v_4 ?v_6)) (or ?v_4 ?v_7)) (or ?v_5 ?v_6)) (or ?v_5 ?v_7)) (or ?v_6 ?v_7)) (or ?v_8 ?v_9)) (or ?v_29 (not ?v_9))) (or ?v_10 ?v_11)) (or ?v_28 (not ?v_11))) (or ?v_1 ?v_14)) (or ?v_5 (<= ?v_35 10))) (or (or (or (or (or (or AT0_PROC1_WAIT AT0_DELTA) AT0_PROC1_SW_A_B_TAU) AT0_PROC1_SW_B_C_TAU) AT0_PROC1_SW_C_B_TAU) AT0_PROC1_SW_C_CS_TAU) AT0_PROC1_SW_CS_A_TAU)) (or ?v_12 AT0_PROC1_A)) (or ?v_12 AT0_PROC1_TAU)) (or ?v_12 AT1_PROC1_B)) (or ?v_12 ?v_10)) (or ?v_13 AT0_PROC1_B)) (or ?v_13 AT0_PROC1_TAU)) (or ?v_13 AT1_PROC1_C)) (or ?v_13 ?v_14)) (or ?v_13 ?v_10)) (or ?v_15 AT0_PROC1_C)) (or ?v_15 AT0_PROC1_TAU)) (or ?v_15 AT1_PROC1_B)) (or ?v_15 ?v_10)) (or ?v_16 AT0_PROC1_C)) (or ?v_16 AT0_PROC1_TAU)) (or ?v_16 AT1_PROC1_CS)) (or ?v_16 (> ?v_17 10))) (or ?v_16 ?v_21)) (or ?v_18 AT0_PROC1_CS)) (or ?v_18 AT0_PROC1_TAU)) (or ?v_18 AT1_PROC1_A)) (or ?v_18 ?v_10)) (or ?v_12 ?v_19)) (or ?v_13 ?v_19)) (or ?v_15 ?v_19)) (or ?v_16 ?v_19)) (or ?v_18 ?v_19)) (or (or ?v_20 ?v_0) AT1_PROC1_A)) (or (or ?v_20 AT0_PROC1_A) ?v_4)) (or (or ?v_20 ?v_1) AT1_PROC1_B)) (or (or ?v_20 AT0_PROC1_B) ?v_5)) (or (or ?v_20 ?v_2) AT1_PROC1_C)) (or (or ?v_20 AT0_PROC1_C) ?v_6)) (or (or ?v_20 ?v_3) AT1_PROC1_CS)) (or (or ?v_20 AT0_PROC1_CS) ?v_7)) (or ?v_20 ?v_23)) (or ?v_20 ?v_21)) (or ?v_20 ?v_19)) (or (or ?v_22 ?v_0) AT1_PROC1_A)) (or (or ?v_22 AT0_PROC1_A) ?v_4)) (or (or ?v_22 ?v_1) AT1_PROC1_B)) (or (or ?v_22 AT0_PROC1_B) ?v_5)) (or (or ?v_22 ?v_2) AT1_PROC1_C)) (or (or ?v_22 AT0_PROC1_C) ?v_6)) (or (or ?v_22 ?v_3) AT1_PROC1_CS)) (or (or ?v_22 AT0_PROC1_CS) ?v_7)) (or ?v_22 ?v_21)) (or ?v_22 ?v_23)) (or ?v_22 ?v_25)) (or ?v_21 ?v_24)) (or ?v_26 (not ?v_24))) (or ?v_19 ?v_25)) (or ?v_27 ?v_31)) (or (or (or ?v_8 ?v_26) ?v_27) ?v_28)) (or (or (or ?v_29 ?v_21) ?v_27) ?v_28)) (or (or ?v_30 ?v_19) ?v_28)) (or (or ?v_30 ?v_27) ?v_10)) (or (or (or (not (< AT0_Z AT0_PROC1_X)) ?v_26) ?v_31) (< AT1_Z AT1_PROC1_X))) AT0_PROC1_A) ?v_8) AT0_ID0) ?v_20) (or ?v_33 ?v_32)) (or (not AT1_ID0) ?v_34)) (or ?v_12 AT0_ID0)) (or ?v_12 AT1_ID0)) (or ?v_13 AT1_ID1)) (or ?v_15 AT0_ID0)) (or ?v_15 AT1_ID0)) (or ?v_16 AT0_ID1)) (or ?v_16 AT1_ID1)) (or ?v_18 AT1_ID0)) (or (or ?v_22 ?v_32) AT1_ID1)) (or (or ?v_22 ?v_33) AT1_ID0)) (or ?v_4 AT1_PROC1_A)) (or AT1_PROC1_A ?v_4)) (or ?v_5 AT1_PROC1_B)) (or AT1_PROC1_B ?v_5)) (or ?v_6 AT1_PROC1_C)) (or AT1_PROC1_C ?v_6)) (or ?v_7 AT1_PROC1_CS)) (or AT1_PROC1_CS ?v_7)) (or ?v_34 AT1_ID1)) (or AT1_ID1 ?v_34)) (= ?v_35 ?v_35)) AT1_PROC1_B) ?v_7))))))))
+(check-sat)
+(exit)

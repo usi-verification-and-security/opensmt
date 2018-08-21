@@ -6,6 +6,8 @@ PRIVATE
 "${CMAKE_CURRENT_LIST_DIR}/Alloc.h"
 "${CMAKE_CURRENT_LIST_DIR}/XAlloc.h"
 "${CMAKE_CURRENT_LIST_DIR}/Global.h"
+"${CMAKE_CURRENT_LIST_DIR}/Integer.h"
+"${CMAKE_CURRENT_LIST_DIR}/Number.h"
 "${CMAKE_CURRENT_LIST_DIR}/IntTypes.h"
 "${CMAKE_CURRENT_LIST_DIR}/SigMap.h"
 "${CMAKE_CURRENT_LIST_DIR}/StringMap.h"
@@ -14,7 +16,7 @@ PRIVATE
 )
 
 install(FILES 
-    Global.h FastRational.h XAlloc.h Alloc.h StringMap.h SigMap.h Timer.h IntTypes.h Real.h
+    Global.h Integer.h Number.h FastRational.h XAlloc.h Alloc.h StringMap.h SigMap.h Timer.h IntTypes.h Real.h
 DESTINATION ${INSTALL_HEADERS_DIR})
 
 

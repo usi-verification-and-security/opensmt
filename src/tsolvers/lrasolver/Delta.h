@@ -113,6 +113,7 @@ public:
 
 };
 
+
 // main value
 inline const Real& Delta::R( ) const
 {

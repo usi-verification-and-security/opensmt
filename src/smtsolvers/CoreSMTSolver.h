@@ -360,6 +360,11 @@ public:
     bool    addClause (Lit p, Lit q, const ipartitions_t& mask = 0);                           // Add a binary clause to the solver.
     bool    addClause (Lit p, Lit q, Lit r, const ipartitions_t& mask = 0);                    // Add a ternary clause to the solver.
     bool    addClause_(      vec<Lit>& ps, const ipartitions_t& mask = 0);                     // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.
+protected:
+    bool    addClause_(      vec<Lit>& ps, CRef& cr, const ipartitions_t& mask = 0);                     // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.  Writes the new clause ref to cr
+    virtual bool addSMTClause_(vec<Lit>&, CRef& cr, const ipartitions_t& mask = 0) = 0;        // For adding SMT clauses within the solver, returning the clause ref
+public:
+    virtual bool addSMTClause_(vec<Lit>&, const ipartitions_t& mask = 0) = 0;                  // For adding SMT clauses within the solver
 #else
     bool    addClause (const vec<Lit> & ps);
     bool    addEmptyClause();                                   // Add the empty clause, making the solver contradictory.
@@ -367,6 +372,11 @@ public:
     bool    addClause (Lit p, Lit q);                           // Add a binary clause to the solver.
     bool    addClause (Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
     bool    addClause_(      vec<Lit>& ps);                     // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.
+    virtual bool addSMTClause_(vec<Lit>&) = 0;                  // For adding SMT clauses within the solver
+protected:
+    bool    addClause_(      vec<Lit>& ps, CRef& cr);           // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.  Write the new clause to cr
+    virtual bool addSMTClause_(vec<Lit>&, CRef& cr) = 0;        // For adding SMT clauses within the solver, returning the clause ref
+public:
 #endif
     // Solving:
     //
@@ -400,6 +410,9 @@ public:
     //
     lbool   value      (Var x) const;       // The current value of a variable.
     lbool   value      (Lit p) const;       // The current value of a literal.
+    lbool   safeValue  (Var x) const;       // The current value of a variable.  l_Undef if the variable does not exist.
+    lbool   safeValue  (Lit p) const;       // The current value of a literal.  l_Undef if the literal does not exist.
+
     lbool   modelValue (Lit p) const;       // The value of a literal in the last model. The last call to solve must have been satisfiable.
     int     nAssigns   ()      const;       // The current number of assigned literals.
     int     nClauses   ()      const;       // The current number of original clauses.
@@ -504,6 +517,7 @@ public:
     vec<vec<Lit> > split_assumptions;
 
 protected:
+    Lit forced_split; // If theory solver tells that we must split the instance, a literal with unknown value is inserted here for the splitting heuristic
     int processed_in_frozen; // The index in Theory's frozen vec until which frozennes has been processed
     // Helper structures:
     //
@@ -648,6 +662,23 @@ protected:
             else return  ub_p.ub < ub_n.ub ? ub_n : ub_p;
         }
     };
+
+    class laresult {
+    public:
+        enum result { tl_unsat, sat, restart, unsat, ok };
+    private:
+        result value;
+    public:
+        explicit laresult(result v) : value(v) {}
+        bool operator == (laresult o) const { return o.value == value; }
+        bool operator != (laresult o) const { return o.value != value; }
+    };
+
+    laresult la_tl_unsat;
+    laresult la_sat;
+    laresult la_restart;
+    laresult la_unsat;
+    laresult la_ok;
 
     // Solver state:
     //
@@ -824,15 +855,18 @@ protected:
     void     analyzeFinal     (Lit p, vec<Lit>& out_conflict);                         // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
     bool     litRedundant     (Lit p, uint32_t abstract_levels);                       // (helper method for 'analyze()')
     lbool    search           (int nof_conflicts, int nof_learnts);                    // Search for a given number of conflicts.
+    bool     okContinue       ();                                                      // Check search termination conditions
+    void     runPeriodics     ();                                                      // Run the periodic functions from searcha
+    void     learntSizeAdjust ();                                                      // Adjust learnts size and print something
     lbool    solve_           (int max_conflicts = 0);                                                      // Main solve method (assumptions given in 'assumptions').
     void     reduceDB         ();                                                      // Reduce the set of learnt clauses.
     void     removeSatisfied  (vec<CRef>& cs);                                         // Shrink 'cs' to contain only non-satisfied clauses.
     void     rebuildOrderHeap ();
 
     void     updateLAUB       (Lit l, int props);                                      // Check the lookahead upper bound and update it if necessary
-    lbool    lookahead_loop   (Lit& best, int &idx);
+    laresult lookahead_loop   (Lit& best, int &idx, ConflQuota &confl_quota);
     void     setLAExact       (Var v, int pprops, int nprops);                         // Set the exact la value
-    bool     LApropagate_wrapper();
+    lbool    LApropagate_wrapper(ConflQuota &confl_quota);
 
     // Maintaining Variable/Clause activity:
     //
@@ -841,7 +875,7 @@ protected:
     void     varBumpActivity  (Var v);                 // Increase a variable with the current 'bump' value.
 
     // Added Line
-    void     boolVarDecActivity( );                    // Decrease boolean atoms activity
+//    void     boolVarDecActivity( );                    // Decrease boolean atoms activity
     void     claDecayActivity  ( );                    // Decay all clauses with the specified factor. Implemented by increasing the 'bump' value instead.
     void     claBumpActivity   ( Clause & c );         // Increase a clause with the current 'bump' value.
     void     mixedVarDecActivity( );                   // Increase a clause with the current 'bump' value.
@@ -992,7 +1026,10 @@ protected:
     void   printStatistics        ( ostream & );   // Prints statistics
 #endif
     void   printTrail             ( );             // Prints the trail (debugging)
-    int    checkTheory            ( bool );        // Checks consistency in theory
+    TPropRes checkTheory          (bool, int&);    // Checks consistency in theory.  The second arg is conflictC
+    TPropRes checkTheory          (bool complete) { int tmp; return checkTheory(complete, tmp); }
+    TPropRes handleSat            (int&);          // Theory check resulted in sat
+    TPropRes handleUnsat          (int&);          // Theory check resulted in unsat
 
     void   deduceTheory           (vec<LitLev>&);  // Perform theory-deductions
 
@@ -1013,7 +1050,7 @@ protected:
           void   dumpRndInter           ( );             // Dumps a random interpolation problem
     */
     vec<CRef>          cleanup;                    // For cleaning up
-    bool               first_model_found;          // True if we found a first boolean model
+//    bool               first_model_found;          // True if we found a first boolean model
     double             skip_step;                  // Steps to skip in calling tsolvers
     long               skipped_calls;              // Calls skipped so far
     long               learnt_t_lemmata;           // T-Lemmata stored during search
@@ -1135,8 +1172,8 @@ protected:
     // Added Code
     //=================================================================================================
 public:
-    lbool   lookaheadSplit2(int d, int &idx);
-    lbool   lookaheadSplit2(int d);
+    lbool   lookaheadSplit(int d, int &idx, ConflQuota confl_quota);
+    lbool   lookaheadSplit(int d);
     void    printTrace() const;
 
 protected:
@@ -1320,6 +1357,8 @@ inline int      CoreSMTSolver::decisionLevel ()      const                { retu
 inline uint32_t CoreSMTSolver::abstractLevel (Var x) const                { return 1 << (level(x) & 31); }
 inline lbool    CoreSMTSolver::value         (Var x) const                { return assigns[x]; }
 inline lbool    CoreSMTSolver::value         (Lit p) const                { return assigns[var(p)] ^ sign(p); }
+inline lbool    CoreSMTSolver::safeValue     (Var x) const                { if (x < assigns.size()) return value(x); else return l_Undef; }
+inline lbool    CoreSMTSolver::safeValue     (Lit p) const                { return safeValue(var(p)); }
 inline lbool    CoreSMTSolver::modelValue    (Lit p) const                { return model[var(p)] ^ sign(p); }
 inline int      CoreSMTSolver::nAssigns      ()      const                { return trail.size(); }
 inline int      CoreSMTSolver::nClauses      ()      const                { return clauses.size(); }
@@ -1481,36 +1520,36 @@ inline void CoreSMTSolver::printClause(const C& c)
 
 //=================================================================================================
 // Added Code
-inline void CoreSMTSolver::boolVarDecActivity( )
-{
-#if 1
-    if (first_model_found)
-        return;
-    /*
-      for (int i = 2; i < nVars(); i++)
-      {
-        Enode * e = theory_handler->varToEnode( i );
-    #if 1
-        if ( !e->isVar( ) && !first_model_found )
-        {
-          activity[i] += e->getWeightInc( ) * var_inc;
-          // Update order_heap with respect to new activity:
-          if (order_heap.inHeap(i))
-        order_heap.decrease(i);
-        }
-    #else
-        if ( e->isVar( ) && !first_model_found )
-        {
-          activity[i] += var_inc;
-          // Update order_heap with respect to new activity:
-          if (order_heap.inHeap(i))
-        order_heap.decrease(i);
-        }
-    #endif
-      }
-    */
-#endif
-}
+//inline void CoreSMTSolver::boolVarDecActivity( )
+//{
+//#if 1
+//    if (first_model_found)
+//        return;
+//    /*
+//      for (int i = 2; i < nVars(); i++)
+//      {
+//        Enode * e = theory_handler->varToEnode( i );
+//    #if 1
+//        if ( !e->isVar( ) && !first_model_found )
+//        {
+//          activity[i] += e->getWeightInc( ) * var_inc;
+//          // Update order_heap with respect to new activity:
+//          if (order_heap.inHeap(i))
+//        order_heap.decrease(i);
+//        }
+//    #else
+//        if ( e->isVar( ) && !first_model_found )
+//        {
+//          activity[i] += var_inc;
+//          // Update order_heap with respect to new activity:
+//          if (order_heap.inHeap(i))
+//        order_heap.decrease(i);
+//        }
+//    #endif
+//      }
+//    */
+//#endif
+//}
 
 #ifdef PRODUCE_PROOF
 

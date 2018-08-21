@@ -39,19 +39,19 @@ public:
 class LABoundAllocator : public RegionAllocator<uint32_t>
 {
     unsigned n_bounds;
-    static int laboundWord32Size() {
-        return (sizeof(LABound)) / sizeof(uint32_t); }
+    static int laboundWord32Size() ;/*{
+        return (sizeof(LABound)) / sizeof(uint32_t); }*/
 public:
     LABoundAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), n_bounds(0) {}
     LABoundAllocator() : n_bounds(0) {}
-    inline unsigned getNumBounds() const { return n_bounds; }
+    inline unsigned getNumBounds() const;// { return n_bounds; }
 
     LABoundRef alloc(BoundT type, PtAsgn leq_pta, LVRef var, const Delta& delta);
     inline LABound&       operator[](LABoundRef r)       { return (LABound&)RegionAllocator<uint32_t>::operator[](r.x); }
     inline const LABound& operator[](LABoundRef r) const { return (LABound&)RegionAllocator<uint32_t>::operator[](r.x); }
-    inline LABound*       lea       (LABoundRef r)       { return (LABound*)RegionAllocator<uint32_t>::lea(r.x); }
-    inline const LABound* lea       (LABoundRef r) const { return (LABound*)RegionAllocator<uint32_t>::lea(r.x); }
-    inline LABoundRef     ael       (const LABound* t)   { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); LABoundRef rf; rf.x = r; return rf; }
+    inline LABound*       lea       (LABoundRef r);
+    inline const LABound* lea       (LABoundRef r) const ;
+    inline LABoundRef     ael       (const LABound* t) ;
     inline void clear() {}
 };
 
@@ -67,12 +67,12 @@ class LABoundList
     LABoundListRef reloc_target;
     LABoundRef     bounds[0];
 public:
-    inline bool           reloced   ()                 const { return reloc; }
-    inline LABoundListRef relocation()                 const { return reloc_target; }
-    inline void           relocate  (LABoundListRef r)       { reloc = 1; reloc_target = r; }
-    inline unsigned       size      ()                 const { return sz; }
+    inline bool           reloced   ()                 const ;
+    inline LABoundListRef relocation()                 const ;
+    inline void           relocate  (LABoundListRef r)   ;
+    inline unsigned       size      ()                 const ;
            LABoundRef     operator[](int i)            const;
-    inline LVRef          getVar    ()                 const { return v; }
+    inline LVRef          getVar    ()                 const ;
     inline LABoundList              (LVRef v, const vec<LABoundRef>& bs);
 };
 
@@ -80,14 +80,13 @@ class bound_lessthan {
     LABoundAllocator& ba;
 public:
     bound_lessthan(LABoundAllocator& ba) : ba(ba) {}
-    inline bool operator() (LABoundRef r1, LABoundRef r2) const { return ba[r1].getValue() < ba[r2].getValue(); }
+    inline bool operator() (LABoundRef r1, LABoundRef r2) const;
 };
 
 class LABoundListAllocator : public RegionAllocator<uint32_t>
 {
     unsigned n_boundlists;
-    static int boundlistWord32Size(int size) {
-        return (sizeof(LABoundList) + (sizeof(LABoundRef)*size)) / sizeof(uint32_t); }
+    static int boundlistWord32Size(int size);
 public:
     LABoundListAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), n_boundlists(0) {}
     LABoundListAllocator() : n_boundlists(0) {}
@@ -96,35 +95,43 @@ public:
 
     LABoundListRef alloc(const LVRef v, const vec<LABoundRef>& bs);
     LABoundListRef alloc(LABoundList& from);
-    inline LABoundList&       operator[](LABoundListRef r)       { return (LABoundList&)RegionAllocator<uint32_t>::operator[](r.x); }
-    inline const LABoundList& operator[](LABoundListRef r) const { return (LABoundList&)RegionAllocator<uint32_t>::operator[](r.x); }
-    inline LABoundList*       lea(LABoundListRef r)              { return (LABoundList*)RegionAllocator<uint32_t>::lea(r.x); }
-    inline const LABoundList* lea(LABoundListRef r) const        { return (LABoundList*)RegionAllocator<uint32_t>::lea(r.x); }
-    inline LABoundListRef     ael(const LABoundList* t)          { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); LABoundListRef rf; rf.x = r; return rf; }
+    inline LABoundList&       operator[](LABoundListRef r)   ;
+    inline const LABoundList& operator[](LABoundListRef r) const;
+    inline LABoundList*       lea(LABoundListRef r)        ;
+    inline const LABoundList* lea(LABoundListRef r) const  ;
+    inline LABoundListRef     ael(const LABoundList* t)    ;
 
     void free(LABoundListRef tid);
     void reloc(LABoundListRef& tr, LABoundListAllocator& to);
 };
 
-struct LABoundRefPair { LABoundRef pos; LABoundRef neg; };
+class LABoundRefPair {
+public:
+    LABoundRef pos;
+    LABoundRef neg;
+    bool operator== (const LABoundRefPair& o) const { return (pos == o.pos) && (neg == o.neg); }
+};
 
 class LABoundStore
 {
+public:
     struct BoundInfo { LVRef v; LABoundRef b1; LABoundRef b2; PTId leq_id; };
+private:
     vec<BoundInfo> in_bounds;
     LABoundAllocator& ba;
     LABoundListAllocator& bla;
     LAVarAllocator& lva;
     LAVarStore& lavarStore;
     vec<LABoundRefPair> ptermToLABoundsRef;
-    LRALogic& logic;
+    LALogic& logic;
     vec<LABoundListRef> var_bound_lists;
 public:
-    LABoundStore(LABoundAllocator& ba, LABoundListAllocator& bla, LAVarAllocator& lva, LAVarStore& lavstore, LRALogic& l) : ba(ba), bla(bla), lva(lva), lavarStore(lavstore), logic(l) {
+    LABoundStore(LABoundAllocator& ba, LABoundListAllocator& bla, LAVarAllocator& lva, LAVarStore& lavstore, LALogic& l) : ba(ba), bla(bla), lva(lva), lavarStore(lavstore), logic(l) {
         vec<LABoundRef> tmp;
     }
-    void addBound(PTRef leq_tr);
+    BoundInfo addBound(PTRef leq_tr);
     void buildBounds(vec<LABoundRefPair>& ptermToLABoundRef);
+    void updateBound(PTRef leq_tr); // Update a single bound.
 //    inline LABoundRef getLowerBound(const LVRef v) const { return bla[lva[v].getBounds()][lva[v].lbound()]; }
 //    inline LABoundRef getUpperBound(const LVRef v) const { return bla[lva[v].getBounds()][lva[v].ubound()]; }
     LABoundRefPair getBoundRefPair(const PTRef leq);
@@ -132,10 +139,10 @@ public:
     // Debug
     char* printBound(LABoundRef br) const; // Print the bound br
     char* printBounds(LVRef v) const; // Print all bounds of v
-    LABoundListRef getBounds(LVRef v) const { return var_bound_lists[lva[v].ID()]; }
-    LABoundRef getBoundByIdx(LVRef v, int it) const { return bla[getBounds(v)][it]; }
-    int getBoundListSize(LVRef v) { return bla[getBounds(v)].size(); }
-    bool isUnbounded(LVRef v) const { return ( (bla[getBounds(v)].size() == 2) && (ba[bla[getBounds(v)][0]].getValue().isMinusInf()) && (ba[bla[getBounds(v)][1]].getValue().isPlusInf()) ); }
+    LABoundListRef getBounds(LVRef v) const;
+    LABoundRef getBoundByIdx(LVRef v, int it) const;
+    int getBoundListSize(LVRef v) ;
+    bool isUnbounded(LVRef v) const;
 };
 
 

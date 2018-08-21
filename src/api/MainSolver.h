@@ -185,7 +185,7 @@ class MainSolver
 
     void printFramesAsQuery();
 
-    sstat lookaheadSplit  (int d)  { return status = sstat(ts.solver.lookaheadSplit2(d)); }
+    sstat lookaheadSplit  (int d)  { return status = sstat(ts.solver.lookaheadSplit(d)); }
     sstat getStatus       ()       { return status; }
     bool  solverEmpty     () const { return ts.solverEmpty(); }
     bool  readSolverState  (const char* file, char** msg);

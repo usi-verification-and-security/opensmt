@@ -66,7 +66,7 @@ void LABoundListAllocator::reloc(LABoundListRef& tr, LABoundListAllocator& to)
     to[tr].v  = bl.getVar();
 }
 
-void LABoundStore::addBound(PTRef leq_ref)
+LABoundStore::BoundInfo LABoundStore::addBound(PTRef leq_ref)
 {
 //    printf(" -> bound store gets %s\n", logic.pp(leq_ref));
     Pterm& leq = logic.getPterm(leq_ref);
@@ -75,7 +75,7 @@ void LABoundStore::addBound(PTRef leq_ref)
 
     bool sum_term_is_negated = logic.isNegated(sum_tr);
 
-    PTRef pos_sum_tr = sum_term_is_negated ? logic.mkRealNeg(sum_tr) : sum_tr;
+    PTRef pos_sum_tr = sum_term_is_negated ? logic.mkNumNeg(sum_tr) : sum_tr;
 
     LVRef v = lavarStore.getVarByPTId(logic.getPterm(pos_sum_tr).getId());
 
@@ -83,21 +83,53 @@ void LABoundStore::addBound(PTRef leq_ref)
     LABoundRef br_neg;
 
     if (sum_term_is_negated) {
-        opensmt::Real constr_neg = -logic.getRealConst(const_tr);
+        opensmt::Real constr_neg = -logic.getNumConst(const_tr);
         br_pos = ba.alloc(bound_u, PtAsgn(leq_ref, l_True), v, Delta(constr_neg));
         br_neg = ba.alloc(bound_l, PtAsgn(leq_ref, l_False), v, Delta(constr_neg, 1));
     }
     else {
-        const Real& constr = logic.getRealConst(const_tr);
+        const Real& constr = logic.getNumConst(const_tr);
         br_pos = ba.alloc(bound_l, PtAsgn(leq_ref, l_True), v, Delta(constr));
         br_neg = ba.alloc(bound_u, PtAsgn(leq_ref, l_False), v, Delta(constr, -1));
     }
 
 //    printf(" --> %s\n", printBound(br_pos));
 //    printf(" --> %s\n", printBound(br_neg));
-    in_bounds.push(BoundInfo{v, br_pos, br_neg, leq.getId()});
+    BoundInfo bi{v, br_pos, br_neg, leq.getId()};
+    in_bounds.push(bi);
+    return bi;
 }
 
+void LABoundStore::updateBound(PTRef tr)
+{
+    // Check if the bound already exists.  If so, don't do anything.
+    if ((ptermToLABoundsRef.size() > Idx(logic.getPterm(tr).getId())) &&
+            !(ptermToLABoundsRef[Idx(logic.getPterm(tr).getId())] == LABoundRefPair{LABoundRef_Undef, LABoundRef_Undef}))
+        return;
+
+    BoundInfo bi = addBound(tr);
+    LVRef vr = bi.v;
+    while (ptermToLABoundsRef.size() <= Idx(bi.leq_id))
+        ptermToLABoundsRef.push({ LABoundRef_Undef, LABoundRef_Undef });
+
+    ptermToLABoundsRef[Idx(bi.leq_id)] = { bi.b1, bi.b2 };
+    // Fix this to do a linear traverse
+    vec<LABoundRef> new_bounds;
+    LABoundListRef blr = var_bound_lists[lva[vr].ID()];
+
+    for (int i = 0; i < bla[blr].size(); i++)
+        new_bounds.push(bla[blr][i]);
+
+    new_bounds.push(bi.b1);
+    new_bounds.push(bi.b2);
+
+    LABoundListRef br = bla.alloc(vr, new_bounds);
+    var_bound_lists[lva[vr].ID()] = br;
+    sort<LABoundRef,bound_lessthan>(bla[br].bounds, bla[br].size(), bound_lessthan(ba));
+
+    for (int j = 0; j < bla[br].size(); j++)
+        ba[bla[br][j]].setIdx(j);
+}
 
 void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
 {
@@ -165,6 +197,8 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
 #endif
 
     }
+
+    // make sure all variables have at least the trivial bounds
     for (int i = 0; i < lavarStore.numVars(); i++) {
         LVRef vr = lavarStore.getVarByIdx(i);
         LAVar& v = lva[vr];
@@ -243,3 +277,37 @@ char* LABoundStore::printBounds(LVRef v) const
 
 LABoundRefPair LABoundStore::getBoundRefPair(const PTRef leq)
 { return ptermToLABoundsRef[Idx(logic.getPterm(leq).getId())]; }
+
+
+int LABoundAllocator::laboundWord32Size() {
+    return (sizeof(LABound)) / sizeof(uint32_t); }
+
+inline unsigned LABoundAllocator::getNumBounds() const { return n_bounds; }
+
+inline LABound*       LABoundAllocator::lea       (LABoundRef r)       { return (LABound*)RegionAllocator<uint32_t>::lea(r.x); }
+inline const LABound* LABoundAllocator::lea       (LABoundRef r) const { return (LABound*)RegionAllocator<uint32_t>::lea(r.x); }
+inline LABoundRef     LABoundAllocator::ael       (const LABound* t)   { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); LABoundRef rf; rf.x = r; return rf; }
+
+inline bool           LABoundList::reloced   ()                 const { return reloc; }
+inline LABoundListRef LABoundList::relocation()                 const { return reloc_target; }
+inline void           LABoundList::relocate  (LABoundListRef r)       { reloc = 1; reloc_target = r; }
+inline unsigned       LABoundList::size      ()                 const { return sz; }
+
+inline LVRef          LABoundList::getVar    ()                 const { return v; }
+
+inline bool bound_lessthan::operator() (LABoundRef r1, LABoundRef r2) const { return ba[r1].getValue() < ba[r2].getValue(); }
+
+int LABoundListAllocator::boundlistWord32Size(int size) {
+    return (sizeof(LABoundList) + (sizeof(LABoundRef)*size)) / sizeof(uint32_t); }
+
+inline LABoundList&       LABoundListAllocator::operator[](LABoundListRef r)       { return (LABoundList&)RegionAllocator<uint32_t>::operator[](r.x); }
+inline const LABoundList& LABoundListAllocator::operator[](LABoundListRef r) const { return (LABoundList&)RegionAllocator<uint32_t>::operator[](r.x); }
+inline LABoundList*       LABoundListAllocator::lea(LABoundListRef r)              { return (LABoundList*)RegionAllocator<uint32_t>::lea(r.x); }
+inline const LABoundList* LABoundListAllocator::lea(LABoundListRef r) const        { return (LABoundList*)RegionAllocator<uint32_t>::lea(r.x); }
+inline LABoundListRef     LABoundListAllocator::ael(const LABoundList* t)          { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); LABoundListRef rf; rf.x = r; return rf; }
+
+//inline LABound& LABoundStore::operator[] (LABoundRef br) { return ba[br]; }
+LABoundListRef LABoundStore::getBounds(LVRef v) const { return var_bound_lists[lva[v].ID()]; }
+LABoundRef LABoundStore::getBoundByIdx(LVRef v, int it) const { return bla[getBounds(v)][it]; }
+int LABoundStore::getBoundListSize(LVRef v) { return bla[getBounds(v)].size(); }
+bool LABoundStore::isUnbounded(LVRef v) const { return ( (bla[getBounds(v)].size() == 2) && (ba[bla[getBounds(v)][0]].getValue().isMinusInf()) && (ba[bla[getBounds(v)][1]].getValue().isPlusInf()) ); }

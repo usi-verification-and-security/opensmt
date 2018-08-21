@@ -1,6 +1,6 @@
 #include "TSolverHandler.h"
 #include "TreeOps.h"
-#include "TSolver.h"
+#include "TResult.h"
 
 TSolverHandler::~TSolverHandler()
 {
@@ -90,30 +90,49 @@ void TSolverHandler::declareTerm(PTRef tr)
     }
 }
 
+void TSolverHandler::informNewSplit(PTRef tr)
+{
+    for (int i = 0; i < tsolvers.size(); i++) {
+        if (tsolvers[i] != NULL) {
+                if (tsolvers[i]->isValid(tr)) {
+                    tsolvers[i]->informNewSplit(tr);
+            }
+        }
+    }
+}
+
 ValPair TSolverHandler::getValue(PTRef tr) const
 {
-    for (int i = 0; i < tsolvers.size(); i++)
+    for (int i = 0; i < tsolvers.size(); i++) {
         if (tsolvers[i] != NULL) {
             PTRef tr_subst = tr;
             if (substs.has(tr) && (substs[tr].sgn == l_True)) {
                 tr_subst = substs[tr].tr;
             }
             ValPair vp = tsolvers[i]->getValue(tr_subst);
-            vp.tr = tr;
-            if (vp != ValPair_Undef)
+            if (vp != ValPair_Undef) {
+                vp.tr = tr;
                 return vp;
+            }
         }
-    return ValPair(tr, "unknown");
+    }
+    return { tr, NULL }; // Value is unspecified in the model
 }
 
-bool TSolverHandler::check(bool complete)
+TRes TSolverHandler::check(bool complete)
 {
-    for (int i = 0; i < tsolvers.size(); i++)
-        if (tsolvers[i] != NULL)
-            if (tsolvers[i]->check(complete) == false)
-                return false;
+    TRes res_final = TR_SAT;
+    for (int i = 0; i < tsolvers.size(); i++) {
+        if (tsolvers[i] != NULL) {
+            TRes res = tsolvers[i]->check(complete);
+            if (res == TR_UNSAT)
+                return TR_UNSAT;
+            else if (res == TR_UNKNOWN)
+                res_final = TR_UNKNOWN;
+        }
+    }
 
-    return true;
+    return res_final;
 }
 
 

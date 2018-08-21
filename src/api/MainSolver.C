@@ -225,6 +225,7 @@ MainSolver::insertFormula(PTRef root, char** msg)
     pfstore[formulas.last()].push(root);
     pfstore[formulas.last()].units.clear();
     pfstore[formulas.last()].root = PTRef_Undef;
+    pfstore[formulas.last()].substs = logic.getTerm_true();
     simplified_until = std::min(simplified_until, formulas.size()-1);
     return s_Undef;
 }
@@ -257,8 +258,9 @@ sstat MainSolver::simplifyFormulas(int from, int& to, char** err_msg)
             fc.setRoot(flat_root);
         }
 
-        // root_instance is updated to the and of the simplified formulas currently in the solver
-        root_instance.setRoot(logic.mkAnd(root_instance.getRoot(), fc.getRoot()));
+        // root_instance is updated to the and of the simplified formulas currently in the solver, together with the substitutions
+        fc.setRoot(logic.mkAnd(fc.getRoot(), pfstore[formulas[i]].substs));
+        root_instance.setRoot(fc.getRoot());
         // Stop if problem becomes unsatisfiable
 #ifdef PRODUCE_PROOF
         // Label the formula with a partition mask.  Needs to be done here (also) since
@@ -467,9 +469,11 @@ ValPair MainSolver::getValue(PTRef tr) const
         lbool val = ts.getTermValue(tr);
         return ValPair(tr, val == l_True ? "true" : (val == l_False ? "false" : "unknown"));
     } else {
-        return thandler.getValue(tr);
+        ValPair vp = thandler.getValue(tr);
+        if (vp.val == NULL)
+            vp.val = strdup(logic.getDefaultValue(tr));
+        return vp;
     }
-    return ValPair();
 }
 
 void MainSolver::getValues(const vec<PTRef>& trs, vec<ValPair>& vals) const
@@ -1254,6 +1258,8 @@ void MainSolver::solve_split(int i, int s, int wpipefd, std::mutex *mtx)
         theory = new UFTheory(config);
     else if (l == QF_LRA)
         theory = new LRATheory(config);
+    else if (l == QF_LIA)
+        theory = new LIATheory(config);
     else {
         cerr << "Unsupported logic" << endl;
         exit(1);

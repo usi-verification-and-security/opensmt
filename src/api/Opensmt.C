@@ -16,6 +16,9 @@ Opensmt::Opensmt(opensmt_logic _logic, const char* name, int bw)
     case qf_lra:
         theory = new LRATheory(*config);
         break;
+    case qf_lia:
+        theory = new LIATheory(*config);
+        break;
     case qf_cuf:
         theory = new CUFTheory(*config , bw);
         break;

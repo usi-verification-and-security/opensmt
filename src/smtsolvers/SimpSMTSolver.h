@@ -79,19 +79,25 @@ class SimpSMTSolver : public CoreSMTSolver
 
     // Problem specification:
     //
-    Var     newVar    (bool polarity = true, bool dvar = true);
+    Var     newVar    (bool polarity = true, bool dvar = true) override;
 #ifdef PRODUCE_PROOF
     bool    addClause (const vec<Lit>& ps, const ipartitions_t& mask = 0);
-    bool    addSMTClause (const  vec<Lit>&, const ipartitions_t& mask = 0);
-    bool    addSMTClause_(       vec<Lit>&, const ipartitions_t& mask = 0);
+    bool    addSMTClause (const  vec<Lit>&, const ipartitions_t& mask = 0) override;
+    bool    addSMTClause_(       vec<Lit>&, const ipartitions_t& mask = 0) override;
+protected:
+    bool    addSMTClause_(       vec<Lit>&, CRef& cr, const ipartitions_t& mask = 0) override;
+public:
     bool    addEmptyClause();                // Add the empty clause to the solver.
     bool    addClause (Lit p, const ipartitions_t& mask = 0);               // Add a unit clause to the solver.
     bool    addClause (Lit p, Lit q, const ipartitions_t& mask = 0);        // Add a binary clause to the solver.
     bool    addClause (Lit p, Lit q, Lit r, const ipartitions_t& mask = 0); // Add a ternary clause to the solver.
 #else
-    bool    addClause (const vec<Lit>& ps);
-    bool    addSMTClause (const  vec<Lit>&);
-    bool    addSMTClause_(       vec<Lit>&);
+    bool    addClause (const vec<Lit>& ps); // FIXME: this is already in parent class, why have it here?
+    bool    addSMTClause (const  vec<Lit>&) override;
+    bool    addSMTClause_(       vec<Lit>&) override;
+protected:
+    bool    addSMTClause_(       vec<Lit>&, CRef& cr) override;
+public:
     bool    addEmptyClause();                // Add the empty clause to the solver.
     bool    addClause (Lit p);               // Add a unit clause to the solver.
     bool    addClause (Lit p, Lit q);        // Add a binary clause to the solver.
@@ -101,7 +107,7 @@ class SimpSMTSolver : public CoreSMTSolver
 
     // Variable mode:
     // 
-    void    setFrozen (Var v, bool b); // If a variable is frozen it will not be eliminated.
+    void    setFrozen (Var v, bool b) override; // If a variable is frozen it will not be eliminated.
     bool    isEliminated(Var v) const;
 
     // Solving:
@@ -116,7 +122,7 @@ class SimpSMTSolver : public CoreSMTSolver
 
     // Memory managment:
     //
-    virtual void garbageCollect();
+    virtual void garbageCollect() override;
 
 
     // Generate a (possibly simplified) DIMACS file:

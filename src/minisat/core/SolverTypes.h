@@ -367,6 +367,26 @@ class CMap
 };
 
 
+//=================================================================================================
+// TPropRes-- a class for containing the result of a theory propagation:
+class TPropRes
+{
+private:
+    int x;
+public:
+    TPropRes() : x(INT32_MAX) {}
+    explicit TPropRes(int x) noexcept : x(x) {}
+    TPropRes(const TPropRes& o) : x(o.x) {}
+    TPropRes &operator= (const TPropRes& o) { x = o.x; return *this; }
+    bool operator== (const TPropRes& o) { return x == o.x; }
+    bool operator!= (const TPropRes& o) { return x != o.x; }
+};
+
+static struct TPropRes tpr_Undef     = TPropRes(INT32_MAX);
+static struct TPropRes tpr_Unsat     = TPropRes(-1);
+static struct TPropRes tpr_Propagate = TPropRes(0);
+static struct TPropRes tpr_Decide    = TPropRes(1);
+
 /*_________________________________________________________________________________________________
 |
 |  subsumes : (other : const Clause&)  ->  Lit
@@ -416,6 +436,20 @@ inline void Clause::strengthen(Lit p)
     remove(*this, p);
     calcAbstraction();
 }
+
+class ConflQuota {
+    bool disabled;
+    int quota;
+public:
+    ConflQuota(int quota) : disabled(false), quota(quota) {}
+    ConflQuota() : disabled(true), quota(0) {}
+    ConflQuota(ConflQuota &q) : disabled(q.disabled), quota(q.quota) {}
+    void operator= (ConflQuota&& o) { disabled = o.disabled; quota = o.quota; };
+    bool operator<  (int i) { if (disabled) return false; else return quota < i; }
+    bool operator<= (int i) { if (disabled) return false; else return quota < i; }
+    bool operator>  (int i) { if (disabled) return true;  else return quota > i; }
+    ConflQuota& operator-- () { if (!disabled) { quota --; } return *this; }
+};
 
 //=================================================================================================
 

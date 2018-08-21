@@ -24,6 +24,7 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
+#include <TSolver.h>
 #include "CoreSMTSolver.h"
 
 #ifdef PRODUCE_PROOF
@@ -77,95 +78,94 @@ void CoreSMTSolver::crashTest(int rounds, Var var_true, Var var_false)
     }
 }
 
-int CoreSMTSolver::checkTheory( bool complete )
+TPropRes
+CoreSMTSolver::handleSat(int& conflictC)
 {
-    // Skip calls to theory solvers
-    // (does not seem to be helpful ...)
-    if ( !complete
-            && skipped_calls + config.sat_initial_skip_step < skip_step )
-    {
-        skipped_calls ++;
-        return 1;
-    }
+    // Increments skip step for sat calls
+    skip_step *= config.sat_skip_step_factor;
 
-    skipped_calls = 0;
+    vec<Lit> new_splits; // In case the theory is not convex the new split var is inserted here
+    theory_handler.getNewSplits(new_splits);
 
-    bool res = theory_handler.assertLits(trail)
-               && theory_handler.check(complete);
-    //
-    // Problem is T-Satisfiable
-    //
-    if ( res )
-    {
-        // Increments skip step for sat calls
-        skip_step *= config.sat_skip_step_factor;
 
-        if ( config.sat_theory_propagation > 0 )
-        {
-            if ( !complete )
-            {
-                vec<LitLev> deds;
-                deduceTheory(deds); // deds will be ordered by decision levels
-                for (int i = 0; i < deds.size(); i++)
-                {
-#ifdef DEBUG_REASONS
-                    // Debuggissimo
-                    vec<Lit> r;
-                    theory_handler.getReason(deds[i].l, r, assigns);
-                    cerr << "deduced " << theory_handler.printAsrtClause(r);
-                    cerr << endl;
-                    addTheoryReasonClause_debug(deds[i].l, r);
-#endif
-                    if (deds[i].lev != decisionLevel()) {
-                    }
-                    uncheckedEnqueue(deds[i].l, CRef_Fake);
-                }
-                if (deds.size() > 0) {
-                    // now check the other theories
-                    res = theory_handler.assertLits(trail)
-                        && theory_handler.check(false);
 
-                    // SAT and deductions done, time for BCP
-                    if ( res ) return 2;
-                    // Otherwise goto Problem is T-Unsatisfiable
-                    // This case can happen only during DTC
-                    assert( res == 0 );
-                    assert( ( ( config.logic == QF_UFIDL
-                            || config.logic == QF_UFLRA )
-                            && config.sat_lazy_dtc != 0 )
-                        || config.logic == QF_AXDIFF
-                        || config.logic == QF_AX );
-                }
-                // SAT and there are no deductions, time for decision
-                else
-                {
-                    skip_step *= config.sat_skip_step_factor;
-                    return 1; // SAT and nothing to deduce, time for decision
-                }
+    if (new_splits.size() > 0) {
+
+        assert(new_splits.size() == 2); // For now we handle the binary case only.
+
+        //printf(" -> Adding the new split\n");
+
+        vec<LitLev> deds;
+        deduceTheory(deds); // To remove possible theory deductions
+
+        Lit l1 = new_splits[0];
+        Lit l2 = new_splits[1];
+
+        assert(safeValue(l1) == l_Undef || safeValue(l2) == l_Undef);
+        assert(safeValue(l1) != l_True);
+        assert(safeValue(l2) != l_True);
+
+        if (safeValue(l1) == l_Undef && safeValue(l2) == l_Undef) {
+            addSMTClause_(new_splits);
+            forced_split = ~l1;
+            return tpr_Decide;
+        }
+        else {
+
+            Lit l_f = value(l1) == l_False ? l1 : l2; // false literal
+            Lit l_i = value(l1) == l_False ? l2 : l1; // implied literal
+
+            conflictC++;
+
+            int lev = vardata[var(l_f)].level;
+            cancelUntil(lev);
+            CRef cr;
+            addSMTClause_(new_splits, cr);
+            if (decisionLevel() > 0) {
+                // DL0 implications are already enqueued in addSMTClause_
+                assert(cr != CRef_Undef);
+                ca[cr][0] = l_i;
+                ca[cr][1] = l_f;
+                uncheckedEnqueue(l_i, cr);
             }
-            else
-                return 1; // SAT and complete call, we are done
-        }
-        else
-        {
-            skip_step *= config.sat_skip_step_factor;
-            return 1; // Sat and nothing to deduce, time for decision
+            return tpr_Propagate;
         }
     }
+    if (config.sat_theory_propagation > 0) {
+        vec<LitLev> deds;
+        deduceTheory(deds); // deds will be ordered by decision levels
+        for (int i = 0; i < deds.size(); i++) {
+            if (deds[i].lev != decisionLevel()) {
+                // Maybe do something someday?
+            }
+            uncheckedEnqueue(deds[i].l, CRef_Fake);
+        }
+        if (deds.size() > 0) {
+            return tpr_Propagate;
+        }
+    }
+    skip_step *= config.sat_skip_step_factor;
+    return tpr_Decide; // Sat and nothing to deduce, time for decision
+}
+
+TPropRes
+CoreSMTSolver::handleUnsat(int& conflictC)
+{
     //
-    // Problem is T-Unsatisfiable
+    // Query is T-Unsatisfiable
     //
-    assert( res == 0 );
+
     // Reset skip step for uns calls
     skip_step = config.sat_initial_skip_step;
 
 #ifndef PRODUCE_PROOF
     // Top-level conflict, problem is T-Unsatisfiable
     if ( decisionLevel( ) == 0 )
-        return -1;
+        return tpr_Unsat;
 #endif
 
     conflicts++;
+    conflictC++;
     vec< Lit > conflicting;
     vec< Lit > learnt_clause;
     int        max_decision_level;
@@ -225,7 +225,7 @@ int CoreSMTSolver::checkTheory( bool complete )
         // ADDED CODE END
         proof.endChain( CRef_Undef );
 #endif
-        return -1;
+        return tpr_Unsat;
     }
 
     CRef confl = CRef_Undef;
@@ -309,7 +309,7 @@ int CoreSMTSolver::checkTheory( bool complete )
     cancelUntil(backtrack_level);
     assert(value(learnt_clause[0]) == l_Undef);
 
-    if (learnt_clause.size() == 1){
+    if (learnt_clause.size() == 1) {
         uncheckedEnqueue(learnt_clause[0]);
 #ifdef PRODUCE_PROOF
         // Create a unit for the proof
@@ -347,7 +347,34 @@ int CoreSMTSolver::checkTheory( bool complete )
     assert( proof.checkState( ) );
 #endif
 
-    return 0;
+    return tpr_Propagate;
+}
+
+TPropRes CoreSMTSolver::checkTheory(bool complete, int& conflictC)
+{
+    // Skip calls to theory solvers
+    // (does not seem to be helpful ...)
+    if ( !complete
+            && skipped_calls + config.sat_initial_skip_step < skip_step )
+    {
+        skipped_calls ++;
+        return tpr_Decide;
+    }
+
+    skipped_calls = 0;
+
+    TRes res = theory_handler.assertLits(trail) ? theory_handler.check(complete) : TR_UNSAT;
+    //
+    // Problem is T-Satisfiable
+    //
+    if ( res == TR_SAT )
+        return handleSat(conflictC);
+    else if (res == TR_UNSAT)
+        return handleUnsat(conflictC);
+
+    assert(res == TR_UNKNOWN);
+
+    return tpr_Decide;
 }
 
 //

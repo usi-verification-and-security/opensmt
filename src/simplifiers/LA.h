@@ -28,28 +28,32 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define LA_H
 
 #include "PtStructs.h"
-#include "LRALogic.h"
+#include "LALogic.h"
+#include "Real.h"
+
 
 class LAExpression
+
 {
-    LRALogic& logic;
+    //LRALogic& logic;
+    LALogic& logic;
 public:
 
-  LAExpression  (LRALogic& l)
+  LAExpression  (LALogic& l)
     : logic     (l)
     , r         (UNDEF)
   {
     polynome[PTRef_Undef] = 0;
   }
 
-  LAExpression  (LRALogic& l, PTRef e, bool do_canonize)
+  LAExpression  (LALogic& l, PTRef e, bool do_canonize)
     : logic     (l)
-    , r         (l.isRealEq(e) ? EQ : (l.isRealLeq(e) ? LEQ : UNDEF))
+    , r         (l.isNumEq(e) ? EQ : (l.isNumLeq(e) ? LEQ : UNDEF))
   {
     initialize(e, do_canonize);
   }
 
-    LAExpression  (LRALogic& l, PTRef e) : LAExpression(l,e,true) {}
+    LAExpression  (LALogic& l, PTRef e) : LAExpression(l,e,true) {}
 
 
 //  LAExpression & operator=(LAExpression&& other) = default;

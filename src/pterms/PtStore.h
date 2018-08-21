@@ -45,13 +45,13 @@ class PtermIter {
     vec<PTRef>& idToPTRef;
   public:
     PtermIter(vec<PTRef>& in) : i(0), idToPTRef(in) {}
-    PTRef operator* () {
+    PTRef operator* ();/* {
         if (i < idToPTRef.size())
             return idToPTRef[i];
         else
             return PTRef_Undef;
-    }
-    const PtermIter& operator++ () { i++; return *this; }
+    }*/
+    const PtermIter& operator++ ();// { i++; return *this; }
 };
 
 class PtStore {
@@ -79,11 +79,11 @@ class PtStore {
   public:
     PtStore(SymStore& symstore_, SStore& sortstore_);
 
-    PTRef newTerm(const SymRef sym, const vec<PTRef>& ps) {
+    PTRef newTerm(const SymRef sym, const vec<PTRef>& ps);/* {
         PTRef tr = pta.alloc(sym, ps); idToPTRef.push(tr);
         assert(idToPTRef.size() == pta.getNumTerms());
         return tr;
-    }
+    }*/
 
 #ifdef PRODUCE_PROOF
     void assignPartition(unsigned int n, PTRef tr); // The new partition system
@@ -95,38 +95,38 @@ class PtStore {
     void addIPartitions(SymRef _s, const ipartitions_t& _p);
 #endif
 
-    void   free(PTRef r) { pta.free(r); }  // this is guaranteed to be lazy
+    void   free(PTRef r);// { pta.free(r); }  // this is guaranteed to be lazy
 
     SymRef lookupSymbol(const char* s, const vec<PTRef>& args);
 
-    Pterm& operator[] (PTRef tr) { return pta[tr]; }
-    const Pterm& operator[] (PTRef tr) const { return pta[tr]; }
+    Pterm& operator[] (PTRef tr);// { return pta[tr]; }
+    const Pterm& operator[] (PTRef tr) const;// { return pta[tr]; }
 
     char* printTerm(PTRef, bool ext = false) const;
     char* printTerm_(PTRef, bool ext = false) const;
 
-    bool hasCtermKey(SymRef& k) { return cterm_map.has(k); }
-    void addToCtermMap(SymRef& k, PTRef tr) {
+    bool hasCtermKey(SymRef& k);// { return cterm_map.has(k); }
+    void addToCtermMap(SymRef& k, PTRef tr);/* {
         cterm_map.insert(k, tr);
 //        cterm_keys.push(k);
-    }
-    PTRef getFromCtermMap(SymRef& k) { return cterm_map[k]; }
+    }*/
+    PTRef getFromCtermMap(SymRef& k);// { return cterm_map[k]; }
 
-    bool hasBoolKey(PTLKey& k) { return bool_map.has(k); }
-    void addToBoolMap(PTLKey& k, PTRef tr) {
+    bool hasBoolKey(PTLKey& k);// { return bool_map.has(k); }
+    void addToBoolMap(PTLKey& k, PTRef tr);/* {
         bool_map.insert(k, tr);
 //        bool_keys.push(k);
-    }
-    PTRef getFromBoolMap(PTLKey& k) { return bool_map[k]; }
+    }*/
+    PTRef getFromBoolMap(PTLKey& k);// { return bool_map[k]; }
 
-    bool hasCplxKey(PTLKey& k) { return cplx_map.has(k); }
-    void addToCplxMap(PTLKey& k, PTRef tr) {
+    bool hasCplxKey(PTLKey& k);// { return cplx_map.has(k); }
+    void addToCplxMap(PTLKey& k, PTRef tr);/* {
         cplx_map.insert(k, tr);
 //        cplx_keys.push(k);
-    }
-    PTRef getFromCplxMap(PTLKey& k) { return cplx_map[k]; }
+    }*/
+    PTRef getFromCplxMap(PTLKey& k);// { return cplx_map[k]; }
 
-    PtermIter getPtermIter() { return PtermIter(idToPTRef); }
+    PtermIter getPtermIter();// { return PtermIter(idToPTRef); }
 
     int* serializeTerms() const;
     void deserializeTerms(const int*);

@@ -16,6 +16,7 @@
 
 
 #include "LRA_Interpolator.h"
+#include "LRALogic.h"
 #include <Real.h>
 #include <LA.h>
 #include <unordered_set>
@@ -27,7 +28,7 @@ using matrix_t = std::vector<std::vector<Real>>;
 
 // TODO: when is explanation negated?
 struct ItpHelper {
-    ItpHelper(LRALogic & logic, PtAsgn ineq, Real coeff) : explanation{ineq.tr}, negated{ineq.sgn == l_False},
+    ItpHelper(LALogic & logic, PtAsgn ineq, Real coeff) : explanation{ineq.tr}, negated{ineq.sgn == l_False},
                                                            expl_coeff{std::move(coeff)}, expr{logic, ineq.tr, false} {}
     PTRef explanation;
     bool negated;
@@ -304,7 +305,7 @@ namespace {
     }
 
 
-    PTRef sumInequalities(std::vector<ItpHelper> const & ineqs, std::vector<Real> const & coeffs, LRALogic & logic) {
+    PTRef sumInequalities(std::vector<ItpHelper> const & ineqs, std::vector<Real> const & coeffs, LALogic & logic) {
         assert(ineqs.size() == coeffs.size());
         LAExpression init{logic};
         auto it_ineq = ineqs.begin();
@@ -331,10 +332,10 @@ namespace {
         PTRef rhs = logic.mkConst("0");
         PTRef lhs = init.toPTRef();
 //        std::cout << "LHS: " << logic.printTerm(lhs) << '\n';
-        return delta_flag ? logic.mkRealLt(lhs, rhs) : logic.mkRealLeq(lhs, rhs);
+        return delta_flag ? logic.mkNumLt(lhs, rhs) : logic.mkNumLeq(lhs, rhs);
     }
 
-    PTRef sumInequalities(std::vector<ItpHelper> const & ineqs, LRALogic & logic) {
+    PTRef sumInequalities(std::vector<ItpHelper> const & ineqs, LALogic & logic) {
         std::vector<Real> coeffs;
         coeffs.reserve(ineqs.size());
         for (const auto & helper : ineqs) {
@@ -370,7 +371,7 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color) {
                              });
 
     std::vector<ItpHelper> helpers;
-    LRALogic & logic = this->logic;
+    LALogic & logic = this->logic;
     std::transform(candidates.begin(), it, std::back_inserter(helpers),
                    [&logic](std::pair<PtAsgn, Real> const & expl) {
                        return ItpHelper{logic, expl.first, expl.second};

@@ -48,6 +48,10 @@ using namespace std;
 
 const char* Logic::e_argnum_mismatch = "incorrect number of arguments";
 const char* Logic::e_bad_constant    = "incorrect constant for logic";
+
+const char* Logic::tk_val_uf_default   = "UFDefault";
+const char* Logic::tk_val_bool_default = "true";
+
 const char* Logic::tk_true     = "true";
 const char* Logic::tk_false    = "false";
 const char* Logic::tk_not      = "not";
@@ -310,7 +314,7 @@ Logic::printSym(SymRef sr) const
 }
 
 char*
-Logic::pp(PTRef tr)
+Logic::pp(PTRef tr) const
 {
     char* out;
 
@@ -529,8 +533,7 @@ bool Logic::simplifyEquality(PtChild& ptc, bool simplify) {
 }
 
 
-void
-Logic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
+void Logic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
 {
     Pterm& p = getPterm(tr);
     vec<PTRef> newargs;
@@ -654,6 +657,15 @@ PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args, char** msg) {
     return rval;
 }
 
+
+const char*
+Logic::getDefaultValue(const PTRef tr) const
+{
+    if (hasSortBool(tr))
+        return tk_val_bool_default;
+    else
+        return tk_val_uf_default;
+}
 
 PTRef
 Logic::mkIte(vec<PTRef>& args)
@@ -2422,3 +2434,112 @@ Logic::collectStats(PTRef root, int& n_of_conn, int& n_of_eq, int& n_of_uf, int&
     }
 }
 
+bool Logic::isIteVar(PTRef tr) const { return top_level_ites.has(tr); }
+PTRef Logic::getTopLevelIte(PTRef tr) { return top_level_ites[tr].repr; }
+void Logic::conjoinExtras(PTRef root, PTRef& new_root) { conjoinItes(root, new_root); }
+
+IdRef       Logic::newIdentifier (const char* name)            { return id_store.newIdentifier(name); }
+IdRef       Logic::newIdentifier (const char* name, vec<int>& nl){ return id_store.newIdentifier(name, nl); }
+// Fetching sorts
+bool        Logic::containsSort  (const char* name)      const { return sort_store.containsSort(name); }
+
+SRef        Logic::newSort       (IdRef idr, const char* name, vec<SRef>& tmp) { return sort_store.newSort(idr, name, tmp); }
+
+SRef        Logic::getSortRef    (const char* name)      const { return sort_store[name]; }
+SRef        Logic::getSortRef    (const PTRef tr)        const { return getSortRef(getPterm(tr).symb()); }
+SRef        Logic::getSortRef    (const SymRef sr)       const { return getSym(sr).rsort(); }
+Sort*       Logic::getSort       (const SRef s)                { return sort_store[s]; }
+const char* Logic::getSortName   (const SRef s)                { return sort_store.getName(s); }
+
+
+PTRef       Logic::mkAnd         (PTRef a1, PTRef a2) { vec<PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkAnd(tmp); }
+PTRef      Logic::mkAnd         (const std::vector<PTRef> & v) { vec<PTRef> tmp; for(PTRef ref : v) {tmp.push(ref);} return mkAnd(tmp); }
+
+PTRef      Logic::mkOr          (PTRef a1, PTRef a2) { vec<PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkOr(tmp); }
+PTRef      Logic::mkOr          (const std::vector<PTRef> & v) { vec<PTRef> tmp; for(PTRef ref : v) {tmp.push(ref);} return mkOr(tmp); }
+
+PTRef       Logic::mkXor         (PTRef a1, PTRef a2) { vec <PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkXor(tmp); }
+
+PTRef       Logic::mkIte         (PTRef c, PTRef t, PTRef e) { vec<PTRef> tmp; tmp.push(c); tmp.push(t); tmp.push(e); return mkIte(tmp); }
+
+
+PTRef       Logic::mkEq          (PTRef a1, PTRef a2) { vec<PTRef> v; v.push(a1); v.push(a2); return mkEq(v); }
+void Logic::dumpFunctions(ostream& dump_out) { vec<const char*> names; defined_functions.getKeys(names); for (int i = 0; i < names.size(); i++) dumpFunction(dump_out, names[i]); }
+void Logic::dumpFunction(ostream& dump_out, const char* tpl_name) { if (defined_functions.has(tpl_name)) dumpFunction(dump_out, defined_functions[tpl_name]); else printf("; Error: function %s is not defined\n", tpl_name); }
+void Logic::dumpFunction(ostream& dump_out, const std::string s) { dumpFunction(dump_out, s.c_str()); }
+
+void Logic::dumpFunction(ostream& dump_out, const Tterm& t) { dumpFunction(dump_out, TFun(t, getSortRef(t.getBody()))); }
+
+// The Boolean connectives
+SymRef        Logic::getSym_true      ()              const { return sym_TRUE;     }
+SymRef        Logic::getSym_false     ()              const { return sym_FALSE;    }
+SymRef        Logic::getSym_and       ()              const { return sym_AND;      }
+SymRef        Logic::getSym_or        ()              const { return sym_OR;       }
+SymRef        Logic::getSym_xor       ()              const { return sym_XOR;      }
+SymRef       Logic::getSym_not       ()              const { return sym_NOT;      }
+SymRef       Logic::getSym_eq        ()              const { return sym_EQ;       }
+SymRef       Logic::getSym_ite       ()              const { return sym_ITE;      }
+SymRef       Logic::getSym_implies   ()              const { return sym_IMPLIES;  }
+SymRef       Logic::getSym_distinct  ()              const { return sym_DISTINCT; }
+SRef         Logic::getSort_bool     ()              const { return sort_BOOL;    }
+
+PTRef         Logic::getTerm_true     ()              const { return term_TRUE;  }
+PTRef         Logic::getTerm_false    ()              const { return term_FALSE; }
+
+bool          Logic::isEquality       (SymRef tr)     const { return equalities.has(tr);    }
+bool          Logic::isEquality       (PTRef tr)      const { return equalities.has(term_store[tr].symb());}
+bool          Logic::isUFEquality     (PTRef tr)      const { return isEquality(tr) && !hasSortBool(getPterm(tr)[0]); }
+bool          Logic::isTheoryEquality (PTRef tr)      const { return isUFEquality(tr); }
+bool          Logic::isDisequality    (SymRef tr)     const { return disequalities.has(tr); }
+bool          Logic::isDisequality    (PTRef tr)      const { return disequalities.has(term_store[tr].symb()); }
+bool          Logic::isIte            (SymRef tr)     const { return ites.has(tr);          }
+bool          Logic::isIte            (PTRef tr)      const { return ites.has(term_store[tr].symb()); }
+
+bool         Logic::isBooleanOperator  (PTRef tr)        const { return isBooleanOperator(term_store[tr].symb()); }
+bool         Logic::isBuiltinSort      (const SRef sr)   const { return sr == sort_BOOL; }
+bool         Logic::isBuiltinConstant  (const SymRef sr) const { return isConstant(sr) && (sr == sym_TRUE || sr == sym_FALSE); }
+bool         Logic::isBuiltinConstant  (const PTRef tr)  const { return isBuiltinConstant(getPterm(tr).symb()); }
+bool         Logic::Logic::isConstant         (PTRef tr)        const { return isConstant(getPterm(tr).symb()); }
+bool         Logic::isUFTerm           (PTRef tr)        const { return isUFSort(getSortRef(tr)); }
+bool         Logic::isUFSort           (const SRef sr)   const { return ufsorts.has(sr); }
+
+
+bool        Logic::isVar              (SymRef sr)     const { return sym_store[sr].nargs() == 0 && !isConstant(sr); }
+bool        Logic::isVar              (PTRef tr)      const { return isVar(getPterm(tr).symb()); }
+
+bool        Logic::isBoolAtom         (PTRef tr)      const { return hasSortBool(tr) && isVar(tr); }
+
+
+bool        Logic::isAnd(PTRef tr)  const { return getPterm(tr).symb() == getSym_and(); }
+bool        Logic::isAnd(SymRef sr) const { return sr == getSym_and(); }
+bool        Logic::isOr (PTRef tr)  const { return getPterm(tr).symb() == getSym_or (); }
+bool        Logic::isOr (SymRef sr) const { return sr == getSym_or(); }
+bool        Logic::isNot(PTRef tr)  const { return getPterm(tr).symb() == getSym_not(); }
+bool        Logic::isNot(SymRef sr) const { return sr == getSym_not(); }
+bool        Logic::isXor(SymRef sr) const { return sr == getSym_xor(); }
+bool        Logic::isXor(PTRef tr)  const { return isXor(getPterm(tr).symb()); }
+bool        Logic::isImplies(SymRef sr) const { return sr == getSym_implies(); }
+bool        Logic::isImplies(PTRef tr)  const { return isImplies(getPterm(tr).symb()); }
+bool        Logic::isTrue(SymRef sr) const { return sr == getSym_true(); }
+bool        Logic::isTrue(PTRef tr)  const { return isTrue(getPterm(tr).symb()); }
+bool        Logic::isFalse(SymRef sr) const { return sr == getSym_false(); }
+bool        Logic::isFalse(PTRef tr)  const { return isFalse(getPterm(tr).symb()); }
+bool        Logic::isDistinct(SymRef sr) const { return sr == getSym_distinct(); }
+bool        Logic::isDistinct(PTRef tr) const { return isDistinct(getPterm(tr).symb()); }
+bool        Logic::isIff(SymRef sr) const { return sr == getSym_eq(); }
+bool        Logic::isIff(PTRef tr) const { return isIff(getPterm(tr).symb()); }
+
+
+bool        Logic::hasSortBool(PTRef tr) const { return sym_store[getPterm(tr).symb()].rsort() == sort_BOOL; }
+bool        Logic::hasSortBool(SymRef sr) const { return sym_store[sr].rsort() == sort_BOOL; }
+
+inline bool Logic::isPredef           (string&)        const { return false; };
+
+char* Logic::printTerm        (PTRef tr)                 const { return printTerm_(tr, false, false); }
+char* Logic::printTerm        (PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
+
+void Logic::termSort(vec<PTRef>& v) const { sort(v, LessThan_PTRef()); }
+
+void  Logic::purify     (PTRef r, PTRef& p, lbool& sgn) const {p = r; sgn = l_True; while (isNot(p)) { sgn = sgn^1; p = getPterm(p)[0]; }}
+
+inline int     Logic::verbose                       ( ) const { return config.verbosity(); }

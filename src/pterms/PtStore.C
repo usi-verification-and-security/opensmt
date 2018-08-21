@@ -264,3 +264,49 @@ PtStore::addIPartitions(SymRef _s, const ipartitions_t& _p)
 
 #endif
 
+
+PTRef PtermIter::operator* () {
+    if (i < idToPTRef.size())
+        return idToPTRef[i];
+    else
+        return PTRef_Undef;
+}
+const PtermIter& PtermIter::operator++ () { i++; return *this; }
+
+
+PTRef PtStore::newTerm(const SymRef sym, const vec<PTRef>& ps) {
+    PTRef tr = pta.alloc(sym, ps); idToPTRef.push(tr);
+    assert(idToPTRef.size() == pta.getNumTerms());
+    return tr;
+}
+
+void   PtStore::free(PTRef r) { pta.free(r); }  // this is guaranteed to be lazy
+
+
+
+Pterm& PtStore::operator[] (PTRef tr) { return pta[tr]; }
+const Pterm& PtStore::operator[] (PTRef tr) const { return pta[tr]; }
+
+bool PtStore::hasCtermKey(SymRef& k) { return cterm_map.has(k); }
+void PtStore::addToCtermMap(SymRef& k, PTRef tr) {
+    cterm_map.insert(k, tr);
+//        cterm_keys.push(k);
+}
+PTRef PtStore::getFromCtermMap(SymRef& k) { return cterm_map[k]; }
+
+bool PtStore::hasBoolKey(PTLKey& k) { return bool_map.has(k); }
+void PtStore::addToBoolMap(PTLKey& k, PTRef tr) {
+    bool_map.insert(k, tr);
+//        bool_keys.push(k);
+}
+PTRef PtStore::getFromBoolMap(PTLKey& k) { return bool_map[k]; }
+
+bool PtStore::hasCplxKey(PTLKey& k) { return cplx_map.has(k); }
+void PtStore::addToCplxMap(PTLKey& k, PTRef tr) {
+    cplx_map.insert(k, tr);
+//        cplx_keys.push(k);
+}
+PTRef PtStore::getFromCplxMap(PTLKey& k) { return cplx_map[k]; }
+
+PtermIter PtStore::getPtermIter() { return PtermIter(idToPTRef); }
+

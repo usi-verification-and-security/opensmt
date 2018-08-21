@@ -208,6 +208,17 @@ void Interpret::interp(ASTNode& n) {
                 new_solver();
                 main_solver = new MainSolver(*thandler, config, solver, "qf_lra solver");
                 main_solver->initialize();
+            }
+            else if ((strcmp(logic_name, QF_LIA.str) == 0) || (strcmp(logic_name, QF_RDL.str) == 0)) {
+                LIATheory *liatheory = new LIATheory(config);
+                theory = liatheory;
+                thandler = new THandler(config, *liatheory);
+                logic = &(theory->getLogic());
+
+                //solver = new SimpSMTSolver(config, *thandler);
+                new_solver();
+                main_solver = new MainSolver(*thandler, config, solver, "qf_lia solver");
+                main_solver->initialize();
             } else if ((strcmp(logic_name, QF_UFLRA.str) == 0) || (strcmp(logic_name, QF_UFRDL.str) == 0)) {
                     UFLRATheory* uflratheory = new UFLRATheory(config);
                     theory = uflratheory;

@@ -777,7 +777,7 @@ public:
   int randomize_lookahead_bufsz() const {
       return optionTable.has(o_sat_split_randomize_lookahead_buf) ?
               optionTable[o_sat_split_randomize_lookahead_buf]->getValue().numval :
-              5; }
+              1; }
 
   int remove_symmetries() const
     { return optionTable.has(o_sat_remove_symmetries) ?
