@@ -2290,8 +2290,12 @@ void Logic::computePartitionMasks(const vec<PTRef> &roots) {
         PTRef tr = list_out[i].tr;
         Pterm& t = getPterm(tr);
         ipartitions_t& p = getIPartitions(tr);
-        for (int j = 0; j < t.size(); j++)
+        for (int j = 0; j < t.size(); j++) {
             addIPartitions(t[j], p);
+        }
+        if (isUF(tr) || isUP(tr)) {
+            addIPartitions(t.symb(), p);
+        }
     }
 }
 
