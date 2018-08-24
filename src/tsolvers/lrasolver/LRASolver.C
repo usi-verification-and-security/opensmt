@@ -28,11 +28,15 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
+#include <unordered_map>
 #include "LRASolver.h"
 #include "LASolver.h"
 
 #include "LA.h"
 
+#ifdef PRODUCE_PROOF
+#include "LRA_Interpolator.h"
+#endif
 
 static SolverDescr descr_lra_solver("LRA Solver", "Solver for Quantifier Free Linear Real Arithmetics");
 
@@ -184,13 +188,17 @@ TRes LRASolver::check(bool complete) {
 LRASolver::~LRASolver( )
 {
     lasolverstats.printStatistics(cerr);
-
 }
 
 LRALogic&  LRASolver::getLogic() { return logic; }
 
 
 #ifdef PRODUCE_PROOF
+
+
+enum class ItpAlg {
+    STRONG, WEAK, FACTOR, EXPERIMENTAL_STRONG, EXPERIMENTAL_WEAK, UNDEF
+};
 //
 // Compute interpolants for the conflict
 //
@@ -205,21 +213,39 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
     assert(status == UNSAT);
     assert (explanation.size()>1);
 
+    if(usingExperimental()){
+        if (verbose() > 1){
+            std::cerr << "; Using experimental LRA interpolation\n";
+        }
+        auto itp = getExperimentalInterpolant(mask, labels);
+        assert(itp != PTRef_Undef);
+        if(logic.isBooleanOperator(itp) || (logic.isNot(itp) && logic.isBooleanOperator(logic.getPterm(itp)[0]))){
+            ++interpolStats.interestingInterpolants;
+//            std::cerr << "; Interesting interpolant computed: " << logic.printTerm(itp) << '\n';
+        }
+        else{
+            ++interpolStats.defaultInterpolants;
+        }
+        return itp;
+    }
+
+    const ItpAlg itpAlg = [this](){
+        if(usingStrong()) {return ItpAlg::STRONG;}
+        if(usingWeak()) {return ItpAlg::WEAK;}
+        if(usingFactor()) {return ItpAlg::FACTOR;}
+        return ItpAlg::UNDEF;
+    }(); // note the parenthesis => immediate call of the lambda
+
     if (verbose() > 1)
     {
-        if (usingStrong())
+        if (itpAlg == ItpAlg::STRONG)
             cerr << "; Using Strong for LRA interpolation" << endl;
-        else if (usingWeak())
+        else if (itpAlg == ItpAlg::WEAK)
             cerr << "; Using Weak for LRA interpolation" << endl;
-        else if(usingFactor())
+        else if(itpAlg == ItpAlg::FACTOR)
             cerr << "; Using Factor " << getStrengthFactor() << " for LRA interpolation" << endl;
         else
             cerr << "; LRA interpolation algorithm unknown" << endl;
-    }
-
-    for(map<PTRef, icolor_t>::iterator it = labels->begin(); it != labels->end(); ++it)
-    {
-        //cout << "; PTRef " << logic.printTerm(it->first) << " has color " << it->second << endl;
     }
 
     LAExpression interpolant(logic);
@@ -244,7 +270,6 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
         icolor_t color = I_UNDEF;
         const ipartitions_t & p = logic.getIPartitions(explanation[i].tr);
         Pterm& t = logic.getPterm(explanation[i].tr);
-
         if ( isAB( p, mask ) ) {
             color = I_AB;
         }
@@ -266,13 +291,18 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
                 || color == I_AB
                 || color == I_B );
 
-        //assert( usingStrong()
-        //        || usingWeak()
-        //        || usingRandom() );
-
         PTRef exp_pt = explanation[i].tr;
-        if(labels != NULL && labels->find(exp_pt) != labels->end())
+        if(labels != nullptr && labels->find(exp_pt) != labels->end())
         {
+            if(color != I_UNDEF){
+                // Partitioning and labels can disagree under conditions that according to partitioning
+                // the explanation can be in both parts, but the label can be more strict
+//                std::cerr << "Color disagreement for term: " << logic.printTerm(explanation[i].tr) << '\n';
+//                std::cerr << "Color from partitioning: " << color << '\n';
+//                std::cerr << "Color from labels: " << labels->find(exp_pt)->second << '\n';
+                assert(color == I_AB || color == labels->find(exp_pt)->second);
+            }
+            // labels have priority of simple partitioning information
             color = labels->find(exp_pt)->second;
             //cout << "; PTRef " << logic.printTerm(exp_pt) << " has Boolean color " << color << endl;
         }
@@ -280,30 +310,29 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
         //assert( color == I_A || color == I_B );
 
         // Add the conflict to the interpolant (multiplied by the coefficient)
-        //if ((color == I_A && usingStrong()) || (color == I_B && usingWeak()))
         if(color == I_A || color == I_AB)
         {
             if (explanation[i].sgn == l_False)
             {
-                interpolant.addExprWithCoeff(LAExpression(logic, explanation[i].tr), explanationCoefficients[i]);
+                interpolant.addExprWithCoeff(LAExpression(logic, explanation[i].tr, false), explanationCoefficients[i]);
                 delta_flag=true;
             }
             else
             {
-                interpolant.addExprWithCoeff(LAExpression(logic, explanation[i].tr), -explanationCoefficients[i]);
+                interpolant.addExprWithCoeff(LAExpression(logic, explanation[i].tr, false), -explanationCoefficients[i]);
             }
         }
-        //if ((color == I_A && usingStrong()) || (color == I_B && usingWeak()))
         if(color == I_B || color == I_AB)
         {
             if (explanation[i].sgn == l_False)
             {
-                interpolant_dual.addExprWithCoeff(LAExpression(logic, explanation[i].tr), explanationCoefficients[i]);
+                interpolant_dual.addExprWithCoeff(LAExpression(logic, explanation[i].tr, false), explanationCoefficients[i]);
+                // TODO: investigate where delta_flag_dual should be used and how it should be used properly
                 delta_flag_dual=true;
             }
             else
             {
-                interpolant_dual.addExprWithCoeff(LAExpression(logic, explanation[i].tr), -explanationCoefficients[i]);
+                interpolant_dual.addExprWithCoeff(LAExpression(logic, explanation[i].tr, false), -explanationCoefficients[i]);
             }
         }
     }
@@ -319,7 +348,7 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
     else
     {
         vec<PTRef> args;
-        if (usingFactor())
+        if (itpAlg == ItpAlg::FACTOR)
         {
             opensmt::Real const_strong = interpolant.getRealConstant();
             opensmt::Real const_weak = interpolant_dual.getRealConstant();
@@ -356,12 +385,12 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
             args.push(logic.mkConst(new_constant));
             args.push(nonconst_strong);
         }
-        else if (usingStrong())
+        else if (itpAlg == ItpAlg::STRONG)
         {
             args.push(logic.mkConst("0"));
             args.push(interpolant.toPTRef());
         }
-        else if (usingWeak())
+        else if (itpAlg == ItpAlg::WEAK)
         {
             args.push(logic.mkConst("0"));
             args.push(interpolant_dual.toPTRef());
@@ -372,7 +401,7 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
         }
 
         char* msg;
-        if (!usingWeak())
+        if (itpAlg != ItpAlg::WEAK)
         {
             if (delta_flag)
                 itp = logic.mkNumLt(args, &msg);
@@ -381,7 +410,7 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
         }
         else
         {
-            if (delta_flag)
+            if (delta_flag_dual)
                 itp = logic.mkNumLt(args, &msg);
             else
                 itp = logic.mkNumLeq(args, &msg);
@@ -397,5 +426,18 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
     return itp;
 }
 
-#endif
+
+
+
+PTRef LRASolver::getExperimentalInterpolant(const ipartitions_t &mask, map<PTRef, icolor_t> *labels) {
+    LRA_Interpolator interpolator{logic, explanation, explanationCoefficients, mask, labels};
+    icolor_t color = config.getLRAInterpolationAlgorithm() == itp_lra_alg_experimental_strong ? icolor_t::I_A : icolor_t::I_B;
+    auto res = interpolator.getInterpolant(color);
+    if(verbose() > 1){
+        std::cerr << "; Experimental interpolation returned interpolant: " << logic.printTerm(res) << '\n';
+    }
+    return res;
+}
+
+#endif // PRODUCE_PROOF
 

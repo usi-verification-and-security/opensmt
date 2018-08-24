@@ -976,6 +976,7 @@ public:
     void   getInterpolants         (const vec<ipartitions_t>& partitions, vec<PTRef>& interpolants);
     void   setColoringSuggestions  (  vec< std::map<PTRef, icolor_t>* > * mp );
     bool   getPathInterpolants(vec<PTRef>& interpolants);
+    bool   getPathInterpolants(vec<PTRef>& interpolants, const vec<ipartitions_t>& A_masks);
     void   getSingleInterpolant(vec<PTRef>& interpolants);
     void   getSingleInterpolant(vec<PTRef>& interpolants, const ipartitions_t& A_mask);
     void   getSingleInterpolant(std::vector<PTRef>& interpolants, const ipartitions_t& A_mask) // This is a wrapper for the above, used by hifrog

@@ -86,9 +86,6 @@ Logic::Logic(SMTConfig& c) :
     , term_TRUE(PTRef_Undef)
     , term_FALSE(PTRef_Undef)
     , subst_num(0)
-#ifdef PRODUCE_PROOF
-    , asrt_idx(0)
-#endif
 {
     config.logic = QF_UF;
     logic_type = QF_UF;
@@ -200,8 +197,10 @@ Logic::Logic(SMTConfig& c) :
     ites.insert(sym_ITE, true);
 
 #ifdef PRODUCE_PROOF
-    flat2orig[getTerm_true()] = getTerm_true();
-    flat2orig[getTerm_false()] = getTerm_false();
+    ipartitions_t mask = 0;
+    mask = ~mask;
+    setIPartitions(getTerm_true(), mask);
+    setIPartitions(getTerm_false(), mask);
 #endif
 }
 
@@ -324,7 +323,14 @@ Logic::pp(PTRef tr) const
     char* name_escaped = printSym(sr);
 
     if (t.size() == 0) {
+#ifdef PARTITION_PRETTYPRINT
+        std::stringstream o;
+        o << getIPartitions(tr);
+        const char* parts = o.str().c_str();
+        asprintf(&out, "%s [%s]", name_escaped, parts);
+#else
         asprintf(&out, "%s", name_escaped);
+#endif
         free(name_escaped);
         return out;
     }
@@ -346,7 +352,14 @@ Logic::pp(PTRef tr) const
         }
     }
     old = out;
+#ifdef PARTITION_PRETTYPRINT
+    std::stringstream o;
+    o << getIPartitions(tr);
+    const char* parts = o.str().c_str();
+    asprintf(&out, "%s) [%s]", old, parts);
+#else
     asprintf(&out, "%s)", old);
+#endif
     ::free(old);
     return out;
 }
@@ -525,14 +538,17 @@ void Logic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
     Pterm& p = getPterm(tr);
     vec<PTRef> newargs;
     char *msg;
-    for(int i = 0; i < p.size(); ++i) {
+    for (int i = 0; i < p.size(); ++i) {
         PTRef tr = p[i];
-        if(tr_map.has(tr))
+        if (tr_map.has(tr))
             newargs.push(tr_map[tr]);
         else
             newargs.push(tr);
     }
     PTRef trp = insertTerm(p.symb(), newargs, &msg);
+#ifdef PRODUCE_PROOF
+    addIPartitions(trp, getIPartitions(tr));
+#endif
     if (trp != tr) {
         if (tr_map.has(tr))
             assert(tr_map[tr] == trp);
@@ -586,13 +602,13 @@ void Logic::simplifyTree(PTRef tr, PTRef& root_out)
         visit(queue[i].x, tr_map);
 #ifdef PRODUCE_PROOF
         PTRef qaux = queue[i].x;
-        if (tr_map.has(qaux) && isAssertion(qaux))
+        if (tr_map.has(qaux))
         {
             PTRef trq = tr_map[qaux];
-            if(trq != qaux)
+            if (trq != qaux)
             {
-                setOriginalAssertion(trq, qaux);
-                assertions_simp.push(trq);
+                addIPartitions(trq, getIPartitions(qaux));
+                partitions_simp.push(trq);
             }
         }
 #endif
@@ -749,7 +765,7 @@ PTRef Logic::mkAnd(vec<PTRef>& args) {
             else if(newargs.size() == 1)
                 tr = newargs[0];
             else
-                tr = insertTermHash(getSym_and(), newargs);
+                tr = mkFun(getSym_and(), newargs);
         }
     }
 
@@ -803,7 +819,7 @@ PTRef Logic::mkOr(vec<PTRef>& args) {
         vec<PTRef> newargs;
         for (int i = 0; i < tmp_args.size(); i++)
             newargs.push(tmp_args[i].sgn == l_True? tmp_args[i].tr : mkNot(tmp_args[i].tr));
-        tr = insertTermHash(getSym_or(), newargs);
+        tr = mkFun(getSym_or(), newargs);
     }
 
     if(tr == PTRef_Undef) {
@@ -835,7 +851,7 @@ PTRef Logic::mkXor(vec<PTRef>& args) {
     vec<PTRef> newargs;
     args.copyTo(newargs);
     sort(newargs);
-    tr = insertTermHash(getSym_xor(), newargs);
+    tr = mkFun(getSym_xor(), newargs);
 
     if(tr == PTRef_Undef) {
         printf("Error in mkXor");
@@ -899,7 +915,7 @@ PTRef Logic::mkEq(vec<PTRef>& args) {
         if (args[0] == getTerm_false() || args[1] == getTerm_false())
             return args[0] == getTerm_false() ? mkNot(args[1]) : mkNot(args[0]);
     }
-    return insertTermHash(eq_sym, args);
+    return mkFun(eq_sym, args);
 }
 
 PTRef Logic::mkNot(vec<PTRef>& args) {
@@ -917,7 +933,7 @@ PTRef Logic::mkNot(PTRef arg) {
     else {
         vec<PTRef> tmp;
         tmp.push(arg);
-        tr = insertTermHash(getSym_not(), tmp);
+        tr = mkFun(getSym_not(), tmp);
     }
 
     if(tr == PTRef_Undef) {
@@ -1100,39 +1116,7 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, char** msg)
         return getTerm_true();
     if(sym == getSym_false())
         return getTerm_false();
-    return insertTermHash(sym, terms);
-}
-
-bool
-Logic::existsTermHash(SymRef sym, const vec<PTRef>& terms_in)
-{
-    vec<PTRef> terms;
-    terms_in.copyTo(terms);
-    PTRef res = PTRef_Undef;
-    char **msg;
-    if (terms.size() == 0) {
-        if (term_store.hasCtermKey(sym)) //cterm_map.contains(sym))
-            return true;
-    }
-    else if (!isBooleanOperator(sym)) {
-        if (sym_store[sym].commutes()) {
-            sort(terms, LessThan_PTRef());
-        }
-        PTLKey k;
-        k.sym = sym;
-        terms.copyTo(k.args);
-        if (term_store.hasCplxKey(k))
-            return true;
-    }
-    else {
-        // Boolean operator
-        PTLKey k;
-        k.sym = sym;
-        terms.copyTo(k.args);
-        if (term_store.hasBoolKey(k))
-            return true;
-    }
-    return false;
+    return mkFun(sym, terms);
 }
 
 PTRef
@@ -2227,36 +2211,94 @@ Logic::implies(PTRef implicant, PTRef implicated)
     dump_out.close( );
     // Check !
     bool tool_res;
-    if ( int pid = fork() )
-    {
+    int pid = fork();
+    if(pid == -1){
+        std::cerr << "Failed to fork\n";
+        // consider throwing and exception
+        return false;
+    }
+    else if( pid == 0){
+        // child process
+        execlp( config.certifying_solver, config.certifying_solver, implies, NULL );
+        perror( "Child process error: " );
+        exit( 1 );
+    }
+    else{
+        // parent
         int status;
         waitpid(pid, &status, 0);
         switch ( WEXITSTATUS( status ) )
         {
             case 0:
+//                std::cerr << "Implication holds!\n";
                 tool_res = false;
                 break;
             case 1:
+//                std::cerr << "Implication does not hold!\n";
+//                std::cerr << "Antecedent: " << logic.printTerm(implicant) << '\n';
+//                std::cerr << "Consequent: " << logic.printTerm(implicated) << '\n';
                 tool_res = true;
                 break;
             default:
-                perror( "Tool" );
+                perror( "Parent process error" );
                 exit( EXIT_FAILURE );
         }
     }
-    else
-    {
-        execlp( "./tool_wrapper.sh", "tool_wrapper.sh", implies, NULL );
-        perror( "tool_wrapper.sh" );
-        exit( 1 );
-    }
 
-    if ( tool_res == true )
-        return false;
-    return true;
+    return !tool_res;
+}
+
+void Logic::conjoinItes(PTRef root, PTRef& new_root)
+{
+    vec<PTRef> queue;
+    Map<PTRef,bool,PTRefHash> seen;
+    queue.push(root);
+    vec<PTRef> args;
+    while (queue.size() != 0) {
+        PTRef el = queue.last();
+        queue.pop();
+        if (seen.has(el)) continue;
+        if (isVar(el) && isIteVar(el)) {
+            PTRef ite = getTopLevelIte(el);
+            args.push(ite);
+            queue.push(ite);
+#ifdef PRODUCE_PROOF
+            setIPartitions(ite, getIPartitions(el));
+#endif
+        }
+        for (int i = 0; i < getPterm(el).size(); i++)
+            queue.push(getPterm(el)[i]);
+        seen.insert(el, true);
+    }
+#ifdef PRODUCE_PROOF
+    computePartitionMasks(args);
+#endif
+    args.push(root);
+    new_root = mkAnd(args);
 }
 
 #ifdef PRODUCE_PROOF
+
+// Given a vector roots of ptrefs, compute the partitions for each term rooted at roots
+// so that a term has the partitions of its ancestors.
+void Logic::computePartitionMasks(const vec<PTRef> &roots) {
+
+    vec<PtChild> list_out;
+    getTermsList(roots, list_out, *this);
+    for (int i = list_out.size()-1; i >= 0; i--)
+    {
+        PTRef tr = list_out[i].tr;
+        Pterm& t = getPterm(tr);
+        ipartitions_t& p = getIPartitions(tr);
+        for (int j = 0; j < t.size(); j++) {
+            addIPartitions(t[j], p);
+        }
+        if (isUF(tr) || isUP(tr)) {
+            addIPartitions(t.symb(), p);
+        }
+    }
+}
+
 bool
 Logic::verifyInterpolantA(PTRef itp, const ipartitions_t& mask)
 {
@@ -2268,18 +2310,17 @@ PTRef
 Logic::getPartitionA(const ipartitions_t& mask)
 {
     Logic& logic = *this;
-
-    vec<PTRef> ass;
-    logic.getAssertions(ass);
+    auto parts = logic.getPartitions();
     vec<PTRef> a_args;
-    for(int i = 0; i < ass.size(); ++i)
+    for(auto part : parts)
     {
-        PTRef a = ass[i];
-        ipartitions_t p = 0;
-        setbit(p, i + 1);
-        if(isAstrict(p, mask)) a_args.push(a);
-        else if(isBstrict(p, mask)) {}
-        else opensmt_error("Assertion is neither A or B");
+        const auto & p_mask = logic.getIPartitions(part);
+        if(isAlocal(p_mask, mask)) {
+            a_args.push(part);
+        }
+        else if(!isBlocal(p_mask, mask)) {
+            opensmt_error("Assertion is neither A or B");
+        }
     }
     PTRef A = logic.mkAnd(a_args);
     return A;
@@ -2289,17 +2330,17 @@ PTRef
 Logic::getPartitionB(const ipartitions_t& mask)
 {
     Logic& logic = *this;
-    vec<PTRef> ass;
-    logic.getAssertions(ass);
+    auto parts = logic.getPartitions();
     vec<PTRef> b_args;
-    for(int i = 0; i < ass.size(); ++i)
+    for(auto part : parts)
     {
-        PTRef a = ass[i];
-        ipartitions_t p = 0;
-        setbit(p, i + 1);
-        if (isAstrict(p, mask)) {}
-        else if (isBstrict(p, mask)) b_args.push(a);
-        else opensmt_error("Assertion is neither A or B");
+        const auto & p_mask = logic.getIPartitions(part);
+        if(isBlocal(p_mask, mask)) {
+            b_args.push(part);
+        }
+        else if(!isAlocal(p_mask, mask)) {
+            opensmt_error("Assertion is neither A or B");
+        }
     }
     PTRef B = logic.mkAnd(b_args);
     return B;
@@ -2351,49 +2392,6 @@ Logic::addClauseClassMask(CRef l, const ipartitions_t& toadd)
     cerr << "; Clause " << l << " now has mask " << clause_class[l] << endl;
 #endif
 }
-
-//
-// Visit the term dag starting from pref in pre-order
-// depth-first-search.  For each term add the partition inherited from
-// pref
-//
-void
-Logic::setIPartitionsIte(PTRef pref)
-{
-    ipartitions_t &partition = getIPartitions(pref);
-    set<PTRef> visited;
-    queue<PTRef> bfs;
-    bool unprocessed_children;
-    bfs.push(pref);
-    while (!bfs.empty())
-    {
-        PTRef p = bfs.front();
-        bfs.pop();
-        if (visited.find(p) != visited.end()) continue;
-
-        // fine to visit
-        visited.insert(p);
-        if (isUF(p) || isUP(p))
-        {
-            addIPartitions(getPterm(p).symb(), partition);
-        }
-        if (p != pref)
-        {
-            addIPartitions(p, partition);
-        }
-
-        // set on children
-        Pterm& t = getPterm(p);
-        for (int i = 0; i < t.size(); ++i)
-        {
-            PTRef c = t[i];
-            if (visited.find(c) == visited.end())
-            {
-                bfs.push(c);
-            }
-        }
-    }
-}
 #endif
 
 void
@@ -2440,37 +2438,6 @@ Logic::collectStats(PTRef root, int& n_of_conn, int& n_of_eq, int& n_of_uf, int&
     }
 }
 
-//MOVINGFROMHEADER FILE
-
-/*
-const char* TFun::getName() const { return name; }
-SRef TFun::getRetSort() const { return ret_sort; }
-PTRef TFun:getBody() const { return tr_body; }
-const vec<PTRef>& TFun::getArgs() const { return args; }*/
-
-void Logic::conjoinItes(PTRef root, PTRef& new_root)
-{
-    vec<PTRef> queue;
-    Map<PTRef,bool,PTRefHash> seen;
-    queue.push(root);
-    vec<PTRef> args;
-    while (queue.size() != 0) {
-        PTRef el = queue.last();
-        queue.pop();
-        if (seen.has(el)) continue;
-        if (isVar(el) && isIteVar(el)) {
-            args.push(getTopLevelIte(el));
-            queue.push(getTopLevelIte(el));
-        }
-        for (int i = 0; i < getPterm(el).size(); i++)
-            queue.push(getPterm(el)[i]);
-        seen.insert(el, true);
-    }
-
-    args.push(root);
-    new_root = mkAnd(args);
-}
-
 bool Logic::isIteVar(PTRef tr) const { return top_level_ites.has(tr); }
 PTRef Logic::getTopLevelIte(PTRef tr) { return top_level_ites[tr].repr; }
 void Logic::conjoinExtras(PTRef root, PTRef& new_root) { conjoinItes(root, new_root); }
@@ -2487,25 +2454,6 @@ SRef        Logic::getSortRef    (const PTRef tr)        const { return getSortR
 SRef        Logic::getSortRef    (const SymRef sr)       const { return getSym(sr).rsort(); }
 Sort*       Logic::getSort       (const SRef s)                { return sort_store[s]; }
 const char* Logic::getSortName   (const SRef s)                { return sort_store.getName(s); }
-
-// Symbols
-SymRef      Logic::newSymb       (const char* name, vec<SRef>& sort_args, char** msg) { return sym_store.newSymb(name, sort_args, msg); }
-//    bool        hasSym        (const SymRef s)        const { return sym_store.contains(s); }
-Symbol& Logic::getSym        (const SymRef s)        { return sym_store[s]; }
-const Symbol& Logic::getSym        (const SymRef s)        const { return sym_store[s]; }
-const Symbol& Logic::getSym        (const PTRef tr)        const { return getSym(getPterm(tr).symb()); }
-SymRef      Logic::getSymRef       (const PTRef tr)        const { return getPterm(tr).symb(); }
-const char* Logic::getSymName      (const PTRef tr)        const { return sym_store.getName(getPterm(tr).symb()); }
-const char* Logic::getSymName      (const SymRef s)        const { return sym_store.getName(s); }
-vec<SymRef>& Logic::symNameToRef (const char* s)               { return sym_store.nameToRef(s); }
-bool        Logic::hasSym        (const char* s)         const { return sym_store.contains(s); }
-bool        Logic::commutes      (const SymRef s)        const { return getSym(s).commutes(); }
-// Terms
-
-
-Pterm&      Logic::getPterm      (const PTRef tr)              { return term_store[tr];  }
-const Pterm& Logic::getPterm     (const PTRef tr)        const { return term_store[tr];  }
-PtermIter   Logic::getPtermIter  ()                            { return term_store.getPtermIter(); }
 
 
 PTRef       Logic::mkAnd         (PTRef a1, PTRef a2) { vec<PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkAnd(tmp); }

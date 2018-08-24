@@ -348,8 +348,9 @@ bool CoreSMTSolver::addClause_(vec<Lit>& _ps, CRef& cr_o)
 #ifdef PRODUCE_PROOF
     root = ca.alloc( ps, false );
     logic.addClauseClassMask(root, mask);
-    for(int lt = 0; lt < ps.size(); ++lt)
+    for(int lt = 0; lt < ps.size(); ++lt) {
         logic.addVarClassMask(var(ps[lt]), mask);
+    }
     proof.addRoot( root, CLA_ORIG );
     assert( config.isInit( ) );
     proof.beginChain( root );

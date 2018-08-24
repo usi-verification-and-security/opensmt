@@ -53,20 +53,9 @@ public:
 
 private:
 
-#ifdef PRODUCE_PROOF
-    bool cnfize          ( PTRef, const ipartitions_t & );            // Do the actual cnfization
-#else
+
     bool cnfize          ( PTRef );            // Do the actual cnfization
-#endif
-#ifdef PRODUCE_PROOF
-    void cnfizeAnd        (PTRef, const ipartitions_t&);                          // Cnfize conjunctions
-    void cnfizeOr         (PTRef, const ipartitions_t&, bool def=true);           // Cnfize disjunctions
-    void cnfizeIff        (PTRef, const ipartitions_t&);                          // Cnfize iffs
-    void cnfizeXor        (PTRef, const ipartitions_t&);                          // Cnfize xors
-    void cnfizeIfthenelse (PTRef, const ipartitions_t&);                          // Cnfize if then elses
-    void cnfizeImplies    (PTRef, const ipartitions_t&);
-    void cnfizeDistinct   (PTRef, const ipartitions_t&);
-#else // PRODUCE_PROOF
+
     void cnfizeAnd        (PTRef);                          // Cnfize conjunctions
     void cnfizeOr         (PTRef, bool def=true);           // Cnfize disjunctions
     void cnfizeIff        (PTRef);                          // Cnfize iffs
@@ -74,8 +63,7 @@ private:
     void cnfizeIfthenelse (PTRef);                          // Cnfize if then elses
     void cnfizeImplies    (PTRef);                          // Cnfize if then elses
     void cnfizeDistinct   (PTRef);                          // Cnfize distinctions
-#endif //PRODUCE_PROOF
-    void copyArgsWithCache(PTRef, vec<PTRef>&, Map<PTRef, PTRef, PTRefHash>&);
+//    void copyArgsWithCache(PTRef, vec<PTRef>&, Map<PTRef, PTRef, PTRefHash>&);
 };
 
 #endif

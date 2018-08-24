@@ -198,36 +198,14 @@ void PtStore::deserializeTerms(const int* buf)
     assert(pta.getNumTerms() == idToPTRef.size());
 }
 
-bool
-PtStore::assignPartition(const char* pname, PTRef pref, char** msg)
-{
-    uint32_t n = partitions.size() + 1;
-    partitions[n] = pref;
-    s_partitions[pname] = pref;
 #ifdef PRODUCE_PROOF
+void
+PtStore::assignPartition(unsigned int n, PTRef ptr) {
+    assert(n >= 0);
     ipartitions_t p = 0;
     setbit(p, n);
-    addIPartitions(pref, p);
-#endif
-    //TODO check whether partition already exists
-    return true;
+    addIPartitions(ptr, p);
 }
-
-bool
-PtStore::assignPartition(PTRef pref, char** msg)
-{
-    uint32_t n = a_partitions.size() + 1;
-    a_partitions[n] = pref;
-#ifdef PRODUCE_PROOF
-    ipartitions_t p = 0;
-    setbit(p, n);
-    addIPartitions(pref, p);
-//    printf("Assigned partition %d to PTRef %d\n", n, pref.x);
-#endif
-    return true;
-}
-
-#ifdef PRODUCE_PROOF
 
 ipartitions_t&
 PtStore::getIPartitions(PTRef _t)
@@ -240,14 +218,14 @@ PtStore::getIPartitions(PTRef _t)
 }
 
 void
-PtStore::setIPartitions(PTRef _t, ipartitions_t& _p)
+PtStore::setIPartitions(PTRef _t, const ipartitions_t& _p)
 {
     ipartitions_t* new_p = new ipartitions_t(_p);
     term_partitions.insert(_t, new_p);
 }
 
 void
-PtStore::addIPartitions(PTRef _t, ipartitions_t& _p)
+PtStore::addIPartitions(PTRef _t, const ipartitions_t& _p)
 {
     if (!term_partitions.has(_t)) {
         ipartitions_t* new_p = new ipartitions_t(0);
@@ -267,7 +245,7 @@ PtStore::getIPartitions(SymRef _s)
 }
 
 void
-PtStore::setIPartitions(SymRef _s, ipartitions_t& _p)
+PtStore::setIPartitions(SymRef _s, const ipartitions_t& _p)
 {
     assert(!sym_partitions.has(_s));
     ipartitions_t* p_new = new ipartitions_t(_p);
@@ -275,7 +253,7 @@ PtStore::setIPartitions(SymRef _s, ipartitions_t& _p)
 }
 
 void
-PtStore::addIPartitions(SymRef _s, ipartitions_t& _p)
+PtStore::addIPartitions(SymRef _s, const ipartitions_t& _p)
 {
     if (!sym_partitions.has(_s)) {
         ipartitions_t* p_new = new ipartitions_t(0);

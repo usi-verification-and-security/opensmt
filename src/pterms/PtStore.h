@@ -66,10 +66,6 @@ class PtStore {
     Map<PTLKey,PTRef,PTLHash,Equal<PTLKey> >    cplx_map;  // Mapping complex terms to canonical terms
 //    vec<PTLKey> cplx_keys;
 
-    // partitions:
-    std::map<uint32_t, PTRef> partitions; //partitions, id to partition
-    std::map<uint32_t, PTRef> a_partitions; //assertions
-    std::map<const char*, PTRef> s_partitions; //partitions, name to partition
 #ifdef PRODUCE_PROOF
     Map<SymRef,ipartitions_t*,SymRefHash,Equal<SymRef> > sym_partitions;
     Map<PTRef,ipartitions_t*,PTRefHash,Equal<PTRef> > term_partitions;
@@ -89,16 +85,14 @@ class PtStore {
         return tr;
     }*/
 
-   // Partitions
-    bool assignPartition(const char* pname, PTRef, char** msg); //for partitions
-    bool assignPartition(PTRef, char** msg); //for assertions
 #ifdef PRODUCE_PROOF
+    void assignPartition(unsigned int n, PTRef tr); // The new partition system
     ipartitions_t& getIPartitions(PTRef _t);
-    void setIPartitions(PTRef _t, ipartitions_t& _p);
-    void addIPartitions(PTRef _t, ipartitions_t& _p);
+    void setIPartitions(PTRef _t, const ipartitions_t& _p);
+    void addIPartitions(PTRef _t, const ipartitions_t& _p);
     ipartitions_t& getIPartitions(SymRef _s);
-    void setIPartitions(SymRef _s, ipartitions_t& _p);
-    void addIPartitions(SymRef _s, ipartitions_t& _p);
+    void setIPartitions(SymRef _s, const ipartitions_t& _p);
+    void addIPartitions(SymRef _s, const ipartitions_t& _p);
 #endif
 
     void   free(PTRef r);// { pta.free(r); }  // this is guaranteed to be lazy

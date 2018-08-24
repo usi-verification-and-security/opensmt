@@ -42,14 +42,14 @@ class Qel {
 };
 
 //
-// Visit the term tree rooted at tr.  Return in list_out every term occurrence
+// Visit the term dag starting from vec<PTRef> trs.  Return in list_out every term occurrence
 // in the tree in an order where the parent term is always listed before its
 // children.  Also store the information who is the parent of the term.  Since
 // the parent info is also returned, duplicate terms will be reported.
 // However, the list_out will not contain duplicates.
 //
 template<class T>
-void getTermList(PTRef tr, vec<T>& list_out, Logic& logic) {
+void getTermsList(const vec<PTRef>& trs, vec<T>& list_out, Logic& logic) {
     vec<Qel<PtChild> > queue;
     Map<PtChild,bool,PtChildHash> seen;
     Map<PTRef,int,PTRefHash> chkd;
@@ -57,7 +57,8 @@ void getTermList(PTRef tr, vec<T>& list_out, Logic& logic) {
 #ifdef PEDANTIC_DEBUG
 //    assert(logic.hasSym(logic.getPterm(tr).symb()));
 #endif
-    queue.push(Qel<PtChild>(PtChild(tr, PTRef_Undef, -1)));
+    for (int i = 0; i < trs.size(); i++)
+        queue.push(Qel<PtChild>(PtChild(trs[i], PTRef_Undef, -1)));
 
     while (queue.size() > 0) {
         int q_idx = queue.size() - 1;
@@ -83,6 +84,11 @@ void getTermList(PTRef tr, vec<T>& list_out, Logic& logic) {
             queue.pop();
         }
     }
+}
+
+template<class T>
+void getTermList(PTRef tr, vec<T>& list_out, Logic& logic) {
+    getTermsList({tr}, list_out, logic);
 }
 
 // Get variables starting from the root

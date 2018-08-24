@@ -114,20 +114,18 @@ class Logic {
     Map<SRef,bool,SRefHash,Equal<SRef> >            ufsorts;
 
 
-    //for partitions:
-    Map<PTRef,int,PTRefHash> assertions;
-    vec<PTRef> assertions_simp;
 #ifdef PRODUCE_PROOF
-    int asrt_idx;
+    //for partitions:
+    //Map<PTRef,int,PTRefHash> partitions;
+    std::map<unsigned int, PTRef> partitions; // map of partition indices to PTRefs of partitions
+    vec<PTRef> partitions_simp;
     map<CRef, ipartitions_t> clause_class;
     map<Var, ipartitions_t> var_class;
-    map<PTRef, PTRef> flat2orig;
 #endif
 
     Map<const char*,TFun,StringHash,Equal<const char*> > defined_functions;
     vec<Tterm> defined_functions_vec; // A strange interface through the Tterms..
 
-    vec<SymRef>         sortToEquality;
     vec<bool>           constants;
     vec<bool>           interpreted_functions;
 
@@ -179,27 +177,6 @@ class Logic {
     void dumpFunction(ostream &, const TFun&);
 
     void conjoinItes(PTRef root, PTRef& new_root);
-    /*{
-        vec<PTRef> queue;
-        Map<PTRef,bool,PTRefHash> seen;
-        queue.push(root);
-        vec<PTRef> args;
-        while (queue.size() != 0) {
-            PTRef el = queue.last();
-            queue.pop();
-            if (seen.has(el)) continue;
-            if (isVar(el) && isIteVar(el)) {
-                args.push(getTopLevelIte(el));
-                queue.push(getTopLevelIte(el));
-            }
-            for (int i = 0; i < getPterm(el).size(); i++)
-                queue.push(getPterm(el)[i]);
-            seen.insert(el, true);
-        }
-
-        args.push(root);
-        new_root = mkAnd(args);
-    }*/
 
   public:
     virtual bool okForBoolVar(PTRef) const; // True if the ref can have a boolean var
@@ -250,22 +227,22 @@ class Logic {
     const char* getSortName   (const SRef s)  ;//              { return sort_store.getName(s); }
 
     // Symbols
-    SymRef      newSymb       (const char* name, vec<SRef>& sort_args, char** msg);//{ return sym_store.newSymb(name, sort_args, msg); }
-//    bool        hasSym        (const SymRef s)        const { return sym_store.contains(s); }
-    Symbol& getSym        (const SymRef s)  ;//      { return sym_store[s]; }
-    const Symbol& getSym        (const SymRef s)        const ;//{ return sym_store[s]; }
-    const Symbol& getSym        (const PTRef tr)        const;// { return getSym(getPterm(tr).symb()); }
-    SymRef      getSymRef       (const PTRef tr)        const ;//{ return getPterm(tr).symb(); }
-    const char* getSymName      (const PTRef tr)        const ;//{ return sym_store.getName(getPterm(tr).symb()); }
-    const char* getSymName      (const SymRef s)        const;// { return sym_store.getName(s); }
-    vec<SymRef>& symNameToRef (const char* s);//               { return sym_store.nameToRef(s); }
-    bool        hasSym        (const char* s)         const;// { return sym_store.contains(s); }
-    bool        commutes      (const SymRef s)        const;// { return getSym(s).commutes(); }
+    SymRef      newSymb       (const char* name, vec<SRef>& sort_args, char** msg)
+                                                            { return sym_store.newSymb(name, sort_args, msg); }
+    Symbol& getSym              (const SymRef s)        { return sym_store[s]; }
+    const Symbol& getSym        (const SymRef s)        const { return sym_store[s]; }
+    const Symbol& getSym        (const PTRef tr)        const { return getSym(getPterm(tr).symb()); }
+    SymRef      getSymRef       (const PTRef tr)        const { return getPterm(tr).symb(); }
+    const char* getSymName      (const PTRef tr)        const { return sym_store.getName(getPterm(tr).symb()); }
+    const char* getSymName      (const SymRef s)        const { return sym_store.getName(s); }
+    vec<SymRef>& symNameToRef (const char* s)               { return sym_store.nameToRef(s); }
+    bool        hasSym        (const char* s)         const { return sym_store.contains(s); }
+    bool        commutes      (const SymRef s)        const { return getSym(s).commutes(); }
     // Terms
 
-    Pterm&      getPterm      (const PTRef tr) ;//             { return term_store[tr];  }
-    const Pterm& getPterm     (const PTRef tr)        const;// { return term_store[tr];  }
-    PtermIter   getPtermIter  ()      ;//                      { return term_store.getPtermIter(); }
+    Pterm&      getPterm      (const PTRef tr)              { return term_store[tr];  }
+    const Pterm& getPterm     (const PTRef tr)        const { return term_store[tr];  }
+    PtermIter   getPtermIter  ()                            { return term_store.getPtermIter(); }
 
     // Default values for the logic
     virtual const char* getDefaultValue(const PTRef tr) const;
@@ -302,6 +279,7 @@ class Logic {
     vec<Tterm>& getFunctions  ();
     SRef        declareSort   (const char* id, char** msg);
     PTRef       mkFun         (SymRef f, const vec<PTRef>& args, char** msg);
+    PTRef       mkFun         (SymRef f, const vec<PTRef>& args) { char* msg; return mkFun(f, args, &msg); };
     PTRef       mkBoolVar     (const char* name);
 
     void dumpHeaderToFile(ostream& dump_out);
@@ -325,27 +303,14 @@ class Logic {
     bool verifyInterpolantB(PTRef, const ipartitions_t&);
     bool verifyInterpolant(PTRef, const ipartitions_t&);
 
-
-    // Partitions
-    void setOriginalAssertion(PTRef flat, PTRef orig)
-    {
-        flat2orig[flat] = orig;
-    }
-    bool hasOriginalAssertion(PTRef flat)
-    {
-        return flat2orig.find(flat) != flat2orig.end();
-    }
-    PTRef getOriginalAssertion(PTRef flat)
-    {
-        assert(flat2orig.find(flat) != flat2orig.end());
-        return flat2orig[flat];
-    }
     ipartitions_t& getIPartitions(PTRef _t) { return term_store.getIPartitions(_t); }
-    void setIPartitions(PTRef _t, ipartitions_t& _p) { term_store.setIPartitions(_t, _p); }
-    void addIPartitions(PTRef _t, ipartitions_t& _p) { term_store.addIPartitions(_t, _p); }
+    void setIPartitions(PTRef _t, const ipartitions_t& _p) { term_store.setIPartitions(_t, _p); }
+    void addIPartitions(PTRef _t, const ipartitions_t& _p) { term_store.addIPartitions(_t, _p); }
     ipartitions_t& getIPartitions(SymRef _s) { return term_store.getIPartitions(_s); }
-    void setIPartitions(SymRef _s, ipartitions_t& _p) { term_store.setIPartitions(_s, _p); }
-    void addIPartitions(SymRef _s, ipartitions_t& _p) { term_store.addIPartitions(_s, _p); }
+    void setIPartitions(SymRef _s, const ipartitions_t& _p) { term_store.setIPartitions(_s, _p); }
+    void addIPartitions(SymRef _s, const ipartitions_t& _p) { term_store.addIPartitions(_s, _p); }
+    void computePartitionMasks(const vec<PTRef> & roots);
+    void computePartitionMasks(PTRef tr) { vec<PTRef> trs = {tr}; computePartitionMasks(trs); }
 #endif
 
     // The Boolean connectives
@@ -437,7 +402,7 @@ class Logic {
     // args is sorted before lookup, but not simplified otherwise
     PTRef       hasEquality        (vec<PTRef>& args);
     // Override for different logics...
-    bool        declare_sort_hook  (SRef sr);
+    virtual bool declare_sort_hook  (SRef sr);
     inline bool isPredef           (string&)        const ;//{ return false; };
 
     // Simplify an equality.  TODO: See if this could be combined with
@@ -574,23 +539,19 @@ class Logic {
 
 #ifdef PRODUCE_PROOF
     //partitions:
-    bool assignPartition(const char* pname, PTRef pref, char** msg)
+    void assignPartition(unsigned int n, PTRef tr)
     {
-        return term_store.assignPartition(pname, pref, msg);
-    }
-
-    bool assignPartition(PTRef pref, char** msg)
-    {
-        assertions.insert(pref, asrt_idx++);
-        return term_store.assignPartition(pref, msg);
+        assert(partitions.find(n) == partitions.end()); // do not reassign existing partition index
+        partitions.emplace(n,tr);
+        term_store.assignPartition(n, tr);
     }
 #endif
 
     bool canInterpolate()
     {
 #ifdef PRODUCE_PROOF
-//        return config.produce_inter() && assertions.getSize() >= 2;
-        return config.produce_inter();
+//        return config.produce_inter() && partitions.getSize() >= 2;
+        return config.produce_inter() > 0;
 #else
         return false;
 #endif //PRODUCE_PROOF
@@ -598,30 +559,31 @@ class Logic {
 
 
 #ifdef PRODUCE_PROOF
-    void setIPartitionsIte(PTRef pref);
+//    void setIPartitionsIte(PTRef pref);
     ipartitions_t& getClauseClassMask(CRef l) { return clause_class[l]; }
     ipartitions_t& getVarClassMask(Var l) { return var_class[l]; }
     void addClauseClassMask(CRef l, const ipartitions_t& toadd);
     void addVarClassMask(Var l, const ipartitions_t& toadd);
-    void getAssertions(vec<PTRef>& asrts) { return assertions.getKeys(asrts); }
-    unsigned getNofPartitions() { return assertions.getSize(); }
-    //TODO: make this better
-    bool isAssertion(PTRef pref)
+    std::vector<PTRef> getPartitions()
     {
-        return assertions.has(pref);
+        std::vector<PTRef> all_partitions;
+        for(auto const & val : partitions) {
+            all_partitions.push_back(val.second);
+        }
+        return all_partitions;
     }
-    bool isAssertionSimp(PTRef pref)
-    {
-        for (int i = 0; i < assertions_simp.size(); ++i)
-            if (assertions_simp[i] == pref)
-                return true;
-        return false;
+
+    std::vector<PTRef> getPartitions(ipartitions_t const & mask){
+        std::vector<PTRef> res;
+        for(auto const & entry : partitions) {
+            if(opensmt::tstbit(mask, entry.first)){
+                res.push_back(entry.second);
+            }
+        }
+        return res;
     }
-    int assertionIndex(PTRef pref)
-    {
-        if (isAssertion(pref)) return assertions[pref];
-        else return -1;
-    }
+
+    unsigned getNofPartitions() { return partitions.size(); }
 #endif
     // Statistics
     int subst_num; // Number of substitutions

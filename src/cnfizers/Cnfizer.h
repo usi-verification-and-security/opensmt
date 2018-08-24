@@ -94,8 +94,6 @@ public:
     void   initialize      ();
     lbool  solve           (vec<FrameId>& en_frames);
 
-    PTRef  expandItes      (vec<PtChild>&);
-
     bool  isNPAtom         (PTRef r, PTRef& p)    const; // Check if r is a (negated) atom.  Return true if the corresponding atom is negated.  The purified reference is placed in the second argument.
     bool  solverEmpty      ()                     const { return s_empty; }
 
@@ -103,18 +101,10 @@ public:
     void  getVarMapping    (CnfState&);
 protected:
 
-#ifdef PRODUCE_PROOF
-    virtual bool cnfize(PTRef, const ipartitions_t&) = 0;
-#else
     virtual bool cnfize                 ( PTRef ) = 0; // Actual cnfization. To be implemented in derived classes
-#endif //PRODUCE_PROOF
-#ifdef PRODUCE_PROOF
-    bool deMorganize(PTRef, const ipartitions_t&);
-#else
     bool     deMorganize                ( PTRef );                                    // Apply deMorgan rules whenever feasible
-#endif //PRODUCE_PROOF
 
-    PTRef    rewriteMaxArity            ( PTRef, Map<PTRef, int, PTRefHash> & );   // Rewrite terms using maximum arity
+//    PTRef    rewriteMaxArity            ( PTRef, Map<PTRef, int, PTRefHash> & );   // Rewrite terms using maximum arity
 
 public:
     bool     checkClause                ( PTRef ); // Check if a formula is a clause
@@ -122,18 +112,11 @@ public:
     bool     checkDeMorgan              ( PTRef );                            // Check if formula can be deMorganized
     void     retrieveTopLevelFormulae   ( PTRef, vec<PTRef> & );         // Retrieves the list of top-level formulae
 protected:
-#ifdef PRODUCE_PROOF
-    bool giveToSolver(PTRef, const ipartitions_t &);
-#else
+
     bool     giveToSolver               ( PTRef );                              // Gives formula to the SAT solver
-#endif // PRODUCE_PROOF
 
 
-#ifdef PRODUCE_PROOF
-    bool  addClause                  ( const vec<Lit>&, const ipartitions_t& mask = 0);
-#else
-    bool  addClause                  ( const vec<Lit>& );
-#endif
+    bool  addClause                  (const vec<Lit>&, PTRef f);
 
     void  retrieveClause             ( PTRef, vec<PTRef> & );         // Retrieve a clause from a formula
     void  retrieveConjuncts          ( PTRef, vec<PTRef> & );         // Retrieve the list of conjuncts
@@ -150,10 +133,10 @@ private:
         pi(PTRef x_) : x(x_), done(false) {}
     };
 
-    void    computeIncomingEdges (PTRef, Map<PTRef, int, PTRefHash> & );         // Computes the list of incoming edges for a node
-    PTRef   mergeEnodeArgs       ( PTRef
-                                 , Map<PTRef, PTRef, PTRefHash> &
-                                 , Map<PTRef, int, PTRefHash> & );  // Subroutine for rewriteMaxArity
+//    void    computeIncomingEdges (PTRef, Map<PTRef, int, PTRefHash> & );         // Computes the list of incoming edges for a node
+//    PTRef   mergeEnodeArgs       ( PTRef
+//                                 , Map<PTRef, PTRef, PTRefHash> &
+//                                 , Map<PTRef, int, PTRefHash> & );  // Subroutine for rewriteMaxArity
 
     bool    checkConj            (PTRef); // Check if a formula is a conjunction
     bool    checkPureConj        (PTRef, Map<PTRef,bool,PTRefHash>& check_cache); // Check if a formula is purely a conjuntion

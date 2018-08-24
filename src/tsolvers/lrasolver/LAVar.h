@@ -60,8 +60,7 @@ private:
 //    BoundIndex curr_lb;      // The current lower bound, idx to bounds table
 //    LABoundListRef bounds; // The bounds of this variable
 
-    PolyRef poly;          // Polynomial
-    OccListRef occs;       // The occurrences in polynomials.
+    // Polynomial
 
 public:
     // Constructor.  The e_orig from SMT world, the bounds list, and a unique id
@@ -86,12 +85,6 @@ public:
     inline int  ID()                const { return header.id; } // Return the ID of the LAVar
     inline void setNonbasic();           // Make LAVar Nonbasic
     inline void setBasic();              // Make LAVar Basic
-
-    // Binded rows system
-    OccListRef getBindedRowsRef() const   ;
-    void       setBindedRowsRef(OccListRef r) ;
-    PolyRef    getPolyRef()       const    ;
-    void       setPolyRef(PolyRef r)       ;
 
     PTRef      getPTRef()         const   ;
 };

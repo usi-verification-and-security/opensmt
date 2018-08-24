@@ -39,8 +39,8 @@ struct PTRef {
 static struct PTRef PTRef_Undef = {INT32_MAX};
 
 struct PTRefHash {
-    uint32_t operator () (const PTRef& s) const;/* {
-        return (uint32_t)s.x; }*/
+    uint32_t operator () (const PTRef& s) const {
+        return (uint32_t)s.x; }
 };
 
 

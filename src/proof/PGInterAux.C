@@ -164,7 +164,7 @@ icolor_t ProofGraph::getVarClass( Var v, const ipartitions_t & A_mask )
 	//Determine mask corresponding to B
 	ipartitions_t B_mask = ~A_mask;
 	//Reset bit 0 to 0
-	clrbit( B_mask, 0 );
+//	clrbit( B_mask, 0 );
 
 	//Get partition mask variable
 	//e.g. 0---0110 variable in first and second partition
@@ -199,7 +199,7 @@ icolor_t ProofGraph::getClauseColor( const ipartitions_t & clause_mask, const ip
     //Determine mask corresponding to B
     ipartitions_t B_mask = ~A_mask;
     //Reset bit 0 to 0
-    clrbit( B_mask, 0 );
+//    clrbit( B_mask, 0 );
     //cout << "Clause has mask " << clause_mask << endl;
     //cout << "A Mask " << A_mask << endl;
     //cout << "B Mask " << B_mask << endl;

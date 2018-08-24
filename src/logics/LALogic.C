@@ -281,22 +281,17 @@ void LALogic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
         args.push(a1); args.push(a2);
         PTRef i1 = mkNumLeq(args, &msg);
         PTRef i2 = mkNumGeq(args, &msg);
-#ifdef PRODUCE_PROOF
-        ipartitions_t &part = getIPartitions(tr);
-        addIPartitions(i1, part);
-        addIPartitions(i2, part);
-#endif
         args.clear();
         args.push(i1); args.push(i2);
         PTRef andr = mkAnd(args);
+#ifdef PRODUCE_PROOF
+        const ipartitions_t &part = getIPartitions(tr);
+        addIPartitions(andr, part);
+        addIPartitions(i1, part);
+        addIPartitions(i2, part);
+#endif
         la_split_inequalities.insert(i1, true);
         la_split_inequalities.insert(i2, true);
-#ifdef PRODUCE_PROOF
-        if (hasOriginalAssertion(tr)) {
-            PTRef orig = getOriginalAssertion(tr);
-            setOriginalAssertion(andr, orig);
-        }
-#endif
         assert(!tr_map.has(tr));
         tr_map.insert(tr, andr);
     }
@@ -637,7 +632,7 @@ PTRef LALogic::mkNumDiv(const vec<PTRef>& args, char** msg)
     simp.simplify(get_sym_Num_DIV(), args, s_new, args_new, msg);
     assert(args.size() == 2);
     if (isNumDiv(s_new)) {
-        assert(isNumTerm(args_new[0]) && isConstant(args_new[1]));
+        assert((isNumTerm(args_new[0]) || isNumPlus(args_new[0])) && isConstant(args_new[1]));
         args_new[1] = mkConst(FastRational_inverse(getNumConst(args_new[1]))); //mkConst(1/getRealConst(args_new[1]));
         return mkNumTimes(args_new);
     }

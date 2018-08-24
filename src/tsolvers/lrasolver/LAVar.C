@@ -29,14 +29,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "LAVar.h"
 #include "LRALogic.h"
 
-
-
 LAVar::LAVar(PTRef e, unsigned id)
         : e(e)
         , col_id(-1)
         , row_id(-1)
-        , poly(PolyRef_Undef)
-        , occs(OccListRef_Undef)
 {
     header.basic = 0;
     header.reloced = 0;
@@ -85,12 +81,6 @@ int  LAVar::getRowId()      const { return row_id; }
 void LAVar::setRowId(int i)       { row_id = i;    }
 int  LAVar::getColId()      const { return col_id; }
 void LAVar::setColId(int i)       { col_id = i;    }
-
-// Binded rows system
-OccListRef LAVar::getBindedRowsRef() const       { return occs; }
-void       LAVar::setBindedRowsRef(OccListRef r) { occs = r; }
-PolyRef    LAVar::getPolyRef()       const       { return poly; }
-void       LAVar::setPolyRef(PolyRef r)          { poly = r; }
 
 PTRef      LAVar::getPTRef()         const       { return e; }
 

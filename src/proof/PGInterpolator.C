@@ -331,7 +331,36 @@ bool ProofGraph::produceTreeInterpolants (opensmt::InterpolationTree *it, vec<PT
     return property_holds;
 }
 
-
+bool ProofGraph::producePathInterpolants ( vec<PTRef> &interpolants, const vec<ipartitions_t> &A_masks){
+    bool propertySatisfied = true;
+    // check that masks are subset of each other
+#ifndef NDEBUG
+    for(int i = 0; i < A_masks.size()-1; ++i) {
+        assert((A_masks[i] & A_masks[i+1]) == A_masks[i]);
+    }
+#endif // NDEBUG
+    for(int i = 0; i < A_masks.size(); ++i) {
+        produceSingleInterpolant(interpolants, A_masks[i]);
+//        if(verbose() > 1){
+//            std::cerr << "; Interpolant for mask: " << A_masks[i] << " is: "
+//                      << logic_.printTerm(interpolants[interpolants.size() - 1]);
+//        }
+        if(i > 0 && enabledInterpVerif()){
+            PTRef previous_itp = interpolants[interpolants.size() - 2];
+            PTRef next_itp = interpolants[interpolants.size() -1];
+            PTRef movedPartitions = logic_.mkAnd(logic_.getPartitions(A_masks[i] ^ A_masks[i-1]));
+            propertySatisfied &= logic_.implies(logic_.mkAnd(previous_itp, movedPartitions), next_itp);
+            if (!propertySatisfied){
+                std::cerr << "Path interpolation does not hold for:\n"
+                             << "First interpolant: " << logic_.printTerm(previous_itp) << '\n'
+                            << "Moved partitions: " << logic_.printTerm(movedPartitions) << '\n'
+                            << "Second interpolant: " << logic_.printTerm(next_itp) << '\n';
+            }
+        }
+    }
+    assert(propertySatisfied);
+    return propertySatisfied;
+}
 
 /**************** MAIN INTERPOLANTS GENERATION METHODS ************************/
 
@@ -1053,7 +1082,7 @@ PTRef ProofGraph::compInterpLabelingOriginal ( ProofNode *n, const ipartitions_t
 
     if (clause_color == I_AB)
     {
-        opensmt_error ("Clause has color I_AB");
+        // Think of a heuristic for choosing the partition?
         clause_color = I_A;
     }
 

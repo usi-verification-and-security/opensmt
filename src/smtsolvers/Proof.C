@@ -625,6 +625,9 @@ void CoreSMTSolver::getSingleInterpolant(vec<PTRef>& interpolants)
 void CoreSMTSolver::getSingleInterpolant(vec<PTRef>& interpolants, const ipartitions_t& A_mask)
 { assert(proof_graph); proof_graph->produceSingleInterpolant(interpolants, A_mask); }
 
+bool   CoreSMTSolver::getPathInterpolants(vec<PTRef>& interpolants, const vec<ipartitions_t> & A_masks)
+{ assert(proof_graph); return proof_graph->producePathInterpolants( interpolants, A_masks ); }
+
 bool   CoreSMTSolver::getPathInterpolants(vec<PTRef>& interpolants)
 { assert(proof_graph); return proof_graph->producePathInterpolants( interpolants ); }
 

@@ -198,6 +198,14 @@ MainSolver::push(PTRef root)
     return res;
 }
 
+#ifdef PRODUCE_PROOF
+void
+MainSolver::assignPartition(unsigned int n, PTRef tr)
+{
+    logic.assignPartition(n, tr);
+}
+#endif
+
 sstat
 MainSolver::insertFormula(PTRef root, char** msg)
 {
@@ -207,13 +215,13 @@ MainSolver::insertFormula(PTRef root, char** msg)
                  Logic::s_sort_bool, logic.getSortName(logic.getSortRef(root)));
         return s_Error;
     }
-    logic.conjoinExtras(root, root);
-    char* err_msg = NULL;
 #ifdef PRODUCE_PROOF
-    if (!logic.assignPartition(root, &err_msg))
-        opensmt_error("Could not assign partition");
-    logic.setIPartitionsIte(root);
+    // Label the formula with a partition mask.  This needs to be done before conjoining the extras
+    // since otherwise we loose the connection between Ites and partitions.
+    logic.computePartitionMasks(root);
 #endif
+    logic.conjoinExtras(root, root);
+
     pfstore[formulas.last()].push(root);
     pfstore[formulas.last()].units.clear();
     pfstore[formulas.last()].root = PTRef_Undef;
@@ -222,7 +230,7 @@ MainSolver::insertFormula(PTRef root, char** msg)
     return s_Undef;
 }
 
-sstat MainSolver::simplifyFormulas(char** err_msg)
+sstat MainSolver::simplifyFormulas(int from, int& to, char** err_msg)
 {
     if (binary_init)
         return s_Undef;
@@ -231,9 +239,9 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
     status = s_Undef;
 
     vec<PTRef> coll_f;
-    for (int i = simplified_until; i < formulas.size(); i++) {
+    for (int i = from ; i < formulas.size(); i++) {
         bool res = getTheory().simplify(formulas, i);
-        simplified_until = i+1;
+        to = i+1;
         PTRef root = pfstore[formulas[i]].root;
 
         if (logic.isFalse(root)) {
@@ -247,20 +255,6 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
         if (logic.isBooleanOperator(fc.getRoot())) {
             computeIncomingEdges(fc.getRoot(), PTRefToIncoming);
             PTRef flat_root = rewriteMaxArity(fc.getRoot(), PTRefToIncoming);
-#ifdef PRODUCE_PROOF
-            PTRef orig_asrt = PTRef_Undef;
-            if (logic.hasOriginalAssertion(fc.getRoot()))
-                orig_asrt = logic.getOriginalAssertion(fc.getRoot());
-//            else
-//                orig_asrt = fc.getRoot();
-
-//            logic.setOriginalAssertion(flat_root, orig_asrt);
-//            vec<PTRef> top_level_formulae;
-//            ts.retrieveTopLevelFormulae(flat_root, top_level_formulae);
-//            for (int i = 0; i < top_level_formulae.size(); i++)
-//                logic.setOriginalAssertion(top_level_formulae[i], orig_asrt);
-
-#endif
             fc.setRoot(flat_root);
         }
 
@@ -268,30 +262,29 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
         fc.setRoot(logic.mkAnd(fc.getRoot(), pfstore[formulas[i]].substs));
         root_instance.setRoot(fc.getRoot());
         // Stop if problem becomes unsatisfiable
+#ifdef PRODUCE_PROOF
+        // Label the formula with a partition mask.  Needs to be done here (also) since
+        // simplify can change the instance (e.g., LRA splits equalities)
+        logic.computePartitionMasks(fc.getRoot());
+#endif
         if ((status = giveToSolver(fc.getRoot(), pfstore[formulas[i]].getId())) == s_False)
             break;
     }
     return status;
 }
 
-void MainSolver::expandItes(FContainer& fc, vec<PtChild>& terms)
+#ifdef PRODUCE_PROOF
+void
+MainSolver::computePartitionMasks(int from, int to)
 {
-    // cnfization of the formula
-    // Get the egraph data structure for instance from here
-    // Terms need to be purified before cnfization?
+    cerr << "; computePartitionMasks called" << endl;
+    vec<PTRef> roots;
+    for (int i = from; i < to; i++)
+        roots.push(pfstore[formulas[i]].root);
 
-    PTRef root = fc.getRoot();
-
-    getTermList<PtChild>(root, terms, logic);
-
-    if (terms.size() > 0) {
-        root = ts.expandItes(terms);
-        terms.clear();
-        // This seems a bit subtle way of updating the terms vector
-        getTermList<PtChild>(root, terms, logic);
-    }
-    fc.setRoot(root);
+    logic.computePartitionMasks(roots);
 }
+#endif
 
 
 // Replace subtrees consisting only of ands / ors with a single and / or term.
@@ -304,7 +297,6 @@ void MainSolver::expandItes(FContainer& fc, vec<PtChild>& terms)
 // term appears as a child in more than one term, we will not flatten
 // that structure.
 //
-
 void MainSolver::computeIncomingEdges(PTRef tr, Map<PTRef,int,PTRefHash>& PTRefToIncoming)
 {
     assert(tr != PTRef_Undef);
@@ -344,7 +336,7 @@ void MainSolver::computeIncomingEdges(PTRef tr, Map<PTRef,int,PTRefHash>& PTRefT
     }
 }
 
-PTRef MainSolver::rewriteMaxArity(PTRef root, Map<PTRef,int,PTRefHash>& PTRefToIncoming)
+PTRef MainSolver::rewriteMaxArity(PTRef root, const Map<PTRef,int,PTRefHash>& PTRefToIncoming)
 {
     vec<PTRef> unprocessed_ptrefs;
     unprocessed_ptrefs.push(root);
@@ -382,35 +374,13 @@ PTRef MainSolver::rewriteMaxArity(PTRef root, Map<PTRef,int,PTRefHash>& PTRefToI
         assert(result != PTRef_Undef);
         assert(!cache.has(tr));
         cache.insert(tr, result);
-#ifdef PRODUCE_PROOF
-        if(logic.canInterpolate())
-        {
-            if(logic.isAssertion(tr) || logic.isAssertionSimp(tr))
-            {
-                PTRef root_tmp = tr;
-                while(logic.hasOriginalAssertion(root_tmp) && (logic.getOriginalAssertion(root_tmp) != root_tmp))
-                    root_tmp = logic.getOriginalAssertion(root_tmp);
-                if(logic.isAnd(result))
-                {
-                    Pterm& ptm = logic.getPterm(result);
-                    for(int i = 0; i < ptm.size(); ++i)
-                        logic.setOriginalAssertion(ptm[i], root_tmp);
-                }
-                else
-                {
-                    //should the entire conjunction also be set? TODO
-                    //apparently yes. WHy?!
-                    logic.setOriginalAssertion(result, root_tmp);
-                }
-            }
-        }
-#endif
+
     }
     PTRef top_tr = cache[root];
     return top_tr;
 }
 
-PTRef MainSolver::mergePTRefArgs(PTRef tr, Map<PTRef,PTRef,PTRefHash>& cache, Map<PTRef,int,PTRefHash>& PTRefToIncoming)
+PTRef MainSolver::mergePTRefArgs(PTRef tr, Map<PTRef,PTRef,PTRefHash>& cache, const Map<PTRef,int,PTRefHash>& PTRefToIncoming)
 {
     assert(logic.isAnd(tr) || logic.isOr(tr));
     Pterm& t = logic.getPterm(tr);
@@ -432,13 +402,22 @@ PTRef MainSolver::mergePTRefArgs(PTRef tr, Map<PTRef,PTRef,PTRefHash>& cache, Ma
             Pterm& substs_t = logic.getPterm(subst);
             for (int j = 0; j < substs_t.size(); j++)
                 new_args.push(substs_t[j]);
+
         } else
             new_args.push(subst);
     }
-    if (sr == logic.getSym_and())
-        return logic.mkAnd(new_args);
-    else
-        return logic.mkOr(new_args);
+    PTRef new_tr;
+    if (sr == logic.getSym_and()) {
+        new_tr = logic.mkAnd(new_args);
+    }
+    else {
+        new_tr = logic.mkOr(new_args);
+    }
+#ifdef PRODUCE_PROOF
+    // copy the partition of tr to the resulting new term
+    logic.setIPartitions(new_tr, logic.getIPartitions(tr));
+#endif
+    return new_tr;
 }
 
 //
@@ -1094,7 +1073,10 @@ sstat MainSolver::check()
         opensmt::StopWatch sw(query_timer);
     }
     sstat rval;
-    rval = simplifyFormulas();
+    int simplified_to;
+    rval = simplifyFormulas(simplified_until, simplified_to);
+
+    simplified_until = simplified_to;
     if (config.dump_query())
         printFramesAsQuery();
 
@@ -1306,7 +1288,7 @@ void MainSolver::solve_split(int i, int s, int wpipefd, std::mutex *mtx)
     free(split);
     this->parallel_solvers[i] = main_solver;
 
-    result = main_solver->simplifyFormulas(&msg);
+    result = main_solver->simplifyFormulas();
     if (result != s_True && result != s_False)
         result = main_solver->solve();
 
