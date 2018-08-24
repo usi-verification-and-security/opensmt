@@ -632,7 +632,7 @@ PTRef LALogic::mkNumDiv(const vec<PTRef>& args, char** msg)
     simp.simplify(get_sym_Num_DIV(), args, s_new, args_new, msg);
     assert(args.size() == 2);
     if (isNumDiv(s_new)) {
-        assert(isNumTerm(args_new[0]) && isConstant(args_new[1]));
+        assert((isNumTerm(args_new[0]) || isNumPlus(args_new[0])) && isConstant(args_new[1]));
         args_new[1] = mkConst(FastRational_inverse(getNumConst(args_new[1]))); //mkConst(1/getRealConst(args_new[1]));
         return mkNumTimes(args_new);
     }
