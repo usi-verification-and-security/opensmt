@@ -1028,8 +1028,8 @@ protected:
     void   printTrail             ( );             // Prints the trail (debugging)
     TPropRes checkTheory          (bool, int&);    // Checks consistency in theory.  The second arg is conflictC
     TPropRes checkTheory          (bool complete) { int tmp; return checkTheory(complete, tmp); }
-    TPropRes handleSat            (int&);          // Theory check resulted in sat
-    TPropRes handleUnsat          (int&);          // Theory check resulted in unsat
+    TPropRes handleSat            ();              // Theory check resulted in sat
+    TPropRes handleUnsat          ();              // Theory check resulted in unsat
 
     void   deduceTheory           (vec<LitLev>&);  // Perform theory-deductions
 

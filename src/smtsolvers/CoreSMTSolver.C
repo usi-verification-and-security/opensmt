@@ -2059,7 +2059,6 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                     else return l_False;    // Top-Level conflict: unsat
                 }
                 else if (res == tpr_Propagate) {
-                    conflictC++;
                     continue; // Theory conflict: time for bcp
                 }
                 else if (res == tpr_Decide) {
@@ -2151,7 +2150,6 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 #endif
                     if ( res == tpr_Propagate )
                     {
-                        conflictC++;
                         continue;
                     }
                     if ( res == tpr_Unsat )

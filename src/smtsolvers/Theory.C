@@ -79,15 +79,13 @@ void CoreSMTSolver::crashTest(int rounds, Var var_true, Var var_false)
 }
 
 TPropRes
-CoreSMTSolver::handleSat(int& conflictC)
+CoreSMTSolver::handleSat()
 {
     // Increments skip step for sat calls
     skip_step *= config.sat_skip_step_factor;
 
     vec<Lit> new_splits; // In case the theory is not convex the new split var is inserted here
     theory_handler.getNewSplits(new_splits);
-
-
 
     if (new_splits.size() > 0) {
 
@@ -114,8 +112,6 @@ CoreSMTSolver::handleSat(int& conflictC)
 
             Lit l_f = value(l1) == l_False ? l1 : l2; // false literal
             Lit l_i = value(l1) == l_False ? l2 : l1; // implied literal
-
-            conflictC++;
 
             int lev = vardata[var(l_f)].level;
             cancelUntil(lev);
@@ -149,7 +145,7 @@ CoreSMTSolver::handleSat(int& conflictC)
 }
 
 TPropRes
-CoreSMTSolver::handleUnsat(int& conflictC)
+CoreSMTSolver::handleUnsat()
 {
     //
     // Query is T-Unsatisfiable
@@ -163,9 +159,6 @@ CoreSMTSolver::handleUnsat(int& conflictC)
     if ( decisionLevel( ) == 0 )
         return tpr_Unsat;
 #endif
-
-    conflicts++;
-    conflictC++;
     vec< Lit > conflicting;
     vec< Lit > learnt_clause;
     int        max_decision_level;
@@ -368,10 +361,12 @@ TPropRes CoreSMTSolver::checkTheory(bool complete, int& conflictC)
     // Problem is T-Satisfiable
     //
     if ( res == TR_SAT )
-        return handleSat(conflictC);
-    else if (res == TR_UNSAT)
-        return handleUnsat(conflictC);
-
+        return handleSat();
+    else if (res == TR_UNSAT) {
+        conflicts++;
+        conflictC++;
+        return handleUnsat();
+    }
     assert(res == TR_UNKNOWN);
 
     return tpr_Decide;
