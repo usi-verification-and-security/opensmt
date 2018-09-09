@@ -106,7 +106,7 @@ CoreSMTSolver::handleSat()
         if (safeValue(l1) == l_Undef && safeValue(l2) == l_Undef) {
             addSMTClause_(new_splits);
             forced_split = ~l1;
-            return tpr_Decide;
+            return TPropRes::Decide;
         }
         else {
 
@@ -124,7 +124,7 @@ CoreSMTSolver::handleSat()
                 ca[cr][1] = l_f;
                 uncheckedEnqueue(l_i, cr);
             }
-            return tpr_Propagate;
+            return TPropRes::Propagate;
         }
     }
     if (config.sat_theory_propagation > 0) {
@@ -137,11 +137,11 @@ CoreSMTSolver::handleSat()
             uncheckedEnqueue(deds[i].l, CRef_Fake);
         }
         if (deds.size() > 0) {
-            return tpr_Propagate;
+            return TPropRes::Propagate;
         }
     }
     skip_step *= config.sat_skip_step_factor;
-    return tpr_Decide; // Sat and nothing to deduce, time for decision
+    return TPropRes::Decide; // Sat and nothing to deduce, time for decision
 }
 
 TPropRes
@@ -157,7 +157,7 @@ CoreSMTSolver::handleUnsat()
 #ifndef PRODUCE_PROOF
     // Top-level conflict, problem is T-Unsatisfiable
     if ( decisionLevel( ) == 0 )
-        return tpr_Unsat;
+        return TPropRes::Unsat;
 #endif
     vec< Lit > conflicting;
     vec< Lit > learnt_clause;
@@ -169,7 +169,7 @@ CoreSMTSolver::handleUnsat()
 #else
     theory_handler.getConflict(conflicting, vardata, max_decision_level);
 #endif
-#if PRODUCE_PROOF
+#ifdef PRODUCE_PROOF
     /*
     PTRef interp = PTRef_Undef;
     if ( config.produce_inter() > 0 )
@@ -218,7 +218,7 @@ CoreSMTSolver::handleUnsat()
         // ADDED CODE END
         proof.endChain( CRef_Undef );
 #endif
-        return tpr_Unsat;
+        return TPropRes::Unsat;
     }
 
     CRef confl = CRef_Undef;
@@ -340,7 +340,7 @@ CoreSMTSolver::handleUnsat()
     assert( proof.checkState( ) );
 #endif
 
-    return tpr_Propagate;
+    return TPropRes::Propagate;
 }
 
 TPropRes CoreSMTSolver::checkTheory(bool complete, int& conflictC)
@@ -351,25 +351,25 @@ TPropRes CoreSMTSolver::checkTheory(bool complete, int& conflictC)
             && skipped_calls + config.sat_initial_skip_step < skip_step )
     {
         skipped_calls ++;
-        return tpr_Decide;
+        return TPropRes::Decide;
     }
 
     skipped_calls = 0;
 
-    TRes res = theory_handler.assertLits(trail) ? theory_handler.check(complete) : TR_UNSAT;
+    TRes res = theory_handler.assertLits(trail) ? theory_handler.check(complete) : TRes::UNSAT;
     //
     // Problem is T-Satisfiable
     //
-    if ( res == TR_SAT )
+    if ( res == TRes::SAT )
         return handleSat();
-    else if (res == TR_UNSAT) {
+    else if (res == TRes::UNSAT) {
         conflicts++;
         conflictC++;
         return handleUnsat();
     }
-    assert(res == TR_UNKNOWN);
+    assert(res == TRes::UNKNOWN);
 
-    return tpr_Decide;
+    return TPropRes::Decide;
 }
 
 //

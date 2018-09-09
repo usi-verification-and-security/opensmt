@@ -114,14 +114,14 @@ void BVSolver::popBacktrackPoint ( )
 //
 TRes BVSolver::check( bool complete )
 {
-    if ( !complete ) return TR_SAT;
+    if ( !complete ) return TRes::SAT;
     assert( explanation.size() == 0 );
 
     // Here check for consistency.  No undefs allowed.
     const bool res = (B.check() == l_True ? true : false);
 
     assert(res || (explanation.size() != 0));
-    return res ? TR_SAT : TR_UNSAT;
+    return res ? TRes::SAT : TRes::UNSAT;
 }
 
 void BVSolver::computeModel( )

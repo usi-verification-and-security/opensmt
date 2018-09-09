@@ -10,7 +10,7 @@ TRes LIASolver::check( bool complete) {
     bool rval = check_simplex(complete);
     if (rval == true)
         return checkIntegersAndSplit();
-    return rval ? TR_SAT : TR_UNSAT;
+    return rval ? TRes::SAT : TRes::UNSAT;
 }
 
 bool LIASolver::isModelInteger(LVRef v) const
@@ -131,7 +131,7 @@ TRes LIASolver::checkIntegersAndSplit() {
                 explanation.push(model.readUBound(x).getPtAsgn());
                 //explanation = {model.readLBound(x).getPtAsgn(), model.readUBound(x).getPtAsgn()};
                 setStatus(UNSAT);
-                return TR_UNSAT;
+                return TRes::UNSAT;
             }
 
             //constructing new constraint
@@ -142,17 +142,17 @@ TRes LIASolver::checkIntegersAndSplit() {
 
             splitondemand.push(constr);
             setStatus(NEWSPLIT);
-            return TR_SAT;
+            return TRes::SAT;
         }
 
     }
     if (nonint_models) {// We could not block these, so we tell the solver that we don't know the satisfiability.
         setStatus(UNKNOWN);
-        return TR_UNKNOWN;
+        return TRes::UNKNOWN;
     }
     else {
         setStatus(SAT);
-        return TR_SAT;
+        return TRes::SAT;
     }
 }
 

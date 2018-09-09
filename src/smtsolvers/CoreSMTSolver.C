@@ -1940,9 +1940,9 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
     // (Incomplete) Check of Level-0 atoms
 
     TPropRes res = checkTheory(false, conflictC);
-    if ( res == tpr_Unsat ) return l_False;
+    if ( res == TPropRes::Unsat) return l_False;
 
-    assert( res == tpr_Decide || res == tpr_Propagate ); // Either good for decision (from TSolver's perspective) or propagate
+    assert( res == TPropRes::Decide || res == TPropRes::Propagate ); // Either good for decision (from TSolver's perspective) or propagate
 #ifdef STATISTICS
     tsolvers_time += cpuTime( ) - start;
 #endif
@@ -2051,17 +2051,17 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                 // Step 1: check if the current assignment is theory-consistent
 
                 TPropRes res = checkTheory(false, conflictC);
-                if (res == tpr_Unsat) {
+                if (res == TPropRes::Unsat) {
                     if (splits.size() > 0) {
                         opensmt::stop = true;
                         return l_Undef;
                     }
                     else return l_False;    // Top-Level conflict: unsat
                 }
-                else if (res == tpr_Propagate) {
+                else if (res == TPropRes::Propagate) {
                     continue; // Theory conflict: time for bcp
                 }
-                else if (res == tpr_Decide) {
+                else if (res == TPropRes::Decide) {
                     ;                 // Sat and no deductions: go ahead
                 }
                 else {
@@ -2148,11 +2148,11 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 #ifdef STATISTICS
                     tsolvers_time += cpuTime( ) - start;
 #endif
-                    if ( res == tpr_Propagate )
+                    if ( res == TPropRes::Propagate )
                     {
                         continue;
                     }
-                    if ( res == tpr_Unsat )
+                    if ( res == TPropRes::Unsat )
                     {
                         if (splits.size() > 0)
                         {
@@ -2161,7 +2161,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                         }
                         else return l_False;
                     }
-                    assert( res == tpr_Decide );
+                    assert( res == TPropRes::Decide );
 
 #ifdef STATISTICS
                     const double start2 = cpuTime( );
@@ -2603,14 +2603,14 @@ lbool CoreSMTSolver::LApropagate_wrapper(ConflQuota& confl_quota)
         if (!diff)
         {
             TPropRes res = checkTheory(true);
-            if (res == tpr_Unsat)
+            if (res == TPropRes::Unsat)
             {
 #ifdef LADEBUG
                 printf("Theory unsatisfiability\n");
 #endif
                 return l_False; // Unsat
             }
-            else if (res == tpr_Propagate)
+            else if (res == TPropRes::Propagate)
             {
 #ifdef LADEBUG
                 printf("Theory propagation / conflict\n");
@@ -2866,9 +2866,9 @@ CoreSMTSolver::laresult CoreSMTSolver::lookahead_loop(Lit& best, int &idx, Confl
 #ifdef LADEBUG
                 printf("All vars set?\n");
 #endif
-                if (checkTheory(true) != tpr_Decide) // TODO could also be tpr_Propagate
+                if (checkTheory(true) != TPropRes::Decide) // TODO could also be tpr_Propagate
                     return la_tl_unsat; // Problem is trivially unsat
-                assert(checkTheory(true) == tpr_Decide);
+                assert(checkTheory(true) == TPropRes::Decide);
 #ifdef LADEBUG
                 for (int j = 0; j < clauses.size(); j++)
                 {

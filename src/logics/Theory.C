@@ -167,7 +167,7 @@ bool Theory::computeSubstitutions(PTRef coll_f, vec<PFRef>& frames, int curr)
 
     pfstore[frames[curr]].root = root;
 
-    bool result = no_conflict && (th->check(true) == TR_SAT);
+    bool result = no_conflict && (th->check(true) == TRes::SAT);
 
     // Traverse frames[curr].root to see all the variables.
     vec<PTRef> queue;

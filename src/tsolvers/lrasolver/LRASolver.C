@@ -176,9 +176,9 @@ Real LRASolver::getReal(PTRef r) {
 TRes LRASolver::check(bool complete) {
 
     if (check_simplex(complete))
-        return TR_SAT;
+        return TRes::SAT;
     else
-        return TR_UNSAT;
+        return TRes::UNSAT;
 
 }
 
