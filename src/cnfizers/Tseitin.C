@@ -116,7 +116,7 @@ void Tseitin::cnfizeAnd( PTRef and_term )
         PTRef arg = logic.getPterm(and_term)[i];
         little_clause.push( theory.findLit(arg) );
         big_clause   .push(~theory.findLit(arg));
-        addClause(little_clause, arg);        // Adds a little clause to the solver
+        addClause(little_clause, and_term);        // Adds a little clause to the solver
         little_clause.pop();
     }
     addClause( big_clause, and_term );                    // Adds a big clause to the solver
@@ -153,12 +153,11 @@ void Tseitin::cnfizeOr( PTRef or_term, bool def)
         little_clause.push(~arg);
         big_clause   .push( arg);
 
-        addClause(little_clause, logic.getPterm(or_term)[i]);        // Adds a little clause to the solver
+        addClause(little_clause, or_term);        // Adds a little clause to the solver
 
         little_clause.pop();
     }
     addClause(big_clause, or_term);                    // Adds a big clause to the solver
-
 }
 
 
