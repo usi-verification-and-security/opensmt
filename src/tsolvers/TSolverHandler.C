@@ -121,14 +121,14 @@ ValPair TSolverHandler::getValue(PTRef tr) const
 
 TRes TSolverHandler::check(bool complete)
 {
-    TRes res_final = TR_SAT;
+    TRes res_final = TRes::SAT;
     for (int i = 0; i < tsolvers.size(); i++) {
         if (tsolvers[i] != NULL) {
             TRes res = tsolvers[i]->check(complete);
-            if (res == TR_UNSAT)
-                return TR_UNSAT;
-            else if (res == TR_UNKNOWN)
-                res_final = TR_UNKNOWN;
+            if (res == TRes::UNSAT)
+                return TRes::UNSAT;
+            else if (res == TRes::UNKNOWN)
+                res_final = TRes::UNKNOWN;
         }
     }
 
