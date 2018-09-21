@@ -3209,6 +3209,7 @@ void CoreSMTSolver::updateSplitState()
     }
 }
 
+#ifdef STATISTICS
 void CoreSMTSolver::printStatistics( ostream & os )
 {
     os << "; -------------------------" << endl;
@@ -3239,6 +3240,7 @@ void CoreSMTSolver::printStatistics( ostream & os )
     if (config.sat_split_type() != spt_none)
     os << "; Ill-adviced splits.......: " << unadvised_splits << endl;
 }
+#endif // STATISTICS
 
 //void CoreSMTSolver::clausesPublish() {
 //    if (this->clauses_sharing.channel.empty() || this->clauses_sharing.c_cls_pub == NULL || this->clauses_sharing.c_cls_pub->err != 0)

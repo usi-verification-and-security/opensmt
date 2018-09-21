@@ -142,7 +142,9 @@ public:
         if(cgraph_)
             delete cgraph_;
 #endif
+#ifdef STATISTICS
         tsolver_stats.printStatistics(std::cerr);
+#endif // STATISTICS
     }
 
     void clearSolver() { clearModel(); } // Only clear the possible computed values

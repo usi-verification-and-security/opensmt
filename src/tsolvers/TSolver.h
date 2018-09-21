@@ -38,7 +38,6 @@ class TheoryInterpolator; // forward declaration
 
 class Logic; // forward declaration
 
-#ifdef STATISTICS
 class TSolverStats
 {
   public:
@@ -122,7 +121,6 @@ class TSolverStats
     int   max_sod_size;
     int   min_sod_size;
 };
-#endif
 
 
 

@@ -89,7 +89,7 @@ void SimpSMTSolver::initialize( )
     if ( config.sat_preprocess_booleans != 0
             || config.sat_preprocess_theory != 0 )
     {
-        opensmt_warning( "disabling SATElite preprocessing to track proof" );
+        if (config.verbosity() > 0 ) {opensmt_warning( "disabling SATElite preprocessing to track proof" )};
         use_simplification = false;
         config.sat_preprocess_booleans = 0;
         config.sat_preprocess_theory = 0;

@@ -187,7 +187,9 @@ TRes LRASolver::check(bool complete) {
 //
 LRASolver::~LRASolver( )
 {
+#ifdef STATISTICS
     lasolverstats.printStatistics(cerr);
+#endif // STATISTICS
 }
 
 LRALogic&  LRASolver::getLogic() { return logic; }

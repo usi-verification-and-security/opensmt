@@ -270,7 +270,7 @@ inline enodeid_pair_t encode( enodeid_t car, enodeid_t cdr )
 #endif
     typedef enodeid_pair_t snodeid_pair_t;
 
-#define STATISTICS
+//#define STATISTICS
 
 // Set the bit B to 1 and leaves the others to 0
 #define SETBIT( B ) ( 1 << (B) )
