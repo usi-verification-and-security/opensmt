@@ -2408,14 +2408,11 @@ lbool CoreSMTSolver::solve_(int max_conflicts)
         // restarts
         if (conflicts == 0 || conflicts >= next_printout)
         {
-//          if ( config.verbosity() > 10 )
-            reportf( "; %9d | %8d %8d | %8.3f s | %6.3f MB\n"
-                     , (int)conflicts
-                     , (int)learnts.size()
-                     , nLearnts()
-                     , cpuTime()
-                     , memUsed( ) / 1048576.0 );
-            fflush( stderr );
+          if ( config.verbosity() > 0 ) {
+              reportf("; %9d | %8d %8d | %8.3f s | %6.3f MB\n", (int) conflicts, (int) learnts.size(), nLearnts(),
+                      cpuTime(), memUsed() / 1048576.0);
+              fflush(stderr);
+          }
         }
 
         if (config.sat_use_luby_restart)
