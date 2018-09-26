@@ -754,17 +754,18 @@ namespace {
         if (it != cache.end()) {
             return it->second;
         }
-        Clause & clause = ca[cref];
-        auto cleared = clearClause(clause, lits);
-        assert(cleared.size() <= clause.size());
         CRef mappedRef = cref;
-        if (cleared.size() < clause.size()) {
-            if (cleared.empty()) {
-                mappedRef = CRef_Undef;
-            }
-            else {
-                mappedRef = ca.alloc(cleared, clause.learnt());
-                logic.addClauseClassMask(mappedRef, logic.getClauseClassMask(cref));
+        if (mappedRef != CRef_Undef) {
+            Clause & clause = ca[cref];
+            auto cleared = clearClause(clause, lits);
+            assert(cleared.size() <= clause.size());
+            if (cleared.size() < clause.size()) {
+                if (cleared.empty()) {
+                    mappedRef = CRef_Undef;
+                } else {
+                    mappedRef = ca.alloc(cleared, clause.learnt());
+                    logic.addClauseClassMask(mappedRef, logic.getClauseClassMask(cref));
+                }
             }
         }
         cache[cref] = mappedRef;
