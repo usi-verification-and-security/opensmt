@@ -573,6 +573,17 @@ void CoreSMTSolver::cancelUntil(int level)
     }
 }
 
+void CoreSMTSolver::printClause(Clause & cl) {
+    for (int i = 0; i < cl.size(); ++i) {
+        std::cout << cl[i].x << ' ';
+    }
+    std::cout << '\n';
+}
+
+void CoreSMTSolver::printClause(CRef cref) {
+    printClause(ca[cref]);
+}
+
 /*
 void CoreSMTSolver::addSMTAxiomClause( vector< Enode * > & smt_clause
 #ifdef PRODUCE_PROOF
@@ -2094,6 +2105,9 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                 else if (value(p) == l_False)
                 {
                     analyzeFinal(~p, conflict);
+#ifdef PRODUCE_PROOF
+                    clearLiteralsFromProof(conflict);
+#endif // PRODUCE_PROOF
                     if (splits.size() > 0)
                     {
                         opensmt::stop = true;

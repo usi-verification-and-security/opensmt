@@ -141,6 +141,7 @@ void ProofGraph::buildProofGraph( int nVars )
         if (visitedSet.find(currClause) == visitedSet.end())
         {
             // in case of (assert false), clause_to_proof_der[currClause] is actually NULL
+            assert(clause_to_proof_der.find(currClause) != clause_to_proof_der.end());
             if (currClause == CRef_Undef && clause_to_proof_der[currClause] == NULL)
             {
                 assert(graph.size() == 0);

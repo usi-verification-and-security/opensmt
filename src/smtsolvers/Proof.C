@@ -30,7 +30,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Proof.h"
 #include "PG.h"
 #include <sys/wait.h>
+#include <unordered_map>
+
 #endif
+
+namespace {
+void print(Clause& cl, ostream& out) {
+    for (int i = 0; i < cl.size(); ++i) {
+        out << cl[i].x << ' ';
+    }
+    out << '\n';
+}
+}
 
 void CoreSMTSolver::dumpRndInter(std::ofstream& dump_out)
 {
@@ -719,5 +730,72 @@ void CoreSMTSolver::mixedVarDecActivity( )
     }
   }
 }
-#endif
+
+namespace {
+    std::vector<Lit> clearClause(Clause const & clause, vec<Lit> const & toRemove) {
+        std::vector<Lit> res;
+        for (int i = 0; i < clause.size(); ++i) {
+            bool found = false;
+            for (int j = 0; j < toRemove.size(); ++j) {
+                if (clause[i] == toRemove[j]) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                res.push_back(clause[i]);
+            }
+        }
+        return res;
+    }
+
+    CRef processClause(CRef cref, ClauseAllocator& ca, std::unordered_map<CRef, CRef> & cache, vec<Lit> const & lits, Logic& logic){
+        auto it = cache.find(cref);
+        if (it != cache.end()) {
+            return it->second;
+        }
+        CRef mappedRef = cref;
+        if (mappedRef != CRef_Undef) {
+            Clause & clause = ca[cref];
+            auto cleared = clearClause(clause, lits);
+            assert(cleared.size() <= clause.size());
+            if (cleared.size() < clause.size()) {
+                if (cleared.empty()) {
+                    mappedRef = CRef_Undef;
+                } else {
+                    mappedRef = ca.alloc(cleared, clause.learnt());
+                    logic.addClauseClassMask(mappedRef, logic.getClauseClassMask(cref));
+                }
+            }
+        }
+        cache[cref] = mappedRef;
+        return mappedRef;
+    }
+
+
+}
+
+void CoreSMTSolver::clearLiteralsFromProof(vec<Lit> const & lits) {
+    auto & proof = this->proof.getProof();
+    std::map< CRef, ProofDer * > clearedProof;
+    std::unordered_map<CRef, CRef> cache;
+    for (auto & chain : proof) {
+        CRef oldRef = chain.first;
+        CRef newRef = processClause(chain.first, ca, cache, lits, theory_handler.getLogic());
+        ProofDer * derivation = chain.second;
+        assert(derivation->chain_cla);
+        auto & references = *(derivation->chain_cla);
+        std::vector<CRef> clearedDerivation;
+        for (auto cref : references) {
+            clearedDerivation.push_back(processClause(cref, ca, cache, lits, theory_handler.getLogic()));
+        }
+        derivation->chain_cla->clear();
+        std::copy(clearedDerivation.begin(), clearedDerivation.end(), std::back_inserter(*(derivation->chain_cla)));
+        assert(cache.find(chain.first) != cache.end());
+        clearedProof[newRef] = derivation;
+    }
+    proof.clear();
+    proof.insert(clearedProof.begin(), clearedProof.end());
+}
+#endif // PRODUCE_PROOF
 
