@@ -28,7 +28,7 @@ bool TSolverHandler::assertLit(PtAsgn asgn)
             continue;
         }
         bool res_new = tsolvers[idx]->assertLit(asgn);
-        res = (res == false) ? false : res_new;
+        res &= res_new;
     }
     return res;
 }

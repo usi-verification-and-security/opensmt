@@ -567,9 +567,11 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
                     PTRef pt_r = varToPTRef(var(lit));
                     res = tmp->assertLit(PtAsgn(pt_r, sign(lit) ? l_False : l_True));
                 }
-                if (res)
-                    tmp->check(true);
-
+                if (res) {
+                    TRes tres = tmp->check(true);
+                    res = (tres != TRes::UNSAT);
+                }
+                assert(!res);
                 map<PTRef, icolor_t> ptref2label;
                 vector<Lit>& cl = n->getClause();
 
