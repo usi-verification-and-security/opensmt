@@ -473,14 +473,14 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
                 opensmt_error("Empty clause found in interpolation\n");
                 assert(false);
             }
-            if (cl.size() == 1 && thandler.varToTerm(var(cl[0])) == thandler.getLogic().getTerm_false() && !sign(cl[0]))
+            if (cl.size() == 1 && varToPTRef(var(cl[0])) == theory.getLogic().getTerm_false() && !sign(cl[0]))
                 fal = true;
 
             if ((n->getType() == CLAORIG && n->getClauseRef() == CRef_Undef) || fal)
             {
                 //unit clause False exists, return degenerate interpolant
                 icolor_t cc = getClauseColor (n->getInterpPartitionMask(), A_mask);
-                Logic &logic = thandler.getLogic();
+                Logic &logic = theory.getLogic();
 
                 if (cc == I_A)
                     interpolants.push (logic.getTerm_false());
@@ -539,12 +539,12 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
             }
             else
             {
-                thandler.backtrack (-1);
-                vec<Lit> newvec;
+                TSolverHandler* tmp = theory.getTSolverHandler_new(theory.getDeductionVec());
+                vector<Lit> newvec;
                 vector<Lit> &oldvec = n->getClause();
 
                 for (int i = 0; i < oldvec.size(); ++i)
-                    newvec.push (~oldvec[i]);
+                    newvec.push_back (~oldvec[i]);
 
 #ifdef ITP_DEBUG
                 cout << "; ASSERTING LITS" << endl;
@@ -557,20 +557,29 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
                 PTRef tr_and = logic.mkAnd(tr_vec);
                 printf("%s\n", logic.printTerm(tr_and));
 #endif
-
-                bool res = thandler.assertLits (newvec);
+                for (auto const & lit : newvec){
+                    PTRef pt_r = varToPTRef(var(lit));
+                    assert(logic_.isTheoryTerm(pt_r));
+                    tmp->declareTerm(pt_r);
+                }
+                bool res = true;
+                for (auto const & lit : newvec){
+                    PTRef pt_r = varToPTRef(var(lit));
+                    res = tmp->assertLit(PtAsgn(pt_r, sign(lit) ? l_False : l_True));
+                }
                 if (res)
-                    thandler.check(true);
+                    tmp->check(true);
 
                 map<PTRef, icolor_t> ptref2label;
                 vector<Lit>& cl = n->getClause();
 
                 for(int i = 0; i < cl.size(); ++i)
                 {
-                    ptref2label[thandler.varToTerm(var(cl[i]))] = getVarColor(n, var(cl[i]));
+                    ptref2label[varToPTRef(var(cl[i]))] = getVarColor(n, var(cl[i]));
                 }
 
-                partial_interp = thandler.getInterpolant (A_mask, &ptref2label);
+                partial_interp = tmp->getInterpolant (A_mask, &ptref2label);
+                delete tmp;
             }
 
             assert ( partial_interp != PTRef_Undef );
@@ -600,7 +609,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
         //getComplexityInterpolant(partial_interp);
         
         int nbool, neq, nuf, nif;
-        thandler.getLogic().collectStats(partial_interp, nbool, neq, nuf, nif);
+        theory.getLogic().collectStats(partial_interp, nbool, neq, nuf, nif);
         cerr << "; Number of boolean connectives: " << nbool << endl;
         cerr << "; Number of equalities: " << neq << endl;
         cerr << "; Number of uninterpreted functions: " << nuf << endl;
@@ -611,7 +620,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
     //if ( enabledInterpVerif() ) verifyPartialInterpolantFromLeaves( getRoot(), A_mask );
     if ( enabledInterpVerif() )
     {
-        bool sound = thandler.getLogic().verifyInterpolant (getRoot()->getPartialInterpolant(), A_mask );
+        bool sound = theory.getLogic().verifyInterpolant (getRoot()->getPartialInterpolant(), A_mask );
 
         if(verbose())
         {
@@ -626,7 +635,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
 
     if(verbose() > 1)
     {
-        cout << "; Interpolant: " << thandler.getLogic().printTerm(partial_interp) << endl;
+        cout << "; Interpolant: " << theory.getLogic().printTerm(partial_interp) << endl;
     }
 }
 
@@ -793,7 +802,7 @@ PTRef ProofGraph::compInterpLabelingOriginalSimple ( ProofNode *n, const ipartit
 
                 for (size_t i = 0; i < clause_size; i++)
                 {
-                    lit = thandler.varToTerm (var (restricted_clause[i]));
+                    lit = varToPTRef (var (restricted_clause[i]));
 
                     //Check polarity literal
                     if (sign (restricted_clause[i])) lit = logic_.mkNot (lit); //logic_.cons(lit));
@@ -849,7 +858,7 @@ PTRef ProofGraph::compInterpLabelingOriginalSimple ( ProofNode *n, const ipartit
 
                 for ( size_t i = 0 ; i < clause_size ; i++ )
                 {
-                    lit = thandler.varToTerm ( var ( restricted_clause[i] ) );
+                    lit = varToPTRef ( var ( restricted_clause[i] ) );
 
                     if ( !sign ( restricted_clause[i] ) ) lit = logic_.mkNot (lit);
 
@@ -925,7 +934,7 @@ PTRef ProofGraph::compInterpLabelingInnerSimple ( ProofNode *n, const ipartition
             Var piv_ = n->getPivot();
             //cerr << "Inserting: " << thandler.varToEnode(piv_) << " " << piv_ << endl;
 //          PTRef piv = thandler.varToEnode( piv_ );
-            PTRef piv = thandler.varToTerm ( piv_ );
+            PTRef piv = varToPTRef ( piv_ );
             bool choose_alternative = false;
 
             if ( usingAlternativeInterpolant() ) choose_alternative = decideOnAlternativeInterpolation ( n );
@@ -1136,7 +1145,7 @@ PTRef ProofGraph::compInterpLabelingOriginal ( ProofNode *n, const ipartitions_t
 
             for (size_t i = 0; i < clause_size; i++)
             {
-                lit = thandler.varToTerm (var (restricted_clause[i]));
+                lit = varToPTRef (var (restricted_clause[i]));
 
                 //Check polarity literal
                 if (sign (restricted_clause[i])) lit = logic_.mkNot (lit);
@@ -1193,7 +1202,7 @@ PTRef ProofGraph::compInterpLabelingOriginal ( ProofNode *n, const ipartitions_t
 
             for ( size_t i = 0 ; i < clause_size ; i++ )
             {
-                lit = thandler.varToTerm ( var ( restricted_clause[i] ) );
+                lit = varToPTRef ( var ( restricted_clause[i] ) );
 
                 // Check polarity literal
                 if ( !sign ( restricted_clause[i] ) )
@@ -1247,7 +1256,7 @@ PTRef ProofGraph::compInterpLabelingInner ( ProofNode *n )
         // Find pivot occurrences in ant1 and ant2 and create enodes
         Var piv_ = n->getPivot();
         //cerr << "Inserting: " << thandler.varToEnode(piv_) << " " << piv_ << endl;
-        PTRef piv = thandler.varToTerm ( piv_ );
+        PTRef piv = varToPTRef ( piv_ );
         bool choose_alternative = false;
 
         if ( usingAlternativeInterpolant() ) choose_alternative = decideOnAlternativeInterpolation ( n );
@@ -1482,7 +1491,7 @@ void ProofGraph::setLabelingFromMap ( ProofNode *n, unsigned num_config )
         if ( var_class == I_AB )
         {
             // Retrieve correspondent Enode
-            PTRef en = thandler.varToTerm (v);
+            PTRef en = varToPTRef (v);
             std::map<PTRef, icolor_t> *col_map = (*vars_suggested_color_map)[num_config];
             assert (col_map);
             std::map<PTRef, icolor_t>::iterator it = col_map->find (en);

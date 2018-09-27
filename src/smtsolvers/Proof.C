@@ -570,7 +570,7 @@ void CoreSMTSolver::getMixedAtoms( set< Var > & mixed )
 }
 
 void CoreSMTSolver::createProofGraph ()
-{ proof_graph = new ProofGraph( config, *this, theory_handler,  proof, nVars( ) ); }
+{ proof_graph = new ProofGraph( config, *this, theory_handler.getTheory(),  proof, nVars( ) ); }
 
 void CoreSMTSolver::deleteProofGraph () { delete proof_graph; }
 

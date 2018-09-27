@@ -535,6 +535,7 @@ bool LASolver::assertLit( PtAsgn asgn, bool reason )
 
 
     // skip if it was deduced by the solver itself with the same polarity
+    assert(deduced.size() > t.getVar());
     if (deduced[t.getVar()] != l_Undef && deduced[t.getVar()].polarity == asgn.sgn && deduced[t.getVar()].deducedBy == id) {
         assert(getStatus());
         tsolver_stats.sat_calls ++;
@@ -1153,7 +1154,7 @@ bool LASolver::checkTableauConsistency() const {
 
 LASolver::~LASolver( )
 {
-    tsolver_stats.printStatistics(cerr);
+    // tsolver_stats.printStatistics(cerr);
 }
 
 PtAsgn_reason LASolver::getDeduction()  { if (deductions_next >= th_deductions.size()) return PtAsgn_reason_Undef; else return th_deductions[deductions_next++]; }

@@ -289,7 +289,7 @@ void ProofGraph::getComplexityInterpolant( PTRef int_e )
     unsigned num_and_or_dag = 0;
 
     q.push_back(int_e);
-    Logic& logic = thandler.getLogic();
+    Logic& logic = theory.getLogic();
     do
     {
         e_curr=q.back();
@@ -307,7 +307,7 @@ void ProofGraph::getComplexityInterpolant( PTRef int_e )
                 cerr << "; Adding complexity of " << logic.printTerm(e_curr) << " = 0" << endl;
 #endif
                 // Add predicate to set
-                if ( e_curr != logic_.getTerm_true() && e_curr != logic_.getTerm_false() ) predicates.insert(thandler.ptrefToVar( e_curr ));
+                if ( e_curr != logic_.getTerm_true() && e_curr != logic_.getTerm_false() ) predicates.insert(PTRefToVar( e_curr ));
                 visited.insert(e_curr);
                 q.pop_back();
             }
