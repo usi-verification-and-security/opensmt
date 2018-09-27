@@ -174,9 +174,6 @@ LIASolver::LIASolver(SMTConfig & c, LIALogic& l, vec<DedElem>& d)
 
 LIASolver::~LIASolver( )
 {
-#ifdef STATISTICS
-    lasolverstats.printStatistics(cerr);
-#endif // STATISTICS
 
 }
 

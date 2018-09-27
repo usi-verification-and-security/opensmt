@@ -24,7 +24,6 @@ void
 ProofNode::setInterpPartitionMask()
 {
     if(i_data == NULL) initIData();
-    Logic& logic = thandler.getLogic();
     i_data->partition_mask = logic.getClauseClassMask(clause_ref);
     assert(i_data->partition_mask != 0);
 #ifdef ITP_DEBUG
@@ -145,14 +144,14 @@ void ProofGraph::buildProofGraph( int nVars )
             if (currClause == CRef_Undef && clause_to_proof_der[currClause] == NULL)
             {
                 assert(graph.size() == 0);
-                ProofNode* n = new ProofNode(thandler);
+                ProofNode* n = new ProofNode(logic_);
                 n->initIData();
                 // Add node to graph vector
                 int currId = (int)graph.size();
                 n->setId(currId);
                 n->setType(CLAORIG);
                 vector<Lit> false_clause;
-                Lit lit_false = thandler.PTRefToLit(logic_.getTerm_false());
+                Lit lit_false = PTRefToLit(logic_.getTerm_false());
                 false_clause.push_back(lit_false);
                 n->initClause(false_clause);
                 // We should set the partition_mask here, but how is that
@@ -195,7 +194,7 @@ void ProofGraph::buildProofGraph( int nVars )
                 if(ctype == CLA_ORIG && currClause==CRef_Undef)
                 {
                     assert(graph.size()==0);
-                    ProofNode* n=new ProofNode(thandler);
+                    ProofNode* n=new ProofNode(logic_);
                     n->initIData();
                     //n->initClause(proof.getClause(currClause));
                     // Add node to graph vector
@@ -212,7 +211,7 @@ void ProofGraph::buildProofGraph( int nVars )
                 // Clause not processed yet
                 if (clauseToIDMap.find(currClause)==clauseToIDMap.end())
                 {
-                    ProofNode* n = new ProofNode(thandler);
+                    ProofNode* n = new ProofNode(logic_);
                     if (ctype == CLA_ORIG) num_leaf++;
                     else num_theory++;
                     n->initClause(proof.getClause(currClause));
@@ -259,7 +258,7 @@ void ProofGraph::buildProofGraph( int nVars )
 
                 if(clauseToIDMap.find(clause_0)==clauseToIDMap.end())
                 {
-                    ProofNode* n=new ProofNode(thandler);
+                    ProofNode* n=new ProofNode(logic_);
                     n->initIData();
                     clause_type_t  _ctype    = (*(clause_to_proof_der[clause_0])).type;
                     if( _ctype==CLA_ORIG )
@@ -313,7 +312,7 @@ void ProofGraph::buildProofGraph( int nVars )
 
                     if(clauseToIDMap.find(clause_i)==clauseToIDMap.end())
                     {
-                        ProofNode* n=new ProofNode(thandler);
+                        ProofNode* n=new ProofNode(logic_);
                         n->initIData();
                         // Contains negative occurrence pivot
                         clause_type_t _ctype = (*(clause_to_proof_der[clause_i])).type;
@@ -392,7 +391,7 @@ void ProofGraph::buildProofGraph( int nVars )
                         //
                         //////////////////////////////////////////////////////////////////////////////////////////
 
-                        n=new ProofNode(thandler); num_derived++;
+                        n=new ProofNode(logic_); num_derived++;
                         n->initIData();
                         //Add node to graph vector
                         n->setId(currId);
@@ -441,7 +440,7 @@ void ProofGraph::buildProofGraph( int nVars )
                             //
                             //////////////////////////////////////////////////////////////////////////////////////////
 
-                            n=new ProofNode(thandler); num_learnt++;
+                            n=new ProofNode(logic_); num_learnt++;
                             unsigned ssize = ( currClause == CRef_Undef ) ? 0 : proof.getClause(currClause).size();
                             if( ssize >= max_learnt_size ) max_learnt_size = ssize;
                             avg_learnt_size += ssize;
@@ -799,7 +798,7 @@ clauseid_t ProofGraph::dupliNode( RuleContext& ra )
 		assert(res->getAnt1()==w || res->getAnt2()==w);
 	}
 
-	ProofNode* n=new ProofNode(thandler);
+	ProofNode* n=new ProofNode(logic_);
 	n->initIData();
 
 	// Create node and add to graph vector
@@ -834,6 +833,5 @@ clauseid_t ProofGraph::dupliNode( RuleContext& ra )
 	duplications++;
 	return currId;
 }
-
 
 #endif

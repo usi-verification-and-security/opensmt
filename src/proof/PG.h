@@ -139,14 +139,14 @@ struct InterpolData
 // Resolution proof graph element
 struct ProofNode
 {
-    ProofNode            (THandler& _th)
+    ProofNode            (Logic& _logic)
     : clause     (NULL)
     , pivot      (-1)
     , ant1       (NULL)
     , ant2       (NULL)
     , resolvents ()
     , i_data     (NULL)
-    , thandler   (_th)
+    , logic   (_logic)
     , clause_ref (CRef_Undef)
     {
         clause = NULL;
@@ -262,7 +262,7 @@ struct ProofNode
 #endif
 
 private:
-    THandler& thandler;
+    Logic&             logic;
     clauseid_t         id;                 // id
     vector<Lit>*     clause;             // Clause
     CRef clause_ref;
@@ -281,12 +281,12 @@ public:
 
 	ProofGraph ( SMTConfig &     c
 			, CoreSMTSolver & s
-			, THandler &      th
+			, Theory &      th
 			, Proof &         t
 			, int             n = -1 )
 : config   ( c )
 , solver   ( s )
-, thandler ( th )
+, theory ( th )
 , logic_ ( th.getLogic() )
 , graph_   ( new vector<ProofNode*> )
 , graph    ( *graph_ )
@@ -530,12 +530,16 @@ public:
 
 private:
 
+    inline Lit PTRefToLit(PTRef ref) {return theory.getTmap().getLit(ref);}
+    inline Var PTRefToVar(PTRef ref) { return theory.getTmap().getVar(ref); }
+    inline PTRef varToPTRef(Var v) { return theory.getTmap().varToPTRef(v); }
+
     //NOTE added for experimentation
     Var 				  pred_to_push;
 
     SMTConfig &           config;
     CoreSMTSolver &       solver;
-    THandler &        thandler;
+    Theory &              theory;
     //Egraph &              egraph;
     Proof &				  proof;
     Logic &               logic_;

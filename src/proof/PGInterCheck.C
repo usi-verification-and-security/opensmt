@@ -162,7 +162,7 @@ bool
 ProofGraph::verifyPartialInterpolantA(ProofNode *n, const ipartitions_t& mask)
 {
     // Check A /\ ~(C|a,ab) -> I, i.e., A /\ ~(C|a,ab) /\ ~I unsat
-    Logic& logic = thandler.getLogic();
+    Logic& logic = theory.getLogic();
     icolor_t var_class;
     icolor_t var_color;
     vector< Lit > & cl = n->getClause();
@@ -185,7 +185,7 @@ ProofGraph::verifyPartialInterpolantA(ProofNode *n, const ipartitions_t& mask)
 		}
 		if( var_color == I_A || var_color == I_AB )
         {
-            PTRef ptaux = thandler.varToTerm(var(cl[i]));
+            PTRef ptaux = varToPTRef(var(cl[i]));
             if(sign(cl[i]))
                 ptaux = logic.mkNot(ptaux);
             restricted_clause.push(ptaux);
@@ -214,7 +214,7 @@ bool
 ProofGraph::verifyPartialInterpolantB(ProofNode *n, const ipartitions_t& mask)
 {
     // Check B /\ ~(C|b,ab) -> ~I, i.e., B /\ ~(C|b,ab) /\ I unsat 
-    Logic& logic = thandler.getLogic();
+    Logic& logic = theory.getLogic();
     icolor_t var_class;
     icolor_t var_color;
     vector< Lit > & cl = n->getClause();
@@ -237,7 +237,7 @@ ProofGraph::verifyPartialInterpolantB(ProofNode *n, const ipartitions_t& mask)
 		}
 		if( var_color == I_B || var_color == I_AB )
         {
-            PTRef ptaux = thandler.varToTerm(var(cl[i]));
+            PTRef ptaux = varToPTRef(var(cl[i]));
             if(sign(cl[i]))
                 ptaux = logic.mkNot(ptaux);
             restricted_clause.push(ptaux);
@@ -281,7 +281,7 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
 	{
 		// Skip true and false
 		if((*it) == logic_.getTerm_true() || (*it) == logic_.getTerm_false()) continue;
-		Var variab = thandler.ptrefToVar(*it);
+		Var variab = PTRefToVar(*it);
 		assert( getVarClass(variab, A_mask) == I_AB );
 	}
 	if( verbose() > 0 ) { cerr << "# The interpolant is on the shared signature" << endl; }
@@ -297,7 +297,7 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
 	string varsDecl("");
 	for(int i = 2; i <= getMaxIdVar(); ++i)
 		{
-				varsDecl += "(declare-fun " + string(logic_.printTerm(thandler.varToTerm(i))) + " () Bool)\n";
+				varsDecl += "(declare-fun " + string(logic_.printTerm(varToPTRef(i))) + " () Bool)\n";
 			}
 	dump_out << varsDecl << endl;
 
@@ -359,9 +359,9 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
 					}
 					// Add negated literal
 					if( sign(cl[i]) )
-						dump_out << logic_.printTerm(thandler.varToTerm( v )) << endl;
+						dump_out << logic_.printTerm(varToPTRef( v )) << endl;
 					else
-						dump_out << "(not " << logic_.printTerm(thandler.varToTerm( v )) << " )" << endl;
+						dump_out << "(not " << logic_.printTerm(varToPTRef( v )) << " )" << endl;
 				}
 			}
 			if(num_added>0) dump_out << "))" << endl;
@@ -472,9 +472,9 @@ dump_out << varsDecl << endl;
 					}
 					// Add negated literal
 					if( sign(cl[i]) )
-						dump_out << logic_.printTerm(thandler.varToTerm( v )) << endl;
+						dump_out << logic_.printTerm(varToPTRef( v )) << endl;
 					else
-						dump_out << "(not " << logic_.printTerm(thandler.varToTerm( v )) << " )" << endl;
+						dump_out << "(not " << logic_.printTerm(varToPTRef( v )) << " )" << endl;
 				}
 			}
 			if(num_added>0) dump_out << "))" << endl;
@@ -541,7 +541,7 @@ bool ProofGraph::verifyPathInterpolantsFromLeaves ( vec< PTRef > & interps)
 	string varsDecl("");
 	for(int i = 2; i <= getMaxIdVar(); ++i)
 	{
-		varsDecl += "(declare-fun " + string(logic_.printTerm(thandler.varToTerm(i))) + " () Bool)\n";
+		varsDecl += "(declare-fun " + string(logic_.printTerm(varToPTRef(i))) + " () Bool)\n";
 	}
 
 	// Try ith constraint I_i /\ phi_i -> I_{i+1}
