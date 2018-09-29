@@ -539,7 +539,11 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
             }
             else
             {
-                TSolverHandler* tmp = theory.getTSolverHandler_new(theory.getDeductionVec());
+                vec<DedElem> stub;
+                for(int i = 0; i < theory.getDeductionVec().size(); ++i){
+                    stub.push({theory.getDeductionVec()[i].deducedBy, l_Undef});
+                }
+                TSolverHandler* tmp = theory.getTSolverHandler_new(stub);
                 vector<Lit> newvec;
                 vector<Lit> &oldvec = n->getClause();
 
