@@ -2296,6 +2296,44 @@ void Logic::computePartitionMasks(const vec<PTRef> &roots) {
         ipartitions_t& p = getIPartitions(tr);
         for (int j = 0; j < t.size(); j++) {
             addIPartitions(t[j], p);
+            // MB: ugly hack to properly compute partitions of ITEs
+            if(isIteVar(t[j])) {
+                PTRef realIte = getTopLevelIte(t[j]);
+//                std::cout << "Recursing on ite: " << printTerm(t[j]) << '\n'
+//                    << printTerm(realIte) << '\n';
+                addIPartitions(realIte, p);
+                computePartitionMasksIte(realIte, t[j]);
+            }
+            // MB: end of ugly hack
+        }
+        if (isUF(tr) || isUP(tr)) {
+            addIPartitions(t.symb(), p);
+        }
+    }
+}
+
+void Logic::computePartitionMasksIte(const PTRef root, PTRef ignore) {
+    vec<PTRef> roots;
+    roots.push(root);
+    vec<PtChild> list_out;
+    getTermsList(roots, list_out, *this);
+    for (int i = list_out.size()-1; i >= 0; i--)
+    {
+        PTRef tr = list_out[i].tr;
+        Pterm& t = getPterm(tr);
+        ipartitions_t& p = getIPartitions(tr);
+        for (int j = 0; j < t.size(); j++) {
+            if (t[j] == ignore) { continue; }
+            addIPartitions(t[j], p);
+            // MB: ugly hack to properly compute partitions of ITEs
+            if(isIteVar(t[j])) {
+                PTRef realIte = getTopLevelIte(t[j]);
+//                std::cout << "Recursing on ite: " << printTerm(t[j]) << '\n'
+//                          << printTerm(realIte) << '\n';
+                addIPartitions(realIte, p);
+                computePartitionMasksIte(realIte, t[j]);
+            }
+            // MB: end of ugly hack
         }
         if (isUF(tr) || isUP(tr)) {
             addIPartitions(t.symb(), p);
