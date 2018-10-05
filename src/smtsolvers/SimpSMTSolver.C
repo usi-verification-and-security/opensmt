@@ -255,6 +255,7 @@ bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause, CRef& cr)
         cerr << "XXX skipped handling of unary theory literal?" << endl;
     }
 #ifdef PRODUCE_PROOF
+    assert(mask != 0);
     if (!CoreSMTSolver::addClause_(smt_clause, cr, mask))
 #else
     if (!CoreSMTSolver::addClause_(smt_clause, cr))

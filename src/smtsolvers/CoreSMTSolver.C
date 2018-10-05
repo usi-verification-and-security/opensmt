@@ -347,6 +347,7 @@ bool CoreSMTSolver::addClause_(vec<Lit>& _ps, CRef& cr_o)
     int i, j;
 #ifdef PRODUCE_PROOF
     root = ca.alloc( ps, false );
+    assert(mask != 0);
     logic.addClauseClassMask(root, mask);
     for(int lt = 0; lt < ps.size(); ++lt) {
         logic.addVarClassMask(var(ps[lt]), mask);
@@ -400,6 +401,7 @@ bool CoreSMTSolver::addClause_(vec<Lit>& _ps, CRef& cr_o)
     if ( resolved )
     {
         res = ca.alloc( ps, false );
+        assert(mask != 0);
         logic.addClauseClassMask(res, mask);
         for(int lt = 0; lt < ps.size(); ++lt)
             logic.addVarClassMask(var(ps[lt]), mask);
