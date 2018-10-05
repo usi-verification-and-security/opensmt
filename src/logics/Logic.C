@@ -546,10 +546,10 @@ void Logic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
             newargs.push(tr);
     }
     PTRef trp = insertTerm(p.symb(), newargs, &msg);
-#ifdef PRODUCE_PROOF
-    addIPartitions(trp, getIPartitions(tr));
-#endif
     if (trp != tr) {
+#ifdef PRODUCE_PROOF
+        addIPartitions(trp, getIPartitions(tr));
+#endif
         if (tr_map.has(tr))
             assert(tr_map[tr] == trp);
         else
@@ -2263,6 +2263,7 @@ void Logic::conjoinItes(PTRef root, PTRef& new_root)
             args.push(ite);
             queue.push(ite);
 #ifdef PRODUCE_PROOF
+            assert(getIPartitions(el) != 0);
             setIPartitions(ite, getIPartitions(el));
 #endif
         }
@@ -2275,6 +2276,9 @@ void Logic::conjoinItes(PTRef root, PTRef& new_root)
 #endif
     args.push(root);
     new_root = mkAnd(args);
+#ifdef PRODUCE_PROOF
+    addIPartitions(new_root, getIPartitions(root));
+#endif
 }
 
 #ifdef PRODUCE_PROOF
