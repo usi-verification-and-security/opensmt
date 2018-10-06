@@ -99,6 +99,8 @@ class MainSolver
     PTRef          prev_query;       // The previously executed query
     PTRef          curr_query;       // The current query
     sstat          status;           // The status of the last solver call (initially s_Undef)
+    unsigned int   inserted_formulas_count = 0; // Number of formulas that has been inserted to this solver
+
 
     bool          binary_init; // Was the formula loaded from .osmt2
 
@@ -166,14 +168,6 @@ class MainSolver
     sstat     insertFormula(PTRef root, char** msg);
     int       simplifiedUntil() const { return simplified_until; }
 
-#ifdef PRODUCE_PROOF
-    sstat     insertFormula(PTRef root, unsigned int n, char** msg) { // Insert formula with given partition index;
-        assignPartition(n, root);
-        return insertFormula(root, msg);
-    }
-    void      assignPartition(unsigned int n, PTRef tr); // Assign partition numbers to individual PTRefs
-    void      computePartitionMasks(int from, int to); // Extend the partitions as masks to the whole PTRef structure.  `From' and `to' refer to indices in the formulas vector.
-#endif
     void      initialize() { ts.solver.initialize(); ts.initialize(); }
 
     // Simplify formulas from formulas[from] onwards until all are simplified or the instance is detected unsatisfiable.  the index up to which simplification was done is stored in `to'.

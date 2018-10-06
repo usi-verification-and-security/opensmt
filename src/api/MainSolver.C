@@ -198,14 +198,6 @@ MainSolver::push(PTRef root)
     return res;
 }
 
-#ifdef PRODUCE_PROOF
-void
-MainSolver::assignPartition(unsigned int n, PTRef tr)
-{
-    logic.assignPartition(n, tr);
-}
-#endif
-
 sstat
 MainSolver::insertFormula(PTRef root, char** msg)
 {
@@ -215,6 +207,8 @@ MainSolver::insertFormula(PTRef root, char** msg)
                  Logic::s_sort_bool, logic.getSortName(logic.getSortRef(root)));
         return s_Error;
     }
+    int partition_index = inserted_formulas_count++;
+    logic.assignPartition(partition_index, root);
 #ifdef PRODUCE_PROOF
     // Label the formula with a partition mask.  This needs to be done before conjoining the extras
     // since otherwise we loose the connection between Ites and partitions.
@@ -248,6 +242,26 @@ sstat MainSolver::simplifyFormulas(int from, int& to, char** err_msg)
             giveToSolver(getLogic().getTerm_false(), pfstore[formulas[i]].getId());
             return status = s_False;
         }
+#ifdef PRODUCE_PROOF
+        assert(pfstore[formulas[i]].substs == logic.getTerm_true());
+        vec<PTRef> const & flas =  pfstore[formulas[i]].formulas;
+        for (int i = 0; i < flas.size(); ++i) {
+            PTRef fla = flas[i];
+            if (fla == logic.getTerm_true()) {continue;}
+            assert(logic.getPartitionIndex(fla) != -1);
+            // Optimize the dag for cnfization
+            Map<PTRef,int,PTRefHash> PTRefToIncoming;
+            if (logic.isBooleanOperator(fla)) {
+                computeIncomingEdges(fla, PTRefToIncoming);
+                fla = rewriteMaxArity(fla, PTRefToIncoming);
+            }
+            assert(logic.getPartitionIndex(fla) != -1);
+            logic.computePartitionMasks(fla);
+            if ((status = giveToSolver(fla, pfstore[formulas[i]].getId())) == s_False) {
+                return s_False;
+            }
+        }
+#else // PRODUCE_PROOF
         FContainer fc(root);
 
         // Optimize the dag for cnfization
@@ -262,29 +276,12 @@ sstat MainSolver::simplifyFormulas(int from, int& to, char** err_msg)
         fc.setRoot(logic.mkAnd(fc.getRoot(), pfstore[formulas[i]].substs));
         root_instance.setRoot(fc.getRoot());
         // Stop if problem becomes unsatisfiable
-#ifdef PRODUCE_PROOF
-        // Label the formula with a partition mask.  Needs to be done here (also) since
-        // simplify can change the instance (e.g., LRA splits equalities)
-        logic.computePartitionMasks(fc.getRoot());
-#endif
         if ((status = giveToSolver(fc.getRoot(), pfstore[formulas[i]].getId())) == s_False)
             break;
+#endif
     }
     return status;
 }
-
-#ifdef PRODUCE_PROOF
-void
-MainSolver::computePartitionMasks(int from, int to)
-{
-    cerr << "; computePartitionMasks called" << endl;
-    vec<PTRef> roots;
-    for (int i = from; i < to; i++)
-        roots.push(pfstore[formulas[i]].root);
-
-    logic.computePartitionMasks(roots);
-}
-#endif
 
 
 // Replace subtrees consisting only of ands / ors with a single and / or term.
@@ -415,7 +412,7 @@ PTRef MainSolver::mergePTRefArgs(PTRef tr, Map<PTRef,PTRef,PTRefHash>& cache, co
     }
 #ifdef PRODUCE_PROOF
     // copy the partition of tr to the resulting new term
-    logic.setIPartitions(new_tr, logic.getIPartitions(tr));
+    logic.transferPartitionMembership(tr, new_tr);
 #endif
     return new_tr;
 }

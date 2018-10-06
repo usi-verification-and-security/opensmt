@@ -43,7 +43,7 @@ bool Tseitin::cnfize(PTRef formula)
     if (!logic.isOr(formula)) {
         vec<Lit> clause;
         clause.push(theory.findLit(formula));
-        addClause(clause, formula);
+        addClause(clause);
     }
     vec<PTRef> unprocessed_terms;       // Stack for unprocessed terms
     unprocessed_terms.push(formula);    // Start with this term
@@ -116,10 +116,10 @@ void Tseitin::cnfizeAnd( PTRef and_term )
         PTRef arg = logic.getPterm(and_term)[i];
         little_clause.push( theory.findLit(arg) );
         big_clause   .push(~theory.findLit(arg));
-        addClause(little_clause, and_term);        // Adds a little clause to the solver
+        addClause(little_clause);        // Adds a little clause to the solver
         little_clause.pop();
     }
-    addClause( big_clause, and_term );                    // Adds a big clause to the solver
+    addClause(big_clause);                    // Adds a big clause to the solver
 }
 
 
@@ -131,7 +131,7 @@ void Tseitin::cnfizeOr( PTRef or_term, bool def)
         for (int i = 0 ; i < logic.getPterm(or_term).size(); i++)
             big_clause.push(theory.findLit(logic.getPterm(or_term)[i]));
 
-        addClause(big_clause, or_term);
+        addClause(big_clause);
         return;
     }
 //  assert( list );
@@ -153,11 +153,11 @@ void Tseitin::cnfizeOr( PTRef or_term, bool def)
         little_clause.push(~arg);
         big_clause   .push( arg);
 
-        addClause(little_clause, or_term);        // Adds a little clause to the solver
+        addClause(little_clause);        // Adds a little clause to the solver
 
         little_clause.pop();
     }
-    addClause(big_clause, or_term);                    // Adds a big clause to the solver
+    addClause(big_clause);                    // Adds a big clause to the solver
 }
 
 
@@ -184,7 +184,7 @@ void Tseitin::cnfizeXor(PTRef xor_term)
     clause.push(arg0);
     clause.push(arg1);
 
-    addClause(clause, xor_term);
+    addClause(clause);
     clause.pop();
     clause.pop();
 
@@ -192,7 +192,7 @@ void Tseitin::cnfizeXor(PTRef xor_term)
     clause.push(~arg0);
     clause.push(~arg1);
 
-    addClause(clause, xor_term);
+    addClause(clause);
     clause.pop();
     clause.pop();
 
@@ -203,7 +203,7 @@ void Tseitin::cnfizeXor(PTRef xor_term)
     clause.push(~arg0);
     clause.push( arg1);
 
-    addClause(clause, xor_term);
+    addClause(clause);
 
     clause.pop();
     clause.pop();
@@ -212,7 +212,7 @@ void Tseitin::cnfizeXor(PTRef xor_term)
     clause.push( arg0);
     clause.push(~arg1);
 
-    addClause(clause, xor_term);
+    addClause(clause);
 }
 
 void Tseitin::cnfizeIff( PTRef eq_term )
@@ -238,7 +238,7 @@ void Tseitin::cnfizeIff( PTRef eq_term )
     clause.push( arg0);
     clause.push(~arg1);
 
-    addClause(clause, eq_term);
+    addClause(clause);
 
     clause.pop();
     clause.pop();
@@ -247,7 +247,7 @@ void Tseitin::cnfizeIff( PTRef eq_term )
     clause.push(~arg0);
     clause.push( arg1);
 
-    addClause(clause, eq_term);
+    addClause(clause);
 
     clause.pop();
     clause.pop();
@@ -259,7 +259,7 @@ void Tseitin::cnfizeIff( PTRef eq_term )
     clause.push(arg0);
     clause.push(arg1);
 
-    addClause(clause, eq_term);
+    addClause(clause);
 
     clause.pop();
     clause.pop();
@@ -268,7 +268,7 @@ void Tseitin::cnfizeIff( PTRef eq_term )
     clause.push(~arg0);
     clause.push(~arg1);
 
-    addClause(clause, eq_term);
+    addClause(clause);
 }
 
 
@@ -297,20 +297,20 @@ void Tseitin::cnfizeIfthenelse( PTRef ite_term )
 
     clause.push(~v); clause.push(~a0); clause.push(a1);
 
-    addClause(clause, ite_term);
+    addClause(clause);
 
     clause.clear();
 
     clause.push(~v); clause.push(a0); clause.push(a2);
-    addClause(clause, ite_term);
+    addClause(clause);
     clause.clear();
 
     clause.push(v); clause.push(~a0); clause.push(~a1);
-    addClause(clause, ite_term);
+    addClause(clause);
     clause.clear();
 
     clause.push(v); clause.push(a0); clause.push(~a2);
-    addClause(clause, ite_term);
+    addClause(clause);
 }
 
 
@@ -338,19 +338,19 @@ void Tseitin::cnfizeImplies( PTRef impl_term  )
 
     clause.push(a0);
 
-    addClause(clause, impl_term);
+    addClause(clause);
 
     clause.pop();
 
     clause.push(~a1);
 
-    addClause(clause, impl_term);
+    addClause(clause);
 
     clause.clear();
 
     clause.push(~v); clause.push(~a0); clause.push(a1);
 
-    addClause(clause, impl_term);
+    addClause(clause);
 
 }
 
