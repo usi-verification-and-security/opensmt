@@ -73,7 +73,7 @@ class SStore
 
   public:
 
-    SStore(SMTConfig & c, IdentifierStore& is_) : is(is_), sa(ssa), config(c) { }
+    SStore(SMTConfig & c, IdentifierStore& is_) : is(is_), sa(), config(c) { }
 
     ~SStore() {
         for (int i = 0; i < sort_names.size(); i++)

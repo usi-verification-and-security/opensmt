@@ -31,7 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Global.h"
 
 class THandler; // Forward declaration
-class SMTConfig; // Forward declaration
+struct SMTConfig; // Forward declaration
 // 
 // Interface that a SATSolver should implement 
 //

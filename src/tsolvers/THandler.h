@@ -33,8 +33,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Theory.h"
 #include "TSolver.h"
 
-class SMTConfig;
-
 class THandler
 {
 private:

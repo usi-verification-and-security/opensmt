@@ -118,6 +118,7 @@ class CUFLogic: public Logic
     virtual const Logic_t getLogic() const { return opensmt::QF_CUF; }
 
 //    virtual PTRef         insertTerm(SymRef sym, vec<PTRef>& terms, char** msg);
+    using Logic::mkConst;
     virtual PTRef         mkConst   (const int c) { char* num; asprintf(&num, "%d", c); PTRef tr = Logic::mkConst(sort_CUFNUM, num); free(num); return tr; }
     PTRef                 mkCUFConst   (const int c) { char* num; asprintf(&num, "%d", c); PTRef tr = Logic::mkConst(sort_CUFNUM, num); free(num); return tr; }
     virtual PTRef         mkCUFNumVar(const char* name) { return mkVar(sort_CUFNUM, name); }

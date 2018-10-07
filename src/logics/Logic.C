@@ -1452,7 +1452,7 @@ void Logic::breakSubstLoops(Map<PTRef,PtAsgn,PTRefHash>& substs)
 
         vec<vec<PTRef> > loops;
         for (int i = 0; i < startNodes.size(); i++) {
-            TarjanAlgorithm tarjan(*this);
+            TarjanAlgorithm tarjan;
             tarjan.getLoops(startNodes[i], loops);
         }
 

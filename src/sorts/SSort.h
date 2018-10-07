@@ -234,11 +234,10 @@ class Sort {
 class SortAllocator : public RegionAllocator<uint32_t>
 {
     static sortid_t static_uniq_id;
-    StrAllocator<SStr, SStrRef>& ssa;
     static int SortWord32Size(int size) {
         return (sizeof(Sort) + size) / sizeof(uint32_t); }
   public:
-    SortAllocator(StrAllocator<SStr, SStrRef>& ssa_) : ssa(ssa_) {}
+    SortAllocator() {}
     void moveTo(SortAllocator &to) {
         RegionAllocator<uint32_t>::moveTo(to); }
     SRef alloc(IdRef idr, SStrRef nr, vec<SRef>& rest)

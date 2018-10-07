@@ -34,7 +34,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 class SimpSMTSolver;
 class CnfState;
 class THandler;
-class SMTConfig;
+struct SMTConfig;
 class TermMapper;
 
 // A small typechecked class for checkClause type return values to enable us to check whether the formula is unsatisfiable simultaneously

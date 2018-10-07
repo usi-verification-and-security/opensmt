@@ -144,12 +144,11 @@ public:
 
     TSolver(SolverId id_, const char* name_, SMTConfig & c, vec<DedElem>& d)
     : id(id_)
-    , name(name_)
     , deductions_next(0)
-    , config  (c)
     , deduced (d)
     , has_explanation(false)
-
+    , name(name_)
+    , config  (c)
     {}
 
     virtual ~TSolver ( ) {}

@@ -131,23 +131,23 @@ class MainSolver
   public:
     MainSolver(THandler& thandler, SMTConfig& c, SimpSMTSolver *s, const char* name)
         : logic(thandler.getLogic())
-        , tmap(thandler.getTMap())
         , config(c)
-        , status(s_Undef)
         , thandler(thandler)
         , pfstore(getTheory().pfstore)
+        , tmap(thandler.getTMap())
         , smt_solver(s)
         , ts( config
             , getTheory()
             , tmap
             , thandler
             , *s )
-        , binary_init(false)
-        , root_instance(logic.getTerm_true())
         , simplified_until(0)
         , check_called(0)
         , prev_query(PTRef_Undef)
         , curr_query(PTRef_Undef)
+        , status(s_Undef)
+        , binary_init(false)
+        , root_instance(logic.getTerm_true())
     {
         solver_name = strdup(name);
         formulas.push(pfstore.alloc());

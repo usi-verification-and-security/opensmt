@@ -428,7 +428,6 @@ class Logic {
     virtual lbool retrieveSubstitutions(vec<PtAsgn>& units, Map<PTRef,PtAsgn,PTRefHash>& substs);
 
     class SubstNode {
-        Logic& logic;
         int procChild;
       public:
         int index;
@@ -438,7 +437,7 @@ class Logic {
         vec<PTRef> children;
         vec<SubstNode*> child_nodes;
         SubstNode* parent;
-        SubstNode(PTRef tr, PTRef target, SubstNode* parent, Logic& l) : logic(l), procChild(0), index(-1), lowlink(-1), status(ns_unseen), tr(tr), parent(parent) {
+        SubstNode(PTRef tr, PTRef target, SubstNode* parent, Logic& l) : procChild(0), index(-1), lowlink(-1), status(ns_unseen), tr(tr), parent(parent) {
             l.getVars(target, children);
             sort(children);
             int i, j;
@@ -461,7 +460,6 @@ class Logic {
     class TarjanAlgorithm {
         vec<SubstNode*> controlStack;
         vec<SubstNode*> tarjanStack;
-        Logic& logic;
         int index;
         void addNode(SubstNode* n) {
             n->index = index;
@@ -472,7 +470,7 @@ class Logic {
             n->status = ns_inStack;
         }
       public:
-        TarjanAlgorithm(Logic& l) : logic(l), index(0) {}
+        TarjanAlgorithm() : index(0) {}
         void getLoops(SubstNode* startNode, vec<vec<PTRef> >& loops) {
             addNode(startNode);
             while (controlStack.size() > 0) {

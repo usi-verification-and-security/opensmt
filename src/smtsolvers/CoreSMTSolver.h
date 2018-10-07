@@ -93,20 +93,23 @@ class SplitData
 
 public:
     SplitData(ClauseAllocator& _ca, vec<CRef>& ic, vec<Lit>& t, int tl, THandler& th, bool no_instance = false)
-        : inst_clauses(ic)
+        : no_instance(no_instance)
+        , theory_handler(th)
         , ca(_ca)
+        , inst_clauses(ic)
         , trail(t)
         , trail_idx(tl)
-        , theory_handler(th)
-        , no_instance(no_instance)
+
     {}
     SplitData(const SplitData& other)
-        : inst_clauses(other.inst_clauses)
+        : no_instance(other.no_instance)
+        , theory_handler(other.theory_handler)
         , ca(other.ca)
+        , inst_clauses(other.inst_clauses)
         , trail(other.trail)
         , trail_idx(other.trail_idx)
-        , theory_handler(other.theory_handler)
-        , no_instance(other.no_instance)
+
+
     {
         assert(other.instance.size() == 0 && other.constraints.size() == 0 && other.learnts.size() == 0);
     }
@@ -1519,9 +1522,7 @@ inline void CoreSMTSolver::checkPartitions( )
 
     for (int i = 2; i < nVars(); i++)
     {
-//    Enode * e = theory_handler.varToEnode( i );
         PTRef tref = theory_handler.varToTerm(i);
-        Pterm& t = theory_handler.varToPterm( i );
 
         ipartitions_t p = theory_handler.getLogic().getIPartitions(tref);
         char* name;

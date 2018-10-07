@@ -55,8 +55,8 @@ protected:
 
     TSolverHandler(SMTConfig &c, vec<DedElem> &d, Logic& l, TermMapper& tmap)
         : config(c)
-        , deductions(d)
         , tmap(tmap)
+        , deductions(d)
     {
         for (int i = 0; i < SolverDescr::getSolverList().size(); i++) {
             SolverDescr* sd = SolverDescr::getSolverList()[i];
