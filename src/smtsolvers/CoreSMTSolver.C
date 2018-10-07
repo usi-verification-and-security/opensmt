@@ -449,11 +449,12 @@ bool CoreSMTSolver::addClause_(const vec<Lit> & _ps, CRef & cr_o)
     {
 
 #ifdef PRODUCE_PROOF
+        // cr must be the last clause we have derived
         CRef cr = res;
 #else
         CRef cr = ca.alloc(ps, false);
+        cr_o = cr;
 #endif
-      cr_o = cr;
         if (ca[cr].size() != 1) {
             clauses.push(cr);
             attachClause(cr);
