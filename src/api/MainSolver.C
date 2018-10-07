@@ -208,13 +208,21 @@ MainSolver::insertFormula(PTRef root, char** msg)
         return s_Error;
     }
     int partition_index = inserted_formulas_count++;
-    logic.assignPartition(partition_index, root);
 #ifdef PRODUCE_PROOF
+    logic.assignPartition(partition_index, root);
+    assert(logic.getPartitionIndex(root) != -1);
     // Label the formula with a partition mask.  This needs to be done before conjoining the extras
     // since otherwise we loose the connection between Ites and partitions.
     logic.computePartitionMasks(root);
+    PTRef old_root = root;
 #endif
+
     logic.conjoinExtras(root, root);
+
+    #ifdef PRODUCE_PROOF
+    logic.transferPartitionMembership(old_root, root);
+    assert(logic.getPartitionIndex(root) != -1);
+#endif // PRODUCE_PROOF
 
     pfstore[formulas.last()].push(root);
     pfstore[formulas.last()].units.clear();
