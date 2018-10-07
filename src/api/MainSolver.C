@@ -236,17 +236,18 @@ sstat MainSolver::simplifyFormulas(int from, int& to, char** err_msg)
     for (int i = from ; i < formulas.size(); i++) {
         bool res = getTheory().simplify(formulas, i);
         to = i+1;
-        PTRef root = pfstore[formulas[i]].root;
+        const PushFrame & frame = pfstore[formulas[i]];
+        PTRef root = frame.root;
 
         if (logic.isFalse(root)) {
-            giveToSolver(getLogic().getTerm_false(), pfstore[formulas[i]].getId());
+            giveToSolver(getLogic().getTerm_false(), frame.getId());
             return status = s_False;
         }
 #ifdef PRODUCE_PROOF
-        assert(pfstore[formulas[i]].substs == logic.getTerm_true());
-        vec<PTRef> const & flas =  pfstore[formulas[i]].formulas;
-        for (int i = 0; i < flas.size(); ++i) {
-            PTRef fla = flas[i];
+        assert(frame.substs == logic.getTerm_true());
+        vec<PTRef> const & flas =  frame.formulas;
+        for (int j = 0; j < flas.size(); ++j) {
+            PTRef fla = flas[j];
             if (fla == logic.getTerm_true()) {continue;}
             assert(logic.getPartitionIndex(fla) != -1);
             // Optimize the dag for cnfization
@@ -257,7 +258,7 @@ sstat MainSolver::simplifyFormulas(int from, int& to, char** err_msg)
             }
             assert(logic.getPartitionIndex(fla) != -1);
             logic.computePartitionMasks(fla);
-            if ((status = giveToSolver(fla, pfstore[formulas[i]].getId())) == s_False) {
+            if ((status = giveToSolver(fla, frame.getId())) == s_False) {
                 return s_False;
             }
         }
