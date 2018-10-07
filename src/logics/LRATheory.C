@@ -7,12 +7,16 @@
 //
 bool LRATheory::simplify(vec<PFRef>& formulas, int curr)
 {
-#ifndef PRODUCE_PROOF
+#ifdef PRODUCE_PROOF
+    vec<PTRef> & flas = pfstore[formulas[curr]].formulas;
+    for(int i = 0; i <flas.size(); ++i) {
+        PTRef & fla = flas[i];
+        lralogic.simplifyAndSplitEq(fla, fla);
+    }
+    pfstore[formulas[curr]].root = getLogic().mkAnd(flas);
+#else
     PTRef coll_f = getCollateFunction(formulas, curr);
     bool res = computeSubstitutions(coll_f, formulas, curr);
-#else
-    pfstore[formulas[curr]].root = getLogic().mkAnd(pfstore[formulas[curr]].formulas);
-#endif
     lralogic.simplifyAndSplitEq(pfstore[formulas[curr]].root, pfstore[formulas[curr]].root);
     vec<Map<PTRef,lbool,PTRefHash>::Pair> units;
     pfstore[formulas[curr]].units.getKeysAndVals(units);
@@ -24,8 +28,8 @@ bool LRATheory::simplify(vec<PFRef>& formulas, int curr)
     }
     PTRef substs_formula = lralogic.mkAnd(substs_vec);
     lralogic.simplifyAndSplitEq(substs_formula, pfstore[formulas[curr]].substs);
-
+#endif // PRODUCE_PROOF
     return true;
-}
+    }
 
 

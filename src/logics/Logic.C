@@ -548,7 +548,7 @@ void Logic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
     PTRef trp = insertTerm(p.symb(), newargs, &msg);
     if (trp != tr) {
 #ifdef PRODUCE_PROOF
-        addIPartitions(trp, getIPartitions(tr));
+    transferPartitionMembership(tr, trp);
 #endif
         if (tr_map.has(tr))
             assert(tr_map[tr] == trp);
@@ -600,18 +600,6 @@ void Logic::simplifyTree(PTRef tr, PTRef& root_out)
 #endif
         processed.insert(queue[i].x, true);
         visit(queue[i].x, tr_map);
-#ifdef PRODUCE_PROOF
-        PTRef qaux = queue[i].x;
-        if (tr_map.has(qaux))
-        {
-            PTRef trq = tr_map[qaux];
-            if (trq != qaux)
-            {
-                addIPartitions(trq, getIPartitions(qaux));
-                partitions_simp.push(trq);
-            }
-        }
-#endif
     }
     if (tr_map.has(tr))
         root_out = tr_map[tr];

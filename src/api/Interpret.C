@@ -319,8 +319,8 @@ void Interpret::interp(ASTNode& n) {
                 if (tr == PTRef_Undef)
                     notify_formatted(true, "assertion returns an unknown sort");
                 else {
-                    if (parse_only) assertions.push(tr);
-                    else
+                    assertions.push(tr);
+                    if (!parse_only)
                     {
                         char* err_msg = NULL;
                         status = main_solver->insertFormula(tr, &err_msg);
@@ -638,10 +638,6 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
                 notify_formatted(true, "name %s already exists", name);
                 return PTRef_Undef;
             }
-#ifdef PRODUCE_PROOF
-            main_solver->assignPartition(term_names.size(), tr);
-            nameToPartition.insert(name, term_names.size());
-#endif
             term_names.push(name);
             nameToTerm.insert(name, tr);
             if (!termToNames.has(tr)) {
@@ -1351,26 +1347,23 @@ void Interpret::getInterpolants(const ASTNode& n)
     for (int i = 0; i < grouping.size() - 1; i++)
     {
         PTRef group = grouping[i];
-        if (termToNames.has(group)) {
-            for (int i = 0; i < termToNames[group].size(); i++) {
-                opensmt::setbit(p, nameToPartition[termToNames[group][i]]);
-//                std::cerr << "; name " << termToNames[group][i] << " itp mask " << p << std::endl;
-            }
+        if (is_top_level_assertion(group))
+        {
+            int assertion_index = get_assertion_index(group);
+            assert(assertion_index >= 0);
+            opensmt::setbit(p, static_cast<unsigned int>(assertion_index));
         }
         else {
             assert(logic->isAnd(group));
             Pterm & and_t = logic->getPterm(group);
-//            std::cerr << "; name (and ";
             for (int j = 0; j < and_t.size(); j++) {
                 PTRef tr = and_t[j];
-                assert(termToNames.has(tr));
-                assert(termToNames[tr].size() == 1);
-                opensmt::setbit(p, nameToPartition[termToNames[tr][0]]);
-//                std::cerr << termToNames[tr][0] << " ";
+                assert(is_top_level_assertion(tr));
+                int assertion_index = get_assertion_index(tr);
+                assert(assertion_index >= 0);
+                opensmt::setbit(p, static_cast<unsigned int>(assertion_index));
             }
-//            std::cerr << ") itp mask " << p << std::endl;
         }
-//        std::cerr << "Pushing mask: " << p << '\n';
         partitionings.push_c(p);
     }
         SimpSMTSolver& smt_solver = main_solver->getSMTSolver();
@@ -1488,5 +1481,17 @@ void Interpret::getInterpolants(const ASTNode& n)
 //
 //#endif
 }
+
+bool Interpret::is_top_level_assertion(PTRef ref) {
+    return get_assertion_index(ref) >= 0;
+}
+
+int Interpret::get_assertion_index(PTRef ref) {
+    for (int i = 0; i < assertions.size(); ++i) {
+        if (ref == assertions[i]) { return i;}
+    }
+    return -1;
+}
+
 #endif
 

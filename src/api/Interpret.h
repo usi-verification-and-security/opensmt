@@ -113,9 +113,6 @@ class Interpret {
     VecMap<PTRef,const char*,PTRefHash,Equal<PTRef> > termToNames;
     vec<const char*>            term_names; // For (! <t> :named <n>) constructs.  if Itp is enabled, this maps a
                                             // partition to it name.
-#ifdef PRODUCE_PROOF
-    Map<const char*,int,StringHash,Equal<const char*>> nameToPartition;
-#endif
     vec<SRef>                   vec_sr_empty; // For faster comparison with empty vec
     vec<PTRef>                  vec_ptr_empty;
 
@@ -163,6 +160,8 @@ class Interpret {
     bool parse_only;
     PTRef getParsedFormula();
     vec<PTRef>& getAssertions() { return assertions; }
+    bool is_top_level_assertion(PTRef ref);
+    int get_assertion_index(PTRef ref);
 };
 
 #endif

@@ -310,25 +310,14 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
     return v;
 }
 
-#ifdef PRODUCE_PROOF
-bool CoreSMTSolver::addClause_(vec<Lit>& _ps, const ipartitions_t& mask)
-{
-    CRef cr;
-    return addClause_(_ps, cr, mask);
-}
-#else
+
 bool CoreSMTSolver::addClause_(vec<Lit>& _ps)
 {
     CRef cr;
     return addClause_(_ps, cr);
 }
-#endif
 
-#ifdef PRODUCE_PROOF
-bool CoreSMTSolver::addClause_(vec<Lit>& _ps, CRef& cr_o, const ipartitions_t& mask)
-#else
-bool CoreSMTSolver::addClause_(vec<Lit>& _ps, CRef& cr_o)
-#endif
+bool CoreSMTSolver::addClause_(const vec<Lit> & _ps, CRef & cr_o)
 {
     cr_o = CRef_Undef;
 
@@ -347,11 +336,7 @@ bool CoreSMTSolver::addClause_(vec<Lit>& _ps, CRef& cr_o)
     int i, j;
 #ifdef PRODUCE_PROOF
     root = ca.alloc( ps, false );
-    assert(mask != 0);
-    logic.addClauseClassMask(root, mask);
-    for(int lt = 0; lt < ps.size(); ++lt) {
-        logic.addVarClassMask(var(ps[lt]), mask);
-    }
+    cr_o = root;
     proof.addRoot( root, CLA_ORIG );
     assert( config.isInit( ) );
     proof.beginChain( root );
@@ -401,10 +386,6 @@ bool CoreSMTSolver::addClause_(vec<Lit>& _ps, CRef& cr_o)
     if ( resolved )
     {
         res = ca.alloc( ps, false );
-        assert(mask != 0);
-        logic.addClauseClassMask(res, mask);
-        for(int lt = 0; lt < ps.size(); ++lt)
-            logic.addVarClassMask(var(ps[lt]), mask);
         assert( ca[res].size( ) < ca[root].size( ) );
         proof.endChain( res );
         // Save root for removal
@@ -473,15 +454,6 @@ bool CoreSMTSolver::addClause_(vec<Lit>& _ps, CRef& cr_o)
         CRef cr = ca.alloc(ps, false);
 #endif
       cr_o = cr;
-#ifdef PRODUCE_PROOF
-        /*
-            if ( config.isIncremental() )
-            {
-              undo_stack.push_back( NEWPROOF );
-              undo_stack_el.push_back( (void *)cr );
-            }
-        */
-#endif
         if (ca[cr].size() != 1) {
             clauses.push(cr);
             attachClause(cr);

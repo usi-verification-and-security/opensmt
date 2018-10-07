@@ -206,25 +206,14 @@ skip_theory_preproc:
 //=================================================================================================
 // Added code
 
-#ifdef PRODUCE_PROOF
-bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause, const ipartitions_t& mask)
-{
-    CRef cr;
-    return addSMTClause_(smt_clause, cr, mask);
-}
-#else
 bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause)
 {
     CRef cr;
     return addSMTClause_(smt_clause, cr);
 }
-#endif
 
-#ifdef PRODUCE_PROOF
-bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause, CRef& cr, const ipartitions_t& mask)
-#else
-bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause, CRef& cr)
-#endif
+
+bool SimpSMTSolver::addSMTClause_(const vec<Lit> & smt_clause, CRef & cr)
 {
     cr = CRef_Undef;
     assert( config.sat_preprocess_theory == 0 );
@@ -254,12 +243,7 @@ bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause, CRef& cr)
 //        Var v = var( smt_clause[0] );
         cerr << "XXX skipped handling of unary theory literal?" << endl;
     }
-#ifdef PRODUCE_PROOF
-    assert(mask != 0);
-    if (!CoreSMTSolver::addClause_(smt_clause, cr, mask))
-#else
     if (!CoreSMTSolver::addClause_(smt_clause, cr))
-#endif
         return false;
 
     if (use_simplification && clauses.size() == nclauses + 1)

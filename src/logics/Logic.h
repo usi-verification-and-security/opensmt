@@ -30,9 +30,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "PtStore.h"
 #include "SStore.h"
 #include "Tterm.h"
-
-
-
+#ifdef PRODUCE_PROOF
+#include "FlaPartitionMap.h"
+#endif
 
 
 class SStore;
@@ -117,8 +117,8 @@ class Logic {
 #ifdef PRODUCE_PROOF
     //for partitions:
     //Map<PTRef,int,PTRefHash> partitions;
-    std::map<unsigned int, PTRef> partitions; // map of partition indices to PTRefs of partitions
-    vec<PTRef> partitions_simp;
+//    std::map<unsigned int, PTRef> partitions; // map of partition indices to PTRefs of partitions
+    FlaPartitionMap flaPartitionMap;
     map<CRef, ipartitions_t> clause_class;
     map<Var, ipartitions_t> var_class;
 #endif
@@ -542,8 +542,7 @@ class Logic {
     //partitions:
     void assignPartition(unsigned int n, PTRef tr)
     {
-        assert(partitions.find(n) == partitions.end()); // do not reassign existing partition index
-        partitions.emplace(n,tr);
+        flaPartitionMap.store_top_level_fla_index(tr, n);
         term_store.assignPartition(n, tr);
     }
 #endif
@@ -567,25 +566,26 @@ class Logic {
     void addVarClassMask(Var l, const ipartitions_t& toadd);
     std::vector<PTRef> getPartitions()
     {
-        std::vector<PTRef> all_partitions;
-        for(auto const & val : partitions) {
-            all_partitions.push_back(val.second);
-        }
-        return all_partitions;
+        return flaPartitionMap.get_top_level_flas();
     }
 
     std::vector<PTRef> getPartitions(ipartitions_t const & mask){
-        std::vector<PTRef> res;
-        for(auto const & entry : partitions) {
-            if(opensmt::tstbit(mask, entry.first)){
-                res.push_back(entry.second);
-            }
-        }
-        return res;
+        throw std::logic_error{"Not supported at the moment!"};
     }
 
-    unsigned getNofPartitions() { return partitions.size(); }
-#endif
+    unsigned getNofPartitions() { return flaPartitionMap.getNoOfPartitions(); }
+
+    void transferPartitionMembership(PTRef old, PTRef new_ptref)
+    {
+        this->addIPartitions(new_ptref, getIPartitions(old));
+        flaPartitionMap.transferPartitionMembership(old, new_ptref);
+    }
+
+    int getPartitionIndex(PTRef ref) const {
+        return flaPartitionMap.getPartitionIndex(ref);
+    }
+
+#endif // PRODUCE_PROOF
     // Statistics
     int subst_num; // Number of substitutions
 
