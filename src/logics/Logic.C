@@ -2352,7 +2352,17 @@ Logic::getPartitionA(const ipartitions_t& mask)
             opensmt_error("Assertion is neither A or B");
         }
     }
+    // add ites:
+    vec<Map<PTRef,Ite,PTRefHash,Equal<PTRef>>::Pair> entries;
+    top_level_ites.getKeysAndVals(entries);
+    for (int i = 0; i < entries.size(); ++i) {
+        assert(getIPartitions(entries[i].data.repr) == getIPartitions(entries[i].key));
+        if(isAlocal(getIPartitions(entries[i].key), mask)){
+            a_args.push(entries[i].data.repr);
+        }
+    }
     PTRef A = logic.mkAnd(a_args);
+
     return A;
 }
 
@@ -2370,6 +2380,15 @@ Logic::getPartitionB(const ipartitions_t& mask)
         }
         else if(!isAlocal(p_mask, mask)) {
             opensmt_error("Assertion is neither A or B");
+        }
+    }
+    // add ites:
+    vec<Map<PTRef,Ite,PTRefHash,Equal<PTRef>>::Pair> entries;
+    top_level_ites.getKeysAndVals(entries);
+    for (int i = 0; i < entries.size(); ++i) {
+        assert(getIPartitions(entries[i].data.repr) == getIPartitions(entries[i].key));
+        if(isBlocal(getIPartitions(entries[i].key), mask)){
+            b_args.push(entries[i].data.repr);
         }
     }
     PTRef B = logic.mkAnd(b_args);
