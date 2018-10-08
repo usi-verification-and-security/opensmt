@@ -378,13 +378,11 @@ inline void clrbit( ipartitions_t & p, const unsigned b ) { mpz_clrbit( p.get_mp
 inline int tstbit( const ipartitions_t & p, const unsigned b ) { return mpz_tstbit( p.get_mpz_t( ), b ); }
 // Function: void mpz_and (mpz_t rop, mpz_t op1, mpz_t op2)
 // Set rop to op1 bitwise-and op2.
-inline void andbit( ipartitions_t & ipres, ipartitions_t & ip1, ipartitions_t & ip2)
+inline void andbit( ipartitions_t & ipres, const ipartitions_t & ip1, const ipartitions_t & ip2)
 { mpz_and( ipres.get_mpz_t( ), ip1.get_mpz_t( ), ip2.get_mpz_t( ) ); }
 // Function: void mpz_or (mpz_t rop, mpz_t op1, mpz_t op2)
 // Set rop to op1 bitwise inclusive-or op2.
-inline void orbit( ipartitions_t & ipres, ipartitions_t & ip1, const ipartitions_t & ip2)
-{ mpz_ior( ipres.get_mpz_t( ), ip1.get_mpz_t( ), ip2.get_mpz_t( ) ); }
-inline void orbit( ipartitions_t & ipres, ipartitions_t & ip1, ipartitions_t & ip2)
+inline void orbit( ipartitions_t & ipres, const ipartitions_t & ip1, const ipartitions_t & ip2)
 { mpz_ior( ipres.get_mpz_t( ), ip1.get_mpz_t( ), ip2.get_mpz_t( ) ); }
 // Or-bit
 // And-bit
