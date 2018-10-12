@@ -213,10 +213,12 @@ bool Logic::isBuiltinFunction(const SymRef sr) const
 
 Logic::~Logic()
 {
+#ifdef STATISTICS
     cerr << "; -------------------------\n";
     cerr << "; STATISTICS FOR LOGICS\n";
     cerr << "; -------------------------\n";
     cerr << "; Substitutions............: " << subst_num << endl;
+#endif // STATISTICS
 }
 
 const Logic_t
