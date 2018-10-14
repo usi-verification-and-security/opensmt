@@ -38,6 +38,8 @@ struct ItpHelper {
 
 namespace {
 
+    void print_matrix(std::vector<std::vector<Real>> const & matrix);
+
     /**
      *
      * @param matrix
@@ -88,7 +90,10 @@ namespace {
         std::vector<std::size_t> pivotColInds;
         std::size_t column = 0;
         for (auto & row : matrix) {
-            while (row[column].isZero()) { ++column; }
+            auto it = std::find_if(row.begin() + column, row.end(), [](const Real & el) {return !el.isZero();});
+            if (it == row.end()) {continue;}
+            column = it - row.begin();
+            assert(pivotColInds.empty() || pivotColInds.back() < column);
             pivotColInds.push_back(column);
             if (row[column] != 1) {
                 normalize(row, column);
@@ -103,9 +108,10 @@ namespace {
                 continue;
             }
             pivotColInds.pop_back();
+            assert(row[pivotColInd] == 1);
             for (int rowInd2 = rowInd - 1; rowInd2 >= 0; --rowInd2) {
-                if (matrix[rowInd2][column].isZero()) { continue; }
-                addToWithCoeff(matrix[rowInd2], row, -matrix[rowInd2][column]);
+                if (matrix[rowInd2][pivotColInd].isZero()) { continue; }
+                addToWithCoeff(matrix[rowInd2], row, -matrix[rowInd2][pivotColInd]);
             }
 
         }
@@ -185,7 +191,7 @@ namespace {
      *
      * @see https://en.wikibooks.org/wiki/Linear_Algebra/Null_Spaces
      * @param matrix in RREF
-     * @return Basis of null space of givern matrix
+     * @return Basis of null space of given matrix
      */
     std::vector<std::vector<Real>> getNullBasis(std::vector<std::vector<Real>> const & matrix) {
         std::vector<std::vector<Real>> basis;
@@ -199,8 +205,13 @@ namespace {
             basis.emplace_back();
             auto & base_vector = basis.back();
 
-            // keep track of current row (with the pivot)
-            auto row = static_cast<int>(matrix.size() - 1);
+            // keep track of current row (with the pivot); there could be zeroed rows at the end of the matrix
+            auto it = std::find_if(matrix.rbegin(), matrix.rend(), [](const std::vector<Real>& row){
+                return std::any_of(row.begin(), row.end(), [](const Real& el){ return !el.isZero();});
+            });
+            assert(it != matrix.rend());
+            auto rrow = it - matrix.rbegin();
+            auto row = static_cast<int>(matrix.size() - (rrow + 1));
             // compute solution for a vector where pivotal columns have unknown,
             // current non-pivotal column has 1 and other non-pivotal columns has 0
             for (auto sol_col = static_cast<int>(cols - 1); sol_col >= 0; --sol_col) {
