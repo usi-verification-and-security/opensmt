@@ -310,7 +310,6 @@ class Logic {
     void setIPartitions(SymRef _s, const ipartitions_t& _p) { term_store.setIPartitions(_s, _p); }
     void addIPartitions(SymRef _s, const ipartitions_t& _p) { term_store.addIPartitions(_s, _p); }
     void computePartitionMasks(const vec<PTRef> & roots);
-    void computePartitionMasksIte(const PTRef root, const PTRef ignore);
     void computePartitionMasks(PTRef tr) { vec<PTRef> trs = {tr}; computePartitionMasks(trs); }
 #endif
 

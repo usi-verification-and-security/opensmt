@@ -2273,12 +2273,18 @@ void Logic::conjoinItes(PTRef root, PTRef& new_root)
 
 #ifdef PRODUCE_PROOF
 
+namespace{
+void computePartitionMasksRec(const std::set<PTRef>& to_process, std::set<PTRef>& seen, Logic& logic);
+}
+
 // Given a vector roots of ptrefs, compute the partitions for each term rooted at roots
 // so that a term has the partitions of its ancestors.
 void Logic::computePartitionMasks(const vec<PTRef> &roots) {
 
     vec<PtChild> list_out;
     getTermsList(roots, list_out, *this);
+    std::set<PTRef> seen;
+    std::set<PTRef> to_process;
     for (int i = list_out.size()-1; i >= 0; i--)
     {
         PTRef tr = list_out[i].tr;
@@ -2289,46 +2295,43 @@ void Logic::computePartitionMasks(const vec<PTRef> &roots) {
             // MB: ugly hack to properly compute partitions of ITEs
             if(isIteVar(t[j])) {
                 PTRef realIte = getTopLevelIte(t[j]);
-//                std::cout << "Recursing on ite: " << printTerm(t[j]) << '\n'
-//                    << printTerm(realIte) << '\n';
                 addIPartitions(realIte, p);
-                computePartitionMasksIte(realIte, t[j]);
+                to_process.insert(realIte);
             }
             // MB: end of ugly hack
+            seen.insert(t[j]);
         }
         if (isUF(tr) || isUP(tr)) {
             addIPartitions(t.symb(), p);
         }
     }
+    computePartitionMasksRec(to_process, seen, *this);
 }
 
-void Logic::computePartitionMasksIte(const PTRef root, PTRef ignore) {
-    vec<PTRef> roots;
-    roots.push(root);
-    vec<PtChild> list_out;
-    getTermsList(roots, list_out, *this);
-    for (int i = list_out.size()-1; i >= 0; i--)
-    {
-        PTRef tr = list_out[i].tr;
-        Pterm& t = getPterm(tr);
-        ipartitions_t& p = getIPartitions(tr);
+namespace {
+void computePartitionMasksRec(const std::set<PTRef>& to_process, std::set<PTRef>& seen, Logic& logic) {
+    std::set<PTRef> next;
+    for (PTRef ptref : to_process) {
+        Pterm& t = logic.getPterm(ptref);
+        ipartitions_t& p = logic.getIPartitions(ptref);
         for (int j = 0; j < t.size(); j++) {
-            if (t[j] == ignore) { continue; }
-            addIPartitions(t[j], p);
-            // MB: ugly hack to properly compute partitions of ITEs
-            if(isIteVar(t[j])) {
-                PTRef realIte = getTopLevelIte(t[j]);
-//                std::cout << "Recursing on ite: " << printTerm(t[j]) << '\n'
-//                          << printTerm(realIte) << '\n';
-                addIPartitions(realIte, p);
-                computePartitionMasksIte(realIte, t[j]);
+            if(seen.find(t[j]) == seen.end()) {
+                logic.addIPartitions(t[j], p);
+                next.insert(t[j]);
+                if(logic.isIteVar(t[j])) {
+                    PTRef realIte = logic.getTopLevelIte(t[j]);
+                    logic.addIPartitions(realIte, p);
+                    next.insert(realIte);
+                }
             }
-            // MB: end of ugly hack
+            seen.insert(t[j]);
         }
-        if (isUF(tr) || isUP(tr)) {
-            addIPartitions(t.symb(), p);
+        if (logic.isUF(ptref) || logic.isUP(ptref)) {
+            logic.addIPartitions(t.symb(), p);
         }
     }
+    if (!next.empty()) {computePartitionMasksRec(next, seen, logic);}
+}
 }
 
 bool
