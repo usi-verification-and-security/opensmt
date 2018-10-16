@@ -13,6 +13,31 @@
 
 class LRALogic;
 
+struct DecomposedStatistics {
+    unsigned int nonTrivialItps = 0;
+    unsigned int decomposedItps = 0;
+    unsigned int nonTrivialBasis = 0;
+    unsigned int standAloneIneq = 0;
+
+    void printStatistics(std::ostream& out) const {
+        out << "\n###Decomposed statistics###\n"
+            << "Total number of nontrivial interpolants produced: " << nonTrivialItps << '\n'
+            << "Total number of decomposed interpolants: " << decomposedItps << '\n'
+            << "Out of total number of decomposed were (partly) trivially decomposable: " << standAloneIneq << '\n'
+            << "Out of total number of decomposed had nontrivial basis of null space: " << nonTrivialBasis << '\n'
+            << "###########################\n"
+            << std::endl;
+    }
+
+    bool hasNonTrivial() const {return nonTrivialItps > 0;}
+
+    void reset() {
+        nonTrivialBasis = 0;
+        nonTrivialItps = 0;
+        decomposedItps = 0;
+    }
+};
+
 class LRA_Interpolator {
 public:
     LRA_Interpolator(LRALogic & logic, vec<PtAsgn> const & explanations, std::vector<opensmt::Real> const & coeffs,
@@ -51,12 +76,16 @@ public:
     }
     bool isALocal(PTRef var) const;
     bool isBLocal(PTRef var) const;
+
+    static DecomposedStatistics stats;
 private:
     LRALogic & logic;
     const vec<PtAsgn> & explanations;
     const std::vector<opensmt::Real> & explanation_coeffs;
     const ipartitions_t & mask;
     std::map<PTRef, icolor_t> * labels;
+
+
 };
 
 #endif // PRODUCE_PROOF

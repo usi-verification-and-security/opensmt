@@ -49,7 +49,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <cmath>
 
 #ifdef PRODUCE_PROOF
+#include <lrasolver/LRA_Interpolator.h>
 #include "Proof.h"
+
+const bool PRINT_LRA_ITP_STATS = true;
 #endif
 
 namespace opensmt
@@ -242,6 +245,9 @@ CoreSMTSolver::~CoreSMTSolver()
 #endif
 
 #ifdef PRODUCE_PROOF
+    if (PRINT_LRA_ITP_STATS && LRA_Interpolator::stats.hasNonTrivial()) {
+        LRA_Interpolator::stats.printStatistics(std::cout);
+    }
     delete proof_;
 #endif
 }

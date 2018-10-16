@@ -26,6 +26,9 @@ using namespace opensmt;
 
 using matrix_t = std::vector<std::vector<Real>>;
 
+// initializing static member
+DecomposedStatistics LRA_Interpolator::stats {};
+
 // TODO: when is explanation negated?
 struct ItpHelper {
     ItpHelper(LALogic & logic, PtAsgn ineq, Real coeff) : explanation{ineq.tr}, negated{ineq.sgn == l_False},
@@ -356,8 +359,15 @@ namespace {
     }
 }
 
+namespace {
+    struct StatsHelper{
+        bool standAloneIneq = false;
+        bool nonTrivialBasis = false;
+    };
+}
 
 PTRef LRA_Interpolator::getInterpolant(icolor_t color) {
+    StatsHelper statsHelper;
     // this will be contain the result, inequalities corresponding to summed up partitions of explanataions (of given color)
     std::vector<PTRef> interpolant_inequalities;
     std::vector<std::pair<PtAsgn, Real>> candidates;
@@ -412,6 +422,7 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color) {
         }
         // explanataion with all variables shared form standalone partition
         if (local_vars.empty()) {
+            statsHelper.standAloneIneq = true;
             interpolant_inequalities.push_back(helper.negated ? logic.mkNot(helper.explanation) : helper.explanation);
         }
             // for explanations with local variables, remember them separately
@@ -474,6 +485,7 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color) {
             }
             else{
                 assert(check_basis(nullBasis));
+                statsHelper.nonTrivialBasis = true;
                 // foreach vector in the basis, cycle over the inequalities and sum it all up, with corresponding coefficient
                 for (const auto & base : nullBasis) {
                     interpolant_inequalities.push_back(sumInequalities(explanations_with_locals, base, logic));
@@ -483,6 +495,20 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color) {
     }
     else{
         assert(explanations_with_locals.empty());
+    }
+
+    if (!interpolant_inequalities.empty()) {
+        LRA_Interpolator::stats.nonTrivialItps++;
+        if (interpolant_inequalities.size() > 1) {
+            LRA_Interpolator::stats.decomposedItps++;
+            assert(statsHelper.nonTrivialBasis || statsHelper.standAloneIneq);
+            if (statsHelper.nonTrivialBasis) {
+                LRA_Interpolator::stats.nonTrivialBasis++;
+            }
+            if (statsHelper.standAloneIneq) {
+                LRA_Interpolator::stats.standAloneIneq++;
+            }
+        }
     }
 
     vec<PTRef> args;
