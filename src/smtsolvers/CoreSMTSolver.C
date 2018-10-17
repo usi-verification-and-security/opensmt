@@ -247,6 +247,7 @@ CoreSMTSolver::~CoreSMTSolver()
 #ifdef PRODUCE_PROOF
     if (PRINT_LRA_ITP_STATS && LRA_Interpolator::stats.hasNonTrivial()) {
         LRA_Interpolator::stats.printStatistics(std::cout);
+        LRA_Interpolator::stats.reset(); // Reset after print so they are not cumulated across instances
     }
     delete proof_;
 #endif

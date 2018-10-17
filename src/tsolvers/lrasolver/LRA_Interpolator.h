@@ -35,6 +35,7 @@ struct DecomposedStatistics {
         nonTrivialBasis = 0;
         nonTrivialItps = 0;
         decomposedItps = 0;
+        standAloneIneq = 0;
     }
 };
 
