@@ -54,15 +54,15 @@ public:
 private:
 
 
-    bool cnfize          ( PTRef );            // Do the actual cnfization
+    bool cnfize             (PTRef);                          // Do the actual cnfization
 
-    void cnfizeAnd        (PTRef);                          // Cnfize conjunctions
-    void cnfizeOr         (PTRef, bool def=true);           // Cnfize disjunctions
-    void cnfizeIff        (PTRef);                          // Cnfize iffs
-    void cnfizeXor        (PTRef);                          // Cnfize xors
-    void cnfizeIfthenelse (PTRef);                          // Cnfize if then elses
-    void cnfizeImplies    (PTRef);                          // Cnfize if then elses
-    void cnfizeDistinct   (PTRef);                          // Cnfize distinctions
+    bool cnfizeAnd          (PTRef);                          // Cnfize conjunctions
+    bool cnfizeOr           (PTRef, bool def = true);         // Cnfize disjunctions
+    bool cnfizeIff          (PTRef);                          // Cnfize iffs
+    bool cnfizeXor          (PTRef);                          // Cnfize xors
+    bool cnfizeIfthenelse   (PTRef);                          // Cnfize if then elses
+    bool cnfizeImplies      (PTRef);                          // Cnfize if then elses
+    bool cnfizeDistinct     (PTRef);                          // Cnfize distinctions
 //    void copyArgsWithCache(PTRef, vec<PTRef>&, Map<PTRef, PTRef, PTRefHash>&);
 };
 
