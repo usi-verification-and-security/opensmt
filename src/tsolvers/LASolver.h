@@ -198,6 +198,8 @@ protected:
     bool invariantHolds() const;
     bool checkTableauConsistency() const;
     void crashInconsistency(LVRef v, int line);
+
+    void deduce(const LABound & bound_prop);
 };
 
 #endif

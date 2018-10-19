@@ -934,49 +934,27 @@ void LASolver::getSimpleDeductions(LVRef v, LABoundRef br)
         for (int it = bound.getIdx() - 1; it >= 0; it = it - 1) {
             LABoundRef bound_prop_ref = boundStore.getBoundByIdx(v, it);
             LABound &bound_prop = ba[bound_prop_ref];
-            if (bound_prop.getValue().isInf())
+            if (bound_prop.getValue().isInf() || bound_prop.getType() != bound_l)
                 continue;
-            if (bound_prop.getType() == bound_l) {
-//                printf("Considering propagating %s\n", boundStore.printBound(bound_prop_ref));
-                if (!hasPolarity(bound_prop.getPTRef())) {
-                    if (deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] == l_Undef) {
-//                        printf(" => deduced %s (var %d)\n", boundStore.printBound(bound_prop_ref),
-//                               logic.getPterm(bound_prop.getPTRef()).getVar());
-                        lbool pol = bound_prop.getSign();
-                        deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] = DedElem(id, pol); // id is the solver id
-                        th_deductions.push(PtAsgn_reason(bound_prop.getPTRef(), pol, PTRef_Undef));
-                    } else {
-//                        printf(" => but its deduced -value was %s instead of l_Undef\n", deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] == l_True ? "l_True" : "l_False");
-                    }
-                }
-                else {
-//                    printf(" => but it already had a polarity\n");
-                }
-            }
+            deduce(bound_prop);
         }
-    }
-    else if (bound.getType() == bound_u) {
+    } else if (bound.getType() == bound_u) {
         for (int it = bound.getIdx() + 1; it < boundStore.getBoundListSize(v) - 1; it = it + 1) {
             LABoundRef bound_prop_ref = boundStore.getBoundByIdx(v, it);
-            LABound &bound_prop = ba[bound_prop_ref];
-            if (bound_prop.getValue().isInf())
+            LABound & bound_prop = ba[bound_prop_ref];
+            if (bound_prop.getValue().isInf() || bound_prop.getType() != bound_u)
                 continue;
-            if (bound_prop.getType() == bound_u) {
-//                printf("Considering propagating %s\n", boundStore.printBound(bound_prop_ref));
-                if (!hasPolarity(bound_prop.getPTRef())) {
-                    if (deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] == l_Undef) {
-//                        printf(" => deduced %s\n", boundStore.printBound(bound_prop_ref));
-                        lbool pol = bound_prop.getSign();
-                        deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] = DedElem(id, pol);
-                        th_deductions.push(PtAsgn_reason(bound_prop.getPTRef(), pol, PTRef_Undef));
-                    } else {
-//                        printf(" => but its deduced -value was %s instead of l_Undef\n", deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] == l_True ? "l_True" : "l_False");
-                    }
-                }
-                else {
-//                    printf(" => but it already had a polarity\n");
-                }
-            }
+            deduce(bound_prop);
+        }
+    }
+}
+
+void LASolver::deduce(const LABound & bound_prop) {
+    if (!hasPolarity(bound_prop.getPTRef())) {
+        if (deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] == l_Undef) {
+            lbool pol = bound_prop.getSign();
+            deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] = DedElem(id, pol); // id is the solver id
+            th_deductions.push(PtAsgn_reason(bound_prop.getPTRef(), pol, PTRef_Undef));
         }
     }
 }
