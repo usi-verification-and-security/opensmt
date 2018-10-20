@@ -67,6 +67,20 @@ class PtStore {
 //    vec<PTLKey> cplx_keys;
 
 #ifdef PRODUCE_PROOF
+public:
+    ~PtStore(){
+        vec<SymRef> s;
+        sym_partitions.getKeys(s);
+        for(int i = 0; i < s.size(); ++i) {
+            delete sym_partitions[s[i]];
+        }
+        vec<PTRef> p;
+        term_partitions.getKeys(p);
+        for(int i = 0; i < p.size(); ++i) {
+            delete term_partitions[p[i]];
+        }
+    }
+private:
     Map<SymRef,ipartitions_t*,SymRefHash,Equal<SymRef> > sym_partitions;
     Map<PTRef,ipartitions_t*,PTRefHash,Equal<PTRef> > term_partitions;
 #endif
