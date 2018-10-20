@@ -201,7 +201,7 @@ class Logic {
     static const char*  s_framev_prefix;
 
     Logic(SMTConfig& c);
-    ~Logic();
+    virtual ~Logic();
 
     bool isIteVar(PTRef tr) const;// { return top_level_ites.has(tr); }
     PTRef getTopLevelIte(PTRef tr);// { return top_level_ites[tr].repr; }

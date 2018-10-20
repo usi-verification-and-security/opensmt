@@ -41,7 +41,7 @@ protected:
     Map<PTRef,bool,PTRefHash> la_split_inequalities;
 public:
     LALogic(SMTConfig &c);
-    ~LALogic() {}
+    ~LALogic() { for(int i = 0; i < numbers.size(); ++i) {delete numbers[i];}}
     virtual bool    isBuiltinFunction(SymRef sr) const;
     virtual PTRef   insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg);
     virtual SRef    getSort_num    ()              const;
