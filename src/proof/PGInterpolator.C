@@ -24,6 +24,7 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 #ifdef PRODUCE_PROOF
 #include "PG.h"
+#include "BoolRewriting.h"
 
 
 // Path interpolation
@@ -637,11 +638,22 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
 
     PTRef interpol = getRoot()->getPartialInterpolant();
     assert (interpol != PTRef_Undef);
+
+    if(simplifyInterpolant()) {
+        if(verbose() > 1) {
+            std::cout << "Itp before simplification: \n" << logic_.printTerm(interpol) << '\n';
+        }
+        Map<PTRef,int,PTRefHash> PTRefToIncoming;
+        ::computeIncomingEdges(logic_, interpol, PTRefToIncoming);
+        PTRef old = interpol;
+        interpol = ::rewriteMaxArity(logic_, interpol, PTRefToIncoming);
+    }
+
     interpolants.push ( interpol );
 
     if(verbose() > 1)
     {
-        cout << "; Interpolant: " << theory.getLogic().printTerm(partial_interp) << endl;
+        cout << "; Interpolant: " << theory.getLogic().printTerm(interpol) << endl;
     }
 }
 

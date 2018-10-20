@@ -29,17 +29,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "DimacsParser.h"
 #include "Interpret.h"
 #include "CnfState.h"
+#include "BoolRewriting.h"
 #include <thread>
 #include <random>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+
 #ifdef USE_GZ
 #include <zlib.h>
 #include <stdio.h>
-#endif
-
-#ifdef USE_GZ
 #if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(__CYGWIN__)
 #include <fcntl.h>
 #include <io.h>
@@ -259,8 +258,8 @@ sstat MainSolver::simplifyFormulas(int from, int& to, char** err_msg)
             if (fla == logic.getTerm_true()) {continue;}
             assert(logic.getPartitionIndex(fla) != -1);
             // Optimize the dag for cnfization
-            Map<PTRef,int,PTRefHash> PTRefToIncoming;
             if (logic.isBooleanOperator(fla)) {
+                Map<PTRef,int,PTRefHash> PTRefToIncoming;
                 computeIncomingEdges(fla, PTRefToIncoming);
                 fla = rewriteMaxArity(fla, PTRefToIncoming);
             }
@@ -305,125 +304,17 @@ sstat MainSolver::simplifyFormulas(int from, int& to, char** err_msg)
 //
 void MainSolver::computeIncomingEdges(PTRef tr, Map<PTRef,int,PTRefHash>& PTRefToIncoming)
 {
-    assert(tr != PTRef_Undef);
-    vec<pi*> unprocessed_ptrefs;
-    unprocessed_ptrefs.push(new pi(tr));
-    while (unprocessed_ptrefs.size() > 0) {
-        pi* pi_ptr = unprocessed_ptrefs.last();
-        if (PTRefToIncoming.has(pi_ptr->x)) {
-            PTRefToIncoming[pi_ptr->x]++;
-            unprocessed_ptrefs.pop();
-            delete pi_ptr;
-            continue;
-        }
-        bool unprocessed_children = false;
-        if (logic.isBooleanOperator(pi_ptr->x) && pi_ptr->done == false) {
-            Pterm& t = logic.getPterm(pi_ptr->x);
-            for (int i = 0; i < t.size(); i++) {
-                // push only unprocessed Boolean operators
-                if (!PTRefToIncoming.has(t[i])) {
-                    unprocessed_ptrefs.push(new pi(t[i]));
-                    unprocessed_children = true;
-                } else {
-                    PTRefToIncoming[t[i]]++;
-                }
-            }
-            pi_ptr->done = true;
-        }
-        if (unprocessed_children)
-            continue;
-
-        unprocessed_ptrefs.pop();
-        // All descendants of pi_ptr->x are processed
-        assert(logic.isBooleanOperator(pi_ptr->x) || logic.isAtom(pi_ptr->x));
-        assert(!PTRefToIncoming.has(pi_ptr->x));
-        PTRefToIncoming.insert(pi_ptr->x, 1);
-        delete pi_ptr;
-    }
+    ::computeIncomingEdges(logic, tr, PTRefToIncoming);
 }
 
 PTRef MainSolver::rewriteMaxArity(PTRef root, const Map<PTRef,int,PTRefHash>& PTRefToIncoming)
 {
-    vec<PTRef> unprocessed_ptrefs;
-    unprocessed_ptrefs.push(root);
-    Map<PTRef,PTRef,PTRefHash> cache;
-
-    while (unprocessed_ptrefs.size() > 0) {
-        PTRef tr = unprocessed_ptrefs.last();
-        if (cache.has(tr)) {
-            unprocessed_ptrefs.pop();
-            continue;
-        }
-
-        bool unprocessed_children = false;
-        Pterm& t = logic.getPterm(tr);
-        for (int i = 0; i < t.size(); i++) {
-            if (logic.isBooleanOperator(t[i]) && !cache.has(t[i])) {
-                unprocessed_ptrefs.push(t[i]);
-                unprocessed_children = true;
-            }
-            else if (logic.isAtom(t[i]))
-                cache.insert(t[i], t[i]);
-        }
-        if (unprocessed_children)
-            continue;
-
-        unprocessed_ptrefs.pop();
-        PTRef result = PTRef_Undef;
-        assert(logic.isBooleanOperator(tr));
-
-        if (logic.isAnd(tr) || logic.isOr(tr)) {
-            result = mergePTRefArgs(tr, cache, PTRefToIncoming);
-        } else {
-            result = tr;
-        }
-        assert(result != PTRef_Undef);
-        assert(!cache.has(tr));
-        cache.insert(tr, result);
-
-    }
-    PTRef top_tr = cache[root];
-    return top_tr;
+    return ::rewriteMaxArity(logic, root, PTRefToIncoming);
 }
 
 PTRef MainSolver::mergePTRefArgs(PTRef tr, Map<PTRef,PTRef,PTRefHash>& cache, const Map<PTRef,int,PTRefHash>& PTRefToIncoming)
 {
-    assert(logic.isAnd(tr) || logic.isOr(tr));
-    Pterm& t = logic.getPterm(tr);
-    SymRef sr = t.symb();
-    vec<PTRef> new_args;
-    for (int i = 0; i < t.size(); i++) {
-        PTRef subst = cache[t[i]];
-        if (logic.getSymRef(t[i]) != sr) {
-            new_args.push(subst);
-            continue;
-        }
-        assert(PTRefToIncoming.has(t[i]));
-        assert(PTRefToIncoming[t[i]] >= 1);
-        if (PTRefToIncoming[t[i]] > 1) {
-            new_args.push(subst);
-            continue;
-        }
-        if (logic.getSymRef(subst) == sr) {
-            Pterm& substs_t = logic.getPterm(subst);
-            for (int j = 0; j < substs_t.size(); j++)
-                new_args.push(substs_t[j]);
-
-        } else
-            new_args.push(subst);
-    }
-    PTRef new_tr;
-    if (sr == logic.getSym_and()) {
-        new_tr = logic.mkAnd(new_args);
-    }
-    else {
-        new_tr = logic.mkOr(new_args);
-    }
-#ifdef PRODUCE_PROOF
-    // copy the partition of tr to the resulting new term
-    logic.transferPartitionMembership(tr, new_tr);
-#endif
-    return new_tr;
+    return ::mergePTRefArgs(logic, tr, cache, PTRefToIncoming);
 }
 
 //

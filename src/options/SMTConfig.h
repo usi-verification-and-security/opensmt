@@ -894,6 +894,9 @@ public:
   int          lra_integer_solver;           // Flag to require integer solution for LA problem
   int          lra_check_on_assert;          // Probability (0 to 100) to run check when assert is called
 
+  // interpolant parameters
+  int           simplify_interpolant;
+
   // parameter for parallelism
   int          parallel_threads;
 

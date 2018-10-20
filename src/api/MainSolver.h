@@ -76,12 +76,6 @@ class MainSolver
     int compress_buf(const int* buf_in, int*& buf_out, int sz, int& sz_out) const;
     int decompress_buf(int* buf_in, int*& buf_out, int sz, int& sz_out) const;
 
-    class pi {
-      public:
-        PTRef x;
-        bool done;
-        pi(PTRef x_) : x(x_), done(false) {}
-    };
     Logic&              logic;
     SMTConfig&          config;
     THandler&           thandler;
