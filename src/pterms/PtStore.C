@@ -210,56 +210,64 @@ PtStore::assignPartition(unsigned int n, PTRef ptr) {
 ipartitions_t&
 PtStore::getIPartitions(PTRef _t)
 {
-    if(!term_partitions.has(_t)) {
-        ipartitions_t *p_new = new ipartitions_t(0);
-        term_partitions.insert(_t, p_new);
-    }
-    return *(term_partitions[_t]);
+    // MB: // this default construct the value if the key was not present and it is default constructed to 0
+    return term_partitions[_t];
+//    if(!term_partitions.has(_t)) {
+//        ipartitions_t *p_new = new ipartitions_t(0);
+//        term_partitions.insert(_t, p_new);
+//    }
+//    return *(term_partitions[_t]);
 }
 
 void
 PtStore::setIPartitions(PTRef _t, const ipartitions_t& _p)
 {
-    ipartitions_t* new_p = new ipartitions_t(_p);
-    term_partitions.insert(_t, new_p);
+    term_partitions[_t] = _p;
+//    ipartitions_t* new_p = new ipartitions_t(_p);
+//    term_partitions.insert(_t, new_p);
 }
 
 void
 PtStore::addIPartitions(PTRef _t, const ipartitions_t& _p)
 {
-    if (!term_partitions.has(_t)) {
-        ipartitions_t* new_p = new ipartitions_t(0);
-        term_partitions.insert(_t, new_p);
-    }
-    *(term_partitions[_t]) |= _p;
+    term_partitions[_t] |= _p;
+//    if (!term_partitions.has(_t)) {
+//        ipartitions_t* new_p = new ipartitions_t(0);
+//        term_partitions.insert(_t, new_p);
+//    }
+//    *(term_partitions[_t]) |= _p;
 }
 
 ipartitions_t&
 PtStore::getIPartitions(SymRef _s)
 {
-    if(!sym_partitions.has(_s)) {
-        ipartitions_t* new_p = new ipartitions_t(0);
-        sym_partitions.insert(_s, new_p);
-    }
-    return *(sym_partitions[_s]);
+    // MB: // this default construct the value if the key was not present and it is default constructed to 0
+    return sym_partitions[_s];
+//    if(!sym_partitions.has(_s)) {
+//        ipartitions_t* new_p = new ipartitions_t(0);
+//        sym_partitions.insert(_s, new_p);
+//    }
+//    return *(sym_partitions[_s]);
 }
 
 void
 PtStore::setIPartitions(SymRef _s, const ipartitions_t& _p)
 {
-    assert(!sym_partitions.has(_s));
-    ipartitions_t* p_new = new ipartitions_t(_p);
-    sym_partitions.insert(_s, p_new);
+    sym_partitions[_s] = _p;
+//    assert(!sym_partitions.has(_s));
+//    ipartitions_t* p_new = new ipartitions_t(_p);
+//    sym_partitions.insert(_s, p_new);
 }
 
 void
 PtStore::addIPartitions(SymRef _s, const ipartitions_t& _p)
 {
-    if (!sym_partitions.has(_s)) {
-        ipartitions_t* p_new = new ipartitions_t(0);
-        sym_partitions.insert(_s, p_new);
-    }
-    *(sym_partitions[_s]) |= _p;
+    sym_partitions[_s] |= _p;
+//    if (!sym_partitions.has(_s)) {
+//        ipartitions_t* p_new = new ipartitions_t(0);
+//        sym_partitions.insert(_s, p_new);
+//    }
+//    *(sym_partitions[_s]) |= _p;
 }
 
 #endif

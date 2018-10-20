@@ -2254,7 +2254,7 @@ void Logic::conjoinItes(PTRef root, PTRef& new_root)
             queue.push(ite);
 #ifdef PRODUCE_PROOF
             assert(getIPartitions(el) != 0);
-            setIPartitions(ite, getIPartitions(el));
+            addIPartitions(ite, getIPartitions(el));
 #endif
         }
         for (int i = 0; i < getPterm(el).size(); i++)

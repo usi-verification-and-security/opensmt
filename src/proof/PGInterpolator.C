@@ -639,7 +639,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
     PTRef interpol = getRoot()->getPartialInterpolant();
     assert (interpol != PTRef_Undef);
 
-    if(simplifyInterpolant()) {
+    if(simplifyInterpolant() && logic_.isBooleanOperator(interpol)) {
         if(verbose() > 1) {
             std::cout << "Itp before simplification: \n" << logic_.printTerm(interpol) << '\n';
         }
