@@ -87,7 +87,7 @@ class MainSolver
     vec<PFRef>          formulas;
 
     opensmt::OSMTTimeVal query_timer; // How much time we spend solving.
-    char*          solver_name; // Name for the solver
+    std::string          solver_name; // Name for the solver
     int            simplified_until; // The formulas have been simplified up to and including formulas[simplified_until-1].
     int            check_called;     // A counter on how many times check was called.
     PTRef          prev_query;       // The previously executed query
@@ -135,6 +135,7 @@ class MainSolver
             , tmap
             , thandler
             , *s )
+        , solver_name {name}
         , simplified_until(0)
         , check_called(0)
         , prev_query(PTRef_Undef)
@@ -143,7 +144,6 @@ class MainSolver
         , binary_init(false)
         , root_instance(logic.getTerm_true())
     {
-        solver_name = strdup(name);
         formulas.push(pfstore.alloc());
         PushFrame& last = pfstore[formulas.last()];
         last.push(logic.getTerm_true());

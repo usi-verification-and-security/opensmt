@@ -966,7 +966,7 @@ sstat MainSolver::check()
 {
     check_called ++;
     if (config.timeQueries()) {
-        printf("; %s query time so far: %f\n", solver_name, query_timer.getTime());
+        printf("; %s query time so far: %f\n", solver_name.c_str(), query_timer.getTime());
         opensmt::StopWatch sw(query_timer);
     }
     sstat rval;
