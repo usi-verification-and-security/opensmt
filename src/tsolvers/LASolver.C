@@ -21,9 +21,7 @@ namespace{
 
 bool LASolver::isValid(PTRef tr)
 {
-    return logic.isNumConst(tr) || logic.isNumPlus(tr) || logic.isNumMinus(tr) || logic.isNumNeg(tr) ||
-           logic.isNumTimes(tr) || logic.isNumDiv(tr) || logic.isNumEq(tr) || logic.isNumLeq(tr) || logic.isNumLt(tr) ||
-           logic.isNumGeq(tr) || logic.isNumGt(tr) || logic.isNumVar(tr);
+    return logic.isNumLeq(tr); // MB: LA solver expects only inequalities in LEQ form!
 }
 
 void LASolver::isProperLeq(PTRef tr)
