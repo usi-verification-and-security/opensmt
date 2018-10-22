@@ -441,15 +441,7 @@ bool Logic::isTheorySymbol(SymRef tr) const {
     // Boolean var
     if (t.rsort() == sort_BOOL && t.nargs() == 0) return false;
     // Standard Boolean operators
-    if (tr == sym_NOT)      return false;
-    if (tr == sym_EQ)       return false;
-    if (tr == sym_IMPLIES)  return false;
-    if (tr == sym_AND)      return false;
-    if (tr == sym_OR)       return false;
-    if (tr == sym_XOR)      return false;
-    if (tr == sym_ITE)      return false;
-    if (tr == sym_DISTINCT) return false;
-    return true;
+    return !(isBooleanOperator(tr));
 }
 
 // description: Add equality for each new sort
