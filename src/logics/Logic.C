@@ -540,13 +540,17 @@ void Logic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
     Pterm& p = getPterm(tr);
     vec<PTRef> newargs;
     char *msg;
+    bool changed = false;
     for (int i = 0; i < p.size(); ++i) {
         PTRef tr = p[i];
-        if (tr_map.has(tr))
+        if (tr_map.has(tr)) {
+            changed |= (tr_map[tr] != tr);
             newargs.push(tr_map[tr]);
+        }
         else
             newargs.push(tr);
     }
+    if (!changed) {return;}
     PTRef trp = insertTerm(p.symb(), newargs, &msg);
     if (trp != tr) {
 #ifdef PRODUCE_PROOF
