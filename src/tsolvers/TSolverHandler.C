@@ -50,6 +50,13 @@ void TSolverHandler::declareTermTree(PTRef tr)
     }
 }
 
+void TSolverHandler::declareAtoms(PTRef tr) {
+    auto atoms = getAtoms(tr, getLogic());
+    for (const PTRef atom : atoms) {
+        declareAtom(atom);
+    }
+}
+
 
 char* TSolverHandler::printValue(PTRef tr)
 {
@@ -86,6 +93,14 @@ void TSolverHandler::declareTerm(PTRef tr)
             else {
 //                printf("Not declaring %s since it's not my style\n", getLogic().printTerm(tr));
             }
+        }
+    }
+}
+
+void TSolverHandler::declareAtom(PTRef tr) {
+    for (int i = 0; i < tsolvers.size(); i++) {
+        if (tsolvers[i] != nullptr && tsolvers[i]->isValid(tr)) {
+            tsolvers[i]->declareTerm(tr);
         }
     }
 }
@@ -149,4 +164,6 @@ char* TSolverHandler::printExplanation(PTRef tr)
     }
     return out;
 }
+
+
 

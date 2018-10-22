@@ -2262,7 +2262,16 @@ void CoreSMTSolver::declareVarsToTheories()
         if (!var_seen[v])
         {
             var_seen[v] = true;
-            theory_handler.declareTermTree(theory_handler.varToTerm(v));
+            if (theory_handler.getLogic().getLogic() == QF_LRA) {
+                const PTRef term = theory_handler.varToTerm(v);
+                if (theory_handler.getLogic().isTheoryTerm(term)){
+                    theory_handler.declareAtoms(term);
+                }
+            }
+            else { // MB: old behaviour, still valid for other logics
+                theory_handler.declareTermTree(theory_handler.varToTerm(v));
+            }
+
         }
     }
     top_level_lits = trail.size();
@@ -2276,7 +2285,15 @@ void CoreSMTSolver::declareVarsToTheories()
             {
                 var_seen[v] = true;
                 assert(theory_handler.getLogic().getPterm(theory_handler.varToTerm(v)).getVar() != -1);
-                theory_handler.declareTermTree(theory_handler.varToTerm(v));
+                if (theory_handler.getLogic().getLogic() == QF_LRA) {
+                    const PTRef term = theory_handler.varToTerm(v);
+                    if (theory_handler.getLogic().isTheoryTerm(term)){
+                        theory_handler.declareAtoms(term);
+                    }
+                }
+                else { // MB: old behaviour, still valid for other logics
+                    theory_handler.declareTermTree(theory_handler.varToTerm(v));
+                }
 //                printf("Declaring clause %d var %s\n", i, theory_handler.getLogic().printTerm(theory_handler.varToTerm(v)));
             }
         }
