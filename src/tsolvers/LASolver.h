@@ -57,11 +57,11 @@ class LASolver: public TSolver
 protected:
 
     LALogic&            logic;
-    LAVarAllocator       lva;
+    LAVarAllocator       lva{1024};
     LAVarStore           lavarStore;
 
-    LABoundAllocator     ba;
-    LABoundListAllocator bla;
+    LABoundAllocator     ba{1024};
+    LABoundListAllocator bla{1024};
     LABoundStore         boundStore;
 
 

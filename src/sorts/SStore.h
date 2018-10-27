@@ -35,8 +35,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 class IdentifierStore
 {
   private:
-    StrAllocator<IdStr, IdStrRef> isa;
-    IdentifierAllocator ia;
+    StrAllocator<IdStr, IdStrRef> isa {1024};
+    IdentifierAllocator ia {1024};
   public:
     // Provided for simplicity
     IdRef newIdentifier(const char* name) {
@@ -57,8 +57,8 @@ class SStore
 {
   private:
     IdentifierStore& is;
-    StrAllocator<SStr, SStrRef> ssa;
-    SortAllocator sa;
+    StrAllocator<SStr, SStrRef> ssa {1024};
+    SortAllocator sa {1024};
     Map<const char*,SRef,StringHash,Equal<const char*> > sortTable;
     vec<SRef>                                     sorts;
     vec<char*> sort_names; // Needed for deallocating the keys in sortTable
