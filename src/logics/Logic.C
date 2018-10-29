@@ -2248,18 +2248,11 @@ void Logic::conjoinItes(PTRef root, PTRef& new_root)
             PTRef ite = getTopLevelIte(el);
             args.push(ite);
             queue.push(ite);
-#ifdef PRODUCE_PROOF
-            assert(getIPartitions(el) != 0);
-            addIPartitions(ite, getIPartitions(el));
-#endif
         }
         for (int i = 0; i < getPterm(el).size(); i++)
             queue.push(getPterm(el)[i]);
         seen.insert(el, true);
     }
-#ifdef PRODUCE_PROOF
-    computePartitionMasks(args);
-#endif
     args.push(root);
     new_root = mkAnd(args);
 #ifdef PRODUCE_PROOF
@@ -2268,10 +2261,6 @@ void Logic::conjoinItes(PTRef root, PTRef& new_root)
 }
 
 #ifdef PRODUCE_PROOF
-
-namespace{
-void computePartitionMasksRec(const std::set<PTRef>& to_process, std::set<PTRef>& seen, Logic& logic);
-}
 
 // Given a vector roots of ptrefs, compute the partitions for each term rooted at roots
 // so that a term has the partitions of its ancestors.
@@ -2288,46 +2277,12 @@ void Logic::computePartitionMasks(const vec<PTRef> &roots) {
         ipartitions_t& p = getIPartitions(tr);
         for (int j = 0; j < t.size(); j++) {
             addIPartitions(t[j], p);
-            // MB: ugly hack to properly compute partitions of ITEs
-            if(isIteVar(t[j])) {
-                PTRef realIte = getTopLevelIte(t[j]);
-                addIPartitions(realIte, p);
-                to_process.insert(realIte);
-            }
-            // MB: end of ugly hack
             seen.insert(t[j]);
         }
         if (isUF(tr) || isUP(tr)) {
             addIPartitions(t.symb(), p);
         }
     }
-    computePartitionMasksRec(to_process, seen, *this);
-}
-
-namespace {
-void computePartitionMasksRec(const std::set<PTRef>& to_process, std::set<PTRef>& seen, Logic& logic) {
-    std::set<PTRef> next;
-    for (PTRef ptref : to_process) {
-        Pterm& t = logic.getPterm(ptref);
-        ipartitions_t& p = logic.getIPartitions(ptref);
-        for (int j = 0; j < t.size(); j++) {
-            if(seen.find(t[j]) == seen.end()) {
-                logic.addIPartitions(t[j], p);
-                next.insert(t[j]);
-                if(logic.isIteVar(t[j])) {
-                    PTRef realIte = logic.getTopLevelIte(t[j]);
-                    logic.addIPartitions(realIte, p);
-                    next.insert(realIte);
-                }
-            }
-            seen.insert(t[j]);
-        }
-        if (logic.isUF(ptref) || logic.isUP(ptref)) {
-            logic.addIPartitions(t.symb(), p);
-        }
-    }
-    if (!next.empty()) {computePartitionMasksRec(next, seen, logic);}
-}
 }
 
 bool

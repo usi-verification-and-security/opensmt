@@ -210,9 +210,6 @@ MainSolver::insertFormula(PTRef root, char** msg)
 #ifdef PRODUCE_PROOF
     logic.assignPartition(partition_index, root);
     assert(logic.getPartitionIndex(root) != -1);
-    // Label the formula with a partition mask.  This needs to be done before conjoining the extras
-    // since otherwise we loose the connection between Ites and partitions.
-    logic.computePartitionMasks(root);
     PTRef old_root = root;
 #endif
 
