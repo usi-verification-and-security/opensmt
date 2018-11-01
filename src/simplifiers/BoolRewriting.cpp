@@ -145,3 +145,104 @@ PTRef mergePTRefArgs(Logic & logic, PTRef tr, Map<PTRef,PTRef,PTRefHash>& cache,
     return new_tr;
 }
 
+namespace {
+struct PtLit {
+    PTRef var;
+    bool sign;
+};
+
+PtLit operator ~(PtLit lit) { return PtLit{lit.var, !lit.sign};}
+
+bool isTerminal(const Logic & logic, PTRef fla) {
+//    return logic.isLit(fla);
+/* MB: The above does NOT work, because of Tseitin literals,
+ * which are literals from proof point of view, but not not literals as PTRefs
+ * So we stop at everything which is not AND or OR.
+ * */
+    return !(logic.isAnd(fla) || logic.isOr(fla));
+}
+
+PtLit decomposeLiteral(const Logic & logic, PTRef lit) {
+    assert(isTerminal(logic, lit));
+    bool sgn = false;
+    while (logic.getSymRef(lit) == logic.getSym_not()) {
+        lit = logic.getPterm(lit)[0];
+        sgn = !sgn;
+    }
+    return PtLit{lit, sgn};
+}
+
+PTRef _simplifyUnderAssignment(Logic & logic, PTRef root,
+                               const Map<PTRef, int, PTRefHash> & PTRefToIncoming,
+                               std::vector<PtLit> assignment,
+                               Map<PTRef, PTRef, PTRefHash> & cache
+) {
+    if (!logic.isAnd(root) && !logic.isOr(root)) {
+        assert(false); // MB: should not be called for anything else
+        return root;
+    }
+    assert(!cache.has(root));
+    bool isAnd = logic.isAnd(root);
+    vec<PTRef> newargs;
+    const Pterm & term = logic.getPterm(root);
+    std::vector<PTRef> literals;
+    std::vector<PTRef> owning_children;
+    std::vector<PTRef> non_owning_children;
+    for (int i = 0; i < term.size(); ++i) {
+        if (isTerminal(logic, term[i])) {
+            literals.push_back(term[i]);
+            continue;
+        }
+        assert(PTRefToIncoming.has(term[i]));
+        assert(PTRefToIncoming[term[i]] >= 1);
+        if (PTRefToIncoming[term[i]] > 1) {
+            non_owning_children.push_back(term[i]);
+        }
+        else{
+            owning_children.push_back(term[i]);
+        }
+    }
+    // process the literals
+    for (PTRef lit : literals) {
+        assert(!cache.has(lit));
+        PtLit decLit = decomposeLiteral(logic, lit);
+        auto it = std::find_if(assignment.begin(), assignment.end(), [decLit](PtLit assign) {
+            return assign.var == decLit.var;
+        });
+        if (it == assignment.end()) {
+            assignment.push_back(isAnd ? decLit : ~decLit);
+            newargs.push(lit);
+        } else {
+            assert(decLit.var == it->var);
+            if (decLit.sign == it->sign) {
+                // this literal is evaluated to true
+                if (!isAnd) { return logic.getTerm_true(); }
+            } else {
+                // this literal is evaluated to false
+                if (isAnd) { return logic.getTerm_false(); }
+            }
+        }
+    }
+    for (PTRef owning_child : owning_children) {
+        assert(!cache.has(owning_child));
+        newargs.push(_simplifyUnderAssignment(logic, owning_child, PTRefToIncoming, assignment, cache));
+    }
+    for (PTRef non_owning_child : non_owning_children) {
+        // cannot simplify under assignment if somebody else is also pointing to this
+        if (cache.has(non_owning_child)) {
+            newargs.push(cache[non_owning_child]);
+        } else {
+            PTRef new_child = _simplifyUnderAssignment(logic, non_owning_child, PTRefToIncoming, {}, cache);
+            newargs.push(new_child);
+            cache.insert(non_owning_child, new_child);
+        }
+
+    }
+    return isAnd ? logic.mkAnd(newargs) : logic.mkOr(newargs);
+}
+}
+
+PTRef simplifyUnderAssignment(Logic & logic, PTRef root, const Map<PTRef,int,PTRefHash>& PTRefToIncoming) {
+    Map<PTRef, PTRef, PTRefHash> cache;
+    return _simplifyUnderAssignment(logic, root, PTRefToIncoming, {},  cache);
+}

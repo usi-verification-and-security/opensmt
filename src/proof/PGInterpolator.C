@@ -639,14 +639,23 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
     PTRef interpol = getRoot()->getPartialInterpolant();
     assert (interpol != PTRef_Undef);
 
-    if(simplifyInterpolant() && logic_.isBooleanOperator(interpol)) {
+    if(simplifyInterpolant() > 0 && logic_.isBooleanOperator(interpol)) {
         if(verbose() > 1) {
-            std::cout << "Itp before simplification: \n" << logic_.printTerm(interpol) << '\n';
+            std::cout << "Itp before rewriting max arity: \n" << logic_.printTerm(interpol) << "\n\n";
         }
         Map<PTRef,int,PTRefHash> PTRefToIncoming;
         ::computeIncomingEdges(logic_, interpol, PTRefToIncoming);
         PTRef old = interpol;
         interpol = ::rewriteMaxArity(logic_, interpol, PTRefToIncoming);
+    }
+    if (simplifyInterpolant() > 1 && logic_.isBooleanOperator(interpol)) {
+        if(verbose() > 1) {
+            std::cout << "Itp before aggressive simplifying: \n" << logic_.printTerm(interpol) << "\n\n";
+        }
+        Map<PTRef,int,PTRefHash> PTRefToIncoming;
+        ::computeIncomingEdges(logic_, interpol, PTRefToIncoming);
+        PTRef old = interpol;
+        interpol = ::simplifyUnderAssignment(logic_, interpol, PTRefToIncoming);
     }
 
     interpolants.push ( interpol );
