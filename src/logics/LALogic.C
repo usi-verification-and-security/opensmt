@@ -92,7 +92,9 @@ PTRef LALogic::normalizeSum(PTRef sum) {
             args[i] = mkNumDiv(tmp);
         }
     }
-    return mkNumPlus(args);
+    // MB: There is nothing there to simplify anymore, since we just normalized constants, but the terms were normalized before
+//    return mkNumPlus(args);
+    return mkFun(get_sym_Num_PLUS(), args);
 }
 // Normalize a product of the form (* a v) to either v or (* -1 v)
 PTRef LALogic::normalizeMul(PTRef mul)
@@ -336,22 +338,44 @@ PTRef LALogic::mkNumNeg(PTRef tr, char** msg)
         return tr_n;
     }
     if (isConstant(tr)) {
-        char* rat_str;
-        opensmt::stringToRational(rat_str, sym_store.getName(getPterm(tr).symb()));
-        opensmt::Number v(rat_str);
-        //PTRef nterm = getNTerm(rat_str); //PS. getNTerm generalise line 358, 361, 362
-        free(rat_str);
-        v = -v;
-        PTRef nterm = mkConst(getSort_num(), v.get_str().c_str());
-        SymRef s = getPterm(nterm).symb();
-        return mkFun(s, args, msg);
+//        char * rat_str;
+//        opensmt::stringToRational(rat_str, sym_store.getName(getPterm(tr).symb()));
+//        opensmt::Number v(rat_str);
+//        //PTRef nterm = getNTerm(rat_str); //PS. getNTerm generalise line 358, 361, 362
+//        free(rat_str);
+//        v = -v;
+//        PTRef nterm = mkConst(getSort_num(), v.get_str().c_str());
+//        SymRef s = getPterm(nterm).symb();
+//        return mkFun(s, args, msg);
+        const opensmt::Number& v = getNumConst(tr);
+        opensmt::Number min = -v;
+        PTRef nterm = mkConst(min);
+        return nterm;
     }
     PTRef mo = mkConst(getSort_num(), "-1");
     args.push(mo); args.push(tr);
     return mkNumTimes(args);
 }
+
+PTRef  LALogic::mkConst(const opensmt::Number& c)
+//{ char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_num(), rat); free(rat); return tr; }
+{
+    const char * val = c.get_str().c_str();
+    PTRef ptr = PTRef_Undef;
+    ptr = mkVar(getSort_num(), val);
+    // Store the value of the number as a real
+    SymId id = sym_store[getPterm(ptr).symb()].getId();
+    for (int i = numbers.size(); i <= id; i++) { numbers.push(nullptr); }
+    if (numbers[id] != nullptr) { assert(c == *numbers[id]);}
+    else { numbers[id] = new opensmt::Number(val); }
+    // Code to allow efficient constant detection.
+    while (id >= constants.size())
+        constants.push(false);
+    constants[id] = true;
+    return ptr;
+}
+
 SRef   LALogic::getSort_num () const { return get_sort_NUM(); }
-PTRef  LALogic::mkConst  (const opensmt::Number& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_num(), rat); free(rat); return tr; }
 PTRef  LALogic::mkConst  (const char* num) { return mkConst(getSort_num(), num); }
 PTRef  LALogic::mkNumVar (const char* name) { return mkVar(getSort_num(), name); }
 bool LALogic::isBuiltinSort  (SRef sr) const { return sr == get_sort_NUM() || Logic::isBuiltinSort(sr); }
@@ -568,6 +592,7 @@ PTRef LALogic::mkNumPlus(const vec<PTRef>& args, char** msg)
         PTRef v;
         PTRef c;
         splitTermToVarAndConst(args_new[i], v, c);
+        assert(isConstant(c));
         if (c == PTRef_Undef) {
             // The term is unit
             c = getTerm_NumOne();
@@ -657,11 +682,14 @@ PTRef LALogic::mkNumLeq(const vec<PTRef>& args_in, char** msg)
     } else {
         // Should be in the form that on one side there is a constant
         // and on the other there is a sum
-        PTRef tr_neg = mkNumNeg(args[0], msg);
-        vec<PTRef> sum_args;
-        sum_args.push(args[1]);
-        sum_args.push(tr_neg);
-        PTRef sum_tmp = mkNumPlus(sum_args, msg); // This gives us a collapsed version of the sum
+        PTRef sum_tmp = [&](){
+           if (args[0] == getTerm_NumZero()) {return args[1];}
+           if (args[1] == getTerm_NumZero()) {return mkNumNeg(args[0]);}
+           vec<PTRef> sum_args;
+           sum_args.push(args[1]);
+           sum_args.push(mkNumNeg(args[0]));
+           return mkNumPlus(sum_args);
+        }();
         if (isConstant(sum_tmp)) {
             args[0] = getTerm_NumZero();
             args[1] = sum_tmp;
@@ -795,8 +823,8 @@ PTRef LALogic::mkConst(SRef s, const char* name)
         // Store the value of the number as a real
         SymId id = sym_store[getPterm(ptr).symb()].getId();
         for (int i = numbers.size(); i <= id; i++)
-            numbers.push(NULL);
-        if (numbers[id] != NULL) { delete numbers[id]; }
+            numbers.push(nullptr);
+        if (numbers[id] != nullptr) { delete numbers[id]; }
         numbers[id] = new opensmt::Number(rat);
         free(rat);
         // Code to allow efficient constant detection.
@@ -954,7 +982,6 @@ void SimplifyConstDiv::constSimplify(const SymRef& s, const vec<PTRef>& terms, S
 // a.
 PTRef SimplifyConst::simplifyConstOp(const vec<PTRef> & terms)
 {
-    opensmt::Number s = getIdOp();
     if (terms.size() == 0) {
         opensmt::Number s = getIdOp();
         return l.mkConst(l.getSort_num(), s.get_str().c_str());
