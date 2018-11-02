@@ -17,3 +17,12 @@ target_sources(RewritingTest
 target_link_libraries(RewritingTest api_static gtest gtest_main)
 
 gtest_add_tests(TARGET RewritingTest)
+
+add_executable(ExpressionsTest)
+target_sources(ExpressionsTest
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_ArithmeticExpressions.cpp"
+    )
+
+target_link_libraries(ExpressionsTest api_static gtest gtest_main)
+
+gtest_add_tests(TARGET ExpressionsTest)
