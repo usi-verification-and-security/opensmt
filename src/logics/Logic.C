@@ -2312,7 +2312,6 @@ Logic::getPartitionA(const ipartitions_t& mask)
     vec<Map<PTRef,Ite,PTRefHash,Equal<PTRef>>::Pair> entries;
     top_level_ites.getKeysAndVals(entries);
     for (int i = 0; i < entries.size(); ++i) {
-        assert(getIPartitions(entries[i].data.repr) == getIPartitions(entries[i].key));
         if(isAlocal(getIPartitions(entries[i].key), mask)){
             a_args.push(entries[i].data.repr);
         }
@@ -2342,7 +2341,6 @@ Logic::getPartitionB(const ipartitions_t& mask)
     vec<Map<PTRef,Ite,PTRefHash,Equal<PTRef>>::Pair> entries;
     top_level_ites.getKeysAndVals(entries);
     for (int i = 0; i < entries.size(); ++i) {
-        assert(getIPartitions(entries[i].data.repr) == getIPartitions(entries[i].key));
         if(isBlocal(getIPartitions(entries[i].key), mask)){
             b_args.push(entries[i].data.repr);
         }
