@@ -360,14 +360,15 @@ PTRef LALogic::mkNumNeg(PTRef tr, char** msg)
 PTRef  LALogic::mkConst(const opensmt::Number& c)
 //{ char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_num(), rat); free(rat); return tr; }
 {
-    const char * val = c.get_str().c_str();
+    std::string str = c.get_str(); // MB: I cannot store c.get_str().c_str() directly, since that is a pointer inside temporary object -> crash.
+    const char * val = str.c_str();
     PTRef ptr = PTRef_Undef;
     ptr = mkVar(getSort_num(), val);
     // Store the value of the number as a real
     SymId id = sym_store[getPterm(ptr).symb()].getId();
     for (int i = numbers.size(); i <= id; i++) { numbers.push(nullptr); }
-    if (numbers[id] != nullptr) { assert(c == *numbers[id]);}
-    else { numbers[id] = new opensmt::Number(val); }
+    if (numbers[id] == nullptr) { numbers[id] = new opensmt::Number(val); }
+    assert(c == *numbers[id]);
     // Code to allow efficient constant detection.
     while (id >= constants.size())
         constants.push(false);
