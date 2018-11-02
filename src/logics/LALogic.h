@@ -190,7 +190,7 @@ public:
 class SimplifyConst {
 protected:
     LALogic& l;
-    PTRef simplifyConstOp(const vec<PTRef>& const_terms, char** msg);
+    PTRef simplifyConstOp(const vec<PTRef> & const_terms);
     virtual void Op(opensmt::Number& s, const opensmt::Number& v) const = 0;
     virtual opensmt::Number getIdOp() const = 0;
     virtual void constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const = 0;

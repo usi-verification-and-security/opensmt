@@ -82,12 +82,15 @@ PTRef LALogic::normalizeSum(PTRef sum) {
     // We need to go through the real values since negative constant
     // terms are are not real negations.
     opensmt::Number k = abs(isConstant(t[0]) ? getNumConst(t[0]) : getNumConst(t[1]));
-    PTRef divisor = mkConst(k);
-    for (int i = 0; i < args.size(); i++) {
-        vec<PTRef> tmp;
-        tmp.push(args[i]);
-        tmp.push(divisor);
-        args[i] = mkNumDiv(tmp);
+    // MB: the case (-1 * var) can get herem but we would be dividing by 1 here, no need for that
+    if (k != 1) {
+        PTRef divisor = mkConst(k);
+        for (int i = 0; i < args.size(); i++) {
+            vec<PTRef> tmp;
+            tmp.push(args[i]);
+            tmp.push(divisor);
+            args[i] = mkNumDiv(tmp);
+        }
     }
     return mkNumPlus(args);
 }
@@ -549,16 +552,15 @@ PTRef LALogic::mkNumPlus(const vec<PTRef>& args, char** msg)
             new_args.push(args[i]);
         }
     }
-    vec<PTRef> tmp_args;
-    new_args.copyTo(tmp_args);
-    //for (int i = 0; i < new_args.size(); i++)
-    //    args.push(new_args[i]);
     SimplifyConstSum simp(*this);
     vec<PTRef> args_new;
     SymRef s_new;
-    simp.simplify(get_sym_Num_PLUS(), tmp_args, s_new, args_new, msg);
+    simp.simplify(get_sym_Num_PLUS(), new_args, s_new, args_new, msg);
     if (args_new.size() == 1)
         return args_new[0];
+    if(s_new != get_sym_Num_PLUS()) {
+        return mkFun(s_new, args_new, msg);
+    }
     // This code takes polynomials (+ (* v c1) (* v c2)) and converts them to the form (* v c3) where c3 = c1+c2
     VecMap<PTRef,PTRef,PTRefHash> s2t;
     vec<PTRef> keys;
@@ -580,8 +582,8 @@ PTRef LALogic::mkNumPlus(const vec<PTRef>& args, char** msg)
     }
     vec<PTRef> sum_args;
     for (int i = 0; i < keys.size(); i++) {
-        vec<PTRef>& consts = s2t[keys[i]];
-        PTRef consts_summed = mkNumPlus(consts);
+        const vec<PTRef>& consts = s2t[keys[i]];
+        PTRef consts_summed = consts.size() == 1 ? consts[0] : mkNumPlus(consts);
         vec<PTRef> term_args;
         term_args.push(consts_summed);
         if (keys[i] != PTRef_Undef)
@@ -593,7 +595,6 @@ PTRef LALogic::mkNumPlus(const vec<PTRef>& args, char** msg)
     }
     if (sum_args.size() == 1) return sum_args[0];
     PTRef tr = mkFun(s_new, sum_args, msg);
-//    PTRef tr = mkFun(s_new, args_new, msg);
     return tr;
 }
 PTRef LALogic::mkNumTimes(const vec<PTRef>& tmp_args, char** msg)
@@ -629,8 +630,8 @@ PTRef LALogic::mkNumDiv(const vec<PTRef>& args, char** msg)
     SimplifyConstDiv simp(*this);
     vec<PTRef> args_new;
     SymRef s_new;
-    simp.simplify(get_sym_Num_DIV(), args, s_new, args_new, msg);
     assert(args.size() == 2);
+    simp.simplify(get_sym_Num_DIV(), args, s_new, args_new, msg);
     if (isNumDiv(s_new)) {
         assert((isNumTerm(args_new[0]) || isNumPlus(args_new[0])) && isConstant(args_new[1]));
         args_new[1] = mkConst(FastRational_inverse(getNumConst(args_new[1]))); //mkConst(1/getRealConst(args_new[1]));
@@ -823,29 +824,35 @@ void SimplifyConst::simplify(const SymRef& s, const vec<PTRef>& args, SymRef& s_
         if (l.isConstant(args[i]) || (l.isNumNeg(args[i]) && l.isConstant(l.getPterm(args[i])[0])))
             const_idx.push(i);
     }
-    if (const_idx.size() > 1) {
-        vec<PTRef> const_terms;
-        for (int i = 0; i < const_idx.size(); i++)
-            const_terms.push(args[const_idx[i]]);
-        PTRef tr = simplifyConstOp(const_terms, msg);
-        if (tr == PTRef_Undef) {
-            printf("%s\n", *msg);
-            assert(false);
-        }
-        int i, j, k;
-        for (i = j = k = 0; i < args.size() && k < const_terms.size(); i++) {
-            if (i != const_idx[k]) args_new_2.push(args[i]);
-            else k++;
-        }
-        // Copy also the rest
-        for (; i < args.size(); i++)
-            args_new_2.push(args[i]);
-        args_new_2.push(tr);
-    } else
-        args.copyTo(args_new_2);
-    constSimplify(s, args_new_2, s_new, args_new);
-    // A single argument for the operator, and the operator is identity
-    // in that case
+    if (const_idx.size() == 0) {
+        s_new = s;
+        args.copyTo(args_new);
+    }
+    else {
+        if (const_idx.size() > 1) {
+            vec<PTRef> const_terms;
+            for (int i = 0; i < const_idx.size(); i++)
+                const_terms.push(args[const_idx[i]]);
+            PTRef tr = simplifyConstOp(const_terms);
+            if (tr == PTRef_Undef) {
+                printf("%s\n", *msg);
+                assert(false);
+            }
+            int i, j, k;
+            for (i = j = k = 0; i < args.size() && k < const_terms.size(); i++) {
+                if (i != const_idx[k]) args_new_2.push(args[i]);
+                else k++;
+            }
+            // Copy also the rest
+            for (; i < args.size(); i++)
+                args_new_2.push(args[i]);
+            args_new_2.push(tr);
+        } else
+            args.copyTo(args_new_2);
+        constSimplify(s, args_new_2, s_new, args_new);
+    }
+//    // A single argument for the operator, and the operator is identity
+//    // in that case
     if (args_new.size() == 1 && (l.isNumPlus(s_new) || l.isNumTimes(s_new) || l.isNumDiv(s_new))) {
         PTRef ch_tr = args_new[0];
         args_new.clear();
@@ -854,6 +861,7 @@ void SimplifyConst::simplify(const SymRef& s, const vec<PTRef>& args, SymRef& s_
             args_new.push(l.getPterm(ch_tr)[i]);
     }
 }
+
 void SimplifyConstSum::constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const
 {
     assert(terms_new.size() == 0);
@@ -944,7 +952,7 @@ void SimplifyConstDiv::constSimplify(const SymRef& s, const vec<PTRef>& terms, S
 // Return a term corresponding to the operation applied to the constant
 // terms.  The list may contain terms of the form (* -1 a) for constant
 // a.
-PTRef SimplifyConst::simplifyConstOp(const vec<PTRef>& terms, char** msg)
+PTRef SimplifyConst::simplifyConstOp(const vec<PTRef> & terms)
 {
     opensmt::Number s = getIdOp();
     if (terms.size() == 0) {
