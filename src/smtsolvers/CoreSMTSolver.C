@@ -344,18 +344,12 @@ bool CoreSMTSolver::addClause_(const vec<Lit> & _ps, CRef & cr_o)
 #ifdef PRODUCE_PROOF
     root = ca.alloc( ps, false );
     cr_o = root;
-    proof.addRoot( root, CLA_ORIG );
-    assert( config.isInit( ) );
-    proof.beginChain( root );
+    std::vector<Var> resolvedUnits;
 #endif
     for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
     {
         if ((value(ps[i]) == l_True && vardata[var(ps[i])].level == 0) || ps[i] == ~p)
         {
-#ifdef PRODUCE_PROOF
-            proof.endChain( );
-            proof.forceDelete( root );
-#endif
             // decrease the counts of those encountered so far
             for (int k = 0; k < j; k++)
             {
@@ -372,13 +366,22 @@ bool CoreSMTSolver::addClause_(const vec<Lit> & _ps, CRef & cr_o)
 #ifdef PRODUCE_PROOF
         else if ( value(ps[i]) == l_False )
         {
-            resolved = true;
-            proof.resolve( units[ var(ps[i]) ], var( ps[i] ) );
+            resolvedUnits.push_back(var(ps[i]));
         }
 #endif
     }
     ps.shrink(i - j);
+#ifdef PRODUCE_PROOF
+    proof.addRoot( root, CLA_ORIG );
+    assert( config.isInit( ) );
+    if (!resolvedUnits.empty()) {
+        proof.beginChain( root );
+        for(Var v : resolvedUnits) {
+            proof.resolve(units[v], v);
+        }
+    }
 
+#endif
     if (ps.size() == 0)
     {
 #ifdef PRODUCE_PROOF
@@ -389,20 +392,14 @@ bool CoreSMTSolver::addClause_(const vec<Lit> & _ps, CRef & cr_o)
     }
 
 #ifdef PRODUCE_PROOF
-    CRef res = CRef_Undef;
-    if ( resolved )
+    CRef res = root;
+    if ( !resolvedUnits.empty() )
     {
         res = ca.alloc( ps, false );
         assert( ca[res].size( ) < ca[root].size( ) );
         proof.endChain( res );
         // Save root for removal
         tleaves.push( root );
-    }
-    else
-    {
-        res = root;
-        // Throw away unnecessary chain
-        proof.endChain( );
     }
 #endif
 
