@@ -48,7 +48,7 @@ void LALogic::splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) 
         var = term;
         fac = getTerm_NumOne();
     } else {
-        var = getTerm_NumOne();
+        var = PTRef_Undef; // MB: no variable
         fac = term;
     }
 }
@@ -610,14 +610,21 @@ PTRef LALogic::mkNumPlus(const vec<PTRef>& args, char** msg)
     for (int i = 0; i < keys.size(); i++) {
         const vec<PTRef>& consts = s2t[keys[i]];
         PTRef consts_summed = consts.size() == 1 ? consts[0] : mkNumPlus(consts);
+        if (isNumZero(consts_summed)) { continue; }
+        if (keys[i] == PTRef_Undef) {
+            sum_args.push(consts_summed);
+            continue;
+        }
+        if (isNumOne(consts_summed)) {
+            sum_args.push(keys[i]);
+            continue;
+        }
+        // default case, variable and constant (cannot be simplified)
         vec<PTRef> term_args;
         term_args.push(consts_summed);
-        if (keys[i] != PTRef_Undef)
-            term_args.push(keys[i]);
-        else term_args.push(getTerm_NumOne());
-        PTRef term = mkNumTimes(term_args);
-        if (!isNumZero(term))
-            sum_args.push(term);
+        term_args.push(keys[i]);
+        PTRef term = mkFun(get_sym_Num_TIMES(), term_args);
+        sum_args.push(term);
     }
     if (sum_args.size() == 1) return sum_args[0];
     PTRef tr = mkFun(s_new, sum_args, msg);
