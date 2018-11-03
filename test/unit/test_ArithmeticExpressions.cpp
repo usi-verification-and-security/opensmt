@@ -168,5 +168,31 @@ TEST(ArithmeticExpressions_test, test_mkNumNeg)
     ASSERT_EQ(logic.getNumConst(minus), -1);
 }
 
+TEST(ArithmeticExpressions_test, test_Inequality_Var_WithCoeff)
+{
+    SMTConfig config;
+    LRALogic logic{config};
+    PTRef one = logic.getTerm_NumOne();
+    PTRef a = logic.mkNumVar("a");
+    PTRef minus = logic.mkNumNeg(a);
+    PTRef leq = logic.mkNumLeq(minus, a);
+    ASSERT_TRUE(logic.isNumLeq(leq));
+    ASSERT_EQ(leq, logic.mkNumLeq(logic.getTerm_NumZero(), a));
+}
+
+TEST(ArithmeticExpressions_test, test_Inequality_Var_NonZero)
+{
+    SMTConfig config;
+    LRALogic logic{config};
+    PTRef one = logic.getTerm_NumOne();
+    PTRef a = logic.mkNumVar("a");
+    PTRef leq = logic.mkNumLeq(one, a);
+    PTRef geq = logic.mkNumGeq(one, a);
+    ASSERT_TRUE(logic.isNumLeq(leq));
+    ASSERT_TRUE(logic.isNumLeq(geq));
+}
+
+
+
 
 
