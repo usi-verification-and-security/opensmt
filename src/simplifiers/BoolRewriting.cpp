@@ -138,10 +138,6 @@ PTRef mergePTRefArgs(Logic & logic, PTRef tr, Map<PTRef,PTRef,PTRefHash>& cache,
     else {
         new_tr = logic.mkOr(new_args);
     }
-#ifdef PRODUCE_PROOF // MB: TODO: move this elsewhere
-    // copy the partition of tr to the resulting new term
-    logic.transferPartitionMembership(tr, new_tr);
-#endif
     return new_tr;
 }
 

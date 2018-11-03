@@ -256,9 +256,11 @@ sstat MainSolver::simplifyFormulas(int from, int& to, char** err_msg)
             assert(logic.getPartitionIndex(fla) != -1);
             // Optimize the dag for cnfization
             if (logic.isBooleanOperator(fla)) {
+                PTRef old = fla;
                 Map<PTRef,int,PTRefHash> PTRefToIncoming;
                 computeIncomingEdges(fla, PTRefToIncoming);
                 fla = rewriteMaxArity(fla, PTRefToIncoming);
+                logic.transferPartitionMembership(old, fla);
             }
             assert(logic.getPartitionIndex(fla) != -1);
             logic.computePartitionMasks(fla);
