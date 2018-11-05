@@ -118,20 +118,16 @@ void CoreSMTSolver::dumpRndInter(std::ofstream& dump_out)
 
   Proof::Proof( ClauseAllocator& cl )
   : begun     ( false )
-  , chain_cla ( NULL )
-  , chain_var ( NULL )
   , last_added( CRef_Undef )
   , cl_al		( cl )
 { }
 
 Proof::~Proof( )
 {
-    if (chain_var) delete chain_var;
-    if (chain_cla) delete chain_cla;
     for ( map< CRef, ProofDer * >::iterator it = clause_to_proof_der.begin(); it != clause_to_proof_der.end(); it++ )
     {
         ProofDer* pd = it->second;
-        if (pd) delete pd;
+        delete pd;
     }
 }
 
@@ -146,10 +142,8 @@ void Proof::addRoot( CRef c, clause_type_t t )
   assert( t == CLA_ORIG || t == CLA_LEARNT || t == CLA_THEORY );
   // Do nothing. Just complies with previous interface
   ProofDer * d = new ProofDer( );
-  d->chain_cla = new vector< CRef >;
-  d->chain_var = new vector< Var >;
   // Not yet referenced
-  d->ref = 0;
+  assert(d->ref == 0);
   d->type = t;
   assert( clause_to_proof_der.find( c ) == clause_to_proof_der.end( ) );
   clause_to_proof_der[ c ] = d;
@@ -184,13 +178,10 @@ void Proof::beginChain( CRef c )
     assert( c != CRef_Undef );
     assert( !begun );
     begun = true;
-    assert( chain_cla == NULL );
-    assert( chain_var == NULL );
-    // Allocates the temporary store for the chain of clauses and variables
-    chain_cla = new vector< CRef >;
-    chain_var = new vector< Var >;
+    assert( chain_cla.empty());
+    assert( chain_var.empty());
     // Sets the first clause of the chain
-    chain_cla->push_back( c );
+    chain_cla.push_back( c );
     assert( clause_to_proof_der.find( c ) != clause_to_proof_der.end( ) );
     // Increase reference
     clause_to_proof_der[ c ]->ref ++;
@@ -203,29 +194,12 @@ void Proof::beginChain( CRef c )
 void Proof::resolve( CRef c, Var p )
 {
     assert( c != CRef_Undef );
-    chain_cla->push_back( c );
-    chain_var->push_back( p );
+    chain_cla.push_back( c );
+    chain_var.push_back( p );
     assert( clause_to_proof_der.find( c ) != clause_to_proof_der.end( ) );
     ProofDer* lala = clause_to_proof_der[c];
     // Increase reference
     clause_to_proof_der[ c ]->ref ++;
-}
-
-//
-// This is called when we need to throw away the
-// temporary chains of resolution steps accumulated
-// for the last clause
-//
-void Proof::endChain( )
-{
-  assert( begun );
-  begun = false;
-  assert( chain_cla );
-  assert( chain_var );
-  delete chain_cla;
-  delete chain_var;
-  chain_var = NULL;
-  chain_cla = NULL;
 }
 
 //
@@ -237,19 +211,17 @@ void Proof::endChain( CRef res )
   assert( begun );
   begun = false;
   // There was no chain (only the first clause was stored)
-  if ( chain_cla->size( ) == 1 )
+  if ( chain_cla.size( ) == 1 )
   {
     // The first clause was not touched
-    if ( (*chain_cla)[0] == res )
+    if ( chain_cla[0] == res )
     {
       // Do nothing
       assert( clause_to_proof_der.find( res ) != clause_to_proof_der.end( ) );
       last_added = res;
-      delete chain_cla;
-      delete chain_var;
-      // Reset temporary chains
-      chain_cla = NULL;
-      chain_var = NULL;
+        // Reset temporary chains
+      chain_cla.clear();
+      chain_var.clear();
       return;
     }
     // Otherwise we have to link the proof of this clause
@@ -260,40 +232,33 @@ void Proof::endChain( CRef res )
     // Use same proof der of (*chain_cla)[0]
 
     // (*chain_cla)[0] is referenced by this
-    clause_to_proof_der[ (*chain_cla)[0] ]->ref ++;
-//    ProofDer* temp = clause_to_proof_der[(*chain_cla)[0]];
+    clause_to_proof_der[ chain_cla[0] ]->ref ++;
     assert( clause_to_proof_der.find( res ) == clause_to_proof_der.end( ) );
     ProofDer * d = new ProofDer( );
-    assert( chain_cla );
-    assert( chain_var );
-    d->chain_cla = chain_cla;
-    d->chain_var = NULL;
-    d->type = clause_to_proof_der[ (*chain_cla)[0] ]->type;
-    delete chain_var;
-    // Not yet referenced
-    d->ref = 0;
+    assert(d->ref == 0);
+    d->type = clause_to_proof_der[ chain_cla[0] ]->type;
+    d->chain_cla = std::move(chain_cla);
+    assert(chain_var.empty());
     clause_to_proof_der[ res ] = d;
     last_added = res;
-    chain_cla = NULL;
-    chain_var = NULL;
+    chain_cla.clear();
+    chain_var.clear();
     return;
   }
   // Otherwise there was a derivation chain
   // Save the temporary derivation chain in a new
   // derivation structure
   ProofDer * d = new ProofDer( );
-  assert( chain_cla );
-  assert( chain_var );
-  d->chain_cla = chain_cla;
-  d->chain_var = chain_var;
+  assert(d->ref == 0);
+  d->chain_cla = std::move(chain_cla);
+  d->chain_var = std::move(chain_var);
   d->type = CLA_LEARNT;
-  d->ref = 0;
   assert( clause_to_proof_der.find( res ) == clause_to_proof_der.end( ) );
   // Create association between res and it's derivation chain
   clause_to_proof_der[ res ] = d;
   last_added = res;
-  chain_cla = NULL;
-  chain_var = NULL;
+  chain_cla.clear();
+  chain_var.clear();
 }
 
 bool Proof::deleted( CRef cr )
@@ -307,12 +272,12 @@ bool Proof::deleted( CRef cr )
   // This clause is still used somewhere else, keep it
   if ( d->ref > 0 ) return false;
   // Dereference parents
-  for ( unsigned i = 0 ; i < d->chain_cla->size( ) ; i ++ )
+  for ( unsigned i = 0 ; i < d->chain_cla.size( ) ; i ++ )
   {
     // Dereference of one
-    if( clause_to_proof_der.find( (*(d->chain_cla))[i] ) == clause_to_proof_der.end( ) )
+    if( clause_to_proof_der.find( d->chain_cla[i] ) == clause_to_proof_der.end( ) )
       continue;
-    ProofDer * dc = clause_to_proof_der[ (*(d->chain_cla))[i] ];
+    ProofDer * dc = clause_to_proof_der[ d->chain_cla[i] ];
     dc->ref --;
   }
   assert( d->ref == 0 );
@@ -324,41 +289,6 @@ bool Proof::deleted( CRef cr )
   cl_al.free( cr );
   // Completely removed
   return true;
-}
-
-/* NOTE old code
-void Proof::forceDelete( Clause * c, const bool deref )
-{
-  assert( clause_to_proof_der.find( c ) != clause_to_proof_der.end( ) );
-  ProofDer * d = clause_to_proof_der[ c ];
-  assert( d );
-  if ( deref )
-  {
-    for ( unsigned i = 0 ; i < d->chain_cla->size( ) ; i ++ )
-    {
-      // Dereference of one
-      // assert( clause_to_proof_der.find( (*(d->chain_cla))[i] ) != clause_to_proof_der.end( ) );
-      // Already removed previously
-      if( clause_to_proof_der.find( (*(d->chain_cla))[i] ) == clause_to_proof_der.end( ) )
-	continue;
-      ProofDer * dc = clause_to_proof_der[ (*(d->chain_cla))[i] ];
-      dc->ref --;
-    }
-  }
-  free( c );
-  delete d;
-  clause_to_proof_der.erase( c );
-}*/
-
-void Proof::forceDelete( CRef c )
-{
-	//cerr << "Forcing deletion of " << c << endl;
-	assert( clause_to_proof_der.find( c ) != clause_to_proof_der.end( ) );
-	ProofDer * d = clause_to_proof_der[ c ];
-	assert( d );
-	delete d;
-	clause_to_proof_der.erase( c );
-	cl_al.free( c );
 }
 
 // Still stubs
@@ -394,22 +324,22 @@ void Proof::print( ostream & out, CoreSMTSolver & s, THandler & t )
 
     // Special case in which there is not
     // a derivation but just an equivalence
-    if ( d->chain_cla->size( ) == 1 )
+    if ( d->chain_cla.size( ) == 1 )
     {
       // Say c is done
       cache.insert( cr );
       // Move to equiv
-      cr = (*d->chain_cla)[0];
+      cr = d->chain_cla[0];
       // Retrieve derivation
       assert( clause_to_proof_der.find( cr ) != clause_to_proof_der.end( ) );
       d = clause_to_proof_der[ cr ];
     }
-    assert( d->chain_cla->size( ) != 1 );
+    assert( d->chain_cla.size( ) != 1 );
     // Look for unprocessed children
     bool unproc_children = false;
-    for ( unsigned i = 0 ; i < d->chain_cla->size( ) ; i ++ )
+    for ( unsigned i = 0 ; i < d->chain_cla.size( ) ; i ++ )
     {
-      CRef cc = (*(d->chain_cla))[i];
+      CRef cc = d->chain_cla[i];
       if ( cache.find( cc ) == cache.end( ) )
       {
 	unproc_children = true;
@@ -422,7 +352,7 @@ void Proof::print( ostream & out, CoreSMTSolver & s, THandler & t )
     // Remove current
     unprocessed.pop_back( );
 
-    if ( d->chain_cla->size( ) > 0 )
+    if ( d->chain_cla.size( ) > 0 )
     {
       out << "; ";
       if ( cr == CRef_Undef )
@@ -433,8 +363,8 @@ void Proof::print( ostream & out, CoreSMTSolver & s, THandler & t )
       out << "(let (cls_" << cr;
       nof_lets ++;
 
-      vector< CRef > & chain_cla = (*(d->chain_cla));
-      vector< Var > & chain_var = (*(d->chain_var));
+      vector< CRef > & chain_cla = d->chain_cla;
+      vector< Var > & chain_var = d->chain_var;
 
       assert( chain_cla.size( ) == chain_var.size( ) + 1 );
 
@@ -521,7 +451,7 @@ void CoreSMTSolver::getMixedAtoms( set< Var > & mixed )
       // Get clause derivation tree
       ProofDer & proofder = *(clause_to_proof_der[ cr ]);
       // Clauses chain
-      vector< CRef > & chain_cla = *(proofder.chain_cla);
+      vector< CRef > & chain_cla = proofder.chain_cla;
       clause_type_t ctype = proofder.type;
 
       assert( ctype == CLA_THEORY
@@ -783,14 +713,13 @@ void CoreSMTSolver::clearLiteralsFromProof(vec<Lit> const & lits) {
         CRef oldRef = chain.first;
         CRef newRef = processClause(chain.first, ca, cache, lits, theory_handler.getLogic());
         ProofDer * derivation = chain.second;
-        assert(derivation->chain_cla);
-        auto & references = *(derivation->chain_cla);
+        auto & references = derivation->chain_cla;
         std::vector<CRef> clearedDerivation;
         for (auto cref : references) {
             clearedDerivation.push_back(processClause(cref, ca, cache, lits, theory_handler.getLogic()));
         }
-        derivation->chain_cla->clear();
-        std::copy(clearedDerivation.begin(), clearedDerivation.end(), std::back_inserter(*(derivation->chain_cla)));
+        derivation->chain_cla.clear();
+        std::copy(clearedDerivation.begin(), clearedDerivation.end(), std::back_inserter(derivation->chain_cla));
         assert(cache.find(chain.first) != cache.end());
         clearedProof[newRef] = derivation;
     }

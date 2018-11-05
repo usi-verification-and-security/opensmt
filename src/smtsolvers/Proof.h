@@ -42,20 +42,13 @@ typedef enum { CLA_ORIG, CLA_LEARNT, CLA_THEORY } clause_type_t;
 struct ProofDer
 {
     ProofDer( )
-    : chain_cla ( NULL )
-    , chain_var ( NULL )
-    , ref       ( 0 )
+    : ref       ( 0 )
     { }
 
-    ~ProofDer( )
-    {
-        assert( chain_cla );
-        delete chain_cla;
-        if ( chain_var ) delete chain_var;
-    }
+    ~ProofDer( ) = default;
 
-    vector< CRef >* chain_cla;               // Clauses chain
-    vector< Var > *      chain_var;               // Pivot chain
+    std::vector< CRef >  chain_cla;               // Clauses chain
+    std::vector< Var >   chain_var;               // Pivot chain
     int                  ref;                     // Reference counter
     clause_type_t        type;                    // The type of the clause
 };
@@ -64,8 +57,8 @@ class Proof
 {
     bool begun; // For debugging
 
-    vector< CRef > *            chain_cla;
-    vector< Var > *             chain_var;
+    std::vector< CRef >            chain_cla;
+    std::vector< Var >             chain_var;
     map< CRef, ProofDer * >     clause_to_proof_der;
     CRef                        last_added;
     ClauseAllocator&            cl_al;
@@ -82,10 +75,8 @@ public:
     bool isTheoryInterpolator(CRef);
     void beginChain ( CRef );                             // Beginnig of resolution chain
     void resolve    ( CRef, Var );                        // Resolve
-    void endChain   ( );                                      // Chain that ended in sat
     void endChain   ( CRef );                             // Last chain refers to clause
     bool deleted    ( CRef );                             // Remove clauses if possible
-    void forceDelete( CRef );         // Remove unconditionally
     inline Clause& getClause        ( CRef cr ) { return cl_al[cr]; } // Get clause from reference
 
     void pushBacktrackPoint     ( );                          // Restore previous state

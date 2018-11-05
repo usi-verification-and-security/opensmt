@@ -169,8 +169,8 @@ void ProofGraph::buildProofGraph( int nVars )
             // Get clause derivation tree
             assert(clause_to_proof_der[currClause] != NULL);
             ProofDer &           proofder = *(clause_to_proof_der[currClause]); // Derivation
-            vector< CRef > &     chaincla = (*(proofder.chain_cla));            // Clauses chain
-            vector< Var > &      chainvar = (*(proofder.chain_var));            // Pivot chain
+            vector< CRef > &     chaincla = proofder.chain_cla;            // Clauses chain
+            vector< Var > &      chainvar = proofder.chain_var;            // Pivot chain
             clause_type_t        ctype    = proofder.type;
 
             // No derivation tree: original clause
@@ -253,8 +253,8 @@ void ProofGraph::buildProofGraph( int nVars )
 
                 // First clause not yet processed
                 CRef clause_0 = chaincla[0];
-                while(clause_to_proof_der[clause_0]->chain_cla != NULL && clause_to_proof_der[clause_0]->chain_cla->size() == 1)
-                    clause_0 = (*(clause_to_proof_der[clause_0]->chain_cla))[0];
+                while(clause_to_proof_der[clause_0]->chain_cla.size() == 1)
+                    clause_0 = clause_to_proof_der[clause_0]->chain_cla[0];
 
                 if(clauseToIDMap.find(clause_0)==clauseToIDMap.end())
                 {
@@ -306,8 +306,8 @@ void ProofGraph::buildProofGraph( int nVars )
                 {
                     // ith clause not yet processed
                     CRef clause_i = chaincla[i];
-                    while(clause_to_proof_der[clause_i]->chain_cla != NULL && clause_to_proof_der[clause_i]->chain_cla->size() == 1)
-                        clause_i = (*(clause_to_proof_der[clause_i]->chain_cla))[0];
+                    while(clause_to_proof_der[clause_i]->chain_cla.size() == 1)
+                        clause_i = clause_to_proof_der[clause_i]->chain_cla[0];
 
 
                     if(clauseToIDMap.find(clause_i)==clauseToIDMap.end())
