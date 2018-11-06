@@ -37,7 +37,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 class CoreSMTSolver;
 class THandler;
 
-typedef enum { CLA_ORIG, CLA_LEARNT, CLA_THEORY } clause_type_t;
+enum class clause_type: char { CLA_ORIG, CLA_LEARNT, CLA_THEORY, CLA_DERIVED };
+
+std::ostream &operator<<(std::ostream &os, clause_type enumTmp);
 
 struct ProofDer
 {
@@ -45,12 +47,14 @@ struct ProofDer
     : ref       ( 0 )
     { }
 
+    ProofDer(clause_type type) : ref {0}, type{type} {}
+
     ~ProofDer( ) = default;
 
     std::vector< CRef >  chain_cla;               // Clauses chain
     std::vector< Var >   chain_var;               // Pivot chain
     int                  ref;                     // Reference counter
-    clause_type_t        type;                    // The type of the clause
+    clause_type        type;                    // The type of the clause
 };
 
 class Proof
@@ -59,7 +63,7 @@ class Proof
 
     std::vector< CRef >            chain_cla;
     std::vector< Var >             chain_var;
-    map< CRef, ProofDer * >     clause_to_proof_der;
+    std::unordered_map< CRef, ProofDer>     clause_to_proof_der;
     CRef                        last_added;
     ClauseAllocator&            cl_al;
     map< CRef, TheoryInterpolator* >  clause_to_itpr;
@@ -67,9 +71,9 @@ class Proof
 public:
 
     Proof ( ClauseAllocator& cl );
-    ~Proof( );
+    ~Proof( ) = default;
 
-    void addRoot    ( CRef, clause_type_t );              // Adds a new root clause
+    void addRoot    ( CRef, clause_type );              // Adds a new root clause
     void setTheoryInterpolator(CRef, TheoryInterpolator*);
     TheoryInterpolator* getTheoryInterpolator(CRef);
     bool isTheoryInterpolator(CRef);
@@ -89,7 +93,7 @@ public:
 
     void print( ostream &, CoreSMTSolver &, THandler & );     // Print proof in SMT-LIB format
 
-    map< CRef, ProofDer * > & getProof( ) { return clause_to_proof_der; }
+    std::unordered_map< CRef, ProofDer> & getProof( ) { return clause_to_proof_der; }
 };
 
 //=================================================================================================

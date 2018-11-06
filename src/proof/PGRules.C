@@ -227,7 +227,7 @@ clauseid_t ProofGraph::applyRuleA1( RuleContext& ra )
 	v2->remRes(ra.getW());
 	y->setAnt1(v2);
 	y->setAnt2(v3);
-	y->setType(CLADERIVED);
+	y->setType(clause_type::CLA_DERIVED);
 	y->setPivot(v->getPivot());
 	y->setId(graph.size());
 	y->addRes(ra.getV());

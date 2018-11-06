@@ -48,7 +48,7 @@ void ProofGraph::printProofAsDotty( ostream & out, ipartitions_t A_mask )
 			string color="";
 			switch( node->getType() )
 			{
-			case 0:
+			case clause_type::CLA_ORIG:
 			{
 				typ = "cls_";
 				out << typ << node->getId() << "[shape=plaintext, label=\"c" << node->getId() <<"  :  ";
@@ -68,7 +68,7 @@ void ProofGraph::printProofAsDotty( ostream & out, ipartitions_t A_mask )
 				out<< " fontcolor=\"black\", style=\"filled\"]" << endl;
 			}
 			break;
-			case 1:
+			case clause_type::CLA_THEORY:
 			{
 				typ = "lea_";
 				out << typ << node->getId() << "[shape=plaintext, label=\"c" << node->getId() <<"  :  ";
@@ -81,7 +81,7 @@ void ProofGraph::printProofAsDotty( ostream & out, ipartitions_t A_mask )
 				out << ", style=\"filled\"]" << endl;
 			}
 			break;
-			case 2:
+			case clause_type::CLA_LEARNT:
 			{
 				typ = "ded_";
 				out << typ << node->getId() << "[shape=plaintext, label=\"c" << node->getId() <<"  :  ";
@@ -105,9 +105,9 @@ void ProofGraph::printProofAsDotty( ostream & out, ipartitions_t A_mask )
 			{
 				switch( r1->getType() )
 				{
-				case 0: t1 = "cls_"; break;
-				case 1: t1 = "lea_"; break;
-				case 2: t1 = "ded_"; break;
+				case clause_type::CLA_ORIG: t1 = "cls_"; break;
+				case clause_type::CLA_THEORY: t1 = "lea_"; break;
+				case clause_type::CLA_LEARNT: t1 = "ded_"; break;
 				default: t1 = ""; break;
 				}
 				out << t1 << r1->getId() << " -> " << typ << node->getId();
@@ -121,9 +121,9 @@ void ProofGraph::printProofAsDotty( ostream & out, ipartitions_t A_mask )
 			{
 				switch( r2->getType() )
 				{
-				case 0: t2 = "cls_"; break;
-				case 1: t2 = "lea_"; break;
-				case 2: t2 = "ded_"; break;
+				case clause_type::CLA_ORIG: t2 = "cls_"; break;
+				case clause_type::CLA_THEORY: t2 = "lea_"; break;
+				case clause_type::CLA_LEARNT: t2 = "ded_"; break;
 				default: t2 = ""; break;
 				}
 				out << t2 << r2->getId() << " -> " << typ << node->getId();

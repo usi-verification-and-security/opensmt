@@ -178,7 +178,7 @@ void ProofGraph::checkClause(clauseid_t nid)
 	}
 	if(n->getClauseSize()==0)
 	{
-		if(n->getType()==CLAORIG)
+		if(n->getType()==clause_type::CLA_ORIG)
 		{
 			cerr << n->getId() << " is an empty original clause" << endl;
 			opensmt_error_();

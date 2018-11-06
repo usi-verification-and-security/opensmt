@@ -372,7 +372,7 @@ bool CoreSMTSolver::addClause_(const vec<Lit> & _ps, CRef & cr_o)
     }
     ps.shrink(i - j);
 #ifdef PRODUCE_PROOF
-    proof.addRoot( root, CLA_ORIG );
+    proof.addRoot( root, clause_type::CLA_ORIG );
     assert( config.isInit( ) );
     if (!resolvedUnits.empty()) {
         proof.beginChain( root );
@@ -1056,7 +1056,7 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
             assert( ctr != CRef_Undef );
             vardata[var(p)].reason = ctr;
 #ifdef PRODUCE_PROOF
-            proof.addRoot(ctr, CLA_THEORY);
+            proof.addRoot(ctr, clause_type::CLA_THEORY);
             /*if ( config.isIncremental() )
             {
                 undo_stack_oper.push_back( NEWPROOF );
@@ -2084,9 +2084,6 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                 else if (value(p) == l_False)
                 {
                     analyzeFinal(~p, conflict);
-#ifdef PRODUCE_PROOF
-                    clearLiteralsFromProof(conflict);
-#endif // PRODUCE_PROOF
                     if (splits.size() > 0)
                     {
                         opensmt::stop = true;

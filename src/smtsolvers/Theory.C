@@ -188,7 +188,7 @@ CoreSMTSolver::handleUnsat()
         CRef confl = ca.alloc(conflicting, config.sat_temporary_learn);
 
         Clause & c = ca[confl];
-        proof.addRoot( confl, CLA_THEORY );
+        proof.addRoot( confl, clause_type::CLA_THEORY );
         //TODO: is it correct?
         //proof.setTheoryInterpolator(confl, theory_itpr);
         //clause_to_itpr[ confl ] = theory_itpr;
@@ -274,7 +274,7 @@ CoreSMTSolver::handleUnsat()
 
     learnt_clause.clear();
 #ifdef PRODUCE_PROOF
-    proof.addRoot( confl, CLA_THEORY );
+    proof.addRoot( confl, clause_type::CLA_THEORY );
     tleaves.push( confl );
     if ( config.isIncremental() )
     {

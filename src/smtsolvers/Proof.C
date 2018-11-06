@@ -122,31 +122,17 @@ void CoreSMTSolver::dumpRndInter(std::ofstream& dump_out)
   , cl_al		( cl )
 { }
 
-Proof::~Proof( )
-{
-    for ( map< CRef, ProofDer * >::iterator it = clause_to_proof_der.begin(); it != clause_to_proof_der.end(); it++ )
-    {
-        ProofDer* pd = it->second;
-        delete pd;
-    }
-}
-
 //
 // Allocates the necessary structures to track
 // the derivation of this clause c
 //
-void Proof::addRoot( CRef c, clause_type_t t )
+void Proof::addRoot( CRef c, clause_type t )
 {
   assert( c != CRef_Undef );
   assert( checkState( ) );
-  assert( t == CLA_ORIG || t == CLA_LEARNT || t == CLA_THEORY );
-  // Do nothing. Just complies with previous interface
-  ProofDer * d = new ProofDer( );
-  // Not yet referenced
-  assert(d->ref == 0);
-  d->type = t;
+  assert( t == clause_type::CLA_ORIG || t == clause_type::CLA_LEARNT || t == clause_type::CLA_THEORY );
   assert( clause_to_proof_der.find( c ) == clause_to_proof_der.end( ) );
-  clause_to_proof_der[ c ] = d;
+  clause_to_proof_der.emplace(c, ProofDer{t});
   last_added = c;
 }
 
@@ -184,7 +170,7 @@ void Proof::beginChain( CRef c )
     chain_cla.push_back( c );
     assert( clause_to_proof_der.find( c ) != clause_to_proof_der.end( ) );
     // Increase reference
-    clause_to_proof_der[ c ]->ref ++;
+    clause_to_proof_der.at(c).ref++;
 }
 
 //
@@ -197,9 +183,8 @@ void Proof::resolve( CRef c, Var p )
     chain_cla.push_back( c );
     chain_var.push_back( p );
     assert( clause_to_proof_der.find( c ) != clause_to_proof_der.end( ) );
-    ProofDer* lala = clause_to_proof_der[c];
     // Increase reference
-    clause_to_proof_der[ c ]->ref ++;
+    clause_to_proof_der.at(c).ref++;
 }
 
 //
@@ -232,14 +217,14 @@ void Proof::endChain( CRef res )
     // Use same proof der of (*chain_cla)[0]
 
     // (*chain_cla)[0] is referenced by this
-    clause_to_proof_der[ chain_cla[0] ]->ref ++;
+    clause_to_proof_der.at(chain_cla[0]).ref++;
     assert( clause_to_proof_der.find( res ) == clause_to_proof_der.end( ) );
-    ProofDer * d = new ProofDer( );
-    assert(d->ref == 0);
-    d->type = clause_to_proof_der[ chain_cla[0] ]->type;
-    d->chain_cla = std::move(chain_cla);
+    ProofDer d;
+    assert(d.ref == 0);
+    d.type = clause_to_proof_der[ chain_cla[0] ].type;
+    d.chain_cla = std::move(chain_cla);
     assert(chain_var.empty());
-    clause_to_proof_der[ res ] = d;
+    clause_to_proof_der.emplace(res, d);
     last_added = res;
     chain_cla.clear();
     chain_var.clear();
@@ -248,14 +233,14 @@ void Proof::endChain( CRef res )
   // Otherwise there was a derivation chain
   // Save the temporary derivation chain in a new
   // derivation structure
-  ProofDer * d = new ProofDer( );
-  assert(d->ref == 0);
-  d->chain_cla = std::move(chain_cla);
-  d->chain_var = std::move(chain_var);
-  d->type = CLA_LEARNT;
+  ProofDer d;
+  assert(d.ref == 0);
+  d.chain_cla = std::move(chain_cla);
+  d.chain_var = std::move(chain_var);
+  d.type = clause_type::CLA_LEARNT;
   assert( clause_to_proof_der.find( res ) == clause_to_proof_der.end( ) );
   // Create association between res and it's derivation chain
-  clause_to_proof_der[ res ] = d;
+  clause_to_proof_der.emplace(res, d);
   last_added = res;
   chain_cla.clear();
   chain_var.clear();
@@ -266,23 +251,20 @@ bool Proof::deleted( CRef cr )
   // Never remove units
   if ( cl_al[cr].size( ) == 1 ) return false;
   assert( clause_to_proof_der.find( cr ) != clause_to_proof_der.end( ) );
-  ProofDer * d = clause_to_proof_der[ cr ];
-  assert( d );
-  assert( d->ref >= 0 );
+  const ProofDer& d = clause_to_proof_der[ cr ];
+  assert( d.ref >= 0 );
   // This clause is still used somewhere else, keep it
-  if ( d->ref > 0 ) return false;
+  if ( d.ref > 0 ) return false;
   // Dereference parents
-  for ( unsigned i = 0 ; i < d->chain_cla.size( ) ; i ++ )
+  for ( unsigned i = 0 ; i < d.chain_cla.size( ) ; i ++ )
   {
     // Dereference of one
-    if( clause_to_proof_der.find( d->chain_cla[i] ) == clause_to_proof_der.end( ) )
+    if( clause_to_proof_der.find( d.chain_cla[i] ) == clause_to_proof_der.end( ) )
       continue;
-    ProofDer * dc = clause_to_proof_der[ d->chain_cla[i] ];
-    dc->ref --;
+    ProofDer & dc = clause_to_proof_der.at(d.chain_cla[i]);
+    dc.ref --;
   }
-  assert( d->ref == 0 );
-  // Remove derivation
-  delete d;
+  assert( d.ref == 0 );
   // Remove correspondence
   clause_to_proof_der.erase( cr );
   // Can be removed
@@ -320,7 +302,7 @@ void Proof::print( ostream & out, CoreSMTSolver & s, THandler & t )
       continue;
     }
     assert( clause_to_proof_der.find( cr ) != clause_to_proof_der.end( ) );
-    ProofDer * d = clause_to_proof_der[ cr ];
+    ProofDer * d = &clause_to_proof_der.at(cr);
 
     // Special case in which there is not
     // a derivation but just an equivalence
@@ -332,7 +314,7 @@ void Proof::print( ostream & out, CoreSMTSolver & s, THandler & t )
       cr = d->chain_cla[0];
       // Retrieve derivation
       assert( clause_to_proof_der.find( cr ) != clause_to_proof_der.end( ) );
-      d = clause_to_proof_der[ cr ];
+      d = &clause_to_proof_der[ cr ];
     }
     assert( d->chain_cla.size( ) != 1 );
     // Look for unprocessed children
@@ -397,9 +379,9 @@ void Proof::print( ostream & out, CoreSMTSolver & s, THandler & t )
     }
     else
     {
-      if ( d->type == CLA_ORIG )
+      if ( d->type == clause_type::CLA_ORIG )
 	core.insert( cr );
-      else if ( d->type == CLA_THEORY ) { }
+      else if ( d->type == clause_type::CLA_THEORY ) { }
       else { }
       out << "(let (cls_" << cr << " ";
       s.printSMTClause( out, cl_al[cr] );
@@ -436,7 +418,7 @@ void CoreSMTSolver::getMixedAtoms( set< Var > & mixed )
 {
   set< CRef > visited_set;
   vector< CRef > unprocessed_clauses;
-  map< CRef, ProofDer * > & clause_to_proof_der = proof.getProof( );
+  auto & clause_to_proof_der = proof.getProof( );
 
   unprocessed_clauses.push_back( CRef_Undef );
 
@@ -449,18 +431,18 @@ void CoreSMTSolver::getMixedAtoms( set< Var > & mixed )
     if( visited_set.find( cr ) == visited_set.end( ) )
     {
       // Get clause derivation tree
-      ProofDer & proofder = *(clause_to_proof_der[ cr ]);
+      const ProofDer & proofder = clause_to_proof_der[ cr ];
       // Clauses chain
-      vector< CRef > & chain_cla = proofder.chain_cla;
-      clause_type_t ctype = proofder.type;
+      const vector< CRef > & chain_cla = proofder.chain_cla;
+      clause_type ctype = proofder.type;
 
-      assert( ctype == CLA_THEORY
-	   || ctype == CLA_ORIG
-	   || ctype == CLA_LEARNT
+      assert( ctype == clause_type::CLA_THEORY
+	   || ctype == clause_type::CLA_ORIG
+	   || ctype == clause_type::CLA_LEARNT
 	   );
 
       // Mixed atoms may only appear within theory clauses
-      if ( ctype == CLA_THEORY )
+      if ( ctype == clause_type::CLA_THEORY )
       {
 	assert( chain_cla.size( ) == 0 );
 	Clause & cla = ca[cr];
@@ -480,7 +462,6 @@ void CoreSMTSolver::getMixedAtoms( set< Var > & mixed )
       // Link clause
       else if ( chain_cla.size( ) == 1 )
       {
-	assert( CLA_LEARNT );
 	if ( visited_set.find( chain_cla[ 0 ] ) == visited_set.end( ) )
 	  unprocessed_clauses.push_back( chain_cla[ 0 ] );
       }
@@ -661,70 +642,25 @@ void CoreSMTSolver::mixedVarDecActivity( )
   }
 }
 
-namespace {
-    std::vector<Lit> clearClause(Clause const & clause, vec<Lit> const & toRemove) {
-        std::vector<Lit> res;
-        for (int i = 0; i < clause.size(); ++i) {
-            bool found = false;
-            for (int j = 0; j < toRemove.size(); ++j) {
-                if (clause[i] == toRemove[j]) {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                res.push_back(clause[i]);
-            }
-        }
-        return res;
+std::ostream & operator<<(std::ostream & os, clause_type val) {
+    switch (val){
+        case clause_type ::CLA_LEARNT:
+            os << "learnt";
+            break;
+        case clause_type ::CLA_DERIVED:
+            os << "derived";
+            break;
+        case clause_type ::CLA_ORIG:
+            os << "original";
+            break;
+        case clause_type ::CLA_THEORY:
+            os << "theory";
+            break;
+        default:
+            assert(false);
     }
-
-    CRef processClause(CRef cref, ClauseAllocator& ca, std::unordered_map<CRef, CRef> & cache, vec<Lit> const & lits, Logic& logic){
-        auto it = cache.find(cref);
-        if (it != cache.end()) {
-            return it->second;
-        }
-        CRef mappedRef = cref;
-        if (mappedRef != CRef_Undef) {
-            Clause & clause = ca[cref];
-            auto cleared = clearClause(clause, lits);
-            assert(cleared.size() <= clause.size());
-            if (cleared.size() < clause.size()) {
-                if (cleared.empty()) {
-                    mappedRef = CRef_Undef;
-                } else {
-                    mappedRef = ca.alloc(cleared, clause.learnt());
-                    logic.addClauseClassMask(mappedRef, logic.getClauseClassMask(cref));
-                }
-            }
-        }
-        cache[cref] = mappedRef;
-        return mappedRef;
-    }
-
-
+    return os;
 }
 
-void CoreSMTSolver::clearLiteralsFromProof(vec<Lit> const & lits) {
-    auto & proof = this->proof.getProof();
-    std::map< CRef, ProofDer * > clearedProof;
-    std::unordered_map<CRef, CRef> cache;
-    for (auto & chain : proof) {
-        CRef oldRef = chain.first;
-        CRef newRef = processClause(chain.first, ca, cache, lits, theory_handler.getLogic());
-        ProofDer * derivation = chain.second;
-        auto & references = derivation->chain_cla;
-        std::vector<CRef> clearedDerivation;
-        for (auto cref : references) {
-            clearedDerivation.push_back(processClause(cref, ca, cache, lits, theory_handler.getLogic()));
-        }
-        derivation->chain_cla.clear();
-        std::copy(clearedDerivation.begin(), clearedDerivation.end(), std::back_inserter(derivation->chain_cla));
-        assert(cache.find(chain.first) != cache.end());
-        clearedProof[newRef] = derivation;
-    }
-    proof.clear();
-    proof.insert(clearedProof.begin(), clearedProof.end());
-}
 #endif // PRODUCE_PROOF
 

@@ -990,7 +990,6 @@ public:
         return clause_to_partition[ c ];
     }
 
-    void clearLiteralsFromProof(vec<Lit> const &);
 // NOTE old methods, to check
     void   printProof              ( ostream & );
     void   GetInterpolants         (const vector<vector<int> >& partitions, vector<PTRef>& interpolants);

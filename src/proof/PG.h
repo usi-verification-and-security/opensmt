@@ -34,17 +34,6 @@ class CoreSMTSolver;
 class Proof;
 
 
-// Types of clauses
-// NB: CLADERIVED are distinct from CLALEARNED,
-// that are the roots of the initial subproofs
-enum clause_type
-{
-	CLAORIG
-	, CLALEARNT
-	, CLADERIVED
-    , CLATHEORY
-};
-
 typedef unsigned clauseid_t;
 
 // Types of rules

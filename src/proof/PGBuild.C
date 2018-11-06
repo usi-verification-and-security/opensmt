@@ -93,7 +93,7 @@ void ProofGraph::buildProofGraph( int nVars )
     // b c
     // ...
     // a,b resolved over c...
-    map< CRef, ProofDer * > & clause_to_proof_der = proof.getProof( );
+    auto & clause_to_proof_der = proof.getProof( );
     map< CRef, ProofDer * >::iterator it;
 
     //To map clauses to graph id
@@ -141,7 +141,7 @@ void ProofGraph::buildProofGraph( int nVars )
         {
             // in case of (assert false), clause_to_proof_der[currClause] is actually NULL
             assert(clause_to_proof_der.find(currClause) != clause_to_proof_der.end());
-            if (currClause == CRef_Undef && clause_to_proof_der[currClause] == NULL)
+            if (currClause == CRef_Undef && clause_to_proof_der.at(currClause).chain_cla.empty())
             {
                 assert(graph.size() == 0);
                 ProofNode* n = new ProofNode(logic_);
@@ -149,7 +149,7 @@ void ProofGraph::buildProofGraph( int nVars )
                 // Add node to graph vector
                 int currId = (int)graph.size();
                 n->setId(currId);
-                n->setType(CLAORIG);
+                n->setType(clause_type::CLA_ORIG);
                 vector<Lit> false_clause;
                 Lit lit_false = PTRefToLit(logic_.getTerm_false());
                 false_clause.push_back(lit_false);
@@ -167,31 +167,31 @@ void ProofGraph::buildProofGraph( int nVars )
             }
 
             // Get clause derivation tree
-            assert(clause_to_proof_der[currClause] != NULL);
-            ProofDer &           proofder = *(clause_to_proof_der[currClause]); // Derivation
-            vector< CRef > &     chaincla = proofder.chain_cla;            // Clauses chain
-            vector< Var > &      chainvar = proofder.chain_var;            // Pivot chain
-            clause_type_t        ctype    = proofder.type;
+            assert(clause_to_proof_der.find(currClause) != clause_to_proof_der.end());
+            ProofDer &           proofder = clause_to_proof_der.at(currClause); // Derivation
+            const vector< CRef > &     chaincla = proofder.chain_cla;            // Clauses chain
+            const vector< Var > &      chainvar = proofder.chain_var;            // Pivot chain
+            clause_type        ctype    = proofder.type;
 
             // No derivation tree: original clause
             // Non empty clause
             // Only boolean reasoning allowed
-            if ( ctype == CLA_ORIG || ctype == CLA_THEORY )
+            if ( ctype == clause_type::CLA_ORIG || ctype == clause_type::CLA_THEORY )
             {
-                if (ctype == CLA_THEORY)
+                if (ctype == clause_type::CLA_THEORY)
                 {
                     if (chaincla.size() >= 2)
                     {
-                        proofder.type = CLA_LEARNT;
+                        proofder.type = clause_type::CLA_LEARNT; // MB: TODO why reassigning type?
                         q.push_back(currClause);
                         continue;
                     }
                 }
-                if (ctype == CLA_ORIG)
+                if (ctype == clause_type::CLA_ORIG)
                     assert(chaincla.size()==0);
                 // Empty clause (represented by NULL) has been labeled as original
                 // if generated at preprocessing time
-                if(ctype == CLA_ORIG && currClause==CRef_Undef)
+                if(ctype == clause_type::CLA_ORIG && currClause==CRef_Undef)
                 {
                     assert(graph.size()==0);
                     ProofNode* n=new ProofNode(logic_);
@@ -200,7 +200,7 @@ void ProofGraph::buildProofGraph( int nVars )
                     // Add node to graph vector
                     int currId=(int)graph.size();
                     n->setId(currId);
-                    n->setType(CLAORIG);
+                    n->setType(clause_type::CLA_ORIG);
                     graph.push_back(n);
                     assert(getNode(currId)==n);
                     root=currId;
@@ -212,10 +212,10 @@ void ProofGraph::buildProofGraph( int nVars )
                 if (clauseToIDMap.find(currClause)==clauseToIDMap.end())
                 {
                     ProofNode* n = new ProofNode(logic_);
-                    if (ctype == CLA_ORIG) num_leaf++;
+                    if (ctype == clause_type::CLA_ORIG) num_leaf++;
                     else num_theory++;
                     n->initClause(proof.getClause(currClause));
-                    if(ctype == CLA_ORIG)
+                    if(ctype == clause_type::CLA_ORIG)
                         n->setClauseRef(currClause);
                     // Add node to graph vector
                     int currId=(int)graph.size();
@@ -226,7 +226,7 @@ void ProofGraph::buildProofGraph( int nVars )
                     clauseToIDMap[currClause] = currId;
                     //Sort clause literals
                     std::sort(n->getClause().begin(),n->getClause().end());
-                    if (ctype == CLA_ORIG)
+                    if (ctype == clause_type::CLA_ORIG)
                     {
                         if ( n->getClauseSize() >= max_leaf_size ) max_leaf_size = n->getClauseSize();
                             avg_leaf_size += n->getClauseSize();
@@ -234,10 +234,10 @@ void ProofGraph::buildProofGraph( int nVars )
                 }
                 // NB: internal derived clauses not considered here
                 //Original clause
-                if (ctype == CLA_ORIG)
-                    getNode(clauseToIDMap[currClause])->setType(CLAORIG);
+                if (ctype == clause_type::CLA_ORIG)
+                    getNode(clauseToIDMap[currClause])->setType(clause_type::CLA_ORIG);
                 else
-                    getNode(clauseToIDMap[currClause])->setType(CLATHEORY);
+                    getNode(clauseToIDMap[currClause])->setType(clause_type::CLA_THEORY);
                 //Determine partition mask in case of interpolation
                 //if( produceInterpolants() > 0 )
                 //      getNode(clauseToIDMap[currClause])->setInterpPartitionMask();
@@ -245,7 +245,7 @@ void ProofGraph::buildProofGraph( int nVars )
             }
             // Learnt clause
             // Resolution tree present
-            else if(ctype==CLA_LEARNT)
+            else if(ctype==clause_type::CLA_LEARNT)
             {
                 int last_seen_id = -1;
                 assert(chaincla.size() >= 2);
@@ -253,15 +253,15 @@ void ProofGraph::buildProofGraph( int nVars )
 
                 // First clause not yet processed
                 CRef clause_0 = chaincla[0];
-                while(clause_to_proof_der[clause_0]->chain_cla.size() == 1)
-                    clause_0 = clause_to_proof_der[clause_0]->chain_cla[0];
+                while(clause_to_proof_der.at(clause_0).chain_cla.size() == 1)
+                    clause_0 = clause_to_proof_der.at(clause_0).chain_cla[0];
 
                 if(clauseToIDMap.find(clause_0)==clauseToIDMap.end())
                 {
                     ProofNode* n=new ProofNode(logic_);
                     n->initIData();
-                    clause_type_t  _ctype    = (*(clause_to_proof_der[clause_0])).type;
-                    if( _ctype==CLA_ORIG )
+                    clause_type  _ctype    = clause_to_proof_der.at(clause_0).type;
+                    if( _ctype==clause_type::CLA_ORIG )
                     {
                         n->initClause(proof.getClause(clause_0));
                         n->setClauseRef(clause_0);
@@ -271,7 +271,7 @@ void ProofGraph::buildProofGraph( int nVars )
                         if( n->getClauseSize() >= max_leaf_size ) max_leaf_size = n->getClauseSize();
                         avg_leaf_size += n->getClauseSize();
                     }
-                    else if (_ctype==CLA_LEARNT )
+                    else if (_ctype==clause_type::CLA_LEARNT )
                     {
                         num_learnt++;
                         //n->setClauseRef(clause_0);
@@ -279,7 +279,7 @@ void ProofGraph::buildProofGraph( int nVars )
                         if( ssize >= max_learnt_size ) max_learnt_size = ssize;
                         avg_learnt_size += ssize;
                     }
-                    else if(_ctype == CLA_THEORY)
+                    else if(_ctype == clause_type::CLA_THEORY)
                     {
                         n->initClause(proof.getClause(clause_0));
                         n->setClauseRef(clause_0, false);
@@ -306,8 +306,8 @@ void ProofGraph::buildProofGraph( int nVars )
                 {
                     // ith clause not yet processed
                     CRef clause_i = chaincla[i];
-                    while(clause_to_proof_der[clause_i]->chain_cla.size() == 1)
-                        clause_i = clause_to_proof_der[clause_i]->chain_cla[0];
+                    while(clause_to_proof_der.at(clause_i).chain_cla.size() == 1)
+                        clause_i = clause_to_proof_der.at(clause_i).chain_cla[0];
 
 
                     if(clauseToIDMap.find(clause_i)==clauseToIDMap.end())
@@ -315,8 +315,8 @@ void ProofGraph::buildProofGraph( int nVars )
                         ProofNode* n=new ProofNode(logic_);
                         n->initIData();
                         // Contains negative occurrence pivot
-                        clause_type_t _ctype = (*(clause_to_proof_der[clause_i])).type;
-                        if( _ctype==CLA_ORIG )
+                        clause_type _ctype = clause_to_proof_der.at(clause_i).type;
+                        if( _ctype==clause_type::CLA_ORIG )
                         {
                             n->initClause(proof.getClause(clause_i));
                             n->setClauseRef(clause_i);
@@ -326,14 +326,14 @@ void ProofGraph::buildProofGraph( int nVars )
                             if( n->getClauseSize() >= max_leaf_size ) max_leaf_size = n->getClauseSize();
                             avg_leaf_size += n->getClauseSize();
                         }
-                        else if (_ctype==CLA_LEARNT )
+                        else if (_ctype==clause_type::CLA_LEARNT )
                         {
                             num_learnt++;
                             unsigned ssize = proof.getClause(clause_i).size();
                             if( ssize >= max_learnt_size ) max_learnt_size = ssize;
                             avg_learnt_size += ssize;
                         }
-                        else if(_ctype == CLA_THEORY)
+                        else if(_ctype == clause_type::CLA_THEORY)
                         {
                             n->initClause(proof.getClause(clause_i));
                             n->setClauseRef(clause_i, false);
@@ -397,7 +397,7 @@ void ProofGraph::buildProofGraph( int nVars )
                         n->setId(currId);
                         graph.push_back(n);
                         assert(getNode(currId)==n);
-                        n->setType(CLADERIVED);
+                        n->setType(clause_type::CLA_DERIVED); // MB: TODO: investigate difference beteween learnt and derived
                     }
                     // End tree reached: currClause
                     else
@@ -454,7 +454,7 @@ void ProofGraph::buildProofGraph( int nVars )
                         }
                         currId = clauseToIDMap[currClause];
                         n = getNode(currId);
-                        n->setType(CLALEARNT);
+                        n->setType(clause_type::CLA_LEARNT);
 
                         //Sink check
                         if(currClause==CRef_Undef) root=currId;

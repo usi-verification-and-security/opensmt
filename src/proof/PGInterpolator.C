@@ -465,7 +465,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
 
         if (n->isLeaf())
         {
-            if (n->getType() != CLAORIG && n->getType() != CLATHEORY) opensmt_error ( "Clause is not original nor theory" );
+            if (n->getType() != clause_type::CLA_ORIG && n->getType() != clause_type::CLA_THEORY) opensmt_error ( "Clause is not original nor theory" );
 
             vector<Lit> &cl = n->getClause();
             bool fal = false;
@@ -477,7 +477,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
             if (cl.size() == 1 && varToPTRef(var(cl[0])) == theory.getLogic().getTerm_false() && !sign(cl[0]))
                 fal = true;
 
-            if ((n->getType() == CLAORIG && n->getClauseRef() == CRef_Undef) || fal)
+            if ((n->getType() == clause_type::CLA_ORIG && n->getClauseRef() == CRef_Undef) || fal)
             {
                 //unit clause False exists, return degenerate interpolant
                 icolor_t cc = getClauseColor (n->getInterpPartitionMask(), A_mask);
@@ -509,7 +509,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
         // Generate partial interpolant for clause i
         if (n->isLeaf())
         {
-            if (n->getType() != CLAORIG && n->getType() != CLATHEORY) opensmt_error ( "Clause is not original nor theory" );
+            if (n->getType() != clause_type::CLA_ORIG && n->getType() != clause_type::CLA_THEORY) opensmt_error ( "Clause is not original nor theory" );
 
             labelLeaf (n, A_mask, 0, PSFunction);
 
@@ -521,7 +521,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
             cout << endl;
             */
 
-            if (n->getType() == CLAORIG)
+            if (n->getType() == clause_type::CLA_ORIG)
             {
 #ifdef ITP_DEBUG
                 /*
@@ -734,7 +734,7 @@ void ProofGraph::produceMultipleInterpolants ( const vec< ipartitions_t > &confi
             // Generate partial interpolant for clause i
             if (n->isLeaf())
             {
-                if (n->getType() != CLAORIG) opensmt_error ( "Clause is not original" );
+                if (n->getType() != clause_type::CLA_ORIG) opensmt_error ( "Clause is not original" );
 
 #ifdef FULL_LABELING
                 partial_interp = compInterpLabelingOriginal ( n, A_mask, curr_interp , PSFunction);
