@@ -21,6 +21,7 @@
 #include <LA.h>
 #include <unordered_set>
 #include <unordered_map>
+#include <functional>
 
 using namespace opensmt;
 
