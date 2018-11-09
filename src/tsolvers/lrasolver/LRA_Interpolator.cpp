@@ -29,17 +29,40 @@ using matrix_t = std::vector<std::vector<Real>>;
 // initializing static member
 DecomposedStatistics LRA_Interpolator::stats {};
 
+namespace {
+
 // TODO: when is explanation negated?
 struct ItpHelper {
     ItpHelper(LALogic & logic, PtAsgn ineq, Real coeff) : explanation{ineq.tr}, negated{ineq.sgn == l_False},
-                                                           expl_coeff{std::move(coeff)}, expr{logic, ineq.tr, false} {}
+                                                          expl_coeff{std::move(coeff)}, expr{logic, ineq.tr, false} {}
     PTRef explanation;
     bool negated;
     Real expl_coeff;
     LAExpression expr;
 };
 
-namespace {
+struct LinearTerm {
+    LinearTerm(PTRef var_, Real coeff_): var{var_}, coeff{std::move(coeff_)} {}
+    PTRef var;
+    Real coeff;
+};
+
+std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bool(PTRef)> isLocal){
+    std::vector<LinearTerm> res;
+    for (auto factor : helper.expr) {
+        auto var_ref = factor.first;
+        if (var_ref != PTRef_Undef) {
+            if (isLocal(var_ref)) {
+                auto coeff = factor.second;
+                if (helper.negated) {
+                    coeff.negate();
+                }
+                res.emplace_back(var_ref, coeff);
+            }
+        }
+    }
+    return res;
+}
 
     void print_matrix(std::vector<std::vector<Real>> const & matrix);
 
@@ -190,6 +213,31 @@ namespace {
         return pivotColsBitMap;
     }
 
+    bool isReducedRowEchelonForm(std::vector<std::vector<Real>> const & matrix) {
+        auto pivotColsBitMap = getPivotColsBitMap(matrix);
+        auto cols = pivotColsBitMap.size();
+        assert(cols == matrix[0].size());
+        unsigned int pivotRow = 0;
+        for (unsigned int col = 0; col < pivotColsBitMap.size(); ++col) {
+            if(pivotColsBitMap[col]) {
+                for (auto row = 0; row < matrix.size(); ++row) {
+                    if ((row != pivotRow && matrix[row][col] != 0) || (row == pivotRow && matrix[row][col] != 1)) {
+                        return false;
+                    }
+                }
+                ++pivotRow;
+            }
+            else { // free column (not pivot)
+                for (auto row = pivotRow; row < matrix.size(); ++row) {
+                    if (matrix[row][col] != 0) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
     /** Given matrix in RREF computes and returns a basis of its null space
      *
      * @see https://en.wikibooks.org/wiki/Linear_Algebra/Null_Spaces
@@ -197,9 +245,11 @@ namespace {
      * @return Basis of null space of given matrix
      */
     std::vector<std::vector<Real>> getNullBasis(std::vector<std::vector<Real>> const & matrix) {
+        assert(isReducedRowEchelonForm(matrix));
         std::vector<std::vector<Real>> basis;
         auto pivotColsBitMap = getPivotColsBitMap(matrix);
         auto cols = matrix[0].size();
+        assert(cols == pivotColsBitMap.size());
         // for non-pivot columns generate a new base vector
         for (std::size_t col = 0; col < cols; ++col) {
             if (pivotColsBitMap[col]) {
@@ -208,41 +258,17 @@ namespace {
             basis.emplace_back();
             auto & base_vector = basis.back();
 
-            // keep track of current row (with the pivot); there could be zeroed rows at the end of the matrix
-            auto it = std::find_if(matrix.rbegin(), matrix.rend(), [](const std::vector<Real>& row){
-                return std::any_of(row.begin(), row.end(), [](const Real& el){ return !el.isZero();});
-            });
-            assert(it != matrix.rend());
-            auto rrow = it - matrix.rbegin();
-            auto row = static_cast<int>(matrix.size() - (rrow + 1));
-            // compute solution for a vector where pivotal columns have unknown,
-            // current non-pivotal column has 1 and other non-pivotal columns has 0
-            for (auto sol_col = static_cast<int>(cols - 1); sol_col >= 0; --sol_col) {
-                assert(row >= 0 && row < matrix.size());
-                assert(cols - (sol_col + 1) ==
-                       base_vector.size()); // we already have solutions for all the following columns
-                if (!pivotColsBitMap[sol_col]) {
-                    base_vector.emplace_back(sol_col == col ? 1 : 0);
-//                    solution.insert(std::make_pair(sol_col, sol_col == col ? 1 : 0));
-                } else {
-                    // pivotal column -> go over the following columns for which we already have solutions
-                    assert(matrix[row][sol_col] == 1); // pivot
-                    Real column_solution{0};
-                    for (int i = sol_col + 1; i < cols; ++i) {
-                        // iterate over the row after the pivot position and multiply minus coefficient with solution of the corresponding column, sum everything
-                        std::size_t sol_index = base_vector.size() - (i - sol_col);
-                        assert(sol_index >= 0 && sol_index < base_vector.size());
-                        column_solution += (-matrix[row][i]) * (base_vector[sol_index]);
-//                        std::cout << "Current solution is " << column_solution << '\n';
-                    }
-                    base_vector.push_back(column_solution);
-                    --row;
+            // put 1 on position of this free column, 0 on positions of other free columns, and -val at pivot row
+            unsigned int pivotRow = 0;
+            for (unsigned int colPos = 0; colPos < cols; ++colPos) {
+                if (pivotColsBitMap[colPos]) {
+                    base_vector.push_back(-matrix[pivotRow][col]);
+                    ++pivotRow;
+                }
+                else { // free column
+                    base_vector.push_back(colPos == col ? 1 : 0);
                 }
             }
-            // we have pushed solutions starting from back, so we have to reverse
-            std::reverse(base_vector.begin(), base_vector.end());
-            // we are done, the basis vector is already in result
-            assert(base_vector.size() == cols);
         }
         return basis;
     }
@@ -254,18 +280,33 @@ namespace {
     /*
      * Tries to replace a vector in basis with a negative coordinate with another vector having less negative coordinates.
      */
-    bool tryFixVec(std::vector<Real> & vec, std::vector<std::vector<Real>> & basis){
+    bool tryFixVec(std::size_t idx, std::vector<std::vector<Real>> & basis, std::vector<Real> & alphas){
+        assert(std::all_of(alphas.begin(), alphas.end(), [](const Real & val) {return val > 0;}));
+        auto & vec = basis[idx];
         auto neg = std::find_if(vec.begin(), vec.end(), [](const Real& val) {return val < 0;});
         assert(neg != vec.end());
-        auto offset = neg - vec.begin();
-        auto canFixNegative = [offset](const std::vector<Real> & other){
-            return other[offset] > 0 && !containsNegative(other);
-        };
-        auto fixer_it = std::find_if(basis.begin(), basis.end(), canFixNegative);
+        auto position = neg - vec.begin();
+        auto fixer_it = basis.begin();
+        Real diff{0};
+        for( ; fixer_it != basis.end(); ++fixer_it) {
+            auto const & fixCandidate = *fixer_it;
+            if (fixCandidate[position] > 0 && !containsNegative(fixCandidate)) {
+                // OK candidate, check alphas
+                diff = vec[position] / fixCandidate[position];
+                auto fixCandidateIndex = fixer_it - basis.begin();
+                if (alphas[fixCandidateIndex] + diff > 0) {
+                    // OK, the alphas will remain positive
+                    break;
+                }
+            }
+        }
         if(fixer_it == basis.end()) {return false;}
         auto const & fixer = *fixer_it;
-        addToWithCoeff(vec, fixer, -(vec[offset]/(fixer)[offset]));
-        assert(vec[offset].isZero());
+        alphas[fixer_it - basis.begin()] += diff;
+        assert(alphas[fixer_it - basis.begin()] > 0);
+        diff.negate();
+        addToWithCoeff(vec, fixer, diff);
+        assert(vec[position].isZero());
         return true;
     }
 
@@ -273,7 +314,7 @@ namespace {
      * Given a basis of vector space where some vector contains negative coordinate, it tries to find a different basis
      * for the space where all coordinates of all vectors of the basis would be non-negative
      */
-    bool tryFixBase(std::vector<std::vector<Real>> & basis){
+    bool tryFixBase(std::vector<std::vector<Real>> & basis, std::vector<Real> alphas) {
         // TODO: make this more efficient if necessary
         auto first_unchecked_it = basis.begin();
         auto vec_with_neg_it = first_unchecked_it;
@@ -282,7 +323,7 @@ namespace {
             if(vec_with_neg_it == basis.end()){
                 return true;
             }
-            bool wasFixed = tryFixVec(*vec_with_neg_it, basis);
+            bool wasFixed = tryFixVec((vec_with_neg_it - basis.begin()), basis, alphas);
             if(!wasFixed){
                 return false;
             }
@@ -357,6 +398,23 @@ namespace {
         }
         return sumInequalities(ineqs, coeffs, logic);
     }
+
+    std::vector<Real> getFarkasCoeffs(std::vector<ItpHelper> const & inequalities) {
+        std::vector<Real> ret;
+        for (const auto & ineq : inequalities) {
+            ret.push_back(ineq.expl_coeff);
+        }
+        return ret;
+    }
+
+    std::vector<Real> getAlphas(std::vector<Real> const & all, std::vector<bool> const & isPivot) {
+        assert(all.size() == isPivot.size());
+        std::vector<Real> ret;
+        for (std::size_t i = 0; i < all.size(); ++i) {
+            if (!isPivot[i]) {ret.push_back(all[i]);}
+        }
+        return ret;
+    }
 }
 
 namespace {
@@ -373,6 +431,7 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color) {
     std::vector<std::pair<PtAsgn, Real>> candidates;
     assert(explanations.size() == explanation_coeffs.size());
     for (std::size_t i = 0; i < explanations.size(); ++i) {
+        assert(explanation_coeffs[i] > 0);
         candidates.emplace_back(explanations[i], explanation_coeffs[i]);
         trace(std::cout << "Explanation " << logic.printTerm(explanations[i].tr) << " with coeff "
                   << explanation_coeffs[i] << " is negated: " << (explanations[i].sgn == l_False) << '\n';)
@@ -398,36 +457,21 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color) {
                        return ItpHelper{logic, expl.first, expl.second};
                    });
 
-    using local_vars_info = std::vector<std::pair<PTRef, FastRational>>;
+    using local_terms_t = std::vector<LinearTerm>;
     // create information about local variables for each inequality
-    std::vector<local_vars_info> ineqs_local_vars;
+    std::vector<local_terms_t> ineqs_local_vars;
     std::vector<ItpHelper> explanations_with_locals;
-    std::vector<Real> explanations_with_locals_coeffs;
     for (const auto & helper : helpers) {
-        local_vars_info local_vars;
-        for (auto factor : helper.expr) {
-            auto var_ref = factor.first;
-            if (var_ref != PTRef_Undef) {
-                if (isLocalFor(color, var_ref)) {
-                    auto coeff = factor.second;
-                    if (helper.negated) {
-                        coeff.negate();
-                    }
-//                    std::cout << "In " << logic.printTerm(helper.explanation) << " coeff for var " << logic.printTerm(var_ref) << " is " << coeff << '\n';
-//                    std::cout << "LAExpression:\n";
-//                    helper.expr.print(std::cout);
-                    local_vars.emplace_back(var_ref, coeff);
-                }
-            }
-        }
+        local_terms_t local_terms = getLocalTerms(helper, [this, color](PTRef ptr) { return this->isLocalFor(color, ptr); });
+
         // explanataion with all variables shared form standalone partition
-        if (local_vars.empty()) {
+        if (local_terms.empty()) {
             statsHelper.standAloneIneq = true;
             interpolant_inequalities.push_back(helper.negated ? logic.mkNot(helper.explanation) : helper.explanation);
         }
-            // for explanations with local variables, remember them separately
+        // for explanations with local variables, remember them separately
         else {
-            ineqs_local_vars.push_back(std::move(local_vars));
+            ineqs_local_vars.push_back(std::move(local_terms));
             explanations_with_locals.push_back(helper);
         }
     }
@@ -436,10 +480,10 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color) {
         // assign index to each local var
         std::unordered_map<PTRef, std::size_t, PTRefHash> local_vars;
         for (const auto & info : ineqs_local_vars) {
-            for (auto const & factor : info) {
-                if (local_vars.find(factor.first) == local_vars.end()) {
+            for (auto const & term : info) {
+                if (local_vars.find(term.var) == local_vars.end()) {
                     auto size = local_vars.size();
-                    local_vars[factor.first] = size;
+                    local_vars[term.var] = size;
                 }
             }
         }
@@ -450,10 +494,10 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color) {
         auto colInd = 0;
         for (const auto & info : ineqs_local_vars) {
             // add coefficient to those rows whose corresponding variable occurs in the inequality
-            for (auto const & coeff_var : info) {
-                auto var = coeff_var.first;
+            for (auto const & term : info) {
+                auto var = term.var;
                 auto ind = local_vars[var];
-                matrix[ind].push_back(coeff_var.second);
+                matrix[ind].push_back(term.coeff);
             }
             // add 0 to other rows
             for (auto & row : matrix) {
@@ -478,7 +522,12 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color) {
             trace(print_matrix(matrix);)
             auto nullBasis = getNullBasis(matrix);
             trace(print_basis(nullBasis);)
-            bool isGood = tryFixBase(nullBasis);
+            assert(explanations_with_locals.size() == matrix[0].size());
+            auto farkasCoeffs = getFarkasCoeffs(explanations_with_locals);
+            auto alphas = getAlphas(farkasCoeffs, getPivotColsBitMap(matrix));
+            assert(std::all_of(alphas.begin(), alphas.end(), [](const Real& v) {return v > 0;}));
+            assert(alphas.size() == nullBasis.size());
+            bool isGood = tryFixBase(nullBasis, alphas);
             if(!isGood){
                 // default behaviour, sum up with original coefficient
                 interpolant_inequalities.push_back(sumInequalities(explanations_with_locals, logic));
