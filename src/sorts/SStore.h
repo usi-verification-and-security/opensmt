@@ -58,7 +58,7 @@ class SStore
   private:
     IdentifierStore& is;
     StrAllocator<SStr, SStrRef> ssa {1024};
-    SortAllocator sa {1024};
+    SortAllocator sa {512};
     Map<const char*,SRef,StringHash,Equal<const char*> > sortTable;
     vec<SRef>                                     sorts;
     vec<char*> sort_names; // Needed for deallocating the keys in sortTable

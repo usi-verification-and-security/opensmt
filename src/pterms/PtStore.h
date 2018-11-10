@@ -55,7 +55,7 @@ class PtermIter {
 };
 
 class PtStore {
-    PtermAllocator pta;
+    PtermAllocator pta{1024*1024};
     SymStore&      symstore;
     SStore&        sortstore;
     vec<PTRef>     idToPTRef;

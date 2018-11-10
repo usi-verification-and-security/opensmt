@@ -722,7 +722,7 @@ protected:
     double              progress_estimate;// Set by 'search()'.
     bool                remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
 
-    ClauseAllocator     ca;
+    ClauseAllocator     ca{512*1024};
 #ifdef CACHE_POLARITY
     vec<char>           prev_polarity;    // The previous polarity of each variable.
 #endif
