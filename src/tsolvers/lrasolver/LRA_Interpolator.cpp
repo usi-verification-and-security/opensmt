@@ -452,7 +452,13 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color) {
                              [color, this](std::pair<PtAsgn, Real> const & expl) {
                                  return this->isInPartitionOfColor(color, expl.first.tr);
                              });
-    
+    if (it == candidates.end() || it == candidates.begin()) {
+        // all inequalities are of the same color -> trivial interpolant
+        // return false for all of color A and true for all of color B
+        return ((it == candidates.end() && color == icolor_t::I_A)
+                || (it == candidates.begin() && color == icolor_t::I_B))
+                ? logic.getTerm_false() : logic.getTerm_true();
+    }
     std::vector<ItpHelper> helpers;
     LALogic & logic = this->logic;
     std::transform(candidates.begin(), it, std::back_inserter(helpers),
