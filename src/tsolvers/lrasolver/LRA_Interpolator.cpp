@@ -422,10 +422,12 @@ namespace {
     struct StatsHelper{
         bool standAloneIneq = false;
         bool nonTrivialBasis = false;
+        bool moreThanOneInequality = false;
     };
 }
 
 PTRef LRA_Interpolator::getInterpolant(icolor_t color) {
+    assert(color == icolor_t::I_A || color == icolor_t::I_B);
     StatsHelper statsHelper;
     // this will be contain the result, inequalities corresponding to summed up partitions of explanataions (of given color)
     std::vector<PTRef> interpolant_inequalities;
@@ -450,14 +452,14 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color) {
                              [color, this](std::pair<PtAsgn, Real> const & expl) {
                                  return this->isInPartitionOfColor(color, expl.first.tr);
                              });
-
+    
     std::vector<ItpHelper> helpers;
     LALogic & logic = this->logic;
     std::transform(candidates.begin(), it, std::back_inserter(helpers),
                    [&logic](std::pair<PtAsgn, Real> const & expl) {
                        return ItpHelper{logic, expl.first, expl.second};
                    });
-
+    statsHelper.moreThanOneInequality = helpers.size() > 1;
     using local_terms_t = std::vector<LinearTerm>;
     // create information about local variables for each inequality
     std::vector<local_terms_t> ineqs_local_vars;
@@ -548,7 +550,9 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color) {
     }
 
     if (!interpolant_inequalities.empty()) {
-        LRA_Interpolator::stats.nonTrivialItps++;
+        if (statsHelper.moreThanOneInequality) {
+            LRA_Interpolator::stats.decompositionOpportunities++;
+        }
         if (interpolant_inequalities.size() > 1) {
             LRA_Interpolator::stats.decomposedItps++;
             assert(statsHelper.nonTrivialBasis || statsHelper.standAloneIneq);
