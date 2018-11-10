@@ -4,6 +4,7 @@
 
 #include "BoolRewriting.h"
 #include "Logic.h"
+#include <unordered_set>
 
 // Replace subtrees consisting only of ands / ors with a single and / or term.
 // Search a maximal section of the tree consisting solely of ands / ors.  The
@@ -241,4 +242,146 @@ PTRef _simplifyUnderAssignment(Logic & logic, PTRef root,
 PTRef simplifyUnderAssignment(Logic & logic, PTRef root, const Map<PTRef,int,PTRefHash>& PTRefToIncoming) {
     Map<PTRef, PTRef, PTRefHash> cache;
     return _simplifyUnderAssignment(logic, root, PTRefToIncoming, {},  cache);
+}
+
+namespace{
+template<typename C, typename T>
+bool contains(C const & container, T el) {
+    return container.find(el) != container.end();
+}
+
+void walkDFS(PTRef node, std::unordered_set<PTRef, PTRefHash> & visited, std::vector<PTRef>& order, Logic & logic) {
+    visited.insert(node);
+    Pterm const & term = logic.getPterm(node);
+    for (int i = 0; i < term.size(); ++i) {
+        assert(node.x > term[i].x);
+        if (!contains(visited, term[i])) {
+            walkDFS(term[i], visited, order, logic);
+        }
+    }
+    order.push_back(node);
+}
+
+
+void update_idom(PTRef node, PTRef parent, std::unordered_map<PTRef, PTRef, PTRefHash>& idom) {
+    //  relies on the fact that child has to be always allocated before parent, so child's PTRef is smaller
+    assert(contains(idom, node));
+    assert(node.x < parent.x);
+    PTRef old_idom = idom.at(node);
+    // walk up the DAG until you find common ancestor
+    PTRef f1 = old_idom;
+    PTRef f2 = parent;
+    while (f1 != f2) {
+        while (f1.x < f2.x) {
+            assert(contains(idom, f1));
+            f1 = idom.at(f1);
+        }
+        while (f2.x < f1.x) {
+            assert(contains(idom, f2));
+            f2 = idom.at(f2);
+        }
+    }
+    idom[node] = f1;
+}
+}
+
+std::vector<PTRef> getPostOrder(PTRef root, Logic& logic) {
+    std::vector<PTRef> res;
+    std::unordered_set<PTRef, PTRefHash> seen;
+    walkDFS(root, seen, res, logic);
+    return res;
+}
+
+std::unordered_map<PTRef, PTRef, PTRefHash> getImmediateDominators(PTRef root, Logic & logic) {
+    std::unordered_map<PTRef, PTRef, PTRefHash> idom;
+    idom[root] = root;
+    auto postOrder = getPostOrder(root, logic);
+    for(auto it = postOrder.rbegin(); it != postOrder.rend(); ++it) { // iterating in REVERSE post order
+        PTRef current = *it;
+        assert(contains(idom, current));
+        // update idoms of all children
+        Pterm const & term = logic.getPterm(current);
+        for(int i = 0; i < term.size(); ++i) {
+            if (contains(idom, term[i])) {
+                update_idom(term[i], current, idom);
+            }
+            else {
+                idom[term[i]] = current;
+            }
+        }
+    }
+    return idom;
+}
+
+namespace{
+PTRef simplifyUnderAssignment_Aggressive(PTRef node, Logic & logic, std::unordered_map<PTRef, PTRef, PTRefHash> const & dominators,
+        std::unordered_map<PTRef, std::vector<PtLit>, PTRefHash>& assignments,
+        std::unordered_map<PTRef, PTRef, PTRefHash> & cache
+        ) {
+    if (!logic.isAnd(node) && !logic.isOr(node)) {
+        assert(false); // MB: should not be called for anything else
+        return node;
+    }
+    assert(contains(dominators, node));
+    assert(contains(assignments, dominators.at(node)));
+    assert(!contains(cache, node));
+    const Pterm & term = logic.getPterm(node);
+    std::vector<PTRef> literals;
+    std::vector<PTRef> connective_children;
+    for (int i = 0; i < term.size(); ++i) {
+        if (isTerminal(logic, term[i])) {
+            literals.push_back(term[i]);
+        }
+        else{
+            connective_children.push_back(term[i]);
+        }
+    }
+    bool isAnd = logic.isAnd(node);
+    vec<PTRef> newargs;
+    // this is the assignment that is propagated to me and I can use it to simplify myself and my children
+    std::vector<PtLit> assignment = assignments.at(dominators.at(node));
+    // process the literals
+    for (PTRef lit : literals) {
+        assert(!contains(cache, lit));
+        PtLit decLit = decomposeLiteral(logic, lit);
+        auto it = std::find_if(assignment.begin(), assignment.end(), [decLit](PtLit assign) {
+            return assign.var == decLit.var;
+        });
+        if (it == assignment.end()) {
+            assignment.push_back(isAnd ? decLit : ~decLit);
+            newargs.push(lit);
+        } else {
+            assert(decLit.var == it->var);
+            if (decLit.sign == it->sign) {
+                // this literal is evaluated to true
+                if (!isAnd) { return logic.getTerm_true(); }
+                // else isAND -> simply ignore this conjunct
+            } else {
+                // this literal is evaluated to false
+                if (isAnd) { return logic.getTerm_false(); }
+                // else isOR -> simply ignore this disjunct
+            }
+        }
+    }
+    // set my assignment and recurse on children
+    assignments[node] = std::move(assignment);
+    for (PTRef child : connective_children) {
+        if (contains(cache, child)) {
+            newargs.push(cache[child]);
+        } else {
+            PTRef new_child = simplifyUnderAssignment_Aggressive(child, logic, dominators, assignments, cache);
+            newargs.push(new_child);
+            cache[child] = new_child;
+        }
+    }
+    return isAnd ? logic.mkAnd(newargs) : logic.mkOr(newargs);
+}
+}
+
+PTRef simplifyUnderAssignment_Aggressive(PTRef root, Logic & logic) {
+    auto idom = getImmediateDominators(root, logic);
+    std::unordered_map<PTRef, std::vector<PtLit>, PTRefHash> assignments;
+    assignments[root] = {};
+    std::unordered_map<PTRef, PTRef, PTRefHash> cache;
+    return simplifyUnderAssignment_Aggressive(root, logic, idom, assignments, cache);
 }
