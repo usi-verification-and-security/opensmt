@@ -36,7 +36,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 class SStore;
-class PTStore;
 
 // For breaking substitution loops
 struct NStatus { uint32_t x; bool operator== (const NStatus& o) const { return o.x == x; } };

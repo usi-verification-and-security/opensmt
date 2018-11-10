@@ -90,7 +90,6 @@ class Pterm {
 
 
     friend class PtermAllocator;
-    friend class PTStore;
     friend void  ptermSort(Pterm&);
     friend class Logic;
   public:
