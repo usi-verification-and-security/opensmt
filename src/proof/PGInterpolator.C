@@ -667,7 +667,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
 
     if(verbose() > 1)
     {
-        cout << "; Interpolant: " << theory.getLogic().printTerm(interpol) << endl;
+        cout << "; Interpolant:\n" << theory.getLogic().printTerm(interpol) << endl;
     }
 }
 
