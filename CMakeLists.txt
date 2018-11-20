@@ -29,6 +29,7 @@ option(PRINT_UNITS "Print units" OFF)
 option(COMPRESS "Use gz compression" ON)
 option(DEBUG_GC "Debug garbage collection" OFF)
 option(LADEBUG "Debug lookahead" OFF)
+option(PRINT_DECOMPOSED_STATS "Print statistics about decomposed interpolants" OFF)
 #option(ENABLE_PROFILING "Enable profiling" OFF)
 
 find_package(Readline REQUIRED)

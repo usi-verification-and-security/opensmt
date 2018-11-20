@@ -52,7 +52,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <lrasolver/LRA_Interpolator.h>
 #include "Proof.h"
 
+#ifdef PRINT_DECOMPOSED_STATS
 const bool PRINT_LRA_ITP_STATS = true;
+#else
+const bool PRINT_LRA_ITP_STATS = false;
+#endif // PRINT_DECOMPOSED_STATS
 #endif
 
 namespace opensmt

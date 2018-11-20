@@ -27,6 +27,10 @@ if(COMPRESS)
 	target_compile_definitions(smtsolvers PRIVATE -DUSE_GZ)
 endif()
 
+if(PRINT_DECOMPOSED_STATS)
+    target_compile_definitions(smtsolvers PRIVATE -DPRINT_DECOMPOSED_STATS)
+endif()
+
 if(PRODUCE_PROOF)
 	target_sources(proof
 	PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Proof.h"
