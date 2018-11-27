@@ -17,7 +17,7 @@ and QF_RDL.  The system also provides an api; the distribution includes a
 minimal example how to use the API.
 
 +------------------------------------------------------------------------------+
-| Compliation                                                                  |
+| Compilation                                                                  |
 +------------------------------------------------------------------------------+
 
 To compile the system from the source code repository, you need a c++11
