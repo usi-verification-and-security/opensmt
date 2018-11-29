@@ -192,6 +192,24 @@ TEST(ArithmeticExpressions_test, test_Inequality_Var_NonZero)
     ASSERT_TRUE(logic.isNumLeq(geq));
 }
 
+TEST(ArithmeticExpressions_test, test_SumToZero)
+{
+    SMTConfig config;
+    LRALogic logic{config};
+    PTRef var = logic.mkNumVar("a");
+    PTRef minusVar = logic.mkNumNeg(var);
+    vec<PTRef> args;
+    args.push(minusVar);
+    args.push(var);
+    PTRef sum = logic.mkNumPlus(args);
+    ASSERT_EQ(sum, logic.getTerm_NumZero());
+    args.clear();
+    args.push(var);
+    args.push(minusVar);
+    sum = logic.mkNumPlus(args);
+    ASSERT_EQ(sum, logic.getTerm_NumZero());
+}
+
 
 
 

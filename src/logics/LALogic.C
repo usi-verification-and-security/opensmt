@@ -626,6 +626,7 @@ PTRef LALogic::mkNumPlus(const vec<PTRef>& args, char** msg)
         PTRef term = mkFun(get_sym_Num_TIMES(), term_args);
         sum_args.push(term);
     }
+    if (sum_args.size() == 0) return getTerm_NumZero();
     if (sum_args.size() == 1) return sum_args[0];
     PTRef tr = mkFun(s_new, sum_args, msg);
     return tr;
