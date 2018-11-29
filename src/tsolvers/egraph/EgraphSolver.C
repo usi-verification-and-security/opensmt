@@ -379,7 +379,7 @@ void Egraph::declareTermRecursively(PTRef tr) {
 //
 void Egraph::declareTerm(PTRef tr) {
 
-    if (!isValid(tr) && !logic.isUFTerm(tr)) { return; }
+    if (!isValid(tr) && !logic.isUFTerm(tr) && !logic.isBoolAtom(tr)) { return; }
 
     if (!enode_store.termToERef.has(tr)) {
         Pterm& tm = logic.getPterm(tr);
