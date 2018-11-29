@@ -565,7 +565,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
                 for (auto const & lit : newvec){
                     PTRef pt_r = varToPTRef(var(lit));
                     assert(logic_.isTheoryTerm(pt_r));
-                    tmp->declareTerm(pt_r);
+                    tmp->declareAtom(pt_r);
                 }
                 bool res = true;
                 for (auto const & lit : newvec){

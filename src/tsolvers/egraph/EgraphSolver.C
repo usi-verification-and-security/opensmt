@@ -355,14 +355,31 @@ int Egraph::countEqClasses()
 
 
 
+void Egraph::declareAtom(PTRef atom) {
+    if (!isValid(atom)) { return; }
+    if (isInformed(atom)) { return; }
+    declareTermRecursively(atom);
+    setInformed(atom);
+}
+
+void Egraph::declareTermRecursively(PTRef tr) {
+    if (declared.find(tr) != declared.end()) { return; } // already declared
+    const Pterm& term = logic.getPterm(tr);
+    // declare first the childen and then the current term
+    for (int i = 0; i < term.size(); ++i) {
+        declareTermRecursively(term[i]);
+    }
+    declareTerm(tr);
+    declared.insert(tr);
+}
+
 //
 // No recursion here, we assume the caller has already introduced the
 // subterms
 //
-lbool Egraph::declareTerm(PTRef tr) {
+void Egraph::declareTerm(PTRef tr) {
 
-    if (!logic.isUFEquality(tr) && !logic.isUP(tr) && !logic.isUFTerm(tr) && !logic.isDisequality(tr) && !logic.isBoolAtom(tr))
-        return l_True;
+    if (!isValid(tr) && !logic.isUFTerm(tr)) { return; }
 
     if (!enode_store.termToERef.has(tr)) {
         Pterm& tm = logic.getPterm(tr);
@@ -410,7 +427,6 @@ lbool Egraph::declareTerm(PTRef tr) {
             known_preds.push(false);
         known_preds[Idx(t.getId())] = true;
     }
-    return l_Undef;
 }
 
 lbool Egraph::addEquality(PtAsgn pa) {

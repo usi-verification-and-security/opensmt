@@ -311,13 +311,13 @@ LVRef LASolver::exprToLVar(PTRef expr) {
 //
 // Reads the constraint into the solver
 //
-lbool LASolver::declareTerm(PTRef leq_tr)
+void LASolver::declareAtom(PTRef leq_tr)
 {
-    if (!logic.isNumLeq(leq_tr)) return l_Undef;
+    if (!logic.isNumLeq(leq_tr)) { return; }
 
-    if (informed(leq_tr)) return l_Undef;
+    if (isInformed(leq_tr)) { return; }
 
-    informed_PTRefs.insert(leq_tr, true);
+    setInformed(leq_tr);
 
 
     if (status != INIT)
@@ -334,12 +334,6 @@ lbool LASolver::declareTerm(PTRef leq_tr)
     while (known_preds.size() <= Idx(t.getId()))
         known_preds.push(false);
     known_preds[Idx(t.getId())] = true;
-
-#if VERBOSE
-    cerr << "; Informed of constraint " << logic.printTerm(tr_tr) << endl;
-//    cout << this << endl;
-#endif
-    return l_Undef;
 }
 
 void LASolver::informNewSplit(PTRef tr)
@@ -718,10 +712,8 @@ void LASolver::initSolver()
         for  (int i = 0; i < rows.size(); i++)
             cout << rows[i] << '\n';
 #endif
-        vec<PTRef> known_PTRefs;
-        informed_PTRefs.getKeys(known_PTRefs);
-        for(int i = 0; i < known_PTRefs.size(); ++i){
-            PTRef leq_tr = known_PTRefs[i];
+        auto known_PTRefs = getInformed();
+        for(PTRef leq_tr : known_PTRefs) {
             Pterm& leq_t = logic.getPterm(leq_tr);
 
             // Terms are of form c <= t where

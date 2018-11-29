@@ -2257,42 +2257,28 @@ void CoreSMTSolver::declareVarsToTheories()
     for (int i = 0; i < trail.size(); i++)
     {
         Var v = var(trail[i]);
-        if (!var_seen[v])
-        {
+        if (!var_seen[v]) {
             var_seen[v] = true;
-            if (theory_handler.getLogic().getLogic() == QF_LRA) {
-                const PTRef term = theory_handler.varToTerm(v);
-                if (theory_handler.getLogic().isTheoryTerm(term)){
-                    theory_handler.declareAtoms(term);
-                }
+            const Logic & logic = theory_handler.getLogic();
+            const PTRef term = theory_handler.varToTerm(v);
+            if (logic.isTheoryTerm(term) || logic.isEquality(term)) {
+                theory_handler.declareAtom(term);
             }
-            else { // MB: old behaviour, still valid for other logics
-                theory_handler.declareTermTree(theory_handler.varToTerm(v));
-            }
-
         }
     }
     top_level_lits = trail.size();
-    for (int i = 0; i < clauses.size(); i++)
-    {
-        Clause& c = ca[clauses[i]];
-        for (int j = 0; j < c.size(); j++)
-        {
+    for (int i = 0; i < clauses.size(); i++) {
+        Clause & c = ca[clauses[i]];
+        for (int j = 0; j < c.size(); j++) {
             Var v = var(c[j]);
-            if (!var_seen[v])
-            {
+            if (!var_seen[v]) {
                 var_seen[v] = true;
-                assert(theory_handler.getLogic().getPterm(theory_handler.varToTerm(v)).getVar() != -1);
-                if (theory_handler.getLogic().getLogic() == QF_LRA) {
-                    const PTRef term = theory_handler.varToTerm(v);
-                    if (theory_handler.getLogic().isTheoryTerm(term)){
-                        theory_handler.declareAtoms(term);
-                    }
+                const Logic & logic = theory_handler.getLogic();
+                assert(logic.getPterm(theory_handler.varToTerm(v)).getVar() != -1);
+                const PTRef term = theory_handler.varToTerm(v);
+                if (logic.isTheoryTerm(term) || logic.isEquality(term)) {
+                    theory_handler.declareAtom(term);
                 }
-                else { // MB: old behaviour, still valid for other logics
-                    theory_handler.declareTermTree(theory_handler.varToTerm(v));
-                }
-//                printf("Declaring clause %d var %s\n", i, theory_handler.getLogic().printTerm(theory_handler.varToTerm(v)));
             }
         }
     }

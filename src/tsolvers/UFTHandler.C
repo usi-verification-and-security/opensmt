@@ -45,10 +45,10 @@ void UFTHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
     {
         PTRef tr = terms[i].tr;
         if (!refs.has(tr)) {
-            declareTerm(tr);
             Pterm& t = logic.getPterm(tr);
             if (logic.getSym(t.symb()).rsort() != logic.getSort_bool())
                 continue;
+            declareAtom(tr);
             Var v = tmap.addBinding(tr);
             while (deductions.size() <= v)
                 deductions.push({egraph->getId(), l_Undef});

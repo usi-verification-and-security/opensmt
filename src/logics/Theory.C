@@ -160,10 +160,12 @@ bool Theory::computeSubstitutions(PTRef coll_f, vec<PFRef>& frames, int curr)
         th->fillTmpDeds(args[i], refs);
 
     bool no_conflict = true;
-    for (int i = 0; i < args.size(); i++)
+    for (int i = 0; i < args.size(); i++) {
         if (!th->assertLit_special(PtAsgn(args[i], l_True))) {
             no_conflict = false;
-            break; }
+            break;
+        }
+    }
 
     pfstore[frames[curr]].root = root;
 

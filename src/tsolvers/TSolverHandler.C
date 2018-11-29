@@ -33,23 +33,6 @@ bool TSolverHandler::assertLit(PtAsgn asgn)
     return res;
 }
 
-// Declare a tree of terms
-void TSolverHandler::declareTermTree(PTRef tr)
-{
-    vec<PtChild> terms;
-    getTermList(tr, terms, getLogic());
-
-    Map<PTRef,bool,PTRefHash> tr_map;
-    for (int i = 0; i < terms.size(); i++)
-    {
-        if (!tr_map.has(terms[i].tr))
-        {
-            declareTerm(terms[i].tr);
-            tr_map.insert(terms[i].tr, true);
-        }
-    }
-}
-
 void TSolverHandler::declareAtoms(PTRef tr) {
     auto atoms = getAtoms(tr, getLogic());
     for (const PTRef atom : atoms) {
@@ -80,27 +63,10 @@ void TSolverHandler::clearSolver()
             tsolvers[i]->clearSolver();
 }
 
-// Declare term to the appropriate solver
-void TSolverHandler::declareTerm(PTRef tr)
-{
-    for (int i = 0; i < tsolvers.size(); i++) {
-        if (tsolvers[i] != NULL) {
-//            printf("Thinking of declaring %s\n", getLogic().printTerm(tr));
-                if (tsolvers[i]->isValid(tr)) {
-                    tsolvers[i]->declareTerm(tr);
-//                    printf("Declaring %s since it's my style\n", getLogic().printTerm(tr));
-            }
-            else {
-//                printf("Not declaring %s since it's not my style\n", getLogic().printTerm(tr));
-            }
-        }
-    }
-}
-
 void TSolverHandler::declareAtom(PTRef tr) {
     for (int i = 0; i < tsolvers.size(); i++) {
         if (tsolvers[i] != nullptr && tsolvers[i]->isValid(tr)) {
-            tsolvers[i]->declareTerm(tr);
+            tsolvers[i]->declareAtom(tr);
         }
     }
 }

@@ -23,7 +23,6 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
-
 #include "SStore.h"
 #include "PtStore.h"
 #include "Logic.h"
@@ -1364,7 +1363,6 @@ bool Logic::varsubstitute(PTRef& root, Map<PTRef,PtAsgn,PTRefHash>& substs, PTRe
     tr_new = gen_sub[root];
     return n_substs > 0;
 }
-
 //
 // Identify and break any substitution loops
 //

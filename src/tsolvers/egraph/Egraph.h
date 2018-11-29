@@ -48,6 +48,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "UFInterpolator.h"
 #endif
 
+#include <unordered_set>
+
 class UFSolverStats: public TSolverStats
 {
     public:
@@ -80,7 +82,7 @@ private:
 
   PTRef         Eq_FALSE; // will be set to (= true false) in constructor
 
-  bool          isValid(PTRef tr) { return logic.isUFEquality(tr) || logic.isUP(tr) || logic.isUFTerm(tr) || logic.isDisequality(tr) || logic.isBoolAtom(tr); }
+  bool          isValid(PTRef tr) { return logic.isUFEquality(tr) || logic.isUP(tr) || logic.isDisequality(tr); }
 
   double fa_garbage_frac;
 
@@ -329,13 +331,18 @@ public:
   lbool       addEquality         ( PtAsgn );
   bool       addTrue             ( PTRef );
   bool       addFalse            ( PTRef );
-  // Non-recursive declare term
-  lbool         declareTerm         (PTRef);
+
+  void declareAtom(PTRef);
+    // Non-recursive declare term
+  void        declareTerm         (PTRef);
   // Remove redundancies and replace with true if
   // trivial.  Return true if root of the formula is trivially true
   bool        simplifyEquality    ( PtChild&, bool simplify = true );
   void        simplifyDisequality ( PtChild&, bool simplify = true );
 private:
+  std::unordered_set<PTRef, PTRefHash> declared;
+  void declareTermRecursively(PTRef);
+
   bool    assertEq        ( PTRef, PTRef, PtAsgn );               // Asserts an equality
   bool    assertNEq       ( PTRef, PTRef, PtAsgn );               // Asserts a negated equality
   bool    assertDist      ( PTRef, PtAsgn );                      // Asserts a distinction
@@ -395,7 +402,6 @@ private:
 
   bool                        state;                            // the hell is this ?
   set< enodeid_t >            initialized;                      // Keep track of initialized nodes
-  map< enodeid_t, lbool >     informed;                         // Keep track of informed nodes
   vec< ERef >                 pending;                          // Pending merges
   vec< Undo >                 undo_stack_main;                  // Keeps track of terms involved in operations
   vec< PtAsgn >               explanation;                      // Stores explanation

@@ -37,7 +37,7 @@ void LRATHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
         PTRef tr = terms[i].tr;
         if (logic.isNumLeq(tr)) {
             if (!refs.has(tr)) {
-                declareTerm(tr);
+                declareAtom(tr);
                 Var v = tmap.addBinding(tr);
                 while (deductions.size() <= v)
                     deductions.push({lrasolver->getId(), l_Undef});
@@ -55,14 +55,14 @@ void LRATHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
             // These can simplify to true and false, and we don't
             // want them to LRA solver
             if (!refs.has(i1) && logic.isNumLeq(i1)) {
-                declareTerm(i1);
+                declareAtom(i1);
                 Var v = tmap.addBinding(i1);
                 while (deductions.size() <= v)
                     deductions.push(DedElem(lrasolver->getId(), l_Undef));
                 refs.insert(i1, v);
             }
             if (!refs.has(i2) && logic.isNumLeq(i2)) {
-                declareTerm(i2);
+                declareAtom(i2);
                 Var v = tmap.addBinding(i2);
                 while (deductions.size() <= v)
                     deductions.push(DedElem(lrasolver->getId(), l_Undef));
