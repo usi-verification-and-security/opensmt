@@ -79,7 +79,7 @@ class SimpSMTSolver : public CoreSMTSolver
     bool    addClause (const vec<Lit>& ps); // FIXME: this is already in parent class, why have it here?
     bool    addSMTClause (const  vec<Lit>&) override;
     bool    addSMTClause_(       vec<Lit>&) override;
-    bool    addSMTClause_(const vec<Lit> &, CRef & cr) override;
+    bool    addSMTClause_(const vec<Lit> &, pair<CRef, CRef> & inOutCRefs) override;
 public:
     bool    addEmptyClause();                // Add the empty clause to the solver.
     bool    addClause (Lit p);               // Add a unit clause to the solver.

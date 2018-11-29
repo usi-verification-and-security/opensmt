@@ -115,8 +115,9 @@ CoreSMTSolver::handleSat()
 
             int lev = vardata[var(l_f)].level;
             cancelUntil(lev);
-            CRef cr;
-            addSMTClause_(new_splits, cr);
+            std::pair<CRef, CRef> iorefs;
+            addSMTClause_(new_splits, iorefs);
+            CRef cr = iorefs.second;
             if (decisionLevel() > 0) {
                 // DL0 implications are already enqueued in addSMTClause_
                 assert(cr != CRef_Undef);

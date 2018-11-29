@@ -324,32 +324,25 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
 
 bool CoreSMTSolver::addClause_(vec<Lit>& _ps)
 {
-    CRef cr;
-    return addClause_(_ps, cr);
+    std::pair<CRef, CRef> fake;
+    return addClause_(_ps, fake);
 }
 
-bool CoreSMTSolver::addClause_(const vec<Lit> & _ps, CRef & cr_o)
+bool CoreSMTSolver::addClause_(const vec<Lit> & _ps, std::pair<CRef, CRef> & inOutCRefs)
 {
-    cr_o = CRef_Undef;
-
-#ifdef PRODUCE_PROOF
-    Logic& logic = theory_handler.getLogic();
-    bool resolved = false;
-    CRef root = CRef_Undef;
-#endif
+    inOutCRefs = std::make_pair(CRef_Undef, CRef_Undef);
+    if (!ok) return false;
     vec<Lit> ps;
     _ps.copyTo(ps);
-
-    if (!ok) return false;
     // Check if clause is satisfied and remove false/duplicate literals:
     sort(ps);
-    Lit p;
-    int i, j;
 #ifdef PRODUCE_PROOF
-    root = ca.alloc( ps, false );
-    cr_o = root;
+    CRef root = ca.alloc( ps, false );
+    inOutCRefs.first = root;
     std::vector<Var> resolvedUnits;
 #endif
+    Lit p;
+    int i, j;
     for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
     {
         if ((value(ps[i]) == l_True && vardata[var(ps[i])].level == 0) || ps[i] == ~p)
@@ -429,48 +422,25 @@ bool CoreSMTSolver::addClause_(const vec<Lit> & _ps, CRef & cr_o)
         }
 #endif
         uncheckedEnqueue(ps[0]);
-#ifdef PRODUCE_PROOF
         CRef confl = propagate();
-        if ( confl == CRef_Undef ) return ok = true;
-        return ok = false;
-#else
-#ifdef REPORT_DL1_THLITS
-        int prev_trail_sz = trail.size();
-#endif
-        ok = (propagate() == CRef_Undef);
-#ifdef REPORT_DL1_THLITS
-        if (trail.size() > prev_trail_sz+1)
-        {
-            cerr << "; Found propagations in addClause:\n";
-            for (int i = prev_trail_sz+1; i < trail.size(); i++)
-            {
-                char* ulit = theory_handler.getLogic().printTerm(theory_handler.varToTerm(var(trail[i])));
-                cerr << ";   " << (sign(trail[i]) ? "not " : "") << ulit << endl;
-                free(ulit);
-            }
-        }
-#endif
+        ok = (confl == CRef_Undef);
         return ok;
-#endif
     }
     else
     {
-
 #ifdef PRODUCE_PROOF
         // cr must be the last clause we have derived
         CRef cr = res;
 #else
         CRef cr = ca.alloc(ps, false);
-        cr_o = cr;
 #endif
+        inOutCRefs.second = cr;
         if (ca[cr].size() != 1) {
             clauses.push(cr);
             attachClause(cr);
         }
-
         undo_stack.push(undo_stack_el(undo_stack_el::NEWCLAUSE, cr));
     }
-
     return true;
 }
 

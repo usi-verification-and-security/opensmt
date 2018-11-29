@@ -364,9 +364,9 @@ public:
     bool    addClause_(      vec<Lit>& ps);                     // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.
     virtual bool addSMTClause_(vec<Lit>&) = 0;                  // For adding SMT clauses within the solver
 protected:
-    bool    addClause_(const vec<Lit> & ps, CRef & cr);           // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.  Write the new clause to cr
+    bool    addClause_(const vec<Lit> & ps, pair<CRef, CRef> & cr);           // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.  Write the new clause to cr
 public:
-    virtual bool addSMTClause_(const vec<Lit> &, CRef & cr) = 0;        // For adding SMT clauses within the solver, returning the clause ref
+    virtual bool addSMTClause_(const vec<Lit> &, pair<CRef, CRef> & inOutCRefs) = 0;        // For adding SMT clauses within the solver, returning the clause ref
     // Solving:
     //
     bool    simplify     ();                        // Removes already satisfied clauses.
