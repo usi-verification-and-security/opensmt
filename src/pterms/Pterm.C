@@ -10,20 +10,6 @@
     void Pterm::setExpRoot       (PTRef r)      { exp_root   = r; }
     void Pterm::setExpTimeStamp  (const int t)  { exp_time_stamp   = t; }
 
-
-    Pterm::Pterm() {
-        header.type      = 0;
-        header.has_extra = 0;
-        header.reloced   = 0;
-        header.noscoping = 0;           // This is an optimization to avoid expensive name lookup on logic operations
-        header.size      = 0;
-
-        var              = var_Undef;
-
-    }
-
-    Pterm    Pterm::operator=   (Pterm)         { assert(false); return *this; }
-
     int      Pterm::size        ()          const   { return header.size; }
 
     const PTRef& Pterm::operator [] (int i) const   { assert(i < size()); return args[i]; }
