@@ -663,6 +663,16 @@ protected:
         }
     };
 
+    // The result from the lookahead loop
+    enum class LALoopRes
+    {
+        sat,
+        unsat,
+        unknown,
+        splits,
+        restart
+    };
+
     class laresult {
     public:
         enum result { tl_unsat, sat, restart, unsat, ok };
@@ -1172,8 +1182,8 @@ protected:
     // Added Code
     //=================================================================================================
 public:
-    lbool   lookaheadSplit(int d, int &idx, ConflQuota confl_quota);
-    lbool   lookaheadSplit(int d);
+    LALoopRes lookaheadSplit(int d, int &idx, ConflQuota confl_quota);
+    lbool     lookaheadSplit(int d);
     void    printTrace() const;
 
 protected:

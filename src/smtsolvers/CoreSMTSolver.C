@@ -2523,8 +2523,8 @@ lbool CoreSMTSolver::lookaheadSplit(int d)
     int idx = 0;
 //    bool first_model_found_prev = first_model_found;
 //    first_model_found = true;
-    lbool res = l_Undef;
-    while (res == l_Undef) {
+    LALoopRes res = LALoopRes::unknown;
+    while (res == LALoopRes::unknown || res == LALoopRes::restart) {
         //cerr << "; Doing lookahead for " << nof_conflicts << " conflicts\n";
         ConflQuota conflict_quota;
         if (false) { //if (config.lookahead_restarts()) {
@@ -2535,18 +2535,25 @@ lbool CoreSMTSolver::lookaheadSplit(int d)
         nof_conflicts = restartNextLimit(nof_conflicts);
     }
 //    first_model_found = first_model_found_prev;
-    if (res == l_True)
+    if (res == LALoopRes::sat)
     {
         model.growTo(nVars());
         for (int i = 0; i < dec_vars; i++) // TODO: Fix this at some point
             model[i] = value(trail[i]);
     }
-    if (res == l_False)
+    if (res == LALoopRes::unsat)
         splits.clear();
     // Without these I get a segfault from theory solver's destructor...
     cancelUntil(0);
     theory_handler.backtrack(0);
-    return res;
+    if (res == LALoopRes::unknown || res == LALoopRes::splits)
+        return l_Undef;
+    if (res == LALoopRes::sat)
+        return l_True;
+    if (res == LALoopRes::unsat)
+        return l_False;
+    assert(false);
+    return l_Undef;
 }
 
 //
@@ -2642,7 +2649,7 @@ lbool CoreSMTSolver::LApropagate_wrapper(ConflQuota& confl_quota)
 // parameter idx store where we were last time in checking the variables
 // confl_quota is the maximum number of conflicts that we're allowed to collect before a restart
 //
-lbool CoreSMTSolver::lookaheadSplit(int d, int &idx, ConflQuota confl_quota)
+CoreSMTSolver::LALoopRes CoreSMTSolver::lookaheadSplit(int d, int &idx, ConflQuota confl_quota)
 {
     int la_split_count = 0;
 
@@ -2693,11 +2700,11 @@ lbool CoreSMTSolver::lookaheadSplit(int d, int &idx, ConflQuota confl_quota)
                 lbool res = LApropagate_wrapper(confl_quota);
                 // Here it is possible that the solver is on level 0 and in an inconsistent state.  How can I check this?
                 if (res == l_False) {
-                    return l_False; // Indicate unsatisfiability
+                    return LALoopRes::unsat; // Indicate unsatisfiability
                 }
                 else if (res == l_Undef) {
                     cancelUntil(0);
-                    return l_Undef; // Do a restart
+                    return LALoopRes::restart; // Do a restart
                 }
                 if (curr_dl != decisionLevel())
                 {
@@ -2747,7 +2754,7 @@ lbool CoreSMTSolver::lookaheadSplit(int d, int &idx, ConflQuota confl_quota)
 #endif
             createSplit_lookahead();
             if (config.sat_split_test_cube_and_conquer())
-                return l_Undef; // The cube-and-conquer experiment
+                return LALoopRes::unsat; // The cube-and-conquer experiment
             else
                 continue;
         }
@@ -2761,10 +2768,10 @@ lbool CoreSMTSolver::lookaheadSplit(int d, int &idx, ConflQuota confl_quota)
         assert(decisionLevel() <= n.d);
 
         if (res == la_tl_unsat) {
-            return l_False;
+            return LALoopRes::unsat;
         }
         else if (res == la_restart) {
-            return l_Undef;
+            return LALoopRes::restart;
         }
         else if (res == la_unsat)
         {
@@ -2786,7 +2793,7 @@ lbool CoreSMTSolver::lookaheadSplit(int d, int &idx, ConflQuota confl_quota)
             printf("Lookahead claims to have found a satisfying truth assignment:\n");
             printTrail();
 #endif
-            return l_True;
+            return LALoopRes::sat;
         }
         assert(res == la_ok);
         assert(best != lit_Undef);
@@ -2804,7 +2811,9 @@ lbool CoreSMTSolver::lookaheadSplit(int d, int &idx, ConflQuota confl_quota)
 #ifdef LADEBUG
     root->print();
 #endif
-    return l_Undef;
+    if (d > 0)
+        return LALoopRes::splits;
+    return LALoopRes::unknown;
 }
 
 CoreSMTSolver::laresult CoreSMTSolver::lookahead_loop(Lit& best, int &idx, ConflQuota &confl_quota)
