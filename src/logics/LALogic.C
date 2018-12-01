@@ -291,7 +291,7 @@ void LALogic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
         PTRef andr = mkAnd(args);
 #ifdef PRODUCE_PROOF
         const ipartitions_t &part = getIPartitions(tr);
-        transferPartitionMembership(andr, tr);
+        transferPartitionMembership(tr, andr);
         addIPartitions(i1, part);
         addIPartitions(i2, part);
 #endif
