@@ -1,15 +1,4 @@
 #include "Pterm.h"
-
-    PtAsgn Pterm::getExpReason       () const { return exp_reason; }
-    PTRef  Pterm::getExpParent       () const { return exp_parent; }
-    PTRef  Pterm::getExpRoot         () const { return exp_root; }
-    int    Pterm::getExpTimeStamp    () const { return exp_time_stamp; }
-
-    void Pterm::setExpReason     (PtAsgn r)     { exp_reason = r; }
-    void Pterm::setExpParent     (PTRef r)      { exp_parent = r; }
-    void Pterm::setExpRoot       (PTRef r)      { exp_root   = r; }
-    void Pterm::setExpTimeStamp  (const int t)  { exp_time_stamp   = t; }
-
     int      Pterm::size        ()          const   { return header.size; }
 
     const PTRef& Pterm::operator [] (int i) const   { assert(i < size()); return args[i]; }

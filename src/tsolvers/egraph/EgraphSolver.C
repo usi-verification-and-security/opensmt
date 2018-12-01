@@ -382,7 +382,7 @@ void Egraph::declareTerm(PTRef tr) {
     if (!isValid(tr) && !logic.isUFTerm(tr) && !logic.isBoolAtom(tr)) { return; }
 
     if (!enode_store.termToERef.has(tr)) {
-        Pterm& tm = logic.getPterm(tr);
+        const Pterm& tm = logic.getPterm(tr);
         ERef sym = enode_store.addSymb(tm.symb());
         ERef cdr = ERef_Nil;
         for (int j = tm.size()-1; j >= 0; j--) {
@@ -394,12 +394,6 @@ void Egraph::declareTerm(PTRef tr) {
             assert (enode_store[cdr].getRoot() == cdr);
 #endif
             cdr = enode_store.addList(car, cdr);
-#ifdef VERBOSE_EUF
-            assert( checkParents( car ) );
-            assert( checkParents( prev_cdr ) );
-            assert( checkParents( cdr ) );
-            assert( checkInvariants( ) );
-#endif
         }
         // Canonize the term representation
 #ifdef VERBOSE_EUF
@@ -471,7 +465,7 @@ lbool Egraph::addEquality(PtAsgn pa) {
 }
 
 lbool Egraph::addDisequality(PtAsgn pa) {
-    Pterm& pt = logic.getPterm(pa.tr);
+    const Pterm& pt = logic.getPterm(pa.tr);
     bool res = true;
 
     if (pt.getVar() != -1 && deduced[pt.getVar()] != l_Undef && deduced[pt.getVar()] == pa.sgn) {
@@ -564,25 +558,18 @@ bool Egraph::assertEq ( PTRef tr_x, PTRef tr_y, PtAsgn r )
 {
     ERef x = enode_store.termToERef[tr_x];
     ERef y = enode_store.termToERef[tr_y];
-
-    Enode& en_x = enode_store[x];
-    Enode& en_y = enode_store[y];
-    assert( en_x.isTerm() );
-    assert( en_y.isTerm() );
+    assert( getEnode(x).isTerm() );
+    assert( getEnode(y).isTerm() );
     assert( pending.size() == 0 );
-//    assert( x->isAtom( )
-//         || config.logic != QF_BV
-//         || x->getWidth( ) == y->getWidth( ) );
-
     pending.push( x );
     pending.push( y );
 
 #ifdef VERBOSE_EUF
-    cerr << "this is assertEq for " << logic.printTerm(en_x.getTerm())
+    cerr << "this is assertEq for " << toString(x)
          << " (enode-id " << tr_x.x << ") and "
-         << logic.printTerm(en_y.getTerm()) << " (enode-id " << tr_y.x << ")" << endl;
+         << toString(y) << " (enode-id " << tr_y.x << ")" << endl;
 
-    ELRef elr_x = en_x.getForbid();
+    ELRef elr_x = getEnode(x).getForbid();
     ERef first_x = ERef_Undef;
     if (elr_x == ELRef_Undef)
         cerr << "asserting eq, x's forbid list is undef" << endl;
@@ -590,7 +577,7 @@ bool Egraph::assertEq ( PTRef tr_x, PTRef tr_y, PtAsgn r )
         cerr << "asserting eq, x's forbid list is " << endl;
         cerr << printDistinctionList(elr_x, forbid_allocator, false);
     }
-    ELRef elr_y = en_y.getForbid();
+    ELRef elr_y = getEnode(y).getForbid();
     ERef first_y = ERef_Undef;
     if (elr_y == ELRef_Undef)
         cerr << "asserting eq, y's forbid list is undef" << endl;
@@ -600,9 +587,7 @@ bool Egraph::assertEq ( PTRef tr_x, PTRef tr_y, PtAsgn r )
     }
 #endif
 
-    const bool res = mergeLoop( r );
-
-    return res;
+    return mergeLoop( r );
 }
 
 //
@@ -618,8 +603,8 @@ bool Egraph::mergeLoop( PtAsgn reason )
         assert( pending.size( ) % 2 == 0 );
         ERef p = pending.last( ); pending.pop( );
         ERef q = pending.last( ); pending.pop( );
-        Enode& en_p = enode_store[p];
-        Enode& en_q = enode_store[q];
+        const Enode& en_p = enode_store[p];
+        const Enode& en_q = enode_store[q];
 
         if ( en_p.getRoot( ) == en_q.getRoot( ) )
             continue;
@@ -667,8 +652,8 @@ bool Egraph::mergeLoop( PtAsgn reason )
         // conflict is ERef_Undef, it means that a conflict arises because
         // we tried to merge two classes that are assigned to different
         // constants, otherwise we have a proper reason
-        PTRef reason_1 = PTRef_Undef;
-        PTRef reason_2 = PTRef_Undef;
+        ERef reason_1 = ERef_Undef;
+        ERef reason_2 = ERef_Undef;
         //
         // Different constants
         //
@@ -676,8 +661,8 @@ bool Egraph::mergeLoop( PtAsgn reason )
         ERef enr_qroot = en_q.getRoot();
 
         if ( reason_inequality.tr == PTRef_Undef ) {
-            Enode& en_proot = enode_store[enr_proot];
-            Enode& en_qroot = enode_store[enr_qroot];
+            const Enode& en_proot = getEnode(enr_proot);
+            const Enode& en_qroot = getEnode(enr_qroot);
             assert(en_proot.getConstant() != PTRef_Undef);
             assert(en_qroot.getConstant() != PTRef_Undef);
             assert(enr_proot != enr_qroot);
@@ -697,24 +682,24 @@ bool Egraph::mergeLoop( PtAsgn reason )
                  << logic.printTerm(en_p.getTerm()) << " and "
                  << logic.printTerm(en_proot.getConstant()) << endl;
 #endif
-            exp_pending.push( en_p.getTerm() );
-            exp_pending.push( en_proot.getConstant() );
+            exp_pending.push( p );
+            exp_pending.push( enr_proot );
             // 2. why q and q->constant are equal
 #ifdef VERBOSE_EUF
             cerr << "constant pushing (2): "
                  << logic.printTerm(en_q.getTerm()) << " and "
                  << logic.printTerm(en_qroot.getConstant()) << endl;
 #endif
-            exp_pending.push( en_q.getTerm() );
-            exp_pending.push( en_qroot.getConstant() );
+            exp_pending.push( q );
+            exp_pending.push( enr_qroot );
             // 3. why p and q are equal
 #ifdef VERBOSE_EUF
             cerr << "constant pushing (3): "
                  << logic.printTerm(en_q.getTerm()) << " and "
                  << logic.printTerm(en_p.getTerm()) << endl;
 #endif
-            exp_pending.push( en_q.getTerm() );
-            exp_pending.push( en_p.getTerm() );
+            exp_pending.push( q );
+            exp_pending.push( p );
 #ifdef VERBOSE_EUF
             cerr << "Explain XXX" << endl;
 #endif
@@ -739,7 +724,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
             // We should iterate through the elements
             // of the distinction and find which atoms
             // are causing the conflict
-            Pterm& pt_reason = logic.getPterm(reason_inequality.tr);
+            const Pterm& pt_reason = logic.getPterm(reason_inequality.tr);
             for (int i = 0; i < pt_reason.size(); i++) {
                 // (1) Get the proper term reference from pos i in the distinction
                 // (2) Get the enode corresponding to the proper term
@@ -751,11 +736,11 @@ bool Egraph::mergeLoop( PtAsgn reason )
                 ERef  enr_arg_root = enode_store[enr_arg].getRoot();      // (3)
 
                 // (4)
-                if ( enr_arg_root == enr_proot ) { assert( reason_1 == PTRef_Undef ); reason_1 = ptr_arg; }
-                if ( enr_arg_root == enr_qroot ) { assert( reason_2 == PTRef_Undef ); reason_2 = ptr_arg; }
+                if ( enr_arg_root == enr_proot ) { assert( reason_1 == ERef_Undef ); reason_1 = enr_arg; }
+                if ( enr_arg_root == enr_qroot ) { assert( reason_2 == ERef_Undef ); reason_2 = enr_arg; }
             }
-            assert( reason_1 != PTRef_Undef );
-            assert( reason_2 != PTRef_Undef );
+            assert( reason_1 != ERef_Undef );
+            assert( reason_2 != ERef_Undef );
 #ifdef VERBOSE_EUF
             cerr << "Explain YYY" << endl;
 #endif
@@ -771,15 +756,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
 #ifdef VERBOSE_EUF
             cerr << "Reason inequality " << logic.printTerm(reason_inequality.tr) << endl;
 #endif
-            Pterm& pt_reason = logic.getPterm(reason_inequality.tr);
-
-            // Hmm, the difference being?
-//          if ( config.incremental ) {
-//              Enode * s = reason;
-//              explanation.push_back( s );
-//          }
-//          else
-//              explanation.push_back( reason );
+            const Pterm& pt_reason = logic.getPterm(reason_inequality.tr);
 
             if (reason_inequality.tr != Eq_FALSE)
                 explanation.push(reason_inequality);
@@ -788,20 +765,15 @@ bool Egraph::mergeLoop( PtAsgn reason )
             // If properly booleanized, the left and righ sides of equality
             // will always be UF terms
             // The left hand side of the equality
-            reason_1 = pt_reason[0];
+            reason_1 = enode_store.termToERef[pt_reason[0]];
             // The rhs of the equality
-            reason_2 = pt_reason[1];
+            reason_2 = enode_store.termToERef[pt_reason[1]];
 
-            assert( reason_1 != PTRef_Undef );
-            assert( reason_2 != PTRef_Undef );
+            assert( reason_1 != ERef_Undef );
+            assert( reason_2 != ERef_Undef );
 
-//#if VERBOSE
 #ifdef VERBOSE_EUF
-//            cerr << "Reason is neg equality: " << term_store.printTerm(reason_inequality.tr) << endl;
-#endif
-//#endif
-#ifdef VERBOSE_EUF
-            cerr << "Explain ZZZ " << logic.printTerm(reason_1) << " " << logic.printTerm(reason_2) << " " << logic.printTerm(reason_inequality.tr) << endl;
+            cerr << "Explain ZZZ " << toString(reason_1) << " " << toString(reason_2) << " " << logic.printTerm(reason_inequality.tr) << endl;
 #endif
 #ifdef PRODUCE_PROOF
             expExplain( reason_1, reason_2, reason_inequality.tr );
@@ -852,9 +824,10 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
     undo_stack_oper.push_back( ASSERT_NEQ );
     undo_stack_term.push_back( r );
 #endif
-
-    ERef p = enode_store[enode_store.termToERef[x]].getRoot();
-    ERef q = enode_store[enode_store.termToERef[y]].getRoot();
+    ERef xe = enode_store.termToERef[x];
+    ERef ye = enode_store.termToERef[y];
+    ERef p = getEnode(xe).getRoot();
+    ERef q = getEnode(ye).getRoot();
 
     // They can't be different if the nodes are in the same class
     if ( p == q ) {
@@ -863,13 +836,9 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
         cerr << "Explain XXY" << endl;
 #endif
 #ifdef PRODUCE_PROOF
-        expExplain( x, y, r.tr );
+        expExplain( xe, ye, r.tr );
 #else
-        expExplain( x, y );
-#endif
-
-#ifdef VERBOSE_EUF
-        assert( checkExp( ) );
+        expExplain( xe, ye );
 #endif
         has_explanation = true;
         return false;
@@ -968,7 +937,7 @@ bool Egraph::assertDist( PTRef tr_d, PtAsgn tr_r )
     // Nodes changed
     vec<ERef> nodes_changed;
     // Assign distinction flag to all arguments
-    Pterm& pt_d = logic.getPterm(tr_d);
+    const Pterm& pt_d = logic.getPterm(tr_d);
 #ifdef VERBOSE_EUF
     cerr << "Distinction check for " << logic.printTerm(tr_d) << endl;
 #endif
@@ -999,9 +968,9 @@ bool Egraph::assertDist( PTRef tr_d, PtAsgn tr_r )
             cerr << "Explain XYX" << endl;
 #endif
 #ifdef PRODUCE_PROOF
-            expExplain( en_c.getTerm(), enode_store[p].getTerm(), tr_r.tr );
+            expExplain( er_c, p, tr_r.tr );
 #else
-            expExplain( en_c.getTerm(), enode_store[p].getTerm() );
+            expExplain( er_c, p);
 #endif
             // Revert changes, as the current context is inconsistent
             while( nodes_changed.size() != 0 ) {
@@ -1040,9 +1009,6 @@ void Egraph::undoDistinction(PTRef tr_d) {
         assert(en_c.isTerm());
         en_c.setDistClasses( en_c.getDistClasses() & ~(SETBIT(index)) );
     }
-#ifdef VERBOSE_EUF
-    assert(checkInvariants());
-#endif
 }
 
 //
@@ -1319,9 +1285,6 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     cerr << "y size is " << enode_store[y].getSize() << endl;
     cerr << "y isTerm is " << enode_store[y].isTerm() << endl;
     cerr << "y isConstant is " << isConstant(y) << endl;
-    assert( checkParents( x ) );
-    assert( checkParents( y ) );
-    assert( checkInvariants( ) );
 #endif
 
     // This is weird.  If I get the references here and change them afterwards, the cgdata will not be correct.
@@ -1493,9 +1456,6 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     }
     // Adjust parent size
     en_x.setParentSize( en_x.getParentSize( ) + en_y.getParentSize( ) );
-#ifdef VERBOSE_EUF
-    checkParents(x);
-#endif
     // Store info about the constant
     if (en_y.isTerm() && en_y.getConstant() != PTRef_Undef) {
         assert(en_x.getConstant() == PTRef_Undef);
@@ -1520,21 +1480,6 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
 
   // Push undo record
     undo_stack_main.push( Undo(MERGE,y) );
-#ifdef VERBOSE_EUF
-    undo_stack_main.last().merged_with = x;
-    undo_stack_main.last().bool_term = reason.tr;
-#endif
-
-//    if (en_x.isTerm()) {
-//        printf("Merging %s and %s, undo stack size %d\n", term_store.printTerm(en_x.getTerm()), term_store.printTerm(en_y.getTerm()), undo_stack_term.size());
-//        printf("There are %d backtrack points\n", backtrack_points.size());
-//    }
-
-#ifdef VERBOSE_EUF
-    assert( checkParents( x ) );
-    assert( checkParents( y ) );
-    assert( checkInvariants( ) );
-#endif
 }
 
 //
@@ -1692,9 +1637,6 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
         if ( v == vstart )
             break;
     }
-#ifdef VERBOSE_EUF
-    assert( checkInvariants( ) );
-#endif
 }
 
 //
@@ -1720,15 +1662,6 @@ void Egraph::undoMerge( ERef y )
     assert( x != ERef_Undef );
 
     Enode& en_x = enode_store[x];
-
-#if VERBOSE
-//    cerr << "UM: Undoing merge of " << y << " and " << x << endl;
-#endif
-#if VERBOSE_EUF
-//    if (en_y.isTerm())
-//        cerr << "UM: Undoing merge of " << logic.printTerm(en_y.getTerm())
-//             << " and " << logic.printTerm(en_x.getTerm()) << endl;
-#endif
 
     // Undoes the merge of the parent lists
     en_x.setParentSize( en_x.getParentSize() - en_y.getParentSize() );
@@ -1873,12 +1806,6 @@ skip_signature_removal:
   //
   // TODO: unmerge for ordinary theories
   //
-
-#ifdef VERBOSE_EUF
-  assert( checkParents( y ) );
-  assert( checkParents( x ) );
-  assert( checkInvariants( ) );
-#endif
 #ifdef GC_DEBUG
     checkRefConsistency();
 #endif
@@ -1910,15 +1837,6 @@ void Egraph::undoDisequality ( ERef x )
 
 
     ELRef yfirst = en_y.getForbid();
-
-#if VERBOSE
-    cerr << "UD: Undoing distinction of " << x << " and " << y << endl;
-#elif VERBOSE_EUF
-//    if (en_x.isTerm())
-//        cerr << "UD: Undoing distinction of "
-//             << logic.printTerm(en_x.getTerm()) << " and "
-//             << logic.printTerm(en_y.getTerm()) << endl;
-#endif
 
 #ifdef GC_DEBUG
     cerr << "Distinction list for xfirst" << endl;
@@ -1962,10 +1880,6 @@ void Egraph::undoDisequality ( ERef x )
         el_yfirst.link = el_xdist.link;
 
     forbid_allocator.free(xdist);
-
-#ifdef VERBOSE_EUF
-    assert( checkInvariants( ) );
-#endif
 #ifdef GC_DEBUG
     checkRefConsistency();
 #endif
@@ -1977,8 +1891,8 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r)
     assert( x != ERef_Undef );
     assert( y != ERef_Undef );
 
-    ERef p = enode_store[x].getRoot();
-    ERef q = enode_store[y].getRoot();
+    ERef p = getEnode(x).getRoot();
+    ERef q = getEnode(y).getRoot();
 
 #ifdef VERBOSE_EUF
     if (enode_store[x].isTerm()) {
@@ -2001,8 +1915,8 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r)
     // possible that the constant is the same. In fact if it was
     // the same, they would be in the same class, but they are not
     // Check if they are part of the same distinction (general distinction)
-    Enode& en_p = enode_store[p];
-    Enode& en_q = enode_store[q];
+    const Enode& en_p = getEnode(p);
+    const Enode& en_q = getEnode(q);
     if ( en_p.isTerm() && en_p.getConstant() != PTRef_Undef && en_q.getConstant() != PTRef_Undef) return true;
     dist_t intersection = ( en_p.getDistClasses( ) & en_q.getDistClasses( ) );
 
@@ -2032,8 +1946,8 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r)
     r = PtAsgn(PTRef_Undef, l_True);
 
     for (;;) {
-        Elist& el_pptr = forbid_allocator[pptr];
-        Elist& el_qptr = forbid_allocator[qptr];
+        const Elist& el_pptr = forbid_allocator[pptr];
+        const Elist& el_qptr = forbid_allocator[qptr];
         // They are unmergeable if they are on the other forbid list
         if ( enode_store[el_pptr.e].getRoot( ) == q ) {
 #ifdef VERBOSE_EUF
@@ -2151,29 +2065,12 @@ void Egraph::tmpMergeEnd( Enode * x, Enode * y )
 */
 #endif
 
-//
-// Functions to be used when egraph is used 
-// as a supporting solver for another theory
-// e.g. AX
-//
-//bool Egraph::extAssertLit( Enode * e )
-//{
-//  assert( config.uf_disable == 0 );
-//  congruence_running = true;
-//  model_computed = false;
-//
-//  bool res = assertLit_( e );
-//
-//  return res;
-//}
-
 bool Egraph::assertLit(PtAsgn pta, bool)
 {
     // invalidate values
-//    opensmt::StopWatch sw(tsolver_stats.egraph_asrt_timer);
     lbool sgn = pta.sgn;
     PTRef pt_r = pta.tr;
-    Pterm& pt = logic.term_store[pt_r];
+    const Pterm& pt = logic.term_store[pt_r];
 
     assert(!hasPolarity(pt_r));
 
@@ -2212,153 +2109,6 @@ bool Egraph::assertLit(PtAsgn pta, bool)
     (res == l_False) ? tsolver_stats.unsat_calls ++ : tsolver_stats.sat_calls ++;
     return (res == l_False) ? false : true;
 }
-
-#if MORE_DEDUCTIONS
-bool Egraph::deduceMore( vector< Enode * > & saved_deds )
-{
-  //
-  // For each negated equality
-  //
-  // x != y
-  //
-  // we see if there are terms
-  //
-  // rd( a, i )
-  // rd( b, j )
-  //
-  // such that
-  //
-  // x ~ rd( a, i )
-  // y ~ rd( b, j )
-  // a ~ b
-  //
-  // these relations imply that i != j,
-  // which is what we (potentially create and)
-  // theory-propagate
-  //
-  bool deduced = false;
-  for ( size_t k = 0 ; k < neq_list.size( ) ; k ++ )
-  {
-    if ( neq_list[ k ]->get1st( )->getRetSort( ) != getSortElem( ) )
-      continue;
-
-    vector< Enode * > x_reads, y_reads;
-
-    Enode * x = neq_list[ k ]->get1st( );
-    Enode * y = neq_list[ k ]->get2nd( );
-
-    Enode * v = x;
-    const Enode * vstart = v;
-    for (;;)
-    {
-      if ( v->isSelect( ) )
-	x_reads.push_back( v );
-
-      v = v->getNext( );
-      if ( v == vstart )
-	break;
-    }
-
-    Enode * t = y;
-    const Enode * tstart = t;
-    for (;;)
-    {
-      if ( t->isSelect( ) )
-	y_reads.push_back( t );
-
-      t = t->getNext( );
-      if ( t == tstart )
-	break;
-    }
-
-    for ( size_t x_i = 0 ; x_i < x_reads.size( ) ; x_i ++ )
-    {
-      for ( size_t y_i = 0 ; y_i < y_reads.size( ) ; y_i ++ )
-      {
-	// Check if they are equal in all but one position
-	Enode * read1 = x_reads[ x_i ];
-	Enode * read2 = y_reads[ y_i ];
-	Enode * diff1 = NULL, * diff2 = NULL;
-
-	if ( read1->get1st( )->getRoot( ) ==
-	     read2->get1st( )->getRoot( ) )
-	{
-	  diff1 = x_reads[ x_i ]->get2nd( );
-	  diff2 = y_reads[ y_i ]->get2nd( );
-	}
-	else if ( read1->get2nd( )->getRoot( ) ==
-	          read2->get2nd( )->getRoot( ) )
-	{
-	  Enode * a1 = read1->get1st( );
-	  Enode * a2 = read2->get1st( );
-
-	  int nof_diff = 0;
-
-	  while ( nof_diff <= 1 
-	      && a1->isStore( ) 
-	      && a2->isStore( ) ) 
-	  {
-	    if ( a1->get3rd( )->getRoot( ) !=
-		 a2->get3rd( )->getRoot( ) ) 
-	    {
-	      // diff1 = a1->get3rd( );
-	      // diff2 = a2->get3rd( );
-	      // nof_diff ++;
-	      // Force exit
-	      nof_diff = 2;
-	    }
-	    if ( a1->get2nd( )->getRoot( ) !=
-		 a2->get2nd( )->getRoot( ) ) 
-	    {
-	      diff1 = a1->get2nd( );
-	      diff2 = a2->get2nd( );
-	      nof_diff ++;
-	    }
-	    a1 = a1->get1st( );
-	    a2 = a2->get1st( );
-	  }
-
-	  // Cannot be different in one
-	  if ( !a1->isVar( ) || !a2->isVar( ) )
-	    continue;
-	  // Different in more than one place
-	  if ( nof_diff > 1 )
-	    continue;
-
-	  assert( nof_diff == 1 );
-	}
-	else 
-	{
-	  continue;
-	}
-
-	assert( diff1 );
-	assert( diff2 );
-	assert( diff1->getRoot( ) != diff2->getRoot( ) );
-
-	Enode * eij = mkEq( cons( diff1
-	                  , cons( diff2 ) ) );
-	  
-	if ( eij->hasPolarity( ) 
-	  || eij->isDeduced( ) )
-	  continue;
-
-	// Adds if does not exists
-	splitOnDemand( eij, id );
-	cerr << "DEDUCED: " << eij << endl;
-	eij->setDeduced( l_False, id );
-	saved_deds.push_back( eij );
-	deduced = true;
-#ifdef STATISTICS
-	tsolvers_stats[ 0 ]->deductions_done ++;
-#endif
-      }
-    }
-  }
-
-  return deduced;
-}
-#endif
 
 //
 // Pushes a backtrack point

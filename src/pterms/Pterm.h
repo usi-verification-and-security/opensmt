@@ -81,28 +81,12 @@ class Pterm {
     PTId        id;
     SymRef      sym;
     Var         var;     // This is defined if the PTRef has a Boolean var associated with it
-    PtAsgn      exp_reason;
-    PTRef       exp_parent;
-    PTRef       exp_root;
-    int         exp_time_stamp;
-    // This has to be the last
     PTRef       args[0]; // Either the terms or the relocation reference
 
 
     friend class PtermAllocator;
     friend void  ptermSort(Pterm&);
   public:
-
-    PtAsgn getExpReason       () const;// { return exp_reason; }
-    PTRef  getExpParent       () const ;//{ return exp_parent; }
-    PTRef  getExpRoot         () const ;//{ return exp_root; }
-    int    getExpTimeStamp    () const ;//{ return exp_time_stamp; }
-
-    void setExpReason     (PtAsgn r);//     { exp_reason = r; }
-    void setExpParent     (PTRef r) ;//     { exp_parent = r; }
-    void setExpRoot       (PTRef r) ;//     { exp_root   = r; }
-    void setExpTimeStamp  (const int t) ;// { exp_time_stamp   = t; }
-
     // forbid any copies or moves
     Pterm() = delete;
     Pterm(const Pterm&) = delete;
@@ -172,10 +156,10 @@ private:
         var              = var_Undef;
 
         for (int i = 0; i < ps.size(); i++) args[i] = ps[i];
-        setExpReason(PtAsgn(PTRef_Undef, l_Undef));
-        setExpParent(PTRef_Undef);
-        setExpRoot(t);
-        setExpTimeStamp(0);
+//        setExpReason(PtAsgn(PTRef_Undef, l_Undef));
+//        setExpParent(PTRef_Undef);
+//        setExpRoot(t);
+//        setExpTimeStamp(0);
     }
 };
 

@@ -622,10 +622,6 @@ bool MainSolver::writeState(int* &buf, int &buf_sz, bool compress, CnfState& cs,
     // Clear the timestamp for explanations!
     for (PtermIter it = logic.getPtermIter(); *it != PTRef_Undef; ++it) {
         Pterm& t = logic.getPterm(*it);
-        t.setExpTimeStamp(0);
-        t.setExpReason(PtAsgn(PTRef_Undef, l_Undef));
-        t.setExpParent(PTRef_Undef);
-        t.setExpRoot(*it);
     }
 
 
@@ -800,10 +796,6 @@ void MainSolver::deserializeSolver(const int* termstore_buf, const int* symstore
     }
     for (PtermIter it = logic.getPtermIter(); *it != PTRef_Undef; ++it) {
         Pterm& t = logic.getPterm(*it);
-        t.setExpTimeStamp(0);
-        assert(t.getExpReason() == PtAsgn_Undef);
-        assert(t.getExpParent() == PTRef_Undef);
-        assert(t.getExpRoot() == *it);
     }
     DimacsParser dp;
     dp.parse_DIMACS_main(cs.getCnf(), ts.solver);

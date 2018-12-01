@@ -129,8 +129,11 @@ public:
 
     void print(ostream& out) { return; }
 
-    const Enode& getEnode(ERef er) const { return enode_store[er]; }
-    const Enode& getEnode(PTRef er) const { return enode_store[er]; }
+private:
+    inline Enode& getEnode(ERef er) { return enode_store[er]; }
+public:
+    inline const Enode& getEnode(ERef er) const { return enode_store[er]; }
+    inline const Enode& getEnode(PTRef er) const { return enode_store[er]; }
     const vec<ERef>& getEnodes() const    { return enode_store.getEnodes(); }
     PTRef ERefToTerm(ERef er)    const    { return enode_store[er].getTerm(); }
     bool  isDeduced(PTRef tr)    const    { return deduced[logic.getPterm(tr).getVar()] != l_Undef; }
@@ -145,23 +148,7 @@ public:
 
   char*   printValue              (PTRef tr); // Print all terms in the same eq class and distinction class
 
-  ERef    getUncheckedAssertions  ( );
-  void    setDistinctEnodes       ( vec<ERef> & );
-
   void    printEnodeList          ( ostream & );
-  void    addAssertion            ( ERef );
-
-  void          initializeStore   ( );
-  inline void   setTopEnode       ( ERef e )         { assert( e != ERef_Nil ); top = e; }
-  inline size_t nofEnodes         ( )                { return enode_store.id_to_enode.size( ); }
-
-
-
-  ERef copyEnodeEtypeTermWithCache   ( ERef, bool = false );
-  ERef copyEnodeEtypeListWithCache   ( ERef, bool = false );
-
-  ERef canonize                      ( ERef, bool = false );
-  ERef maximize                      ( ERef );
 
 #ifdef STATISTICS
   void        printMemStats             ( ostream & );
@@ -208,27 +195,18 @@ public:
   ERef    getInterfaceTerm         ( const int );
   bool    isRootUF                 ( ERef );
   ERef    canonizeDTC              ( ERef, bool = false );
-#ifdef PRODUCE_PROOF
-  void    getInterfaceVars         ( Enode *, set< Enode * > & );
-#endif
 
   Logic& getLogic() { return logic; }
 private:
 
   int countEqClasses();
   vec< ERef > interface_terms;
-  // Cache for interface terms
-//  set< Enode * > interface_terms_cache;
-  // Cache for uf terms and la terms
-//  set< Enode * > it_uf, it_la;
 
 public:
 
   //===========================================================================
   // Public APIs for Egraph Core Solver
 
-  //void                initializeTheorySolvers ( SimpSMTSolver * );          // Attaches ordinary theory solvers
-  bool                assertLit_lowlevel      (PtAsgn);                     // No checks
   bool                assertLit               (PtAsgn, bool = false);
   void                pushBacktrackPoint      ( );                          // Push a backtrack point
   void                popBacktrackPoint       ( );                          // Backtrack to last saved point
@@ -315,7 +293,6 @@ private:
   vec< int >                  dup_set2;                         // Fast duplicate checking
   int                         dup_map_count1;                   // Current dup token
   int                         dup_map_count2;                   // Current dup token
-  ERef                        top;                              // Top node of the formula
   bool                           model_computed;                // Has model been computed lately ?
   bool                           congruence_running;            // True if congruence is running
 
@@ -365,18 +342,18 @@ private:
   //
   void     expExplain           ( );                            // Main routine for explanation
 #ifdef PRODUCE_PROOF
-  void     expExplain           ( PTRef, PTRef, PTRef );        // Enqueue equality and explain
+  void     expExplain           ( ERef, ERef, PTRef );        // Enqueue equality and explain
 #else
-  void     expExplain           ( PTRef, PTRef );               // Enqueue equality and explain
+  void     expExplain(ERef, ERef);               // Enqueue equality and explain
 #endif
   void     expStoreExplanation  ( ERef, ERef, PtAsgn );         // Store the explanation for the merge
-  void     expExplainAlongPath  ( PTRef, PTRef );               // Store explanation in explanation
-  void     expEnqueueArguments  ( PTRef, PTRef );               // Enqueue arguments to be explained
-  void     expReRootOn          ( PTRef );                      // Reroot the proof tree on x
-  void     expUnion             ( PTRef, PTRef );               // Union of x and y in the explanation
-  PTRef    expFind              ( PTRef );                      // Find for the eq classes of the explanation
-  PTRef    expHighestNode       ( PTRef );                      // Returns the node of the eq class of x that is closest to the root of the explanation tree
-  PTRef    expNCA               ( PTRef, PTRef );               // Return the nearest common ancestor of x and y
+  void     expExplainAlongPath(ERef, ERef);               // Store explanation in explanation
+  void     expEnqueueArguments(ERef, ERef);               // Enqueue arguments to be explained
+  void     expReRootOn(ERef);                      // Reroot the proof tree on x
+  void     expUnion(ERef, ERef);               // Union of x and y in the explanation
+  ERef expFind(ERef);                      // Find for the eq classes of the explanation
+  ERef expHighestNode(ERef);                      // Returns the node of the eq class of x that is closest to the root of the explanation tree
+  ERef expNCA(ERef, ERef);               // Return the nearest common ancestor of x and y
   void     expRemoveExplanation ( );                            // Undoes the effect of expStoreExplanation
   void     expCleanup           ( );                            // Undoes the effect of expExplain
 
@@ -410,9 +387,9 @@ private:
   vec< ERef>                  neq_list;
 #endif
 
-  vec< PTRef >                exp_pending;                      // Pending explanations
-  vec< PTRef >                exp_undo_stack;                   // Keep track of exp_parent merges
-  vec< PTRef >                exp_cleanup;                      // List of nodes to be restored
+  vec< ERef >                 exp_pending;                      // Pending explanations
+  vec< ERef >                 exp_undo_stack;                   // Keep track of exp_parent merges
+  vec< ERef >                 exp_cleanup;                      // List of nodes to be restored
   int                         time_stamp;                       // Need for finding NCA
   int                         conf_index;                       // Index of theory solver that caused conflict
 
@@ -482,12 +459,13 @@ private:
 public:
   char* printEqClass               ( PTRef tr ) const;
   char* printDistinctions          ( PTRef tr ) const;
-  char* printExplanation           ( PTRef tr ) { char* tmp; asprintf(&tmp, "%s", printExplanationTreeDotty(tr).c_str()); return tmp; }
+  char* printExplanation           ( PTRef tr ) { char* tmp; asprintf(&tmp, "%s", printExplanationTreeDotty(enode_store.termToERef[tr]).c_str()); return tmp; }
 private:
   bool   isEqual                   (PTRef, PTRef) const;
-  string printExplanationTree      ( PTRef );
+  string printExplanationTree(ERef);
+  std::string toString                 (ERef er) const { return std::string{logic.printTerm(getEnode(er).getTerm())};}
 public:
-  string printExplanationTreeDotty ( PTRef );
+  string printExplanationTreeDotty(ERef);
 private:
   const string printDistinctionList( ELRef, ELAllocator& ela, bool detailed = true );
   void checkForbidReferences       ( ERef );
