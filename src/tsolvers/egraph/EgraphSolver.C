@@ -1286,32 +1286,33 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     cerr << "y isTerm is " << enode_store[y].isTerm() << endl;
     cerr << "y isConstant is " << isConstant(y) << endl;
 #endif
+    { // sanity checks
+        const Enode& an_x = getEnode(x);
+        const Enode& an_y = getEnode(y);
 
-    // This is weird.  If I get the references here and change them afterwards, the cgdata will not be correct.
-    Enode& an_x = enode_store[x];
-    Enode& an_y = enode_store[y];
-
-    if (an_x.isTerm()) {
-        assert( !isConstant(x) || !isConstant(y) );
+        if (an_x.isTerm()) {
+            assert( !isConstant(x) || !isConstant(y) );
 //        assert( !isConstant(x) || an_x.getSize() == 1 );
 //        assert( !isConstant(y) || an_y.getSize() == 1 );
+        }
+        assert( an_x.getRoot( ) != an_y.getRoot( ) );
+        assert( x == an_x.getRoot( ) );
+        assert( y == an_y.getRoot( ) );
     }
-    assert( an_x.getRoot( ) != an_y.getRoot( ) );
-    assert( x == an_x.getRoot( ) );
-    assert( y == an_y.getRoot( ) );
+
 
     // Ensure that the constant or the one with a larger equivalence
     // class will be in x (and will become the root)
-    if ((an_y.isTerm() && isConstant(y)) ||
-        (!(an_x.isTerm() && isConstant(x)) && (an_x.getSize() < an_y.getSize())))
+    if (isConstant(y) ||
+        (!(isConstant(x)) && (getEnode(x).getSize() < getEnode(y).getSize())))
     {
         ERef tmp = x;
         x = y;
         y = tmp;
     }
     // Get the references right here
-    Enode& en_x = enode_store[x];
-    Enode& en_y = enode_store[y];
+    Enode& en_x = getEnode(x);
+    Enode& en_y = getEnode(y);
 
     assert(en_x.type() == en_y.type());
     assert(!en_y.isTerm() || !isConstant(y));
@@ -1344,12 +1345,12 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     ERef w = en_x.getParentSize() < en_y.getParentSize( ) ? x : y ;
     // Visit each parent of w, according to the type of w
     // and remove each congruence root from the signature table
-    Enode& en_w = enode_store[w];
+    const Enode& en_w = getEnode(w);
     ERef p = en_w.getParent();
     const ERef pstart = p;
     const bool scdr = en_w.isList( );
     for ( ; p != ERef_Undef ; ) {
-        Enode& en_p = enode_store[p];
+        const Enode& en_p = getEnode(p);
         assert ( en_p.isTerm( ) || en_p.isList( ) );
         // If p is a congruence root
         if ( p == en_p.getCgPtr( ) )
@@ -1380,7 +1381,7 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     bool constant_set = false;
 #endif
     while (true) {
-        Enode& en_v = enode_store[v];
+        Enode& en_v = getEnode(v);
         // XXX
 #ifdef VERBOSE_EUF
         if (isConstant(v)) {
@@ -1412,7 +1413,7 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     // Insert new signatures and propagate congruences
     p = en_w.getParent();
     for ( ; p != ERef_Undef; ) {
-        Enode& en_p = enode_store[p];
+        Enode& en_p = getEnode(p);
         // If p is a congruence root
         if ( p == en_p.getCgPtr( ) ) {
             //ERef q = EnodeStore.insertSig(p);
