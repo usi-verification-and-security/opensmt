@@ -329,7 +329,7 @@ void LASolver::declareAtom(PTRef leq_tr)
     // DEBUG check
     isProperLeq(leq_tr);
 
-    Pterm& t = logic.getPterm(leq_tr);
+    const Pterm& t = logic.getPterm(leq_tr);
 
     while (known_preds.size() <= Idx(t.getId()))
         known_preds.push(false);
@@ -349,6 +349,7 @@ LVRef LASolver::getBasicVarToFixByShortestPoly() const {
     LVRef current = LVRef_Undef;
     std::size_t current_poly_size = static_cast<std::size_t>(-1);
     for (auto it : candidates) {
+        assert(tableau.isBasic(it));
         assert(it != LVRef_Undef);
         if (isModelOutOfBounds(it)) {
             new_candidates.insert(it);
@@ -369,6 +370,7 @@ LVRef LASolver::getBasicVarToFixByBland() const {
     LVRef current = LVRef_Undef;
     for (auto it : candidates) {
         assert(it != LVRef_Undef);
+        assert(tableau.isBasic(it));
         if (isModelOutOfBounds(it)) {
             new_candidates.insert(it);
             // Select the var with the smallest id
@@ -509,7 +511,7 @@ bool LASolver::assertLit( PtAsgn asgn, bool reason )
 
     bool is_reason = false;
 
-    Pterm& t = logic.getPterm(asgn.tr);
+    const Pterm& t = logic.getPterm(asgn.tr);
 
 
     LABoundRefPair p = boundStore.getBoundRefPair(asgn.tr);
@@ -610,7 +612,8 @@ bool LASolver::assertBoundOnVar(LVRef it, LABoundRef itBound_ref)
         if(!tableau.isActive(it)){
             throw "Not implemented yet!";
         }
-        candidates.insert(it);
+        assert(tableau.isBasic(it));
+        newCandidate(it);
     }
 
 //  LAVar *x = it;
@@ -651,16 +654,14 @@ void LASolver::popBacktrackPoints(unsigned int count) {
         TSolver::popBacktrackPoint();
     }
     assert(checkValueConsistency());
-//    fixCandidates();
+//    newCandidate();
     assert(invariantHolds());
     setStatus(SAT);
 }
 
-void LASolver::fixCandidates() {
-    candidates.clear();
-    for (const auto & row : tableau.getRows()) {
-        candidates.insert(row.first);
-    }
+void LASolver::newCandidate(LVRef candidateVar) {
+    assert(tableau.isBasic(candidateVar));
+    candidates.insert(candidateVar);
 }
 
 void LASolver::pivot( const LVRef bv, const LVRef nv){
@@ -670,6 +671,10 @@ void LASolver::pivot( const LVRef bv, const LVRef nv){
 //    tableau.print();
     updateValues(bv, nv);
     tableau.pivot(bv, nv);
+    // after pivot, bv is not longer a candidate
+    candidates.erase(bv);
+    // and nv can be a candidate
+    newCandidate(nv);
 //    tableau.print();
     assert(checkValueConsistency());
     assert(checkTableauConsistency());
@@ -678,13 +683,12 @@ void LASolver::pivot( const LVRef bv, const LVRef nv){
 void LASolver::changeValueBy(LVRef var, const Delta & diff) {
     // update var's value
     model.write(var, model.read(var) + diff);
-    candidates.insert(var);
     // update all (active) rows where var is present
     for ( LVRef row : tableau.getColumn(var)){
         assert(tableau.isBasic(row));
         if (tableau.isActive(row)) {
             model.write(row, model.read(row) + (tableau.getCoeff(row, var) * diff));
-            candidates.insert(row);
+            newCandidate(row);
         }
     }
 }
@@ -736,8 +740,6 @@ void LASolver::initSolver()
             doGaussianElimination();
 
         model.initModel(lavarStore);
-
-        fixCandidates();
 
         status = SAT;
     }

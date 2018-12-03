@@ -123,7 +123,7 @@ protected:
     bool assertBoundOnVar(LVRef it, LABoundRef it_i);
 
     unsigned nVars() const;// { return lva.getNumVars(); }
-    void  fixCandidates( );                                      // Reset row candidates for possible out of bounds
+    inline void newCandidate(LVRef candidateVar);
 
     opensmt::Number getNum(PTRef);
 
