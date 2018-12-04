@@ -60,6 +60,7 @@ PTRef EnodeStore::addTerm(ERef sr, ERef args, PTRef term) {
         // we need to communicate equality back to the caller so that
         // eventually required actions can be taken.
         if (containsSig(sr, args)) {
+            assert(false);
             ERef canon = lookupSig(sr, args);
             termToERef.insert(term, canon);
             rval = ea[canon].getTerm();

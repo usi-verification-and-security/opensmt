@@ -16,6 +16,7 @@ static struct LABoundListRef LABoundListRef_Undef = {INT32_MAX};
 struct BoundT {
     char t;
     bool operator== (const BoundT& o) const { return o.t == t; }
+    bool operator!= (const BoundT& o) const { return o.t != t; }
     BoundT operator~ () const { return { (char)(1-t) }; }
 };
 

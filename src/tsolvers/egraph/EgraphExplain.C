@@ -25,7 +25,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 #include "Egraph.h"
-
 //=============================================================================
 // Explanation Routines: details about these routines are in paper
 //
@@ -51,11 +50,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 void Egraph::expStoreExplanation ( ERef x, ERef y, PtAsgn reason )
 {
-    assert(enode_store[x].isTerm());
-    assert(enode_store[y].isTerm());
+    assert(getEnode(x).isTerm());
+    assert(getEnode(y).isTerm());
 
     // They must be different because the merge hasn't occured yet
-    assert( enode_store[x].getRoot() != enode_store[y].getRoot() );
+    assert( getEnode(x).getRoot() != getEnode(y).getRoot() );
     // The main observation here is that the explanation tree, altough
     // differently oriented, has the same size as the equivalence tree
     // (actually we don't keep the equivalence tree, because we use
@@ -65,27 +64,23 @@ void Egraph::expStoreExplanation ( ERef x, ERef y, PtAsgn reason )
     // balanced (which is a requirement to keep the O(nlogn) bound
 
     // Make sure that x is the node with the larger number of edges to switch
-    Enode& root_x = enode_store[enode_store[x].getRoot()];
-    Enode& root_y = enode_store[enode_store[y].getRoot()];
+    const Enode& root_x = enode_store[getEnode(x).getRoot()];
+    const Enode& root_y = enode_store[getEnode(y).getRoot()];
     if ( root_x.getSize() < root_y.getSize() ) {
         ERef tmp = x;
         x = y;
         y = tmp;
     }
-
-    PTRef tr_y = enode_store[y].getTerm();
-    PTRef tr_x = enode_store[x].getTerm();
-
     // Reroot the explanation tree on y. It has an amortized cost of logn
-    expReRootOn( tr_y );
+    expReRootOn( y );
 
-    logic.getPterm(tr_y).setExpParent(tr_x);
-    logic.getPterm(tr_y).setExpReason(reason);
+    getEnode(y).setExpParent(x);
+    getEnode(y).setExpReason(reason);
     // Store both nodes. Because of rerooting operations
     // we don't know whether x --> y or x <-- y at the moment of
     // backtracking. So we just save reason and check both parts
-    exp_undo_stack.push(tr_x);
-    exp_undo_stack.push(tr_y);
+    exp_undo_stack.push(x);
+    exp_undo_stack.push(y);
 
 #ifdef VERBOSE_EUF
     assert( checkExpTree(tr_x) );
@@ -99,21 +94,21 @@ void Egraph::expStoreExplanation ( ERef x, ERef y, PtAsgn reason )
 // Re-root the tree containing x, in such a way that
 // the new root is x itself
 //
-void Egraph::expReRootOn (PTRef x) {
-    PTRef p = x;
-    PTRef parent = logic.getPterm(p).getExpParent();
-    PtAsgn reason = logic.getPterm(p).getExpReason();
-    logic.getPterm(x).setExpParent(PTRef_Undef);
-    logic.getPterm(x).setExpReason(PtAsgn_Undef);
-    while( parent != PTRef_Undef ) {
+void Egraph::expReRootOn(ERef x) {
+    ERef p = x;
+    ERef parent = getEnode(p).getExpParent();
+    PtAsgn reason = getEnode(p).getExpReason();
+    getEnode(x).setExpParent(ERef_Undef);
+    getEnode(x).setExpReason(PtAsgn_Undef);
+    while( parent != ERef_Undef ) {
         // Save grandparent
-        PTRef grandparent = logic.getPterm(parent).getExpParent();
+        ERef grandparent = getEnode(parent).getExpParent();
         // Save reason
         PtAsgn saved_reason = reason;
-        reason = logic.getPterm(parent).getExpReason();
+        reason = getEnode(parent).getExpReason();
         // Reverse edge & reason
-        logic.getPterm(parent).setExpParent(p);
-        logic.getPterm(parent).setExpReason(saved_reason);
+        getEnode(parent).setExpParent(p);
+        getEnode(parent).setExpReason(saved_reason);
 
 #ifdef VERBOSE_EUF
         assert( checkExpTree( parent ) );
@@ -129,13 +124,8 @@ void Egraph::expExplain () {
     while ( exp_pending.size() > 0 ) {
         assert( exp_pending.size() % 2 == 0 );
 
-        PTRef p_in = exp_pending.last(); exp_pending.pop();
-        PTRef q_in = exp_pending.last(); exp_pending.pop();
-
-        ERef p_er = enode_store.termToERef[p_in];
-        PTRef p = enode_store.ERefToTerm[p_er];
-        ERef q_er = enode_store.termToERef[q_in];
-        PTRef q = enode_store.ERefToTerm[q_er];
+        ERef p = exp_pending.last(); exp_pending.pop();
+        ERef q = exp_pending.last(); exp_pending.pop();
 
         if ( p == q ) continue;
 
@@ -144,23 +134,17 @@ void Egraph::expExplain () {
         assert( checkExpTree( q ) );
 #endif
 #ifdef VERBOSE_EUFEX
-        cerr << "Explain " << logic.printTerm(p) << " and " << logic.printTerm(q) << endl;
+        cerr << "Explain " << toString(p) << " and " << toString(q) << endl;
 #endif
-        PTRef w = expNCA(p, q);
-        assert(w != PTRef_Undef);
+        ERef w = expNCA(p, q);
+        assert(w != ERef_Undef);
 
 #ifdef VERBOSE_EUFEX
-//        cerr << "Explanation from " << term_store.printTerm(p) << " to " << term_store.printTerm(w) << ":" << endl;
-//        cerr << " " << printExplanationTree(p) << endl;
-//        cerr << "Explanation from " << term_store.printTerm(q) << " to " << term_store.printTerm(w) << ":" << endl;
-//        cerr << " " <<printExplanationTree(q) << endl;
-#endif
-#ifdef VERBOSE_EUFEX
-        cerr << "Explaining along path " << logic.printTerm(p) << " -> " << logic.printTerm(w) << endl;
+        cerr << "Explaining along path " << toString(p) << " -> " << toString(w) << endl;
 #endif
         expExplainAlongPath( p, w );
 #ifdef VERBOSE_EUFEX
-        cerr << "Explaining along path " << logic.printTerm(q) << " -> " << logic.printTerm(w) << endl;
+        cerr << "Explaining along path " << toString(q) << " -> " << toString(w) << endl;
 #endif
         expExplainAlongPath( q, w );
     }
@@ -190,15 +174,14 @@ void Egraph::explain( PTRef x, PTRef y, vec<PTRef> & expl )
 // Wrapper for expExplain
 //
 #ifdef PRODUCE_PROOF
-void Egraph::expExplain(PTRef x, PTRef y, PTRef r)
+void Egraph::expExplain(ERef x, ERef y, PTRef r)
 #else
-void Egraph::expExplain(PTRef x, PTRef y)
+void Egraph::expExplain(ERef x, ERef y)
 #endif
 {
-//    opensmt::StopWatch(tsolver_stats.egraph_explain_timer);
 #ifdef VERBOSE_EUFEX
     cerr << "exp pending size " << exp_pending.size() << endl;
-    cerr << "explain pushing " << logic.printTerm(x) << " and " << logic.printTerm(y) << endl;
+    cerr << "explain pushing " << toString(x) << " and " << toString(y) << endl;
 #endif
     exp_pending.push(x);
     exp_pending.push(y);
@@ -206,7 +189,7 @@ void Egraph::expExplain(PTRef x, PTRef y)
 #ifdef PRODUCE_PROOF
     if ( config.produce_inter() != 0 )
     {
-        cgraph_->setConf( x, y, r );
+        cgraph_->setConf( getEnode(x).getTerm(), getEnode(y).getTerm(), r );
     }
 #endif
 
@@ -232,10 +215,10 @@ void Egraph::expCleanup() {
     cerr << "Cleanup called" << endl;
 #endif
     for (int i = exp_cleanup.size()-1; i >= 0; i--) {
-        PTRef x = exp_cleanup[i];
-        logic.getPterm(x).setExpRoot(x);
+        auto x = exp_cleanup[i];
+        getEnode(x).setExpRoot(x);
 #ifdef VERBOSE_EUFEX
-        cerr << "clean: " << logic.printTerm(x) << endl;
+        cerr << "clean: " << toString(x) << endl;
 #endif
 // These are not used
 //        assert(expHighestNode.contains(x));
@@ -248,20 +231,20 @@ void Egraph::expCleanup() {
 // Subroutine of explain
 // A step of explanation for x and y
 //
-void Egraph::expExplainAlongPath (PTRef x, PTRef y) {
-    PTRef v  = expHighestNode(x);
+void Egraph::expExplainAlongPath(ERef x, ERef y) {
+    auto v  = expHighestNode(x);
     // Why this? Not in the pseudo code!
-    PTRef to = expHighestNode(y);
+    auto to = expHighestNode(y);
 
 #ifdef VERBOSE_EUFEX
-    cerr << "Explaining " << logic.printTerm(v) << " to " << logic.printTerm(to) << endl;
+    cerr << "Explaining " << toString(v) << " to " << toString(to) << endl;
 #endif
     while ( v != to ) {
-        PTRef p = logic.getPterm(v).getExpParent();
-        if (p == PTRef_Undef)
-            cerr << "weirdness " << logic.printTerm(v) << endl;
-        assert(p != PTRef_Undef);
-        PtAsgn r = logic.getPterm(v).getExpReason();
+        auto p = getEnode(v).getExpParent();
+        if (p == ERef_Undef)
+            cerr << "weirdness " << toString(v) << endl;
+        assert(p != ERef_Undef);
+        PtAsgn r = getEnode(v).getExpReason();
 
         // If it is not a congruence edge
         if (r.tr != PTRef_Undef && r.tr != Eq_FALSE) {
@@ -276,36 +259,41 @@ void Egraph::expExplainAlongPath (PTRef x, PTRef y) {
         // a1,...,an = b1,...bn. For each pair ai,bi
         // we have therefore to compute the reasons
         else {
-            assert( logic.getPterm(v).symb() == logic.getPterm(p).symb() );
-            assert( logic.getPterm(v).nargs() == logic.getPterm(p).nargs() );
+            assert( getEnode(v).getCar() == getEnode(p).getCar() );
+            // MB: FIXME enable the second check
+//            assert( logic.getPterm(v).nargs() == logic.getPterm(p).nargs() );
             expEnqueueArguments( v, p );
         }
 
 #ifdef PRODUCE_PROOF
         if ( config.produce_inter() != 0 ) {
-            cgraph_->addCNode( v );
-            cgraph_->addCNode( p );
-            cgraph_->addCEdge( v, p, r.tr );
+            const Enode& v_node = getEnode(v);
+            const Enode& p_node = getEnode(p);
+            assert(v_node.isTerm());
+            assert(p_node.isTerm());
+            cgraph_->addCNode( v_node.getTerm() );
+            cgraph_->addCNode( p_node.getTerm() );
+            cgraph_->addCEdge( v_node.getTerm(), p_node.getTerm(), r.tr );
         }
 #endif
 
         expUnion( v, p );
-        PTRef v_old = v;
+        auto v_old = v;
         v = expHighestNode( p );
         if (v_old == v)
             assert(false); // loop in the explanation graph!
     }
 }
 
-void Egraph::expEnqueueArguments(PTRef x, PTRef y) {
+void Egraph::expEnqueueArguments(ERef x, ERef y) {
     // No explanation needed if they are the same
     if ( x == y )
         return;
-
+    assert(getEnode(x).isTerm() && getEnode(y).isTerm());
     // Simple explanation if they are arity 0 terms
-    if ( logic.getPterm(x).nargs() == 0 ) {
+    if ( getEnode(x).getSize() == 0 ) {
 #ifdef VERBOSE_EUFEX
-        cerr << "pushing " << logic.printTerm(x) << " and " << logic.printTerm(y) << endl;
+        cerr << "pushing " << toString(x) << " and " << toString(y) << endl;
 #endif
         exp_pending.push(x);
         exp_pending.push(y);
@@ -315,30 +303,41 @@ void Egraph::expEnqueueArguments(PTRef x, PTRef y) {
     // Recursively enqueue the explanations for the args
     // Use the canonical representative here in case the UF solver
     // detected an equivalence!
-    assert( logic.getPterm(x).symb() == logic.getPterm(y).symb() );
-    for (uint32_t i = 0; i < logic.getPterm(x).nargs(); i++) {
-        PTRef xptr = logic.getPterm(x)[i];
-        PTRef yptr = logic.getPterm(y)[i];
+    assert( getEnode(x).getCar() == getEnode(y).getCar() );
+    assert(getEnode(getEnode(x).getCar()).isSymb());
+    ERef cdr_x = getEnode(x).getCdr();
+    ERef cdr_y = getEnode(y).getCdr();
+    while(cdr_x != ERef_Nil) {
+        assert(cdr_y != ERef_Nil);
+        assert(getEnode(cdr_x).isList());
+        assert(getEnode(cdr_y).isList());
+        ERef xptr = getEnode(cdr_x).getCar();
+        ERef yptr = getEnode(cdr_y).getCar();
+        assert(getEnode(xptr).isTerm());
+        assert(getEnode(yptr).isTerm());
 #ifdef VERBOSE_EUFEX
-        cerr << "in loop pushing " << logic.printTerm(xptr) << " and " << logic.printTerm(yptr) << endl;
+        cerr << "in loop pushing " << toString(xptr) << " and " << toString(yptr) << endl;
 #endif
         exp_pending.push(xptr);
         exp_pending.push(yptr);
+        cdr_x = getEnode(cdr_x).getCdr();
+        cdr_y = getEnode(cdr_y).getCdr();
     }
+    assert(cdr_y == ERef_Nil);
 }
 
-void Egraph::expUnion(PTRef x, PTRef y) {
+void Egraph::expUnion(ERef x, ERef y) {
 #ifdef VERBOSE_EUFEX
-    cerr << "Union: " << logic.printTerm(x) << " " << logic.printTerm(y) << endl;
+    cerr << "Union: " << toString(x) << " " << toString(y) << endl;
 #endif
     // Unions are always between a node and its parent
-    assert(logic.getPterm(x).getExpParent() == y);
+    assert(getEnode(x).getExpParent() == y);
     // Retrieve the representant for the explanation class for x and y
-    PTRef x_exp_root = expFind(x);
-    PTRef y_exp_root = expFind(y);
+    auto x_exp_root = expFind(x);
+    auto y_exp_root = expFind(y);
 #ifdef VERBOSE_EUFEX
-    cerr << "Root of " << logic.printTerm(x) << " is " << logic.printTerm(x_exp_root) << endl;
-    cerr << "Root of " << logic.printTerm(y) << " is " << logic.printTerm(y_exp_root) << endl;
+    cerr << "Root of " << toString(x) << " is " << toString(x_exp_root) << endl;
+    cerr << "Root of " << toString(y) << " is " << toString(y_exp_root) << endl;
 #endif
 
 #ifdef VERBOSE_EUF
@@ -351,15 +350,15 @@ void Egraph::expUnion(PTRef x, PTRef y) {
         return;
     // Save highest node. It is always the node of the parent,
     // as it is closest to the root of the explanation tree
-    logic.getPterm(x_exp_root).setExpRoot(y_exp_root);
+    getEnode(x_exp_root).setExpRoot(y_exp_root);
 
     // Keep track of this union
 #ifdef VERBOSE_EUFEX
-    cerr << "Union: cleanup " << logic.printTerm(x_exp_root) << endl;
+    cerr << "Union: cleanup " << toString(x_exp_root) << endl;
 #endif
     exp_cleanup.push(x_exp_root);
 #ifdef VERBOSE_EUFEX
-    cerr << "Union: cleanup " << logic.printTerm(y_exp_root) << endl;
+    cerr << "Union: cleanup " << toString(y_exp_root) << endl;
 #endif
     exp_cleanup.push(y_exp_root);
 
@@ -373,27 +372,27 @@ void Egraph::expUnion(PTRef x, PTRef y) {
 // Find the representant of x's equivalence class
 // and meanwhile do path compression
 //
-PTRef Egraph::expFind(PTRef x) {
+ERef Egraph::expFind(ERef x) {
     // If x is the root, return x
-    if (logic.getPterm(x).getExpRoot() == x) return x;
+    if (getEnode(x).getExpRoot() == x) return x;
     // Recurse
 #ifdef VERBOSE_EUFEX
-    cerr << "expFind: " << logic.printTerm(x) << endl;
+    cerr << "expFind: " << toString(x) << endl;
 #endif
-    PTRef exp_root = expFind(logic.getPterm(x).getExpRoot());
+    ERef exp_root = expFind(getEnode(x).getExpRoot());
     // Path compression
-    if (exp_root != logic.getPterm(x).getExpRoot()) {
-        logic.getPterm(x).setExpRoot(exp_root);
+    if (exp_root != getEnode(x).getExpRoot()) {
+        getEnode(x).setExpRoot(exp_root);
 #ifdef VERBOSE_EUFEX
-        cerr << "expFind: cleanup " << logic.printTerm(x) << endl;
+        cerr << "expFind: cleanup " << toString(x) << endl;
 #endif
         exp_cleanup.push(x);
     }
     return exp_root;
 }
 
-PTRef Egraph::expHighestNode(PTRef x) {
-    PTRef x_exp_root = expFind(x);
+ERef Egraph::expHighestNode(ERef x) {
+    ERef x_exp_root = expFind(x);
     return x_exp_root;
 }
 
@@ -401,17 +400,17 @@ PTRef Egraph::expHighestNode(PTRef x) {
 // Explain Nearest Common Ancestor
 //
 
-PTRef Egraph::expNCA(PTRef x, PTRef y) {
+ERef Egraph::expNCA(ERef x, ERef y) {
     // Increase time stamp
     time_stamp ++;
 
-    PTRef h_x = expHighestNode(x);
+    auto h_x = expHighestNode(x);
 #ifdef VERBOSE_EUFEX
-    cerr << "Highest node of " << logic.printTerm(x) << " is " << logic.printTerm(h_x) << endl;
+    cerr << "Highest node of " << toString(x) << " is " << toString(h_x) << endl;
 #endif
-    PTRef h_y = expHighestNode(y);
+    auto h_y = expHighestNode(y);
 #ifdef VERBOSE_EUFEX
-    cerr << "Highest node of " << logic.printTerm(y) << " is " << logic.printTerm(h_y) << endl;
+    cerr << "Highest node of " << toString(y) << " is " << toString(h_y) << endl;
 #endif
 #ifdef VERBOSE_EUF
     assert(checkExpReachable( x, h_x ));
@@ -419,13 +418,13 @@ PTRef Egraph::expNCA(PTRef x, PTRef y) {
 #endif
 
     while ( h_x != h_y ) {
-        assert(h_x == PTRef_Undef || logic.getPterm(h_x).getExpTimeStamp() <= time_stamp);
-        assert(h_y == PTRef_Undef || logic.getPterm(h_y).getExpTimeStamp() <= time_stamp);
-        if ( h_x != PTRef_Undef ) {
+        assert(h_x == ERef_Undef || getEnode(h_x).getExpTimeStamp() <= time_stamp);
+        assert(h_y == ERef_Undef || getEnode(h_y).getExpTimeStamp() <= time_stamp);
+        if ( h_x != ERef_Undef ) {
             // We reached a node already marked by h_y
-            if (logic.getPterm(h_x).getExpTimeStamp() == time_stamp) {
+            if (getEnode(h_x).getExpTimeStamp() == time_stamp) {
 #ifdef VERBOSE_EUFEX
-                cerr << "found x, " << logic.printTerm(h_x) << endl;
+                cerr << "found x, " << toString(h_x) << endl;
 #endif
                 return h_x;
             }
@@ -436,28 +435,23 @@ PTRef Egraph::expNCA(PTRef x, PTRef y) {
 //            cerr << "x: ExpParent of " << logic.printTerm(h_x) << " is "
 //                 << (term_store[h_x].getExpParent() == PTRef_Undef ? "undef" : logic.printTerm(term_store[h_x].getExpParent())) << endl;
 #endif
-            if (logic.getPterm(h_x).getExpParent() != h_x) {
-                logic.getPterm(h_x).setExpTimeStamp(time_stamp);
-                h_x = logic.getPterm(h_x).getExpParent();
+            if (getEnode(h_x).getExpParent() != h_x) {
+                getEnode(h_x).setExpTimeStamp(time_stamp);
+                h_x = getEnode(h_x).getExpParent();
             }
         }
-        if ( h_y != PTRef_Undef ) {
+        if ( h_y != ERef_Undef ) {
             // We reached a node already marked by h_x
-            if (logic.getPterm(h_y).getExpTimeStamp() == time_stamp) {
+            if (getEnode(h_y).getExpTimeStamp() == time_stamp) {
 #ifdef VERBOSE_EUFEX
-                cerr << "found y, " << logic.printTerm(h_y) << endl;
+                cerr << "found y, " << toString(h_y) << endl;
 #endif
                 return h_y;
             }
             // Mark the node and move to the next
-#ifdef VERBOSE_EUFEX
-            // MB: this does not work any, there is no term_store member anymore
-//            cerr << "y: ExpParent of " << logic.printTerm(h_y) << " is "
-//                 << (term_store[h_y].getExpParent() == PTRef_Undef ? "undef" : logic.printTerm(term_store[h_y].getExpParent())) << endl;
-#endif
-            if (logic.getPterm(h_y).getExpParent() != h_y) {
-                logic.getPterm(h_y).setExpTimeStamp(time_stamp);
-                h_y = logic.getPterm(h_y).getExpParent();
+            if (getEnode(h_y).getExpParent() != h_y) {
+                getEnode(h_y).setExpTimeStamp(time_stamp);
+                h_y = getEnode(h_y).getExpParent();
             }
         }
     }
@@ -473,24 +467,24 @@ PTRef Egraph::expNCA(PTRef x, PTRef y) {
 void Egraph::expRemoveExplanation() {
     assert(exp_undo_stack.size() >= 2);
 
-    PTRef x = exp_undo_stack.last();
+    auto x = exp_undo_stack.last();
     exp_undo_stack.pop();
-    PTRef y = exp_undo_stack.last();
+    auto y = exp_undo_stack.last();
     exp_undo_stack.pop();
 
-    assert( x != PTRef_Undef );
-    assert( y != PTRef_Undef );
+    assert( x != ERef_Undef );
+    assert( y != ERef_Undef );
 
     // We observe that we don't need to undo the rerooting
     // of the explanation trees, because it doesn't affect
     // correctness. We just have to reroot y on itself
-    assert( logic.getPterm(x).getExpParent() == y || logic.getPterm(y).getExpParent() == x);
-    if (logic.getPterm(x).getExpParent() == y ) {
-        logic.getPterm(x).setExpParent(PTRef_Undef);
-        logic.getPterm(x).setExpReason(PtAsgn_Undef);
+    assert( getEnode(x).getExpParent() == y || getEnode(y).getExpParent() == x);
+    if (getEnode(x).getExpParent() == y ) {
+        getEnode(x).setExpParent(ERef_Undef);
+        getEnode(x).setExpReason(PtAsgn_Undef);
     }
     else {
-        logic.getPterm(y).setExpParent(PTRef_Undef);
-        logic.getPterm(y).setExpReason(PtAsgn_Undef);
+        getEnode(y).setExpParent(ERef_Undef);
+        getEnode(y).setExpReason(PtAsgn_Undef);
     }
 }

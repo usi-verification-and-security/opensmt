@@ -26,66 +26,56 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef PROOF2_H
 #define PROOF2_H
 
-#include "Global.h"
-#include "CoreSMTSolver.h"
-#include "THandler.h"
 #include "SolverTypes.h"
-#include "TheoryInterpolator.h"
+#include <vector>
+#include <unordered_map>
+#include <iosfwd>
 
 //=================================================================================================
 
 class CoreSMTSolver;
 class THandler;
 
-typedef enum { CLA_ORIG, CLA_LEARNT, CLA_THEORY } clause_type_t;
+enum class clause_type: char { CLA_ORIG, CLA_LEARNT, CLA_THEORY, CLA_DERIVED };
+
+std::ostream &operator<<(std::ostream &os, clause_type enumTmp);
 
 struct ProofDer
 {
     ProofDer( )
-    : chain_cla ( NULL )
-    , chain_var ( NULL )
-    , ref       ( 0 )
+    : ref       ( 0 )
     { }
 
-    ~ProofDer( )
-    {
-        assert( chain_cla );
-        delete chain_cla;
-        if ( chain_var ) delete chain_var;
-    }
+    ProofDer(clause_type type) : ref {0}, type{type} {}
 
-    vector< CRef >* chain_cla;               // Clauses chain
-    vector< Var > *      chain_var;               // Pivot chain
+    ~ProofDer( ) = default;
+
+    std::vector< CRef >  chain_cla;               // Clauses chain
+    std::vector< Var >   chain_var;               // Pivot chain
     int                  ref;                     // Reference counter
-    clause_type_t        type;                    // The type of the clause
+    clause_type        type;                    // The type of the clause
 };
 
 class Proof
 {
     bool begun; // For debugging
 
-    vector< CRef > *            chain_cla;
-    vector< Var > *             chain_var;
-    map< CRef, ProofDer * >     clause_to_proof_der;
+    std::vector< CRef >            chain_cla;
+    std::vector< Var >             chain_var;
+    std::unordered_map< CRef, ProofDer>     clause_to_proof_der;
     CRef                        last_added;
     ClauseAllocator&            cl_al;
-    map< CRef, TheoryInterpolator* >  clause_to_itpr;
 
 public:
 
     Proof ( ClauseAllocator& cl );
-    ~Proof( );
+    ~Proof( ) = default;
 
-    void addRoot    ( CRef, clause_type_t );              // Adds a new root clause
-    void setTheoryInterpolator(CRef, TheoryInterpolator*);
-    TheoryInterpolator* getTheoryInterpolator(CRef);
-    bool isTheoryInterpolator(CRef);
+    void addRoot    ( CRef, clause_type );              // Adds a new root clause
     void beginChain ( CRef );                             // Beginnig of resolution chain
     void resolve    ( CRef, Var );                        // Resolve
-    void endChain   ( );                                      // Chain that ended in sat
     void endChain   ( CRef );                             // Last chain refers to clause
     bool deleted    ( CRef );                             // Remove clauses if possible
-    void forceDelete( CRef );         // Remove unconditionally
     inline Clause& getClause        ( CRef cr ) { return cl_al[cr]; } // Get clause from reference
 
     void pushBacktrackPoint     ( );                          // Restore previous state
@@ -96,9 +86,9 @@ public:
 
     inline bool     checkState  ( ) { return !begun; }        // Stupid check
 
-    void print( ostream &, CoreSMTSolver &, THandler & );     // Print proof in SMT-LIB format
+    void print( std::ostream &, CoreSMTSolver &, THandler & );     // Print proof in SMT-LIB format
 
-    map< CRef, ProofDer * > & getProof( ) { return clause_to_proof_der; }
+    std::unordered_map< CRef, ProofDer> & getProof( ) { return clause_to_proof_der; }
 };
 
 //=================================================================================================

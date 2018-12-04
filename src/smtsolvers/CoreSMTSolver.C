@@ -49,7 +49,14 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <cmath>
 
 #ifdef PRODUCE_PROOF
+#include <lrasolver/LRA_Interpolator.h>
 #include "Proof.h"
+
+#ifdef PRINT_DECOMPOSED_STATS
+const bool PRINT_LRA_ITP_STATS = true;
+#else
+const bool PRINT_LRA_ITP_STATS = false;
+#endif // PRINT_DECOMPOSED_STATS
 #endif
 
 namespace opensmt
@@ -242,6 +249,10 @@ CoreSMTSolver::~CoreSMTSolver()
 #endif
 
 #ifdef PRODUCE_PROOF
+    if (PRINT_LRA_ITP_STATS && LRA_Interpolator::stats.anyOpportunity()) {
+        LRA_Interpolator::stats.printStatistics(std::cout);
+        LRA_Interpolator::stats.reset(); // Reset after print so they are not cumulated across instances
+    }
     delete proof_;
 #endif
 }
@@ -310,59 +321,32 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
     return v;
 }
 
-#ifdef PRODUCE_PROOF
-bool CoreSMTSolver::addClause_(vec<Lit>& _ps, const ipartitions_t& mask)
-{
-    CRef cr;
-    return addClause_(_ps, cr, mask);
-}
-#else
+
 bool CoreSMTSolver::addClause_(vec<Lit>& _ps)
 {
-    CRef cr;
-    return addClause_(_ps, cr);
+    std::pair<CRef, CRef> fake;
+    return addClause_(_ps, fake);
 }
-#endif
 
-#ifdef PRODUCE_PROOF
-bool CoreSMTSolver::addClause_(vec<Lit>& _ps, CRef& cr_o, const ipartitions_t& mask)
-#else
-bool CoreSMTSolver::addClause_(vec<Lit>& _ps, CRef& cr_o)
-#endif
+bool CoreSMTSolver::addClause_(const vec<Lit> & _ps, std::pair<CRef, CRef> & inOutCRefs)
 {
-    cr_o = CRef_Undef;
-
-#ifdef PRODUCE_PROOF
-    Logic& logic = theory_handler.getLogic();
-    bool resolved = false;
-    CRef root = CRef_Undef;
-#endif
+    inOutCRefs = std::make_pair(CRef_Undef, CRef_Undef);
+    if (!ok) return false;
     vec<Lit> ps;
     _ps.copyTo(ps);
-
-    if (!ok) return false;
     // Check if clause is satisfied and remove false/duplicate literals:
     sort(ps);
+#ifdef PRODUCE_PROOF
+    CRef root = ca.alloc( ps, false );
+    inOutCRefs.first = root;
+    std::vector<Var> resolvedUnits;
+#endif
     Lit p;
     int i, j;
-#ifdef PRODUCE_PROOF
-    root = ca.alloc( ps, false );
-    logic.addClauseClassMask(root, mask);
-    for(int lt = 0; lt < ps.size(); ++lt) {
-        logic.addVarClassMask(var(ps[lt]), mask);
-    }
-    proof.addRoot( root, CLA_ORIG );
-    assert( config.isInit( ) );
-    proof.beginChain( root );
-#endif
     for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
     {
         if ((value(ps[i]) == l_True && vardata[var(ps[i])].level == 0) || ps[i] == ~p)
         {
-#ifdef PRODUCE_PROOF
-            proof.endChain( );
-            proof.forceDelete( root );
-#endif
             // decrease the counts of those encountered so far
             for (int k = 0; k < j; k++)
             {
@@ -379,13 +363,22 @@ bool CoreSMTSolver::addClause_(vec<Lit>& _ps, CRef& cr_o)
 #ifdef PRODUCE_PROOF
         else if ( value(ps[i]) == l_False )
         {
-            resolved = true;
-            proof.resolve( units[ var(ps[i]) ], var( ps[i] ) );
+            resolvedUnits.push_back(var(ps[i]));
         }
 #endif
     }
     ps.shrink(i - j);
+#ifdef PRODUCE_PROOF
+    proof.addRoot( root, clause_type::CLA_ORIG );
+    assert( config.isInit( ) );
+    if (!resolvedUnits.empty()) {
+        proof.beginChain( root );
+        for(Var v : resolvedUnits) {
+            proof.resolve(units[v], v);
+        }
+    }
 
+#endif
     if (ps.size() == 0)
     {
 #ifdef PRODUCE_PROOF
@@ -396,23 +389,14 @@ bool CoreSMTSolver::addClause_(vec<Lit>& _ps, CRef& cr_o)
     }
 
 #ifdef PRODUCE_PROOF
-    CRef res = CRef_Undef;
-    if ( resolved )
+    CRef res = root;
+    if ( !resolvedUnits.empty() )
     {
         res = ca.alloc( ps, false );
-        logic.addClauseClassMask(res, mask);
-        for(int lt = 0; lt < ps.size(); ++lt)
-            logic.addVarClassMask(var(ps[lt]), mask);
         assert( ca[res].size( ) < ca[root].size( ) );
         proof.endChain( res );
         // Save root for removal
         tleaves.push( root );
-    }
-    else
-    {
-        res = root;
-        // Throw away unnecessary chain
-        proof.endChain( );
     }
 #endif
 
@@ -438,56 +422,25 @@ bool CoreSMTSolver::addClause_(vec<Lit>& _ps, CRef& cr_o)
         }
 #endif
         uncheckedEnqueue(ps[0]);
-#ifdef PRODUCE_PROOF
         CRef confl = propagate();
-        if ( confl == CRef_Undef ) return ok = true;
-        return ok = false;
-#else
-#ifdef REPORT_DL1_THLITS
-        int prev_trail_sz = trail.size();
-#endif
-        ok = (propagate() == CRef_Undef);
-#ifdef REPORT_DL1_THLITS
-        if (trail.size() > prev_trail_sz+1)
-        {
-            cerr << "; Found propagations in addClause:\n";
-            for (int i = prev_trail_sz+1; i < trail.size(); i++)
-            {
-                char* ulit = theory_handler.getLogic().printTerm(theory_handler.varToTerm(var(trail[i])));
-                cerr << ";   " << (sign(trail[i]) ? "not " : "") << ulit << endl;
-                free(ulit);
-            }
-        }
-#endif
+        ok = (confl == CRef_Undef);
         return ok;
-#endif
     }
     else
     {
-
 #ifdef PRODUCE_PROOF
+        // cr must be the last clause we have derived
         CRef cr = res;
 #else
         CRef cr = ca.alloc(ps, false);
 #endif
-      cr_o = cr;
-#ifdef PRODUCE_PROOF
-        /*
-            if ( config.isIncremental() )
-            {
-              undo_stack.push_back( NEWPROOF );
-              undo_stack_el.push_back( (void *)cr );
-            }
-        */
-#endif
+        inOutCRefs.second = cr;
         if (ca[cr].size() != 1) {
             clauses.push(cr);
             attachClause(cr);
         }
-
         undo_stack.push(undo_stack_el(undo_stack_el::NEWCLAUSE, cr));
     }
-
     return true;
 }
 
@@ -571,6 +524,17 @@ void CoreSMTSolver::cancelUntil(int level)
         //if ( first_model_found )
         theory_handler.backtrack(trail.size());
     }
+}
+
+void CoreSMTSolver::printClause(Clause & cl) {
+    for (int i = 0; i < cl.size(); ++i) {
+        std::cout << cl[i].x << ' ';
+    }
+    std::cout << '\n';
+}
+
+void CoreSMTSolver::printClause(CRef cref) {
+    printClause(ca[cref]);
 }
 
 /*
@@ -1066,7 +1030,7 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
             assert( ctr != CRef_Undef );
             vardata[var(p)].reason = ctr;
 #ifdef PRODUCE_PROOF
-            proof.addRoot(ctr, CLA_THEORY);
+            proof.addRoot(ctr, clause_type::CLA_THEORY);
             /*if ( config.isIncremental() )
             {
                 undo_stack_oper.push_back( NEWPROOF );
@@ -2263,25 +2227,28 @@ void CoreSMTSolver::declareVarsToTheories()
     for (int i = 0; i < trail.size(); i++)
     {
         Var v = var(trail[i]);
-        if (!var_seen[v])
-        {
+        if (!var_seen[v]) {
             var_seen[v] = true;
-            theory_handler.declareTermTree(theory_handler.varToTerm(v));
+            const Logic & logic = theory_handler.getLogic();
+            const PTRef term = theory_handler.varToTerm(v);
+            if (logic.isTheoryTerm(term) || logic.isEquality(term)) {
+                theory_handler.declareAtom(term);
+            }
         }
     }
     top_level_lits = trail.size();
-    for (int i = 0; i < clauses.size(); i++)
-    {
-        Clause& c = ca[clauses[i]];
-        for (int j = 0; j < c.size(); j++)
-        {
+    for (int i = 0; i < clauses.size(); i++) {
+        Clause & c = ca[clauses[i]];
+        for (int j = 0; j < c.size(); j++) {
             Var v = var(c[j]);
-            if (!var_seen[v])
-            {
+            if (!var_seen[v]) {
                 var_seen[v] = true;
-                assert(theory_handler.getLogic().getPterm(theory_handler.varToTerm(v)).getVar() != -1);
-                theory_handler.declareTermTree(theory_handler.varToTerm(v));
-//                printf("Declaring clause %d var %s\n", i, theory_handler.getLogic().printTerm(theory_handler.varToTerm(v)));
+                const Logic & logic = theory_handler.getLogic();
+                assert(logic.getPterm(theory_handler.varToTerm(v)).getVar() != -1);
+                const PTRef term = theory_handler.varToTerm(v);
+                if (logic.isTheoryTerm(term) || logic.isEquality(term)) {
+                    theory_handler.declareAtom(term);
+                }
             }
         }
     }
@@ -2408,14 +2375,11 @@ lbool CoreSMTSolver::solve_(int max_conflicts)
         // restarts
         if (conflicts == 0 || conflicts >= next_printout)
         {
-//          if ( config.verbosity() > 10 )
-            reportf( "; %9d | %8d %8d | %8.3f s | %6.3f MB\n"
-                     , (int)conflicts
-                     , (int)learnts.size()
-                     , nLearnts()
-                     , cpuTime()
-                     , memUsed( ) / 1048576.0 );
-            fflush( stderr );
+          if ( config.verbosity() > 0 ) {
+              reportf("; %9d | %8d %8d | %8.3f s | %6.3f MB\n", (int) conflicts, (int) learnts.size(), nLearnts(),
+                      cpuTime(), memUsed() / 1048576.0);
+              fflush(stderr);
+          }
         }
 
         if (config.sat_use_luby_restart)
@@ -3218,6 +3182,7 @@ void CoreSMTSolver::updateSplitState()
     }
 }
 
+#ifdef STATISTICS
 void CoreSMTSolver::printStatistics( ostream & os )
 {
     os << "; -------------------------" << endl;
@@ -3248,6 +3213,7 @@ void CoreSMTSolver::printStatistics( ostream & os )
     if (config.sat_split_type() != spt_none)
     os << "; Ill-adviced splits.......: " << unadvised_splits << endl;
 }
+#endif // STATISTICS
 
 //void CoreSMTSolver::clausesPublish() {
 //    if (this->clauses_sharing.channel.empty() || this->clauses_sharing.c_cls_pub == NULL || this->clauses_sharing.c_cls_pub->err != 0)

@@ -31,7 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Global.h"
 
 class THandler; // Forward declaration
-class SMTConfig; // Forward declaration
+struct SMTConfig; // Forward declaration
 // 
 // Interface that a SATSolver should implement 
 //
@@ -51,11 +51,8 @@ public:
   // (atom or negated atom) and feeds a
   // corresponding clause in the SAT Solver
   //
-#ifdef PRODUCE_PROOF
-  virtual bool   addSMTClause  ( const vec<Lit> &, const ipartitions_t& mask) = 0;
-#else
+
   virtual bool   addSMTClause  ( const vec<Lit> &) = 0;
-#endif
   virtual bool   smtSolve      ( )                          = 0;
   virtual void   setFrozen     ( Var, bool )                = 0;
   virtual bool   okay          () const                     = 0;

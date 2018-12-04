@@ -75,7 +75,7 @@ void ProofGraph::verifyLeavesInconsistency( )
 			dump_out << "(and" << endl;
 			added++;
 		}
-		solver.printSMTClause( dump_out, getNode(proofleaves[ i ])->getClause(), false );
+		printClause( dump_out, getNode(proofleaves[ i ])->getClause());
 		dump_out << endl;
 	}
 	if(added > 0) dump_out << "))" << endl;
@@ -178,7 +178,7 @@ void ProofGraph::checkClause(clauseid_t nid)
 	}
 	if(n->getClauseSize()==0)
 	{
-		if(n->getType()==CLAORIG)
+		if(n->getType()==clause_type::CLA_ORIG)
 		{
 			cerr << n->getId() << " is an empty original clause" << endl;
 			opensmt_error_();

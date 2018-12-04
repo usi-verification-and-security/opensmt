@@ -93,20 +93,23 @@ class SplitData
 
 public:
     SplitData(ClauseAllocator& _ca, vec<CRef>& ic, vec<Lit>& t, int tl, THandler& th, bool no_instance = false)
-        : inst_clauses(ic)
+        : no_instance(no_instance)
+        , theory_handler(th)
         , ca(_ca)
+        , inst_clauses(ic)
         , trail(t)
         , trail_idx(tl)
-        , theory_handler(th)
-        , no_instance(no_instance)
+
     {}
     SplitData(const SplitData& other)
-        : inst_clauses(other.inst_clauses)
+        : no_instance(other.no_instance)
+        , theory_handler(other.theory_handler)
         , ca(other.ca)
+        , inst_clauses(other.inst_clauses)
         , trail(other.trail)
         , trail_idx(other.trail_idx)
-        , theory_handler(other.theory_handler)
-        , no_instance(other.no_instance)
+
+
     {
         assert(other.instance.size() == 0 && other.constraints.size() == 0 && other.learnts.size() == 0);
     }
@@ -353,19 +356,6 @@ protected:
     virtual void  addVar    (Var v); // Ensure that var v exists in the solver
     Var           newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
 public:
-#ifdef PRODUCE_PROOF
-    bool    addClause (const vec<Lit> & ps, const ipartitions_t& mask = 0);
-    bool    addEmptyClause();                                   // Add the empty clause, making the solver contradictory.
-    bool    addClause (Lit p, const ipartitions_t& mask = 0);                                  // Add a unit clause to the solver.
-    bool    addClause (Lit p, Lit q, const ipartitions_t& mask = 0);                           // Add a binary clause to the solver.
-    bool    addClause (Lit p, Lit q, Lit r, const ipartitions_t& mask = 0);                    // Add a ternary clause to the solver.
-    bool    addClause_(      vec<Lit>& ps, const ipartitions_t& mask = 0);                     // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.
-protected:
-    bool    addClause_(      vec<Lit>& ps, CRef& cr, const ipartitions_t& mask = 0);                     // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.  Writes the new clause ref to cr
-    virtual bool addSMTClause_(vec<Lit>&, CRef& cr, const ipartitions_t& mask = 0) = 0;        // For adding SMT clauses within the solver, returning the clause ref
-public:
-    virtual bool addSMTClause_(vec<Lit>&, const ipartitions_t& mask = 0) = 0;                  // For adding SMT clauses within the solver
-#else
     bool    addClause (const vec<Lit> & ps);
     bool    addEmptyClause();                                   // Add the empty clause, making the solver contradictory.
     bool    addClause (Lit p);                                  // Add a unit clause to the solver.
@@ -374,10 +364,9 @@ public:
     bool    addClause_(      vec<Lit>& ps);                     // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.
     virtual bool addSMTClause_(vec<Lit>&) = 0;                  // For adding SMT clauses within the solver
 protected:
-    bool    addClause_(      vec<Lit>& ps, CRef& cr);           // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.  Write the new clause to cr
-    virtual bool addSMTClause_(vec<Lit>&, CRef& cr) = 0;        // For adding SMT clauses within the solver, returning the clause ref
+    bool    addClause_(const vec<Lit> & ps, pair<CRef, CRef> & cr);           // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.  Write the new clause to cr
 public:
-#endif
+    virtual bool addSMTClause_(const vec<Lit> &, pair<CRef, CRef> & inOutCRefs) = 0;        // For adding SMT clauses within the solver, returning the clause ref
     // Solving:
     //
     bool    simplify     ();                        // Removes already satisfied clauses.
@@ -743,7 +732,7 @@ protected:
     double              progress_estimate;// Set by 'search()'.
     bool                remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
 
-    ClauseAllocator     ca;
+    ClauseAllocator     ca{512*1024};
 #ifdef CACHE_POLARITY
     vec<char>           prev_polarity;    // The previous polarity of each variable.
 #endif
@@ -1010,6 +999,7 @@ public:
         assert( clause_to_partition.find( c ) != clause_to_partition.end( ) );
         return clause_to_partition[ c ];
     }
+
 // NOTE old methods, to check
     void   printProof              ( ostream & );
     void   GetInterpolants         (const vector<vector<int> >& partitions, vector<PTRef>& interpolants);
@@ -1278,39 +1268,6 @@ inline bool     CoreSMTSolver::enqueue         (Lit p, CRef from)
     return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, from), true);
 }
 
-#ifdef PRODUCE_PROOF
-inline bool     CoreSMTSolver::addClause       (const vec<Lit>& ps, const ipartitions_t& mask)
-{
-    ps.copyTo(add_tmp);
-    return addClause_(add_tmp, mask);
-}
-inline bool     CoreSMTSolver::addEmptyClause  ()
-{
-    add_tmp.clear();
-    return addClause_(add_tmp);
-}
-inline bool     CoreSMTSolver::addClause       (Lit p, const ipartitions_t& mask)
-{
-    add_tmp.clear();
-    add_tmp.push(p);
-    return addClause_(add_tmp, mask);
-}
-inline bool     CoreSMTSolver::addClause       (Lit p, Lit q, const ipartitions_t& mask)
-{
-    add_tmp.clear();
-    add_tmp.push(p);
-    add_tmp.push(q);
-    return addClause_(add_tmp, mask);
-}
-inline bool     CoreSMTSolver::addClause       (Lit p, Lit q, Lit r, const ipartitions_t& mask)
-{
-    add_tmp.clear();
-    add_tmp.push(p);
-    add_tmp.push(q);
-    add_tmp.push(r);
-    return addClause_(add_tmp, mask);
-}
-#else
 inline bool     CoreSMTSolver::addClause       (const vec<Lit>& ps)
 {
     ps.copyTo(add_tmp);
@@ -1342,7 +1299,6 @@ inline bool     CoreSMTSolver::addClause       (Lit p, Lit q, Lit r)
     add_tmp.push(r);
     return addClause_(add_tmp);
 }
-#endif
 
 
 
@@ -1575,9 +1531,7 @@ inline void CoreSMTSolver::checkPartitions( )
 
     for (int i = 2; i < nVars(); i++)
     {
-//    Enode * e = theory_handler.varToEnode( i );
         PTRef tref = theory_handler.varToTerm(i);
-        Pterm& t = theory_handler.varToPterm( i );
 
         ipartitions_t p = theory_handler.getLogic().getIPartitions(tref);
         char* name;

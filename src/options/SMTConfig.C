@@ -602,6 +602,7 @@ SMTConfig::initializeConfig( )
   proof_remove_mixed            = 0;
 //  proof_certify_inter           = 0;
   proof_random_seed	        = 0;
+  simplify_interpolant           = 0;
 
   parallel_threads = 0;
 

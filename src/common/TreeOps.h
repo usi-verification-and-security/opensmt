@@ -26,6 +26,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #ifndef Common_TreeOps_h
 #define Common_TreeOps_h
+
+#include <unordered_set>
 #include "Vec.h"
 #include "Pterm.h"
 #include "Logic.h"
@@ -124,6 +126,44 @@ getVars(PTRef tr, Logic& logic, Map<PTRef,bool,PTRefHash>& vars)
         seen.insert(tr, true);
     }
     return;
+}
+
+inline std::vector<PTRef>
+getAtoms(PTRef tr, Logic & logic)
+{
+    std::vector<PTRef> atoms;
+    std::unordered_set<PTRef, PTRefHash> seen;
+    std::vector<PTRef> queue;
+    queue.push_back(tr);
+    while (queue.size() != 0)
+    {
+        tr = queue.back();
+        if (seen.find(tr) != seen.end()) {
+            queue.pop_back();
+            continue;
+        }
+
+        if (logic.isBooleanOperator(tr)) { // I only need to consider children of connectives, no need for going further
+            bool unprocessed_children = false;
+            for (int i = 0; i < logic.getPterm(tr).size(); i++)
+            {
+                PTRef c = logic.getPterm(tr)[i];
+                if (seen.find(c) != seen.end()) continue;
+                else {
+                    queue.push_back(c);
+                    unprocessed_children = true;
+                }
+            }
+            if (unprocessed_children == true) continue;
+        } // if not boolean operator => it is an atom!
+        queue.pop_back();
+        assert(logic.isBooleanOperator(tr) || logic.hasSortBool(tr)); // MB: we should not go past atoms!
+        if (!logic.isBooleanOperator(tr) && logic.hasSortBool(tr)) {
+            atoms.push_back(tr);
+        }
+        seen.insert(tr);
+    }
+    return atoms;
 }
 
 #endif

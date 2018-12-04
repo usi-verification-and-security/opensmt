@@ -29,17 +29,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "DimacsParser.h"
 #include "Interpret.h"
 #include "CnfState.h"
+#include "BoolRewriting.h"
 #include <thread>
 #include <random>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+
 #ifdef USE_GZ
 #include <zlib.h>
 #include <stdio.h>
-#endif
-
-#ifdef USE_GZ
 #if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(__CYGWIN__)
 #include <fcntl.h>
 #include <io.h>
@@ -198,14 +197,6 @@ MainSolver::push(PTRef root)
     return res;
 }
 
-#ifdef PRODUCE_PROOF
-void
-MainSolver::assignPartition(unsigned int n, PTRef tr)
-{
-    logic.assignPartition(n, tr);
-}
-#endif
-
 sstat
 MainSolver::insertFormula(PTRef root, char** msg)
 {
@@ -215,12 +206,19 @@ MainSolver::insertFormula(PTRef root, char** msg)
                  Logic::s_sort_bool, logic.getSortName(logic.getSortRef(root)));
         return s_Error;
     }
+    int partition_index = inserted_formulas_count++;
 #ifdef PRODUCE_PROOF
-    // Label the formula with a partition mask.  This needs to be done before conjoining the extras
-    // since otherwise we loose the connection between Ites and partitions.
-    logic.computePartitionMasks(root);
+    logic.assignPartition(partition_index, root);
+    assert(logic.getPartitionIndex(root) != -1);
+    PTRef old_root = root;
 #endif
+
     logic.conjoinExtras(root, root);
+
+    #ifdef PRODUCE_PROOF
+    logic.transferPartitionMembership(old_root, root);
+    assert(logic.getPartitionIndex(root) != -1);
+#endif // PRODUCE_PROOF
 
     pfstore[formulas.last()].push(root);
     pfstore[formulas.last()].units.clear();
@@ -242,12 +240,35 @@ sstat MainSolver::simplifyFormulas(int from, int& to, char** err_msg)
     for (int i = from ; i < formulas.size(); i++) {
         bool res = getTheory().simplify(formulas, i);
         to = i+1;
-        PTRef root = pfstore[formulas[i]].root;
+        const PushFrame & frame = pfstore[formulas[i]];
+        PTRef root = frame.root;
 
         if (logic.isFalse(root)) {
-            giveToSolver(getLogic().getTerm_false(), pfstore[formulas[i]].getId());
+            giveToSolver(getLogic().getTerm_false(), frame.getId());
             return status = s_False;
         }
+#ifdef PRODUCE_PROOF
+        assert(frame.substs == logic.getTerm_true());
+        vec<PTRef> const & flas =  frame.formulas;
+        for (int j = 0; j < flas.size(); ++j) {
+            PTRef fla = flas[j];
+            if (fla == logic.getTerm_true()) {continue;}
+            assert(logic.getPartitionIndex(fla) != -1);
+            // Optimize the dag for cnfization
+            if (logic.isBooleanOperator(fla)) {
+                PTRef old = fla;
+                Map<PTRef,int,PTRefHash> PTRefToIncoming;
+                computeIncomingEdges(fla, PTRefToIncoming);
+                fla = rewriteMaxArity(fla, PTRefToIncoming);
+                logic.transferPartitionMembership(old, fla);
+            }
+            assert(logic.getPartitionIndex(fla) != -1);
+            logic.computePartitionMasks(fla);
+            if ((status = giveToSolver(fla, frame.getId())) == s_False) {
+                return s_False;
+            }
+        }
+#else // PRODUCE_PROOF
         FContainer fc(root);
 
         // Optimize the dag for cnfization
@@ -262,29 +283,12 @@ sstat MainSolver::simplifyFormulas(int from, int& to, char** err_msg)
         fc.setRoot(logic.mkAnd(fc.getRoot(), pfstore[formulas[i]].substs));
         root_instance.setRoot(fc.getRoot());
         // Stop if problem becomes unsatisfiable
-#ifdef PRODUCE_PROOF
-        // Label the formula with a partition mask.  Needs to be done here (also) since
-        // simplify can change the instance (e.g., LRA splits equalities)
-        logic.computePartitionMasks(fc.getRoot());
-#endif
         if ((status = giveToSolver(fc.getRoot(), pfstore[formulas[i]].getId())) == s_False)
             break;
+#endif
     }
     return status;
 }
-
-#ifdef PRODUCE_PROOF
-void
-MainSolver::computePartitionMasks(int from, int to)
-{
-    cerr << "; computePartitionMasks called" << endl;
-    vec<PTRef> roots;
-    for (int i = from; i < to; i++)
-        roots.push(pfstore[formulas[i]].root);
-
-    logic.computePartitionMasks(roots);
-}
-#endif
 
 
 // Replace subtrees consisting only of ands / ors with a single and / or term.
@@ -299,125 +303,17 @@ MainSolver::computePartitionMasks(int from, int to)
 //
 void MainSolver::computeIncomingEdges(PTRef tr, Map<PTRef,int,PTRefHash>& PTRefToIncoming)
 {
-    assert(tr != PTRef_Undef);
-    vec<pi*> unprocessed_ptrefs;
-    unprocessed_ptrefs.push(new pi(tr));
-    while (unprocessed_ptrefs.size() > 0) {
-        pi* pi_ptr = unprocessed_ptrefs.last();
-        if (PTRefToIncoming.has(pi_ptr->x)) {
-            PTRefToIncoming[pi_ptr->x]++;
-            unprocessed_ptrefs.pop();
-            delete pi_ptr;
-            continue;
-        }
-        bool unprocessed_children = false;
-        if (logic.isBooleanOperator(pi_ptr->x) && pi_ptr->done == false) {
-            Pterm& t = logic.getPterm(pi_ptr->x);
-            for (int i = 0; i < t.size(); i++) {
-                // push only unprocessed Boolean operators
-                if (!PTRefToIncoming.has(t[i])) {
-                    unprocessed_ptrefs.push(new pi(t[i]));
-                    unprocessed_children = true;
-                } else {
-                    PTRefToIncoming[t[i]]++;
-                }
-            }
-            pi_ptr->done = true;
-        }
-        if (unprocessed_children)
-            continue;
-
-        unprocessed_ptrefs.pop();
-        // All descendants of pi_ptr->x are processed
-        assert(logic.isBooleanOperator(pi_ptr->x) || logic.isAtom(pi_ptr->x));
-        assert(!PTRefToIncoming.has(pi_ptr->x));
-        PTRefToIncoming.insert(pi_ptr->x, 1);
-        delete pi_ptr;
-    }
+    ::computeIncomingEdges(logic, tr, PTRefToIncoming);
 }
 
 PTRef MainSolver::rewriteMaxArity(PTRef root, const Map<PTRef,int,PTRefHash>& PTRefToIncoming)
 {
-    vec<PTRef> unprocessed_ptrefs;
-    unprocessed_ptrefs.push(root);
-    Map<PTRef,PTRef,PTRefHash> cache;
-
-    while (unprocessed_ptrefs.size() > 0) {
-        PTRef tr = unprocessed_ptrefs.last();
-        if (cache.has(tr)) {
-            unprocessed_ptrefs.pop();
-            continue;
-        }
-
-        bool unprocessed_children = false;
-        Pterm& t = logic.getPterm(tr);
-        for (int i = 0; i < t.size(); i++) {
-            if (logic.isBooleanOperator(t[i]) && !cache.has(t[i])) {
-                unprocessed_ptrefs.push(t[i]);
-                unprocessed_children = true;
-            }
-            else if (logic.isAtom(t[i]))
-                cache.insert(t[i], t[i]);
-        }
-        if (unprocessed_children)
-            continue;
-
-        unprocessed_ptrefs.pop();
-        PTRef result = PTRef_Undef;
-        assert(logic.isBooleanOperator(tr));
-
-        if (logic.isAnd(tr) || logic.isOr(tr)) {
-            result = mergePTRefArgs(tr, cache, PTRefToIncoming);
-        } else {
-            result = tr;
-        }
-        assert(result != PTRef_Undef);
-        assert(!cache.has(tr));
-        cache.insert(tr, result);
-
-    }
-    PTRef top_tr = cache[root];
-    return top_tr;
+    return ::rewriteMaxArity(logic, root, PTRefToIncoming);
 }
 
 PTRef MainSolver::mergePTRefArgs(PTRef tr, Map<PTRef,PTRef,PTRefHash>& cache, const Map<PTRef,int,PTRefHash>& PTRefToIncoming)
 {
-    assert(logic.isAnd(tr) || logic.isOr(tr));
-    Pterm& t = logic.getPterm(tr);
-    SymRef sr = t.symb();
-    vec<PTRef> new_args;
-    for (int i = 0; i < t.size(); i++) {
-        PTRef subst = cache[t[i]];
-        if (logic.getSymRef(t[i]) != sr) {
-            new_args.push(subst);
-            continue;
-        }
-        assert(PTRefToIncoming.has(t[i]));
-        assert(PTRefToIncoming[t[i]] >= 1);
-        if (PTRefToIncoming[t[i]] > 1) {
-            new_args.push(subst);
-            continue;
-        }
-        if (logic.getSymRef(subst) == sr) {
-            Pterm& substs_t = logic.getPterm(subst);
-            for (int j = 0; j < substs_t.size(); j++)
-                new_args.push(substs_t[j]);
-
-        } else
-            new_args.push(subst);
-    }
-    PTRef new_tr;
-    if (sr == logic.getSym_and()) {
-        new_tr = logic.mkAnd(new_args);
-    }
-    else {
-        new_tr = logic.mkOr(new_args);
-    }
-#ifdef PRODUCE_PROOF
-    // copy the partition of tr to the resulting new term
-    logic.setIPartitions(new_tr, logic.getIPartitions(tr));
-#endif
-    return new_tr;
+    return ::mergePTRefArgs(logic, tr, cache, PTRefToIncoming);
 }
 
 //
@@ -726,10 +622,6 @@ bool MainSolver::writeState(int* &buf, int &buf_sz, bool compress, CnfState& cs,
     // Clear the timestamp for explanations!
     for (PtermIter it = logic.getPtermIter(); *it != PTRef_Undef; ++it) {
         Pterm& t = logic.getPterm(*it);
-        t.setExpTimeStamp(0);
-        t.setExpReason(PtAsgn(PTRef_Undef, l_Undef));
-        t.setExpParent(PTRef_Undef);
-        t.setExpRoot(*it);
     }
 
 
@@ -904,10 +796,6 @@ void MainSolver::deserializeSolver(const int* termstore_buf, const int* symstore
     }
     for (PtermIter it = logic.getPtermIter(); *it != PTRef_Undef; ++it) {
         Pterm& t = logic.getPterm(*it);
-        t.setExpTimeStamp(0);
-        assert(t.getExpReason() == PtAsgn_Undef);
-        assert(t.getExpParent() == PTRef_Undef);
-        assert(t.getExpRoot() == *it);
     }
     DimacsParser dp;
     dp.parse_DIMACS_main(cs.getCnf(), ts.solver);
@@ -1069,7 +957,7 @@ sstat MainSolver::check()
 {
     check_called ++;
     if (config.timeQueries()) {
-        printf("; %s query time so far: %f\n", solver_name, query_timer.getTime());
+        printf("; %s query time so far: %f\n", solver_name.c_str(), query_timer.getTime());
         opensmt::StopWatch sw(query_timer);
     }
     sstat rval;

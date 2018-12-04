@@ -93,10 +93,13 @@ Enode::Enode(ERef car_,
     if (ptr != PTRef_Undef) {
         header.type = et_term;
         // Term specific data
-//        setDeduced(l_Undef);
         setDistClasses(0);
         setConstant(PTRef_Undef);
         setForbid(ELRef_Undef);
         setPterm(ptr);
+        setExpParent(ERef_Undef);
+        setExpRoot(er);
+        setExpReason(PtAsgn(PTRef_Undef, l_Undef));
+        setExpTimeStamp(0);
     }
 }

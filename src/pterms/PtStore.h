@@ -27,7 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef PTSTORE_H
 #define PTSTORE_H
 
-#include <map>
+#include <unordered_map>
 
 #include "Pterm.h"
 #include "SymStore.h"
@@ -55,7 +55,7 @@ class PtermIter {
 };
 
 class PtStore {
-    PtermAllocator pta;
+    PtermAllocator pta{1024*1024};
     SymStore&      symstore;
     SStore&        sortstore;
     vec<PTRef>     idToPTRef;
@@ -67,8 +67,10 @@ class PtStore {
 //    vec<PTLKey> cplx_keys;
 
 #ifdef PRODUCE_PROOF
-    Map<SymRef,ipartitions_t*,SymRefHash,Equal<SymRef> > sym_partitions;
-    Map<PTRef,ipartitions_t*,PTRefHash,Equal<PTRef> > term_partitions;
+    std::unordered_map<SymRef, ipartitions_t, SymRefHash> sym_partitions;
+    std::unordered_map<PTRef, ipartitions_t, PTRefHash> term_partitions;
+//    Map<SymRef,ipartitions_t*,SymRefHash,Equal<SymRef> > sym_partitions;
+//    Map<PTRef,ipartitions_t*,PTRefHash,Equal<PTRef> > term_partitions;
 #endif
 
     Map<PTLKey,PTRef,PTLHash,Equal<PTLKey> >    bool_map;  // Mapping boolean terms to canonical terms

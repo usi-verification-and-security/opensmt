@@ -243,7 +243,7 @@ ProofGraph::computePSFunction(vector< clauseid_t >& DFSv, const ipartitions_t& A
 		{
 			n = getNode(DFSv[i]); assert(n);
 			if(!n->isLeaf()) continue;
-            if(n->getType() == CLATHEORY)
+            if(n->getType() == clause_type::CLA_THEORY)
             {
                 vector<Lit>& tlits = n->getClause();
                 if(!tlits.empty())
@@ -257,7 +257,7 @@ ProofGraph::computePSFunction(vector< clauseid_t >& DFSv, const ipartitions_t& A
                 }
                 continue;
             }
-			if(n->getType() != CLAORIG)
+			if(n->getType() != clause_type::CLA_ORIG)
 			{
                 opensmt_error( "Clause is not original" );
 			}

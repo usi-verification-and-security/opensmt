@@ -38,12 +38,12 @@ bool Tseitin::cnfize(PTRef formula)
     assert(formula != PTRef_Undef);
     // Top level formula must not be and anymore
     assert(!logic.isAnd(formula));
-
+    bool res = true;
     // Add the top level literal as a unit to solver.
     if (!logic.isOr(formula)) {
         vec<Lit> clause;
         clause.push(theory.findLit(formula));
-        addClause(clause, formula);
+        res &= addClause(clause);
     }
     vec<PTRef> unprocessed_terms;       // Stack for unprocessed terms
     unprocessed_terms.push(formula);    // Start with this term
@@ -66,19 +66,19 @@ bool Tseitin::cnfize(PTRef formula)
         int sz = logic.getPterm(ptr).size();
         bool need_def = (ptr == formula ? false : true); // Definition variable not needed for top formula
         if (logic.isAnd(ptr))
-            cnfizeAnd(ptr);
+            res &= cnfizeAnd(ptr);
         else if (logic.isOr(ptr))
-            cnfizeOr(ptr, need_def);
+            res &= cnfizeOr(ptr, need_def);
         else if (logic.isXor(ptr))
-            cnfizeXor(ptr);
+            res &= cnfizeXor(ptr);
         else if (logic.isIff(ptr))
-            cnfizeIff(ptr);
+            res &= cnfizeIff(ptr);
         else if (logic.isImplies(ptr))
-            cnfizeImplies(ptr);
+            res &= cnfizeImplies(ptr);
         else if (logic.isDistinct(ptr))
-            cnfizeDistinct(ptr);
+            res &= cnfizeDistinct(ptr);
         else if (logic.isIte(ptr))
-            cnfizeIfthenelse(ptr);
+            res &= cnfizeIfthenelse(ptr);
         else if (!logic.isNot(ptr) && sz > 0) {
             goto tseitin_end;
         }
@@ -92,11 +92,11 @@ tseitin_end:
         if (need_def) // Only mark as processed if the definition is formed
             processed.insert(ptr, true);
     }
-    return true;
+    return res;
 }
 
 
-void Tseitin::cnfizeAnd( PTRef and_term )
+bool Tseitin::cnfizeAnd(PTRef and_term)
 {
 //  assert( list );
 //  assert( list->isList( ) );
@@ -112,27 +112,28 @@ void Tseitin::cnfizeAnd( PTRef and_term )
     vec<Lit> big_clause;
     little_clause.push(~v);
     big_clause   .push(v);
+    bool res = true;
     for (int i = 0; i < logic.getPterm(and_term).size(); i++) {
         PTRef arg = logic.getPterm(and_term)[i];
         little_clause.push( theory.findLit(arg) );
         big_clause   .push(~theory.findLit(arg));
-        addClause(little_clause, and_term);        // Adds a little clause to the solver
+        res &= addClause(little_clause);        // Adds a little clause to the solver
         little_clause.pop();
     }
-    addClause( big_clause, and_term );                    // Adds a big clause to the solver
+    res &= addClause(big_clause);                    // Adds a big clause to the solver
+    return res;
 }
 
 
 
-void Tseitin::cnfizeOr( PTRef or_term, bool def)
+bool Tseitin::cnfizeOr(PTRef or_term, bool def)
 {
     if (!def) {
         vec<Lit> big_clause;
         for (int i = 0 ; i < logic.getPterm(or_term).size(); i++)
             big_clause.push(theory.findLit(logic.getPterm(or_term)[i]));
 
-        addClause(big_clause, or_term);
-        return;
+        return addClause(big_clause);
     }
 //  assert( list );
 //  assert( list->isList( ) );
@@ -148,20 +149,22 @@ void Tseitin::cnfizeOr( PTRef or_term, bool def)
     Lit v = theory.findLit(or_term);
     little_clause.push( v);
     big_clause   .push(~v);
+    bool res = true;
     for (int i = 0 ; i < logic.getPterm(or_term).size(); i++) {
         Lit arg = theory.findLit(logic.getPterm(or_term)[i]);
         little_clause.push(~arg);
         big_clause   .push( arg);
 
-        addClause(little_clause, or_term);        // Adds a little clause to the solver
+        res &= addClause(little_clause);        // Adds a little clause to the solver
 
         little_clause.pop();
     }
-    addClause(big_clause, or_term);                    // Adds a big clause to the solver
+    res &= addClause(big_clause);                    // Adds a big clause to the solver
+    return res;
 }
 
 
-void Tseitin::cnfizeXor(PTRef xor_term)
+bool Tseitin::cnfizeXor(PTRef xor_term)
 {
     //
     // ( a_0 xor a_1 )
@@ -177,6 +180,7 @@ void Tseitin::cnfizeXor(PTRef xor_term)
     Lit arg0 = theory.findLit(logic.getPterm(xor_term)[0]);
     Lit arg1 = theory.findLit(logic.getPterm(xor_term)[1]);
     vec<Lit> clause;
+    bool res = true;
 
     clause.push(~v);
 
@@ -184,7 +188,7 @@ void Tseitin::cnfizeXor(PTRef xor_term)
     clause.push(arg0);
     clause.push(arg1);
 
-    addClause(clause, xor_term);
+    res &= addClause(clause);
     clause.pop();
     clause.pop();
 
@@ -192,7 +196,7 @@ void Tseitin::cnfizeXor(PTRef xor_term)
     clause.push(~arg0);
     clause.push(~arg1);
 
-    addClause(clause, xor_term);
+    res &= addClause(clause);
     clause.pop();
     clause.pop();
 
@@ -203,7 +207,7 @@ void Tseitin::cnfizeXor(PTRef xor_term)
     clause.push(~arg0);
     clause.push( arg1);
 
-    addClause(clause, xor_term);
+    res &= addClause(clause);
 
     clause.pop();
     clause.pop();
@@ -212,10 +216,11 @@ void Tseitin::cnfizeXor(PTRef xor_term)
     clause.push( arg0);
     clause.push(~arg1);
 
-    addClause(clause, xor_term);
+    res &= addClause(clause);
+    return res;
 }
 
-void Tseitin::cnfizeIff( PTRef eq_term )
+bool Tseitin::cnfizeIff(PTRef eq_term)
 {
 
     //
@@ -231,6 +236,7 @@ void Tseitin::cnfizeIff( PTRef eq_term )
     Lit arg0 = theory.findLit(logic.getPterm(eq_term)[0]);
     Lit arg1 = theory.findLit(logic.getPterm(eq_term)[1]);
     vec<Lit> clause;
+    bool res = true;
 
     clause.push(~v);
 
@@ -238,7 +244,7 @@ void Tseitin::cnfizeIff( PTRef eq_term )
     clause.push( arg0);
     clause.push(~arg1);
 
-    addClause(clause, eq_term);
+    res &= addClause(clause);
 
     clause.pop();
     clause.pop();
@@ -247,7 +253,7 @@ void Tseitin::cnfizeIff( PTRef eq_term )
     clause.push(~arg0);
     clause.push( arg1);
 
-    addClause(clause, eq_term);
+    res &= addClause(clause);
 
     clause.pop();
     clause.pop();
@@ -259,7 +265,7 @@ void Tseitin::cnfizeIff( PTRef eq_term )
     clause.push(arg0);
     clause.push(arg1);
 
-    addClause(clause, eq_term);
+    res &= addClause(clause);
 
     clause.pop();
     clause.pop();
@@ -268,11 +274,12 @@ void Tseitin::cnfizeIff( PTRef eq_term )
     clause.push(~arg0);
     clause.push(~arg1);
 
-    addClause(clause, eq_term);
+    res &= addClause(clause);
+    return res;
 }
 
 
-void Tseitin::cnfizeIfthenelse( PTRef ite_term )
+bool Tseitin::cnfizeIfthenelse(PTRef ite_term)
 {
     //  (!a | !i | t) & (!a | i | e) & (a | !i | !t) & (a | i | !e)
     //
@@ -294,27 +301,29 @@ void Tseitin::cnfizeIfthenelse( PTRef ite_term )
     Lit a2 = theory.findLit(pt_ite[2]);
 
     vec<Lit> clause;
+    bool res = true;
 
     clause.push(~v); clause.push(~a0); clause.push(a1);
 
-    addClause(clause, ite_term);
+    res &= addClause(clause);
 
     clause.clear();
 
     clause.push(~v); clause.push(a0); clause.push(a2);
-    addClause(clause, ite_term);
+    res &= addClause(clause);
     clause.clear();
 
     clause.push(v); clause.push(~a0); clause.push(~a1);
-    addClause(clause, ite_term);
+    res &= addClause(clause);
     clause.clear();
 
     clause.push(v); clause.push(a0); clause.push(~a2);
-    addClause(clause, ite_term);
+    res &= addClause(clause);
+    return res;
 }
 
 
-void Tseitin::cnfizeImplies( PTRef impl_term  )
+bool Tseitin::cnfizeImplies(PTRef impl_term)
 {
     // ( a_0 => a_1 )
     //
@@ -333,30 +342,31 @@ void Tseitin::cnfizeImplies( PTRef impl_term  )
     Lit a1 = theory.findLit(pt_impl[1]);
 
     vec<Lit> clause;
+    bool res = true;
 
     clause.push(v);
 
     clause.push(a0);
 
-    addClause(clause, impl_term);
+    res &= addClause(clause);
 
     clause.pop();
 
     clause.push(~a1);
 
-    addClause(clause, impl_term);
+    res &= addClause(clause);
 
     clause.clear();
 
     clause.push(~v); clause.push(~a0); clause.push(a1);
 
-    addClause(clause, impl_term);
-
+    res &= addClause(clause);
+    return res;
 }
 
-void Tseitin::cnfizeDistinct( PTRef distinct_term  )
+bool Tseitin::cnfizeDistinct(PTRef distinct_term)
 {
-    cnfizeXor(distinct_term);
+    return cnfizeXor(distinct_term);
 }
 
 //void Tseitin::copyArgsWithCache(PTRef tr, vec<PTRef>& args, Map<PTRef, PTRef, PTRefHash>& cache)

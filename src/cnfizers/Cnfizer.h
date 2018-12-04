@@ -34,7 +34,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 class SimpSMTSolver;
 class CnfState;
 class THandler;
-class SMTConfig;
+struct SMTConfig;
 class TermMapper;
 
 // A small typechecked class for checkClause type return values to enable us to check whether the formula is unsatisfiable simultaneously
@@ -116,7 +116,7 @@ protected:
     bool     giveToSolver               ( PTRef );                              // Gives formula to the SAT solver
 
 
-    bool  addClause                  (const vec<Lit>&, PTRef f);
+    bool addClause(const vec<Lit> &);
 
     void  retrieveClause             ( PTRef, vec<PTRef> & );         // Retrieve a clause from a formula
     void  retrieveConjuncts          ( PTRef, vec<PTRef> & );         // Retrieve the list of conjuncts
@@ -144,6 +144,10 @@ private:
 
     // The special boolean symbols
 protected:
+
+    // PROOF vdrsion
+    int currentPartition = -1;
+    // end of PROOG version
 
     Map<PTRef,bool,PTRefHash,Equal<PTRef> >   processed;  // Is a term already processed
     Map<PTRef,Var,PTRefHash,Equal<PTRef> >    seen;       // mapping from PTRef to var

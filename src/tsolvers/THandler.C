@@ -53,7 +53,7 @@ void THandler::backtrack(int lev)
 }
 
 // Push newly found literals from trail to the solvers
-bool THandler::assertLits(vec<Lit>& trail)
+bool THandler::assertLits(const vec<Lit> & trail)
 {
     bool res = true;
 
@@ -145,7 +145,7 @@ void THandler::getNewSplits(vec<Lit> &splits) {
     Pterm& t = getLogic().getPterm(tr);
     for (int i = 0; i < t.size(); i++) {
         tmap.addBinding(t[i]);
-        declareTermTree(t[i]);
+        declareAtom(t[i]);
         informNewSplit(t[i]);
         splits.push(tmap.getLit(t[i]));
     }
@@ -815,12 +815,10 @@ void    THandler::computeModel      () { getSolverHandler().computeModel(); } //
 void    THandler::clearModel        () { /*getSolverHandler().clearModel();*/ }   // Clear the model if necessary
 
 bool    THandler::assertLit         (PtAsgn pta) { return getSolverHandler().assertLit(pta); } // Push the assignment to all theory solvers
-void    THandler::declareTermTree   (PTRef tr) { getSolverHandler().declareTermTree(tr); }
 void    THandler::informNewSplit    (PTRef tr) { getSolverHandler().informNewSplit(tr);  } // The splitting variable might need data structure changes in the solver (e.g. LIA needs to re-build bounds)
 
 char*   THandler::printValue         (PTRef tr) { return getSolverHandler().printValue(tr); } // Debug.  Ask from the solvers what they know about value of tr
 char*   THandler::printExplanation   (PTRef tr) { return getSolverHandler().printExplanation(tr); } // Debug.  Ask from the solvers what they know about explanation of tr
-void    THandler::declareTerm        (PTRef tr) { getSolverHandler().declareTerm(tr); }
 
 inline double THandler::drand(double& seed)
 {

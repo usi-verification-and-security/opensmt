@@ -48,6 +48,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "UFInterpolator.h"
 #endif
 
+#include <unordered_set>
+
 class UFSolverStats: public TSolverStats
 {
     public:
@@ -80,7 +82,7 @@ private:
 
   PTRef         Eq_FALSE; // will be set to (= true false) in constructor
 
-  bool          isValid(PTRef tr) { return logic.isUFEquality(tr) || logic.isUP(tr) || logic.isUFTerm(tr) || logic.isDisequality(tr) || logic.isBoolAtom(tr); }
+  bool          isValid(PTRef tr) { return logic.isUFEquality(tr) || logic.isUP(tr) || logic.isDisequality(tr); }
 
   double fa_garbage_frac;
 
@@ -97,35 +99,11 @@ private:
   static const char* s_val_false;
 
 public:
-//  SimpSMTSolver* solver; // for debugging only
-
   Egraph(SMTConfig & c , Logic& l
-//          , TermMapper& term_map
           , vec<DedElem>& d);
 
     ~Egraph( ) {
-//        if (config.countEqClasses)
-//            tsolver_stats.num_eq_classes = countEqClasses();
-//        else
-//            tsolver_stats.num_eq_classes = -1;
-
         backtrackToStackSize( 0 );
-#ifdef STATISTICS
-        // TODO added for convenience
-//        if ( config.produceStats() ) {
-//            config.getStatsOut( ) << "; -------------------------" << endl;
-//            config.getStatsOut( ) << "; STATISTICS FOR EUF SOLVER" << endl;
-//            config.getStatsOut( ) << "; -------------------------" << endl;
-//            //tsolver_stats.printStatistics( config.getStatsOut( ) );
-//        }
-//
-//        if ( config.print_stats ) {
-//            cerr << "; -------------------------" << endl;
-//            cerr << "; STATISTICS FOR EUF SOLVER" << endl;
-//            cerr << "; -------------------------" << endl;
-//            //tsolver_stats.printStatistics( cerr );
-//        }
-#endif
         //
         // Delete enodes
         //
@@ -142,15 +120,20 @@ public:
         if(cgraph_)
             delete cgraph_;
 #endif
+#ifdef STATISTICS
         tsolver_stats.printStatistics(std::cerr);
+#endif // STATISTICS
     }
 
     void clearSolver() { clearModel(); } // Only clear the possible computed values
 
     void print(ostream& out) { return; }
 
-    const Enode& getEnode(ERef er) const { return enode_store[er]; }
-    const Enode& getEnode(PTRef er) const { return enode_store[er]; }
+private:
+    inline Enode& getEnode(ERef er) { return enode_store[er]; }
+public:
+    inline const Enode& getEnode(ERef er) const { return enode_store[er]; }
+    inline const Enode& getEnode(PTRef er) const { return enode_store[er]; }
     const vec<ERef>& getEnodes() const    { return enode_store.getEnodes(); }
     PTRef ERefToTerm(ERef er)    const    { return enode_store[er].getTerm(); }
     bool  isDeduced(PTRef tr)    const    { return deduced[logic.getPterm(tr).getVar()] != l_Undef; }
@@ -158,7 +141,6 @@ public:
 
     bool  isConstant(ERef er)    const    {
         return (enode_store[er].isTerm() && logic.isConstant(enode_store[er].getTerm()));
-//       return enode_store.ERef_True == er || enode_store.ERef_False == er;
     }
 
     size_t size() const { return enode_store.id_to_enode.size(); };
@@ -166,23 +148,7 @@ public:
 
   char*   printValue              (PTRef tr); // Print all terms in the same eq class and distinction class
 
-  ERef    getUncheckedAssertions  ( );
-  void    setDistinctEnodes       ( vec<ERef> & );
-
   void    printEnodeList          ( ostream & );
-  void    addAssertion            ( ERef );
-
-  void          initializeStore   ( );
-  inline void   setTopEnode       ( ERef e )         { assert( e != ERef_Nil ); top = e; }
-  inline size_t nofEnodes         ( )                { return enode_store.id_to_enode.size( ); }
-
-
-
-  ERef copyEnodeEtypeTermWithCache   ( ERef, bool = false );
-  ERef copyEnodeEtypeListWithCache   ( ERef, bool = false );
-
-  ERef canonize                      ( ERef, bool = false );
-  ERef maximize                      ( ERef );
 
 #ifdef STATISTICS
   void        printMemStats             ( ostream & );
@@ -229,27 +195,18 @@ public:
   ERef    getInterfaceTerm         ( const int );
   bool    isRootUF                 ( ERef );
   ERef    canonizeDTC              ( ERef, bool = false );
-#ifdef PRODUCE_PROOF
-  void    getInterfaceVars         ( Enode *, set< Enode * > & );
-#endif
 
   Logic& getLogic() { return logic; }
 private:
 
   int countEqClasses();
   vec< ERef > interface_terms;
-  // Cache for interface terms
-//  set< Enode * > interface_terms_cache;
-  // Cache for uf terms and la terms
-//  set< Enode * > it_uf, it_la;
 
 public:
 
   //===========================================================================
   // Public APIs for Egraph Core Solver
 
-  //void                initializeTheorySolvers ( SimpSMTSolver * );          // Attaches ordinary theory solvers
-  bool                assertLit_lowlevel      (PtAsgn);                     // No checks
   bool                assertLit               (PtAsgn, bool = false);
   void                pushBacktrackPoint      ( );                          // Push a backtrack point
   void                popBacktrackPoint       ( );                          // Backtrack to last saved point
@@ -257,27 +214,14 @@ public:
   PTRef               getSuggestion           ( );                          // Return a suggested literal based on the current state
   void                getConflict             ( bool, vec<PtAsgn>& );       // Get explanation
   TRes                check                   ( bool ) { return TRes::SAT; }// Check satisfiability
-//  lbool               evaluate                ( PTRef ) { assert(false); return l_Undef; }
   virtual ValPair     getValue                (PTRef tr);
-//  void                initializeCong          ( Enode * );                  // Initialize congruence structures for a node
   void                computeModel            ( );
   void                clearModel              ( );
   void                printModel              ( ostream & );                // Computes and print the model
-//  inline void         setUseGmp               ( ) { use_gmp = true; }
-//  inline bool         getUseGmp               ( ) { return use_gmp; }
   void                splitOnDemand           ( vec<PTRef> &, int ) { };       // Splitting on demand modulo equality
-//  void                splitOnDemand           ( ERef, int );                // Splitting on demand
-//  bool                checkDupClause          ( ERef, ERef);                // Check if a clause is duplicate
   void                explain                 ( PTRef
                                               , PTRef
                                               , vec<PTRef> & );             // Exported explain
-  // Temporary merge, used by array theory to merge indexes
-#ifdef PRODUCE_PROOF
-  /*
-  void                tmpMergeBegin           ( ERef, ERef );
-  void                tmpMergeEnd             ( ERef, ERef );
-  */
-#endif
 
   //===========================================================================
   // Exported function for using egraph as supporting solver
@@ -335,43 +279,6 @@ private:
 #endif
   };
 
-  /*
-  //
-  // Handy function to swap two arguments of a list
-  //
-  inline ERef swapList ( ERef args )
-  {
-    assert( args != ERef_Undef );
-    Enode& en = enode_store[args];
-    assert( en.isList() );
-    assert( en.getArity() == 2 );
-    return enode_store.addList(
-            enode_store[en.getCdr()].getCar(),
-            enode_store.addList(en.getCar(),
-                                ERef_Nil));
-  }
-  */
-  //
-  // Related to term creation
-  //
-//  Enode * insertNumber ( Enode * );                             // Inserts a number
-//  void    removeNumber ( Enode * );                             // Remove a number
-//  void    insertSymbol ( Enode * );                             // Inserts a symbol
-//  void    removeSymbol ( Enode * );                             // Remove a symbol
-//  Enode * lookupSymbol ( const char * name );                   // Retrieve a symbol
-//  void    insertDefine ( const char *, Enode * );               // Insert a define
-//  Enode * lookupDefine ( const char * );                        // Retrieve a define
-//  Enode * insertStore  ( const enodeid_t, Enode *, Enode * );   // Insert node into the global store
-//  void    removeStore  ( Enode * );                             // Remove a node from the global store
-//  void    evaluateTermRec ( Enode *, Real & );                  // Evaluate node
-  //
-  // Related to congruence closure
-  //
-//  Enode * insertSigTab ( const enodeid_t, Enode *, Enode * );   // For undoable cons only
-//  Enode * insertSigTab ( Enode * );                             // For for terms that go in the congruence
-//  Enode * lookupSigTab ( Enode * );                             // Retrieve Enode
-//  void    removeSigTab ( Enode * );                             // Remove Enode from sig_tab
-
   bool                        active_dup1;                      // To prevent nested usage
   bool                        active_dup2;                      // To prevent nested usage
   Map<PTRef,int,PTRefHash,Equal<PTRef> >  duplicates1;          // Fast duplicate checking
@@ -386,25 +293,6 @@ private:
   vec< int >                  dup_set2;                         // Fast duplicate checking
   int                         dup_map_count1;                   // Current dup token
   int                         dup_map_count2;                   // Current dup token
-//  map< string, Enode * >      name_to_number;                   // Store for numbers
-//  map< string, Enode * >      name_to_symbol;                   // Store for symbols
-//  map< string, Enode * >      name_to_define;                   // Store for defines
-
-//  SplayTree< Enode *, Enode::idLessThan > store;                // The actual store
-//  SigTab                                  sig_tab;              // (Supposely) Efficient Signature table for congruence closure
-
-//  vector< Enode * >              id_to_enode;                   // Table ENODE_ID --> ENODE
-//  vector< int >                  id_to_belong_mask;             // Table ENODE_ID --> ENODE
-//  vector< int >                  id_to_fan_in;                  // Table ENODE_ID --> fan in
-//  list< Enode * >                assertions;                    // List of assertions
-//  vector< Enode * >              cache;                         // Cache simplifications
-  ERef                        top;                              // Top node of the formula
-//  map< Pair( int ), Enode * >    ext_store;                     // For fast extraction handling
-//  vector< Enode * >              se_store;                      // For fast sign extension
-//  vector< int >                  id_to_inc_edges;               // Keeps track of how many edges enter an enode
-//  bool                           has_ites;                      // True if there is at least one ite
-//  set< Enode * >                 variables;                     // List of variables
-//  vector< Pair( Enode * ) >      top_level_substs;              // Keep track of substitutuions in TopLevelProp.C
   bool                           model_computed;                // Has model been computed lately ?
   bool                           congruence_running;            // True if congruence is running
 
@@ -416,24 +304,22 @@ private:
   // Asserting literals
   //
 public:
-//  lbool       simplifyAndAddTerms ( PTRef, vec<PtPair>&, vec<PTRef>& );
   lbool       addDisequality      ( PtAsgn );
   lbool       addEquality         ( PtAsgn );
   bool       addTrue             ( PTRef );
   bool       addFalse            ( PTRef );
-  // The term to be added, a list to be filled with the ites found, and
-  // the nested booleans that should be processed again with the CNF
-  // solver
-//  lbool       addTerm             ( PTRef, vec<PtPair>&, vec<PTRef>& );
-  // Non-recursive declare term
-  lbool         declareTerm         (PTRef);
-  // Recursive declare term
-//  void        declareTermTree     ( PTRef );
+
+  void declareAtom(PTRef);
+    // Non-recursive declare term
+  void        declareTerm         (PTRef);
   // Remove redundancies and replace with true if
   // trivial.  Return true if root of the formula is trivially true
   bool        simplifyEquality    ( PtChild&, bool simplify = true );
   void        simplifyDisequality ( PtChild&, bool simplify = true );
 private:
+  std::unordered_set<PTRef, PTRefHash> declared;
+  void declareTermRecursively(PTRef);
+
   bool    assertEq        ( PTRef, PTRef, PtAsgn );               // Asserts an equality
   bool    assertNEq       ( PTRef, PTRef, PtAsgn );               // Asserts a negated equality
   bool    assertDist      ( PTRef, PtAsgn );                      // Asserts a distinction
@@ -456,18 +342,18 @@ private:
   //
   void     expExplain           ( );                            // Main routine for explanation
 #ifdef PRODUCE_PROOF
-  void     expExplain           ( PTRef, PTRef, PTRef );        // Enqueue equality and explain
+  void     expExplain           ( ERef, ERef, PTRef );        // Enqueue equality and explain
 #else
-  void     expExplain           ( PTRef, PTRef );               // Enqueue equality and explain
+  void     expExplain(ERef, ERef);               // Enqueue equality and explain
 #endif
   void     expStoreExplanation  ( ERef, ERef, PtAsgn );         // Store the explanation for the merge
-  void     expExplainAlongPath  ( PTRef, PTRef );               // Store explanation in explanation
-  void     expEnqueueArguments  ( PTRef, PTRef );               // Enqueue arguments to be explained
-  void     expReRootOn          ( PTRef );                      // Reroot the proof tree on x
-  void     expUnion             ( PTRef, PTRef );               // Union of x and y in the explanation
-  PTRef    expFind              ( PTRef );                      // Find for the eq classes of the explanation
-  PTRef    expHighestNode       ( PTRef );                      // Returns the node of the eq class of x that is closest to the root of the explanation tree
-  PTRef    expNCA               ( PTRef, PTRef );               // Return the nearest common ancestor of x and y
+  void     expExplainAlongPath(ERef, ERef);               // Store explanation in explanation
+  void     expEnqueueArguments(ERef, ERef);               // Enqueue arguments to be explained
+  void     expReRootOn(ERef);                      // Reroot the proof tree on x
+  void     expUnion(ERef, ERef);               // Union of x and y in the explanation
+  ERef expFind(ERef);                      // Find for the eq classes of the explanation
+  ERef expHighestNode(ERef);                      // Returns the node of the eq class of x that is closest to the root of the explanation tree
+  ERef expNCA(ERef, ERef);               // Return the nearest common ancestor of x and y
   void     expRemoveExplanation ( );                            // Undoes the effect of expStoreExplanation
   void     expCleanup           ( );                            // Undoes the effect of expExplain
 
@@ -493,25 +379,19 @@ private:
 
   bool                        state;                            // the hell is this ?
   set< enodeid_t >            initialized;                      // Keep track of initialized nodes
-  map< enodeid_t, lbool >     informed;                         // Keep track of informed nodes
   vec< ERef >                 pending;                          // Pending merges
   vec< Undo >                 undo_stack_main;                  // Keeps track of terms involved in operations
-//  vec< oper_t >               undo_stack_oper;                  // Keeps track of operations
   vec< PtAsgn >               explanation;                      // Stores explanation
 
 #if MORE_DEDUCTIONS
   vec< ERef>                  neq_list;
 #endif
 
-  vec< PTRef >                exp_pending;                      // Pending explanations
-  vec< PTRef >                exp_undo_stack;                   // Keep track of exp_parent merges
-  vec< PTRef >                exp_cleanup;                      // List of nodes to be restored
+  vec< ERef >                 exp_pending;                      // Pending explanations
+  vec< ERef >                 exp_undo_stack;                   // Keep track of exp_parent merges
+  vec< ERef >                 exp_cleanup;                      // List of nodes to be restored
   int                         time_stamp;                       // Need for finding NCA
   int                         conf_index;                       // Index of theory solver that caused conflict
-
-//  Real                        rescale_factor;                   // Rescale factor for DL
-//  long                        rescale_factor_l;                 // Rescale factor for DL
-//  bool                        use_gmp;                          // Do we have to use gmp?
 
   void    initializeCongInc ( ERef );                           // Initialize a node in the congruence at runtime
   void    initializeAndMerge( ERef );                           // Initialize a node in the congruence at runtime
@@ -544,10 +424,7 @@ public:
 
   TheoryInterpolator*         getTheoryInterpolator()
   {
-      return NULL;
-      //TheoryInterpolator* ret = cgraph;
-      //cgraph = new CGraph(*this, config, logic);
-      //return ret;
+      return nullptr;
   }
   Enode *         getNextAssertion        ( );
   Enode *         expandDefinitions       ( Enode * );
@@ -572,7 +449,6 @@ private:
   vector< uint64_t >      id_to_iformula;            // From enode to iformula it belongs to
   CGraph *                cgraph;                   // Holds congrunce graph and compute interpolant 
   CGraph *                cgraph_;                   // Holds congrunce graph and compute interpolant 
-  //vec<CGraph*> cgraphs;
   bool                    automatic_coloring;        // Set automatic node coloring
   vector< Enode * >       idef_list;                 // Definition list in rev chron order
   map< Enode *, Enode * > idef_map;                  // Def to term map
@@ -580,17 +456,16 @@ private:
 
   //===========================================================================
   // Debugging routines - Implemented in EgraphDebug.C
-
-//  string printEqClass              ( ERef );
 public:
   char* printEqClass               ( PTRef tr ) const;
   char* printDistinctions          ( PTRef tr ) const;
-  char* printExplanation           ( PTRef tr ) { char* tmp; asprintf(&tmp, "%s", printExplanationTreeDotty(tr).c_str()); return tmp; }
+  char* printExplanation           ( PTRef tr ) { char* tmp; asprintf(&tmp, "%s", printExplanationTreeDotty(enode_store.termToERef[tr]).c_str()); return tmp; }
 private:
   bool   isEqual                   (PTRef, PTRef) const;
-  string printExplanationTree      ( PTRef );
+  string printExplanationTree(ERef);
+  std::string toString                 (ERef er) const { return std::string{logic.printTerm(getEnode(er).getTerm())};}
 public:
-  string printExplanationTreeDotty ( PTRef );
+  string printExplanationTreeDotty(ERef);
 private:
   const string printDistinctionList( ELRef, ELAllocator& ela, bool detailed = true );
   void checkForbidReferences       ( ERef );

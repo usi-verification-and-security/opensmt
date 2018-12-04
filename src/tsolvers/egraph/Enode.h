@@ -81,11 +81,12 @@ class Extra {
         ELRef       forbid;         // List of unmergeable Enodes
         dist_t      dist_classes;   // The bit vector for distinction classes
         int         dist_index;     // My distinction index
-
-
         PTRef       constant;
-//        lbool       deduced;
-
+        // fields related to explanation
+        PtAsgn      exp_reason;
+        ERef        exp_parent;
+        ERef        exp_root;
+        int         exp_time_stamp;
     } trm;
     friend class Enode;
     friend class EnodeAllocator;
@@ -105,6 +106,7 @@ protected:
         unsigned reloced   : 1;
         enodeid_t id       : 29; } header;
 
+    static_assert(sizeof(SymRef) == sizeof(ERef), "Expected size of types does not match");
     union {
         SymRef symb;
         ERef   root;
@@ -112,6 +114,7 @@ protected:
 
     ERef        er;             // Either my eref or reference to the relocated one
     cgId        cid;            // The congruence id of the enode (defined also for symbols)
+    // Must be last field!
     Extra       ex[0];          // Enode specific data
 
     friend class EnodeAllocator;
@@ -177,12 +180,16 @@ public:
     void setSize       (int i)         { assert(type() != et_symb); ex->lst.size = i; }
     ERef getERef       ()        const { return er; }
 
-    // Defined for term Enodes
-//    bool  isDeduced     ()        const { assert(isTerm()); return ex->trm.deduced != l_Undef; }
-//    void  setDeduced    (lbool v)       { assert(isTerm()); ex->trm.deduced = v; }
-//    lbool getDeduced    ()        const { assert(isTerm()); return ex->trm.deduced; }
-//    void  resetDeduced  ()              { assert(isTerm()); ex->trm.deduced = l_Undef; }
-//    SymRef getSymb      ()        const { assert(isTerm()); return symb; }
+    PtAsgn getExpReason       () const { assert(type() == et_term); return ex->trm.exp_reason; }
+    ERef   getExpParent       () const { assert(type() == et_term); return ex->trm.exp_parent; }
+    ERef   getExpRoot         () const { assert(type() == et_term); return ex->trm.exp_root; }
+    int    getExpTimeStamp    () const { assert(type() == et_term); return ex->trm.exp_time_stamp; }
+
+    void setExpReason     (PtAsgn r)     { assert(type() == et_term); ex->trm.exp_reason = r; }
+    void setExpParent     (ERef r)       { assert(type() == et_term); ex->trm.exp_parent = r; }
+    void setExpRoot       (ERef r)       { assert(type() == et_term); ex->trm.exp_root   = r; }
+    void setExpTimeStamp  (const int t)  { assert(type() == et_term); ex->trm.exp_time_stamp   = t; }
+
 private:
     void  setPterm      (PTRef tr)      { assert(isTerm()); ex->trm.pterm = tr; }
 public:
@@ -201,7 +208,7 @@ public:
     inline dist_t getDistClasses() const { assert(!isSymb()); if (isTerm()) return ex->trm.dist_classes; else return 0; }
 
     void setConstant      (PTRef tr)      { assert(isTerm()); ex->trm.constant = tr; }
-    PTRef getConstant     ()              { if (!isTerm()) return PTRef_Undef; return ex->trm.constant; }
+    PTRef getConstant     () const        { if (!isTerm()) return PTRef_Undef; return ex->trm.constant; }
     void clearConstant    ()              { assert(isTerm()); ex->trm.constant = PTRef_Undef; }
 };
 
@@ -247,8 +254,8 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
 
     // For symbols
     ERef alloc(SymRef sym) {
-        assert(sizeof(SymRef) == sizeof(uint32_t));
-        assert(sizeof(ERef)   == sizeof(uint32_t));
+        static_assert(sizeof(SymRef) == sizeof(uint32_t), "Expected size of types does not match");
+        static_assert(sizeof(ERef)   == sizeof(uint32_t), "Expected size of types does not match");
         uint32_t v = RegionAllocator<uint32_t>::alloc(symEnodeWord32Size());
         ERef eid;
         eid.x = v;
@@ -260,8 +267,8 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
     // For terms and lists
     ERef alloc(ERef car, ERef cdr, Enode::en_type t, PTRef ptr)
     {
-        assert(sizeof(SymRef) == sizeof(uint32_t));
-        assert(sizeof(ERef)   == sizeof(uint32_t));
+        static_assert(sizeof(SymRef) == sizeof(uint32_t), "Expected size of types does not match");
+        static_assert(sizeof(ERef)   == sizeof(uint32_t), "Expected size of types does not match");
 
         assert(t == Enode::et_list || t == Enode::et_term);
         uint32_t v = RegionAllocator<uint32_t>::alloc(t == Enode::et_list ? listEnodeWord32Size() : termEnodeWord32Size());
@@ -269,9 +276,6 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
         eid.x = v;
         assert(t != Enode::et_list || ptr == PTRef_Undef);
         Enode* tmp = new (lea(eid)) Enode(car, cdr, *this, eid, n_enodes++, ptr);
-//        tmp->header.type = t;
-//        tmp->trm.pterm = ptr;
-//        tmp->trm.id = n_enodes++;
         return eid;
     }
 

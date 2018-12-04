@@ -30,13 +30,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "PtStore.h"
 #include "SStore.h"
 #include "Tterm.h"
-
-
-
+#ifdef PRODUCE_PROOF
+#include "FlaPartitionMap.h"
+#endif
 
 
 class SStore;
-class PTStore;
 
 // For breaking substitution loops
 struct NStatus { uint32_t x; bool operator== (const NStatus& o) const { return o.x == x; } };
@@ -117,8 +116,8 @@ class Logic {
 #ifdef PRODUCE_PROOF
     //for partitions:
     //Map<PTRef,int,PTRefHash> partitions;
-    std::map<unsigned int, PTRef> partitions; // map of partition indices to PTRefs of partitions
-    vec<PTRef> partitions_simp;
+//    std::map<unsigned int, PTRef> partitions; // map of partition indices to PTRefs of partitions
+    FlaPartitionMap flaPartitionMap;
     map<CRef, ipartitions_t> clause_class;
     map<Var, ipartitions_t> var_class;
 #endif
@@ -201,7 +200,7 @@ class Logic {
     static const char*  s_framev_prefix;
 
     Logic(SMTConfig& c);
-    ~Logic();
+    virtual ~Logic();
 
     bool isIteVar(PTRef tr) const;// { return top_level_ites.has(tr); }
     PTRef getTopLevelIte(PTRef tr);// { return top_level_ites[tr].repr; }
@@ -427,7 +426,6 @@ class Logic {
     virtual lbool retrieveSubstitutions(vec<PtAsgn>& units, Map<PTRef,PtAsgn,PTRefHash>& substs);
 
     class SubstNode {
-        Logic& logic;
         int procChild;
       public:
         int index;
@@ -437,7 +435,7 @@ class Logic {
         vec<PTRef> children;
         vec<SubstNode*> child_nodes;
         SubstNode* parent;
-        SubstNode(PTRef tr, PTRef target, SubstNode* parent, Logic& l) : logic(l), procChild(0), index(-1), lowlink(-1), status(ns_unseen), tr(tr), parent(parent) {
+        SubstNode(PTRef tr, PTRef target, SubstNode* parent, Logic& l) : procChild(0), index(-1), lowlink(-1), status(ns_unseen), tr(tr), parent(parent) {
             l.getVars(target, children);
             sort(children);
             int i, j;
@@ -460,7 +458,6 @@ class Logic {
     class TarjanAlgorithm {
         vec<SubstNode*> controlStack;
         vec<SubstNode*> tarjanStack;
-        Logic& logic;
         int index;
         void addNode(SubstNode* n) {
             n->index = index;
@@ -471,7 +468,7 @@ class Logic {
             n->status = ns_inStack;
         }
       public:
-        TarjanAlgorithm(Logic& l) : logic(l), index(0) {}
+        TarjanAlgorithm() : index(0) {}
         void getLoops(SubstNode* startNode, vec<vec<PTRef> >& loops) {
             addNode(startNode);
             while (controlStack.size() > 0) {
@@ -541,8 +538,7 @@ class Logic {
     //partitions:
     void assignPartition(unsigned int n, PTRef tr)
     {
-        assert(partitions.find(n) == partitions.end()); // do not reassign existing partition index
-        partitions.emplace(n,tr);
+        flaPartitionMap.store_top_level_fla_index(tr, n);
         term_store.assignPartition(n, tr);
     }
 #endif
@@ -566,25 +562,26 @@ class Logic {
     void addVarClassMask(Var l, const ipartitions_t& toadd);
     std::vector<PTRef> getPartitions()
     {
-        std::vector<PTRef> all_partitions;
-        for(auto const & val : partitions) {
-            all_partitions.push_back(val.second);
-        }
-        return all_partitions;
+        return flaPartitionMap.get_top_level_flas();
     }
 
     std::vector<PTRef> getPartitions(ipartitions_t const & mask){
-        std::vector<PTRef> res;
-        for(auto const & entry : partitions) {
-            if(opensmt::tstbit(mask, entry.first)){
-                res.push_back(entry.second);
-            }
-        }
-        return res;
+        throw std::logic_error{"Not supported at the moment!"};
     }
 
-    unsigned getNofPartitions() { return partitions.size(); }
-#endif
+    unsigned getNofPartitions() { return flaPartitionMap.getNoOfPartitions(); }
+
+    void transferPartitionMembership(PTRef old, PTRef new_ptref)
+    {
+        this->addIPartitions(new_ptref, getIPartitions(old));
+        flaPartitionMap.transferPartitionMembership(old, new_ptref);
+    }
+
+    int getPartitionIndex(PTRef ref) const {
+        return flaPartitionMap.getPartitionIndex(ref);
+    }
+
+#endif // PRODUCE_PROOF
     // Statistics
     int subst_num; // Number of substitutions
 

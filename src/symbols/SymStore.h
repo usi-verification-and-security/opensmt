@@ -37,7 +37,7 @@ class SymStore {
   private:
     VecMap<const char*,SymRef,StringHash,Equal<const char*> >  symbolTable;
     vec<SymRef>                                 symbols;
-    SymbolAllocator                             ta;
+    SymbolAllocator                             ta{1024};
   public:
     vec<char*>                                  idToName;
 

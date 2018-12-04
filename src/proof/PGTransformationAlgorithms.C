@@ -20,6 +20,7 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 #ifdef PRODUCE_PROOF
 
 #include "PG.h"
+#include "CoreSMTSolver.h" // TODO: MB: deal with reportf and remove this include
 
 //************************* RECYCLE PIVOTS AND RECYCLE UNITS ***************************
 
@@ -352,7 +353,7 @@ double ProofGraph::recyclePivotsIter()
 				}
 				else
 				{
-					assert(n->getType()==CLAORIG || n->getType()==CLATHEORY);
+					assert(n->getType()==clause_type::CLA_ORIG || n->getType()==clause_type::CLA_THEORY);
 					assert(n->getNumResolvents() > 0);
 					for(set<clauseid_t>::iterator it = n->getResolvents().begin(); it != n->getResolvents().end(); it++ )
 						if(getNode(*it) != NULL) q.push_back(*it);
@@ -585,12 +586,12 @@ void ProofGraph::recycleUnits()
 		else
 		{
 			//printClause(unit);
-			ProofNode* newroot=new ProofNode(thandler);
+			ProofNode* newroot=new ProofNode(logic_);
 			newroot->initClause();
 			if(produceInterpolants()) newroot->initIData();
 			newroot->setAnt1(oldroot);
 			newroot->setAnt2(unit);
-			newroot->setType(CLADERIVED);
+			newroot->setType(clause_type::CLA_DERIVED);
 			newroot->setPivot(var((unit->getClause())[0]));
 			newroot->setId(graph.size());
 			graph.push_back(newroot);

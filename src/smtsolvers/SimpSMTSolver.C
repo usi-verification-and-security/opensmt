@@ -89,7 +89,7 @@ void SimpSMTSolver::initialize( )
     if ( config.sat_preprocess_booleans != 0
             || config.sat_preprocess_theory != 0 )
     {
-        opensmt_warning( "disabling SATElite preprocessing to track proof" );
+        if (config.verbosity() > 0 ) {opensmt_warning( "disabling SATElite preprocessing to track proof" )};
         use_simplification = false;
         config.sat_preprocess_booleans = 0;
         config.sat_preprocess_theory = 0;
@@ -206,27 +206,16 @@ skip_theory_preproc:
 //=================================================================================================
 // Added code
 
-#ifdef PRODUCE_PROOF
-bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause, const ipartitions_t& mask)
-{
-    CRef cr;
-    return addSMTClause_(smt_clause, cr, mask);
-}
-#else
 bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause)
 {
-    CRef cr;
-    return addSMTClause_(smt_clause, cr);
+    std::pair<CRef, CRef> fake;
+    return addSMTClause_(smt_clause, fake);
 }
-#endif
 
-#ifdef PRODUCE_PROOF
-bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause, CRef& cr, const ipartitions_t& mask)
-#else
-bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause, CRef& cr)
-#endif
+
+bool SimpSMTSolver::addSMTClause_(const vec<Lit> & smt_clause, std::pair<CRef, CRef> & inOutCRefs)
 {
-    cr = CRef_Undef;
+    inOutCRefs = std::make_pair(CRef_Undef, CRef_Undef);
     assert( config.sat_preprocess_theory == 0 );
 
     // Check that the variables exist in the solver
@@ -254,11 +243,7 @@ bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause, CRef& cr)
 //        Var v = var( smt_clause[0] );
         cerr << "XXX skipped handling of unary theory literal?" << endl;
     }
-#ifdef PRODUCE_PROOF
-    if (!CoreSMTSolver::addClause_(smt_clause, cr, mask))
-#else
-    if (!CoreSMTSolver::addClause_(smt_clause, cr))
-#endif
+    if (!CoreSMTSolver::addClause_(smt_clause, inOutCRefs))
         return false;
 
     if (use_simplification && clauses.size() == nclauses + 1)

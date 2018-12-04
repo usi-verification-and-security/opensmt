@@ -21,9 +21,7 @@ namespace{
 
 bool LASolver::isValid(PTRef tr)
 {
-    return logic.isNumConst(tr) || logic.isNumPlus(tr) || logic.isNumMinus(tr) || logic.isNumNeg(tr) ||
-           logic.isNumTimes(tr) || logic.isNumDiv(tr) || logic.isNumEq(tr) || logic.isNumLeq(tr) || logic.isNumLt(tr) ||
-           logic.isNumGeq(tr) || logic.isNumGt(tr) || logic.isNumVar(tr);
+    return logic.isNumLeq(tr); // MB: LA solver expects only inequalities in LEQ form!
 }
 
 void LASolver::isProperLeq(PTRef tr)
@@ -313,13 +311,13 @@ LVRef LASolver::exprToLVar(PTRef expr) {
 //
 // Reads the constraint into the solver
 //
-lbool LASolver::declareTerm(PTRef leq_tr)
+void LASolver::declareAtom(PTRef leq_tr)
 {
-    if (!logic.isNumLeq(leq_tr)) return l_Undef;
+    if (!logic.isNumLeq(leq_tr)) { return; }
 
-    if (informed(leq_tr)) return l_Undef;
+    if (isInformed(leq_tr)) { return; }
 
-    informed_PTRefs.insert(leq_tr, true);
+    setInformed(leq_tr);
 
 
     if (status != INIT)
@@ -331,17 +329,11 @@ lbool LASolver::declareTerm(PTRef leq_tr)
     // DEBUG check
     isProperLeq(leq_tr);
 
-    Pterm& t = logic.getPterm(leq_tr);
+    const Pterm& t = logic.getPterm(leq_tr);
 
     while (known_preds.size() <= Idx(t.getId()))
         known_preds.push(false);
     known_preds[Idx(t.getId())] = true;
-
-#if VERBOSE
-    cerr << "; Informed of constraint " << logic.printTerm(tr_tr) << endl;
-//    cout << this << endl;
-#endif
-    return l_Undef;
 }
 
 void LASolver::informNewSplit(PTRef tr)
@@ -357,6 +349,7 @@ LVRef LASolver::getBasicVarToFixByShortestPoly() const {
     LVRef current = LVRef_Undef;
     std::size_t current_poly_size = static_cast<std::size_t>(-1);
     for (auto it : candidates) {
+        assert(tableau.isBasic(it));
         assert(it != LVRef_Undef);
         if (isModelOutOfBounds(it)) {
             new_candidates.insert(it);
@@ -377,6 +370,7 @@ LVRef LASolver::getBasicVarToFixByBland() const {
     LVRef current = LVRef_Undef;
     for (auto it : candidates) {
         assert(it != LVRef_Undef);
+        assert(tableau.isBasic(it));
         if (isModelOutOfBounds(it)) {
             new_candidates.insert(it);
             // Select the var with the smallest id
@@ -517,7 +511,7 @@ bool LASolver::assertLit( PtAsgn asgn, bool reason )
 
     bool is_reason = false;
 
-    Pterm& t = logic.getPterm(asgn.tr);
+    const Pterm& t = logic.getPterm(asgn.tr);
 
 
     LABoundRefPair p = boundStore.getBoundRefPair(asgn.tr);
@@ -535,6 +529,7 @@ bool LASolver::assertLit( PtAsgn asgn, bool reason )
 
 
     // skip if it was deduced by the solver itself with the same polarity
+    assert(deduced.size() > t.getVar());
     if (deduced[t.getVar()] != l_Undef && deduced[t.getVar()].polarity == asgn.sgn && deduced[t.getVar()].deducedBy == id) {
         assert(getStatus());
         tsolver_stats.sat_calls ++;
@@ -617,7 +612,8 @@ bool LASolver::assertBoundOnVar(LVRef it, LABoundRef itBound_ref)
         if(!tableau.isActive(it)){
             throw "Not implemented yet!";
         }
-        candidates.insert(it);
+        assert(tableau.isBasic(it));
+        newCandidate(it);
     }
 
 //  LAVar *x = it;
@@ -658,16 +654,14 @@ void LASolver::popBacktrackPoints(unsigned int count) {
         TSolver::popBacktrackPoint();
     }
     assert(checkValueConsistency());
-//    fixCandidates();
+//    newCandidate();
     assert(invariantHolds());
     setStatus(SAT);
 }
 
-void LASolver::fixCandidates() {
-    candidates.clear();
-    for (const auto & row : tableau.getRows()) {
-        candidates.insert(row.first);
-    }
+void LASolver::newCandidate(LVRef candidateVar) {
+    assert(tableau.isBasic(candidateVar));
+    candidates.insert(candidateVar);
 }
 
 void LASolver::pivot( const LVRef bv, const LVRef nv){
@@ -677,6 +671,10 @@ void LASolver::pivot( const LVRef bv, const LVRef nv){
 //    tableau.print();
     updateValues(bv, nv);
     tableau.pivot(bv, nv);
+    // after pivot, bv is not longer a candidate
+    candidates.erase(bv);
+    // and nv can be a candidate
+    newCandidate(nv);
 //    tableau.print();
     assert(checkValueConsistency());
     assert(checkTableauConsistency());
@@ -685,13 +683,12 @@ void LASolver::pivot( const LVRef bv, const LVRef nv){
 void LASolver::changeValueBy(LVRef var, const Delta & diff) {
     // update var's value
     model.write(var, model.read(var) + diff);
-    candidates.insert(var);
     // update all (active) rows where var is present
     for ( LVRef row : tableau.getColumn(var)){
         assert(tableau.isBasic(row));
         if (tableau.isActive(row)) {
             model.write(row, model.read(row) + (tableau.getCoeff(row, var) * diff));
-            candidates.insert(row);
+            newCandidate(row);
         }
     }
 }
@@ -719,10 +716,8 @@ void LASolver::initSolver()
         for  (int i = 0; i < rows.size(); i++)
             cout << rows[i] << '\n';
 #endif
-        vec<PTRef> known_PTRefs;
-        informed_PTRefs.getKeys(known_PTRefs);
-        for(int i = 0; i < known_PTRefs.size(); ++i){
-            PTRef leq_tr = known_PTRefs[i];
+        auto known_PTRefs = getInformed();
+        for(PTRef leq_tr : known_PTRefs) {
             Pterm& leq_t = logic.getPterm(leq_tr);
 
             // Terms are of form c <= t where
@@ -745,8 +740,6 @@ void LASolver::initSolver()
             doGaussianElimination();
 
         model.initModel(lavarStore);
-
-        fixCandidates();
 
         status = SAT;
     }
@@ -933,49 +926,27 @@ void LASolver::getSimpleDeductions(LVRef v, LABoundRef br)
         for (int it = bound.getIdx() - 1; it >= 0; it = it - 1) {
             LABoundRef bound_prop_ref = boundStore.getBoundByIdx(v, it);
             LABound &bound_prop = ba[bound_prop_ref];
-            if (bound_prop.getValue().isInf())
+            if (bound_prop.getValue().isInf() || bound_prop.getType() != bound_l)
                 continue;
-            if (bound_prop.getType() == bound_l) {
-//                printf("Considering propagating %s\n", boundStore.printBound(bound_prop_ref));
-                if (!hasPolarity(bound_prop.getPTRef())) {
-                    if (deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] == l_Undef) {
-//                        printf(" => deduced %s (var %d)\n", boundStore.printBound(bound_prop_ref),
-//                               logic.getPterm(bound_prop.getPTRef()).getVar());
-                        lbool pol = bound_prop.getSign();
-                        deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] = DedElem(id, pol); // id is the solver id
-                        th_deductions.push(PtAsgn_reason(bound_prop.getPTRef(), pol, PTRef_Undef));
-                    } else {
-//                        printf(" => but its deduced -value was %s instead of l_Undef\n", deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] == l_True ? "l_True" : "l_False");
-                    }
-                }
-                else {
-//                    printf(" => but it already had a polarity\n");
-                }
-            }
+            deduce(bound_prop);
         }
-    }
-    else if (bound.getType() == bound_u) {
+    } else if (bound.getType() == bound_u) {
         for (int it = bound.getIdx() + 1; it < boundStore.getBoundListSize(v) - 1; it = it + 1) {
             LABoundRef bound_prop_ref = boundStore.getBoundByIdx(v, it);
-            LABound &bound_prop = ba[bound_prop_ref];
-            if (bound_prop.getValue().isInf())
+            LABound & bound_prop = ba[bound_prop_ref];
+            if (bound_prop.getValue().isInf() || bound_prop.getType() != bound_u)
                 continue;
-            if (bound_prop.getType() == bound_u) {
-//                printf("Considering propagating %s\n", boundStore.printBound(bound_prop_ref));
-                if (!hasPolarity(bound_prop.getPTRef())) {
-                    if (deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] == l_Undef) {
-//                        printf(" => deduced %s\n", boundStore.printBound(bound_prop_ref));
-                        lbool pol = bound_prop.getSign();
-                        deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] = DedElem(id, pol);
-                        th_deductions.push(PtAsgn_reason(bound_prop.getPTRef(), pol, PTRef_Undef));
-                    } else {
-//                        printf(" => but its deduced -value was %s instead of l_Undef\n", deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] == l_True ? "l_True" : "l_False");
-                    }
-                }
-                else {
-//                    printf(" => but it already had a polarity\n");
-                }
-            }
+            deduce(bound_prop);
+        }
+    }
+}
+
+void LASolver::deduce(const LABound & bound_prop) {
+    if (!hasPolarity(bound_prop.getPTRef())) {
+        if (deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] == l_Undef) {
+            lbool pol = bound_prop.getSign();
+            deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] = DedElem(id, pol); // id is the solver id
+            th_deductions.push(PtAsgn_reason(bound_prop.getPTRef(), pol, PTRef_Undef));
         }
     }
 }
@@ -1153,7 +1124,7 @@ bool LASolver::checkTableauConsistency() const {
 
 LASolver::~LASolver( )
 {
-    tsolver_stats.printStatistics(cerr);
+    // tsolver_stats.printStatistics(cerr);
 }
 
 PtAsgn_reason LASolver::getDeduction()  { if (deductions_next >= th_deductions.size()) return PtAsgn_reason_Undef; else return th_deductions[deductions_next++]; }

@@ -38,7 +38,6 @@ class TheoryInterpolator; // forward declaration
 
 class Logic; // forward declaration
 
-#ifdef STATISTICS
 class TSolverStats
 {
   public:
@@ -122,7 +121,6 @@ class TSolverStats
     int   max_sod_size;
     int   min_sod_size;
 };
-#endif
 
 
 
@@ -146,12 +144,11 @@ public:
 
     TSolver(SolverId id_, const char* name_, SMTConfig & c, vec<DedElem>& d)
     : id(id_)
-    , name(name_)
     , deductions_next(0)
-    , config  (c)
     , deduced (d)
     , has_explanation(false)
-
+    , name(name_)
+    , config  (c)
     {}
 
     virtual ~TSolver ( ) {}
@@ -182,7 +179,7 @@ public:
 
     SolverId getId() { return id; }
     bool hasExplanation() { return has_explanation; }
-    virtual lbool declareTerm(PTRef tr) = 0;
+    virtual void declareAtom(PTRef tr) = 0;
     virtual void  informNewSplit(PTRef tr) { };
     virtual char* printValue(PTRef) = 0; // Debug function.  Instances are allowed to print whatever they want.
     virtual char* printExplanation(PTRef) = 0; // Debug function.  Instances are allowed to print whatever they want.
@@ -191,14 +188,18 @@ public:
     bool         isKnown(PTRef tr);
 
 protected:
-    Map<PTRef,bool,PTRefHash>   informed_PTRefs;
-    bool                        informed(PTRef tr) { return informed_PTRefs.has(tr); }
+    bool                        isInformed(PTRef tr) { return informed_PTRefs.has(tr); }
+    void                        setInformed(PTRef tr) { informed_PTRefs.insert(tr, true); }
+    std::vector<PTRef>          getInformed() {std::vector<PTRef> res; vec<PTRef> tmp; informed_PTRefs.getKeys(tmp);
+                                                for(int i = 0; i < tmp.size(); ++i) {res.push_back(tmp[i]);} return res; }
     bool                        has_explanation;  // Does the solver have an explanation (conflict detected)
     string                      name;             // Name of the solver
     SMTConfig &                 config;           // Reference to configuration
     vec< size_t >               backtrack_points; // Keeps track of backtrack points
 
     vec<bool>     known_preds; // List of known PTRefs with boolean return value (that can be asserted)
+private:
+    Map<PTRef,bool,PTRefHash>   informed_PTRefs;
 };
 
 #endif

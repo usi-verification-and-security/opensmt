@@ -51,14 +51,17 @@ Cnfizer::Cnfizer ( SMTConfig       &config_
 
 void Cnfizer::initialize()
 {
+    // TODO: MB: why is all this initialization necessary?
+    currentPartition = 0;
     vec<Lit> c;
     Lit l = theory.findLit (logic.getTerm_true());
     c.push (l);
-    addClause (c, logic.getTerm_true());
+    addClause(c);
     c.pop();
     l = theory.findLit (logic.getTerm_false());
     c.push (~l);
-    addClause (c, logic.getTerm_false());
+    addClause(c);
+    currentPartition = -1;
 }
 
 lbool
@@ -150,6 +153,10 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
     cerr << "cnfizerAndGiveToSolver: " << logic.printTerm (formula) << endl;
 #endif
 
+#ifdef PRODUCE_PROOF
+    assert(logic.getPartitionIndex(formula) != -1);
+    currentPartition = logic.getPartitionIndex(formula);
+#endif // PRODUCE_PROOF
     vec<PTRef> top_level_formulae;
     // Retrieve top-level formulae - this is a list constructed from a conjunction
     retrieveTopLevelFormulae (formula, top_level_formulae);
@@ -203,10 +210,11 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
 
         s_empty = false; // solver no longer empty
     }
-
-    if (res == false) return l_False;
-
-    return l_Undef;
+    currentPartition = -1;
+    return res == false ? l_False : l_Undef;
+//    if (res == false) return l_False;
+//
+//    return l_Undef;
 }
 
 //
@@ -238,7 +246,7 @@ bool Cnfizer::deMorganize ( PTRef formula )
 #endif
         }
 
-        rval = addClause (clause, formula);
+        rval = addClause(clause);
     }
 
     return rval;
@@ -387,10 +395,8 @@ bool Cnfizer::checkPureConj (PTRef e, Map<PTRef, bool, PTRefHash, Equal<PTRef> >
     return true;
 }
 
-bool Cnfizer::addClause (const vec<Lit> &c_in, PTRef f)
-
+bool Cnfizer::addClause(const vec<Lit> & c_in)
 {
-
     vec<Lit> c;
     c_in.copyTo(c);
     if (frame_term != logic.getTerm_true()) {
@@ -412,7 +418,18 @@ bool Cnfizer::addClause (const vec<Lit> &c_in, PTRef f)
 
 #endif
 #ifdef PRODUCE_PROOF
-    bool res = solver.addSMTClause(c, logic.getIPartitions(f));
+    std::pair<CRef,CRef> iorefs = std::make_pair(CRef_Undef,CRef_Undef);
+    bool res = solver.addSMTClause_(c, iorefs);
+    CRef ref = iorefs.first;
+    if (ref != CRef_Undef) {
+        ipartitions_t parts = 0;
+        assert(currentPartition != -1);
+        setbit(parts, static_cast<unsigned int>(currentPartition));
+        logic.addClauseClassMask(ref, parts);
+        for (int i = 0; i < c.size(); ++i) {
+            logic.addVarClassMask(var(c[i]), parts);
+        }
+    }
 #else
     bool res = solver.addSMTClause (c);
 #endif
@@ -432,7 +449,7 @@ bool Cnfizer::giveToSolver ( PTRef f )
     if (logic.isLit (f))
     {
         clause.push (theory.findLit (f));
-        return addClause (clause, f);
+        return addClause(clause);
     }
 
     //
@@ -447,7 +464,7 @@ bool Cnfizer::giveToSolver ( PTRef f )
         for (int i = 0; i < lits.size(); i++)
             clause.push (theory.findLit (lits[i]));
 
-        return addClause (clause, f);
+        return addClause(clause);
     }
 
     //

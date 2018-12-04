@@ -115,8 +115,9 @@ CoreSMTSolver::handleSat()
 
             int lev = vardata[var(l_f)].level;
             cancelUntil(lev);
-            CRef cr;
-            addSMTClause_(new_splits, cr);
+            std::pair<CRef, CRef> iorefs;
+            addSMTClause_(new_splits, iorefs);
+            CRef cr = iorefs.second;
             if (decisionLevel() > 0) {
                 // DL0 implications are already enqueued in addSMTClause_
                 assert(cr != CRef_Undef);
@@ -188,7 +189,7 @@ CoreSMTSolver::handleUnsat()
         CRef confl = ca.alloc(conflicting, config.sat_temporary_learn);
 
         Clause & c = ca[confl];
-        proof.addRoot( confl, CLA_THEORY );
+        proof.addRoot( confl, clause_type::CLA_THEORY );
         //TODO: is it correct?
         //proof.setTheoryInterpolator(confl, theory_itpr);
         //clause_to_itpr[ confl ] = theory_itpr;
@@ -274,7 +275,7 @@ CoreSMTSolver::handleUnsat()
 
     learnt_clause.clear();
 #ifdef PRODUCE_PROOF
-    proof.addRoot( confl, CLA_THEORY );
+    proof.addRoot( confl, clause_type::CLA_THEORY );
     tleaves.push( confl );
     if ( config.isIncremental() )
     {

@@ -23,7 +23,6 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
-
 #include "SStore.h"
 #include "PtStore.h"
 #include "Logic.h"
@@ -213,10 +212,12 @@ bool Logic::isBuiltinFunction(const SymRef sr) const
 
 Logic::~Logic()
 {
+#ifdef STATISTICS
     cerr << "; -------------------------\n";
     cerr << "; STATISTICS FOR LOGICS\n";
     cerr << "; -------------------------\n";
     cerr << "; Substitutions............: " << subst_num << endl;
+#endif // STATISTICS
 }
 
 const Logic_t
@@ -439,15 +440,7 @@ bool Logic::isTheorySymbol(SymRef tr) const {
     // Boolean var
     if (t.rsort() == sort_BOOL && t.nargs() == 0) return false;
     // Standard Boolean operators
-    if (tr == sym_NOT)      return false;
-    if (tr == sym_EQ)       return false;
-    if (tr == sym_IMPLIES)  return false;
-    if (tr == sym_AND)      return false;
-    if (tr == sym_OR)       return false;
-    if (tr == sym_XOR)      return false;
-    if (tr == sym_ITE)      return false;
-    if (tr == sym_DISTINCT) return false;
-    return true;
+    return !(isBooleanOperator(tr));
 }
 
 // description: Add equality for each new sort
@@ -538,18 +531,22 @@ void Logic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
     Pterm& p = getPterm(tr);
     vec<PTRef> newargs;
     char *msg;
+    bool changed = false;
     for (int i = 0; i < p.size(); ++i) {
         PTRef tr = p[i];
-        if (tr_map.has(tr))
+        if (tr_map.has(tr)) {
+            changed |= (tr_map[tr] != tr);
             newargs.push(tr_map[tr]);
+        }
         else
             newargs.push(tr);
     }
+    if (!changed) {return;}
     PTRef trp = insertTerm(p.symb(), newargs, &msg);
-#ifdef PRODUCE_PROOF
-    addIPartitions(trp, getIPartitions(tr));
-#endif
     if (trp != tr) {
+#ifdef PRODUCE_PROOF
+    transferPartitionMembership(tr, trp);
+#endif
         if (tr_map.has(tr))
             assert(tr_map[tr] == trp);
         else
@@ -600,18 +597,6 @@ void Logic::simplifyTree(PTRef tr, PTRef& root_out)
 #endif
         processed.insert(queue[i].x, true);
         visit(queue[i].x, tr_map);
-#ifdef PRODUCE_PROOF
-        PTRef qaux = queue[i].x;
-        if (tr_map.has(qaux))
-        {
-            PTRef trq = tr_map[qaux];
-            if (trq != qaux)
-            {
-                addIPartitions(trq, getIPartitions(qaux));
-                partitions_simp.push(trq);
-            }
-        }
-#endif
     }
     if (tr_map.has(tr))
         root_out = tr_map[tr];
@@ -1378,7 +1363,6 @@ bool Logic::varsubstitute(PTRef& root, Map<PTRef,PtAsgn,PTRefHash>& substs, PTRe
     tr_new = gen_sub[root];
     return n_substs > 0;
 }
-
 //
 // Identify and break any substitution loops
 //
@@ -1464,7 +1448,7 @@ void Logic::breakSubstLoops(Map<PTRef,PtAsgn,PTRefHash>& substs)
 
         vec<vec<PTRef> > loops;
         for (int i = 0; i < startNodes.size(); i++) {
-            TarjanAlgorithm tarjan(*this);
+            TarjanAlgorithm tarjan;
             tarjan.getLoops(startNodes[i], loops);
         }
 
@@ -2262,19 +2246,16 @@ void Logic::conjoinItes(PTRef root, PTRef& new_root)
             PTRef ite = getTopLevelIte(el);
             args.push(ite);
             queue.push(ite);
-#ifdef PRODUCE_PROOF
-            setIPartitions(ite, getIPartitions(el));
-#endif
         }
         for (int i = 0; i < getPterm(el).size(); i++)
             queue.push(getPterm(el)[i]);
         seen.insert(el, true);
     }
-#ifdef PRODUCE_PROOF
-    computePartitionMasks(args);
-#endif
     args.push(root);
     new_root = mkAnd(args);
+#ifdef PRODUCE_PROOF
+    addIPartitions(new_root, getIPartitions(root));
+#endif
 }
 
 #ifdef PRODUCE_PROOF
@@ -2285,6 +2266,8 @@ void Logic::computePartitionMasks(const vec<PTRef> &roots) {
 
     vec<PtChild> list_out;
     getTermsList(roots, list_out, *this);
+    std::set<PTRef> seen;
+    std::set<PTRef> to_process;
     for (int i = list_out.size()-1; i >= 0; i--)
     {
         PTRef tr = list_out[i].tr;
@@ -2292,6 +2275,7 @@ void Logic::computePartitionMasks(const vec<PTRef> &roots) {
         ipartitions_t& p = getIPartitions(tr);
         for (int j = 0; j < t.size(); j++) {
             addIPartitions(t[j], p);
+            seen.insert(t[j]);
         }
         if (isUF(tr) || isUP(tr)) {
             addIPartitions(t.symb(), p);
@@ -2322,7 +2306,16 @@ Logic::getPartitionA(const ipartitions_t& mask)
             opensmt_error("Assertion is neither A or B");
         }
     }
+    // add ites:
+    vec<Map<PTRef,Ite,PTRefHash,Equal<PTRef>>::Pair> entries;
+    top_level_ites.getKeysAndVals(entries);
+    for (int i = 0; i < entries.size(); ++i) {
+        if(isAlocal(getIPartitions(entries[i].key), mask)){
+            a_args.push(entries[i].data.repr);
+        }
+    }
     PTRef A = logic.mkAnd(a_args);
+
     return A;
 }
 
@@ -2340,6 +2333,14 @@ Logic::getPartitionB(const ipartitions_t& mask)
         }
         else if(!isAlocal(p_mask, mask)) {
             opensmt_error("Assertion is neither A or B");
+        }
+    }
+    // add ites:
+    vec<Map<PTRef,Ite,PTRefHash,Equal<PTRef>>::Pair> entries;
+    top_level_ites.getKeysAndVals(entries);
+    for (int i = 0; i < entries.size(); ++i) {
+        if(isBlocal(getIPartitions(entries[i].key), mask)){
+            b_args.push(entries[i].data.repr);
         }
     }
     PTRef B = logic.mkAnd(b_args);

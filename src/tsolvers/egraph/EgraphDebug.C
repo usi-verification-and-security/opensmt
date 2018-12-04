@@ -271,42 +271,41 @@ char* Egraph::printValue(PTRef tr)
     return tmp_out;
 }
 
-std::string Egraph::printExplanationTree( PTRef x )
-{
-    stringstream os;
-    while ( x != PTRef_Undef ) {
-        os << logic.printTerm(x);
-        if (logic.getPterm(x).getExpParent() != PTRef_Undef) {
-            os << " --[";
-            if (logic.getPterm(x).getExpReason().tr == PTRef_Undef) {
-                os << "<";
-                for (int i = 0; i < logic.getPterm(x).size(); i++)
-                    os << logic.printTerm(logic.getPterm(x)[i]) << " ";
-                os << ">";
-            }
-            else
-                os << (logic.getPterm(x).getExpReason().sgn == l_True ? "" : "not ") << logic.printTerm(logic.getPterm(x).getExpReason().tr);
-            if ( logic.getPterm(x).getExpParent() != PTRef_Undef )
-                os << "]--> ";
-        }
-        x = logic.getPterm(x).getExpParent();
-    }
-    return os.str();
-}
+//std::string Egraph::printExplanationTree(ERef x)
+//{
+//    stringstream os;
+//    while ( x != ERef_Undef ) {
+//        os << toString(x);
+//        if (getEnode(x).getExpParent() != ERef_Undef) {
+//            os << " --[";
+//            if (getEnode(x).getExpReason().tr == PTRef_Undef) {
+//                os << "<";
+//                for (int i = 0; i < logic.getPterm(x).size(); i++)
+//                    os << logic.printTerm(logic.getPterm(x)[i]) << " ";
+//                os << ">";
+//            }
+//            else
+//                os << (logic.getPterm(x).getExpReason().sgn == l_True ? "" : "not ") << logic.printTerm(logic.getPterm(x).getExpReason().tr);
+//            if ( logic.getPterm(x).getExpParent() != PTRef_Undef )
+//                os << "]--> ";
+//        }
+//        x = logic.getPterm(x).getExpParent();
+//    }
+//    return os.str();
+//}
 
-std::string Egraph::printExplanationTreeDotty( PTRef x )
+std::string Egraph::printExplanationTreeDotty(ERef x)
 {
     stringstream os;
     os << "digraph expl" << endl;
     os << "{" << endl;
 
-    while ( x != PTRef_Undef ) {
-        char* name = logic.printTerm(x);
+    while ( x != ERef_Undef ) {
+        std::string name = toString(x);
         os << name;
-        ::free(name);
-        if (logic.getPterm(x).getExpParent() != PTRef_Undef)
+        if (getEnode(x).getExpParent() != ERef_Undef)
             os << " -> ";
-        x = logic.getPterm(x).getExpParent();
+        x = getEnode(x).getExpParent();
     }
 
     os << endl << "}" << endl;

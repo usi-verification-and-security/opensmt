@@ -70,39 +70,22 @@ class SimpSMTSolver : public CoreSMTSolver
 
     set< Clause * >                      to_remove;
     vector< Clause * >                   unary_to_remove;
-/*
-    // TODO: change to vector< list< Clauses * > >
-    map< Enode *, set< enodeid_t > >     t_var; // Variables to which is connected to
-    map< enodeid_t, vector< Clause * > > t_pos; // Clauses where theory variable appears positively
-    map< enodeid_t, vector< Clause * > > t_neg; // Clauses where theory variable appears negatively
-*/
+
 
     // Problem specification:
     //
     Var     newVar    (bool polarity = true, bool dvar = true) override;
-#ifdef PRODUCE_PROOF
-    bool    addClause (const vec<Lit>& ps, const ipartitions_t& mask = 0);
-    bool    addSMTClause (const  vec<Lit>&, const ipartitions_t& mask = 0) override;
-    bool    addSMTClause_(       vec<Lit>&, const ipartitions_t& mask = 0) override;
-protected:
-    bool    addSMTClause_(       vec<Lit>&, CRef& cr, const ipartitions_t& mask = 0) override;
-public:
-    bool    addEmptyClause();                // Add the empty clause to the solver.
-    bool    addClause (Lit p, const ipartitions_t& mask = 0);               // Add a unit clause to the solver.
-    bool    addClause (Lit p, Lit q, const ipartitions_t& mask = 0);        // Add a binary clause to the solver.
-    bool    addClause (Lit p, Lit q, Lit r, const ipartitions_t& mask = 0); // Add a ternary clause to the solver.
-#else
+
     bool    addClause (const vec<Lit>& ps); // FIXME: this is already in parent class, why have it here?
     bool    addSMTClause (const  vec<Lit>&) override;
     bool    addSMTClause_(       vec<Lit>&) override;
-protected:
-    bool    addSMTClause_(       vec<Lit>&, CRef& cr) override;
+    bool    addSMTClause_(const vec<Lit> &, pair<CRef, CRef> & inOutCRefs) override;
 public:
     bool    addEmptyClause();                // Add the empty clause to the solver.
     bool    addClause (Lit p);               // Add a unit clause to the solver.
     bool    addClause (Lit p, Lit q);        // Add a binary clause to the solver.
     bool    addClause (Lit p, Lit q, Lit r); // Add a ternary clause to the solver.
-#endif
+
     bool    substitute(Var v, Lit x);  // Replace all occurences of v with x (may cause a contradiction).
 
     // Variable mode:
@@ -244,21 +227,12 @@ inline void SimpSMTSolver::updateElimHeap(Var v) {
     if (elim_heap.inHeap(v) || (!frozen[v] && !isEliminated(v) && value(v) == l_Undef))
         elim_heap.update(v); }
 
-#ifdef PRODUCE_PROOF
-inline bool SimpSMTSolver::addClause    (const vec<Lit>& ps, const ipartitions_t& mask)    { ps.copyTo(add_tmp); return addClause_(add_tmp, mask); }
-inline bool SimpSMTSolver::addSMTClause (const vec<Lit>& ps, const ipartitions_t& mask) { ps.copyTo(add_tmp); return addSMTClause_(add_tmp, mask); }
-inline bool SimpSMTSolver::addEmptyClause()                     { add_tmp.clear(); return addClause_(add_tmp); }
-inline bool SimpSMTSolver::addClause    (Lit p, const ipartitions_t& mask)                 { add_tmp.clear(); add_tmp.push(p); return addClause_(add_tmp, mask); }
-inline bool SimpSMTSolver::addClause    (Lit p, Lit q, const ipartitions_t& mask)          { add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); return addClause_(add_tmp, mask); }
-inline bool SimpSMTSolver::addClause    (Lit p, Lit q, Lit r, const ipartitions_t& mask)   { add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); add_tmp.push(r); return addClause_(add_tmp, mask); }
-#else
 inline bool SimpSMTSolver::addClause    (const vec<Lit>& ps)    { ps.copyTo(add_tmp); return addClause_(add_tmp); }
 inline bool SimpSMTSolver::addSMTClause (const vec<Lit>& ps) { ps.copyTo(add_tmp); return addSMTClause_(add_tmp); }
 inline bool SimpSMTSolver::addEmptyClause()                     { add_tmp.clear(); return addClause_(add_tmp); }
 inline bool SimpSMTSolver::addClause    (Lit p)                 { add_tmp.clear(); add_tmp.push(p); return addClause_(add_tmp); }
 inline bool SimpSMTSolver::addClause    (Lit p, Lit q)          { add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); return addClause_(add_tmp); }
 inline bool SimpSMTSolver::addClause    (Lit p, Lit q, Lit r)   { add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); add_tmp.push(r); return addClause_(add_tmp); }
-#endif
 
 inline void  SimpSMTSolver::setFrozen    (Var v, bool b) { if ( !use_simplification ) return; frozen[v] = (char)b; if (b) { updateElimHeap(v); } }
 inline lbool SimpSMTSolver::solve        (                     bool do_simp, bool turn_off_simp)  { budgetOff(); assumptions.clear(); return solve_(do_simp, turn_off_simp); }

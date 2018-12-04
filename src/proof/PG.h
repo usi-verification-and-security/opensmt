@@ -26,24 +26,17 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 #include "Proof.h"
 #include <map>
 #include <new>
+#include "PTRef.h"
+#include "Theory.h"
+#include "THandler.h"
 
 //using namespace Minisat;
 using namespace opensmt;
 
 class CoreSMTSolver;
 class Proof;
-
-
-// Types of clauses
-// NB: CLADERIVED are distinct from CLALEARNED,
-// that are the roots of the initial subproofs
-enum clause_type
-{
-	CLAORIG
-	, CLALEARNT
-	, CLADERIVED
-    , CLATHEORY
-};
+class Logic;
+class SMTConfig;
 
 typedef unsigned clauseid_t;
 
@@ -139,14 +132,14 @@ struct InterpolData
 // Resolution proof graph element
 struct ProofNode
 {
-    ProofNode            (THandler& _th)
+    ProofNode            (Logic& _logic)
     : clause     (NULL)
     , pivot      (-1)
     , ant1       (NULL)
     , ant2       (NULL)
     , resolvents ()
     , i_data     (NULL)
-    , thandler   (_th)
+    , logic   (_logic)
     , clause_ref (CRef_Undef)
     {
         clause = NULL;
@@ -262,7 +255,7 @@ struct ProofNode
 #endif
 
 private:
-    THandler& thandler;
+    Logic&             logic;
     clauseid_t         id;                 // id
     vector<Lit>*     clause;             // Clause
     CRef clause_ref;
@@ -281,12 +274,13 @@ public:
 
 	ProofGraph ( SMTConfig &     c
 			, CoreSMTSolver & s
-			, THandler &      th
+			, Theory &      th
 			, Proof &         t
 			, int             n = -1 )
 : config   ( c )
 , solver   ( s )
-, thandler ( th )
+, theory ( th )
+, thandler {new THandler(c, th)}
 , logic_ ( th.getLogic() )
 , graph_   ( new vector<ProofNode*> )
 , graph    ( *graph_ )
@@ -298,6 +292,7 @@ public:
 		mpz_init(visited_1);
 		mpz_init(visited_2);
 		buildProofGraph( n );
+		initTSolver();
 }
 
 	~ProofGraph()
@@ -364,6 +359,7 @@ public:
     // Inverts the normal order Hashing + RecyclePivots
     bool			switchToRPHashing()			{ return (config.proof_switch_to_rp_hash >= 1);}
     inline bool    additionalRandomization       ( ) { return ( config.proof_random_context_analysis == 1 ); }
+    int             simplifyInterpolant                     ( ) const { return config.simplify_interpolant; }
     //
     // Build et al.
     //
@@ -401,6 +397,7 @@ public:
     void              topolSortingTopDown   ( vector< clauseid_t > & );
     void              topolSortingBotUp     ( vector< clauseid_t > & );
     void              printProofNode        ( clauseid_t );
+    void              printClause           (std::ostream&, std::vector<Lit> const& lits);
     void              printClause           ( ProofNode * );
     void              printClause           ( ProofNode *, ostream & );
     inline ProofNode* getNode               ( clauseid_t id ) { assert( id<graph.size() ); return graph[ id ]; }
@@ -530,15 +527,24 @@ public:
 
 private:
 
+    inline Lit PTRefToLit(PTRef ref) {return theory.getTmap().getLit(ref);}
+    inline Var PTRefToVar(PTRef ref) { return theory.getTmap().getVar(ref); }
+    inline PTRef varToPTRef(Var v) { return theory.getTmap().varToPTRef(v); }
+
+    void initTSolver();
+    void clearTSolver();
+    bool assertLiteralsToTSolver(vec<Lit> const&);
+
     //NOTE added for experimentation
     Var 				  pred_to_push;
 
     SMTConfig &           config;
     CoreSMTSolver &       solver;
-    THandler &        thandler;
+    Theory &              theory;
     //Egraph &              egraph;
     Proof &				  proof;
     Logic &               logic_;
+    std::unique_ptr<THandler> thandler;
 
     vector< ProofNode * >*         graph_;                       // Graph
     vector< ProofNode * >&         graph;

@@ -96,6 +96,7 @@ class StrAllocator : public RegionAllocator<uint32_t>
         return (size+1) / sizeof(uint32_t) + ((size+1) % sizeof(uint32_t) == 0 ? 0 : 1); }
   public:
     StrAllocator() {}
+    StrAllocator(uint32_t init_capacity): RegionAllocator<uint32_t>(init_capacity) {}
     ~StrAllocator() {}
     void moveTo(StrAllocator &to) {
         RegionAllocator<uint32_t>::moveTo(to); }
@@ -142,11 +143,11 @@ class Identifier {
 
 class IdentifierAllocator : public RegionAllocator<uint32_t>
 {
-    StrAllocator<IdStr, IdStrRef> isa;
     static int IdentifierWord32Size(int size) {
         return (sizeof(Identifier) + size) / sizeof(uint32_t); }
   public:
     IdentifierAllocator() {}
+    IdentifierAllocator(uint32_t init_capacity): RegionAllocator<uint32_t>(init_capacity) {}
     void moveTo(IdentifierAllocator &to) {
         RegionAllocator<uint32_t>::moveTo(to); }
     IdRef alloc(IdStrRef nr)
@@ -234,11 +235,11 @@ class Sort {
 class SortAllocator : public RegionAllocator<uint32_t>
 {
     static sortid_t static_uniq_id;
-    StrAllocator<SStr, SStrRef>& ssa;
     static int SortWord32Size(int size) {
         return (sizeof(Sort) + size) / sizeof(uint32_t); }
   public:
-    SortAllocator(StrAllocator<SStr, SStrRef>& ssa_) : ssa(ssa_) {}
+    SortAllocator() {}
+    SortAllocator(uint32_t init_capacity): RegionAllocator<uint32_t>(init_capacity) {}
     void moveTo(SortAllocator &to) {
         RegionAllocator<uint32_t>::moveTo(to); }
     SRef alloc(IdRef idr, SStrRef nr, vec<SRef>& rest)

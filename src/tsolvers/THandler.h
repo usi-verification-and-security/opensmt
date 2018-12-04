@@ -28,12 +28,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define THANDLER_H
 
 #include "TermMapper.h"
-#include "Global.h"
 #include "TSolverHandler.h"
 #include "Theory.h"
 #include "TSolver.h"
-
-class SMTConfig;
 
 class THandler
 {
@@ -91,9 +88,10 @@ public:
 
     void    computeModel      () ;//{ getSolverHandler().computeModel(); } // Computes a model in the solver if necessary
     void    clearModel        ();// { /*getSolverHandler().clearModel();*/ }   // Clear the model if necessary
-    bool    assertLits        (vec<Lit>&);             // Give to the TSolvers the newly added literals on the trail
+    bool    assertLits        (const vec<Lit> &);             // Give to the TSolvers the newly added literals on the trail
     bool    assertLit         (PtAsgn pta);// { return getSolverHandler().assertLit(pta); } // Push the assignment to all theory solvers
-    void    declareTermTree   (PTRef tr);// { getSolverHandler().declareTermTree(tr); } // Declare the terms in the formula recursively.
+    void    declareAtoms      (PTRef tr) { getSolverHandler().declareAtoms(tr); }
+    void    declareAtom       (PTRef tr) { getSolverHandler().declareAtom(tr); }
     void    informNewSplit    (PTRef tr); // Splitting variable data structure updates (e.g., recompute bounds list)
     TRes    check             (bool);       // Check trail in the theories
     void    backtrack         (int);        // Remove literals that are not anymore on the trail
@@ -102,7 +100,7 @@ public:
 
     char*   printValue         (PTRef tr);// { return getSolverHandler().printValue(tr); } // Debug.  Ask from the solvers what they know about value of tr
     char*   printExplanation   (PTRef tr);// { return getSolverHandler().printExplanation(tr); } // Debug.  Ask from the solvers what they know about explanation of tr
-    void    declareTerm        (PTRef tr);// { getSolverHandler().declareTerm(tr); }
+    // { getSolverHandler().declareTerm(tr); }
 
 protected:
 

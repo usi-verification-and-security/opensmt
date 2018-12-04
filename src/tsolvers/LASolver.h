@@ -57,11 +57,11 @@ class LASolver: public TSolver
 protected:
 
     LALogic&            logic;
-    LAVarAllocator       lva;
+    LAVarAllocator       lva{1024};
     LAVarStore           lavarStore;
 
-    LABoundAllocator     ba;
-    LABoundListAllocator bla;
+    LABoundAllocator     ba{1024};
+    LABoundListAllocator bla{1024};
     LABoundStore         boundStore;
 
 
@@ -84,7 +84,7 @@ public:
 
     virtual void clearSolver() override; // Remove all problem specific data from the solver.  Should be called each time the solver is being used after a push or a pop in the incremental interface.
 
-    lbool declareTerm        (PTRef tr) override;                // Inform the theory solver about the existence of a literal
+    void declareAtom(PTRef tr) override;                // Inform the theory solver about the existence of an atom
     void  informNewSplit     (PTRef tr) override;                // Update bounds for the split variable
     bool  check_simplex  (bool);
     bool  assertLit          ( PtAsgn , bool = false ) override; // Push the constraint into Solver
@@ -123,7 +123,7 @@ protected:
     bool assertBoundOnVar(LVRef it, LABoundRef it_i);
 
     unsigned nVars() const;// { return lva.getNumVars(); }
-    void  fixCandidates( );                                      // Reset row candidates for possible out of bounds
+    inline void newCandidate(LVRef candidateVar);
 
     opensmt::Number getNum(PTRef);
 
@@ -198,6 +198,8 @@ protected:
     bool invariantHolds() const;
     bool checkTableauConsistency() const;
     void crashInconsistency(LVRef v, int line);
+
+    void deduce(const LABound & bound_prop);
 };
 
 #endif

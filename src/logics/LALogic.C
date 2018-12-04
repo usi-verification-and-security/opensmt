@@ -48,7 +48,7 @@ void LALogic::splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) 
         var = term;
         fac = getTerm_NumOne();
     } else {
-        var = getTerm_NumOne();
+        var = PTRef_Undef; // MB: no variable
         fac = term;
     }
 }
@@ -82,14 +82,19 @@ PTRef LALogic::normalizeSum(PTRef sum) {
     // We need to go through the real values since negative constant
     // terms are are not real negations.
     opensmt::Number k = abs(isConstant(t[0]) ? getNumConst(t[0]) : getNumConst(t[1]));
-    PTRef divisor = mkConst(k);
-    for (int i = 0; i < args.size(); i++) {
-        vec<PTRef> tmp;
-        tmp.push(args[i]);
-        tmp.push(divisor);
-        args[i] = mkNumDiv(tmp);
+    // MB: the case (-1 * var) can get herem but we would be dividing by 1 here, no need for that
+    if (k != 1) {
+        PTRef divisor = mkConst(k);
+        for (int i = 0; i < args.size(); i++) {
+            vec<PTRef> tmp;
+            tmp.push(args[i]);
+            tmp.push(divisor);
+            args[i] = mkNumDiv(tmp);
+        }
     }
-    return mkNumPlus(args);
+    // MB: There is nothing there to simplify anymore, since we just normalized constants, but the terms were normalized before
+//    return mkNumPlus(args);
+    return mkFun(get_sym_Num_PLUS(), args);
 }
 // Normalize a product of the form (* a v) to either v or (* -1 v)
 PTRef LALogic::normalizeMul(PTRef mul)
@@ -286,7 +291,7 @@ void LALogic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
         PTRef andr = mkAnd(args);
 #ifdef PRODUCE_PROOF
         const ipartitions_t &part = getIPartitions(tr);
-        addIPartitions(andr, part);
+        transferPartitionMembership(tr, andr);
         addIPartitions(i1, part);
         addIPartitions(i2, part);
 #endif
@@ -333,22 +338,45 @@ PTRef LALogic::mkNumNeg(PTRef tr, char** msg)
         return tr_n;
     }
     if (isConstant(tr)) {
-        char* rat_str;
-        opensmt::stringToRational(rat_str, sym_store.getName(getPterm(tr).symb()));
-        opensmt::Number v(rat_str);
-        //PTRef nterm = getNTerm(rat_str); //PS. getNTerm generalise line 358, 361, 362
-        free(rat_str);
-        v = -v;
-        PTRef nterm = mkConst(getSort_num(), v.get_str().c_str());
-        SymRef s = getPterm(nterm).symb();
-        return mkFun(s, args, msg);
+//        char * rat_str;
+//        opensmt::stringToRational(rat_str, sym_store.getName(getPterm(tr).symb()));
+//        opensmt::Number v(rat_str);
+//        //PTRef nterm = getNTerm(rat_str); //PS. getNTerm generalise line 358, 361, 362
+//        free(rat_str);
+//        v = -v;
+//        PTRef nterm = mkConst(getSort_num(), v.get_str().c_str());
+//        SymRef s = getPterm(nterm).symb();
+//        return mkFun(s, args, msg);
+        const opensmt::Number& v = getNumConst(tr);
+        opensmt::Number min = -v;
+        PTRef nterm = mkConst(min);
+        return nterm;
     }
     PTRef mo = mkConst(getSort_num(), "-1");
     args.push(mo); args.push(tr);
     return mkNumTimes(args);
 }
+
+PTRef  LALogic::mkConst(const opensmt::Number& c)
+//{ char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_num(), rat); free(rat); return tr; }
+{
+    std::string str = c.get_str(); // MB: I cannot store c.get_str().c_str() directly, since that is a pointer inside temporary object -> crash.
+    const char * val = str.c_str();
+    PTRef ptr = PTRef_Undef;
+    ptr = mkVar(getSort_num(), val);
+    // Store the value of the number as a real
+    SymId id = sym_store[getPterm(ptr).symb()].getId();
+    for (int i = numbers.size(); i <= id; i++) { numbers.push(nullptr); }
+    if (numbers[id] == nullptr) { numbers[id] = new opensmt::Number(val); }
+    assert(c == *numbers[id]);
+    // Code to allow efficient constant detection.
+    while (id >= constants.size())
+        constants.push(false);
+    constants[id] = true;
+    return ptr;
+}
+
 SRef   LALogic::getSort_num () const { return get_sort_NUM(); }
-PTRef  LALogic::mkConst  (const opensmt::Number& c) { char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_num(), rat); free(rat); return tr; }
 PTRef  LALogic::mkConst  (const char* num) { return mkConst(getSort_num(), num); }
 PTRef  LALogic::mkNumVar (const char* name) { return mkVar(getSort_num(), name); }
 bool LALogic::isBuiltinSort  (SRef sr) const { return sr == get_sort_NUM() || Logic::isBuiltinSort(sr); }
@@ -549,16 +577,15 @@ PTRef LALogic::mkNumPlus(const vec<PTRef>& args, char** msg)
             new_args.push(args[i]);
         }
     }
-    vec<PTRef> tmp_args;
-    new_args.copyTo(tmp_args);
-    //for (int i = 0; i < new_args.size(); i++)
-    //    args.push(new_args[i]);
     SimplifyConstSum simp(*this);
     vec<PTRef> args_new;
     SymRef s_new;
-    simp.simplify(get_sym_Num_PLUS(), tmp_args, s_new, args_new, msg);
+    simp.simplify(get_sym_Num_PLUS(), new_args, s_new, args_new, msg);
     if (args_new.size() == 1)
         return args_new[0];
+    if(s_new != get_sym_Num_PLUS()) {
+        return mkFun(s_new, args_new, msg);
+    }
     // This code takes polynomials (+ (* v c1) (* v c2)) and converts them to the form (* v c3) where c3 = c1+c2
     VecMap<PTRef,PTRef,PTRefHash> s2t;
     vec<PTRef> keys;
@@ -566,6 +593,7 @@ PTRef LALogic::mkNumPlus(const vec<PTRef>& args, char** msg)
         PTRef v;
         PTRef c;
         splitTermToVarAndConst(args_new[i], v, c);
+        assert(isConstant(c));
         if (c == PTRef_Undef) {
             // The term is unit
             c = getTerm_NumOne();
@@ -580,20 +608,27 @@ PTRef LALogic::mkNumPlus(const vec<PTRef>& args, char** msg)
     }
     vec<PTRef> sum_args;
     for (int i = 0; i < keys.size(); i++) {
-        vec<PTRef>& consts = s2t[keys[i]];
-        PTRef consts_summed = mkNumPlus(consts);
+        const vec<PTRef>& consts = s2t[keys[i]];
+        PTRef consts_summed = consts.size() == 1 ? consts[0] : mkNumPlus(consts);
+        if (isNumZero(consts_summed)) { continue; }
+        if (keys[i] == PTRef_Undef) {
+            sum_args.push(consts_summed);
+            continue;
+        }
+        if (isNumOne(consts_summed)) {
+            sum_args.push(keys[i]);
+            continue;
+        }
+        // default case, variable and constant (cannot be simplified)
         vec<PTRef> term_args;
         term_args.push(consts_summed);
-        if (keys[i] != PTRef_Undef)
-            term_args.push(keys[i]);
-        else term_args.push(getTerm_NumOne());
-        PTRef term = mkNumTimes(term_args);
-        if (!isNumZero(term))
-            sum_args.push(term);
+        term_args.push(keys[i]);
+        PTRef term = mkFun(get_sym_Num_TIMES(), term_args);
+        sum_args.push(term);
     }
+    if (sum_args.size() == 0) return getTerm_NumZero();
     if (sum_args.size() == 1) return sum_args[0];
     PTRef tr = mkFun(s_new, sum_args, msg);
-//    PTRef tr = mkFun(s_new, args_new, msg);
     return tr;
 }
 PTRef LALogic::mkNumTimes(const vec<PTRef>& tmp_args, char** msg)
@@ -629,8 +664,8 @@ PTRef LALogic::mkNumDiv(const vec<PTRef>& args, char** msg)
     SimplifyConstDiv simp(*this);
     vec<PTRef> args_new;
     SymRef s_new;
-    simp.simplify(get_sym_Num_DIV(), args, s_new, args_new, msg);
     assert(args.size() == 2);
+    simp.simplify(get_sym_Num_DIV(), args, s_new, args_new, msg);
     if (isNumDiv(s_new)) {
         assert((isNumTerm(args_new[0]) || isNumPlus(args_new[0])) && isConstant(args_new[1]));
         args_new[1] = mkConst(FastRational_inverse(getNumConst(args_new[1]))); //mkConst(1/getRealConst(args_new[1]));
@@ -656,11 +691,14 @@ PTRef LALogic::mkNumLeq(const vec<PTRef>& args_in, char** msg)
     } else {
         // Should be in the form that on one side there is a constant
         // and on the other there is a sum
-        PTRef tr_neg = mkNumNeg(args[0], msg);
-        vec<PTRef> sum_args;
-        sum_args.push(args[1]);
-        sum_args.push(tr_neg);
-        PTRef sum_tmp = mkNumPlus(sum_args, msg); // This gives us a collapsed version of the sum
+        PTRef sum_tmp = [&](){
+           if (args[0] == getTerm_NumZero()) {return args[1];}
+           if (args[1] == getTerm_NumZero()) {return mkNumNeg(args[0]);}
+           vec<PTRef> sum_args;
+           sum_args.push(args[1]);
+           sum_args.push(mkNumNeg(args[0]));
+           return mkNumPlus(sum_args);
+        }();
         if (isConstant(sum_tmp)) {
             args[0] = getTerm_NumZero();
             args[1] = sum_tmp;
@@ -794,8 +832,8 @@ PTRef LALogic::mkConst(SRef s, const char* name)
         // Store the value of the number as a real
         SymId id = sym_store[getPterm(ptr).symb()].getId();
         for (int i = numbers.size(); i <= id; i++)
-            numbers.push(NULL);
-        if (numbers[id] != NULL) { delete numbers[id]; }
+            numbers.push(nullptr);
+        if (numbers[id] != nullptr) { delete numbers[id]; }
         numbers[id] = new opensmt::Number(rat);
         free(rat);
         // Code to allow efficient constant detection.
@@ -823,29 +861,35 @@ void SimplifyConst::simplify(const SymRef& s, const vec<PTRef>& args, SymRef& s_
         if (l.isConstant(args[i]) || (l.isNumNeg(args[i]) && l.isConstant(l.getPterm(args[i])[0])))
             const_idx.push(i);
     }
-    if (const_idx.size() > 1) {
-        vec<PTRef> const_terms;
-        for (int i = 0; i < const_idx.size(); i++)
-            const_terms.push(args[const_idx[i]]);
-        PTRef tr = simplifyConstOp(const_terms, msg);
-        if (tr == PTRef_Undef) {
-            printf("%s\n", *msg);
-            assert(false);
-        }
-        int i, j, k;
-        for (i = j = k = 0; i < args.size() && k < const_terms.size(); i++) {
-            if (i != const_idx[k]) args_new_2.push(args[i]);
-            else k++;
-        }
-        // Copy also the rest
-        for (; i < args.size(); i++)
-            args_new_2.push(args[i]);
-        args_new_2.push(tr);
-    } else
-        args.copyTo(args_new_2);
-    constSimplify(s, args_new_2, s_new, args_new);
-    // A single argument for the operator, and the operator is identity
-    // in that case
+    if (const_idx.size() == 0) {
+        s_new = s;
+        args.copyTo(args_new);
+    }
+    else {
+        if (const_idx.size() > 1) {
+            vec<PTRef> const_terms;
+            for (int i = 0; i < const_idx.size(); i++)
+                const_terms.push(args[const_idx[i]]);
+            PTRef tr = simplifyConstOp(const_terms);
+            if (tr == PTRef_Undef) {
+                printf("%s\n", *msg);
+                assert(false);
+            }
+            int i, j, k;
+            for (i = j = k = 0; i < args.size() && k < const_terms.size(); i++) {
+                if (i != const_idx[k]) args_new_2.push(args[i]);
+                else k++;
+            }
+            // Copy also the rest
+            for (; i < args.size(); i++)
+                args_new_2.push(args[i]);
+            args_new_2.push(tr);
+        } else
+            args.copyTo(args_new_2);
+        constSimplify(s, args_new_2, s_new, args_new);
+    }
+//    // A single argument for the operator, and the operator is identity
+//    // in that case
     if (args_new.size() == 1 && (l.isNumPlus(s_new) || l.isNumTimes(s_new) || l.isNumDiv(s_new))) {
         PTRef ch_tr = args_new[0];
         args_new.clear();
@@ -854,6 +898,7 @@ void SimplifyConst::simplify(const SymRef& s, const vec<PTRef>& args, SymRef& s_
             args_new.push(l.getPterm(ch_tr)[i]);
     }
 }
+
 void SimplifyConstSum::constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const
 {
     assert(terms_new.size() == 0);
@@ -944,9 +989,8 @@ void SimplifyConstDiv::constSimplify(const SymRef& s, const vec<PTRef>& terms, S
 // Return a term corresponding to the operation applied to the constant
 // terms.  The list may contain terms of the form (* -1 a) for constant
 // a.
-PTRef SimplifyConst::simplifyConstOp(const vec<PTRef>& terms, char** msg)
+PTRef SimplifyConst::simplifyConstOp(const vec<PTRef> & terms)
 {
-    opensmt::Number s = getIdOp();
     if (terms.size() == 0) {
         opensmt::Number s = getIdOp();
         return l.mkConst(l.getSort_num(), s.get_str().c_str());

@@ -76,12 +76,6 @@ class MainSolver
     int compress_buf(const int* buf_in, int*& buf_out, int sz, int& sz_out) const;
     int decompress_buf(int* buf_in, int*& buf_out, int sz, int& sz_out) const;
 
-    class pi {
-      public:
-        PTRef x;
-        bool done;
-        pi(PTRef x_) : x(x_), done(false) {}
-    };
     Logic&              logic;
     SMTConfig&          config;
     THandler&           thandler;
@@ -93,12 +87,14 @@ class MainSolver
     vec<PFRef>          formulas;
 
     opensmt::OSMTTimeVal query_timer; // How much time we spend solving.
-    char*          solver_name; // Name for the solver
+    std::string          solver_name; // Name for the solver
     int            simplified_until; // The formulas have been simplified up to and including formulas[simplified_until-1].
     int            check_called;     // A counter on how many times check was called.
     PTRef          prev_query;       // The previously executed query
     PTRef          curr_query;       // The current query
     sstat          status;           // The status of the last solver call (initially s_Undef)
+    unsigned int   inserted_formulas_count = 0; // Number of formulas that has been inserted to this solver
+
 
     bool          binary_init; // Was the formula loaded from .osmt2
 
@@ -129,25 +125,25 @@ class MainSolver
   public:
     MainSolver(THandler& thandler, SMTConfig& c, SimpSMTSolver *s, const char* name)
         : logic(thandler.getLogic())
-        , tmap(thandler.getTMap())
         , config(c)
-        , status(s_Undef)
         , thandler(thandler)
         , pfstore(getTheory().pfstore)
+        , tmap(thandler.getTMap())
         , smt_solver(s)
         , ts( config
             , getTheory()
             , tmap
             , thandler
             , *s )
-        , binary_init(false)
-        , root_instance(logic.getTerm_true())
+        , solver_name {name}
         , simplified_until(0)
         , check_called(0)
         , prev_query(PTRef_Undef)
         , curr_query(PTRef_Undef)
+        , status(s_Undef)
+        , binary_init(false)
+        , root_instance(logic.getTerm_true())
     {
-        solver_name = strdup(name);
         formulas.push(pfstore.alloc());
         PushFrame& last = pfstore[formulas.last()];
         last.push(logic.getTerm_true());
@@ -166,14 +162,6 @@ class MainSolver
     sstat     insertFormula(PTRef root, char** msg);
     int       simplifiedUntil() const { return simplified_until; }
 
-#ifdef PRODUCE_PROOF
-    sstat     insertFormula(PTRef root, unsigned int n, char** msg) { // Insert formula with given partition index;
-        assignPartition(n, root);
-        return insertFormula(root, msg);
-    }
-    void      assignPartition(unsigned int n, PTRef tr); // Assign partition numbers to individual PTRefs
-    void      computePartitionMasks(int from, int to); // Extend the partitions as masks to the whole PTRef structure.  `From' and `to' refer to indices in the formulas vector.
-#endif
     void      initialize() { ts.solver.initialize(); ts.initialize(); }
 
     // Simplify formulas from formulas[from] onwards until all are simplified or the instance is detected unsatisfiable.  the index up to which simplification was done is stored in `to'.

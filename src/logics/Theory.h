@@ -119,6 +119,7 @@ private:
     int id_counter;
 public:
     PushFrameAllocator() : id_counter(FrameId_bottom.id) {}
+    PushFrameAllocator(uint32_t init_capacity) : RegionAllocator<uint32_t>(init_capacity), id_counter(FrameId_bottom.id) {}
     void moveTo(PushFrameAllocator& to);/* {
         to.id_counter = id_counter;
         RegionAllocator<uint32_t>::moveTo(to); }*/
@@ -145,7 +146,7 @@ class Theory
     Theory(SMTConfig &c) : config(c) {}
     void setSubstitutions(Map<PTRef,PtAsgn,PTRefHash>& substs);// { getTSolverHandler().setSubstitutions(substs); }
   public:
-    PushFrameAllocator      pfstore;
+    PushFrameAllocator      pfstore {1024};
     virtual TermMapper     &getTmap() = 0;
     const Lit               findLit(PTRef ptr); // Bind the term to a Boolean variable
     virtual Logic          &getLogic()              = 0;
