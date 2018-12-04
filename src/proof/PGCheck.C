@@ -75,7 +75,7 @@ void ProofGraph::verifyLeavesInconsistency( )
 			dump_out << "(and" << endl;
 			added++;
 		}
-		solver.printSMTClause( dump_out, getNode(proofleaves[ i ])->getClause(), false );
+		printClause( dump_out, getNode(proofleaves[ i ])->getClause());
 		dump_out << endl;
 	}
 	if(added > 0) dump_out << "))" << endl;

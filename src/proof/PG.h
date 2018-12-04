@@ -26,13 +26,16 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 #include "Proof.h"
 #include <map>
 #include <new>
+#include "PTRef.h"
+#include "Theory.h"
 
 //using namespace Minisat;
 using namespace opensmt;
 
 class CoreSMTSolver;
 class Proof;
-
+class Logic;
+class SMTConfig;
 
 typedef unsigned clauseid_t;
 
@@ -391,6 +394,7 @@ public:
     void              topolSortingTopDown   ( vector< clauseid_t > & );
     void              topolSortingBotUp     ( vector< clauseid_t > & );
     void              printProofNode        ( clauseid_t );
+    void              printClause           (std::ostream&, std::vector<Lit> const& lits);
     void              printClause           ( ProofNode * );
     void              printClause           ( ProofNode *, ostream & );
     inline ProofNode* getNode               ( clauseid_t id ) { assert( id<graph.size() ); return graph[ id ]; }

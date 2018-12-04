@@ -26,11 +26,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef PROOF2_H
 #define PROOF2_H
 
-#include "Global.h"
-#include "CoreSMTSolver.h"
-#include "THandler.h"
 #include "SolverTypes.h"
-#include "TheoryInterpolator.h"
+#include <vector>
+#include <unordered_map>
+#include <iosfwd>
 
 //=================================================================================================
 
@@ -66,7 +65,6 @@ class Proof
     std::unordered_map< CRef, ProofDer>     clause_to_proof_der;
     CRef                        last_added;
     ClauseAllocator&            cl_al;
-    map< CRef, TheoryInterpolator* >  clause_to_itpr;
 
 public:
 
@@ -74,9 +72,6 @@ public:
     ~Proof( ) = default;
 
     void addRoot    ( CRef, clause_type );              // Adds a new root clause
-    void setTheoryInterpolator(CRef, TheoryInterpolator*);
-    TheoryInterpolator* getTheoryInterpolator(CRef);
-    bool isTheoryInterpolator(CRef);
     void beginChain ( CRef );                             // Beginnig of resolution chain
     void resolve    ( CRef, Var );                        // Resolve
     void endChain   ( CRef );                             // Last chain refers to clause
@@ -91,7 +86,7 @@ public:
 
     inline bool     checkState  ( ) { return !begun; }        // Stupid check
 
-    void print( ostream &, CoreSMTSolver &, THandler & );     // Print proof in SMT-LIB format
+    void print( std::ostream &, CoreSMTSolver &, THandler & );     // Print proof in SMT-LIB format
 
     std::unordered_map< CRef, ProofDer> & getProof( ) { return clause_to_proof_der; }
 };

@@ -136,26 +136,6 @@ void Proof::addRoot( CRef c, clause_type t )
   last_added = c;
 }
 
-bool
-Proof::isTheoryInterpolator(CRef cl)
-{
-    return clause_to_itpr.find(cl) != clause_to_itpr.end();
-}
-
-TheoryInterpolator*
-Proof::getTheoryInterpolator(CRef cl)
-{
-    assert(clause_to_itpr.find(cl) != clause_to_itpr.end());
-    return clause_to_itpr[cl];
-}
-
-void
-Proof::setTheoryInterpolator(CRef cl, TheoryInterpolator* itpr)
-{
-    assert(clause_to_itpr.find(cl) == clause_to_itpr.end());
-    clause_to_itpr[cl] = itpr;
-}
-
 //
 // This is the beginning of a derivation chain.
 //

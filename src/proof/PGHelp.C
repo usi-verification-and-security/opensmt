@@ -258,8 +258,8 @@ bool ProofGraph::mergeClauses(vector<Lit>& A, vector<Lit>& B, vector<Lit>& resol
     }
     if( resolv.size() < ressize )
     {
-        solver.printSMTClause( cerr, A ); cerr << endl;
-        solver.printSMTClause( cerr, B ); cerr << endl;
+        printClause( cerr, A ); cerr << endl;
+        printClause( cerr, B ); cerr << endl;
     }
     assert( resolv.size() >= ressize );
     resolv.resize( ressize );

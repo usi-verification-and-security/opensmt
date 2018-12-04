@@ -19,6 +19,7 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 #ifdef PRODUCE_PROOF
 #include "PG.h"
+#include "CoreSMTSolver.h"
 
 // Prints resolution proof graph to a dot file,
 // with proper colors
@@ -164,6 +165,10 @@ void ProofGraph::printClause(ProofNode* n, ostream & os)
 		if(sign(cl[k])) os << "-";
 		//FIXME os << thandler.varToEnode(var(cl[k])) << " ";
 	}
+}
+
+void ProofGraph::printClause(std::ostream & out, std::vector<Lit> const & lits) {
+    this->solver.printSMTClause(out, lits);
 }
 
 void ProofGraph::printProofNode(clauseid_t vid)

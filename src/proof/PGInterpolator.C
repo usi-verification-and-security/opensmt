@@ -538,8 +538,9 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
                 partial_interp = compInterpLabelingOriginalSimple ( n, A_mask );
 #endif
             }
-            else
+            else // Theory lemma
             {
+                assert(n->getType() == clause_type::CLA_THEORY);
                 vec<DedElem> stub;
                 for(int i = 0; i < theory.getDeductionVec().size(); ++i){
                     stub.push({theory.getDeductionVec()[i].deducedBy, l_Undef});

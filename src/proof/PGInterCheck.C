@@ -316,7 +316,7 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
 				dump_out << "(and" << endl;
 				A_added++;
 			}
-			solver.printSMTClause( dump_out, n->getClause() );
+			printClause( dump_out, n->getClause() );
 			dump_out << endl;
 		}
 	}
@@ -430,7 +430,7 @@ dump_out << varsDecl << endl;
 				dump_out << "(and" << endl;
 				B_added++;
 			}
-			solver.printSMTClause( dump_out, n->getClause() );
+			printClause( dump_out, n->getClause() );
 			dump_out << endl;
 		}
 	}
@@ -571,7 +571,7 @@ bool ProofGraph::verifyPathInterpolantsFromLeaves ( vec< PTRef > & interps)
 			int in_j = opensmt::tstbit( part, j+1 );
 			if ( in_j )
 			{
-				solver.printSMTClause( dump_out, n->getClause() );
+				printClause( dump_out, n->getClause() );
 				dump_out << endl;
 			}
 		}
@@ -998,7 +998,7 @@ bool ProofGraph::verifyTreeInterpolantsFromLeaves( opensmt::InterpolationTree* i
 			int in_jp = opensmt::tstbit( part, jp );
 			if ( in_jp )
 			{
-				solver.printSMTClause( dump_out, n->getClause() );
+				printClause( dump_out, n->getClause() );
 				dump_out << endl;
 			}
 		}
