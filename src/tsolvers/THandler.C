@@ -53,7 +53,7 @@ void THandler::backtrack(int lev)
 }
 
 // Push newly found literals from trail to the solvers
-bool THandler::assertLits(vec<Lit>& trail)
+bool THandler::assertLits(const vec<Lit> & trail)
 {
     bool res = true;
 

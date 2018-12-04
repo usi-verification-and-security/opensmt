@@ -47,6 +47,20 @@ ostream& operator<< (ostream &out, RuleContext &ra)
 	return out;
 }
 
+void ProofGraph::initTSolver() {
+    assert(!this->leaves_ids.empty());
+    for (auto id : this->leaves_ids) {
+        ProofNode * node = getNode(id);
+        assert(node->getType() == clause_type::CLA_ORIG || node->getType() == clause_type::CLA_THEORY);
+        if (node->getType() == clause_type::CLA_ORIG) { continue; }
+        const auto & clause = this->getNode(id)->getClause();
+        for (auto const & lit : clause) {
+            Var v = var(lit);
+            assert(thandler->isTheoryTerm(v));
+            thandler->declareAtom(this->varToPTRef(v));
+        }
+    }
+}
 
 // Resolution proof builder
 void ProofGraph::buildProofGraph( int nVars )

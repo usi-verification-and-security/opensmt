@@ -28,7 +28,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define THANDLER_H
 
 #include "TermMapper.h"
-#include "Global.h"
 #include "TSolverHandler.h"
 #include "Theory.h"
 #include "TSolver.h"
@@ -89,7 +88,7 @@ public:
 
     void    computeModel      () ;//{ getSolverHandler().computeModel(); } // Computes a model in the solver if necessary
     void    clearModel        ();// { /*getSolverHandler().clearModel();*/ }   // Clear the model if necessary
-    bool    assertLits        (vec<Lit>&);             // Give to the TSolvers the newly added literals on the trail
+    bool    assertLits        (const vec<Lit> &);             // Give to the TSolvers the newly added literals on the trail
     bool    assertLit         (PtAsgn pta);// { return getSolverHandler().assertLit(pta); } // Push the assignment to all theory solvers
     void    declareAtoms      (PTRef tr) { getSolverHandler().declareAtoms(tr); }
     void    declareAtom       (PTRef tr) { getSolverHandler().declareAtom(tr); }

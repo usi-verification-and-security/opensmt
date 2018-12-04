@@ -541,16 +541,12 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
             else // Theory lemma
             {
                 assert(n->getType() == clause_type::CLA_THEORY);
-                vec<DedElem> stub;
-                for(int i = 0; i < theory.getDeductionVec().size(); ++i){
-                    stub.push({theory.getDeductionVec()[i].deducedBy, l_Undef});
-                }
-                TSolverHandler* tmp = theory.getTSolverHandler_new(stub);
-                vector<Lit> newvec;
+                clearTSolver();
+                vec<Lit> newvec;
                 vector<Lit> &oldvec = n->getClause();
 
                 for (int i = 0; i < oldvec.size(); ++i)
-                    newvec.push_back (~oldvec[i]);
+                    newvec.push(~oldvec[i]);
 
 #ifdef ITP_DEBUG
                 cout << "; ASSERTING LITS" << endl;
@@ -563,18 +559,9 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
                 PTRef tr_and = logic.mkAnd(tr_vec);
                 printf("%s\n", logic.printTerm(tr_and));
 #endif
-                for (auto const & lit : newvec){
-                    PTRef pt_r = varToPTRef(var(lit));
-                    assert(logic_.isTheoryTerm(pt_r));
-                    tmp->declareAtom(pt_r);
-                }
-                bool res = true;
-                for (auto const & lit : newvec){
-                    PTRef pt_r = varToPTRef(var(lit));
-                    res = tmp->assertLit(PtAsgn(pt_r, sign(lit) ? l_False : l_True));
-                }
+                bool res = this->assertLiteralsToTSolver(newvec);
                 if (res) {
-                    TRes tres = tmp->check(true);
+                    TRes tres = thandler->check(true);
                     res = (tres != TRes::UNSAT);
                 }
                 assert(!res);
@@ -586,8 +573,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
                     ptref2label[varToPTRef(var(cl[i]))] = getVarColor(n, var(cl[i]));
                 }
 
-                partial_interp = tmp->getInterpolant (A_mask, &ptref2label);
-                delete tmp;
+                partial_interp = thandler->getInterpolant (A_mask, &ptref2label);
             }
 
             assert ( partial_interp != PTRef_Undef );
@@ -1548,6 +1534,16 @@ void ProofGraph::setLabelingFromMap ( ProofNode *n, unsigned num_config )
         else opensmt_error ( "Variable has no class" );
     }
 }
+
+// HELPER methods for theory solver
+void ProofGraph::clearTSolver() {
+    thandler->backtrack(-1);
+}
+
+bool ProofGraph::assertLiteralsToTSolver(vec<Lit> const & vec) {
+    return thandler->assertLits(vec);
+}
+
 #endif
 
 #endif

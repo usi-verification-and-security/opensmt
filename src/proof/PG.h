@@ -28,6 +28,7 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 #include <new>
 #include "PTRef.h"
 #include "Theory.h"
+#include "THandler.h"
 
 //using namespace Minisat;
 using namespace opensmt;
@@ -279,6 +280,7 @@ public:
 : config   ( c )
 , solver   ( s )
 , theory ( th )
+, thandler {new THandler(c, th)}
 , logic_ ( th.getLogic() )
 , graph_   ( new vector<ProofNode*> )
 , graph    ( *graph_ )
@@ -290,6 +292,7 @@ public:
 		mpz_init(visited_1);
 		mpz_init(visited_2);
 		buildProofGraph( n );
+		initTSolver();
 }
 
 	~ProofGraph()
@@ -528,6 +531,10 @@ private:
     inline Var PTRefToVar(PTRef ref) { return theory.getTmap().getVar(ref); }
     inline PTRef varToPTRef(Var v) { return theory.getTmap().varToPTRef(v); }
 
+    void initTSolver();
+    void clearTSolver();
+    bool assertLiteralsToTSolver(vec<Lit> const&);
+
     //NOTE added for experimentation
     Var 				  pred_to_push;
 
@@ -537,6 +544,7 @@ private:
     //Egraph &              egraph;
     Proof &				  proof;
     Logic &               logic_;
+    std::unique_ptr<THandler> thandler;
 
     vector< ProofNode * >*         graph_;                       // Graph
     vector< ProofNode * >&         graph;
