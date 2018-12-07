@@ -312,8 +312,6 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
     if ( v != 0 && v != 1 )
         undo_stack.push(undo_stack_el(undo_stack_el::NEWVAR, v));
 
-    n_occs.push(0);
-
     // Add the deduction entry for this variable
     theory_handler.pushDeduction();
 
@@ -347,18 +345,11 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, std::pair<CRef, CRe
     {
         if (value(ps[i]) == l_True || ps[i] == ~p)
         {
-            // decrease the counts of those encountered so far
-            for (int k = 0; k < j; k++)
-            {
-                n_occs[var(ps[k])] -= 1;
-                assert(n_occs[var(ps[k])] >= 0);
-            }
             return true;
         }
         else if (value(ps[i]) != l_False && ps[i] != p)
         {
             ps[j++] = p = ps[i];
-            n_occs[var(ps[i])] += 1;
         }
 #ifdef PRODUCE_PROOF
         else if ( value(ps[i]) == l_False )
@@ -1763,7 +1754,6 @@ void CoreSMTSolver::popBacktrackPoint()
         {
             CRef cr = op.getClause();
             detachClause(cr);
-            detached.push(cr);
         }
 #ifdef PRODUCE_PROOF
         else if (op.getType() == undo_stack_el::NEWPROOF)

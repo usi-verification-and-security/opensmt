@@ -442,7 +442,6 @@ public:
     void     printSMTClause   ( ostream &, const C& );
     void     printSMTClause   ( ostream &, vec< Lit > &, bool = false );
     void     printSMTClause   ( ostream &, vector< Lit > &, bool = false );
-    vec<CRef> detached;
 
     // Added Code
     //=================================================================================================
@@ -692,8 +691,6 @@ protected:
     vec<ExVal>          LAexacts;         // The current exact values
     vec<char>           polarity;         // The preferred polarity of each variable.
     vec<char>           decision;         // Declares if a variable is eligible for selection in the decision heuristic.
-public:
-    vec<int>            n_occs;           // Number of occurrences of a variable in clauses
 protected:
 #ifdef PEDANTIC_DEBUG
 public:
