@@ -1469,7 +1469,7 @@ BitBlaster::bbDistinct(PTRef tr)
 bool
 BitBlaster::addClause(vec< Lit > & c, PTRef tr)
 {
-    return solverP.addClause(c);
+    return solverP.addOriginalClause(c);
 }
 
 //=============================================================================

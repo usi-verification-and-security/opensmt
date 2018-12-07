@@ -188,14 +188,14 @@ skip_theory_preproc:
 //=================================================================================================
 // Added code
 
-bool SimpSMTSolver::addSMTClause_(const vec<Lit>& smt_clause)
+bool SimpSMTSolver::addOriginalSMTClause(const vec<Lit> & smt_clause)
 {
     std::pair<CRef, CRef> fake;
-    return addSMTClause_(smt_clause, fake);
+    return addOriginalSMTClause(smt_clause, fake);
 }
 
 
-bool SimpSMTSolver::addSMTClause_(const vec<Lit> & smt_clause, std::pair<CRef, CRef> & inOutCRefs)
+bool SimpSMTSolver::addOriginalSMTClause(const vec<Lit> & smt_clause, std::pair<CRef, CRef> & inOutCRefs)
 {
     inOutCRefs = std::make_pair(CRef_Undef, CRef_Undef);
     assert( config.sat_preprocess_theory == 0 );
@@ -203,11 +203,9 @@ bool SimpSMTSolver::addSMTClause_(const vec<Lit> & smt_clause, std::pair<CRef, C
     // Check that the variables exist in the solver
     for (int i = 0; i < smt_clause.size(); i++) {
         Lit l = smt_clause[i];
-
-        PTRef tr = theory_handler.getTMap().varToPTRef(var(l));
-        Pterm& t = theory_handler.getLogic().getPterm(tr);
-        Var v = t.getVar();
-        assert(v == var(l));
+        Var v = var(l);
+        PTRef tr = theory_handler.getTMap().varToPTRef(v);
+        assert(v == theory_handler.getLogic().getPterm(tr).getVar());
         addVar(v);
         if (theory_handler.getLogic().isTheoryTerm(tr) || theory_handler.getTMap().isFrozen(v))
             setFrozen(v, true);
@@ -226,7 +224,7 @@ bool SimpSMTSolver::addSMTClause_(const vec<Lit> & smt_clause, std::pair<CRef, C
         cerr << "XXX skipped handling of unary theory literal?" << endl;
     }
     int nclauses = clauses.size();
-    if (!CoreSMTSolver::addClause_(smt_clause, inOutCRefs))
+    if (!CoreSMTSolver::addOriginalClause_(smt_clause, inOutCRefs))
         return false;
 
     if (use_simplification && clauses.size() == nclauses + 1)
@@ -636,7 +634,7 @@ bool SimpSMTSolver::eliminateVar(Var v)
     vec<Lit>& resolvent = add_tmp;
     for (int i = 0; i < pos.size(); i++)
         for (int j = 0; j < neg.size(); j++)
-            if (merge(ca[pos[i]], ca[neg[j]], v, resolvent) && !addSMTClause_(resolvent))
+            if (merge(ca[pos[i]], ca[neg[j]], v, resolvent) && !addOriginalSMTClause(resolvent))
                 return false;
 
     // Free occurs list for this variable:
@@ -676,7 +674,7 @@ bool SimpSMTSolver::substitute(Var v, Lit x)
 
         removeClause(cls[i]);
 
-        if (!addSMTClause_(subst_clause))
+        if (!addOriginalSMTClause(subst_clause))
             return ok = false;
     }
 

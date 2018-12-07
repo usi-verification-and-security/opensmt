@@ -134,7 +134,7 @@ class DimacsParser {
                 skipLine(in);
             else
                 readClause(in, S, lits),
-                S.addClause(lits);
+                S.addOriginalClause(lits);
         }
     }
 };

@@ -419,7 +419,7 @@ bool Cnfizer::addClause(const vec<Lit> & c_in)
 #endif
 #ifdef PRODUCE_PROOF
     std::pair<CRef,CRef> iorefs = std::make_pair(CRef_Undef,CRef_Undef);
-    bool res = solver.addSMTClause_(c, iorefs);
+    bool res = solver.addOriginalSMTClause(c, iorefs);
     CRef ref = iorefs.first;
     if (ref != CRef_Undef) {
         ipartitions_t parts = 0;
@@ -431,7 +431,7 @@ bool Cnfizer::addClause(const vec<Lit> & c_in)
         }
     }
 #else
-    bool res = solver.addSMTClause (c);
+    bool res = solver.addOriginalSMTClause(c);
 #endif
     return res;
 }

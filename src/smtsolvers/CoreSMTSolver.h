@@ -339,9 +339,13 @@ public:
 //=================================================================================================
 // Solver -- the main class:
 
-class CoreSMTSolver : public SMTSolver
+class CoreSMTSolver
 {
+protected:
+    SMTConfig & config;         // Stores Config
+    THandler  & theory_handler; // Handles theory
 public:
+    bool stop = false;
 
     // Constructor/Destructor:
     //
@@ -353,20 +357,18 @@ public:
     // Problem specification:
     //
 protected:
-    virtual void  addVar    (Var v); // Ensure that var v exists in the solver
-    Var           newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
+    void  addVar    (Var v); // Ensure that var v exists in the solver
+    virtual Var newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
 public:
-    bool    addClause (const vec<Lit> & ps);
+    bool    addOriginalClause(const vec<Lit> & ps);
     bool    addEmptyClause();                                   // Add the empty clause, making the solver contradictory.
-    bool    addClause (Lit p);                                  // Add a unit clause to the solver.
-    bool    addClause (Lit p, Lit q);                           // Add a binary clause to the solver.
-    bool    addClause (Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
-    virtual bool addSMTClause_(const vec<Lit>&) = 0;            // For adding SMT clauses within the solver
+    bool    addOriginalClause(Lit p);                                  // Add a unit clause to the solver.
+    bool    addOriginalClause(Lit p, Lit q);                           // Add a binary clause to the solver.
+    bool    addOriginalClause(Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
 protected:
-    bool    addClause_(const vec<Lit>& ps);                     // Add a clause to the solver
-    bool    addClause_(const vec<Lit> & ps, pair<CRef, CRef> & cr);           // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.  Write the new clause to cr
+    bool    addOriginalClause_(const vec<Lit> & _ps);                     // Add a clause to the solver
+    bool    addOriginalClause_(const vec<Lit> & _ps, pair<CRef, CRef> & inOutCRefs);           // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.  Write the new clause to cr
 public:
-    virtual bool addSMTClause_(const vec<Lit> &, pair<CRef, CRef> & inOutCRefs) = 0;        // For adding SMT clauses within the solver, returning the clause ref
     // Solving:
     //
     bool    simplify     ();                        // Removes already satisfied clauses.
@@ -1236,35 +1238,35 @@ inline bool     CoreSMTSolver::enqueue         (Lit p, CRef from)
     return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, from), true);
 }
 
-inline bool     CoreSMTSolver::addClause       (const vec<Lit>& ps)
+inline bool     CoreSMTSolver::addOriginalClause(const vec<Lit> & ps)
 {
-    return addClause_(ps);
+    return addOriginalClause_(ps);
 }
 inline bool     CoreSMTSolver::addEmptyClause  ()
 {
     add_tmp.clear();
-    return addClause_(add_tmp);
+    return addOriginalClause_(add_tmp);
 }
-inline bool     CoreSMTSolver::addClause       (Lit p)
+inline bool     CoreSMTSolver::addOriginalClause(Lit p)
 {
     add_tmp.clear();
     add_tmp.push(p);
-    return addClause_(add_tmp);
+    return addOriginalClause_(add_tmp);
 }
-inline bool     CoreSMTSolver::addClause       (Lit p, Lit q)
+inline bool     CoreSMTSolver::addOriginalClause(Lit p, Lit q)
 {
     add_tmp.clear();
     add_tmp.push(p);
     add_tmp.push(q);
-    return addClause_(add_tmp);
+    return addOriginalClause_(add_tmp);
 }
-inline bool     CoreSMTSolver::addClause       (Lit p, Lit q, Lit r)
+inline bool     CoreSMTSolver::addOriginalClause(Lit p, Lit q, Lit r)
 {
     add_tmp.clear();
     add_tmp.push(p);
     add_tmp.push(q);
     add_tmp.push(r);
-    return addClause_(add_tmp);
+    return addOriginalClause_(add_tmp);
 }
 
 

@@ -68,7 +68,9 @@ namespace opensmt
 // Constructor/Destructor:
 
 CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
-    : SMTSolver        (c, t)
+    :
+    config (c)
+    , theory_handler (t)
     , verbosity        (c.verbosity())
     // Parameters: (formerly in 'SearchParams')
     , var_decay        (c.sat_var_decay())
@@ -319,14 +321,15 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
 }
 
 
-bool CoreSMTSolver::addClause_(const vec<Lit>& _ps)
+bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps)
 {
     std::pair<CRef, CRef> fake;
-    return addClause_(_ps, fake);
+    return addOriginalClause_(_ps, fake);
 }
 
-bool CoreSMTSolver::addClause_(const vec<Lit> & _ps, std::pair<CRef, CRef> & inOutCRefs)
+bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, std::pair<CRef, CRef> & inOutCRefs)
 {
+    assert(decisionLevel() == 0);
     inOutCRefs = std::make_pair(CRef_Undef, CRef_Undef);
     if (!ok) return false;
     vec<Lit> ps;
@@ -342,7 +345,7 @@ bool CoreSMTSolver::addClause_(const vec<Lit> & _ps, std::pair<CRef, CRef> & inO
     int i, j;
     for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
     {
-        if ((value(ps[i]) == l_True && vardata[var(ps[i])].level == 0) || ps[i] == ~p)
+        if (value(ps[i]) == l_True || ps[i] == ~p)
         {
             // decrease the counts of those encountered so far
             for (int k = 0; k < j; k++)
@@ -352,7 +355,7 @@ bool CoreSMTSolver::addClause_(const vec<Lit> & _ps, std::pair<CRef, CRef> & inO
             }
             return true;
         }
-        else if ((value(ps[i]) != l_False || vardata[var(ps[i])].level > 0) && ps[i] != p)
+        else if (value(ps[i]) != l_False && ps[i] != p)
         {
             ps[j++] = p = ps[i];
             n_occs[var(ps[i])] += 1;
@@ -399,7 +402,6 @@ bool CoreSMTSolver::addClause_(const vec<Lit> & _ps, std::pair<CRef, CRef> & inO
 
     if (ps.size() == 1)
     {
-        assert(decisionLevel() == 0);
         assert(value(ps[0]) == l_Undef);
 #ifdef PRODUCE_PROOF
         assert( res != CRef_Undef );
@@ -3136,7 +3138,7 @@ bool CoreSMTSolver::createSplit_scatter(bool last)
 
 bool CoreSMTSolver::excludeAssumptions(vec<Lit>& neg_constrs)
 {
-    addClause(neg_constrs);
+    addOriginalClause(neg_constrs);
     simplify();
     return ok;
 }
