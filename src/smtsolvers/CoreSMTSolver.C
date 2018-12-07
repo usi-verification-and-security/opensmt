@@ -69,7 +69,6 @@ namespace opensmt
 
 CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     : SMTSolver        (c, t)
-    , axioms_checked   ( 0 )
     , verbosity        (c.verbosity())
     // Parameters: (formerly in 'SearchParams')
     , var_decay        (c.sat_var_decay())
@@ -230,13 +229,11 @@ CoreSMTSolver::~CoreSMTSolver()
     for (int i = 0; i < clauses.size(); i++) if(clauses[i] != CRef_Undef) ca.free(clauses[i]);
     for (int i = 0; i < pleaves.size(); i++) if(pleaves[i] != CRef_Undef) ca.free(pleaves[i]);
     for (int i = 0; i < learnts.size(); i++) if(learnts[i] != CRef_Undef) ca.free(learnts[i]);
-    for (int i = 0; i < axioms.size(); i++) if(axioms[i] != CRef_Undef) ca.free(axioms[i]);
     for (int i = 0; i < tleaves.size(); i++) if(tleaves[i] != CRef_Undef) ca.free(tleaves[i]);
 
 #else
     for (int i = 0; i < learnts.size(); i++) ca.free(learnts[i]);
     for (int i = 0; i < clauses.size(); i++) ca.free(clauses[i]);
-    for (int i = 0; i < axioms .size(); i++) ca.free(axioms [i]);
 #endif
 
     for (int i = 0; i < tmp_reas.size(); i++) ca.free(tmp_reas[i]);
@@ -1765,13 +1762,6 @@ void CoreSMTSolver::popBacktrackPoint()
             CRef cr = op.getClause();
             detachClause(cr);
             detached.push(cr);
-        }
-        else if (op.getType() == undo_stack_el::NEWAXIOM)
-        {
-            CRef cr = op.getClause();
-            assert(axioms.last() == cr);
-            axioms.pop();
-            removeClause(cr);
         }
 #ifdef PRODUCE_PROOF
         else if (op.getType() == undo_stack_el::NEWPROOF)

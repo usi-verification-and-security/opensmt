@@ -373,58 +373,6 @@ TPropRes CoreSMTSolver::checkTheory(bool complete, int& conflictC)
     return TPropRes::Decide;
 }
 
-//
-// Functions for lemma on demand modulo equality
-//
-int CoreSMTSolver::checkAxioms( )
-{
-    for ( ; axioms_checked < axioms.size( )
-            ; axioms_checked ++ )
-    {
-        CRef ax_ = axioms[axioms_checked];
-        Clause& ax = ca[ax_];
-
-        int assigned_false = 0;
-        Lit unassigned = lit_Undef;
-        int max_decision_level = -1;
-
-        for ( int i = 0 ; i < ax.size( ) ; i ++ )
-        {
-            if ( value( ax[ i ] ) == l_True )
-                continue;
-
-            if ( value( ax[ i ] ) == l_False )
-            {
-                assigned_false ++;
-                if ( level( var(ax[i]) ) > max_decision_level )
-                    max_decision_level = level( var(ax[i]) );
-            }
-            else
-                unassigned = ax[ i ];
-        }
-        // All literals in lemma are false
-        if ( assigned_false == ax.size( ) )
-            return analyzeUnsatLemma( ax_ );
-        // All literals but one are false: time for BCP
-        if ( unassigned != lit_Undef
-                && assigned_false == ax.size( ) - 1 )
-        {
-            // Determine the lowest decision level that
-            // causes the propagation
-            if ( decisionLevel( ) > max_decision_level )
-                cancelUntil( max_decision_level );
-
-            axioms_checked ++;
-            uncheckedEnqueue( unassigned, ax_ );
-            return 2;
-        }
-    }
-
-    assert( axioms_checked == axioms.size( ) );
-
-    return 1;
-}
-
 int CoreSMTSolver::analyzeUnsatLemma(CRef confl)
 {
     assert(confl != CRef_Undef);

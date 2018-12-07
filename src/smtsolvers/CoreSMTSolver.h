@@ -423,29 +423,13 @@ public:
     void    checkGarbage(double gf);
     void    checkGarbage();
 
-    //=================================================================================================
-    // Added Code
-    /*
-        void addSMTAxiomClause  ( vector< Enode * > &
-    #ifdef PRODUCE_PROOF
-    	                    , Enode *
-    #endif
-    	                    );
-
-    #ifdef PRODUCE_PROOF
-        Enode * computeAxiomInterp ( vector< Enode * > & );
-    #endif
-
-        void addNewAtom         ( Enode * );
-    */
-    vec<CRef>                axioms;         // List of axioms produced with splitting on demand
-    int                      axioms_checked; // Id of next axiom to be checked
 
 #ifdef PRODUCE_PROOF
     set< int >               axioms_ids;     // Set of ids for lemmas on demand
 #endif
 
     // External support incremental and backtrackable APIs
+    // MB: This is used (and needed) by BitBlaster; can be removed if BitBlaster is re-worked
     void        pushBacktrackPoint ( );
     void        popBacktrackPoint  ( );
     void        reset              ( );
@@ -538,15 +522,15 @@ protected:
 
 //=================================================================================================
     // Added Code
-    struct watcher_lt
-    {
-        const ClauseAllocator& ca;
-        watcher_lt(const ClauseAllocator& ca_) : ca(ca_) {}
-        bool operator () (const Watcher& x, const Watcher& y)
-        {
-            return ca[x.cref].size() < ca[y.cref].size();
-        }
-    };
+//    struct watcher_lt
+//    {
+//        const ClauseAllocator& ca;
+//        watcher_lt(const ClauseAllocator& ca_) : ca(ca_) {}
+//        bool operator () (const Watcher& x, const Watcher& y)
+//        {
+//            return ca[x.cref].size() < ca[y.cref].size();
+//        }
+//    };
     // Added Code
     //=================================================================================================
 
@@ -905,11 +889,6 @@ protected:
     bool     withinBudget     ()      const;
 
 
-// Debug:
-//    void     printLit         (Lit l);
-//    template<class C>
-//    void     printClause      (const C& c);
-
     void     printSMTLit              ( ostream &, const Lit );
 
 #ifdef PRODUCE_PROOF
@@ -1033,22 +1012,13 @@ protected:
 
     void   deduceTheory           (vec<LitLev>&);  // Perform theory-deductions
 
-    int    checkAxioms            ( );             // Checks consistency of lemma on demand
-
     int    analyzeUnsatLemma      ( CRef );        // Conflict analysis for an unsat lemma on demand
 
     void   cancelUntilVar         ( Var );         // Backtrack until a certain variable
     void   cancelUntilVarTempInit ( Var );         // Backtrack until a certain variable
     void   cancelUntilVarTempDone ( );             // Backtrack until a certain variable
     int    restartNextLimit       ( int );         // Next conflict limit for restart
-    /*
-          Var    generateMoreEij        ( );             // Generate more eij
-          Var    generateNextEij        ( );             // Generate next eij
-    */
     void   dumpCNF                ( );             // Dumps CNF to cnf.smt2
-    /*
-          void   dumpRndInter           ( );             // Dumps a random interpolation problem
-    */
     vec<CRef>          cleanup;                    // For cleaning up
 //    bool               first_model_found;          // True if we found a first boolean model
     double             skip_step;                  // Steps to skip in calling tsolvers
@@ -1084,8 +1054,6 @@ protected:
     //
     // Data structures for DTC
     //
-    // vector< Enode * >  interface_terms;            // Interface terms for lazy dtc
-    // set< Enode * >     interface_terms_cache;      // Interface terms for lazy dtc
     set< PTRef >     interface_equalities;       // To check that we do not duplicate eij
     set< PTRef >     atoms_seen;                 // Some interface equalities may already exists in the formula
 
@@ -1484,72 +1452,6 @@ inline void CoreSMTSolver::printClause(const C& c)
     free(clause);
 }
 
-//=================================================================================================
-// Added Code
-//inline void CoreSMTSolver::boolVarDecActivity( )
-//{
-//#if 1
-//    if (first_model_found)
-//        return;
-//    /*
-//      for (int i = 2; i < nVars(); i++)
-//      {
-//        Enode * e = theory_handler->varToEnode( i );
-//    #if 1
-//        if ( !e->isVar( ) && !first_model_found )
-//        {
-//          activity[i] += e->getWeightInc( ) * var_inc;
-//          // Update order_heap with respect to new activity:
-//          if (order_heap.inHeap(i))
-//        order_heap.decrease(i);
-//        }
-//    #else
-//        if ( e->isVar( ) && !first_model_found )
-//        {
-//          activity[i] += var_inc;
-//          // Update order_heap with respect to new activity:
-//          if (order_heap.inHeap(i))
-//        order_heap.decrease(i);
-//        }
-//    #endif
-//      }
-//    */
-//#endif
-//}
-
-#ifdef PRODUCE_PROOF
-
-// NOTE Each boolean variable has associated an enode and a bitvector
-// which contains the ids of the partitions where the variable appears
-// Bit 0 is reserved to identify mixed predicates
-inline void CoreSMTSolver::checkPartitions( )
-{
-    if ( config.produce_inter() == 0 )
-        return;
-
-    unsigned mixed = 0;
-
-    for (int i = 2; i < nVars(); i++)
-    {
-        PTRef tref = theory_handler.varToTerm(i);
-
-        ipartitions_t p = theory_handler.getLogic().getIPartitions(tref);
-        char* name;
-        theory_handler.getVarName(i, &name);
-        free(name);
-
-        if ( p == 0 )
-        {
-            char* name;
-            theory_handler.getVarName(i, &name);
-            opensmt_error2( "node without partitions:", name );
-            free(name);
-        }
-        if ( p % 2 == 1 )
-            mixed ++;
-    }
-}
-#endif
 
 inline void CoreSMTSolver::cnfToString(CnfState& cs)
 {
@@ -1704,68 +1606,5 @@ inline void CoreSMTSolver::printClause( vec< Lit > & c )
         fprintf(stderr, " ");
     }
 }
-
-/*
-#ifdef PRODUCE_PROOF
-inline void CoreSMTSolver::printRestrictedSMTClause( ostream & os, vec< Lit > & c, const ipartitions_t & mask )
-{
-  assert( c.size( ) > 0 );
-  int nof_lits = 0;
-  stringstream s;
-  for ( int i = 0 ; i < c.size( ) ; i++ )
-  {
-    Var v = var(c[i]);
-    if ( v <= 1 ) continue;
-    Enode * e = theory_handler->varToEnode( v );
-    if ( (e->getIPartitions( ) & mask) != 0 )
-    {
-      s << (sign(c[i])?"(not ":"") << e << (sign(c[i])?") ":" ");
-      nof_lits ++;
-    }
-  }
-  if ( nof_lits == 0 )
-    os << "false";
-  else if ( nof_lits == c.size( ) )
-    os << "true";
-  else
-  {
-    if ( nof_lits > 1 ) os << "(or ";
-    os << s.str( );
-    if ( nof_lits > 1 ) os << ")";
-  }
-}
-
-inline Enode * CoreSMTSolver::mkRestrictedSMTClause( vec< Lit > & c
-                                                   , const ipartitions_t & mask )
-{
-  assert( c.size( ) > 0 );
-  list< Enode * > args;
-  for ( int i = 0 ; i < c.size( ) ; i++ )
-  {
-    Var v = var(c[i]);
-    if ( v <= 1 ) continue;
-
-    Enode * e = sign(c[i])
-      ? egraph.mkNot( egraph.cons( theory_handler->varToEnode( v ) ) )
-      : theory_handler->varToEnode( v );
-    Enode * epos = theory_handler->varToEnode( v );
-    //
-    // If Shared literal
-    //
-    if ( ((epos->getIPartitions( ) &  mask) != 0)
-	&& ((epos->getIPartitions( ) & ~mask) != 0) )
-    {
-      args.push_front( e );
-    }
-  }
-  if ( args.size( ) == 0 )
-    return egraph.mkFalse( );
-
-  return egraph.mkOr( egraph.cons( args ) );
-}
-#endif
-*/
-
-//=================================================================================================
 
 #endif

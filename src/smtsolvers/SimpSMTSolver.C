@@ -97,23 +97,6 @@ void SimpSMTSolver::initialize( )
 #else
     use_simplification = config.sat_preprocess_booleans != 0;
 #endif
-
-    // Add clauses for true/false
-    // Useful for expressing TAtoms that are constantly true/false
-
-//  const Var var_True = newVar( );
-//  const Var var_False = newVar( );
-
-//  setFrozen( var_True, true );
-//  setFrozen( var_False, true );
-
-//  vec< Lit > clauseTrue, clauseFalse;
-//  clauseTrue.push( Lit( var_True ) );
-//  addClause( clauseTrue );
-//  clauseFalse.push( Lit( var_False, true ) );
-//  addClause( clauseFalse );
-
-//  theory_handler = new THandler( egraph, config, *this, trail, level, assigns, var_True, var_False );
 }
 
 Var SimpSMTSolver::newVar(bool sign, bool dvar)
@@ -131,7 +114,6 @@ Var SimpSMTSolver::newVar(bool sign, bool dvar)
         frozen   .push((char)false);
         touched  .push(0);
         elim_heap.insert(v);
-        elimtable.push();
     }
 
     return v;
@@ -225,6 +207,7 @@ bool SimpSMTSolver::addSMTClause_(const vec<Lit> & smt_clause, std::pair<CRef, C
         PTRef tr = theory_handler.getTMap().varToPTRef(var(l));
         Pterm& t = theory_handler.getLogic().getPterm(tr);
         Var v = t.getVar();
+        assert(v == var(l));
         addVar(v);
         if (theory_handler.getLogic().isTheoryTerm(tr) || theory_handler.getTMap().isFrozen(v))
             setFrozen(v, true);

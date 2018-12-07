@@ -57,20 +57,7 @@ class SimpSMTSolver : public CoreSMTSolver
     SimpSMTSolver (SMTConfig &, THandler&);
     ~SimpSMTSolver( );
 
-//    inline lbool smtSolve             ( bool do_simp = true ) { return solve( do_simp, false ); }
-/*
-    Enode *      mergeTAtoms          ( Enode *, bool, Enode *, bool, Enode * );
-    void         eliminateTVar        ( Enode * );
-*/
     void         initialize           ( );
-/*
-    void         getDLVars            ( Enode *, bool, Enode **, Enode ** );
-    void         gatherInterfaceTerms ( Enode * );
-*/
-
-    set< Clause * >                      to_remove;
-    vector< Clause * >                   unary_to_remove;
-
 
     // Problem specification:
     //
@@ -141,16 +128,6 @@ public:
 
     // Helper structures:
     //
-    struct ElimData {
-        int          order;      // 0 means not eliminated, >0 gives an index in the elimination order
-        vec<Clause*> eliminated;
-        ElimData() : order(0) {} };
-
-    struct ElimOrderLt {
-        const vec<ElimData>& elimtable;
-        ElimOrderLt(const vec<ElimData>& et) : elimtable(et) {}
-        bool operator()(Var x, Var y) { return elimtable[x].order > elimtable[y].order; } };
-
     struct ElimLt {
         const vec<int>& n_occ;
         explicit ElimLt(const vec<int>& no) : n_occ(no) {}
@@ -159,12 +136,6 @@ public:
         // 32-bit implementation instead then, but this will have to do for now.
         uint64_t cost  (Var x)        const { return (uint64_t)n_occ[toInt(mkLit(x))] * (uint64_t)n_occ[toInt(~mkLit(x))]; }
         bool operator()(Var x, Var y) const { return cost(x) < cost(y); }
-
-        // TODO: investigate this order alternative more.
-        // bool operator()(Var x, Var y) const { 
-        //     int c_x = cost(x);
-        //     int c_y = cost(y);
-        //     return c_x < c_y || c_x == c_y && x < y; }
     };
 
     struct ClauseDeleted {
@@ -176,7 +147,6 @@ public:
     //
     int                 elimorder;
     bool                use_simplification;
-    vec<ElimData>       elimtable;
     vec<uint32_t>       elimclauses;
     vec<char>           touched;
     OccLists<Var, vec<CRef>, ClauseDeleted>
