@@ -102,27 +102,44 @@ CoreSMTSolver::handleSat()
         assert(safeValue(l1) == l_Undef || safeValue(l2) == l_Undef);
         assert(safeValue(l1) != l_True);
         assert(safeValue(l2) != l_True);
-
+        // MB: ensure the solver knows about the variables
+        addVar(var(l1));
+        addVar(var(l2));
         if (safeValue(l1) == l_Undef && safeValue(l2) == l_Undef) {
-            addSMTClause_(new_splits);
+            // MB: allocate, attach and remember the clause - treated as original
+            CRef cr = ca.alloc(new_splits, false);
+            attachClause(cr);
+            clauses.push(cr);
+#ifdef PRODUCE_PROOF
+            // MB: the proof needs to know about the new class; TODO: what type it should be?
+            proof.addRoot( cr, clause_type::CLA_ORIG );
+#endif // PRODUCE_PROOF
             forced_split = ~l1;
             return TPropRes::Decide;
         }
         else {
-
             Lit l_f = value(l1) == l_False ? l1 : l2; // false literal
             Lit l_i = value(l1) == l_False ? l2 : l1; // implied literal
 
             int lev = vardata[var(l_f)].level;
             cancelUntil(lev);
-            std::pair<CRef, CRef> iorefs;
-            addSMTClause_(new_splits, iorefs);
-            CRef cr = iorefs.second;
-            if (decisionLevel() > 0) {
-                // DL0 implications are already enqueued in addSMTClause_
-                assert(cr != CRef_Undef);
-                ca[cr][0] = l_i;
-                ca[cr][1] = l_f;
+            if (decisionLevel() == 0) {
+                // MB: do not allocate, we can directly enqueue the implied literal
+                uncheckedEnqueue(l_i);
+            }
+            else {
+                // MB: we are going to propagate, make sure the implied literal is the first one
+                if (l_i != new_splits[0]) {
+                    new_splits[0] = l_i;
+                    new_splits[1] = l_f;
+                }
+                CRef cr = ca.alloc(new_splits, false);
+                attachClause(cr);
+                clauses.push(cr);
+#ifdef PRODUCE_PROOF
+                // MB: the proof needs to know about the new class; TODO: what type it should be?
+                proof.addRoot( cr, clause_type::CLA_ORIG );
+#endif // PRODUCE_PROOF
                 uncheckedEnqueue(l_i, cr);
             }
             return TPropRes::Propagate;
