@@ -145,6 +145,7 @@ void THandler::getNewSplits(vec<Lit> &splits) {
     Pterm& t = getLogic().getPterm(tr);
     for (int i = 0; i < t.size(); i++) {
         tmap.addBinding(t[i]);
+        assert(getLogic().isAtom(t[i])); // MB: Needs to be an atom, otherwise the declaration would not work.
         declareAtom(t[i]);
         informNewSplit(t[i]);
         splits.push(tmap.getLit(t[i]));
