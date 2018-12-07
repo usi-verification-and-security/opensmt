@@ -319,7 +319,7 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
 }
 
 
-bool CoreSMTSolver::addClause_(vec<Lit>& _ps)
+bool CoreSMTSolver::addClause_(const vec<Lit>& _ps)
 {
     std::pair<CRef, CRef> fake;
     return addClause_(_ps, fake);
@@ -2119,9 +2119,6 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 
 #ifdef STATISTICS
                     const double start2 = cpuTime( );
-#endif
-//	    res = checkAxioms( );
-#ifdef STATISTICS
                     tsolvers_time += cpuTime( ) - start2;
 #endif
 

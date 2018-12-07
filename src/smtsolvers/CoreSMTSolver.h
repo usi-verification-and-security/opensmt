@@ -361,9 +361,9 @@ public:
     bool    addClause (Lit p);                                  // Add a unit clause to the solver.
     bool    addClause (Lit p, Lit q);                           // Add a binary clause to the solver.
     bool    addClause (Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
-    bool    addClause_(      vec<Lit>& ps);                     // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.
-    virtual bool addSMTClause_(vec<Lit>&) = 0;                  // For adding SMT clauses within the solver
+    virtual bool addSMTClause_(const vec<Lit>&) = 0;            // For adding SMT clauses within the solver
 protected:
+    bool    addClause_(const vec<Lit>& ps);                     // Add a clause to the solver
     bool    addClause_(const vec<Lit> & ps, pair<CRef, CRef> & cr);           // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.  Write the new clause to cr
 public:
     virtual bool addSMTClause_(const vec<Lit> &, pair<CRef, CRef> & inOutCRefs) = 0;        // For adding SMT clauses within the solver, returning the clause ref
@@ -1238,8 +1238,7 @@ inline bool     CoreSMTSolver::enqueue         (Lit p, CRef from)
 
 inline bool     CoreSMTSolver::addClause       (const vec<Lit>& ps)
 {
-    ps.copyTo(add_tmp);
-    return addClause_(add_tmp);
+    return addClause_(ps);
 }
 inline bool     CoreSMTSolver::addEmptyClause  ()
 {

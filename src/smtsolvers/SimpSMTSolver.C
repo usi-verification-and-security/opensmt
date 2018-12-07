@@ -188,7 +188,7 @@ skip_theory_preproc:
 //=================================================================================================
 // Added code
 
-bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause)
+bool SimpSMTSolver::addSMTClause_(const vec<Lit>& smt_clause)
 {
     std::pair<CRef, CRef> fake;
     return addSMTClause_(smt_clause, fake);
@@ -216,7 +216,6 @@ bool SimpSMTSolver::addSMTClause_(const vec<Lit> & smt_clause, std::pair<CRef, C
     for (int i = 0; i < smt_clause.size(); i++)
         assert(!isEliminated(var(smt_clause[i])));
 #endif
-    int nclauses = clauses.size();
     if (use_rcheck && implied(smt_clause))
         return true;
     if ( config.sat_preprocess_theory != 0
@@ -226,6 +225,7 @@ bool SimpSMTSolver::addSMTClause_(const vec<Lit> & smt_clause, std::pair<CRef, C
 //        Var v = var( smt_clause[0] );
         cerr << "XXX skipped handling of unary theory literal?" << endl;
     }
+    int nclauses = clauses.size();
     if (!CoreSMTSolver::addClause_(smt_clause, inOutCRefs))
         return false;
 
@@ -833,35 +833,6 @@ void SimpSMTSolver::cleanUpClauses()
     clauses.shrink(i - j);
     //this->n_clauses-=(i-j);
 }
-
-
-//=================================================================================================
-// Added Code
-/*
-void SimpSMTSolver::getDLVars( Enode * e, bool negate, Enode ** x, Enode ** y )
-{
-  assert( config.sat_preprocess_theory != 0 );
-  assert( e->isLeq( ) );
-  Enode * lhs = e->get1st( );
-  Enode * rhs = e->get2nd( );
-  (void)rhs;
-  assert( lhs->isMinus( ) );
-  assert( rhs->isConstant( ) || ( rhs->isUminus( ) && rhs->get1st( )->isConstant( ) ) );
-
-  *x = lhs->get1st( );
-  *y = lhs->get2nd( );
-
-  if ( negate )
-  {
-    Enode *tmp = *x;
-    *x = *y;
-    *y = tmp;
-  }
-}
-*/
-
-// Added Code
-//=================================================================================================
 
 //=================================================================================================
 // Garbage Collection methods:

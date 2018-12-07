@@ -65,7 +65,7 @@ class SimpSMTSolver : public CoreSMTSolver
 
     bool    addClause (const vec<Lit>& ps); // FIXME: this is already in parent class, why have it here?
     bool    addSMTClause (const  vec<Lit>&) override;
-    bool    addSMTClause_(       vec<Lit>&) override;
+    bool    addSMTClause_(const  vec<Lit>&) override;
     bool    addSMTClause_(const vec<Lit> &, pair<CRef, CRef> & inOutCRefs) override;
 public:
     bool    addEmptyClause();                // Add the empty clause to the solver.
@@ -197,8 +197,8 @@ inline void SimpSMTSolver::updateElimHeap(Var v) {
     if (elim_heap.inHeap(v) || (!frozen[v] && !isEliminated(v) && value(v) == l_Undef))
         elim_heap.update(v); }
 
-inline bool SimpSMTSolver::addClause    (const vec<Lit>& ps)    { ps.copyTo(add_tmp); return addClause_(add_tmp); }
-inline bool SimpSMTSolver::addSMTClause (const vec<Lit>& ps) { ps.copyTo(add_tmp); return addSMTClause_(add_tmp); }
+inline bool SimpSMTSolver::addClause    (const vec<Lit>& ps)    { return addClause_(ps); }
+inline bool SimpSMTSolver::addSMTClause (const vec<Lit>& ps)    { return addSMTClause_(ps); }
 inline bool SimpSMTSolver::addEmptyClause()                     { add_tmp.clear(); return addClause_(add_tmp); }
 inline bool SimpSMTSolver::addClause    (Lit p)                 { add_tmp.clear(); add_tmp.push(p); return addClause_(add_tmp); }
 inline bool SimpSMTSolver::addClause    (Lit p, Lit q)          { add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); return addClause_(add_tmp); }
