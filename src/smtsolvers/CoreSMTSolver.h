@@ -860,7 +860,7 @@ protected:
 //    void     boolVarDecActivity( );                    // Decrease boolean atoms activity
     void     claDecayActivity  ( );                    // Decay all clauses with the specified factor. Implemented by increasing the 'bump' value instead.
     void     claBumpActivity   ( Clause & c );         // Increase a clause with the current 'bump' value.
-    void     mixedVarDecActivity( );                   // Increase a clause with the current 'bump' value.
+    // Increase a clause with the current 'bump' value.
 
 
     // Operations on clauses:
@@ -981,7 +981,6 @@ public:
 // NOTE old methods, to check
     void   printProof              ( ostream & );
     void   GetInterpolants         (const vector<vector<int> >& partitions, vector<PTRef>& interpolants);
-    void   getMixedAtoms           ( set< Var > & );
     void   verifyInterpolantWithExternalTool ( vector< PTRef > & );
     inline TheoryInterpolator*                  getTheoryInterpolator( CRef cr )
     {

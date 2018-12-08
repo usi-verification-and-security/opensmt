@@ -239,44 +239,6 @@ void Egraph::getConflict( bool deduction, vec<PtAsgn>& cnfl )
 #endif
 }
 
-/*
-#ifdef PRODUCE_PROOF
-//Enode * Egraph::getInterpolants( logic_t & l )
-PTRef
-Egraph::getInterpolants(const ipartitions_t & p)
-{
-  assert( config.produce_inter() );
-  assert(cgraphs.size() == 1);
-  PTRef itp = PTRef_Undef;
-  vec<PTRef> and_args;
-  cerr << "Generating interpolants for " << cgraphs.size() << " conflicts" << endl;
-  for(int i = 0; i < cgraphs.size(); ++i)
-  {
-      PTRef pi = cgraphs[i]->getInterpolant(p);
-      and_args.push(pi);
-      if(config.certify_inter())
-          cgraphs[i]->verifyInterpolantWithExternalTool(p);
-      cerr << ";Partial interpolant " << i << ": " << logic.printTerm(pi) << endl;
-      int ncon, neq, nuf;
-      logic.collectStats(pi, ncon, neq, nuf);
-      cerr << ";Partial interpolant " << i << " data: \n";
-      cerr << ";Number of connectives: " << ncon << '\n';
-      cerr << ";Number of equalities: " << neq << '\n';
-      cerr << ";Number of UF: " << nuf << endl;
-  }
-  itp = logic.mkAnd(and_args);
-  return itp;
-  //assert( 0 <= conf_index && conf_index < (int)tsolvers.size( ) );
-  //if ( conf_index == 0 ) 
-  //{
-  //  l = QF_UF;
-  //  return interpolants;
-  //}
-  //return tsolvers[ conf_index ]->getInterpolants( l );
-}
-#endif
-*/
-
 void Egraph::clearModel()
 {
     values.clear();
@@ -309,51 +271,6 @@ int Egraph::countEqClasses()
     }
     return n_classes;
 }
-
-//void Egraph::printModel( ostream & os )
-//{
-//  assert( config.produce_models );
-//  computeModel( );
-//  //
-//  // Print values
-//  //
-//  for( set< Enode * >::iterator it = variables.begin( )
-//      ; it != variables.end( )
-//      ; it ++ )
-//  {
-//    // Retrieve enode
-//    Enode * v = *it;
-//    // Print depending on type
-//    if ( v->hasSortBool( ) )
-//      continue;
-//    else if ( v->hasSortInt( )
-//	   || v->hasSortReal( ) )
-//    {
-//      os << "(= " << v << " ";
-//      if ( v->hasValue( ) )
-//	os << v->getValue( );
-//      else
-//	os << "?";
-//      os << ")";
-//    }
-//    else if ( config.logic == QF_UF )
-//    {
-//      os << "(= " << v << " " << v->getRoot( ) << ")";
-//    }
-//    else if ( config.logic == QF_CT )
-//    {
-//      os << "(= " << v << " " << v->getValue( ) << ")";
-//    }
-//    else
-//    {
-//      opensmt_error2( "model printing unsupported for this variable: ", v );
-//    }
-//
-//    os << endl;
-//  }
-//}
-
-
 
 void Egraph::declareAtom(PTRef atom) {
     if (!isValid(atom)) { return; }
@@ -1179,84 +1096,6 @@ void Egraph::backtrackToStackSize ( size_t size ) {
 
 }
 
-// bool Egraph::checkDupClause( Enode * c1, Enode * c2 )
-// {
-//   assert( c1 );
-//   assert( c2 );
-//   // Swap let cl3 be the lowest clause
-//   if ( c1->getId( ) > c2->getId( ) )
-//   {
-//     Enode * tmp = c1;
-//     c1 = c2;
-//     c2 = tmp;
-//   }
-// 
-// #ifdef BUILD_64
-//   enodeid_pair_t sig = encode( c1->getId( ), c2->getId( ) );
-// #else
-//   Pair( enodeid_t ) sig = make_pair( c1->getId( ), c2->getId( ) );
-// #endif
-// 
-//   const bool res = clauses_sent.insert( sig ).second == false;
-//   return res;
-// }
-
-//void Egraph::splitOnDemand( vector< Enode * > & c, const int
-//#ifdef STATISTICS
-//    id 
-//#endif
-//    )
-//{
-//  assert( config.incremental );
-//  // Assume that we split only of size 2
-//  assert( c.size( ) == 2 );
-//  if ( checkDupClause( c[ 0 ], c[ 1 ] ) ) return;
-//#ifdef STATISTICS
-//  assert( id >= 0 );
-//  assert( id < static_cast< int >( tsolvers_stats.size( ) ) );
-//  TSolverStats & ts = *tsolvers_stats[ id ];
-//  if ( (long)c.size( ) > ts.max_sod_size )
-//    ts.max_sod_size = c.size( );
-//  if ( (long)c.size( ) < ts.min_sod_size )
-//    ts.min_sod_size = c.size( );
-//  ts.sod_sent ++;
-//  ts.sod_done ++;
-//  ts.avg_sod_size += c.size( );
-//#endif
-//
-//#ifdef PRODUCE_PROOF
-//  assert( config.produce_inter == 0 || c[ 0 ]->getIPartitions( ) != 0 );
-//  assert( config.produce_inter == 0 || c[ 1 ]->getIPartitions( ) != 0 );
-//  // FIXME: should compute interpolant ...
-//  solver->addSMTAxiomClause( c, NULL );
-//#else
-//  solver->addSMTAxiomClause( c );
-//#endif
-//}
-
-//void Egraph::splitOnDemand( Enode * c, const int
-//#ifdef STATISTICS
-//    id 
-//#endif
-//    )
-//{
-//  assert( c );
-//
-//#ifdef STATISTICS
-//  assert( id >= 0 );
-//  assert( id < static_cast< int >( tsolvers_stats.size( ) ) );
-//  TSolverStats & ts = *tsolvers_stats[ id ];
-//  if ( ts.max_sod_size < 1 )
-//    ts.max_sod_size = 1;
-//  if ( ts.min_sod_size > 1 )
-//    ts.min_sod_size = 1;
-//  ts.sod_sent ++;
-//  ts.sod_done ++;
-//  ts.avg_sod_size ++;
-//#endif
-//
-//  solver->addNewAtom( c );
-//}
 
 //=============================================================================
 // Congruence Closure Routines
@@ -1979,92 +1818,6 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r)
     assert( r.tr == PTRef_Undef );
     return false;
 }
-
-
-#ifdef PRODUCE_PROOF
-/*
-void Egraph::tmpMergeBegin( Enode * x, Enode * y )
-{
-  assert( config.produce_inter != 0 );
-  assert( config.logic == QF_AX
-       || config.logic == QF_AXDIFF );
-
-  if ( !x->hasCongData( ) ) x->allocCongData( );
-  if ( !y->hasCongData( ) ) y->allocCongData( );
-
-  x = x->getRoot( );
-  y = y->getRoot( );
-
-  // x will become root
-  // Swap x,y if x is not root
-  if ( x->getRoot( ) != x )
-  {
-    Enode * tmp = x;
-    x = y;
-    y = tmp;
-  }
-
-  // Swap if y is ABcommon and x no
-  if ( y->getIPartitions( ) == 6 &&
-       x->getIPartitions( ) != 6 )
-  {
-    Enode * tmp = x;
-    x = y;
-    y = tmp;
-  }
-
-  Enode * v = y;
-  const Enode * vstart = v;
-  for (;;)
-  {
-    v->setRoot( x );
-    v = v->getNext( );
-    if ( v == vstart )
-      break;
-  }
-
-  // Splice next lists
-  Enode * tmp = x->getNext( );
-  x->setNext( y->getNext( ) );
-  y->setNext( tmp );
-  // Update size of the congruence class
-  x->setSize( x->getSize( ) + y->getSize( ) );
-}
-
-void Egraph::tmpMergeEnd( Enode * x, Enode * y )
-{
-  assert( config.produce_inter != 0 );
-  assert( config.logic == QF_AX
-       || config.logic == QF_AXDIFF );
-
-  if ( x->getSize( ) < y->getSize( ) )
-  {
-    Enode * tmp = x;
-    x = y;
-    y = tmp;
-  }
-
-  // Restore the size of x's class
-  x->setSize( x->getSize( ) - y->getSize( ) );
-  // Unsplice next lists
-  Enode * tmp = x->getNext( );
-  x->setNext( y->getNext( ) );
-  y->setNext( tmp );
-  // Reroot each node of y's eq class back to y
-  Enode * v = y;
-  const Enode * vstart = v;
-  for (;;)
-  {
-    v->setRoot( y );
-    v = v->getNext( );
-    if ( v == vstart )
-      break;
-  }
-
-  assert( x->getRoot( ) != y->getRoot( ) );
-}
-*/
-#endif
 
 bool Egraph::assertLit(PtAsgn pta, bool)
 {

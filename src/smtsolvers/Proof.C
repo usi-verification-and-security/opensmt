@@ -393,73 +393,6 @@ void Proof::print( ostream & out, CoreSMTSolver & s, THandler & t )
 //=============================================================================
 // The following functions are declared in CoreSMTSolver.h
 
-// Gather mixed atoms in proof
-void CoreSMTSolver::getMixedAtoms( set< Var > & mixed )
-{
-  set< CRef > visited_set;
-  vector< CRef > unprocessed_clauses;
-  auto & clause_to_proof_der = proof.getProof( );
-
-  unprocessed_clauses.push_back( CRef_Undef );
-
-  do
-  {
-    CRef cr = unprocessed_clauses.back( );
-    unprocessed_clauses.pop_back( );
-
-    // Clause not visited yet
-    if( visited_set.find( cr ) == visited_set.end( ) )
-    {
-      // Get clause derivation tree
-      const ProofDer & proofder = clause_to_proof_der[ cr ];
-      // Clauses chain
-      const vector< CRef > & chain_cla = proofder.chain_cla;
-      clause_type ctype = proofder.type;
-
-      assert( ctype == clause_type::CLA_THEORY
-	   || ctype == clause_type::CLA_ORIG
-	   || ctype == clause_type::CLA_LEARNT
-	   );
-
-      // Mixed atoms may only appear within theory clauses
-      if ( ctype == clause_type::CLA_THEORY )
-      {
-	assert( chain_cla.size( ) == 0 );
-	Clause & cla = ca[cr];
-	for (int i = 0; i < cla.size(); i++)
-	{
-	  Var v = var(cla[i]);
-	  if ( v <= 1 ) continue;
-//	 PTRef e = theory_handler->varToEnode( v );
-	  PTRef tref = theory_handler.varToTerm(v);
-	  Pterm& t = theory_handler.varToPterm(v);
-//	  assert( e->isTAtom( ) );
-	  // Insert if it has mixed partitions
-	  if ( (theory_handler.getLogic().getIPartitions(tref) % 2) == 1 )
-	    mixed.insert( v );
-	}
-      }
-      // Link clause
-      else if ( chain_cla.size( ) == 1 )
-      {
-	if ( visited_set.find( chain_cla[ 0 ] ) == visited_set.end( ) )
-	  unprocessed_clauses.push_back( chain_cla[ 0 ] );
-      }
-      // Clauses in the derivation chain not yet visited have to be visited
-      else
-      {
-	for ( size_t i = 0 ; i < chain_cla.size( ) ; i ++ )
-	  if ( visited_set.find( chain_cla[ i ] ) == visited_set.end( ) )
-	    unprocessed_clauses.push_back( chain_cla[ i ] );
-      }
-
-      // Mark clause as visited
-      visited_set.insert( cr );
-    }
-  }
-  while( !unprocessed_clauses.empty( ) );
-}
-
 void CoreSMTSolver::createProofGraph ()
 { proof_graph = new ProofGraph( config, *this, theory_handler.getTheory(),  proof, nVars( ) ); }
 
@@ -600,26 +533,6 @@ bool CoreSMTSolver::checkImplication( PTRef f1, PTRef f2 )
 		cerr << "External tool says phi_1 -> phi_2 holds" << endl;
 	}
 	return impl_holds;
-}
-
-void CoreSMTSolver::mixedVarDecActivity( )
-{
-  Logic& logic = theory_handler.getLogic();
-  if( config.produce_inter() > 0)
-  {
-    for (int i = 2; i < nVars(); i++)
-    {
-      PTRef er = theory_handler.varToTerm(i);
-      Pterm& e = theory_handler.varToPterm(i);
-      if ( !logic.isVar(er) && logic.getIPartitions(er) % 2 == 1 )
-      {
-	activity[i] -= config.produce_inter() > 0 ? 1 : 0;
-	// Update order_heap with respect to new activity:
-	if (order_heap.inHeap(i))
-	  order_heap.decrease(i);
-      }
-    }
-  }
 }
 
 std::ostream & operator<<(std::ostream & os, clause_type val) {

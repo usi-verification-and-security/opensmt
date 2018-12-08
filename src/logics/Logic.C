@@ -33,10 +33,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <set>
 
 #include <sys/wait.h>
-#ifdef PRODUCE_PROOF
-#include <fstream>
-#include <sstream>
-#endif
 
 
 using namespace std;
@@ -2000,9 +1996,6 @@ void
 Logic::dumpHeaderToFile(ostream& dump_out)
 {
     dump_out << "(set-logic " << getName() << ")" << endl;
-#ifdef PRODUCE_PROOF
-//    dump_out << "(set-option :produce-interpolants true)" << endl;
-#endif
     const vec<SRef>& sorts = sort_store.getSorts();
     for (int i = 0; i < sorts.size(); i++)
     {
@@ -2266,8 +2259,6 @@ void Logic::computePartitionMasks(const vec<PTRef> &roots) {
 
     vec<PtChild> list_out;
     getTermsList(roots, list_out, *this);
-    std::set<PTRef> seen;
-    std::set<PTRef> to_process;
     for (int i = list_out.size()-1; i >= 0; i--)
     {
         PTRef tr = list_out[i].tr;
@@ -2275,7 +2266,6 @@ void Logic::computePartitionMasks(const vec<PTRef> &roots) {
         ipartitions_t& p = getIPartitions(tr);
         for (int j = 0; j < t.size(); j++) {
             addIPartitions(t[j], p);
-            seen.insert(t[j]);
         }
         if (isUF(tr) || isUP(tr)) {
             addIPartitions(t.symb(), p);

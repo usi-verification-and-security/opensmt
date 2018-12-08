@@ -2301,15 +2301,6 @@ lbool CoreSMTSolver::solve_(int max_conflicts)
     assert( config.logic != QF_UFLRA || config.sat_lazy_dtc == 0 || config.isIncremental() );
     // UF solver should be enabled for lazy dtc
     assert( config.sat_lazy_dtc == 0 || config.uf_disable == 0 );
-#ifdef PRODUCE_PROOF
-    /*
-    // Checks that every variable is associated to a non-zero partition
-    if (config.produce_inter > 0) {
-        checkPartitions( );
-        mixedVarDecActivity( );
-    }
-    */
-#endif
 
     if ( config.sat_dump_cnf != 0 )
         dumpCNF( );

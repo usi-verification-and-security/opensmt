@@ -1336,7 +1336,8 @@ void Interpret::getInterpolants(const ASTNode& n)
 //        printf("Itp'ing a term %s\n", logic->pp(tr));
         grouping.push(tr);
     }
-    if (!logic->canInterpolate())
+
+    if (!(config.produce_inter() > 0))
         opensmt_error("Cannot interpolate");
 
 #ifdef PRODUCE_PROOF
