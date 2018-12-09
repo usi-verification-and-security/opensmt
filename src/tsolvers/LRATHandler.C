@@ -90,7 +90,9 @@ bool LRATHandler::assertLit_special(PtAsgn a)
         PTRef i1 = logic.mkNumLeq(args, &msg);
         PTRef i2 = logic.mkNumGeq(args, &msg);
         res &= assertLit(PtAsgn(i1, l_True));
-        res &= assertLit(PtAsgn(i2, l_True));
+        if(res) {
+            res &= assertLit(PtAsgn(i2, l_True));
+        }
     }
     else
         res = assertLit(a);
