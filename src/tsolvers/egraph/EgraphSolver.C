@@ -73,7 +73,6 @@ Egraph::Egraph(SMTConfig & c, Logic& l , vec<DedElem>& d)
       , congruence_running ( false )
       , time_stamp         ( 0 )
 #ifdef PRODUCE_PROOF
-      , iformula           ( 1 )
       , cgraph_            ( new CGraph( *this, config, logic ) )
       , cgraph(NULL)
       , automatic_coloring ( false )
@@ -258,18 +257,6 @@ void Egraph::computeModel( )
         values.insert(enodes[i], root_r);
     }
     values_ok = true;
-}
-
-int Egraph::countEqClasses()
-{
-    int n_classes = 0;
-    Map<ERef,bool,ERefHash> eq_classes;
-    const vec<ERef>& enodes = enode_store.getEnodes();
-    for (int i = 0; i < enodes.size(); i++) {
-        if (eq_classes.has(enodes[i]))
-            n_classes++;
-    }
-    return n_classes;
 }
 
 void Egraph::declareAtom(PTRef atom) {
@@ -473,8 +460,8 @@ bool Egraph::addFalse(PTRef term) {
 //
 bool Egraph::assertEq ( PTRef tr_x, PTRef tr_y, PtAsgn r )
 {
-    ERef x = enode_store.termToERef[tr_x];
-    ERef y = enode_store.termToERef[tr_y];
+    ERef x = termToERef(tr_x);
+    ERef y = termToERef(tr_y);
     assert( getEnode(x).isTerm() );
     assert( getEnode(y).isTerm() );
     assert( pending.size() == 0 );
@@ -520,8 +507,8 @@ bool Egraph::mergeLoop( PtAsgn reason )
         assert( pending.size( ) % 2 == 0 );
         ERef p = pending.last( ); pending.pop( );
         ERef q = pending.last( ); pending.pop( );
-        const Enode& en_p = enode_store[p];
-        const Enode& en_q = enode_store[q];
+        const Enode& en_p = getEnode(p);
+        const Enode& en_q = getEnode(q);
 
         if ( en_p.getRoot( ) == en_q.getRoot( ) )
             continue;
@@ -974,101 +961,7 @@ void Egraph::backtrackToStackSize ( size_t size ) {
             neq_list.pop( );
         }
 #endif
-        else if ( last_action == INITCONG ) {
-            assert( config.isIncremental() );
-#if VERBOSE
-            cerr << "UNDO: BEG INITCONG " << e << endl;
-#endif
-            ERef e = u.arg.er;
-            Enode& en_e = enode_store[e];
 
-            ERef car = en_e.getCar( );
-            ERef cdr = en_e.getCdr( );
-            assert( car != ERef_Undef );
-            assert( cdr != ERef_Undef );
-
-            if ( en_e.getCgPtr( ) == e ) {
-                assert( enode_store.lookupSig( e ) == e );
-                // Remove from sig_tab
-                enode_store.removeSig( e );
-            }
-            else {
-                assert( enode_store.lookupSig( e ) != e );
-                en_e.setCgPtr( e );
-            }
-
-            assert( initialized.find( en_e.getId( ) ) != initialized.end( ) );
-            // Remove from initialized nodes
-            initialized.erase( en_e.getId( ) );
-            assert( initialized.find( en_e.getId( ) ) == initialized.end( ) );
-            // Remove parents info
-//            if ( en_e.isList( ) )
-//                enode_store.removeParent( car, e );
-//            enode_store.removeParent( cdr, e );
-
-            // Deallocate congruence data
-            // This sounds like a huge overhead!
-//      assert( en_e.hasCongData( ) );
-//      e->deallocCongData( );
-//      assert( !e->hasCongData( ) );
-        }
-        else if ( last_action == FAKE_MERGE ) {
-#if VERBOSE
-            cerr << "UNDO: BEGIN FAKE MERGE " << e << endl;
-#endif
-            ERef e = u.arg.er;
-            Enode& en_e = enode_store[e];
-#ifdef VERBOSE_EUF
-            cerr << "Undo fake merge: " << logic.printTerm(en_e.getTerm()) << endl;
-#endif
-
-            assert( initialized.find( en_e.getId( ) ) != initialized.end( ) );
-            initialized.erase( en_e.getId( ) );
-            assert( initialized.find( en_e.getId( ) ) == initialized.end( ) );
-//      assert( e->hasCongData( ) );
-//      e->deallocCongData( );
-//      assert( !e->hasCongData( ) );
-        }
-        else if ( last_action == FAKE_INSERT ) {
-#if VERBOSE
-            cerr << "UNDO: BEGIN FAKE INSERT " << e << endl;
-#endif
-            ERef e = u.arg.er;
-            Enode& en_e = enode_store[e];
-#ifdef VERBOSE_EUF
-            cerr << "Undo fake insert: " << logic.printTerm(en_e.getTerm()) << endl;
-#endif
-
-            assert( en_e.isTerm( ) || en_e.isList( ) );
-            ERef car = en_e.getCar( );
-            ERef cdr = en_e.getCdr( );
-            assert( car != ERef_Nil );
-            assert( cdr != ERef_Nil );
-
-            // Node must be there if its a congruence
-            // root and it has to be removed
-            if ( en_e.getCgPtr() == e ) {
-                assert( enode_store.lookupSig( e ) == e );
-                enode_store.removeSig( e );
-            }
-            // Otherwise sets it back to itself
-            else {
-                assert( enode_store.lookupSig( e ) != e );
-                en_e.setCgPtr( e );
-            }
-
-            // Remove Parent info
-//            if ( en_e.isList( ) )
-//                enode_store.removeParent( car, e );
-//            enode_store.removeParent( cdr, e );
-            // Remove initialization
-            assert( initialized.find( en_e.getId( ) ) != initialized.end( ) );
-            initialized.erase( en_e.getId( ) );
-            // Dealloc cong data
-//      assert( e->hasCongData( ) );
-//      e->deallocCongData( );
-//      assert( !e->hasCongData( ) );
-        }
         else if ( last_action == DISEQ ) {
             ERef e = u.arg.er;
             Enode& en_e = enode_store[e];
@@ -1078,14 +971,8 @@ void Egraph::backtrackToStackSize ( size_t size ) {
             PTRef ptr = u.arg.ptr;
             undoDistinction( ptr );
         }
-//    else if ( last_action == SYMB )
-//      removeSymbol( e );
-//    else if ( last_action == NUMB )
-//      removeNumber( e );
         else if ( last_action == CONS )
 //      undoCons( e );
-//    else if ( last_action == INSERT_STORE )
-//      removeStore( e );
         ;
         else if ( last_action == SET_POLARITY) {
             assert(hasPolarity(u.arg.ptr));

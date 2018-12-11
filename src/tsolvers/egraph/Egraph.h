@@ -131,16 +131,17 @@ public:
 
 private:
     inline Enode& getEnode(ERef er) { return enode_store[er]; }
+    ERef termToERef(PTRef p)              { return enode_store.termToERef[p]; }
 public:
     inline const Enode& getEnode(ERef er) const { return enode_store[er]; }
-    inline const Enode& getEnode(PTRef er) const { return enode_store[er]; }
     const vec<ERef>& getEnodes() const    { return enode_store.getEnodes(); }
-    PTRef ERefToTerm(ERef er)    const    { return enode_store[er].getTerm(); }
+    PTRef ERefToTerm(ERef er)    const    { return getEnode(er).getTerm(); }
+
     bool  isDeduced(PTRef tr)    const    { return deduced[logic.getPterm(tr).getVar()] != l_Undef; }
     lbool getDeduced(PTRef tr)   const    { return deduced[logic.getPterm(tr).getVar()].polarity; }
 
     bool  isConstant(ERef er)    const    {
-        return (enode_store[er].isTerm() && logic.isConstant(enode_store[er].getTerm()));
+        return (getEnode(er).isTerm() && logic.isConstant(getEnode(er).getTerm()));
     }
 
     size_t size() const { return enode_store.id_to_enode.size(); };
@@ -197,10 +198,6 @@ public:
   ERef    canonizeDTC              ( ERef, bool = false );
 
   Logic& getLogic() { return logic; }
-private:
-
-  int countEqClasses();
-  vec< ERef > interface_terms;
 
 public:
 
@@ -235,28 +232,14 @@ public:
 
 private:
 
-  //===========================================================================
-  // Private Routines for enode construction/destruction
-
-//  Snode * sarith1;
-//  Snode * sarray;
-//  Snode * sindex;
-//  Snode * selem;
-
   //
   // Defines the set of operations that can be performed and that should be undone
   //
   typedef enum {      // These constants are stored on undo_stack_oper when
-      SYMB            // A new symbol is created
-    , NUMB            // A new number is created
-    , CONS            // An undoable cons is done
+      CONS            // An undoable cons is done
     , MERGE           // A merge is done
-    , INITCONG        // Congruence initialized
-    , FAKE_MERGE      // A fake merge for incrementality
-    , FAKE_INSERT     // A fake insert for incrementality
     , DISEQ           // A negated equality is asserted
     , DIST            // A distinction is asserted
-    , INSERT_STORE    // Inserted in store
     , EXPL            // Explanation added
     , SET_DYNAMIC     // Dynamic info was set
     , SET_POLARITY    // A polarity of a PTRef was set
@@ -299,7 +282,6 @@ private:
   //===========================================================================
   // Private Routines for Core Theory Solver
 
-  bool    assertLit_      ( PTRef ) { return true; }             // Assert a theory literal
   //
   // Asserting literals
   //
@@ -357,28 +339,7 @@ private:
   void     expRemoveExplanation ( );                            // Undoes the effect of expStoreExplanation
   void     expCleanup           ( );                            // Undoes the effect of expExplain
 
-  inline const char * logicStr ( Logic_t l )
-  {
-         if ( l == EMPTY )     return "EMPTY";
-    else if ( l == QF_UF )     return "QF_UF";
-    else if ( l == QF_BV )     return "QF_BV";
-    else if ( l == QF_RDL )    return "QF_RDL";
-    else if ( l == QF_IDL )    return "QF_IDL";
-    else if ( l == QF_LRA )    return "QF_LRA";
-    else if ( l == QF_LIA )    return "QF_LIA";
-    else if ( l == QF_UFRDL )  return "QF_UFRDL";
-    else if ( l == QF_UFIDL )  return "QF_UFIDL";
-    else if ( l == QF_UFLRA )  return "QF_UFLRA";
-    else if ( l == QF_UFLIA )  return "QF_UFLIA";
-    else if ( l == QF_UFBV )   return "QF_UFBV";
-    else if ( l == QF_AX )     return "QF_AX";
-    else if ( l == QF_AXDIFF ) return "QF_AXDIFF";
-    else if ( l == QF_BOOL )   return "QF_BOOL";
-    return "";
-  }
 
-  bool                        state;                            // the hell is this ?
-  set< enodeid_t >            initialized;                      // Keep track of initialized nodes
   vec< ERef >                 pending;                          // Pending merges
   vec< Undo >                 undo_stack_main;                  // Keeps track of terms involved in operations
   vec< PtAsgn >               explanation;                      // Stores explanation
@@ -391,12 +352,6 @@ private:
   vec< ERef >                 exp_undo_stack;                   // Keep track of exp_parent merges
   vec< ERef >                 exp_cleanup;                      // List of nodes to be restored
   int                         time_stamp;                       // Need for finding NCA
-  int                         conf_index;                       // Index of theory solver that caused conflict
-
-  void    initializeCongInc ( ERef );                           // Initialize a node in the congruence at runtime
-  void    initializeAndMerge( ERef );                           // Initialize a node in the congruence at runtime
-  ERef    uCons             ( ERef, ERef );                     // Undoable cons - To create dynamic terms
-  void    undoCons          ( ERef );                           // Undoes a cons
 
   //============================================================================
   // Memory management for forbid allocator
@@ -415,7 +370,6 @@ private:
 public:
 
   inline void     setAutomaticColoring    ( ) { assert( !automatic_coloring ); automatic_coloring = true; }
-  inline unsigned getNofPartitions        ( ) { return iformula - 1; }
 
   PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
   {
@@ -426,32 +380,12 @@ public:
   {
       return nullptr;
   }
-  Enode *         getNextAssertion        ( );
-  Enode *         expandDefinitions       ( Enode * );
-  void            addDefinition           ( Enode *, Enode * );
-  void            maximizeColors          ( );
-  void            finalizeColors          ( Enode *, const ipartitions_t & );
 
 private:
 
-  inline void     formulaToTag     ( Enode * e ) { formulae_to_tag.push_back( e ); }
-
-  void            addIFormula      ( );
-  void            tagIFormulae     ( const ipartitions_t & );
-  void            tagIFormulae     ( const ipartitions_t &, vector< Enode * > & );
-  void            tagIFormula      ( Enode *, const ipartitions_t & );
-
-  void            scanForDefs      ( Enode *, set< Enode * > & );
-  Enode *         substitute       ( Enode *, map< Enode *, Enode * > & );
-
-  unsigned                iformula;                  // Current formula id
-  vector< Enode * >       formulae_to_tag;           // Formulae to be tagged
-  vector< uint64_t >      id_to_iformula;            // From enode to iformula it belongs to
-  CGraph *                cgraph;                   // Holds congrunce graph and compute interpolant 
+  CGraph *                cgraph;                   // Holds congrunce graph and compute interpolant
   CGraph *                cgraph_;                   // Holds congrunce graph and compute interpolant 
   bool                    automatic_coloring;        // Set automatic node coloring
-  vector< Enode * >       idef_list;                 // Definition list in rev chron order
-  map< Enode *, Enode * > idef_map;                  // Def to term map
 #endif
 
   //===========================================================================
@@ -461,7 +395,6 @@ public:
   char* printDistinctions          ( PTRef tr ) const;
   char* printExplanation           ( PTRef tr ) { char* tmp; asprintf(&tmp, "%s", printExplanationTreeDotty(enode_store.termToERef[tr]).c_str()); return tmp; }
 private:
-  bool   isEqual                   (PTRef, PTRef) const;
   string printExplanationTree(ERef);
   std::string toString                 (ERef er) const { return std::string{logic.printTerm(getEnode(er).getTerm())};}
 public:
@@ -488,13 +421,10 @@ private:
   bool checkExpTree              ( PTRef );
   bool checkExpReachable         ( PTRef, PTRef );
 #endif
-  bool checkStaticDynamicTable   ( );
 
 #ifdef STATISTICS
   void printStatistics ( ofstream & );
 #endif
-
-  friend class GCTest;
 };
 
 inline void Egraph::initDupMap1( )

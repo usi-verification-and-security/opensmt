@@ -64,8 +64,8 @@ void Egraph::expStoreExplanation ( ERef x, ERef y, PtAsgn reason )
     // balanced (which is a requirement to keep the O(nlogn) bound
 
     // Make sure that x is the node with the larger number of edges to switch
-    const Enode& root_x = enode_store[getEnode(x).getRoot()];
-    const Enode& root_y = enode_store[getEnode(y).getRoot()];
+    const Enode& root_x = getEnode(getEnode(x).getRoot());
+    const Enode& root_y = getEnode(getEnode(y).getRoot());
     if ( root_x.getSize() < root_y.getSize() ) {
         ERef tmp = x;
         x = y;
