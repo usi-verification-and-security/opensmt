@@ -406,6 +406,19 @@ private:
   string printCbeStructure         ( );
   string printCbeStructure         ( ERef, set< int > & );
   string printParents              ( ERef );
+  // Helper methods
+  void addForbidList(Enode & to, const Enode & from);
+  void undoAddForbidList(Enode & to, const Enode & from);
+  void mergeDistinctionClasses(Enode & to, const Enode & from);
+  void removeSignatureOfRootedParents(ERef node);
+  void mergeCongruenceClassInfo(ERef newroot, ERef oldroot);
+  void undomergeCongruenceClassInfo(ERef newroot, ERef oldroot);
+  void propagateEqualityByCongruence(ERef node);
+  void mergeParentLists(Enode & to, const Enode & from);
+  void unmergeParentLists(Enode & to, const Enode & from);
+  void updateConstantInfo(Enode & to, Enode & from);
+  void undoUpdateConstantInfo(Enode & to, Enode & from);
+  void reinsertSignatures(ERef node);
 
 #if VERBOSE_EUF
 public:
