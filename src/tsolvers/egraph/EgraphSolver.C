@@ -1055,7 +1055,7 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     mergeDistinctionClasses(en_x, en_y);
     // Assign w to the class with fewer parents
     ERef w = en_x.getParentSize() < en_y.getParentSize( ) ? x : y ;
-    removeSignatureOfRootedParents(w);
+//    removeSignatureOfRootedParents(w);
 
     // Compute deductions that follows from
     // merging x and y. Probably this function
@@ -1952,9 +1952,10 @@ void Egraph::reinsertSignatures(ERef node) {
                 assert(false);
             }
 #else
-            assert(!enode_store.containsSig(p));
+//            assert(!enode_store.containsSig(p));
 #endif
-            enode_store.insertSig(p);
+//            enode_store.insertSig(p);
+            assert(enode_store.containsSig(p));
         }
         // Next element
         p = scdr ? en_p.getSameCdr( ) : en_p.getSameCar();
