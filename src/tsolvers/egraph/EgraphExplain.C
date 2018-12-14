@@ -83,8 +83,8 @@ void Egraph::expStoreExplanation ( ERef x, ERef y, PtAsgn reason )
     exp_undo_stack.push(y);
 
 #ifdef VERBOSE_EUF
-    assert( checkExpTree(tr_x) );
-    assert( checkExpTree(tr_y) );
+    assert( checkExpTree(getEnode(x).getTerm()) );
+    assert( checkExpTree(getEnode(y).getTerm()) );
 //    cout << printExplanationTree( tr_y ) << endl;
 #endif
 }
@@ -111,7 +111,7 @@ void Egraph::expReRootOn(ERef x) {
         getEnode(parent).setExpReason(saved_reason);
 
 #ifdef VERBOSE_EUF
-        assert( checkExpTree( parent ) );
+        assert( checkExpTree( getEnode(parent).getTerm() ) );
 #endif
 
         // Move the two pointers
@@ -130,8 +130,8 @@ void Egraph::expExplain () {
         if ( p == q ) continue;
 
 #ifdef VERBOSE_EUF
-        assert( checkExpTree( p ) );
-        assert( checkExpTree( q ) );
+        assert( checkExpTree( getEnode(p).getTerm() ) );
+        assert( checkExpTree( getEnode(q).getTerm() ) );
 #endif
 #ifdef VERBOSE_EUFEX
         cerr << "Explain " << toString(p) << " and " << toString(q) << endl;
@@ -333,16 +333,16 @@ void Egraph::expUnion(ERef x, ERef y) {
     // Unions are always between a node and its parent
     assert(getEnode(x).getExpParent() == y);
     // Retrieve the representant for the explanation class for x and y
-    auto x_exp_root = expFind(x);
-    auto y_exp_root = expFind(y);
+    ERef x_exp_root = expFind(x);
+    ERef y_exp_root = expFind(y);
 #ifdef VERBOSE_EUFEX
     cerr << "Root of " << toString(x) << " is " << toString(x_exp_root) << endl;
     cerr << "Root of " << toString(y) << " is " << toString(y_exp_root) << endl;
 #endif
 
 #ifdef VERBOSE_EUF
-    assert(checkExpReachable( x, x_exp_root ) );
-    assert(checkExpReachable( y, y_exp_root ) );
+    assert(checkExpReachable( getEnode(x).getTerm(), getEnode(x_exp_root).getTerm() ) );
+    assert(checkExpReachable( getEnode(y).getTerm(), getEnode(y_exp_root).getTerm() ) );
 #endif
 
     // No need to merge elements of the same class
@@ -363,8 +363,8 @@ void Egraph::expUnion(ERef x, ERef y) {
     exp_cleanup.push(y_exp_root);
 
 #ifdef VERBOSE_EUF
-    assert(checkExpReachable(x, x_exp_root));
-    assert(checkExpReachable(y, y_exp_root));
+    assert(checkExpReachable(getEnode(x).getTerm(), getEnode(x_exp_root).getTerm()));
+    assert(checkExpReachable(getEnode(y).getTerm(), getEnode(y_exp_root).getTerm()));
 #endif
 }
 
@@ -413,8 +413,8 @@ ERef Egraph::expNCA(ERef x, ERef y) {
     cerr << "Highest node of " << toString(y) << " is " << toString(h_y) << endl;
 #endif
 #ifdef VERBOSE_EUF
-    assert(checkExpReachable( x, h_x ));
-    assert(checkExpReachable( y, h_y ));
+    assert(checkExpReachable( getEnode(x).getTerm(), getEnode(h_x).getTerm()));
+    assert(checkExpReachable( getEnode(y).getTerm(), getEnode(h_y).getTerm() ));
 #endif
 
     while ( h_x != h_y ) {

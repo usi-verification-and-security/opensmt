@@ -421,7 +421,7 @@ private:
   void undoUpdateConstantInfo(Enode & to, Enode & from);
   void unmergeParentCongruenceClasses(ERef node);
 
-#if VERBOSE_EUF
+#ifdef VERBOSE_EUF
 public:
   const char* printUndoTrail     ( );
   const char* printAsrtTrail     ( );

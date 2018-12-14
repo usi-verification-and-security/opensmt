@@ -1154,44 +1154,7 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
             deduced_polarity = l_False;
     }
 
-#ifdef VERBOSE_EUF
-    lbool deduced_polarity2 = l_Undef;
-    if ( x == enode_store.getEnode_true() )
-        deduced_polarity2 = l_True;
-    else if ( x == enode_store.getEnode_false() )
-        deduced_polarity2 = l_False;
-    else if (isEqual(enode_store[x].getTerm(), logic.getTerm_true()))
-        deduced_polarity2 = l_True;
-    else if (isEqual(enode_store[x].getTerm(), logic.getTerm_false()))
-        deduced_polarity2 = l_False;
-
-    if ( deduced_polarity2 == l_Undef ) {
-        ERef tmp = x;
-        x = y;
-        y = tmp;
-    }
-
-    if ( x == enode_store.getEnode_true() )
-        deduced_polarity2 = l_True;
-    else if ( x == enode_store.getEnode_false() )
-        deduced_polarity2 = l_False;
-    else if (isEqual(enode_store[x].getTerm(), logic.getTerm_true()))
-        deduced_polarity2 = l_True;
-    else if (isEqual(enode_store[x].getTerm(), logic.getTerm_false()))
-        deduced_polarity2 = l_False;
-
-    if (deduced_polarity != deduced_polarity2)
-        assert(false);
-#endif
-
     if ( deduced_polarity == l_Undef ) { // True, for instance, if x & y are not boolean types, or if they are, but they have not been assigned a value yet
-#ifdef VERBOSE_EUF
-        assert(enode_store[x].isList() ||
-               (!isEqual(enode_store[x].getTerm(), logic.getTerm_true()) &&
-                !isEqual(enode_store[x].getTerm(), logic.getTerm_false()) &&
-                !isEqual(enode_store[y].getTerm(), logic.getTerm_true()) &&
-                !isEqual(enode_store[y].getTerm(), logic.getTerm_false())));
-#endif
 #ifdef NEG_DEDUCE
         // Work on negative deductions:
         // Merge of x and y results in inequalities expressed in the forbid
@@ -1251,28 +1214,27 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
         // that we previously deduced on this branch
         ERef sv = v;
         PTRef sv_tr = enode_store[sv].getTerm();
-        if (logic.getPterm(sv_tr).getVar() == -1 || deduced[logic.getPterm(sv_tr).getVar()] == l_Undef) {
-            if (!hasPolarity(sv_tr) && (logic.getPterm(sv_tr).getVar() == -1 || deduced[logic.getPterm(sv_tr).getVar()] == l_Undef))
-            {
-                if (logic.getPterm(sv_tr).getVar() != -1) 
-                    deduced[logic.getPterm(sv_tr).getVar()] = {id, deduced_polarity};
-#ifdef VERBOSE_EUF
-                cerr << "Deducing ";
-                cerr << (deduced_polarity == l_False ? "not " : "");
-                cerr << logic.printTerm(enode_store[sv].getTerm());
-                cerr << " since ";
-                cerr << logic.printTerm(enode_store[x].getTerm());
-                cerr << " and ";
-                cerr << logic.printTerm(enode_store[y].getTerm());
-                cerr << " are now equal";
-                cerr << endl;
-#endif
-                th_deductions.push(PtAsgn_reason(enode_store.ERefToTerm[sv],
-                                              deduced_polarity, reason.tr));
-#ifdef STATISTICS
-                tsolver_stats.deductions_done ++;
-#endif
+        if (!hasPolarity(sv_tr) &&
+            (logic.getPterm(sv_tr).getVar() == -1 || deduced[logic.getPterm(sv_tr).getVar()] == l_Undef)) {
+            if (logic.getPterm(sv_tr).getVar() != -1) {
+                deduced[logic.getPterm(sv_tr).getVar()] = {id, deduced_polarity};
             }
+#ifdef VERBOSE_EUF
+            cerr << "Deducing ";
+            cerr << (deduced_polarity == l_False ? "not " : "");
+            cerr << logic.printTerm(enode_store[sv].getTerm());
+            cerr << " since ";
+            cerr << logic.printTerm(enode_store[x].getTerm());
+            cerr << " and ";
+            cerr << logic.printTerm(enode_store[y].getTerm());
+            cerr << " are now equal";
+            cerr << endl;
+#endif
+            th_deductions.push(PtAsgn_reason(enode_store.ERefToTerm[sv],
+                                             deduced_polarity, reason.tr));
+#ifdef STATISTICS
+            tsolver_stats.deductions_done ++;
+#endif
         }
         v = enode_store[v].getNext( );
         if ( v == vstart )
@@ -1872,23 +1834,12 @@ void Egraph::updateConstantInfo(Enode & to, Enode & from) {
     if (from.isTerm() && from.getConstant() != PTRef_Undef) {
         assert(to.getConstant() == PTRef_Undef);
         to.setConstant( from.getConstant() );
-#ifdef VERBOSE_EUF
-        constant_set = true;
-#endif
     }
         // Store info about the constant
     else if (to.isTerm() && to.getConstant() != PTRef_Undef) {
         assert(from.getConstant() == PTRef_Undef);
         from.setConstant(to.getConstant());
-#ifdef VERBOSE_EUF
-        constant_set = true;
-#endif
     }
-
-#ifdef VERBOSE_EUF
-    if (constant_shouldset && !constant_set)
-        assert(false);
-#endif
 }
 
 void Egraph::unmergeParentLists(Enode & to, const Enode & from) {
