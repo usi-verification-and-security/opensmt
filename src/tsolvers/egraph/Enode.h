@@ -103,8 +103,7 @@ protected:
 
     struct {
         unsigned type      : 2;
-        unsigned reloced   : 1;
-        enodeid_t id       : 29; } header;
+        enodeid_t id       : 30; } header;
 
     static_assert(sizeof(SymRef) == sizeof(ERef), "Expected size of types does not match");
     union {
@@ -126,7 +125,7 @@ public:
 
     // For symbols
     Enode(SymRef symb_, ERef er_, enodeid_t id_)
-        : header  ({et_symb, 0, id_})
+        : header  ({et_symb, id_})
         , symb     (symb_)
         , er      (er_)
         , cid     (cgid_ctr++) {}
@@ -136,11 +135,6 @@ public:
     // Defined for all Enodes
 
     en_type type        ()        const { return (en_type)header.type; }
-
-    void relocate       (ERef e)        { header.reloced = 1; er = e; }
-    bool reloced        ()        const { return header.reloced; }
-    ERef relocation     ()        const { return er; }
-
     uint32_t getId      ()        const { return header.id; }
 
     bool  isList        ()        const { return (en_type)header.type == et_list; }
@@ -302,16 +296,6 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
         else
             RegionAllocator<uint32_t>::free(symEnodeWord32Size());
 
-    }
-
-    void reloc(ERef& er, EnodeAllocator& to)
-    {
-        Enode& e = operator[](er);
-
-        if (e.reloced()) { er = e.relocation(); return; }
-
-        er = to.alloc(e);
-        e.relocate(er);
     }
 
 };

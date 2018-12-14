@@ -76,9 +76,6 @@ class EnodeStore {
     ERef  addSymb(SymRef t);
     ERef  addList(ERef car, ERef cdr);
 
-    void undoTerm(ERef);
-    void undoList(ERef);
-
     ERef get_Nil() const { return ERef_Nil; }
     void free(ERef er) { ea.free(er); }
     vec<ERef>           id_to_enode;
@@ -94,7 +91,6 @@ class EnodeStore {
           Enode& operator[] (PTRef tr)       { return ea[termToERef[tr]]; }
     const Enode& operator[] (PTRef tr) const { return ea[termToERef[tr]]; }
 
-    void removeParent(ERef, ERef);
     char* printEnode(ERef);
 
     char getDistIndex(PTRef tr_d) const {

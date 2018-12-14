@@ -41,7 +41,7 @@ Enode::Enode(ERef car_,
              ERef er_,
              enodeid_t id_,
              PTRef ptr)
-     : header({et_list, 0, id_}) // Fix the type to term later if necessary
+     : header({et_list, id_}) // Fix the type to term later if necessary
      , er(er_)
      , cid(cgid_ctr++)
 
