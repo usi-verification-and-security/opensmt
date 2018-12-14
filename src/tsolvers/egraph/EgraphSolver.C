@@ -24,6 +24,38 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
+/********************************************************************
+The algorithm and data structures are inspired by the following paper:
+
+@article{Detlefs:2005:STP:1066100.1066102,
+ author = {Detlefs, David and Nelson, Greg and Saxe, James B.},
+ title = {Simplify: A Theorem Prover for Program Checking},
+ journal = {J. ACM},
+ issue_date = {May 2005},
+ volume = {52},
+ number = {3},
+ month = may,
+ year = {2005},
+ issn = {0004-5411},
+ pages = {365--473},
+ numpages = {109},
+ url = {http://doi.acm.org/10.1145/1066100.1066102},
+ doi = {10.1145/1066100.1066102},
+ acmid = {1066102},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ keywords = {Theorem proving, decision procedures, program checking},
+}
+
+ The important part describing the merge and its undo is described in section 7 - The E-graph in Detail
+
+ The following changes have been made to the merge algorithm:
+ Old signatures are no longer removed from the table of signatures (also they now don't have to be reinserted back in undo)
+ This means that the table can grow in memory but we can skip the whole 5.2 from the merge, so we save one whole pass through the parents.
+
+*********************************************************************/
+
+
 #include "Egraph.h"
 #include "Enode.h"
 //#include "LA.h"
@@ -1015,19 +1047,14 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     { // sanity checks
         const Enode& an_x = getEnode(x);
         const Enode& an_y = getEnode(y);
-
-        if (an_x.isTerm()) {
-            assert( !isConstant(x) || !isConstant(y) );
-//        assert( !isConstant(x) || an_x.getSize() == 1 );
-//        assert( !isConstant(y) || an_y.getSize() == 1 );
-        }
+        assert( an_x.type() == an_y.type() );
+        assert( !an_x.isTerm() || !isConstant(x) || !isConstant(y));
         assert( an_x.getRoot( ) != an_y.getRoot( ) );
         assert( x == an_x.getRoot( ) );
         assert( y == an_y.getRoot( ) );
     }
 
-
-    // Ensure that the constant or the one with a larger equivalence
+    // Step 1: Ensure that the constant or the one with a larger equivalence
     // class will be in x (and will become the root)
     if (isConstant(y) ||
         (!(isConstant(x)) && (getEnode(x).getSize() < getEnode(y).getSize())))
@@ -1038,25 +1065,22 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     Enode& en_x = getEnode(x);
     Enode& en_y = getEnode(y);
 
-    assert(en_x.type() == en_y.type());
     assert(!en_y.isTerm() || !isConstant(y));
 
-    // TODO:
-    // Propagate equalities to other ordinary theories
-    //
+    // Step 2: Propagate equalities to other ordinary theories
+    // MB: We are not doing that
+    // Step 3: MB: Also not relevant for us
 
-    // Update forbid list for x by adding elements of y
-    addForbidList(en_x, en_y);
+    // Step 4: Update forbid list for x by adding elements of y
+    mergeForbidLists(en_x, en_y);
 #ifdef GC_DEBUG
     checkRefConsistency();
     checkForbidReferences(x);
 #endif
-    // Merge distinction classes
+    // Step 4: Merge distinction classes
     mergeDistinctionClasses(en_x, en_y);
-    // Assign w to the class with fewer parents
-    ERef w = en_x.getParentSize() < en_y.getParentSize( ) ? x : y ;
-//    removeSignatureOfRootedParents(w);
 
+    // MB: Intermezzo - our theory propagation
     // Compute deductions that follows from
     // merging x and y. Probably this function
     // could be partially embedded into the next
@@ -1066,23 +1090,36 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
         deduce( x, y, reason );
     }
 
-    mergeCongruenceClassInfo(x, y);
+    // Step 5: Consists of several operations
+    // Step 5.1: Assign w to the class with fewer parents
+    // Only parents of w's class will get new signatures
+    const bool xLessParents = en_x.getParentSize() < en_y.getParentSize( );
+    ERef w = xLessParents ? x : y ;
+    // Step 5.2: Remove old signatures of w’s class’s parents.
+    // MB: This step is skipped now, we keep the old signatures in the table
+    // removeSignaturesOfParentsThatAreCongruenceRoots(w);
 
-    // Preserve signatures of larger parent set
-    if ( en_x.getParentSize() < en_y.getParentSize() )
+
+    // Step 5.3: Union of equivalence classes
+    mergeEquivalenceClasses(x, y);
+
+    // Step 5.4: Preserve signatures of the larger parent set by swapping id’s if necessary.
+    // MB: This is necessary to ensure that exactly the signatures of w's parents have changed.
+    if ( xLessParents )
     {
         enodeid_t tmp = en_x.getCid();
         en_x.setCid( en_y.getCid() );
         en_y.setCid( tmp );
     }
-    // Insert new signatures and propagate congruences
-    propagateEqualityByCongruence(w);
-    // Merge parent lists
+    // Step 5.5: Insert new signatures and propagate congruences
+    newSignaturesAndCongruencePairs(w);
+    // Step 6: Merge parent lists
     mergeParentLists(en_x, en_y);
-    // Store info about the constant
+    // MB: added step: Store info about the constant
     updateConstantInfo(en_x, en_y);
+    // Step 7: Not relevant -> skipped
 
-  // Push undo record
+    // Step 8: Push undo record
     undo_stack_main.push( Undo(MERGE,y) );
 }
 
@@ -1267,36 +1304,36 @@ void Egraph::undoMerge( ERef y )
 
     Enode& en_x = enode_store[x];
 
-    // Undoes the merge of the parent lists
+    // Undo Step 6 of merge:
     unmergeParentLists(en_x, en_y);
 
+    // Undo Step 5 of merge
     // Assign w to the smallest parent class
-    ERef w = en_x.getParentSize( ) < en_y.getParentSize( ) ? x : y ;
-    assert(w != ERef_Undef);
+    const bool xLessParents = en_x.getParentSize() < en_y.getParentSize( );
+    ERef w = xLessParents ? x : y ;
     Enode& en_w = enode_store[w];
-    // Undoes the insertion of the modified signatures
-    removeSignatureOfRootedParents(w); // MB: why this?
+    // Undo Case 2 of Step 5.5 of merge
+    removeSignaturesOfParentsThatAreCongruenceRoots(w);
 
-    undomergeCongruenceClassInfo(x, y);
-    // Undo swapping
+    // Undo Step 5.4 of merge
     if ( en_x.getParentSize( ) < en_y.getParentSize( ) ) {
         enodeid_t tmp = en_x.getCid( );
         en_x.setCid( en_y.getCid( ) );
         en_y.setCid( tmp );
     }
-    // Reinsert back signatures that have been removed during
-    // the merge operation
-    reinsertSignatures(w);
-    // Restore distinction classes for x, with a set difference operation
-    en_x.setDistClasses( ( en_x.getDistClasses() & ~(en_y.getDistClasses())) );
+    // Undo Step 5.3 of merge
+    unmergeEquivalenceClasses(x, y);
 
-    undoAddForbidList(en_x, en_y);
-
+    // Undo Case 1 of Step 5.5 of merge
+    // Since we are skipping Step 5.2 in merge. we do not have to undo that.
+    unmergeParentCongruenceClasses(w);
+    // Undo step 4 of Merge
+    unmergeDistinctionClasses(en_x, en_y);
+    unmergeForbidLists(en_x, en_y);
+    // Undo our custome step
     undoUpdateConstantInfo(en_x, en_y);
 
-  //
-  // TODO: unmerge for ordinary theories
-  //
+    // Undo Step 2 -> not relevant
 #ifdef GC_DEBUG
     checkRefConsistency();
 #endif
@@ -1695,7 +1732,7 @@ void Egraph::faGarbageCollect() {
 #endif
 }
 
-void Egraph::addForbidList(Enode & to, const Enode & from) {
+void Egraph::mergeForbidLists(Enode & to, const Enode & from) {
     if ( from.getForbid( ) != ELRef_Undef ) {
         // We assign the same forbid list
         if ( to.getForbid( ) == ELRef_Undef ) {
@@ -1715,14 +1752,19 @@ void Egraph::mergeDistinctionClasses(Enode & to, const Enode & from) {
     to.setDistClasses( ( to.getDistClasses( ) | from.getDistClasses( ) ) );
 }
 
-void Egraph::removeSignatureOfRootedParents(ERef noderef) {
+void Egraph::unmergeDistinctionClasses(Enode & to, const Enode & from) {
+    to.setDistClasses( ( to.getDistClasses() & ~(from.getDistClasses())) );
+}
+
+void Egraph::removeSignaturesOfParentsThatAreCongruenceRoots(ERef noderef) {
     // Visit each parent of w, according to the type of w
     // and remove each congruence root from the signature table
     const Enode& node = getEnode(noderef);
     ERef p = node.getParent();
+    if (p == ERef_Undef) { return; } // No parent -> no work
     const ERef pstart = p;
     const bool scdr = node.isList( );
-    for ( ; p != ERef_Undef ; ) {
+    while (true) {
         const Enode& en_p = getEnode(p);
         assert ( en_p.isTerm( ) || en_p.isList( ) );
         // If p is a congruence root
@@ -1733,12 +1775,13 @@ void Egraph::removeSignatureOfRootedParents(ERef noderef) {
         // Next element
         p = scdr ? en_p.getSameCdr( ) : en_p.getSameCar( ) ;
         // End of cycle
-        if ( p == pstart )
-            p = ERef_Undef;
+        if ( p == pstart ) {
+            return; // Nothing to do after the cycle;
+        }
     }
 }
 
-void Egraph::mergeCongruenceClassInfo(ERef newroot, ERef oldroot) {
+void Egraph::mergeEquivalenceClasses(ERef newroot, ERef oldroot) {
     // Perform the union of the two equivalence classes
     // i.e. reroot every node in y's class to point to x
     ERef v = oldroot;
@@ -1771,30 +1814,32 @@ void Egraph::mergeCongruenceClassInfo(ERef newroot, ERef oldroot) {
     en_x.setSize( en_x.getSize( ) + en_y.getSize( ) );
 }
 
-void Egraph::propagateEqualityByCongruence(ERef node) {
+void Egraph::newSignaturesAndCongruencePairs(ERef node) {
     ERef p = getEnode(node).getParent();
+    if (p == ERef_Undef) { return; } // no parents, nothing to be done
     const bool scdr = getEnode(node).isList( );
     const ERef pstart = p;
-    for ( ; p != ERef_Undef; ) {
+    while (true) {
         Enode& en_p = getEnode(p);
-        // If p is a congruence root
+        // Only roots of congruence classes needs to be processed
         if ( p == en_p.getCgPtr( ) ) {
-            //ERef q = EnodeStore.insertSig(p);
-            // Signature already present
-            //if ( q != p )
             if (enode_store.containsSig(p)) {
+                // Case 1: p joins q's congruence class
                 ERef q = enode_store.lookupSig(p);
                 en_p.setCgPtr( q );
                 pending.push( p );
                 pending.push( q );
             }
-            else enode_store.insertSig(p);
+            else {
+                // Case 2: p remains congruent root (but now has new signature)
+                enode_store.insertSig(p);
+            }
         }
         // Next element
         p = scdr ? en_p.getSameCdr( ) : en_p.getSameCar( ) ;
         // Exit if cycle complete
         if ( p == pstart )
-            p = ERef_Undef;
+            return; // Nothing to be done after cycle
     }
 }
 
@@ -1871,7 +1916,7 @@ void Egraph::unmergeParentLists(Enode & to, const Enode & from) {
     }
 }
 
-void Egraph::undomergeCongruenceClassInfo(ERef newroot, ERef oldroot) {
+void Egraph::unmergeEquivalenceClasses(ERef newroot, ERef oldroot) {
     Enode & en_x = getEnode(newroot);
     Enode & en_y = getEnode(oldroot);
     // Restore the size of x's class
@@ -1892,7 +1937,7 @@ void Egraph::undomergeCongruenceClassInfo(ERef newroot, ERef oldroot) {
     }
 }
 
-void Egraph::undoAddForbidList(Enode & to, const Enode & from) {
+void Egraph::unmergeForbidLists(Enode & to, const Enode & from) {
     // Restore forbid list for x and y
     if ( (to.getForbid( ) == from.getForbid() ) && to.getForbid() != ELRef_Undef ) {
         forbid_allocator.removeRef(to.getERef(), to.getForbid());
@@ -1925,7 +1970,7 @@ void Egraph::undoUpdateConstantInfo(Enode & to, Enode & from) {
     }
 }
 
-void Egraph::reinsertSignatures(ERef node) {
+void Egraph::unmergeParentCongruenceClasses(ERef node) {
     ERef p = getEnode(node).getParent( );
     if (p == ERef_Undef) return;
     const bool scdr = getEnode(node).isList( );
@@ -1936,31 +1981,21 @@ void Egraph::reinsertSignatures(ERef node) {
 
         ERef cg = en_p.getCgPtr();
         Enode& en_cg = enode_store[cg];
-        // If p is a congruence root
-        if ( p == cg
-             || enode_store[en_p.getCar()].getRoot() != enode_store[en_cg.getCar()].getRoot()
+        // If p was congruence root before the merge (detect difference with the root of its congruence class before undo)
+        if ( enode_store[en_p.getCar()].getRoot() != enode_store[en_cg.getCar()].getRoot()
              || enode_store[en_p.getCdr()].getRoot() != enode_store[en_cg.getCdr()].getRoot() )
         {
+            // Undo Case 1 in Step 5.5 of merge
             en_p.setCgPtr(p);
         }
-        if (en_p.getCgPtr() == p) {
-#ifdef VERBOSE_EUF
-            if (enode_store.containsSig(p)) {
-                char* errmsg = enode_store.printEnode(p);
-                cerr << errmsg;
-                free(errmsg);
-                assert(false);
-            }
-#else
-//            assert(!enode_store.containsSig(p));
-#endif
-//            enode_store.insertSig(p);
-            assert(enode_store.containsSig(p));
-        }
+        // MB: We are keeping the old signature, which is now valid again, so it should be in the store
+        assert(en_p.getCgPtr() != p || enode_store.containsSig(p));
         // Next element
         p = scdr ? en_p.getSameCdr( ) : en_p.getSameCar();
         // End of cycle
         if ( p == pstart )
-            break;
+            return; // Nothing to do after the loop;
     }
 }
+
+
