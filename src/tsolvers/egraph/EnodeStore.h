@@ -146,11 +146,8 @@ class EnodeStore {
           ERef carRoot = ea[en_e.getCar()].getRoot();
           ERef cdrRoot = ea[en_e.getCdr()].getRoot();
           assert(!containsSig(e));
-          assert(e == en_e.getCgPtr());
-          sig_tab.insert(SigPair(ea[carRoot].getCid(), ea[cdrRoot].getCid()), en_e.getCgPtr());
-#ifdef PEDANTIC_DEBUG
-//          SigPair(ea[carRoot.getCid(), ea[cdrRoot].getCid()])
-#endif
+          assert(e == en_e.getCgPtr()); // MB: Only congruence roots should be inserted
+          sig_tab.insert(SigPair(ea[carRoot].getCid(), ea[cdrRoot].getCid()), e);
         }
 // DEBUG
 #ifdef PEDANTIC_DEBUG
