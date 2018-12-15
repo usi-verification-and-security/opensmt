@@ -150,25 +150,6 @@ void Egraph::expExplain () {
     }
 }
 
-// Exported explain
-/*
-void Egraph::explain( PTRef x, PTRef y, vec<PTRef> & expl )
-{
-    assert(false);
-    assert(explanation.size() == 0);
-    if (x == y) return;
-    expExplain(x, y, PTRef_Undef);
-    assert(explanation.size() > 0);
-    for (int i = 0; i < explanation.size(); i++)
-        expl.push(explanation[i]);
-    expCleanup( );
-    explanation.clear( );
-#ifdef PRODUCE_PROOF
-    if ( config.produce_inter != 0 )
-        cgraph.clear( );
-#endif
-}
-*/
 //
 // Produce an explanation between nodes x and y
 // Wrapper for expExplain
@@ -291,7 +272,7 @@ void Egraph::expEnqueueArguments(ERef x, ERef y) {
         return;
     assert(getEnode(x).isTerm() && getEnode(y).isTerm());
     // Simple explanation if they are arity 0 terms
-    if ( getEnode(x).getSize() == 0 ) {
+    if ( logic.getPterm(getEnode(x).getTerm()).nargs() == 0 ) {
 #ifdef VERBOSE_EUFEX
         cerr << "pushing " << toString(x) << " and " << toString(y) << endl;
 #endif
