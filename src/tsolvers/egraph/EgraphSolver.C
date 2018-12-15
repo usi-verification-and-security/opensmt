@@ -242,8 +242,9 @@ PTRef Egraph::getSuggestion( )
 void Egraph::getConflict( bool deduction, vec<PtAsgn>& cnfl )
 {
     (void)deduction;
-    for (int i = 0; i < explanation.size(); i++)
+    for (int i = 0; i < explanation.size(); i++) {
         cnfl.push(explanation[i]);
+    }
 #ifdef STATISTICS
     if (deduction) {
         if (cnfl.size() > tsolver_stats.max_reas_size)
