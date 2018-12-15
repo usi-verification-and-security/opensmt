@@ -161,25 +161,6 @@ public:
   inline void storeDup1(PTRef e) { assert(  active_dup1 ); if (duplicates1.has(e)) duplicates1[e] = dup_count1; else duplicates1.insert(e, dup_count1); }
   inline bool isDup1   (PTRef e) { assert(  active_dup1 ); return !duplicates1.has(e) ? false : duplicates1[e] == dup_count1; }
   inline void doneDup1 ()        { assert(  active_dup1 ); active_dup1 = false; }
-  //
-  // Fast duplicates checking. Cannot be nested !
-  //
-  inline void initDup2  ( )           { assert( !active_dup2 ); active_dup2 = true; duplicates2.growTo( enode_store.id_to_enode.size( ), dup_count2 ); dup_count2 ++; }
-  inline void storeDup2 ( ERef e ) { assert(  active_dup2 ); assert( enode_store[e].getId() < (enodeid_t)duplicates2.size_() ); duplicates2[ enode_store[e].getId( ) ] = dup_count2; }
-  inline bool isDup2    ( ERef e ) { assert(  active_dup2 ); assert( enode_store[e].getId() < (enodeid_t)duplicates2.size_() ); return duplicates2[ enode_store[e].getId( ) ] == dup_count2; }
-  inline void doneDup2  ( )           { assert(  active_dup2 ); active_dup2 = false; }
-  //
-  // Fast duplicates checking. Cannot be nested !
-  //
-  void    initDupMap1  ( );
-  void    storeDupMap1 ( ERef, ERef );
-  ERef    valDupMap1   ( ERef );
-  void    doneDupMap1  ( );
-
-  void    initDupMap2  ( );
-  void    storeDupMap2 ( ERef, ERef );
-  ERef    valDupMap2   ( ERef );
-  void    doneDupMap2  ( );
 
   void    computePolarities ( ERef );
 
@@ -263,19 +244,12 @@ private:
   };
 
   bool                        active_dup1;                      // To prevent nested usage
-  bool                        active_dup2;                      // To prevent nested usage
   Map<PTRef,int,PTRefHash,Equal<PTRef> >  duplicates1;          // Fast duplicate checking
-  vec< int >                  duplicates2;                      // Fast duplicate checking
   int                         dup_count1;                       // Current dup token
-  int                         dup_count2;                       // Current dup token
   bool                        active_dup_map1;                  // To prevent nested usage
-  bool                        active_dup_map2;                  // To prevent nested usage
   vec< ERef >                 dup_map1;                         // Fast duplicate checking
   vec< int >                  dup_set1;                         // Fast duplicate checking
-  vec< ERef >                 dup_map2;                         // Fast duplicate checking
-  vec< int >                  dup_set2;                         // Fast duplicate checking
   int                         dup_map_count1;                   // Current dup token
-  int                         dup_map_count2;                   // Current dup token
   bool                           model_computed;                // Has model been computed lately ?
   bool                           congruence_running;            // True if congruence is running
 
@@ -438,81 +412,5 @@ private:
   void printStatistics ( ofstream & );
 #endif
 };
-
-inline void Egraph::initDupMap1( )
-{
-  assert( !active_dup_map1 );
-  active_dup_map1 = true;
-  dup_map1.growTo( enode_store.id_to_enode.size( ), ERef_Nil );
-  dup_set1.growTo( enode_store.id_to_enode.size( ), dup_map_count1 );
-  dup_map_count1 ++;
-}
-
-inline void Egraph::initDupMap2( )
-{
-  assert( !active_dup_map2 );
-  active_dup_map2 = true;
-  dup_map2.growTo( enode_store.id_to_enode.size( ), ERef_Nil );
-  dup_set2.growTo( enode_store.id_to_enode.size( ), dup_map_count2 );
-  dup_map_count2 ++;
-}
-
-inline void Egraph::storeDupMap1( ERef k, ERef e )
-{
-  assert(  active_dup_map1 );
-  dup_map1.growTo( enode_store.id_to_enode.size( ), ERef_Nil ); // Should this be ERef_Undef instead?
-  dup_set1.growTo( enode_store.id_to_enode.size( ), dup_map_count1 - 1 );
-  Enode& en_k = enode_store[k];
-  assert( en_k.getId() < (enodeid_t)dup_set1.size_( ) );
-  dup_set1[ en_k.getId() ] = dup_map_count1;
-  dup_map1[ en_k.getId( ) ] = e;
-}
-
-inline void Egraph::storeDupMap2( ERef k, ERef e )
-{
-  assert(  active_dup_map2 );
-  dup_map2.growTo( enode_store.id_to_enode.size( ), ERef_Undef );
-  dup_set2.growTo( enode_store.id_to_enode.size( ), dup_map_count2 - 1 );
-  Enode& en_k = enode_store[k];
-  assert( en_k.getId( ) < (enodeid_t)dup_set2.size_( ) );
-  dup_set2[ en_k.getId( ) ] = dup_map_count2;
-  dup_map2[ en_k.getId( ) ] = e;
-}
-
-inline ERef Egraph::valDupMap1( ERef k )
-{
-  assert(  active_dup_map1 );
-  dup_map1.growTo( enode_store.id_to_enode.size( ), ERef_Undef );
-  dup_set1.growTo( enode_store.id_to_enode.size( ), dup_map_count1 - 1 );
-  Enode& en_k = enode_store[k];
-  assert( en_k.getId( ) < (enodeid_t)dup_set1.size_( ) );
-  if ( dup_set1[ en_k.getId( ) ] == dup_map_count1 )
-    return dup_map1[ en_k.getId( ) ];
-  return ERef_Undef;
-}
-
-inline ERef Egraph::valDupMap2( ERef k )
-{
-  assert(  active_dup_map2 );
-  dup_map2.growTo( enode_store.id_to_enode.size( ), ERef_Undef );
-  dup_set2.growTo( enode_store.id_to_enode.size( ), dup_map_count2 - 1 );
-  Enode& en_k = enode_store[k];
-  assert( en_k.getId( ) < (enodeid_t)dup_set2.size_( ) );
-  if ( dup_set2[ en_k.getId( ) ] == dup_map_count2 )
-    return dup_map2[ en_k.getId( ) ];
-  return ERef_Undef;
-}
-
-inline void Egraph::doneDupMap1( )
-{
-  assert(  active_dup_map1 );
-  active_dup_map1 = false;
-}
-
-inline void Egraph::doneDupMap2( )
-{
-  assert(  active_dup_map2 );
-  active_dup_map2 = false;
-}
 
 #endif
