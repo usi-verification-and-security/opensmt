@@ -602,8 +602,8 @@ bool Egraph::mergeLoop( PtAsgn reason )
             assert(enr_proot != enr_qroot);
 #ifdef PRODUCE_PROOF
             if ( config.produce_inter() > 0 ) {
-                cgraph_->setConf( en_proot.getConstant( )
-                        , en_qroot.getConstant( )
+                cgraph_->setConf( en_proot.getTerm( )
+                        , en_qroot.getTerm( )
                         , PTRef_Undef );
             }
 #endif
@@ -614,7 +614,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
 #ifdef VERBOSE_EUF
             cerr << "constant pushing (1): "
                  << logic.printTerm(en_p.getTerm()) << " and "
-                 << logic.printTerm(en_proot.getConstant()) << endl;
+                 << logic.printTerm(en_proot.getTerm()) << endl;
 #endif
             exp_pending.push( p );
             exp_pending.push( enr_proot );
@@ -622,7 +622,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
 #ifdef VERBOSE_EUF
             cerr << "constant pushing (2): "
                  << logic.printTerm(en_q.getTerm()) << " and "
-                 << logic.printTerm(en_qroot.getConstant()) << endl;
+                 << logic.printTerm(en_qroot.getTerm()) << endl;
 #endif
             exp_pending.push( q );
             exp_pending.push( enr_qroot );
