@@ -1061,6 +1061,12 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     {
         std::swap(x,y);
     }
+
+    // MB: Before we actually merge the classes, we check if we are not merging with eq. class of constant True or False
+    if ( config.uf_theory_propagation > 0 ) {
+        deduce( x, y, reason );
+    }
+
     // Get the references right here
     Enode& en_x = getEnode(x);
     Enode& en_y = getEnode(y);
@@ -1079,16 +1085,6 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
 #endif
     // Step 4: Merge distinction classes
     mergeDistinctionClasses(en_x, en_y);
-
-    // MB: Intermezzo - our theory propagation
-    // Compute deductions that follows from
-    // merging x and y. Probably this function
-    // could be partially embedded into the next
-    // cycle. However, for the sake of simplicity
-    // we prefer to separate the two contexts
-    if ( config.uf_theory_propagation > 0 ) {
-        deduce( x, y, reason );
-    }
 
     // Step 5: Consists of several operations
     // Step 5.1: Assign w to the class with fewer parents
@@ -1126,35 +1122,23 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
 //
 // Deduce facts from the merge of x and y
 //
-// FIXME The implementation of polarity deduction should be based on just checking the
-//       enode against true/false.  Or possibly the trail should be available for checking.
-//       2014-07-01 fixed?
-//
+// Currently, it only deduces if something we are merging into eq. class of a constant True or False
 void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
     if (enode_store[x].isList()) return;
     lbool deduced_polarity = l_Undef;
 
-
-    PTRef x_const = enode_store[x].getConstant();
-    if ( x_const == logic.getTerm_true() )
+    // Depends on the invariant that constants are always the root of its eq. class.
+    // Also we assume that y is root of the class being merged into class with root x
+    // That means only x can be constant.
+    assert(y != enode_store.ERef_True && y != enode_store.ERef_False);
+    if ( x == enode_store.ERef_True  ){
         deduced_polarity = l_True;
-    else if ( x_const == logic.getTerm_false() )
+    }
+    else if ( x == enode_store.ERef_False ){
         deduced_polarity = l_False;
-
-    // Let y store the representant of the class
-    // containing the facts that we are about to deduce
-    if ( deduced_polarity == l_Undef ) {
-        ERef tmp = x;
-        x = y;
-        y = tmp;
-        PTRef x_const = enode_store[x].getConstant();
-        if ( x_const == logic.getTerm_true() )
-            deduced_polarity = l_True;
-        else if ( x_const == logic.getTerm_false() )
-            deduced_polarity = l_False;
     }
 
-    if ( deduced_polarity == l_Undef ) { // True, for instance, if x & y are not boolean types, or if they are, but they have not been assigned a value yet
+    if ( deduced_polarity == l_Undef ) {
 #ifdef NEG_DEDUCE
         // Work on negative deductions:
         // Merge of x and y results in inequalities expressed in the forbid
@@ -1206,19 +1190,20 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
 #endif // NEG_DEDUCE
         return;
     }
-
+    // x is the constant, go over the members of eq class of y and check if they have can be propagated to SAT solver
     ERef v = y;
     const ERef vstart = v;
     for (;;) {
         // We deduce only things that aren't currently assigned or
         // that we previously deduced on this branch
-        ERef sv = v;
-        PTRef sv_tr = enode_store[sv].getTerm();
-        if (!hasPolarity(sv_tr) &&
-            (logic.getPterm(sv_tr).getVar() == -1 || deduced[logic.getPterm(sv_tr).getVar()] == l_Undef)) {
-            if (logic.getPterm(sv_tr).getVar() != -1) {
-                deduced[logic.getPterm(sv_tr).getVar()] = {id, deduced_polarity};
+        PTRef v_tr = getEnode(v).getTerm();
+        assert(logic.getPterm(v_tr).getVar() != -1);
+        if (!hasPolarity(v_tr) && deduced[logic.getPterm(v_tr).getVar()] == l_Undef) {
+            if (logic.getPterm(v_tr).getVar() != -1) {
+                deduced[logic.getPterm(v_tr).getVar()] = {id, deduced_polarity};
             }
+            assert(v_tr == enode_store.ERefToTerm[v]);
+            th_deductions.push(PtAsgn_reason(v_tr, deduced_polarity, reason.tr));
 #ifdef VERBOSE_EUF
             cerr << "Deducing ";
             cerr << (deduced_polarity == l_False ? "not " : "");
@@ -1230,13 +1215,11 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
             cerr << " are now equal";
             cerr << endl;
 #endif
-            th_deductions.push(PtAsgn_reason(enode_store.ERefToTerm[sv],
-                                             deduced_polarity, reason.tr));
 #ifdef STATISTICS
             tsolver_stats.deductions_done ++;
 #endif
         }
-        v = enode_store[v].getNext( );
+        v = getEnode(v).getNext( );
         if ( v == vstart )
             break;
     }
