@@ -94,7 +94,6 @@ Enode::Enode(ERef car_,
         header.type = et_term;
         // Term specific data
         setDistClasses(0);
-        setConstant(PTRef_Undef);
         setForbid(ELRef_Undef);
         setPterm(ptr);
         setExpParent(ERef_Undef);

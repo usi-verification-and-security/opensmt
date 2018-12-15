@@ -81,7 +81,6 @@ class Extra {
         ELRef       forbid;         // List of unmergeable Enodes
         dist_t      dist_classes;   // The bit vector for distinction classes
         int         dist_index;     // My distinction index
-        PTRef       constant;
         // fields related to explanation
         PtAsgn      exp_reason;
         ERef        exp_parent;
@@ -200,10 +199,6 @@ public:
 
 //    inline dist_t getDistClasses() const { assert(isTerm()); return ex->trm.dist_classes; }
     inline dist_t getDistClasses() const { assert(!isSymb()); if (isTerm()) return ex->trm.dist_classes; else return 0; }
-
-    void setConstant      (PTRef tr)      { assert(isTerm()); ex->trm.constant = tr; }
-    PTRef getConstant     () const        { if (!isTerm()) return PTRef_Undef; return ex->trm.constant; }
-    void clearConstant    ()              { assert(isTerm()); ex->trm.constant = PTRef_Undef; }
 };
 
 struct ERefHash {

@@ -129,8 +129,6 @@ Egraph::Egraph(SMTConfig & c, Logic& l , vec<DedElem>& d)
 
     PTRef t = logic.getTerm_true();
     PTRef f = logic.getTerm_false();
-    enode_store[t].setConstant(t);
-    enode_store[f].setConstant(f);
 
     enode_store.ERef_True  = enode_store.termToERef[t];
     enode_store.ERef_False = enode_store.termToERef[f];
@@ -337,7 +335,6 @@ void Egraph::declareTerm(PTRef tr) {
 #endif
         PTRef rval = enode_store.addTerm(sym, cdr, tr);
         assert(rval == tr);
-        if (logic.isConstant(rval)) enode_store[rval].setConstant(rval);
     }
 
     // Check if termToERef contained the ref and it has been rewritten
@@ -582,12 +579,12 @@ bool Egraph::mergeLoop( PtAsgn reason )
         else
             cerr << "Due to different constants" << endl;
 #endif
-        has_explanation = true;
         // Conflict detected. We should retrieve the explanation
         // We have to distinguish 2 cases. If the reason for the
         // conflict is ERef_Undef, it means that a conflict arises because
         // we tried to merge two classes that are assigned to different
         // constants, otherwise we have a proper reason
+        has_explanation = true;
         ERef reason_1 = ERef_Undef;
         ERef reason_2 = ERef_Undef;
         //
@@ -599,8 +596,9 @@ bool Egraph::mergeLoop( PtAsgn reason )
         if ( reason_inequality.tr == PTRef_Undef ) {
             const Enode& en_proot = getEnode(enr_proot);
             const Enode& en_qroot = getEnode(enr_qroot);
-            assert(en_proot.getConstant() != PTRef_Undef);
-            assert(en_qroot.getConstant() != PTRef_Undef);
+            assert(en_proot.isTerm() && en_qroot.isTerm());
+            assert(logic.isConstant(en_proot.getTerm()));
+            assert(logic.isConstant(en_qroot.getTerm()));
             assert(enr_proot != enr_qroot);
 #ifdef PRODUCE_PROOF
             if ( config.produce_inter() > 0 ) {
@@ -1055,7 +1053,7 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     }
 
     // Step 1: Ensure that the constant or the one with a larger equivalence
-    // class will be in x (and will become the root)
+    // class will be in x (and will become the root). Constants must be roots! It is an invariant that other code depends on!
     if (isConstant(y) ||
         (!(isConstant(x)) && (getEnode(x).getSize() < getEnode(y).getSize())))
     {
@@ -1111,8 +1109,6 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     newSignaturesAndCongruencePairs(w);
     // Step 6: Merge parent lists
     mergeParentLists(en_x, en_y);
-    // MB: added step: Store info about the constant
-    updateConstantInfo(en_x, en_y);
     // Step 7: Not relevant -> skipped
 
     // Step 8: Push undo record
@@ -1275,8 +1271,6 @@ void Egraph::undoMerge( ERef y )
     // Undo step 4 of Merge
     unmergeDistinctionClasses(en_x, en_y);
     unmergeForbidLists(en_x, en_y);
-    // Undo our custome step
-    undoUpdateConstantInfo(en_x, en_y);
 
     // Undo Step 2 -> not relevant
 #ifdef GC_DEBUG
@@ -1388,9 +1382,10 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r)
     // possible that the constant is the same. In fact if it was
     // the same, they would be in the same class, but they are not
     // Check if they are part of the same distinction (general distinction)
+    if ( isConstant(p) && isConstant(q)) return true;
     const Enode& en_p = getEnode(p);
     const Enode& en_q = getEnode(q);
-    if ( en_p.isTerm() && en_p.getConstant() != PTRef_Undef && en_q.getConstant() != PTRef_Undef) return true;
+
     dist_t intersection = ( en_p.getDistClasses( ) & en_q.getDistClasses( ) );
 
     if ( intersection ) {
@@ -1813,18 +1808,6 @@ void Egraph::mergeParentLists(Enode & to, const Enode & from) {
     to.setParentSize( to.getParentSize( ) + from.getParentSize( ) );
 }
 
-void Egraph::updateConstantInfo(Enode & to, Enode & from) {
-    if (from.isTerm() && from.getConstant() != PTRef_Undef) {
-        assert(to.getConstant() == PTRef_Undef);
-        to.setConstant( from.getConstant() );
-    }
-        // Store info about the constant
-    else if (to.isTerm() && to.getConstant() != PTRef_Undef) {
-        assert(from.getConstant() == PTRef_Undef);
-        from.setConstant(to.getConstant());
-    }
-}
-
 void Egraph::unmergeParentLists(Enode & to, const Enode & from) {
     to.setParentSize( to.getParentSize() - from.getParentSize() );
     // Restore the correct parents
@@ -1882,25 +1865,6 @@ void Egraph::unmergeForbidLists(Enode & to, const Enode & from) {
         ELRef tmp = forbid_allocator[to.getForbid()].link;
         forbid_allocator[to.getForbid()].link = forbid_allocator[from.getForbid()].link;
         forbid_allocator[from.getForbid()].link = tmp;
-    }
-
-}
-
-void Egraph::undoUpdateConstantInfo(Enode & to, Enode & from) {
-    if (from.getConstant() != PTRef_Undef) {
-        PTRef yc = from.getConstant();
-        PTRef xc = to.getConstant();
-        assert( yc == xc );
-        // Invariant: the constant comes from one class only
-        // No merge can occur beteween terms that point to the
-        // same constant, as they would be in the same class already
-//        assert( ( yc->getRoot( ) == y && xc->getRoot( ) != x )
-//             || ( yc->getRoot( ) != y && xc->getRoot( ) == x ) );
-        // Determine from which class the constant comes from
-        if ( enode_store[yc].getRoot() == from.getERef() )
-            to.clearConstant();
-        else
-            from.clearConstant();
     }
 }
 

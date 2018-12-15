@@ -417,8 +417,6 @@ private:
   void newSignaturesAndCongruencePairs(ERef node);
   void mergeParentLists(Enode & to, const Enode & from);
   void unmergeParentLists(Enode & to, const Enode & from);
-  void updateConstantInfo(Enode & to, Enode & from);
-  void undoUpdateConstantInfo(Enode & to, Enode & from);
   void unmergeParentCongruenceClasses(ERef node);
 
 #ifdef VERBOSE_EUF
