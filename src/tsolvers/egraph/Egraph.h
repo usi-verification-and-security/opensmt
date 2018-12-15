@@ -44,10 +44,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "GCTest.h"
 #endif
 
-#ifdef PRODUCE_PROOF
-#include "UFInterpolator.h"
-#endif
-
 #include <unordered_set>
 
 class UFSolverStats: public TSolverStats
@@ -73,8 +69,9 @@ class UFSolverStats: public TSolverStats
 
 class Egraph : public TSolver
 {
+protected:
+    Logic& logic;
 private:
-  Logic& logic;
   ELAllocator   forbid_allocator;
 
   EnodeStore    enode_store;
@@ -102,7 +99,7 @@ public:
   Egraph(SMTConfig & c , Logic& l
           , vec<DedElem>& d);
 
-    ~Egraph( ) {
+    virtual ~Egraph( ) {
         backtrackToStackSize( 0 );
         //
         // Delete enodes
@@ -114,12 +111,6 @@ public:
 
             enode_store.id_to_enode.pop();
         }
-#ifdef PRODUCE_PROOF
-        if(cgraph)
-            delete cgraph;
-        if(cgraph_)
-            delete cgraph_;
-#endif
 #ifdef STATISTICS
         tsolver_stats.printStatistics(std::cerr);
 #endif // STATISTICS
@@ -129,8 +120,9 @@ public:
 
     void print(ostream& out) { return; }
 
-private:
+protected:
     inline Enode& getEnode(ERef er) { return enode_store[er]; }
+private:
     ERef termToERef(PTRef p)              { return enode_store.termToERef[p]; }
 public:
     inline const Enode& getEnode(ERef er) const { return enode_store[er]; }
@@ -197,9 +189,6 @@ public:
   void                clearModel              ( );
   void                printModel              ( ostream & );                // Computes and print the model
   void                splitOnDemand           ( vec<PTRef> &, int ) { };       // Splitting on demand modulo equality
-  void                explain                 ( PTRef
-                                              , PTRef
-                                              , vec<PTRef> & );             // Exported explain
 
   //===========================================================================
   // Exported function for using egraph as supporting solver
@@ -296,12 +285,13 @@ private:
   //
   // Explanation routines and data
   //
+protected:
+  virtual void doExplain(ERef, ERef, PtAsgn);                   // Explain why the Enodes are equivalent when PtAsgn says it should be different
+  virtual void explainConstants(ERef, ERef);
+  virtual void expExplainEdge(ERef v, ERef p);
+private:
   void     expExplain           ( );                            // Main routine for explanation
-#ifdef PRODUCE_PROOF
-  void     expExplain           ( ERef, ERef, PTRef );        // Enqueue equality and explain
-#else
   void     expExplain(ERef, ERef);               // Enqueue equality and explain
-#endif
   void     expStoreExplanation  ( ERef, ERef, PtAsgn );         // Store the explanation for the merge
   void     expExplainAlongPath(ERef, ERef);               // Store explanation in explanation
   void     expEnqueueArguments(ERef, ERef);               // Enqueue arguments to be explained
@@ -336,31 +326,6 @@ private:
         faGarbageCollect(); }
   void relocAll(ELAllocator&);
   //============================================================================
-
-#ifdef PRODUCE_PROOF
-  //===========================================================================
-  // Interpolation related routines - Implemented in EgraphDebug.C
-
-public:
-
-  inline void     setAutomaticColoring    ( ) { assert( !automatic_coloring ); automatic_coloring = true; }
-
-  PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
-  {
-        return cgraph->getInterpolant(mask, labels);
-  }
-
-  TheoryInterpolator*         getTheoryInterpolator()
-  {
-      return nullptr;
-  }
-
-private:
-
-  CGraph *                cgraph;                   // Holds congrunce graph and compute interpolant
-  CGraph *                cgraph_;                   // Holds congrunce graph and compute interpolant 
-  bool                    automatic_coloring;        // Set automatic node coloring
-#endif
 
   //===========================================================================
   // Debugging routines - Implemented in EgraphDebug.C

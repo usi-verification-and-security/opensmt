@@ -154,11 +154,7 @@ void Egraph::expExplain () {
 // Produce an explanation between nodes x and y
 // Wrapper for expExplain
 //
-#ifdef PRODUCE_PROOF
-void Egraph::expExplain(ERef x, ERef y, PTRef r)
-#else
 void Egraph::expExplain(ERef x, ERef y)
-#endif
 {
 #ifdef VERBOSE_EUFEX
     cerr << "exp pending size " << exp_pending.size() << endl;
@@ -167,24 +163,8 @@ void Egraph::expExplain(ERef x, ERef y)
     exp_pending.push(x);
     exp_pending.push(y);
 
-#ifdef PRODUCE_PROOF
-    if ( config.produce_inter() != 0 )
-    {
-        cgraph_->setConf( getEnode(x).getTerm(), getEnode(y).getTerm(), r );
-    }
-#endif
-
     initDup1();
     expExplain();
- #ifdef PRODUCE_PROOF
-    if ( config.produce_inter() != 0 )
-    {
-        delete cgraph;
-        cgraph = cgraph_;
-        //cgraphs.push(cgraph_);
-        cgraph_ = new CGraph(*this, config, logic);
-    }
-#endif
     doneDup1();
     expCleanup();
 }
@@ -221,46 +201,12 @@ void Egraph::expExplainAlongPath(ERef x, ERef y) {
     cerr << "Explaining " << toString(v) << " to " << toString(to) << endl;
 #endif
     while ( v != to ) {
-        auto p = getEnode(v).getExpParent();
+        ERef p = getEnode(v).getExpParent();
         if (p == ERef_Undef)
             cerr << "weirdness " << toString(v) << endl;
         assert(p != ERef_Undef);
-        PtAsgn r = getEnode(v).getExpReason();
-
-        // If it is not a congruence edge
-        if (r.tr != PTRef_Undef && r.tr != Eq_FALSE) {
-            assert(!isDup1(r.tr)); // MB: It seems that with the shortcuts stored in expRoot, duplicates will never be encountered
-            if ( !isDup1(r.tr) ) {
-                explanation.push(r);
-                storeDup1(r.tr);
-            }
-        }
-        // Otherwise it is a congruence edge
-        // This means that the edge is linking nodes
-        // like (v)f(a1,...,an) (p)f(b1,...,bn), and that
-        // a1,...,an = b1,...bn. For each pair ai,bi
-        // we have therefore to compute the reasons
-        else {
-            assert( getEnode(v).getCar() == getEnode(p).getCar() );
-            // MB: FIXME enable the second check
-//            assert( logic.getPterm(v).nargs() == logic.getPterm(p).nargs() );
-            expEnqueueArguments( v, p );
-        }
-
-#ifdef PRODUCE_PROOF
-        if ( config.produce_inter() != 0 ) {
-            const Enode& v_node = getEnode(v);
-            const Enode& p_node = getEnode(p);
-            assert(v_node.isTerm());
-            assert(p_node.isTerm());
-            cgraph_->addCNode( v_node.getTerm() );
-            cgraph_->addCNode( p_node.getTerm() );
-            cgraph_->addCEdge( v_node.getTerm(), p_node.getTerm(), r.tr );
-        }
-#endif
-
-        expUnion( v, p );
-        auto v_old = v;
+        expExplainEdge(v,p);
+        ERef v_old = v;
         v = expHighestNode( p );
         if (v_old == v)
             assert(false); // loop in the explanation graph!
@@ -306,6 +252,31 @@ void Egraph::expEnqueueArguments(ERef x, ERef y) {
         cdr_y = getEnode(cdr_y).getCdr();
     }
     assert(cdr_y == ERef_Nil);
+}
+
+void Egraph::expExplainEdge(const ERef v, const ERef p) {
+    assert(getEnode(v).getExpParent() == p);
+    PtAsgn r = getEnode(v).getExpReason();
+
+    // If it is not a congruence edge
+    if (r.tr != PTRef_Undef && r.tr != Eq_FALSE) {
+        assert(!isDup1(r.tr)); // MB: It seems that with the shortcuts stored in expRoot, duplicates will never be encountered
+        if ( !isDup1(r.tr) ) {
+            explanation.push(r);
+            storeDup1(r.tr);
+        }
+    }
+        // Otherwise it is a congruence edge
+        // This means that the edge is linking nodes
+        // like (v)f(a1,...,an) (p)f(b1,...,bn), and that
+        // a1,...,an = b1,...bn. For each pair ai,bi
+        // we have therefore to compute the reasons
+    else {
+        assert( getEnode(v).getCar() == getEnode(p).getCar() );
+        assert( logic.getPterm(getEnode(v).getTerm()).nargs() == logic.getPterm(getEnode(p).getTerm()).nargs() );
+        expEnqueueArguments( v, p );
+    }
+    expUnion( v, p );
 }
 
 void Egraph::expUnion(ERef x, ERef y) {

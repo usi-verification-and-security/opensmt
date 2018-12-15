@@ -72,7 +72,6 @@ public:
     virtual       Logic& getLogic() = 0;
     virtual const Logic& getLogic() const = 0;
 #ifdef PRODUCE_PROOF
-    virtual TheoryInterpolator* getTheoryInterpolator() = 0;
     virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t>*) = 0;
 #endif
 

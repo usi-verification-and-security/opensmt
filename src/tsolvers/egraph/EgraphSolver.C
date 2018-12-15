@@ -100,11 +100,6 @@ Egraph::Egraph(SMTConfig & c, Logic& l , vec<DedElem>& d)
       , dup_map_count1     ( 0 )
       , congruence_running ( false )
       , time_stamp         ( 0 )
-#ifdef PRODUCE_PROOF
-      , cgraph_            ( new CGraph( *this, config, logic ) )
-      , cgraph(NULL)
-      , automatic_coloring ( false )
-#endif
 {
     // For the uninterpreted predicates to work we need to have
     // two special terms true and false, and an asserted disequality
@@ -591,67 +586,10 @@ bool Egraph::mergeLoop( PtAsgn reason )
         ERef enr_qroot = en_q.getRoot();
 
         if ( reason_inequality.tr == PTRef_Undef ) {
-            const Enode& en_proot = getEnode(enr_proot);
-            const Enode& en_qroot = getEnode(enr_qroot);
-            assert(en_proot.isTerm() && en_qroot.isTerm());
-            assert(logic.isConstant(en_proot.getTerm()));
-            assert(logic.isConstant(en_qroot.getTerm()));
-            assert(enr_proot != enr_qroot);
-#ifdef PRODUCE_PROOF
-            if ( config.produce_inter() > 0 ) {
-                cgraph_->setConf( en_proot.getTerm( )
-                        , en_qroot.getTerm( )
-                        , PTRef_Undef );
-            }
-#endif
-            //
-            // We need explaining
-            //
-            // 1. why p and p->constant are equal
-#ifdef VERBOSE_EUF
-            cerr << "constant pushing (1): "
-                 << logic.printTerm(en_p.getTerm()) << " and "
-                 << logic.printTerm(en_proot.getTerm()) << endl;
-#endif
-            exp_pending.push( p );
-            exp_pending.push( enr_proot );
-            // 2. why q and q->constant are equal
-#ifdef VERBOSE_EUF
-            cerr << "constant pushing (2): "
-                 << logic.printTerm(en_q.getTerm()) << " and "
-                 << logic.printTerm(en_qroot.getTerm()) << endl;
-#endif
-            exp_pending.push( q );
-            exp_pending.push( enr_qroot );
-            // 3. why p and q are equal
-#ifdef VERBOSE_EUF
-            cerr << "constant pushing (3): "
-                 << logic.printTerm(en_q.getTerm()) << " and "
-                 << logic.printTerm(en_p.getTerm()) << endl;
-#endif
-            exp_pending.push( q );
-            exp_pending.push( p );
-#ifdef VERBOSE_EUF
-            cerr << "Explain XXX" << endl;
-#endif
-            initDup1( );
-            expExplain( );
- #ifdef PRODUCE_PROOF
-            if ( config.produce_inter() > 0 ) {
-                delete cgraph;
-                cgraph = cgraph_;
-                //cgraphs.push(cgraph_);
-                cgraph_ = new CGraph(*this, config, logic);
-            }
-#endif
-           doneDup1( );
-            expCleanup(); // Should be organized better...
+            explainConstants(p,q);
         }
         // Does the reason term correspond to disequality symbol
         else if ( logic.isDisequality(logic.getPterm(reason_inequality.tr).symb()) ) {
-            // The reason is a distinction, but skip the false equality
-            if (reason_inequality.tr != Eq_FALSE)
-                explanation.push( reason_inequality );
             // We should iterate through the elements
             // of the distinction and find which atoms
             // are causing the conflict
@@ -675,11 +613,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
 #ifdef VERBOSE_EUF
             cerr << "Explain YYY" << endl;
 #endif
-#ifdef PRODUCE_PROOF
-            expExplain( reason_1, reason_2, reason_inequality.tr );
-#else
-            expExplain( reason_1, reason_2 );
-#endif
+            doExplain(reason_1, reason_2, reason_inequality);
         }
         else if ( logic.isEquality(logic.getPterm(reason_inequality.tr).symb()) ) {
             // The reason is a negated equality
@@ -688,9 +622,6 @@ bool Egraph::mergeLoop( PtAsgn reason )
             cerr << "Reason inequality " << logic.printTerm(reason_inequality.tr) << endl;
 #endif
             const Pterm& pt_reason = logic.getPterm(reason_inequality.tr);
-
-            if (reason_inequality.tr != Eq_FALSE)
-                explanation.push(reason_inequality);
 
             // The equality
             // If properly booleanized, the left and righ sides of equality
@@ -706,11 +637,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
 #ifdef VERBOSE_EUF
             cerr << "Explain ZZZ " << toString(reason_1) << " " << toString(reason_2) << " " << logic.printTerm(reason_inequality.tr) << endl;
 #endif
-#ifdef PRODUCE_PROOF
-            expExplain( reason_1, reason_2, reason_inequality.tr );
-#else
-            expExplain( reason_1, reason_2 );
-#endif
+            doExplain(reason_1, reason_2, reason_inequality);
         }
         else if ( logic.isUP(reason_inequality.tr) ) {
             // The reason is an uninterpreted predicate
@@ -762,16 +689,10 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
 
     // They can't be different if the nodes are in the same class
     if ( p == q ) {
-        if (r.tr != Eq_FALSE) explanation.push( r );
 #ifdef VERBOSE_EUF
         cerr << "Explain XXY" << endl;
 #endif
-#ifdef PRODUCE_PROOF
-        expExplain( xe, ye, r.tr );
-#else
-        expExplain( xe, ye );
-#endif
-        has_explanation = true;
+        doExplain(xe,ye,r);
         return false;
     }
 
@@ -883,10 +804,6 @@ bool Egraph::assertDist( PTRef tr_d, PtAsgn tr_r )
 #endif
         if ( root_to_enode.has(root_id) ) {
             // Two equivalent nodes in the same distinction. Conflict
-            if (tr_r.tr != Eq_FALSE) {
-                explanation.push(tr_r);
-                has_explanation = true;
-            }
             // Extract the other node with the same root
             ERef p = root_to_enode[root_id];
 #ifdef VERBOSE_EUF
@@ -898,11 +815,7 @@ bool Egraph::assertDist( PTRef tr_d, PtAsgn tr_r )
 #ifdef VERBOSE_EUF
             cerr << "Explain XYX" << endl;
 #endif
-#ifdef PRODUCE_PROOF
-            expExplain( er_c, p, tr_r.tr );
-#else
-            expExplain( er_c, p);
-#endif
+            doExplain( er_c, p, tr_r);
             // Revert changes, as the current context is inconsistent
             while( nodes_changed.size() != 0 ) {
                 ERef n = nodes_changed.last();
@@ -1891,6 +1804,56 @@ void Egraph::unmergeParentCongruenceClasses(ERef node) {
         if ( p == pstart )
             return; // Nothing to do after the loop;
     }
+}
+
+void Egraph::doExplain(ERef x, ERef y, PtAsgn reason_inequality) {
+    if (reason_inequality.tr != Eq_FALSE) {
+        explanation.push(reason_inequality);
+    }
+    expExplain(x,y);
+    has_explanation = true;
+}
+
+void Egraph::explainConstants(ERef p, ERef q) {
+    ERef enr_proot = getEnode(p).getRoot();
+    ERef enr_qroot = getEnode(q).getRoot();
+    const Enode& en_proot = getEnode(enr_proot);
+    const Enode& en_qroot = getEnode(enr_qroot);
+    assert(en_proot.isTerm() && en_qroot.isTerm());
+    assert(logic.isConstant(en_proot.getTerm()));
+    assert(logic.isConstant(en_qroot.getTerm()));
+    assert(enr_proot != enr_qroot);
+    //
+    // We need explaining
+    //
+    // 1. why p and p->constant are equal
+    exp_pending.push( p );
+    exp_pending.push( enr_proot );
+    // 2. why q and q->constant are equal
+    exp_pending.push( q );
+    exp_pending.push( enr_qroot );
+    // 3. why p and q are equal
+    exp_pending.push( q );
+    exp_pending.push( p );
+#ifdef VERBOSE_EUF
+    cerr << "constant pushing (1): "
+                 << logic.printTerm(en_p.getTerm()) << " and "
+                 << logic.printTerm(en_proot.getTerm()) << endl;
+
+    cerr << "constant pushing (2): "
+                 << logic.printTerm(en_q.getTerm()) << " and "
+                 << logic.printTerm(en_qroot.getTerm()) << endl;
+
+    cerr << "constant pushing (3): "
+                 << logic.printTerm(en_q.getTerm()) << " and "
+                 << logic.printTerm(en_p.getTerm()) << endl;
+
+    cerr << "Explain XXX" << endl;
+#endif
+    initDup1( );
+    expExplain( );
+    doneDup1( );
+    expCleanup();
 }
 
 

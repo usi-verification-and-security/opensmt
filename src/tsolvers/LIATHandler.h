@@ -22,10 +22,6 @@ class LIATHandler : public TSolverHandler
     virtual const Logic& getLogic() const override;
 
 #ifdef PRODUCE_PROOF
-    virtual TheoryInterpolator* getTheoryInterpolator() override
-    {
-        return nullptr;
-    }
     virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels) override;
 #endif
 };
