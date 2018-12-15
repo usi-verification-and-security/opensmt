@@ -229,6 +229,7 @@ void Egraph::expExplainAlongPath(ERef x, ERef y) {
 
         // If it is not a congruence edge
         if (r.tr != PTRef_Undef && r.tr != Eq_FALSE) {
+            assert(!isDup1(r.tr)); // MB: It seems that with the shortcuts stored in expRoot, duplicates will never be encountered
             if ( !isDup1(r.tr) ) {
                 explanation.push(r);
                 storeDup1(r.tr);
