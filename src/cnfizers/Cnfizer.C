@@ -32,16 +32,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 using namespace std;
 
 Cnfizer::Cnfizer ( SMTConfig       &config_
-                   , Theory        &theory
+                   , Logic         &logic_
                    , TermMapper    &tmap
-                   , THandler      &thandler_
                    , SimpSMTSolver &solver_
                  ) :
       config   (config_  )
-    , theory   (theory)
-    , logic    (theory.getLogic())
+    , logic    (logic_)
     , tmap     (tmap)
-    , thandler (thandler_)
     , solver   (solver_)
     , s_empty  (true)
 {
@@ -54,11 +51,11 @@ void Cnfizer::initialize()
     // TODO: MB: why is all this initialization necessary?
     currentPartition = 0;
     vec<Lit> c;
-    Lit l = theory.findLit (logic.getTerm_true());
+    Lit l = this->getOrCreateLiteralFor (logic.getTerm_true());
     c.push (l);
     addClause(c);
     c.pop();
-    l = theory.findLit (logic.getTerm_false());
+    l = this->getOrCreateLiteralFor (logic.getTerm_false());
     c.push (~l);
     addClause(c);
     currentPartition = -1;
@@ -70,7 +67,7 @@ Cnfizer::solve(vec<FrameId>& en_frames)
     vec<Lit> assumps;
     // Initialize so that by default frames are disabled
     for (int i = 0; i < frame_terms.size(); i++)
-        assumps.push(theory.findLit(frame_terms[i]));
+        assumps.push(this->getOrCreateLiteralFor(frame_terms[i]));
 
     // Enable the terms which are listed in en_frames
     // At this point assumps has the same size as frame_terms and the
@@ -81,7 +78,7 @@ Cnfizer::solve(vec<FrameId>& en_frames)
         assumps[asmp_idx] = ~assumps[asmp_idx];
     }
     // Filter out the lit_Trues and lit_Falses used as empty values
-    Lit lit_true = theory.findLit(logic.getTerm_true());
+    Lit lit_true = this->getOrCreateLiteralFor(logic.getTerm_true());
     int i, j;
     for (i = j = 0; i < assumps.size(); i++) {
         if (assumps[i] != lit_true && assumps[i] != ~lit_true)
@@ -240,7 +237,7 @@ bool Cnfizer::deMorganize ( PTRef formula )
 
         for (int i = 0; i < conjuncts.size(); i++)
         {
-            clause.push (~theory.findLit (conjuncts[i]));
+            clause.push (~this->getOrCreateLiteralFor (conjuncts[i]));
 #ifdef PEDANTIC_DEBUG
             cerr << "(not " << logic.printTerm (conjuncts[i]) << ")" << endl;
 #endif
@@ -400,7 +397,7 @@ bool Cnfizer::addClause(const vec<Lit> & c_in)
     vec<Lit> c;
     c_in.copyTo(c);
     if (frame_term != logic.getTerm_true()) {
-        Lit l = theory.findLit(frame_term);
+        Lit l = this->getOrCreateLiteralFor(frame_term);
         tmap.setFrozen(var(l));
         c.push(l);
     }
@@ -448,7 +445,7 @@ bool Cnfizer::giveToSolver ( PTRef f )
     //
     if (logic.isLit (f))
     {
-        clause.push (theory.findLit (f));
+        clause.push (this->getOrCreateLiteralFor (f));
         return addClause(clause);
     }
 
@@ -462,7 +459,7 @@ bool Cnfizer::giveToSolver ( PTRef f )
         retrieveClause (f, lits);
 
         for (int i = 0; i < lits.size(); i++)
-            clause.push (theory.findLit (lits[i]));
+            clause.push (this->getOrCreateLiteralFor (lits[i]));
 
         return addClause(clause);
     }

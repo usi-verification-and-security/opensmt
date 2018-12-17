@@ -30,12 +30,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Global.h"
 #include "Theory.h"
 #include "Logic.h"
+#include "TermMapper.h"
 
 class SimpSMTSolver;
 class CnfState;
 class THandler;
 struct SMTConfig;
-class TermMapper;
 
 // A small typechecked class for checkClause type return values to enable us to check whether the formula is unsatisfiable simultaneously
 class ckval {
@@ -66,19 +66,15 @@ public:
     SimpSMTSolver&      solver;
 protected:
     SMTConfig&          config;
-    Theory&             theory;
     Logic&              logic;
     TermMapper&         tmap;
-
-    THandler&           thandler;
     bool                s_empty;
 
 public:
 
     Cnfizer( SMTConfig &    config_
-           , Theory&        logic_
+           , Logic&        logic_
            , TermMapper&    tmap_
-           , THandler&      thandler_
            , SimpSMTSolver& solver_
            );
 
@@ -124,6 +120,7 @@ private:
     bool    checkPureConj        (PTRef, Map<PTRef,bool,PTRefHash>& check_cache); // Check if a formula is purely a conjuntion
 
 protected:
+    inline Lit getOrCreateLiteralFor(PTRef ptr) {return this->tmap.getOrCreateLit(ptr);}
 
     // PROOF version
     int currentPartition = -1;

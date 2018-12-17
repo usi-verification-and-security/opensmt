@@ -2,34 +2,6 @@
 //#include "MainSolver.h"
 //#include "logics/Logic.h"
 
-// Function for assigning a PTRef to a Boolean variable if the Boolean
-// variable does not yet exist.
-// Extracts the literal corresponding to a term.
-// Accepts negations.
-const Lit Theory::findLit (PTRef ptr)
-{
-    PTRef p_tr;
-    bool sgn;
-    Var v;
-    getTmap().getTerm(ptr, p_tr, sgn);
-
-    Pterm& p = getLogic().getPterm(p_tr);
-    if (p.getVar() == -1)
-    {
-        v = getTmap().addBinding(p_tr);
-
-        if (getLogic().isTheoryTerm (p_tr))
-        {
-            getLogic().okForBoolVar(p_tr);
-        }
-    }
-
-    v = getLogic().getPterm(p_tr).getVar();
-    Lit l = mkLit (v, sgn);
-
-    return l;
-}
-
 
 // The Collate function is constructed from all frames up to the current
 // one and will be used to simplify the formulas in the current frame

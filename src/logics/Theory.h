@@ -148,7 +148,6 @@ class Theory
   public:
     PushFrameAllocator      pfstore {1024};
     virtual TermMapper     &getTmap() = 0;
-    const Lit               findLit(PTRef ptr); // Bind the term to a Boolean variable
     virtual Logic          &getLogic()              = 0;
     virtual TSolverHandler &getTSolverHandler()     = 0;
     virtual TSolverHandler *getTSolverHandler_new(vec<DedElem>&) = 0;
