@@ -37,26 +37,6 @@ class CnfState;
 class THandler;
 struct SMTConfig;
 
-// A small typechecked class for checkClause type return values to enable us to check whether the formula is unsatisfiable simultaneously
-class ckval {
-    char value;
-    explicit ckval(int v) : value(v) { }
-public:
-    ckval()          : value(0) { }
-    int toInt(void) const { return value; }
-    bool operator == (ckval c) const { return value == c.value; }
-    bool operator != (ckval c) const { return value == c.value; }
-
-    friend ckval toCkval(int v);
-};
-inline ckval toCkval(int v) {return ckval(v); }
-
-const ckval ck_True  = toCkval( 1);
-const ckval ck_False = toCkval(-1);
-const ckval ck_Unsat = toCkval( 0);
-
-
-
 //
 // Generic class for conversion into CNF
 //
