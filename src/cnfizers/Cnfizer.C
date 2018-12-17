@@ -545,30 +545,6 @@ void Cnfizer::retrieveConjuncts ( PTRef f, vec<PTRef> &conjuncts )
     }
 }
 
-//
-// A shortcut for literal negation
-//
-//Enode * Cnfizer::toggleLit ( Enode * arg )
-//{
-//  assert( arg->isTerm( ) );
-//  return egraph.mkNot( egraph.cons( arg ) );
-//}
-
-
-vec<ValPair> *Cnfizer::getModel()
-{
-    assert (solver.okay());
-    vec<lbool> &model = solver.model;
-    vec<ValPair> *out = new vec<ValPair>();
-
-    for (Var v = 0; v < model.size(); v++)
-    {
-        if (logic.isTheoryTerm (tmap.varToPTRef (v)))
-            out->push (ValPair (tmap.varToPTRef (v), model[v] == l_True ? "true" : (model[v] == l_False ? "false" : "unknown") ));
-    }
-
-    return out;
-}
 
 lbool Cnfizer::getTermValue (PTRef tr) const
 {

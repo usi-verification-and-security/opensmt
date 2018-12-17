@@ -45,13 +45,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "Sort.h"
 #include "SimpSMTSolver.h"
-//#include "SimpSolver.h"
-//#include "System.h"
 
 //=================================================================================================
 // Constructor/Destructor:
 
-//SimpSMTSolver::SimpSMTSolver(Egraph & e, SMTConfig & c) :
 SimpSMTSolver::SimpSMTSolver(SMTConfig & c, THandler & t) :
     CoreSMTSolver(c, t)
     , grow               (c.sat_grow())
