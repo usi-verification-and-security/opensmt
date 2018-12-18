@@ -1508,7 +1508,7 @@ void Logic::breakSubstLoops(Map<PTRef,PtAsgn,PTRefHash>& substs)
 //
 // The substitutions for the term riddance from osmt1
 //
-lbool Logic::retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs)
+lbool Logic::retrieveSubstitutions(const vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs)
 {
     for (int i = 0; i < facts.size(); i++) {
         PTRef tr = facts[i].tr;
@@ -1518,14 +1518,14 @@ lbool Logic::retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHas
 #ifdef SIMPLIFY_DEBUG
             cerr << "Identified an equality: " << printTerm(tr) << endl;
 #endif
-            Pterm& t = getPterm(tr);
+            const Pterm& t = getPterm(tr);
             // n will be the reference
             if (isUFEquality(tr) || isIff(tr)) {
                 // This is the simple replacement to elimiate enode terms where possible
                 assert(t.size() == 2);
                 // One of them should be a var
-                Pterm& a1 = getPterm(t[0]);
-                Pterm& a2 = getPterm(t[1]);
+                const Pterm& a1 = getPterm(t[0]);
+                const Pterm& a2 = getPterm(t[1]);
                 if (a1.size() == 0 || a2.size() == 0) {
                     PTRef var = a1.size() == 0 ? t[0] : t[1];
                     PTRef trm = a1.size() == 0 ? t[1] : t[0];

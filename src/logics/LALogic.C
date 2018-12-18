@@ -219,7 +219,7 @@ void LALogic::simplifyAndSplitEq(PTRef tr, PTRef& root_out)
     simplifyTree(tr, root_out);
     split_eq = false;
 }
-lbool LALogic::retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs)
+lbool LALogic::retrieveSubstitutions(const vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs)
 {
     lbool res = Logic::retrieveSubstitutions(facts, substs);
     if (res != l_Undef) return res;

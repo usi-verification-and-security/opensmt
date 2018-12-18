@@ -37,7 +37,7 @@ PTRef Theory::getCollateFunction(vec<PFRef>& formulas, int curr)
 // R_{curr}.
 // If x = f(Y) is a newly found substitution and there is a lower frame F containing x, add x = f(Y) to R_{curr}.
 //
-bool Theory::computeSubstitutions(PTRef coll_f, vec<PFRef>& frames, int curr)
+bool Theory::computeSubstitutions(const PTRef coll_f, const vec<PFRef>& frames, const int curr)
 {
 
     if (!config.do_substitutions() || config.produce_inter()) {
@@ -49,7 +49,7 @@ bool Theory::computeSubstitutions(PTRef coll_f, vec<PFRef>& frames, int curr)
     }
     assert(config.do_substitutions() && !config.produce_inter());
     vec<PTRef> curr_args;
-    PushFrame& curr_frame = pfstore[frames[curr]];
+    const PushFrame& curr_frame = pfstore[frames[curr]];
 
     assert(curr_frame.units.elems() == 0);
 
@@ -60,10 +60,9 @@ bool Theory::computeSubstitutions(PTRef coll_f, vec<PFRef>& frames, int curr)
 
     // l_True : exists and is valid
     // l_False : exists but has been disabled to break symmetries
-    Map<PTRef,PtAsgn,PTRefHash> substs;
+
     vec<Map<PTRef,lbool,PTRefHash>*> prev_units;
     vec<PtAsgn> prev_units_vec;
-
     for (int i = 0; i < curr; i++) {
         prev_units.push(&(pfstore[frames[i]].units));
         vec<Map<PTRef,lbool,PTRefHash>::Pair> tmp;
@@ -72,6 +71,7 @@ bool Theory::computeSubstitutions(PTRef coll_f, vec<PFRef>& frames, int curr)
             prev_units_vec.push(PtAsgn(tmp[i].key, tmp[i].data));
     }
 
+    Map<PTRef,PtAsgn,PTRefHash> substs;
     vec<PtAsgn> all_units_vec;
     prev_units_vec.copyTo(all_units_vec);
     // This computes the new unit clauses to curr_frame.units until closure

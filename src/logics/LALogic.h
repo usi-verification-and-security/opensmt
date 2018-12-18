@@ -42,28 +42,28 @@ protected:
 public:
     LALogic(SMTConfig &c);
     ~LALogic() { for(int i = 0; i < numbers.size(); ++i) {delete numbers[i];}}
-    virtual bool    isBuiltinFunction(SymRef sr) const;
-    virtual PTRef   insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg);
+    virtual bool    isBuiltinFunction(SymRef sr) const override;
+    virtual PTRef   insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg) override;
     virtual SRef    getSort_num    ()              const;
-    virtual PTRef     mkConst         (const char* name, const char **msg);
-    virtual PTRef     mkConst         (SRef s, const char* name);
+    virtual PTRef     mkConst         (const char* name, const char **msg) override;
+    virtual PTRef     mkConst         (SRef s, const char* name) override;
     virtual PTRef     mkConst         (const opensmt::Number& c);
     virtual PTRef     mkConst         (const char* num);
     virtual PTRef     mkNumVar        (const char* name);
-    virtual bool isBuiltinSort  (SRef sr) const;
-    virtual bool isBuiltinConstant(SymRef sr) const;
+    virtual bool isBuiltinSort  (SRef sr) const override;
+    virtual bool isBuiltinConstant(SymRef sr) const override;
     virtual bool  isNumConst     (SymRef sr)     const;
     virtual bool  isNumConst     (PTRef tr)      const;
     virtual bool  isNonnegNumConst (PTRef tr)  const;
     virtual bool   hasSortNum(SymRef sr) const;
     virtual bool   hasSortNum(PTRef tr)  const;
     virtual const opensmt::Number& getNumConst(PTRef tr) const;
-    virtual bool        isUFEquality(PTRef tr) const;
-    virtual bool        isTheoryEquality(PTRef tr) const;
-    virtual bool isAtom(PTRef tr) const;
-    virtual bool        isUF(PTRef tr) const;
-    virtual bool        isUF(SymRef sr) const;
-    virtual const char* getDefaultValue(const PTRef tr) const;
+    virtual bool        isUFEquality(PTRef tr) const override;
+    virtual bool        isTheoryEquality(PTRef tr) const override;
+    virtual bool isAtom(PTRef tr) const override;
+    virtual bool        isUF(PTRef tr) const override;
+    virtual bool        isUF(SymRef sr) const override;
+    virtual const char* getDefaultValue(const PTRef tr) const override;
 
     virtual const SymRef get_sym_Num_TIMES () const =0;
     virtual const SymRef get_sym_Num_DIV () const =0;
@@ -108,7 +108,7 @@ public:
     virtual bool isNumOne(PTRef tr) const;
     // Real terms are of form c, a, or (* c a) where c is a constant and a is a variable.
     virtual bool isNumTerm(PTRef tr) const;
-    virtual bool okForBoolVar(PTRef) const;
+    virtual bool okForBoolVar(PTRef) const override;
 
     virtual PTRef getTerm_NumZero() const =0;
     virtual PTRef getTerm_NumOne() const =0;
@@ -147,15 +147,15 @@ public:
     virtual lbool arithmeticElimination(vec<PTRef> &, Map<PTRef, PtAsgn, PTRefHash> &);
     virtual void simplifyAndSplitEq(PTRef, PTRef &);
 
-    virtual void visit(PTRef, Map<PTRef, PTRef, PTRefHash> &);
-    virtual lbool retrieveSubstitutions(vec<PtAsgn> &facts, Map<PTRef, PtAsgn, PTRefHash> &substs);
-    virtual void termSort(vec<PTRef> &v) const;
-    virtual bool okToPartition(PTRef tr) const; // Partitioning hints from logic
-    virtual void serializeLogicData(int *&logicdata_buf) const;
-    virtual void deserializeLogicData(const int *logicdata_buf);
-    virtual char *printTerm_(PTRef tr, bool ext, bool s) const;
-    virtual char *printTerm(PTRef tr) const;
-    virtual char *printTerm(PTRef tr, bool l, bool s) const;
+    virtual void visit(PTRef, Map<PTRef, PTRef, PTRefHash> &) override;
+    virtual lbool retrieveSubstitutions(const vec<PtAsgn> &facts, Map<PTRef, PtAsgn, PTRefHash> &substs) override;
+    virtual void termSort(vec<PTRef> &v) const override;
+    virtual bool okToPartition(PTRef tr) const override; // Partitioning hints from logic
+    virtual void serializeLogicData(int *&logicdata_buf) const override;
+    virtual void deserializeLogicData(const int *logicdata_buf) override;
+    virtual char *printTerm_(PTRef tr, bool ext, bool s) const override;
+    virtual char *printTerm(PTRef tr) const override;
+    virtual char *printTerm(PTRef tr, bool l, bool s) const override;
 
 };
 // Determine for two multiplicative terms (* k1 v1) and (* k2 v2), v1 !=
