@@ -142,7 +142,7 @@ class Theory
   protected:
     vec<DedElem>        deductions;
     SMTConfig &         config;
-    PTRef getCollateFunction(vec<PFRef>& formulas, int curr);
+    PTRef getCollateFunction(const vec<PFRef> & formulas, int curr);
     Theory(SMTConfig &c) : config(c) {}
     void setSubstitutions(Map<PTRef,PtAsgn,PTRefHash>& substs);// { getTSolverHandler().setSubstitutions(substs); }
   public:

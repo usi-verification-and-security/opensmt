@@ -14,7 +14,7 @@
 // simplification (critical for the eq_diamond instances in QF_UF of
 // smtlib).
 //
-PTRef Theory::getCollateFunction(vec<PFRef>& formulas, int curr)
+PTRef Theory::getCollateFunction(const vec<PFRef> & formulas, int curr)
 {
     assert(curr < formulas.size());
     // XXX
@@ -39,7 +39,6 @@ PTRef Theory::getCollateFunction(vec<PFRef>& formulas, int curr)
 //
 bool Theory::computeSubstitutions(const PTRef coll_f, const vec<PFRef>& frames, const int curr)
 {
-
     if (!config.do_substitutions() || config.produce_inter()) {
         vec<PTRef> curr_args;
         for (int i = 0; i < pfstore[frames[curr]].size(); i++)
@@ -139,9 +138,9 @@ bool Theory::computeSubstitutions(const PTRef coll_f, const vec<PFRef>& frames, 
         }
     }
 
-    pfstore[frames[curr]].root = root;
-
     bool result = no_conflict && (th->check(true) == TRes::SAT);
+
+    pfstore[frames[curr]].root = root;
 
     // Traverse frames[curr].root to see all the variables.
     vec<PTRef> queue;

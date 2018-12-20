@@ -1283,7 +1283,7 @@ bool Logic::isAtom(PTRef r) const {
 // Preconditions:
 //  - all substitutions in substs must be on variables
 //
-bool Logic::varsubstitute(PTRef& root, Map<PTRef,PtAsgn,PTRefHash>& substs, PTRef& tr_new)
+bool Logic::varsubstitute(PTRef root, const Map<PTRef, PtAsgn, PTRefHash> & substs, PTRef & tr_new)
 {
     Map<PTRef,PTRef,PTRefHash> gen_sub;
     vec<PTRef> queue;

@@ -109,7 +109,7 @@ PTRef LALogic::normalizeMul(PTRef mul)
     else
         return v;
 }
-lbool LALogic::arithmeticElimination(vec<PTRef> &top_level_arith, Map<PTRef,PtAsgn,PTRefHash>& substitutions)
+lbool LALogic::arithmeticElimination(const vec<PTRef> & top_level_arith, Map<PTRef, PtAsgn, PTRefHash> & substitutions)
 {
     vec<LAExpression*> equalities;
     LALogic& logic = *this;

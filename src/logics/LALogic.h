@@ -144,7 +144,8 @@ public:
     virtual void splitTermToVarAndConst(const PTRef &term, PTRef &var, PTRef &fac) const;
     virtual PTRef normalizeSum(PTRef sum);
     virtual PTRef normalizeMul(PTRef mul);
-    virtual lbool arithmeticElimination(vec<PTRef> &, Map<PTRef, PtAsgn, PTRefHash> &);
+    virtual lbool arithmeticElimination(const vec<PTRef> & top_level_arith,
+                                        Map<PTRef, PtAsgn, PTRefHash> & substitutions);
     virtual void simplifyAndSplitEq(PTRef, PTRef &);
 
     virtual void visit(PTRef, Map<PTRef, PTRef, PTRefHash> &) override;
