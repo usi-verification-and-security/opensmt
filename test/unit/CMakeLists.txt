@@ -27,3 +27,12 @@ target_sources(ExpressionsTest
 target_link_libraries(ExpressionsTest api_static gtest gtest_main)
 
 gtest_add_tests(TARGET ExpressionsTest)
+
+add_executable(TheorySimplificationsTest)
+target_sources(TheorySimplificationsTest
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_TheorySimplifications.cpp"
+    )
+
+target_link_libraries(TheorySimplificationsTest api_static gtest gtest_main)
+
+gtest_add_tests(TARGET TheorySimplificationsTest)
