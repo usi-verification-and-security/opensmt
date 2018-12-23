@@ -12,6 +12,7 @@
 #include "lrasolver/Polynomial.h"
 
 #include <unordered_set>
+#include <set>
 #include <unordered_map>
 
 class LAVar;
@@ -149,7 +150,8 @@ protected:
     LRAModel model;
 
     // Out of bound candidates
-    mutable std::unordered_set<LVRef, LVRefHash> candidates;
+    // mutable std::unordered_set<LVRef, LVRefHash> candidates;
+    mutable std::set<LVRef, LVRefComp> candidates;
 
     // Model & bounds
     bool isEquality(LVRef) const;

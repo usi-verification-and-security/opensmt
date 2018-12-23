@@ -345,7 +345,7 @@ void LASolver::informNewSplit(PTRef tr)
 }
 
 LVRef LASolver::getBasicVarToFixByShortestPoly() const {
-    std::unordered_set<LVRef, LVRefHash> new_candidates;
+    decltype(candidates) new_candidates;
     LVRef current = LVRef_Undef;
     std::size_t current_poly_size = static_cast<std::size_t>(-1);
     for (auto it : candidates) {
@@ -365,7 +365,7 @@ LVRef LASolver::getBasicVarToFixByShortestPoly() const {
 }
 
 LVRef LASolver::getBasicVarToFixByBland() const {
-    std::unordered_set<LVRef, LVRefHash> new_candidates;
+    decltype(candidates) new_candidates;
     int curr_var_id_x = lavarStore.numVars();
     LVRef current = LVRef_Undef;
     for (auto it : candidates) {
@@ -1124,7 +1124,9 @@ bool LASolver::checkTableauConsistency() const {
 
 LASolver::~LASolver( )
 {
-    // tsolver_stats.printStatistics(cerr);
+#ifdef STATISTICS
+     tsolver_stats.printStatistics(cerr);
+#endif // STATISTICS
 }
 
 PtAsgn_reason LASolver::getDeduction()  { if (deductions_next >= th_deductions.size()) return PtAsgn_reason_Undef; else return th_deductions[deductions_next++]; }

@@ -45,6 +45,10 @@ struct LVRefHash {
     uint32_t operator() (const LVRef& s) const {return (uint32_t)s.x/8; }
 };
 
+struct LVRefComp {
+    bool operator()(LVRef a, LVRef b) const { return a.x < b.x; }
+};
+
 static struct LVRef LVRef_Undef = { INT32_MAX };
 
 #endif
