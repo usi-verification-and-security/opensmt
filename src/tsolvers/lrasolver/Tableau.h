@@ -15,40 +15,71 @@
 #include <vector>
 #include <functional>
 
+class Column{
+    std::vector<LVRef> rows;
+    unsigned int realSize = 0;
+
+    using iterator_t = std::vector<LVRef>::iterator;
+    using const_iterator_t = std::vector<LVRef>::const_iterator;
+
+public:
+    void addRow(LVRef row) {
+        assert(realSize <= rows.size());
+        assert(std::find(rows.begin(), rows.begin() + realSize, row) == rows.begin() + realSize);
+        if (realSize < rows.size()) {
+            rows[realSize] = row;
+        }
+        else{
+            rows.push_back(row);
+
+        }
+        ++realSize;
+    }
+    void removeRow(LVRef row) {
+        assert(realSize > 0);
+        assert(realSize <= rows.size());
+        auto realEnd = rows.begin() + realSize;
+        auto it = std::find(rows.begin(), realEnd, row);
+        assert(it != realEnd);
+        if (it == realEnd) {
+            throw std::logic_error{"Removing row that is not present"};
+        }
+        std::iter_swap(it, realEnd - 1);
+        --realSize;
+    }
+
+    void clear() {
+        rows.clear();
+        realSize = 0;
+    }
+
+    bool empty() const {
+        return realSize == 0;
+    }
+
+    unsigned int size() const {
+        return realSize;
+    }
+
+    iterator_t begin() { return rows.begin(); }
+    iterator_t end() { return rows.begin() + realSize; }
+
+    const_iterator_t begin() const { return rows.cbegin(); }
+    const_iterator_t end() const { return rows.cbegin() + realSize; }
+
+    const_iterator_t find(LVRef row) const { return std::find(begin(), end(), row); }
+
+
+};
+
 class Tableau{
 
 protected:
-    using column_t = std::unordered_set<LVRef, LVRefHash>;
+
+    // using column_t = std::unordered_set<LVRef, LVRefHash>;
+    using column_t = Column;
     using rows_t = std::unordered_map<LVRef, Polynomial, LVRefHash>;
     using vars_t = std::unordered_set<LVRef, LVRefHash>;
-
-//    class ColumnView{
-//    public:
-//        using iterator = std::vector<LVRef>::iterator;
-//        using const_iterator = std::vector<LVRef>::const_iterator;
-//        iterator begin() {return ColumnViewIterator(colvar, tableau)}
-//        iterator end();
-//        ColumnView(LVRef colVar, const Tableau & tableau) : colvar{colVar}, tableau{tableau} {}
-//    private:
-//
-//        LVRef colvar;
-//        const Tableau & tableau;
-//
-//        class ColumnViewIterator{
-//            const Tableau & tableau;
-//            column_t::iterator it;
-//            column_t::iterator end;
-//        public:
-//            ColumnViewIterator(, const Tableau & tableau) :
-//                    tableau{tableau},
-//                    it{tableau.cols.at(v).begin()},
-//                    end{tableau.cols.at(v).end()}
-//            {}
-//            LVRef operator*() {return *it;}
-//            void operator++() {++it; while(it != end && !tableau.isActive(*it)){++it;}}
-//
-//        };
-//    };
 
 public:
     void newNonbasicVar(LVRef v);
@@ -88,9 +119,9 @@ private:
 
     void addRow(LVRef v, Polynomial p);
     void removeRow(LVRef v);
-
-
-
+    void addRowToColumn(LVRef row, LVRef col) { cols.at(col).addRow(row); }
+    void removeRowFromColumn(LVRef row, LVRef col) { cols.at(col).removeRow(row); }
+    void clearColumn(LVRef col) {cols.at(col).clear();}
 };
 
 

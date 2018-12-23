@@ -37,7 +37,7 @@ void Tableau::newBasicVar(LVRef v, Polynomial poly) {
     }
     for(auto const & term : poly) {
         assert(contains(cols, term.first));
-        cols.at(term.first).insert(v);
+        addRowToColumn(v, term.first);
     }
     addRow(v, std::move(poly));
     basic_vars.insert(v);
@@ -131,18 +131,15 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
     for(auto & term : nvPoly) {
         auto var = term.first;
         if(var != bv) {
-            auto erased = cols.at(var).erase(bv);
-            assert(erased > 0);
+            removeRowFromColumn(bv, var);
         }
         assert(contains(cols, var));
-        auto res = cols.at(var).insert(nv);
-        assert(res.second);
+        addRowToColumn(nv, var);
     }
 
     // remove the bv row from nv column
     assert(contains(cols, nv));
-    auto erased = cols.at(nv).erase(bv);
-    assert(erased > 0);
+    removeRowFromColumn(bv, nv);
 
     // for all (active) rows containing nv, substitute
     for (auto rowVar : getColumn(nv)) {
@@ -160,16 +157,16 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
         for (const auto & addedVar : changes.added) {
             assert(contains(cols, addedVar));
             assert(!contains(cols.at(addedVar), rowVar));
-            cols.at(addedVar).insert(rowVar);
+            addRowToColumn(rowVar, addedVar);
         }
         for (const auto & removedVar : changes.removed) {
             assert(contains(cols, removedVar));
             assert(contains(cols.at(removedVar), rowVar));
-            cols.at(removedVar).erase(rowVar);
+            removeRowFromColumn(rowVar, removedVar);
         }
     }
     assert(contains(cols, nv));
-    cols.at(nv).clear();
+    clearColumn(nv);
 }
 
 void Tableau::clear() {
@@ -286,7 +283,7 @@ Tableau::doGaussianElimination(std::function<bool(LVRef)> shouldEliminate) {
         for (auto const & term : poly) {
             auto l_var = term.first;
             assert(contains(cols, l_var));
-            cols.at(l_var).erase(chosen_row);
+            removeRowFromColumn(chosen_row, l_var);
         }
         assert(contains(basic_vars, chosen_row));
         basic_vars.erase(chosen_row);
@@ -315,12 +312,12 @@ Tableau::doGaussianElimination(std::function<bool(LVRef)> shouldEliminate) {
             for (const auto & addedVar : res.added) {
                 assert(contains(cols, addedVar));
                 assert(!contains(cols.at(addedVar), rowVar));
-                cols.at(addedVar).insert(rowVar);
+                addRowToColumn(rowVar, addedVar);
             }
             for (const auto & removedVar : res.removed) {
                 assert(contains(cols, removedVar));
                 assert(contains(cols.at(removedVar), rowVar));
-                cols.at(removedVar).erase(rowVar);
+                removeRowFromColumn(rowVar, removedVar);
             }
         }
         // remove the eliminated column
