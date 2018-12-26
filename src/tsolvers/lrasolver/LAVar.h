@@ -45,46 +45,14 @@ class LAVar
     friend class LAVarAllocator;
 
 private:
-    struct {
-        bool basic   : 1;  // Is the node basic or non-basic
-        bool reloced : 1;
-        bool skp     : 1;
-        unsigned id      : 29; // The unique id
-    } header;
-
+    unsigned id; // The unique id
     PTRef e;               // The term in the SMT world
-    int col_id;            // Column id
-    int row_id;            // Row id
-
-//    BoundIndex curr_ub;      // The current upper bound, idx to bounds table
-//    BoundIndex curr_lb;      // The current lower bound, idx to bounds table
-//    LABoundListRef bounds; // The bounds of this variable
-
-    // Polynomial
 
 public:
     // Constructor.  The e_orig from SMT world, the bounds list, and a unique id
     LAVar(PTRef e_orig, unsigned id);
-    bool skip    ()      const;
-    void setSkip ()     ;
-    void clrSkip ()       ;
-    int  getRowId()      const;
-    void setRowId(int i)      ;
-    int  getColId()      const;
-    void setColId(int i)     ;
 
-//    BoundIndex ubound()             const { return curr_ub; }
-//    BoundIndex lbound()             const { return curr_lb; }
-//    void setUbound(BoundIndex i)            { curr_ub = i; }
-//    void setLbound(BoundIndex i)            { curr_lb = i; }
-//    LABoundListRef getBounds()      const { return bounds; }
-//    void setBounds(LABoundListRef l)      { bounds = l; }
-
-    //inline bool isBasic()           const { return header.basic; } // Checks if current LAVar is Basic in current solver state
-
-    inline int  ID()                const { return header.id; } // Return the ID of the LAVar
-    inline void setNonbasic();           // Make LAVar Nonbasic
-    inline void setBasic();              // Make LAVar Basic
+    inline int  ID()                const { return id; } // Return the ID of the LAVar
 
     PTRef      getPTRef()         const   ;
 };

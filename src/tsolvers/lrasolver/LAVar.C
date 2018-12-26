@@ -30,15 +30,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "LRALogic.h"
 
 LAVar::LAVar(PTRef e, unsigned id)
-        : e(e)
-        , col_id(-1)
-        , row_id(-1)
-{
-    header.basic = 0;
-    header.reloced = 0;
-    header.skp = 0;
-    header.id = id;
-}
+        : e(e), id{id}
+{}
 
 LVRef LAVarStore::getNewVar(PTRef e_orig) {
     assert(!logic.isNegated(e_orig));
@@ -74,25 +67,7 @@ void LAVarStore::addLeqVar(PTRef leq_tr, LVRef v)
 
 bool LAVarStore::hasVar(PTRef tr) { return hasVar(logic.getPterm(tr).getId()); }
 
-bool LAVar::skip    ()      const { return header.skp;                }
-void LAVar::setSkip ()            { header.skp = true;                }
-void LAVar::clrSkip ()            { header.skp = false;               }
-int  LAVar::getRowId()      const { return row_id; }
-void LAVar::setRowId(int i)       { row_id = i;    }
-int  LAVar::getColId()      const { return col_id; }
-void LAVar::setColId(int i)       { col_id = i;    }
-
 PTRef      LAVar::getPTRef()         const       { return e; }
-
-void LAVar::setNonbasic()
-{
-    header.basic = false;
-}
-
-void LAVar::setBasic()
-{
-    header.basic = true;
-}
 
 int LAVarAllocator::lavarWord32Size() {
     return (sizeof(LAVar)) / sizeof(uint32_t); }
