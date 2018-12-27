@@ -58,10 +58,10 @@ void LRASolver::clearSolver()
 }
 
 void LRASolver::computeConcreteModel(LVRef v) {
-    while (concrete_model.size() <= lva[v].ID())
+    while (concrete_model.size() <= getVarId(v))
         concrete_model.push(nullptr);
 
-    PTRef tr = lva[v].getPTRef();
+    PTRef tr = lavarStore.getVarPTRef(v);
     auto it = removed_by_GaussianElimination.find(v);
     if(it != removed_by_GaussianElimination.end()){
         auto const & representation = (*it).second;
@@ -69,10 +69,10 @@ void LRASolver::computeConcreteModel(LVRef v) {
         for (auto const & term : representation) {
             val += term.coeff * model.read(term.var);
         }
-        concrete_model[lva[v].ID()] = new opensmt::Real(val.R() + val.D() * delta);
+        concrete_model[getVarId(v)] = new opensmt::Real(val.R() + val.D() * delta);
     }
     else {
-        concrete_model[lva[v].ID()] = new opensmt::Real(model.read(v).R() + model.read(v).D() * delta);
+        concrete_model[getVarId(v)] = new opensmt::Real(model.read(v).R() + model.read(v).D() * delta);
     }
 }
 
@@ -117,7 +117,7 @@ void LRASolver::computeModel()
 
     for (unsigned i = 0; i < lavarStore.numVars(); ++i)
     {
-        LVRef v = lavarStore.getVarByIdx(i);
+        LVRef v {i};
         if (model.read(v).D() == 0)
             continue; // If values are exact we do not need to consider them for delta computation
 
@@ -157,7 +157,7 @@ void LRASolver::computeModel()
 
     for ( unsigned i = 0; i < lavarStore.numVars(); i++)
     {
-        LVRef v = lavarStore.getVarByIdx(i);
+        LVRef v {i};
         computeConcreteModel(v);
     }
 

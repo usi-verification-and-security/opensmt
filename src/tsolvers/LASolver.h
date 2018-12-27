@@ -58,7 +58,6 @@ class LASolver: public TSolver
 protected:
 
     LALogic&            logic;
-    LAVarAllocator       lva{1024};
     LAVarStore           lavarStore;
 
     LABoundAllocator     ba{1024};
@@ -76,6 +75,11 @@ protected:
     unsigned bland_threshold;
     LASolverStats tsolver_stats;
     void setBound(PTRef leq);
+
+protected:
+    PTRef getVarPTRef(LVRef v) const {
+        return lavarStore.getVarPTRef(v);
+    }
 
 public:
 
@@ -194,7 +198,6 @@ protected:
     char* printValue(PTRef tr) override ;
     char* printExplanation(PTRef tr) override ;
     void isProperLeq(PTRef tr);  // The Leq term conforms to the assumptions of its form.  Only asserts.
-    char* printVar(LVRef v);
     bool valueConsistent(LVRef v) const; // Debug: Checks that the value of v in the model is consistent with the evaluated value of the polynomial of v in the same model.
     bool checkValueConsistency() const;
     bool invariantHolds() const;

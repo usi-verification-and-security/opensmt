@@ -120,13 +120,13 @@ private:
     vec<BoundInfo> in_bounds;
     LABoundAllocator& ba;
     LABoundListAllocator& bla;
-    LAVarAllocator& lva;
     LAVarStore& lavarStore;
     vec<LABoundRefPair> ptermToLABoundsRef;
     LALogic& logic;
     vec<LABoundListRef> var_bound_lists;
 public:
-    LABoundStore(LABoundAllocator& ba, LABoundListAllocator& bla, LAVarAllocator& lva, LAVarStore& lavstore, LALogic& l) : ba(ba), bla(bla), lva(lva), lavarStore(lavstore), logic(l) {
+    LABoundStore(LABoundAllocator & ba, LABoundListAllocator & bla, LAVarStore & lavstore, LALogic & l)
+            : ba(ba), bla(bla), lavarStore(lavstore), logic(l) {
         vec<LABoundRef> tmp;
     }
     BoundInfo addBound(PTRef leq_tr);

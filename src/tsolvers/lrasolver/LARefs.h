@@ -41,8 +41,12 @@ struct LVRef {
     inline friend bool operator!= (const LVRef& a1, const LVRef& a2) { return a1.x != a2.x; }
 };
 
+inline unsigned getVarId(LVRef ref) { return ref.x;}
+// For debugging
+inline char* printVar (LVRef r) { char* str; asprintf(&str, "v%d", r.x);  return str; }
+
 struct LVRefHash {
-    uint32_t operator() (const LVRef& s) const {return (uint32_t)s.x/8; }
+    uint32_t operator() (const LVRef& s) const {return s.x; }
 };
 
 struct LVRefComp {

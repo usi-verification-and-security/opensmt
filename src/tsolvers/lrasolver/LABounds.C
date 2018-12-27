@@ -115,7 +115,7 @@ void LABoundStore::updateBound(PTRef tr)
     ptermToLABoundsRef[Idx(bi.leq_id)] = { bi.b1, bi.b2 };
     // Fix this to do a linear traverse
     vec<LABoundRef> new_bounds;
-    LABoundListRef blr = var_bound_lists[lva[vr].ID()];
+    LABoundListRef blr = var_bound_lists[getVarId(vr)];
 
     for (int i = 0; i < bla[blr].size(); i++)
         new_bounds.push(bla[blr][i]);
@@ -124,7 +124,7 @@ void LABoundStore::updateBound(PTRef tr)
     new_bounds.push(bi.b2);
 
     LABoundListRef br = bla.alloc(vr, new_bounds);
-    var_bound_lists[lva[vr].ID()] = br;
+    var_bound_lists[getVarId(vr)] = br;
     sort<LABoundRef,bound_lessthan>(bla[br].bounds, bla[br].size(), bound_lessthan(ba));
 
     for (int j = 0; j < bla[br].size(); j++)
@@ -159,9 +159,9 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
         }
         LABoundListRef br = bla.alloc(keys[i], refs);
 
-        while (var_bound_lists.size() <= lva[keys[i]].ID())
+        while (var_bound_lists.size() <= getVarId(keys[i]))
             var_bound_lists.push(LABoundListRef_Undef);
-        var_bound_lists[lva[keys[i]].ID()] = br;
+        var_bound_lists[getVarId(keys[i])] = br;
         sort<LABoundRef,bound_lessthan>(bla[br].bounds, bla[br].size(), bound_lessthan(ba));
 
         for (int j = 0; j < bla[br].size(); j++)
@@ -199,20 +199,20 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
     }
 
     // make sure all variables have at least the trivial bounds
-    for (int i = 0; i < lavarStore.numVars(); i++) {
-        LVRef vr = lavarStore.getVarByIdx(i);
-        LAVar& v = lva[vr];
-        while (var_bound_lists.size() <= v.ID())
+    for (unsigned i = 0; i < lavarStore.numVars(); i++) {
+        LVRef ref {i};
+        auto id = getVarId(ref);
+        while (var_bound_lists.size() <= id)
             var_bound_lists.push(LABoundListRef_Undef);
 
-        if (var_bound_lists[v.ID()] == LABoundListRef_Undef) {
+        if (var_bound_lists[id] == LABoundListRef_Undef) {
             vec<LABoundRef> refs;
-            LABoundRef lb_minusInf = ba.alloc(bound_l, PtAsgn(logic.getTerm_true(), l_True), vr, Delta_MinusInf);
-            LABoundRef ub_plusInf = ba.alloc(bound_u, PtAsgn(logic.getTerm_true(), l_True), vr, Delta_PlusInf);
+            LABoundRef lb_minusInf = ba.alloc(bound_l, PtAsgn(logic.getTerm_true(), l_True), ref, Delta_MinusInf);
+            LABoundRef ub_plusInf = ba.alloc(bound_u, PtAsgn(logic.getTerm_true(), l_True), ref, Delta_PlusInf);
             refs.push(lb_minusInf);
             refs.push(ub_plusInf);
-            LABoundListRef br = bla.alloc(vr, refs);
-            var_bound_lists[v.ID()] = br;
+            LABoundListRef br = bla.alloc(ref, refs);
+            var_bound_lists[id] = br;
         }
     }
 }
@@ -229,8 +229,9 @@ char*
 LABoundStore::printBound(LABoundRef br) const
 {
     char *str_out;
-    char *v_str_ptr = logic.pp(lva[ba[br].getLVRef()].getPTRef());
-    char *v_str_lvr = lva.printVar(ba[br].getLVRef());
+    char *v_str_ptr = logic.pp(lavarStore.getVarPTRef(ba[br].getLVRef()));
+    char *v_str_lvr;
+    asprintf(&v_str_lvr, "v%d", ba[br].getLVRef().x);
     char* v_str;
     asprintf(&v_str, "%s [%s]", v_str_lvr, v_str_ptr);
     free(v_str_lvr);
@@ -260,7 +261,7 @@ LABoundStore::printBound(LABoundRef br) const
 
 char* LABoundStore::printBounds(LVRef v) const
 {
-    LABoundListRef blr = var_bound_lists[lva[v].ID()];
+    LABoundListRef blr = var_bound_lists[getVarId(v)];
     char* bounds_str = (char*) malloc(1);
     bounds_str[0] = '\0';
     for (int i = 0; i < bla[blr].size(); i++) {
@@ -307,7 +308,7 @@ inline const LABoundList* LABoundListAllocator::lea(LABoundListRef r) const     
 inline LABoundListRef     LABoundListAllocator::ael(const LABoundList* t)          { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); LABoundListRef rf; rf.x = r; return rf; }
 
 //inline LABound& LABoundStore::operator[] (LABoundRef br) { return ba[br]; }
-LABoundListRef LABoundStore::getBounds(LVRef v) const { return var_bound_lists[lva[v].ID()]; }
+LABoundListRef LABoundStore::getBounds(LVRef v) const { return var_bound_lists[getVarId(v)]; }
 LABoundRef LABoundStore::getBoundByIdx(LVRef v, int it) const { return bla[getBounds(v)][it]; }
 int LABoundStore::getBoundListSize(LVRef v) { return bla[getBounds(v)].size(); }
 bool LABoundStore::isUnbounded(LVRef v) const { return ( (bla[getBounds(v)].size() == 2) && (ba[bla[getBounds(v)][0]].getValue().isMinusInf()) && (ba[bla[getBounds(v)][1]].getValue().isPlusInf()) ); }

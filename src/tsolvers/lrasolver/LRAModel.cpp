@@ -7,8 +7,10 @@
 
 void LRAModel::initModel(LAVarStore &s)
 {
-    for (int i = 0; i < s.numVars(); i++)
-        addVar(s.getVarByIdx(i));
+    for (unsigned i = 0; i < s.numVars(); i++) {
+        LVRef ref {i};
+        addVar(ref);
+    }
 }
 
 int
@@ -17,7 +19,7 @@ LRAModel::addVar(LVRef v)
     if (has_model.has(v))
         return n_vars_with_model;
 
-    while (int_model.size() <= lva[v].ID()) {
+    while (int_model.size() <= getVarId(v)) {
         int_model.push();
         int_lbounds.push();
         int_ubounds.push();
@@ -26,8 +28,8 @@ LRAModel::addVar(LVRef v)
     has_model.insert(v, true);
 //    printf("Pushing the default model for %s\n", lva.printVar(v));
     write(v, Delta());
-    int_lbounds[lva[v].ID()].push({ bs.getBoundByIdx(v, 0), 0 });
-    int_ubounds[lva[v].ID()].push({ bs.getBoundByIdx(v, bs.getBoundListSize(v)-1), 0 });
+    int_lbounds[getVarId(v)].push({ bs.getBoundByIdx(v, 0), 0 });
+    int_ubounds[getVarId(v)].push({ bs.getBoundByIdx(v, bs.getBoundListSize(v)-1), 0 });
     return ++n_vars_with_model;
 }
 
@@ -46,11 +48,11 @@ LRAModel::addVar(LVRef v)
 void
 LRAModel::write(const LVRef &v, Delta val)
 {
-    if ((int_model[lva[v].ID()].size() == 0) || (int_model[lva[v].ID()].last().dl != backtrackLevel())) {
-        int_model[lva[v].ID()].push();
+    if ((int_model[getVarId(v)].size() == 0) || (int_model[getVarId(v)].last().dl != backtrackLevel())) {
+        int_model[getVarId(v)].push();
         model_trace.push(v);
     }
-    ModelEl& el = int_model[lva[v].ID()].last();
+    ModelEl& el = int_model[getVarId(v)].last();
     el.d  = std::move(val);
     el.dl = backtrackLevel();
 }
@@ -67,10 +69,10 @@ LRAModel::pushBound(const LABoundRef br) {
     LABound& b = bs[br];
     LVRef vr = b.getLVRef();
     if (b.getType() == bound_u) {
-        int_ubounds[lva[vr].ID()].push({br, backtrackLevel()});
+        int_ubounds[getVarId(vr)].push({br, backtrackLevel()});
     }
     else
-        int_lbounds[lva[vr].ID()].push({br, backtrackLevel()});
+        int_lbounds[getVarId(vr)].push({br, backtrackLevel()});
 
     bound_trace.push(br);
 }
@@ -84,9 +86,9 @@ LRAModel::popBounds()
         LVRef vr = b.getLVRef();
         LABoundRef latest_bound = LABoundRef_Undef;
         if (b.getType() == bound_u) {
-            int_ubounds[lva[vr].ID()].pop();
+            int_ubounds[getVarId(vr)].pop();
         } else {
-            int_lbounds[lva[vr].ID()].pop();
+            int_lbounds[getVarId(vr)].pop();
         }
     }
     bound_trace.shrink(bound_trace.size() - limits.last().bound_lim);
@@ -97,13 +99,13 @@ LRAModel::popModels()
 {
     assert(limits.size() > 0);
     for (int i = model_trace.size()-1; i >= limits.last().model_lim; i--) {
-        int id = lva[model_trace[i]].ID();
+        int id = getVarId(model_trace[i]);
         if (int_model[id].size() == 1) {
             ModelEl& m = int_model[id][0];
             m.d.reset();
             m.dl = 0;
         } else {
-            int_model[lva[model_trace[i]].ID()].pop();
+            int_model[getVarId(model_trace[i])].pop();
         }
     }
     model_trace.shrink(model_trace.size() - limits.last().model_lim);
@@ -133,9 +135,9 @@ void LRAModel::printModelState()
     for (int i = 0; i < vars.size(); i++) {
         LVRef v = vars[i];
         if (has_model[v]) {
-            int id = lva[v].ID();
+            int id = getVarId(v);
             vec<ModelEl> &vals = int_model[id];
-            printf("Var %s [%s], has %d models\n", lva.printVar(v), logic.pp(lva[v].getPTRef()), vals.size());
+            printf("Var %s [%s], has %d models\n", printVar(v), logic.pp(lavarStore.getVarPTRef(v)), vals.size());
             char *buf = (char*) malloc(1);
             buf[0] = '\0';
             for (int j = 0; j < vals.size(); j++) {
@@ -148,7 +150,7 @@ void LRAModel::printModelState()
             free(buf);
         }
         else
-            printf("Var %s has no models\n", lva.printVar(v));
+            printf("Var %s has no models\n", printVar(v));
     }
     printf("There are %d bounds in the bound trace\n", bound_trace.size());
     for (int i = 0; i < bound_trace.size(); i++) {
@@ -176,18 +178,17 @@ void LRAModel::clear() {
 
 int LRAModel::backtrackLevel() { return limits.size() - 1; }
 
-//inline const Delta& LRAModel::read (const LVRef &v) const { assert(hasModel(v)); return int_model[lva[v].ID()].last().d; }
-const  bool  LRAModel::hasModel(const LVRef& v) const { return (lva[v].ID() < int_model.size() && int_model[lva[v].ID()].size() > 0); }
+const  bool  LRAModel::hasModel(const LVRef& v) const { return (getVarId(v) < int_model.size() && int_model[getVarId(v)].size() > 0); }
 
-const LABound& LRAModel::readLBound(const LVRef &v) const { return bs[int_lbounds[lva[v].ID()].last().br]; }
-const LABound& LRAModel::readUBound(const LVRef &v) const { return bs[int_ubounds[lva[v].ID()].last().br]; }
-const Delta& LRAModel::Lb(LVRef v) const { return bs[int_lbounds[lva[v].ID()].last().br].getValue(); }
-const Delta& LRAModel::Ub(LVRef v) const { return bs[int_ubounds[lva[v].ID()].last().br].getValue(); }
+const LABound& LRAModel::readLBound(const LVRef &v) const { return bs[int_lbounds[getVarId(v)].last().br]; }
+const LABound& LRAModel::readUBound(const LVRef &v) const { return bs[int_ubounds[getVarId(v)].last().br]; }
+const Delta& LRAModel::Lb(LVRef v) const { return bs[int_lbounds[getVarId(v)].last().br].getValue(); }
+const Delta& LRAModel::Ub(LVRef v) const { return bs[int_ubounds[getVarId(v)].last().br].getValue(); }
 void LRAModel::pushBacktrackPoint()      { limits.push({model_trace.size(), bound_trace.size(), decision_trace.size()}); }
 PtAsgn LRAModel::popBacktrackPoint() { popModels(); popBounds(); PtAsgn popd = popDecisions(); limits.pop(); return popd; }; // Returns the decision if the backtrack point had a decision
 int  LRAModel::getBacktrackSize() const { return limits.size(); }
 
-bool LRAModel::isEquality(LVRef v) const { return bs[int_lbounds[lva[v].ID()].last().br].getIdx()+1 == bs[int_ubounds[lva[v].ID()].last().br].getIdx() && !Lb(v).isInf() && !Ub(v).isInf() && Lb(v) == Ub(v); }
+bool LRAModel::isEquality(LVRef v) const { return bs[int_lbounds[getVarId(v)].last().br].getIdx()+1 == bs[int_ubounds[getVarId(v)].last().br].getIdx() && !Lb(v).isInf() && !Ub(v).isInf() && Lb(v) == Ub(v); }
 bool LRAModel::isUnbounded(LVRef v) const { return bs.isUnbounded(v); }
 bool LRAModel::boundSatisfied(LVRef v, LABoundRef b) const { return ((bs[b].getType() == bound_u) && !(bs[b].getIdx() < readUBound(v).getIdx())) || ((bs[b].getType() == bound_l) && !(bs[b].getIdx() > readLBound(v).getIdx())); }
 bool LRAModel::boundUnsatisfied(LVRef v, LABoundRef b) const

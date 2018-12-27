@@ -45,9 +45,9 @@ LASolver::LASolver(SolverDescr dls, SMTConfig & c, LALogic& l, vec<DedElem>& d)
         , TSolver((SolverId)descr_la_solver, (const char*)descr_la_solver, c, d)
         //, delta(Delta::ZERO)
         , bland_threshold(1000)
-        , lavarStore(lva, l)
-        , boundStore(ba, bla, lva, lavarStore, l)
-        , model(lva, boundStore, l)
+        , lavarStore(l)
+        , boundStore(ba, bla, lavarStore, l)
+        , model(lavarStore, boundStore, l)
 {
     status = INIT;
 }
@@ -374,8 +374,10 @@ LVRef LASolver::getBasicVarToFixByBland() const {
         if (isModelOutOfBounds(it)) {
             new_candidates.insert(it);
             // Select the var with the smallest id
-            current = lva[it].ID() < curr_var_id_x ? it : current;
-            curr_var_id_x = lva[it].ID() < curr_var_id_x ? lva[it].ID() : curr_var_id_x;
+            auto id = getVarId(it);
+            assert(it.x == id);
+            current = id < curr_var_id_x ? it : current;
+            curr_var_id_x = id < curr_var_id_x ? id : curr_var_id_x;
         }
     }
     candidates.swap(new_candidates);
@@ -450,8 +452,8 @@ LVRef LASolver::findNonBasicForPivotByBland(LVRef basicVar) {
             const bool coeff_is_pos = (coeff > 0);
             if ((coeff_is_pos && model.read(y) < model.Ub(y)) || (!coeff_is_pos && model.read(y) > model.Lb(y))) {
                 // Choose the leftmost nonbasic variable with a negative (reduced) cost
-                y_found = lva[y].ID() < curr_var_id_y ? y : y_found;
-                curr_var_id_y = lva[y].ID() < curr_var_id_y ? lva[y].ID() : curr_var_id_y;
+                y_found = getVarId(y) < curr_var_id_y ? y : y_found;
+                curr_var_id_y = getVarId(y) < curr_var_id_y ? getVarId(y) : curr_var_id_y;
             }
         }
     }
@@ -466,8 +468,8 @@ LVRef LASolver::findNonBasicForPivotByBland(LVRef basicVar) {
             const bool &coeff_is_pos = (coeff > 0);
             if ((!coeff_is_pos && model.read(y) < model.Ub(y)) || (coeff_is_pos && model.read(y) > model.Lb(y))) {
                 // Choose the leftmost nonbasic variable with a negative (reduced) cost
-                y_found = lva[y].ID() < curr_var_id_y ? y : y_found;
-                curr_var_id_y = lva[y].ID() < curr_var_id_y ? lva[y].ID() : curr_var_id_y;
+                y_found = getVarId(y) < curr_var_id_y ? y : y_found;
+                curr_var_id_y = getVarId(y) < curr_var_id_y ? getVarId(y) : curr_var_id_y;
             }
         }
     } else {
@@ -1042,7 +1044,7 @@ opensmt::Number LASolver::evaluateTerm(PTRef tr)
     PTRef var;
     logic.splitTermToVarAndConst(tr, var, coef);
     PTId id = logic.getPterm(var).getId();
-    val += logic.getNumConst(coef) * *concrete_model[lva[lavarStore.getVarByPTId(id)].ID()];
+    val += logic.getNumConst(coef) * *concrete_model[getVarId(lavarStore.getVarByPTId(id))];
 
     return val;
 }
@@ -1071,7 +1073,7 @@ ValPair LASolver::getValue(PTRef tr) {
             val = evaluateTerm(tr);
     }
     else
-        val = *concrete_model[lva[lavarStore.getVarByPTId(id)].ID()];
+        val = *concrete_model[getVarId(lavarStore.getVarByPTId(id))];
 
     return ValPair(tr, val.get_str().c_str());
 }
@@ -1108,7 +1110,7 @@ bool LASolver::invariantHolds() const
         if (isModelOutOfBounds(var)) {
             rval = false;
             printf("Non-basic (column) LRA var %s has value %s <= %s <= %s\n",
-                   lva.printVar(var), model.Lb(var).printValue(),
+                   printVar(var), model.Lb(var).printValue(),
                    model.read(var).printValue(), model.Ub(var).printValue());
             assert(false);
         }
@@ -1133,7 +1135,7 @@ PtAsgn_reason LASolver::getDeduction()  { if (deductions_next >= th_deductions.s
 
 LALogic&  LASolver::getLogic()  { return logic; }
 
-unsigned LASolver::nVars() const { return lva.getNumVars(); }
+unsigned LASolver::nVars() const { return lavarStore.numVars(); }
 
 bool LASolver::isProcessedByTableau(LVRef var) {return tableau.isProcessed(var);}
 

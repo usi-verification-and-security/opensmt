@@ -38,7 +38,7 @@ private:
     vec<LABoundRef> bound_trace;
     vec<PtAsgn> decision_trace;
 
-    LAVarAllocator &lva;
+    LAVarStore &lavarStore;
     LABoundStore &bs;
     int n_vars_with_model;
     LALogic& logic; // Needed just for debug prints
@@ -49,13 +49,13 @@ private:
     PtAsgn       popDecisions();
 
 public:
-    LRAModel(LAVarAllocator &lva, LABoundStore& bs, LALogic& logic) : lva(lva), bs(bs), n_vars_with_model(0), logic(logic) { limits.push({0, 0}); }
+    LRAModel(LAVarStore & lavarStore, LABoundStore & bs, LALogic & logic) : lavarStore(lavarStore), bs(bs), n_vars_with_model(0), logic(logic) { limits.push({0, 0}); }
     void initModel(LAVarStore &s);
     int addVar(LVRef v); // Adds a variable.  Returns the total number of variables
     inline int   nVars() { return n_vars_with_model; }
 
     void         write(const LVRef &v, Delta);
-    inline const Delta& read (const LVRef &v) const { assert(hasModel(v)); return int_model[lva[v].ID()].last().d; }
+    inline const Delta& read (const LVRef &v) const { assert(hasModel(v)); return int_model[getVarId(v)].last().d; }
     const  bool  hasModel(const LVRef& v) const;
 
     void pushBound(const LABoundRef br);

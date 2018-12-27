@@ -30,10 +30,10 @@ void LIASolver::clearSolver()
 }
 
 void LIASolver::computeConcreteModel(LVRef v) {
-    while (concrete_model.size() <= lva[v].ID())
+    while (concrete_model.size() <= getVarId(v))
         concrete_model.push(nullptr);
 
-    PTRef tr = lva[v].getPTRef();
+    PTRef tr = getVarPTRef(v);
     auto it = removed_by_GaussianElimination.find(v);
     if(it != removed_by_GaussianElimination.end()){
         auto const & representation = (*it).second;
@@ -41,10 +41,10 @@ void LIASolver::computeConcreteModel(LVRef v) {
         for (auto const & term : representation) {
             val += term.coeff * model.read(term.var);
         }
-        concrete_model[lva[v].ID()] = new opensmt::Real(val.R());
+        concrete_model[getVarId(v)] = new opensmt::Real(val.R());
     }
     else {
-        concrete_model[lva[v].ID()] = new opensmt::Real(model.read(v).R());
+        concrete_model[getVarId(v)] = new opensmt::Real(model.read(v).R());
     }
 }
 
@@ -61,7 +61,7 @@ void LIASolver::computeModel()
 
     for (unsigned i = 0; i < lavarStore.numVars(); ++i)
     {
-        LVRef v = lavarStore.getVarByIdx(i);
+        LVRef v {i};
         assert (model.read(v).D() == 0);
 
     }
@@ -72,7 +72,7 @@ void LIASolver::computeModel()
 
     for ( unsigned i = 0; i < lavarStore.numVars(); i++)
     {
-        LVRef v = lavarStore.getVarByIdx(i);
+        LVRef v {i};
         computeConcreteModel(v);
     }
 }
@@ -84,7 +84,7 @@ void LIASolver::notifyVar(LVRef v)
         int_vars.push(v);
     }
 
-    while(cuts.size() <= lva[v].ID())
+    while(cuts.size() <= getVarId(v))
         cuts.push();
 }
 
@@ -97,7 +97,7 @@ TRes LIASolver::checkIntegersAndSplit() {
         LVRef x = int_vars[i];
         if (removed_by_GaussianElimination.find(x) != removed_by_GaussianElimination.end()) {
             computeConcreteModel(x);
-            model.write(x, Delta(*concrete_model[lva[x].ID()]));
+            model.write(x, Delta(*concrete_model[getVarId(x)]));
         }
         if (!isModelInteger(x)) {
             nonint_models = true;
@@ -119,10 +119,10 @@ TRes LIASolver::checkIntegersAndSplit() {
             }
 
             // We might have this blocked already, and then the solver should essentially return "I don't know, please go ahead".
-            if (cuts[lva[x].ID()].has(c)) {
+            if (cuts[getVarId(x)].has(c)) {
                 continue;
             }
-            cuts[lva[x].ID()].insert(c, true);
+            cuts[getVarId(x)].insert(c, true);
 
             // Check if integer splitting is possible for the current variable
             if (c < model.Lb(x) && c + 1 > model.Ub(x)) { //then splitting not possible, and we create explanation
@@ -136,8 +136,8 @@ TRes LIASolver::checkIntegersAndSplit() {
 
             //constructing new constraint
             //x <= c || x >= c+1;
-            PTRef constr = logic.mkOr(logic.mkNumLeq(lva[x].getPTRef(), logic.mkConst(c)),
-                       logic.mkNumGeq(lva[x].getPTRef(), logic.mkConst(c + 1)));
+            PTRef constr = logic.mkOr(logic.mkNumLeq(getVarPTRef(x), logic.mkConst(c)),
+                       logic.mkNumGeq(getVarPTRef(x), logic.mkConst(c + 1)));
             //printf("LIA solver constraint %s\n", logic.pp(constr));
 
             splitondemand.push(constr);

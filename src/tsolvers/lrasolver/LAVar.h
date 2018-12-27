@@ -31,67 +31,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "PtStructs.h"
 #include "LARefs.h"
 #include "Pterm.h"
+#include <vector>
 
 class LRASolver;
 class LAVarStore;
 class LALogic;
 
 
-//
-// Class to store the term of constraints as a column of Simplex method tableau
-//
-class LAVar
-{
-    friend class LAVarAllocator;
-
-private:
-    unsigned id; // The unique id
-    PTRef e;               // The term in the SMT world
-
-public:
-    // Constructor.  The e_orig from SMT world, the bounds list, and a unique id
-    LAVar(PTRef e_orig, unsigned id);
-
-    inline int  ID()                const { return id; } // Return the ID of the LAVar
-
-    PTRef      getPTRef()         const   ;
-};
-
-
-class LAVarAllocator : public RegionAllocator<uint32_t>
-{
-    unsigned n_vars;
-    static int lavarWord32Size();/* {
-        return (sizeof(LAVar)) / sizeof(uint32_t); }*/
-public:
-    LAVarAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), n_vars(0) {}
-    LAVarAllocator()                   : n_vars(0) {}
-    unsigned getNumVars() const;
-
-    LVRef alloc(PTRef e);
-
-    LAVar&       operator[](LVRef r) ;
-    const LAVar& operator[](LVRef r) const ;
-    // Deref, Load Effective Address (LEA), Inverse of LEA (AEL):
-    LAVar*       lea       (LVRef r)    ;
-    const LAVar* lea       (LVRef r) const  ;
-    LVRef        ael       (const LAVar* t) ;
-    void         free      (LVRef r)        ;
-    void         clear() {}
-    // Debug stuff
-    char*        printVar (LVRef r)  const ;
-};
-
 class LAVarStore
 {
 private:
-    vec<LVRef>      lavars;
-    LAVarAllocator& lva;
+    std::vector<PTRef>      lavars;
     vec<LVRef>      leqToLavar;              // Maps Pterm constraints to solver's real variables.
     vec<LVRef>      ptermToLavar;            // Maps Pterm variables to solver's real variables
     LALogic&        logic;
 public:
-    LAVarStore(LAVarAllocator& lva, LALogic& logic) : lva(lva), logic(logic) {}
+    LAVarStore(LALogic & logic) : logic(logic) {}
     inline void   clear() {};
     LVRef  getNewVar(PTRef e_orig);
     LVRef  getVarByPTId(PTId i);
@@ -100,8 +55,7 @@ public:
     bool   hasVar(PTId i) ;
     bool   hasVar(PTRef tr);
     int    numVars() const ;
-    void   remove(LVRef r) ;
-    LVRef  getVarByIdx(unsigned i) ;
+    inline PTRef getVarPTRef(LVRef ref) const { return lavars[ref.x]; }
 };
 
 
