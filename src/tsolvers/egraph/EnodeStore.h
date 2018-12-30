@@ -60,7 +60,7 @@ class EnodeStore {
 #else
     EnodeStore(Logic& l) :
         logic(l)
-      , ea(1024*1024, &sig_tab)
+      , ea(1024*1024)
       , ERef_Nil(ea.alloc(SymRef_Undef))
       , dist_idx(0)
 #endif
@@ -78,7 +78,6 @@ class EnodeStore {
 
     ERef get_Nil() const { return ERef_Nil; }
     void free(ERef er) { ea.free(er); }
-    vec<ERef>           id_to_enode;
 
     Map<PTRef,ERef,PTRefHash,Equal<PTRef> >    termToERef;
     Map<SymRef,ERef,SymRefHash,Equal<SymRef> > symToERef;

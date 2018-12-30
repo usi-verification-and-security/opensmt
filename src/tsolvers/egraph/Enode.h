@@ -224,12 +224,9 @@ struct ERef_vecEq {
 class EnodeAllocator : public RegionAllocator<uint32_t>
 {
     enodeid_t n_enodes;
-
-    Map<SigPair,ERef,SigHash,Equal<const SigPair&> >* sig_tab;
-
  public:
 
-    EnodeAllocator(uint32_t start_cap, Map<SigPair, ERef, SigHash, Equal<const SigPair&> >* st) : RegionAllocator<uint32_t>(start_cap), n_enodes(0), sig_tab(st) {}
+    EnodeAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), n_enodes(0) {}
     EnodeAllocator() : n_enodes(0) {}
 
     static int symEnodeWord32Size()  { return sizeof(Enode) / sizeof(int32_t); }
@@ -268,10 +265,7 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
         return eid;
     }
 
-    ERef alloc(Enode&) {
-        assert(false);
-        return ERef_Undef;
-    }
+    ERef alloc(Enode&) = delete;
 
     // Deref, Load Effective Address (LEA), Inverse of LEA (AEL):
     Enode&       operator[](ERef r)         { return (Enode&)RegionAllocator<uint32_t>::operator[](r.x); }

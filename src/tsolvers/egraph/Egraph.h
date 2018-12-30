@@ -101,16 +101,6 @@ public:
 
     virtual ~Egraph( ) {
         backtrackToStackSize( 0 );
-        //
-        // Delete enodes
-        //
-        while ( enode_store.id_to_enode.size() != 0 ) {
-            ERef er = enode_store.id_to_enode.last();
-            if (er != ERef_Undef )
-                enode_store.free(er);
-
-            enode_store.id_to_enode.pop();
-        }
 #ifdef STATISTICS
         tsolver_stats.printStatistics(std::cerr);
 #endif // STATISTICS
@@ -136,7 +126,7 @@ public:
         return (getEnode(er).isTerm() && logic.isConstant(getEnode(er).getTerm()));
     }
 
-    size_t size() const { return enode_store.id_to_enode.size(); };
+    size_t size() const { return enode_store.enodes.size(); };
 
 
   char*   printValue              (PTRef tr); // Print all terms in the same eq class and distinction class
