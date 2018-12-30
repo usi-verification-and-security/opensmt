@@ -235,10 +235,6 @@ private:
   bool                        active_dup1;                      // To prevent nested usage
   Map<PTRef,int,PTRefHash,Equal<PTRef> >  duplicates1;          // Fast duplicate checking
   int                         dup_count1;                       // Current dup token
-  bool                        active_dup_map1;                  // To prevent nested usage
-  vec< ERef >                 dup_map1;                         // Fast duplicate checking
-  vec< int >                  dup_set1;                         // Fast duplicate checking
-  int                         dup_map_count1;                   // Current dup token
   bool                           model_computed;                // Has model been computed lately ?
   bool                           congruence_running;            // True if congruence is running
 

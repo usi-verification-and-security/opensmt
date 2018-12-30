@@ -96,8 +96,6 @@ Egraph::Egraph(SMTConfig & c, Logic& l , vec<DedElem>& d)
       , fa_garbage_frac    ( 0.5 )
       , active_dup1        ( false )
       , dup_count1         ( 0 )
-      , active_dup_map1    ( false )
-      , dup_map_count1     ( 0 )
       , congruence_running ( false )
       , time_stamp         ( 0 )
 {
