@@ -219,8 +219,6 @@ public:
 
   char*   printValue              (PTRef tr); // Print all terms in the same eq class and distinction class
 
-  void    printEnodeList          ( ostream & );
-
 #ifdef STATISTICS
   void        printMemStats             ( ostream & );
 #endif
@@ -265,7 +263,6 @@ public:
   virtual ValPair     getValue                (PTRef tr);
   void                computeModel            ( );
   void                clearModel              ( );
-  void                printModel              ( ostream & );                // Computes and print the model
   void                splitOnDemand           ( vec<PTRef> &, int ) { };       // Splitting on demand modulo equality
 
   //===========================================================================
@@ -408,7 +405,6 @@ public:
   char* printDistinctions          ( PTRef tr ) const;
   char* printExplanation           ( PTRef tr ) { char* tmp; asprintf(&tmp, "%s", printExplanationTreeDotty(enode_store.termToERef[tr]).c_str()); return tmp; }
 private:
-  string printExplanationTree(ERef);
   std::string toString                 (ERef er) const { return std::string{logic.printTerm(getEnode(er).getTerm())};}
 public:
   string printExplanationTreeDotty(ERef);
@@ -416,9 +412,6 @@ private:
   const string printDistinctionList( ELRef, ELAllocator& ela, bool detailed = true );
   void checkForbidReferences       ( ERef );
   void checkRefConsistency         ( );
-  string printCbeStructure         ( );
-  string printCbeStructure         ( ERef, set< int > & );
-  string printParents              ( ERef );
   // Helper methods
   void mergeForbidLists(Enode & to, const Enode & from);
   void unmergeForbidLists(Enode & to, const Enode & from);
