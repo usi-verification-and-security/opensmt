@@ -388,6 +388,19 @@ void Egraph::checkRefConsistency() {
     }
 }
 
+std::string Egraph::toString(ERef er) const {
+    if (er == ERef_Nil) { return "empty list" ; }
+    if (er == ERef_Undef) { return "undef"; }
+    const Enode & node = getEnode(er);
+    if (node.isSymb()) {
+        return logic.printSym(node.getSymb());
+    }
+    if (node.isTerm()) {
+        return logic.printTerm(node.getTerm());
+    }
+    return "List with head " + toString(node.getCar()) + "\nand tail " + toString(node.getCdr());
+}
+
 /*
 #ifdef PEDANTIC_DEBUG
 const char* Egraph::printUndoTrail() {

@@ -405,7 +405,7 @@ public:
   char* printDistinctions          ( PTRef tr ) const;
   char* printExplanation           ( PTRef tr ) { char* tmp; asprintf(&tmp, "%s", printExplanationTreeDotty(enode_store.termToERef[tr]).c_str()); return tmp; }
 private:
-  std::string toString                 (ERef er) const { return std::string{logic.printTerm(getEnode(er).getTerm())};}
+  std::string toString                 (ERef er) const;
 public:
   string printExplanationTreeDotty(ERef);
 private:

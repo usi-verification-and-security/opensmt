@@ -1167,7 +1167,7 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
 #ifdef VERBOSE_EUF
             cerr << "Deducing ";
             cerr << (deduced_polarity == l_False ? "not " : "");
-            cerr << logic.printTerm(enode_store[sv].getTerm());
+            cerr << logic.printTerm(enode_store[v].getTerm());
             cerr << " since ";
             cerr << logic.printTerm(enode_store[x].getTerm());
             cerr << " and ";
@@ -1928,16 +1928,16 @@ void Egraph::explainConstants(ERef p, ERef q) {
     exp_pending.push( p );
 #ifdef VERBOSE_EUF
     cerr << "constant pushing (1): "
-                 << logic.printTerm(en_p.getTerm()) << " and "
+                 << logic.printTerm(getEnode(p).getTerm()) << " and "
                  << logic.printTerm(en_proot.getTerm()) << endl;
 
     cerr << "constant pushing (2): "
-                 << logic.printTerm(en_q.getTerm()) << " and "
+                 << logic.printTerm(getEnode(q).getTerm()) << " and "
                  << logic.printTerm(en_qroot.getTerm()) << endl;
 
     cerr << "constant pushing (3): "
-                 << logic.printTerm(en_q.getTerm()) << " and "
-                 << logic.printTerm(en_p.getTerm()) << endl;
+                 << logic.printTerm(getEnode(q).getTerm()) << " and "
+                 << logic.printTerm(getEnode(p).getTerm()) << endl;
 
     cerr << "Explain XXX" << endl;
 #endif
