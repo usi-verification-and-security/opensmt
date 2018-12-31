@@ -269,7 +269,7 @@ void Egraph::computeModel( )
     if (values_ok == true)
         return;
 
-    const vec<ERef>& enodes = enode_store.getEnodes();
+    const vec<ERef>& enodes = enode_store.getTermEnodes();
     for (int i = 0; i < enodes.size(); i++) {
         if (values.has(enodes[i]))
             continue;
@@ -1065,14 +1065,7 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
                 // Case 2: p remains congruent root (but now has new signature)
                 enode_store.insertSig(parent);
                 // re-insert to parent vectors of its car and cdr
-                // car
-                auto & carParents = parents[getEnode(getEnode(parentNode.getCar()).getRoot()).getCid()];
-                auto index = carParents.addParent(parent);
-                parentNode.setCarParentIndex(index);
-                // cdr
-                auto & cdrParents = parents[getEnode(getEnode(parentNode.getCdr()).getRoot()).getCid()];
-                auto cdrIndex = cdrParents.addParent(parent);
-                parentNode.setCdrParentIndex(index);
+                addToParentVectors(parent);
             }
         }
     }
@@ -1269,17 +1262,9 @@ void Egraph::undoMerge( ERef y )
         if (entry.isValid()) {
             // insert the signature
             ERef parent = UseVector::entryToERef(entry);
-            Enode & parentNode = getEnode(parent);
             assert(!enode_store.containsSig(parent));
             enode_store.insertSig(parent);
-            // add parent to car
-            auto & carParents = parents[getEnode(getEnode(parentNode.getCar()).getRoot()).getCid()];
-            auto index = carParents.addParent(parent);
-            parentNode.setCarParentIndex(index);
-            // cdr
-            auto & cdrParents = parents[getEnode(getEnode(parentNode.getCdr()).getRoot()).getCid()];
-            auto cdrIndex = cdrParents.addParent(parent);
-            parentNode.setCdrParentIndex(index);
+            addToParentVectors(parent);
         }
     }
 
@@ -1997,7 +1982,7 @@ uint32_t UseVector::getFreeSlotIndex() {
         Entry e = data[free];
         assert(e.isFree());
         // MB: TODO: what if this should be -1? Test!
-        free = e.data;
+        free = freeEntryToIndex(e);
         return ret;
     }
     ret = data.size();
@@ -2008,12 +1993,12 @@ uint32_t UseVector::getFreeSlotIndex() {
 void Egraph::addToParentVectors(ERef eref) {
     Enode& enode = getEnode(eref);
     // set as parent for car
-    auto carCID = getEnode(enode.getCar()).getCid();
+    auto carCID = getEnode(getEnode(enode.getCar()).getRoot()).getCid();
     auto index = parents[carCID].addParent(eref);
     enode.setCarParentIndex(index);
 
     // set as parent for cdr
-    auto cdrCID = getEnode(enode.getCdr()).getCid();
+    auto cdrCID = getEnode(getEnode(enode.getCdr()).getRoot()).getCid();
     index = parents[cdrCID].addParent(eref);
     enode.setCdrParentIndex(index);
 }

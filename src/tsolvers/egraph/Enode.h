@@ -253,7 +253,6 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
         ERef eid;
         eid.x = v;
         Enode* tmp = new (lea(eid)) Enode(sym, eid, n_enodes++);
-        tmp->header.id = n_enodes++;
         return eid;
     }
 

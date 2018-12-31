@@ -47,7 +47,7 @@ class EnodeStore {
 
     vec<PTRef>     index_to_dist;                    // Table distinction index --> proper term
 
-    vec<ERef>      enodes;
+    vec<ERef>      termEnodes;
 
   public:
 #if defined(PEDANTIC_DEBUG)
@@ -67,7 +67,7 @@ class EnodeStore {
         { Enode::ERef_Nil = ERef_Nil; } // Nil is a symbol.  It should
                                         // in theory be list, but makes no matter now
 
-    const vec<ERef>& getEnodes() const { return enodes; };
+    const vec<ERef>& getTermEnodes() const { return termEnodes; };
 
     ERef getEnode_true()  { return ERef_True;  }
     ERef getEnode_false() { return ERef_False; }

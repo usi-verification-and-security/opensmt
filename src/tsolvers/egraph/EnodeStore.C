@@ -81,7 +81,7 @@ PTRef EnodeStore::addTerm(ERef sr, ERef args, PTRef term) {
             assert(!ERefToTerm.has(new_er));
             ERefToTerm.insert(new_er, term);
 
-            enodes.push(new_er);
+            termEnodes.push(new_er);
 
             rval = term;
         }

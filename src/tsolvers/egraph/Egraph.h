@@ -121,14 +121,14 @@ public:
     static ERef entryToERef(Entry e) {
         // MB: TODO: Test that the conversion is correct
         assert(e.isValid());
-        unsigned int val = e.data << 2;
+        unsigned int val = e.data;
         return ERef{val};
     }
 
     static int freeEntryToIndex(Entry e) {
         // MB: TODO: Test that the conversion is correct
         assert(e.isFree());
-        int val = e.data << 2;
+        int val = e.data;
         return val;
     }
 
@@ -160,7 +160,7 @@ private:
 
   void addToParentVectors(ERef);
 
-  unsigned getParentsSize(ERef ref) { return parents[getEnode(ref).getCid()].size(); }
+  unsigned getParentsSize(ERef ref) { assert(getEnode(ref).getCid() < parents.size()); return parents[getEnode(ref).getCid()].size(); }
   //***************************************************************************************************************
   ELAllocator   forbid_allocator;
 
@@ -206,7 +206,6 @@ private:
     ERef termToERef(PTRef p)              { return enode_store.termToERef[p]; }
 public:
     inline const Enode& getEnode(ERef er) const { return enode_store[er]; }
-    const vec<ERef>& getEnodes() const    { return enode_store.getEnodes(); }
     PTRef ERefToTerm(ERef er)    const    { return getEnode(er).getTerm(); }
 
     bool  isDeduced(PTRef tr)    const    { return deduced[logic.getPterm(tr).getVar()] != l_Undef; }
@@ -215,9 +214,6 @@ public:
     bool  isConstant(ERef er)    const    {
         return (getEnode(er).isTerm() && logic.isConstant(getEnode(er).getTerm()));
     }
-
-    size_t size() const { return enode_store.enodes.size(); };
-
 
   char*   printValue              (PTRef tr); // Print all terms in the same eq class and distinction class
 
