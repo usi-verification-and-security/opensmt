@@ -325,6 +325,7 @@ void Egraph::declareTerm(PTRef tr) {
 #endif
         PTRef rval = enode_store.addTerm(sym, cdr, tr);
         assert(rval == tr);
+        updateParentsVector(tr);
     }
 
     // Check if termToERef contained the ref and it has been rewritten
@@ -1994,13 +1995,33 @@ void Egraph::addToParentVectors(ERef eref) {
     Enode& enode = getEnode(eref);
     // set as parent for car
     auto carCID = getEnode(getEnode(enode.getCar()).getRoot()).getCid();
+    assert(parents.size() > carCID);
     auto index = parents[carCID].addParent(eref);
     enode.setCarParentIndex(index);
 
     // set as parent for cdr
     auto cdrCID = getEnode(getEnode(enode.getCdr()).getRoot()).getCid();
+    assert(parents.size() > cdrCID);
     index = parents[cdrCID].addParent(eref);
     enode.setCdrParentIndex(index);
+}
+
+void Egraph::updateParentsVector(PTRef term) {
+    ERef eref = termToERef(term);
+
+    while (eref != ERef_Nil) {
+        const Enode& enode = getEnode(eref);
+        ERef head = enode.getCar();
+        ERef tail = enode.getCdr();
+        auto headCid = getEnode(head).getCid();
+        auto tailCid = getEnode(tail).getCid();
+        auto max = std::max(headCid, tailCid);
+        while (max >= parents.size()) {
+            parents.emplace_back();
+        }
+        addToParentVectors(eref);
+        eref = tail;
+    }
 }
 
 

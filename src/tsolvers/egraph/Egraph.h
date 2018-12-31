@@ -160,6 +160,8 @@ private:
 
   void addToParentVectors(ERef);
 
+  void updateParentsVector(PTRef);
+
   unsigned getParentsSize(ERef ref) { assert(getEnode(ref).getCid() < parents.size()); return parents[getEnode(ref).getCid()].size(); }
   //***************************************************************************************************************
   ELAllocator   forbid_allocator;
