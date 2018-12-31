@@ -67,11 +67,101 @@ class UFSolverStats: public TSolverStats
         }
 };
 
+/*
+ * Defines parents of an equivalence class of terms - terms where at least one term from the class is present as a child
+ * p is parent of t if t is car or cdr of p => p will be present in UseVector of class(t).
+ * Moreover, if p's index in UseVector is i then p.carParentIndex or p.cdrParentIndex is i.
+ */
+class UseVector {
+    /* First two bits represent tag: 00 - valid entry, 01 - marked entry, 11 - empty entry
+     * In case of valid and marked entry, the data is ERef, in case of empty entry, the data is next free entry.
+     * This data structure is a vector possibly containing a free list inside
+     */
+    struct Entry {
+        unsigned tag      : 2;
+        unsigned data    : 30;
+
+        Entry(ERef e): tag{0}, data{e.x} { assert(e.x >> 30 == 0); }
+        Entry(): tag{0}, data{0} { }
+        bool isFree() const { return tag == 3; }
+        bool isValid() const { return tag == 0; }
+        bool isMarked() const { return tag == 1; }
+    };
+    static_assert(sizeof(Entry) == 4, "Entry is not of expected size!");
+    std::vector<Entry> data;
+    int32_t free; // pointer to head of a free list, -1 means no free list
+    uint32_t nelems; // the real number of elements;
+
+    using iterator = decltype(data)::iterator;
+    using const_iterator = decltype(data)::const_iterator;
+
+public:
+    UseVector() : data{}, free{-1}, nelems{0}
+    {}
+
+    uint32_t size() const { return nelems; }
+
+    uint32_t addParent(ERef parent);
+
+    void clearEntryAt(int index);
+
+    void markEntry(Entry& entry);
+    void unMarkEntry(Entry& entry);
+
+    iterator begin() { return data.begin(); }
+    iterator end() { return data.end(); }
+    const_iterator begin() const { return data.cbegin(); }
+    const_iterator end() const { return data.cend(); }
+
+    static Entry erefToEntry(ERef e) {
+        assert(e.x >> 30 == 0);
+        return Entry(e);
+    }
+
+    static ERef entryToERef(Entry e) {
+        // MB: TODO: Test that the conversion is correct
+        assert(e.isValid());
+        unsigned int val = e.data << 2;
+        return ERef{val};
+    }
+
+    static int freeEntryToIndex(Entry e) {
+        // MB: TODO: Test that the conversion is correct
+        assert(e.isFree());
+        int val = e.data << 2;
+        return val;
+    }
+
+    static Entry indexToFreeEntry(int index) {
+        // MB: TODO: Test that the conversion is correct
+        Entry ret;
+        ret.tag = 3;
+        ret.data = index;
+        return ret;
+    }
+
+    const Entry& operator[](unsigned index) const { assert(index < data.size()); return data[index]; }
+private:
+    uint32_t getFreeSlotIndex();
+
+
+};
+
 class Egraph : public TSolver
 {
 protected:
     Logic& logic;
 private:
+  /*
+   * fields and methods related to parent vectors
+   */
+  //***************************************************************************************************************
+  std::vector<UseVector> parents;
+
+  void addToParentVectors(ERef);
+
+  unsigned getParentsSize(ERef ref) { return parents[getEnode(ref).getCid()].size(); }
+  //***************************************************************************************************************
   ELAllocator   forbid_allocator;
 
   EnodeStore    enode_store;

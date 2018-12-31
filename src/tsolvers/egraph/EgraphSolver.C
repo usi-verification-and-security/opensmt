@@ -963,7 +963,7 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     // Step 1: Ensure that the constant or the one with a larger equivalence
     // class will be in x (and will become the root). Constants must be roots! It is an invariant that other code depends on!
     if (isConstant(y) ||
-        (!(isConstant(x)) && (getEnode(x).getSize() < getEnode(y).getSize())))
+        (!(isConstant(x)) && (getParentsSize(x) < getParentsSize(y))))
     {
         std::swap(x,y);
     }
@@ -993,28 +993,90 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     mergeDistinctionClasses(en_x, en_y);
 
     // Step 5: Consists of several operations
-    // Step 5.1: Assign w to the class with fewer parents
-    // Only parents of w's class will get new signatures
-    const bool xLessParents = en_x.getParentSize() < en_y.getParentSize( );
-    ERef w = xLessParents ? x : y ;
-    // Step 5.2: Remove old signatures of w’s class’s parents.
+
+    // Step 5.2: Remove old signatures of y’s class’s parents.
     // MB: This step is skipped now, we keep the old signatures in the table
-    // removeSignaturesOfParentsThatAreCongruenceRoots(w);
+//     removeSignaturesOfParentsThatAreCongruenceRoots(w);
+    // remove parents of y from other use vectors
+    for (auto const & entry : parents[en_y.getCid()]) {
+        if (entry.isValid()) {
+            ERef parent = UseVector::entryToERef(entry);
+            const Enode & parentNode = getEnode(parent);
+            assert(parentNode.getCgPtr() == parent);
+            assert( enode_store.containsSig( parent ));
+            enode_store.removeSig(parent);
+            //  check car
+            int carParentIndex = parentNode.getCarParentIndex();
+            if (carParentIndex >= 0) {
+                // valid index
+                const Enode& car = getEnode(parentNode.getCar());
+                if (car.getRoot() != y) {
+                    assert(getEnode(parentNode.getCdr()).getRoot() == y);
+                    assert(UseVector::entryToERef(parents[getEnode(car.getRoot()).getCid()][carParentIndex]) == parent);
+                    parents[getEnode(car.getRoot()).getCid()].clearEntryAt(carParentIndex);
+                }
+            }
+            // check cdr
+            int cdrParentIndex = parentNode.getCdrParentIndex();
+            if (cdrParentIndex >= 0) {
+                // valid index
+                const Enode& cdr = getEnode(parentNode.getCdr());
+                if (cdr.getRoot() != y) {
+                    assert(getEnode(parentNode.getCar()).getRoot() == y);
+                    assert(UseVector::entryToERef(parents[cdr.getCid()][cdrParentIndex]) == parent);
+                    parents[getEnode(cdr.getRoot()).getCid()].clearEntryAt(cdrParentIndex);
+                }
+            }
+        }
+    }
+
 
 
     // Step 5.3: Union of equivalence classes
     mergeEquivalenceClasses(x, y);
 
-    // Step 5.4: Preserve signatures of the larger parent set by swapping id’s if necessary.
-    // MB: This is necessary to ensure that exactly the signatures of w's parents have changed.
-    if ( xLessParents )
-    {
-        enodeid_t tmp = en_x.getCid();
-        en_x.setCid( en_y.getCid() );
-        en_y.setCid( tmp );
-    }
     // Step 5.5: Insert new signatures and propagate congruences
-    newSignaturesAndCongruencePairs(w);
+//    newSignaturesAndCongruencePairs(w);
+/*
+   * Reprocess all parents of y
+   *
+   * For backtracking, we keep all its parents
+   * - if parent remains a congruence root, it's kept as is
+   * - if parent is no longer a congruence root, it's kept as a marked
+   *   entry
+   */
+    auto & y_parents = parents[en_y.getCid()];
+    for (auto & entry : y_parents) {
+        if (entry.isValid()) {
+            ERef parent = UseVector::entryToERef(entry);
+            Enode & parentNode = getEnode(parent);
+            assert(parentNode.getCgPtr() == parent);
+            if (enode_store.containsSig(parent)) {
+                // Case 1: p joins q's congruence class
+                ERef q = enode_store.lookupSig(parent);
+                getEnode(parent).setCgPtr( q );
+                pending.push( parent );
+                pending.push( q );
+                // p is no longer in the congruence table
+                // put a mark for backtracking
+                y_parents.markEntry(entry);
+            }
+            else {
+                // Case 2: p remains congruent root (but now has new signature)
+                enode_store.insertSig(parent);
+                // re-insert to parent vectors of its car and cdr
+                // car
+                auto & carParents = parents[getEnode(getEnode(parentNode.getCar()).getRoot()).getCid()];
+                auto index = carParents.addParent(parent);
+                parentNode.setCarParentIndex(index);
+                // cdr
+                auto & cdrParents = parents[getEnode(getEnode(parentNode.getCdr()).getRoot()).getCid()];
+                auto cdrIndex = cdrParents.addParent(parent);
+                parentNode.setCdrParentIndex(index);
+            }
+        }
+    }
+
     // Step 6: Merge parent lists
     mergeParentLists(en_x, en_y);
     // Step 7: Not relevant -> skipped
@@ -1157,25 +1219,70 @@ void Egraph::undoMerge( ERef y )
     unmergeParentLists(en_x, en_y);
 
     // Undo Step 5 of merge
-    // Assign w to the smallest parent class
-    const bool xLessParents = en_x.getParentSize() < en_y.getParentSize( );
-    ERef w = xLessParents ? x : y ;
-    Enode& en_w = enode_store[w];
     // Undo Case 2 of Step 5.5 of merge
-    removeSignaturesOfParentsThatAreCongruenceRoots(w);
+    auto & y_parents = parents[en_y.getCid()];
+    for (auto & entry : y_parents) {
+        if (entry.isValid()) {
+            ERef parent = UseVector::entryToERef(entry);
+            Enode & parentNode = getEnode(parent);
+            assert(enode_store.containsSig(parent));
+            assert(parentNode.getCgPtr() == parent);
+            enode_store.removeSig(parent);
+            // remove from parent's lists of car and cdr
+            //  check car
+            int carParentIndex = parentNode.getCarParentIndex();
+            if (carParentIndex >= 0) {
+                // valid index
+                const Enode& car = getEnode(parentNode.getCar());
+                assert(UseVector::entryToERef(parents[car.getCid()][carParentIndex]) == parent);
+                parents[getEnode(car.getRoot()).getCid()].clearEntryAt(carParentIndex);
+            }
+            // check cdr
+            int cdrParentIndex = parentNode.getCdrParentIndex();
+            if (cdrParentIndex >= 0) {
+                // valid index
+                const Enode & cdr = getEnode(parentNode.getCdr());
+                assert(UseVector::entryToERef(parents[cdr.getCid()][cdrParentIndex]) == parent);
+                parents[getEnode(cdr.getRoot()).getCid()].clearEntryAt(cdrParentIndex);
+            }
+        }
+        else if (entry.isMarked()) {
+            // simply unmark
+            y_parents.unMarkEntry(entry);
+            ERef parent = UseVector::entryToERef(entry);
+            Enode & parentNode = getEnode(parent);
+            assert(parentNode.getCgPtr() != parent);
+            parentNode.setCgPtr(parent);
+
+        }
+    }
 
     // Undo Step 5.4 of merge
-    if ( en_x.getParentSize( ) < en_y.getParentSize( ) ) {
-        enodeid_t tmp = en_x.getCid( );
-        en_x.setCid( en_y.getCid( ) );
-        en_y.setCid( tmp );
-    }
     // Undo Step 5.3 of merge
     unmergeEquivalenceClasses(x, y);
 
     // Undo Case 1 of Step 5.5 of merge
     // Since we are skipping Step 5.2 in merge. we do not have to undo that.
-    unmergeParentCongruenceClasses(w);
+//    unmergeParentCongruenceClasses(w);
+    // re-insert parents of y
+    for (auto & entry : y_parents) {
+        if (entry.isValid()) {
+            // insert the signature
+            ERef parent = UseVector::entryToERef(entry);
+            Enode & parentNode = getEnode(parent);
+            assert(!enode_store.containsSig(parent));
+            enode_store.insertSig(parent);
+            // add parent to car
+            auto & carParents = parents[getEnode(getEnode(parentNode.getCar()).getRoot()).getCid()];
+            auto index = carParents.addParent(parent);
+            parentNode.setCarParentIndex(index);
+            // cdr
+            auto & cdrParents = parents[getEnode(getEnode(parentNode.getCdr()).getRoot()).getCid()];
+            auto cdrIndex = cdrParents.addParent(parent);
+            parentNode.setCdrParentIndex(index);
+        }
+    }
+
     // Undo step 4 of Merge
     unmergeDistinctionClasses(en_x, en_y);
     unmergeForbidLists(en_x, en_y);
@@ -1852,6 +1959,63 @@ void Egraph::explainConstants(ERef p, ERef q) {
     expExplain( );
     doneDup1( );
     expCleanup();
+}
+
+uint32_t UseVector::addParent(ERef parent) {
+    auto index = getFreeSlotIndex();
+    auto entry = erefToEntry(parent);
+    data[index] = entry;
+    ++nelems;
+    return index;
+}
+
+void UseVector::clearEntryAt(int index) {
+    assert(index >= 0 && index < data.size() && data[index].isValid());
+    // MB: TODO: what if free is -1?
+    data[index] = UseVector::indexToFreeEntry(free);
+    free = index;
+    --nelems;
+}
+
+void UseVector::markEntry(Entry& entry) {
+    // MB: TODO: I probably do not need to decrement the number of elements, since this use vector should not be accessed until backtracking makes it valid again
+    assert(entry.isValid());
+    entry.tag = 1;
+    --this->nelems;
+}
+
+void UseVector::unMarkEntry(Entry& entry) {
+    // MB: TODO: check if the decrement in markEntry needs to be undone
+    assert(entry.isMarked());
+    entry.tag = 0;
+    ++this->nelems;
+}
+
+uint32_t UseVector::getFreeSlotIndex() {
+    auto ret = free;
+    if (ret >= 0) {
+        Entry e = data[free];
+        assert(e.isFree());
+        // MB: TODO: what if this should be -1? Test!
+        free = e.data;
+        return ret;
+    }
+    ret = data.size();
+    data.emplace_back();
+    return ret;
+}
+
+void Egraph::addToParentVectors(ERef eref) {
+    Enode& enode = getEnode(eref);
+    // set as parent for car
+    auto carCID = getEnode(enode.getCar()).getCid();
+    auto index = parents[carCID].addParent(eref);
+    enode.setCarParentIndex(index);
+
+    // set as parent for cdr
+    auto cdrCID = getEnode(enode.getCdr()).getCid();
+    index = parents[cdrCID].addParent(eref);
+    enode.setCdrParentIndex(index);
 }
 
 

@@ -75,6 +75,8 @@ class Extra {
         ERef        same_cdr;       // Circular list of all the cdr-parents of the class
         int         parent_size;    // Size of the parent's congruence class
         ERef        cg_ptr;         // Congruence class representative (how is this different from root?)
+        int         carParentIndex;
+        int         cdrParentIndex;
     } lst;
     struct {
         PTRef       pterm;          // The corresponding pterm
@@ -166,6 +168,11 @@ public:
     void setSameCdr    (ERef e)        { assert(type() != et_symb); ex->lst.same_cdr = e; }
     ERef getSameCar    ()        const { assert(type() != et_symb); return ex->lst.same_car; }
     void setSameCar    (ERef e)        { assert(type() != et_symb); ex->lst.same_car = e; }
+
+    void setCarParentIndex(int32_t idx) { assert(type() != et_symb); ex->lst.carParentIndex = idx; }
+    void setCdrParentIndex(int32_t idx) { assert(type() != et_symb); ex->lst.cdrParentIndex = idx; }
+    int32_t getCarParentIndex() const   { assert(type() != et_symb); return ex->lst.carParentIndex; }
+    int32_t getCdrParentIndex() const   { assert(type() != et_symb); return ex->lst.cdrParentIndex; }
 
     ERef getNext       ()        const { assert(type() != et_symb); return ex->lst.next; }
     void setNext       (ERef n)        { assert(type() != et_symb); ex->lst.next = n; }
