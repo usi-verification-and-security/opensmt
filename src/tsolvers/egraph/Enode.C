@@ -54,6 +54,8 @@ Enode::Enode(ERef car_,
     setSize(1);
     setParent(ERef_Undef);
     setParentSize(0);
+    setCarParentIndex(-1);
+    setCdrParentIndex(-1);
 
     Enode& x = ea[getCar()];
     Enode& y = ea[getCdr()];

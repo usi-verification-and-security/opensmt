@@ -131,23 +131,25 @@ class EnodeStore {
         { SigPair sp( ea[ea[car].getRoot()].getCid(), ea[ea[cdr].getRoot()].getCid() );
           return sig_tab[sp]; }
 
-    inline void removeSig(ERef e)
-        { const Enode& en_e = ea[e];
-          ERef carRoot = ea[en_e.getCar()].getRoot();
-          ERef cdrRoot = ea[en_e.getCdr()].getRoot();
-          SigPair sp( ea[carRoot].getCid(), ea[cdrRoot].getCid() );
-          sig_tab.remove(sp);
-          assert(!containsSig(e));
-          }
+    inline void removeSig(ERef e) {
+        assert(containsSig(e));
+        const Enode & en_e = ea[e];
+        ERef carRoot = ea[en_e.getCar()].getRoot();
+        ERef cdrRoot = ea[en_e.getCdr()].getRoot();
+        SigPair sp(ea[carRoot].getCid(), ea[cdrRoot].getCid());
+        sig_tab.remove(sp);
+        assert(!containsSig(e));
+    }
 
-    inline void insertSig(ERef e)
-        { const Enode& en_e = ea[e];
-          ERef carRoot = ea[en_e.getCar()].getRoot();
-          ERef cdrRoot = ea[en_e.getCdr()].getRoot();
-          assert(!containsSig(e));
-          assert(e == en_e.getCgPtr()); // MB: Only congruence roots should be inserted
-          sig_tab.insert(SigPair(ea[carRoot].getCid(), ea[cdrRoot].getCid()), e);
-        }
+    inline void insertSig(ERef e) {
+        const Enode & en_e = ea[e];
+        ERef carRoot = ea[en_e.getCar()].getRoot();
+        ERef cdrRoot = ea[en_e.getCdr()].getRoot();
+        assert(!containsSig(e));
+        assert(e == en_e.getCgPtr()); // MB: Only congruence roots should be inserted
+        sig_tab.insert(SigPair(ea[carRoot].getCid(), ea[cdrRoot].getCid()), e);
+        assert(containsSig(e));
+    }
 // DEBUG
 #ifdef PEDANTIC_DEBUG
     bool checkInvariants();

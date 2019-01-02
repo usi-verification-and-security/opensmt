@@ -78,16 +78,18 @@ class UseVector {
      * This data structure is a vector possibly containing a free list inside
      */
     struct Entry {
-        unsigned tag      : 2;
-        unsigned data    : 30;
+        enum class Tag : unsigned char {Valid, Marked, Free};
+        int data;
+        Tag tag;
 
-        Entry(ERef e): tag{0}, data{e.x} { assert(e.x >> 30 == 0); }
-        Entry(): tag{0}, data{0} { }
-        bool isFree() const { return tag == 3; }
-        bool isValid() const { return tag == 0; }
-        bool isMarked() const { return tag == 1; }
+        Entry(ERef e): tag{Tag::Valid}, data{static_cast<int>(e.x)} { }
+        Entry(): tag{Tag::Valid}, data{0} { }
+        bool isFree() const { return tag == Tag::Free; }
+        bool isValid() const { return tag == Tag::Valid; }
+        bool isMarked() const { return tag == Tag::Marked; }
     };
-    static_assert(sizeof(Entry) == 4, "Entry is not of expected size!");
+    // MB: make it 4 again
+    static_assert(sizeof(Entry) == 8, "Entry is not of expected size!");
     std::vector<Entry> data;
     int32_t free; // pointer to head of a free list, -1 means no free list
     uint32_t nelems; // the real number of elements;
@@ -135,7 +137,7 @@ public:
     static Entry indexToFreeEntry(int index) {
         // MB: TODO: Test that the conversion is correct
         Entry ret;
-        ret.tag = 3;
+        ret.tag = Entry::Tag::Free;
         ret.data = index;
         return ret;
     }
