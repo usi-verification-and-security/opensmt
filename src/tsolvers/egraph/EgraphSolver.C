@@ -1913,14 +1913,16 @@ void Egraph::addToParentVectors(ERef eref) {
     }
 
     // set as parent for cdr
-    if (enode.getCdrParentIndex() < 0) { // not set yet
-        auto cdrCID = getEnode(getEnode(enode.getCdr()).getRoot()).getCid();
-        assert(parents.size() > cdrCID);
-        auto index = parents[cdrCID].addParent(eref);
-        enode.setCdrParentIndex(index);
-    }
-    else {
-        assert(UseVector::entryToERef(parents[getEnode(getEnode(enode.getCdr()).getRoot()).getCid()][enode.getCdrParentIndex()]) == eref);
+    if (enode.getCdr() != ERef_Nil) {
+        if (enode.getCdrParentIndex() < 0) { // not set yet
+            auto cdrCID = getEnode(getEnode(enode.getCdr()).getRoot()).getCid();
+            assert(parents.size() > cdrCID);
+            auto index = parents[cdrCID].addParent(eref);
+            enode.setCdrParentIndex(index);
+        } else {
+            assert(UseVector::entryToERef(
+                    parents[getEnode(getEnode(enode.getCdr()).getRoot()).getCid()][enode.getCdrParentIndex()]) == eref);
+        }
     }
 }
 
