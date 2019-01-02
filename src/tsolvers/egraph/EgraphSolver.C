@@ -999,39 +999,7 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     // MB: This step is skipped now, we keep the old signatures in the table
 //     removeSignaturesOfParentsThatAreCongruenceRoots(w);
     // remove parents of y from other use vectors
-    for (auto const & entry : parents[en_y.getCid()]) {
-        if (entry.isValid()) {
-            ERef parent = UseVector::entryToERef(entry);
-            Enode & parentNode = getEnode(parent);
-//            assert(parentNode.getCgPtr() == parent);
-            assert( enode_store.containsSig( parent ));
-            enode_store.removeSig(parent);
-            //  check car
-            int carParentIndex = parentNode.getCarParentIndex();
-            if (carParentIndex >= 0) {
-                // valid index
-                const Enode& car = getEnode(parentNode.getCar());
-                if (car.getRoot() != y) {
-                    assert(getEnode(parentNode.getCdr()).getRoot() == y);
-                    assert(UseVector::entryToERef(parents[getEnode(car.getRoot()).getCid()][carParentIndex]) == parent);
-                    parents[getEnode(car.getRoot()).getCid()].clearEntryAt(carParentIndex);
-                }
-                parentNode.setCarParentIndex(-1);
-            }
-            // check cdr
-            int cdrParentIndex = parentNode.getCdrParentIndex();
-            if (cdrParentIndex >= 0) {
-                // valid index
-                const Enode& cdr = getEnode(parentNode.getCdr());
-                if (cdr.getRoot() != y) {
-                    assert(getEnode(parentNode.getCar()).getRoot() == y);
-                    assert(UseVector::entryToERef(parents[getEnode(cdr.getRoot()).getCid()][cdrParentIndex]) == parent);
-                    parents[getEnode(cdr.getRoot()).getCid()].clearEntryAt(cdrParentIndex);
-                }
-                parentNode.setCdrParentIndex(-1);
-            }
-        }
-    }
+    processParentsBeforeMerge(y);
 
 
 
@@ -1039,39 +1007,7 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     mergeEquivalenceClasses(x, y);
 
     // Step 5.5: Insert new signatures and propagate congruences
-//    newSignaturesAndCongruencePairs(w);
-/*
-   * Reprocess all parents of y
-   *
-   * For backtracking, we keep all its parents
-   * - if parent remains a congruence root, it's kept as is
-   * - if parent is no longer a congruence root, it's kept as a marked
-   *   entry
-   */
-    auto & y_parents = parents[en_y.getCid()];
-    for (auto & entry : y_parents) {
-        if (entry.isValid()) {
-            ERef parent = UseVector::entryToERef(entry);
-            Enode & parentNode = getEnode(parent);
-//            assert(parentNode.getCgPtr() == parent);
-            if (enode_store.containsSig(parent)) {
-                // Case 1: p joins q's congruence class
-                ERef q = enode_store.lookupSig(parent);
-//                getEnode(parent).setCgPtr( q );
-                pending.push( parent );
-                pending.push( q );
-                // p is no longer in the congruence table
-                // put a mark for backtracking
-                y_parents.markEntry(entry);
-            }
-            else {
-                // Case 2: p remains congruent root (but now has new signature)
-                enode_store.insertSig(parent);
-                // re-insert to parent vectors of its car and cdr
-                addToParentVectors(parent);
-            }
-        }
-    }
+    processParentsAfterMerge(parents[en_y.getCid()]);
 
     // Step 6: Merge parent lists
 //    mergeParentLists(en_x, en_y);
@@ -1217,43 +1153,7 @@ void Egraph::undoMerge( ERef y )
     // Undo Step 5 of merge
     // Undo Case 2 of Step 5.5 of merge
     auto & y_parents = parents[en_y.getCid()];
-    for (auto & entry : y_parents) {
-        if (entry.isValid()) {
-            ERef parent = UseVector::entryToERef(entry);
-            Enode & parentNode = getEnode(parent);
-            assert(enode_store.containsSig(parent));
-//            assert(parentNode.getCgPtr() == parent);
-            enode_store.removeSig(parent);
-            // remove from parent's lists of car and cdr
-            //  check car
-            int carParentIndex = parentNode.getCarParentIndex();
-            if (carParentIndex >= 0) {
-                // valid index
-                const Enode& car = getEnode(parentNode.getCar());
-                assert(UseVector::entryToERef(parents[getEnode(car.getRoot()).getCid()][carParentIndex]) == parent);
-                parents[getEnode(car.getRoot()).getCid()].clearEntryAt(carParentIndex);
-                parentNode.setCarParentIndex(-1);
-            }
-            // check cdr
-            int cdrParentIndex = parentNode.getCdrParentIndex();
-            if (cdrParentIndex >= 0) {
-                // valid index
-                const Enode & cdr = getEnode(parentNode.getCdr());
-                assert(UseVector::entryToERef(parents[getEnode(cdr.getRoot()).getCid()][cdrParentIndex]) == parent);
-                parents[getEnode(cdr.getRoot()).getCid()].clearEntryAt(cdrParentIndex);
-                parentNode.setCdrParentIndex(-1);
-            }
-        }
-        else if (entry.isMarked()) {
-            // simply unmark
-            y_parents.unMarkEntry(entry);
-//            ERef parent = UseVector::entryToERef(entry);
-//            Enode & parentNode = getEnode(parent);
-//            assert(parentNode.getCgPtr() != parent);
-//            parentNode.setCgPtr(parent);
-
-        }
-    }
+    processParentsBeforeUnMerge(y_parents);
 
     // Undo Step 5.4 of merge
     // Undo Step 5.3 of merge
@@ -1263,20 +1163,7 @@ void Egraph::undoMerge( ERef y )
     // Since we are skipping Step 5.2 in merge. we do not have to undo that.
 //    unmergeParentCongruenceClasses(w);
     // re-insert parents of y
-    for (auto it = y_parents.begin(); it != y_parents.end(); ++it) {
-        auto & entry = *it;
-        if (entry.isValid()) {
-            // insert the signature
-            ERef parent = UseVector::entryToERef(entry);
-            assert(!enode_store.containsSig(parent));
-            enode_store.insertSig(parent);
-            // addToParentVectors adds for car and cdr, one of them is y_parents, so it would add second entry which is the same as current one
-            // clear the current entry before that;
-            // TODO: think about how to avoid this
-            y_parents.clearEntryAt(it - y_parents.begin());
-            addToParentVectors(parent);
-        }
-    }
+    processParentsAfterUnMerge(y_parents);
 
     // Undo step 4 of Merge
     unmergeDistinctionClasses(en_x, en_y);
@@ -1764,85 +1651,6 @@ void Egraph::mergeEquivalenceClasses(ERef newroot, ERef oldroot) {
     en_x.setSize( en_x.getSize( ) + en_y.getSize( ) );
 }
 
-//void Egraph::newSignaturesAndCongruencePairs(ERef node) {
-//    ERef p = getEnode(node).getParent();
-//    if (p == ERef_Undef) { return; } // no parents, nothing to be done
-//    const bool scdr = getEnode(node).isList( );
-//    const ERef pstart = p;
-//    while (true) {
-//        Enode& en_p = getEnode(p);
-//        // Only roots of congruence classes needs to be processed
-//        if ( p == en_p.getCgPtr( ) ) {
-//            if (enode_store.containsSig(p)) {
-//                // Case 1: p joins q's congruence class
-//                ERef q = enode_store.lookupSig(p);
-//                en_p.setCgPtr( q );
-//                pending.push( p );
-//                pending.push( q );
-//            }
-//            else {
-//                // Case 2: p remains congruent root (but now has new signature)
-//                enode_store.insertSig(p);
-//            }
-//        }
-//        // Next element
-//        p = scdr ? en_p.getSameCdr( ) : en_p.getSameCar( ) ;
-//        // Exit if cycle complete
-//        if ( p == pstart )
-//            return; // Nothing to be done after cycle
-//    }
-//}
-
-//void Egraph::mergeParentLists(Enode & to, const Enode & from) {
-//    if ( from.getParent() != ERef_Undef ) {
-//        // If x has no parents, we assign y's one
-//        if ( to.getParent() == ERef_Undef ) {
-//            assert( to.type() == from.type() );
-//            to.setParent( from.getParent() );
-//        }
-//            // Splice the parent lists
-//        else {
-//            if ( to.isList() ) {
-//                ERef tmp = enode_store[to.getParent()].getSameCdr();
-//                enode_store[to.getParent()].setSameCdr( enode_store[from.getParent()].getSameCdr( ) );
-//                enode_store[from.getParent()].setSameCdr( tmp );
-//            }
-//            else {
-//                ERef tmp = enode_store[to.getParent()].getSameCar();
-//                enode_store[to.getParent()].setSameCar( enode_store[from.getParent()].getSameCar() );
-//                enode_store[from.getParent()].setSameCar( tmp );
-//            }
-//        }
-//    }
-//    // Adjust parent size
-//    to.setParentSize( to.getParentSize( ) + from.getParentSize( ) );
-//}
-//
-//void Egraph::unmergeParentLists(Enode & to, const Enode & from) {
-//    to.setParentSize( to.getParentSize() - from.getParentSize() );
-//    // Restore the correct parents
-//    if ( from.getParent( ) != ERef_Undef ) {
-//        // If the parents are equal, that means that
-//        // y's parent has been assigned to x
-//        if ( to.getParent( ) == from.getParent( ) )
-//            to.setParent( ERef_Undef );
-//            // Unsplice the parent lists
-//        else {
-//            assert( to.getParent() != ERef_Undef );
-//            if ( to.isList( ) ) {
-//                ERef tmp = enode_store[to.getParent()].getSameCdr();
-//                enode_store[to.getParent()].setSameCdr( enode_store[from.getParent()].getSameCdr() );
-//                enode_store[from.getParent()].setSameCdr( tmp );
-//            }
-//            else {
-//                ERef tmp = enode_store[to.getParent()].getSameCar();
-//                enode_store[to.getParent()].setSameCar( enode_store[from.getParent()].getSameCar() );
-//                enode_store[from.getParent()].setSameCar( tmp );
-//            }
-//        }
-//    }
-//}
-
 void Egraph::unmergeEquivalenceClasses(ERef newroot, ERef oldroot) {
     Enode & en_x = getEnode(newroot);
     Enode & en_y = getEnode(oldroot);
@@ -1878,33 +1686,124 @@ void Egraph::unmergeForbidLists(Enode & to, const Enode & from) {
     }
 }
 
-//void Egraph::unmergeParentCongruenceClasses(ERef node) {
-//    ERef p = getEnode(node).getParent( );
-//    if (p == ERef_Undef) return;
-//    const bool scdr = getEnode(node).isList( );
-//    const ERef pstart = p;
-//    while (true) {
-//        Enode& en_p = enode_store[p];
-//        assert( en_p.isTerm( ) || en_p.isList( ) );
-//
-//        ERef cg = en_p.getCgPtr();
-//        Enode& en_cg = enode_store[cg];
-//        // If p was congruence root before the merge (detect difference with the root of its congruence class before undo)
-//        if ( enode_store[en_p.getCar()].getRoot() != enode_store[en_cg.getCar()].getRoot()
-//             || enode_store[en_p.getCdr()].getRoot() != enode_store[en_cg.getCdr()].getRoot() )
-//        {
-//            // Undo Case 1 in Step 5.5 of merge
-//            en_p.setCgPtr(p);
-//        }
-//        // MB: We are keeping the old signature, which is now valid again, so it should be in the store
-//        assert(en_p.getCgPtr() != p || enode_store.containsSig(p));
-//        // Next element
-//        p = scdr ? en_p.getSameCdr( ) : en_p.getSameCar();
-//        // End of cycle
-//        if ( p == pstart )
-//            return; // Nothing to do after the loop;
-//    }
-//}
+void Egraph::processParentsBeforeMerge(const ERef y) {
+    auto cid = getEnode(y).getCid();
+    for (auto const & entry : parents[cid]) {
+        if (entry.isValid()) {
+            ERef parent = UseVector::entryToERef(entry);
+            Enode & parentNode = getEnode(parent);
+//            assert(parentNode.getCgPtr() == parent);
+            assert( enode_store.containsSig( parent ));
+            enode_store.removeSig(parent);
+            //  check car
+            int carParentIndex = parentNode.getCarParentIndex();
+            if (carParentIndex >= 0) {
+                // valid index
+                const Enode& car = getEnode(parentNode.getCar());
+                if (car.getRoot() != y) {
+                    assert(getEnode(parentNode.getCdr()).getRoot() == y);
+                    assert(UseVector::entryToERef(parents[getEnode(car.getRoot()).getCid()][carParentIndex]) == parent);
+                    parents[getEnode(car.getRoot()).getCid()].clearEntryAt(carParentIndex);
+                }
+                parentNode.setCarParentIndex(-1);
+            }
+            // check cdr
+            int cdrParentIndex = parentNode.getCdrParentIndex();
+            if (cdrParentIndex >= 0) {
+                // valid index
+                const Enode& cdr = getEnode(parentNode.getCdr());
+                if (cdr.getRoot() != y) {
+                    assert(getEnode(parentNode.getCar()).getRoot() == y);
+                    assert(UseVector::entryToERef(parents[getEnode(cdr.getRoot()).getCid()][cdrParentIndex]) == parent);
+                    parents[getEnode(cdr.getRoot()).getCid()].clearEntryAt(cdrParentIndex);
+                }
+                parentNode.setCdrParentIndex(-1);
+            }
+        }
+    }
+}
+
+/*
+   * Reprocess all parents of y
+   *
+   * For backtracking, we keep all its parents
+   * - if parent remains a congruence root, it's kept as is
+   * - if parent is no longer a congruence root, it's kept as a marked
+   *   entry
+   */
+void Egraph::processParentsAfterMerge(UseVector & parents) {
+    for (auto & entry : parents) {
+        if (entry.isValid()) {
+            ERef parent = UseVector::entryToERef(entry);
+            if (enode_store.containsSig(parent)) {
+                // Case 1: p joins q's congruence class
+                ERef q = enode_store.lookupSig(parent);
+                pending.push( parent );
+                pending.push( q );
+                // p is no longer in the congruence table
+                // put a mark for backtracking
+                parents.markEntry(entry);
+            }
+            else {
+                // Case 2: p remains congruent root (but now has new signature)
+                enode_store.insertSig(parent);
+                // re-insert to parent vectors of its car and cdr
+                addToParentVectors(parent);
+            }
+        }
+    }
+}
+
+void Egraph::processParentsBeforeUnMerge(UseVector & y_parents) {
+    for (auto & entry : y_parents) {
+        if (entry.isValid()) {
+            ERef parent = UseVector::entryToERef(entry);
+            Enode & parentNode = getEnode(parent);
+            assert(enode_store.containsSig(parent));
+            enode_store.removeSig(parent);
+            // remove from parent's lists of car and cdr
+            //  check car
+            int carParentIndex = parentNode.getCarParentIndex();
+            if (carParentIndex >= 0) {
+                // valid index
+                const Enode& car = getEnode(parentNode.getCar());
+                assert(UseVector::entryToERef(parents[getEnode(car.getRoot()).getCid()][carParentIndex]) == parent);
+                parents[getEnode(car.getRoot()).getCid()].clearEntryAt(carParentIndex);
+                parentNode.setCarParentIndex(-1);
+            }
+            // check cdr
+            int cdrParentIndex = parentNode.getCdrParentIndex();
+            if (cdrParentIndex >= 0) {
+                // valid index
+                const Enode & cdr = getEnode(parentNode.getCdr());
+                assert(UseVector::entryToERef(parents[getEnode(cdr.getRoot()).getCid()][cdrParentIndex]) == parent);
+                parents[getEnode(cdr.getRoot()).getCid()].clearEntryAt(cdrParentIndex);
+                parentNode.setCdrParentIndex(-1);
+            }
+        }
+        else if (entry.isMarked()) {
+            // simply unmark
+            y_parents.unMarkEntry(entry);
+        }
+    }
+}
+
+void Egraph::processParentsAfterUnMerge(UseVector & y_parents) {
+    for (auto it = y_parents.begin(); it != y_parents.end(); ++it) {
+        auto & entry = *it;
+        if (entry.isValid()) {
+            // insert the signature
+            ERef parent = UseVector::entryToERef(entry);
+            assert(!enode_store.containsSig(parent));
+            enode_store.insertSig(parent);
+            // addToParentVectors adds for car and cdr, one of them is y_parents, so it would add second entry which is the same as current one
+            // clear the current entry before that;
+            // TODO: think about how to avoid this
+            y_parents.clearEntryAt(it - y_parents.begin());
+            addToParentVectors(parent);
+        }
+    }
+}
 
 void Egraph::doExplain(ERef x, ERef y, PtAsgn reason_inequality) {
     if (reason_inequality.tr != Eq_FALSE) {
@@ -1991,7 +1890,6 @@ uint32_t UseVector::getFreeSlotIndex() {
     if (ret >= 0) {
         Entry e = data[free];
         assert(e.isFree());
-        // MB: TODO: what if this should be -1? Test!
         free = freeEntryToIndex(e);
         assert(free < 0 || free < data.size());
         return ret;
@@ -2046,5 +1944,7 @@ void Egraph::updateParentsVector(PTRef term) {
         eref = tail;
     }
 }
+
+
 
 

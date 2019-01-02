@@ -422,10 +422,13 @@ private:
   void removeSignaturesOfParentsThatAreCongruenceRoots(ERef node);
   void mergeEquivalenceClasses(ERef newroot, ERef oldroot);
   void unmergeEquivalenceClasses(ERef newroot, ERef oldroot);
-  void newSignaturesAndCongruencePairs(ERef node);
-  void mergeParentLists(Enode & to, const Enode & from);
-  void unmergeParentLists(Enode & to, const Enode & from);
-  void unmergeParentCongruenceClasses(ERef node);
+  void processParentsAfterMerge(UseVector & parents);
+  void processParentsBeforeMerge(ERef merged);
+  void processParentsBeforeUnMerge(UseVector & parents);
+  void processParentsAfterUnMerge(UseVector & parents);
+//  void mergeParentLists(Enode & to, const Enode & from);
+//  void unmergeParentLists(Enode & to, const Enode & from);
+//  void unmergeParentCongruenceClasses(ERef node);
 
 #ifdef VERBOSE_EUF
 public:
