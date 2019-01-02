@@ -70,11 +70,11 @@ class Extra {
         ERef        cdr;
         ERef        next;           // Next node in the class
         int         size;           // Size of the eq class
-        ERef        parent;         // Parent of the node (in congruence)
-        ERef        same_car;       // Circular list of all the car-parents of the class
-        ERef        same_cdr;       // Circular list of all the cdr-parents of the class
-        int         parent_size;    // Size of the parent's congruence class
-        ERef        cg_ptr;         // Congruence class representative (how is this different from root?)
+//        ERef        parent;         // Parent of the node (in congruence)
+//        ERef        same_car;       // Circular list of all the car-parents of the class
+//        ERef        same_cdr;       // Circular list of all the cdr-parents of the class
+//        int         parent_size;    // Size of the parent's congruence class
+//        ERef        cg_ptr;         // Congruence class representative (how is this different from root?)
         int         carParentIndex;
         int         cdrParentIndex;
     } lst;
@@ -157,17 +157,17 @@ public:
     ERef getCdr()                const { assert(type() != et_symb); return ex->lst.cdr; }
     ERef getRoot()               const { if (isSymb()) return er; else return root; }
     void setRoot       (ERef r)        { assert(type() != et_symb); root = r; }
-    ERef getCgPtr      ()        const { assert(type() != et_symb); return ex->lst.cg_ptr; }
-    void setCgPtr      (ERef e)        { assert(type() != et_symb); ex->lst.cg_ptr = e; }
-
-    ERef getParent     ()        const { assert(type() != et_symb); return ex->lst.parent; }
-    void setParent     (ERef e)        { assert(type() != et_symb); ex->lst.parent = e; }
-    int  getParentSize ()        const { assert(type() != et_symb); return ex->lst.parent_size; }
-    void setParentSize (int i)         { assert(type() != et_symb); ex->lst.parent_size = i; }
-    ERef getSameCdr    ()        const { assert(type() != et_symb); return ex->lst.same_cdr; }
-    void setSameCdr    (ERef e)        { assert(type() != et_symb); ex->lst.same_cdr = e; }
-    ERef getSameCar    ()        const { assert(type() != et_symb); return ex->lst.same_car; }
-    void setSameCar    (ERef e)        { assert(type() != et_symb); ex->lst.same_car = e; }
+//    ERef getCgPtr      ()        const { assert(type() != et_symb); return ex->lst.cg_ptr; }
+//    void setCgPtr      (ERef e)        { assert(type() != et_symb); ex->lst.cg_ptr = e; }
+//
+//    ERef getParent     ()        const { assert(type() != et_symb); return ex->lst.parent; }
+//    void setParent     (ERef e)        { assert(type() != et_symb); ex->lst.parent = e; }
+//    int  getParentSize ()        const { assert(type() != et_symb); return ex->lst.parent_size; }
+//    void setParentSize (int i)         { assert(type() != et_symb); ex->lst.parent_size = i; }
+//    ERef getSameCdr    ()        const { assert(type() != et_symb); return ex->lst.same_cdr; }
+//    void setSameCdr    (ERef e)        { assert(type() != et_symb); ex->lst.same_cdr = e; }
+//    ERef getSameCar    ()        const { assert(type() != et_symb); return ex->lst.same_car; }
+//    void setSameCar    (ERef e)        { assert(type() != et_symb); ex->lst.same_car = e; }
 
     void setCarParentIndex(int32_t idx) { assert(type() != et_symb); ex->lst.carParentIndex = idx; }
     void setCdrParentIndex(int32_t idx) { assert(type() != et_symb); ex->lst.cdrParentIndex = idx; }

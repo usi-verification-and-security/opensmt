@@ -1003,7 +1003,7 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
         if (entry.isValid()) {
             ERef parent = UseVector::entryToERef(entry);
             Enode & parentNode = getEnode(parent);
-            assert(parentNode.getCgPtr() == parent);
+//            assert(parentNode.getCgPtr() == parent);
             assert( enode_store.containsSig( parent ));
             enode_store.removeSig(parent);
             //  check car
@@ -1053,11 +1053,11 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
         if (entry.isValid()) {
             ERef parent = UseVector::entryToERef(entry);
             Enode & parentNode = getEnode(parent);
-            assert(parentNode.getCgPtr() == parent);
+//            assert(parentNode.getCgPtr() == parent);
             if (enode_store.containsSig(parent)) {
                 // Case 1: p joins q's congruence class
                 ERef q = enode_store.lookupSig(parent);
-                getEnode(parent).setCgPtr( q );
+//                getEnode(parent).setCgPtr( q );
                 pending.push( parent );
                 pending.push( q );
                 // p is no longer in the congruence table
@@ -1074,7 +1074,7 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     }
 
     // Step 6: Merge parent lists
-    mergeParentLists(en_x, en_y);
+//    mergeParentLists(en_x, en_y);
     // Step 7: Not relevant -> skipped
 
     // Step 8: Push undo record
@@ -1212,7 +1212,7 @@ void Egraph::undoMerge( ERef y )
     Enode& en_x = enode_store[x];
 
     // Undo Step 6 of merge:
-    unmergeParentLists(en_x, en_y);
+//    unmergeParentLists(en_x, en_y);
 
     // Undo Step 5 of merge
     // Undo Case 2 of Step 5.5 of merge
@@ -1222,7 +1222,7 @@ void Egraph::undoMerge( ERef y )
             ERef parent = UseVector::entryToERef(entry);
             Enode & parentNode = getEnode(parent);
             assert(enode_store.containsSig(parent));
-            assert(parentNode.getCgPtr() == parent);
+//            assert(parentNode.getCgPtr() == parent);
             enode_store.removeSig(parent);
             // remove from parent's lists of car and cdr
             //  check car
@@ -1247,10 +1247,10 @@ void Egraph::undoMerge( ERef y )
         else if (entry.isMarked()) {
             // simply unmark
             y_parents.unMarkEntry(entry);
-            ERef parent = UseVector::entryToERef(entry);
-            Enode & parentNode = getEnode(parent);
-            assert(parentNode.getCgPtr() != parent);
-            parentNode.setCgPtr(parent);
+//            ERef parent = UseVector::entryToERef(entry);
+//            Enode & parentNode = getEnode(parent);
+//            assert(parentNode.getCgPtr() != parent);
+//            parentNode.setCgPtr(parent);
 
         }
     }
@@ -1706,30 +1706,30 @@ void Egraph::unmergeDistinctionClasses(Enode & to, const Enode & from) {
     to.setDistClasses( ( to.getDistClasses() & ~(from.getDistClasses())) );
 }
 
-void Egraph::removeSignaturesOfParentsThatAreCongruenceRoots(ERef noderef) {
-    // Visit each parent of w, according to the type of w
-    // and remove each congruence root from the signature table
-    const Enode& node = getEnode(noderef);
-    ERef p = node.getParent();
-    if (p == ERef_Undef) { return; } // No parent -> no work
-    const ERef pstart = p;
-    const bool scdr = node.isList( );
-    while (true) {
-        const Enode& en_p = getEnode(p);
-        assert ( en_p.isTerm( ) || en_p.isList( ) );
-        // If p is a congruence root
-        if ( p == en_p.getCgPtr( ) ) {
-            assert( enode_store.containsSig( p ));
-            enode_store.removeSig(p);
-        }
-        // Next element
-        p = scdr ? en_p.getSameCdr( ) : en_p.getSameCar( ) ;
-        // End of cycle
-        if ( p == pstart ) {
-            return; // Nothing to do after the cycle;
-        }
-    }
-}
+//void Egraph::removeSignaturesOfParentsThatAreCongruenceRoots(ERef noderef) {
+//    // Visit each parent of w, according to the type of w
+//    // and remove each congruence root from the signature table
+//    const Enode& node = getEnode(noderef);
+//    ERef p = node.getParent();
+//    if (p == ERef_Undef) { return; } // No parent -> no work
+//    const ERef pstart = p;
+//    const bool scdr = node.isList( );
+//    while (true) {
+//        const Enode& en_p = getEnode(p);
+//        assert ( en_p.isTerm( ) || en_p.isList( ) );
+//        // If p is a congruence root
+//        if ( p == en_p.getCgPtr( ) ) {
+//            assert( enode_store.containsSig( p ));
+//            enode_store.removeSig(p);
+//        }
+//        // Next element
+//        p = scdr ? en_p.getSameCdr( ) : en_p.getSameCar( ) ;
+//        // End of cycle
+//        if ( p == pstart ) {
+//            return; // Nothing to do after the cycle;
+//        }
+//    }
+//}
 
 void Egraph::mergeEquivalenceClasses(ERef newroot, ERef oldroot) {
     // Perform the union of the two equivalence classes
@@ -1764,84 +1764,84 @@ void Egraph::mergeEquivalenceClasses(ERef newroot, ERef oldroot) {
     en_x.setSize( en_x.getSize( ) + en_y.getSize( ) );
 }
 
-void Egraph::newSignaturesAndCongruencePairs(ERef node) {
-    ERef p = getEnode(node).getParent();
-    if (p == ERef_Undef) { return; } // no parents, nothing to be done
-    const bool scdr = getEnode(node).isList( );
-    const ERef pstart = p;
-    while (true) {
-        Enode& en_p = getEnode(p);
-        // Only roots of congruence classes needs to be processed
-        if ( p == en_p.getCgPtr( ) ) {
-            if (enode_store.containsSig(p)) {
-                // Case 1: p joins q's congruence class
-                ERef q = enode_store.lookupSig(p);
-                en_p.setCgPtr( q );
-                pending.push( p );
-                pending.push( q );
-            }
-            else {
-                // Case 2: p remains congruent root (but now has new signature)
-                enode_store.insertSig(p);
-            }
-        }
-        // Next element
-        p = scdr ? en_p.getSameCdr( ) : en_p.getSameCar( ) ;
-        // Exit if cycle complete
-        if ( p == pstart )
-            return; // Nothing to be done after cycle
-    }
-}
+//void Egraph::newSignaturesAndCongruencePairs(ERef node) {
+//    ERef p = getEnode(node).getParent();
+//    if (p == ERef_Undef) { return; } // no parents, nothing to be done
+//    const bool scdr = getEnode(node).isList( );
+//    const ERef pstart = p;
+//    while (true) {
+//        Enode& en_p = getEnode(p);
+//        // Only roots of congruence classes needs to be processed
+//        if ( p == en_p.getCgPtr( ) ) {
+//            if (enode_store.containsSig(p)) {
+//                // Case 1: p joins q's congruence class
+//                ERef q = enode_store.lookupSig(p);
+//                en_p.setCgPtr( q );
+//                pending.push( p );
+//                pending.push( q );
+//            }
+//            else {
+//                // Case 2: p remains congruent root (but now has new signature)
+//                enode_store.insertSig(p);
+//            }
+//        }
+//        // Next element
+//        p = scdr ? en_p.getSameCdr( ) : en_p.getSameCar( ) ;
+//        // Exit if cycle complete
+//        if ( p == pstart )
+//            return; // Nothing to be done after cycle
+//    }
+//}
 
-void Egraph::mergeParentLists(Enode & to, const Enode & from) {
-    if ( from.getParent() != ERef_Undef ) {
-        // If x has no parents, we assign y's one
-        if ( to.getParent() == ERef_Undef ) {
-            assert( to.type() == from.type() );
-            to.setParent( from.getParent() );
-        }
-            // Splice the parent lists
-        else {
-            if ( to.isList() ) {
-                ERef tmp = enode_store[to.getParent()].getSameCdr();
-                enode_store[to.getParent()].setSameCdr( enode_store[from.getParent()].getSameCdr( ) );
-                enode_store[from.getParent()].setSameCdr( tmp );
-            }
-            else {
-                ERef tmp = enode_store[to.getParent()].getSameCar();
-                enode_store[to.getParent()].setSameCar( enode_store[from.getParent()].getSameCar() );
-                enode_store[from.getParent()].setSameCar( tmp );
-            }
-        }
-    }
-    // Adjust parent size
-    to.setParentSize( to.getParentSize( ) + from.getParentSize( ) );
-}
-
-void Egraph::unmergeParentLists(Enode & to, const Enode & from) {
-    to.setParentSize( to.getParentSize() - from.getParentSize() );
-    // Restore the correct parents
-    if ( from.getParent( ) != ERef_Undef ) {
-        // If the parents are equal, that means that
-        // y's parent has been assigned to x
-        if ( to.getParent( ) == from.getParent( ) )
-            to.setParent( ERef_Undef );
-            // Unsplice the parent lists
-        else {
-            assert( to.getParent() != ERef_Undef );
-            if ( to.isList( ) ) {
-                ERef tmp = enode_store[to.getParent()].getSameCdr();
-                enode_store[to.getParent()].setSameCdr( enode_store[from.getParent()].getSameCdr() );
-                enode_store[from.getParent()].setSameCdr( tmp );
-            }
-            else {
-                ERef tmp = enode_store[to.getParent()].getSameCar();
-                enode_store[to.getParent()].setSameCar( enode_store[from.getParent()].getSameCar() );
-                enode_store[from.getParent()].setSameCar( tmp );
-            }
-        }
-    }
-}
+//void Egraph::mergeParentLists(Enode & to, const Enode & from) {
+//    if ( from.getParent() != ERef_Undef ) {
+//        // If x has no parents, we assign y's one
+//        if ( to.getParent() == ERef_Undef ) {
+//            assert( to.type() == from.type() );
+//            to.setParent( from.getParent() );
+//        }
+//            // Splice the parent lists
+//        else {
+//            if ( to.isList() ) {
+//                ERef tmp = enode_store[to.getParent()].getSameCdr();
+//                enode_store[to.getParent()].setSameCdr( enode_store[from.getParent()].getSameCdr( ) );
+//                enode_store[from.getParent()].setSameCdr( tmp );
+//            }
+//            else {
+//                ERef tmp = enode_store[to.getParent()].getSameCar();
+//                enode_store[to.getParent()].setSameCar( enode_store[from.getParent()].getSameCar() );
+//                enode_store[from.getParent()].setSameCar( tmp );
+//            }
+//        }
+//    }
+//    // Adjust parent size
+//    to.setParentSize( to.getParentSize( ) + from.getParentSize( ) );
+//}
+//
+//void Egraph::unmergeParentLists(Enode & to, const Enode & from) {
+//    to.setParentSize( to.getParentSize() - from.getParentSize() );
+//    // Restore the correct parents
+//    if ( from.getParent( ) != ERef_Undef ) {
+//        // If the parents are equal, that means that
+//        // y's parent has been assigned to x
+//        if ( to.getParent( ) == from.getParent( ) )
+//            to.setParent( ERef_Undef );
+//            // Unsplice the parent lists
+//        else {
+//            assert( to.getParent() != ERef_Undef );
+//            if ( to.isList( ) ) {
+//                ERef tmp = enode_store[to.getParent()].getSameCdr();
+//                enode_store[to.getParent()].setSameCdr( enode_store[from.getParent()].getSameCdr() );
+//                enode_store[from.getParent()].setSameCdr( tmp );
+//            }
+//            else {
+//                ERef tmp = enode_store[to.getParent()].getSameCar();
+//                enode_store[to.getParent()].setSameCar( enode_store[from.getParent()].getSameCar() );
+//                enode_store[from.getParent()].setSameCar( tmp );
+//            }
+//        }
+//    }
+//}
 
 void Egraph::unmergeEquivalenceClasses(ERef newroot, ERef oldroot) {
     Enode & en_x = getEnode(newroot);
@@ -1878,33 +1878,33 @@ void Egraph::unmergeForbidLists(Enode & to, const Enode & from) {
     }
 }
 
-void Egraph::unmergeParentCongruenceClasses(ERef node) {
-    ERef p = getEnode(node).getParent( );
-    if (p == ERef_Undef) return;
-    const bool scdr = getEnode(node).isList( );
-    const ERef pstart = p;
-    while (true) {
-        Enode& en_p = enode_store[p];
-        assert( en_p.isTerm( ) || en_p.isList( ) );
-
-        ERef cg = en_p.getCgPtr();
-        Enode& en_cg = enode_store[cg];
-        // If p was congruence root before the merge (detect difference with the root of its congruence class before undo)
-        if ( enode_store[en_p.getCar()].getRoot() != enode_store[en_cg.getCar()].getRoot()
-             || enode_store[en_p.getCdr()].getRoot() != enode_store[en_cg.getCdr()].getRoot() )
-        {
-            // Undo Case 1 in Step 5.5 of merge
-            en_p.setCgPtr(p);
-        }
-        // MB: We are keeping the old signature, which is now valid again, so it should be in the store
-        assert(en_p.getCgPtr() != p || enode_store.containsSig(p));
-        // Next element
-        p = scdr ? en_p.getSameCdr( ) : en_p.getSameCar();
-        // End of cycle
-        if ( p == pstart )
-            return; // Nothing to do after the loop;
-    }
-}
+//void Egraph::unmergeParentCongruenceClasses(ERef node) {
+//    ERef p = getEnode(node).getParent( );
+//    if (p == ERef_Undef) return;
+//    const bool scdr = getEnode(node).isList( );
+//    const ERef pstart = p;
+//    while (true) {
+//        Enode& en_p = enode_store[p];
+//        assert( en_p.isTerm( ) || en_p.isList( ) );
+//
+//        ERef cg = en_p.getCgPtr();
+//        Enode& en_cg = enode_store[cg];
+//        // If p was congruence root before the merge (detect difference with the root of its congruence class before undo)
+//        if ( enode_store[en_p.getCar()].getRoot() != enode_store[en_cg.getCar()].getRoot()
+//             || enode_store[en_p.getCdr()].getRoot() != enode_store[en_cg.getCdr()].getRoot() )
+//        {
+//            // Undo Case 1 in Step 5.5 of merge
+//            en_p.setCgPtr(p);
+//        }
+//        // MB: We are keeping the old signature, which is now valid again, so it should be in the store
+//        assert(en_p.getCgPtr() != p || enode_store.containsSig(p));
+//        // Next element
+//        p = scdr ? en_p.getSameCdr( ) : en_p.getSameCar();
+//        // End of cycle
+//        if ( p == pstart )
+//            return; // Nothing to do after the loop;
+//    }
+//}
 
 void Egraph::doExplain(ERef x, ERef y, PtAsgn reason_inequality) {
     if (reason_inequality.tr != Eq_FALSE) {

@@ -132,7 +132,7 @@ char* EnodeStore::printEnode(ERef e) {
                          "|  - root      : %d\n"
                          "|  - congruence: %d\n"
                          "|  - root cong.: %d\n"
-                         "|  - cong. ptr : %d\n"
+//                         "|  - cong. ptr : %d\n"
                          "+---------------------------------------------\n"
                          "| Forbids: \n"
 #ifndef PEDANTIC_DEBUG
@@ -146,7 +146,8 @@ char* EnodeStore::printEnode(ERef e) {
                      , en.getRoot().x
                      , en.getCid()
                      , ea[en.getRoot()].getCid()
-                     , en.getCgPtr().x);
+//                     , en.getCgPtr().x
+                     );
         ::free(old);
 #ifdef PEDANTIC_DEBUG
         ELRef f_start = en.getForbid();
@@ -180,7 +181,7 @@ char* EnodeStore::printEnode(ERef e) {
                          "|  - root      : %d\n"
                          "|  - congruence: %d\n"
                          "|  - root cong.: %d\n"
-                         "|  - cong. ptr : %d\n"
+//                         "|  - cong. ptr : %d\n"
                          "+--------------------------------------------+\n"
                      , old
                      , en.getCdr().x
@@ -189,7 +190,8 @@ char* EnodeStore::printEnode(ERef e) {
                      , en.getRoot().x
                      , en.getCid()
                      , ea[en.getRoot()].getCid()
-                     , en.getCgPtr().x);
+//                     , en.getCgPtr().x
+                     );
         ::free(old);
     }
 
@@ -205,46 +207,46 @@ char* EnodeStore::printEnode(ERef e) {
 
     }
     if (!en.isSymb()) {
-        old = out;
-        asprintf(&out, "%s|  - Number of parents: %d\n"
-                         "|    "
-                     , old, ea[en.getRoot()].getParentSize());
-        ::free(old);
-        ERef parent_start = en.getParent();
-        ERef parent = parent_start;
-        int pcount = 0;
-        if (parent_start == ERef_Undef) {
-            old = out;
-            asprintf(&out, "%s\n", old);
-            ::free(old);
-            goto skip; }
-        if (en.isTerm()) {
-            while (true) {
-                old = out;
-                pcount ++;
-                asprintf(&out, "%s%d ", old, parent.x);
-                ::free(old);
-                parent = ea[parent].getSameCar();
-                if (parent == parent_start) break;
-            }
-        }
-        else if (en.isList()) {
-            ERef parent_start = en.getParent();
-            ERef parent = parent_start;
-            while (true) {
-                old = out;
-                pcount ++;
-                asprintf(&out, "%s%d ", old, parent.x);
-                ::free(old);
-                parent = ea[parent].getSameCdr();
-                if (parent == parent_start) break;
-            }
-        }
-        if (pcount != ea[en.getRoot()].getParentSize()) {
-            old = out;
-            asprintf(&out, "%s%s", old, "parent count mismatch!");
-            ::free(old);
-        }
+//        old = out;
+//        asprintf(&out, "%s|  - Number of parents: %d\n"
+//                         "|    "
+//                     , old, ea[en.getRoot()].getParentSize());
+//        ::free(old);
+//        ERef parent_start = en.getParent();
+//        ERef parent = parent_start;
+//        int pcount = 0;
+//        if (parent_start == ERef_Undef) {
+//            old = out;
+//            asprintf(&out, "%s\n", old);
+//            ::free(old);
+//            goto skip; }
+//        if (en.isTerm()) {
+//            while (true) {
+//                old = out;
+//                pcount ++;
+//                asprintf(&out, "%s%d ", old, parent.x);
+//                ::free(old);
+//                parent = ea[parent].getSameCar();
+//                if (parent == parent_start) break;
+//            }
+//        }
+//        else if (en.isList()) {
+//            ERef parent_start = en.getParent();
+//            ERef parent = parent_start;
+//            while (true) {
+//                old = out;
+//                pcount ++;
+//                asprintf(&out, "%s%d ", old, parent.x);
+//                ::free(old);
+//                parent = ea[parent].getSameCdr();
+//                if (parent == parent_start) break;
+//            }
+//        }
+//        if (pcount != ea[en.getRoot()].getParentSize()) {
+//            old = out;
+//            asprintf(&out, "%s%s", old, "parent count mismatch!");
+//            ::free(old);
+//        }
         old = out;
         asprintf(&out, "%s\n", old);
         ::free(old);
