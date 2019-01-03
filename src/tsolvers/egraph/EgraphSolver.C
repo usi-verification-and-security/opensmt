@@ -1701,6 +1701,7 @@ void Egraph::processParentsAfterMerge(UseVector & oldroot_parents, ERef oldroot)
     // split the loop over the parents depending on what has been changed; this avoids condition inside the loop
     if (carChanged) {
         for (auto & entry : oldroot_parents) {
+            assert(!entry.isMarked());
             if (entry.isValid()) {
                 ERef parent = UseVector::entryToERef(entry);
                 Enode & parentNode = getEnode(parent);
@@ -1711,7 +1712,7 @@ void Egraph::processParentsAfterMerge(UseVector & oldroot_parents, ERef oldroot)
                     pending.push(q);
                     // p is no longer in the congruence table
                     // put a mark for backtracking
-                    oldroot_parents.markEntry(entry);
+                    entry.mark();
                     // remove from parent vector of the UNCHANGED child (CDR is unchanged)
                     removeFromCdrUseVectorExceptNill(parent, parentNode);
                     parentNode.setCdrParentIndex(-1);
@@ -1727,6 +1728,7 @@ void Egraph::processParentsAfterMerge(UseVector & oldroot_parents, ERef oldroot)
     }
     else {
         for (auto & entry : oldroot_parents) {
+            assert(!entry.isMarked());
             if (entry.isValid()) {
                 ERef parent = UseVector::entryToERef(entry);
                 Enode & parentNode = getEnode(parent);
@@ -1737,7 +1739,7 @@ void Egraph::processParentsAfterMerge(UseVector & oldroot_parents, ERef oldroot)
                     pending.push(q);
                     // p is no longer in the congruence table
                     // put a mark for backtracking
-                    oldroot_parents.markEntry(entry);
+                    entry.mark();
                     // remove from parent vector of the UNCHANGED child (CAR is unchanged)
                     removeFromCarUseVector(parent, parentNode);
                     parentNode.setCarParentIndex(-1);
@@ -1773,8 +1775,7 @@ void Egraph::processParentsBeforeUnMerge(UseVector & y_parents, ERef oldroot) {
                 parentNode.setCarParentIndex(originalIndex);
             }
             else if (entry.isMarked()) {
-                // simply unmark
-                y_parents.unMarkEntry(entry);
+                entry.unmark();
                 ERef parent = UseVector::entryToERef(entry);
                 Enode & parentNode = getEnode(parent);
                 // insert back to parent's vector of the unchanged child (CRD is the unchanged child)
@@ -1798,8 +1799,7 @@ void Egraph::processParentsBeforeUnMerge(UseVector & y_parents, ERef oldroot) {
                 parentNode.setCdrParentIndex(originalIndex);
             }
             else if (entry.isMarked()) {
-                // simply unmark
-                y_parents.unMarkEntry(entry);
+                entry.unmark();
                 ERef parent = UseVector::entryToERef(entry);
                 Enode & parentNode = getEnode(parent);
                 // insert back to parent's vector of the unchanged child (CAD is the unchanged child)
@@ -1874,19 +1874,19 @@ void UseVector::clearEntryAt(int index) {
     --nelems;
 }
 
-void UseVector::markEntry(Entry& entry) {
-    // MB: TODO: I probably do not need to decrement the number of elements, since this use vector should not be accessed until backtracking makes it valid again
-    assert(entry.isValid());
-    entry.tag = Entry::Tag::Marked;
-    --this->nelems;
-}
-
-void UseVector::unMarkEntry(Entry& entry) {
-    // MB: TODO: check if the decrement in markEntry needs to be undone
-    assert(entry.isMarked());
-    entry.tag = Entry::Tag::Valid;
-    ++this->nelems;
-}
+//void UseVector::markEntry(Entry& entry) {
+//    // MB: TODO: I probably do not need to decrement the number of elements, since this use vector should not be accessed until backtracking makes it valid again
+//    assert(entry.isValid());
+//    entry.mark();
+//    --this->nelems;
+//}
+//
+//void UseVector::unMarkEntry(Entry& entry) {
+//    // MB: TODO: check if the decrement in markEntry needs to be undone
+//    assert(entry.isMarked());
+//    entry.unmark();
+//    ++this->nelems;
+//}
 
 uint32_t UseVector::getFreeSlotIndex() {
     auto ret = free;

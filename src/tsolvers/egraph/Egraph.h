@@ -84,11 +84,13 @@ class UseVector {
 
         Entry(ERef e): tag{Tag::Valid}, data{static_cast<int>(e.x)} { }
         Entry(): tag{Tag::Valid}, data{0} { }
-        bool isFree() const { return tag == Tag::Free; }
-        bool isValid() const { return tag == Tag::Valid; }
-        bool isMarked() const { return tag == Tag::Marked; }
+        inline bool isFree()   const    { return tag == Tag::Free; }
+        inline bool isValid()  const    { return tag == Tag::Valid; }
+        inline bool isMarked() const    { return tag == Tag::Marked; }
+        inline void mark()              { assert(isValid()); tag = Tag::Marked; }
+        inline void unmark()            { assert(isMarked()); tag = Tag::Valid; }
     };
-    // MB: make it 4 again
+    // TODO: make it 4 again
     static_assert(sizeof(Entry) == 8, "Entry is not of expected size!");
     std::vector<Entry> data;
     int32_t free; // pointer to head of a free list, -1 means no free list
