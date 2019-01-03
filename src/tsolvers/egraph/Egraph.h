@@ -164,6 +164,14 @@ private:
 
   void updateParentsVector(PTRef);
 
+  inline void addToCarUseVector(ERef parent, Enode& parentNode);
+  inline void addToCdrUseVector(ERef parent, Enode& parentNode);
+  inline void addToCdrUseVectorExceptNill(ERef parent, Enode& parentNode);
+
+  inline void removeFromCarUseVector(ERef parent, Enode const & parentNode);
+  inline void removeFromCdrUseVector(ERef parent, Enode const & parentNode);
+  inline void removeFromCdrUseVectorExceptNill(ERef parent, Enode const & parentNode);
+
   unsigned getParentsSize(ERef ref) { assert(getEnode(ref).getCid() < parents.size()); return parents[getEnode(ref).getCid()].size(); }
   //***************************************************************************************************************
   ELAllocator   forbid_allocator;
@@ -419,16 +427,10 @@ private:
   void unmergeForbidLists(Enode & to, const Enode & from);
   void mergeDistinctionClasses(Enode & to, const Enode & from);
   void unmergeDistinctionClasses(Enode & to, const Enode & from);
-  void removeSignaturesOfParentsThatAreCongruenceRoots(ERef node);
   void mergeEquivalenceClasses(ERef newroot, ERef oldroot);
   void unmergeEquivalenceClasses(ERef newroot, ERef oldroot);
   void processParentsAfterMerge(UseVector & parents, ERef merged);
-  void processParentsBeforeMerge(ERef merged);
   void processParentsBeforeUnMerge(UseVector & y_parents, ERef oldroot);
-  void processParentsAfterUnMerge(UseVector & parents);
-//  void mergeParentLists(Enode & to, const Enode & from);
-//  void unmergeParentLists(Enode & to, const Enode & from);
-//  void unmergeParentCongruenceClasses(ERef node);
 
 #ifdef VERBOSE_EUF
 public:
