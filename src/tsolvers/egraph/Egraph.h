@@ -167,10 +167,12 @@ private:
   void updateParentsVector(PTRef);
 
   inline void addToCarUseVector(ERef parent, Enode& parentNode);
+  inline void addToCarUseVectorExceptSymbols(ERef parent, Enode& parentNode);
   inline void addToCdrUseVector(ERef parent, Enode& parentNode);
   inline void addToCdrUseVectorExceptNill(ERef parent, Enode& parentNode);
 
   inline void removeFromCarUseVector(ERef parent, Enode const & parentNode);
+  inline void removeFromCarUseVectorExceptSymbols(ERef parent, Enode const & parentNode);
   inline void removeFromCdrUseVector(ERef parent, Enode const & parentNode);
   inline void removeFromCdrUseVectorExceptNill(ERef parent, Enode const & parentNode);
 

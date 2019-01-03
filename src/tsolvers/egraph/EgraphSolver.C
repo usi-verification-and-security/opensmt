@@ -1721,6 +1721,7 @@ void Egraph::processParentsAfterMerge(UseVector & oldroot_parents, ERef oldroot)
                     // Case 2: p remains congruent root (but now has new signature)
                     enode_store.insertSig(parent);
                     // insert to parent vector of the changed child (CAR is changed)
+                    assert(!getEnode(parentNode.getCar()).isSymb()); // Symbols are never changed!
                     addToCarUseVector(parent, parentNode);
                 }
             }
@@ -1741,7 +1742,7 @@ void Egraph::processParentsAfterMerge(UseVector & oldroot_parents, ERef oldroot)
                     // put a mark for backtracking
                     entry.mark();
                     // remove from parent vector of the UNCHANGED child (CAR is unchanged)
-                    removeFromCarUseVector(parent, parentNode);
+                    removeFromCarUseVectorExceptSymbols(parent, parentNode);
                     parentNode.setCarParentIndex(-1);
                 } else {
                     // Case 2: p remains congruent root (but now has new signature)
@@ -1771,6 +1772,7 @@ void Egraph::processParentsBeforeUnMerge(UseVector & y_parents, ERef oldroot) {
                 // remove from parent's vector of changed child (CAR is the changed child);
                 // restore the index to the one in current usevector
                 auto originalIndex = it - y_parents.begin();
+                assert(!getEnode(parentNode.getCar()).isSymb()); // Symbols are never changed!
                 removeFromCarUseVector(parent, parentNode);
                 parentNode.setCarParentIndex(originalIndex);
             }
@@ -1803,7 +1805,7 @@ void Egraph::processParentsBeforeUnMerge(UseVector & y_parents, ERef oldroot) {
                 ERef parent = UseVector::entryToERef(entry);
                 Enode & parentNode = getEnode(parent);
                 // insert back to parent's vector of the unchanged child (CAD is the unchanged child)
-                addToCarUseVector(parent, parentNode);
+                addToCarUseVectorExceptSymbols(parent, parentNode);
             }
         }
     }
@@ -1905,18 +1907,21 @@ uint32_t UseVector::getFreeSlotIndex() {
 void Egraph::addToParentVectors(ERef eref) {
     Enode& enode = getEnode(eref);
     // set as parent for car
-    if (enode.getCarParentIndex() < 0) { // not set yet
-        auto carCID = getEnode(getEnode(enode.getCar()).getRoot()).getCid();
-        assert(parents.size() > carCID);
-        auto index = parents[carCID].addParent(eref);
-        enode.setCarParentIndex(index);
-    }
-    else {
-        assert(UseVector::entryToERef(parents[getEnode(getEnode(enode.getCar()).getRoot()).getCid()][enode.getCarParentIndex()]) == eref);
+    Enode const & carNode = getEnode(enode.getCar());
+    if (!carNode.isSymb()) { // we do not need to store the parent information for symbols since those are never merged
+        if (enode.getCarParentIndex() < 0) { // not set yet
+            auto carCID = getEnode(getEnode(enode.getCar()).getRoot()).getCid();
+            assert(parents.size() > carCID);
+            auto index = parents[carCID].addParent(eref);
+            enode.setCarParentIndex(index);
+        } else {
+            assert(UseVector::entryToERef(
+                    parents[getEnode(getEnode(enode.getCar()).getRoot()).getCid()][enode.getCarParentIndex()]) == eref);
+        }
     }
 
     // set as parent for cdr
-    if (enode.getCdr() != ERef_Nil) {
+    if (enode.getCdr() != ERef_Nil) { // we do not need to store parent information for empty list since it is never changed
         if (enode.getCdrParentIndex() < 0) { // not set yet
             auto cdrCID = getEnode(getEnode(enode.getCdr()).getRoot()).getCid();
             assert(parents.size() > cdrCID);
@@ -1958,6 +1963,16 @@ void Egraph::addToCarUseVector(ERef parent, Enode & parentNode) {
     parentNode.setCarParentIndex(index);
 }
 
+void Egraph::addToCarUseVectorExceptSymbols(ERef parent, Enode & parentNode) {
+    assert(parentNode.getERef() == parent);
+    const Enode & car = getEnode(parentNode.getCar());
+    if (car.isSymb()) { assert(parentNode.getCarParentIndex() < 0); return; }
+    auto carCID = getEnode(car.getRoot()).getCid();
+    assert(parents.size() > carCID);
+    auto index = parents[carCID].addParent(parent);
+    parentNode.setCarParentIndex(index);
+}
+
 void Egraph::addToCdrUseVector(ERef parent, Enode & parentNode) {
     assert(parentNode.getERef() == parent);
     auto cdrCID = getEnode(getEnode(parentNode.getCdr()).getRoot()).getCid();
@@ -1968,7 +1983,7 @@ void Egraph::addToCdrUseVector(ERef parent, Enode & parentNode) {
 
 void Egraph::addToCdrUseVectorExceptNill(ERef parent, Enode & parentNode) {
     assert(parentNode.getERef() == parent);
-    if (parentNode.getCdr() == ERef_Nil) { return; }
+    if (parentNode.getCdr() == ERef_Nil) { assert(parentNode.getCdrParentIndex() < 0); return; }
     auto cdrCID = getEnode(getEnode(parentNode.getCdr()).getRoot()).getCid();
     assert(parents.size() > cdrCID);
     auto index = parents[cdrCID].addParent(parent);
@@ -1977,6 +1992,15 @@ void Egraph::addToCdrUseVectorExceptNill(ERef parent, Enode & parentNode) {
 
 void Egraph::removeFromCarUseVector(ERef parent, Enode const & parentNode) {
     const Enode & car = getEnode(parentNode.getCar());
+    int carParentIndex = parentNode.getCarParentIndex();
+    assert(carParentIndex >= 0);
+    assert(UseVector::entryToERef(parents[getEnode(car.getRoot()).getCid()][carParentIndex]) == parent);
+    parents[getEnode(car.getRoot()).getCid()].clearEntryAt(carParentIndex);
+}
+
+void Egraph::removeFromCarUseVectorExceptSymbols(ERef parent, Enode const & parentNode) {
+    const Enode & car = getEnode(parentNode.getCar());
+    if (car.isSymb()) { assert(parentNode.getCarParentIndex() < 0); return; }
     int carParentIndex = parentNode.getCarParentIndex();
     assert(carParentIndex >= 0);
     assert(UseVector::entryToERef(parents[getEnode(car.getRoot()).getCid()][carParentIndex]) == parent);
@@ -1992,7 +2016,7 @@ void Egraph::removeFromCdrUseVector(ERef parent, Enode const & parentNode) {
 }
 
 void Egraph::removeFromCdrUseVectorExceptNill(ERef parent, Enode const & parentNode) {
-    if (parentNode.getCdr() == ERef_Nil) { return; }
+    if (parentNode.getCdr() == ERef_Nil) { assert(parentNode.getCdrParentIndex() < 0); return; }
     const Enode & cdr = getEnode(parentNode.getCdr());
     auto cdrParentIndex = parentNode.getCdrParentIndex();
     assert(cdrParentIndex >= 0);
