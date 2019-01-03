@@ -999,7 +999,7 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     // MB: This step is skipped now, we keep the old signatures in the table
 //     removeSignaturesOfParentsThatAreCongruenceRoots(w);
     // remove parents of y from other use vectors
-    processParentsBeforeMerge(y);
+//    processParentsBeforeMerge(y);
 
 
 
@@ -1007,7 +1007,7 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     mergeEquivalenceClasses(x, y);
 
     // Step 5.5: Insert new signatures and propagate congruences
-    processParentsAfterMerge(parents[en_y.getCid()]);
+    processParentsAfterMerge(parents[en_y.getCid()], y);
 
     // Step 6: Merge parent lists
 //    mergeParentLists(en_x, en_y);
@@ -1701,6 +1701,7 @@ void Egraph::processParentsBeforeMerge(const ERef y) {
                 // valid index
                 const Enode& car = getEnode(parentNode.getCar());
                 if (car.getRoot() != y) {
+                    assert(getEnode(y).isList());
                     assert(getEnode(parentNode.getCdr()).getRoot() == y);
                     assert(UseVector::entryToERef(parents[getEnode(car.getRoot()).getCid()][carParentIndex]) == parent);
                     parents[getEnode(car.getRoot()).getCid()].clearEntryAt(carParentIndex);
@@ -1713,6 +1714,7 @@ void Egraph::processParentsBeforeMerge(const ERef y) {
                 // valid index
                 const Enode& cdr = getEnode(parentNode.getCdr());
                 if (cdr.getRoot() != y) {
+                    assert(getEnode(y).isTerm());
                     assert(getEnode(parentNode.getCar()).getRoot() == y);
                     assert(UseVector::entryToERef(parents[getEnode(cdr.getRoot()).getCid()][cdrParentIndex]) == parent);
                     parents[getEnode(cdr.getRoot()).getCid()].clearEntryAt(cdrParentIndex);
@@ -1731,10 +1733,11 @@ void Egraph::processParentsBeforeMerge(const ERef y) {
    * - if parent is no longer a congruence root, it's kept as a marked
    *   entry
    */
-void Egraph::processParentsAfterMerge(UseVector & parents) {
-    for (auto & entry : parents) {
+void Egraph::processParentsAfterMerge(UseVector & oldroot_parents, ERef oldroot) {
+    for (auto & entry : oldroot_parents) {
         if (entry.isValid()) {
             ERef parent = UseVector::entryToERef(entry);
+            Enode & parentNode = getEnode(parent);
             if (enode_store.containsSig(parent)) {
                 // Case 1: p joins q's congruence class
                 ERef q = enode_store.lookupSig(parent);
@@ -1742,13 +1745,52 @@ void Egraph::processParentsAfterMerge(UseVector & parents) {
                 pending.push( q );
                 // p is no longer in the congruence table
                 // put a mark for backtracking
-                parents.markEntry(entry);
+                oldroot_parents.markEntry(entry);
+                // remove from parent vector of the other child
+                if (getEnode(oldroot).isList()) {
+                    // oldroot is old root of cdr, remove parent from usevector of car (which has not changed)
+                    const Enode& car = getEnode(parentNode.getCar());
+                    int carParentIndex = parentNode.getCarParentIndex();
+                    assert(carParentIndex >= 0);
+                    assert(UseVector::entryToERef(parents[getEnode(car.getRoot()).getCid()][carParentIndex]) == parent);
+                    parents[getEnode(car.getRoot()).getCid()].clearEntryAt(carParentIndex);
+
+                }
+                else {
+                    assert(getEnode(oldroot).isTerm());
+                    const Enode& cdr = getEnode(parentNode.getCdr());
+                    int cdrParentIndex = parentNode.getCdrParentIndex();
+                    assert(cdrParentIndex >= 0 || parentNode.getCdr() == ERef_Nil);
+                    if (cdrParentIndex >= 0) {
+                        assert(UseVector::entryToERef(parents[getEnode(cdr.getRoot()).getCid()][cdrParentIndex]) == parent);
+                        parents[getEnode(cdr.getRoot()).getCid()].clearEntryAt(cdrParentIndex);
+
+                    }
+                }
+                parentNode.setCarParentIndex(-1);
+                parentNode.setCdrParentIndex(-1);
             }
             else {
                 // Case 2: p remains congruent root (but now has new signature)
                 enode_store.insertSig(parent);
                 // re-insert to parent vectors of its car and cdr
-                addToParentVectors(parent);
+                if (getEnode(oldroot).isList()) {
+                    if (parentNode.getCdr() != ERef_Nil) {
+                        // root of cdr has changed add it there
+                        auto cdrCID = getEnode(getEnode(parentNode.getCdr()).getRoot()).getCid();
+                        assert(parents.size() > cdrCID);
+                        auto index = parents[cdrCID].addParent(parent);
+                        parentNode.setCdrParentIndex(index);
+                    }
+                }
+                else {
+                    assert(getEnode(oldroot).isTerm());
+                    // root of car has been changed, ad it there
+                    auto carCID = getEnode(getEnode(parentNode.getCar()).getRoot()).getCid();
+                    assert(parents.size() > carCID);
+                    auto index = parents[carCID].addParent(parent);
+                    parentNode.setCarParentIndex(index);
+                }
             }
         }
     }
@@ -1794,8 +1836,8 @@ void Egraph::processParentsAfterUnMerge(UseVector & y_parents) {
         if (entry.isValid()) {
             // insert the signature
             ERef parent = UseVector::entryToERef(entry);
-            assert(!enode_store.containsSig(parent));
-            enode_store.insertSig(parent);
+            assert(enode_store.containsSig(parent));
+//            enode_store.insertSig(parent);
             // addToParentVectors adds for car and cdr, one of them is y_parents, so it would add second entry which is the same as current one
             // clear the current entry before that;
             // TODO: think about how to avoid this

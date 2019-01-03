@@ -422,7 +422,7 @@ private:
   void removeSignaturesOfParentsThatAreCongruenceRoots(ERef node);
   void mergeEquivalenceClasses(ERef newroot, ERef oldroot);
   void unmergeEquivalenceClasses(ERef newroot, ERef oldroot);
-  void processParentsAfterMerge(UseVector & parents);
+  void processParentsAfterMerge(UseVector & parents, ERef merged);
   void processParentsBeforeMerge(ERef merged);
   void processParentsBeforeUnMerge(UseVector & parents);
   void processParentsAfterUnMerge(UseVector & parents);
