@@ -424,7 +424,7 @@ private:
   void unmergeEquivalenceClasses(ERef newroot, ERef oldroot);
   void processParentsAfterMerge(UseVector & parents, ERef merged);
   void processParentsBeforeMerge(ERef merged);
-  void processParentsBeforeUnMerge(UseVector & parents);
+  void processParentsBeforeUnMerge(UseVector & y_parents, ERef oldroot);
   void processParentsAfterUnMerge(UseVector & parents);
 //  void mergeParentLists(Enode & to, const Enode & from);
 //  void unmergeParentLists(Enode & to, const Enode & from);

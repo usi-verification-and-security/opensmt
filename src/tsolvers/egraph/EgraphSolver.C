@@ -1153,7 +1153,7 @@ void Egraph::undoMerge( ERef y )
     // Undo Step 5 of merge
     // Undo Case 2 of Step 5.5 of merge
     auto & y_parents = parents[en_y.getCid()];
-    processParentsBeforeUnMerge(y_parents);
+    processParentsBeforeUnMerge(y_parents, y);
 
     // Undo Step 5.4 of merge
     // Undo Step 5.3 of merge
@@ -1163,7 +1163,7 @@ void Egraph::undoMerge( ERef y )
     // Since we are skipping Step 5.2 in merge. we do not have to undo that.
 //    unmergeParentCongruenceClasses(w);
     // re-insert parents of y
-    processParentsAfterUnMerge(y_parents);
+//    processParentsAfterUnMerge(y_parents);
 
     // Undo step 4 of Merge
     unmergeDistinctionClasses(en_x, en_y);
@@ -1746,35 +1746,35 @@ void Egraph::processParentsAfterMerge(UseVector & oldroot_parents, ERef oldroot)
                 // p is no longer in the congruence table
                 // put a mark for backtracking
                 oldroot_parents.markEntry(entry);
-                // remove from parent vector of the other child
+                // remove from parent vector of the UNCHANGED child
                 if (getEnode(oldroot).isList()) {
-                    // oldroot is old root of cdr, remove parent from usevector of car (which has not changed)
+                    // root of cdr has changed, remove parent from usevector of car
                     const Enode& car = getEnode(parentNode.getCar());
                     int carParentIndex = parentNode.getCarParentIndex();
                     assert(carParentIndex >= 0);
                     assert(UseVector::entryToERef(parents[getEnode(car.getRoot()).getCid()][carParentIndex]) == parent);
                     parents[getEnode(car.getRoot()).getCid()].clearEntryAt(carParentIndex);
-
+                    parentNode.setCarParentIndex(-1);
                 }
                 else {
                     assert(getEnode(oldroot).isTerm());
+                    // root of car has changed, remove parent from usevector of cdr
                     const Enode& cdr = getEnode(parentNode.getCdr());
                     int cdrParentIndex = parentNode.getCdrParentIndex();
                     assert(cdrParentIndex >= 0 || parentNode.getCdr() == ERef_Nil);
                     if (cdrParentIndex >= 0) {
                         assert(UseVector::entryToERef(parents[getEnode(cdr.getRoot()).getCid()][cdrParentIndex]) == parent);
                         parents[getEnode(cdr.getRoot()).getCid()].clearEntryAt(cdrParentIndex);
-
+                        parentNode.setCdrParentIndex(-1);
                     }
                 }
-                parentNode.setCarParentIndex(-1);
-                parentNode.setCdrParentIndex(-1);
             }
             else {
                 // Case 2: p remains congruent root (but now has new signature)
                 enode_store.insertSig(parent);
-                // re-insert to parent vectors of its car and cdr
+                // insert to parent vector of the changed child
                 if (getEnode(oldroot).isList()) {
+                    assert(parentNode.getCdr() != ERef_Nil);
                     if (parentNode.getCdr() != ERef_Nil) {
                         // root of cdr has changed add it there
                         auto cdrCID = getEnode(getEnode(parentNode.getCdr()).getRoot()).getCid();
@@ -1796,36 +1796,63 @@ void Egraph::processParentsAfterMerge(UseVector & oldroot_parents, ERef oldroot)
     }
 }
 
-void Egraph::processParentsBeforeUnMerge(UseVector & y_parents) {
-    for (auto & entry : y_parents) {
+void Egraph::processParentsBeforeUnMerge(UseVector & y_parents, ERef oldroot) {
+    for (auto it = y_parents.begin(); it != y_parents.end(); ++it) {
+        auto & entry = *it;
         if (entry.isValid()) {
             ERef parent = UseVector::entryToERef(entry);
             Enode & parentNode = getEnode(parent);
             assert(enode_store.containsSig(parent));
             enode_store.removeSig(parent);
-            // remove from parent's lists of car and cdr
-            //  check car
-            int carParentIndex = parentNode.getCarParentIndex();
-            if (carParentIndex >= 0) {
-                // valid index
-                const Enode& car = getEnode(parentNode.getCar());
-                assert(UseVector::entryToERef(parents[getEnode(car.getRoot()).getCid()][carParentIndex]) == parent);
-                parents[getEnode(car.getRoot()).getCid()].clearEntryAt(carParentIndex);
-                parentNode.setCarParentIndex(-1);
+            // remove from parent's vector of changed child;
+            // restore the index to the one in current usevector
+            auto originalIndex = it - y_parents.begin();
+            if (getEnode(oldroot).isList()) {
+                // root of cdr has changed
+                assert(parentNode.getCdr() != ERef_Nil);
+                if (parentNode.getCdr() != ERef_Nil) {
+                    const Enode & cdr = getEnode(parentNode.getCdr());
+                    auto cdrCID = getEnode(cdr.getRoot()).getCid();
+                    auto cdrParentIndex = parentNode.getCdrParentIndex();
+                    assert(UseVector::entryToERef(parents[cdrCID][cdrParentIndex]) == parent);
+                    assert(cdrParentIndex >= 0);
+                    parents[cdrCID].clearEntryAt(cdrParentIndex);
+                    parentNode.setCdrParentIndex(originalIndex);
+                }
             }
-            // check cdr
-            int cdrParentIndex = parentNode.getCdrParentIndex();
-            if (cdrParentIndex >= 0) {
-                // valid index
-                const Enode & cdr = getEnode(parentNode.getCdr());
-                assert(UseVector::entryToERef(parents[getEnode(cdr.getRoot()).getCid()][cdrParentIndex]) == parent);
-                parents[getEnode(cdr.getRoot()).getCid()].clearEntryAt(cdrParentIndex);
-                parentNode.setCdrParentIndex(-1);
+            else{
+                assert(getEnode(oldroot).isTerm());
+                // root of car has changed
+                const Enode& car = getEnode(parentNode.getCar());
+                auto carCID = getEnode(car.getRoot()).getCid();
+                auto carParentIndex = parentNode.getCarParentIndex();
+                assert(UseVector::entryToERef(parents[carCID][carParentIndex]) == parent);
+                assert(carParentIndex >= 0);
+                parents[carCID].clearEntryAt(carParentIndex);
+                parentNode.setCarParentIndex(originalIndex);
             }
         }
         else if (entry.isMarked()) {
             // simply unmark
             y_parents.unMarkEntry(entry);
+            ERef parent = UseVector::entryToERef(entry);
+            Enode & parentNode = getEnode(parent);
+            // inset back to parent's vector of the unchanged child
+            if (getEnode(oldroot).isList()) {
+                // root of cdr is changed, the unchanged child is CAR
+                auto carCID = getEnode(getEnode(parentNode.getCar()).getRoot()).getCid();
+                assert(parents.size() > carCID);
+                auto index = parents[carCID].addParent(parent);
+                parentNode.setCarParentIndex(index);
+            }
+            else {
+                assert(getEnode(oldroot).isTerm());
+                // root of car is changed, the unchanged child is CDR
+                auto cdrCID = getEnode(getEnode(parentNode.getCdr()).getRoot()).getCid();
+                assert(parents.size() > cdrCID);
+                auto index = parents[cdrCID].addParent(parent);
+                parentNode.setCdrParentIndex(index);
+            }
         }
     }
 }
