@@ -44,7 +44,7 @@ void Polynomial::divideBy(const opensmt::Real &r) {
 
 MergeResult
 Polynomial::merge(const Polynomial &other, const opensmt::Real &coeff) {
-    MergeResult res;
+    MergeResult res{other.size(), this->size()};
     auto & added = res.added;
     auto & removed = res.removed;
     decltype(poly) merged;

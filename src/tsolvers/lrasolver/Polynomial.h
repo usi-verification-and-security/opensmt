@@ -13,6 +13,12 @@
 struct MergeResult{
     std::vector<LVRef> added;
     std::vector<LVRef> removed;
+
+    MergeResult() = default;
+    MergeResult(unsigned long added_size_hint, unsigned long removed_size_hint) {
+        added.reserve(added_size_hint);
+        removed.reserve(removed_size_hint);
+    }
 };
 
 class Polynomial{
