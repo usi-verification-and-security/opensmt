@@ -80,7 +80,6 @@ bool LRATHandler::assertLit_special(PtAsgn a)
 {
 //    assert(logic.isRealEq(a.tr) || logic.isRealLeq(a.tr));
     assert(a.sgn == l_True);
-    bool res = true;
     if (logic.isNumEq(a.tr)) {
         Pterm& p = logic.getPterm(a.tr);
         vec<PTRef> args;
@@ -89,12 +88,11 @@ bool LRATHandler::assertLit_special(PtAsgn a)
         char* msg;
         PTRef i1 = logic.mkNumLeq(args, &msg);
         PTRef i2 = logic.mkNumGeq(args, &msg);
-        res &= assertLit(PtAsgn(i1, l_True));
-        res &= assertLit(PtAsgn(i2, l_True));
+        bool res = assertLit(PtAsgn(i1, l_True));
+        return res && assertLit(PtAsgn(i2, l_True));
     }
     else
-        res = assertLit(a);
-    return res;
+        return assertLit(a);
 }
 
 #ifdef PRODUCE_PROOF
