@@ -98,3 +98,17 @@ TEST(Rationals_test, test_doubleRepresentation) {
     EXPECT_TRUE(res < 0);
 }
 
+TEST(Rationals_test, test_negate_int32min) {
+    // INT32_MIN
+    Real r {"-2147483648"};
+    r.negate();
+    EXPECT_TRUE(r > 0);
+}
+
+TEST(Rationals_test, test_additionAssign) {
+    Real a {"2147483640"};
+    Real b {"10"};
+    additionAssign(a,b);
+    EXPECT_EQ(a, Real{"2147483650"} );
+}
+
