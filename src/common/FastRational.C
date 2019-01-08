@@ -13,26 +13,26 @@ FastRational::FastRational( const char * s, const int base )
     mpq_init(mpq);
     mpq_set_str(mpq, s, base);
     mpq_canonicalize( mpq );
-    has_mpq = true;
-    make_word( );
-    if ( has_word )
+    state = State::MPQ_ALLOCATED_AND_VALID;
+    try_fit_word();
+    if ( wordPartValid() )
         kill_mpq( );
     assert( isWellFormed( ) );
 }
 
-FastRational::FastRational(FastRational &&other) noexcept : has_word{other.has_word}, has_mpq{other.has_mpq}, num{other.num}, den{other.den}  {
+FastRational::FastRational(FastRational &&other) noexcept : state{other.state}, num{other.num}, den{other.den}  {
     std::swap(this->mpq, other.mpq);
-    other.has_mpq = false;
+    other.state = State::WORD_VALID;
 }
 void FastRational::reset()
 {
-    kill_mpq(); has_mpq = false; has_word = true; num  = 0; den = 1;
+    kill_mpq(); state = State::WORD_VALID; num  = 0; den = 1;
 }
 void FastRational::print(std::ostream & out) const
 {
 //  const bool sign = num < 0;
     const bool sign = this->sign() < 0;
-    if (has_word) {
+    if (wordPartValid()) {
         word abs_num = (sign?-num:num);
         if (den == 1) {
             out << (sign?"(- ":"") << abs_num << (sign?")":"");
@@ -40,7 +40,7 @@ void FastRational::print(std::ostream & out) const
             out << "(/ " << (sign?"(- ":"") << abs_num << (sign?") ":" ") << den << ")";
         }
     } else {
-        assert(has_mpq);
+        assert(mpqPartValid());
         mpq_class mpq_c( mpq );
         if ( sign ) mpq_c = -mpq_c;
         out << (sign?"(- ":"") << mpq_c << (sign?")":"");
@@ -48,14 +48,14 @@ void FastRational::print(std::ostream & out) const
 }
 void FastRational::print_(std::ostream & out) const
 {
-    if (has_word) {
+    if (wordPartValid()) {
         if (den == 1) {
             out << num;
         } else {
             out << num << "/" << den;
         }
     } else {
-        assert(has_mpq);
+        assert(mpqPartValid());
         out << mpq;
     }
 }
