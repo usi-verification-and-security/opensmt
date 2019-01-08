@@ -17,7 +17,17 @@ struct MergeResult{
 
 class Polynomial{
 private:
-    using poly_t = std::unordered_map<LVRef, opensmt::Real, LVRefHash>;
+    struct Term {
+        LVRef var;
+        opensmt::Real coeff;
+
+        Term(LVRef var, opensmt::Real&& coeff): var{var}, coeff{std::move(coeff)} {}
+    };
+    struct TermCmp {
+        bool operator()(const Term& first, const Term& second) { return first.var.x < second.var.x; }
+    };
+//    using poly_t = std::unordered_map<LVRef, opensmt::Real, LVRefHash>;
+    using poly_t = std::vector<Term>; // Terms are ordered by variable num
     poly_t poly;
 public:
     void addTerm(LVRef var, opensmt::Real coeff);
@@ -47,8 +57,14 @@ public:
 
     // debug
     bool contains(LVRef var) const {
-        return poly.find(var) != poly.end();
+        return findTermForVar(var) != poly.end();
     }
+
+    const_iterator findTermForVar(LVRef var) const {
+        return std::find_if(poly.begin(), poly.end(), [var](const Term& term) { return term.var == var; });
+    }
+
+    void print() const;
 };
 
 #endif //OPENSMT_POLYNOMIAL_H

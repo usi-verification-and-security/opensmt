@@ -39,7 +39,7 @@ void LIASolver::computeConcreteModel(LVRef v) {
         auto const & representation = (*it).second;
         Delta val;
         for (auto const & term : representation) {
-            val += term.second * model.read(term.first);
+            val += term.coeff * model.read(term.var);
         }
         concrete_model[lva[v].ID()] = new opensmt::Real(val.R());
     }

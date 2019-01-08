@@ -36,8 +36,8 @@ void Tableau::newBasicVar(LVRef v, Polynomial poly) {
         throw std::logic_error("Trying to insert the same variable more than once!");
     }
     for(auto const & term : poly) {
-        assert(contains(cols, term.first));
-        addRowToColumn(v, term.first);
+        assert(contains(cols, term.var));
+        addRowToColumn(v, term.var);
     }
     addRow(v, std::move(poly));
     basic_vars.insert(v);
@@ -129,7 +129,7 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
     addRow(nv, nvPoly);
     // update column information regarding this one poly
     for(auto & term : nvPoly) {
-        auto var = term.first;
+        auto var = term.var;
         if(var != bv) {
             removeRowFromColumn(bv, var);
         }
@@ -198,7 +198,7 @@ void Tableau::print() const {
     for(auto row : rows) {
         std::cout << "Var of the row: " << row.first.x << ';';
         for (const auto & term : this->getPoly(row.first)) {
-            std::cout << "( " << term.second << " | " << term.first.x << " ) ";
+            std::cout << "( " << term.coeff << " | " << term.var.x << " ) ";
         }
         std::cout << '\n';
     }
@@ -243,7 +243,7 @@ bool Tableau::checkConsistency() const {
         res &= contains(basic_vars, var);
         assert(res);
         for (auto const & term : row.second) {
-            auto termVar = term.first;
+            auto termVar = term.var;
             res &= contains(nonbasic_vars, termVar) && contains(cols, termVar);
             assert(res);
             res &= contains(cols.at(termVar), var);
@@ -281,7 +281,7 @@ Tableau::doGaussianElimination(std::function<bool(LVRef)> shouldEliminate) {
         // remove the row completly, update the column information; TODO: this can be done together in one method
         removeRow(chosen_row);
         for (auto const & term : poly) {
-            auto l_var = term.first;
+            auto l_var = term.var;
             assert(contains(cols, l_var));
             removeRowFromColumn(chosen_row, l_var);
         }

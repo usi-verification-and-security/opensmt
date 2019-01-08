@@ -5,10 +5,13 @@
 #include <Real.h>
 #include "LARefs.h"
 #include "Polynomial.h"
+#include <iostream>
 
 void Polynomial::addTerm(LVRef var, opensmt::Real coeff) {
-    assert(poly.find(var) == poly.end());
-    poly[var] = std::move(coeff);
+    assert(!contains(var));
+    Term term {var, std::move(coeff)};
+    auto it = std::upper_bound(poly.begin(), poly.end(), term, TermCmp{});
+    poly.insert(it, std::move(term));
 }
 
 unsigned long Polynomial::size() const {
@@ -16,23 +19,25 @@ unsigned long Polynomial::size() const {
 }
 
 const FastRational &Polynomial::getCoeff(LVRef var) const {
-    return poly.at(var);
+    assert(contains(var));
+    return findTermForVar(var)->coeff;
 }
 
 void Polynomial::removeVar(LVRef var) {
-    assert(poly.find(var) != poly.end());
-    poly.erase(var);
+    assert(contains(var));
+    auto it = findTermForVar(var);
+    poly.erase(it);
 }
 
 void Polynomial::negate() {
     for(auto & term : poly) {
-        term.second.negate();
+        term.coeff.negate();
     }
 }
 
 void Polynomial::divideBy(const opensmt::Real &r) {
     for(auto & term : poly) {
-        term.second /= r;
+        term.coeff /= r;
     }
 }
 
@@ -41,23 +46,54 @@ Polynomial::merge(const Polynomial &other, const opensmt::Real &coeff) {
     MergeResult res;
     auto & added = res.added;
     auto & removed = res.removed;
-    for(const auto & term : other) {
-        auto var = term.first;
-        auto var_coeff = term.second;
-        auto var_in_current = poly.find(var);
-        if(var_in_current == poly.end()) {
-            // not present before
-            added.push_back(var);
-            this->addTerm(var, coeff * var_coeff);
-        }
-        else{
-            // present, sum up coeffs
-            var_in_current->second += coeff * var_coeff;
-            if(var_in_current->second.isZero()){
-                removed.push_back(var);
-                this->removeVar(var);
+    decltype(poly) merged;
+    merged.reserve(this->poly.size() + other.poly.size());
+    auto myIt = poly.cbegin();
+    auto otherIt = other.poly.cbegin();
+    auto myEnd = poly.cend();
+    auto otherEnd = other.poly.cend();
+    TermCmp cmp;
+    while(true) {
+        if (myIt == myEnd) {
+            for (auto it = otherIt; it != otherEnd; ++it) {
+                merged.emplace_back(it->var, it->coeff * coeff);
+                added.push_back(it->var);
             }
+            break;
+        }
+        if (otherIt == otherEnd) {
+            merged.insert(merged.end(), myIt, myEnd);
+            break;
+        }
+        if(cmp(*myIt, *otherIt)) {
+            merged.push_back(*myIt);
+            ++myIt;
+        }
+        else if (cmp(*otherIt, *myIt)) {
+            merged.emplace_back(otherIt->var, otherIt->coeff * coeff);
+            added.push_back(otherIt->var);
+            ++otherIt;
+        }
+        else {
+            assert(myIt->var == otherIt->var);
+            auto mergedCoeff = myIt->coeff + (otherIt->coeff * coeff);
+            if (mergedCoeff.isZero()) {
+                removed.push_back(myIt->var);
+            }
+            else {
+                merged.emplace_back(myIt->var, std::move(mergedCoeff));
+            }
+            ++myIt;
+            ++otherIt;
         }
     }
+    poly.swap(merged);
     return res;
+}
+
+void Polynomial::print() const {
+    for (auto & term : poly) {
+        std::cout << term.coeff << " * " << term.var.x << "v + ";
+    }
+    std::cout << std::endl;
 }

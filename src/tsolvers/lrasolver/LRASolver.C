@@ -67,7 +67,7 @@ void LRASolver::computeConcreteModel(LVRef v) {
         auto const & representation = (*it).second;
         Delta val;
         for (auto const & term : representation) {
-            val += term.second * model.read(term.first);
+            val += term.coeff * model.read(term.var);
         }
         concrete_model[lva[v].ID()] = new opensmt::Real(val.R() + val.D() * delta);
     }
@@ -83,7 +83,7 @@ void LRASolver::doGaussianElimination( )
         auto entry = *rit;
         auto poly = entry.second;
         for(auto const & term : entry.second){
-            auto var = term.first;
+            auto var = term.var;
             auto it = removed_by_GaussianElimination.find(var);
             if( it != removed_by_GaussianElimination.end() && poly.contains(var)) {
                 auto to_substitute = (*it).second;

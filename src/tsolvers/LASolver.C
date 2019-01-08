@@ -389,10 +389,10 @@ LVRef LASolver::findNonBasicForPivotByHeuristic(LVRef basicVar) {
     if (model.read(basicVar) < model.Lb(basicVar)) {
 
         for (auto const &term : tableau.getPoly(basicVar)) {
-            auto var = term.first;
+            auto var = term.var;
             assert(tableau.isNonBasic(var));
             assert(var != basicVar);
-            auto const &coeff = term.second;
+            auto const &coeff = term.coeff;
             const bool is_coeff_pos = coeff > 0;
 
             if ((is_coeff_pos && model.read(var) < model.Ub(var)) ||
@@ -410,10 +410,10 @@ LVRef LASolver::findNonBasicForPivotByHeuristic(LVRef basicVar) {
     else if (model.read(basicVar) > model.Ub(basicVar)) {
 
         for (auto const &term : tableau.getPoly(basicVar)) {
-            auto var = term.first;
+            auto var = term.var;
             assert(tableau.isNonBasic(var));
             assert(var != basicVar);
-            auto const &coeff = term.second;
+            auto const &coeff = term.coeff;
             const bool is_coeff_pos = coeff > 0;
 
             if ((!is_coeff_pos && model.read(var) < model.Ub(var)) ||
@@ -443,10 +443,10 @@ LVRef LASolver::findNonBasicForPivotByBland(LVRef basicVar) {
         int curr_var_id_y = max_var_id;
         // look for nonbasic terms to fix the breaking of the bound
         for (auto term : tableau.getPoly(basicVar)) {
-            auto y = term.first;
+            auto y = term.var;
             assert(basicVar != y);
             assert(tableau.isNonBasic(y));
-            auto const &coeff = term.second;
+            auto const &coeff = term.coeff;
             const bool coeff_is_pos = (coeff > 0);
             if ((coeff_is_pos && model.read(y) < model.Ub(y)) || (!coeff_is_pos && model.read(y) > model.Lb(y))) {
                 // Choose the leftmost nonbasic variable with a negative (reduced) cost
@@ -459,10 +459,10 @@ LVRef LASolver::findNonBasicForPivotByBland(LVRef basicVar) {
         int curr_var_id_y = max_var_id;
         // look for nonbasic terms to fix the unbounding
         for (auto term : tableau.getPoly(basicVar)) {
-            auto y = term.first;
+            auto y = term.var;
             assert(basicVar != y);
             assert(tableau.isNonBasic(y));
-            auto const &coeff = term.second;
+            auto const &coeff = term.coeff;
             const bool &coeff_is_pos = (coeff > 0);
             if ((!coeff_is_pos && model.read(y) < model.Ub(y)) || (coeff_is_pos && model.read(y) > model.Lb(y))) {
                 // Choose the leftmost nonbasic variable with a negative (reduced) cost
@@ -676,8 +676,8 @@ void LASolver::pivot( const LVRef bv, const LVRef nv){
     // and nv can be a candidate
     newCandidate(nv);
 //    tableau.print();
-    assert(checkValueConsistency());
     assert(checkTableauConsistency());
+    assert(checkValueConsistency());
 }
 
 void LASolver::changeValueBy(LVRef var, const Delta & diff) {
@@ -803,9 +803,9 @@ void LASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
 //        dst.push(ba[bla[lva[x].getBounds()][lva[x].lbound()]].getPTRef());
         explanationCoefficients.emplace_back( 1 );
         for (auto const & term : tableau.getPoly(x)) {
-            Real const & coeff = term.second;
+            Real const & coeff = term.coeff;
             assert( ! coeff.isZero());
-            auto const var = term.first;
+            auto const var = term.var;
             assert(var != x);
             if (coeff < 0) {
                 const LABound& b = model.readLBound(var);
@@ -858,9 +858,9 @@ void LASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
         explanationCoefficients.emplace_back( 1 );
 
         for (auto const & term : tableau.getPoly(x)) {
-            Real const & coeff = term.second;
+            Real const & coeff = term.coeff;
             assert( ! coeff.isZero());
-            auto const var = term.first;
+            auto const var = term.var;
             assert(var != x);
             if (coeff > 0) {
                 const LABound& b = model.readLBound(var);
@@ -1093,7 +1093,7 @@ bool LASolver::valueConsistent(LVRef v) const
     const Delta& value = model.read(v);
     Delta sum(0);
     for (auto & term : tableau.getPoly(v)){
-      sum += term.second * model.read(term.first);
+      sum += term.coeff * model.read(term.var);
     }
 
     assert(value == sum);
