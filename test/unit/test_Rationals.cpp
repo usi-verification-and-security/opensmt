@@ -87,3 +87,14 @@ TEST(Rationals_test, test_hash_function)
         prev = hashes[i];
     }
 }
+
+TEST(Rationals_test, test_doubleRepresentation) {
+    int val = 100000;
+    Real r{val};
+    Real overflow = r * r;
+    EXPECT_TRUE(overflow > 0);
+    r.negate();
+    Real res = r * val;
+    EXPECT_TRUE(res < 0);
+}
+
