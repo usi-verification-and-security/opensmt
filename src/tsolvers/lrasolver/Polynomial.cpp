@@ -41,13 +41,14 @@ void Polynomial::divideBy(const opensmt::Real &r) {
     }
 }
 
+
 MergeResult
 Polynomial::merge(const Polynomial &other, const opensmt::Real &coeff) {
     MergeResult res;
     auto & added = res.added;
     auto & removed = res.removed;
     decltype(poly) merged;
-    merged.reserve(this->poly.size() + other.poly.size());
+    merged.reserve(std::max(this->poly.size(),other.poly.size()));
     auto myIt = poly.cbegin();
     auto otherIt = other.poly.cbegin();
     auto myEnd = poly.cend();
@@ -88,6 +89,7 @@ Polynomial::merge(const Polynomial &other, const opensmt::Real &coeff) {
         }
     }
     poly.swap(merged);
+    poly.shrink_to_fit();
     return res;
 }
 
