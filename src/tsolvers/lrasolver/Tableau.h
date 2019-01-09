@@ -78,19 +78,19 @@ protected:
 
     // using column_t = std::unordered_set<LVRef, LVRefHash>;
     using column_t = Column;
-    using rows_t = std::unordered_map<LVRef, Polynomial, LVRefHash>;
+    using rows_t = std::vector<std::unique_ptr<Polynomial>>;
     using vars_t = std::unordered_set<LVRef, LVRefHash>;
 
 public:
     void newNonbasicVar(LVRef v);
     void nonbasicVar(LVRef v);
-    void newBasicVar(LVRef v, Polynomial poly);
+    void newBasicVar(LVRef v, std::unique_ptr<Polynomial> poly);
     std::size_t getNumOfCols() const;
     std::size_t getPolySize(LVRef basicVar) const;
     const Polynomial& getPoly(LVRef basicVar) const;
     Polynomial& getPoly(LVRef basicVar);
     const opensmt::Real & getCoeff(LVRef basicVar, LVRef nonBasicVar) const;
-    const column_t & getColumn(LVRef nonBasicVar);
+    const column_t & getColumn(LVRef nonBasicVar) const;
     const rows_t & getRows() const;
     const vars_t & getNonBasicVars() const;
 
@@ -111,17 +111,19 @@ public:
     bool checkConsistency() const;
 
 private:
-    std::unordered_map<LVRef, column_t, LVRefHash> cols;
+    std::vector<std::unique_ptr<column_t>> cols;
     rows_t rows;
 
     vars_t basic_vars;
     vars_t nonbasic_vars;
 
-    void addRow(LVRef v, Polynomial p);
-    void removeRow(LVRef v);
-    void addRowToColumn(LVRef row, LVRef col) { cols.at(col).addRow(row); }
-    void removeRowFromColumn(LVRef row, LVRef col) { cols.at(col).removeRow(row); }
-    void clearColumn(LVRef col) {cols.at(col).clear();}
+    void addRow(LVRef v, std::unique_ptr<Polynomial> p);
+    std::unique_ptr<Polynomial> removeRow(LVRef v);
+    void moveRowFromTo(LVRef from, LVRef to);
+    void moveColFromTo(LVRef from, LVRef to);
+    void addRowToColumn(LVRef row, LVRef col) { assert(cols[col.x]); cols[col.x]->addRow(row); }
+    void removeRowFromColumn(LVRef row, LVRef col) { assert(cols[col.x]); cols[col.x]->removeRow(row); }
+    void clearColumn(LVRef col) { assert(cols[col.x]); cols[col.x]->clear();}
 };
 
 

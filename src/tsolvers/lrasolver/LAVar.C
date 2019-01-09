@@ -32,7 +32,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 LVRef LAVarStore::getNewVar(PTRef e_orig) {
     assert(!logic.isNegated(e_orig));
     auto idx = static_cast<unsigned>(lavars.size());
-    lavars.emplace_back(e_orig);
+    lavars.push_back(e_orig);
 
     PTId id_pos = logic.getPterm(e_orig).getId();
     PTId id_neg = logic.getPterm(logic.mkNumNeg(e_orig)).getId();

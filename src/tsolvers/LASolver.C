@@ -246,8 +246,8 @@ LVRef LASolver::getLAVar_single(PTRef expr_in) {
     return x;
 }
 
-Polynomial LASolver::expressionToLVarPoly(PTRef term) {
-    Polynomial poly;
+std::unique_ptr<Polynomial> LASolver::expressionToLVarPoly(PTRef term) {
+    std::unique_ptr<Polynomial> poly = std::unique_ptr<Polynomial>(new Polynomial());
     // If term is negated, we need to flip the signs of the poly
     bool negated = logic.isNegated(term);
     for (int i = 0; i < logic.getPterm(term).size(); i++) {
@@ -264,7 +264,7 @@ Polynomial LASolver::expressionToLVarPoly(PTRef term) {
         if (negated) {
             coeff.negate();
         }
-        poly.addTerm(var, std::move(coeff));
+        poly->addTerm(var, std::move(coeff));
     }
     return poly;
 }
@@ -1081,9 +1081,12 @@ ValPair LASolver::getValue(PTRef tr) {
 
 bool LASolver::checkValueConsistency() const{
     bool res = true;
-    for(auto row : tableau.getRows()) {
-        if(tableau.isActive(row.first)){
-            res &= valueConsistent(row.first);
+    auto const & rows = tableau.getRows();
+    for(unsigned i = 0; i < rows.size(); ++i) {
+        if(!rows[i]) {continue;}
+        LVRef var {i};
+        if(tableau.isActive(var)){
+            res &= valueConsistent(var);
         }
     }
     assert(res);

@@ -113,7 +113,7 @@ protected:
     void pivot(LVRef basic, LVRef nonBasic);
 
 
-    Polynomial expressionToLVarPoly(PTRef expression);
+    std::unique_ptr<Polynomial> expressionToLVarPoly(PTRef term);
     LVRef getBasicVarToFixByBland() const;
     LVRef getBasicVarToFixByShortestPoly() const;
     LVRef findNonBasicForPivotByBland(LVRef basicVar);
