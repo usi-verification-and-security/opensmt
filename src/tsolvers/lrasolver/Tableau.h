@@ -14,6 +14,7 @@
 #include <unordered_map>
 #include <vector>
 #include <functional>
+#include <memory>
 
 class Column{
     std::vector<LVRef> rows;
