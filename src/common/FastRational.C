@@ -21,8 +21,10 @@ FastRational::FastRational( const char * s, const int base )
 }
 
 FastRational::FastRational(FastRational &&other) noexcept : state{other.state}, num{other.num}, den{other.den}  {
-    std::swap(this->mpq, other.mpq);
-    other.state = State::WORD_VALID;
+    if (other.mpqMemoryAllocated()) {
+        std::swap(this->mpq, other.mpq);
+        other.state = State::WORD_VALID;
+    }
 }
 void FastRational::reset()
 {
