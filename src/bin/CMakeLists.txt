@@ -9,3 +9,5 @@ target_compile_definitions(exec PRIVATE GIT_SHA1="${GIT_SHA1}")
 target_link_libraries(exec api_static)
 
 set_target_properties(exec PROPERTIES OUTPUT_NAME opensmt)
+
+install(TARGETS exec RUNTIME DESTINATION bin)
