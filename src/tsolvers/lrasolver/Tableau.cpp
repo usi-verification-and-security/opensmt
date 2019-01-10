@@ -133,13 +133,12 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
     assert(!rows[nv.x]);
     {
         Polynomial & nvPoly = getRowPoly(bv);
-        const auto coeff = nvPoly.getCoeff(nv);
+        const auto coeff = nvPoly.removeVar(nv);
         Real bvCoeff{1};
         if (!isOne(coeff)) {
             nvPoly.divideBy(coeff);
             bvCoeff /= coeff;
         }
-        nvPoly.removeVar(nv);
         nvPoly.negate();
         nvPoly.addTerm(bv, bvCoeff);
     }
@@ -164,9 +163,8 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
         }
         // update the polynomials
         auto & poly = getRowPoly(rowVar);
-        const auto& nvCoeff = poly.getCoeff(nv);
+        const auto nvCoeff = poly.removeVar(nv);
         auto changes = poly.merge(nvPoly, nvCoeff);
-        poly.removeVar(nv);
         // update the column information
         assert(cols[bv.x]);
         assert(std::find(changes.added.begin(), changes.added.end(), bv) != changes.added.end());
@@ -314,9 +312,8 @@ Tableau::doGaussianElimination(std::function<bool(LVRef)> shouldEliminate) {
         cols[chosen_row.x] = std::unique_ptr<Column>(new Column());
         // now express the chosen_row in terms of column variable
         {
-            auto coeff = poly.getCoeff(var);
+            auto coeff = poly.removeVar(var);
             coeff.negate();
-            poly.removeVar(var);
             poly.addTerm(chosen_row, -1);
             poly.divideBy(coeff);
         }
@@ -327,8 +324,7 @@ Tableau::doGaussianElimination(std::function<bool(LVRef)> shouldEliminate) {
             if (rowVar == chosen_row) { continue; }
             assert(rows[rowVar.x]);
             auto & row_poly = getRowPoly(rowVar);
-            auto coeff = row_poly.getCoeff(var);
-            row_poly.removeVar(var);
+            auto coeff = row_poly.removeVar(var);
             auto res = row_poly.merge(poly, coeff);
             // process added and removed vars
             for (const auto & addedVar : res.added) {

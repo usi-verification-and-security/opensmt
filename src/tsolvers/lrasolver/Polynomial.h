@@ -39,7 +39,7 @@ public:
     void addTerm(LVRef var, opensmt::Real coeff);
     std::size_t size() const;
     const opensmt::Real & getCoeff(LVRef var) const;
-    void removeVar(LVRef var);
+    opensmt::Real removeVar(LVRef var);
     void negate();
     void divideBy(const opensmt::Real& r);
     MergeResult merge(const Polynomial & other, const opensmt::Real & coeff);

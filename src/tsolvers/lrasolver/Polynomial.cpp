@@ -23,10 +23,12 @@ const FastRational &Polynomial::getCoeff(LVRef var) const {
     return findTermForVar(var)->coeff;
 }
 
-void Polynomial::removeVar(LVRef var) {
+opensmt::Real Polynomial::removeVar(LVRef var) {
     assert(contains(var));
     auto it = findTermForVar(var);
+    auto coeff = std::move(it->coeff);
     poly.erase(it);
+    return coeff;
 }
 
 void Polynomial::negate() {
