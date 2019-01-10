@@ -88,10 +88,10 @@ public:
     void newBasicVar(LVRef v, std::unique_ptr<Polynomial> poly);
     std::size_t getNumOfCols() const;
     std::size_t getPolySize(LVRef basicVar) const;
-    const Polynomial& getPoly(LVRef basicVar) const;
-    Polynomial& getPoly(LVRef basicVar);
     const opensmt::Real & getCoeff(LVRef basicVar, LVRef nonBasicVar) const;
     const column_t & getColumn(LVRef nonBasicVar) const;
+    const Polynomial & getRowPoly(LVRef basicVar) const;
+    Polynomial & getRowPoly(LVRef basicVar);
     const rows_t & getRows() const;
     const vars_t & getNonBasicVars() const;
 

@@ -62,16 +62,6 @@ std::size_t Tableau::getPolySize(LVRef basicVar) const {
     return rows[basicVar.x]->size();
 }
 
-const Polynomial & Tableau::getPoly(LVRef basicVar) const {
-    assert(rows[basicVar.x]);
-    return *rows[basicVar.x];
-}
-
-Polynomial & Tableau::getPoly(LVRef basicVar) {
-    assert(rows[basicVar.x]);
-    return *rows[basicVar.x];
-}
-
 const opensmt::Real & Tableau::getCoeff(LVRef basicVar, LVRef nonBasicVar) const {
     assert(rows[basicVar.x]);
     return rows[basicVar.x]->getCoeff(nonBasicVar);
@@ -80,6 +70,16 @@ const opensmt::Real & Tableau::getCoeff(LVRef basicVar, LVRef nonBasicVar) const
 const Tableau::column_t & Tableau::getColumn(LVRef nonBasicVar) const {
     assert(cols[nonBasicVar.x]);
     return *cols[nonBasicVar.x];
+}
+
+const Polynomial & Tableau::getRowPoly(LVRef basicVar) const {
+    assert(rows[basicVar.x]);
+    return *rows[basicVar.x];
+}
+
+Polynomial & Tableau::getRowPoly(LVRef basicVar) {
+    assert(rows[basicVar.x]);
+    return *rows[basicVar.x];
 }
 
 const Tableau::rows_t & Tableau::getRows() const {
@@ -132,7 +132,7 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
     assert(rows[bv.x]);
     assert(!rows[nv.x]);
     {
-        Polynomial & nvPoly = *rows[bv.x];
+        Polynomial & nvPoly = getRowPoly(bv);
         const auto coeff = nvPoly.getCoeff(nv);
         Real bvCoeff{1};
         if (!isOne(coeff)) {
@@ -149,7 +149,7 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
     // move the column from nv tto bv
     moveColFromTo(nv, bv);
 
-    Polynomial & nvPoly = *rows[nv.x];
+    Polynomial & nvPoly = getRowPoly(nv);
     // update column information regarding this one poly
     for(auto & term : nvPoly) {
         auto var = term.var;
@@ -163,7 +163,7 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
             continue;
         }
         // update the polynomials
-        auto & poly = getPoly(rowVar);
+        auto & poly = getRowPoly(rowVar);
         const auto& nvCoeff = poly.getCoeff(nv);
         auto changes = poly.merge(nvPoly, nvCoeff);
         poly.removeVar(nv);
@@ -173,12 +173,12 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
         for (const auto & addedVar : changes.added) {
             if (addedVar == bv) { continue; }
             assert(cols[addedVar.x]);
-            assert(!contains(*cols[addedVar.x], rowVar));
+            assert(!contains(getColumn(addedVar), rowVar));
             addRowToColumn(rowVar, addedVar);
         }
         for (const auto & removedVar : changes.removed) {
             assert(cols[removedVar.x]);
-            assert(contains(*cols[removedVar.x], rowVar));
+            assert(contains(getColumn(removedVar), rowVar));
             removeRowFromColumn(rowVar, removedVar);
         }
     }
@@ -200,38 +200,40 @@ bool Tableau::isActive(LVRef basicVar) const { return true;}
 bool Tableau::isBasic(LVRef v) const {return contains(basic_vars, v);}
 bool Tableau::isNonBasic(LVRef v) const {return contains(nonbasic_vars, v);}
 
-//void Tableau::print() const {
-//    std::cout << "Basic vars: ";
-//    for (auto var : basic_vars) {
-//        std::cout << var.x << " ";
-//    }
-//    std::cout << '\n';
-//
-//    std::cout << "Non-basic vars: ";
-//    for (auto var : nonbasic_vars) {
-//        std::cout << var.x << " ";
-//    }
-//    std::cout << '\n';
-//
-//    std::cout << "Rows:\n";
-//    for(auto row : rows) {
-//        std::cout << "Var of the row: " << row.first.x << ';';
-//        for (const auto & term : this->getPoly(row.first)) {
-//            std::cout << "( " << term.coeff << " | " << term.var.x << " ) ";
-//        }
-//        std::cout << '\n';
-//    }
-//    std::cout << '\n';
-//    std::cout << "Columns:\n";
-//    for(auto col : cols) {
-//        std::cout << "Var of the column: " << col.first.x << "; Contains: ";
-//        for (auto var : col.second) {
-//            std::cout << var.x << ' ';
-//        }
-//        std::cout << '\n';
-//    }
-//    std::cout << '\n';
-//}
+void Tableau::print() const {
+    std::cout << "Basic vars: ";
+    for (auto var : basic_vars) {
+        std::cout << var.x << " ";
+    }
+    std::cout << '\n';
+
+    std::cout << "Non-basic vars: ";
+    for (auto var : nonbasic_vars) {
+        std::cout << var.x << " ";
+    }
+    std::cout << '\n';
+
+    std::cout << "Rows:\n";
+    for(unsigned i = 0; i != rows.size(); ++i) {
+        if (!rows[i]) { continue; }
+        std::cout << "Var of the row: " << i << ';';
+        for (const auto & term : this->getRowPoly(LVRef{i})) {
+            std::cout << "( " << term.coeff << " | " << term.var.x << " ) ";
+        }
+        std::cout << '\n';
+    }
+    std::cout << '\n';
+    std::cout << "Columns:\n";
+    for(unsigned i = 0; i != cols.size(); ++i) {
+        if(!cols[i]) { continue; }
+        std::cout << "Var of the column: " << i << "; Contains: ";
+        for (auto var : getColumn(LVRef{i})) {
+            std::cout << var.x << ' ';
+        }
+        std::cout << '\n';
+    }
+    std::cout << '\n';
+}
 
 bool Tableau::checkConsistency() const {
     bool res = true;
@@ -249,7 +251,7 @@ bool Tableau::checkConsistency() const {
         res &= contains(nonbasic_vars, var);
         assert(res);
         for(auto row : *cols[i]) {
-            res &= this->getPoly(row).contains(var);
+            res &= this->getRowPoly(row).contains(var);
             assert(res);
         }
     }
@@ -266,7 +268,7 @@ bool Tableau::checkConsistency() const {
             auto termVar = term.var;
             res &= contains(nonbasic_vars, termVar) && cols[termVar.x];
             assert(res);
-            res &= contains(*cols[termVar.x], var);
+            res &= contains(getColumn(termVar), var);
             assert(res);
         }
     }
@@ -284,11 +286,11 @@ Tableau::doGaussianElimination(std::function<bool(LVRef)> shouldEliminate) {
         if (!shouldEliminate(var) || cols[var.x]->empty()) { continue; }
         // we are going to eliminate this column variable from the tableau
         // pick row which we are going to use to express this variable
-        auto const & col = *cols[var.x];
-        auto const & col_rows = col;
-        LVRef chosen_row = *(col_rows.begin());
+        auto const & col = getColumn(var);
+        // finds the row with the minimal size of the polynomial
+        LVRef chosen_row = *(col.begin());
         auto min_size = rows[chosen_row.x]->size();
-        for (auto it = ++col_rows.begin(); it != col_rows.end(); ++it) {
+        for (auto it = ++col.begin(); it != col.end(); ++it) {
             auto size = rows[it->x]->size();
             if (size < min_size) {
                 min_size = size;
@@ -321,15 +323,14 @@ Tableau::doGaussianElimination(std::function<bool(LVRef)> shouldEliminate) {
         // remember the polynomial for removed var
         removed.emplace_back(var, poly);
         // now substitute in other rows where var is present
-        for (auto rowVar : col_rows) {
+        for (auto rowVar : col) {
             if (rowVar == chosen_row) { continue; }
             assert(rows[rowVar.x]);
-            auto & row_poly = *rows[rowVar.x];
+            auto & row_poly = getRowPoly(rowVar);
             auto coeff = row_poly.getCoeff(var);
             row_poly.removeVar(var);
             auto res = row_poly.merge(poly, coeff);
             // process added and removed vars
-            // TODO: unite the operation done here an during pivoting
             for (const auto & addedVar : res.added) {
                 assert(cols[addedVar.x]);
                 assert(!contains(*cols[addedVar.x], rowVar));
@@ -345,7 +346,9 @@ Tableau::doGaussianElimination(std::function<bool(LVRef)> shouldEliminate) {
         assert(contains(nonbasic_vars, var));
         nonbasic_vars.erase(var);
         assert(cols[var.x]);
+        // Destroy the column object
         cols[var.x].reset();
+        assert(!cols[var.x]);
 //        print();
     }
     assert(checkConsistency());

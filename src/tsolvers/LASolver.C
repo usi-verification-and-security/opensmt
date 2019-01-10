@@ -390,7 +390,7 @@ LVRef LASolver::findNonBasicForPivotByHeuristic(LVRef basicVar) {
     LVRef v_found = LVRef_Undef;
     if (model.read(basicVar) < model.Lb(basicVar)) {
 
-        for (auto const &term : tableau.getPoly(basicVar)) {
+        for (auto const &term : tableau.getRowPoly(basicVar)) {
             auto var = term.var;
             assert(tableau.isNonBasic(var));
             assert(var != basicVar);
@@ -411,7 +411,7 @@ LVRef LASolver::findNonBasicForPivotByHeuristic(LVRef basicVar) {
     }
     else if (model.read(basicVar) > model.Ub(basicVar)) {
 
-        for (auto const &term : tableau.getPoly(basicVar)) {
+        for (auto const &term : tableau.getRowPoly(basicVar)) {
             auto var = term.var;
             assert(tableau.isNonBasic(var));
             assert(var != basicVar);
@@ -444,7 +444,7 @@ LVRef LASolver::findNonBasicForPivotByBland(LVRef basicVar) {
         // For the Bland rule
         int curr_var_id_y = max_var_id;
         // look for nonbasic terms to fix the breaking of the bound
-        for (auto term : tableau.getPoly(basicVar)) {
+        for (auto term : tableau.getRowPoly(basicVar)) {
             auto y = term.var;
             assert(basicVar != y);
             assert(tableau.isNonBasic(y));
@@ -460,7 +460,7 @@ LVRef LASolver::findNonBasicForPivotByBland(LVRef basicVar) {
     else if (model.read(basicVar) > model.Ub(basicVar)) {
         int curr_var_id_y = max_var_id;
         // look for nonbasic terms to fix the unbounding
-        for (auto term : tableau.getPoly(basicVar)) {
+        for (auto term : tableau.getRowPoly(basicVar)) {
             auto y = term.var;
             assert(basicVar != y);
             assert(tableau.isNonBasic(y));
@@ -804,7 +804,7 @@ void LASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
 //        dst.push(model.readLBound(x).getPTRef());
 //        dst.push(ba[bla[lva[x].getBounds()][lva[x].lbound()]].getPTRef());
         explanationCoefficients.emplace_back( 1 );
-        for (auto const & term : tableau.getPoly(x)) {
+        for (auto const & term : tableau.getRowPoly(x)) {
             Real const & coeff = term.coeff;
             assert( ! coeff.isZero());
             auto const var = term.var;
@@ -859,7 +859,7 @@ void LASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
 //        dst.push(model.readUBound(x).getPTRef());
         explanationCoefficients.emplace_back( 1 );
 
-        for (auto const & term : tableau.getPoly(x)) {
+        for (auto const & term : tableau.getRowPoly(x)) {
             Real const & coeff = term.coeff;
             assert( ! coeff.isZero());
             auto const var = term.var;
@@ -1097,7 +1097,7 @@ bool LASolver::valueConsistent(LVRef v) const
 {
     const Delta& value = model.read(v);
     Delta sum(0);
-    for (auto & term : tableau.getPoly(v)){
+    for (auto & term : tableau.getRowPoly(v)){
       sum += term.coeff * model.read(term.var);
     }
 
