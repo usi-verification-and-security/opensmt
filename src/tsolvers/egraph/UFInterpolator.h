@@ -84,13 +84,6 @@ struct CEdge
   CNode * target;
   PTRef reason;
   icolor_t color;
-
-  inline friend ostream & operator<<( ostream & os, CEdge * ce )
-  {
-    //FIXME
-    return os;
-    //return os << logic.getPterm(ce->source->e) << " ---> " << logic.getPterm(ce->target->e);
-  }
 };
 
 class Egraph;

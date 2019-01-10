@@ -41,6 +41,7 @@ class TermMapper {
     TermMapper(Logic& l) : var_cnt(0), logic(l) {}
 
     Var addBinding(PTRef tr);
+    const Lit getOrCreateLit(PTRef ptr);
     void setFrozen(Var v) { frozen[v] = true; }
     bool isFrozen(Var v)  { return frozen[v]; }
     // Return a "purified" term by removing sequence of nots.  sgn is false if

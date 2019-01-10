@@ -45,10 +45,6 @@ class LRATHandler : public TSolverHandler
     virtual const Logic& getLogic() const;
 
 #ifdef PRODUCE_PROOF
-    virtual TheoryInterpolator* getTheoryInterpolator()
-    {
-        return NULL;
-    }
     virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels);
 #endif
 };

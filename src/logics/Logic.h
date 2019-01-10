@@ -422,8 +422,8 @@ class Logic {
     lbool isInHashes(vec<Map<PTRef,lbool,PTRefHash>*>& hashes, Map<PTRef,lbool,PTRefHash>& curr_hash, PtAsgn tr);
     // Top-level equalities based substitutions
     void getNewFacts(PTRef root, vec<Map<PTRef,lbool,PTRefHash>*>& prev_units, Map<PTRef,lbool,PTRefHash>& facts);
-    bool varsubstitute(PTRef& root, Map<PTRef,PtAsgn,PTRefHash>& substs, PTRef& tr_new);  // Do the substitution.  Return true if at least one substitution was done, and false otherwise.
-    virtual lbool retrieveSubstitutions(vec<PtAsgn>& units, Map<PTRef,PtAsgn,PTRefHash>& substs);
+    bool varsubstitute(PTRef  root, const Map<PTRef, PtAsgn, PTRefHash> & substs, PTRef & tr_new);  // Do the substitution.  Return true if at least one substitution was done, and false otherwise.
+    virtual lbool retrieveSubstitutions(const vec<PtAsgn>& units, Map<PTRef,PtAsgn,PTRefHash>& substs);
 
     class SubstNode {
         int procChild;
@@ -541,21 +541,7 @@ class Logic {
         flaPartitionMap.store_top_level_fla_index(tr, n);
         term_store.assignPartition(n, tr);
     }
-#endif
 
-    bool canInterpolate()
-    {
-#ifdef PRODUCE_PROOF
-//        return config.produce_inter() && partitions.getSize() >= 2;
-        return config.produce_inter() > 0;
-#else
-        return false;
-#endif //PRODUCE_PROOF
-    }
-
-
-#ifdef PRODUCE_PROOF
-//    void setIPartitionsIte(PTRef pref);
     ipartitions_t& getClauseClassMask(CRef l) { return clause_class[l]; }
     ipartitions_t& getVarClassMask(Var l) { return var_class[l]; }
     void addClauseClassMask(CRef l, const ipartitions_t& toadd);

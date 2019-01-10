@@ -71,9 +71,7 @@ Lit TermMapper::getLit(PTRef r) const {
     bool sgn;
     PTRef p;
     getTerm(r, p, sgn);
-#ifdef PEDANTIC_DEBUG
     assert(logic.getPterm(p).hasVar());
-#endif
     return mkLit(logic.getPterm(p).getVar(), sgn);
 }
 
@@ -88,6 +86,26 @@ Var TermMapper::getVar(PTRef r) const {
     PTRef p;
     getVar(r, p, v);
     return logic.getPterm(p).getVar();
+}
+
+const Lit TermMapper::getOrCreateLit(PTRef ptr) {
+    PTRef p_tr;
+    bool sgn;
+    Var v;
+    this->getTerm(ptr, p_tr, sgn);
+
+    Pterm& p = logic.getPterm(p_tr);
+    if (p.getVar() == -1)
+    {
+        v = this->addBinding(p_tr);
+        assert(!logic.isTheoryTerm(p_tr) || logic.okForBoolVar(p_tr));
+    }
+    else{
+        v = logic.getPterm(p_tr).getVar();
+    }
+    Lit l = mkLit (v, sgn);
+
+    return l;
 }
 
 

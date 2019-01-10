@@ -28,7 +28,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define SMTSOLVER_H
 
 #include "SolverTypes.h"
-#include "Global.h"
 
 class THandler; // Forward declaration
 struct SMTConfig; // Forward declaration
@@ -62,7 +61,6 @@ protected:
   virtual void   addVar        (Var v)                      = 0;
   virtual Var    newVar        ( bool = true, bool = true ) = 0;
 
-//  Egraph &    egraph;         // Stores Sgraph
   SMTConfig & config;         // Stores Config
   THandler  & theory_handler; // Handles theory
 public:

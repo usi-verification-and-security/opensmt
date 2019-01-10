@@ -53,8 +53,6 @@ class UFTHandler : public TSolverHandler
     virtual const Logic& getLogic() const;
 
 #ifdef PRODUCE_PROOF
-    virtual TheoryInterpolator* getTheoryInterpolator();
-
     virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels);
 #endif // PRODUCE_PROOF
 };

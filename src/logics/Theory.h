@@ -142,19 +142,18 @@ class Theory
   protected:
     vec<DedElem>        deductions;
     SMTConfig &         config;
-    PTRef getCollateFunction(vec<PFRef>& formulas, int curr);
+    PTRef getCollateFunction(const vec<PFRef> & formulas, int curr);
     Theory(SMTConfig &c) : config(c) {}
     void setSubstitutions(Map<PTRef,PtAsgn,PTRefHash>& substs);// { getTSolverHandler().setSubstitutions(substs); }
   public:
     PushFrameAllocator      pfstore {1024};
     virtual TermMapper     &getTmap() = 0;
-    const Lit               findLit(PTRef ptr); // Bind the term to a Boolean variable
     virtual Logic          &getLogic()              = 0;
     virtual TSolverHandler &getTSolverHandler()     = 0;
     virtual TSolverHandler *getTSolverHandler_new(vec<DedElem>&) = 0;
     virtual bool            simplify(vec<PFRef>&, int) = 0; // Simplify a vector of PushFrames in an incrementality-aware manner
     vec<DedElem>           &getDeductionVec();//   { return deductions; }
-    bool                    computeSubstitutions(PTRef coll_f, vec<PFRef>& frames, int curr);
+    bool                    computeSubstitutions(PTRef coll_f, const vec<PFRef>& frames, int curr);
     void                    printFramesAsQuery(vec<PFRef>& en_frames, std::ostream& s);
     virtual                ~Theory()                           {};
 };

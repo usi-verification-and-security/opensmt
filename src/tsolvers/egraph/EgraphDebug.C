@@ -243,21 +243,6 @@ char* Egraph::printEqClass(PTRef tr) const {
     return out;
 }
 
-bool Egraph::isEqual(PTRef tr_x, PTRef tr_y) const {
-
-    const ERef er = enode_store.termToERef[tr_x];
-    ERef c_er = er;
-
-    while (true) {
-        const Enode& en = enode_store[c_er];
-        ERef next_er = en.getNext();
-        if (next_er == er) break;
-        const Enode& en_o = enode_store[next_er];
-        if (en_o.getTerm() == tr_y) return true;
-        c_er = next_er;
-    }
-    return false;
-}
 char* Egraph::printValue(PTRef tr)
 {
     char* tmp_out;
@@ -270,29 +255,6 @@ char* Egraph::printValue(PTRef tr)
     free(tmp_dist);
     return tmp_out;
 }
-
-//std::string Egraph::printExplanationTree(ERef x)
-//{
-//    stringstream os;
-//    while ( x != ERef_Undef ) {
-//        os << toString(x);
-//        if (getEnode(x).getExpParent() != ERef_Undef) {
-//            os << " --[";
-//            if (getEnode(x).getExpReason().tr == PTRef_Undef) {
-//                os << "<";
-//                for (int i = 0; i < logic.getPterm(x).size(); i++)
-//                    os << logic.printTerm(logic.getPterm(x)[i]) << " ";
-//                os << ">";
-//            }
-//            else
-//                os << (logic.getPterm(x).getExpReason().sgn == l_True ? "" : "not ") << logic.printTerm(logic.getPterm(x).getExpReason().tr);
-//            if ( logic.getPterm(x).getExpParent() != PTRef_Undef )
-//                os << "]--> ";
-//        }
-//        x = logic.getPterm(x).getExpParent();
-//    }
-//    return os.str();
-//}
 
 std::string Egraph::printExplanationTreeDotty(ERef x)
 {
@@ -424,6 +386,19 @@ void Egraph::checkRefConsistency() {
             assert(forbid_allocator[forbid].getId() == i);
         }
     }
+}
+
+std::string Egraph::toString(ERef er) const {
+    if (er == ERef_Nil) { return "empty list" ; }
+    if (er == ERef_Undef) { return "undef"; }
+    const Enode & node = getEnode(er);
+    if (node.isSymb()) {
+        return logic.printSym(node.getSymb());
+    }
+    if (node.isTerm()) {
+        return logic.printTerm(node.getTerm());
+    }
+    return "List with head " + toString(node.getCar()) + "\nand tail " + toString(node.getCdr());
 }
 
 /*

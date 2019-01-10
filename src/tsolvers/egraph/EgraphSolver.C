@@ -24,6 +24,38 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
+/********************************************************************
+The algorithm and data structures are inspired by the following paper:
+
+@article{Detlefs:2005:STP:1066100.1066102,
+ author = {Detlefs, David and Nelson, Greg and Saxe, James B.},
+ title = {Simplify: A Theorem Prover for Program Checking},
+ journal = {J. ACM},
+ issue_date = {May 2005},
+ volume = {52},
+ number = {3},
+ month = may,
+ year = {2005},
+ issn = {0004-5411},
+ pages = {365--473},
+ numpages = {109},
+ url = {http://doi.acm.org/10.1145/1066100.1066102},
+ doi = {10.1145/1066100.1066102},
+ acmid = {1066102},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ keywords = {Theorem proving, decision procedures, program checking},
+}
+
+ The important part describing the merge and its undo is described in section 7 - The E-graph in Detail
+
+ The following changes have been made to the merge algorithm:
+ Old signatures are no longer removed from the table of signatures (also they now don't have to be reinserted back in undo)
+ This means that the table can grow in memory but we can skip the whole 5.2 from the merge, so we save one whole pass through the parents.
+
+*********************************************************************/
+
+
 #include "Egraph.h"
 #include "Enode.h"
 //#include "LA.h"
@@ -63,21 +95,9 @@ Egraph::Egraph(SMTConfig & c, Logic& l , vec<DedElem>& d)
       , ERef_Nil           ( enode_store.get_Nil() )
       , fa_garbage_frac    ( 0.5 )
       , active_dup1        ( false )
-      , active_dup2        ( false )
       , dup_count1         ( 0 )
-      , dup_count2         ( 0 )
-      , active_dup_map1    ( false )
-      , active_dup_map2    ( false )
-      , dup_map_count1     ( 0 )
-      , dup_map_count2     ( 0 )
       , congruence_running ( false )
       , time_stamp         ( 0 )
-#ifdef PRODUCE_PROOF
-      , iformula           ( 1 )
-      , cgraph_            ( new CGraph( *this, config, logic ) )
-      , cgraph(NULL)
-      , automatic_coloring ( false )
-#endif
 {
     // For the uninterpreted predicates to work we need to have
     // two special terms true and false, and an asserted disequality
@@ -98,8 +118,6 @@ Egraph::Egraph(SMTConfig & c, Logic& l , vec<DedElem>& d)
 
     PTRef t = logic.getTerm_true();
     PTRef f = logic.getTerm_false();
-    enode_store[t].setConstant(t);
-    enode_store[f].setConstant(f);
 
     enode_store.ERef_True  = enode_store.termToERef[t];
     enode_store.ERef_False = enode_store.termToERef[f];
@@ -217,8 +235,9 @@ PTRef Egraph::getSuggestion( )
 void Egraph::getConflict( bool deduction, vec<PtAsgn>& cnfl )
 {
     (void)deduction;
-    for (int i = 0; i < explanation.size(); i++)
+    for (int i = 0; i < explanation.size(); i++) {
         cnfl.push(explanation[i]);
+    }
 #ifdef STATISTICS
     if (deduction) {
         if (cnfl.size() > tsolver_stats.max_reas_size)
@@ -239,44 +258,6 @@ void Egraph::getConflict( bool deduction, vec<PtAsgn>& cnfl )
 #endif
 }
 
-/*
-#ifdef PRODUCE_PROOF
-//Enode * Egraph::getInterpolants( logic_t & l )
-PTRef
-Egraph::getInterpolants(const ipartitions_t & p)
-{
-  assert( config.produce_inter() );
-  assert(cgraphs.size() == 1);
-  PTRef itp = PTRef_Undef;
-  vec<PTRef> and_args;
-  cerr << "Generating interpolants for " << cgraphs.size() << " conflicts" << endl;
-  for(int i = 0; i < cgraphs.size(); ++i)
-  {
-      PTRef pi = cgraphs[i]->getInterpolant(p);
-      and_args.push(pi);
-      if(config.certify_inter())
-          cgraphs[i]->verifyInterpolantWithExternalTool(p);
-      cerr << ";Partial interpolant " << i << ": " << logic.printTerm(pi) << endl;
-      int ncon, neq, nuf;
-      logic.collectStats(pi, ncon, neq, nuf);
-      cerr << ";Partial interpolant " << i << " data: \n";
-      cerr << ";Number of connectives: " << ncon << '\n';
-      cerr << ";Number of equalities: " << neq << '\n';
-      cerr << ";Number of UF: " << nuf << endl;
-  }
-  itp = logic.mkAnd(and_args);
-  return itp;
-  //assert( 0 <= conf_index && conf_index < (int)tsolvers.size( ) );
-  //if ( conf_index == 0 ) 
-  //{
-  //  l = QF_UF;
-  //  return interpolants;
-  //}
-  //return tsolvers[ conf_index ]->getInterpolants( l );
-}
-#endif
-*/
-
 void Egraph::clearModel()
 {
     values.clear();
@@ -288,7 +269,7 @@ void Egraph::computeModel( )
     if (values_ok == true)
         return;
 
-    const vec<ERef>& enodes = enode_store.getEnodes();
+    const vec<ERef>& enodes = enode_store.getTermEnodes();
     for (int i = 0; i < enodes.size(); i++) {
         if (values.has(enodes[i]))
             continue;
@@ -297,63 +278,6 @@ void Egraph::computeModel( )
     }
     values_ok = true;
 }
-
-int Egraph::countEqClasses()
-{
-    int n_classes = 0;
-    Map<ERef,bool,ERefHash> eq_classes;
-    const vec<ERef>& enodes = enode_store.getEnodes();
-    for (int i = 0; i < enodes.size(); i++) {
-        if (eq_classes.has(enodes[i]))
-            n_classes++;
-    }
-    return n_classes;
-}
-
-//void Egraph::printModel( ostream & os )
-//{
-//  assert( config.produce_models );
-//  computeModel( );
-//  //
-//  // Print values
-//  //
-//  for( set< Enode * >::iterator it = variables.begin( )
-//      ; it != variables.end( )
-//      ; it ++ )
-//  {
-//    // Retrieve enode
-//    Enode * v = *it;
-//    // Print depending on type
-//    if ( v->hasSortBool( ) )
-//      continue;
-//    else if ( v->hasSortInt( )
-//	   || v->hasSortReal( ) )
-//    {
-//      os << "(= " << v << " ";
-//      if ( v->hasValue( ) )
-//	os << v->getValue( );
-//      else
-//	os << "?";
-//      os << ")";
-//    }
-//    else if ( config.logic == QF_UF )
-//    {
-//      os << "(= " << v << " " << v->getRoot( ) << ")";
-//    }
-//    else if ( config.logic == QF_CT )
-//    {
-//      os << "(= " << v << " " << v->getValue( ) << ")";
-//    }
-//    else
-//    {
-//      opensmt_error2( "model printing unsupported for this variable: ", v );
-//    }
-//
-//    os << endl;
-//  }
-//}
-
-
 
 void Egraph::declareAtom(PTRef atom) {
     if (!isValid(atom)) { return; }
@@ -401,7 +325,7 @@ void Egraph::declareTerm(PTRef tr) {
 #endif
         PTRef rval = enode_store.addTerm(sym, cdr, tr);
         assert(rval == tr);
-        if (logic.isConstant(rval)) enode_store[rval].setConstant(rval);
+        updateParentsVector(tr);
     }
 
     // Check if termToERef contained the ref and it has been rewritten
@@ -556,8 +480,8 @@ bool Egraph::addFalse(PTRef term) {
 //
 bool Egraph::assertEq ( PTRef tr_x, PTRef tr_y, PtAsgn r )
 {
-    ERef x = enode_store.termToERef[tr_x];
-    ERef y = enode_store.termToERef[tr_y];
+    ERef x = termToERef(tr_x);
+    ERef y = termToERef(tr_y);
     assert( getEnode(x).isTerm() );
     assert( getEnode(y).isTerm() );
     assert( pending.size() == 0 );
@@ -603,8 +527,8 @@ bool Egraph::mergeLoop( PtAsgn reason )
         assert( pending.size( ) % 2 == 0 );
         ERef p = pending.last( ); pending.pop( );
         ERef q = pending.last( ); pending.pop( );
-        const Enode& en_p = enode_store[p];
-        const Enode& en_q = enode_store[q];
+        const Enode& en_p = getEnode(p);
+        const Enode& en_q = getEnode(q);
 
         if ( en_p.getRoot( ) == en_q.getRoot( ) )
             continue;
@@ -646,12 +570,12 @@ bool Egraph::mergeLoop( PtAsgn reason )
         else
             cerr << "Due to different constants" << endl;
 #endif
-        has_explanation = true;
         // Conflict detected. We should retrieve the explanation
         // We have to distinguish 2 cases. If the reason for the
         // conflict is ERef_Undef, it means that a conflict arises because
         // we tried to merge two classes that are assigned to different
         // constants, otherwise we have a proper reason
+        has_explanation = true;
         ERef reason_1 = ERef_Undef;
         ERef reason_2 = ERef_Undef;
         //
@@ -661,66 +585,10 @@ bool Egraph::mergeLoop( PtAsgn reason )
         ERef enr_qroot = en_q.getRoot();
 
         if ( reason_inequality.tr == PTRef_Undef ) {
-            const Enode& en_proot = getEnode(enr_proot);
-            const Enode& en_qroot = getEnode(enr_qroot);
-            assert(en_proot.getConstant() != PTRef_Undef);
-            assert(en_qroot.getConstant() != PTRef_Undef);
-            assert(enr_proot != enr_qroot);
-#ifdef PRODUCE_PROOF
-            if ( config.produce_inter() > 0 ) {
-                cgraph_->setConf( en_proot.getConstant( )
-                        , en_qroot.getConstant( )
-                        , PTRef_Undef );
-            }
-#endif
-            //
-            // We need explaining
-            //
-            // 1. why p and p->constant are equal
-#ifdef VERBOSE_EUF
-            cerr << "constant pushing (1): "
-                 << logic.printTerm(en_p.getTerm()) << " and "
-                 << logic.printTerm(en_proot.getConstant()) << endl;
-#endif
-            exp_pending.push( p );
-            exp_pending.push( enr_proot );
-            // 2. why q and q->constant are equal
-#ifdef VERBOSE_EUF
-            cerr << "constant pushing (2): "
-                 << logic.printTerm(en_q.getTerm()) << " and "
-                 << logic.printTerm(en_qroot.getConstant()) << endl;
-#endif
-            exp_pending.push( q );
-            exp_pending.push( enr_qroot );
-            // 3. why p and q are equal
-#ifdef VERBOSE_EUF
-            cerr << "constant pushing (3): "
-                 << logic.printTerm(en_q.getTerm()) << " and "
-                 << logic.printTerm(en_p.getTerm()) << endl;
-#endif
-            exp_pending.push( q );
-            exp_pending.push( p );
-#ifdef VERBOSE_EUF
-            cerr << "Explain XXX" << endl;
-#endif
-            initDup1( );
-            expExplain( );
- #ifdef PRODUCE_PROOF
-            if ( config.produce_inter() > 0 ) {
-                delete cgraph;
-                cgraph = cgraph_;
-                //cgraphs.push(cgraph_);
-                cgraph_ = new CGraph(*this, config, logic);
-            }
-#endif
-           doneDup1( );
-            expCleanup(); // Should be organized better...
+            explainConstants(p,q);
         }
         // Does the reason term correspond to disequality symbol
         else if ( logic.isDisequality(logic.getPterm(reason_inequality.tr).symb()) ) {
-            // The reason is a distinction, but skip the false equality
-            if (reason_inequality.tr != Eq_FALSE)
-                explanation.push( reason_inequality );
             // We should iterate through the elements
             // of the distinction and find which atoms
             // are causing the conflict
@@ -744,11 +612,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
 #ifdef VERBOSE_EUF
             cerr << "Explain YYY" << endl;
 #endif
-#ifdef PRODUCE_PROOF
-            expExplain( reason_1, reason_2, reason_inequality.tr );
-#else
-            expExplain( reason_1, reason_2 );
-#endif
+            doExplain(reason_1, reason_2, reason_inequality);
         }
         else if ( logic.isEquality(logic.getPterm(reason_inequality.tr).symb()) ) {
             // The reason is a negated equality
@@ -757,9 +621,6 @@ bool Egraph::mergeLoop( PtAsgn reason )
             cerr << "Reason inequality " << logic.printTerm(reason_inequality.tr) << endl;
 #endif
             const Pterm& pt_reason = logic.getPterm(reason_inequality.tr);
-
-            if (reason_inequality.tr != Eq_FALSE)
-                explanation.push(reason_inequality);
 
             // The equality
             // If properly booleanized, the left and righ sides of equality
@@ -775,11 +636,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
 #ifdef VERBOSE_EUF
             cerr << "Explain ZZZ " << toString(reason_1) << " " << toString(reason_2) << " " << logic.printTerm(reason_inequality.tr) << endl;
 #endif
-#ifdef PRODUCE_PROOF
-            expExplain( reason_1, reason_2, reason_inequality.tr );
-#else
-            expExplain( reason_1, reason_2 );
-#endif
+            doExplain(reason_1, reason_2, reason_inequality);
         }
         else if ( logic.isUP(reason_inequality.tr) ) {
             // The reason is an uninterpreted predicate
@@ -831,16 +688,10 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
 
     // They can't be different if the nodes are in the same class
     if ( p == q ) {
-        if (r.tr != Eq_FALSE) explanation.push( r );
 #ifdef VERBOSE_EUF
         cerr << "Explain XXY" << endl;
 #endif
-#ifdef PRODUCE_PROOF
-        expExplain( xe, ye, r.tr );
-#else
-        expExplain( xe, ye );
-#endif
-        has_explanation = true;
+        doExplain(xe,ye,r);
         return false;
     }
 
@@ -952,10 +803,6 @@ bool Egraph::assertDist( PTRef tr_d, PtAsgn tr_r )
 #endif
         if ( root_to_enode.has(root_id) ) {
             // Two equivalent nodes in the same distinction. Conflict
-            if (tr_r.tr != Eq_FALSE) {
-                explanation.push(tr_r);
-                has_explanation = true;
-            }
             // Extract the other node with the same root
             ERef p = root_to_enode[root_id];
 #ifdef VERBOSE_EUF
@@ -967,11 +814,7 @@ bool Egraph::assertDist( PTRef tr_d, PtAsgn tr_r )
 #ifdef VERBOSE_EUF
             cerr << "Explain XYX" << endl;
 #endif
-#ifdef PRODUCE_PROOF
-            expExplain( er_c, p, tr_r.tr );
-#else
-            expExplain( er_c, p);
-#endif
+            doExplain( er_c, p, tr_r);
             // Revert changes, as the current context is inconsistent
             while( nodes_changed.size() != 0 ) {
                 ERef n = nodes_changed.last();
@@ -1057,101 +900,7 @@ void Egraph::backtrackToStackSize ( size_t size ) {
             neq_list.pop( );
         }
 #endif
-        else if ( last_action == INITCONG ) {
-            assert( config.isIncremental() );
-#if VERBOSE
-            cerr << "UNDO: BEG INITCONG " << e << endl;
-#endif
-            ERef e = u.arg.er;
-            Enode& en_e = enode_store[e];
 
-            ERef car = en_e.getCar( );
-            ERef cdr = en_e.getCdr( );
-            assert( car != ERef_Undef );
-            assert( cdr != ERef_Undef );
-
-            if ( en_e.getCgPtr( ) == e ) {
-                assert( enode_store.lookupSig( e ) == e );
-                // Remove from sig_tab
-                enode_store.removeSig( e );
-            }
-            else {
-                assert( enode_store.lookupSig( e ) != e );
-                en_e.setCgPtr( e );
-            }
-
-            assert( initialized.find( en_e.getId( ) ) != initialized.end( ) );
-            // Remove from initialized nodes
-            initialized.erase( en_e.getId( ) );
-            assert( initialized.find( en_e.getId( ) ) == initialized.end( ) );
-            // Remove parents info
-//            if ( en_e.isList( ) )
-//                enode_store.removeParent( car, e );
-//            enode_store.removeParent( cdr, e );
-
-            // Deallocate congruence data
-            // This sounds like a huge overhead!
-//      assert( en_e.hasCongData( ) );
-//      e->deallocCongData( );
-//      assert( !e->hasCongData( ) );
-        }
-        else if ( last_action == FAKE_MERGE ) {
-#if VERBOSE
-            cerr << "UNDO: BEGIN FAKE MERGE " << e << endl;
-#endif
-            ERef e = u.arg.er;
-            Enode& en_e = enode_store[e];
-#ifdef VERBOSE_EUF
-            cerr << "Undo fake merge: " << logic.printTerm(en_e.getTerm()) << endl;
-#endif
-
-            assert( initialized.find( en_e.getId( ) ) != initialized.end( ) );
-            initialized.erase( en_e.getId( ) );
-            assert( initialized.find( en_e.getId( ) ) == initialized.end( ) );
-//      assert( e->hasCongData( ) );
-//      e->deallocCongData( );
-//      assert( !e->hasCongData( ) );
-        }
-        else if ( last_action == FAKE_INSERT ) {
-#if VERBOSE
-            cerr << "UNDO: BEGIN FAKE INSERT " << e << endl;
-#endif
-            ERef e = u.arg.er;
-            Enode& en_e = enode_store[e];
-#ifdef VERBOSE_EUF
-            cerr << "Undo fake insert: " << logic.printTerm(en_e.getTerm()) << endl;
-#endif
-
-            assert( en_e.isTerm( ) || en_e.isList( ) );
-            ERef car = en_e.getCar( );
-            ERef cdr = en_e.getCdr( );
-            assert( car != ERef_Nil );
-            assert( cdr != ERef_Nil );
-
-            // Node must be there if its a congruence
-            // root and it has to be removed
-            if ( en_e.getCgPtr() == e ) {
-                assert( enode_store.lookupSig( e ) == e );
-                enode_store.removeSig( e );
-            }
-            // Otherwise sets it back to itself
-            else {
-                assert( enode_store.lookupSig( e ) != e );
-                en_e.setCgPtr( e );
-            }
-
-            // Remove Parent info
-//            if ( en_e.isList( ) )
-//                enode_store.removeParent( car, e );
-//            enode_store.removeParent( cdr, e );
-            // Remove initialization
-            assert( initialized.find( en_e.getId( ) ) != initialized.end( ) );
-            initialized.erase( en_e.getId( ) );
-            // Dealloc cong data
-//      assert( e->hasCongData( ) );
-//      e->deallocCongData( );
-//      assert( !e->hasCongData( ) );
-        }
         else if ( last_action == DISEQ ) {
             ERef e = u.arg.er;
             Enode& en_e = enode_store[e];
@@ -1161,14 +910,8 @@ void Egraph::backtrackToStackSize ( size_t size ) {
             PTRef ptr = u.arg.ptr;
             undoDistinction( ptr );
         }
-//    else if ( last_action == SYMB )
-//      removeSymbol( e );
-//    else if ( last_action == NUMB )
-//      removeNumber( e );
         else if ( last_action == CONS )
 //      undoCons( e );
-//    else if ( last_action == INSERT_STORE )
-//      removeStore( e );
         ;
         else if ( last_action == SET_POLARITY) {
             assert(hasPolarity(u.arg.ptr));
@@ -1179,84 +922,6 @@ void Egraph::backtrackToStackSize ( size_t size ) {
 
 }
 
-// bool Egraph::checkDupClause( Enode * c1, Enode * c2 )
-// {
-//   assert( c1 );
-//   assert( c2 );
-//   // Swap let cl3 be the lowest clause
-//   if ( c1->getId( ) > c2->getId( ) )
-//   {
-//     Enode * tmp = c1;
-//     c1 = c2;
-//     c2 = tmp;
-//   }
-// 
-// #ifdef BUILD_64
-//   enodeid_pair_t sig = encode( c1->getId( ), c2->getId( ) );
-// #else
-//   Pair( enodeid_t ) sig = make_pair( c1->getId( ), c2->getId( ) );
-// #endif
-// 
-//   const bool res = clauses_sent.insert( sig ).second == false;
-//   return res;
-// }
-
-//void Egraph::splitOnDemand( vector< Enode * > & c, const int
-//#ifdef STATISTICS
-//    id 
-//#endif
-//    )
-//{
-//  assert( config.incremental );
-//  // Assume that we split only of size 2
-//  assert( c.size( ) == 2 );
-//  if ( checkDupClause( c[ 0 ], c[ 1 ] ) ) return;
-//#ifdef STATISTICS
-//  assert( id >= 0 );
-//  assert( id < static_cast< int >( tsolvers_stats.size( ) ) );
-//  TSolverStats & ts = *tsolvers_stats[ id ];
-//  if ( (long)c.size( ) > ts.max_sod_size )
-//    ts.max_sod_size = c.size( );
-//  if ( (long)c.size( ) < ts.min_sod_size )
-//    ts.min_sod_size = c.size( );
-//  ts.sod_sent ++;
-//  ts.sod_done ++;
-//  ts.avg_sod_size += c.size( );
-//#endif
-//
-//#ifdef PRODUCE_PROOF
-//  assert( config.produce_inter == 0 || c[ 0 ]->getIPartitions( ) != 0 );
-//  assert( config.produce_inter == 0 || c[ 1 ]->getIPartitions( ) != 0 );
-//  // FIXME: should compute interpolant ...
-//  solver->addSMTAxiomClause( c, NULL );
-//#else
-//  solver->addSMTAxiomClause( c );
-//#endif
-//}
-
-//void Egraph::splitOnDemand( Enode * c, const int
-//#ifdef STATISTICS
-//    id 
-//#endif
-//    )
-//{
-//  assert( c );
-//
-//#ifdef STATISTICS
-//  assert( id >= 0 );
-//  assert( id < static_cast< int >( tsolvers_stats.size( ) ) );
-//  TSolverStats & ts = *tsolvers_stats[ id ];
-//  if ( ts.max_sod_size < 1 )
-//    ts.max_sod_size = 1;
-//  if ( ts.min_sod_size > 1 )
-//    ts.min_sod_size = 1;
-//  ts.sod_sent ++;
-//  ts.sod_done ++;
-//  ts.avg_sod_size ++;
-//#endif
-//
-//  solver->addNewAtom( c );
-//}
 
 //=============================================================================
 // Congruence Closure Routines
@@ -1289,269 +954,89 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     { // sanity checks
         const Enode& an_x = getEnode(x);
         const Enode& an_y = getEnode(y);
-
-        if (an_x.isTerm()) {
-            assert( !isConstant(x) || !isConstant(y) );
-//        assert( !isConstant(x) || an_x.getSize() == 1 );
-//        assert( !isConstant(y) || an_y.getSize() == 1 );
-        }
+        assert( an_x.type() == an_y.type() );
+        assert( !an_x.isTerm() || !isConstant(x) || !isConstant(y));
         assert( an_x.getRoot( ) != an_y.getRoot( ) );
         assert( x == an_x.getRoot( ) );
         assert( y == an_y.getRoot( ) );
     }
 
-
-    // Ensure that the constant or the one with a larger equivalence
-    // class will be in x (and will become the root)
+    // Step 1: Ensure that the constant or the one with a larger equivalence
+    // class will be in x (and will become the root). Constants must be roots! It is an invariant that other code depends on!
     if (isConstant(y) ||
-        (!(isConstant(x)) && (getEnode(x).getSize() < getEnode(y).getSize())))
+        (!(isConstant(x)) && (getParentsSize(x) < getParentsSize(y))))
     {
-        ERef tmp = x;
-        x = y;
-        y = tmp;
-    }
-    // Get the references right here
-    Enode& en_x = getEnode(x);
-    Enode& en_y = getEnode(y);
-
-    assert(en_x.type() == en_y.type());
-    assert(!en_y.isTerm() || !isConstant(y));
-
-    // TODO:
-    // Propagate equalities to other ordinary theories
-    //
-
-    // Update forbid list for x by adding elements of y
-    if ( en_y.getForbid( ) != ELRef_Undef ) {
-        // We assign the same forbid list
-        if ( en_x.getForbid( ) == ELRef_Undef ) {
-            en_x.setForbid( en_y.getForbid( ) );
-            forbid_allocator.addReference(en_x.getForbid(), x);
-        }
-        // Otherwise we splice the two lists
-        else {
-            ELRef tmp = forbid_allocator[en_x.getForbid()].link;
-            forbid_allocator[en_x.getForbid()].link = forbid_allocator[en_y.getForbid()].link;
-            forbid_allocator[en_y.getForbid()].link = tmp;
-        }
-    }
-#ifdef GC_DEBUG
-    checkRefConsistency();
-    checkForbidReferences(x);
-#endif
-    // Merge distinction classes
-    en_x.setDistClasses( ( en_x.getDistClasses( ) | en_y.getDistClasses( ) ) );
-    // Assign w to the class with fewer parents
-    ERef w = en_x.getParentSize() < en_y.getParentSize( ) ? x : y ;
-    // Visit each parent of w, according to the type of w
-    // and remove each congruence root from the signature table
-    const Enode& en_w = getEnode(w);
-    ERef p = en_w.getParent();
-    const ERef pstart = p;
-    const bool scdr = en_w.isList( );
-    for ( ; p != ERef_Undef ; ) {
-        const Enode& en_p = getEnode(p);
-        assert ( en_p.isTerm( ) || en_p.isList( ) );
-        // If p is a congruence root
-        if ( p == en_p.getCgPtr( ) )
-            enode_store.removeSig( p );
-        // Next element
-        p = scdr ? en_p.getSameCdr( ) : en_p.getSameCar( ) ;
-        // End of cycle
-        if ( p == pstart )
-            p = ERef_Undef;
+        std::swap(x,y);
     }
 
-    // Compute deductions that follows from
-    // merging x and y. Probably this function
-    // could be partially embedded into the next
-    // cycle. However, for the sake of simplicity
-    // we prefer to separate the two contexts
+    // MB: Before we actually merge the classes, we check if we are not merging with eq. class of constant True or False
     if ( config.uf_theory_propagation > 0 ) {
         deduce( x, y, reason );
     }
 
-    // Perform the union of the two equivalence classes
-    // i.e. reroot every node in y's class to point to x
+    // Get the references right here
+    Enode& en_x = getEnode(x);
+    Enode& en_y = getEnode(y);
 
-    ERef v = y;
-    const ERef vstart = v;
-#ifdef VERBOSE_EUF
-    bool constant_shouldset = false;
-    bool constant_set = false;
+    assert(!en_y.isTerm() || !isConstant(y));
+
+    // Step 2: Propagate equalities to other ordinary theories
+    // MB: We are not doing that
+    // Step 3: MB: Also not relevant for us
+
+    // Step 4: Update forbid list for x by adding elements of y
+    mergeForbidLists(en_x, en_y);
+#ifdef GC_DEBUG
+    checkRefConsistency();
+    checkForbidReferences(x);
 #endif
-    while (true) {
-        Enode& en_v = getEnode(v);
-        // XXX
-#ifdef VERBOSE_EUF
-        if (isConstant(v)) {
-            cerr << "Rerooting " << logic.printTerm(en_v.getTerm()) << endl;
-            constant_shouldset = true;
-        }
-#endif
-        en_v.setRoot(x);
-        v = en_v.getNext();
-        if (v == vstart)
-            break;
-    }
+    // Step 4: Merge distinction classes
+    mergeDistinctionClasses(en_x, en_y);
 
-    // Splice next lists
-    ERef tmp = en_x.getNext();
-    en_x.setNext( en_y.getNext() );
-    en_y.setNext( tmp );
-    // Update size of the congruence class
-    en_x.setSize( en_x.getSize( ) + en_y.getSize( ) );
+    // Step 5: Consists of several operations
 
-    // Preserve signatures of larger parent set
-    if ( en_x.getParentSize() < en_y.getParentSize() )
-    {
-        enodeid_t tmp = en_x.getCid();
-        en_x.setCid( en_y.getCid() );
-        en_y.setCid( tmp );
-    }
+    // Step 5.2: Remove old signatures of y’s class’s parents.
+    // MB: This step is skipped now, we keep the old signatures in the table
+//     removeSignaturesOfParentsThatAreCongruenceRoots(w);
+    // remove parents of y from other use vectors
+//    processParentsBeforeMerge(y);
 
-    // Insert new signatures and propagate congruences
-    p = en_w.getParent();
-    for ( ; p != ERef_Undef; ) {
-        Enode& en_p = getEnode(p);
-        // If p is a congruence root
-        if ( p == en_p.getCgPtr( ) ) {
-            //ERef q = EnodeStore.insertSig(p);
-            // Signature already present
-            //if ( q != p )
-            if (enode_store.containsSig(p)) {
-                ERef q = enode_store.lookupSig(p);
-                en_p.setCgPtr( q );
-                pending.push( p );
-                pending.push( q );
-            }
-            else enode_store.insertSig(p);
-        }
-        // Next element
-        p = scdr ? en_p.getSameCdr( ) : en_p.getSameCar( ) ;
-        // Exit if cycle complete
-        if ( p == pstart )
-            p = ERef_Undef;
-    }
 
-    // Merge parent lists
-    if ( en_y.getParent() != ERef_Undef ) {
-        // If x has no parents, we assign y's one
-        if ( en_x.getParent() == ERef_Undef ) {
-            assert( en_x.type() == en_y.type() );
-            en_x.setParent( en_y.getParent() );
-        }
-        // Splice the parent lists
-        else {
-            if ( en_x.isList() ) {
-                ERef tmp = enode_store[en_x.getParent()].getSameCdr();
-                enode_store[en_x.getParent()].setSameCdr( enode_store[en_y.getParent()].getSameCdr( ) );
-                enode_store[en_y.getParent()].setSameCdr( tmp );
-            }
-            else {
-                ERef tmp = enode_store[en_x.getParent()].getSameCar();
-                enode_store[en_x.getParent()].setSameCar( enode_store[en_y.getParent()].getSameCar() );
-                enode_store[en_y.getParent()].setSameCar( tmp );
-            }
-        }
-    }
-    // Adjust parent size
-    en_x.setParentSize( en_x.getParentSize( ) + en_y.getParentSize( ) );
-    // Store info about the constant
-    if (en_y.isTerm() && en_y.getConstant() != PTRef_Undef) {
-        assert(en_x.getConstant() == PTRef_Undef);
-        en_x.setConstant( en_y.getConstant() );
-#ifdef VERBOSE_EUF
-        constant_set = true;
-#endif
-    }
-    // Store info about the constant
-    else if (en_x.isTerm() && en_x.getConstant() != PTRef_Undef) {
-        assert(en_y.getConstant() == PTRef_Undef);
-        en_y.setConstant(en_x.getConstant());
-#ifdef VERBOSE_EUF
-        constant_set = true;
-#endif
-    }
 
-#ifdef VERBOSE_EUF
-    if (constant_shouldset && !constant_set)
-        assert(false);
-#endif
+    // Step 5.3: Union of equivalence classes
+    mergeEquivalenceClasses(x, y);
 
-  // Push undo record
+    // Step 5.5: Insert new signatures and propagate congruences
+    processParentsAfterMerge(parents[en_y.getCid()], y);
+
+    // Step 6: Merge parent lists
+//    mergeParentLists(en_x, en_y);
+    // Step 7: Not relevant -> skipped
+
+    // Step 8: Push undo record
     undo_stack_main.push( Undo(MERGE,y) );
 }
 
 //
 // Deduce facts from the merge of x and y
 //
-// FIXME The implementation of polarity deduction should be based on just checking the
-//       enode against true/false.  Or possibly the trail should be available for checking.
-//       2014-07-01 fixed?
-//
+// Currently, it only deduces if something we are merging into eq. class of a constant True or False
 void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
     if (enode_store[x].isList()) return;
     lbool deduced_polarity = l_Undef;
 
-
-    PTRef x_const = enode_store[x].getConstant();
-    if ( x_const == logic.getTerm_true() )
+    // Depends on the invariant that constants are always the root of its eq. class.
+    // Also we assume that y is root of the class being merged into class with root x
+    // That means only x can be constant.
+    assert(y != enode_store.ERef_True && y != enode_store.ERef_False);
+    if ( x == enode_store.ERef_True  ){
         deduced_polarity = l_True;
-    else if ( x_const == logic.getTerm_false() )
+    }
+    else if ( x == enode_store.ERef_False ){
         deduced_polarity = l_False;
+    }
 
-    // Let y store the representant of the class
-    // containing the facts that we are about to deduce
     if ( deduced_polarity == l_Undef ) {
-        ERef tmp = x;
-        x = y;
-        y = tmp;
-        PTRef x_const = enode_store[x].getConstant();
-        if ( x_const == logic.getTerm_true() )
-            deduced_polarity = l_True;
-        else if ( x_const == logic.getTerm_false() )
-            deduced_polarity = l_False;
-    }
-
-#ifdef VERBOSE_EUF
-    lbool deduced_polarity2 = l_Undef;
-    if ( x == enode_store.getEnode_true() )
-        deduced_polarity2 = l_True;
-    else if ( x == enode_store.getEnode_false() )
-        deduced_polarity2 = l_False;
-    else if (isEqual(enode_store[x].getTerm(), logic.getTerm_true()))
-        deduced_polarity2 = l_True;
-    else if (isEqual(enode_store[x].getTerm(), logic.getTerm_false()))
-        deduced_polarity2 = l_False;
-
-    if ( deduced_polarity2 == l_Undef ) {
-        ERef tmp = x;
-        x = y;
-        y = tmp;
-    }
-
-    if ( x == enode_store.getEnode_true() )
-        deduced_polarity2 = l_True;
-    else if ( x == enode_store.getEnode_false() )
-        deduced_polarity2 = l_False;
-    else if (isEqual(enode_store[x].getTerm(), logic.getTerm_true()))
-        deduced_polarity2 = l_True;
-    else if (isEqual(enode_store[x].getTerm(), logic.getTerm_false()))
-        deduced_polarity2 = l_False;
-
-    if (deduced_polarity != deduced_polarity2)
-        assert(false);
-#endif
-
-    if ( deduced_polarity == l_Undef ) { // True, for instance, if x & y are not boolean types, or if they are, but they have not been assigned a value yet
-#ifdef VERBOSE_EUF
-        assert(enode_store[x].isList() ||
-               (!isEqual(enode_store[x].getTerm(), logic.getTerm_true()) &&
-                !isEqual(enode_store[x].getTerm(), logic.getTerm_false()) &&
-                !isEqual(enode_store[y].getTerm(), logic.getTerm_true()) &&
-                !isEqual(enode_store[y].getTerm(), logic.getTerm_false())));
-#endif
 #ifdef NEG_DEDUCE
         // Work on negative deductions:
         // Merge of x and y results in inequalities expressed in the forbid
@@ -1603,38 +1088,36 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
 #endif // NEG_DEDUCE
         return;
     }
-
+    // x is the constant, go over the members of eq class of y and check if they have can be propagated to SAT solver
     ERef v = y;
     const ERef vstart = v;
     for (;;) {
         // We deduce only things that aren't currently assigned or
         // that we previously deduced on this branch
-        ERef sv = v;
-        PTRef sv_tr = enode_store[sv].getTerm();
-        if (logic.getPterm(sv_tr).getVar() == -1 || deduced[logic.getPterm(sv_tr).getVar()] == l_Undef) {
-            if (!hasPolarity(sv_tr) && (logic.getPterm(sv_tr).getVar() == -1 || deduced[logic.getPterm(sv_tr).getVar()] == l_Undef))
-            {
-                if (logic.getPterm(sv_tr).getVar() != -1) 
-                    deduced[logic.getPterm(sv_tr).getVar()] = {id, deduced_polarity};
-#ifdef VERBOSE_EUF
-                cerr << "Deducing ";
-                cerr << (deduced_polarity == l_False ? "not " : "");
-                cerr << logic.printTerm(enode_store[sv].getTerm());
-                cerr << " since ";
-                cerr << logic.printTerm(enode_store[x].getTerm());
-                cerr << " and ";
-                cerr << logic.printTerm(enode_store[y].getTerm());
-                cerr << " are now equal";
-                cerr << endl;
-#endif
-                th_deductions.push(PtAsgn_reason(enode_store.ERefToTerm[sv],
-                                              deduced_polarity, reason.tr));
-#ifdef STATISTICS
-                tsolver_stats.deductions_done ++;
-#endif
+        PTRef v_tr = getEnode(v).getTerm();
+        assert(logic.getPterm(v_tr).getVar() != -1);
+        if (!hasPolarity(v_tr) && deduced[logic.getPterm(v_tr).getVar()] == l_Undef) {
+            if (logic.getPterm(v_tr).getVar() != -1) {
+                deduced[logic.getPterm(v_tr).getVar()] = {id, deduced_polarity};
             }
+            assert(v_tr == enode_store.ERefToTerm[v]);
+            th_deductions.push(PtAsgn_reason(v_tr, deduced_polarity, reason.tr));
+#ifdef VERBOSE_EUF
+            cerr << "Deducing ";
+            cerr << (deduced_polarity == l_False ? "not " : "");
+            cerr << logic.printTerm(enode_store[v].getTerm());
+            cerr << " since ";
+            cerr << logic.printTerm(enode_store[x].getTerm());
+            cerr << " and ";
+            cerr << logic.printTerm(enode_store[y].getTerm());
+            cerr << " are now equal";
+            cerr << endl;
+#endif
+#ifdef STATISTICS
+            tsolver_stats.deductions_done ++;
+#endif
         }
-        v = enode_store[v].getNext( );
+        v = getEnode(v).getNext( );
         if ( v == vstart )
             break;
     }
@@ -1664,149 +1147,29 @@ void Egraph::undoMerge( ERef y )
 
     Enode& en_x = enode_store[x];
 
-    // Undoes the merge of the parent lists
-    en_x.setParentSize( en_x.getParentSize() - en_y.getParentSize() );
-    // Restore the correct parents
-    if ( en_y.getParent( ) != ERef_Undef ) {
-        // If the parents are equal, that means that
-        // y's parent has been assigned to x
-        if ( en_x.getParent( ) == en_y.getParent( ) )
-            en_x.setParent( ERef_Undef );
-        // Unsplice the parent lists
-        else {
-            assert( en_x.getParent() != ERef_Undef );
-            if ( en_x.isList( ) ) {
-                ERef tmp = enode_store[en_x.getParent()].getSameCdr();
-                enode_store[en_x.getParent()].setSameCdr( enode_store[en_y.getParent()].getSameCdr() );
-                enode_store[en_y.getParent()].setSameCdr( tmp );
-            }
-            else {
-                ERef tmp = enode_store[en_x.getParent()].getSameCar();
-                enode_store[en_x.getParent()].setSameCar( enode_store[en_y.getParent()].getSameCar() );
-                enode_store[en_y.getParent()].setSameCar( tmp );
-            }
-        }
-    }
+    // Undo Step 6 of merge:
+//    unmergeParentLists(en_x, en_y);
 
-    // Assign w to the smallest parent class
-    ERef w = en_x.getParentSize( ) < en_y.getParentSize( ) ? x : y ;
-    assert(w != ERef_Undef);
-    Enode& en_w = enode_store[w];
-    // Undoes the insertion of the modified signatures
-    ERef p = en_w.getParent( );
-    const ERef pstart = p;
-    // w might be NULL, i.e. it may not have fathers (hmm, checked for ERef_Undef above)
-    const bool scdr = w == ERef_Undef ? false : en_w.isList( );
+    // Undo Step 5 of merge
+    // Undo Case 2 of Step 5.5 of merge
+    auto & y_parents = parents[en_y.getCid()];
+    processParentsBeforeUnMerge(y_parents, y);
 
-    if (p == ERef_Undef) goto skip_cgroot_sig_removal;
-    while (true) {
-        Enode& en_p = enode_store[p];
-        assert( en_p.isTerm( ) || en_p.isList( ) );
-        // If p is a congruence root
-        if ( p == en_p.getCgPtr( ) ) {
-            assert( enode_store.lookupSig( p ) != ERef_Undef );
-            enode_store.removeSig( p );
-        }
-        // Next element
-        p = scdr ? en_p.getSameCdr( ) : en_p.getSameCar( ) ;
-        // End of cycle
-        if ( p == pstart )
-            break;
-    }
-skip_cgroot_sig_removal:
-    // Restore the size of x's class
-    en_x.setSize( en_x.getSize( ) - en_y.getSize( ) );
-    // Unsplice next lists
-    ERef tmp = en_x.getNext( );
-    en_x.setNext( en_y.getNext( ) );
-    en_y.setNext( tmp );
-    // Reroot each node of y's eq class back to y
-    ERef v = y;
-    const ERef vstart = v;
-    while (true) {
-        Enode& en_v = enode_store[v];
-        en_v.setRoot( y );
-        v = en_v.getNext( );
-        if ( v == vstart )
-            break;
-    }
-    // Undo swapping
-    if ( en_x.getParentSize( ) < en_y.getParentSize( ) ) {
-        enodeid_t tmp = en_x.getCid( );
-        en_x.setCid( en_y.getCid( ) );
-        en_y.setCid( tmp );
-    }
-    // Reinsert back signatures that have been removed during
-    // the merge operation
-    p = en_w.getParent( );
-    if (p == ERef_Undef) goto skip_signature_removal;
-    while (true) {
-        Enode& en_p = enode_store[p];
-        assert( en_p.isTerm( ) || en_p.isList( ) );
+    // Undo Step 5.4 of merge
+    // Undo Step 5.3 of merge
+    unmergeEquivalenceClasses(x, y);
 
-        ERef cg = en_p.getCgPtr();
-        Enode& en_cg = enode_store[cg];
-        // If p is a congruence root
-        if ( p == cg
-            || enode_store[en_p.getCar()].getRoot() != enode_store[en_cg.getCar()].getRoot()
-            || enode_store[en_p.getCdr()].getRoot() != enode_store[en_cg.getCdr()].getRoot() )
-        {
-            en_p.setCgPtr(p);
-        }
-        if (en_p.getCgPtr() == p) {
-#ifdef VERBOSE_EUF
-            if (enode_store.containsSig(p)) {
-                char* errmsg = enode_store.printEnode(p);
-                cerr << errmsg;
-                free(errmsg);
-                assert(false);
-            }
-#else
-            assert(!enode_store.containsSig(p));
-#endif
-            enode_store.insertSig(p);
-        }
-        // Next element
-        p = scdr ? en_p.getSameCdr( ) : en_p.getSameCar();
-        // End of cycle
-        if ( p == pstart )
-            break;
-    }
-skip_signature_removal:
-    // Restore distinction classes for x, with a set difference operation
-    en_x.setDistClasses( ( en_x.getDistClasses() & ~(en_y.getDistClasses())) );
+    // Undo Case 1 of Step 5.5 of merge
+    // Since we are skipping Step 5.2 in merge. we do not have to undo that.
+//    unmergeParentCongruenceClasses(w);
+    // re-insert parents of y
+//    processParentsAfterUnMerge(y_parents);
 
-    // Restore forbid list for x and y
-    if ( (en_x.getForbid( ) == en_y.getForbid() ) && en_x.getForbid() != ELRef_Undef ) {
-        forbid_allocator.removeRef(x, en_x.getForbid());
-        en_x.setForbid( ELRef_Undef );
-    }
-    // Unsplice back the two lists
-    else if ( en_y.getForbid( ) != ELRef_Undef ) {
-        ELRef tmp = forbid_allocator[en_x.getForbid()].link;
-        forbid_allocator[en_x.getForbid()].link = forbid_allocator[en_y.getForbid()].link;
-        forbid_allocator[en_y.getForbid()].link = tmp;
-    }
+    // Undo step 4 of Merge
+    unmergeDistinctionClasses(en_x, en_y);
+    unmergeForbidLists(en_x, en_y);
 
-    if (en_y.getConstant() != PTRef_Undef) {
-        PTRef yc = en_y.getConstant();
-        PTRef xc = en_x.getConstant();
-        assert( yc == xc );
-        // Invariant: the constant comes from one class only
-        // No merge can occur beteween terms that point to the
-        // same constant, as they would be in the same class already
-//        assert( ( yc->getRoot( ) == y && xc->getRoot( ) != x )
-//             || ( yc->getRoot( ) != y && xc->getRoot( ) == x ) );
-        // Determine from which class the constant comes from
-        if ( enode_store[yc].getRoot() == y )
-            en_x.clearConstant();
-        else
-            en_y.clearConstant();
-    }
-
-  //
-  // TODO: unmerge for ordinary theories
-  //
+    // Undo Step 2 -> not relevant
 #ifdef GC_DEBUG
     checkRefConsistency();
 #endif
@@ -1916,9 +1279,10 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r)
     // possible that the constant is the same. In fact if it was
     // the same, they would be in the same class, but they are not
     // Check if they are part of the same distinction (general distinction)
+    if ( isConstant(p) && isConstant(q)) return true;
     const Enode& en_p = getEnode(p);
     const Enode& en_q = getEnode(q);
-    if ( en_p.isTerm() && en_p.getConstant() != PTRef_Undef && en_q.getConstant() != PTRef_Undef) return true;
+
     dist_t intersection = ( en_p.getDistClasses( ) & en_q.getDistClasses( ) );
 
     if ( intersection ) {
@@ -1979,92 +1343,6 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r)
     assert( r.tr == PTRef_Undef );
     return false;
 }
-
-
-#ifdef PRODUCE_PROOF
-/*
-void Egraph::tmpMergeBegin( Enode * x, Enode * y )
-{
-  assert( config.produce_inter != 0 );
-  assert( config.logic == QF_AX
-       || config.logic == QF_AXDIFF );
-
-  if ( !x->hasCongData( ) ) x->allocCongData( );
-  if ( !y->hasCongData( ) ) y->allocCongData( );
-
-  x = x->getRoot( );
-  y = y->getRoot( );
-
-  // x will become root
-  // Swap x,y if x is not root
-  if ( x->getRoot( ) != x )
-  {
-    Enode * tmp = x;
-    x = y;
-    y = tmp;
-  }
-
-  // Swap if y is ABcommon and x no
-  if ( y->getIPartitions( ) == 6 &&
-       x->getIPartitions( ) != 6 )
-  {
-    Enode * tmp = x;
-    x = y;
-    y = tmp;
-  }
-
-  Enode * v = y;
-  const Enode * vstart = v;
-  for (;;)
-  {
-    v->setRoot( x );
-    v = v->getNext( );
-    if ( v == vstart )
-      break;
-  }
-
-  // Splice next lists
-  Enode * tmp = x->getNext( );
-  x->setNext( y->getNext( ) );
-  y->setNext( tmp );
-  // Update size of the congruence class
-  x->setSize( x->getSize( ) + y->getSize( ) );
-}
-
-void Egraph::tmpMergeEnd( Enode * x, Enode * y )
-{
-  assert( config.produce_inter != 0 );
-  assert( config.logic == QF_AX
-       || config.logic == QF_AXDIFF );
-
-  if ( x->getSize( ) < y->getSize( ) )
-  {
-    Enode * tmp = x;
-    x = y;
-    y = tmp;
-  }
-
-  // Restore the size of x's class
-  x->setSize( x->getSize( ) - y->getSize( ) );
-  // Unsplice next lists
-  Enode * tmp = x->getNext( );
-  x->setNext( y->getNext( ) );
-  y->setNext( tmp );
-  // Reroot each node of y's eq class back to y
-  Enode * v = y;
-  const Enode * vstart = v;
-  for (;;)
-  {
-    v->setRoot( y );
-    v = v->getNext( );
-    if ( v == vstart )
-      break;
-  }
-
-  assert( x->getRoot( ) != y->getRoot( ) );
-}
-*/
-#endif
 
 bool Egraph::assertLit(PtAsgn pta, bool)
 {
@@ -2289,4 +1567,459 @@ void Egraph::faGarbageCollect() {
 #ifdef GC_DEBUG
     checkRefConsistency();
 #endif
+}
+
+void Egraph::mergeForbidLists(Enode & to, const Enode & from) {
+    if ( from.getForbid( ) != ELRef_Undef ) {
+        // We assign the same forbid list
+        if ( to.getForbid( ) == ELRef_Undef ) {
+            to.setForbid( from.getForbid( ) );
+            forbid_allocator.addReference(to.getForbid(), to.getERef());
+        }
+            // Otherwise we splice the two lists
+        else {
+            ELRef tmp = forbid_allocator[to.getForbid()].link;
+            forbid_allocator[to.getForbid()].link = forbid_allocator[from.getForbid()].link;
+            forbid_allocator[from.getForbid()].link = tmp;
+        }
+    }
+}
+
+void Egraph::mergeDistinctionClasses(Enode & to, const Enode & from) {
+    to.setDistClasses( ( to.getDistClasses( ) | from.getDistClasses( ) ) );
+}
+
+void Egraph::unmergeDistinctionClasses(Enode & to, const Enode & from) {
+    to.setDistClasses( ( to.getDistClasses() & ~(from.getDistClasses())) );
+}
+
+//void Egraph::removeSignaturesOfParentsThatAreCongruenceRoots(ERef noderef) {
+//    // Visit each parent of w, according to the type of w
+//    // and remove each congruence root from the signature table
+//    const Enode& node = getEnode(noderef);
+//    ERef p = node.getParent();
+//    if (p == ERef_Undef) { return; } // No parent -> no work
+//    const ERef pstart = p;
+//    const bool scdr = node.isList( );
+//    while (true) {
+//        const Enode& en_p = getEnode(p);
+//        assert ( en_p.isTerm( ) || en_p.isList( ) );
+//        // If p is a congruence root
+//        if ( p == en_p.getCgPtr( ) ) {
+//            assert( enode_store.containsSig( p ));
+//            enode_store.removeSig(p);
+//        }
+//        // Next element
+//        p = scdr ? en_p.getSameCdr( ) : en_p.getSameCar( ) ;
+//        // End of cycle
+//        if ( p == pstart ) {
+//            return; // Nothing to do after the cycle;
+//        }
+//    }
+//}
+
+void Egraph::mergeEquivalenceClasses(ERef newroot, ERef oldroot) {
+    // Perform the union of the two equivalence classes
+    // i.e. reroot every node in y's class to point to x
+    ERef v = oldroot;
+    const ERef vstart = v;
+#ifdef VERBOSE_EUF
+    bool constant_shouldset = false;
+    bool constant_set = false;
+#endif
+    while (true) {
+        Enode& en_v = getEnode(v);
+#ifdef VERBOSE_EUF
+        if (isConstant(v)) {
+            cerr << "Rerooting " << logic.printTerm(en_v.getTerm()) << endl;
+            constant_shouldset = true;
+        }
+#endif
+        en_v.setRoot(newroot);
+        v = en_v.getNext();
+        if (v == vstart)
+            break;
+    }
+
+    // Splice next lists
+    Enode& en_x = getEnode(newroot);
+    Enode& en_y = getEnode(oldroot);
+    ERef tmp = en_x.getNext();
+    en_x.setNext( en_y.getNext() );
+    en_y.setNext( tmp );
+    // Update size of the congruence class
+    en_x.setSize( en_x.getSize( ) + en_y.getSize( ) );
+}
+
+void Egraph::unmergeEquivalenceClasses(ERef newroot, ERef oldroot) {
+    Enode & en_x = getEnode(newroot);
+    Enode & en_y = getEnode(oldroot);
+    // Restore the size of x's class
+    en_x.setSize( en_x.getSize( ) - en_y.getSize( ) );
+    // Unsplice next lists
+    ERef tmp = en_x.getNext( );
+    en_x.setNext( en_y.getNext( ) );
+    en_y.setNext( tmp );
+    // Reroot each node of y's eq class back to y
+    ERef v = oldroot;
+    const ERef vstart = v;
+    while (true) {
+        Enode& en_v = enode_store[v];
+        en_v.setRoot( oldroot );
+        v = en_v.getNext( );
+        if ( v == vstart )
+            break;
+    }
+}
+
+void Egraph::unmergeForbidLists(Enode & to, const Enode & from) {
+    // Restore forbid list for x and y
+    if ( (to.getForbid( ) == from.getForbid() ) && to.getForbid() != ELRef_Undef ) {
+        forbid_allocator.removeRef(to.getERef(), to.getForbid());
+        to.setForbid( ELRef_Undef );
+    }
+        // Unsplice back the two lists
+    else if ( from.getForbid( ) != ELRef_Undef ) {
+        ELRef tmp = forbid_allocator[to.getForbid()].link;
+        forbid_allocator[to.getForbid()].link = forbid_allocator[from.getForbid()].link;
+        forbid_allocator[from.getForbid()].link = tmp;
+    }
+}
+
+/*
+   * Reprocess all parents of y
+   *
+   * For backtracking, we keep all its parents
+   * - if parent remains a congruence root, it's kept as is
+   * - if parent is no longer a congruence root, it's kept as a marked
+   *   entry
+   */
+void Egraph::processParentsAfterMerge(UseVector & oldroot_parents, ERef oldroot) {
+    assert(getEnode(oldroot).isTerm() || getEnode(oldroot).isList());
+    // only one of the two children has been changed, since car is term or symbol and cdr is list and they can never be in the same equivalence class
+    bool carChanged = getEnode(oldroot).isTerm();
+    // split the loop over the parents depending on what has been changed; this avoids condition inside the loop
+    if (carChanged) {
+        for (auto & entry : oldroot_parents) {
+            assert(!entry.isMarked());
+            if (entry.isValid()) {
+                ERef parent = UseVector::entryToERef(entry);
+                Enode & parentNode = getEnode(parent);
+                if (enode_store.containsSig(parent)) {
+                    // Case 1: p joins q's congruence class
+                    ERef q = enode_store.lookupSig(parent);
+                    pending.push(parent);
+                    pending.push(q);
+                    // p is no longer in the congruence table
+                    // put a mark for backtracking
+                    entry.mark();
+                    // remove from parent vector of the UNCHANGED child (CDR is unchanged)
+                    removeFromCdrUseVectorExceptNill(parent, parentNode);
+                    parentNode.setCdrParentIndex(-1);
+                }
+                else {
+                    // Case 2: p remains congruent root (but now has new signature)
+                    enode_store.insertSig(parent);
+                    // insert to parent vector of the changed child (CAR is changed)
+                    assert(!getEnode(parentNode.getCar()).isSymb()); // Symbols are never changed!
+                    addToCarUseVector(parent, parentNode);
+                }
+            }
+        }
+    }
+    else {
+        for (auto & entry : oldroot_parents) {
+            assert(!entry.isMarked());
+            if (entry.isValid()) {
+                ERef parent = UseVector::entryToERef(entry);
+                Enode & parentNode = getEnode(parent);
+                if (enode_store.containsSig(parent)) {
+                    // Case 1: p joins q's congruence class
+                    ERef q = enode_store.lookupSig(parent);
+                    pending.push(parent);
+                    pending.push(q);
+                    // p is no longer in the congruence table
+                    // put a mark for backtracking
+                    entry.mark();
+                    // remove from parent vector of the UNCHANGED child (CAR is unchanged)
+                    removeFromCarUseVectorExceptSymbols(parent, parentNode);
+                    parentNode.setCarParentIndex(-1);
+                } else {
+                    // Case 2: p remains congruent root (but now has new signature)
+                    enode_store.insertSig(parent);
+                    // insert to parent vector of the changed child (CDR is changed)
+                    assert(parentNode.getCdr() != ERef_Nil); // empty list is never changed!
+                    addToCdrUseVector(parent, parentNode);
+                }
+            }
+        }
+    }
+}
+
+void Egraph::processParentsBeforeUnMerge(UseVector & y_parents, ERef oldroot) {
+    assert(getEnode(oldroot).isTerm() || getEnode(oldroot).isList());
+    // only one of the two children has been changed, since car is term or symbol and cdr is list and they can never be in the same equivalence class
+    bool carChanged = getEnode(oldroot).isTerm();
+    // split the loop over the parents depending on what has been changed; this avoids condition inside the loop
+    if (carChanged) {
+        for (auto it = y_parents.begin(); it != y_parents.end(); ++it) {
+            auto & entry = *it;
+            if (entry.isValid()) {
+                ERef parent = UseVector::entryToERef(entry);
+                Enode & parentNode = getEnode(parent);
+                assert(enode_store.containsSig(parent));
+                enode_store.removeSig(parent);
+                // remove from parent's vector of changed child (CAR is the changed child);
+                // restore the index to the one in current usevector
+                auto originalIndex = it - y_parents.begin();
+                assert(!getEnode(parentNode.getCar()).isSymb()); // Symbols are never changed!
+                removeFromCarUseVector(parent, parentNode);
+                parentNode.setCarParentIndex(originalIndex);
+            }
+            else if (entry.isMarked()) {
+                entry.unmark();
+                ERef parent = UseVector::entryToERef(entry);
+                Enode & parentNode = getEnode(parent);
+                // insert back to parent's vector of the unchanged child (CRD is the unchanged child)
+                addToCdrUseVectorExceptNill(parent, parentNode);
+            }
+        }
+    }
+    else { // the same loop but CAR and CDR switched
+        for (auto it = y_parents.begin(); it != y_parents.end(); ++it) {
+            auto & entry = *it;
+            if (entry.isValid()) {
+                ERef parent = UseVector::entryToERef(entry);
+                Enode & parentNode = getEnode(parent);
+                assert(enode_store.containsSig(parent));
+                enode_store.removeSig(parent);
+                // remove from parent's vector of changed child (CDR is the changed child);
+                // restore the index to the one in current usevector
+                auto originalIndex = it - y_parents.begin();
+                assert(parentNode.getCdr() != ERef_Nil); // Empty list is never changed
+                removeFromCdrUseVector(parent, parentNode);
+                parentNode.setCdrParentIndex(originalIndex);
+            }
+            else if (entry.isMarked()) {
+                entry.unmark();
+                ERef parent = UseVector::entryToERef(entry);
+                Enode & parentNode = getEnode(parent);
+                // insert back to parent's vector of the unchanged child (CAD is the unchanged child)
+                addToCarUseVectorExceptSymbols(parent, parentNode);
+            }
+        }
+    }
+}
+
+void Egraph::doExplain(ERef x, ERef y, PtAsgn reason_inequality) {
+    if (reason_inequality.tr != Eq_FALSE) {
+        explanation.push(reason_inequality);
+    }
+    expExplain(x,y);
+    has_explanation = true;
+}
+
+void Egraph::explainConstants(ERef p, ERef q) {
+    ERef enr_proot = getEnode(p).getRoot();
+    ERef enr_qroot = getEnode(q).getRoot();
+    const Enode& en_proot = getEnode(enr_proot);
+    const Enode& en_qroot = getEnode(enr_qroot);
+    assert(en_proot.isTerm() && en_qroot.isTerm());
+    assert(logic.isConstant(en_proot.getTerm()));
+    assert(logic.isConstant(en_qroot.getTerm()));
+    assert(enr_proot != enr_qroot);
+    //
+    // We need explaining
+    //
+    // 1. why p and p->constant are equal
+    exp_pending.push( p );
+    exp_pending.push( enr_proot );
+    // 2. why q and q->constant are equal
+    exp_pending.push( q );
+    exp_pending.push( enr_qroot );
+    // 3. why p and q are equal
+    exp_pending.push( q );
+    exp_pending.push( p );
+#ifdef VERBOSE_EUF
+    cerr << "constant pushing (1): "
+                 << logic.printTerm(getEnode(p).getTerm()) << " and "
+                 << logic.printTerm(en_proot.getTerm()) << endl;
+
+    cerr << "constant pushing (2): "
+                 << logic.printTerm(getEnode(q).getTerm()) << " and "
+                 << logic.printTerm(en_qroot.getTerm()) << endl;
+
+    cerr << "constant pushing (3): "
+                 << logic.printTerm(getEnode(q).getTerm()) << " and "
+                 << logic.printTerm(getEnode(p).getTerm()) << endl;
+
+    cerr << "Explain XXX" << endl;
+#endif
+    initDup1( );
+    expExplain( );
+    doneDup1( );
+    expCleanup();
+}
+
+uint32_t UseVector::addParent(ERef parent) {
+    auto index = getFreeSlotIndex();
+    auto entry = erefToEntry(parent);
+    data[index] = entry;
+    ++nelems;
+    return index;
+}
+
+void UseVector::clearEntryAt(int index) {
+    assert(index >= 0 && index < data.size() && data[index].isValid());
+    data[index] = UseVector::indexToFreeEntry(free);
+    free = index;
+    --nelems;
+}
+
+//void UseVector::markEntry(Entry& entry) {
+//    // MB: TODO: I probably do not need to decrement the number of elements, since this use vector should not be accessed until backtracking makes it valid again
+//    assert(entry.isValid());
+//    entry.mark();
+//    --this->nelems;
+//}
+//
+//void UseVector::unMarkEntry(Entry& entry) {
+//    // MB: TODO: check if the decrement in markEntry needs to be undone
+//    assert(entry.isMarked());
+//    entry.unmark();
+//    ++this->nelems;
+//}
+
+uint32_t UseVector::getFreeSlotIndex() {
+    auto ret = free;
+    if (ret >= 0) {
+        Entry e = data[free];
+        assert(e.isFree());
+        free = freeEntryToIndex(e);
+        assert(free < 0 || free < data.size());
+        return ret;
+    }
+    ret = data.size();
+    data.emplace_back();
+    return ret;
+}
+
+void Egraph::addToParentVectors(ERef eref) {
+    Enode& enode = getEnode(eref);
+    // set as parent for car
+    Enode const & carNode = getEnode(enode.getCar());
+    if (!carNode.isSymb()) { // we do not need to store the parent information for symbols since those are never merged
+        if (enode.getCarParentIndex() < 0) { // not set yet
+            auto carCID = getEnode(getEnode(enode.getCar()).getRoot()).getCid();
+            assert(parents.size() > carCID);
+            auto index = parents[carCID].addParent(eref);
+            enode.setCarParentIndex(index);
+        } else {
+            assert(UseVector::entryToERef(
+                    parents[getEnode(getEnode(enode.getCar()).getRoot()).getCid()][enode.getCarParentIndex()]) == eref);
+        }
+    }
+
+    // set as parent for cdr
+    if (enode.getCdr() != ERef_Nil) { // we do not need to store parent information for empty list since it is never changed
+        if (enode.getCdrParentIndex() < 0) { // not set yet
+            auto cdrCID = getEnode(getEnode(enode.getCdr()).getRoot()).getCid();
+            assert(parents.size() > cdrCID);
+            auto index = parents[cdrCID].addParent(eref);
+            enode.setCdrParentIndex(index);
+        } else {
+            assert(UseVector::entryToERef(
+                    parents[getEnode(getEnode(enode.getCdr()).getRoot()).getCid()][enode.getCdrParentIndex()]) == eref);
+        }
+    }
+}
+
+void Egraph::updateParentsVector(PTRef term) {
+    ERef eref = termToERef(term);
+    auto cid = getEnode(eref).getCid();
+    while (cid >= parents.size()) {
+        parents.emplace_back();
+    }
+    while (eref != ERef_Nil) {
+        const Enode& enode = getEnode(eref);
+        ERef head = enode.getCar();
+        ERef tail = enode.getCdr();
+        auto headCid = getEnode(head).getCid();
+        auto tailCid = getEnode(tail).getCid();
+        auto max = std::max(headCid, tailCid);
+        while (max >= parents.size()) {
+            parents.emplace_back();
+        }
+        addToParentVectors(eref);
+        eref = tail;
+    }
+}
+
+void Egraph::addToCarUseVector(ERef parent, Enode & parentNode) {
+    assert(parentNode.getERef() == parent);
+    auto carCID = getEnode(getEnode(parentNode.getCar()).getRoot()).getCid();
+    assert(parents.size() > carCID);
+    auto index = parents[carCID].addParent(parent);
+    parentNode.setCarParentIndex(index);
+}
+
+void Egraph::addToCarUseVectorExceptSymbols(ERef parent, Enode & parentNode) {
+    assert(parentNode.getERef() == parent);
+    const Enode & car = getEnode(parentNode.getCar());
+    if (car.isSymb()) { assert(parentNode.getCarParentIndex() < 0); return; }
+    auto carCID = getEnode(car.getRoot()).getCid();
+    assert(parents.size() > carCID);
+    auto index = parents[carCID].addParent(parent);
+    parentNode.setCarParentIndex(index);
+}
+
+void Egraph::addToCdrUseVector(ERef parent, Enode & parentNode) {
+    assert(parentNode.getERef() == parent);
+    auto cdrCID = getEnode(getEnode(parentNode.getCdr()).getRoot()).getCid();
+    assert(parents.size() > cdrCID);
+    auto index = parents[cdrCID].addParent(parent);
+    parentNode.setCdrParentIndex(index);
+}
+
+void Egraph::addToCdrUseVectorExceptNill(ERef parent, Enode & parentNode) {
+    assert(parentNode.getERef() == parent);
+    if (parentNode.getCdr() == ERef_Nil) { assert(parentNode.getCdrParentIndex() < 0); return; }
+    auto cdrCID = getEnode(getEnode(parentNode.getCdr()).getRoot()).getCid();
+    assert(parents.size() > cdrCID);
+    auto index = parents[cdrCID].addParent(parent);
+    parentNode.setCdrParentIndex(index);
+}
+
+void Egraph::removeFromCarUseVector(ERef parent, Enode const & parentNode) {
+    const Enode & car = getEnode(parentNode.getCar());
+    int carParentIndex = parentNode.getCarParentIndex();
+    assert(carParentIndex >= 0);
+    assert(UseVector::entryToERef(parents[getEnode(car.getRoot()).getCid()][carParentIndex]) == parent);
+    parents[getEnode(car.getRoot()).getCid()].clearEntryAt(carParentIndex);
+}
+
+void Egraph::removeFromCarUseVectorExceptSymbols(ERef parent, Enode const & parentNode) {
+    const Enode & car = getEnode(parentNode.getCar());
+    if (car.isSymb()) { assert(parentNode.getCarParentIndex() < 0); return; }
+    int carParentIndex = parentNode.getCarParentIndex();
+    assert(carParentIndex >= 0);
+    assert(UseVector::entryToERef(parents[getEnode(car.getRoot()).getCid()][carParentIndex]) == parent);
+    parents[getEnode(car.getRoot()).getCid()].clearEntryAt(carParentIndex);
+}
+
+void Egraph::removeFromCdrUseVector(ERef parent, Enode const & parentNode) {
+    const Enode & cdr = getEnode(parentNode.getCdr());
+    auto cdrParentIndex = parentNode.getCdrParentIndex();
+    assert(cdrParentIndex >= 0);
+    assert(UseVector::entryToERef(parents[getEnode(cdr.getRoot()).getCid()][cdrParentIndex]) == parent);
+    parents[getEnode(cdr.getRoot()).getCid()].clearEntryAt(cdrParentIndex);
+}
+
+void Egraph::removeFromCdrUseVectorExceptNill(ERef parent, Enode const & parentNode) {
+    if (parentNode.getCdr() == ERef_Nil) { assert(parentNode.getCdrParentIndex() < 0); return; }
+    const Enode & cdr = getEnode(parentNode.getCdr());
+    auto cdrParentIndex = parentNode.getCdrParentIndex();
+    assert(cdrParentIndex >= 0);
+    assert(UseVector::entryToERef(parents[getEnode(cdr.getRoot()).getCid()][cdrParentIndex]) == parent);
+    parents[getEnode(cdr.getRoot()).getCid()].clearEntryAt(cdrParentIndex);
 }

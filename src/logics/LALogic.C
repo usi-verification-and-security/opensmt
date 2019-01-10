@@ -109,7 +109,7 @@ PTRef LALogic::normalizeMul(PTRef mul)
     else
         return v;
 }
-lbool LALogic::arithmeticElimination(vec<PTRef> &top_level_arith, Map<PTRef,PtAsgn,PTRefHash>& substitutions)
+lbool LALogic::arithmeticElimination(const vec<PTRef> & top_level_arith, Map<PTRef, PtAsgn, PTRefHash> & substitutions)
 {
     vec<LAExpression*> equalities;
     LALogic& logic = *this;
@@ -219,7 +219,7 @@ void LALogic::simplifyAndSplitEq(PTRef tr, PTRef& root_out)
     simplifyTree(tr, root_out);
     split_eq = false;
 }
-lbool LALogic::retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs)
+lbool LALogic::retrieveSubstitutions(const vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs)
 {
     lbool res = Logic::retrieveSubstitutions(facts, substs);
     if (res != l_Undef) return res;

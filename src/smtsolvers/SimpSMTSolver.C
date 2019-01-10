@@ -45,13 +45,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "Sort.h"
 #include "SimpSMTSolver.h"
-//#include "SimpSolver.h"
-//#include "System.h"
 
 //=================================================================================================
 // Constructor/Destructor:
 
-//SimpSMTSolver::SimpSMTSolver(Egraph & e, SMTConfig & c) :
 SimpSMTSolver::SimpSMTSolver(SMTConfig & c, THandler & t) :
     CoreSMTSolver(c, t)
     , grow               (c.sat_grow())
@@ -97,23 +94,6 @@ void SimpSMTSolver::initialize( )
 #else
     use_simplification = config.sat_preprocess_booleans != 0;
 #endif
-
-    // Add clauses for true/false
-    // Useful for expressing TAtoms that are constantly true/false
-
-//  const Var var_True = newVar( );
-//  const Var var_False = newVar( );
-
-//  setFrozen( var_True, true );
-//  setFrozen( var_False, true );
-
-//  vec< Lit > clauseTrue, clauseFalse;
-//  clauseTrue.push( Lit( var_True ) );
-//  addClause( clauseTrue );
-//  clauseFalse.push( Lit( var_False, true ) );
-//  addClause( clauseFalse );
-
-//  theory_handler = new THandler( egraph, config, *this, trail, level, assigns, var_True, var_False );
 }
 
 Var SimpSMTSolver::newVar(bool sign, bool dvar)
@@ -131,7 +111,6 @@ Var SimpSMTSolver::newVar(bool sign, bool dvar)
         frozen   .push((char)false);
         touched  .push(0);
         elim_heap.insert(v);
-        elimtable.push();
     }
 
     return v;
@@ -206,14 +185,14 @@ skip_theory_preproc:
 //=================================================================================================
 // Added code
 
-bool SimpSMTSolver::addSMTClause_(vec<Lit>& smt_clause)
+bool SimpSMTSolver::addOriginalSMTClause(const vec<Lit> & smt_clause)
 {
     std::pair<CRef, CRef> fake;
-    return addSMTClause_(smt_clause, fake);
+    return addOriginalSMTClause(smt_clause, fake);
 }
 
 
-bool SimpSMTSolver::addSMTClause_(const vec<Lit> & smt_clause, std::pair<CRef, CRef> & inOutCRefs)
+bool SimpSMTSolver::addOriginalSMTClause(const vec<Lit> & smt_clause, std::pair<CRef, CRef> & inOutCRefs)
 {
     inOutCRefs = std::make_pair(CRef_Undef, CRef_Undef);
     assert( config.sat_preprocess_theory == 0 );
@@ -221,10 +200,9 @@ bool SimpSMTSolver::addSMTClause_(const vec<Lit> & smt_clause, std::pair<CRef, C
     // Check that the variables exist in the solver
     for (int i = 0; i < smt_clause.size(); i++) {
         Lit l = smt_clause[i];
-
-        PTRef tr = theory_handler.getTMap().varToPTRef(var(l));
-        Pterm& t = theory_handler.getLogic().getPterm(tr);
-        Var v = t.getVar();
+        Var v = var(l);
+        PTRef tr = theory_handler.getTMap().varToPTRef(v);
+        assert(v == theory_handler.getLogic().getPterm(tr).getVar());
         addVar(v);
         if (theory_handler.getLogic().isTheoryTerm(tr) || theory_handler.getTMap().isFrozen(v))
             setFrozen(v, true);
@@ -233,7 +211,6 @@ bool SimpSMTSolver::addSMTClause_(const vec<Lit> & smt_clause, std::pair<CRef, C
     for (int i = 0; i < smt_clause.size(); i++)
         assert(!isEliminated(var(smt_clause[i])));
 #endif
-    int nclauses = clauses.size();
     if (use_rcheck && implied(smt_clause))
         return true;
     if ( config.sat_preprocess_theory != 0
@@ -243,7 +220,8 @@ bool SimpSMTSolver::addSMTClause_(const vec<Lit> & smt_clause, std::pair<CRef, C
 //        Var v = var( smt_clause[0] );
         cerr << "XXX skipped handling of unary theory literal?" << endl;
     }
-    if (!CoreSMTSolver::addClause_(smt_clause, inOutCRefs))
+    int nclauses = clauses.size();
+    if (!CoreSMTSolver::addOriginalClause_(smt_clause, inOutCRefs))
         return false;
 
     if (use_simplification && clauses.size() == nclauses + 1)
@@ -653,7 +631,7 @@ bool SimpSMTSolver::eliminateVar(Var v)
     vec<Lit>& resolvent = add_tmp;
     for (int i = 0; i < pos.size(); i++)
         for (int j = 0; j < neg.size(); j++)
-            if (merge(ca[pos[i]], ca[neg[j]], v, resolvent) && !addSMTClause_(resolvent))
+            if (merge(ca[pos[i]], ca[neg[j]], v, resolvent) && !addOriginalSMTClause(resolvent))
                 return false;
 
     // Free occurs list for this variable:
@@ -693,7 +671,7 @@ bool SimpSMTSolver::substitute(Var v, Lit x)
 
         removeClause(cls[i]);
 
-        if (!addSMTClause_(subst_clause))
+        if (!addOriginalSMTClause(subst_clause))
             return ok = false;
     }
 
@@ -850,35 +828,6 @@ void SimpSMTSolver::cleanUpClauses()
     clauses.shrink(i - j);
     //this->n_clauses-=(i-j);
 }
-
-
-//=================================================================================================
-// Added Code
-/*
-void SimpSMTSolver::getDLVars( Enode * e, bool negate, Enode ** x, Enode ** y )
-{
-  assert( config.sat_preprocess_theory != 0 );
-  assert( e->isLeq( ) );
-  Enode * lhs = e->get1st( );
-  Enode * rhs = e->get2nd( );
-  (void)rhs;
-  assert( lhs->isMinus( ) );
-  assert( rhs->isConstant( ) || ( rhs->isUminus( ) && rhs->get1st( )->isConstant( ) ) );
-
-  *x = lhs->get1st( );
-  *y = lhs->get2nd( );
-
-  if ( negate )
-  {
-    Enode *tmp = *x;
-    *x = *y;
-    *y = tmp;
-  }
-}
-*/
-
-// Added Code
-//=================================================================================================
 
 //=================================================================================================
 // Garbage Collection methods:

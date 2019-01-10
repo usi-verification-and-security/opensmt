@@ -47,7 +47,7 @@ class EnodeStore {
 
     vec<PTRef>     index_to_dist;                    // Table distinction index --> proper term
 
-    vec<ERef>      enodes;
+    vec<ERef>      termEnodes;
 
   public:
 #if defined(PEDANTIC_DEBUG)
@@ -60,14 +60,14 @@ class EnodeStore {
 #else
     EnodeStore(Logic& l) :
         logic(l)
-      , ea(1024*1024, &sig_tab)
+      , ea(1024*1024)
       , ERef_Nil(ea.alloc(SymRef_Undef))
       , dist_idx(0)
 #endif
         { Enode::ERef_Nil = ERef_Nil; } // Nil is a symbol.  It should
                                         // in theory be list, but makes no matter now
 
-    const vec<ERef>& getEnodes() const { return enodes; };
+    const vec<ERef>& getTermEnodes() const { return termEnodes; };
 
     ERef getEnode_true()  { return ERef_True;  }
     ERef getEnode_false() { return ERef_False; }
@@ -76,12 +76,8 @@ class EnodeStore {
     ERef  addSymb(SymRef t);
     ERef  addList(ERef car, ERef cdr);
 
-    void undoTerm(ERef);
-    void undoList(ERef);
-
     ERef get_Nil() const { return ERef_Nil; }
     void free(ERef er) { ea.free(er); }
-    vec<ERef>           id_to_enode;
 
     Map<PTRef,ERef,PTRefHash,Equal<PTRef> >    termToERef;
     Map<SymRef,ERef,SymRefHash,Equal<SymRef> > symToERef;
@@ -94,7 +90,6 @@ class EnodeStore {
           Enode& operator[] (PTRef tr)       { return ea[termToERef[tr]]; }
     const Enode& operator[] (PTRef tr) const { return ea[termToERef[tr]]; }
 
-    void removeParent(ERef, ERef);
     char* printEnode(ERef);
 
     char getDistIndex(PTRef tr_d) const {
@@ -136,25 +131,25 @@ class EnodeStore {
         { SigPair sp( ea[ea[car].getRoot()].getCid(), ea[ea[cdr].getRoot()].getCid() );
           return sig_tab[sp]; }
 
-    inline void removeSig(ERef e)
-        { const Enode& en_e = ea[e];
-          ERef carRoot = ea[en_e.getCar()].getRoot();
-          ERef cdrRoot = ea[en_e.getCdr()].getRoot();
-          SigPair sp( ea[carRoot].getCid(), ea[cdrRoot].getCid() );
-          sig_tab.remove(sp);
-          assert(!containsSig(e));
-          }
+    inline void removeSig(ERef e) {
+        assert(containsSig(e));
+        const Enode & en_e = ea[e];
+        ERef carRoot = ea[en_e.getCar()].getRoot();
+        ERef cdrRoot = ea[en_e.getCdr()].getRoot();
+        SigPair sp(ea[carRoot].getCid(), ea[cdrRoot].getCid());
+        sig_tab.remove(sp);
+        assert(!containsSig(e));
+    }
 
-    inline void insertSig(ERef e)
-        { const Enode& en_e = ea[e];
-          ERef carRoot = ea[en_e.getCar()].getRoot();
-          ERef cdrRoot = ea[en_e.getCdr()].getRoot();
-          assert(!containsSig(e));
-          sig_tab.insert(SigPair(ea[carRoot].getCid(), ea[cdrRoot].getCid()), en_e.getCgPtr());
-#ifdef PEDANTIC_DEBUG
-//          SigPair(ea[carRoot.getCid(), ea[cdrRoot].getCid()])
-#endif
-        }
+    inline void insertSig(ERef e) {
+        const Enode & en_e = ea[e];
+        ERef carRoot = ea[en_e.getCar()].getRoot();
+        ERef cdrRoot = ea[en_e.getCdr()].getRoot();
+        assert(!containsSig(e));
+//        assert(e == en_e.getCgPtr()); // MB: Only congruence roots should be inserted
+        sig_tab.insert(SigPair(ea[carRoot].getCid(), ea[cdrRoot].getCid()), e);
+        assert(containsSig(e));
+    }
 // DEBUG
 #ifdef PEDANTIC_DEBUG
     bool checkInvariants();

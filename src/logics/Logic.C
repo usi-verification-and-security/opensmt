@@ -33,10 +33,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <set>
 
 #include <sys/wait.h>
-#ifdef PRODUCE_PROOF
-#include <fstream>
-#include <sstream>
-#endif
 
 
 using namespace std;
@@ -1287,7 +1283,7 @@ bool Logic::isAtom(PTRef r) const {
 // Preconditions:
 //  - all substitutions in substs must be on variables
 //
-bool Logic::varsubstitute(PTRef& root, Map<PTRef,PtAsgn,PTRefHash>& substs, PTRef& tr_new)
+bool Logic::varsubstitute(PTRef root, const Map<PTRef, PtAsgn, PTRefHash> & substs, PTRef & tr_new)
 {
     Map<PTRef,PTRef,PTRefHash> gen_sub;
     vec<PTRef> queue;
@@ -1512,7 +1508,7 @@ void Logic::breakSubstLoops(Map<PTRef,PtAsgn,PTRefHash>& substs)
 //
 // The substitutions for the term riddance from osmt1
 //
-lbool Logic::retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs)
+lbool Logic::retrieveSubstitutions(const vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs)
 {
     for (int i = 0; i < facts.size(); i++) {
         PTRef tr = facts[i].tr;
@@ -1522,14 +1518,14 @@ lbool Logic::retrieveSubstitutions(vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHas
 #ifdef SIMPLIFY_DEBUG
             cerr << "Identified an equality: " << printTerm(tr) << endl;
 #endif
-            Pterm& t = getPterm(tr);
+            const Pterm& t = getPterm(tr);
             // n will be the reference
             if (isUFEquality(tr) || isIff(tr)) {
                 // This is the simple replacement to elimiate enode terms where possible
                 assert(t.size() == 2);
                 // One of them should be a var
-                Pterm& a1 = getPterm(t[0]);
-                Pterm& a2 = getPterm(t[1]);
+                const Pterm& a1 = getPterm(t[0]);
+                const Pterm& a2 = getPterm(t[1]);
                 if (a1.size() == 0 || a2.size() == 0) {
                     PTRef var = a1.size() == 0 ? t[0] : t[1];
                     PTRef trm = a1.size() == 0 ? t[1] : t[0];
@@ -2000,9 +1996,6 @@ void
 Logic::dumpHeaderToFile(ostream& dump_out)
 {
     dump_out << "(set-logic " << getName() << ")" << endl;
-#ifdef PRODUCE_PROOF
-//    dump_out << "(set-option :produce-interpolants true)" << endl;
-#endif
     const vec<SRef>& sorts = sort_store.getSorts();
     for (int i = 0; i < sorts.size(); i++)
     {
@@ -2266,8 +2259,6 @@ void Logic::computePartitionMasks(const vec<PTRef> &roots) {
 
     vec<PtChild> list_out;
     getTermsList(roots, list_out, *this);
-    std::set<PTRef> seen;
-    std::set<PTRef> to_process;
     for (int i = list_out.size()-1; i >= 0; i--)
     {
         PTRef tr = list_out[i].tr;
@@ -2275,7 +2266,6 @@ void Logic::computePartitionMasks(const vec<PTRef> &roots) {
         ipartitions_t& p = getIPartitions(tr);
         for (int j = 0; j < t.size(); j++) {
             addIPartitions(t[j], p);
-            seen.insert(t[j]);
         }
         if (isUF(tr) || isUP(tr)) {
             addIPartitions(t.symb(), p);

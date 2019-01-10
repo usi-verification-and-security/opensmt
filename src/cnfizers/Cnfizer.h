@@ -30,32 +30,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Global.h"
 #include "Theory.h"
 #include "Logic.h"
+#include "TermMapper.h"
 
 class SimpSMTSolver;
 class CnfState;
 class THandler;
 struct SMTConfig;
-class TermMapper;
-
-// A small typechecked class for checkClause type return values to enable us to check whether the formula is unsatisfiable simultaneously
-class ckval {
-    char value;
-    explicit ckval(int v) : value(v) { }
-public:
-    ckval()          : value(0) { }
-    int toInt(void) const { return value; }
-    bool operator == (ckval c) const { return value == c.value; }
-    bool operator != (ckval c) const { return value == c.value; }
-
-    friend ckval toCkval(int v);
-};
-inline ckval toCkval(int v) {return ckval(v); }
-
-const ckval ck_True  = toCkval( 1);
-const ckval ck_False = toCkval(-1);
-const ckval ck_Unsat = toCkval( 0);
-
-
 
 //
 // Generic class for conversion into CNF
@@ -66,19 +46,15 @@ public:
     SimpSMTSolver&      solver;
 protected:
     SMTConfig&          config;
-    Theory&             theory;
     Logic&              logic;
     TermMapper&         tmap;
-
-    THandler&           thandler;
     bool                s_empty;
 
 public:
 
     Cnfizer( SMTConfig &    config_
-           , Theory&        logic_
+           , Logic&        logic_
            , TermMapper&    tmap_
-           , THandler&      thandler_
            , SimpSMTSolver& solver_
            );
 
@@ -86,8 +62,6 @@ public:
     virtual ~Cnfizer( ) { }
 
     lbool cnfizeAndGiveToSolver (PTRef, FrameId frame_id); // Main routine
-
-    vec<ValPair>* getModel ();                              // Retrieves the model (if SAT and solved)
 
     lbool  getTermValue(PTRef) const;
 
@@ -104,7 +78,6 @@ protected:
     virtual bool cnfize                 ( PTRef ) = 0; // Actual cnfization. To be implemented in derived classes
     bool     deMorganize                ( PTRef );                                    // Apply deMorgan rules whenever feasible
 
-//    PTRef    rewriteMaxArity            ( PTRef, Map<PTRef, int, PTRefHash> & );   // Rewrite terms using maximum arity
 
 public:
     bool     checkClause                ( PTRef ); // Check if a formula is a clause
@@ -121,48 +94,21 @@ protected:
     void  retrieveClause             ( PTRef, vec<PTRef> & );         // Retrieve a clause from a formula
     void  retrieveConjuncts          ( PTRef, vec<PTRef> & );         // Retrieve the list of conjuncts
 
-//  Enode * toggleLit		   ( Enode * );                              // Handy function for toggling literals
-
-
-
 private:
-    class pi {
-      public:
-        PTRef x;
-        bool done;
-        pi(PTRef x_) : x(x_), done(false) {}
-    };
-
-//    void    computeIncomingEdges (PTRef, Map<PTRef, int, PTRefHash> & );         // Computes the list of incoming edges for a node
-//    PTRef   mergeEnodeArgs       ( PTRef
-//                                 , Map<PTRef, PTRef, PTRefHash> &
-//                                 , Map<PTRef, int, PTRefHash> & );  // Subroutine for rewriteMaxArity
 
     bool    checkConj            (PTRef); // Check if a formula is a conjunction
     bool    checkPureConj        (PTRef, Map<PTRef,bool,PTRefHash>& check_cache); // Check if a formula is purely a conjuntion
 
-
-    // The special boolean symbols
 protected:
+    inline Lit getOrCreateLiteralFor(PTRef ptr) {return this->tmap.getOrCreateLit(ptr);}
 
-    // PROOF vdrsion
+    // PROOF version
     int currentPartition = -1;
-    // end of PROOG version
-
-    Map<PTRef,bool,PTRefHash,Equal<PTRef> >   processed;  // Is a term already processed
-    Map<PTRef,Var,PTRefHash,Equal<PTRef> >    seen;       // mapping from PTRef to var
+    // end of PROOF version
 
     PTRef frame_term;
     vec<PTRef> frame_terms;
     void setFrameTerm(FrameId frame_id);
-
-//    bool  isLit            (PTRef r);
-    bool  isBooleanOperator(SymRef tr) { return logic.isBooleanOperator(tr); } // (tr == logic.getSym_and()) | (tr == logic.getSym_or() ) | (tr == logic.getSym_not() ) | (tr == logic.getSym_eq() ) | (tr == logic.getSym_xor() ); }
-    bool  isTheorySymbol   (SymRef tr) const { return logic.isTheorySymbol(tr); }
-    bool  isIte            (SymRef tr) const { return logic.isIte(tr); }
-    bool  isAtom           (PTRef r) const;
-    void  declareAtom      (PTRef, SymRef);              // Declare an atom for the smt/sat solver
-    bool  termSeen         (PTRef)                const; // True if the term has been seen and thus processed in the sense that there is already literal corresponding to it.  Sees through negations.
 };
 
 #endif

@@ -81,7 +81,7 @@ PTRef EnodeStore::addTerm(ERef sr, ERef args, PTRef term) {
             assert(!ERefToTerm.has(new_er));
             ERefToTerm.insert(new_er, term);
 
-            enodes.push(new_er);
+            termEnodes.push(new_er);
 
             rval = term;
         }
@@ -114,160 +114,6 @@ ERef EnodeStore::addList(ERef x, ERef y) {
     return rval;
 }
 
-// Undo a term.  Prerequisites are that the node has no parents
-// and is in a singleton equivalence class.
-void EnodeStore::undoTerm( ERef e ) {
-    assert( e != ERef_Nil );
-    assert( ea[e].isTerm() );
-    assert( ea[e].getParentSize() == 0 );
-    assert( ea[e].getNext() == e );
-
-    Enode& en = ea[e];
-    ERef car = en.getCar();
-    ERef cdr = en.getCdr();
-
-    // Node must be there
-    assert( lookupSig(e) == e );
-    // Remove from sig_tab
-    removeSig(e);
-    // Remove Parent info
-    Enode& en_car = ea[car];
-    Enode& en_cdr = ea[cdr];
-
-    assert(en_car.isSymb());
-    assert(en_cdr.isList() || cdr == ERef_Nil);
-
-    // remove e from cdr's parent list
-    if (cdr != ERef_Nil) {
-        assert(en_cdr.getParentSize() > 0);
-        int parentsz = en_cdr.getParentSize();
-        if (parentsz == 1) {
-            en_cdr.setParentSize(0);
-            en_cdr.setParent(ERef_Undef);
-        }
-        else {
-            ERef p = en_cdr.getParent();
-            ERef p_prev;
-            while (true) {
-                p_prev = p;
-                p = ea[p].getSameCdr();
-                if (p == e) break;
-            }
-            assert(p == e);
-            ea[p_prev].setSameCdr(en.getSameCdr());
-        }
-        en_cdr.setParentSize(parentsz-1);
-    }
-
-    // Get rid of the extra data
-    termToERef.remove(en.getTerm());
-    ERefToTerm.remove(e);
-    ea.free(e);
-}
-
-// Undo a list.  Prerequisites are that the node has no parents
-// and is in a singleton equivalence class.
-void EnodeStore::undoList( ERef e ) {
-    assert( e != ERef_Nil );
-    assert( ea[e].isList() );
-    assert( ea[e].getParentSize() == 0 );
-    assert( ea[e].getNext() == e );
-
-    Enode& en = ea[e];
-    ERef car = en.getCar();
-    ERef cdr = en.getCdr();
-
-    // Node must be there
-    assert( lookupSig(e) == e );
-    // Remove from sig_tab
-    removeSig(e);
-    // Remove Parent info
-    Enode& en_car = ea[car];
-    Enode& en_cdr = ea[cdr];
-
-    assert(en_car.isTerm());
-    assert(en_cdr.isList() || cdr == ERef_Nil);
-
-    // remove e from cdr's parent list
-    if (cdr != ERef_Nil) {
-        assert(en_cdr.getParentSize() > 0);
-        int parentsz = en_cdr.getParentSize();
-        if (parentsz == 1) {
-            en_cdr.setParentSize(0);
-            en_cdr.setParent(ERef_Undef);
-        }
-        else {
-            ERef p = en_cdr.getParent();
-            ERef p_prev;
-            while (true) {
-                p_prev = p;
-                p = ea[p].getSameCdr();
-                if (p == e) break;
-            }
-            assert(p == e);
-            ea[p_prev].setSameCdr(en.getSameCdr());
-        }
-        en_cdr.setParentSize(parentsz-1);
-    }
-
-    // remove e from car's parent list
-    assert(en_cdr.getParentSize() > 0);
-    int parentsz = en_car.getParentSize();
-    if (parentsz == 1) {
-        en_car.setParentSize(0);
-        en_car.setParent(ERef_Undef);
-    }
-    else {
-        ERef p = en_car.getParent();
-        ERef p_prev;
-        while (true) {
-            p_prev = p;
-            p = ea[p].getSameCar();
-            if (p == e) break;
-        }
-        assert(p == e);
-        ea[p_prev].setSameCar(en.getSameCar());
-    }
-    en_car.setParentSize(parentsz-1);
-
-    ea.free(e);
-}
-
-// p is only given as an argument for assertion checking!
-void EnodeStore::removeParent(ERef n, ERef p) {
-
-    if ( n == ERef_Nil ) return;
-
-    Enode& en_n = ea[n];
-
-    assert( en_n.isList() || en_n.isTerm( ) );
-    assert( en_n.getParent() != ERef_Undef );
-    assert( en_n.getParentSize() > 0 );
-    en_n.setParentSize( en_n.getParentSize() - 1 );
-    // If only one parent, remove it and restore NULL
-    if ( en_n.getParentSize() == 0 )
-    {
-        assert( en_n.getParent() == p );
-        en_n.setParent( ERef_Undef );
-        return;
-    }
-    // Otherwise adds remove p from the samecar/cdr list
-    if ( en_n.isList() )
-    {
-        // Build or update samecdr circular list
-        assert( ea[en_n.getParent()].getSameCdr() == p );
-        Enode& en_samecdr = ea[ea[en_n.getParent()].getSameCdr()];
-        ea[en_n.getParent()].setSameCdr( en_samecdr.getSameCdr() );
-    }
-    else
-    {
-        // Build or update samecar circular list
-        assert( ea[en_n.getParent()].getSameCar() == p );
-        Enode& en_samecar = ea[ea[en_n.getParent()].getSameCar()];
-        ea[en_n.getParent()].setSameCar( en_samecar.getSameCar( ) );
-    }
-}
-
 // DEBUG
 
 char* EnodeStore::printEnode(ERef e) {
@@ -286,7 +132,7 @@ char* EnodeStore::printEnode(ERef e) {
                          "|  - root      : %d\n"
                          "|  - congruence: %d\n"
                          "|  - root cong.: %d\n"
-                         "|  - cong. ptr : %d\n"
+//                         "|  - cong. ptr : %d\n"
                          "+---------------------------------------------\n"
                          "| Forbids: \n"
 #ifndef PEDANTIC_DEBUG
@@ -300,7 +146,8 @@ char* EnodeStore::printEnode(ERef e) {
                      , en.getRoot().x
                      , en.getCid()
                      , ea[en.getRoot()].getCid()
-                     , en.getCgPtr().x);
+//                     , en.getCgPtr().x
+                     );
         ::free(old);
 #ifdef PEDANTIC_DEBUG
         ELRef f_start = en.getForbid();
@@ -334,7 +181,7 @@ char* EnodeStore::printEnode(ERef e) {
                          "|  - root      : %d\n"
                          "|  - congruence: %d\n"
                          "|  - root cong.: %d\n"
-                         "|  - cong. ptr : %d\n"
+//                         "|  - cong. ptr : %d\n"
                          "+--------------------------------------------+\n"
                      , old
                      , en.getCdr().x
@@ -343,7 +190,8 @@ char* EnodeStore::printEnode(ERef e) {
                      , en.getRoot().x
                      , en.getCid()
                      , ea[en.getRoot()].getCid()
-                     , en.getCgPtr().x);
+//                     , en.getCgPtr().x
+                     );
         ::free(old);
     }
 
@@ -359,46 +207,46 @@ char* EnodeStore::printEnode(ERef e) {
 
     }
     if (!en.isSymb()) {
-        old = out;
-        asprintf(&out, "%s|  - Number of parents: %d\n"
-                         "|    "
-                     , old, ea[en.getRoot()].getParentSize());
-        ::free(old);
-        ERef parent_start = en.getParent();
-        ERef parent = parent_start;
-        int pcount = 0;
-        if (parent_start == ERef_Undef) {
-            old = out;
-            asprintf(&out, "%s\n", old);
-            ::free(old);
-            goto skip; }
-        if (en.isTerm()) {
-            while (true) {
-                old = out;
-                pcount ++;
-                asprintf(&out, "%s%d ", old, parent.x);
-                ::free(old);
-                parent = ea[parent].getSameCar();
-                if (parent == parent_start) break;
-            }
-        }
-        else if (en.isList()) {
-            ERef parent_start = en.getParent();
-            ERef parent = parent_start;
-            while (true) {
-                old = out;
-                pcount ++;
-                asprintf(&out, "%s%d ", old, parent.x);
-                ::free(old);
-                parent = ea[parent].getSameCdr();
-                if (parent == parent_start) break;
-            }
-        }
-        if (pcount != ea[en.getRoot()].getParentSize()) {
-            old = out;
-            asprintf(&out, "%s%s", old, "parent count mismatch!");
-            ::free(old);
-        }
+//        old = out;
+//        asprintf(&out, "%s|  - Number of parents: %d\n"
+//                         "|    "
+//                     , old, ea[en.getRoot()].getParentSize());
+//        ::free(old);
+//        ERef parent_start = en.getParent();
+//        ERef parent = parent_start;
+//        int pcount = 0;
+//        if (parent_start == ERef_Undef) {
+//            old = out;
+//            asprintf(&out, "%s\n", old);
+//            ::free(old);
+//            goto skip; }
+//        if (en.isTerm()) {
+//            while (true) {
+//                old = out;
+//                pcount ++;
+//                asprintf(&out, "%s%d ", old, parent.x);
+//                ::free(old);
+//                parent = ea[parent].getSameCar();
+//                if (parent == parent_start) break;
+//            }
+//        }
+//        else if (en.isList()) {
+//            ERef parent_start = en.getParent();
+//            ERef parent = parent_start;
+//            while (true) {
+//                old = out;
+//                pcount ++;
+//                asprintf(&out, "%s%d ", old, parent.x);
+//                ::free(old);
+//                parent = ea[parent].getSameCdr();
+//                if (parent == parent_start) break;
+//            }
+//        }
+//        if (pcount != ea[en.getRoot()].getParentSize()) {
+//            old = out;
+//            asprintf(&out, "%s%s", old, "parent count mismatch!");
+//            ::free(old);
+//        }
         old = out;
         asprintf(&out, "%s\n", old);
         ::free(old);

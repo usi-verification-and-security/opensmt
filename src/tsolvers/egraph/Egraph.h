@@ -44,10 +44,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "GCTest.h"
 #endif
 
-#ifdef PRODUCE_PROOF
-#include "UFInterpolator.h"
-#endif
-
 #include <unordered_set>
 
 class UFSolverStats: public TSolverStats
@@ -71,10 +67,117 @@ class UFSolverStats: public TSolverStats
         }
 };
 
+/*
+ * Defines parents of an equivalence class of terms - terms where at least one term from the class is present as a child
+ * p is parent of t if t is car or cdr of p => p will be present in UseVector of class(t).
+ * Moreover, if p's index in UseVector is i then p.carParentIndex or p.cdrParentIndex is i.
+ */
+class UseVector {
+    /* First two bits represent tag: 00 - valid entry, 01 - marked entry, 11 - empty entry
+     * In case of valid and marked entry, the data is ERef, in case of empty entry, the data is next free entry.
+     * This data structure is a vector possibly containing a free list inside
+     */
+    struct Entry {
+        enum class Tag : unsigned char {Valid, Marked, Free};
+        int data;
+        Tag tag;
+
+        Entry(ERef e): tag{Tag::Valid}, data{static_cast<int>(e.x)} { }
+        Entry(): tag{Tag::Valid}, data{0} { }
+        inline bool isFree()   const    { return tag == Tag::Free; }
+        inline bool isValid()  const    { return tag == Tag::Valid; }
+        inline bool isMarked() const    { return tag == Tag::Marked; }
+        inline void mark()              { assert(isValid()); tag = Tag::Marked; }
+        inline void unmark()            { assert(isMarked()); tag = Tag::Valid; }
+    };
+    // TODO: make it 4 again
+    static_assert(sizeof(Entry) == 8, "Entry is not of expected size!");
+    std::vector<Entry> data;
+    int32_t free; // pointer to head of a free list, -1 means no free list
+    uint32_t nelems; // the real number of elements;
+
+    using iterator = decltype(data)::iterator;
+    using const_iterator = decltype(data)::const_iterator;
+
+public:
+    UseVector() : data{}, free{-1}, nelems{0}
+    {}
+
+    uint32_t size() const { return nelems; }
+
+    uint32_t addParent(ERef parent);
+
+    void clearEntryAt(int index);
+
+    void markEntry(Entry& entry);
+    void unMarkEntry(Entry& entry);
+
+    iterator begin() { return data.begin(); }
+    iterator end() { return data.end(); }
+    const_iterator begin() const { return data.cbegin(); }
+    const_iterator end() const { return data.cend(); }
+
+    static Entry erefToEntry(ERef e) {
+        assert(e.x >> 30 == 0);
+        return Entry(e);
+    }
+
+    static ERef entryToERef(Entry e) {
+        // MB: TODO: Test that the conversion is correct
+        assert(e.isValid());
+        unsigned int val = e.data;
+        return ERef{val};
+    }
+
+    static int freeEntryToIndex(Entry e) {
+        // MB: TODO: Test that the conversion is correct
+        assert(e.isFree());
+        int val = e.data;
+        return val;
+    }
+
+    static Entry indexToFreeEntry(int index) {
+        // MB: TODO: Test that the conversion is correct
+        Entry ret;
+        ret.tag = Entry::Tag::Free;
+        ret.data = index;
+        return ret;
+    }
+
+    const Entry& operator[](unsigned index) const { assert(index < data.size()); return data[index]; }
+private:
+    uint32_t getFreeSlotIndex();
+
+
+};
+
 class Egraph : public TSolver
 {
+protected:
+    Logic& logic;
 private:
-  Logic& logic;
+  /*
+   * fields and methods related to parent vectors
+   */
+  //***************************************************************************************************************
+  std::vector<UseVector> parents;
+
+  void addToParentVectors(ERef);
+
+  void updateParentsVector(PTRef);
+
+  inline void addToCarUseVector(ERef parent, Enode& parentNode);
+  inline void addToCarUseVectorExceptSymbols(ERef parent, Enode& parentNode);
+  inline void addToCdrUseVector(ERef parent, Enode& parentNode);
+  inline void addToCdrUseVectorExceptNill(ERef parent, Enode& parentNode);
+
+  inline void removeFromCarUseVector(ERef parent, Enode const & parentNode);
+  inline void removeFromCarUseVectorExceptSymbols(ERef parent, Enode const & parentNode);
+  inline void removeFromCdrUseVector(ERef parent, Enode const & parentNode);
+  inline void removeFromCdrUseVectorExceptNill(ERef parent, Enode const & parentNode);
+
+  unsigned getParentsSize(ERef ref) { assert(getEnode(ref).getCid() < parents.size()); return parents[getEnode(ref).getCid()].size(); }
+  //***************************************************************************************************************
   ELAllocator   forbid_allocator;
 
   EnodeStore    enode_store;
@@ -102,24 +205,8 @@ public:
   Egraph(SMTConfig & c , Logic& l
           , vec<DedElem>& d);
 
-    ~Egraph( ) {
+    virtual ~Egraph( ) {
         backtrackToStackSize( 0 );
-        //
-        // Delete enodes
-        //
-        while ( enode_store.id_to_enode.size() != 0 ) {
-            ERef er = enode_store.id_to_enode.last();
-            if (er != ERef_Undef )
-                enode_store.free(er);
-
-            enode_store.id_to_enode.pop();
-        }
-#ifdef PRODUCE_PROOF
-        if(cgraph)
-            delete cgraph;
-        if(cgraph_)
-            delete cgraph_;
-#endif
 #ifdef STATISTICS
         tsolver_stats.printStatistics(std::cerr);
 #endif // STATISTICS
@@ -129,26 +216,22 @@ public:
 
     void print(ostream& out) { return; }
 
-private:
+protected:
     inline Enode& getEnode(ERef er) { return enode_store[er]; }
+private:
+    ERef termToERef(PTRef p)              { return enode_store.termToERef[p]; }
 public:
     inline const Enode& getEnode(ERef er) const { return enode_store[er]; }
-    inline const Enode& getEnode(PTRef er) const { return enode_store[er]; }
-    const vec<ERef>& getEnodes() const    { return enode_store.getEnodes(); }
-    PTRef ERefToTerm(ERef er)    const    { return enode_store[er].getTerm(); }
+    PTRef ERefToTerm(ERef er)    const    { return getEnode(er).getTerm(); }
+
     bool  isDeduced(PTRef tr)    const    { return deduced[logic.getPterm(tr).getVar()] != l_Undef; }
     lbool getDeduced(PTRef tr)   const    { return deduced[logic.getPterm(tr).getVar()].polarity; }
 
     bool  isConstant(ERef er)    const    {
-        return (enode_store[er].isTerm() && logic.isConstant(enode_store[er].getTerm()));
+        return (getEnode(er).isTerm() && logic.isConstant(getEnode(er).getTerm()));
     }
 
-    size_t size() const { return enode_store.id_to_enode.size(); };
-
-
   char*   printValue              (PTRef tr); // Print all terms in the same eq class and distinction class
-
-  void    printEnodeList          ( ostream & );
 
 #ifdef STATISTICS
   void        printMemStats             ( ostream & );
@@ -160,25 +243,6 @@ public:
   inline void storeDup1(PTRef e) { assert(  active_dup1 ); if (duplicates1.has(e)) duplicates1[e] = dup_count1; else duplicates1.insert(e, dup_count1); }
   inline bool isDup1   (PTRef e) { assert(  active_dup1 ); return !duplicates1.has(e) ? false : duplicates1[e] == dup_count1; }
   inline void doneDup1 ()        { assert(  active_dup1 ); active_dup1 = false; }
-  //
-  // Fast duplicates checking. Cannot be nested !
-  //
-  inline void initDup2  ( )           { assert( !active_dup2 ); active_dup2 = true; duplicates2.growTo( enode_store.id_to_enode.size( ), dup_count2 ); dup_count2 ++; }
-  inline void storeDup2 ( ERef e ) { assert(  active_dup2 ); assert( enode_store[e].getId() < (enodeid_t)duplicates2.size_() ); duplicates2[ enode_store[e].getId( ) ] = dup_count2; }
-  inline bool isDup2    ( ERef e ) { assert(  active_dup2 ); assert( enode_store[e].getId() < (enodeid_t)duplicates2.size_() ); return duplicates2[ enode_store[e].getId( ) ] == dup_count2; }
-  inline void doneDup2  ( )           { assert(  active_dup2 ); active_dup2 = false; }
-  //
-  // Fast duplicates checking. Cannot be nested !
-  //
-  void    initDupMap1  ( );
-  void    storeDupMap1 ( ERef, ERef );
-  ERef    valDupMap1   ( ERef );
-  void    doneDupMap1  ( );
-
-  void    initDupMap2  ( );
-  void    storeDupMap2 ( ERef, ERef );
-  ERef    valDupMap2   ( ERef );
-  void    doneDupMap2  ( );
 
   void    computePolarities ( ERef );
 
@@ -197,10 +261,6 @@ public:
   ERef    canonizeDTC              ( ERef, bool = false );
 
   Logic& getLogic() { return logic; }
-private:
-
-  int countEqClasses();
-  vec< ERef > interface_terms;
 
 public:
 
@@ -217,11 +277,7 @@ public:
   virtual ValPair     getValue                (PTRef tr);
   void                computeModel            ( );
   void                clearModel              ( );
-  void                printModel              ( ostream & );                // Computes and print the model
   void                splitOnDemand           ( vec<PTRef> &, int ) { };       // Splitting on demand modulo equality
-  void                explain                 ( PTRef
-                                              , PTRef
-                                              , vec<PTRef> & );             // Exported explain
 
   //===========================================================================
   // Exported function for using egraph as supporting solver
@@ -235,28 +291,14 @@ public:
 
 private:
 
-  //===========================================================================
-  // Private Routines for enode construction/destruction
-
-//  Snode * sarith1;
-//  Snode * sarray;
-//  Snode * sindex;
-//  Snode * selem;
-
   //
   // Defines the set of operations that can be performed and that should be undone
   //
   typedef enum {      // These constants are stored on undo_stack_oper when
-      SYMB            // A new symbol is created
-    , NUMB            // A new number is created
-    , CONS            // An undoable cons is done
+      CONS            // An undoable cons is done
     , MERGE           // A merge is done
-    , INITCONG        // Congruence initialized
-    , FAKE_MERGE      // A fake merge for incrementality
-    , FAKE_INSERT     // A fake insert for incrementality
     , DISEQ           // A negated equality is asserted
     , DIST            // A distinction is asserted
-    , INSERT_STORE    // Inserted in store
     , EXPL            // Explanation added
     , SET_DYNAMIC     // Dynamic info was set
     , SET_POLARITY    // A polarity of a PTRef was set
@@ -280,26 +322,14 @@ private:
   };
 
   bool                        active_dup1;                      // To prevent nested usage
-  bool                        active_dup2;                      // To prevent nested usage
   Map<PTRef,int,PTRefHash,Equal<PTRef> >  duplicates1;          // Fast duplicate checking
-  vec< int >                  duplicates2;                      // Fast duplicate checking
   int                         dup_count1;                       // Current dup token
-  int                         dup_count2;                       // Current dup token
-  bool                        active_dup_map1;                  // To prevent nested usage
-  bool                        active_dup_map2;                  // To prevent nested usage
-  vec< ERef >                 dup_map1;                         // Fast duplicate checking
-  vec< int >                  dup_set1;                         // Fast duplicate checking
-  vec< ERef >                 dup_map2;                         // Fast duplicate checking
-  vec< int >                  dup_set2;                         // Fast duplicate checking
-  int                         dup_map_count1;                   // Current dup token
-  int                         dup_map_count2;                   // Current dup token
   bool                           model_computed;                // Has model been computed lately ?
   bool                           congruence_running;            // True if congruence is running
 
   //===========================================================================
   // Private Routines for Core Theory Solver
 
-  bool    assertLit_      ( PTRef ) { return true; }             // Assert a theory literal
   //
   // Asserting literals
   //
@@ -340,12 +370,13 @@ private:
   //
   // Explanation routines and data
   //
+protected:
+  virtual void doExplain(ERef, ERef, PtAsgn);                   // Explain why the Enodes are equivalent when PtAsgn says it should be different
+  virtual void explainConstants(ERef, ERef);
+  virtual void expExplainEdge(ERef v, ERef p);
+private:
   void     expExplain           ( );                            // Main routine for explanation
-#ifdef PRODUCE_PROOF
-  void     expExplain           ( ERef, ERef, PTRef );        // Enqueue equality and explain
-#else
   void     expExplain(ERef, ERef);               // Enqueue equality and explain
-#endif
   void     expStoreExplanation  ( ERef, ERef, PtAsgn );         // Store the explanation for the merge
   void     expExplainAlongPath(ERef, ERef);               // Store explanation in explanation
   void     expEnqueueArguments(ERef, ERef);               // Enqueue arguments to be explained
@@ -357,28 +388,7 @@ private:
   void     expRemoveExplanation ( );                            // Undoes the effect of expStoreExplanation
   void     expCleanup           ( );                            // Undoes the effect of expExplain
 
-  inline const char * logicStr ( Logic_t l )
-  {
-         if ( l == EMPTY )     return "EMPTY";
-    else if ( l == QF_UF )     return "QF_UF";
-    else if ( l == QF_BV )     return "QF_BV";
-    else if ( l == QF_RDL )    return "QF_RDL";
-    else if ( l == QF_IDL )    return "QF_IDL";
-    else if ( l == QF_LRA )    return "QF_LRA";
-    else if ( l == QF_LIA )    return "QF_LIA";
-    else if ( l == QF_UFRDL )  return "QF_UFRDL";
-    else if ( l == QF_UFIDL )  return "QF_UFIDL";
-    else if ( l == QF_UFLRA )  return "QF_UFLRA";
-    else if ( l == QF_UFLIA )  return "QF_UFLIA";
-    else if ( l == QF_UFBV )   return "QF_UFBV";
-    else if ( l == QF_AX )     return "QF_AX";
-    else if ( l == QF_AXDIFF ) return "QF_AXDIFF";
-    else if ( l == QF_BOOL )   return "QF_BOOL";
-    return "";
-  }
 
-  bool                        state;                            // the hell is this ?
-  set< enodeid_t >            initialized;                      // Keep track of initialized nodes
   vec< ERef >                 pending;                          // Pending merges
   vec< Undo >                 undo_stack_main;                  // Keeps track of terms involved in operations
   vec< PtAsgn >               explanation;                      // Stores explanation
@@ -391,12 +401,6 @@ private:
   vec< ERef >                 exp_undo_stack;                   // Keep track of exp_parent merges
   vec< ERef >                 exp_cleanup;                      // List of nodes to be restored
   int                         time_stamp;                       // Need for finding NCA
-  int                         conf_index;                       // Index of theory solver that caused conflict
-
-  void    initializeCongInc ( ERef );                           // Initialize a node in the congruence at runtime
-  void    initializeAndMerge( ERef );                           // Initialize a node in the congruence at runtime
-  ERef    uCons             ( ERef, ERef );                     // Undoable cons - To create dynamic terms
-  void    undoCons          ( ERef );                           // Undoes a cons
 
   //============================================================================
   // Memory management for forbid allocator
@@ -408,52 +412,6 @@ private:
   void relocAll(ELAllocator&);
   //============================================================================
 
-#ifdef PRODUCE_PROOF
-  //===========================================================================
-  // Interpolation related routines - Implemented in EgraphDebug.C
-
-public:
-
-  inline void     setAutomaticColoring    ( ) { assert( !automatic_coloring ); automatic_coloring = true; }
-  inline unsigned getNofPartitions        ( ) { return iformula - 1; }
-
-  PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
-  {
-        return cgraph->getInterpolant(mask, labels);
-  }
-
-  TheoryInterpolator*         getTheoryInterpolator()
-  {
-      return nullptr;
-  }
-  Enode *         getNextAssertion        ( );
-  Enode *         expandDefinitions       ( Enode * );
-  void            addDefinition           ( Enode *, Enode * );
-  void            maximizeColors          ( );
-  void            finalizeColors          ( Enode *, const ipartitions_t & );
-
-private:
-
-  inline void     formulaToTag     ( Enode * e ) { formulae_to_tag.push_back( e ); }
-
-  void            addIFormula      ( );
-  void            tagIFormulae     ( const ipartitions_t & );
-  void            tagIFormulae     ( const ipartitions_t &, vector< Enode * > & );
-  void            tagIFormula      ( Enode *, const ipartitions_t & );
-
-  void            scanForDefs      ( Enode *, set< Enode * > & );
-  Enode *         substitute       ( Enode *, map< Enode *, Enode * > & );
-
-  unsigned                iformula;                  // Current formula id
-  vector< Enode * >       formulae_to_tag;           // Formulae to be tagged
-  vector< uint64_t >      id_to_iformula;            // From enode to iformula it belongs to
-  CGraph *                cgraph;                   // Holds congrunce graph and compute interpolant 
-  CGraph *                cgraph_;                   // Holds congrunce graph and compute interpolant 
-  bool                    automatic_coloring;        // Set automatic node coloring
-  vector< Enode * >       idef_list;                 // Definition list in rev chron order
-  map< Enode *, Enode * > idef_map;                  // Def to term map
-#endif
-
   //===========================================================================
   // Debugging routines - Implemented in EgraphDebug.C
 public:
@@ -461,20 +419,24 @@ public:
   char* printDistinctions          ( PTRef tr ) const;
   char* printExplanation           ( PTRef tr ) { char* tmp; asprintf(&tmp, "%s", printExplanationTreeDotty(enode_store.termToERef[tr]).c_str()); return tmp; }
 private:
-  bool   isEqual                   (PTRef, PTRef) const;
-  string printExplanationTree(ERef);
-  std::string toString                 (ERef er) const { return std::string{logic.printTerm(getEnode(er).getTerm())};}
+  std::string toString                 (ERef er) const;
 public:
   string printExplanationTreeDotty(ERef);
 private:
   const string printDistinctionList( ELRef, ELAllocator& ela, bool detailed = true );
   void checkForbidReferences       ( ERef );
   void checkRefConsistency         ( );
-  string printCbeStructure         ( );
-  string printCbeStructure         ( ERef, set< int > & );
-  string printParents              ( ERef );
+  // Helper methods
+  void mergeForbidLists(Enode & to, const Enode & from);
+  void unmergeForbidLists(Enode & to, const Enode & from);
+  void mergeDistinctionClasses(Enode & to, const Enode & from);
+  void unmergeDistinctionClasses(Enode & to, const Enode & from);
+  void mergeEquivalenceClasses(ERef newroot, ERef oldroot);
+  void unmergeEquivalenceClasses(ERef newroot, ERef oldroot);
+  void processParentsAfterMerge(UseVector & parents, ERef merged);
+  void processParentsBeforeUnMerge(UseVector & y_parents, ERef oldroot);
 
-#if VERBOSE_EUF
+#ifdef VERBOSE_EUF
 public:
   const char* printUndoTrail     ( );
   const char* printAsrtTrail     ( );
@@ -488,89 +450,10 @@ private:
   bool checkExpTree              ( PTRef );
   bool checkExpReachable         ( PTRef, PTRef );
 #endif
-  bool checkStaticDynamicTable   ( );
 
 #ifdef STATISTICS
   void printStatistics ( ofstream & );
 #endif
-
-  friend class GCTest;
 };
-
-inline void Egraph::initDupMap1( )
-{
-  assert( !active_dup_map1 );
-  active_dup_map1 = true;
-  dup_map1.growTo( enode_store.id_to_enode.size( ), ERef_Nil );
-  dup_set1.growTo( enode_store.id_to_enode.size( ), dup_map_count1 );
-  dup_map_count1 ++;
-}
-
-inline void Egraph::initDupMap2( )
-{
-  assert( !active_dup_map2 );
-  active_dup_map2 = true;
-  dup_map2.growTo( enode_store.id_to_enode.size( ), ERef_Nil );
-  dup_set2.growTo( enode_store.id_to_enode.size( ), dup_map_count2 );
-  dup_map_count2 ++;
-}
-
-inline void Egraph::storeDupMap1( ERef k, ERef e )
-{
-  assert(  active_dup_map1 );
-  dup_map1.growTo( enode_store.id_to_enode.size( ), ERef_Nil ); // Should this be ERef_Undef instead?
-  dup_set1.growTo( enode_store.id_to_enode.size( ), dup_map_count1 - 1 );
-  Enode& en_k = enode_store[k];
-  assert( en_k.getId() < (enodeid_t)dup_set1.size_( ) );
-  dup_set1[ en_k.getId() ] = dup_map_count1;
-  dup_map1[ en_k.getId( ) ] = e;
-}
-
-inline void Egraph::storeDupMap2( ERef k, ERef e )
-{
-  assert(  active_dup_map2 );
-  dup_map2.growTo( enode_store.id_to_enode.size( ), ERef_Undef );
-  dup_set2.growTo( enode_store.id_to_enode.size( ), dup_map_count2 - 1 );
-  Enode& en_k = enode_store[k];
-  assert( en_k.getId( ) < (enodeid_t)dup_set2.size_( ) );
-  dup_set2[ en_k.getId( ) ] = dup_map_count2;
-  dup_map2[ en_k.getId( ) ] = e;
-}
-
-inline ERef Egraph::valDupMap1( ERef k )
-{
-  assert(  active_dup_map1 );
-  dup_map1.growTo( enode_store.id_to_enode.size( ), ERef_Undef );
-  dup_set1.growTo( enode_store.id_to_enode.size( ), dup_map_count1 - 1 );
-  Enode& en_k = enode_store[k];
-  assert( en_k.getId( ) < (enodeid_t)dup_set1.size_( ) );
-  if ( dup_set1[ en_k.getId( ) ] == dup_map_count1 )
-    return dup_map1[ en_k.getId( ) ];
-  return ERef_Undef;
-}
-
-inline ERef Egraph::valDupMap2( ERef k )
-{
-  assert(  active_dup_map2 );
-  dup_map2.growTo( enode_store.id_to_enode.size( ), ERef_Undef );
-  dup_set2.growTo( enode_store.id_to_enode.size( ), dup_map_count2 - 1 );
-  Enode& en_k = enode_store[k];
-  assert( en_k.getId( ) < (enodeid_t)dup_set2.size_( ) );
-  if ( dup_set2[ en_k.getId( ) ] == dup_map_count2 )
-    return dup_map2[ en_k.getId( ) ];
-  return ERef_Undef;
-}
-
-inline void Egraph::doneDupMap1( )
-{
-  assert(  active_dup_map1 );
-  active_dup_map1 = false;
-}
-
-inline void Egraph::doneDupMap2( )
-{
-  assert(  active_dup_map2 );
-  active_dup_map2 = false;
-}
 
 #endif

@@ -70,18 +70,19 @@ class Extra {
         ERef        cdr;
         ERef        next;           // Next node in the class
         int         size;           // Size of the eq class
-        ERef        parent;         // Parent of the node (in congruence)
-        ERef        same_car;       // Circular list of all the car-parents of the class
-        ERef        same_cdr;       // Circular list of all the cdr-parents of the class
-        int         parent_size;    // Size of the parent's congruence class
-        ERef        cg_ptr;         // Congruence class representative (how is this different from root?)
+//        ERef        parent;         // Parent of the node (in congruence)
+//        ERef        same_car;       // Circular list of all the car-parents of the class
+//        ERef        same_cdr;       // Circular list of all the cdr-parents of the class
+//        int         parent_size;    // Size of the parent's congruence class
+//        ERef        cg_ptr;         // Congruence class representative (how is this different from root?)
+        int         carParentIndex;
+        int         cdrParentIndex;
     } lst;
     struct {
         PTRef       pterm;          // The corresponding pterm
         ELRef       forbid;         // List of unmergeable Enodes
         dist_t      dist_classes;   // The bit vector for distinction classes
         int         dist_index;     // My distinction index
-        PTRef       constant;
         // fields related to explanation
         PtAsgn      exp_reason;
         ERef        exp_parent;
@@ -103,8 +104,7 @@ protected:
 
     struct {
         unsigned type      : 2;
-        unsigned reloced   : 1;
-        enodeid_t id       : 29; } header;
+        enodeid_t id       : 30; } header;
 
     static_assert(sizeof(SymRef) == sizeof(ERef), "Expected size of types does not match");
     union {
@@ -126,7 +126,7 @@ public:
 
     // For symbols
     Enode(SymRef symb_, ERef er_, enodeid_t id_)
-        : header  ({et_symb, 0, id_})
+        : header  ({et_symb, id_})
         , symb     (symb_)
         , er      (er_)
         , cid     (cgid_ctr++) {}
@@ -136,11 +136,6 @@ public:
     // Defined for all Enodes
 
     en_type type        ()        const { return (en_type)header.type; }
-
-    void relocate       (ERef e)        { header.reloced = 1; er = e; }
-    bool reloced        ()        const { return header.reloced; }
-    ERef relocation     ()        const { return er; }
-
     uint32_t getId      ()        const { return header.id; }
 
     bool  isList        ()        const { return (en_type)header.type == et_list; }
@@ -162,17 +157,22 @@ public:
     ERef getCdr()                const { assert(type() != et_symb); return ex->lst.cdr; }
     ERef getRoot()               const { if (isSymb()) return er; else return root; }
     void setRoot       (ERef r)        { assert(type() != et_symb); root = r; }
-    ERef getCgPtr      ()        const { assert(type() != et_symb); return ex->lst.cg_ptr; }
-    void setCgPtr      (ERef e)        { assert(type() != et_symb); ex->lst.cg_ptr = e; }
+//    ERef getCgPtr      ()        const { assert(type() != et_symb); return ex->lst.cg_ptr; }
+//    void setCgPtr      (ERef e)        { assert(type() != et_symb); ex->lst.cg_ptr = e; }
+//
+//    ERef getParent     ()        const { assert(type() != et_symb); return ex->lst.parent; }
+//    void setParent     (ERef e)        { assert(type() != et_symb); ex->lst.parent = e; }
+//    int  getParentSize ()        const { assert(type() != et_symb); return ex->lst.parent_size; }
+//    void setParentSize (int i)         { assert(type() != et_symb); ex->lst.parent_size = i; }
+//    ERef getSameCdr    ()        const { assert(type() != et_symb); return ex->lst.same_cdr; }
+//    void setSameCdr    (ERef e)        { assert(type() != et_symb); ex->lst.same_cdr = e; }
+//    ERef getSameCar    ()        const { assert(type() != et_symb); return ex->lst.same_car; }
+//    void setSameCar    (ERef e)        { assert(type() != et_symb); ex->lst.same_car = e; }
 
-    ERef getParent     ()        const { assert(type() != et_symb); return ex->lst.parent; }
-    void setParent     (ERef e)        { assert(type() != et_symb); ex->lst.parent = e; }
-    int  getParentSize ()        const { assert(type() != et_symb); return ex->lst.parent_size; }
-    void setParentSize (int i)         { assert(type() != et_symb); ex->lst.parent_size = i; }
-    ERef getSameCdr    ()        const { assert(type() != et_symb); return ex->lst.same_cdr; }
-    void setSameCdr    (ERef e)        { assert(type() != et_symb); ex->lst.same_cdr = e; }
-    ERef getSameCar    ()        const { assert(type() != et_symb); return ex->lst.same_car; }
-    void setSameCar    (ERef e)        { assert(type() != et_symb); ex->lst.same_car = e; }
+    void setCarParentIndex(int32_t idx) { assert(type() != et_symb); ex->lst.carParentIndex = idx; }
+    void setCdrParentIndex(int32_t idx) { assert(type() != et_symb); ex->lst.cdrParentIndex = idx; }
+    int32_t getCarParentIndex() const   { assert(type() != et_symb); return ex->lst.carParentIndex; }
+    int32_t getCdrParentIndex() const   { assert(type() != et_symb); return ex->lst.cdrParentIndex; }
 
     ERef getNext       ()        const { assert(type() != et_symb); return ex->lst.next; }
     void setNext       (ERef n)        { assert(type() != et_symb); ex->lst.next = n; }
@@ -206,10 +206,6 @@ public:
 
 //    inline dist_t getDistClasses() const { assert(isTerm()); return ex->trm.dist_classes; }
     inline dist_t getDistClasses() const { assert(!isSymb()); if (isTerm()) return ex->trm.dist_classes; else return 0; }
-
-    void setConstant      (PTRef tr)      { assert(isTerm()); ex->trm.constant = tr; }
-    PTRef getConstant     () const        { if (!isTerm()) return PTRef_Undef; return ex->trm.constant; }
-    void clearConstant    ()              { assert(isTerm()); ex->trm.constant = PTRef_Undef; }
 };
 
 struct ERefHash {
@@ -235,12 +231,9 @@ struct ERef_vecEq {
 class EnodeAllocator : public RegionAllocator<uint32_t>
 {
     enodeid_t n_enodes;
-
-    Map<SigPair,ERef,SigHash,Equal<const SigPair&> >* sig_tab;
-
  public:
 
-    EnodeAllocator(uint32_t start_cap, Map<SigPair, ERef, SigHash, Equal<const SigPair&> >* st) : RegionAllocator<uint32_t>(start_cap), n_enodes(0), sig_tab(st) {}
+    EnodeAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), n_enodes(0) {}
     EnodeAllocator() : n_enodes(0) {}
 
     static int symEnodeWord32Size()  { return sizeof(Enode) / sizeof(int32_t); }
@@ -260,7 +253,6 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
         ERef eid;
         eid.x = v;
         Enode* tmp = new (lea(eid)) Enode(sym, eid, n_enodes++);
-        tmp->header.id = n_enodes++;
         return eid;
     }
 
@@ -279,10 +271,7 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
         return eid;
     }
 
-    ERef alloc(Enode&) {
-        assert(false);
-        return ERef_Undef;
-    }
+    ERef alloc(Enode&) = delete;
 
     // Deref, Load Effective Address (LEA), Inverse of LEA (AEL):
     Enode&       operator[](ERef r)         { return (Enode&)RegionAllocator<uint32_t>::operator[](r.x); }
@@ -302,16 +291,6 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
         else
             RegionAllocator<uint32_t>::free(symEnodeWord32Size());
 
-    }
-
-    void reloc(ERef& er, EnodeAllocator& to)
-    {
-        Enode& e = operator[](er);
-
-        if (e.reloced()) { er = e.relocation(); return; }
-
-        er = to.alloc(e);
-        e.relocate(er);
     }
 
 };

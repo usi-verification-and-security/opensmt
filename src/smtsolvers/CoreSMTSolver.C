@@ -68,8 +68,9 @@ namespace opensmt
 // Constructor/Destructor:
 
 CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
-    : SMTSolver        (c, t)
-    , axioms_checked   ( 0 )
+    :
+    config (c)
+    , theory_handler (t)
     , verbosity        (c.verbosity())
     // Parameters: (formerly in 'SearchParams')
     , var_decay        (c.sat_var_decay())
@@ -230,13 +231,11 @@ CoreSMTSolver::~CoreSMTSolver()
     for (int i = 0; i < clauses.size(); i++) if(clauses[i] != CRef_Undef) ca.free(clauses[i]);
     for (int i = 0; i < pleaves.size(); i++) if(pleaves[i] != CRef_Undef) ca.free(pleaves[i]);
     for (int i = 0; i < learnts.size(); i++) if(learnts[i] != CRef_Undef) ca.free(learnts[i]);
-    for (int i = 0; i < axioms.size(); i++) if(axioms[i] != CRef_Undef) ca.free(axioms[i]);
     for (int i = 0; i < tleaves.size(); i++) if(tleaves[i] != CRef_Undef) ca.free(tleaves[i]);
 
 #else
     for (int i = 0; i < learnts.size(); i++) ca.free(learnts[i]);
     for (int i = 0; i < clauses.size(); i++) ca.free(clauses[i]);
-    for (int i = 0; i < axioms .size(); i++) ca.free(axioms [i]);
 #endif
 
     for (int i = 0; i < tmp_reas.size(); i++) ca.free(tmp_reas[i]);
@@ -313,8 +312,6 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
     if ( v != 0 && v != 1 )
         undo_stack.push(undo_stack_el(undo_stack_el::NEWVAR, v));
 
-    n_occs.push(0);
-
     // Add the deduction entry for this variable
     theory_handler.pushDeduction();
 
@@ -322,14 +319,15 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
 }
 
 
-bool CoreSMTSolver::addClause_(vec<Lit>& _ps)
+bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps)
 {
     std::pair<CRef, CRef> fake;
-    return addClause_(_ps, fake);
+    return addOriginalClause_(_ps, fake);
 }
 
-bool CoreSMTSolver::addClause_(const vec<Lit> & _ps, std::pair<CRef, CRef> & inOutCRefs)
+bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, std::pair<CRef, CRef> & inOutCRefs)
 {
+    assert(decisionLevel() == 0);
     inOutCRefs = std::make_pair(CRef_Undef, CRef_Undef);
     if (!ok) return false;
     vec<Lit> ps;
@@ -345,20 +343,13 @@ bool CoreSMTSolver::addClause_(const vec<Lit> & _ps, std::pair<CRef, CRef> & inO
     int i, j;
     for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
     {
-        if ((value(ps[i]) == l_True && vardata[var(ps[i])].level == 0) || ps[i] == ~p)
+        if (value(ps[i]) == l_True || ps[i] == ~p)
         {
-            // decrease the counts of those encountered so far
-            for (int k = 0; k < j; k++)
-            {
-                n_occs[var(ps[k])] -= 1;
-                assert(n_occs[var(ps[k])] >= 0);
-            }
             return true;
         }
-        else if ((value(ps[i]) != l_False || vardata[var(ps[i])].level > 0) && ps[i] != p)
+        else if (value(ps[i]) != l_False && ps[i] != p)
         {
             ps[j++] = p = ps[i];
-            n_occs[var(ps[i])] += 1;
         }
 #ifdef PRODUCE_PROOF
         else if ( value(ps[i]) == l_False )
@@ -402,7 +393,6 @@ bool CoreSMTSolver::addClause_(const vec<Lit> & _ps, std::pair<CRef, CRef> & inO
 
     if (ps.size() == 1)
     {
-        assert(decisionLevel() == 0);
         assert(value(ps[0]) == l_Undef);
 #ifdef PRODUCE_PROOF
         assert( res != CRef_Undef );
@@ -1764,14 +1754,6 @@ void CoreSMTSolver::popBacktrackPoint()
         {
             CRef cr = op.getClause();
             detachClause(cr);
-            detached.push(cr);
-        }
-        else if (op.getType() == undo_stack_el::NEWAXIOM)
-        {
-            CRef cr = op.getClause();
-            assert(axioms.last() == cr);
-            axioms.pop();
-            removeClause(cr);
         }
 #ifdef PRODUCE_PROOF
         else if (op.getType() == undo_stack_el::NEWPROOF)
@@ -2129,9 +2111,6 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 
 #ifdef STATISTICS
                     const double start2 = cpuTime( );
-#endif
-//	    res = checkAxioms( );
-#ifdef STATISTICS
                     tsolvers_time += cpuTime( ) - start2;
 #endif
 
@@ -2322,15 +2301,6 @@ lbool CoreSMTSolver::solve_(int max_conflicts)
     assert( config.logic != QF_UFLRA || config.sat_lazy_dtc == 0 || config.isIncremental() );
     // UF solver should be enabled for lazy dtc
     assert( config.sat_lazy_dtc == 0 || config.uf_disable == 0 );
-#ifdef PRODUCE_PROOF
-    /*
-    // Checks that every variable is associated to a non-zero partition
-    if (config.produce_inter > 0) {
-        checkPartitions( );
-        mixedVarDecActivity( );
-    }
-    */
-#endif
 
     if ( config.sat_dump_cnf != 0 )
         dumpCNF( );
@@ -3149,7 +3119,7 @@ bool CoreSMTSolver::createSplit_scatter(bool last)
 
 bool CoreSMTSolver::excludeAssumptions(vec<Lit>& neg_constrs)
 {
-    addClause(neg_constrs);
+    addOriginalClause(neg_constrs);
     simplify();
     return ok;
 }

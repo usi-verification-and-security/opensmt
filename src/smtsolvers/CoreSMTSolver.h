@@ -339,9 +339,13 @@ public:
 //=================================================================================================
 // Solver -- the main class:
 
-class CoreSMTSolver : public SMTSolver
+class CoreSMTSolver
 {
+protected:
+    SMTConfig & config;         // Stores Config
+    THandler  & theory_handler; // Handles theory
 public:
+    bool stop = false;
 
     // Constructor/Destructor:
     //
@@ -353,20 +357,18 @@ public:
     // Problem specification:
     //
 protected:
-    virtual void  addVar    (Var v); // Ensure that var v exists in the solver
-    Var           newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
+    void  addVar    (Var v); // Ensure that var v exists in the solver
+    virtual Var newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
 public:
-    bool    addClause (const vec<Lit> & ps);
+    bool    addOriginalClause(const vec<Lit> & ps);
     bool    addEmptyClause();                                   // Add the empty clause, making the solver contradictory.
-    bool    addClause (Lit p);                                  // Add a unit clause to the solver.
-    bool    addClause (Lit p, Lit q);                           // Add a binary clause to the solver.
-    bool    addClause (Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
-    bool    addClause_(      vec<Lit>& ps);                     // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.
-    virtual bool addSMTClause_(vec<Lit>&) = 0;                  // For adding SMT clauses within the solver
+    bool    addOriginalClause(Lit p);                                  // Add a unit clause to the solver.
+    bool    addOriginalClause(Lit p, Lit q);                           // Add a binary clause to the solver.
+    bool    addOriginalClause(Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
 protected:
-    bool    addClause_(const vec<Lit> & ps, pair<CRef, CRef> & cr);           // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.  Write the new clause to cr
+    bool    addOriginalClause_(const vec<Lit> & _ps);                     // Add a clause to the solver
+    bool    addOriginalClause_(const vec<Lit> & _ps, pair<CRef, CRef> & inOutCRefs);           // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.  Write the new clause to cr
 public:
-    virtual bool addSMTClause_(const vec<Lit> &, pair<CRef, CRef> & inOutCRefs) = 0;        // For adding SMT clauses within the solver, returning the clause ref
     // Solving:
     //
     bool    simplify     ();                        // Removes already satisfied clauses.
@@ -423,29 +425,13 @@ public:
     void    checkGarbage(double gf);
     void    checkGarbage();
 
-    //=================================================================================================
-    // Added Code
-    /*
-        void addSMTAxiomClause  ( vector< Enode * > &
-    #ifdef PRODUCE_PROOF
-    	                    , Enode *
-    #endif
-    	                    );
-
-    #ifdef PRODUCE_PROOF
-        Enode * computeAxiomInterp ( vector< Enode * > & );
-    #endif
-
-        void addNewAtom         ( Enode * );
-    */
-    vec<CRef>                axioms;         // List of axioms produced with splitting on demand
-    int                      axioms_checked; // Id of next axiom to be checked
 
 #ifdef PRODUCE_PROOF
     set< int >               axioms_ids;     // Set of ids for lemmas on demand
 #endif
 
     // External support incremental and backtrackable APIs
+    // MB: This is used (and needed) by BitBlaster; can be removed if BitBlaster is re-worked
     void        pushBacktrackPoint ( );
     void        popBacktrackPoint  ( );
     void        reset              ( );
@@ -456,7 +442,6 @@ public:
     void     printSMTClause   ( ostream &, const C& );
     void     printSMTClause   ( ostream &, vec< Lit > &, bool = false );
     void     printSMTClause   ( ostream &, vector< Lit > &, bool = false );
-    vec<CRef> detached;
 
     // Added Code
     //=================================================================================================
@@ -538,15 +523,15 @@ protected:
 
 //=================================================================================================
     // Added Code
-    struct watcher_lt
-    {
-        const ClauseAllocator& ca;
-        watcher_lt(const ClauseAllocator& ca_) : ca(ca_) {}
-        bool operator () (const Watcher& x, const Watcher& y)
-        {
-            return ca[x.cref].size() < ca[y.cref].size();
-        }
-    };
+//    struct watcher_lt
+//    {
+//        const ClauseAllocator& ca;
+//        watcher_lt(const ClauseAllocator& ca_) : ca(ca_) {}
+//        bool operator () (const Watcher& x, const Watcher& y)
+//        {
+//            return ca[x.cref].size() < ca[y.cref].size();
+//        }
+//    };
     // Added Code
     //=================================================================================================
 
@@ -706,8 +691,6 @@ protected:
     vec<ExVal>          LAexacts;         // The current exact values
     vec<char>           polarity;         // The preferred polarity of each variable.
     vec<char>           decision;         // Declares if a variable is eligible for selection in the decision heuristic.
-public:
-    vec<int>            n_occs;           // Number of occurrences of a variable in clauses
 protected:
 #ifdef PEDANTIC_DEBUG
 public:
@@ -877,7 +860,7 @@ protected:
 //    void     boolVarDecActivity( );                    // Decrease boolean atoms activity
     void     claDecayActivity  ( );                    // Decay all clauses with the specified factor. Implemented by increasing the 'bump' value instead.
     void     claBumpActivity   ( Clause & c );         // Increase a clause with the current 'bump' value.
-    void     mixedVarDecActivity( );                   // Increase a clause with the current 'bump' value.
+    // Increase a clause with the current 'bump' value.
 
 
     // Operations on clauses:
@@ -904,11 +887,6 @@ protected:
     double   progressEstimate ()      const; // DELETE THIS ?? IT'S NOT VERY USEFUL ...
     bool     withinBudget     ()      const;
 
-
-// Debug:
-//    void     printLit         (Lit l);
-//    template<class C>
-//    void     printClause      (const C& c);
 
     void     printSMTLit              ( ostream &, const Lit );
 
@@ -1003,7 +981,6 @@ public:
 // NOTE old methods, to check
     void   printProof              ( ostream & );
     void   GetInterpolants         (const vector<vector<int> >& partitions, vector<PTRef>& interpolants);
-    void   getMixedAtoms           ( set< Var > & );
     void   verifyInterpolantWithExternalTool ( vector< PTRef > & );
     inline TheoryInterpolator*                  getTheoryInterpolator( CRef cr )
     {
@@ -1033,22 +1010,13 @@ protected:
 
     void   deduceTheory           (vec<LitLev>&);  // Perform theory-deductions
 
-    int    checkAxioms            ( );             // Checks consistency of lemma on demand
-
     int    analyzeUnsatLemma      ( CRef );        // Conflict analysis for an unsat lemma on demand
 
     void   cancelUntilVar         ( Var );         // Backtrack until a certain variable
     void   cancelUntilVarTempInit ( Var );         // Backtrack until a certain variable
     void   cancelUntilVarTempDone ( );             // Backtrack until a certain variable
     int    restartNextLimit       ( int );         // Next conflict limit for restart
-    /*
-          Var    generateMoreEij        ( );             // Generate more eij
-          Var    generateNextEij        ( );             // Generate next eij
-    */
     void   dumpCNF                ( );             // Dumps CNF to cnf.smt2
-    /*
-          void   dumpRndInter           ( );             // Dumps a random interpolation problem
-    */
     vec<CRef>          cleanup;                    // For cleaning up
 //    bool               first_model_found;          // True if we found a first boolean model
     double             skip_step;                  // Steps to skip in calling tsolvers
@@ -1084,8 +1052,6 @@ protected:
     //
     // Data structures for DTC
     //
-    // vector< Enode * >  interface_terms;            // Interface terms for lazy dtc
-    // set< Enode * >     interface_terms_cache;      // Interface terms for lazy dtc
     set< PTRef >     interface_equalities;       // To check that we do not duplicate eij
     set< PTRef >     atoms_seen;                 // Some interface equalities may already exists in the formula
 
@@ -1268,36 +1234,35 @@ inline bool     CoreSMTSolver::enqueue         (Lit p, CRef from)
     return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, from), true);
 }
 
-inline bool     CoreSMTSolver::addClause       (const vec<Lit>& ps)
+inline bool     CoreSMTSolver::addOriginalClause(const vec<Lit> & ps)
 {
-    ps.copyTo(add_tmp);
-    return addClause_(add_tmp);
+    return addOriginalClause_(ps);
 }
 inline bool     CoreSMTSolver::addEmptyClause  ()
 {
     add_tmp.clear();
-    return addClause_(add_tmp);
+    return addOriginalClause_(add_tmp);
 }
-inline bool     CoreSMTSolver::addClause       (Lit p)
+inline bool     CoreSMTSolver::addOriginalClause(Lit p)
 {
     add_tmp.clear();
     add_tmp.push(p);
-    return addClause_(add_tmp);
+    return addOriginalClause_(add_tmp);
 }
-inline bool     CoreSMTSolver::addClause       (Lit p, Lit q)
+inline bool     CoreSMTSolver::addOriginalClause(Lit p, Lit q)
 {
     add_tmp.clear();
     add_tmp.push(p);
     add_tmp.push(q);
-    return addClause_(add_tmp);
+    return addOriginalClause_(add_tmp);
 }
-inline bool     CoreSMTSolver::addClause       (Lit p, Lit q, Lit r)
+inline bool     CoreSMTSolver::addOriginalClause(Lit p, Lit q, Lit r)
 {
     add_tmp.clear();
     add_tmp.push(p);
     add_tmp.push(q);
     add_tmp.push(r);
-    return addClause_(add_tmp);
+    return addOriginalClause_(add_tmp);
 }
 
 
@@ -1484,72 +1449,6 @@ inline void CoreSMTSolver::printClause(const C& c)
     free(clause);
 }
 
-//=================================================================================================
-// Added Code
-//inline void CoreSMTSolver::boolVarDecActivity( )
-//{
-//#if 1
-//    if (first_model_found)
-//        return;
-//    /*
-//      for (int i = 2; i < nVars(); i++)
-//      {
-//        Enode * e = theory_handler->varToEnode( i );
-//    #if 1
-//        if ( !e->isVar( ) && !first_model_found )
-//        {
-//          activity[i] += e->getWeightInc( ) * var_inc;
-//          // Update order_heap with respect to new activity:
-//          if (order_heap.inHeap(i))
-//        order_heap.decrease(i);
-//        }
-//    #else
-//        if ( e->isVar( ) && !first_model_found )
-//        {
-//          activity[i] += var_inc;
-//          // Update order_heap with respect to new activity:
-//          if (order_heap.inHeap(i))
-//        order_heap.decrease(i);
-//        }
-//    #endif
-//      }
-//    */
-//#endif
-//}
-
-#ifdef PRODUCE_PROOF
-
-// NOTE Each boolean variable has associated an enode and a bitvector
-// which contains the ids of the partitions where the variable appears
-// Bit 0 is reserved to identify mixed predicates
-inline void CoreSMTSolver::checkPartitions( )
-{
-    if ( config.produce_inter() == 0 )
-        return;
-
-    unsigned mixed = 0;
-
-    for (int i = 2; i < nVars(); i++)
-    {
-        PTRef tref = theory_handler.varToTerm(i);
-
-        ipartitions_t p = theory_handler.getLogic().getIPartitions(tref);
-        char* name;
-        theory_handler.getVarName(i, &name);
-        free(name);
-
-        if ( p == 0 )
-        {
-            char* name;
-            theory_handler.getVarName(i, &name);
-            opensmt_error2( "node without partitions:", name );
-            free(name);
-        }
-        if ( p % 2 == 1 )
-            mixed ++;
-    }
-}
-#endif
 
 inline void CoreSMTSolver::cnfToString(CnfState& cs)
 {
@@ -1704,68 +1603,5 @@ inline void CoreSMTSolver::printClause( vec< Lit > & c )
         fprintf(stderr, " ");
     }
 }
-
-/*
-#ifdef PRODUCE_PROOF
-inline void CoreSMTSolver::printRestrictedSMTClause( ostream & os, vec< Lit > & c, const ipartitions_t & mask )
-{
-  assert( c.size( ) > 0 );
-  int nof_lits = 0;
-  stringstream s;
-  for ( int i = 0 ; i < c.size( ) ; i++ )
-  {
-    Var v = var(c[i]);
-    if ( v <= 1 ) continue;
-    Enode * e = theory_handler->varToEnode( v );
-    if ( (e->getIPartitions( ) & mask) != 0 )
-    {
-      s << (sign(c[i])?"(not ":"") << e << (sign(c[i])?") ":" ");
-      nof_lits ++;
-    }
-  }
-  if ( nof_lits == 0 )
-    os << "false";
-  else if ( nof_lits == c.size( ) )
-    os << "true";
-  else
-  {
-    if ( nof_lits > 1 ) os << "(or ";
-    os << s.str( );
-    if ( nof_lits > 1 ) os << ")";
-  }
-}
-
-inline Enode * CoreSMTSolver::mkRestrictedSMTClause( vec< Lit > & c
-                                                   , const ipartitions_t & mask )
-{
-  assert( c.size( ) > 0 );
-  list< Enode * > args;
-  for ( int i = 0 ; i < c.size( ) ; i++ )
-  {
-    Var v = var(c[i]);
-    if ( v <= 1 ) continue;
-
-    Enode * e = sign(c[i])
-      ? egraph.mkNot( egraph.cons( theory_handler->varToEnode( v ) ) )
-      : theory_handler->varToEnode( v );
-    Enode * epos = theory_handler->varToEnode( v );
-    //
-    // If Shared literal
-    //
-    if ( ((epos->getIPartitions( ) &  mask) != 0)
-	&& ((epos->getIPartitions( ) & ~mask) != 0) )
-    {
-      args.push_front( e );
-    }
-  }
-  if ( args.size( ) == 0 )
-    return egraph.mkFalse( );
-
-  return egraph.mkOr( egraph.cons( args ) );
-}
-#endif
-*/
-
-//=================================================================================================
 
 #endif

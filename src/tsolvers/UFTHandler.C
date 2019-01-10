@@ -1,12 +1,21 @@
 #include "UFTHandler.h"
 #include "TreeOps.h"
+#ifdef PRODUCE_PROOF
+#include "InterpolatingEgraph.h"
+#else // PRODUCE_PROOF
 #include "Egraph.h"
+#endif // PRODUCE_PROOF
 
 UFTHandler::UFTHandler(SMTConfig& c, Logic& l, vec<DedElem>& d, TermMapper& tmap)
     : TSolverHandler(c, d, l, tmap)
     , logic(l)
 {
+#ifdef PRODUCE_PROOF
+    egraph = new InterpolatingEgraph(config, logic, deductions);
+#else // PRODUCE_PROOF
     egraph = new Egraph(config, logic, deductions);
+#endif // PRODUCE_PROOF
+
     SolverId my_id = egraph->getId();
     tsolvers[my_id.id] = egraph;
     solverSchedule.push(my_id.id); // Only UF for the QF_UF logic
@@ -58,14 +67,11 @@ void UFTHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
 }
 
 #ifdef PRODUCE_PROOF
-TheoryInterpolator* UFTHandler::getTheoryInterpolator()
-{
-    return egraph->getTheoryInterpolator();
-}
-
 PTRef UFTHandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
 {
-    return egraph->getInterpolant(mask, labels);
+    InterpolatingEgraph* iegraph = dynamic_cast<InterpolatingEgraph*>(egraph);
+    assert(iegraph);
+    return iegraph->getInterpolant(mask, labels);
 }
 #endif
 

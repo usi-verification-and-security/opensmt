@@ -131,9 +131,8 @@ class MainSolver
         , tmap(thandler.getTMap())
         , smt_solver(s)
         , ts( config
-            , getTheory()
+            , thandler.getLogic()
             , tmap
-            , thandler
             , *s )
         , solver_name {name}
         , simplified_until(0)

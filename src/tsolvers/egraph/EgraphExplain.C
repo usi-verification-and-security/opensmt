@@ -64,8 +64,8 @@ void Egraph::expStoreExplanation ( ERef x, ERef y, PtAsgn reason )
     // balanced (which is a requirement to keep the O(nlogn) bound
 
     // Make sure that x is the node with the larger number of edges to switch
-    const Enode& root_x = enode_store[getEnode(x).getRoot()];
-    const Enode& root_y = enode_store[getEnode(y).getRoot()];
+    const Enode& root_x = getEnode(getEnode(x).getRoot());
+    const Enode& root_y = getEnode(getEnode(y).getRoot());
     if ( root_x.getSize() < root_y.getSize() ) {
         ERef tmp = x;
         x = y;
@@ -83,8 +83,8 @@ void Egraph::expStoreExplanation ( ERef x, ERef y, PtAsgn reason )
     exp_undo_stack.push(y);
 
 #ifdef VERBOSE_EUF
-    assert( checkExpTree(tr_x) );
-    assert( checkExpTree(tr_y) );
+    assert( checkExpTree(getEnode(x).getTerm()) );
+    assert( checkExpTree(getEnode(y).getTerm()) );
 //    cout << printExplanationTree( tr_y ) << endl;
 #endif
 }
@@ -111,7 +111,7 @@ void Egraph::expReRootOn(ERef x) {
         getEnode(parent).setExpReason(saved_reason);
 
 #ifdef VERBOSE_EUF
-        assert( checkExpTree( parent ) );
+        assert( checkExpTree( getEnode(parent).getTerm() ) );
 #endif
 
         // Move the two pointers
@@ -130,8 +130,8 @@ void Egraph::expExplain () {
         if ( p == q ) continue;
 
 #ifdef VERBOSE_EUF
-        assert( checkExpTree( p ) );
-        assert( checkExpTree( q ) );
+        assert( checkExpTree( getEnode(p).getTerm() ) );
+        assert( checkExpTree( getEnode(q).getTerm() ) );
 #endif
 #ifdef VERBOSE_EUFEX
         cerr << "Explain " << toString(p) << " and " << toString(q) << endl;
@@ -150,34 +150,11 @@ void Egraph::expExplain () {
     }
 }
 
-// Exported explain
-/*
-void Egraph::explain( PTRef x, PTRef y, vec<PTRef> & expl )
-{
-    assert(false);
-    assert(explanation.size() == 0);
-    if (x == y) return;
-    expExplain(x, y, PTRef_Undef);
-    assert(explanation.size() > 0);
-    for (int i = 0; i < explanation.size(); i++)
-        expl.push(explanation[i]);
-    expCleanup( );
-    explanation.clear( );
-#ifdef PRODUCE_PROOF
-    if ( config.produce_inter != 0 )
-        cgraph.clear( );
-#endif
-}
-*/
 //
 // Produce an explanation between nodes x and y
 // Wrapper for expExplain
 //
-#ifdef PRODUCE_PROOF
-void Egraph::expExplain(ERef x, ERef y, PTRef r)
-#else
 void Egraph::expExplain(ERef x, ERef y)
-#endif
 {
 #ifdef VERBOSE_EUFEX
     cerr << "exp pending size " << exp_pending.size() << endl;
@@ -186,24 +163,8 @@ void Egraph::expExplain(ERef x, ERef y)
     exp_pending.push(x);
     exp_pending.push(y);
 
-#ifdef PRODUCE_PROOF
-    if ( config.produce_inter() != 0 )
-    {
-        cgraph_->setConf( getEnode(x).getTerm(), getEnode(y).getTerm(), r );
-    }
-#endif
-
     initDup1();
     expExplain();
- #ifdef PRODUCE_PROOF
-    if ( config.produce_inter() != 0 )
-    {
-        delete cgraph;
-        cgraph = cgraph_;
-        //cgraphs.push(cgraph_);
-        cgraph_ = new CGraph(*this, config, logic);
-    }
-#endif
     doneDup1();
     expCleanup();
 }
@@ -240,45 +201,12 @@ void Egraph::expExplainAlongPath(ERef x, ERef y) {
     cerr << "Explaining " << toString(v) << " to " << toString(to) << endl;
 #endif
     while ( v != to ) {
-        auto p = getEnode(v).getExpParent();
+        ERef p = getEnode(v).getExpParent();
         if (p == ERef_Undef)
             cerr << "weirdness " << toString(v) << endl;
         assert(p != ERef_Undef);
-        PtAsgn r = getEnode(v).getExpReason();
-
-        // If it is not a congruence edge
-        if (r.tr != PTRef_Undef && r.tr != Eq_FALSE) {
-            if ( !isDup1(r.tr) ) {
-                explanation.push(r);
-                storeDup1(r.tr);
-            }
-        }
-        // Otherwise it is a congruence edge
-        // This means that the edge is linking nodes
-        // like (v)f(a1,...,an) (p)f(b1,...,bn), and that
-        // a1,...,an = b1,...bn. For each pair ai,bi
-        // we have therefore to compute the reasons
-        else {
-            assert( getEnode(v).getCar() == getEnode(p).getCar() );
-            // MB: FIXME enable the second check
-//            assert( logic.getPterm(v).nargs() == logic.getPterm(p).nargs() );
-            expEnqueueArguments( v, p );
-        }
-
-#ifdef PRODUCE_PROOF
-        if ( config.produce_inter() != 0 ) {
-            const Enode& v_node = getEnode(v);
-            const Enode& p_node = getEnode(p);
-            assert(v_node.isTerm());
-            assert(p_node.isTerm());
-            cgraph_->addCNode( v_node.getTerm() );
-            cgraph_->addCNode( p_node.getTerm() );
-            cgraph_->addCEdge( v_node.getTerm(), p_node.getTerm(), r.tr );
-        }
-#endif
-
-        expUnion( v, p );
-        auto v_old = v;
+        expExplainEdge(v,p);
+        ERef v_old = v;
         v = expHighestNode( p );
         if (v_old == v)
             assert(false); // loop in the explanation graph!
@@ -291,7 +219,7 @@ void Egraph::expEnqueueArguments(ERef x, ERef y) {
         return;
     assert(getEnode(x).isTerm() && getEnode(y).isTerm());
     // Simple explanation if they are arity 0 terms
-    if ( getEnode(x).getSize() == 0 ) {
+    if ( logic.getPterm(getEnode(x).getTerm()).nargs() == 0 ) {
 #ifdef VERBOSE_EUFEX
         cerr << "pushing " << toString(x) << " and " << toString(y) << endl;
 #endif
@@ -326,6 +254,31 @@ void Egraph::expEnqueueArguments(ERef x, ERef y) {
     assert(cdr_y == ERef_Nil);
 }
 
+void Egraph::expExplainEdge(const ERef v, const ERef p) {
+    assert(getEnode(v).getExpParent() == p);
+    PtAsgn r = getEnode(v).getExpReason();
+
+    // If it is not a congruence edge
+    if (r.tr != PTRef_Undef && r.tr != Eq_FALSE) {
+        assert(!isDup1(r.tr)); // MB: It seems that with the shortcuts stored in expRoot, duplicates will never be encountered
+        if ( !isDup1(r.tr) ) {
+            explanation.push(r);
+            storeDup1(r.tr);
+        }
+    }
+        // Otherwise it is a congruence edge
+        // This means that the edge is linking nodes
+        // like (v)f(a1,...,an) (p)f(b1,...,bn), and that
+        // a1,...,an = b1,...bn. For each pair ai,bi
+        // we have therefore to compute the reasons
+    else {
+        assert( getEnode(v).getCar() == getEnode(p).getCar() );
+        assert( logic.getPterm(getEnode(v).getTerm()).nargs() == logic.getPterm(getEnode(p).getTerm()).nargs() );
+        expEnqueueArguments( v, p );
+    }
+    expUnion( v, p );
+}
+
 void Egraph::expUnion(ERef x, ERef y) {
 #ifdef VERBOSE_EUFEX
     cerr << "Union: " << toString(x) << " " << toString(y) << endl;
@@ -333,16 +286,16 @@ void Egraph::expUnion(ERef x, ERef y) {
     // Unions are always between a node and its parent
     assert(getEnode(x).getExpParent() == y);
     // Retrieve the representant for the explanation class for x and y
-    auto x_exp_root = expFind(x);
-    auto y_exp_root = expFind(y);
+    ERef x_exp_root = expFind(x);
+    ERef y_exp_root = expFind(y);
 #ifdef VERBOSE_EUFEX
     cerr << "Root of " << toString(x) << " is " << toString(x_exp_root) << endl;
     cerr << "Root of " << toString(y) << " is " << toString(y_exp_root) << endl;
 #endif
 
 #ifdef VERBOSE_EUF
-    assert(checkExpReachable( x, x_exp_root ) );
-    assert(checkExpReachable( y, y_exp_root ) );
+    assert(checkExpReachable( getEnode(x).getTerm(), getEnode(x_exp_root).getTerm() ) );
+    assert(checkExpReachable( getEnode(y).getTerm(), getEnode(y_exp_root).getTerm() ) );
 #endif
 
     // No need to merge elements of the same class
@@ -363,8 +316,8 @@ void Egraph::expUnion(ERef x, ERef y) {
     exp_cleanup.push(y_exp_root);
 
 #ifdef VERBOSE_EUF
-    assert(checkExpReachable(x, x_exp_root));
-    assert(checkExpReachable(y, y_exp_root));
+    assert(checkExpReachable(getEnode(x).getTerm(), getEnode(x_exp_root).getTerm()));
+    assert(checkExpReachable(getEnode(y).getTerm(), getEnode(y_exp_root).getTerm()));
 #endif
 }
 
@@ -413,8 +366,8 @@ ERef Egraph::expNCA(ERef x, ERef y) {
     cerr << "Highest node of " << toString(y) << " is " << toString(h_y) << endl;
 #endif
 #ifdef VERBOSE_EUF
-    assert(checkExpReachable( x, h_x ));
-    assert(checkExpReachable( y, h_y ));
+    assert(checkExpReachable( getEnode(x).getTerm(), getEnode(h_x).getTerm()));
+    assert(checkExpReachable( getEnode(y).getTerm(), getEnode(h_y).getTerm() ));
 #endif
 
     while ( h_x != h_y ) {

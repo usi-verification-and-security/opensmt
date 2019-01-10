@@ -15,6 +15,8 @@ if(PRODUCE_PROOF)
 	target_sources(tsolvers
 		PUBLIC "${CMAKE_CURRENT_LIST_DIR}/UFInterpolator.h"
 		PRIVATE "${CMAKE_CURRENT_LIST_DIR}/UFInterpolator.C"
+        PUBLIC "${CMAKE_CURRENT_LIST_DIR}/InterpolatingEgraph.h"
+        PRIVATE "${CMAKE_CURRENT_LIST_DIR}/InterpolatingEgraph.cpp"
 	)
 
 	install(FILES ${CMAKE_CURRENT_LIST_DIR}/UFInterpolator.h DESTINATION ${INSTALL_HEADERS_DIR})
