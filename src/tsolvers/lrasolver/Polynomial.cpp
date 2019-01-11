@@ -51,9 +51,9 @@ Polynomial::merge(const Polynomial &other, const opensmt::Real &coeff) {
     auto & removed = res.removed;
     decltype(poly) merged;
     merged.reserve(std::max(this->poly.size(),other.poly.size()));
-    auto myIt = poly.cbegin();
+    auto myIt = std::make_move_iterator(poly.begin());
     auto otherIt = other.poly.cbegin();
-    auto myEnd = poly.cend();
+    auto myEnd = std::make_move_iterator(poly.end());
     auto otherEnd = other.poly.cend();
     TermCmp cmp;
     while(true) {
@@ -69,7 +69,7 @@ Polynomial::merge(const Polynomial &other, const opensmt::Real &coeff) {
             break;
         }
         if(cmp(*myIt, *otherIt)) {
-            merged.push_back(*myIt);
+            merged.emplace_back(*myIt);
             ++myIt;
         }
         else if (cmp(*otherIt, *myIt)) {
