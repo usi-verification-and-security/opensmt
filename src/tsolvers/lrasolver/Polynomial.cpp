@@ -79,7 +79,8 @@ Polynomial::merge(const Polynomial &other, const opensmt::Real &coeff) {
         }
         else {
             assert(myIt->var == otherIt->var);
-            auto mergedCoeff = myIt->coeff + (otherIt->coeff * coeff);
+            auto mergedCoeff = otherIt->coeff * coeff;
+            mergedCoeff += myIt->coeff;
             if (mergedCoeff.isZero()) {
                 removed.push_back(myIt->var);
             }
