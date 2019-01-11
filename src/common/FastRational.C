@@ -6,6 +6,7 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
  */
 #include "FastRational.h"
 #include <sstream>
+
 //mpz_init(FastRational::one);
 //mpz_set_si(FastRational::one, 1);
 FastRational::FastRational( const char * s, const int base )
@@ -20,12 +21,6 @@ FastRational::FastRational( const char * s, const int base )
     assert( isWellFormed( ) );
 }
 
-FastRational::FastRational(FastRational &&other) noexcept : state{other.state}, num{other.num}, den{other.den}  {
-    if (other.mpqMemoryAllocated()) {
-        std::swap(this->mpq, other.mpq);
-        other.state = State::WORD_VALID;
-    }
-}
 void FastRational::reset()
 {
     kill_mpq(); state = State::WORD_VALID; num  = 0; den = 1;

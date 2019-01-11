@@ -95,7 +95,7 @@ public:
     FastRational(word num, word den) : state{State::WORD_VALID}, num(num), den(den) { }
     FastRational(const char* s, const int base = 10);
     inline FastRational( const FastRational & );
-    FastRational(FastRational&& other) noexcept;
+    inline FastRational(FastRational&& other) noexcept;
     FastRational & operator=(FastRational && other) {
         std::swap(this->state, other.state);
         std::swap(this->num, other.num);
@@ -346,7 +346,6 @@ inline std::ostream & operator<<(std::ostream & out, const FastRational & r)
     return out;
 }
 inline FastRational::FastRational(const FastRational& x) {
-
     if (x.wordPartValid()) {
         num = x.num;
         den = x.den;
@@ -359,6 +358,14 @@ inline FastRational::FastRational(const FastRational& x) {
         state = State::MPQ_ALLOCATED_AND_VALID;
     }
 }
+
+inline FastRational::FastRational(FastRational &&other) noexcept : state{other.state}, num{other.num}, den{other.den}  {
+    if (other.mpqMemoryAllocated()) {
+        std::swap(this->mpq, other.mpq);
+        other.state = State::WORD_VALID;
+    }
+}
+
 inline FastRational& FastRational::operator=(const FastRational& x) {
     if (x.wordPartValid()) {
         num = x.num;
