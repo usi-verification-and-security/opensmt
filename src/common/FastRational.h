@@ -93,7 +93,7 @@ public:
     FastRational( ) : state{State::WORD_VALID}, num(0), den(1) { }
     FastRational( word x ) : state{State::WORD_VALID}, num(x), den(1) { }
     FastRational(word num, word den) : state{State::WORD_VALID}, num(num), den(den) { }
-    FastRational(const char* s, const int base = 10);
+    explicit FastRational(const char* s, const int base = 10);
     inline FastRational( const FastRational & );
     inline FastRational(FastRational&& other) noexcept;
     FastRational & operator=(FastRational && other) {
