@@ -30,6 +30,8 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 #include "Theory.h"
 #include "THandler.h"
 
+#include <memory>
+
 //using namespace Minisat;
 using namespace opensmt;
 
