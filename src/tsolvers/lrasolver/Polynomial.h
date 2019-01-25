@@ -9,6 +9,7 @@
 #include "Real.h"
 #include <vector>
 #include <unordered_map>
+#include <functional>
 
 struct MergeResult{
     std::vector<LVRef> added;
@@ -43,6 +44,8 @@ public:
     void negate();
     void divideBy(const opensmt::Real& r);
     MergeResult merge(const Polynomial & other, const opensmt::Real & coeff);
+    void merge(const Polynomial & other, const opensmt::Real & coeff, std::function<void(LVRef)> informAdded,
+               std::function<void(LVRef)> informRemoved);
 
     using iterator = poly_t::iterator;
     using const_iterator = poly_t::const_iterator;

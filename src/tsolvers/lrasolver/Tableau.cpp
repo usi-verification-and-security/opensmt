@@ -164,21 +164,21 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
         // update the polynomials
         auto & poly = getRowPoly(rowVar);
         const auto nvCoeff = poly.removeVar(nv);
-        auto changes = poly.merge(nvPoly, nvCoeff);
-        // update the column information
-        assert(cols[bv.x]);
-        assert(std::find(changes.added.begin(), changes.added.end(), bv) != changes.added.end());
-        for (const auto & addedVar : changes.added) {
-            if (addedVar == bv) { continue; }
-            assert(cols[addedVar.x]);
-            assert(!contains(getColumn(addedVar), rowVar));
-            addRowToColumn(rowVar, addedVar);
-        }
-        for (const auto & removedVar : changes.removed) {
-            assert(cols[removedVar.x]);
-            assert(contains(getColumn(removedVar), rowVar));
-            removeRowFromColumn(rowVar, removedVar);
-        }
+        poly.merge(nvPoly, nvCoeff,
+                // informAdded
+                   [this, bv, rowVar](LVRef addedVar) {
+                       if (addedVar == bv) { return; }
+                       assert(cols[addedVar.x]);
+                       assert(!contains(getColumn(addedVar), rowVar));
+                       addRowToColumn(rowVar, addedVar);
+                   },
+                // informRemoved
+                   [this, rowVar](LVRef removedVar) {
+                       assert(cols[removedVar.x]);
+                       assert(contains(getColumn(removedVar), rowVar));
+                       removeRowFromColumn(rowVar, removedVar);
+                   }
+        );
     }
     assert(!cols[nv.x]);
     assert(cols[bv.x]);
