@@ -132,6 +132,7 @@ void static inline wordToBinary(const opensmt::Integer x, char*& bin, const int 
         mpq_t num;
         mpq_init(num);
         int val = mpq_set_str(num, flo, 0);
+        (void) val;
         assert(val != -1);
         mpq_canonicalize(num);
         if (is_neg)
