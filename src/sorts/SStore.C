@@ -45,46 +45,37 @@ SRef SStore::newSort(IdRef id, const char* name_, vec<SRef>& rest)
 SRef SStore::newSort(IdRef idr, vec<SRef>& rest)
 {
     SRef sr = SRef_Undef;
-    char* canon_name = NULL;
     char* old;
+    std::string canon_name;
     if (rest.size() > 0) {
-        char* arg_names;
-        asprintf(&arg_names, "%s", getName(rest[0]));
+        std::stringstream ss;
+        ss << is.getName(idr);
+        ss << " (";
+        ss << getName(rest[0]);
         for (int i = 1; i < rest.size(); i++) {
-            old = arg_names;
-            asprintf(&arg_names, "%s %s", old, getName(rest[i]));
-            free(old);
+            ss << ' ';
+            ss << getName(rest[i]);
         }
-        old = canon_name;
-        asprintf(&canon_name, "%s (%s)", is.getName(idr), old);
-        free(old);
-    } else
-        asprintf(&canon_name, "%s", is.getName(idr));
+        ss << ')';
+        canon_name = ss.str();
+    } else {
+        canon_name = is.getName(idr);
+    }
 
-    if (sortTable.has(canon_name)) {
-        SRef sr = sortTable[canon_name];
-        free(canon_name);
+    const char* c_canon_name = canon_name.c_str();
+    if (sortTable.has(c_canon_name)) {
+        SRef sr = sortTable[c_canon_name];
         return sr;
     } else {
-        SStrRef nr = ssa.alloc(canon_name);
+        char* new_name = strdup(c_canon_name);
+        SStrRef nr = ssa.alloc(new_name);
         sr = sa.alloc(idr, nr, rest);
         sorts.push(sr);
-        sortTable.insert(canon_name, sr);
-        sort_names.push(canon_name);
+        sortTable.insert(new_name, sr);
+        sort_names.push(new_name);
         return sr;
     }
 }
-
-
-//void SStore::insertStore(Sort* s) {
-//    // temporary hack, finally a finer mem allocation for Sort would be nice?
-//    assert(sorts.size() == SRefToSort.size());
-//    const char* name = s->getCanonName();
-//    SRef sr = sorts.size();
-//    sorts.push(sr);
-//    sortTable.insert(name, sr);
-//    SRefToSort.push(s);
-//}
 
 int* IdentifierStore::serializeIdentifiers() const
 {
