@@ -297,10 +297,9 @@ char*
 Logic::protectName(const char* name) const
 {
     char *name_escaped;
-    if (hasQuotableChars(name))
-        asprintf(&name_escaped, "|%s|", name);
-    else
-        asprintf(&name_escaped, "%s", name);
+    int printed_chars = hasQuotableChars(name) ? asprintf(&name_escaped, "|%s|", name)
+            : asprintf(&name_escaped, "%s", name);
+    (void)printed_chars;
     return name_escaped;
 }
 
@@ -317,47 +316,34 @@ Logic::pp(PTRef tr) const
 
     const Pterm& t = getPterm(tr);
     SymRef sr = t.symb();
-    char* name_escaped = printSym(sr);
+    std::string name_escaped = printSym(sr);
 
     if (t.size() == 0) {
+        std::stringstream ss;
+        ss << name_escaped;
 #ifdef PARTITION_PRETTYPRINT
-        std::stringstream o;
-        o << getIPartitions(tr);
-        const char* parts = o.str().c_str();
-        asprintf(&out, "%s [%s]", name_escaped, parts);
-#else
-        asprintf(&out, "%s", name_escaped);
+        ss << " [" << getIPartitions(tr) << ' ]';
 #endif
-        free(name_escaped);
+        out = strdup(ss.str().c_str());
         return out;
     }
 
     // Here we know that t.size() > 0
 
-    char* old;
-    asprintf(&out, "(%s ", name_escaped);
-    free(name_escaped);
-
+    std::stringstream ss;
+    ss << '(' << name_escaped << ' ';
     for (int i = 0; i < t.size(); i++) {
-        old = out;
-        asprintf(&out, "%s%s", old, pp(t[i]));
-        ::free(old);
+        const std::string arg = pp(t[i]);
+        ss << arg;
         if (i < t.size()-1) {
-            old = out;
-            asprintf(&out, "%s ", old);
-            ::free(old);
+            ss << ' ';
         }
     }
-    old = out;
+    ss << ')';
 #ifdef PARTITION_PRETTYPRINT
-    std::stringstream o;
-    o << getIPartitions(tr);
-    const char* parts = o.str().c_str();
-    asprintf(&out, "%s) [%s]", old, parts);
-#else
-    asprintf(&out, "%s)", old);
+    ss << " [" << getIPartitions(tr) << ']';
 #endif
-    ::free(old);
+    out = strdup(ss.str().c_str());
     return out;
 }
 
