@@ -121,10 +121,9 @@ void Cnfizer::setFrameTerm(FrameId frame_id)
     // frame_id == {0} is for the bottom frame and we don't want to add
     // literals to it since it is never retracted.
     if (frame_id != FrameId_bottom && frame_terms[frame_id.id] == logic.getTerm_true()) {
-        char* name;
-        asprintf(&name, "%s%d", Logic::s_framev_prefix, frame_id.id);
-        PTRef frame_term = logic.mkBoolVar(name);
-        free(name);
+        std::string name {Logic::s_framev_prefix};
+        name += std::to_string(frame_id.id);
+        PTRef frame_term = logic.mkBoolVar(name.c_str());
         frame_terms[frame_id.id] = frame_term;
     }
 
