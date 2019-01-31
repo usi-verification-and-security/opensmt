@@ -34,36 +34,41 @@ const int PtStore::ptstore_buf_idx = 2;
 PtStore::PtStore(SymStore& symstore_, SStore& sortstore_)
     : symstore(symstore_), sortstore(sortstore_) { }
 
+    // TODO: MB: Consider rewriting this using C++ streams
 char* PtStore::printTerm_(PTRef tr, bool ext) const {
     const Pterm& t = pta[tr];
     SymRef sr = t.symb();
     char* out;
     if (t.size() == 0) {
-        if (ext)
-            asprintf(&out, "%s <%d>", symstore.getName(sr), tr.x);
-        else
-            asprintf(&out, "%s", symstore.getName(sr));
+        int chars_printed = ext ? asprintf(&out, "%s <%d>", symstore.getName(sr), tr.x)
+                : asprintf(&out, "%s", symstore.getName(sr));
+        if (chars_printed < 0) return nullptr;
         return out;
     }
 
     char* old;
-    asprintf(&out, "(%s ", symstore.getName(sr));
+    int chars_printed = asprintf(&out, "(%s ", symstore.getName(sr));
+    if (chars_printed < 0) { return nullptr; }
     for (int i = 0; i < t.size(); i++) {
         old = out;
-        asprintf(&out, "%s%s", old, printTerm_(t[i], ext));
+        char* arg = printTerm_(t[i], ext);
+        if (arg == nullptr) { return nullptr; }
+        chars_printed = asprintf(&out, "%s%s", old, arg);
         ::free(old);
+        ::free(arg);
+        if (chars_printed < 0) { return nullptr; }
         if (i < t.size()-1) {
             old = out;
-            asprintf(&out, "%s ", old);
+            chars_printed = asprintf(&out, "%s ", old);
             ::free(old);
+            if (chars_printed < 0) { return nullptr; }
         }
     }
     old = out;
-    if (ext)
-        asprintf(&out, "%s) <%d>", old, tr.x);
-    else
-        asprintf(&out, "%s)", old);
+    chars_printed = ext ? asprintf(&out, "%s) <%d>", old, tr.x)
+            : asprintf(&out, "%s)", old);
     ::free(old);
+    if (chars_printed < 0) { return nullptr; }
     return out;
 }
 
