@@ -202,8 +202,9 @@ MainSolver::insertFormula(PTRef root, char** msg)
 {
     if (logic.getSortRef(root) != logic.getSort_bool())
     {
-        asprintf(msg, "Top-level assertion sort must be %s, got %s",
+        int chars_written = asprintf(msg, "Top-level assertion sort must be %s, got %s",
                  Logic::s_sort_bool, logic.getSortName(logic.getSortRef(root)));
+        (void)chars_written;
         return s_Error;
     }
     int partition_index = inserted_formulas_count++;
