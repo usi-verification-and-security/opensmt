@@ -1203,27 +1203,6 @@ int Interpret::interpInteractive(FILE*) {
     return rval;
 }
 
-IdRef Interpret::newIdentifier(ASTNode& n)
-{
-    if (n.children == NULL)
-        return logic->newIdentifier(n.getValue());
-    else {
-        char* s = NULL;
-        char* o = s;
-        vec<int> nl;
-        for (list<ASTNode*>::iterator it = n.children->begin(); it != n.children->end(); it++) {
-            o = s;
-            asprintf(&s, "%s %s", o, (**it).getValue());
-            free(o);
-            nl.push(atoi((**it).getValue()));
-        }
-        o = s;
-        asprintf(&s, "%s (%s)", n.getValue(), s);
-        free(o);
-        return logic->newIdentifier(n.getValue(), nl);
-    }
-}
-
 // The Traversal of the node is unnecessary and a result of a confusion
 // Code can possibly be reused when define-sort is implemented
 char* Interpret::buildSortName(ASTNode& sn)

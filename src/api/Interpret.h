@@ -71,7 +71,6 @@ class Interpret {
 
     bool                        f_exit;
 
-    IdRef                       newIdentifier(ASTNode& n);
     char*                       buildSortName(ASTNode& n);
     SRef                        newSort      (ASTNode& n);
 
