@@ -731,27 +731,18 @@ bool Interpret::getAssignment() {
        notify_formatted(true, "Last solver call not satisfiable");
        return false;
     }
-    char* out_str;
-    asprintf(&out_str, "(");
+    std::stringstream ss;
+    ss << '(';
     for (int i = 0; i < term_names.size(); i++) {
         const char* name = term_names[i];
         PTRef tr = nameToTerm[name];
         lbool val = main_solver->getTermValue(tr);
-        char*  new_str;
-        asprintf(&new_str, "%s(%s %s)%s",
-                 out_str,
-                 name,
-                 val == l_True ? "true" : (val == l_False ? "false" : "unknown"),
-                 i < term_names.size() - 1 ? " " : "");
-        free(out_str);
-        out_str = new_str;
+        ss << '(' << name << ' ' << (val == l_True ? "true" : (val == l_False ? "false" : "unknown"))
+            << ')' << (i < term_names.size() - 1 ? " " : "");
     }
-    char* new_str;
-    asprintf(&new_str, "%s)", out_str);
-    free(out_str);
-    out_str = new_str;
-    notify_formatted(false, out_str);
-    free(out_str);
+    ss << ')';
+    const std::string& out = ss.str();
+    notify_formatted(false, out.c_str());
     return true;
 }
 
