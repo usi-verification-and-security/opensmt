@@ -944,7 +944,8 @@ void MainSolver::printFramesAsQuery()
         getTheory().printFramesAsQuery(formulas, std::cout);
     else {
         char* s_file_name;
-        asprintf(&s_file_name, "%s-%d.smt2", base_name, check_called);
+        int chars_written = asprintf(&s_file_name, "%s-%d.smt2", base_name, check_called);
+        (void)chars_written;
         std::ofstream stream;
         stream.open(s_file_name);
         getTheory().printFramesAsQuery(formulas, stream);
