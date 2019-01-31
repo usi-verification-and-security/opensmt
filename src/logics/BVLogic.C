@@ -190,12 +190,11 @@ BVLogic::BVLogic(SMTConfig& c, int width) :
     sym_BV_COLLATE32 = declareFun(tk_bv_coll32, sort_CUFNUM, coll_params, &msg, true);
 
     for (int i = 0; i < 32; i++) {
-        char* sym_name;
-        asprintf(&sym_name, "%s%d", s_uf_extract_base, i);
+        std::string sym_name {s_uf_extract_base};
+        sym_name += std::to_string(i);
         vec<SRef> tmp;
         tmp.push(sort_CUFNUM);
-        declareFun(sym_name, getSort_bool(), tmp, &msg, true);
-        free(sym_name);
+        declareFun(sym_name.c_str(), getSort_bool(), tmp, &msg, true);
     }
 }
 
