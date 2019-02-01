@@ -54,14 +54,17 @@ void Delta::print( std::ostream & out ) const
 char* Delta::printValue() const
 {
     char* out;
+    int written = -1;
     if (isPlusInf())
-        asprintf(&out, "+inf");
+        written = asprintf(&out, "+inf");
     else if (isMinusInf())
-        asprintf(&out, "-inf");
+        written = asprintf(&out, "-inf");
     else
-        asprintf(&out, "(%s | %s)",
+        written = asprintf(&out, "(%s | %s)",
                 r.get_str().c_str(),
                 d.get_str().c_str());
+    assert(written >= 0);
+    (void)written;
     return out;
 }
 
