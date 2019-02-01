@@ -551,9 +551,9 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
 #ifdef ITP_DEBUG
                 cout << "; ASSERTING LITS" << endl;
                 vec<PTRef> tr_vec;
-                Logic& logic = thandler.getLogic();
+                Logic& logic = thandler->getLogic();
                 for (int i = 0; i < newvec.size(); ++i) {
-                    PTRef tr_vecel = thandler.varToTerm(var(newvec[i]));
+                    PTRef tr_vecel = thandler->varToTerm(var(newvec[i]));
                     tr_vec.push(sign(newvec[i]) ? logic.mkNot(tr_vecel) : tr_vecel);
                 }
                 PTRef tr_and = logic.mkAnd(tr_vec);
