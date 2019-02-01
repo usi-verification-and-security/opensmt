@@ -358,7 +358,8 @@ Logic::printTerm_(PTRef tr, bool ext, bool safe) const
         char *str_t = printTerm_(ite.t, ext, safe);
         char *str_e = printTerm_(ite.e, ext, safe);
 
-        asprintf(&out, "(ite %s %s %s)", str_i, str_t, str_e);
+        int res = asprintf(&out, "(ite %s %s %s)", str_i, str_t, str_e);
+        assert(res >= 0); (void)res;
 
         free(str_i); free(str_t); free(str_e);
 
@@ -370,10 +371,9 @@ Logic::printTerm_(PTRef tr, bool ext, bool safe) const
     char* name_escaped = printSym(sr);
 
     if (t.size() == 0) {
-        if (ext)
-            asprintf(&out, "%s <%d>", name_escaped, tr.x);
-        else
-            asprintf(&out, "%s", name_escaped);
+        int res = ext ? asprintf(&out, "%s <%d>", name_escaped, tr.x)
+                : asprintf(&out, "%s", name_escaped);
+        assert(res >= 0); (void)res;
         free(name_escaped);
         return out;
     }
@@ -381,26 +381,27 @@ Logic::printTerm_(PTRef tr, bool ext, bool safe) const
     // Here we know that t.size() > 0
 
     char* old;
-    asprintf(&out, "(%s ", name_escaped);
+    int chars_written = asprintf(&out, "(%s ", name_escaped);
+    assert(chars_written >= 0);
     free(name_escaped);
 
     for (int i = 0; i < t.size(); i++) {
         old = out;
         char * current_term = printTerm_(t[i], ext, safe);
-        asprintf(&out, "%s%s", old, current_term);
+        chars_written = asprintf(&out, "%s%s", old, current_term);
+        assert(chars_written >= 0);
         ::free(old);
         ::free(current_term);
         if (i < t.size()-1) {
             old = out;
-            asprintf(&out, "%s ", old);
+            chars_written = asprintf(&out, "%s ", old);
+            assert(chars_written >= 0);
             ::free(old);
         }
     }
     old = out;
-    if (ext)
-        asprintf(&out, "%s) <%d>", old, tr.x);
-    else
-        asprintf(&out, "%s)", old);
+    chars_written = ext ? asprintf(&out, "%s) <%d>", old, tr.x) : asprintf(&out, "%s)", old);
+    assert(chars_written >= 0); (void)chars_written;
     ::free(old);
     return out;
 }
