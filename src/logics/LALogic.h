@@ -2,20 +2,20 @@
 #define LALOGIC_H
 #include "Logic.h"
 #include "Number.h"
-class LANonLinearException
+class LANonLinearException : std::runtime_error
 {
-    char* reason;
 public:
-    LANonLinearException(const char* reason_) {
-        asprintf(&reason, "Term %s is non-linear", reason_);
+    LANonLinearException(const char* reason_) : runtime_error(reason_) {
     }
-    virtual char* what() const
+    virtual const char* what() const noexcept
     {
         char* out;
-        asprintf(&out, "%s", reason);
+        int chars_written = asprintf(&out, "Term %s is non-linear", std::runtime_error::what());
+        assert(chars_written >= 0);
+        (void) chars_written;
         return out;
     }
-    ~LANonLinearException() { free(reason); }
+    ~LANonLinearException() = default;
 };
 class LALogic: public Logic
 {

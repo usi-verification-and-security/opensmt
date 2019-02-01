@@ -654,9 +654,7 @@ PTRef LALogic::mkNumTimes(const vec<PTRef>& tmp_args, char** msg)
     if (isNumTerm(tr) || isNumPlus(tr) || isUF(tr))
         return tr;
     else {
-        char* err;
-        asprintf(&err, "%s", printTerm(tr));
-        throw LANonLinearException(err);
+        throw LANonLinearException(printTerm(tr));
     }
 }
 PTRef LALogic::mkNumDiv(const vec<PTRef>& args, char** msg)
