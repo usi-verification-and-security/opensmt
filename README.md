@@ -37,7 +37,7 @@ If you have cmake version 3.11, the build system will construct unit
 tests.  These are available through
 
 ```
-$ ./test/unit/LRATest
+$ ctest
 ```
 
 ## Using OpenSMT2 interpolation
