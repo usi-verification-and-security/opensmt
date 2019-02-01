@@ -1091,25 +1091,22 @@ LALogic::printTerm_(PTRef tr, bool ext, bool safe) const
                 den[j++] = rat_str[i];
             den[j] = '\0';
             if (ext) {
-                if (is_neg)
-                    asprintf(&out, "(/ (- %s) %s) <%d>", nom, den, tr.x);
-                else
-                    asprintf(&out, "(/ %s %s) <%d>", nom, den, tr.x);
+                int written = is_neg ? asprintf(&out, "(/ (- %s) %s) <%d>", nom, den, tr.x)
+                        : asprintf(&out, "(/ %s %s) <%d>", nom, den, tr.x);
+                assert(written >= 0); (void)written;
             }
             else {
-                if (is_neg)
-                    asprintf(&out, "(/ (- %s) %s)", nom, den);
-                else
-                    asprintf(&out, "(/ %s %s)", nom, den);
+                int written = is_neg ? asprintf(&out, "(/ (- %s) %s)", nom, den)
+                    : asprintf(&out, "(/ %s %s)", nom, den);
+                assert(written >= 0); (void)written;
             }
             free(nom);
             free(den);
         }
         else if (is_neg) {
-            if (ext)
-                asprintf(&out, "(- %s) <%d>", rat_str, tr.x);
-            else
-                asprintf(&out, "(- %s)", rat_str);
+            int written = ext ? asprintf(&out, "(- %s) <%d>", rat_str, tr.x)
+                    : asprintf(&out, "(- %s)", rat_str);
+            assert(written >= 0); (void) written;
         }
         else
             out = rat_str;
