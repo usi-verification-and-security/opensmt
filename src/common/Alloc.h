@@ -78,9 +78,6 @@ class RegionAllocator
         memory = NULL;
         sz = cap = wasted_ = 0;
     }
-
-    int* serialize() const;
-    void deserialize(const int*);
 };
 
 template<class T>
@@ -123,35 +120,6 @@ RegionAllocator<T>::alloc(int size)
         throw OutOfMemoryException();
 
     return prev_sz;
-}
-
-template<class T>
-int* RegionAllocator<T>::serialize() const
-{
-    assert(sizeof(T) % sizeof(int) == 0);
-    int buf_sz = 4*sizeof(int) + sz*sizeof(T);
-    int* buf = (int*)malloc(buf_sz);
-    buf[0] = buf_sz/sizeof(int);
-    buf[1] = sz;
-    buf[2] = cap;
-    buf[3] = wasted_;
-    T* membuf = (T*)(&buf[4]);
-    for (uint32_t i = 0; i < sz; i++)
-        membuf[i] = memory[i];
-
-    return buf;
-}
-
-template<class T>
-void RegionAllocator<T>::deserialize(const int* buf)
-{
-    sz = buf[1];
-    cap = buf[2];
-    wasted_ = buf[3];
-    memory = (T*)xrealloc(memory, sizeof(T)*cap);
-    T* membuf = (T*)(&buf[4]);
-    for (uint32_t i = 0; i < sz; i++)
-        memory[i] = membuf[i];
 }
 
 //=================================================================================================

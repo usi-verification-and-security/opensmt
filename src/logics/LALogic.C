@@ -240,41 +240,7 @@ bool LALogic::okToPartition(PTRef tr) const
 {
     return !la_split_inequalities.has(tr);
 }
-void LALogic::serializeLogicData(int*& logicdata_buf) const
-{
-    Logic::serializeLogicData(logicdata_buf);
-    vec<SymRef> number_syms;
-    for (int i = 0; i < numbers.size(); i++)
-        if (numbers[i] != NULL)
-            number_syms.push(sym_store.symbols[i]);
-#ifdef VERBOSE_FOPS
-    printf("Found %d real symbols\n", real_syms.size());
-#endif
-    int size_old = logicdata_buf[buf_sz_idx];
-    int size_new = size_old + number_syms.size() + 2;
-    logicdata_buf = (int*) realloc(logicdata_buf, size_new*sizeof(int));
-    logicdata_buf[size_old] = number_syms.size();
-    for (int i = 0; i < number_syms.size(); i++)
-        logicdata_buf[size_old+1+i] = number_syms[i].x;
-    logicdata_buf[buf_sz_idx] = size_new;
-}
-void LALogic::deserializeLogicData(const int* logicdata_buf)
-{
-    Logic::deserializeLogicData(logicdata_buf);
-    int mydata_init = logicdata_buf[constants_offs_idx] + logicdata_buf[logicdata_buf[constants_offs_idx]];
-    assert(mydata_init < logicdata_buf[0]); // Inside the buffer still
-    int sz = logicdata_buf[mydata_init];
-    for (int i = 0; i < sz; i++) {
-        SymRef sr = {(uint32_t) logicdata_buf[mydata_init+1+i]};
-        SymId id = sym_store[sr].getId();
-        for (int j = numbers.size(); j <= id; j++)
-            numbers.push(NULL);
-        numbers[id] = new opensmt::Number(sym_store.idToName[id]);
-        while (id >= constants.size())
-            constants.push(false);
-        constants[id] = true;
-    }
-}
+
 void LALogic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
 {
     if (split_eq && isNumEq(tr)) {

@@ -126,9 +126,6 @@ class PtStore {
     PTRef getFromCplxMap(PTLKey& k);// { return cplx_map[k]; }
 
     PtermIter getPtermIter();// { return PtermIter(idToPTRef); }
-
-    int* serializeTerms() const;
-    void deserializeTerms(const int*);
 };
 
 #endif

@@ -120,45 +120,6 @@ SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args) {
 }
 
 
-int* PtStore::serializeTerms() const
-{
-    int* ptstore_buf = pta.serialize();
-    int ptstore_buf_sz = ptstore_buf[0];
-    int buf_sz = ptstore_buf_sz+pta.getNumTerms()+4;
-    int* buf = (int*)malloc(buf_sz*sizeof(int));
-    buf[0] = buf_sz;
-    int ptstore_vec_offs = ptstore_buf_idx + 1;
-    buf[ptstore_vec_idx] = ptstore_vec_offs;
-
-    int ptstore_buf_offs = ptstore_vec_offs + pta.getNumTerms() + 1;
-    buf[ptstore_buf_idx] = ptstore_buf_offs;
-
-    buf[ptstore_vec_offs] = pta.getNumTerms(); // Cannot be right!
-    for (int i = 0; i < pta.getNumTerms(); i++)
-        buf[i + ptstore_vec_offs + 1] = idToPTRef[i].x;
-
-    for (int i = 0; i < ptstore_buf_sz; i++)
-        buf[ptstore_buf_offs+i] = ptstore_buf[i];
-
-    ::free(ptstore_buf);
-
-    return buf;
-}
-
-void PtStore::deserializeTerms(const int* buf)
-{
-    const int* ptstore_buf = &buf[buf[ptstore_buf_idx]];
-    pta.deserialize(ptstore_buf);
-    const int* vec_buf = &buf[buf[ptstore_vec_idx]];
-    pta.setNumTerms(vec_buf[0]);
-    idToPTRef.clear();
-    for (int i = 0; i < vec_buf[0]; i++) {
-        PTRef tr = {(uint32_t)vec_buf[i+1]};
-        idToPTRef.push(tr);
-    }
-    assert(pta.getNumTerms() == idToPTRef.size());
-}
-
 #ifdef PRODUCE_PROOF
 void
 PtStore::assignPartition(unsigned int n, PTRef ptr) {

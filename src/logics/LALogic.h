@@ -152,8 +152,6 @@ public:
     virtual lbool retrieveSubstitutions(const vec<PtAsgn> &facts, Map<PTRef, PtAsgn, PTRefHash> &substs) override;
     virtual void termSort(vec<PTRef> &v) const override;
     virtual bool okToPartition(PTRef tr) const override; // Partitioning hints from logic
-    virtual void serializeLogicData(int *&logicdata_buf) const override;
-    virtual void deserializeLogicData(const int *logicdata_buf) override;
     virtual char *printTerm_(PTRef tr, bool ext, bool s) const override;
     virtual char *printTerm(PTRef tr) const override;
     virtual char *printTerm(PTRef tr, bool l, bool s) const override;

@@ -510,11 +510,6 @@ class Logic {
 
     PTRef learnEqTransitivity(PTRef); // Learn limited transitivity information
 
-    virtual void serializeLogicData(int*& logicdata_buf) const;
-    virtual void deserializeLogicData(const int* logicdata_buf);
-
-    void        serializeTermSystem(int*& termstore_buf, int*& symstore_buf, int*& idstore_buf, int*& sortstore_buf, int*& logicdata_buf) const;
-    void        deserializeTermSystem(const int* termstore_buf, const int* symstore_buf, const int* idstore_buf, const int* sortstore_buf, const int* logicdata_buf);
 
     bool       hasQuotableChars(const char* name) const;
     char*      protectName(const char* name) const;

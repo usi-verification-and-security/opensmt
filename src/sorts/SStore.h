@@ -49,8 +49,6 @@ class IdentifierStore
     }
     ~IdentifierStore() {}
     const char* getName(IdRef ir) { return isa[ia[ir].getNameRef()].getName(); }
-    int* serializeIdentifiers() const;
-    void deserializeIdentifiers(const int*);
 };
 
 class SStore
@@ -96,9 +94,6 @@ class SStore
     const char* getName     (SRef sr) { return ssa[sa[sr].getNameRef()].getName(); }
     Sort&   getSort         (SRef sr) { return sa[sr]; }
     const vec<SRef>& getSorts() const { return sorts; }
-
-    int*    serializeSorts() const;
-    void    deserializeSorts(const int*);
 
     void dumpSortsToFile(ostream&);
 };
