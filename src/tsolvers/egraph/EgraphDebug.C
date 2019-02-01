@@ -198,21 +198,6 @@ bool Egraph::checkExpReachable( PTRef x, PTRef h_x ) {
 //=============================================================================
 // Printing Routines
 
-//string Egraph::printEqClass( ERef v )
-//{
-//    stringstream os;
-//    os << "Class of " << v.x << " :" << endl;
-//    const ERef vstart = v;
-//    for (;;) {
-//        os << "   " << v.x << endl;
-//        v = enode_store[v].getNext();
-//        if ( v == vstart )
-//            break;
-//    }
-//    return os.str();
-//}
-//
-
 char* Egraph::printEqClass(PTRef tr) const {
     char* out;
     char* old;
@@ -221,8 +206,9 @@ char* Egraph::printEqClass(PTRef tr) const {
     assert(enode_store[er].isTerm());
     ERef c_er = er;
     char* tmp = logic.printTerm(tr);
-    asprintf(&out, "In the same eq class with %s are:\n[ ",
+    int written = asprintf(&out, "In the same eq class with %s are:\n[ ",
              tmp);
+    assert(written >= 0);
     ::free(tmp);
 
     while (true) {
@@ -232,13 +218,15 @@ char* Egraph::printEqClass(PTRef tr) const {
         const Enode& en_o = enode_store[next_er];
         old = out;
         tmp = logic.printTerm(en_o.getTerm());
-        asprintf(&out, "%s%s ", old, tmp);
+        written = asprintf(&out, "%s%s ", old, tmp);
+        assert(written >= 0);
         ::free(tmp);
         ::free(old);
         c_er = next_er;
     }
     old = out;
-    asprintf(&out, "%s]", old);
+    written = asprintf(&out, "%s]", old);
+    assert(written >= 0); (void)written;
     ::free(old);
     return out;
 }
@@ -272,7 +260,8 @@ char* Egraph::printDistinctions(PTRef x) const
     }
 
     char* tmp = logic.printTerm(x);
-    asprintf(&out, "In different eq class with %s are:\n[ ", tmp);
+    int written = asprintf(&out, "In different eq class with %s are:\n[ ", tmp);
+    assert(written >= 0); (void)written;
     ::free(tmp);
 
 
@@ -282,7 +271,8 @@ char* Egraph::printDistinctions(PTRef x) const
     ELRef elr = enode_store[er].getForbid();
     if (elr == ELRef_Undef) {
         char* tmp = out;
-        asprintf(&out, "%s]", tmp);
+        written = asprintf(&out, "%s]", tmp);
+        assert(written >= 0);
         free(tmp);
         return out;
     }
@@ -294,14 +284,16 @@ char* Egraph::printDistinctions(PTRef x) const
         const Elist& el_o = forbid_allocator[next_elr];
         old = out;
         tmp = logic.printTerm(enode_store[el_o.e].getTerm());
-        asprintf(&out, "%s%s ", old, tmp);
+        written = asprintf(&out, "%s%s ", old, tmp);
+        assert(written >= 0);
         ::free(tmp);
         ::free(old);
         if (next_elr == elr) break;
         c_elr = next_elr;
     }
     old = out;
-    asprintf(&out, "%s]", old);
+    written = asprintf(&out, "%s]", old);
+    assert(written >= 0);
     ::free(old);
     return out;
 }
