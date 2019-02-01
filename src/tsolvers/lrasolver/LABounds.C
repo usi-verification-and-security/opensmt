@@ -231,29 +231,32 @@ LABoundStore::printBound(LABoundRef br) const
     char *str_out;
     char *v_str_ptr = logic.pp(lavarStore.getVarPTRef(ba[br].getLVRef()));
     char *v_str_lvr;
-    asprintf(&v_str_lvr, "v%d", ba[br].getLVRef().x);
+    int written = asprintf(&v_str_lvr, "v%d", ba[br].getLVRef().x);
+    assert(written >= 0);
     char* v_str;
-    asprintf(&v_str, "%s [%s]", v_str_lvr, v_str_ptr);
+    written = asprintf(&v_str, "%s [%s]", v_str_lvr, v_str_ptr);
+    assert(written >= 0); (void)written;
     free(v_str_lvr);
     free(v_str_ptr);
     const Delta & d = ba[br].getValue();
     if (d.isMinusInf())
-        asprintf(&str_out, "- Inf <= %s", v_str);
+        written = asprintf(&str_out, "- Inf <= %s", v_str);
     else if (d.isPlusInf())
-        asprintf(&str_out, "%s <= + Inf", v_str);
+        written = asprintf(&str_out, "%s <= + Inf", v_str);
     else {
         opensmt::Real r = d.R();
         opensmt::Real s = d.D();
         BoundT type = ba[br].getType();
         if ((type == bound_l) && (s == 0))
-            asprintf(&str_out, "%s <= %s", r.get_str().c_str(), v_str);
+            written = asprintf(&str_out, "%s <= %s", r.get_str().c_str(), v_str);
         if ((type == bound_l) && (s != 0))
-            asprintf(&str_out, "%s < %s", r.get_str().c_str(), v_str);
+            written = asprintf(&str_out, "%s < %s", r.get_str().c_str(), v_str);
         if ((type == bound_u) && (s == 0))
-            asprintf(&str_out, "%s <= %s", v_str, r.get_str().c_str());
+            written = asprintf(&str_out, "%s <= %s", v_str, r.get_str().c_str());
         if ((type == bound_u) && (s != 0))
-            asprintf(&str_out, "%s < %s", v_str, r.get_str().c_str());
+            written = asprintf(&str_out, "%s < %s", v_str, r.get_str().c_str());
     }
+    assert(written >= 0); (void)written;
     free(v_str);
 
     return str_out;
@@ -268,7 +271,8 @@ char* LABoundStore::printBounds(LVRef v) const
         LABoundRef br = bla[blr][i];
         char* tmp;
         char* tmp2 = printBound(br);
-        asprintf(&tmp, "%s(%s) ", bounds_str, tmp2);
+        int written = asprintf(&tmp, "%s(%s) ", bounds_str, tmp2);
+        assert(written >= 0); (void)written;
         free(bounds_str);
         free(tmp2);
         bounds_str = tmp;
