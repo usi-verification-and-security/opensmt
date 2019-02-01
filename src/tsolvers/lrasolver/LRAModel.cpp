@@ -142,7 +142,8 @@ void LRAModel::printModelState()
             buf[0] = '\0';
             for (int j = 0; j < vals.size(); j++) {
                 char *tmp_buf;
-                asprintf(&tmp_buf, "%s(%s, %d) ", buf, vals[j].d.printValue(), vals[j].dl);
+                int written = asprintf(&tmp_buf, "%s(%s, %d) ", buf, vals[j].d.printValue(), vals[j].dl);
+                assert(written >= 0); (void)written;
                 free(buf);
                 buf = tmp_buf;
             }
