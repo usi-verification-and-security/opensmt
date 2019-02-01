@@ -596,22 +596,25 @@ PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args, char** msg) {
             const vec<PTRef>& tpl_args = defined_functions[s].getArgs();
             Map<PTRef,PTRef,PTRefHash> subst_map;
             if (args.size() != tpl_args.size()) {
-                asprintf(msg, "Arg size mismatch: should be %d but is %d", tpl_args.size(), args.size());
+                int written = asprintf(msg, "Arg size mismatch: should be %d but is %d", tpl_args.size(), args.size());
+                assert(written >= 0); (void)written;
                 return PTRef_Undef;
             }
             for (int i = 0; i < args.size(); i++) {
                 if (getSortRef(args[i]) == getSortRef(tpl_args[i]))
                     subst_map.insert(tpl_args[i], args[i]);
                 else {
-                    asprintf(msg, "Arg %s (%d) return sort mismatch: should be %s but is %s",
+                    int written = asprintf(msg, "Arg %s (%d) return sort mismatch: should be %s but is %s",
                             printTerm(args[i]), i, getSymName(tpl_args[i]), getSymName(args[i]));
+                    assert(written >= 0); (void)written;
                     return PTRef_Undef;
                 }
             }
             return instantiateFunctionTemplate(s, subst_map);
         }
         else {
-            asprintf(msg, "Unknown symbol `%s'", s);
+            int written = asprintf(msg, "Unknown symbol `%s'", s);
+            assert(written >= 0); (void)written;
             return PTRef_Undef;
         }
     }
@@ -653,7 +656,8 @@ Logic::mkIte(vec<PTRef>& args)
 
     char* name;
     static unsigned ite_counter = 0;
-    asprintf(&name, "%s%d", s_ite_prefix, ite_counter++);
+    int written = asprintf(&name, "%s%d", s_ite_prefix, ite_counter++);
+    assert(written >= 0); (void)written;
     PTRef o_ite = mkVar(sr, name);
     free(name);
 
@@ -1014,10 +1018,8 @@ SRef Logic::declareSort(const char* id, char** msg)
     vec<SRef> tmp;
     SRef sr = sort_store.newSort(idr, tmp);
     declare_sort_hook(sr);
-    char* sort_name;
-    asprintf(&sort_name, "%s", id);
-    SRef rval = sort_store[sort_name];
-    free(sort_name);
+    std::string sort_name{id};
+    SRef rval = sort_store[sort_name.c_str()];
     ufsorts.insert(rval, true);
 //    printf("Inserted sort %s\n", id);
     return rval;
