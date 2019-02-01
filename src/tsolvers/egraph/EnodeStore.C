@@ -120,11 +120,11 @@ char* EnodeStore::printEnode(ERef e) {
     Enode& en = ea[e];
     char* out;
     char* old;
-    asprintf(&out, "+=============================================\n");
-
+    int wrt = asprintf(&out, "+=============================================\n");
+    assert(wrt >= 0);
     if (en.isTerm()) {
         old = out;
-        asprintf(&out, "%s| Term enode (%s)\n"
+        wrt = asprintf(&out, "%s| Term enode (%s)\n"
                          "+---------------------------------------------\n"
                          "|  - Reference : %d\n"
                          "|  - Symb Enode: %d\n"
@@ -173,7 +173,7 @@ char* EnodeStore::printEnode(ERef e) {
 
     else if (en.isList()) {
         old = out;
-        asprintf(&out, "%s| List enode                                 |\n"
+        wrt = asprintf(&out, "%s| List enode                                 |\n"
                          "+--------------------------------------------+\n"
                          "|  - Reference : %d\n"
                          "|  - Car       : %d\n"
@@ -197,7 +197,7 @@ char* EnodeStore::printEnode(ERef e) {
 
     else if (en.isSymb()) {
         old = out;
-        asprintf(&out, "%s| Symb enode (%s)\n"
+        wrt = asprintf(&out, "%s| Symb enode (%s)\n"
                          "+---------------------------------------------\n"
                          "|  - Reference: %d\n"
                          "+=============================================\n"
@@ -206,62 +206,26 @@ char* EnodeStore::printEnode(ERef e) {
         ::free(old);
 
     }
+    assert(wrt >= 0);
     if (!en.isSymb()) {
-//        old = out;
-//        asprintf(&out, "%s|  - Number of parents: %d\n"
-//                         "|    "
-//                     , old, ea[en.getRoot()].getParentSize());
-//        ::free(old);
-//        ERef parent_start = en.getParent();
-//        ERef parent = parent_start;
-//        int pcount = 0;
-//        if (parent_start == ERef_Undef) {
-//            old = out;
-//            asprintf(&out, "%s\n", old);
-//            ::free(old);
-//            goto skip; }
-//        if (en.isTerm()) {
-//            while (true) {
-//                old = out;
-//                pcount ++;
-//                asprintf(&out, "%s%d ", old, parent.x);
-//                ::free(old);
-//                parent = ea[parent].getSameCar();
-//                if (parent == parent_start) break;
-//            }
-//        }
-//        else if (en.isList()) {
-//            ERef parent_start = en.getParent();
-//            ERef parent = parent_start;
-//            while (true) {
-//                old = out;
-//                pcount ++;
-//                asprintf(&out, "%s%d ", old, parent.x);
-//                ::free(old);
-//                parent = ea[parent].getSameCdr();
-//                if (parent == parent_start) break;
-//            }
-//        }
-//        if (pcount != ea[en.getRoot()].getParentSize()) {
-//            old = out;
-//            asprintf(&out, "%s%s", old, "parent count mismatch!");
-//            ::free(old);
-//        }
         old = out;
-        asprintf(&out, "%s\n", old);
+        wrt = asprintf(&out, "%s\n", old);
+        assert(wrt >= 0);
         ::free(old);
 skip:
         if (en.isTerm()) {
             old = out;
             char* in = printEnode(en.getCar());
-            asprintf(&out, "%s%s\n", old, in);
+            wrt = asprintf(&out, "%s%s\n", old, in);
+            assert(wrt >= 0);
             ::free(old);
             ::free(in);
             ERef cdr = en.getCdr();
             if (cdr != ERef_Nil) {
                 old = out;
                 in = printEnode(cdr);
-                asprintf(&out, "%s%s\n", old, in);
+                wrt = asprintf(&out, "%s%s\n", old, in);
+                assert(wrt >= 0);
                 ::free(old);
                 ::free(in);
             }
@@ -269,18 +233,21 @@ skip:
         else if (en.isList()) {
             old = out;
             char* in = printEnode(en.getCar());
-            asprintf(&out, "%s%s", old, in);
+            wrt = asprintf(&out, "%s%s", old, in);
+            assert(wrt >= 0);
             ::free(old);
             ::free(in);
             if (en.getCdr() != ERef_Nil) {
                 old = out;
                 in = printEnode(en.getCdr());
-                asprintf(&out, "%s%s", old, in);
+                wrt = asprintf(&out, "%s%s", old, in);
+                assert(wrt >= 0);
                 ::free(old);
                 ::free(in);
             }
         }
     }
+    (void)wrt;
     return out;
 }
 
