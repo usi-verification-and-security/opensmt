@@ -23,10 +23,6 @@ if(PRINT_UNITS)
 	target_compile_definitions(smtsolvers PRIVATE -DREPORT_DL1_THLITS)
 endif()
 
-if(COMPRESS)
-	target_compile_definitions(smtsolvers PRIVATE -DUSE_GZ)
-endif()
-
 if(PRINT_DECOMPOSED_STATS)
     target_compile_definitions(smtsolvers PRIVATE -DPRINT_DECOMPOSED_STATS)
 endif()

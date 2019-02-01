@@ -52,7 +52,6 @@ SOFTWARE.
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
-#include <zlib.h>
 #include "SimpSMTSolver.h"
 
 class DimacsParser {
