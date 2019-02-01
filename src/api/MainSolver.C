@@ -278,7 +278,8 @@ bool MainSolver::writeFuns_smtlib2(const char* file)
 bool MainSolver::writeSolverState_smtlib2(const char* file, char** msg)
 {
     char* name;
-    asprintf(&name, "%s.smt2", file);
+    int written = asprintf(&name, "%s.smt2", file);
+    assert(written >= 0);
     std::ofstream file_s;
     file_s.open(name);
     if (file_s.is_open()) {
@@ -288,10 +289,12 @@ bool MainSolver::writeSolverState_smtlib2(const char* file, char** msg)
         file_s.close();
     }
     else {
-        asprintf(msg, "Failed to open file %s\n", name);
+        written = asprintf(msg, "Failed to open file %s\n", name);
+        assert(written >= 0);
         free(name);
         return false;
     }
+    (void)written;
     free(name);
     return true;
 }
@@ -315,7 +318,9 @@ bool MainSolver::writeSolverSplits_smtlib2(const char* file, char** msg)
         PTRef problem = logic.mkAnd(conj_vec);
 
         char* name;
-        asprintf(&name, "%s-%02d.smt2", file, i);
+        int written = asprintf(&name, "%s-%02d.smt2", file, i);
+        assert(written >= 0);
+        (void)written;
         std::ofstream file;
         file.open(name);
         if (file.is_open()) {
@@ -328,7 +333,8 @@ bool MainSolver::writeSolverSplits_smtlib2(const char* file, char** msg)
             file.close();
         }
         else {
-            asprintf(msg, "Failed to open file %s\n", name);
+            written = asprintf(msg, "Failed to open file %s\n", name);
+            assert(written >= 0);
             free(name);
             return false;
         }
