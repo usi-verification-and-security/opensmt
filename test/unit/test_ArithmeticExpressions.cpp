@@ -5,10 +5,23 @@
 #include <gtest/gtest.h>
 #include "LRALogic.h"
 
-TEST(ArithmeticExpressions_test, test_Sum_Zero)
-{
+class ArithmeticExpressions_test : public ::testing::Test {
+protected:
+    ArithmeticExpressions_test(): logic{config} {}
+    virtual void SetUp() {
+        x = logic.mkNumVar("x");
+        y = logic.mkNumVar("y");
+        z = logic.mkNumVar("z");
+    }
     SMTConfig config;
-    LRALogic logic{config};
+    LRALogic logic;
+    PTRef x;
+    PTRef y;
+    PTRef z;
+};
+
+TEST_F(ArithmeticExpressions_test, test_Sum_Zero)
+{
     PTRef zero = logic.mkConst("0");
     vec<PTRef> args;
     args.push(zero);
@@ -17,10 +30,8 @@ TEST(ArithmeticExpressions_test, test_Sum_Zero)
     ASSERT_EQ(res, zero);
 }
 
-TEST(ArithmeticExpressions_test, test_Sum_Ignore_Zeros)
+TEST_F(ArithmeticExpressions_test, test_Sum_Ignore_Zeros)
 {
-    SMTConfig config;
-    LRALogic logic{config};
     PTRef zero = logic.mkConst("0");
     PTRef a = logic.mkNumVar("a");
     vec<PTRef> args;
@@ -31,10 +42,8 @@ TEST(ArithmeticExpressions_test, test_Sum_Ignore_Zeros)
     ASSERT_EQ(res, a);
 }
 
-TEST(ArithmeticExpressions_test, test_One_Arg_Multiplication)
+TEST_F(ArithmeticExpressions_test, test_One_Arg_Multiplication)
 {
-    SMTConfig config;
-    LRALogic logic{config};
     PTRef zero = logic.mkConst("0");
     PTRef two = logic.mkConst("2");
     PTRef one = logic.mkConst("1");
@@ -48,10 +57,8 @@ TEST(ArithmeticExpressions_test, test_One_Arg_Multiplication)
     ASSERT_EQ(res, div);
 }
 
-TEST(ArithmeticExpressions_test, test_Times_Ignore_Ones)
+TEST_F(ArithmeticExpressions_test, test_Times_Ignore_Ones)
 {
-    SMTConfig config;
-    LRALogic logic{config};
     PTRef one = logic.mkConst("1");
     PTRef a = logic.mkNumVar("a");
     vec<PTRef> args;
@@ -62,10 +69,8 @@ TEST(ArithmeticExpressions_test, test_Times_Ignore_Ones)
     ASSERT_EQ(res, a);
 }
 
-TEST(ArithmeticExpressions_test, test_Times_Single_Arg)
+TEST_F(ArithmeticExpressions_test, test_Times_Single_Arg)
 {
-    SMTConfig config;
-    LRALogic logic{config};
     PTRef a = logic.mkNumVar("a");
     vec<PTRef> args;
     args.push(a);
@@ -74,10 +79,8 @@ TEST(ArithmeticExpressions_test, test_Times_Single_Arg)
     ASSERT_EQ(res, a);
 }
 
-TEST(ArithmeticExpressions_test, test_Sum_Single_Arg)
+TEST_F(ArithmeticExpressions_test, test_Sum_Single_Arg)
 {
-    SMTConfig config;
-    LRALogic logic{config};
     PTRef a = logic.mkNumVar("a");
     vec<PTRef> args;
     args.push(a);
@@ -86,10 +89,8 @@ TEST(ArithmeticExpressions_test, test_Sum_Single_Arg)
     ASSERT_EQ(res, a);
 }
 
-TEST(ArithmeticExpressions_test, test_Sum_Single_Arg_Nested)
+TEST_F(ArithmeticExpressions_test, test_Sum_Single_Arg_Nested)
 {
-    SMTConfig config;
-    LRALogic logic{config};
     PTRef a = logic.mkNumVar("a");
     PTRef two = logic.mkConst("2");
     PTRef zero = logic.mkConst("0");
@@ -101,10 +102,8 @@ TEST(ArithmeticExpressions_test, test_Sum_Single_Arg_Nested)
     ASSERT_EQ(res, times);
 }
 
-TEST(ArithmeticExpressions_test, test_Sum_Single_Arg_Nested_With_Simplification)
+TEST_F(ArithmeticExpressions_test, test_Sum_Single_Arg_Nested_With_Simplification)
 {
-    SMTConfig config;
-    LRALogic logic{config};
     PTRef a = logic.mkNumVar("a");
     PTRef two = logic.mkConst("2");
     PTRef zero = logic.mkConst("0");
@@ -117,10 +116,8 @@ TEST(ArithmeticExpressions_test, test_Sum_Single_Arg_Nested_With_Simplification)
     ASSERT_EQ(res, times);
 }
 
-TEST(ArithmeticExpressions_test, test_Simple_Leq)
+TEST_F(ArithmeticExpressions_test, test_Simple_Leq)
 {
-    SMTConfig config;
-    LRALogic logic{config};
     PTRef a = logic.mkNumVar("a");
     PTRef zero = logic.mkConst("0");
     PTRef res = logic.mkNumLeq(zero, a);
@@ -130,10 +127,8 @@ TEST(ArithmeticExpressions_test, test_Simple_Leq)
     ASSERT_EQ(logic.getPterm(res)[1], a);
 }
 
-TEST(ArithmeticExpressions_test, test_Simple_Leq_Two_Vars)
+TEST_F(ArithmeticExpressions_test, test_Simple_Leq_Two_Vars)
 {
-    SMTConfig config;
-    LRALogic logic{config};
     PTRef a = logic.mkNumVar("a");
     PTRef b = logic.mkNumVar("b");
     PTRef zero = logic.mkConst("0");
@@ -143,10 +138,8 @@ TEST(ArithmeticExpressions_test, test_Simple_Leq_Two_Vars)
     ASSERT_EQ(logic.getPterm(res)[0], zero);
 }
 
-TEST(ArithmeticExpressions_test, test_Simple_Leq_Two_Vars2)
+TEST_F(ArithmeticExpressions_test, test_Simple_Leq_Two_Vars2)
 {
-    SMTConfig config;
-    LRALogic logic{config};
     PTRef a = logic.mkNumVar("a");
     PTRef b = logic.mkNumVar("b");
     PTRef zero = logic.mkConst("0");
@@ -156,10 +149,8 @@ TEST(ArithmeticExpressions_test, test_Simple_Leq_Two_Vars2)
     ASSERT_EQ(logic.getPterm(res)[0], zero);
 }
 
-TEST(ArithmeticExpressions_test, test_mkNumNeg)
+TEST_F(ArithmeticExpressions_test, test_mkNumNeg)
 {
-    SMTConfig config;
-    LRALogic logic{config};
     PTRef one = logic.getTerm_NumOne();
     PTRef minus = logic.mkNumNeg(one);
     ASSERT_TRUE(logic.isConstant(minus));
@@ -168,10 +159,8 @@ TEST(ArithmeticExpressions_test, test_mkNumNeg)
     ASSERT_EQ(logic.getNumConst(minus), -1);
 }
 
-TEST(ArithmeticExpressions_test, test_Inequality_Var_WithCoeff)
+TEST_F(ArithmeticExpressions_test, test_Inequality_Var_WithCoeff)
 {
-    SMTConfig config;
-    LRALogic logic{config};
     PTRef one = logic.getTerm_NumOne();
     PTRef a = logic.mkNumVar("a");
     PTRef minus = logic.mkNumNeg(a);
@@ -180,10 +169,8 @@ TEST(ArithmeticExpressions_test, test_Inequality_Var_WithCoeff)
     ASSERT_EQ(leq, logic.mkNumLeq(logic.getTerm_NumZero(), a));
 }
 
-TEST(ArithmeticExpressions_test, test_Inequality_Var_NonZero)
+TEST_F(ArithmeticExpressions_test, test_Inequality_Var_NonZero)
 {
-    SMTConfig config;
-    LRALogic logic{config};
     PTRef one = logic.getTerm_NumOne();
     PTRef a = logic.mkNumVar("a");
     PTRef leq = logic.mkNumLeq(one, a);
@@ -192,10 +179,8 @@ TEST(ArithmeticExpressions_test, test_Inequality_Var_NonZero)
     ASSERT_TRUE(logic.isNumLeq(geq));
 }
 
-TEST(ArithmeticExpressions_test, test_SumToZero)
+TEST_F(ArithmeticExpressions_test, test_SumToZero)
 {
-    SMTConfig config;
-    LRALogic logic{config};
     PTRef var = logic.mkNumVar("a");
     PTRef minusVar = logic.mkNumNeg(var);
     vec<PTRef> args;
@@ -208,6 +193,13 @@ TEST(ArithmeticExpressions_test, test_SumToZero)
     args.push(minusVar);
     sum = logic.mkNumPlus(args);
     ASSERT_EQ(sum, logic.getTerm_NumZero());
+}
+
+TEST_F(ArithmeticExpressions_test, test_NonLinearException)
+{
+    EXPECT_THROW(logic.mkNumTimes(x,y), LANonLinearException);
+    PTRef two = logic.mkConst("2");
+    EXPECT_NO_THROW(logic.mkNumTimes(x,two));
 }
 
 
