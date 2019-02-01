@@ -96,12 +96,6 @@ public:
     TRes    check             (bool);       // Check trail in the theories
     void    backtrack         (int);        // Remove literals that are not anymore on the trail
 
-//    lbool   evaluate          ( PTRef e ) { return l_Undef; }
-
-    char*   printValue         (PTRef tr);// { return getSolverHandler().printValue(tr); } // Debug.  Ask from the solvers what they know about value of tr
-    char*   printExplanation   (PTRef tr);// { return getSolverHandler().printExplanation(tr); } // Debug.  Ask from the solvers what they know about explanation of tr
-    // { getSolverHandler().declareTerm(tr); }
-
 protected:
 
 

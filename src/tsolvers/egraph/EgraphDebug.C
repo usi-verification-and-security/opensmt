@@ -243,19 +243,6 @@ char* Egraph::printEqClass(PTRef tr) const {
     return out;
 }
 
-char* Egraph::printValue(PTRef tr)
-{
-    char* tmp_out;
-    char* tmp_eqs;
-    char* tmp_dist;
-    tmp_eqs = printEqClass(tr);
-    tmp_dist = printDistinctions(tr);
-    asprintf(&tmp_out, "%s\n%s", tmp_eqs, tmp_dist);
-    free(tmp_eqs);
-    free(tmp_dist);
-    return tmp_out;
-}
-
 std::string Egraph::printExplanationTreeDotty(ERef x)
 {
     stringstream os;

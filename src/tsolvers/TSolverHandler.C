@@ -41,20 +41,6 @@ void TSolverHandler::declareAtoms(PTRef tr) {
 }
 
 
-char* TSolverHandler::printValue(PTRef tr)
-{
-    char* out = (char*)malloc(1);
-    out[0] = '\0';
-    for (int i = 0; i < tsolvers.size(); i++) {
-        if (tsolvers[i] != NULL) {
-            char* old_out = out;
-            asprintf(&out, "%s\n%s", old_out, tsolvers[i]->printValue(tr));
-            free(old_out);
-        }
-    }
-    return out;
-}
-
 // Clear the vars of the solvers
 void TSolverHandler::clearSolver()
 {
@@ -114,21 +100,6 @@ TRes TSolverHandler::check(bool complete)
     }
 
     return res_final;
-}
-
-
-char* TSolverHandler::printExplanation(PTRef tr)
-{
-    char* out = (char*)malloc(1);
-    out[0] = '\0';
-    for (int i = 0; i < tsolvers.size(); i++) {
-        if (tsolvers[i] != NULL) {
-            char* old_out = out;
-            asprintf(&out, "%s\n%s", old_out, tsolvers[i]->printExplanation(tr));
-            free(old_out);
-        }
-    }
-    return out;
 }
 
 

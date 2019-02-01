@@ -195,8 +195,6 @@ protected:
     inline int     verbose                       ( ) const { return config.verbosity(); }
 
     // Debug stuff
-    char* printValue(PTRef tr) override ;
-    char* printExplanation(PTRef tr) override ;
     void isProperLeq(PTRef tr);  // The Leq term conforms to the assumptions of its form.  Only asserts.
     bool valueConsistent(LVRef v) const; // Debug: Checks that the value of v in the model is consistent with the evaluated value of the polynomial of v in the same model.
     bool checkValueConsistency() const;

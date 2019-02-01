@@ -82,8 +82,6 @@ public:
     virtual bool assertLit_special(PtAsgn) = 0;        // Push the assignnment to the theory solver, with equality splitting if necessary
     void    declareAtoms      (PTRef);                 // Declare atoms to theory solvers
     void    informNewSplit(PTRef);                     // Recompute split datastructures
-    char*   printValue(PTRef tr);
-    char*   printExplanation(PTRef tr);
     void    declareAtom(PTRef tr);                     // Declare atom to the appropriate solver
 //    virtual SolverId getId() const { return my_id; }
     virtual void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs) = 0;

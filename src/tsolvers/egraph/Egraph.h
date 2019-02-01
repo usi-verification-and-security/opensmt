@@ -231,8 +231,6 @@ public:
         return (getEnode(er).isTerm() && logic.isConstant(getEnode(er).getTerm()));
     }
 
-  char*   printValue              (PTRef tr); // Print all terms in the same eq class and distinction class
-
 #ifdef STATISTICS
   void        printMemStats             ( ostream & );
 #endif

@@ -178,8 +178,6 @@ public:
     bool hasExplanation() { return has_explanation; }
     virtual void declareAtom(PTRef tr) = 0;
     virtual void  informNewSplit(PTRef tr) { };
-    virtual char* printValue(PTRef) = 0; // Debug function.  Instances are allowed to print whatever they want.
-    virtual char* printExplanation(PTRef) = 0; // Debug function.  Instances are allowed to print whatever they want.
     virtual Logic& getLogic() = 0;
     virtual bool isValid(PTRef tr) = 0;
     bool         isKnown(PTRef tr);
