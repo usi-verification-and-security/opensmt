@@ -604,8 +604,6 @@ SMTConfig::initializeConfig( )
   proof_random_seed	        = 0;
   simplify_interpolant           = 0;
 
-  parallel_threads = 0;
-
 }
 
 void

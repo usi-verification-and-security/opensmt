@@ -623,16 +623,6 @@ public:
       }
       return spm_unknown;
     }
-  const SpFormat smt_split_format() const {
-      if (optionTable.has(o_smt_split_format)) {
-          const char* type = optionTable[o_smt_split_format]->getValue().strval;
-          if (strcmp(type, spformats_smt2) == 0)
-              return spformat_smt2;
-          else if (strcmp(type, spformats_osmt2) == 0)
-              return spformat_osmt2;
-      }
-      return spformat_osmt2; // The default
-    }
   const SpFormat smt_split_format_length() const {
       if (optionTable.has(o_smt_split_format_length)) {
           const char* type = optionTable[o_smt_split_format_length]->getValue().strval;
@@ -706,19 +696,6 @@ public:
   int sat_dump_learnts() const
     { return optionTable.has(o_sat_dump_learnts) ?
         optionTable[o_sat_dump_learnts]->getValue().numval : 0; }
-
-    bool sat_split_threads(int threads){
-        if (threads<1 || parallel_threads) return false;
-        //insertOption(o_sat_split_type, new SMTOption(spts_scatter));
-        insertOption(o_sat_split_type, new SMTOption(spts_lookahead));
-        insertOption(o_sat_split_units, new SMTOption(spts_time));
-        insertOption(o_sat_split_inittune, new SMTOption(double(2)));
-        insertOption(o_sat_split_midtune, new SMTOption(double(2)));
-        insertOption(o_sat_split_num, new SMTOption(threads));
-        insertOption(o_sat_split_asap, new SMTOption(1));
-        parallel_threads = threads;
-        return true;
-    }
 
   bool sat_split_test_cube_and_conquer() const
     { return optionTable.has(o_sat_split_test_cube_and_conquer) ?
@@ -896,9 +873,6 @@ public:
 
   // interpolant parameters
   int           simplify_interpolant;
-
-  // parameter for parallelism
-  int          parallel_threads;
 
     static char* server_host;
     static uint16_t server_port;

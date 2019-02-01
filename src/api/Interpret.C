@@ -408,22 +408,6 @@ void Interpret::interp(ASTNode& n) {
             writeState((**(n.children->begin())).getValue());
             break;
         }
-        case t_readstate:
-        {
-            if(parse_only) break;
-            if (logic != NULL) {
-                const char* filename = (**(n.children->begin())).getValue();
-                CnfState cs;
-                char* msg;
-                bool rval = main_solver->readSolverState(filename, &msg);
-                if (!rval) {
-                    notify_formatted("%s", msg);
-                }
-            } else {
-                notify_formatted(true, "Illegal command before set-logic: read-state");
-            }
-            break;
-        }
         case t_writefuns:
         {
             const char* filename = (**(n.children->begin())).getValue();
@@ -683,10 +667,7 @@ bool Interpret::checkSat() {
         if (!o_dump_state.isEmpty() && o_split == spt_none)
             writeState(name);
         else if (o_split != spt_none) {
-            if (config.smt_split_format() == spformat_smt2)
-                writeSplits_smtlib2(name);
-            else
-                writeSplits(name);
+            writeSplits_smtlib2(name);
         }
         free(name);
     }
@@ -775,20 +756,8 @@ void Interpret::writeState(const char* filename)
     char* msg;
     bool rval;
 
-    if (config.smt_split_format() == spformat_osmt2)
-        rval = main_solver->writeSolverState(filename, &msg);
-    else if (config.smt_split_format() == spformat_smt2)
-        rval = main_solver->writeSolverState_smtlib2(filename, &msg);
+    rval = main_solver->writeSolverState_smtlib2(filename, &msg);
 
-    if (!rval) {
-        notify_formatted("%s", msg);
-    }
-}
-
-void Interpret::writeSplits(const char* filename)
-{
-    char* msg;
-    bool rval = main_solver->writeSolverSplits(filename, &msg);
     if (!rval) {
         notify_formatted("%s", msg);
     }

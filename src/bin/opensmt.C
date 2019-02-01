@@ -40,17 +40,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace opensmt {
 
 void        catcher            ( int );
-//extern bool stop;
 
-} // namespace opensmt
-
-//extern int  smtset_in          ( FILE * );
-//extern int  smtparse           ( );
-//extern int  cnfset_in          ( FILE * );
-//extern int  cnfparse           ( );
-//extern int  smt2set_in         ( FILE * );
-//extern int  smt2parse          ( );
-//OpenSMTContext * parser_ctx;
+}
 
 /*****************************************************************************\
  *                                                                           *
@@ -60,75 +51,38 @@ void        catcher            ( int );
 
 int main( int argc, char * argv[] )
 {
-//  opensmt::stop = false;
-  // Allocates Command Handler (since SMT-LIB 2.0)
-//  OpenSMTContext context( argc, argv );
-  // Catch SigTerm, so that it answers even on ctrl-c
-  signal( SIGTERM, opensmt::catcher );
-  signal( SIGINT , opensmt::catcher );
+    signal( SIGTERM, opensmt::catcher );
+    signal( SIGINT , opensmt::catcher );
 
-  //
-  // This trick (copied from Main.C of MiniSAT) is to allow
-  // the repeatability of experiments that might be compromised
-  // by the floating point unit approximations on doubles
-  //
+    //
+    // This trick (copied from Main.C of MiniSAT) is to allow
+    // the repeatability of experiments that might be compromised
+    // by the floating point unit approximations on doubles
+    //
 #if defined(__linux__)
-  fpu_control_t oldcw, newcw;
-  _FPU_GETCW(oldcw); newcw = (oldcw & ~_FPU_EXTENDED) | _FPU_DOUBLE; _FPU_SETCW(newcw);
+    fpu_control_t oldcw, newcw;
+    _FPU_GETCW(oldcw); newcw = (oldcw & ~_FPU_EXTENDED) | _FPU_DOUBLE; _FPU_SETCW(newcw);
 #endif
 
 #ifdef PEDANTIC_DEBUG
-  cerr << "; pedantic assertion checking enabled (very slow)" << endl;
+    cerr << "; pedantic assertion checking enabled (very slow)" << endl;
 #endif
 
 #ifndef NDEBUG
-  cerr << "; this binary is compiled in debug mode (slow)" << endl;
+    cerr << "; this binary is compiled in debug mode (slow)" << endl;
 #endif
 
-  cerr << "; git hash: " << GIT_SHA1 << endl;
+    cerr << "; git hash: " << GIT_SHA1 << endl;
 
-  cerr << "; symbol enode size: " << EnodeAllocator::symEnodeWord32Size() << endl;
-  cerr << "; list enode size: " << EnodeAllocator::listEnodeWord32Size() << endl;
-  cerr << "; term enode size: " << EnodeAllocator::termEnodeWord32Size() << endl;
-  //cerr << "; Configured with args " << CONFIG_FLAGS << endl;
-  //cerr << "; preprocessor definitions set in configure " << CONFIGTIME_DEFFLAGS << endl;
-  //cerr << "; compiler flags set in configure " << CONFIGTIME_COMPFLAGS << endl;
-
-  // Initialize pointer to context for parsing
-//  parser_ctx    = &context;
   // Accepts file from stdin if nothing specified
     FILE * fin = NULL;
     int opt, i;
-//    WorkerClient *w;
+
     SMTConfig c;
     bool dryrun = false; // Run without solving
-    while ((opt = getopt(argc, argv, "hp:dr:")) != -1) {
+    while ((opt = getopt(argc, argv, "hdr:")) != -1) {
         switch (opt) {
-            case 'p':
-                if(!c.sat_split_threads(atoi(optarg))){
-                    fprintf(stderr, "Invalid parallel argument: %s\n", optarg);
-                    return -1;
-                }
-                break;
-//            case 's':
-//            case 'r':
-//                for(i=0;optarg[i]!=':' && optarg[i]!='\0';i++){}
-//                if(optarg[i]!=':'){
-//                    fprintf(stderr, "Invalid host:port argument\n",
-//                            argv[0]);
-//                    return 1;
-//                }
-//                optarg[i]='\0';
-//
-//                if(opt == 's') {
-//                    SMTConfig::server_host = optarg;
-//                    SMTConfig::server_port = atoi(&optarg[i+1]);
-//                }
-//                if(opt == 'r'){
-//                    SMTConfig::database_host = optarg;
-//                    SMTConfig::database_port = atoi(&optarg[i+1]);
-//                }
-//                break;
+
             case 'h':
                 //    context.getConfig( ).printHelp( );
                 break;
@@ -143,21 +97,12 @@ int main( int argc, char * argv[] )
                     fprintf(stderr, "; Using random seed %d\n", atoi(optarg));
                 break;
             default: /* '?' */
-                fprintf(stderr, "Usage:\n\t%s [-p threads] [-d] [-r seed] filename [...]\n",
+                fprintf(stderr, "Usage:\n\t%s [-d] [-h] [-r seed] filename [...]\n",
                         argv[0]);
                 return 0;
         }
     }
 
-//    if(SMTConfig::server_host!=NULL) {
-//        try {
-//            WorkerClient *w = new WorkerClient();
-//            w->runForever();
-//        } catch (char const *s) {
-//            std::cout << "Exception: " << s << "\n";
-//        }
-//        return 0;
-//    }
     Interpret interpreter(c);
 
     if (argc - optind == 0) {
@@ -201,14 +146,8 @@ void catcher( int sig )
   {
     case SIGINT:
     case SIGTERM:
-        exit(1);
         printf("Exit from signal\n");
-//      if ( opensmt::stop )
-//      {
-//	parser_ctx->PrintResult( l_Undef );
-//	exit( 1 );
-//      }
-//      opensmt::stop = true;
+        exit(1);
       break;
   }
 }

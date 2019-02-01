@@ -64,17 +64,6 @@ const sstat s_Error = toSstat( 2);
 class MainSolver
 {
   private:
-    const static int sz_idx              = 0;
-    const static int map_offs_idx        = 1;
-    const static int termstore_offs_idx  = 2;
-    const static int symstore_offs_idx   = 3;
-    const static int idstore_offs_idx    = 4;
-    const static int sortstore_offs_idx  = 5;
-    const static int logicstore_offs_idx = 6;
-    const static int cnf_offs_idx        = 7;
-
-    int compress_buf(const int* buf_in, int*& buf_out, int sz, int& sz_out) const;
-    int decompress_buf(int* buf_in, int*& buf_out, int sz, int& sz_out) const;
 
     Logic&              logic;
     SMTConfig&          config;
@@ -116,8 +105,6 @@ class MainSolver
     void computeIncomingEdges(PTRef tr, Map<PTRef,int,PTRefHash>& PTRefToIncoming);
     PTRef rewriteMaxArity(PTRef, const Map<PTRef,int,PTRefHash>&);
     PTRef mergePTRefArgs(PTRef, Map<PTRef,PTRef,PTRefHash>&, const Map<PTRef,int,PTRefHash>&);
-
-    vec<MainSolver*> parallel_solvers;
 
     FContainer root_instance; // Contains the root of the instance once simplifications are done
 
@@ -175,22 +162,12 @@ class MainSolver
     sstat lookaheadSplit  (int d)  { return status = sstat(ts.solver.lookaheadSplit(d)); }
     sstat getStatus       ()       { return status; }
     bool  solverEmpty     () const { return ts.solverEmpty(); }
-    bool  readSolverState  (const char* file, char** msg);
-    bool  readSolverState  (int* buf, int buf_sz, bool compressed, char **msg);
-    bool  writeState       (const char* file, CnfState& cs, char** msg);
-    bool  writeState       (int* &buf, int &buf_sz, bool compress, CnfState& cs, char** msg);
-    bool  writeSolverState (const char* file, char** msg);
-    bool  writeSolverState (int* &buf, int &buf_sz, bool compress, char** msg);
     bool  writeSolverState_smtlib2 (const char* file, char** msg);
 
     bool  writeFuns_smtlib2 (const char* file);
 
     void  addToConj(vec<vec<PtAsgn> >& in, vec<PTRef>& out); // Add the contents of in as disjuncts to out
     bool  writeSolverSplits_smtlib2(const char* file, char** msg);
-    bool  writeSolverSplits(const char* file, char** msg);
-    bool  writeSolverSplit (int s, int* &split, int &split_sz, bool compress, char** msg);
-    bool  writeSolverSplits(int** &splits, char** msg);
-    void  deserializeSolver(const int* termstore_buf, const int* symstore_buf, const int* idstore_buf, const int* sortstore_buf, const int* logicdata_buf, CnfState& cs);
 
     // Values
     lbool   getTermValue   (PTRef tr) const { return ts.getTermValue(tr); }
@@ -199,7 +176,6 @@ class MainSolver
     bool    getAssignment  (const char*);
 
 
-    void solve_split(int i,int s, int wpipefd, std::mutex *mtx);
     void stop() { ts.solver.stop = true; }
 
     bool readFormulaFromFile(const char *file);
