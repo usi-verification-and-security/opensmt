@@ -322,8 +322,10 @@ inline enodeid_pair_t encode( enodeid_t car, enodeid_t cdr )
     FILE*   in = fopen(name, "rb");
     if (in == NULL) return 0;
     int value;
-    for (; field >= 0; field--)
-        fscanf(in, "%d", &value);
+    for (; field >= 0; field--) {
+        int res = fscanf(in, "%d", &value);
+        (void)res;
+    }
     fclose(in);
     return value;
 }
