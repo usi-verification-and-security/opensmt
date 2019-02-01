@@ -1419,11 +1419,11 @@ Egraph::getValue(PTRef tr)
         return ValPair_Undef;
     }
     char* name;
-
+    int written = -1;
     if (!enode_store.has(tr)) {
         // This variable was never pushed to Egraph so its value is not
         // bound by anything.
-        asprintf(&name, "%s%d", s_any_prefix, Idx(logic.getPterm(tr).getId()));
+        written = asprintf(&name, "%s%d", s_any_prefix, Idx(logic.getPterm(tr).getId()));
     }
     else {
 
@@ -1431,17 +1431,18 @@ Egraph::getValue(PTRef tr)
         ERef e_root = values[e.getERef()];
 
         if (e_root == enode_store.ERef_True)
-           asprintf(&name, "true");
+           written = asprintf(&name, "true");
         else if (e_root == enode_store.ERef_False)
-            asprintf(&name, "false");
+            written = asprintf(&name, "false");
         else if (isConstant(e_root)) {
             char* const_name = logic.printTerm(enode_store[e_root].getTerm());
-            asprintf(&name, "%s%s", s_const_prefix, const_name);
+            written = asprintf(&name, "%s%s", s_const_prefix, const_name);
             free(const_name);
         }
         else
-            asprintf(&name, "%s%d", s_val_prefix, enode_store[e_root].getId());
+            written = asprintf(&name, "%s%d", s_val_prefix, enode_store[e_root].getId());
     }
+    assert(written >= 0); (void)written;
     ValPair vp(tr, name);
     free(name);
     return vp;
