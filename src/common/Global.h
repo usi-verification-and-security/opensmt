@@ -160,7 +160,9 @@ void static inline wordToBinary(const opensmt::Integer x, char*& bin, const int 
         char* reason;
     public:
         strConvException(const char* reason_) {
-            asprintf(&reason, "Error converting string to rational.  %s is not a legal rational", reason_);
+            int res = asprintf(&reason, "Error converting string to rational.  %s is not a legal rational", reason_);
+            assert(res >=0);
+            (void)res;
         }
         virtual const char* what() const noexcept
         {
