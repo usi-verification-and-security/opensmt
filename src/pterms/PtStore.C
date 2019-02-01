@@ -34,44 +34,6 @@ const int PtStore::ptstore_buf_idx = 2;
 PtStore::PtStore(SymStore& symstore_, SStore& sortstore_)
     : symstore(symstore_), sortstore(sortstore_) { }
 
-    // TODO: MB: Consider rewriting this using C++ streams
-char* PtStore::printTerm_(PTRef tr, bool ext) const {
-    const Pterm& t = pta[tr];
-    SymRef sr = t.symb();
-    char* out;
-    if (t.size() == 0) {
-        int chars_printed = ext ? asprintf(&out, "%s <%d>", symstore.getName(sr), tr.x)
-                : asprintf(&out, "%s", symstore.getName(sr));
-        if (chars_printed < 0) return nullptr;
-        return out;
-    }
-
-    char* old;
-    int chars_printed = asprintf(&out, "(%s ", symstore.getName(sr));
-    if (chars_printed < 0) { return nullptr; }
-    for (int i = 0; i < t.size(); i++) {
-        old = out;
-        char* arg = printTerm_(t[i], ext);
-        if (arg == nullptr) { return nullptr; }
-        chars_printed = asprintf(&out, "%s%s", old, arg);
-        ::free(old);
-        ::free(arg);
-        if (chars_printed < 0) { return nullptr; }
-        if (i < t.size()-1) {
-            old = out;
-            chars_printed = asprintf(&out, "%s ", old);
-            ::free(old);
-            if (chars_printed < 0) { return nullptr; }
-        }
-    }
-    old = out;
-    chars_printed = ext ? asprintf(&out, "%s) <%d>", old, tr.x)
-            : asprintf(&out, "%s)", old);
-    ::free(old);
-    if (chars_printed < 0) { return nullptr; }
-    return out;
-}
-
 //
 // Resolves the SymRef for name s taking into account polymorphism
 // Returns SymRef_Undef if the name is not defined anywhere
@@ -157,12 +119,6 @@ SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args) {
     return SymRef_Undef;
 }
 
-
-char* PtStore::printTerm(PTRef tr, bool ext) const
-{
-    char* tms = printTerm_(tr, ext);
-    return tms;
-}
 
 int* PtStore::serializeTerms() const
 {

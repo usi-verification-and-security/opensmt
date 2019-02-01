@@ -104,9 +104,6 @@ class PtStore {
     Pterm& operator[] (PTRef tr);// { return pta[tr]; }
     const Pterm& operator[] (PTRef tr) const;// { return pta[tr]; }
 
-    char* printTerm(PTRef, bool ext = false) const;
-    char* printTerm_(PTRef, bool ext = false) const;
-
     bool hasCtermKey(SymRef& k);// { return cterm_map.has(k); }
     void addToCtermMap(SymRef& k, PTRef tr);/* {
         cterm_map.insert(k, tr);
