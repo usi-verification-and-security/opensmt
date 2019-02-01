@@ -1200,28 +1200,30 @@ char* Interpret::buildSortName(ASTNode& sn)
 {
     list<ASTNode*>::iterator it = sn.children->begin();
     char* canon_name;
-    asprintf(&canon_name, "%s", (**it).getValue());
+    int written = asprintf(&canon_name, "%s", (**it).getValue());
+    assert(written >= 0); (void)written;
     return canon_name;
 
-    asprintf(&canon_name, "%s", (**(it++)).getValue());
-    if  (it != sn.children->end()) {
-        char* arg_names;
-        char* old;
-        char* sub_name = buildSortName(**(it++));
-        asprintf(&arg_names, "%s", sub_name);
-        free(sub_name);
-        for (; it != sn.children->end(); it++) {
-            old = arg_names;
-            sub_name = buildSortName(**it);
-            asprintf(&arg_names, "%s %s", old, sub_name);
-            free(sub_name);
-            free(old);
-        }
-        old = canon_name;
-        asprintf(&canon_name, "%s (%s)", old, arg_names);
-        free(old);
-    }
-    return canon_name;
+//    MB: This code was not reachable, it seems to handle paramteric sorts, but that is not really supported now
+//    asprintf(&canon_name, "%s", (**(it++)).getValue());
+//    if  (it != sn.children->end()) {
+//        char* arg_names;
+//        char* old;
+//        char* sub_name = buildSortName(**(it++));
+//        asprintf(&arg_names, "%s", sub_name);
+//        free(sub_name);
+//        for (; it != sn.children->end(); it++) {
+//            old = arg_names;
+//            sub_name = buildSortName(**it);
+//            asprintf(&arg_names, "%s %s", old, sub_name);
+//            free(sub_name);
+//            free(old);
+//        }
+//        old = canon_name;
+//        asprintf(&canon_name, "%s (%s)", old, arg_names);
+//        free(old);
+//    }
+//    return canon_name;
 }
 
 SRef Interpret::newSort(ASTNode& sn) {
