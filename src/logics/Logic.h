@@ -39,10 +39,10 @@ class SStore;
 
 // For breaking substitution loops
 struct NStatus { uint32_t x; bool operator== (const NStatus& o) const { return o.x == x; } };
-static NStatus ns_inStack  = {0};
-static NStatus ns_complete = {1};
-static NStatus ns_unseen   = {2};
-static NStatus ns_undef    = {INT32_MAX};
+const static NStatus ns_inStack  = {0};
+const static NStatus ns_complete = {1};
+const static NStatus ns_unseen   = {2};
+
 
 class Logic {
     class TFun {

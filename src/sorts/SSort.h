@@ -45,8 +45,8 @@ struct SRef {
     inline friend bool operator!= (const SRef& a1, const SRef& a2) {return a1.x != a2.x; }
 };
 
-static struct SRef SRef_Undef = {INT32_MAX};
-static struct SRef SRef_Nil   = {INT32_MAX-1};
+const static struct SRef SRef_Undef = {INT32_MAX};
+const static struct SRef SRef_Nil   = {INT32_MAX-1};
 
 struct SRefHash {
     uint32_t operator () (const SRef& s) const {
