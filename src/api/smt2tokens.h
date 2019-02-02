@@ -72,10 +72,4 @@ struct smt2token
 {
     token x;
 };
-
-#define S_BANG = "!";
-static const char* S_PUSH = "push";
-static const char* S_EXISTS = "exists";
-static const char* S_FORALL = "forall";
-static const char* S_LET = "let";
 #endif
