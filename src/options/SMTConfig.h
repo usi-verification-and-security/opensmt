@@ -338,13 +338,13 @@ private:
       int full_length = strlen(base)+1+strlen(output_dir());
       char *full_str = (char*)malloc(full_length+1);
       char* ptr = full_str;
-      for (int i = 0; i < strlen(path); i++) {
+      for (unsigned int i = 0; i < strlen(path); i++) {
           *ptr = path[i];
           ptr++;
       }
       (*ptr) = '/';
       ptr++;
-      for (int i = 0; i < strlen(base); i++) {
+      for (unsigned int i = 0; i < strlen(base); i++) {
           *ptr = base[i];
           ptr++;
       }

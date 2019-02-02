@@ -61,7 +61,7 @@ protected:
         for (int i = 0; i < SolverDescr::getSolverList().size(); i++) {
             SolverDescr* sd = SolverDescr::getSolverList()[i];
             SolverId id = (SolverId)(*sd);
-            while (id.id >= tsolvers.size()) tsolvers.push(NULL);
+            while (id.id >= (unsigned)tsolvers.size()) tsolvers.push(NULL);
         }
     }
 public:
