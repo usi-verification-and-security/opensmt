@@ -176,22 +176,20 @@ inline bool operator!=(const SpPref& s1, const SpPref& s2) { return s1.t != s2.t
 inline bool operator==(const SpFormat& s1, const SpFormat& s2) { return s1.t == s2.t; }
 inline bool operator!=(const SpFormat& s1, const SpFormat& s2) { return s1.t != s2.t; }
 
-static const char* spts_lookahead = "lookahead";
-static const char* spts_scatter   = "scattering";
-static const char* spts_none      = "none";
+static const char* const spts_lookahead = "lookahead";
+static const char* const spts_scatter   = "scattering";
+static const char* const spts_none      = "none";
 
-static const char* spts_decisions = "decisions";
-static const char* spts_time      = "time";
+static const char* const spts_decisions = "decisions";
+static const char* const spts_time      = "time";
 
-static const char* spprefs_tterm   = "tterm";
-static const char* spprefs_blind   = "blind";
-static const char* spprefs_bterm   = "bterm";
-static const char* spprefs_rand    = "random";
+static const char* const spprefs_tterm   = "tterm";
+static const char* const spprefs_blind   = "blind";
+static const char* const spprefs_bterm   = "bterm";
+static const char* const spprefs_rand    = "random";
 
-static const char* spformats_smt2   = "smt2";
-static const char* spformats_osmt2  = "osmt2";
-static const char* spformats_brief  = "brief";
-static const char* spformats_full   = "full";
+static const char* const spformats_brief  = "brief";
+static const char* const spformats_full   = "full";
 
 static const struct SpType spt_none      = { 0 };
 static const struct SpType spt_lookahead = { 1 };
