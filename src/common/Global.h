@@ -73,15 +73,6 @@ using std::pair;
 using std::make_pair;
 using std::list;
 
-//#if defined( __GNUC__ ) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
-//using __gnu_pbds::priority_queue;
-//using __gnu_pbds::pairing_heap_tag;
-//#else
-//#error "This version of OpenSMT2 requires at least gcc 4.3"
-//using pb_ds::priority_queue;
-//using pb_ds::pairing_heap_tag;
-//#endif
-
 using std::cout;
 using std::cerr;
 using std::endl;
@@ -278,32 +269,11 @@ inline enodeid_pair_t encode( enodeid_t car, enodeid_t cdr )
 // Set the bit B to 1 and leaves the others to 0
 #define SETBIT( B ) ( 1 << (B) )
 
-    struct Logic_t {
-        int x;
-        const char* str;
-        bool operator== (const Logic_t& o) const { return x == o.x; }
-        bool operator!= (const Logic_t& o) const { return x != o.x; }
-    };
 
-    static struct Logic_t UNDEF = {-1, "UNDEF"};
-    static struct Logic_t EMPTY = {0, "EMPTY"};
-    static struct Logic_t QF_UF = {1, "QF_UF"};
-    static struct Logic_t QF_CUF = {1, "QF_CUF"};
-    static struct Logic_t QF_BV = {2, "QF_BV"};
-    static struct Logic_t QF_RDL = {3, "QF_RDL"};
-    static struct Logic_t QF_IDL = {4, "QF_IDL"};
-    static struct Logic_t QF_LRA = {5, "QF_LRA"};
-    static struct Logic_t QF_LIA = {6, "QF_LIA"};
-    static struct Logic_t QF_UFRDL = {7, "QF_UFRDL"};
-    static struct Logic_t QF_UFIDL = {8, "QF_UFIDL"};
-    static struct Logic_t QF_UFLRA = {9, "QF_UFLRA"};
-    static struct Logic_t QF_UFLIA = {10, "QF_UFLIA"};
-    static struct Logic_t QF_UFBV = {11, "QF_UFBV"};
-    static struct Logic_t QF_AX = {12, "QF_AX"};
-    static struct Logic_t QF_AXDIFF = {13, "QF_AXDIFF"};
-    static struct Logic_t QF_BOOL = {14, "QF_BOOL"};
-    static struct Logic_t QF_AUFBV = {15, "QF_AUFBV"};
-    static struct Logic_t QF_CT = {16, "QF_CT"};
+    enum class Logic_t{
+        UNDEF, EMPTY, QF_UF, QF_CUF, QF_BV, QF_RDL, QF_IDL, QF_LRA, QF_LIA, QF_UFRDL, QF_UFIDL,
+        QF_UFLRA, QF_UFLIA, QF_UFBV, QF_AX, QF_AXDIFF, QF_BOOL, QF_AUFBV, QF_CT
+    };
 
 
     static inline double cpuTime(void)
@@ -460,25 +430,6 @@ using opensmt::snodeid_t;
 using opensmt::sortid_t;
 using opensmt::enodeid_pair_t;
 using opensmt::encode;
-using opensmt::Logic_t;
-using opensmt::UNDEF;
-using opensmt::EMPTY;
-using opensmt::QF_UF;
-using opensmt::QF_BV;
-using opensmt::QF_RDL;
-using opensmt::QF_IDL;
-using opensmt::QF_LRA;
-using opensmt::QF_LIA;
-using opensmt::QF_UFRDL;
-using opensmt::QF_UFIDL;
-using opensmt::QF_UFLRA;
-using opensmt::QF_UFLIA;
-using opensmt::QF_UFBV;
-using opensmt::QF_AUFBV;
-using opensmt::QF_AX;
-using opensmt::QF_AXDIFF;
-using opensmt::QF_BOOL;
-using opensmt::QF_CT;
 using opensmt::cpuTime;
 using opensmt::memUsed;
 #ifdef PRODUCE_PROOF

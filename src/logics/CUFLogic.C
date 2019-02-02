@@ -102,7 +102,7 @@ CUFLogic::CUFLogic(SMTConfig& c) :
     , term_CUF_ZERO(PTRef_Undef)
     , term_CUF_ONE(PTRef_Undef)
 {
-    logic_type = opensmt::QF_CUF;
+    logic_type = opensmt::Logic_t::QF_CUF;
     char* msg;
     sort_CUFNUM = declareSort(s_sort_cufnum, &msg);
 

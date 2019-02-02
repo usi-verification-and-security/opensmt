@@ -25,7 +25,6 @@ class BVLogic: public CUFLogic
 //    void getCommEqs(vec<PTRef>& out) const { comm_eqs.getKeys(out); }
 
   protected:
-    Logic_t logic_type;
     SymRef              sym_BV_ZERO;   // 0
     SymRef              sym_BV_ONE;    // 1
     SymRef              sym_BV_MINUS;  // -
@@ -105,8 +104,8 @@ class BVLogic: public CUFLogic
     BVLogic (SMTConfig& c, int width = i_default_bitwidth);
     ~BVLogic();
     virtual int          getBitWidth() const { return bitwidth; }
-    virtual const char*   getName()  const { return getLogic().str; }
-    virtual const Logic_t getLogic() const { return opensmt::QF_BV; }
+    virtual const char*   getName()  const { return "QF_BV"; }
+    virtual const opensmt::Logic_t getLogic() const { return opensmt::Logic_t::QF_BV; }
 
 //    virtual PTRef         insertTerm(SymRef sym, vec<PTRef>& terms, char** msg);
     PTRef         mkBVConst   (const int c) { char* num; opensmt::wordToBinary(c, num, getBitWidth()); PTRef tr = Logic::mkConst(sort_BVNUM, num); free(num); return tr; } // Convert the int c to binary

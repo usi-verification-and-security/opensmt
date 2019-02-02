@@ -69,7 +69,7 @@ LRALogic::LRALogic(SMTConfig& c) :
 {
     char* m;
     char** msg = &m;
-    logic_type = QF_LRA;
+    logic_type = opensmt::Logic_t::QF_LRA;
     sort_REAL = declareSort(s_sort_real, msg);
     ufsorts.remove(sort_REAL);
 //    printf("Setting sort_REAL to %d at %p\n", sort_REAL.x, &(sort_REAL.x));

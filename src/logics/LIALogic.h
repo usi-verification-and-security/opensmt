@@ -21,7 +21,6 @@ public:
 class LIALogic: public LALogic
 {
 protected:
-    Logic_t logic_type;
     vec<opensmt::Integer2*> integers;//PS. replace this with Number?
     SymRef              sym_Int_ZERO;
     SymRef              sym_Int_ONE;
@@ -59,8 +58,8 @@ public:
     ~LIALogic () {
         for (int i = 0; i < integers.size(); i++) delete integers[i];
     }
-    virtual const char*   getName()         const override;// { return getLogic().str; }
-    virtual const Logic_t getLogic()        const override;// { return QF_LIA; }
+    virtual const char*   getName()         const override { return "QF_LIA"; }
+    virtual const opensmt::Logic_t getLogic()        const override { return opensmt::Logic_t::QF_LIA; }
     virtual bool isBuiltinSort(SRef sr) const override;// { return sr == sort_INTEGER || Logic::isBuiltinSort(sr); }
     virtual bool  isNonnegNumConst(PTRef tr) const override;// { return isNumConst(tr) && getNumConst(tr) >= 0; }
     virtual SRef   getSort_num()  const override;// {return sort_INTEGER;}

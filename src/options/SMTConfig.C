@@ -542,7 +542,7 @@ void
 SMTConfig::initializeConfig( )
 {
   // Set Global Default configuration
-  logic                         = UNDEF;
+  logic                         = opensmt::Logic_t::UNDEF;
   status                        = l_Undef;
   insertOption(o_produce_stats, new SMTOption(0));
 //  produce_stats                 = 0;

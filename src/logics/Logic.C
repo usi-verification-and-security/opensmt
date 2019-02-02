@@ -82,8 +82,9 @@ Logic::Logic(SMTConfig& c) :
     , term_FALSE(PTRef_Undef)
     , subst_num(0)
 {
-    config.logic = QF_UF;
-    logic_type = QF_UF;
+    logic_type = opensmt::Logic_t::QF_UF;
+    config.logic = logic_type;
+
     char* msg;
     // We can't use declareSort here since it assumes that sort_BOOL
     // exists for making the equality symbol!
@@ -216,16 +217,16 @@ Logic::~Logic()
 #endif // STATISTICS
 }
 
-const Logic_t
+const opensmt::Logic_t
 Logic::getLogic() const
 {
-    return QF_UF;
+    return logic_type;
 }
 
 const char*
 Logic::getName() const
 {
-    return getLogic().str;
+    return "QF_UF";
 }
 
 bool

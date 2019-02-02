@@ -405,7 +405,7 @@ public:
   void printHelp        ( );
   void printConfig      ( ostream & out );
 
-  inline bool      isInit      ( ) { return logic != UNDEF; }
+  inline bool      isInit      ( ) { return logic != opensmt::Logic_t::UNDEF; }
 
   inline ostream & getStatsOut     ( ) { assert( optionTable.has(o_produce_stats) );  return stats_out; }
   inline ostream & getRegularOut   ( ) { return rocset ? out : cout; }
@@ -484,7 +484,7 @@ public:
   }
 
   const char * filename;                     // Holds the name of the input filename
-  struct Logic_t logic;                        // SMT-Logic under consideration
+  opensmt::Logic_t logic;                    // SMT-Logic under consideration
   lbool        status;                       // Status of the benchmark
 //  int          incremental;                  // Incremental solving
   int           isIncremental() const

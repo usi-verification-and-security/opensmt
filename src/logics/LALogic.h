@@ -20,7 +20,6 @@ public:
 class LALogic: public Logic
 {
 protected:
-    Logic_t logic_type;
     vec<opensmt::Number*> numbers;
 
     bool split_eq;

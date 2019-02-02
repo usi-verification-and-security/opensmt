@@ -64,6 +64,8 @@ namespace opensmt
     extern bool stop;
 }
 
+using opensmt::Logic_t;
+
 //=================================================================================================
 // Constructor/Destructor:
 
@@ -199,26 +201,6 @@ CoreSMTSolver::initialize( )
         polarity_mode = polarity_user;
         break; // Boolean atoms
     }
-
-    if ( config.logic == QF_AX
-            || config.logic == QF_AXDIFF )
-    {
-        polarity_mode = polarity_false;
-        // polarity_mode = polarity_true;
-        // polarity_mode = polarity_rnd;
-        opensmt_warning( "Overriding polarity for AX theory" );
-    }
-
-    /*if(SMTConfig::database_host!=NULL){
-        struct timeval timeout = {1, 500000}; // 1.5 seconds
-        this->clauses_sharing.c_cls_pub = redisConnectWithTimeout(SMTConfig::database_host, SMTConfig::database_port, timeout);
-        this->clauses_sharing.c_cls_sub = redisConnectWithTimeout(SMTConfig::database_host, SMTConfig::database_port, timeout);
-        if (this->clauses_sharing.c_cls_pub == NULL || this->clauses_sharing.c_cls_sub == NULL) {
-            std::cerr << "Connection error: can't use clause sharing!\n";
-            redisFree(this->clauses_sharing.c_cls_pub);
-            redisFree(this->clauses_sharing.c_cls_sub);
-        }
-    }*/
 
     init = true;
 }
@@ -825,22 +807,6 @@ Lit CoreSMTSolver::pickBranchLit()
     if (split_preference == sppref_tterm || split_preference == sppref_bterm)
         for (int i = 0; i < discarded.size(); i++)
            order_heap.insert(discarded[i]);
-
-    if ( next == var_Undef
-        && ( config.logic == QF_UFIDL || config.logic == QF_UFLRA )
-        && config.sat_lazy_dtc != 0 )
-    {
-    //	next = generateMoreEij( );
-
-        /*
-        if ( next != var_Undef )
-            cerr << "Generated eij " << next << ", with value " << ( value( next ) == l_True
-                ? "T"
-                    : value( next ) == l_False
-                    ? "F"
-                        : "U" ) << endl;
-        */
-    }
 
     if ( next == var_Undef )
         return lit_Undef;
@@ -2129,11 +2095,12 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                     return l_True;
             }
 
+
             // This case may happen only during DTC
             if ( value( next ) != l_Undef )
             {
-                assert( config.logic == QF_UFIDL
-                        || config.logic == QF_UFLRA );
+                assert( config.logic == opensmt::Logic_t::QF_UFIDL
+                        || config.logic == opensmt::Logic_t::QF_UFLRA );
                 continue;
             }
 
@@ -2290,15 +2257,14 @@ lbool CoreSMTSolver::solve_(int max_conflicts)
     random_seed = config.getRandomSeed();
 //    assert( init );
     // Check some invariants before we start ...
-    assert( config.logic != UNDEF );
+    assert( config.logic != Logic_t::UNDEF );
     // Incrementality should be enabled for arrays
     // assert( config.logic != QF_AX || config.incremental );
     // Incrementality should be enabled for lazy dtc
-    assert( config.logic != QF_UFRDL || config.sat_lazy_dtc == 0 || config.isIncremental() );
-    assert( config.logic != QF_UFIDL || config.sat_lazy_dtc == 0 || config.isIncremental() );
-    assert( config.logic != QF_UFLRA || config.sat_lazy_dtc == 0 || config.isIncremental() );
-    assert( config.logic != QF_UFLIA || config.sat_lazy_dtc == 0 || config.isIncremental() );
-    assert( config.logic != QF_UFLRA || config.sat_lazy_dtc == 0 || config.isIncremental() );
+    assert( config.logic != Logic_t::QF_UFRDL || config.sat_lazy_dtc == 0 || config.isIncremental() );
+    assert( config.logic != Logic_t::QF_UFIDL || config.sat_lazy_dtc == 0 || config.isIncremental() );
+    assert( config.logic != Logic_t::QF_UFLRA || config.sat_lazy_dtc == 0 || config.isIncremental() );
+    assert( config.logic != Logic_t::QF_UFLIA || config.sat_lazy_dtc == 0 || config.isIncremental() );
     // UF solver should be enabled for lazy dtc
     assert( config.sat_lazy_dtc == 0 || config.uf_disable == 0 );
 

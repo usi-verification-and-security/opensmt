@@ -40,7 +40,6 @@ class CUFLogic: public Logic
     void getCommEqs(vec<PTRef>& out) const { comm_eqs.getKeys(out); }
 
   protected:
-    Logic_t logic_type;
     SymRef              sym_CUF_ZERO;   // 0
     SymRef              sym_CUF_ONE;    // 1
     SymRef              sym_CUF_NEG;    // -
@@ -114,8 +113,8 @@ class CUFLogic: public Logic
   public:
     CUFLogic (SMTConfig& c);
     ~CUFLogic();
-    virtual const char*   getName()  const { return getLogic().str; }
-    virtual const Logic_t getLogic() const { return opensmt::QF_CUF; }
+    virtual const char*   getName()  const { return "QF_CUF"; }
+    virtual const opensmt::Logic_t getLogic() const { return opensmt::Logic_t::QF_CUF; }
 
 //    virtual PTRef         insertTerm(SymRef sym, vec<PTRef>& terms, char** msg);
     using Logic::mkConst;

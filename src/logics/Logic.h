@@ -143,7 +143,7 @@ class Logic {
   public:
     PtStore             term_store;
   protected:
-    Logic_t             logic_type;
+    opensmt::Logic_t    logic_type;
     SymRef              sym_TRUE;
     SymRef              sym_FALSE;
     SymRef              sym_AND;
@@ -208,8 +208,8 @@ class Logic {
 
     virtual void conjoinExtras(PTRef root, PTRef& new_root);// { conjoinItes(root, new_root); }
 
-    virtual const Logic_t getLogic() const;
-    virtual const char* getName()    const;
+    virtual const opensmt::Logic_t getLogic() const;
+    virtual const char * getName() const;
 
     // Identifiers
     IdRef       newIdentifier (const char* name)   ;//         { return id_store.newIdentifier(name); }

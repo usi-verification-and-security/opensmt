@@ -68,6 +68,17 @@ Interpret::~Interpret() {
             delete solver;
     }
 }
+using opensmt::Logic_t;
+namespace {
+opensmt::Logic_t getLogicFromString(std::string name) {
+    if (name == "QF_UF") return opensmt::Logic_t::QF_UF;
+    if (name == "QF_LRA") return opensmt::Logic_t::QF_LRA;
+    if (name == "QF_LIA") return opensmt::Logic_t::QF_LIA;
+    if (name == "QF_CUF") return opensmt::Logic_t::QF_CUF;
+    if (name == "QF_UFLRA") return opensmt::Logic_t::QF_UFLRA;
+    return opensmt::Logic_t::UNDEF;
+}
+}
 
 void Interpret::new_solver() {
     this->solver = new SimpSMTSolver(this->config, *this->thandler);
@@ -178,57 +189,78 @@ void Interpret::interp(ASTNode& n) {
             const char* logic_name = logic_n.getValue();
             if (logic != NULL) {
                 notify_formatted(true, "logic has already been set to %s", logic->getName());
-            } else if (strcmp(logic_name, QF_UF.str) == 0) {
-                UFTheory *uftheory = new UFTheory(config);
-                theory = uftheory;
-                thandler = new THandler(config, *uftheory);
-                logic = &(theory->getLogic());
-                //solver = new SimpSMTSolver(config, *thandler);
-                new_solver();
-
-                main_solver = new MainSolver(*thandler, config, solver, "qf_uf solver");
-                main_solver->initialize();
-            } else if (strcmp(logic_name, opensmt::QF_CUF.str) == 0) {
-                CUFTheory *cuftheory = new CUFTheory(config);
-                theory = cuftheory;
-                thandler = new THandler(config, *cuftheory);
-                logic = &(theory->getLogic());
-                //solver = new SimpSMTSolver(config, *thandler);
-                new_solver();
-
-                main_solver = new MainSolver(*thandler, config, solver, "qf_cuf solver");
-                main_solver->initialize();
-            } else if ((strcmp(logic_name, QF_LRA.str) == 0) || (strcmp(logic_name, QF_RDL.str) == 0)) {
-                LRATheory *lratheory = new LRATheory(config);
-                theory = lratheory;
-                thandler = new THandler(config, *lratheory);
-                logic = &(theory->getLogic());
-
-                //solver = new SimpSMTSolver(config, *thandler);
-                new_solver();
-                main_solver = new MainSolver(*thandler, config, solver, "qf_lra solver");
-                main_solver->initialize();
-            }
-            else if ((strcmp(logic_name, QF_LIA.str) == 0) || (strcmp(logic_name, QF_RDL.str) == 0)) {
-                LIATheory *liatheory = new LIATheory(config);
-                theory = liatheory;
-                thandler = new THandler(config, *liatheory);
-                logic = &(theory->getLogic());
-
-                //solver = new SimpSMTSolver(config, *thandler);
-                new_solver();
-                main_solver = new MainSolver(*thandler, config, solver, "qf_lia solver");
-                main_solver->initialize();
-            } else if ((strcmp(logic_name, QF_UFLRA.str) == 0) || (strcmp(logic_name, QF_UFRDL.str) == 0)) {
-                    UFLRATheory* uflratheory = new UFLRATheory(config);
-                    theory = uflratheory;
-                    thandler = new THandler(config, *uflratheory);
-                    logic = &(theory->getLogic());
-                    new_solver();
-                    main_solver = new MainSolver(*thandler, config, solver, "qf_uflra solver");
-                    main_solver->initialize();
             } else {
-                notify_formatted(true, "unknown logic %s", logic_name);
+                auto logic_type = getLogicFromString(logic_name);
+                switch (logic_type) {
+                    case Logic_t::QF_UF:
+                    {
+                        UFTheory *uftheory = new UFTheory(config);
+                        theory = uftheory;
+                        thandler = new THandler(config, *uftheory);
+                        logic = &(theory->getLogic());
+                        new_solver();
+
+                        main_solver = new MainSolver(*thandler, config, solver, "qf_uf solver");
+                        main_solver->initialize();
+                        break;
+                    }
+                    case Logic_t::QF_CUF:
+                    {
+                        CUFTheory *cuftheory = new CUFTheory(config);
+                        theory = cuftheory;
+                        thandler = new THandler(config, *cuftheory);
+                        logic = &(theory->getLogic());
+                        new_solver();
+
+                        main_solver = new MainSolver(*thandler, config, solver, "qf_cuf solver");
+                        main_solver->initialize();
+                        break;
+                    }
+                    case Logic_t::QF_LRA:
+                    case Logic_t::QF_RDL:
+                    {
+                        LRATheory *lratheory = new LRATheory(config);
+                        theory = lratheory;
+                        thandler = new THandler(config, *lratheory);
+                        logic = &(theory->getLogic());
+
+                        new_solver();
+                        main_solver = new MainSolver(*thandler, config, solver, "qf_lra solver");
+                        main_solver->initialize();
+                        break;
+                    }
+                    case Logic_t::QF_LIA:
+                    case Logic_t::QF_IDL:
+                    {
+                        LIATheory *liatheory = new LIATheory(config);
+                        theory = liatheory;
+                        thandler = new THandler(config, *liatheory);
+                        logic = &(theory->getLogic());
+
+                        new_solver();
+                        main_solver = new MainSolver(*thandler, config, solver, "qf_lia solver");
+                        main_solver->initialize();
+                        break;
+                    }
+                    case Logic_t::QF_UFLRA:
+                    {
+                        UFLRATheory* uflratheory = new UFLRATheory(config);
+                        theory = uflratheory;
+                        thandler = new THandler(config, *uflratheory);
+                        logic = &(theory->getLogic());
+                        new_solver();
+                        main_solver = new MainSolver(*thandler, config, solver, "qf_uflra solver");
+                        main_solver->initialize();
+                        break;
+                    }
+                    case Logic_t ::UNDEF:
+                        notify_formatted(true, "unknown logic %s", logic_name);
+                        break;
+                    default:
+                        assert(false);
+                        throw std::logic_error{"Unreachable code - error in logic selection"};
+
+                };
             }
             break;
         }

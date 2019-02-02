@@ -46,7 +46,7 @@ LIALogic::LIALogic(SMTConfig& c) :
     char* m;
     char** msg = &m;
 
-    logic_type = QF_LIA;
+    logic_type = opensmt::Logic_t::QF_LIA;
 
     sort_INTEGER = declareSort(s_sort_integer, msg);
     ufsorts.remove(sort_INTEGER);
@@ -112,9 +112,6 @@ LIALogic::LIALogic(SMTConfig& c) :
     sym_store.setInterpreted(sym_Int_ITE);
 }
 
-
-const char*   LIALogic::getName()         const  { return getLogic().str; }
-const Logic_t LIALogic::getLogic()        const  { return QF_LIA; }
 bool LIALogic::isBuiltinSort(SRef sr) const  { return sr == sort_INTEGER || Logic::isBuiltinSort(sr); }
 bool  LIALogic::isNonnegNumConst(PTRef tr) const  { return isNumConst(tr) && getNumConst(tr) >= 0; }
 
