@@ -75,19 +75,15 @@ void smt2newerror( YYLTYPE* locp, Smt2newContext* context, const char * s )
 %token TK_AS TK_DECIMAL TK_EXISTS TK_FORALL TK_LET TK_NUMERAL TK_PAR TK_STRING
 %token TK_ASSERT TK_CHECKSAT TK_DECLARESORT TK_DECLAREFUN TK_DECLARECONST TK_DEFINESORT TK_DEFINEFUN TK_EXIT TK_GETASSERTIONS TK_GETASSIGNMENT TK_GETINFO TK_GETOPTION TK_GETPROOF TK_GETUNSATCORE TK_GETVALUE TK_POP TK_PUSH TK_SETLOGIC TK_SETINFO TK_SETOPTION TK_THEORY TK_GETITPS TK_WRSTATE TK_RDSTATE TK_SIMPLIFY TK_WRFUNS TK_ECHO
 %token TK_NUM TK_SYM TK_KEY TK_STR TK_DEC TK_HEX TK_BIN
-%token KW_SORTS KW_FUNS KW_SORTSDESCRIPTION KW_FUNSDESCRIPTION KW_DEFINITION KW_NOTES KW_THEORIES KW_LANGUAGE KW_EXTENSIONS KW_VALUES KW_PRINTSUCCESS KW_EXPANDDEFINITIONS KW_INTERACTIVEMODE KW_PRODUCEPROOFS KW_PRODUCEUNSATCORES KW_PRODUCEMODELS KW_PRODUCEASSIGNMENTS KW_REGULAROUTPUTCHANNEL KW_DIAGNOSTICOUTPUTCHANNEL KW_RANDOMSEED KW_VERBOSITY KW_ERRORBEHAVIOR KW_NAME KW_NAMED KW_AUTHORS KW_VERSION KW_STATUS KW_REASONUNKNOWN KW_ALLSTATISTICS
+%token KW_SORTS KW_FUNS KW_SORTSDESCRIPTION KW_FUNSDESCRIPTION KW_DEFINITION KW_NOTES KW_THEORIES KW_EXTENSIONS KW_VALUES KW_PRINTSUCCESS KW_EXPANDDEFINITIONS KW_INTERACTIVEMODE KW_PRODUCEPROOFS KW_PRODUCEUNSATCORES KW_PRODUCEMODELS KW_PRODUCEASSIGNMENTS KW_REGULAROUTPUTCHANNEL KW_DIAGNOSTICOUTPUTCHANNEL KW_RANDOMSEED KW_VERBOSITY KW_ERRORBEHAVIOR KW_NAME KW_NAMED KW_AUTHORS KW_VERSION KW_STATUS KW_REASONUNKNOWN KW_ALLSTATISTICS
 
 %type <tok> TK_AS TK_DECIMAL TK_EXISTS TK_FORALL TK_LET TK_NUMERAL TK_PAR TK_STRING
 %type <tok> TK_ASSERT TK_CHECKSAT TK_DECLARESORT TK_DECLAREFUN TK_DECLARECONST TK_DEFINESORT TK_DEFINEFUN TK_EXIT TK_GETASSERTIONS TK_GETASSIGNMENT TK_GETINFO TK_GETOPTION TK_GETPROOF TK_GETUNSATCORE TK_GETVALUE TK_POP TK_PUSH TK_SETLOGIC TK_SETINFO TK_SETOPTION TK_THEORY TK_GETITPS TK_WRSTATE TK_RDSTATE TK_SIMPLIFY TK_WRFUNS TK_ECHO
 
-%type <str> TK_NUM TK_SYM TK_KEY TK_STR TK_DEC TK_HEX TK_BIN meta_spec_const
-%type <str> KW_SORTS KW_FUNS KW_SORTSDESCRIPTION KW_FUNSDESCRIPTION KW_DEFINITION KW_NOTES KW_THEORIES KW_LANGUAGE KW_EXTENSIONS KW_VALUES KW_PRINTSUCCESS KW_EXPANDDEFINITIONS KW_INTERACTIVEMODE KW_PRODUCEPROOFS KW_PRODUCEUNSATCORES KW_PRODUCEMODELS KW_PRODUCEASSIGNMENTS KW_REGULAROUTPUTCHANNEL KW_DIAGNOSTICOUTPUTCHANNEL KW_RANDOMSEED KW_VERBOSITY KW_ERRORBEHAVIOR KW_NAME KW_NAMED KW_AUTHORS KW_VERSION KW_STATUS KW_REASONUNKNOWN KW_ALLSTATISTICS predef_key
+%type <str> TK_NUM TK_SYM TK_KEY TK_STR TK_DEC TK_HEX TK_BIN
+%type <str> KW_SORTS KW_FUNS KW_SORTSDESCRIPTION KW_FUNSDESCRIPTION KW_DEFINITION KW_NOTES KW_THEORIES KW_EXTENSIONS KW_VALUES KW_PRINTSUCCESS KW_EXPANDDEFINITIONS KW_INTERACTIVEMODE KW_PRODUCEPROOFS KW_PRODUCEUNSATCORES KW_PRODUCEMODELS KW_PRODUCEASSIGNMENTS KW_REGULAROUTPUTCHANNEL KW_DIAGNOSTICOUTPUTCHANNEL KW_RANDOMSEED KW_VERBOSITY KW_ERRORBEHAVIOR KW_NAME KW_NAMED KW_AUTHORS KW_VERSION KW_STATUS KW_REASONUNKNOWN KW_ALLSTATISTICS predef_key
 %type <snode> identifier sort command attribute attribute_value s_expr spec_const qual_identifier var_binding sorted_var term const_val
 %type <snode_list> sort_list command_list s_expr_list numeral_list term_list var_binding_list attribute_list sorted_var_list symbol_list
-%type <snode> sort_symbol_decl fun_symbol_decl par_fun_symbol_decl
-%type <snode_list> sort_symbol_decl_list par_fun_symbol_decl_list
-%type <snode> theory_attribute theory_decl logic_attribute logic
-%type <snode_list> theory_attribute_list logic_attribute_list
 %type <snode> b_value option info_flag
 
 %start script
@@ -474,227 +470,10 @@ term: spec_const
         }
     ;
 
-
-sort_symbol_decl_list:
-        { $$ = new list<ASTNode*>(); }
-    | sort_symbol_decl_list sort_symbol_decl
-        { $1->push_back($2); $$ = $1; }
-    ;
-
-sort_symbol_decl: '(' identifier TK_NUM attribute_list ')'
-        {
-            $$ = new ASTNode(SSYMD_T, NULL);
-            $$->children = $4;
-            $$->children->push_front(new ASTNode(NUM_T, $3));
-            $$->children->push_front($2);
-        }
-    ;
-
-meta_spec_const: TK_NUM
-        { $$ = new ASTNode(NUM_T, $1); }
-    | TK_DEC
-        { $$ = new ASTNode(DEC_T, $1); }
-    | TK_STR
-        { $$ = new ASTNode(STR_T, $1); }
-    ;
-
-fun_symbol_decl:'(' spec_const sort attribute_list ')'
-        {
-            $$ = new ASTNode(FSYMD_T, NULL);
-            $$->children = new std::list<ASTNode*>();
-
-            $$->children->push_back($2);
-            $$->children->push_back($3);
-            ASTNode* al = new ASTNode(GATTRL_T, NULL);
-            al->children = $4;
-            $$->children->push_back(al);
-        }
-    | '(' meta_spec_const sort attribute_list ')'
-        {
-            $$ = new ASTNode(FSYMD_T, NULL);
-            $$->children = new std::list<ASTNode*>();
-
-            $$->children->push_back($2);
-            $$->children->push_back($3);
-            ASTNode* al = new ASTNode(GATTRL_T, NULL);
-            al->children = $4;
-            $$->children->push_back(al);
-        }
-    | '(' identifier sort sort_list attribute_list ')'
-        {
-            $$ = new ASTNode(FSYMD_T, NULL);
-            $$->children = new std::list<ASTNode*>();
-
-            $$->children->push_back($2);
-
-            ASTNode* sl = new ASTNode(SORTL_T, NULL);
-            sl->children = $4;
-            sl->children->push_front($3);
-            $$->children->push_back(sl);
-
-            ASTNode* al = new ASTNode(GATTRL_T, NULL);
-            al->children = $4;
-            $$->children->push_back(al);
-        }
-    ;
-
 symbol_list:
         { $$ = new std::list<ASTNode*>(); }
     | symbol_list TK_SYM
         { $1->push_back(new ASTNode(SYM_T, $2)); $$ = $1; }
-    ;
-
-par_fun_symbol_decl_list:
-        { $$ = new list<ASTNode*>(); }
-    | par_fun_symbol_decl_list par_fun_symbol_decl
-        { $1->push_back($2); $$ = $1; }
-    ;
-
-par_fun_symbol_decl: fun_symbol_decl
-        {
-            $$ = new ASTNode(PFSYMD_T, NULL);
-            $$->children = new std::list<ASTNode*>();
-            $$->children->push_back($1);
-        }
-    | '(' TK_PAR '(' TK_SYM symbol_list ')' '(' identifier sort sort_list attribute_list ')' ')'
-        {
-            $$ = new ASTNode(PFSYMD_T, NULL);
-            ASTNode* syml = new ASTNode(SYML_T, NULL);
-            $$->children = new std::list<ASTNode*>();
-
-            syml->children = $5;
-            syml->children->push_front($4);
-            $$->children->push_back(syml);
-
-            ASTNode* id = new ASTNode(PFID_T, NULL)
-            id->children = new std::list<ASTNode*>();
-
-            id->children->push_back($8);
-
-            ASTNode* sortl = new ASTNode(SORTL_T, NULL);
-            sortl->children = $10;
-            sortl->push_front($9);
-
-            id->children->push_back(sortl);
-
-            ASTNode* attrl = new ASTNode(GATTRL_T, NULL);
-            attrl->children = $11;
-            id->children->push_back(attrl);
-
-            $$->children->push_back(id);
-        }
-    ;
-
-theory_attribute_list:
-        { $$ = new std::list<ASTNode*>(); }
-    | theory_attribute_list theory_attribute
-        { $1->push_back($2); $$ = $1; }
-    ;
-
-theory_attribute: KW_SORTS '(' sort_symbol_decl sort_symbol_decl_list ')'
-        {
-            $$ = new ASTNode(TATTR_T, $1);
-            $4->push_front($3);
-            $$->children = $4;
-        }
-    | KW_FUNS '(' par_fun_symbol_decl par_fun_symbol_decl_list ')'
-        {
-            $$ = new ASTNode(TATTR_T, $1);
-            $4->push_front($3);
-            $$->children = $4;
-        }
-    | KW_SORTSDESCRIPTION TK_STR
-        {
-            $$ = new ASTNode(TATTR_T, $1);
-            $$->children = new std::list<ASTNode*>();
-            $$->children->push_back(new ASTNode(STR_T, $1));
-        }
-    | KW_FUNSDESCRIPTION TK_STR
-        {
-            $$ = new ASTNode(TATTR_T, $1);
-            $$->children = new std::list<ASTNode*>();
-            $$->children->push_back(new ASTNode(STR_T, $1));
-        }
-    | KW_DEFINITION TK_STR
-        {
-            $$ = new ASTNode(TATTR_T, $1);
-            $$->children = new std::list<ASTNode*>();
-            $$->children->push_back(new ASTNode(STR_T, $1));
-        }
-    | KW_VALUES TK_STR
-        {
-            $$ = new ASTNode(TATTR_T, $1);
-            $$->children = new std::list<ASTNode*>();
-            $$->children->push_back(new ASTNode(STR_T, $1));
-        }
-    | KW_NOTES TK_STR
-        {
-            $$ = new ASTNode(TATTR_T, $1);
-            $$->children = new std::list<ASTNode*>();
-            $$->children->push_back(new ASTNode(STR_T, $1));
-        }
-    | attribute
-        {
-            $$ = new ASTNode(TATTR_T, NULL);
-            $$->children = new std::list<ASTNode*>();
-            $$->children->push_back($1);
-        }
-    ;
-
-theory_decl: '(' TK_THEORY TK_SYM theory_attribute theory_attribute_list ')'
-        {
-            $$ = new ASTNode(TDECL_T, $3);
-            $$->children = $5;
-            $$->children->push_back($4);
-        }
-    ;
-
-logic_attribute_list:
-        { $$ = new std::list<ASTNode*>(); }
-    | logic_attribute_list logic_attribute
-        { $1->push_back($2); $$ = $1; }
-    ;
-
-logic_attribute: KW_THEORIES '(' TK_SYM symbol_list ')'
-        {
-            $$ = new ASTNode(LATTR_T, $1);
-            $4->push_front(new ASTNode(SYM_T, $3));
-            $$->children = $4;
-        }
-    | KW_LANGUAGE TK_STR
-        {
-            $$ = new ASTNode(LATTR_T, $1);
-            $$->children = new std::list<ASTNode*>();
-            $$->children->push_back(new ASTNode(STR_T, $2));
-        }
-    | KW_EXTENSIONS TK_STR
-        {
-            $$ = new ASTNode(LATTR_T, $1);
-            $$->children = new std::list<ASTNode*>();
-            $$->children->push_back(new ASTNode(STR_T, $2));
-        }
-    | KW_VALUES TK_STR
-        {
-            $$ = new ASTNode(LATTR_T, $1);
-            $$->children = new std::list<ASTNode*>();
-            $$->children->push_back(new ASTNode(STR_T, $2));
-        }
-    | KW_NOTES TK_STR
-        {
-            $$ = new ASTNode(LATTR_T, $1);
-            $$->children = new std::list<ASTNode*>();
-            $$->children->push_back(new ASTNode(STR_T, $2));
-        }
-    | attribute
-        { $$ = new ASTNode(LATTR_T, $1); }
-    ;
-
-logic: '(' TK_SYM logic_attribute logic_attribute_list ')'
-        {
-            $$ = new ASTNode(LOGIC_T, $2);
-            $$->children = $4;
-            $$->push_front($3);
-        }
     ;
 
 b_value: TK_SYM
@@ -799,8 +578,6 @@ predef_key: KW_SORTS
     | KW_NOTES
         { $$ = $1; }
     | KW_THEORIES
-        { $$ = $1; }
-    | KW_LANGUAGE
         { $$ = $1; }
     | KW_EXTENSIONS
         { $$ = $1; }

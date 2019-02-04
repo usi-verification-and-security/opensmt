@@ -103,7 +103,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ":values"                    { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_VALUES;                  }
 ":notes"                     { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_NOTES;                   }
 ":theories"                  { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_THEORIES;                }
-":language"                  { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_LANGUAGE;                }
 ":extensions"                { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_EXTENSIONS;              }
 ":print-success"             { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_PRINTSUCCESS;            }
 ":expand-definitions"        { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_EXPANDDEFINITIONS;       }
