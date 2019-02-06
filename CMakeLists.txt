@@ -29,6 +29,7 @@ option(PRINT_UNITS "Print units" OFF)
 option(DEBUG_GC "Debug garbage collection" OFF)
 option(LADEBUG "Debug lookahead" OFF)
 option(PRINT_DECOMPOSED_STATS "Print statistics about decomposed interpolants" OFF)
+option(STATISTICS "Compute and print solver's statistics" OFF)
 #option(ENABLE_PROFILING "Enable profiling" OFF)
 
 find_package(Readline REQUIRED)
@@ -95,6 +96,10 @@ endif ()
 if (LADEBUG)
     add_definitions(-DLADEBUG)
 endif ()
+
+if(STATISTICS)
+    add_definitions(-DSTATISTICS)
+endif(STATISTICS)
 
 add_subdirectory(${CMAKE_SOURCE_DIR})
 
