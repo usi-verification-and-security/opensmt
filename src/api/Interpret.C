@@ -39,6 +39,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Global.h"
 #include "smt2tokens.h"
 #include "MainSolver.h"
+#include "LookaheadSMTSolver.h"
 
 #ifdef ITP_DEBUG
 #include "TreeOps.h"
@@ -81,7 +82,10 @@ opensmt::Logic_t getLogicFromString(std::string name) {
 }
 
 void Interpret::new_solver() {
-    this->solver = new SimpSMTSolver(this->config, *this->thandler);
+	if (config.sat_pure_lookahead())
+	    this->solver = new LookaheadSMTSolver(this->config, *this->thandler);
+	else
+		this->solver = new SimpSMTSolver(this->config, *this->thandler);
 }
 
 PTRef

@@ -1,4 +1,4 @@
-add_library(smtsolvers OBJECT "")
+add_library(smtsolvers OBJECT "" LookaheadSMTSolver.cpp LookaheadSMTSolver.h)
 
 target_sources(smtsolvers
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/SMTSolver.h"

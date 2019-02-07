@@ -182,7 +182,6 @@ class MainSolver
 
     void printFramesAsQuery();
 
-    sstat lookaheadSplit  (int d)  { return status = sstat(ts.solver.lookaheadSplit(d)); }
     sstat getStatus       ()       { return status; }
     bool  solverEmpty     () const { return ts.solverEmpty(); }
     bool  writeSolverState_smtlib2 (const char* file, char** msg);
