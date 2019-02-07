@@ -159,7 +159,7 @@ public:
 
     // Main internal methods:
     //
-    lbool         solve_                   (bool do_simp = true, bool turn_off_simp = false);
+    lbool         solve_                   (bool do_simp, bool turn_off_simp);
     bool          asymm                    (Var v, CRef cr);
     bool          asymmVar                 (Var v);
     void          updateElimHeap           (Var v);
