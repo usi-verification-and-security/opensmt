@@ -438,6 +438,7 @@ public:
     bool operator<= (int i) { if (disabled) return false; else return quota < i; }
     bool operator>  (int i) { if (disabled) return true;  else return quota > i; }
     ConflQuota& operator-- () { if (!disabled) { quota --; } return *this; }
+    int getQuota() const { return quota; }
 };
 
 //=================================================================================================

@@ -162,7 +162,7 @@ skip_theory_preproc:
 #endif
 
     if (result == l_True)
-        result = CoreSMTSolver::solve_();
+        result = solve_();
 
     if (result == l_True)
     {

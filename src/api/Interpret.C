@@ -82,10 +82,10 @@ opensmt::Logic_t getLogicFromString(std::string name) {
 }
 
 void Interpret::new_solver() {
-	if (config.sat_pure_lookahead())
-	    this->solver = new LookaheadSMTSolver(this->config, *this->thandler);
-	else
-		this->solver = new SimpSMTSolver(this->config, *this->thandler);
+    if (config.sat_pure_lookahead())
+        this->solver = new LookaheadSMTSolver(this->config, *this->thandler);
+    else
+        this->solver = new SimpSMTSolver(this->config, *this->thandler);
 }
 
 PTRef

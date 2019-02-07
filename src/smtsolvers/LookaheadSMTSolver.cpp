@@ -73,11 +73,9 @@ lbool LookaheadSMTSolver::solve_()
     declareVarsToTheories();
 
     double nof_conflicts = restart_first;
-    const size_t old_conflicts = nLearnts();
 
     int idx = 0;
-//    bool first_model_found_prev = first_model_found;
-//    first_model_found = true;
+
     LALoopRes res = LALoopRes::unknown;
     while (res == LALoopRes::unknown || res == LALoopRes::restart) {
         //cerr << "; Doing lookahead for " << nof_conflicts << " conflicts\n";
@@ -89,18 +87,20 @@ lbool LookaheadSMTSolver::solve_()
 
         nof_conflicts = restartNextLimit(nof_conflicts);
     }
-//    first_model_found = first_model_found_prev;
+
     if (res == LALoopRes::sat)
     {
         model.growTo(nVars());
-        for (int i = 0; i < dec_vars; i++) // TODO: Fix this at some point
-            model[i] = value(trail[i]);
+        for (int i = 0; i < dec_vars; i++) {
+            Var p = var(trail[i]);
+            model[p] = value(p);
+        }
     }
     if (res == LALoopRes::unsat)
         splits.clear();
     // Without these I get a segfault from theory solver's destructor...
-    cancelUntil(0);
-    theory_handler.backtrack(0);
+//    cancelUntil(0);
+//    theory_handler.backtrack(0);
     if (res == LALoopRes::unknown || res == LALoopRes::splits)
         return l_Undef;
     if (res == LALoopRes::sat)
@@ -135,7 +135,7 @@ lbool LookaheadSMTSolver::LApropagate_wrapper(ConflQuota& confl_quota)
                 return l_False; // Unsat
             -- confl_quota;
 #ifdef LADEBUG
-            cerr << "; Got a conflict, quota now " << confl_quota << "\n";
+            cerr << "; Got a conflict, quota now " << confl_quota.getQuota() << "\n";
 #endif
             if (confl_quota <= 0)
                 return l_Undef;
@@ -180,7 +180,7 @@ lbool LookaheadSMTSolver::LApropagate_wrapper(ConflQuota& confl_quota)
                 diff = true;
                 -- confl_quota;
 #ifdef LADEBUG
-                cerr << "; Got a theory conflict, quota now " << confl_quota << "\n";
+                cerr << "; Got a theory conflict, quota now " << confl_quota.getQuota() << "\n";
 #endif
                 if (confl_quota <= 0)
                     return l_Undef;
@@ -430,7 +430,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookahead_loop(Lit& best, int &
 #ifdef LADEBUG
                 printf("All vars set?\n");
 #endif
-                if (checkTheory(true) != TPropRes::Decide) // TODO could also be tpr_Propagate
+                if (checkTheory(true) != TPropRes::Decide)
                     return la_tl_unsat; // Problem is trivially unsat
                 assert(checkTheory(true) == TPropRes::Decide);
 #ifdef LADEBUG
