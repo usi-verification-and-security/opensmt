@@ -159,6 +159,7 @@ public:
 
     // Main internal methods:
     //
+    using CoreSMTSolver::solve_;
     lbool         solve_                   (bool do_simp, bool turn_off_simp);
     bool          asymm                    (Var v, CRef cr);
     bool          asymmVar                 (Var v);

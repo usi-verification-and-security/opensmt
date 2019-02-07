@@ -374,11 +374,6 @@ public:
     bool    simplify     ();                        // Removes already satisfied clauses.
     void    declareVarsToTheories();                 // Declare the seen variables to the theories
     bool    solve        ( const vec< Lit > & assumps );                 // Search for a model that respects a given set of assumptions.
-//    bool    solveLimited (const vec<Lit>& assumps); // Search for a model that respects a given set of assumptions (With resource constraints).
-    bool    solve        ();                        // Search without assumptions.
-//    bool    solve        (Lit p);                   // Search for a model that respects a single assumption.
-//    bool    solve        (Lit p, Lit q);            // Search for a model that respects two assumptions.
-//    bool    solve        (Lit p, Lit q, Lit r);     // Search for a model that respects three assumptions.
     virtual bool  okay   () const;                  // FALSE means solver is in a conflicting state
     void    crashTest    (int, Var, Var);           // Stress test the theory solver
 
@@ -649,6 +644,8 @@ protected:
 
     // Main internal methods:
     //
+    virtual lbool solve_      ();                                                      // Main solve method (assumptions given in 'assumptions').
+
     void     updateSplitState();                                                       // Update the state of the splitting machine.
     bool     scatterLevel();                                                           // Are we currently on a scatter level.
     bool     createSplit_scatter(bool last);                                           // Create a split formula and place it to the splits vector.
@@ -667,7 +664,6 @@ protected:
     bool     okContinue       ();                                                      // Check search termination conditions
     void     runPeriodics     ();                                                      // Run the periodic functions from searcha
     void     learntSizeAdjust ();                                                      // Adjust learnts size and print something
-    virtual lbool    solve_   ();                                                      // Main solve method (assumptions given in 'assumptions').
     void     reduceDB         ();                                                      // Reduce the set of learnt clauses.
     void     removeSatisfied  (vec<CRef>& cs);                                         // Shrink 'cs' to contain only non-satisfied clauses.
     void     rebuildOrderHeap ();
