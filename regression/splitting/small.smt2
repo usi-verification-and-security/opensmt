@@ -1,3 +1,4 @@
+(set-option :lookahead-split)
 (set-logic QF_LRA)
 (set-info :source |
 These benchmarks used in the paper:

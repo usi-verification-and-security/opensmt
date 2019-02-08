@@ -1,6 +1,5 @@
-(set-option :split-type lookahead)
+(set-option :lookahead-split)
 (set-option :split-num 64)
-(set-option :split-asap true)
 (set-option :split-format smt2)
 (set-option :split-format-length "brief")
 (set-option :output-dir "splits_here")
