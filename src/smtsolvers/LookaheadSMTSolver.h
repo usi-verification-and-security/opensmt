@@ -8,13 +8,53 @@
 #include "SimpSMTSolver.h"
 
 class LookaheadSMTSolver : public SimpSMTSolver {
-
+protected:
+    ConflQuota confl_quota;
+    int idx;
     uint32_t latest_round;                      // The numbering for arrays
+
     void updateRound() { latest_round++; }
     // -----------------------------------------------------------------------------------------
     // Data type for exact value array
     static inline int min(int i, int j) { return i < j ? i : j; }
     static inline int max(int i, int j) { return i > j ? i : j; }
+    class LANode
+    {
+    public:
+        // c1 & c2 are for debugging
+        LANode* c1;
+        LANode* c2;
+        const LANode* p;
+        Lit l;
+        lbool v;
+        int d;
+        LANode() : c1(NULL), c2(NULL), p(NULL), l(lit_Undef), v(l_Undef), d(0) {}
+        LANode(LANode&& o) : c1(o.c1), c2(o.c2), p(o.p), l(o.l), v(o.v), d(o.d) {}
+        LANode& operator=(const LANode& o) { c1 = o.c1; c2 = o.c2; p = o.p; l = o.l; v = o.v; d = o.d; return *this; }
+        LANode(const LANode* par, Lit li, lbool va, int dl) :
+            c1(NULL), c2(NULL), p(par), l(li), v(va), d(dl) {}
+
+        void print()
+        {
+            for (int i = 0; i < d; i++)
+                dprintf(STDERR_FILENO, " ");
+            dprintf(STDERR_FILENO, "%s%d [%s, %d]", sign(l) ? "-" : "", var(l), v == l_False ? "unsat" : "open", d);
+
+            if (c1 != NULL)
+            {
+                dprintf(STDERR_FILENO, " c1");
+            }
+            if (c2 != NULL)
+            {
+                dprintf(STDERR_FILENO, " c2");
+            }
+            dprintf(STDERR_FILENO, "\n");
+            if (c1 != NULL)
+                c1->print();
+            if (c2 != NULL)
+                c2->print();
+        }
+    };
 
     class ExVal
     {
@@ -69,9 +109,7 @@ class LookaheadSMTSolver : public SimpSMTSolver {
         void updateUB_n(const UBel& ub) { if (ub_n.round < ub.round || (ub_n.round == ub.round && ub_n.ub > ub.ub)) ub_n = ub; }
 
         bool safeToSkip(const ExVal& e) const;
-        const UBel& getUB_p()  const { return ub_p; }
-        const UBel& getUB_n()  const { return ub_n; }
-        bool betterThan(const ExVal& e) const;
+
         const UBel& getLow() const
         {
             if (ub_p.round != ub_n.round) return UBel_Undef;
@@ -84,43 +122,14 @@ class LookaheadSMTSolver : public SimpSMTSolver {
         }
     };
 
-    // The result from the lookahead loop
-    enum class LALoopRes
-    {
-        sat,
-        unsat,
-        unknown,
-        splits,
-        restart
-    };
 
-    class laresult {
-    public:
-        enum result { tl_unsat, sat, restart, unsat, ok };
-    private:
-        result value;
-    public:
-        explicit laresult(result v) : value(v) {}
-        bool operator == (laresult o) const { return o.value == value; }
-        bool operator != (laresult o) const { return o.value != value; }
-    };
 
-    laresult la_tl_unsat;
-    laresult la_sat;
-    laresult la_restart;
-    laresult la_unsat;
-    laresult la_ok;
-
-    LALoopRes solveLookahead(int d, int &idx, ConflQuota confl_quota);
-
-	bool betterThan_ub(const UBVal& ub, const ExVal& e) const;
 
     void updateLABest(Var v);
 
     vec<UBVal>          LAupperbounds;    // The current upper bounds
     vec<ExVal>          LAexacts;         // The current exact values
 
-	int la_round;                         // Keeps track of the lookahead round (used in lower bounds)
     class LABestLitBuf {
         private:
             int size;
@@ -184,14 +193,44 @@ class LookaheadSMTSolver : public SimpSMTSolver {
 
 
     void     updateLAUB       (Lit l, int props);                                      // Check the lookahead upper bound and update it if necessary
-    laresult lookahead_loop   (Lit& best, int &idx, ConflQuota &confl_quota);
     void     setLAExact       (Var v, int pprops, int nprops);                         // Set the exact la value
-    lbool    LApropagate_wrapper(ConflQuota &confl_quota);
+    lbool    laPropagateWrapper();
 
-    bool createSplit_lookahead();
+    bool     createSplitLookahead();
 
 protected:
+    // The result from the lookahead loop
+    enum class LALoopRes
+    {
+        sat,
+        unsat,
+        unknown,
+        splits,
+        restart
+    };
+
+    enum class laresult
+    {
+        la_tl_unsat,
+        la_sat,
+        la_restart,
+        la_unsat,
+        la_ok
+    };
+
+    virtual LALoopRes solveLookahead();
+    laresult lookaheadLoop   (Lit& best);
     lbool solve_() override;                                                            // Does not change the formula
+
+    enum class PathBuildResult {
+        pathbuild_success,
+        pathbuild_tlunsat,
+        pathbuild_unsat,
+        pathbuild_restart
+    };
+
+    PathBuildResult setSolverToNode(LANode* n);                                         // Set solver dl stack according to the path from root to n
+    laresult expandTree(const LANode* n, LANode& c1, LANode &c2);                       // Do lookahead.  On success write the new children to c1 and c2
 public:
     LookaheadSMTSolver(SMTConfig&, THandler&);
     Var newVar(bool sign, bool dvar) override;

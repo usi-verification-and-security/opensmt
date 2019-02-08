@@ -433,6 +433,7 @@ public:
     ConflQuota(int quota) : disabled(false), quota(quota) {}
     ConflQuota() : disabled(true), quota(0) {}
     ConflQuota(ConflQuota &q) : disabled(q.disabled), quota(q.quota) {}
+    ConflQuota& operator= (const ConflQuota& o) { disabled = o.disabled; quota = o.quota; return *this; }
     void operator= (ConflQuota&& o) { disabled = o.disabled; quota = o.quota; };
     bool operator<  (int i) { if (disabled) return false; else return quota < i; }
     bool operator<= (int i) { if (disabled) return false; else return quota < i; }

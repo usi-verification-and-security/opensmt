@@ -6,11 +6,7 @@
 
 LookaheadSMTSolver::LookaheadSMTSolver(SMTConfig& c, THandler& thandler)
 	: SimpSMTSolver(c, thandler)
-    , la_tl_unsat           (laresult::tl_unsat)
-    , la_sat                (laresult::sat)
-    , la_restart            (laresult::restart)
-    , la_unsat              (laresult::unsat)
-    , la_ok                 (laresult::ok)
+    , idx                   (0)
     , latest_round          (0)
     , buf_LABests           (c.randomize_lookahead_bufsz(), assigns, c.randomize_lookahead(), c.getRandomSeed())
 {}
@@ -83,7 +79,7 @@ lbool LookaheadSMTSolver::solve_()
         if (false) { //if (config.lookahead_restarts()) {
             conflict_quota = ConflQuota((int)nof_conflicts);
         }
-        res = solveLookahead(d, idx, conflict_quota);
+        res = solveLookahead();
 
         nof_conflicts = restartNextLimit(nof_conflicts);
     }
@@ -122,7 +118,7 @@ lbool LookaheadSMTSolver::solve_()
 // new conflicts or propagations are available in theory or in unit propagation
 //
 
-lbool LookaheadSMTSolver::LApropagate_wrapper(ConflQuota& confl_quota)
+lbool LookaheadSMTSolver::laPropagateWrapper()
 {
     CRef cr;
     bool diff;
@@ -191,196 +187,186 @@ lbool LookaheadSMTSolver::LApropagate_wrapper(ConflQuota& confl_quota)
     return l_True;
 }
 
+/**
+ * Set solver decision stack according to the path from the root to @param n.
+ * As a side-effect the solver is either
+ * (i)  set to the path, or
+ * (ii) a node in the path is marked closed, meaning that there are no solutions in extensions of the path.
+ * In case (i) @return pathbuild_success
+ * In case (ii), either @return pathbuild_tlunsat or @return pathbuild_unsat
+ *
+ */
+LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode* n)
+{
+    cancelUntil(0);
+
+    vec<Lit> path;
+    const LANode* curr = n;
+    const LANode* parent = n->p;
+    // Collect the truth assignment.
+    while (parent != curr)
+    {
+        path.push(curr->l);
+        curr = parent;
+        parent = curr->p;
+    }
+#ifdef LADEBUG
+    printf("Setting solver to the right dl %d\n", path.size());
+#endif
+    for (int i = path.size() - 1; i >= 0; i--)
+    {
+        newDecisionLevel();
+        if (value(path[i]) == l_Undef)
+        {
+#ifdef LADEBUG
+            printf("I will propagate %s%d\n", sign(path[i]) ? "-" : "", var(path[i]));
+#endif
+            int curr_dl = decisionLevel();
+            uncheckedEnqueue(path[i]);
+            lbool res = laPropagateWrapper();
+            // Here it is possible that the solver is on level 0 and in an inconsistent state.  How can I check this?
+            if (res == l_False) {
+                return PathBuildResult::pathbuild_tlunsat; // Indicate unsatisfiability
+            }
+            else if (res == l_Undef) {
+                cancelUntil(0);
+                return PathBuildResult::pathbuild_restart; // Do a restart
+            }
+            if (curr_dl != decisionLevel())
+            {
+
+//                    cerr << " -> Path this far is unsatisfiable already\n";
+//                    cerr << "Marking the subtree false:\n";
+//                    n.print();
+
+                n->v = l_False;
+                return PathBuildResult::pathbuild_unsat;
+            }
+        }
+        else
+        {
+#ifdef LADEBUG
+            printf("Would propagate %s%d but the literal is already assigned\n", sign(path[i]) ? "-" : "", var(path[i]));
+#endif
+            if (value(path[i]) == l_False)
+            {
+                n->v = l_False;
+#ifdef LADEBUG
+                printf("Unsatisfiable branch since I'd like to propagate %s%d but %s%d is assigned already\n", sign(path[i]) ? "-" : "", var(path[i]), sign(~path[i]) ? "-" : "", var(path[i]));
+                printf("Marking the subtree false:\n");
+                n.print();
+#endif
+                return PathBuildResult::pathbuild_unsat;
+            }
+            else
+            {
+                assert(value(path[i]) == l_True);
+            }
+        }
+    }
+    return PathBuildResult::pathbuild_success;
+}
+
+LookaheadSMTSolver::laresult LookaheadSMTSolver::expandTree(const LANode* n, LANode& c1, LANode &c2)
+{
+    // Otherwise we will continue here by attempting to create two children for this node
+
+    // Do the lookahead
+    assert(decisionLevel() == n->d);
+    Lit best;
+    laresult res = lookaheadLoop(best);
+    assert(decisionLevel() <= n->d);
+    if (res != laresult::la_ok)
+        return res;
+
+    assert(best != lit_Undef);
+
+    c1.p = n;
+    c1.d = n->d+1;
+    c1.l = best;
+    c1.v = l_Undef;
+    c2.p = n;
+    c2.d = n->d+1;
+    c2.l = ~best;
+    c2.v = l_Undef;
+
+    return laresult::la_ok;
+}
+
 // The new try for the lookahead with backjumping:
 // Do not write this as a recursive function but instead maintain the
 // tree explicitly.  Each internal node should have the info whether its
 // both children have been constructed and whether any of its two
 // children has been shown unsatisfiable either directly or with a
 // backjump.
-//
-// The parameter d is the maximum depth of a path, used for splitting.
-// If d < 0, there is no maximum depth and the search continues on a
-// branch until it is shown unsatisfiable.
-// parameter idx store where we were last time in checking the variables
-// confl_quota is the maximum number of conflicts that we're allowed to collect before a restart
-//
-LookaheadSMTSolver::LALoopRes LookaheadSMTSolver::solveLookahead(int d, int &idx, ConflQuota confl_quota)
+LookaheadSMTSolver::LALoopRes LookaheadSMTSolver::solveLookahead()
 {
-    int la_split_count = 0;
 
     updateRound();
     vec<LANode*> queue;
-    LANode* root = new LANode();
+    LANode *root = new LANode();
     root->p  = root;
     queue.push(root);
 
     while (queue.size() != 0)
     {
-//        printf("LA split count %d\n", la_split_count++);
-        LANode& n = *queue.last();
+        LANode* n = queue.last();
         queue.pop();
 #ifdef LADEBUG
         printf("main loop: dl %d -> %d\n", decisionLevel(), 0);
 #endif
-        cancelUntil(0);
 
-        if (n.v == l_False)
+        if (n->v == l_False)
             continue;
 
-        vec<Lit> path;
-        LANode *curr = &n;
-        LANode* parent = n.p;
-        // Collect the truth assignment.
-        while (parent != curr)
-        {
-            path.push(curr->l);
-            curr = parent;
-            parent = curr->p;
-        }
-
-        int i;
-#ifdef LADEBUG
-        printf("Setting solver to the right dl %d\n", path.size());
-#endif
-        for (i = path.size() - 1; i >= 0; i--)
-        {
-            newDecisionLevel();
-            if (value(path[i]) == l_Undef)
-            {
-#ifdef LADEBUG
-                printf("I will propagate %s%d\n", sign(path[i]) ? "-" : "", var(path[i]));
-#endif
-                int curr_dl = decisionLevel();
-                uncheckedEnqueue(path[i]);
-                lbool res = LApropagate_wrapper(confl_quota);
-                // Here it is possible that the solver is on level 0 and in an inconsistent state.  How can I check this?
-                if (res == l_False) {
-                    return LALoopRes::unsat; // Indicate unsatisfiability
-                }
-                else if (res == l_Undef) {
-                    cancelUntil(0);
-                    return LALoopRes::restart; // Do a restart
-                }
-                if (curr_dl != decisionLevel())
-                {
-
-//                    cerr << " -> Path this far is unsatisfiable already\n";
-//                    cerr << "Marking the subtree false:\n";
-//                    n.print();
-
-                    n.v = l_False;
-                    break;
-                }
-            }
-            else
-            {
-#ifdef LADEBUG
-                printf("Would propagate %s%d but the literal is already assigned\n", sign(path[i]) ? "-" : "", var(path[i]));
-#endif
-                if (value(path[i]) == l_False)
-                {
-                    n.v = l_False;
-#ifdef LADEBUG
-                    printf("Unsatisfiable branch since I'd like to propagate %s%d but %s%d is assigned already\n", sign(path[i]) ? "-" : "", var(path[i]), sign(~path[i]) ? "-" : "", var(path[i]));
-                    printf("Marking the subtree false:\n");
-                    n.print();
-#endif
-                    break;
-                }
-                else
-                {
-                    assert(value(path[i]) == l_True);
-                }
-            }
-        }
-
-        if (i != -1)
-        {
-#ifdef LADEBUG
-            printf("Unsatisfiability detected on branch\n");
-#endif
-            continue;
-        }
-        if ((d >= 0) && n.d == d)
-        {
-#ifdef LADEBUG
-            printf("Producing a split:\n");;
-            printTrace();
-#endif
-            createSplit_lookahead();
-            if (config.sat_split_test_cube_and_conquer())
-                return LALoopRes::unsat; // The cube-and-conquer experiment
-            else
+        switch (setSolverToNode(n)) {
+            case PathBuildResult::pathbuild_tlunsat:
+                return LALoopRes::unsat;
+            case PathBuildResult::pathbuild_restart:
+                return LALoopRes::restart;
+            case PathBuildResult::pathbuild_unsat:
                 continue;
+            case PathBuildResult::pathbuild_success:
+                ;
         }
 
-        // Otherwise we will continue here by attempting to create two children for this node
-
-        // Do the lookahead
-        assert(decisionLevel() == n.d);
-        Lit best;
-        laresult res = lookahead_loop(best, idx, confl_quota);
-        assert(decisionLevel() <= n.d);
-
-        if (res == la_tl_unsat) {
-            return LALoopRes::unsat;
+        LANode *c1 = new LANode();
+        LANode *c2 = new LANode();
+        switch (expandTree(n, *c1, *c2)) {
+            case laresult::la_tl_unsat:
+                return LALoopRes::unsat;
+            case laresult::la_restart:
+                return LALoopRes::restart;
+            case laresult::la_unsat:
+                queue.push(n);
+                continue;
+            case laresult::la_sat:
+                return LALoopRes::sat;
+            case laresult::la_ok:
+                ;
         }
-        else if (res == la_restart) {
-            return LALoopRes::restart;
-        }
-        else if (res == la_unsat)
-        {
-            assert(decisionLevel() < n.d);
-#ifdef LADEBUG
-            printf("Unsatisfiability detected after lookahead\n");
-#endif
-            // level and force a backjump.  It means that the node from
-            // which backjump happens is unsatisfiable.  It does not
-            // mean that the path leading to the lookahead node would be
-            // unsatisfiable.  Hence we need to put this node back to
-            // the search queue.
-            queue.push(&n);
-            continue;
-        }
-        else if (res == la_sat)
-        {
-#ifdef LADEBUG
-            printf("Lookahead claims to have found a satisfying truth assignment:\n");
-            printTrail();
-#endif
-            return LALoopRes::sat;
-        }
-        assert(res == la_ok);
-        assert(best != lit_Undef);
-
-        LANode* c1 = new LANode(&n, best, l_Undef, n.d+1);
-        LANode* c2 = new LANode(&n, ~best, l_Undef, n.d+1);
 
         queue.push(c1);
         queue.push(c2);
-
-        // These are for debugging
-        n.c1 = c1;
-        n.c2 = c2;
     }
 #ifdef LADEBUG
     root->print();
 #endif
-    if (d > 0)
-        return LALoopRes::splits;
     return LALoopRes::unknown;
 }
 
-LookaheadSMTSolver::laresult LookaheadSMTSolver::lookahead_loop(Lit& best, int &idx, ConflQuota &confl_quota)
+LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
 {
-    ConflQuota unlimited;
-    if (LApropagate_wrapper(unlimited) == l_False)
+    ConflQuota prev = confl_quota;
+    confl_quota = ConflQuota(); // Unlimited;
+    if (laPropagateWrapper() == l_False)
     {
 #ifdef LADEBUG
         printf("Already unsatisfiable at entering the lookahead loop\n");
 #endif
-        return la_tl_unsat;
+        return laresult::la_tl_unsat;
     }
+    confl_quota = prev;
 
     updateRound();
     int i = 0;
@@ -431,9 +417,9 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookahead_loop(Lit& best, int &
                 printf("All vars set?\n");
 #endif
                 if (checkTheory(true) != TPropRes::Decide)
-                    return la_tl_unsat; // Problem is trivially unsat
+                    return laresult::la_tl_unsat; // Problem is trivially unsat
                 assert(checkTheory(true) == TPropRes::Decide);
-#ifdef LADEBUG
+#ifndef NDEBUG
                 for (int j = 0; j < clauses.size(); j++)
                 {
                     Clause& c = ca[clauses[j]];
@@ -449,7 +435,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookahead_loop(Lit& best, int &
                 }
 #endif
                 best = lit_Undef;
-                return la_sat; // Stands for SAT
+                return laresult::la_sat; // Stands for SAT
             }
             continue;
         }
@@ -470,16 +456,16 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookahead_loop(Lit& best, int &
            printf("Checking lit %s%d\n", p == 0 ? "" : "-", v);
 #endif
             uncheckedEnqueue(l);
-            lbool res = LApropagate_wrapper(confl_quota);
+            lbool res = laPropagateWrapper();
             if (res == l_False)
             {
                 best = lit_Undef;
-                return la_tl_unsat;
+                return laresult::la_tl_unsat;
             }
             else if (res == l_Undef)
             {
                 cancelUntil(0);
-                return la_restart;
+                return laresult::la_restart;
             }
             // Else we go on
             if (decisionLevel() == d+1)
@@ -505,7 +491,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookahead_loop(Lit& best, int &
 #endif
                 // Backtracking should happen.
                 best = lit_Undef;
-                return la_restart;
+                return laresult::la_restart;
             }
             p == 0 ? p0 = trail.size() : p1 = trail.size();
             // Update also the clause deletion heuristic?
@@ -526,7 +512,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookahead_loop(Lit& best, int &
 #ifdef LADEBUG
         printf("All variables are already set, so we have nothing to branch on and this is a SAT answer\n");
 #endif
-        return la_sat;
+        return laresult::la_sat;
     }
     best = buf_LABests.getLit();
     assert(best != lit_Undef);
@@ -538,7 +524,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookahead_loop(Lit& best, int &
 #endif
     idx = (idx + i) % nVars();
     if (!theory_handler.getLogic().okToPartition(theory_handler.varToTerm(var(best)))) { unadvised_splits++; }
-    return la_ok;
+    return laresult::la_ok;
 }
 
 void LookaheadSMTSolver::updateLABest(Var v)
@@ -566,7 +552,7 @@ void LookaheadSMTSolver::setLAExact(Var v, int pprops, int nprops)
 //    else LABestLit = mkLit(v, nprops > pprops);
 }
 
-bool LookaheadSMTSolver::createSplit_lookahead()
+bool LookaheadSMTSolver::createSplitLookahead()
 {
     // Due to the stupidness of the minisat version this gets
     // complicated

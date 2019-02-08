@@ -300,40 +300,6 @@ inline void SplitData::toPTRefs(vec<vec<PtAsgn> >& out, vec<vec<Lit> >& in)
 template<class A, class B>
 struct Pair { A first; B second; };
 
-class LANode
-{
-public:
-    // c1 & c2 are for debugging
-    LANode* c1;
-    LANode* c2;
-    LANode* p;
-    Lit l;
-    lbool v;
-    int d;
-    LANode() : c1(NULL), c2(NULL), p(NULL), l(lit_Undef), v(l_Undef), d(0) {}
-    LANode(LANode* par, Lit li, lbool va, int dl) :
-        c1(NULL), c2(NULL), p(par), l(li), v(va), d(dl) {}
-    void print()
-    {
-        for (int i = 0; i < d; i++)
-            dprintf(STDERR_FILENO, " ");
-        dprintf(STDERR_FILENO, "%s%d [%s, %d]", sign(l) ? "-" : "", var(l), v == l_False ? "unsat" : "open", d);
-
-        if (c1 != NULL)
-        {
-            dprintf(STDERR_FILENO, " c1");
-        }
-        if (c2 != NULL)
-        {
-            dprintf(STDERR_FILENO, " c2");
-        }
-        dprintf(STDERR_FILENO, "\n");
-        if (c1 != NULL)
-            c1->print();
-        if (c2 != NULL)
-            c2->print();
-    }
-};
 
 
 //=================================================================================================
