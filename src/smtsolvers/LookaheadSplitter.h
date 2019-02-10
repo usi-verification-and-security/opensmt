@@ -8,10 +8,17 @@
 #include "LookaheadSMTSolver.h"
 
 class LookaheadSplitter : public LookaheadSMTSolver {
-public:
-    LookaheadSplitter(SMTConfig& c, THandler& thandler) : LookaheadSMTSolver(c, thandler) {}
 protected:
     LALoopRes solveLookahead() override;
+    class LASplitNode : public LookaheadSMTSolver::LANode
+    {
+    public:
+        SplitData* sd;
+    };
+    public:
+    LookaheadSplitter(SMTConfig& c, THandler& thandler) : LookaheadSMTSolver(c, thandler) {}
+    bool     createSplitLookahead(LASplitNode*);
+
 };
 
 

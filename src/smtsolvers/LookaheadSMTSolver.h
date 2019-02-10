@@ -196,7 +196,6 @@ protected:
     void     setLAExact       (Var v, int pprops, int nprops);                         // Set the exact la value
     lbool    laPropagateWrapper();
 
-    bool     createSplitLookahead();
 
 protected:
     // The result from the lookahead loop

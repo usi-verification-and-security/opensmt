@@ -254,7 +254,7 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode* 
 #ifdef LADEBUG
                 printf("Unsatisfiable branch since I'd like to propagate %s%d but %s%d is assigned already\n", sign(path[i]) ? "-" : "", var(path[i]), sign(~path[i]) ? "-" : "", var(path[i]));
                 printf("Marking the subtree false:\n");
-                n.print();
+                n->print();
 #endif
                 return PathBuildResult::pathbuild_unsat;
             }
@@ -552,35 +552,4 @@ void LookaheadSMTSolver::setLAExact(Var v, int pprops, int nprops)
 //    else LABestLit = mkLit(v, nprops > pprops);
 }
 
-bool LookaheadSMTSolver::createSplitLookahead()
-{
-    // Due to the stupidness of the minisat version this gets
-    // complicated
-    // XXX Now that the version is updated check that this code works!
-    int curr_dl0_idx = trail_lim.size() > 0 ? trail_lim[0] : trail.size();
-    splits.push_c(SplitData(ca, clauses, trail, curr_dl0_idx, theory_handler, config.smt_split_format_length() == spformat_brief));
-    SplitData& sp = splits.last();
-
-    printf("; Outputing an instance:\n; ");
-    Lit p = lit_Undef;
-    for (int i = 0; i < decisionLevel(); i++)
-    {
-        vec<Lit> tmp;
-        Lit l = trail[trail_lim[i]];
-        if (p != l) {
-            // In cases where the LA solver couldn't propagate due to
-            // literal being already assigned, the literal may be
-            // duplicated.  Do not report duplicates.
-            tmp.push(l);
-            printf("%s%d ", sign(l) ? "-" : "", var(l));
-            sp.addConstraint(tmp);
-        }
-        p = l;
-    }
-    printf("\n");
-
-    sp.updateInstance();
-    assert(ok);
-    return true;
-}
 
