@@ -97,7 +97,7 @@ lbool LookaheadSMTSolver::solve_()
     // Without these I get a segfault from theory solver's destructor...
 //    cancelUntil(0);
 //    theory_handler.backtrack(0);
-    if (res == LALoopRes::unknown || res == LALoopRes::splits)
+    if (res == LALoopRes::unknown_final)
         return l_Undef;
     if (res == LALoopRes::sat)
         return l_True;
@@ -267,7 +267,7 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode* 
     return PathBuildResult::pathbuild_success;
 }
 
-LookaheadSMTSolver::laresult LookaheadSMTSolver::expandTree(const LANode* n, LANode& c1, LANode &c2)
+LookaheadSMTSolver::laresult LookaheadSMTSolver::expandTree(LANode* n, LANode* c1, LANode *c2)
 {
     // Otherwise we will continue here by attempting to create two children for this node
 
@@ -281,14 +281,16 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::expandTree(const LANode* n, LAN
 
     assert(best != lit_Undef);
 
-    c1.p = n;
-    c1.d = n->d+1;
-    c1.l = best;
-    c1.v = l_Undef;
-    c2.p = n;
-    c2.d = n->d+1;
-    c2.l = ~best;
-    c2.v = l_Undef;
+    c1->p = n;
+    c1->d = n->d+1;
+    c1->l = best;
+    c1->v = l_Undef;
+    c2->p = n;
+    c2->d = n->d+1;
+    c2->l = ~best;
+    c2->v = l_Undef;
+    n->c1 = c1;
+    n->c2 = c2;
 
     return laresult::la_ok;
 }
@@ -316,23 +318,26 @@ LookaheadSMTSolver::LALoopRes LookaheadSMTSolver::solveLookahead()
         printf("main loop: dl %d -> %d\n", decisionLevel(), 0);
 #endif
 
-        if (n->v == l_False)
+        if (n->v == l_False) {
+            deallocTree(n);
             continue;
-
+        }
         switch (setSolverToNode(n)) {
             case PathBuildResult::pathbuild_tlunsat:
                 return LALoopRes::unsat;
             case PathBuildResult::pathbuild_restart:
                 return LALoopRes::restart;
-            case PathBuildResult::pathbuild_unsat:
+            case PathBuildResult::pathbuild_unsat: {
+                deallocTree(n);
                 continue;
+            }
             case PathBuildResult::pathbuild_success:
                 ;
         }
 
-        LANode *c1 = new LANode();
-        LANode *c2 = new LANode();
-        switch (expandTree(n, *c1, *c2)) {
+        auto *c1 = new LANode();
+        auto *c2 = new LANode();
+        switch (expandTree(n, c1, c2)) {
             case laresult::la_tl_unsat:
                 return LALoopRes::unsat;
             case laresult::la_restart:
@@ -552,4 +557,25 @@ void LookaheadSMTSolver::setLAExact(Var v, int pprops, int nprops)
 //    else LABestLit = mkLit(v, nprops > pprops);
 }
 
+void LookaheadSMTSolver::deallocTree(LANode *root)
+{
+    vec<LANode*> queue;
+    Map<LANode*, bool, LANode::Hash> seen;
+    queue.push(root);
+    while (queue.size() != 0) {
+        LANode *n = queue.last();
+        if (!seen.has(n)) {
+            seen.insert(n, true);
+            if (n->c1 != nullptr) {
+                assert(n->c2 != nullptr);
+                queue.push(n->c1);
+                queue.push(n->c2);
+                continue;
+            }
+        }
+
+        queue.pop();
+        delete n;
+    }
+}
 

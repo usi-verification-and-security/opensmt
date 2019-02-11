@@ -307,11 +307,11 @@ bool MainSolver::writeSolverSplits_smtlib2(const char* file, char** msg)
     for (int i = 0; i < splits.size(); i++) {
         vec<PTRef> conj_vec;
         vec<vec<PtAsgn> > constraints;
-        splits[i].constraintsToPTRefs(constraints);
+        splits[i].constraintsToPTRefs(constraints, thandler);
         addToConj(constraints, conj_vec);
 
         vec<vec<PtAsgn> > learnts;
-        splits[i].learntsToPTRefs(learnts);
+        splits[i].learntsToPTRefs(learnts, thandler);
         addToConj(learnts, conj_vec);
 
         if (config.smt_split_format_length() == spformat_full)

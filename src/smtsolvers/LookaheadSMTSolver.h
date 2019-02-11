@@ -21,39 +21,47 @@ protected:
     class LANode
     {
     public:
-        // c1 & c2 are for debugging
+        // c1 & c2 are for garbage collection
         LANode* c1;
         LANode* c2;
         const LANode* p;
         Lit l;
         lbool v;
         int d;
-        LANode() : c1(NULL), c2(NULL), p(NULL), l(lit_Undef), v(l_Undef), d(0) {}
+        LANode() : c1(nullptr), c2(nullptr), p(nullptr), l(lit_Undef), v(l_Undef), d(0) {}
         LANode(LANode&& o) : c1(o.c1), c2(o.c2), p(o.p), l(o.l), v(o.v), d(o.d) {}
         LANode& operator=(const LANode& o) { c1 = o.c1; c2 = o.c2; p = o.p; l = o.l; v = o.v; d = o.d; return *this; }
         LANode(const LANode* par, Lit li, lbool va, int dl) :
-            c1(NULL), c2(NULL), p(par), l(li), v(va), d(dl) {}
+            c1(nullptr), c2(nullptr), p(par), l(li), v(va), d(dl) {}
 
-        void print()
-        {
+        virtual void print_local() {
             for (int i = 0; i < d; i++)
                 dprintf(STDERR_FILENO, " ");
             dprintf(STDERR_FILENO, "%s%d [%s, %d]", sign(l) ? "-" : "", var(l), v == l_False ? "unsat" : "open", d);
 
-            if (c1 != NULL)
+            if (c1 != nullptr)
             {
                 dprintf(STDERR_FILENO, " c1");
             }
-            if (c2 != NULL)
+            if (c2 != nullptr)
             {
                 dprintf(STDERR_FILENO, " c2");
             }
             dprintf(STDERR_FILENO, "\n");
-            if (c1 != NULL)
+        }
+
+        void print()
+        {
+            print_local();
+
+            if (c1 != nullptr)
                 c1->print();
-            if (c2 != NULL)
+            if (c2 != nullptr)
                 c2->print();
         }
+        struct Hash {
+            uint32_t operator ()(const LANode *p) const { return (uint32_t)(unsigned int long)p/sizeof(unsigned int long); }
+        };
     };
 
     class ExVal
@@ -204,7 +212,7 @@ protected:
         sat,
         unsat,
         unknown,
-        splits,
+        unknown_final,
         restart
     };
 
@@ -228,8 +236,9 @@ protected:
         pathbuild_restart
     };
 
-    PathBuildResult setSolverToNode(LANode* n);                                         // Set solver dl stack according to the path from root to n
-    laresult expandTree(const LANode* n, LANode& c1, LANode &c2);                       // Do lookahead.  On success write the new children to c1 and c2
+    PathBuildResult setSolverToNode(LANode *n);                                         // Set solver dl stack according to the path from root to n
+    laresult expandTree(LANode *n, LANode *c1, LANode *c2);                             // Do lookahead.  On success write the new children to c1 and c2
+    void deallocTree(LANode *n);                                                        // Dealloc the tree rooted at n
 public:
     LookaheadSMTSolver(SMTConfig&, THandler&);
     Var newVar(bool sign, bool dvar) override;

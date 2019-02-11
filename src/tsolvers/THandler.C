@@ -792,10 +792,10 @@ TermMapper&           THandler::getTMap()                { return tmap; }
 
 ValPair THandler::getValue          (PTRef tr) const { return getSolverHandler().getValue(tr); };
 
-bool    THandler::isTheoryTerm       ( Var v ) { return getLogic().isTheoryTerm(varToTerm(v)); }
-PTRef   THandler::varToTerm          ( Var v ) { return tmap.varToPTRef(v); }  // Return the term ref corresponding to a variable
-Pterm&  THandler::varToPterm         ( Var v)  { return getLogic().getPterm(tmap.varToPTRef(v)); } // Return the term corresponding to a variable
-Lit     THandler::PTRefToLit         ( PTRef tr) { return tmap.getLit(tr); }
+bool    THandler::isTheoryTerm       ( Var v )       { return getLogic().isTheoryTerm(varToTerm(v)); }
+PTRef   THandler::varToTerm          ( Var v ) const { return tmap.varToPTRef(v); }  // Return the term ref corresponding to a variable
+Pterm&  THandler::varToPterm         ( Var v)        { return getLogic().getPterm(tmap.varToPTRef(v)); } // Return the term corresponding to a variable
+Lit     THandler::PTRefToLit         ( PTRef tr)     { return tmap.getLit(tr); }
 
 void    THandler::getVarName         ( Var v, char** name ) { *name = getLogic().printTerm(tmap.varToPTRef(v)); }
 
