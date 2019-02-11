@@ -1,11 +1,8 @@
-(set-option :dump-state "state-dump/bar")
-(set-option :split-type "scattering")
-(set-option :split-units "decisions")
-(set-option :split-asap true)
-(set-option :split-init-tune 100)
-(set-option :split-mid-tune 100)
+(set-option :lookahead-split)
 (set-option :split-num 2)
-(set-option :split-format "smt2")
+(set-option :split-format smt2)
+(set-option :split-format-length "brief")
+(set-option :output-dir "splits_here")
 (set-logic QF_UF)
 (set-info :source |
 CADE ATP System competition. See http://www.cs.miami.edu/~tptp/CASC
