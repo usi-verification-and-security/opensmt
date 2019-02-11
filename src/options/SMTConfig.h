@@ -701,6 +701,8 @@ public:
         optionTable[o_sat_split_test_cube_and_conquer]->getValue().numval : 0; }
 
   const SpType sat_split_type() const {
+      if (sat_lookahead_split())
+          return spt_lookahead;
       if (optionTable.has(o_sat_split_type)) {
         const char* type = optionTable[o_sat_split_type]->getValue().strval;
         if (strcmp(type, spts_lookahead) == 0)

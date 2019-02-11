@@ -154,7 +154,7 @@ public:
     vec<T>&       operator [] (int index)       { return data[index]; }
 
     // Duplicatation (preferred instead):
-    void copyTo(vec<vec<T> >& copy) const { copy.clear(); copy.growTo(sz); for (int i = 0; i < sz; i++) copy[i] = data[i]; }
+    void copyTo(vec<vec<T> >& copy) const { copy.clear(); copy.growTo(sz); for (int i = 0; i < sz; i++) data[i].copyTo(copy[i]); }
     void moveTo(vec<vec<T> >& dest) { dest.clear(true); dest.data = data; dest.sz = sz; dest.cap = cap; data = NULL; sz = 0; cap = 0; }
 };
 

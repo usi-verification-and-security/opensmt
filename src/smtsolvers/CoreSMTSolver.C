@@ -2457,7 +2457,7 @@ bool CoreSMTSolver::createSplit_scatter(bool last)
 {
     int curr_dl0_idx = trail_lim.size() > 0 ? trail_lim[0] : trail.size();
     assert(splits.size() == split_assumptions.size());
-    splits.push_c(SplitData(ca, clauses, trail, curr_dl0_idx, theory_handler, config.smt_split_format_length() == spformat_brief));
+    splits.push_c(SplitData(config.smt_split_format_length() == spformat_brief));
     split_assumptions.push();
     SplitData& sp = splits.last();
     vec<Lit> constraints_negated;
@@ -2485,7 +2485,6 @@ bool CoreSMTSolver::createSplit_scatter(bool last)
         sp.addConstraint(tmp);
     }
 
-    sp.updateInstance();
     // XXX Skipped learned clauses
     cancelUntil(0);
     if (!excludeAssumptions(constraints_negated))

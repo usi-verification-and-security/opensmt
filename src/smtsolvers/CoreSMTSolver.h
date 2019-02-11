@@ -75,43 +75,32 @@ class Enode;
 class SplitData
 {
     bool                no_instance;    // Does SplitData store the instance?
-    THandler&           theory_handler;
-    ClauseAllocator&    ca;
-    vec<CRef>&          inst_clauses;   // Reference to the instance clause database
-    vec<Lit>&           trail;          // Solver's trail for level 0 unit clauses
-    int                 trail_idx;      // First index not on level 0 at the time of insertion
 
     vec<vec<Lit> >      constraints;    // The split constraints
     vec<vec<Lit> >      learnts;        // The learnt clauses
-    vec<vec<Lit> >      instance;       // The copy of the instance as it was when updateInstance was called
 
     char* litToString(const Lit);
     template<class C> char* clauseToString(const C&);
     char* clauseToString(const vec<Lit>&);
     int getLitSize(const Lit l) const;
-    void toPTRefs(vec<vec<PtAsgn> >& out, vec<vec<Lit> >& in);
+    void toPTRefs(vec<vec<PtAsgn> >& out, vec<vec<Lit> >& in, const THandler &thandler);
 
 public:
-    SplitData(ClauseAllocator& _ca, vec<CRef>& ic, vec<Lit>& t, int tl, THandler& th, bool no_instance = false)
+    SplitData(bool no_instance = true)
         : no_instance(no_instance)
-        , theory_handler(th)
-        , ca(_ca)
-        , inst_clauses(ic)
-        , trail(t)
-        , trail_idx(tl)
 
-    {}
+    { assert(no_instance); }
+    SplitData(SplitData&& other)
+        : no_instance(other.no_instance)
+    { other.constraints.moveTo(constraints); other.learnts.moveTo(learnts); }
+
     SplitData(const SplitData& other)
         : no_instance(other.no_instance)
-        , theory_handler(other.theory_handler)
-        , ca(other.ca)
-        , inst_clauses(other.inst_clauses)
-        , trail(other.trail)
-        , trail_idx(other.trail_idx)
+    { other.constraints.copyTo(constraints); other.learnts.copyTo(learnts); }
 
-
+    SplitData& operator= (SplitData&& o)
     {
-        assert(other.instance.size() == 0 && other.constraints.size() == 0 && other.learnts.size() == 0);
+        o.constraints.moveTo(constraints); o.learnts.moveTo(learnts); return *this;
     }
 
     template<class C> void addConstraint(const C& c)
@@ -128,23 +117,10 @@ public:
         for (int i = 0; i < c.size(); i++)
             learnt.push(c[i]);
     }
-    void updateInstance()
-    {
-        if (no_instance) return;
 
-        assert(instance.size() == 0);
-        for (int i = 0; i < inst_clauses.size(); i++)
-        {
-            instance.push();
-            vec<Lit>& c_o = instance.last();
-            Clause& c_i = ca[inst_clauses[i]];
-            for (int j = 0; j < c_i.size(); j++)
-                c_o.push(c_i[j]);
-        }
-    }
     char* splitToString();
-    inline void  constraintsToPTRefs(vec<vec<PtAsgn> >& out) { toPTRefs(out, constraints); }
-    inline void  learntsToPTRefs(vec<vec<PtAsgn> >& out) { toPTRefs(out, learnts); }
+    inline void  constraintsToPTRefs(vec<vec<PtAsgn>>& out, const THandler& thandler) { toPTRefs(out, constraints, thandler); }
+    inline void  learntsToPTRefs(vec<vec<PtAsgn>>& out, const THandler& thandler) { toPTRefs(out, learnts, thandler); }
     void  cnfToString(CnfState& cs) { cs.setCnf(splitToString()); }
 };
 
@@ -191,7 +167,7 @@ inline char* SplitData::splitToString()
     int sz = 0;
     char* buf = (char*) malloc(1024);
 
-
+/*
     // Units in dl 0
     for (int i = 0; i < (trail_idx > 0 ? trail_idx : trail.size()); i++)
     {
@@ -204,7 +180,7 @@ inline char* SplitData::splitToString()
         sprintf(&buf[sz], "%s%d 0\n", sign(trail[i]) ? "-" : "", var(trail[i])+1);
         sz += n+3; // points to NULL
     }
-
+*/
     // The constraints
     for (int i = 0; i < constraints.size(); i++)
     {
@@ -230,30 +206,6 @@ inline char* SplitData::splitToString()
         sz += 2;
     }
 
-    // The instance
-    for (int i = 0; i < instance.size(); i++)
-    {
-        vec<Lit> &c = instance[i];
-        for (int j = 0; j < c.size(); j++)
-        {
-            Lit l = c[j];
-            int n = getLitSize(l);
-            while (buf_cap < sz + n + 2)   // The size of lit, the trailing space, and NULL
-            {
-                buf_cap *= 2;
-                buf = (char*) realloc(buf, buf_cap);
-            }
-            sprintf(&buf[sz], "%s%d ", sign(l) ? "-" : "", var(l)+1);
-            sz += n+1; // points to the NULL
-        }
-        while (buf_cap < sz + 3)   // zero, newline and NULL
-        {
-            buf_cap *= 2;
-            buf = (char*) realloc(buf, buf_cap);
-        }
-        sprintf(&buf[sz], "0\n");
-        sz += 2; // points to the NULL
-    }
     for (int i = 0; i < learnts.size(); i++)
     {
         vec<Lit>& c = learnts[i];
@@ -281,7 +233,7 @@ inline char* SplitData::splitToString()
     return buf;
 }
 
-inline void SplitData::toPTRefs(vec<vec<PtAsgn> >& out, vec<vec<Lit> >& in)
+inline void SplitData::toPTRefs(vec<vec<PtAsgn> >& out, vec<vec<Lit> >& in, const THandler& theory_handler)
 {
     for (int i = 0; i < in.size(); i++)
     {
@@ -1195,9 +1147,8 @@ inline void CoreSMTSolver::printClause(const C& c)
 
 inline void CoreSMTSolver::cnfToString(CnfState& cs)
 {
-    int curr_dl0_idx = trail_lim.size() > 0 ? trail_lim[0] : trail.size();
-    SplitData sd(ca, clauses, trail, curr_dl0_idx, theory_handler);
-    sd.updateInstance();
+    SplitData sd;
+
     if (config.sat_dump_learnts())
     {
         for (int i = 0; i < learnts.size(); i++)

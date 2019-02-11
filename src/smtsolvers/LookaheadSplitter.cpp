@@ -33,8 +33,10 @@ LookaheadSMTSolver::LALoopRes LookaheadSplitter::solveLookahead()
         printf("main loop: dl %d -> %d\n", decisionLevel(), 0);
 #endif
 
-        if (n->v == l_False)
+        if (n->v == l_False) {
+            deallocTree(n);
             continue;
+        }
 
         switch (setSolverToNode(n)) {
             case PathBuildResult::pathbuild_tlunsat:
@@ -42,7 +44,7 @@ LookaheadSMTSolver::LALoopRes LookaheadSplitter::solveLookahead()
             case PathBuildResult::pathbuild_restart:
                 return LALoopRes::restart;
             case PathBuildResult::pathbuild_unsat: {
-                // Here we need to clear all instances associated with the node n
+                deallocTree(n);
                 continue;
             }
             case PathBuildResult::pathbuild_success:
@@ -62,9 +64,9 @@ LookaheadSMTSolver::LALoopRes LookaheadSplitter::solveLookahead()
                 continue;
         }
 
-        LASplitNode *c1 = new LASplitNode();
-        LASplitNode *c2 = new LASplitNode();
-        switch (expandTree(n, *c1, *c2)) {
+        auto *c1 = new LASplitNode();
+        auto *c2 = new LASplitNode();
+        switch (expandTree(n, c1, c2)) {
             case laresult::la_tl_unsat:
                 return LALoopRes::unsat;
             case laresult::la_restart:
@@ -84,17 +86,17 @@ LookaheadSMTSolver::LALoopRes LookaheadSplitter::solveLookahead()
 #ifdef LADEBUG
     root->print();
 #endif
-    return LALoopRes::unknown;
+    copySplits(root);
+    return LALoopRes::unknown_final;
 }
 
 bool LookaheadSplitter::createSplitLookahead(LASplitNode *n)
 {
-    // TODO: Do not push to splits, but instead to n from now on
+    // Create a split instance and add it to node n.
     int curr_dl0_idx = trail_lim.size() > 0 ? trail_lim[0] : trail.size();
-//    n->sd = new SplitData(ca, clauses, trail, curr_dl0_idx, theory_handler, config.smt_split_format_length() == spformat_brief));
-    splits.push_c(SplitData(ca, clauses, trail, curr_dl0_idx, theory_handler, config.smt_split_format_length() == spformat_brief));
-    SplitData& sp = splits.last();
-
+    assert(n->sd == NULL);
+    n->sd = new SplitData(config.smt_split_format_length() == spformat_brief);
+    SplitData& sd = *n->sd;
     printf("; Outputing an instance:\n; ");
     Lit p = lit_Undef;
     for (int i = 0; i < decisionLevel(); i++)
@@ -107,14 +109,43 @@ bool LookaheadSplitter::createSplitLookahead(LASplitNode *n)
             // duplicated.  Do not report duplicates.
             tmp.push(l);
             printf("%s%d ", sign(l) ? "-" : "", var(l));
-            sp.addConstraint(tmp);
+            sd.addConstraint(tmp);
         }
         p = l;
     }
     printf("\n");
 
-    sp.updateInstance();
     assert(ok);
     return true;
+}
+
+void LookaheadSplitter::copySplits(LASplitNode *root)
+{
+    if (root == nullptr)
+        return;
+
+    vec<LASplitNode*> queue;
+    queue.push(root);
+
+    Map <LASplitNode*,bool,LASplitNode::Hash> seen;
+
+    // This is buggy: We need to pop the instances once all their children have been processed.
+    while (queue.size() != 0) {
+        LASplitNode* n = queue.last();
+        if (!seen.has(n)) {
+            seen.insert(n, true);
+            if (n->c1 != nullptr) {
+                assert(n->c2 != nullptr);
+                queue.push(n->getC1());
+                queue.push(n->getC2());
+            }
+            continue;
+        }
+        queue.pop();
+        if (n->sd != nullptr) {
+            splits.push_m(std::move(*n->sd));
+            n->sd = nullptr;
+        }
+    }
 }
 
