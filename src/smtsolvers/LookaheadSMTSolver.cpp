@@ -496,7 +496,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
 #endif
                 // Backtracking should happen.
                 best = lit_Undef;
-                return laresult::la_restart;
+                return laresult::la_unsat;
             }
             p == 0 ? p0 = trail.size() : p1 = trail.size();
             // Update also the clause deletion heuristic?
