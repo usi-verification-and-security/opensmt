@@ -1079,7 +1079,7 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, char** msg)
         return mkNot(terms[0]);
     if(isEquality(sym))
         return mkEq(terms);
-    if(sym == getSym_ite())
+    if(isIte(sym))
         return mkIte(terms);
     if(sym == getSym_implies())
         return mkImpl(terms);
