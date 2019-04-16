@@ -589,9 +589,8 @@ bool Egraph::mergeLoop( PtAsgn reason )
         }
         // Does the reason term correspond to disequality symbol
         else if ( logic.isDisequality(logic.getPterm(reason_inequality.tr).symb()) ) {
-            // We should iterate through the elements
-            // of the distinction and find which atoms
-            // are causing the conflict
+            // We should iterate through the elements of the distinction
+            // and find which atoms are causing the conflict
             const Pterm& pt_reason = logic.getPterm(reason_inequality.tr);
             for (int i = 0; i < pt_reason.size(); i++) {
                 // (1) Get the proper term reference from pos i in the distinction
@@ -604,8 +603,8 @@ bool Egraph::mergeLoop( PtAsgn reason )
                 ERef  enr_arg_root = enode_store[enr_arg].getRoot();      // (3)
 
                 // (4)
-                if ( enr_arg_root == enr_proot ) { assert( reason_1 == ERef_Undef ); reason_1 = enr_arg; }
-                if ( enr_arg_root == enr_qroot ) { assert( reason_2 == ERef_Undef ); reason_2 = enr_arg; }
+                if ( enr_arg_root == enr_proot ) { reason_1 = enr_arg; }
+                if ( enr_arg_root == enr_qroot ) { reason_2 = enr_arg; }
             }
             assert( reason_1 != ERef_Undef );
             assert( reason_2 != ERef_Undef );
