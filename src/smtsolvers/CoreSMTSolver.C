@@ -2243,8 +2243,8 @@ lbool CoreSMTSolver::solve_(int max_conflicts)
     }
     resource_units = config.sat_resource_units();
     resource_limit = config.sat_resource_limit();
-    if (resource_limit >= 0)
-    {
+    if (resource_limit >= 0) {
+
         if (resource_units == spm_time)
             next_resource_limit = cpuTime() + resource_limit;
         else if (resource_units == spm_decisions)

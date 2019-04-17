@@ -102,17 +102,7 @@ bool THandler::assertLits(const vec<Lit> & trail)
 
     checked_trail_size = stack.size( );
 //  assert( !res || trail.size( ) == (int)stack.size( ) );
-#ifdef VERBOSE_EUF
-//    if (res != l_False)
-//        cout << "; non-conflicting" << endl;
-//    cout << printAssertions(assertions);
-//    char* tmp = egraph.printEqClass(logic.getTerm_true());
-//    cout << tmp << endl;
-//    ::free(tmp);
-//    tmp = egraph.printEqClass(logic.getTerm_false());
-//    cout << tmp << endl;
-//    ::free(tmp);
-#endif
+
     return res;
 }
 

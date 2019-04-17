@@ -827,10 +827,12 @@ bool Egraph::assertDist( PTRef tr_d, PtAsgn tr_r )
         else
             root_to_enode.insert(root_id, er_c);
         // Activate distinction in e
-        en_c.setDistClasses(en_c.getDistClasses() | SETBIT(index));
-        nodes_changed.push(er_c);
+        // This should be done for the root of en_c, not en_c
+        Enode& root = enode_store[en_c.getRoot()];
+        root.setDistClasses(root.getDistClasses() | SETBIT(index));
+        nodes_changed.push(en_c.getRoot());
 #ifdef VERBOSE_EUF
-        cerr << "  Activating distinction of " << logic.printTerm(tr_c) << endl;
+        cerr << "  Activating distinction of the root " << logic.pp(root.getTerm()) << " of " << logic.pp(tr_c) << endl;
 #endif
     }
     // Distinction pushed without conflict
