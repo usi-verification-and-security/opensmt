@@ -303,7 +303,7 @@ void Egraph::declareTermRecursively(PTRef tr) {
 //
 void Egraph::declareTerm(PTRef tr) {
 
-    if (!isValid(tr) && !logic.isUFTerm(tr) && !logic.isBoolAtom(tr)) { return; }
+    if (!isValid(tr) && !logic.isTheoryTerm(tr) && !logic.isBoolAtom(tr)) { return; }
 
     if (!enode_store.termToERef.has(tr)) {
         const Pterm& tm = logic.getPterm(tr);
@@ -1380,6 +1380,14 @@ bool Egraph::assertLit(PtAsgn pta, bool)
         res = addTrue(pt_r) == false ? l_False : l_Undef;
     }
     else if (logic.isUP(pt_r) && sgn == l_False) {
+        setPolarity(pt_r, l_False);
+        res = addFalse(pt_r) == false ? l_False : l_Undef;
+    }
+    else if (logic.hasSortBool(pt_r) && sgn == l_True) {
+        setPolarity(pt_r, l_True);
+        res = addTrue(pt_r) == false ? l_False : l_Undef;
+    }
+    else if (logic.hasSortBool(pt_r) && sgn == l_False) {
         setPolarity(pt_r, l_False);
         res = addFalse(pt_r) == false ? l_False : l_Undef;
     }

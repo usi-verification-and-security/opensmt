@@ -177,6 +177,9 @@ class Logic {
 
     void conjoinItes(PTRef root, PTRef& new_root);
 
+  private:
+    vec<bool> appears_in_uf;
+
   public:
     virtual bool okForBoolVar(PTRef) const; // True if the ref can have a boolean var
     virtual bool okToPartition(PTRef) const { return true; } // Does the logic think this is a good var to partition on (while parallelizing)
@@ -218,9 +221,12 @@ class Logic {
     bool        containsSort  (const char* name)      const;// { return sort_store.containsSort(name); }
   protected:
     SRef        newSort       (IdRef idr, const char* name, vec<SRef>& tmp);// { return sort_store.newSort(idr, name, tmp); }
+    PTRef       mkFun         (SymRef f, const vec<PTRef>& args, char** msg);
+    PTRef       mkFun         (SymRef f, const vec<PTRef>& args) { char* msg; return mkFun(f, args, &msg); };
+
   public:
     SRef        getSortRef    (const char* name)      const;// { return sort_store[name]; }
-    SRef        getSortRef    (const PTRef tr)        const ;//{ return getSortRef(getPterm(tr).symb()); }
+    SRef        getSortRef    (const PTRef tr)        const;// { return getSortRef(getPterm(tr).symb()); }
     SRef        getSortRef    (const SymRef sr)       const;// { return getSym(sr).rsort(); }
     Sort*       getSort       (const SRef s)   ;//             { return sort_store[s]; }
     const char* getSortName   (const SRef s)  ;//              { return sort_store.getName(s); }
@@ -245,7 +251,7 @@ class Logic {
 
     // Default values for the logic
     virtual const char* getDefaultValue(const PTRef tr) const;
-
+    PTRef       mkUninterpFun (SymRef f, const vec<PTRef>& args) { char* msg; return mkFun(f, args, &msg); };
     // Boolean term generation
     PTRef       mkAnd         (vec<PTRef>&);
     PTRef       mkAnd         (PTRef a1, PTRef a2);// { vec<PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkAnd(tmp); }
@@ -277,8 +283,7 @@ class Logic {
     bool        defineFun     (const char* fname, const vec<PTRef>& args, SRef ret_sort, const PTRef tr);
     vec<Tterm>& getFunctions  ();
     SRef        declareSort   (const char* id, char** msg);
-    PTRef       mkFun         (SymRef f, const vec<PTRef>& args, char** msg);
-    PTRef       mkFun         (SymRef f, const vec<PTRef>& args) { char* msg; return mkFun(f, args, &msg); };
+
     PTRef       mkBoolVar     (const char* name);
 
     void dumpHeaderToFile(ostream& dump_out);
@@ -344,16 +349,18 @@ class Logic {
     bool         isTheorySymbol     (SymRef tr)       const;
     bool         isTheoryTerm       (PTRef tr)        const;
     bool         isBooleanOperator  (SymRef tr)       const;
-    bool         isBooleanOperator  (PTRef tr)        const ;//{ return isBooleanOperator(term_store[tr].symb()); }
+    bool         isBooleanOperator  (PTRef tr)        const;// { return isBooleanOperator(term_store[tr].symb()); }
     virtual bool isBuiltinSort      (const SRef sr)   const;// { return sr == sort_BOOL; }
     virtual bool isBuiltinConstant  (const SymRef sr) const;// { return isConstant(sr) && (sr == sym_TRUE || sr == sym_FALSE); }
     bool         isBuiltinConstant  (const PTRef tr)  const;// { return isBuiltinConstant(getPterm(tr).symb()); }
     virtual bool isBuiltinFunction  (const SymRef sr) const;
     bool         isConstant         (const SymRef sr) const;
-    bool         isConstant         (PTRef tr)        const ;//{ return isConstant(getPterm(tr).symb()); }
+    bool         isConstant         (PTRef tr)        const;// { return isConstant(getPterm(tr).symb()); }
     bool         isUFTerm           (PTRef tr)        const;// { return isUFSort(getSortRef(tr)); }
     bool         isUFSort           (const SRef sr)   const;// { return ufsorts.has(sr); }
 
+    bool         appearsInUF        (PTRef tr)        const;
+    void         setAppearsInUF     (PTRef tr);
 
     bool        isVar              (SymRef sr)     const ;//{ return sym_store[sr].nargs() == 0 && !isConstant(sr); }
     bool        isVar              (PTRef tr)      const;// { return isVar(getPterm(tr).symb()); }

@@ -119,7 +119,7 @@ TEST_F(RetrieveSubstitutionTest, test_AtomSubstituition) {
 }
 
 TEST_F(RetrieveSubstitutionTest, test_ConstantSubstituition) {
-    PTRef fx = logic.mkFun(f, {x});
+    PTRef fx = logic.mkUninterpFun(f, {x});
     PTRef eq = logic.mkEq(fx, c);
     vec<PtAsgn> facts;
     facts.push(PtAsgn{eq, l_True});
@@ -131,8 +131,8 @@ TEST_F(RetrieveSubstitutionTest, test_ConstantSubstituition) {
 }
 
 TEST_F(RetrieveSubstitutionTest, test_NestedSubstitution) {
-    PTRef fx = logic.mkFun(f, {x});
-    PTRef fy = logic.mkFun(f, {y});
+    PTRef fx = logic.mkUninterpFun(f, {x});
+    PTRef fy = logic.mkUninterpFun(f, {y});
     PTRef eq = logic.mkEq(fx, y);
     PTRef eq2 = logic.mkEq(fy, z);
     vec<PtAsgn> facts;
@@ -196,14 +196,14 @@ TEST_F(ApplySubstitutionTest, test_VarVarSub) {
 }
 
 TEST_F(ApplySubstitutionTest, test_NestedSub) {
-    PTRef fy = logic.mkFun(f, {y});
-    PTRef fz = logic.mkFun(f, {z});
-    PTRef fla = logic.mkEq(x, logic.mkFun(f, {fz}));
+    PTRef fy = logic.mkUninterpFun(f, {y});
+    PTRef fz = logic.mkUninterpFun(f, {z});
+    PTRef fla = logic.mkEq(x, logic.mkUninterpFun(f, {fz}));
     Map<PTRef, PtAsgn, PTRefHash> subst;
     subst.insert(x, PtAsgn{fy, l_True});
     subst.insert(y, PtAsgn{fz, l_True});
     PTRef res = PTRef_Undef;
     logic.varsubstitute(fla, subst, res);
 //    EXPECT_EQ(res, logic.getTerm_true()); // MB: This requires something like fixed-point substitution
-    EXPECT_EQ(res, logic.mkEq(fy, logic.mkFun(f, {fz})));
+    EXPECT_EQ(res, logic.mkEq(fy, logic.mkUninterpFun(f, {fz})));
 }

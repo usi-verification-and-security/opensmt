@@ -414,7 +414,11 @@ bool Logic::isTheoryTerm(PTRef ptr) const {
         assert(p.nargs() == 2);
             return false;
     }
-    else return isTheorySymbol(sr);
+    else if (hasSortBool(ptr) && appearsInUF(ptr)) {
+        return true;
+    }
+    else
+        return isTheorySymbol(sr);
 }
 
 bool Logic::isTheorySymbol(SymRef tr) const {
@@ -425,6 +429,22 @@ bool Logic::isTheorySymbol(SymRef tr) const {
     if (t.rsort() == sort_BOOL && t.nargs() == 0) return false;
     // Standard Boolean operators
     return !(isBooleanOperator(tr));
+}
+
+void Logic::setAppearsInUF(PTRef tr) {
+    uint32_t id = Idx(getPterm(tr).getId());
+
+    while (id >= appears_in_uf.size())
+        appears_in_uf.push(false);
+    appears_in_uf[id] = true;
+}
+
+bool Logic::appearsInUF(PTRef tr) const {
+    uint32_t id = Idx(getPterm(tr).getId());
+    if (id < appears_in_uf.size())
+        return appears_in_uf[id];
+    else
+        return false;
 }
 
 // description: Add equality for each new sort
@@ -644,9 +664,9 @@ Logic::mkIte(vec<PTRef>& args)
 {
     if (!hasSortBool(args[0])) return PTRef_Undef;
     assert(args.size() == 3);
-    if(isTrue(args[0])) return args[1];
-    if(isFalse(args[0])) return args[2];
-    if(args[1] == args[2]) return args[1];
+    if (isTrue(args[0]))    return args[1];
+    if (isFalse(args[0]))   return args[2];
+    if (args[1] == args[2]) return args[1];
 
     SRef sr = getSortRef(args[1]);
     if(sr != getSortRef(args[2]))
@@ -710,7 +730,7 @@ PTRef Logic::mkAnd(vec<PTRef>& args) {
         if (!hasSortBool(args[i]))
             return PTRef_Undef;
 
-    if(args.size() == 0)
+    if (args.size() == 0)
         tr = getTerm_true();
     else {
         sort(args, LessThan_PTRef());
@@ -723,16 +743,16 @@ PTRef Logic::mkAnd(vec<PTRef>& args) {
         }
         args.shrink(i-j);
         vec<PTRef> newargs;
-        for(int i = 0; i < args.size(); ++i)
+        for (int i = 0; i < args.size(); ++i)
         {
-            if(isFalse(args[i])) {
+            if (isFalse(args[i])) {
                 tr = getTerm_false();
                 break;
             }
-            if(!isTrue(args[i]))
+            if (!isTrue(args[i]))
                 newargs.push(args[i]);
         }
-        if(tr == PTRef_Undef) {
+        if (tr == PTRef_Undef) {
             if(newargs.size() == 0)
                 tr = getTerm_true();
             else if(newargs.size() == 1)
@@ -973,8 +993,16 @@ PTRef Logic::mkFun(SymRef f, const vec<PTRef>& args, char** msg)
     PTRef tr;
     if (f == SymRef_Undef)
         tr = PTRef_Undef;
-    else
+    else {
         tr = insertTermHash(f, args);
+        if (isUFTerm(tr)) {
+            for (int i = 0; i < args.size(); i++) {
+                if (hasSortBool(args[i])) {
+                    setAppearsInUF(args[i]);
+                }
+            }
+        }
+    }
     return tr;
 }
 

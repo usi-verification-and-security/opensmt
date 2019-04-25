@@ -4,16 +4,8 @@
 # 1 - unsat
 # 2 - unknown
 
-#osmt=/u1/home/aehyvari/src/OpenSMT/opensmt-dev/TRUNK/opensmt
-#osmt=/Users/aehyvari/src/OpenSMT/opensmt-dev/opensmt-dev/TRUNK/opensmt
-#osmt=/home/hyvaeria/src/OpenSMT/opensmt_antti/opensmt-dev/trunk/opensmt
-#osmt=/home/hyvaeria/src/OpenSMT/opensmt_antti/opensmt-dev/trunk/delta/run-dumper.sh
-#osmt=/home/hyvaeria/src/opensmt2/opensmt-dev/trunk/delta/run-dumper.sh
-osmt=/home/hyvaeria/src/opensmt2/opensmt-tmp
-#z3=/u1/home/aehyvari/src/z3/z3/bin/external/z3
-#z3=/Users/aehyvari/src/z3/bin/external/z3
-z3=/home/hyvaeria/src/z3/bin/external/z3
-#z3=/home/leonardo/devel/opensmt2/opensmt_correct
+osmt=/Users/prova/src/opensmt2/build/src/bin/opensmt
+z3=/Users/prova/src/z3/build/z3
 if [[ $# != 1 ]]; then
     echo "Usage: $0 <file>"
     exit 1
