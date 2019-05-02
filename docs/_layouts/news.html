@@ -1,0 +1,12 @@
+---
+layout: default
+---
+<h2>{{ page.title }} </h1>
+<p>{{ page.newsdate | date_to_string }}
+{% assign author = site.authors | where: 'short_name', page.author |
+first %}
+{{ content }}
+{% if author %}
+- <a href="{{ author.url }}">{{ page.author }}</a>
+{% endif %}
+</p>
