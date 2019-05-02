@@ -706,7 +706,7 @@ bool CGraph::colorEdgesFrom ( CNode *x, const ipartitions_t &mask )
                 }
 
                 char **msg;
-                PTRef nn = logic.mkFun (logic.getPterm (x->e).symb(), new_args, msg);
+                PTRef nn = logic.mkUninterpFun (logic.getPterm (x->e).symb(), new_args);
                 /*
                 if(isAstrict(logic.getIPartitions(new_args[0]), mask) && isBstrict(logic.getIPartitions(new_args[1]), mask))
                     logic.addIPartitions(nn, 0);
