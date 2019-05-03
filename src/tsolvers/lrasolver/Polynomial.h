@@ -69,7 +69,12 @@ public:
         return findTermForVar(var) != poly.end();
     }
 
+
     const_iterator findTermForVar(LVRef var) const {
+        return std::find_if(poly.begin(), poly.end(), [var](const Term& term) { return term.var == var; });
+    }
+
+    iterator findTermForVar(LVRef var) {
         return std::find_if(poly.begin(), poly.end(), [var](const Term& term) { return term.var == var; });
     }
 
