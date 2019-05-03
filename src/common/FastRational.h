@@ -9,7 +9,6 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
 #include <string>
 #include <gmpxx.h>
 #include <cassert>
-#include <climits>
 typedef int32_t  word;
 typedef uint32_t uword;
 typedef int64_t  lword;
