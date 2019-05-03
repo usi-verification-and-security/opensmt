@@ -1,0 +1,56 @@
+language: cpp
+
+sudo: true
+
+os:
+  - linux
+
+dist: xenial
+
+compiler:
+  - clang
+  - gcc
+
+env:
+  matrix:
+    - CMAKE_BUILD_TYPE=Release
+      PRODUCE_PROOF=OFF
+    - CMAKE_BUILD_TYPE=Debug
+      PRODUCE_PROOF=OFF
+
+matrix:
+  include:
+    - os: linux
+      dist: trusty
+      compiler: gcc
+    - os: linux
+      dist: trusty
+      compiler: clang
+    - env:
+      - CMAKE_BUILD_TYPE=Release
+      - PRODUCE_PROOF=ON
+      compiler: clang
+    - env:
+      - CMAKE_BUILD_TYPE=Release
+      - PRODUCE_PROOF=ON
+      compiler: gcc
+
+
+
+addons:
+  apt:
+    update: true
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - libgmp-dev
+      - libreadline-dev
+      - bison
+      - flex
+
+install: true
+script:
+  - mkdir build && cd build
+  - cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DPRODUCE_PROOF=${PRODUCE_PROOF} ..
+  - make
+  - ctest
