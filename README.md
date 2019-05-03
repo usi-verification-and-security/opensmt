@@ -1,15 +1,14 @@
-+------------------------------------------------------------------------------+
-| OpenSMT2                                                                     |
-|                                                                              |
-| Copyright 2019 Antti Hyvarinen <antti.hyvarinen@gmail.com>                   |
-| Copyright 2009 Roberto Bruttomesso <roberto.bruttomesso@gmail.com>           |
-|                                                                              |
-| Project page......: http://verify.inf.usi.ch/opensmt                         |
-|                                                                              |
-| OpenSMT is distributed in the hope that it will be useful,                   |
-| but WITHOUT ANY WARRANTY; without even the implied warranty of               |
-| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                         |
-+------------------------------------------------------------------------------+
+[![Build Status](https://travis-ci.com/usi-verification-and-security/opensmt.svg?branch=master)](https://travis-ci.com/usi-verification-and-security/opensmt)
+
+# OpenSMT2
+Copyright 2019 Antti Hyvarinen <antti.hyvarinen@gmail.com>  
+Copyright 2009 Roberto Bruttomesso <roberto.bruttomesso@gmail.com>
+
+Project page: http://verify.inf.usi.ch/opensmt
+
+OpenSMT is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 OpenSMT2 supports reading files in `smtlib2` format and the theories
 `QF_UF`, `QF_LRA`, `QF_RDL`, and `QF_LIA`.  The system also provides an
@@ -22,7 +21,6 @@ compliant compiler and the following libraries and headers installed:
 
  - gmp
  - readline
- - zlib
 
 In addition the compilation system relies on `cmake` and the `smtlib2`
 parser on `flex` and `bison`.  To compile OpenSMT2, use the following
