@@ -14,7 +14,9 @@ compiler:
 env:
   matrix:
     - CMAKE_BUILD_TYPE=Release
+      PRODUCE_PROOF=OFF
     - CMAKE_BUILD_TYPE=Debug
+      PRODUCE_PROOF=OFF
 
 matrix:
   include:
@@ -24,6 +26,14 @@ matrix:
     - os: linux
       dist: trusty
       compiler: clang
+    - env:
+      - CMAKE_BUILD_TYPE=Release
+      - PRODUCE_PROOF=ON
+      compiler: clang
+    - env:
+      - CMAKE_BUILD_TYPE=Release
+      - PRODUCE_PROOF=ON
+      compiler: gcc
 
 
 
@@ -41,6 +51,6 @@ addons:
 install: true
 script:
   - mkdir build && cd build
-  - cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} ..
+  - cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DPRODUCE_PROOF=${PRODUCE_PROOF} ..
   - make
   - ctest
