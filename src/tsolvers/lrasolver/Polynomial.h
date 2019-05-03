@@ -28,7 +28,7 @@ private:
         LVRef var;
         opensmt::Real coeff;
 
-        Term(LVRef var, opensmt::Real&& coeff): var{var}, coeff{std::move(coeff)} {}
+        Term(LVRef var, opensmt::Real&& coeff): var{var.x}, coeff{std::move(coeff)} {}
     };
     struct TermCmp {
         bool operator()(const Term& first, const Term& second) { return first.var.x < second.var.x; }
