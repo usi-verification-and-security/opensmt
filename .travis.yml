@@ -1,5 +1,10 @@
 language: cpp
 
+#safelist of branches where travis should run
+branches:
+    only:
+        - master    
+
 sudo: true
 
 os:
