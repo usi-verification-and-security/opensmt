@@ -17,11 +17,12 @@ compiler:
   - gcc
 
 env:
+  global:
+    - PRODUCE_PROOF=OFF
+    - RUN_REGRESSION_TESTS=OFF
   matrix:
     - CMAKE_BUILD_TYPE=Release
-      PRODUCE_PROOF=OFF
     - CMAKE_BUILD_TYPE=Debug
-      PRODUCE_PROOF=OFF
 
 matrix:
   include:
@@ -59,3 +60,6 @@ script:
   - cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DPRODUCE_PROOF=${PRODUCE_PROOF} ..
   - make
   - ctest
+  - if [[ ${CMAKE_BUILD_TYPE} == Debug && ${PRODUCE_PROOF} == OFF ]]; then
+        cd ../regression && ./run-test-notiming.sh ../build/src/bin/opensmt;
+    fi
