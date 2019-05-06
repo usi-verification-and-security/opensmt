@@ -232,11 +232,7 @@ Logic::getName() const
 bool
 Logic::okForBoolVar(PTRef tr) const
 {
-    return isEquality (tr)        ||
-           isDisequality (tr)     ||
-           getTerm_true() == tr   ||
-           getTerm_false() == tr  ||
-           isUP (tr)              ;
+    return hasSortBool(tr);
 }
 
 //
