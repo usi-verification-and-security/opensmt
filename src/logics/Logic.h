@@ -181,7 +181,6 @@ class Logic {
     vec<bool> appears_in_uf;
 
   public:
-    virtual bool okForBoolVar(PTRef) const; // True if the ref can have a boolean var
     virtual bool okToPartition(PTRef) const { return true; } // Does the logic think this is a good var to partition on (while parallelizing)
     bool existsTermHash(SymRef, const vec<PTRef>&);
     static const char*  tk_val_uf_default;
@@ -347,6 +346,7 @@ class Logic {
     // boolean operators (and, not, or, etc...)
     // Note that equivalence over non-boolean terms is not a Boolean operator.
     bool         isTheorySymbol     (SymRef tr)       const;
+    // True for terms (PTRef) that are of interest to theory solver and should be declared to the solver. Only such terms should be declared to the theory solver
     bool         isTheoryTerm       (PTRef tr)        const;
     bool         isBooleanOperator  (SymRef tr)       const;
     bool         isBooleanOperator  (PTRef tr)        const;// { return isBooleanOperator(term_store[tr].symb()); }

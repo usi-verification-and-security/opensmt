@@ -284,11 +284,7 @@ bool LALogic::isNumTerm(PTRef tr) const
     else
         return false;
 }
-bool
-LALogic::okForBoolVar(PTRef tr) const
-{
-    return isNumLeq(tr) || Logic::okForBoolVar(tr);
-}
+
 PTRef LALogic::mkNumNeg(PTRef tr, char** msg)
 {
     if (isNumNeg(tr)) return getPterm(tr)[0];
