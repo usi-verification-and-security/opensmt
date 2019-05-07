@@ -107,7 +107,6 @@ public:
     virtual bool isNumOne(PTRef tr) const;
     // Real terms are of form c, a, or (* c a) where c is a constant and a is a variable.
     virtual bool isNumTerm(PTRef tr) const;
-    virtual bool okForBoolVar(PTRef) const override;
 
     virtual PTRef getTerm_NumZero() const =0;
     virtual PTRef getTerm_NumOne() const =0;

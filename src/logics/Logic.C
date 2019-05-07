@@ -229,12 +229,6 @@ Logic::getName() const
     return "QF_UF";
 }
 
-bool
-Logic::okForBoolVar(PTRef tr) const
-{
-    return hasSortBool(tr);
-}
-
 //
 // Escape the symbol name if it contains a prohibited character from the
 // list defined by the quotable[] table below
