@@ -98,7 +98,7 @@ const Lit TermMapper::getOrCreateLit(PTRef ptr) {
     if (p.getVar() == -1)
     {
         v = this->addBinding(p_tr);
-        assert(!logic.isTheoryTerm(p_tr) || logic.okForBoolVar(p_tr));
+        assert(logic.hasSortBool(p_tr));
     }
     else{
         v = logic.getPterm(p_tr).getVar();
