@@ -625,6 +625,9 @@ PTRef LALogic::mkNumDiv(const vec<PTRef>& args, char** msg)
     vec<PTRef> args_new;
     SymRef s_new;
     assert(args.size() == 2);
+    if(this->isNumZero(args[1])) {
+        throw LADivisionByZeroException();
+    }
     simp.simplify(get_sym_Num_DIV(), args, s_new, args_new, msg);
     if (isNumDiv(s_new)) {
         assert((isNumTerm(args_new[0]) || isNumPlus(args_new[0])) && isConstant(args_new[1]));
