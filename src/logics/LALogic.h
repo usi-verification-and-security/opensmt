@@ -17,6 +17,14 @@ public:
     }
     ~LANonLinearException() = default;
 };
+
+class LADivisionByZeroException : public std::runtime_error
+{
+public:
+    LADivisionByZeroException() : runtime_error("Explicit division by zero encountered!") {}
+    ~LADivisionByZeroException() = default;
+};
+
 class LALogic: public Logic
 {
 protected:

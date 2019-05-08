@@ -566,7 +566,14 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
         }
         assert(args.size() > 0);
         char* msg = NULL;
-        PTRef tr = logic->resolveTerm(name, args, &msg);
+        PTRef tr = PTRef_Undef;
+        try {
+            tr = logic->resolveTerm(name, args, &msg);
+        }
+        catch (LADivisionByZeroException & ex) {
+            notify_formatted(true, ex.what());
+            return PTRef_Undef;
+        }
         if (tr == PTRef_Undef) {
             notify_formatted(true, "No such symbol %s: %s", name, msg);
             comment_formatted("The symbol %s is not defined for the following sorts:", name);
