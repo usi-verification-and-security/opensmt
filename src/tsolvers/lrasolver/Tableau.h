@@ -12,6 +12,7 @@
 
 #include <unordered_set>
 #include <unordered_map>
+#include <set>
 #include <vector>
 #include <functional>
 #include <memory>
@@ -80,7 +81,8 @@ protected:
     // using column_t = std::unordered_set<LVRef, LVRefHash>;
     using column_t = Column;
     using rows_t = std::vector<std::unique_ptr<Polynomial>>;
-    using vars_t = std::unordered_set<LVRef, LVRefHash>;
+//    using vars_t = std::unordered_set<LVRef, LVRefHash>;
+    using vars_t = std::set<LVRef, LVRefComp>;
 
 public:
     void newNonbasicVar(LVRef v);
