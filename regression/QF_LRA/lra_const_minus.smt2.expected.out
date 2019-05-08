@@ -1,1 +1,5 @@
-explicit div by zero
+(error "Explicit division by zero encountered!")
+
+(error "assertion returns an unknown sort")
+
+unsat
