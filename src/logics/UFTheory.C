@@ -4,7 +4,7 @@
 // present.  If PRODUCE_PROOF is enabled, do no simplifications but just
 // update the root.
 //
-bool UFTheory::simplify(vec<PFRef>& formulas, int curr)
+bool UFTheory::simplify(const vec<PFRef>& formulas, int curr)
 {
 #ifdef PRODUCE_PROOF
     pfstore[formulas[curr]].root = getLogic().mkAnd(pfstore[formulas[curr]].formulas);

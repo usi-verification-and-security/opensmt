@@ -151,10 +151,10 @@ class Theory
     virtual Logic          &getLogic()              = 0;
     virtual TSolverHandler &getTSolverHandler()     = 0;
     virtual TSolverHandler *getTSolverHandler_new(vec<DedElem>&) = 0;
-    virtual bool            simplify(vec<PFRef>&, int) = 0; // Simplify a vector of PushFrames in an incrementality-aware manner
+    virtual bool            simplify(const vec<PFRef>&, int) = 0; // Simplify a vector of PushFrames in an incrementality-aware manner
     vec<DedElem>           &getDeductionVec();//   { return deductions; }
     bool                    computeSubstitutions(PTRef coll_f, const vec<PFRef>& frames, int curr);
-    void                    printFramesAsQuery(vec<PFRef>& en_frames, std::ostream& s);
+    void                    printFramesAsQuery(const vec<PFRef> & frames, std::ostream & s);
     virtual                ~Theory()                           {};
 };
 
@@ -176,7 +176,7 @@ class LRATheory : public Theory
     virtual LRALogic&    getLogic();//    { return lralogic; }
     virtual LRATHandler& getTSolverHandler();// { return lratshandler; }
     virtual LRATHandler *getTSolverHandler_new(vec<DedElem> &d);// { return new LRATHandler(config, lralogic, d, tmap); }
-    virtual bool simplify(vec<PFRef>&, int); // Theory specific simplifications
+    virtual bool simplify(const vec<PFRef>&, int); // Theory specific simplifications
 };
 
 class LIATheory : public Theory
@@ -197,7 +197,7 @@ public:
     virtual LIALogic&    getLogic();//    { return lialogic; }
     virtual LIATHandler& getTSolverHandler();// { return liatshandler; }
     virtual LIATHandler *getTSolverHandler_new(vec<DedElem> &d);// { return new LIATHandler(config, lialogic, d, tmap); }
-    virtual bool simplify(vec<PFRef>&, int);
+    virtual bool simplify(const vec<PFRef>&, int);
 };
 
 class UFTheory : public Theory
@@ -219,7 +219,7 @@ class UFTheory : public Theory
     virtual UFTHandler&  getTSolverHandler()    { return tshandler; }
     virtual const UFTHandler& getTSolverHandler() const { return tshandler; }
     virtual UFTHandler *getTSolverHandler_new(vec<DedElem>& d) { return new UFTHandler(config, uflogic, d, tmap); }
-    virtual bool simplify(vec<PFRef>&, int);
+    virtual bool simplify(const vec<PFRef>&, int);
 };
 
 class CUFTheory : public Theory
@@ -242,7 +242,7 @@ class CUFTheory : public Theory
     virtual CUFTHandler& getTSolverHandler() { return tshandler; }
     virtual const CUFTHandler& getTSolverHandler() const { return tshandler; }
     virtual CUFTHandler *getTSolverHandler_new(vec<DedElem>& d) { return new CUFTHandler(config, cuflogic, d, tmap); }
-    virtual bool simplify(vec<PFRef>&, int);
+    virtual bool simplify(const vec<PFRef>&, int);
 };
 
 

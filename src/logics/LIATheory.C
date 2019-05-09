@@ -5,7 +5,7 @@
 // inequalities.  If PRODUCE_PROOF is enabled, only do the splitting to
 // inequalities.
 //
-bool LIATheory::simplify(vec<PFRef>& formulas, int curr)
+bool LIATheory::simplify(const vec<PFRef>& formulas, int curr)
 {
 #ifdef PRODUCE_PROOF
     vec<PTRef> & flas = pfstore[formulas[curr]].formulas;
