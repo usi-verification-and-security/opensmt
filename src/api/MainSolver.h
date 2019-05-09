@@ -65,6 +65,32 @@ class MainSolver
 {
   private:
 
+    class PushFramesWrapper {
+    private:
+        vec<PFRef> frames;
+        std::size_t simplified_until = 0; // The frame have been simplified up to (excluding) frames[simplified_until].
+    public:
+        PFRef last() const { assert(frames.size() > 0); return frames.last(); }
+
+        std::size_t size() const { return frames.size_(); }
+
+        const vec<PFRef>& getFrameReferences() const { return frames; }
+
+        PFRef getFrameReference(std::size_t i) const { return frames[i]; }
+
+        std::size_t getSimplifiedUntil() const { return simplified_until; }
+
+        void setSimplifiedUntil(std::size_t n) { simplified_until = n; }
+
+        void push(PFRef frame_ref) { frames.push(frame_ref); }
+
+        void pop() {
+            frames.pop();
+            if (simplified_until > size()) { simplified_until = size(); }
+        }
+
+    };
+
     Logic&              logic;
     SMTConfig&          config;
     THandler&           thandler;
@@ -73,11 +99,11 @@ class MainSolver
     vec<DedElem>        deductions;
     SimpSMTSolver*      smt_solver;
     Tseitin             ts;
-    vec<PFRef>          formulas;
+    PushFramesWrapper   frames;
+
 
     opensmt::OSMTTimeVal query_timer; // How much time we spend solving.
     std::string          solver_name; // Name for the solver
-    int            simplified_until; // The formulas have been simplified up to and including formulas[simplified_until-1].
     int            check_called;     // A counter on how many times check was called.
     PTRef          prev_query;       // The previously executed query
     PTRef          curr_query;       // The current query
@@ -122,7 +148,6 @@ class MainSolver
             , tmap
             , *s )
         , solver_name {name}
-        , simplified_until(0)
         , check_called(0)
         , prev_query(PTRef_Undef)
         , curr_query(PTRef_Undef)
@@ -130,8 +155,8 @@ class MainSolver
         , binary_init(false)
         , root_instance(logic.getTerm_true())
     {
-        formulas.push(pfstore.alloc());
-        PushFrame& last = pfstore[formulas.last()];
+        frames.push(pfstore.alloc());
+        PushFrame& last = pfstore[frames.last()];
         last.push(logic.getTerm_true());
     }
 
@@ -146,14 +171,12 @@ class MainSolver
     void      push();
     bool      pop();
     sstat     insertFormula(PTRef root, char** msg);
-    int       simplifiedUntil() const { return simplified_until; }
 
     void      initialize() { ts.solver.initialize(); ts.initialize(); }
 
-    // Simplify formulas from formulas[from] onwards until all are simplified or the instance is detected unsatisfiable.  the index up to which simplification was done is stored in `to'.
-    sstat simplifyFormulas(int from, int& to) { char* msg; sstat res = simplifyFormulas(from, to, &msg); if (res == s_Error) { printf("%s\n", msg); } return res; }
-    sstat simplifyFormulas(int from, int& to, char** err_msg);
-    sstat simplifyFormulas() { int to; sstat rval = simplifyFormulas(simplifiedUntil(), to); simplified_until = to; return rval; }
+    // Simplify frames (not yet simplified) until all are simplified or the instance is detected unsatisfiable.
+    sstat simplifyFormulas(char** msg);
+    sstat simplifyFormulas() { char* msg; sstat res = simplifyFormulas(&msg); if (res == s_Error) { printf("%s\n", msg); } return res; }
     sstat solve           ();
     sstat check           ();      // A wrapper for solve which simplifies the loaded formulas and initializes the solvers
 

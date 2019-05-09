@@ -42,14 +42,14 @@ namespace opensmt { extern bool stop; }
 void
 MainSolver::push()
 {
-    formulas.push(pfstore.alloc());
+    frames.push(pfstore.alloc());
 }
 
 bool
 MainSolver::pop()
 {
-    if (formulas.size() > 1) {
-        formulas.pop();
+    if (frames.size() > 1) {
+        frames.pop();
         return true;
     }
     else
@@ -91,15 +91,17 @@ MainSolver::insertFormula(PTRef root, char** msg)
     assert(logic.getPartitionIndex(root) != -1);
 #endif // PRODUCE_PROOF
 
-    pfstore[formulas.last()].push(root);
-    pfstore[formulas.last()].units.clear();
-    pfstore[formulas.last()].root = PTRef_Undef;
-    pfstore[formulas.last()].substs = logic.getTerm_true();
-    simplified_until = std::min(simplified_until, formulas.size()-1);
+    PushFrame& lastFrame =  pfstore[frames.last()];
+    lastFrame.push(root);
+    lastFrame.units.clear();
+    lastFrame.root = PTRef_Undef;
+    lastFrame.substs = logic.getTerm_true();
+    // New formula has been added to the last frame. If the frame has been simplified before, we need to do it again
+    frames.setSimplifiedUntil(std::min(frames.getSimplifiedUntil(), frames.size() - 1));
     return s_Undef;
 }
 
-sstat MainSolver::simplifyFormulas(int from, int& to, char** err_msg)
+sstat MainSolver::simplifyFormulas(char** err_msg)
 {
     if (binary_init)
         return s_Undef;
@@ -108,10 +110,10 @@ sstat MainSolver::simplifyFormulas(int from, int& to, char** err_msg)
     status = s_Undef;
 
     vec<PTRef> coll_f;
-    for (int i = from ; i < formulas.size(); i++) {
-        bool res = getTheory().simplify(formulas, i);
-        to = i+1;
-        const PushFrame & frame = pfstore[formulas[i]];
+    for (std::size_t i = frames.getSimplifiedUntil(); i < frames.size(); i++) {
+        bool res = getTheory().simplify(frames.getFrameReferences(), i);
+        frames.setSimplifiedUntil(i + 1);
+        const PushFrame & frame = pfstore[frames.getFrameReference(i)];
         PTRef root = frame.root;
 
         if (logic.isFalse(root)) {
@@ -151,10 +153,10 @@ sstat MainSolver::simplifyFormulas(int from, int& to, char** err_msg)
         }
 
         // root_instance is updated to the and of the simplified formulas currently in the solver, together with the substitutions
-        fc.setRoot(logic.mkAnd(fc.getRoot(), pfstore[formulas[i]].substs));
+        fc.setRoot(logic.mkAnd(fc.getRoot(), frame.substs));
         root_instance.setRoot(fc.getRoot());
         // Stop if problem becomes unsatisfiable
-        if ((status = giveToSolver(fc.getRoot(), pfstore[formulas[i]].getId())) == s_False)
+        if ((status = giveToSolver(fc.getRoot(), frame.getId())) == s_False)
             break;
 #endif
     }
@@ -347,14 +349,14 @@ void MainSolver::printFramesAsQuery()
 {
     char* base_name = config.dump_query_name();
     if (base_name == NULL)
-        getTheory().printFramesAsQuery(formulas, std::cout);
+        getTheory().printFramesAsQuery(frames.getFrameReferences(), std::cout);
     else {
         char* s_file_name;
         int chars_written = asprintf(&s_file_name, "%s-%d.smt2", base_name, check_called);
         (void)chars_written;
         std::ofstream stream;
         stream.open(s_file_name);
-        getTheory().printFramesAsQuery(formulas, stream);
+        getTheory().printFramesAsQuery(frames.getFrameReferences(), stream);
         stream.close();
         free(s_file_name);
     }
@@ -369,10 +371,8 @@ sstat MainSolver::check()
         opensmt::StopWatch sw(query_timer);
     }
     sstat rval;
-    int simplified_to;
-    rval = simplifyFormulas(simplified_until, simplified_to);
+    rval = simplifyFormulas();
 
-    simplified_until = simplified_to;
     if (config.dump_query())
         printFramesAsQuery();
 
@@ -402,9 +402,10 @@ sstat MainSolver::solve()
     vec<PTRef> query;
 
     vec<FrameId> en_frames;
-    for (int i = 0; i < formulas.size(); i++) {
-        en_frames.push(pfstore[formulas[i]].getId());
-        query.push(pfstore[formulas[i]].root);
+    for (int i = 0; i < frames.size(); i++) {
+        const PushFrame& frame = pfstore[frames.getFrameReference(i)];
+        en_frames.push(frame.getId());
+        query.push(frame.root);
     }
     status = sstat(ts.solve(en_frames));
 
