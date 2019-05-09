@@ -10,7 +10,6 @@
 #include "LAVar.h"
 #include "Real.h"
 
-#include <unordered_set>
 #include <unordered_map>
 #include <set>
 #include <vector>
