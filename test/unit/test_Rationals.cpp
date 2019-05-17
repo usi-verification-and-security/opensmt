@@ -40,7 +40,8 @@ TEST(Rationals_test, test_hash_function)
     }
     for (int i = 0; i < 10; i++) {
         char* str;
-        asprintf(&str, "%ld/%u", random(), UINT32_MAX);
+        int written = asprintf(&str, "%ld/%u", random(), UINT32_MAX);
+        assert(written != -1); (void)written;
         Real r(str);
         free(str);
         hashes.push(r.getHashValue());
@@ -58,7 +59,8 @@ TEST(Rationals_test, test_hash_function)
         }
         den_str[20] = 0;
         char *str;
-        asprintf(&str, "%s/%s", num_str, den_str);
+        int written = asprintf(&str, "%s/%s", num_str, den_str);
+        assert(written != -1); (void)written;
         Real r(str);
         free(str);
         hashes.push(r.getHashValue());
@@ -74,7 +76,8 @@ TEST(Rationals_test, test_hash_function)
         for (int i = 0; i < 10; i++) {
             den_str[19] = 48 + i;
             char *str;
-            asprintf(&str, "1/%s", den_str);
+            int written = asprintf(&str, "1/%s", den_str);
+            assert(written != -1); (void)written;
             Real r(str);
             free(str);
             hashes.push(r.getHashValue());
