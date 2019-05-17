@@ -27,15 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Logic.h"
 #include "LALogic.h"
 #include "Real.h"
-class LRANonLinearException : std::logic_error
-{
-public:
-    LRANonLinearException(const char* reason_) : std::logic_error(reason_) {
-    }
-    LRANonLinearException(std::string const & reason) : std::logic_error(reason) {
-    }
-    ~LRANonLinearException() = default;
-};
+
 class LRALogic: public LALogic
 {
 protected:
