@@ -27,10 +27,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef PTSTORE_H
 #define PTSTORE_H
 
-#include <unordered_map>
-
 #include "Pterm.h"
 #include "SymStore.h"
+
+#ifdef PRODUCE_PROOF
+#include <unordered_map>
+#endif
 
 class SStore; // forward declaration
 
