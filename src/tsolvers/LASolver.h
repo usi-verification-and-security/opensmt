@@ -11,8 +11,6 @@
 #include "lrasolver/Tableau.h"
 #include "lrasolver/Polynomial.h"
 
-#include <unordered_set>
-#include <set>
 #include <unordered_map>
 
 class LAVar;
