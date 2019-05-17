@@ -3,21 +3,7 @@
 #include "Logic.h"
 #include "Integer.h"
 #include "LALogic.h"
-class LIANonLinearException
-{
-    char* reason;
-public:
-    LIANonLinearException(const char* reason_) {
-        asprintf(&reason, "Term %s is non-linear", reason_);
-    }
-    virtual char* what() const
-    {
-        char* out;
-        asprintf(&out, "%s", reason);
-        return out;
-    }
-    ~LIANonLinearException() { free(reason); }
-};
+
 class LIALogic: public LALogic
 {
 protected:
