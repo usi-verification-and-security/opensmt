@@ -28,7 +28,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "TreeOps.h"
 #include "DimacsParser.h"
 #include "Interpret.h"
-#include "CnfState.h"
 #include "BoolRewriting.h"
 #include <thread>
 #include <random>

@@ -559,38 +559,3 @@ lbool Cnfizer::getTermValue (PTRef tr) const
     }
     else return l_Undef;
 }
-
-void Cnfizer::getVarMapping (CnfState &cs)
-{
-    // The mapping to terms
-#ifdef VERBOSE_FOPS
-    char *out = (char *)malloc (1);
-    out[0] = 0;
-    char *old;
-#endif
-
-    for (int i = 0; i < solver.nVars(); i++)
-    {
-        PTRef tr = tmap.varToPTRef (i);
-        cs.addToMap ({i, tr});
-#ifdef VERBOSE_FOPS
-        old = out;
-        char *map_s;
-        char *term_s = logic.printTerm (tmap.varToPTRef (i));
-        asprintf (&map_s, "%d -> %d [%s]", i, tmap.varToPTRef (i).x, term_s);
-        free (term_s);
-        asprintf (&out, "%s%s\n", old, map_s);
-        free (map_s);
-#endif
-    }
-
-#ifdef VERBOSE_FOPS
-    cerr << "Cnf looks like" << endl;
-    cerr << cs.getCnf() << endl;
-    cerr << "Map looks like " << endl;
-    cerr << out << endl;
-    free (out);
-#endif
-}
-
-void  Cnfizer::getSolverState   (CnfState& cs) { solver.cnfToString(cs); }
