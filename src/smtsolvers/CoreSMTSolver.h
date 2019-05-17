@@ -57,7 +57,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "Alg.h"
 
 #include "SolverTypes.h"
-#include "CnfState.h"
 
 #include "Timer.h"
 
@@ -121,7 +120,6 @@ public:
     char* splitToString();
     inline void  constraintsToPTRefs(vec<vec<PtAsgn>>& out, const THandler& thandler) { toPTRefs(out, constraints, thandler); }
     inline void  learntsToPTRefs(vec<vec<PtAsgn>>& out, const THandler& thandler) { toPTRefs(out, learnts, thandler); }
-    void  cnfToString(CnfState& cs) { cs.setCnf(splitToString()); }
 };
 
 inline int SplitData::getLitSize(const Lit l) const
@@ -667,8 +665,6 @@ public:
     void     printClause      ( Clause& );
     //void     printClause      ( vec< Lit > & );
 
-    void     cnfToString      (CnfState&);
-
 	void   populateClauses  (vec<PTRef> & clauses, const vec<CRef> & crefs, int limit = std::numeric_limits<int>::max());
 	void   populateClauses  (vec<PTRef> & clauses, const vec<Lit> & lits);
 	char * printCnfClauses  ();
@@ -1142,21 +1138,6 @@ inline void CoreSMTSolver::printClause(const C& c)
     char* clause = logic.printTerm(tr);
     fprintf(stderr, "; %s", clause);
     free(clause);
-}
-
-
-inline void CoreSMTSolver::cnfToString(CnfState& cs)
-{
-    SplitData sd;
-
-    if (config.sat_dump_learnts())
-    {
-        for (int i = 0; i < learnts.size(); i++)
-            sd.addLearnt(ca[learnts[i]]);
-    }
-    if (okay())
-        cs.setCnf(sd.splitToString());
-    else cs.setUnsat();
 }
 
 inline void CoreSMTSolver::populateClauses(vec<PTRef> & clauses, const vec<CRef> & crefs, int limit)

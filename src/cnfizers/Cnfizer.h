@@ -71,8 +71,6 @@ public:
     bool  isNPAtom         (PTRef r, PTRef& p)    const; // Check if r is a (negated) atom.  Return true if the corresponding atom is negated.  The purified reference is placed in the second argument.
     bool  solverEmpty      ()                     const { return s_empty; }
 
-    void  getSolverState   (CnfState& cs);
-    void  getVarMapping    (CnfState&);
 protected:
 
     virtual bool cnfize                 ( PTRef ) = 0; // Actual cnfization. To be implemented in derived classes
