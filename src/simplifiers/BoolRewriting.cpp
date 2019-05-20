@@ -275,6 +275,7 @@ PTRef simplifyUnderAssignment_Aggressive(PTRef node, Logic & logic, std::unorder
     bool isAnd = logic.isAnd(node);
     vec<PTRef> newargs;
     // this is the assignment that is propagated to me and I can use it to simplify myself and my children
+    assert(assignments.find(dominators.at(node)) != assignments.end());
     std::vector<PtLit> assignment = assignments.at(dominators.at(node));
     // process the literals
     for (PTRef lit : literals) {
@@ -301,6 +302,7 @@ PTRef simplifyUnderAssignment_Aggressive(PTRef node, Logic & logic, std::unorder
     }
     // set my assignment and recurse on children
     assignments[node] = std::move(assignment);
+
     for (PTRef child : connective_children) {
         if (contains(cache, child)) {
             newargs.push(cache[child]);
@@ -310,6 +312,8 @@ PTRef simplifyUnderAssignment_Aggressive(PTRef node, Logic & logic, std::unorder
             cache[child] = new_child;
         }
     }
+    // after we are done with this node, we don't need to remember its assignment anymore
+    assignments.erase(node);
     return isAnd ? logic.mkAnd(newargs) : logic.mkOr(newargs);
 }
 }
