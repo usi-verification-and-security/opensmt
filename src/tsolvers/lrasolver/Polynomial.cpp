@@ -100,7 +100,7 @@ void
 Polynomial::merge(const Polynomial &other, const opensmt::Real &coeff, std::function<void(LVRef)> informAdded,
                   std::function<void(LVRef)> informRemoved) {
     decltype(poly) merged;
-    merged.reserve(std::max(this->poly.size(),other.poly.size()));
+    merged.reserve(this->poly.size() + other.poly.size());
     auto myIt = std::make_move_iterator(poly.begin());
     auto otherIt = other.poly.cbegin();
     auto myEnd = std::make_move_iterator(poly.end());
