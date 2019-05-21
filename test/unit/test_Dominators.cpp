@@ -4,7 +4,8 @@
 
 #include <gtest/gtest.h>
 #include <BoolRewriting.h>
-#include "Logic.h"
+#include <Logic.h>
+#include <SMTConfig.h>
 #include <algorithm>
 
 TEST(Dominators_test, test_PostOrderSimpleTree)

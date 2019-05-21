@@ -29,6 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "TreeOps.h"
 #include "Global.h"
 #include "Deductions.h"
+#include "SMTConfig.h"
 #include <queue>
 #include <set>
 
@@ -65,7 +66,7 @@ const char* Logic::s_framev_prefix = ".frame";
 // The constructor initiates the base logic (Boolean)
 Logic::Logic(SMTConfig& c) :
       config(c)
-    , sort_store(config, id_store)
+    , sort_store(id_store)
     , term_store(sym_store, sort_store)
     , sym_TRUE(SymRef_Undef)
     , sym_FALSE(SymRef_Undef)
