@@ -51,8 +51,9 @@ public:
 
 private:
 
+    bool declare            (vec<PTRef>& unprocessed_terms, PTRef formula); // Called by cnfize to construct the CNF
 
-    bool cnfize             (PTRef);                          // Do the actual cnfization
+    bool cnfize             (PTRef);                          // Assert the top-level formulas and starts cnfization
 
     bool cnfizeAnd          (PTRef);                          // Cnfize conjunctions
     bool cnfizeOr           (PTRef, bool def = true);         // Cnfize disjunctions

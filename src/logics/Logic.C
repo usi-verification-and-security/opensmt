@@ -50,7 +50,9 @@ const char* Logic::tk_val_bool_default = "true";
 
 const char* Logic::tk_true     = "true";
 const char* Logic::tk_false    = "false";
+const char* Logic::tk_anon     = ".anon";
 const char* Logic::tk_not      = "not";
+const char* Logic::tk_uf_not   = ".uf-not";
 const char* Logic::tk_equals   = "=";
 const char* Logic::tk_implies  = "=>";
 const char* Logic::tk_and      = "and";
@@ -70,10 +72,12 @@ Logic::Logic(SMTConfig& c) :
     , term_store(sym_store, sort_store)
     , sym_TRUE(SymRef_Undef)
     , sym_FALSE(SymRef_Undef)
+    , sym_ANON(SymRef_Undef)
     , sym_AND(SymRef_Undef)
     , sym_OR(SymRef_Undef)
     , sym_XOR(SymRef_Undef)
     , sym_NOT(SymRef_Undef)
+    , sym_UF_NOT(SymRef_Undef)
     , sym_EQ(SymRef_Undef)
     , sym_IMPLIES(SymRef_Undef)
     , sym_DISTINCT(SymRef_Undef)
@@ -94,8 +98,6 @@ Logic::Logic(SMTConfig& c) :
     sort_store.newSort(bool_id, tmp_srefs);
     sort_BOOL = sort_store["Bool"];
 
-    SymRef tr;
-
     term_TRUE = mkConst(getSort_bool(), tk_true);
     if (term_TRUE == PTRef_Undef) {
         printf("Error in constructing term %s: %s\n", tk_true, msg);
@@ -105,7 +107,6 @@ Logic::Logic(SMTConfig& c) :
     sym_store[sym_TRUE].setNoScoping();
     sym_store.setInterpreted(sym_TRUE);
 
-    vec<PTRef> tmp;
 
     term_FALSE = mkConst(getSort_bool(), tk_false);
     if (term_FALSE  == PTRef_Undef) {
@@ -116,8 +117,15 @@ Logic::Logic(SMTConfig& c) :
     sym_store[sym_FALSE].setNoScoping();
     sym_store.setInterpreted(sym_FALSE);
 
+    // The anonymous symbol for the enodes of propositional formulas nested inside UFs (or UPs)
     vec<SRef> params;
+    sym_ANON = sym_store.newSymb(tk_anon, params, &msg);
+
     params.push(sort_BOOL);
+
+    // UF not that is not visible outside the uf solver
+    sym_UF_NOT = sym_store.newSymb(tk_uf_not, params, &msg);
+
 
     if ((sym_NOT = declareFun(tk_not, sort_BOOL, params, &msg, true)) == SymRef_Undef) {
         printf("Error in declaring function %s: %s\n", tk_not, msg);
@@ -428,6 +436,7 @@ void Logic::setAppearsInUF(PTRef tr) {
     while (id >= appears_in_uf.size())
         appears_in_uf.push(false);
     appears_in_uf[id] = true;
+    propFormulasAppearingInUF.push(tr);
 }
 
 bool Logic::appearsInUF(PTRef tr) const {
@@ -437,6 +446,33 @@ bool Logic::appearsInUF(PTRef tr) const {
     else
         return false;
 }
+
+/**
+ * Return all nested Boolean roots.  A PTRef tr is a nested Boolean root if it is an argument of a term f
+ *  where f is not a Boolean operator and tr has a Boolean return sort.
+ * @param root
+ * @return
+ */
+vec<PTRef> Logic::getNestedBoolRoots(PTRef root) const {
+    vec<PTRef> nestedBoolRoots;
+
+    vec<PTRef> queue;
+    queue.push(root);
+
+    while (queue.size() != 0) {
+        PTRef tr = queue.last();
+        queue.pop();
+        const Pterm& t = getPterm(tr);
+        for (int i = 0; i < t.size(); i++) {
+            queue.push(t[i]);
+            if (!isBooleanOperator(tr) && hasSortBool(t[i])) {
+                nestedBoolRoots.push(t[i]);
+            }
+        }
+    }
+    return std::move(nestedBoolRoots);
+}
+
 
 // description: Add equality for each new sort
 // precondition: sort has been declared
@@ -990,6 +1026,7 @@ PTRef Logic::mkFun(SymRef f, const vec<PTRef>& args, char** msg)
             for (int i = 0; i < args.size(); i++) {
                 if (hasSortBool(args[i])) {
                     setAppearsInUF(args[i]);
+                    setAppearsInUF(mkNot(args[i]));
                 }
             }
         }
@@ -1859,6 +1896,8 @@ Logic::dumpHeaderToFile(ostream& dump_out)
     for (int i = 0; i < symbols.size(); ++i)
     {
         SymRef s = symbols[i];
+        if (s == getSym_true() || s == getSym_false() || s == getSym_anon())
+            continue;
         if (isConstant(s)) {
             if (isBuiltinConstant(s)) continue;
             dump_out << "(declare-const ";

@@ -62,6 +62,7 @@ public:
     virtual ~Cnfizer( ) { }
 
     lbool cnfizeAndGiveToSolver (PTRef, FrameId frame_id); // Main routine
+    void  declareToSolver(const vec<PTRef>& nestedBoolRoots, FrameId frame_id); // Entry point for declaring.
 
     lbool  getTermValue(PTRef) const;
 
@@ -73,7 +74,8 @@ public:
 
 protected:
 
-    virtual bool cnfize                 ( PTRef ) = 0; // Actual cnfization. To be implemented in derived classes
+    virtual bool cnfize                 ( PTRef ) = 0; // Cnfize and assert the top-level.  Calls declare.
+    virtual bool declare                ( vec<PTRef>&, PTRef root ) = 0;  // Actual cnfization. To be implemented in derived classes
     bool     deMorganize                ( PTRef );                                    // Apply deMorgan rules whenever feasible
 
 

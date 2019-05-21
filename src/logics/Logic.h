@@ -147,6 +147,7 @@ class Logic {
     opensmt::Logic_t    logic_type;
     SymRef              sym_TRUE;
     SymRef              sym_FALSE;
+    SymRef              sym_ANON;
     SymRef              sym_AND;
     SymRef              sym_OR;
     SymRef              sym_XOR;
@@ -155,6 +156,8 @@ class Logic {
     SymRef              sym_IMPLIES;
     SymRef              sym_DISTINCT;
     SymRef              sym_ITE;
+
+    SymRef              sym_UF_NOT;
 
 
     SRef                sort_BOOL;
@@ -180,6 +183,7 @@ class Logic {
 
   private:
     vec<bool> appears_in_uf;
+    vec<PTRef> propFormulasAppearingInUF;
 
   public:
     virtual bool okToPartition(PTRef) const { return true; } // Does the logic think this is a good var to partition on (while parallelizing)
@@ -188,6 +192,8 @@ class Logic {
     static const char*  tk_val_bool_default;
     static const char*  tk_true;
     static const char*  tk_false;
+    static const char*  tk_anon;   // The anonymous symbol for enodes for propositional formulas
+    static const char*  tk_uf_not; // The symbol for propositional not in UF.
     static const char*  tk_not;
     static const char*  tk_equals;
     static const char*  tk_implies;
@@ -320,6 +326,7 @@ class Logic {
     // The Boolean connectives
     SymRef        getSym_true      ()              const;// { return sym_TRUE;     }
     SymRef        getSym_false     ()              const;// { return sym_FALSE;    }
+    SymRef        getSym_anon      ()              const    { return sym_ANON; }
     SymRef        getSym_and       ()              const;// { return sym_AND;      }
     SymRef        getSym_or        ()              const;// { return sym_OR;       }
     SymRef        getSym_xor       ()              const;// { return sym_XOR;      }
@@ -328,7 +335,9 @@ class Logic {
     SymRef        getSym_ite       ()              const;// { return sym_ITE;      }
     SymRef        getSym_implies   ()              const;// { return sym_IMPLIES;  }
     SymRef        getSym_distinct  ()              const;// { return sym_DISTINCT; }
+    SymRef        getSym_uf_not    ()              const    { return sym_UF_NOT;   }
     SRef          getSort_bool     ()              const;// { return sort_BOOL;    }
+
 
     PTRef         getTerm_true     ()              const;// { return term_TRUE;  }
     PTRef         getTerm_false    ()              const;// { return term_FALSE; }
@@ -362,6 +371,7 @@ class Logic {
 
     bool         appearsInUF        (PTRef tr)        const;
     void         setAppearsInUF     (PTRef tr);
+    vec<PTRef>   getNestedBoolRoots (PTRef tr)        const;
 
     bool        isVar              (SymRef sr)     const ;//{ return sym_store[sr].nargs() == 0 && !isConstant(sr); }
     bool        isVar              (PTRef tr)      const;// { return isVar(getPterm(tr).symb()); }
@@ -388,6 +398,7 @@ class Logic {
     bool        isTrue(PTRef tr)  const ;//{ return isTrue(getPterm(tr).symb()); }
     bool        isFalse(SymRef sr) const;// { return sr == getSym_false(); }
     bool        isFalse(PTRef tr)  const;// { return isFalse(getPterm(tr).symb()); }
+    bool        isAnon(SymRef sr) const { return sr == getSym_anon(); }
     bool        isDistinct(SymRef sr) const;// { return sr == getSym_distinct(); }
     bool        isDistinct(PTRef tr) const;// { return isDistinct(getPterm(tr).symb()); }
     bool        isIff(SymRef sr) const;// { return sr == getSym_eq(); }

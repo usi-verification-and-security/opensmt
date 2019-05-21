@@ -38,6 +38,7 @@ class EnodeStore {
     ERef           ERef_Nil;
     ERef           ERef_True;
     ERef           ERef_False;
+    ERef           sym_uf_not;
     Map<PTRef,char,PTRefHash,Equal<PTRef> > dist_classes;
     uint32_t       dist_idx;
 
@@ -61,6 +62,7 @@ class EnodeStore {
     EnodeStore(Logic& l) :
         logic(l)
       , ea(1024*1024)
+      , sym_uf_not(ERef_Undef)
       , ERef_Nil(ea.alloc(SymRef_Undef))
       , dist_idx(0)
 #endif
@@ -72,7 +74,7 @@ class EnodeStore {
     ERef getEnode_true()  { return ERef_True;  }
     ERef getEnode_false() { return ERef_False; }
 
-    PTRef addTerm(ERef sym, ERef args, PTRef pt);
+    ERef  addTerm(ERef sym, ERef args, PTRef pt);
     ERef  addSymb(SymRef t);
     ERef  addList(ERef car, ERef cdr);
 

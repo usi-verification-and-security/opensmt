@@ -33,8 +33,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
 
-bool Tseitin::cnfize(PTRef formula)
-{
+bool Tseitin::cnfize(PTRef formula) {
     assert(formula != PTRef_Undef);
     // Top level formula must not be and anymore
     assert(!logic.isAnd(formula));
@@ -45,13 +44,22 @@ bool Tseitin::cnfize(PTRef formula)
         clause.push(this->getOrCreateLiteralFor(formula));
         res &= addClause(clause);
     }
+
     vec<PTRef> unprocessed_terms;       // Stack for unprocessed terms
     unprocessed_terms.push(formula);    // Start with this term
-    Map<PTRef,bool,PTRefHash,Equal<PTRef> >   processed;  // Is a term already processed
+    res = declare(unprocessed_terms, formula);
+    return res;
+}
+
+bool Tseitin::declare(vec<PTRef>& unprocessed_terms, PTRef formula) {
+    bool res = true;
+    Map<PTRef,bool,PTRefHash,Equal<PTRef>> processed;  // Is a term already processed
+
     //
     // Visit the DAG of the formula
     //
     while (unprocessed_terms.size() != 0) {
+
         PTRef ptr = unprocessed_terms.last();
         unprocessed_terms.pop();
         //
@@ -92,6 +100,7 @@ tseitin_end:
         if (need_def) // Only mark as processed if the definition is formed
             processed.insert(ptr, true);
     }
+
     return res;
 }
 

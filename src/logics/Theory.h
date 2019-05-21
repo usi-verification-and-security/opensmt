@@ -99,6 +99,7 @@ public:
     PushFrame(PushFrame& pf);
     PushFrame() : id(FrameId_Undef), root(PTRef_Undef) {} // For pushing into vecs we need a default.
     PushFrame operator= (PushFrame& other);
+    vec<PTRef> nestedBoolRoots;
  private:
     PushFrame(uint32_t id) : id({id}), root(PTRef_Undef) {}
 };
@@ -152,6 +153,7 @@ class Theory
     virtual TSolverHandler &getTSolverHandler()     = 0;
     virtual TSolverHandler *getTSolverHandler_new(vec<DedElem>&) = 0;
     virtual bool            simplify(const vec<PFRef>&, int) = 0; // Simplify a vector of PushFrames in an incrementality-aware manner
+    virtual void            purify(const vec<PFRef>&, int);        // Purify a vector of PushFrames
     vec<DedElem>           &getDeductionVec();//   { return deductions; }
     bool                    computeSubstitutions(PTRef coll_f, const vec<PFRef>& frames, int curr);
     void                    printFramesAsQuery(const vec<PFRef> & frames, std::ostream & s);

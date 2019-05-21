@@ -99,22 +99,13 @@ Egraph::Egraph(SMTConfig & c, Logic& l , vec<DedElem>& d)
       , congruence_running ( false )
       , time_stamp         ( 0 )
 {
-    // For the uninterpreted predicates to work we need to have
-    // two special terms true and false, and an asserted disequality
-    // true != false
+    enode_store.sym_uf_not = enode_store.addSymb(logic.getSym_uf_not());
+    // For the uninterpreted predicates and propositional structures inside
+    // uninterpreted functions define function not, the terms true and false,
+    // and an asserted disequality true != false
 
-    // This is for the enode store
-    // XXX These guys should be defined through the same interface every
-    // other term is defined.  This is probably declareTerm()
-    ERef ers_true  = enode_store.addSymb(logic.getSym_true());
-    ERef ers_false = enode_store.addSymb(logic.getSym_false());
-    PTRef ptr_new_true  = enode_store.addTerm(ers_true, ERef_Nil,
-                            logic.getTerm_true());
-    PTRef ptr_new_false = enode_store.addTerm(ers_false, ERef_Nil,
-                            logic.getTerm_false());
-
-    assert(ptr_new_true  == logic.getTerm_true());
-    assert(ptr_new_false == logic.getTerm_false());
+    constructTerm(logic.getTerm_true());
+    constructTerm(logic.getTerm_false());
 
     PTRef t = logic.getTerm_true();
     PTRef f = logic.getTerm_false();
@@ -126,11 +117,12 @@ Egraph::Egraph(SMTConfig & c, Logic& l , vec<DedElem>& d)
     tmp.push(logic.getTerm_true());
     tmp.push(logic.getTerm_false());
     PTRef neq = logic.mkEq(tmp);
-//    const char* msg;
-//    PTRef neq = logic.insertTerm(logic.getSym_eq(), tmp, &msg);
-    assert(neq != PTRef_Undef);
+
     assertNEq(logic.getTerm_true(), logic.getTerm_false(), PtAsgn(neq, l_False));
+
     Eq_FALSE = neq;
+
+    // We also need the UF-only-visible version of boolean negation
 }
 
 //
@@ -293,23 +285,70 @@ void Egraph::declareTermRecursively(PTRef tr) {
     for (int i = 0; i < term.size(); ++i) {
         declareTermRecursively(term[i]);
     }
+
     declareTerm(tr);
     declared.insert(tr);
 }
 
-//
-// No recursion here, we assume the caller has already introduced the
-// subterms
-//
-void Egraph::declareTerm(PTRef tr) {
+/**
+ * Adds the term to the solver taking into account the arguments.
+ * - In general the arguments of the term have UF representation.
+ * - However, if the term itself is a Boolean operator, its arguments
+ *   will not have enodes as this case will be handled separately by
+ *   the SAT solver
+ *
+ * For the Boolean terms (that appear as arguments in UF), we add also
+ * their negations.  This means that we need the negation uninterpreted
+ * function.
+ *
+ * @param tr
+ */
+void Egraph::constructTerm(PTRef tr) {
 
-    if (!isValid(tr) && !logic.isTheoryTerm(tr) && !logic.isBoolAtom(tr)) { return; }
+    if (enode_store.termToERef.has(tr))
+        return;
 
-    if (!enode_store.termToERef.has(tr)) {
-        const Pterm& tm = logic.getPterm(tr);
-        ERef sym = enode_store.addSymb(tm.symb());
-        ERef cdr = ERef_Nil;
-        for (int j = tm.size()-1; j >= 0; j--) {
+    ERef sym, cdr;
+    const Pterm& tm = logic.getPterm(tr);
+
+
+    // Add both the pure and the negated terms
+    if (logic.isBooleanOperator(tr) || logic.isBoolAtom(tr) || logic.isTrue(tr) || logic.isFalse(tr)) {
+        PTRef tr_pure;
+        PTRef tr_neg;
+        lbool sgn;
+        logic.purify(tr, tr_pure, sgn);
+        tr_neg = logic.mkNot(tr_pure);
+
+        // If tr is a complex Boolean operator, do not model the full logic but cut here (the ERef
+        // will be treated as a UF constant with the anon name from the logic).  Otherwise, (tr is
+        // a pure Boolean atom or its negation), use the term ref from the logic.
+        if (logic.isBooleanOperator(tr_pure)) {
+            sym = enode_store.addSymb(logic.getSym_anon());
+        }
+        else {
+            sym = enode_store.addSymb(logic.getSymRef(tr_pure));
+        }
+
+        // Add the pure term
+        ERef er_pure = enode_store.addTerm(sym, ERef_Nil, tr_pure);
+        // Add the negated term
+        ERef er_neg = enode_store.addTerm(enode_store.sym_uf_not, enode_store.addList(er_pure, ERef_Nil), logic.mkNot(tr_pure));
+
+        updateParentsVector(tr_pure);
+        updateParentsVector(logic.mkNot(tr_pure));
+
+        // Make sure er_pure and er_neg need to be different
+        assertNEq(er_pure, er_neg, PtAsgn_Undef);
+
+        boolTermToERef.insert(tr_pure, er_pure);
+        boolTermToERef.insert(tr_neg, er_neg);
+    }
+
+    else {
+        sym = enode_store.addSymb(tm.symb());
+        cdr = ERef_Nil;
+        for (int j = tm.size() - 1; j >= 0; j--) {
             assert(enode_store.termToERef.has(tm[j])); // The child was not inserted
             ERef car = enode_store.termToERef[tm[j]];
 #ifdef VERBOSE_EUF
@@ -319,23 +358,25 @@ void Egraph::declareTerm(PTRef tr) {
 #endif
             cdr = enode_store.addList(car, cdr);
         }
-        // Canonize the term representation
+        enode_store.addTerm(sym, cdr, tr);
+
+        updateParentsVector(tr);
+    }
+}
+
+//
+// No recursion here, we assume the caller has already introduced the
+// subterms
+//
+void Egraph::declareTerm(PTRef tr) {
+
+    if (!isValid(tr) && !logic.isTheoryTerm(tr) && !logic.isBoolAtom(tr)) { return; }
+    if ((logic.isBoolAtom(tr) || logic.isBooleanOperator(tr)) && !logic.appearsInUF(tr)) { return; }
+    constructTerm(tr);
 #ifdef VERBOSE_EUF
         cerr << "EgraphSolver: Adding term " << logic.printTerm(tr) << " (" << tr.x << ")" << endl;
 #endif
-        PTRef rval = enode_store.addTerm(sym, cdr, tr);
-        assert(rval == tr);
-        updateParentsVector(tr);
-    }
 
-    // Check if termToERef contained the ref and it has been rewritten
-    // to another term.  This is a bit messy, but will do for now...
-    PTRef out = enode_store[enode_store.termToERef[tr]].getTerm();
-    if (out != tr) {
-        printf("Term changed while being added\n");
-        assert(false);
-        exit(1);
-    }
     if (logic.isDisequality(tr) && !enode_store.dist_classes.has(tr))
         enode_store.addDistClass(tr);
 
@@ -459,6 +500,9 @@ bool Egraph::addFalse(PTRef term) {
         return true;
     }
     bool res = assertEq(term, logic.getTerm_false(), PtAsgn(term, l_False));
+
+
+
 #ifdef STATISTICS
     if (res == false)
         tsolver_stats.unsat_calls++;
@@ -478,10 +522,13 @@ bool Egraph::addFalse(PTRef term) {
 //
 // Assert an equality between nodes x and y
 //
-bool Egraph::assertEq ( PTRef tr_x, PTRef tr_y, PtAsgn r )
-{
+bool Egraph::assertEq ( PTRef tr_x, PTRef tr_y, PtAsgn r ) {
     ERef x = termToERef(tr_x);
     ERef y = termToERef(tr_y);
+    return assertEq(x, y, r);
+}
+
+bool Egraph::assertEq(ERef x, ERef y, PtAsgn r) {
     assert( getEnode(x).isTerm() );
     assert( getEnode(y).isTerm() );
     assert( pending.size() == 0 );
@@ -658,8 +705,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
 //
 // Assert a disequality between nodes x and y
 //
-bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
-{
+bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r ) {
 #ifdef VERBOSE_EUF
     cerr << "Assert NEQ of " << logic.printTerm(x) << " and " << logic.printTerm(y) << " since " << logic.printTerm(r.tr) << endl;
 #endif
@@ -680,11 +726,11 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
     undo_stack_oper.push_back( ASSERT_NEQ );
     undo_stack_term.push_back( r );
 #endif
+
     ERef xe = enode_store.termToERef[x];
     ERef ye = enode_store.termToERef[y];
     ERef p = getEnode(xe).getRoot();
     ERef q = getEnode(ye).getRoot();
-
     // They can't be different if the nodes are in the same class
     if ( p == q ) {
 #ifdef VERBOSE_EUF
@@ -693,7 +739,11 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r )
         doExplain(xe,ye,r);
         return false;
     }
+    return assertNEq(p, q, r);
+}
 
+bool Egraph::assertNEq(ERef p, ERef q, PtAsgn r)
+{
     // Is it possible that x is already in the list of y
     // and viceversa ? YES. If things have
     // been done carefully (for instance, if x=y is the same atom
@@ -1095,7 +1145,15 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
     for (;;) {
         // We deduce only things that aren't currently assigned or
         // that we previously deduced on this branch
+
         PTRef v_tr = getEnode(v).getTerm();
+        if (logic.isNot(v_tr)) {
+            // This is a negation of a propositional formula, and needs not be propagated
+            v = getEnode(v).getNext();
+            if ( v == vstart )
+                break;
+            continue;
+        }
         assert(logic.getPterm(v_tr).getVar() != -1);
         if (!hasPolarity(v_tr) && deduced[logic.getPterm(v_tr).getVar()] == l_Undef) {
             if (logic.getPterm(v_tr).getVar() != -1) {
@@ -1385,11 +1443,15 @@ bool Egraph::assertLit(PtAsgn pta, bool)
     }
     else if (logic.hasSortBool(pt_r) && sgn == l_True) {
         setPolarity(pt_r, l_True);
-        res = addTrue(pt_r) == false ? l_False : l_Undef;
+        bool b_res = addTrue(pt_r);
+        b_res &= assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.ERef_False, PtAsgn(pt_r, l_True));
+        res = !b_res ? l_False : l_Undef;
     }
     else if (logic.hasSortBool(pt_r) && sgn == l_False) {
         setPolarity(pt_r, l_False);
-        res = addFalse(pt_r) == false ? l_False : l_Undef;
+        bool b_res = addFalse(pt_r);
+        b_res &= assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.ERef_True, PtAsgn(pt_r, l_False));
+        res = !b_res ? l_False : l_Undef;
     }
     else
         assert(false);
