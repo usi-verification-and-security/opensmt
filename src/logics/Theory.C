@@ -213,6 +213,30 @@ bool Theory::computeSubstitutions(const PTRef coll_f, const vec<PFRef>& frames, 
     return result;
 }
 
+/**
+ * Purify the terms of the frame.
+ * Example 1:
+ * root := f(c, a) != f(true,b) /\ f(c, a) != f(false,b)
+ *
+ * after purification:
+ * root := f(c, a) != f(true,b) /\ f(c, a) != f(false,b)
+ * pured_atoms := c
+ *
+ * Example 2:
+ * root  := f((c \/ d) /\ (c \/ -d) /\ (-c \/ d) /\ (-c \/ -d))
+ * after purification:
+ * root := f((c \/ d) /\ (c \/ -d) /\ (-c \/ d) /\ (-c \/ -d))
+ * pured_atoms := (c \/ d) /\ (c \/ -d) /\ (-c \/ d) /\ (-c \/ -d)
+ *
+ * @param frames
+ * @param i
+ */
+void
+Theory::purify(const vec<PFRef>& frames, int i)
+{
+
+}
+
 void
 Theory::printFramesAsQuery(const vec<PFRef> & frames, std::ostream & s)
 {

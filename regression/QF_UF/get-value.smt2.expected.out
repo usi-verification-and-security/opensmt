@@ -1,2 +1,2 @@
 sat
-((f u8)(g u8)(h u14)(true true)(false false))
+((f u9)(g u9)(h u15)(true true)(false false))

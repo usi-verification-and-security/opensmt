@@ -95,6 +95,7 @@ MainSolver::insertFormula(PTRef root, char** msg)
     lastFrame.units.clear();
     lastFrame.root = PTRef_Undef;
     lastFrame.substs = logic.getTerm_true();
+    lastFrame.nestedBoolRoots = logic.getNestedBoolRoots(root);
     // New formula has been added to the last frame. If the frame has been simplified before, we need to do it again
     frames.setSimplifiedUntil(std::min(frames.getSimplifiedUntil(), frames.size() - 1));
     return s_Undef;
@@ -157,6 +158,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
         // Stop if problem becomes unsatisfiable
         if ((status = giveToSolver(fc.getRoot(), frame.getId())) == s_False)
             break;
+        declareToSolver(frame.nestedBoolRoots, frame.getId());
 #endif
     }
     return status;

@@ -162,6 +162,7 @@ private:
   //***************************************************************************************************************
   std::vector<UseVector> parents;
 
+  Map<PTRef,ERef,PTRefHash> boolTermToERef;
   void addToParentVectors(ERef);
 
   void updateParentsVector(PTRef);
@@ -340,6 +341,7 @@ public:
   void declareAtom(PTRef);
     // Non-recursive declare term
   void        declareTerm         (PTRef);
+  void        constructTerm       (PTRef tr);
   // Remove redundancies and replace with true if
   // trivial.  Return true if root of the formula is trivially true
   bool        simplifyEquality    ( PtChild&, bool simplify = true );
@@ -349,7 +351,9 @@ private:
   void declareTermRecursively(PTRef);
 
   bool    assertEq        ( PTRef, PTRef, PtAsgn );               // Asserts an equality
+  bool    assertEq        ( ERef, ERef, PtAsgn );                 // Called by the above
   bool    assertNEq       ( PTRef, PTRef, PtAsgn );               // Asserts a negated equality
+  bool    assertNEq       ( ERef, ERef, PtAsgn );                 // Called by the above
   bool    assertDist      ( PTRef, PtAsgn );                      // Asserts a distinction
   //
   // Backtracking

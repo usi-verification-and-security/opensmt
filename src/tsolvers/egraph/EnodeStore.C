@@ -31,15 +31,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ERef EnodeStore::addSymb(SymRef t) {
     ERef rval;
     assert(t != SymRef_Undef);
-    if (symToERef.has(t))
+    if (logic.isAnon(t)) {
+        ERef er = ea.alloc(t);
+        rval = er;
+    }
+    else if (symToERef.has(t)) {
         rval = symToERef[t];
+    }
     else {
         ERef er = ea.alloc(t);
         symToERef.insert(t, er);
         rval = er;
-
-//        enodes.push(er);
-
     }
     return rval;
 }
@@ -47,46 +49,24 @@ ERef EnodeStore::addSymb(SymRef t) {
 //
 // Add a term to enode store
 //
-PTRef EnodeStore::addTerm(ERef sr, ERef args, PTRef term) {
+ERef EnodeStore::addTerm(ERef sr, ERef args, PTRef term) {
     assert(ea[sr].isSymb());
-    PTRef rval;
     if (termToERef.has(term))
-        rval = term;
-    else {
-        // Term's signature might be here already, and then it should
-        // join the equivalence group.  To have the explanations
-        // working, there must not be two terms that correspond to a
-        // single enode (this goes back to the explanation tree).  Thus
-        // we need to communicate equality back to the caller so that
-        // eventually required actions can be taken.
-        if (containsSig(sr, args)) {
-            assert(false);
-            ERef canon = lookupSig(sr, args);
-            termToERef.insert(term, canon);
-            rval = ea[canon].getTerm();
-#ifdef PEDANTIC_DEBUG
-            cerr << "Seeing the duplicate in EnodeStore: "
-                 << "ERef " << canon.x << endl;
-            char* enstr = printEnode(canon);
-            cerr << "letting " << logic.printTerm(term)
-                 << " point to " << endl << enstr << endl;
-            ::free(enstr);
-#endif
-        }
-        else {
-            assert (ea[args].getRoot() == args);
-            ERef new_er = ea.alloc(sr, args, Enode::et_term, term);
-            insertSig(new_er);
-            termToERef.insert(term, new_er);
-            assert(!ERefToTerm.has(new_er));
-            ERefToTerm.insert(new_er, term);
+        return termToERef[term];
 
-            termEnodes.push(new_er);
+    // Term's signature must not exist.  Otherwise the term would have two different signatures.
+    assert(!containsSig(sr, args));
 
-            rval = term;
-        }
-    }
-    return rval;
+    assert (ea[args].getRoot() == args);
+    ERef new_er = ea.alloc(sr, args, Enode::et_term, term);
+    insertSig(new_er);
+    termToERef.insert(term, new_er);
+    assert(!ERefToTerm.has(new_er));
+    ERefToTerm.insert(new_er, term);
+
+    termEnodes.push(new_er);
+
+    return new_er;
 }
 
 // Same cleverness implemented here.
