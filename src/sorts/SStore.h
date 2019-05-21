@@ -28,7 +28,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define SSTORE_H
 
 #include "SSort.h"
-#include "SMTConfig.h"
 #include "StringMap.h"
 #include "Alloc.h"
 
@@ -66,12 +65,10 @@ class SStore
       , CONS            // An undoable cons is done
     } oper_t;
 
-    SMTConfig & config; // Reference to config
-
 
   public:
 
-    SStore(SMTConfig & c, IdentifierStore& is_) : is(is_), config(c) { }
+    SStore(IdentifierStore & is_) : is(is_) { }
 
     ~SStore() {
         for (int i = 0; i < sort_names.size(); i++)

@@ -27,6 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Logic.h"
 #include "LALogic.h"
 #include "Real.h"
+#include "SMTConfig.h"
 
 class LRALogic: public LALogic
 {

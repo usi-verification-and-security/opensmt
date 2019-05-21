@@ -3,7 +3,8 @@
 //
 
 #include <gtest/gtest.h>
-#include "Logic.h"
+#include <Logic.h>
+#include <SMTConfig.h>
 
 class GetFactsTest : public ::testing::Test {
 protected:

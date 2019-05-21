@@ -4,7 +4,8 @@
 
 #include <gtest/gtest.h>
 #include <BoolRewriting.h>
-#include "Logic.h"
+#include <Logic.h>
+#include <SMTConfig.h>
 
 TEST(SimplifyUnderAssignment_test, test_Simple_Conjunction)
 {
