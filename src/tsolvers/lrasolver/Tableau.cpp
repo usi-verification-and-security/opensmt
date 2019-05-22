@@ -156,6 +156,7 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
         removeRowFromColumn(bv, var);
         addRowToColumn(nv, var);
     }
+    std::vector<Polynomial::Term> storage;
     // for all (active) rows containing nv, substitute
     for (auto rowVar : getColumn(bv)) {
         if(rowVar == nv || !isActive(rowVar)) {
@@ -178,6 +179,7 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
                        assert(contains(getColumn(removedVar), rowVar));
                        removeRowFromColumn(rowVar, removedVar);
                    }
+                   , storage
         );
     }
     assert(!cols[nv.x]);
