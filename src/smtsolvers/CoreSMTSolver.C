@@ -2191,19 +2191,6 @@ void CoreSMTSolver::declareVarsToTheories()
             }
         }
     }
-
-    // Forbid branching on the vars that do not appear in the formula.
-    // I'm curious as to whether this is sound!
-    for (int i = 0; i < nVars(); i++)
-    {
-        if (!var_seen[i])
-        {
-            setDecisionVar(decision[i], false);
-#ifdef PEDANTIC_DEBUG
-            cerr << "Disabling var " << theory_handler.getLogic().printTerm(theory_handler.varToTerm(i)) << endl;
-#endif
-        }
-    }
 }
 
 lbool CoreSMTSolver::solve_()
