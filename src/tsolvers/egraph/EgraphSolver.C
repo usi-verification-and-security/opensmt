@@ -99,7 +99,7 @@ Egraph::Egraph(SMTConfig & c, Logic& l , vec<DedElem>& d)
       , congruence_running ( false )
       , time_stamp         ( 0 )
 {
-    enode_store.sym_uf_not = enode_store.addSymb(logic.getSym_uf_not());
+
     // For the uninterpreted predicates and propositional structures inside
     // uninterpreted functions define function not, the terms true and false,
     // and an asserted disequality true != false
@@ -112,6 +112,7 @@ Egraph::Egraph(SMTConfig & c, Logic& l , vec<DedElem>& d)
 
     enode_store.ERef_True  = enode_store.termToERef[t];
     enode_store.ERef_False = enode_store.termToERef[f];
+
     // add the term (= true false) to term store
     vec<PTRef> tmp;
     tmp.push(logic.getTerm_true());
@@ -122,7 +123,6 @@ Egraph::Egraph(SMTConfig & c, Logic& l , vec<DedElem>& d)
 
     Eq_FALSE = neq;
 
-    // We also need the UF-only-visible version of boolean negation
 }
 
 //
@@ -358,9 +358,17 @@ void Egraph::constructTerm(PTRef tr) {
 #endif
             cdr = enode_store.addList(car, cdr);
         }
-        enode_store.addTerm(sym, cdr, tr);
+        ERef er = enode_store.addTerm(sym, cdr, tr);
 
         updateParentsVector(tr);
+
+        if (logic.isUP(tr) || logic.isEquality(tr)) {
+            PTRef tr_neg = logic.mkNot(tr);
+            ERef er_neg = enode_store.addTerm(enode_store.sym_uf_not, enode_store.addList(er, ERef_Nil), tr_neg);
+            updateParentsVector(tr_neg);
+            boolTermToERef.insert(tr, er);
+            boolTermToERef.insert(tr_neg, er_neg);
+        }
     }
 }
 
@@ -1437,11 +1445,17 @@ bool Egraph::assertLit(PtAsgn pta, bool)
     }
     else if (logic.isUP(pt_r) && sgn == l_True) {
         setPolarity(pt_r, l_True);
-        res = addTrue(pt_r) == false ? l_False : l_Undef;
+        bool b_res;
+        b_res = addTrue(pt_r);
+        b_res &= assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.ERef_False, PtAsgn(pt_r, l_True));
+        res = !b_res ? l_False : l_Undef;
     }
     else if (logic.isUP(pt_r) && sgn == l_False) {
         setPolarity(pt_r, l_False);
-        res = addFalse(pt_r) == false ? l_False : l_Undef;
+        bool b_res;
+        b_res = addFalse(pt_r);
+        b_res &= assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.ERef_True, PtAsgn(pt_r, l_False));
+        res = !b_res ? l_False : l_Undef;
     }
     else if (logic.hasSortBool(pt_r) && sgn == l_True) {
         setPolarity(pt_r, l_True);

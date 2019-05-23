@@ -51,23 +51,8 @@ class EnodeStore {
     vec<ERef>      termEnodes;
 
   public:
-#if defined(PEDANTIC_DEBUG)
-    EnodeStore(Logic& l, ELAllocator& fa_)
-      : logic(l)
-      , ea(1024*1024, &sig_tab)
-      , ERef_Nil(ea.alloc(SymRef_Undef))
-      , dist_idx(0)
-      , fa(fa_)
-#else
-    EnodeStore(Logic& l) :
-        logic(l)
-      , ea(1024*1024)
-      , sym_uf_not(ERef_Undef)
-      , ERef_Nil(ea.alloc(SymRef_Undef))
-      , dist_idx(0)
-#endif
-        { Enode::ERef_Nil = ERef_Nil; } // Nil is a symbol.  It should
-                                        // in theory be list, but makes no matter now
+
+    EnodeStore(Logic& l);
 
     const vec<ERef>& getTermEnodes() const { return termEnodes; };
 
