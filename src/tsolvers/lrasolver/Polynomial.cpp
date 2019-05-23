@@ -68,7 +68,7 @@ Polynomial::merge(const Polynomial &other, const opensmt::Real &coeff) {
             merged.insert(merged.end(), myIt, myEnd);
             break;
         }
-        if(cmp(*myIt, *otherIt)) {
+        if (cmp(*myIt, *otherIt)) {
             merged.emplace_back(*myIt);
             ++myIt;
         }
@@ -118,7 +118,7 @@ Polynomial::merge(const Polynomial &other, const opensmt::Real &coeff, std::func
             merged.insert(merged.end(), myIt, myEnd);
             break;
         }
-        if(cmp(*myIt, *otherIt)) {
+        if (cmp(*myIt, *otherIt)) {
             merged.emplace_back(*myIt);
             ++myIt;
         }
@@ -166,7 +166,7 @@ Polynomial::merge(const Polynomial &other, const opensmt::Real &coeff, std::func
             storage.insert(storage.end(), myIt, myEnd);
             break;
         }
-        if(cmp(*myIt, *otherIt)) {
+        if (cmp(*myIt, *otherIt)) {
             storage.emplace_back(*myIt);
             ++myIt;
         }
