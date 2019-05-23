@@ -295,7 +295,9 @@ PTRef LALogic::mkNumNeg(PTRef tr, char** msg)
             assert(tr_arg != PTRef_Undef);
             args.push(tr_arg);
         }
-        PTRef tr_n = mkNumPlus(args, msg);
+//        PTRef tr_n = mkNumPlus(args, msg);
+        PTRef tr_n = mkFun(get_sym_Num_PLUS(), args, msg);
+        assert(tr_n == mkNumPlus(args, msg));
         assert(tr_n != PTRef_Undef);
         return tr_n;
     }
