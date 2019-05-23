@@ -63,6 +63,7 @@ public:
 
     lbool cnfizeAndGiveToSolver (PTRef, FrameId frame_id); // Main routine
     void  declareToSolver(const vec<PTRef>& nestedBoolRoots, FrameId frame_id); // Entry point for declaring.
+    void  declareVars    (vec<PTRef>&); // Declare a set of Boolean atoms to the solver (without asserting them)
 
     lbool  getTermValue(PTRef) const;
 

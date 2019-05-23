@@ -159,6 +159,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
         if ((status = giveToSolver(fc.getRoot(), frame.getId())) == s_False)
             break;
         declareToSolver(frame.nestedBoolRoots, frame.getId());
+        ts.declareVars(logic.propFormulasAppearingInUF);
 #endif
     }
     return status;
