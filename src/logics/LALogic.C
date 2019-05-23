@@ -641,64 +641,65 @@ PTRef LALogic::mkNumDiv(const vec<PTRef>& args, char** msg)
 // constant, and arg[1][0] has factor 1 or -1
 PTRef LALogic::mkNumLeq(const vec<PTRef>& args_in, char** msg)
 {
-    vec<PTRef> args;
-    args_in.copyTo(args);
-    assert(args.size() == 2);
-    if (isConstant(args[0]) && isConstant(args[1])) {
-        opensmt::Number v1(sym_store.getName(getPterm(args[0]).symb()));
-        opensmt::Number v2(sym_store.getName(getPterm(args[1]).symb()));
-        if (v1 <= v2) //PS. OR (v3<=v4)
+    assert(args_in.size() == 2);
+    if (isConstant(args_in[0]) && isConstant(args_in[1])) {
+        opensmt::Number const & v1 = this->getNumConst(args_in[0]);
+        opensmt::Number const & v2 = this->getNumConst(args_in[1]);
+        if (v1 <= v2)
             return getTerm_true();
         else
             return getTerm_false();
-    } else {
-        // Should be in the form that on one side there is a constant
-        // and on the other there is a sum
-        PTRef sum_tmp = [&](){
-           if (args[0] == getTerm_NumZero()) {return args[1];}
-           if (args[1] == getTerm_NumZero()) {return mkNumNeg(args[0]);}
-           vec<PTRef> sum_args;
-           sum_args.push(args[1]);
-           sum_args.push(mkNumNeg(args[0]));
-           return mkNumPlus(sum_args);
-        }();
-        if (isConstant(sum_tmp)) {
-            args[0] = getTerm_NumZero();
-            args[1] = sum_tmp;
-            return mkNumLeq(args, msg); // either true or false
-        } if (isNumTimes(sum_tmp)) {
-            sum_tmp = normalizeMul(sum_tmp);
-        } else if (isNumPlus(sum_tmp)) {
-            // Normalize the sum
-            sum_tmp = normalizeSum(sum_tmp); //Now the sum is normalized by dividing with the "first" factor.
-        }
-        // Otherwise no operation, already normalized
-        vec<PTRef> nonconst_args;
-        PTRef c = PTRef_Undef;
-        if (isNumPlus(sum_tmp)) {
-            Pterm& t = getPterm(sum_tmp);
-            for (int i = 0; i < t.size(); i++) {
-                if (!isConstant(t[i]))
-                    nonconst_args.push(t[i]);
-                else {
-                    assert(c == PTRef_Undef);
-                    c = t[i];
-                }
-            }
-            if (c == PTRef_Undef) {
-                args[0] = getTerm_NumZero();
-                args[1] = mkNumPlus(nonconst_args);
-            } else {
-                args[0] = mkNumNeg(c);
-                args[1] = mkNumPlus(nonconst_args);
-            }
-        } else if (isNumVar(sum_tmp) || isNumTimes(sum_tmp)) {
-            args[0] = getTerm_NumZero();
-            args[1] = sum_tmp;
-        } else assert(false);
-        PTRef r = mkFun(get_sym_Num_LEQ(), args, msg);
-        return r;
     }
+    vec<PTRef> args;
+    args_in.copyTo(args);
+
+    // Should be in the form that on one side there is a constant
+    // and on the other there is a sum
+    PTRef sum_tmp = [&](){
+       if (args[0] == getTerm_NumZero()) {return args[1];}
+       if (args[1] == getTerm_NumZero()) {return mkNumNeg(args[0]);}
+       vec<PTRef> sum_args;
+       sum_args.push(args[1]);
+       sum_args.push(mkNumNeg(args[0]));
+       return mkNumPlus(sum_args);
+    }();
+    if (isConstant(sum_tmp)) {
+        args[0] = getTerm_NumZero();
+        args[1] = sum_tmp;
+        return mkNumLeq(args, msg); // either true or false
+    } if (isNumTimes(sum_tmp)) {
+        sum_tmp = normalizeMul(sum_tmp);
+    } else if (isNumPlus(sum_tmp)) {
+        // Normalize the sum
+        sum_tmp = normalizeSum(sum_tmp); //Now the sum is normalized by dividing with the "first" factor.
+    }
+    // Otherwise no operation, already normalized
+    vec<PTRef> nonconst_args;
+    PTRef c = PTRef_Undef;
+    if (isNumPlus(sum_tmp)) {
+        Pterm& t = getPterm(sum_tmp);
+        for (int i = 0; i < t.size(); i++) {
+            if (!isConstant(t[i]))
+                nonconst_args.push(t[i]);
+            else {
+                assert(c == PTRef_Undef);
+                c = t[i];
+            }
+        }
+        if (c == PTRef_Undef) {
+            args[0] = getTerm_NumZero();
+            args[1] = mkNumPlus(nonconst_args);
+        } else {
+            args[0] = mkNumNeg(c);
+            args[1] = mkNumPlus(nonconst_args);
+        }
+    } else if (isNumVar(sum_tmp) || isNumTimes(sum_tmp)) {
+        args[0] = getTerm_NumZero();
+        args[1] = sum_tmp;
+    } else assert(false);
+    PTRef r = mkFun(get_sym_Num_LEQ(), args, msg);
+    return r;
+
 }
 PTRef LALogic::mkNumGeq(const vec<PTRef>& args, char** msg)
 {
@@ -710,14 +711,9 @@ PTRef LALogic::mkNumGeq(const vec<PTRef>& args, char** msg)
 PTRef LALogic::mkNumLt(const vec<PTRef>& args, char** msg)
 {
     if (isConstant(args[0]) && isConstant(args[1])) {
-        char *rat_str1, *rat_str2;
-        opensmt::stringToRational(rat_str1, sym_store.getName(getPterm(args[0]).symb()));
-        opensmt::stringToRational(rat_str2, sym_store.getName(getPterm(args[1]).symb()));
-        opensmt::Number v1(rat_str1);
-        opensmt::Number v2(rat_str2);
-        free(rat_str1);
-        free(rat_str2);
-        if (v1 < v2) { //PS. OR (v3 < v4)
+        opensmt::Number const& v1 = this->getNumConst(args[0]);
+        opensmt::Number const& v2 = this->getNumConst(args[1]);
+        if (v1 < v2) {
             return getTerm_true();
         } else {
             return getTerm_false();
@@ -735,19 +731,6 @@ PTRef LALogic::mkNumLt(const vec<PTRef>& args, char** msg)
 }
 PTRef LALogic::mkNumGt(const vec<PTRef>& args, char** msg)
 {
-    if (isConstant(args[0]) && isConstant(args[1])) {
-        char *rat_str1, *rat_str2;
-        opensmt::stringToRational(rat_str1, sym_store.getName(getPterm(args[0]).symb()));
-        opensmt::stringToRational(rat_str2, sym_store.getName(getPterm(args[1]).symb()));
-        opensmt::Number v1(rat_str1);
-        opensmt::Number v2(rat_str2);
-        free(rat_str1);
-        free(rat_str2);
-        if (v1 > v2) //PS. OR (v3 > v4)
-            return getTerm_true();
-        else
-            return getTerm_false();
-    }
     PTRef tr = mkNumLeq(args, msg);
     if (tr == PTRef_Undef) {
         printf("%s\n", *msg);
@@ -956,7 +939,7 @@ PTRef SimplifyConst::simplifyConstOp(const vec<PTRef> & terms)
 {
     if (terms.size() == 0) {
         opensmt::Number s = getIdOp();
-        return l.mkConst(l.getSort_num(), s.get_str().c_str());
+        return l.mkConst(s);
     } else if (terms.size() == 1) {
         return terms[0];
     } else {
