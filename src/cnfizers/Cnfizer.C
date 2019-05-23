@@ -242,6 +242,12 @@ void Cnfizer::declareToSolver(const vec<PTRef>& nestedBoolRoots, FrameId frame_i
     currentPartition = -1;
 }
 
+void Cnfizer::declareVars(vec<PTRef>& vars)
+{
+    for (size_t i = 0; i < vars.size(); i++)
+        tmap.getOrCreateLit(vars[i]);
+}
+
 //
 // Apply simple de Morgan laws to the formula
 //

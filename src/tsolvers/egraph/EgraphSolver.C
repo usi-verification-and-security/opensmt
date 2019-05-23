@@ -417,7 +417,8 @@ lbool Egraph::addEquality(PtAsgn pa) {
         else
             res2 = addFalse(pa.tr);
 
-        assert(res2 != false);
+        if (!res2)
+            return l_False;
     }
 
 #ifdef STATISTICS
@@ -460,7 +461,8 @@ lbool Egraph::addDisequality(PtAsgn pa) {
             res2 = addTrue(pa.tr);
         else
             res2 = addFalse(pa.tr);
-        assert(res2 != false);
+        if (!res2)
+            return l_False;
     }
 #ifdef STATISTICS
     if (!res)

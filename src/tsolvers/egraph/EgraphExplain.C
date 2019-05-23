@@ -260,7 +260,8 @@ void Egraph::expExplainEdge(const ERef v, const ERef p) {
 
     // If it is not a congruence edge
     if (r.tr != PTRef_Undef && r.tr != Eq_FALSE) {
-        assert(!isDup1(r.tr)); // MB: It seems that with the shortcuts stored in expRoot, duplicates will never be encountered
+//        AH: It seems that bringing the required propositional vars to the egraph reintroduces the duplicates
+//        assert(!isDup1(r.tr)); // MB: It seems that with the shortcuts stored in expRoot, duplicates will never be encountered
         if ( !isDup1(r.tr) ) {
             explanation.push(r);
             storeDup1(r.tr);
@@ -273,7 +274,6 @@ void Egraph::expExplainEdge(const ERef v, const ERef p) {
         // we have therefore to compute the reasons
     else {
         assert( getEnode(v).getCar() == getEnode(p).getCar() );
-        assert( logic.getPterm(getEnode(v).getTerm()).nargs() == logic.getPterm(getEnode(p).getTerm()).nargs() );
         expEnqueueArguments( v, p );
     }
     expUnion( v, p );

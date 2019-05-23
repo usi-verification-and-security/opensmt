@@ -183,6 +183,7 @@ class Logic {
 
   private:
     vec<bool> appears_in_uf;
+  public:
     vec<PTRef> propFormulasAppearingInUF;
 
   public:

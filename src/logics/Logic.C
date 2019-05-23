@@ -433,10 +433,13 @@ bool Logic::isTheorySymbol(SymRef tr) const {
 void Logic::setAppearsInUF(PTRef tr) {
     uint32_t id = Idx(getPterm(tr).getId());
 
+    if (appears_in_uf.size() <= id || appears_in_uf[id] == false)
+        propFormulasAppearingInUF.push(tr);
+
     while (id >= appears_in_uf.size())
         appears_in_uf.push(false);
+
     appears_in_uf[id] = true;
-    propFormulasAppearingInUF.push(tr);
 }
 
 bool Logic::appearsInUF(PTRef tr) const {
@@ -1022,7 +1025,7 @@ PTRef Logic::mkFun(SymRef f, const vec<PTRef>& args, char** msg)
         tr = PTRef_Undef;
     else {
         tr = insertTermHash(f, args);
-        if (isUFTerm(tr)) {
+        if (isUFTerm(tr) || isUP(tr)) {
             for (int i = 0; i < args.size(); i++) {
                 if (hasSortBool(args[i])) {
                     setAppearsInUF(args[i]);
