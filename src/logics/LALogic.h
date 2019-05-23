@@ -116,8 +116,9 @@ public:
     // Real terms are of form c, a, or (* c a) where c is a constant and a is a variable.
     virtual bool isNumTerm(PTRef tr) const;
 
-    virtual PTRef getTerm_NumZero() const =0;
-    virtual PTRef getTerm_NumOne() const =0;
+    virtual PTRef getTerm_NumZero() const = 0;
+    virtual PTRef getTerm_NumOne() const = 0;
+    virtual PTRef getTerm_NumMinusOne() const = 0;
     virtual PTRef mkNumNeg(PTRef, char **);
     virtual PTRef mkNumNeg(PTRef tr);
     virtual PTRef mkNumMinus(const vec<PTRef> &, char **);

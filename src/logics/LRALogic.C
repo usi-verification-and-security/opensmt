@@ -65,6 +65,7 @@ LRALogic::LRALogic(SMTConfig& c) :
         , sort_REAL(SRef_Undef)
         , term_Real_ZERO(PTRef_Undef)
         , term_Real_ONE(PTRef_Undef)
+        , term_Real_MINUSONE(PTRef_Undef)
         , split_eq(false)
 {
     char* m;
@@ -80,6 +81,7 @@ LRALogic::LRALogic(SMTConfig& c) :
     term_Real_ONE  = mkConst(sort_REAL, tk_real_one);
     sym_Real_ONE   = getSymRef(term_Real_ONE);
     sym_store.setInterpreted(sym_Real_ONE);
+    term_Real_MINUSONE  = mkConst(sort_REAL, "-1");
     params.push(sort_REAL);
     // Negation
     sym_Real_NEG = declareFun(tk_real_neg, sort_REAL, params, msg, true);
@@ -145,4 +147,5 @@ const SRef LRALogic::get_sort_NUM () const {return sort_REAL;}
 
 PTRef    LRALogic::getTerm_NumZero() const  { return term_Real_ZERO; }
 PTRef      LRALogic::getTerm_NumOne()  const  { return term_Real_ONE; }
+PTRef      LRALogic::getTerm_NumMinusOne()  const  { return term_Real_MINUSONE; }
 bool        LRALogic::hasSortNum(PTRef tr) const  { return hasSortReal(getPterm(tr).symb()); }

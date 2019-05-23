@@ -49,6 +49,7 @@ protected:
     SRef                sort_REAL;
     PTRef               term_Real_ZERO;
     PTRef               term_Real_ONE;
+    PTRef               term_Real_MINUSONE;
     //static const char*  tk_val_real_default;
     static const char*  tk_real_zero;
     static const char*  tk_real_one;
@@ -114,6 +115,7 @@ public:
 
     PTRef       getTerm_NumZero() const override;
     PTRef       getTerm_NumOne()  const override;
+    PTRef       getTerm_NumMinusOne()  const override;
 
     virtual const SymRef get_sym_Num_TIMES () const override;
     virtual const SymRef get_sym_Num_DIV () const override;

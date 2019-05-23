@@ -24,6 +24,7 @@ protected:
     SRef                sort_INTEGER;
     PTRef               term_Int_ZERO;
     PTRef               term_Int_ONE;
+    PTRef               term_Int_MINUSONE;
     static const char*  tk_int_zero;
     static const char*  tk_int_one;
     static const char*  tk_int_neg;
@@ -82,6 +83,7 @@ public:
 
     PTRef       getTerm_NumZero() const override;// { return term_Int_ZERO; }
     PTRef       getTerm_NumOne()  const override;// { return term_Int_ONE; }
+    PTRef       getTerm_NumMinusOne()  const override;// { return term_Int_ONE; }
 
     virtual const SymRef get_sym_Num_TIMES () const override;
     virtual const SymRef get_sym_Num_DIV () const override;
