@@ -529,6 +529,7 @@ PTRef LALogic::mkNumMinus(const vec<PTRef>& args_in, char** msg)
 PTRef LALogic::mkNumPlus(const vec<PTRef>& args, char** msg)
 {
     vec<PTRef> new_args;
+    new_args.capacity(args.size());
     // Flatten possible internal sums.  This needs not be done properly,
     // with a post-order dfs, since we are guaranteed that the inner
     // sums are already flattened.
