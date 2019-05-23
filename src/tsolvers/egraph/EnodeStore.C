@@ -28,6 +28,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Symbol.h"
 #include "Logic.h"
 
+EnodeStore::EnodeStore(Logic& l)
+      : logic(l)
+      , ea(1024*1024)
+      , ERef_Nil(ea.alloc(SymRef_Undef))
+      , dist_idx(0)
+{
+    Enode::ERef_Nil = ERef_Nil;
+    sym_uf_not = addSymb(logic.getSym_uf_not());
+}
+
+
 ERef EnodeStore::addSymb(SymRef t) {
     ERef rval;
     assert(t != SymRef_Undef);
