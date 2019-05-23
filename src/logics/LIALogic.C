@@ -41,6 +41,7 @@ LIALogic::LIALogic(SMTConfig& c) :
         , sort_INTEGER(SRef_Undef)
         , term_Int_ZERO(PTRef_Undef)
         , term_Int_ONE(PTRef_Undef)
+        , term_Int_MINUSONE(PTRef_Undef)
         , split_eq(false)
 {
     char* m;
@@ -54,16 +55,13 @@ LIALogic::LIALogic(SMTConfig& c) :
 //    printf("Setting sort_REAL to %d at %p\n", sort_REAL.x, &(sort_REAL.x));
     vec<SRef> params;
     term_Int_ZERO = mkConst(sort_INTEGER, tk_int_zero);
-
-
     sym_Int_ZERO  = getSymRef(term_Int_ZERO);
-
     sym_store.setInterpreted(sym_Int_ZERO);
 
     term_Int_ONE  = mkConst(sort_INTEGER, tk_int_one);
-
     sym_Int_ONE   = getSymRef(term_Int_ONE);
     sym_store.setInterpreted(sym_Int_ONE);
+    term_Int_MINUSONE  = mkConst(sort_INTEGER, "-1");
     params.push(sort_INTEGER);
     // Negation
     sym_Int_NEG = declareFun(tk_int_neg, sort_INTEGER, params, msg, true);
@@ -149,6 +147,7 @@ bool        LIALogic::hasSortInt(SymRef sr) const { return sym_store[sr].rsort()
 bool        LIALogic::hasSortNum(PTRef tr) const  { return hasSortInt(getPterm(tr).symb()); }
 PTRef       LIALogic::getTerm_NumZero() const  { return term_Int_ZERO; }
 PTRef      LIALogic::getTerm_NumOne()  const  { return term_Int_ONE; }
+PTRef      LIALogic::getTerm_NumMinusOne()  const  { return term_Int_MINUSONE; }
 
 
 const SymRef LIALogic::get_sym_Num_TIMES () const {return sym_Int_TIMES;}

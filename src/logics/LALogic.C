@@ -314,7 +314,7 @@ PTRef LALogic::mkNumNeg(PTRef tr, char** msg)
         PTRef nterm = mkConst(min);
         return nterm;
     }
-    PTRef mo = mkConst(getSort_num(), "-1");
+    PTRef mo = this->getTerm_NumMinusOne();
     args.push(mo); args.push(tr);
     return mkNumTimes(args);
 }
