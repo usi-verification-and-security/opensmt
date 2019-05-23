@@ -958,30 +958,15 @@ PTRef SimplifyConst::simplifyConstOp(const vec<PTRef> & terms)
         opensmt::Number s = getIdOp();
         return l.mkConst(l.getSort_num(), s.get_str().c_str());
     } else if (terms.size() == 1) {
-        char* rat_str;
-        opensmt::stringToRational(rat_str, l.getSymName(terms[0]));
-        opensmt::Number val(rat_str);
-        free(rat_str);
-        return l.mkConst(l.getSort_num(), val.get_str().c_str());
+        return terms[0];
     } else {
-        char* rat_str;
-        opensmt::stringToRational(rat_str, l.getSymName(terms[0]));
-        opensmt::Number s(rat_str);
-        free(rat_str);
+        opensmt::Number s = l.getNumConst(terms[0]);
         for (int i = 1; i < terms.size(); i++) {
-            PTRef tr = PTRef_Undef;
-            if (l.isConstant(terms[i]))
-                tr = terms[i];
-            else if (l.isNumNeg(terms[i]))
-                tr = l.getPterm(terms[i])[0];
-            else continue;
-            char* rat_str;
-            opensmt::stringToRational(rat_str, l.getSymName(tr));
-            opensmt::Number val(rat_str);
-            free(rat_str);
+            assert(l.isConstant((terms[i])));
+            opensmt::Number const& val = l.getNumConst(terms[i]);
             Op(s, val);
         }
-        return l.mkConst(l.getSort_num(), s.get_str().c_str());
+        return l.mkConst(s);
     }
 }
 const char* LALogic::tk_val_num_default = "1";
