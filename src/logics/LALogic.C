@@ -287,7 +287,7 @@ bool LALogic::isNumTerm(PTRef tr) const
 
 PTRef LALogic::mkNumNeg(PTRef tr, char** msg)
 {
-    if (isNumNeg(tr)) return getPterm(tr)[0];
+    assert(!isNumNeg(tr)); // MB: The invariant now is that there is no "Minus" node
     vec<PTRef> args;
     if (isNumPlus(tr)) {
         for (int i = 0; i < getPterm(tr).size(); i++) {
@@ -295,22 +295,12 @@ PTRef LALogic::mkNumNeg(PTRef tr, char** msg)
             assert(tr_arg != PTRef_Undef);
             args.push(tr_arg);
         }
-//        PTRef tr_n = mkNumPlus(args, msg);
         PTRef tr_n = mkFun(get_sym_Num_PLUS(), args, msg);
         assert(tr_n == mkNumPlus(args, msg));
         assert(tr_n != PTRef_Undef);
         return tr_n;
     }
     if (isConstant(tr)) {
-//        char * rat_str;
-//        opensmt::stringToRational(rat_str, sym_store.getName(getPterm(tr).symb()));
-//        opensmt::Number v(rat_str);
-//        //PTRef nterm = getNTerm(rat_str); //PS. getNTerm generalise line 358, 361, 362
-//        free(rat_str);
-//        v = -v;
-//        PTRef nterm = mkConst(getSort_num(), v.get_str().c_str());
-//        SymRef s = getPterm(nterm).symb();
-//        return mkFun(s, args, msg);
         const opensmt::Number& v = getNumConst(tr);
         opensmt::Number min = -v;
         PTRef nterm = mkConst(min);
@@ -322,7 +312,6 @@ PTRef LALogic::mkNumNeg(PTRef tr, char** msg)
 }
 
 PTRef  LALogic::mkConst(const opensmt::Number& c)
-//{ char* rat; opensmt::stringToRational(rat, c.get_str().c_str()); PTRef tr = mkConst(getSort_num(), rat); free(rat); return tr; }
 {
     std::string str = c.get_str(); // MB: I cannot store c.get_str().c_str() directly, since that is a pointer inside temporary object -> crash.
     const char * val = str.c_str();
@@ -807,7 +796,9 @@ void SimplifyConst::simplify(const SymRef& s, const vec<PTRef>& args, SymRef& s_
     vec<int> const_idx;
     vec<PTRef> args_new_2;
     for (int i = 0; i < args.size(); i++) {
-        if (l.isConstant(args[i]) || (l.isNumNeg(args[i]) && l.isConstant(l.getPterm(args[i])[0])))
+        assert(!l.isNumNeg(args[i])); // MB: No minus nodes, the check can be simplified
+//        if (l.isConstant(args[i]) || (l.isNumNeg(args[i]) && l.isConstant(l.getPterm(args[i])[0])))
+        if (l.isConstant(args[i]))
             const_idx.push(i);
     }
     if (const_idx.size() == 0) {
