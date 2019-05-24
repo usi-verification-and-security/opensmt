@@ -30,6 +30,28 @@ PTRef Theory::getCollateFunction(const vec<PFRef> & formulas, int curr)
     return getLogic().mkAnd(coll_f_args);
 }
 
+namespace{
+    void substitutionsTransitiveClosure(Logic & logic, Map<PTRef, PtAsgn, PTRefHash> & substs) {
+        bool changed = true;
+        while (changed) {
+            changed = false;
+            vec<Map<PTRef, PtAsgn, PTRefHash>::Pair> keyvals;
+            substs.getKeysAndVals(keyvals);
+            for (int i = 0; i < keyvals.size(); ++i) {
+                auto keyval = keyvals[i];
+                if (keyval.data.sgn != l_True) { continue; }
+                PTRef newVal = PTRef_Undef;
+                PTRef oldVal = keyval.data.tr;
+                logic.varsubstitute(oldVal, substs, newVal);
+                if (oldVal != newVal) {
+                    changed = true;
+                    substs[keyval.key] = PtAsgn(newVal, l_True);
+                }
+            }
+        }
+    }
+}
+
 //
 // Given coll_f = (R_1 /\ ... /\ R_{curr-1}) /\ (U_1 /\ ... /\ U_{curr-1}) /\
 // P_{curr}, compute U_{curr}.  Place U_{curr} to frame and simplify
@@ -89,6 +111,7 @@ bool Theory::computeSubstitutions(const PTRef coll_f, const vec<PFRef>& frames, 
             all_units_vec.push(PtAsgn(unit.key, unit.data));
         }
         lbool res = getLogic().retrieveSubstitutions(all_units_vec, substs);
+        substitutionsTransitiveClosure(getLogic(), substs);
         if (res != l_Undef)
             root = (res == l_True ? getLogic().getTerm_true() : getLogic().getTerm_false());
         PTRef new_root;
