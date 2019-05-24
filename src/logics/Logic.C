@@ -627,7 +627,7 @@ void Logic::simplifyTree(PTRef tr, PTRef& root_out)
         if (unprocessed_children) continue;
 #ifdef SIMPLIFY_DEBUG
         cerr << "Found a node " << queue[i].x.x << endl;
-        cerr << "Before simplification it looks like " << term_store.printTerm(queue[i].x) << endl;
+        cerr << "Before simplification it looks like " << this->printTerm(queue[i].x) << endl;
 #endif
         processed.insert(queue[i].x, true);
         visit(queue[i].x, tr_map);
@@ -1517,15 +1517,15 @@ void Logic::breakSubstLoops(Map<PTRef,PtAsgn,PTRefHash>& substs)
             fprintf(foo, "  %s [shape=box]\n", printTerm(startNodes[i]->tr));
 
         for (int i = 0; i < roots.size(); i++) {
-            if (seen[getPterm(roots[i]->tr).getId()] != white)
+            if (seen[Idx(getPterm(roots[i]->tr).getId())] != white)
                 continue;
             vec<SubstNode*> queue;
             queue.push(roots[i]);
             while (queue.size() > 0) {
                 SubstNode* n = queue.last(); queue.pop();
-                if (seen[getPterm(n->tr).getId()] != white)
+                if (seen[Idx(getPterm(n->tr).getId())] != white)
                     continue;
-                seen[getPterm(n->tr).getId()] = black;
+                seen[Idx(getPterm(n->tr).getId())] = black;
                 for (int j = 0; j < n->child_nodes.size(); j++) {
                     if (n->child_nodes[j] != NULL) {
                         fprintf(foo, "  %s -> %s;\n", printTerm(n->tr), printTerm(n->child_nodes[j]->tr));
