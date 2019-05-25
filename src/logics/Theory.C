@@ -100,32 +100,50 @@ bool Theory::computeSubstitutions(const PTRef coll_f, const vec<PFRef>& frames, 
             prev_units_vec.push(PtAsgn(tmp[i].key, tmp[i].data));
     }
 
-    Map<PTRef,PtAsgn,PTRefHash> substs;
+    Map<PTRef,PtAsgn,PTRefHash> allsubsts;
     vec<PtAsgn> all_units_vec;
+    vec<PtAsgn> current_units_vec;
     prev_units_vec.copyTo(all_units_vec);
+    prev_units_vec.copyTo(current_units_vec);
     // This computes the new unit clauses to curr_frame.units until closure
     while (true) {
         // update the current simplification formula
 //        PTRef simp_formula = getLogic().mkAnd(coll_f, root);
         PTRef simp_formula = root;
+        Map<PTRef,lbool,PTRefHash> new_units;
+        vec<Map<PTRef,lbool,PTRefHash>::Pair> new_units_vec;
         // Get U_i
-        getLogic().getNewFacts(simp_formula, prev_units, pfstore[frames[curr]].units);
+        getLogic().getNewFacts(simp_formula, prev_units, new_units);
         // Add the newly obtained units to the list of all substitutions
-        vec<Map<PTRef,lbool,PTRefHash>::Pair> new_units;
         // Clear the previous units
-        all_units_vec.shrink(all_units_vec.size() - prev_units_vec.size());
-        pfstore[frames[curr]].units.getKeysAndVals(new_units);
-        for (int i = 0; i < new_units.size(); i++) {
-            Map<PTRef,lbool,PTRefHash>::Pair unit = new_units[i];
-            all_units_vec.push(PtAsgn(unit.key, unit.data));
+        new_units.getKeysAndVals(new_units_vec);
+        for (int i = 0; i < new_units_vec.size(); i++) {
+            Map<PTRef,lbool,PTRefHash>::Pair unit = new_units_vec[i];
+            if (!pfstore[frames[curr]].units.has(unit.key)) {
+                pfstore[frames[curr]].units.insert(unit.key, unit.data);
+                all_units_vec.push(PtAsgn(unit.key, unit.data));
+                current_units_vec.push(PtAsgn(unit.key, unit.data));
+            }
         }
-        lbool res = getLogic().retrieveSubstitutions(all_units_vec, substs);
-        substitutionsTransitiveClosure(getLogic(), substs);
+        Map<PTRef,PtAsgn,PTRefHash> newsubsts;
+        lbool res = getLogic().retrieveSubstitutions(current_units_vec, newsubsts);
+        current_units_vec.clear();
+        substitutionsTransitiveClosure(getLogic(), newsubsts);
         if (res != l_Undef)
             root = (res == l_True ? getLogic().getTerm_true() : getLogic().getTerm_false());
         PTRef new_root;
-        bool cont = getLogic().varsubstitute(root, substs, new_root);
+        bool cont = getLogic().varsubstitute(root, newsubsts, new_root);
+        // remember the substitutions
+        vec<Map<PTRef,PtAsgn,PTRefHash>::Pair> newsubsts_vec;
+        newsubsts.getKeysAndVals(newsubsts_vec);
+        for (int i = 0; i < newsubsts_vec.size(); ++i) {
+            PTRef key = newsubsts_vec[i].key;
+            if (!allsubsts.has(key)) {
+                allsubsts.insert(key, newsubsts_vec[i].data);
+            }
+        }
         root = new_root;
+
         if (!cont) break;
     }
 #ifdef SIMPLIFY_DEBUG
@@ -212,7 +230,7 @@ bool Theory::computeSubstitutions(const PTRef coll_f, const vec<PFRef>& frames, 
     // Check the previous frames to see whether a substitution needs to
     // be inserted to frames[curr].root.
     vec<Map<PTRef,PtAsgn,PTRefHash>::Pair> substitutions;
-    substs.getKeysAndVals(substitutions);
+    allsubsts.getKeysAndVals(substitutions);
     for (int i = 0; i < substitutions.size(); i++)
     {
         Map<PTRef,PtAsgn,PTRefHash>::Pair& p = substitutions[i];
@@ -240,7 +258,7 @@ bool Theory::computeSubstitutions(const PTRef coll_f, const vec<PFRef>& frames, 
             }
         }
     }
-    getTSolverHandler().setSubstitutions(substs);
+    getTSolverHandler().setSubstitutions(allsubsts);
     delete th;
     return result;
 }
