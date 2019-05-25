@@ -13,7 +13,8 @@ bool UFTheory::simplify(const vec<PFRef>& formulas, int curr)
     PTRef coll_f = getCollateFunction(formulas, curr);
 
     PTRef trans = getLogic().learnEqTransitivity(coll_f);
-    pfstore[formulas[curr]].push(trans);
+//    pfstore[formulas[curr]].push(trans);
+    coll_f = getLogic().isTrue(trans) ? coll_f : getLogic().mkAnd(coll_f, trans);
 
     bool res = computeSubstitutions(coll_f, formulas, curr);
     vec<Map<PTRef,lbool,PTRefHash>::Pair> units;
