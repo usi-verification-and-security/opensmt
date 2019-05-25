@@ -119,10 +119,12 @@ bool Tseitin::cnfizeAnd(PTRef and_term)
     Lit v = this->getOrCreateLiteralFor(and_term);
     vec<Lit> little_clause;
     vec<Lit> big_clause;
+    int size = logic.getPterm(and_term).size();
+    big_clause.capacity(size + 1);
     little_clause.push(~v);
     big_clause   .push(v);
     bool res = true;
-    for (int i = 0; i < logic.getPterm(and_term).size(); i++) {
+    for (int i = 0; i < size; i++) {
         PTRef arg = logic.getPterm(and_term)[i];
         little_clause.push( this->getOrCreateLiteralFor(arg) );
         big_clause   .push(~this->getOrCreateLiteralFor(arg));
