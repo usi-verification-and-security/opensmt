@@ -75,15 +75,17 @@ bool Theory::computeSubstitutions(const PTRef coll_f, const vec<PFRef>& frames, 
         return true;
     }
     assert(config.do_substitutions() && !config.produce_inter());
-    vec<PTRef> curr_args;
-    const PushFrame& curr_frame = pfstore[frames[curr]];
+//    const PushFrame& curr_frame = pfstore[frames[curr]];
 
-    assert(curr_frame.units.elems() == 0);
+    assert(pfstore[frames[curr]].units.elems() == 0);
 
     // root for the first iteration is P_{curr}
-    for (int i = 0; i < curr_frame.size(); i++)
-        curr_args.push(curr_frame[i]);
-    PTRef root = getLogic().mkAnd(curr_args);
+//    vec<PTRef> curr_args;
+//    for (int i = 0; i < curr_frame.size(); i++)
+//        curr_args.push(curr_frame[i]);
+//    PTRef root = getLogic().mkAnd(curr_args);
+    // MB: We are going to simplify coll_f and it already contains the current frame
+    PTRef root = coll_f;
 
     // l_True : exists and is valid
     // l_False : exists but has been disabled to break symmetries
@@ -104,7 +106,8 @@ bool Theory::computeSubstitutions(const PTRef coll_f, const vec<PFRef>& frames, 
     // This computes the new unit clauses to curr_frame.units until closure
     while (true) {
         // update the current simplification formula
-        PTRef simp_formula = getLogic().mkAnd(coll_f, root);
+//        PTRef simp_formula = getLogic().mkAnd(coll_f, root);
+        PTRef simp_formula = root;
         // Get U_i
         getLogic().getNewFacts(simp_formula, prev_units, pfstore[frames[curr]].units);
         // Add the newly obtained units to the list of all substitutions
