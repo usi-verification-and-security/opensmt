@@ -1378,17 +1378,21 @@ bool Logic::varsubstitute(PTRef root, const Map<PTRef, PtAsgn, PTRefHash> & subs
             }
             else {
                 vec<PTRef> args_mapped;
+                args_mapped.capacity(t.size());
 #ifdef SIMPLIFY_DEBUG
                 printf("Arg substitution found for %s:\n", printTerm(tr));
 #endif
+                bool changed = false;
                 for (int i = 0; i < t.size(); i++) {
-                    args_mapped.push(gen_sub[t[i]]);
+                    PTRef sub = gen_sub[t[i]];
+                    changed |= (sub != t[i]);
+                    args_mapped.push(sub);
 #ifdef SIMPLIFY_DEBUG
                     printf("  %s -> %s\n", printTerm(t[i]), printTerm(gen_sub[t[i]]));
 #endif
                 }
                 char* msg;
-                result = insertTerm(t.symb(), args_mapped, &msg);
+                result = changed ? insertTerm(t.symb(), args_mapped, &msg) : tr;
 #ifdef SIMPLIFY_DEBUG
                 printf("  -> %s\n", printTerm(result));
 #endif
