@@ -1,15 +1,56 @@
 \documentclass{article}
 
 \title{The OpenSMT2 Solver}
-\author{Formal Verification Lab, USI Lugano}
-
+\author{
+Martin Blicha \and 
+Antti E. J. Hyv{\"a}rinen \and
+Matteo Marescotti \and
+Natasha Sharygina \\
+{\small Universit{\`a} della Svizzera italiana, Lugano}
+}
+\date{}
 \begin{document}
 \maketitle
 
-\begin{abstract}
-The OpenSMT2 SMT solver supports the quantifier-free theories of uninterpreted functions, linear real arithmetic, and linear integer arithmetic.
+\section{Overview}
+OpenSMT2~\cite{HyvarinenMAS16} is a lazy~\cite{NieuwenhuisOT:JACM06}
+DPLL($T$)-based~\cite{DavisLL:ACM1962}
+SMT solver written in C{\tt ++}, supporting
+the quantifier-free theories of uninterpreted functions, linear real arithmetic, and linear integer arithmetic.
 Furthermore, OpenSMT2 supports a wide range of interpolation options, providing users extraordinary customisation opportunities for adaptation to different domains.
 Developers can interface OpenSMT2 through the API library exposing most of the internal features. The clear object-oriented structure of the internal design encourages an easy extension to e.g. support more theories and interpolation algorithms.
-\end{abstract}
+
+\section{Utilization}
+OpenSMT2 is used in various research work. We mention,
+in chronological order, work on interpolation 
+algorithms~\cite{BlichaHKS19,AltHAS17,JancikAFHKS16,AsadiBFHESC18}
+and parallel SMT 
+solving~\cite{HyvarinenMSCS18,MarescottiHS18,HyvarinenMS:SAT15}.
+OpenSMT2 is
+used as the back-end in model-checking tools
+HiFrog~\cite{AltACMFHS17},
+eVolCheck~\cite{FSS_TACAS13}, 
+FunFrog~\cite{SFS_ATVA12}, and
+PeRIPLO~\cite{RolliniAFHS:LPAR2013,AltFHS:VSTTE2015}.
+OpenSMT2 is a supported engine in the parallel 
+solving framework SMTS~\cite{MarescottiHS16}.
+
+\section{Acknowledgements}
+We thank everyone who helped
+developing OpenSMT2. In particular,
+Leonardo Alt,
+Sepideh Asadi,
+Martin Blicha,
+Roberto Bruttomesso,
+Antti E. J. Hyv{\"a}rinen,
+Matteo Marescotti,
+Edgar Pek,
+Simone Fulvio Rollini, 
+Parvin Sadigova,
+Natasha Sharygina,
+Aliaksei Tsitovich.
+
+\bibliography{abstract}
+\bibliographystyle{plain}
 
 \end{document}
