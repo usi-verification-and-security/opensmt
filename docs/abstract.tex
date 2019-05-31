@@ -1,27 +1,93 @@
 \documentclass{article}
 
-\title{The OpenSMT2 Solver}
+\usepackage{hyperref}
+
+\title{The OpenSMT Solver in SMT-COMP 2019}
 \author{
 Martin Blicha \and 
 Antti E. J. Hyv{\"a}rinen \and
 Matteo Marescotti \and
 Natasha Sharygina \\
-{\small Universit{\`a} della Svizzera italiana, Lugano}
+{\small Universit{\`a} della Svizzera italiana (USI), Lugano,
+Switzerland}
 }
 \date{}
 \begin{document}
 \maketitle
 
 \section{Overview}
-OpenSMT2~\cite{HyvarinenMAS16} is a lazy~\cite{NieuwenhuisOT:JACM06}
-DPLL($T$)-based~\cite{DavisLL:ACM1962}
-SMT solver written in C{\tt ++}, supporting
-the quantifier-free theories of uninterpreted functions, linear real arithmetic, and linear integer arithmetic.
-Furthermore, OpenSMT2 supports a wide range of interpolation options, providing users extraordinary customisation opportunities for adaptation to different domains.
-Developers can interface OpenSMT2 through the API library exposing most of the internal features. The clear object-oriented structure of the internal design encourages an easy extension to e.g. support more theories and interpolation algorithms.
+
+OpenSMT~\cite{HyvarinenMAS16} is a T-DPLL based SMT
+solver~\cite{NieuwenhuisOT:JACM06} that has been developed at USI,
+Switzerland, since 2008.  The solver is written in {\tt C++} and
+currently supports the quantifier-free logics of equality with
+uninterpreted functions (QF\_UF), and linear real arithmetic (QF\_LRA).
+The solver has a rudimentary support for quantifier-free linear integer
+arithmetic (QF\_LIA) based on branch-and-bound, and supports some
+aspects of bit-vector logic.
+
+In comparison to 2018, the 2019 competition entry features a wide range
+of performance improvements in simplification, the Simplex algorithm,
+and the Egraph algorithm, several bug fixes related to solver soundness,
+and improved support for the logics.  In the process, the solver
+high-level architecture improved and low-level code cleaning resulted in
+fewer compiler warnings.
+
+The solver development process is better defined in comparison to the
+previous state.  The main public repository
+ is now
+hosted in GitHub, where the commit process is integrated with Travis CI
+to ensure the passing of regression tests and different compilation.
+Commits are integrated to the master branch through pull requests once
+they pass a human review and the Travis CI configuration.
+
+OpenSMT features not exercised in the competition include support for a
+wide range of interpolation algorithms for propositional
+logic~\cite{AltFHS:VSTTE2015}, linear real
+arithmetic~\cite{BlichaHKS19}, and uninterpreted
+functions~\cite{AltHAS:FMCAD17}; an experimental look\-ahead-based
+search algorithm~\cite{HyvarinenMSCS18} as an alternative to the more
+standard CDCL algorithm; and features that support search-space
+partitioning in particular designed for parallel
+solving~\cite{HyvarinenMS:SAT15}.
+
+\section{External Code and Contributors}
+
+The SAT solver driving OpenSMT is based on the MiniSAT
+solver~\cite{EenS:SAT03}, and the rational number implementation is
+inspired by a library written by David Monniaux.  Several people have
+directly contributed to the OpenSMT code.  In alphabetical order, the
+major contributors are
+%
+Leonardo Alt,
+Sepideh Asadi,
+Martin Blicha,
+Roberto Bruttomesso,
+Antti E. J. Hyv{\"a}rinen,
+Matteo Marescotti,
+Edgar Pek,
+Simone Fulvio Rollini,
+Parvin Sadigova, and
+Aliaksei Tsitovich.
+%
+The solver is being developed in Natasha Sharygina's software
+verification group at USI.
 
 \section{Utilization}
-OpenSMT2 is used in various research work. We mention,
+
+OpenSMT is being used in a range of projects as a back-end solver.  It
+does interpolation for the Sally model checker~\cite{JovanovicD:FMCAD16}
+which won the transition systems category in the constrained horn clause
+competition 2019.  OpenSMT also forms the basis of our own model
+checkers such as HiFrog~\cite{AltACMFHS17}.  OpenSMT is compatible with
+the parallelization engine SMTS~\cite{MarescottiHS18}.
+
+\section{Download}
+The solver source code is available at
+
+\url{https://github.com/usi-verification-and-security/opensmt}.
+
+\iffalse
 in chronological order, work on interpolation 
 algorithms~\cite{BlichaHKS19,AltHAS17,JancikAFHKS16,AsadiBFHESC18}
 and parallel SMT 
@@ -49,6 +115,7 @@ Simone Fulvio Rollini,
 Parvin Sadigova,
 Natasha Sharygina,
 Aliaksei Tsitovich.
+\fi
 
 \bibliography{abstract}
 \bibliographystyle{plain}
