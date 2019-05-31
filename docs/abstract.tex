@@ -27,11 +27,12 @@ arithmetic (QF\_LIA) based on branch-and-bound, and supports some
 aspects of bit-vector logic.
 
 In comparison to 2018, the 2019 competition entry features a wide range
-of performance improvements in simplification, the Simplex algorithm,
-and the Egraph algorithm, several bug fixes related to solver soundness,
-and improved support for the logics.  In the process, the solver
-high-level architecture improved and low-level code cleaning resulted in
-fewer compiler warnings.
+of performance improvements in simplification, the Simplex
+algorithm~\cite{DutertreM:CAV06}, and the Egraph
+algorithm~\cite{DetlefsNS:JAC05}, several bug fixes related to solver
+soundness, and improved support for the logics.  In the process, the
+solver high-level architecture improved and low-level code cleaning
+resulted in fewer compiler warnings.
 
 The solver development process is better defined in comparison to the
 previous state.  The main public repository
@@ -59,16 +60,16 @@ inspired by a library written by David Monniaux.  Several people have
 directly contributed to the OpenSMT code.  In alphabetical order, the
 major contributors are
 %
-Leonardo Alt,
-Sepideh Asadi,
-Martin Blicha,
-Roberto Bruttomesso,
-Antti E. J. Hyv{\"a}rinen,
-Matteo Marescotti,
-Edgar Pek,
-Simone Fulvio Rollini,
-Parvin Sadigova, and
-Aliaksei Tsitovich.
+Leonardo Alt (Ethereum Foundation),
+Sepideh Asadi (USI),
+Martin Blicha (USI, Charles University),
+Roberto Bruttomesso (Cybersecurity / Nozomi Networks),
+Antti E. J. Hyv{\"a}rinen (USI),
+Matteo Marescotti (USI),
+Edgar Pek (University of Illinois, Urbana-Champaign),
+Simone Fulvio Rollini (United Technologies Research Center),
+Parvin Sadigova (King's College London), and
+Aliaksei Tsitovich (Sonova).
 %
 The solver is being developed in Natasha Sharygina's software
 verification group at USI.
@@ -83,9 +84,12 @@ checkers such as HiFrog~\cite{AltACMFHS17}.  OpenSMT is compatible with
 the parallelization engine SMTS~\cite{MarescottiHS18}.
 
 \section{Download}
-The solver source code is available at
+More information on the solver and downloads are available at
 
-\url{https://github.com/usi-verification-and-security/opensmt}.
+\begin{itemize}
+    \item \url{https://github.com/usi-verification-and-security/opensmt}
+    \item \url{http://verify.inf.usi.ch/opensmt}
+\end{itemize}
 
 \iffalse
 in chronological order, work on interpolation 
