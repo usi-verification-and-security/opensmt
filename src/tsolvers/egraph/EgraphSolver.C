@@ -396,7 +396,7 @@ void Egraph::declareTerm(PTRef tr) {
     }
 }
 
-lbool Egraph::addEquality(PtAsgn pa) {
+bool Egraph::addEquality(PtAsgn pa) {
     Pterm& pt = logic.getPterm(pa.tr);
     assert(pt.size() == 2);
 
@@ -404,7 +404,7 @@ lbool Egraph::addEquality(PtAsgn pa) {
 #ifdef VERBOSE_EUF
         cerr << "Assertion already deduced: " << logic.printTerm(pa.tr) << endl;
 #endif
-        return l_Undef;
+        return true;
     }
     bool res = true;
     PTRef e = pt[0];
@@ -426,7 +426,7 @@ lbool Egraph::addEquality(PtAsgn pa) {
             res2 = addFalse(pa.tr);
 
         if (!res2)
-            return l_False;
+            return false;
     }
 
 #ifdef STATISTICS
@@ -435,10 +435,10 @@ lbool Egraph::addEquality(PtAsgn pa) {
     // The sat_calls is increased already in addTrue
 #endif
 
-    return res == false ? l_False : l_Undef;
+    return res;
 }
 
-lbool Egraph::addDisequality(PtAsgn pa) {
+bool Egraph::addDisequality(PtAsgn pa) {
     const Pterm& pt = logic.getPterm(pa.tr);
     bool res = true;
 
@@ -446,7 +446,7 @@ lbool Egraph::addDisequality(PtAsgn pa) {
 #ifdef VERBOSE_EUF
         cerr << "Assertion already deduced: " << logic.printTerm(pa.tr) << endl;
 #endif
-        return l_Undef;
+        return true;
     }
 
     if (pt.size() == 2)
@@ -470,7 +470,7 @@ lbool Egraph::addDisequality(PtAsgn pa) {
         else
             res2 = addFalse(pa.tr);
         if (!res2)
-            return l_False;
+            return false;
     }
 #ifdef STATISTICS
     if (!res)
@@ -478,7 +478,7 @@ lbool Egraph::addDisequality(PtAsgn pa) {
     // The sat_calls is increased already in addFalse
 #endif
 
-    return res == false ? l_False : l_Undef;
+    return res;
 }
 
 bool Egraph::addTrue(PTRef term) {
@@ -1422,7 +1422,7 @@ bool Egraph::assertLit(PtAsgn pta, bool)
 
     assert(!hasPolarity(pt_r));
 
-    lbool res;
+    bool res = true; // MB: true means NO conflict, false means conflict
     undo_stack_main.push(Undo(SET_POLARITY, pt_r));
 
     // Watch out here! the second argument of PtAsgn constructor is
@@ -1445,35 +1445,29 @@ bool Egraph::assertLit(PtAsgn pta, bool)
     }
     else if (logic.isUP(pt_r) && sgn == l_True) {
         setPolarity(pt_r, l_True);
-        bool b_res;
-        b_res = addTrue(pt_r);
-        b_res &= assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.ERef_False, PtAsgn(pt_r, l_True));
-        res = !b_res ? l_False : l_Undef;
+        // MB: Short circuit evaluation is important, the second call should NOT happen if the first returns false
+        res = addTrue(pt_r) && assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.ERef_False, PtAsgn(pt_r, l_True));
     }
     else if (logic.isUP(pt_r) && sgn == l_False) {
         setPolarity(pt_r, l_False);
-        bool b_res;
-        b_res = addFalse(pt_r);
-        b_res &= assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.ERef_True, PtAsgn(pt_r, l_False));
-        res = !b_res ? l_False : l_Undef;
+        // MB: Short circuit evaluation is important, the second call should NOT happen if the first returns false
+        res = addFalse(pt_r) && assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.ERef_True, PtAsgn(pt_r, l_False));
     }
     else if (logic.hasSortBool(pt_r) && sgn == l_True) {
         setPolarity(pt_r, l_True);
-        bool b_res = addTrue(pt_r);
-        b_res &= assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.ERef_False, PtAsgn(pt_r, l_True));
-        res = !b_res ? l_False : l_Undef;
+        // MB: Short circuit evaluation is important, the second call should NOT happen if the first returns false
+        res = addTrue(pt_r) && assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.ERef_False, PtAsgn(pt_r, l_True));
     }
     else if (logic.hasSortBool(pt_r) && sgn == l_False) {
         setPolarity(pt_r, l_False);
-        bool b_res = addFalse(pt_r);
-        b_res &= assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.ERef_True, PtAsgn(pt_r, l_False));
-        res = !b_res ? l_False : l_Undef;
+        // MB: Short circuit evaluation is important, the second call should NOT happen if the first returns false
+        res = addFalse(pt_r) && assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.ERef_True, PtAsgn(pt_r, l_False));
     }
     else
         assert(false);
 
-    (res == l_False) ? tsolver_stats.unsat_calls ++ : tsolver_stats.sat_calls ++;
-    return (res == l_False) ? false : true;
+    !res ? tsolver_stats.unsat_calls ++ : tsolver_stats.sat_calls ++;
+    return res;
 }
 
 //
