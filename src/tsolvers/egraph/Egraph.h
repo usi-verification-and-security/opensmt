@@ -333,8 +333,8 @@ private:
   // Asserting literals
   //
 public:
-  lbool       addDisequality      ( PtAsgn );
-  lbool       addEquality         ( PtAsgn );
+  bool       addDisequality      ( PtAsgn );
+  bool       addEquality         ( PtAsgn );
   bool       addTrue             ( PTRef );
   bool       addFalse            ( PTRef );
 
