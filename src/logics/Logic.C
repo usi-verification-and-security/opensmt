@@ -460,11 +460,13 @@ vec<PTRef> Logic::getNestedBoolRoots(PTRef root) const {
     vec<PTRef> nestedBoolRoots;
 
     vec<PTRef> queue;
+    std::unordered_set<PTRef, PTRefHash> processed;
     queue.push(root);
 
     while (queue.size() != 0) {
         PTRef tr = queue.last();
         queue.pop();
+        if (processed.find(tr) != processed.end()) { continue; } // already processed
         const Pterm& t = getPterm(tr);
         for (int i = 0; i < t.size(); i++) {
             queue.push(t[i]);
@@ -472,6 +474,7 @@ vec<PTRef> Logic::getNestedBoolRoots(PTRef root) const {
                 nestedBoolRoots.push(t[i]);
             }
         }
+        processed.insert(tr);
     }
     return std::move(nestedBoolRoots);
 }
