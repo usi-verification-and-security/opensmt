@@ -476,7 +476,7 @@ vec<PTRef> Logic::getNestedBoolRoots(PTRef root) const {
         }
         processed.insert(tr);
     }
-    return std::move(nestedBoolRoots);
+    return nestedBoolRoots;
 }
 
 
