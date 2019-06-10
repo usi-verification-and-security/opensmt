@@ -112,8 +112,10 @@ PTRef mergePTRefArgs(Logic & logic, PTRef tr, Map<PTRef,PTRef,PTRefHash>& cache,
     Pterm& t = logic.getPterm(tr);
     SymRef sr = t.symb();
     vec<PTRef> new_args;
+    bool changed = false;
     for (int i = 0; i < t.size(); i++) {
         PTRef subst = cache[t[i]];
+        changed |= subst != t[i];
         if (logic.getSymRef(t[i]) != sr) {
             new_args.push(subst);
             continue;
@@ -125,6 +127,7 @@ PTRef mergePTRefArgs(Logic & logic, PTRef tr, Map<PTRef,PTRef,PTRefHash>& cache,
             continue;
         }
         if (logic.getSymRef(subst) == sr) {
+            changed = true;
             const Pterm& substs_t = logic.getPterm(subst);
             for (int j = 0; j < substs_t.size(); j++)
                 new_args.push(substs_t[j]);
@@ -132,6 +135,7 @@ PTRef mergePTRefArgs(Logic & logic, PTRef tr, Map<PTRef,PTRef,PTRefHash>& cache,
         } else
             new_args.push(subst);
     }
+    if (!changed) { return tr; }
     PTRef new_tr;
     if (sr == logic.getSym_and()) {
         new_tr = logic.mkAnd(new_args);
