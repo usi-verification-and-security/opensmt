@@ -566,17 +566,17 @@ bool Logic::simplifyEquality(PtChild& ptc, bool simplify) {
 void Logic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
 {
     Pterm& p = getPterm(tr);
-    vec<PTRef> newargs;
+    vec<PTRef> newargs(p.size());
     char *msg;
     bool changed = false;
     for (int i = 0; i < p.size(); ++i) {
         PTRef tr = p[i];
         if (tr_map.has(tr)) {
             changed |= (tr_map[tr] != tr);
-            newargs.push(tr_map[tr]);
+            newargs[i] = tr_map[tr];
         }
         else
-            newargs.push(tr);
+            newargs[i] = tr;
     }
     if (!changed) {return;}
     PTRef trp = insertTerm(p.symb(), newargs, &msg);
@@ -626,8 +626,9 @@ void Logic::simplifyTree(PTRef tr, PTRef& root_out)
                 }
             }
             queue[i].done = true;
+            if (unprocessed_children) continue;
         }
-        if (unprocessed_children) continue;
+        assert(!unprocessed_children);
 #ifdef SIMPLIFY_DEBUG
         cerr << "Found a node " << queue[i].x.x << endl;
         cerr << "Before simplification it looks like " << this->printTerm(queue[i].x) << endl;
