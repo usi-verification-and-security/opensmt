@@ -320,8 +320,8 @@ class Logic {
     ipartitions_t& getIPartitions(SymRef _s) { return term_store.getIPartitions(_s); }
     void setIPartitions(SymRef _s, const ipartitions_t& _p) { term_store.setIPartitions(_s, _p); }
     void addIPartitions(SymRef _s, const ipartitions_t& _p) { term_store.addIPartitions(_s, _p); }
-    void computePartitionMasks(const vec<PTRef> & roots);
-    void computePartitionMasks(PTRef tr) { vec<PTRef> trs = {tr}; computePartitionMasks(trs); }
+    void propagatePartitionMask(PTRef tr);
+
 #endif
 
     // The Boolean connectives

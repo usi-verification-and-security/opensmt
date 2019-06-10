@@ -135,7 +135,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
                 logic.transferPartitionMembership(old, fla);
             }
             assert(logic.getPartitionIndex(fla) != -1);
-            logic.computePartitionMasks(fla);
+            logic.propagatePartitionMask(fla);
             if ((status = giveToSolver(fla, frame.getId())) == s_False) {
                 return s_False;
             }

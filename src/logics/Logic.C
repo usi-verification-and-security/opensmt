@@ -2154,22 +2154,24 @@ void Logic::conjoinItes(PTRef root, PTRef& new_root)
 
 #ifdef PRODUCE_PROOF
 
-// Given a vector roots of ptrefs, compute the partitions for each term rooted at roots
-// so that a term has the partitions of its ancestors.
-void Logic::computePartitionMasks(const vec<PTRef> &roots) {
+void Logic::propagatePartitionMask(PTRef root) {
+    ipartitions_t& p = getIPartitions(root);
+    Map<PTRef, bool, PTRefHash> seen;
+    std::vector<PTRef> queue {root};
 
-    vec<PtChild> list_out;
-    getTermsList(roots, list_out, *this);
-    for (int i = list_out.size()-1; i >= 0; i--)
-    {
-        PTRef tr = list_out[i].tr;
-        Pterm& t = getPterm(tr);
-        ipartitions_t& p = getIPartitions(tr);
-        for (int j = 0; j < t.size(); j++) {
-            addIPartitions(t[j], p);
-        }
-        if (isUF(tr) || isUP(tr)) {
-            addIPartitions(t.symb(), p);
+    while (!queue.empty()) {
+        PTRef current = queue.back();
+        queue.pop_back();
+        if (!seen.has(current)) {
+            const Pterm& c_term = this->getPterm(current);
+            for (int j = 0; j < c_term.size(); ++j) {
+                addIPartitions(c_term[j], p);
+                queue.push_back(c_term[j]);
+            }
+            if (isUF(current) || isUP(current)) {
+                addIPartitions(c_term.symb(), p);
+            }
+            seen.insert(current, false);
         }
     }
 }
