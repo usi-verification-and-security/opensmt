@@ -9,7 +9,7 @@ bool LRATheory::simplify(const vec<PFRef>& formulas, int curr)
 {
 #ifdef PRODUCE_PROOF
     vec<PTRef> & flas = pfstore[formulas[curr]].formulas;
-    for(int i = 0; i <flas.size(); ++i) {
+    for(int i = 0; i < flas.size(); ++i) {
         PTRef & fla = flas[i];
         lralogic.simplifyAndSplitEq(fla, fla);
     }
