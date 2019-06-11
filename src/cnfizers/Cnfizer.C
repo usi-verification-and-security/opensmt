@@ -157,7 +157,6 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
     // Retrieve top-level formulae - this is a list constructed from a conjunction
     retrieveTopLevelFormulae (formula, top_level_formulae);
     assert (top_level_formulae.size() != 0);
-
 #ifdef PEDANTIC_DEBUG
     cerr << "Top level formulae:" << endl;
 
@@ -203,43 +202,17 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
 #endif // PEDANTIC_DEBUG
             res = cnfize (f); // Perform actual cnfization (implemented in subclasses)
         }
-
-        s_empty = false; // solver no longer empty
     }
+    s_empty = false; // solver no longer empty
+    if (res) {
+        vec<PTRef> nestedBoolRoots = getNestedBoolRoots(formula);
+        res = declare(nestedBoolRoots, PTRef_Undef); // Declare the formula without asserting the top level
+        assert(res);
+        declareVars(logic.propFormulasAppearingInUF);
+    }
+
     currentPartition = -1;
     return res == false ? l_False : l_Undef;
-//    if (res == false) return l_False;
-//
-//    return l_Undef;
-}
-
-void Cnfizer::declareToSolver(const vec<PTRef>& nestedBoolRoots, FrameId frame_id) {
-    // Get the variable for the incrementality.
-    setFrameTerm(frame_id);
-
-    Map<PTRef, PTRef, PTRefHash> valdupmap;
-//  egraph.initDupMap1( );
-
-    if (solver.okay() == false) return;
-
-    for (int i = 0; i < nestedBoolRoots.size(); i++) {
-
-        PTRef formula = nestedBoolRoots[i];
-        assert(formula != PTRef_Undef);
-
-#ifdef PRODUCE_PROOF
-        assert(logic.getPartitionIndex(formula) != -1);
-        currentPartition = logic.getPartitionIndex(formula);
-#endif // PRODUCE_PROOF
-
-        vec<PTRef> unprocessed_terms = {formula};
-
-        bool res = declare(unprocessed_terms, PTRef_Undef); // Declare the formula without asserting the top level
-        assert(res == true);
-        s_empty = false; // solver no longer empty
-    }
-
-    currentPartition = -1;
 }
 
 void Cnfizer::declareVars(vec<PTRef>& vars)

@@ -372,7 +372,7 @@ class Logic {
 
     bool         appearsInUF        (PTRef tr)        const;
     void         setAppearsInUF     (PTRef tr);
-    vec<PTRef>   getNestedBoolRoots (PTRef tr)        const;
+    virtual vec<PTRef> getNestedBoolRoots (PTRef tr)  const;
 
     bool        isVar              (SymRef sr)     const ;//{ return sym_store[sr].nargs() == 0 && !isConstant(sr); }
     bool        isVar              (PTRef tr)      const;// { return isVar(getPterm(tr).symb()); }

@@ -62,7 +62,6 @@ public:
     virtual ~Cnfizer( ) { }
 
     lbool cnfizeAndGiveToSolver (PTRef, FrameId frame_id); // Main routine
-    void  declareToSolver(const vec<PTRef>& nestedBoolRoots, FrameId frame_id); // Entry point for declaring.
     void  declareVars    (vec<PTRef>&); // Declare a set of Boolean atoms to the solver (without asserting them)
 
     lbool  getTermValue(PTRef) const;
@@ -102,6 +101,7 @@ private:
 
 protected:
     inline Lit getOrCreateLiteralFor(PTRef ptr) {return this->tmap.getOrCreateLit(ptr);}
+    inline vec<PTRef> getNestedBoolRoots(PTRef ptr) { return logic.getNestedBoolRoots(ptr); }
 
     // PROOF version
     int currentPartition = -1;
