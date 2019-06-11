@@ -1154,10 +1154,8 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, char** msg)
 }
 
 PTRef
-Logic::insertTermHash(SymRef sym, const vec<PTRef>& terms_in)
+Logic::insertTermHash(SymRef sym, const vec<PTRef>& terms)
 {
-    vec<PTRef> terms;
-    terms_in.copyTo(terms);
     PTRef res = PTRef_Undef;
     char *msg;
     if (terms.size() == 0) {
@@ -1169,9 +1167,6 @@ Logic::insertTermHash(SymRef sym, const vec<PTRef>& terms_in)
         }
     }
     else if (!isBooleanOperator(sym)) {
-        if (sym_store[sym].commutes()) {
-            termSort(terms);
-        }
         if (!sym_store[sym].left_assoc() &&
             !sym_store[sym].right_assoc() &&
             !sym_store[sym].chainable() &&
@@ -1185,10 +1180,13 @@ Logic::insertTermHash(SymRef sym, const vec<PTRef>& terms_in)
         PTLKey k;
         k.sym = sym;
         terms.copyTo(k.args);
+        if (sym_store[sym].commutes()) {
+            termSort(k.args);
+        }
         if (term_store.hasCplxKey(k))
             res = term_store.getFromCplxMap(k);
         else {
-            res = term_store.newTerm(sym, terms);
+            res = term_store.newTerm(sym, k.args);
             term_store.addToCplxMap(k, res);
         }
     }
