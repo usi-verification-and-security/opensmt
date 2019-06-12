@@ -115,7 +115,7 @@ PTRef mergePTRefArgs(Logic & logic, PTRef tr, Map<PTRef,PTRef,PTRefHash>& cache,
     bool changed = false;
     for (int i = 0; i < t.size(); i++) {
         PTRef subst = cache[t[i]];
-        changed |= subst != t[i];
+        changed |= (subst != t[i]);
         if (logic.getSymRef(t[i]) != sr) {
             new_args.push(subst);
             continue;
