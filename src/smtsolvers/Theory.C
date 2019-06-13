@@ -103,8 +103,8 @@ CoreSMTSolver::handleSat()
         assert(safeValue(l1) != l_True);
         assert(safeValue(l2) != l_True);
         // MB: ensure the solver knows about the variables
-        addVar(var(l1));
-        addVar(var(l2));
+        addVar_(var(l1));
+        addVar_(var(l2));
         if (safeValue(l1) == l_Undef && safeValue(l2) == l_Undef) {
             // MB: allocate, attach and remember the clause - treated as original
             CRef cr = ca.alloc(new_splits, false);
