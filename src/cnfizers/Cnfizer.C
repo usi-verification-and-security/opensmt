@@ -217,8 +217,10 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
 
 void Cnfizer::declareVars(vec<PTRef>& vars)
 {
-    for (size_t i = 0; i < vars.size(); i++)
-        tmap.getOrCreateLit(vars[i]);
+    for (size_t i = 0; i < vars.size(); i++) {
+        Lit l = tmap.getOrCreateLit(vars[i]);
+        solver.addVar(var(l));
+    }
 }
 
 //

@@ -273,9 +273,10 @@ public:
     // Problem specification:
     //
 protected:
-    void  addVar    (Var v); // Ensure that var v exists in the solver
+    void  addVar_    (Var v); // Ensure that var v exists in the solver
     virtual Var newVar(bool polarity, bool dvar);//    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
 public:
+    void    addVar(Var v); // Anounce the existence of a variable to the solver
     bool    addOriginalClause(const vec<Lit> & ps);
     bool    addEmptyClause();                                   // Add the empty clause, making the solver contradictory.
     bool    addOriginalClause(Lit p);                                  // Add a unit clause to the solver.

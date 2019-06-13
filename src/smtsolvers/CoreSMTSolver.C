@@ -234,10 +234,21 @@ CoreSMTSolver::~CoreSMTSolver()
 
 //=================================================================================================
 // Minor methods:
+
+void CoreSMTSolver::addVar(Var v)
+{
+    PTRef pterm = theory_handler.getTMap().varToPTRef(v);
+    if (pterm == PTRef_Undef) {
+        opensmt_warning("Trying to add to SAT solver a variable not bound to any pterm. Ignoring the variable!");
+        return;
+    }
+    addVar_(v);
+}
+
 //
 // Add a new var v to the solver if it does not yet exist
 //
-void CoreSMTSolver::addVar(Var v)
+void CoreSMTSolver::addVar_(Var v)
 {
     if (v < nVars()) {
         // These are Necessary in incremental mode since previously

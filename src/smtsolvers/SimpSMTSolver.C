@@ -203,7 +203,7 @@ bool SimpSMTSolver::addOriginalSMTClause(const vec<Lit> & smt_clause, std::pair<
         Var v = var(l);
         PTRef tr = theory_handler.getTMap().varToPTRef(v);
         assert(v == theory_handler.getLogic().getPterm(tr).getVar());
-        addVar(v);
+        addVar_(v);
         if (theory_handler.getLogic().isTheoryTerm(tr) || theory_handler.getTMap().isFrozen(v))
             setFrozen(v, true);
     }
