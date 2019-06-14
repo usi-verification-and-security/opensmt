@@ -42,11 +42,11 @@ struct DecomposedStatistics {
 class LRA_Interpolator {
 public:
     LRA_Interpolator(LRALogic & logic, vec<PtAsgn> const & explanations, std::vector<opensmt::Real> const & coeffs,
-                     ipartitions_t const & mask, std::map<PTRef, icolor_t> * labels) : logic{logic},
-                                                                                       explanations{explanations},
-                                                                                       explanation_coeffs{coeffs},
-                                                                                       mask{mask},
-                                                                                       labels{labels}
+                     ipartitions_t const & mask, std::map<PTRef, icolor_t> * labels) : logic(logic),
+                                                                                       explanations(explanations),
+                                                                                       explanation_coeffs(coeffs),
+                                                                                       mask(mask),
+                                                                                       labels(labels)
     {}
     PTRef getInterpolant(icolor_t color);
 

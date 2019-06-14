@@ -34,8 +34,8 @@ namespace {
 
 // TODO: when is explanation negated?
 struct ItpHelper {
-    ItpHelper(LALogic & logic, PtAsgn ineq, Real coeff) : explanation{ineq.tr}, negated{ineq.sgn == l_False},
-                                                          expl_coeff{std::move(coeff)}, expr{logic, ineq.tr, false} {}
+    ItpHelper(LALogic & logic, PtAsgn ineq, Real coeff) : explanation(ineq.tr), negated(ineq.sgn == l_False),
+                                                          expl_coeff(std::move(coeff)), expr(logic, ineq.tr, false) {}
     PTRef explanation;
     bool negated;
     Real expl_coeff;
@@ -43,7 +43,7 @@ struct ItpHelper {
 };
 
 struct LinearTerm {
-    LinearTerm(PTRef var_, Real coeff_): var{var_}, coeff{std::move(coeff_)} {}
+    LinearTerm(PTRef var_, Real coeff_): var(var_), coeff(std::move(coeff_)) {}
     PTRef var;
     Real coeff;
 };
