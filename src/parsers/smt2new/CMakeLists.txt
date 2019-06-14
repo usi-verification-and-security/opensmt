@@ -8,7 +8,7 @@
 
 add_library(parsers OBJECT "")
 
-find_package(BISON)
+find_package(BISON 2.7)
 find_package(FLEX)
 
 BISON_TARGET(smt2newParser smt2newparser.yy ${CMAKE_CURRENT_BINARY_DIR}/smt2newparser.cc)
