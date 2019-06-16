@@ -11,7 +11,9 @@ bool LIATheory::simplify(const vec<PFRef>& formulas, int curr)
     vec<PTRef> & flas = pfstore[formulas[curr]].formulas;
     for(int i = 0; i <flas.size(); ++i) {
         PTRef & fla = flas[i];
-        lialogic.simplifyAndSplitEq(fla, fla);
+        PTRef old = flas[i];
+        lialogic.simplifyAndSplitEq(old, fla);
+        lialogic.transferPartitionMembership(old, fla);
     }
     pfstore[formulas[curr]].root = getLogic().mkAnd(flas);
 #else // PRODUCE_PROOF
