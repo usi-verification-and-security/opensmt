@@ -581,9 +581,6 @@ void Logic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
     if (!changed) {return;}
     PTRef trp = insertTerm(p.symb(), newargs, &msg);
     if (trp != tr) {
-#ifdef PRODUCE_PROOF
-    transferPartitionMembership(tr, trp);
-#endif
         if (tr_map.has(tr))
             assert(tr_map[tr] == trp);
         else

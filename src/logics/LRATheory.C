@@ -11,7 +11,9 @@ bool LRATheory::simplify(const vec<PFRef>& formulas, int curr)
     vec<PTRef> & flas = pfstore[formulas[curr]].formulas;
     for(int i = 0; i < flas.size(); ++i) {
         PTRef & fla = flas[i];
-        lralogic.simplifyAndSplitEq(fla, fla);
+        PTRef old = flas[i];
+        lralogic.simplifyAndSplitEq(old, fla);
+        lralogic.transferPartitionMembership(old, fla);
     }
     pfstore[formulas[curr]].root = getLogic().mkAnd(flas);
 #else
