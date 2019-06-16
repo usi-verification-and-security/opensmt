@@ -2155,22 +2155,26 @@ void Logic::conjoinItes(PTRef root, PTRef& new_root)
 
 void Logic::propagatePartitionMask(PTRef root) {
     ipartitions_t& p = getIPartitions(root);
-    Map<PTRef, bool, PTRefHash> seen;
+    std::vector<bool> seen;
+    // MB: Relies on invariant: Every subterm was created before its parent, so it has lower id
+    auto size = Idx(this->getPterm(root).getId()) + 1;
+    seen.resize(size, false);
     std::vector<PTRef> queue {root};
-
     while (!queue.empty()) {
         PTRef current = queue.back();
         queue.pop_back();
-        if (!seen.has(current)) {
-            const Pterm& c_term = this->getPterm(current);
+        const Pterm& c_term = this->getPterm(current);
+        auto id = Idx(c_term.getId());
+        assert(id < size);
+        if (!seen[id]) {
+            addIPartitions(current, p);
             for (int j = 0; j < c_term.size(); ++j) {
-                addIPartitions(c_term[j], p);
                 queue.push_back(c_term[j]);
             }
             if (isUF(current) || isUP(current)) {
                 addIPartitions(c_term.symb(), p);
             }
-            seen.insert(current, false);
+            seen[id] = true;
         }
     }
 }
