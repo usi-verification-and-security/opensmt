@@ -598,26 +598,29 @@ void Logic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
 void Logic::simplifyTree(PTRef tr, PTRef& root_out)
 {
     vec<pi> queue;
-    Map<PTRef,bool,PTRefHash> processed;
+    std::vector<bool> processed;
+    // MB: Relies on invariant: Every subterm was created before its parent, so it has lower id
+    auto size = Idx(this->getPterm(tr).getId()) + 1;
+    processed.resize(size, false);
     Map<PTRef,PTRef,PTRefHash> tr_map;
     queue.push(pi(tr));
-    lbool last_val = l_Undef;
     while (queue.size() != 0) {
         // First find a node with all children processed.
-        int i = queue.size()-1;
-        if (processed.has(queue[i].x)) {
+        pi current = queue.last();
+        const Pterm & t = this->getPterm(current.x);
+        auto id = Idx(t.getId());
+        if (processed[id]) {
             queue.pop();
             continue;
         }
         bool unprocessed_children = false;
-        if (queue[i].done == false) {
+        if (current.done == false) {
 #ifdef SIMPLIFY_DEBUG
-            cerr << "looking at term num " << queue[i].x.x << endl;
+            std::cerr << "looking at term num " << current.x << std::endl;
 #endif
-            Pterm& t = getPterm(queue[i].x);
             for (int j = 0; j < t.size(); j++) {
                 PTRef cr = t[j];
-                if (!processed.has(cr)) {
+                if (!processed[Idx(this->getPterm(cr).getId())]) {
                     unprocessed_children = true;
                     queue.push(pi(cr));
 #ifdef SIMPLIFY_DEBUG
@@ -625,16 +628,16 @@ void Logic::simplifyTree(PTRef tr, PTRef& root_out)
 #endif
                 }
             }
-            queue[i].done = true;
+            current.done = true;
             if (unprocessed_children) continue;
         }
         assert(!unprocessed_children);
 #ifdef SIMPLIFY_DEBUG
-        cerr << "Found a node " << queue[i].x.x << endl;
-        cerr << "Before simplification it looks like " << this->printTerm(queue[i].x) << endl;
+        std::cerr << "Found a node " << current.x << std::endl;
+        std::cerr << "Before simplification it looks like " << this->printTerm(current) << std::endl;
 #endif
-        processed.insert(queue[i].x, true);
-        visit(queue[i].x, tr_map);
+        processed[id] = true;
+        visit(current.x, tr_map);
     }
     if (tr_map.has(tr))
         root_out = tr_map[tr];
