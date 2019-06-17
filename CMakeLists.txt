@@ -13,6 +13,13 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 #message(${CMAKE_C_COMPILER_ID})
 #message(${CMAKE_CXX_COMPILER_ID})
 
+#Set the default build type if this is the first time cmake is run and nothing has been set
+if (NOT EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
+  if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel." FORCE)
+  endif()
+endif()
+
 set(INSTALL_HEADERS_DIR include/opensmt)
 
 option(PRODUCE_PROOF "Produce proof" OFF)
