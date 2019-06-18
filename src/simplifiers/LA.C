@@ -216,14 +216,14 @@ PTRef LAExpression::toPTRef() const
     PTRef poly = logic.mkNumPlus(sum_list);
     constant = -constant;
     PTRef c = logic.mkConst(constant);
-    vec<PTRef> args;
-    args.push(poly);
-    args.push(c);
     if ( r == EQ ) {
+        vec<PTRef> args;
+        args.push(poly);
+        args.push(c);
         return logic.mkEq(args);
     }
     else {
-       return logic.mkNumLeq(args);
+       return logic.mkNumLeq(poly, c);
     }
   }
   //

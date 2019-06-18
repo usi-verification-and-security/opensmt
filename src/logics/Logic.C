@@ -1022,6 +1022,20 @@ PTRef Logic::mkConst(const SRef s, const char* name) {
     return ptr;
 }
 
+PTRef Logic::mkUninterpFun(SymRef f, const vec<PTRef> & args) {
+    PTRef tr = mkFun(f, args);
+    assert(isUFTerm(tr) || isUP(tr));
+    if (isUFTerm(tr) || isUP(tr)) {
+        for (int i = 0; i < args.size(); i++) {
+            if (hasSortBool(args[i])) {
+                setAppearsInUF(args[i]);
+                setAppearsInUF(mkNot(args[i]));
+            }
+        }
+    }
+    return tr;
+}
+
 PTRef Logic::mkFun(SymRef f, const vec<PTRef>& args, char** msg)
 {
     PTRef tr;
@@ -1029,14 +1043,6 @@ PTRef Logic::mkFun(SymRef f, const vec<PTRef>& args, char** msg)
         tr = PTRef_Undef;
     else {
         tr = insertTermHash(f, args);
-        if (isUFTerm(tr) || isUP(tr)) {
-            for (int i = 0; i < args.size(); i++) {
-                if (hasSortBool(args[i])) {
-                    setAppearsInUF(args[i]);
-                    setAppearsInUF(mkNot(args[i]));
-                }
-            }
-        }
     }
     return tr;
 }
@@ -1150,7 +1156,7 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, char** msg)
         return getTerm_true();
     if(sym == getSym_false())
         return getTerm_false();
-    return mkFun(sym, terms);
+    return mkUninterpFun(sym, terms);
 }
 
 PTRef
