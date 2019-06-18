@@ -1,4 +1,4 @@
-\documentclass{article}
+\documentclass{easychair}
 
 \usepackage{hyperref}
 
@@ -8,10 +8,13 @@ Martin Blicha \and
 Antti E. J. Hyv{\"a}rinen \and
 Matteo Marescotti \and
 Natasha Sharygina \\
-{\small Universit{\`a} della Svizzera italiana (USI), Lugano,
-Switzerland}
 }
+\institute{Universit{\`a} della Svizzera italiana (USI), Lugano,
+Switzerland}
 \date{}
+\titlerunning{The OpenSMT Solver in SMT-COMP 2019}
+\authorrunning{M. Blicha, A. E. J. Hyv{\"a}rinen, M. Marescotti, and N.
+Sharygina}
 \begin{document}
 \maketitle
 
@@ -76,19 +79,21 @@ verification group at USI.
 
 \section{Utilization}
 
-OpenSMT is being used in a range of projects as a back-end solver.
-Recent examples include its use as an interpolation engine of the Sally
-model checker~\cite{JovanovicD:FMCAD16} which won the transition systems
+OpenSMT is used in a range of projects as a back-end solver.  Recent
+examples include its use as an interpolation engine of the Sally model
+checker~\cite{JovanovicD:FMCAD16} which won the transition systems
 category in the constrained Horn clause competition 2019.  OpenSMT also
 forms the basis of our own model checkers such as
-HiFrog~\cite{AltACMFHS17}.  OpenSMT is compatible with the
-parallelization engine SMTS~\cite{MarescottiHS18}.
+HiFrog~\cite{AltACMFHS17}.  OpenSMT is compatible with the SMTS
+parallelization framework~\cite{MarescottiHS18}.
 
-\section{Download}
-More information on the solver and downloads are available at
+\section{Availability}
+The source code repository and more information on the solver is
+available at
 
 \begin{itemize}
     \item \url{https://github.com/usi-verification-and-security/opensmt}
+        and
     \item \url{http://verify.inf.usi.ch/opensmt}
 \end{itemize}
 
