@@ -202,6 +202,19 @@ TEST_F(ArithmeticExpressions_test, test_NonLinearException)
     EXPECT_NO_THROW(logic.mkNumTimes(x,two));
 }
 
+TEST_F(ArithmeticExpressions_test, test_Inequality_Constant)
+{
+    PTRef one = logic.getTerm_NumOne();
+    PTRef a = logic.mkNumVar("a");
+    vec<PTRef> args;
+    args.push(a);
+    args.push(one);
+    PTRef sum = logic.mkNumPlus(args);
+    ASSERT_EQ(logic.mkNumLeq(a, a), logic.getTerm_true());
+    ASSERT_EQ(logic.mkNumLeq(a, sum), logic.getTerm_true());
+    ASSERT_EQ(logic.mkNumGeq(a, sum), logic.getTerm_false());
+}
+
 
 
 
