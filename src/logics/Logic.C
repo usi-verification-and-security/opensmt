@@ -2127,28 +2127,32 @@ Logic::implies(PTRef implicant, PTRef implicated)
 
 void Logic::conjoinItes(PTRef root, PTRef& new_root)
 {
-    vec<PTRef> queue;
-    Map<PTRef,bool,PTRefHash> seen;
-    queue.push(root);
+    std::vector<bool> seen;
+    // MB: Relies on invariant: Every subterm was created before its parent, so it has lower id
+    auto size = Idx(this->getPterm(root).getId()) + 1;
+    seen.resize(size, false);
+    std::vector<PTRef> queue {root};
     vec<PTRef> args;
-    while (queue.size() != 0) {
-        PTRef el = queue.last();
-        queue.pop();
-        if (seen.has(el)) continue;
-        if (isVar(el) && isIteVar(el)) {
-            PTRef ite = getTopLevelIte(el);
-            args.push(ite);
-            queue.push(ite);
+    while (!queue.empty()) {
+        PTRef current = queue.back();
+        queue.pop_back();
+        const Pterm& c_term = this->getPterm(current);
+        auto id = Idx(c_term.getId());
+        assert(id < size);
+        if (!seen[id]) {
+            if (isVar(current) && isIteVar(current)) {
+                PTRef ite = getTopLevelIte(current);
+                args.push(ite);
+                queue.push_back(ite);
+            }
+            for (int i = 0; i < c_term.size(); i++) {
+                queue.push_back(c_term[i]);
+            }
+            seen[id] = true;
         }
-        for (int i = 0; i < getPterm(el).size(); i++)
-            queue.push(getPterm(el)[i]);
-        seen.insert(el, true);
     }
     args.push(root);
     new_root = mkAnd(args);
-#ifdef PRODUCE_PROOF
-    addIPartitions(new_root, getIPartitions(root));
-#endif
 }
 
 #ifdef PRODUCE_PROOF
