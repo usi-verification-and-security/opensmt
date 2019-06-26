@@ -95,27 +95,32 @@ Logic::Logic(SMTConfig& c) :
     // exists for making the equality symbol!
     IdRef bool_id = id_store.newIdentifier("Bool");
     vec<SRef> tmp_srefs;
+    vec<PTRef> args;
     sort_store.newSort(bool_id, tmp_srefs);
     sort_BOOL = sort_store["Bool"];
+    tmp_srefs.push(sort_BOOL);
 
-    term_TRUE = mkConst(getSort_bool(), tk_true);
+    sym_TRUE = newSymb(tk_true, tmp_srefs, &msg);
+    sym_store[sym_TRUE].setNoScoping();
+    sym_store.setInterpreted(sym_TRUE);
+
+    term_TRUE = mkFun(sym_TRUE, args);
     if (term_TRUE == PTRef_Undef) {
         printf("Error in constructing term %s: %s\n", tk_true, msg);
         assert(false);
     }
-    sym_TRUE = sym_store.nameToRef(tk_true)[0];
-    sym_store[sym_TRUE].setNoScoping();
-    sym_store.setInterpreted(sym_TRUE);
+    markConstant(term_TRUE);
 
+    sym_FALSE = newSymb(tk_false, tmp_srefs, &msg);
+    sym_store[sym_FALSE].setNoScoping();
+    sym_store.setInterpreted(sym_FALSE);
 
-    term_FALSE = mkConst(getSort_bool(), tk_false);
+    term_FALSE = mkFun(sym_FALSE, args);
     if (term_FALSE  == PTRef_Undef) {
         printf("Error in constructing term %s: %s\n", tk_false, msg);
         assert(false);
     }
-    sym_FALSE = sym_store.nameToRef(tk_false)[0];
-    sym_store[sym_FALSE].setNoScoping();
-    sym_store.setInterpreted(sym_FALSE);
+    markConstant(term_FALSE);
 
     // The anonymous symbol for the enodes of propositional formulas nested inside UFs (or UPs)
     vec<SRef> params;
@@ -994,7 +999,7 @@ PTRef Logic::mkVar(SRef s, const char* name) {
         sr = symNameToRef(name)[0];
     }
     vec<PTRef> tmp;
-    PTRef ptr = insertTerm(sr, tmp, &msg);
+    PTRef ptr = mkFun(sr, tmp, &msg);
     assert (ptr != PTRef_Undef);
 
     return ptr;
@@ -1013,13 +1018,21 @@ PTRef Logic::mkConst(const SRef s, const char* name) {
     } else {
         ptr = mkVar(s, name);
     }
+    markConstant(ptr);
+
+    return ptr;
+}
+
+void Logic::markConstant(PTRef ptr) {
+    SymId id = sym_store[getPterm(ptr).symb()].getId();
+    markConstant(id);
+}
+
+void Logic::markConstant(SymId id) {
     // Code to allow efficient constant detection.
-    int id = sym_store[getPterm(ptr).symb()].getId();
     while (id >= constants.size())
         constants.push(false);
     constants[id] = true;
-
-    return ptr;
 }
 
 PTRef Logic::mkUninterpFun(SymRef f, const vec<PTRef> & args) {
@@ -1148,6 +1161,8 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, char** msg)
         return mkNot(terms[0]);
     if(isEquality(sym))
         return mkEq(terms);
+    if(isDisequality(sym))
+        return mkFun(sym, terms);
     if(isIte(sym))
         return mkIte(terms);
     if(sym == getSym_implies())
@@ -1156,6 +1171,10 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, char** msg)
         return getTerm_true();
     if(sym == getSym_false())
         return getTerm_false();
+    if(isVar(sym)) {
+        assert(terms.size() == 0);
+        return mkFun(sym, terms);
+    }
     return mkUninterpFun(sym, terms);
 }
 

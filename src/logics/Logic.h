@@ -230,6 +230,8 @@ class Logic {
     SRef        newSort       (IdRef idr, const char* name, vec<SRef>& tmp);// { return sort_store.newSort(idr, name, tmp); }
     PTRef       mkFun         (SymRef f, const vec<PTRef>& args, char** msg);
     PTRef       mkFun         (SymRef f, const vec<PTRef>& args) { char* msg; return mkFun(f, args, &msg); };
+    void        markConstant  (PTRef ptr);
+    void        markConstant  (SymId sid);
 
   public:
     SRef        getSortRef    (const char* name)      const;// { return sort_store[name]; }
