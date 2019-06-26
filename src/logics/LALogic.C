@@ -322,10 +322,7 @@ PTRef  LALogic::mkConst(const opensmt::Number& c)
     for (int i = numbers.size(); i <= id; i++) { numbers.push(nullptr); }
     if (numbers[id] == nullptr) { numbers[id] = new opensmt::Number(val); }
     assert(c == *numbers[id]);
-    // Code to allow efficient constant detection.
-    while (id >= constants.size())
-        constants.push(false);
-    constants[id] = true;
+    markConstant(id);
     return ptr;
 }
 
@@ -764,10 +761,7 @@ PTRef LALogic::mkConst(SRef s, const char* name)
         if (numbers[id] != nullptr) { delete numbers[id]; }
         numbers[id] = new opensmt::Number(rat);
         free(rat);
-        // Code to allow efficient constant detection.
-        while (id >= constants.size())
-            constants.push(false);
-        constants[id] = true;
+        markConstant(id);
     } else
         ptr = Logic::mkConst(s, name);
     return ptr;
