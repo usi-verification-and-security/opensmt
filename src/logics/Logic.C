@@ -95,32 +95,26 @@ Logic::Logic(SMTConfig& c) :
     // exists for making the equality symbol!
     IdRef bool_id = id_store.newIdentifier("Bool");
     vec<SRef> tmp_srefs;
-    vec<PTRef> args;
     sort_store.newSort(bool_id, tmp_srefs);
     sort_BOOL = sort_store["Bool"];
-    tmp_srefs.push(sort_BOOL);
 
-    sym_TRUE = newSymb(tk_true, tmp_srefs, &msg);
-    sym_store[sym_TRUE].setNoScoping();
-    sym_store.setInterpreted(sym_TRUE);
-
-    term_TRUE = mkFun(sym_TRUE, args);
+    term_TRUE = mkConst(getSort_bool(), tk_true);
     if (term_TRUE == PTRef_Undef) {
         printf("Error in constructing term %s: %s\n", tk_true, msg);
         assert(false);
     }
-    markConstant(term_TRUE);
+    sym_TRUE = sym_store.nameToRef(tk_true)[0];
+    sym_store[sym_TRUE].setNoScoping();
+    sym_store.setInterpreted(sym_TRUE);
 
-    sym_FALSE = newSymb(tk_false, tmp_srefs, &msg);
-    sym_store[sym_FALSE].setNoScoping();
-    sym_store.setInterpreted(sym_FALSE);
-
-    term_FALSE = mkFun(sym_FALSE, args);
+    term_FALSE = mkConst(getSort_bool(), tk_false);
     if (term_FALSE  == PTRef_Undef) {
         printf("Error in constructing term %s: %s\n", tk_false, msg);
         assert(false);
     }
-    markConstant(term_FALSE);
+    sym_FALSE = sym_store.nameToRef(tk_false)[0];
+    sym_store[sym_FALSE].setNoScoping();
+    sym_store.setInterpreted(sym_FALSE);
 
     // The anonymous symbol for the enodes of propositional formulas nested inside UFs (or UPs)
     vec<SRef> params;
