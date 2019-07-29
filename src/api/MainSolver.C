@@ -129,9 +129,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
             // Optimize the dag for cnfization
             if (logic.isBooleanOperator(fla)) {
                 PTRef old = fla;
-                Map<PTRef,int,PTRefHash> PTRefToIncoming;
-                computeIncomingEdges(fla, PTRefToIncoming);
-                fla = rewriteMaxArity(fla, PTRefToIncoming);
+                fla = rewriteMaxArity(fla);
                 logic.transferPartitionMembership(old, fla);
             }
             assert(logic.getPartitionIndex(fla) != -1);
@@ -144,10 +142,8 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
         FContainer fc(root);
 
         // Optimize the dag for cnfization
-        Map<PTRef,int,PTRefHash> PTRefToIncoming;
         if (logic.isBooleanOperator(fc.getRoot())) {
-            computeIncomingEdges(fc.getRoot(), PTRefToIncoming);
-            PTRef flat_root = rewriteMaxArity(fc.getRoot(), PTRefToIncoming);
+            PTRef flat_root = rewriteMaxArity(fc.getRoot());
             fc.setRoot(flat_root);
         }
 
@@ -178,14 +174,9 @@ void MainSolver::computeIncomingEdges(PTRef tr, Map<PTRef,int,PTRefHash>& PTRefT
     ::computeIncomingEdges(logic, tr, PTRefToIncoming);
 }
 
-PTRef MainSolver::rewriteMaxArity(PTRef root, const Map<PTRef,int,PTRefHash>& PTRefToIncoming)
+PTRef MainSolver::rewriteMaxArity(PTRef root)
 {
-    return ::rewriteMaxArity(logic, root, PTRefToIncoming);
-}
-
-PTRef MainSolver::mergePTRefArgs(PTRef tr, Map<PTRef,PTRef,PTRefHash>& cache, const Map<PTRef,int,PTRefHash>& PTRefToIncoming)
-{
-    return ::mergePTRefArgs(logic, tr, cache, PTRefToIncoming);
+    return ::rewriteMaxArityClassic(logic, root);
 }
 
 //
