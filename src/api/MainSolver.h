@@ -129,8 +129,7 @@ class MainSolver
     FContainer simplifyEqualities(vec<PtChild>& terms);
 
     void computeIncomingEdges(PTRef tr, Map<PTRef,int,PTRefHash>& PTRefToIncoming);
-    PTRef rewriteMaxArity(PTRef, const Map<PTRef,int,PTRefHash>&);
-    PTRef mergePTRefArgs(PTRef, Map<PTRef,PTRef,PTRefHash>&, const Map<PTRef,int,PTRefHash>&);
+    PTRef rewriteMaxArity(PTRef);
 
     FContainer root_instance; // Contains the root of the instance once simplifications are done
 
