@@ -626,31 +626,33 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
     PTRef interpol = getRoot()->getPartialInterpolant();
     assert (interpol != PTRef_Undef);
 
-    if(simplifyInterpolant() == 4 && logic_.isBooleanOperator(interpol) && !logic_.isNot(interpol)) {
-        interpol = ::rewriteMaxArityAggresive(logic_, interpol);
-        interpol = ::simplifyUnderAssignment_Aggressive(interpol, logic_);
-    }
-    else {
-        if (simplifyInterpolant() > 0 && logic_.isBooleanOperator(interpol)) {
-            if (verbose() > 1) {
-                std::cout << "Itp before rewriting max arity: \n" << logic_.printTerm(interpol) << "\n\n";
-            }
-            interpol = ::rewriteMaxArityClassic(logic_, interpol);
-        }
-        if (simplifyInterpolant() == 2 && logic_.isBooleanOperator(interpol) && !logic_.isNot(interpol)) {
-            if (verbose() > 1) {
-                std::cout << "Itp before aggressive simplifying: \n" << logic_.printTerm(interpol) << "\n\n";
-            }
-            Map<PTRef, int, PTRefHash> PTRefToIncoming;
-            ::computeIncomingEdges(logic_, interpol, PTRefToIncoming);
-            interpol = ::simplifyUnderAssignment(logic_, interpol, PTRefToIncoming);
-        }
+    const bool cannotSimplify = !(logic_.isBooleanOperator(interpol) && !logic_.isNot(interpol));
 
-        if (simplifyInterpolant() == 3 && logic_.isBooleanOperator(interpol) && !logic_.isNot(interpol)) {
-            if (verbose() > 1) {
-                std::cout << "Itp before aggressive simplifying: \n" << logic_.printTerm(interpol) << "\n\n";
-            }
+    if (!cannotSimplify) {
+        if(simplifyInterpolant() == 4) {
+            interpol = ::rewriteMaxArityAggresive(logic_, interpol);
             interpol = ::simplifyUnderAssignment_Aggressive(interpol, logic_);
+        }
+        else {
+            if (simplifyInterpolant() > 0) {
+                if (verbose() > 1) {
+                    std::cout << "Itp before rewriting max arity: \n" << logic_.printTerm(interpol) << "\n\n";
+                }
+                interpol = ::rewriteMaxArityClassic(logic_, interpol);
+            }
+            if (simplifyInterpolant() == 2) {
+                if (verbose() > 1) {
+                    std::cout << "Itp before aggressive simplifying: \n" << logic_.printTerm(interpol) << "\n\n";
+                }
+                interpol = ::simplifyUnderAssignment(logic_, interpol);
+            }
+
+            if (simplifyInterpolant() == 3) {
+                if (verbose() > 1) {
+                    std::cout << "Itp before aggressive simplifying: \n" << logic_.printTerm(interpol) << "\n\n";
+                }
+                interpol = ::simplifyUnderAssignment_Aggressive(interpol, logic_);
+            }
         }
     }
 
