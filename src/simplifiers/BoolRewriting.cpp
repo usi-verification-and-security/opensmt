@@ -175,9 +175,11 @@ PTRef _simplifyUnderAssignment(Logic & logic, PTRef root,
 }
 }
 
-PTRef simplifyUnderAssignment(Logic & logic, PTRef root, const Map<PTRef,int,PTRefHash>& PTRefToIncoming) {
+PTRef simplifyUnderAssignment(Logic & logic, PTRef root) {
+    Map<PTRef, int, PTRefHash> incomingEdges;
+    ::computeIncomingEdges(logic, root, incomingEdges);
     Map<PTRef, PTRef, PTRefHash> cache;
-    return _simplifyUnderAssignment(logic, root, PTRefToIncoming, {},  cache);
+    return _simplifyUnderAssignment(logic, root, incomingEdges, {},  cache);
 }
 
 namespace{

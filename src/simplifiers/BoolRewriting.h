@@ -18,7 +18,7 @@ PTRef rewriteMaxArityAggresive(Logic & logic, PTRef root);
 
 PTRef rewriteMaxArityClassic(Logic & logic, PTRef root);
 
-PTRef simplifyUnderAssignment(Logic & logic, PTRef root, const Map<PTRef,int,PTRefHash>& PTRefToIncoming);
+PTRef simplifyUnderAssignment(Logic & logic, PTRef root);
 
 PTRef simplifyUnderAssignment_Aggressive(PTRef root, Logic & logic);
 

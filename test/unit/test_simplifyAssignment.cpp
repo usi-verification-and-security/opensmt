@@ -17,9 +17,7 @@ TEST(SimplifyUnderAssignment_test, test_Simple_Conjunction)
             logic.mkNot(a),
             b
             ));
-    Map<PTRef,int,PTRefHash> PTRefToIncoming;
-    computeIncomingEdges(logic, conj, PTRefToIncoming);
-    PTRef res = simplifyUnderAssignment(logic, conj, PTRefToIncoming);
+    PTRef res = simplifyUnderAssignment(logic, conj);
     ASSERT_EQ(res, logic.mkAnd(a,b));
 }
 
@@ -30,9 +28,7 @@ TEST(SimplifyUnderAssignment_test, test_ConjunctionToConstant)
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");
     PTRef conj = logic.mkAnd(a, logic.mkAnd(logic.mkNot(a), b));
-    Map<PTRef,int,PTRefHash> PTRefToIncoming;
-    computeIncomingEdges(logic, conj, PTRefToIncoming);
-    PTRef res = simplifyUnderAssignment(logic, conj, PTRefToIncoming);
+    PTRef res = simplifyUnderAssignment(logic, conj);
     ASSERT_EQ(res, logic.getTerm_false());
 }
 
@@ -43,9 +39,7 @@ TEST(SimplifyUnderAssignment_test, test_DisjunctionToConstant)
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");
     PTRef disj = logic.mkOr(a, logic.mkOr(logic.mkNot(a), b));
-    Map<PTRef,int,PTRefHash> PTRefToIncoming;
-    computeIncomingEdges(logic, disj, PTRefToIncoming);
-    PTRef res = simplifyUnderAssignment(logic, disj, PTRefToIncoming);
+    PTRef res = simplifyUnderAssignment(logic, disj);
     ASSERT_EQ(res, logic.getTerm_true());
 }
 
@@ -59,9 +53,7 @@ TEST(SimplifyUnderAssignment_test, test_Simple_Disjunction)
             logic.mkNot(a),
             b
     ));
-    Map<PTRef,int,PTRefHash> PTRefToIncoming;
-    computeIncomingEdges(logic, disj, PTRefToIncoming);
-    PTRef res = simplifyUnderAssignment(logic, disj, PTRefToIncoming);
+    PTRef res = simplifyUnderAssignment(logic, disj);
     ASSERT_EQ(res, logic.mkOr(a,b));
 }
 
@@ -78,9 +70,7 @@ TEST(SimplifyUnderAssignment_test, test_Do_Not_Simplify_Shared)
             cdisj,
             logic.mkOr(logic.mkNot(a), conj)
             );
-    Map<PTRef,int,PTRefHash> PTRefToIncoming;
-    computeIncomingEdges(logic, top, PTRefToIncoming);
-    PTRef res = simplifyUnderAssignment(logic, top, PTRefToIncoming);
+    PTRef res = simplifyUnderAssignment(logic, top);
     ASSERT_EQ(res, top);
 }
 
@@ -96,9 +86,7 @@ TEST(SimplifyUnderAssignment_test, test_NestedStructure)
             logic.mkOr(nota, logic.mkAnd(b, nota)),
             c
     );
-    Map<PTRef,int,PTRefHash> PTRefToIncoming;
-    computeIncomingEdges(logic, top, PTRefToIncoming);
-    PTRef res = simplifyUnderAssignment(logic, top, PTRefToIncoming);
+    PTRef res = simplifyUnderAssignment(logic, top);
     ASSERT_EQ(res, logic.mkAnd(nota, c));
 }
 
@@ -116,9 +104,7 @@ TEST(SimplifyUnderAssignemnt_test, test_BooleanEquality)
     args.push(nota);
     args.push(logic.mkOr(a, logic.mkNot(eq)));
     PTRef top = logic.mkAnd(args);
-    Map<PTRef,int,PTRefHash> PTRefToIncoming;
-    computeIncomingEdges(logic, top, PTRefToIncoming);
-    PTRef res = simplifyUnderAssignment(logic, top, PTRefToIncoming);
+    PTRef res = simplifyUnderAssignment(logic, top);
     ASSERT_TRUE(res == logic.getTerm_false());
 }
 
@@ -186,9 +172,7 @@ TEST(SimplifyUnderAssignmentAggressive_test, test_Do_Not_Simplify)
             cdisj,
             logic.mkOr(logic.mkNot(a), conj)
     );
-    Map<PTRef,int,PTRefHash> PTRefToIncoming;
-    computeIncomingEdges(logic, top, PTRefToIncoming);
-    PTRef res = simplifyUnderAssignment(logic, top, PTRefToIncoming);
+    PTRef res = simplifyUnderAssignment(logic, top);
     ASSERT_EQ(res, top);
 }
 
