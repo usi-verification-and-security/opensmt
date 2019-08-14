@@ -32,6 +32,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Tterm.h"
 #ifdef PRODUCE_PROOF
 #include "FlaPartitionMap.h"
+#include "PartitionInfo.h"
 #endif
 
 
@@ -299,18 +300,20 @@ class Logic {
     bool implies(PTRef, PTRef); // Check the result with an external solver
 
 #ifdef PRODUCE_PROOF
+    PartitionInfo partitionInfo;
+
     PTRef getPartitionA(const ipartitions_t&);
     PTRef getPartitionB(const ipartitions_t&);
     bool verifyInterpolantA(PTRef, const ipartitions_t&);
     bool verifyInterpolantB(PTRef, const ipartitions_t&);
     bool verifyInterpolant(PTRef, const ipartitions_t&);
 
-    ipartitions_t& getIPartitions(PTRef _t) { return term_store.getIPartitions(_t); }
-    void setIPartitions(PTRef _t, const ipartitions_t& _p) { term_store.setIPartitions(_t, _p); }
-    void addIPartitions(PTRef _t, const ipartitions_t& _p) { term_store.addIPartitions(_t, _p); }
-    ipartitions_t& getIPartitions(SymRef _s) { return term_store.getIPartitions(_s); }
-    void setIPartitions(SymRef _s, const ipartitions_t& _p) { term_store.setIPartitions(_s, _p); }
-    void addIPartitions(SymRef _s, const ipartitions_t& _p) { term_store.addIPartitions(_s, _p); }
+    ipartitions_t& getIPartitions(PTRef _t) { return partitionInfo.getIPartitions(_t); }
+    void setIPartitions(PTRef _t, const ipartitions_t& _p) { partitionInfo.setIPartitions(_t, _p); }
+    void addIPartitions(PTRef _t, const ipartitions_t& _p) { partitionInfo.addIPartitions(_t, _p); }
+    ipartitions_t& getIPartitions(SymRef _s) { return partitionInfo.getIPartitions(_s); }
+    void setIPartitions(SymRef _s, const ipartitions_t& _p) { partitionInfo.setIPartitions(_s, _p); }
+    void addIPartitions(SymRef _s, const ipartitions_t& _p) { partitionInfo.addIPartitions(_s, _p); }
     void propagatePartitionMask(PTRef tr);
 
 #endif
@@ -467,7 +470,7 @@ class Logic {
     void assignPartition(unsigned int n, PTRef tr)
     {
         flaPartitionMap.store_top_level_fla_index(tr, n);
-        term_store.assignPartition(n, tr);
+        partitionInfo.assignPartition(n, tr);
     }
 
     ipartitions_t& getClauseClassMask(CRef l) { return clause_class[l]; }
