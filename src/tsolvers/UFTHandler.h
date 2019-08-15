@@ -45,15 +45,16 @@ class UFTHandler : public TSolverHandler
   public:
     UFTHandler(SMTConfig& c, Logic& l, vec<DedElem>& d, TermMapper& tmap);
     virtual ~UFTHandler();
-    virtual bool assertLit_special(PtAsgn a);
+    virtual bool assertLit_special(PtAsgn a) override;
     // This is for simplification, needed to run the theory solver code
     // as if it were running inside a SAT solver.
-    void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs);
-    virtual       Logic& getLogic();
-    virtual const Logic& getLogic() const;
+    void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs) override;
+    virtual       Logic& getLogic() override;
+    virtual const Logic& getLogic() const override;
+    virtual lbool getPolaritySuggestion(PTRef) const override;
 
 #ifdef PRODUCE_PROOF
-    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels);
+    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels) override;
 #endif // PRODUCE_PROOF
 };
 

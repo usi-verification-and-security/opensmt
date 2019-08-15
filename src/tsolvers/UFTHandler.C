@@ -66,6 +66,11 @@ void UFTHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
     }
 }
 
+lbool UFTHandler::getPolaritySuggestion(PTRef p) const {
+    if (egraph) { return egraph->getPolaritySuggestion(p); }
+    return l_Undef;
+}
+
 #ifdef PRODUCE_PROOF
 PTRef UFTHandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
 {
@@ -73,6 +78,7 @@ PTRef UFTHandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t>
     assert(iegraph);
     return iegraph->getInterpolant(mask, labels);
 }
+
 #endif
 
 
