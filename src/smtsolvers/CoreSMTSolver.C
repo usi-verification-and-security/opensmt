@@ -821,6 +821,14 @@ Lit CoreSMTSolver::pickBranchLit()
 #endif
 
     bool sign = false;
+    bool use_theory_suggested_polarity = config.use_theory_polarity_suggestion();
+    if (use_theory_suggested_polarity && next != var_Undef && theory_handler.isTheoryTerm(next)) {
+        lbool suggestion = this->theory_handler.getSolverHandler().getPolaritySuggestion(this->theory_handler.varToTerm(next));
+        if (suggestion != l_Undef) {
+            sign = (suggestion != l_True);
+            return mkLit(next, sign);
+        }
+    }
     switch ( polarity_mode )
     {
     case polarity_true:

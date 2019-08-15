@@ -55,6 +55,7 @@ public:
     void computeModel() override;
 
     LRALogic&  getLogic() override;
+    lbool getPolaritySuggestion(PTRef) const;
 
 
 #ifdef PRODUCE_PROOF

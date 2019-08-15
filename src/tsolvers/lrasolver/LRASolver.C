@@ -191,6 +191,32 @@ LRASolver::~LRASolver( )
 
 LRALogic&  LRASolver::getLogic() { return logic; }
 
+lbool LRASolver::getPolaritySuggestion(PTRef ptref) const {
+    if (!this->isInformed(ptref)) { return l_Undef; }
+    LVRef var = this->lavarStore.getVarByLeqId(logic.getPterm(ptref).getId());
+    if (!model.hasModel(var)) { return l_Undef; }
+    LABoundRefPair bounds = this->boundStore.getBoundRefPair(ptref);
+    auto const& val = model.read(var);
+    bool positive = false;
+    auto const& positive_bound = this->boundStore[bounds.pos];
+    if ((positive_bound.getType() == bound_l && positive_bound.getValue() <= val)
+        || (positive_bound.getType() == bound_u && positive_bound.getValue() >= val)) {
+        positive = true;
+    }
+    bool negative = false;
+    auto const& negative_bound = this->boundStore[bounds.neg];
+    if ((negative_bound.getType() == bound_l && negative_bound.getValue() <= val)
+        || (negative_bound.getType() == bound_u && negative_bound.getValue() >= val)) {
+        negative = true;
+    }
+    // MB: Maybe we will not get any suggestion, if the value is <0|-1/2>, but the bounds are <0|0> and <0|-1>
+//    assert(positive || negative);
+    assert(!positive || !negative);
+    if (positive) { return l_True; }
+    if (negative) { return l_False; }
+    return l_Undef;
+}
+
 
 #ifdef PRODUCE_PROOF
 

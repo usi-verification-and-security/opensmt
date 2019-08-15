@@ -787,6 +787,9 @@ public:
         optionTable[o_do_substitutions]->getValue().numval : 1; }
 
 
+   bool use_theory_polarity_suggestion() const
+   { return sat_theory_polarity_suggestion != 0; }
+
 //  int          produce_stats;                // Should print statistics ?
   int          print_stats;                  // Should print statistics ?
   int          produce_proofs;               // Should produce proofs ?
@@ -815,6 +818,7 @@ public:
   // SAT-Solver related parameters
   int          sat_theory_propagation;       // Enables theory propagation from the sat-solver
   int          sat_polarity_mode;            // Polarity mode
+  int          sat_theory_polarity_suggestion;  // Should the SAT solver ask the theory solver for var polarity when making a decision
   double       sat_initial_skip_step;        // Initial skip step for tsolver calls
   double       sat_skip_step_factor;         // Increment for skip step
   int          sat_use_luby_restart;         // Use luby restart mechanism
