@@ -51,7 +51,7 @@ public:
     LVRef  getNewVar(PTRef e_orig);
     LVRef  getVarByPTId(PTId i);
     void   addLeqVar(PTRef leq_tr, LVRef v); // Adds a binding from leq_tr to the "slack var" v
-    LVRef  getVarByLeqId(PTId i);
+    LVRef  getVarByLeqId(PTId i) const;
     bool   hasVar(PTId i) ;
     bool   hasVar(PTRef tr);
     int    numVars() const ;

@@ -183,7 +183,7 @@ public:
     bool         isKnown(PTRef tr);
 
 protected:
-    bool                        isInformed(PTRef tr) { return informed_PTRefs.has(tr); }
+    bool                        isInformed(PTRef tr) const { return informed_PTRefs.has(tr); }
     void                        setInformed(PTRef tr) { informed_PTRefs.insert(tr, true); }
     std::vector<PTRef>          getInformed() {std::vector<PTRef> res; vec<PTRef> tmp; informed_PTRefs.getKeys(tmp);
                                                 for(int i = 0; i < tmp.size(); ++i) {res.push_back(tmp[i]);} return res; }
