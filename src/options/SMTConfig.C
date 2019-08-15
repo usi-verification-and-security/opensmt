@@ -604,6 +604,7 @@ SMTConfig::initializeConfig( )
 //  proof_certify_inter           = 0;
   proof_random_seed	        = 0;
   simplify_interpolant           = 0;
+  sat_theory_polarity_suggestion = 1;
 
 }
 

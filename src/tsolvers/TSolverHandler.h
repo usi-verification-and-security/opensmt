@@ -85,6 +85,7 @@ public:
     void    declareAtom(PTRef tr);                     // Declare atom to the appropriate solver
 //    virtual SolverId getId() const { return my_id; }
     virtual void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs) = 0;
+    virtual lbool getPolaritySuggestion(PTRef) const { return l_Undef; }
     TRes    check(bool);
 };
 #endif

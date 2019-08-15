@@ -24,6 +24,10 @@ const Logic &LRATHandler::getLogic() const
     return logic;
 }
 
+lbool LRATHandler::getPolaritySuggestion(PTRef p) const {
+    return lrasolver->getPolaritySuggestion(p);
+}
+
 
 void LRATHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
 {
