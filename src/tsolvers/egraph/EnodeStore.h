@@ -84,7 +84,7 @@ class EnodeStore {
         return dist_classes[tr_d];
     }
 
-    PTRef getDistTerm(dist_t idx) { return index_to_dist[idx]; }
+    PTRef getDistTerm(dist_t idx) const { return index_to_dist[idx]; }
 
     void addDistClass(PTRef tr_d) {
         assert(!dist_classes.has(tr_d));

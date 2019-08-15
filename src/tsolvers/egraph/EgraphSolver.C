@@ -221,6 +221,34 @@ PTRef Egraph::getSuggestion( )
   return PTRef_Undef;
 }
 
+lbool Egraph::getPolaritySuggestion(PTRef p)
+{
+    if (!isInformed(p)) { return l_Undef; }
+    // MB: it could be uninterpreted predicate! No suggestion in that case
+    if (!logic.isEquality(p) && !logic.isDisequality(p)) { return l_Undef; }
+    bool equality = logic.isEquality(p);
+    const Pterm& term = logic.getPterm(p);
+    if(term.size() > 2) { return l_Undef; } // For now focus on 2 arguments
+    PTRef lhs = term[0];
+    PTRef rhs = term[1];
+    assert(enode_store.termToERef.has(lhs) && enode_store.termToERef.has(rhs));
+    if (!enode_store.termToERef.has(lhs) || !enode_store.termToERef.has(rhs)) { return l_Undef; }
+    ERef e_lhs = termToERef(lhs);
+    ERef e_rhs = termToERef(rhs);
+    if (getEnode(e_lhs).getRoot() == getEnode(e_rhs).getRoot()) {
+        // Already in the same equivalence class, avoid conflict
+        return equality ? l_True : l_False;
+    }
+    PtAsgn tmp(PTRef_Undef, l_Undef);
+    bool res = unmergeable(getEnode(e_lhs).getRoot(), getEnode(e_rhs).getRoot(), tmp);
+    if (res) {
+        // they are unmergable so don't assert equality
+        return equality ? l_False : l_True;
+    }
+    // no decision
+    return l_Undef;
+}
+
 //
 // Communicate conflict
 //
@@ -1319,7 +1347,7 @@ void Egraph::undoDisequality ( ERef x )
 }
 
 
-bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r)
+bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r) const
 {
     assert( x != ERef_Undef );
     assert( y != ERef_Undef );

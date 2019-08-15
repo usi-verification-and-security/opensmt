@@ -271,6 +271,7 @@ public:
   void                popBacktrackPoint       ( );                          // Backtrack to last saved point
   PtAsgn_reason       getDeduction            ( );                          // Return an implied node based on the current state
   PTRef               getSuggestion           ( );                          // Return a suggested literal based on the current state
+  lbool               getPolaritySuggestion   (PTRef);                      // Return a suggested polarity for a given literal
   void                getConflict             ( bool, vec<PtAsgn>& );       // Get explanation
   TRes                check                   ( bool ) { return TRes::SAT; }// Check satisfiability
   virtual ValPair     getValue                (PTRef tr);
@@ -362,7 +363,7 @@ private:
   //
   // Congruence closure main routines
   //
-  bool    unmergeable     ( ERef, ERef, PtAsgn& );              // Can two nodes be merged ?
+  bool    unmergeable     ( ERef, ERef, PtAsgn& ) const;        // Can two nodes be merged ?
   void    merge           ( ERef, ERef, PtAsgn );               // Merge two nodes
   bool    mergeLoop       ( PtAsgn reason );                    // Merge loop
   void    deduce          ( ERef, ERef, PtAsgn );               // Deduce from merging of two nodes (record the reason)
