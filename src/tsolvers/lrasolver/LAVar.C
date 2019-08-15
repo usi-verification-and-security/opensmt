@@ -65,7 +65,7 @@ bool LAVarStore::hasVar(PTRef tr) { return hasVar(logic.getPterm(tr).getId()); }
 
 LVRef  LAVarStore::getVarByPTId(PTId i) { return ptermToLavar[Idx(i)]; }
 
-LVRef  LAVarStore::getVarByLeqId(PTId i) { return leqToLavar[Idx(i)]; }
+LVRef  LAVarStore::getVarByLeqId(PTId i) const { return leqToLavar[Idx(i)]; }
 bool   LAVarStore::hasVar(PTId i) { return ptermToLavar.size() > Idx(i) && ptermToLavar[Idx(i)] != LVRef_Undef; }
 
 int    LAVarStore::numVars() const { return lavars.size(); }

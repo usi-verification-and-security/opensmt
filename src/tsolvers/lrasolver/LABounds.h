@@ -134,8 +134,8 @@ public:
     void updateBound(PTRef leq_tr); // Update a single bound.
 //    inline LABoundRef getLowerBound(const LVRef v) const { return bla[lva[v].getBounds()][lva[v].lbound()]; }
 //    inline LABoundRef getUpperBound(const LVRef v) const { return bla[lva[v].getBounds()][lva[v].ubound()]; }
-    LABoundRefPair getBoundRefPair(const PTRef leq);
-    inline LABound& operator[] (LABoundRef br) { return ba[br]; }
+    LABoundRefPair getBoundRefPair(const PTRef leq) const;
+    inline LABound& operator[] (LABoundRef br) const { return ba[br]; }
     // Debug
     char* printBound(LABoundRef br) const; // Print the bound br
     char* printBounds(LVRef v) const; // Print all bounds of v

@@ -280,7 +280,7 @@ char* LABoundStore::printBounds(LVRef v) const
     return bounds_str;
 }
 
-LABoundRefPair LABoundStore::getBoundRefPair(const PTRef leq)
+LABoundRefPair LABoundStore::getBoundRefPair(const PTRef leq) const
 { return ptermToLABoundsRef[Idx(logic.getPterm(leq).getId())]; }
 
 
