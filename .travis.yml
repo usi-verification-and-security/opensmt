@@ -40,7 +40,10 @@ matrix:
       - CMAKE_BUILD_TYPE=Release
       - PRODUCE_PROOF=ON
       compiler: gcc
-
+    - env:
+      - CMAKE_BUILD_TYPE=Debug
+      - PRODUCE_PROOF=ON
+      compiler: gcc
 
 
 addons:
@@ -62,4 +65,7 @@ script:
   - ctest
   - if [[ ${CMAKE_BUILD_TYPE} == Debug && ${PRODUCE_PROOF} == OFF ]]; then
         cd ../regression && ./run-test-notiming.sh ../build/src/bin/opensmt;
+    fi
+  - if [[ ${CMAKE_BUILD_TYPE} == Debug && ${PRODUCE_PROOF} == ON ]]; then
+        cd ../regression_itp && ./run-tests.sh ../build/src/bin/opensmt;
     fi
