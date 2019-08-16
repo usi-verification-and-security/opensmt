@@ -42,47 +42,9 @@ void CGraph::addCNode ( PTRef e )
     CNode *n = new CNode ( e );
     cnodes_store[ e ] = n;
     cnodes.push_back ( n );
-    // We need to color this node. It might
-    // be a result from some congruence
-    // closure operations, hence it might be
-    // uncolored
 #ifdef ITP_DEBUG
     cerr << "; Adding CNode " << logic.printTerm (e) << endl;
 #endif
-
-    if ( logic.getIPartitions (e) == 0 )
-    {
-#ifdef ITP_DEBUG
-        cerr << "; " << logic.printTerm (e) << " has empty partitioning mask" << endl;
-#endif
-        ipartitions_t max_inner_parts = 0;
-
-        // Set partitions for symbol
-        if ( logic.isUF (e) )
-            max_inner_parts = logic.getIPartitions (logic.getPterm (e).symb());
-        // map Pterm->id to partiions
-        // map SymRef to partition
-        // Set symbol is shared everywhere
-        else
-            max_inner_parts = ~max_inner_parts;
-
-        Pterm &p = logic.getPterm (e);
-
-        for (int i = 0; i < p.size(); ++i)
-        {
-            PTRef arg = p[i];
-            assert (logic.getIPartitions (arg) != 0);
-            max_inner_parts &= logic.getIPartitions (arg);
-        }
-
-        assert ( max_inner_parts != 0 );
-#ifdef ITP_DEBUG
-        cerr << "; " << logic.printTerm (e) << " has now partitioning mask " << max_inner_parts << endl;
-#endif
-        logic.setIPartitions ( e, max_inner_parts );
-    }
-
-    assert ( logic.getIPartitions (e) != 0 );
 }
 
 void CGraph::colorNodes ( const ipartitions_t &mask )
@@ -255,6 +217,7 @@ CGraph::removeCEdge(CEdge *e)
 
 void CGraph::addCEdge ( PTRef s, PTRef t, PTRef r )
 {
+    assert(s != t);
     assert ( s != PTRef_Undef);
     assert ( t != PTRef_Undef);
     // Retrieve corresponding nodes
@@ -780,8 +743,18 @@ bool CGraph::colorEdgesFrom ( CNode *x, const ipartitions_t &mask )
                 cedges.back( )->color = n->color;
                 x = cnn;
 
-                if(cnn_next != NULL)
-                    addCEdge(n->e, cnn_next->e, cnn_next_reason);
+
+                if(cnn_next != NULL) {
+                    // MB: It looks like it is possible that there has already been an edge n -> cnn
+                    // In that case a self-loop edge would be added here and that causes trouble later
+                    // We need to prevent that
+                    if (cnn_next == n) {
+                        cnn->next->reason = cnn_next_reason;
+                    }
+                    else {
+                        addCEdge(n->e, cnn_next->e, cnn_next_reason);
+                    }
+                }
             }
 
             // Now all the children are colored, we can decide how to color this
@@ -2403,6 +2376,7 @@ size_t CGraph::getSortedEdges ( CNode *x
         {
             CEdge *candidate = x->next;
             x = x->next->target;
+
 
             // Touching an already seen node (by y)
             // x is the nearest common ancestor
