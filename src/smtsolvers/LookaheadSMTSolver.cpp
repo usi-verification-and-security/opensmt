@@ -5,53 +5,16 @@
 #include "LookaheadSMTSolver.h"
 
 LookaheadSMTSolver::LookaheadSMTSolver(SMTConfig& c, THandler& thandler)
-	: SimpSMTSolver(c, thandler)
-    , idx                   (0)
-    , latest_round          (0)
-    , buf_LABests           (c.randomize_lookahead_bufsz(), assigns, c.randomize_lookahead(), c.getRandomSeed())
+	: SimpSMTSolver (c, thandler)
+	, score         (assigns, c)
+    , idx           (0)
 {}
 
 Var LookaheadSMTSolver::newVar(bool sign, bool dvar)
 {
     Var v = SimpSMTSolver::newVar(sign, dvar);
-    LAupperbounds.push(); // leave space for the var
-    LAexacts.push();      // leave space for the var
+    score.newVar();
     return v;
-}
-
-const LookaheadSMTSolver::UBel LookaheadSMTSolver::UBel_Undef(-1, -1);
-
-// safeToSkip: given an exact value e for a variable b, is it safe to
-// skip checking my literal's extra value in the lookahead heuristic?
-//
-bool LookaheadSMTSolver::UBVal::safeToSkip(const ExVal& e) const
-{
-    // My value needs to be current with respect to both polarities and
-    // the timestamp of e
-    if (!current(e)) return false;
-
-    const UBel& ub_l = getLow();
-    const UBel& ub_h = getHigh();
-
-    assert(ub_l != UBel_Undef);
-
-    // If my low-polarity upper bound is less than the low exact of b there is
-    // no reason to check me
-    if (ub_l.ub < e.getEx_l())
-    {
-        return true;
-    }
-
-    // If my low-polarity upper bound is equal to the low exact of b and
-    // my high-polarity upper bound is less than or equal to the high
-    // exact of b there is no reason to check me
-    if (ub_l.ub ==  e.getEx_l() && ub_h.ub <= e.getEx_h())
-    {
-        return true;
-    }
-
-    // In all other cases the value needs to be checked.
-    return false;
 }
 
 lbool LookaheadSMTSolver::solve_()
@@ -76,9 +39,9 @@ lbool LookaheadSMTSolver::solve_()
     while (res == LALoopRes::unknown || res == LALoopRes::restart) {
         //cerr << "; Doing lookahead for " << nof_conflicts << " conflicts\n";
         ConflQuota conflict_quota;
-        if (false) { //if (config.lookahead_restarts()) {
-            conflict_quota = ConflQuota((int)nof_conflicts);
-        }
+        //if (config.lookahead_restarts()) {
+        //    conflict_quota = ConflQuota((int)nof_conflicts);
+        //}
         res = solveLookahead();
 
         nof_conflicts = restartNextLimit(nof_conflicts);
@@ -92,19 +55,17 @@ lbool LookaheadSMTSolver::solve_()
             model[p] = value(p);
         }
     }
-    if (res == LALoopRes::unsat)
-        splits.clear();
-    // Without these I get a segfault from theory solver's destructor...
-//    cancelUntil(0);
-//    theory_handler.backtrack(0);
-    if (res == LALoopRes::unknown_final)
-        return l_Undef;
-    if (res == LALoopRes::sat)
-        return l_True;
-    if (res == LALoopRes::unsat)
-        return l_False;
-    assert(false);
-    return l_Undef;
+    switch (res) {
+        case LALoopRes::unknown_final:
+            return l_Undef;
+        case LALoopRes::sat:
+            return l_True;
+        case LALoopRes::unsat:
+            return l_False;
+        default:
+            assert(false);
+            return l_Undef;
+    }
 }
 
 //
@@ -234,11 +195,6 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode* 
             }
             if (curr_dl != decisionLevel())
             {
-
-//                    cerr << " -> Path this far is unsatisfiable already\n";
-//                    cerr << "Marking the subtree false:\n";
-//                    n.print();
-
                 n->v = l_False;
                 return PathBuildResult::pathbuild_unsat;
             }
@@ -306,7 +262,7 @@ LookaheadSMTSolver::LALoopRes LookaheadSMTSolver::solveLookahead()
 #ifdef NC_BJ_RECOVERY
     bool nonchronoBackumpRecovery = false;
 #endif
-    updateRound();
+    score.updateRound();
     vec<LANode*> queue;
     LANode *root = new LANode();
     root->p  = root;
@@ -395,7 +351,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
     }
     confl_quota = prev;
 
-    updateRound();
+    score.updateRound();
     int i = 0;
     int d = decisionLevel();
 
@@ -406,35 +362,33 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
 #ifdef LADEBUG
     printf("Starting lookahead loop with %d vars\n", nVars());
 #endif
-    for (Var v(idx % nVars()); (LAexacts[v].getRound() != latest_round); v = Var((idx + (++i)) % nVars()))
+    for (Var v(idx % nVars()); !score.isAlreadyChecked(v); v = Var((idx + (++i)) % nVars()))
     {
         if (!decision[v]) {
-            LAexacts[v].setRound(latest_round);
+            score.setChecked(v);
 #ifdef LADEBUG
-            printf("Not a decision variable: %d (%s)\n", v, theory_handler.getLogic().printTerm(theory_handler.varToTerm(v)));
+            cout << "Not a decision variable: " << v << "(" << theory_handler.getLogic.printTerm(theory_handler.varToTerm(v)) << ")\n";
 #endif
-            continue; // Skip the non-decision vars
+            continue;
         }
         if (v == (idx * nVars()) && skipped_vars_due_to_logic > 0)
             respect_logic_partitioning_hints = false; // Allow branching on these since we looped back.
         if (respect_logic_partitioning_hints && !(theory_handler.getLogic().okToPartition(theory_handler.varToTerm(v)))) {
             skipped_vars_due_to_logic ++;
-            printf("Skipping %d since logic says it's not good\n", v);
+            cout << "Skipping " << v << " since logic says it's not good\n";
             continue; // Skip the vars that the logic considers bad to split on
         }
 #ifdef LADEBUG
         printf("Checking var %d\n", v);
 #endif
-        Lit best = buf_LABests.getLit();
-        if (value(v) != l_Undef || (best != lit_Undef && LAupperbounds[v].safeToSkip(LAexacts[var(best)])))
+        Lit best = score.getBest();
+        if (value(v) != l_Undef || (best != lit_Undef && score.safeToSkip(v, best)))
         {
 #ifdef LADEBUG
             printf("  Var is safe to skip due to %s\n",
                    value(v) != l_Undef ? "being assigned" : "having low upper bound");
-//            if (value(v) == l_Undef)
-//                printf("  Var is safe to skip due to having low upper bound\n");
 #endif
-            LAexacts[v].setRound(latest_round);
+            score.setChecked(v);
             // It is possible that all variables are assigned here.
             // In this case it seems that we have a satisfying assignment.
             // This is in fact a debug check
@@ -467,7 +421,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
             continue;
         }
         if (trail.size() == nVars() + skipped_vars_due_to_logic) {
-            printf("; %d vars were skipped\n", skipped_vars_due_to_logic);
+            cout << "; " << skipped_vars_due_to_logic << " vars were skipped\n";
             respect_logic_partitioning_hints = false;
             continue;
         }
@@ -476,6 +430,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
         for (int p = 0; p < 2; p++)   // do for both polarities
         {
             assert(decisionLevel() == d);
+            int ss = score.getSolverScore(this);
             newDecisionLevel();
             Lit l = mkLit(v, p);
             int tmp_trail_sz = trail.size();
@@ -500,15 +455,14 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
 #ifdef LADEBUG
                 printf(" -> Successfully propagated %d lits\n", trail.size() - tmp_trail_sz);
 #endif
-                for (int j = 0; j < trail.size(); j++)
-                    updateLAUB(trail[j], trail.size());
+                score.updateSolverScore(ss, this);
             }
             else if (decisionLevel() == d)
             {
 #ifdef LADEBUG
                 printf(" -> Propagation resulted in backtrack\n");
 #endif
-                updateRound();
+                score.updateRound();
                 break;
             }
             else
@@ -520,7 +474,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
                 best = lit_Undef;
                 return laresult::la_unsat;
             }
-            p == 0 ? p0 = trail.size() : p1 = trail.size();
+            p == 0 ? p0 = ss : p1 = ss;
             // Update also the clause deletion heuristic?
             cancelUntil(decisionLevel() - 1);
         }
@@ -529,19 +483,18 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
 #ifdef LADEBUG
            printf("Updating var %d to (%d, %d)\n", v, p0, p1);
 #endif
-            setLAExact(v, p0, p1);
-            updateLABest(v);
-            assert(value(buf_LABests.getLit()) == l_Undef);
+            score.setLAValue(v, p0, p1);
+            score.updateLABest(v);
         }
     }
-    if (trail.size() == dec_vars && buf_LABests.getLit() == lit_Undef)
+    best = score.getBest();
+    if (trail.size() == dec_vars && best == lit_Undef)
     {
 #ifdef LADEBUG
         printf("All variables are already set, so we have nothing to branch on and this is a SAT answer\n");
 #endif
         return laresult::la_sat;
     }
-    best = buf_LABests.getLit();
     assert(best != lit_Undef);
 #ifdef LADEBUG
     printf("Lookahead phase over successfully\n");
@@ -552,31 +505,6 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
     idx = (idx + i) % nVars();
     if (!theory_handler.getLogic().okToPartition(theory_handler.varToTerm(var(best)))) { unadvised_splits++; }
     return laresult::la_ok;
-}
-
-void LookaheadSMTSolver::updateLABest(Var v)
-{
-    assert(value(v) == l_Undef);
-    ExVal& e = LAexacts[v];
-    Lit l_v = mkLit(v, e.betterPolarity());
-    buf_LABests.insert(l_v, e);
-}
-
-void LookaheadSMTSolver::updateLAUB(Lit l, int props)
-{
-    UBVal& val = LAupperbounds[var(l)];
-    if (sign(l))
-        val.updateUB_n(UBel(props, latest_round));
-    else
-        val.updateUB_p(UBel(props, latest_round));
-}
-
-void LookaheadSMTSolver::setLAExact(Var v, int pprops, int nprops)
-{
-    LAexacts[v] = ExVal(pprops, nprops, latest_round);
-//    if (LABestLit != lit_Undef)
-//        LABestLit = LAexacts[var(LABestLit)] < LAexacts[v] ? mkLit(v, nprops > pprops) : LABestLit;
-//    else LABestLit = mkLit(v, nprops > pprops);
 }
 
 void LookaheadSMTSolver::deallocTree(LANode *root)

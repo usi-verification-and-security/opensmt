@@ -257,6 +257,7 @@ struct Pair { A first; B second; };
 
 class CoreSMTSolver
 {
+    friend class LookaheadScoreClassic;
 protected:
     SMTConfig & config;         // Stores Config
     THandler  & theory_handler; // Handles theory
