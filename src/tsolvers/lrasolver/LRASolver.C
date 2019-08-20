@@ -194,7 +194,7 @@ LRALogic&  LRASolver::getLogic() { return logic; }
 
 lbool LRASolver::getPolaritySuggestion(PTRef ptref) const {
     if (!this->isInformed(ptref)) { return l_Undef; }
-    LVRef var = this->lavarStore.getVarByLeqId(logic.getPterm(ptref).getId());
+    LVRef var = this->getVarForLeq(ptref);
     if (!model.hasModel(var)) { return l_Undef; }
     LABoundRefPair bounds = this->boundStore.getBoundRefPair(ptref);
     assert( bounds.pos != LABoundRef_Undef && bounds.neg != LABoundRef_Undef );

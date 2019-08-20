@@ -69,15 +69,14 @@ void LABoundListAllocator::reloc(LABoundListRef& tr, LABoundListAllocator& to)
 LABoundStore::BoundInfo LABoundStore::addBound(PTRef leq_ref)
 {
 //    printf(" -> bound store gets %s\n", logic.pp(leq_ref));
-    Pterm& leq = logic.getPterm(leq_ref);
+    const Pterm& leq = logic.getPterm(leq_ref);
     PTRef const_tr = leq[0];
     PTRef sum_tr = leq[1];
 
     bool sum_term_is_negated = logic.isNegated(sum_tr);
 
-    PTRef pos_sum_tr = sum_term_is_negated ? logic.mkNumNeg(sum_tr) : sum_tr;
-
-    LVRef v = lavarStore.getVarByPTId(logic.getPterm(pos_sum_tr).getId());
+    LVRef v = lavarStore.getVarByLeqId(logic.getPterm(leq_ref).getId());
+    assert(v == lavarStore.getVarByPTId(logic.getPterm(sum_tr).getId()));
 
     LABoundRef br_pos;
     LABoundRef br_neg;

@@ -132,6 +132,8 @@ protected:
 
     LVRef getLAVar_single(PTRef term);                      // Initialize a new LA var if needed, otherwise return the old var
     bool hasVar(PTRef expr);
+    LVRef getVarForLeq(PTRef ref) const { return lavarStore.getVarByLeqId(logic.getPterm(ref).getId()); }
+    LVRef getVarForTerm(PTRef ref) const { return lavarStore.getVarByPTId(logic.getPterm(ref).getId()); }
     virtual void doGaussianElimination( ) = 0;                     // Performs Gaussian elimination of all redundant terms in the Tableau if applicable
     virtual void notifyVar(LVRef v) {}                             // Notify the solver of the existence of the var. This is so that LIA can add it to integer vars list.
     void changeValueBy( LVRef, const Delta & );                    // Updates the bounds after constraint pushing

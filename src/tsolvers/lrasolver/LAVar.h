@@ -49,9 +49,10 @@ public:
     LAVarStore(LALogic & logic) : logic(logic) {}
     inline void   clear() {};
     LVRef  getNewVar(PTRef e_orig);
-    LVRef  getVarByPTId(PTId i);
+    LVRef  getVarByPTId(PTId i) const;
     void   addLeqVar(PTRef leq_tr, LVRef v); // Adds a binding from leq_tr to the "slack var" v
     LVRef  getVarByLeqId(PTId i) const;
+
     bool   hasVar(PTId i) ;
     bool   hasVar(PTRef tr);
     int    numVars() const ;
