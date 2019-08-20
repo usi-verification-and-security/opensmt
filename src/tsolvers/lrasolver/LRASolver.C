@@ -191,6 +191,7 @@ LRASolver::~LRASolver( )
 
 LRALogic&  LRASolver::getLogic() { return logic; }
 
+
 lbool LRASolver::getPolaritySuggestion(PTRef ptref) const {
     if (!this->isInformed(ptref)) { return l_Undef; }
     LVRef var = this->lavarStore.getVarByLeqId(logic.getPterm(ptref).getId());
@@ -202,17 +203,21 @@ lbool LRASolver::getPolaritySuggestion(PTRef ptref) const {
     auto const& positive_bound = this->boundStore[bounds.pos];
     if ((positive_bound.getType() == bound_l && positive_bound.getValue() <= val)
         || (positive_bound.getType() == bound_u && positive_bound.getValue() >= val)) {
+        // The current value of the variable is consistent with the positive bound
         positive = true;
     }
     bool negative = false;
     auto const& negative_bound = this->boundStore[bounds.neg];
     if ((negative_bound.getType() == bound_l && negative_bound.getValue() <= val)
         || (negative_bound.getType() == bound_u && negative_bound.getValue() >= val)) {
+        // The current value of the variable is consistent with the negative bound
         negative = true;
     }
-    // MB: Maybe we will not get any suggestion, if the value is <0|-1/2>, but the bounds are <0|0> and <0|-1>
-//    assert(positive || negative);
+    // The value cannot be consistent with bound positive and negative bound at the same time
     assert(!positive || !negative);
+    // It can happen that neither bound is consistent with the current assignment. Consider the current value
+    // of variable "x" as <0,-1/2> with term "x >= 0". The positive bound is lower with value <0,0> and the negative
+    // bound is upper with value <0, -1>. Then both "positive" and "negative" will be false
     if (positive) { return l_True; }
     if (negative) { return l_False; }
     return l_Undef;
