@@ -63,7 +63,7 @@ void LAVarStore::addLeqVar(PTRef leq_tr, LVRef v)
 bool LAVarStore::hasVar(PTRef tr) { return hasVar(logic.getPterm(tr).getId()); }
 
 
-LVRef  LAVarStore::getVarByPTId(PTId i) { return ptermToLavar[Idx(i)]; }
+LVRef  LAVarStore::getVarByPTId(PTId i) const { return ptermToLavar[Idx(i)]; }
 
 LVRef  LAVarStore::getVarByLeqId(PTId i) const { return leqToLavar[Idx(i)]; }
 bool   LAVarStore::hasVar(PTId i) { return ptermToLavar.size() > Idx(i) && ptermToLavar[Idx(i)] != LVRef_Undef; }

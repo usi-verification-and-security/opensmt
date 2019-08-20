@@ -240,7 +240,7 @@ LVRef LASolver::getLAVar_single(PTRef expr_in) {
     PTId id_pos = logic.getPterm(expr).getId();
 
     if (lavarStore.hasVar(id_pos))
-        return lavarStore.getVarByPTId(id_pos);
+        return getVarForTerm(expr);
 
     LVRef x = lavarStore.getNewVar(expr);
     return x;
@@ -283,7 +283,7 @@ std::unique_ptr<Polynomial> LASolver::expressionToLVarPoly(PTRef term) {
 LVRef LASolver::exprToLVar(PTRef expr) {
     LVRef x = LVRef_Undef;
     if (lavarStore.hasVar(expr)){
-        x = lavarStore.getVarByPTId(logic.getPterm(expr).getId());
+        x = getVarForTerm(expr);
         if(isProcessedByTableau(x))
         { return x;}
     }
@@ -513,9 +513,6 @@ bool LASolver::assertLit( PtAsgn asgn, bool reason )
 
     bool is_reason = false;
 
-    const Pterm& t = logic.getPterm(asgn.tr);
-
-
     LABoundRefPair p = boundStore.getBoundRefPair(asgn.tr);
     LABoundRef bound_ref = asgn.sgn == l_False ? p.neg : p.pos;
 
@@ -524,12 +521,12 @@ bool LASolver::assertLit( PtAsgn asgn, bool reason )
 //    printf("Asserting %s (%d)\n", boundStore.printBound(bound_ref), asgn.tr.x);
 //    printf(" - equal to %s%s\n", asgn.sgn == l_True ? "" : "not ", logic.pp(asgn.tr));
 
-    LVRef it = lavarStore.getVarByLeqId(t.getId());
+    LVRef it = getVarForLeq(asgn.tr);
     // Constraint to push was not found in local storage. Most likely it was not read properly before
     assert(it != LVRef_Undef);
     assert(!isUnbounded(it));
 
-
+    const Pterm& t = logic.getPterm(asgn.tr);
     // skip if it was deduced by the solver itself with the same polarity
     assert(deduced.size() > t.getVar());
     if (deduced[t.getVar()] != l_Undef && deduced[t.getVar()].polarity == asgn.sgn && deduced[t.getVar()].deducedBy == id) {
@@ -1043,8 +1040,7 @@ opensmt::Number LASolver::evaluateTerm(PTRef tr)
     PTRef coef;
     PTRef var;
     logic.splitTermToVarAndConst(tr, var, coef);
-    PTId id = logic.getPterm(var).getId();
-    val += logic.getNumConst(coef) * *concrete_model[getVarId(lavarStore.getVarByPTId(id))];
+    val += logic.getNumConst(coef) * *concrete_model[getVarId(getVarForTerm(var))];
 
     return val;
 }
@@ -1073,7 +1069,7 @@ ValPair LASolver::getValue(PTRef tr) {
             val = evaluateTerm(tr);
     }
     else
-        val = *concrete_model[getVarId(lavarStore.getVarByPTId(id))];
+        val = *concrete_model[getVarId(getVarForTerm(tr))];
 
     return ValPair(tr, val.get_str().c_str());
 }
