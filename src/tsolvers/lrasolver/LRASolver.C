@@ -196,6 +196,7 @@ lbool LRASolver::getPolaritySuggestion(PTRef ptref) const {
     LVRef var = this->lavarStore.getVarByLeqId(logic.getPterm(ptref).getId());
     if (!model.hasModel(var)) { return l_Undef; }
     LABoundRefPair bounds = this->boundStore.getBoundRefPair(ptref);
+    assert( bounds.pos != LABoundRef_Undef && bounds.neg != LABoundRef_Undef );
     auto const& val = model.read(var);
     bool positive = false;
     auto const& positive_bound = this->boundStore[bounds.pos];
