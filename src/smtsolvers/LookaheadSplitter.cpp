@@ -87,6 +87,7 @@ LookaheadSMTSolver::LALoopRes LookaheadSplitter::solveLookahead()
     root->print();
 #endif
     copySplits(root);
+    assert(splits.size() == config.sat_split_num());
     return LALoopRes::unknown_final;
 }
 
