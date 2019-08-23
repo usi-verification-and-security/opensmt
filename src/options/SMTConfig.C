@@ -526,6 +526,8 @@ const char* SMTConfig::o_smt_split_format_length = ":split-format-length"; // br
 const char* SMTConfig::o_respect_logic_partitioning_hints = ":respect-logic-partitioning-hints"; // Logic can have a say whether a var is good for partitioning
 const char* SMTConfig::o_sat_lookahead_split = ":lookahead-split";
 const char* SMTConfig::o_sat_pure_lookahead = ":pure-lookahead";
+const char* SMTConfig::o_lookahead_score_deep = ":lookahead-score-deep";
+
 char* SMTConfig::server_host=NULL;
 uint16_t SMTConfig::server_port = 0;
 char* SMTConfig::database_host=NULL;

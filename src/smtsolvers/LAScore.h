@@ -7,11 +7,20 @@
 
 #include <SolverTypes.h>
 #include <SMTConfig.h>
+#include <limits>
+#include <string>
 
 class LookaheadSMTSolver;
 
-class LookaheadScore {
-protected:
+template<class EV>
+class LABestLitBuf {
+private:
+    int size;
+    vec<std::pair < EV, Lit> > buf;
+    const vec<lbool> &assigns;
+    EV  heur_worst;     // the lowest heuristic value currently in buf
+    int heur_worst_loc; // The location of heur_worst in buf
+    inline lbool value(Lit p) const { return assigns[var(p)] ^ sign(p); }
     // Returns a random float 0 <= x < 1. Seed must never be 0.
     static inline double drand(double& seed)
     {
@@ -27,6 +36,72 @@ protected:
         return (int)(drand(seed) * size);
     }
 
+    bool randomize;
+    double rnd_seed;
+public:
+    // Use 0 for random seed to disable randomization
+    LABestLitBuf(int sz, const vec<lbool> &assigns, bool randomize, double rnd_seed)
+            : size(sz), assigns(assigns), randomize(randomize), rnd_seed(rnd_seed)
+    {
+        for (int i = 0; i < size; i++)
+            buf.push(std::pair < EV, Lit > {EV(), lit_Undef});
+        heur_worst_loc = 0;
+        heur_worst = buf[heur_worst_loc].first;
+    }
+
+    void insert(Lit l, EV &val) {
+        int i;
+        if (val < heur_worst) { return; }
+        buf[heur_worst_loc] = std::pair<EV,Lit>(val, l);
+        EV current_worst = EV::max_val;
+        for (i = 0; i < size; i++) {
+            int loc = (heur_worst_loc+i) % size;
+            EV &buf_val = buf[loc].first;
+            if (buf_val <= current_worst) {
+                current_worst = heur_worst = buf_val;
+                heur_worst_loc = loc;
+            }
+        }
+    }
+
+    Lit getLit(int i) {
+        assert(i < size);
+        assert(i >= 0);
+        for (int j = 0; j < size; j++) {
+            if (i + j < size && buf[i + j].second != lit_Undef && value(buf[i + j].second) == l_Undef)
+                return buf[i + j].second;
+            if (i - j >= 0 && buf[i - j].second != lit_Undef && value(buf[i - j].second) == l_Undef)
+                return buf[i - j].second;
+        }
+        return lit_Undef;
+    }
+
+    Lit getLit() {
+        if (randomize) {
+            int i = irand(rnd_seed, size);
+            return getLit(i);
+        } else
+            return getLit(0);
+    }
+
+    int getSize() { return size; }
+
+    // Debug
+    std::string str() const {
+        std::ostringstream ss;
+        ss << "[ ";
+        for (int i = 0; i < size; i++)
+            ss << "(" << buf[i].first.str() << "," << buf[i].second.x << ") ";
+        ss << "]" << endl;
+
+        ss << "Worst is " << heur_worst.str() << " at location " << heur_worst_loc << endl;
+        return ss.str();
+    }
+};
+
+class LookaheadScore {
+protected:
+
     const vec<lbool>& assigns;
     unsigned latest_round; // The numbering for arrays
 
@@ -37,8 +112,8 @@ public:
     explicit LookaheadScore(const vec<lbool>& assigns) : assigns(assigns), latest_round(0) {}
     virtual void setLAValue(Var v, int p0, int p1) = 0;
 
-    virtual int  getSolverScore(const LookaheadSMTSolver *solver) = 0;
-    virtual void updateSolverScore(int &ss, const LookaheadSMTSolver *solver) = 0;
+    virtual double getSolverScore(const LookaheadSMTSolver *solver) = 0;
+    virtual void updateSolverScore(double &ss, const LookaheadSMTSolver *solver) = 0;
 
     virtual void updateLABest(Var v) =  0;
     virtual void newVar() = 0;
@@ -47,6 +122,53 @@ public:
     virtual bool isAlreadyChecked(Var v) const = 0;
     virtual bool safeToSkip(Var v, Lit cmp) const = 0; // Given that the heuristic value of cmp is known, is it safe to skip checking value of v
 };
+
+// The deep lookahead score of a variable v is defined as
+// score_p(v) + score_n(v) + 1024*score_p(v)*score_n(v), where
+//  - score_p(v) = \sum_{c \in F} (1/2)^nfree((sigma . v | F), c)
+//  - score_n(v) = \sum_{c \in F} (1/2)^nfree((sigma . \neg v| F), c)
+//  - nfree(ss, c) is
+//    - the number of free variables in clause c after ss has been run
+//      until unit propagation closure, if c does not contain a true literal, or
+//    - 0, if c contains a true literal
+class LookaheadScoreDeep : public LookaheadScore {
+private:
+    class DoubleVal {
+        int round;
+        double val;
+    public:
+        DoubleVal() : round(-1), val(std::numeric_limits<double>::min()) {}
+        DoubleVal(int round, double val) : round(round), val(val) {}
+        static const DoubleVal max_val;
+
+        bool operator<  (const DoubleVal& o) const { return (round < o.round) || (val < o.val); }
+        bool operator<= (const DoubleVal& o) const { return (round < o.round) || (val <= o.val); }
+        int getRound() const { return round; }
+        void setRound(int r) { round = r; }
+    };
+    LABestLitBuf<DoubleVal> buf_LABests;
+    vec<DoubleVal> LAexacts;
+    int base_score_round;
+    double cached_score;
+    double computeScoreFromClauses(const vec<CRef>& clauses, const LookaheadSMTSolver *solver);
+    bool current(const DoubleVal &e) const { return latest_round == e.getRound(); }
+public:
+    explicit LookaheadScoreDeep(const vec<lbool> &assigns, const SMTConfig &c)
+            : LookaheadScore(assigns), base_score_round(-1)
+            , buf_LABests(c.randomize_lookahead_bufsz(), assigns, c.randomize_lookahead(), c.getRandomSeed()) {}
+    void setLAValue(Var v, int p0, int p1) override;
+
+    double getSolverScore(const LookaheadSMTSolver *solver) override;
+    void updateSolverScore(double &ss, const LookaheadSMTSolver *solver) override;
+
+    void updateLABest(Var v) override;
+    void newVar() override;
+    Lit  getBest() override;
+    void setChecked(Var v) override;
+    bool isAlreadyChecked(Var v) const override;
+    bool safeToSkip(Var v, Lit cmp) const override; // Given that the heuristic value of cmp is known, is it safe to skip checking value of v
+};
+
 
 class LookaheadScoreClassic : public LookaheadScore {
     friend LookaheadSMTSolver;
@@ -67,7 +189,7 @@ private:
 
         bool operator!=(const UBel &o) const { return !(operator==(o)); }
     };
-
+public:
     class ExVal {
     private:
         int pprops;
@@ -84,10 +206,20 @@ private:
         ExVal(int p, int n, int r) : pprops(p), nprops(n), round(r) {}
 
         bool operator<(const ExVal &e) const {
-            return (round < e.round) ||
-                   (min(pprops, nprops) < min(e.pprops, e.nprops)) ||
+            if (round > e.round) return false;
+            if (round < e.round) return true;
+            else {
+                return (min(pprops, nprops) < min(e.pprops, e.nprops)) ||
+                       ((min(pprops, nprops) == min(e.pprops, e.nprops)) &&
+                        (max(pprops, nprops) < max(e.pprops, e.nprops)));
+            }
+        }
+        bool operator<=(const ExVal &e) const {
+            if (round > e.round) return false;
+            if (round < e.round) return true;
+            return (min(pprops, nprops) <= min(e.pprops, e.nprops)) ||
                    ((min(pprops, nprops) == min(e.pprops, e.nprops)) &&
-                    (max(pprops, nprops) < max(e.pprops, e.nprops)));
+                    (max(pprops, nprops) <= max(e.pprops, e.nprops)));
         }
 
         bool betterPolarity() const { return pprops < nprops; } // Should return false if the literal should be unsigned
@@ -98,8 +230,12 @@ private:
         int getEx_h() const { return max(pprops, nprops); }
 
         void setRound(int r) { round = r; }
+        static const ExVal max_val;
+
+        std::string str() const;
     };
 
+private:
     class UBVal {
     private:
         UBel ub_p;
@@ -135,73 +271,14 @@ private:
         }
     };
 
-    class LABestLitBuf {
-    private:
-        int size;
-        vec<std::pair < ExVal, Lit> > buf;
-        const vec<lbool> &assigns;
 
-        inline lbool value(Lit p) const { return assigns[var(p)] ^ sign(p); }
-
-        bool randomize;
-        double rnd_seed;
-    public:
-        // Use 0 for random seed to disable randomization
-        LABestLitBuf(int sz, const vec<lbool> &assigns, bool randomize, double rnd_seed)
-                : size(sz), assigns(assigns), randomize(randomize), rnd_seed(rnd_seed) {
-            for (int i = 0; i < size; i++)
-                buf.push(std::pair < ExVal, Lit > {ExVal(), lit_Undef});
-        }
-
-        void insert(Lit l, ExVal &val) {
-            int i;
-            for (i = 0; i < size; i++) {
-                ExVal &buf_val = buf[i].first;
-                Lit buf_l = buf[i].second;
-                if ((buf_val < val) || (value(buf_l) != l_Undef))
-                    break;
-            }
-            if (i == size)
-                return;
-
-            std::pair <ExVal, Lit> new_next = buf[i];
-            buf[i++] = std::pair < ExVal, Lit > {val, l};
-            for (; i < size; i++) {
-                std::pair <ExVal, Lit> tmp = buf[i];
-                buf[i] = new_next;
-                new_next = tmp;
-            }
-        }
-
-        Lit getLit(int i) {
-            assert(i < size);
-            assert(i >= 0);
-            for (int j = 0; j < size; j++) {
-                if (i + j < size && buf[i + j].second != lit_Undef && value(buf[i + j].second) == l_Undef)
-                    return buf[i + j].second;
-                if (i - j >= 0 && buf[i - j].second != lit_Undef && value(buf[i - j].second) == l_Undef)
-                    return buf[i - j].second;
-            }
-            return lit_Undef;
-        }
-
-        Lit getLit() {
-            if (randomize) {
-                int i = irand(rnd_seed, size);
-                return getLit(i);
-            } else
-                return getLit(0);
-        }
-
-        int getSize() { return size; }
-    };
 
     void setLAExact(Var v, int p0, int p1);
 
 
     vec<UBVal> LAupperbounds;    // The current upper bounds
     vec<ExVal> LAexacts;         // The current exact values
-    LABestLitBuf buf_LABests;
+    LABestLitBuf<ExVal> buf_LABests;
     static const UBel UBel_Undef;
 
 public:
@@ -223,8 +300,8 @@ public:
     void updateLAUB(Lit l, int props);                               // Check the lookahead upper bound and update it if necessary
     void setLAValue(Var v, int pprops, int nprops) override;         // Set the exact la value
 
-    int getSolverScore(const LookaheadSMTSolver *solver) override;
+    double getSolverScore(const LookaheadSMTSolver *solver) override;
 
-    void updateSolverScore(int &ss, const LookaheadSMTSolver *solver) override;
+    void updateSolverScore(double &ss, const LookaheadSMTSolver *solver) override;
 };
 #endif //OPENSMT_LASCORE_H

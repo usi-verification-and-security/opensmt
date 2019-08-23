@@ -40,12 +40,13 @@ LookaheadSMTSolver::LALoopRes LookaheadSplitter::solveLookahead()
 
         switch (setSolverToNode(n)) {
             case PathBuildResult::pathbuild_tlunsat:
-                return LALoopRes::unsat;
+                assert(false); //return LALoopRes::unsat;
             case PathBuildResult::pathbuild_restart:
                 return LALoopRes::restart;
             case PathBuildResult::pathbuild_unsat: {
-                deallocTree(n);
-                continue;
+                assert(false);
+                //deallocTree(n);
+                //continue;
             }
             case PathBuildResult::pathbuild_success:
                 ;
@@ -72,8 +73,7 @@ LookaheadSMTSolver::LALoopRes LookaheadSplitter::solveLookahead()
             case laresult::la_restart:
                 return LALoopRes::restart;
             case laresult::la_unsat:
-                queue.push(n);
-                continue;
+                return LALoopRes::restart; // We restart for correctness (complicated?)
             case laresult::la_sat:
                 return LALoopRes::sat;
             case laresult::la_ok:

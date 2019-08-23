@@ -284,6 +284,7 @@ public:
   static const char* o_sat_split_asap;
   static const char* o_sat_lookahead_split;
   static const char* o_sat_pure_lookahead;
+  static const char* o_lookahead_score_deep;
   static const char* o_sat_split_units;
   static const char* o_sat_split_preference;
   static const char* o_sat_split_test_cube_and_conquer;
@@ -750,6 +751,10 @@ public:
   int sat_pure_lookahead() const {
       return optionTable.has(o_sat_pure_lookahead) ?
               optionTable[o_sat_pure_lookahead]->getValue().numval :
+              0; }
+  int lookahead_score_deep() const {
+      return optionTable.has(o_lookahead_score_deep) ?
+              optionTable[o_lookahead_score_deep]->getValue().numval :
               0; }
   int randomize_lookahead() const {
       return optionTable.has(o_sat_split_randomize_lookahead) ?
