@@ -4,6 +4,8 @@
 
 #include "LAScore.h"
 #include "LookaheadSMTSolver.h"
+#include <cmath>
+
 
 bool LookaheadScoreClassic::isAlreadyChecked(Var v) const {
     return (LAexacts[v].getRound() == latest_round);
@@ -21,11 +23,11 @@ bool LookaheadScoreClassic::safeToSkip(Var v, Lit ref) const {
      return LAupperbounds[v].safeToSkip(LAexacts[var(ref)]);
 }
 
-int LookaheadScoreClassic::getSolverScore(const LookaheadSMTSolver *solver) {
+double LookaheadScoreClassic::getSolverScore(const LookaheadSMTSolver *solver) {
     return solver->trail.size();
 }
 
-void LookaheadScoreClassic::updateSolverScore(int &ss, const LookaheadSMTSolver* solver) {
+void LookaheadScoreClassic::updateSolverScore(double &ss, const LookaheadSMTSolver* solver) {
     for (int j = 0; j < solver->trail.size(); j++)
         updateLAUB(solver->trail[j], solver->trail.size());
 
@@ -68,6 +70,14 @@ void LookaheadScoreClassic::newVar() {
     LAexacts.push();      // leave space for the var
 }
 
+const LookaheadScoreClassic::ExVal LookaheadScoreClassic::ExVal::max_val = ExVal(std::numeric_limits<int>::max(), std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
+
+std::string LookaheadScoreClassic::ExVal::str() const {
+    std::ostringstream ss;
+    ss << "[" << this->nprops << "," << this->pprops << "," << this->round << "]";
+    return ss.str();
+}
+
 // safeToSkip: given an exact value e for a variable b, is it safe to
 // skip checking my literal's extra value in the lookahead heuristic?
 //
@@ -97,3 +107,88 @@ bool LookaheadScoreClassic::UBVal::safeToSkip(const ExVal& e) const {
     // In all other cases the value needs to be checked.
     return false;
 }
+
+void LookaheadScoreDeep::newVar() {
+    LAexacts.push();      // leave space for the var
+}
+
+void LookaheadScoreDeep::setLAValue(Var v, int p0, int p1) {
+    LAexacts[v] = DoubleVal(p0+p1+1024*p0*p1, latest_round);
+}
+
+void LookaheadScoreDeep::updateSolverScore(double &ss, const LookaheadSMTSolver *solver) {
+    double new_score = computeScoreFromClauses(solver->clauses, solver) + computeScoreFromClauses(solver->learnts, solver);
+    ss = new_score - ss;
+}
+
+double LookaheadScoreDeep::getSolverScore(const LookaheadSMTSolver *solver) {
+    if (base_score_round >= 0 && base_score_round == latest_round) {
+        return cached_score;
+    }
+
+    double score = computeScoreFromClauses(solver->clauses, solver) + computeScoreFromClauses(solver->learnts, solver);
+
+    base_score_round = latest_round;
+    cached_score = score;
+
+    return score;
+}
+
+double LookaheadScoreDeep::computeScoreFromClauses(const vec<CRef> &clauses, const LookaheadSMTSolver *solver) {
+    double score = 0;
+
+    const ClauseAllocator &ca = solver->ca;
+    for (int i = 0; i < clauses.size(); i++) {
+        unsigned nf = 0, nu = 0;
+        bool is_taut = false;
+
+        const Clause& c = ca[clauses[i]];
+        for (int j = 0; j < c.size(); j++) {
+            if (value(c[j]) == l_False) {
+                ++nf;
+                break;
+            }
+            else if (value(c[j]) == l_True) {
+                is_taut = true;
+                break;
+            }
+            else {
+                ++nu;
+                break;
+            }
+        }
+        if (!is_taut && nf > 0) {
+            score += pow(0.5, nu);
+        }
+    }
+
+    return score;
+}
+
+bool LookaheadScoreDeep::safeToSkip(Var v, Lit p) const {
+    return LAexacts[v].getRound() == latest_round;
+}
+
+void LookaheadScoreDeep::setChecked(Var v) {
+    LAexacts[v].setRound(latest_round);
+}
+
+void LookaheadScoreDeep::updateLABest(Var v) {
+    assert(value(v) == l_Undef);
+    DoubleVal e = LAexacts[v];
+    Lit l_v = mkLit(v, true);
+    buf_LABests.insert(l_v, e);
+    assert(value(buf_LABests.getLit()) == l_Undef);
+}
+
+bool LookaheadScoreDeep::isAlreadyChecked(Var v) const {
+    return (LAexacts[v].getRound() == latest_round);
+}
+
+Lit LookaheadScoreDeep::getBest() {
+    return buf_LABests.getLit();
+}
+
+const LookaheadScoreDeep::DoubleVal LookaheadScoreDeep::DoubleVal::max_val = DoubleVal(std::numeric_limits<int>::max(), std::numeric_limits<double>::max());
+
+

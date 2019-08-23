@@ -6,7 +6,8 @@
 
 LookaheadSMTSolver::LookaheadSMTSolver(SMTConfig& c, THandler& thandler)
 	: SimpSMTSolver (c, thandler)
-	, score         (assigns, c)
+	, score_p       (c.lookahead_score_deep() ? (LookaheadScore*)(new LookaheadScoreDeep(assigns, c)) : (LookaheadScore*)(new LookaheadScoreClassic(assigns, c)))
+	, score         (*score_p)
     , idx           (0)
 {}
 
@@ -225,8 +226,6 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode* 
 
 LookaheadSMTSolver::laresult LookaheadSMTSolver::expandTree(LANode* n, LANode* c1, LANode *c2)
 {
-    // Otherwise we will continue here by attempting to create two children for this node
-
     // Do the lookahead
     assert(decisionLevel() == n->d);
     Lit best;
@@ -430,7 +429,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
         for (int p = 0; p < 2; p++)   // do for both polarities
         {
             assert(decisionLevel() == d);
-            int ss = score.getSolverScore(this);
+            double ss = score.getSolverScore(this);
             newDecisionLevel();
             Lit l = mkLit(v, p);
             int tmp_trail_sz = trail.size();

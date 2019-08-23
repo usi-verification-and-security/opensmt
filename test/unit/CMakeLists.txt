@@ -46,3 +46,12 @@ target_sources(EGraphTest
 target_link_libraries(EGraphTest api_static gtest gtest_main)
 
 gtest_add_tests(TARGET EGraphTest)
+
+add_executable(LATest)
+target_sources(LATest
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Lookahead.cpp"
+    )
+
+target_link_libraries(LATest api_static gtest gtest_main)
+
+gtest_add_tests(TARGET LATest)
