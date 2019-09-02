@@ -9,12 +9,17 @@
 #include <cstdlib>
 #include <string>
 
-class BestLitBufTest: public ::testing::Test {
+class BestLitBufTestClassic: public ::testing::Test {
 public:
-    BestLitBufTest() {}
+    BestLitBufTestClassic() {}
 };
 
-TEST_F(BestLitBufTest, test_UnitLookahead) {
+class BestLitBufTestDeep: public ::testing::Test {
+public:
+    BestLitBufTestDeep() {}
+};
+
+TEST_F(BestLitBufTestClassic, test_UnitLookahead) {
     vec<lbool> assigns;
     for (int i = 0; i < 10; i++)
         assigns.push(l_Undef);
@@ -49,14 +54,43 @@ TEST_F(BestLitBufTest, test_UnitLookahead) {
     buf.insert(l6,v6);
     ASSERT_TRUE(buf.getLit(0) != l6 && buf.getLit(1) != l6);
 
-//    for (int i = 0; i < 100; i++) {
-//        Var v = rand() % assigns.size();
-//        bool p = rand() % 2;
-//        Lit l = mkLit(v, p);
-//
-//        LookaheadScoreClassic::ExVal val(rand() % 10, rand() % 10, 1);
-//        std::cout << "inserting lit " << l.x << " val " << val.str() << endl;
-//        buf.insert(l, val);
-//        std::cout << buf.str();
-//    }
+}
+
+TEST_F(BestLitBufTestDeep, test_UnitLookahead) {
+    vec<lbool> assigns;
+    for (int i = 0; i < 10; i++)
+        assigns.push(l_Undef);
+
+    LABestLitBuf<LookaheadScoreDeep::DoubleVal> buf(2, assigns, true, 1);
+
+    LookaheadScoreDeep::DoubleVal v1(1, 1);
+    Lit l1 = mkLit(0, true);
+    LookaheadScoreDeep::DoubleVal v2(2, 1);
+    Lit l2 = mkLit(1, true);
+    LookaheadScoreDeep::DoubleVal v3(1, 2);
+    Lit l3 = mkLit(2, true);
+    LookaheadScoreDeep::DoubleVal v4(2, 2);
+    Lit l4 = mkLit(3, true);
+    LookaheadScoreDeep::DoubleVal v5(1, 1);
+    Lit l5 = mkLit(4, true);
+    LookaheadScoreDeep::DoubleVal v6(2, 1);
+    Lit l6 = mkLit(5, true);
+
+    buf.insert(l1, v1);
+    ASSERT_EQ(buf.getLit(0), l1);
+    buf.insert(l2, v2);
+    ASSERT_EQ(buf.getLit(1), l2);
+    buf.insert(l3, v3);
+    ASSERT_TRUE(buf.getLit(0) == l2 || buf.getLit(1) == l2);
+    ASSERT_TRUE(buf.getLit(0) == l3 || buf.getLit(1) == l3);
+    buf.insert(l4, v4);
+    ASSERT_TRUE(buf.getLit(0) == l2 || buf.getLit(0) == l4);
+    ASSERT_TRUE(buf.getLit(1) == l2 || buf.getLit(1) == l4);
+    ASSERT_TRUE(buf.getLit(0) != buf.getLit(1));
+    buf.insert(l5,v5);
+    ASSERT_TRUE(buf.getLit(0) == l2 || buf.getLit(0) == l4);
+    ASSERT_TRUE(buf.getLit(1) == l2 || buf.getLit(1) == l4);
+    buf.insert(l6,v6);
+    ASSERT_TRUE(buf.getLit(0) == l4 || buf.getLit(1) == l4);
+
 }
