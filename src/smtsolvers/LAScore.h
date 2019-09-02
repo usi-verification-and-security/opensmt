@@ -132,20 +132,33 @@ public:
 //      until unit propagation closure, if c does not contain a true literal, or
 //    - 0, if c contains a true literal
 class LookaheadScoreDeep : public LookaheadScore {
-private:
+public:
     class DoubleVal {
         int round;
         double val;
     public:
-        DoubleVal() : round(-1), val(std::numeric_limits<double>::min()) {}
+        DoubleVal() : round(-1), val(std::numeric_limits<double>::lowest()) {}
         DoubleVal(int round, double val) : round(round), val(val) {}
+        DoubleVal(const DoubleVal& o) { round = o.round; val = o.val; }
+        DoubleVal& operator=(const DoubleVal& o) { round = o.round; val = o.val; return *this; }
         static const DoubleVal max_val;
 
-        bool operator<  (const DoubleVal& o) const { return (round < o.round) || (val < o.val); }
-        bool operator<= (const DoubleVal& o) const { return (round < o.round) || (val <= o.val); }
+        bool operator<  (const DoubleVal& o) const {
+            if (round > o.round) return false;
+            if (round < o.round) return true;
+            else {
+                return (val < o.val);
+            }
+        }
+        bool operator<= (const DoubleVal& o) const {
+            if (round > o.round) return false;
+            if (round < o.round) return true;
+            return (val <= o.val);
+        }
         int getRound() const { return round; }
         void setRound(int r) { round = r; }
     };
+private:
     LABestLitBuf<DoubleVal> buf_LABests;
     vec<DoubleVal> LAexacts;
     int base_score_round;
@@ -155,7 +168,7 @@ private:
 public:
     explicit LookaheadScoreDeep(const vec<lbool> &assigns, const SMTConfig &c)
             : LookaheadScore(assigns), base_score_round(-1)
-            , buf_LABests(c.randomize_lookahead_bufsz(), assigns, c.randomize_lookahead(), c.getRandomSeed()) {}
+            , buf_LABests(c.randomize_lookahead_bufsz(), assigns, c.randomize_lookahead(), c.getRandomSeed()) {std::cerr << "; Deep score\n";}
     void setLAValue(Var v, int p0, int p1) override;
 
     double getSolverScore(const LookaheadSMTSolver *solver) override;
@@ -284,7 +297,7 @@ private:
 public:
     explicit LookaheadScoreClassic(const vec<lbool> &assigns, const SMTConfig &c)
             : buf_LABests(c.randomize_lookahead_bufsz(), assigns, c.randomize_lookahead(), c.getRandomSeed()),
-              LookaheadScore(assigns) {}
+              LookaheadScore(assigns) { std::cerr << "; Classic score\n"; }
 
     void newVar() override;
 

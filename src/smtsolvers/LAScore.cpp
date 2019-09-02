@@ -113,7 +113,7 @@ void LookaheadScoreDeep::newVar() {
 }
 
 void LookaheadScoreDeep::setLAValue(Var v, int p0, int p1) {
-    LAexacts[v] = DoubleVal(p0+p1+1024*p0*p1, latest_round);
+    LAexacts[v] = DoubleVal(latest_round, p0+p1+1024*p0*p1);
 }
 
 void LookaheadScoreDeep::updateSolverScore(double &ss, const LookaheadSMTSolver *solver) {
@@ -146,7 +146,6 @@ double LookaheadScoreDeep::computeScoreFromClauses(const vec<CRef> &clauses, con
         for (int j = 0; j < c.size(); j++) {
             if (value(c[j]) == l_False) {
                 ++nf;
-                break;
             }
             else if (value(c[j]) == l_True) {
                 is_taut = true;
@@ -154,7 +153,6 @@ double LookaheadScoreDeep::computeScoreFromClauses(const vec<CRef> &clauses, con
             }
             else {
                 ++nu;
-                break;
             }
         }
         if (!is_taut && nf > 0) {
