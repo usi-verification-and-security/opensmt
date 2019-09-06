@@ -61,7 +61,7 @@ void LRASolver::computeConcreteModel(LVRef v) {
     while (concrete_model.size() <= getVarId(v))
         concrete_model.push(nullptr);
 
-    PTRef tr = lavarStore.getVarPTRef(v);
+    PTRef tr = laVarMapper.getVarPTRef(v);
     auto it = removed_by_GaussianElimination.find(v);
     if(it != removed_by_GaussianElimination.end()){
         auto const & representation = (*it).second;
@@ -115,7 +115,7 @@ void LRASolver::computeModel()
     // \delta'(x) = D/k
     // Finally, \delta := min_{x \in LV |delta'(x)|}.
 
-    for (unsigned i = 0; i < lavarStore.numVars(); ++i)
+    for (unsigned i = 0; i < laVarMapper.numVars(); ++i)
     {
         LVRef v {i};
         if (model.read(v).D() == 0)
@@ -155,7 +155,7 @@ void LRASolver::computeModel()
     cerr << "; delta: " << curDelta << '\n';
 #endif
 
-    for ( unsigned i = 0; i < lavarStore.numVars(); i++)
+    for ( unsigned i = 0; i < laVarMapper.numVars(); i++)
     {
         LVRef v {i};
         computeConcreteModel(v);
@@ -196,7 +196,7 @@ lbool LRASolver::getPolaritySuggestion(PTRef ptref) const {
     if (!this->isInformed(ptref)) { return l_Undef; }
     LVRef var = this->getVarForLeq(ptref);
     if (!model.hasModel(var)) { return l_Undef; }
-    LABoundRefPair bounds = this->boundStore.getBoundRefPair(ptref);
+    LABoundRefPair bounds = getBoundRefPair(ptref);
     assert( bounds.pos != LABoundRef_Undef && bounds.neg != LABoundRef_Undef );
     auto const& val = model.read(var);
     bool positive = false;

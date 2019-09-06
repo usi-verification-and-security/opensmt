@@ -17,7 +17,66 @@ namespace{
     }
 }
 
+PtAsgn LASolver::getAsgnByBound(LABoundRef br) const {
+    return LABoundRefToLeqAsgn[boundStore[br].getId()];
+}
 
+LABoundStore::BoundInfo LASolver::addBound(PTRef leq_tr) {
+//    printf(" -> bound store gets %s\n", logic.pp(leq_ref));
+    const Pterm& leq = logic.getPterm(leq_tr);
+    PTRef const_tr = leq[0];
+    PTRef sum_tr = leq[1];
+
+    bool sum_term_is_negated = logic.isNegated(sum_tr);
+
+    LVRef v = laVarMapper.getVarByLeqId(logic.getPterm(leq_tr).getId());
+    assert(v == laVarMapper.getVarByPTId(logic.getPterm(sum_tr).getId()));
+
+    LABoundStore::BoundInfo bi;
+
+    LABoundRef br_pos;
+    LABoundRef br_neg;
+
+    if (sum_term_is_negated) {
+        opensmt::Real constr_neg = -logic.getNumConst(const_tr);
+        bi = boundStore.allocBoundPair(v, constr_neg, false);
+        br_pos = bi.ub;
+        br_neg = bi.lb;
+    }
+    else {
+        const Real& constr = logic.getNumConst(const_tr);
+        bi = boundStore.allocBoundPair(v, constr, true);
+        br_pos = bi.lb;
+        br_neg = bi.ub;
+    }
+    int br_pos_idx = boundStore[br_pos].getId();
+    int br_neg_idx = boundStore[br_neg].getId();
+
+    int tid = Idx(logic.getPterm(leq_tr).getId());
+    if (LeqToLABoundRefPair.size() <= tid) {
+        LeqToLABoundRefPair.growTo(tid + 1);
+    }
+    LeqToLABoundRefPair[tid] = LABoundRefPair{br_pos, br_neg};
+
+    if (LABoundRefToLeqAsgn.size() <= std::max(br_pos_idx, br_neg_idx)) {
+        LABoundRefToLeqAsgn.growTo(std::max(br_pos_idx, br_neg_idx) + 1);
+    }
+    LABoundRefToLeqAsgn[br_pos_idx] = PtAsgn(leq_tr, l_True);
+    LABoundRefToLeqAsgn[br_neg_idx] = PtAsgn(leq_tr, l_False);
+    return bi;
+}
+
+void LASolver::updateBound(PTRef tr)
+{
+    // If the bound already exists, do nothing.
+    int id = Idx(logic.getPterm(tr).getId());
+    if ((LeqToLABoundRefPair.size() > id) &&
+        !(LeqToLABoundRefPair[id] == LABoundRefPair{LABoundRef_Undef, LABoundRef_Undef}))
+        return;
+
+    LABoundStore::BoundInfo bi = addBound(tr);
+    boundStore.updateBound(bi);
+}
 
 bool LASolver::isValid(PTRef tr)
 {
@@ -39,15 +98,11 @@ void LASolver::isProperLeq(PTRef tr)
 
 LASolver::LASolver(SolverDescr dls, SMTConfig & c, LALogic& l, vec<DedElem>& d)
         : logic(l)
-//    , bindedRowsStore(l, lva, bra)
-//    , pa(pta)
-//    , polyStore(lva, pa, bindedRowsStore, l)
         , TSolver((SolverId)descr_la_solver, (const char*)descr_la_solver, c, d)
-        //, delta(Delta::ZERO)
         , bland_threshold(1000)
-        , lavarStore(l)
-        , boundStore(ba, bla, lavarStore, l)
-        , model(lavarStore, boundStore, l)
+        , laVarMapper(l, laVarStore)
+        , boundStore(laVarMapper)
+        , model(laVarMapper, boundStore, l)
 {
     status = INIT;
 }
@@ -219,7 +274,7 @@ void LASolver::setBound(PTRef leq_tr)
 {
 //    printf("Setting bound for %s\n", logic.printTerm(leq_tr));
 
-    boundStore.addBound(leq_tr);
+    addBound(leq_tr);
 }
 
 opensmt::Number LASolver::getNum(PTRef r) {
@@ -230,7 +285,7 @@ opensmt::Number LASolver::getNum(PTRef r) {
 bool LASolver::hasVar(PTRef expr) {
     expr =  logic.isNegated(expr) ? logic.mkNumNeg(expr) : expr;
     PTId id = logic.getPterm(expr).getId();
-    return lavarStore.hasVar(id);
+    return laVarMapper.hasVar(id);
 }
 
 LVRef LASolver::getLAVar_single(PTRef expr_in) {
@@ -239,10 +294,10 @@ LVRef LASolver::getLAVar_single(PTRef expr_in) {
 
     PTId id_pos = logic.getPterm(expr).getId();
 
-    if (lavarStore.hasVar(id_pos))
+    if (laVarMapper.hasVar(id_pos))
         return getVarForTerm(expr);
 
-    LVRef x = lavarStore.getNewVar(expr);
+    LVRef x = laVarMapper.getNewVar(expr);
     return x;
 }
 
@@ -282,7 +337,7 @@ std::unique_ptr<Polynomial> LASolver::expressionToLVarPoly(PTRef term) {
 //
 LVRef LASolver::exprToLVar(PTRef expr) {
     LVRef x = LVRef_Undef;
-    if (lavarStore.hasVar(expr)){
+    if (laVarMapper.hasVar(expr)){
         x = getVarForTerm(expr);
         if(isProcessedByTableau(x))
         { return x;}
@@ -340,8 +395,8 @@ void LASolver::informNewSplit(PTRef tr)
 {
     PTRef term = logic.getPterm(tr)[1];
     LVRef v = exprToLVar(term);
-    lavarStore.addLeqVar(tr, v);
-    boundStore.updateBound(tr);
+    laVarMapper.addLeqVar(tr, v);
+    updateBound(tr);
 }
 
 LVRef LASolver::getBasicVarToFixByShortestPoly() const {
@@ -366,7 +421,7 @@ LVRef LASolver::getBasicVarToFixByShortestPoly() const {
 
 LVRef LASolver::getBasicVarToFixByBland() const {
     decltype(candidates) new_candidates;
-    int curr_var_id_x = lavarStore.numVars();
+    int curr_var_id_x = laVarMapper.numVars();
     LVRef current = LVRef_Undef;
     for (auto it : candidates) {
         assert(it != LVRef_Undef);
@@ -437,7 +492,7 @@ LVRef LASolver::findNonBasicForPivotByHeuristic(LVRef basicVar) {
 }
 
 LVRef LASolver::findNonBasicForPivotByBland(LVRef basicVar) {
-    int max_var_id = lavarStore.numVars();
+    int max_var_id = laVarMapper.numVars();
     LVRef y_found = LVRef_Undef;
     // Model doesn't fit the lower bound
     if (model.read(basicVar) < model.Lb(basicVar)) {
@@ -513,7 +568,7 @@ bool LASolver::assertLit( PtAsgn asgn, bool reason )
 
     bool is_reason = false;
 
-    LABoundRefPair p = boundStore.getBoundRefPair(asgn.tr);
+    LABoundRefPair p = getBoundRefPair(asgn.tr);
     LABoundRef bound_ref = asgn.sgn == l_False ? p.neg : p.pos;
 
 //    printf("Model state\n");
@@ -564,7 +619,7 @@ bool LASolver::assertBoundOnVar(LVRef it, LABoundRef itBound_ref)
     assert( status == SAT );
     assert( it != LVRef_Undef );
     assert( !isUnbounded(it) );
-    const LABound &itBound = ba[itBound_ref];
+    const LABound &itBound = boundStore[itBound_ref];
 
 //  cerr << "; ASSERTING bound on " << *it << endl;
 
@@ -578,21 +633,13 @@ bool LASolver::assertBoundOnVar(LVRef it, LABoundRef itBound_ref)
         explanation.clear();
         explanationCoefficients.clear();
 
-        if (itBound.getType() == bound_u)
-        {
-            PTRef tr = model.readLBound(it).getPTRef();
-            explanation.push(PtAsgn(tr, getPolarity(tr)));
-            explanationCoefficients.emplace_back( 1 );
-        }
-        else if (itBound.getType() == bound_l)
-        {
-            PTRef tr = model.readUBound(it).getPTRef();
-            explanation.push(PtAsgn(tr, getPolarity(tr)));
-            explanationCoefficients.emplace_back( 1 );
-        }
+        PtAsgn pta = getAsgnByBound(itBound.getType() == bound_u ? model.readLBoundRef(it) : model.readUBoundRef(it));
 
-        assert(itBound.getPTRef() != PTRef_Undef);
-        explanation.push(itBound.getPtAsgn());
+        explanation.push(pta);
+        explanationCoefficients.emplace_back( 1 );
+
+        assert(getAsgnByBound(itBound_ref).tr != PTRef_Undef);
+        explanation.push(getAsgnByBound(itBound_ref));
         explanationCoefficients.emplace_back(1);
         return setStatus( UNSAT );
     }
@@ -728,17 +775,17 @@ void LASolver::initSolver()
             // Ensure that all variables exists, build the polynomial, and update the occurrences.
             LVRef v = exprToLVar(term);
 
-            lavarStore.addLeqVar(leq_tr, v);
+            laVarMapper.addLeqVar(leq_tr, v);
 
             // Assumes that the LRA variable has been already declared
             setBound(leq_tr);
         }
-        boundStore.buildBounds(ptermToLABoundRefs); // Bounds are needed for gaussian elimination
+        boundStore.buildBounds(); // Bounds are needed for gaussian elimination
         // Gaussian Elimination should not be performed in the Incremental mode!
         if (config.lra_gaussian_elim == 1 && config.do_substitutions())
             doGaussianElimination();
 
-        model.initModel(lavarStore);
+        model.initModel(laVarMapper);
 
         status = SAT;
     }
@@ -796,8 +843,9 @@ void LASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
 {
     if (model.read(x) < model.Lb(x)) {
         // add all bounds for polynomial elements, which limit lower bound
-        const LABound& b_f = model.readLBound(x);
-        dst.push(b_f.getSign() == l_True ? b_f.getPTRef() : logic.mkNot(b_f.getPTRef()));
+        LABoundRef b_f = model.readLBoundRef(x);
+        PtAsgn b_f_asgn = getAsgnByBound(b_f);
+        dst.push(b_f_asgn.sgn == l_True ? b_f_asgn.tr : logic.mkNot(b_f_asgn.tr));
 //        dst.push(model.readLBound(x).getPTRef());
 //        dst.push(ba[bla[lva[x].getBounds()][lva[x].lbound()]].getPTRef());
         explanationCoefficients.emplace_back( 1 );
@@ -807,52 +855,29 @@ void LASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
             auto const var = term.var;
             assert(var != x);
             if (coeff < 0) {
-                const LABound& b = model.readLBound(var);
-                assert( b.getPTRef() != PTRef_Undef );
-                dst.push( b.getSign() == l_True ? b.getPTRef() : logic.mkNot(b.getPTRef()) );
+                LABoundRef br = model.readLBoundRef(var);
+                PtAsgn b_asgn = getAsgnByBound(br);
+                assert( b_asgn.tr != PTRef_Undef );
+                dst.push( b_asgn.sgn == l_True ? b_asgn.tr : logic.mkNot(b_asgn.tr) );
 
                 explanationCoefficients.push_back( -coeff );
             }
             else {
-                const LABound& b = model.readUBound(var);
-                assert( b.getPTRef() != PTRef_Undef );
-                dst.push( b.getSign() == l_True ? b.getPTRef() : logic.mkNot(b.getPTRef()) );
+                LABoundRef br = model.readUBoundRef(var);
+                PtAsgn b_asgn = getAsgnByBound(br);
+                assert( b_asgn.tr != PTRef_Undef );
+                dst.push( b_asgn.sgn == l_True ? b_asgn.tr : logic.mkNot(b_asgn.tr) );
 
                 explanationCoefficients.push_back(coeff);
             }
         }
-
-//        for (int i = 0; i < polyStore.getSize(lva[x].getPolyRef()); i++) {
-//            const PolyTerm &pt = pta[polyStore.readTerm(polyStore.getPolyRef(x), i)];
-//            const Real &a = pt.coef;
-//            assert( a != 0 );
-//            LVRef y = pt.var;
-//            //LVRef y = columns[lva[pt.var].getColId()];
-//            assert(x != y);
-//
-//            if (a < 0) {
-//                const LABound& b = model.readLBound(y);
-////                printf("The bound is %s\n", b.getSign() == l_True ? "positive" : "negative");
-//                assert( b.getPTRef() != PTRef_Undef );
-//                dst.push( b.getSign() == l_True ? b.getPTRef() : logic.mkNot(b.getPTRef()) );
-//
-//                explanationCoefficients.push_back( -a );
-//            }
-//            else {
-//                const LABound& b = model.readUBound(y);
-////                printf("The bound is %s\n", b.getSign() == l_True ? "positive" : "negative");
-//                assert( b.getPTRef() != PTRef_Undef );
-//                dst.push( b.getSign() == l_True ? b.getPTRef() : logic.mkNot(b.getPTRef()) );
-//
-//                explanationCoefficients.push_back(a);
-//            }
-//        }
     }
     if (model.read(x) > model.Ub(x)) {
         // add all bounds for polynomial elements, which limit upper bound
 //        dst.push(ba[bla[lva[x].getBounds()][lva[x].ubound()]].getPTRef());
-        const LABound& b_f = model.readUBound(x);
-        dst.push(b_f.getSign() == l_True ? b_f.getPTRef() : logic.mkNot(b_f.getPTRef()));
+        LABoundRef br_f = model.readUBoundRef(x);
+        PtAsgn br_f_asgn = getAsgnByBound(br_f);
+        dst.push(br_f_asgn.sgn == l_True ? br_f_asgn.tr : logic.mkNot(br_f_asgn.tr));
 //        dst.push(model.readUBound(x).getPTRef());
         explanationCoefficients.emplace_back( 1 );
 
@@ -862,46 +887,22 @@ void LASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
             auto const var = term.var;
             assert(var != x);
             if (coeff > 0) {
-                const LABound& b = model.readLBound(var);
-                assert( b.getPTRef() != PTRef_Undef );
-                dst.push( b.getSign() == l_True ? b.getPTRef() : logic.mkNot(b.getPTRef()) );
+                LABoundRef br = model.readLBoundRef(var);
+                PtAsgn br_asgn = getAsgnByBound(br);
+                assert( br_asgn.tr != PTRef_Undef );
+                dst.push( br_asgn.sgn == l_True ? br_asgn.tr : logic.mkNot(br_asgn.tr) );
 
                 explanationCoefficients.push_back( coeff );
             }
             else {
-                const LABound& b = model.readUBound(var);
-                assert( b.getPTRef() != PTRef_Undef );
-                dst.push( b.getSign() == l_True ? b.getPTRef() : logic.mkNot(b.getPTRef()) );
+                LABoundRef br = model.readUBoundRef(var);
+                PtAsgn br_asgn = getAsgnByBound(br);
+                assert( br_asgn.tr != PTRef_Undef );
+                dst.push( br_asgn.sgn == l_True ? br_asgn.tr : logic.mkNot(br_asgn.tr) );
 
                 explanationCoefficients.push_back(-coeff);
             }
         }
-//        for (int i = 0; i < polyStore.getSize(lva[x].getPolyRef()); i++) {
-//            const PolyTerm &pt = pta[polyStore.readTerm(polyStore.getPolyRef(x), i)];
-//            const Real &a = pt.coef;
-//            assert( a != 0 );
-//            LVRef y = pt.var;
-//            //LVRef y = columns[lva[pt.var].getColId()];
-//            assert(x != y);
-//
-//            if (a > 0) {
-////                LABoundRef l_bound = bla[lva[y].getBounds()][lva[y].lbound()];
-//                const LABound& b = model.readLBound(y);
-////                printf("The bound is %s\n", b.getSign() == l_True ? "positive" : "negative");
-//                assert( b.getPTRef() != PTRef_Undef );
-//                dst.push( b.getSign() == l_True ? b.getPTRef() : logic.mkNot(b.getPTRef()) );
-//                explanationCoefficients.push_back( a );
-//            }
-//            else {
-////                LABoundRef u_bound = bla[lva[y].getBounds()][lva[y].ubound()];
-//                const LABound& b = model.readUBound(y);
-////                printf("The bound is %s\n", b.getSign() == l_True ? "positive" : "negative");
-//
-//                assert( b.getPTRef() != PTRef_Undef );
-//                dst.push( b.getSign() == l_True ? b.getPTRef() : logic.mkNot(b.getPTRef()) );
-//                explanationCoefficients.push_back(-a);
-//            }
-//        }
     }
 
 //    printf("I now came up with an explanation.  It looks like this:\n");
@@ -918,34 +919,35 @@ void LASolver::getSimpleDeductions(LVRef v, LABoundRef br)
 //    printf("Deducing from bound %s\n", boundStore.printBound(br));
 //    printf("The full bound list for %s:\n%s\n", logic.printTerm(lva[v].getPTRef()), boundStore.printBounds(v));
 
-    LABound& bound = ba[br];
+    LABound& bound = boundStore[br];
     if (bound.getValue().isInf())
         return;
     if (bound.getType() == bound_l) {
-        for (int it = bound.getIdx() - 1; it >= 0; it = it - 1) {
+        for (int it = bound.getIdx().x - 1; it >= 0; it = it - 1) {
             LABoundRef bound_prop_ref = boundStore.getBoundByIdx(v, it);
-            LABound &bound_prop = ba[bound_prop_ref];
+            LABound &bound_prop = boundStore[bound_prop_ref];
             if (bound_prop.getValue().isInf() || bound_prop.getType() != bound_l)
                 continue;
-            deduce(bound_prop);
+            deduce(bound_prop_ref);
         }
     } else if (bound.getType() == bound_u) {
-        for (int it = bound.getIdx() + 1; it < boundStore.getBoundListSize(v) - 1; it = it + 1) {
+        for (int it = bound.getIdx().x + 1; it < boundStore.getBoundListSize(v) - 1; it = it + 1) {
             LABoundRef bound_prop_ref = boundStore.getBoundByIdx(v, it);
-            LABound & bound_prop = ba[bound_prop_ref];
+            LABound & bound_prop = boundStore[bound_prop_ref];
             if (bound_prop.getValue().isInf() || bound_prop.getType() != bound_u)
                 continue;
-            deduce(bound_prop);
+            deduce(bound_prop_ref);
         }
     }
 }
 
-void LASolver::deduce(const LABound & bound_prop) {
-    if (!hasPolarity(bound_prop.getPTRef())) {
-        if (deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] == l_Undef) {
-            lbool pol = bound_prop.getSign();
-            deduced[logic.getPterm(bound_prop.getPTRef()).getVar()] = DedElem(id, pol); // id is the solver id
-            th_deductions.push(PtAsgn_reason(bound_prop.getPTRef(), pol, PTRef_Undef));
+void LASolver::deduce(LABoundRef bound_prop) {
+    PtAsgn ba = getAsgnByBound(bound_prop);
+    if (!hasPolarity(ba.tr)) {
+        if (deduced[logic.getPterm(ba.tr).getVar()] == l_Undef) {
+            lbool pol = ba.sgn;
+            deduced[logic.getPterm(ba.tr).getVar()] = DedElem(id, pol); // id is the solver id
+            th_deductions.push(PtAsgn_reason(ba.tr, pol, PTRef_Undef));
         }
     }
 }
@@ -1058,7 +1060,7 @@ ValPair LASolver::getValue(PTRef tr) {
     if (!logic.hasSortNum(tr)) return ValPair_Undef;
     PTId id = logic.getPterm(tr).getId();
     opensmt::Real val(0);
-    if (!lavarStore.hasVar(id)) {
+    if (!laVarMapper.hasVar(id)) {
         // This is a linear expression.
         if (logic.getPterm(tr).size() > 0) {
             Pterm &t = logic.getPterm(tr);
@@ -1134,7 +1136,7 @@ PtAsgn_reason LASolver::getDeduction()  { if (deductions_next >= th_deductions.s
 
 LALogic&  LASolver::getLogic()  { return logic; }
 
-unsigned LASolver::nVars() const { return lavarStore.numVars(); }
+unsigned LASolver::nVars() const { return laVarMapper.numVars(); }
 
 bool LASolver::isProcessedByTableau(LVRef var) {return tableau.isProcessed(var);}
 

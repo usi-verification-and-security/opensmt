@@ -5,7 +5,7 @@
 #include "LRAModel.h"
 #include "LRALogic.h"
 
-void LRAModel::initModel(LAVarStore &s)
+void LRAModel::initModel(LAVarMapper &s)
 {
     for (unsigned i = 0; i < s.numVars(); i++) {
         LVRef ref {i};
@@ -137,7 +137,7 @@ void LRAModel::printModelState()
         if (has_model[v]) {
             int id = getVarId(v);
             vec<ModelEl> &vals = int_model[id];
-            printf("Var %s [%s], has %d models\n", printVar(v), logic.pp(lavarStore.getVarPTRef(v)), vals.size());
+            printf("Var %s [%s], has %d models\n", printVar(v), logic.pp(laVarMapper.getVarPTRef(v)), vals.size());
             char *buf = (char*) malloc(1);
             buf[0] = '\0';
             for (int j = 0; j < vals.size(); j++) {
@@ -181,17 +181,19 @@ int LRAModel::backtrackLevel() { return limits.size() - 1; }
 
 const  bool  LRAModel::hasModel(const LVRef& v) const { return (getVarId(v) < int_model.size() && int_model[getVarId(v)].size() > 0); }
 
-const LABound& LRAModel::readLBound(const LVRef &v) const { return bs[int_lbounds[getVarId(v)].last().br]; }
-const LABound& LRAModel::readUBound(const LVRef &v) const { return bs[int_ubounds[getVarId(v)].last().br]; }
+LABoundRef LRAModel::readLBoundRef(LVRef v) const { return int_lbounds[getVarId(v)].last().br; }
+const LABound& LRAModel::readLBound(const LVRef &v) const { return bs[readLBoundRef(v)]; }
+LABoundRef LRAModel::readUBoundRef(LVRef v) const { return int_ubounds[getVarId(v)].last().br; }
+const LABound& LRAModel::readUBound(const LVRef &v) const { return bs[readUBoundRef(v)]; }
 const Delta& LRAModel::Lb(LVRef v) const { return bs[int_lbounds[getVarId(v)].last().br].getValue(); }
 const Delta& LRAModel::Ub(LVRef v) const { return bs[int_ubounds[getVarId(v)].last().br].getValue(); }
 void LRAModel::pushBacktrackPoint()      { limits.push({model_trace.size(), bound_trace.size(), decision_trace.size()}); }
 PtAsgn LRAModel::popBacktrackPoint() { popModels(); popBounds(); PtAsgn popd = popDecisions(); limits.pop(); return popd; }; // Returns the decision if the backtrack point had a decision
 int  LRAModel::getBacktrackSize() const { return limits.size(); }
 
-bool LRAModel::isEquality(LVRef v) const { return bs[int_lbounds[getVarId(v)].last().br].getIdx()+1 == bs[int_ubounds[getVarId(v)].last().br].getIdx() && !Lb(v).isInf() && !Ub(v).isInf() && Lb(v) == Ub(v); }
+bool LRAModel::isEquality(LVRef v) const { return bs[int_lbounds[getVarId(v)].last().br].getIdx().x+1 == bs[int_ubounds[getVarId(v)].last().br].getIdx().x && !Lb(v).isInf() && !Ub(v).isInf() && Lb(v) == Ub(v); }
 bool LRAModel::isUnbounded(LVRef v) const { return bs.isUnbounded(v); }
-bool LRAModel::boundSatisfied(LVRef v, LABoundRef b) const { return ((bs[b].getType() == bound_u) && !(bs[b].getIdx() < readUBound(v).getIdx())) || ((bs[b].getType() == bound_l) && !(bs[b].getIdx() > readLBound(v).getIdx())); }
+bool LRAModel::boundSatisfied(LVRef v, LABoundRef b) const { return ((bs[b].getType() == bound_u) && bs[b].getIdx().x >= readUBound(v).getIdx().x) || ((bs[b].getType() == bound_l) && bs[b].getIdx().x <= readLBound(v).getIdx().x); }
 bool LRAModel::boundUnsatisfied(LVRef v, LABoundRef b) const
-{ return ((bs[b].getType() == bound_l) && (bs[b].getIdx() > readUBound(v).getIdx() && bs[b].getValue() != Ub(v))) ||
-         ((bs[b].getType() == bound_u) && (bs[b].getIdx() < readLBound(v).getIdx() && bs[b].getValue() != Lb(v))); }
+{ return ((bs[b].getType() == bound_l) && (bs[b].getIdx().x > readUBound(v).getIdx().x && bs[b].getValue() != Ub(v))) ||
+         ((bs[b].getType() == bound_u) && (bs[b].getIdx().x < readLBound(v).getIdx().x && bs[b].getValue() != Lb(v))); }

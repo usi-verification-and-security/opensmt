@@ -4,6 +4,7 @@
 #include "Delta.h"
 #include "LARefs.h"
 #include "LAVar.h"
+#include "LAVarMapper.h"
 
 //
 // Bound index type.  The bounds are ordered in a list, and indexed using a number in the list.
@@ -18,22 +19,19 @@
 class LABound
 {
     char type;    // Upper / lower
-    char reverse; // is this used?
-    char active;  // is this used?
-    int idx;      // The index in variable's bound list
+    int bidx;     // The index in variable's bound list
+    int id;       // The unique id of the bound
     LVRef var;
     Delta delta;
-    PtAsgn leq_pta;
 public:
-    LABound(BoundT type, PtAsgn leq_pta, LVRef var, const Delta& delta);
-    inline void setIdx(int i)  { idx = i; }
-    inline int getIdx() const { return idx; }
+    struct BLIdx { int x; };
+    LABound(BoundT type, LVRef var, const Delta& delta, int id);
+    inline void setIdx(BLIdx i)  { bidx = i.x; }
+    inline BLIdx getIdx() const { return {bidx}; }
     inline const Delta& getValue() const { return delta; }
     inline BoundT getType() const { return { type }; }
-    inline PTRef getPTRef() const { return leq_pta.tr;  }
-    inline lbool getSign()  const { return leq_pta.sgn; }
     inline LVRef getLVRef() const { return var; }
-    inline PtAsgn getPtAsgn() const { return leq_pta; }
+    int getId() const { return id; }
 };
 
 class LABoundAllocator : public RegionAllocator<uint32_t>
@@ -46,7 +44,7 @@ public:
     LABoundAllocator() : n_bounds(0) {}
     inline unsigned getNumBounds() const;// { return n_bounds; }
 
-    LABoundRef alloc(BoundT type, PtAsgn leq_pta, LVRef var, const Delta& delta);
+    LABoundRef alloc(BoundT type, LVRef var, const Delta& delta);
     inline LABound&       operator[](LABoundRef r)       { return (LABound&)RegionAllocator<uint32_t>::operator[](r.x); }
     inline const LABound& operator[](LABoundRef r) const { return (LABound&)RegionAllocator<uint32_t>::operator[](r.x); }
     inline LABound*       lea       (LABoundRef r);
@@ -115,27 +113,21 @@ public:
 class LABoundStore
 {
 public:
-    struct BoundInfo { LVRef v; LABoundRef b1; LABoundRef b2; PTId leq_id; };
+    struct BoundInfo { LVRef v; LABoundRef ub; LABoundRef lb; };
 private:
     vec<BoundInfo> in_bounds;
-    LABoundAllocator& ba;
-    LABoundListAllocator& bla;
-    LAVarStore& lavarStore;
-    vec<LABoundRefPair> ptermToLABoundsRef;
-    LALogic& logic;
+    LABoundAllocator ba{1024};
+    LABoundListAllocator bla{1024};
+    LAVarMapper& laVarMapper;
     vec<LABoundListRef> var_bound_lists;
 public:
-    LABoundStore(LABoundAllocator & ba, LABoundListAllocator & bla, LAVarStore & lavstore, LALogic & l)
-            : ba(ba), bla(bla), lavarStore(lavstore), logic(l) {
-        vec<LABoundRef> tmp;
-    }
-    BoundInfo addBound(PTRef leq_tr);
-    void buildBounds(vec<LABoundRefPair>& ptermToLABoundRef);
-    void updateBound(PTRef leq_tr); // Update a single bound.
+    LABoundStore(LAVarMapper & lavMapper) : laVarMapper(lavMapper) {}
+    void buildBounds();
+    void updateBound(BoundInfo bi); // Update a single bound.
 //    inline LABoundRef getLowerBound(const LVRef v) const { return bla[lva[v].getBounds()][lva[v].lbound()]; }
 //    inline LABoundRef getUpperBound(const LVRef v) const { return bla[lva[v].getBounds()][lva[v].ubound()]; }
-    LABoundRefPair getBoundRefPair(const PTRef leq) const;
-    inline LABound& operator[] (LABoundRef br) const { return ba[br]; }
+    inline LABound& operator[] (LABoundRef br) { return ba[br]; }
+    inline const LABound& operator[] (LABoundRef br) const { return ba[br]; }
     // Debug
     char* printBound(LABoundRef br) const; // Print the bound br
     char* printBounds(LVRef v) const; // Print all bounds of v
@@ -143,6 +135,13 @@ public:
     LABoundRef getBoundByIdx(LVRef v, int it) const;
     int getBoundListSize(LVRef v) ;
     bool isUnbounded(LVRef v) const;
+    // Construct an upper bound v ~ c and its negation \neg (v ~ c), where ~ is < if strict and <= if !strict
+    BoundInfo allocBoundPair(LVRef v, const opensmt::Real& c, bool strict) {
+        LABoundRef ub = ba.alloc(bound_u, v, strict ? Delta(c, -1) : Delta(c));
+        LABoundRef lb = ba.alloc(bound_l, v, strict ? Delta(c) : Delta(c, 1));
+        in_bounds.push(BoundInfo{v, ub, lb});
+        return in_bounds.last();
+    }
 };
 
 

@@ -12,6 +12,7 @@
 #include "lrasolver/Polynomial.h"
 
 #include <unordered_map>
+#include <lrasolver/LAVarMapper.h>
 
 class LAVar;
 class LAVarStore;
@@ -56,12 +57,16 @@ class LASolver: public TSolver
 protected:
 
     LALogic&             logic;
-    LAVarStore           lavarStore;
+    LAVarStore           laVarStore;
+    LAVarMapper          laVarMapper;
 
-    LABoundAllocator     ba{1024};
-    LABoundListAllocator bla{1024};
     LABoundStore         boundStore;
 
+    vec<PtAsgn>          LABoundRefToLeqAsgn;
+    PtAsgn getAsgnByBound(LABoundRef br) const;
+    vec<LABoundRefPair>  LeqToLABoundRefPair;
+    LABoundRefPair getBoundRefPair(const PTRef leq) const
+        { return LeqToLABoundRefPair[Idx(logic.getPterm(leq).getId())]; }
 
     // Possible internal states of the solver
     typedef enum
@@ -76,7 +81,7 @@ protected:
 
 protected:
     PTRef getVarPTRef(LVRef v) const {
-        return lavarStore.getVarPTRef(v);
+        return laVarMapper.getVarPTRef(v);
     }
 
 public:
@@ -107,6 +112,8 @@ public:
 protected:
     Tableau tableau;
 
+    LABoundStore::BoundInfo addBound(PTRef leq_tr);
+    void updateBound(PTRef leq_tr);
     LVRef exprToLVar(PTRef expr); // Ensures this term and all variables in it has corresponding LVAR.  Returns the LAVar for the term.
     void  pivot(LVRef basic, LVRef nonBasic);
 
@@ -132,8 +139,8 @@ protected:
 
     LVRef getLAVar_single(PTRef term);                      // Initialize a new LA var if needed, otherwise return the old var
     bool hasVar(PTRef expr);
-    LVRef getVarForLeq(PTRef ref) const { return lavarStore.getVarByLeqId(logic.getPterm(ref).getId()); }
-    LVRef getVarForTerm(PTRef ref) const { return lavarStore.getVarByPTId(logic.getPterm(ref).getId()); }
+    LVRef getVarForLeq(PTRef ref)  const  { return laVarMapper.getVarByLeqId(logic.getPterm(ref).getId()); }
+    LVRef getVarForTerm(PTRef ref) const  { return laVarMapper.getVarByPTId(logic.getPterm(ref).getId()); }
     virtual void doGaussianElimination( ) = 0;                     // Performs Gaussian elimination of all redundant terms in the Tableau if applicable
     virtual void notifyVar(LVRef v) {}                             // Notify the solver of the existence of the var. This is so that LIA can add it to integer vars list.
     void changeValueBy( LVRef, const Delta & );                    // Updates the bounds after constraint pushing
@@ -202,7 +209,7 @@ protected:
     bool checkTableauConsistency() const;
     void crashInconsistency(LVRef v, int line);
 
-    void deduce(const LABound & bound_prop);
+    void deduce(LABoundRef bound_prop);
 };
 
 #endif

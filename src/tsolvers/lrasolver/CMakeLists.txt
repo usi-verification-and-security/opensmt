@@ -4,6 +4,7 @@ target_sources(tsolvers
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/Delta.h"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/LABounds.h"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/LARefs.h"
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/LAVarMapper.h"
     #PRIVATE "${CMAKE_CURRENT_LIST_DIR}/LRAModel.h"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/Tableau.h"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/Polynomial.h"
@@ -15,6 +16,7 @@ target_sources(tsolvers
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/LRAModel.cpp"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/Tableau.cpp"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/Polynomial.cpp"
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/LAVarMapper.cpp"
     )
 
 if(PRODUCE_PROOF)

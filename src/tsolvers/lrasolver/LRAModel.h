@@ -10,6 +10,7 @@
 #include "LABounds.h"
 #include "Vec.h"
 #include "LARefs.h"
+#include "LAVarMapper.h"
 
 struct Limits
 {
@@ -38,7 +39,7 @@ private:
     vec<LABoundRef> bound_trace;
     vec<PtAsgn> decision_trace;
 
-    LAVarStore &lavarStore;
+    LAVarMapper &laVarMapper;
     LABoundStore &bs;
     int n_vars_with_model;
     LALogic& logic; // Needed just for debug prints
@@ -49,8 +50,8 @@ private:
     PtAsgn       popDecisions();
 
 public:
-    LRAModel(LAVarStore & lavarStore, LABoundStore & bs, LALogic & logic) : lavarStore(lavarStore), bs(bs), n_vars_with_model(0), logic(logic) { limits.push({0, 0}); }
-    void initModel(LAVarStore &s);
+    LRAModel(LAVarMapper &laVarMapper, LABoundStore & bs, LALogic & logic) : laVarMapper(laVarMapper), bs(bs), n_vars_with_model(0), logic(logic) { limits.push({0, 0}); }
+    void initModel(LAVarMapper &s);
     int addVar(LVRef v); // Adds a variable.  Returns the total number of variables
     inline int   nVars() { return n_vars_with_model; }
 
@@ -61,7 +62,9 @@ public:
     void pushBound(const LABoundRef br);
     void pushDecision(PtAsgn asgn);
     const LABound& readLBound(const LVRef &v) const;
+    LABoundRef readLBoundRef(LVRef v) const;
     const LABound& readUBound(const LVRef &v) const;
+    LABoundRef readUBoundRef(LVRef v) const;
     const Delta& Lb(LVRef v) const;
     const Delta& Ub(LVRef v) const;
     void pushBacktrackPoint() ;

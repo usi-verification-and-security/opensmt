@@ -41,22 +41,13 @@ class LALogic;
 class LAVarStore
 {
 private:
-    std::vector<PTRef>      lavars;
-    vec<LVRef>      leqToLavar;              // Maps Pterm constraints to solver's real variables.
-    vec<LVRef>      ptermToLavar;            // Maps Pterm variables to solver's real variables
-    LALogic&        logic;
-public:
-    LAVarStore(LALogic & logic) : logic(logic) {}
-    inline void   clear() {};
-    LVRef  getNewVar(PTRef e_orig);
-    LVRef  getVarByPTId(PTId i) const;
-    void   addLeqVar(PTRef leq_tr, LVRef v); // Adds a binding from leq_tr to the "slack var" v
-    LVRef  getVarByLeqId(PTId i) const;
+    std::vector<LVRef>      lavars;
 
-    bool   hasVar(PTId i) ;
-    bool   hasVar(PTRef tr);
+public:
+    LAVarStore() {}
+    LVRef  getNewVar();
+    inline void   clear() {};
     int    numVars() const ;
-    inline PTRef getVarPTRef(LVRef ref) const { return lavars[ref.x]; }
 };
 
 
