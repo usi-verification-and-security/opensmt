@@ -8,7 +8,6 @@
 #include "SimpSMTSolver.h"
 #include "LAScore.h"
 
-
 class LookaheadSMTSolver : public SimpSMTSolver {
 protected:
     ConflQuota confl_quota;
