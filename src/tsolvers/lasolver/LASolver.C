@@ -109,12 +109,12 @@ bool LASolver::check_simplex(bool complete) {
         if (!bland_rule && (repeats > tableau.getNumOfCols()))
             bland_rule = true;
 
-        if(bland_rule){
+        if (bland_rule) {
             x = getBasicVarToFixByBland();
             ++bland_counter;
             ++tsolver_stats.num_bland_ops;
         }
-        else{
+        else {
             x = getBasicVarToFixByShortestPoly();
             ++pivot_counter;
             ++tsolver_stats.num_pivot_ops;

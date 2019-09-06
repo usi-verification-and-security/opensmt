@@ -55,7 +55,7 @@ class LASolver: public TSolver
 
 protected:
 
-    LALogic&            logic;
+    LALogic&             logic;
     LAVarStore           lavarStore;
 
     LABoundAllocator     ba{1024};
@@ -87,20 +87,20 @@ public:
 
     virtual void clearSolver() override; // Remove all problem specific data from the solver.  Should be called each time the solver is being used after a push or a pop in the incremental interface.
 
-    void declareAtom(PTRef tr) override;                // Inform the theory solver about the existence of an atom
+    void  declareAtom        (PTRef tr) override;                // Inform the theory solver about the existence of an atom
     void  informNewSplit     (PTRef tr) override;                // Update bounds for the split variable
-    bool  check_simplex  (bool);
+    bool  check_simplex      (bool);
     bool  assertLit          ( PtAsgn , bool = false ) override; // Push the constraint into Solver
     void  pushBacktrackPoint ( ) override;                       // Push a backtrack point
     void  popBacktrackPoint  ( ) override;                       // Backtrack to last saved point
-    void  popBacktrackPoints  ( unsigned int ) override;         // Backtrack given number of saved points
+    void  popBacktrackPoints ( unsigned int ) override;         // Backtrack given number of saved points
 
 
     // Return the conflicting bounds
-    void  getConflict(bool, vec<PtAsgn>& e) override;
+    void          getConflict(bool, vec<PtAsgn>& e) override;
     PtAsgn_reason getDeduction() override;
 
-    LALogic&  getLogic() override;
+    LALogic&   getLogic() override;
     bool       isValid(PTRef tr) override;
 
 
@@ -108,7 +108,7 @@ protected:
     Tableau tableau;
 
     LVRef exprToLVar(PTRef expr); // Ensures this term and all variables in it has corresponding LVAR.  Returns the LAVar for the term.
-    void pivot(LVRef basic, LVRef nonBasic);
+    void  pivot(LVRef basic, LVRef nonBasic);
 
 
     std::unique_ptr<Polynomial> expressionToLVarPoly(PTRef term);
@@ -116,7 +116,7 @@ protected:
     LVRef getBasicVarToFixByShortestPoly() const;
     LVRef findNonBasicForPivotByBland(LVRef basicVar);
     LVRef findNonBasicForPivotByHeuristic(LVRef basicVar);
-    void updateValues(LVRef basicVar, LVRef nonBasicVar);
+    void  updateValues(LVRef basicVar, LVRef nonBasicVar);
 
 
 //protected:
