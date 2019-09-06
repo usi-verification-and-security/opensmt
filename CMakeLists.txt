@@ -37,7 +37,6 @@ option(DEBUG_GC "Debug garbage collection" OFF)
 option(LADEBUG "Debug lookahead" OFF)
 option(PRINT_DECOMPOSED_STATS "Print statistics about decomposed interpolants" OFF)
 option(STATISTICS "Compute and print solver's statistics" OFF)
-option(NC_BJ_RECOVERY "Check if non-chronological backjumping in lookahead can ever result in entering the old node" OFF)
 #option(ENABLE_PROFILING "Enable profiling" OFF)
 
 find_package(Readline REQUIRED)
@@ -108,10 +107,6 @@ endif ()
 if(STATISTICS)
     add_definitions(-DSTATISTICS)
 endif(STATISTICS)
-
-if (NC_BJ_RECOVERY)
-    add_definitions(-DNC_BJ_RECOVERY)
-endif (NC_BJ_RECOVERY)
 
 add_subdirectory(${CMAKE_SOURCE_DIR})
 

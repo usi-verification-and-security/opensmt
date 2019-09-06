@@ -258,9 +258,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::expandTree(LANode* n, LANode* c
 // backjump.
 LookaheadSMTSolver::LALoopRes LookaheadSMTSolver::solveLookahead()
 {
-#ifdef NC_BJ_RECOVERY
-    bool nonchronoBackumpRecovery = false;
-#endif
+
     score.updateRound();
     vec<LANode*> queue;
     LANode *root = new LANode();
@@ -281,10 +279,6 @@ LookaheadSMTSolver::LALoopRes LookaheadSMTSolver::solveLookahead()
         }
         switch (setSolverToNode(n)) {
             case PathBuildResult::pathbuild_tlunsat: {
-#ifdef DEBUG_NC_BJ_RECOVERY
-                if (nonchronoBackumpRecovery)
-                    nonchronoBackumpRecovery = false;
-#endif
                 return LALoopRes::unsat;
             }
             case PathBuildResult::pathbuild_restart: {
@@ -292,19 +286,9 @@ LookaheadSMTSolver::LALoopRes LookaheadSMTSolver::solveLookahead()
             }
             case PathBuildResult::pathbuild_unsat: {
                 deallocTree(n);
-#ifdef DEBUG_NC_BJ_RECOVERY
-                if (nonchronoBackumpRecovery)
-                    nonchronoBackumpRecovery = false;
-#endif
                 continue;
             }
             case PathBuildResult::pathbuild_success: {
-#ifdef DEBUG_NC_BJ_RECOVERY
-                if (nonchronoBackumpRecovery) {
-                    cout << "Non-chronological backjump recovery was successful.  Examine this!\n";
-                    exit(1);
-                }
-#endif
                 ;
             }
         }
@@ -318,9 +302,6 @@ LookaheadSMTSolver::LALoopRes LookaheadSMTSolver::solveLookahead()
                 return LALoopRes::restart;
             case laresult::la_unsat:
                 queue.push(n);
-#ifdef DEBUG_NC_BJ_RECOVERY
-                nonchronoBackumpRecovery = true;
-#endif
                 continue;
             case laresult::la_sat:
                 return LALoopRes::sat;
