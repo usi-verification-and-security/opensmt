@@ -99,8 +99,7 @@ protected:
     PathBuildResult setSolverToNode(LANode *n);                                         // Set solver dl stack according to the path from root to n
     laresult expandTree(LANode *n, LANode *c1, LANode *c2);                             // Do lookahead.  On success write the new children to c1 and c2
     void deallocTree(LANode *n);                                                        // Dealloc the tree rooted at n
-    LookaheadScore *score_p;
-    LookaheadScore &score;
+    std::unique_ptr<LookaheadScore> score;
 public:
     LookaheadSMTSolver(SMTConfig&, THandler&);
     Var newVar(bool sign, bool dvar) override;
