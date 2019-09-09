@@ -19,7 +19,7 @@ LookaheadSMTSolver::LALoopRes LookaheadSplitter::solveLookahead()
 
     int maxDepth = getLog2Ceil(config.sat_split_num());
 
-    score.updateRound();
+    score->updateRound();
     vec<LASplitNode*> queue;
     LASplitNode *root = new LASplitNode();
     root->p  = root;

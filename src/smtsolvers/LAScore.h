@@ -110,6 +110,7 @@ protected:
 public:
     void updateRound() { latest_round++; }
     explicit LookaheadScore(const vec<lbool>& assigns) : assigns(assigns), latest_round(0) {}
+    virtual ~LookaheadScore() = default;
     virtual void setLAValue(Var v, int p0, int p1) = 0;
 
     virtual double getSolverScore(const LookaheadSMTSolver *solver) = 0;

@@ -6,15 +6,14 @@
 
 LookaheadSMTSolver::LookaheadSMTSolver(SMTConfig& c, THandler& thandler)
 	: SimpSMTSolver (c, thandler)
-	, score_p       (c.lookahead_score_deep() ? (LookaheadScore*)(new LookaheadScoreDeep(assigns, c)) : (LookaheadScore*)(new LookaheadScoreClassic(assigns, c)))
-	, score         (*score_p)
+	, score         (c.lookahead_score_deep() ? (LookaheadScore*)(new LookaheadScoreDeep(assigns, c)) : (LookaheadScore*)(new LookaheadScoreClassic(assigns, c)))
     , idx           (0)
 {}
 
 Var LookaheadSMTSolver::newVar(bool sign, bool dvar)
 {
     Var v = SimpSMTSolver::newVar(sign, dvar);
-    score.newVar();
+    score->newVar();
     return v;
 }
 
@@ -259,7 +258,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::expandTree(LANode* n, LANode* c
 LookaheadSMTSolver::LALoopRes LookaheadSMTSolver::solveLookahead()
 {
 
-    score.updateRound();
+    score->updateRound();
     vec<LANode*> queue;
     LANode *root = new LANode();
     root->p  = root;
@@ -331,7 +330,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
     }
     confl_quota = prev;
 
-    score.updateRound();
+    score->updateRound();
     int i = 0;
     int d = decisionLevel();
 
@@ -342,10 +341,10 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
 #ifdef LADEBUG
     printf("Starting lookahead loop with %d vars\n", nVars());
 #endif
-    for (Var v(idx % nVars()); !score.isAlreadyChecked(v); v = Var((idx + (++i)) % nVars()))
+    for (Var v(idx % nVars()); !score->isAlreadyChecked(v); v = Var((idx + (++i)) % nVars()))
     {
         if (!decision[v]) {
-            score.setChecked(v);
+            score->setChecked(v);
 #ifdef LADEBUG
             cout << "Not a decision variable: " << v << "(" << theory_handler.getLogic.printTerm(theory_handler.varToTerm(v)) << ")\n";
 #endif
@@ -361,14 +360,14 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
 #ifdef LADEBUG
         printf("Checking var %d\n", v);
 #endif
-        Lit best = score.getBest();
-        if (value(v) != l_Undef || (best != lit_Undef && score.safeToSkip(v, best)))
+        Lit best = score->getBest();
+        if (value(v) != l_Undef || (best != lit_Undef && score->safeToSkip(v, best)))
         {
 #ifdef LADEBUG
             printf("  Var is safe to skip due to %s\n",
                    value(v) != l_Undef ? "being assigned" : "having low upper bound");
 #endif
-            score.setChecked(v);
+            score->setChecked(v);
             // It is possible that all variables are assigned here.
             // In this case it seems that we have a satisfying assignment.
             // This is in fact a debug check
@@ -410,7 +409,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
         for (int p = 0; p < 2; p++)   // do for both polarities
         {
             assert(decisionLevel() == d);
-            double ss = score.getSolverScore(this);
+            double ss = score->getSolverScore(this);
             newDecisionLevel();
             Lit l = mkLit(v, p);
             int tmp_trail_sz = trail.size();
@@ -435,14 +434,14 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
 #ifdef LADEBUG
                 printf(" -> Successfully propagated %d lits\n", trail.size() - tmp_trail_sz);
 #endif
-                score.updateSolverScore(ss, this);
+                score->updateSolverScore(ss, this);
             }
             else if (decisionLevel() == d)
             {
 #ifdef LADEBUG
                 printf(" -> Propagation resulted in backtrack\n");
 #endif
-                score.updateRound();
+                score->updateRound();
                 break;
             }
             else
@@ -463,11 +462,11 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
 #ifdef LADEBUG
            printf("Updating var %d to (%d, %d)\n", v, p0, p1);
 #endif
-            score.setLAValue(v, p0, p1);
-            score.updateLABest(v);
+            score->setLAValue(v, p0, p1);
+            score->updateLABest(v);
         }
     }
-    best = score.getBest();
+    best = score->getBest();
     if (trail.size() == dec_vars && best == lit_Undef)
     {
 #ifdef LADEBUG
