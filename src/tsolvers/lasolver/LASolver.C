@@ -4,18 +4,6 @@
 
 static SolverDescr descr_la_solver("LA Solver", "Solver for Quantifier Free Linear Arithmetics");
 
-// MB: helper functions
-namespace{
-    bool isBoundSatisfied(Delta const & val, LABound const & bound ) {
-        if (bound.getType() == bound_u){
-            return val <= bound.getValue();
-        }
-        else {
-            assert(bound.getType() == bound_l);
-            return val >= bound.getValue();
-        }
-    }
-}
 
 PtAsgn LASolver::getAsgnByBound(LABoundRef br) const {
     return LABoundRefToLeqAsgn[boundStore[br].getId()];
@@ -99,10 +87,10 @@ void LASolver::isProperLeq(PTRef tr)
 LASolver::LASolver(SolverDescr dls, SMTConfig & c, LALogic& l, vec<DedElem>& d)
         : logic(l)
         , TSolver((SolverId)descr_la_solver, (const char*)descr_la_solver, c, d)
-        , bland_threshold(1000)
         , laVarMapper(l, laVarStore)
         , boundStore(laVarMapper)
-        , model(laVarMapper, boundStore, l)
+        , model(laVarMapper, boundStore)
+        , simplex(c, model, boundStore)
 {
     status = INIT;
 }
@@ -110,11 +98,8 @@ LASolver::LASolver(SolverDescr dls, SMTConfig & c, LALogic& l, vec<DedElem>& d)
 void LASolver::clearSolver()
 {
     status = INIT;
-    explanationCoefficients.clear();
-    candidates.clear();
+    simplex.clear();
     // TODO set information about columns and rows in LAVars
-    this->tableau.clear();
-    removed_by_GaussianElimination.clear();
     TSolver::clearSolver();
 
     // MB: Let's keep the LAVar store and allocator
@@ -131,6 +116,13 @@ void LASolver::clearSolver()
     //delta = Delta::ZERO;
 }
 
+void LASolver::storeExplanation(std::vector<LABoundRef> &explanationBounds) {
+    explanation.clear();
+    for (int i = 0; i < explanationBounds.size(); i++) {
+        PtAsgn asgn = getAsgnByBound(explanationBounds[i]);
+        explanation.push(asgn);
+    }
+}
 
 bool LASolver::check_simplex(bool complete) {
     // opensmt::StopWatch check_timer(tsolver_stats.simplex_timer);
@@ -140,80 +132,17 @@ bool LASolver::check_simplex(bool complete) {
     if (status == INIT) {
         initSolver();
     }
+    std::vector<LABoundRef> explanationBounds;
+    bool rval = simplex.checkSimplex(explanationBounds, explanationCoefficients);
 
-    bool bland_rule = false;
-    unsigned repeats = 0;
-    unsigned pivot_counter = 0;
-    unsigned bland_counter = 0;
-    // These values are from Yices
-    unsigned bthreshold = bland_threshold;
-    if (nVars() > 10000)
-        bthreshold *= 1000;
-    else if (nVars() > 1000)
-        bthreshold *= 100;
+    if (rval)
+        setStatus(SAT);
+    else {
+        storeExplanation(explanationBounds);
 
-    // keep doing pivotAndUpdate until the SAT/UNSAT status is confirmed
-    while (true) {
-        repeats++;
-        // clear the explanations vector
-        explanation.clear( );
-        explanationCoefficients.clear( );
-
-        LVRef x = LVRef_Undef;
-
-        if (!bland_rule && (repeats > tableau.getNumOfCols()))
-            bland_rule = true;
-
-        if (bland_rule) {
-            x = getBasicVarToFixByBland();
-            ++bland_counter;
-            ++tsolver_stats.num_bland_ops;
-        }
-        else {
-            x = getBasicVarToFixByShortestPoly();
-            ++pivot_counter;
-            ++tsolver_stats.num_pivot_ops;
-        }
-
-        if (x == LVRef_Undef) {
-            // If not found, check if problem refinement for integers is required
-            //if (config.lra_integer_solver && complete)
-            //return checkIntegersAndSplit( );
-
-            // Otherwise - SAT
-            refineBounds();
-
-//            cerr << "; USUAL SAT" << endl;
-            setStatus(SAT);
-            break;
-//            return setStatus( SAT );
-        }
-
-        LVRef y_found = LVRef_Undef;
-        if(bland_rule){
-            y_found = findNonBasicForPivotByBland(x);
-        }
-        else{
-            y_found = findNonBasicForPivotByHeuristic(x);
-        }
-        // if it was not found - UNSAT
-        if (y_found == LVRef_Undef) {
-            vec<PTRef> tmp;
-            getConflictingBounds(x, tmp);
-            for (int i = 0; i < tmp.size(); i++) {
-                PTRef pure;
-                lbool sgn;
-                logic.purify(tmp[i], pure, sgn);
-                explanation.push(PtAsgn(pure, sgn));
-            }
-            setStatus(UNSAT);
-            break;
-        }
-            // if it was found - pivot old Basic x with non-basic y and do the model updates
-        else {
-            pivot(x, y_found);
-        }
+        setStatus(UNSAT);
     }
+
     getStatus() ? tsolver_stats.sat_calls ++ : tsolver_stats.unsat_calls ++;
 //    printf(" - check ended\n");
 //    printf(" => %s\n", getStatus() ? "sat" : "unsat");
@@ -225,14 +154,14 @@ bool LASolver::check_simplex(bool complete) {
 //
 // The model system
 //
-bool LASolver::isModelOutOfBounds(LVRef v) const
-{
-    return ( (model.read(v) > model.Ub(v)) || (model.read(v) < model.Lb(v)) );
+/*
+bool LASolver::isModelOutOfBounds(LVRef v) const {
+    return simplex.isModelOutOfBounds(v);
 }
 
 bool LASolver::isModelOutOfUpperBound(LVRef v) const
 {
-    return ( model.read(v)> model.Ub(v) );
+    return simplex.isModelOutOfBounds(v);
 }
 
 bool LASolver::isModelOutOfLowerBound(LVRef v) const
@@ -256,19 +185,7 @@ const Delta LASolver::overBound(LVRef v) const
     printf("Problem in overBound, LRASolver.C:%d\n", __LINE__);
     exit(1);
 }
-
-bool LASolver::isEquality(LVRef v) const
-{
-    return model.isEquality(v);
-}
-
-bool LASolver::isUnbounded(LVRef v) const
-{
-    bool rval = model.isUnbounded(v);
-//    if (rval)
-//        printf("Var %s is unbounded\n", lva.printVar(v));
-    return rval;
-}
+*/
 
 void LASolver::setBound(PTRef leq_tr)
 {
@@ -302,27 +219,27 @@ LVRef LASolver::getLAVar_single(PTRef expr_in) {
 }
 
 std::unique_ptr<Polynomial> LASolver::expressionToLVarPoly(PTRef term) {
-    std::unique_ptr<Polynomial> poly = std::unique_ptr<Polynomial>(new Polynomial());
-    // If term is negated, we need to flip the signs of the poly
+
     bool negated = logic.isNegated(term);
+    auto terms = std::unique_ptr<std::vector<std::pair<LVRef, opensmt::Real>>>(new std::vector<std::pair<LVRef, opensmt::Real>>());
+
     for (int i = 0; i < logic.getPterm(term).size(); i++) {
         PTRef v;
         PTRef c;
         logic.splitTermToVarAndConst(logic.getPterm(term)[i], v, c);
-        LVRef var = getLAVar_single(v);
+        LVRef
+        var = getLAVar_single(v);
         notifyVar(var);
-
-        tableau.nonbasicVar(var);
-
         Real coeff = getNum(c);
-
         if (negated) {
             coeff.negate();
         }
-        poly->addTerm(var, std::move(coeff));
+        terms->push_back(std::pair<LVRef, opensmt::Real>(var, std::move(coeff)));
     }
-    return poly;
+
+    return simplex.addPoly(std::move(terms));
 }
+
 
 //
 // Get a possibly new LAVar for a PTRef term.  We may assume that the term is of one of the following forms,
@@ -339,7 +256,7 @@ LVRef LASolver::exprToLVar(PTRef expr) {
     LVRef x = LVRef_Undef;
     if (laVarMapper.hasVar(expr)){
         x = getVarForTerm(expr);
-        if(isProcessedByTableau(x))
+        if (simplex.isProcessedByTableau(x))
         { return x;}
     }
 
@@ -351,13 +268,13 @@ LVRef LASolver::exprToLVar(PTRef expr) {
         logic.splitTermToVarAndConst(expr, v, c);
         assert(logic.isNumVar(v) || (logic.isNegated(v) && logic.isNumVar(logic.mkNumNeg(v))));
         x = getLAVar_single(v);
-        tableau.newNonbasicVar(x);
+        simplex.newNonbasicVar(x);
         notifyVar(x);
     }
     else {
         // Cases (3), (4a) and (4b)
         x = getLAVar_single(expr);
-        tableau.newBasicVar(x, expressionToLVarPoly(expr));
+        simplex.newBasicVar(x, expressionToLVarPoly(expr));
     }
     assert(x != LVRef_Undef);
     return x;
@@ -398,141 +315,6 @@ void LASolver::informNewSplit(PTRef tr)
     laVarMapper.addLeqVar(tr, v);
     updateBound(tr);
 }
-
-LVRef LASolver::getBasicVarToFixByShortestPoly() const {
-    decltype(candidates) new_candidates;
-    LVRef current = LVRef_Undef;
-    std::size_t current_poly_size = static_cast<std::size_t>(-1);
-    for (auto it : candidates) {
-        assert(tableau.isBasic(it));
-        assert(it != LVRef_Undef);
-        if (isModelOutOfBounds(it)) {
-            new_candidates.insert(it);
-            if (current == LVRef_Undef || current_poly_size > tableau.getPolySize(it)) {
-                current = it;
-                current_poly_size = tableau.getPolySize(it);
-
-            }
-        }
-    }
-    candidates.swap(new_candidates);
-    return current;
-}
-
-LVRef LASolver::getBasicVarToFixByBland() const {
-    decltype(candidates) new_candidates;
-    int curr_var_id_x = laVarMapper.numVars();
-    LVRef current = LVRef_Undef;
-    for (auto it : candidates) {
-        assert(it != LVRef_Undef);
-        assert(tableau.isBasic(it));
-        if (isModelOutOfBounds(it)) {
-            new_candidates.insert(it);
-            // Select the var with the smallest id
-            auto id = getVarId(it);
-            assert(it.x == id);
-            current = id < curr_var_id_x ? it : current;
-            curr_var_id_x = id < curr_var_id_x ? id : curr_var_id_x;
-        }
-    }
-    candidates.swap(new_candidates);
-    return current;
-}
-
-LVRef LASolver::findNonBasicForPivotByHeuristic(LVRef basicVar) {
-    // favor more independent variables: those present in less rows
-    assert(tableau.isBasic(basicVar));
-    LVRef v_found = LVRef_Undef;
-    if (model.read(basicVar) < model.Lb(basicVar)) {
-
-        for (auto const &term : tableau.getRowPoly(basicVar)) {
-            auto var = term.var;
-            assert(tableau.isNonBasic(var));
-            assert(var != basicVar);
-            auto const &coeff = term.coeff;
-            const bool is_coeff_pos = coeff > 0;
-
-            if ((is_coeff_pos && model.read(var) < model.Ub(var)) ||
-                (!is_coeff_pos && model.read(var) > model.Lb(var))) {
-                if (v_found == LVRef_Undef) {
-                    v_found = var;
-                }
-                    // heuristic favoring more independent vars
-                else if (tableau.getColumn(v_found).size() > tableau.getColumn(var).size()) {
-                    v_found = var;
-                }
-            }
-        }
-    }
-    else if (model.read(basicVar) > model.Ub(basicVar)) {
-
-        for (auto const &term : tableau.getRowPoly(basicVar)) {
-            auto var = term.var;
-            assert(tableau.isNonBasic(var));
-            assert(var != basicVar);
-            auto const &coeff = term.coeff;
-            const bool is_coeff_pos = coeff > 0;
-
-            if ((!is_coeff_pos && model.read(var) < model.Ub(var)) ||
-                (is_coeff_pos && model.read(var) > model.Lb(var))) {
-                if (v_found == LVRef_Undef) {
-                    v_found = var;
-                }
-                    // heuristic favoring more independent vars
-                else if (tableau.getColumn(v_found).size() > tableau.getColumn(var).size()) {
-                    v_found = var;
-                }
-            }
-        }
-    }
-    else{
-        opensmt_error( "Error in bounds comparison" );
-    }
-    return v_found;
-}
-
-LVRef LASolver::findNonBasicForPivotByBland(LVRef basicVar) {
-    int max_var_id = laVarMapper.numVars();
-    LVRef y_found = LVRef_Undef;
-    // Model doesn't fit the lower bound
-    if (model.read(basicVar) < model.Lb(basicVar)) {
-        // For the Bland rule
-        int curr_var_id_y = max_var_id;
-        // look for nonbasic terms to fix the breaking of the bound
-        for (auto term : tableau.getRowPoly(basicVar)) {
-            auto y = term.var;
-            assert(basicVar != y);
-            assert(tableau.isNonBasic(y));
-            auto const &coeff = term.coeff;
-            const bool coeff_is_pos = (coeff > 0);
-            if ((coeff_is_pos && model.read(y) < model.Ub(y)) || (!coeff_is_pos && model.read(y) > model.Lb(y))) {
-                // Choose the leftmost nonbasic variable with a negative (reduced) cost
-                y_found = getVarId(y) < curr_var_id_y ? y : y_found;
-                curr_var_id_y = getVarId(y) < curr_var_id_y ? getVarId(y) : curr_var_id_y;
-            }
-        }
-    }
-    else if (model.read(basicVar) > model.Ub(basicVar)) {
-        int curr_var_id_y = max_var_id;
-        // look for nonbasic terms to fix the unbounding
-        for (auto term : tableau.getRowPoly(basicVar)) {
-            auto y = term.var;
-            assert(basicVar != y);
-            assert(tableau.isNonBasic(y));
-            auto const &coeff = term.coeff;
-            const bool &coeff_is_pos = (coeff > 0);
-            if ((!coeff_is_pos && model.read(y) < model.Ub(y)) || (coeff_is_pos && model.read(y) > model.Lb(y))) {
-                // Choose the leftmost nonbasic variable with a negative (reduced) cost
-                y_found = getVarId(y) < curr_var_id_y ? y : y_found;
-                curr_var_id_y = getVarId(y) < curr_var_id_y ? getVarId(y) : curr_var_id_y;
-            }
-        }
-    } else {
-        opensmt_error("Error in bounds comparison");
-    }
-    return y_found;
-}
-
 
 //
 // Push the constraint into the solver and increase the level
@@ -579,7 +361,7 @@ bool LASolver::assertLit( PtAsgn asgn, bool reason )
     LVRef it = getVarForLeq(asgn.tr);
     // Constraint to push was not found in local storage. Most likely it was not read properly before
     assert(it != LVRef_Undef);
-    assert(!isUnbounded(it));
+    assert(!model.isUnbounded(it));
 
     const Pterm& t = logic.getPterm(asgn.tr);
     // skip if it was deduced by the solver itself with the same polarity
@@ -612,62 +394,23 @@ bool LASolver::assertLit( PtAsgn asgn, bool reason )
     return getStatus();
 }
 
-bool LASolver::assertBoundOnVar(LVRef it, LABoundRef itBound_ref)
-{
+bool LASolver::assertBoundOnVar(LVRef it, LABoundRef itBound_ref) {
     // No check whether the bounds are consistent for the polynomials.  This is done later with Simplex.
 
-    assert( status == SAT );
-    assert( it != LVRef_Undef );
-    assert( !isUnbounded(it) );
-    const LABound &itBound = boundStore[itBound_ref];
+    assert(status == SAT);
+    assert(it != LVRef_Undef);
+    assert(!model.isUnbounded(it));
+    std::vector<LABoundRef> explanationBounds;
+    bool rval = simplex.assertBoundOnVar(it, itBound_ref, explanationBounds, explanationCoefficients);
 
-//  cerr << "; ASSERTING bound on " << *it << endl;
-
-    // Check if simple SAT can be given
-    if (model.boundSatisfied(it, itBound_ref))
-        return getStatus();
-
-    // Check if simple UNSAT can be given.  The last check checks that this is not actually about asserting equality.
-    if (model.boundUnsatisfied(it, itBound_ref))
-    {
-        explanation.clear();
-        explanationCoefficients.clear();
-
-        PtAsgn pta = getAsgnByBound(itBound.getType() == bound_u ? model.readLBoundRef(it) : model.readUBoundRef(it));
-
-        explanation.push(pta);
-        explanationCoefficients.emplace_back( 1 );
-
-        assert(getAsgnByBound(itBound_ref).tr != PTRef_Undef);
-        explanation.push(getAsgnByBound(itBound_ref));
-        explanationCoefficients.emplace_back(1);
-        return setStatus( UNSAT );
+    if (!rval) {
+        storeExplanation(explanationBounds);
+        return setStatus(UNSAT);
     }
-
-    // Update the Tableau data if a non-basic variable
-    if (tableau.isNonBasic(it)) {
-        if(!isBoundSatisfied(model.read(it), itBound)){
-            changeValueBy(it, itBound.getValue() - model.read(it));
-        }
-        else{
-//            std::cout << "Bound is satisfied by current assignment, no need to update model!\n\n";
-        }
-    }
-    else // basic variable got a new bound, it becomes a possible candidate
-    {
-        if(!tableau.isActive(it)){
-            throw "Not implemented yet!";
-        }
-        assert(tableau.isBasic(it));
-        newCandidate(it);
-    }
-
-//  LAVar *x = it;
-//  cerr << "; ASSERTED bound on " << *x << ": " << x->L( ) << " <= " << x->M( ) << " <= " << x->U( ) << endl;
-
-//  cerr  << "; NORMAL " << status <<endl;
     return getStatus();
 }
+
+
 
 //
 // Push the solver one level down
@@ -693,62 +436,17 @@ void LASolver::popBacktrackPoint( ) {
 //
 void LASolver::popBacktrackPoints(unsigned int count) {
     for ( ; count > 0; --count){
-        PtAsgn dec = model.popBacktrackPoint();
+        PtAsgn dec = model.popTermBacktrackPoint();
         if (dec != PtAsgn_Undef) {
             clearPolarity(dec.tr);
         }
         TSolver::popBacktrackPoint();
     }
-    assert(checkValueConsistency());
+    assert(simplex.checkValueConsistency());
 //    newCandidate();
-    assert(invariantHolds());
+    assert(simplex.invariantHolds());
     setStatus(SAT);
 }
-
-void LASolver::newCandidate(LVRef candidateVar) {
-    assert(tableau.isBasic(candidateVar));
-    candidates.insert(candidateVar);
-}
-
-void LASolver::pivot( const LVRef bv, const LVRef nv){
-    assert(tableau.isBasic(bv));
-    assert(tableau.isNonBasic(nv));
-    assert(valueConsistent(bv));
-//    tableau.print();
-    updateValues(bv, nv);
-    tableau.pivot(bv, nv);
-    // after pivot, bv is not longer a candidate
-    candidates.erase(bv);
-    // and nv can be a candidate
-    newCandidate(nv);
-//    tableau.print();
-    assert(checkTableauConsistency());
-    assert(checkValueConsistency());
-}
-
-void LASolver::changeValueBy(LVRef var, const Delta & diff) {
-    // update var's value
-    model.write(var, model.read(var) + diff);
-    // update all (active) rows where var is present
-    for ( LVRef row : tableau.getColumn(var)){
-        assert(tableau.isBasic(row));
-        if (tableau.isActive(row)) {
-            model.write(row, model.read(row) + (tableau.getCoeff(row, var) * diff));
-            newCandidate(row);
-        }
-    }
-}
-
-void LASolver::updateValues(const LVRef bv, const LVRef nv){
-    assert(model.read(bv) < model.Lb(bv) || model.read(bv) > model.Ub(bv));
-    auto bvNewVal = (model.read(bv) < model.Lb(bv)) ? model.Lb(bv) : model.Ub(bv);
-    const auto & coeff = tableau.getCoeff(bv, nv);
-    // nvDiff represents how much we need to change nv, so that bv gets to the right value
-    auto nvDiff = (bvNewVal - model.read(bv)) / coeff;
-    // update nv's value
-    changeValueBy(nv, nvDiff);
-}
-
 
 void LASolver::initSolver()
 {
@@ -783,7 +481,7 @@ void LASolver::initSolver()
         boundStore.buildBounds(); // Bounds are needed for gaussian elimination
         // Gaussian Elimination should not be performed in the Incremental mode!
         if (config.lra_gaussian_elim == 1 && config.do_substitutions())
-            doGaussianElimination();
+            simplifySimplex();
 
         model.initModel(laVarMapper);
 
@@ -836,83 +534,7 @@ bool LASolver::setStatus( LASolverStatus s )
         has_explanation = true;
     return getStatus( );
 }
-//
-// Returns the bounds conflicting with the actual model.
-//
-void LASolver::getConflictingBounds( LVRef x, vec<PTRef> & dst )
-{
-    if (model.read(x) < model.Lb(x)) {
-        // add all bounds for polynomial elements, which limit lower bound
-        LABoundRef b_f = model.readLBoundRef(x);
-        PtAsgn b_f_asgn = getAsgnByBound(b_f);
-        dst.push(b_f_asgn.sgn == l_True ? b_f_asgn.tr : logic.mkNot(b_f_asgn.tr));
-//        dst.push(model.readLBound(x).getPTRef());
-//        dst.push(ba[bla[lva[x].getBounds()][lva[x].lbound()]].getPTRef());
-        explanationCoefficients.emplace_back( 1 );
-        for (auto const & term : tableau.getRowPoly(x)) {
-            Real const & coeff = term.coeff;
-            assert( ! coeff.isZero());
-            auto const var = term.var;
-            assert(var != x);
-            if (coeff < 0) {
-                LABoundRef br = model.readLBoundRef(var);
-                PtAsgn b_asgn = getAsgnByBound(br);
-                assert( b_asgn.tr != PTRef_Undef );
-                dst.push( b_asgn.sgn == l_True ? b_asgn.tr : logic.mkNot(b_asgn.tr) );
 
-                explanationCoefficients.push_back( -coeff );
-            }
-            else {
-                LABoundRef br = model.readUBoundRef(var);
-                PtAsgn b_asgn = getAsgnByBound(br);
-                assert( b_asgn.tr != PTRef_Undef );
-                dst.push( b_asgn.sgn == l_True ? b_asgn.tr : logic.mkNot(b_asgn.tr) );
-
-                explanationCoefficients.push_back(coeff);
-            }
-        }
-    }
-    if (model.read(x) > model.Ub(x)) {
-        // add all bounds for polynomial elements, which limit upper bound
-//        dst.push(ba[bla[lva[x].getBounds()][lva[x].ubound()]].getPTRef());
-        LABoundRef br_f = model.readUBoundRef(x);
-        PtAsgn br_f_asgn = getAsgnByBound(br_f);
-        dst.push(br_f_asgn.sgn == l_True ? br_f_asgn.tr : logic.mkNot(br_f_asgn.tr));
-//        dst.push(model.readUBound(x).getPTRef());
-        explanationCoefficients.emplace_back( 1 );
-
-        for (auto const & term : tableau.getRowPoly(x)) {
-            Real const & coeff = term.coeff;
-            assert( ! coeff.isZero());
-            auto const var = term.var;
-            assert(var != x);
-            if (coeff > 0) {
-                LABoundRef br = model.readLBoundRef(var);
-                PtAsgn br_asgn = getAsgnByBound(br);
-                assert( br_asgn.tr != PTRef_Undef );
-                dst.push( br_asgn.sgn == l_True ? br_asgn.tr : logic.mkNot(br_asgn.tr) );
-
-                explanationCoefficients.push_back( coeff );
-            }
-            else {
-                LABoundRef br = model.readUBoundRef(var);
-                PtAsgn br_asgn = getAsgnByBound(br);
-                assert( br_asgn.tr != PTRef_Undef );
-                dst.push( br_asgn.sgn == l_True ? br_asgn.tr : logic.mkNot(br_asgn.tr) );
-
-                explanationCoefficients.push_back(-coeff);
-            }
-        }
-    }
-
-//    printf("I now came up with an explanation.  It looks like this:\n");
-//    for (int i = 0; i < dst.size(); i++)
-//        printf("(%s) ", logic.printTerm(dst[i]));
-//    printf("\n");
-
-//    assert( dst.size() == polyStore.getSize(lva[x].getPolyRef())+1 ); // One for each term plus the broken equality
-
-}
 
 void LASolver::getSimpleDeductions(LVRef v, LABoundRef br)
 {
@@ -950,17 +572,6 @@ void LASolver::deduce(LABoundRef bound_prop) {
             th_deductions.push(PtAsgn_reason(ba.tr, pol, PTRef_Undef));
         }
     }
-}
-
-//
-// Compute the current bounds for each row and tries to deduce something useful
-//
-void LASolver::refineBounds( )
-{
-
-    // Check if polynomial deduction is enabled
-    if (config.lra_poly_deduct_size == 0)
-        return;
 }
 
 //
@@ -1077,52 +688,6 @@ ValPair LASolver::getValue(PTRef tr) {
 }
 
 
-bool LASolver::checkValueConsistency() const{
-    bool res = true;
-    auto const & rows = tableau.getRows();
-    for(unsigned i = 0; i < rows.size(); ++i) {
-        if(!rows[i]) {continue;}
-        LVRef var {i};
-        if(tableau.isActive(var)){
-            res &= valueConsistent(var);
-        }
-    }
-    assert(res);
-    return res;
-}
-
-bool LASolver::valueConsistent(LVRef v) const
-{
-    const Delta& value = model.read(v);
-    Delta sum(0);
-    for (auto & term : tableau.getRowPoly(v)){
-      sum += term.coeff * model.read(term.var);
-    }
-
-    assert(value == sum);
-    return value == sum;
-}
-
-bool LASolver::invariantHolds() const
-{
-    bool rval = true;
-    for (auto var : tableau.getNonBasicVars()){
-        assert(model.hasModel(var));
-        if (isModelOutOfBounds(var)) {
-            rval = false;
-            printf("Non-basic (column) LRA var %s has value %s <= %s <= %s\n",
-                   printVar(var), model.Lb(var).printValue(),
-                   model.read(var).printValue(), model.Ub(var).printValue());
-            assert(false);
-        }
-    }
-    return rval;
-}
-bool LASolver::checkTableauConsistency() const {
-    bool res = tableau.checkConsistency();
-    assert(res);
-    return res;
-}
 
 
 LASolver::~LASolver( )
@@ -1138,7 +703,5 @@ LALogic&  LASolver::getLogic()  { return logic; }
 
 unsigned LASolver::nVars() const { return laVarMapper.numVars(); }
 
-bool LASolver::isProcessedByTableau(LVRef var) {return tableau.isProcessed(var);}
 
-const LABoundRef LASolver::getBound(LVRef v, int idx) const { return boundStore.getBoundByIdx(v, idx); }
 

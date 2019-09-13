@@ -58,7 +58,7 @@ LRAModel::write(const LVRef &v, Delta val)
 }
 
 void
-LRAModel::pushDecision(PtAsgn asgn)
+TermLRAModel::pushDecision(PtAsgn asgn)
 {
     int_decisions.push({asgn, backtrackLevel()});
     decision_trace.push(asgn);
@@ -84,7 +84,6 @@ LRAModel::popBounds()
         LABoundRef br = bound_trace[i];
         LABound &b = bs[br];
         LVRef vr = b.getLVRef();
-        LABoundRef latest_bound = LABoundRef_Undef;
         if (b.getType() == bound_u) {
             int_ubounds[getVarId(vr)].pop();
         } else {
@@ -112,16 +111,15 @@ LRAModel::popModels()
 }
 
 PtAsgn
-LRAModel::popDecisions()
+TermLRAModel::popDecisions()
 {
     assert(limits.size() > 0);
-    assert((decision_trace.size() - limits.last().dec_lim == 0) || (decision_trace.size() - limits.last().dec_lim == 1));
     PtAsgn popd = PtAsgn_Undef;
-    if (decision_trace.size()-limits.last().dec_lim == 1) {
+    if (decision_trace.size()-dec_limit.last() == 1) {
         popd = int_decisions.last().asgn;
         int_decisions.pop();
     }
-    decision_trace.shrink(decision_trace.size() - limits.last().dec_lim);
+    decision_trace.shrink(decision_trace.size() - dec_limit.last());
     return popd;
 }
 
@@ -137,7 +135,7 @@ void LRAModel::printModelState()
         if (has_model[v]) {
             int id = getVarId(v);
             vec<ModelEl> &vals = int_model[id];
-            printf("Var %s [%s], has %d models\n", printVar(v), logic.pp(laVarMapper.getVarPTRef(v)), vals.size());
+            printf("Var %s has %d models\n", printVar(v), vals.size());
             char *buf = (char*) malloc(1);
             buf[0] = '\0';
             for (int j = 0; j < vals.size(); j++) {
@@ -166,15 +164,20 @@ void LRAModel::clear() {
     this->int_model.clear();
     this->int_lbounds.clear();
     this->bound_trace.clear();
-    this->decision_trace.clear();
     this->has_model.clear();
-    this->int_decisions.clear();
     this->int_ubounds.clear();
     this->limits.clear();
     this->model_trace.clear();
     this->n_vars_with_model = 0;
 
     limits.push({0, 0});
+}
+
+void TermLRAModel::clear() {
+    LRAModel::clear();
+    this->decision_trace.clear();
+    this->int_decisions.clear();
+    dec_limit.clear();
 }
 
 int LRAModel::backtrackLevel() { return limits.size() - 1; }
@@ -187,8 +190,10 @@ LABoundRef LRAModel::readUBoundRef(LVRef v) const { return int_ubounds[getVarId(
 const LABound& LRAModel::readUBound(const LVRef &v) const { return bs[readUBoundRef(v)]; }
 const Delta& LRAModel::Lb(LVRef v) const { return bs[int_lbounds[getVarId(v)].last().br].getValue(); }
 const Delta& LRAModel::Ub(LVRef v) const { return bs[int_ubounds[getVarId(v)].last().br].getValue(); }
-void LRAModel::pushBacktrackPoint()      { limits.push({model_trace.size(), bound_trace.size(), decision_trace.size()}); }
-PtAsgn LRAModel::popBacktrackPoint() { popModels(); popBounds(); PtAsgn popd = popDecisions(); limits.pop(); return popd; }; // Returns the decision if the backtrack point had a decision
+void LRAModel::pushBacktrackPoint()      { limits.push({model_trace.size(), bound_trace.size()}); }
+void TermLRAModel::pushBacktrackPoint()     { LRAModel::pushBacktrackPoint(); dec_limit.push(decision_trace.size()); }
+void LRAModel::popLRABacktrackPoint() { popModels(); popBounds(); limits.pop(); }; // Returns the decision if the backtrack point had a decision
+PtAsgn TermLRAModel::popTermBacktrackPoint() { LRAModel::popLRABacktrackPoint(); PtAsgn popd = popDecisions(); dec_limit.pop(); return popd; }; // Returns the decision if the backtrack point had a decision
 int  LRAModel::getBacktrackSize() const { return limits.size(); }
 
 bool LRAModel::isEquality(LVRef v) const { return bs[int_lbounds[getVarId(v)].last().br].getIdx().x+1 == bs[int_ubounds[getVarId(v)].last().br].getIdx().x && !Lb(v).isInf() && !Ub(v).isInf() && Lb(v) == Ub(v); }

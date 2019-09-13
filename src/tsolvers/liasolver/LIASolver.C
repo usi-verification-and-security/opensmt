@@ -34,8 +34,8 @@ void LIASolver::computeConcreteModel(LVRef v) {
         concrete_model.push(nullptr);
 
     PTRef tr = getVarPTRef(v);
-    auto it = removed_by_GaussianElimination.find(v);
-    if(it != removed_by_GaussianElimination.end()){
+    if (simplex.isRemovedByGaussianElimination(v)) {
+        auto it = simplex.getRemovedByGaussianElimination(v);
         auto const & representation = (*it).second;
         Delta val;
         for (auto const & term : representation) {
@@ -95,7 +95,7 @@ TRes LIASolver::checkIntegersAndSplit() {
     for (int i = 0; i < int_vars.size(); i++) {
 
         LVRef x = int_vars[i];
-        if (removed_by_GaussianElimination.find(x) != removed_by_GaussianElimination.end()) {
+        if (simplex.isRemovedByGaussianElimination(x)) {
             computeConcreteModel(x);
             model.write(x, Delta(*concrete_model[getVarId(x)]));
         }

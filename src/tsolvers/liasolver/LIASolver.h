@@ -64,8 +64,7 @@ public:
 protected:
 
     void notifyVar(LVRef v) override;
-    void doGaussianElimination() override { return; }        // For now we do not Gaussian eliminate in LIA
-
+    void simplifySimplex() override { };                    // So far nothing here
     void initSolver( );                                     // Initializes the solver
 
     TRes checkIntegersAndSplit();
