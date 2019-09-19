@@ -149,7 +149,7 @@ void LABoundStore::buildBounds()
     }
 
     // make sure all variables have at least the trivial bounds
-    for (unsigned i = 0; i < laVarMapper.numVars(); i++) {
+    for (unsigned i = 0; i < lvstore.numVars(); i++) {
         LVRef ref {i};
         auto id = getVarId(ref);
         while (var_bound_lists.size() <= id)

@@ -5,9 +5,9 @@
 #include "LRAModel.h"
 #include "LRALogic.h"
 
-void LRAModel::initModel(LAVarMapper &s)
+void LRAModel::initModel()
 {
-    for (unsigned i = 0; i < s.numVars(); i++) {
+    for (unsigned i = 0; i < bs.nVars(); i++) {
         LVRef ref {i};
         addVar(ref);
     }

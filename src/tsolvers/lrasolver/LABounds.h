@@ -4,7 +4,6 @@
 #include "Delta.h"
 #include "LARefs.h"
 #include "LAVar.h"
-#include "LAVarMapper.h"
 
 //
 // Bound index type.  The bounds are ordered in a list, and indexed using a number in the list.
@@ -118,10 +117,10 @@ private:
     vec<BoundInfo> in_bounds;
     LABoundAllocator ba{1024};
     LABoundListAllocator bla{1024};
-    LAVarMapper& laVarMapper;
     vec<LABoundListRef> var_bound_lists;
+    LAVarStore &lvstore;
 public:
-    LABoundStore(LAVarMapper & lavMapper) : laVarMapper(lavMapper) {}
+    LABoundStore(LAVarStore &lvstore) : lvstore(lvstore) {}
     void buildBounds();
     void updateBound(BoundInfo bi); // Update a single bound.
 //    inline LABoundRef getLowerBound(const LVRef v) const { return bla[lva[v].getBounds()][lva[v].lbound()]; }
@@ -142,7 +141,7 @@ public:
         in_bounds.push(BoundInfo{v, ub, lb});
         return in_bounds.last();
     }
-    int nVars() const { return laVarMapper.numVars(); }
+    int nVars() const { return lvstore.numVars(); }
 };
 
 

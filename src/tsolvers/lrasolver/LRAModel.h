@@ -36,7 +36,6 @@ protected:
     vec<LVRef> model_trace;
     vec<LABoundRef> bound_trace;
 
-    LAVarMapper &laVarMapper;
     LABoundStore &bs;
     int n_vars_with_model;
     Map<LVRef,bool,LVRefHash> has_model;
@@ -45,8 +44,8 @@ protected:
     void         popBounds();
 
 public:
-    LRAModel(LAVarMapper &laVarMapper, LABoundStore & bs) : laVarMapper(laVarMapper), bs(bs), n_vars_with_model(0) { limits.push({0, 0}); }
-    void initModel(LAVarMapper &s);
+    LRAModel(LABoundStore & bs) : bs(bs), n_vars_with_model(0) { limits.push({0, 0}); }
+    void initModel();
     int addVar(LVRef v); // Adds a variable.  Returns the total number of variables
     inline int   nVars() { return n_vars_with_model; }
 
@@ -83,7 +82,7 @@ class TermLRAModel : public LRAModel
     PtAsgn       popDecisions();
     vec<int>     dec_limit;
 public:
-    TermLRAModel(LAVarMapper &laVarMapper, LABoundStore &bs) : LRAModel(laVarMapper, bs) { dec_limit.push(0); }
+    TermLRAModel(LABoundStore &bs) : LRAModel(bs) { dec_limit.push(0); }
     void pushDecision(PtAsgn asgn);
     PtAsgn popTermBacktrackPoint();
     void pushBacktrackPoint() override;

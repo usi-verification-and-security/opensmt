@@ -88,8 +88,8 @@ LASolver::LASolver(SolverDescr dls, SMTConfig & c, LALogic& l, vec<DedElem>& d)
         : logic(l)
         , TSolver((SolverId)descr_la_solver, (const char*)descr_la_solver, c, d)
         , laVarMapper(l, laVarStore)
-        , boundStore(laVarMapper)
-        , model(laVarMapper, boundStore)
+        , boundStore(laVarStore)
+        , model(boundStore)
         , simplex(c, model, boundStore)
 {
     status = INIT;
@@ -483,7 +483,7 @@ void LASolver::initSolver()
         if (config.lra_gaussian_elim == 1 && config.do_substitutions())
             simplifySimplex();
 
-        model.initModel(laVarMapper);
+        model.initModel();
 
         status = SAT;
     }
