@@ -2,7 +2,7 @@
 
 ### Description
 
-### Manual: See here(./manual.md)
+### Manual: See [here](./manual.md)
 
 ### news
 
