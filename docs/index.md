@@ -1,10 +1,8 @@
-## OpenSMT Solver
+## Opensmt Solver
 
 ### Description
 
-### Manual: See [here](./manual.md)
-
-### news
+### News
 
 {% for news in site.news  %}
 - {{ news.newsdate | date_to_string }} [{{news.title}}]({{ news.url }})
