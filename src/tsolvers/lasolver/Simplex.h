@@ -49,11 +49,17 @@ class Simplex {
     bool checkTableauConsistency() const;
     SMTConfig& c;
 public:
+    struct ExplTerm {
+        LABoundRef boundref;
+        opensmt::Real coeff;
+    };
+    using Explanation = std::vector<ExplTerm>;
+
     Simplex(SMTConfig& c, LRAModel& model, LABoundStore &bs) : model(model), c(c), bland_threshold(1000), boundStore(bs) {}
     void doGaussianElimination();                           // Performs Gaussian elimination of all redundant terms in the Tableau if applicable
     void clear() { candidates.clear(); tableau.clear(); removed_by_GaussianElimination.clear();}
-    bool checkSimplex(std::vector<LABoundRef> &explanation, std::vector<opensmt::Real> &explanationCoefficients);
-    bool assertBoundOnVar(LVRef it, LABoundRef itBound_ref, std::vector<LABoundRef> &explanation, std::vector<opensmt::Real> &explanationCoefficients);
+    Explanation checkSimplex();
+    Explanation assertBoundOnVar(LVRef it, LABoundRef itBound_ref);
     bool isProcessedByTableau  (LVRef var) const;
     bool isModelOutOfBounds    (LVRef v) const;
     bool isModelOutOfUpperBound(LVRef v) const;
@@ -61,7 +67,7 @@ public:
     std::unique_ptr<Polynomial> addPoly(std::unique_ptr<std::vector<std::pair<LVRef,opensmt::Real>>> terms);
     void newNonbasicVar(LVRef v) { tableau.newNonbasicVar(v); }
     void newBasicVar(LVRef x, std::unique_ptr<Polynomial> poly) { tableau.newBasicVar(x, std::move(poly)); }
-    void getConflictingBounds(LVRef x, std::vector<LABoundRef> &explanation, std::vector<opensmt::Real> &explanationCoefficients);
+    Explanation getConflictingBounds(LVRef x);
     bool checkValueConsistency() const;
     bool invariantHolds() const;
     bool isRemovedByGaussianElimination(LVRef v) const { return removed_by_GaussianElimination.find(v) != removed_by_GaussianElimination.end(); }

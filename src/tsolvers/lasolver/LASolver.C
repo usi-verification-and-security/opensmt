@@ -116,10 +116,10 @@ void LASolver::clearSolver()
     //delta = Delta::ZERO;
 }
 
-void LASolver::storeExplanation(std::vector<LABoundRef> &explanationBounds) {
+void LASolver::storeExplanation(Simplex::Explanation &&explanationBounds) {
     explanation.clear();
     for (int i = 0; i < explanationBounds.size(); i++) {
-        PtAsgn asgn = getAsgnByBound(explanationBounds[i]);
+        PtAsgn asgn = getAsgnByBound(explanationBounds[i].boundref);
         explanation.push(asgn);
     }
 }
@@ -132,14 +132,11 @@ bool LASolver::check_simplex(bool complete) {
     if (status == INIT) {
         initSolver();
     }
-    std::vector<LABoundRef> explanationBounds;
-    bool rval = simplex.checkSimplex(explanationBounds, explanationCoefficients);
+    storeExplanation(simplex.checkSimplex());
 
-    if (rval)
+    if (explanation.size() == 0)
         setStatus(SAT);
     else {
-        storeExplanation(explanationBounds);
-
         setStatus(UNSAT);
     }
 
@@ -400,11 +397,9 @@ bool LASolver::assertBoundOnVar(LVRef it, LABoundRef itBound_ref) {
     assert(status == SAT);
     assert(it != LVRef_Undef);
     assert(!model.isUnbounded(it));
-    std::vector<LABoundRef> explanationBounds;
-    bool rval = simplex.assertBoundOnVar(it, itBound_ref, explanationBounds, explanationCoefficients);
+    storeExplanation(simplex.assertBoundOnVar(it, itBound_ref));
 
-    if (!rval) {
-        storeExplanation(explanationBounds);
+    if (explanation.size()) {
         return setStatus(UNSAT);
     }
     return getStatus();

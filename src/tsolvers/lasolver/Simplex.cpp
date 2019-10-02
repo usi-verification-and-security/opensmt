@@ -17,10 +17,7 @@ namespace{
     }
 }
 
-bool Simplex::checkSimplex(std::vector<LABoundRef> &explanation, std::vector<opensmt::Real> &explanationCoefficients) {
-
-    explanation.clear( );
-    explanationCoefficients.clear( );
+Simplex::Explanation Simplex::checkSimplex() {
 
     bool bland_rule = false;
     unsigned repeats = 0;
@@ -55,7 +52,7 @@ bool Simplex::checkSimplex(std::vector<LABoundRef> &explanation, std::vector<ope
         if (x == LVRef_Undef) {
             // SAT
             refineBounds();
-            return true;
+            return Explanation();
         }
 
         LVRef y_found = LVRef_Undef;
@@ -67,8 +64,7 @@ bool Simplex::checkSimplex(std::vector<LABoundRef> &explanation, std::vector<ope
         }
         // if it was not found - UNSAT
         if (y_found == LVRef_Undef) {
-            getConflictingBounds(x, explanation, explanationCoefficients);
-            return false;
+            return getConflictingBounds(x);
         }
             // if it was found - pivot old Basic x with non-basic y and do the model updates
         else {
@@ -266,52 +262,42 @@ LVRef Simplex::findNonBasicForPivotByBland(LVRef basicVar) {
     return y_found;
 }
 
-bool Simplex::assertBoundOnVar(LVRef it, LABoundRef itBound_ref, std::vector<LABoundRef> &explanation, std::vector<opensmt::Real> &explanationCoefficients) {
-    assert(explanation.empty());
+Simplex::Explanation Simplex::assertBoundOnVar(LVRef it, LABoundRef itBound_ref) {
     const LABound &itBound = boundStore[itBound_ref];
 
 //  cerr << "; ASSERTING bound on " << *it << endl;
 
     // Check if simple SAT can be given
     if (model.boundSatisfied(it, itBound_ref))
-        return true;
+        return {};
+
 
     // Check if simple UNSAT can be given.  The last check checks that this is not actually about asserting equality.
     if (model.boundUnsatisfied(it, itBound_ref))
     {
-        explanationCoefficients.clear();
-
-        explanation.push_back(itBound.getType() == bound_u ? model.readLBoundRef(it) : model.readUBoundRef(it));
-
-        explanationCoefficients.emplace_back(1);
-        explanation.push_back(itBound_ref);
-        explanationCoefficients.emplace_back(1);
-        return false;
+        LABoundRef br = itBound.getType() == bound_u ? model.readLBoundRef(it) : model.readUBoundRef(it);
+        return {{br, 1}, {itBound_ref, 1}};
     }
 
     // Update the Tableau data if a non-basic variable
     if (tableau.isNonBasic(it)) {
-        if (!isBoundSatisfied(model.read(it), itBound)){
+        if (!isBoundSatisfied(model.read(it), itBound)) {
             changeValueBy(it, itBound.getValue() - model.read(it));
         }
-        else{
+        else {
 //            std::cout << "Bound is satisfied by current assignment, no need to update model!\n\n";
         }
     }
     else // basic variable got a new bound, it becomes a possible candidate
     {
-        if(!tableau.isActive(it)){
+        if(!tableau.isActive(it)) {
             throw "Not implemented yet!";
         }
         assert(tableau.isBasic(it));
         newCandidate(it);
     }
 
-//  LAVar *x = it;
-//  cerr << "; ASSERTED bound on " << *x << ": " << x->L( ) << " <= " << x->M( ) << " <= " << x->U( ) << endl;
-
-//  cerr  << "; NORMAL " << status <<endl;
-    return true;
+    return {};
 }
 
 void Simplex::newCandidate(LVRef candidateVar) {
@@ -366,35 +352,32 @@ void Simplex::updateValues(const LVRef bv, const LVRef nv){
 //
 // Returns the bounds conflicting with the actual model.
 //
-void Simplex::getConflictingBounds( LVRef x, std::vector<LABoundRef> &explanation, std::vector<opensmt::Real> &explanationCoefficients)
+Simplex::Explanation Simplex::getConflictingBounds(LVRef x)
 {
+    Explanation expl;
     if (model.read(x) < model.Lb(x)) {
         // add all bounds for polynomial elements which limit lower bound
         LABoundRef b_f = model.readLBoundRef(x);
-        explanation.push_back(b_f);
-        explanationCoefficients.emplace_back( 1 );
+        expl.push_back({b_f, 1});
         for (auto const & term : tableau.getRowPoly(x)) {
             Real const & coeff = term.coeff;
-            assert( ! coeff.isZero());
+            assert(! coeff.isZero());
             auto const var = term.var;
             assert(var != x);
             if (coeff < 0) {
                 LABoundRef br = model.readLBoundRef(var);
-                explanation.push_back(br);
-                explanationCoefficients.push_back( -coeff );
+                expl.push_back({br, -coeff});
             }
             else {
                 LABoundRef br = model.readUBoundRef(var);
-                explanation.push_back(br);
-                explanationCoefficients.push_back(coeff);
+                expl.push_back({br,coeff});
             }
         }
     }
     if (model.read(x) > model.Ub(x)) {
         // add all bounds for polynomial elements which limit upper bound
         LABoundRef br_f = model.readUBoundRef(x);
-        explanation.push_back(br_f);
-        explanationCoefficients.emplace_back( 1 );
+        expl.push_back({br_f,1});
 
         for (auto const & term : tableau.getRowPoly(x)) {
             Real const & coeff = term.coeff;
@@ -403,16 +386,15 @@ void Simplex::getConflictingBounds( LVRef x, std::vector<LABoundRef> &explanatio
             assert(var != x);
             if (coeff > 0) {
                 LABoundRef br = model.readLBoundRef(var);
-                explanation.push_back(br);
-                explanationCoefficients.push_back( coeff );
+                expl.push_back({br, coeff});
             }
             else {
                 LABoundRef br = model.readUBoundRef(var);
-                explanation.push_back(br);
-                explanationCoefficients.push_back(-coeff);
+                expl.push_back({br, -coeff});
             }
         }
     }
+    return expl;
 }
 
 bool Simplex::checkValueConsistency() const {
