@@ -2,3 +2,5 @@ theme: jekyll-theme-dinky
 title: Opensmt
 description: Opensmt solver
 collections:
+show_downloads: true
+repository_url: "https://github.com/usi-verification-and-security/opensmt"
