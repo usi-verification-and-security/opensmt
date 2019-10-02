@@ -64,8 +64,8 @@ public:
     bool isModelOutOfBounds    (LVRef v) const;
     bool isModelOutOfUpperBound(LVRef v) const;
     bool isModelOutOfLowerBound(LVRef v) const;
-    std::unique_ptr<Polynomial> addPoly(std::unique_ptr<std::vector<std::pair<LVRef,opensmt::Real>>> terms);
     void newNonbasicVar(LVRef v) { tableau.newNonbasicVar(v); }
+    void nonbasicVar(LVRef v)    { tableau.nonbasicVar(v); }
     void newBasicVar(LVRef x, std::unique_ptr<Polynomial> poly) { tableau.newBasicVar(x, std::move(poly)); }
     Explanation getConflictingBounds(LVRef x);
     bool checkValueConsistency() const;

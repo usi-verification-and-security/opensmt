@@ -116,19 +116,6 @@ bool Simplex::isUnbounded(LVRef v) const
     return rval;
 }
 
-std::unique_ptr<Polynomial> Simplex::addPoly(std::unique_ptr<std::vector<std::pair<LVRef,opensmt::Real>>> terms) {
-
-    std::unique_ptr<Polynomial> poly = std::unique_ptr<Polynomial>(new Polynomial());
-    for (auto term_pair = terms->begin(); term_pair != terms->end(); term_pair++) {
-        LVRef var = term_pair->first;
-        opensmt::Real coeff = term_pair->second;
-        tableau.nonbasicVar(var);
-        poly->addTerm(var, std::move(coeff));
-    }
-
-    return poly;
-}
-
 LVRef Simplex::getBasicVarToFixByShortestPoly() const {
     decltype(candidates) new_candidates;
     LVRef current = LVRef_Undef;

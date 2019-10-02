@@ -217,24 +217,25 @@ LVRef LASolver::getLAVar_single(PTRef expr_in) {
 
 std::unique_ptr<Polynomial> LASolver::expressionToLVarPoly(PTRef term) {
 
+    auto poly = std::unique_ptr<Polynomial>(new Polynomial());
+
     bool negated = logic.isNegated(term);
-    auto terms = std::unique_ptr<std::vector<std::pair<LVRef, opensmt::Real>>>(new std::vector<std::pair<LVRef, opensmt::Real>>());
 
     for (int i = 0; i < logic.getPterm(term).size(); i++) {
         PTRef v;
         PTRef c;
         logic.splitTermToVarAndConst(logic.getPterm(term)[i], v, c);
-        LVRef
-        var = getLAVar_single(v);
+        LVRef var = getLAVar_single(v);
         notifyVar(var);
         Real coeff = getNum(c);
         if (negated) {
             coeff.negate();
         }
-        terms->push_back(std::pair<LVRef, opensmt::Real>(var, std::move(coeff)));
+        simplex.nonbasicVar(var);
+        poly->addTerm(var, std::move(coeff));
     }
 
-    return simplex.addPoly(std::move(terms));
+    return poly;
 }
 
 
