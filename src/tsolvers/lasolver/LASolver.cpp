@@ -118,9 +118,11 @@ void LASolver::clearSolver()
 
 void LASolver::storeExplanation(Simplex::Explanation &&explanationBounds) {
     explanation.clear();
+    explanationCoefficients.clear();
     for (int i = 0; i < explanationBounds.size(); i++) {
         PtAsgn asgn = getAsgnByBound(explanationBounds[i].boundref);
         explanation.push(asgn);
+        explanationCoefficients.push_back(explanationBounds[i].coeff);
     }
 }
 
