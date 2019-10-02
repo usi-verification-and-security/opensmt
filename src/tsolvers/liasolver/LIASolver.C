@@ -34,8 +34,8 @@ void LIASolver::computeConcreteModel(LVRef v) {
         concrete_model.push(nullptr);
 
     PTRef tr = getVarPTRef(v);
-    auto it = removed_by_GaussianElimination.find(v);
-    if(it != removed_by_GaussianElimination.end()){
+    if (simplex.isRemovedByGaussianElimination(v)) {
+        auto it = simplex.getRemovedByGaussianElimination(v);
         auto const & representation = (*it).second;
         Delta val;
         for (auto const & term : representation) {
@@ -59,7 +59,7 @@ void LIASolver::computeModel()
 
     Delta delta_abst = Delta_PlusInf;  // We support plus infinity for this one.
 
-    for (unsigned i = 0; i < lavarStore.numVars(); ++i)
+    for (unsigned i = 0; i < laVarMapper.numVars(); ++i)
     {
         LVRef v {i};
         assert (model.read(v).D() == 0);
@@ -70,7 +70,7 @@ void LIASolver::computeModel()
     cerr << "; delta: " << curDelta << '\n';
 #endif
 
-    for ( unsigned i = 0; i < lavarStore.numVars(); i++)
+    for ( unsigned i = 0; i < laVarMapper.numVars(); i++)
     {
         LVRef v {i};
         computeConcreteModel(v);
@@ -95,7 +95,7 @@ TRes LIASolver::checkIntegersAndSplit() {
     for (int i = 0; i < int_vars.size(); i++) {
 
         LVRef x = int_vars[i];
-        if (removed_by_GaussianElimination.find(x) != removed_by_GaussianElimination.end()) {
+        if (simplex.isRemovedByGaussianElimination(x)) {
             computeConcreteModel(x);
             model.write(x, Delta(*concrete_model[getVarId(x)]));
         }
@@ -127,8 +127,8 @@ TRes LIASolver::checkIntegersAndSplit() {
             // Check if integer splitting is possible for the current variable
             if (c < model.Lb(x) && c + 1 > model.Ub(x)) { //then splitting not possible, and we create explanation
 
-                explanation.push(model.readLBound(x).getPtAsgn());
-                explanation.push(model.readUBound(x).getPtAsgn());
+                explanation.push(getAsgnByBound(model.readLBoundRef(x)));
+                explanation.push(getAsgnByBound(model.readUBoundRef(x)));
                 //explanation = {model.readLBound(x).getPtAsgn(), model.readUBound(x).getPtAsgn()};
                 setStatus(UNSAT);
                 return TRes::UNSAT;

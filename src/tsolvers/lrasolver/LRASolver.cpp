@@ -61,9 +61,8 @@ void LRASolver::computeConcreteModel(LVRef v) {
     while (concrete_model.size() <= getVarId(v))
         concrete_model.push(nullptr);
 
-    PTRef tr = lavarStore.getVarPTRef(v);
-    auto it = removed_by_GaussianElimination.find(v);
-    if(it != removed_by_GaussianElimination.end()){
+    if (simplex.isRemovedByGaussianElimination(v)) {
+        auto it = simplex.getRemovedByGaussianElimination(v);
         auto const & representation = (*it).second;
         Delta val;
         for (auto const & term : representation) {
@@ -76,24 +75,6 @@ void LRASolver::computeConcreteModel(LVRef v) {
     }
 }
 
-void LRASolver::doGaussianElimination( )
-{
-    auto eliminated = tableau.doGaussianElimination([this](LVRef v){return this->isUnbounded(v);});
-    for(auto rit = eliminated.rbegin(); rit != eliminated.rend(); ++ rit) {
-        auto entry = *rit;
-        auto poly = entry.second;
-        for(auto const & term : entry.second){
-            auto var = term.var;
-            auto it = removed_by_GaussianElimination.find(var);
-            if( it != removed_by_GaussianElimination.end() && poly.contains(var)) {
-                auto to_substitute = (*it).second;
-                auto coeff = poly.getCoeff(var);
-                poly.merge(to_substitute, coeff);
-            }
-        }
-        removed_by_GaussianElimination.emplace(entry.first, poly);
-    }
-}
 
 //
 // Detect the appropriate value for symbolic delta and stores the model
@@ -115,13 +96,13 @@ void LRASolver::computeModel()
     // \delta'(x) = D/k
     // Finally, \delta := min_{x \in LV |delta'(x)|}.
 
-    for (unsigned i = 0; i < lavarStore.numVars(); ++i)
+    for (unsigned i = 0; i < laVarMapper.numVars(); ++i)
     {
         LVRef v {i};
         if (model.read(v).D() == 0)
             continue; // If values are exact we do not need to consider them for delta computation
 
-        assert( !isModelOutOfBounds(v) );
+        assert( !simplex.isModelOutOfBounds(v) );
 
         Delta D;
 
@@ -155,7 +136,7 @@ void LRASolver::computeModel()
     cerr << "; delta: " << curDelta << '\n';
 #endif
 
-    for ( unsigned i = 0; i < lavarStore.numVars(); i++)
+    for ( unsigned i = 0; i < laVarMapper.numVars(); i++)
     {
         LVRef v {i};
         computeConcreteModel(v);
@@ -196,7 +177,7 @@ lbool LRASolver::getPolaritySuggestion(PTRef ptref) const {
     if (!this->isInformed(ptref)) { return l_Undef; }
     LVRef var = this->getVarForLeq(ptref);
     if (!model.hasModel(var)) { return l_Undef; }
-    LABoundRefPair bounds = this->boundStore.getBoundRefPair(ptref);
+    LABoundRefPair bounds = getBoundRefPair(ptref);
     assert( bounds.pos != LABoundRef_Undef && bounds.neg != LABoundRef_Undef );
     auto const& val = model.read(var);
     bool positive = false;

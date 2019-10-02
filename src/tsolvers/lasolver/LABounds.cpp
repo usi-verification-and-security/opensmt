@@ -1,21 +1,19 @@
 #include "LABounds.h"
 #include "LRALogic.h"
 
-LABound::LABound(BoundT type, PtAsgn leq_pta, LVRef var, const Delta& delta)
+LABound::LABound(BoundT type, LVRef var, const Delta& delta, int id)
     : type(type.t)
-    , reverse(false)
-    , active(true)
-    , idx(UINT32_MAX)
-    , leq_pta(leq_pta)
+    , bidx(UINT32_MAX)
+    , id(id)
     , var(var)
     , delta(delta)
 {}
 
-LABoundRef LABoundAllocator::alloc(BoundT type, PtAsgn leq_pta, LVRef var, const Delta& delta)
+LABoundRef LABoundAllocator::alloc(BoundT type, LVRef var, const Delta& delta)
 {
     uint32_t v = RegionAllocator<uint32_t>::alloc(laboundWord32Size());
     LABoundRef id = {v};
-    new (lea(id)) LABound(type, leq_pta, var, delta);
+    new (lea(id)) LABound(type, var, delta, n_bounds++);
     return id;
 }
 
@@ -66,71 +64,27 @@ void LABoundListAllocator::reloc(LABoundListRef& tr, LABoundListAllocator& to)
     to[tr].v  = bl.getVar();
 }
 
-LABoundStore::BoundInfo LABoundStore::addBound(PTRef leq_ref)
-{
-//    printf(" -> bound store gets %s\n", logic.pp(leq_ref));
-    const Pterm& leq = logic.getPterm(leq_ref);
-    PTRef const_tr = leq[0];
-    PTRef sum_tr = leq[1];
 
-    bool sum_term_is_negated = logic.isNegated(sum_tr);
-
-    LVRef v = lavarStore.getVarByLeqId(logic.getPterm(leq_ref).getId());
-    assert(v == lavarStore.getVarByPTId(logic.getPterm(sum_tr).getId()));
-
-    LABoundRef br_pos;
-    LABoundRef br_neg;
-
-    if (sum_term_is_negated) {
-        opensmt::Real constr_neg = -logic.getNumConst(const_tr);
-        br_pos = ba.alloc(bound_u, PtAsgn(leq_ref, l_True), v, Delta(constr_neg));
-        br_neg = ba.alloc(bound_l, PtAsgn(leq_ref, l_False), v, Delta(constr_neg, 1));
-    }
-    else {
-        const Real& constr = logic.getNumConst(const_tr);
-        br_pos = ba.alloc(bound_l, PtAsgn(leq_ref, l_True), v, Delta(constr));
-        br_neg = ba.alloc(bound_u, PtAsgn(leq_ref, l_False), v, Delta(constr, -1));
-    }
-
-//    printf(" --> %s\n", printBound(br_pos));
-//    printf(" --> %s\n", printBound(br_neg));
-    BoundInfo bi{v, br_pos, br_neg, leq.getId()};
-    in_bounds.push(bi);
-    return bi;
-}
-
-void LABoundStore::updateBound(PTRef tr)
-{
-    // Check if the bound already exists.  If so, don't do anything.
-    if ((ptermToLABoundsRef.size() > Idx(logic.getPterm(tr).getId())) &&
-            !(ptermToLABoundsRef[Idx(logic.getPterm(tr).getId())] == LABoundRefPair{LABoundRef_Undef, LABoundRef_Undef}))
-        return;
-
-    BoundInfo bi = addBound(tr);
-    LVRef vr = bi.v;
-    while (ptermToLABoundsRef.size() <= Idx(bi.leq_id))
-        ptermToLABoundsRef.push({ LABoundRef_Undef, LABoundRef_Undef });
-
-    ptermToLABoundsRef[Idx(bi.leq_id)] = { bi.b1, bi.b2 };
+void LABoundStore::updateBound(BoundInfo bi) {
     // Fix this to do a linear traverse
     vec<LABoundRef> new_bounds;
-    LABoundListRef blr = var_bound_lists[getVarId(vr)];
+    LABoundListRef blr = var_bound_lists[getVarId(bi.v)];
 
     for (int i = 0; i < bla[blr].size(); i++)
         new_bounds.push(bla[blr][i]);
 
-    new_bounds.push(bi.b1);
-    new_bounds.push(bi.b2);
+    new_bounds.push(bi.ub);
+    new_bounds.push(bi.lb);
 
-    LABoundListRef br = bla.alloc(vr, new_bounds);
-    var_bound_lists[getVarId(vr)] = br;
+    LABoundListRef br = bla.alloc(bi.v, new_bounds);
+    var_bound_lists[getVarId(bi.v)] = br;
     sort<LABoundRef,bound_lessthan>(bla[br].bounds, bla[br].size(), bound_lessthan(ba));
 
     for (int j = 0; j < bla[br].size(); j++)
-        ba[bla[br][j]].setIdx(j);
+        ba[bla[br][j]].setIdx(LABound::BLIdx{j});
 }
 
-void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
+void LABoundStore::buildBounds()
 {
     VecMap<LVRef, BoundInfo, LVRefHash> bounds_map;
 
@@ -139,32 +93,29 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
         if (!bounds_map.has(v))
             bounds_map.insert(v, vec<BoundInfo>());
         bounds_map[v].push(in_bounds[i]);
-        while (ptermToLABoundsRef.size() <= Idx(in_bounds[i].leq_id))
-            ptermToLABoundsRef.push({ LABoundRef_Undef, LABoundRef_Undef });
-        ptermToLABoundsRef[Idx(in_bounds[i].leq_id)] = { in_bounds[i].b1, in_bounds[i].b2 };
     }
     vec<LVRef> keys;
     bounds_map.getKeys(keys);
     for (int i = 0; i < keys.size(); i++) {
         vec<LABoundRef> refs;
-        LABoundRef lb_minusInf = ba.alloc(bound_l, PtAsgn(logic.getTerm_true(), l_True), keys[i], Delta_MinusInf);
-        LABoundRef ub_plusInf = ba.alloc(bound_u, PtAsgn(logic.getTerm_true(), l_True), keys[i], Delta_PlusInf);
+        LABoundRef lb_minusInf = ba.alloc(bound_l, keys[i], Delta_MinusInf);
+        LABoundRef ub_plusInf = ba.alloc(bound_u, keys[i], Delta_PlusInf);
         refs.push(lb_minusInf);
         refs.push(ub_plusInf);
         for (int j = 0; j < bounds_map[keys[i]].size(); j++) {
             BoundInfo &info = bounds_map[keys[i]][j];
-            refs.push(info.b1);
-            refs.push(info.b2);
+            refs.push(info.ub);
+            refs.push(info.lb);
         }
         LABoundListRef br = bla.alloc(keys[i], refs);
 
         while (var_bound_lists.size() <= getVarId(keys[i]))
-            var_bound_lists.push(LABoundListRef_Undef);
+            LABoundStore::var_bound_lists.push(LABoundListRef_Undef);
         var_bound_lists[getVarId(keys[i])] = br;
         sort<LABoundRef,bound_lessthan>(bla[br].bounds, bla[br].size(), bound_lessthan(ba));
 
         for (int j = 0; j < bla[br].size(); j++)
-            ba[bla[br][j]].setIdx(j);
+            ba[bla[br][j]].setIdx(LABound::BLIdx{j});
 
         // Check that the bounds are correctly ordered
 #ifdef DO_BOUNDS_CHECK
@@ -198,7 +149,7 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
     }
 
     // make sure all variables have at least the trivial bounds
-    for (unsigned i = 0; i < lavarStore.numVars(); i++) {
+    for (unsigned i = 0; i < lvstore.numVars(); i++) {
         LVRef ref {i};
         auto id = getVarId(ref);
         while (var_bound_lists.size() <= id)
@@ -206,8 +157,8 @@ void LABoundStore::buildBounds(vec<LABoundRefPair>& ptermToLABoundRefs)
 
         if (var_bound_lists[id] == LABoundListRef_Undef) {
             vec<LABoundRef> refs;
-            LABoundRef lb_minusInf = ba.alloc(bound_l, PtAsgn(logic.getTerm_true(), l_True), ref, Delta_MinusInf);
-            LABoundRef ub_plusInf = ba.alloc(bound_u, PtAsgn(logic.getTerm_true(), l_True), ref, Delta_PlusInf);
+            LABoundRef lb_minusInf = ba.alloc(bound_l, ref, Delta_MinusInf);
+            LABoundRef ub_plusInf = ba.alloc(bound_u, ref, Delta_PlusInf);
             refs.push(lb_minusInf);
             refs.push(ub_plusInf);
             LABoundListRef br = bla.alloc(ref, refs);
@@ -228,15 +179,13 @@ char*
 LABoundStore::printBound(LABoundRef br) const
 {
     char *str_out;
-    char *v_str_ptr = logic.pp(lavarStore.getVarPTRef(ba[br].getLVRef()));
     char *v_str_lvr;
     int written = asprintf(&v_str_lvr, "v%d", ba[br].getLVRef().x);
     assert(written >= 0);
     char* v_str;
-    written = asprintf(&v_str, "%s [%s]", v_str_lvr, v_str_ptr);
+    written = asprintf(&v_str, "%s", v_str_lvr);
     assert(written >= 0); (void)written;
     free(v_str_lvr);
-    free(v_str_ptr);
     const Delta & d = ba[br].getValue();
     if (d.isMinusInf())
         written = asprintf(&str_out, "- Inf <= %s", v_str);
@@ -279,8 +228,7 @@ char* LABoundStore::printBounds(LVRef v) const
     return bounds_str;
 }
 
-LABoundRefPair LABoundStore::getBoundRefPair(const PTRef leq) const
-{ return ptermToLABoundsRef[Idx(logic.getPterm(leq).getId())]; }
+
 
 
 int LABoundAllocator::laboundWord32Size() {

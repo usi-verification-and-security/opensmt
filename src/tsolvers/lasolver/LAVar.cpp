@@ -1,8 +1,10 @@
 /*********************************************************************
- Author: Aliaksei Tsitovich <aliaksei.tsitovich@usi.ch>,
-         Roberto Bruttomesso <roberto.bruttomesso@unisi.ch>
+ Author: Aliaksei Tsitovich <aliaksei.tsitovich@lu.unisi.ch>
+ Roberto Bruttomesso <roberto.bruttomesso@unisi.ch>
+ Antti Hyvarinen <antti.hyvarinen@gmail.com>
 
- OpenSMT2 -- Copyright (C) 2008 - 2012, Roberto Bruttomesso
+ OpenSMT2 -- Copyright (C) 2012 - 2015, Antti Hyvarinen
+                           2008 - 2012, Roberto Bruttomesso
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the
@@ -24,27 +26,14 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
-#ifndef LACOLUMN_H_
-#define LACOLUMN_H_
+#include "LAVar.h"
+#include "LRALogic.h"
 
-#include "LAArray.h"
+LVRef LAVarStore::getNewVar() {
+    auto idx = static_cast<unsigned>(lavars.size());
+    LVRef lv {idx};
+    lavars.push_back(lv);
+    return lv;
+}
 
-struct LAColumnItem
-{
-  int key;
-  int pos_in_row;
-
-  LAColumnItem( int _key, int _pos_in_row )
-  {
-    key = _key;
-    pos_in_row = _pos_in_row;
-  }
-};
-
-class LAColumn: public LAArray<LAColumnItem>
-{
-public:
-  int add( const int key, const int pos );
-};
-
-#endif /* LACOLUMN_H_ */
+int    LAVarStore::numVars() const { return lavars.size(); }

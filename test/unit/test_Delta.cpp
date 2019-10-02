@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <lrasolver/Delta.h>
+#include <lasolver/Delta.h>
 TEST(Delta_test, test_ops_in_Delta)
 {
     Delta plus_infty(Delta::UPPER);

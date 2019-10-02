@@ -1,8 +1,8 @@
 /*********************************************************************
- Author: Aliaksei Tsitovich <aliaksei.tsitovich@usi.ch>,
-         Roberto Bruttomesso <roberto.bruttomesso@unisi.ch>
+Author: Aliaksei Tsitovich <aliaksei.tsitovich@lu.unisi.ch>
+      , Roberto Bruttomesso <roberto.bruttomesso@unisi.ch>
 
- OpenSMT2 -- Copyright (C) 2008 - 2012, Roberto Bruttomesso
+OpenSMT2 -- Copyright (C) 2008-2012, Roberto Bruttomesso
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the
@@ -24,29 +24,31 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
-#ifndef LAROW_H
-#define LAROW_H
+#ifndef LAVAR_H
+#define LAVAR_H
 
-#include "LAArray.h"
+#include "Deductions.h"
+#include "PtStructs.h"
+#include "LARefs.h"
+#include "Pterm.h"
+#include <vector>
 
-struct LARowItem
+class LRASolver;
+class LAVarStore;
+class LALogic;
+
+
+class LAVarStore
 {
-  int key;
-  int pos;
-  Real * coef;
+private:
+    std::vector<LVRef>      lavars;
 
-  LARowItem( int _key, int _pos, Real * _coef )
-  {
-    key = _key;
-    pos = _pos;
-    coef = _coef;
-  }
-};
-
-class LARow: public LAArray<LARowItem>
-{
 public:
-  int add( const int key, const int pos, Real * coef );
+    LAVarStore() {}
+    LVRef  getNewVar();
+    inline void   clear() {};
+    int    numVars() const ;
 };
+
 
 #endif
