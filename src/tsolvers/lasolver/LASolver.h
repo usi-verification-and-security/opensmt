@@ -8,12 +8,12 @@
 
 #include "TSolver.h"
 #include "lrasolver/LRAModel.h"
-#include "lrasolver/Tableau.h"
-#include "lrasolver/Polynomial.h"
+#include "Tableau.h"
+#include "Polynomial.h"
 #include "Simplex.h"
 
 #include <unordered_map>
-#include <lrasolver/LAVarMapper.h>
+#include "LAVarMapper.h"
 
 class LAVar;
 class LAVarStore;

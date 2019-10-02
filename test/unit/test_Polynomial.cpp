@@ -3,7 +3,7 @@
 //
 
 #include <gtest/gtest.h>
-#include <lrasolver/Polynomial.h>
+#include <lasolver/Polynomial.h>
 
 TEST(Polynomial_test, test_AddTerm){
     Polynomial poly;

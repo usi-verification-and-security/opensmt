@@ -3,7 +3,7 @@
 
 #include "LIALogic.h"
 #include "LASolver.h"
-#include "lrasolver/LARefs.h"
+#include "lasolver/LARefs.h"
 
 
 

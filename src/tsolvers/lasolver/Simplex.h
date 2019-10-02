@@ -5,9 +5,9 @@
 #ifndef OPENSMT_SIMPLEX_H
 #define OPENSMT_SIMPLEX_H
 
-#include "lrasolver/LABounds.h"
-#include "lrasolver/Tableau.h"
-#include "lrasolver/LAVar.h"
+#include "lasolver/LABounds.h"
+#include "lasolver/Tableau.h"
+#include "lasolver/LAVar.h"
 #include "lrasolver/LRAModel.h"
 #include "SMTConfig.h"
 
