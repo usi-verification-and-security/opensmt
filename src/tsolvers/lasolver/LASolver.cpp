@@ -89,8 +89,7 @@ LASolver::LASolver(SolverDescr dls, SMTConfig & c, LALogic& l, vec<DedElem>& d)
         , TSolver((SolverId)descr_la_solver, (const char*)descr_la_solver, c, d)
         , laVarMapper(l, laVarStore)
         , boundStore(laVarStore)
-        , model(boundStore)
-        , simplex(c, model, boundStore)
+        , simplex(c, std::unique_ptr<TermLRAModel>(new TermLRAModel(boundStore)), boundStore)
 {
     status = INIT;
 }
@@ -110,7 +109,6 @@ void LASolver::clearSolver()
 //    ba.clear();
 //    this->bla.clear();
 
-    this->model.clear();
     // TODO: clear statistics
 //    this->tsolver_stats.clear();
     //delta = Delta::ZERO;
@@ -361,7 +359,7 @@ bool LASolver::assertLit( PtAsgn asgn, bool reason )
     LVRef it = getVarForLeq(asgn.tr);
     // Constraint to push was not found in local storage. Most likely it was not read properly before
     assert(it != LVRef_Undef);
-    assert(!model.isUnbounded(it));
+    assert(!simplex.isUnbounded(it));
 
     const Pterm& t = logic.getPterm(asgn.tr);
     // skip if it was deduced by the solver itself with the same polarity

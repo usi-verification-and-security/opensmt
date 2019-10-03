@@ -34,7 +34,7 @@ class Simplex {
 
     void changeValueBy( LVRef, const Delta & );             // Updates the bounds after constraint pushing
     void refineBounds() { return; }                         // Compute the bounds for touched polynomials and deduces new bounds from it
-    LRAModel &model;
+    std::unique_ptr<LRAModel> model;
     // Out of bound candidates
     // mutable std::unordered_set<LVRef, LVRefHash> candidates;
     mutable std::set<LVRef, LVRefComp> candidates;
@@ -55,9 +55,10 @@ public:
     };
     using Explanation = std::vector<ExplTerm>;
 
-    Simplex(SMTConfig& c, LRAModel& model, LABoundStore &bs) : model(model), c(c), bland_threshold(1000), boundStore(bs) {}
+    Simplex(SMTConfig& c, std::unique_ptr<LRAModel> model, LABoundStore &bs) : model(std::move(model)), c(c), bland_threshold(1000), boundStore(bs) {}
+    Simplex(SMTConfig& c, LABoundStore&bs) : model(new LRAModel(bs)), c(c), bland_threshold(1000), boundStore(bs) {}
     void doGaussianElimination();                           // Performs Gaussian elimination of all redundant terms in the Tableau if applicable
-    void clear() { candidates.clear(); tableau.clear(); removed_by_GaussianElimination.clear();}
+    void clear() { model->clear(); candidates.clear(); tableau.clear(); removed_by_GaussianElimination.clear();}
     Explanation checkSimplex();
     Explanation assertBoundOnVar(LVRef it, LABoundRef itBound_ref);
     bool isProcessedByTableau  (LVRef var) const;

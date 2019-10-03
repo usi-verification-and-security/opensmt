@@ -147,8 +147,6 @@ protected:
     void initSolver( );                                     // Initializes the solver
     void print( ostream & out ) override;                            // Prints terms, current bounds and the tableau
 
-    // Value system + history of bounds
-    TermLRAModel model;
 
     Delta evalSum(PTRef tr) const;
     vec<opensmt::Real*> concrete_model;              // Save here the concrete model for the vars indexed by Id
