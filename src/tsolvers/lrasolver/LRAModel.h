@@ -16,7 +16,6 @@ struct Limits
 {
     int model_lim;
     int bound_lim;
-//    int dec_lim;
 };
 
 
@@ -45,7 +44,7 @@ protected:
 
 public:
     LRAModel(LABoundStore & bs) : bs(bs), n_vars_with_model(0) { limits.push({0, 0}); }
-    void initModel();
+    void init();
     int addVar(LVRef v); // Adds a variable.  Returns the total number of variables
     inline int   nVars() { return n_vars_with_model; }
 
@@ -61,7 +60,7 @@ public:
     const Delta& Lb(LVRef v) const;
     const Delta& Ub(LVRef v) const;
     virtual void pushBacktrackPoint();
-    virtual void popLRABacktrackPoint();
+    virtual void popBacktrackPoint();
     int  getBacktrackSize() const ;
 
     bool isEquality(LVRef v) const;
@@ -69,25 +68,9 @@ public:
     bool boundSatisfied(LVRef v, LABoundRef b) const;
     bool boundUnsatisfied(LVRef v, LABoundRef b) const;
 
-    void printModelState();
+    void printState() const;
 
     virtual void clear();
-};
-
-class TermLRAModel : public LRAModel
-{
-    struct DecEl   { PtAsgn asgn; int dl; };
-    vec<DecEl>   int_decisions;
-    vec<PtAsgn>  decision_trace;
-    PtAsgn       popDecisions();
-    vec<int>     dec_limit;
-public:
-    TermLRAModel(LABoundStore &bs) : LRAModel(bs) { dec_limit.push(0); }
-    void pushDecision(PtAsgn asgn);
-    PtAsgn popTermBacktrackPoint();
-    void pushBacktrackPoint() override;
-    void clear() override;
-
 };
 
 #endif //OPENSMT_LRAMODEL_H

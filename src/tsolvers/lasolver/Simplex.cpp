@@ -250,13 +250,10 @@ LVRef Simplex::findNonBasicForPivotByBland(LVRef basicVar) {
 }
 
 Simplex::Explanation Simplex::assertBoundOnVar(LVRef it, LABoundRef itBound_ref) {
+    assert(!model->isUnbounded(it));
     const LABound &itBound = boundStore[itBound_ref];
 
 //  cerr << "; ASSERTING bound on " << *it << endl;
-
-    // Check if simple SAT can be given
-    if (model->boundSatisfied(it, itBound_ref))
-        return {};
 
 
     // Check if simple UNSAT can be given.  The last check checks that this is not actually about asserting equality.
@@ -266,13 +263,16 @@ Simplex::Explanation Simplex::assertBoundOnVar(LVRef it, LABoundRef itBound_ref)
         return {{br, 1}, {itBound_ref, 1}};
     }
 
+    model->pushBound(itBound_ref);
+
+    // Check if simple SAT can be given
+    if (model->boundSatisfied(it, itBound_ref))
+        return {};
+
     // Update the Tableau data if a non-basic variable
     if (tableau.isNonBasic(it)) {
         if (!isBoundSatisfied(model->read(it), itBound)) {
             changeValueBy(it, itBound.getValue() - model->read(it));
-        }
-        else {
-//            std::cout << "Bound is satisfied by current assignment, no need to update model!\n\n";
         }
     }
     else // basic variable got a new bound, it becomes a possible candidate
@@ -457,3 +457,63 @@ void Simplex::doGaussianElimination( )
     }
 }
 
+Delta Simplex::getValuation(LVRef v) const {
+    Delta val(0);
+    if (isRemovedByGaussianElimination(v)) {
+        auto it = getRemovedByGaussianElimination(v);
+        auto const & representation = (*it).second;
+
+        for (auto const & term : representation) {
+            val += term.coeff * model->read(term.var);
+        }
+    }
+    else {
+        val = model->read(v);
+    }
+    return val;
+}
+
+opensmt::Real Simplex::computeDelta() const {
+
+
+    // Let x be a LV variable such that there are asserted bounds c_1 <= x and x <= c_2, where
+    // (1) c_1 = (i1 | s1), c_2 = (i2 | -s2)
+    // (2) s1, s2 \in {0, 1}
+    // (3) val(x) = (R | D).
+    // Then delta(x) := (i1+i2)/2 - R.
+    // If x is not bounded from below or above, i.e., c_1 <= x, or x <= c_2, or neither, then
+    // delta(x) := + Infty.
+    // Now D at the same time is equal to k*\delta', and we need a value for \delta'.  So
+    // \delta'(x) = D/k
+    // Finally, \delta := min_{x \in LV |delta'(x)|}.
+
+    Delta delta_abst = Delta_PlusInf;
+
+    for (unsigned i = 0; i < boundStore.nVars(); ++i)
+    {
+        LVRef v {i};
+        if (model->read(v).D() == 0)
+            continue; // If values are exact we do not need to consider them for delta computation
+
+        assert( !isModelOutOfBounds(v) );
+
+        Delta D;
+
+        if (model->Lb(v).isMinusInf() || model->Ub(v).isPlusInf())
+            D = Delta_PlusInf;
+        else
+            D = (model->Lb(v).R() + model->Ub(v).R())/2 - model->read(v).R();
+
+        D = D/model->read(v).D();
+
+        if (D < 0) D.negate();
+
+        if (delta_abst > D)
+            delta_abst = D;
+    }
+
+    if (delta_abst.isPlusInf())
+        return 1;
+    else
+        return delta_abst.R();
+}

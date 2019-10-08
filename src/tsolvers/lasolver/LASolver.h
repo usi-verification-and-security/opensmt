@@ -56,11 +56,20 @@ class LASolver: public TSolver
 {
 
 protected:
+    struct DecEl { PtAsgn asgn; int dl; };
 
     LALogic&             logic;
     LAVarStore           laVarStore;
     LAVarMapper          laVarMapper;
     Simplex              simplex;
+    vec<DecEl>           int_decisions;
+    vec<PtAsgn>          decision_trace;
+    vec<int>             dec_limit;
+
+    PtAsgn               popTermBacktrackPoint();
+    PtAsgn               popDecisions();
+    void                 pushDecision(PtAsgn);
+    int                  backtrackLevel();
 
     LABoundStore         boundStore;
     std::vector<opensmt::Real> explanationCoefficients;
@@ -145,11 +154,15 @@ protected:
     inline bool getStatus( );                               // Read the status of the solver in lbool
     bool setStatus( LASolverStatus );               // Sets and return status of the solver
     void initSolver( );                                     // Initializes the solver
+
+    void computeConcreteModel(LVRef v, const opensmt::Real& d);
+    void computeModel() override;
+
     void print( ostream & out ) override;                            // Prints terms, current bounds and the tableau
 
 
     Delta evalSum(PTRef tr) const;
-    vec<opensmt::Real*> concrete_model;              // Save here the concrete model for the vars indexed by Id
+    std::vector<opensmt::Real> concrete_model;              // Save here the concrete model for the vars indexed by Id
 //    const Delta overBound(LVRef v);
 //    bool isModelOutOfBounds(LVRef v) const;
 

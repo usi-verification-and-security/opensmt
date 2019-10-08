@@ -52,97 +52,10 @@ LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
 
 void LRASolver::clearSolver()
 {
-
     LASolver::clearSolver();
     delta = Delta::ZERO;
 }
 
-void LRASolver::computeConcreteModel(LVRef v) {
-    while (concrete_model.size() <= getVarId(v))
-        concrete_model.push(nullptr);
-
-    if (simplex.isRemovedByGaussianElimination(v)) {
-        auto it = simplex.getRemovedByGaussianElimination(v);
-        auto const & representation = (*it).second;
-        Delta val;
-        for (auto const & term : representation) {
-            val += term.coeff * model.read(term.var);
-        }
-        concrete_model[getVarId(v)] = new opensmt::Real(val.R() + val.D() * delta);
-    }
-    else {
-        concrete_model[getVarId(v)] = new opensmt::Real(model.read(v).R() + model.read(v).D() * delta);
-    }
-}
-
-
-//
-// Detect the appropriate value for symbolic delta and stores the model
-//
-
-void LRASolver::computeModel()
-{
-    assert( status == SAT );
-    Delta delta_abst = Delta_PlusInf;  // We support plus infinity for this one.
-
-    // Let x be a LV variable such that there are asserted bounds c_1 <= x and x <= c_2, where
-    // (1) c_1 = (i1 | s1), c_2 = (i2 | -s2)
-    // (2) s1, s2 \in {0, 1}
-    // (3) val(x) = (R | D).
-    // Then delta(x) := (i1+i2)/2 - R.
-    // If x is not bounded from below or above, i.e., c_1 <= x, or x <= c_2, or neither, then
-    // delta(x) := + Infty.
-    // Now D at the same time is equal to k*\delta', and we need a value for \delta'.  So
-    // \delta'(x) = D/k
-    // Finally, \delta := min_{x \in LV |delta'(x)|}.
-
-    for (unsigned i = 0; i < laVarMapper.numVars(); ++i)
-    {
-        LVRef v {i};
-        if (model.read(v).D() == 0)
-            continue; // If values are exact we do not need to consider them for delta computation
-
-        assert( !simplex.isModelOutOfBounds(v) );
-
-        Delta D;
-
-        if (model.Lb(v).isMinusInf() || model.Ub(v).isPlusInf())
-            D = Delta_PlusInf;
-        else
-            D = (model.Lb(v).R() + model.Ub(v).R())/2 - model.read(v).R();
-
-        D = D/model.read(v).D();
-
-        if (D < 0) D.negate();
-
-        if (delta_abst > D)
-            delta_abst = D;
-
-    }
-
-    if (delta_abst.isPlusInf())
-        delta = 1;
-    else
-        delta = delta_abst.R();
-
-/*
-    // TODO: check if it is it really true :)
-    assert( minDelta >= 0 );
-    assert( maxDelta <= 0 );
-    delta = ( minDelta ) / 2;
-*/
-
-#ifdef GAUSSIAN_DEBUG
-    cerr << "; delta: " << curDelta << '\n';
-#endif
-
-    for ( unsigned i = 0; i < laVarMapper.numVars(); i++)
-    {
-        LVRef v {i};
-        computeConcreteModel(v);
-    }
-
-}
 
 
 Real LRASolver::getReal(PTRef r) {
@@ -176,10 +89,10 @@ LRALogic&  LRASolver::getLogic() { return logic; }
 lbool LRASolver::getPolaritySuggestion(PTRef ptref) const {
     if (!this->isInformed(ptref)) { return l_Undef; }
     LVRef var = this->getVarForLeq(ptref);
-    if (!model.hasModel(var)) { return l_Undef; }
+    if (!simplex.hasModel(var)) { return l_Undef; }
     LABoundRefPair bounds = getBoundRefPair(ptref);
     assert( bounds.pos != LABoundRef_Undef && bounds.neg != LABoundRef_Undef );
-    auto const& val = model.read(var);
+    auto const& val = simplex.read(var);
     bool positive = false;
     auto const& positive_bound = this->boundStore[bounds.pos];
     if ((positive_bound.getType() == bound_l && positive_bound.getValue() <= val)

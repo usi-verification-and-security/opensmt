@@ -53,8 +53,7 @@ public:
     virtual void clearSolver() override; // Remove all problem specific data from the solver.  Should be called each time the solver is being used after a push or a pop in the incremental interface.
 
     TRes check         ( bool ) override;                  // Checks the satisfiability of current constraints
-    void computeConcreteModel(LVRef v);
-    void computeModel() override;
+
 
     LRALogic&  getLogic() override;
     lbool getPolaritySuggestion(PTRef) const;
