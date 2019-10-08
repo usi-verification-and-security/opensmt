@@ -102,7 +102,6 @@ int LASolver::backtrackLevel() {
 
 void LASolver::pushDecision(PtAsgn asgn)
 {
-    int_decisions.push({asgn, backtrackLevel()});
     decision_trace.push(asgn);
 }
 
@@ -111,7 +110,6 @@ void LASolver::clearSolver()
     status = INIT;
     simplex.clear();
     decision_trace.clear();
-    int_decisions.clear();
     dec_limit.clear();
     // TODO set information about columns and rows in LAVars
     TSolver::clearSolver();
@@ -406,12 +404,13 @@ bool LASolver::assertBoundOnVar(LVRef it, LABoundRef itBound_ref) {
 
     assert(status == SAT);
     assert(it != LVRef_Undef);
+    simplex.invariantHolds();
     storeExplanation(simplex.assertBoundOnVar(it, itBound_ref));
 
     if (explanation.size() > 0) {
         return setStatus(UNSAT);
     }
-
+    simplex.invariantHolds();
     return getStatus();
 }
 
@@ -426,30 +425,26 @@ void LASolver::pushBacktrackPoint( )
     simplex.pushBacktrackPoint();
     dec_limit.push(decision_trace.size());
 
-//    printf(" -> Push backtrack point.  Following is the state of the model after the push\n");
-//    model.printModelState();
-
+    cout << " -> Push backtrack point.  Following is the state of the model after the push\n";
+    simplex.printModelState();
+    simplex.invariantHolds();
     // Update the generic deductions state
     TSolver::pushBacktrackPoint();
 }
 
-PtAsgn
+void
 LASolver::popDecisions()
 {
-    PtAsgn popd = PtAsgn_Undef;
-    if (decision_trace.size()-dec_limit.last() == 1) {
-        popd = int_decisions.last().asgn;
-        int_decisions.pop();
+    while (decision_trace.size() > dec_limit.last()+1) {
+        clearPolarity(decision_trace.last().tr);
+        decision_trace.pop();
     }
-    decision_trace.shrink(decision_trace.size() - dec_limit.last());
-    return popd;
 }
 
-PtAsgn LASolver::popTermBacktrackPoint() {
+void LASolver::popTermBacktrackPoint() {
     simplex.popBacktrackPoint();
-    PtAsgn popd = popDecisions();
     dec_limit.pop();
-    return popd;
+    popDecisions();
 }
 
 // Pop the solver one level up
@@ -461,11 +456,9 @@ void LASolver::popBacktrackPoint( ) {
 // Pop the solver given number of times
 //
 void LASolver::popBacktrackPoints(unsigned int count) {
+    assert(simplex.invariantHolds());
     for ( ; count > 0; --count){
-        PtAsgn dec = popTermBacktrackPoint();
-        if (dec != PtAsgn_Undef) {
-            clearPolarity(dec.tr);
-        }
+        popTermBacktrackPoint();
         TSolver::popBacktrackPoint();
     }
     assert(simplex.checkValueConsistency());

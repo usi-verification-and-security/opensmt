@@ -263,11 +263,11 @@ Simplex::Explanation Simplex::assertBoundOnVar(LVRef it, LABoundRef itBound_ref)
         return {{br, 1}, {itBound_ref, 1}};
     }
 
-    model->pushBound(itBound_ref);
-
     // Check if simple SAT can be given
     if (model->boundSatisfied(it, itBound_ref))
         return {};
+
+    model->pushBound(itBound_ref);
 
     // Update the Tableau data if a non-basic variable
     if (tableau.isNonBasic(it)) {
@@ -468,7 +468,14 @@ Delta Simplex::getValuation(LVRef v) const {
         }
     }
     else {
-        val = model->read(v);
+        if (tableau.isBasic(v)) {
+            for (auto const & term : tableau.getRowPoly(v)) {
+                val += term.coeff * model->read(term.var);
+            }
+        }
+        else {
+            val = model->read(v);
+        }
     }
     return val;
 }

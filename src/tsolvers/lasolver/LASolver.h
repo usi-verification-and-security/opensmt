@@ -62,12 +62,11 @@ protected:
     LAVarStore           laVarStore;
     LAVarMapper          laVarMapper;
     Simplex              simplex;
-    vec<DecEl>           int_decisions;
     vec<PtAsgn>          decision_trace;
     vec<int>             dec_limit;
 
-    PtAsgn               popTermBacktrackPoint();
-    PtAsgn               popDecisions();
+    void                 popTermBacktrackPoint();
+    void                 popDecisions();
     void                 pushDecision(PtAsgn);
     int                  backtrackLevel();
 

@@ -81,8 +81,8 @@ public:
 
     opensmt::Real computeDelta() const;
     bool hasModel(LVRef v) const { return model->hasModel(v); }
-    Delta getValuation(LVRef) const; // Understands also variables deleted by gaussian elimination
-    Delta read(LVRef v) const { return model->read(v); }
+    Delta getValuation(LVRef) const;                     // Understands also variables deleted by gaussian elimination
+    Delta read(LVRef v) const { return model->read(v); } // ignores unsafely variables deleted by gaussian elimination
     const LABoundRef readLBoundRef(const LVRef &v) const { return model->readLBoundRef(v); }
     const LABoundRef readUBoundRef(const LVRef &v) const { return model->readUBoundRef(v); }
     const Delta& Lb(LVRef v) const { return model->Lb(v); }
