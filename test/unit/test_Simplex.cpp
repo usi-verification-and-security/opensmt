@@ -19,8 +19,8 @@ TEST(Simplex_test, test_ops_in_Simplex)
     LVRef y_minus_x = vs.getNewVar();
     auto p_y_minus_x = std::unique_ptr<Polynomial>(new Polynomial());
 
-    p_y_minus_x->addTerm(x, 1);
-    p_y_minus_x->addTerm(y, -1);
+    p_y_minus_x->addTerm(x, -1);
+    p_y_minus_x->addTerm(y, 1);
 
     LABoundStore bs(vs);
 
@@ -92,8 +92,8 @@ TEST(Simplex_test, test_ops_in_Simplex)
     ex = s.assertBoundOnVar(y_minus_x, y_minus_x_nostrict_0.lb);
     s.assertBoundOnVar(x, x_nostrict_1.lb);
     s.assertBoundOnVar(y, y_nostrict_1.lb);
-    s.printModelState();
     ex = s.checkSimplex();
+    s.printModelState();
     ASSERT_EQ(ex.size(), 0);
     d = s.computeDelta();
     x_val = s.getValuation(x);
