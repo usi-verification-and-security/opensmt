@@ -441,8 +441,8 @@ LASolver::popDecisions()
 
 void LASolver::popTermBacktrackPoint() {
     simplex.popBacktrackPoint();
-    dec_limit.pop();
     popDecisions();
+    dec_limit.pop();
 }
 
 // Pop the solver one level up
