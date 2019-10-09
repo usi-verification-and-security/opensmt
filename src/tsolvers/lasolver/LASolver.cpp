@@ -425,8 +425,6 @@ void LASolver::pushBacktrackPoint( )
     simplex.pushBacktrackPoint();
     dec_limit.push(decision_trace.size());
 
-    cout << " -> Push backtrack point.  Following is the state of the model after the push\n";
-    simplex.printModelState();
     simplex.invariantHolds();
     // Update the generic deductions state
     TSolver::pushBacktrackPoint();
