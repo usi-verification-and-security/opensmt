@@ -468,14 +468,7 @@ Delta Simplex::getValuation(LVRef v) const {
         }
     }
     else {
-        if (tableau.isBasic(v)) {
-            for (auto const & term : tableau.getRowPoly(v)) {
-                val += term.coeff * model->read(term.var);
-            }
-        }
-        else {
-            val = model->read(v);
-        }
+        val = model->read(v);
     }
     return val;
 }
