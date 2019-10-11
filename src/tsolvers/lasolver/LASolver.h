@@ -64,9 +64,10 @@ protected:
     Simplex              simplex;
     vec<PtAsgn>          decision_trace;
     vec<int>             dec_limit;
+    vec<DecEl>           int_decisions;
 
-    void                 popTermBacktrackPoint();
-    void                 popDecisions();
+    PtAsgn               popTermBacktrackPoint();
+    PtAsgn               popDecisions();
     void                 pushDecision(PtAsgn);
     int                  backtrackLevel();
 
