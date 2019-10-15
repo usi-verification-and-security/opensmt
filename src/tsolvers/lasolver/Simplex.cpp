@@ -21,8 +21,6 @@ Simplex::Explanation Simplex::checkSimplex() {
 
     bool bland_rule = false;
     unsigned repeats = 0;
-    unsigned pivot_counter = 0;
-    unsigned bland_counter = 0;
     // These values are from Yices
     unsigned bthreshold = bland_threshold;
     if (boundStore.nVars() > 10000)
@@ -35,17 +33,15 @@ Simplex::Explanation Simplex::checkSimplex() {
         repeats++;
         LVRef x = LVRef_Undef;
 
-        if (!bland_rule && (repeats > tableau.getNumOfCols()))
+        if (!bland_rule && (repeats > bthreshold))
             bland_rule = true;
 
         if (bland_rule) {
             x = getBasicVarToFixByBland();
-            ++bland_counter;
             ++simplex_stats.num_bland_ops;
         }
         else {
             x = getBasicVarToFixByShortestPoly();
-            ++pivot_counter;
             ++simplex_stats.num_pivot_ops;
         }
 
@@ -517,3 +513,11 @@ opensmt::Real Simplex::computeDelta() const {
     else
         return delta_abst.R();
 }
+
+Simplex::~Simplex()
+{
+#ifdef STATISTICS
+     simplex_stats.printStatistics(cerr);
+#endif // STATISTICS
+}
+

@@ -34,16 +34,14 @@ class LASolverStats: public TSolverStats
         , TSolverStats()
         {}
 
-        void printStatistics(ostream& os)
+        void printStatistics(ostream& os) override
         {
             os << "; -------------------------" << endl;
             os << "; STATISTICS FOR LA SOLVER" << endl;
             os << "; -------------------------" << endl;
             TSolverStats::printStatistics(os);
-            os << "; Number of LA vars.......: " << num_vars << endl;
-            os << "; Pivot operations.........: " << num_pivot_ops << endl;
-            os << "; Bland operations.........: " << num_bland_ops << endl;
-            os << "; LA time.............: " << timer.getTime() << " s\n";
+            os << "; Number of LA vars........: " << num_vars << endl;
+            os << "; LA time..................: " << timer.getTime() << " s\n";
         }
 };
 

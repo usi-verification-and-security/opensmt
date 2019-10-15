@@ -16,6 +16,14 @@ public:
     int num_bland_ops;
     int num_pivot_ops;
     SimplexStats() : num_bland_ops(0), num_pivot_ops(0) {}
+    void printStatistics(ostream& os)
+    {
+        os << "; -------------------------" << endl;
+        os << "; STATISTICS FOR SIMPLEX   " << endl;
+        os << "; -------------------------" << endl;
+        os << "; Pivot operations.........: " << num_pivot_ops << endl;
+        os << "; Bland operations.........: " << num_bland_ops << endl;
+    }
 };
 
 class Simplex {
@@ -58,8 +66,10 @@ public:
 
     Simplex(SMTConfig& c, std::unique_ptr<LRAModel> model, LABoundStore &bs) : model(std::move(model)), c(c), bland_threshold(1000), boundStore(bs) {}
     Simplex(SMTConfig& c, LABoundStore&bs) : model(new LRAModel(bs)), c(c), bland_threshold(1000), boundStore(bs) {}
+    ~Simplex();
 
     void initModel() { model->init(); }
+
     void doGaussianElimination();                           // Performs Gaussian elimination of all redundant terms in the Tableau if applicable
     void clear() { model->clear(); candidates.clear(); tableau.clear(); removed_by_GaussianElimination.clear();}
     Explanation checkSimplex();
