@@ -89,16 +89,30 @@ LASolver::LASolver(SolverDescr dls, SMTConfig & c, LALogic& l, vec<DedElem>& d)
         , TSolver((SolverId)descr_la_solver, (const char*)descr_la_solver, c, d)
         , laVarMapper(l, laVarStore)
         , boundStore(laVarStore)
-        , model(boundStore)
-        , simplex(c, model, boundStore)
+        , simplex(c, boundStore)
 {
+    dec_limit.push(0);
     status = INIT;
+}
+
+
+int LASolver::backtrackLevel() {
+    return dec_limit.size() - 1;
+}
+
+void LASolver::pushDecision(PtAsgn asgn)
+{
+    int_decisions.push({asgn, backtrackLevel()});
+    decision_trace.push(asgn);
 }
 
 void LASolver::clearSolver()
 {
     status = INIT;
     simplex.clear();
+    decision_trace.clear();
+    int_decisions.clear();
+    dec_limit.clear();
     // TODO set information about columns and rows in LAVars
     TSolver::clearSolver();
 
@@ -110,7 +124,6 @@ void LASolver::clearSolver()
 //    ba.clear();
 //    this->bla.clear();
 
-    this->model.clear();
     // TODO: clear statistics
 //    this->tsolver_stats.clear();
     //delta = Delta::ZERO;
@@ -361,7 +374,6 @@ bool LASolver::assertLit( PtAsgn asgn, bool reason )
     LVRef it = getVarForLeq(asgn.tr);
     // Constraint to push was not found in local storage. Most likely it was not read properly before
     assert(it != LVRef_Undef);
-    assert(!model.isUnbounded(it));
 
     const Pterm& t = logic.getPterm(asgn.tr);
     // skip if it was deduced by the solver itself with the same polarity
@@ -378,15 +390,10 @@ bool LASolver::assertLit( PtAsgn asgn, bool reason )
     if (assertBoundOnVar( it, bound_ref))
     {
         assert(getStatus());
-        model.pushBound(bound_ref);
-        assert(!is_reason);
-        if (!is_reason) {
-            setPolarity(asgn.tr, asgn.sgn);
-            model.pushDecision(asgn);
-            getSimpleDeductions(it, bound_ref);
-            tsolver_stats.sat_calls++;
-        }
-
+        setPolarity(asgn.tr, asgn.sgn);
+        pushDecision(asgn);
+        getSimpleDeductions(it, bound_ref);
+        tsolver_stats.sat_calls++;
     } else {
         tsolver_stats.unsat_calls++;
     }
@@ -399,10 +406,9 @@ bool LASolver::assertBoundOnVar(LVRef it, LABoundRef itBound_ref) {
 
     assert(status == SAT);
     assert(it != LVRef_Undef);
-    assert(!model.isUnbounded(it));
     storeExplanation(simplex.assertBoundOnVar(it, itBound_ref));
 
-    if (explanation.size()) {
+    if (explanation.size() > 0) {
         return setStatus(UNSAT);
     }
     return getStatus();
@@ -416,12 +422,30 @@ bool LASolver::assertBoundOnVar(LVRef it, LABoundRef itBound_ref) {
 void LASolver::pushBacktrackPoint( )
 {
     // Check if any updates need to be repeated after backtrack
-    model.pushBacktrackPoint();
-//    printf(" -> Push backtrack point.  Following is the state of the model after the push\n");
-//    model.printModelState();
+    simplex.pushBacktrackPoint();
+    dec_limit.push(decision_trace.size());
 
     // Update the generic deductions state
     TSolver::pushBacktrackPoint();
+}
+
+PtAsgn
+LASolver::popDecisions()
+{
+    PtAsgn popd = PtAsgn_Undef;
+    if (decision_trace.size() - dec_limit.last() == 1) {
+        popd = int_decisions.last().asgn;
+        int_decisions.pop();
+    }
+    decision_trace.shrink(decision_trace.size() - dec_limit.last());
+    return popd;
+}
+
+PtAsgn LASolver::popTermBacktrackPoint() {
+    simplex.popBacktrackPoint();
+    PtAsgn popd = popDecisions();
+    dec_limit.pop();
+    return popd;
 }
 
 // Pop the solver one level up
@@ -434,7 +458,7 @@ void LASolver::popBacktrackPoint( ) {
 //
 void LASolver::popBacktrackPoints(unsigned int count) {
     for ( ; count > 0; --count){
-        PtAsgn dec = model.popTermBacktrackPoint();
+        PtAsgn dec = popTermBacktrackPoint();
         if (dec != PtAsgn_Undef) {
             clearPolarity(dec.tr);
         }
@@ -481,7 +505,7 @@ void LASolver::initSolver()
         if (config.lra_gaussian_elim == 1 && config.do_substitutions())
             simplifySimplex();
 
-        model.initModel();
+        simplex.initModel();
 
         status = SAT;
     }
@@ -577,7 +601,7 @@ void LASolver::deduce(LABoundRef bound_prop) {
 //
 void LASolver::print( ostream & out )
 {
-    model.printModelState();
+    simplex.printModelState();
     throw "Not implemented yet!";
     // print current non-basic variables
 //    out << "Var:" << endl;
@@ -651,7 +675,7 @@ opensmt::Number LASolver::evaluateTerm(PTRef tr)
     PTRef coef;
     PTRef var;
     logic.splitTermToVarAndConst(tr, var, coef);
-    val += logic.getNumConst(coef) * *concrete_model[getVarId(getVarForTerm(var))];
+    val += logic.getNumConst(coef) * concrete_model[getVarId(getVarForTerm(var))];
 
     return val;
 }
@@ -680,12 +704,35 @@ ValPair LASolver::getValue(PTRef tr) {
             val = evaluateTerm(tr);
     }
     else
-        val = *concrete_model[getVarId(getVarForTerm(tr))];
+        val = concrete_model[getVarId(getVarForTerm(tr))];
 
     return ValPair(tr, val.get_str().c_str());
 }
 
 
+void LASolver::computeConcreteModel(LVRef v, const opensmt::Real& delta) {
+    while (concrete_model.size() <= getVarId(v))
+        concrete_model.push_back(0);
+    Delta val = simplex.getValuation(v);
+    concrete_model[getVarId(v)] = val.R() + val.D() * delta;
+}
+
+
+//
+// Detect the appropriate value for symbolic delta and stores the model
+//
+
+void LASolver::computeModel()
+{
+    assert( status == SAT );
+    opensmt::Real delta = simplex.computeDelta();
+
+    for ( unsigned i = 0; i < laVarMapper.numVars(); i++)
+    {
+        LVRef v {i};
+        computeConcreteModel(v, delta);
+    }
+}
 
 
 LASolver::~LASolver( )
