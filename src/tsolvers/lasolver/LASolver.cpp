@@ -675,6 +675,11 @@ opensmt::Number LASolver::evaluateTerm(PTRef tr)
     PTRef coef;
     PTRef var;
     logic.splitTermToVarAndConst(tr, var, coef);
+    if (!hasVar(var)) {
+        // MB: This variable is not known to the LASolver. Most probably it was not part of the query.
+        // We can assign it any value.
+        return 0;
+    }
     val += logic.getNumConst(coef) * concrete_model[getVarId(getVarForTerm(var))];
 
     return val;
