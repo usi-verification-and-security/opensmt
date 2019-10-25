@@ -40,9 +40,10 @@ SymStore::~SymStore() {
 
 SymRef SymStore::newSymb(const char* fname, const vec<SRef>& args, char** msg, bool, bool, bool, bool) {
     // Check if there already is a term called fname with same number of arguments of the same sort
-    bool newsym = !contains(fname);
-    if (newsym == false) {
-        const vec<SymRef>& trs = symbolTable[fname];
+    auto* symrefs = getRefOrNull(fname);
+
+    if (symrefs) {
+        const vec<SymRef>& trs = *symrefs;
         for (int i = 0; i < trs.size(); i++) {
             if (ta[trs[i]].rsort() == args[0] && ta[trs[i]].nargs() == args.size_()-1) {
                 uint32_t j;
@@ -59,7 +60,7 @@ SymRef SymStore::newSymb(const char* fname, const vec<SRef>& args, char** msg, b
             }
         }
     }
-
+    bool newsym = (symrefs == nullptr);
     SymRef tr = ta.alloc(args, false);
     SymId id = symbols.size();
     symbols.push(tr);
