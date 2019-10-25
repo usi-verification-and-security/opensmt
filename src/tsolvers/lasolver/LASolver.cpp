@@ -219,13 +219,12 @@ bool LASolver::hasVar(PTRef expr) {
 
 LVRef LASolver::getLAVar_single(PTRef expr_in) {
 
+    PTId id = logic.getPterm(expr_in).getId();
+
+    if (laVarMapper.hasVar(id))
+        return getVarForTerm(expr_in);
+
     PTRef expr = logic.isNegated(expr_in) ? logic.mkNumNeg(expr_in) : expr_in;
-
-    PTId id_pos = logic.getPterm(expr).getId();
-
-    if (laVarMapper.hasVar(id_pos))
-        return getVarForTerm(expr);
-
     LVRef x = laVarMapper.getNewVar(expr);
     return x;
 }
