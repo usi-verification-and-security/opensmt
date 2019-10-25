@@ -465,7 +465,6 @@ void LASolver::popBacktrackPoints(unsigned int count) {
         TSolver::popBacktrackPoint();
     }
     assert(simplex.checkValueConsistency());
-//    newCandidate();
     assert(simplex.invariantHolds());
     setStatus(SAT);
 }
@@ -563,7 +562,7 @@ void LASolver::getSimpleDeductions(LVRef v, LABoundRef br)
 //    printf("Deducing from bound %s\n", boundStore.printBound(br));
 //    printf("The full bound list for %s:\n%s\n", logic.printTerm(lva[v].getPTRef()), boundStore.printBounds(v));
 
-    LABound& bound = boundStore[br];
+    const LABound& bound = boundStore[br];
     if (bound.getValue().isInf())
         return;
     if (bound.getType() == bound_l) {

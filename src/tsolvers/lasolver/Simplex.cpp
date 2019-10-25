@@ -262,6 +262,7 @@ Simplex::Explanation Simplex::assertBoundOnVar(LVRef it, LABoundRef itBound_ref)
     // Check if simple UNSAT can be given.  The last check checks that this is not actually about asserting equality.
     if (model->boundUnsatisfied(it, itBound_ref))
     {
+        assert(itBound.getType() == bound_u || itBound.getType() == bound_l);
         LABoundRef br = itBound.getType() == bound_u ? model->readLBoundRef(it) : model->readUBoundRef(it);
         return {{br, 1}, {itBound_ref, 1}};
     }
