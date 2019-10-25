@@ -39,8 +39,9 @@ PtStore::PtStore(SymStore& symstore_, SStore& sortstore_)
 // Returns SymRef_Undef if the name is not defined anywhere
 //
 SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args) {
-    if (symstore.contains(s)) {
-        const vec<SymRef>& trefs = symstore.nameToRef(s);
+    auto* values = symstore.getRefOrNull(s);
+    if (values) {
+        const vec<SymRef>& trefs = *values;
         if (symstore[trefs[0]].noScoping()) {
             // No need to look forward, this is the only possible term
             // list
@@ -95,11 +96,7 @@ SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args) {
                     return SymRef_Undef;
             }
         }
-    }
 
-    // We get here if it was not in let branches either
-    if (symstore.contains(s)) {
-        const vec<SymRef>& trefs = symstore.nameToRef(s);
         for (int i = 0; i < trefs.size(); i++) {
             SymRef ctr = trefs[i];
             const Symbol& t = symstore[ctr];
@@ -114,6 +111,7 @@ SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args) {
                     return ctr;
             }
         }
+
     }
     // Not found
     return SymRef_Undef;

@@ -49,6 +49,9 @@ class SymStore {
     const vec<SymRef>& nameToRef(const char* s) const { return symbolTable[s]; }
     vec<SymRef>& nameToRef(const char* s)             { return symbolTable[s]; }
 
+    // Replace with std::optional if C++17 will be required
+    const vec<SymRef>* getRefOrNull(const char* s) const { return symbolTable.getOrNull(s); }
+
     Symbol& operator [] (SymRef sr)                   { return ta[sr]; }
     const Symbol& operator [] (SymRef tr)       const { return ta[tr]; }
     const char* getName(SymRef tr)              const { return idToName[ta[tr].getId()]; }

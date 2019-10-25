@@ -323,6 +323,15 @@ class VecMap {
         return false;
     }
 
+    const vec<D>* getOrNull(const K& k) const {
+        if (size == 0) return nullptr;
+        const vec<Pair>& ps = table[index(k)];
+        for (int i = 0; i < ps.size(); i++)
+            if (equals(ps[i].key, k))
+                return &ps[i].data;
+        return nullptr;
+    }
+
     void getKeys(vec<K>& out) const {
         if (size == 0) return;
         for (int i = 0; i < cap; i++) {
