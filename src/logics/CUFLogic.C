@@ -204,7 +204,7 @@ CUFLogic::mkCUFNeg(PTRef tr, char** msg)
         return tr_n;
     }
     if (isConstant(tr)) {
-        int v = atoi(sym_store.getName(getPterm(tr).symb()));
+        int v = getCUFNUMConst(tr);
         v = -v;
         PTRef nterm = mkCUFConst(v);
         SymRef s = getPterm(nterm).symb();

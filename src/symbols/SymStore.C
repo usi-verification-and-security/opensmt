@@ -38,7 +38,7 @@ SymStore::~SymStore() {
         free(idToName[i]);
 }
 
-SymRef SymStore::newSymb(const char* fname, const vec<SRef>& args, char** msg, bool, bool, bool, bool) {
+SymRef SymStore::newSymb(const char * fname, const vec<SRef> & args) {
     // Check if there already is a term called fname with same number of arguments of the same sort
     auto* symrefs = getRefOrNull(fname);
 

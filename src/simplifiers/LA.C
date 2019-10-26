@@ -82,10 +82,10 @@ void LAExpression::initialize( PTRef e, bool do_canonize )
             x = tmp;
         }
 
-        opensmt::Real new_c(logic.getSymName(x));
+        opensmt::Real new_c = logic.getNumConst(x);
         new_c = new_c * c;
         curr_term .push_back( y );
-        curr_const.push_back( new_c );
+        curr_const.push_back( std::move(new_c) );
     }
     //
     // Otherwise it is a variable or UF or constant
@@ -94,7 +94,7 @@ void LAExpression::initialize( PTRef e, bool do_canonize )
     {
       assert(logic.isVar(t) || logic.isConstant(t) || logic.isUF(t));
       if ( logic.isConstant(t) ) {
-        const opensmt::Real tval(logic.getSymName(t));
+        const opensmt::Real tval = logic.getNumConst(t);
         polynome[ PTRef_Undef ] += tval * c;
       } else {
         if (logic.hasSortNum(t))

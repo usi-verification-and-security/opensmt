@@ -231,13 +231,9 @@ BVLogic::mkBVNeg(PTRef tr, char** msg)
     assert(hasSortBVNUM(tr));
     if (isBVNeg(tr)) return getPterm(tr)[0];
     if (isConstant(tr)) {
-        int v = atoi(sym_store.getName(getPterm(tr).symb()));
+        int v = getBVNUMConst(tr);
         v = -v;
         PTRef nterm = mkBVConst(v);
-      /*  SymRef s = getPterm(nterm).symb();
-        vec<PTRef> args;
-        args.push(nterm);
-        return mkFun(s, args, msg);*/
         return nterm;
     }
     vec<PTRef> arg;

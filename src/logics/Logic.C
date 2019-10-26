@@ -118,12 +118,12 @@ Logic::Logic(SMTConfig& c) :
 
     // The anonymous symbol for the enodes of propositional formulas nested inside UFs (or UPs)
     vec<SRef> params;
-    sym_ANON = sym_store.newSymb(tk_anon, params, &msg);
+    sym_ANON = sym_store.newSymb(tk_anon, params);
 
     params.push(sort_BOOL);
 
     // UF not that is not visible outside the uf solver
-    sym_UF_NOT = sym_store.newSymb(tk_uf_not, params, &msg);
+    sym_UF_NOT = sym_store.newSymb(tk_uf_not, params);
 
 
     if ((sym_NOT = declareFun(tk_not, sort_BOOL, params, &msg, true)) == SymRef_Undef) {
@@ -1114,7 +1114,7 @@ SymRef Logic::declareFun(const char* fname, const SRef rsort, const vec<SRef>& a
         assert(args[i] != SRef_Undef);
         comb_args.push(args[i]);
     }
-    SymRef sr = sym_store.newSymb(fname, comb_args, msg);
+    SymRef sr = sym_store.newSymb(fname, comb_args);
     SymId id = getSym(sr).getId();
     for (unsigned i = interpreted_functions.size(); i <= id; i++)
         interpreted_functions.push(false);
