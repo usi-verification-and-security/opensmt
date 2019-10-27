@@ -55,6 +55,7 @@ Simplex::Explanation Simplex::checkSimplex() {
         if (x == LVRef_Undef) {
             // SAT
             refineBounds();
+            model->saveAssignment();
             return Explanation();
         }
 
@@ -419,7 +420,6 @@ bool Simplex::invariantHolds() const
 {
     bool rval = true;
     for (auto var : tableau.getNonBasicVars()){
-        assert(model->hasModel(var));
         if (isModelOutOfBounds(var)) {
             rval = false;
             printf("Non-basic (column) LRA var %s has value %s <= %s <= %s\n",

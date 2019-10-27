@@ -82,18 +82,15 @@ TEST(Simplex_test, test_ops_in_Simplex)
 
     ex = s.assertBoundOnVar(y_minus_x, y_minus_x_nostrict_1.lb);
     ASSERT_EQ(ex.size(), 0); // not detectable at this point
-    s.printModelState();
     ex = s.checkSimplex();
     ASSERT_EQ(ex.size(), 3);
 
     s.popBacktrackPoint();
-    s.printModelState();
 
     ex = s.assertBoundOnVar(y_minus_x, y_minus_x_nostrict_0.lb);
     s.assertBoundOnVar(x, x_nostrict_1.lb);
     s.assertBoundOnVar(y, y_nostrict_1.lb);
     ex = s.checkSimplex();
-    s.printModelState();
     ASSERT_EQ(ex.size(), 0);
     d = s.computeDelta();
     x_val = s.getValuation(x);

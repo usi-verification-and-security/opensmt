@@ -75,6 +75,13 @@ public:
     Explanation checkSimplex();
     void pushBacktrackPoint() { model->pushBacktrackPoint(); }
     void popBacktrackPoint()  { model->popBacktrackPoint(); }
+    inline void finalizeBacktracking() {
+        model->restoreAssignment();
+        candidates.clear();
+        assert(checkValueConsistency());
+        assert(invariantHolds());
+    }
+
     Explanation assertBoundOnVar(LVRef it, LABoundRef itBound_ref);
     bool isProcessedByTableau  (LVRef var) const;
     bool isModelOutOfBounds    (LVRef v) const;
@@ -90,7 +97,6 @@ public:
     std::unordered_map<LVRef,Polynomial,LVRefHash>::const_iterator getRemovedByGaussianElimination(LVRef v) const { return removed_by_GaussianElimination.find(v); }
 
     opensmt::Real computeDelta() const;
-    bool hasModel(LVRef v) const { return model->hasModel(v); }
     Delta getValuation(LVRef) const;                     // Understands also variables deleted by gaussian elimination
     Delta read(LVRef v) const { return model->read(v); } // ignores unsafely variables deleted by gaussian elimination
     const LABoundRef readLBoundRef(const LVRef &v) const { return model->readLBoundRef(v); }
@@ -98,7 +104,6 @@ public:
     const Delta& Lb(LVRef v) const { return model->Lb(v); }
     const Delta& Ub(LVRef v) const { return model->Ub(v); }
 
-    void printModelState() const { model->printState(); };
 };
 
 

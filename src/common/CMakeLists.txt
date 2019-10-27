@@ -14,6 +14,7 @@ PRIVATE
 "${CMAKE_CURRENT_LIST_DIR}/StringMap.h"
 "${CMAKE_CURRENT_LIST_DIR}/Timer.h"
 "${CMAKE_CURRENT_LIST_DIR}/TreeOps.h"
+"${CMAKE_CURRENT_LIST_DIR}/NatSet.h"
 )
 
 install(FILES 

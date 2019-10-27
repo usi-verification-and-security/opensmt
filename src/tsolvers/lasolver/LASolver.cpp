@@ -463,8 +463,7 @@ void LASolver::popBacktrackPoints(unsigned int count) {
         }
         TSolver::popBacktrackPoint();
     }
-    assert(simplex.checkValueConsistency());
-    assert(simplex.invariantHolds());
+    simplex.finalizeBacktracking();
     setStatus(SAT);
 }
 
@@ -599,7 +598,6 @@ void LASolver::deduce(LABoundRef bound_prop) {
 //
 void LASolver::print( ostream & out )
 {
-    simplex.printModelState();
     throw "Not implemented yet!";
     // print current non-basic variables
 //    out << "Var:" << endl;
