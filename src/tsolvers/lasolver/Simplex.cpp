@@ -447,41 +447,11 @@ bool Simplex::isProcessedByTableau(LVRef var) const {return tableau.isProcessed(
 
 const LABoundRef Simplex::getBound(LVRef v, int idx) const { return boundStore.getBoundByIdx(v, idx); }
 
-void Simplex::doGaussianElimination( )
-{
-    auto eliminated = tableau.doGaussianElimination([this](LVRef v){return this->isUnbounded(v);});
-    for(auto rit = eliminated.rbegin(); rit != eliminated.rend(); ++ rit) {
-        auto entry = *rit;
-        auto poly = entry.second;
-        for(auto const & term : entry.second){
-            auto var = term.var;
-            auto it = removed_by_GaussianElimination.find(var);
-            if( it != removed_by_GaussianElimination.end() && poly.contains(var)) {
-                auto to_substitute = (*it).second;
-                auto coeff = poly.getCoeff(var);
-                poly.merge(to_substitute, coeff);
-            }
-        }
-        removed_by_GaussianElimination.emplace(entry.first, poly);
-    }
-}
-
 Delta Simplex::getValuation(LVRef v) const {
-    Delta val(0);
     if (tableau.isQuasiBasic(v)) {
         (const_cast<Simplex*>(this))->quasiToBasic(v);
     }
-    if (isRemovedByGaussianElimination(v)) {
-        auto it = getRemovedByGaussianElimination(v);
-        auto const & representation = (*it).second;
-
-        for (auto const & term : representation) {
-            val += term.coeff * model->read(term.var);
-        }
-    }
-    else {
-        val = model->read(v);
-    }
+    Delta val = model->read(v);
     return val;
 }
 

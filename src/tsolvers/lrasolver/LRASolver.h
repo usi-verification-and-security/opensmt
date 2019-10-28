@@ -42,8 +42,6 @@ private:
     LRALogic&            logic;
     LRASolverStats lasolverstats;
 
-protected:
-    void simplifySimplex() override { simplex.doGaussianElimination(); };
 public:
 
     LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d);

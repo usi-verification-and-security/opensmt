@@ -62,7 +62,6 @@ public:
 protected:
 
     void notifyVar(LVRef v) override;
-    void simplifySimplex() override { };                    // So far nothing here
     void initSolver( );                                     // Initializes the solver
 
     TRes checkIntegersAndSplit();

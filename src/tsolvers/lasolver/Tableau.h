@@ -107,10 +107,6 @@ public:
     void quasiToBasic(LVRef v);
     void basicToQuasi(LVRef v);
 
-    // returns map of eliminated variables to their corresponding polynomials
-    // NOTE: Variables eliminate sooner can contain variables eliminated later!
-    std::vector<std::pair<LVRef, Polynomial>> doGaussianElimination(std::function<bool(LVRef)>);
-
     // debug
     void print() const;
     bool checkConsistency() const;

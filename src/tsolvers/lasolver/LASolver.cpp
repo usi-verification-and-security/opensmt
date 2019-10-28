@@ -501,9 +501,6 @@ void LASolver::initSolver()
             setBound(leq_tr);
         }
         boundStore.buildBounds(); // Bounds are needed for gaussian elimination
-        // Gaussian Elimination should not be performed in the Incremental mode!
-        if (config.lra_gaussian_elim == 1 && config.do_substitutions())
-            simplifySimplex();
 
         simplex.initModel();
 

@@ -128,12 +128,6 @@ protected:
 
     std::unique_ptr<Polynomial> expressionToLVarPoly(PTRef term);
 
-    virtual void simplifySimplex() = 0;
-
-//protected:
-    // vector in which witnesses for unsatisfiability are stored
-
-
     unsigned nVars() const;// { return lva.getNumVars(); }
 
     opensmt::Number getNum(PTRef);

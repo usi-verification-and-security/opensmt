@@ -589,7 +589,6 @@ SMTConfig::initializeConfig( )
   lra_disable                   = 0;
   lra_theory_propagation        = 1;
   lra_poly_deduct_size          = 0;
-  lra_gaussian_elim             = 1;
   lra_integer_solver            = 0;
   lra_check_on_assert           = 0;
   // Proof parameters

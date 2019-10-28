@@ -48,9 +48,6 @@ TRes LIASolver::checkIntegersAndSplit() {
     for (int i = 0; i < int_vars.size(); i++) {
 
         LVRef x = int_vars[i];
-        if (simplex.isRemovedByGaussianElimination(x)) {
-            computeConcreteModel(x, 1);
-        }
         if (!isModelInteger(x)) {
             nonint_models = true;
             //Prepare the variable to store a splitting value

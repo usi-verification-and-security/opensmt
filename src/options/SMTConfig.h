@@ -881,7 +881,6 @@ public:
   int          lra_theory_propagation;       // Enable theory propagation
   int          lra_poly_deduct_size;         // Used to define the size of polynomial to be used for deduction; 0 - no deduction for polynomials
   int          lra_trade_off;                // Trade-off value for DL preprocessing
-  int          lra_gaussian_elim;            // Used to switch on/off Gaussian elimination in LRA
   int          lra_integer_solver;           // Flag to require integer solution for LA problem
   int          lra_check_on_assert;          // Probability (0 to 100) to run check when assert is called
 

@@ -52,7 +52,6 @@ class Simplex {
 
     const LABoundRef getBound(LVRef v, int idx) const ;//{ return boundStore.getBoundByIdx(v, idx); }
     bool isUnbounded (LVRef v) const;
-    std::unordered_map<LVRef,Polynomial, LVRefHash> removed_by_GaussianElimination;       // Stack of variables removed during Gaussian elimination
 
     bool valueConsistent(LVRef v) const; // Debug: Checks that the value of v in the model is consistent with the evaluated value of the polynomial of v in the same model.
     bool checkTableauConsistency() const;
@@ -94,8 +93,6 @@ public:
     Explanation getConflictingBounds(LVRef x);
     bool checkValueConsistency() const;
     bool invariantHolds() const;
-    bool isRemovedByGaussianElimination(LVRef v) const { return removed_by_GaussianElimination.find(v) != removed_by_GaussianElimination.end(); }
-    std::unordered_map<LVRef,Polynomial,LVRefHash>::const_iterator getRemovedByGaussianElimination(LVRef v) const { return removed_by_GaussianElimination.find(v); }
 
     opensmt::Real computeDelta() const;
     Delta getValuation(LVRef) const;                     // Understands also variables deleted by gaussian elimination
