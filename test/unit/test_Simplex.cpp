@@ -47,7 +47,7 @@ TEST(Simplex_test, test_ops_in_Simplex)
 
     s.newNonbasicVar(x);
     s.newNonbasicVar(y);
-    s.newBasicVar(y_minus_x, std::move(p_y_minus_x));
+    s.newRow(y_minus_x, std::move(p_y_minus_x));
 
     s.initModel();
 

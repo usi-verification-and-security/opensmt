@@ -15,7 +15,8 @@ TRes LIASolver::check( bool complete) {
 
 bool LIASolver::isModelInteger(LVRef v) const
 {
-    return !( simplex.read(v).hasDelta() || !simplex.read(v).R().isInteger() );
+    Delta val = simplex.getValuation(v);
+    return !( val.hasDelta() || !val.R().isInteger() );
 }
 
 opensmt::Integer2 LIASolver::getInt(PTRef r) {
@@ -57,15 +58,15 @@ TRes LIASolver::checkIntegersAndSplit() {
 
             // if val of int variable is not int, set it to integer by getting floor (c) and ceiling (c+1)
             // if real part of int var is int, then delta must be non-zero
-
-            if (!simplex.read(x).R().isInteger()) {
-                c = simplex.read(x).R().floor();
+            Delta x_val = simplex.getValuation(x);
+            if (!x_val.R().isInteger()) {
+                c = x_val.R().floor();
             } else { //but if the value from LRA solver returned is integer(which is here subset of real), then we consider delta part
-                assert(simplex.read(x).D() != 0);
-                if (simplex.read(x).D() < 0) {
-                    c = simplex.read(x).R() - 1;
+                assert(x_val.D() != 0);
+                if (x_val.D() < 0) {
+                    c = x_val.R() - 1;
                 } else {
-                    c = simplex.read(x).R();
+                    c = x_val.R();
                 }
             }
 

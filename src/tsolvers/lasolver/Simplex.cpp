@@ -268,6 +268,8 @@ Simplex::Explanation Simplex::assertBoundOnVar(LVRef it, LABoundRef itBound_ref)
         return {{br, 1}, {itBound_ref, 1}};
     }
 
+    // Here we count the bound as activated
+    boundActivated(it);
     // Check if simple SAT can be given
     if (model->boundSatisfied(it, itBound_ref))
         return {};
@@ -282,9 +284,6 @@ Simplex::Explanation Simplex::assertBoundOnVar(LVRef it, LABoundRef itBound_ref)
     }
     else // basic variable got a new bound, it becomes a possible candidate
     {
-        if(!tableau.isActive(it)) {
-            throw "Not implemented yet!";
-        }
         assert(tableau.isBasic(it));
         newCandidate(it);
     }
@@ -312,7 +311,12 @@ void Simplex::pivot(const LVRef bv, const LVRef nv){
     // after pivot, bv is not longer a candidate
     eraseCandidate(bv);
     // and nv can be a candidate
-    newCandidate(nv);
+    if (getNumOfBoundsActive(nv) == 0) {
+        tableau.basicToQuasi(nv);
+    }
+    else {
+        newCandidate(nv);
+    }
 //    tableau.print();
     assert(checkTableauConsistency());
     assert(checkValueConsistency());
@@ -323,8 +327,8 @@ void Simplex::changeValueBy(LVRef var, const Delta & diff) {
     model->write(var, model->read(var) + diff);
     // update all (active) rows where var is present
     for ( LVRef row : tableau.getColumn(var)){
-        assert(tableau.isBasic(row));
-        if (tableau.isActive(row)) {
+        assert(!tableau.isNonBasic(row));
+        if (tableau.isBasic(row)) { // skip quasi-basic variables
             model->write(row, model->read(row) + (tableau.getCoeff(row, var) * diff));
             newCandidate(row);
         }
@@ -395,7 +399,8 @@ bool Simplex::checkValueConsistency() const {
     for(unsigned i = 0; i < rows.size(); ++i) {
         if(!rows[i]) {continue;}
         LVRef var {i};
-        if(tableau.isActive(var)){
+        assert(!tableau.isNonBasic(var));
+        if(tableau.isBasic(var)){
             res &= valueConsistent(var);
         }
     }
@@ -463,6 +468,9 @@ void Simplex::doGaussianElimination( )
 
 Delta Simplex::getValuation(LVRef v) const {
     Delta val(0);
+    if (tableau.isQuasiBasic(v)) {
+        (const_cast<Simplex*>(this))->quasiToBasic(v);
+    }
     if (isRemovedByGaussianElimination(v)) {
         auto it = getRemovedByGaussianElimination(v);
         auto const & representation = (*it).second;
@@ -520,6 +528,22 @@ opensmt::Real Simplex::computeDelta() const {
         return 1;
     else
         return delta_abst.R();
+}
+
+void Simplex::quasiToBasic(LVRef it) {
+    tableau.quasiToBasic(it);
+    // Recompute the value of the row variable
+    // Literals are asserted in groups, so the current assignment might already be different then the last consistent one
+    // Fix the last consistent value for this var, then fix the current value of the var
+    Delta val; // initialized to 0
+    Delta oldVal;
+    for (auto const & term : tableau.getRowPoly(it)) {
+        val += term.coeff * model->read(term.var);
+        oldVal += term.coeff * model->readBackupValue(term.var);
+    }
+
+    model->writeBackupValue(it, std::move(oldVal));
+    model->write(it, std::move(val));
 }
 
 Simplex::~Simplex()

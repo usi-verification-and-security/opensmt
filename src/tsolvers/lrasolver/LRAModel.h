@@ -44,7 +44,13 @@ public:
     inline int   nVars() { return n_vars_with_model; }
 
     void         write(const LVRef &v, Delta);
-    inline const Delta& read (const LVRef &v) const { return current_assignment[getVarId(v)];; }
+    inline const Delta& read (const LVRef &v) const { return current_assignment[getVarId(v)]; }
+private:
+    // needed from Simplex to make all work properly with backtracking and quasi-basic variables
+    friend class Simplex;
+    void         writeBackupValue(LVRef v, Delta val) { last_consistent_assignment[getVarId(v)] = std::move(val); }
+    inline const Delta& readBackupValue (LVRef v) const { return last_consistent_assignment[getVarId(v)]; }
+public:
 
     void pushBound(const LABoundRef br);
     const LABound& readLBound(const LVRef &v) const;

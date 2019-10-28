@@ -70,8 +70,7 @@ public:
 
     void initModel() { model->init(); }
 
-    void doGaussianElimination();                           // Performs Gaussian elimination of all redundant terms in the Tableau if applicable
-    void clear() { model->clear(); candidates.clear(); tableau.clear(); removed_by_GaussianElimination.clear();}
+    void clear() { model->clear(); candidates.clear(); tableau.clear(); boundsActivated.clear(); }
     Explanation checkSimplex();
     void pushBacktrackPoint() { model->pushBacktrackPoint(); }
     void popBacktrackPoint()  { model->popBacktrackPoint(); }
@@ -82,14 +81,16 @@ public:
         assert(invariantHolds());
     }
 
+    void quasiToBasic(LVRef it);
+
     Explanation assertBoundOnVar(LVRef it, LABoundRef itBound_ref);
     bool isProcessedByTableau  (LVRef var) const;
     bool isModelOutOfBounds    (LVRef v) const;
     bool isModelOutOfUpperBound(LVRef v) const;
     bool isModelOutOfLowerBound(LVRef v) const;
-    void newNonbasicVar(LVRef v) { tableau.newNonbasicVar(v); }
-    void nonbasicVar(LVRef v)    { tableau.nonbasicVar(v); }
-    void newBasicVar(LVRef x, std::unique_ptr<Polynomial> poly) { tableau.newBasicVar(x, std::move(poly)); }
+    void newNonbasicVar(LVRef v) { newVar(v); tableau.newNonbasicVar(v); }
+    void nonbasicVar(LVRef v)    { newVar(v); tableau.nonbasicVar(v); }
+    void newRow(LVRef x, std::unique_ptr<Polynomial> poly) { newVar(x); tableau.newRow(x, std::move(poly)); }
     Explanation getConflictingBounds(LVRef x);
     bool checkValueConsistency() const;
     bool invariantHolds() const;
@@ -98,12 +99,68 @@ public:
 
     opensmt::Real computeDelta() const;
     Delta getValuation(LVRef) const;                     // Understands also variables deleted by gaussian elimination
-    Delta read(LVRef v) const { return model->read(v); } // ignores unsafely variables deleted by gaussian elimination
+//    Delta read(LVRef v) const { assert(!tableau.isQuasiBasic(v)); return model->read(v); } // ignores unsafely variables deleted by gaussian elimination
     const LABoundRef readLBoundRef(const LVRef &v) const { return model->readLBoundRef(v); }
     const LABoundRef readUBoundRef(const LVRef &v) const { return model->readUBoundRef(v); }
     const Delta& Lb(LVRef v) const { return model->Lb(v); }
     const Delta& Ub(LVRef v) const { return model->Ub(v); }
 
+    // Keeping track of activated bounds
+private:
+    std::vector<unsigned int> boundsActivated;
+    unsigned int getNumOfBoundsActive(LVRef var) const {
+        assert(getVarId(var) < boundsActivated.size());
+        return boundsActivated[getVarId(var)];
+    }
+    void newVar(LVRef v) {
+        while (getVarId(v) >= boundsActivated.size()) {
+            boundsActivated.push_back(0);
+        }
+    }
+public:
+    void boundActivated(LVRef v) {
+        assert(!tableau.isQuasiBasic(v) || boundsActivated[getVarId(v)] == 0);
+        if(tableau.isQuasiBasic(v)) {
+            quasiToBasic(v);
+        }
+        ++boundsActivated[getVarId(v)];
+
+    }
+    void boundDeactivated(LVRef v) {
+        --boundsActivated[getVarId(v)];
+        if (getNumOfBoundsActive(v) == 0 && tableau.isBasic(v)) {
+            tableau.basicToQuasi(v);
+        }
+    }
+
+    lbool getPolaritySuggestion(LVRef var, LABoundRef pos, LABoundRef neg) const {
+        if (tableau.isQuasiBasic(var)) {
+            (const_cast<Simplex*>(this))->quasiToBasic(var);
+        }
+        auto const& val = model->read(var);
+        bool positive = false;
+        auto const& positive_bound = this->boundStore[pos];
+        if ((positive_bound.getType() == bound_l && positive_bound.getValue() <= val)
+            || (positive_bound.getType() == bound_u && positive_bound.getValue() >= val)) {
+            // The current value of the variable is consistent with the positive bound
+            positive = true;
+        }
+        bool negative = false;
+        auto const& negative_bound = this->boundStore[neg];
+        if ((negative_bound.getType() == bound_l && negative_bound.getValue() <= val)
+            || (negative_bound.getType() == bound_u && negative_bound.getValue() >= val)) {
+            // The current value of the variable is consistent with the negative bound
+            negative = true;
+        }
+        // The value cannot be consistent with bound positive and negative bound at the same time
+        assert(!positive || !negative);
+        // It can happen that neither bound is consistent with the current assignment. Consider the current value
+        // of variable "x" as <0,-1/2> with term "x >= 0". The positive bound is lower with value <0,0> and the negative
+        // bound is upper with value <0, -1>. Then both "positive" and "negative" will be false
+        if (positive) { return l_True; }
+        if (negative) { return l_False; }
+        return l_Undef;
+    }
 };
 
 

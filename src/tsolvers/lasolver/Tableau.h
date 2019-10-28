@@ -86,7 +86,7 @@ protected:
 public:
     void newNonbasicVar(LVRef v);
     void nonbasicVar(LVRef v);
-    void newBasicVar(LVRef v, std::unique_ptr<Polynomial> poly);
+    void newRow(LVRef v, std::unique_ptr<Polynomial> poly);
     std::size_t getNumOfCols() const;
     std::size_t getPolySize(LVRef basicVar) const;
     const opensmt::Real & getCoeff(LVRef basicVar, LVRef nonBasicVar) const;
@@ -98,11 +98,14 @@ public:
 
     void clear();
     void pivot(LVRef bv, LVRef nv);
-    bool isActive(LVRef basicVar) const;
     bool isBasic(LVRef v) const;
     bool isNonBasic(LVRef v) const;
+    bool isQuasiBasic(LVRef v) const;
 
     bool isProcessed(LVRef v) const;
+
+    void quasiToBasic(LVRef v);
+    void basicToQuasi(LVRef v);
 
     // returns map of eliminated variables to their corresponding polynomials
     // NOTE: Variables eliminate sooner can contain variables eliminated later!
@@ -118,6 +121,7 @@ private:
 
     vars_t basic_vars;
     vars_t nonbasic_vars;
+    vars_t quasi_base_vars;
 
     void addRow(LVRef v, std::unique_ptr<Polynomial> p);
     std::unique_ptr<Polynomial> removeRow(LVRef v);
@@ -126,6 +130,7 @@ private:
     void addRowToColumn(LVRef row, LVRef col) { assert(cols[col.x]); cols[col.x]->addRow(row); }
     void removeRowFromColumn(LVRef row, LVRef col) { assert(cols[col.x]); cols[col.x]->removeRow(row); }
     void clearColumn(LVRef col) { assert(cols[col.x]); cols[col.x]->clear();}
+    void normalizeRow(LVRef row);
 };
 
 

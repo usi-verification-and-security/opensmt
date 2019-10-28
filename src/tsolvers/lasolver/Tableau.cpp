@@ -36,20 +36,16 @@ void Tableau::newNonbasicVar(LVRef v) {
     nonbasic_vars.insert(v);
 }
 
-void Tableau::newBasicVar(LVRef v, std::unique_ptr<Polynomial> poly) {
-    assert(!contains(basic_vars, v));
+void Tableau::newRow(LVRef v, std::unique_ptr<Polynomial> poly) {
+    assert(!isProcessed(v));
     while(cols.size() <= v.x) {
         cols.emplace_back();
     }
     while(rows.size() <= v.x) {
         rows.emplace_back();
     }
-    for(auto const & term : *poly) {
-        assert(cols[term.var.x]);
-        addRowToColumn(v, term.var);
-    }
     addRow(v, std::move(poly));
-    basic_vars.insert(v);
+    quasi_base_vars.insert(v);
 
 }
 
@@ -116,7 +112,7 @@ void Tableau::moveColFromTo(LVRef from, LVRef to) {
 }
 
 bool Tableau::isProcessed(LVRef v) const {
-    return contains(basic_vars, v) || contains(nonbasic_vars, v);
+    return contains(basic_vars, v) || contains(nonbasic_vars, v) || contains(quasi_base_vars, v);
 }
 
 void Tableau::pivot(LVRef bv, LVRef nv) {
@@ -159,7 +155,7 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
     std::vector<Polynomial::Term> storage;
     // for all (active) rows containing nv, substitute
     for (auto rowVar : getColumn(bv)) {
-        if(rowVar == nv || !isActive(rowVar)) {
+        if(rowVar == nv || isQuasiBasic(rowVar)) {
             continue;
         }
         // update the polynomials
@@ -193,12 +189,12 @@ void Tableau::clear() {
     this->cols.clear();
     this->basic_vars.clear();
     this->nonbasic_vars.clear();
+    this->quasi_base_vars.clear();
 }
-
-bool Tableau::isActive(LVRef basicVar) const { return true;}
 
 bool Tableau::isBasic(LVRef v) const {return contains(basic_vars, v);}
 bool Tableau::isNonBasic(LVRef v) const {return contains(nonbasic_vars, v);}
+bool Tableau::isQuasiBasic(LVRef v) const {return contains(quasi_base_vars, v);}
 
 void Tableau::print() const {
     std::cout << "Basic vars: ";
@@ -258,10 +254,10 @@ bool Tableau::checkConsistency() const {
 
     for(unsigned i = 0; i < rows.size(); ++i) {
         LVRef var {i};
-        if(!isActive(var)) {
+        if(isQuasiBasic(var)) {
             continue;
         }
-        if (!rows[i]) { continue; }
+        if (!rows[i]) { assert(isNonBasic(var)); continue; }
         res &= contains(basic_vars, var);
         assert(res);
         for (auto const & term : *rows[i]) {
@@ -351,4 +347,55 @@ Tableau::doGaussianElimination(std::function<bool(LVRef)> shouldEliminate) {
     }
     assert(checkConsistency());
     return removed;
+}
+
+// Makes sures the representing polynomial of this row contains only nonbasic variables
+void Tableau::normalizeRow(LVRef v) {
+    assert(isQuasiBasic(v)); // Do not call this for non quasi rows
+    Polynomial & row = getRowPoly(v);
+    std::vector<Polynomial::Term> toEliminate;
+    for (auto & term : row) {
+        if (isQuasiBasic(term.var)) {
+            normalizeRow(term.var);
+            toEliminate.push_back(term);
+        }
+        if (isBasic(term.var)) {
+            toEliminate.push_back(term);
+        }
+    }
+    if (!toEliminate.empty()) {
+        Polynomial p;
+        for (auto & term : toEliminate) {
+            p.merge(getRowPoly(term.var), term.coeff, [](LVRef) {}, [](LVRef) {});
+            p.addTerm(term.var, -term.coeff);
+        }
+        row.merge(p, 1, [](LVRef) {}, [](LVRef) {});
+    }
+}
+
+// Eliminates basic variables from representation of this row.
+void Tableau::quasiToBasic(LVRef v) {
+    assert(isQuasiBasic(v));
+    normalizeRow(v);
+    for (auto & term : getRowPoly(v)) {
+        addRowToColumn(v, term.var);
+    }
+    basic_vars.insert(v);
+    quasi_base_vars.erase(v);
+    assert(isBasic(v));
+    assert(checkConsistency());
+}
+
+void Tableau::basicToQuasi(LVRef v) {
+    assert(isBasic(v));
+    basic_vars.erase(v);
+    quasi_base_vars.insert(v);
+    assert(isQuasiBasic(v));
+
+    Polynomial & row = getRowPoly(v);
+    for (auto & term : row) {
+        assert(isNonBasic(term.var));
+        removeRowFromColumn(v, term.var);
+    }
+    assert(checkConsistency());
 }

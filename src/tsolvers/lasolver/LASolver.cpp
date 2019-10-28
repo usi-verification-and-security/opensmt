@@ -286,7 +286,7 @@ LVRef LASolver::exprToLVar(PTRef expr) {
     else {
         // Cases (3), (4a) and (4b)
         x = getLAVar_single(expr);
-        simplex.newBasicVar(x, expressionToLVarPoly(expr));
+        simplex.newRow(x, expressionToLVarPoly(expr));
     }
     assert(x != LVRef_Undef);
     return x;
@@ -460,7 +460,10 @@ void LASolver::popBacktrackPoints(unsigned int count) {
         PtAsgn dec = popTermBacktrackPoint();
         if (dec != PtAsgn_Undef) {
             clearPolarity(dec.tr);
+            LVRef it = getVarForLeq(dec.tr);
+            simplex.boundDeactivated(it);
         }
+
         TSolver::popBacktrackPoint();
     }
     simplex.finalizeBacktracking();
