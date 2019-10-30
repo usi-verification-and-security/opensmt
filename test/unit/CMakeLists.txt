@@ -3,6 +3,7 @@ add_executable(LRATest)
 target_sources(LRATest 
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Rationals.cpp"
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Delta.cpp"
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Matrix.cpp"
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Polynomial.cpp"
     )
 

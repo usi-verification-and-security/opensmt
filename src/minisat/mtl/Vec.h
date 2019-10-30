@@ -44,7 +44,7 @@ class vec {
     // Don't allow copying (error prone):
     vec<T>&  operator = (vec<T>& other) { assert(0); return *this; }
              vec        (vec<T>& other) { assert(0); }
-             
+
     // Helpers for calculating next capacity:
     static inline int  imax   (int x, int y) { int mask = (y-x) >> (sizeof(int)*8-1); return (x&mask) + (y&(~mask)); }
     //static inline void nextCap(int& cap){ cap += ((cap >> 1) + 2) & ~1; }
@@ -68,6 +68,7 @@ public:
     uint32_t size_    (void) const     { assert(sz >= 0); return (uint32_t) sz; }
     void     shrink   (int nelems)     { assert(nelems <= sz); for (int i = 0; i < nelems; i++) sz--, data[sz].~T(); }
     void     shrink_  (int nelems)     { assert(nelems <= sz); sz -= nelems; }
+    void     resize   (int new_sz)     { assert(new_sz <= sz); shrink(sz - new_sz); }
     int      capacity (void) const     { return cap; }
     void     capacity (int min_cap);
     void     growTo   (int size);
@@ -134,6 +135,7 @@ public:
     void     capacity (int min_cap);
     void     growTo   (int size);
     void     growTo   (int size, const vec<T>& pad);
+    void     resize   (int size)       { if (size > sz) { growTo(size); } if (size < sz) { shrink(sz-size); }}
     void     clear    (bool dealloc = false);
     void     reset    ();
 
