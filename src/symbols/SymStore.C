@@ -70,9 +70,12 @@ SymRef SymStore::newSymb(const char * fname, const vec<SRef> & args) {
     ta[tr].id = id;                     // Tell the term its id, used in error reporting, and checking whether two terms could be equal in future?
     if (newsym) {
         vec<SymRef> trs;
+        trs.push(tr);
         symbolTable.insert(tmp_name, trs);
     }
-    symbolTable[tmp_name].push(tr);           // Map the name to term reference (why not id?), used in parsing
+    else {
+        symbolTable[tmp_name].push(tr);           // Map the name to term reference (why not id?), used in parsing
+    }
     return tr;
 }
 
