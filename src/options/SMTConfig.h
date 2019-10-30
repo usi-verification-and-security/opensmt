@@ -80,12 +80,12 @@ class ASTNode {
     char*               val;
     static const char*  typestr[];
   public:
-    std::list< ASTNode* >*children;
+    std::vector< ASTNode* >*children;
     ASTNode(ASTType t, smt2token tok) : type(t), tok(tok), val(NULL), children(NULL) {}
     ASTNode(ASTType t, char* v) : type(t), tok({t_none}), val(v), children(NULL) {}
     ~ASTNode() {
         if (children) {
-            for (std::list<ASTNode*>::const_iterator ci = children->begin(); ci != children->end(); ci++) {
+            for (auto ci = children->begin(); ci != children->end(); ci++) {
                 delete *ci;
             };
             delete children;

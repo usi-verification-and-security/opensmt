@@ -85,7 +85,7 @@ class Interpret {
     bool                        declareConst(ASTNode& n); //(const char* fname, const SRef ret_sort);
     bool                        defineFun(const ASTNode& n);
     bool                        checkSat();
-    void                        getValue(const list<ASTNode*>* term);
+    void                        getValue(const std::vector<ASTNode*>* term);
     bool                        push();
     bool                        pop();
     PTRef                       parseTerm(const ASTNode& term, vec<LetFrame>& let_branch);

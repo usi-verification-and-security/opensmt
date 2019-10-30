@@ -31,7 +31,7 @@ void ASTNode::print(std::ostream& o, int indent) {
             printf(" ");
         o << "<type: " << typeToStr() << ", value: " << (val != NULL ?  val : "NULL") << ">" << std::endl;
         if (children == NULL) return;
-        for (std::list<ASTNode*>::iterator i = children->begin(); i != children->end(); i++)
+        for (auto i = children->begin(); i != children->end(); i++)
             (*i)->print(o, indent+1);
 }
 
@@ -87,7 +87,7 @@ ConfValue::ConfValue(const ASTNode& s_expr_n) {
     if (s_expr_n.getType() == SEXPRL_T) {
         type = O_LIST;
         configs = new list<ConfValue*>;
-        for (list<ASTNode*>::iterator i = s_expr_n.children->begin(); i != s_expr_n.children->end(); i++)
+        for (auto i = s_expr_n.children->begin(); i != s_expr_n.children->end(); i++)
             configs->push_back(new ConfValue(**i));
     }
     else if (s_expr_n.getType() == SYM_T) {

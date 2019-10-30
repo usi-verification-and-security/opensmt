@@ -560,7 +560,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
 
     else if ( t == LQID_T ) {
         // Multi-argument term
-        list<ASTNode*>::iterator node_iter = term.children->begin();
+        auto node_iter = term.children->begin();
         vec<PTRef> args;
         const char* name = (**node_iter).getValue(); node_iter++;
         // Parse the arguments
@@ -609,8 +609,8 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
     }
 
     else if (t == LET_T) {
-        std::list<ASTNode*>::iterator ch = term.children->begin();
-        std::list<ASTNode*>::iterator vbl = (**ch).children->begin();
+        auto ch = term.children->begin();
+        auto vbl = (**ch).children->begin();
         let_branch.push(); // The next scope, where my vars will be defined
         vec<PTRef> tmp_args;
         vec<char*> names;
@@ -650,7 +650,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
 
     else if (t == BANG_T) {
         assert(term.children->size() == 2);
-        std::list<ASTNode*>::iterator ch = term.children->begin();
+        auto ch = term.children->begin();
         ASTNode& named_term = **ch;
         ASTNode& attr_l = **(++ ch);
         assert(attr_l.getType() == GATTRL_T);
@@ -773,10 +773,10 @@ bool Interpret::getAssignment() {
     return true;
 }
 
-void Interpret::getValue(const list<ASTNode*>* terms)
+void Interpret::getValue(const std::vector<ASTNode*>* terms)
 {
     vec<ValPair> values;
-    for (list<ASTNode*>::const_iterator term_it = terms->begin(); term_it != terms->end(); ++term_it) {
+    for (auto term_it = terms->begin(); term_it != terms->end(); ++term_it) {
         const ASTNode& term = **term_it;
         vec<LetFrame> tmp;
         PTRef tr = parseTerm(term, tmp);
@@ -817,7 +817,7 @@ void Interpret::writeSplits_smtlib2(const char* filename)
 
 bool Interpret::declareFun(ASTNode& n) // (const char* fname, const vec<SRef>& args)
 {
-    list<ASTNode*>::iterator it = n.children->begin();
+    auto it = n.children->begin();
     ASTNode& name_node = **(it++);
     ASTNode& args_node = **(it++);
     ASTNode& ret_node  = **(it++);
@@ -838,7 +838,7 @@ bool Interpret::declareFun(ASTNode& n) // (const char* fname, const vec<SRef>& a
         free(name);
         return false;
     }
-    for (list<ASTNode*>::iterator it2 = args_node.children->begin(); it2 != args_node.children->end(); it2++) {
+    for (auto it2 = args_node.children->begin(); it2 != args_node.children->end(); it2++) {
         char* name = buildSortName(**it2);
         if (logic->containsSort(name)) {
             args.push(logic->getSortRef(name));
@@ -868,7 +868,7 @@ bool Interpret::declareFun(ASTNode& n) // (const char* fname, const vec<SRef>& a
 
 bool Interpret::declareConst(ASTNode& n) //(const char* fname, const SRef ret_sort)
 {
-    list<ASTNode*>::iterator it = n.children->begin();
+    auto it = n.children->begin();
     ASTNode& name_node = **(it++);
     ASTNode& args_node = **(it++);
     ASTNode& ret_node = **(it++);
@@ -895,7 +895,7 @@ bool Interpret::declareConst(ASTNode& n) //(const char* fname, const SRef ret_so
 
 bool Interpret::defineFun(const ASTNode& n)
 {
-    list<ASTNode*>::iterator it = n.children->begin();
+    auto it = n.children->begin();
     ASTNode& name_node = **(it++);
     ASTNode& args_node = **(it++);
     ASTNode& ret_node  = **(it++);
@@ -907,10 +907,10 @@ bool Interpret::defineFun(const ASTNode& n)
     // Get the argument sorts
     vec<SRef> arg_sorts;
     vec<PTRef> arg_trs;
-    for (list<ASTNode*>::iterator it2 = args_node.children->begin(); it2 != args_node.children->end(); it2++) {
+    for (auto it2 = args_node.children->begin(); it2 != args_node.children->end(); it2++) {
         string varName = (**it2).getValue();
-        list<ASTNode*>::iterator varC = (**it2).children->begin();
-        list<ASTNode*>::iterator varCC = (**varC).children->begin();
+        auto varC = (**it2).children->begin();
+        auto varCC = (**varC).children->begin();
         string sortName = (**varCC).getValue();
 
         if (logic->containsSort(sortName.c_str())) {
@@ -1036,7 +1036,7 @@ void Interpret::notify_success() {
 }
 
 void Interpret::execute(const ASTNode* r) {
-    list<ASTNode*>::iterator i = r->children->begin();
+    auto i = r->children->begin();
     for (; i != r->children->end() && !f_exit; i++) {
         interp(**i);
     }
@@ -1058,7 +1058,6 @@ int Interpret::interpFile(char *content){
     int rval = smt2newparse(&context);
 
     if (rval != 0) return rval;
-
     const ASTNode* r = context.getRoot();
     execute(r);
     return rval;
@@ -1213,7 +1212,7 @@ int Interpret::interpInteractive(FILE*) {
 // Code can possibly be reused when define-sort is implemented
 char* Interpret::buildSortName(ASTNode& sn)
 {
-    list<ASTNode*>::iterator it = sn.children->begin();
+    auto it = sn.children->begin();
     char* canon_name;
     int written = asprintf(&canon_name, "%s", (**it).getValue());
     assert(written >= 0); (void)written;

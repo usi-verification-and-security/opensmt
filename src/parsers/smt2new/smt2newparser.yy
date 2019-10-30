@@ -67,7 +67,7 @@ void smt2newerror( YYLTYPE* locp, Smt2newContext* context, const char * s )
   char  *                      str;
   std::vector< std::string > * str_list;
   ASTNode *                    snode;
-  std::list< ASTNode * > *     snode_list;
+  std::vector< ASTNode * > *   snode_list;
   smt2token                    tok;
 }
 
@@ -94,7 +94,7 @@ script: command_list { ASTNode *n = new ASTNode(CMDL_T, strdup("main-script")); 
 
 
 command_list:
-        { $$ = new std::list<ASTNode*>(); }
+        { $$ = new std::vector<ASTNode*>(); }
     | command_list command
         { (*$1).push_back($2); $$ = $1; }
     ;
@@ -102,32 +102,32 @@ command_list:
 command: '(' TK_SETLOGIC TK_SYM ')'
         {
             $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back(new ASTNode(SYM_T, $3));
         }
     | '(' TK_SETOPTION option ')'
         {
             $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back($3);
         }
     | '(' TK_SETINFO attribute ')'
         {
             $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back($3);
         }
     | '(' TK_DECLARESORT TK_SYM TK_NUM ')'
         {
             $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back(new ASTNode(SYM_T, $3));
             $$->children->push_back(new ASTNode(NUM_T, $4));
         }
     | '(' TK_DEFINESORT TK_SYM '(' symbol_list ')' sort ')'
         {
             $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back(new ASTNode(SYM_T, $3));
 
             ASTNode* syml = new ASTNode(SYML_T, NULL);
@@ -140,7 +140,7 @@ command: '(' TK_SETLOGIC TK_SYM ')'
     | '(' TK_DECLAREFUN TK_SYM '(' sort_list ')' sort ')'
         {
             $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back(new ASTNode(SYM_T, $3));
 
             ASTNode* sortl = new ASTNode(SORTL_T, NULL);
@@ -152,11 +152,11 @@ command: '(' TK_SETLOGIC TK_SYM ')'
     | '(' TK_DECLARECONST const_val '(' ')' sort ')'
         {
             $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back($3);
 
             ASTNode* sortl = new ASTNode(SORTL_T, NULL);
-            sortl->children = new std::list<ASTNode*>();
+            sortl->children = new std::vector<ASTNode*>();
             $$->children->push_back(sortl);
 
             $$->children->push_back($6);
@@ -164,7 +164,7 @@ command: '(' TK_SETLOGIC TK_SYM ')'
     | '(' TK_DEFINEFUN TK_SYM '(' sorted_var_list ')' sort term ')'
         {
             $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back(new ASTNode(SYM_T, $3));
 
             ASTNode* svl = new ASTNode(SVL_T, NULL);
@@ -177,19 +177,19 @@ command: '(' TK_SETLOGIC TK_SYM ')'
     | '(' TK_PUSH TK_NUM ')'
         {
             $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back(new ASTNode(NUM_T, $3));
         }
     | '(' TK_POP TK_NUM ')'
         {
             $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back(new ASTNode(NUM_T, $3));
         }
     | '(' TK_ASSERT term ')'
         {
             $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back($3);
         }
     | '(' TK_CHECKSAT ')'
@@ -212,19 +212,19 @@ command: '(' TK_SETLOGIC TK_SYM ')'
     | '(' TK_WRSTATE TK_STR ')'
         {
             $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back(new ASTNode(UATTR_T, $3));
         }
     | '(' TK_RDSTATE TK_STR ')'
         {
             $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back(new ASTNode(UATTR_T, $3));
         }
     | '(' TK_WRFUNS TK_STR ')'
         {
             $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back(new ASTNode(UATTR_T, $3));
         }
     | '(' TK_GETUNSATCORE ')'
@@ -235,7 +235,7 @@ command: '(' TK_SETLOGIC TK_SYM ')'
         {
             $$ = new ASTNode(CMD_T, $2);
             $$->children = $5;
-            $$->children->push_front($4);
+            $$->children->insert($$->children->begin(), $4);
         }
     | '(' TK_GETASSIGNMENT ')'
         {
@@ -244,19 +244,19 @@ command: '(' TK_SETLOGIC TK_SYM ')'
     | '(' TK_GETOPTION TK_KEY ')'
         {
             $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back(new ASTNode(UATTR_T, $3));
         }
     | '(' TK_GETOPTION predef_key ')'
         {
             $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back(new ASTNode(PATTR_T, $3));
         }
     | '(' TK_GETINFO info_flag ')'
         {
             $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back($3);
         }
     | '(' TK_SIMPLIFY ')'
@@ -268,13 +268,13 @@ command: '(' TK_SETLOGIC TK_SYM ')'
     | '(' TK_ECHO TK_STR ')'
         {
             $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back(new ASTNode(UATTR_T, $3));
         }
     ;
 
 attribute_list:
-        { $$ = new std::list<ASTNode*>(); }
+        { $$ = new std::vector<ASTNode*>(); }
     | attribute_list attribute
         { $1->push_back($2); $$ = $1; }
     ;
@@ -282,15 +282,15 @@ attribute_list:
 attribute: TK_KEY
         { $$ = new ASTNode(UATTR_T, $1); }
     | TK_KEY attribute_value
-        { $$ = new ASTNode(UATTR_T, $1); $$->children = new std::list<ASTNode*>(); $$->children->push_back($2); }
+        { $$ = new ASTNode(UATTR_T, $1); $$->children = new std::vector<ASTNode*>(); $$->children->push_back($2); }
     | predef_key
         { $$ = new ASTNode(PATTR_T, $1); }
     | predef_key attribute_value
-        { $$ = new ASTNode(PATTR_T, $1); $$->children = new std::list<ASTNode*>(); $$->children->push_back($2); }
+        { $$ = new ASTNode(PATTR_T, $1); $$->children = new std::vector<ASTNode*>(); $$->children->push_back($2); }
     ;
 
 attribute_value: spec_const
-        { $$ = new ASTNode(SPECC_T, NULL); $$->children = new std::list<ASTNode*>(); $$->children->push_back($1); }
+        { $$ = new ASTNode(SPECC_T, NULL); $$->children = new std::vector<ASTNode*>(); $$->children->push_back($1); }
     | TK_SYM
         {
             $$ = new ASTNode(SYM_T, $1);
@@ -309,25 +309,25 @@ identifier: TK_SYM
     ;
 
 sort: identifier
-      { $$ = new ASTNode(ID_T, NULL); $$->children = new std::list<ASTNode*>(); $$->children->push_back($1); }
+      { $$ = new ASTNode(ID_T, NULL); $$->children = new std::vector<ASTNode*>(); $$->children->push_back($1); }
     | '(' identifier sort sort_list ')'
       {
         $$ = new ASTNode(LID_T, NULL);
         $$->children = $4;
-        $$->children->push_front($3);
+        $$->children->insert($$->children->begin(), $3);
       }
     ;
 
 sort_list: sort_list sort
         { $1->push_back($2); $$ = $1; }
     |
-        { $$ = new std::list<ASTNode*>(); }
+        { $$ = new std::vector<ASTNode*>(); }
     ;
 
 s_expr: spec_const
         {
             $$ = new ASTNode(SPECC_T, NULL);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back($1);
         }
     | TK_SYM
@@ -347,7 +347,7 @@ s_expr: spec_const
 
 s_expr_list:
         {
-            $$ = new std::list<ASTNode*>();
+            $$ = new std::vector<ASTNode*>();
         }
     | s_expr_list s_expr
         {
@@ -378,7 +378,7 @@ const_val: TK_SYM
 numeral_list: numeral_list TK_NUM
         { $1->push_back(new ASTNode(NUM_T, $2)); $$ = $1; }
     | TK_NUM
-        { $$ = new std::list<ASTNode*>(); $$->push_back(new ASTNode(NUM_T, $1)); }
+        { $$ = new std::vector<ASTNode*>(); $$->push_back(new ASTNode(NUM_T, $1)); }
     ;
 
 qual_identifier: identifier
@@ -386,53 +386,53 @@ qual_identifier: identifier
     | '(' TK_AS identifier sort ')'
         {
             $$ = new ASTNode(AS_T, NULL);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back($3);
             $$->children->push_back($4);
         }
     ;
 
 var_binding_list:
-        { $$ = new std::list<ASTNode*>(); }
+        { $$ = new std::vector<ASTNode*>(); }
     | var_binding_list var_binding
         { $1->push_back($2); $$ = $1; }
     ;
 
 var_binding: '(' TK_SYM term ')'
-        { $$ = new ASTNode(VARB_T, $2); $$->children = new std::list<ASTNode*>(); $$->children->push_back($3); }
+        { $$ = new ASTNode(VARB_T, $2); $$->children = new std::vector<ASTNode*>(); $$->children->push_back($3); }
     ;
 
 sorted_var_list:
-        { $$ = new std::list<ASTNode*>(); }
+        { $$ = new std::vector<ASTNode*>(); }
     | sorted_var_list sorted_var
         { $1->push_back($2); $$ = $1; }
     ;
 
 sorted_var: '(' TK_SYM sort ')'
-        { $$ = new ASTNode(SV_T, $2);  $$->children = new std::list<ASTNode*>(); $$->children->push_back($3); }
+        { $$ = new ASTNode(SV_T, $2);  $$->children = new std::vector<ASTNode*>(); $$->children->push_back($3); }
 
 term_list:
-        { $$ = new std::list<ASTNode*>(); }
+        { $$ = new std::vector<ASTNode*>(); }
     | term_list term
         { $1->push_back($2); $$ = $1; }
     ;
 
 term: spec_const
-        { $$ = new ASTNode(TERM_T, NULL); $$->children = new std::list<ASTNode*>(); $$->children->push_back($1); }
+        { $$ = new ASTNode(TERM_T, NULL); $$->children = new std::vector<ASTNode*>(); $$->children->push_back($1); }
     | qual_identifier
-        { $$ = new ASTNode(QID_T, NULL); $$->children = new std::list<ASTNode*>(); $$->children->push_back($1); }
+        { $$ = new ASTNode(QID_T, NULL); $$->children = new std::vector<ASTNode*>(); $$->children->push_back($1); }
     | '(' qual_identifier term term_list ')'
         {
             $$ = new ASTNode(LQID_T, NULL);
             $$->children = $4;
-            $$->children->push_front($3);
-            $$->children->push_front($2);
+            $$->children->insert($$->children->begin(), $3);
+            $$->children->insert($$->children->begin(), $2);
         }
     | '(' TK_LET '(' var_binding var_binding_list ')' term ')'
         {
             $$ = new ASTNode(LET_T, NULL);
-            $$->children = new std::list<ASTNode*>();
-            $5->push_front($4);
+            $$->children = new std::vector<ASTNode*>();
+            $5->insert($5->begin(), $4);
             ASTNode* vbl = new ASTNode(VARBL_T, NULL);
             vbl->children = $5;
             $$->children->push_back(vbl);
@@ -441,8 +441,8 @@ term: spec_const
     | '(' TK_FORALL '(' sorted_var sorted_var_list ')' term ')'
         {
             $$ = new ASTNode(FORALL_T, NULL);
-            $$->children = new std::list<ASTNode*>();
-            $5->push_front($4);
+            $$->children = new std::vector<ASTNode*>();
+            $5->insert($5->begin(), $4);
             ASTNode* svl = new ASTNode(SVL_T, NULL);
             svl->children = $5;
             $$->children->push_back(svl);
@@ -451,8 +451,8 @@ term: spec_const
     | '(' TK_EXISTS '(' sorted_var sorted_var_list ')' term ')'
         {
             $$ = new ASTNode(EXISTS_T, NULL);
-            $$->children = new std::list<ASTNode*>();
-            $5->push_front($4);
+            $$->children = new std::vector<ASTNode*>();
+            $5->insert($5->begin(), $4);
             ASTNode* svl = new ASTNode(SVL_T, NULL);
             svl->children = $5;
             $$->children->push_back(svl);
@@ -461,17 +461,17 @@ term: spec_const
     | '(' '!' term attribute attribute_list ')'
         {
             $$ = new ASTNode(BANG_T, NULL);
-            $$->children = new std::list<ASTNode*>();
-            $$->children->push_front($3);
+            $$->children = new std::vector<ASTNode*>();
+            $$->children->push_back($3);
             ASTNode *atrs = new ASTNode(GATTRL_T, NULL);
-            $5->push_front($4);
+            $5->insert($5->begin(), $4);
             atrs->children = $5;
             $$->children->push_back(atrs);
         }
     ;
 
 symbol_list:
-        { $$ = new std::list<ASTNode*>(); }
+        { $$ = new std::vector<ASTNode*>(); }
     | symbol_list TK_SYM
         { $1->push_back(new ASTNode(SYM_T, $2)); $$ = $1; }
     ;
@@ -492,73 +492,73 @@ b_value: TK_SYM
 option: KW_PRINTSUCCESS b_value
         {
             $$ = new ASTNode(OPTION_T, $1);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back($2);
         }
     | KW_EXPANDDEFINITIONS b_value
         {
             $$ = new ASTNode(OPTION_T, $1);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back($2);
         }
     | KW_INTERACTIVEMODE b_value
         {
             $$ = new ASTNode(OPTION_T, $1);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back($2);
         }
     | KW_PRODUCEPROOFS b_value
         {
             $$ = new ASTNode(OPTION_T, $1);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back($2);
         }
     | KW_PRODUCEUNSATCORES b_value
         {
             $$ = new ASTNode(OPTION_T, $1);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back($2);
         }
     | KW_PRODUCEMODELS b_value
         {
             $$ = new ASTNode(OPTION_T, $1);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back($2);
         }
     | KW_PRODUCEASSIGNMENTS b_value
         {
             $$ = new ASTNode(OPTION_T, $1);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back($2);
         }
     | KW_REGULAROUTPUTCHANNEL TK_STR
         {
             $$ = new ASTNode(OPTION_T, $1);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back(new ASTNode(STR_T, $2));
         }
     | KW_DIAGNOSTICOUTPUTCHANNEL TK_STR
         {
             $$ = new ASTNode(OPTION_T, $1);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back(new ASTNode(STR_T, $2));
         }
     | KW_RANDOMSEED TK_NUM
         {
             $$ = new ASTNode(OPTION_T, $1);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back(new ASTNode(NUM_T, $2));
         }
     | KW_VERBOSITY TK_NUM
         {
             $$ = new ASTNode(OPTION_T, $1);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back(new ASTNode(NUM_T, $2));
         }
     | attribute
         {
             $$ = new ASTNode(OPTION_T, NULL);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back($1);
         }
     ;
@@ -638,7 +638,7 @@ info_flag: KW_ERRORBEHAVIOR
     | TK_KEY
         {
             $$ = new ASTNode(INFO_T, NULL);
-            $$->children = new std::list<ASTNode*>();
+            $$->children = new std::vector<ASTNode*>();
             $$->children->push_back(new ASTNode(GATTR_T, $1));
         }
     ;
