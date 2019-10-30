@@ -35,9 +35,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 struct StringHash {
     uint32_t operator () (const char* s) const {
-        uint32_t v = 0;
-        for (int i = 0; s[i] != '\0'; i++) v += (uint32_t)s[i];
-    return v; }
+        // http://www.cse.yorku.ca/~oz/hash.html
+        size_t h = 5381;
+        int c;
+        while ((c = *s++))
+            h = ((h << 5) + h) + c;
+        return h;
+    }
 };
 
 template <>
