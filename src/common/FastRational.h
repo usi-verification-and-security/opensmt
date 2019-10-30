@@ -10,6 +10,8 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
 #include <gmpxx.h>
 #include <cassert>
 #include <climits>
+#include <Vec.h>
+
 typedef int32_t  word;
 typedef uint32_t uword;
 typedef int64_t  lword;
@@ -19,6 +21,7 @@ typedef uint64_t ulword;
 #define UWORD_MAX UINT_MAX
 #define LWORD_MIN LONG_MIN
 #define LWORD_MAX LONG_MAX
+
 class MpzUnit
 {
 private:
@@ -44,6 +47,7 @@ enum class State: unsigned char {
     MPQ_ALLOCATED_AND_VALID = MPQ_MEMORY_ALLOCATED | MPQ_VALID, // ONLY MPQ part is valid
     WORD_AND_MPQ = WORD_VALID | MPQ_ALLOCATED_AND_VALID // BOTH WORD and MPQ parts are valid (and they are the same)
 };
+
 using state_t = std::underlying_type<State>::type;
 static_assert(std::is_same<state_t,unsigned char>::value, "Underlying value for FastRational inner type is not as expected");
 
@@ -56,6 +60,14 @@ inline State& operator |= (State& lhs, State rhs)
 {
     lhs = lhs | rhs;
     return lhs;
+}
+
+inline uword absVal(word x) {
+    return x>=0 ? x : -x;
+}
+
+inline ulword absVal(lword x) {
+    return x>=0 ? x : -x;
 }
 
 class FastRational
@@ -179,6 +191,11 @@ private:
     friend inline void substractionAssign   ( FastRational &, const FastRational & );
     friend inline void multiplicationAssign( FastRational &, const FastRational & );
     friend inline void divisionAssign      ( FastRational &, const FastRational & );
+    friend FastRational gcd(FastRational&, FastRational&);
+    friend FastRational lcm(FastRational&, FastRational&);
+    friend FastRational fastrat_fdiv_q(FastRational& n, FastRational& d);
+    friend FastRational fastrat_fdiv_q(FastRational&& n, FastRational&& d);
+    friend FastRational divexact(FastRational& n, FastRational& d);
 public:
     void print_details ( std::ostream & ) const;
     void print         ( std::ostream & ) const;
@@ -201,6 +218,19 @@ private:
     uword den;
     mpq_t mpq;
 public:
+    FastRational get_den() const {
+        if (wordPartValid() && den <= INT32_MAX)
+            return (uword)den;
+        else
+            return FastRational(mpz_class(mpq_denref(mpq)));
+    }
+    FastRational get_num() const {
+        if (wordPartValid())
+            return num;
+        else
+            return FastRational(mpz_class(mpq_numref(mpq)));
+    }
+
     inline int compare(const FastRational& b) const;
     inline int sign() const;
     bool operator< ( const FastRational & b ) const { return compare(b) < 0; }
@@ -239,6 +269,9 @@ public:
     }
     inline FastRational ceil( ) const
     {
+        if (isInteger())
+            return *this;
+
         if (wordPartValid()) {
             word ret = (num > 0 ? (uword)num : (uword)(-num) ) / den;
             if ( num < 0 ) ret = -ret;
@@ -254,6 +287,7 @@ public:
     }
     inline FastRational floor( ) const
     {
+        if (isInteger()) return *this;
         return ceil( ) - 1;
     }
     bool isWellFormed() const;
@@ -333,7 +367,30 @@ public:
             return mpq_sgn(mpq)==0;
         }
     }
+
+
+    // Return *this % d.  The return value will have the sign of d
+    FastRational operator%(const FastRational& d) {
+        assert(isInteger() && d.isInteger());
+        if (!mpqPartValid() && !d.mpqPartValid()) {
+            lword w = absVal(num % d.num);
+            return (word)(d.num > 0 ? w : -w);
+        }
+        FastRational r = (*this) / d;
+        r = r.floor();
+        r = (*this) - r*d;
+        return r;
+    }
 };
+// Divide n by d, forming a quotient q.
+// Rounds q down towards -infinity, and r will have the same sign as d.
+FastRational fastrat_fdiv_q(FastRational&& n, FastRational&& d);
+FastRational fastrat_fdiv_q(FastRational& n, FastRational& d);
+FastRational fastrat_round_to_int(const FastRational& n);
+
+FastRational gcd(FastRational& a, FastRational& b);
+
+FastRational lcm(FastRational& a, FastRational& b);
 
 struct FastRationalHash {
     uint32_t operator() (const FastRational& s) const {
@@ -384,6 +441,7 @@ inline FastRational& FastRational::operator=(const FastRational& x) {
     }
     return *this;
 }
+
 inline bool FastRational::operator==(const FastRational& b) const {
     if (this->wordPartValid() && b.wordPartValid()) {
         return num == b.num && den == b.den;
@@ -392,6 +450,7 @@ inline bool FastRational::operator==(const FastRational& b) const {
     b.force_ensure_mpq_valid();
     return mpq_equal(mpq, b.mpq);
 }
+
 inline FastRational FastRational::operator-() const {
     if (this->wordPartValid() && num > WORD_MIN) {
         return FastRational(-num, den);
@@ -404,6 +463,7 @@ inline FastRational FastRational::operator-() const {
         return x;
     }
 }
+
 inline void FastRational::negate() {
     if (this->wordPartValid() && num > WORD_MIN) {
         num = -num;
@@ -415,6 +475,7 @@ inline void FastRational::negate() {
         setWordPartInvalid();
     }
 }
+
 inline int FastRational::compare(const FastRational& b) const {
     if (this->wordPartValid() && b.wordPartValid()) {
         if (b.den == den) {
@@ -427,6 +488,7 @@ inline int FastRational::compare(const FastRational& b) const {
     b.force_ensure_mpq_valid();
     return mpq_cmp(mpq, b.mpq);
 }
+
 inline int FastRational::sign() const {
     if (wordPartValid()) {
         if (num < 0) return -1;
@@ -437,12 +499,7 @@ inline int FastRational::sign() const {
         return mpq_sgn(mpq);
     }
 }
-inline uword absVal(word x) {
-    return x>=0 ? x : -x;
-}
-inline ulword absVal(lword x) {
-    return x>=0 ? x : -x;
-}
+
 template<typename integer> integer gcd(integer a, integer b) {
     if (a==0) return b;
     if (b==0) return a;
@@ -458,6 +515,28 @@ template<typename integer> integer gcd(integer a, integer b) {
         b = r;
     }
 }
+
+template<typename integer>
+FastRational lcm(integer a, integer b) {
+    if (a == 0) return 0;
+    if (b == 0) return 0;
+    if (b > a)
+        return FastRational(b / gcd(a, b)) * a;
+    else
+        return FastRational(a / gcd(a, b)) * b;
+}
+
+// Return 1 if |op1| > |op2|, -1 if |op1| < |op2|, and 0 if op1 = op2
+inline int cmpabs(FastRational& op1, FastRational& op2)
+{
+    FastRational tmp1 = op1;
+    FastRational tmp2 = op2;
+    if (tmp1.sign() == -1)
+        tmp1 = -tmp1;
+    if (tmp2.sign() == -1)
+        tmp2 = -tmp2;
+    return tmp1.compare(tmp2);
+};
 template<ulword> ulword gcd(ulword a, ulword b);
 template<uword> uword gcd(uword a, uword b);
 #define CHECK_WORD(var, value) \
@@ -488,12 +567,14 @@ template<uword> uword gcd(uword a, uword b);
     } while(0)
 #define COMPUTE_WORD(var, value) \
     word var; CHECK_WORD(var, value)
+
 inline bool FastRational::isWellFormed() const
 {
     return (  wordPartValid() || mpqPartValid() )
            && ( !wordPartValid() || (den != 0 && gcd(absVal(num), den)==1) )
            && ( !mpqPartValid()  || mpz_sgn(mpq_denref(mpq))!=0 );
 }
+
 inline FastRational::FastRational(word n, uword d) : state{State::WORD_VALID} {
     assert(d > 0);
     if (n == 0) {
@@ -509,6 +590,7 @@ inline FastRational::FastRational(word n, uword d) : state{State::WORD_VALID} {
         den = d/common;
     }
 }
+
 inline void addition(FastRational& dst, const FastRational& a, const FastRational& b) {
     if (a.wordPartValid() && b.wordPartValid()) {
         if (b.num == 0) {
@@ -554,6 +636,7 @@ inline void addition(FastRational& dst, const FastRational& a, const FastRationa
     dst.state = State::MPQ_ALLOCATED_AND_VALID;
     dst.try_fit_word();
 }
+
 inline void substraction(FastRational& dst, const FastRational& a, const FastRational& b) {
     if (a.wordPartValid() && b.wordPartValid()) {
         if (b.num == 0) {
@@ -601,6 +684,7 @@ inline void substraction(FastRational& dst, const FastRational& a, const FastRat
     dst.state = State::MPQ_ALLOCATED_AND_VALID;
     dst.try_fit_word();
 }
+
 inline void multiplication(FastRational& dst, const FastRational& a, const FastRational& b) {
     if ((a.wordPartValid() && a.num==0) || (b.wordPartValid() && b.num==0)) {
         dst.num=0;
@@ -653,6 +737,7 @@ inline void multiplication(FastRational& dst, const FastRational& a, const FastR
     dst.state = State::MPQ_ALLOCATED_AND_VALID;
     dst.try_fit_word();
 }
+
 inline void division(FastRational& dst, const FastRational& a, const FastRational& b) {
     if (a.wordPartValid() && b.wordPartValid()) {
         uword common1 = gcd(absVal(a.num), absVal(b.num));
@@ -677,6 +762,7 @@ inline void division(FastRational& dst, const FastRational& a, const FastRationa
     dst.state = State::MPQ_ALLOCATED_AND_VALID;
     dst.try_fit_word();
 }
+
 inline double FastRational::get_d() const {
     if (wordPartValid()) {
         return double(num)/double(den);
@@ -685,6 +771,7 @@ inline double FastRational::get_d() const {
         return mpq_get_d(mpq);
     }
 }
+
 inline void additionAssign(FastRational& a, const FastRational& b) {
     if (b.wordPartValid()) {
         if (b.num == 0) return;
@@ -725,6 +812,7 @@ inline void additionAssign(FastRational& a, const FastRational& b) {
     a.state = State::MPQ_ALLOCATED_AND_VALID;
     a.try_fit_word();
 }
+
 inline void substractionAssign(FastRational& a, const FastRational& b) {
     if (a.wordPartValid() && b.wordPartValid()) {
         uword common = gcd(a.den, b.den);
@@ -749,6 +837,7 @@ inline void substractionAssign(FastRational& a, const FastRational& b) {
     a.state = State::MPQ_ALLOCATED_AND_VALID;
     a.try_fit_word();
 }
+
 inline void multiplicationAssign(FastRational& a, const FastRational& b) {
     if (a.wordPartValid() && b.wordPartValid()) {
         lword common1 = gcd(absVal(a.num), b.den);
@@ -769,6 +858,7 @@ inline void multiplicationAssign(FastRational& a, const FastRational& b) {
     a.state = State::MPQ_ALLOCATED_AND_VALID;
     a.try_fit_word();
 }
+
 inline void divisionAssign(FastRational& a, const FastRational& b) {
     if (a.wordPartValid() && b.wordPartValid()) {
         lword common1 = gcd(absVal(a.num), absVal(b.num));
@@ -795,10 +885,12 @@ inline void divisionAssign(FastRational& a, const FastRational& b) {
     a.state = State::MPQ_ALLOCATED_AND_VALID;
     a.try_fit_word();
 }
+
 inline unsigned FastRational::size() const {
     if (wordPartValid()) return 64;
     return mpz_sizeinbase(mpq_numref(mpq), 2) + mpz_sizeinbase(mpq_denref(mpq), 2);
 }
+
 inline FastRational FastRational::inverse() const {
     FastRational dest;
     if (wordPartValid()) {
@@ -823,6 +915,7 @@ inline FastRational FastRational::inverse() const {
     dest.state = State::MPQ_ALLOCATED_AND_VALID;
     return dest;
 }
+
 inline FastRational abs(const FastRational& x) {
     if (x.sign() >= 0) {
         return x;
@@ -830,7 +923,10 @@ inline FastRational abs(const FastRational& x) {
         return -x;
     }
 }
+
 inline FastRational FastRational_inverse(const FastRational& x) {
     return x.inverse();
 }
+
+FastRational get_multiplicand(const vec<FastRational>& reals);
 #endif

@@ -125,6 +125,18 @@ template <class T, class LessThan> void sort(vec<T>& v, LessThan lt) {
 template <class T> void sort(vec<T>& v) {
     sort(v, LessThan_default<T>()); }
 
+template<class T> void uniq(vec<T>& v) {
+        int j, i;
+        if (v.size() == 0) return;
+        T* prev = &v[0];
+        for (i = 1, j = 1; i < v.size(); i++) {
+            if (v[i] != *prev) {
+                v[j++] = v[i];
+                prev = &v[i];
+            }
+        }
+        v.shrink(i-j);
+}
 
 //=================================================================================================
 #endif
