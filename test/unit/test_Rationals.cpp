@@ -31,7 +31,7 @@ TEST(Rationals_test, test_hash_function)
 {
     vec<uint32_t> hashes;
     for (int i = 0; i < 10; i++) {
-        Real r(random());
+        Real r((int)random());
         hashes.push(r.getHashValue());
     }
     for (int i = 0; i < 10; i++) {
@@ -115,3 +115,38 @@ TEST(Rationals_test, test_additionAssign) {
     EXPECT_EQ(a, Real{"2147483650"} );
 }
 
+TEST(Rationals_test, test_overwrite)
+{
+    Real r(INT32_MAX);
+    Real q(0);
+    r *= 10;
+    r = 0;
+    r = INT32_MAX;
+    r *= 10;
+    r = q;
+}
+
+TEST(Rationals_test, test_unique)
+{
+    vec<Real> v = {1, 1, 2, 3, 3, 4};
+    vec<Real> w = {1, 2, 3, 4};
+    uniq(v);
+    ASSERT_EQ(v.size(), w.size());
+    for (int i = 0; i < v.size(); i++)
+        ASSERT_EQ(v[i], w[i]);
+}
+
+TEST(Rationals_test, test_uword)
+{
+    uint32_t x = 2589903246;
+    FastRational f(x);
+    ASSERT_TRUE(f.mpqPartValid());
+}
+
+TEST(Rationals_test, test_modulo)
+{
+    FastRational a(-37033300);
+    FastRational b(1);
+    FastRational mod = a % b;
+    ASSERT_EQ(mod, 0);
+}

@@ -195,7 +195,7 @@ TEST(Matrix_test, smith_matrix1) {
 
     ms.compute_snf(U, S, dim, L, Li, R, Ri);
     printf("The snf matrix:\n%s\n", ms.print(S));
-    /* int diag[] = {2, 6, 12};
+    int diag[] = {2, 6, 12};
      for (int i = 1; i <= 3; i++) {
          for (int j = 1; j <= 3; j++) {
              if (i != j)
@@ -203,7 +203,7 @@ TEST(Matrix_test, smith_matrix1) {
              else
                  ASSERT_EQ(ms.MM(S, i, j), diag[i - 1]);
          }
-     }*/
+     }
 }
 
 TEST(Matrix_test, smith_matrix111) {
@@ -250,15 +250,15 @@ TEST(Matrix_test, smith_matrix111) {
 
     ms.compute_snf(U, S, dim, L, Li, R, Ri);
     printf("The snf matrix:\n%s\n", ms.print(S));
-    /* int diag[] = {2, 6, 12};
-     for (int i = 1; i <= 3; i++) {
-         for (int j = 1; j <= 3; j++) {
+    int diag[] = {1, 3, 21, 0};
+     for (int i = 1; i <= 4; i++) {
+         for (int j = 1; j <= 4; j++) {
              if (i != j)
                  ASSERT_EQ(ms.MM(S, i, j), 0);
              else
                  ASSERT_EQ(ms.MM(S, i, j), diag[i - 1]);
          }
-     }*/
+     }
 }
 
 TEST(Matrix_test, smith_matrix2) {
@@ -561,47 +561,29 @@ TEST(Matrix_test, hermite_matrix1) {
     LAVecStore vecStore(va, logic);
     LAMatrixStore ms(vecStore);
     MId U = ms.getNewMatrix(4, 4);
-    //  3 3 1 4
-    //  0 1 0 0
-    //  0 0 19 16
-    //  0 0 0 3
+    int u[4][4] = {{3, 3, 1, 4},
+                   {0, 1, 0, 0},
+                   {0, 0, 19, 16},
+                   {0, 0, 0, 3}};
+
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++)
+            ms.MM(U, i+1, j+1) = u[i][j];
 
     //HNF
-
-    //3 0 1 1
-    //0 1 0 0
-    //0 0 19 1
-    //0 0 0 3
-    ms.MM(U, 1, 1) = 3;
-    ms.MM(U, 1, 2) = 3;
-    ms.MM(U, 1, 3) = 1;
-    ms.MM(U, 1, 4) = 4;
-
-    ms.MM(U, 2, 1) = 0;
-    ms.MM(U, 2, 2) = 1;
-    ms.MM(U, 2, 3) = 0;
-    ms.MM(U, 2, 4) = 0;
-
-    ms.MM(U, 3, 1) = 0;
-    ms.MM(U, 3, 2) = 0;
-    ms.MM(U, 3, 3) = 19;
-    ms.MM(U, 3, 4) = 16;
-
-    ms.MM(U, 4, 1) = 0;
-    ms.MM(U, 4, 2) = 0;
-    ms.MM(U, 4, 3) = 0;
-    ms.MM(U, 4, 4) = 3;
-
-    //MId R = ms.getNewMatrix(4, 4);
-    //MId Ri = ms.getNewMatrix(4, 4);
+    int hnf_ref[4][4] = {{3, 0, 1, 1},
+                         {0, 1, 0, 0},
+                         {0, 0, 19, 1},
+                         {0, 0, 0, 3}};
 
     MId H = ms.getNewMatrix(4, 4);
-
-    //int dim;
 
     ms.compute_hnf(H, U);
     printf("The hnf matrix:\n%s\n", ms.print(H));
 
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++)
+            ASSERT_EQ(ms.MM(H, i+1, j+1), hnf_ref[i][j]);
 }
 
 TEST(Matrix_test, hermite_matrix2) {
@@ -611,48 +593,28 @@ TEST(Matrix_test, hermite_matrix2) {
     LAVecStore vecStore(va, logic);
     LAMatrixStore ms(vecStore);
     MId U = ms.getNewMatrix(4, 4);
-    //  0 -1 1 0
-    //  -2 3 2 1
-    //  -6 -1 -2 0
-    //  4 -2 -2 10
+    int u[4][4] = {{0, -1, 1, 0},
+                   {-2, 3, 2, 1},
+                   {-6, -1, -2, 0},
+                   {4, -2, -2, 10}};
 
     //HNF
-
-    //2 0 1 11
-    //0 1 5 12
-    //0 0 6 12
-    //0 0 0 33
-
-    ms.MM(U, 1, 1) = 0;
-    ms.MM(U, 1, 2) = -1;
-    ms.MM(U, 1, 3) = 1;
-    ms.MM(U, 1, 4) = 0;
-
-    ms.MM(U, 2, 1) = -2;
-    ms.MM(U, 2, 2) = 3;
-    ms.MM(U, 2, 3) = 2;
-    ms.MM(U, 2, 4) = 1;
-
-    ms.MM(U, 3, 1) = -6;
-    ms.MM(U, 3, 2) = -1;
-    ms.MM(U, 3, 3) = -2;
-    ms.MM(U, 3, 4) = 0;
-
-    ms.MM(U, 4, 1) = 4;
-    ms.MM(U, 4, 2) = -2;
-    ms.MM(U, 4, 3) = -2;
-    ms.MM(U, 4, 4) = 10;
+    int hnf_ref[4][4] = {{2, 0, 1, 11},
+                         {0, 1, 5, 12},
+                         {0, 0, 6, 12},
+                         {0, 0, 0, 33}};
 
     MId H = ms.getNewMatrix(4, 4);
-
-    //int dim;
-
     ms.compute_hnf(H, U);
+
     printf("The hnf matrix:\n%s\n", ms.print(H));
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++)
+            ASSERT_EQ(ms.MM(H, i+1, j+1), hnf_ref[i][j]);
 
 }
 
-/*
+
 TEST(Matrix_test, hermite_matrix3) {
     LAVecAllocator va;
     SMTConfig config;
@@ -694,4 +656,4 @@ TEST(Matrix_test, hermite_matrix3) {
     ms.compute_hnf(H, U);
     printf("The hnf matrix:\n%s\n", ms.print(H));
 
-}*/
+}

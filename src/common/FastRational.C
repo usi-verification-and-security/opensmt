@@ -22,6 +22,19 @@ FastRational::FastRational( const char * s, const int base )
     assert( isWellFormed( ) );
 }
 
+FastRational::FastRational(uint32_t x)
+{
+    if (x > INT_MAX) {
+        mpq_init(mpq);
+        mpq_set_ui(mpq, x, 1);
+        state = State::MPQ_ALLOCATED_AND_VALID;
+    } else {
+        num = x;
+        den = 1;
+        state = State::WORD_VALID;
+    }
+}
+
 void FastRational::reset()
 {
     kill_mpq(); state = State::WORD_VALID; num  = 0; den = 1;
