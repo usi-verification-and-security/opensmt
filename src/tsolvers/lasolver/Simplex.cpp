@@ -424,7 +424,8 @@ bool Simplex::valueConsistent(LVRef v) const
 bool Simplex::invariantHolds() const
 {
     bool rval = true;
-    for (auto var : tableau.getNonBasicVars()){
+    auto vars = tableau.getNonBasicVars();
+    for (auto var : vars){
         if (isModelOutOfBounds(var)) {
             rval = false;
             printf("Non-basic (column) LRA var %s has value %s <= %s <= %s\n",

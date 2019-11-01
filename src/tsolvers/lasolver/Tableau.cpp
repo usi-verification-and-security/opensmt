@@ -18,34 +18,24 @@ namespace {
 }
 
 void Tableau::nonbasicVar(LVRef v) {
-    if(contains(nonbasic_vars, v)) {return;}
-    assert(!contains(basic_vars, v));
+    if(isNonBasic(v)) {return;}
+    assert(!isProcessed(v));
     newNonbasicVar(v);
 }
 
 void Tableau::newNonbasicVar(LVRef v) {
-    assert(!contains(nonbasic_vars, v));
-    while(cols.size() <= v.x) {
-        cols.emplace_back();
-    }
-    while(rows.size() <= v.x) {
-        rows.emplace_back();
-    }
+    assert(!isProcessed(v));
+    ensureTableaReadyFor(v);
     assert(!cols[v.x]);
     cols[v.x] = std::unique_ptr<Column>(new Column());
-    nonbasic_vars.insert(v);
+    varTypes[getVarId(v)] = VarType::NONBASIC;
 }
 
 void Tableau::newRow(LVRef v, std::unique_ptr<Polynomial> poly) {
     assert(!isProcessed(v));
-    while(cols.size() <= v.x) {
-        cols.emplace_back();
-    }
-    while(rows.size() <= v.x) {
-        rows.emplace_back();
-    }
+    ensureTableaReadyFor(v);
     addRow(v, std::move(poly));
-    quasi_base_vars.insert(v);
+    varTypes[getVarId(v)] = VarType::QUASIBASIC;
 
 }
 
@@ -82,8 +72,15 @@ const Tableau::rows_t & Tableau::getRows() const {
     return rows;
 }
 
-const Tableau::vars_t & Tableau::getNonBasicVars() const {
-    return nonbasic_vars;
+std::vector<LVRef> Tableau::getNonBasicVars() const {
+    std::vector<LVRef> res;
+    res.resize(varTypes.size());
+    for (unsigned i = 0; i < varTypes.size(); ++i) {
+        if (varTypes[i] == VarType::NONBASIC) {
+            res.push_back(LVRef{i});
+        }
+    }
+    return res;
 }
 
 void Tableau::addRow(LVRef v, std::unique_ptr<Polynomial> p) {
@@ -112,16 +109,14 @@ void Tableau::moveColFromTo(LVRef from, LVRef to) {
 }
 
 bool Tableau::isProcessed(LVRef v) const {
-    return contains(basic_vars, v) || contains(nonbasic_vars, v) || contains(quasi_base_vars, v);
+    return varTypes.size() > getVarId(v) && varTypes[getVarId(v)] != VarType::NONE;
 }
 
 void Tableau::pivot(LVRef bv, LVRef nv) {
     assert(isBasic(bv));
     assert(isNonBasic(nv));
-    basic_vars.erase(bv);
-    basic_vars.insert(nv);
-    nonbasic_vars.erase(nv);
-    nonbasic_vars.insert(bv);
+    varTypes[getVarId(bv)] = VarType::NONBASIC;
+    varTypes[getVarId(nv)] = VarType::BASIC;
     assert(cols[nv.x]);
     assert(!cols[bv.x]);
     // compute the polynomial for nv
@@ -187,28 +182,17 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
 void Tableau::clear() {
     this->rows.clear();
     this->cols.clear();
-    this->basic_vars.clear();
-    this->nonbasic_vars.clear();
-    this->quasi_base_vars.clear();
+    this->varTypes.clear();
 }
 
-bool Tableau::isBasic(LVRef v) const {return contains(basic_vars, v);}
-bool Tableau::isNonBasic(LVRef v) const {return contains(nonbasic_vars, v);}
-bool Tableau::isQuasiBasic(LVRef v) const {return contains(quasi_base_vars, v);}
+bool Tableau::isBasic(LVRef v) const
+    {return varTypes.size() > getVarId(v) && varTypes[getVarId(v)] == VarType::BASIC;}
+bool Tableau::isNonBasic(LVRef v) const
+    {return varTypes.size() > getVarId(v) && varTypes[getVarId(v)] == VarType::NONBASIC;}
+bool Tableau::isQuasiBasic(LVRef v) const
+    {return varTypes.size() > getVarId(v) && varTypes[getVarId(v)] == VarType::QUASIBASIC;}
 
 void Tableau::print() const {
-    std::cout << "Basic vars: ";
-    for (auto var : basic_vars) {
-        std::cout << var.x << " ";
-    }
-    std::cout << '\n';
-
-    std::cout << "Non-basic vars: ";
-    for (auto var : nonbasic_vars) {
-        std::cout << var.x << " ";
-    }
-    std::cout << '\n';
-
     std::cout << "Rows:\n";
     for(unsigned i = 0; i != rows.size(); ++i) {
         if (!rows[i]) { continue; }
@@ -233,22 +217,18 @@ void Tableau::print() const {
 
 bool Tableau::checkConsistency() const {
     bool res = true;
-    for (auto nv : nonbasic_vars)  {
-        res &= (cols[nv.x] != nullptr);
-        assert(res);
-    }
     for(unsigned i = 0; i < cols.size(); ++i) {
         LVRef var {i};
-        if(!cols[i]){
-            // there could be empty non-basic variables; e.g. from atoms x <= 5
-            // or here, we could have columns also or basic variables, which should be empty
-            continue;
-        }
-        res &= contains(nonbasic_vars, var);
-        assert(res);
-        for(auto row : *cols[i]) {
-            res &= this->getRowPoly(row).contains(var);
+        if (isNonBasic(var)) {
+            res &= (cols[i] != nullptr);
             assert(res);
+            for(auto row : *cols[i]) {
+                res &= this->getRowPoly(row).contains(var);
+                assert(res);
+            }
+        }
+        else{
+            assert(!cols[i]);
         }
     }
 
@@ -258,11 +238,11 @@ bool Tableau::checkConsistency() const {
             continue;
         }
         if (!rows[i]) { assert(isNonBasic(var)); continue; }
-        res &= contains(basic_vars, var);
+        res &= isBasic(var);
         assert(res);
         for (auto const & term : *rows[i]) {
             auto termVar = term.var;
-            res &= contains(nonbasic_vars, termVar) && cols[termVar.x];
+            res &= isNonBasic(termVar) && cols[termVar.x];
             assert(res);
             res &= contains(getColumn(termVar), var);
             assert(res);
@@ -302,16 +282,14 @@ void Tableau::quasiToBasic(LVRef v) {
     for (auto & term : getRowPoly(v)) {
         addRowToColumn(v, term.var);
     }
-    basic_vars.insert(v);
-    quasi_base_vars.erase(v);
+    varTypes[getVarId(v)] = VarType::BASIC;
     assert(isBasic(v));
     assert(checkConsistency());
 }
 
 void Tableau::basicToQuasi(LVRef v) {
     assert(isBasic(v));
-    basic_vars.erase(v);
-    quasi_base_vars.insert(v);
+    varTypes[getVarId(v)] = VarType::QUASIBASIC;
     assert(isQuasiBasic(v));
 
     Polynomial & row = getRowPoly(v);
@@ -320,4 +298,17 @@ void Tableau::basicToQuasi(LVRef v) {
         removeRowFromColumn(v, term.var);
     }
     assert(checkConsistency());
+}
+
+void Tableau::ensureTableaReadyFor(LVRef v) {
+    auto id = getVarId(v);
+    while(cols.size() <= id) {
+        cols.emplace_back();
+    }
+    while(rows.size() <= id) {
+        rows.emplace_back();
+    }
+    while(varTypes.size() <= id) {
+        varTypes.push_back(VarType::NONE);
+    }
 }

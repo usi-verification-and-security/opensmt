@@ -94,7 +94,6 @@ public:
     const Polynomial & getRowPoly(LVRef basicVar) const;
     Polynomial & getRowPoly(LVRef basicVar);
     const rows_t & getRows() const;
-    const vars_t & getNonBasicVars() const;
 
     void clear();
     void pivot(LVRef bv, LVRef nv);
@@ -110,14 +109,17 @@ public:
     // debug
     void print() const;
     bool checkConsistency() const;
+    std::vector<LVRef> getNonBasicVars() const;
 
 private:
     std::vector<std::unique_ptr<column_t>> cols;
     rows_t rows;
 
-    vars_t basic_vars;
-    vars_t nonbasic_vars;
-    vars_t quasi_base_vars;
+    enum class VarType:char {
+        NONE, BASIC, NONBASIC, QUASIBASIC
+    };
+    std::vector<VarType> varTypes;
+    void ensureTableaReadyFor(LVRef v);
 
     void addRow(LVRef v, std::unique_ptr<Polynomial> p);
     std::unique_ptr<Polynomial> removeRow(LVRef v);
