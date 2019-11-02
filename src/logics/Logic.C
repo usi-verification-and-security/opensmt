@@ -1127,15 +1127,16 @@ bool Logic::defineFun(const char* fname, const vec<PTRef>& args, SRef rsort, PTR
     if (defined_functions.has(fname))
         return false; // already there
     TFun tpl_fun(fname, args, rsort, tr);
-    defined_functions.insert(fname, tpl_fun);
     // This part is a bit silly..
     Tterm tmp;
     defined_functions_vec.push(tmp);
     Tterm& t = defined_functions_vec.last();
     t.setName(tpl_fun.getName());
     t.setBody(tpl_fun.getBody());
-    for (int i = 0; i < args.size(); i++)
+    for (int i = 0; i < args.size(); i++) {
         t.addArg(args[i]);
+    }
+    defined_functions.insert(t.getName(), tpl_fun);
     return true;
 }
 

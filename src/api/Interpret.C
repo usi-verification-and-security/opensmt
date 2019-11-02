@@ -69,6 +69,9 @@ Interpret::~Interpret() {
         if (solver != NULL)
             delete solver;
     }
+    for (int i = 0; i < term_names.size(); ++i) {
+        free(term_names[i]);
+    }
 }
 using opensmt::Logic_t;
 namespace {
@@ -663,11 +666,12 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
         if (strcmp(name_attr.getValue(), ":named") == 0) {
             ASTNode& sym = **(name_attr.children->begin());
             assert(sym.getType() == SYM_T);
-            const char* name = sym.getValue();
-            if (nameToTerm.has(name)) {
-                notify_formatted(true, "name %s already exists", name);
+            if (nameToTerm.has(sym.getValue())) {
+                notify_formatted(true, "name %s already exists", sym.getValue());
                 return PTRef_Undef;
             }
+            char* name = strdup(sym.getValue());
+            // MB: term_names becomes the owner of the string and is responsible for deleting
             term_names.push(name);
             nameToTerm.insert(name, tr);
             if (!termToNames.has(tr)) {
@@ -1039,6 +1043,8 @@ void Interpret::execute(const ASTNode* r) {
     auto i = r->children->begin();
     for (; i != r->children->end() && !f_exit; i++) {
         interp(**i);
+        delete *i;
+        *i = nullptr;
     }
 }
 
