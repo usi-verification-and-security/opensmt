@@ -19,9 +19,8 @@
 class LRAModel
 {
 protected:
-    struct BoundEl { LABoundRef br; int dl; };
-    vec<vec<BoundEl> > int_lbounds;
-    vec<vec<BoundEl> > int_ubounds;
+    vec<vec<LABoundRef> > int_lbounds;
+    vec<vec<LABoundRef> > int_ubounds;
 
     vec<int> bound_limits;
     vec<LABoundRef> bound_trace;
