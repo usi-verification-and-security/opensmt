@@ -66,3 +66,14 @@ target_sources(SimplexTest
 target_link_libraries(SimplexTest api_static gtest gtest_main)
 
 gtest_add_tests(TARGET SimplexTest)
+
+add_executable(HermiteTest)
+target_sources(HermiteTest
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_HNF.cpp"
+    )
+
+target_link_libraries(HermiteTest api_static gtest gtest_main)
+
+gtest_add_tests(TARGET HermiteTest)
+
+

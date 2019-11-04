@@ -201,6 +201,29 @@ LAMatrixStore::sub_column(MId A, int j, int jpivot)
         MM(A, i, j) -= MM(A, i, jpivot);
 }
 
+// return the column number j>=jmin of the least absolute coefficient H[i,j].
+// return 0 if H[i,j]=0 for any j>=jmin
+int LAMatrixStore::least_in_row(MId H, int i, int jmin) {
+    int pos = 0;
+    opensmt::Real least;
+    LAMatrix& Hm = operator[](H);
+    assert(jmin <= Hm.nCols());
+    for (int j = Hm.nCols(); j > jmin; j--) {
+        if (MM(H, i, j) == 0)
+            continue;
+        if (pos != 0) {
+            if (cmpabs(MM(H, i, j), least) <= 0) {
+                pos = j;
+                least = MM(H, i, j);
+            }
+        }
+        else {
+            pos = j;
+            least = MM(H, i, j);
+        }
+    }
+    return pos;
+}
 
 // return the row number imin of the least absolute coefficient in the column H[i,j]
 //
@@ -244,10 +267,6 @@ LAMatrixStore::least_in_col(MId H, int imin, int j)
         }
     }
     return imin;
-
-
-
-
 }
 
 
@@ -471,7 +490,7 @@ LAMatrixStore::compute_snf(MId U, MId &S, int &dim, MId &L, MId &Li, MId &R, MId
 }
 
 
-/*
+
 ///PS: HERE I implement computation of Hermite Normal Form///
 //  Transform the matrix U into a Hermite matrix H
 //  and compute two matrices  R and Ri for which it holds:
@@ -493,7 +512,7 @@ LAMatrixStore::compute_snf(MId U, MId &S, int &dim, MId &L, MId &Li, MId &R, MId
 //  Dim is equal to the rank of the Hermite matrix H of U
 //
 void
-LAMatrixStore::compute_hnf(const MId U1, MId &H, int &dim1, MId &R1, MId &Ri1)
+LAMatrixStore::compute_hnf_v1(const MId U1, MId &H, int &dim1, MId &R1, MId &Ri1)
 {
     int curcol;
     opensmt::Real pivot, x;
@@ -517,23 +536,23 @@ LAMatrixStore::compute_hnf(const MId U1, MId &H, int &dim1, MId &R1, MId &Ri1)
         setIdMatrix(Ri1);
 
     curcol=1;
-    int p;
-    for (p = 1; p <= U1m.nCols(); p++)
+    for (int p = 1; p <= U1m.nRows(); p++)
     {
         int j;
-        while ((j = least_in_row(H, p, curcol))!=0) //here we wanna say while least in row is not zero do something
+        while ((j = least_in_row(H, p, curcol)) !=0) //here we wanna say while least in row is not zero do something
         {
             if (j != curcol)
             {
-                //r1d = divexact(MM(H, j, curcol), d);
-                //std::cout << "Result of exact div" << r1d << std::endl;
-
+                cout << "swap " << j << " " << curcol << endl;
                 swap_columns(H, j, curcol);
-                swap_rows(R1, j, curcol);
-                swap_columns (Ri1, j, curcol);
-                j=curcol;
+                if (R1 != MId_Undef)
+                    swap_rows(R1, j, curcol);
+                if (Ri1 != MId_Undef)
+                    swap_columns (Ri1, j, curcol);
+                j = curcol;
             }
             pivot = MM(H, p, j);
+            cout << "pivot " << pivot << endl;
             if (pivot < 0)
             {
                 pivot.negate();
@@ -544,7 +563,7 @@ LAMatrixStore::compute_hnf(const MId U1, MId &H, int &dim1, MId &R1, MId &Ri1)
                     neg_column(Ri1, j);
             }
 
-            for (int l = j + 1; l <= Hm.nRows(); l++)
+            for (int l = j + 1; l <= Hm.nCols(); l++)
             {
                 if (MM(H, p, l) == 0)
                     continue;
@@ -552,8 +571,10 @@ LAMatrixStore::compute_hnf(const MId U1, MId &H, int &dim1, MId &R1, MId &Ri1)
                 //We subtract from the column l, x times the column j
                 submul_column(H, l, j, x);
                 //We add to the line l, x times the line j [To check]
-                addmul_row(R1, j, l, x);
-                submul_column(Ri1, l, j, x);
+                if (R1 != MId_Undef)
+                    addmul_row(R1, j, l, x);
+                if (Ri1 != MId_Undef)
+                    submul_column(Ri1, l, j, x);
             }
         }
 
@@ -570,7 +591,7 @@ LAMatrixStore::compute_hnf(const MId U1, MId &H, int &dim1, MId &R1, MId &Ri1)
 
         if (pivot != 0)
         {
-            for (int l = 1; l <= Hm.nCols(); l++) //maybe problem with curcol? l <= curcol- 1
+            for (int l = 1; l <= curcol-1; l++)
             {
                 if (MM(H, p, l) == 0)
                     continue;
@@ -582,6 +603,8 @@ LAMatrixStore::compute_hnf(const MId U1, MId &H, int &dim1, MId &R1, MId &Ri1)
                 submul_column(Ri1, l, curcol, x);
             }
             curcol++;
+            if (curcol > U1m.nCols())
+                break;
         }
     }
     curcol--;
@@ -591,7 +614,7 @@ LAMatrixStore::compute_hnf(const MId U1, MId &H, int &dim1, MId &R1, MId &Ri1)
 
 
 /// Here is the end of computation of Hermite Normal Form ///
-*/
+
 
 ///compute hnf from pdf
 

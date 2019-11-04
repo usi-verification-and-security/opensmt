@@ -553,107 +553,24 @@ TEST(lcm_test, lcm_list)
     ASSERT_EQ(r, 385);
 }
 
-
-TEST(Matrix_test, hermite_matrix1) {
+TEST(Matrix_test, least_in_row) {
     LAVecAllocator va;
     SMTConfig config;
     LIALogic logic(config);
     LAVecStore vecStore(va, logic);
     LAMatrixStore ms(vecStore);
     MId U = ms.getNewMatrix(4, 4);
-    int u[4][4] = {{3, 3, 1, 4},
-                   {0, 1, 0, 0},
-                   {0, 0, 19, 16},
-                   {0, 0, 0, 3}};
+    int u[4][4] = {{2, 3, 6, 2},
+                   {5, -6, -1, 6},
+                   {8, 3, -1, 1},
+                   {0, 0, 0, 0}};
 
     for (int i = 0; i < 4; i++)
         for (int j = 0; j < 4; j++)
             ms.MM(U, i+1, j+1) = u[i][j];
 
-    //HNF
-    int hnf_ref[4][4] = {{3, 0, 1, 1},
-                         {0, 1, 0, 0},
-                         {0, 0, 19, 1},
-                         {0, 0, 0, 3}};
-
-    MId H = ms.getNewMatrix(4, 4);
-
-    ms.compute_hnf(H, U);
-    printf("The hnf matrix:\n%s\n", ms.print(H));
-
-    for (int i = 0; i < 4; i++)
-        for (int j = 0; j < 4; j++)
-            ASSERT_EQ(ms.MM(H, i+1, j+1), hnf_ref[i][j]);
-}
-
-TEST(Matrix_test, hermite_matrix2) {
-    LAVecAllocator va;
-    SMTConfig config;
-    LIALogic logic(config);
-    LAVecStore vecStore(va, logic);
-    LAMatrixStore ms(vecStore);
-    MId U = ms.getNewMatrix(4, 4);
-    int u[4][4] = {{0, -1, 1, 0},
-                   {-2, 3, 2, 1},
-                   {-6, -1, -2, 0},
-                   {4, -2, -2, 10}};
-
-    //HNF
-    int hnf_ref[4][4] = {{2, 0, 1, 11},
-                         {0, 1, 5, 12},
-                         {0, 0, 6, 12},
-                         {0, 0, 0, 33}};
-
-    MId H = ms.getNewMatrix(4, 4);
-    ms.compute_hnf(H, U);
-
-    printf("The hnf matrix:\n%s\n", ms.print(H));
-    for (int i = 0; i < 4; i++)
-        for (int j = 0; j < 4; j++)
-            ASSERT_EQ(ms.MM(H, i+1, j+1), hnf_ref[i][j]);
-
-}
-
-
-TEST(Matrix_test, hermite_matrix3) {
-    LAVecAllocator va;
-    SMTConfig config;
-    LIALogic logic(config);
-    LAVecStore vecStore(va, logic);
-    LAMatrixStore ms(vecStore);
-    MId U = ms.getNewMatrix(3, 4);
-    //  2 3 6 2
-    //  5 6 1 6
-    //  8 3 1 1
-
-    //HNF
-
-    //1 0 50 -11
-    //0 3 28 -2
-    //0 0 61 -13
-
-
-    ms.MM(U, 1, 1) = 2;
-    ms.MM(U, 1, 2) = 3;
-    ms.MM(U, 1, 3) = 6;
-    ms.MM(U, 1, 4) = 2;
-
-    ms.MM(U, 2, 1) = 5;
-    ms.MM(U, 2, 2) = 6;
-    ms.MM(U, 2, 3) = 1;
-    ms.MM(U, 2, 4) = 6;
-
-    ms.MM(U, 3, 1) = 8;
-    ms.MM(U, 3, 2) = 3;
-    ms.MM(U, 3, 3) = 1;
-    ms.MM(U, 3, 4) = 1;
-
-
-    MId H = ms.getNewMatrix(3, 4);
-
-    //int dim;
-
-    ms.compute_hnf(H, U);
-    printf("The hnf matrix:\n%s\n", ms.print(H));
-
+    ASSERT_EQ(ms.least_in_row(U, 1, 1), 4);
+    ASSERT_EQ(ms.least_in_row(U, 2, 2), 3);
+    ASSERT_EQ(ms.least_in_row(U, 3, 3), 4);
+    ASSERT_EQ(ms.least_in_row(U, 4, 1), 0);
 }

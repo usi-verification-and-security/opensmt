@@ -174,18 +174,16 @@ public:
     void compute_snf  (MId A, MId &S, int &dim, MId &X, MId &Y, MId &U, MId &V);
 
     // Transform A into a Hermite matrix H such that A = H*U and U*V=I
-    //void compute_hnf  (const MId A1, MId &H, int &dim1, MId &U1, MId &V1);
+    void compute_hnf_v1(const MId A1, MId &H, int &dim1, MId &U1, MId &V1);
     //void compute_hnf_minors(MId &H, const MId A);
     //void hnf_transform(MId &H, MId &U, const MId A);
     //void hnf(MId &H, const MId A);
     //void hnf_classical(MId H, const MId A);
     //int fz_is_zero(MId H);
-    //int least_in_row (MId H, int i, int jmin);
+    int least_in_row (MId H, int i, int jmin);
     void compute_hnf (MId &H, const MId A1);
     void compute_hhnf (MId &H, const MId A1);
     int least_in_col(MId H, int imin, int j);
-
-
 
     // Determine whether the linear integer equality defined by facs and c has a solution.
     // Return true and the solution in sol if yes, otherwise return false.
