@@ -76,4 +76,11 @@ target_link_libraries(HermiteTest api_static gtest gtest_main)
 
 gtest_add_tests(TARGET HermiteTest)
 
+add_executable(LIACutTest)
+target_sources(LIACutTest
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_LIACutSolver.cpp"
+    )
 
+target_link_libraries(LIACutTest api_static gtest gtest_main)
+
+gtest_add_tests(TARGET LIACutTest)
