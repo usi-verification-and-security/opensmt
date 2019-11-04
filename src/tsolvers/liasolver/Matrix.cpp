@@ -543,7 +543,6 @@ LAMatrixStore::compute_hnf_v1(const MId U1, MId &H, int &dim1, MId &R1, MId &Ri1
         {
             if (j != curcol)
             {
-                cout << "swap " << j << " " << curcol << endl;
                 swap_columns(H, j, curcol);
                 if (R1 != MId_Undef)
                     swap_rows(R1, j, curcol);
@@ -552,7 +551,6 @@ LAMatrixStore::compute_hnf_v1(const MId U1, MId &H, int &dim1, MId &R1, MId &Ri1
                 j = curcol;
             }
             pivot = MM(H, p, j);
-            cout << "pivot " << pivot << endl;
             if (pivot < 0)
             {
                 pivot.negate();
