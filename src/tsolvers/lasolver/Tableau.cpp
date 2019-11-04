@@ -25,7 +25,7 @@ void Tableau::nonbasicVar(LVRef v) {
 
 void Tableau::newNonbasicVar(LVRef v) {
     assert(!isProcessed(v));
-    ensureTableaReadyFor(v);
+    ensureTableauReadyFor(v);
     assert(!cols[v.x]);
     cols[v.x] = std::unique_ptr<Column>(new Column());
     varTypes[getVarId(v)] = VarType::NONBASIC;
@@ -33,7 +33,7 @@ void Tableau::newNonbasicVar(LVRef v) {
 
 void Tableau::newRow(LVRef v, std::unique_ptr<Polynomial> poly) {
     assert(!isProcessed(v));
-    ensureTableaReadyFor(v);
+    ensureTableauReadyFor(v);
     addRow(v, std::move(poly));
     varTypes[getVarId(v)] = VarType::QUASIBASIC;
 
@@ -300,7 +300,7 @@ void Tableau::basicToQuasi(LVRef v) {
     assert(checkConsistency());
 }
 
-void Tableau::ensureTableaReadyFor(LVRef v) {
+void Tableau::ensureTableauReadyFor(LVRef v) {
     auto id = getVarId(v);
     while(cols.size() <= id) {
         cols.emplace_back();

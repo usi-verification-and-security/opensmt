@@ -396,11 +396,11 @@ Simplex::Explanation Simplex::getConflictingBounds(LVRef x)
 bool Simplex::checkValueConsistency() const {
     bool res = true;
     auto const & rows = tableau.getRows();
-    for(unsigned i = 0; i < rows.size(); ++i) {
-        if(!rows[i]) {continue;}
+    for (unsigned i = 0; i < rows.size(); ++i) {
+        if (!rows[i]) { continue; }
         LVRef var {i};
         assert(!tableau.isNonBasic(var));
-        if(tableau.isBasic(var)){
+        if (tableau.isBasic(var)) {
             res &= valueConsistent(var);
         }
     }

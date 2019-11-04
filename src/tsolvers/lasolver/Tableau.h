@@ -119,7 +119,7 @@ private:
         NONE, BASIC, NONBASIC, QUASIBASIC
     };
     std::vector<VarType> varTypes;
-    void ensureTableaReadyFor(LVRef v);
+    void ensureTableauReadyFor(LVRef v);
 
     void addRow(LVRef v, std::unique_ptr<Polynomial> p);
     std::unique_ptr<Polynomial> removeRow(LVRef v);
