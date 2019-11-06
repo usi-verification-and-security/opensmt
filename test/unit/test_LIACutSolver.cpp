@@ -58,9 +58,9 @@ TEST(LIACutSolver_test, test_computeEqualityBasis)
 
     s->newNonbasicVar(x);
     s->newNonbasicVar(y);
-    s->newBasicVar(y_minus_x, std::move(p_y_minus_x));
-    s->newBasicVar(two_x_minus_two_y, std::move(p_two_x_minus_two_y));
-    s->newBasicVar(minus_y_minus_ten_x, std::move(p_minus_y_minus_ten_x));
+    s->newRow(y_minus_x, std::move(p_y_minus_x));
+    s->newRow(two_x_minus_two_y, std::move(p_two_x_minus_two_y));
+    s->newRow(minus_y_minus_ten_x, std::move(p_minus_y_minus_ten_x));
 
     Simplex::Explanation explanation = s->checkSimplex();
     ASSERT_EQ(explanation.size(), 0); //this property has to be failed as the system is UNSAT then explanation size has to be >0
