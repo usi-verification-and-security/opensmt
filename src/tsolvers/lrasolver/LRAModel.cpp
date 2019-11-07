@@ -77,7 +77,7 @@ void LRAModel::clear() {
     this->current_assignment.clear();
     this->last_consistent_assignment.clear();
     this->changed_vars_set.reset();
-    this->changed_vars_vec.reset();
+    this->changed_vars_vec.clear();
     this->int_lbounds.clear();
     this->bound_trace.clear();
     this->has_model.clear();

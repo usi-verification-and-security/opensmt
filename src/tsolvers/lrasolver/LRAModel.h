@@ -72,7 +72,7 @@ public:
             LVRef v = changed_vars_vec[i];
             last_consistent_assignment[getVarId(v)] = current_assignment[getVarId(v)];
         }
-        changed_vars_vec.reset();
+        changed_vars_vec.clear();
         changed_vars_set.reset();
     }
 
@@ -81,7 +81,7 @@ public:
             LVRef v = changed_vars_vec[i];
             current_assignment[getVarId(v)] = last_consistent_assignment[getVarId(v)];
         }
-        changed_vars_vec.reset();
+        changed_vars_vec.clear();
         changed_vars_set.reset();
     }
 
