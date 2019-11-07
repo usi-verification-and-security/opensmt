@@ -850,6 +850,7 @@ bool Interpret::declareFun(ASTNode& n) // (const char* fname, const vec<SRef>& a
         }
         else {
             notify_formatted(true, "Undefined sort %s in function %s", name, fname);
+            free(name);
             return false;
         }
     }
@@ -881,13 +882,13 @@ bool Interpret::declareConst(ASTNode& n) //(const char* fname, const SRef ret_so
     SRef ret_sort;
     if (logic->containsSort(name)) {
         ret_sort = newSort(ret_node);
+        free(name);
     } else {
         notify_formatted(true, "Failed to declare constant %s", fname);
         notify_formatted(true, "Unknown return sort %s of %s", name, fname);
         free(name);
         return false;
     }
-
     PTRef rval = logic->mkConst(ret_sort, fname);
     if (rval == PTRef_Undef) {
         comment_formatted("While declare-const %s: %s", fname, "error");
