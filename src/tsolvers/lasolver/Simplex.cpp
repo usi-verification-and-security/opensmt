@@ -109,41 +109,33 @@ bool Simplex::isUnbounded(LVRef v) const
 }
 
 LVRef Simplex::getBasicVarToFixByShortestPoly() const {
-    decltype(candidates) new_candidates;
     LVRef current = LVRef_Undef;
     std::size_t current_poly_size = static_cast<std::size_t>(-1);
     for (auto it : candidates) {
         assert(tableau.isBasic(it));
         assert(it != LVRef_Undef);
-        if (isModelOutOfBounds(it)) {
-            new_candidates.insert(it);
-            if (current == LVRef_Undef || current_poly_size > tableau.getPolySize(it)) {
-                current = it;
-                current_poly_size = tableau.getPolySize(it);
-            }
+        assert(isModelOutOfBounds(it));
+        if (current == LVRef_Undef || current_poly_size > tableau.getPolySize(it)) {
+            current = it;
+            current_poly_size = tableau.getPolySize(it);
         }
     }
-    candidates.swap(new_candidates);
     return current;
 }
 
 LVRef Simplex::getBasicVarToFixByBland() const {
-    decltype(candidates) new_candidates;
     int curr_var_id_x = boundStore.nVars();
     LVRef current = LVRef_Undef;
     for (auto it : candidates) {
         assert(it != LVRef_Undef);
         assert(tableau.isBasic(it));
-        if (isModelOutOfBounds(it)) {
-            new_candidates.insert(it);
-            // Select the var with the smallest id
-            auto id = getVarId(it);
-            assert(it.x == id);
-            current = id < curr_var_id_x ? it : current;
-            curr_var_id_x = id < curr_var_id_x ? id : curr_var_id_x;
-        }
+        assert(isModelOutOfBounds(it));
+        // Select the var with the smallest id
+        auto id = getVarId(it);
+        assert(it.x == id);
+        current = id < curr_var_id_x ? it : current;
+        curr_var_id_x = id < curr_var_id_x ? id : curr_var_id_x;
     }
-    candidates.swap(new_candidates);
     return current;
 }
 
@@ -273,7 +265,15 @@ Simplex::Explanation Simplex::assertBoundOnVar(LVRef it, LABoundRef itBound_ref)
     else // basic variable got a new bound, it becomes a possible candidate
     {
         assert(tableau.isBasic(it));
-        newCandidate(it);
+        if (isModelOutOfBounds(it)) {
+            newCandidate(it);
+        }
+        else {
+            // MB: Not sure if it can happen that it would have been candidate before.
+            // The hypothesis is that no.
+            assert(candidates.find(it) == candidates.end());
+            eraseCandidate(it);
+        }
     }
 
     return {};
@@ -303,7 +303,9 @@ void Simplex::pivot(const LVRef bv, const LVRef nv){
         tableau.basicToQuasi(nv);
     }
     else {
-        newCandidate(nv);
+        if (isModelOutOfBounds(nv)) {
+            newCandidate(nv);
+        }
     }
 //    tableau.print();
     assert(checkTableauConsistency());
@@ -318,7 +320,12 @@ void Simplex::changeValueBy(LVRef var, const Delta & diff) {
         assert(!tableau.isNonBasic(row));
         if (tableau.isBasic(row)) { // skip quasi-basic variables
             model->write(row, model->read(row) + (tableau.getCoeff(row, var) * diff));
-            newCandidate(row);
+            if (isModelOutOfBounds(row)) {
+                newCandidate(row);
+            }
+            else {
+                eraseCandidate(row);
+            }
         }
     }
 }
