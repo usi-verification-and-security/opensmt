@@ -1327,6 +1327,7 @@ void Interpret::getInterpolants(const ASTNode& n)
         else{
             smt_solver.getSingleInterpolant(itps, partitionings[0]);
         }
+        smt_solver.deleteProofGraph();
 
         for (int j = 0; j < itps.size(); j++) {
             char* itp = logic->pp(itps[j]);
