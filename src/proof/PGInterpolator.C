@@ -574,6 +574,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
                 }
 
                 partial_interp = thandler->getInterpolant (A_mask, &ptref2label);
+                clearTSolver();
             }
 
             assert ( partial_interp != PTRef_Undef );
