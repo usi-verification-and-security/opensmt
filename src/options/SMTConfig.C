@@ -502,6 +502,7 @@ const char* SMTConfig::o_sat_resource_limit = ":resource-limit";
 const char* SMTConfig::o_dump_state = ":dump-state";
 const char* SMTConfig::o_time_queries = ":time-queries";
 const char* SMTConfig::o_output_dir = ":output-dir";
+const char* SMTConfig::o_ghost_vars = ":ghost-vars";
 const char* SMTConfig::o_dump_query = ":dump-query";
 const char* SMTConfig::o_dump_query_name = ":dump-query-name";
 const char* SMTConfig::o_inst_name = ":instance-name";

@@ -298,6 +298,7 @@ public:
   static const char* o_smt_split_format_length;
   static const char* o_respect_logic_partitioning_hints;
   static const char* o_output_dir;
+  static const char* o_ghost_vars;
 
 private:
 
@@ -787,6 +788,14 @@ public:
     }
       return sppref_blind;
   }
+
+  bool use_ghost_vars() const {
+      if (optionTable.has(o_ghost_vars)) {
+          return optionTable[o_ghost_vars]->getValue().numval != 0;
+      }
+      return false;
+  }
+
   int do_substitutions() const
     { return optionTable.has(o_do_substitutions) ?
         optionTable[o_do_substitutions]->getValue().numval : 1; }

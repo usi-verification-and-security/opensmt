@@ -285,8 +285,8 @@ public:
     bool    addOriginalClause(Lit p, Lit q);                           // Add a binary clause to the solver.
     bool    addOriginalClause(Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
 protected:
-    bool    addOriginalClause_(const vec<Lit> & _ps);                     // Add a clause to the solver
-    bool    addOriginalClause_(const vec<Lit> & _ps, pair<CRef, CRef> & inOutCRefs);           // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.  Write the new clause to cr
+    bool         addOriginalClause_(const vec<Lit> & _ps);                                          // Add a clause to the solver
+    virtual bool addOriginalClause_(const vec<Lit> & _ps, pair<CRef, CRef> & inOutCRefs);           // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.  Write the new clause to cr
 public:
     // Solving:
     //
@@ -570,12 +570,12 @@ protected:
     bool     createSplit_scatter(bool last);                                           // Create a split formula and place it to the splits vector.
     bool     excludeAssumptions(vec<Lit>& neg_constrs);                                // Add a clause to the database and propagate
     void     insertVarOrder   (Var x);                                                 // Insert a variable in the decision order priority queue.
-    Lit      pickBranchLit    ();                                                      // Return the next decision variable.
-    void     newDecisionLevel ();                                                      // Begins a new decision level.
+    virtual Lit  pickBranchLit ();                                                     // Return the next decision variable.
+    virtual void newDecisionLevel ();                                                  // Begins a new decision level.
     void     uncheckedEnqueue (Lit p, CRef from = CRef_Undef);                         // Enqueue a literal. Assumes value of literal is undefined.
     bool     enqueue          (Lit p, CRef from = CRef_Undef);                         // Test if fact 'p' contradicts current state, enqueue otherwise.
     CRef     propagate        ();                                                      // Perform unit propagation. Returns possibly conflicting clause.
-    void     cancelUntil      (int level);                                             // Backtrack until a certain level.
+    virtual void cancelUntil  (int level);                                             // Backtrack until a certain level.
     void     analyze          (CRef confl, vec<Lit>& out_learnt, int& out_btlevel);    // (bt = backtrack)
     void     analyzeFinal     (Lit p, vec<Lit>& out_conflict);                         // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
     bool     litRedundant     (Lit p, uint32_t abstract_levels);                       // (helper method for 'analyze()')
