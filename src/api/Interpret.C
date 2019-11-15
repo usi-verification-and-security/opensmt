@@ -41,6 +41,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "MainSolver.h"
 #include "LookaheadSMTSolver.h"
 #include "LookaheadSplitter.h"
+#include "GhostSMTSolver.h"
 
 #ifdef ITP_DEBUG
 #include "TreeOps.h"
@@ -90,6 +91,8 @@ void Interpret::new_solver() {
         this->solver = new LookaheadSMTSolver(this->config, *this->thandler);
     else if (config.sat_lookahead_split())
         this->solver = new LookaheadSplitter(this->config, *this->thandler);
+    else if (config.use_ghost_vars())
+        this->solver = new GhostSMTSolver(this->config, *this->thandler);
     else
         this->solver = new SimpSMTSolver(this->config, *this->thandler);
 }
