@@ -5,9 +5,19 @@ echo " - host name $(hostname -f)"
 echo " - script path: $(readlink -f $0)"
 
 opensmt=../opensmt
+options=""
 if [[ ! $# -eq 0 ]] ; then
     #echo 'Setting path to' $1
-    opensmt=$1
+    while [[ ! $# -eq 0 ]]; do
+        if [ "${1}" = "-c" ]; then
+            options="${options} ${2}"
+            shift;
+            shift;
+        else
+            opensmt=${1};
+            shift
+        fi
+    done;
 fi
 
 tmpfolder=log-$(date '+%Y-%m-%d-%H-%M-%S')
@@ -23,7 +33,7 @@ for file in $(find . -name '*.smt2' |sort) generic/foo; do
     dir=$(dirname $file)
 
     #/usr/bin/time -p -o $tmpfolder/$name.time ${opensmt} $dir/$name > $tmpfolder/$name.out 2>$tmpfolder/$name.err.tmp
-    sh -c "ulimit -St 60; ${opensmt} $dir/$name > $tmpfolder/$name.out 2>$tmpfolder/$name.err.tmp" 2>/dev/null 
+    sh -c "ulimit -St 60; ${opensmt} $(echo ${options}) $dir/$name > $tmpfolder/$name.out 2>$tmpfolder/$name.err.tmp" 2>/dev/null 
     #/usr/bin/time -p -o $tmpfolder/$name.time valgrind --leak-check=full ${opensmt} $dir/$name
     #continue
     grep -v '^;' $tmpfolder/$name.err.tmp > $tmpfolder/$name.err
