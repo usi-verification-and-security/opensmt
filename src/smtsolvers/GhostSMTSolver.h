@@ -17,13 +17,15 @@ private:
     Lit pickBranchPolarity(Var v);
     bool isGhost(Lit l) const;
 protected:
-    bool addOriginalClause_(const vec<Lit> &_ps, pair<CRef, CRef> & inOutCRefs) override;
+    bool addOriginalSMTClause(const vec<Lit> &_ps, pair<CRef, CRef> & inOutCRefs) override;
     Lit  pickBranchLit     ()          override;
     void newDecisionLevel  ()          override;
     void cancelUntil       (int level) override;
     Var  newVar            (bool polarity, bool dvar) override;
 public:
     GhostSMTSolver(SMTConfig& c, THandler& h) : SimpSMTSolver(c, h) {}
+    void garbageCollect() override;
+    void relocAll();
 };
 
 #endif //OPENSMT_GHOSTSMTSOLVER_H

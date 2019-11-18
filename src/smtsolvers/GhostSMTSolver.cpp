@@ -13,7 +13,7 @@ bool GhostSMTSolver::isGhost(Lit l) const
         if (!satisfied(ca[appearances[i]]))
             break;
     }
-    return i < appearances.size();
+    return i == appearances.size();
 }
 
 void GhostSMTSolver::newDecisionLevel()
@@ -32,10 +32,14 @@ void GhostSMTSolver::cancelUntil(int level)
 }
 
 bool
-GhostSMTSolver::addOriginalClause_(const vec<Lit> &_ps, pair<CRef, CRef> &inOutCRefs)
+GhostSMTSolver::addOriginalSMTClause(const vec<Lit> &_ps, pair<CRef, CRef> &inOutCRefs)
 {
-    bool rval = SimpSMTSolver::addOriginalClause_(_ps, inOutCRefs);
+    bool rval = SimpSMTSolver::addOriginalSMTClause(_ps, inOutCRefs);
     CRef in_clause = inOutCRefs.second;
+
+    if (in_clause == CRef_Undef)
+        return rval;
+
     Clause& c = ca[in_clause];
     for (int i = 0; i < c.size(); i++) {
         Lit l = c[i];
@@ -164,3 +168,26 @@ GhostSMTSolver::pickBranchLit() {
     return l;
 }
 
+void GhostSMTSolver::relocAll() {
+    for (int i = 0; i < thLitToClauses.size(); i++) {
+        vec<CRef> &appearances = thLitToClauses[i];
+        for (int j = 0; j < appearances.size(); j++) {
+            CRef cr = appearances[j];
+            appearances[j] = ca[cr].relocation();
+        }
+    }
+}
+
+void
+GhostSMTSolver::garbageCollect()
+{
+    ClauseAllocator to(ca.size() - ca.wasted());
+    cleanUpClauses();
+    to.extra_clause_field = ca.extra_clause_field; // NOTE: this is important to keep (or lose) the extra fields.
+
+    SimpSMTSolver::relocAll(to);
+    CoreSMTSolver::relocAll(to);
+    relocAll();
+
+    to.moveTo(ca);
+}
