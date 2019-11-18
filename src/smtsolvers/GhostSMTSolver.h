@@ -22,6 +22,7 @@ protected:
     void newDecisionLevel  ()          override;
     void cancelUntil       (int level) override;
     Var  newVar            (bool polarity, bool dvar) override;
+    void verifyModel       () override;
 public:
     GhostSMTSolver(SMTConfig& c, THandler& h) : SimpSMTSolver(c, h) {}
     void garbageCollect() override;

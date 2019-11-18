@@ -2340,17 +2340,17 @@ lbool CoreSMTSolver::solve_()
         }
     }
 
-	if (status == l_True)
-	{
-		// Extend & copy model:
-		model.growTo(nVars());
-		for (int i = 0; i < nVars(); i++)
-		    model[i] = value(i);
-	}
-	else
-	{
-		assert( opensmt::stop || status == l_False || this->stop);
-	}
+    if (status == l_True)
+    {
+        // Extend & copy model:
+        model.growTo(nVars());
+        for (int i = 0; i < nVars(); i++)
+            model[i] = value(i);
+    }
+    else
+    {
+        assert( opensmt::stop || status == l_False || this->stop);
+    }
 
     // We terminate
     return status;
