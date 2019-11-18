@@ -2342,7 +2342,8 @@ lbool CoreSMTSolver::solve_()
 	{
 		// Extend & copy model:
 		model.growTo(nVars());
-		for (int i = 0; i < nVars(); i++) model[i] = value(i);
+		for (int i = 0; i < nVars(); i++)
+		    model[i] = value(i);
 //            verifyModel();
 		// Compute models in tsolvers
 		if (config.produce_models() && !config.isIncremental())

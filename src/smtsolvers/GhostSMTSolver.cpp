@@ -22,13 +22,17 @@ void GhostSMTSolver::newDecisionLevel()
     ghostTrailLim.push(ghostTrail.size());
 }
 
-void GhostSMTSolver::cancelUntil(int level)
-{
+void GhostSMTSolver::cancelUntil(int level) {
+    int prev_dl = decisionLevel();
     SimpSMTSolver::cancelUntil(level);
-    if (decisionLevel() > level) {
-        for (int c = ghostTrail.size() - 1; c >= ghostTrailLim[level]; c--)
-            insertVarOrder(ghostTrailLim[c]);
+    if (prev_dl > level) {
+        for (int c = ghostTrail.size() - 1; c >= ghostTrailLim[level]; c--) {
+            insertVarOrder(ghostTrail[c]);
+        }
+        ghostTrail.shrink(ghostTrail.size() - ghostTrailLim[level]);
+        ghostTrailLim.shrink(ghostTrailLim.size() - level);
     }
+    assert(ghostTrailLim.size() == trail_lim.size());
 }
 
 bool
@@ -191,3 +195,32 @@ GhostSMTSolver::garbageCollect()
 
     to.moveTo(ca);
 }
+
+void GhostSMTSolver::verifyModel()
+{
+    bool failed = false;
+    for (int i = 0; i < clauses.size(); i++)
+    {
+        assert(ca[clauses[i]].mark() == 0);
+        Clause& c = ca[clauses[i]];
+        for (int j = 0; j < c.size(); j++)
+            if (modelValue(c[j]) == l_True)
+                goto next;
+
+        for (int j = 0; j < c.size(); j++)
+            if (modelValue(c[j]) == l_Undef && isGhost(c[j]))
+                goto next;
+
+        reportf("unsatisfied clause: ");
+        printClause<Clause>(ca[clauses[i]]);
+        reportf("\n");
+        failed = true;
+        next:;
+    }
+
+    assert(!failed);
+
+    // Removed line
+    // reportf("Verified %d original clauses.\n", clauses.size());
+}
+

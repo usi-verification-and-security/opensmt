@@ -631,8 +631,8 @@ protected:
     void     printRestrictedSMTClause ( ostream &, vec< Lit > &, const ipartitions_t & );
     Enode *  mkRestrictedSMTClause    ( vec< Lit > &, const ipartitions_t & );
 #endif
-    void     verifyModel      ();
-    void     checkLiteralCount();
+    virtual void verifyModel      ();
+    void         checkLiteralCount();
 
     //ADDED FOR MINIMIZATION
     void     printClause      ( vec< Lit > & );
@@ -1017,7 +1017,7 @@ inline lbool    CoreSMTSolver::value         (Var x) const                { retu
 inline lbool    CoreSMTSolver::value         (Lit p) const                { return assigns[var(p)] ^ sign(p); }
 inline lbool    CoreSMTSolver::safeValue     (Var x) const                { if (x < assigns.size()) return value(x); else return l_Undef; }
 inline lbool    CoreSMTSolver::safeValue     (Lit p) const                { return safeValue(var(p)); }
-inline lbool    CoreSMTSolver::modelValue    (Lit p) const                { return model[var(p)] ^ sign(p); }
+inline lbool    CoreSMTSolver::modelValue    (Lit p) const                { return model[var(p)] != l_Undef ? (model[var(p)] ^ sign(p)) : l_Undef; }
 inline int      CoreSMTSolver::nAssigns      ()      const                { return trail.size(); }
 inline int      CoreSMTSolver::nClauses      ()      const                { return clauses.size(); }
 inline int      CoreSMTSolver::nLearnts      ()      const                { return learnts.size(); }
