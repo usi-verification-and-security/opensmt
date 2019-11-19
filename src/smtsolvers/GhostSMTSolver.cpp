@@ -3,15 +3,18 @@
 //
 
 #include "GhostSMTSolver.h"
+#include <utility>
 
-bool GhostSMTSolver::isGhost(Lit l) const
+bool GhostSMTSolver::isGhost(Lit l)
 {
     if (!theory_handler.isTheoryTerm(var(l))) return false;
-    const vec<CRef> &appearances = thLitToClauses[toInt(l)];
+    vec<CRef> &appearances = thLitToClauses[toInt(l)];
     int i;
     for (i = 0; i < appearances.size(); i++) {
-        if (!satisfied(ca[appearances[i]]))
+        if (!satisfied(ca[appearances[i]])) {
+            std::swap(appearances[0], appearances[i]);
             break;
+        }
     }
     return i == appearances.size();
 }
