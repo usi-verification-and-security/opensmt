@@ -35,16 +35,18 @@ void GhostSMTSolver::cancelUntil(int level) {
     assert(ghostTrailLim.size() == trail_lim.size());
 }
 
-bool
-GhostSMTSolver::addOriginalSMTClause(const vec<Lit> &_ps, pair<CRef, CRef> &inOutCRefs)
+void
+GhostSMTSolver::attachClause(CRef in_clause)
 {
-    bool rval = SimpSMTSolver::addOriginalSMTClause(_ps, inOutCRefs);
-    CRef in_clause = inOutCRefs.second;
+    SimpSMTSolver::attachClause(in_clause);
 
     if (in_clause == CRef_Undef)
-        return rval;
+        return;
 
-    Clause& c = ca[in_clause];
+    const Clause& c = ca[in_clause];
+    if (c.learnt())
+        return;
+
     for (int i = 0; i < c.size(); i++) {
         Lit l = c[i];
         if (theory_handler.isTheoryTerm(var(l))) {
@@ -53,7 +55,26 @@ GhostSMTSolver::addOriginalSMTClause(const vec<Lit> &_ps, pair<CRef, CRef> &inOu
             thLitToClauses[idx].push(in_clause);
         }
     }
-    return rval;
+}
+
+void
+GhostSMTSolver::detachClause(CRef cr, bool strict)
+{
+    SimpSMTSolver::detachClause(cr, strict);
+    const Clause& c = ca[cr];
+    if (c.learnt())
+        return;
+
+    assert(false);
+    for (int i = 0; i < c.size(); i++) {
+        Lit l = c[i];
+        if (theory_handler.isTheoryTerm(var(l))) {
+            int idx = toInt(l);
+            assert(idx < thLitToClauses.size());
+            // We need a better data structure
+//            thLitToClauses[idx].pop();
+        }
+    }
 }
 
 Var

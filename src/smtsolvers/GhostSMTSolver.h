@@ -17,7 +17,8 @@ private:
     Lit pickBranchPolarity(Var v);
     bool isGhost(Lit l) const;
 protected:
-    bool addOriginalSMTClause(const vec<Lit> &_ps, pair<CRef, CRef> & inOutCRefs) override;
+    void attachClause      (CRef)      override;
+    void detachClause      (CRef, bool strict) override;
     Lit  pickBranchLit     ()          override;
     void newDecisionLevel  ()          override;
     void cancelUntil       (int level) override;
