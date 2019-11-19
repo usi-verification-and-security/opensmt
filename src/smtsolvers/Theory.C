@@ -123,25 +123,29 @@ CoreSMTSolver::handleSat()
 
             int lev = vardata[var(l_f)].level;
             cancelUntil(lev);
+#ifndef PRODUCE_PROOF
             if (decisionLevel() == 0) {
                 // MB: do not allocate, we can directly enqueue the implied literal
                 uncheckedEnqueue(l_i);
+                return TPropRes::Propagate;
             }
-            else {
-                // MB: we are going to propagate, make sure the implied literal is the first one
-                if (l_i != new_splits[0]) {
-                    new_splits[0] = l_i;
-                    new_splits[1] = l_f;
-                }
-                CRef cr = ca.alloc(new_splits, false);
-                attachClause(cr);
-                clauses.push(cr);
+#endif
+            // MB: we are going to propagate, make sure the implied literal is the first one
+            if (l_i != new_splits[0]) {
+                new_splits[0] = l_i;
+                new_splits[1] = l_f;
+            }
+            CRef cr = ca.alloc(new_splits, false);
+            attachClause(cr);
+            clauses.push(cr);
 #ifdef PRODUCE_PROOF
-                // MB: the proof needs to know about the new class; TODO: what type it should be?
-                proof.addRoot( cr, clause_type::CLA_ORIG );
-#endif // PRODUCE_PROOF
-                uncheckedEnqueue(l_i, cr);
+            // MB: the proof needs to know about the new class; TODO: what type it should be?
+            proof.addRoot( cr, clause_type::CLA_ORIG );
+            if (decisionLevel() == 0) {
+                units[ var(l_i) ] = cr;
             }
+#endif // PRODUCE_PROOF
+            uncheckedEnqueue(l_i, cr);
             return TPropRes::Propagate;
         }
     }
