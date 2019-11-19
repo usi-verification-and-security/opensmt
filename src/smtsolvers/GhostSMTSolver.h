@@ -15,7 +15,7 @@ private:
     Var pickBranchVar();
     Var pickRandomBranchVar();
     Lit pickBranchPolarity(Var v);
-    bool isGhost(Lit l) const;
+    bool isGhost(Lit l);
 protected:
     void attachClause      (CRef)      override;
     void detachClause      (CRef, bool strict) override;
