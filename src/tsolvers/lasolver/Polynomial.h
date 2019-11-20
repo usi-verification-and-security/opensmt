@@ -34,14 +34,14 @@ public:
     void negate();
     void divideBy(const opensmt::Real& r);
 
-    void merge(const Polynomial & other, const opensmt::Real & coeff, std::function<void(LVRef)> informAdded,
-               std::function<void(LVRef)> informRemoved);
-
-    void merge(const Polynomial & other, const opensmt::Real & coeff, std::function<void(LVRef)> informAdded,
-               std::function<void(LVRef)> informRemoved, std::vector<Term>& storage);
+    template<typename ADD, typename REM>
+    void merge(const Polynomial & other, const opensmt::Real & coeff, ADD informAdded, REM informRemoved) {
+        std::vector<Term> storage;
+        merge(other, coeff, informAdded, informRemoved, storage);
+    }
 
     template<typename ADD, typename REM>
-    void mergeNew(const Polynomial & other, const opensmt::Real & coeff, ADD informAdded, REM informRemoved,
+    void merge(const Polynomial & other, const opensmt::Real & coeff, ADD informAdded, REM informRemoved,
             std::vector<Term>& storage);
 
     using iterator = poly_t::iterator;
@@ -79,7 +79,7 @@ public:
 };
 
 template<typename ADD, typename REM>
-void Polynomial::mergeNew(const Polynomial &other, const opensmt::Real &coeff, ADD informAdded,
+void Polynomial::merge(const Polynomial &other, const opensmt::Real &coeff, ADD informAdded,
                   REM informRemoved, std::vector<Term>& storage) {
     storage.reserve(this->poly.size() + other.poly.size());
     auto myIt = std::make_move_iterator(poly.begin());

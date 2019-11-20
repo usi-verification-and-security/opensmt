@@ -156,7 +156,7 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
         // update the polynomials
         auto & poly = getRowPoly(rowVar);
         const auto nvCoeff = poly.removeVar(nv);
-        poly.mergeNew(nvPoly, nvCoeff,
+        poly.merge(nvPoly, nvCoeff,
                 // informAdded
                    [this, bv, rowVar](LVRef addedVar) {
                        if (addedVar == bv) { return; }
