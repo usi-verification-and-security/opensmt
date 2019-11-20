@@ -234,6 +234,8 @@ CoreSMTSolver::~CoreSMTSolver()
     }
     delete proof_;
 #endif
+    cerr << "; time used for choosing branch lit " << branchTimer.getTime() << endl;
+    cerr << "; avg dec time " << branchTimer.getTime()/decisions << endl;
 }
 
 //=================================================================================================
@@ -742,6 +744,7 @@ void CoreSMTSolver::cancelUntilVarTempDone( )
 
 Lit CoreSMTSolver::pickBranchLit()
 {
+    opensmt::StopWatch s(branchTimer);
     if (forced_split != lit_Undef) {
         Lit fs = forced_split;
         forced_split = lit_Undef;

@@ -165,7 +165,7 @@ GhostSMTSolver::pickBranchPolarity(Var next) {
 
 Lit
 GhostSMTSolver::pickBranchLit() {
-
+    opensmt::StopWatch s(branchTimer);
     if (forced_split != lit_Undef) {
         Lit fs = forced_split;
         forced_split = lit_Undef;
