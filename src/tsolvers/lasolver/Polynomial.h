@@ -40,6 +40,10 @@ public:
     void merge(const Polynomial & other, const opensmt::Real & coeff, std::function<void(LVRef)> informAdded,
                std::function<void(LVRef)> informRemoved, std::vector<Term>& storage);
 
+    template<typename ADD, typename REM>
+    void mergeNew(const Polynomial & other, const opensmt::Real & coeff, ADD informAdded, REM informRemoved,
+            std::vector<Term>& storage);
+
     using iterator = poly_t::iterator;
     using const_iterator = poly_t::const_iterator;
 
@@ -73,5 +77,53 @@ public:
 
     void print() const;
 };
+
+template<typename ADD, typename REM>
+void Polynomial::mergeNew(const Polynomial &other, const opensmt::Real &coeff, ADD informAdded,
+                  REM informRemoved, std::vector<Term>& storage) {
+    storage.reserve(this->poly.size() + other.poly.size());
+    auto myIt = std::make_move_iterator(poly.begin());
+    auto otherIt = other.poly.cbegin();
+    auto myEnd = std::make_move_iterator(poly.end());
+    auto otherEnd = other.poly.cend();
+    TermCmp cmp;
+    while(true) {
+        if (myIt == myEnd) {
+            for (auto it = otherIt; it != otherEnd; ++it) {
+                storage.emplace_back(it->var, it->coeff * coeff);
+                informAdded(it->var);
+            }
+            break;
+        }
+        if (otherIt == otherEnd) {
+            storage.insert(storage.end(), myIt, myEnd);
+            break;
+        }
+        if (cmp(*myIt, *otherIt)) {
+            storage.emplace_back(*myIt);
+            ++myIt;
+        }
+        else if (cmp(*otherIt, *myIt)) {
+            storage.emplace_back(otherIt->var, otherIt->coeff * coeff);
+            informAdded(otherIt->var);
+            ++otherIt;
+        }
+        else {
+            assert(myIt->var == otherIt->var);
+            auto mergedCoeff = otherIt->coeff * coeff;
+            mergedCoeff += myIt->coeff;
+            if (mergedCoeff.isZero()) {
+                informRemoved(myIt->var);
+            }
+            else {
+                storage.emplace_back(myIt->var, std::move(mergedCoeff));
+            }
+            ++myIt;
+            ++otherIt;
+        }
+    }
+    std::vector<Term>(std::make_move_iterator(storage.begin()), std::make_move_iterator(storage.end())).swap(poly);
+    storage.clear();
+}
 
 #endif //OPENSMT_POLYNOMIAL_H
