@@ -11,17 +11,6 @@
 #include <unordered_map>
 #include <functional>
 
-struct MergeResult{
-    std::vector<LVRef> added;
-    std::vector<LVRef> removed;
-
-    MergeResult() = default;
-    MergeResult(unsigned long added_size_hint, unsigned long removed_size_hint) {
-        added.reserve(added_size_hint);
-        removed.reserve(removed_size_hint);
-    }
-};
-
 class Polynomial{
     friend class Tableau;
 private:
@@ -44,8 +33,6 @@ public:
     opensmt::Real removeVar(LVRef var);
     void negate();
     void divideBy(const opensmt::Real& r);
-
-    MergeResult merge(const Polynomial & other, const opensmt::Real & coeff);
 
     void merge(const Polynomial & other, const opensmt::Real & coeff, std::function<void(LVRef)> informAdded,
                std::function<void(LVRef)> informRemoved);
