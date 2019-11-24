@@ -83,9 +83,9 @@ public:
 
     Explanation assertBoundOnVar(LVRef it, LABoundRef itBound_ref);
     bool isProcessedByTableau  (LVRef var) const;
-    bool isModelOutOfBounds    (LVRef v) const;
-    bool isModelOutOfUpperBound(LVRef v) const;
-    bool isModelOutOfLowerBound(LVRef v) const;
+    inline bool isModelOutOfBounds    (LVRef v) const { return isModelOutOfUpperBound(v) || isModelOutOfLowerBound(v); }
+    inline bool isModelOutOfUpperBound(LVRef v) const { return ( model->read(v) > model->Ub(v) ); }
+    inline bool isModelOutOfLowerBound(LVRef v) const { return ( model->read(v) < model->Lb(v) ); }
     void newNonbasicVar(LVRef v) { newVar(v); tableau.newNonbasicVar(v); }
     void nonbasicVar(LVRef v)    { newVar(v); tableau.nonbasicVar(v); }
     void newRow(LVRef x, std::unique_ptr<Polynomial> poly) { newVar(x); tableau.newRow(x, std::move(poly)); }

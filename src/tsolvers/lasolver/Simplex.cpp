@@ -65,20 +65,6 @@ Simplex::Explanation Simplex::checkSimplex() {
     }
 }
 
-bool Simplex::isModelOutOfBounds(LVRef v) const {
-    return ( (model->read(v) > model->Ub(v)) || (model->read(v) < model->Lb(v)) );
-}
-
-bool Simplex::isModelOutOfUpperBound(LVRef v) const
-{
-    return ( model->read(v)> model->Ub(v) );
-}
-
-bool Simplex::isModelOutOfLowerBound(LVRef v) const
-{
-    return ( model->read(v) < model->Lb(v) );
-}
-
 const Delta Simplex::overBound(LVRef v) const
 {
     assert( isModelOutOfBounds(v) );

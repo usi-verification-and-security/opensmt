@@ -56,8 +56,8 @@ public:
     LABoundRef readLBoundRef(LVRef v) const;
     const LABound& readUBound(const LVRef &v) const;
     LABoundRef readUBoundRef(LVRef v) const;
-    const Delta& Lb(LVRef v) const;
-    const Delta& Ub(LVRef v) const;
+    inline const Delta& Lb(LVRef v) const { return bs[int_lbounds[getVarId(v)].last()].getValue(); }
+    inline const Delta& Ub(LVRef v) const { return bs[int_ubounds[getVarId(v)].last()].getValue(); }
     void pushBacktrackPoint();
     void popBacktrackPoint();
     int  getBacktrackSize() const ;
