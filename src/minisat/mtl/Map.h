@@ -168,13 +168,35 @@ class Map {
         }
     }
 
+    vec<Pair> getKeysAndVals() const {
+        vec<Pair> out;
+        if (size == 0) return;
+        for (int i = 0; i < cap; i++) {
+            if (table[i] == NULL) continue;
+            for (int j = 0; j < table[i].size(); j++)
+                out.push(table[i][j]);
+        }
+        return out;
+    }
+
     void getKeysAndValsPtrs(vec<Pair*>& out) {
         if (size == 0) return;
         for (int i = 0; i < cap; i++) {
-            if (table[1] == NULL) continue;
+            if (table[i] == NULL) continue;
             for (int j = 0; j < table[i].size(); j++)
                 out.push(&table[i][j]);
         }
+    }
+
+    vec<Pair*> getKeysAndValsPtrs() {
+        if (size == 0) return {};
+        vec<Pair*> out;
+        for (int i = 0; i < cap; i++) {
+            if (table[i] == NULL) continue;
+            for (int j = 0; j < table[i].size(); j++)
+                out.push(&table[i][j]);
+        }
+        return out;
     }
 
     // PRECONDITION: the key must exist in the map.

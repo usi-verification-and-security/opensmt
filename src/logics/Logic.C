@@ -32,6 +32,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SMTConfig.h"
 #include <queue>
 #include <set>
+#include "SubstLoopBreaker.h"
 
 #include <sys/wait.h>
 
@@ -1433,151 +1434,6 @@ bool Logic::varsubstitute(PTRef root, const Map<PTRef, PtAsgn, PTRefHash> & subs
     tr_new = gen_sub[root];
     return n_substs > 0;
 }
-//
-// Identify and break any substitution loops
-//
-void Logic::breakSubstLoops(Map<PTRef,PtAsgn,PTRefHash>& substs)
-{
-    int iters;
-    vec<SubstNode*> alloced;
-    for (iters = 0; ; iters++) {
-        if (substs.getSize() == 0) return;
-
-        const char white = 0;
-        const char black = 2;
-        const char undef = 3;
-
-        vec<PTRef> keys;
-        Map<PTRef,SubstNode*,PTRefHash> varToSubstNode;
-        substs.getKeys(keys);
-        vec<char> seen;
-        // Color all variables that appear as keys white
-        for (int i = 0; i < keys.size(); i++) {
-            uint32_t id = Idx(getPterm(keys[i]).getId());
-            while (id >= seen.size())
-                seen.push(undef);
-            seen[id] = white;
-        }
-        vec<SubstNode*> roots;
-        for (int i = 0; i < keys.size(); i++) {
-            uint32_t id = Idx(getPterm(keys[i]).getId());
-            vec<SubstNode*> queue;
-            if (seen[id] == white && substs[keys[i]].sgn == l_True) {
-                SubstNode* n = new SubstNode(keys[i], substs[keys[i]].tr, NULL, *this);
-                alloced.push(n);
-                queue.push(n);
-                roots.push(n);
-                assert(!varToSubstNode.has(keys[i]));
-                varToSubstNode.insert(keys[i], n);
-                while (queue.size() > 0) {
-                    SubstNode* var = queue.last();
-                    PTRef var_tr = var->tr;
-                    if (seen[Idx(getPterm(var_tr).getId())] == white) {
-                        seen[Idx(getPterm(var_tr).getId())] = black;
-                        for (int j = 0; j < var->children.size(); j++) {
-                            SubstNode* cn = NULL;
-                            if (varToSubstNode.has(var->children[j])) {
-                                cn = varToSubstNode[var->children[j]];
-                                if (cn->parent == NULL && cn != n) cn->parent = var;
-                            } else if (substs.has(var->children[j]) && substs[var->children[j]].sgn == l_True) {
-                                cn = new SubstNode(var->children[j], substs[var->children[j]].tr, var, *this);
-                                alloced.push(cn);
-                                queue.push(cn);
-                                varToSubstNode.insert(cn->tr, cn);
-                            }
-                            var->child_nodes.push(cn);
-                        }
-                        continue;
-                    } else if (seen[Idx(getPterm(var_tr).getId())] == black) {
-                        queue.pop();
-                        continue;
-                    }
-                }
-            }
-        }
-
-        for (int i = 0; i < seen.size(); i++)
-            seen[i] = white;
-
-        // Find the start nodes
-        vec<SubstNode*> startNodes;
-        for (int i = 0; i < roots.size(); i++) {
-            SubstNode* n = roots[i];
-            while (n->parent != NULL) {
-                n = n->parent;
-            }
-            startNodes.push(n);
-        }
-        sort(startNodes);
-        int i, j;
-        SubstNode* p = NULL;
-        for (i = j = 0; i < startNodes.size(); i++)
-            if (startNodes[i] != p)
-                p = startNodes[j++] = startNodes[i];
-        startNodes.shrink(i-j);
-
-        vec<vec<PTRef> > loops;
-        for (int i = 0; i < startNodes.size(); i++) {
-            TarjanAlgorithm tarjan;
-            tarjan.getLoops(startNodes[i], loops);
-        }
-
-#ifdef SIMPLIFY_DEBUG
-        if (loops.size() == 0)
-            cerr << "No loops\n";
-        for (int i = 0; i < loops.size(); i++) {
-            cerr << "Loop " << i << endl;
-            vec<PTRef>& loop = loops[i];
-            for (int j = 0; j < loop.size(); j++)
-                cerr << "  " << printTerm(loop[j]) << endl;
-        }
-
-        // Debug: visualize a bit.
-        char* fname = NULL;
-        asprintf(&fname, "loopbreak-%d.dot", iters);
-        FILE* foo = fopen(fname, "w");
-        free(fname);
-        fprintf(foo, "digraph foo {\n");
-        for (int i = 0; i < startNodes.size(); i++)
-            fprintf(foo, "  %s [shape=box]\n", printTerm(startNodes[i]->tr));
-
-        for (int i = 0; i < roots.size(); i++) {
-            if (seen[Idx(getPterm(roots[i]->tr).getId())] != white)
-                continue;
-            vec<SubstNode*> queue;
-            queue.push(roots[i]);
-            while (queue.size() > 0) {
-                SubstNode* n = queue.last(); queue.pop();
-                if (seen[Idx(getPterm(n->tr).getId())] != white)
-                    continue;
-                seen[Idx(getPterm(n->tr).getId())] = black;
-                for (int j = 0; j < n->child_nodes.size(); j++) {
-                    if (n->child_nodes[j] != NULL) {
-                        fprintf(foo, "  %s -> %s;\n", printTerm(n->tr), printTerm(n->child_nodes[j]->tr));
-                        queue.push(n->child_nodes[j]);
-                    }
-                }
-            }
-        }
-        for (int i = 0; i < loops.size(); i++)
-            for (int j = 0; j < loops[i].size(); j++)
-                fprintf(foo, "  %s -> %s [style=dotted];\n", printTerm(loops[i][j]), printTerm(loops[i][(j+1)%loops[i].size()]));
-        fprintf(foo, "}");
-        fclose(foo);
-#endif
-
-        // Terminate if no loops found
-        if (loops.size() == 0)
-            break;
-
-        // Break the found loops
-        for (int i = 0; i < loops.size(); i++) {
-            substs[loops[i][0]].sgn = l_False;
-        }
-    }
-    for (int i = 0; i < alloced.size(); i++)
-        delete alloced[i];
-}
 
 //
 // The substitutions for the term riddance from osmt1
@@ -1640,7 +1496,8 @@ lbool Logic::retrieveSubstitutions(const vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PT
             } else substs.insert(tr, PtAsgn(term, l_True));
         }
     }
-    breakSubstLoops(substs);
+    SubstLoopBreaker slb(*this);
+    slb(substs.getKeysAndValsPtrs());
     return l_Undef;
 }
 
@@ -1788,33 +1645,7 @@ bool Logic::contains(PTRef term, PTRef var)
     return false;
 }
 
-//
-// Get all vars from a term
-//
-void Logic::getVars(PTRef term, vec<PTRef>& vars) const
-{
-    Map<PTRef, bool, PTRefHash> proc;
-    vec<PTRef> queue;
-    queue.push(term);
 
-    while (queue.size() != 0) {
-        PTRef tr = queue.last();
-        if (proc.has(tr)) {
-            queue.pop();
-            continue;
-        }
-        bool unprocessed_children = false;
-        const Pterm& t = getPterm(tr);
-        for (int i = 0; i < t.size(); i++)
-            if (!proc.has(t[i])) {
-                queue.push(t[i]);
-                unprocessed_children = true; }
-        if (unprocessed_children) continue;
-        queue.pop();
-        proc.insert(tr, true);
-        if (isVar(tr)) vars.push(tr);
-    }
-}
 
 PTRef Logic::learnEqTransitivity(PTRef formula)
 {
