@@ -101,6 +101,7 @@ class Map {
 
     Map () : table(NULL), cap(0), size(0) {}
     Map (const H& h, const E& e) : hash(h), equals(e), table(NULL), cap(0), size(0){}
+    Map (Map&& o) { std::swap(hash, o.hash); std::swap(equals, o.equals); std::swap(table, o.table); std::swap(cap, o.cap); std::swap(size, o.size); }
     ~Map () { delete [] table; }
 
 

@@ -41,6 +41,10 @@ vec<PTRef> SubstNodeAllocator::getVars(PTRef term) const
 
 SNRef SubstNodeAllocator::alloc(PTRef tr, PTRef target)
 {
+    SNRef tmp;
+    if (SourceToSNRef.peek(tr, tmp))
+        return tmp;
+
     uint32_t v = RegionAllocator<uint32_t>::alloc(substNode32Size());
     SNRef sid = {v};
     TVLRef tvr;
@@ -53,6 +57,7 @@ SNRef SubstNodeAllocator::alloc(PTRef tr, PTRef target)
     else {
         new (lea(sid)) SubstNode(tr, target, getVars(target), tla);
     }
+    SourceToSNRef.insert(tr, sid);
     return sid;
 }
 
@@ -129,9 +134,6 @@ vec<SNRef> SubstLoopBreaker::constructSubstitutionGraph(const vec<Map<PTRef,PtAs
         // Init the seen table
         PTRef name = substKeysAndVals[i]->key;
         PtAsgn subst = substKeysAndVals[i]->data;
-        uint32_t id = Idx(logic.getPterm(substKeysAndVals[i]->key).getId());
-        while (id >= seen.size())
-            seen.push(false);
 
         // Allocate the nodes and create the mapping for each enabled substitution
         if (subst.sgn == l_True) {
@@ -145,10 +147,9 @@ vec<SNRef> SubstLoopBreaker::constructSubstitutionGraph(const vec<Map<PTRef,PtAs
         PTRef var = PTRefs[i];
         SNRef var_node = PTRefToSNRef[var];
 
-        uint32_t id = Idx(logic.getPterm(var).getId());
         vec<SNRef> queue;
         // The node has already been processed or the substitution is disabled
-        if (seen[id])
+        if (seen.has(var))
             continue;
 
         queue.push(var_node);
@@ -158,9 +159,8 @@ vec<SNRef> SubstLoopBreaker::constructSubstitutionGraph(const vec<Map<PTRef,PtAs
             SNRef var_sr = queue.last();
             queue.pop();
             PTRef var_tr = sna[var_sr].getTr();
-            uint32_t var_id = Idx(logic.getPterm(var_tr).getId());
-            if (!seen[var_id]) {
-                seen[var_id] = true;
+            if (!seen.has(var_tr)) {
+                seen.insert(var_tr, true);
                 sna[var_sr].setProcessing();
                 for (int j = 0; j < sna[var_sr].nChildren(); j++) {
                     PTRef child_tr = sna[var_sr].getChildTerm(j);
@@ -198,14 +198,29 @@ vec<vec<SNRef>> SubstLoopBreaker::findLoops(vec<SNRef>& startNodes) {
     return loops;
 }
 
+Map<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::constructLooplessSubstitution(const vec<Map<PTRef,PtAsgn,PTRefHash>::Pair*>&& substs)
+{
+    Map<PTRef,PtAsgn,PTRefHash> substs_out;
+    for (int i = 0; i < substs.size(); i++) {
+        auto pair = substs[i];
+        if (pair->data.sgn != l_True)
+            continue;
+
+        SNRef subst_node = sna.getSNRefBySource(pair->key);
+        if (sna[subst_node].nChildren() > 0)
+            substs_out.insert(pair->key, pair->data);
+    }
+    return substs_out;
+}
+
 //
 // Identify and break any substitution loops
 //
-void SubstLoopBreaker::operator() (const vec<Map<PTRef,PtAsgn,PTRefHash>::Pair*>&& substs)
+Map<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::operator() (const vec<Map<PTRef,PtAsgn,PTRefHash>::Pair*>&& substs)
 {
-    assert(seen.size() == 0);
+    assert(seen.elems() == 0);
 
-    if (substs.size() == 0) return;
+    if (substs.size() == 0) return Map<PTRef,PtAsgn,PTRefHash>();
 
     vec<SNRef> startNodes = constructSubstitutionGraph(std::move(substs));
 
@@ -220,6 +235,7 @@ void SubstLoopBreaker::operator() (const vec<Map<PTRef,PtAsgn,PTRefHash>::Pair*>
         breakLoops(loops);
 //        printGraphAndLoops(startNodes, loops);
     }
+    return constructLooplessSubstitution(std::move(substs));
 }
 
 void SubstLoopBreaker::breakLoops(const vec<vec<SNRef>>& loops) {

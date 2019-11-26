@@ -138,6 +138,7 @@ private:
     const Logic& logic;
     Map<PTRef,TVLRef,PTRefHash> TargetToTargetVarListRef;
     vec<PTRef> getVars(PTRef term) const;
+    Map<PTRef,SNRef,PTRefHash> SourceToSNRef;
 public:
     SubstNodeAllocator(TargetVarListAllocator& tla, const Logic& l, uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), tla(tla), logic(l) {}
 
@@ -145,6 +146,7 @@ public:
 
           SubstNode& operator[](SNRef r)       { return (SubstNode&)RegionAllocator<uint32_t>::operator[](r.x); }
     const SubstNode& operator[](SNRef r) const { return (SubstNode&)RegionAllocator<uint32_t>::operator[](r.x); }
+    SNRef getSNRefBySource(PTRef ptr)    const { return SourceToSNRef[ptr]; }
 private:
     SubstNode* lea(SNRef r) { return (SubstNode*)RegionAllocator<uint32_t>::lea(r.x); }
 
@@ -166,18 +168,19 @@ class SubstLoopBreaker {
 private:
 
     const Logic& logic;
-    vec<bool> seen;
+    Map<PTRef,bool,PTRefHash> seen;
     TargetVarListAllocator tvla;
     SubstNodeAllocator sna;
 
 public:
     SubstLoopBreaker(const Logic& l) : logic(l), tvla(1024), sna(tvla, logic, 1024) {}
-    void operator() (const vec<Map<PTRef,PtAsgn,PTRefHash>::Pair*>&& substs);
+    Map<PTRef,PtAsgn,PTRefHash> operator() (const vec<Map<PTRef,PtAsgn,PTRefHash>::Pair*>&& substs);
     vec<SNRef> constructSubstitutionGraph(const vec<Map<PTRef,PtAsgn,PTRefHash>::Pair*>&& substKeysAndVals);
     vec<vec<SNRef>> findLoops(vec<SNRef>& startNodes);
     void breakLoops(const vec<vec<SNRef>>& loops);
     std::stringstream printGraphAndLoops(const vec<SNRef>& startNodes, const vec<vec<SNRef>>& loops);
     vec<SNRef> minimizeRoots(vec<SNRef>&& roots) { return std::move(roots); }// nothing here, maybe do some attempt?
+    Map<PTRef,PtAsgn,PTRefHash> constructLooplessSubstitution(const vec<Map<PTRef,PtAsgn,PTRefHash>::Pair*>&& substs);
 };
 
 #endif //OPENSMT_SUBSTLOOPBREAKER_H
