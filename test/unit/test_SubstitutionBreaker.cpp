@@ -127,3 +127,55 @@ TEST(SubstitutionBreaker, test_getLoops2) {
 //    std::cerr << slb.printGraphAndLoops(startNodes, loops).str() << std::endl;
 //    ASSERT_TRUE(substs[a].sgn == l_False || substs[b].sgn == l_False);
 }
+
+TEST(SubstitutionBreaker, test_getLoops3) {
+    SMTConfig config;
+    Logic logic{config};
+
+    char* tmp;
+    SRef U = logic.declareSort("U", &tmp);
+    PTRef e0 = logic.mkVar(U, "e0");
+    PTRef e1 = logic.mkVar(U, "e1");
+    PTRef e2 = logic.mkVar(U, "e2");
+    PTRef e4 = logic.mkVar(U, "e4");
+
+    SymRef symb_op = logic.declareFun("op", U, {U, U}, &tmp, false);
+
+    PTRef op_e2_e1 = logic.mkUninterpFun(symb_op, {e2, e1});
+    PTRef op_e2_e2 = logic.mkUninterpFun(symb_op, {e2, e2});
+    PTRef op_e0_e0 = logic.mkUninterpFun(symb_op, {e0, e0});
+    PTRef op_e4_e1 = logic.mkUninterpFun(symb_op, {e4, e1});
+
+    typedef Map<PTRef,PtAsgn,PTRefHash>::Pair spair;
+
+    vec<spair*> substs;
+
+    spair p_e0     {e0, {op_e2_e1, l_True}};
+    spair p_e4     {e4, {op_e2_e2, l_True}};
+    spair p_e1     {e1, {op_e0_e0, l_True}};
+    spair p_e2     {e2, {op_e4_e1, l_True}};
+
+    substs.push(&p_e0);
+    substs.push(&p_e4);
+    substs.push(&p_e1);
+    substs.push(&p_e2);
+
+    SubstLoopBreaker slb(logic);
+    Map<PTRef,PtAsgn,PTRefHash> new_substs = slb(std::move(substs));
+
+    SubstLoopBreaker slb2(logic);
+    vec<SNRef> startNodes = slb2.constructSubstitutionGraph(std::move(new_substs.getKeysAndValsPtrs()));
+    std::cerr << slb2.printGraphAndLoops(startNodes, {}).str() << std::endl;
+    vec<vec<SNRef>> loops = slb2.findLoops(startNodes);
+    std::cerr << slb2.printGraphAndLoops(startNodes, loops).str() << std::endl;
+    vec<SNRef> orphans = slb2.breakLoops(loops);
+    for (int i = 0; i < orphans.size(); i++) {
+        startNodes.push(orphans[i]);
+    }
+    sort(startNodes);
+    uniq(startNodes);
+
+    std::cerr << slb2.printGraphAndLoops(startNodes, {}).str() << std::endl;
+//    std::cerr << slb.printGraphAndLoops(startNodes, loops).str() << std::endl;
+//    ASSERT_TRUE(substs[a].sgn == l_False || substs[b].sgn == l_False);
+}

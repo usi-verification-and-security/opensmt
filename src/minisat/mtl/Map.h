@@ -104,6 +104,8 @@ class Map {
     Map (Map&& o) { std::swap(hash, o.hash); std::swap(equals, o.equals); std::swap(table, o.table); std::swap(cap, o.cap); std::swap(size, o.size); }
     ~Map () { delete [] table; }
 
+    Map<K,D,H,E>&  operator = (Map<K,D,H,E>&& o) { std::swap(hash, o.hash); std::swap(equals, o.equals); std::swap(table, o.table); std::swap(cap, o.cap); std::swap(size, o.size); return *this; }
+
 
     // PRECONDITION: the key must already exist in the map.
     const D& operator [] (const K& k) const

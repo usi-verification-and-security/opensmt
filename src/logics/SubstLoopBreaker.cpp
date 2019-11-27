@@ -58,7 +58,15 @@ SNRef SubstNodeAllocator::alloc(PTRef tr, PTRef target)
         new (lea(sid)) SubstNode(tr, target, getVars(target), tla);
     }
     SourceToSNRef.insert(tr, sid);
+    SNRefs.push(sid);
     return sid;
+}
+
+void
+SubstNodeAllocator::clearTarjan()
+{
+    for (int i = 0; i < SNRefs.size(); i++)
+        operator[](SNRefs[i]).clearTarjan();
 }
 
 TargetVarList::TargetVarList(vec<PTRef>&& _children)
@@ -134,6 +142,7 @@ vec<SNRef> SubstLoopBreaker::constructSubstitutionGraph(const vec<Map<PTRef,PtAs
         // Init the seen table
         PTRef name = substKeysAndVals[i]->key;
         PtAsgn subst = substKeysAndVals[i]->data;
+
 
         // Allocate the nodes and create the mapping for each enabled substitution
         if (subst.sgn == l_True) {
@@ -232,19 +241,28 @@ Map<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::operator() (const vec<Map<PTRef,Pt
             break;
 
 //        printGraphAndLoops(startNodes, loops);
-        breakLoops(loops);
+        vec<SNRef> orphans = breakLoops(loops);
+        for (int i = 0; i < orphans.size(); i++)
+            startNodes.push(orphans[i]);
+        sort(startNodes);
+        uniq(startNodes);
 //        printGraphAndLoops(startNodes, loops);
     }
     return constructLooplessSubstitution(std::move(substs));
 }
 
-void SubstLoopBreaker::breakLoops(const vec<vec<SNRef>>& loops) {
-    // Break the found loops
+vec<SNRef> SubstLoopBreaker::breakLoops(const vec<vec<SNRef>>& loops) {
+    // Break the found loops.  Return the orphaned children as new start nodes
+    vec<SNRef> orphans;
     for (int i = 0; i < loops.size(); i++) {
         int last_idx = loops[i].size()-1;
         assert(last_idx >= 0);
+        for (int j = 0; j < sna[loops[i][last_idx]].nChildren(); j++) {
+            orphans.push(sna[loops[i][last_idx]][j]);
+        }
         sna[loops[i][last_idx]].killChildren();
     }
+    return orphans;
 }
 
 std::stringstream SubstLoopBreaker::printGraphAndLoops(const vec<SNRef> &startNodes, const vec<vec<SNRef>>& loops) {
