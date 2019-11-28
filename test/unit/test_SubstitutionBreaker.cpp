@@ -7,6 +7,8 @@
 #include <Map.h>
 #include <SubstLoopBreaker.h>
 
+typedef Map<PTRef,PtAsgn,PTRefHash>::Pair spair;
+
 TEST(SubstitutionBreaker, test_getVars) {
     SMTConfig config;
     Logic logic{config};
@@ -32,6 +34,23 @@ TEST(SubstitutionBreaker, test_getVars) {
     ASSERT_EQ(sna[snr].nChildren(), 3);
 }
 
+TEST(SubstitutionBreaker, test_Simple) {
+    SMTConfig config;
+    Logic logic{config};
+
+    char *tmp;
+    PTRef a = logic.mkVar(logic.getSort_bool(), "a");
+    vec<spair*> substs;
+    spair p1 = spair{a, {logic.getTerm_true(), l_True}};
+
+    substs.push(&p1);
+
+    SubstLoopBreaker slb(logic);
+
+    Map<PTRef,PtAsgn,PTRefHash> subst_map = slb(std::move(substs));
+    ASSERT_TRUE(subst_map.has(a));
+}
+
 TEST(SubstitutionBreaker, test_getLoops) {
     SMTConfig config;
     Logic logic{config};
@@ -47,7 +66,7 @@ TEST(SubstitutionBreaker, test_getLoops) {
     SymRef fun2 = logic.declareFun("g", U, {U, U, U}, &tmp, false);
     PTRef f = logic.mkUninterpFun(fun, {a});
     PTRef g = logic.mkUninterpFun(fun2, {c, d, e});
-    typedef Map<PTRef,PtAsgn,PTRefHash>::Pair spair;
+
     vec<spair*> substs;
     spair p1 = spair{a, {f, l_True}};
     spair p2 = spair{b, {a, l_True}};
@@ -63,12 +82,10 @@ TEST(SubstitutionBreaker, test_getLoops) {
     SubstLoopBreaker slb(logic);
     vec<SNRef> startNodes = slb.constructSubstitutionGraph(std::move(substs));
     std::cerr << slb.printGraphAndLoops(startNodes, {}).str() << std::endl;
-    ASSERT_TRUE(startNodes.size() > 0);
+    ASSERT_GT(startNodes.size(), 0);
     vec<vec<SNRef>> loops = slb.findLoops(startNodes);
+    ASSERT_EQ(loops.size(), 0); // The system does not remove self-loops
     std::cerr << slb.printGraphAndLoops(startNodes, loops).str() << std::endl;
-    slb.breakLoops(loops);
-    std::cerr << slb.printGraphAndLoops(startNodes, loops).str() << std::endl;
-//    ASSERT_TRUE(substs[a].sgn == l_False || substs[b].sgn == l_False);
 }
 
 TEST(SubstitutionBreaker, test_getLoops2) {
@@ -97,7 +114,6 @@ TEST(SubstitutionBreaker, test_getLoops2) {
     PTRef h2_a1_b1_a2 = logic.mkUninterpFun(symb_h2, {a1, b1, a2});
     PTRef h_b1_a2 = logic.mkUninterpFun(symb_h, {b1, a2});
 
-    typedef Map<PTRef,PtAsgn,PTRefHash>::Pair spair;
 
     vec<spair*> substs;
 
@@ -119,13 +135,9 @@ TEST(SubstitutionBreaker, test_getLoops2) {
 
     SubstLoopBreaker slb(logic);
     vec<SNRef> startNodes = slb.constructSubstitutionGraph(std::move(substs));
-    std::cerr << slb.printGraphAndLoops(startNodes, {}).str() << std::endl;
-    ASSERT_TRUE(startNodes.size() > 0);
+    ASSERT_GT(startNodes.size(), 0);
     vec<vec<SNRef>> loops = slb.findLoops(startNodes);
-    std::cerr << slb.printGraphAndLoops(startNodes, loops).str() << std::endl;
-    slb.breakLoops(loops);
-//    std::cerr << slb.printGraphAndLoops(startNodes, loops).str() << std::endl;
-//    ASSERT_TRUE(substs[a].sgn == l_False || substs[b].sgn == l_False);
+    ASSERT_EQ(loops.size(), 1);
 }
 
 TEST(SubstitutionBreaker, test_getLoops3) {
@@ -146,8 +158,6 @@ TEST(SubstitutionBreaker, test_getLoops3) {
     PTRef op_e0_e0 = logic.mkUninterpFun(symb_op, {e0, e0});
     PTRef op_e4_e1 = logic.mkUninterpFun(symb_op, {e4, e1});
 
-    typedef Map<PTRef,PtAsgn,PTRefHash>::Pair spair;
-
     vec<spair*> substs;
 
     spair p_e0     {e0, {op_e2_e1, l_True}};
@@ -165,17 +175,8 @@ TEST(SubstitutionBreaker, test_getLoops3) {
 
     SubstLoopBreaker slb2(logic);
     vec<SNRef> startNodes = slb2.constructSubstitutionGraph(std::move(new_substs.getKeysAndValsPtrs()));
-    std::cerr << slb2.printGraphAndLoops(startNodes, {}).str() << std::endl;
-    vec<vec<SNRef>> loops = slb2.findLoops(startNodes);
-    std::cerr << slb2.printGraphAndLoops(startNodes, loops).str() << std::endl;
-    vec<SNRef> orphans = slb2.breakLoops(loops);
-    for (int i = 0; i < orphans.size(); i++) {
-        startNodes.push(orphans[i]);
-    }
-    sort(startNodes);
-    uniq(startNodes);
 
     std::cerr << slb2.printGraphAndLoops(startNodes, {}).str() << std::endl;
-//    std::cerr << slb.printGraphAndLoops(startNodes, loops).str() << std::endl;
-//    ASSERT_TRUE(substs[a].sgn == l_False || substs[b].sgn == l_False);
+    vec<vec<SNRef>> loops = slb2.findLoops(startNodes);
+    ASSERT_EQ(loops.size(), 0);
 }

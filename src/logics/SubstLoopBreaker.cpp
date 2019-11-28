@@ -198,8 +198,8 @@ vec<SNRef> SubstLoopBreaker::constructSubstitutionGraph(const vec<Map<PTRef,PtAs
 
 vec<vec<SNRef>> SubstLoopBreaker::findLoops(vec<SNRef>& startNodes) {
     vec<vec<SNRef>> loops;
+    TarjanAlgorithm tarjan(sna);
     for (int i = 0; i < startNodes.size(); i++) {
-        TarjanAlgorithm tarjan(sna);
         vec<vec<SNRef>> loops_tmp = tarjan.getLoops(startNodes[i]);
         for (int i = 0; i < loops_tmp.size(); i++)
             loops.push(std::move(loops_tmp[i]));
@@ -216,7 +216,7 @@ Map<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::constructLooplessSubstitution(cons
             continue;
 
         SNRef subst_node = sna.getSNRefBySource(pair->key);
-        if (sna[subst_node].nChildren() > 0)
+        if (sna[subst_node].hasChildren())
             substs_out.insert(pair->key, pair->data);
     }
     return substs_out;
@@ -260,7 +260,7 @@ vec<SNRef> SubstLoopBreaker::breakLoops(const vec<vec<SNRef>>& loops) {
         for (int j = 0; j < sna[loops[i][last_idx]].nChildren(); j++) {
             orphans.push(sna[loops[i][last_idx]][j]);
         }
-        sna[loops[i][last_idx]].killChildren();
+        sna[loops[i][last_idx]].swipeChildren();
     }
     return orphans;
 }

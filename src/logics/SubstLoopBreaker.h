@@ -126,7 +126,8 @@ public:
     bool      processing()        const { return tvla[children].processing(); }
     void      setProcessed()            { tvla[children].setProcessed(); }
     void      setProcessing()           { tvla[children].setProcessing(); }
-    void      killChildren()            { children = TVLRef_Undef; }
+    bool      hasChildren()       const { return children != TVLRef_Undef; }
+    void      swipeChildren()            { children = TVLRef_Undef; }
 
     void      clearTarjan()             { procChild = 0; index = -1; lowlink = -1; status = NStatus::unseen; }
 };
