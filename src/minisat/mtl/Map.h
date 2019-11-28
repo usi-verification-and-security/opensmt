@@ -173,7 +173,7 @@ class Map {
 
     vec<Pair> getKeysAndVals() const {
         vec<Pair> out;
-        if (size == 0) return;
+        if (size == 0) return {};
         for (int i = 0; i < cap; i++) {
             if (table[i] == NULL) continue;
             for (int j = 0; j < table[i].size(); j++)
