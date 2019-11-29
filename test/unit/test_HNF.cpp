@@ -118,68 +118,68 @@ TEST_F(HNF_test, test_hnf3) {
 }
 
 TEST_F(HNF_test, test_hnf4) {
-int rows = 4;
-int cols = 4;
-MId U = ms.getNewMatrix(rows, cols);
+    int rows = 4;
+    int cols = 4;
+    MId U = ms.getNewMatrix(rows, cols);
 
-int u[4][4] = {{1, 2, -6, -6},
-               {2, -5, -3, 7},
-               {-4, -3, 0, 0},
-               {1, -3, 5, -8}};
+    int u[4][4] = {{1, 2, -6, -6},
+                   {2, -5, -3, 7},
+                   {-4, -3, 0, 0},
+                   {1, -3, 5, -8}};
 
-for (int i = 0; i < rows; i++)
-for (int j = 0; j < cols; j++)
-ms.MM(U, i+1, j+1) = u[i][j];
+    for (int i = 0; i < rows; i++)
+        for (int j = 0; j < cols; j++)
+            ms.MM(U, i+1, j+1) = u[i][j];
 
-//HNF
+    //HNF
 
-int hnf_ref[4][4] = {{1, 0, 0, 0},
-                     {0, 1, 0, 0},
-                     {0, 0, 1, 0},
-                     {335, 286, 1663, 2873}};
+    int hnf_ref[4][4] = {{1, 0, 0, 0},
+                         {0, 1, 0, 0},
+                         {0, 0, 1, 0},
+                         {335, 286, 1663, 2873}};
 
-MId H = ms.getNewMatrix(rows, cols);
+    MId H = ms.getNewMatrix(rows, cols);
 
-int dim;
-MId U1 = MId_Undef;
-MId V1 = MId_Undef;
-ms.compute_hnf_v1(U, H, dim, U1, V1);
-cout << "The hnf matrix:" << endl << ms.print(H) << endl;
-for (int i = 0; i < rows; i++)
-for (int j = 0; j < cols; j++)
-ASSERT_EQ(ms.MM(H, i+1, j+1), hnf_ref[i][j]);
+    int dim;
+    MId U1 = MId_Undef;
+    MId V1 = MId_Undef;
+    ms.compute_hnf_v1(U, H, dim, U1, V1);
+    cout << "The hnf matrix:" << endl << ms.print(H) << endl;
+    for (int i = 0; i < rows; i++)
+        for (int j = 0; j < cols; j++)
+            ASSERT_EQ(ms.MM(H, i+1, j+1), hnf_ref[i][j]);
 }
 
 TEST_F(HNF_test, test_hnf5) {
-int rows = 3;
-int cols = 3;
-MId U = ms.getNewMatrix(rows, cols);
+    int rows = 3;
+    int cols = 3;
+    MId U = ms.getNewMatrix(rows, cols);
 
-int u[3][3] = {{9, -36, 30},
-               {-36, 192, -180},
-               {30, -180, 180}};
+    int u[3][3] = {{9, -36, 30},
+                   {-36, 192, -180},
+                   {30, -180, 180}};
 
 
-for (int i = 0; i < rows; i++)
-for (int j = 0; j < cols; j++)
-ms.MM(U, i+1, j+1) = u[i][j];
+    for (int i = 0; i < rows; i++)
+        for (int j = 0; j < cols; j++)
+            ms.MM(U, i+1, j+1) = u[i][j];
 
-//HNF
+    //HNF
 
-int hnf_ref[3][3] = {{3, 0, 0},
-                     {0, 12, 0},
-                     {30, 0, 60}};
+    int hnf_ref[3][3] = {{3, 0, 0},
+                         {0, 12, 0},
+                         {30, 0, 60}};
 
-MId H = ms.getNewMatrix(rows, cols);
+    MId H = ms.getNewMatrix(rows, cols);
 
-int dim;
-MId U1 = MId_Undef;
-MId V1 = MId_Undef;
-ms.compute_hnf_v1(U, H, dim, U1, V1);
-cout << "The hnf matrix:" << endl << ms.print(H) << endl;
-for (int i = 0; i < rows; i++)
-for (int j = 0; j < cols; j++)
-ASSERT_EQ(ms.MM(H, i+1, j+1), hnf_ref[i][j]);
+    int dim;
+    MId U1 = MId_Undef;
+    MId V1 = MId_Undef;
+    ms.compute_hnf_v1(U, H, dim, U1, V1);
+    cout << "The hnf matrix:" << endl << ms.print(H) << endl;
+    for (int i = 0; i < rows; i++)
+        for (int j = 0; j < cols; j++)
+            ASSERT_EQ(ms.MM(H, i+1, j+1), hnf_ref[i][j]);
 }
 
 /*
@@ -255,83 +255,75 @@ ASSERT_EQ(ms.MM(H, i+1, j+1), hnf_ref[i][j]);
 */
 
 TEST_F(HNF_test, test_hnf8) {
-int rows = 4;
-int cols = 5;
-MId U = ms.getNewMatrix(rows, cols);
+    int rows = 4;
+    int cols = 5;
+    MId U = ms.getNewMatrix(rows, cols);
 
-int u[4][5] = {{9,  6,  0, -8,  0},
-               {-5, -8,  0,  0,  0},
-               {0,  0,  0,  4,  0},
-               {0,  0,  0, -5,  0}};
+    int u[4][5] = {{9,  6,  0, -8,  0},
+                   {-5, -8,  0,  0,  0},
+                   {0,  0,  0,  4,  0},
+                   {0,  0,  0, -5,  0}};
 
 
-for (int i = 0; i < rows; i++)
-for (int j = 0; j < cols; j++)
-ms.MM(U, i+1, j+1) = u[i][j];
+    for (int i = 0; i < rows; i++)
+        for (int j = 0; j < cols; j++)
+            ms.MM(U, i+1, j+1) = u[i][j];
 
-//HNF
+    //HNF
 
-int hnf_ref[4][5] = {{1, 0, 0, 0, 0},
-                     {1, 2, 0, 0, 0},
-                     {28, 36, 84, 0, 0},
-                     {-35, -45, -105, 0, 0}};
+    int hnf_ref[4][5] = {{1, 0, 0, 0, 0},
+                         {1, 2, 0, 0, 0},
+                         {28, 36, 84, 0, 0},
+                         {-35, -45, -105, 0, 0}};
 
-MId H = ms.getNewMatrix(rows, cols);
+    MId H = ms.getNewMatrix(rows, cols);
 
-int dim;
-MId U1 = MId_Undef;
-MId V1 = MId_Undef;
-ms.compute_hnf_v1(U, H, dim, U1, V1);
-cout << "The hnf matrix:" << endl << ms.print(H) << endl;
-for (int i = 0; i < rows; i++)
-for (int j = 0; j < cols; j++)
-ASSERT_EQ(ms.MM(H, i+1, j+1), hnf_ref[i][j]);
+    int dim;
+    MId U1 = MId_Undef;
+    MId V1 = MId_Undef;
+    ms.compute_hnf_v1(U, H, dim, U1, V1);
+    cout << "The hnf matrix:" << endl << ms.print(H) << endl;
+    for (int i = 0; i < rows; i++)
+        for (int j = 0; j < cols; j++)
+            ASSERT_EQ(ms.MM(H, i+1, j+1), hnf_ref[i][j]);
 }
 
 TEST_F(HNF_test, test_hnf9) {
-int rows = 6;
-int cols = 4;
-MId U = ms.getNewMatrix(rows, cols);
+    int rows = 6;
+    int cols = 4;
+    MId U = ms.getNewMatrix(rows, cols);
 
-int u[6][4] = {{-5, -2,  7,  1},
-               {8,  8,  -5,  -1},
-               {-3, -2, -8, 6},
-               {-9, -2, 4, 0},
-               {5, 8, 3, 8},
-               {5, 5, -4, -3}};
+    int u[6][4] = {{-5, -2,  7,  1},
+                   {8,  8,  -5,  -1},
+                   {-3, -2, -8, 6},
+                   {-9, -2, 4, 0},
+                   {5, 8, 3, 8},
+                   {5, 5, -4, -3}};
 
 
-for (int i = 0; i < rows; i++)
-for (int j = 0; j < cols; j++)
-ms.MM(U, i+1, j+1) = u[i][j];
+    for (int i = 0; i < rows; i++)
+        for (int j = 0; j < cols; j++)
+            ms.MM(U, i+1, j+1) = u[i][j];
 
-//HNF
+    //HNF
 
-int hnf_ref[6][4] = {{1, 0, 0, 0},
-                     {0, 1, 0, 0},
-                     {3, 1, 4, 0},
-                     {237, 103, 352, 486},
-                     {-299, -130, -450, -627},
-                     {90, 40, 135, 188}};
+    int hnf_ref[6][4] = {{1, 0, 0, 0},
+                         {0, 1, 0, 0},
+                         {3, 1, 4, 0},
+                         {237, 103, 352, 486},
+                         {-299, -130, -450, -627},
+                         {90, 40, 135, 188}};
 
-MId H = ms.getNewMatrix(rows, cols);
+    MId H = ms.getNewMatrix(rows, cols);
 
-int dim;
-MId U1 = MId_Undef;
-MId V1 = MId_Undef;
-ms.compute_hnf_v1(U, H, dim, U1, V1);
-cout << "The hnf matrix:" << endl << ms.print(H) << endl;
-for (int i = 0; i < rows; i++)
-for (int j = 0; j < cols; j++)
-ASSERT_EQ(ms.MM(H, i+1, j+1), hnf_ref[i][j]);
+    int dim;
+    MId U1 = MId_Undef;
+    MId V1 = MId_Undef;
+    ms.compute_hnf_v1(U, H, dim, U1, V1);
+    cout << "The hnf matrix:" << endl << ms.print(H) << endl;
+    for (int i = 0; i < rows; i++)
+        for (int j = 0; j < cols; j++)
+            ASSERT_EQ(ms.MM(H, i+1, j+1), hnf_ref[i][j]);
 }
-
-
-
-
-
-
-
-
 
 
