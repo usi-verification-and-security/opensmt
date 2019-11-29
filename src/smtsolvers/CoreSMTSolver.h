@@ -395,8 +395,10 @@ public:
     //
     uint64_t solves, starts, decisions, rnd_decisions, propagations, conflicts, conflicts_last_update;
     uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
+#ifdef STATISTICS
     opensmt::OSMTTimeVal search_timer;
     opensmt::OSMTTimeVal branchTimer;
+#endif
     double learnts_size;
     uint64_t all_learnts;
     uint64_t learnt_theory_conflicts;
