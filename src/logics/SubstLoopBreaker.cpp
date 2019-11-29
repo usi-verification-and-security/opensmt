@@ -265,7 +265,7 @@ vec<SNRef> SubstLoopBreaker::breakLoops(const vec<vec<SNRef>>& loops) {
     return orphans;
 }
 
-std::stringstream SubstLoopBreaker::printGraphAndLoops(const vec<SNRef> &startNodes, const vec<vec<SNRef>>& loops) {
+std::string SubstLoopBreaker::printGraphAndLoops(const vec<SNRef> &startNodes, const vec<vec<SNRef>>& loops) {
     if (loops.size() == 0)
         cerr << "No loops\n";
     for (int i = 0; i < loops.size(); i++) {
@@ -329,5 +329,5 @@ std::stringstream SubstLoopBreaker::printGraphAndLoops(const vec<SNRef> &startNo
         free(in);
     }
     ss << "}";
-    return ss;
+    return ss.str();
 }
