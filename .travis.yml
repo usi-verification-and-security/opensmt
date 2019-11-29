@@ -4,7 +4,6 @@ language: cpp
 branches:
     only:
         - master    
-
 sudo: true
 
 os:
@@ -19,7 +18,6 @@ compiler:
 env:
   global:
     - PRODUCE_PROOF=OFF
-    - RUN_REGRESSION_TESTS=OFF
   matrix:
     - CMAKE_BUILD_TYPE=Release
     - CMAKE_BUILD_TYPE=Debug
@@ -58,9 +56,13 @@ addons:
       - flex
 
 install: true
+
+before_script:
+    - if [[ "${TRAVIS_COMPILER}" == "clang" ]]; then FLAGS="-Wpessimizing-move -Werror=pessimizing-move"; fi
+
 script:
   - mkdir build && cd build
-  - cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DPRODUCE_PROOF=${PRODUCE_PROOF} ..
+  - cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_CXX_FLAGS="$FLAGS" -DPRODUCE_PROOF=${PRODUCE_PROOF} ..
   - make
   - ctest
   - if [[ ${CMAKE_BUILD_TYPE} == Debug && ${PRODUCE_PROOF} == OFF ]]; then
