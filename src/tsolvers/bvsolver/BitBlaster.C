@@ -494,7 +494,6 @@ BitBlaster::bbBvand(PTRef tr)
         bb_args.push(bbTerm(logic.getPterm(tr)[i]));
 
     int n_bits = bs[bb_args[0]].size(); // the number of bits in each argument
-    int n_args = bb_args.size(); // the number of arguments
     // Iterate over all bits
     vec<PTRef> result;
     for (int i = 0; i < n_bits; i++) {
@@ -583,7 +582,6 @@ BitBlaster::bbBvor(PTRef tr)
         bb_args.push(bbTerm(logic.getPterm(tr)[i]));
 
     int n_bits = bs[bb_args[0]].size(); // the number of bits in each argument
-    int n_args = bb_args.size(); // the number of arguments
     // Iterate over all bits
     for (int i = 0; i < n_bits; i++) {
         vec<PTRef> and_args;

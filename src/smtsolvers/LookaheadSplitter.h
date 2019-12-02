@@ -16,7 +16,7 @@ protected:
         // The children
         SplitData* sd;
         LASplitNode() : sd(nullptr) {}
-        ~LASplitNode() { delete sd; }
+        ~LASplitNode() override { delete sd; }
         void print_local() override {
             LANode::print_local();
             for (int i = 0; i < d; i++)

@@ -43,7 +43,7 @@ TEST(Simplex_test, test_ops_in_Simplex)
 
     bs.buildBounds();
 
-    Simplex s(c, bs);
+    Simplex s(bs);
 
     s.newNonbasicVar(x);
     s.newNonbasicVar(y);

@@ -27,8 +27,9 @@ public:
 };
 
 class Simplex {
+    std::unique_ptr<LRAModel> model;
     LABoundStore& boundStore;
-    unsigned bland_threshold;
+
     Tableau tableau;
     SimplexStats simplex_stats;
     void  pivot(LVRef basic, LVRef nonBasic);
@@ -42,7 +43,6 @@ class Simplex {
 
     void changeValueBy( LVRef, const Delta & );             // Updates the bounds after constraint pushing
     void refineBounds() { return; }                         // Compute the bounds for touched polynomials and deduces new bounds from it
-    std::unique_ptr<LRAModel> model;
     // Out of bound candidates
     // mutable std::unordered_set<LVRef, LVRefHash> candidates;
     mutable std::set<LVRef, LVRefComp> candidates;
@@ -55,7 +55,6 @@ class Simplex {
 
     bool valueConsistent(LVRef v) const; // Debug: Checks that the value of v in the model is consistent with the evaluated value of the polynomial of v in the same model.
     bool checkTableauConsistency() const;
-    SMTConfig& c;
 public:
     struct ExplTerm {
         LABoundRef boundref;
@@ -63,8 +62,8 @@ public:
     };
     using Explanation = std::vector<ExplTerm>;
 
-    Simplex(SMTConfig& c, std::unique_ptr<LRAModel> model, LABoundStore &bs) : model(std::move(model)), c(c), bland_threshold(1000), boundStore(bs) {}
-    Simplex(SMTConfig& c, LABoundStore&bs) : model(new LRAModel(bs)), c(c), bland_threshold(1000), boundStore(bs) {}
+    Simplex(std::unique_ptr<LRAModel> model, LABoundStore &bs) : model(std::move(model)), boundStore(bs) {}
+    Simplex(LABoundStore&bs) : model(new LRAModel(bs)), boundStore(bs) {}
     ~Simplex();
 
     void initModel() { model->init(); }

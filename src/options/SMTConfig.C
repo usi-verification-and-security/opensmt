@@ -613,7 +613,6 @@ void
 SMTConfig::parseCMDLine( int argc
                        , char * argv[ ] )
 {
-  char config_name[ 64 ];
   for ( int i = 1 ; i < argc - 1 ; i ++ )
   {
     const char * buf = argv[ i ];

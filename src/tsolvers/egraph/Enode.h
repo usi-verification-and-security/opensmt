@@ -252,7 +252,7 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
         uint32_t v = RegionAllocator<uint32_t>::alloc(symEnodeWord32Size());
         ERef eid;
         eid.x = v;
-        Enode* tmp = new (lea(eid)) Enode(sym, eid, n_enodes++);
+        new (lea(eid)) Enode(sym, eid, n_enodes++);
         return eid;
     }
 
@@ -267,7 +267,7 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
         ERef eid;
         eid.x = v;
         assert(t != Enode::et_list || ptr == PTRef_Undef);
-        Enode* tmp = new (lea(eid)) Enode(car, cdr, *this, eid, n_enodes++, ptr);
+        new (lea(eid)) Enode(car, cdr, *this, eid, n_enodes++, ptr);
         return eid;
     }
 

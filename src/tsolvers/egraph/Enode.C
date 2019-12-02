@@ -57,8 +57,8 @@ Enode::Enode(ERef car_,
     setCarParentIndex(-1);
     setCdrParentIndex(-1);
 
-    Enode& x = ea[getCar()];
-    Enode& y = ea[getCdr()];
+//    Enode& x = ea[getCar()];
+//    Enode& y = ea[getCdr()];
 
 //    if (x.type() != et_symb) {
 //        // x is not a symbol

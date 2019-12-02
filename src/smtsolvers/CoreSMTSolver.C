@@ -70,10 +70,11 @@ using opensmt::Logic_t;
 // Constructor/Destructor:
 
 CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
-    :
-    config (c)
-    , theory_handler (t)
+    : config           (c)
+    , theory_handler   (t)
     , verbosity        (c.verbosity())
+    , init             (false)
+    , stop             (false)
     // Parameters: (formerly in 'SearchParams')
     , var_decay        (c.sat_var_decay())
     , clause_decay     (c.sat_clause_decay())
@@ -97,11 +98,13 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , solves(0), starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), conflicts_last_update(0)
     , dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0)
       // ADDED FOR MINIMIZATION
-    , learnts_size(0) , all_learnts(0), n_clauses(0)
+    , learnts_size(0) , all_learnts(0)
     , learnt_theory_conflicts(0)
     , top_level_lits        (0)
+    , forced_split          (lit_Undef)
 
     , ok                    (true)
+    , n_clauses(0)
     , cla_inc               (1)
     , var_inc               (1)
     , watches               (WatcherDeleted(ca))
@@ -125,24 +128,18 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , split_next            (split_units == spm_time ? cpuTime() + split_inittune : decisions + split_inittune)
     , split_preference      (sppref_undef)
     , unadvised_splits      (0)
-    , forced_split          (lit_Undef)
-    , learnt_t_lemmata      (0)
-    , perm_learnt_t_lemmata (0)
-    , luby_i                (0)
-    , luby_k                (1)
-    , cuvti                 (false)
+
+
 #ifdef PRODUCE_PROOF
     , proof_                ( new Proof( ca ) )
     , proof                 ( * proof_ )
     , proof_graph           ( NULL )
 #endif
-    , next_it_i             (0)
-    , next_it_j             (1)
+
 #ifdef STATISTICS
     , preproc_time          (0)
     , elim_tvars            (0)
 #endif
-    , init                  (false)
 #ifdef PEDANTIC_DEBUG
     , max_dl_debug          (0)
     , analyze_cnt           (0)
@@ -150,6 +147,13 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , conflict_budget       (-1)
     , propagation_budget    (-1)
     , asynch_interrupt      (false)
+    , learnt_t_lemmata      (0)
+    , perm_learnt_t_lemmata (0)
+    , luby_i                (0)
+    , luby_k                (1)
+    , cuvti                 (false)
+    , next_it_i             (0)
+    , next_it_j             (1)
 { }
 
 void
@@ -883,7 +887,6 @@ public:
 
 void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
 {
-    CRef confl_orig = confl;
 #ifdef PRODUCE_PROOF
     assert( proof.checkState( ) );
 #endif
@@ -2155,7 +2158,6 @@ double CoreSMTSolver::progressEstimate() const
   ...
 
 
- */
 
 static double luby(double y, int x)
 {
@@ -2174,6 +2176,7 @@ static double luby(double y, int x)
 
     return pow(y, seq);
 }
+*/
 
 void CoreSMTSolver::declareVarsToTheories()
 {
@@ -2298,7 +2301,6 @@ lbool CoreSMTSolver::solve_()
     double next_printout = restart_first;
 
     // Search:
-    const size_t old_conflicts = nLearnts( );
 
     if (config.dryrun())
         stop = true;
@@ -2342,13 +2344,8 @@ lbool CoreSMTSolver::solve_()
 	{
 		// Extend & copy model:
 		model.growTo(nVars());
-		for (int i = 0; i < nVars(); i++) model[i] = value(i);
-//            verifyModel();
-		// Compute models in tsolvers
-		if (config.produce_models() && !config.isIncremental())
-		{
-			printModel();
-		}
+		for (int i = 0; i < nVars(); i++)
+		    model[i] = value(i);
 	}
 	else
 	{
@@ -2461,7 +2458,6 @@ bool CoreSMTSolver::scatterLevel()
 
 bool CoreSMTSolver::createSplit_scatter(bool last)
 {
-    int curr_dl0_idx = trail_lim.size() > 0 ? trail_lim[0] : trail.size();
     assert(splits.size() == split_assumptions.size());
     splits.push_c(SplitData(config.smt_split_format_length() == spformat_brief));
     split_assumptions.push();

@@ -725,7 +725,7 @@ const char* THandler::printAsrtClause(vec<Lit>& r) {
     for (int i = 0; i < r.size(); i++) {
         Var v = var(r[i]);
         bool sgn = sign(r[i]);
-        os << (sgn ? "not " : "") << getLogic().printTerm(tmap.varToPTRef(var(r[i]))) << " ";
+        os << (sgn ? "not " : "") << getLogic().printTerm(tmap.varToPTRef(v)) << " ";
     }
     return os.str().c_str();
 }

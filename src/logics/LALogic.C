@@ -485,7 +485,6 @@ char* LALogic::printTerm(PTRef tr) const { return printTerm_(tr, false, false); 
 char* LALogic::printTerm(PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
 PTRef LALogic::mkNumMinus(const vec<PTRef>& args_in, char** msg)
 {
-    SymRef s;
     vec<PTRef> args;
     args_in.copyTo(args);
     if (args.size() == 1) {
@@ -510,6 +509,7 @@ PTRef LALogic::mkNumMinus(const vec<PTRef>& args_in, char** msg)
     args[1] = fact;
     return mkNumPlus(args);
 }
+
 PTRef LALogic::mkNumPlus(const vec<PTRef>& args, char** msg)
 {
     vec<PTRef> new_args;

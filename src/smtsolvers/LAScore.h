@@ -160,9 +160,9 @@ public:
         void setRound(int r) { round = r; }
     };
 private:
+    int base_score_round;
     LABestLitBuf<DoubleVal> buf_LABests;
     vec<DoubleVal> LAexacts;
-    int base_score_round;
     double cached_score;
     double computeScoreFromClauses(const vec<CRef>& clauses, const LookaheadSMTSolver *solver);
     bool current(const DoubleVal &e) const { return latest_round == e.getRound(); }
@@ -297,8 +297,8 @@ private:
 
 public:
     explicit LookaheadScoreClassic(const vec<lbool> &assigns, const SMTConfig &c)
-            : buf_LABests(c.randomize_lookahead_bufsz(), assigns, c.randomize_lookahead(), c.getRandomSeed()),
-              LookaheadScore(assigns) { std::cerr << "; Classic score\n"; }
+            : LookaheadScore(assigns), buf_LABests(c.randomize_lookahead_bufsz(), assigns, c.randomize_lookahead(), c.getRandomSeed())
+              { std::cerr << "; Classic score\n"; }
 
     void newVar() override;
 

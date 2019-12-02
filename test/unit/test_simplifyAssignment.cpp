@@ -97,7 +97,6 @@ TEST(SimplifyUnderAssignemnt_test, test_BooleanEquality)
     PTRef a = logic.mkBoolVar("a");
     PTRef nota = logic.mkNot(a);
     PTRef b = logic.mkBoolVar("b");
-    PTRef c = logic.mkBoolVar("c");
     PTRef eq = logic.mkEq(a,b);
     vec<PTRef> args;
     args.push(eq);
@@ -199,7 +198,6 @@ TEST(SimplifyUnderAssignmentAggressive_test, test_BooleanEquality)
     PTRef a = logic.mkBoolVar("a");
     PTRef nota = logic.mkNot(a);
     PTRef b = logic.mkBoolVar("b");
-    PTRef c = logic.mkBoolVar("c");
     PTRef eq = logic.mkEq(a,b);
     vec<PTRef> args;
     args.push(eq);

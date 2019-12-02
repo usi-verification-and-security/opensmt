@@ -111,24 +111,3 @@ void CoreSMTSolver::printTrail( )
   }
 }
 
-void CoreSMTSolver::printModel( )
-{
-  // Print Boolean model
-  printModel( config.getRegularOut( ) );
-  // Print Theory model
-//  egraph.printModel( config.getRegularOut( ) );
-}
-
-void CoreSMTSolver::printModel( ostream & out )
-{
-  for (Var v = 2; v < model.size(); v++)
-  {
-//    Enode * e = theory_handler->varToEnode( v );
-//    if ( e->isTAtom( ) )
-//      continue;
-    int tmp1, tmp2;
-//    if( sscanf( (e->getCar( )->getName( )).c_str( ), CNF_STR, &tmp1, &tmp2 ) != 2 )
- //     if ( model[ v ] != l_Undef )
-//	out << ( model[ v ] == l_True ? "" : "(not " ) << e << ( model[ v ] == l_True ? "" : ")" ) << endl;
-  }
-}

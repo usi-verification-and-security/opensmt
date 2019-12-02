@@ -79,8 +79,8 @@ class UseVector {
      */
     struct Entry {
         enum class Tag : unsigned char {Valid, Marked, Free};
-        int data;
         Tag tag;
+        int data;
 
         Entry(ERef e): tag{Tag::Valid}, data{static_cast<int>(e.x)} { }
         Entry(): tag{Tag::Valid}, data{0} { }

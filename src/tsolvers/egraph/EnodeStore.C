@@ -203,7 +203,7 @@ char* EnodeStore::printEnode(ERef e) {
         wrt = asprintf(&out, "%s\n", old);
         assert(wrt >= 0);
         ::free(old);
-skip:
+
         if (en.isTerm()) {
             old = out;
             char* in = printEnode(en.getCar());

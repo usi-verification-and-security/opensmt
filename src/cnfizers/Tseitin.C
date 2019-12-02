@@ -70,7 +70,6 @@ bool Tseitin::declare(vec<PTRef>& unprocessed_terms, PTRef formula) {
 
         // Here (after the checks) not safe to use Pterm& since cnfize.* can alter the table of terms
         // by calling findLit
-        SymRef symb = logic.getPterm(ptr).symb();
         int sz = logic.getPterm(ptr).size();
         bool need_def = (ptr == formula ? false : true); // Definition variable not needed for top formula
         if (logic.isAnd(ptr))

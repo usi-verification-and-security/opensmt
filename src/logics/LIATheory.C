@@ -18,7 +18,7 @@ bool LIATheory::simplify(const vec<PFRef>& formulas, int curr)
     pfstore[formulas[curr]].root = getLogic().mkAnd(flas);
 #else // PRODUCE_PROOF
     PTRef coll_f = getCollateFunction(formulas, curr);
-    bool res = computeSubstitutions(coll_f, formulas, curr);
+    computeSubstitutions(coll_f, formulas, curr);
     lialogic.simplifyAndSplitEq(pfstore[formulas[curr]].root, pfstore[formulas[curr]].root);
     vec<Map<PTRef,lbool,PTRefHash>::Pair> units;
     pfstore[formulas[curr]].units.getKeysAndVals(units);

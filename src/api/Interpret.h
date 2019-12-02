@@ -32,7 +32,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 // forward declarations
 class Logic;
-class SMTConfig;
 class Theory;
 class SimpSMTSolver;
 class MainSolver;
@@ -64,12 +63,25 @@ class LetFrame {
 class Interpret {
   protected:
     SMTConfig      &config;
+    Logic          *logic;
     Theory         *theory;
     THandler       *thandler;
-    Logic          *logic;
     SimpSMTSolver  *solver;
+    MainSolver     *main_solver;
 
-    bool                        f_exit;
+    bool            f_exit;
+    int             asrt_lev;
+    int             sat_calls; // number of sat calls
+    bool            parse_only;
+
+    // Named terms for getting variable values
+    Map<const char*,PTRef,StringHash,Equal<const char*>> nameToTerm;
+    VecMap<PTRef,const char*,PTRefHash,Equal<PTRef> > termToNames;
+    vec<char*>      term_names; // For (! <t> :named <n>) constructs.  if Itp is enabled, this maps a
+                                            // partition to it name.
+    vec<PTRef>      vec_ptr_empty;
+
+    vec<PTRef>      assertions;
 
     char*                       buildSortName(ASTNode& n);
     SRef                        newSort      (ASTNode& n);
@@ -102,46 +114,27 @@ class Interpret {
     bool                        addLetName(const char* s, const PTRef args, LetFrame& frame);
     PTRef                       letNameResolve(const char* s, const vec<LetFrame>& frame) const;
     PTRef                       insertTerm(const char* s, const vec<PTRef>& args);
-    int                         asrt_lev;
 
-    int                         sat_calls; // number of sat calls
 
-    // Named terms for getting variable values
-    Map<const char*,PTRef,StringHash,Equal<const char*>> nameToTerm;
-    VecMap<PTRef,const char*,PTRefHash,Equal<PTRef> > termToNames;
-    vec<char*>                  term_names; // For (! <t> :named <n>) constructs.  if Itp is enabled, this maps a
-                                            // partition to it name.
-    vec<SRef>                   vec_sr_empty; // For faster comparison with empty vec
-    vec<PTRef>                  vec_ptr_empty;
-
-    vec<PTRef> assertions;
 
     virtual void new_solver();
 
   public:
-    Interpret(SMTConfig& c)
-        : logic   (NULL)
-        , theory(NULL)
-        , thandler(NULL)
-        , solver(NULL)
-        , main_solver(NULL)
-        , f_exit(false)
-        , asrt_lev(0)
-        , sat_calls(0)
-        , config(c)
-        , parse_only(false) { }
+
 
     Interpret(SMTConfig& c, Logic *_l, Theory *_t, THandler *_th, SimpSMTSolver *_s, MainSolver *_m)
-        : logic   (_l)
-        , theory(_t)
-        , thandler(_th)
-        , solver(_s)
+        : config     (c)
+        , logic      (_l)
+        , theory     (_t)
+        , thandler   (_th)
+        , solver     (_s)
         , main_solver(_m)
-        , f_exit(false)
-        , asrt_lev(0)
-        , sat_calls(0)
-        , config(c)
-        , parse_only(false) { }
+        , f_exit     (false)
+        , asrt_lev   (0)
+        , sat_calls  (0)
+        , parse_only (false) { }
+
+    Interpret(SMTConfig& c) : Interpret(c, nullptr, nullptr, nullptr, nullptr, nullptr) { }
 
     ~Interpret();
 
@@ -153,13 +146,12 @@ class Interpret {
     ValPair getValue       (PTRef tr) const;
     bool    getAssignment  ();
 
-    MainSolver   *main_solver;
 
-    bool parse_only;
     PTRef getParsedFormula();
     vec<PTRef>& getAssertions() { return assertions; }
     bool is_top_level_assertion(PTRef ref);
     int get_assertion_index(PTRef ref);
+    void setParseOnly() { parse_only = true; }
 };
 
 #endif

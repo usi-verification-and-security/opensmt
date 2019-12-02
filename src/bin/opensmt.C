@@ -76,10 +76,9 @@ int main( int argc, char * argv[] )
 
   // Accepts file from stdin if nothing specified
     FILE * fin = NULL;
-    int opt, i;
+    int opt;
 
     SMTConfig c;
-    bool dryrun = false; // Run without solving
     while ((opt = getopt(argc, argv, "hdr:")) != -1) {
         switch (opt) {
 
@@ -108,7 +107,7 @@ int main( int argc, char * argv[] )
     if (argc - optind == 0) {
         fin = stdin;
         c.setInstanceName("stdin");
-        int rval = interpreter.interpInteractive(fin);
+        interpreter.interpInteractive(fin);
     }
     else {
         for (int i = optind; i < argc; i++) {
@@ -127,7 +126,7 @@ int main( int argc, char * argv[] )
                 opensmt_error( "SMTLIB 1.2 format is not supported in this version, sorry" );
             }
             else if ( extension != NULL && strcmp( extension, ".smt2" ) == 0 ) {
-                int rval = interpreter.interpFile(fin);
+                interpreter.interpFile(fin);
             }
             else
                 opensmt_error2( filename, " extension not recognized. Please use one in { smt2, cnf } or stdin (smtlib2 is assumed)" );

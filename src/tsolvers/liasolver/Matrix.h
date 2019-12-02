@@ -105,9 +105,9 @@ public:
 class LAMatrix
 {
 private:
+    LAVecRef coeffs;
     int cols;
     int rows;
-    LAVecRef coeffs;
 public:
     LAMatrix() : coeffs(LAVecRef_Undef), cols(0), rows(0) {}
     LAMatrix(LAVecRef coeffs, int rows, int cols) : coeffs(coeffs), cols(cols), rows(rows) {}

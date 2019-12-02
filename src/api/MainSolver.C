@@ -76,8 +76,10 @@ MainSolver::insertFormula(PTRef root, char** msg)
         (void)chars_written;
         return s_Error;
     }
+#ifndef PRODUCE_PROOF
+    inserted_formulas_count++;
+#else
     int partition_index = inserted_formulas_count++;
-#ifdef PRODUCE_PROOF
     logic.assignPartition(partition_index, root);
     assert(logic.getPartitionIndex(root) != -1);
     PTRef old_root = root;
@@ -110,7 +112,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
 
     vec<PTRef> coll_f;
     for (std::size_t i = frames.getSimplifiedUntil(); i < frames.size(); i++) {
-        bool res = getTheory().simplify(frames.getFrameReferences(), i);
+        getTheory().simplify(frames.getFrameReferences(), i);
         frames.setSimplifiedUntil(i + 1);
         const PushFrame & frame = pfstore[frames.getFrameReference(i)];
         PTRef root = frame.root;
@@ -403,7 +405,7 @@ MainSolver::readFormulaFromFile(const char *file)
         return false;
     }
     Interpret interp(config, &logic, &getTheory(), &thandler, smt_solver, this);
-    interp.parse_only = true;
+    interp.setParseOnly();
     interp.interpFile(f);
     return true;
 }

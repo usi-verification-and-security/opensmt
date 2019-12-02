@@ -6,8 +6,8 @@
 
 LookaheadSMTSolver::LookaheadSMTSolver(SMTConfig& c, THandler& thandler)
 	: SimpSMTSolver (c, thandler)
-	, score         (c.lookahead_score_deep() ? (LookaheadScore*)(new LookaheadScoreDeep(assigns, c)) : (LookaheadScore*)(new LookaheadScoreClassic(assigns, c)))
     , idx           (0)
+	, score         (c.lookahead_score_deep() ? (LookaheadScore*)(new LookaheadScoreDeep(assigns, c)) : (LookaheadScore*)(new LookaheadScoreClassic(assigns, c)))
 {}
 
 Var LookaheadSMTSolver::newVar(bool sign, bool dvar)
@@ -32,8 +32,6 @@ lbool LookaheadSMTSolver::solve_()
     declareVarsToTheories();
 
     double nof_conflicts = restart_first;
-
-    int idx = 0;
 
     LALoopRes res = LALoopRes::unknown;
     while (res == LALoopRes::unknown || res == LALoopRes::restart) {
@@ -412,7 +410,6 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
             double ss = score->getSolverScore(this);
             newDecisionLevel();
             Lit l = mkLit(v, p);
-            int tmp_trail_sz = trail.size();
 #ifdef LADEBUG
            printf("Checking lit %s%d\n", p == 0 ? "" : "-", v);
 #endif

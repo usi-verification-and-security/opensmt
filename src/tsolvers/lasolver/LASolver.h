@@ -28,10 +28,10 @@ class LASolverStats: public TSolverStats
         opensmt::OSMTTimeVal timer;
 
         LASolverStats()
-        : num_pivot_ops(0)
+        : TSolverStats()
+        , num_pivot_ops(0)
         , num_bland_ops(0)
         , num_vars(0)
-        , TSolverStats()
         {}
 
         void printStatistics(ostream& os) override
@@ -59,6 +59,7 @@ protected:
     LALogic&             logic;
     LAVarStore           laVarStore;
     LAVarMapper          laVarMapper;
+    LABoundStore         boundStore;
     Simplex              simplex;
     vec<PtAsgn>          decision_trace;
     vec<int>             dec_limit;
@@ -69,7 +70,6 @@ protected:
     void                 pushDecision(PtAsgn);
     int                  backtrackLevel();
 
-    LABoundStore         boundStore;
     std::vector<opensmt::Real> explanationCoefficients;
 
     vec<PtAsgn>          LABoundRefToLeqAsgn;

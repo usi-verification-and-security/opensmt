@@ -40,7 +40,7 @@ private:
 #ifdef PEDANTIC_DEBUG
 public:
 #endif
-    SMTConfig          &config;                   // Reference to configuration
+    SMTConfig          &config;                   // Reference to configuration, needed for PRODUCE_PROOF
 public:
 
     THandler ( SMTConfig& c, Theory& tsh)

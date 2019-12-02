@@ -69,7 +69,7 @@ const char* Logic::s_framev_prefix = ".frame";
 Logic::Logic(SMTConfig& c) :
       config(c)
     , sort_store(id_store)
-    , term_store(sym_store, sort_store)
+    , term_store(sym_store)
     , sym_TRUE(SymRef_Undef)
     , sym_FALSE(SymRef_Undef)
     , sym_ANON(SymRef_Undef)
@@ -100,7 +100,7 @@ Logic::Logic(SMTConfig& c) :
 
     term_TRUE = mkConst(getSort_bool(), tk_true);
     if (term_TRUE == PTRef_Undef) {
-        printf("Error in constructing term %s: %s\n", tk_true, msg);
+        printf("Error in constructing term %s\n", tk_true);
         assert(false);
     }
     sym_TRUE = sym_store.nameToRef(tk_true)[0];
@@ -109,7 +109,7 @@ Logic::Logic(SMTConfig& c) :
 
     term_FALSE = mkConst(getSort_bool(), tk_false);
     if (term_FALSE  == PTRef_Undef) {
-        printf("Error in constructing term %s: %s\n", tk_false, msg);
+        printf("Error in constructing term %s\n", tk_false);
         assert(false);
     }
     sym_FALSE = sym_store.nameToRef(tk_false)[0];
@@ -756,7 +756,6 @@ Logic::mkIte(vec<PTRef>& args)
 // Check if arguments contain trues or a false and return the simplified
 // term
 PTRef Logic::mkAnd(vec<PTRef>& args) {
-    char** msg;
     PTRef tr = PTRef_Undef;
 
     for (int i = 0; i < args.size(); i++)
@@ -796,7 +795,7 @@ PTRef Logic::mkAnd(vec<PTRef>& args) {
     }
 
     if (tr == PTRef_Undef) {
-        printf("Error in mkAnd: %s", *msg);
+        printf("Error in mkAnd");
         assert(false);
     }
 
@@ -2045,8 +2044,6 @@ Logic::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate, bool t
 void
 Logic::dumpFunction(ostream& dump_out, const TFun& tpl_fun)
 {
-    PTRef tr_function = tpl_fun.getBody();
-    Pterm& t = getPterm(tr_function);
     const char* name = tpl_fun.getName();
     char *quoted_name = protectName(name);
 
@@ -2070,7 +2067,6 @@ Logic::instantiateFunctionTemplate(const char* fname, Map<PTRef, PTRef,PTRefHash
 {
     const TFun& tpl_fun = defined_functions[fname];
     PTRef tr = tpl_fun.getBody();
-    Pterm& t = getPterm(tpl_fun.getBody());
     const vec<PTRef>& args = tpl_fun.getArgs();
     Map<PTRef,PtAsgn,PTRefHash> substs_asgn;
     for (int i = 0; i < args.size(); i++) {

@@ -85,11 +85,11 @@ void LASolver::isProperLeq(PTRef tr)
 }
 
 LASolver::LASolver(SolverDescr dls, SMTConfig & c, LALogic& l, vec<DedElem>& d)
-        : logic(l)
-        , TSolver((SolverId)descr_la_solver, (const char*)descr_la_solver, c, d)
+        : TSolver((SolverId)descr_la_solver, (const char*)descr_la_solver, c, d)
+        , logic(l)
         , laVarMapper(l, laVarStore)
         , boundStore(laVarStore)
-        , simplex(c, boundStore)
+        , simplex(boundStore)
 {
     dec_limit.push(0);
     status = INIT;
@@ -489,7 +489,7 @@ void LASolver::initSolver()
             // Terms are of form c <= t where
             //  - c is a constant and
             //  - t is either a variable or a sum
-            PTRef cons = leq_t[0];
+            // leq_t[0] is const and leq_t[1] is term
             PTRef term = leq_t[1];
 
             // Ensure that all variables exists, build the polynomial, and update the occurrences.
@@ -661,7 +661,6 @@ void LASolver::getConflict(bool, vec<PtAsgn>& e) {
 // (3) c
 opensmt::Number LASolver::evaluateTerm(PTRef tr)
 {
-    Pterm& t = logic.getPterm(tr);
     opensmt::Real val(0);
     // Case (3)
     if (logic.isNumConst(tr))

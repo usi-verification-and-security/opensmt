@@ -45,7 +45,6 @@ SRef SStore::newSort(IdRef id, const char* name_, vec<SRef>& rest)
 SRef SStore::newSort(IdRef idr, vec<SRef>& rest)
 {
     SRef sr = SRef_Undef;
-    char* old;
     std::string canon_name;
     if (rest.size() > 0) {
         std::stringstream ss;

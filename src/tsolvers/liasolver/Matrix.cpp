@@ -14,8 +14,7 @@ LAVecStore::getNewVec(const vec<opensmt::Real>& ps, const opensmt::Real& den)
 char*
 LAVecStore::print(LAVecRef vr)
 {
-    char *str = (char*) malloc(1);
-    str[0] = '\0';
+    char *str;
     asprintf(&str, "[\n");
     for (int i = 1; i <= operator[](vr).size(); i++) {
         char* tmp;
@@ -523,10 +522,6 @@ LAMatrixStore::compute_hnf_v1(const MId U1, MId &H, int &dim1, MId &R1, MId &Ri1
         LAMatrix &R1m = operator[](R1);
         assert(R1m.nRows() == U1m.nRows());
     }
-    if (Ri1 != MId_Undef) {
-        LAMatrix& Ri1m = operator[](Ri1);
-        LAMatrix& R1m = operator[](R1);
-    }
 
     if (H != U1)
         setMatrix(H, U1);
@@ -620,7 +615,6 @@ void
 LAMatrixStore::compute_hnf(MId &H, const MId A){//, int &dim) {//maybe no need for dim and p
 
     LAMatrix &Hm = operator[](H);
-    LAMatrix &Am = operator[](A);
 
     if (H != A)
         setMatrix(H, A);

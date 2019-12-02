@@ -31,9 +31,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 const int PtStore::ptstore_vec_idx = 1;
 const int PtStore::ptstore_buf_idx = 2;
 
-PtStore::PtStore(SymStore& symstore_, SStore& sortstore_)
-    : symstore(symstore_), sortstore(sortstore_) { }
-
 //
 // Resolves the SymRef for name s taking into account polymorphism
 // Returns SymRef_Undef if the name is not defined anywhere

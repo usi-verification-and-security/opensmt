@@ -21,27 +21,15 @@ Simplex::Explanation Simplex::checkSimplex() {
 
     bool bland_rule = false;
     unsigned repeats = 0;
-    // These values are from Yices
-#ifdef USE_YICES_BLAND_RULE
-    unsigned bthreshold = bland_threshold;
-    if (boundStore.nVars() > 10000)
-        bthreshold *= 1000;
-    else if (boundStore.nVars() > 1000)
-        bthreshold *= 100;
-#endif
 
     // keep doing pivotAndUpdate until the SAT/UNSAT status is confirmed
     while (true) {
         repeats++;
         LVRef x = LVRef_Undef;
 
-#ifdef USE_YICES_BLAND_RULE
-        if (!bland_rule && (repeats > bthreshold))
-            bland_rule = true;
-#else
+
         if (!bland_rule && (repeats > tableau.getNumOfCols()))
             bland_rule = true;
-#endif
 
         if (bland_rule) {
             x = getBasicVarToFixByBland();

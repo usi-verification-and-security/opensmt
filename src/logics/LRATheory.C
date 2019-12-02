@@ -18,7 +18,7 @@ bool LRATheory::simplify(const vec<PFRef>& formulas, int curr)
     pfstore[formulas[curr]].root = getLogic().mkAnd(flas);
 #else
     PTRef coll_f = getCollateFunction(formulas, curr);
-    bool res = computeSubstitutions(coll_f, formulas, curr);
+    computeSubstitutions(coll_f, formulas, curr);
     lralogic.simplifyAndSplitEq(pfstore[formulas[curr]].root, pfstore[formulas[curr]].root);
     vec<Map<PTRef,lbool,PTRefHash>::Pair> units;
     pfstore[formulas[curr]].units.getKeysAndVals(units);

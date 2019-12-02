@@ -480,7 +480,6 @@ void CoreSMTSolver::deduceTheory(vec<LitLev>& deductions)
 {
     Lit ded = lit_Undef;
     int n_deductions = 0;
-    int last_dl = -1;
 
     while (true)
     {

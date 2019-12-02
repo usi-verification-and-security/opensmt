@@ -59,7 +59,6 @@ class PtermIter {
 class PtStore {
     PtermAllocator pta{1024*1024};
     SymStore&      symstore;
-    SStore&        sortstore;
     vec<PTRef>     idToPTRef;
 
     Map<SymRef,PTRef,SymRefHash,Equal<SymRef> > cterm_map; // Mapping constant symbols to terms
@@ -81,7 +80,7 @@ class PtStore {
     static const int ptstore_buf_idx;
     static const int ptstore_vec_idx;
   public:
-    PtStore(SymStore& symstore_, SStore& sortstore_);
+    PtStore(SymStore& symstore) : symstore(symstore) {}
 
     PTRef newTerm(const SymRef sym, const vec<PTRef>& ps);/* {
         PTRef tr = pta.alloc(sym, ps); idToPTRef.push(tr);

@@ -39,10 +39,11 @@ using opensmt::Real;
 class Delta
 {
 private:
-    Real r;     // main value
-    Real d;     // delta to keep track of < / <= difference
     bool infinite;// infinite bit
     bool positive;// +/- infinite bit
+    Real r;     // main value
+    Real d;     // delta to keep track of < / <= difference
+
 
     inline bool isLess( const Real &c ) const;    //basic function to use in comparison with Real operator
     inline bool isGreater( const Real &c ) const; //basic function to use in comparison with Real operator

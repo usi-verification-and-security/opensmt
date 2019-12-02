@@ -36,10 +36,10 @@ Cnfizer::Cnfizer ( SMTConfig       &config_
                    , TermMapper    &tmap
                    , SimpSMTSolver &solver_
                  ) :
-      config   (config_  )
+      solver   (solver_)
+    , config   (config_  )
     , logic    (logic_)
     , tmap     (tmap)
-    , solver   (solver_)
     , s_empty  (true)
 {
     frame_terms.push(logic.getTerm_true()); // frame 0 does not have a var

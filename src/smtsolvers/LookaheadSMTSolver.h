@@ -34,7 +34,7 @@ protected:
         LANode& operator=(const LANode& o) { c1 = o.c1; c2 = o.c2; p = o.p; l = o.l; v = o.v; d = o.d; return *this; }
         LANode(const LANode* par, Lit li, lbool va, int dl) :
             c1(nullptr), c2(nullptr), p(par), l(li), v(va), d(dl) {}
-
+        virtual ~LANode() = default;
         virtual void print_local() {
             for (int i = 0; i < d; i++)
                 dprintf(STDERR_FILENO, " ");

@@ -95,7 +95,6 @@ LookaheadSMTSolver::LALoopRes LookaheadSplitter::solveLookahead()
 bool LookaheadSplitter::createSplitLookahead(LASplitNode *n)
 {
     // Create a split instance and add it to node n.
-    int curr_dl0_idx = trail_lim.size() > 0 ? trail_lim[0] : trail.size();
     assert(n->sd == NULL);
     n->sd = new SplitData(config.smt_split_format_length() == spformat_brief);
     SplitData& sd = *n->sd;

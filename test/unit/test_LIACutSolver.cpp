@@ -53,7 +53,7 @@ TEST(LIACutSolver_test, test_computeEqualityBasis)
     bs.buildBounds();
 
     //Simplex s(c, m, bs);
-    auto s = std::unique_ptr<Simplex>(new Simplex(c, bs));
+    auto s = std::unique_ptr<Simplex>(new Simplex(bs));
 
     s->newNonbasicVar(x);
     s->newNonbasicVar(y);

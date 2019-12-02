@@ -185,7 +185,6 @@ void Interpret::exit() {
 }
 
 void Interpret::interp(ASTNode& n) {
-    bool rval;
     assert(n.getType() == CMD_T);
     const smt2token cmd = n.getToken();
     switch (cmd.x) {
@@ -402,11 +401,9 @@ void Interpret::interp(ASTNode& n) {
             if(parse_only)
                 break;
 
-            char* msg;
-            int to;
             sstat status = main_solver->simplifyFormulas();
             if (status == s_Error)
-                notify_formatted(true, "Simplify: %s", msg);
+                notify_formatted(true, "Simplify");
             break;
         }
         case t_checksat:
@@ -441,11 +438,9 @@ void Interpret::interp(ASTNode& n) {
         {
             if (parse_only) break;
             if (main_solver->solverEmpty()) {
-                char* msg;
-                int to;
                 sstat status = main_solver->simplifyFormulas();
                 if (status == s_Error)
-                    notify_formatted(true, "write-state: %s", msg);
+                    notify_formatted(true, "write-state");
             }
             writeState((**(n.children->begin())).getValue());
             break;
@@ -875,7 +870,7 @@ bool Interpret::declareConst(ASTNode& n) //(const char* fname, const SRef ret_so
 {
     auto it = n.children->begin();
     ASTNode& name_node = **(it++);
-    ASTNode& args_node = **(it++);
+    it++; // args_node
     ASTNode& ret_node = **(it++);
     const char* fname = name_node.getValue();
     char* name = buildSortName(ret_node);

@@ -171,8 +171,6 @@ PtAsgn_reason Egraph::getDeduction( ) {
     // Communicate UF deductions
     while ( deductions_next < th_deductions.size_( ) ) {
         PtAsgn_reason pta = th_deductions[deductions_next++];
-        ERef e             = enode_store.termToERef[pta.tr];
-        Enode& en_e        = enode_store[e];
         // For sure this has a deduced polarity
         assert( logic.getPterm(pta.tr).getVar() == -1 || deduced[logic.getPterm(pta.tr).getVar()] != l_Undef );
         // If it has been pushed it is not a good candidate
@@ -185,7 +183,6 @@ PtAsgn_reason Egraph::getDeduction( ) {
 #ifdef VERBOSE_EUF
         cerr << "sent a deduction" << endl;
 #endif
-//    const int index = e->getDedIndex( );
 //    tsolvers_stats[ index ]->deductions_sent ++;
 #endif
 
@@ -205,9 +202,7 @@ PTRef Egraph::getSuggestion( )
   while ( suggestions.size() != 0 )
   {
     PTRef tr = suggestions.last();
-    ERef e = enode_store.termToERef[tr];
     suggestions.pop();
-    Enode& en_e = enode_store[e];
     if ( hasPolarity(tr) )
       continue;
     if ( logic.getPterm(tr).getVar() == -1 || deduced[logic.getPterm(tr).getVar()] != l_Undef )
@@ -992,7 +987,6 @@ void Egraph::backtrackToStackSize ( size_t size ) {
 
         else if ( last_action == DISEQ ) {
             ERef e = u.arg.er;
-            Enode& en_e = enode_store[e];
             undoDisequality( e );
         }
         else if ( last_action == DIST ) {

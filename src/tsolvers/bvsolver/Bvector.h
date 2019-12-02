@@ -105,7 +105,7 @@ class Bvector {
 
     bool     reloced     ()      const   { return header.reloced; }
     BVRef    relocation  ()      const   { return { args[0].name.x }; }
-    void     relocate    (BVRef t)       { header.reloced = 1; args[0] = { t.x, 0 }; }
+    void     relocate    (BVRef t)       { header.reloced = 1; args[0] = { {t.x}, {0} }; }
     bool     is_signed   ()      const   { return header.is_signed; }
     void     set_signed  (bool m)    { header.is_signed = m; }
 

@@ -101,12 +101,12 @@ public:
 
     // Mode of operation:
     //
+    int     grow;              // Allow a variable elimination step to grow by a number of clauses (default to zero).
     int     clause_lim;        // Variables are not eliminated if it produces a resolvent with a length above this limit.
                                // -1 means no limit.
     int     subsumption_lim;   // Do not check if subsumption against a clause larger than this. -1 means no limit.
     double  simp_garbage_frac; // A different limit for when to issue a GC during simplification (Also see 'garbage_frac').
 
-    int     grow;             // Allow a variable elimination step to grow by a number of clauses (default to zero).
     bool    use_asymm;         // Shrink clauses by asymmetric branching.
     bool    use_rcheck;        // Check if a clause is already implied. Prett costly, and subsumes subsumptions :)
     bool    use_elim;          // Perform variable elimination.
@@ -141,17 +141,18 @@ public:
     //
     int                 elimorder;
     bool                use_simplification;
-    vec<uint32_t>       elimclauses;
-    vec<char>           touched;
     OccLists<Var, vec<CRef>, ClauseDeleted>
                         occurs;
-    vec<int>            n_occ;
     Heap<ElimLt>        elim_heap;
+    int                 bwdsub_assigns;
+    vec<uint32_t>       elimclauses;
+    vec<char>           touched;
+    int                 n_touched;
+
+    vec<int>            n_occ;
     Queue<CRef>         subsumption_queue;
     vec<char>           frozen;
     vec<char>           eliminated;
-    int                 bwdsub_assigns;
-    int                 n_touched;
 
     // Temporaries:
     //

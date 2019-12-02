@@ -56,11 +56,11 @@ class LABoundList
 {
     friend class LABoundListAllocator;
     friend class LABoundStore; // Needed so that I can sort the bounds in the list
+    LVRef          v; // Do we need this?
     struct {
         unsigned reloc   : 1;
         unsigned sz      : 31;
     };
-    LVRef          v; // Do we need this?
     LABoundListRef reloc_target;
     LABoundRef     bounds[0];
 public:

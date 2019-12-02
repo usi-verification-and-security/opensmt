@@ -262,6 +262,8 @@ class CoreSMTSolver
 protected:
     SMTConfig & config;         // Stores Config
     THandler  & theory_handler; // Handles theory
+    bool      verbosity;
+    bool      init;
 public:
     bool stop = false;
 
@@ -368,7 +370,6 @@ public:
 
     // Mode of operation:
     //
-    bool      verbosity;
     double    var_decay;          // Inverse of the variable activity decay factor.                                            (default 1 / 0.95)
     double    clause_decay;       // Inverse of the clause activity decay factor.                                              (1 / 0.999)
     double    random_var_freq;    // The frequency with which the decision heuristic tries to choose a random variable.        (default 0.02)
@@ -554,7 +555,7 @@ protected:
 
     SpPref   split_preference;
 
-    int         unadvised_splits; // How many times the split happened on a PTRef that the logic considers ill-advised
+    int      unadvised_splits; // How many times the split happened on a PTRef that the logic considers ill-advised
     // Resource contraints:
     //
     int64_t             conflict_budget;    // -1 means no budget.
@@ -677,8 +678,6 @@ public:
     /*
           lbool  getModel               ( Enode * );
     */
-    void   printModel             ( );             // Wrapper
-    void   printModel             ( ostream & );   // Prints model
 
 #ifdef PRODUCE_PROOF
     void   printProofSMT2          ( ostream & ); // Print proof
@@ -758,9 +757,6 @@ protected:
     long               skipped_calls;              // Calls skipped so far
     long               learnt_t_lemmata;           // T-Lemmata stored during search
     long               perm_learnt_t_lemmata;      // T-Lemmata stored during search
-
-    // XXX (not) Added by Grisha
-    void   addBB                  ( vec<Var>& );   // Add a bit blasted variable group
 
     unsigned           luby_i;                     // Keep track of luby index
     unsigned           luby_k;                     // Keep track of luby k
@@ -851,7 +847,6 @@ protected:
     unsigned           total_tvars;
     unsigned           ie_generated;
 #endif
-    bool               init;
 
     // very debug XXX
 #ifdef PEDANTIC_DEBUG

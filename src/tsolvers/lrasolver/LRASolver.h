@@ -12,8 +12,8 @@ class LRASolverStats: public LASolverStats
         opensmt::OSMTTimeVal simplex_timer;
 
         LRASolverStats()
-        : num_vars(0)
-        , LASolverStats()
+        : LASolverStats()
+        , num_vars(0)
         {}
 
         void printStatistics(ostream& os) override

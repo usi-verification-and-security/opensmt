@@ -41,8 +41,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 static SolverDescr descr_lra_solver("LRA Solver", "Solver for Quantifier Free Linear Real Arithmetics");
 
 LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
-    : logic(l)
-    , LASolver(descr_lra_solver, c, l, d)
+    : LASolver(descr_lra_solver, c, l, d)
+    , logic(l)
     , delta(Delta::ZERO)
 
 {

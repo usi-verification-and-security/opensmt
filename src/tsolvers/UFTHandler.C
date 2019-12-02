@@ -46,8 +46,6 @@ void UFTHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
     vec<PtChild> terms;
     getTermList(root, terms, getLogic());
 
-    int n = deductions.size()-1;
-
     // We need to have a variable for each term for the theory solver to
     // work.
     for (int i = 0; i < terms.size(); i++)

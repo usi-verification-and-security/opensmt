@@ -15,8 +15,8 @@ public:
     opensmt::OSMTTimeVal bb_timer;
 
     LIASolverStats()
-            : num_vars(0)
-            , LASolverStats()
+            : LASolverStats()
+            , num_vars(0)
     {}
 
     void printStatistics(ostream& os) override

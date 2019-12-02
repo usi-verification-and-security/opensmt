@@ -528,15 +528,13 @@ FastRational lcm(integer a, integer b) {
 }
 
 // Return 1 if |op1| > |op2|, -1 if |op1| < |op2|, and 0 if op1 = op2
-inline int cmpabs(FastRational& op1, FastRational& op2)
+inline int cmpabs(FastRational op1, FastRational op2)
 {
-    FastRational tmp1 = op1;
-    FastRational tmp2 = op2;
-    if (tmp1.sign() == -1)
-        tmp1 = -tmp1;
-    if (tmp2.sign() == -1)
-        tmp2 = -tmp2;
-    return tmp1.compare(tmp2);
+    if (op1.sign() == -1)
+        op1 = -op1;
+    if (op2.sign() == -1)
+        op2 = -op2;
+    return op1.compare(op2);
 };
 template<ulword> ulword gcd(ulword a, ulword b);
 template<uword> uword gcd(uword a, uword b);

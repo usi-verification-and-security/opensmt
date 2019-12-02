@@ -36,7 +36,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 class SStore;
-class SMTConfig;
+struct SMTConfig;
 
 // For breaking substitution loops
 struct NStatus { uint32_t x; bool operator== (const NStatus& o) const { return o.x == x; } };
@@ -152,19 +152,15 @@ class Logic {
     SymRef              sym_OR;
     SymRef              sym_XOR;
     SymRef              sym_NOT;
+    SymRef              sym_UF_NOT;
     SymRef              sym_EQ;
     SymRef              sym_IMPLIES;
     SymRef              sym_DISTINCT;
     SymRef              sym_ITE;
 
-    SymRef              sym_UF_NOT;
-
-
     SRef                sort_BOOL;
-
     PTRef               term_TRUE;
     PTRef               term_FALSE;
-
 
     // For depth first search
     class pi {

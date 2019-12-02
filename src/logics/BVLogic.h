@@ -27,6 +27,7 @@ class BVLogic: public CUFLogic
   protected:
     SymRef              sym_BV_ZERO;   // 0
     SymRef              sym_BV_ONE;    // 1
+    SymRef              sym_BV_NEG;    // -
     SymRef              sym_BV_MINUS;  // -
     SymRef              sym_BV_PLUS;   // +
     SymRef              sym_BV_TIMES;  // *
@@ -34,28 +35,27 @@ class BVLogic: public CUFLogic
     SymRef              sym_BV_EQ;     // ==
     SymRef              sym_BV_SLEQ;   // s<=
     SymRef              sym_BV_ULEQ;   // u<=
-    SymRef              sym_BV_SLT;    // s<
-    SymRef              sym_BV_ULT;    // u<
     SymRef              sym_BV_SGEQ;   // s>=
     SymRef              sym_BV_UGEQ;   // u>=
+    SymRef              sym_BV_SLT;    // s<
+    SymRef              sym_BV_ULT;    // u<
     SymRef              sym_BV_SGT;    // s>
     SymRef              sym_BV_UGT;    // u>
+    SymRef              sym_BV_BWXOR;  // ^
     SymRef              sym_BV_LSHIFT; // <<
     SymRef              sym_BV_LRSHIFT; // l>>
     SymRef              sym_BV_ARSHIFT; // a>>
     SymRef              sym_BV_MOD;    // %
-    SymRef              sym_BV_BWAND;  // &
     SymRef              sym_BV_BWOR;   // |
+    SymRef              sym_BV_BWAND;  // &
+    SymRef              sym_BV_LAND;   // &&
+    SymRef              sym_BV_LOR;    // ||
+    SymRef              sym_BV_NOT;    // !
+    SymRef              sym_BV_COMPL;  // ~
+    SymRef              sym_BV_COLLATE32; // .coll32
     SymRef              sym_BV_INC;    // ++
     SymRef              sym_BV_DEC;    // --
     SymRef              sym_BV_NEQ;    // !=
-    SymRef              sym_BV_LAND;   // &&
-    SymRef              sym_BV_LOR;    // ||
-    SymRef              sym_BV_NEG;    // -
-    SymRef              sym_BV_NOT;    // !
-    SymRef              sym_BV_COMPL;  // ~
-    SymRef              sym_BV_BWXOR;  // ^
-    SymRef              sym_BV_COLLATE32; // .coll32
 
     SRef                sort_BVNUM;
 
