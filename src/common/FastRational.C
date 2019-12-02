@@ -84,7 +84,7 @@ FastRational gcd(FastRational& a, FastRational& b)
 {
     assert(a.isInteger() & b.isInteger());
     if (a.wordPartValid() && b.wordPartValid()) {
-        return std::move(FastRational(gcd(a.num, b.num)));
+        return FastRational(gcd(a.num, b.num));
     }
     else {
         a.ensure_mpq_valid();
@@ -96,7 +96,7 @@ FastRational gcd(FastRational& a, FastRational& b)
         b.try_fit_word();
         FastRational o_gcd = FastRational(mpz_class(o));
         mpz_clear(o);
-        return std::move(o_gcd);
+        return o_gcd;
     }
 }
 
@@ -104,7 +104,7 @@ FastRational lcm(FastRational& a, FastRational& b)
 {
     assert(a.isInteger() & b.isInteger());
     if (a.wordPartValid() && b.wordPartValid()) {
-        return std::move(lcm(a.num, b.num));
+        return lcm(a.num, b.num);
     }
     else {
         a.ensure_mpq_valid();
@@ -118,7 +118,7 @@ FastRational lcm(FastRational& a, FastRational& b)
             b.try_fit_word();
         FastRational o_gcd = FastRational(mpz_class(o));
         mpz_clear(o);
-        return std::move(o_gcd);
+        return o_gcd;
     }
 }
 
@@ -148,7 +148,7 @@ overflow:
     mpz_init(t);
     mpz_fdiv_q(t, mpq_numref(n.mpq), mpq_numref(d.mpq));
 //    FastRational o = FastRational(mpz_class(t));
-    return std::move(FastRational(mpz_class(t)));
+    return FastRational(mpz_class(t));
 }
 
 FastRational fastrat_round_to_int(const FastRational& n) {
@@ -181,7 +181,7 @@ FastRational fastrat_fdiv_q(FastRational& n, FastRational& d) {
 //    FastRational o = FastRational(mpz_class(t));
     n.try_fit_word();
     d.try_fit_word();
-    return std::move(FastRational(mpz_class(t)));
+    return FastRational(mpz_class(t));
 }
 
 //void mpz_divexact (mpz_ptr, mpz_srcptr, mpz_srcptr);
@@ -210,7 +210,7 @@ FastRational divexact(FastRational& n, FastRational& d) {
         mpz_divexact(t, mpq_numref(n.mpq), mpq_numref(d.mpq));
         n.try_fit_word();
         d.try_fit_word();
-        return std::move(FastRational(mpz_class(t)));
+        return FastRational(mpz_class(t));
     }
 }
 
