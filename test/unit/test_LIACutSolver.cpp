@@ -4,7 +4,6 @@
 #include <Vec.h>
 #include <Sort.h>
 #include <SMTConfig.h>
-#include <liasolver/LIACutSolver.h>
 #include <lasolver/Simplex.h>
 #include <lasolver/LASolver.h>
 
