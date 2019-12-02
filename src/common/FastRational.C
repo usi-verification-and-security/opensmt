@@ -251,12 +251,13 @@ FastRational get_multiplicand(const vec<FastRational>& reals)
             int k = 0;
             FastRational m = lcm(dens[dens.size()-1], dens[dens.size()-2]);
             mult *= m;
+            int orig_sz = dens.size();
             for (int j = 0; j < dens.size()-2; j++) {
                 FastRational n = (m/dens[j]).get_den();
                 if (n != 1)
                     dens[k++] = n;
             }
-            dens.resize(k);
+            dens.shrink(orig_sz-k);
         }
     }
 #ifdef PRINTALOT
