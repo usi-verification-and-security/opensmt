@@ -15,16 +15,19 @@ char*
 LAVecStore::print(LAVecRef vr)
 {
     char *str;
-    asprintf(&str, "[\n");
+    int res = asprintf(&str, "[\n");
+    assert(res >= 0); (void)res;
     for (int i = 1; i <= operator[](vr).size(); i++) {
         char* tmp;
         string s = operator[](vr)[i].get_str();
-        asprintf(&tmp, "%s%s \n", str, s.c_str());
+        int res = asprintf(&tmp, "%s%s \n", str, s.c_str());
+        assert(res >= 0); (void)res;
         free(str);
         str = tmp;
     }
     char *tmp;
-    asprintf(&tmp, "%s]\n", str);
+    res = asprintf(&tmp, "%s]\n", str);
+    assert(res >= 0); (void)res;
     free(str);
     str = tmp;
     return str;
@@ -1032,16 +1035,19 @@ LAMatrixStore::print(MId A)
         char* col_buf = (char*)malloc(1);
         col_buf[0] = '\0';
         for (int j = 1; j <= nCols; j++) {
-            asprintf(&buf_new, "%s%s%s", col_buf, MM(A, i, j).get_str().c_str(), j < nCols ? " " : "");
+            int res = asprintf(&buf_new, "%s%s%s", col_buf, MM(A, i, j).get_str().c_str(), j < nCols ? " " : "");
+            assert(res >= 0); (void)res;
             free(col_buf);
             col_buf = buf_new;
         }
-        asprintf(&buf_new, "%s%s[%s]%s", buf, i == 1 ? "" : " ", col_buf, i < nRows ? "\n" : "");
+        int res = asprintf(&buf_new, "%s%s[%s]%s", buf, i == 1 ? "" : " ", col_buf, i < nRows ? "\n" : "");
+        assert(res >= 0); (void)res;
         free(col_buf);
         free(buf);
         buf = buf_new;
     }
-    asprintf(&buf_new, "[%s]", buf);
+    int res = asprintf(&buf_new, "[%s]", buf);
+    assert(res >= 0); (void)res;
     free(buf);
     return buf_new;
 }
