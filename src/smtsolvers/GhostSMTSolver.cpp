@@ -69,15 +69,6 @@ GhostSMTSolver::detachClause(CRef cr, bool strict)
         return;
 
     assert(false);
-    for (int i = 0; i < c.size(); i++) {
-        Lit l = c[i];
-        if (theory_handler.isTheoryTerm(var(l))) {
-            int idx = toInt(l);
-            assert(idx < thLitToClauses.size());
-            // We need a better data structure
-//            thLitToClauses[idx].pop();
-        }
-    }
 }
 
 Var
