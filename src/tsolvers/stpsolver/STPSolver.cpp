@@ -29,8 +29,8 @@ bool STPSolver::assertLit(PtAsgn asgn, bool b) {
     // asgn.tr is the atom
     // asgn.sgn is the polarity (positive or negative)
     // TODO: process the addition of the constraint to the current set of constraints
-    //      Return false is immediate conflict has been detected, otherwise return true
-    //      Postpone actual checking of consistency of the extended set of constraints until call to check method
+    //      Return false if immediate conflict has been detected, otherwise return true
+    //      Postpone actual checking of consistency of the extended set of constraints until call to the "check" method
     return true;
 }
 
