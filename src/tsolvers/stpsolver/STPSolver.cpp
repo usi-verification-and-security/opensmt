@@ -26,7 +26,7 @@ void STPSolver::declareAtom(PTRef tr) {
 
 bool STPSolver::assertLit(PtAsgn asgn, bool b) {
     // Actually asserting an atom to the solver - adding a new constraint to the current set
-    // asgn.tr is the atom
+    // asgn.tr is the atom to add
     // asgn.sgn is the polarity (positive or negative)
     // TODO: process the addition of the constraint to the current set of constraints
     //      Return false if immediate conflict has been detected, otherwise return true
