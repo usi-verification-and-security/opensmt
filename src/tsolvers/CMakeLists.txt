@@ -29,6 +29,7 @@ include(lasolver/CMakeLists.txt)
 include(lrasolver/CMakeLists.txt)
 include(bvsolver/CMakeLists.txt)
 include(liasolver/CMakeLists.txt)
+include(stpsolver/CMakeLists.txt)
 
 install(FILES Deductions.h UFTHandler.h CUFTHandler.h LRATHandler.h LIATHandler.h TSolver.h THandler.h
 TSolverHandler.h TResult.h

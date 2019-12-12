@@ -20,7 +20,8 @@ STPSolver::~STPSolver() {
 void STPSolver::declareAtom(PTRef tr) {
     // This method is used from outside to tell the solver about a possible atom that can later be asserted positively
     // or negatively
-    // Ignore everything else other than atoms of the form "x - y <= c"; i.e., variable minus variable is less or equal some constant
+    // Ignore everything else other than atoms of the form "x - y <= c"; i.e., variable minus variable is less or equal
+    // to some constant
     // TODO: store information about the term tr if necessary
 }
 
