@@ -691,20 +691,24 @@ opensmt::Number LASolver::evaluateTerm(PTRef tr)
 //
 ValPair LASolver::getValue(PTRef tr) {
     if (!logic.hasSortNum(tr)) return ValPair_Undef;
-    PTId id = logic.getPterm(tr).getId();
     opensmt::Real val(0);
-    if (!laVarMapper.hasVar(id)) {
+    if (!laVarMapper.hasVar(tr)) {
         // This is a linear expression.
         if (logic.getPterm(tr).size() > 0) {
             Pterm &t = logic.getPterm(tr);
             for (int i = 0; i < t.size(); i++)
                 val += evaluateTerm(t[i]);
         }
-        else
+        else {
             val = evaluateTerm(tr);
+        }
     }
-    else
+    else {
         val = concrete_model[getVarId(getVarForTerm(tr))];
+        // MB: We have to ba cautious since both positive and negative version of a term are mapped to the same LVar!
+        // Hence if the term is negative we need to negate the value, since the value correspond to the positive term.
+        if (logic.isNegated(tr)) { val.negate(); }
+    }
 
     return ValPair(tr, val.get_str().c_str());
 }
