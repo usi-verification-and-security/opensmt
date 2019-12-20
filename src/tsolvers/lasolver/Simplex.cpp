@@ -446,47 +446,60 @@ Delta Simplex::getValuation(LVRef v) const {
 
 opensmt::Real Simplex::computeDelta() const {
 
+    /*
+     Delta computation according to the Technical Report accompanying the Simple paper
+     https://yices.csl.sri.com/papers/sri-csl-06-01.pdf
+     For a pair (c,k) \in Q_\delta representing Real value c + k * \delta if the inequality (c_1, k_1) <= (c_2, k_2) holds
+     then there exists \delta_0 such that \forall 0 < \epsilon < \delta_0 the inequality c_1 + k_1 * \epsilon <= c_2 + k_2 * \epsilon holds.
 
-    // Let x be a LV variable such that there are asserted bounds c_1 <= x and x <= c_2, where
-    // (1) c_1 = (i1 | s1), c_2 = (i2 | -s2)
-    // (2) s1, s2 \in {0, 1}
-    // (3) val(x) = (R | D).
-    // Then delta(x) := (i1+i2)/2 - R.
-    // If x is not bounded from below or above, i.e., c_1 <= x, or x <= c_2, or neither, then
-    // delta(x) := + Infty.
-    // Now D at the same time is equal to k*\delta', and we need a value for \delta'.  So
-    // \delta'(x) = D/k
-    // Finally, \delta := min_{x \in LV |delta'(x)|}.
+     \delta_0 can be defined as (c_2 - c_1) / (k_1 - k_2) if c_1 < c_2 and k_1 > k_2 ( and \delta_0 = 1 otherwise)
+
+     Extending to a set of inequilities, we can take minimum of deltas needed to satisfy every inequality separately
+
+     In our case, for each variable we need to consider both lower and upper bound (if they exist)
+    */
 
     Delta delta_abst = Delta_PlusInf;
 
     for (unsigned i = 0; i < boundStore.nVars(); ++i)
     {
         LVRef v {i};
+        assert( !isModelOutOfBounds(v) );
+
         if (model->read(v).D() == 0)
             continue; // If values are exact we do not need to consider them for delta computation
 
-        assert( !isModelOutOfBounds(v) );
-
-        Delta D;
-
-        if (model->Lb(v).isMinusInf() || model->Ub(v).isPlusInf())
-            D = Delta_PlusInf;
-        else
-            D = (model->Lb(v).R() + model->Ub(v).R())/2 - model->read(v).R();
-
-        D = D/model->read(v).D();
-
-        if (D < 0) D.negate();
-
-        if (delta_abst > D)
-            delta_abst = D;
+        auto const & val = model->read(v);
+        // Computing delta to satisfy lower bound
+        auto const & lb = model->Lb(v);
+        if (!lb.isMinusInf()) {
+            assert(lb.R() <= val.R());
+            if (lb.R() < val.R() && lb.D() > val.D()) {
+                Real valOfDelta = (val.R() - lb.R()) / (lb.D() - val.D());
+                assert(valOfDelta > 0);
+                if (delta_abst > valOfDelta) {
+                    delta_abst = valOfDelta;
+                }
+            }
+        }
+        // Computing delta to satisfy upper bound
+        auto const & ub = model->Ub(v);
+        if (!ub.isPlusInf()) {
+            assert(ub.R() >= val.R());
+            if (val.R() < ub.R() && val.D() > ub.D()) {
+                Real valOfDelta = (ub.R() - val.R()) / (val.D() - ub.D());
+                assert(valOfDelta > 0);
+                if (delta_abst > valOfDelta) {
+                    delta_abst = valOfDelta;
+                }
+            }
+        }
     }
 
-    if (delta_abst.isPlusInf())
+    if (delta_abst > 1) {
         return 1;
-    else
-        return delta_abst.R();
+    }
+    return delta_abst.R()/2;
 }
 
 void Simplex::quasiToBasic(LVRef it) {
