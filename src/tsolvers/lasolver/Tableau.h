@@ -39,13 +39,11 @@ public:
     void removeRow(LVRef row) {
         assert(realSize > 0);
         assert(realSize <= rows.size());
-        auto realEnd = rows.begin() + realSize;
-        auto it = std::find(rows.begin(), realEnd, row);
-        assert(it != realEnd);
-        if (it == realEnd) {
-            throw std::logic_error{"Removing row that is not present"};
-        }
-        std::iter_swap(it, realEnd - 1);
+        auto beg = rows.rbegin() + (rows.size() - realSize);
+        assert (std::distance(beg, rows.rend()) == realSize);
+        auto it = std::find(beg, rows.rend(), row);
+        assert(it != rows.rend());
+        std::iter_swap(it, beg);
         --realSize;
     }
 
