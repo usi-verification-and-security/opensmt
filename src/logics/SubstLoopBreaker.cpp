@@ -133,7 +133,7 @@ vec<vec<SNRef>> TarjanAlgorithm::getLoops(SNRef startNode) {
 }
 
 
-vec<SNRef> SubstLoopBreaker::constructSubstitutionGraph(const vec<Map<PTRef,PtAsgn,PTRefHash>::Pair*>&& substKeysAndVals)
+vec<SNRef> SubstLoopBreaker::constructSubstitutionGraph(const vec<Map<PTRef,PtAsgn,PTRefHash>::Pair*>& substKeysAndVals)
 {
     Map<PTRef, SNRef, PTRefHash> PTRefToSNRef;
     vec<PTRef> PTRefs;
@@ -207,7 +207,7 @@ vec<vec<SNRef>> SubstLoopBreaker::findLoops(vec<SNRef>& startNodes) {
     return loops;
 }
 
-Map<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::constructLooplessSubstitution(const vec<Map<PTRef,PtAsgn,PTRefHash>::Pair*>&& substs)
+Map<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::constructLooplessSubstitution(vec<Map<PTRef,PtAsgn,PTRefHash>::Pair*>&& substs)
 {
     Map<PTRef,PtAsgn,PTRefHash> substs_out;
     for (int i = 0; i < substs.size(); i++) {
@@ -217,21 +217,21 @@ Map<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::constructLooplessSubstitution(cons
 
         SNRef subst_node = sna.getSNRefBySource(pair->key);
         if (sna[subst_node].hasChildren())
-            substs_out.insert(pair->key, pair->data);
+            pair->data.sgn = l_False;
     }
-    return substs_out;
+    return substs;
 }
 
 //
 // Identify and break any substitution loops
 //
-Map<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::operator() (const vec<Map<PTRef,PtAsgn,PTRefHash>::Pair*>&& substs)
+Map<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::operator() (vec<Map<PTRef,PtAsgn,PTRefHash>::Pair*>&& substs)
 {
     assert(seen.elems() == 0);
 
     if (substs.size() == 0) return Map<PTRef,PtAsgn,PTRefHash>();
 
-    vec<SNRef> startNodes = constructSubstitutionGraph(std::move(substs));
+    vec<SNRef> startNodes = constructSubstitutionGraph(substs);
 
     while (true) {
         vec<vec<SNRef>> loops = findLoops(startNodes);

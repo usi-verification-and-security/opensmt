@@ -180,13 +180,13 @@ private:
 
 public:
     SubstLoopBreaker(const Logic& l) : logic(l), tvla(1024), sna(tvla, logic, 1024) {}
-    Map<PTRef,PtAsgn,PTRefHash> operator() (const vec<Map<PTRef,PtAsgn,PTRefHash>::Pair*>&& substs);
-    vec<SNRef> constructSubstitutionGraph(const vec<Map<PTRef,PtAsgn,PTRefHash>::Pair*>&& substKeysAndVals);
+    Map<PTRef,PtAsgn,PTRefHash> operator() (vec<Map<PTRef,PtAsgn,PTRefHash>::Pair*>&& substs);
+    vec<SNRef> constructSubstitutionGraph(const vec<Map<PTRef,PtAsgn,PTRefHash>::Pair*>& substKeysAndVals);
     vec<vec<SNRef>> findLoops(vec<SNRef>& startNodes);
     vec<SNRef> breakLoops(const vec<vec<SNRef>>& loops);
     std::string printGraphAndLoops(const vec<SNRef>& startNodes, const vec<vec<SNRef>>& loops);
     vec<SNRef> minimizeRoots(vec<SNRef>&& roots) { return std::move(roots); }// nothing here, maybe do some attempt?
-    Map<PTRef,PtAsgn,PTRefHash> constructLooplessSubstitution(const vec<Map<PTRef,PtAsgn,PTRefHash>::Pair*>&& substs);
+    Map<PTRef,PtAsgn,PTRefHash> constructLooplessSubstitution(vec<Map<PTRef,PtAsgn,PTRefHash>::Pair*>&& substs);
 };
 
 #endif //OPENSMT_SUBSTLOOPBREAKER_H
