@@ -133,10 +133,12 @@ vec<vec<SNRef>> TarjanAlgorithm::getLoops(SNRef startNode) {
 }
 
 
-vec<SNRef> SubstLoopBreaker::constructSubstitutionGraph(const vec<Map<PTRef,PtAsgn,PTRefHash>::Pair*>& substKeysAndVals)
+vec<SNRef> SubstLoopBreaker::constructSubstitutionGraph(const Map<PTRef,PtAsgn,PTRefHash>& substs)
 {
     Map<PTRef, SNRef, PTRefHash> PTRefToSNRef;
     vec<PTRef> PTRefs;
+
+    auto substKeysAndVals = substs.getKeysAndValsPtrs();
 
     for (int i = 0; i < substKeysAndVals.size(); i++) {
         // Init the seen table
@@ -207,29 +209,29 @@ vec<vec<SNRef>> SubstLoopBreaker::findLoops(vec<SNRef>& startNodes) {
     return loops;
 }
 
-Map<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::constructLooplessSubstitution(vec<Map<PTRef,PtAsgn,PTRefHash>::Pair*>&& substs)
+Map<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::constructLooplessSubstitution(Map<PTRef,PtAsgn,PTRefHash>&& substs)
 {
-    Map<PTRef,PtAsgn,PTRefHash> substs_out;
-    for (int i = 0; i < substs.size(); i++) {
-        auto pair = substs[i];
+    auto keysAndValsPtrs = substs.getKeysAndValsPtrs();
+    for (int i = 0; i < keysAndValsPtrs.size(); i++) {
+        auto pair = keysAndValsPtrs[i];
         if (pair->data.sgn != l_True)
             continue;
 
         SNRef subst_node = sna.getSNRefBySource(pair->key);
-        if (sna[subst_node].hasChildren())
+        if (!sna[subst_node].hasChildren())
             pair->data.sgn = l_False;
     }
-    return substs;
+    return std::move(substs); // Since susbsts is a template, we need the move constructor here
 }
 
 //
 // Identify and break any substitution loops
 //
-Map<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::operator() (vec<Map<PTRef,PtAsgn,PTRefHash>::Pair*>&& substs)
+Map<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::operator() (Map<PTRef,PtAsgn,PTRefHash>&& substs)
 {
     assert(seen.elems() == 0);
 
-    if (substs.size() == 0) return Map<PTRef,PtAsgn,PTRefHash>();
+    if (substs.getSize() == 0) return Map<PTRef,PtAsgn,PTRefHash>();
 
     vec<SNRef> startNodes = constructSubstitutionGraph(substs);
 
@@ -248,7 +250,7 @@ Map<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::operator() (vec<Map<PTRef,PtAsgn,P
         uniq(startNodes);
 //        printGraphAndLoops(startNodes, loops);
     }
-    return constructLooplessSubstitution(std::move(substs));
+    return constructLooplessSubstitution(std::move(substs)); // Why don't we need the move contructor here, given that Map is a template?
 }
 
 vec<SNRef> SubstLoopBreaker::breakLoops(const vec<vec<SNRef>>& loops) {

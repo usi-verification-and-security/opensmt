@@ -1497,7 +1497,7 @@ lbool Logic::retrieveSubstitutions(const vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PT
         }
     }
     SubstLoopBreaker slb(*this);
-    substs = slb(substs.getKeysAndValsPtrs());
+    substs = slb(std::move(substs));
     return l_Undef;
 }
 
