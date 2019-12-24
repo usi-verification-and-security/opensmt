@@ -42,7 +42,7 @@ class vec {
     int cap;
 
     // Don't allow copying (error prone):
-    vec<T>&  operator = (vec<T>& other)  = delete;
+    vec<T>&  operator = (vec<T>& other) = delete;
              vec        (vec<T>& other) = delete;
 
     // Helpers for calculating next capacity:

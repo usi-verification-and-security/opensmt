@@ -250,7 +250,7 @@ Map<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::operator() (Map<PTRef,PtAsgn,PTRef
         uniq(startNodes);
 //        printGraphAndLoops(startNodes, loops);
     }
-    return constructLooplessSubstitution(std::move(substs)); // Why don't we need the move contructor here, given that Map is a template?
+    return constructLooplessSubstitution(std::move(substs));
 }
 
 vec<SNRef> SubstLoopBreaker::breakLoops(const vec<vec<SNRef>>& loops) {
