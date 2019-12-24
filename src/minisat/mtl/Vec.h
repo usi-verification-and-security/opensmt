@@ -42,8 +42,8 @@ class vec {
     int cap;
 
     // Don't allow copying (error prone):
-    vec<T>&  operator = (vec<T>& other) { assert(0); return *this; }
-             vec        (vec<T>& other) { assert(0); }
+    vec<T>&  operator = (vec<T>& other) = delete;
+             vec        (vec<T>& other) = delete;
 
     // Helpers for calculating next capacity:
     static inline int  imax   (int x, int y) { int mask = (y-x) >> (sizeof(int)*8-1); return (x&mask) + (y&(~mask)); }
@@ -58,7 +58,7 @@ public:
     vec(const std::initializer_list<T> &iList);
     vec(vec&& o)                : data(NULL) , sz(0)   , cap(0)    { std::swap(data, o.data); std::swap(sz, o.sz); std::swap(cap, o.cap); }
    ~vec()                                                          { clear(true); }
-   vec<T>& operator = (vec<T>&& o) { std::swap(data, o.data); std::swap(sz, o.sz); std::swap(cap, o.cap); return *this; }
+    vec<T>& operator = (vec<T>&& o) { std::swap(data, o.data); std::swap(sz, o.sz); std::swap(cap, o.cap); return *this; }
 
     // Pointer to first element:
     operator T*       (void)           { return data; }
@@ -109,6 +109,7 @@ class vec<vec<T> > {
     vec<vec<T> >&  operator = (vec<vec<T> >& other) { assert(0); return *this; }
                    vec        (vec<vec<T> >& other) { assert(0); }
 
+
     // Helpers for calculating next capacity:
     static inline int  imax   (int x, int y) { int mask = (y-x) >> (sizeof(int)*8-1); return (x&mask) + (y&(~mask)); }
     //static inline void nextCap(int& cap){ cap += ((cap >> 1) + 2) & ~1; }
@@ -120,7 +121,9 @@ public:
     explicit vec(int size)           : data(NULL) , sz(0)   , cap(0)    { growTo(size); }
     vec(int size, const vec<T>& pad) : data(NULL) , sz(0)   , cap(0)    { growTo(size, pad); }
     vec(const std::initializer_list<std::initializer_list<T> > &iList);
-   ~vec()                                                          { clear(true); }
+    vec(vec<vec<T>>&& o)                : data(NULL) , sz(0)   , cap(0)    { std::swap(data, o.data); std::swap(sz, o.sz); std::swap(cap, o.cap); }
+    vec<vec<T>>& operator = (vec<vec<T>>&& o) { std::swap(data, o.data); std::swap(sz, o.sz); std::swap(cap, o.cap); return *this; }
+    ~vec()                                                          { clear(true); }
 
     // Pointer to first element:
     operator vec<T>*  (void)           { return data; }
@@ -139,6 +142,7 @@ public:
 
     // Stack interface:
     void     push  (void)               { if (sz == cap) capacity(sz+1); new (&data[sz]) vec<T>(); sz++; }
+    void     push  (vec<T>&& elem)      { if (sz == cap) capacity(sz+1); new (&data[sz]) vec<T>(); data[sz++] = std::move(elem); }
     void     push  (const vec<T>& elem) { if (sz == cap) capacity(sz+1); data[sz++] = elem; }
 
     void     push_ (const T& elem)      { assert(sz < cap); data[sz++] = elem; }

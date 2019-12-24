@@ -66,8 +66,8 @@ class Map {
     int        size;
 
     // Don't allow copying (error prone):
-    Map<K,D,H,E>&  operator = (Map<K,D,H,E>& other) { assert(0); }
-                   Map        (Map<K,D,H,E>& other) { assert(0); }
+    Map<K,D,H,E>&  operator = (Map<K,D,H,E>& other) = delete;
+                   Map        (Map<K,D,H,E>& other) = delete;
 
     bool    checkCap(int new_size) const { return new_size > cap; }
 
@@ -100,9 +100,13 @@ class Map {
  public:
 
     Map () : table(NULL), cap(0), size(0) {}
-    Map (const H& h, const E& e) : hash(h), equals(e), table(NULL), cap(0), size(0){}
+    Map (const H& h, const E& e) : hash(h), equals(e), table(NULL), cap(0), size(0) {}
+    Map (Map&& o) noexcept : table(NULL), cap(0), size(0) { std::swap(hash, o.hash); std::swap(equals, o.equals); std::swap(table, o.table); std::swap(cap, o.cap); std::swap(size, o.size); }
+    //    Map (Map<K,D,H,E>&& o) noexcept : cap(0), size(0) { std::swap(hash, o.hash); std::swap(equals, o.equals); std::swap(table, o.table); std::swap(cap, o.cap); std::swap(size, o.size); }
     ~Map () { delete [] table; }
 
+    //Map<K,D,H,E>&  operator = (Map<K,D,H,E>&& o) { std::swap(hash, o.hash); std::swap(equals, o.equals); std::swap(table, o.table); std::swap(cap, o.cap); std::swap(size, o.size); return *this; }
+    Map&  operator = (Map&& o) { std::swap(hash, o.hash); std::swap(equals, o.equals); std::swap(table, o.table); std::swap(cap, o.cap); std::swap(size, o.size); return *this; }
 
     // PRECONDITION: the key must already exist in the map.
     const D& operator [] (const K& k) const
@@ -168,13 +172,46 @@ class Map {
         }
     }
 
+    vec<Pair> getKeysAndVals() const {
+        vec<Pair> out;
+        if (size == 0) return {};
+        for (int i = 0; i < cap; i++) {
+            if (table[i] == NULL) continue;
+            for (int j = 0; j < table[i].size(); j++)
+                out.push(table[i][j]);
+        }
+        return out;
+    }
+
     void getKeysAndValsPtrs(vec<Pair*>& out) {
         if (size == 0) return;
         for (int i = 0; i < cap; i++) {
-            if (table[1] == NULL) continue;
+            if (table[i] == NULL) continue;
             for (int j = 0; j < table[i].size(); j++)
                 out.push(&table[i][j]);
         }
+    }
+
+    vec<Pair*> getKeysAndValsPtrs() {
+        if (size == 0) return {};
+        vec<Pair*> out;
+        for (int i = 0; i < cap; i++) {
+            if (table[i] == NULL) continue;
+            for (int j = 0; j < table[i].size(); j++)
+                out.push(&table[i][j]);
+        }
+        return out;
+    }
+
+    vec<const Pair*> getKeysAndValsPtrs() const {
+        if (size == 0) return {};
+        vec<const Pair*> out;
+        for (int i = 0; i < cap; i++) {
+            if (table[i] == NULL) continue;
+            for (int j = 0; j < table[i].size(); j++)
+                out.push(&table[i][j]);
+        }
+        return out;
     }
 
     // PRECONDITION: the key must exist in the map.

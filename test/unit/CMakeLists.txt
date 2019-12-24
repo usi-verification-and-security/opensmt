@@ -84,3 +84,11 @@ target_sources(LIACutTest
 target_link_libraries(LIACutTest api_static gtest gtest_main)
 
 gtest_add_tests(TARGET LIACutTest)
+
+add_executable(SubstitutionBreakerTest)
+target_sources(SubstitutionBreakerTest
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_SubstitutionBreaker.cpp"
+    )
+
+target_link_libraries(SubstitutionBreakerTest api_static gtest gtest_main)
+gtest_add_tests(TARGET SubstitutionBreakerTest)
