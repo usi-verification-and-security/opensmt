@@ -18,57 +18,41 @@
 
 class Column{
     std::vector<LVRef> rows;
-    unsigned int realSize = 0;
 
     using iterator_t = std::vector<LVRef>::iterator;
     using const_iterator_t = std::vector<LVRef>::const_iterator;
 
 public:
     void addRow(LVRef row) {
-        assert(realSize <= rows.size());
-        assert(std::find(rows.begin(), rows.begin() + realSize, row) == rows.begin() + realSize);
-        if (realSize < rows.size()) {
-            rows[realSize] = row;
-        }
-        else{
-            rows.push_back(row);
-
-        }
-        ++realSize;
+        rows.push_back(row);
     }
     void removeRow(LVRef row) {
-        assert(realSize > 0);
-        assert(realSize <= rows.size());
-        auto beg = rows.rbegin() + (rows.size() - realSize);
-        assert (std::distance(beg, rows.rend()) == realSize);
+        auto beg = rows.rbegin();
         auto it = std::find(beg, rows.rend(), row);
         assert(it != rows.rend());
         std::iter_swap(it, beg);
-        --realSize;
+        rows.pop_back();
     }
 
     void clear() {
         rows.clear();
-        realSize = 0;
     }
 
     bool empty() const {
-        return realSize == 0;
+        return rows.empty();
     }
 
     unsigned int size() const {
-        return realSize;
+        return rows.size();
     }
 
     iterator_t begin() { return rows.begin(); }
-    iterator_t end() { return rows.begin() + realSize; }
+    iterator_t end() { return rows.end(); }
 
     const_iterator_t begin() const { return rows.cbegin(); }
-    const_iterator_t end() const { return rows.cbegin() + realSize; }
+    const_iterator_t end() const { return rows.cend(); }
 
     const_iterator_t find(LVRef row) const { return std::find(begin(), end(), row); }
-
-
 };
 
 class Tableau{
