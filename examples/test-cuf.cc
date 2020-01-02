@@ -15,12 +15,12 @@ main(int argc, char** argv)
     int c1_int = atoi(argv[1]);
     int c2_int = atoi(argv[2]);
     SMTConfig c;
-    CUFTheory cuftheory(c, 8);
-    THandler thandler(c, cuftheory);
-    SimpSMTSolver solver(c, thandler);
-    MainSolver mainSolver(thandler, c, &solver);
-
-    BVLogic& logic = cuftheory.getLogic();
+    CUFTheory* cuftheory = new CUFTheory(c, 8);
+    THandler* thandler = new THandler(c, *cuftheory);
+    SimpSMTSolver* solver = new SimpSMTSolver(c, *thandler);
+    MainSolver* mainSolver_ = new MainSolver(*thandler, c, solver, "test solver");
+    MainSolver& mainSolver = *mainSolver_;
+    BVLogic& logic = cuftheory->getLogic();
 
     PTRef a = logic.mkCUFNumVar("a");
     PTRef b = logic.mkCUFNumVar("b");
@@ -51,7 +51,7 @@ main(int argc, char** argv)
     bbb.bindCUFToBV(a, a_bv);
     bbb.bindCUFToBV(b, b_bv);
 
-    bbb.notifyEquality(eq3);
+//    bbb.notifyEquality(eq3);
 
     sstat r = mainSolver.check();
 

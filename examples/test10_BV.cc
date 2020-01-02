@@ -10,13 +10,12 @@
 int main(int argc, char** argv)
 {
     SMTConfig c;
-    CUFTheory cuftheory(c);
-    THandler thandler(c, cuftheory);
-    SimpSMTSolver solver(c, thandler);
-    MainSolver mainSolver(thandler, c, &solver);
-    BVLogic& logic = cuftheory.getLogic();
-
-    // BVLogic bvlogic(c);
+    CUFTheory* cuftheory = new CUFTheory(c);
+    THandler* thandler = new THandler(c, *cuftheory);
+    SimpSMTSolver* solver = new SimpSMTSolver(c, *thandler);
+    MainSolver* mainSolver_ = new MainSolver(*thandler, c, solver, "test solver");
+    MainSolver& mainSolver = *mainSolver_;
+    BVLogic& logic = cuftheory->getLogic();
 
     PTRef a = logic.mkBVNumVar("a");
     PTRef const1 = logic.mkBVConst(1);

@@ -21,11 +21,12 @@ The result is UNSAT,means c1=c2 holds!
 int main(int argc, char** argv)
 {
     SMTConfig c;
-    CUFTheory cuftheory(c , 8);
-    THandler thandler(c, cuftheory);
-    SimpSMTSolver solver(c, thandler);
-    MainSolver mainSolver(thandler, c, &solver);
-    BVLogic& logic = cuftheory.getLogic();
+    CUFTheory* cuftheory = new CUFTheory(c, 8);
+    THandler* thandler = new THandler(c, *cuftheory);
+    SimpSMTSolver* solver = new SimpSMTSolver(c, *thandler);
+    MainSolver* mainSolver_ = new MainSolver(*thandler, c, solver, "test solver");
+    MainSolver& mainSolver = *mainSolver_;
+    BVLogic& logic = cuftheory->getLogic();
 
    // PTRef k = logic.mkBVNumVar("k"); no need for it; by using mkBVMod it is already in the server.
     PTRef a = logic.mkBVNumVar("a");
