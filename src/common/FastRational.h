@@ -10,7 +10,7 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
 #include <gmpxx.h>
 #include <cassert>
 #include <climits>
-#include <Vec.h>
+#include "Vec.h"
 
 typedef int32_t  word;
 typedef uint32_t uword;
