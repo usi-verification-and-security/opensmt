@@ -15,9 +15,7 @@ class STPSolver : TSolver {
     LALogic& logic;
 
 public:
-    STPSolver(SolverDescr dls, SMTConfig & c, LALogic& l, vec<DedElem>& d);
-
-private:
+    STPSolver(SMTConfig & c, LALogic & l, vec<DedElem> & d);
 
     ~STPSolver() override;
 
@@ -25,7 +23,7 @@ private:
 
     void print(ostream & out) override;
 
-    bool assertLit(PtAsgn asgn, bool b) override;
+    bool assertLit(PtAsgn asgn, bool b = false) override;
 
     void pushBacktrackPoint() override;
 

@@ -6,7 +6,7 @@
 
 static SolverDescr descr_stp_solver("STP Solver", "Solver for Simple Temporal Problem (Difference Logic)");
 
-STPSolver::STPSolver(SolverDescr dls, SMTConfig & c, LALogic & l, vec<DedElem> & d)
+STPSolver::STPSolver(SMTConfig & c, LALogic & l, vec<DedElem> & d)
         : TSolver((SolverId)descr_stp_solver, (const char*)descr_stp_solver, c, d)
         , logic(l)
 {

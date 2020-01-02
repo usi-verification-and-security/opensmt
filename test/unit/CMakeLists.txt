@@ -84,3 +84,10 @@ target_sources(LIACutTest
 target_link_libraries(LIACutTest api_static gtest gtest_main)
 
 gtest_add_tests(TARGET LIACutTest)
+
+add_executable(STPSolverTest)
+target_sources(STPSolverTest
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_STPSolver.cpp"
+    )
+target_link_libraries(STPSolverTest api_static gtest gtest_main)
+gtest_add_tests(TARGET STPSolverTest)
