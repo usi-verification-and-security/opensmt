@@ -94,8 +94,6 @@ LABoundRef LRAModel::readLBoundRef(LVRef v) const { return int_lbounds[getVarId(
 const LABound& LRAModel::readLBound(const LVRef &v) const { return bs[readLBoundRef(v)]; }
 LABoundRef LRAModel::readUBoundRef(LVRef v) const { return int_ubounds[getVarId(v)].last(); }
 const LABound& LRAModel::readUBound(const LVRef &v) const { return bs[readUBoundRef(v)]; }
-const Delta& LRAModel::Lb(LVRef v) const { return bs[int_lbounds[getVarId(v)].last()].getValue(); }
-const Delta& LRAModel::Ub(LVRef v) const { return bs[int_ubounds[getVarId(v)].last()].getValue(); }
 void LRAModel::pushBacktrackPoint()      { bound_limits.push(bound_trace.size()); }
 void LRAModel::popBacktrackPoint() { popBounds(); bound_limits.pop(); }; // Returns the decision if the backtrack point had a decision
 int  LRAModel::getBacktrackSize() const { return bound_limits.size(); }
