@@ -42,7 +42,7 @@ main(int argc, char** argv)
         printf("unsat\n");
     }
     else if (r == s_Undef)
-        printf("unknowon\n");
+        printf("unknown\n");
     else
         printf("error\n");
 
