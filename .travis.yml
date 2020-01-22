@@ -58,7 +58,7 @@ addons:
 install: true
 
 before_script:
-    - if [[ "${TRAVIS_COMPILER}" == "clang" ]]; then FLAGS="-Wpessimizing-move -Werror=pessimizing-move"; fi
+    - FLAGS="-Wall -Werror"
     - INSTALL=${TRAVIS_BUILD_DIR}/install
     - mkdir build && mkdir ${INSTALL}
 
