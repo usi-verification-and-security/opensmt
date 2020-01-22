@@ -34,6 +34,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endif
 
+#ifndef NDEBUG
 namespace {
 void print(Clause& cl, ostream& out) {
     for (int i = 0; i < cl.size(); ++i) {
@@ -42,6 +43,7 @@ void print(Clause& cl, ostream& out) {
     out << '\n';
 }
 }
+#endif // NDEBUG
 
 void CoreSMTSolver::dumpRndInter(std::ofstream& dump_out)
 {
