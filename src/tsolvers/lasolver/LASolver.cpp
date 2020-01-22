@@ -82,6 +82,7 @@ void LASolver::isProperLeq(PTRef tr)
     assert(logic.isNumVar(sum) || logic.isNumPlus(sum) || logic.isNumTimes(sum));
     assert(!logic.isNumTimes(sum) || ((logic.isNumVar(logic.getPterm(sum)[0]) && (logic.mkNumNeg(logic.getPterm(sum)[1])) == logic.getTerm_NumOne()) ||
                                       (logic.isNumVar(logic.getPterm(sum)[1]) && (logic.mkNumNeg(logic.getPterm(sum)[0])) == logic.getTerm_NumOne())));
+    (void) cons; (void)sum;
 }
 
 LASolver::LASolver(SolverDescr dls, SMTConfig & c, LALogic& l, vec<DedElem>& d)
