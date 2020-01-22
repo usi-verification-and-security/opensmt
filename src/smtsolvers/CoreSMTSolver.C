@@ -135,11 +135,6 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , proof                 ( * proof_ )
     , proof_graph           ( NULL )
 #endif
-
-#ifdef STATISTICS
-    , preproc_time          (0)
-    , elim_tvars            (0)
-#endif
 #ifdef PEDANTIC_DEBUG
     , max_dl_debug          (0)
     , analyze_cnt           (0)
@@ -154,6 +149,10 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , cuvti                 (false)
     , next_it_i             (0)
     , next_it_j             (1)
+#ifdef STATISTICS
+    , preproc_time          (0)
+    , elim_tvars            (0)
+#endif
 { }
 
 void

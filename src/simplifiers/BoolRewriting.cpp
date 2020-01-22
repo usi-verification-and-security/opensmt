@@ -66,7 +66,7 @@ PTRef rewriteMaxArityClassic(Logic & logic, PTRef root) {
     Map<PTRef,int,PTRefHash> PTRefToIncoming;
     computeIncomingEdges(logic, root, PTRefToIncoming);
     return rewriteMaxArity(logic, root,
-            [&logic, &PTRefToIncoming](PTRef candidate)
+            [&PTRefToIncoming](PTRef candidate)
             {
                 assert(PTRefToIncoming.has(candidate) && PTRefToIncoming[candidate] >= 1);
                 return PTRefToIncoming[candidate] > 1;
