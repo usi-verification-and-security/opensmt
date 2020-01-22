@@ -171,7 +171,6 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
     {
         icolor_t color = I_UNDEF;
         const ipartitions_t & p = logic.getIPartitions(explanation[i].tr);
-        Pterm& t = logic.getPterm(explanation[i].tr);
         if ( isAB( p, mask ) ) {
             color = I_AB;
         }
@@ -255,12 +254,12 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
             opensmt::Real const_strong = interpolant.getRealConstant();
             opensmt::Real const_weak = interpolant_dual.getRealConstant();
             PTRef nonconst_strong = interpolant.getPTRefNonConstant();
-            PTRef nonconst_weak = interpolant_dual.getPTRefNonConstant();
+            //PTRef nonconst_weak = interpolant_dual.getPTRefNonConstant();
             //cout << "; Constant Strong " << const_strong << endl;
             //cout << "; Constant Weak " << const_weak << endl;
             //cout << "; NonConstant Strong " << logic.printTerm(nonconst_strong) << endl;
             //cout << "; NonConstant Weak " << logic.printTerm(nonconst_weak) << endl;
-            PTRef neg_strong = logic.mkNumNeg(nonconst_strong);
+            //PTRef neg_strong = logic.mkNumNeg(nonconst_strong);
             //assert(neg_strong == nonconst_weak);
 
             opensmt::Real lower_bound = const_strong;

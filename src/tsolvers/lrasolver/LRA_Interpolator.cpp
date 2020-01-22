@@ -65,8 +65,6 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
     return res;
 }
 
-    void print_matrix(std::vector<std::vector<Real>> const & matrix);
-
     /**
      *
      * @param matrix
@@ -214,6 +212,7 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
         return pivotColsBitMap;
     }
 
+#ifndef NDEBUG
     bool isReducedRowEchelonForm(std::vector<std::vector<Real>> const & matrix) {
         auto pivotColsBitMap = getPivotColsBitMap(matrix);
         auto cols = pivotColsBitMap.size();
@@ -238,6 +237,34 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
         }
         return true;
     }
+
+    bool check_basis(std::vector<std::vector<FastRational>> const & basis) {
+        return std::all_of(basis.begin(), basis.end(), [](std::vector<Real> const & baseVec) {
+            return std::none_of(baseVec.begin(), baseVec.end(), [](const Real & el) { return el < 0; });
+        });
+    }
+
+    void print_matrix(std::vector<std::vector<Real>> const & matrix) {
+        for (auto const & row : matrix) {
+            for (auto const & elem : row) {
+                std::cout << elem << " ";
+            }
+            std::cout << '\n';
+        }
+        std::cout << '\n';
+    }
+
+    void print_basis(std::vector<std::vector<FastRational>> const & nullBasis) {
+        std::cout << "Basis: " << '\n';
+        for (auto const & base : nullBasis) {
+            for (auto const & elem : base) {
+                std::cout << elem << ' ';
+            }
+            std::cout << '\n';
+        }
+        std::cout << '\n';
+    }
+#endif // NDEBUG
 
     /** Given matrix in RREF computes and returns a basis of its null space
      *
@@ -331,33 +358,6 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
             first_unchecked_it = vec_with_neg_it;
         }
         return true;
-    }
-
-    bool check_basis(std::vector<std::vector<FastRational>> const & basis){
-        return std::all_of(basis.begin(), basis.end(), [](std::vector<Real> const & baseVec){
-            return std::none_of(baseVec.begin(), baseVec.end(), [](const Real& el){return el < 0;});
-        });
-    }
-
-    void print_matrix(std::vector<std::vector<Real>> const & matrix) {
-        for (auto const & row : matrix) {
-            for (auto const & elem : row) {
-                std::cout << elem << " ";
-            }
-            std::cout << '\n';
-        }
-        std::cout << '\n';
-    }
-
-    void print_basis(std::vector<std::vector<FastRational>> const & nullBasis) {
-        std::cout << "Basis: " << '\n';
-        for (auto const & base : nullBasis) {
-            for (auto const & elem : base) {
-                std::cout << elem << ' ';
-            }
-            std::cout << '\n';
-        }
-        std::cout << '\n';
     }
 
 
