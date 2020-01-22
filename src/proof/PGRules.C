@@ -53,12 +53,9 @@ bool ProofGraph::getRuleContext(clauseid_t idv3, clauseid_t idv, RuleContext& ra
 	// v antecedents are w and v3; clauses are w clause and (~t1, C3)
 	// v clause is (C1 C2 C3)
 
-	bool found1, found2;
-	size_t size;
-
 	// Determine sign of t1 and t0 (if present) in v3
-	bool t0_in_C3=false;
-	bool sign_t0_C3=false; Lit l;
+	bool t0_in_C3 = false;
+	bool sign_t0_C3 = false;
 
 	short r0 = v3->hasOccurrenceBin(t0);
 	if(r0 != -1) { t0_in_C3 = true; sign_t0_C3 = (r0 == 0)? false : true; }
@@ -95,7 +92,8 @@ bool ProofGraph::getRuleContext(clauseid_t idv3, clauseid_t idv, RuleContext& ra
 
 	bool sign_t0_v1;
 	// Determine v1 and v2
-	ProofNode *v1=NULL,*v2=NULL;
+	ProofNode * v1 = nullptr;
+	ProofNode * v2 = nullptr;
 	// Case t1 not in C2
 	if(!t1_in_C2)
 	{
@@ -342,6 +340,7 @@ void ProofGraph::applyRuleB1( RuleContext& ra )
 
 	ProofNode *v1=getNode(ra.getV1()),*v2=getNode(ra.getV2()),
 			*w=getNode(ra.getW()),*v3=getNode(ra.getV3()),*v=getNode(ra.getV());
+    (void)v2;
 
 	assert((v->getAnt1()==w && v->getAnt2()== v3) || (v->getAnt1()==v3 && v->getAnt2()== w));
 	assert((w->getAnt1()==v1 && w->getAnt2()== v2) || (w->getAnt1()==v2 && w->getAnt2()==v1));
@@ -409,7 +408,7 @@ void ProofGraph::applyRuleB2Prime( RuleContext& ra )
 
 	ProofNode *v1=getNode(ra.getV1()),*v2=getNode(ra.getV2()),
 			*w=getNode(ra.getW()),*v3=getNode(ra.getV3()),*v=getNode(ra.getV());
-
+    (void)v2;
 	assert((v->getAnt1()==w && v->getAnt2()== v3) || (v->getAnt1()==v3 && v->getAnt2()== w));
 	assert((w->getAnt1()==v1 && w->getAnt2()== v2) || (w->getAnt1()==v2 && w->getAnt2()==v1));
 

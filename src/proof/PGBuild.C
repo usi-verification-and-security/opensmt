@@ -396,8 +396,7 @@ void ProofGraph::buildProofGraph( int nVars )
                             // else replace node with existing one
                             else
                             {
-                                ProofNode* replacing = getNode( it->second );
-                                assert( replacing );
+                                assert( getNode( it->second ) );
                                 last_seen_id = it->second;
                                 // Skip the new node construction and move to the next clause in the chain
                                 continue;
@@ -445,8 +444,7 @@ void ProofGraph::buildProofGraph( int nVars )
                                 // else replace node with existing one
                                 else
                                 {
-                                    ProofNode* replacing = getNode( it->second );
-                                    assert( replacing );
+                                    assert( getNode( it->second ) );
                                     last_seen_id = it->second;
                                     // Skip the new node construction and move to the next clause in the chain
                                     continue;
@@ -527,7 +525,7 @@ void ProofGraph::buildProofGraph( int nVars )
         // Check whether there are any remaining pieces
         checkProof( false );
         unsigned rem = cleanProofGraph( );
-        assert( rem == 0 );
+        assert( rem == 0 ); (void)rem;
     }
 
     if( verbose() > 0 )
@@ -805,11 +803,11 @@ clauseid_t ProofGraph::dupliNode( RuleContext& ra )
 	clauseid_t v_id = ra.getV();
 	ProofNode* w = getNode( ra.getW() );
 	assert(w);
-	unsigned num_old_res = w->getNumResolvents();
+    unsigned num_old_res = w->getNumResolvents(); (void)num_old_res;
 	assert( num_old_res > 1);
 	for( set<clauseid_t>::iterator it = w->getResolvents().begin(); it!=w->getResolvents().end(); it++)
 	{
-		ProofNode* res = getNode( (*it) ); assert(res);
+		ProofNode* res = getNode( (*it) ); assert(res); (void)res;
 		assert(res->getAnt1()==w || res->getAnt2()==w);
 	}
 

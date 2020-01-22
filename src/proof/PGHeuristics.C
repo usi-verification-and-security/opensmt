@@ -68,9 +68,6 @@ bool ProofGraph::allowSwapRuleForPredicatePushingDown(RuleContext& ra, Var pred)
 	//cerr << "SWAP-Trying to push down " << thandler->varToEnode(pred) <<
 	//	" where w=" << ra.getW() << " and v=" << ra.getV() << endl;
 
-	rul_type t=ra.getType();
-	bool dupl=(getNode(ra.getW())->getNumResolvents()>1);
-
 	Var pred1 = ( getNode(ra.getW())->getPivot() );
 	Var pred2 = ( getNode(ra.getV())->getPivot() );
 	bool is1 = (pred1==pred);
@@ -99,7 +96,6 @@ bool ProofGraph::allowSwapRuleForPredicatePushingDown(RuleContext& ra, Var pred)
 //Output: true if rule application is allowed
 bool ProofGraph::allowCutRuleForPredicatePushing(RuleContext& ra, Var pred)
 {
-	rul_type t=ra.getType();
 	bool dupl=(getNode(ra.getW())->getNumResolvents()>1);
 
 	Var pred1 = ( getNode(ra.getW())->getPivot() );
@@ -134,11 +130,6 @@ short ProofGraph::handleRuleApplicationForPredicatePushing(RuleContext& ra1,Rule
 	// Cut application rule
 	bool(ProofGraph::*allowCut)(RuleContext& ra,Var v) = &ProofGraph::allowCutRuleForPredicatePushing;
 
-
-	// Duplication allowed?
-	const bool duplAllowedSwap = false;
-	const bool duplAllowedCut = false;
-
 	// Check need for duplication
 	bool dupl1, dupl2;
 	bool allowed1, allowed2;
@@ -146,7 +137,6 @@ short ProofGraph::handleRuleApplicationForPredicatePushing(RuleContext& ra1,Rule
 	short chosen=-1;
 	rul_type t1=ra1.getType();
 	rul_type t2=ra2.getType();
-	bool all1,all2;
 	bool is1cut=isCutRule(t1);
 	bool is2cut=isCutRule(t2);
 	bool is1swap=isSwapRule(t1);
@@ -304,7 +294,6 @@ short ProofGraph::handleRuleApplicationForUnitsPushingDown(RuleContext& ra1,Rule
 	short chosen=-1;
 	rul_type t1=ra1.getType();
 	rul_type t2=ra2.getType();
-	bool all1,all2;
 	bool is1cut=isCutRule(t1);
 	bool is2cut=isCutRule(t2);
 	bool is1swap=isSwapRule(t1);
@@ -449,7 +438,6 @@ short ProofGraph::handleRuleApplicationForReduction(RuleContext& ra1,RuleContext
 	short chosen=-1;
 	rul_type t1=ra1.getType();
 	rul_type t2=ra2.getType();
-	bool all1,all2;
 	bool is1cut=isCutRule(t1);
 	bool is2cut=isCutRule(t2);
 	bool is1swap=isSwapRule(t1);
@@ -618,7 +606,6 @@ short ProofGraph::handleRuleApplicationForStrongerWeakerInterpolant(RuleContext&
 	short chosen=-1;
 	rul_type t1=ra1.getType();
 	rul_type t2=ra2.getType();
-	bool all1,all2;
 	bool is1cut=isCutRule(t1);
 	bool is2cut=isCutRule(t2);
 	bool is1swap=isSwapRule(t1);
@@ -716,7 +703,6 @@ short ProofGraph::handleRuleApplicationForStrongerWeakerInterpolant(RuleContext&
 //Output: true if rule application is allowed
 bool ProofGraph::allowSwapRuleForCNFinterpolant(RuleContext& ra)
 {
-	rul_type t=ra.getType();
 	bool dupl=(getNode(ra.getW())->getNumResolvents()>1);
 
 	// McMillan should be used for generating an interpolant in CNF
@@ -762,7 +748,6 @@ short ProofGraph::handleRuleApplicationForCNFinterpolant(RuleContext& ra1,RuleCo
 	short chosen=-1;
 	rul_type t1=ra1.getType();
 	rul_type t2=ra2.getType();
-	bool all1,all2;
 	bool is1cut=isCutRule(t1);
 	bool is2cut=isCutRule(t2);
 	bool is1swap=isSwapRule(t1);

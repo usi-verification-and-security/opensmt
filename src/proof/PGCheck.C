@@ -223,7 +223,7 @@ void ProofGraph::checkClause(clauseid_t nid)
 			// Checks whether both antecedents have the pivot
 			short f1 = n->getAnt1()->hasOccurrenceBin(n->getPivot());
 			short f2 = n->getAnt2()->hasOccurrenceBin(n->getPivot());
-			assert( f1 != -1 ); assert( f2 != -1 ); assert( f1 != f2 );
+			assert( f1 != -1 ); assert( f2 != -1 ); assert( f1 != f2 ); (void)f1; (void)f2;
 		}
 	}
 	// Check that every resolvent has this node as its antecedent

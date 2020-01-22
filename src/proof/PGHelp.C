@@ -289,7 +289,6 @@ void ProofGraph::getComplexityInterpolant( PTRef int_e )
     unsigned num_and_or_dag = 0;
 
     q.push_back(int_e);
-    Logic& logic = theory.getLogic();
     do
     {
         e_curr=q.back();

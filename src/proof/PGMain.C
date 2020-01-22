@@ -187,7 +187,7 @@ double ProofGraph::doReduction(double solving_time)
 	double red_time=0;
 	//Number of inner transformation loops
 	//-1 for exhaustiveness
-	int num_transf_loops=0;
+//	int num_transf_loops=0; // MB: not used?
 	//Number of outer transformation loops
 	//useful for alternation with recycle pivots
 	int num_global_reduction_loops=0;

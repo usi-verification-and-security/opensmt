@@ -281,8 +281,7 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
 	{
 		// Skip true and false
 		if((*it) == logic_.getTerm_true() || (*it) == logic_.getTerm_false()) continue;
-		Var variab = PTRefToVar(*it);
-		assert( getVarClass(variab, A_mask) == I_AB );
+		assert( getVarClass(PTRefToVar(*it), A_mask) == I_AB );
 	}
 	if( verbose() > 0 ) { cerr << "# The interpolant is on the shared signature" << endl; }
 
@@ -949,14 +948,12 @@ void ProofGraph::verifyTreeInterpolants( opensmt::InterpolationTree* itree, vect
 // Requirement  ( /\_(j,k) I_k /\ phi_j ) -> I_j
 bool ProofGraph::verifyTreeInterpolantsFromLeaves( opensmt::InterpolationTree* itree, vec< PTRef > & interps)
 {
-	if( verbose() ) cerr << "# Verifying the tree interpolation property" << endl;
-
-	unsigned no_part = logic_.getNofPartitions();
+	if( verbose() ) std::cerr << "# Verifying the tree interpolation property" << std::endl;
 
 	// m partitions, one for each node of the tree
 	// TODO m or less interpolants - not necessarily all nodes are approximated
 	// for nodes non approximated, interpolants are the original formulae
-	assert( no_part == interps.size() );
+	assert( logic_.getNofPartitions() == interps.size() );
 
 	// NOTE partition ids start from 1, interpolants vector from 0
 	// interpolants[i] contains interpolant for node with partition id i+1

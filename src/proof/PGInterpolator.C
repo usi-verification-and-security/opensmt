@@ -979,7 +979,7 @@ PTRef ProofGraph::compInterpLabelingInnerSimple ( ProofNode *n, const ipartition
                 vec<PTRef> or_args;
                 or_args.push (and_1);
                 or_args.push (and_2);
-                PTRef partial_interp = logic_.mkOr (or_args);
+                partial_interp = logic_.mkOr (or_args);
 
 //              PTRef and_1 = logic_.mkAnd( logic_.cons( partial_interp_ant1, logic_.cons( logic_.mkNot( logic_.cons( piv ) ) ) ) );
 //              PTRef and_2 = logic_.mkAnd( logic_.cons( partial_interp_ant2, logic_.cons( piv ) ) );
@@ -1369,8 +1369,7 @@ ProofGraph::setLeafPSLabeling (ProofNode *n, map<Var, icolor_t> *labels)
         if (var_class == I_AB)
         {
             map<Var, icolor_t>::iterator it = labels->find (v);
-            set<Var>::iterator itv = theory_only.find(v);
-            assert (itv != theory_only.end() || it != labels->end());
+            assert (theory_only.find(v) != theory_only.end() || it != labels->end());
 
             if (it->second == I_A)
                 colorA (n, v);
@@ -1400,8 +1399,7 @@ ProofGraph::setLeafPSWLabeling (ProofNode *n, map<Var, icolor_t> *labels)
         if (var_class == I_AB)
         {
             map<Var, icolor_t>::iterator it = labels->find (v);
-            set<Var>::iterator itv = theory_only.find(v);
-            assert (itv != theory_only.end() || it != labels->end());
+            assert (theory_only.find(v) != theory_only.end() || it != labels->end());
 
             if (it->second == I_A)
                 colorA (n, v);
@@ -1431,8 +1429,7 @@ ProofGraph::setLeafPSSLabeling (ProofNode *n, map<Var, icolor_t> *labels)
         if (var_class == I_AB)
         {
             map<Var, icolor_t>::iterator it = labels->find (v);
-            set<Var>::iterator itv = theory_only.find(v);
-            assert (itv != theory_only.end() || it != labels->end());
+            assert (theory_only.find(v) != theory_only.end() || it != labels->end());
 
             if (it->second == I_A)
                 colorAB (n, v);

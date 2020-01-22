@@ -237,8 +237,7 @@ ProofGraph::computePSFunction(vector< clauseid_t >& DFSv, const ipartitions_t& A
 		time(&before);
 		
 		map<Var, int> occ_a, occ_b;
-		int aclauses, bclauses;
-		aclauses = bclauses;
+
 		for(size_t i = 0; i < proof_size; ++i)
 		{
 			n = getNode(DFSv[i]); assert(n);
@@ -277,14 +276,12 @@ ProofGraph::computePSFunction(vector< clauseid_t >& DFSv, const ipartitions_t& A
 					if(vclass != I_AB) continue;
 					if(col == I_A)
 					{
-						++aclauses;
 						++occ_a[v];
 						if(occ_b.find(v) == occ_b.end())
 							occ_b[v] = 0;
 					}
 					else if(col == I_B)
 					{
-						++bclauses;
 						++occ_b[v];
 						if(occ_a.find(v) == occ_a.end())
 							occ_a[v] = 0;
