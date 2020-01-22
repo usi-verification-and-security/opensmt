@@ -31,6 +31,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 %option noyywrap
 %option yylineno
 %option stack
+%option nounput
+%option noinput
+%option noyy_top_state
 
 %{
 
