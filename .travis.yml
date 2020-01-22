@@ -63,6 +63,7 @@ before_script:
     - mkdir build && mkdir ${INSTALL}
 
 script:
+  - set -e
   - cd build
   - cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_CXX_FLAGS="$FLAGS" -DPRODUCE_PROOF=${PRODUCE_PROOF} -DCMAKE_INSTALL_PREFIX=${INSTALL} ..
   - make
