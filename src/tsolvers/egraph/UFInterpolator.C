@@ -469,8 +469,7 @@ bool CGraph::colorEdgesFrom ( CNode *x, const ipartitions_t &mask )
     assert ( x );
 
     // Color from x
-    CNode *n = NULL;
-    CNode *orig_x = x;
+    CNode *n = nullptr;
 
 #ifdef COLOR_DEBUG
     cerr << "; ColorEdgesFrom " << logic.printTerm(x->e) << endl;
@@ -567,6 +566,7 @@ bool CGraph::colorEdgesFrom ( CNode *x, const ipartitions_t &mask )
                             //cerr << "; Edges from X to N" << endl;
                             vector<CEdge*> sorted;
                             size_t xnl = getSortedEdges(cn_arg_x, cn_arg_n, sorted);
+                            (void)xnl;
                             for(int i = 0; i < sorted.size(); ++i)
                             {
                                 CNode *from = sorted[i]->source;
@@ -625,6 +625,7 @@ bool CGraph::colorEdgesFrom ( CNode *x, const ipartitions_t &mask )
                             //cerr << "; Edges from X to N" << endl;
                             vector<CEdge*> sorted;
                             size_t xnl = getSortedEdges(cn_arg_x, cn_arg_n, sorted);
+                            (void)xnl;
                             for(int i = 0; i < sorted.size() - 1; ++i)
                             {
                                 CNode *from = sorted[i]->source;
@@ -657,8 +658,7 @@ bool CGraph::colorEdgesFrom ( CNode *x, const ipartitions_t &mask )
                         assert ( abcommon != PTRef_Undef );
                         //cerr << "; Node " << logic.printTerm(abcommon) << " is AB" << endl;
                         assert ( cnodes_store.find ( abcommon ) != cnodes_store.end( ) );
-                        CNode *new_arg_x = cnodes_store[ abcommon ];
-                        assert ( new_arg_x->color == I_AB );
+                        assert ( cnodes_store[abcommon]->color == I_AB );
                         new_args.push ( abcommon );
 
 
@@ -668,7 +668,6 @@ bool CGraph::colorEdgesFrom ( CNode *x, const ipartitions_t &mask )
                     }
                 }
 
-                char **msg;
                 PTRef nn = logic.mkUninterpFun (logic.getPterm (x->e).symb(), new_args);
                 /*
                 if(isAstrict(logic.getIPartitions(new_args[0]), mask) && isBstrict(logic.getIPartitions(new_args[1]), mask))
@@ -927,6 +926,7 @@ CGraph::interpolate_flat (const path_t &p)
     factors.push_back (p);
     vector<path_t> parents;
     const bool a_factor = getFactorsAndParents ( p, factors, parents );
+    (void)a_factor;
     // this should be a flat path
     assert (parents.size() == 0);
 

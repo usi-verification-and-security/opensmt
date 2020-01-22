@@ -111,7 +111,7 @@ public:
     , m_labels(NULL)
   { }
 
-  ~CGraph( ) { clear( ); }
+  virtual ~CGraph( ) { clear( ); }
 
 	inline int     verbose                       ( ) const { return config.verbosity(); }
     void verifyInterpolantWithExternalTool( const ipartitions_t& mask );
@@ -189,8 +189,6 @@ private:
   bool          getFactorsAndParents ( const path_t &, vector< path_t > &, vector< path_t > & );
   void labelFactors( vector<path_t> & );
   PTRef interpolate_flat(const path_t& p);
-  bool flat;
-  bool divided;
   inline path_t path                 ( CNode * c1, CNode * c2 ) { return make_pair( c1, c2 ); }
 
   bool          checkColors          ( );
@@ -200,24 +198,26 @@ private:
   Egraph &                        egraph;
   SMTConfig &                     config;
   Logic &                         logic;
-  vector< CNode * >               cnodes;
-  vector< CEdge * >               cedges;
-  map< PTRef, CNode * >       cnodes_store;
-  set< pair< PTRef, PTRef > > path_seen;
-  set< CNode * >                  colored_nodes;
-  set< CEdge * >                  colored_edges;
+  std::vector< CNode * >          cnodes;
+  std::vector< CEdge * >          cedges;
+  std::map< PTRef, CNode * >      cnodes_store;
+  std::set< pair< PTRef, PTRef >> path_seen;
+  std::set< CNode * >             colored_nodes;
+  std::set< CEdge * >             colored_edges;
   bool                            colored;
   PTRef                         conf1;
   PTRef                         conf2;
   PTRef                         conf;
-  map< path_t, icolor_t > L;
+  std::map< path_t, icolor_t > L;
   PTRef interpolant;
   icolor_t conf_color;
-  map<PTRef, icolor_t> *m_labels;
   vec<PTRef> A_basic;
   vec<PTRef> B_basic;
   unsigned int max_width;
   unsigned int max_height;
+  bool flat;
+  bool divided;
+  std::map<PTRef, icolor_t> *m_labels;
 
   struct CAdjust
   {
@@ -230,6 +230,7 @@ private:
       assert( prev->target == n );
       assert( x->next );
       assert( x->next == prev );
+      (void)n;
     }
 
     // Undo
@@ -245,7 +246,7 @@ private:
       assert( x->next != prev );
       assert( cnn->next != prev );
       x->next = prev;
-      cnn->next = NULL;
+      cnn->next = nullptr;
     }
 
   private:
