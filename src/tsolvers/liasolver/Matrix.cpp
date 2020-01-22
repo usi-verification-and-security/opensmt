@@ -37,10 +37,9 @@ opensmt::Real&
 LAMatrixStore::MM(MId mid, int row, int col)
 {
     LAMatrix& m = operator[](mid);
-    int nrows = m.nRows();
     int ncols = m.nCols();
     assert(row >= 1 && col >= 1);
-    assert(row <= nrows && col <= ncols);
+    assert(row <= m.nRows() && col <= ncols);
     return vs[m.getCoeffs()][ncols*(row-1) + col-1 + 1]; // Vectors are indexed from 1 ... n
 }
 
@@ -303,33 +302,26 @@ LAMatrixStore::compute_snf(MId U, MId &S, int &dim, MId &L, MId &Li, MId &R, MId
     int imin, jmin;
     bool found;
     opensmt::Real x, valmin;
-
+    auto const& store = *this; (void) store;
     LAMatrix& Sm = operator[](S);
-    LAMatrix& Um = operator[](U);
     if (R != MId_Undef) {
-        LAMatrix &Rm = operator[](R);
-        assert(Rm.nCols() == Rm.nRows());
-        assert(Rm.nRows() == Um.nCols());
+        assert(store[R].nCols() == store[R].nRows());
+        assert(store[R].nRows() == store[U].nCols());
 
     }
     if (Ri != MId_Undef) {
-        LAMatrix& Rim = operator[](Ri);
-        LAMatrix& Rm = operator[](R);
-        assert(Rim.nRows() == Rim.nCols());
-        assert(Rim.nRows() == Rm.nCols());
+        assert(store[Ri].nRows() == store[Ri].nCols());
+        assert(store[Ri].nRows() == store[R].nCols());
 
     }
     if (L != MId_Undef) {
-        LAMatrix& Lm = operator[](L);
-        assert(Lm.nCols() == Lm.nRows());
-        assert(Lm.nCols() == Um.nRows());
+        assert(store[L].nCols() == store[L].nRows());
+        assert(store[L].nCols() == store[U].nRows());
 
     }
     if (Li != MId_Undef) {
-        LAMatrix& Lmi = operator[](Li);
-        LAMatrix& Lm = operator[](L);
-        assert(Lmi.nRows() == Lmi.nCols());
-        assert(Lmi.nRows() == Lm.nRows());
+        assert(store[Li].nRows() == store[Li].nCols());
+        assert(store[Li].nRows() == store[L].nRows());
     }
 
     //std::cout << " Rows U" << Um.nRows() << " Cols U " << Um.nCols() << " Rows S" << Sm.nRows() << " Cols S " << Sm.nCols() << "\n";
@@ -522,8 +514,7 @@ LAMatrixStore::compute_hnf_v1(const MId U1, MId &H, int &dim1, MId &R1, MId &Ri1
     LAMatrix& Hm = operator[](H);
     LAMatrix& U1m = operator[](U1);
     if (R1 != MId_Undef) {
-        LAMatrix &R1m = operator[](R1);
-        assert(R1m.nRows() == U1m.nRows());
+        assert(operator[](R1).nRows() == U1m.nRows());
     }
 
     if (H != U1)
