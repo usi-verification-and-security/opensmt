@@ -149,9 +149,6 @@ void THandler::getConflict (
         vec<Lit> & conflict
         , vec<VarData>& vardata
         , int & max_decision_level
-#ifdef PEDANTIC_DEBUG
-        , vec<Lit>& trail
-#endif
     )
 {
     // First of all, the explanation in a tsolver is
@@ -160,75 +157,38 @@ void THandler::getConflict (
     // wants a clause we store it in the form ( l1 | ... | ln )
     // where li is the literal corresponding with ei with polarity !pi
     vec<PtAsgn> explanation;
-    int i;
-    for (i = 0; i < getSolverHandler().tsolvers.size(); i++) {
-        if (getSolverHandler().tsolvers[i] != NULL && getSolverHandler().tsolvers[i]->hasExplanation()) {
-            getSolverHandler().tsolvers[i]->getConflict(false, explanation);
-            break;
+    {
+        int i;
+        for (i = 0; i < getSolverHandler().tsolvers.size(); i++) {
+            if (getSolverHandler().tsolvers[i] != nullptr && getSolverHandler().tsolvers[i]->hasExplanation()) {
+                getSolverHandler().tsolvers[i]->getConflict(false, explanation);
+                break;
+            }
         }
+        assert(i != getSolverHandler().tsolvers.size());
     }
-    assert(i != getSolverHandler().tsolvers.size());
 
 #ifdef VERBOSE_EUF
-//    cout << printExplanation(explanation, assigns);
+//    std::cout << printExplanation(explanation, assigns);
 #endif
-    if ( explanation.size() == 0 ) {
+    if (explanation.size() == 0) {
         max_decision_level = 0;
         return;
     }
-//    assert( explanation.size() != 0 );
 
-//  if ( config.certification_level > 0 )
-//    verifyExplanationWithExternalTool( explanation );
-
-#ifdef PRODUCE_PROOF
-  max_decision_level = -1;
-  for(int i = 0; i < explanation.size(); ++i)
-    {
-        PtAsgn& ei = explanation[i];
-        assert( ei.sgn == l_True || ei.sgn == l_False);
+    max_decision_level = -1;
+    for (int i = 0; i < explanation.size(); ++i) {
+        PtAsgn & ei = explanation[i];
+        assert(ei.sgn == l_True || ei.sgn == l_False);
         Var v = ptrefToVar(ei.tr);
         bool negate = ei.sgn == l_False;
         Lit l = mkLit(v, !negate);
         conflict.push(l);
 
-    if ( max_decision_level < vardata[ v ].level )
-      max_decision_level = vardata[ v ].level;
-  }
-  if ( config.produce_inter() == 0 )
-    explanation.clear( );
-#else
-    max_decision_level = -1;
-#ifdef VERBOSE_EUF
-    cerr << "Explanation clause: " << endl;
-#endif
-    while (explanation.size() != 0) {
-        PtAsgn ta = explanation.last( );
-        explanation.pop( );
-#ifdef VERBOSE_EUF
-        cerr << " " << (ta.sgn == l_False ? "" : "not ") << getLogic().printTerm(ta.tr) << endl;
-#endif
-//    assert( ei->hasPolarity( ) );
-//    assert( ei->getPolarity( ) == l_True
-//       || ei->getPolarity( ) == l_False );
-//        bool negate = ei->getPolarity( ) == l_False;
-
-//        Var v = enodeToVar( ei );
-        Lit l = tmap.getLit(ta.tr);
-        // Get the sign right
-        lbool val = ta.sgn;
-        if (val == l_False)
-            l = ~l;
-#ifdef PEDANTIC_DEBUG
-        assert( isOnTrail(l, trail) );
-#endif
-        conflict.push( ~l );
-
-        if ( max_decision_level < vardata[ var(l) ].level )
-            max_decision_level = vardata[ var(l) ].level;
+        if (max_decision_level < vardata[v].level) {
+            max_decision_level = vardata[v].level;
+        }
     }
-#endif
-
 }
 
 #ifdef PRODUCE_PROOF
