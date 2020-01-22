@@ -24,11 +24,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 
-%pure-parser
+%define api.pure
+%define parse.error verbose
 %name-prefix "smt2new"
 %locations
 %defines
-%error-verbose
 %parse-param { Smt2newContext* context }
 %lex-param { void* scanner }
 
