@@ -67,8 +67,6 @@ TEST(Polynomial_test, test_Merge3){
     Polynomial poly2;
     LVRef x1 {4772};
     LVRef x2 {4776};
-    LVRef y1 {2604};
-    LVRef y2 {4624};
     poly1.addTerm(x1, 1);
     poly1.addTerm(x2, -2);
     poly2.addTerm(x2, 1);

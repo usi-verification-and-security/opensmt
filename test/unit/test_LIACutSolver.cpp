@@ -46,9 +46,9 @@ TEST(LIACutSolver_test, test_computeEqualityBasis)
 
     LABoundStore bs(vs);
 
-    LABoundStore::BoundInfo y_minus_x_nostrict_m5 = bs.allocBoundPair(y_minus_x, -5, false);  // y - x + 5 <= 0
-    LABoundStore::BoundInfo two_x_minus_two_y_nostrict_m1 = bs.allocBoundPair(two_x_minus_two_y, -1, false);    // 2x - 2y + 1 <= 0
-    LABoundStore::BoundInfo minus_y_minus_ten_x_nostrict_m20  = bs.allocBoundPair(minus_y_minus_ten_x, -20, false);   // -y - 10x + 20 <= 0
+    //LABoundStore::BoundInfo y_minus_x_nostrict_m5 = bs.allocBoundPair(y_minus_x, -5, false);  // y - x + 5 <= 0
+    //LABoundStore::BoundInfo two_x_minus_two_y_nostrict_m1 = bs.allocBoundPair(two_x_minus_two_y, -1, false);    // 2x - 2y + 1 <= 0
+    //LABoundStore::BoundInfo minus_y_minus_ten_x_nostrict_m20  = bs.allocBoundPair(minus_y_minus_ten_x, -20, false);   // -y - 10x + 20 <= 0
 
     bs.buildBounds();
 

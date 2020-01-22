@@ -25,21 +25,22 @@ TEST(Simplex_test, test_ops_in_Simplex)
     LABoundStore bs(vs);
 
     LABoundStore::BoundInfo x_strict_0   = bs.allocBoundPair(x, 0, true); // x < 0 and x >= 0
-    LABoundStore::BoundInfo x_nostrict_0 = bs.allocBoundPair(x, 0, false); // x <= 0 and x > 0
     LABoundStore::BoundInfo y_strict_0   = bs.allocBoundPair(y, 0, true); // y < 0 and y >= 0
-    LABoundStore::BoundInfo y_nostrict_0 = bs.allocBoundPair(y, 0, false); // y <= 0 and y > 0
+//    LABoundStore::BoundInfo x_nostrict_0 = bs.allocBoundPair(x, 0, false); // x <= 0 and x > 0
+//    LABoundStore::BoundInfo y_nostrict_0 = bs.allocBoundPair(y, 0, false); // y <= 0 and y > 0
 
     LABoundStore::BoundInfo x_strict_1   = bs.allocBoundPair(x, 1, true); // x < 1 and x >= 1
     LABoundStore::BoundInfo x_nostrict_1 = bs.allocBoundPair(x, 1, false); // x <= 1 and x > 1
     LABoundStore::BoundInfo y_strict_1   = bs.allocBoundPair(y, 1, true); // y < 1 and y >= 1
     LABoundStore::BoundInfo y_nostrict_1 = bs.allocBoundPair(y, 1, false); // y <= 1 and y > 1
 
-    LABoundStore::BoundInfo y_minus_x_strict_0    = bs.allocBoundPair(y_minus_x, 0, true);    // y - x < 0 and y - x >= 0
     LABoundStore::BoundInfo y_minus_x_nostrict_0  = bs.allocBoundPair(y_minus_x, 0, false);   // y - x <= 0 and y - x > 0
-    LABoundStore::BoundInfo y_minus_x_strict_m1   = bs.allocBoundPair(y_minus_x, -1, true);   // y - x + 1 <  0
-    LABoundStore::BoundInfo y_minus_x_nostrict_m1 = bs.allocBoundPair(y_minus_x, -1, false);  // y - x + 1 <= 0
-    LABoundStore::BoundInfo y_minus_x_strict_1    = bs.allocBoundPair(y_minus_x, 1, true);    // y - x - 1 <  0
     LABoundStore::BoundInfo y_minus_x_nostrict_1  = bs.allocBoundPair(y_minus_x, 1, false);   // y - x - 1 <= 0
+    //LABoundStore::BoundInfo y_minus_x_strict_0    = bs.allocBoundPair(y_minus_x, 0, true);    // y - x < 0 and y - x >= 0
+    //LABoundStore::BoundInfo y_minus_x_strict_m1   = bs.allocBoundPair(y_minus_x, -1, true);   // y - x + 1 <  0
+    //LABoundStore::BoundInfo y_minus_x_nostrict_m1 = bs.allocBoundPair(y_minus_x, -1, false);  // y - x + 1 <= 0
+    //LABoundStore::BoundInfo y_minus_x_strict_1    = bs.allocBoundPair(y_minus_x, 1, true);    // y - x - 1 <  0
+
 
     bs.buildBounds();
 
