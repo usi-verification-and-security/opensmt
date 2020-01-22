@@ -788,9 +788,7 @@ protected:
     //
     set< PTRef >     interface_equalities;       // To check that we do not duplicate eij
     set< PTRef >     atoms_seen;                 // Some interface equalities may already exists in the formula
-
-    int                next_it_i;                  // Next index i
-    int                next_it_j;                  // Next index j
+    
     //
     // Data structures required for incrementality, backtrackability
     //

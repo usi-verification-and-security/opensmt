@@ -128,13 +128,6 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , split_next            (split_units == spm_time ? cpuTime() + split_inittune : decisions + split_inittune)
     , split_preference      (sppref_undef)
     , unadvised_splits      (0)
-
-
-#ifdef PRODUCE_PROOF
-    , proof_                ( new Proof( ca ) )
-    , proof                 ( * proof_ )
-    , proof_graph           ( NULL )
-#endif
 #ifdef PEDANTIC_DEBUG
     , max_dl_debug          (0)
     , analyze_cnt           (0)
@@ -147,8 +140,11 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , luby_i                (0)
     , luby_k                (1)
     , cuvti                 (false)
-    , next_it_i             (0)
-    , next_it_j             (1)
+#ifdef PRODUCE_PROOF
+    , proof_                ( new Proof( ca ) )
+    , proof                 ( * proof_ )
+    , proof_graph           ( nullptr )
+#endif
 #ifdef STATISTICS
     , preproc_time          (0)
     , elim_tvars            (0)
