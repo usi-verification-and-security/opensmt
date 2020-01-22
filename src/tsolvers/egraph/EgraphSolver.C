@@ -1035,13 +1035,11 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     cerr << "y isConstant is " << isConstant(y) << endl;
 #endif
     { // sanity checks
-        const Enode& an_x = getEnode(x);
-        const Enode& an_y = getEnode(y);
-        assert( an_x.type() == an_y.type() );
-        assert( !an_x.isTerm() || !isConstant(x) || !isConstant(y));
-        assert( an_x.getRoot( ) != an_y.getRoot( ) );
-        assert( x == an_x.getRoot( ) );
-        assert( y == an_y.getRoot( ) );
+        assert( getEnode(x).type() == getEnode(y).type() );
+        assert( !getEnode(x).isTerm() || !isConstant(x) || !isConstant(y));
+        assert( getEnode(x).getRoot( ) != getEnode(y).getRoot( ) );
+        assert( x == getEnode(x).getRoot( ) );
+        assert( y == getEnode(y).getRoot( ) );
     }
 
     // Step 1: Ensure that the constant or the one with a larger equivalence
@@ -1926,11 +1924,9 @@ void Egraph::doExplain(ERef x, ERef y, PtAsgn reason_inequality) {
 void Egraph::explainConstants(ERef p, ERef q) {
     ERef enr_proot = getEnode(p).getRoot();
     ERef enr_qroot = getEnode(q).getRoot();
-    const Enode& en_proot = getEnode(enr_proot);
-    const Enode& en_qroot = getEnode(enr_qroot);
-    assert(en_proot.isTerm() && en_qroot.isTerm());
-    assert(logic.isConstant(en_proot.getTerm()));
-    assert(logic.isConstant(en_qroot.getTerm()));
+    assert(getEnode(enr_proot).isTerm() && getEnode(enr_qroot).isTerm());
+    assert(logic.isConstant(getEnode(enr_proot).getTerm()));
+    assert(logic.isConstant(getEnode(enr_qroot).getTerm()));
     assert(enr_proot != enr_qroot);
     //
     // We need explaining

@@ -348,10 +348,8 @@ void Egraph::checkForbidReferences(ERef er) {
     do {
         Elist& e_old = forbid_allocator[er_old];
         for (int j = 0; j < forbid_allocator.referenced_by[e_old.getId()].size(); j++) {
-            ERef referer = forbid_allocator.referenced_by[e_old.getId()][j];
-            assert (e_old.e != referer);
+            assert (e_old.e != forbid_allocator.referenced_by[e_old.getId()][j]);
         }
-
     } while (start != er_old);
 }
 
@@ -361,8 +359,7 @@ void Egraph::checkRefConsistency() {
         for (int j = 0; j < referers.size(); j++) {
             ERef referer = referers[j];
             if (referer == ERef_Undef) continue;
-            ELRef forbid = enode_store[referer].getForbid();
-            assert(forbid_allocator[forbid].getId() == i);
+            assert(forbid_allocator[enode_store[referer].getForbid()].getId() == i);
         }
     }
 }
