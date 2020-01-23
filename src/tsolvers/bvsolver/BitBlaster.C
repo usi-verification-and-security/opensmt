@@ -337,7 +337,9 @@ BitBlaster::bbBvslt(PTRef tr)
     assert( bs[bb_lhs].size( ) == bs[bb_rhs].size( ) );
 
     // <a>_S < <b>_S <=> (msb(a) <=> msb(b)) xor add(a, ~b, 1).cout
-    PTRef tr_out = logic.mkXor(logic.mkEq(bs[bb_lhs].msb(), bs[bb_rhs].msb()), bbBvadd_carryonly(logic.mkBVPlus(lhs, logic.mkBVCompl(rhs)), logic.getTerm_true()));
+    PTRef tr_out = logic.mkXor(logic.mkEq(bs[bb_lhs].msb(), bs[bb_rhs].msb()), bbBvadd_carryonly(logic.mkBVPlus(lhs,
+                                                                                                                logic.mkBVCompl(
+                                                                                                                        rhs)), logic.getTerm_true()));
 
     // Save result and return
     vec<PTRef> asgns;
