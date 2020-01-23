@@ -57,13 +57,8 @@ const char* BitBlaster::s_bbBvlsh       = ".bbBvlsh";
 const char* BitBlaster::s_bbBvlrsh      = "s_bbBvlrsh";
 const char* BitBlaster::s_bbBvarsh      = "s_bbBvarsh";
 
-BitBlaster::BitBlaster ( const SolverId i
-                       , SMTConfig & c
-                       , MainSolver& mainSolver
-                       , BVLogic& bvlogic
-                       , vec<PtAsgn> & ex
-                       , vec<DedElem> & d
-                       , vec<PTRef> & s )
+BitBlaster::BitBlaster(SolverId, SMTConfig & c, MainSolver & mainSolver, BVLogic & bvlogic, vec<PtAsgn> & ex,
+                       vec<DedElem> & d, vec<PTRef> & s)
     : last_refined(0)
     , config      (c)
     , mainSolver  (mainSolver)
@@ -160,7 +155,7 @@ BitBlaster::assertLit (PtAsgn pta)
     //
     vec< Lit > clause;
     clause.push( mkLit( act_var, (pta.sgn == l_True ? false : true) ) );
-    bool res = addClause( clause, pta.tr );
+    bool res = addClause(clause);
 
     return res;
 }
@@ -1467,7 +1462,7 @@ BitBlaster::bbDistinct(PTRef tr)
 }
 
 bool
-BitBlaster::addClause(vec< Lit > & c, PTRef tr)
+BitBlaster::addClause(vec<Lit> & c)
 {
     return solverP.addOriginalClause(c);
 }
@@ -2217,67 +2212,3 @@ BitBlaster::notifyEquality(PTRef tr)
         return l_Undef;
 }
 
-lbool
-BitBlaster::glueBtoUF(BVRef br, PTRef tr)
-{
-    /*
-    char* msg;
-
-    vec<PTRef> bv;
-    bs.copyTo(br, bv);
-    PTRef eq_tr = logic.mkGlueBtoUF(bv, tr);
-    sstat status = mainSolver.insertFormula(eq_tr, &msg);
-    if (status == s_True)
-        return l_True;
-    else if (status == s_False)
-        return l_False;
-    else
-        return l_Undef;
-    */
-    return l_Undef;
-}
-
-lbool
-BitBlaster::glueUFtoB(PTRef tr, BVRef br)
-{
-    /*
-    char* msg;
-    vec<PTRef> bv;
-    bs.copyTo(br, bv);
-    PTRef and_tr = logic.mkGlueUFtoB(tr, bv);
-    bs.bindPTRefToBVRef(tr,br);
-    sstat status = mainSolver.insertFormula(and_tr, &msg);
-    if (status == s_True)
-        return l_True;
-    else if (status == s_False)
-        return l_False;
-    else
-        return l_Undef;
-    */
-    return l_Undef;
-}
-
-lbool
-BitBlaster::glueUFtoUF(PTRef tr1, PTRef tr2)
-{
-    /*
-    BVRef br1 = bs.getBoundBVRef(tr1);
-    BVRef br2 = bs.getBoundBVRef(tr2);
-
-    vec<PTRef> and_args;
-    for (int i = 0; i < bs[br1].size(); i++)
-        and_args.push(logic.mkEq(bs[br1][i], bs[br2][i]));
-    PTRef iff_tr = logic.mkEq(logic.mkEq(tr1, tr2), logic.mkAnd(and_args));
-
-    char* msg;
-    sstat status = mainSolver.insertFormula(iff_tr, &msg);
-
-    if (status == s_True)
-        return l_True;
-    else if (status == s_False)
-        return l_False;
-    else
-        return l_Undef;
-*/
-    return l_Undef;
-}
