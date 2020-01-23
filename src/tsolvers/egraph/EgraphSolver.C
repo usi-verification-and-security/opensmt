@@ -413,7 +413,7 @@ void Egraph::declareTerm(PTRef tr) {
 
     if (logic.hasSortBool(tr)) {
         Pterm& t = logic.getPterm(tr);
-        while (known_preds.size() <= Idx(t.getId()))
+        while (static_cast<unsigned int>(known_preds.size()) <= Idx(t.getId()))
             known_preds.push(false);
         known_preds[Idx(t.getId())] = true;
     }
@@ -1970,25 +1970,11 @@ uint32_t UseVector::addParent(ERef parent) {
 }
 
 void UseVector::clearEntryAt(int index) {
-    assert(index >= 0 && index < data.size() && data[index].isValid());
+    assert(index >= 0 && static_cast<std::size_t>(index) < data.size() && data[index].isValid());
     data[index] = UseVector::indexToFreeEntry(free);
     free = index;
     --nelems;
 }
-
-//void UseVector::markEntry(Entry& entry) {
-//    // MB: TODO: I probably do not need to decrement the number of elements, since this use vector should not be accessed until backtracking makes it valid again
-//    assert(entry.isValid());
-//    entry.mark();
-//    --this->nelems;
-//}
-//
-//void UseVector::unMarkEntry(Entry& entry) {
-//    // MB: TODO: check if the decrement in markEntry needs to be undone
-//    assert(entry.isMarked());
-//    entry.unmark();
-//    ++this->nelems;
-//}
 
 uint32_t UseVector::getFreeSlotIndex() {
     auto ret = free;
@@ -1996,7 +1982,7 @@ uint32_t UseVector::getFreeSlotIndex() {
         Entry e = data[free];
         assert(e.isFree());
         free = freeEntryToIndex(e);
-        assert(free < 0 || free < data.size());
+        assert(free < 0 || static_cast<std::size_t>(free) < data.size());
         return ret;
     }
     ret = data.size();

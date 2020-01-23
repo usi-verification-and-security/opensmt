@@ -354,7 +354,7 @@ void Egraph::checkForbidReferences(ERef er) {
 }
 
 void Egraph::checkRefConsistency() {
-    for (int i = 0; i < forbid_allocator.referenced_by.size(); i++) {
+    for (unsigned int i = 0; i < static_cast<unsigned int>(forbid_allocator.referenced_by.size()); i++) {
         vec<ERef>& referers = forbid_allocator.referenced_by[i];
         for (int j = 0; j < referers.size(); j++) {
             ERef referer = referers[j];
