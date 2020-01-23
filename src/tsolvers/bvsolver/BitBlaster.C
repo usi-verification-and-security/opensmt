@@ -298,7 +298,7 @@ BitBlaster::bbEq(PTRef tr)
 
     // Produce the result
     vec<PTRef> result_args;
-    for ( unsigned i = 0 ; i < bs[bb_lhs].size() ; i ++ )
+    for ( int i = 0 ; i < bs[bb_lhs].size() ; i ++ )
     {
         result_args.push(logic.mkEq(bs[bb_lhs][i], bs[bb_rhs][i]));
     }
@@ -380,7 +380,7 @@ BitBlaster::bbBvule(PTRef tr)
     // Produce the result
     //
     PTRef lt_prev = PTRef_Undef;
-    for (unsigned i = 0 ; i < bs[bb_lhs].size() ; i ++)
+    for (int i = 0 ; i < bs[bb_lhs].size() ; i ++)
     {
         // Produce ~l[i] & r[i]
         PTRef not_l   = logic.mkNot(bs[bb_lhs][i]);
@@ -1043,7 +1043,7 @@ BitBlaster::bbBvurem(PTRef tr)
         //
         PTRef carry = PTRef_Undef;
 
-        for( unsigned j = 0 ; j < minuend.size( ) ; j++ )
+        for (unsigned j = 0; j < static_cast<unsigned>(minuend.size()); j++)
         {
             PTRef bit_1 = minuend[ j ];
             PTRef bit_2 = subtrahend[ j ];
@@ -1073,7 +1073,7 @@ BitBlaster::bbBvurem(PTRef tr)
         //
         // Adds one, if bit_i is one
         //
-        for (unsigned j = 0 ; j < minuend.size( ) ; j++)
+        for (unsigned j = 0; j < static_cast<unsigned>(minuend.size()); j++)
         {
             PTRef bit_1 = minuend[ j ];
             PTRef bit_2 = j == 0 ? logic.getTerm_true() : logic.getTerm_false();
@@ -1285,7 +1285,7 @@ BitBlaster::bbBvmul(PTRef tr)
         for ( unsigned j = 0 ; j < size - i ; j ++ )
             addend.push(logic.mkAnd(bs[bb_arg2][i], bs[bb_arg1][j]));
 
-        assert( addend.size( ) == size );
+        assert(static_cast<unsigned>(addend.size()) == size);
         // Accumulate computed term
         PTRef carry = PTRef_Undef;
 
@@ -1341,11 +1341,11 @@ BitBlaster::bbSignExtend(PTRef tr)
     PTRef x = logic.getPterm(tr)[0];
     BVRef bb_x = bbTerm(x);
     // Copy x
-    unsigned i;
-    for ( i = 0 ; i < bs[bb_x].size( ) ; i ++ )
+    int i = 0;
+    for ( ; i < bs[bb_x].size( ) ; i ++ )
         result.push(bs[bb_x][i]);
     // Sign extend
-    for ( ; (int)i < bitwidth; i ++ ) // Should be bit width of what?
+    for ( ; i < bitwidth; i ++ ) // Should be bit width of what?
         result.push(bs[bb_x].lsb());
 
     return bs.newBvector(names, result, mkActVar(s_bbSignExtend), tr);
@@ -1400,8 +1400,8 @@ BitBlaster::bbConstant(PTRef tr)
     {
         const std::string value = logic.getSymName(tr);
 
-        assert(value.length() == bitwidth);
-        for (unsigned i = 0 ; i < bitwidth; i ++)
+        assert(value.length() == static_cast<unsigned>(bitwidth));
+        for (int i = 0 ; i < bitwidth; i ++)
         {
             asgns[i] = value[bitwidth-i-1] == '1' ? logic.getTerm_true() : logic.getTerm_false();
         }
@@ -2114,7 +2114,7 @@ PTRef BitBlaster::simplify( PTRef formula )
 void BitBlaster::computeModel( )
 {
     model.clear();
-    for ( unsigned i = 0 ; i < variables.size( ) ; i++ )
+    for (unsigned i = 0; i < static_cast<unsigned>(variables.size()); i++)
     {
         PTRef e = variables[ i ];
         Real value = 0;

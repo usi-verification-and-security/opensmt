@@ -48,7 +48,7 @@ lbool LookaheadSMTSolver::solve_()
     if (res == LALoopRes::sat)
     {
         model.growTo(nVars());
-        for (int i = 0; i < dec_vars; i++) {
+        for (unsigned int i = 0; i < dec_vars; i++) {
             Var p = var(trail[i]);
             model[p] = value(p);
         }
@@ -369,7 +369,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
             // It is possible that all variables are assigned here.
             // In this case it seems that we have a satisfying assignment.
             // This is in fact a debug check
-            if (trail.size() == dec_vars)
+            if (static_cast<unsigned int>(trail.size()) == dec_vars)
             {
 #ifdef LADEBUG
                 printf("All vars set?\n");
@@ -464,7 +464,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
         }
     }
     best = score->getBest();
-    if (trail.size() == dec_vars && best == lit_Undef)
+    if (static_cast<unsigned int>(trail.size()) == dec_vars && best == lit_Undef)
     {
 #ifdef LADEBUG
         printf("All variables are already set, so we have nothing to branch on and this is a SAT answer\n");

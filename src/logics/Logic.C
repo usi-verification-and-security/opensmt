@@ -431,7 +431,7 @@ bool Logic::isTheorySymbol(SymRef tr) const {
 }
 
 void Logic::setAppearsInUF(PTRef tr) {
-    uint32_t id = Idx(getPterm(tr).getId());
+    int id = static_cast<int>(Idx(getPterm(tr).getId()));
 
     if (appears_in_uf.size() <= id || appears_in_uf[id] == false)
         propFormulasAppearingInUF.push(tr);
@@ -444,7 +444,7 @@ void Logic::setAppearsInUF(PTRef tr) {
 
 bool Logic::appearsInUF(PTRef tr) const {
     uint32_t id = Idx(getPterm(tr).getId());
-    if (id < appears_in_uf.size())
+    if (id < static_cast<unsigned int>(appears_in_uf.size()))
         return appears_in_uf[id];
     else
         return false;
@@ -1022,7 +1022,7 @@ void Logic::markConstant(PTRef ptr) {
 
 void Logic::markConstant(SymId id) {
     // Code to allow efficient constant detection.
-    while (id >= constants.size())
+    while (id >= static_cast<unsigned int>(constants.size()))
         constants.push(false);
     constants[id] = true;
 }
@@ -1769,7 +1769,7 @@ Logic::dumpHeaderToFile(ostream& dump_out)
         free(sym);
         Symbol& symb = sym_store[s];
         dump_out << "(";
-        for(int j = 0; j < symb.nargs(); ++j)
+        for(unsigned int j = 0; j < symb.nargs(); ++j)
         {
             dump_out << sort_store.getName(symb[j]) << " ";
         }

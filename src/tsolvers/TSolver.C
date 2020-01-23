@@ -49,7 +49,7 @@ void TSolver::pushBacktrackPoint()
 bool TSolver::isKnown(PTRef tr)
 {
     uint32_t id = Idx(getLogic().getPterm(tr).getId());
-    if (known_preds.size() <= id)
+    if (static_cast<unsigned int>(known_preds.size()) <= id)
         return false;
     return known_preds[id];
 }

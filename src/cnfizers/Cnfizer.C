@@ -115,7 +115,7 @@ bool Cnfizer::isNPAtom (PTRef r, PTRef &p) const
 
 void Cnfizer::setFrameTerm(FrameId frame_id)
 {
-    while (frame_terms.size() <= frame_id.id) {
+    while (static_cast<unsigned int>(frame_terms.size()) <= frame_id.id) {
         frame_terms.push(logic.getTerm_true());
     }
     // frame_id == {0} is for the bottom frame and we don't want to add
@@ -217,7 +217,7 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
 
 void Cnfizer::declareVars(vec<PTRef>& vars)
 {
-    for (size_t i = 0; i < vars.size(); i++) {
+    for (int i = 0; i < vars.size(); i++) {
         Lit l = tmap.getOrCreateLit(vars[i]);
         solver.addVar(var(l));
     }

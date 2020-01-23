@@ -27,7 +27,7 @@ const opensmt::Number&
 LALogic::getNumConst(PTRef tr) const
 {
     SymId id = sym_store[getPterm(tr).symb()].getId();
-    assert(id < numbers.size() && numbers[id] != NULL);
+    assert(id < static_cast<unsigned int>(numbers.size()) && numbers[id] != nullptr);
     return *numbers[id];
 }
 void LALogic::splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) const
@@ -155,7 +155,7 @@ lbool LALogic::arithmeticElimination(const vec<PTRef> & top_level_arith, Map<PTR
         // FORWARD substitution
         // We put the matrix equalities into upper triangular form
         //
-        for (uint32_t i = 0; i < equalities.size()-1; i++) {
+        for (int i = 0; i < equalities.size()-1; i++) {
             LAExpression &s = *equalities[i];
             // Solve w.r.t. first variable
             if (s.solve( ) == PTRef_Undef) {
@@ -165,7 +165,7 @@ lbool LALogic::arithmeticElimination(const vec<PTRef> & top_level_arith, Map<PTR
             }
             // Use the first variable x in s to generate a
             // substitution and replace x in lac
-            for ( unsigned j = i + 1 ; j < equalities.size( ) ; j ++ ) {
+            for ( int j = i + 1 ; j < equalities.size( ) ; j ++ ) {
                 LAExpression & lac = *equalities[ j ];
                 combine( s, lac );
             }
@@ -193,7 +193,7 @@ lbool LALogic::arithmeticElimination(const vec<PTRef> & top_level_arith, Map<PTR
         //
         // Now, for each row we get a substitution
         //
-        for (unsigned i = 0 ;i < equalities.size(); i++) {
+        for (int i = 0 ;i < equalities.size(); i++) {
             LAExpression& lae = *equalities[i];
             pair<PTRef, PTRef> sub = lae.getSubst();
             if (sub.first == PTRef_Undef) continue;
@@ -318,7 +318,7 @@ PTRef  LALogic::mkConst(const opensmt::Number& c)
     ptr = mkVar(getSort_num(), val);
     // Store the value of the number as a real
     SymId id = sym_store[getPterm(ptr).symb()].getId();
-    for (int i = numbers.size(); i <= id; i++) { numbers.push(nullptr); }
+    for (int i = numbers.size(); static_cast<unsigned int>(i) <= id; i++) { numbers.push(nullptr); }
     if (numbers[id] == nullptr) { numbers[id] = new opensmt::Number(val); }
     assert(c == *numbers[id]);
     markConstant(id);
@@ -727,7 +727,7 @@ PTRef LALogic::mkConst(SRef s, const char* name)
         ptr = mkVar(s, rat);
         // Store the value of the number as a real
         SymId id = sym_store[getPterm(ptr).symb()].getId();
-        for (int i = numbers.size(); i <= id; i++)
+        for (int i = numbers.size(); static_cast<unsigned>(i) <= id; i++)
             numbers.push(nullptr);
         if (numbers[id] != nullptr) { delete numbers[id]; }
         numbers[id] = new opensmt::Number(rat);

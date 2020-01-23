@@ -43,8 +43,9 @@ LABoundListRef LABoundListAllocator::alloc(const LVRef v, const vec<LABoundRef>&
 LABoundListRef LABoundListAllocator::alloc(LABoundList& from)
 {
     vec<LABoundRef> tmp;
-    for (int i = 0; i < from.size(); i++)
+    for (unsigned int i = 0; i < from.size(); i++) {
         tmp.push(from[i]);
+    }
     return alloc(from.getVar(), tmp);
 }
 
@@ -70,8 +71,9 @@ void LABoundStore::updateBound(BoundInfo bi) {
     vec<LABoundRef> new_bounds;
     LABoundListRef blr = var_bound_lists[getVarId(bi.v)];
 
-    for (int i = 0; i < bla[blr].size(); i++)
+    for (unsigned int i = 0; i < bla[blr].size(); i++) {
         new_bounds.push(bla[blr][i]);
+    }
 
     new_bounds.push(bi.ub);
     new_bounds.push(bi.lb);
@@ -80,8 +82,9 @@ void LABoundStore::updateBound(BoundInfo bi) {
     var_bound_lists[getVarId(bi.v)] = br;
     sort<LABoundRef,bound_lessthan>(bla[br].bounds, bla[br].size(), bound_lessthan(ba));
 
-    for (int j = 0; j < bla[br].size(); j++)
+    for (int j = 0; j < static_cast<int>(bla[br].size()); j++) {
         ba[bla[br][j]].setIdx(LABound::BLIdx{j});
+    }
 }
 
 void LABoundStore::buildBounds()
@@ -109,12 +112,12 @@ void LABoundStore::buildBounds()
         }
         LABoundListRef br = bla.alloc(keys[i], refs);
 
-        while (var_bound_lists.size() <= getVarId(keys[i]))
+        while (static_cast<unsigned int>(var_bound_lists.size()) <= getVarId(keys[i]))
             LABoundStore::var_bound_lists.push(LABoundListRef_Undef);
         var_bound_lists[getVarId(keys[i])] = br;
         sort<LABoundRef,bound_lessthan>(bla[br].bounds, bla[br].size(), bound_lessthan(ba));
 
-        for (int j = 0; j < bla[br].size(); j++)
+        for (int j = 0; static_cast<unsigned int>(j) < bla[br].size(); j++)
             ba[bla[br][j]].setIdx(LABound::BLIdx{j});
 
         // Check that the bounds are correctly ordered
@@ -152,7 +155,7 @@ void LABoundStore::buildBounds()
     for (unsigned i = 0; i < lvstore.numVars(); i++) {
         LVRef ref {i};
         auto id = getVarId(ref);
-        while (var_bound_lists.size() <= id)
+        while (static_cast<unsigned>(var_bound_lists.size()) <= id)
             var_bound_lists.push(LABoundListRef_Undef);
 
         if (var_bound_lists[id] == LABoundListRef_Undef) {
@@ -215,7 +218,7 @@ char* LABoundStore::printBounds(LVRef v) const
     LABoundListRef blr = var_bound_lists[getVarId(v)];
     char* bounds_str = (char*) malloc(1);
     bounds_str[0] = '\0';
-    for (int i = 0; i < bla[blr].size(); i++) {
+    for (unsigned int i = 0; i < bla[blr].size(); i++) {
         LABoundRef br = bla[blr][i];
         char* tmp;
         char* tmp2 = printBound(br);

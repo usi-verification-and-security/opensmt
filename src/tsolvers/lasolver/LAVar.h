@@ -47,7 +47,7 @@ public:
     LAVarStore() {}
     LVRef  getNewVar();
     inline void   clear() {};
-    int    numVars() const ;
+    std::size_t numVars() const ;
 };
 
 

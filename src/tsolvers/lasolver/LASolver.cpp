@@ -133,7 +133,7 @@ void LASolver::clearSolver()
 void LASolver::storeExplanation(Simplex::Explanation &&explanationBounds) {
     explanation.clear();
     explanationCoefficients.clear();
-    for (int i = 0; i < explanationBounds.size(); i++) {
+    for (std::size_t i = 0; i < explanationBounds.size(); i++) {
         PtAsgn asgn = getAsgnByBound(explanationBounds[i].boundref);
         explanation.push(asgn);
         explanationCoefficients.push_back(explanationBounds[i].coeff);
@@ -316,7 +316,7 @@ void LASolver::declareAtom(PTRef leq_tr)
 
     const Pterm& t = logic.getPterm(leq_tr);
 
-    while (known_preds.size() <= Idx(t.getId()))
+    while (static_cast<unsigned int>(known_preds.size()) <= Idx(t.getId()))
         known_preds.push(false);
     known_preds[Idx(t.getId())] = true;
 }
@@ -747,7 +747,7 @@ LASolver::~LASolver( )
 #endif // STATISTICS
 }
 
-PtAsgn_reason LASolver::getDeduction()  { if (deductions_next >= th_deductions.size()) return PtAsgn_reason_Undef; else return th_deductions[deductions_next++]; }
+PtAsgn_reason LASolver::getDeduction()  { if (deductions_next >= static_cast<unsigned>(th_deductions.size())) return PtAsgn_reason_Undef; else return th_deductions[deductions_next++]; }
 
 LALogic&  LASolver::getLogic()  { return logic; }
 

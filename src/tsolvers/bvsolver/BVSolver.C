@@ -98,7 +98,7 @@ void BVSolver::popBacktrackPoint ( )
     //
     // Restore stack size
     //
-    while ( stack.size( ) > stack_new_size ) 
+    while (static_cast<unsigned>(stack.size()) > stack_new_size )
     {
         stack.pop();
     }

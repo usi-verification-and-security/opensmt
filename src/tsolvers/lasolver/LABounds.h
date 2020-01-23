@@ -141,7 +141,7 @@ public:
         in_bounds.push(BoundInfo{v, ub, lb});
         return in_bounds.last();
     }
-    int nVars() const { return lvstore.numVars(); }
+    std::size_t nVars() const { return lvstore.numVars(); }
 };
 
 

@@ -36,4 +36,4 @@ LVRef LAVarStore::getNewVar() {
     return lv;
 }
 
-int    LAVarStore::numVars() const { return lavars.size(); }
+std::size_t LAVarStore::numVars() const { return lavars.size(); }

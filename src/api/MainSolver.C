@@ -382,7 +382,7 @@ sstat MainSolver::solve()
     vec<PTRef> query;
 
     vec<FrameId> en_frames;
-    for (int i = 0; i < frames.size(); i++) {
+    for (std::size_t i = 0; i < frames.size(); i++) {
         const PushFrame& frame = pfstore[frames.getFrameReference(i)];
         en_frames.push(frame.getId());
         query.push(frame.root);

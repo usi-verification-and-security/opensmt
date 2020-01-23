@@ -8,7 +8,7 @@
 
 
 bool LookaheadScoreClassic::isAlreadyChecked(Var v) const {
-    return (LAexacts[v].getRound() == latest_round);
+    return (static_cast<unsigned int>(LAexacts[v].getRound()) == latest_round);
 }
 
 Lit LookaheadScoreClassic::getBest() {
@@ -122,7 +122,7 @@ void LookaheadScoreDeep::updateSolverScore(double &ss, const LookaheadSMTSolver 
 }
 
 double LookaheadScoreDeep::getSolverScore(const LookaheadSMTSolver *solver) {
-    if (base_score_round >= 0 && base_score_round == latest_round) {
+    if (base_score_round >= 0 && static_cast<unsigned int>(base_score_round) == latest_round) {
         return cached_score;
     }
 
@@ -163,8 +163,8 @@ double LookaheadScoreDeep::computeScoreFromClauses(const vec<CRef> &clauses, con
     return score;
 }
 
-bool LookaheadScoreDeep::safeToSkip(Var v, Lit p) const {
-    return LAexacts[v].getRound() == latest_round;
+bool LookaheadScoreDeep::safeToSkip(Var v, Lit) const {
+    return static_cast<unsigned int>(LAexacts[v].getRound()) == latest_round;
 }
 
 void LookaheadScoreDeep::setChecked(Var v) {
@@ -180,7 +180,7 @@ void LookaheadScoreDeep::updateLABest(Var v) {
 }
 
 bool LookaheadScoreDeep::isAlreadyChecked(Var v) const {
-    return (LAexacts[v].getRound() == latest_round);
+    return (static_cast<unsigned int>(LAexacts[v].getRound()) == latest_round);
 }
 
 Lit LookaheadScoreDeep::getBest() {

@@ -37,7 +37,7 @@ void LIASolver::notifyVar(LVRef v)
         int_vars.push(v);
     }
 
-    while(cuts.size() <= getVarId(v))
+    while(static_cast<unsigned>(cuts.size()) <= getVarId(v))
         cuts.push();
 }
 

@@ -8,8 +8,9 @@
 LVRef LAVarMapper::getNewVar(PTRef e_orig) {
     assert(!logic.isNegated(e_orig));
     LVRef lv = laVarStore.getNewVar();
-    if (lv.x >= laVarToPTRef.size())
+    if (lv.x >= static_cast<unsigned int>(laVarToPTRef.size())) {
         laVarToPTRef.growTo(lv.x+1, PTRef_Undef);
+    }
 
     laVarToPTRef[lv.x] = e_orig;
 
@@ -44,5 +45,5 @@ LVRef  LAVarMapper::getVarByPTId(PTId i) const { return ptermToLavar[Idx(i)]; }
 
 LVRef  LAVarMapper::getVarByLeqId(PTId i) const { return leqToLavar[Idx(i)]; }
 
-bool   LAVarMapper::hasVar(PTId i) { return ptermToLavar.size() > Idx(i) && ptermToLavar[Idx(i)] != LVRef_Undef; }
+bool   LAVarMapper::hasVar(PTId i) { return static_cast<unsigned int>(ptermToLavar.size()) > Idx(i) && ptermToLavar[Idx(i)] != LVRef_Undef; }
 

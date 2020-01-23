@@ -19,7 +19,7 @@ LRAModel::addVar(LVRef v)
     if (has_model.has(v))
         return n_vars_with_model;
 
-    while (current_assignment.size() <= getVarId(v)) {
+    while (static_cast<unsigned>(current_assignment.size()) <= getVarId(v)) {
         current_assignment.push();
         last_consistent_assignment.push();
         changed_vars_set.assure_domain(getVarId(v));

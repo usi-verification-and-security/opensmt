@@ -110,7 +110,7 @@ LVRef Simplex::getBasicVarToFixByShortestPoly() const {
 }
 
 LVRef Simplex::getBasicVarToFixByBland() const {
-    int curr_var_id_x = boundStore.nVars();
+    auto curr_var_id_x = boundStore.nVars();
     LVRef current = LVRef_Undef;
     for (auto it : candidates) {
         assert(it != LVRef_Undef);
@@ -178,12 +178,12 @@ LVRef Simplex::findNonBasicForPivotByHeuristic(LVRef basicVar) {
 }
 
 LVRef Simplex::findNonBasicForPivotByBland(LVRef basicVar) {
-    int max_var_id = boundStore.nVars();
+    auto max_var_id = boundStore.nVars();
     LVRef y_found = LVRef_Undef;
     // Model doesn't fit the lower bound
     if (model->read(basicVar) < model->Lb(basicVar)) {
         // For the Bland rule
-        int curr_var_id_y = max_var_id;
+        auto curr_var_id_y = max_var_id;
         // look for nonbasic terms to fix the breaking of the bound
         for (auto term : tableau.getRowPoly(basicVar)) {
             auto y = term.var;
@@ -199,7 +199,7 @@ LVRef Simplex::findNonBasicForPivotByBland(LVRef basicVar) {
         }
     }
     else if (model->read(basicVar) > model->Ub(basicVar)) {
-        int curr_var_id_y = max_var_id;
+        auto curr_var_id_y = max_var_id;
         // look for nonbasic terms to fix the unbounding
         for (auto term : tableau.getRowPoly(basicVar)) {
             auto y = term.var;

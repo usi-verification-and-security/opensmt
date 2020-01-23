@@ -1702,7 +1702,7 @@ void CoreSMTSolver::popBacktrackPoint()
     //
     size_t new_stack_size = undo_stack_size.last();
     undo_stack_size.pop();
-    while ( undo_stack.size( ) > new_stack_size )
+    while (static_cast<size_t>(undo_stack.size()) > new_stack_size )
     {
         const undo_stack_el op = undo_stack.last();
 
