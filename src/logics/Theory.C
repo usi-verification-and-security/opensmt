@@ -58,13 +58,13 @@ namespace{
     }
 }
 
-//
-// Given coll_f = (R_1 /\ ... /\ R_{curr-1}) /\ (U_1 /\ ... /\ U_{curr-1}) /\
-// P_{curr}, compute U_{curr}.  Place U_{curr} to frame and simplify
+/*
+// Given coll_f = (R_1 /\ ... /\ R_{curr-1}) /\ (U_1 /\ ... /\ U_{curr-1}) /\ P_{curr},
+// compute U_{curr}.  Place U_{curr} to frame and simplify
 // the problem P_{curr} using (U_1 /\ ... /\ U_{curr}) resulting in
 // R_{curr}.
 // If x = f(Y) is a newly found substitution and there is a lower frame F containing x, add x = f(Y) to R_{curr}.
-//
+*/
 bool Theory::computeSubstitutions(const PTRef coll_f, const vec<PFRef>& frames, const int curr)
 {
     if (!config.do_substitutions() || config.produce_inter()) {
