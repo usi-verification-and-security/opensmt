@@ -22,5 +22,7 @@ target_sources(parsers
     PRIVATE ${FLEX_smt2newScanner_OUTPUTS}
 )
 
+target_compile_options(parsers PRIVATE -Wno-error)
+
 install(FILES smt2newcontext.h
 DESTINATION ${INSTALL_HEADERS_DIR})
