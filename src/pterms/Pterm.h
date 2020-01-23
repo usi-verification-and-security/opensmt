@@ -146,7 +146,7 @@ class Pterm {
 #endif
 private:
     // MB: Constructor is private to forbid any use outside PtermAllocator, which is a friend
-    Pterm(const SymRef sym_, const vec<PTRef>& ps, PTRef t) : sym(sym_) {
+    Pterm(const SymRef sym_, const vec<PTRef> & ps) : sym(sym_) {
         header.type      = 0;
         header.has_extra = 0;
         header.reloced   = 0;
@@ -155,11 +155,7 @@ private:
 
         var              = var_Undef;
 
-        for (int i = 0; i < ps.size(); i++) args[i] = ps[i];
-//        setExpReason(PtAsgn(PTRef_Undef, l_Undef));
-//        setExpParent(PTRef_Undef);
-//        setExpRoot(t);
-//        setExpTimeStamp(0);
+        for (int i = 0; i < ps.size(); i++) { args[i] = ps[i]; }
     }
 };
 
@@ -206,13 +202,13 @@ class PtermAllocator : public RegionAllocator<uint32_t>
         to.n_terms = n_terms;
         RegionAllocator<uint32_t>::moveTo(to); }*/
 
-    PTRef alloc(const SymRef sym, const vec<PTRef>& ps, bool extra = false)
+    PTRef alloc(const SymRef sym, const vec<PTRef> & ps)
     {
         assert(sizeof(PTRef) == sizeof(uint32_t));
 
         uint32_t v = RegionAllocator<uint32_t>::alloc(ptermWord32Size(ps.size()));
         PTRef tid = {v};
-        new (lea(tid)) Pterm(sym, ps, tid);
+        new(lea(tid)) Pterm(sym, ps);
         operator[](tid).setId(n_terms++);
 
         return tid;
