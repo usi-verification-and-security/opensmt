@@ -244,14 +244,13 @@ bool LALogic::okToPartition(PTRef tr) const
 void LALogic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
 {
     if (split_eq && isNumEq(tr)) {
-        char *msg;
         Pterm& p = getPterm(tr);
         PTRef a1 = p[0];
         PTRef a2 = p[1];
         vec<PTRef> args;
         args.push(a1); args.push(a2);
-        PTRef i1 = mkNumLeq(args, &msg);
-        PTRef i2 = mkNumGeq(args, &msg);
+        PTRef i1 = mkNumLeq(args);
+        PTRef i2 = mkNumGeq(args);
         args.clear();
         args.push(i1); args.push(i2);
         PTRef andr = mkAnd(args);
@@ -438,29 +437,10 @@ PTRef LALogic::mkNumLeq(const vec<PTRef> &args) {
     return tr;
 }
 
-PTRef LALogic::mkNumLeq(const vec<PTRef> &args, char** msg) {
-    assert(args.size() == 2);
-    PTRef tr = mkNumLeq(args[0], args[1]);
-    assert(tr != PTRef_Undef);
-    return tr;
-}
-
-PTRef LALogic::mkNumGeq(const vec<PTRef> &args) {
-    char *msg;
-    PTRef tr = mkNumGeq(args, &msg);
-    assert(tr != PTRef_Undef);
-    return tr;
-}
 PTRef LALogic::mkNumGeq(const PTRef arg1, const PTRef arg2) {
     return mkNumLeq(arg2, arg1);
 }
 
-PTRef LALogic::mkNumLt(const vec<PTRef> &args) {
-    char *msg;
-    PTRef tr = mkNumLt(args, &msg);
-    assert(tr != PTRef_Undef);
-    return tr;
-}
 PTRef LALogic::mkNumLt(const PTRef arg1, const PTRef arg2) {
     vec<PTRef> tmp;
     tmp.push(arg1);
@@ -468,12 +448,6 @@ PTRef LALogic::mkNumLt(const PTRef arg1, const PTRef arg2) {
     return mkNumLt(tmp);
 }
 
-PTRef LALogic::mkNumGt(const vec<PTRef> &args) {
-    char *msg;
-    PTRef tr = mkNumGt(args, &msg);
-    assert(tr != PTRef_Undef);
-    return tr;
-}
 PTRef LALogic::mkNumGt(const PTRef arg1, const PTRef arg2) {
     vec<PTRef> tmp;
     tmp.push(arg1);
@@ -683,12 +657,12 @@ PTRef LALogic::mkNumLeq(PTRef lhs, PTRef rhs)
     return r;
 
 }
-PTRef LALogic::mkNumGeq(const vec<PTRef>& args, char** msg)
+PTRef LALogic::mkNumGeq(const vec<PTRef> & args)
 {
     assert(args.size() == 2);
     return mkNumLeq(args[1], args[0]);
 }
-PTRef LALogic::mkNumLt(const vec<PTRef>& args, char** msg)
+PTRef LALogic::mkNumLt(const vec<PTRef> & args)
 {
     if (isConstant(args[0]) && isConstant(args[1])) {
         opensmt::Number const& v1 = this->getNumConst(args[0]);
@@ -706,11 +680,10 @@ PTRef LALogic::mkNumLt(const vec<PTRef>& args, char** msg)
     }
     return mkNot(tr);
 }
-PTRef LALogic::mkNumGt(const vec<PTRef>& args, char** msg)
+PTRef LALogic::mkNumGt(const vec<PTRef> & args)
 {
-    PTRef tr = mkNumLeq(args, msg);
+    PTRef tr = mkNumLeq(args);
     if (tr == PTRef_Undef) {
-        printf("%s\n", *msg);
         assert(false);
     }
     return mkNot(tr);
@@ -729,13 +702,13 @@ PTRef LALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
     if (sym == get_sym_Num_DIV())
         return mkNumDiv(terms, msg);
     if (sym == get_sym_Num_LEQ())
-        return mkNumLeq(terms, msg);
+        return mkNumLeq(terms);
     if (sym == get_sym_Num_LT())
-        return mkNumLt(terms, msg);
+        return mkNumLt(terms);
     if (sym == get_sym_Num_GEQ())
-        return mkNumGeq(terms, msg);
+        return mkNumGeq(terms);
     if (sym == get_sym_Num_GT())
-        return mkNumGt(terms, msg);
+        return mkNumGt(terms);
     if (sym == get_sym_Num_ITE())
         return mkIte(terms);
     return Logic::insertTerm(sym, terms, msg);

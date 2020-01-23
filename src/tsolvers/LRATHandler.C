@@ -53,9 +53,8 @@ void LRATHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
             Pterm& p = logic.getPterm(tr);
             args.push(p[0]);
             args.push(p[1]);
-            char* msg;
-            PTRef i1 = logic.mkNumLeq(args, &msg);
-            PTRef i2 = logic.mkNumGeq(args, &msg);
+            PTRef i1 = logic.mkNumLeq(args);
+            PTRef i2 = logic.mkNumGeq(args);
             // These can simplify to true and false, and we don't
             // want them to LRA solver
             if (!refs.has(i1) && logic.isNumLeq(i1)) {
@@ -89,9 +88,8 @@ bool LRATHandler::assertLit_special(PtAsgn a)
         vec<PTRef> args;
         args.push(p[0]);
         args.push(p[1]);
-        char* msg;
-        PTRef i1 = logic.mkNumLeq(args, &msg);
-        PTRef i2 = logic.mkNumGeq(args, &msg);
+        PTRef i1 = logic.mkNumLeq(args);
+        PTRef i2 = logic.mkNumGeq(args);
         bool res = assertLit(PtAsgn(i1, l_True));
         return res && assertLit(PtAsgn(i2, l_True));
     }
