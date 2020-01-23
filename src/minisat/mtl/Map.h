@@ -275,8 +275,8 @@ class VecMap {
     int        size;
 
     // Don't allow copying (error prone):
-    VecMap<K,D,H,E>&  operator = (VecMap<K,D,H,E>& ) { assert(0); }
-                   VecMap        (VecMap<K,D,H,E>& ) { assert(0); }
+    VecMap<K,D,H,E>&  operator = (VecMap<K,D,H,E>& ) = delete;
+                   VecMap        (VecMap<K,D,H,E>& ) = delete;
 
     bool    checkCap(int new_size) const { return new_size > cap; }
 
@@ -430,8 +430,8 @@ class VecKeyMap {
     int        size;
 
     // Don't allow copying (error prone):
-    VecKeyMap<K,D,H,E>&  operator = (VecKeyMap<K,D,H,E>& other) { assert(0); }
-                   VecKeyMap        (VecKeyMap<K,D,H,E>& other) { assert(0); }
+    VecKeyMap<K,D,H,E>&  operator = (VecKeyMap<K,D,H,E>& other) = delete;
+                   VecKeyMap        (VecKeyMap<K,D,H,E>& other) = delete;
 
     bool    checkCap(int new_size) const { return new_size > cap; }
 
@@ -560,8 +560,8 @@ class MapVec
     int cap;
 
     // Don't allow copying (error prone):
-    MapVec<K,D,H>&  operator = (MapVec<K,D,H>& other) { assert(0); return *this; }
-    MapVec<K,D,H,E>            (MapVec<K,D,H,E>& other) { assert(0); }
+    MapVec<K,D,H>&  operator = (MapVec<K,D,H>& other) = delete;
+    MapVec<K,D,H,E>            (MapVec<K,D,H,E>& other) = delete;
 
     // Helpers for calculating next capacity:
     static inline int  imax   (int x, int y) { int mask = (y-x) >> (sizeof(int)*8-1); return (x&mask) + (y&(~mask)); }

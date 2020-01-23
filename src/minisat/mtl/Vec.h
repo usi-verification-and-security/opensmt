@@ -106,8 +106,8 @@ class vec<vec<T> > {
     int cap;
 
     // Don't allow copying (error prone):
-    vec<vec<T> >&  operator = (vec<vec<T> >& other) { assert(0); return *this; }
-                   vec        (vec<vec<T> >& other) { assert(0); }
+    vec<vec<T> >&  operator = (vec<vec<T> >& other) = delete;
+                   vec        (vec<vec<T> >& other) = delete;
 
 
     // Helpers for calculating next capacity:
