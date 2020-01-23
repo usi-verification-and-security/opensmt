@@ -25,7 +25,7 @@ Opensmt::Opensmt(opensmt_logic _logic, const char* name, int bw)
     default:
         opensmt_error("Theory not supported");
     }
-    thandler = new THandler(*config, *theory);
+    thandler = new THandler(*theory);
     solver = new SimpSMTSolver(*config, *thandler);
     mainSolver = new MainSolver(*thandler, *config, solver, name);
     mainSolver->initialize();

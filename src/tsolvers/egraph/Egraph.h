@@ -215,7 +215,7 @@ public:
 
     void clearSolver() { clearModel(); } // Only clear the possible computed values
 
-    void print(ostream& out) { return; }
+    void print(ostream&) { return; }
 
 protected:
     inline Enode& getEnode(ERef er) { return enode_store[er]; }

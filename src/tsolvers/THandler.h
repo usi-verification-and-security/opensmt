@@ -39,7 +39,7 @@ private:
     TermMapper         &tmap;                     // Mappings between TRefs and Lits
 public:
 
-    THandler ( SMTConfig& c, Theory& tsh)
+    THandler(Theory & tsh)
     : theory             (tsh)
     , tmap               (tsh.getTmap())
     , checked_trail_size (0)

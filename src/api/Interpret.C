@@ -208,7 +208,7 @@ void Interpret::interp(ASTNode& n) {
                     {
                         UFTheory *uftheory = new UFTheory(config);
                         theory = uftheory;
-                        thandler = new THandler(config, *uftheory);
+                        thandler = new THandler(*uftheory);
                         logic = &(theory->getLogic());
                         new_solver();
 
@@ -220,7 +220,7 @@ void Interpret::interp(ASTNode& n) {
                     {
                         CUFTheory *cuftheory = new CUFTheory(config);
                         theory = cuftheory;
-                        thandler = new THandler(config, *cuftheory);
+                        thandler = new THandler(*cuftheory);
                         logic = &(theory->getLogic());
                         new_solver();
 
@@ -233,7 +233,7 @@ void Interpret::interp(ASTNode& n) {
                     {
                         LRATheory *lratheory = new LRATheory(config);
                         theory = lratheory;
-                        thandler = new THandler(config, *lratheory);
+                        thandler = new THandler(*lratheory);
                         logic = &(theory->getLogic());
 
                         new_solver();
@@ -246,7 +246,7 @@ void Interpret::interp(ASTNode& n) {
                     {
                         LIATheory *liatheory = new LIATheory(config);
                         theory = liatheory;
-                        thandler = new THandler(config, *liatheory);
+                        thandler = new THandler(*liatheory);
                         logic = &(theory->getLogic());
 
                         new_solver();
@@ -258,7 +258,7 @@ void Interpret::interp(ASTNode& n) {
                     {
                         UFLRATheory* uflratheory = new UFLRATheory(config);
                         theory = uflratheory;
-                        thandler = new THandler(config, *uflratheory);
+                        thandler = new THandler(*uflratheory);
                         logic = &(theory->getLogic());
                         new_solver();
                         main_solver = new MainSolver(*thandler, config, solver, "qf_uflra solver");

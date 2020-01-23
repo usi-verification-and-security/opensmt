@@ -86,7 +86,7 @@ void LASolver::isProperLeq(PTRef tr)
 }
 
 LASolver::LASolver(SolverDescr dls, SMTConfig & c, LALogic& l, vec<DedElem>& d)
-        : TSolver((SolverId)descr_la_solver, (const char*)descr_la_solver, c, d)
+        : TSolver((SolverId)dls, (const char*)dls, c, d)
         , logic(l)
         , laVarMapper(l, laVarStore)
         , boundStore(laVarStore)
@@ -597,7 +597,7 @@ void LASolver::deduce(LABoundRef bound_prop) {
 //
 // Prints the current state of the solver (terms, bounds, tableau)
 //
-void LASolver::print( ostream & out )
+void LASolver::print( ostream & )
 {
     throw "Not implemented yet!";
     // print current non-basic variables

@@ -281,7 +281,7 @@ public:
 , theory ( th )
 , proof	   ( t )
 , logic_ ( th.getLogic() )
-, thandler {new THandler(c, th)}
+, thandler {new THandler(th)}
 , graph_   ( new vector<ProofNode*> )
 , graph    ( *graph_ )
 #ifdef FULL_LABELING

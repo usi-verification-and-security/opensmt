@@ -164,7 +164,7 @@ public:
     virtual char *printTerm(PTRef tr, bool l, bool s) const override;
 
     // MB: In pure LA, there are never nested boolean terms
-    virtual vec<PTRef> getNestedBoolRoots (PTRef tr)  const override { return vec<PTRef>(); }
+    virtual vec<PTRef> getNestedBoolRoots (PTRef)  const override { return vec<PTRef>(); }
 
 };
 // Determine for two multiplicative terms (* k1 v1) and (* k2 v2), v1 !=
