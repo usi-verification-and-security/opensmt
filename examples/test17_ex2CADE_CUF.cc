@@ -21,7 +21,7 @@ int main(int argc, char** argv)
 {
     SMTConfig c;
     CUFTheory* cuftheory = new CUFTheory(c, 8);
-    THandler* thandler = new THandler(c, *cuftheory);
+    THandler* thandler = new THandler(*cuftheory);
     SimpSMTSolver* solver = new SimpSMTSolver(c, *thandler);
     MainSolver* mainSolver_ = new MainSolver(*thandler, c, solver, "test solver");
     MainSolver& mainSolver = *mainSolver_;

@@ -6,7 +6,7 @@ main(int argc, char** argv)
 {
     SMTConfig c;
     UFTheory* uftheory = new UFTheory(c);
-    THandler* thandler = new THandler(c, *uftheory);
+    THandler* thandler = new THandler(*uftheory);
     SimpSMTSolver* solver = new SimpSMTSolver(c, *thandler);
     MainSolver* mainSolver_ = new MainSolver(*thandler, c, solver, "test solver");
     MainSolver& mainSolver = *mainSolver_;

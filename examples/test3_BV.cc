@@ -14,7 +14,7 @@ main(int argc, char** argv)
 {
     SMTConfig c;
     CUFTheory* cuftheory = new CUFTheory(c);
-    THandler* thandler = new THandler(c, *cuftheory);
+    THandler* thandler = new THandler(*cuftheory);
     SimpSMTSolver* solver = new SimpSMTSolver(c, *thandler);
     MainSolver* mainSolver = new MainSolver(*thandler, c, solver, "test solver");
     CUFLogic& logic = cuftheory->getLogic();

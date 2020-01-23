@@ -14,7 +14,7 @@ main(int argc, char** argv)
 {
     SMTConfig c;
     CUFTheory* cuftheory = new CUFTheory(c);
-    THandler* thandler = new THandler(c, *cuftheory);
+    THandler* thandler = new THandler(*cuftheory);
     SimpSMTSolver* solver = new SimpSMTSolver(c, *thandler);
     MainSolver* mainSolver = new MainSolver(*thandler, c, solver, "test solver");
     BVLogic& logic = cuftheory->getLogic();
@@ -44,12 +44,11 @@ main(int argc, char** argv)
 
     PTRef eq = logic.mkAnd(args);*/
 
-    SolverId id = { 5 };
 	vec<PtAsgn> asgns;
 	vec<DedElem> deds;
 	vec<PTRef> foo;
 
-	BitBlaster bbb(id, c, *mainSolver, logic, asgns, deds, foo);
+	BitBlaster bbb({42}, c, *mainSolver, logic, asgns, deds, foo);
 
 	BVRef output1;
 	lbool stat;
