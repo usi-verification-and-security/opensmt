@@ -361,8 +361,6 @@ bool LASolver::assertLit( PtAsgn asgn, bool reason )
 
     assert(asgn.sgn != l_Undef);
 
-    bool is_reason = false;
-
     LABoundRefPair p = getBoundRefPair(asgn.tr);
     LABoundRef bound_ref = asgn.sgn == l_False ? p.neg : p.pos;
 
@@ -384,7 +382,7 @@ bool LASolver::assertLit( PtAsgn asgn, bool reason )
         return getStatus();
     }
     if (deduced[t.getVar()] != l_Undef && deduced[t.getVar()].deducedBy == id) {
-        is_reason = true; // This is a conflict!
+        // MB: what should happen here?
     }
 
     if (assertBoundOnVar( it, bound_ref))
