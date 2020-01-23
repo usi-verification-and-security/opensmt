@@ -301,20 +301,19 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
             opensmt_error("Error: interpolation algorithm not set for LRA.");
         }
 
-        char* msg;
         if (itpAlg != ItpAlg::WEAK)
         {
             if (delta_flag)
-                itp = logic.mkNumLt(args, &msg);
+                itp = logic.mkNumLt(args);
             else
-                itp = logic.mkNumLeq(args, &msg);
+                itp = logic.mkNumLeq(args);
         }
         else
         {
             if (delta_flag_dual)
-                itp = logic.mkNumLt(args, &msg);
+                itp = logic.mkNumLt(args);
             else
-                itp = logic.mkNumLeq(args, &msg);
+                itp = logic.mkNumLeq(args);
             itp = logic.mkNot(itp);
         }
     }
