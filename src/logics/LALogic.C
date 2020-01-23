@@ -295,7 +295,7 @@ PTRef LALogic::mkNumNeg(PTRef tr, char** msg)
             assert(tr_arg != PTRef_Undef);
             args.push(tr_arg);
         }
-        PTRef tr_n = mkFun(get_sym_Num_PLUS(), args, msg);
+        PTRef tr_n = mkFun(get_sym_Num_PLUS(), args);
         assert(tr_n == mkNumPlus(args, msg));
         assert(tr_n != PTRef_Undef);
         return tr_n;
@@ -489,8 +489,6 @@ PTRef LALogic::mkNumMinus(const vec<PTRef>& args_in, char** msg)
     args_in.copyTo(args);
     if (args.size() == 1) {
         return mkNumNeg(args[0], msg);
-//        s = sym_Real_NEG;
-//        return mkFun(s, args, msg);
     }
     assert (args.size() == 2);
     PTRef mo = mkConst(getSort_num(), "-1");
@@ -533,7 +531,7 @@ PTRef LALogic::mkNumPlus(const vec<PTRef>& args, char** msg)
     if (args_new.size() == 1)
         return args_new[0];
     if(s_new != get_sym_Num_PLUS()) {
-        return mkFun(s_new, args_new, msg);
+        return mkFun(s_new, args_new);
     }
     // This code takes polynomials (+ (* v c1) (* v c2)) and converts them to the form (* v c3) where c3 = c1+c2
     VecMap<PTRef,PTRef,PTRefHash> s2t;
@@ -574,7 +572,7 @@ PTRef LALogic::mkNumPlus(const vec<PTRef>& args, char** msg)
     }
     if (sum_args.size() == 0) return getTerm_NumZero();
     if (sum_args.size() == 1) return sum_args[0];
-    PTRef tr = mkFun(s_new, sum_args, msg);
+    PTRef tr = mkFun(s_new, sum_args);
     return tr;
 }
 PTRef LALogic::mkNumTimes(const vec<PTRef>& tmp_args, char** msg)
@@ -594,7 +592,7 @@ PTRef LALogic::mkNumTimes(const vec<PTRef>& tmp_args, char** msg)
     vec<PTRef> args_new;
     SymRef s_new;
     simp.simplify(get_sym_Num_TIMES(), args, s_new, args_new, msg);
-    PTRef tr = mkFun(s_new, args_new, msg);
+    PTRef tr = mkFun(s_new, args_new);
     // Either a real term or, if we constructed a multiplication of a
     // constant and a sum, a real sum.
     if (isNumTerm(tr) || isNumPlus(tr) || isUF(tr))
@@ -618,7 +616,7 @@ PTRef LALogic::mkNumDiv(const vec<PTRef>& args, char** msg)
         args_new[1] = mkConst(FastRational_inverse(getNumConst(args_new[1]))); //mkConst(1/getRealConst(args_new[1]));
         return mkNumTimes(args_new);
     }
-    PTRef tr = mkFun(s_new, args_new, msg);
+    PTRef tr = mkFun(s_new, args_new);
     return tr;
 }
 

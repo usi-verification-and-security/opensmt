@@ -984,16 +984,14 @@ PTRef Logic::mkConst(const char* name, const char** msg)
 PTRef Logic::mkVar(SRef s, const char* name) {
     vec<SRef> sort_args;
     sort_args.push(s);
-    char* msg;
-    SymRef sr = newSymb(name, sort_args, &msg);
+    SymRef sr = newSymb(name, sort_args);
     if (sr == SymRef_Undef) {
-        cerr << "Warning: while mkVar " << name << ": " << msg << endl;
-        free(msg);
+        std::cerr << "Warning: while mkVar " << name << ": " << std::endl;
         assert(symNameToRef(name).size() == 1);
         sr = symNameToRef(name)[0];
     }
     vec<PTRef> tmp;
-    PTRef ptr = mkFun(sr, tmp, &msg);
+    PTRef ptr = mkFun(sr, tmp);
     assert (ptr != PTRef_Undef);
 
     return ptr;
@@ -1043,7 +1041,7 @@ PTRef Logic::mkUninterpFun(SymRef f, const vec<PTRef> & args) {
     return tr;
 }
 
-PTRef Logic::mkFun(SymRef f, const vec<PTRef>& args, char** msg)
+PTRef Logic::mkFun(SymRef f, const vec<PTRef>& args)
 {
     PTRef tr;
     if (f == SymRef_Undef)
@@ -1061,7 +1059,7 @@ PTRef Logic::mkBoolVar(const char* name)
     SymRef sr = declareFun(name, sort_BOOL, tmp, &msg);
     assert(sr != SymRef_Undef);
     vec<PTRef> tmp2;
-    PTRef tr = mkFun(sr, tmp2, &msg);
+    PTRef tr = mkFun(sr, tmp2);
     return tr;
 }
 

@@ -221,8 +221,7 @@ BVLogic::mkBVEq(PTRef a1, PTRef a2)
     vec<PTRef> tmp;
     tmp.push(a1);
     tmp.push(a2);
-    char* msg;
-    return mkFun(sym_BV_EQ, tmp, &msg);
+    return mkFun(sym_BV_EQ, tmp);
 }
 
 PTRef
@@ -271,7 +270,7 @@ BVLogic::mkBVPlus(const PTRef arg1, const PTRef arg2, char** msg)
     vec<PTRef> sum_args;
     sum_args.push(arg1);
     sum_args.push(arg2);
-    PTRef tr = mkFun(sym_BV_PLUS, sum_args, msg);
+    PTRef tr = mkFun(sym_BV_PLUS, sum_args);
 //    sum_args[0] = arg2;
 //    sum_args[1] = arg1;
 //    PTRef tr_comm = mkFun(sym_BV_PLUS, sum_args, msg);
@@ -292,7 +291,7 @@ BVLogic::mkBVTimes(const PTRef arg1, const PTRef arg2, char** msg)
     times_args.push(arg1);
     times_args.push(arg2);
 
-    PTRef tr = mkFun(sym_BV_TIMES, times_args, msg);
+    PTRef tr = mkFun(sym_BV_TIMES, times_args);
 //    times_args[0] = arg2;
 //    times_args[1] = arg1;
 //    PTRef tr_comm = mkFun(sym_BV_TIMES, times_args, msg);
@@ -312,7 +311,7 @@ BVLogic::mkBVDiv(const PTRef arg1, const PTRef arg2)
     div_args.push(arg1);
     div_args.push(arg2);
     char* msg;
-    PTRef tr = mkFun(sym_BV_DIV, div_args, &msg);
+    PTRef tr = mkFun(sym_BV_DIV, div_args);
     return tr;
 }
 
@@ -384,7 +383,7 @@ BVLogic::mkBVUleq(const PTRef arg1, const PTRef arg2, char** msg)
     vec<PTRef> args;
     args.push(arg1);
     args.push(arg2);
-    PTRef tr = mkFun(sym_BV_ULEQ, args, msg);
+    PTRef tr = mkFun(sym_BV_ULEQ, args);
     return tr;
 }
 
@@ -413,7 +412,7 @@ BVLogic::mkBVSlt(const PTRef arg1, const PTRef arg2, char** msg)
     vec<PTRef> args;
     args.push(arg1);
     args.push(arg2);
-    PTRef tr = mkFun(sym_BV_SLT, args, msg);
+    PTRef tr = mkFun(sym_BV_SLT, args);
     return tr;
 }
 
@@ -427,8 +426,7 @@ PTRef BVLogic::mkBVLshift(const PTRef arg1, const PTRef arg2)
     vec<PTRef> args;
     args.push(arg1);
     args.push(arg2);
-    char* msg;
-    return mkFun(sym_BV_LSHIFT, args, &msg);
+    return mkFun(sym_BV_LSHIFT, args);
 }
 
 PTRef BVLogic::mkBVLRshift(const PTRef arg1, const PTRef arg2)
@@ -438,8 +436,7 @@ PTRef BVLogic::mkBVLRshift(const PTRef arg1, const PTRef arg2)
     vec<PTRef> args;
     args.push(arg1);
     args.push(arg2);
-    char* msg;
-    return mkFun(sym_BV_LRSHIFT, args, &msg);
+    return mkFun(sym_BV_LRSHIFT, args);
 }
 
 PTRef BVLogic::mkBVARshift(const PTRef arg1, const PTRef arg2)
@@ -449,8 +446,7 @@ PTRef BVLogic::mkBVARshift(const PTRef arg1, const PTRef arg2)
     vec<PTRef> args;
     args.push(arg1);
     args.push(arg2);
-    char* msg;
-    return mkFun(sym_BV_ARSHIFT, args, &msg);
+    return mkFun(sym_BV_ARSHIFT, args);
 }
 
 
@@ -466,9 +462,7 @@ PTRef BVLogic::mkBVMod(const PTRef arg1, const PTRef arg2)
     vec<PTRef> args;
     args.push(arg1);
     args.push(arg2);
-    char* msg;
-
-    return mkFun(sym_BV_MOD, args, &msg);
+    return mkFun(sym_BV_MOD, args);
 }
 
 PTRef BVLogic::mkBVBwAnd(const PTRef arg1, const PTRef arg2)
@@ -478,8 +472,7 @@ PTRef BVLogic::mkBVBwAnd(const PTRef arg1, const PTRef arg2)
     vec<PTRef> args;
     args.push(arg1);
     args.push(arg2);
-    char* msg;
-    return mkFun(sym_BV_BWAND, args, &msg);
+    return mkFun(sym_BV_BWAND, args);
 }
 
 PTRef BVLogic::mkBVBwOr(const PTRef arg1, const PTRef arg2)
@@ -489,8 +482,7 @@ PTRef BVLogic::mkBVBwOr(const PTRef arg1, const PTRef arg2)
     vec<PTRef> args;
     args.push(arg1);
     args.push(arg2);
-    char* msg;
-    return mkFun(sym_BV_BWOR, args, &msg);
+    return mkFun(sym_BV_BWOR, args);
 }
 
 /*PTRef BVLogic::mkBVInc(const PTRef arg1)
@@ -526,8 +518,7 @@ PTRef BVLogic::mkBVLand(const PTRef arg1, const PTRef arg2)
     vec<PTRef> args;
     args.push(arg1);
     args.push(arg2);
-    char* msg;
-    PTRef tr = mkFun(sym_BV_LAND, args, &msg);
+    PTRef tr = mkFun(sym_BV_LAND, args);
     return tr;
 }
 
@@ -538,8 +529,7 @@ PTRef BVLogic::mkBVLor(const PTRef arg1, const PTRef arg2)
     vec<PTRef> args;
     args.push(arg1);
     args.push(arg2);
-    char* msg;
-    PTRef tr = mkFun(sym_BV_LOR, args, &msg);
+    PTRef tr = mkFun(sym_BV_LOR, args);
     return tr;
 }
 
@@ -554,8 +544,7 @@ PTRef BVLogic::mkBVNot(const PTRef arg)
         return term_BV_ONE;
     vec<PTRef> tmp;
     tmp.push(arg);
-    char* msg;
-    PTRef tr = mkFun(sym_BV_NOT, tmp, &msg);
+    PTRef tr = mkFun(sym_BV_NOT, tmp);
     return tr;
 }
 
@@ -563,11 +552,10 @@ PTRef BVLogic::mkBVBwXor(const PTRef arg1, const PTRef arg2)
 {
     assert(hasSortBVNUM(arg1));
     assert(hasSortBVNUM(arg2));
-    char* msg;
     vec<PTRef> args;
     args.push(arg1);
     args.push(arg2);
-    return mkFun(sym_BV_BWXOR, args, &msg);
+    return mkFun(sym_BV_BWXOR, args);
 }
 
 PTRef BVLogic::mkBVCompl(const PTRef arg1)
@@ -575,8 +563,7 @@ PTRef BVLogic::mkBVCompl(const PTRef arg1)
     assert(hasSortBVNUM(arg1));
     vec<PTRef> args;
     args.push(arg1);
-    char* msg;
-    PTRef tr = mkFun(sym_BV_COMPL, args, &msg);
+    PTRef tr = mkFun(sym_BV_COMPL, args);
 //    PTRef neq = mkBVNeq(tr, arg1);
 //    if (!compl_diseqs.has(neq))
 //        compl_diseqs.insert(neq, true);

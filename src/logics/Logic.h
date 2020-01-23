@@ -218,8 +218,7 @@ class Logic {
     bool        containsSort  (const char* name)      const;// { return sort_store.containsSort(name); }
   protected:
     SRef        newSort       (IdRef idr, const char* name, vec<SRef>& tmp);// { return sort_store.newSort(idr, name, tmp); }
-    PTRef       mkFun         (SymRef f, const vec<PTRef>& args, char** msg);
-    PTRef       mkFun         (SymRef f, const vec<PTRef>& args) { char* msg; return mkFun(f, args, &msg); };
+    PTRef       mkFun         (SymRef f, const vec<PTRef>& args);
     void        markConstant  (PTRef ptr);
     void        markConstant  (SymId sid);
 
@@ -231,7 +230,7 @@ class Logic {
     const char* getSortName   (const SRef s)  ;//              { return sort_store.getName(s); }
 
     // Symbols
-    SymRef      newSymb       (const char* name, vec<SRef>& sort_args, char** msg)
+    SymRef      newSymb       (const char* name, vec<SRef>& sort_args)
                                                             { return sym_store.newSymb(name, sort_args); }
     Symbol& getSym              (const SymRef s)        { return sym_store[s]; }
     const Symbol& getSym        (const SymRef s)        const { return sym_store[s]; }
