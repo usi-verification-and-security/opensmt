@@ -3,7 +3,7 @@
 #include <liasolver/LIASolver.h>
 
 LIATHandler::LIATHandler(SMTConfig& c, LIALogic& l, vec<DedElem>& d, TermMapper& tmap)
-        : TSolverHandler(c, d, l, tmap)
+        : TSolverHandler(c, d, tmap)
         , logic(l)
 {
     liasolver = new LIASolver(config, logic, deductions);

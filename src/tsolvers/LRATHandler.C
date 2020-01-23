@@ -3,7 +3,7 @@
 #include "lrasolver/LRASolver.h"
 
 LRATHandler::LRATHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d, TermMapper& tmap)
-        : TSolverHandler(c, d, l, tmap)
+        : TSolverHandler(c, d, tmap)
         , logic(l)
 {
     lrasolver = new LRASolver(config, logic, deductions);

@@ -7,7 +7,7 @@
 #endif // PRODUCE_PROOF
 
 UFTHandler::UFTHandler(SMTConfig& c, Logic& l, vec<DedElem>& d, TermMapper& tmap)
-    : TSolverHandler(c, d, l, tmap)
+    : TSolverHandler(c, d, tmap)
     , logic(l)
 {
 #ifdef PRODUCE_PROOF
