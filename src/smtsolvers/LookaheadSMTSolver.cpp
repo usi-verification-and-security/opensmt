@@ -19,16 +19,6 @@ Var LookaheadSMTSolver::newVar(bool sign, bool dvar)
 
 lbool LookaheadSMTSolver::solve_()
 {
-    int d;
-    if (config.sat_split_type() == spt_lookahead) {
-        if (config.sat_split_fixvars() > 0)
-            d = config.sat_split_fixvars();
-		d = getLog2Ceil(config.sat_split_num());
-    }
-    else {
-        d = -1;
-    }
-
     declareVarsToTheories();
 
     double nof_conflicts = restart_first;
