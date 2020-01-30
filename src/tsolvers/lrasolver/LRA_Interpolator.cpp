@@ -89,7 +89,7 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
      */
     void addToWithCoeff(std::vector<Real> & to, std::vector<Real> const & what, const Real & coeff) {
         assert(to.size() == what.size());
-        for (auto i = 0; i < what.size(); ++i) {
+        for (std::size_t i = 0; i < what.size(); ++i) {
             to[i] += coeff * what[i];
         }
     }
@@ -433,7 +433,7 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color) {
     std::vector<PTRef> interpolant_inequalities;
     std::vector<std::pair<PtAsgn, Real>> candidates;
     assert(explanations.size() == explanation_coeffs.size());
-    for (std::size_t i = 0; i < explanations.size(); ++i) {
+    for (int i = 0; i < explanations.size(); ++i) {
         assert(explanation_coeffs[i] > 0);
         candidates.emplace_back(explanations[i], explanation_coeffs[i]);
         trace(std::cout << "Explanation " << logic.printTerm(explanations[i].tr) << " with coeff "
@@ -500,7 +500,7 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color) {
         // rows correspond to local variables, columns correspond to explanations (inequalities)
 
         matrix_t matrix{local_vars.size()};
-        auto colInd = 0;
+        std::size_t colInd = 0;
         for (const auto & info : ineqs_local_vars) {
             // add coefficient to those rows whose corresponding variable occurs in the inequality
             for (auto const & term : info) {

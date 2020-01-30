@@ -167,7 +167,7 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
     printf(";  %s\n", logic.printTerm(tr));
 #endif
 
-    for ( unsigned i = 0; i < explanation.size( ); i++ )
+    for ( int i = 0; i < explanation.size( ); i++ )
     {
         icolor_t color = I_UNDEF;
         const ipartitions_t & p = logic.getIPartitions(explanation[i].tr);
