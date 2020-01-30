@@ -294,7 +294,7 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
 	logic_.dumpHeaderToFile( dump_out );
 
 	string varsDecl("");
-	for(int i = 2; i <= getMaxIdVar(); ++i)
+	for(int i = 2; i <= static_cast<int>(getMaxIdVar()); ++i)
 		{
 				varsDecl += "(declare-fun " + string(logic_.printTerm(varToPTRef(i))) + " () Bool)\n";
 			}
@@ -538,7 +538,7 @@ bool ProofGraph::verifyPathInterpolantsFromLeaves ( vec< PTRef > & interps)
 	assert( (no_part + 1) == interps.size() );
 
 	string varsDecl("");
-	for(int i = 2; i <= getMaxIdVar(); ++i)
+	for(int i = 2; i <= static_cast<int>(getMaxIdVar()); ++i)
 	{
 		varsDecl += "(declare-fun " + string(logic_.printTerm(varToPTRef(i))) + " () Bool)\n";
 	}
@@ -635,8 +635,9 @@ bool ProofGraph::verifySimultaneousAbstraction( vec< PTRef > & interps)
 	logic_.dumpHeaderToFile( dump_out );
 
 	// Add conjunction interpolants
-	for( unsigned i = 0; i < interps.size(); i++ )
-		logic_.dumpFormulaToFile( dump_out, interps[i], false );
+	for( int i = 0; i < interps.size(); i++ ) {
+        logic_.dumpFormulaToFile(dump_out, interps[i], false);
+    }
 	dump_out << "(check-sat)" << endl;
 	dump_out << "(exit)" << endl;
 	dump_out.close( );
@@ -699,8 +700,9 @@ bool ProofGraph::verifyGenSimultaneousAbstraction( vec< PTRef > & interps)
 	logic_.dumpHeaderToFile( dump_out );
 
 	// Add conjunction interpolants
-	for( unsigned i = 0; i < interps.size()-1; i++ )
-		logic_.dumpFormulaToFile( dump_out, interps[i], false );
+	for( int i = 0; i < interps.size()-1; i++ ) {
+        logic_.dumpFormulaToFile(dump_out, interps[i], false);
+    }
 	// Add negation last interpolant
 	logic_.dumpFormulaToFile( dump_out, interps[interps.size()-1], true );
 	dump_out << "(check-sat)" << endl;

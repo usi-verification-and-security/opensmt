@@ -223,7 +223,7 @@ void ProofGraph::produceConfigMatrixInterpolants (const vec< vec<int> > &configs
     // First interpolant is true -> all partitions in B
     for ( unsigned i = 0; i < parts.size(); i++ )
     {
-        for (unsigned j = 0; j < configs[i].size(); ++j)
+        for (int j = 0; j < configs[i].size(); ++j)
         {
             // Set partitions[i] bit to 1 (starting from bit 1, bit 0 is untouched)
             // NOTE remember that partition ids are numbered from 0 in FunFrog!
@@ -531,10 +531,11 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
                 assert(n->getType() == clause_type::CLA_THEORY);
                 clearTSolver();
                 vec<Lit> newvec;
-                vector<Lit> &oldvec = n->getClause();
+                std::vector<Lit> &oldvec = n->getClause();
 
-                for (int i = 0; i < oldvec.size(); ++i)
-                    newvec.push(~oldvec[i]);
+                for (std::size_t j = 0; j < oldvec.size(); ++j) {
+                    newvec.push(~oldvec[j]);
+                }
 
 #ifdef ITP_DEBUG
                 cout << "; ASSERTING LITS" << endl;
@@ -553,12 +554,12 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
                     res = (tres != TRes::UNSAT);
                 }
                 assert(!res);
-                map<PTRef, icolor_t> ptref2label;
-                vector<Lit>& cl = n->getClause();
+                std::map<PTRef, icolor_t> ptref2label;
+                std::vector<Lit>& cl = n->getClause();
 
-                for(int i = 0; i < cl.size(); ++i)
+                for(std::size_t j = 0; j < cl.size(); ++j)
                 {
-                    ptref2label[varToPTRef(var(cl[i]))] = getVarColor(n, var(cl[i]));
+                    ptref2label[varToPTRef(var(cl[j]))] = getVarColor(n, var(cl[j]));
                 }
 
                 partial_interp = thandler->getInterpolant (A_mask, &ptref2label);

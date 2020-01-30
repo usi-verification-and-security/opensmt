@@ -477,14 +477,16 @@ void ProofGraph::buildProofGraph( int nVars )
                     // First internal node deduced from first clauses 0 and 1
                     // Other internal nodes deduced from last internal node and clause i
                     n->setPivot(chainvar[i-1]); proof_variables.insert(chainvar[i-1]);
-                    if(chainvar[i-1] > max_id_variable) max_id_variable = chainvar[i-1];
+                    if (static_cast<unsigned>(chainvar[i-1]) > max_id_variable) {
+                        max_id_variable = static_cast<unsigned>(chainvar[i-1]);
+                    }
                     assert(last_seen_id>=0); assert(currId>=0);
 
                     bool pos_piv = true;
                     bool found_piv = false;
                     // Make sure ant1 has the pivot positive (and ant2 negated)
                     Clause& clausei = proof.getClause(clause_i);
-                    for(int k=0;k<clausei.size();k++)
+                    for(unsigned k = 0; k < clausei.size(); k++)
                     {
                         if( var( clausei[k] ) == n->getPivot() )
                         {

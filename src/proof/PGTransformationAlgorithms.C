@@ -927,11 +927,11 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
 		}
 
 		cerr << "# RE\t";
-		if(num_nodes >= new_n_nodes)
+		if(num_nodes >= static_cast<int>(new_n_nodes))
 			cerr << "Nodes: " << new_n_nodes << "(-" << 100*((double)(num_nodes - new_n_nodes)/num_nodes) << "%)\t";
 		else
 			cerr << "Nodes: " << new_n_nodes << "(+" << 100*((double)(new_n_nodes - num_nodes)/num_nodes) << "%)\t";
-		if(num_edges >= new_n_edges)
+		if(num_edges >= static_cast<int>(new_n_edges))
 			cerr << "Edges: " << new_n_edges << "(-" << 100*((double)(num_edges - new_n_edges)/num_edges) << "%)\t";
 		else
 			cerr << "Edges: " << new_n_edges << "(+" << 100*((double)(new_n_edges - num_edges)/num_edges) << "%)\t";

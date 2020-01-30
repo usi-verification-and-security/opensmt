@@ -67,7 +67,7 @@ void ProofGraph::verifyLeavesInconsistency( )
 	logic_.dumpHeaderToFile( dump_out );
 
 	unsigned added = 0;
-	for ( int i = 0 ; i < proofleaves.size( ) ; i ++ )
+	for ( unsigned i = 0 ; i < proofleaves.size( ) ; i ++ )
 	{
 		if(added == 0)
 		{

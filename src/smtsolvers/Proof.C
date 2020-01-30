@@ -427,7 +427,7 @@ void CoreSMTSolver::printInter( ostream & out )
         opensmt_error( "Please choose a value between 0 and 3" );
 
 
-    for( size_t i = 0 ; i < sequence_of_interpolants.size( ) ; i ++ )
+    for( int i = 0 ; i < sequence_of_interpolants.size( ) ; i ++ )
     {
         // Before printing, we have to undo definitions
         // for instance those introduced when converting
