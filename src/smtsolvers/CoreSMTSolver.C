@@ -1861,8 +1861,6 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 
     starts++;
 
-    bool first = true;
-
 #ifdef STATISTICS
     const double start = cpuTime( );
 #endif
@@ -1906,7 +1904,6 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                 }
                 else return l_False;
             }
-            first = false;
             learnt_clause.clear();
             analyze(confl, learnt_clause, backtrack_level);
 
