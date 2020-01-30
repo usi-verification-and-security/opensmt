@@ -50,7 +50,7 @@ GhostSMTSolver::attachClause(CRef in_clause)
     if (c.learnt())
         return;
 
-    for (int i = 0; i < c.size(); i++) {
+    for (unsigned i = 0; i < c.size(); i++) {
         Lit l = c[i];
         if (theory_handler.isTheoryTerm(var(l))) {
             int idx = toInt(l);
@@ -218,11 +218,11 @@ void GhostSMTSolver::verifyModel()
     {
         assert(ca[clauses[i]].mark() == 0);
         Clause& c = ca[clauses[i]];
-        for (int j = 0; j < c.size(); j++)
+        for (unsigned j = 0; j < c.size(); j++)
             if (modelValue(c[j]) == l_True)
                 goto next;
 
-        for (int j = 0; j < c.size(); j++)
+        for (unsigned j = 0; j < c.size(); j++)
             if (modelValue(c[j]) == l_Undef && isGhost(c[j]))
                 goto next;
 

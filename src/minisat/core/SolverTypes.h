@@ -154,7 +154,7 @@ class Clause {
         header.reloced   = 0;
         header.size      = ps.size();
 
-        for (int i = 0; i < ps.size(); i++)
+        for (unsigned i = 0; i < (unsigned)ps.size(); i++)
             data[i].lit = ps[i];
 
         if (header.has_extra){
@@ -168,12 +168,12 @@ public:
     void calcAbstraction() {
         assert(header.has_extra);
         uint32_t abstraction = 0;
-        for (int i = 0; i < size(); i++)
+        for (unsigned i = 0; i < size(); i++)
             abstraction |= 1 << (var(data[i].lit) & 31);
         data[header.size].abs = abstraction;  }
 
 
-    int          size        ()      const   { return header.size; }
+    unsigned int size        ()      const   { return header.size; }
     void         shrink      (int i)         { assert(i <= size()); if (header.has_extra) data[header.size-i] = data[header.size]; header.size -= i; }
     void         pop         ()              { shrink(1); }
     bool         learnt      ()      const   { return header.learnt; }

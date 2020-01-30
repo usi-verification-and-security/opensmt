@@ -472,7 +472,7 @@ void CoreSMTSolver::removeClause(CRef cr)
 
 bool CoreSMTSolver::satisfied(const Clause& c) const
 {
-    for (int i = 0; i < c.size(); i++)
+    for (unsigned i = 0; i < c.size(); i++)
         if (value(c[i]) == l_True)
             return true;
     return false;
@@ -506,7 +506,7 @@ void CoreSMTSolver::cancelUntil(int level)
 }
 
 void CoreSMTSolver::printClause(Clause & cl) {
-    for (int i = 0; i < cl.size(); ++i) {
+    for (unsigned i = 0; i < cl.size(); ++i) {
         std::cout << cl[i].x << ' ';
     }
     std::cout << '\n';
@@ -916,7 +916,7 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
         if (c.learnt())
             claBumpActivity(c);
 
-        for (int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++)
+        for (unsigned j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++)
         {
             Lit q = c[j];
 
@@ -1093,7 +1093,7 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
             else
             {
                 Clause& c = ca[reason(var(out_learnt[i]))];
-                for (int k = 1; k < c.size(); k++)
+                for (unsigned k = 1; k < c.size(); k++)
                     if (!seen[var(c[k])] && level(var(c[k])) > 0)
                     {
                         out_learnt[j++] = out_learnt[i];
@@ -1149,7 +1149,7 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
         proof.resolve(c, v);
         // Look for level 0 unit clauses
         Clause& cla = ca[ c ];
-        for (int k = 1; k < cla.size(); k++)
+        for (unsigned k = 1; k < cla.size(); k++)
         {
             Var vv = var(cla[k]);
             if (level( vv ) == 0) proof.resolve( units[ vv ], vv );
@@ -1281,7 +1281,7 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
 
         analyze_stack.pop();
 
-        for (int i = 1; i < c.size(); i++)
+        for (unsigned i = 1; i < c.size(); i++)
         {
             Lit p  = c[i];
 
@@ -1359,7 +1359,7 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
                 else
                 {
                     Clause& c = ca[reason(x)];
-                    for (int j = 1; j < c.size(); j++)
+                    for (unsigned j = 1; j < c.size(); j++)
                         if (level(var(c[j])) > 0)
                             seen[var(c[j])] = 1;
                 }
@@ -1449,7 +1449,7 @@ CRef CoreSMTSolver::propagate()
             }
 
             // Look for new watch:
-            for (int k = 2; k < c.size(); k++)
+            for (unsigned k = 2; k < c.size(); k++)
                 if (value(c[k]) != l_False)
                 {
                     c[1] = c[k];
@@ -1463,7 +1463,7 @@ CRef CoreSMTSolver::propagate()
             if (decisionLevel() == 0)
             {
                 proof.beginChain( cr );
-                for (int k = 1; k < c.size(); k++)
+                for (unsigned k = 1; k < c.size(); k++)
                 {
                     assert(level(var(c[k])) == 0);
                     proof.resolve( units[var(c[k])], var(c[k]) );
@@ -2199,7 +2199,7 @@ void CoreSMTSolver::declareVarsToTheories()
     top_level_lits = trail.size();
     for (int i = 0; i < clauses.size(); i++) {
         Clause & c = ca[clauses[i]];
-        for (int j = 0; j < c.size(); j++) {
+        for (unsigned j = 0; j < c.size(); j++) {
             Var v = var(c[j]);
             if (!var_seen[v]) {
                 var_seen[v] = true;

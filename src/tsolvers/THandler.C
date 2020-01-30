@@ -692,7 +692,7 @@ const char* THandler::printAsrtClause(vec<Lit>& r) {
 
 const char* THandler::printAsrtClause(Clause* c) {
     vec<Lit> v;
-    for (int i = 0; i < c->size(); i++)
+    for (unsigned i = 0; i < c->size(); i++)
         v.push((*c)[i]);
     return printAsrtClause(v);
 }

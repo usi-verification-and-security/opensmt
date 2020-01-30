@@ -230,7 +230,7 @@ CoreSMTSolver::handleUnsat()
         // Empty clause derived
         // ADDED CODE BEGIN
         proof.beginChain( confl );
-        for ( int k = 0; k < c.size() ; k ++ )
+        for ( unsigned k = 0; k < c.size() ; k ++ )
         {
             //assert( level[ var(c[k]) ] == 0 );
             //assert( value( c[k] ) == l_False );
@@ -407,7 +407,7 @@ int CoreSMTSolver::analyzeUnsatLemma(CRef confl)
 
     // Get highest decision level
     int max_decision_level = level(var(c[0]));
-    for ( int i = 1 ; i < c.size( ) ; i++ )
+    for ( unsigned i = 1 ; i < c.size( ) ; i++ )
         if ( level(var(c[i])) > max_decision_level )
             max_decision_level = level(var(c[i]));
 
@@ -417,7 +417,7 @@ int CoreSMTSolver::analyzeUnsatLemma(CRef confl)
     {
 #ifdef PRODUCE_PROOF
         proof.beginChain( confl );
-        for ( int k = 0; k < c.size() ; k ++ )
+        for ( unsigned k = 0; k < c.size() ; k ++ )
         {
             assert(level(var(c[k])) == 0);
             assert(value( c[k] ) == l_False);

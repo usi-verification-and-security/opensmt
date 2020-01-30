@@ -236,7 +236,7 @@ bool SimpSMTSolver::addOriginalSMTClause(const vec<Lit> & smt_clause, std::pair<
         // consequence of how backward subsumption is used to mimic
         // forward subsumption.
         subsumption_queue.insert(cr);
-        for (int i = 0; i < c.size(); i++)
+        for (unsigned i = 0; i < c.size(); i++)
         {
             occurs[var(c[i])].push(cr);
             n_occ[toInt(c[i])]++;
@@ -257,7 +257,7 @@ void SimpSMTSolver::removeClause(CRef cr)
     const Clause& c = ca[cr];
 
     if (use_simplification)
-        for (int i = 0; i < c.size(); i++)
+        for (unsigned i = 0; i < c.size(); i++)
         {
             n_occ[toInt(c[i])]--;
             updateElimHeap(var(c[i]));
@@ -307,11 +307,11 @@ bool SimpSMTSolver::merge(const Clause& _ps, const Clause& _qs, Var v, vec<Lit>&
     const Clause& ps =  ps_smallest ? _qs : _ps;
     const Clause& qs =  ps_smallest ? _ps : _qs;
 
-    for (int i = 0; i < qs.size(); i++)
+    for (unsigned i = 0; i < qs.size(); i++)
     {
         if (var(qs[i]) != v)
         {
-            for (int j = 0; j < ps.size(); j++)
+            for (unsigned j = 0; j < ps.size(); j++)
             {
                 if (var(ps[j]) == var(qs[i]))
                 {
@@ -327,7 +327,7 @@ next:
         ;
     }
 
-    for (int i = 0; i < ps.size(); i++)
+    for (unsigned i = 0; i < ps.size(); i++)
         if (var(ps[i]) != v)
             out_clause.push(ps[i]);
 
@@ -348,11 +348,11 @@ bool SimpSMTSolver::merge(const Clause& _ps, const Clause& _qs, Var v, int& size
 
     size = ps.size()-1;
 
-    for (int i = 0; i < qs.size(); i++)
+    for (unsigned i = 0; i < qs.size(); i++)
     {
         if (var(__qs[i]) != v)
         {
-            for (int j = 0; j < ps.size(); j++)
+            for (unsigned j = 0; j < ps.size(); j++)
             {
                 if (var(__ps[j]) == var(__qs[i]))
                 {
@@ -465,7 +465,7 @@ bool SimpSMTSolver::backwardSubsumptionCheck(bool verbose)
 
         // Find best variable to scan:
         Var best = var(c[0]);
-        for (int i = 1; i < c.size(); i++)
+        for (unsigned i = 1; i < c.size(); i++)
             if (occurs[var(c[i])].size() < occurs[best].size())
                 best = var(c[i]);
 
@@ -476,8 +476,7 @@ bool SimpSMTSolver::backwardSubsumptionCheck(bool verbose)
         for (int j = 0; j < _cs.size(); j++)
             if (c.mark())
                 break;
-            else if (!ca[cs[j]].mark() && cs[j] != cr && (subsumption_lim == -1 || ca[cs[j]].size() < subsumption_lim))
-            {
+            else if (!ca[cs[j]].mark() && cs[j] != cr && (subsumption_lim == -1 || ca[cs[j]].size() < static_cast<unsigned>(subsumption_lim)))            {
                 Lit l = c.subsumes(ca[cs[j]]);
 
                 if (l == lit_Undef)
@@ -509,7 +508,7 @@ bool SimpSMTSolver::asymm(Var v, CRef cr)
 
     trail_lim.push(trail.size());
     Lit l = lit_Undef;
-    for (int i = 0; i < c.size(); i++)
+    for (unsigned i = 0; i < c.size(); i++)
         if (var(c[i]) != v && value(c[i]) != l_False)
         {
             uncheckedEnqueue(~c[i]);
@@ -561,7 +560,7 @@ static void mkElimClause(vec<uint32_t>& elimclauses, Var v, Clause& c)
 
     // Copy clause to elimclauses-vector. Remember position where the
     // variable 'v' occurs:
-    for (int i = 0; i < c.size(); i++)
+    for (unsigned i = 0; i < c.size(); i++)
     {
         elimclauses.push(toInt(c[i]));
         if (var(c[i]) == v)
@@ -663,7 +662,7 @@ bool SimpSMTSolver::substitute(Var v, Lit x)
         Clause& c = ca[cls[i]];
 
         subst_clause.clear();
-        for (int j = 0; j < c.size(); j++)
+        for (unsigned j = 0; j < c.size(); j++)
         {
             Lit p = c[j];
             subst_clause.push(var(p) == v ? x ^ sign(p) : p);

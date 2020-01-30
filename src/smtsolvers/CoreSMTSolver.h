@@ -113,7 +113,7 @@ public:
     {
         learnts.push();
         vec<Lit>& learnt = learnts.last();
-        for (int i = 0; i < c.size(); i++)
+        for (unsigned i = 0; i < c.size(); i++)
             learnt.push(c[i]);
     }
 
@@ -672,7 +672,7 @@ public:
     void     printClause      ( Clause& );
     //void     printClause      ( vec< Lit > & );
 
-	void   populateClauses  (vec<PTRef> & clauses, const vec<CRef> & crefs, int limit = std::numeric_limits<int>::max());
+	void   populateClauses  (vec<PTRef> & clauses, const vec<CRef> & crefs, unsigned int limit = std::numeric_limits<unsigned int>::max());
 	void   populateClauses  (vec<PTRef> & clauses, const vec<Lit> & lits);
 	char * printCnfClauses  ();
 	char * printCnfLearnts  ();
@@ -1120,7 +1120,7 @@ inline void CoreSMTSolver::printLit(Lit l)
 template<class C>
 inline void CoreSMTSolver::printClause(const C& c)
 {
-    for (int i = 0; i < c.size(); i++)
+    for (unsigned i = 0; i < c.size(); i++)
     {
         printLit(c[i]);
         fprintf(stderr, " ");
@@ -1128,7 +1128,7 @@ inline void CoreSMTSolver::printClause(const C& c)
 
     Logic& logic = theory_handler.getLogic();
     vec<PTRef> args;
-    for (int i = 0; i < c.size(); i++)
+    for (unsigned i = 0; i < c.size(); i++)
     {
         PTRef tr = sign(c[i]) ? logic.mkNot(theory_handler.varToTerm(var(c[i]))) : theory_handler.varToTerm(var(c[i]));
         args.push(tr);
@@ -1139,7 +1139,7 @@ inline void CoreSMTSolver::printClause(const C& c)
     free(clause);
 }
 
-inline void CoreSMTSolver::populateClauses(vec<PTRef> & clauses, const vec<CRef> & crefs, int limit)
+inline void CoreSMTSolver::populateClauses(vec<PTRef> & clauses, const vec<CRef> & crefs, unsigned int limit)
 {
 	Logic& logic = theory_handler.getLogic();
 	for (int i = 0; i < crefs.size(); i++) {
@@ -1148,7 +1148,7 @@ inline void CoreSMTSolver::populateClauses(vec<PTRef> & clauses, const vec<CRef>
 			continue;
 		}
 		vec<PTRef> literals;
-		for (int j = 0; j < clause.size(); j++) {
+		for (unsigned j = 0; j < clause.size(); j++) {
 			Lit& literal = clause[j];
 			Var v = var(literal);
 			PTRef ptr = theory_handler.varToTerm(v);
@@ -1200,7 +1200,7 @@ inline void CoreSMTSolver::printSMTClause( ostream & os, const C& c )
 {
     if ( c.size( ) == 0 ) os << "-";
     if ( c.size( ) > 1 ) os << "(or ";
-    for (int i = 0; i < c.size(); i++)
+    for (unsigned i = 0; i < c.size(); i++)
     {
         Var v = var(c[i]);
         if ( v <= 1 ) continue;

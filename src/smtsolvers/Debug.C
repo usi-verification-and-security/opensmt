@@ -71,7 +71,7 @@ void CoreSMTSolver::verifyModel()
     {
         assert(ca[clauses[i]].mark() == 0);
         Clause& c = ca[clauses[i]];
-        for (int j = 0; j < c.size(); j++)
+        for (unsigned j = 0; j < c.size(); j++)
             if (modelValue(c[j]) == l_True)
                 goto next;
 

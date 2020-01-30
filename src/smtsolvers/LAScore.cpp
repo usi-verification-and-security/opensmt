@@ -143,7 +143,7 @@ double LookaheadScoreDeep::computeScoreFromClauses(const vec<CRef> &clauses, con
         bool is_taut = false;
 
         const Clause& c = ca[clauses[i]];
-        for (int j = 0; j < c.size(); j++) {
+        for (unsigned j = 0; j < c.size(); j++) {
             if (value(c[j]) == l_False) {
                 ++nf;
             }
