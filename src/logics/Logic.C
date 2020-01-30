@@ -985,8 +985,9 @@ PTRef Logic::mkVar(SRef s, const char* name) {
     vec<SRef> sort_args;
     sort_args.push(s);
     SymRef sr = newSymb(name, sort_args);
+    assert(sr != SymRef_Undef);
     if (sr == SymRef_Undef) {
-        std::cerr << "Warning: while mkVar " << name << ": " << std::endl;
+        std::cerr << "Unexpected situation in  Logic::mkVar for " << name << std::endl;
         assert(symNameToRef(name).size() == 1);
         sr = symNameToRef(name)[0];
     }
