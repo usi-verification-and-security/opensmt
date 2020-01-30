@@ -961,9 +961,10 @@ BitBlaster::bbBvudiv(PTRef tr)
             // O[2] O[1] O[0]
             //      N[2] N[1] N[0]
             //
-            for (int j = size - 1 ; j >= 1 ; j --)
+            for (int j = size - 1 ; j >= 1 ; j --) {
                 minuend[j] = minuend[j - 1];
-                minuend[0] = bs[dividend][i - 1];
+            }
+            minuend[0] = bs[dividend][i - 1];
         }
     }
     //
