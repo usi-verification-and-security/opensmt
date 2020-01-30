@@ -204,8 +204,8 @@ icolor_t CGraph::colorNodesRec ( CNode *c, const ipartitions_t &mask )
 void
 CGraph::removeCEdge(CEdge *e)
 {
-    if(e == NULL) return;
-    for(int i = 0; i < cedges.size(); ++i)
+    if(e == nullptr) return;
+    for(std::size_t i = 0; i < cedges.size(); ++i)
     {
         if(cedges[i] == e)
         {
@@ -564,10 +564,10 @@ bool CGraph::colorEdgesFrom ( CNode *x, const ipartitions_t &mask )
                             
                            
                             //cerr << "; Edges from X to N" << endl;
-                            vector<CEdge*> sorted;
+                            std::vector<CEdge*> sorted;
                             size_t xnl = getSortedEdges(cn_arg_x, cn_arg_n, sorted);
                             (void)xnl;
-                            for(int i = 0; i < sorted.size(); ++i)
+                            for(std::size_t i = 0; i < sorted.size(); ++i)
                             {
                                 CNode *from = sorted[i]->source;
                                 CNode *to = sorted[i]->target;
@@ -623,10 +623,10 @@ bool CGraph::colorEdgesFrom ( CNode *x, const ipartitions_t &mask )
                             
                            
                             //cerr << "; Edges from X to N" << endl;
-                            vector<CEdge*> sorted;
+                            std::vector<CEdge*> sorted;
                             size_t xnl = getSortedEdges(cn_arg_x, cn_arg_n, sorted);
                             (void)xnl;
-                            for(int i = 0; i < sorted.size() - 1; ++i)
+                            for(std::size_t i = 0; i < sorted.size() - 1; ++i)
                             {
                                 CNode *from = sorted[i]->source;
                                 CNode *to = sorted[i]->target;
@@ -922,9 +922,9 @@ CGraph::interpolate_flat (const path_t &p)
     vec<PTRef> args;
     bool la, lb, lab, ra, rb, rab;
 
-    vector<path_t> factors;
+    std::vector<path_t> factors;
     factors.push_back (p);
-    vector<path_t> parents;
+    std::vector<path_t> parents;
     const bool a_factor = getFactorsAndParents ( p, factors, parents );
     (void)a_factor;
     // this should be a flat path
@@ -933,9 +933,9 @@ CGraph::interpolate_flat (const path_t &p)
     //cerr << "; Flat path has " << factors.size() << " factors:" << endl;
     //for(int i = 0; i < factors.size(); ++i) cerr << "; Factor " << i << " = (" << logic.printTerm(factors[i].first->e) << "," << logic.printTerm(factors[i].second->e) << ")" << endl;
 
-    for (int i = 0; i < factors.size(); i += 3)
+    for (std::size_t i = 0; i < factors.size(); i += 3)
     {
-        int j = i + 2;
+        std::size_t j = i + 2;
 
         if (j >= factors.size()) j = (factors.size() - 1);
 
@@ -1323,7 +1323,7 @@ bool CGraph::getSubpaths ( const path_t &pi
 
     if (lnode == NULL || rnode == NULL)
     {
-        for (int i = 0; i < sorted_edges.size(); ++i)
+        for (std::size_t i = 0; i < sorted_edges.size(); ++i)
         {
             scolor = sorted_edges[i]->source->color;
             tcolor = sorted_edges[i]->target->color;
@@ -1458,7 +1458,7 @@ CGraph::getSubpathsSwap ( const path_t &pi
 
     if (lnode == NULL || rnode == NULL)
     {
-        for (int i = 0; i < sorted_edges.size(); ++i)
+        for (std::size_t i = 0; i < sorted_edges.size(); ++i)
         {
             scolor = sorted_edges[i]->source->color;
             tcolor = sorted_edges[i]->target->color;
@@ -1716,7 +1716,7 @@ CGraph::Irec ( const path_t &p, map< path_t, PTRef > &cache , unsigned int h)
 
     string lstr (";");
 
-    for (int i = 0; i < h; ++i) lstr += ' ';
+    for (unsigned i = 0; i < h; ++i) { lstr += ' '; }
 
     /*
       map< path_t, PTRef >::iterator it = cache.find( p );
@@ -1823,9 +1823,9 @@ CGraph::Irec ( const path_t &p, map< path_t, PTRef > &cache , unsigned int h)
             bool la, lb, lab, ra, rb, rab;
             divided = true;
 
-            for (int i = 0; i < factors.size(); i += 3)
+            for (std::size_t i = 0; i < factors.size(); i += 3)
             {
-                int j = i + 2;
+                std::size_t j = i + 2;
 
                 if (j >= factors.size()) j = (factors.size() - 1);
 
@@ -1967,7 +1967,7 @@ CGraph::Irec ( const path_t &p, map< path_t, PTRef > &cache , unsigned int h)
         }
         else
         {
-            for (int i = 0; i < factors.size(); ++i)
+            for (std::size_t i = 0; i < factors.size(); ++i)
                 conj.push (Irec (factors[i], cache, h));
         }
     }
@@ -2000,7 +2000,7 @@ CGraph::IrecSwap ( const path_t &p, map< path_t, PTRef > &cache , unsigned int h
 
     string lstr (";");
 
-    for (int i = 0; i < h; ++i) lstr += ' ';
+    for (unsigned i = 0; i < h; ++i) { lstr += ' '; }
 
 #ifdef ITP_DEBUG
     cerr << lstr << "Interpolant IrecSwap(" << logic.printTerm (p.first->e) << "," << logic.printTerm (p.second->e) << ")" << endl;
@@ -2106,9 +2106,9 @@ CGraph::IrecSwap ( const path_t &p, map< path_t, PTRef > &cache , unsigned int h
             bool la, lb, lab, ra, rb, rab;
             divided = true;
 
-            for (int i = 0; i < factors.size(); i += 3)
+            for (std::size_t i = 0; i < factors.size(); i += 3)
             {
-                int j = i + 2;
+                std::size_t j = i + 2;
 
                 if (j >= factors.size()) j = (factors.size() - 1);
 
@@ -2233,7 +2233,7 @@ CGraph::IrecSwap ( const path_t &p, map< path_t, PTRef > &cache , unsigned int h
             cerr << "Multiple factors, recursing on them" << endl;
 #endif
 
-            for (int i = 0; i < factors.size(); ++i)
+            for (std::size_t i = 0; i < factors.size(); ++i)
             {
 #ifdef ITP_DEBUG
                 cerr << "Recursing on factor " << logic.printTerm (factors[i].first->e) << '-' << logic.printTerm (factors[i].second->e) << endl;
@@ -2540,22 +2540,22 @@ bool CGraph::getFactorsAndParents ( const path_t      &p
 }
 
 void
-CGraph::labelFactors (vector<path_t> &factors)
+CGraph::labelFactors (std::vector<path_t> &factors)
 {
     // McMillan
     if (usingStrong())
-        for (int i = 0; i < factors.size(); ++i)
+        for (std::size_t i = 0; i < factors.size(); ++i)
             L[factors[i]] = I_B;
 
     // McMillan'
     else if (usingWeak())
-        for (int i = 0; i < factors.size(); ++i)
+        for (std::size_t i = 0; i < factors.size(); ++i)
             L[factors[i]] = I_A;
 
     // Random
     else if (usingRandom())
     {
-        for (int i = 0; i < factors.size(); ++i)
+        for (std::size_t i = 0; i < factors.size(); ++i)
         {
             if (rand() % 2)
             {
@@ -2589,7 +2589,7 @@ CGraph::verifyInterpolantWithExternalTool ( const ipartitions_t &mask )
     vec<PTRef> a_args;
     vec<PTRef> b_args;
 
-    for (int i = 0; i < cedges.size(); ++i)
+    for (std::size_t i = 0; i < cedges.size(); ++i)
     {
         CEdge *ce = cedges[i];
         vec<PTRef> eq_args;
