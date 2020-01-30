@@ -181,7 +181,7 @@ clauseid_t ProofGraph::ruleApply(RuleContext& ra)
 {
 	rul_type toApply=ra.getType();
 	assert(toApply!=rNO);
-	assert(ra.getV1()!=-1);
+	assert(ra.getV1()!=static_cast<clauseid_t>(-1));
 	clauseid_t claid = 0;
 
 	if(toApply==rA1 || toApply==rA1B) claid = applyRuleA1(ra);

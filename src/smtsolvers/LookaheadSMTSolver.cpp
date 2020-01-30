@@ -371,7 +371,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
                 for (int j = 0; j < clauses.size(); j++)
                 {
                     Clause& c = ca[clauses[j]];
-                    int k;
+                    unsigned k;
                     for (k = 0; k < c.size(); k++)
                     {
                         if (value(c[k]) == l_True)

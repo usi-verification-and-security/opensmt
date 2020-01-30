@@ -97,7 +97,7 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
     // assumes there are 0 on all position before col
     void normalize(std::vector<Real> & row, std::size_t col) {
 #ifndef NDEBUG
-        for (auto i = 0; i < col; ++i) {
+        for (std::size_t i = 0; i < col; ++i) {
             assert(row[i] == 0);
         }
 #endif //NDEBUG
@@ -167,7 +167,7 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
                 if (matrix[row][pivotCol] == 0) { continue; }
                 addToWithCoeff(matrix[row], matrix[pivotRow], -(matrix[row][pivotCol] / matrix[pivotRow][pivotCol]));
 #ifndef NDEBUG
-                for (auto col = 0; col <= pivotCol; ++col) {
+                for (std::size_t col = 0; col <= pivotCol; ++col) {
                     assert(matrix[row][col] == 0);
                 }
 #endif // NDEBUG
@@ -185,7 +185,7 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
         auto rank = std::count_if(matrix.cbegin(), matrix.cend(), [](std::vector<Real> const & row) {
             return std::any_of(row.cbegin(), row.cend(), [](Real const & r) { return r != 0; });
         });
-        auto cols = matrix[0].size();
+        auto cols = static_cast<long>(matrix[0].size());
         assert(cols >= rank);
         return cols - rank;
     }
@@ -217,10 +217,10 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
         auto pivotColsBitMap = getPivotColsBitMap(matrix);
         auto cols = pivotColsBitMap.size();
         assert(cols == matrix[0].size());
-        unsigned int pivotRow = 0;
+        std::size_t pivotRow = 0;
         for (unsigned int col = 0; col < pivotColsBitMap.size(); ++col) {
             if(pivotColsBitMap[col]) {
-                for (auto row = 0; row < matrix.size(); ++row) {
+                for (std::size_t row = 0; row < matrix.size(); ++row) {
                     if ((row != pivotRow && matrix[row][col] != 0) || (row == pivotRow && matrix[row][col] != 1)) {
                         return false;
                     }
@@ -245,6 +245,7 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
     }
 
     void print_matrix(std::vector<std::vector<Real>> const & matrix) {
+        (void)print_matrix; // MB: to supress compiler warning for this unused helpful debug method
         for (auto const & row : matrix) {
             for (auto const & elem : row) {
                 std::cout << elem << " ";
@@ -255,6 +256,7 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
     }
 
     void print_basis(std::vector<std::vector<FastRational>> const & nullBasis) {
+        (void)print_basis; // MB: to supress compiler warning for this unused helpful debug method
         std::cout << "Basis: " << '\n';
         for (auto const & base : nullBasis) {
             for (auto const & elem : base) {
@@ -432,7 +434,7 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color) {
     // this will be contain the result, inequalities corresponding to summed up partitions of explanataions (of given color)
     std::vector<PTRef> interpolant_inequalities;
     std::vector<std::pair<PtAsgn, Real>> candidates;
-    assert(explanations.size() == explanation_coeffs.size());
+    assert(explanations.size() == static_cast<int>(explanation_coeffs.size()));
     for (int i = 0; i < explanations.size(); ++i) {
         assert(explanation_coeffs[i] > 0);
         candidates.emplace_back(explanations[i], explanation_coeffs[i]);

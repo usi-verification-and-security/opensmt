@@ -535,7 +535,7 @@ bool ProofGraph::verifyPathInterpolantsFromLeaves ( vec< PTRef > & interps)
 	unsigned no_part = logic_.getNofPartitions();
 
 	// m partitions, m+1 interpolants
-	assert( (no_part + 1) == interps.size() );
+	assert( (no_part + 1) == static_cast<unsigned>(interps.size()) );
 
 	string varsDecl("");
 	for(int i = 2; i <= static_cast<int>(getMaxIdVar()); ++i)
@@ -763,7 +763,7 @@ bool ProofGraph::verifyStateTransitionInterpolants ( vec< PTRef > & interps)
 
 	// m partitions, 2m+1 interpolants
 	unsigned no_part = logic_.getNofPartitions();
-	assert( (2*no_part + 1) == interps.size() );
+	assert( (2*no_part + 1) == static_cast<unsigned>(interps.size()) );
 
 	// Try ith constraint I_i /\ J_{i+1} -> I_{i+1}
 	bool property_holds = true;
@@ -955,7 +955,7 @@ bool ProofGraph::verifyTreeInterpolantsFromLeaves( opensmt::InterpolationTree* i
 	// m partitions, one for each node of the tree
 	// TODO m or less interpolants - not necessarily all nodes are approximated
 	// for nodes non approximated, interpolants are the original formulae
-	assert( logic_.getNofPartitions() == interps.size() );
+	assert( logic_.getNofPartitions() == static_cast<unsigned>(interps.size()) );
 
 	// NOTE partition ids start from 1, interpolants vector from 0
 	// interpolants[i] contains interpolant for node with partition id i+1
