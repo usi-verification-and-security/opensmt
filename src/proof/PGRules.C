@@ -64,6 +64,7 @@ bool ProofGraph::getRuleContext(clauseid_t idv3, clauseid_t idv, RuleContext& ra
 	bool t1_in_ant1=false, t1_in_ant2 =false;
 	bool sign_t0_ant1=false, sign_t0_ant2=false;
 	bool sign_t1_ant1=false, sign_t1_ant2=false;
+    (void)sign_t1_ant1;(void)sign_t1_ant2; // MB: For some reason this are not read ever.
 
 	// Sign of t0
 	short r1 = w->getAnt1()->hasOccurrenceBin(t0);
@@ -90,7 +91,7 @@ bool ProofGraph::getRuleContext(clauseid_t idv3, clauseid_t idv, RuleContext& ra
 	// t1 found in both antecedents clauses?
 	bool t1_in_C2=t1_in_ant1 && t1_in_ant2;
 
-	bool sign_t0_v1;
+	bool sign_t0_v1 = false; // MB: Warning! this variable was previously unintialized and there is a path to usage without setting its value!
 	// Determine v1 and v2
 	ProofNode * v1 = nullptr;
 	ProofNode * v2 = nullptr;

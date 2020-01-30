@@ -434,8 +434,8 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
     }
 
     // Clause and partial interpolant
-    ProofNode *n;
-    PTRef partial_interp;
+    ProofNode *n = nullptr;
+    PTRef partial_interp = PTRef_Undef;
 
     // Vector for topological ordering
     vector< clauseid_t > DFSv;
@@ -583,7 +583,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
         }
     }
 
-    if (PSFunction != NULL) delete PSFunction;
+    delete PSFunction;
 
     // Last clause visited is the empty clause with total interpolant
     assert (partial_interp == getRoot()->getPartialInterpolant());
@@ -686,13 +686,13 @@ void ProofGraph::produceMultipleInterpolants ( const std::vector< ipartitions_t 
 #endif
     }
 
-    uint64_t mem_used = 0;
-
-    if ( verbose() )
-    {
-        mem_used = memUsed();
-        //reportff( "# Memory used before generating interpolants: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
-    }
+//    uint64_t mem_used = 0;
+//
+//    if ( verbose() )
+//    {
+//        mem_used = memUsed();
+//        //reportff( "# Memory used before generating interpolants: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
+//    }
 
     assert ( sequence_of_interpolants.size( ) == 0 );
 
@@ -763,12 +763,12 @@ void ProofGraph::produceMultipleInterpolants ( const std::vector< ipartitions_t 
 
         if ( enabledInterpVerif() ) verifyPartialInterpolantFromLeaves ( getRoot(), A_mask );
 
-        if ( verbose() )
-        {
-            mem_used = memUsed();
-            //cerr << "# Interpolant: " << partial_interp << endl;
-            //reportff( "# Memory used after generating %d interpolants: %.3f MB\n", curr_interp+1,  mem_used == 0 ? 0 : mem_used / 1048576.0 );
-        }
+//        if ( verbose() )
+//        {
+//            mem_used = memUsed();
+//            //cerr << "# Interpolant: " << partial_interp << endl;
+//            //reportff( "# Memory used after generating %d interpolants: %.3f MB\n", curr_interp+1,  mem_used == 0 ? 0 : mem_used / 1048576.0 );
+//        }
 
         if ( printProofDotty( ) == 1 )
         {

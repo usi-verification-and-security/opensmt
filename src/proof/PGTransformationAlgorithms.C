@@ -193,7 +193,7 @@ double ProofGraph::recyclePivotsIter()
 		reportf( "# Memory used after recycling, before restructuring: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
 	}
 
-	bool warning = false;
+//	bool warning = false;
 	// Restructuring, from leaves to root
 	std::deque<clauseid_t>q;
 	q.assign(leaves_ids.begin(),leaves_ids.end());
@@ -250,7 +250,7 @@ double ProofGraph::recyclePivotsIter()
 						// NOTE not clear how this might happen
 						if ( n->getAnt1() == n->getAnt2() )
 						{
-							warning=true;
+//							warning=true; // MB suspicious situation!
 							ProofNode* replacing = n->getAnt1();
 							set<clauseid_t>& resolvents = n->getResolvents();
 							for(set<clauseid_t>::iterator it = resolvents.begin(); it!=resolvents.end(); it++)

@@ -42,7 +42,7 @@ void ProofGraph::transfProofForReduction( )
 	// Time left for transformation
 	double solvingTime = cpuTime( );
 
-	size_t size=0;
+//	size_t size=0;
 	int numnodes=0;
 	int numedges=0;
 	int numleaves=0;
@@ -51,13 +51,13 @@ void ProofGraph::transfProofForReduction( )
 	int maxclasize=0;
 	double avgclasize=0;
 	int numunary=0;
-	double varclasize=0;
+//	double varclasize=0;
 
 	if ( verbose() )
 	{
 		getGraphInfo( );
 
-		size = graph.size( );
+//		size = graph.size( );
 		numnodes = num_nodes;
 		numedges = num_edges;
 		numleaves = num_leaves;
@@ -66,7 +66,7 @@ void ProofGraph::transfProofForReduction( )
 		maxclasize = max_cla_size;
 		avgclasize = av_cla_size;
 		numunary = num_unary;
-		varclasize = var_cla_size;
+//		varclasize = var_cla_size;
 	}
 
 	double time=0;

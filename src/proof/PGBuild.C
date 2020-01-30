@@ -495,7 +495,7 @@ void ProofGraph::buildProofGraph( int nVars )
                             break;
                         }
                     }
-                    assert( found_piv );
+                    assert( found_piv );(void)found_piv;
                     int id_i=clauseToIDMap[clause_i];
                     if(pos_piv)
                     {
