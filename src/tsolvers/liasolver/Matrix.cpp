@@ -299,8 +299,9 @@ LAMatrixStore::least_in_col(MId H, int imin, int j)
 void
 LAMatrixStore::compute_snf(MId U, MId &S, int &dim, MId &L, MId &Li, MId &R, MId &Ri)
 {
-    int imin, jmin;
-    bool found;
+    int imin = 0;
+    int jmin = 0;
+    bool found = false;
     opensmt::Real x, valmin;
     auto const& store = *this; (void) store;
     LAMatrix& Sm = operator[](S);
