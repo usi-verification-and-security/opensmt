@@ -82,7 +82,7 @@ void CoreSMTSolver::verifyModel()
         next:;
     }
 
-    assert(!failed);
+    assert(!failed); (void)failed;
 
     // Removed line
     // reportf("Verified %d original clauses.\n", clauses.size());
