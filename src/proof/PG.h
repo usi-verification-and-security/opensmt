@@ -321,6 +321,7 @@ public:
     bool verifyTreeInterpolantsFromLeaves   ( opensmt::InterpolationTree*, vec<PTRef> &);
 
     void produceMultipleInterpolants        ( const vec< ipartitions_t >&, vec<PTRef> &);
+    void produceMultipleInterpolants        ( const std::vector< ipartitions_t >&, vec<PTRef> &);
     void produceSingleInterpolant           (vec<PTRef>& interpolants);
     void produceSingleInterpolant           (vec<PTRef>& interpolants, const ipartitions_t& A_mask);
     void printProofAsDotty                  ( ostream &, ipartitions_t ip = 0);

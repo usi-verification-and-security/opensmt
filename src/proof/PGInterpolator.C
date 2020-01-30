@@ -52,10 +52,8 @@ bool ProofGraph::producePathInterpolants ( vec<PTRef> &interpolants )
     if ( verbose() ) cerr << "# Path interpolation " << endl;
 
     // Generate appropriate masks
-    vec< ipartitions_t > configs;
-    while (configs.size() <= logic_.getNofPartitions()+1)
-        configs.push();
-//    configs.resize (logic_.getNofPartitions() + 1, 0);
+    std::vector< ipartitions_t > configs;
+    configs.resize (logic_.getNofPartitions() + 1, 0);
 
     // First interpolant is true -> all partitions in B
     for ( unsigned i = 1; i < configs.size(); i++ )
@@ -98,10 +96,8 @@ bool ProofGraph::produceSimultaneousAbstraction ( vec< PTRef > &interpolants )
     if ( verbose() ) cerr << "# Simultaneous abstraction " << endl;
 
     // Generate appropriate masks
-    vec< ipartitions_t > configs;
-    while (configs.size() < logic_.getNofPartitions())
-        configs.push();
-//    configs.resize (logic_.getNofPartitions(), 0);
+    std::vector< ipartitions_t > configs;
+    configs.resize (logic_.getNofPartitions(), 0);
 
     for ( unsigned i = 0; i < configs.size(); i++ )
     {
@@ -143,10 +139,8 @@ bool ProofGraph::produceGenSimultaneousAbstraction ( vec< PTRef > &interpolants 
     if ( verbose() ) cerr << "# Generalized simultaneous abstraction " << endl;
 
     // Generate appropriate masks
-    vec< ipartitions_t > configs;
-    while (configs.size() < nparts)
-        configs.push();
-//    configs.resize (nparts, 0);
+    std::vector< ipartitions_t > configs;
+    configs.resize (nparts, 0);
 
     for ( unsigned i = 0; i < nparts - 1; i++ )
     {
@@ -190,10 +184,8 @@ bool ProofGraph::produceStateTransitionInterpolants ( vec< PTRef > &interpolants
     if ( verbose() ) cerr << "# State-transition interpolation " << endl;
 
     // Generate appropriate masks
-    vec< ipartitions_t > configs;
-    while (configs.size() < (2*npart) + 1)
-        configs.push();
-//    configs.resize ((2 * npart) + 1, 0);
+    std::vector< ipartitions_t > configs;
+    configs.resize ((2 * npart) + 1, 0);
 
     // All the path interpolants
     // First interpolant is true -> all partitions in B
@@ -225,10 +217,8 @@ void ProofGraph::produceConfigMatrixInterpolants (const vec< vec<int> > &configs
     if ( verbose() ) cerr << "# General interpolation via configuration matrix " << endl;
 
     // Generate appropriate masks
-    vec< ipartitions_t > parts;
-    while (parts.size() < configs.size())
-        parts.push();
-//    parts.resize (configs.size(), 0);
+    std::vector< ipartitions_t > parts;
+    parts.resize (configs.size(), 0);
 
     // First interpolant is true -> all partitions in B
     for ( unsigned i = 0; i < parts.size(); i++ )
@@ -261,10 +251,8 @@ bool ProofGraph::produceTreeInterpolants (opensmt::InterpolationTree *it, vec<PT
     // Generate appropriate masks
     // NOTE partition ids start from 1, parts vector from 0
     // parts[i] contains configuration mask for partition id i+1
-    vec< ipartitions_t > parts;
-    while (parts.size() < logic_.getNofPartitions())
-        parts.push();
-//    parts.resize (logic_.getNofPartitions(), 0);
+    std::vector< ipartitions_t > parts;
+    parts.resize (logic_.getNofPartitions(), 0);
 
     // Visit the tree in topological order bottom up and compute the configurations
     std::deque<opensmt::InterpolationTree *> q;
@@ -665,7 +653,16 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
     }
 }
 
-void ProofGraph::produceMultipleInterpolants ( const vec< ipartitions_t > &configs, vec<PTRef> &sequence_of_interpolants )
+void ProofGraph::produceMultipleInterpolants ( const vec< ipartitions_t > &configs, vec<PTRef> &sequence_of_interpolants ) {
+    std::vector<ipartitions_t> v;
+    v.reserve(configs.size());
+    for (int i = 0; i < configs.size(); ++i) {
+        v.push_back(configs[i]);
+    }
+    produceMultipleInterpolants(v, sequence_of_interpolants);
+}
+
+void ProofGraph::produceMultipleInterpolants ( const std::vector< ipartitions_t > &configs, vec<PTRef> &sequence_of_interpolants )
 {
     /*  if( verbose() > 1 )
         {
