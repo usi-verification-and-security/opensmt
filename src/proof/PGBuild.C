@@ -41,10 +41,10 @@ ProofNode::setInterpPartitionMask( const ipartitions_t& mask)
 
 ostream& operator<< (ostream &out, RuleContext &ra)
 {
-	out << "Context: v1(" << ra.getV1() << ") v2(" << ra.getV2() << ") w("
-			<< ra.getW() << ") v3(" << ra.getV3() << ") v("
-			<< ra.getV() << ")";
-	return out;
+    out << "Context: v1(" << ra.getV1() << ") v2(" << ra.getV2() << ") w("
+        << ra.getW() << ") v3(" << ra.getV3() << ") v("
+        << ra.getV() << ")";
+    return out;
 }
 
 void ProofGraph::initTSolver() {
@@ -171,8 +171,8 @@ void ProofGraph::buildProofGraph( int nVars )
                 n->initClause(false_clause);
                 // We should set the partition_mask here, but how is that
                 // done?
-//                ipartitions_t mask = 0x10; // This is arbitrary, we should somehow know in which partition the false is so we could get this right.
-//                n->setInterpPartitionMask(mask);
+                // ipartitions_t mask = 0x10; // This is arbitrary, we should somehow know in which partition the false is so we could get this right.
+                // n->setInterpPartitionMask(mask);
                 graph.push_back(n);
                 assert(getNode(currId)==n);
                 root=currId;
@@ -244,7 +244,7 @@ void ProofGraph::buildProofGraph( int nVars )
                     if (ctype == clause_type::CLA_ORIG)
                     {
                         if ( n->getClauseSize() >= max_leaf_size ) max_leaf_size = n->getClauseSize();
-                            avg_leaf_size += n->getClauseSize();
+                        avg_leaf_size += n->getClauseSize();
                     }
                 }
                 // NB: internal derived clauses not considered here
@@ -572,281 +572,281 @@ void ProofGraph::buildProofGraph( int nVars )
 
 void ProofGraph::fillProofGraph()
 {
-	if ( verbose() > 1 )
-	{
-		uint64_t mem_used = memUsed();
-		reportf( "# Memory used before filling the proof: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
-	}
+    if ( verbose() > 1 )
+    {
+        uint64_t mem_used = memUsed();
+        reportf( "# Memory used before filling the proof: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
+    }
 
-	vector<clauseid_t>q;
-	clauseid_t id;
-	ProofNode* n=NULL;
-	q.push_back(getRoot()->getId());
-	do
-	{
-		id=q.back();
-		n=getNode(id);
-		//Node not visited yet
-		if(!isSetVisited1(id))
-		{
-			// Enqueue antecedents if not visited
-			if(n->getAnt1()!=NULL && !isSetVisited1(n->getAnt1()->getId()))
-				q.push_back(n->getAnt1()->getId());
-			else if(n->getAnt2()!=NULL && !isSetVisited1(n->getAnt2()->getId()))
-				q.push_back(n->getAnt2()->getId());
-			// Mark node as visited if both antecedents visited
-			else
-			{
-				setVisited1(id);
-				q.pop_back();
-				assert(n);
-				//Non leaf node
-				if(!n->isLeaf())
-				{
-					n->initClause();
-					mergeClauses(n->getAnt1()->getClause(), n->getAnt2()->getClause(), n->getClause(), n->getPivot());
-				}
-			}
-		}
-		else q.pop_back();
-	}
-	while(!q.empty());
-	resetVisited1();
+    vector<clauseid_t>q;
+    clauseid_t id;
+    ProofNode* n=NULL;
+    q.push_back(getRoot()->getId());
+    do
+    {
+        id=q.back();
+        n=getNode(id);
+        //Node not visited yet
+        if(!isSetVisited1(id))
+        {
+            // Enqueue antecedents if not visited
+            if(n->getAnt1()!=NULL && !isSetVisited1(n->getAnt1()->getId()))
+                q.push_back(n->getAnt1()->getId());
+            else if(n->getAnt2()!=NULL && !isSetVisited1(n->getAnt2()->getId()))
+                q.push_back(n->getAnt2()->getId());
+                // Mark node as visited if both antecedents visited
+            else
+            {
+                setVisited1(id);
+                q.pop_back();
+                assert(n);
+                //Non leaf node
+                if(!n->isLeaf())
+                {
+                    n->initClause();
+                    mergeClauses(n->getAnt1()->getClause(), n->getAnt2()->getClause(), n->getClause(), n->getPivot());
+                }
+            }
+        }
+        else q.pop_back();
+    }
+    while(!q.empty());
+    resetVisited1();
 
-	if ( verbose() > 0 )
-	{
-		uint64_t mem_used = memUsed();
-		reportf( "# Memory used after filling the proof: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
-	}
+    if ( verbose() > 0 )
+    {
+        uint64_t mem_used = memUsed();
+        reportf( "# Memory used after filling the proof: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
+    }
 }
 
 void ProofGraph::emptyProofGraph()
 {
-	if ( verbose() > 1 )
-	{
-		uint64_t mem_used = memUsed();
-		reportf( "# Memory used before emptying the proof: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
-	}
-	ProofNode* n = NULL;
-	for(size_t i=0;i< getGraphSize() ;i++)
-	{
-		n=getNode(i);
-		if( n!=NULL && !n->isLeaf() ) { n->resetClause(); }
-	}
-	if ( verbose() > 0 )
-	{
-		uint64_t mem_used = memUsed();
-		reportf( "# Memory used after emptying the proof: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
-	}
+    if ( verbose() > 1 )
+    {
+        uint64_t mem_used = memUsed();
+        reportf( "# Memory used before emptying the proof: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
+    }
+    ProofNode* n = NULL;
+    for(size_t i=0;i< getGraphSize() ;i++)
+    {
+        n=getNode(i);
+        if( n!=NULL && !n->isLeaf() ) { n->resetClause(); }
+    }
+    if ( verbose() > 0 )
+    {
+        uint64_t mem_used = memUsed();
+        reportf( "# Memory used after emptying the proof: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
+    }
 }
 
 void ProofGraph::normalizeAntecedentOrder()
 {
-	// Normalize proof for interpolation
-	std::deque<ProofNode*> q;
-	ProofNode* n;
-	q.push_back(getRoot());
-	do
-	{
-		n=q.front();
-		q.pop_front();
-		if(!isSetVisited1(n->getId()))
-		{
-			if(!n->isLeaf())
-			{
-				q.push_back(n->getAnt1());
-				q.push_back(n->getAnt2());
+    // Normalize proof for interpolation
+    std::deque<ProofNode*> q;
+    ProofNode* n;
+    q.push_back(getRoot());
+    do
+    {
+        n=q.front();
+        q.pop_front();
+        if(!isSetVisited1(n->getId()))
+        {
+            if(!n->isLeaf())
+            {
+                q.push_back(n->getAnt1());
+                q.push_back(n->getAnt2());
 
-				// Check pivot in antecedents
-				short f1 = n->getAnt1()->hasOccurrenceBin(n->getPivot());
-				short f2 = n->getAnt2()->hasOccurrenceBin(n->getPivot());
-				assert( f1!=-1 && f2!=-1 );
-				assert( !(f1==1 && f2==1) && !(f1==0 && f2==0) );
-				// Exchange antecedents if necessary
-				if( f1==1 && f2==0 )
-				{
-					ProofNode* aux = n->getAnt1();
-					n->setAnt1( n->getAnt2() );
-					n->setAnt2( aux );
-				}
-			}
-			setVisited1(n->getId());
-		}
-	}
-	while(!q.empty());
-	resetVisited1();
+                // Check pivot in antecedents
+                short f1 = n->getAnt1()->hasOccurrenceBin(n->getPivot());
+                short f2 = n->getAnt2()->hasOccurrenceBin(n->getPivot());
+                assert( f1!=-1 && f2!=-1 );
+                assert( !(f1==1 && f2==1) && !(f1==0 && f2==0) );
+                // Exchange antecedents if necessary
+                if( f1==1 && f2==0 )
+                {
+                    ProofNode* aux = n->getAnt1();
+                    n->setAnt1( n->getAnt2() );
+                    n->setAnt2( aux );
+                }
+            }
+            setVisited1(n->getId());
+        }
+    }
+    while(!q.empty());
+    resetVisited1();
 }
 
 int ProofGraph::cleanProofGraph()
 {
-	// Remove the unreachable part of the graph
-	// Ideally it will be made of subgraphs not connected to the main graph
-	unsigned removed=0;
-	bool done = false;
-	unsigned counter = 0;
-	while(!done)
-	{
-		done = true;
-		counter ++;
-		for(size_t i=0;i< getGraphSize() ;i++)
-		{
-			if(getNode(i)!=NULL && getNode(i)->getNumResolvents()==0 && getNode(i)!=getRoot())
-			{
-				done = false;
-				removed += removeTree(i);
-				//cerr << "Detached tree starting at " << i << endl;
-			}
-		}
-	}
-	return removed;
+    // Remove the unreachable part of the graph
+    // Ideally it will be made of subgraphs not connected to the main graph
+    unsigned removed=0;
+    bool done = false;
+    unsigned counter = 0;
+    while(!done)
+    {
+        done = true;
+        counter ++;
+        for(size_t i=0;i< getGraphSize() ;i++)
+        {
+            if(getNode(i)!=NULL && getNode(i)->getNumResolvents()==0 && getNode(i)!=getRoot())
+            {
+                done = false;
+                removed += removeTree(i);
+                //cerr << "Detached tree starting at " << i << endl;
+            }
+        }
+    }
+    return removed;
 }
 
 //Remove a node from the graph
 void ProofGraph::removeNode(clauseid_t vid)
 {
-	ProofNode* n=getNode(vid);
-	assert(n);
-	if(n->getAnt1()==NULL && n->getAnt2()==NULL) removeLeaf(vid);
-	n->setAnt1(NULL); n->setAnt2(NULL);
-	// Free memory
-	n->delIData();
-	delete n;
-	// Remove v from proof
-	graph[vid]=NULL;
+    ProofNode* n=getNode(vid);
+    assert(n);
+    if(n->getAnt1()==NULL && n->getAnt2()==NULL) removeLeaf(vid);
+    n->setAnt1(NULL); n->setAnt2(NULL);
+    // Free memory
+    n->delIData();
+    delete n;
+    // Remove v from proof
+    graph[vid]=NULL;
 }
 
 unsigned ProofGraph::removeTree( clauseid_t vid )
 {
-	assert(getNode(vid));
-	assert(getNode(vid)->getNumResolvents() == 0 );
-	unsigned removed=0;
+    assert(getNode(vid));
+    assert(getNode(vid)->getNumResolvents() == 0 );
+    unsigned removed=0;
 
-	//Go on removing nodes with 0 resolvents
-	//Visit graph from root keeping track of edges and nodes
-	std::deque< clauseid_t > q;
-	ProofNode * n;
-	clauseid_t c;
-	// Better a set than a boolean vector to avoid wasting memory
-	std::set<clauseid_t> visit;
+    //Go on removing nodes with 0 resolvents
+    //Visit graph from root keeping track of edges and nodes
+    std::deque< clauseid_t > q;
+    ProofNode * n;
+    clauseid_t c;
+    // Better a set than a boolean vector to avoid wasting memory
+    std::set<clauseid_t> visit;
 
 
-	/*
- 	// For some reason this code leaves some hanging nodes with RecyclePivots
- 	q.push_back( vid );
-	do
-	{
-		c = q.front( );
-		q.pop_front( );
-		assert( c < getGraphSize() );
+    /*
+     // For some reason this code leaves some hanging nodes with RecyclePivots
+     q.push_back( vid );
+    do
+    {
+        c = q.front( );
+        q.pop_front( );
+        assert( c < getGraphSize() );
 
-		//Node not visited yet
-		if(visit.find(c) == visit.end())
-		{
-			n = getNode(c);
-			assert( n );
-			//Mark node as visited
-			visit.insert(c);
-			//Remove node if no more resolvents present
-			if( n->getNumResolvents() == 0 )
-			{
-				if( n->getAnt1()!=NULL )
-				{
-					assert(getNode(n->getAnt1()->getId())==n->getAnt1());
-					q.push_back( n->getAnt1()->getId() );
-					n->getAnt1()->remRes( c );
-				}
-				if( n->getAnt2()!=NULL )
-				{
-					assert(getNode(n->getAnt2()->getId())==n->getAnt2());
-					q.push_back( n->getAnt2()->getId() );
-					n->getAnt2()->remRes( c );
-				}
-				removeNode( c );
-				removed++;
-			}
-		}
-	}
-	while( !q.empty( ) );*/
+        //Node not visited yet
+        if(visit.find(c) == visit.end())
+        {
+            n = getNode(c);
+            assert( n );
+            //Mark node as visited
+            visit.insert(c);
+            //Remove node if no more resolvents present
+            if( n->getNumResolvents() == 0 )
+            {
+                if( n->getAnt1()!=NULL )
+                {
+                    assert(getNode(n->getAnt1()->getId())==n->getAnt1());
+                    q.push_back( n->getAnt1()->getId() );
+                    n->getAnt1()->remRes( c );
+                }
+                if( n->getAnt2()!=NULL )
+                {
+                    assert(getNode(n->getAnt2()->getId())==n->getAnt2());
+                    q.push_back( n->getAnt2()->getId() );
+                    n->getAnt2()->remRes( c );
+                }
+                removeNode( c );
+                removed++;
+            }
+        }
+    }
+    while( !q.empty( ) );*/
 
-	q.push_back( vid );
-	do
-	{
-		c = q.front( );
-		q.pop_front( );
-		assert( c < getGraphSize() );
-		n = getNode(c);
-		//Remove node if no more resolvents present
-		if( n!= NULL && n->getNumResolvents() == 0 )
-		{
-			if( n->getAnt1()!=NULL )
-			{
-				assert(getNode(n->getAnt1()->getId())==n->getAnt1());
-				q.push_back( n->getAnt1()->getId() );
-				n->getAnt1()->remRes( c );
-			}
-			if( n->getAnt2()!=NULL )
-			{
-				assert(getNode(n->getAnt2()->getId())==n->getAnt2());
-				q.push_back( n->getAnt2()->getId() );
-				n->getAnt2()->remRes( c );
-			}
-			removeNode( c );
-			removed++;
-		}
-	}
-	while( !q.empty( ) );
+    q.push_back( vid );
+    do
+    {
+        c = q.front( );
+        q.pop_front( );
+        assert( c < getGraphSize() );
+        n = getNode(c);
+        //Remove node if no more resolvents present
+        if( n!= NULL && n->getNumResolvents() == 0 )
+        {
+            if( n->getAnt1()!=NULL )
+            {
+                assert(getNode(n->getAnt1()->getId())==n->getAnt1());
+                q.push_back( n->getAnt1()->getId() );
+                n->getAnt1()->remRes( c );
+            }
+            if( n->getAnt2()!=NULL )
+            {
+                assert(getNode(n->getAnt2()->getId())==n->getAnt2());
+                q.push_back( n->getAnt2()->getId() );
+                n->getAnt2()->remRes( c );
+            }
+            removeNode( c );
+            removed++;
+        }
+    }
+    while( !q.empty( ) );
 
-	return removed;
+    return removed;
 }
 
 clauseid_t ProofGraph::dupliNode( RuleContext& ra )
 {
-	//cerr << "Duplicating " << ra.getW() << " in rule " << ra.getType() << endl;
-	clauseid_t v_id = ra.getV();
-	ProofNode* w = getNode( ra.getW() );
-	assert(w);
+    //cerr << "Duplicating " << ra.getW() << " in rule " << ra.getType() << endl;
+    clauseid_t v_id = ra.getV();
+    ProofNode* w = getNode( ra.getW() );
+    assert(w);
     unsigned num_old_res = w->getNumResolvents(); (void)num_old_res;
-	assert( num_old_res > 1);
-	for( set<clauseid_t>::iterator it = w->getResolvents().begin(); it!=w->getResolvents().end(); it++)
-	{
-		ProofNode* res = getNode( (*it) ); assert(res); (void)res;
-		assert(res->getAnt1()==w || res->getAnt2()==w);
-	}
+    assert( num_old_res > 1);
+    for( set<clauseid_t>::iterator it = w->getResolvents().begin(); it!=w->getResolvents().end(); it++)
+    {
+        ProofNode* res = getNode( (*it) ); assert(res); (void)res;
+        assert(res->getAnt1()==w || res->getAnt2()==w);
+    }
 
-	ProofNode* n=new ProofNode(logic_);
-	n->initIData();
+    ProofNode* n=new ProofNode(logic_);
+    n->initIData();
 
-	// Create node and add to graph vector
-	clauseid_t currId=getGraphSize();
-	n->setId(currId);
-	graph.push_back(n);
-	assert(getNode(currId)==n);
-	n->setType(w->getType());
-	n->initClause(w->getClause());
+    // Create node and add to graph vector
+    clauseid_t currId=getGraphSize();
+    n->setId(currId);
+    graph.push_back(n);
+    assert(getNode(currId)==n);
+    n->setType(w->getType());
+    n->initClause(w->getClause());
     n->setInterpPartitionMask(w->getInterpPartitionMask());
 
-	// Set antecedents, pivot
-	n->setAnt1(w->getAnt1());
-	n->setAnt2(w->getAnt2());
-	n->getAnt1()->addRes(currId);
-	n->getAnt2()->addRes(currId);
-	n->setPivot(w->getPivot());
+    // Set antecedents, pivot
+    n->setAnt1(w->getAnt1());
+    n->setAnt2(w->getAnt2());
+    n->getAnt1()->addRes(currId);
+    n->getAnt2()->addRes(currId);
+    n->setPivot(w->getPivot());
 
-	// The new node replaces w in the context
-	// w loses v but keeps everything else
-	ProofNode* v = getNode(v_id);
-	w->remRes(v_id);
-	n->addRes(v_id);
-	if(v->getAnt1() == w) v->setAnt1(n);
-	else if(v->getAnt2() == w) v->setAnt2(n);
-	else opensmt_error_();
-	assert( w->getResolvents().find(v_id) == w->getResolvents().end());
-	assert( w->getNumResolvents() == num_old_res - 1);
-	// Remember to modify context
-	ra.cw = currId;
+    // The new node replaces w in the context
+    // w loses v but keeps everything else
+    ProofNode* v = getNode(v_id);
+    w->remRes(v_id);
+    n->addRes(v_id);
+    if(v->getAnt1() == w) v->setAnt1(n);
+    else if(v->getAnt2() == w) v->setAnt2(n);
+    else opensmt_error_();
+    assert( w->getResolvents().find(v_id) == w->getResolvents().end());
+    assert( w->getNumResolvents() == num_old_res - 1);
+    // Remember to modify context
+    ra.cw = currId;
 
-	duplications++;
-	return currId;
+    duplications++;
+    return currId;
 }
 
 #endif
