@@ -4,7 +4,7 @@ target_sources(symbols
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Symbol.h"
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/SymRef.h"
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/SymStore.h"
-PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/SymStore.C"
+PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/SymStore.cc"
 )
 
 #target_link_libraries(symbols sorts)
