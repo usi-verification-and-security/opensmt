@@ -837,13 +837,15 @@ void SimplifyConstTimes::constSimplify(const SymRef& s, const vec<PTRef>& terms,
         terms_new.push(con);
     else
     {
-        Pterm& p = l.getPterm(plus);
         vec<PTRef> sum_args;
-        for(int i = 0; i < p.size(); ++i)
+        int termSize = l.getPterm(plus).size();
+        for(int i = 0; i < termSize; ++i)
         {
             vec<PTRef> times_args;
             times_args.push(con);
-            times_args.push(p[i]);
+            // MB: we cannot use Pterm& here, because in the line after next new term might be allocated, which might
+            //     trigger reallocation of the table of terms
+            times_args.push(l.getPterm(plus)[i]);
             sum_args.push(l.mkNumTimes(times_args));
         }
         terms_new.push(l.mkNumPlus(sum_args));
