@@ -81,10 +81,10 @@ const Delta Simplex::overBound(LVRef v) const
     exit(1);
 }
 
-bool Simplex::isEquality(LVRef v) const
-{
-    return model->isEquality(v);
-}
+//bool Simplex::isEquality(LVRef v) const
+//{
+//    return model->isEquality(v);
+//}
 
 bool Simplex::isUnbounded(LVRef v) const
 {
@@ -129,7 +129,7 @@ LVRef Simplex::findNonBasicForPivotByHeuristic(LVRef basicVar) {
     // favor more independent variables: those present in less rows
     assert(tableau.isBasic(basicVar));
     LVRef v_found = LVRef_Undef;
-    if (model->read(basicVar) < model->Lb(basicVar)) {
+    if (isModelOutOfLowerBound(basicVar)) {
 
         for (auto const &term : tableau.getRowPoly(basicVar)) {
             auto var = term.var;
@@ -138,8 +138,8 @@ LVRef Simplex::findNonBasicForPivotByHeuristic(LVRef basicVar) {
             auto const &coeff = term.coeff;
             const bool is_coeff_pos = coeff > 0;
 
-            if ((is_coeff_pos && model->read(var) < model->Ub(var)) ||
-                (!is_coeff_pos && model->read(var) > model->Lb(var))) {
+            if ((is_coeff_pos && (!model->hasUBound(var) || model->read(var) < model->Ub(var))) ||
+                (!is_coeff_pos && (!model->hasLBound(var) || model->read(var) > model->Lb(var)))) {
                 if (v_found == LVRef_Undef) {
                     v_found = var;
                 }
@@ -150,7 +150,7 @@ LVRef Simplex::findNonBasicForPivotByHeuristic(LVRef basicVar) {
             }
         }
     }
-    else if (model->read(basicVar) > model->Ub(basicVar)) {
+    else if (isModelOutOfUpperBound(basicVar)) {
 
         for (auto const &term : tableau.getRowPoly(basicVar)) {
             auto var = term.var;
@@ -159,8 +159,8 @@ LVRef Simplex::findNonBasicForPivotByHeuristic(LVRef basicVar) {
             auto const &coeff = term.coeff;
             const bool is_coeff_pos = coeff > 0;
 
-            if ((!is_coeff_pos && model->read(var) < model->Ub(var)) ||
-                (is_coeff_pos && model->read(var) > model->Lb(var))) {
+            if ((!is_coeff_pos && (!model->hasUBound(var) || model->read(var) < model->Ub(var))) ||
+                (is_coeff_pos && (!model->hasLBound(var) || model->read(var) > model->Lb(var)))) {
                 if (v_found == LVRef_Undef) {
                     v_found = var;
                 }
@@ -181,7 +181,7 @@ LVRef Simplex::findNonBasicForPivotByBland(LVRef basicVar) {
     auto max_var_id = boundStore.nVars();
     LVRef y_found = LVRef_Undef;
     // Model doesn't fit the lower bound
-    if (model->read(basicVar) < model->Lb(basicVar)) {
+    if (isModelOutOfLowerBound(basicVar)) {
         // For the Bland rule
         auto curr_var_id_y = max_var_id;
         // look for nonbasic terms to fix the breaking of the bound
@@ -191,14 +191,15 @@ LVRef Simplex::findNonBasicForPivotByBland(LVRef basicVar) {
             assert(tableau.isNonBasic(y));
             auto const &coeff = term.coeff;
             const bool coeff_is_pos = (coeff > 0);
-            if ((coeff_is_pos && model->read(y) < model->Ub(y)) || (!coeff_is_pos && model->read(y) > model->Lb(y))) {
+            if ((coeff_is_pos && (!model->hasUBound(y) || model->read(y) < model->Ub(y)))
+                || (!coeff_is_pos && (!model->hasLBound(y) || model->read(y) > model->Lb(y)))) {
                 // Choose the leftmost nonbasic variable with a negative (reduced) cost
                 y_found = getVarId(y) < curr_var_id_y ? y : y_found;
                 curr_var_id_y = getVarId(y) < curr_var_id_y ? getVarId(y) : curr_var_id_y;
             }
         }
     }
-    else if (model->read(basicVar) > model->Ub(basicVar)) {
+    else if (isModelOutOfUpperBound(basicVar)) {
         auto curr_var_id_y = max_var_id;
         // look for nonbasic terms to fix the unbounding
         for (auto term : tableau.getRowPoly(basicVar)) {
@@ -207,7 +208,8 @@ LVRef Simplex::findNonBasicForPivotByBland(LVRef basicVar) {
             assert(tableau.isNonBasic(y));
             auto const &coeff = term.coeff;
             const bool &coeff_is_pos = (coeff > 0);
-            if ((!coeff_is_pos && model->read(y) < model->Ub(y)) || (coeff_is_pos && model->read(y) > model->Lb(y))) {
+            if ((!coeff_is_pos && (!model->hasUBound(y) || model->read(y) < model->Ub(y)))
+                || (coeff_is_pos && (!model->hasLBound(y) || model->read(y) > model->Lb(y)))) {
                 // Choose the leftmost nonbasic variable with a negative (reduced) cost
                 y_found = getVarId(y) < curr_var_id_y ? y : y_found;
                 curr_var_id_y = getVarId(y) < curr_var_id_y ? getVarId(y) : curr_var_id_y;
@@ -227,7 +229,7 @@ Simplex::Explanation Simplex::assertBoundOnVar(LVRef it, LABoundRef itBound_ref)
 
 
     // Check if simple UNSAT can be given.  The last check checks that this is not actually about asserting equality.
-    if (model->boundUnsatisfied(it, itBound_ref))
+    if (model->boundTriviallyUnsatisfied(it, itBound_ref))
     {
         assert(itBound.getType() == bound_u || itBound.getType() == bound_l);
         LABoundRef br = itBound.getType() == bound_u ? model->readLBoundRef(it) : model->readUBoundRef(it);
@@ -237,7 +239,7 @@ Simplex::Explanation Simplex::assertBoundOnVar(LVRef it, LABoundRef itBound_ref)
     // Here we count the bound as activated
     boundActivated(it);
     // Check if simple SAT can be given
-    if (model->boundSatisfied(it, itBound_ref))
+    if (model->boundTriviallySatisfied(it, itBound_ref))
         return {};
 
     model->pushBound(itBound_ref);
@@ -317,8 +319,8 @@ void Simplex::changeValueBy(LVRef var, const Delta & diff) {
 }
 
 void Simplex::updateValues(const LVRef bv, const LVRef nv){
-    assert(model->read(bv) < model->Lb(bv) || model->read(bv) > model->Ub(bv));
-    auto bvNewVal = (model->read(bv) < model->Lb(bv)) ? model->Lb(bv) : model->Ub(bv);
+    assert(isModelOutOfBounds(bv));
+    auto bvNewVal = (isModelOutOfLowerBound(bv)) ? model->Lb(bv) : model->Ub(bv);
     const auto & coeff = tableau.getCoeff(bv, nv);
     // nvDiff represents how much we need to change nv, so that bv gets to the right value
     auto nvDiff = (bvNewVal - model->read(bv)) / coeff;
@@ -332,7 +334,7 @@ void Simplex::updateValues(const LVRef bv, const LVRef nv){
 Simplex::Explanation Simplex::getConflictingBounds(LVRef x)
 {
     Explanation expl;
-    if (model->read(x) < model->Lb(x)) {
+    if (isModelOutOfLowerBound(x)) {
         // add all bounds for polynomial elements which limit lower bound
         LABoundRef b_f = model->readLBoundRef(x);
         expl.push_back({b_f, 1});
@@ -351,7 +353,7 @@ Simplex::Explanation Simplex::getConflictingBounds(LVRef x)
             }
         }
     }
-    if (model->read(x) > model->Ub(x)) {
+    if (isModelOutOfUpperBound(x)) {
         // add all bounds for polynomial elements which limit upper bound
         LABoundRef br_f = model->readUBoundRef(x);
         expl.push_back({br_f,1});
@@ -409,9 +411,14 @@ bool Simplex::invariantHolds() const
     for (auto var : vars){
         if (isModelOutOfBounds(var)) {
             rval = false;
-            printf("Non-basic (column) LRA var %s has value %s <= %s <= %s\n",
-                   printVar(var), model->Lb(var).printValue(),
-                   model->read(var).printValue(), model->Ub(var).printValue());
+            if (isModelOutOfUpperBound(var)) {
+                printf("Non-basic (column) LRA var %s has value %s <= %s \n",
+                       printVar(var), model->read(var).printValue(), model->Ub(var).printValue());
+            }
+            if (isModelOutOfLowerBound(var)) {
+                printf("Non-basic (column) LRA var %s has value %s <= %s \n",
+                       printVar(var), model->Lb(var).printValue(), model->read(var).printValue());
+            }
             assert(false);
         }
     }
@@ -452,7 +459,8 @@ opensmt::Real Simplex::computeDelta() const {
      In our case, for each variable we need to consider both lower and upper bound (if they exist)
     */
 
-    Delta delta_abst = Delta_PlusInf;
+    Delta delta_abst;
+    bool deltaNotSet = true;
 
     for (unsigned i = 0; i < boundStore.nVars(); ++i)
     {
@@ -464,32 +472,34 @@ opensmt::Real Simplex::computeDelta() const {
 
         auto const & val = model->read(v);
         // Computing delta to satisfy lower bound
-        auto const & lb = model->Lb(v);
-        if (!lb.isMinusInf()) {
+        if (model->hasLBound(v)) {
+            auto const & lb = model->Lb(v);
             assert(lb.R() <= val.R());
             if (lb.R() < val.R() && lb.D() > val.D()) {
                 Real valOfDelta = (val.R() - lb.R()) / (lb.D() - val.D());
                 assert(valOfDelta > 0);
-                if (delta_abst > valOfDelta) {
+                if (deltaNotSet || delta_abst > valOfDelta) {
+                    deltaNotSet = false;
                     delta_abst = valOfDelta;
                 }
             }
         }
         // Computing delta to satisfy upper bound
-        auto const & ub = model->Ub(v);
-        if (!ub.isPlusInf()) {
+        if (model->hasUBound(v)) {
+            auto const & ub = model->Ub(v);
             assert(ub.R() >= val.R());
             if (val.R() < ub.R() && val.D() > ub.D()) {
                 Real valOfDelta = (ub.R() - val.R()) / (val.D() - ub.D());
                 assert(valOfDelta > 0);
-                if (delta_abst > valOfDelta) {
+                if (deltaNotSet || delta_abst > valOfDelta) {
+                    deltaNotSet = false;
                     delta_abst = valOfDelta;
                 }
             }
         }
     }
 
-    if (delta_abst > 1) {
+    if (deltaNotSet || delta_abst > 1) {
         return 1;
     }
     return delta_abst.R()/2;

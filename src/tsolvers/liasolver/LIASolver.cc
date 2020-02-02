@@ -74,7 +74,7 @@ TRes LIASolver::checkIntegersAndSplit() {
             cuts[getVarId(x)].insert(c, true);
 
             // Check if integer splitting is possible for the current variable
-            if (c < simplex.Lb(x) && c + 1 > simplex.Ub(x)) { //then splitting not possible, and we create explanation
+            if (simplex.hasLBound(x) && simplex.hasUBound(x) && c < simplex.Lb(x) && c + 1 > simplex.Ub(x)) { //then splitting not possible, and we create explanation
 
                 explanation.push(getAsgnByBound(simplex.readLBoundRef(x)));
                 explanation.push(getAsgnByBound(simplex.readUBoundRef(x)));

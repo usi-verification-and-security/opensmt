@@ -560,13 +560,11 @@ void LASolver::getSimpleDeductions(LVRef v, LABoundRef br)
 //    printf("The full bound list for %s:\n%s\n", logic.printTerm(lva[v].getPTRef()), boundStore.printBounds(v));
 
     const LABound& bound = boundStore[br];
-    if (bound.getValue().isInf())
-        return;
     if (bound.getType() == bound_l) {
         for (int it = bound.getIdx().x - 1; it >= 0; it = it - 1) {
             LABoundRef bound_prop_ref = boundStore.getBoundByIdx(v, it);
             LABound &bound_prop = boundStore[bound_prop_ref];
-            if (bound_prop.getValue().isInf() || bound_prop.getType() != bound_l)
+            if (bound_prop.getType() != bound_l)
                 continue;
             deduce(bound_prop_ref);
         }
@@ -574,7 +572,7 @@ void LASolver::getSimpleDeductions(LVRef v, LABoundRef br)
         for (int it = bound.getIdx().x + 1; it < boundStore.getBoundListSize(v) - 1; it = it + 1) {
             LABoundRef bound_prop_ref = boundStore.getBoundByIdx(v, it);
             LABound & bound_prop = boundStore[bound_prop_ref];
-            if (bound_prop.getValue().isInf() || bound_prop.getType() != bound_u)
+            if (bound_prop.getType() != bound_u)
                 continue;
             deduce(bound_prop_ref);
         }

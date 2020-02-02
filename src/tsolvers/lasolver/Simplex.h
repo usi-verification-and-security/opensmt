@@ -46,7 +46,7 @@ class Simplex {
     // Out of bound candidates
     // mutable std::unordered_set<LVRef, LVRefHash> candidates;
     mutable std::set<LVRef, LVRefComp> candidates;
-    bool isEquality(LVRef) const;
+//    bool isEquality(LVRef) const;
     const Delta overBound(LVRef) const;
     // Model & bounds
 
@@ -84,8 +84,8 @@ public:
     Explanation assertBoundOnVar(LVRef it, LABoundRef itBound_ref);
     bool isProcessedByTableau  (LVRef var) const;
     inline bool isModelOutOfBounds    (LVRef v) const { return isModelOutOfUpperBound(v) || isModelOutOfLowerBound(v); }
-    inline bool isModelOutOfUpperBound(LVRef v) const { return ( model->read(v) > model->Ub(v) ); }
-    inline bool isModelOutOfLowerBound(LVRef v) const { return ( model->read(v) < model->Lb(v) ); }
+    inline bool isModelOutOfUpperBound(LVRef v) const { return ( model->hasUBound(v) && model->read(v) > model->Ub(v) ); }
+    inline bool isModelOutOfLowerBound(LVRef v) const { return ( model->hasLBound(v) && model->read(v) < model->Lb(v) ); }
     void newNonbasicVar(LVRef v) { newVar(v); tableau.newNonbasicVar(v); }
     void nonbasicVar(LVRef v)    { newVar(v); tableau.nonbasicVar(v); }
     void newRow(LVRef x, std::unique_ptr<Polynomial> poly) { newVar(x); tableau.newRow(x, std::move(poly)); }
@@ -100,6 +100,8 @@ public:
     const LABoundRef readUBoundRef(const LVRef &v) const { return model->readUBoundRef(v); }
     const Delta& Lb(LVRef v) const { return model->Lb(v); }
     const Delta& Ub(LVRef v) const { return model->Ub(v); }
+    bool hasLBound(LVRef v) const {return model->hasLBound(v); }
+    bool hasUBound(LVRef v) const {return model->hasUBound(v); }
 
     // Keeping track of activated bounds
 private:

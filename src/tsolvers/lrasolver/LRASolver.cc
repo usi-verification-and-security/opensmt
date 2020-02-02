@@ -43,8 +43,6 @@ static SolverDescr descr_lra_solver("LRA Solver", "Solver for Quantifier Free Li
 LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
     : LASolver(descr_lra_solver, c, l, d)
     , logic(l)
-    , delta(Delta::ZERO)
-
 {
     status = INIT;
 }
@@ -53,7 +51,6 @@ LRASolver::LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d)
 void LRASolver::clearSolver()
 {
     LASolver::clearSolver();
-    delta = Delta::ZERO;
 }
 
 
