@@ -86,6 +86,12 @@ public:
     inline bool isModelOutOfBounds    (LVRef v) const { return isModelOutOfUpperBound(v) || isModelOutOfLowerBound(v); }
     inline bool isModelOutOfUpperBound(LVRef v) const { return ( model->hasUBound(v) && model->read(v) > model->Ub(v) ); }
     inline bool isModelOutOfLowerBound(LVRef v) const { return ( model->hasLBound(v) && model->read(v) < model->Lb(v) ); }
+
+    // No upper bound count as +infinity
+    inline bool isModelStrictlyUnderUpperBound(LVRef v) const { return ( !model->hasUBound(v) || model->read(v) < model->Ub(v) ); }
+    // No lower bound count as -infinity
+    inline bool isModelStrictlyOverLowerBound(LVRef v) const { return ( !model->hasLBound(v) || model->read(v) > model->Lb(v) ); }
+
     void newNonbasicVar(LVRef v) { newVar(v); tableau.newNonbasicVar(v); }
     void nonbasicVar(LVRef v)    { newVar(v); tableau.nonbasicVar(v); }
     void newRow(LVRef x, std::unique_ptr<Polynomial> poly) { newVar(x); tableau.newRow(x, std::move(poly)); }

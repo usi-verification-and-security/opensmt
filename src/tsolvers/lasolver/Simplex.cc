@@ -138,8 +138,8 @@ LVRef Simplex::findNonBasicForPivotByHeuristic(LVRef basicVar) {
             auto const &coeff = term.coeff;
             const bool is_coeff_pos = coeff > 0;
 
-            if ((is_coeff_pos && (!model->hasUBound(var) || model->read(var) < model->Ub(var))) ||
-                (!is_coeff_pos && (!model->hasLBound(var) || model->read(var) > model->Lb(var)))) {
+            if ((is_coeff_pos && isModelStrictlyUnderUpperBound(var)) ||
+                (!is_coeff_pos && isModelStrictlyOverLowerBound(var))) {
                 if (v_found == LVRef_Undef) {
                     v_found = var;
                 }
@@ -159,8 +159,8 @@ LVRef Simplex::findNonBasicForPivotByHeuristic(LVRef basicVar) {
             auto const &coeff = term.coeff;
             const bool is_coeff_pos = coeff > 0;
 
-            if ((!is_coeff_pos && (!model->hasUBound(var) || model->read(var) < model->Ub(var))) ||
-                (is_coeff_pos && (!model->hasLBound(var) || model->read(var) > model->Lb(var)))) {
+            if ((!is_coeff_pos && isModelStrictlyUnderUpperBound(var)) ||
+                (is_coeff_pos && isModelStrictlyOverLowerBound(var))) {
                 if (v_found == LVRef_Undef) {
                     v_found = var;
                 }
@@ -191,8 +191,8 @@ LVRef Simplex::findNonBasicForPivotByBland(LVRef basicVar) {
             assert(tableau.isNonBasic(y));
             auto const &coeff = term.coeff;
             const bool coeff_is_pos = (coeff > 0);
-            if ((coeff_is_pos && (!model->hasUBound(y) || model->read(y) < model->Ub(y)))
-                || (!coeff_is_pos && (!model->hasLBound(y) || model->read(y) > model->Lb(y)))) {
+            if ((coeff_is_pos && isModelStrictlyUnderUpperBound(y))
+                || (!coeff_is_pos && isModelStrictlyOverLowerBound(y))) {
                 // Choose the leftmost nonbasic variable with a negative (reduced) cost
                 y_found = getVarId(y) < curr_var_id_y ? y : y_found;
                 curr_var_id_y = getVarId(y) < curr_var_id_y ? getVarId(y) : curr_var_id_y;
@@ -208,8 +208,8 @@ LVRef Simplex::findNonBasicForPivotByBland(LVRef basicVar) {
             assert(tableau.isNonBasic(y));
             auto const &coeff = term.coeff;
             const bool &coeff_is_pos = (coeff > 0);
-            if ((!coeff_is_pos && (!model->hasUBound(y) || model->read(y) < model->Ub(y)))
-                || (coeff_is_pos && (!model->hasLBound(y) || model->read(y) > model->Lb(y)))) {
+            if ((!coeff_is_pos && isModelStrictlyUnderUpperBound(y))
+                || (coeff_is_pos && isModelStrictlyOverLowerBound(y))) {
                 // Choose the leftmost nonbasic variable with a negative (reduced) cost
                 y_found = getVarId(y) < curr_var_id_y ? y : y_found;
                 curr_var_id_y = getVarId(y) < curr_var_id_y ? getVarId(y) : curr_var_id_y;
