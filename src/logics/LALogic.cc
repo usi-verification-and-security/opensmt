@@ -749,7 +749,6 @@ PTRef LALogic::mkConst(SRef s, const char* name)
 void SimplifyConst::simplify(const SymRef& s, const vec<PTRef>& args, SymRef& s_new, vec<PTRef>& args_new, char** msg)
 {
     vec<int> const_idx;
-    vec<PTRef> args_new_2;
     for (int i = 0; i < args.size(); i++) {
         assert(!l.isNumNeg(args[i])); // MB: No minus nodes, the check can be simplified
         if (l.isConstant(args[i]))
@@ -769,18 +768,23 @@ void SimplifyConst::simplify(const SymRef& s, const vec<PTRef>& args, SymRef& s_
                 printf("%s\n", *msg);
                 assert(false);
             }
-            int i, j, k;
-            for (i = j = k = 0; i < args.size() && k < const_terms.size(); i++) {
-                if (i != const_idx[k]) args_new_2.push(args[i]);
-                else k++;
+            vec<PTRef> args_new_2;
+            args_new_2.capacity((args.size() - const_terms.size()) + 1);
+            int i, k;
+            for (i = k = 0; k < const_terms.size(); i++) {
+                if (i != const_idx[k]) { args_new_2.push(args[i]); }
+                else { k++; }
             }
             // Copy also the rest
-            for (; i < args.size(); i++)
+            for (; i < args.size(); i++) {
                 args_new_2.push(args[i]);
+            }
             args_new_2.push(tr);
-        } else
-            args.copyTo(args_new_2);
-        constSimplify(s, args_new_2, s_new, args_new);
+            constSimplify(s, args_new_2, s_new, args_new);
+        } else {
+            constSimplify(s, args, s_new, args_new);
+        }
+
     }
 //    // A single argument for the operator, and the operator is identity
 //    // in that case
