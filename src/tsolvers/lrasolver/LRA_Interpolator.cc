@@ -215,7 +215,7 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
         return pivotColsBitMap;
     }
 
-#ifndef NDEBUG
+#ifndef NDEBUG // ======== DEBUG METHODS ================
     bool isReducedRowEchelonForm(std::vector<std::vector<Real>> const & matrix) {
         auto pivotColsBitMap = getPivotColsBitMap(matrix);
         auto cols = pivotColsBitMap.size();
@@ -269,7 +269,21 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
         }
         std::cout << '\n';
     }
-#endif // NDEBUG
+
+    bool isDecomposition(Basis const & basis, Coordinates const & coordinates, std::vector<Real> const & original) {
+        assert(coordinates.size() == basis.size());
+        assert(std::all_of(basis.begin(), basis.end(),
+                           [&original](std::vector<Real> const & baseVec) { return baseVec.size() == original.size(); }));
+        for (std::size_t i = 0; i < original.size(); ++i) {
+            Real sum = 0;
+            for (std::size_t j = 0; j < basis.size(); ++j) {
+                sum += basis[j][i] * coordinates[j];
+            }
+            if (sum != original[i]) { return false; }
+        }
+        return true;
+    }
+#endif // NDEBUG // ======== DEBUG METHODS ================
 
     /** Given matrix in RREF computes and returns a basis of its null space
      *
@@ -365,20 +379,6 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
 //        }
 //        return true;
 //    }
-
-    bool isDecomposition(Basis const & basis, Coordinates const & coordinates, std::vector<Real> const& original) {
-        assert(coordinates.size() == basis.size());
-        assert(std::all_of(basis.begin(), basis.end(),
-                [&original](std::vector<Real> const& baseVec) { return baseVec.size() == original.size(); }));
-        for (std::size_t i = 0; i < original.size(); ++i) {
-            Real sum = 0;
-            for(std::size_t j = 0; j < basis.size(); ++j) {
-                sum += basis[j][i] * coordinates[j];
-            }
-            if (sum != original[i]) { return false; }
-        }
-        return true;
-    }
 
 
     PTRef sumInequalities(std::vector<ItpHelper> const & ineqs, std::vector<Real> const & coeffs, LALogic & logic) {
