@@ -48,6 +48,9 @@ struct LinearTerm {
     Real coeff;
 };
 
+using Basis = std::vector<std::vector<Real>>;
+using Coordinates = std::vector<Real>;
+
 std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bool(PTRef)> isLocal){
     std::vector<LinearTerm> res;
     for (auto factor : helper.expr) {
@@ -303,61 +306,76 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
         return basis;
     }
 
-    bool containsNegative(std::vector<Real> const & vec){
-        return std::any_of(vec.begin(), vec.end(), [](const Real & val) { return val < 0; });
-    }
+//    MB: the methods commented out represent the old, incomplete approach
+//    bool containsNegative(std::vector<Real> const & vec){
+//        return std::any_of(vec.begin(), vec.end(), [](const Real & val) { return val < 0; });
+//    }
+//
+//
+//    /*
+//     * Tries to replace a vector in basis with a negative coordinate with another vector having less negative coordinates.
+//     */
+//    bool tryFixVec(std::size_t idx, std::vector<std::vector<Real>> & basis, std::vector<Real> & alphas){
+//        assert(std::all_of(alphas.begin(), alphas.end(), [](const Real & val) {return val > 0;}));
+//        auto & vec = basis[idx];
+//        auto neg = std::find_if(vec.begin(), vec.end(), [](const Real& val) {return val < 0;});
+//        assert(neg != vec.end());
+//        auto position = neg - vec.begin();
+//        auto fixer_it = basis.begin();
+//        Real diff{0};
+//        for( ; fixer_it != basis.end(); ++fixer_it) {
+//            auto const & fixCandidate = *fixer_it;
+//            if (fixCandidate[position] > 0 && !containsNegative(fixCandidate)) {
+//                // OK candidate, check alphas
+//                diff = vec[position] / fixCandidate[position];
+//                auto fixCandidateIndex = fixer_it - basis.begin();
+//                if (alphas[fixCandidateIndex] + diff > 0) {
+//                    // OK, the alphas will remain positive
+//                    break;
+//                }
+//            }
+//        }
+//        if(fixer_it == basis.end()) {return false;}
+//        auto const & fixer = *fixer_it;
+//        alphas[fixer_it - basis.begin()] += diff;
+//        assert(alphas[fixer_it - basis.begin()] > 0);
+//        diff.negate();
+//        addToWithCoeff(vec, fixer, diff);
+//        assert(vec[position].isZero());
+//        return true;
+//    }
+//
+//    /*
+//     * Given a basis of vector space where some vector contains negative coordinate, it tries to find a different basis
+//     * for the space where all coordinates of all vectors of the basis would be non-negative
+//     */
+//    bool tryFixBase(std::vector<std::vector<Real>> & basis, std::vector<Real> alphas) {
+//        auto first_unchecked_it = basis.begin();
+//        auto vec_with_neg_it = first_unchecked_it;
+//        while(vec_with_neg_it != basis.end()){
+//            vec_with_neg_it = std::find_if(first_unchecked_it, basis.end(), containsNegative);
+//            if(vec_with_neg_it == basis.end()){
+//                return true;
+//            }
+//            bool wasFixed = tryFixVec((vec_with_neg_it - basis.begin()), basis, alphas);
+//            if(!wasFixed){
+//                return false;
+//            }
+//            first_unchecked_it = vec_with_neg_it;
+//        }
+//        return true;
+//    }
 
-    /*
-     * Tries to replace a vector in basis with a negative coordinate with another vector having less negative coordinates.
-     */
-    bool tryFixVec(std::size_t idx, std::vector<std::vector<Real>> & basis, std::vector<Real> & alphas){
-        assert(std::all_of(alphas.begin(), alphas.end(), [](const Real & val) {return val > 0;}));
-        auto & vec = basis[idx];
-        auto neg = std::find_if(vec.begin(), vec.end(), [](const Real& val) {return val < 0;});
-        assert(neg != vec.end());
-        auto position = neg - vec.begin();
-        auto fixer_it = basis.begin();
-        Real diff{0};
-        for( ; fixer_it != basis.end(); ++fixer_it) {
-            auto const & fixCandidate = *fixer_it;
-            if (fixCandidate[position] > 0 && !containsNegative(fixCandidate)) {
-                // OK candidate, check alphas
-                diff = vec[position] / fixCandidate[position];
-                auto fixCandidateIndex = fixer_it - basis.begin();
-                if (alphas[fixCandidateIndex] + diff > 0) {
-                    // OK, the alphas will remain positive
-                    break;
-                }
+    bool isDecomposition(Basis const & basis, Coordinates const & coordinates, std::vector<Real> const& original) {
+        assert(coordinates.size() == basis.size());
+        assert(std::all_of(basis.begin(), basis.end(),
+                [&original](std::vector<Real> const& baseVec) { return baseVec.size() == original.size(); }));
+        for (std::size_t i = 0; i < original.size(); ++i) {
+            Real sum = 0;
+            for(std::size_t j = 0; j < basis.size(); ++j) {
+                sum += basis[j][i] * coordinates[j];
             }
-        }
-        if(fixer_it == basis.end()) {return false;}
-        auto const & fixer = *fixer_it;
-        alphas[fixer_it - basis.begin()] += diff;
-        assert(alphas[fixer_it - basis.begin()] > 0);
-        diff.negate();
-        addToWithCoeff(vec, fixer, diff);
-        assert(vec[position].isZero());
-        return true;
-    }
-
-    /*
-     * Given a basis of vector space where some vector contains negative coordinate, it tries to find a different basis
-     * for the space where all coordinates of all vectors of the basis would be non-negative
-     */
-    bool tryFixBase(std::vector<std::vector<Real>> & basis, std::vector<Real> alphas) {
-        // TODO: make this more efficient if necessary
-        auto first_unchecked_it = basis.begin();
-        auto vec_with_neg_it = first_unchecked_it;
-        while(vec_with_neg_it != basis.end()){
-            vec_with_neg_it = std::find_if(first_unchecked_it, basis.end(), containsNegative);
-            if(vec_with_neg_it == basis.end()){
-                return true;
-            }
-            bool wasFixed = tryFixVec((vec_with_neg_it - basis.begin()), basis, alphas);
-            if(!wasFixed){
-                return false;
-            }
-            first_unchecked_it = vec_with_neg_it;
+            if (sum != original[i]) { return false; }
         }
         return true;
     }
@@ -410,22 +428,47 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
         return ret;
     }
 
-    std::vector<Real> getAlphas(std::vector<Real> const & all, std::vector<bool> const & isPivot) {
-        assert(all.size() == isPivot.size());
+    // Gets coordinates (alphas) with respect to current basis. Relies on the fact that
+    // explanations_with_locals and columns of matrix are in 1-1 correspondence (including ordering)
+    // Moreover, it relies on how the basis is computed, namely that for a given free (non-pivot) column
+    // and its corresponding position, there is exactly one vector in basis with 1 in that position and all
+    // other vectors in basis have 0 in that position. Consequently, the coordinate for that vector is the element
+    // in Farkas coefficients at that position
+    template<typename T>
+    std::vector<Real> getAlphas(std::vector<Real> const & allFarkasCoeffs, T & isPivot) {
         std::vector<Real> ret;
-        for (std::size_t i = 0; i < all.size(); ++i) {
-            if (!isPivot[i]) {ret.push_back(all[i]);}
+        for (std::size_t i = 0; i < allFarkasCoeffs.size(); ++i) {
+            if (!isPivot(i)) {ret.push_back(allFarkasCoeffs[i]);}
         }
         return ret;
     }
-}
 
-namespace {
+    void ensureNonNegativeVec(std::vector<Real> & baseVec, std::size_t baseVecIndex, Coordinates & coordinates,
+                              std::vector<Real> const & vecToDecompose) {
+        for (std::size_t i = 0; i < baseVec.size(); ++i) {
+            if (baseVec[i] < 0) {
+                auto coeff = (-baseVec[i] / vecToDecompose[i]);
+                // baseVec += coeff * vecToDecompose;
+                for (std::size_t j = 0; j < baseVec.size(); ++j) { baseVec[j] += coeff * vecToDecompose[j]; }
+                // update coordinates
+                Real divisor = Real{1} + (coeff * coordinates[baseVecIndex]);
+                for (Real& coordinate : coordinates) { coordinate /= divisor; }
+            }
+        }
+    }
+
+    void ensureNonNegativeDecomposition(Basis& basis, Coordinates & coordinates, std::vector<Real> const & vecToDecompose) {
+        for (std::size_t i = 0; i < basis.size(); ++i) {
+            ensureNonNegativeVec(basis[i], i, coordinates, vecToDecompose);
+        }
+    }
+
     struct StatsHelper{
         bool standAloneIneq = false;
         bool nonTrivialBasis = false;
         bool moreThanOneInequality = false;
     };
+
 }
 
 PTRef LRA_Interpolator::getInterpolant(icolor_t color) {
@@ -535,21 +578,21 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color) {
             trace(print_basis(nullBasis);)
             assert(explanations_with_locals.size() == matrix[0].size());
             auto farkasCoeffs = getFarkasCoeffs(explanations_with_locals);
-            auto alphas = getAlphas(farkasCoeffs, getPivotColsBitMap(matrix));
+            const auto pivotColIndexBitMap = getPivotColsBitMap(matrix);
+            assert(farkasCoeffs.size() == pivotColIndexBitMap.size());
+            auto isPivotColIndex = [&pivotColIndexBitMap](std::size_t index) { return pivotColIndexBitMap[index]; };
+            auto alphas = getAlphas(farkasCoeffs, isPivotColIndex);
             assert(std::all_of(alphas.begin(), alphas.end(), [](const Real& v) {return v > 0;}));
             assert(alphas.size() == nullBasis.size());
-            bool isGood = tryFixBase(nullBasis, alphas);
-            if(!isGood){
-                // default behaviour, sum up with original coefficient
-                interpolant_inequalities.push_back(sumInequalities(explanations_with_locals, logic));
-            }
-            else{
-                assert(check_basis(nullBasis));
-                statsHelper.nonTrivialBasis = true;
-                // foreach vector in the basis, cycle over the inequalities and sum it all up, with corresponding coefficient
-                for (const auto & base : nullBasis) {
-                    interpolant_inequalities.push_back(sumInequalities(explanations_with_locals, base, logic));
-                }
+            assert(isDecomposition(nullBasis, alphas, farkasCoeffs));
+            ensureNonNegativeDecomposition(nullBasis, alphas, farkasCoeffs);
+            assert(std::all_of(alphas.begin(), alphas.end(), [](const Real& v) {return v > 0;}));
+            assert(check_basis(nullBasis));
+            assert(isDecomposition(nullBasis, alphas, farkasCoeffs));
+            statsHelper.nonTrivialBasis = true;
+            // foreach vector in the basis, cycle over the inequalities and sum it all up, with corresponding coefficient
+            for (const auto & base : nullBasis) {
+                interpolant_inequalities.push_back(sumInequalities(explanations_with_locals, base, logic));
             }
         }
     }
