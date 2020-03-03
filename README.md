@@ -29,6 +29,17 @@ command
 $ mkdir build; cd build; cmake ..; make
 ```
 
+By default, OpenSMT is compiled without interpolation capabilities.  To enable interpolation, the cmake option `PRODUCE_PROOF` must be enabled. This can be done in the cmake configuration file
+`CMakeCache.txt` produced by `cmake` in your build directory or when configuring cmake from the command line:
+```
+$ cmake -DPRODUCE_PROOF=ON ..
+```
+
+With this option OpenSMT supports a range of interpolation options for propositional
+logic, linear real arithmetic, and uninterpreted functions with
+equality.
+
+### Changing build type
 The default build type is RELEASE. Different build type can be configured using cmake variable CMAKE_BUILD_TYPE. For example, to create a debug build use
 ```
 $ cmake -DCMAKE_BUILD_TYPE=Debug ..
@@ -42,16 +53,6 @@ tests.  These are available through
 
 ```
 $ ctest
-```
-
-## Using OpenSMT2 interpolation
-
-OpenSMT supports a range of interpolation options for propositional
-logic, linear real arithmetic, and uninterpreted functions with
-equality.  To enable interpolation code the option `PRODUCE_PROOF` must be enabled. This can be done in the cmake configuration file
-`CMakeCache.txt` produced by `cmake` in your build directory or when configuring cmake from the command line:
-```
-$ cmake -DPRODUCE_PROOF=ON ..
 ```
 
 ## Installing OpenSMT2
