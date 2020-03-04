@@ -1,20 +1,20 @@
 #include "Graph.hpp"
 
-void Graph::AddVertex(PTRef x) {
+void Graph::addVertex(PTRef x) {
     vertices[x] = Vertex();
 }
 
 // append a new edge constraint to graph
-bool Graph::AddEdge(Edge e) {
+bool Graph::addEdge(const Edge& e) {
     if (edges.count(e) && edges.at(e) == e_type::consequence)
         return true;
 
-    edges[a] = e_type::assigned;
+    edges[e] = e_type::assigned;
 
     // horribly inefficient. used as proof of concept.
     // will be replaced later
-    std::map<PTRef, int> phi;
-    std::map<PTRef, int> updated;
+    std::map<PTRef, opensmt::Number> phi;
+    std::map<PTRef, opensmt::Number> updated;
 
     //initial setup;
     for (const auto & i : vertices)
@@ -22,7 +22,7 @@ bool Graph::AddEdge(Edge e) {
     phi[e.to] = vertices[e.from].value + e.cost - vertices[e.to].value;
 
     // main loop of algorithm
-    for (PTRef s = GetArgMin(phi); phi[s] < 0 && phi[e.from] == 0; s = GetArgMin(phi)) {
+    for (PTRef s = getArgMin(phi); phi[s] < 0 && phi[e.from] == 0; s = getArgMin(phi)) {
         // update value of s by phi
         updated[s] = vertices[s].value + phi[s];
         phi[s] = 0;
@@ -45,7 +45,7 @@ bool Graph::AddEdge(Edge e) {
 
 // finds argmin in linear time
 // TODO: replace with faster data structure
-PTRef Graph::GetArgMin(std::map<PTRef, int> func) {
+PTRef Graph::getArgMin(std::map<PTRef, opensmt::Number> func) {
     PTRef min = func.begin()->first;
     for (const auto & x : func)
         if (x.first < min) min = x.first;

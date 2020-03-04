@@ -6,6 +6,7 @@
 #include <map>
 #include <PtStructs.h>
 #include <vector>
+#include <Number.h>
 
 // describes the type of known edge
 enum class e_type : char {
@@ -17,21 +18,21 @@ enum class e_type : char {
 
 struct Edge {
     PTRef from, to;
-    int cost;
+    opensmt::Number cost;
 };
 
 struct Vertex {
-    int value;
+    opensmt::Number value;
     std::vector<Edge> neighbours; // all edges coming from this vertex
 };
 
 class Graph {
     std::map<PTRef, Vertex> vertices;
     std::map<Edge, e_type> edges;
-    PTRef GetArgMin(std::map<PTRef, int> func);
+    PTRef getArgMin(std::map<PTRef, opensmt::Number> func);
 public:
-    void AddVertex(PTRef x);
-    bool AddEdge(Edge e);
+    void addVertex(PTRef x);
+    bool addEdge(const Edge& e);
 };
 
 
