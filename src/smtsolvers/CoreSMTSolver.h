@@ -341,11 +341,6 @@ public:
     void    checkGarbage(double gf);
     void    checkGarbage();
 
-
-#ifdef PRODUCE_PROOF
-    set< int >               axioms_ids;     // Set of ids for lemmas on demand
-#endif
-
     // External support incremental and backtrackable APIs
     // MB: This is used (and needed) by BitBlaster; can be removed if BitBlaster is re-worked
     void        pushBacktrackPoint ( );
@@ -508,8 +503,6 @@ protected:
 #endif
     vec<int>            trail_lim;        // Separator indices for different decision levels in 'trail'.
 #ifdef PRODUCE_PROOF
-    vec<int>            trail_pos;        // 'trail_pos[var]' is the variable's position in 'trail[]'. This supersedes 'level[]' in some sense, and 'level[]' will probably be removed in future releases.
-    vec<Lit>            analyze_proof;
     vec< CRef >         units;
 #endif
     vec<VarData>        vardata;          // Stores reason and level for each variable.

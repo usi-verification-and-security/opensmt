@@ -281,7 +281,6 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
     trail    .capacity(v+1);
     setDecisionVar(v, dvar);
 #ifdef PRODUCE_PROOF
-    trail_pos.push(-1);
     units    .push( CRef_Undef );
 #endif
 
@@ -1071,9 +1070,6 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
         uint32_t abstract_level = 0;
         for (i = 1; i < out_learnt.size(); i++)
             abstract_level |= abstractLevel(var(out_learnt[i])); // (maintain an abstraction of levels involved in conflict)
-#ifdef PRODUCE_PROOF
-        analyze_proof.clear( );
-#endif
 
         for (i = j = 1; i < out_learnt.size(); i++)
             if (reason(var(out_learnt[i])) == CRef_Undef || !litRedundant(out_learnt[i], abstract_level))
@@ -1133,29 +1129,6 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
         cerr << "; Found a unit literal " << (sign(out_learnt[0]) ? "not " : "") << ulit << endl;
         free(ulit);
     }
-#endif
-
-#ifdef PRODUCE_PROOF
-    // Finalize proof logging with conflict clause minimization steps:
-    //
-    sort( analyze_proof, lastToFirst_lt(trail_pos) );
-    for ( int k = 0 ; k < analyze_proof.size() ; k++ )
-    {
-        Var v = var( analyze_proof[ k ] );
-        assert( level(v) > 0 );
-        // Skip decision variables
-        assert(reason(v) != CRef_Undef);
-        CRef c = reason( v );
-        proof.resolve(c, v);
-        // Look for level 0 unit clauses
-        Clause& cla = ca[ c ];
-        for (unsigned k = 1; k < cla.size(); k++)
-        {
-            Var vv = var(cla[k]);
-            if (level( vv ) == 0) proof.resolve( units[ vv ], vv );
-        }
-    }
-    // Chain will be ended outside analyze
 #endif
 
     for (int j = 0; j < analyze_toclear.size(); j++) seen[var(analyze_toclear[j])] = 0;    // ('seen[]' is now cleared)
@@ -1241,27 +1214,6 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
                     perm_learnt_t_lemmata ++;
             }
             vardata[v].reason = ct;
-#ifdef PRODUCE_PROOF
-            /* NOTE : THEORY INTERPOLATION NOT YET SUPPORTED
-            proof.addRoot( ct, CLA_THEORY );
-            if ( config.isIncremental() )
-            {
-                undo_stack_oper.push_back( NEWPROOF );
-                undo_stack_elem.push_back( (void *)ct );
-            }
-            if ( config.produce_inter() > 0 )
-            {
-                Enode * interpolants = theory_handler->getInterpolants( );
-                assert( interpolants );
-                clause_to_in[ ct ] = interpolants;
-                if ( config.isIncremental() )
-                {
-                    undo_stack_oper.push_back( NEWINTER );
-                    undo_stack_elem.push_back( NULL );
-                }
-            }
-            */
-#endif
         }
         else
         {
@@ -1303,10 +1255,6 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
             }
         }
     }
-
-#ifdef PRODUCE_PROOF
-    analyze_proof.push( p );
-#endif
 
     return true;
 }
@@ -1388,10 +1336,6 @@ void CoreSMTSolver::uncheckedEnqueue(Lit p, CRef from)
 #endif
 
     trail.push(p);
-
-#ifdef PRODUCE_PROOF
-    trail_pos[var(p)] = trail.size();
-#endif
 }
 
 
