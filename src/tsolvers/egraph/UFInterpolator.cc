@@ -23,7 +23,6 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
-#ifdef PRODUCE_PROOF
 
 #include <sys/wait.h>
 #include "UFInterpolator.h"
@@ -2846,4 +2845,3 @@ bool CGraph::checkColors( )
 
     return true;
 }
-#endif

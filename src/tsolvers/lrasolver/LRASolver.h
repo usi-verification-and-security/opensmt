@@ -57,7 +57,6 @@ public:
     lbool getPolaritySuggestion(PTRef) const;
 
 
-#ifdef PRODUCE_PROOF
     PTRef getInterpolant( const ipartitions_t &, map<PTRef, icolor_t>* );
     PTRef getExperimentalInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *labels);
     bool usingStrong() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_strong; }
@@ -82,7 +81,6 @@ public:
     };
 
     InterpolStatistics interpolStats;
-#endif
 
 protected:
 

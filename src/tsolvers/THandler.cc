@@ -191,31 +191,12 @@ void THandler::getConflict (
     }
 }
 
-#ifdef PRODUCE_PROOF
 
 PTRef
 THandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
 {
     return getSolverHandler().getInterpolant(mask, labels);
 }
-
-//PTRef THandler::getInterpolants(const ipartitions_t& p)
-//{
-//    return getSolverHandler().getInterpolants(p);
-    /*
-    vec<PTRef> itps;
-    for(int i = 0; i < tsolvers.size(); ++i)
-        if(tsolvers[i] != NULL)
-            itps.push(tsolvers[i]->getInterpolants(p));
-
-  // Check interpolants correctness
-  //if ( config.proof_certify_inter > 1 )
-    //verifyInterpolantWithExternalTool( itps[0], p );
-
-  return itps[0];
-  */
-//}
-#endif
 
 //
 // It is in principle possible that the egraph contains deduceable literals

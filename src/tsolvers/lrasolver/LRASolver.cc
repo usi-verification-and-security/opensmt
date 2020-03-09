@@ -34,9 +34,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "LA.h"
 
-#ifdef PRODUCE_PROOF
 #include "LRA_Interpolator.h"
-#endif
 
 static SolverDescr descr_lra_solver("LRA Solver", "Solver for Quantifier Free Linear Real Arithmetics");
 
@@ -95,7 +93,6 @@ lbool LRASolver::getPolaritySuggestion(PTRef ptref) const {
 }
 
 
-#ifdef PRODUCE_PROOF
 
 
 enum class ItpAlg {
@@ -338,6 +335,3 @@ PTRef LRASolver::getExperimentalInterpolant(const ipartitions_t &mask, map<PTRef
     }
     return res;
 }
-
-#endif // PRODUCE_PROOF
-

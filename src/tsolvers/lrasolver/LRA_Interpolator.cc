@@ -2,7 +2,6 @@
 // Created by Martin Blicha on 22.05.18.
 //
 
-#ifdef PRODUCE_PROOF
 
 //#ifndef NDEBUG
 //#define TRACE
@@ -591,5 +590,3 @@ bool LRA_Interpolator::isALocal(PTRef var) const {
 bool LRA_Interpolator::isBLocal(PTRef var) const {
     return isBstrict(logic.getIPartitions(var), mask);
 }
-
-#endif // PRODUCE_PROOF

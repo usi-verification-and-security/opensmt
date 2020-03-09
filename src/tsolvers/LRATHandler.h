@@ -45,9 +45,7 @@ class LRATHandler : public TSolverHandler
     virtual const Logic& getLogic() const override;
     virtual lbool getPolaritySuggestion(PTRef) const override;
 
-#ifdef PRODUCE_PROOF
     virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels) override;
-#endif
 };
 
 #endif

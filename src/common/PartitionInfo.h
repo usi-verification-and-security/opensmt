@@ -5,8 +5,6 @@
 #ifndef OPENSMT_PARTITIONINFO_H
 #define OPENSMT_PARTITIONINFO_H
 
-#ifdef PRODUCE_PROOF
-
 #include <unordered_map>
 
 #include "PTRef.h"
@@ -27,7 +25,5 @@ public:
     void setIPartitions(SymRef _s, const ipartitions_t& _p);
     void addIPartitions(SymRef _s, const ipartitions_t& _p);
 };
-
-#endif //PRODUCE_PROOF
 
 #endif //OPENSMT_PARTITIONINFO_H

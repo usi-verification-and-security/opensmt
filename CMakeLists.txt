@@ -63,6 +63,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/smtsolvers
     ${CMAKE_SOURCE_DIR}/parsers/smt2new
     ${CMAKE_SOURCE_DIR}/simplifiers
+    ${CMAKE_SOURCE_DIR}/proof
     ${GMP_INCLUDE_DIR}
 )
 
@@ -97,7 +98,6 @@ endif(VERBOSE_FOPS)
 
 if (PRODUCE_PROOF)
     add_definitions(-DPRODUCE_PROOF -DFULL_LABELING)
-    include_directories(${CMAKE_SOURCE_DIR}/proof)
 endif ()
 
 if (LADEBUG)

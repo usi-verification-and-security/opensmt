@@ -17,7 +17,6 @@ You should have received a copy of the GNU General Public License
 along with Periplo. If not, see <http://www.gnu.org/licenses/>.
  *********************************************************************/
 
-#ifdef PRODUCE_PROOF
 #include "PG.h"
 #include "CoreSMTSolver.h"
 
@@ -211,5 +210,4 @@ void ProofGraph::printRuleApplicationStatus()
 	cerr << "# swap_ties:    " << swap_ties << endl;
 }
 
-#endif
 

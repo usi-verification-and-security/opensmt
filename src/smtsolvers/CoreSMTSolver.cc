@@ -48,16 +48,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "Sort.h"
 #include <cmath>
 
-#ifdef PRODUCE_PROOF
-#include <lrasolver/LRA_Interpolator.h>
 #include "Proof.h"
 
 #ifdef PRINT_DECOMPOSED_STATS
-const bool PRINT_LRA_ITP_STATS = true;
-#else
-const bool PRINT_LRA_ITP_STATS = false;
+#include <lrasolver/LRA_Interpolator.h>
 #endif // PRINT_DECOMPOSED_STATS
-#endif
+
 
 namespace opensmt
 {
@@ -140,10 +136,8 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , luby_i                (0)
     , luby_k                (1)
     , cuvti                 (false)
-#ifdef PRODUCE_PROOF
-    , proof                 ( new Proof( ca ) )
+    , proof                 ( config.produce_proofs > 0 ? new Proof( ca ) : nullptr )
     , proof_graph           ( nullptr )
-#endif
 #ifdef STATISTICS
     , preproc_time          (0)
     , elim_tvars            (0)
@@ -199,20 +193,6 @@ CoreSMTSolver::initialize( )
 
 CoreSMTSolver::~CoreSMTSolver()
 {
-#ifdef PRODUCE_PROOF
-
-    for (int i = 0; i < units.size(); i++)   if(units[i] != CRef_Undef)   ca.free(units[i]);
-    for (int i = 0; i < clauses.size(); i++) if(clauses[i] != CRef_Undef) ca.free(clauses[i]);
-    for (int i = 0; i < pleaves.size(); i++) if(pleaves[i] != CRef_Undef) ca.free(pleaves[i]);
-    for (int i = 0; i < learnts.size(); i++) if(learnts[i] != CRef_Undef) ca.free(learnts[i]);
-
-#else
-    for (int i = 0; i < learnts.size(); i++) ca.free(learnts[i]);
-    for (int i = 0; i < clauses.size(); i++) ca.free(clauses[i]);
-#endif
-
-    for (int i = 0; i < tmp_reas.size(); i++) ca.free(tmp_reas[i]);
-
 #ifdef STATISTICS
     if ( config.produceStats() != 0 ) printStatistics ( config.getStatsOut( ) );
     // TODO added for convenience
@@ -220,12 +200,12 @@ CoreSMTSolver::~CoreSMTSolver()
 
 #endif
 
-#ifdef PRODUCE_PROOF
-    if (PRINT_LRA_ITP_STATS && LRA_Interpolator::stats.anyOpportunity()) {
+#ifdef PRINT_DECOMPOSED_STATS
+    if (LRA_Interpolator::stats.anyOpportunity()) {
         LRA_Interpolator::stats.printStatistics(std::cout);
         LRA_Interpolator::stats.reset(); // Reset after print so they are not cumulated across instances
     }
-#endif
+#endif // PRINT_DECOMPOSED_STATS
 #ifdef STATISTICS
     cerr << "; time used for choosing branch lit " << branchTimer.getTime() << endl;
     cerr << "; avg dec time " << branchTimer.getTime()/decisions << endl;
@@ -277,10 +257,7 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
     decision .push();
     trail    .capacity(v+1);
     setDecisionVar(v, dvar);
-#ifdef PRODUCE_PROOF
     units    .push( CRef_Undef );
-#endif
-
     polarity    .push((char)sign);
 
 #if CACHE_POLARITY
@@ -429,13 +406,14 @@ void CoreSMTSolver::removeClause(CRef cr)
     // Don't leave pointers to free'd memory!
     if (locked(c)) vardata[var(c[0])].reason = CRef_Undef;
     c.mark(1);
-#ifdef PRODUCE_PROOF
-    // Remove clause and derivations if ref becomes 0
-    // If ref is not 0, we keep it and remove later
-    if ( !proof->deleted( cr ) ) pleaves.push( cr );
-#else
-    ca.free(cr);
-#endif
+    if (logsProof()) { // MB: quick solution to remove the macro; TODO: re-investigate separate storages
+        // Remove clause and derivations if ref becomes 0
+        // If ref is not 0, we keep it and remove later
+        if (!proof->deleted(cr)) pleaves.push(cr);
+    }
+    else {
+        ca.free(cr);
+    }
 }
 
 bool CoreSMTSolver::satisfied(const Clause& c) const
@@ -483,129 +461,6 @@ void CoreSMTSolver::printClause(Clause & cl) {
 void CoreSMTSolver::printClause(CRef cref) {
     printClause(ca[cref]);
 }
-
-/*
-void CoreSMTSolver::addSMTAxiomClause( vector< Enode * > & smt_clause
-#ifdef PRODUCE_PROOF
-                                     , Enode * interpolants
-#endif
-				     )
-{
-  assert( smt_clause.size( ) > 0 );
-
-  vec< Lit > sat_clause;
-  int nof_false = 0;
-  Lit unass = lit_Undef;
-
-  for ( vector< Enode * >::iterator it = smt_clause.begin( ) ;
-      it != smt_clause.end( ) ;
-      it ++ )
-  {
-    Enode * e = *it;
-
-    if ( config.logic == QF_UFIDL
-      || config.logic == QF_UFLRA )
-      atoms_seen.insert( e );
-
-    assert( !e->isTrue ( ) );
-    assert( !e->isFalse( ) );
-
-    Lit l = theory_handler->enodeToLit( e );
-
-    // Shrink clause
-    if ( value( l ) == l_False
-      && level[ var(l) ] == 0 )
-      continue;
-
-    if ( value( l ) == l_False )
-      nof_false ++;
-    else if ( value( l ) != l_True )
-      unass = l;
-
-    sat_clause.push( l );
-
-    // Can skip if satisfied at level 0 ...
-    if ( value( l ) == l_True && level[ var(l) ] == 0 )
-      return;
-  }
-
-  // assert( sat_clause.size( ) > 1 );
-  Clause * ct = Clause_new( sat_clause );
-
-  if ( config.incremental )
-  {
-    undo_stack_oper.push_back( NEWAXIOM );
-    undo_stack_elem.push_back( (void *)ct );
-  }
-
-#ifdef PRODUCE_PROOF
-  bool add_unit = false;
-  proof.addRoot( ct, CLA_THEORY );
-  if ( config.incremental )
-  {
-    undo_stack_oper.push_back( NEWPROOF );
-    undo_stack_elem.push_back( (void *)ct );
-  }
-#endif
-
-  // Boolean propagate if only one literal
-  // has survived. Others were all false
-  // at decision level 0
-  if ( sat_clause.size( ) == 1 )
-  {
-    uncheckedEnqueue( unass, ct );
-#ifdef PRODUCE_PROOF
-    units[ var( unass ) ] = ct;
-    if ( config.produce_inter != 0 )
-    {
-      assert( interpolants );
-      clause_to_in[ ct ] = interpolants;
-    }
-#endif
-  }
-  else
-  {
-    attachClause( *ct );
-    axioms.push( ct );
-
-    // Boolean propagate, but keep clause,
-    // if only one literal has survived at
-    // this level
-    if ( sat_clause.size( ) == nof_false + 1
-	&& unass != lit_Undef )
-    {
-      uncheckedEnqueue( unass, ct );
-#ifdef PRODUCE_PROOF
-      add_unit = true;
-#endif
-    }
-
-    assert( config.isInit( ) );
-#ifdef PRODUCE_PROOF
-    // Assign clause for proof if unit propag occurred
-    if ( add_unit )
-      units[ var( unass ) ] = ct;
-
-    if ( config.produce_inter != 0 )
-    {
-      assert( interpolants );
-      clause_to_in[ ct ] = interpolants;
-    }
-#endif
-  }
-}
-*/
-
-/*
-void CoreSMTSolver::addNewAtom( Enode * e )
-{
-  assert( e );
-  assert( !e->isTrue ( ) );
-  assert( !e->isFalse( ) );
-  // Automatically adds new variable for e
-  Lit l = theory_handler->enodeToLit( e );
-}
-*/
 
 void CoreSMTSolver::cancelUntilVar( Var v )
 {
@@ -823,19 +678,6 @@ Lit CoreSMTSolver::pickBranchLit()
 
     return next == var_Undef ? lit_Undef : mkLit(next, sign);
 }
-
-#ifdef PRODUCE_PROOF
-class lastToFirst_lt    // Helper class to 'analyze' -- order literals from last to first occurance in 'trail[]'.
-{
-    const vec<int>& trail_pos;
-public:
-    lastToFirst_lt(const vec<int>& t) : trail_pos(t) {}
-    bool operator () (Lit p, Lit q)
-    {
-        return trail_pos[var(p)] > trail_pos[var(q)];
-    }
-};
-#endif
 
 /*_________________________________________________________________________________________________
   |
@@ -1097,12 +939,8 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
 // visiting literals at levels that cannot be removed later.
 bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
 {
-#ifdef PRODUCE_PROOF
-    // Dunno how to handle this case in proof !
-    return false;
-#endif
-
-    if ( config.sat_minimize_conflicts <= 0 )
+    // MB: TODO: figure out if this is compatible with proof tracking
+    if ( logsProof() || config.sat_minimize_conflicts <= 0 )
         return false;
 
     analyze_stack.clear();
@@ -1212,9 +1050,6 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
   |________________________________________________________________________________________________@*/
 void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
 {
-//#ifdef PRODUCE_PROOF
-//    opensmt_error( "case not handled (yet)" );
-//#endif
     out_conflict.clear();
     out_conflict.push(p);
 
@@ -1344,9 +1179,9 @@ CRef CoreSMTSolver::propagate()
                     goto NextClause;
                 }
 
-#ifdef PRODUCE_PROOF
+            // PROOF tracking specific code
             // Did not find watch -- clause is unit under assignment:
-            if (decisionLevel() == 0)
+            if (this->logsProof() && decisionLevel() == 0)
             {
                 proof->beginChain( cr );
                 for (unsigned k = 1; k < c.size(); k++)
@@ -1378,7 +1213,7 @@ CRef CoreSMTSolver::propagate()
                     proof->endChain( CRef_Undef );
                 }
             }
-#endif
+// End of PROOF tracking specific code
 
             // Did not find watch -- clause is unit under assignment:
             *j++ = w;
@@ -1440,53 +1275,16 @@ void CoreSMTSolver::reduceDB()
     }
     learnts.shrink(i - j);
     checkGarbage();
-#ifdef PRODUCE_PROOF
-    /* NOTE old code
-    // Remove unused theory lemmata
-    for ( i = j = 0 ; i < tleaves.size( ) ; i++ ){
-        // RB: Not clear if it is safe, probably not
-        // Remove if satisfied at dec level 0
-        if (decisionLevel( ) == 0 && satisfied( *tleaves[i] ))
-            proof.forceDelete( tleaves[i], true );
-        else
-	{
-            if ( proof.deleted( tleaves[i] ) )
-                ; // Do nothing
-            else
-                tleaves[j++] = tleaves[i];
-	}
-    }
-    tleaves.shrink(i - j);
-
-    // Remove unused leaves
-    for ( i = j = 0 ; i < pleaves.size( ) ; i++ )
-    {
-        // RB: Not clear if it is safe, probably not
-        // Remove if satisfied at dec level 0
-        if (decisionLevel( ) == 0 && satisfied( *pleaves[i] ))
-            proof.forceDelete( pleaves[i], true );
-        else
-        {
-            if ( proof.deleted( pleaves[i] ) )
-                ; // Do nothing
-            else
-                pleaves[j++] = pleaves[i];
+    if (logsProof()) {
+        // Remove unused leaves
+        // FIXME deal with theory lemmata when proofs will be extended to theories
+        for (i = j = 0; i < pleaves.size(); i++) {
+            CRef cr = pleaves[i];
+            assert(ca[cr].mark() == 1);
+            if (!proof->deleted(cr)) pleaves[j++] = pleaves[i];
         }
+        pleaves.shrink(i - j);
     }
-    pleaves.shrink(i - j);
-    */
-
-    // Remove unused leaves
-    // FIXME deal with theory lemmata when proofs will be extended to theories
-    for ( i = j = 0 ; i < pleaves.size( ) ; i++ )
-    {
-        CRef cr = pleaves[i];
-        assert(ca[cr].mark() == 1);
-        if ( ! proof->deleted( cr ) ) pleaves[j++] = pleaves[i];
-    }
-    pleaves.shrink(i - j);
-
-#endif
 }
 
 
@@ -1621,13 +1419,6 @@ void CoreSMTSolver::popBacktrackPoint()
             CRef cr = op.getClause();
             detachClause(cr);
         }
-#ifdef PRODUCE_PROOF
-        else if (op.getType() == undo_stack_el::NEWPROOF)
-        {
-            assert( false );
-        }
-        else if (op.getType() == undo_stack_el::NEWINTER) ; // Do nothing. Ids are never reset ...
-#endif
         else
         {
             opensmt_error2( "unknown undo operation in CoreSMTSolver", op.getType() );
@@ -1794,12 +1585,13 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
             if (learnt_clause.size() == 1)
             {
                 uncheckedEnqueue(learnt_clause[0]);
-#ifdef PRODUCE_PROOF
-                CRef cr = ca.alloc( learnt_clause, false );
-                proof->endChain( cr );
-                assert( units[ var(learnt_clause[0]) ] == CRef_Undef );
-                units[ var(learnt_clause[0]) ] = cr;
-#endif
+                if (logsProof())
+                {
+                    CRef cr = ca.alloc(learnt_clause, false);
+                    proof->endChain(cr);
+                    assert(units[var(learnt_clause[0])] == CRef_Undef);
+                    units[var(learnt_clause[0])] = cr;
+                }
             }
             else
             {
@@ -1809,9 +1601,9 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 
                 CRef cr = ca.alloc(learnt_clause, true);
 
-#ifdef PRODUCE_PROOF
-                proof->endChain(cr);
-#endif
+                if (logsProof()) {
+                    proof->endChain(cr);
+                }
                 learnts.push(cr);
                 attachClause(cr);
                 claBumpActivity(ca[cr]);
@@ -1874,9 +1666,6 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                     assert( false );
                 }
 
-                // Check axioms
-//          res = checkAxioms( );
-//
 //          switch( res )
 //          {
 //            case -1: return l_False;        // Top-Level conflict: unsat

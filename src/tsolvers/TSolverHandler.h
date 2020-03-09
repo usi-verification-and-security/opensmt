@@ -32,9 +32,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "TermMapper.h"
 #include "TSolver.h"
 
-#ifdef PRODUCE_PROOF
 class TheoryInterpolator;
-#endif //PRODUCE_PROOF
 
 class THandler;
 class TSolver;
@@ -71,9 +69,7 @@ public:
 
     virtual       Logic& getLogic() = 0;
     virtual const Logic& getLogic() const = 0;
-#ifdef PRODUCE_PROOF
     virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t>*) = 0;
-#endif
 
     void    setSubstitutions(Map<PTRef,PtAsgn,PTRefHash>& substs_) { substs_.moveTo(substs); }
     ValPair getValue          (PTRef tr) const;

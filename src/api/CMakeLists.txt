@@ -12,9 +12,7 @@ $<TARGET_OBJECTS:common>
 $<TARGET_OBJECTS:simplifiers>
 )
 
-if(PRODUCE_PROOF)
 set(OBJECTS_TO_ADD $<TARGET_OBJECTS:proof> ${OBJECTS_TO_ADD})
-endif()
 
 add_library(api OBJECT "")
 

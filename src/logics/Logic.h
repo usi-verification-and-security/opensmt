@@ -30,10 +30,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "PtStore.h"
 #include "SStore.h"
 #include "Tterm.h"
-#ifdef PRODUCE_PROOF
+
 #include "FlaPartitionMap.h"
 #include "PartitionInfo.h"
-#endif
+
 
 
 class SStore;
@@ -109,14 +109,12 @@ class Logic {
     Map<SRef,bool,SRefHash,Equal<SRef> >            ufsorts;
 
 
-#ifdef PRODUCE_PROOF
     //for partitions:
     //Map<PTRef,int,PTRefHash> partitions;
 //    std::map<unsigned int, PTRef> partitions; // map of partition indices to PTRefs of partitions
     FlaPartitionMap flaPartitionMap;
     map<CRef, ipartitions_t> clause_class;
     map<Var, ipartitions_t> var_class;
-#endif
 
     Map<const char*,TFun,StringHash,Equal<const char*> > defined_functions;
     vec<Tterm> defined_functions_vec; // A strange interface through the Tterms..
@@ -299,7 +297,6 @@ class Logic {
 
     bool implies(PTRef, PTRef); // Check the result with an external solver
 
-#ifdef PRODUCE_PROOF
     PartitionInfo partitionInfo;
 
     PTRef getPartitionA(const ipartitions_t&);
@@ -316,7 +313,6 @@ class Logic {
     void addIPartitions(SymRef _s, const ipartitions_t& _p) { partitionInfo.addIPartitions(_s, _p); }
     void propagatePartitionMask(PTRef tr);
 
-#endif
 
     // The Boolean connectives
     SymRef        getSym_true      ()              const;// { return sym_TRUE;     }
@@ -465,7 +461,6 @@ class Logic {
     void compareTermStore(PtStore& other) { }// term_store.compare(other); }
 #endif
 
-#ifdef PRODUCE_PROOF
     //partitions:
     void assignPartition(unsigned int n, PTRef tr)
     {
@@ -498,7 +493,6 @@ class Logic {
         return flaPartitionMap.getPartitionIndex(ref);
     }
 
-#endif // PRODUCE_PROOF
     // Statistics
     int subst_num; // Number of substitutions
 

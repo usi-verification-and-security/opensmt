@@ -17,7 +17,6 @@ You should have received a copy of the GNU General Public License
 along with Periplo. If not, see <http://www.gnu.org/licenses/>.
  *********************************************************************/
 
-#ifdef PRODUCE_PROOF
 #include "PG.h"
 
 
@@ -264,6 +263,3 @@ double ProofGraph::doReduction(double solving_time)
 	time_end=cpuTime();
 	return time_end-time_init;
 }
-
-
-#endif

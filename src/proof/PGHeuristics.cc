@@ -17,7 +17,6 @@ You should have received a copy of the GNU General Public License
 along with Periplo. If not, see <http://www.gnu.org/licenses/>.
  *********************************************************************/
 
-#ifdef PRODUCE_PROOF
 #include "PG.h"
 
 
@@ -545,21 +544,14 @@ bool ProofGraph::allowSwapRuleForStrongerWeakerInterpolant(RuleContext& ra, cons
 	// McMillan/McMillan'/Pudlak should be used
 	assert( usingMcMillanInterpolation() || usingPudlakInterpolation() || usingMcMillanPrimeInterpolation() );
 	// Check colors of the two pivots
-#ifdef FULL_LABELING
 	icolor_t piv_w_color = getVarClass2( getNode(ra.getW())->getPivot() );
-#else
-	icolor_t piv_w_color = getVarClass( getNode(ra.getW())->getPivot(), mask );
-#endif
 	if(  piv_w_color == I_AB )
 	{
 		if( usingMcMillanInterpolation() ) piv_w_color = I_B;
 		if( usingMcMillanPrimeInterpolation() ) piv_w_color = I_A;
 	}
-#ifdef FULL_LABELING
 	icolor_t piv_v_color = getVarClass2( getNode(ra.getV())->getPivot() );
-#else
-	icolor_t piv_v_color = getVarClass( getNode(ra.getV())->getPivot(), mask );
-#endif
+
 	if(  piv_v_color == I_AB )
 	{
 		if( usingMcMillanInterpolation() ) piv_v_color = I_B;
@@ -698,7 +690,6 @@ short ProofGraph::handleRuleApplicationForStrongerWeakerInterpolant(RuleContext&
 	return chosen;
 }
 
-#ifdef FULL_LABELING
 //Input: a context for a swap rule
 //Output: true if rule application is allowed
 bool ProofGraph::allowSwapRuleForCNFinterpolant(RuleContext& ra)
@@ -840,7 +831,6 @@ short ProofGraph::handleRuleApplicationForCNFinterpolant(RuleContext& ra1,RuleCo
 	return chosen;
 }
 
-#endif
 
 //Input: node to be replaced by either antecedent during restructuring
 //Output: true if ant1 is chosen, false if ant2 is chosen
@@ -910,4 +900,3 @@ bool ProofGraph::chooseReplacingAntecedent( ProofNode* n )
 //   AB  A     if I1=true            (~s or I2) or I3 -> (I2 or ~s)
 //   AB  B     ?
 //   AB  AB    ?
-#endif

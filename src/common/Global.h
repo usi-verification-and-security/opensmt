@@ -332,7 +332,6 @@ static inline uint64_t memUsed() { return (uint64_t)memReadStat(0) * (uint64_t)g
 #define ELE_STR "ELE_%d"
 #define ARR_STR "ARR_%d"
 
-#ifdef PRODUCE_PROOF
     // For interpolation. When only 2 partitions
 // are considered, these shorthands simplify
 // readability
@@ -368,9 +367,7 @@ inline bool isBlocal ( const ipartitions_t & p, const ipartitions_t & mask ) { r
 inline bool isAstrict( const ipartitions_t & p, const ipartitions_t & mask ) { return !isABmixed( p ) && isAlocal( p, mask ) && !isBlocal( p, mask ); }
 inline bool isBstrict( const ipartitions_t & p, const ipartitions_t & mask ) { return !isABmixed( p ) && isBlocal( p, mask ) && !isAlocal( p, mask ); }
 inline bool isAB     ( const ipartitions_t & p, const ipartitions_t & mask ) { return !isABmixed( p ) && isAlocal( p, mask ) &&  isBlocal( p, mask ); }
-#endif
 
-#ifdef PRODUCE_PROOF
     // To specify the tree structure of a collection of partitions
 // NOTE Partitions should be tagged with consecutive ids >=1
 class InterpolationTree
@@ -400,7 +397,6 @@ private:
     set<InterpolationTree*>  children;        // The children of the node in the tree
     InterpolationTree* parent;
 };
-#endif
 } // namespace opensmt
 
 struct EnodeIdHash {
@@ -432,7 +428,6 @@ using opensmt::enodeid_pair_t;
 using opensmt::encode;
 using opensmt::cpuTime;
 using opensmt::memUsed;
-#ifdef PRODUCE_PROOF
 using opensmt::icolor_t;
 using opensmt::I_UNDEF;
 using opensmt::I_A;
@@ -448,7 +443,6 @@ using opensmt::isAstrict;
 using opensmt::isBstrict;
 using opensmt::isAB;
 using opensmt::isABmixed;
-#endif
 
 #ifndef INT32_MAX
 #define INT32_MAX 0x7fffffffL

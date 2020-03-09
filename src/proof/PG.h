@@ -20,8 +20,6 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 #ifndef PROOFGRAPH_H
 #define PROOFGRAPH_H
 
-#ifdef PRODUCE_PROOF
-
 #include "Global.h"
 #include "Proof.h"
 #include <map>
@@ -110,7 +108,6 @@ struct InterpolData
     PTRef            partial_interp;     // Stores partial interpolant
     ipartitions_t    partition_mask;     // Stores info on partitions in a bitvector
 
-#ifdef FULL_LABELING
     // NOTE labeling rules for AB variables
     // color a:  bit 1, bit 0
     // color b:  bit 0, bit 1
@@ -119,15 +116,12 @@ struct InterpolData
     // This notation is consistent with coloring of inner nodes given by | of antecedents colorings
     ipartitions_t      AB_vars_a_colored;
     ipartitions_t      AB_vars_b_colored;
-#endif
 
     InterpolData ()
     : partial_interp    ( PTRef_Undef )
     , partition_mask    ( 0 )
-#ifdef FULL_LABELING
     , AB_vars_a_colored ( 0 )
     , AB_vars_b_colored ( 0 )
-#endif
     {}
 };
 
@@ -230,7 +224,6 @@ struct ProofNode
     // true if positive occurrence pivot is in first antecedent
     bool                          checkPolarityAnt();
 
-#ifdef FULL_LABELING
     //
     // Interpolation and labeling
     //
@@ -251,7 +244,6 @@ struct ProofNode
     inline void    colorA                 ( int i ) { setbit( i_data->AB_vars_a_colored, i ); clrbit( i_data->AB_vars_b_colored, i ); }
     inline void    colorB                 ( int i ) { setbit( i_data->AB_vars_b_colored, i ); clrbit( i_data->AB_vars_a_colored, i ); }
     inline void    colorAB                ( int i ) { setbit( i_data->AB_vars_a_colored, i ); setbit( i_data->AB_vars_b_colored, i ); }
-#endif
 
 private:
     Logic&             logic;
@@ -284,9 +276,7 @@ public:
 , thandler {new THandler(th)}
 , graph_   ( new vector<ProofNode*> )
 , graph    ( *graph_ )
-#ifdef FULL_LABELING
 , vars_suggested_color_map ( NULL )
-#endif
 {
 		mpz_init(visited_1);
 		mpz_init(visited_2);
@@ -421,7 +411,6 @@ public:
     PTRef          compInterpLabelingOriginalSimple         ( ProofNode *, const ipartitions_t & );
     PTRef          compInterpLabelingInnerSimple            ( ProofNode *, const ipartitions_t & );
 
-#ifdef FULL_LABELING
     PTRef        compInterpLabelingOriginal               ( ProofNode *, const ipartitions_t &, unsigned num_config = 0 , map<Var, icolor_t>* PSFunc = NULL);
     PTRef        compInterpLabelingInner                  ( ProofNode * );
     void labelLeaf(ProofNode*, const ipartitions_t&, unsigned num_config = 0, map<Var, icolor_t>* PSFunc = NULL);
@@ -462,7 +451,6 @@ public:
     	n->updateColoringAfterRes( AB_vars_mapping[n->getPivot()] );
     }
     icolor_t getVarColor(ProofNode* n, Var v);
-#endif
 
     void 		   analyzeProofLocality   (const ipartitions_t &);
     void 		   verifyPartialInterpolantFromLeaves ( ProofNode*, const ipartitions_t& mask );
@@ -518,12 +506,10 @@ public:
     // Strengthen/weaken interpolants by applying A2 rule locally
     short 		   handleRuleApplicationForStrongerWeakerInterpolant(RuleContext& ra1,RuleContext& ra2, const ipartitions_t&);
     bool           allowSwapRuleForStrongerWeakerInterpolant(RuleContext& ra, const ipartitions_t&);
-#ifdef FULL_LABELING
     // Produce interpolants in CNF using McMillan algorithm - partial CNFization since no duplications allowed!
     // See allowSwapRuleForCNFinterpolant
     short 		   handleRuleApplicationForCNFinterpolant(RuleContext& ra1,RuleContext& ra2, const ipartitions_t&);
     bool           allowSwapRuleForCNFinterpolant(RuleContext& ra);
-#endif
 
 private:
 
@@ -553,12 +539,10 @@ private:
     set<clauseid_t>				   leaves_ids;					// Proof leaves, for top-down visits
     std::set< Var >                proof_variables;             // Variables actually present in the proof
     unsigned                                       max_id_variable;                             // Highest value for a variable
-#ifdef FULL_LABELING
     std::set<Var> theory_only;
     // NOTE class A has value -1, class B value -2, undetermined value -3, class AB has index bit from 0 onwards
     std::vector<int>               AB_vars_mapping;             // Variables of class AB mapping to mpz integer bit index
     vec< std::map<PTRef, icolor_t>* > *    vars_suggested_color_map;	 // To suggest color for shared vars
-#endif
     int                                                    num_vars_limit;               // Number of variables in the problem (not nec in the proof)
 
     // Info on graph dimension
@@ -591,5 +575,4 @@ private:
     mpz_t visited_2;
 };
 
-#endif
 #endif

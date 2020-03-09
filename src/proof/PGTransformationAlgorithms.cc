@@ -17,7 +17,6 @@ You should have received a copy of the GNU General Public License
 along with Periplo. If not, see <http://www.gnu.org/licenses/>.
  *********************************************************************/
 
-#ifdef PRODUCE_PROOF
 
 #include "PG.h"
 #include "CoreSMTSolver.h" // TODO: MB: deal with reportf and remove this include
@@ -1057,5 +1056,4 @@ void ProofGraph::proofPostStructuralHashing()
 	}
 	///////////////////////////////////////////////////////////////////////////////
 }
-#endif
 

@@ -1,20 +1,14 @@
 #include "UFTHandler.h"
 #include "TreeOps.h"
-#ifdef PRODUCE_PROOF
 #include "InterpolatingEgraph.h"
-#else // PRODUCE_PROOF
 #include "Egraph.h"
-#endif // PRODUCE_PROOF
 
 UFTHandler::UFTHandler(SMTConfig& c, Logic& l, vec<DedElem>& d, TermMapper& tmap)
     : TSolverHandler(c, d, tmap)
     , logic(l)
 {
-#ifdef PRODUCE_PROOF
-    egraph = new InterpolatingEgraph(config, logic, deductions);
-#else // PRODUCE_PROOF
-    egraph = new Egraph(config, logic, deductions);
-#endif // PRODUCE_PROOF
+    egraph = config.produce_proofs > 0 ? new InterpolatingEgraph(config, logic, deductions)
+            : new Egraph(config, logic, deductions);
 
     SolverId my_id = egraph->getId();
     tsolvers[my_id.id] = egraph;
@@ -69,14 +63,10 @@ lbool UFTHandler::getPolaritySuggestion(PTRef p) const {
     return l_Undef;
 }
 
-#ifdef PRODUCE_PROOF
 PTRef UFTHandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
 {
     InterpolatingEgraph* iegraph = dynamic_cast<InterpolatingEgraph*>(egraph);
     assert(iegraph);
     return iegraph->getInterpolant(mask, labels);
 }
-
-#endif
-
 

@@ -29,15 +29,13 @@ if(PRINT_DECOMPOSED_STATS)
     target_compile_definitions(smtsolvers PRIVATE -DPRINT_DECOMPOSED_STATS)
 endif()
 
-if(PRODUCE_PROOF)
-	target_sources(proof
-	PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Proof.h"
-	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Proof.cc"
-	)
-	install(FILES TheoryInterpolator.h
-			DESTINATION ${INSTALL_HEADERS_DIR})
+target_sources(proof
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Proof.h"
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Proof.cc"
+)
+install(FILES TheoryInterpolator.h
+        DESTINATION ${INSTALL_HEADERS_DIR})
 
-endif()
 
 install(FILES SimpSMTSolver.h CoreSMTSolver.h SMTSolver.h 
 DESTINATION ${INSTALL_HEADERS_DIR})

@@ -22,7 +22,6 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 #include <fstream>
 
 
-#ifdef PRODUCE_PROOF
 #include "PG.h"
 #include "BoolRewriting.h"
 
@@ -384,15 +383,12 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
     // Check
     checkInterAlgo();
 
-#ifdef FULL_LABELING
     // Track AB class variables and associate index to them in nodes bit masks
     computeABVariablesMapping ( A_mask );
-#endif
 
     // NOTE generation of interpolants in CNF
     if ( interpolantInCNF() )
     {
-#ifdef FULL_LABELING
 
         if ( usingMcMillanInterpolation() )
         {
@@ -411,9 +407,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
             opensmt_warning ("Please set McMillan interpolation algorithm to generate interpolants in CNF");
         }
 
-#else
-        opensmt_warning ("Please compile with --enable-fulllabeling to enable proof transformation for interpolants in CNF");
-#endif
+
     }
     // NOTE Preliminary application of A2 rules to strengthen/weaken the interpolant
     // Not compatible with interpolants in CNF
@@ -520,11 +514,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
                 */
 #endif
 
-#ifdef FULL_LABELING
                 partial_interp = compInterpLabelingOriginal ( n, A_mask , 0, PSFunction);
-#else
-                partial_interp = compInterpLabelingOriginalSimple ( n, A_mask );
-#endif
             }
             else // Theory lemma
             {
@@ -573,11 +563,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
         }
         else
         {
-#ifdef FULL_LABELING
             partial_interp = compInterpLabelingInner ( n );
-#else
-            partial_interp = compInterpLabelingInnerSimple ( n, A_mask );
-#endif
             assert ( partial_interp != PTRef_Undef );
             n->setPartialInterpolant ( partial_interp );
         }
@@ -680,10 +666,6 @@ void ProofGraph::produceMultipleInterpolants ( const std::vector< ipartitions_t 
 
     if ( needProofStatistics() )
     {
-#ifndef FULL_LABELING
-        opensmt_warning ("Please compile with --enable-fulllabeling to enable proof-sensitive interpolation");
-        return;
-#endif
     }
 
 //    uint64_t mem_used = 0;
@@ -715,10 +697,8 @@ void ProofGraph::produceMultipleInterpolants ( const std::vector< ipartitions_t 
 
         const ipartitions_t &A_mask = configs[curr_interp];
 
-#ifdef FULL_LABELING
         // Track AB class variables and associate index to them in nodes bit masks
         computeABVariablesMapping ( A_mask );
-#endif
 
         map<Var, icolor_t> *PSFunction = computePSFunction (DFSv, A_mask);
 
@@ -733,20 +713,13 @@ void ProofGraph::produceMultipleInterpolants ( const std::vector< ipartitions_t 
             {
                 if (n->getType() != clause_type::CLA_ORIG) opensmt_error ( "Clause is not original" );
 
-#ifdef FULL_LABELING
                 partial_interp = compInterpLabelingOriginal ( n, A_mask, curr_interp , PSFunction);
                 //if ( enabledPedInterpVerif() ) verifyPartialInterpolantFromLeaves( n, A_mask );
-#else
-                partial_interp = compInterpLabelingOriginalSimple ( n, A_mask );
-#endif
+
             }
             else
             {
-#ifdef FULL_LABELING
                 partial_interp = compInterpLabelingInner ( n );
-#else
-                partial_interp = compInterpLabelingInnerSimple ( n, A_mask );
-#endif
             }
 
             assert ( partial_interp != PTRef_Undef );
@@ -1080,7 +1053,6 @@ void ProofGraph::checkInterAlgo()
 
 /********** FULL LABELING BASED INTERPOLATION **********/
 
-#ifdef FULL_LABELING
 
 
 void
@@ -1546,6 +1518,4 @@ bool ProofGraph::assertLiteralsToTSolver(vec<Lit> const & vec) {
     return thandler->assertLits(vec);
 }
 
-#endif
 
-#endif

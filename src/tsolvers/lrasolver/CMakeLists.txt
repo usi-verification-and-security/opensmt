@@ -6,10 +6,8 @@ target_sources(tsolvers
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/LRAModel.cc"
     )
 
-if(PRODUCE_PROOF)
-    target_sources(tsolvers
-        PUBLIC "${CMAKE_CURRENT_LIST_DIR}/LRA_Interpolator.h"
-        PUBLIC "${CMAKE_CURRENT_LIST_DIR}/LRA_Interpolator.cc"
-        )
-endif()
+target_sources(tsolvers
+    PUBLIC "${CMAKE_CURRENT_LIST_DIR}/LRA_Interpolator.h"
+    PUBLIC "${CMAKE_CURRENT_LIST_DIR}/LRA_Interpolator.cc"
+    )
 

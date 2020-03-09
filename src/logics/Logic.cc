@@ -2001,8 +2001,6 @@ void Logic::conjoinItes(PTRef root, PTRef& new_root)
     new_root = mkAnd(args);
 }
 
-#ifdef PRODUCE_PROOF
-
 void Logic::propagatePartitionMask(PTRef root) {
     ipartitions_t& p = getIPartitions(root);
     std::vector<bool> seen;
@@ -2139,7 +2137,6 @@ Logic::addClauseClassMask(CRef l, const ipartitions_t& toadd)
     cerr << "; Clause " << l << " now has mask " << clause_class[l] << endl;
 #endif
 }
-#endif
 
 void
 Logic::collectStats(PTRef root, int& n_of_conn, int& n_of_eq, int& n_of_uf, int& n_of_if)

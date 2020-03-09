@@ -1,10 +1,8 @@
 //
 // Created by Martin Blicha on 2019-08-14.
 //
-#ifdef PRODUCE_PROOF
 #include "PartitionInfo.h"
 
-#ifdef PRODUCE_PROOF
 void
 PartitionInfo::assignPartition(unsigned int n, PTRef ptr) {
     assert(n >= 0);
@@ -50,7 +48,3 @@ PartitionInfo::addIPartitions(SymRef _s, const ipartitions_t& _p)
 {
     sym_partitions[_s] |= _p;
 }
-
-#endif
-
-#endif // PRODUCE_PROOF

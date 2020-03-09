@@ -97,11 +97,9 @@ bool LRATHandler::assertLit_special(PtAsgn a)
         return assertLit(a);
 }
 
-#ifdef PRODUCE_PROOF
 PTRef LRATHandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
 {
     return lrasolver->getInterpolant(mask, labels);
 }
-#endif // PRODUCE_PROOF
 
 

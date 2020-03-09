@@ -17,124 +17,9 @@ You should have received a copy of the GNU General Public License
 along with Periplo. If not, see <http://www.gnu.org/licenses/>.
  *********************************************************************/
 
-#ifdef PRODUCE_PROOF
 #include "PG.h"
 #include <sys/wait.h>
 #include <fstream>
-
-/*
-bool
-ProofGraph::implies(PTRef implicant, PTRef implicated)
-{
-    Logic& logic = thandler.getLogic();
-    const char * implies = "implies.smt2";
-    std::ofstream dump_out( implies );
-    logic.dumpHeaderToFile(dump_out);
-
-    logic.dumpFormulaToFile(dump_out, implicant);
-    logic.dumpFormulaToFile(dump_out, implicated, true);
-    dump_out << "(check-sat)" << endl;
-    dump_out << "(exit)" << endl;
-    dump_out.close( );
-    // Check !
-    bool tool_res;
-    if ( int pid = fork() )
-    {
-      int status;
-      waitpid(pid, &status, 0);
-      switch ( WEXITSTATUS( status ) )
-      {
-	case 0:
-	  tool_res = false;
-	  break;
-	case 1:
-	  tool_res = true;
-	  break;
-	default:
-	  perror( "Tool" );
-	  exit( EXIT_FAILURE );
-      }
-    }
-    else
-    {
-      execlp( "tool_wrapper.sh", "tool_wrapper.sh", implies, NULL );
-      perror( "Tool" );
-      exit( 1 );
-    }
-
-    if ( tool_res == true )
-        return false;
-    return true;
-}
-
-bool
-ProofGraph::verifyInterpolantA(PTRef itp, const ipartitions_t& mask)
-{
-    // Check A -> I, i.e., A & !I
-    return implies(getPartitionA(mask), itp);
-}
-
-PTRef
-ProofGraph::getPartitionA(const ipartitions_t& mask)
-{
-    Logic& logic = thandler.getLogic();
-    vec<PTRef>& ass = logic.getAssertions();
-    vec<PTRef> a_args;
-    for(int i = 0; i < ass.size(); ++i)
-    {
-        PTRef a = ass[i];
-    	ipartitions_t p = 0;
-	    setbit(p, i + 1);
-        if(isAstrict(p, mask)) a_args.push(a);
-        else if(isBstrict(p, mask)) {}
-    	else opensmt_error("Assertion is neither A or B");
-    }
-    PTRef A = logic.mkAnd(a_args);
-    return A;
-}
-
-PTRef
-ProofGraph::getPartitionB(const ipartitions_t& mask)
-{
-    Logic& logic = thandler.getLogic();
-    vec<PTRef>& ass = logic.getAssertions();
-    vec<PTRef> b_args;
-    for(int i = 0; i < ass.size(); ++i)
-    {
-        PTRef a = ass[i];
-    	ipartitions_t p = 0;
-	    setbit(p, i + 1);
-        if(isAstrict(p, mask)) {}
-        else if(isBstrict(p, mask)) b_args.push(a);
-    	else opensmt_error("Assertion is neither A or B");
-    }
-    PTRef B = logic.mkAnd(b_args);
-    return B;
-}
-
-bool
-ProofGraph::verifyInterpolantB(PTRef itp, const ipartitions_t& mask)
-{
-    Logic& logic = thandler.getLogic();
-    vec<PTRef>& ass = logic.getAssertions();
-    PTRef nB = logic.mkNot(getPartitionB(mask));
-    // Check A -> I, i.e., A & !I
-    return implies(itp, nB);
-}
-
-bool
-ProofGraph::verifyInterpolant(PTRef itp, const ipartitions_t& mask)
-{
-    cerr << "; Verifying final interpolant" << endl;
-    bool res = verifyInterpolantA(itp, mask);
-    if(!res)
-        opensmt_error("A -> I does not hold");
-    res = verifyInterpolantB(itp, mask);
-    if(!res)
-        opensmt_error("I -> !B does not hold");
-    return res;
-}
-*/
 
 bool
 ProofGraph::verifyPartialInterpolant(ProofNode *n, const ipartitions_t& mask)
@@ -1052,7 +937,3 @@ bool ProofGraph::verifyTreeInterpolantsFromLeaves( opensmt::InterpolationTree* i
     }
     return property_holds;
 }
-
-
-#endif
-

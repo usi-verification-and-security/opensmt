@@ -17,7 +17,6 @@ You should have received a copy of the GNU General Public License
 along with Periplo. If not, see <http://www.gnu.org/licenses/>.
  *********************************************************************/
 
-#ifdef PRODUCE_PROOF
 #include "PG.h"
 
 
@@ -47,7 +46,6 @@ bool ProofGraph::decideOnAlternativeInterpolation(ProofNode* n)
 	return false;
 }
 
-#ifdef FULL_LABELING
 void ProofGraph::computeABVariablesMapping( const ipartitions_t & A_mask )
 {
 	// Track AB class variables and associate index to them
@@ -150,7 +148,6 @@ icolor_t ProofGraph::getPivotColor( ProofNode* n )
 
 	return var_color;
 }
-#endif
 
 // Input: variable, current interpolant partition masks for A and B
 // e.g. 0---010 first partition in A
@@ -219,7 +216,6 @@ icolor_t ProofGraph::getClauseColor( const ipartitions_t & clause_mask, const ip
 
     return clause_color;
 }
-
 
 map<Var, icolor_t>*
 ProofGraph::computePSFunction(vector< clauseid_t >& DFSv, const ipartitions_t& A_mask)
@@ -328,5 +324,3 @@ ProofGraph::computePSFunction(vector< clauseid_t >& DFSv, const ipartitions_t& A
 
 	return labels;
 }
-
-#endif
