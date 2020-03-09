@@ -26,13 +26,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "CoreSMTSolver.h"
 
-#ifdef PRODUCE_PROOF
 #include "Proof.h"
 #include "PG.h"
-#include <sys/wait.h>
+//#include <sys/wait.h>
 #include <unordered_map>
-
-#endif
 
 void CoreSMTSolver::dumpRndInter(std::ofstream& dump_out)
 {
@@ -105,26 +102,26 @@ void CoreSMTSolver::dumpRndInter(std::ofstream& dump_out)
   dump_out << ") :partition p" << config.sat_dump_rnd_inter() + 1 << ")" << endl;
 }
 
-#ifdef PRODUCE_PROOF
-
   Proof::Proof( ClauseAllocator& cl )
   : begun     ( false )
-  , last_added( CRef_Undef )
   , cl_al		( cl )
 { }
 
-//
-// Allocates the necessary structures to track
-// the derivation of this clause c
-//
-void Proof::addRoot( CRef c, clause_type t )
+
+void Proof::newOriginalClause(CRef c)
 {
-  assert( c != CRef_Undef );
-  assert( checkState( ) );
-  assert( t == clause_type::CLA_ORIG || t == clause_type::CLA_LEARNT || t == clause_type::CLA_THEORY );
-  assert( clause_to_proof_der.find( c ) == clause_to_proof_der.end( ) );
-  clause_to_proof_der.emplace(c, ProofDer{t});
-  last_added = c;
+  assert(c != CRef_Undef);
+  assert(!hasOpenChain());
+  assert(clause_to_proof_der.find(c) == clause_to_proof_der.end());
+  clause_to_proof_der.emplace(c, ProofDer{clause_type::CLA_ORIG});
+}
+
+void Proof::newTheoryClause(CRef c)
+{
+    assert(c != CRef_Undef);
+    assert(!hasOpenChain());
+    assert(clause_to_proof_der.find(c) == clause_to_proof_der.end());
+    clause_to_proof_der.emplace(c, ProofDer{clause_type::CLA_THEORY});
 }
 
 //
@@ -133,88 +130,53 @@ void Proof::addRoot( CRef c, clause_type t )
 void Proof::beginChain( CRef c )
 {
     assert( c != CRef_Undef );
-    assert( !begun );
+    assert( !hasOpenChain() );
     begun = true;
-    assert( chain_cla.empty());
-    assert( chain_var.empty());
-    // Sets the first clause of the chain
-    chain_cla.push_back( c );
+    assert(current_chain.isEmpty());
     assert( clause_to_proof_der.find( c ) != clause_to_proof_der.end( ) );
+    current_chain.setInitial(c);
     // Increase reference
-    clause_to_proof_der.at(c).ref++;
+    ++clause_to_proof_der.at(c).ref;
 }
 
 //
 // Store a resolution step with chain_cla.back( ) and c
 // on the pivot variable p
 //
-void Proof::resolve( CRef c, Var p )
+void Proof::addResolutionStep(CRef c, Var p)
 {
     assert( c != CRef_Undef );
-    chain_cla.push_back( c );
-    chain_var.push_back( p );
+    current_chain.addResolutionStep(c,p);
     assert( clause_to_proof_der.find( c ) != clause_to_proof_der.end( ) );
-    // Increase reference
+    // Note that clause c is used as an assumption in another derivation
     clause_to_proof_der.at(c).ref++;
 }
 
-//
-// Finalize the temporary chain
-// NULL is the empty clause
-//
+// Finalize and store the temporary chain
 void Proof::endChain( CRef res )
 {
-  assert( begun );
+  assert(hasOpenChain());
   begun = false;
   // There was no chain (only the first clause was stored)
-  if ( chain_cla.size( ) == 1 )
+  if ( current_chain.isTrivial() )
   {
-    // The first clause was not touched
-    if ( chain_cla[0] == res )
-    {
-      // Do nothing
+      assert(current_chain.chain_cla[0] == res);
       assert( clause_to_proof_der.find( res ) != clause_to_proof_der.end( ) );
-      last_added = res;
-        // Reset temporary chains
-      chain_cla.clear();
-      chain_var.clear();
-      return;
-    }
-    // Otherwise we have to link the proof of this clause
-    // with the proof of clause (*chain_cla)[0]
-    // Also we should check that res and (*chain_cla)[0] are
-    // semantically equivalent clauses -- we don't do it we
-    // take it for granted !
-    // Use same proof der of (*chain_cla)[0]
-
-    // (*chain_cla)[0] is referenced by this
-    clause_to_proof_der.at(chain_cla[0]).ref++;
-    assert( clause_to_proof_der.find( res ) == clause_to_proof_der.end( ) );
-    ProofDer d;
-    assert(d.ref == 0);
-    d.type = clause_to_proof_der[ chain_cla[0] ].type;
-    d.chain_cla = std::move(chain_cla);
-    assert(chain_var.empty());
-    clause_to_proof_der.emplace(res, d);
-    last_added = res;
-    chain_cla.clear();
-    chain_var.clear();
-    return;
+      // No need to update the chain already stored in the proof
+      current_chain.clear();
   }
-  // Otherwise there was a derivation chain
-  // Save the temporary derivation chain in a new
-  // derivation structure
-  ProofDer d;
-  assert(d.ref == 0);
-  d.chain_cla = std::move(chain_cla);
-  d.chain_var = std::move(chain_var);
-  d.type = clause_type::CLA_LEARNT;
-  assert( clause_to_proof_der.find( res ) == clause_to_proof_der.end( ) );
-  // Create association between res and it's derivation chain
-  clause_to_proof_der.emplace(res, d);
-  last_added = res;
-  chain_cla.clear();
-  chain_var.clear();
+  else {
+      // Otherwise there was a real derivation chain
+      // Save the temporary derivation chain in a new
+      // derivation structure
+      assert(!current_chain.isEmpty());
+      assert(current_chain.ref == 0);
+      current_chain.type = clause_type::CLA_LEARNT;
+      assert( clause_to_proof_der.find( res ) == clause_to_proof_der.end( ) );
+      // Create association between res and it's derivation chain
+      clause_to_proof_der.emplace(res, std::move(current_chain));
+      current_chain.clear();
+  }
 }
 
 bool Proof::deleted( CRef cr )
@@ -225,29 +187,21 @@ bool Proof::deleted( CRef cr )
   const ProofDer& d = clause_to_proof_der[ cr ];
   assert( d.ref >= 0 );
   // This clause is still used somewhere else, keep it
-  if ( d.ref > 0 ) return false;
-  // Dereference parents
+  if ( d.ref > 0 ) { return false; }
+  // No derivation uses this clause as an assumption, it is safe to remove its derivation.
+  // The assumption clauses are notified that there is one less derivation where they are used
   for ( unsigned i = 0 ; i < d.chain_cla.size( ) ; i ++ )
   {
-    // Dereference of one
-    if( clause_to_proof_der.find( d.chain_cla[i] ) == clause_to_proof_der.end( ) )
-      continue;
-    ProofDer & dc = clause_to_proof_der.at(d.chain_cla[i]);
-    dc.ref --;
+    assert( clause_to_proof_der.find( d.chain_cla[i] ) != clause_to_proof_der.end( ) );
+    ProofDer & parent = clause_to_proof_der.at(d.chain_cla[i]);
+    parent.ref--;
   }
   assert( d.ref == 0 );
-  // Remove correspondence
   clause_to_proof_der.erase( cr );
-  // Can be removed
+  // The clause itself can be removed from Clause store
   cl_al.free( cr );
-  // Completely removed
   return true;
 }
-
-// Still stubs
-void Proof::pushBacktrackPoint( ) { }
-void Proof::popBacktrackPoint( )  { }
-void Proof::reset( )              { }
 
 void Proof::print( ostream & out, CoreSMTSolver & s, THandler & t )
 {
@@ -385,12 +339,12 @@ void Proof::print( ostream & out, CoreSMTSolver & s, THandler & t )
 // The following functions are declared in CoreSMTSolver.h
 
 void CoreSMTSolver::createProofGraph ()
-{ proof_graph = new ProofGraph( config, *this, theory_handler.getTheory(),  proof, nVars( ) ); }
+{ proof_graph = new ProofGraph( config, *this, theory_handler.getTheory(),  *proof, nVars( ) ); }
 
 void CoreSMTSolver::deleteProofGraph () { delete proof_graph; }
 
 void CoreSMTSolver::printProofSMT2( ostream & out )
-{ proof.print( out, *this, theory_handler ); }
+{ proof->print( out, *this, theory_handler ); }
 
 void CoreSMTSolver::printProofDotty( )
 { assert(proof_graph); proof_graph->printProofGraph(); }
@@ -399,7 +353,7 @@ void CoreSMTSolver::printInter( ostream & out )
 {
     assert( config.produce_inter() != 0 );
 
-    if (config.print_proofs_smtlib2 > 0) proof.print( out, *this, theory_handler );
+    if (config.print_proofs_smtlib2 > 0) proof->print( out, *this, theory_handler );
 
     // Compute interpolants
     vec<PTRef> sequence_of_interpolants;
@@ -545,6 +499,4 @@ std::ostream & operator<<(std::ostream & os, clause_type val) {
     }
     return os;
 }
-
-#endif // PRODUCE_PROOF
 

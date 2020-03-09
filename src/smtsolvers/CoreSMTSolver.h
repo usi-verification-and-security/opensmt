@@ -740,8 +740,6 @@ protected:
 
     void   deduceTheory           (vec<LitLev>&);  // Perform theory-deductions
 
-    int    analyzeUnsatLemma      ( CRef );        // Conflict analysis for an unsat lemma on demand
-
     void   cancelUntilVar         ( Var );         // Backtrack until a certain variable
     void   cancelUntilVarTempInit ( Var );         // Backtrack until a certain variable
     void   cancelUntilVarTempDone ( );             // Backtrack until a certain variable
@@ -765,11 +763,9 @@ protected:
     //
     // Proof production
     //
-    Proof *             proof_;                   // (Pointer to) Proof store
-    Proof &             proof;                    // Proof store
+    std::unique_ptr<Proof> proof;                 // (Pointer to) Proof store
     vec< CRef >         pleaves;                  // Store clauses that are still involved in the proof
     ProofGraph *        proof_graph;              // Proof graph
-    vec< CRef >         tleaves;                  // Store theory clauses to be removed
 
     map< CRef, TheoryInterpolator* >  clause_to_itpr;        // Clause id to interpolant (for theory clauses)
     // TODO: Maybe change to vectors

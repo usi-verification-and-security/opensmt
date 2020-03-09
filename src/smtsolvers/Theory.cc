@@ -112,7 +112,7 @@ CoreSMTSolver::handleSat()
             clauses.push(cr);
 #ifdef PRODUCE_PROOF
             // MB: the proof needs to know about the new class; TODO: what type it should be?
-            proof.addRoot( cr, clause_type::CLA_ORIG );
+            proof->newOriginalClause(cr);
 #endif // PRODUCE_PROOF
             forced_split = ~l1;
             return TPropRes::Decide;
@@ -140,7 +140,7 @@ CoreSMTSolver::handleSat()
             clauses.push(cr);
 #ifdef PRODUCE_PROOF
             // MB: the proof needs to know about the new class; TODO: what type it should be?
-            proof.addRoot( cr, clause_type::CLA_ORIG );
+            proof->newOriginalClause(cr);
             if (decisionLevel() == 0) {
                 units[ var(l_i) ] = cr;
             }
@@ -210,35 +210,19 @@ CoreSMTSolver::handleUnsat()
         CRef confl = ca.alloc(conflicting, config.sat_temporary_learn);
 
         Clause & c = ca[confl];
-        proof.addRoot( confl, clause_type::CLA_THEORY );
-        //TODO: is it correct?
-        //proof.setTheoryInterpolator(confl, theory_itpr);
-        //clause_to_itpr[ confl ] = theory_itpr;
-        tleaves.push( confl );
-        if ( config.isIncremental() )
-        {
-            // Not yet integrated
-            //assert(false);
-            undo_stack.push(undo_stack_el(undo_stack_el::NEWPROOF, confl));
-        }
-        if ( config.produce_inter() > 0 )
-        {
-            //assert(interp != PTRef_Undef);
-            // FIXME why here?
-            //proof.resolve( units[var(c[k])], var(c[k]) );
-        }
+        proof->newTheoryClause(confl);
         // Empty clause derived
         // ADDED CODE BEGIN
-        proof.beginChain( confl );
+        proof->beginChain( confl );
         for ( unsigned k = 0; k < c.size() ; k ++ )
         {
             //assert( level[ var(c[k]) ] == 0 );
             //assert( value( c[k] ) == l_False );
             //assert( units[var(c[k])] != NULL );
-            proof.resolve( units[var(c[k])], var(c[k]) );
+            proof->addResolutionStep( units[var(c[k])], var(c[k]) );
         }
         // ADDED CODE END
-        proof.endChain( CRef_Undef );
+        proof->endChain( CRef_Undef );
 #endif
         return TPropRes::Unsat;
     }
@@ -296,8 +280,7 @@ CoreSMTSolver::handleUnsat()
 
     learnt_clause.clear();
 #ifdef PRODUCE_PROOF
-    proof.addRoot( confl, clause_type::CLA_THEORY );
-    tleaves.push( confl );
+    proof->newTheoryClause(confl);
     if ( config.isIncremental() )
     {
         undo_stack.push(undo_stack_el(undo_stack_el::NEWPROOF, confl));
@@ -329,9 +312,9 @@ CoreSMTSolver::handleUnsat()
 #ifdef PRODUCE_PROOF
         // Create a unit for the proof
         CRef cr = ca.alloc(learnt_clause, false);
-        proof.endChain( cr );
+        proof->endChain( cr );
         //assert( units[ var(learnt_clause[0]) ] == CRef_Undef );
-        units[ var(learnt_clause[0]) ] = proof.last( );
+        units[ var(learnt_clause[0]) ] = cr;
 #endif
     } else {
         // ADDED FOR NEW MINIMIZATION
@@ -341,11 +324,7 @@ CoreSMTSolver::handleUnsat()
         CRef cr = ca.alloc(learnt_clause, true);
 
 #ifdef PRODUCE_PROOF
-        proof.endChain( cr );
-        if ( config.isIncremental() )
-        {
-            undo_stack.push(undo_stack_el(undo_stack_el::NEWPROOF, cr));
-        }
+        proof->endChain( cr );
 #endif
         learnts.push(cr);
         learnt_theory_conflicts++;
@@ -357,11 +336,6 @@ CoreSMTSolver::handleUnsat()
 
     varDecayActivity();
     claDecayActivity();
-
-#ifdef PRODUCE_PROOF
-    assert( proof.checkState( ) );
-#endif
-
     return TPropRes::Propagate;
 }
 
@@ -392,85 +366,6 @@ TPropRes CoreSMTSolver::checkTheory(bool complete, int& conflictC)
     assert(res == TRes::UNKNOWN);
 
     return TPropRes::Decide;
-}
-
-int CoreSMTSolver::analyzeUnsatLemma(CRef confl)
-{
-    assert(confl != CRef_Undef);
-
-#ifndef PRODUCE_PROOF
-  if ( decisionLevel( ) == 0 )
-    return -1;
-#endif
-
-    Clause & c = ca[confl];
-
-    // Get highest decision level
-    int max_decision_level = level(var(c[0]));
-    for ( unsigned i = 1 ; i < c.size( ) ; i++ )
-        if ( level(var(c[i])) > max_decision_level )
-            max_decision_level = level(var(c[i]));
-
-    cancelUntil( max_decision_level );
-
-    if ( decisionLevel( ) == 0 )
-    {
-#ifdef PRODUCE_PROOF
-        proof.beginChain( confl );
-        for ( unsigned k = 0; k < c.size() ; k ++ )
-        {
-            assert(level(var(c[k])) == 0);
-            assert(value( c[k] ) == l_False);
-            assert(units[ var(c[k]) ] != CRef_Undef);
-            proof.resolve(units[var(c[k])], var(c[k]));
-        }
-        // Empty clause reached
-        proof.endChain(CRef_Undef);
-#endif
-        return -1;
-    }
-
-    vec< Lit > learnt_clause;
-    int backtrack_level;
-    analyze( confl, learnt_clause, backtrack_level );
-    cancelUntil(backtrack_level);
-    assert(value(learnt_clause[0]) == l_Undef);
-
-    if (learnt_clause.size() == 1)
-    {
-        uncheckedEnqueue(learnt_clause[0]);
-#ifdef PRODUCE_PROOF
-        // Create a unit for proof
-        CRef cr = ca.alloc(learnt_clause, false);
-        proof.endChain(cr);
-        assert(units[var(learnt_clause[0])] == CRef_Undef);
-        units[ var(learnt_clause[0]) ] = proof.last();
-#endif
-    }
-    else
-    {
-        // ADDED FOR NEW MINIMIZATION
-        learnts_size += learnt_clause.size( );
-        all_learnts ++;
-
-        CRef cr = ca.alloc(learnt_clause, true);
-
-#ifdef PRODUCE_PROOF
-        proof.endChain(cr);
-        if ( config.isIncremental() )
-            undo_stack.push(undo_stack_el(undo_stack_el::NEWPROOF, cr));
-#endif
-        learnts.push(cr);
-        undo_stack.push(undo_stack_el(undo_stack_el::NEWLEARNT, cr));
-        attachClause(cr);
-        claBumpActivity(ca[cr]);
-        uncheckedEnqueue(learnt_clause[0], cr);
-    }
-
-    varDecayActivity();
-    claDecayActivity();
-
-    return 0;
 }
 
 //

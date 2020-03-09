@@ -141,8 +141,7 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , luby_k                (1)
     , cuvti                 (false)
 #ifdef PRODUCE_PROOF
-    , proof_                ( new Proof( ca ) )
-    , proof                 ( * proof_ )
+    , proof                 ( new Proof( ca ) )
     , proof_graph           ( nullptr )
 #endif
 #ifdef STATISTICS
@@ -206,7 +205,6 @@ CoreSMTSolver::~CoreSMTSolver()
     for (int i = 0; i < clauses.size(); i++) if(clauses[i] != CRef_Undef) ca.free(clauses[i]);
     for (int i = 0; i < pleaves.size(); i++) if(pleaves[i] != CRef_Undef) ca.free(pleaves[i]);
     for (int i = 0; i < learnts.size(); i++) if(learnts[i] != CRef_Undef) ca.free(learnts[i]);
-    for (int i = 0; i < tleaves.size(); i++) if(tleaves[i] != CRef_Undef) ca.free(tleaves[i]);
 
 #else
     for (int i = 0; i < learnts.size(); i++) ca.free(learnts[i]);
@@ -227,7 +225,6 @@ CoreSMTSolver::~CoreSMTSolver()
         LRA_Interpolator::stats.printStatistics(std::cout);
         LRA_Interpolator::stats.reset(); // Reset after print so they are not cumulated across instances
     }
-    delete proof_;
 #endif
 #ifdef STATISTICS
     cerr << "; time used for choosing branch lit " << branchTimer.getTime() << endl;
@@ -318,87 +315,65 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, std::pair<CRef, CRe
     assert(decisionLevel() == 0);
     inOutCRefs = std::make_pair(CRef_Undef, CRef_Undef);
     if (!ok) return false;
+    bool logProof = static_cast<bool>(proof);
     vec<Lit> ps;
     _ps.copyTo(ps);
     // Check if clause is satisfied and remove false/duplicate literals:
     sort(ps);
-#ifdef PRODUCE_PROOF
-    CRef root = ca.alloc( ps, false );
-    inOutCRefs.first = root;
-    std::vector<Var> resolvedUnits;
-#endif
+    std::vector<Lit> resolvedUnits;
     Lit p;
     int i, j;
     for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
     {
         if (value(ps[i]) == l_True || ps[i] == ~p)
         {
+            // This original clause is already satisfied
             return true;
         }
-        else if (value(ps[i]) != l_False && ps[i] != p)
+        else if (value(ps[i]) != l_False && ps[i] != p) // Ignore duplicates and falsified literals
         {
+
             ps[j++] = p = ps[i];
         }
-#ifdef PRODUCE_PROOF
-        else if ( value(ps[i]) == l_False )
+        else if ( logProof && value(ps[i]) == l_False )
         {
-            resolvedUnits.push_back(var(ps[i]));
+            resolvedUnits.push_back(ps[i]);
         }
-#endif
     }
     ps.shrink(i - j);
-#ifdef PRODUCE_PROOF
-    proof.addRoot( root, clause_type::CLA_ORIG );
-    assert( config.isInit( ) );
-    if (!resolvedUnits.empty()) {
-        proof.beginChain( root );
-        for(Var v : resolvedUnits) {
-            proof.resolve(units[v], v);
+    if (logProof) {
+        vec<Lit> original;
+        ps.copyTo(original);
+        for(Lit l : resolvedUnits) {
+            original.push(l);
+        }
+        CRef inputClause = ca.alloc(original, false);
+        CRef outputClause = resolvedUnits.empty() ? inputClause :
+                ps.size() == 0 ? CRef_Undef : ca.alloc(ps, false);
+        inOutCRefs = std::make_pair<>(inputClause, outputClause);
+        proof->newOriginalClause(inputClause);
+        if (!resolvedUnits.empty()) {
+            proof->beginChain( inputClause );
+            for(Lit l : resolvedUnits) {
+                Var v = var(l);
+                assert(units[v] != CRef_Undef);
+                proof->addResolutionStep(units[v], v);
+            }
+            proof->endChain(outputClause);
         }
     }
-
-#endif
-    if (ps.size() == 0)
-    {
-#ifdef PRODUCE_PROOF
-        proof.endChain( CRef_Undef );
-        tleaves.push( root );
-#endif
+    if (ps.size() == 0) {
         return ok = false;
     }
-
-#ifdef PRODUCE_PROOF
-    CRef res = root;
-    if ( !resolvedUnits.empty() )
-    {
-        res = ca.alloc( ps, false );
-        assert( ca[res].size( ) < ca[root].size( ) );
-        proof.endChain( res );
-        // Save root for removal
-        tleaves.push( root );
-    }
-#endif
-
     if (ps.size() == 1)
     {
         assert(value(ps[0]) == l_Undef);
-#ifdef PRODUCE_PROOF
-        assert( res != CRef_Undef );
-        assert( units[ var(ps[0]) ] == CRef_Undef );
-        units[ var(ps[0]) ] = res;
-#endif
-#ifdef VERBOSE_SAT
-        cerr << toInt(ps[0]) << endl;
-#endif
-#ifdef REPORT_DL1_THLITS
-        if (init_cl_len != 1)
-        {
-            // propagation
-            char* ulit = theory_handler.getLogic().printTerm(theory_handler.varToTerm(var(ps[0])));
-            cerr << "; Made a unit in addClause " << (sign(ps[0]) ? "not " : "") << ulit << endl;
-            free(ulit);
+        if (logProof) {
+            CRef clauseAfterRes = inOutCRefs.second;
+            assert( clauseAfterRes != CRef_Undef );
+            assert( units[ var(ps[0]) ] == CRef_Undef );
+            units[ var(ps[0]) ] = clauseAfterRes;
         }
-#endif
         uncheckedEnqueue(ps[0]);
         CRef confl = propagate();
         ok = (confl == CRef_Undef);
@@ -406,18 +381,12 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, std::pair<CRef, CRe
     }
     else
     {
-#ifdef PRODUCE_PROOF
-        // cr must be the last clause we have derived
-        CRef cr = res;
-#else
-        CRef cr = ca.alloc(ps, false);
-#endif
-        inOutCRefs.second = cr;
-        if (ca[cr].size() != 1) {
-            clauses.push(cr);
-            attachClause(cr);
-        }
-        undo_stack.push(undo_stack_el(undo_stack_el::NEWCLAUSE, cr));
+        CRef clauseToAttach = logProof ? inOutCRefs.second : ca.alloc(ps, false);
+        inOutCRefs.second = clauseToAttach;
+        clauses.push(clauseToAttach);
+        attachClause(clauseToAttach);
+        // MB: TODO: remove this undo_stack
+        undo_stack.push(undo_stack_el(undo_stack_el::NEWCLAUSE, clauseToAttach));
     }
     return true;
 }
@@ -463,7 +432,7 @@ void CoreSMTSolver::removeClause(CRef cr)
 #ifdef PRODUCE_PROOF
     // Remove clause and derivations if ref becomes 0
     // If ref is not 0, we keep it and remove later
-    if ( !proof.deleted( cr ) ) pleaves.push( cr );
+    if ( !proof->deleted( cr ) ) pleaves.push( cr );
 #else
     ca.free(cr);
 #endif
@@ -888,9 +857,8 @@ public:
 
 void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
 {
-#ifdef PRODUCE_PROOF
-    assert( proof.checkState( ) );
-#endif
+    bool logProof = static_cast<bool>(proof);
+    assert(!logProof || !proof->hasOpenChain());
     assert(confl != CRef_Undef);
     assert( cleanup.size( ) == 0 );       // Cleanup stack must be empty
 
@@ -903,54 +871,53 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
     int index   = trail.size() - 1;
     out_btlevel = 0;
 
-#ifdef PRODUCE_PROOF
-    proof.beginChain( confl );
-#endif
+    if (logProof) {
+        proof->beginChain(confl);
+    }
 
     do
     {
         assert(confl != CRef_Undef); // (otherwise should be UIP)
         Clause& c = ca[confl];
 
-        if (c.learnt())
+        if (c.learnt()) {
             claBumpActivity(c);
+        }
 
         for (unsigned j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++)
         {
             Lit q = c[j];
 
-            if (!seen[var(q)] && level(var(q)) > 0)
+            if (!seen[var(q)])
             {
-                varBumpActivity(var(q));
-                seen[var(q)] = 1;
-                // Variable propagated at current level
-                if (level(var(q)) >= decisionLevel())
-                    // Increment counter for number of pivot variables left on which to resolve
-                    pathC++;
-                else
-                {
-                    // Variable propagated at previous level
-                    out_learnt.push(q);
+                if (level(var(q)) > 0) {
+                    varBumpActivity(var(q));
+                    seen[var(q)] = 1;
+                    // Variable propagated at current level
+                    if (level(var(q)) >= decisionLevel())
+                        // Increment counter for number of pivot variables left on which to resolve
+                        pathC++;
+                    else {
+                        // Variable propagated at previous level
+                        out_learnt.push(q);
+                    }
+                }
+                else if (logProof) {
+                    assert(level(var(q)) == 0);
+                    assert(units[var(q)] != CRef_Undef);
+                    proof->addResolutionStep(units[var(q)], var(q));
                 }
             }
-#ifdef PRODUCE_PROOF
-            else if (!seen[var(q)])
-            {
-                if ( level( var(q) ) == 0 )
-                {
-                    proof.resolve( units[ var( q ) ], var( q ) );
-                }
-            }
-#endif
         }
         // Select next clause to look at:
         while (!seen[var(trail[index--])])
             ; // Do nothing
         assert(index >= 0);
-        p     = trail[index+1];
+        p = trail[index+1];
 
-        if ( reason(var(p)) == CRef_Fake )
+        if (reason(var(p)) == CRef_Fake)
         {
+            assert(!logProof); // MB: TODO Can we combine theory propagation and proof?
             // Before retrieving the reason it is necessary to backtrack
             // a little bit in order to remove every atom pushed after
             // p has been deduced
@@ -1001,26 +968,6 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
             }
             assert( ctr != CRef_Undef );
             vardata[var(p)].reason = ctr;
-#ifdef PRODUCE_PROOF
-            proof.addRoot(ctr, clause_type::CLA_THEORY);
-            /*if ( config.isIncremental() )
-            {
-                undo_stack_oper.push_back( NEWPROOF );
-                undo_stack_elem.push_back( (void *)ct );
-            }*/
-
-            if ( config.produce_inter() > 0 )
-            {
-                // Enode * interpolants = theory_handler->getInterpolants( );
-                // assert( interpolants );
-                // clause_to_in[ ct ] = interpolants;
-                /*if ( config.isIncremental() )
-                {
-                    undo_stack_oper.push_back( NEWINTER );
-                    undo_stack_elem.push_back( NULL );
-                }*/
-            }
-#endif
         }
 
         confl = reason(var(p));
@@ -1048,12 +995,12 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
         assert( pathC == 1 || confl != CRef_Undef );
         seen[var(p)] = 0;
         pathC--;
-#ifdef PRODUCE_PROOF
-        if ( pathC > 0 )
+        // Add resolution step only if this is not the last literal from current level
+        // The last literal is not resolved! It is a part of the learnt clause
+        if ( logProof && pathC > 0 )
         {
-            proof.resolve(confl, var(p));
+            proof->addResolutionStep(confl, var(p));
         }
-#endif
     }
     while (pathC > 0);
 
@@ -1136,18 +1083,13 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
     // Cleanup generated lemmata
     for ( int i = 0 ; i < cleanup.size() ; i ++ )
     {
-#ifdef PRODUCE_PROOF
-        // Theory lemma automatically cleaned
-        tleaves.push( cleanup[ i ] );
-#else
+        assert(!logProof);
         ca.free(cleanup[i]);
-#endif
     }
-
+    cleanup.clear();
 //    for (int i = 0; i < out_learnt.size(); i++)
 //        printf("%d ", out_learnt[i]);
 //    printf("\n");
-    cleanup.clear();
 }
 
 
@@ -1406,11 +1348,11 @@ CRef CoreSMTSolver::propagate()
             // Did not find watch -- clause is unit under assignment:
             if (decisionLevel() == 0)
             {
-                proof.beginChain( cr );
+                proof->beginChain( cr );
                 for (unsigned k = 1; k < c.size(); k++)
                 {
                     assert(level(var(c[k])) == 0);
-                    proof.resolve( units[var(c[k])], var(c[k]) );
+                    proof->addResolutionStep( units[var(c[k])], var(c[k]) );
                 }
 
                 assert( units[ var(first) ] == CRef_Undef || value( first ) == l_False );    // (if variable already has 'id', it must be with the other polarity and we should have derived the empty clause here)
@@ -1419,7 +1361,7 @@ CRef CoreSMTSolver::propagate()
                     vec<Lit> tmp;
                     tmp.push(first);
                     CRef uc = ca.alloc( tmp );
-                    proof.endChain( uc );
+                    proof->endChain( uc );
                     assert( units[ var(first) ] == CRef_Undef );
                     units[var(first)] = uc;
                 }
@@ -1428,12 +1370,12 @@ CRef CoreSMTSolver::propagate()
                     vec<Lit> tmp;
                     tmp.push(first);
                     CRef uc = ca.alloc( tmp );
-                    proof.endChain(uc);
+                    proof->endChain(uc);
                     pleaves.push(uc);
                     // Empty clause derived:
-                    proof.beginChain(units[var(first)]);
-                    proof.resolve(uc, var(first));
-                    proof.endChain( CRef_Undef );
+                    proof->beginChain(units[var(first)]);
+                    proof->addResolutionStep(uc, var(first));
+                    proof->endChain( CRef_Undef );
                 }
             }
 #endif
@@ -1540,7 +1482,7 @@ void CoreSMTSolver::reduceDB()
     {
         CRef cr = pleaves[i];
         assert(ca[cr].mark() == 1);
-        if ( ! proof.deleted( cr ) ) pleaves[j++] = pleaves[i];
+        if ( ! proof->deleted( cr ) ) pleaves[j++] = pleaves[i];
     }
     pleaves.shrink(i - j);
 
@@ -1614,9 +1556,6 @@ CoreSMTSolver::pushBacktrackPoint()
     //
     undo_stack_size.push(undo_stack.size( ));
     undo_trail_size.push(trail.size( ));
-#ifdef PRODUCE_PROOF
-    proof.pushBacktrackPoint( );
-#endif
 }
 
 void CoreSMTSolver::popBacktrackPoint()
@@ -1705,9 +1644,6 @@ void CoreSMTSolver::popBacktrackPoint()
         learnts.pop( );
         removeClause(cr);
     }
-#ifdef PRODUCE_PROOF
-    proof.popBacktrackPoint( );
-#endif
     assert( learnts.size( ) == 0 );
     // Backtrack theory solvers
     theory_handler.backtrack(trail.size());
@@ -1792,12 +1728,12 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
         ::free(name);
     }
 #endif
-#ifdef PRODUCE_PROOF
-    // Force disable theory propagation, since we don't
-    // have at the moment we don't construct the reasons
-    // for the propagated literals
-    config.sat_theory_propagation = 0;
-#endif
+    if (proof) {
+        // Force disable theory propagation, since we don't
+        // have at the moment we don't construct the reasons
+        // for the propagated literals
+        config.sat_theory_propagation = 0;
+    }
     assert(ok);
     int         backtrack_level;
     int         conflictC = 0;
@@ -1860,9 +1796,9 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                 uncheckedEnqueue(learnt_clause[0]);
 #ifdef PRODUCE_PROOF
                 CRef cr = ca.alloc( learnt_clause, false );
-                proof.endChain( cr );
+                proof->endChain( cr );
                 assert( units[ var(learnt_clause[0]) ] == CRef_Undef );
-                units[ var(learnt_clause[0]) ] = proof.last( );
+                units[ var(learnt_clause[0]) ] = cr;
 #endif
             }
             else
@@ -1874,7 +1810,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                 CRef cr = ca.alloc(learnt_clause, true);
 
 #ifdef PRODUCE_PROOF
-                proof.endChain(cr);
+                proof->endChain(cr);
 #endif
                 learnts.push(cr);
                 attachClause(cr);
