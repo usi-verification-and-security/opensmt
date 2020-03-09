@@ -26,10 +26,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "CoreSMTSolver.h"
 
+#include <sys/wait.h>
+
+#include <unordered_map>
+
 #include "Proof.h"
 #include "PG.h"
-//#include <sys/wait.h>
-#include <unordered_map>
+
+
 
 void CoreSMTSolver::dumpRndInter(std::ofstream& dump_out)
 {

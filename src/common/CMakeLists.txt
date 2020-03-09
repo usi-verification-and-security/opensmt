@@ -19,7 +19,8 @@ target_sources(common
 )
 
 install(FILES 
-    Global.h Integer.h Number.h FastRational.h XAlloc.h Alloc.h StringMap.h SigMap.h Timer.h IntTypes.h Real.h FlaPartitionMap.h
+    Global.h Integer.h Number.h FastRational.h XAlloc.h Alloc.h StringMap.h SigMap.h Timer.h IntTypes.h
+    Real.h FlaPartitionMap.h PartitionInfo.h
 DESTINATION ${INSTALL_HEADERS_DIR})
 
 

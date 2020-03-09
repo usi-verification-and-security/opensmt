@@ -52,6 +52,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "THandler.h"
 
 #include <cstdio>
+#include <memory>
+
 #include "Vec.h"
 #include "Heap.h"
 #include "Alg.h"
