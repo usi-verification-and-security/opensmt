@@ -186,18 +186,7 @@ CoreSMTSolver::handleUnsat()
     int        max_decision_level;
     int        backtrack_level;
 
-#ifdef PEDANTIC_DEBUG
-    theory_handler.getConflict(conflicting, vardata, max_decision_level, trail);
-#else
     theory_handler.getConflict(conflicting, vardata, max_decision_level);
-#endif
-#ifdef PRODUCE_PROOF
-    /*
-    PTRef interp = PTRef_Undef;
-    if ( config.produce_inter() > 0 )
-        interp = theory_handler.getInterpolants( );
-    */
-#endif
 
     assert( max_decision_level <= decisionLevel( ) );
     cancelUntil( max_decision_level );
@@ -230,7 +219,6 @@ CoreSMTSolver::handleUnsat()
     CRef confl = CRef_Undef;
     assert( conflicting.size( ) > 0 );
 
-#ifdef PRODUCE_PROOF
     // Do not store theory lemma
     if ( conflicting.size( ) > config.sat_learn_up_to_size
             || conflicting.size( ) == 1 ) // That might happen in bit-vector theories
@@ -242,56 +230,17 @@ CoreSMTSolver::handleUnsat()
     {
         confl = ca.alloc(conflicting, config.sat_temporary_learn);
         learnts.push(confl);
-        if ( config.isIncremental() )
-        {
-            undo_stack.push(undo_stack_el(undo_stack_el::NEWLEARNT, confl));
-        }
         attachClause(confl);
         claBumpActivity(ca[confl]);
         learnt_t_lemmata ++;
         if ( !config.sat_temporary_learn )
             perm_learnt_t_lemmata ++;
     }
-#else
-    // Do not store theory lemma
-    if ( conflicting.size( ) > config.sat_learn_up_to_size
-            || conflicting.size( ) == 1 ) // That might happen in bit-vector theories
-    {
-        confl = ca.alloc(conflicting);
-    }
-    // Learn theory lemma
-    else
-    {
-        confl = ca.alloc(conflicting, config.sat_temporary_learn);
-        learnts.push(confl);
-//    if ( config.incremental )
-//    {
-//      undo_stack_oper.push_back( NEWLEARNT );
-//      undo_stack_elem.push_back( (void *)confl );
-//    }
-        attachClause(confl);
-        claBumpActivity(ca[confl]);
-        learnt_t_lemmata ++;
-        if ( !config.sat_temporary_learn )
-            perm_learnt_t_lemmata ++;
-    }
-#endif
     assert( confl != CRef_Undef );
 
     learnt_clause.clear();
 #ifdef PRODUCE_PROOF
     proof->newTheoryClause(confl);
-    if ( config.isIncremental() )
-    {
-        undo_stack.push(undo_stack_el(undo_stack_el::NEWPROOF, confl));
-    }
-    if ( config.produce_inter() > 0 )
-    {
-        if ( config.isIncremental() )
-        {
-            undo_stack.push(undo_stack_el(undo_stack_el::NEWINTER, CRef_Undef));
-        }
-    }
 #endif
 
     analyze( confl, learnt_clause, backtrack_level );

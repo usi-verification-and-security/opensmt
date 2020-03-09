@@ -157,15 +157,24 @@ void Proof::addResolutionStep(CRef c, Var p)
 }
 
 // Finalize and store the temporary chain
-void Proof::endChain( CRef res )
+void Proof::endChain( CRef conclusion )
 {
   assert(hasOpenChain());
   begun = false;
   // There was no chain (only the first clause was stored)
   if ( current_chain.isTrivial() )
   {
-      assert(current_chain.chain_cla[0] == res);
-      assert( clause_to_proof_der.find( res ) != clause_to_proof_der.end( ) );
+      CRef premise = current_chain.chain_cla[0];
+      auto premise_type = clause_to_proof_der.at(premise).type; (void)premise_type;
+      // MB: When analyzing theory conflict, it might happen that the learnt clause is the same as conflicting clause
+      //     (but order of literals might be different)
+      assert(premise == conclusion || premise_type == clause_type::CLA_THEORY);
+      if (premise != conclusion) {
+          // It must be the case that premise is a theory clause and conclusion is an equivalent clause
+          // Just create a separate proof chain for conclusion.
+          this->newTheoryClause(conclusion);
+      }
+      assert( clause_to_proof_der.find( conclusion ) != clause_to_proof_der.end( ) );
       // No need to update the chain already stored in the proof
       current_chain.clear();
   }
@@ -176,9 +185,9 @@ void Proof::endChain( CRef res )
       assert(!current_chain.isEmpty());
       assert(current_chain.ref == 0);
       current_chain.type = clause_type::CLA_LEARNT;
-      assert( clause_to_proof_der.find( res ) == clause_to_proof_der.end( ) );
+      assert( clause_to_proof_der.find( conclusion ) == clause_to_proof_der.end( ) );
       // Create association between res and it's derivation chain
-      clause_to_proof_der.emplace(res, std::move(current_chain));
+      clause_to_proof_der.emplace(conclusion, std::move(current_chain));
       current_chain.clear();
   }
 }
