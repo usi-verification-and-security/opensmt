@@ -3,7 +3,8 @@ language: cpp
 #safelist of branches where travis should run
 branches:
     only:
-        - master    
+        - master
+        - pp_cleanup    
 sudo: true
 
 os:
