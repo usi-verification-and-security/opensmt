@@ -19,6 +19,12 @@ enum class e_type : char {
 struct Edge {
     PTRef from, to;
     opensmt::Number cost;
+
+    // Temporary workaround to be able to use as map keys
+    // Shouldn't be needed once better data structures are used
+     bool operator <(const Edge & other) const {
+        return from < other.from || to < other.to || cost < other.cost;
+    }
 };
 
 struct Vertex {
@@ -29,10 +35,13 @@ struct Vertex {
 class Graph {
     std::map<PTRef, Vertex> vertices;
     std::map<Edge, e_type> edges;
+    bool valid;
     PTRef getArgMin(std::map<PTRef, opensmt::Number> func);
 public:
+    Graph() noexcept;
     void addVertex(PTRef x);
     bool addEdge(const Edge& e);
+    bool check();
 };
 
 

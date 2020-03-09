@@ -8,11 +8,16 @@
 #include "TSolver.h"
 #include "LALogic.h"
 #include "SMTConfig.h"
+#include "Graph.hpp"
 
 
 class STPSolver : TSolver {
 
     LALogic& logic;
+
+    Graph graph;
+
+    Edge parseEdge(PTRef e);
 
 public:
     STPSolver(SMTConfig & c, LALogic & l, vec<DedElem> & d);

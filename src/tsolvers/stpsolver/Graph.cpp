@@ -1,16 +1,19 @@
 #include "Graph.hpp"
 
+Graph::Graph() noexcept : valid(true) {}
+
 void Graph::addVertex(PTRef x) {
-    vertices[x] = Vertex();
+    if (!vertices.count(x))
+        vertices[x] = Vertex();
 }
 
+// FIXME: performs consistency check when adding
 // append a new edge constraint to graph
 bool Graph::addEdge(const Edge& e) {
-    if (edges.count(e) && edges.at(e) == e_type::consequence)
-        return true;
+    if (edges.count(e)) return true;
 
     edges[e] = e_type::assigned;
-
+    vertices[e.from].neighbours.push_back(e);
     // horribly inefficient. used as proof of concept.
     // will be replaced later
     std::map<PTRef, opensmt::Number> phi;
@@ -33,22 +36,33 @@ bool Graph::addEdge(const Edge& e) {
     }
 
     // negative cycle detected
-    if (phi[e.from] < 0)
-        return false;
-
-    for (const auto & i : updated) {
-        vertices[i.first].value = i.second;
+    if (phi[e.from] < 0) {
+        valid = false;
+        vertices[e.from].neighbours.pop_back();
+    }
+    else {
+        for (const auto & i : updated) {
+            vertices[i.first].value = i.second;
+        }
     }
 
     return true;
 }
 
+bool Graph::check() {
+    return valid;
+}
+
+
 // finds argmin in linear time
 // TODO: replace with faster data structure
 PTRef Graph::getArgMin(std::map<PTRef, opensmt::Number> func) {
-    PTRef min = func.begin()->first;
-    for (const auto & x : func)
-        if (x.first < min) min = x.first;
-
-    return min;
+    auto argmin = func.begin()->first;
+    auto min = func[argmin];
+    for (const auto &x : func)
+        if (x.second < min) {
+            argmin = x.first;
+            min = x.second;
+        }
+    return argmin;
 }
