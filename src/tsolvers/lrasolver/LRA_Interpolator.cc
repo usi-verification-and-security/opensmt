@@ -243,6 +243,7 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
         });
     }
 
+#ifdef TRACE
     void print_matrix(std::vector<std::vector<Real>> const & matrix) {
         (void)print_matrix; // MB: to supress compiler warning for this unused helpful debug method
         for (auto const & row : matrix) {
@@ -265,6 +266,7 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
         }
         std::cout << '\n';
     }
+#endif // TRACE
 #endif // NDEBUG
 
     /** Given matrix in RREF computes and returns a basis of its null space
