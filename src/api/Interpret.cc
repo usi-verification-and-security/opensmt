@@ -417,12 +417,14 @@ void Interpret::interp(ASTNode& n) {
         }
         case t_getinterpolants:
         {
-            if(!parse_only)
-#ifdef PRODUCE_PROOF
-                getInterpolants(n);
-#else
-                notify_formatted(true, "This binary has no support to interpolation");
-#endif
+            if(!parse_only) {
+                if (config.produce_inter()) {
+                    getInterpolants(n);
+                } else {
+                    notify_formatted(true,
+                                     "Option to produce interpolants has not been set, skipping this command ...");
+                }
+            }
             break;
         }
         case t_getassignment:
@@ -1270,7 +1272,6 @@ SRef Interpret::newSort(ASTNode& sn) {
     return rval;
 }
 
-#ifdef PRODUCE_PROOF
 void Interpret::getInterpolants(const ASTNode& n)
 {
     auto exps = *n.children;
@@ -1333,7 +1334,6 @@ void Interpret::getInterpolants(const ASTNode& n)
             free(itp);
         }
 }
-#endif
 
 bool Interpret::is_top_level_assertion(PTRef ref) {
     return get_assertion_index(ref) >= 0;
