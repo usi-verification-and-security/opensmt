@@ -45,9 +45,7 @@ class UFLRATHandler : public LRATHandler
 //    virtual bool assertLit_special(PtAsgn);
     virtual Logic& getLogic();
 
-#ifdef PRODUCE_PROOF
     virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels);
-#endif // PRODUCE_PROOF
 };
 
 #endif
