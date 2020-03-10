@@ -201,12 +201,12 @@ Logic::Logic(SMTConfig& c) :
 
     ites.insert(sym_ITE, true);
 
-#ifdef PRODUCE_PROOF
+    // MB: TODO: Is this necessary?
     ipartitions_t mask = 0;
     mask = ~mask;
     setIPartitions(getTerm_true(), mask);
     setIPartitions(getTerm_false(), mask);
-#endif
+    /////////////////////////////////////////
 }
 
 bool Logic::isBuiltinFunction(const SymRef sr) const
@@ -1733,9 +1733,6 @@ void
 Logic::dumpChecksatToFile(ostream& dump_out)
 {
     dump_out << "(check-sat)" << endl;
-#ifdef PRODUCE_PROOF
-    dump_out << "(get-interpolants)" << endl;
-#endif
     dump_out << "(exit)" << endl;
 }
 

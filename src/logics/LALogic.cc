@@ -254,12 +254,6 @@ void LALogic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
         args.clear();
         args.push(i1); args.push(i2);
         PTRef andr = mkAnd(args);
-#ifdef PRODUCE_PROOF
-        const ipartitions_t &part = getIPartitions(tr);
-        transferPartitionMembership(tr, andr);
-        addIPartitions(i1, part);
-        addIPartitions(i2, part);
-#endif
         la_split_inequalities.insert(i1, true);
         la_split_inequalities.insert(i2, true);
         assert(!tr_map.has(tr));
