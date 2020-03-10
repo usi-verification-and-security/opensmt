@@ -104,13 +104,6 @@ protected:
         return (int)(drand(seed) * size);
     }*/
 
-//  void verifyCallWithExternalTool        ( bool, size_t );
-//  void verifyExplanationWithExternalTool ( vector< Enode * > & );
-//  void verifyDeductionWithExternalTool   ( Enode * = NULL );
-//  bool callCertifyingSolver              ( const char * );
-#ifdef PRODUCE_PROOF
-    void verifyInterpolantWithExternalTool ( PTRef itp, const ipartitions_t & );
-#endif
     void dumpHeaderToFile(ostream&);
     void dumpFormulaToFile(ostream&, PTRef, bool negate = false);
 
