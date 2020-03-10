@@ -76,21 +76,14 @@ MainSolver::insertFormula(PTRef root, char** msg)
         (void)chars_written;
         return s_Error;
     }
-#ifndef PRODUCE_PROOF
+
     inserted_formulas_count++;
-#else
-    int partition_index = inserted_formulas_count++;
-    logic.assignPartition(partition_index, root);
-    assert(logic.getPartitionIndex(root) != -1);
-    PTRef old_root = root;
-#endif
-
     logic.conjoinExtras(root, root);
-
-    #ifdef PRODUCE_PROOF
-    logic.transferPartitionMembership(old_root, root);
-    assert(logic.getPartitionIndex(root) != -1);
-#endif // PRODUCE_PROOF
+    if (getConfig().produce_inter()) {
+        int partition_index = inserted_formulas_count;
+        logic.assignPartition(partition_index, root);
+        assert(logic.getPartitionIndex(root) != -1);
+    }
 
     PushFrame& lastFrame =  pfstore[frames.last()];
     lastFrame.push(root);
@@ -111,6 +104,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
     status = s_Undef;
 
     vec<PTRef> coll_f;
+    bool keepPartitionsSeparate = getConfig().produce_proofs > 0;
     for (std::size_t i = frames.getSimplifiedUntil(); i < frames.size(); i++) {
         getTheory().simplify(frames.getFrameReferences(), i);
         frames.setSimplifiedUntil(i + 1);
@@ -121,41 +115,37 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
             giveToSolver(getLogic().getTerm_false(), frame.getId());
             return status = s_False;
         }
-#ifdef PRODUCE_PROOF
-        assert(frame.substs == logic.getTerm_true());
-        vec<PTRef> const & flas =  frame.formulas;
-        for (int j = 0; j < flas.size(); ++j) {
-            PTRef fla = flas[j];
-            if (fla == logic.getTerm_true()) {continue;}
-            assert(logic.getPartitionIndex(fla) != -1);
+        if (keepPartitionsSeparate) {
+            assert(frame.substs == logic.getTerm_true());
+            vec<PTRef> const & flas = frame.formulas;
+            for (int j = 0; j < flas.size(); ++j) {
+                PTRef fla = flas[j];
+                if (fla == logic.getTerm_true()) { continue; }
+                assert(logic.getPartitionIndex(fla) != -1);
+                // Optimize the dag for cnfization
+                if (logic.isBooleanOperator(fla)) {
+                    PTRef old = fla;
+                    fla = rewriteMaxArity(fla);
+                    logic.transferPartitionMembership(old, fla);
+                }
+                assert(logic.getPartitionIndex(fla) != -1);
+                logic.propagatePartitionMask(fla);
+                if ((status = giveToSolver(fla, frame.getId())) == s_False) {
+                    return s_False;
+                }
+            }
+        } else {
             // Optimize the dag for cnfization
-            if (logic.isBooleanOperator(fla)) {
-                PTRef old = fla;
-                fla = rewriteMaxArity(fla);
-                logic.transferPartitionMembership(old, fla);
+            if (logic.isBooleanOperator(root)) {
+                root = rewriteMaxArity(root);
             }
-            assert(logic.getPartitionIndex(fla) != -1);
-            logic.propagatePartitionMask(fla);
-            if ((status = giveToSolver(fla, frame.getId())) == s_False) {
-                return s_False;
-            }
+            // root_instance is updated to the and of the simplified formulas currently in the solver, together with the substitutions
+            root = logic.mkAnd(root, frame.substs);
+            root_instance.setRoot(root);
+            // Stop if problem becomes unsatisfiable
+            if ((status = giveToSolver(root, frame.getId())) == s_False)
+                break;
         }
-#else // PRODUCE_PROOF
-        FContainer fc(root);
-
-        // Optimize the dag for cnfization
-        if (logic.isBooleanOperator(fc.getRoot())) {
-            PTRef flat_root = rewriteMaxArity(fc.getRoot());
-            fc.setRoot(flat_root);
-        }
-
-        // root_instance is updated to the and of the simplified formulas currently in the solver, together with the substitutions
-        fc.setRoot(logic.mkAnd(fc.getRoot(), frame.substs));
-        root_instance.setRoot(fc.getRoot());
-        // Stop if problem becomes unsatisfiable
-        if ((status = giveToSolver(fc.getRoot(), frame.getId())) == s_False)
-            break;
-#endif
     }
     return status;
 }
