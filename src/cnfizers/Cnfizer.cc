@@ -148,10 +148,10 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
     cerr << "cnfizerAndGiveToSolver: " << logic.printTerm (formula) << endl;
 #endif
 
-#ifdef PRODUCE_PROOF
-    assert(logic.getPartitionIndex(formula) != -1);
-    currentPartition = logic.getPartitionIndex(formula);
-#endif // PRODUCE_PROOF
+    if (keepPartitionInfo()) {
+        assert(logic.getPartitionIndex(formula) != -1);
+        currentPartition = logic.getPartitionIndex(formula);
+    }
     vec<PTRef> top_level_formulae;
     // Retrieve top-level formulae - this is a list constructed from a conjunction
     retrieveTopLevelFormulae (formula, top_level_formulae);
@@ -422,23 +422,24 @@ bool Cnfizer::addClause(const vec<Lit> & c_in)
     }
 
 #endif
-#ifdef PRODUCE_PROOF
-    std::pair<CRef,CRef> iorefs = std::make_pair(CRef_Undef,CRef_Undef);
-    bool res = solver.addOriginalSMTClause(c, iorefs);
-    CRef ref = iorefs.first;
-    if (ref != CRef_Undef) {
-        ipartitions_t parts = 0;
-        assert(currentPartition != -1);
-        setbit(parts, static_cast<unsigned int>(currentPartition));
-        logic.addClauseClassMask(ref, parts);
-        for (int i = 0; i < c.size(); ++i) {
-            logic.addVarClassMask(var(c[i]), parts);
+    if (keepPartitionInfo()) {
+        std::pair<CRef, CRef> iorefs = std::make_pair(CRef_Undef, CRef_Undef);
+        bool res = solver.addOriginalSMTClause(c, iorefs);
+        CRef ref = iorefs.first;
+        if (ref != CRef_Undef) {
+            ipartitions_t parts = 0;
+            assert(currentPartition != -1);
+            setbit(parts, static_cast<unsigned int>(currentPartition));
+            logic.addClauseClassMask(ref, parts);
+            for (int i = 0; i < c.size(); ++i) {
+                logic.addVarClassMask(var(c[i]), parts);
+            }
         }
+        return res;
     }
-#else
-    bool res = solver.addOriginalSMTClause(c);
-#endif
-    return res;
+    else {
+        return solver.addOriginalSMTClause(c);
+    }
 }
 //
 // Give the formula to the solver
