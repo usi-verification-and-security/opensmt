@@ -1986,7 +1986,7 @@ void Logic::conjoinItes(PTRef root, PTRef& new_root)
         auto id = Idx(c_term.getId());
         assert(id < size);
         if (!seen[id]) {
-            if (isVar(current) && isIteVar(current)) {
+            if (isVar(c_term.symb()) && isIteVar(current)) {
                 PTRef ite = getTopLevelIte(current);
                 args.push(ite);
                 queue.push_back(ite);

@@ -139,7 +139,6 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
     setFrameTerm(frame_id);
 
     Map<PTRef, PTRef, PTRefHash> valdupmap;
-//  egraph.initDupMap1( );
 
     if (solver.okay() == false) return l_False;
 

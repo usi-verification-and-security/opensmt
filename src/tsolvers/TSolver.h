@@ -32,9 +32,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Deductions.h"
 #include "SolverTypes.h"
 #include "TResult.h"
-#ifdef PRODUCE_PROOF
+
 class TheoryInterpolator; // forward declaration
-#endif
+
 
 class Logic; // forward declaration
 
