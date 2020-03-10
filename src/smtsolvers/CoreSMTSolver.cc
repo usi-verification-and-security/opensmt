@@ -152,9 +152,6 @@ CoreSMTSolver::initialize( )
     random_seed = config.getRandomSeed();
     restart_first = config.sat_restart_first();
     restart_inc = config.sat_restart_inc();
-    // FIXME: check why this ?
-//    first_model_found = config.logic == QF_UFLRA
-//                        || config.logic == QF_UFIDL;
     // Set some parameters
     skip_step = config.sat_initial_skip_step;
     skipped_calls = 0;
@@ -186,6 +183,10 @@ CoreSMTSolver::initialize( )
     case 5:
         polarity_mode = polarity_user;
         break; // Boolean atoms
+    }
+
+    if ((config.produce_proofs > 0 || config.produce_inter() > 0) && !proof) {
+        proof = std::unique_ptr<Proof>(new Proof(this->ca));
     }
 
     init = true;
@@ -292,7 +293,7 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, std::pair<CRef, CRe
     assert(decisionLevel() == 0);
     inOutCRefs = std::make_pair(CRef_Undef, CRef_Undef);
     if (!ok) return false;
-    bool logProof = static_cast<bool>(proof);
+    bool logProof = this->logsProof();
     vec<Lit> ps;
     _ps.copyTo(ps);
     // Check if clause is satisfied and remove false/duplicate literals:
@@ -699,7 +700,7 @@ Lit CoreSMTSolver::pickBranchLit()
 
 void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
 {
-    bool logProof = static_cast<bool>(proof);
+    bool logProof = this->logsProof();
     assert(!logProof || !proof->hasOpenChain());
     assert(confl != CRef_Undef);
     assert( cleanup.size( ) == 0 );       // Cleanup stack must be empty
@@ -1938,11 +1939,10 @@ lbool CoreSMTSolver::solve_()
     // UF solver should be enabled for lazy dtc
     assert( config.sat_lazy_dtc == 0 || config.uf_disable == 0 );
 
-    if ( config.sat_dump_cnf != 0 )
-        dumpCNF( );
+    if (config.sat_dump_cnf != 0) {
+        dumpCNF();
+    }
 
-//    if ( config.sat_dump_rnd_inter != 0 )
-//        dumpRndInter( );
     model.clear();
     conflict.clear();
 

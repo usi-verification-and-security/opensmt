@@ -362,15 +362,14 @@ sstat MainSolver::check()
         printf("; %s query time so far: %f\n", solver_name.c_str(), query_timer.getTime());
         opensmt::StopWatch sw(query_timer);
     }
-    sstat rval;
-    rval = simplifyFormulas();
+    initialize();
+    sstat rval = simplifyFormulas();
 
     if (config.dump_query())
         printFramesAsQuery();
 
     if (rval != s_Undef)
         return rval;
-    initialize();
     return solve();
 }
 

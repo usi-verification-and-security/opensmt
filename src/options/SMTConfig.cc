@@ -593,11 +593,7 @@ SMTConfig::initializeConfig( )
   lra_integer_solver            = 0;
   lra_check_on_assert           = 0;
   // Proof parameters
-#ifdef PRODUCE_PROOF
-  produce_proofs = 1;
-#else
   produce_proofs = 0;
-#endif // PRODUCE_PROOF
 //  proof_reduce                  = 0;
   proof_ratio_red_solv          = 0;
   proof_red_time                = 0;
