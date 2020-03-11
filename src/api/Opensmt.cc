@@ -33,7 +33,6 @@ Opensmt::Opensmt(opensmt_logic _logic, const char* name, int bw)
 
 Opensmt::Opensmt(opensmt_logic _logic, const char* name, SMTConfig* config)
 {
-    const char* msg;
     config->setTimeQueries();
     switch(_logic)
     {
