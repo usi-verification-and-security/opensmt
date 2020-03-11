@@ -10,6 +10,9 @@ if [[ ! $# -eq 0 ]] ; then
     opensmt=$1
 fi
 
+# run the interpolating version of OpenSMT
+opensmt=${opensmt}' -i'
+
 tmpfolder=log-$(date '+%Y-%m-%d-%H-%M-%S')
 mkdir ${tmpfolder}
 

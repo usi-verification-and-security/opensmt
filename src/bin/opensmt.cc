@@ -79,7 +79,7 @@ int main( int argc, char * argv[] )
     int opt;
 
     SMTConfig c;
-    while ((opt = getopt(argc, argv, "hdr:")) != -1) {
+    while ((opt = getopt(argc, argv, "hdr:i")) != -1) {
         switch (opt) {
 
             case 'h':
@@ -94,6 +94,10 @@ int main( int argc, char * argv[] )
                     fprintf(stderr, "Error setting random seed: %s\n", msg);
                 else
                     fprintf(stderr, "; Using random seed %d\n", atoi(optarg));
+                break;
+            case 'i':
+                c.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+                c.produce_proofs = 1;
                 break;
             default: /* '?' */
                 fprintf(stderr, "Usage:\n\t%s [-d] [-h] [-r seed] filename [...]\n",
