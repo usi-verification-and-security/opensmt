@@ -31,6 +31,35 @@ Opensmt::Opensmt(opensmt_logic _logic, const char* name, int bw)
     mainSolver->initialize();
 }
 
+Opensmt::Opensmt(opensmt_logic _logic, const char* name, SMTConfig* config)
+{
+    const char* msg;
+    config->setTimeQueries();
+    switch(_logic)
+    {
+        case qf_uf:
+        case qf_bool:
+            theory = new UFTheory(*config);
+            break;
+        case qf_lra:
+            theory = new LRATheory(*config);
+            break;
+        case qf_lia:
+            theory = new LIATheory(*config);
+            break;
+        case qf_cuf:
+            theory = new CUFTheory(*config , config->cuf_bitwidth);
+            break;
+        default:
+        opensmt_error("Theory not supported");
+    }
+    this->config = config;
+    thandler = new THandler(*theory);
+    solver = new SimpSMTSolver(*config, *thandler);
+    mainSolver = new MainSolver(*thandler, *config, solver, name);
+    mainSolver->initialize();
+}
+
 Opensmt::~Opensmt()
 {
     delete mainSolver;

@@ -608,7 +608,7 @@ SMTConfig::initializeConfig( )
   proof_random_seed	        = 0;
   simplify_interpolant           = 0;
   sat_theory_polarity_suggestion = 1;
-
+  cuf_bitwidth                   = 32;
 }
 
 void

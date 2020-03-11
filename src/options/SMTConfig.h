@@ -879,6 +879,8 @@ public:
   // UF-Solver related parameters
   int          uf_disable;                   // Disable the solver
   int          uf_theory_propagation;        // Enable theory propagation
+  // CUF-Solver related parameter
+  int          cuf_bitwidth;                  // Bit-width to use by the CUF solver
   // BV-Solver related parameters
   int          bv_disable;                   // Disable the solver
   int          bv_theory_propagation;        // Enable theory propagation

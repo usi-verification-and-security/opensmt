@@ -4,7 +4,11 @@
 Opensmt*
 pre()
 {
-    Opensmt* osmt = new Opensmt(opensmt_logic::qf_uf, "test solver");
+    SMTConfig * config = new SMTConfig();
+    config->produce_proofs = 1;
+    const char* msg;
+    config->setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    Opensmt* osmt = new Opensmt(opensmt_logic::qf_uf, "test solver", config);
     return osmt;
 }
 
@@ -17,9 +21,6 @@ main(int argc, char** argv)
     MainSolver& mainSolver = osmt->getMainSolver();
     SimpSMTSolver& solver = osmt->getSolver();
     Logic& logic = osmt->getLogic();
-
-    const char* msg;
-    c.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
     
     // Let's build two assertions
 
@@ -51,8 +52,8 @@ main(int argc, char** argv)
     else if (r == s_False)
     {
         printf("unsat\n");
-#ifdef PRODUCE_PROOF
         // Set labeling function
+        const char* msg;
         c.setOption(SMTConfig::o_itp_bool_alg, SMTOption(0), msg);
 
         // Create the proof graph
@@ -74,7 +75,6 @@ main(int argc, char** argv)
         vector<PTRef> itps;
         solver.getSingleInterpolant(itps, mask);
         cerr << ";Interpolant:\n;" << logic.printTerm(itps[0]) << endl;
-#endif // PRODUCE_PROOF
     }
     else if (r == s_Undef)
         printf("unknown\n");
