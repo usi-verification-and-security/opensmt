@@ -206,7 +206,6 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
     }
     if(A_added > 0) dump_out << "))" << endl;
 
-#ifdef FULL_LABELING
     if(n->isLeaf())
     {
         // Add negation of clause restriction
@@ -251,7 +250,6 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
             if(num_added>0) dump_out << "))" << endl;
         }
     }
-#endif
 
     // Add partial interpolant
     //dump_out << "(assert (not " << partial_interp << ") )" << endl;
@@ -320,7 +318,6 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
     }
     if(B_added > 0) dump_out << "))" << endl;
 
-#ifdef FULL_LABELING
     if(n->isLeaf())
     {
         icolor_t var_class;
@@ -364,7 +361,6 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
             if(num_added>0) dump_out << "))" << endl;
         }
     }
-#endif
 
     // Add partial interpolant
     //dump_out << "(assert " << partial_interp << " )" << endl;

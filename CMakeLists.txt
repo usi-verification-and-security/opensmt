@@ -91,15 +91,6 @@ if(VERBOSE_FOPS)
     add_definitions(-DVERBOSE_FOPS)
 endif(VERBOSE_FOPS)
 
-# there should be a better way of profiling
-#if(ENABLE_PROFILING)
-#    add_compile_options(-pg)
-#endif()
-
-if (PRODUCE_PROOF)
-    add_definitions(-DPRODUCE_PROOF -DFULL_LABELING)
-endif ()
-
 if (LADEBUG)
     add_definitions(-DLADEBUG)
 endif ()

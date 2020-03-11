@@ -76,11 +76,9 @@ void ProofGraph::buildProofGraph( int nVars )
     assert( nVars>0 );
     num_vars_limit=nVars;
     max_id_variable=0;
-#ifdef FULL_LABELING
     // Mapping for AB class variables
     AB_vars_mapping.reserve(num_vars_limit);
     AB_vars_mapping.resize(num_vars_limit,-3);
-#endif
 
     av_cla_size=0; max_cla_size=0;
     num_edges=0;

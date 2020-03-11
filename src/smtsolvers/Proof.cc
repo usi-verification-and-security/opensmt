@@ -408,9 +408,7 @@ void CoreSMTSolver::getInterpolants(const vec<vec<int> >& partitions, vec<PTRef>
 void CoreSMTSolver::getInterpolants(const vec<ipartitions_t>& partitions, vec<PTRef>& interpolants)
 { assert(proof_graph); proof_graph->produceMultipleInterpolants( partitions, interpolants ); }
 
-#ifdef FULL_LABELING
 void CoreSMTSolver::setColoringSuggestions	( vec< std::map<PTRef, icolor_t>* > * mp ){ proof_graph->setColoringSuggestions(mp); }
-#endif
 
 void CoreSMTSolver::getSingleInterpolant(vec<PTRef>& interpolants)
 { assert(proof_graph); proof_graph->produceSingleInterpolant(interpolants); }
