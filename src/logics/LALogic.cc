@@ -814,11 +814,9 @@ void SimplifyConstSum::constSimplify(const SymRef& s, const vec<PTRef>& terms, S
 }
 void SimplifyConstTimes::constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const
 {
-    //distribute the constant over the first sum
-    int i;
     PTRef con, plus;
     con = plus = PTRef_Undef;
-    for (i = 0; i < terms.size(); i++) {
+    for (int i = 0; i < terms.size(); i++) {
         if (l.isNumZero(terms[i])) {
             terms_new.clear();
             s_new = l.getPterm(l.getTerm_NumZero()).symb();
@@ -841,6 +839,8 @@ void SimplifyConstTimes::constSimplify(const SymRef& s, const vec<PTRef>& terms,
         terms_new.push(con);
     else
     {
+        assert(con != PTRef_Undef && plus != PTRef_Undef);
+        //distribute the constant over the sum
         vec<PTRef> sum_args;
         int termSize = l.getPterm(plus).size();
         for(int i = 0; i < termSize; ++i)
