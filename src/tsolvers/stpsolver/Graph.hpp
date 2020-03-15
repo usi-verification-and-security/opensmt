@@ -35,8 +35,10 @@ struct Vertex {
 class Graph {
     std::map<PTRef, Vertex> vertices;
     std::map<Edge, e_type> edges;
+    std::vector<Edge> added;
     bool valid;
     PTRef getArgMin(std::map<PTRef, opensmt::Number> func);
+    bool areAddedZero(std::map<PTRef, opensmt::Number> phi);
 public:
     Graph() noexcept;
     void addVertex(PTRef x);
