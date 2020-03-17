@@ -77,12 +77,16 @@ MainSolver::insertFormula(PTRef root, char** msg)
         return s_Error;
     }
 
-    inserted_formulas_count++;
     logic.conjoinExtras(root, root);
     if (getConfig().produce_inter()) {
-        int partition_index = inserted_formulas_count;
+        // MB: Important for HiFrog! partition index is the index of the formula in an virtual array of inserted formulas,
+        //     thus we need the old value of count. TODO: Find a good interface for this so it cannot be broken this easily
+        int partition_index = inserted_formulas_count++;
         logic.assignPartition(partition_index, root);
         assert(logic.getPartitionIndex(root) != -1);
+    }
+    else {
+        ++inserted_formulas_count;
     }
 
     PushFrame& lastFrame =  pfstore[frames.last()];
