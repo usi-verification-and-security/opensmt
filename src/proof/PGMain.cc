@@ -28,7 +28,7 @@ void ProofGraph::printProofGraph( )
 	fillProofGraph();
 	//Print original proof
 	if( verbose() > 0 ) cerr << "# Outputting dotty proof" << endl;
-	ofstream dotty( "proof.dot" );
+	ofstream dotty( "proof.dot", ofstream::out | ofstream::trunc);
 	printProofAsDotty( dotty );
 	emptyProofGraph();
 }

@@ -22,122 +22,123 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 // Prints resolution proof graph to a dot file,
 // with proper colors
-void ProofGraph::printProofAsDotty( ostream & out, ipartitions_t A_mask )
-{
-	// Visited nodes vector
-	vector< bool > visited_dotty(getGraphSize(), false );
-	// Visit proof graph from sink via DFS
-	vector< ProofNode * > q;
-	q.push_back(getRoot());
+void ProofGraph::printProofAsDotty(std::ostream & out, ipartitions_t A_mask) {
+    // Visited nodes vector
+    std::vector<bool> visited_dotty(getGraphSize(), false);
+    // Visit proof graph from sink via DFS
+    std::vector<ProofNode *> q;
+    q.push_back(getRoot());
 
-	out << "digraph proof {" << endl;
+    out << "digraph proof {" << endl;
 
-	while( !q.empty( ) )
-	{
-		ProofNode * node = q.back( );
-		// Remove node
-		q.pop_back( );
-		// Node not yet visited
-		if( !visited_dotty.at( node->getId() ) )
-		{
-			//Clean
-			//clauseSort(node->clause);
-			// Print node
-			//0 if original, 1 if lemma, 2 if learnt, 3 if internally derived
-			string typ;
-			string color="";
-			switch( node->getType() )
-			{
-			case clause_type::CLA_ORIG:
-			{
-				typ = "cls_";
-				out << typ << node->getId() << "[shape=plaintext, label=\"c" << node->getId() <<"  :  ";
-				printClause(node, out);
-				if( produceInterpolants() && node->getPartialInterpolant( ) != PTRef_Undef ) {
-                    // FIXME out << "\\\\n" << node->getPartialInterpolant( );
-                    if (produceInterpolants()) {
-                        icolor_t col = getClauseColor(node->getInterpPartitionMask(), A_mask);
-                        if (col == I_A) out << "\", color=\"lightblue\",";
-                        if (col == I_B) out << "\", color=\"red\",";
-                        if (col == I_AB) out << "\", color=\"violet\",";
+    while (!q.empty()) {
+        ProofNode * node = q.back();
+        // Remove node
+        q.pop_back();
+        // Node not yet visited
+        if (!visited_dotty.at(node->getId())) {
+            //Clean
+            //clauseSort(node->clause);
+            // Print node
+            string typ;
+            string color = "";
+            switch (node->getType()) {
+                case clause_type::CLA_ORIG:
+                    typ = "cls_";
+                    out << typ << node->getId() << "[shape=plaintext, label=\"c" << node->getId() << "  :  ";
+                    printClause(node, out);
+                    if (produceInterpolants() && node->getPartialInterpolant() != PTRef_Undef) {
+                        // FIXME out << "\\\\n" << node->getPartialInterpolant( );
+                        if (produceInterpolants()) {
+                            icolor_t col = getClauseColor(node->getInterpPartitionMask(), A_mask);
+                            if (col == I_A) out << "\", color=\"lightblue\",";
+                            if (col == I_B) out << "\", color=\"red\",";
+                            if (col == I_AB) out << "\", color=\"violet\",";
+                        }
+                    } else {
+                        out << "\", color=\"lightblue\",";
                     }
+                    out << " fontcolor=\"black\", style=\"filled\"]" << endl;
+                    break;
+                case clause_type::CLA_THEORY:
+                    typ = "the_";
+                    out << typ << node->getId() << "[shape=plaintext, label=\"c" << node->getId() << "  :  ";
+                    if (!node->getClause().empty()) { printClause(node, out); }
+                    else out << "+"; // learnt clause
+                    if (produceInterpolants() && node->getPartialInterpolant() != PTRef_Undef) {
+                        //FIXME out << "\\\\n" << node->getPartialInterpolant( );
+                    }
+                    out << "\", color=\"grey\"";
+                    out << ", style=\"filled\"]" << endl;
+                    break;
+                case clause_type::CLA_LEARNT:
+                    typ = "lea_";
+                    out << typ << node->getId() << "[shape=plaintext, label=\"c" << node->getId() << "  :  ";
+                    if (!node->getClause().empty()) { printClause(node, out); }
+                    else out << "+"; // learnt clause
+                    if (produceInterpolants() && node->getPartialInterpolant() != PTRef_Undef) {
+                        //FIXME out << "\\\\n" << node->getPartialInterpolant( );
+                    }
+                    out << "\", color=\"orange\"";
+                    out << ", style=\"filled\"]" << endl;
+                    break;
+                case clause_type::CLA_DERIVED:
+                    typ = "der_";
+                    out << typ << node->getId() << "[shape=plaintext, label=\"c" << node->getId() << "  :  ";
+                    if (!node->getClause().empty()) { printClause(node, out); }
+                    else out << "+"; // internal derived clause
+                    if (produceInterpolants() && node->getPartialInterpolant() != PTRef_Undef) {
+                        //FIXME out << "\\\\n" << node->getPartialInterpolant( );
+                    }
+                    out << "\", color=\"green\"";
+                    out << ", style=\"filled\"]" << endl;
+                    break;
+                default:
+                    assert(false);
+                    typ = "";
+                    break;
+            }
+
+            // Print edges from parents (if existing)
+            auto addEdgeToParent = [&out, &typ](const ProofNode & parent, const ProofNode & child) {
+                std::string t1;
+                switch (parent.getType()) {
+                    case clause_type::CLA_ORIG:
+                        t1 = "cls_";
+                        break;
+                    case clause_type::CLA_THEORY:
+                        t1 = "the_";
+                        break;
+                    case clause_type::CLA_LEARNT:
+                        t1 = "lea_";
+                        break;
+                    case clause_type::CLA_DERIVED:
+                        t1 = "der_";
+                        break;
+                    default:
+                        assert(false);
+                        t1 = "";
+                        break;
                 }
-				else {
-                    out << "\", color=\"lightblue\",";
-                }
-				out<< " fontcolor=\"black\", style=\"filled\"]" << endl;
-			}
-			break;
-			case clause_type::CLA_THEORY:
-			{
-				typ = "lea_";
-				out << typ << node->getId() << "[shape=plaintext, label=\"c" << node->getId() <<"  :  ";
-				if( !node->getClause().empty( ) )
-				{ printClause(node, out); }
-				else out << "+"; // learnt clause
-				if( produceInterpolants() && node->getPartialInterpolant( ) != PTRef_Undef )
-					//FIXME out << "\\\\n" << node->getPartialInterpolant( );
-				out << "\", color=\"grey\"";
-				out << ", style=\"filled\"]" << endl;
-			}
-			break;
-			case clause_type::CLA_LEARNT:
-			{
-				typ = "ded_";
-				out << typ << node->getId() << "[shape=plaintext, label=\"c" << node->getId() <<"  :  ";
-				if( !node->getClause().empty( ) )
-				{ printClause(node, out); }
-				else out << "+"; // internal ded clause clause
-				if( produceInterpolants() && node->getPartialInterpolant( ) != PTRef_Undef )
-					//FIXME out << "\\\\n" << node->getPartialInterpolant( );
-				out << "\", color=\"orange\"";
-				out << ", style=\"filled\"]" << endl;
-			}
-			break;
-			default: typ=""; break;
-			}
-
-			// Print edges from parents (if existing)
-			string t1,t2;
-			ProofNode * r1 = node->getAnt1();
-			ProofNode * r2 = node->getAnt2();
-			if( r1 != NULL )
-			{
-				switch( r1->getType() )
-				{
-				case clause_type::CLA_ORIG: t1 = "cls_"; break;
-				case clause_type::CLA_THEORY: t1 = "lea_"; break;
-				case clause_type::CLA_LEARNT: t1 = "ded_"; break;
-				default: t1 = ""; break;
-				}
-				out << t1 << r1->getId() << " -> " << typ << node->getId();
-				// FIXME
-				//out << " [label=\"(" << thandler.varToEnode(node->getPivot()) << ")\", fontsize=10]" << endl;
-
-				// Enqueue parents
-				q.push_back( r1 );
-			}
-			if( r2 != NULL )
-			{
-				switch( r2->getType() )
-				{
-				case clause_type::CLA_ORIG: t2 = "cls_"; break;
-				case clause_type::CLA_THEORY: t2 = "lea_"; break;
-				case clause_type::CLA_LEARNT: t2 = "ded_"; break;
-				default: t2 = ""; break;
-				}
-				out << t2 << r2->getId() << " -> " << typ << node->getId();
-				// FIXME
-				//out << " [label=\"(" << thandler.varToEnode(node->getPivot()) << ")\", fontsize=10]" << endl;
-
-				// Enqueue parents
-				q.push_back( r2 );
-			}
-			//Mark node as visited
-			visited_dotty[ node->getId() ] = true;
-		}
-	}
-	out << "}" << endl;
+                out << t1 << parent.getId() << " -> " << typ << child.getId() << '\n';
+            };
+            ProofNode * r1 = node->getAnt1();
+            ProofNode * r2 = node->getAnt2();
+            if (r1 != nullptr) {
+                addEdgeToParent(*r1, *node);
+                // Enqueue the parent
+                q.push_back(r1);
+            }
+            if (r2 != nullptr) {
+                addEdgeToParent(*r2, *node);
+                // Enqueue the parent
+                q.push_back(r2);
+            }
+            //Mark node as visited
+            visited_dotty[node->getId()] = true;
+        }
+    }
+    out << "}" << endl;
 }
 
 void ProofGraph::printClause(ProofNode* n)
@@ -161,8 +162,8 @@ void ProofGraph::printClause(ProofNode* n, ostream & os)
 	vector<Lit>& cl=n->getClause();
 	for(size_t k=0;k<cl.size();k++)
 	{
-		if(sign(cl[k])) os << "-";
-		//FIXME os << thandler.varToEnode(var(cl[k])) << " ";
+		if(sign(cl[k])) { os << "-"; }
+		os << var(cl[k]) << " ";
 	}
 }
 
