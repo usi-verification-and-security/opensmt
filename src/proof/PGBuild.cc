@@ -106,17 +106,15 @@ void ProofGraph::buildProofGraph( int nVars )
     // ...
     // a,b resolved over c...
     auto & clause_to_proof_der = proof.getProof( );
-    map< CRef, ProofDer * >::iterator it;
+    std::map<CRef, ProofDer *>::iterator it;
 
     //To map clauses to graph id
     //An id is associated when the node is created
-    map< CRef, int >* clauseToIDMap_ = new map< CRef, int>;
-    map< CRef, int >& clauseToIDMap = *clauseToIDMap_;
+    std::map<CRef, int> clauseToIDMap;
     //To keep track of visited nodes
-    set< CRef >* visitedSet_ = new set<CRef>;
-    set< CRef >& visitedSet = *visitedSet_;
+    std::set<CRef> visitedSet;
     //Queue to build proof graph from sink
-    std::deque< CRef > q;
+    std::deque<CRef> q;
 
     unsigned      num_theory = 0;
     unsigned      num_clause = 0;
@@ -132,13 +130,7 @@ void ProofGraph::buildProofGraph( int nVars )
     // second antecedent -> negative occurrence pivot
 
     // Map to associate node to its antecedents
-    map< pair<int,int>, int >* ants_map_ = NULL;
-    if ( enabledStructuralHashingWhileBuilding() )
-    {
-        ants_map_ = new map< pair<int,int>, int >;
-    }
-    map< pair<int,int>, int >& ants_map = *ants_map_;
-
+    std::map< std::pair<int,int>, int > ants_map;
     if ( verbose() && enabledStructuralHashingWhileBuilding() )
     { cerr << "; " << "Performing structural hashing while building the proof" << endl; }
     //Start from empty clause
@@ -408,7 +400,7 @@ void ProofGraph::buildProofGraph( int nVars )
                         n->setId(currId);
                         graph.push_back(n);
                         assert(getNode(currId)==n);
-                        n->setType(clause_type::CLA_DERIVED); // MB: TODO: investigate difference beteween learnt and derived
+                        n->setType(clause_type::CLA_DERIVED);
                     }
                     // End tree reached: currClause
                     else
@@ -515,9 +507,6 @@ void ProofGraph::buildProofGraph( int nVars )
         }
     }
     while(!q.empty());
-    delete clauseToIDMap_;
-    delete visitedSet_;
-    if ( enabledStructuralHashingWhileBuilding() ) delete(ants_map_);
 
     if( proofCheck() )
     {

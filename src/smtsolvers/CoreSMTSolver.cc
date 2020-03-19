@@ -258,7 +258,6 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
     decision .push();
     trail    .capacity(v+1);
     setDecisionVar(v, dvar);
-    units    .push( CRef_Undef );
     polarity    .push((char)sign);
 
 #if CACHE_POLARITY
@@ -334,8 +333,8 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, std::pair<CRef, CRe
             proof->beginChain( inputClause );
             for(Lit l : resolvedUnits) {
                 Var v = var(l);
-                assert(units[v] != CRef_Undef);
-                proof->addResolutionStep(units[v], v);
+                assert(reason(v) != CRef_Undef);
+                proof->addResolutionStep(reason(v), v);
             }
             proof->endChain(outputClause);
         }
@@ -346,13 +345,9 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, std::pair<CRef, CRe
     if (ps.size() == 1)
     {
         assert(value(ps[0]) == l_Undef);
-        if (logProof) {
-            CRef clauseAfterRes = inOutCRefs.second;
-            assert( clauseAfterRes != CRef_Undef );
-            assert( units[ var(ps[0]) ] == CRef_Undef );
-            units[ var(ps[0]) ] = clauseAfterRes;
-        }
-        uncheckedEnqueue(ps[0]);
+        CRef reasonForAssignment = inOutCRefs.second;
+        assert((logProof && reasonForAssignment != CRef_Undef) || (!logProof && reasonForAssignment == CRef_Undef));
+        uncheckedEnqueue(ps[0], reasonForAssignment);
         CRef confl = propagate();
         ok = (confl == CRef_Undef);
         return ok;
@@ -747,8 +742,8 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
                 }
                 else if (logProof) {
                     assert(level(var(q)) == 0);
-                    assert(units[var(q)] != CRef_Undef);
-                    proof->addResolutionStep(units[var(q)], var(q));
+                    assert(reason(var(q)) != CRef_Undef);
+                    proof->addResolutionStep(reason(var(q)), var(q));
                 }
             }
         }
@@ -1040,6 +1035,35 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
     return true;
 }
 
+void CoreSMTSolver::finalizeProof(CRef finalConflict) {
+    assert(this->logsProof());
+    assert(finalConflict != CRef_Undef);
+    proof->beginChain(finalConflict);
+
+    int index   = trail.size() - 1;
+    CRef conflict = finalConflict;
+    while(true)
+    {
+        Clause& c = ca[conflict];
+        for (unsigned j = conflict == finalConflict ? 0 : 1 ; j < c.size(); j++)
+        {
+            Var v = var(c[j]);
+            seen[v] = 1;
+        }
+        // Select next clause to look at:
+        while (index >=0 && !seen[var(trail[index])]) {
+            --index;
+        }
+        if (index < 0) { break; }
+        Var varToResolve = var(trail[index]);
+        assert(reason(varToResolve) != CRef_Undef && reason(varToResolve) != CRef_Fake);
+        conflict = reason(varToResolve);
+        seen[varToResolve] = 0;
+        proof->addResolutionStep(conflict, varToResolve);
+    }
+    proof->endChain(CRef_Undef);
+}
+
 /*_________________________________________________________________________________________________
   |
   |  analyzeFinal : (p : Lit)  ->  [void]
@@ -1180,45 +1204,9 @@ CRef CoreSMTSolver::propagate()
                     goto NextClause;
                 }
 
-            // PROOF tracking specific code
-            // Did not find watch -- clause is unit under assignment:
-            if (this->logsProof() && decisionLevel() == 0)
-            {
-                proof->beginChain( cr );
-                for (unsigned k = 1; k < c.size(); k++)
-                {
-                    assert(level(var(c[k])) == 0);
-                    proof->addResolutionStep( units[var(c[k])], var(c[k]) );
-                }
-
-                assert( units[ var(first) ] == CRef_Undef || value( first ) == l_False );    // (if variable already has 'id', it must be with the other polarity and we should have derived the empty clause here)
-                if ( value(first) != l_False )
-                {
-                    vec<Lit> tmp;
-                    tmp.push(first);
-                    CRef uc = ca.alloc( tmp );
-                    proof->endChain( uc );
-                    assert( units[ var(first) ] == CRef_Undef );
-                    units[var(first)] = uc;
-                }
-                else
-                {
-                    vec<Lit> tmp;
-                    tmp.push(first);
-                    CRef uc = ca.alloc( tmp );
-                    proof->endChain(uc);
-                    pleaves.push(uc);
-                    // Empty clause derived:
-                    proof->beginChain(units[var(first)]);
-                    proof->addResolutionStep(uc, var(first));
-                    proof->endChain( CRef_Undef );
-                }
-            }
-// End of PROOF tracking specific code
-
-            // Did not find watch -- clause is unit under assignment:
+            // Did not find watch
             *j++ = w;
-            if (value(first) == l_False)
+            if (value(first) == l_False) // clause is falsified
             {
                 confl = cr;
                 qhead = trail.size();
@@ -1226,8 +1214,25 @@ CRef CoreSMTSolver::propagate()
                 while (i < end)
                     *j++ = *i++;
             }
-            else
+            else {  // clause is unit under assignment:
+                if (decisionLevel() == 0 && this->logsProof()) {
+                    // MB: we need to log the derivation of the unit clauses at level 0, otherwise the proof
+                    //     is not constructed correctly
+                    proof->beginChain(cr);
+                    for (unsigned k = 1; k < c.size(); k++)
+                    {
+                        assert(level(var(c[k])) == 0);
+                        proof->addResolutionStep(reason(var(c[k])), var(c[k]));
+                    }
+                    vec<Lit> tmp = {first};
+                    CRef unitClause = ca.alloc(tmp);
+                    proof->endChain(unitClause);
+                    // Replace the reason for enqueing the literal with the unit clause.
+                    // Necessary for correct functioning of proof logging in analyze()
+                    cr = unitClause;
+                }
                 uncheckedEnqueue(first, cr);
+            }
 
 NextClause:
             ;
@@ -1569,6 +1574,9 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
             conflictC++;
             if (decisionLevel() == 0)
             {
+                if (logsProof()) {
+                    this->finalizeProof(confl);
+                }
                 if (splits.size() > 0)
                 {
                     opensmt::stop = true;
@@ -1585,14 +1593,14 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 
             if (learnt_clause.size() == 1)
             {
-                uncheckedEnqueue(learnt_clause[0]);
+                CRef reason = CRef_Undef;
                 if (logsProof())
                 {
                     CRef cr = ca.alloc(learnt_clause, false);
                     proof->endChain(cr);
-                    assert(units[var(learnt_clause[0])] == CRef_Undef);
-                    units[var(learnt_clause[0])] = cr;
+                    reason = cr;
                 }
+                uncheckedEnqueue(learnt_clause[0], reason);
             }
             else
             {
@@ -1759,15 +1767,6 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                     }
                     assert( res == TPropRes::Decide );
 
-#ifdef STATISTICS
-                    const double start2 = cpuTime( );
-                    tsolvers_time += cpuTime( ) - start2;
-#endif
-
-//            if ( res == 0 ) { conflictC++; continue; }
-//            if ( res == 2 ) { continue; }
-//            if ( res == -1 ) return l_False;
-//            assert( res == 1 );
                     // Otherwise we still have to make sure that
                     // splitting on demand did not add any new variable
                     decisions++;
@@ -2235,106 +2234,3 @@ void CoreSMTSolver::printStatistics( ostream & os )
 }
 #endif // STATISTICS
 
-//void CoreSMTSolver::clausesPublish() {
-//    if (this->clauses_sharing.channel.empty() || this->clauses_sharing.c_cls_pub == NULL || this->clauses_sharing.c_cls_pub->err != 0)
-//        return;
-//    std::string s;
-//    for (int i = 0; i < this->learnts.size(); i++) {
-//        Clause &c = *this->learnts[i];
-//        if (c.mark() != 3) {
-//            clauseSerialize(c, s);
-//            c.mark(3);
-//        }
-//    }
-//    if (s.length() == 0)
-//        return;
-//    Message m;
-//
-//    struct sockaddr_in sin;
-//    int addrlen = sizeof(sin);
-//    getsockname(this->clauses_sharing.c_cls_pub->fd, (struct sockaddr *) &sin, (socklen_t *) &addrlen);
-//    m.header["from"].append(inet_ntoa(sin.sin_addr));
-//    m.header["from"].append(":");
-//    m.header["from"].append(std::to_string(sin.sin_port));
-//
-//    m.payload = s;
-//    std::string d;
-//    m.dump(d);
-//
-//    redisReply *reply = (redisReply *) redisCommand(this->clauses_sharing.c_cls_pub, "PUBLISH %s.out %b", this->clauses_sharing.channel.c_str(), d.c_str(),
-//                                                    d.length());
-//    if (reply == NULL)
-//        std::cerr << "Connection error during clause publishing\n";
-//    freeReplyObject(reply);
-//    /* non block
-//    redisCommand(this->c_cls_pub, "PUBLISH %s.out %b", this->channel, d.c_str(), d.length());
-//    this->flush(this->c_cls_pub);
-//    if (this->c_cls_pub->err != 0)
-//        cerr << "Redis publish connection lost\n"; */
-//}
-
-
-//void CoreSMTSolver::clausesUpdate() {
-//    if (this->clauses_sharing.channel.empty() || this->clauses_sharing.c_cls_sub == NULL || this->clauses_sharing.c_cls_sub->err != 0)
-//        return;
-//    /* non block
-//    redisReply *reply;
-//    redisBufferRead(this->c_cls_sub);
-//    if (redisGetReplyFromReader(this->c_cls_sub, (void **) &reply) != REDIS_OK)
-//        cerr << "Redis subscribe connection lost\n";
-//    if (reply == NULL)
-//        return;
-//    assert (reply->type == REDIS_REPLY_ARRAY && reply->elements == 3);
-//    assert (std::string(reply->element[0]->str).compare("message") == 0);
-//    std::string s = std::string(reply->element[2]->str, reply->element[2]->len); */
-////ZREVRANGEBYSCORE %s +inf 0 LIMIT 0 10000
-//    redisReply *reply = (redisReply *) redisCommand(this->clauses_sharing.c_cls_sub, "SRANDMEMBER %s 10000",
-//                                                    this->clauses_sharing.channel.c_str());
-//    if (reply == NULL) {
-//        std::cerr << "Connection error during clause updating\n";
-//        return;
-//    }
-//    if (reply->type != REDIS_REPLY_ARRAY)
-//        return;
-//
-//    for (int i = this->n_clauses; i < this->clauses.size(); i++) {
-//        if (i < this->n_clauses + reply->elements)
-//            this->removeClause(*this->clauses[i]);
-//        if (i + reply->elements < this->clauses.size())
-//            this->clauses[i] = this->clauses[i + reply->elements];
-//    }
-//    this->clauses.shrink(std::min(this->clauses.size() - this->n_clauses, (uint32_t) reply->elements));
-//
-//
-//    for (int i = 0; i < reply->elements; i++) {
-//        std::string str = std::string(reply->element[i]->str, reply->element[i]->len);
-//        vec<Lit> lits;
-//        uint32_t o = 0;
-//        clauseDeserialize(str, &o, lits);
-//        bool f=false;
-//        for(int j=0; j<lits.size(); j++){
-//            if(!this->var_seen[var(lits[j])]) {
-//                f=true;
-//                break;
-//            }
-//        }
-//        if(!f)
-//            this->addClause(lits, true);
-//    }
-///*
-//    if (reply->type != REDIS_REPLY_STRING)
-//        return;
-//    std::string s = std::string(reply->str, reply->len);
-//    Message m;
-//    m.load(s);
-//    //if (m.header.find("from") != m.header.end()) if (m.header["from"].compare(...) == 0)
-//    //  return;
-//    uint32_t o = 0;
-//    while (o < m.payload.length()) {
-//        vec<Lit> lits;
-//        clauseDeserialize(m.payload, &o, lits);
-//        solver.addClause(lits, true);
-//    }
-//*/
-//    freeReplyObject(reply);
-//}

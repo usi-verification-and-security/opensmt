@@ -139,9 +139,6 @@ CoreSMTSolver::handleSat()
             if (logsProof()) {
                 // MB: the proof needs to know about the new class; TODO: what type it should be?
                 proof->newOriginalClause(cr);
-                if (decisionLevel() == 0) {
-                    units[var(l_i)] = cr;
-                }
             }
             uncheckedEnqueue(l_i, cr);
             return TPropRes::Propagate;
@@ -193,24 +190,10 @@ CoreSMTSolver::handleUnsat()
     if ( decisionLevel( ) == 0 )
     {
         if(logsProof()) {
-            // MB: TODO: investigate this block of code
-            // This case is equivalent to "Did not find watch" in propagate( )
             // All conflicting atoms are dec-level 0
             CRef confl = ca.alloc(conflicting, config.sat_temporary_learn);
-
-            Clause & c = ca[confl];
             proof->newTheoryClause(confl);
-            // Empty clause derived
-            // ADDED CODE BEGIN
-            proof->beginChain(confl);
-            for (unsigned k = 0; k < c.size(); k++) {
-                //assert( level[ var(c[k]) ] == 0 );
-                //assert( value( c[k] ) == l_False );
-                //assert( units[var(c[k])] != NULL );
-                proof->addResolutionStep(units[var(c[k])], var(c[k]));
-            }
-            // ADDED CODE END
-            proof->endChain(CRef_Undef);
+            this->finalizeProof(confl);
         }
         return TPropRes::Unsat;
     }
@@ -218,8 +201,8 @@ CoreSMTSolver::handleUnsat()
     CRef confl = CRef_Undef;
     assert( conflicting.size( ) > 0 );
 
-    // Do not store theory lemma
-    if ( conflicting.size( ) > config.sat_learn_up_to_size
+    bool learnOnlyTemporary = conflicting.size() > config.sat_learn_up_to_size;
+    if (learnOnlyTemporary
             || conflicting.size( ) == 1 ) // That might happen in bit-vector theories
     {
         confl = ca.alloc(conflicting);
@@ -245,7 +228,7 @@ CoreSMTSolver::handleUnsat()
 
     if (!logsProof()) {
         // Get rid of the temporary lemma
-        if ( conflicting.size( ) > config.sat_learn_up_to_size )
+        if (learnOnlyTemporary)
         {
             ca.free(confl);
         }
@@ -255,14 +238,14 @@ CoreSMTSolver::handleUnsat()
     assert(value(learnt_clause[0]) == l_Undef);
 
     if (learnt_clause.size() == 1) {
-        uncheckedEnqueue(learnt_clause[0]);
-        if (logsProof()) {
-            // Create a unit for the proof
+        CRef reason = CRef_Undef;
+        if (logsProof())
+        {
             CRef cr = ca.alloc(learnt_clause, false);
             proof->endChain(cr);
-            //assert( units[ var(learnt_clause[0]) ] == CRef_Undef );
-            units[var(learnt_clause[0])] = cr;
+            reason = cr;
         }
+        uncheckedEnqueue(learnt_clause[0], reason);
     } else {
         // ADDED FOR NEW MINIMIZATION
         learnts_size += learnt_clause.size( );

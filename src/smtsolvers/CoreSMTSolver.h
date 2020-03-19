@@ -726,10 +726,10 @@ protected:
     // Proof production
     //
     bool logsProof() const { return static_cast<bool>(proof); }
+    void finalizeProof(CRef finalConflict);
     std::unique_ptr<Proof> proof;                 // (Pointer to) Proof store
     vec< CRef >         pleaves;                  // Store clauses that are still involved in the proof
     ProofGraph *        proof_graph;              // Proof graph
-    vec< CRef >         units;                    // Tracks unit clauses for variables
     // End of proof production
 
     //
