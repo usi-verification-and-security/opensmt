@@ -1041,26 +1041,14 @@ void CoreSMTSolver::finalizeProof(CRef finalConflict) {
     assert(finalConflict != CRef_Undef);
     proof->beginChain(finalConflict);
 
-    int index   = trail.size() - 1;
-    CRef conflict = finalConflict;
-    while(true)
-    {
-        Clause& c = ca[conflict];
-        for (unsigned j = conflict == finalConflict ? 0 : 1 ; j < c.size(); j++)
-        {
-            Var v = var(c[j]);
-            seen[v] = 1;
-        }
-        // Select next clause to look at:
-        while (index >=0 && !seen[var(trail[index])]) {
-            --index;
-        }
-        if (index < 0) { break; }
-        Var varToResolve = var(trail[index]);
+    Clause const & c = ca[finalConflict];
+    for (unsigned j = 0; j < c.size(); ++j) {
+        Var varToResolve = var(c[j]);
         assert(reason(varToResolve) != CRef_Undef && reason(varToResolve) != CRef_Fake);
-        conflict = reason(varToResolve);
-        seen[varToResolve] = 0;
-        proof->addResolutionStep(conflict, varToResolve);
+        assert(level(varToResolve) == 0);
+        CRef unitReason = reason(varToResolve);
+        assert(ca[unitReason].size() == 1 && ca[unitReason][0] == ~c[j]);
+        proof->addResolutionStep(unitReason, varToResolve);
     }
     proof->endChain(CRef_Undef);
 }
