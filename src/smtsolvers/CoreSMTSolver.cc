@@ -1037,6 +1037,7 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
 
 void CoreSMTSolver::finalizeProof(CRef finalConflict) {
     assert(this->logsProof());
+    assert(decisionLevel() == 0);
     assert(finalConflict != CRef_Undef);
     proof->beginChain(finalConflict);
 
@@ -1211,8 +1212,12 @@ CRef CoreSMTSolver::propagate()
                 confl = cr;
                 qhead = trail.size();
                 // Copy the remaining watches:
-                while (i < end)
+                while (i < end) {
                     *j++ = *i++;
+                }
+                if (decisionLevel() == 0 && this->logsProof()) {
+                    this->finalizeProof(confl);
+                }
             }
             else {  // clause is unit under assignment:
                 if (decisionLevel() == 0 && this->logsProof()) {
@@ -1574,9 +1579,6 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
             conflictC++;
             if (decisionLevel() == 0)
             {
-                if (logsProof()) {
-                    this->finalizeProof(confl);
-                }
                 if (splits.size() > 0)
                 {
                     opensmt::stop = true;
