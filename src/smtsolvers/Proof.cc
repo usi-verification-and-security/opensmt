@@ -128,6 +128,14 @@ void Proof::newTheoryClause(CRef c)
     clause_to_proof_der.emplace(c, ProofDer{clause_type::CLA_THEORY});
 }
 
+void Proof::newAssumptionLiteral(CRef c) {
+    assert(c != CRef_Undef);
+    assert(getClause(c).size() == 1);
+    // MB: Note that we might need to call this in the middle of assumption chain
+    assert(clause_to_proof_der.find(c) == clause_to_proof_der.end());
+    clause_to_proof_der.emplace(c, ProofDer{clause_type::CLA_ASSUMPTION});
+}
+
 //
 // This is the beginning of a derivation chain.
 //
@@ -149,6 +157,7 @@ void Proof::beginChain( CRef c )
 //
 void Proof::addResolutionStep(CRef c, Var p)
 {
+    assert(hasOpenChain());
     assert( c != CRef_Undef );
     current_chain.addResolutionStep(c,p);
     assert( clause_to_proof_der.find( c ) != clause_to_proof_der.end( ) );

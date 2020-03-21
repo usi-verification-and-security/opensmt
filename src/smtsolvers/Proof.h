@@ -43,7 +43,10 @@ class THandler;
  * - learnt   -> clause learnt by the SAT solver, result of a derivation chain
  * - derived  -> denotes intermediate clauses in resolution chains; needed only for ProofGraph (consider removing it)
  */
-enum class clause_type: char { CLA_ORIG, CLA_LEARNT, CLA_THEORY, CLA_DERIVED };
+enum class clause_type: char { CLA_ORIG, CLA_LEARNT, CLA_THEORY, CLA_DERIVED, CLA_ASSUMPTION };
+inline bool isLeafClauseType(clause_type ct) {
+    return ct == clause_type::CLA_ORIG || ct == clause_type::CLA_THEORY || ct == clause_type::CLA_ASSUMPTION;
+}
 
 std::ostream &operator<<(std::ostream &os, clause_type enumTmp);
 
@@ -90,6 +93,9 @@ public:
 
     // Notifies the proof about a new T-clause.
     void newTheoryClause ( CRef);
+
+    // Notifies the proof about an assumption-literal unit clause needed in the proof
+    void newAssumptionLiteral(CRef);
 
     // Notifies the proof that a new resolution chain, starting from the passed clause, is being processed.
     void beginChain ( CRef );

@@ -93,6 +93,14 @@ void ProofGraph::printProofAsDotty(std::ostream & out, ipartitions_t A_mask) {
                     out << "\", color=\"green\"";
                     out << ", style=\"filled\"]" << endl;
                     break;
+                case clause_type::CLA_ASSUMPTION:
+                    typ = "ass_";
+                    out << typ << node->getId() << "[shape=plaintext, label=\"c" << node->getId() << "  :  ";
+                    assert(!node->getClause().empty());
+                    printClause(node, out);
+                    out << "\", color=\"yellow\"";
+                    out << ", style=\"filled\"]" << endl;
+                    break;
                 default:
                     assert(false);
                     typ = "";
@@ -114,6 +122,9 @@ void ProofGraph::printProofAsDotty(std::ostream & out, ipartitions_t A_mask) {
                         break;
                     case clause_type::CLA_DERIVED:
                         t1 = "der_";
+                        break;
+                    case clause_type::CLA_ASSUMPTION:
+                        t1 = "ass_";
                         break;
                     default:
                         assert(false);

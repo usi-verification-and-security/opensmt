@@ -1067,47 +1067,67 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
     out_conflict.clear();
     out_conflict.push(p);
 
-    if (decisionLevel() == 0)
-        return;
-
     seen[var(p)] = 1;
+    if (logsProof()) {
+        CRef assumptionUnitClause = ca.alloc(vec<Lit>{~p});
+        proof->newAssumptionLiteral(assumptionUnitClause);
+        proof->beginChain(assumptionUnitClause);
+    }
 
-    for (int i = trail.size()-1; i >= trail_lim[0]; i--)
+    for (int i = trail.size()-1; i >= 0; i--)
     {
         Var x = var(trail[i]);
         if (seen[x])
         {
-            if (reason(x) == CRef_Undef)
+            if (reason(x) == CRef_Undef) // This should happen only for assumptions
             {
                 assert(level(x) > 0);
+                assert(std::find(&assumptions[0], &assumptions[0] + assumptions.size(), ~trail[i])
+                != &assumptions[0] + assumptions.size());
                 out_conflict.push(~trail[i]);
+                if (logsProof()) {
+                    // Add a resolution step with unit clauses for this assumption
+                    CRef assumptionUnitClause = ca.alloc(vec<Lit>{~trail[i]});
+                    proof->newAssumptionLiteral(assumptionUnitClause);
+                    proof->addResolutionStep(assumptionUnitClause, x);
+                }
             }
             else
             {
                 if (reason(x) == CRef_Fake)
                 {
+                    assert(!logsProof()); // MB: If we make theory progpagation work with proof logging, fix this.
                     cancelUntilVarTempInit(x);
                     vec<Lit> r;
                     theory_handler.getReason(trail[i], r);
                     assert(r.size() > 0);
-                    for (int j = 1; j < r.size(); j++)
-                        if (level(var(r[j])) > 0)
-                            seen[var(r[j])] = 1;
+                    assert(r[0] == trail[i]);
+                    for (int j = 1; j < r.size(); j++) {
+                        seen[var(r[j])] = 1;
+                    }
                     cancelUntilVarTempDone();
                 }
                 else
                 {
                     Clause& c = ca[reason(x)];
-                    for (unsigned j = 1; j < c.size(); j++)
-                        if (level(var(c[j])) > 0)
-                            seen[var(c[j])] = 1;
+                    assert(c[0] == trail[i]);
+                    for (unsigned j = 1; j < c.size(); j++) {
+                        seen[var(c[j])] = 1;
+                    }
+                    if (logsProof()) {
+                        proof->addResolutionStep(reason(x), x);
+                    }
                 }
                 seen[x] = 0;
             }
         }
     }
-
+    assert(seen[var(p)] == 0);
     seen[var(p)] = 0;
+     if (logsProof()) {
+        // MB: Hopefully we have resolved away all literals including assumptions
+        proof->endChain(CRef_Undef);
+    }
 }
 
 
@@ -1688,6 +1708,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                 else if (value(p) == l_False)
                 {
                     analyzeFinal(~p, conflict);
+                    assert(conflict.size() > 0);
                     if (splits.size() > 0)
                     {
                         opensmt::stop = true;
