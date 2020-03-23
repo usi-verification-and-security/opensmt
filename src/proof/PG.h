@@ -411,13 +411,13 @@ public:
     PTRef          compInterpLabelingOriginalSimple         ( ProofNode *, const ipartitions_t & );
     PTRef          compInterpLabelingInnerSimple            ( ProofNode *, const ipartitions_t & );
 
-    PTRef        compInterpLabelingOriginal               ( ProofNode *, const ipartitions_t &, unsigned num_config = 0 , map<Var, icolor_t>* PSFunc = NULL);
-    PTRef        compInterpLabelingInner                  ( ProofNode * );
-    void labelLeaf(ProofNode*, const ipartitions_t&, unsigned num_config = 0, map<Var, icolor_t>* PSFunc = NULL);
-    void           setLeafRandomLabeling                    ( ProofNode * );
-    void           setLeafMcMillanLabeling                  ( ProofNode * );
-    void           setLeafPudlakLabeling                    ( ProofNode * );
-    void           setLeafMcMillanPrimeLabeling             ( ProofNode * );
+    PTRef          compInterpLabelingOriginal               (ProofNode * n, const ipartitions_t & A_mask);
+    PTRef          compInterpLabelingInner                  (ProofNode *);
+    void           labelLeaf                                (ProofNode *, const ipartitions_t&, unsigned num_config = 0, std::map<Var, icolor_t>* PSFunc = nullptr);
+    void           setLeafRandomLabeling                    (ProofNode *);
+    void           setLeafMcMillanLabeling                  (ProofNode *);
+    void           setLeafPudlakLabeling                    (ProofNode *);
+    void           setLeafMcMillanPrimeLabeling             (ProofNode *);
     void 		   setLeafPSLabeling		( ProofNode*, std::map<Var, icolor_t>* PSFunction );
     void 		   setLeafPSWLabeling		( ProofNode*, std::map<Var, icolor_t>* PSFunction );
     void 		   setLeafPSSLabeling		( ProofNode*, std::map<Var, icolor_t>* PSFunction );
@@ -520,6 +520,9 @@ private:
     void initTSolver();
     void clearTSolver();
     bool assertLiteralsToTSolver(vec<Lit> const&);
+    void addDefaultAssumedLiterals();
+    inline bool isAssumedLiteral(Lit l) const
+    { return std::find(assumedLiterals.begin(), assumedLiterals.end(), l) != assumedLiterals.end(); }
 
     //NOTE added for experimentation
     Var 				  pred_to_push;
@@ -538,12 +541,13 @@ private:
     clauseid_t                     root;                        // Proof root
     set<clauseid_t>				   leaves_ids;					// Proof leaves, for top-down visits
     std::set< Var >                proof_variables;             // Variables actually present in the proof
-    unsigned                                       max_id_variable;                             // Highest value for a variable
+    unsigned                       max_id_variable;             // Highest value for a variable
     std::set<Var> theory_only;
+    std::vector<Lit> assumedLiterals;
     // NOTE class A has value -1, class B value -2, undetermined value -3, class AB has index bit from 0 onwards
     std::vector<int>               AB_vars_mapping;             // Variables of class AB mapping to mpz integer bit index
     vec< std::map<PTRef, icolor_t>* > *    vars_suggested_color_map;	 // To suggest color for shared vars
-    int                                                    num_vars_limit;               // Number of variables in the problem (not nec in the proof)
+    int                            num_vars_limit;               // Number of variables in the problem (not nec in the proof)
 
     // Info on graph dimension
     int    num_nodes;

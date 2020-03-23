@@ -82,6 +82,7 @@ class Proof
     ProofDer current_chain;
     std::unordered_map< CRef, ProofDer>     clause_to_proof_der;
     ClauseAllocator&            cl_al;
+    std::vector<CRef> assumed_literals;
 
 public:
 
@@ -109,9 +110,19 @@ public:
     inline bool hasOpenChain() { return begun; }
 
     bool deleted    ( CRef );                             // Remove clauses if possible
-    inline Clause& getClause        ( CRef cr ) { return cl_al[cr]; } // Get clause from reference
+    inline Clause& getClause       ( CRef cr ) const { return cl_al[cr]; } // Get clause from reference
 
     void print( std::ostream &, CoreSMTSolver &, THandler & );     // Print proof in SMT-LIB format
+
+    std::vector<Lit> getAssumedLiterals() const {
+        std::vector<Lit> res;
+        res.reserve(assumed_literals.size());
+        for (CRef assumedUnitClause : assumed_literals) {
+            assert(getClause(assumedUnitClause).size() == 1);
+            res.push_back(getClause(assumedUnitClause)[0]);
+        }
+        return res;
+    }
 
     std::unordered_map< CRef, ProofDer> & getProof( ) { return clause_to_proof_der; }
 };

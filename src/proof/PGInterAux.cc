@@ -51,9 +51,8 @@ void ProofGraph::computeABVariablesMapping( const ipartitions_t & A_mask )
 	// Track AB class variables and associate index to them
 	// NOTE class A has value -1, class B value -2, undetermined value -3, class AB has index bit from 0 onwards
 	int AB_bit_index = 0;
-	for( std::set<Var>::iterator nv = proof_variables.begin(); nv != proof_variables.end(); nv++ )
+	for( Var v : proof_variables )
 	{
-		Var v = (*nv);
 		icolor_t v_class = getVarClass( v, A_mask );
 		if( v_class == I_A ){ AB_vars_mapping[v] = -1; }
 		else if( v_class == I_B ){ AB_vars_mapping[v] = -2; }
@@ -145,6 +144,9 @@ icolor_t ProofGraph::getPivotColor( ProofNode* n )
 		updateColoringAfterRes(n);
 	}
 	else opensmt_error( "Pivot " << v << " has no class" );
+	if(isAssumedLiteral(Lit{v}) || isAssumedLiteral(~Lit{v})) {
+	    return I_S;
+	}
 
 	return var_color;
 }
@@ -154,14 +156,8 @@ icolor_t ProofGraph::getPivotColor( ProofNode* n )
 // Output: returns A-local , B-local or AB-common
 icolor_t ProofGraph::getVarClass( Var v, const ipartitions_t & A_mask )
 {
-	// Get enode corresponding to variable
-	//PTRef enode_var = thandler.varToTerm(v); //varToEnode( v );
-
-	// TODO look at isAB methods in egraph
 	//Determine mask corresponding to B
 	ipartitions_t B_mask = ~A_mask;
-	//Reset bit 0 to 0
-//	clrbit( B_mask, 0 );
 
 	//Get partition mask variable
 	//e.g. 0---0110 variable in first and second partition

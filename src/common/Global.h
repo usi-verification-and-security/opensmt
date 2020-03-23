@@ -341,6 +341,7 @@ typedef enum
  , I_A     = 1
  , I_B     = 2
  , I_AB    = I_A | I_B
+ , I_S     = 4
 } icolor_t;
 // For interpolation. Type that has to
 // be used to store multiple partitions for

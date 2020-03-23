@@ -134,6 +134,7 @@ void Proof::newAssumptionLiteral(CRef c) {
     // MB: Note that we might need to call this in the middle of assumption chain
     assert(clause_to_proof_der.find(c) == clause_to_proof_der.end());
     clause_to_proof_der.emplace(c, ProofDer{clause_type::CLA_ASSUMPTION});
+    assumed_literals.push_back(c);
 }
 
 //

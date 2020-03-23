@@ -825,3 +825,7 @@ clauseid_t ProofGraph::dupliNode( RuleContext& ra )
     duplications++;
     return currId;
 }
+
+void ProofGraph::addDefaultAssumedLiterals() {
+    this->assumedLiterals = this->proof.getAssumedLiterals();
+}

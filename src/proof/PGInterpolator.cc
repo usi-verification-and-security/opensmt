@@ -447,7 +447,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
 
         if (n->isLeaf())
         {
-            if (n->getType() != clause_type::CLA_ORIG && n->getType() != clause_type::CLA_THEORY) opensmt_error ( "Clause is not original nor theory" );
+            if (!isLeafClauseType(n->getType())) opensmt_error ( "Leaf node with non-leaf clause type" );
 
             vector<Lit> &cl = n->getClause();
             bool fal = false;
@@ -456,31 +456,28 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
                 opensmt_error("Empty clause found in interpolation\n");
                 assert(false);
             }
-            if (cl.size() == 1 && varToPTRef(var(cl[0])) == theory.getLogic().getTerm_false() && !sign(cl[0]))
+            if (cl.size() == 1 && varToPTRef(var(cl[0])) == theory.getLogic().getTerm_false() && !sign(cl[0])) {
                 fal = true;
+            }
 
             if ((n->getType() == clause_type::CLA_ORIG && n->getClauseRef() == CRef_Undef) || fal)
             {
                 //unit clause False exists, return degenerate interpolant
                 icolor_t cc = getClauseColor (n->getInterpPartitionMask(), A_mask);
                 Logic &logic = theory.getLogic();
+                interpolants.push( cc == I_A ? logic.getTerm_false() : logic.getTerm_true());
 
-                if (cc == I_A)
-                    interpolants.push (logic.getTerm_false());
-                else
-                    interpolants.push (logic.getTerm_true());
-
-                if(verbose())
-                    cout << "; Degenerate interpolant" << endl;
-
+                if(verbose()) {
+                    std::cout << "; Degenerate interpolant" << std::endl;
+                }
                 return;
             }
         }
     }
 
-    if ( verbose() > 0 ) cerr << "# Generating interpolant " << endl;
+    if ( verbose() > 0 ) std::cerr << "# Generating interpolant " << std::endl;
 
-    map<Var, icolor_t> *PSFunction = computePSFunction (DFSv, A_mask);
+    std::map<Var, icolor_t> *PSFunction = computePSFunction (DFSv, A_mask);
 
     // Traverse proof and compute current interpolant
     for ( size_t i = 0 ; i < proof_size ; i++ )
@@ -491,7 +488,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
         // Generate partial interpolant for clause i
         if (n->isLeaf())
         {
-            if (n->getType() != clause_type::CLA_ORIG && n->getType() != clause_type::CLA_THEORY) opensmt_error ( "Clause is not original nor theory" );
+            if (!isLeafClauseType(n->getType())) opensmt_error ( "Leaf node with non-leaf clause type" );
 
             labelLeaf (n, A_mask, 0, PSFunction);
 
@@ -513,12 +510,10 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
                 cerr << endl;
                 */
 #endif
-
-                partial_interp = compInterpLabelingOriginal ( n, A_mask , 0, PSFunction);
+                partial_interp = compInterpLabelingOriginal(n, A_mask);
             }
-            else // Theory lemma
+            else if (n->getType() == clause_type::CLA_THEORY) // Theory lemma
             {
-                assert(n->getType() == clause_type::CLA_THEORY);
                 clearTSolver();
                 vec<Lit> newvec;
                 std::vector<Lit> &oldvec = n->getClause();
@@ -555,11 +550,19 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
                 partial_interp = thandler->getInterpolant (A_mask, &ptref2label);
                 clearTSolver();
             }
+            else {
+                assert(n->getType() == clause_type::CLA_ASSUMPTION);
+                // MB: Frame literals must be ignored when interpolating
+                // This interpolant will be ignored eventually, any value would do
+                n->setPartialInterpolant (logic_.getTerm_true());
+                continue;
+            }
 
             assert ( partial_interp != PTRef_Undef );
             n->setPartialInterpolant ( partial_interp );
-            if (enabledPedInterpVerif())
+            if (enabledPedInterpVerif()) {
                 verifyPartialInterpolant(n, A_mask);
+            }
         }
         else
         {
@@ -713,7 +716,7 @@ void ProofGraph::produceMultipleInterpolants ( const std::vector< ipartitions_t 
             {
                 if (n->getType() != clause_type::CLA_ORIG) opensmt_error ( "Clause is not original" );
 
-                partial_interp = compInterpLabelingOriginal ( n, A_mask, curr_interp , PSFunction);
+                partial_interp = compInterpLabelingOriginal(n, A_mask);
                 //if ( enabledPedInterpVerif() ) verifyPartialInterpolantFromLeaves( n, A_mask );
 
             }
@@ -1076,7 +1079,7 @@ ProofGraph::labelLeaf (ProofNode *n, const ipartitions_t &A_mask, unsigned num_c
 
 // Input: leaf clause, current interpolant partition masks for A and B
 // Output: Labeling-based partial interpolant for the clause
-PTRef ProofGraph::compInterpLabelingOriginal ( ProofNode *n, const ipartitions_t &A_mask, unsigned num_config , map<Var, icolor_t> *PSFunction)
+PTRef ProofGraph::compInterpLabelingOriginal(ProofNode * n, const ipartitions_t & A_mask)
 {
     // Then calculate interpolant
     icolor_t clause_color = getClauseColor ( n->getInterpPartitionMask(), A_mask );
@@ -1096,6 +1099,7 @@ PTRef ProofGraph::compInterpLabelingOriginal ( ProofNode *n, const ipartitions_t
 
     PTRef partial_interp = PTRef_Undef;
 
+    // MB: TODO unite the cases in one function
     // Leaf belongs to A -> interpolant = leaf clause restricted to b
     if ( clause_color == I_A )
     {
@@ -1111,6 +1115,10 @@ PTRef ProofGraph::compInterpLabelingOriginal ( ProofNode *n, const ipartitions_t
 
         for ( size_t i = 0 ; i < size ; i ++ )
         {
+            if (isAssumedLiteral(~cl[i])) {
+                // ignore if the negation is assumed, it's as if this literal did not exist
+                continue;
+            }
             Var v = var (cl[i]);
             var_class = getVarClass2 ( v );
             assert ( var_class == I_B || var_class == I_A || var_class == I_AB );
@@ -1168,6 +1176,10 @@ PTRef ProofGraph::compInterpLabelingOriginal ( ProofNode *n, const ipartitions_t
 
         for ( size_t i = 0 ; i < size ; i ++ )
         {
+            if (isAssumedLiteral(~cl[i])) {
+                // ignore if the negation is assumed, it's as if this literal did not exist
+                continue;
+            }
             Var v = var (cl[i]);
             var_class = getVarClass2 ( v );
             assert ( var_class == I_B || var_class == I_A || var_class == I_AB );
@@ -1230,6 +1242,18 @@ PTRef ProofGraph::compInterpLabelingInner ( ProofNode *n )
     PTRef partial_interp = PTRef_Undef;
     // Determine color pivot, depending on its color in the two antecedents
     icolor_t pivot_color = getPivotColor ( n );
+    if (pivot_color == I_S) {
+        Var v = n->getPivot();
+        if(isAssumedLiteral(Lit{v})) {
+            // Positive occurence is in first parent
+            // Retuen interpolant from second
+            return partial_interp_ant2;
+        }
+        else {
+            assert(isAssumedLiteral(~Lit{v}));
+            return partial_interp_ant1;
+        }
+    }
 
     vec<PTRef> args;
     args.push (partial_interp_ant1);
