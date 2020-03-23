@@ -10,7 +10,7 @@ STPSolver::STPSolver(SMTConfig & c, LALogic & l, vec<DedElem> & d)
         : TSolver((SolverId)descr_stp_solver, (const char*)descr_stp_solver, c, d)
         , logic(l)
 {
-
+    has_explanation = true;
 }
 
 STPSolver::~STPSolver() = default;
@@ -59,10 +59,10 @@ bool STPSolver::assertLit(PtAsgn asgn, bool b) {
        auto tmp = e.from;
        e.from = e.to;
        e.to = tmp;
-       c = -(c + 1);   // Works only on integer values!!!
+       c = -(c + 1);                        // FIXME: Works only on integer values!!!
     }
 
-    return graph.addEdge(e, c);     // performs consistency check. Must be refactored
+    return graph.addEdge(e, c);
 }
 
 TRes STPSolver::check(bool b) {
@@ -86,6 +86,7 @@ void STPSolver::pushBacktrackPoint() {
     // Marks a checkpoint for the set of constraints in the solver
     // Important for backtracking
     TSolver::pushBacktrackPoint();
+    backtracks.push_back(graph);
 }
 
 void STPSolver::popBacktrackPoint() {
@@ -97,7 +98,15 @@ void STPSolver::popBacktrackPoint() {
 void STPSolver::popBacktrackPoints(unsigned int i) {
     // This method is called after unsatisfiable state is detected
     // The solver should remove all constraints that were pushed to the solver in the last "i" backtrackpoints
-    TSolver::popBacktrackPoints(i);
+    // TSolver::popBacktrackPoints(i);  <-- FIXME: infinite recursion with current definition of popBacktrackPoint()
+    assert ( backtracks.size() >= i );
+    graph = backtracks[backtracks.size() - i];
+    for (size_t j = 0; j < i-1; ++j) {
+        TSolver::popBacktrackPoint();
+        backtracks.pop_back();
+    }
+
+    has_explanation = true;     // perform full check after pop
 }
 
 ValPair STPSolver::getValue(PTRef pt) {

@@ -17,6 +17,8 @@ class STPSolver : TSolver {
 
     Graph graph;
 
+    std::vector<Graph> backtracks;
+
     opensmt::Number parseEdge(PTRef ineq, Edge &edge);
 
 public:

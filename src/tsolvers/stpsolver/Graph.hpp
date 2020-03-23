@@ -17,7 +17,7 @@ struct Edge {
     {}
 
     bool operator <(const Edge & other) const {
-        return from < other.from || to < other.to;
+        return from < other.from || (from == other.from && to < other.to);
     }
     bool operator ==(const Edge & other) const {
         return from == other.from && to == other.to;
@@ -37,7 +37,7 @@ class Graph {
     bool areAddedZero(const std::map<PTRef, opensmt::Number> &phi) const;
 public:
     void addVertex(PTRef x);
-    bool addEdge(const Edge& e, const opensmt::Number &cost);
+    bool addEdge(const Edge &e, const opensmt::Number &cost);
     bool check();
 };
 

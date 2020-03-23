@@ -6,10 +6,14 @@ void Graph::addVertex(PTRef x) {
 }
 
 // append a new edge constraint to graph
-bool Graph::addEdge(const Edge& e, const opensmt::Number &cost) {
+bool Graph::addEdge(const Edge &e, const opensmt::Number &cost) {
     // for detecting negative cycles, we need to care only about the lowest cost edge between two vertices
-    if (!edges.count(e) || cost < edges[e])
+    if (!edges.count(e))
+        vertices[e.from].neighbours.push_back(e.to);
+    if (!edges.count(e) || cost < edges[e]) {
         edges[e] = cost;
+        added.push_back(e);
+    }
     return true;
 }
 
