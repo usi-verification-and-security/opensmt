@@ -16,19 +16,21 @@ STPSolver::STPSolver(SMTConfig & c, LALogic & l, vec<DedElem> & d)
 STPSolver::~STPSolver() = default;
 
 // TODO: implement checks on correctness of format
-Edge STPSolver::parseEdge(PTRef e) {
+// returns the edge cost, puts vertices into &edge
+opensmt::Number STPSolver::parseEdge(PTRef ineq, Edge &edge) {
     // Atoms made by mkNumLeq are in form "-c <= -x + y", so we need to negate the coefficients
-
     // e[0] is the constant, e[1] is the difference
-    opensmt::Number c = logic.getNumConst(logic.getPterm(e)[0]) * -1;
-    PTRef add = logic.getPterm(e)[1];                   // the subtraction is stored as an addition with one term negated
+    opensmt::Number c = logic.getNumConst(logic.getPterm(ineq)[0]) * -1;
+    PTRef add = logic.getPterm(ineq)[1];                   // the subtraction is stored as an addition with one term negated
 
     PTRef y = logic.getPterm(add)[0];                   // first term is 'y'
     PTRef mul = logic.getPterm(add)[1];                 // second term is '-1 * x'
     if (!logic.isNumVar(y)) std::swap(y, mul);  // or they might be reversed
     PTRef x = logic.getPterm(mul)[1];                   // assumes multiplication constant is -1
 
-    return Edge{.from = x, .to = y, .cost = c};
+    edge.from = x;
+    edge.to = y;
+    return c;
 }
 
 void STPSolver::declareAtom(PTRef tr) {
@@ -37,7 +39,8 @@ void STPSolver::declareAtom(PTRef tr) {
     // Ignore everything else other than atoms of the form "x - y <= c"; i.e., variable minus variable is less or equal
     // to some constant
     // TODO: store information about the term tr if necessary
-    Edge e = parseEdge(tr);
+    Edge e{};
+    opensmt::Number c = parseEdge(tr, e);
     graph.addVertex(e.from);
     graph.addVertex(e.to);
 }
@@ -50,22 +53,25 @@ bool STPSolver::assertLit(PtAsgn asgn, bool b) {
     //      Return false if immediate conflict has been detected, otherwise return true
     //      Postpone actual checking of consistency of the extended set of constraints until call to the "check" method
 
-    Edge e = parseEdge(asgn.tr);
+    Edge e{};
+    opensmt::Number c = parseEdge(asgn.tr, e);
     if (asgn.sgn == l_False) {             // negating the edge if needed
        auto tmp = e.from;
        e.from = e.to;
        e.to = tmp;
-       e.cost = -(e.cost + 1);   // Works only on integer values!!!
+       c = -(c + 1);   // Works only on integer values!!!
     }
 
-    return graph.addEdge(e);     // performs consistency check. Must be refactored
+    return graph.addEdge(e, c);     // performs consistency check. Must be refactored
 }
 
 TRes STPSolver::check(bool b) {
     // The main method checking the consistency of the current set of constraints
     // Return SAT if the current set of constraints is satisfiable, UNSAT if unsatisfiable
     // TODO: implement the main check of consistency
-    return graph.check() ? TRes::SAT : TRes::UNSAT;
+    if (!has_explanation) return TRes::UNSAT;
+    has_explanation = graph.check();
+    return has_explanation ? TRes::SAT : TRes::UNSAT;
 }
 
 void STPSolver::clearSolver() {

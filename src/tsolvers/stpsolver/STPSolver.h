@@ -17,7 +17,7 @@ class STPSolver : TSolver {
 
     Graph graph;
 
-    Edge parseEdge(PTRef e);
+    opensmt::Number parseEdge(PTRef ineq, Edge &edge);
 
 public:
     STPSolver(SMTConfig & c, LALogic & l, vec<DedElem> & d);

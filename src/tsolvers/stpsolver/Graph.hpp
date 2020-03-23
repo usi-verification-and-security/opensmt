@@ -8,41 +8,36 @@
 #include <vector>
 #include <Number.h>
 
-// describes the type of known edge
-enum class e_type : char {
-    unassigned = 0,
-    assigned,
-    propagated, // assigned & all consequences found
-    consequence // provable from assigned (propagated) edges
-};
-
 struct Edge {
     PTRef from, to;
-    opensmt::Number cost;
-
     // Temporary workaround to be able to use as map keys
     // Shouldn't be needed once better data structures are used
-     bool operator <(const Edge & other) const {
-        return from < other.from || to < other.to || cost < other.cost;
+    Edge() = default;
+    Edge(PTRef from, PTRef to) : from(from), to(to)
+    {}
+
+    bool operator <(const Edge & other) const {
+        return from < other.from || to < other.to;
+    }
+    bool operator ==(const Edge & other) const {
+        return from == other.from && to == other.to;
     }
 };
 
 struct Vertex {
     opensmt::Number value;
-    std::vector<Edge> neighbours; // all edges coming from this vertex
+    std::vector<PTRef> neighbours; // all edges coming from this vertex
 };
 
 class Graph {
     std::map<PTRef, Vertex> vertices;
-    std::map<Edge, e_type> edges;
+    std::map<Edge, opensmt::Number> edges; // assigned edges and their costs
     std::vector<Edge> added;
-    bool valid;
-    PTRef getArgMin(std::map<PTRef, opensmt::Number> func);
-    bool areAddedZero(std::map<PTRef, opensmt::Number> phi);
+    PTRef getArgMin(const std::map<PTRef, opensmt::Number> &func) const;
+    bool areAddedZero(const std::map<PTRef, opensmt::Number> &phi) const;
 public:
-    Graph() noexcept;
     void addVertex(PTRef x);
-    bool addEdge(const Edge& e);
+    bool addEdge(const Edge& e, const opensmt::Number &cost);
     bool check();
 };
 
