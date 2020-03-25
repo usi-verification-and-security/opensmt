@@ -47,6 +47,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "CoreSMTSolver.h"
 #include "Sort.h"
 #include <cmath>
+#include <iostream>
 
 #include "Proof.h"
 
@@ -449,7 +450,7 @@ void CoreSMTSolver::cancelUntil(int level)
 
 void CoreSMTSolver::printClause(Clause & cl) {
     for (unsigned i = 0; i < cl.size(); ++i) {
-        std::cout << cl[i].x << ' ';
+        std::cout << cl[i] << ' ';
     }
     std::cout << '\n';
 }
@@ -1069,8 +1070,7 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
 
     seen[var(p)] = 1;
     if (logsProof()) {
-        CRef assumptionUnitClause = ca.alloc(vec<Lit>{~p});
-        proof->newAssumptionLiteral(assumptionUnitClause);
+        CRef assumptionUnitClause = proof->getUnitForAssumptionLiteral(~p);
         proof->beginChain(assumptionUnitClause);
     }
 
@@ -1082,13 +1082,12 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
             if (reason(x) == CRef_Undef) // This should happen only for assumptions
             {
                 assert(level(x) > 0);
-                assert(std::find(&assumptions[0], &assumptions[0] + assumptions.size(), ~trail[i])
+                assert(std::find(&assumptions[0], &assumptions[0] + assumptions.size(), trail[i])
                 != &assumptions[0] + assumptions.size());
                 out_conflict.push(~trail[i]);
                 if (logsProof()) {
                     // Add a resolution step with unit clauses for this assumption
-                    CRef assumptionUnitClause = ca.alloc(vec<Lit>{~trail[i]});
-                    proof->newAssumptionLiteral(assumptionUnitClause);
+                    CRef assumptionUnitClause = proof->getUnitForAssumptionLiteral(trail[i]);
                     proof->addResolutionStep(assumptionUnitClause, x);
                 }
             }
@@ -2097,6 +2096,14 @@ void CoreSMTSolver::garbageCollect()
     to.moveTo(ca);
 }
 
+void CoreSMTSolver::setAssumptions(vec<Lit> const & assumps) {
+    assumptions.clear();
+    assumps.copyTo(assumptions);
+    if(proof) {
+        proof->setCurrentAssumptionLiterals(&assumps[0], &assumps[0] + assumps.size());
+    }
+}
+
 int CoreSMTSolver::restartNextLimit ( int nof_conflicts )
 {
     // Luby's restart
@@ -2245,3 +2252,7 @@ void CoreSMTSolver::printStatistics( ostream & os )
 }
 #endif // STATISTICS
 
+inline std::ostream& operator <<(std::ostream& out, Lit l) {
+    out << (sign(l) ? "-" : "") << var(l);
+    return out;
+}

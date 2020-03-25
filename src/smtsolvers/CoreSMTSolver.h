@@ -52,7 +52,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "THandler.h"
 
 #include <cstdio>
+#include <iosfwd>
 #include <memory>
+#include <sstream>
 
 #include "Vec.h"
 #include "Heap.h"
@@ -65,7 +67,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 class Proof;
 class ProofGraph;
 
-
+// Helper method to print Literal to a stream
+std::ostream& operator <<(std::ostream& out, Lit l); // MB: Feel free to find a better place for this method.
 
 // -----------------------------------------------------------------------------------------
 // The splits
@@ -413,6 +416,8 @@ protected:
         return d;
     }
 
+    void virtual setAssumptions(vec<Lit> const& assumps);
+
     struct Watcher
     {
         CRef cref;
@@ -647,7 +652,7 @@ protected:
 
 public:
 
-    void     printLit         (Lit l);
+    void     printLit         (Lit l) const;
     template<class C>
     void     printClause      (const C& c);
     void     printClause      ( CRef );
@@ -988,7 +993,7 @@ inline bool     CoreSMTSolver::withinBudget() const
 inline bool     CoreSMTSolver::solve  (const vec<Lit>& assumps)
 {
     budgetOff();
-    assumps.copyTo(assumptions);
+    setAssumptions(assumps);
     return solve_() == l_True;
 }
 
@@ -1051,10 +1056,11 @@ static inline const char* showBool(bool b) { return b ? "true" : "false"; }
 // Just like 'assert()' but expression will be evaluated in the release version as well.
 static inline void check(bool expr) { (void)expr; assert(expr); }
 
-inline void CoreSMTSolver::printLit(Lit l)
+inline void CoreSMTSolver::printLit(Lit l) const
 {
-    reportf("%s%-3d", sign(l) ? "-" : "", var(l)+1 );
-    //reportf("%s%-3d:%c", sign(l) ? "-" : "", var(l)+1, value(l) == l_True ? '1' : (value(l) == l_False ? '0' : 'X'));
+    std::flush(std::cout);
+    std::cerr << l;
+    std::flush(std::cerr);
 }
 
 

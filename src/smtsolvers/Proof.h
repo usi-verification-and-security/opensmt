@@ -95,9 +95,6 @@ public:
     // Notifies the proof about a new T-clause.
     void newTheoryClause ( CRef);
 
-    // Notifies the proof about an assumption-literal unit clause needed in the proof
-    void newAssumptionLiteral(CRef);
-
     // Notifies the proof that a new resolution chain, starting from the passed clause, is being processed.
     void beginChain ( CRef );
 
@@ -107,7 +104,23 @@ public:
     // Notifies the proof to register a resolution step in current chain.
     void addResolutionStep( CRef, Var );
 
-    inline bool hasOpenChain() { return begun; }
+    inline bool hasOpenChain() const { return begun; }
+
+    template<typename TIt>
+    void setCurrentAssumptionLiterals(TIt begin, TIt end){
+        this->cleanAssumedLiterals();
+        for (auto it = begin; it != end; ++it){
+            addAssumptionLiteral(*it);
+        }
+    }
+
+    // MB: I don't like this being public, but it is the easiest way
+    CRef getUnitForAssumptionLiteral(Lit l) {
+        auto it = std::find_if(assumed_literals.begin(), assumed_literals.end(),
+                [l, this](CRef c) { return cl_al[c][0] == l; });
+        assert(it != assumed_literals.end());
+        return *it;
+    }
 
     bool deleted    ( CRef );                             // Remove clauses if possible
     inline Clause& getClause       ( CRef cr ) const { return cl_al[cr]; } // Get clause from reference
@@ -124,7 +137,12 @@ public:
         return res;
     }
 
-    std::unordered_map< CRef, ProofDer> & getProof( ) { return clause_to_proof_der; }
+    std::unordered_map< CRef, ProofDer> const & getProof( ) const { return clause_to_proof_der; }
+
+private:
+    // Helper methods
+    void cleanAssumedLiterals();
+    void addAssumptionLiteral(Lit l);
 };
 
 //=================================================================================================

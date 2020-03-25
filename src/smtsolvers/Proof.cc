@@ -128,14 +128,6 @@ void Proof::newTheoryClause(CRef c)
     clause_to_proof_der.emplace(c, ProofDer{clause_type::CLA_THEORY});
 }
 
-void Proof::newAssumptionLiteral(CRef c) {
-    assert(c != CRef_Undef);
-    assert(getClause(c).size() == 1);
-    // MB: Note that we might need to call this in the middle of assumption chain
-    assert(clause_to_proof_der.find(c) == clause_to_proof_der.end());
-    clause_to_proof_der.emplace(c, ProofDer{clause_type::CLA_ASSUMPTION});
-    assumed_literals.push_back(c);
-}
 
 //
 // This is the beginning of a derivation chain.
@@ -358,13 +350,40 @@ void Proof::print( ostream & out, CoreSMTSolver & s, THandler & t )
   out << ")" << endl;
 }
 
+void Proof::cleanAssumedLiterals() {
+    // MB: This relies on the invariant that in case of conflict based on assumptions,
+    // the final conflict starts at the assumed literal that was falsified
+    auto it = clause_to_proof_der.find(CRef_Undef);
+    if ( it != clause_to_proof_der.end()) {
+        CRef finalReason = it->second.chain_cla[0];
+        if (std::find(assumed_literals.begin(), assumed_literals.end(), finalReason) != assumed_literals.end()) {
+            clause_to_proof_der.erase(it);
+        }
+    }
+    for (CRef assumed_unit : assumed_literals) {
+        cl_al.free(assumed_unit);
+    }
+    assumed_literals.clear();
+}
+
+void Proof::addAssumptionLiteral(Lit l) {
+    // Allocate the unit clause for the assumed literal
+    CRef assumed_unit = cl_al.alloc(vec<Lit>{l});
+    // And store it
+    clause_to_proof_der.emplace(assumed_unit, ProofDer{clause_type::CLA_ASSUMPTION});
+    assumed_literals.push_back(assumed_unit);
+}
+
 //=============================================================================
 // The following functions are declared in CoreSMTSolver.h
 
 void CoreSMTSolver::createProofGraph ()
-{ proof_graph = new ProofGraph( config, *this, theory_handler.getTheory(),  *proof, nVars( ) ); }
+{
+    deleteProofGraph();
+    proof_graph = new ProofGraph( config, *this, theory_handler.getTheory(),  *proof, nVars());
+}
 
-void CoreSMTSolver::deleteProofGraph () { delete proof_graph; }
+void CoreSMTSolver::deleteProofGraph () { delete proof_graph; proof_graph = nullptr; }
 
 void CoreSMTSolver::printProofSMT2( ostream & out )
 { proof->print( out, *this, theory_handler ); }
