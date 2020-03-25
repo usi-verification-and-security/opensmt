@@ -105,7 +105,7 @@ void ProofGraph::buildProofGraph( int nVars )
     // b c
     // ...
     // a,b resolved over c...
-    auto & clause_to_proof_der = proof.getProof( );
+    auto const & clause_to_proof_der = proof.getProof( );
 
     //To map clauses to graph id
     //An id is associated when the node is created
@@ -198,7 +198,7 @@ void ProofGraph::buildProofGraph( int nVars )
 
             // Get clause derivation tree
             assert(clause_to_proof_der.find(currClause) != clause_to_proof_der.end());
-            ProofDer &           proofder = clause_to_proof_der.at(currClause); // Derivation
+            ProofDer const &           proofder = clause_to_proof_der.at(currClause); // Derivation
             const vector< CRef > &     chaincla = proofder.chain_cla;            // Clauses chain
             const vector< Var > &      chainvar = proofder.chain_var;            // Pivot chain
             clause_type        ctype    = proofder.type;
@@ -208,18 +208,8 @@ void ProofGraph::buildProofGraph( int nVars )
             // Only boolean reasoning allowed
             if (ctype == clause_type::CLA_ORIG || ctype == clause_type::CLA_THEORY || ctype == clause_type::CLA_ASSUMPTION)
             {
-                if (ctype == clause_type::CLA_THEORY)
-                {
-                    if (chaincla.size() >= 2)
-                    {
-                        proofder.type = clause_type::CLA_LEARNT; // MB: TODO why reassigning type?
-                        q.push_back(currClause);
-                        continue;
-                    }
-                }
-                if (ctype == clause_type::CLA_ORIG)
-                    assert(chaincla.size()==0);
-                // Empty clause (represented by NULL) has been labeled as original
+                assert(chaincla.size() == 0);
+                // Empty clause has been labeled as original
                 // if generated at preprocessing time
                 if(ctype == clause_type::CLA_ORIG && currClause==CRef_Undef)
                 {
@@ -494,6 +484,8 @@ void ProofGraph::buildProofGraph( int nVars )
         }
     }
     while(!q.empty());
+
+    this->addDefaultAssumedLiterals();
 
     if( proofCheck() )
     {

@@ -521,8 +521,9 @@ private:
     void clearTSolver();
     bool assertLiteralsToTSolver(vec<Lit> const&);
     void addDefaultAssumedLiterals();
-    inline bool isAssumedLiteral(Lit l) const
-    { return std::find(assumedLiterals.begin(), assumedLiterals.end(), l) != assumedLiterals.end(); }
+    inline bool isAssumedLiteral(Lit l) const {
+        return std::find(assumedLiterals.begin(), assumedLiterals.end(), l) != assumedLiterals.end();
+    }
 
     //NOTE added for experimentation
     Var 				  pred_to_push;

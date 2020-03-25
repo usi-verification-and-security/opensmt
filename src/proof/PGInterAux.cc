@@ -144,7 +144,9 @@ icolor_t ProofGraph::getPivotColor( ProofNode* n )
 		updateColoringAfterRes(n);
 	}
 	else opensmt_error( "Pivot " << v << " has no class" );
-	if(isAssumedLiteral(Lit{v}) || isAssumedLiteral(~Lit{v})) {
+	Lit pos = mkLit(v);
+	Lit neg = ~pos;
+	if(isAssumedLiteral(pos) || isAssumedLiteral(neg)) {
 	    return I_S;
 	}
 
@@ -158,16 +160,11 @@ icolor_t ProofGraph::getVarClass( Var v, const ipartitions_t & A_mask )
 {
 	//Determine mask corresponding to B
 	ipartitions_t B_mask = ~A_mask;
-
-	//Get partition mask variable
-	//e.g. 0---0110 variable in first and second partition
-	//const ipartitions_t & enode_mask = logic_.getIPartitions(enode_var);
-	const ipartitions_t& enode_mask = logic_.getVarClassMask(v);
-//	const ipartitions_t & enode_mask = enode_var->getIPartitions( );
+	const ipartitions_t& var_mask = logic_.getVarClassMask(v);
 
 	// Check if variable present in A or B
-	const bool var_in_A = ( (enode_mask & A_mask) != 0 );
-	const bool var_in_B = ( (enode_mask & B_mask) != 0 );
+	const bool var_in_A = ( (var_mask & A_mask) != 0 );
+	const bool var_in_B = ( (var_mask & B_mask) != 0 );
 	assert( var_in_A || var_in_B );
 
 	icolor_t var_class;
