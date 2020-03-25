@@ -1079,13 +1079,13 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
         Var x = var(trail[i]);
         if (seen[x])
         {
-            if (reason(x) == CRef_Undef) // This should happen only for assumptions
+            if (reason(x) == CRef_Undef)
             {
-                assert(level(x) > 0);
-                assert(std::find(&assumptions[0], &assumptions[0] + assumptions.size(), trail[i])
-                != &assumptions[0] + assumptions.size());
                 out_conflict.push(~trail[i]);
                 if (logsProof()) {
+                    assert(level(x) > 0);
+                    assert(std::find(&assumptions[0], &assumptions[0] + assumptions.size(), trail[i])
+                           != &assumptions[0] + assumptions.size());
                     // Add a resolution step with unit clauses for this assumption
                     CRef assumptionUnitClause = proof->getUnitForAssumptionLiteral(trail[i]);
                     proof->addResolutionStep(assumptionUnitClause, x);
@@ -1117,8 +1117,8 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
                         proof->addResolutionStep(reason(x), x);
                     }
                 }
-                seen[x] = 0;
             }
+            seen[x] = 0;
         }
     }
     assert(seen[var(p)] == 0);
