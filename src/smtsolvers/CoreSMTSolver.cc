@@ -2252,7 +2252,7 @@ void CoreSMTSolver::printStatistics( ostream & os )
 }
 #endif // STATISTICS
 
-inline std::ostream& operator <<(std::ostream& out, Lit l) {
+std::ostream& operator <<(std::ostream& out, Lit l) {
     out << (sign(l) ? "-" : "") << var(l);
     return out;
 }

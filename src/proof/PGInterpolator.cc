@@ -1245,14 +1245,13 @@ PTRef ProofGraph::compInterpLabelingInner ( ProofNode *n )
     if (pivot_color == I_S) {
         Var v = n->getPivot();
         Lit pos = mkLit(v);
-        Lit neg = ~pos;
         if(isAssumedLiteral(pos)) {
             // Positive occurence is in first parent
             // Retuen interpolant from second
             return partial_interp_ant2;
         }
         else {
-            assert(isAssumedLiteral(neg));
+            assert(isAssumedLiteral(~pos));
             return partial_interp_ant1;
         }
     }
