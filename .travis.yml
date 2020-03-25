@@ -4,7 +4,7 @@ language: cpp
 branches:
     only:
         - master
-        - pp_cleanup
+        - inc_itp
 
 os:
   - linux
