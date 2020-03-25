@@ -204,8 +204,8 @@ Logic::Logic(SMTConfig& c) :
     // MB: TODO: Is this necessary?
     ipartitions_t mask = 0;
     mask = ~mask;
-    setIPartitions(getTerm_true(), mask);
-    setIPartitions(getTerm_false(), mask);
+    addIPartitions(getTerm_true(), mask);
+    addIPartitions(getTerm_false(), mask);
     /////////////////////////////////////////
 }
 
@@ -2116,23 +2116,20 @@ Logic::verifyInterpolant(PTRef itp, const ipartitions_t& mask)
 }
 
 void
-Logic::addVarClassMask(Var l, const ipartitions_t& toadd)
+Logic::addVarClassMask(Var v, const ipartitions_t& toadd)
 {
-    opensmt::orbit(var_class[l], var_class[l], toadd);
-#ifdef ITP_DEBUG
-    cerr << "; Adding mask " << toadd << " to var " << l << endl;
-    cerr << "; Var " << l << " now has mask " << var_class[l] << endl;
-#endif
+    partitionInfo.addVarPartition(v, toadd);
 }
 
 void
-Logic::addClauseClassMask(CRef l, const ipartitions_t& toadd)
+Logic::addClauseClassMask(CRef c, const ipartitions_t& toadd)
 {
-    opensmt::orbit(clause_class[l], clause_class[l], toadd);
-#ifdef ITP_DEBUG
-    cerr << "; Adding mask " << toadd << " to clause " << l << endl;
-    cerr << "; Clause " << l << " now has mask " << clause_class[l] << endl;
-#endif
+    partitionInfo.addClausePartition(c, toadd);
+}
+
+void
+Logic::invalidatePartitions(const ipartitions_t& toinvalidate) {
+    partitionInfo.invalidatePartitions(toinvalidate);
 }
 
 void

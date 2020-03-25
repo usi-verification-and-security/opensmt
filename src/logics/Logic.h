@@ -30,8 +30,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "PtStore.h"
 #include "SStore.h"
 #include "Tterm.h"
-
-#include "FlaPartitionMap.h"
 #include "PartitionInfo.h"
 
 
@@ -108,13 +106,6 @@ class Logic {
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      ites;
     Map<SRef,bool,SRefHash,Equal<SRef> >            ufsorts;
 
-
-    //for partitions:
-    //Map<PTRef,int,PTRefHash> partitions;
-//    std::map<unsigned int, PTRef> partitions; // map of partition indices to PTRefs of partitions
-    FlaPartitionMap flaPartitionMap;
-    map<CRef, ipartitions_t> clause_class;
-    map<Var, ipartitions_t> var_class;
 
     Map<const char*,TFun,StringHash,Equal<const char*> > defined_functions;
     vec<Tterm> defined_functions_vec; // A strange interface through the Tterms..
@@ -305,13 +296,40 @@ class Logic {
     bool verifyInterpolantB(PTRef, const ipartitions_t&);
     bool verifyInterpolant(PTRef, const ipartitions_t&);
 
+    //partitions:
     ipartitions_t& getIPartitions(PTRef _t) { return partitionInfo.getIPartitions(_t); }
-    void setIPartitions(PTRef _t, const ipartitions_t& _p) { partitionInfo.setIPartitions(_t, _p); }
     void addIPartitions(PTRef _t, const ipartitions_t& _p) { partitionInfo.addIPartitions(_t, _p); }
     ipartitions_t& getIPartitions(SymRef _s) { return partitionInfo.getIPartitions(_s); }
-    void setIPartitions(SymRef _s, const ipartitions_t& _p) { partitionInfo.setIPartitions(_s, _p); }
     void addIPartitions(SymRef _s, const ipartitions_t& _p) { partitionInfo.addIPartitions(_s, _p); }
     void propagatePartitionMask(PTRef tr);
+    void assignTopLevelPartitionIndex(unsigned int n, PTRef tr)
+    {
+        partitionInfo.assignTopLevelPartitionIndex(n, tr);
+    }
+
+    ipartitions_t& getClauseClassMask(CRef c) { return partitionInfo.getClausePartitions(c); }
+    ipartitions_t& getVarClassMask(Var v) { return partitionInfo.getVarPartition(v); }
+    void addClauseClassMask(CRef c, const ipartitions_t& toadd);
+    void addVarClassMask(Var v, const ipartitions_t& toadd);
+    void invalidatePartitions(const ipartitions_t& toinvalidate);
+    inline std::vector<PTRef> getPartitions() { return partitionInfo.getTopLevelFormulas(); }
+
+
+    std::vector<PTRef> getPartitions(ipartitions_t const & mask){
+        throw std::logic_error{"Not supported at the moment!"};
+    }
+
+    unsigned getNofPartitions() { return partitionInfo.getNoOfPartitions(); }
+
+    void transferPartitionMembership(PTRef old, PTRef new_ptref)
+    {
+        this->addIPartitions(new_ptref, getIPartitions(old));
+        partitionInfo.transferPartitionMembership(old, new_ptref);
+    }
+
+    int getPartitionIndex(PTRef ref) const {
+        return partitionInfo.getPartitionIndex(ref);
+    }
 
 
     // The Boolean connectives
@@ -460,38 +478,6 @@ class Logic {
     void compareSortStore(SStore& other) { }
     void compareTermStore(PtStore& other) { }// term_store.compare(other); }
 #endif
-
-    //partitions:
-    void assignPartition(unsigned int n, PTRef tr)
-    {
-        flaPartitionMap.store_top_level_fla_index(tr, n);
-        partitionInfo.assignPartition(n, tr);
-    }
-
-    ipartitions_t& getClauseClassMask(CRef l) { return clause_class[l]; }
-    ipartitions_t& getVarClassMask(Var l) { return var_class[l]; }
-    void addClauseClassMask(CRef l, const ipartitions_t& toadd);
-    void addVarClassMask(Var l, const ipartitions_t& toadd);
-    std::vector<PTRef> getPartitions()
-    {
-        return flaPartitionMap.get_top_level_flas();
-    }
-
-    std::vector<PTRef> getPartitions(ipartitions_t const & mask){
-        throw std::logic_error{"Not supported at the moment!"};
-    }
-
-    unsigned getNofPartitions() { return flaPartitionMap.getNoOfPartitions(); }
-
-    void transferPartitionMembership(PTRef old, PTRef new_ptref)
-    {
-        this->addIPartitions(new_ptref, getIPartitions(old));
-        flaPartitionMap.transferPartitionMembership(old, new_ptref);
-    }
-
-    int getPartitionIndex(PTRef ref) const {
-        return flaPartitionMap.getPartitionIndex(ref);
-    }
 
     // Statistics
     int subst_num; // Number of substitutions

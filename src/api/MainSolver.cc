@@ -48,6 +48,18 @@ bool
 MainSolver::pop()
 {
     if (frames.size() > 1) {
+        if(config.produce_inter() > 0) {
+            auto toPop = frames.last();
+            auto& partitionsToInvalidate = pfstore[toPop].formulas;
+            ipartitions_t mask = 0;
+            for (int i = 0; i < partitionsToInvalidate.size(); ++i) {
+                PTRef part = partitionsToInvalidate[i];
+                auto index = logic.getPartitionIndex(part);
+                assert(index != -1);
+                opensmt::setbit(mask, static_cast<unsigned int>(index));
+            }
+            logic.invalidatePartitions(mask);
+        }
         frames.pop();
         return true;
     }
@@ -82,7 +94,7 @@ MainSolver::insertFormula(PTRef root, char** msg)
         // MB: Important for HiFrog! partition index is the index of the formula in an virtual array of inserted formulas,
         //     thus we need the old value of count. TODO: Find a good interface for this so it cannot be broken this easily
         int partition_index = inserted_formulas_count++;
-        logic.assignPartition(partition_index, root);
+        logic.assignTopLevelPartitionIndex(partition_index, root);
         assert(logic.getPartitionIndex(root) != -1);
     }
     else {

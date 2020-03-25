@@ -4,11 +4,12 @@
 #include "PartitionInfo.h"
 
 void
-PartitionInfo::assignPartition(unsigned int n, PTRef ptr) {
+PartitionInfo::assignTopLevelPartitionIndex(unsigned int n, PTRef tr) {
     assert(n >= 0);
+    flaPartitionMap.store_top_level_fla_index(tr, n);
     ipartitions_t p = 0;
     setbit(p, n);
-    addIPartitions(ptr, p);
+    addIPartitions(tr, p);
 }
 
 ipartitions_t&
@@ -19,14 +20,9 @@ PartitionInfo::getIPartitions(PTRef _t)
 }
 
 void
-PartitionInfo::setIPartitions(PTRef _t, const ipartitions_t& _p)
-{
-    term_partitions[_t] = _p;
-}
-
-void
 PartitionInfo::addIPartitions(PTRef _t, const ipartitions_t& _p)
 {
+    // MB: // this default construct the value if the key was not present and it is default constructed to 0
     term_partitions[_t] |= _p;
 }
 
@@ -38,13 +34,46 @@ PartitionInfo::getIPartitions(SymRef _s)
 }
 
 void
-PartitionInfo::setIPartitions(SymRef _s, const ipartitions_t& _p)
+PartitionInfo::addIPartitions(SymRef _s, const ipartitions_t& _p)
 {
-    sym_partitions[_s] = _p;
+    // MB: // this default construct the value if the key was not present and it is default constructed to 0
+    sym_partitions[_s] |= _p;
+}
+
+ipartitions_t & PartitionInfo::getClausePartitions(CRef c) {
+    return clause_class[c];
+}
+
+void PartitionInfo::addClausePartition(CRef c, const ipartitions_t & p) {
+    //opensmt::orbit(clause_class[c], clause_class[c], p);
+    clause_class[c] |= p;
+}
+
+ipartitions_t & PartitionInfo::getVarPartition(Var v) {
+    return var_class[v];
+}
+
+void PartitionInfo::addVarPartition(Var v, const ipartitions_t & p) {
+    var_class[v] |= p;
 }
 
 void
-PartitionInfo::addIPartitions(SymRef _s, const ipartitions_t& _p)
-{
-    sym_partitions[_s] |= _p;
+PartitionInfo::invalidatePartitions(const ipartitions_t& toinvalidate) {
+    auto negated = ~toinvalidate;
+    for (auto & clause_info : clause_class) {
+        auto& current_info = clause_info.second;
+        opensmt::andbit(current_info, current_info, negated);
+    }
+    for (auto & var_info : var_class) {
+        auto& current_info = var_info.second;
+        opensmt::andbit(current_info, current_info, negated);
+    }
+    for (auto & term_info : term_partitions) {
+        auto& current_info = term_info.second;
+        opensmt::andbit(current_info, current_info, negated);
+    }
+    for (auto & sym_info : sym_partitions) {
+        auto& current_info = sym_info.second;
+        opensmt::andbit(current_info, current_info, negated);
+    }
 }
