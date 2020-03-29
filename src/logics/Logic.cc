@@ -2024,6 +2024,23 @@ void Logic::propagatePartitionMask(PTRef root) {
     }
 }
 
+ipartitions_t Logic::computeAllowedPartitions(PTRef p) {
+    vec<PtChild> subterms;
+    getTermList(p, subterms, *this);
+    vec<PTRef> vars;
+    for (int i = 0; i < subterms.size(); ++i) {
+        if (this->isVar(subterms[i].tr)) {
+            vars.push(subterms[i].tr);
+        }
+    }
+    if (vars.size() == 0) { return 0; }
+    ipartitions_t allowed = this->getIPartitions(vars[0]);
+    for (int i = 1; i < vars.size(); ++i) {
+        allowed &= this->getIPartitions(vars[i]);
+    }
+    return allowed;
+}
+
 bool
 Logic::verifyInterpolantA(PTRef itp, const ipartitions_t& mask)
 {

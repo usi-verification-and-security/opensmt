@@ -307,6 +307,7 @@ class Logic {
         partitionInfo.assignTopLevelPartitionIndex(n, tr);
     }
 
+    ipartitions_t  computeAllowedPartitions(PTRef p);
     ipartitions_t& getClauseClassMask(CRef c) { return partitionInfo.getClausePartitions(c); }
     ipartitions_t& getVarClassMask(Var v) { return partitionInfo.getVarPartition(v); }
     void addClauseClassMask(CRef c, const ipartitions_t& toadd);

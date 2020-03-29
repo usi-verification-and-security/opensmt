@@ -163,8 +163,22 @@ icolor_t ProofGraph::getVarClass( Var v, const ipartitions_t & A_mask )
 	const ipartitions_t& var_mask = logic_.getVarClassMask(v);
 
 	// Check if variable present in A or B
-	const bool var_in_A = ( (var_mask & A_mask) != 0 );
-	const bool var_in_B = ( (var_mask & B_mask) != 0 );
+	bool var_in_A = ((var_mask & A_mask) != 0);
+	bool var_in_B = ((var_mask & B_mask) != 0);
+	// MB: In incremental solving it might be that this is theory literal that has been popped.
+	//      Determine its class based on the classes of variables it contains
+	if (!var_in_A && !var_in_B) {
+        PTRef term = varToPTRef(v);
+        assert(this->logic_.isTheoryTerm(term));
+        assert((logic_.getIPartitions(term) & A_mask) == 0 && (logic_.getIPartitions(term) & B_mask) == 0);
+        auto allowedPartitions = logic_.computeAllowedPartitions(term);
+        assert(allowedPartitions != 0);
+        var_in_A = ((allowedPartitions & A_mask) != 0);
+        var_in_B = ((allowedPartitions & B_mask) != 0);
+        // MB: Also update the partition information for interpolation
+        logic_.addIPartitions(term, allowedPartitions);
+        logic_.addVarClassMask(v, allowedPartitions);
+	}
 	assert( var_in_A || var_in_B );
 
 	icolor_t var_class;
