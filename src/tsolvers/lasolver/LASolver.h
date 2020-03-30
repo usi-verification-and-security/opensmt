@@ -158,9 +158,6 @@ protected:
 
     opensmt::Real evaluateTerm(PTRef tr);
 
-    // Bounds system
-    vec<LABoundRefPair> ptermToLABoundRefs;
-
     LASolverStatus status;                  // Internal status of the solver (different from bool)
 
 

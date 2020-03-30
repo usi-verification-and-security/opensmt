@@ -47,3 +47,9 @@ LVRef  LAVarMapper::getVarByLeqId(PTId i) const { return leqToLavar[Idx(i)]; }
 
 bool   LAVarMapper::hasVar(PTId i) { return static_cast<unsigned int>(ptermToLavar.size()) > Idx(i) && ptermToLavar[Idx(i)] != LVRef_Undef; }
 
+void LAVarMapper::clear() {
+    this->leqToLavar.clear();
+    this->laVarToPTRef.clear();
+    this->ptermToLavar.clear();
+}
+

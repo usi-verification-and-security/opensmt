@@ -27,7 +27,9 @@ void LIASolver::clearSolver()
 {
 
     LASolver::clearSolver();
-    //delta = Delta::ZERO;
+    this->cuts.clear();
+    this->int_vars.clear();
+    this->int_vars_map.clear();
 }
 
 void LIASolver::notifyVar(LVRef v)

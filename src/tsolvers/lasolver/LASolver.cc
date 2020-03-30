@@ -116,16 +116,14 @@ void LASolver::clearSolver()
     dec_limit.clear();
     TSolver::clearSolver();
 
-//    laVarStore.clear();
-//    laVarMapper.clear();
-
-    // also keep the bounds allocator, bounds list allocator
-//    ba.clear();
-//    this->bla.clear();
+    laVarStore.clear();
+    laVarMapper.clear();
+    boundStore.clear();
+    LABoundRefToLeqAsgn.clear();
+    LeqToLABoundRefPair.clear();
 
     // TODO: clear statistics
 //    this->tsolver_stats.clear();
-    //delta = Delta::ZERO;
 }
 
 void LASolver::storeExplanation(Simplex::Explanation &&explanationBounds) {

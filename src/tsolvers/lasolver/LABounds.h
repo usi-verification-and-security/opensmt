@@ -123,6 +123,7 @@ private:
 public:
     LABoundStore(LAVarStore &lvstore) : lvstore(lvstore) {}
     void buildBounds();
+    void clear();
     void updateBound(BoundInfo bi); // Update a single bound.
 //    inline LABoundRef getLowerBound(const LVRef v) const { return bla[lva[v].getBounds()][lva[v].lbound()]; }
 //    inline LABoundRef getUpperBound(const LVRef v) const { return bla[lva[v].getBounds()][lva[v].ubound()]; }

@@ -26,7 +26,9 @@ public:
     LVRef  getVarByLeqId(PTId i) const;
     bool   hasVar(PTId i) ;
     bool   hasVar(PTRef tr);
+    void   clear();
     inline PTRef getVarPTRef(LVRef ref) const { return laVarToPTRef[ref.x]; }
+
 };
 
 
