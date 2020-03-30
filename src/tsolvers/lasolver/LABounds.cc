@@ -150,8 +150,7 @@ void LABoundStore::buildBounds()
     }
 
     // make sure all variables have at least the trivial bounds
-    for (unsigned i = 0; i < lvstore.numVars(); i++) {
-        LVRef ref {i};
+    for (LVRef ref : lvstore) {
         auto id = getVarId(ref);
         while (static_cast<unsigned>(var_bound_lists.size()) <= id)
             var_bound_lists.push(LABoundListRef_Undef);

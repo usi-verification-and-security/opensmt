@@ -5,9 +5,9 @@
 #include "LAVarMapper.h"
 #include "LALogic.h"
 
-LVRef LAVarMapper::getNewVar(PTRef e_orig) {
+LVRef LAVarMapper::registerNewMapping(LVRef lv, PTRef e_orig) {
+    assert(!hasVar(e_orig));
     assert(!logic.isNegated(e_orig));
-    LVRef lv = laVarStore.getNewVar();
     if (lv.x >= static_cast<unsigned int>(laVarToPTRef.size())) {
         laVarToPTRef.growTo(lv.x+1, PTRef_Undef);
     }

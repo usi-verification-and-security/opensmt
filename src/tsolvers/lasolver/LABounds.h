@@ -4,6 +4,7 @@
 #include "Delta.h"
 #include "LARefs.h"
 #include "LAVar.h"
+#include "Alloc.h"
 
 //
 // Bound index type.  The bounds are ordered in a list, and indexed using a number in the list.
@@ -141,7 +142,7 @@ public:
         in_bounds.push(BoundInfo{v, ub, lb});
         return in_bounds.last();
     }
-    std::size_t nVars() const { return lvstore.numVars(); }
+    LAVarStore const& getVarStore() const { return lvstore; }
 };
 
 

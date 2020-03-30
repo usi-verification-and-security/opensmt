@@ -128,8 +128,6 @@ protected:
 
     std::unique_ptr<Polynomial> expressionToLVarPoly(PTRef term);
 
-    unsigned nVars() const;// { return lva.getNumVars(); }
-
     opensmt::Number getNum(PTRef);
 
     LVRef getLAVar_single(PTRef term);                      // Initialize a new LA var if needed, otherwise return the old var

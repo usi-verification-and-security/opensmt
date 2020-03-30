@@ -7,8 +7,8 @@
 
 void LRAModel::init()
 {
-    for (unsigned i = 0; i < bs.nVars(); i++) {
-        LVRef ref {i};
+    LAVarStore varStore = bs.getVarStore();
+    for (LVRef ref : varStore) {
         addVar(ref);
     }
 }

@@ -88,7 +88,7 @@ void LASolver::isProperLeq(PTRef tr)
 LASolver::LASolver(SolverDescr dls, SMTConfig & c, LALogic& l, vec<DedElem>& d)
         : TSolver((SolverId)dls, (const char*)dls, c, d)
         , logic(l)
-        , laVarMapper(l, laVarStore)
+        , laVarMapper(l)
         , boundStore(laVarStore)
         , simplex(boundStore)
 {
@@ -114,12 +114,10 @@ void LASolver::clearSolver()
     decision_trace.clear();
     int_decisions.clear();
     dec_limit.clear();
-    // TODO set information about columns and rows in LAVars
     TSolver::clearSolver();
 
-    // MB: Let's keep the LAVar store and allocator
-//    lva.clear();
-//    lavarStore.clear();
+//    laVarStore.clear();
+//    laVarMapper.clear();
 
     // also keep the bounds allocator, bounds list allocator
 //    ba.clear();
@@ -222,11 +220,13 @@ LVRef LASolver::getLAVar_single(PTRef expr_in) {
 
     PTId id = logic.getPterm(expr_in).getId();
 
-    if (laVarMapper.hasVar(id))
+    if (laVarMapper.hasVar(id)) {
         return getVarForTerm(expr_in);
+    }
 
     PTRef expr = logic.isNegated(expr_in) ? logic.mkNumNeg(expr_in) : expr_in;
-    LVRef x = laVarMapper.getNewVar(expr);
+    LVRef x = laVarStore.getNewVar();
+    laVarMapper.registerNewMapping(x, expr);
     return x;
 }
 
@@ -728,10 +728,9 @@ void LASolver::computeModel()
     assert( status == SAT );
     opensmt::Real delta = simplex.computeDelta();
 
-    for ( unsigned i = 0; i < laVarMapper.numVars(); i++)
+    for (LVRef var : laVarStore)
     {
-        LVRef v {i};
-        computeConcreteModel(v, delta);
+        computeConcreteModel(var, delta);
     }
 }
 
@@ -746,8 +745,5 @@ LASolver::~LASolver( )
 PtAsgn_reason LASolver::getDeduction()  { if (deductions_next >= static_cast<unsigned>(th_deductions.size())) return PtAsgn_reason_Undef; else return th_deductions[deductions_next++]; }
 
 LALogic&  LASolver::getLogic()  { return logic; }
-
-unsigned LASolver::nVars() const { return laVarMapper.numVars(); }
-
 
 

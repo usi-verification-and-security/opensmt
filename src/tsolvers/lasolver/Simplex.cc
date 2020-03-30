@@ -4,6 +4,8 @@
 
 #include "Simplex.h"
 
+#include <limits>
+
 // MB: helper functions
 namespace{
     bool isBoundSatisfied(Delta const & val, LABound const & bound ) {
@@ -110,7 +112,7 @@ LVRef Simplex::getBasicVarToFixByShortestPoly() const {
 }
 
 LVRef Simplex::getBasicVarToFixByBland() const {
-    auto curr_var_id_x = boundStore.nVars();
+    auto curr_var_id_x = std::numeric_limits<unsigned>::max();
     LVRef current = LVRef_Undef;
     for (auto it : candidates) {
         assert(it != LVRef_Undef);
@@ -178,7 +180,7 @@ LVRef Simplex::findNonBasicForPivotByHeuristic(LVRef basicVar) {
 }
 
 LVRef Simplex::findNonBasicForPivotByBland(LVRef basicVar) {
-    auto max_var_id = boundStore.nVars();
+    auto max_var_id = std::numeric_limits<unsigned>::max();
     LVRef y_found = LVRef_Undef;
     // Model doesn't fit the lower bound
     if (isModelOutOfLowerBound(basicVar)) {
@@ -462,9 +464,9 @@ opensmt::Real Simplex::computeDelta() const {
     Delta delta_abst;
     bool deltaNotSet = true;
 
-    for (unsigned i = 0; i < boundStore.nVars(); ++i)
+    const LAVarStore& laVarStore = boundStore.getVarStore();
+    for (LVRef v : laVarStore)
     {
-        LVRef v {i};
         assert( !isModelOutOfBounds(v) );
 
         if (model->read(v).D() == 0)
