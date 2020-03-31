@@ -1,0 +1,6 @@
+(set-logic QF_LRA)
+(declare-fun _substvar_29_ () Bool)
+(check-sat)
+(check-sat)
+(assert (or (distinct true true) _substvar_29_))
+(check-sat)

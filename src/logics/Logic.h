@@ -271,6 +271,9 @@ class Logic {
     PTRef       mkEq          (vec<PTRef>& args);
     PTRef       mkEq          (PTRef a1, PTRef a2);// { vec<PTRef> v; v.push(a1); v.push(a2); return mkEq(v); }
 
+    // General disequalities
+    PTRef       mkDistinct    (vec<PTRef>& args);
+
     // Generic variables
     PTRef       mkVar         (SRef, const char*);
     // Generic constants
