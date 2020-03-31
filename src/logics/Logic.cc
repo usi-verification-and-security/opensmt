@@ -950,8 +950,7 @@ PTRef Logic::mkDistinct(vec<PTRef>& args) {
     if (args.size() == 0) return getTerm_true();
     if (args.size() == 1) return getTerm_true();
     sort(args);
-    int i = 1;
-    int j = 0;
+
     for (int i = 1, j = 0; i < args.size(); i++, j++) {
         if (args[j] == args[i]) {
             return getTerm_false();
