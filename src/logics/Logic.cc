@@ -932,25 +932,27 @@ PTRef Logic::mkEq(vec<PTRef>& args) {
     if (isConstant(args[0]) && isConstant(args[1]))
         return (args[0] == args[1]) ? getTerm_true() : getTerm_false();
     if (args[0] == args[1]) return getTerm_true();
-    SymRef eq_sym = term_store.lookupSymbol(tk_equals, args);
     // Simplify more here now that the equals type is known
-    if (hasSortBool(eq_sym)) {
+    if (hasSortBool(args[0])) {
         if (args[0] == mkNot(args[1])) return getTerm_false();
         if (args[0] == getTerm_true() || args[1] == getTerm_true())
             return args[0] == getTerm_true() ? args[1] : args[0];
         if (args[0] == getTerm_false() || args[1] == getTerm_false())
             return args[0] == getTerm_false() ? mkNot(args[1]) : mkNot(args[0]);
     }
+    SymRef eq_sym = term_store.lookupSymbol(tk_equals, args);
     return mkFun(eq_sym, args);
 }
 
+// Given args = {a_1, ..., a_n}, distinct(args) holds iff
+// for all a_i, a_j \in args s.t. i != j: a_i != a_j
 PTRef Logic::mkDistinct(vec<PTRef>& args) {
-    if (args.size() == 0) return getTerm_false(); // Is this correct?
-    if (args.size() == 1) return getTerm_true(); // Is this correct?
+    if (args.size() == 0) return getTerm_true();
+    if (args.size() == 1) return getTerm_true();
     sort(args);
     int i = 1;
     int j = 0;
-    for (; i < args.size(); i++, j++) {
+    for (int i = 1, j = 0; i < args.size(); i++, j++) {
         if (args[j] == args[i]) {
             return getTerm_false();
         }

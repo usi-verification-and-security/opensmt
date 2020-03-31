@@ -92,3 +92,11 @@ target_sources(SubstitutionBreakerTest
 
 target_link_libraries(SubstitutionBreakerTest api_static gtest gtest_main)
 gtest_add_tests(TARGET SubstitutionBreakerTest)
+
+add_executable(LogicMkTermsTest)
+target_sources(LogicMkTermsTest
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_LogicMkTerms.cc"
+    )
+
+target_link_libraries(LogicMkTermsTest api_static gtest gtest_main)
+gtest_add_tests(TARGET LogicMkTermsTest)
