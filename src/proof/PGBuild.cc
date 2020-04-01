@@ -465,7 +465,6 @@ void ProofGraph::buildProofGraph( int nVars )
     while(!q.empty());
 
     this->addDefaultAssumedLiterals();
-    this->computeVarPartitions();
 
     if( proofCheck() )
     {
@@ -800,19 +799,4 @@ clauseid_t ProofGraph::dupliNode( RuleContext& ra )
 
 void ProofGraph::addDefaultAssumedLiterals() {
     this->assumedLiterals = this->proof.getAssumedLiterals();
-}
-
-/**
- * Assumes the proof graph has been built and the leaves are known
- */
-void ProofGraph::computeVarPartitions() {
-    for (auto id : this->leaves_ids) {
-        auto* node = getNode(id);
-        if (node->getType() != clause_type::CLA_ORIG) { continue; }
-        auto & clause = node->getClause();
-        auto& part_info = logic_.getClauseClassMask(node->getClauseRef());
-        for (Lit l : clause) {
-            this->var_class[var(l)] |= part_info;
-        }
-    }
 }

@@ -513,9 +513,9 @@ public:
 
 private:
 
-    inline Lit PTRefToLit(PTRef ref) {return theory.getTmap().getLit(ref);}
-    inline Var PTRefToVar(PTRef ref) { return theory.getTmap().getVar(ref); }
-    inline PTRef varToPTRef(Var v) { return theory.getTmap().varToPTRef(v); }
+    inline Lit PTRefToLit(PTRef ref) const {return theory.getTmap().getLit(ref);}
+    inline Var PTRefToVar(PTRef ref) const { return theory.getTmap().getVar(ref); }
+    inline PTRef varToPTRef(Var v) const { return theory.getTmap().varToPTRef(v); }
 
     void initTSolver();
     void clearTSolver();
@@ -524,8 +524,10 @@ private:
     inline bool isAssumedLiteral(Lit l) const {
         return std::find(assumedLiterals.begin(), assumedLiterals.end(), l) != assumedLiterals.end();
     }
-
-    void computeVarPartitions();
+    inline bool isAssumedVar(Var v) const {
+        return isAssumedLiteral(mkLit(v, true)) || isAssumedLiteral(mkLit(v, false));
+    }
+    ipartitions_t const& getVarPartition(Var v) const { return logic_.getIPartitions(varToPTRef(v)); }
 
     //NOTE added for experimentation
     Var 				  pred_to_push;
@@ -545,7 +547,6 @@ private:
     set<clauseid_t>				   leaves_ids;					// Proof leaves, for top-down visits
     std::set< Var >                proof_variables;             // Variables actually present in the proof
     unsigned                       max_id_variable;             // Highest value for a variable
-    std::unordered_map<Var, ipartitions_t> var_class;           // Which variable belongs to which partition
     std::set<Var> theory_only;
     std::vector<Lit> assumedLiterals;
     // NOTE class A has value -1, class B value -2, undetermined value -3, class AB has index bit from 0 onwards

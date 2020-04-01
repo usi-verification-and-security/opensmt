@@ -158,16 +158,17 @@ icolor_t ProofGraph::getPivotColor( ProofNode* n )
 // Output: returns A-local , B-local or AB-common
 icolor_t ProofGraph::getVarClass( Var v, const ipartitions_t & A_mask )
 {
-	//Determine mask corresponding to B
-	ipartitions_t B_mask = ~A_mask;
-	const ipartitions_t& var_mask = this->var_class[v];
+    //Determine mask corresponding to B
+    ipartitions_t B_mask = ~A_mask;
+    const ipartitions_t & var_mask = this->getVarPartition(v);
 
-	// Check if variable present in A or B
-	bool var_in_A = ((var_mask & A_mask) != 0);
-	bool var_in_B = ((var_mask & B_mask) != 0);
-	// MB: In incremental solving it might be that this is theory literal that has been popped.
-	//      Determine its class based on the classes of variables it contains
-	if (!var_in_A && !var_in_B) {
+    // Check if variable present in A or B
+    bool var_in_A = ((var_mask & A_mask) != 0);
+    bool var_in_B = ((var_mask & B_mask) != 0);
+    // MB: In incremental solving it might be that this is theory literal that has been popped.
+    //      Determine its class based on the classes of variables it contains
+    if (!var_in_A && !var_in_B) {
+        if (this->isAssumedVar(v)) { return I_AB; } // MB: Does not matter for assumed literals
         PTRef term = varToPTRef(v);
         assert(this->logic_.isTheoryTerm(term));
         assert((logic_.getIPartitions(term) & A_mask) == 0 && (logic_.getIPartitions(term) & B_mask) == 0);
@@ -177,18 +178,17 @@ icolor_t ProofGraph::getVarClass( Var v, const ipartitions_t & A_mask )
         var_in_B = ((allowedPartitions & B_mask) != 0);
         // MB: Also update the partition information for interpolation
         logic_.addIPartitions(term, allowedPartitions);
-        this->var_class[v] = allowedPartitions;
-	}
-	assert( var_in_A || var_in_B );
+    }
+    assert(var_in_A || var_in_B);
 
-	icolor_t var_class;
-	// Determine if variable A-local, B-local or AB-common
-	if ( var_in_A && !var_in_B ) var_class = I_A;
-	else if ( !var_in_A && var_in_B ) var_class = I_B;
-	else if (  var_in_A && var_in_B ) var_class = I_AB;
-	else opensmt_error( "Variable has no class" );
+    icolor_t var_class;
+    // Determine if variable A-local, B-local or AB-common
+    if (var_in_A && !var_in_B) var_class = I_A;
+    else if (!var_in_A && var_in_B) var_class = I_B;
+    else if (var_in_A && var_in_B) var_class = I_AB;
+    else opensmt_error("Variable has no class");
 
-	return var_class;
+    return var_class;
 }
 
 // Input: proof node, current interpolant partition masks for A and B
