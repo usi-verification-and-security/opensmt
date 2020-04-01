@@ -228,30 +228,33 @@ void ProofGraph::buildProofGraph( int nVars )
                     break;
                 }
 
+                // MB: we are building from the root to the leaves and we cannot visit a leave before it has been encountered
+                //      and when processing an inner node derived from the leaf.
+                assert(clauseToIDMap.find(currClause) != clauseToIDMap.end());
                 // Clause not processed yet
-                if (clauseToIDMap.find(currClause)==clauseToIDMap.end())
-                {
-                    ProofNode* n = new ProofNode(logic_);
-                    counters.recordNewClause(ctype);
-                    n->initClause(proof.getClause(currClause));
-                    if(ctype == clause_type::CLA_ORIG) {
-                        n->setClauseRef(currClause);
-                    }
-                    // Add node to graph vector
-                    int currId=(int)graph.size();
-                    n->setId(currId);
-                    graph.push_back(n);
-                    assert(getNode(currId) == n);
-                    //Update map clause->id
-                    clauseToIDMap[currClause] = currId;
-                    //Sort clause literals
-                    std::sort(n->getClause().begin(),n->getClause().end());
-                    if (ctype == clause_type::CLA_ORIG)
-                    {
-                        if ( n->getClauseSize() >= max_leaf_size ) max_leaf_size = n->getClauseSize();
-                        avg_leaf_size += n->getClauseSize();
-                    }
-                }
+//                if (clauseToIDMap.find(currClause)==clauseToIDMap.end())
+//                {
+//                    ProofNode* n = new ProofNode(logic_);
+//                    counters.recordNewClause(ctype);
+//                    n->initClause(proof.getClause(currClause));
+//                    if(ctype == clause_type::CLA_ORIG) {
+//                        n->setClauseRef(currClause);
+//                    }
+//                    // Add node to graph vector
+//                    int currId=(int)graph.size();
+//                    n->setId(currId);
+//                    graph.push_back(n);
+//                    assert(getNode(currId) == n);
+//                    //Update map clause->id
+//                    clauseToIDMap[currClause] = currId;
+//                    //Sort clause literals
+//                    std::sort(n->getClause().begin(),n->getClause().end());
+//                    if (ctype == clause_type::CLA_ORIG)
+//                    {
+//                        if ( n->getClauseSize() >= max_leaf_size ) max_leaf_size = n->getClauseSize();
+//                        avg_leaf_size += n->getClauseSize();
+//                    }
+//                }
                 // NB: internal derived clauses not considered here
                 assert(ctype == clause_type::CLA_ORIG || ctype == clause_type::CLA_THEORY || ctype == clause_type::CLA_ASSUMPTION);
                 getNode(clauseToIDMap[currClause])->setType(ctype);
