@@ -309,9 +309,7 @@ class Logic {
 
     ipartitions_t  computeAllowedPartitions(PTRef p);
     ipartitions_t& getClauseClassMask(CRef c) { return partitionInfo.getClausePartitions(c); }
-    ipartitions_t& getVarClassMask(Var v) { return partitionInfo.getVarPartition(v); }
     void addClauseClassMask(CRef c, const ipartitions_t& toadd);
-    void addVarClassMask(Var v, const ipartitions_t& toadd);
     void invalidatePartitions(const ipartitions_t& toinvalidate);
     inline std::vector<PTRef> getPartitions() { return partitionInfo.getTopLevelFormulas(); }
 

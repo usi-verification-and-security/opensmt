@@ -525,6 +525,8 @@ private:
         return std::find(assumedLiterals.begin(), assumedLiterals.end(), l) != assumedLiterals.end();
     }
 
+    void computeVarPartitions();
+
     //NOTE added for experimentation
     Var 				  pred_to_push;
 
@@ -543,6 +545,7 @@ private:
     set<clauseid_t>				   leaves_ids;					// Proof leaves, for top-down visits
     std::set< Var >                proof_variables;             // Variables actually present in the proof
     unsigned                       max_id_variable;             // Highest value for a variable
+    std::unordered_map<Var, ipartitions_t> var_class;           // Which variable belongs to which partition
     std::set<Var> theory_only;
     std::vector<Lit> assumedLiterals;
     // NOTE class A has value -1, class B value -2, undetermined value -3, class AB has index bit from 0 onwards

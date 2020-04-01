@@ -18,7 +18,6 @@ class PartitionInfo {
     std::unordered_map<SymRef, ipartitions_t, SymRefHash> sym_partitions;
     std::unordered_map<PTRef, ipartitions_t, PTRefHash> term_partitions;
     std::unordered_map<CRef, ipartitions_t> clause_class;
-    std::unordered_map<Var, ipartitions_t> var_class;
     FlaPartitionMap flaPartitionMap;
 
 public:
@@ -29,8 +28,6 @@ public:
     void addIPartitions(SymRef s, const ipartitions_t& p);
     ipartitions_t& getClausePartitions(CRef);
     void addClausePartition(CRef c, const ipartitions_t& p);
-    ipartitions_t& getVarPartition(Var v);
-    void addVarPartition(Var v, const ipartitions_t& p);
 
     inline std::vector<PTRef> getTopLevelFormulas() const { return flaPartitionMap.get_top_level_flas(); }
     inline unsigned int getNoOfPartitions() const {return flaPartitionMap.getNoOfPartitions(); }

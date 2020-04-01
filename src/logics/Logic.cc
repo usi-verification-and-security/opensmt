@@ -2133,12 +2133,6 @@ Logic::verifyInterpolant(PTRef itp, const ipartitions_t& mask)
 }
 
 void
-Logic::addVarClassMask(Var v, const ipartitions_t& toadd)
-{
-    partitionInfo.addVarPartition(v, toadd);
-}
-
-void
 Logic::addClauseClassMask(CRef c, const ipartitions_t& toadd)
 {
     partitionInfo.addClausePartition(c, toadd);

@@ -431,9 +431,6 @@ bool Cnfizer::addClause(const vec<Lit> & c_in)
             assert(currentPartition != -1);
             setbit(parts, static_cast<unsigned int>(currentPartition));
             logic.addClauseClassMask(ref, parts);
-            for (int i = 0; i < c.size(); ++i) {
-                logic.addVarClassMask(var(c[i]), parts);
-            }
         }
         return res;
     }

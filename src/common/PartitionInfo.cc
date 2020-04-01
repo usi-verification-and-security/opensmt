@@ -49,25 +49,9 @@ void PartitionInfo::addClausePartition(CRef c, const ipartitions_t & p) {
     clause_class[c] |= p;
 }
 
-ipartitions_t & PartitionInfo::getVarPartition(Var v) {
-    return var_class[v];
-}
-
-void PartitionInfo::addVarPartition(Var v, const ipartitions_t & p) {
-    var_class[v] |= p;
-}
-
 void
 PartitionInfo::invalidatePartitions(const ipartitions_t& toinvalidate) {
     auto negated = ~toinvalidate;
-    for (auto & clause_info : clause_class) {
-        auto& current_info = clause_info.second;
-        opensmt::andbit(current_info, current_info, negated);
-    }
-    for (auto & var_info : var_class) {
-        auto& current_info = var_info.second;
-        opensmt::andbit(current_info, current_info, negated);
-    }
     for (auto & term_info : term_partitions) {
         auto& current_info = term_info.second;
         opensmt::andbit(current_info, current_info, negated);
