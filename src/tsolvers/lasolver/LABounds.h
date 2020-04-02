@@ -50,7 +50,7 @@ public:
     inline LABound*       lea       (LABoundRef r);
     inline const LABound* lea       (LABoundRef r) const ;
     inline LABoundRef     ael       (const LABound* t) ;
-    inline void clear() {}
+    void clear() override { RegionAllocator<uint32_t>::clear(); n_bounds = 0;}
 };
 
 class LABoundList
@@ -101,6 +101,7 @@ public:
 
     void free(LABoundListRef tid);
     void reloc(LABoundListRef& tr, LABoundListAllocator& to);
+    void clear() override { RegionAllocator<uint32_t>::clear(); n_boundlists = 0; }
 };
 
 class LABoundRefPair {

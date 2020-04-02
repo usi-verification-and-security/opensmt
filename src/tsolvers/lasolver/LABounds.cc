@@ -251,9 +251,8 @@ int LABoundStore::getBoundListSize(LVRef v) { return bla[getBounds(v)].size(); }
 bool LABoundStore::isUnbounded(LVRef v) const { return getBounds(v) == LABoundListRef_Undef; }
 
 void LABoundStore::clear() {
-    // MB: TODO: proper cleaning of the bounds
     this->ba.clear();
-//    this->bla.clear();
+    this->bla.clear();
     this->in_bounds.clear();
     this->var_bound_lists.clear();
 }

@@ -100,3 +100,12 @@ target_sources(LogicMkTermsTest
 
 target_link_libraries(LogicMkTermsTest api_static gtest gtest_main)
 gtest_add_tests(TARGET LogicMkTermsTest)
+
+add_executable(BoundTest)
+target_sources(BoundTest
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Bounds.cc"
+    )
+
+
+target_link_libraries(BoundTest api_static gtest gtest_main)
+gtest_add_tests(TARGET BoundTest)
