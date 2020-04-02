@@ -17,7 +17,7 @@ TEST_F(BoundTest, test_LABounds) {
         for (int i = 0; i < 100; i++) {
             vars.push(vs.getNewVar());
             for (int j = 0; j < 10; j++) {
-                LABoundStore::BoundInfo bi = bs.allocBoundPair(vars[i], j, j % 2);
+                bs.allocBoundPair(vars[i], j, j % 2);
             }
         }
         bs.buildBounds();
