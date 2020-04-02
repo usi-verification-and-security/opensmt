@@ -295,7 +295,6 @@ public:
     bool    simplify     ();                        // Removes already satisfied clauses.
     void    declareVarsToTheories();                 // Declare the seen variables to the theories
     bool    solve        ( const vec< Lit > & assumps );                 // Search for a model that respects a given set of assumptions.
-    virtual bool  okay   () const;                  // FALSE means solver is in a conflicting state
     void    crashTest    (int, Var, Var);           // Stress test the theory solver
 
     void    toDimacs     (FILE* f, const vec<Lit>& assumps);            // Write CNF to file in DIMACS-format.
@@ -352,7 +351,7 @@ public:
     void        popBacktrackPoint  ( );
     void        reset              ( );
     inline void restoreOK          ( )       { ok = true; }
-    inline bool isOK               ( ) const { return ok; }
+    inline bool isOK               ( ) const { return ok; } // FALSE means solver is in a conflicting state
 
     template<class C>
     void     printSMTClause   ( ostream &, const C& );
@@ -590,6 +589,7 @@ protected:
     void     reduceDB         ();                                                      // Reduce the set of learnt clauses.
     void     removeSatisfied  (vec<CRef>& cs);                                         // Shrink 'cs' to contain only non-satisfied clauses.
     void     rebuildOrderHeap ();
+    lbool    zeroLevelConflictHandler();                                               // Common handling of zero-level conflict as it can happen at multiple places
 
     // Maintaining Variable/Clause activity:
     //
@@ -1050,8 +1050,6 @@ inline bool     CoreSMTSolver::solve  (const vec<Lit>& assumps)
     assumps.copyTo(assumptions);
     return solve_() == l_True;
 }
-
-inline bool     CoreSMTSolver::okay   () const { return ok; }
 
 inline void     CoreSMTSolver::toDimacs(const char* file)
 {

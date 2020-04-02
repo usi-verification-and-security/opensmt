@@ -49,6 +49,7 @@ MainSolver::pop()
 {
     if (frames.size() > 1) {
         frames.pop();
+        getSMTSolver().restoreOK();
         return true;
     }
     else
@@ -376,16 +377,14 @@ sstat MainSolver::check()
 
 sstat MainSolver::solve()
 {
-    if (!smt_solver->okay())
+    if (!smt_solver->isOK()){
         return s_False;
-
-    vec<PTRef> query;
+    }
 
     vec<FrameId> en_frames;
     for (std::size_t i = 0; i < frames.size(); i++) {
         const PushFrame& frame = pfstore[frames.getFrameReference(i)];
         en_frames.push(frame.getId());
-        query.push(frame.root);
     }
     status = sstat(ts.solve(en_frames));
 

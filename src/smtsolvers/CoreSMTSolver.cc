@@ -1897,12 +1897,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
             conflictC++;
             if (decisionLevel() == 0)
             {
-                if (splits.size() > 0)
-                {
-                    opensmt::stop = true;
-                    return l_Undef;
-                }
-                else return l_False;
+                return zeroLevelConflictHandler();
             }
             learnt_clause.clear();
             analyze(confl, learnt_clause, backtrack_level);
@@ -1957,12 +1952,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
             // Simplify the set of problem clauses:
             if (decisionLevel() == 0 && !simplify())
             {
-                if (splits.size() > 0)
-                {
-                    opensmt::stop = true;
-                    return l_Undef;
-                }
-                else return l_False;
+                return zeroLevelConflictHandler();
             }
             // Two ways of reducing the clause.  The latter one seems to be working
             // better (not running proper tests since the cluster is down...)
@@ -2020,12 +2010,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                 else if (value(p) == l_False)
                 {
                     analyzeFinal(~p, conflict);
-                    if (splits.size() > 0)
-                    {
-                        opensmt::stop = true;
-                        return l_Undef;
-                    }
-                    else return l_False;
+                    return zeroLevelConflictHandler();
                 }
                 else
                 {
@@ -2361,6 +2346,18 @@ void CoreSMTSolver::clearSearch()
 //    if (first_model_found || splits.size() > 1) {
         theory_handler.backtrack(-1);
 //    }
+}
+
+lbool CoreSMTSolver::zeroLevelConflictHandler() {
+    if (splits.size() > 0)
+    {
+        opensmt::stop = true;
+        return l_Undef;
+    }
+    else {
+        ok = false;
+        return l_False;
+    }
 }
 
 
