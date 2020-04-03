@@ -7,7 +7,7 @@
 
 void LRAModel::init()
 {
-    LAVarStore varStore = bs.getVarStore();
+    LAVarStore const & varStore = bs.getVarStore();
     for (LVRef ref : varStore) {
         addVar(ref);
     }
@@ -97,7 +97,11 @@ void LRAModel::pushBacktrackPoint()      { bound_limits.push(bound_trace.size())
 void LRAModel::popBacktrackPoint() { popBounds(); bound_limits.pop(); }; // Returns the decision if the backtrack point had a decision
 int  LRAModel::getBacktrackSize() const { return bound_limits.size(); }
 
-//bool LRAModel::isEquality(LVRef v) const { return hasLBound(v) && hasUBound(v) && bs[int_lbounds[getVarId(v)].last()].getIdx().x+1 == bs[int_ubounds[getVarId(v)].last()].getIdx().x && !Lb(v).isInf() && !Ub(v).isInf() && Lb(v) == Ub(v); }
+bool LRAModel::isEquality(LVRef v) const {
+    return hasLBound(v) && hasUBound(v)
+        && bs[int_lbounds[getVarId(v)].last()].getIdx().x+1 == bs[int_ubounds[getVarId(v)].last()].getIdx().x
+        && Lb(v) == Ub(v);
+}
 bool LRAModel::isUnbounded(LVRef v) const { return bs.isUnbounded(v); }
 bool LRAModel::boundTriviallySatisfied(LVRef v, LABoundRef b) const
 {

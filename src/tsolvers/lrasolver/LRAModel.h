@@ -64,7 +64,7 @@ public:
     void popBacktrackPoint();
     int  getBacktrackSize() const ;
 
-//    bool isEquality(LVRef v) const;
+    bool isEquality(LVRef v) const;
     bool isUnbounded(LVRef v) const;
     bool boundTriviallySatisfied(LVRef v, LABoundRef b) const;
     bool boundTriviallyUnsatisfied(LVRef v, LABoundRef b) const;

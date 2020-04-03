@@ -318,7 +318,7 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, std::pair<CRef, CRe
 {
     assert(decisionLevel() == 0);
     inOutCRefs = std::make_pair(CRef_Undef, CRef_Undef);
-    if (!ok) return false;
+    if (!isOK()) { return false; }
     vec<Lit> ps;
     _ps.copyTo(ps);
     // Check if clause is satisfied and remove false/duplicate literals:
