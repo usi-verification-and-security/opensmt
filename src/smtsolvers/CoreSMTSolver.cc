@@ -2065,12 +2065,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                     }
                     if ( res == TPropRes::Unsat )
                     {
-                        if (splits.size() > 0)
-                        {
-                            opensmt::stop = true;
-                            return l_Undef;
-                        }
-                        else return l_False;
+                        return zeroLevelConflictHandler();
                     }
                     assert( res == TPropRes::Decide );
 

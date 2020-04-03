@@ -365,6 +365,20 @@ CoreSMTSolver::handleUnsat()
     return TPropRes::Propagate;
 }
 
+/**
+ * Performs the consistency check of current assignment in the theory and returns the next action for the SAT solver.
+ * TPropRes::Unsat - 0-level theory conflict has been detected, the whole problem is UNSAT
+ * TPropRes::Propagate - New literal has been enqued to the trail, propagation phase should follow
+ * TPropRes::Decide - Current assignment is consistent, no propagation detected, SAT solver should decide next variable
+ *
+ * Note that if theory conflict is detected, this conflict is handled in handleUnsat() method.
+ * The solver can either backtrack to consistent state, learn theory clause and return TPropRes::Propagate
+ * or if the conflict is on level 0, return TPropRes::Unsat to indicate that the whole problem is UNSAT
+ *
+ * @param complete should the theory check be complete or simpler (sound but not necessary complete) check can be used
+ * @param conflictC conflict counter
+ * @return The action SAT solver should perform next
+ */
 TPropRes CoreSMTSolver::checkTheory(bool complete, int& conflictC)
 {
     // Skip calls to theory solvers
