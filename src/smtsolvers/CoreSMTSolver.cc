@@ -745,6 +745,7 @@ Lit CoreSMTSolver::pickBranchLit()
     opensmt::StopWatch s(branchTimer);
 #endif
     if (forced_split != lit_Undef) {
+        assert(value(var(forced_split)) == l_Undef);
         Lit fs = forced_split;
         forced_split = lit_Undef;
         return fs;

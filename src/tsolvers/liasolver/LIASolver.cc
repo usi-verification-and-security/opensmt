@@ -8,8 +8,9 @@ static SolverDescr descr_lia_solver("LIA Solver", "Solver for Quantifier Free Li
 
 TRes LIASolver::check( bool complete) {
     bool rval = check_simplex(complete);
-    if (rval == true)
+    if (complete && rval) {
         return checkIntegersAndSplit();
+    }
     return rval ? TRes::SAT : TRes::UNSAT;
 }
 
