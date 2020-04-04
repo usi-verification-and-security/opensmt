@@ -300,21 +300,6 @@ Theory::printFramesAsQuery(const vec<PFRef> & frames, std::ostream & s)
 }
 
 //MOVINGFROMHEADER
-
-void PushFrameAllocator::moveTo(PushFrameAllocator& to) {
-    to.id_counter = id_counter;
-    RegionAllocator<uint32_t>::moveTo(to); }
-PFRef PushFrameAllocator::alloc()
-{
-    uint32_t v = RegionAllocator<uint32_t>::alloc(sizeof(PushFrame));
-    PFRef r = {v};
-    new (lea(r)) PushFrame(id_counter++);
-    return r;
-}
-PushFrame& PushFrameAllocator::operator[](PFRef r) { return (PushFrame&)RegionAllocator<uint32_t>::operator[](r.x); }
-PushFrame* PushFrameAllocator::lea       (PFRef r) { return (PushFrame*)RegionAllocator<uint32_t>::lea(r.x); }
-PFRef      PushFrameAllocator::ael       (const PushFrame* t) { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); return { r }; }
-
 void Theory::setSubstitutions(Map<PTRef,PtAsgn,PTRefHash>& substs) { getTSolverHandler().setSubstitutions(substs); }
 vec<DedElem>& Theory::getDeductionVec()   { return deductions; }
 

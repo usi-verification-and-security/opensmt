@@ -117,22 +117,33 @@ class PushFrameAllocator : public RegionAllocator<uint32_t>
 {
 private:
     int id_counter;
+    std::vector<PFRef> allocatedFrames;
 public:
     PushFrameAllocator() : id_counter(FrameId_bottom.id) {}
     PushFrameAllocator(uint32_t init_capacity) : RegionAllocator<uint32_t>(init_capacity), id_counter(FrameId_bottom.id) {}
-    void moveTo(PushFrameAllocator& to);/* {
+
+    ~PushFrameAllocator() {
+        for (PFRef ref : allocatedFrames) {
+            lea(ref)->PushFrame::~PushFrame();
+        }
+    }
+
+    void moveTo(PushFrameAllocator& to) {
         to.id_counter = id_counter;
-        RegionAllocator<uint32_t>::moveTo(to); }*/
-    PFRef alloc();
-/*    {
-        uint32_t v = RegionAllocator<uint32_t>::alloc(sizeof(PushFrame));
+        RegionAllocator<uint32_t>::moveTo(to);
+        to.allocatedFrames = std::move(allocatedFrames);
+    }
+    PFRef alloc()
+    {
+        uint32_t v = RegionAllocator<uint32_t>::alloc(sizeof(PushFrame)/sizeof(uint32_t));
         PFRef r = {v};
         new (lea(r)) PushFrame(id_counter++);
+        allocatedFrames.push_back(r);
         return r;
-    }*/
-    PushFrame& operator[](PFRef r);// { return (PushFrame&)RegionAllocator<uint32_t>::operator[](r.x); }
-    PushFrame* lea       (PFRef r);// { return (PushFrame*)RegionAllocator<uint32_t>::lea(r.x); }
-    PFRef      ael       (const PushFrame* t);// { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); return { r }; }
+    }
+    PushFrame& operator[](PFRef r) { return (PushFrame&)RegionAllocator<uint32_t>::operator[](r.x); }
+    PushFrame* lea       (PFRef r) { return (PushFrame*)RegionAllocator<uint32_t>::lea(r.x); }
+    PFRef      ael       (const PushFrame* t) { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); return { r }; }
 
 };
 
