@@ -58,9 +58,11 @@ void LASolver::updateBound(PTRef tr)
 {
     // If the bound already exists, do nothing.
     int id = Idx(logic.getPterm(tr).getId());
+
     if ((LeqToLABoundRefPair.size() > id) &&
-        !(LeqToLABoundRefPair[id] == LABoundRefPair{LABoundRef_Undef, LABoundRef_Undef}))
+        !(LeqToLABoundRefPair[id] == LABoundRefPair{LABoundRef_Undef, LABoundRef_Undef})) {
         return;
+    }
 
     LABoundStore::BoundInfo bi = addBound(tr);
     boundStore.updateBound(bi);

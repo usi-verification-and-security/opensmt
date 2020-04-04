@@ -226,6 +226,7 @@ LVRef Simplex::findNonBasicForPivotByBland(LVRef basicVar) {
 Simplex::Explanation Simplex::assertBoundOnVar(LVRef it, LABoundRef itBound_ref) {
     assert(!model->isUnbounded(it));
     const LABound &itBound = boundStore[itBound_ref];
+    assert(itBound.getLVRef() == it);
 
 //  cerr << "; ASSERTING bound on " << *it << endl;
 

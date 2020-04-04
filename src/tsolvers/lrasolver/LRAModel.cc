@@ -49,8 +49,9 @@ LRAModel::pushBound(const LABoundRef br) {
     if (b.getType() == bound_u) {
         int_ubounds[getVarId(vr)].push(br);
     }
-    else
+    else {
         int_lbounds[getVarId(vr)].push(br);
+    }
 
     bound_trace.push(br);
 }
