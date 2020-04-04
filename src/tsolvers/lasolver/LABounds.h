@@ -106,8 +106,8 @@ public:
 
 class LABoundRefPair {
 public:
-    LABoundRefPair(): pos{LABoundRef_Undef}, neg{LABoundRef_Undef} {}
-    LABoundRefPair(LABoundRef pos, LABoundRef neg): pos{pos}, neg{neg} {}
+    LABoundRefPair(): pos{LABoundRef_Undef.x}, neg{LABoundRef_Undef.x} {}
+    LABoundRefPair(LABoundRef pos, LABoundRef neg): pos{pos.x}, neg{neg.x} {}
     LABoundRef pos;
     LABoundRef neg;
     bool operator== (const LABoundRefPair& o) const { return (pos == o.pos) && (neg == o.neg); }
