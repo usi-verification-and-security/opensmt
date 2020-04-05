@@ -1109,8 +1109,9 @@ bool Logic::isLit(PTRef tr) const
 
 SRef Logic::declareSort(const char* id, char** msg)
 {
-    if (containsSort(id))
+    if (containsSort(id)) {
         return getSortRef(id);
+    }
 
     IdRef idr = id_store.newIdentifier(id);
     vec<SRef> tmp;

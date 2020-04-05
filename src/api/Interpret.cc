@@ -832,7 +832,7 @@ bool Interpret::declareFun(ASTNode& n) // (const char* fname, const vec<SRef>& a
     char* name = buildSortName(ret_node);
 
     if (logic->containsSort(name)) {
-        SRef sr = newSort(ret_node);
+        SRef sr = logic->getSortRef(name);
         args.push(sr);
         free(name);
     } else {
@@ -879,7 +879,7 @@ bool Interpret::declareConst(ASTNode& n) //(const char* fname, const SRef ret_so
     char* name = buildSortName(ret_node);
     SRef ret_sort;
     if (logic->containsSort(name)) {
-        ret_sort = newSort(ret_node);
+        ret_sort = logic->getSortRef(name);
         free(name);
     } else {
         notify_formatted(true, "Failed to declare constant %s", fname);
@@ -932,7 +932,7 @@ bool Interpret::defineFun(const ASTNode& n)
     char* rsort_name = buildSortName(ret_node);
     SRef ret_sort;
     if (logic->containsSort(rsort_name)) {
-        ret_sort = newSort(ret_node);
+        ret_sort = logic->getSortRef(rsort_name);
         free(rsort_name);
     } else {
         notify_formatted(true, "Unknown return sort %s of %s", rsort_name, fname);
