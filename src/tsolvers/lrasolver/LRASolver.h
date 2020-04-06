@@ -82,10 +82,6 @@ public:
 
     InterpolStatistics interpolStats;
 
-protected:
-
-    opensmt::Real delta;
-
 private:
 
     opensmt::Real getReal(PTRef);

@@ -58,9 +58,11 @@ void LASolver::updateBound(PTRef tr)
 {
     // If the bound already exists, do nothing.
     int id = Idx(logic.getPterm(tr).getId());
+
     if ((LeqToLABoundRefPair.size() > id) &&
-        !(LeqToLABoundRefPair[id] == LABoundRefPair{LABoundRef_Undef, LABoundRef_Undef}))
+        !(LeqToLABoundRefPair[id] == LABoundRefPair{LABoundRef_Undef, LABoundRef_Undef})) {
         return;
+    }
 
     LABoundStore::BoundInfo bi = addBound(tr);
     boundStore.updateBound(bi);
@@ -88,7 +90,7 @@ void LASolver::isProperLeq(PTRef tr)
 LASolver::LASolver(SolverDescr dls, SMTConfig & c, LALogic& l, vec<DedElem>& d)
         : TSolver((SolverId)dls, (const char*)dls, c, d)
         , logic(l)
-        , laVarMapper(l, laVarStore)
+        , laVarMapper(l)
         , boundStore(laVarStore)
         , simplex(boundStore)
 {
@@ -114,20 +116,16 @@ void LASolver::clearSolver()
     decision_trace.clear();
     int_decisions.clear();
     dec_limit.clear();
-    // TODO set information about columns and rows in LAVars
     TSolver::clearSolver();
 
-    // MB: Let's keep the LAVar store and allocator
-//    lva.clear();
-//    lavarStore.clear();
-
-    // also keep the bounds allocator, bounds list allocator
-//    ba.clear();
-//    this->bla.clear();
+    laVarStore.clear();
+    laVarMapper.clear();
+    boundStore.clear();
+    LABoundRefToLeqAsgn.clear();
+    LeqToLABoundRefPair.clear();
 
     // TODO: clear statistics
 //    this->tsolver_stats.clear();
-    //delta = Delta::ZERO;
 }
 
 void LASolver::storeExplanation(Simplex::Explanation &&explanationBounds) {
@@ -222,11 +220,13 @@ LVRef LASolver::getLAVar_single(PTRef expr_in) {
 
     PTId id = logic.getPterm(expr_in).getId();
 
-    if (laVarMapper.hasVar(id))
+    if (laVarMapper.hasVar(id)) {
         return getVarForTerm(expr_in);
+    }
 
     PTRef expr = logic.isNegated(expr_in) ? logic.mkNumNeg(expr_in) : expr_in;
-    LVRef x = laVarMapper.getNewVar(expr);
+    LVRef x = laVarStore.getNewVar();
+    laVarMapper.registerNewMapping(x, expr);
     return x;
 }
 
@@ -560,13 +560,11 @@ void LASolver::getSimpleDeductions(LVRef v, LABoundRef br)
 //    printf("The full bound list for %s:\n%s\n", logic.printTerm(lva[v].getPTRef()), boundStore.printBounds(v));
 
     const LABound& bound = boundStore[br];
-    if (bound.getValue().isInf())
-        return;
     if (bound.getType() == bound_l) {
         for (int it = bound.getIdx().x - 1; it >= 0; it = it - 1) {
             LABoundRef bound_prop_ref = boundStore.getBoundByIdx(v, it);
             LABound &bound_prop = boundStore[bound_prop_ref];
-            if (bound_prop.getValue().isInf() || bound_prop.getType() != bound_l)
+            if (bound_prop.getType() != bound_l)
                 continue;
             deduce(bound_prop_ref);
         }
@@ -574,7 +572,7 @@ void LASolver::getSimpleDeductions(LVRef v, LABoundRef br)
         for (int it = bound.getIdx().x + 1; it < boundStore.getBoundListSize(v) - 1; it = it + 1) {
             LABoundRef bound_prop_ref = boundStore.getBoundByIdx(v, it);
             LABound & bound_prop = boundStore[bound_prop_ref];
-            if (bound_prop.getValue().isInf() || bound_prop.getType() != bound_u)
+            if (bound_prop.getType() != bound_u)
                 continue;
             deduce(bound_prop_ref);
         }
@@ -730,10 +728,9 @@ void LASolver::computeModel()
     assert( status == SAT );
     opensmt::Real delta = simplex.computeDelta();
 
-    for ( unsigned i = 0; i < laVarMapper.numVars(); i++)
+    for (LVRef var : laVarStore)
     {
-        LVRef v {i};
-        computeConcreteModel(v, delta);
+        computeConcreteModel(var, delta);
     }
 }
 
@@ -748,8 +745,5 @@ LASolver::~LASolver( )
 PtAsgn_reason LASolver::getDeduction()  { if (deductions_next >= static_cast<unsigned>(th_deductions.size())) return PtAsgn_reason_Undef; else return th_deductions[deductions_next++]; }
 
 LALogic&  LASolver::getLogic()  { return logic; }
-
-unsigned LASolver::nVars() const { return laVarMapper.numVars(); }
-
 
 

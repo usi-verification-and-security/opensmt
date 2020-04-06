@@ -743,7 +743,6 @@ PTRef LALogic::mkConst(SRef s, const char* name)
 void SimplifyConst::simplify(const SymRef& s, const vec<PTRef>& args, SymRef& s_new, vec<PTRef>& args_new, char** msg)
 {
     vec<int> const_idx;
-    vec<PTRef> args_new_2;
     for (int i = 0; i < args.size(); i++) {
         assert(!l.isNumNeg(args[i])); // MB: No minus nodes, the check can be simplified
         if (l.isConstant(args[i]))
@@ -763,18 +762,23 @@ void SimplifyConst::simplify(const SymRef& s, const vec<PTRef>& args, SymRef& s_
                 printf("%s\n", *msg);
                 assert(false);
             }
-            int i, j, k;
-            for (i = j = k = 0; i < args.size() && k < const_terms.size(); i++) {
-                if (i != const_idx[k]) args_new_2.push(args[i]);
-                else k++;
+            vec<PTRef> args_new_2;
+            args_new_2.capacity((args.size() - const_terms.size()) + 1);
+            int i, k;
+            for (i = k = 0; k < const_terms.size(); i++) {
+                if (i != const_idx[k]) { args_new_2.push(args[i]); }
+                else { k++; }
             }
             // Copy also the rest
-            for (; i < args.size(); i++)
+            for (; i < args.size(); i++) {
                 args_new_2.push(args[i]);
+            }
             args_new_2.push(tr);
-        } else
-            args.copyTo(args_new_2);
-        constSimplify(s, args_new_2, s_new, args_new);
+            constSimplify(s, args_new_2, s_new, args_new);
+        } else {
+            constSimplify(s, args, s_new, args_new);
+        }
+
     }
 //    // A single argument for the operator, and the operator is identity
 //    // in that case
@@ -804,11 +808,9 @@ void SimplifyConstSum::constSimplify(const SymRef& s, const vec<PTRef>& terms, S
 }
 void SimplifyConstTimes::constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const
 {
-    //distribute the constant over the first sum
-    int i;
     PTRef con, plus;
     con = plus = PTRef_Undef;
-    for (i = 0; i < terms.size(); i++) {
+    for (int i = 0; i < terms.size(); i++) {
         if (l.isNumZero(terms[i])) {
             terms_new.clear();
             s_new = l.getPterm(l.getTerm_NumZero()).symb();
@@ -831,13 +833,17 @@ void SimplifyConstTimes::constSimplify(const SymRef& s, const vec<PTRef>& terms,
         terms_new.push(con);
     else
     {
-        Pterm& p = l.getPterm(plus);
+        assert(con != PTRef_Undef && plus != PTRef_Undef);
+        //distribute the constant over the sum
         vec<PTRef> sum_args;
-        for(int i = 0; i < p.size(); ++i)
+        int termSize = l.getPterm(plus).size();
+        for(int i = 0; i < termSize; ++i)
         {
             vec<PTRef> times_args;
             times_args.push(con);
-            times_args.push(p[i]);
+            // MB: we cannot use Pterm& here, because in the line after next new term might be allocated, which might
+            //     trigger reallocation of the table of terms
+            times_args.push(l.getPterm(plus)[i]);
             sum_args.push(l.mkNumTimes(times_args));
         }
         terms_new.push(l.mkNumPlus(sum_args));

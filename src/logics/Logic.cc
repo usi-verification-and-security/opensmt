@@ -932,16 +932,38 @@ PTRef Logic::mkEq(vec<PTRef>& args) {
     if (isConstant(args[0]) && isConstant(args[1]))
         return (args[0] == args[1]) ? getTerm_true() : getTerm_false();
     if (args[0] == args[1]) return getTerm_true();
-    SymRef eq_sym = term_store.lookupSymbol(tk_equals, args);
     // Simplify more here now that the equals type is known
-    if (hasSortBool(eq_sym)) {
+    if (hasSortBool(args[0])) {
         if (args[0] == mkNot(args[1])) return getTerm_false();
         if (args[0] == getTerm_true() || args[1] == getTerm_true())
             return args[0] == getTerm_true() ? args[1] : args[0];
         if (args[0] == getTerm_false() || args[1] == getTerm_false())
             return args[0] == getTerm_false() ? mkNot(args[1]) : mkNot(args[0]);
     }
+    SymRef eq_sym = term_store.lookupSymbol(tk_equals, args);
     return mkFun(eq_sym, args);
+}
+
+// Given args = {a_1, ..., a_n}, distinct(args) holds iff
+// for all a_i, a_j \in args s.t. i != j: a_i != a_j
+PTRef Logic::mkDistinct(vec<PTRef>& args) {
+    if (args.size() == 0) return getTerm_true();
+    if (args.size() == 1) return getTerm_true();
+    sort(args);
+
+    for (int i = 1, j = 0; i < args.size(); i++, j++) {
+        if (args[j] == args[i]) {
+            return getTerm_false();
+        }
+    }
+    SymRef diseq_sym = term_store.lookupSymbol(tk_distinct, args);
+    // The boolean distinctness is either xor or false
+    if (hasSortBool(args[0])) {
+        if (args.size() > 2)
+            return getTerm_false();
+        return mkXor(args);
+    }
+    return mkFun(diseq_sym, args);
 }
 
 PTRef Logic::mkNot(vec<PTRef>& args) {
@@ -1087,8 +1109,9 @@ bool Logic::isLit(PTRef tr) const
 
 SRef Logic::declareSort(const char* id, char** msg)
 {
-    if (containsSort(id))
+    if (containsSort(id)) {
         return getSortRef(id);
+    }
 
     IdRef idr = id_store.newIdentifier(id);
     vec<SRef> tmp;
@@ -1156,7 +1179,7 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, char** msg)
     if(isEquality(sym))
         return mkEq(terms);
     if(isDisequality(sym))
-        return mkFun(sym, terms);
+        return mkDistinct(terms);
     if(isIte(sym))
         return mkIte(terms);
     if(sym == getSym_implies())
@@ -2217,6 +2240,7 @@ PTRef       Logic::mkIte         (PTRef c, PTRef t, PTRef e) { vec<PTRef> tmp; t
 
 
 PTRef       Logic::mkEq          (PTRef a1, PTRef a2) { vec<PTRef> v; v.push(a1); v.push(a2); return mkEq(v); }
+
 void Logic::dumpFunctions(ostream& dump_out) { vec<const char*> names; defined_functions.getKeys(names); for (int i = 0; i < names.size(); i++) dumpFunction(dump_out, names[i]); }
 void Logic::dumpFunction(ostream& dump_out, const char* tpl_name) { if (defined_functions.has(tpl_name)) dumpFunction(dump_out, defined_functions[tpl_name]); else printf("; Error: function %s is not defined\n", tpl_name); }
 void Logic::dumpFunction(ostream& dump_out, const std::string s) { dumpFunction(dump_out, s.c_str()); }

@@ -128,8 +128,6 @@ protected:
 
     std::unique_ptr<Polynomial> expressionToLVarPoly(PTRef term);
 
-    unsigned nVars() const;// { return lva.getNumVars(); }
-
     opensmt::Number getNum(PTRef);
 
     LVRef getLAVar_single(PTRef term);                      // Initialize a new LA var if needed, otherwise return the old var
@@ -159,9 +157,6 @@ protected:
 //    bool isModelOutOfBounds(LVRef v) const;
 
     opensmt::Real evaluateTerm(PTRef tr);
-
-    // Bounds system
-    vec<LABoundRefPair> ptermToLABoundRefs;
 
     LASolverStatus status;                  // Internal status of the solver (different from bool)
 

@@ -30,10 +30,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 // Set Delta to 0
 //
-void Delta::reset()
-{
-    infinite = false;
-    positive = true;
+void Delta::reset() {
     r.reset();
     d.reset();
 }
@@ -41,30 +38,18 @@ void Delta::reset()
 //
 // prints the Delta
 //
-void Delta::print( std::ostream & out ) const
-{
-  if( isPlusInf( ) )
-    out << "+inf";
-  else if( isMinusInf( ) )
-    out << "-inf";
-  else
-    out << R( ) << "|" << D( );
+void Delta::print(std::ostream & out) const {
+    out << R() << "|" << D();
 }
 
-char* Delta::printValue() const
-{
-    char* out;
+char * Delta::printValue() const {
+    char * out;
     int written = -1;
-    if (isPlusInf())
-        written = asprintf(&out, "+inf");
-    else if (isMinusInf())
-        written = asprintf(&out, "-inf");
-    else
-        written = asprintf(&out, "(%s | %s)",
-                r.get_str().c_str(),
-                d.get_str().c_str());
+    written = asprintf(&out, "(%s | %s)",
+                       r.get_str().c_str(),
+                       d.get_str().c_str());
     assert(written >= 0);
-    (void)written;
+    (void) written;
     return out;
 }
 

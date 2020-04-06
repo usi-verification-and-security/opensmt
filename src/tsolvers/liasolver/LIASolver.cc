@@ -8,8 +8,9 @@ static SolverDescr descr_lia_solver("LIA Solver", "Solver for Quantifier Free Li
 
 TRes LIASolver::check( bool complete) {
     bool rval = check_simplex(complete);
-    if (rval == true)
+    if (complete && rval) {
         return checkIntegersAndSplit();
+    }
     return rval ? TRes::SAT : TRes::UNSAT;
 }
 
@@ -27,7 +28,9 @@ void LIASolver::clearSolver()
 {
 
     LASolver::clearSolver();
-    //delta = Delta::ZERO;
+    this->cuts.clear();
+    this->int_vars.clear();
+    this->int_vars_map.clear();
 }
 
 void LIASolver::notifyVar(LVRef v)
@@ -74,7 +77,7 @@ TRes LIASolver::checkIntegersAndSplit() {
             cuts[getVarId(x)].insert(c, true);
 
             // Check if integer splitting is possible for the current variable
-            if (c < simplex.Lb(x) && c + 1 > simplex.Ub(x)) { //then splitting not possible, and we create explanation
+            if (simplex.hasLBound(x) && simplex.hasUBound(x) && c < simplex.Lb(x) && c + 1 > simplex.Ub(x)) { //then splitting not possible, and we create explanation
 
                 explanation.push(getAsgnByBound(simplex.readLBoundRef(x)));
                 explanation.push(getAsgnByBound(simplex.readUBoundRef(x)));

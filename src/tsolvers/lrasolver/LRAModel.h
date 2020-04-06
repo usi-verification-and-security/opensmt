@@ -52,20 +52,22 @@ private:
 public:
 
     void pushBound(const LABoundRef br);
+    bool hasLBound(LVRef v) const { return int_lbounds[getVarId(v)].size() != 0; }
     const LABound& readLBound(const LVRef &v) const;
     LABoundRef readLBoundRef(LVRef v) const;
+    bool hasUBound(LVRef v) const { return int_ubounds[getVarId(v)].size() != 0; }
     const LABound& readUBound(const LVRef &v) const;
     LABoundRef readUBoundRef(LVRef v) const;
-    inline const Delta& Lb(LVRef v) const { return bs[int_lbounds[getVarId(v)].last()].getValue(); }
-    inline const Delta& Ub(LVRef v) const { return bs[int_ubounds[getVarId(v)].last()].getValue(); }
+    inline const Delta& Lb(LVRef v) const { return readLBound(v).getValue(); }
+    inline const Delta& Ub(LVRef v) const { return readUBound(v).getValue(); }
     void pushBacktrackPoint();
     void popBacktrackPoint();
     int  getBacktrackSize() const ;
 
     bool isEquality(LVRef v) const;
     bool isUnbounded(LVRef v) const;
-    bool boundSatisfied(LVRef v, LABoundRef b) const;
-    bool boundUnsatisfied(LVRef v, LABoundRef b) const;
+    bool boundTriviallySatisfied(LVRef v, LABoundRef b) const;
+    bool boundTriviallyUnsatisfied(LVRef v, LABoundRef b) const;
 
     void saveAssignment() {
         for (int i = 0; i < changed_vars_vec.size(); ++i) {

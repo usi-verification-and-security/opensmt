@@ -82,8 +82,6 @@ bool Tseitin::declare(vec<PTRef>& unprocessed_terms, PTRef formula) {
             res &= cnfizeIff(ptr);
         else if (logic.isImplies(ptr))
             res &= cnfizeImplies(ptr);
-        else if (logic.isDistinct(ptr))
-            res &= cnfizeDistinct(ptr);
         else if (logic.isIte(ptr))
             res &= cnfizeIfthenelse(ptr);
         else if (!logic.isNot(ptr) && sz > 0) {
@@ -372,11 +370,6 @@ bool Tseitin::cnfizeImplies(PTRef impl_term)
 
     res &= addClause(clause);
     return res;
-}
-
-bool Tseitin::cnfizeDistinct(PTRef distinct_term)
-{
-    return cnfizeXor(distinct_term);
 }
 
 //void Tseitin::copyArgsWithCache(PTRef tr, vec<PTRef>& args, Map<PTRef, PTRef, PTRefHash>& cache)

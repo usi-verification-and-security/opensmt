@@ -2,6 +2,7 @@
 #define LABOUNDREFS_H
 #include "IntTypes.h"
 #include <ostream>
+#include <cassert>
 
 struct LABoundListRef
 {

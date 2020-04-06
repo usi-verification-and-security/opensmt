@@ -138,9 +138,7 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
     // Get the variable for the incrementality.
     setFrameTerm(frame_id);
 
-    Map<PTRef, PTRef, PTRefHash> valdupmap;
-
-    if (solver.okay() == false) return l_False;
+    if (!solver.isOK()) return l_False;
 
     assert ( formula != PTRef_Undef);
 
@@ -551,7 +549,7 @@ void Cnfizer::retrieveConjuncts ( PTRef f, vec<PTRef> &conjuncts )
 
 lbool Cnfizer::getTermValue (PTRef tr) const
 {
-    assert (solver.okay());
+    assert (solver.isOK());
     vec<lbool> &model = solver.model;
     PTRef p;
     bool sgn;

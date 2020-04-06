@@ -13,7 +13,8 @@ LABoundRef LABoundAllocator::alloc(BoundT type, LVRef var, const Delta& delta)
 {
     uint32_t v = RegionAllocator<uint32_t>::alloc(laboundWord32Size());
     LABoundRef id = {v};
-    new (lea(id)) LABound(type, var, delta, n_bounds++);
+    new (lea(id)) LABound(type, var, delta, static_cast<int>(allocatedBounds.size()));
+    allocatedBounds.push_back(id);
     return id;
 }
 
@@ -71,8 +72,10 @@ void LABoundStore::updateBound(BoundInfo bi) {
     vec<LABoundRef> new_bounds;
     LABoundListRef blr = var_bound_lists[getVarId(bi.v)];
 
-    for (unsigned int i = 0; i < bla[blr].size(); i++) {
-        new_bounds.push(bla[blr][i]);
+    if (blr != LABoundListRef_Undef) {
+        for (unsigned int i = 0; i < bla[blr].size(); i++) {
+            new_bounds.push(bla[blr][i]);
+        }
     }
 
     new_bounds.push(bi.ub);
@@ -101,10 +104,6 @@ void LABoundStore::buildBounds()
     bounds_map.getKeys(keys);
     for (int i = 0; i < keys.size(); i++) {
         vec<LABoundRef> refs;
-        LABoundRef lb_minusInf = ba.alloc(bound_l, keys[i], Delta_MinusInf);
-        LABoundRef ub_plusInf = ba.alloc(bound_u, keys[i], Delta_PlusInf);
-        refs.push(lb_minusInf);
-        refs.push(ub_plusInf);
         for (int j = 0; j < bounds_map[keys[i]].size(); j++) {
             BoundInfo &info = bounds_map[keys[i]][j];
             refs.push(info.ub);
@@ -151,22 +150,11 @@ void LABoundStore::buildBounds()
 
     }
 
-    // make sure all variables have at least the trivial bounds
-    for (unsigned i = 0; i < lvstore.numVars(); i++) {
-        LVRef ref {i};
+    // make sure all variables are recorded in the bound lists, even if they have no bounds
+    for (LVRef ref : lvstore) {
         auto id = getVarId(ref);
         while (static_cast<unsigned>(var_bound_lists.size()) <= id)
             var_bound_lists.push(LABoundListRef_Undef);
-
-        if (var_bound_lists[id] == LABoundListRef_Undef) {
-            vec<LABoundRef> refs;
-            LABoundRef lb_minusInf = ba.alloc(bound_l, ref, Delta_MinusInf);
-            LABoundRef ub_plusInf = ba.alloc(bound_u, ref, Delta_PlusInf);
-            refs.push(lb_minusInf);
-            refs.push(ub_plusInf);
-            LABoundListRef br = bla.alloc(ref, refs);
-            var_bound_lists[id] = br;
-        }
     }
 }
 
@@ -190,23 +178,19 @@ LABoundStore::printBound(LABoundRef br) const
     assert(written >= 0); (void)written;
     free(v_str_lvr);
     const Delta & d = ba[br].getValue();
-    if (d.isMinusInf())
-        written = asprintf(&str_out, "- Inf <= %s", v_str);
-    else if (d.isPlusInf())
-        written = asprintf(&str_out, "%s <= + Inf", v_str);
-    else {
-        opensmt::Real r = d.R();
-        opensmt::Real s = d.D();
-        BoundT type = ba[br].getType();
-        if ((type == bound_l) && (s == 0))
-            written = asprintf(&str_out, "%s <= %s", r.get_str().c_str(), v_str);
-        if ((type == bound_l) && (s != 0))
-            written = asprintf(&str_out, "%s < %s", r.get_str().c_str(), v_str);
-        if ((type == bound_u) && (s == 0))
-            written = asprintf(&str_out, "%s <= %s", v_str, r.get_str().c_str());
-        if ((type == bound_u) && (s != 0))
-            written = asprintf(&str_out, "%s < %s", v_str, r.get_str().c_str());
-    }
+
+    opensmt::Real r = d.R();
+    opensmt::Real s = d.D();
+    BoundT type = ba[br].getType();
+    if ((type == bound_l) && (s == 0))
+        written = asprintf(&str_out, "%s <= %s", r.get_str().c_str(), v_str);
+    if ((type == bound_l) && (s != 0))
+        written = asprintf(&str_out, "%s < %s", r.get_str().c_str(), v_str);
+    if ((type == bound_u) && (s == 0))
+        written = asprintf(&str_out, "%s <= %s", v_str, r.get_str().c_str());
+    if ((type == bound_u) && (s != 0))
+        written = asprintf(&str_out, "%s < %s", v_str, r.get_str().c_str());
+
     assert(written >= 0); (void)written;
     free(v_str);
 
@@ -234,15 +218,6 @@ char* LABoundStore::printBounds(LVRef v) const
 
 
 
-int LABoundAllocator::laboundWord32Size() {
-    return (sizeof(LABound)) / sizeof(uint32_t); }
-
-inline unsigned LABoundAllocator::getNumBounds() const { return n_bounds; }
-
-inline LABound*       LABoundAllocator::lea       (LABoundRef r)       { return (LABound*)RegionAllocator<uint32_t>::lea(r.x); }
-inline const LABound* LABoundAllocator::lea       (LABoundRef r) const { return (LABound*)RegionAllocator<uint32_t>::lea(r.x); }
-inline LABoundRef     LABoundAllocator::ael       (const LABound* t)   { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); LABoundRef rf; rf.x = r; return rf; }
-
 inline bool           LABoundList::reloced   ()                 const { return reloc; }
 inline LABoundListRef LABoundList::relocation()                 const { return reloc_target; }
 inline void           LABoundList::relocate  (LABoundListRef r)       { reloc = 1; reloc_target = r; }
@@ -265,4 +240,11 @@ inline LABoundListRef     LABoundListAllocator::ael(const LABoundList* t)       
 LABoundListRef LABoundStore::getBounds(LVRef v) const { return var_bound_lists[getVarId(v)]; }
 LABoundRef LABoundStore::getBoundByIdx(LVRef v, int it) const { return bla[getBounds(v)][it]; }
 int LABoundStore::getBoundListSize(LVRef v) { return bla[getBounds(v)].size(); }
-bool LABoundStore::isUnbounded(LVRef v) const { return ( (bla[getBounds(v)].size() == 2) && (ba[bla[getBounds(v)][0]].getValue().isMinusInf()) && (ba[bla[getBounds(v)][1]].getValue().isPlusInf()) ); }
+bool LABoundStore::isUnbounded(LVRef v) const { return getBounds(v) == LABoundListRef_Undef; }
+
+void LABoundStore::clear() {
+    this->ba.clear();
+    this->bla.clear();
+    this->in_bounds.clear();
+    this->var_bound_lists.clear();
+}

@@ -61,7 +61,6 @@ private:
     bool cnfizeXor          (PTRef);                          // Cnfize xors
     bool cnfizeIfthenelse   (PTRef);                          // Cnfize if then elses
     bool cnfizeImplies      (PTRef);                          // Cnfize if then elses
-    bool cnfizeDistinct     (PTRef);                          // Cnfize distinctions
 //    void copyArgsWithCache(PTRef, vec<PTRef>&, Map<PTRef, PTRef, PTRefHash>&);
 };
 
