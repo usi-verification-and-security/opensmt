@@ -13,7 +13,8 @@ LABoundRef LABoundAllocator::alloc(BoundT type, LVRef var, const Delta& delta)
 {
     uint32_t v = RegionAllocator<uint32_t>::alloc(laboundWord32Size());
     LABoundRef id = {v};
-    new (lea(id)) LABound(type, var, delta, n_bounds++);
+    new (lea(id)) LABound(type, var, delta, static_cast<int>(allocatedBounds.size()));
+    allocatedBounds.push_back(id);
     return id;
 }
 
@@ -216,15 +217,6 @@ char* LABoundStore::printBounds(LVRef v) const
 
 
 
-
-int LABoundAllocator::laboundWord32Size() {
-    return (sizeof(LABound)) / sizeof(uint32_t); }
-
-inline unsigned LABoundAllocator::getNumBounds() const { return n_bounds; }
-
-inline LABound*       LABoundAllocator::lea       (LABoundRef r)       { return (LABound*)RegionAllocator<uint32_t>::lea(r.x); }
-inline const LABound* LABoundAllocator::lea       (LABoundRef r) const { return (LABound*)RegionAllocator<uint32_t>::lea(r.x); }
-inline LABoundRef     LABoundAllocator::ael       (const LABound* t)   { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); LABoundRef rf; rf.x = r; return rf; }
 
 inline bool           LABoundList::reloced   ()                 const { return reloc; }
 inline LABoundListRef LABoundList::relocation()                 const { return reloc_target; }
