@@ -350,28 +350,11 @@ void Proof::print( ostream & out, CoreSMTSolver & s, THandler & t )
   out << ")" << endl;
 }
 
-void Proof::cleanAssumedLiterals() {
-    // MB: This relies on the invariant that in case of conflict based on assumptions,
-    // the final conflict starts at the assumed literal that was falsified
-    auto it = clause_to_proof_der.find(CRef_Undef);
-    if ( it != clause_to_proof_der.end()) {
-        CRef finalReason = it->second.chain_cla[0];
-        if (std::find(assumed_literals.begin(), assumed_literals.end(), finalReason) != assumed_literals.end()) {
-            clause_to_proof_der.erase(it);
-        }
-    }
-    for (CRef assumed_unit : assumed_literals) {
-        cl_al.free(assumed_unit);
-    }
-    assumed_literals.clear();
-}
-
-void Proof::addAssumptionLiteral(Lit l) {
-    // Allocate the unit clause for the assumed literal
-    CRef assumed_unit = cl_al.alloc(vec<Lit>{l});
-    // And store it
-    clause_to_proof_der.emplace(assumed_unit, ProofDer{clause_type::CLA_ASSUMPTION});
-    assumed_literals.push_back(assumed_unit);
+void Proof::cleanAssumedLiteral(Lit l) {
+    CRef unit = assumed_literals.at(l);
+    assert(clause_to_proof_der.find(unit) != clause_to_proof_der.end());
+    clause_to_proof_der.erase(unit);
+    cl_al.free(unit);
 }
 
 //=============================================================================

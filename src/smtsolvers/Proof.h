@@ -30,6 +30,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <vector>
 #include <unordered_map>
 #include <iosfwd>
+#include <functional>
 
 //=================================================================================================
 
@@ -77,12 +78,17 @@ struct ProofDer
 
 class Proof
 {
+    struct LitHash {
+        std::size_t operator()(Lit l) const noexcept
+        { return std::hash<int>{}(l.x); }
+    };
+
     bool begun; // For debugging
 
     ProofDer current_chain;
     std::unordered_map< CRef, ProofDer>     clause_to_proof_der;
     ClauseAllocator&            cl_al;
-    std::vector<CRef> assumed_literals;
+    std::unordered_map<Lit, CRef, LitHash> assumed_literals;
 
 public:
 
@@ -108,18 +114,40 @@ public:
 
     template<typename TIt>
     void setCurrentAssumptionLiterals(TIt begin, TIt end){
-        this->cleanAssumedLiterals();
+        decltype(assumed_literals) replacement;
+
         for (auto it = begin; it != end; ++it){
-            addAssumptionLiteral(*it);
+            Lit lit = *it;
+            auto inCurrent = assumed_literals.find(lit);
+            if (inCurrent != assumed_literals.end()) {
+                replacement.insert(*inCurrent);
+            }
+            else {
+                CRef assumed_unit = cl_al.alloc(vec<Lit>{lit});
+                // And store it
+                clause_to_proof_der.emplace(assumed_unit, ProofDer{clause_type::CLA_ASSUMPTION});
+                replacement.insert(std::make_pair<>(lit, assumed_unit));
+            }
         }
+        // And clean those that has not been preserved
+        auto emptyDerIt = clause_to_proof_der.find(CRef_Undef);
+        CRef assumedUnitReason = emptyDerIt == clause_to_proof_der.end() ? CRef_Undef : emptyDerIt->second.chain_cla[0];
+        for (auto const & entry : assumed_literals) {
+            if (replacement.find(entry.first) == replacement.end()) {
+                if (entry.second == assumedUnitReason) {
+                    clause_to_proof_der.erase(emptyDerIt);
+                }
+                cleanAssumedLiteral(entry.first);
+            }
+        }
+        std::swap(assumed_literals, replacement);
     }
 
     // MB: I don't like this being public, but it is the easiest way
     CRef getUnitForAssumptionLiteral(Lit l) {
-        auto it = std::find_if(assumed_literals.begin(), assumed_literals.end(),
-                [l, this](CRef c) { return cl_al[c][0] == l; });
+        auto it = assumed_literals.find(l);
         assert(it != assumed_literals.end());
-        return *it;
+        return it->second;
     }
 
     bool deleted    ( CRef );                             // Remove clauses if possible
@@ -130,9 +158,8 @@ public:
     std::vector<Lit> getAssumedLiterals() const {
         std::vector<Lit> res;
         res.reserve(assumed_literals.size());
-        for (CRef assumedUnitClause : assumed_literals) {
-            assert(getClause(assumedUnitClause).size() == 1);
-            res.push_back(getClause(assumedUnitClause)[0]);
+        for (auto const& entry : assumed_literals) {
+            res.push_back(entry.first);
         }
         return res;
     }
@@ -141,8 +168,7 @@ public:
 
 private:
     // Helper methods
-    void cleanAssumedLiterals();
-    void addAssumptionLiteral(Lit l);
+    void cleanAssumedLiteral(Lit l);
 };
 
 //=================================================================================================
