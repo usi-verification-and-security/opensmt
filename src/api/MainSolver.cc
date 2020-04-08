@@ -41,7 +41,9 @@ namespace opensmt { extern bool stop; }
 void
 MainSolver::push()
 {
+    bool alreadyUnsat = isLastFrameUnsat();
     frames.push(pfstore.alloc());
+    if (alreadyUnsat) { rememberLastFrameUnsat(); }
 }
 
 bool
@@ -49,7 +51,9 @@ MainSolver::pop()
 {
     if (frames.size() > 1) {
         frames.pop();
-        getSMTSolver().restoreOK();
+        if (!isLastFrameUnsat()) {
+            getSMTSolver().restoreOK();
+        }
         return true;
     }
     else
@@ -59,6 +63,7 @@ MainSolver::pop()
 sstat
 MainSolver::push(PTRef root)
 {
+
     push();
     char* msg;
     sstat res = insertFormula(root, &msg);
@@ -363,16 +368,23 @@ sstat MainSolver::check()
         printf("; %s query time so far: %f\n", solver_name.c_str(), query_timer.getTime());
         opensmt::StopWatch sw(query_timer);
     }
+    if (isLastFrameUnsat()) {
+        return s_False;
+    }
     sstat rval;
     rval = simplifyFormulas();
 
     if (config.dump_query())
         printFramesAsQuery();
 
-    if (rval != s_Undef)
-        return rval;
-    initialize();
-    return solve();
+    if (rval == s_Undef) {
+        initialize();
+        rval = solve();
+    }
+    if (rval == s_False) {
+        rememberLastFrameUnsat();
+    }
+    return rval;
 }
 
 sstat MainSolver::solve()

@@ -96,11 +96,12 @@ public:
     void addSeen(PTRef tr)                       { seen.insert(tr, l_True); }
     bool isSeen(PTRef tr)                       { return seen.has(tr); }
     vec<PTRef> formulas;
+    bool unsat;                       // If true than the stack of frames with this frame at top is UNSAT
     PushFrame(PushFrame& pf);
     PushFrame() : id(FrameId_Undef), root(PTRef_Undef) {} // For pushing into vecs we need a default.
     PushFrame operator= (PushFrame& other);
  private:
-    PushFrame(uint32_t id) : id({id}), root(PTRef_Undef) {}
+    PushFrame(uint32_t id) : id({id}), root(PTRef_Undef), unsat(false) {}
 };
 
 struct PFRef {
