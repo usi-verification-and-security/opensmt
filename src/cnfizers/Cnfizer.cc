@@ -197,19 +197,35 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
 #ifdef PEDANTIC_DEBUG
             cout << " => proper cnfization" << endl;
 #endif // PEDANTIC_DEBUG
-            res = cnfize (f); // Perform actual cnfization (implemented in subclasses)
+            res = cnfizeAndAssert (f); // Perform actual cnfization (implemented in subclasses)
         }
     }
     s_empty = false; // solver no longer empty
     if (res) {
         vec<PTRef> nestedBoolRoots = getNestedBoolRoots(formula);
-        res = declare(nestedBoolRoots, PTRef_Undef); // Declare the formula without asserting the top level
+        for (int i = 0; i < nestedBoolRoots.size(); ++i) {
+            res &= cnfize(nestedBoolRoots[i]); // cnfize the formula without asserting the top level
+        }
         assert(res);
         declareVars(logic.propFormulasAppearingInUF);
     }
 
     currentPartition = -1;
     return res == false ? l_False : l_Undef;
+}
+
+bool Cnfizer::cnfizeAndAssert(PTRef formula) {
+    assert(formula != PTRef_Undef);
+    // Top level formula must not be and anymore
+    assert(!logic.isAnd(formula));
+    bool res = true;
+    // Add the top level literal as a unit to solver.
+    vec<Lit> clause;
+    clause.push(this->getOrCreateLiteralFor(formula));
+    res &= addClause(clause);
+
+    res = cnfize(formula);
+    return res;
 }
 
 void Cnfizer::declareVars(vec<PTRef>& vars)
