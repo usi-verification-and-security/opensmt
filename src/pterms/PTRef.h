@@ -43,6 +43,13 @@ struct PTRefHash {
         return (uint32_t)s.x; }
 };
 
+struct PTRefPairHash {
+    std::size_t operator () (std::pair<PTRef, PTRef> p) const {
+        std::hash<uint32_t> hasher;
+        return (hasher(p.first.x) ^ hasher(p.second.x));
+    }
+};
+
 
 template <>
 struct Equal<const PTRef> {

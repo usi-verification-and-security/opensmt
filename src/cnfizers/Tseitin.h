@@ -51,6 +51,9 @@ public:
 
 private:
 
+    // Cache of already cnfized terms. Note that this is different from Cnfizer cache of already processed top-level flas
+    Cache alreadyCnfized;
+
     bool cnfize             (PTRef);                          // Cnfize the given term
     bool cnfizeAnd          (PTRef);                          // Cnfize conjunctions
     bool cnfizeOr           (PTRef);                          // Cnfize disjunctions

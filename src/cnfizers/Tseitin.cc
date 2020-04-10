@@ -36,7 +36,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 bool Tseitin::cnfize(PTRef term) {
     bool res = true;
     vec<PTRef> unprocessed_terms {term};
-    Map<PTRef,bool,PTRefHash,Equal<PTRef>> processed;  // Is a term already processed
 
     //
     // Visit the DAG of the formula
@@ -48,8 +47,9 @@ bool Tseitin::cnfize(PTRef term) {
         //
         // Skip if the node has already been processed before
         //
-        if (processed.has(ptr))
+        if (alreadyCnfized.contains(ptr, frame_term)){
             continue;
+        }
 
         // Here (after the checks) not safe to use Pterm& since cnfize.* can alter the table of terms
         // by calling findLit
@@ -69,14 +69,14 @@ bool Tseitin::cnfize(PTRef term) {
         else if (!logic.isNot(ptr) && sz > 0) {
             goto tseitin_end;
         }
-
         {
-            Pterm& pt = logic.getPterm(ptr);
-            for (int i = 0; i < pt.size(); i++)
+            Pterm const& pt = logic.getPterm(ptr);
+            for (int i = 0; i < pt.size(); i++) {
                 unprocessed_terms.push(pt[i]); // Using the PTRef is safe if a reallocation happened
+            }
         }
 tseitin_end:
-        processed.insert(ptr, true);
+        alreadyCnfized.insert(ptr, frame_term);
     }
 
     return res;

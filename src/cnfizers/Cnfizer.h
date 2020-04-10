@@ -32,6 +32,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Logic.h"
 #include "TermMapper.h"
 
+#include <unordered_set>
+
 class SimpSMTSolver;
 class CnfState;
 class THandler;
@@ -49,6 +51,16 @@ protected:
     Logic&              logic;
     TermMapper&         tmap;
     bool                s_empty;
+
+    class Cache {
+        using CacheEntry = std::pair<PTRef, PTRef>;
+        std::unordered_set<CacheEntry, PTRefPairHash > cache;
+    public:
+        bool contains(PTRef term, PTRef frame_term);
+        void insert(PTRef term, PTRef frame_term);
+    };
+
+    Cache alreadyAsserted;
 
 public:
 
