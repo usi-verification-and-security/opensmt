@@ -32,6 +32,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Logic.h"
 #include "TermMapper.h"
 
+#include <unordered_set>
+
 class SimpSMTSolver;
 class CnfState;
 class THandler;
@@ -49,6 +51,16 @@ protected:
     Logic&              logic;
     TermMapper&         tmap;
     bool                s_empty;
+
+    class Cache {
+        using CacheEntry = std::pair<PTRef, PTRef>;
+        std::unordered_set<CacheEntry, PTRefPairHash > cache;
+    public:
+        bool contains(PTRef term, PTRef frame_term);
+        void insert(PTRef term, PTRef frame_term);
+    };
+
+    Cache alreadyAsserted;
 
 public:
 
@@ -73,10 +85,10 @@ public:
 
 protected:
 
-    virtual bool cnfize                 ( PTRef ) = 0; // Cnfize and assert the top-level.  Calls declare.
-    virtual bool declare                ( vec<PTRef>&, PTRef root ) = 0;  // Actual cnfization. To be implemented in derived classes
-    bool     deMorganize                ( PTRef );                                    // Apply deMorgan rules whenever feasible
-    void     declareVars                (vec<PTRef>&); // Declare a set of Boolean atoms to the solver (without asserting them)
+    virtual bool cnfizeAndAssert        ( PTRef );       // Cnfize and assert the top-level.
+    virtual bool cnfize                 ( PTRef ) = 0;   // Actual cnfization. To be implemented in derived classes
+    bool     deMorganize                ( PTRef );       // Apply deMorgan rules whenever feasible
+    void     declareVars                (vec<PTRef>&);   // Declare a set of Boolean atoms to the solver (without asserting them)
 
 public:
     bool     checkClause                ( PTRef ); // Check if a formula is a clause
