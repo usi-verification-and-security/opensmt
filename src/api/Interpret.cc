@@ -79,7 +79,9 @@ namespace {
 opensmt::Logic_t getLogicFromString(std::string name) {
     if (name == "QF_UF") return opensmt::Logic_t::QF_UF;
     if (name == "QF_LRA") return opensmt::Logic_t::QF_LRA;
+    if (name == "QF_RDL") return opensmt::Logic_t::QF_RDL;
     if (name == "QF_LIA") return opensmt::Logic_t::QF_LIA;
+    if (name == "QF_IDL") return opensmt::Logic_t::QF_IDL;
     if (name == "QF_CUF") return opensmt::Logic_t::QF_CUF;
     if (name == "QF_UFLRA") return opensmt::Logic_t::QF_UFLRA;
     return opensmt::Logic_t::UNDEF;
@@ -199,7 +201,7 @@ void Interpret::interp(ASTNode& n) {
             }
             ASTNode &logic_n = **(n.children->begin());
             const char* logic_name = logic_n.getValue();
-            if (logic != NULL) {
+            if (logic != nullptr) {
                 notify_formatted(true, "logic has already been set to %s", logic->getName());
             } else {
                 auto logic_type = getLogicFromString(logic_name);
