@@ -27,6 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define OPENSMT_PTREF_H
 
 #include "Map.h"
+#include <functional>
 
 struct PTRef {
     uint32_t x;
@@ -41,6 +42,13 @@ const struct PTRef PTRef_Undef = {INT32_MAX};
 struct PTRefHash {
     uint32_t operator () (const PTRef& s) const {
         return (uint32_t)s.x; }
+};
+
+struct PTRefPairHash {
+    std::size_t operator () (std::pair<PTRef, PTRef> p) const {
+        std::hash<uint32_t> hasher;
+        return (hasher(p.first.x) ^ hasher(p.second.x));
+    }
 };
 
 

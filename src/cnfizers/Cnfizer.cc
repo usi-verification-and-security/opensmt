@@ -168,6 +168,9 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
     for (unsigned i = 0 ; i < top_level_formulae.size_() && (res == true) ; i ++)
     {
         PTRef f = top_level_formulae[i];
+        if (alreadyAsserted.contains(f, frame_term)) {
+            continue;
+        }
 #ifdef PEDANTIC_DEBUG
         cerr << "Adding clause " << logic.printTerm (f) << endl;
 #endif
@@ -177,9 +180,7 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
 #ifdef PEDANTIC_DEBUG
             cerr << " => Already in CNF" << endl;
 #endif
-
             res = giveToSolver (f);
-            continue;
         }
 
         // Check whether it can be rewritten using deMorgan laws
@@ -189,7 +190,6 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
 #ifdef PEDANTIC_DEBUG
             cout << " => Will be de Morganized" << endl;
 #endif
-
             res = deMorganize (f);
         }
         else
@@ -199,6 +199,7 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
 #endif // PEDANTIC_DEBUG
             res = cnfizeAndAssert (f); // Perform actual cnfization (implemented in subclasses)
         }
+        alreadyAsserted.insert(f, frame_term);
     }
     s_empty = false; // solver no longer empty
     if (res) {
@@ -539,7 +540,7 @@ void Cnfizer::retrieveClause ( PTRef f, vec<PTRef> &clause )
         clause.push (f);
     else if ( logic.isOr (f) )
     {
-        Pterm &t = logic.getPterm (f);
+        Pterm const &t = logic.getPterm (f);
 
         for ( int i = 0; i < t.size(); i++)
             retrieveClause ( t[i], clause );
@@ -581,4 +582,13 @@ lbool Cnfizer::getTermValue (PTRef tr) const
         return sgn == false ? val : (val == l_True ? l_False : l_True);
     }
     else return l_Undef;
+}
+
+bool Cnfizer::Cache::contains(PTRef term, PTRef frame_term) {
+    return this->cache.find(std::make_pair<>(term, frame_term)) != this->cache.end();
+}
+
+void Cnfizer::Cache::insert(PTRef term, PTRef frame_term) {
+    assert(!contains(term, frame_term));
+    this->cache.insert(std::make_pair<>(term, frame_term));
 }
