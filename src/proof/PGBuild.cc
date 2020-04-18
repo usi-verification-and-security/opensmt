@@ -464,8 +464,6 @@ void ProofGraph::buildProofGraph( int nVars )
     }
     while(!q.empty());
 
-    this->addDefaultAssumedLiterals();
-
     if( proofCheck() )
     {
         // Check whether there are any remaining pieces
@@ -509,6 +507,11 @@ void ProofGraph::buildProofGraph( int nVars )
     }
     if ( verbose() ) { cerr << "# " << "Proof graph building end" << endl; }
     building_time=cpuTime()-initTime;
+
+    // Postprocessing of the proof
+
+    this->addDefaultAssumedLiterals();
+    this->ensureNoLiteralsWithoutPartition();
 
     if( proofCheck() )
     {
@@ -799,4 +802,35 @@ clauseid_t ProofGraph::dupliNode( RuleContext& ra )
 
 void ProofGraph::addDefaultAssumedLiterals() {
     this->assumedLiterals = this->proof.getAssumedLiterals();
+}
+
+void ProofGraph::ensureNoLiteralsWithoutPartition() {
+    std::vector<Var> noPartitionVars;
+    for (Var v : proof_variables) {
+        auto const& part = getVarPartition(v);
+        if(part == 0 && !this->isAssumedVar(v)) {
+            PTRef term = varToPTRef(v);
+            assert(this->logic_.isTheoryTerm(term));
+            auto allowedPartitions = logic_.computeAllowedPartitions(term);
+            if (allowedPartitions != 0) {
+                // MB: Update the partition information
+                logic_.addIPartitions(term, allowedPartitions);
+            }
+            else {
+                noPartitionVars.push_back(v);
+            }
+        }
+    }
+    if (!noPartitionVars.empty()) {
+        this->eliminateNoPartitionTheoryVars(noPartitionVars);
+    }
+}
+
+void ProofGraph::eliminateNoPartitionTheoryVars(std::vector<Var> const & noPartitionTheoryVars) {
+    // First step: lift all resolution steps on these vars as close to leaves as possible to create subproofs
+    // where resolution happens only on marked vars
+    this->liftVarsToLeaves(noPartitionTheoryVars);
+
+    // Second step: Replace the subproofs created in the first step with their root.
+    // The leaves of each subproof must be theory clauses, so its root must also be a valid theory clause
 }

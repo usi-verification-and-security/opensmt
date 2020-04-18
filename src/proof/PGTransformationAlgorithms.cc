@@ -1000,3 +1000,26 @@ void ProofGraph::proofPostStructuralHashing()
 	///////////////////////////////////////////////////////////////////////////////
 }
 
+
+namespace{
+class LightVars {
+public:
+
+    template<typename TIt>
+    LightVars(TIt begin, TIt end) {
+
+    }
+
+    bool isLight(Var v) const;
+
+private:
+
+};
+}
+
+
+void ProofGraph::liftVarsToLeaves(std::vector<Var> const & vars) {
+    LightVars lightVars (vars.begin(), vars.end());
+    proofTransformAndRestructure(-1, -1, true, nullptr);
+}
+
