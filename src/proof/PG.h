@@ -22,15 +22,15 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 #include "Global.h"
 #include "Proof.h"
-#include <map>
-#include <new>
 #include "PTRef.h"
 #include "Theory.h"
 #include "THandler.h"
 
 #include <memory>
+#include <map>
+#include <new>
+#include <functional>
 
-//using namespace Minisat;
 using namespace opensmt;
 
 class CoreSMTSolver;
@@ -411,22 +411,22 @@ public:
     PTRef          compInterpLabelingOriginalSimple         ( ProofNode *, const ipartitions_t & );
     PTRef          compInterpLabelingInnerSimple            ( ProofNode *, const ipartitions_t & );
 
-    PTRef          compInterpLabelingOriginal               (ProofNode * n, const ipartitions_t & A_mask);
-    PTRef          compInterpLabelingInner                  (ProofNode *);
-    void           labelLeaf                                (ProofNode *, const ipartitions_t&, unsigned num_config = 0, std::map<Var, icolor_t>* PSFunc = nullptr);
-    void           setLeafRandomLabeling                    (ProofNode *);
-    void           setLeafMcMillanLabeling                  (ProofNode *);
-    void           setLeafPudlakLabeling                    (ProofNode *);
-    void           setLeafMcMillanPrimeLabeling             (ProofNode *);
-    void 		   setLeafPSLabeling		( ProofNode*, std::map<Var, icolor_t>* PSFunction );
-    void 		   setLeafPSWLabeling		( ProofNode*, std::map<Var, icolor_t>* PSFunction );
-    void 		   setLeafPSSLabeling		( ProofNode*, std::map<Var, icolor_t>* PSFunction );
-    bool           usingLabelingSuggestions           	    ( ) { return ( config.itp_bool_alg() == 6 ); }
-    void   setColoringSuggestions   ( vec< std::map<PTRef, icolor_t>* > * mp ) { assert(mp); vars_suggested_color_map = mp; }
-    void   setLabelingFromMap       ( ProofNode*, unsigned );
-    icolor_t       getPivotColor                            ( ProofNode * );
-    void           computeABVariablesMapping                ( const ipartitions_t & );
-    inline int     getVarInfoFromMapping                    ( Var v )
+    PTRef           compInterpLabelingOriginal               (ProofNode * n, const ipartitions_t & A_mask);
+    PTRef           compInterpLabelingInner                  (ProofNode *);
+    void            labelLeaf                                (ProofNode *, const ipartitions_t&, unsigned num_config = 0, std::map<Var, icolor_t>* PSFunc = nullptr);
+    void            setLeafRandomLabeling                    (ProofNode *);
+    void            setLeafMcMillanLabeling                  (ProofNode *);
+    void            setLeafPudlakLabeling                    (ProofNode *);
+    void            setLeafMcMillanPrimeLabeling             (ProofNode *);
+    void            setLeafPSLabeling		( ProofNode*, std::map<Var, icolor_t>* PSFunction );
+    void            setLeafPSWLabeling		( ProofNode*, std::map<Var, icolor_t>* PSFunction );
+    void            setLeafPSSLabeling		( ProofNode*, std::map<Var, icolor_t>* PSFunction );
+    bool            usingLabelingSuggestions           	    ( ) { return ( config.itp_bool_alg() == 6 ); }
+    void            setColoringSuggestions   ( vec< std::map<PTRef, icolor_t>* > * mp ) { assert(mp); vars_suggested_color_map = mp; }
+    void            setLabelingFromMap       ( ProofNode*, unsigned );
+    icolor_t        getPivotColor                            ( ProofNode * );
+    void            computeABVariablesMapping                ( const ipartitions_t & );
+    inline int      getVarInfoFromMapping                    ( Var v )
     {
     	assert((unsigned)v<AB_vars_mapping.size()); assert(AB_vars_mapping[v]!=-3);
     	return(AB_vars_mapping[v]);
@@ -464,52 +464,51 @@ public:
     //
     // Trasformation
     //
-    bool           chooseReplacingAntecedent( ProofNode* );
+    bool            chooseReplacingAntecedent( ProofNode* );
     /** A loop of top down reduction sweeps; embeds the topological sorting */
-    void           proofTransformAndRestructure(const double, const int, bool do_transf,
-            short  (ProofGraph::*handleRules) ( RuleContext&,RuleContext&,const ipartitions_t& mask_), const ipartitions_t& mask= 0);
-    void		   proofPostStructuralHashing();
-    double         recyclePivotsIter();
-    void			recycleUnits();
+    void            proofTransformAndRestructure(const double, const int, bool do_transf, std::function<short(RuleContext&,RuleContext&)> handleRules);
+    void            proofPostStructuralHashing();
+    double          recyclePivotsIter();
+    void            recycleUnits();
 
-    bool           getRuleContext				 (clauseid_t, clauseid_t, RuleContext&);
+    bool            getRuleContext				 (clauseid_t, clauseid_t, RuleContext&);
     // In case of A1 rule, return id of node added
-    clauseid_t      ruleApply					 	 (RuleContext&);
-    clauseid_t      applyRuleA1				 	 (RuleContext&);
-    void           applyRuleA1Prime				 (RuleContext&);
-    void           applyRuleA2					 (RuleContext&);
-    void           applyRuleB1					 (RuleContext&);
-    void           applyRuleB2					 (RuleContext&);
-    void           applyRuleB2Prime				 (RuleContext&);
-    void           applyRuleB3					 (RuleContext&);
-    void 		   printRuleApplicationStatus();
-    void           transfProofForReduction       ( );
-    double         doIt                          ( double );
-    double         doReduction                   ( double );
+    clauseid_t      ruleApply               (RuleContext&);
+    clauseid_t      applyRuleA1             (RuleContext&);
+    void            applyRuleA1Prime        (RuleContext&);
+    void            applyRuleA2             (RuleContext&);
+    void            applyRuleB1             (RuleContext&);
+    void            applyRuleB2             (RuleContext&);
+    void            applyRuleB2Prime        (RuleContext&);
+    void            applyRuleB3             (RuleContext&);
+    void            printRuleApplicationStatus  ();
+    void            transfProofForReduction     ();
+    double          doIt                        (double);
+    double          doReduction                 (double);
     // Application of rules
     inline bool    isSwapRule                    ( rul_type rt ) const { return ( rt==rA1 || rt==rA1B || rt==rA1prime || rt==rA2 || rt==rA2B || rt==rA2u || rt==rB2 ); }
     inline bool    isCutRule                     ( rul_type rt ) const { return (rt==rB1 || rt==rB2prime || rt==rB3); }
     // Reduce the proof
-    short         handleRuleApplicationForReduction( RuleContext&,RuleContext&, const ipartitions_t& );
-    bool 		   allowSwapRuleForReduction(RuleContext& );
-    bool 		   allowCutRuleForReduction( RuleContext& );
+    short           handleRuleApplicationForReduction(RuleContext & ra1, RuleContext & ra2);
+    bool            allowSwapRuleForReduction(RuleContext& );
+    bool            allowCutRuleForReduction( RuleContext& );
     // Push unit clauses down in the proof
-    short          handleRuleApplicationForUnitsPushingDown( RuleContext&,RuleContext&, const ipartitions_t& );
-    bool 		   allowSwapRuleForUnitsPushingDown(RuleContext&);
+    short           handleRuleApplicationForUnitsPushingDown(RuleContext & ra1, RuleContext & ra2);
+    bool            allowSwapRuleForUnitsPushingDown(RuleContext&);
     // Push predicates in the proof
-    short          handleRuleApplicationForPredicatePushing( RuleContext&, RuleContext&, const ipartitions_t& );
-    bool 		   allowSwapRuleForPredicatePushingUp( RuleContext&,Var );
-    bool 		   allowSwapRuleForPredicatePushingDown( RuleContext&,Var );
-    bool 		   allowCutRuleForPredicatePushing( RuleContext&,Var );
-    inline void   setPredicateToPush(Var p){ pred_to_push = p; }
+    short          handleRuleApplicationForPredicatePushing(RuleContext & ra1, RuleContext & ra2);
+    bool            allowSwapRuleForPredicatePushingUp( RuleContext&,Var );
+    bool            allowSwapRuleForPredicatePushingDown( RuleContext&,Var );
+    bool            allowCutRuleForPredicatePushing( RuleContext&,Var );
+    inline void     setPredicateToPush(Var p){ pred_to_push = p; }
 
     // Strengthen/weaken interpolants by applying A2 rule locally
-    short 		   handleRuleApplicationForStrongerWeakerInterpolant(RuleContext& ra1,RuleContext& ra2, const ipartitions_t&);
-    bool           allowSwapRuleForStrongerWeakerInterpolant(RuleContext& ra, const ipartitions_t&);
+    short           handleRuleApplicationForStrongerWeakerInterpolant(RuleContext & ra1, RuleContext & ra2);
+    bool            allowSwapRuleForStrongerWeakerInterpolant(RuleContext & ra);
     // Produce interpolants in CNF using McMillan algorithm - partial CNFization since no duplications allowed!
     // See allowSwapRuleForCNFinterpolant
-    short 		   handleRuleApplicationForCNFinterpolant(RuleContext& ra1,RuleContext& ra2, const ipartitions_t&);
-    bool           allowSwapRuleForCNFinterpolant(RuleContext& ra);
+    short           handleRuleApplicationForCNFinterpolant(RuleContext & ra1, RuleContext & ra2);
+    bool            allowSwapRuleForCNFinterpolant(RuleContext& ra);
 
 private:
 

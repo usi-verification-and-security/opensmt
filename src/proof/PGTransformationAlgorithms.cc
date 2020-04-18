@@ -640,7 +640,8 @@ void ProofGraph::recycleUnits()
 }
 
 
-void ProofGraph::proofTransformAndRestructure(const double left_time, const int max_num_loops, bool do_transf, short  (ProofGraph::*handleRules) ( RuleContext&,RuleContext&,const ipartitions_t& ), const ipartitions_t& mask)
+void ProofGraph::proofTransformAndRestructure(const double left_time, const int max_num_loops, bool do_transf,
+        std::function<short(RuleContext&,RuleContext&)> handleRules)
 {
     if (verbose() > 1) { std::cerr << "# " << "Proof transformation traversals begin" << std::endl; }
     if (verbose() > 1) {
@@ -721,7 +722,7 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
                             getRuleContext(n->getAnt1()->getId(), n->getId(), ra1);
                             getRuleContext(n->getAnt2()->getId(), n->getId(), ra2);
 
-                            short chosen = (*this.*handleRules)(ra1, ra2, mask);
+                            short chosen = handleRules(ra1, ra2);
 
                             rul_type app_rule = rNO;
                             if (chosen != 0) {

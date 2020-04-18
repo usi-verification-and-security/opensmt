@@ -395,7 +395,8 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
             if ( verbose() > 0 ) cerr << "# Proof transformation for interpolants (partially) in CNF" << endl;
 
             fillProofGraph();
-            proofTransformAndRestructure (-1, -1, true, &ProofGraph::handleRuleApplicationForCNFinterpolant);
+            proofTransformAndRestructure (-1, -1, true, [this](RuleContext & ra1, RuleContext & ra2 )
+                { return this->handleRuleApplicationForCNFinterpolant(ra1, ra2); });
             checkProof (true);
             // Normalize antecedents order ( for interpolation )
             normalizeAntecedentOrder();
@@ -421,7 +422,9 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
 
         fillProofGraph();
         // NOTE Only a couple of loops to avoid too much overhead
-        proofTransformAndRestructure (-1, 2, true, &ProofGraph::handleRuleApplicationForStrongerWeakerInterpolant, A_mask);
+        proofTransformAndRestructure (-1, 2, true, [this] (RuleContext & ra1, RuleContext & ra2) {
+            return this->handleRuleApplicationForStrongerWeakerInterpolant(ra1, ra2);
+        });
         // Normalize antecedents order ( for interpolation )
         normalizeAntecedentOrder();
         emptyProofGraph();

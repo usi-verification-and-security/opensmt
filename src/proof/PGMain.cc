@@ -167,99 +167,89 @@ void ProofGraph::transfProofForReduction( )
 }
 
 // Performs reduction
-double ProofGraph::doReduction(double solving_time)
-{
-	if(enabledTransfTraversals())
-	{
-		if(  ( ratioReductionSolvingTime() > 0 && reductionTime() > 0) ||
-				( ratioReductionSolvingTime() > 0 && numGraphTraversals() > 0) ||
-				( reductionTime() > 0 && numGraphTraversals() > 0) ||
-				( ratioReductionSolvingTime() == 0 && reductionTime() == 0 && numGraphTraversals() == 0)   )
-			opensmt_error( "Please set either ratio or time for reduction or number of proof traversals" );
-	}
-	if ( reductionLoops() == 0 )
-		opensmt_error( "Please set number of global reduction loops to at least 1" );
+double ProofGraph::doReduction(double solving_time) {
+    if (enabledTransfTraversals()) {
+        if ((ratioReductionSolvingTime() > 0 && reductionTime() > 0) ||
+            (ratioReductionSolvingTime() > 0 && numGraphTraversals() > 0) ||
+            (reductionTime() > 0 && numGraphTraversals() > 0) ||
+            (ratioReductionSolvingTime() == 0 && reductionTime() == 0 && numGraphTraversals() == 0)) opensmt_error(
+                "Please set either ratio or time for reduction or number of proof traversals");
+    }
+    if (reductionLoops() == 0) opensmt_error("Please set number of global reduction loops to at least 1");
 
-	//Transformation time calculation
-	double time_init=0;
-	double time_end=0;
-	double red_time=0;
-	//Number of inner transformation loops
-	//-1 for exhaustiveness
-//	int num_transf_loops=0; // MB: not used?
-	//Number of outer transformation loops
-	//useful for alternation with recycle pivots
-	int num_global_reduction_loops=0;
-	// Time available for transformations
-	// -1 for exhaustiveness
-	double ratio;
+    //Transformation time calculation
+    double time_init = 0;
+    double time_end = 0;
+    double red_time = 0;
+    //Number of inner transformation loops
+    //-1 for exhaustiveness
+    //int num_transf_loops=0; // MB: not used?
+    //Number of outer transformation loops
+    //useful for alternation with recycle pivots
+    int num_global_reduction_loops = 0;
+    // Time available for transformations
+    // -1 for exhaustiveness
+    double ratio;
 
-	if( ratioReductionSolvingTime() > 0)
-	{
-		// Ratio transformation time/solving time
-		ratio=ratioReductionSolvingTime();
-		red_time=ratio*solving_time;
-	}
-	else if( reductionTime() > 0)
-	{
-		red_time=reductionTime();
-	}
+    if (ratioReductionSolvingTime() > 0) {
+        // Ratio transformation time/solving time
+        ratio = ratioReductionSolvingTime();
+        red_time = ratio * solving_time;
+    } else if (reductionTime() > 0) {
+        red_time = reductionTime();
+    }
 
-	//For each outer loop, recycle pivots algorithm is executed, followed by a certain
-	//number of transformation loops, or by a single restructuring loop
+    //For each outer loop, recycle pivots algorithm is executed, followed by a certain
+    //number of transformation loops, or by a single restructuring loop
 
-	//Each global loop is given an equal fraction of available time
-	num_global_reduction_loops=reductionLoops();
-	if ( verbose() > 0 )
-	{
-		cerr << "# Compressing proof, " << num_global_reduction_loops << " global iteration(s) " << endl;
-		if( enabledPushDownUnits() ) cerr << "# preceded by LowerUnits" << endl;
-		cerr << "# Each global iteration consists of: " << endl;
-		if( enabledStructuralHashing() ) cerr << "# StructuralHashing" << endl;
-		if( enabledRecyclePivots() ) cerr << "# RecyclePivotsWithIntersection" << endl;
-		if( enabledTransfTraversals() )
-		{
-			cerr << "# ReduceAndExpose ";
-			if( ratioReductionSolvingTime() > 0 || reductionTime() > 0)
-				cerr << "with overall timeout " << red_time << " sec(s) " << endl;
-			else if ( numGraphTraversals() > 0 )
-				cerr << "with " << numGraphTraversals() << " graph traversal(s) "<< endl;
-		}
-		cerr << "#" << endl;
-	}
-	double spent_time=0,i_time=0;
+    //Each global loop is given an equal fraction of available time
+    num_global_reduction_loops = reductionLoops();
+    if (verbose() > 0) {
+        cerr << "# Compressing proof, " << num_global_reduction_loops << " global iteration(s) " << endl;
+        if (enabledPushDownUnits()) cerr << "# preceded by LowerUnits" << endl;
+        cerr << "# Each global iteration consists of: " << endl;
+        if (enabledStructuralHashing()) cerr << "# StructuralHashing" << endl;
+        if (enabledRecyclePivots()) cerr << "# RecyclePivotsWithIntersection" << endl;
+        if (enabledTransfTraversals()) {
+            cerr << "# ReduceAndExpose ";
+            if (ratioReductionSolvingTime() > 0 || reductionTime() > 0)
+                cerr << "with overall timeout " << red_time << " sec(s) " << endl;
+            else if (numGraphTraversals() > 0)
+                cerr << "with " << numGraphTraversals() << " graph traversal(s) " << endl;
+        }
+        cerr << "#" << endl;
+    }
+    double spent_time = 0, i_time = 0;
 
-	time_init=cpuTime();
-	if( enabledPushDownUnits() ) recycleUnits();
-	for(int k=1; k <= num_global_reduction_loops; k++)
-	{
-		if ( verbose() > 0 ) cerr << "# Global iteration " << k << endl;
-		i_time=cpuTime();
-		if( switchToRPHashing() )
-		{
-			if( enabledRecyclePivots() ) recyclePivotsIter();
-			if( enabledStructuralHashing() ) proofPostStructuralHashing();
-		}
-		else
-		{
-			if( enabledStructuralHashing() ) proofPostStructuralHashing();
-			if( enabledRecyclePivots() ) recyclePivotsIter();
-		}
-		spent_time=cpuTime()-i_time;
-		// Not really meaningful to do graph traversals in the last global loop
-		if(enabledTransfTraversals() && k <= num_global_reduction_loops - 1)
-		{
-			if(ratioReductionSolvingTime() > 0 || reductionTime() > 0 )
-			{
-				// Available time = global loop timeout - time used for recycle pivots
-				// Already out of time for transformation rules
-				if(red_time - spent_time <= 0) continue;
-				proofTransformAndRestructure(red_time-spent_time,-1,true, &ProofGraph::handleRuleApplicationForReduction);
-			}
-			if(numGraphTraversals() >0 )
-				proofTransformAndRestructure(-1,numGraphTraversals(),true, &ProofGraph::handleRuleApplicationForReduction);
-		}
-	}
-	time_end=cpuTime();
-	return time_end-time_init;
+    time_init = cpuTime();
+    if (enabledPushDownUnits()) recycleUnits();
+    for (int k = 1; k <= num_global_reduction_loops; k++) {
+        if (verbose() > 0) cerr << "# Global iteration " << k << endl;
+        i_time = cpuTime();
+        if (switchToRPHashing()) {
+            if (enabledRecyclePivots()) recyclePivotsIter();
+            if (enabledStructuralHashing()) proofPostStructuralHashing();
+        } else {
+            if (enabledStructuralHashing()) proofPostStructuralHashing();
+            if (enabledRecyclePivots()) recyclePivotsIter();
+        }
+        spent_time = cpuTime() - i_time;
+        // Not really meaningful to do graph traversals in the last global loop
+        if (enabledTransfTraversals() && k <= num_global_reduction_loops - 1) {
+            auto handleRuleApplication = [this](RuleContext & ra1, RuleContext & ra2) {
+                return this->handleRuleApplicationForReduction(ra1, ra2);
+            };
+            if (ratioReductionSolvingTime() > 0 || reductionTime() > 0) {
+                // Available time = global loop timeout - time used for recycle pivots
+                // Already out of time for transformation rules
+                if (red_time - spent_time <= 0) { continue; }
+                proofTransformAndRestructure(red_time - spent_time, -1, true, handleRuleApplication);
+            }
+            if (numGraphTraversals() > 0) {
+                proofTransformAndRestructure(-1, numGraphTraversals(), true, handleRuleApplication);
+            }
+        }
+    }
+    time_end = cpuTime();
+    return time_end - time_init;
 }

@@ -114,7 +114,7 @@ bool ProofGraph::allowCutRuleForPredicatePushing(RuleContext& ra, Var pred)
 
 //Input: a pair of left/right contexts
 //Output: 0,1,2 to apply no rule, rule1, rule2
-short ProofGraph::handleRuleApplicationForPredicatePushing(RuleContext& ra1,RuleContext& ra2, const ipartitions_t& mask)
+short ProofGraph::handleRuleApplicationForPredicatePushing(RuleContext & ra1, RuleContext & ra2)
 {
 	/*	cerr << "Examining (w=" << ra1.getW() << ",v="
 			<< ra1.getV() << "," << ra1.getType() <<") and (w="
@@ -281,7 +281,7 @@ bool ProofGraph::allowSwapRuleForUnitsPushingDown(RuleContext& ra)
 
 //Input: a pair of left/right contexts
 //Output: 0,1,2 to apply no rule, rule1, rule2
-short ProofGraph::handleRuleApplicationForUnitsPushingDown(RuleContext& ra1,RuleContext& ra2, const ipartitions_t& mask)
+short ProofGraph::handleRuleApplicationForUnitsPushingDown(RuleContext & ra1, RuleContext & ra2)
 {
 	// Swap application rule
 	bool(ProofGraph::*allowSwap)(RuleContext& ra) = &ProofGraph::allowSwapRuleForUnitsPushingDown;
@@ -420,7 +420,7 @@ bool ProofGraph::allowCutRuleForReduction(RuleContext& ra)
 
 //Input: a pair of left/right contexts
 //Output: 0,1,2 to apply no rule, rule1, rule2
-short ProofGraph::handleRuleApplicationForReduction(RuleContext& ra1,RuleContext& ra2, const ipartitions_t& mask)
+short ProofGraph::handleRuleApplicationForReduction(RuleContext & ra1, RuleContext & ra2)
 {
 	// Randomize application of rules
 	if( additionalRandomization() && rand()%2==0 ) return 0;
@@ -531,7 +531,7 @@ short ProofGraph::handleRuleApplicationForReduction(RuleContext& ra1,RuleContext
 
 //Input: a context for a swap rule
 //Output: true if rule application is allowed
-bool ProofGraph::allowSwapRuleForStrongerWeakerInterpolant(RuleContext& ra, const ipartitions_t& mask)
+bool ProofGraph::allowSwapRuleForStrongerWeakerInterpolant(RuleContext & ra)
 {
 	rul_type t=ra.getType();
 	bool dupl=(getNode(ra.getW())->getNumResolvents()>1);
@@ -586,10 +586,10 @@ bool ProofGraph::allowSwapRuleForStrongerWeakerInterpolant(RuleContext& ra, cons
 
 //Input: a pair of left/right contexts
 //Output: 0,1,2 to apply no rule, rule1, rule2
-short ProofGraph::handleRuleApplicationForStrongerWeakerInterpolant(RuleContext& ra1,RuleContext& ra2, const ipartitions_t& mask)
+short ProofGraph::handleRuleApplicationForStrongerWeakerInterpolant(RuleContext & ra1, RuleContext & ra2)
 {
 	// Swap application rule
-	bool(ProofGraph::*allowSwap)(RuleContext&, const ipartitions_t&) = &ProofGraph::allowSwapRuleForStrongerWeakerInterpolant;
+	bool(ProofGraph::*allowSwap)(RuleContext&) = &ProofGraph::allowSwapRuleForStrongerWeakerInterpolant;
 
 	// Check need for duplication
 	bool dupl1, dupl2;
@@ -612,7 +612,7 @@ short ProofGraph::handleRuleApplicationForStrongerWeakerInterpolant(RuleContext&
 	else if(ra1.disabled() && ra2.enabled())
 	{
 		if( is2cut ) allowed2 =  false;
-		else if( is2swap ) allowed2 = (*this.*allowSwap)(ra2, mask);
+		else if( is2swap ) allowed2 = (*this.*allowSwap)(ra2);
 		else opensmt_error_();
 		if(allowed2) chosen=2; else chosen=0;
 	}
@@ -620,7 +620,7 @@ short ProofGraph::handleRuleApplicationForStrongerWeakerInterpolant(RuleContext&
 	else if(ra1.enabled() && ra2.disabled())
 	{
 		if( is1cut ) allowed1 =  false;
-		else if( is1swap ) allowed1 = (*this.*allowSwap)(ra1, mask);
+		else if( is1swap ) allowed1 = (*this.*allowSwap)(ra1);
 		else opensmt_error_();
 		if(allowed1) chosen=1; else chosen=0;
 	}
@@ -628,11 +628,11 @@ short ProofGraph::handleRuleApplicationForStrongerWeakerInterpolant(RuleContext&
 	else if(ra1.enabled() && ra2.enabled())
 	{
 		if( is1cut ) allowed1 = false;
-		else if( is1swap ) allowed1 = (*this.*allowSwap)(ra1, mask);
+		else if( is1swap ) allowed1 = (*this.*allowSwap)(ra1);
 		else opensmt_error_();
 
 		if( is2cut ) allowed2 =  false;
-		else if( is2swap ) allowed2 = (*this.*allowSwap)(ra2, mask);
+		else if( is2swap ) allowed2 = (*this.*allowSwap)(ra2);
 		else opensmt_error_();
 
 		//Neither allowed
@@ -725,7 +725,7 @@ bool ProofGraph::allowSwapRuleForCNFinterpolant(RuleContext& ra)
 
 //Input: a pair of left/right contexts
 //Output: 0,1,2 to apply no rule, rule1, rule2
-short ProofGraph::handleRuleApplicationForCNFinterpolant(RuleContext& ra1,RuleContext& ra2, const ipartitions_t& mask)
+short ProofGraph::handleRuleApplicationForCNFinterpolant(RuleContext & ra1, RuleContext & ra2)
 {
 	// Swap application rule
 	bool(ProofGraph::*allowSwap)(RuleContext& ra) = &ProofGraph::allowSwapRuleForCNFinterpolant;
