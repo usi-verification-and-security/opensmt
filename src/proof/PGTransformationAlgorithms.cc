@@ -21,6 +21,8 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 #include "PG.h"
 #include "CoreSMTSolver.h" // TODO: MB: deal with reportf and remove this include
 
+#include <unordered_set>
+
 //************************* RECYCLE PIVOTS AND RECYCLE UNITS ***************************
 
 double ProofGraph::recyclePivotsIter()
@@ -1007,19 +1009,61 @@ public:
 
     template<typename TIt>
     LightVars(TIt begin, TIt end) {
-
+        lights.insert(begin, end);
     }
 
-    bool isLight(Var v) const;
+    bool isLight(Var v) const { return lights.find(v) != lights.end(); }
 
 private:
-
+    std::unordered_set<Var> lights;
 };
+
+class LiftingVarsRuleHandler {
+public:
+    LiftingVarsRuleHandler(ProofGraph & pg, LightVars const & lv) : proofGraph{pg}, lightVars{lv} {}
+
+    short operator()(RuleContext & ra1, RuleContext & ra2);
+
+private:
+    ProofGraph & proofGraph;
+    LightVars const & lightVars;
+};
+
+short LiftingVarsRuleHandler::operator()(RuleContext &ra1, RuleContext &ra2) {
+    // Return 0 for no application, 1 for applying rule 1, 2 for applying rule 2
+//    ProofGraph const & pg = this->proofGraph;
+    auto isUnordered = [this] (RuleContext const& ra) {
+        Var lowerPivot = this->proofGraph.getNode(ra.getV())->getPivot();
+        Var upperPivot = this->proofGraph.getNode(ra.getW())->getPivot();
+        return this->lightVars.isLight(lowerPivot) && !this->lightVars.isLight(upperPivot);
+    };
+    bool enabled1 = ra1.enabled() && isUnordered(ra1);
+    bool enabled2 = ra2.enabled() && isUnordered(ra2);
+    if (!enabled1) {
+        return enabled2 ? 2 : 0;
+    }
+    // ra1 is enabled
+    if (!enabled2) { return 1; }
+    // BOTH are enabled, pick better
+    rul_type t1 = ra1.getType();
+    rul_type t2 = ra2.getType();
+    if (isCutRule(t1)) { return 1; }
+    if (isCutRule(t2)) { return 2; }
+    assert(isSwapRule(t1) && isSwapRule(t2));
+    // Prefer simple swaps
+    if (t1 == rA2) { return 1; }
+    if (t2 == rA2) { return 2; }
+    // No further rules, just pick first one
+    return 1;
+
+}
+
 }
 
 
 void ProofGraph::liftVarsToLeaves(std::vector<Var> const & vars) {
     LightVars lightVars (vars.begin(), vars.end());
-    proofTransformAndRestructure(-1, -1, true, nullptr);
+    LiftingVarsRuleHandler handler(*this, lightVars);
+    proofTransformAndRestructure(-1, -1, true, handler);
 }
 

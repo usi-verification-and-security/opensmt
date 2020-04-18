@@ -827,10 +827,16 @@ void ProofGraph::ensureNoLiteralsWithoutPartition() {
 }
 
 void ProofGraph::eliminateNoPartitionTheoryVars(std::vector<Var> const & noPartitionTheoryVars) {
+    // Prepare the graph for transformation
+    this->fillProofGraph();
+
     // First step: lift all resolution steps on these vars as close to leaves as possible to create subproofs
     // where resolution happens only on marked vars
     this->liftVarsToLeaves(noPartitionTheoryVars);
 
     // Second step: Replace the subproofs created in the first step with their root.
     // The leaves of each subproof must be theory clauses, so its root must also be a valid theory clause
+
+    // Cleanup
+    this->emptyProofGraph();
 }

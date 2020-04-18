@@ -56,6 +56,9 @@ enum rul_type
 	, rNO
 };
 
+inline bool isSwapRule (rul_type rt)  { return rt==rA1 || rt==rA1B || rt==rA1prime || rt==rA2 || rt==rA2B || rt==rA2u || rt==rB2; }
+inline bool isCutRule  (rul_type rt)  { return rt==rB1 || rt==rB2prime || rt==rB3; }
+
 // Rules applicability info
 // Five nodes context plus type of applicable rule
 class RuleContext
@@ -485,9 +488,6 @@ public:
     void            transfProofForReduction     ();
     double          doIt                        (double);
     double          doReduction                 (double);
-    // Application of rules
-    inline bool    isSwapRule                    ( rul_type rt ) const { return ( rt==rA1 || rt==rA1B || rt==rA1prime || rt==rA2 || rt==rA2B || rt==rA2u || rt==rB2 ); }
-    inline bool    isCutRule                     ( rul_type rt ) const { return (rt==rB1 || rt==rB2prime || rt==rB3); }
     // Reduce the proof
     short           handleRuleApplicationForReduction(RuleContext & ra1, RuleContext & ra2);
     bool            allowSwapRuleForReduction(RuleContext& );
