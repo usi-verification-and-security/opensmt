@@ -1020,7 +1020,7 @@ private:
 
 class LiftingVarsRuleHandler {
 public:
-    LiftingVarsRuleHandler(ProofGraph & pg, LightVars const & lv) : proofGraph{pg}, lightVars{lv} {}
+    LiftingVarsRuleHandler(ProofGraph & pg, LightVars const & lv) : proofGraph(pg), lightVars(lv) {}
 
     short operator()(RuleContext & ra1, RuleContext & ra2);
 
