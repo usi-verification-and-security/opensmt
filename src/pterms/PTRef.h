@@ -27,6 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define OPENSMT_PTREF_H
 
 #include "Map.h"
+#include <functional>
 
 struct PTRef {
     uint32_t x;
