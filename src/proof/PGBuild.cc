@@ -50,6 +50,7 @@ void ProofGraph::initTSolver() {
     assert(!this->leaves_ids.empty());
     for (auto id : this->leaves_ids) {
         ProofNode * node = getNode(id);
+        assert(node);
         assert(node->getType() == clause_type::CLA_ORIG || node->getType() == clause_type::CLA_THEORY || node->getType() == clause_type::CLA_ASSUMPTION);
         if (node->getType() != clause_type::CLA_THEORY) { continue; }
         const auto & clause = this->getNode(id)->getClause();
@@ -827,7 +828,7 @@ void ProofGraph::ensureNoLiteralsWithoutPartition() {
 }
 
 void ProofGraph::eliminateNoPartitionTheoryVars(std::vector<Var> const & noPartitionTheoryVars) {
-    // Prepare the graph for transformation
+    // Prepare the graph for transformations
     this->fillProofGraph();
 
     // First step: lift all resolution steps on these vars as close to leaves as possible to create subproofs
@@ -836,7 +837,11 @@ void ProofGraph::eliminateNoPartitionTheoryVars(std::vector<Var> const & noParti
 
     // Second step: Replace the subproofs created in the first step with their root.
     // The leaves of each subproof must be theory clauses, so its root must also be a valid theory clause
+    this->replaceSubproofsWithNoPartitionTheoryVars(noPartitionTheoryVars);
 
     // Cleanup
     this->emptyProofGraph();
+    for (Var v : noPartitionTheoryVars) {
+        this->proof_variables.erase(v);
+    }
 }

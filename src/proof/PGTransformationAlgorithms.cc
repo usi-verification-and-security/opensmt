@@ -1067,3 +1067,47 @@ void ProofGraph::liftVarsToLeaves(std::vector<Var> const & vars) {
     proofTransformAndRestructure(-1, -1, true, handler);
 }
 
+void ProofGraph::replaceSubproofsWithNoPartitionTheoryVars(std::vector<Var> const & vars) {
+    auto mustBeEliminated = [&vars](Var v) { return std::find(std::begin(vars), std::end(vars), v) != std::end(vars); };
+    std::deque<clauseid_t> toProcess;
+    toProcess.assign(this->leaves_ids.begin(), this->leaves_ids.end());
+    while (!toProcess.empty()) {
+        clauseid_t current_id = toProcess.front();
+        toProcess.pop_front();
+
+        ProofNode * leaf = this->getNode(current_id);
+        if (!leaf) { continue; } // MB: We could have removed the node already, since we are removing both parents of a new leaf
+        assert(leaf->isLeaf());
+        bool hasMixed = false;
+        for (Var v : vars) {
+            short present = leaf->hasOccurrenceBin(v);
+            hasMixed |= (present != -1);
+        }
+        if (!hasMixed) { continue; }
+        auto resolvents_ids = leaf->getResolvents();
+        for (auto resolvent_id : resolvents_ids) {
+            ProofNode * resolvent = this->getNode(resolvent_id);
+            assert(resolvent);
+            Var pivot = resolvent->getPivot();
+            assert(mustBeEliminated(pivot)); // MB: While there is a problematic variable in the clause, all resolution steps must be on a problematic var
+
+            // resolvent must be theory valid lemma, make it new leaf
+            ProofNode * ant1 = resolvent->getAnt1();
+            ProofNode * ant2 = resolvent->getAnt2();
+            assert(ant1 && ant2);
+            assert(ant1->getType() == clause_type::CLA_THEORY);
+            assert(ant2->getType() == clause_type::CLA_THEORY);
+            assert(ant1->isLeaf() && ant2->isLeaf());
+            ant1->remRes(resolvent_id);
+            ant2->remRes(resolvent_id);
+            if (ant1->getNumResolvents() == 0) { this->removeNode(ant1->getId()); }
+            if (ant2->getNumResolvents() == 0) { this->removeNode(ant2->getId()); }
+            resolvent->setType(clause_type::CLA_THEORY);
+            resolvent->setAnt1(nullptr);
+            resolvent->setAnt2(nullptr);
+            this->addLeaf(resolvent_id);
+            toProcess.push_back(resolvent_id);
+        }
+    }
+}
+

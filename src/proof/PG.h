@@ -531,6 +531,7 @@ private:
     void ensureNoLiteralsWithoutPartition();
     void eliminateNoPartitionTheoryVars(std::vector<Var> const & noParititionTheoryVars);
     void liftVarsToLeaves(std::vector<Var> const & vars);
+    void replaceSubproofsWithNoPartitionTheoryVars(std::vector<Var> const & vars);
 
     //NOTE added for experimentation
     Var 				  pred_to_push;
