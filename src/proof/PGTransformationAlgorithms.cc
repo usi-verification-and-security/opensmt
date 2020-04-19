@@ -1071,12 +1071,14 @@ void ProofGraph::replaceSubproofsWithNoPartitionTheoryVars(std::vector<Var> cons
     auto mustBeEliminated = [&vars](Var v) { return std::find(std::begin(vars), std::end(vars), v) != std::end(vars); };
     std::deque<clauseid_t> toProcess;
     toProcess.assign(this->leaves_ids.begin(), this->leaves_ids.end());
+    resetVisited1();
     while (!toProcess.empty()) {
         clauseid_t current_id = toProcess.front();
         toProcess.pop_front();
+        setVisited1(current_id);
 
         ProofNode * leaf = this->getNode(current_id);
-        if (!leaf) { continue; } // MB: We could have removed the node already, since we are removing both parents of a new leaf
+        assert(leaf);
         assert(leaf->isLeaf());
         bool hasMixed = false;
         for (Var v : vars) {
@@ -1095,6 +1097,11 @@ void ProofGraph::replaceSubproofsWithNoPartitionTheoryVars(std::vector<Var> cons
             ProofNode * ant1 = resolvent->getAnt1();
             ProofNode * ant2 = resolvent->getAnt2();
             assert(ant1 && ant2);
+            // only continue if both antecedents has been processed already!
+            if (!isSetVisited1(ant1->getId()) || !isSetVisited1(ant2->getId())) {
+                // This resolvent will be processed when the second antecedent is taken from the queue
+                continue;
+            }
             assert(ant1->getType() == clause_type::CLA_THEORY);
             assert(ant2->getType() == clause_type::CLA_THEORY);
             assert(ant1->isLeaf() && ant2->isLeaf());
@@ -1109,5 +1116,6 @@ void ProofGraph::replaceSubproofsWithNoPartitionTheoryVars(std::vector<Var> cons
             toProcess.push_back(resolvent_id);
         }
     }
+    resetVisited1();
 }
 
