@@ -1090,9 +1090,10 @@ void ProofGraph::replaceSubproofsWithNoPartitionTheoryVars(std::vector<Var> cons
         for (auto resolvent_id : resolvents_ids) {
             ProofNode * resolvent = this->getNode(resolvent_id);
             assert(resolvent);
-            Var pivot = resolvent->getPivot();
-            assert(mustBeEliminated(pivot)); // MB: While there is a problematic variable in the clause, all resolution steps must be on a problematic var
-
+            assert(mustBeEliminated(resolvent->getPivot())); // MB: While there is a problematic variable in the clause, all resolution steps must be on a problematic var
+            if (!mustBeEliminated(resolvent->getPivot())) {
+                opensmt_error("Error in post-processing in the proof: Lifting orphaned theory variables did not work properly");
+            }
             // resolvent must be theory valid lemma, make it new leaf
             ProofNode * ant1 = resolvent->getAnt1();
             ProofNode * ant2 = resolvent->getAnt2();
