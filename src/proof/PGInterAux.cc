@@ -169,15 +169,7 @@ icolor_t ProofGraph::getVarClass( Var v, const ipartitions_t & A_mask )
     //      Determine its class based on the classes of variables it contains
     if (!var_in_A && !var_in_B) {
         if (this->isAssumedVar(v)) { return I_AB; } // MB: Does not matter for assumed literals
-        PTRef term = varToPTRef(v);
-        assert(this->logic_.isTheoryTerm(term));
-        assert((logic_.getIPartitions(term) & A_mask) == 0 && (logic_.getIPartitions(term) & B_mask) == 0);
-        auto allowedPartitions = logic_.computeAllowedPartitions(term);
-        assert(allowedPartitions != 0);
-        var_in_A = ((allowedPartitions & A_mask) != 0);
-        var_in_B = ((allowedPartitions & B_mask) != 0);
-        // MB: Also update the partition information for interpolation
-        logic_.addIPartitions(term, allowedPartitions);
+        // Literals with no partition are handled during proof building, so no other variable except assumed ones should have no partition.
     }
     assert(var_in_A || var_in_B);
 
