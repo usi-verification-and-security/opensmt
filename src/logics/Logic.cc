@@ -413,7 +413,7 @@ bool Logic::isTheoryTerm(PTRef ptr) const {
         assert(p.nargs() == 2);
             return false;
     }
-    else if (hasSortBool(ptr) && appearsInUF(ptr)) {
+    else if (hasSortBool(sr) && appearsInUF(ptr)) {
         return true;
     }
     else
