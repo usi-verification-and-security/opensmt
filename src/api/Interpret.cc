@@ -439,6 +439,13 @@ void Interpret::interp(ASTNode& n) {
                 getValue(n.children);
             break;
         }
+        case t_getmodel:
+        {
+            if(!parse_only)
+                getModel();
+            break;
+        }
+
         case t_writestate:
         {
             if (parse_only) break;
@@ -801,6 +808,27 @@ void Interpret::getValue(const std::vector<ASTNode*>* terms)
     printf(")\n");
 }
 
+void Interpret::getModel() {
+//    std::cout << "(get-model) encountered!" << std::endl;
+    std::cout << "(model\n";
+    for (int i = 0; i < user_declarations.size(); ++i) {
+        SymRef symref = user_declarations[i];
+        const Symbol & sym = logic->getSym(symref);
+        if (sym.size() == 1) {
+            // variable, just get its value
+            char* s = this->logic->printSym(symref);
+            SRef symSort = sym.rsort();
+            PTRef term = logic->mkVar(symSort, s);
+            std::cout << "(define-fun " << s  << " () " << logic->getSortName(symSort) << ' ' << main_solver->getValue(term).val << ')' << '\n';
+            free(s);
+        }
+        else {
+            std::cerr << "Not supported for non-constants yet" << std::endl;
+        };
+    }
+    std::cout << ')' << std::endl;
+}
+
 void Interpret::writeState(const char* filename)
 {
     char* msg;
@@ -868,6 +896,7 @@ bool Interpret::declareFun(ASTNode& n) // (const char* fname, const vec<SRef>& a
         free(msg);
         return false;
     }
+    user_declarations.push(rval);
     return true;
 }
 
