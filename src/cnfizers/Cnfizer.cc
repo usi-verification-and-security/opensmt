@@ -225,7 +225,7 @@ bool Cnfizer::cnfizeAndAssert(PTRef formula) {
     clause.push(this->getOrCreateLiteralFor(formula));
     res &= addClause(clause);
 
-    res = cnfize(formula);
+    res &= cnfize(formula);
     return res;
 }
 
