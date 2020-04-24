@@ -247,8 +247,9 @@ ValPair MainSolver::getValue(PTRef tr) const
 
     } else {
         ValPair vp = thandler.getValue(tr);
-        if (vp.val == NULL)
+        if (vp.val == nullptr) {
             vp.val = strdup(logic.getDefaultValue(tr));
+        }
         return vp;
     }
 }

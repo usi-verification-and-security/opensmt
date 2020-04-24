@@ -71,7 +71,7 @@ void TSolverHandler::informNewSplit(PTRef tr)
 ValPair TSolverHandler::getValue(PTRef tr) const
 {
     for (int i = 0; i < tsolvers.size(); i++) {
-        if (tsolvers[i] != NULL) {
+        if (tsolvers[i] != nullptr) {
             PTRef tr_subst = tr;
             if (substs.has(tr) && (substs[tr].sgn == l_True)) {
                 tr_subst = substs[tr].tr;
@@ -83,7 +83,7 @@ ValPair TSolverHandler::getValue(PTRef tr) const
             }
         }
     }
-    return { tr, NULL }; // Value is unspecified in the model
+    return { tr, nullptr }; // Value is unspecified in the model
 }
 
 TRes TSolverHandler::check(bool complete)
