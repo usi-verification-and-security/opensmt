@@ -234,7 +234,17 @@ ValPair MainSolver::getValue(PTRef tr) const
 {
     if (logic.hasSortBool(tr)) {
         lbool val = ts.getTermValue(tr);
-        return ValPair(tr, val == l_True ? "true" : (val == l_False ? "false" : "unknown"));
+        if (val != l_Undef) {
+            return ValPair(tr, val == l_True ? "true" : "false");
+        }
+        // Try if it was not substituted away
+        PTRef subs = thandler.getSubstitution(tr);
+        if (subs != PTRef_Undef) {
+            return getValue(subs);
+        }
+        // Term not seen in the formula, return any value
+        return ValPair(tr, "true");
+
     } else {
         ValPair vp = thandler.getValue(tr);
         if (vp.val == NULL)

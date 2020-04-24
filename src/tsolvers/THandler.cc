@@ -768,6 +768,15 @@ void    THandler::clearModel        () { /*getSolverHandler().clearModel();*/ } 
 bool    THandler::assertLit         (PtAsgn pta) { return getSolverHandler().assertLit(pta); } // Push the assignment to all theory solvers
 void    THandler::informNewSplit    (PTRef tr) { getSolverHandler().informNewSplit(tr);  } // The splitting variable might need data structure changes in the solver (e.g. LIA needs to re-build bounds)
 
+PTRef THandler::getSubstitution(PTRef tr) {
+    auto const & subst = getSolverHandler().substs;
+    if (subst.has(tr)){
+        PtAsgn subs = subst[tr];
+        return subs.sgn == l_True ? subs.tr : PTRef_Undef;
+    }
+    return PTRef_Undef;
+}
+
 inline double THandler::drand(double& seed)
 {
     seed *= 1389796;

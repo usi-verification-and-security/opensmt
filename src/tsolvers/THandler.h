@@ -65,6 +65,7 @@ public:
     Lit     getDeduction         ();                      // Returns a literal that is implied by the current state and the reason literal
     Lit     getSuggestion        ( );                     // Returns a literal that is suggested by the current state
     void    getReason            ( Lit, vec< Lit > &);    // Returns the explanation for a deduced literal
+    PTRef   getSubstitution     (PTRef tr);               // Returns the substituted term, or PTRef_Undef if this term was not substituted
 
     ValPair getValue          (PTRef tr) const ;//{ return getSolverHandler().getValue(tr); };
 
