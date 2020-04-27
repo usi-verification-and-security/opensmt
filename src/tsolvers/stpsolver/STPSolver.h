@@ -8,18 +8,16 @@
 #include "TSolver.h"
 #include "LALogic.h"
 #include "SMTConfig.h"
-#include "Graph.hpp"
+#include "STPMapper.h"
 
 
 class STPSolver : TSolver {
 
     LALogic& logic;
 
-    Graph graph;
+    STPMapper mapper;
 
-    std::vector<Graph> backtracks;
-
-    opensmt::Number parseEdge(PTRef ineq, Edge &edge);
+    STPStore store;
 
 public:
     STPSolver(SMTConfig & c, LALogic & l, vec<DedElem> & d);

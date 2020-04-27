@@ -1,4 +1,4 @@
-add_library(tsolvers OBJECT "" stpsolver/Graph.cpp stpsolver/Graph.hpp)
+add_library(tsolvers OBJECT "" stpsolver/STPStore.h stpsolver/STPMapper.h)
 
 target_sources(tsolvers
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Deductions.h"
