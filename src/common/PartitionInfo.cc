@@ -52,9 +52,15 @@ void PartitionInfo::addClausePartition(CRef c, const ipartitions_t & p) {
 void
 PartitionInfo::invalidatePartitions(const ipartitions_t& toinvalidate) {
     auto negated = ~toinvalidate;
-    for (auto & term_info : term_partitions) {
-        auto& current_info = term_info.second;
+    for (auto it = term_partitions.begin(); it != term_partitions.end(); /* deliberately empty */) {
+        auto& current_info = it->second;
         opensmt::andbit(current_info, current_info, negated);
+        if (current_info == 0) {
+            it = term_partitions.erase(it);
+        }
+        else {
+            ++it;
+        }
     }
     for (auto & sym_info : sym_partitions) {
         auto& current_info = sym_info.second;
