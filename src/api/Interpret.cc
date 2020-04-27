@@ -809,24 +809,28 @@ void Interpret::getValue(const std::vector<ASTNode*>* terms)
 }
 
 void Interpret::getModel() {
-//    std::cout << "(get-model) encountered!" << std::endl;
-    std::cout << "(model\n";
+
+    std::stringstream ss;
+    ss << "(model\n";
     for (int i = 0; i < user_declarations.size(); ++i) {
         SymRef symref = user_declarations[i];
         const Symbol & sym = logic->getSym(symref);
         if (sym.size() == 1) {
             // variable, just get its value
-            char* s = this->logic->printSym(symref);
+            char* s = logic->printSym(symref);
             SRef symSort = sym.rsort();
             PTRef term = logic->mkVar(symSort, s);
-            std::cout << "(define-fun " << s  << " () " << logic->getSortName(symSort) << ' ' << main_solver->getValue(term).val << ')' << '\n';
+            ss << "(define-fun " << s  << " () " << logic->getSortName(symSort) << ' ' << main_solver->getValue(term).val << ')' << '\n';
             free(s);
         }
         else {
-            std::cerr << "Not supported for non-constants yet" << std::endl;
+            char* s = logic->printSym(symref);
+            notify_formatted(true, "Non-constant encountered during a model query: %s. This is not supported yet, ignoring...",  s);
+            free(s);
         };
     }
-    std::cout << ')' << std::endl;
+    ss << ')';
+    std::cout << ss.str() << std::endl;
 }
 
 void Interpret::writeState(const char* filename)
