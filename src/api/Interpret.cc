@@ -441,8 +441,16 @@ void Interpret::interp(ASTNode& n) {
         }
         case t_getmodel:
         {
-            if(!parse_only)
+            if(parse_only) { break; }
+            if (logic == nullptr) {
+                notify_formatted(true, "Illegal command before set-logic: get-model");
+            }
+            else if (main_solver->getStatus() != s_True) {
+                notify_formatted(true, "Command get-model called, but solver is not in SAT state");
+            }
+            else {
                 getModel();
+            }
             break;
         }
 
