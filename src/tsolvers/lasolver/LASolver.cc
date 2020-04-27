@@ -698,7 +698,7 @@ ValPair LASolver::getValue(PTRef tr) {
             }
         }
         else {
-            assert(logic.isNumConst(tr) || (logic.isNumTimes(tr) && logic.getPterm(tr).size() == 2));
+            assert(logic.isNumConst(tr) || logic.isNumVar(tr) || (logic.isNumTimes(tr) && logic.getPterm(tr).size() == 2));
             val = evaluateTerm(tr);
         }
     }
