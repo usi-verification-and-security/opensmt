@@ -13,10 +13,10 @@ VertexRef STPStore::createVertex() {
     return r;
 }
 
-EdgeRef STPStore::createEdge() {
+EdgeRef STPStore::createEdge(VertexRef from, VertexRef to, opensmt::Number cost) {
     uint32_t i = edges.size();
     EdgeRef r{i};
-    edges.push_back(r);
-    costs.emplace_back();
+    edges.push_back(Edge{from, to});
+    costs.push_back(cost);
     return r;
 }

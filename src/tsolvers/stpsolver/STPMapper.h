@@ -16,6 +16,9 @@ class STPMapper {
 
 public:
     STPMapper(const LALogic &l, STPStore &s);
+
+    void setVert(PTRef var, VertexRef vert);
+    void setEdge(PTRef leq, EdgeRef edge);
 };
 
 #endif //OPENSMT_STPMAPPER_H

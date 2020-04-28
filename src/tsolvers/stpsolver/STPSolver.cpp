@@ -15,12 +15,43 @@ STPSolver::STPSolver(SMTConfig & c, LALogic & l, vec<DedElem> & d)
 
 STPSolver::~STPSolver() = default;
 
+ParsedRef STPSolver::parseRef(PTRef ref) {
+    // inequalities are in the form (c <= (x + (-1 * y)))
+    assert( logic.isNumLeq(ref) );
+    Pterm &leq = logic.getPterm(ref);
+    assert( logic.isNumConst(leq[0]) );
+    auto con = -logic.getNumConst(leq[0]);  // -'c': since we want the form (y <= x + c), the constant is negated
+    PTRef diff = leq[1];                        // 'x + (-1 * y)'
+
+    assert( logic.isNumPlus(diff) );
+    Pterm &diffPt = logic.getPterm(diff);
+    uint8_t ix = logic.isNumVar(diffPt[0]) ? 0 : 1;     // index of 'x'
+    uint8_t iy = 1 - ix;                                    // index of '-1 * y'
+    PTRef x = diffPt[ix];                       // 'x'
+    assert( logic.isNumTimes(diffPt[iy]) );
+
+    Pterm &mult = logic.getPterm(diffPt[iy]);   // '-1 * y'
+    assert( logic.isNumConst(mult[0]) && logic.getNumConst(mult[0]) == -1 );
+    assert( logic.isNumVar(mult[1]) );
+    PTRef y = mult[1];                          // 'y'
+
+    return ParsedRef{x, y, diff, con};
+}
+
 void STPSolver::declareAtom(PTRef tr) {
     // This method is used from outside to tell the solver about a possible atom that can later be asserted positively
     // or negatively
     // Ignore everything else other than atoms of the form "x - y <= c"; i.e., variable minus variable is less or equal
     // to some constant
     // TODO: store information about the term tr if necessary
+    auto parsed = parseRef(tr);
+    auto x = store.createVertex();
+    auto y = store.createVertex();
+    auto e = store.createEdge(y, x, parsed.c);
+    mapper.setVert(parsed.x, x);
+    mapper.setVert(parsed.y, y);
+    // TODO: is the difference ref unique for each created (x + (-1*y)) ?
+    mapper.setEdge(parsed.diff, e);
 }
 
 bool STPSolver::assertLit(PtAsgn asgn, bool b) {
