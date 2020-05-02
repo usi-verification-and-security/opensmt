@@ -47,6 +47,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "CoreSMTSolver.h"
 #include "Sort.h"
 #include <cmath>
+#include <algorithm>
 
 #ifdef PRODUCE_PROOF
 #include <lrasolver/LRA_Interpolator.h>
@@ -894,7 +895,8 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
     assert( proof.checkState( ) );
 #endif
     assert(confl != CRef_Undef);
-    assert( cleanup.size( ) == 0 );       // Cleanup stack must be empty
+    assert(cleanup.size() == 0);       // Cleanup stack must be empty
+    assert(std::all_of(seen.begin(), seen.end(), [](char c) { return c == 0; })); // seen must be cleared
 
     int pathC = 0;
     Lit p     = lit_Undef;
@@ -1160,7 +1162,7 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
 #endif
 
     for (int j = 0; j < analyze_toclear.size(); j++) seen[var(analyze_toclear[j])] = 0;    // ('seen[]' is now cleared)
-
+    assert(std::all_of(seen.begin(), seen.end(), [](char c) { return c == 0; }));
     // Cleanup generated lemmata
     for ( int i = 0 ; i < cleanup.size() ; i ++ )
     {
