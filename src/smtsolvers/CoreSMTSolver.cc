@@ -1366,8 +1366,8 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
                         if (level(var(c[j])) > 0)
                             seen[var(c[j])] = 1;
                 }
-                seen[x] = 0;
             }
+            seen[x] = 0;
         }
     }
 
