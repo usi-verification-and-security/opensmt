@@ -94,6 +94,13 @@ public:
     const T& operator [] (int index) const { return data[index]; }
     T&       operator [] (int index)       { return data[index]; }
 
+    // methods for STL compatibility
+    T*          begin()       { return data; }
+    const T*    begin() const { return data; }
+    T*          end()         { return data + sz; }
+    const T*    end()   const { return data + sz; }
+
+
     // Duplicatation (preferred instead):
     void copyTo(vec<T>& copy) const { copy.clear(); copy.growTo(sz); for (int i = 0; i < sz; i++) copy[i] = data[i]; }
     void moveTo(vec<T>& dest) { dest.clear(true); dest.data = data; dest.sz = sz; dest.cap = cap; data = NULL; sz = 0; cap = 0; }
