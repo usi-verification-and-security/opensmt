@@ -72,8 +72,6 @@ int main( int argc, char * argv[] )
     cerr << "; this binary is compiled in debug mode (slow)" << endl;
 #endif
 
-    cerr << "; git hash: " << GIT_SHA1 << endl;
-
   // Accepts file from stdin if nothing specified
     FILE * fin = NULL;
     int opt;
