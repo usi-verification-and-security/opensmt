@@ -275,6 +275,7 @@ void Interpret::interp(ASTNode& n) {
                         throw std::logic_error{"Unreachable code - error in logic selection"};
 
                 };
+                notify_success();
             }
             break;
         }
@@ -286,6 +287,7 @@ void Interpret::interp(ASTNode& n) {
             }
 
             setInfo(**(n.children->begin()));
+            notify_success();
             break;
         }
         case t_getinfo:
@@ -306,6 +308,7 @@ void Interpret::interp(ASTNode& n) {
             }
 
             setOption(**(n.children->begin()));
+            notify_success();
             break;
         }
         case  t_getoption:
@@ -479,14 +482,18 @@ void Interpret::interp(ASTNode& n) {
         }
         case t_push:
         {
-            if(!parse_only)
+            if(!parse_only){
                 push();
+                notify_success();
+            }
             break;
         }
         case t_pop:
         {
-            if(!parse_only)
+            if(!parse_only) {
                 pop();
+                notify_success();
+            }
             break;
         }
         case t_exit:
@@ -1077,8 +1084,9 @@ void Interpret::notify_formatted(bool error, const char* fmt_str, ...) {
 }
 
 void Interpret::notify_success() {
-    if (config.printSuccess())
-        cout << "success" << endl;
+    if (config.printSuccess()) {
+        std::cout << "success" << std::endl;
+    }
 }
 
 void Interpret::execute(const ASTNode* r) {
