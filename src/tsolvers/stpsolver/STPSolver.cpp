@@ -9,12 +9,13 @@ static SolverDescr descr_stp_solver("STP Solver", "Solver for Simple Temporal Pr
 STPSolver::STPSolver(SMTConfig & c, LALogic & l, vec<DedElem> & d)
         : TSolver((SolverId)descr_stp_solver, (const char*)descr_stp_solver, c, d)
         , logic(l)
-        , mapper(l, store)          // store is initialized before mapper
+        , mapper(l, store)          // store is initialized before mapper and graph, so these constructors are valid
+        , graph(store)
 {}
 
 STPSolver::~STPSolver() = default;
 
-// TODO: Ignore terms we don't care about without error?
+// TODO: Ignore terms we don't care about instead of throwing an exception?
 ParsedPTRef STPSolver::parseRef(PTRef ref) {
     // inequalities are in the form (c <= (x + (-1 * y)))
     assert( logic.isNumLeq(ref) );
@@ -57,7 +58,7 @@ void STPSolver::declareAtom(PTRef tr) {
 
     // label negation, if it was already set.
     auto n = store.hasNeighbour(x, y);
-    if (n && store.getEdge(n).cost == (-store.getEdge(e).cost - 1)) {   // TODO: Negates cost only for integers
+    if (n && store.getEdge(n).cost == (-store.getEdge(e).cost - 1)) {   // FIXME: Negates cost only for integers
            store.setNegation(e, n);
     }
 }

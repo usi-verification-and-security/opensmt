@@ -9,6 +9,7 @@
 #include "LALogic.h"
 #include "SMTConfig.h"
 #include "STPMapper.h"
+#include "STPEdgeGraph.h"
 
 struct ParsedPTRef {
     // y <= x + c
@@ -24,6 +25,8 @@ class STPSolver : TSolver {
     STPStore store;
 
     STPMapper mapper;
+
+    STPEdgeGraph graph;
 
     ParsedPTRef parseRef(PTRef ref);
 
