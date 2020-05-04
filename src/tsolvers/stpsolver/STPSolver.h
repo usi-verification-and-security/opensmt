@@ -10,22 +10,22 @@
 #include "SMTConfig.h"
 #include "STPMapper.h"
 
-struct ParsedRef {
-    PTRef x;
-    PTRef y;
-    PTRef diff; // useful for quick parsing of edges // TODO: Unique for each inequality?
-    opensmt::Number c;
+struct ParsedPTRef {
+    // y <= x + c
+    PTRef x;            // destination of the edge
+    PTRef y;            // source of the edge
+    opensmt::Number c;  // cost of the edge
 };
 
 class STPSolver : TSolver {
 
     LALogic& logic;
 
-    STPMapper mapper;
-
     STPStore store;
 
-    ParsedRef parseRef(PTRef ref);
+    STPMapper mapper;
+
+    ParsedPTRef parseRef(PTRef ref);
 
 public:
     STPSolver(SMTConfig & c, LALogic & l, vec<DedElem> & d);

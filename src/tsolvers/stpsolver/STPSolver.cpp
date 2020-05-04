@@ -9,13 +9,13 @@ static SolverDescr descr_stp_solver("STP Solver", "Solver for Simple Temporal Pr
 STPSolver::STPSolver(SMTConfig & c, LALogic & l, vec<DedElem> & d)
         : TSolver((SolverId)descr_stp_solver, (const char*)descr_stp_solver, c, d)
         , logic(l)
-{
-    has_explanation = true;
-}
+        , mapper(l, store)          // store is initialized before mapper
+{}
 
 STPSolver::~STPSolver() = default;
 
-ParsedRef STPSolver::parseRef(PTRef ref) {
+// TODO: Ignore terms we don't care about without error?
+ParsedPTRef STPSolver::parseRef(PTRef ref) {
     // inequalities are in the form (c <= (x + (-1 * y)))
     assert( logic.isNumLeq(ref) );
     Pterm &leq = logic.getPterm(ref);
@@ -34,8 +34,8 @@ ParsedRef STPSolver::parseRef(PTRef ref) {
     assert( logic.isNumConst(mult[0]) && logic.getNumConst(mult[0]) == -1 );
     assert( logic.isNumVar(mult[1]) );
     PTRef y = mult[1];                          // 'y'
-
-    return ParsedRef{x, y, diff, con};
+    auto ret = ParsedPTRef{x, y, con};
+    return ret;
 }
 
 void STPSolver::declareAtom(PTRef tr) {
@@ -45,13 +45,21 @@ void STPSolver::declareAtom(PTRef tr) {
     // to some constant
     // TODO: store information about the term tr if necessary
     auto parsed = parseRef(tr);
+    // create new variables in store
     auto x = store.createVertex();
     auto y = store.createVertex();
     auto e = store.createEdge(y, x, parsed.c);
+
+    // link new variables to the inequality
     mapper.setVert(parsed.x, x);
     mapper.setVert(parsed.y, y);
-    // TODO: is the difference ref unique for each created (x + (-1*y)) ?
-    mapper.setEdge(parsed.diff, e);
+    mapper.setEdge(tr, e);
+
+    // label negation, if it was already set.
+    auto n = store.hasNeighbour(x, y);
+    if (n && store.getEdge(n).cost == (-store.getEdge(e).cost - 1)) {   // TODO: Negates cost only for integers
+           store.setNegation(e, n);
+    }
 }
 
 bool STPSolver::assertLit(PtAsgn asgn, bool b) {
@@ -61,6 +69,7 @@ bool STPSolver::assertLit(PtAsgn asgn, bool b) {
     // TODO: process the addition of the constraint to the current set of constraints
     //      Return false if immediate conflict has been detected, otherwise return true
     //      Postpone actual checking of consistency of the extended set of constraints until call to the "check" method
+    EdgeRef e = mapper.getEdgeRef(asgn.tr);
 
     return true;
 }
