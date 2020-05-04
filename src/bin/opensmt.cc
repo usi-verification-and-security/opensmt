@@ -77,7 +77,8 @@ int main( int argc, char * argv[] )
     int opt;
 
     SMTConfig c;
-    while ((opt = getopt(argc, argv, "hdr:")) != -1) {
+    bool pipe = false;
+    while ((opt = getopt(argc, argv, "hdpr:")) != -1) {
         switch (opt) {
 
             case 'h':
@@ -93,6 +94,9 @@ int main( int argc, char * argv[] )
                 else
                     fprintf(stderr, "; Using random seed %d\n", atoi(optarg));
                 break;
+            case 'p':
+                pipe = true;
+                break;
             default: /* '?' */
                 fprintf(stderr, "Usage:\n\t%s [-d] [-h] [-r seed] filename [...]\n",
                         argv[0]);
@@ -103,9 +107,14 @@ int main( int argc, char * argv[] )
     Interpret interpreter(c);
 
     if (argc - optind == 0) {
-        fin = stdin;
         c.setInstanceName("stdin");
-        interpreter.interpInteractive(fin);
+        if (pipe) {
+            interpreter.interpPipe();
+        }
+        else {
+            fin = stdin;
+            interpreter.interpInteractive(fin);
+        }
     }
     else {
         for (int i = optind; i < argc; i++) {

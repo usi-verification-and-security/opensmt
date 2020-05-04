@@ -1119,7 +1119,7 @@ int Interpret::interpFile(char *content){
     return rval;
 }
 
-/*
+
 // For reading from pipe
 int Interpret::interpPipe() {
 
@@ -1192,7 +1192,6 @@ int Interpret::interpPipe() {
     free(buf);
     return 0;
 }
-*/
 
 // For reading with readline.
 int Interpret::interpInteractive(FILE*) {
