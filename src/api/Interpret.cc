@@ -1126,7 +1126,6 @@ int Interpret::interpPipe() {
     int buf_sz  = 16;
     char* buf   = (char*) malloc(sizeof(char)*buf_sz);
     int rd_head = 0;
-    int rd_idx  = 0;
 
     bool done  = false;
     buf[0] = '\0';
