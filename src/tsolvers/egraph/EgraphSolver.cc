@@ -1966,6 +1966,7 @@ uint32_t UseVector::addParent(ERef parent) {
     auto entry = erefToEntry(parent);
     data[index] = entry;
     ++nelems;
+    assert(entryToERef(entry) == parent);
     return index;
 }
 
@@ -1978,11 +1979,11 @@ void UseVector::clearEntryAt(int index) {
 
 uint32_t UseVector::getFreeSlotIndex() {
     auto ret = free;
-    if (ret >= 0) {
+    if (ret != Entry::FREE_ENTRY_LIST_GUARD) {
         Entry e = data[free];
         assert(e.isFree());
         free = freeEntryToIndex(e);
-        assert(free < 0 || static_cast<std::size_t>(free) < data.size());
+        assert(free == Entry::FREE_ENTRY_LIST_GUARD || static_cast<std::size_t>(free) < data.size());
         return ret;
     }
     ret = data.size();
