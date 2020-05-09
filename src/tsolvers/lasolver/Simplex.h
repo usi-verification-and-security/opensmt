@@ -75,6 +75,7 @@ public:
     inline void finalizeBacktracking() {
         model->restoreAssignment();
         candidates.clear();
+        bufferOfActivatedBounds.clear();
         assert(checkValueConsistency());
         assert(invariantHolds());
     }
@@ -111,6 +112,7 @@ public:
 
     // Keeping track of activated bounds
 private:
+    std::vector<std::pair<LVRef, LABoundRef>> bufferOfActivatedBounds;
     std::vector<unsigned int> boundsActivated;
     unsigned int getNumOfBoundsActive(LVRef var) const {
         assert(getVarId(var) < boundsActivated.size());
@@ -121,6 +123,8 @@ private:
             boundsActivated.push_back(0);
         }
     }
+
+    void processBufferOfActivatedBounds();
 public:
     void boundActivated(LVRef v) {
         assert(!tableau.isQuasiBasic(v) || boundsActivated[getVarId(v)] == 0);

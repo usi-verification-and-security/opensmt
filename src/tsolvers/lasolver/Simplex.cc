@@ -20,7 +20,7 @@ namespace{
 }
 
 Simplex::Explanation Simplex::checkSimplex() {
-
+    processBufferOfActivatedBounds();
     bool bland_rule = false;
     unsigned repeats = 0;
 
@@ -239,34 +239,15 @@ Simplex::Explanation Simplex::assertBoundOnVar(LVRef it, LABoundRef itBound_ref)
         return {{br, 1}, {itBound_ref, 1}};
     }
 
-    // Here we count the bound as activated
-    boundActivated(it);
     // Check if simple SAT can be given
     if (model->boundTriviallySatisfied(it, itBound_ref))
         return {};
 
+    // Here we count the bound as activated
+    boundActivated(it);
     model->pushBound(itBound_ref);
 
-    // Update the Tableau data if a non-basic variable
-    if (tableau.isNonBasic(it)) {
-        if (!isBoundSatisfied(model->read(it), itBound)) {
-            changeValueBy(it, itBound.getValue() - model->read(it));
-        }
-    }
-    else // basic variable got a new bound, it becomes a possible candidate
-    {
-        assert(tableau.isBasic(it));
-        if (isModelOutOfBounds(it)) {
-            newCandidate(it);
-        }
-        else {
-            // MB: Not sure if it can happen that it would have been candidate before.
-            // The hypothesis is that no.
-            assert(candidates.find(it) == candidates.end());
-            eraseCandidate(it);
-        }
-    }
-
+    bufferOfActivatedBounds.push_back(std::make_pair(it, itBound_ref));
     return {};
 }
 
@@ -514,14 +495,12 @@ void Simplex::quasiToBasic(LVRef it) {
     // Literals are asserted in groups, so the current assignment might already be different then the last consistent one
     // Fix the last consistent value for this var, then fix the current value of the var
     Delta val; // initialized to 0
-    Delta oldVal;
+    assert(model->changed_vars_vec.size() == 0);
     for (auto const & term : tableau.getRowPoly(it)) {
+        assert(model->read(term.var) == model->readBackupValue(term.var));
         val += term.coeff * model->read(term.var);
-        oldVal += term.coeff * model->readBackupValue(term.var);
     }
-
-    model->writeBackupValue(it, std::move(oldVal));
-    model->write(it, std::move(val));
+    model->restoreVarWithValue(it, std::move(val));
 }
 
 Simplex::~Simplex()
@@ -529,5 +508,30 @@ Simplex::~Simplex()
 #ifdef STATISTICS
      simplex_stats.printStatistics(cerr);
 #endif // STATISTICS
+}
+
+void Simplex::processBufferOfActivatedBounds() {
+    while (!bufferOfActivatedBounds.empty()) {
+        LVRef var = bufferOfActivatedBounds.back().first;
+        LABoundRef boundRef = bufferOfActivatedBounds.back().second;
+        bufferOfActivatedBounds.pop_back();
+        assert(!tableau.isQuasiBasic(var));
+        // Update the Tableau data if a non-basic variable
+        if (tableau.isNonBasic(var)) {
+            auto const & bound = boundStore[boundRef];
+            if (!isBoundSatisfied(model->read(var), bound)) {
+                changeValueBy(var, bound.getValue() - model->read(var));
+            }
+        } else // basic variable got a new bound, it becomes a possible candidate
+        {
+            assert(tableau.isBasic(var));
+            if (isModelOutOfBounds(var)) {
+                newCandidate(var);
+            } else {
+                // MB: Experience shows this should really not happen
+                assert(candidates.find(var) == candidates.end());
+            }
+        }
+    }
 }
 
