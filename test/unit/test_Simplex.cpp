@@ -87,6 +87,7 @@ TEST(Simplex_test, test_ops_in_Simplex)
     ASSERT_EQ(ex.size(), 3);
 
     s.popBacktrackPoint();
+    s.finalizeBacktracking();
 
     ex = s.assertBoundOnVar(y_minus_x, y_minus_x_nostrict_0.lb);
     s.assertBoundOnVar(x, x_nostrict_1.lb);
