@@ -266,7 +266,6 @@ protected:
     TermMapper  tmap;
     RDLTHandler rdltshandler;
 public:
-    virtual TermMapper& getTmap();// { return tmap; }
     RDLTheory(SMTConfig& c)
             : Theory(c)
             , lralogic(c)
@@ -275,6 +274,7 @@ public:
     { }
     ~RDLTheory() = default;
     virtual LRALogic&    getLogic()    { return lralogic; }
+    TermMapper&  getTmap() { return tmap; }
     virtual RDLTHandler& getTSolverHandler() { return rdltshandler; }
     virtual RDLTHandler *getTSolverHandler_new(vec<DedElem> &d) {
         return new RDLTHandler(config, lralogic, d, tmap);
