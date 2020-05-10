@@ -81,12 +81,14 @@ class UseVector {
     private:
         uint32_t data;
     public:
-        static const uint32_t VALID_MASK = 0x00;
-        static const uint32_t MARKED_MASK = 0x01;
-        static const uint32_t FREE_MASK = 0x03;
-        static const uint32_t TAG_MASK = 0x03;
-        static constexpr unsigned int FREE_ENTRY_LIST_GUARD = (static_cast<uint32_t>(-1)) >> 2;
+        static const uint32_t VALID_MASK = 0x00;  // 00
+        static const uint32_t MARKED_MASK = 0x01; // 01
+        static const uint32_t FREE_MASK = 0x03;   // 11
+        static const uint32_t TAG_MASK = 0x03;    // bit mask to get the two least significant bits
+        static const uint32_t FREE_ENTRY_LIST_GUARD = (static_cast<uint32_t>(-1)) >> 2;
 
+        // MB: This packing tag and data together means that the value of ERef is restricted to 2^30.
+        // This is not an issue for the current benchmarks we are dealing with
         explicit Entry(ERef e): data{e.x << 2} { }
         explicit Entry(uint32_t i): data{i << 2} { }
         Entry(int) = delete;
@@ -101,7 +103,7 @@ class UseVector {
     };
     static_assert(sizeof(Entry) == 4, "Entry is not of expected size!");
     std::vector<Entry> data;
-    uint32_t free; // pointer to head of a free list, -1 means no free list
+    uint32_t free; // pointer to head of a free list, FREE_ENTRY_LIST_GUARD means no free list
     uint32_t nelems; // the real number of elements;
 
     using iterator = decltype(data)::iterator;
