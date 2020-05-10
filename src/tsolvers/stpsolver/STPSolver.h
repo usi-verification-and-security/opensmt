@@ -18,7 +18,7 @@ struct ParsedPTRef {
     opensmt::Number c;  // cost of the edge
 };
 
-class STPSolver : TSolver {
+class STPSolver : public TSolver {
 
     LALogic& logic;
 

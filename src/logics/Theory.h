@@ -36,6 +36,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "LIATHandler.h"
 #include "UFTHandler.h"
 #include "CUFTHandler.h"
+#include "RDLTHandler.h"
 #include "Alloc.h"
 
 // Simplification in frames:
@@ -244,6 +245,29 @@ class CUFTheory : public Theory
     virtual const CUFTHandler& getTSolverHandler() const { return tshandler; }
     virtual CUFTHandler *getTSolverHandler_new(vec<DedElem>& d) { return new CUFTHandler(config, cuflogic, d, tmap); }
     virtual bool simplify(const vec<PFRef>&, int);
+};
+
+class RDLTheory : public Theory
+{
+protected:
+    LRALogic    lralogic;
+    TermMapper  tmap;
+    RDLTHandler rdltshandler;
+public:
+    virtual TermMapper& getTmap();// { return tmap; }
+    RDLTheory(SMTConfig& c)
+            : Theory(c)
+            , lralogic(c)
+            , tmap(lralogic)
+            , rdltshandler(c, lralogic, deductions, tmap)
+    { }
+    ~RDLTheory() = default;
+    virtual LRALogic&    getLogic()    { return lralogic; }
+    virtual RDLTHandler& getTSolverHandler() { return rdltshandler; }
+    virtual RDLTHandler *getTSolverHandler_new(vec<DedElem> &d) {
+        return new RDLTHandler(config, lralogic, d, tmap);
+    }
+    virtual bool simplify(const vec<PFRef>&, int); // Theory specific simplifications
 };
 
 
