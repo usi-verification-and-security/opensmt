@@ -29,6 +29,23 @@ command
 $ mkdir build; cd build; cmake ..; make
 ```
 
+By default, OpenSMT is compiled without interpolation capabilities.  To enable interpolation, the cmake option `PRODUCE_PROOF` must be enabled. This can be done in the cmake configuration file
+`CMakeCache.txt` produced by `cmake` in your build directory or when configuring cmake from the command line:
+```
+$ cmake -DPRODUCE_PROOF=ON ..
+```
+
+With this option OpenSMT supports a range of interpolation options for propositional
+logic, linear real arithmetic, and uninterpreted functions with
+equality.
+
+### Changing build type
+The default build type is RELEASE. Different build type can be configured using cmake variable CMAKE_BUILD_TYPE. For example, to create a debug build use
+```
+$ cmake -DCMAKE_BUILD_TYPE=Debug ..
+```
+
+
 ## Unit tests
 
 If you have cmake version 3.11, the build system will construct unit
@@ -38,13 +55,15 @@ tests.  These are available through
 $ ctest
 ```
 
-## Using OpenSMT2 interpolation
-
-OpenSMT supports a range of interpolation options for propositional
-logic, linear real arithmetic, and uninterpreted functions with
-equality.  To enable interpolation code the compilation needs to be
-configured by enabling `PRODUCE_PROOF` in the cmake configuration file
-`CMakeCache.txt` produced by `cmake` in your build directory.
+## Installing OpenSMT2
+After a successful build, an executable, a static library, and a shared library are created.
+The path to the executable is `<BUILD_DIR>/src/bin/opensmt`, the libraries are located in `<BUILD_DIR>/src/api`.
+To install OpenSMT in your system simply run
+```
+$ make install
+```
+The install directory can be customized using cmake variable CMAKE_INSTALL_PREFIX. The default is `/usr/local`.
+This installs the library in the folder `<INSTALL_DIR>/lib` and puts the necessary header files in the folder `<INSTALL_DIR>/include/opensmt`.
 
 If you have questions please mail them to me at
 antti.hyvarinen@gmail.com, or to the discussion forum!

@@ -21,8 +21,8 @@ add_library(api OBJECT "")
 
 
 set(PRIVATE_SOURCES_TO_ADD
-	"${CMAKE_CURRENT_SOURCE_DIR}/Interpret.C"
-	"${CMAKE_CURRENT_SOURCE_DIR}/MainSolver.C"
+	"${CMAKE_CURRENT_SOURCE_DIR}/Interpret.cc"
+	"${CMAKE_CURRENT_SOURCE_DIR}/MainSolver.cc"
 )
 
 set(PUBLIC_SOURCES_TO_ADD
@@ -30,7 +30,7 @@ set(PUBLIC_SOURCES_TO_ADD
 	"${CMAKE_CURRENT_SOURCE_DIR}/MainSolver.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/DimacsParser.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/smt2tokens.h"
-	"${CMAKE_CURRENT_SOURCE_DIR}/Opensmt.C"
+	"${CMAKE_CURRENT_SOURCE_DIR}/Opensmt.cc"
 )
 
 target_sources(api

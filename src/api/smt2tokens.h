@@ -55,6 +55,7 @@ enum token {
     t_getproof,
     t_getunsatcore,
     t_getvalue,
+    t_getmodel,
     t_pop,
     t_push,
     t_setlogic,

@@ -97,11 +97,12 @@ public:
     void addSeen(PTRef tr)                       { seen.insert(tr, l_True); }
     bool isSeen(PTRef tr)                       { return seen.has(tr); }
     vec<PTRef> formulas;
+    bool unsat;                       // If true than the stack of frames with this frame at top is UNSAT
     PushFrame(PushFrame& pf);
     PushFrame() : id(FrameId_Undef), root(PTRef_Undef) {} // For pushing into vecs we need a default.
     PushFrame operator= (PushFrame& other);
  private:
-    PushFrame(uint32_t id) : id({id}), root(PTRef_Undef) {}
+    PushFrame(uint32_t id) : id({id}), root(PTRef_Undef), unsat(false) {}
 };
 
 struct PFRef {
@@ -118,22 +119,33 @@ class PushFrameAllocator : public RegionAllocator<uint32_t>
 {
 private:
     int id_counter;
+    std::vector<PFRef> allocatedFrames;
 public:
     PushFrameAllocator() : id_counter(FrameId_bottom.id) {}
     PushFrameAllocator(uint32_t init_capacity) : RegionAllocator<uint32_t>(init_capacity), id_counter(FrameId_bottom.id) {}
-    void moveTo(PushFrameAllocator& to);/* {
+
+    ~PushFrameAllocator() {
+        for (PFRef ref : allocatedFrames) {
+            lea(ref)->PushFrame::~PushFrame();
+        }
+    }
+
+    void moveTo(PushFrameAllocator& to) {
         to.id_counter = id_counter;
-        RegionAllocator<uint32_t>::moveTo(to); }*/
-    PFRef alloc();
-/*    {
-        uint32_t v = RegionAllocator<uint32_t>::alloc(sizeof(PushFrame));
+        RegionAllocator<uint32_t>::moveTo(to);
+        to.allocatedFrames = std::move(allocatedFrames);
+    }
+    PFRef alloc()
+    {
+        uint32_t v = RegionAllocator<uint32_t>::alloc(sizeof(PushFrame)/sizeof(uint32_t));
         PFRef r = {v};
         new (lea(r)) PushFrame(id_counter++);
+        allocatedFrames.push_back(r);
         return r;
-    }*/
-    PushFrame& operator[](PFRef r);// { return (PushFrame&)RegionAllocator<uint32_t>::operator[](r.x); }
-    PushFrame* lea       (PFRef r);// { return (PushFrame*)RegionAllocator<uint32_t>::lea(r.x); }
-    PFRef      ael       (const PushFrame* t);// { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); return { r }; }
+    }
+    PushFrame& operator[](PFRef r) { return (PushFrame&)RegionAllocator<uint32_t>::operator[](r.x); }
+    PushFrame* lea       (PFRef r) { return (PushFrame*)RegionAllocator<uint32_t>::lea(r.x); }
+    PFRef      ael       (const PushFrame* t) { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); return { r }; }
 
 };
 

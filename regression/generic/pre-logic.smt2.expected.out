@@ -1,3 +1,14 @@
+success
+success
+success
+success
+success
+success
+success
+success
+success
+success
+success
 true
 quux
 Longer story
@@ -12,6 +23,11 @@ Longer story
 ( foo string 10 4075 1.23 2 ( ( ) bar ( :keyword ) ) )
 (error "No value for attr :non-existing-option")
 
+success
+success
+success
+success
+success
 (error "no value for info :foo")
 
 :error-behavior commit-adultery

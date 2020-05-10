@@ -12,8 +12,8 @@ class InterpolatingEgraph : public Egraph {
 public:
     InterpolatingEgraph(SMTConfig & c , Logic& l
     , vec<DedElem>& d) : Egraph{c,l,d}
-            , cgraph_            ( new CGraph( *this, config, l ) )
             , cgraph(nullptr)
+            , cgraph_( new CGraph( *this, config, l ) )
     {}
 
     virtual ~InterpolatingEgraph() override {

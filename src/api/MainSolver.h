@@ -133,6 +133,13 @@ class MainSolver
 
     FContainer root_instance; // Contains the root of the instance once simplifications are done
 
+    // helper private methods
+    PushFrame& getLastFrame() const { return pfstore[frames.last()]; }
+    bool isLastFrameUnsat() const { return getLastFrame().unsat; }
+    void rememberLastFrameUnsat() { getLastFrame().unsat = true; }
+
+
+
 
   public:
     MainSolver(THandler& thandler, SMTConfig& c, SimpSMTSolver *s, const char* name)

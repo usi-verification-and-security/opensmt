@@ -34,6 +34,7 @@ class RegionAllocator
     uint32_t  sz;
     uint32_t  cap;
     uint32_t  wasted_;
+    uint32_t  start_cap;
 
     void capacity(uint32_t min_cap);
 
@@ -45,11 +46,20 @@ class RegionAllocator
     enum { Ref_True = UINT32_MAX-2 };
     enum { Unit_Size = sizeof(uint32_t) };
 
-    explicit RegionAllocator(uint32_t start_cap = 1024*1024) : memory(NULL), sz(0), cap(0), wasted_(0){ capacity(start_cap); }
+    explicit RegionAllocator(uint32_t start_cap = 1024*1024) : memory(NULL), sz(0), cap(0), wasted_(0), start_cap(start_cap) { capacity(start_cap); }
     ~RegionAllocator()
     {
-        if (memory != NULL)
-            ::free(memory);
+        ::free(memory);
+    }
+
+    virtual void clear()
+    {
+        ::free(memory);
+        memory = nullptr;
+        sz = 0;
+        cap = 0;
+        wasted_ = 0;
+        capacity(start_cap);
     }
 
 

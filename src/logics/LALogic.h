@@ -134,17 +134,13 @@ public:
     virtual PTRef mkNumDiv(const vec<PTRef> &, char **);
     virtual  PTRef mkNumDiv(const vec<PTRef> &args);
     virtual  PTRef mkNumDiv(const PTRef nom, const PTRef den);
-    virtual PTRef mkNumLeq(const vec<PTRef> &, char **);
     virtual PTRef mkNumLeq(const vec<PTRef> &args);
     virtual PTRef mkNumLeq(const PTRef arg1, const PTRef arg2);
-    virtual PTRef mkNumGeq(const vec<PTRef> &, char **);
-    virtual PTRef mkNumGeq(const vec<PTRef> &args);
+    virtual PTRef mkNumGeq(const vec<PTRef> & args);
     virtual PTRef mkNumGeq(const PTRef arg1, const PTRef arg2);
-    virtual  PTRef mkNumLt(const vec<PTRef> &, char **);
-    virtual PTRef mkNumLt(const vec<PTRef> &args);
+    virtual PTRef mkNumLt(const vec<PTRef> & args);
     virtual  PTRef mkNumLt(const PTRef arg1, const PTRef arg2);
-    virtual PTRef mkNumGt(const vec<PTRef> &, char **);
-    virtual PTRef mkNumGt(const vec<PTRef> &args);
+    virtual PTRef mkNumGt(const vec<PTRef> & args);
     virtual PTRef mkNumGt(const PTRef arg1, const PTRef arg2);
 
     virtual bool isNegated(PTRef tr) const;
@@ -164,7 +160,7 @@ public:
     virtual char *printTerm(PTRef tr, bool l, bool s) const override;
 
     // MB: In pure LA, there are never nested boolean terms
-    virtual vec<PTRef> getNestedBoolRoots (PTRef tr)  const override { return vec<PTRef>(); }
+    virtual vec<PTRef> getNestedBoolRoots (PTRef)  const override { return vec<PTRef>(); }
 
 };
 // Determine for two multiplicative terms (* k1 v1) and (* k2 v2), v1 !=

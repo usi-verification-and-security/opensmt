@@ -2,6 +2,7 @@
 #define LABOUNDREFS_H
 #include "IntTypes.h"
 #include <ostream>
+#include <cassert>
 
 struct LABoundListRef
 {
@@ -11,7 +12,7 @@ struct LABoundListRef
     inline friend bool operator!= (const LABoundListRef& a1, const LABoundListRef& a2) { return a1.x != a2.x; }
 };
 
-static struct LABoundListRef LABoundListRef_Undef = {INT32_MAX};
+const struct LABoundListRef LABoundListRef_Undef = {INT32_MAX};
 
 struct BoundT {
     char t;
@@ -31,8 +32,8 @@ struct LABoundRef
     inline friend bool operator!= (const LABoundRef& a1, const LABoundRef& a2) { return a1.x != a2.x; }
 };
 
-static struct LABoundRef LABoundRef_Undef = {INT32_MAX};
-static struct LABoundRef LABoundRef_Infty = { 0 };
+const struct LABoundRef LABoundRef_Undef = {INT32_MAX};
+const struct LABoundRef LABoundRef_Infty = { 0 };
 
 struct LVRef {
     uint32_t x;
@@ -53,6 +54,6 @@ struct LVRefComp {
     bool operator()(LVRef a, LVRef b) const { return a.x < b.x; }
 };
 
-static struct LVRef LVRef_Undef = { INT32_MAX };
+const struct LVRef LVRef_Undef = { INT32_MAX };
 
 #endif

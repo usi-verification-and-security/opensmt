@@ -113,7 +113,7 @@ public:
     {
         learnts.push();
         vec<Lit>& learnt = learnts.last();
-        for (int i = 0; i < c.size(); i++)
+        for (unsigned i = 0; i < c.size(); i++)
             learnt.push(c[i]);
     }
 
@@ -295,7 +295,6 @@ public:
     bool    simplify     ();                        // Removes already satisfied clauses.
     void    declareVarsToTheories();                 // Declare the seen variables to the theories
     bool    solve        ( const vec< Lit > & assumps );                 // Search for a model that respects a given set of assumptions.
-    virtual bool  okay   () const;                  // FALSE means solver is in a conflicting state
     void    crashTest    (int, Var, Var);           // Stress test the theory solver
 
     void    toDimacs     (FILE* f, const vec<Lit>& assumps);            // Write CNF to file in DIMACS-format.
@@ -352,7 +351,7 @@ public:
     void        popBacktrackPoint  ( );
     void        reset              ( );
     inline void restoreOK          ( )       { ok = true; }
-    inline bool isOK               ( ) const { return ok; }
+    inline bool isOK               ( ) const { return ok; } // FALSE means solver is in a conflicting state
 
     template<class C>
     void     printSMTClause   ( ostream &, const C& );
@@ -590,6 +589,7 @@ protected:
     void     reduceDB         ();                                                      // Reduce the set of learnt clauses.
     void     removeSatisfied  (vec<CRef>& cs);                                         // Shrink 'cs' to contain only non-satisfied clauses.
     void     rebuildOrderHeap ();
+    lbool    zeroLevelConflictHandler();                                               // Common handling of zero-level conflict as it can happen at multiple places
 
     // Maintaining Variable/Clause activity:
     //
@@ -672,7 +672,7 @@ public:
     void     printClause      ( Clause& );
     //void     printClause      ( vec< Lit > & );
 
-	void   populateClauses  (vec<PTRef> & clauses, const vec<CRef> & crefs, int limit = std::numeric_limits<int>::max());
+	void   populateClauses  (vec<PTRef> & clauses, const vec<CRef> & crefs, unsigned int limit = std::numeric_limits<unsigned int>::max());
 	void   populateClauses  (vec<PTRef> & clauses, const vec<Lit> & lits);
 	char * printCnfClauses  ();
 	char * printCnfLearnts  ();
@@ -788,9 +788,7 @@ protected:
     //
     set< PTRef >     interface_equalities;       // To check that we do not duplicate eij
     set< PTRef >     atoms_seen;                 // Some interface equalities may already exists in the formula
-
-    int                next_it_i;                  // Next index i
-    int                next_it_j;                  // Next index j
+    
     //
     // Data structures required for incrementality, backtrackability
     //
@@ -1053,8 +1051,6 @@ inline bool     CoreSMTSolver::solve  (const vec<Lit>& assumps)
     return solve_() == l_True;
 }
 
-inline bool     CoreSMTSolver::okay   () const { return ok; }
-
 inline void     CoreSMTSolver::toDimacs(const char* file)
 {
     vec<Lit> as;
@@ -1122,7 +1118,7 @@ inline void CoreSMTSolver::printLit(Lit l)
 template<class C>
 inline void CoreSMTSolver::printClause(const C& c)
 {
-    for (int i = 0; i < c.size(); i++)
+    for (unsigned i = 0; i < c.size(); i++)
     {
         printLit(c[i]);
         fprintf(stderr, " ");
@@ -1130,7 +1126,7 @@ inline void CoreSMTSolver::printClause(const C& c)
 
     Logic& logic = theory_handler.getLogic();
     vec<PTRef> args;
-    for (int i = 0; i < c.size(); i++)
+    for (unsigned i = 0; i < c.size(); i++)
     {
         PTRef tr = sign(c[i]) ? logic.mkNot(theory_handler.varToTerm(var(c[i]))) : theory_handler.varToTerm(var(c[i]));
         args.push(tr);
@@ -1141,7 +1137,7 @@ inline void CoreSMTSolver::printClause(const C& c)
     free(clause);
 }
 
-inline void CoreSMTSolver::populateClauses(vec<PTRef> & clauses, const vec<CRef> & crefs, int limit)
+inline void CoreSMTSolver::populateClauses(vec<PTRef> & clauses, const vec<CRef> & crefs, unsigned int limit)
 {
 	Logic& logic = theory_handler.getLogic();
 	for (int i = 0; i < crefs.size(); i++) {
@@ -1150,7 +1146,7 @@ inline void CoreSMTSolver::populateClauses(vec<PTRef> & clauses, const vec<CRef>
 			continue;
 		}
 		vec<PTRef> literals;
-		for (int j = 0; j < clause.size(); j++) {
+		for (unsigned j = 0; j < clause.size(); j++) {
 			Lit& literal = clause[j];
 			Var v = var(literal);
 			PTRef ptr = theory_handler.varToTerm(v);
@@ -1202,7 +1198,7 @@ inline void CoreSMTSolver::printSMTClause( ostream & os, const C& c )
 {
     if ( c.size( ) == 0 ) os << "-";
     if ( c.size( ) > 1 ) os << "(or ";
-    for (int i = 0; i < c.size(); i++)
+    for (unsigned i = 0; i < c.size(); i++)
     {
         Var v = var(c[i]);
         if ( v <= 1 ) continue;

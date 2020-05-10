@@ -5,12 +5,13 @@ int
 main(int argc, char** argv)
 {
     SMTConfig c;
-    UFTheory uftheory(c);
-    THandler thandler(c, uftheory);
-    SimpSMTSolver solver(c, thandler);
-    MainSolver mainSolver(thandler, c, &solver);
+    UFTheory* uftheory = new UFTheory(c);
+    THandler* thandler = new THandler(*uftheory);
+    SimpSMTSolver* solver = new SimpSMTSolver(c, *thandler);
+    MainSolver* mainSolver_ = new MainSolver(*thandler, c, solver, "test solver");
+    MainSolver& mainSolver = *mainSolver_;
 
-    Logic& logic = thandler.getLogic();
+    Logic& logic = thandler->getLogic();
 
     PTRef v1 = logic.mkBoolVar("a");
     PTRef v2 = logic.mkBoolVar("b");

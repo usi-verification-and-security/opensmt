@@ -1,4 +1,4 @@
-add_library(sorts OBJECT SSort.C SStore.C)
+add_library(sorts OBJECT SSort.cc SStore.cc)
 
 install(FILES SSort.h SStore.h DESTINATION ${INSTALL_HEADERS_DIR})
 

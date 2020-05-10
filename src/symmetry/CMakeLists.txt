@@ -1,4 +1,4 @@
-add_library(symmetry STATIC Symmetry.h Symmetry.cpp)
+add_library(symmetry STATIC Symmetry.h Symmetry.cc)
 
 target_include_directories(symmetry
 PRIVATE "${CMAKE_SOURCE_DIR}"

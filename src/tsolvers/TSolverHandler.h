@@ -53,7 +53,7 @@ protected:
 
     Map<PTRef,PtAsgn,PTRefHash> substs;
 
-    TSolverHandler(SMTConfig &c, vec<DedElem> &d, Logic& l, TermMapper& tmap)
+    TSolverHandler(SMTConfig & c, vec<DedElem> & d, TermMapper & tmap)
         : config(c)
         , tmap(tmap)
         , deductions(d)

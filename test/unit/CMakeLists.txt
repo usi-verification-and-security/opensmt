@@ -2,7 +2,7 @@ include(GoogleTest)
 add_executable(LRATest)
 target_sources(LRATest 
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Rationals.cpp"
-    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Delta.cpp"
+#    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Delta.cpp"
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Matrix.cpp"
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Polynomial.cpp"
     )
@@ -91,3 +91,28 @@ target_sources(STPSolverTest
     )
 target_link_libraries(STPSolverTest api_static gtest gtest_main)
 gtest_add_tests(TARGET STPSolverTest)
+
+add_executable(SubstitutionBreakerTest)
+target_sources(SubstitutionBreakerTest
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_SubstitutionBreaker.cpp"
+    )
+
+target_link_libraries(SubstitutionBreakerTest api_static gtest gtest_main)
+gtest_add_tests(TARGET SubstitutionBreakerTest)
+
+add_executable(LogicMkTermsTest)
+target_sources(LogicMkTermsTest
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_LogicMkTerms.cc"
+    )
+
+target_link_libraries(LogicMkTermsTest api_static gtest gtest_main)
+gtest_add_tests(TARGET LogicMkTermsTest)
+
+add_executable(BoundTest)
+target_sources(BoundTest
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Bounds.cc"
+    )
+
+
+target_link_libraries(BoundTest api_static gtest gtest_main)
+gtest_add_tests(TARGET BoundTest)

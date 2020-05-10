@@ -27,10 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef LAVAR_H
 #define LAVAR_H
 
-#include "Deductions.h"
-#include "PtStructs.h"
 #include "LARefs.h"
-#include "Pterm.h"
 #include <vector>
 
 class LRASolver;
@@ -46,8 +43,12 @@ private:
 public:
     LAVarStore() {}
     LVRef  getNewVar();
-    inline void   clear() {};
-    int    numVars() const ;
+    inline void   clear() { lavars.clear(); }
+    std::size_t numVars() const ;
+
+    using const_iterator = decltype(lavars)::const_iterator;
+    const_iterator begin() const { return lavars.begin(); }
+    const_iterator end() const { return lavars.end(); }
 };
 
 

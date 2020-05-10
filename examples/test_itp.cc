@@ -4,7 +4,7 @@
 Opensmt*
 pre()
 {
-    Opensmt* osmt = new Opensmt(opensmt_logic::qf_bool);
+    Opensmt* osmt = new Opensmt(opensmt_logic::qf_uf, "test solver");
     return osmt;
 }
 
@@ -17,16 +17,6 @@ main(int argc, char** argv)
     MainSolver& mainSolver = osmt->getMainSolver();
     SimpSMTSolver& solver = osmt->getSolver();
     Logic& logic = osmt->getLogic();
-    
-
-    /*
-    SMTConfig c;
-    UFTheory uftheory(c);
-    THandler thandler(c, uftheory);
-    SimpSMTSolver solver(c, thandler);
-    MainSolver mainSolver(thandler, c, &solver);
-    Logic& logic = thandler.getLogic();
-    */
 
     const char* msg;
     c.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
@@ -49,8 +39,9 @@ main(int argc, char** argv)
     args2.push(neg_b);
     PTRef ass2 = logic.mkOr(args2);
 
-    mainSolver.push(ass1);
-    mainSolver.push(ass2);
+    char* msg2;
+    mainSolver.insertFormula(ass1, &msg2);
+    mainSolver.insertFormula(ass2, &msg2);
 
     // Check
     sstat r = mainSolver.check();
@@ -60,7 +51,7 @@ main(int argc, char** argv)
     else if (r == s_False)
     {
         printf("unsat\n");
-
+#ifdef PRODUCE_PROOF
         // Set labeling function
         c.setOption(SMTConfig::o_itp_bool_alg, SMTOption(0), msg);
 
@@ -83,9 +74,10 @@ main(int argc, char** argv)
         vector<PTRef> itps;
         solver.getSingleInterpolant(itps, mask);
         cerr << ";Interpolant:\n;" << logic.printTerm(itps[0]) << endl;
+#endif // PRODUCE_PROOF
     }
     else if (r == s_Undef)
-        printf("unknowon\n");
+        printf("unknown\n");
     else
         printf("error\n");
 
