@@ -6,19 +6,19 @@ int
 main(int argc, char** argv)
 {
     SMTConfig c;
-    CUFTheory cuftheory(c);
-    THandler thandler(c, cuftheory);
-    SimpSMTSolver solver(c, thandler);
-    MainSolver mainSolver(thandler, c, &solver);
+    CUFTheory* cuftheory = new CUFTheory(c);
+    THandler* thandler = new THandler(*cuftheory);
+    SimpSMTSolver* solver = new SimpSMTSolver(c, *thandler);
+    MainSolver* mainSolver_ = new MainSolver(*thandler, c, solver, "test solver");
+    MainSolver& mainSolver = *mainSolver_;
+    BVLogic& logic = cuftheory->getLogic();
 
-    BVLogic& logic = cuftheory.getLogic();
-
-    PTRef a = logic.mkNumVar("a");
-    PTRef b = logic.mkNumVar("b");
+    PTRef a = logic.mkBVNumVar("a");
+    PTRef b = logic.mkBVNumVar("b");
     PTRef ab = logic.mkBVBwAnd(a, b);
 
-    PTRef d = logic.mkNumVar("b");
-    PTRef f = logic.mkNumVar("a");
+    PTRef d = logic.mkBVNumVar("b");
+    PTRef f = logic.mkBVNumVar("a");
     PTRef ba = logic.mkBVBwAnd(d, f);
 
 
@@ -26,11 +26,11 @@ main(int argc, char** argv)
     PTRef eq = logic.mkBVEq(ab,ba);
     PTRef eq_neg = logic.mkBVNot(eq);
 
-    SolverId id = { 5 };
     vec<PtAsgn> asgns;
     vec<DedElem> deds;
     vec<PTRef> foo;
 
+    SolverId id = {42};
     BitBlaster bbb(id, c, mainSolver, logic, asgns, deds, foo);
     BVRef output;
 

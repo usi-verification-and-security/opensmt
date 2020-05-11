@@ -410,7 +410,7 @@ public:
 
         elr = to.alloc(el);
         to.referenced_by.push();
-        assert(to.referenced_by.size() == to[elr].getId()+1);
+        assert(static_cast<unsigned int>(to.referenced_by.size()) == to[elr].getId()+1);
 
         // copy referers from old allocator to new
         vec<ERef>& referers = referenced_by[el.getId()];

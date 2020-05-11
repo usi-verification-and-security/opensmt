@@ -128,15 +128,13 @@ protected:
 
     std::unique_ptr<Polynomial> expressionToLVarPoly(PTRef term);
 
-    unsigned nVars() const;// { return lva.getNumVars(); }
-
     opensmt::Number getNum(PTRef);
 
     LVRef getLAVar_single(PTRef term);                      // Initialize a new LA var if needed, otherwise return the old var
     bool hasVar(PTRef expr);
     LVRef getVarForLeq(PTRef ref)  const  { return laVarMapper.getVarByLeqId(logic.getPterm(ref).getId()); }
     LVRef getVarForTerm(PTRef ref) const  { return laVarMapper.getVarByPTId(logic.getPterm(ref).getId()); }
-    virtual void notifyVar(LVRef v) {}                             // Notify the solver of the existence of the var. This is so that LIA can add it to integer vars list.
+    virtual void notifyVar(LVRef) {}                             // Notify the solver of the existence of the var. This is so that LIA can add it to integer vars list.
     void getConflictingBounds( LVRef, vec<PTRef> & );       // Returns the bounds conflicting with the actual model
     void getDeducedBounds( const Delta& c, BoundT, vec<PtAsgn_reason>& dst, SolverId solver_id ); // find possible deductions by value c
     void getDeducedBounds( BoundT, vec<PtAsgn_reason>& dst, SolverId solver_id );                 // find possible deductions for actual bounds values
@@ -159,9 +157,6 @@ protected:
 //    bool isModelOutOfBounds(LVRef v) const;
 
     opensmt::Real evaluateTerm(PTRef tr);
-
-    // Bounds system
-    vec<LABoundRefPair> ptermToLABoundRefs;
 
     LASolverStatus status;                  // Internal status of the solver (different from bool)
 

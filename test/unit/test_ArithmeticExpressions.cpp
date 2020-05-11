@@ -44,7 +44,6 @@ TEST_F(ArithmeticExpressions_test, test_Sum_Ignore_Zeros)
 
 TEST_F(ArithmeticExpressions_test, test_One_Arg_Multiplication)
 {
-    PTRef zero = logic.mkConst("0");
     PTRef two = logic.mkConst("2");
     PTRef one = logic.mkConst("1");
     PTRef a = logic.mkNumVar("a");
@@ -93,7 +92,6 @@ TEST_F(ArithmeticExpressions_test, test_Sum_Single_Arg_Nested)
 {
     PTRef a = logic.mkNumVar("a");
     PTRef two = logic.mkConst("2");
-    PTRef zero = logic.mkConst("0");
     PTRef times = logic.mkNumTimes(a,two);
     vec<PTRef> args;
     args.push(times);
@@ -121,7 +119,6 @@ TEST_F(ArithmeticExpressions_test, test_Simple_Leq)
     PTRef a = logic.mkNumVar("a");
     PTRef zero = logic.mkConst("0");
     PTRef res = logic.mkNumLeq(zero, a);
-    const Pterm& term = logic.getPterm(res);
     ASSERT_EQ(logic.getSymRef(res),logic.get_sym_Num_LEQ());
     ASSERT_EQ(logic.getPterm(res)[0], zero);
     ASSERT_EQ(logic.getPterm(res)[1], a);
@@ -133,7 +130,6 @@ TEST_F(ArithmeticExpressions_test, test_Simple_Leq_Two_Vars)
     PTRef b = logic.mkNumVar("b");
     PTRef zero = logic.mkConst("0");
     PTRef res = logic.mkNumLeq(b, a);
-    const Pterm& term = logic.getPterm(res);
     ASSERT_EQ(logic.getSymRef(res),logic.get_sym_Num_LEQ());
     ASSERT_EQ(logic.getPterm(res)[0], zero);
 }
@@ -144,7 +140,6 @@ TEST_F(ArithmeticExpressions_test, test_Simple_Leq_Two_Vars2)
     PTRef b = logic.mkNumVar("b");
     PTRef zero = logic.mkConst("0");
     PTRef res = logic.mkNumLeq(a, b);
-    const Pterm& term = logic.getPterm(res);
     ASSERT_EQ(logic.getSymRef(res),logic.get_sym_Num_LEQ());
     ASSERT_EQ(logic.getPterm(res)[0], zero);
 }
@@ -161,7 +156,6 @@ TEST_F(ArithmeticExpressions_test, test_mkNumNeg)
 
 TEST_F(ArithmeticExpressions_test, test_Inequality_Var_WithCoeff)
 {
-    PTRef one = logic.getTerm_NumOne();
     PTRef a = logic.mkNumVar("a");
     PTRef minus = logic.mkNumNeg(a);
     PTRef leq = logic.mkNumLeq(minus, a);

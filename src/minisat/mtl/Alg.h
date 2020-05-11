@@ -35,9 +35,9 @@ template<class V, class T>
 static inline void remove(V& ts, const T& t)
 {
     int j = 0;
-    for (; j < ts.size() && ts[j] != t; j++);
-    assert(j < ts.size());
-    for (; j < ts.size()-1; j++) ts[j] = ts[j+1];
+    for (; j < static_cast<int>(ts.size()) && ts[j] != t; j++);
+    assert(j < static_cast<int>(ts.size()));
+    for (; j < static_cast<int>(ts.size())-1; j++) ts[j] = ts[j+1];
     ts.pop();
 }
 
@@ -46,8 +46,8 @@ template<class V, class T>
 static inline bool find(V& ts, const T& t)
 {
     int j = 0;
-    for (; j < ts.size() && ts[j] != t; j++);
-    return j < ts.size();
+    for (; j < static_cast<int>(ts.size()) && ts[j] != t; j++);
+    return j < static_cast<int>(ts.size());
 }
 
 

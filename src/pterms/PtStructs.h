@@ -78,7 +78,7 @@ class ValPair
 public:
     PTRef tr;
     char* val;
-    ValPair() : tr(PTRef_Undef), val(NULL) {}
+    ValPair() : tr(PTRef_Undef), val(nullptr) {}
     ~ValPair();/* {
         if (val != NULL)
             free(val);

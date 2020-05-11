@@ -2,18 +2,19 @@ add_library(tsolvers OBJECT "" stpsolver/STPStore.h stpsolver/STPMapper.h stpsol
 
 target_sources(tsolvers
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Deductions.h"
-PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Deductions.C"
+PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Deductions.cc"
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/TSolverHandler.h"
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/TSolver.h"
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/TResult.h"
-PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/CUFTHandler.C"
-PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LRATHandler.C"
-PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LIATHandler.C"
-PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/THandler.C"
-PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/TSolverHandler.C"
-PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/UFLRATHandler.C"
-PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/UFTHandler.C"
-PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/TSolver.C"
+PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/CUFTHandler.cc"
+PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LRATHandler.cc"
+PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/RDLTHandler.cc"
+PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LIATHandler.cc"
+PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/THandler.cc"
+PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/TSolverHandler.cc"
+PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/UFLRATHandler.cc"
+PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/UFTHandler.cc"
+PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/TSolver.cc"
 )
 
 if(VERBOSE_EUF)
@@ -31,7 +32,7 @@ include(bvsolver/CMakeLists.txt)
 include(liasolver/CMakeLists.txt)
 include(stpsolver/CMakeLists.txt)
 
-install(FILES Deductions.h UFTHandler.h CUFTHandler.h LRATHandler.h LIATHandler.h TSolver.h THandler.h
+install(FILES Deductions.h UFTHandler.h CUFTHandler.h LRATHandler.h LIATHandler.h RDLTHandler.h TSolver.h THandler.h
 TSolverHandler.h TResult.h
 DESTINATION ${INSTALL_HEADERS_DIR})
 

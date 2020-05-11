@@ -85,7 +85,7 @@ protected:
         vec<SRef> args;
         args.push(ufsort);
         args.push(ufsort);
-        f = logic.newSymb("f", args, nullptr);
+        f = logic.newSymb("f", args);
     }
     SMTConfig config;
     Logic logic;
@@ -162,7 +162,7 @@ protected:
         vec<SRef> args;
         args.push(ufsort);
         args.push(ufsort);
-        f = logic.newSymb("f", args, nullptr);
+        f = logic.newSymb("f", args);
     }
     SMTConfig config;
     Logic logic;

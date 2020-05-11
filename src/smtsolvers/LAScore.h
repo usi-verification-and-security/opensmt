@@ -165,7 +165,7 @@ private:
     vec<DoubleVal> LAexacts;
     double cached_score;
     double computeScoreFromClauses(const vec<CRef>& clauses, const LookaheadSMTSolver *solver);
-    bool current(const DoubleVal &e) const { return latest_round == e.getRound(); }
+    bool current(const DoubleVal &e) const { return latest_round == static_cast<unsigned int>(e.getRound()); }
 public:
     explicit LookaheadScoreDeep(const vec<lbool> &assigns, const SMTConfig &c)
             : LookaheadScore(assigns), base_score_round(-1)

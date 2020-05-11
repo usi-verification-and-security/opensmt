@@ -13,30 +13,28 @@ int
 main(int argc, char** argv)
 {
     SMTConfig c;
-    CUFTheory cuftheory(c);
-    THandler thandler(c, cuftheory);
-    SimpSMTSolver solver(c, thandler);
-    MainSolver mainSolver(thandler, c, &solver);
-    CUFLogic& logic = cuftheory.getLogic();
+    CUFTheory* cuftheory = new CUFTheory(c);
+    THandler* thandler = new THandler(*cuftheory);
+    SimpSMTSolver* solver = new SimpSMTSolver(c, *thandler);
+    MainSolver* mainSolver = new MainSolver(*thandler, c, solver, "test solver");
+    CUFLogic& logic = cuftheory->getLogic();
 
     BVLogic bvlogic(c);
 
-    //PTRef eq = logic.mkEq(yz,zy);   //for all
-    //PTRef eq_neg = logic.mkNot(eq); // the negation of formula
-
-    PTRef y_bb = bvlogic.mkNumVar("y");
-    PTRef z_bb = bvlogic.mkNumVar("z");
+    PTRef y_bb = bvlogic.mkBVNumVar("y");
+    PTRef z_bb = bvlogic.mkBVNumVar("z");
     PTRef yz_bb = bvlogic.mkBVBwAnd(y_bb, z_bb);
 
-    PTRef z2_bb = bvlogic.mkNumVar("z");
-    PTRef y2_bb = bvlogic.mkNumVar("y");
+    PTRef z2_bb = bvlogic.mkBVNumVar("z");
+    PTRef y2_bb = bvlogic.mkBVNumVar("y");
     PTRef zy_bb = bvlogic.mkBVBwAnd(z2_bb, y2_bb);
 
-    PTRef eq_bb = bvlogic.mkEq(yz_bb, zy_bb);
+    PTRef eq_bb = bvlogic.mkBVEq(yz_bb, zy_bb);
     PTRef eq_bb_neg = bvlogic.mkBVNot(eq_bb);
+    // MB: TODO: How to turn BVsort to boolean?
 
-    mainSolver.push(eq_bb_neg);
-    sstat r = mainSolver.check();
+    mainSolver->push(eq_bb_neg);
+    sstat r = mainSolver->check();
 
     if (r == s_True)
         printf("sat\n");
