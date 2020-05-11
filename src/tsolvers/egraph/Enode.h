@@ -207,8 +207,6 @@ struct ERef_vecEq {
         return true; }
 };
 
-// MB: The data structures used in the satisfiability checking algorithm (UseVector) requires at the moment that
-// the values of ERef cannot exceed 2^30. The benchmarks that we are dealing with at the moment are far below this limit.
 class EnodeAllocator : public RegionAllocator<uint32_t>
 {
     enodeid_t n_enodes;
@@ -238,13 +236,16 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
     }
 
     // For terms and lists
-    ERef alloc(ERef car, ERef cdr, Enode::en_type t, PTRef ptr)
-    {
+    ERef alloc(ERef car, ERef cdr, Enode::en_type t, PTRef ptr) {
         static_assert(sizeof(SymRef) == sizeof(uint32_t), "Expected size of types does not match");
         static_assert(sizeof(ERef)   == sizeof(uint32_t), "Expected size of types does not match");
 
         assert(t == Enode::et_list || t == Enode::et_term);
         uint32_t v = RegionAllocator<uint32_t>::alloc(t == Enode::et_list ? listEnodeWord32Size() : termEnodeWord32Size());
+        // MB: The data structures used in the satisfiability checking algorithm (UseVector) requires at the moment that
+        // the values of ERef cannot exceed 2^30. The benchmarks that we are dealing with at the moment are far below this limit,
+        // but here is a dynamic check just in case.
+        if (v >= (static_cast<uint32_t>(-1) >> 2)) { throw OutOfMemoryException(); }
         ERef eid;
         eid.x = v;
         assert(t != Enode::et_list || ptr == PTRef_Undef);
