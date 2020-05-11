@@ -45,16 +45,22 @@ TEST_F(LogicMkTermsTest, test_Distinct){
     distinct = logic.mkDistinct(args);
     ASSERT_EQ(distinct, logic.getTerm_false());
 
+
+
+    args.clear();
+    args.push(x);
+    args.push(y);
+    distinct = logic.mkDistinct(args);
+    // MB: dinstinct(x,y) is equivalent to not equal(x,y) and the second version is preferred
+    ASSERT_TRUE(logic.isNot(distinct) && logic.isEquality(logic.getPterm(distinct)[0]));
+
     PTRef b1 = logic.mkBoolVar("b1");
     PTRef b2 = logic.mkBoolVar("b2");
+    PTRef b3 = logic.mkBoolVar("b3");
 
     args.clear();
     args.push(b1);
     args.push(b2);
-    distinct = logic.mkDistinct(args);
-    ASSERT_TRUE(logic.isXor(distinct));
-
-    PTRef b3 = logic.mkBoolVar("b3");
     args.push(b3);
     distinct = logic.mkDistinct(args);
     ASSERT_EQ(distinct, logic.getTerm_false());
