@@ -38,7 +38,7 @@ using namespace opensmt;
 class CoreSMTSolver;
 class Proof;
 class Logic;
-class SMTConfig;
+struct SMTConfig;
 
 typedef unsigned clauseid_t;
 
@@ -135,18 +135,15 @@ struct InterpolData
 struct ProofNode
 {
     ProofNode            (Logic& _logic)
-    : clause     (NULL)
-    , pivot      (-1)
-    , ant1       (NULL)
-    , ant2       (NULL)
-    , resolvents ()
-    , i_data     (NULL)
-    , logic   (_logic)
+    : logic   (_logic)
+    , clause     (nullptr)
     , clause_ref (CRef_Undef)
-    {
-        clause = NULL;
-        i_data = NULL;
-    }
+    , pivot      (-1)
+    , ant1       (nullptr)
+    , ant2       (nullptr)
+    , resolvents ()
+    , i_data     (nullptr)
+    { }
 
     ~ProofNode ( )
     {
@@ -266,7 +263,7 @@ private:
     ProofNode *        ant2;               // Edges to antecedents
     set< clauseid_t  > resolvents;         // Resolvents
     clause_type        type;               // Node type
-    InterpolData*       i_data;               // Data for interpolants computation
+    InterpolData*      i_data;             // Data for interpolants computation
 };
 
 
@@ -282,11 +279,11 @@ public:
 : config   ( c )
 , solver   ( s )
 , theory ( th )
-, thandler {new THandler(c, th)}
+, proof	   ( t )
 , logic_ ( th.getLogic() )
+, thandler {new THandler(th)}
 , graph_   ( new vector<ProofNode*> )
 , graph    ( *graph_ )
-, proof	   ( t )
 #ifdef FULL_LABELING
 , vars_suggested_color_map ( NULL )
 #endif
@@ -324,6 +321,7 @@ public:
     bool verifyTreeInterpolantsFromLeaves   ( opensmt::InterpolationTree*, vec<PTRef> &);
 
     void produceMultipleInterpolants        ( const vec< ipartitions_t >&, vec<PTRef> &);
+    void produceMultipleInterpolants        ( const std::vector< ipartitions_t >&, vec<PTRef> &);
     void produceSingleInterpolant           (vec<PTRef>& interpolants);
     void produceSingleInterpolant           (vec<PTRef>& interpolants, const ipartitions_t& A_mask);
     void printProofAsDotty                  ( ostream &, ipartitions_t ip = 0);

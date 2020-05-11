@@ -4,7 +4,7 @@
 Opensmt*
 pre()
 {
-    Opensmt* osmt = new Opensmt(opensmt_logic::qf_lra);
+    Opensmt* osmt = new Opensmt(opensmt_logic::qf_lra, "test solver");
     return osmt;
 }
 
@@ -27,8 +27,8 @@ main(int argc, char** argv)
     // assertion (<= -1 0)
     vec<PTRef> leq_args;
     leq_args.push(cons);
-    leq_args.push(logic.getTerm_RealZero());
-    PTRef le1 = logic.mkRealLeq(leq_args);
+    leq_args.push(logic.getTerm_NumZero());
+    PTRef le1 = logic.mkNumLeq(leq_args);
 
     mainSolver.push(le1);
 
@@ -42,7 +42,7 @@ main(int argc, char** argv)
         printf("unsat\n");
     }
     else if (r == s_Undef)
-        printf("unknowon\n");
+        printf("unknown\n");
     else
         printf("error\n");
 

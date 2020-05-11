@@ -37,16 +37,11 @@ class THandler
 private:
     Theory             &theory;
     TermMapper         &tmap;                     // Mappings between TRefs and Lits
-#ifdef PEDANTIC_DEBUG
-public:
-#endif
-    SMTConfig          &config;                   // Reference to configuration, needed for PRODUCE_PROOF
 public:
 
-    THandler ( SMTConfig& c, Theory& tsh)
+    THandler(Theory & tsh)
     : theory             (tsh)
     , tmap               (tsh.getTmap())
-    , config             (c)
     , checked_trail_size (0)
     { }
 
@@ -61,18 +56,16 @@ public:
     const TSolverHandler& getSolverHandler() const;// { return theory.getTSolverHandler(); }
     TermMapper&           getTMap()      ;//          { return tmap; }
 
-#ifdef PEDANTIC_DEBUG
-    void    getConflict          ( vec<Lit>&, vec<VarData>&, int &, vec<Lit>& ); // Returns theory conflict in terms of literals
-#else
     void    getConflict          ( vec<Lit>&, vec<VarData>&, int & ); // Returns theory conflict in terms of literals
     void    getNewSplits         ( vec<Lit>& ); // Return the new splits as a vector of literals that needs to be interpreted as a clause.
-#endif
+
 #ifdef PRODUCE_PROOF
     PTRef getInterpolant         (const ipartitions_t&, map<PTRef, icolor_t>*);
 #endif
     Lit     getDeduction         ();                      // Returns a literal that is implied by the current state and the reason literal
     Lit     getSuggestion        ( );                     // Returns a literal that is suggested by the current state
     void    getReason            ( Lit, vec< Lit > &);    // Returns the explanation for a deduced literal
+    PTRef   getSubstitution     (PTRef tr);               // Returns the substituted term, or PTRef_Undef if this term was not substituted
 
     ValPair getValue          (PTRef tr) const ;//{ return getSolverHandler().getValue(tr); };
 

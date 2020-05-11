@@ -8,8 +8,8 @@
 
 add_library(parsers OBJECT "")
 
-find_package(BISON 2.7)
-find_package(FLEX)
+find_package(BISON 3.0 REQUIRED)
+find_package(FLEX REQUIRED)
 
 BISON_TARGET(smt2newParser smt2newparser.yy ${CMAKE_CURRENT_BINARY_DIR}/smt2newparser.cc)
 FLEX_TARGET(smt2newScanner smt2newlexer.ll ${CMAKE_CURRENT_BINARY_DIR}/smt2newlexer.cc)
@@ -21,6 +21,8 @@ target_sources(parsers
     PRIVATE ${BISON_smt2newParser_OUTPUTS}
     PRIVATE ${FLEX_smt2newScanner_OUTPUTS}
 )
+
+target_compile_options(parsers PRIVATE -Wno-error)
 
 install(FILES smt2newcontext.h
 DESTINATION ${INSTALL_HEADERS_DIR})

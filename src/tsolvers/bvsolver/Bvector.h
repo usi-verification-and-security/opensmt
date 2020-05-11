@@ -133,7 +133,7 @@ class BvectorAllocator : public RegionAllocator<uint32_t>
         to.n_terms = n_terms;
         RegionAllocator<uint32_t>::moveTo(to); }
 
-    BVRef alloc(const vec<PTRef>& names, const vec<PTRef>& asgn, PTRef act_var, bool extra = false)
+    BVRef alloc(const vec<PTRef> & names, const vec<PTRef> & asgn, PTRef act_var)
     {
         assert(sizeof(PTRef) == sizeof(uint32_t));
         assert(names.size() == asgn.size());
@@ -149,7 +149,7 @@ class BvectorAllocator : public RegionAllocator<uint32_t>
         return tid;
     }
 
-    BVRef alloc(Bvector&, bool) { assert(false); return BVRef_Undef; }
+    BVRef alloc(Bvector&, bool) = delete;
 
     // Deref, Load Effective Address (LEA), Inverse of LEA (AEL):
     Bvector&       operator[](BVRef r)         { return (Bvector&)RegionAllocator<uint32_t>::operator[](r.x); }
@@ -164,18 +164,18 @@ class BvectorAllocator : public RegionAllocator<uint32_t>
         RegionAllocator<uint32_t>::free(ptermWord32Size(t.size()));
     }
 
-    void reloc(BVRef& tr, BvectorAllocator& to)
-    {
-        Bvector& t = operator[](tr);
-
-        if (t.reloced()) { tr = t.relocation(); return; }
-
-        tr = to.alloc(t, false);
-        t.relocate(tr);
-
-        // Copy extra data-fields:
-        to[tr].set_signed(t.is_signed());
-    }
+//    void reloc(BVRef& tr, BvectorAllocator& to)
+//    {
+//        Bvector& t = operator[](tr);
+//
+//        if (t.reloced()) { tr = t.relocation(); return; }
+//
+//        tr = to.alloc(t, false);
+//        t.relocate(tr);
+//
+//        // Copy extra data-fields:
+//        to[tr].set_signed(t.is_signed());
+//    }
     friend class BVStore;
 };
 #endif

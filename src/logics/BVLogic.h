@@ -194,54 +194,42 @@ class BVLogic: public CUFLogic
 
 
     PTRef mkBVNeg(const vec<PTRef>& args) { assert(args.size() == 1); return mkBVNeg(args[0]); }
-    PTRef mkBVNeg(PTRef, char**);
-    PTRef mkBVNeg(PTRef tr) {char* msg; PTRef trn = mkBVNeg(tr, &msg); assert(trn != PTRef_Undef); return trn; }
+    PTRef mkBVNeg(PTRef);
 
-    PTRef mkBVMinus(const vec<PTRef>&, char**);
-    PTRef mkBVMinus(const vec<PTRef>& args) { char *msg; PTRef tr = mkBVMinus(args, &msg); assert(tr != PTRef_Undef); return tr; }
+    PTRef mkBVMinus(const vec<PTRef>&);
     PTRef mkBVMinus(const PTRef a1, const PTRef a2) { vec<PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkBVMinus(tmp); }
 
     PTRef mkBVPlus(const vec<PTRef>& args) { assert(args.size() == 2); return mkBVPlus(args[0], args[1]); }
-    PTRef mkBVPlus(const PTRef arg1, const PTRef arg2, char**);
-    PTRef mkBVPlus(const PTRef arg1, const PTRef arg2) { char *msg; PTRef tr = mkBVPlus(arg1, arg2, &msg); assert(tr != PTRef_Undef); return tr; }
+    PTRef mkBVPlus(const PTRef arg1, const PTRef arg2);
 
     PTRef mkBVTimes(const vec<PTRef>& args) {assert(args.size() == 2); return mkBVTimes(args[0], args[1]);}
-    PTRef mkBVTimes(const PTRef, const PTRef, char**);
-    PTRef mkBVTimes(const PTRef arg1, const PTRef arg2) { char *msg; PTRef tr = mkBVTimes(arg1, arg2, &msg); assert(tr != PTRef_Undef); return tr; }
+    PTRef mkBVTimes(const PTRef, const PTRef);
 
     PTRef mkBVDiv(const vec<PTRef>& args) {assert(args.size() == 2); return mkBVDiv(args[0], args[1]);}
     PTRef mkBVDiv(const PTRef nom, const PTRef den);
 
-    PTRef mkBVSleq(const PTRef arg1, const PTRef arg2, char**);
-    PTRef mkBVSleq(const PTRef arg1, const PTRef arg2) { char* msg; return mkBVSleq(arg1, arg2, &msg); }
+    PTRef mkBVSleq(const PTRef arg1, const PTRef arg2);
     PTRef mkBVSleq(const vec<PTRef>& args) {assert(args.size() == 2); return mkBVSleq(args[0], args[1]);}
 
-    PTRef mkBVUleq(const PTRef arg1, const PTRef arg2, char**);
-    PTRef mkBVUleq(const PTRef arg1, const PTRef arg2) { char *msg; return mkBVUleq(arg1, arg2, &msg); }
+    PTRef mkBVUleq(const PTRef arg1, const PTRef arg2);
     PTRef mkBVUleq(const vec<PTRef>& args) {assert(args.size() == 2); return mkBVUleq(args[0], args[1]);}
 
-    PTRef mkBVSlt(const PTRef arg1, const PTRef arg2, char**);
-    PTRef mkBVSlt(const PTRef arg1, const PTRef arg2) { char* msg; return mkBVSlt(arg1, arg2, &msg); }
+    PTRef mkBVSlt(const PTRef arg1, const PTRef arg2);
     PTRef mkBVSlt(const vec<PTRef>& args) {assert(args.size() == 2); return mkBVSlt(args[0], args[1]);}
 
-    PTRef mkBVUlt(const PTRef arg1, const PTRef arg2, char**);
-    PTRef mkBVUlt(const PTRef arg1, const PTRef arg2) { char *msg; return mkBVUlt(arg1, arg2, &msg); }
+    PTRef mkBVUlt(const PTRef arg1, const PTRef arg2);
     PTRef mkBVUlt(const vec<PTRef>& args) {assert(args.size() == 2); return mkBVUlt(args[0], args[1]);}
 
-    PTRef mkBVSgeq(const PTRef arg1, const PTRef arg2, char**);
-    PTRef mkBVSgeq(const PTRef arg1, const PTRef arg2) { char* msg; return mkBVSgeq(arg1, arg2, &msg); }
+    PTRef mkBVSgeq(const PTRef arg1, const PTRef arg2);
     PTRef mkBVSgeq(const vec<PTRef>& args) { assert(args.size() == 2); return mkBVSgeq(args[0], args[1]); }
 
-    PTRef mkBVUgeq(const PTRef arg1, const PTRef arg2, char**);
-    PTRef mkBVUgeq(const PTRef arg1, const PTRef arg2) { char* msg; return mkBVUgeq(arg1, arg2, &msg); }
+    PTRef mkBVUgeq(const PTRef arg1, const PTRef arg2);
     PTRef mkBVUgeq(const vec<PTRef>& args) { assert(args.size() == 2); return mkBVUgeq(args[0], args[1]); }
 
-    PTRef mkBVSgt(const PTRef arg1, const PTRef arg2, char** tmp);
-    PTRef mkBVSgt(const PTRef arg1, const PTRef arg2) { char* msg; return mkBVSgt(arg1, arg2, &msg); }
+    PTRef mkBVSgt(const PTRef arg1, const PTRef arg2);
     PTRef mkBVSgt(const vec<PTRef>& args) { assert(args.size() == 2); return mkBVSgt(args[0], args[1]); }
 
-    PTRef mkBVUgt(const PTRef arg1, const PTRef arg2, char** tmp);
-    PTRef mkBVUgt(const PTRef arg1, const PTRef arg2) { char* msg; return mkBVUgt(arg1, arg2, &msg); }
+    PTRef mkBVUgt(const PTRef arg1, const PTRef arg2);
     PTRef mkBVUgt(const vec<PTRef>& args) { assert(args.size() == 2); return mkBVUgt(args[0], args[1]); }
 
 

@@ -138,6 +138,7 @@ public:
     MId getNewMatrix(int rows, int cols) { matrices.push(LAMatrix(vs.getNewVec(rows*cols), rows, cols)); return MId{matrices.size_()-1}; }
     MId getNewMatrix(LAVecRef v); // Initialize a (n x 1) matrix from the contents of size n vector v
     LAMatrix& operator[] (MId i) { return matrices[i.x]; }
+    const LAMatrix& operator[] (MId i) const { return matrices[i.x]; }
     // Set Matrix t to contain values that are equal to those of s.  t and s need to agree on dimensions.
     void setMatrix(MId t, MId s) {
         assert(operator[](t).nRows() == operator[](s).nRows());

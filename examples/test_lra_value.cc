@@ -4,7 +4,7 @@
 Opensmt*
 pre()
 {
-    Opensmt* osmt = new Opensmt(opensmt_logic::qf_lra);
+    Opensmt* osmt = new Opensmt(opensmt_logic::qf_lra, "Test solver");
     return osmt;
 }
 void
@@ -22,35 +22,26 @@ main(int argc, char** argv)
     SimpSMTSolver& solver = osmt->getSolver();
     LRALogic& logic = osmt->getLRALogic();
 
-    /*
-    SMTConfig c;
-    UFTheory uftheory(c);
-    THandler thandler(c, uftheory);
-    SimpSMTSolver solver(c, thandler);
-    MainSolver mainSolver(thandler, c, &solver);
-    Logic& logic = thandler.getLogic();
-    */
-
     const char* msg;
     c.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
 
     // Let's build two assertions
 
     // Create vars
-    PTRef x1 = logic.mkRealVar("x1");
-    PTRef x2 = logic.mkRealVar("x2");
-    PTRef x3 = logic.mkRealVar("x3");
-    PTRef x4 = logic.mkRealVar("x4");
+    PTRef x1 = logic.mkNumVar("x1");
+    PTRef x2 = logic.mkNumVar("x2");
+    PTRef x3 = logic.mkNumVar("x3");
+    PTRef x4 = logic.mkNumVar("x4");
 
     // First assertion (and (<= x1 x2) (<= x3 x4))
     vec<PTRef> leq_args;
     leq_args.push(x1);
     leq_args.push(x2);
-    PTRef le1 = logic.mkRealLeq(leq_args);
+    PTRef le1 = logic.mkNumLeq(leq_args);
     leq_args.clear();
     leq_args.push(x3);
     leq_args.push(x4);
-    PTRef le2 = logic.mkRealLeq(leq_args);
+    PTRef le2 = logic.mkNumLeq(leq_args);
     vec<PTRef> args1;
     args1.push(le1);
     args1.push(le2);
@@ -60,11 +51,11 @@ main(int argc, char** argv)
     leq_args.clear();
     leq_args.push(x2);
     leq_args.push(x3);
-    PTRef le3 = logic.mkRealLeq(leq_args);
+    PTRef le3 = logic.mkNumLeq(leq_args);
     leq_args.clear();
     leq_args.push(x4);
     leq_args.push(logic.mkConst("2"));
-    PTRef l4 = logic.mkRealLt(leq_args);
+    PTRef l4 = logic.mkNumLt(leq_args);
     vec<PTRef> args2;
     args2.push(le3);
     args2.push(l4);
@@ -100,7 +91,7 @@ main(int argc, char** argv)
     else if (r == s_False)
     {
         printf("unsat\n");
-
+#ifdef PRODUCE_PROOF
         // Set labeling function
         c.setOption(SMTConfig::o_itp_bool_alg, SMTOption(0), msg);
 
@@ -123,9 +114,10 @@ main(int argc, char** argv)
         vector<PTRef> itps;
         solver.getSingleInterpolant(itps, mask);
         cerr << ";Interpolant:\n;" << logic.printTerm(itps[0]) << endl;
+#endif // PRODUCE_PROOF
     }
     else if (r == s_Undef)
-        printf("unknowon\n");
+        printf("unknown\n");
     else
         printf("error\n");
 

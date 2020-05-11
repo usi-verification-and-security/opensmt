@@ -38,12 +38,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 class SStore;
 struct SMTConfig;
 
-// For breaking substitution loops
-struct NStatus { uint32_t x; bool operator== (const NStatus& o) const { return o.x == x; } };
-const static NStatus ns_inStack  = {0};
-const static NStatus ns_complete = {1};
-const static NStatus ns_unseen   = {2};
-
 
 class Logic {
     class TFun {
@@ -224,8 +218,7 @@ class Logic {
     bool        containsSort  (const char* name)      const;// { return sort_store.containsSort(name); }
   protected:
     SRef        newSort       (IdRef idr, const char* name, vec<SRef>& tmp);// { return sort_store.newSort(idr, name, tmp); }
-    PTRef       mkFun         (SymRef f, const vec<PTRef>& args, char** msg);
-    PTRef       mkFun         (SymRef f, const vec<PTRef>& args) { char* msg; return mkFun(f, args, &msg); };
+    PTRef       mkFun         (SymRef f, const vec<PTRef>& args);
     void        markConstant  (PTRef ptr);
     void        markConstant  (SymId sid);
 
@@ -237,7 +230,7 @@ class Logic {
     const char* getSortName   (const SRef s)  ;//              { return sort_store.getName(s); }
 
     // Symbols
-    SymRef      newSymb       (const char* name, vec<SRef>& sort_args, char** msg)
+    SymRef      newSymb       (const char* name, vec<SRef>& sort_args)
                                                             { return sym_store.newSymb(name, sort_args); }
     Symbol& getSym              (const SymRef s)        { return sym_store[s]; }
     const Symbol& getSym        (const SymRef s)        const { return sym_store[s]; }
@@ -277,6 +270,9 @@ class Logic {
     // Generic equalities
     PTRef       mkEq          (vec<PTRef>& args);
     PTRef       mkEq          (PTRef a1, PTRef a2);// { vec<PTRef> v; v.push(a1); v.push(a2); return mkEq(v); }
+
+    // General disequalities
+    PTRef       mkDistinct    (vec<PTRef>& args);
 
     // Generic variables
     PTRef       mkVar         (SRef, const char*);
@@ -443,86 +439,8 @@ class Logic {
     bool varsubstitute(PTRef  root, const Map<PTRef, PtAsgn, PTRefHash> & substs, PTRef & tr_new);  // Do the substitution.  Return true if at least one substitution was done, and false otherwise.
     virtual lbool retrieveSubstitutions(const vec<PtAsgn>& units, Map<PTRef,PtAsgn,PTRefHash>& substs);
 
-    class SubstNode {
-        int procChild;
-      public:
-        int index;
-        int lowlink;
-        NStatus status;
-        PTRef tr;
-        vec<PTRef> children;
-        vec<SubstNode*> child_nodes;
-        SubstNode* parent;
-        SubstNode(PTRef tr, PTRef target, SubstNode* parent, Logic& l) : procChild(0), index(-1), lowlink(-1), status(ns_unseen), tr(tr), parent(parent) {
-            l.getVars(target, children);
-            sort(children);
-            int i, j;
-            PTRef p = PTRef_Undef;
-            for (i = j = 0; i < children.size(); i++)
-                if (children[i] != p)
-                    p = children[j++] = children[i];
-            children.shrink(i-j);
-        }
-        SubstNode* getNextChild() {
-            for (; procChild < child_nodes.size(); procChild++) {
-                if (child_nodes[procChild] != NULL)
-                    return child_nodes[procChild++];
-            }
-            return NULL;
-        }
-        void updateLowlink(int i) { lowlink = lowlink < i ? lowlink : i; }
-    };
 
-    class TarjanAlgorithm {
-        vec<SubstNode*> controlStack;
-        vec<SubstNode*> tarjanStack;
-        int index;
-        void addNode(SubstNode* n) {
-            n->index = index;
-            n->lowlink = index;
-            index++;
-            controlStack.push(n);
-            tarjanStack.push(n);
-            n->status = ns_inStack;
-        }
-      public:
-        TarjanAlgorithm() : index(0) {}
-        void getLoops(SubstNode* startNode, vec<vec<PTRef> >& loops) {
-            addNode(startNode);
-            while (controlStack.size() > 0) {
-                SubstNode* n = controlStack.last();
-                SubstNode* c = n->getNextChild();
-                if (c != NULL) {
-                    if (c->status == ns_unseen)
-                        addNode(c);
-                    else if (c->status == ns_inStack)
-                        n->updateLowlink(c->index);
-                } else {
-                    controlStack.pop();
-                    if (controlStack.size() > 0)
-                        controlStack.last()->updateLowlink(n->lowlink);
-                    if (n->lowlink == n->index) {
-                        // Start a new SCC
-                        vec<PTRef> scc;
-                        SubstNode* w = NULL;
-                        do {
-                            w = tarjanStack.last(); tarjanStack.pop();
-                            w->status = ns_complete;
-                            scc.push(w->tr);
-                        } while (w != n);
-                        if (scc.size() > 1) {
-                            loops.push();
-                            for (int i = scc.size()-1; i >= 0; i--)
-                                loops.last().push(scc[i]);
-                        }
-                    }
-                }
-            }
-        }
-    };
 
-    void getVars(PTRef, vec<PTRef>&) const;
-    void breakSubstLoops(Map<PTRef,PtAsgn,PTRefHash>& substs);
 
     bool contains(PTRef x, PTRef y);  // term x contains an occurrence of y
 

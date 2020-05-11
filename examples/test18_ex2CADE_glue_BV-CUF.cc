@@ -25,11 +25,12 @@ void printValue(ValPair vp, Logic& l)
 int main(int argc, char** argv)
 {
     SMTConfig c;
-    CUFTheory cuftheory(c , 8);
-    THandler thandler(c, cuftheory);
-    SimpSMTSolver solver(c, thandler);
-    MainSolver mainSolver(thandler, c, &solver);
-    BVLogic& logic = cuftheory.getLogic();
+    CUFTheory* cuftheory = new CUFTheory(c, 8);
+    THandler* thandler = new THandler(*cuftheory);
+    SimpSMTSolver* solver = new SimpSMTSolver(c, *thandler);
+    MainSolver* mainSolver_ = new MainSolver(*thandler, c, solver, "test solver");
+    MainSolver& mainSolver = *mainSolver_;
+    BVLogic& logic = cuftheory->getLogic();
 
     PTRef a = logic.mkCUFNumVar("a");
     PTRef b = logic.mkCUFNumVar("b");
@@ -111,10 +112,10 @@ int main(int argc, char** argv)
     PTRef eq2_bv = logic.mkBVEq(mod4_bv, c2_bv);
 
 //***** BItBlasting of C1_bv and C2_bv and two******
-    SolverId id = { 5 };
     vec<PtAsgn> asgns;
     vec<DedElem> deds;
     vec<PTRef> foo;
+    SolverId id = {42};
     BitBlaster bbb(id, c, mainSolver, logic, asgns, deds, foo);
 
     BVRef output1;

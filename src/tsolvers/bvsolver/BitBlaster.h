@@ -38,13 +38,8 @@ class BitBlaster
 {
 public:
 
-    BitBlaster ( SolverId
-               , SMTConfig &
-               , MainSolver&
-               , BVLogic&
-               , vec<PtAsgn> &
-               , vec<DedElem> &
-               , vec<PTRef> & );
+    BitBlaster(SolverId, SMTConfig & c, MainSolver & mainSolver, BVLogic & bvlogic, vec<PtAsgn> & ex,
+               vec<DedElem> & d, vec<PTRef> & s);
     ~BitBlaster ( );
 
     lbool inform             (PTRef); // For the interface for bitvector solver
@@ -63,9 +58,6 @@ public:
     // Public Theory refinement stuff
     lbool notifyEqualities   (); // Check all refined equalities, add explicit new terms for them
     void  bindCUFToBV        (PTRef cuf_tr, PTRef bv_tr) { assert(!pToB.has(cuf_tr)); bbTerm(bv_tr); pToB.insert(cuf_tr, bv_tr); refined.push(cuf_tr); }
-    lbool glueBtoUF          (BVRef br, PTRef tr);  // (= tr (c br_1 ... br_32))
-    lbool glueUFtoB          (PTRef tr, BVRef br);  // (= br_0 (e0 tr)) /\ ... /\ (= br_32 (e32 tr))
-    lbool glueUFtoUF         (PTRef tr1, PTRef tr2); // (= uf1 uf2) <-> (and (= .b00_0 .b00_1) ... (= .b31_0 .b31_1))
     PTRef mkCollate32        (vec<PTRef>& bits);
     PTRef mkExtract          (PTRef tr, int i);
     // Theory refinement stuff
@@ -87,7 +79,7 @@ private:
     THandler&      thandler;
     SimpSMTSolver& solverP;                       // Solver with proof logger
 
-    bool addClause ( vec< Lit > &, PTRef );
+    bool addClause(vec<Lit> & c);
 
     static const char* s_bbEq;
     static const char* s_bbAnd;

@@ -58,16 +58,22 @@ addons:
 install: true
 
 before_script:
-    - if [[ "${TRAVIS_COMPILER}" == "clang" ]]; then FLAGS="-Wpessimizing-move -Werror=pessimizing-move"; fi
+    - FLAGS="-Wall -Werror"
+    - INSTALL=${TRAVIS_BUILD_DIR}/install
+    - mkdir build && mkdir ${INSTALL}
 
 script:
-  - mkdir build && cd build
-  - cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_CXX_FLAGS="$FLAGS" -DPRODUCE_PROOF=${PRODUCE_PROOF} ..
+  - set -e
+  - cd build
+  - cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_CXX_FLAGS="$FLAGS" -DPRODUCE_PROOF=${PRODUCE_PROOF} -DCMAKE_INSTALL_PREFIX=${INSTALL} ..
   - make
   - ctest
+  - make install
   - if [[ ${CMAKE_BUILD_TYPE} == Debug && ${PRODUCE_PROOF} == OFF ]]; then
         cd ../regression && ./run-test-notiming.sh ../build/src/bin/opensmt;
     fi
   - if [[ ${CMAKE_BUILD_TYPE} == Debug && ${PRODUCE_PROOF} == ON ]]; then
         cd ../regression_itp && ./run-tests.sh ../build/src/bin/opensmt;
     fi
+  - cd ../examples && mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DPRODUCE_PROOF=${PRODUCE_PROOF} -DOPENSMT_DIR=${INSTALL} ..
+  - make
