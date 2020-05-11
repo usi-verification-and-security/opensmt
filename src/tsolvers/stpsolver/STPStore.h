@@ -42,7 +42,7 @@ public:
     Edge & getEdge(EdgeRef e) { return edges[e.x]; }
     const std::vector<EdgeRef> & getEdgesOf(VertexRef v) const { return edgesOfVertex[v.x]; }
     void setNegation(EdgeRef a, EdgeRef b);
-    EdgeRef hasNeighbour(VertexRef from, VertexRef to);
+    EdgeRef hasNeighbour(VertexRef, VertexRef) { return EdgeRef_Undef; } // FIXME temp function - will be removed
 };
 
 #endif //OPENSMT_STPSTORE_H

@@ -30,9 +30,3 @@ void STPStore::setNegation(EdgeRef a, EdgeRef b) {
     edges[b.x].neg = a;
 }
 
-EdgeRef STPStore::hasNeighbour(VertexRef from, VertexRef to) {
-    for (auto && e : outgoing[from.x]) {
-        if (edges[e.x].to == to) return e;
-    }
-    return EdgeRef_Undef;
-}

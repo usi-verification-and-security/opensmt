@@ -3,6 +3,7 @@
 
 bool STPEdgeGraph::isTrue(EdgeRef e) {
     // TODO
+    return false;
 }
 
 void STPEdgeGraph::setTrue(EdgeRef e) {
