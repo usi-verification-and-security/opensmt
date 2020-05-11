@@ -39,8 +39,6 @@ class LRATHandler : public TSolverHandler
   public:
     LRATHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d, TermMapper& tmap);
     virtual ~LRATHandler();
-    virtual void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs) override;
-    virtual bool assertLit_special(PtAsgn) override;
     virtual Logic& getLogic() override;
     virtual const Logic& getLogic() const override;
     virtual lbool getPolaritySuggestion(PTRef) const override;

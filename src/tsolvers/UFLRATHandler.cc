@@ -28,65 +28,6 @@ UFLRATHandler::UFLRATHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d, TermMap
 
 }
 
-void UFLRATHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
-{
-    // XXX Reorganize so that the storing of the previous variable would
-    // not be so awkward?
-    vec<PtChild> terms;
-    getTermList(root, terms, getLogic());
-
-    for (int i = 0; i < terms.size(); i++)
-    {
-        PTRef tr = terms[i].tr;
-        if (logic.isNumLeq(tr)) {
-            if (!refs.has(tr)) {
-                declareAtom(tr);
-                Var v = tmap.addBinding(tr);
-                while (deductions.size() <= v)
-                    deductions.push({lrasolver->getId(), l_Undef});
-                refs.insert(tr, v);
-            }
-        }
-        else if (logic.isNumEq(tr)) {
-            vec<PTRef> args;
-            Pterm& p = logic.getPterm(tr);
-            args.push(p[0]);
-            args.push(p[1]);
-            PTRef i1 = logic.mkNumLeq(args);
-            PTRef i2 = logic.mkNumGeq(args);
-            // These can simplify to true and false, and we don't
-            // want them to LRA solver
-            if (!refs.has(i1) && logic.isNumLeq(i1)) {
-                declareAtom(i1);
-                Var v = tmap.addBinding(i1);
-                while (deductions.size() <= v)
-                    deductions.push(DedElem(lrasolver->getId(), l_Undef));
-                refs.insert(i1, v);
-            }
-            if (!refs.has(i2) && logic.isNumLeq(i2)) {
-                declareAtom(i2);
-                Var v = tmap.addBinding(i2);
-                while (deductions.size() <= v)
-                    deductions.push(DedElem(lrasolver->getId(), l_Undef));
-                refs.insert(i2, v);
-            }
-        } else {
-            // UF term
-            if (!refs.has(tr)) {
-                Pterm& t = logic.getPterm(tr);
-                if (logic.getSym(t.symb()).rsort() != logic.getSort_bool())
-                    continue;
-                declareAtom(tr);
-                Var v = tmap.addBinding(tr);
-                while (deductions.size() <= v)
-                    deductions.push({lrasolver->getId(), l_Undef});
-                refs.insert(tr,v);
-            }
-        }
-    }
-}
-
-
 UFLRATHandler::~UFLRATHandler() {}
 
 Logic &UFLRATHandler::getLogic()

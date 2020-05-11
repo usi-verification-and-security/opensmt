@@ -79,12 +79,10 @@ public:
     ValPair getValue          (PTRef tr) const;
     void    computeModel      ();                      // Computes a model in the solver if necessary
     bool    assertLit         (PtAsgn);                // Push the assignment to all theory solvers
-    virtual bool assertLit_special(PtAsgn) = 0;        // Push the assignnment to the theory solver, with equality splitting if necessary
     void    declareAtoms      (PTRef);                 // Declare atoms to theory solvers
     void    informNewSplit(PTRef);                     // Recompute split datastructures
     void    declareAtom(PTRef tr);                     // Declare atom to the appropriate solver
 //    virtual SolverId getId() const { return my_id; }
-    virtual void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs) = 0;
     virtual lbool getPolaritySuggestion(PTRef) const { return l_Undef; }
     TRes    check(bool);
 };

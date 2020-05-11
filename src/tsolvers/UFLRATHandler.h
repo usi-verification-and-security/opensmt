@@ -41,8 +41,6 @@ class UFLRATHandler : public LRATHandler
   public:
     UFLRATHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d, TermMapper& tmap);
     virtual ~UFLRATHandler();
-    virtual void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs);
-//    virtual bool assertLit_special(PtAsgn);
     virtual Logic& getLogic();
 
 #ifdef PRODUCE_PROOF
