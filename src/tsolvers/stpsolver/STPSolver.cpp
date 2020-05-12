@@ -10,7 +10,7 @@ STPSolver::STPSolver(SMTConfig & c, LALogic & l, vec<DedElem> & d)
         : TSolver((SolverId)descr_stp_solver, (const char*)descr_stp_solver, c, d)
         , logic(l)
         , mapper(l, store)          // store is initialized before mapper and graph, so these constructors are valid
-        , graph(store)
+        , graph(store, mapper)  // similarly, mapper is initialized before graph (per declaration in header)
 {}
 
 STPSolver::~STPSolver() = default;
@@ -57,9 +57,13 @@ void STPSolver::declareAtom(PTRef tr) {
     mapper.setEdge(tr, e);
 
     // label negation, if it was already set.
-    auto n = store.hasNeighbour(x, y);
-    if (n && store.getEdge(n).cost == (-store.getEdge(e).cost - 1)) {   // FIXME: Negates cost only for integers
-           store.setNegation(e, n);
+    auto &possibleNegs = mapper.edgesOf(x);     // TODO: Use shortest of x, y?
+    for (auto eRef : possibleNegs) {
+        Edge & edge = store.getEdge(eRef);
+        if (edge.from == x && edge.to == y && edge.cost == -(parsed.c + 1)) { // FIXME: negates only for integer costs
+            store.setNegation(eRef, e);
+            break;
+        }
     }
 }
 

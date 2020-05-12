@@ -2,19 +2,24 @@
 #define OPENSMT_STPEDGEGRAPH_H
 
 #include "STPStore.h"
+#include "STPMapper.h"
 
 class STPEdgeGraph {
 
     STPStore & store;
 
+    STPMapper & mapper;
+
+    std::vector<EdgeRef> addedEdges;
+
     using AdjList = std::vector<EdgeRef>;
     std::vector<AdjList> incoming, outgoing;
 
 public:
-    explicit STPEdgeGraph(STPStore & store) : store(store) {}
+    explicit STPEdgeGraph(STPStore &store, STPMapper &mapper) : store(store), mapper(mapper) {}
     bool isTrue(EdgeRef e);
     void setTrue(EdgeRef e);
-    void getConsequences(EdgeRef e);
+    void findConsequences(EdgeRef e);
 };
 
 
