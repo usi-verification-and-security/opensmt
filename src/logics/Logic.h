@@ -107,6 +107,8 @@ class Logic {
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      ites;
     Map<SRef,bool,SRefHash,Equal<SRef> >            ufsorts;
 
+    int maxDistinctClasses;
+    int distinctClassCount;
 
 #ifdef PRODUCE_PROOF
     //for partitions:
