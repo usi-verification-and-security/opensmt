@@ -966,20 +966,32 @@ PTRef Logic::mkDistinct(vec<PTRef>& args) {
             return getTerm_false();
         return mkXor(args);
     }
-    if (distinctClassCount < maxDistinctClasses) {
-        distinctClassCount++;
-        SymRef diseq_sym = term_store.lookupSymbol(tk_distinct, args);
-        return mkFun(diseq_sym, args);
+
+    SymRef diseq_sym = term_store.lookupSymbol(tk_distinct, args);
+    assert(!isBooleanOperator(diseq_sym));
+    PTLKey key;
+    key.sym = diseq_sym;
+    args.copyTo(key.args);
+    if (term_store.hasCplxKey(key)) {
+        return term_store.getFromCplxMap(key);
     }
     else {
-        vec<PTRef> distinct_terms;
-        for (int i = 0; i < args.size(); i++) {
-            for (int j = i + 1; j < args.size(); j++) {
-                vec<PTRef> small_distinct{args[i], args[j]};
-                distinct_terms.push(mkDistinct(small_distinct));
-            }
+        if (distinctClassCount < maxDistinctClasses) {
+            PTRef res = term_store.newTerm(diseq_sym, args);
+            term_store.addToCplxMap(key, res);
+            distinctClassCount++;
+            return res;
         }
-        return mkAnd(distinct_terms);
+        else {
+            vec<PTRef> distinct_terms;
+            for (int i = 0; i < args.size(); i++) {
+                for (int j = i + 1; j < args.size(); j++) {
+                    vec<PTRef> small_distinct{args[i], args[j]};
+                    distinct_terms.push(mkDistinct(small_distinct));
+                }
+            }
+            return mkAnd(distinct_terms);
+        }
     }
 }
 
