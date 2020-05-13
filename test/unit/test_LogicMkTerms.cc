@@ -73,7 +73,8 @@ TEST_F(LogicMkTermsTest, test_ManyDistinct) {
     SRef ufsort = logic.declareSort("U", nullptr);
     vec<PTRef> names;
     for (int i = 0; i < 9; i++) {
-        names.push(logic.mkVar(ufsort, "x"));
+        std::string name = "x" + std::to_string(i);
+        names.push(logic.mkVar(ufsort, name.c_str()));
     }
     vec<PTRef> distincts1;
     for (int i = 0; i < 9; i++) {
