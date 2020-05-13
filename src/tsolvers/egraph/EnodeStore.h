@@ -89,7 +89,7 @@ class EnodeStore {
 
     void addDistClass(PTRef tr_d) {
         assert(!dist_classes.has(tr_d));
-        if (dist_idx >= sizeof(dist_t)*8) {
+        if (dist_idx >= maxDistinctClasses) {
             throw OsmtInternalException();
         }
         dist_classes.insert(tr_d, dist_idx);

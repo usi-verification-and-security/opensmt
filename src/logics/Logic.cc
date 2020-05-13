@@ -68,8 +68,7 @@ const char* Logic::s_framev_prefix = ".frame";
 
 // The constructor initiates the base logic (Boolean)
 Logic::Logic(SMTConfig& c) :
-      maxDistinctClasses(32)
-    , distinctClassCount(0)
+      distinctClassCount(0)
     , config(c)
     , sort_store(id_store)
     , term_store(sym_store)
