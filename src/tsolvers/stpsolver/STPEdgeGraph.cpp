@@ -1,12 +1,21 @@
 #include <stack>
 #include "STPEdgeGraph.h"
 
-bool STPEdgeGraph::isTrue(EdgeRef e) {
+bool STPEdgeGraph::isTrue(EdgeRef e) const {
     return std::find(addedEdges.begin(), addedEdges.end(), e) != addedEdges.end();
 }
 
 void STPEdgeGraph::setTrue(EdgeRef e) {
     addedEdges.push_back(e);
+    const Edge &edge = store.getEdge(e);
+    auto max = std::max(edge.from.x, edge.to.x);
+    if (incoming.size() <= max) {
+        incoming.resize(max + 1);
+        outgoing.resize(max + 1);
+    }
+
+    outgoing[edge.from.x].push_back(e);
+    incoming[edge.to.x].push_back(e);
 }
 
 void STPEdgeGraph::findConsequences(EdgeRef e) {
@@ -18,13 +27,15 @@ void STPEdgeGraph::findConsequences(EdgeRef e) {
 
     std::stack<VertexRef> open;
     auto start = store.getEdge(e);
-    open.push(start.from);
 
+    visitedA[start.from.x] = true;
+    lengthA[start.from.x] = 0;
+    open.push(start.from);
     // TODO: similar code twice. Refactor?
     while (!open.empty()) {
         VertexRef curr = open.top(); open.pop();
         for (auto eRef : incoming[curr.x]) {
-            Edge &edge = store.getEdge(eRef);
+            const Edge &edge = store.getEdge(eRef);
             if (!visitedA[edge.from.x]) {
                 visitedA[edge.from.x] = true;
                 lengthA[edge.from.x] = lengthA[curr.x] + edge.cost;
@@ -37,11 +48,13 @@ void STPEdgeGraph::findConsequences(EdgeRef e) {
         }
     }
 
+    visitedB[start.to.x] = true;
+    lengthB[start.to.x] = 0;
     open.push(start.to);
     while (!open.empty()) {
         VertexRef curr = open.top(); open.pop();
         for (auto eRef : outgoing[curr.x]) {
-            Edge &edge = store.getEdge(eRef);
+            const Edge &edge = store.getEdge(eRef);
             if (!visitedB[edge.to.x]) {
                 visitedB[edge.to.x] = true;
                 lengthB[edge.to.x] = lengthB[curr.x] + edge.cost;
@@ -58,7 +71,7 @@ void STPEdgeGraph::findConsequences(EdgeRef e) {
         for (uint32_t i = 0; i < n; ++i) {
             if (!visitedA[i]) continue;
             for (auto eRef : mapper.edgesOf(VertexRef{i})) {
-                Edge & edge = store.getEdge(eRef);
+                const Edge & edge = store.getEdge(eRef);
                 if (edge.from.x == i && visitedB[edge.to.x] && edge.cost >= lengthA[i] + start.cost + lengthB[edge.to.x])
                     addedEdges.push_back(eRef);
             }
@@ -67,7 +80,7 @@ void STPEdgeGraph::findConsequences(EdgeRef e) {
         for (uint32_t i = 0; i < n; ++i) {
             if (!visitedB[i]) continue;
             for (auto eRef : mapper.edgesOf(VertexRef{i})) {
-                Edge & edge = store.getEdge(eRef);
+                const Edge & edge = store.getEdge(eRef);
                 if (edge.to.x == i && visitedA[edge.from.x] && edge.cost >= lengthA[edge.from.x] + start.cost + lengthB[i])
                     addedEdges.push_back(eRef);
             }

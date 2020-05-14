@@ -11,12 +11,14 @@ STPSolver::STPSolver(SMTConfig & c, LALogic & l, vec<DedElem> & d)
         , logic(l)
         , mapper(l, store)          // store is initialized before mapper and graph, so these constructors are valid
         , graph(store, mapper)  // similarly, mapper is initialized before graph (per declaration in header)
+        , inv_bpoint(0)
+        , curr_bpoint(0)
 {}
 
 STPSolver::~STPSolver() = default;
 
 // TODO: Ignore terms we don't care about instead of throwing an exception?
-ParsedPTRef STPSolver::parseRef(PTRef ref) {
+ParsedPTRef STPSolver::parseRef(PTRef ref) const {
     // inequalities are in the form (c <= (x + (-1 * y)))
     assert( logic.isNumLeq(ref) );
     Pterm &leq = logic.getPterm(ref);
@@ -39,6 +41,15 @@ ParsedPTRef STPSolver::parseRef(PTRef ref) {
     return ret;
 }
 
+EdgeRef STPSolver::createNegation(EdgeRef e) {
+    const Edge &edge = store.getEdge(e);
+    EdgeRef res = store.createEdge(edge.to, edge.from, -(edge.cost + 1));
+    store.setNegation(e, res);
+    return res;
+}
+
+
+
 void STPSolver::declareAtom(PTRef tr) {
     // This method is used from outside to tell the solver about a possible atom that can later be asserted positively
     // or negatively
@@ -46,25 +57,32 @@ void STPSolver::declareAtom(PTRef tr) {
     // to some constant
     // TODO: store information about the term tr if necessary
     auto parsed = parseRef(tr);
-    // create new variables in store
-    auto x = store.createVertex();
-    auto y = store.createVertex();
-    auto e = store.createEdge(y, x, parsed.c);
 
-    // link new variables to the inequality
-    mapper.setVert(parsed.x, x);
-    mapper.setVert(parsed.y, y);
-    mapper.setEdge(tr, e);
+    // find out if edge already exists (created as part of a negation)
+    VertexRef x = mapper.getVertRef(parsed.x);
+    VertexRef y = mapper.getVertRef(parsed.y);
+    EdgeRef e = mapper.getEdgeRef(y, x, parsed.c);
 
-    // label negation, if it was already set.
-    auto &possibleNegs = mapper.edgesOf(x);     // TODO: Use shortest of x, y?
-    for (auto eRef : possibleNegs) {
-        Edge & edge = store.getEdge(eRef);
-        if (edge.from == x && edge.to == y && edge.cost == -(parsed.c + 1)) { // FIXME: negates only for integer costs
-            store.setNegation(eRef, e);
-            break;
-        }
+    if (e != EdgeRef_Undef) {
+        mapper.mapEdge(tr, e);  // pure negations don't have entries in mapper
+        return;
     }
+
+    // create new variables in store
+    if (x == VertRef_Undef) {
+        x = store.createVertex();
+        mapper.setVert(parsed.x, x);
+    }
+    if (y == VertRef_Undef) {
+        y = store.createVertex();
+        mapper.setVert(parsed.y, y);
+    }
+    // e is definitely EdgeRef_Undef (see comparison above)
+    e = store.createEdge(y, x, parsed.c);
+    EdgeRef neg = createNegation(e);
+    store.setNegation(e, neg);
+    mapper.mapEdge(tr, e);
+    mapper.mapEdge(neg);
 }
 
 bool STPSolver::assertLit(PtAsgn asgn, bool b) {
@@ -75,7 +93,20 @@ bool STPSolver::assertLit(PtAsgn asgn, bool b) {
     //      Return false if immediate conflict has been detected, otherwise return true
     //      Postpone actual checking of consistency of the extended set of constraints until call to the "check" method
     EdgeRef e = mapper.getEdgeRef(asgn.tr);
+    assert( e != EdgeRef_Undef );
+    EdgeRef neg = store.getEdge(e).neg;
 
+    if (graph.isTrue(e) && asgn.sgn == l_True) return true;         // e was already determined as true
+    if (graph.isTrue(neg) && asgn.sgn == l_False) return true;
+    if (graph.isTrue(neg) || graph.isTrue(e)) {                     // e/neg is already set in the wrong direction
+        inv_bpoint = curr_bpoint;
+        return false;    // e was already determined as conflicting
+    }
+
+    // nothing was set, so we decide
+    EdgeRef set = (asgn.sgn == l_True) ? e : neg;
+    graph.setTrue(set);
+    graph.findConsequences(set);
     return true;
 }
 
@@ -84,7 +115,7 @@ TRes STPSolver::check(bool b) {
     // Return SAT if the current set of constraints is satisfiable, UNSAT if unsatisfiable
     // TODO: implement the main check of consistency
 
-    return TRes::SAT;
+    return inv_bpoint == 0 ? TRes::SAT : TRes::UNSAT;
 }
 
 void STPSolver::clearSolver() {
@@ -99,6 +130,7 @@ void STPSolver::pushBacktrackPoint() {
     // Marks a checkpoint for the set of constraints in the solver
     // Important for backtracking
     TSolver::pushBacktrackPoint();
+    ++curr_bpoint;
 }
 
 void STPSolver::popBacktrackPoint() {
@@ -110,7 +142,10 @@ void STPSolver::popBacktrackPoint() {
 void STPSolver::popBacktrackPoints(unsigned int i) {
     // This method is called after unsatisfiable state is detected
     // The solver should remove all constraints that were pushed to the solver in the last "i" backtrackpoints
-    TSolver::popBacktrackPoints(i);
+    //  TSolver::popBacktrackPoints(i); <-- causes a stack overflow - calls STPSolver::popBacktrackPoint()
+    curr_bpoint -= i;
+    if (inv_bpoint > curr_bpoint)
+        inv_bpoint = 0;
 }
 
 ValPair STPSolver::getValue(PTRef pt) {

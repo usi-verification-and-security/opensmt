@@ -19,8 +19,11 @@ class STPMapper {
 public:
     STPMapper(LALogic const &l, STPStore &s);
     void setVert(PTRef var, VertexRef vert);
-    void setEdge(PTRef leq, EdgeRef edge);
+    void mapEdge(EdgeRef edge);
+    void mapEdge(PTRef leq, EdgeRef edge);
+    VertexRef getVertRef(PTRef var);
     EdgeRef getEdgeRef(PTRef leq);
+    EdgeRef getEdgeRef(VertexRef y, VertexRef x, const opensmt::Number &c) const;
     const vector<EdgeRef> & edgesOf(VertexRef v) { return edgesContainingVert[v.x]; }
 };
 

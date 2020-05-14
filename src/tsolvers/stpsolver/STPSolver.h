@@ -28,7 +28,12 @@ class STPSolver : public TSolver {
 
     STPEdgeGraph graph;
 
-    ParsedPTRef parseRef(PTRef ref);
+    size_t curr_bpoint;                 // current backtrack point
+    size_t inv_bpoint;                  // backtrack point where we entered an inconsistent state
+
+    ParsedPTRef parseRef(PTRef ref) const;
+
+    EdgeRef createNegation(EdgeRef e);
 
 public:
     STPSolver(SMTConfig & c, LALogic & l, vec<DedElem> & d);

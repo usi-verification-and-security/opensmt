@@ -9,12 +9,14 @@
 struct VertexRef {
     uint32_t x;
     inline bool operator==(VertexRef other) const { return x == other.x; }
+    inline bool operator!=(VertexRef other) const { return x != other.x; }
     explicit operator bool() const { return x != INT32_MAX; }
 };
 
 struct EdgeRef {
     uint32_t x;
     inline bool operator==(EdgeRef other) const { return x == other.x; }
+    inline bool operator!=(EdgeRef other) const { return x != other.x; }
     explicit operator bool() const { return x != INT32_MAX; }
 };
 
@@ -37,7 +39,7 @@ public:
 
     size_t vertexNum() const  { return verts.size(); }
     size_t edgeNum() const { return edges.size(); }
-    Edge & getEdge(EdgeRef e) { return edges[e.x]; }
+    const Edge & getEdge(EdgeRef e) const { return edges[e.x]; }
     void setNegation(EdgeRef a, EdgeRef b);
 };
 
