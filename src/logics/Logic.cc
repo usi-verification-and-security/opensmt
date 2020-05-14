@@ -953,18 +953,19 @@ PTRef Logic::mkDistinct(vec<PTRef>& args) {
     if (args.size() == 0) return getTerm_true();
     if (args.size() == 1) return getTerm_true();
     if (args.size() == 2) return mkNot(mkEq(args));
+
+    // The boolean distinctness over > 2 args is false
+    if (hasSortBool(args[0])) {
+        assert(args.size() > 2);
+        return getTerm_false();
+    }
+
     sort(args);
 
     for (int i = 1, j = 0; i < args.size(); i++, j++) {
         if (args[j] == args[i]) {
             return getTerm_false();
         }
-    }
-    // The boolean distinctness is either xor or false
-    if (hasSortBool(args[0])) {
-        if (args.size() > 2)
-            return getTerm_false();
-        return mkXor(args);
     }
 
     SymRef diseq_sym = term_store.lookupSymbol(tk_distinct, args);
