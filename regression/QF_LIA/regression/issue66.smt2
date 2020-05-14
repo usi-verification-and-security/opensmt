@@ -1,4 +1,3 @@
-(set-option :pure-lookahead true)
 (set-logic QF_LIA)
 (declare-fun v0 () Bool)
 (declare-fun i2 () Int)
