@@ -92,7 +92,7 @@ class ASTNode {
         }
         free(val);
     }
-    void                  print(std::ostream& o, int indent);
+    void                   print(std::ostream& o, int indent);
     inline const char      *typeToStr() const { return typestr[type]; }
     inline ASTType         getType()   const { return type; }
     inline const char      *getValue()  const { return val; }
