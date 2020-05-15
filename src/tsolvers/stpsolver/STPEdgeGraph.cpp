@@ -2,11 +2,14 @@
 #include "STPEdgeGraph.h"
 
 bool STPEdgeGraph::isTrue(EdgeRef e) const {
-    return std::find(addedEdges.begin(), addedEdges.end(), e) != addedEdges.end();
+    for (auto &&pair : addedEdges) {
+        if (pair.first == e) return true;
+    }
+    return false;
 }
 
 void STPEdgeGraph::setTrue(EdgeRef e) {
-    addedEdges.push_back(e);
+    addedEdges.emplace_back(e, ++addedCount);
     const Edge &edge = store.getEdge(e);
     auto max = std::max(edge.from.x, edge.to.x);
     if (incoming.size() <= max) {
@@ -72,8 +75,11 @@ void STPEdgeGraph::findConsequences(EdgeRef e) {
             if (!visitedA[i]) continue;
             for (auto eRef : mapper.edgesOf(VertexRef{i})) {
                 const Edge & edge = store.getEdge(eRef);
-                if (edge.from.x == i && visitedB[edge.to.x] && edge.cost >= lengthA[i] + start.cost + lengthB[edge.to.x])
-                    addedEdges.push_back(eRef);
+                if (edge.from.x == i && visitedB[edge.to.x] && edge.cost >= lengthA[i] + start.cost + lengthB[edge.to.x]) {
+                    addedEdges.emplace_back(eRef, addedCount);
+                    incoming[edge.to.x].push_back(eRef);
+                    outgoing[edge.from.x].push_back(eRef);
+                }
             }
         }
     } else {
@@ -81,8 +87,11 @@ void STPEdgeGraph::findConsequences(EdgeRef e) {
             if (!visitedB[i]) continue;
             for (auto eRef : mapper.edgesOf(VertexRef{i})) {
                 const Edge & edge = store.getEdge(eRef);
-                if (edge.to.x == i && visitedA[edge.from.x] && edge.cost >= lengthA[edge.from.x] + start.cost + lengthB[i])
-                    addedEdges.push_back(eRef);
+                if (edge.to.x == i && visitedA[edge.from.x] && edge.cost >= lengthA[edge.from.x] + start.cost + lengthB[i]) {
+                    addedEdges.emplace_back(eRef, addedCount);
+                    incoming[edge.to.x].push_back(eRef);
+                    outgoing[edge.from.x].push_back(eRef);
+                }
             }
         }
     }
