@@ -2,10 +2,7 @@
 #include "STPEdgeGraph.h"
 
 bool STPEdgeGraph::isTrue(EdgeRef e) const {
-    for (EdgeRef eRef : addedEdges) {
-        if (eRef == e) return true;
-    }
-    return false;
+    return e != EdgeRef_Undef && store.getEdge(e).setTime != 0;
 }
 
 void STPEdgeGraph::setTrue(EdgeRef e, bool consequence) {
