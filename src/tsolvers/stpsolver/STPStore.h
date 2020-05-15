@@ -27,6 +27,7 @@ struct Edge {
     VertexRef from, to;
     EdgeRef neg;
     opensmt::Number cost;
+    uint32_t setTime;
 };
 
 class STPStore {
@@ -40,6 +41,7 @@ public:
     size_t vertexNum() const  { return verts.size(); }
     size_t edgeNum() const { return edges.size(); }
     const Edge & getEdge(EdgeRef e) const { return edges[e.x]; }
+    Edge & getEdge(EdgeRef e) { return edges[e.x]; }
     void setNegation(EdgeRef a, EdgeRef b);
 };
 

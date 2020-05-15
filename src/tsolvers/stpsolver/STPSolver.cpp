@@ -105,7 +105,7 @@ bool STPSolver::assertLit(PtAsgn asgn, bool b) {
 
     // nothing was set, so we decide
     EdgeRef set = (asgn.sgn == l_True) ? e : neg;
-    graph.setTrue(set);
+    graph.setTrue(set, false);
     graph.findConsequences(set);
     return true;
 }

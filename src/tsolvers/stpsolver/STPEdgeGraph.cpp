@@ -2,15 +2,19 @@
 #include "STPEdgeGraph.h"
 
 bool STPEdgeGraph::isTrue(EdgeRef e) const {
-    for (auto &&pair : addedEdges) {
-        if (pair.first == e) return true;
+    for (EdgeRef eRef : addedEdges) {
+        if (eRef == e) return true;
     }
     return false;
 }
 
-void STPEdgeGraph::setTrue(EdgeRef e) {
-    addedEdges.emplace_back(e, ++addedCount);
-    const Edge &edge = store.getEdge(e);
+void STPEdgeGraph::setTrue(EdgeRef e, bool consequence) {
+    if (!consequence) ++addedCount;
+    Edge &edge = store.getEdge(e);
+    if (edge.setTime != 0) return;              // edge was already set to true - it is already stored
+
+    addedEdges.push_back(e);
+    edge.setTime = addedCount;
     auto max = std::max(edge.from.x, edge.to.x);
     if (incoming.size() <= max) {
         incoming.resize(max + 1);
@@ -77,9 +81,7 @@ void STPEdgeGraph::findConsequences(EdgeRef e) {
                 if (eRef == e) continue;
                 const Edge & edge = store.getEdge(eRef);
                 if (edge.from.x == i && visitedB[edge.to.x] && edge.cost >= lengthA[i] + start.cost + lengthB[edge.to.x]) {
-                    addedEdges.emplace_back(eRef, addedCount);
-                    incoming[edge.to.x].push_back(eRef);
-                    outgoing[edge.from.x].push_back(eRef);
+                    setTrue(eRef, true);
                 }
             }
         }
@@ -90,9 +92,7 @@ void STPEdgeGraph::findConsequences(EdgeRef e) {
                 if (eRef == e) continue;
                 const Edge & edge = store.getEdge(eRef);
                 if (edge.to.x == i && visitedA[edge.from.x] && edge.cost >= lengthA[edge.from.x] + start.cost + lengthB[i]) {
-                    addedEdges.emplace_back(eRef, addedCount);
-                    incoming[edge.to.x].push_back(eRef);
-                    outgoing[edge.from.x].push_back(eRef);
+                    setTrue(eRef, true);
                 }
             }
         }
@@ -102,13 +102,14 @@ void STPEdgeGraph::findConsequences(EdgeRef e) {
 void STPEdgeGraph::removeAfter(uint32_t point) {
     if (addedEdges.empty()) return;
     for (ptrdiff_t i = addedEdges.size()-1; i >= 0; --i) {
-        auto &pair = addedEdges[i];
-        if (pair.second <= point) return;
-        auto &edge = store.getEdge(pair.first);
+        EdgeRef eRef = addedEdges[i];
+        auto &edge = store.getEdge(eRef);
+        if (edge.setTime <= point) return;
         // edges are added in the same order to all three - no need to check the values of incoming / outgoing
         incoming[edge.to.x].pop_back();
         outgoing[edge.from.x].pop_back();
         addedEdges.pop_back();
+        edge.setTime = 0;
     }
 }
 

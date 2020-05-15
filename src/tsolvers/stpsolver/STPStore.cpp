@@ -13,7 +13,7 @@ VertexRef STPStore::createVertex() {
 EdgeRef STPStore::createEdge(VertexRef from, VertexRef to, opensmt::Number cost) {
     uint32_t i = edges.size();
     EdgeRef r{i};
-    edges.push_back(Edge{from, to, EdgeRef_Undef, std::move(cost)});
+    edges.push_back(Edge{from, to, EdgeRef_Undef, std::move(cost), 0});
     return r;
 }
 
