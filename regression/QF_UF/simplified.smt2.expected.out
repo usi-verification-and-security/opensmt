@@ -3,3 +3,4 @@
 (error "assertion returns an unknown sort")
 
 sat
+(error "check status which says unsat")
