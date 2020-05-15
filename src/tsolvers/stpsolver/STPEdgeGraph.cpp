@@ -74,6 +74,7 @@ void STPEdgeGraph::findConsequences(EdgeRef e) {
         for (uint32_t i = 0; i < n; ++i) {
             if (!visitedA[i]) continue;
             for (auto eRef : mapper.edgesOf(VertexRef{i})) {
+                if (eRef == e) continue;
                 const Edge & edge = store.getEdge(eRef);
                 if (edge.from.x == i && visitedB[edge.to.x] && edge.cost >= lengthA[i] + start.cost + lengthB[edge.to.x]) {
                     addedEdges.emplace_back(eRef, addedCount);
@@ -86,6 +87,7 @@ void STPEdgeGraph::findConsequences(EdgeRef e) {
         for (uint32_t i = 0; i < n; ++i) {
             if (!visitedB[i]) continue;
             for (auto eRef : mapper.edgesOf(VertexRef{i})) {
+                if (eRef == e) continue;
                 const Edge & edge = store.getEdge(eRef);
                 if (edge.to.x == i && visitedA[edge.from.x] && edge.cost >= lengthA[edge.from.x] + start.cost + lengthB[i]) {
                     addedEdges.emplace_back(eRef, addedCount);
@@ -94,6 +96,19 @@ void STPEdgeGraph::findConsequences(EdgeRef e) {
                 }
             }
         }
+    }
+}
+
+void STPEdgeGraph::removeAfter(uint32_t point) {
+    if (addedEdges.empty()) return;
+    for (ptrdiff_t i = addedEdges.size()-1; i >= 0; --i) {
+        auto &pair = addedEdges[i];
+        if (pair.second <= point) return;
+        auto &edge = store.getEdge(pair.first);
+        // edges are added in the same order to all three - no need to check the values of incoming / outgoing
+        incoming[edge.to.x].pop_back();
+        outgoing[edge.from.x].pop_back();
+        addedEdges.pop_back();
     }
 }
 

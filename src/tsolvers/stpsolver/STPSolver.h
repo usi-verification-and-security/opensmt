@@ -28,6 +28,8 @@ class STPSolver : public TSolver {
 
     STPEdgeGraph graph;
 
+    std::vector<uint32_t> backtrack_points;
+
     size_t curr_bpoint;                 // current backtrack point
     size_t inv_bpoint;                  // backtrack point where we entered an inconsistent state
 

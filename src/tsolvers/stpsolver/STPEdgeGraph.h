@@ -21,8 +21,10 @@ class STPEdgeGraph {
 public:
     explicit STPEdgeGraph(STPStore &store, STPMapper &mapper) : store(store), mapper(mapper), addedCount(0) {}
     bool isTrue(EdgeRef e) const;
+    uint32_t getAddedCount() const { return addedCount; }
     void setTrue(EdgeRef e);
     void findConsequences(EdgeRef e);
+    void removeAfter(uint32_t point);
 };
 
 

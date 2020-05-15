@@ -131,6 +131,7 @@ void STPSolver::pushBacktrackPoint() {
     // Important for backtracking
     TSolver::pushBacktrackPoint();
     ++curr_bpoint;
+    backtrack_points.push_back(graph.getAddedCount());
 }
 
 void STPSolver::popBacktrackPoint() {
@@ -143,9 +144,13 @@ void STPSolver::popBacktrackPoints(unsigned int i) {
     // This method is called after unsatisfiable state is detected
     // The solver should remove all constraints that were pushed to the solver in the last "i" backtrackpoints
     //  TSolver::popBacktrackPoints(i); <-- causes a stack overflow - calls STPSolver::popBacktrackPoint()
+    assert( backtrack_points.size() >= i );
     curr_bpoint -= i;
     if (inv_bpoint > curr_bpoint)
         inv_bpoint = 0;
+    backtrack_points.resize(curr_bpoint + 1);
+    graph.removeAfter(backtrack_points.back());
+    // no need to modify mapper or store - the values stored there can't change
 }
 
 ValPair STPSolver::getValue(PTRef pt) {
