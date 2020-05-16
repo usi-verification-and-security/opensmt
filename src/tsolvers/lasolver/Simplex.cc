@@ -58,7 +58,9 @@ Simplex::Explanation Simplex::checkSimplex() {
         }
         // if it was not found - UNSAT
         if (y_found == LVRef_Undef) {
-            return getConflictingBounds(x);
+            auto explanation = getConflictingBounds(x);
+            model->restoreAssignment();
+            return explanation;
         }
             // if it was found - pivot old Basic x with non-basic y and do the model updates
         else {

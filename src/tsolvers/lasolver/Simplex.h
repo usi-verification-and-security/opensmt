@@ -73,7 +73,7 @@ public:
     void pushBacktrackPoint() { model->pushBacktrackPoint(); }
     void popBacktrackPoint()  { model->popBacktrackPoint(); }
     inline void finalizeBacktracking() {
-        model->restoreAssignment();
+        assert(model->changed_vars_vec.size() == 0);
         candidates.clear();
         bufferOfActivatedBounds.clear();
         assert(checkValueConsistency());
