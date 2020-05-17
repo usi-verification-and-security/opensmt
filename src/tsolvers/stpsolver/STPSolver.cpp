@@ -43,6 +43,7 @@ ParsedPTRef STPSolver::parseRef(PTRef ref) const {
 
 EdgeRef STPSolver::createNegation(EdgeRef e) {
     const Edge &edge = store.getEdge(e);
+    // TODO: The negation of edge cost as (-(cost+1)) only works for integer costs, not for real costs
     EdgeRef res = store.createEdge(edge.to, edge.from, -(edge.cost + 1));
     store.setNegation(e, res);
     return res;
@@ -64,7 +65,7 @@ void STPSolver::declareAtom(PTRef tr) {
     EdgeRef e = mapper.getEdgeRef(y, x, parsed.c);
 
     if (e != EdgeRef_Undef) {
-        mapper.mapEdge(tr, e);  // pure negations don't have entries in mapper
+        mapper.mapEdge(tr, e);  // edges created as negations of another atom can't yet exist in mapper
         return;
     }
 
@@ -77,12 +78,11 @@ void STPSolver::declareAtom(PTRef tr) {
         y = store.createVertex();
         mapper.setVert(parsed.y, y);
     }
-    // e is definitely EdgeRef_Undef (see comparison above)
+    // e is definitely EdgeRef_Undef
     e = store.createEdge(y, x, parsed.c);
     EdgeRef neg = createNegation(e);
-    store.setNegation(e, neg);
     mapper.mapEdge(tr, e);
-    mapper.mapEdge(neg);
+    mapper.registerEdge(neg);       // adding 'neg' to the 'edgesOf' map even without a PTRef to assign to it
 }
 
 bool STPSolver::assertLit(PtAsgn asgn, bool b) {
@@ -92,18 +92,21 @@ bool STPSolver::assertLit(PtAsgn asgn, bool b) {
     // TODO: process the addition of the constraint to the current set of constraints
     //      Return false if immediate conflict has been detected, otherwise return true
     //      Postpone actual checking of consistency of the extended set of constraints until call to the "check" method
+
+    // If 'e' exists, 'neg' must also exist (see declareAtom)
     EdgeRef e = mapper.getEdgeRef(asgn.tr);
     assert( e != EdgeRef_Undef );
     EdgeRef neg = store.getEdge(e).neg;
 
-    if (graph.isTrue(e) && asgn.sgn == l_True) return true;         // e was already determined as true
+    if (graph.isTrue(e) && asgn.sgn == l_True) return true;     // assignment was already found as a consequence
     if (graph.isTrue(neg) && asgn.sgn == l_False) return true;
-    if (graph.isTrue(neg) || graph.isTrue(e)) {                     // e/neg is already set in the wrong direction
-        inv_bpoint = curr_bpoint;
-        return false;    // e was already determined as conflicting
+
+    if (graph.isTrue(neg) || graph.isTrue(e)) {                 // negation of assignment was found as a consequence
+        if (!inv_bpoint) inv_bpoint = curr_bpoint;              // remember the first time we reached inconsistent state
+        return false;
     }
 
-    // nothing was set, so we decide
+    // The assignment isn't decided yet, so we set it as true and find all of its consequences
     EdgeRef set = (asgn.sgn == l_True) ? e : neg;
     graph.setTrue(set, false);
     graph.findConsequences(set);
@@ -115,6 +118,7 @@ TRes STPSolver::check(bool b) {
     // Return SAT if the current set of constraints is satisfiable, UNSAT if unsatisfiable
     // TODO: implement the main check of consistency
 
+    // we check the validity of each assertLit, so this just returns the consistency of current state
     return inv_bpoint == 0 ? TRes::SAT : TRes::UNSAT;
 }
 
@@ -143,12 +147,14 @@ void STPSolver::popBacktrackPoint() {
 void STPSolver::popBacktrackPoints(unsigned int i) {
     // This method is called after unsatisfiable state is detected
     // The solver should remove all constraints that were pushed to the solver in the last "i" backtrackpoints
-    //  TSolver::popBacktrackPoints(i); <-- causes a stack overflow - calls STPSolver::popBacktrackPoint()
+    //  TSolver::popBacktrackPoints(i); <-- FIXME: causes a stack overflow - calls STPSolver::popBacktrackPoint()
+
     assert( backtrack_points.size() >= i );
     curr_bpoint -= i;
-    if (inv_bpoint > curr_bpoint)
+    if (inv_bpoint > curr_bpoint)   // if we returned back to a consistent state, we reset inv_bpoint
         inv_bpoint = 0;
-    backtrack_points.resize(curr_bpoint + 1);
+
+    backtrack_points.resize(curr_bpoint + 1); // pop 'i-1' values from the backtrack stack
     graph.removeAfter(backtrack_points.back());
     // no need to modify mapper or store - the values stored there can't change
 }

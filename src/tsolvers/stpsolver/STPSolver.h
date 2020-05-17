@@ -12,7 +12,8 @@
 #include "STPEdgeGraph.h"
 
 struct ParsedPTRef {
-    // y <= x + c
+    // represents inequalities of the form 'y <= x + c'
+    // this corresponds to edges 'y --c--> x'
     PTRef x;            // destination of the edge
     PTRef y;            // source of the edge
     opensmt::Number c;  // cost of the edge
@@ -28,13 +29,14 @@ class STPSolver : public TSolver {
 
     STPEdgeGraph graph;
 
-    std::vector<uint32_t> backtrack_points;
+    std::vector<uint32_t> backtrack_points; // store of how many edges were set true at each backtrack point
 
-    size_t curr_bpoint;                 // current backtrack point
-    size_t inv_bpoint;                  // backtrack point where we entered an inconsistent state
+    size_t curr_bpoint;                     // current backtrack point
+    size_t inv_bpoint;                      // backtrack point where we entered an inconsistent state
 
     ParsedPTRef parseRef(PTRef ref) const;
 
+    // Given an edge, add the negation of that edge to 'store' and mark them as negations
     EdgeRef createNegation(EdgeRef e);
 
 public:

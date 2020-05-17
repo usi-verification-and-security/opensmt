@@ -3,7 +3,6 @@
 #include <utility>
 
 VertexRef STPStore::createVertex() {
-    // create new vertex ref
     return VertexRef{vertices++};
 }
 

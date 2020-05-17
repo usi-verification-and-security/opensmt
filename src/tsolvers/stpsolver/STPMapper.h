@@ -12,14 +12,14 @@ class STPMapper {
 
     STPStore &store;
 
-    std::vector<VertexRef> varToVertRef;              // maps PTRefs of variables to VertRefs
-    std::vector<EdgeRef> leqToEdgeRef;                // maps PTRefs of inequalities to EdgeRefs
-    std::vector<std::vector<EdgeRef>> edgesContainingVert;
+    std::vector<VertexRef> varToVertRef;                    // maps PTRefs of variables to VertRefs
+    std::vector<EdgeRef> leqToEdgeRef;                      // maps PTRefs of inequalities to EdgeRefs
+    std::vector<std::vector<EdgeRef>> edgesContainingVert;  // list of edges each vertex appears in
 
 public:
     STPMapper(LALogic const &l, STPStore &s);
     void setVert(PTRef var, VertexRef vert);
-    void mapEdge(EdgeRef edge);
+    void registerEdge(EdgeRef edge);
     void mapEdge(PTRef leq, EdgeRef edge);
     VertexRef getVertRef(PTRef var);
     EdgeRef getEdgeRef(PTRef leq);

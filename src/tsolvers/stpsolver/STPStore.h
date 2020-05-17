@@ -24,10 +24,10 @@ static VertexRef VertRef_Undef = VertexRef { INT32_MAX };
 static EdgeRef EdgeRef_Undef = EdgeRef { INT32_MAX };
 
 struct Edge {
-    VertexRef from, to;
-    EdgeRef neg;
-    opensmt::Number cost;
-    uint32_t setTime;
+    VertexRef from, to;     // vertices of this edge
+    EdgeRef neg;            // the logical negation of this edge
+    opensmt::Number cost;   // cost of this edge
+    uint32_t setTime;       // timestamp of when this was assigned as true (0 if it wasn't assigned)
 };
 
 class STPStore {
