@@ -4,10 +4,7 @@
 
 VertexRef STPStore::createVertex() {
     // create new vertex ref
-    uint32_t i = verts.size();
-    VertexRef r{i};
-    verts.push_back(r);
-    return r;
+    return VertexRef{vertices++};
 }
 
 EdgeRef STPStore::createEdge(VertexRef from, VertexRef to, opensmt::Number cost) {

@@ -17,6 +17,8 @@ class STPEdgeGraph {
     using AdjList = std::vector<EdgeRef>;
     std::vector<AdjList> incoming, outgoing;
 
+    size_t dfsSearch(VertexRef init, std::vector<bool> &visited, std::vector<opensmt::Number> &length, bool forward);
+
 public:
     explicit STPEdgeGraph(STPStore &store, STPMapper &mapper) : store(store), mapper(mapper), addedCount(0) {}
     bool isTrue(EdgeRef e) const;

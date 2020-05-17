@@ -32,13 +32,14 @@ struct Edge {
 
 class STPStore {
 private:
-    std::vector<VertexRef> verts;           // list of all created vertices
-    std::vector<Edge> edges;                //                     edges
+    uint32_t vertices;                      // number of created vertices (a vertex doesn't actually carry any information)
+    std::vector<Edge> edges;                // list of all created edges
 public:
+    STPStore() : vertices(0) {}
     VertexRef createVertex();
     EdgeRef createEdge(VertexRef from, VertexRef to, opensmt::Number cost);
 
-    size_t vertexNum() const  { return verts.size(); }
+    size_t vertexNum() const  { return vertices; }
     size_t edgeNum() const { return edges.size(); }
     const Edge & getEdge(EdgeRef e) const { return edges[e.x]; }
     Edge & getEdge(EdgeRef e) { return edges[e.x]; }

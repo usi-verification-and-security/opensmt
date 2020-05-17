@@ -24,7 +24,6 @@ void STPEdgeGraph::setTrue(EdgeRef e, bool consequence) {
 
 void STPEdgeGraph::findConsequences(EdgeRef e) {
     size_t n = store.vertexNum();
-    size_t aTotal = 0, bTotal = 0;
 
     std::vector<bool> visitedA(n), visitedB(n);             // TODO: Replace with maps?
     std::vector<opensmt::Number> lengthA(n), lengthB(n);
@@ -32,68 +31,53 @@ void STPEdgeGraph::findConsequences(EdgeRef e) {
     std::stack<VertexRef> open;
     auto start = store.getEdge(e);
 
-    visitedA[start.from.x] = true;
-    lengthA[start.from.x] = 0;
-    open.push(start.from);
-    // TODO: similar code twice. Refactor?
+    auto aTotal = dfsSearch(start.from, visitedA, lengthA, false);
+    auto bTotal = dfsSearch(start.to, visitedB, lengthB, true);
+
+    bool aLess = aTotal <= bTotal;
+    auto &thisVisited = aLess ? visitedA : visitedB;
+    auto &otherVisited = aLess ? visitedB : visitedA;
+    auto &thisLength = aLess ? lengthA : lengthB;
+    auto &otherLength = aLess ? lengthB : lengthA;
+
+    for (uint32_t i = 0; i < n; ++i) {
+        if (!thisVisited[i]) continue;
+        for (auto eRef : mapper.edgesOf(VertexRef{i})) {
+            Edge &edge = store.getEdge(eRef);
+            auto thisSide = aLess ? edge.from.x : edge.to.x;
+            auto otherSide = aLess ? edge.to.x : edge.from.x;
+            if (thisSide == i && otherVisited[otherSide] && edge.cost >= thisLength[thisSide] + start.cost + otherLength[otherSide])
+                setTrue(eRef, true);
+        }
+    }
+}
+
+size_t STPEdgeGraph::dfsSearch(VertexRef init, std::vector<bool> &visited, std::vector<opensmt::Number> &length, bool forward) {
+    size_t total = 0;
+    std::stack<VertexRef> open;
+    visited[init.x] = true;
+    length[init.x] = 0;
+    open.push(init);
+
     while (!open.empty()) {
         VertexRef curr = open.top(); open.pop();
-        for (auto eRef : incoming[curr.x]) {
-            const Edge &edge = store.getEdge(eRef);
-            if (!visitedA[edge.from.x]) {
-                visitedA[edge.from.x] = true;
-                lengthA[edge.from.x] = lengthA[curr.x] + edge.cost;
-                aTotal += mapper.edgesOf(edge.from).size();
-                open.push(edge.from);
-            } else if (lengthA[edge.from.x] > lengthA[curr.x] + edge.cost) {
-                lengthA[edge.from.x] = lengthA[curr.x] + edge.cost;
-                open.push(edge.from);
+        auto &toScan = forward ? outgoing[curr.x] : incoming[curr.x];
+        for (auto eRef : toScan) {
+            Edge &edge = store.getEdge(eRef);
+            auto next = forward ? edge.to : edge.from;
+            if (!visited[next.x]) {
+                visited[next.x] = true;
+                open.push(next);
+                length[next.x] = length[curr.x] + edge.cost;
+                total += static_cast<uint32_t>(mapper.edgesOf(next).size());
+            } else if (length[next.x] > length[curr.x] + edge.cost) {
+                length[next.x] = length[curr.x] + edge.cost;
+                open.push(next);
             }
         }
     }
 
-    visitedB[start.to.x] = true;
-    lengthB[start.to.x] = 0;
-    open.push(start.to);
-    while (!open.empty()) {
-        VertexRef curr = open.top(); open.pop();
-        for (auto eRef : outgoing[curr.x]) {
-            const Edge &edge = store.getEdge(eRef);
-            if (!visitedB[edge.to.x]) {
-                visitedB[edge.to.x] = true;
-                lengthB[edge.to.x] = lengthB[curr.x] + edge.cost;
-                bTotal += mapper.edgesOf(edge.to).size();
-                open.push(edge.to);
-            } else if (lengthB[edge.from.x] > lengthB[curr.x] + edge.cost) {
-                lengthB[edge.to.x] = lengthB[curr.x] + edge.cost;
-                open.push(edge.to);
-            }
-        }
-    }
-
-    if (aTotal <= bTotal) {
-        for (uint32_t i = 0; i < n; ++i) {
-            if (!visitedA[i]) continue;
-            for (auto eRef : mapper.edgesOf(VertexRef{i})) {
-                if (eRef == e) continue;
-                const Edge & edge = store.getEdge(eRef);
-                if (edge.from.x == i && visitedB[edge.to.x] && edge.cost >= lengthA[i] + start.cost + lengthB[edge.to.x]) {
-                    setTrue(eRef, true);
-                }
-            }
-        }
-    } else {
-        for (uint32_t i = 0; i < n; ++i) {
-            if (!visitedB[i]) continue;
-            for (auto eRef : mapper.edgesOf(VertexRef{i})) {
-                if (eRef == e) continue;
-                const Edge & edge = store.getEdge(eRef);
-                if (edge.to.x == i && visitedA[edge.from.x] && edge.cost >= lengthA[edge.from.x] + start.cost + lengthB[i]) {
-                    setTrue(eRef, true);
-                }
-            }
-        }
-    }
+    return total;
 }
 
 void STPEdgeGraph::removeAfter(uint32_t point) {
