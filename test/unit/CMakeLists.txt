@@ -15,6 +15,7 @@ add_executable(RewritingTest)
 target_sources(RewritingTest
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_simplifyAssignment.cpp"
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Dominators.cpp"
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Rewriting.cpp"
     )
 
 target_link_libraries(RewritingTest api_static gtest gtest_main)
