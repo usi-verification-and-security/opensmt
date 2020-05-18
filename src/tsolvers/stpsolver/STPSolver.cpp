@@ -93,20 +93,19 @@ bool STPSolver::assertLit(PtAsgn asgn, bool b) {
     // TODO: process the addition of the constraint to the current set of constraints
     //      Return false if immediate conflict has been detected, otherwise return true
     //      Postpone actual checking of consistency of the extended set of constraints until call to the "check" method
+    if (inv_edge != EdgeRef_Undef) return false;            // no need to check anything if we're inconsistent already
 
     // If 'e' exists, 'neg' must also exist (see declareAtom)
     EdgeRef e = mapper.getEdgeRef(asgn.tr);
     assert( e != EdgeRef_Undef );
     EdgeRef neg = store.getEdge(e).neg;
 
-    if (graph.isTrue(e) && asgn.sgn == l_True) return true;     // assignment was already found as a consequence
+    if (graph.isTrue(e) && asgn.sgn == l_True) return true; // assignment was already found as a consequence
     if (graph.isTrue(neg) && asgn.sgn == l_False) return true;
 
-    if (graph.isTrue(neg) || graph.isTrue(e)) {                 // negation of assignment was found as a consequence
-        if (inv_edge == EdgeRef_Undef) {                        // remember the first time we reached inconsistent state
-            inv_bpoint = curr_bpoint;
-            inv_edge = (asgn.sgn == l_True) ? e : neg;          // save the edge which is inconsistent when set true
-        }
+    if (graph.isTrue(neg) || graph.isTrue(e)) {             // negation of assignment was found as a consequence
+        inv_bpoint = curr_bpoint;                           // remember the first time we reached inconsistent state
+        inv_edge = (asgn.sgn == l_True) ? e : neg;          // save the edge which is inconsistent when set true
         return false;
     }
 
@@ -178,6 +177,7 @@ void STPSolver::computeModel() {
 void STPSolver::getConflict(bool b, vec<PtAsgn> & vec) {
     // In case of unsatisfiability, return the witnessing subset of constraints
     // The bool parameter can be ignored, the second parameter is the output parameter
+    if (inv_edge == EdgeRef_Undef) return;  // TODO: how to handle call in consistent state?
 
 }
 

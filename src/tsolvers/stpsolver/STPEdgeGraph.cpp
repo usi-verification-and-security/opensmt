@@ -25,41 +25,38 @@ void STPEdgeGraph::setTrue(EdgeRef e, bool consequence) {
 void STPEdgeGraph::findConsequences(EdgeRef e) {
     size_t n = store.vertexNum();
 
-    std::vector<bool> visitedA(n), visitedB(n);             // maps which vertex was visited in DFS TODO: Replace with maps?
-    std::vector<opensmt::Number> lengthA(n), lengthB(n);    // maps the lowest distance found from start to a vertex
-
     auto start = store.getEdge(e);
     // find potential starts/ends of an edge
-    auto aTotal = dfsSearch(start.from, visitedA, lengthA, false);
-    auto bTotal = dfsSearch(start.to, visitedB, lengthB, true);
+    auto aRes = dfsSearch(start.from, false);
+    auto bRes = dfsSearch(start.to, true);
 
     // we scan through the side which appears in fewer total edges
-    bool aLess = aTotal <= bTotal;
-    auto &thisVisited = aLess ? visitedA : visitedB;
-    auto &otherVisited = aLess ? visitedB : visitedA;
-    auto &thisLength = aLess ? lengthA : lengthB;
-    auto &otherLength = aLess ? lengthB : lengthA;
+    auto &thisRes = aRes.total < bRes.total ? aRes : bRes;
+    auto &otherRes = aRes.total < bRes.total ? bRes : aRes;
 
     // for each (WLOG) 'a', go through its edges and find each 'a -> b' edge that has cost higher than length found by DFS
     // such edges are consequences of the current graph
     for (uint32_t i = 0; i < n; ++i) {
-        if (!thisVisited[i]) continue;
+        if (!(*thisRes.visited)[i]) continue;
         for (auto eRef : mapper.edgesOf(VertexRef{i})) {
             Edge &edge = store.getEdge(eRef);
-            auto thisSide = aLess ? edge.from.x : edge.to.x;
-            auto otherSide = aLess ? edge.to.x : edge.from.x;
-            if (thisSide == i && otherVisited[otherSide] && edge.cost >= thisLength[thisSide] + start.cost + otherLength[otherSide])
-                setTrue(eRef, true);
+            auto thisSide = (aRes.total < bRes.total) ? edge.from.x : edge.to.x;
+            auto otherSide = (aRes.total < bRes.total) ? edge.to.x : edge.from.x;
+            if (thisSide == i && (*otherRes.visited)[otherSide]
+                && edge.cost >= (*thisRes.distance)[thisSide] + start.cost + (*otherRes.distance)[otherSide])
+                    setTrue(eRef, true);
         }
     }
 }
 
 // DFS through the graph to find shortest paths to all reachable vertices from 'init' in the given direction
-size_t STPEdgeGraph::dfsSearch(VertexRef init, std::vector<bool> &visited, std::vector<opensmt::Number> &length, bool forward) {
+DFSResult STPEdgeGraph::dfsSearch(VertexRef init, bool forward) {
+    auto visited = std::unique_ptr<std::vector<bool>>(new std::vector<bool>(store.vertexNum()));
+    auto length = std::unique_ptr<std::vector<opensmt::Number>>(new std::vector<opensmt::Number>(store.vertexNum()));
     size_t total = 0;
     std::stack<VertexRef> open;
-    visited[init.x] = true;
-    length[init.x] = 0;
+    (*visited)[init.x] = true;
+    (*length)[init.x] = 0;
     open.push(init);
 
     while (!open.empty()) {
@@ -68,19 +65,19 @@ size_t STPEdgeGraph::dfsSearch(VertexRef init, std::vector<bool> &visited, std::
         for (auto eRef : toScan) {
             Edge &edge = store.getEdge(eRef);
             auto next = forward ? edge.to : edge.from;
-            if (!visited[next.x]) {
-                visited[next.x] = true;
+            if (!(*visited)[next.x]) {
+                (*visited)[next.x] = true;
                 open.push(next);
-                length[next.x] = length[curr.x] + edge.cost;
+                (*length)[next.x] = (*length)[curr.x] + edge.cost;
                 total += static_cast<uint32_t>(mapper.edgesOf(next).size());
-            } else if (length[next.x] > length[curr.x] + edge.cost) {
-                length[next.x] = length[curr.x] + edge.cost;
+            } else if ((*length)[next.x] > (*length)[curr.x] + edge.cost) {
+                (*length)[next.x] = (*length)[curr.x] + edge.cost;
                 open.push(next);
             }
         }
     }
 
-    return total;
+    return DFSResult{std::move(visited), std::move(length), total};
 }
 
 // removes all edges that have timestamp strictly later than 'point' from the graph
