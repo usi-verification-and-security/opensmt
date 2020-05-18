@@ -761,6 +761,7 @@ PTRef Logic::mkAnd(vec<PTRef>& args) {
     if (args.size() == 0) { return getTerm_true(); }
     // Remove duplicates
     vec<PtAsgn> tmp_args;
+    tmp_args.capacity(args.size());
     for (int i = 0; i < args.size(); i++) {
         if (!hasSortBool(args[i])) {
             return PTRef_Undef;
@@ -771,7 +772,7 @@ PTRef Logic::mkAnd(vec<PTRef>& args) {
             tmp_args.push(PtAsgn(args[i], l_True));
         }
     }
-    sort(tmp_args, LessThan_PtAsgn());
+    std::sort(tmp_args.begin(), tmp_args.end(), LessThan_PtAsgn());
     int i, j;
     PtAsgn p = PtAsgn_Undef;
     for (i = 0, j = 0; i < tmp_args.size(); i++) {
@@ -794,6 +795,7 @@ PTRef Logic::mkAnd(vec<PTRef>& args) {
         return tmp_args[0].sgn == l_True ? tmp_args[0].tr : mkNot(tmp_args[0].tr);
     }
     vec<PTRef> newargs;
+    newargs.capacity(tmp_args.size());
     for (int k = 0; k < tmp_args.size(); k++) {
         newargs.push(tmp_args[k].sgn == l_True ? tmp_args[k].tr : mkNot(tmp_args[k].tr));
     }
@@ -804,6 +806,7 @@ PTRef Logic::mkOr(vec<PTRef>& args) {
     if (args.size() == 0) { return getTerm_false(); }
     // Remove duplicates
     vec<PtAsgn> tmp_args;
+    tmp_args.capacity(args.size());
     for (int i = 0; i < args.size(); i++) {
         if (!hasSortBool(args[i])) {
             return PTRef_Undef;
@@ -814,7 +817,7 @@ PTRef Logic::mkOr(vec<PTRef>& args) {
             tmp_args.push(PtAsgn(args[i], l_True));
         }
     }
-    sort(tmp_args, LessThan_PtAsgn());
+    std::sort(tmp_args.begin(), tmp_args.end(), LessThan_PtAsgn());
     int i, j;
     PtAsgn p = PtAsgn_Undef;
     for (i = 0, j = 0; i < tmp_args.size(); i++) {
@@ -837,6 +840,7 @@ PTRef Logic::mkOr(vec<PTRef>& args) {
         return tmp_args[0].sgn == l_True ? tmp_args[0].tr : mkNot(tmp_args[0].tr);
     }
     vec<PTRef> newargs;
+    newargs.capacity(tmp_args.size());
     for (int k = 0; k < tmp_args.size(); k++) {
         newargs.push(tmp_args[k].sgn == l_True ? tmp_args[k].tr : mkNot(tmp_args[k].tr));
     }
