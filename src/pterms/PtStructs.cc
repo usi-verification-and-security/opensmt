@@ -14,8 +14,6 @@ uint32_t PtAsgnHash::operator () (const PtAsgn& s) const {
 
 bool LessThan_PTRef::operator () (PTRef& x, PTRef& y) { return x.x < y.x; }
 
-bool LessThan_PtAsgn::operator () (PtAsgn& x, PtAsgn& y) { return x.tr.x < y.tr.x; }
-
 
 ValPair::~ValPair() {
     if (val != NULL)

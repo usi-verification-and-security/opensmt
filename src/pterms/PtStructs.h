@@ -70,7 +70,9 @@ struct LessThan_PTRef {
 };
 
 struct LessThan_PtAsgn {
-    bool operator () (PtAsgn& x, PtAsgn& y);// { return x.tr.x < y.tr.x; }
+    bool operator () (PtAsgn x, PtAsgn y) {
+        return x.tr.x < y.tr.x;
+    }
 };
 
 class ValPair
