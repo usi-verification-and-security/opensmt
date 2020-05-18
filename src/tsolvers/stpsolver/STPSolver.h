@@ -31,8 +31,9 @@ class STPSolver : public TSolver {
 
     std::vector<uint32_t> backtrack_points; // store of how many edges were set true at each backtrack point
 
-    uint32_t curr_bpoint;                     // current backtrack point
-    ptrdiff_t inv_bpoint;                      // backtrack point where we entered an inconsistent state
+    size_t curr_bpoint;                     // current backtrack point
+    size_t inv_bpoint;                      // backtrack point where we entered an inconsistent state
+    EdgeRef inv_edge;                       // first edge that caused the inconsistent state
 
     ParsedPTRef parseRef(PTRef ref) const;
 

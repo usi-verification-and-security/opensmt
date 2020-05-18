@@ -13,6 +13,7 @@ STPSolver::STPSolver(SMTConfig & c, LALogic & l, vec<DedElem> & d)
         , graph(store, mapper)  // similarly, mapper is initialized before graph (per declaration in header)
         , inv_bpoint(-1)
         , curr_bpoint(0)
+        , inv_edge(EdgeRef_Undef)
 {}
 
 STPSolver::~STPSolver() = default;
@@ -102,7 +103,10 @@ bool STPSolver::assertLit(PtAsgn asgn, bool b) {
     if (graph.isTrue(neg) && asgn.sgn == l_False) return true;
 
     if (graph.isTrue(neg) || graph.isTrue(e)) {                 // negation of assignment was found as a consequence
-        if (inv_bpoint == -1) inv_bpoint = curr_bpoint;              // remember the first time we reached inconsistent state
+        if (inv_edge == EdgeRef_Undef) {                        // remember the first time we reached inconsistent state
+            inv_bpoint = curr_bpoint;
+            inv_edge = (asgn.sgn == l_True) ? e : neg;          // save the edge which is inconsistent when set true
+        }
         return false;
     }
 
@@ -119,7 +123,7 @@ TRes STPSolver::check(bool b) {
     // TODO: implement the main check of consistency
 
     // we check the validity of each assertLit, so this just returns the consistency of current state
-    return inv_bpoint == -1 ? TRes::SAT : TRes::UNSAT;
+    return inv_edge == EdgeRef_Undef ? TRes::SAT : TRes::UNSAT;
 }
 
 void STPSolver::clearSolver() {
@@ -151,8 +155,10 @@ void STPSolver::popBacktrackPoints(unsigned int i) {
 
     assert( backtrack_points.size() >= i );
     curr_bpoint -= i;
-    if (inv_bpoint > curr_bpoint)   // if we returned back to a consistent state, we reset inv_bpoint
-        inv_bpoint = -1;
+    if (inv_bpoint > curr_bpoint) {  // if we returned back to a consistent state, we reset inv_bpoint
+        inv_bpoint = 0;
+        inv_edge = EdgeRef_Undef;
+    }
 
     backtrack_points.resize(curr_bpoint + 1); // pop 'i-1' values from the backtrack stack
     graph.removeAfter(backtrack_points.back());
