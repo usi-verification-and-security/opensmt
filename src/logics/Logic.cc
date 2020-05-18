@@ -1398,7 +1398,13 @@ bool Logic::isAtom(PTRef r) const {
 //
 bool Logic::varsubstitute(PTRef root, const Map<PTRef, PtAsgn, PTRefHash> & substs, PTRef & tr_new)
 {
+    if (substs.elems() == 0) {
+        tr_new = root;
+        return false;
+    }
     Map<PTRef,PTRef,PTRefHash> gen_sub;
+    std::vector<char> processed;
+    processed.resize(Idx(getPterm(root).getId()) + 1, 0);
     vec<PTRef> queue;
     int n_substs = 0;
 
@@ -1408,15 +1414,17 @@ bool Logic::varsubstitute(PTRef root, const Map<PTRef, PtAsgn, PTRefHash> & subs
 #ifdef SIMPLIFY_DEBUG
         cerr << "processing " << printTerm(tr) << endl;
 #endif
-        if (gen_sub.has(tr)) {
+        Pterm const & t = getPterm(tr);
+        auto index = Idx(t.getId());
+        if (processed[index] == 1) {
             // Already processed
             queue.pop();
             continue;
         }
         bool unprocessed_children = false;
-        Pterm& t = getPterm(tr);
         for (int i = 0; i < t.size(); i++) {
-            if (!gen_sub.has(t[i])) {
+            auto childIndex = Idx(getPterm(t[i]).getId());
+            if (processed[childIndex] == 0) {
                 queue.push(t[i]);
                 unprocessed_children = true;
             }
@@ -1448,9 +1456,10 @@ bool Logic::varsubstitute(PTRef root, const Map<PTRef, PtAsgn, PTRefHash> & subs
 #endif
                 bool changed = false;
                 for (int i = 0; i < t.size(); i++) {
-                    PTRef sub = gen_sub[t[i]];
-                    changed |= (sub != t[i]);
-                    args_mapped.push(sub);
+                    PTRef sub = PTRef_Undef;
+                    bool hasSub = gen_sub.peek(t[i], sub);
+                    changed |= hasSub;
+                    args_mapped.push(hasSub ? sub : t[i]);
 #ifdef SIMPLIFY_DEBUG
                     printf("  %s -> %s\n", printTerm(t[i]), printTerm(gen_sub[t[i]]));
 #endif
@@ -1464,16 +1473,17 @@ bool Logic::varsubstitute(PTRef root, const Map<PTRef, PtAsgn, PTRefHash> & subs
             assert(result != PTRef_Undef);
         }
         assert(result != PTRef_Undef);
-        gen_sub.insert(tr, result);
+        processed[index] = 1;
 
         if (result != tr) {
+            gen_sub.insert(tr, result);
             n_substs++;
 #ifdef SIMPLIFY_DEBUG
             cerr << "Will substitute " << printTerm(tr) << " with " << printTerm(result) << endl;
 #endif
         }
     }
-    tr_new = gen_sub[root];
+    tr_new = gen_sub.has(root) ? gen_sub[root] : root;
     return n_substs > 0;
 }
 
