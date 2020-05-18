@@ -177,11 +177,6 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
 // term appears as a child in more than one term, we will not flatten
 // that structure.
 //
-void MainSolver::computeIncomingEdges(PTRef tr, Map<PTRef,int,PTRefHash>& PTRefToIncoming)
-{
-    ::computeIncomingEdges(logic, tr, PTRefToIncoming);
-}
-
 PTRef MainSolver::rewriteMaxArity(PTRef root)
 {
     return ::rewriteMaxArityClassic(logic, root);

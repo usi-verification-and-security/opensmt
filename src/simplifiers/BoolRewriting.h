@@ -12,7 +12,7 @@
 
 class Logic;
 
-void computeIncomingEdges(const Logic& logic, PTRef tr, Map<PTRef,int,PTRefHash>& PTRefToIncoming);
+void computeIncomingEdges(const Logic& logic, PTRef tr, std::unordered_map<PTRef,int,PTRefHash>& PTRefToIncoming);
 
 PTRef rewriteMaxArityAggresive(Logic & logic, PTRef root);
 
