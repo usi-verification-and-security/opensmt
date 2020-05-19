@@ -53,9 +53,11 @@ protected:
     bool                s_empty;
 
     class Cache {
+        PTRef zeroLevelTerm;
         using CacheEntry = std::pair<PTRef, PTRef>;
         std::unordered_set<CacheEntry, PTRefPairHash > cache;
     public:
+        Cache(PTRef zeroLevelTerm): zeroLevelTerm(zeroLevelTerm) {}
         bool contains(PTRef term, PTRef frame_term);
         void insert(PTRef term, PTRef frame_term);
     };

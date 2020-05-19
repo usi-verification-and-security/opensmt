@@ -41,6 +41,7 @@ Cnfizer::Cnfizer ( SMTConfig       &config_
     , logic    (logic_)
     , tmap     (tmap)
     , s_empty  (true)
+    , alreadyAsserted(logic.getTerm_true())
 {
     frame_terms.push(logic.getTerm_true()); // frame 0 does not have a var
     frame_term = frame_terms[0];
@@ -585,10 +586,11 @@ lbool Cnfizer::getTermValue (PTRef tr) const
 }
 
 bool Cnfizer::Cache::contains(PTRef term, PTRef frame_term) {
-    return this->cache.find(std::make_pair<>(term, frame_term)) != this->cache.end();
+    return cache.find(std::make_pair<>(term, frame_term)) != cache.end()
+        || ( frame_term != zeroLevelTerm && cache.find(std::make_pair<>(term, zeroLevelTerm)) != cache.end());
 }
 
 void Cnfizer::Cache::insert(PTRef term, PTRef frame_term) {
     assert(!contains(term, frame_term));
-    this->cache.insert(std::make_pair<>(term, frame_term));
+    cache.insert(std::make_pair<>(term, frame_term));
 }

@@ -2201,6 +2201,9 @@ lbool CoreSMTSolver::solve_()
 {
 //    opensmt::PrintStopWatch watch("solve time", cerr);
 
+    for (Lit l : this->assumptions) {
+        this->addVar_(var(l));
+    }
     this->clausesUpdate();
 
     // Inform theories of the variables that are actually seen by the
