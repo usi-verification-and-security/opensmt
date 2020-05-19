@@ -58,9 +58,10 @@ Simplex::Explanation Simplex::checkSimplex() {
         }
         // if it was not found - UNSAT
         if (y_found == LVRef_Undef) {
-            auto explanation = getConflictingBounds(x);
+            assert(isModelOutOfBounds(x));
+            bool isOutOfLowerBound = isModelOutOfLowerBound(x);
             model->restoreAssignment();
-            return explanation;
+            return getConflictingBounds(x, isOutOfLowerBound);
         }
             // if it was found - pivot old Basic x with non-basic y and do the model updates
         else {
@@ -317,10 +318,10 @@ void Simplex::updateValues(const LVRef bv, const LVRef nv){
 //
 // Returns the bounds conflicting with the actual model.
 //
-Simplex::Explanation Simplex::getConflictingBounds(LVRef x)
+Simplex::Explanation Simplex::getConflictingBounds(LVRef x, bool conflictOnLower)
 {
     Explanation expl;
-    if (isModelOutOfLowerBound(x)) {
+    if (conflictOnLower) {
         // add all bounds for polynomial elements which limit lower bound
         LABoundRef b_f = model->readLBoundRef(x);
         expl.push_back({b_f, 1});
@@ -339,7 +340,7 @@ Simplex::Explanation Simplex::getConflictingBounds(LVRef x)
             }
         }
     }
-    if (isModelOutOfUpperBound(x)) {
+    else {
         // add all bounds for polynomial elements which limit upper bound
         LABoundRef br_f = model->readUBoundRef(x);
         expl.push_back({br_f,1});
